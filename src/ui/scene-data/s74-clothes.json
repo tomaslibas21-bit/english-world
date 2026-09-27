@@ -1,22 +1,43 @@
 {
   "npc": "Chloe, sales assistant",
-  "images": ["greet", "size", "color", "tryon", "fit", "pay", "return"],
+  "images": [
+    "greet",
+    "size",
+    "color",
+    "tryon",
+    "fit",
+    "pay",
+    "return"
+  ],
   "start": "greet",
   "done": "pay",
   "phases": {
-    "howareyou": "greet", "item": "greet", "return_q": "greet",
-    "size": "size", "shoe": "size",
+    "howareyou": "greet",
+    "item": "greet",
+    "return_q": "greet",
+    "size": "size",
+    "shoe": "size",
     "color": "color",
     "tryon": "tryon",
-    "fit": "fit", "decide": "fit",
-    "rewards": "pay", "rewards_join": "pay", "pay": "pay", "bag": "pay", "receipt": "pay",
-    "r_receipt": "return", "r_reason": "return", "r_choice": "return", "r_new": "return"
+    "fit": "fit",
+    "decide": "fit",
+    "rewards": "pay",
+    "rewards_join": "pay",
+    "pay": "pay",
+    "bag": "pay",
+    "receipt": "pay",
+    "r_receipt": "return",
+    "r_reason": "return",
+    "r_choice": "return",
+    "r_new": "return"
   },
-  "focus": [42, 32],
+  "focus": [
+    42,
+    32
+  ],
   "jobs": {
-    "greet": "11bab4e3-e2a3-4c7c-b4b4-ef95339cc5f4", "size": "3c75b439-84cd-4ef5-8b3c-cb2f6869d0ca",
-    "color": "7d43a817-17e6-4e6c-84ba-6cb408cfcd6e", "tryon": "fd3f91bc-5aab-42eb-80fb-01ee06917ddd",
-    "fit": "6012f6f1-6a0a-4a55-8216-a2a895de68ae", "pay": "b9e450c8-c944-4a15-8a75-4138d6680600",
-    "return": "aca509a7-110e-4b18-8748-c215f78fcac0"
+    "greet": "11bab4e3-e2a3-4c7c-b4b4-ef95339cc5f4",
+    "fit": "6012f6f1-6a0a-4a55-8216-a2a895de68ae",
+    "pay": "b9e450c8-c944-4a15-8a75-4138d6680600"
   }
 }
