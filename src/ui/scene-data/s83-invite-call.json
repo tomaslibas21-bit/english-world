@@ -1,0 +1,33 @@
+{
+  "npc": "Lizzie, your friend (phone call)",
+  "images": [
+    "hello",
+    "excited",
+    "plan",
+    "sister",
+    "bye"
+  ],
+  "start": "hello",
+  "phases": {
+    "hello": "hello",
+    "howareyou": "hello",
+    "invite": "hello",
+    "bad_line": "hello",
+    "day": "excited",
+    "band": "excited",
+    "start": "excited",
+    "other_day": "excited",
+    "place": "plan",
+    "meet_time": "plan",
+    "suggest_place": "plan",
+    "suggest_time": "plan",
+    "sister": "sister",
+    "pay": "sister",
+    "bbq": "sister",
+    "closing": "bye"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
