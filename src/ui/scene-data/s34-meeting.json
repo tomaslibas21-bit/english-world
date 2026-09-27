@@ -1,0 +1,41 @@
+{
+  "npc": "Kate, Paul and Sara (team meeting)",
+  "images": [
+    "mute",
+    "update",
+    "clarify",
+    "opinion",
+    "owner",
+    "wrap"
+  ],
+  "start": "mute",
+  "phases": {
+    "mute": "mute",
+    "sara_hear": "mute",
+    "notes": "update",
+    "update": "update",
+    "what_task": "update",
+    "send_q": "update",
+    "when_q": "update",
+    "help_offer": "update",
+    "summary": "update",
+    "add": "update",
+    "add_what": "update",
+    "clarify": "clarify",
+    "makes_sense": "clarify",
+    "opinion": "opinion",
+    "why": "opinion",
+    "talk_after": "opinion",
+    "dl_view": "opinion",
+    "dl_who": "opinion",
+    "owner": "owner",
+    "aob": "wrap",
+    "aob_more": "wrap",
+    "aob_what": "wrap",
+    "closing": "wrap"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
