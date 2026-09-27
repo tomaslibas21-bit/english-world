@@ -1,0 +1,39 @@
+{
+  "npc": "Frank, your neighbor (at the bus stop)",
+  "images": [
+    "greet",
+    "weather",
+    "chat",
+    "rain",
+    "late",
+    "bye"
+  ],
+  "start": "greet",
+  "sticky": [
+    "rain"
+  ],
+  "phases": {
+    "howareyou": "greet",
+    "weather": "weather",
+    "winter": "weather",
+    "new_q": "chat",
+    "intro": "chat",
+    "from_q": "chat",
+    "weekend_past": "chat",
+    "week": "chat",
+    "busy_why": "chat",
+    "weekend_plans": "chat",
+    "wkf_what": "chat",
+    "wkp_what": "chat",
+    "your_turn": "chat",
+    "react": "chat",
+    "rain": "rain",
+    "late": "late",
+    "like_q": "late",
+    "closing": "bye"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
