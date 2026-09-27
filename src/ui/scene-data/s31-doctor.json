@@ -1,0 +1,44 @@
+{
+  "npc": "Dr. Carter, family doctor",
+  "images": [
+    "greet",
+    "listen",
+    "sleeve",
+    "breath",
+    "ah",
+    "hurt",
+    "rx",
+    "bye"
+  ],
+  "start": "greet",
+  "phases": {
+    "dob": "greet",
+    "feeling": "greet",
+    "problem": "greet",
+    "sick_q": "listen",
+    "more_sym": "listen",
+    "howlong": "listen",
+    "scale": "listen",
+    "fever": "listen",
+    "meds": "listen",
+    "meds_what": "listen",
+    "sleeve": "sleeve",
+    "exam": "breath",
+    "breath": "breath",
+    "ah": "ah",
+    "hurt": "hurt",
+    "allergy": "rx",
+    "chart": "rx",
+    "allergy_which": "rx",
+    "rx": "rx",
+    "rx_q": "rx",
+    "pharmacy": "rx",
+    "note": "rx",
+    "questions": "bye",
+    "closing": "bye"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
