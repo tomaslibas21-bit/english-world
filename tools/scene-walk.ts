@@ -1,8 +1,8 @@
 // Checks the illustrated scenes (src/ui/scene-data/*.json, pictures in public/scenes/) and shows which
 // picture is on screen at each moment of the simulated conversations. It mirrors session.ts (the id of
 // the pending question or step when the person starts talking, "closing" for the goodbye turn) and
-// SceneBackdrop (that id's picture, else the "done" picture once the task is complete, else the
-// current picture).
+// SceneBackdrop (a sticky picture once shown, else that id's picture, else the "done" picture once
+// the task is complete, else the current picture).
 //   npx tsx tools/scene-walk.ts                 every scene
 //   npx tsx tools/scene-walk.ts s72 s84-date    only these (prefix of the file name)
 //   --seeds=12   seeds per simulated conversation      --quiet   no picture sequences
@@ -50,7 +50,7 @@ function walk(sit: SituationDef, f: SceneFile, onTurn: (stepId: string | null, p
     let kept: string | undefined;
     const show = () => {
       const stepId = conv.ended ? "closing" : conv.pending?.id ?? conv.effectiveStep()?.id ?? null;
-      const pic = (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
+      const pic = (kept && f.sticky?.includes(kept) && kept) || (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
       kept = pic;
       onTurn(stepId, pic, sim.name, seed);
     };
@@ -109,6 +109,7 @@ for (const key of files.sort()) {
   }
   if (!images.has(f.start)) err(`start "${f.start}" is not in images`);
   if (f.done && !images.has(f.done)) err(`done "${f.done}" is not in images`);
+  for (const n of f.sticky ?? []) if (!images.has(n)) err(`sticky "${n}" is not in images`);
   for (const [id, n] of Object.entries(f.phases ?? {})) if (!images.has(n)) err(`phase "${id}" → "${n}" is not in images`);
   if (!Array.isArray(f.focus) || f.focus.length !== 2 || f.focus.some((v) => typeof v !== "number" || v < 0 || v > 100)) err("focus must be [x%, y%]");
 

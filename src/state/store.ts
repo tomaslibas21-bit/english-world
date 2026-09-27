@@ -102,12 +102,15 @@ export interface ConvUI {
   guess: Guess | null;
   /** "Listen and repeat" of a guide example (practice only, never an answer). */
   practice: Practice | null;
+  /** Counts the conversations started, so that per-conversation display state (the scene picture)
+   *  starts fresh when the same situation is played again. */
+  run: number;
 }
 
 export const EMPTY_CONV: ConvUI = {
   active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
   mic: { status: "off", heard: "" }, failures: 0, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
-  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null,
+  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0,
 };
 
 export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; ms?: number }

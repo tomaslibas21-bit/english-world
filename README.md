@@ -1,6 +1,6 @@
 # English World · Maple Harbor
 
-A browser game for Lithuanian adults practising spoken **American English**. You arrive at a small, friendly American coastal town, walk around, go into places and talk with the people there. The 36 conversations cover the 30 situation songs (62–91) and go well beyond their lyrics.
+A browser game for Lithuanian adults practising spoken **American English**. You arrive at a small, friendly American coastal town, walk around, go into places and talk with the people there. The 41 conversations cover 35 situation songs (31–35 and 62–91) and go well beyond their lyrics.
 
 - **Say it your way.** People react to what you actually said. They fill in details you gave, don't ask again for them, accept short answers, keep negation ("I *don't* want a cappuccino") and ask when something is unclear.
 - **Lithuanian suggestions say _what_ you could say; English hints show _how_.** Clicking a suggestion never answers for you.
@@ -40,9 +40,10 @@ The first `npm run audio` downloads the Kokoro-82M ONNX model (about 320 MB) fro
 
 ## Hosting
 
-The build is a static site: about 5 MB of code, 16 MB of scene pictures (WebP) and about 170 MB of voice clips (18,400 files in `audio/`). No server is needed.
+The build is a static site: about 5 MB of code, 18 MB of scene pictures (WebP) and about 225 MB of voice clips (about 21,200 files in `audio/`). No server is needed.
 
-- **GitHub Pages (the plan).** `.github/workflows/deploy.yml` builds the site with Node 22 on every push to `main` and publishes it at `https://<user>.github.io/<repository>/`. The base path comes from the repository name. The repository doesn't exist yet: the owner installs GitHub CLI and logs in, then the coordinator creates the repository, pushes and turns Pages on. The steps, in Lithuanian, are in `docs/HOSTING.md`.
+- **GitHub Pages (live).** The game is published at https://tomaslibas21-bit.github.io/english-world/ from the public repository `tomaslibas21-bit/english-world`. `.github/workflows/deploy.yml` builds the site with Node 22 on every push to `main` and publishes it in about a minute; the base path comes from the repository name. The steps, in Lithuanian, are in `docs/HOSTING.md`.
+- **Inside English Master (planned).** Publish the built game as a section of the fluent-steps site (`/zaidimas`), so that it shares the site's origin and word cards. Serve the voice clips from Cloudflare R2: at about 21,000 files they exceed the 20,000-file limit of a Cloudflare Workers deploy.
 - **As a section of another site** (e.g. `https://your-site/game/`):
 
   ```bash
@@ -78,7 +79,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 ## Looks
 
 - **World styles.** Settings → *Pasaulio stilius*: **Kaladėlės** (the original block look, the default), **Animacija** (bright cartoon with outlines and big round heads), **Iliustracija** (the teal, orange and cream palette of the illustrated scenes) and **Tikroviškas** (natural proportions, realistic materials and reflections). All four are built in code. Adding `?style=toon`, `storybook`, `realistic` or `blocks` to the address tries a style in that tab only. Code: `src/game/style.ts`, `styleScene.ts`, `world/styled.ts`, `characters/`.
-- **Illustrated scenes.** In all 31 face-to-face conversations, the game shows one picture per phase instead of the 3D view (198 WebP pictures in `public/scenes/`, about 16 MB; full-quality originals are kept locally in `.art-originals/`, which isn't published). Settings → *Iliustruotos scenos* turns this off. See `docs/SCENE-ART.md`; `npx tsx tools/scene-walk.ts` checks every scene against the simulated conversations.
+- **Illustrated scenes.** In 36 of the 41 conversations, calls included, the game shows one picture per phase instead of the 3D view (225 WebP pictures in `public/scenes/`, about 18 MB; full-quality originals are kept locally in `.art-originals/`, which isn't published). Settings → *Iliustruotos scenos* turns this off. See `docs/SCENE-ART.md`; `npx tsx tools/scene-walk.ts` checks every scene against the simulated conversations. The five newest conversations (songs 31–35) show the 3D view until their pictures arrive; the brief is in `docs/PICTURES-WANTED.md`.
 - **Icons.** Hand-drawn SVG icons (`src/ui/icons.tsx`), with no emoji anywhere in the interface.
 
 ## Learning features
@@ -122,12 +123,12 @@ So recognition needs an internet connection in most browsers. Audio sent to Goog
 - **Lithuanian translations and glosses:** written with AI assistance following TOMAS-INTERLINEAR-v2 and LIBRARY-MINIMUM-UNIT-v3. They still need a native-speaker review (see "Known limitations").
 - **Fonts:** Nunito, EB Garamond and Gentium Book Plus (SIL Open Font License), bundled through @fontsource.
 - **3D:** everything is procedural (Three.js geometry), so there are no third-party models.
-- **Scene illustrations** (`public/scenes/`): generated with Nano Banana Pro through Higgsfield for this game (see `docs/SCENE-ART.md`). Any text in them was specified word for word and checked.
+- **Scene illustrations** (`public/scenes/`): generated for this game with Nano Banana Pro through Higgsfield (see `docs/SCENE-ART.md`), and with ChatGPT for the calls and a few extras (see `docs/PICTURES-WANTED.md`). Any text in them was specified word for word and checked.
 
 ## Testing status
 
-- **Automated:** `npm test` (engine unit tests); `npm run check:content` over every conversation. The content check covers grammar validity, interlinear unit counts for both address forms and both genders, registered merges, per-situation NLU tests (2,700+), scripted simulations on 12 random seeds each, and 80 random-order conversations each, checking that no handler crashes.
-- **Understanding learner answers** (`tools/coverage.ts`). `tests/corpus/` holds about 9,200 practice sentences (every answer point of every situation: fluent, learner-style and short answers, plus meaning-flip traps); nearly all are understood and no trap is accepted. `tests/heldout/` is a separate **blind** set of about 4,100 sentences written without looking at the grammar; its even half was never used for tuning. On that half the original engine understood 58% correctly and the current one about 79%, with fewer traps accepted than before. Don't tune patterns against `tests/heldout/`, or it stops being a fair measure.
+- **Automated:** `npm test` (engine unit tests); `npm run check:content` over every conversation. The content check covers grammar validity, interlinear unit counts for both address forms and both genders, registered merges, per-situation NLU tests (3,600+), scripted simulations on 12 random seeds each, and 80 random-order conversations each, checking that no handler crashes.
+- **Understanding learner answers** (`tools/coverage.ts`). `tests/corpus/` holds about 11,600 practice sentences (every answer point of every situation: fluent, learner-style and short answers, plus meaning-flip traps); nearly all are understood and no trap is accepted. `tests/heldout/` is a separate **blind** set of about 4,700 sentences written without looking at the grammar; its even half was never used for tuning. On that half the original engine understood 58% correctly and the current one about 79%, with fewer traps accepted than before. The five newest conversations (songs 31–35) got their own blind sentences after they were written: 77% understood correctly, and 0 of 61 traps accepted. Don't tune patterns against `tests/heldout/`, or it stops being a fair measure.
 - **In the game (browser):** every conversation was played end to end through the real session code (typed input), in its real place with its NPC present, including phone and video calls and world events (taxi rides, bus rides, boarding, items handed over). The towns, all interiors, the mobile layout and touch controls were checked visually.
 
 ## Known limitations

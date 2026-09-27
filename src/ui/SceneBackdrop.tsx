@@ -12,13 +12,14 @@ export function SceneBackdrop() {
   const art = on && conv.active ? sceneFor(conv.sitId, conv.hostId) : undefined;
 
   // a moment with its own picture shows it; after the task, other moments show the "done" picture;
-  // a side question (or any other moment without a picture) keeps the current one
-  const last = useRef<{ sit: string; stem: string } | null>(null);
+  // a side question (or any other moment without a picture) keeps the current one; a sticky picture
+  // stays until the end. A new conversation starts fresh, even in the same situation.
+  const last = useRef<{ run: number; stem: string } | null>(null);
   let stem: string | undefined;
   if (art) {
-    const kept = last.current?.sit === conv.sitId ? last.current.stem : undefined;
-    stem = (conv.stepId && art.phases[conv.stepId]) || (conv.completed && art.done) || kept || art.start;
-    last.current = { sit: conv.sitId, stem };
+    const kept = last.current?.run === conv.run ? last.current.stem : undefined;
+    stem = (kept && art.sticky?.includes(kept) && kept) || (conv.stepId && art.phases[conv.stepId]) || (conv.completed && art.done) || kept || art.start;
+    last.current = { run: conv.run, stem };
   }
 
   useEffect(() => {

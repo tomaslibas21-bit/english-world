@@ -4,18 +4,18 @@
 - Live game: https://tomaslibas21-bit.github.io/english-world/
 - Code: https://github.com/tomaslibas21-bit/english-world
 
-During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel. 198 pictures exist for the 31 face-to-face conversations. This brief lists the pictures still wanted, mainly the **5 phone and video calls**. The game already supports call pictures: adding the files below is enough, with no code changes.
+During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel. 225 pictures exist for 36 of the 41 conversations. This brief lists the pictures still wanted: the **five new conversations for songs 31–35** (the doctor, the supermarket, small talk at the bus stop, a work meeting and the gym), 40 pictures in total. Adding the files below is enough, with no code changes.
 
 ## Where to look
 
 - **The existing pictures, in the style to match:** [`public/scenes/`](https://github.com/tomaslibas21-bit/english-world/tree/main/public/scenes). The best style references are:
-  - [`s72-cafe/greet.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s72-cafe/greet.webp)
-  - [`s68-hotel/welcome.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s68-hotel/welcome.webp)
-  - [`s64a-checkin/greet.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s64a-checkin/greet.webp)
-  - [`s88-first-day/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s88-first-day/hello.webp) (an office)
-  - [`s86-old-friend/surprise.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s86-old-friend/surprise.webp) (outdoors)
+  - [`s72-cafe/greet.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s72-cafe/greet.webp) (a counter)
+  - [`s75-pharmacy/greet.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s75-pharmacy/greet.webp) (health care)
+  - [`s88-first-day/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s88-first-day/hello.webp) (the Brightline office, with its glass-walled meeting room on the left)
+  - [`s89-video-call/grid.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s89-video-call/grid.webp) (Kate, Paul and Sara, who are also in the meeting below)
+  - [`s82-neighbor/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s82-neighbor/hello.webp) (outdoors in the residential part of town)
 - **The full art guide:** [`docs/SCENE-ART.md`](SCENE-ART.md), with the style, framing, text rules and file format.
-- **Each person's look:** [`src/content/npcs.ts`](../src/content/npcs.ts): skin tone, hair style and colour, clothes colours, accessories.
+- **Each person's look:** [`src/content/npcs.ts`](../src/content/npcs.ts): skin tone, hair style and colour, clothes colours, accessories. The descriptions below already say it in words.
 - **The conversations:** [`src/content/situations/<id>.ts`](../src/content/situations/), with what each person says.
 - **The scene files** (which picture shows at which moment): [`src/ui/scene-data/`](../src/ui/scene-data/).
 
@@ -23,8 +23,8 @@ During a conversation, the game shows **one illustrated picture per phase** of t
 
 > Clean, modern semi-flat illustration for an adult language-learning app, in the style of a premium travel or wellness app: simple confident shapes, minimal soft shading, fine grain texture, warm natural daylight, harmonious slightly muted palette with deep teal and warm orange accents and creamy whites. Grown-up and elegant, not childish, not cartoonish. The background is simplified and a little soft so attention stays on the person.
 
-- **Framing:** eye level. The person is about **one third from the left edge**, waist up, facing the viewer, with their head in the upper half. **Keep the right third calm**, because the conversation panel covers it on computers.
-- **One scene, one set-up:** every picture of a scene has the same room, the same person, the same clothes and the same camera. Only the pose, gesture, expression and props change. Make the first picture, then edit it for the others.
+- **Framing:** eye level, seen from the learner's side (across the desk, the counter or the table). The person is about **one third from the left edge**, waist up, facing the viewer, with their head in the upper half. **Keep the right third calm**, because the conversation panel covers it on computers.
+- **One scene, one set-up:** every picture of a scene has the same room, the same person, the same clothes and the same camera. Only the pose, gesture, expression and props change. Make the first picture, then edit it for the others. Where a scene has a second set-up (the self-checkout, the gym floor), make its first picture the same way, with the same person and clothes.
 - **Text:** none, except text given below word for word. No logos or brands. Screens, badges and papers stay blank or show simple shapes. American spelling.
 - **People:** grown-ups with friendly, natural expressions and natural hands (five fingers).
 
@@ -34,174 +34,204 @@ During a conversation, the game shows **one illustrated picture per phase** of t
   - 2048 px wide, 16:9 (2048×1152; about 1143 high is fine too)
   - WebP, quality about 80, under 250 KB each
   - lower-case names
-- **Scene file:** `src/ui/scene-data/<scene>.json`. It is given below for each new scene, ready to use. Optionally add `"jobs": { "<name>": "<generation id>" }` for later edits.
+- **Scene file:** `src/ui/scene-data/<scene>.json`. It is given below for each scene, ready to use. Optionally add `"jobs": { "<name>": "<generation id>" }` for later edits.
 - **Check:** if you can run code, `npx tsx tools/scene-walk.ts <scene>` must report 0 errors, and `npm test` and `npm run build` must pass.
 - **Push straight to `main`.** No one is using the game yet, so no pull request is needed.
   - Every push publishes the live site in about a minute (GitHub Actions, "Deploy to GitHub Pages"). If a build fails, the previous version stays online.
   - Commit one scene at a time: its pictures and its scene file together, so that a scene file never points to pictures that aren't there yet.
-  - After pushing, check the scene in the live game: https://tomaslibas21-bit.github.io/english-world/ → "Visos situacijos" → the call.
+  - Commit as `tomaslibas21-bit <299487494+tomaslibas21-bit@users.noreply.github.com>` (set `git config user.name` and `user.email` in your copy of the repository), so that no personal name or email address appears in the public history.
+  - After pushing, check the scene in the live game: https://tomaslibas21-bit.github.io/english-world/ → "Visos situacijos" → the conversation.
 
-## A. The five calls (25 pictures)
+## The five new conversations (40 pictures)
 
-A phone call shows the **other person at their end of the line**, talking on the phone or a headset. The video call shows the meeting **on the learner's laptop screen**.
+### s31-doctor: Dr. Carter, family doctor (8 pictures)
 
-### s76-dentist-call: Linda, dental office reception
-
-- **Linda:** a woman with fair skin, a brown chin-length bob and glasses, wearing a light teal top and a phone headset.
-- **Place:** the front desk of a small, bright dental office. On the wall behind her is a sign with exactly the text **GREEN STREET DENTAL**.
+- **Dr. Carter:** a woman with brown skin and black hair in a neat bun, wearing glasses, a white doctor's coat over a navy top, navy trousers and a blank name badge, with a stethoscope around her neck. Calm and kind.
+- **Place:** a bright exam room at Harbor Family Clinic: an exam table covered with white paper, a small desk with a computer, a blood-pressure cuff on the wall, cabinets and a window with daylight. No text anywhere.
 
 | Picture | Shows | Moments |
 |---|---|---|
-| `greet` | Answering the call with a warm smile, one hand on the headset microphone | help, help_move, reason, hear, more, closing |
-| `sorry` | Sympathetic: eyebrows raised, hand on chest ("Oh no, I'm sorry to hear that") | pain_len |
-| `details` | Typing at her computer while listening | new_pt, name, surname, spell, dob, phone, insurance |
-| `hold` | One finger raised, "one moment, please", glancing at her screen | hold |
-| `slot` | Looking at an open appointment book with blank lines, pen ready | slot |
+| `greet` | Standing by the desk with a tablet, a warm, welcoming smile ("How are you feeling today?") | dob, feeling, problem |
+| `listen` | Sitting on her rolling stool, leaning forward a little, listening with concern and typing notes on the tablet | sick_q, more_sym, howlong, scale, fever, meds, meds_what |
+| `sleeve` | Holding up a blood-pressure cuff with both hands ("Could you roll up your sleeve?") | sleeve |
+| `breath` | The stethoscope in her ears, holding its chest piece out toward the viewer and breathing in herself to show how ("Take a deep breath") | exam, breath |
+| `ah` | Holding a wooden tongue depressor and a small penlight, her own mouth open in a demonstrating "ah" | ah |
+| `hurt` | Reaching gently toward the viewer with her fingertips, a caring, questioning look ("Does it hurt here?") | hurt |
+| `rx` | Back at the desk, writing on a prescription pad (lines only, no readable text), glancing up as she explains | allergy, chart, allergy_which, rx, rx_q, pharmacy, note |
+| `bye` | Standing, handing over a folded prescription (no readable text) with a warm smile ("Feel better soon!") | questions, closing |
 
 ```json
 {
-  "npc": "Linda, dental office reception (phone call)",
-  "images": ["greet", "sorry", "details", "hold", "slot"],
+  "npc": "Dr. Carter, family doctor",
+  "images": ["greet", "listen", "sleeve", "breath", "ah", "hurt", "rx", "bye"],
   "start": "greet",
   "phases": {
-    "help": "greet", "help_move": "greet", "reason": "greet", "hear": "greet", "more": "greet", "closing": "greet",
-    "pain_len": "sorry",
-    "new_pt": "details", "name": "details", "surname": "details", "spell": "details", "dob": "details", "phone": "details", "insurance": "details",
-    "hold": "hold",
-    "slot": "slot"
+    "dob": "greet", "feeling": "greet", "problem": "greet",
+    "sick_q": "listen", "more_sym": "listen", "howlong": "listen", "scale": "listen", "fever": "listen", "meds": "listen", "meds_what": "listen",
+    "sleeve": "sleeve",
+    "exam": "breath", "breath": "breath",
+    "ah": "ah",
+    "hurt": "hurt",
+    "allergy": "rx", "chart": "rx", "allergy_which": "rx", "rx": "rx", "rx_q": "rx", "pharmacy": "rx", "note": "rx",
+    "questions": "bye", "closing": "bye"
   },
   "focus": [34, 30]
 }
 ```
 
-### s80-support-call: the NetWave phone menu, then Claire, customer service
+### s32-supermarket: Marcus, cashier, and the self-checkout (8 pictures)
 
-- **Claire:** a woman with tan skin and a chestnut ponytail, wearing a purple top and a headset.
-- **Place:** a calm, modern customer-service desk with a monitor. The first picture is different: it shows the learner's own phone on a kitchen table.
+- **Marcus:** a man with dark skin and a short black buzz cut, wearing a green shirt under a darker green apron, a blank name badge and charcoal trousers. Cheerful and quick.
+- **Place:** checkout lane 4 at Harbor Market, a bright neighborhood supermarket: a conveyor belt with groceries (eggs, bread, apples and a bag of chips, all without brands), a card reader on a small stand, paper and plastic bags. Above the lane, a small lane sign with exactly the number **4**.
+- **Second set-up (`sco`):** the self-checkout area of the same store.
 
 | Picture | Shows | Moments |
 |---|---|---|
-| `menu` | A smartphone on a kitchen table during a call. The screen shows only the name **NetWave** (exactly) and a simple sound-wave. Beside it is a Wi-Fi router with one red light. | menu |
-| `hello` | Claire at her desk, friendly greeting | name, account, someone |
-| `problem` | Claire listening with concern while typing | problem, problem_bill, since |
-| `router` | Claire holding up a small Wi-Fi router (no text on it), pointing at its lights | lights, restart, restart_now, still_red |
-| `technician` | Claire smiling, pointing at a desk calendar (no text) | tech, more, closing |
+| `greet` | Scanning an item with a friendly smile ("Did you find everything okay?") | find, missing, howareyou |
+| `rewards` | Holding up a plain green loyalty card (no text) with an asking look | rewards, join, phone |
+| `price` | The register phone at his ear, holding up the bag of chips in his other hand ("Price check on register four") | price, second |
+| `bags` | Holding up a paper bag in one hand and a plastic bag in the other ("Paper or plastic?") | bags, bag_kind |
+| `pay` | Gesturing with an open hand toward the card reader ("Cash or card?") | pay, cash, debit, cashback, cb_amount, charge |
+| `receipt` | Handing over a receipt (no readable text) with a big smile | receipt, closing |
+| `id` | Holding a bottle of red wine (plain label, no text), his other hand held out politely ("Can I see your ID?") | id |
+| `sco` | The self-checkout: its screen shows exactly **Unexpected item in the bagging area** with a simple warning triangle, and a paper bag sits on the bagging scale. Marcus walks up with a raised hand and a helpful smile. | sco, sco_explain |
 
 ```json
 {
-  "npc": "Claire, NetWave customer service (phone call)",
-  "images": ["menu", "hello", "problem", "router", "technician"],
-  "start": "menu",
+  "npc": "Marcus, cashier (and the self-checkout)",
+  "images": ["greet", "rewards", "price", "bags", "pay", "receipt", "id", "sco"],
+  "start": "greet",
   "phases": {
-    "menu": "menu",
-    "name": "hello", "account": "hello", "someone": "hello",
-    "problem": "problem", "problem_bill": "problem", "since": "problem",
-    "lights": "router", "restart": "router", "restart_now": "router", "still_red": "router",
-    "tech": "technician", "more": "technician", "closing": "technician"
+    "find": "greet", "missing": "greet", "howareyou": "greet",
+    "rewards": "rewards", "join": "rewards", "phone": "rewards",
+    "price": "price", "second": "price",
+    "bags": "bags", "bag_kind": "bags",
+    "pay": "pay", "cash": "pay", "debit": "pay", "cashback": "pay", "cb_amount": "pay", "charge": "pay",
+    "receipt": "receipt", "closing": "receipt",
+    "id": "id",
+    "sco": "sco", "sco_explain": "sco"
   },
   "focus": [34, 30]
 }
 ```
 
-### s83-invite-call: Lizzie, your friend
+### s33-small-talk: Frank, your neighbor (6 pictures)
 
-- **Lizzie:** a woman with light skin and a red ponytail, wearing a green top and blue jeans.
-- **Place:** her cozy living room at home. She is talking on her smartphone.
+- **Frank:** a retired man with light skin, short white hair and glasses, wearing a brown flat cap, a light olive-green jacket and charcoal trousers, a little heavy-set. A closed dark-green umbrella hangs on his arm. Chatty and warm.
+- **Place:** a bus-stop shelter on a quiet residential street in Maple Harbor: a bench, a small bus-stop sign with only a bus symbol (no text), trees and houses behind. **The weather changes in the game** (lovely, cold, hot or cloudy), so the sky must fit all of them: partly cloudy and soft, mostly hidden by the shelter roof, with no strong sun and no dark clouds.
 
 | Picture | Shows | Moments |
 |---|---|---|
-| `hello` | On the phone, happy to hear from you | hello, howareyou, invite, bad_line |
-| `excited` | Thrilled, free hand raised in a "yes!" | day, band, start, other_day |
-| `plan` | Thinking, writing on a sticky note (no text) | place, meet_time, suggest_place, suggest_time |
-| `sister` | A hopeful, asking face | sister, pay, bbq |
-| `bye` | Waving goodbye, phone at her ear | closing |
+| `greet` | Waving hello with a big smile ("Hey, neighbor! How's it going?") | howareyou |
+| `weather` | Looking up at the sky from under the shelter roof, one palm turned up, a knowing smile ("Lovely weather, isn't it?") | weather, winter |
+| `chat` | Leaning on the closed umbrella, chatting happily, one hand gesturing | new_q, intro, from_q, weekend_past, week, busy_why, weekend_plans, wkf_what, wkp_what, your_turn, react |
+| `rain` | It has started to rain: Frank holds his big umbrella open and tilts it toward the viewer to share it ("Quick, get under my umbrella!"). Rain streaks, a wet street, a grayer sky. | rain |
+| `late` | Checking his wristwatch, eyebrows raised, a patient shrug ("The bus is late again. Typical!") | late, like_q |
+| `bye` | Pointing down the street with a smile, as if the bus is coming (no bus in the picture), waving goodbye with the other hand | closing |
+
+`"sticky": ["rain"]` keeps the rain picture until the end once it starts raining, so no dry picture comes back after it.
 
 ```json
 {
-  "npc": "Lizzie, your friend (phone call)",
-  "images": ["hello", "excited", "plan", "sister", "bye"],
-  "start": "hello",
+  "npc": "Frank, your neighbor (at the bus stop)",
+  "images": ["greet", "weather", "chat", "rain", "late", "bye"],
+  "start": "greet",
+  "sticky": ["rain"],
   "phases": {
-    "hello": "hello", "howareyou": "hello", "invite": "hello", "bad_line": "hello",
-    "day": "excited", "band": "excited", "start": "excited", "other_day": "excited",
-    "place": "plan", "meet_time": "plan", "suggest_place": "plan", "suggest_time": "plan",
-    "sister": "sister", "pay": "sister", "bbq": "sister",
+    "howareyou": "greet",
+    "weather": "weather", "winter": "weather",
+    "new_q": "chat", "intro": "chat", "from_q": "chat", "weekend_past": "chat", "week": "chat", "busy_why": "chat",
+    "weekend_plans": "chat", "wkf_what": "chat", "wkp_what": "chat", "your_turn": "chat", "react": "chat",
+    "rain": "rain",
+    "late": "late", "like_q": "late",
     "closing": "bye"
   },
   "focus": [34, 30]
 }
 ```
 
-### s89-video-call: team meeting with Kate, Paul and Sara
+### s34-meeting: team meeting with Kate, Paul and Sara (6 pictures)
 
-- **The view:** a laptop screen fills most of the picture. It shows a video meeting in a generic app, with no brand and no names or text on the tiles. **Kate** has a large tile on the left, **Paul** and **Sara** smaller tiles, and the learner's own small self-view tile is dark with a camera-off icon.
-- **Kate** (team lead): fair skin, blonde ponytail, blue top, headset.
-- **Paul:** tan skin, short brown hair, glasses, a beard, brown top.
-- **Sara:** brown skin, curly black hair, raspberry top.
-
-| Picture | Shows | Moments |
-|---|---|---|
-| `grid` | Kate talking with a friendly smile, the others listening | hear, hear2, weekend, cat, first, goahead, questions, anything_else, next_week |
-| `camera` | Kate pointing at the learner's dark self-view tile ("your camera's off") | camera, cam_still |
-| `mute` | Paul talking, with a red crossed-out microphone icon on his tile; Kate signalling "you're muted" | mute, paul_hear |
-| `screen` | Kate sharing her screen: a simple bar-chart slide (no text) fills the main area, with the faces small at the side | screen, update, send_q |
-| `freeze` | Sara's tile frozen and blurry; Kate and Paul look puzzled | freeze, freeze_q, echo |
-| `bye` | Everyone waving goodbye | paul_leave, closing |
-
-```json
-{
-  "npc": "Kate, Paul and Sara (video call)",
-  "images": ["grid", "camera", "mute", "screen", "freeze", "bye"],
-  "start": "grid",
-  "phases": {
-    "hear": "grid", "hear2": "grid", "weekend": "grid", "cat": "grid", "first": "grid", "goahead": "grid", "questions": "grid", "anything_else": "grid", "next_week": "grid",
-    "camera": "camera", "cam_still": "camera",
-    "mute": "mute", "paul_hear": "mute",
-    "screen": "screen", "update": "screen", "send_q": "screen",
-    "freeze": "freeze", "freeze_q": "freeze", "echo": "freeze",
-    "paul_leave": "bye", "closing": "bye"
-  },
-  "focus": [32, 34]
-}
-```
-
-### s90-running-late: Mr. Harris, your boss
-
-- **Mr. Harris:** a man with light skin, grey side-parted hair and glasses, wearing a light grey shirt and a dark red tie.
-- **Place:** his office, at a desk with a laptop. He is talking on his phone.
+- **The people** are the same as in the video call ([`s89-video-call/grid.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s89-video-call/grid.webp)): keep their faces, hair and clothes.
+  - **Kate** (team lead): fair skin, wavy blonde hair in a loose ponytail, a teal-blue button-up shirt. No headset: she is in the room.
+  - **Paul:** tan skin, short brown hair, glasses, a short beard, a rust-brown top.
+  - **Sara:** brown skin, curly black hair, a raspberry top, small gold earrings. She joins from home, so she is only on the wall screen.
+- **Place:** the glass-walled meeting room of the Brightline office ([`s88-first-day/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s88-first-day/hello.webp)): a light wooden table with laptops and coffee mugs, sage-green chairs, a whiteboard, plants, a big wall screen showing Sara in a video tile (no names, no text, no app branding). The viewer sits at the table. Kate stands at the head of the table about one third from the left, Paul sits at the table, and the screen is near the middle of the picture. The right third stays calm (the glass wall, a plant).
 
 | Picture | Shows | Moments |
 |---|---|---|
-| `hello` | Answering the phone at his desk | opening, who |
-| `concerned` | "What happened?": a concerned face | late, reason |
-| `watch` | Checking his wristwatch while on the phone | eta, plan_q, room, need_help |
-| `okay` | Relaxed, with a reassuring smile ("See you soon") | plan, closing |
+| `mute` | Sara talking on the screen, with a red crossed-out microphone icon on her tile; Kate points at the screen with an amused, puzzled smile; Paul looks at the screen ("You're on mute!") | mute, sara_hear |
+| `update` | Kate turned to the viewer with an open, inviting hand ("And you? How's it going?"); Paul and Sara listening | notes, update, what_task, send_q, when_q, help_offer, summary, add, add_what |
+| `clarify` | Paul explaining with both hands, a small gesture growing into a big one ("first a few users, then everyone"); Kate listening | clarify, makes_sense |
+| `opinion` | Paul and Sara disagreeing (Paul with a hand raised, Sara gesturing on the screen); Kate turns to the viewer ("What do you think?") | opinion, why, talk_after, dl_view, dl_who |
+| `owner` | Kate at the whiteboard with a marker, next to three drawn checkboxes with wavy lines (no readable text), looking at the viewer ("Who's taking this?") | owner |
+| `wrap` | Kate smiling as she closes her notebook, Paul standing up, Sara waving on the screen ("Let's wrap up. Thanks, everyone!") | aob, aob_more, aob_what, closing |
 
 ```json
 {
-  "npc": "Mr. Harris, your boss (phone call)",
-  "images": ["hello", "concerned", "watch", "okay"],
-  "start": "hello",
+  "npc": "Kate, Paul and Sara (team meeting)",
+  "images": ["mute", "update", "clarify", "opinion", "owner", "wrap"],
+  "start": "mute",
   "phases": {
-    "opening": "hello", "who": "hello",
-    "reason": "concerned", "late": "concerned",
-    "eta": "watch", "plan_q": "watch", "room": "watch", "need_help": "watch",
-    "plan": "okay", "closing": "okay"
+    "mute": "mute", "sara_hear": "mute",
+    "notes": "update", "update": "update", "what_task": "update", "send_q": "update", "when_q": "update", "help_offer": "update", "summary": "update", "add": "update", "add_what": "update",
+    "clarify": "clarify", "makes_sense": "clarify",
+    "opinion": "opinion", "why": "opinion", "talk_after": "opinion", "dl_view": "opinion", "dl_who": "opinion",
+    "owner": "owner",
+    "aob": "wrap", "aob_more": "wrap", "aob_what": "wrap", "closing": "wrap"
   },
   "focus": [34, 30]
 }
 ```
 
-## B. A few extra pictures for existing scenes (6, optional)
+### s35-gym: Jordan, personal trainer (12 pictures)
 
-Edit the existing picture of the scene, so that everything else stays exactly the same. Then update that scene's file in `src/ui/scene-data/`.
+- **Jordan:** a woman with tan skin and a long black ponytail, wearing a teal athletic top, black leggings, sneakers and a blank badge. Energetic and always smiling.
+- **Place:** Harbor Fitness, a bright, modern gym with big windows. Two set-ups:
+  - **The front desk** (`welcome`, `form`, `lockers`): a counter; on the wall behind it, a sign with exactly **HARBOR FITNESS** and a small price board with exactly two lines, **MONTHLY $35** and **DAY PASS $10**; the door to the locker room in the background, on the left.
+  - **The workout floor** (the other nine): exercise bikes and treadmills, a leg-press machine, a bench press, dumbbells and a water fountain. These pictures share the room, the light and Jordan's look; the camera may move a little to show each moment's machine.
 
-- **s74-clothes (Chloe).** Four pictures show yellow jackets, but learners also shop for shoes, jeans, sweaters and dresses. Replace them with versions that don't show one kind of garment:
-  - `size.webp`: a tape measure around her neck, open hand, "What size?"
-  - `color.webp`: gesturing at a wall of neatly folded clothes in many colours
-  - `tryon.webp`: pointing to the fitting rooms, hands empty
-  - `return.webp`: a receipt in her hand, a shopping bag on the counter
+| Picture | Shows | Moments |
+|---|---|---|
+| `welcome` | Behind the front desk, waving, with a big smile ("Welcome to Harbor Fitness!") | new, plan, alt_plan, howareyou |
+| `form` | Sliding a clipboard with a form (lines only, no readable text) and a pen across the counter ("Sign at the bottom") | form, pay |
+| `lockers` | Pointing toward the locker-room door, a folded towel over her arm ("The locker room is right over there") | lockers, lock_q, changing |
+| `warmup` | On the workout floor between an exercise bike and a treadmill, gesturing at both ("Warm up first!") | warmup |
+| `machine` | A hand on the leg-press machine, a forgotten water bottle on its seat ("Is this machine free?") | machine, broken |
+| `sets` | Holding up three fingers, a clipboard in her other hand ("Three sets of ten reps") | sets |
+| `rep` | Cheering with both fists up, excited ("One more rep! You can do it!") | rep |
+| `spot` | Standing at the head of the bench press, hands ready just under the bar, focused and encouraging ("I'll stay right here") | spot |
+| `breath` | Laughing kindly as she holds out a water bottle ("Take a break, grab some water") | breath, breath_q |
+| `careful` | Stepping closer with a concerned face, one hand raised ("Whoa, are you okay? Stop right there.") | okay_q, where_hurt |
+| `stretch` | Showing an easy standing stretch, calm and smiling ("Let's do some easy stretching instead") | stretch |
+| `next` | Thumbs up with a big smile ("Same time tomorrow?") | next, thursday_q, closing |
 
-  File names and mapping stay the same.
-- **s91b-police (Officer Reyes):** a new `found.webp`. He smiles, holding the desk phone's receiver aside: "Good news! Someone turned it in." Add `"found"` to `images`, and change the phase `"found": "greet"` to `"found": "found"`.
-- **s77-salon (Jessie):** a new `drink.webp`. She offers a cup of coffee and a glass of water. Add `"drink"` to `images`, and change `"drink": "welcome"` to `"drink": "drink"`.
+`feel_q` ("How do you feel?") is left out on purpose: it comes after the warm-up and after the stretching, so it keeps the picture already showing.
+
+```json
+{
+  "npc": "Jordan, personal trainer",
+  "images": ["welcome", "form", "lockers", "warmup", "machine", "sets", "rep", "spot", "breath", "careful", "stretch", "next"],
+  "start": "welcome",
+  "phases": {
+    "new": "welcome", "plan": "welcome", "alt_plan": "welcome", "howareyou": "welcome",
+    "form": "form", "pay": "form",
+    "lockers": "lockers", "lock_q": "lockers", "changing": "lockers",
+    "warmup": "warmup",
+    "machine": "machine", "broken": "machine",
+    "sets": "sets",
+    "rep": "rep",
+    "spot": "spot",
+    "breath": "breath", "breath_q": "breath",
+    "okay_q": "careful", "where_hurt": "careful",
+    "stretch": "stretch",
+    "next": "next", "thursday_q": "next", "closing": "next"
+  },
+  "focus": [34, 30]
+}
+```
+
+## Done
+
+- **The five calls** (25 pictures): s76-dentist-call, s80-support-call, s83-invite-call, s89-video-call and s90-running-late. Made on 27 Sep 2026.
+- **Extras** (6 pictures): four garment-neutral pictures for s74-clothes, `found` for s91b-police and `drink` for s77-salon. Made on 27 Sep 2026.

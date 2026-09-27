@@ -1,6 +1,6 @@
 # Illustrated conversation scenes
 
-During a face-to-face conversation, the game can show a still illustration of the place with the person in it, behind the conversation panel, instead of the 3D view. There is **one picture per phase** of the conversation: the person does what that moment is about, like holding up three cup sizes or handing over the key cards. The picture changes as they start asking the next question, and a "done" picture can show once the task is complete. Changes are a soft crossfade, and a very slow zoom keeps the picture alive. Phone and video calls keep their own call screen.
+During a conversation, the game can show a still illustration of the place with the person in it, behind the conversation panel, instead of the 3D view. There is **one picture per phase** of the conversation: the person does what that moment is about, like holding up three cup sizes or handing over the key cards. The picture changes as they start asking the next question, and a "done" picture can show once the task is complete. Changes are a soft crossfade, and a very slow zoom keeps the picture alive. A phone or video call shows the other person at their end of the line; a call without a scene file keeps the plain call screen.
 
 ## Files
 
@@ -32,10 +32,11 @@ During a face-to-face conversation, the game can show a still illustration of th
 - **`phases`:** maps an id to a picture. The id is the id of the pending question or of the step when the person starts talking (`conv.pending?.id ?? conv.effectiveStep()?.id`, set in `src/game/session.ts`). `howareyou` is the shared small-talk question. `closing` is the goodbye: the "anything else?" question, and also the last turn whenever the conversation ends.
 - **Unlisted ids** keep the current picture.
 - **`done`** (optional): shown after the task is complete, for moments without their own picture.
+- **`sticky`** (optional): pictures that stay for the rest of the conversation once shown. The small talk (s33) uses it for the rain: once it starts raining, no dry picture comes back.
 - **`focus`:** where the person's face is, in % of the picture, so narrow screens crop around it.
 - **`jobs`:** the Higgsfield job id of each picture, so it can be edited later.
 
-**Which picture shows:** that id's picture; else, once the task is complete, `done`; else the current picture; else `start`.
+**Which picture shows:** a sticky picture that is already showing; else that id's picture; else, once the task is complete, `done`; else the current picture; else `start`. Every new conversation starts fresh, even in the same situation.
 
 `tools/scene-walk.ts` runs every simulated conversation of the situation with 12 seeds. It prints the picture at each moment, how often each picture is shown, and the ids that have no picture of their own. It also checks each picture file: that it exists and is a complete WebP picture, about 2048 px wide and 16:9, and under about 200 KB. It warns about files in the folder that the game doesn't use, such as a leftover `.jpg`.
 
@@ -90,7 +91,7 @@ Model: Higgsfield `nano_banana_pro` (Nano Banana Pro), `aspect_ratio: "16:9"`, `
 
 ## Status
 
-**All 31 face-to-face situations have pictures:** 198 pictures in 32 scenes. The date has two scenes, one for Emma and one for Sam. The 5 phone and video calls keep their call screen.
+**36 of the 41 situations have pictures:** 225 pictures in 37 scenes, for all 31 face-to-face situations of songs 62–91 and the 5 phone and video calls. The date has two scenes, one for Emma and one for Sam. The five newest situations, for songs 31–35, are waiting for theirs: the brief is in [`PICTURES-WANTED.md`](PICTURES-WANTED.md). Until then they show the 3D view.
 
 | Scene | Person | Pictures | Names |
 |---|---|---|---|
@@ -113,27 +114,32 @@ Model: Higgsfield `nano_banana_pro` (Nano Banana Pro), `aspect_ratio: "16:9"`, `
 | s73-restaurant | Lucia | 8 | host · greet · order · serve · wrong · dessert · check · tip |
 | s74-clothes | Chloe | 7 | greet · size · color · tryon · fit · pay · return |
 | s75-pharmacy | Mr. Okafor | 6 | greet · questions · recommend · dosage · rx · pay |
-| s77-salon | Jessie | 6 | welcome · consult · wash · chat · reveal · pay |
+| s76-dentist-call | Linda (phone) | 5 | greet · sorry · details · hold · slot |
+| s77-salon | Jessie | 7 | welcome · drink · consult · wash · chat · reveal · pay |
 | s78-bank | Aaron | 6 | greet · card · id · form · cash · app |
 | s79-post | Gloria | 6 | greet · scale · service · customs · pickup · pay |
+| s80-support-call | NetWave menu, Claire (phone) | 5 | menu · hello · problem · router · technician |
 | s81-apartment | Mr. Patel | 6 | hello · tour · questions · decision · lease · keys |
 | s82-neighbor | Rita | 6 | hello · package · chat · trash · needs · coffee |
+| s83-invite-call | Lizzie (phone) | 5 | hello · excited · plan · sister · bye |
 | s84-date@emma | Emma | 6 | greet · drinks · talk · check · cold · again |
 | s84-date@sam | Sam | 6 | greet · drinks · talk · check · cold · again |
 | s85-dinner | Dan | 7 | door · coat · drink · dinner · cat · burnt · dessert |
 | s86-old-friend | Lucy | 5 | surprise · chat · news · hurry · numbers |
 | s87-interview | Ms. Brooks | 7 | greet · call · about · why · strengths · salary · questions |
 | s88-first-day | Maria | 6 | hello · desk · tour · coffee · task · lunch |
+| s89-video-call | Kate, Paul and Sara (video) | 6 | grid · camera · mute · screen · freeze · bye |
+| s90-running-late | Mr. Harris (phone) | 4 | hello · concerned · watch · okay |
 | s91a-lost-wallet | Mrs. Lee | 5 | greet · worried · police · found · bye |
-| s91b-police | Officer Reyes | 6 | greet · notes · describe · contents · name · report |
+| s91b-police | Officer Reyes | 7 | greet · notes · describe · contents · name · report · found |
 
 - **Pilot (25 Sep 2026):** the café, hotel and check-in. It used 16 credits for the style test and 48 for the 22 pictures.
 - **Rollout (25 Sep 2026):** the other 28 situations, made by five helpers in parallel from docs/SCENE-ART.md. They used 398 credits for 172 kept pictures, about 17% of them redos. Another 10 credits went on 5 fixes: a dish-free "here's your meal" in the restaurant, Walter's delay apology, Diaz typing, Ms. Brooks taking a call, and Rita's parcel.
+- **Calls and extras (27 Sep 2026):** ChatGPT, connected to the GitHub repository, made the 25 call pictures and 6 extras from [`PICTURES-WANTED.md`](PICTURES-WANTED.md) and pushed them straight to `main`: Jessie's drink offer, Officer Reyes's "someone turned it in", and four garment-neutral pictures for the clothes shop. They were checked for style, text and `tools/scene-walk.ts`. Calls use the same scene files as face-to-face conversations; the picture shows the person at their end of the line.
 - **WebP (26 Sep 2026):** all 198 pictures were converted from the JPEGs to WebP quality 80 at the same size, which took them from 68 MB to 16 MB. Side-by-side crops showed the text on the café menu, the departure boards and the museum price board as sharp as before. Only the faint paper grain in plain areas is a little smoother when zoomed in.
 - **Job ids:** every picture's job id is in its scene file (`jobs`), so it can be edited later.
 - **Known compromises:**
-  - Rare branches share a picture: the found-wallet twist at the police station, and a burger order getting the "wrong dish" burger.
-  - The clothes shop shows jackets whatever the learner shops for.
+  - A rare branch shares a picture: a burger order gets the "wrong dish" burger.
   - A few people are framed full-length rather than waist up: Rita, Mr. Patel, and Vinnie at the taxi stand.
 
-**Calls:** phone and video calls can have scenes too (a scene file is enough; without one, the call screen stays). The pictures still wanted, with ready scene files, are in [`PICTURES-WANTED.md`](PICTURES-WANTED.md).
+**Still wanted:** the pictures for s31–s35, with ready scene files, are in [`PICTURES-WANTED.md`](PICTURES-WANTED.md).

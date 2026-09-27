@@ -19,6 +19,9 @@ export interface SceneFile {
   start: string;
   /** The picture once the task is complete, for moments without their own picture (optional). */
   done?: string;
+  /** Pictures that stay for the rest of the conversation once shown (optional): the rain in the
+   *  small talk, so that no dry picture comes back after it. */
+  sticky?: string[];
   /** Where the person is, in % of the picture (x, y): kept in view when the screen crops it. */
   focus: [number, number];
   /** Higgsfield job id per picture, for later edits (optional; not used by the game). */
@@ -39,6 +42,7 @@ function resolve(key: string, f: SceneFile): SceneArt {
     phases: Object.fromEntries(Object.entries(f.phases).map(([k, v]) => [k, s(v)])),
     start: s(f.start),
     done: f.done ? s(f.done) : undefined,
+    sticky: f.sticky?.map(s),
     focus: f.focus,
   };
 }
