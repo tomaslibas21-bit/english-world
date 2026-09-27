@@ -1,0 +1,26 @@
+{
+  "npc": "Mr. Harris, your boss (phone call)",
+  "images": [
+    "hello",
+    "concerned",
+    "watch",
+    "okay"
+  ],
+  "start": "hello",
+  "phases": {
+    "opening": "hello",
+    "who": "hello",
+    "reason": "concerned",
+    "late": "concerned",
+    "eta": "watch",
+    "plan_q": "watch",
+    "room": "watch",
+    "need_help": "watch",
+    "plan": "okay",
+    "closing": "okay"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
