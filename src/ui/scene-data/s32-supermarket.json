@@ -1,0 +1,41 @@
+{
+  "npc": "Marcus, cashier (and the self-checkout)",
+  "images": [
+    "greet",
+    "rewards",
+    "price",
+    "bags",
+    "pay",
+    "receipt",
+    "id",
+    "sco"
+  ],
+  "start": "greet",
+  "phases": {
+    "find": "greet",
+    "missing": "greet",
+    "howareyou": "greet",
+    "rewards": "rewards",
+    "join": "rewards",
+    "phone": "rewards",
+    "price": "price",
+    "second": "price",
+    "bags": "bags",
+    "bag_kind": "bags",
+    "pay": "pay",
+    "cash": "pay",
+    "debit": "pay",
+    "cashback": "pay",
+    "cb_amount": "pay",
+    "charge": "pay",
+    "receipt": "receipt",
+    "closing": "receipt",
+    "id": "id",
+    "sco": "sco",
+    "sco_explain": "sco"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
