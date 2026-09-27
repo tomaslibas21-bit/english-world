@@ -1,0 +1,39 @@
+{
+  "npc": "Kate, Paul and Sara (video call)",
+  "images": [
+    "grid",
+    "camera",
+    "mute",
+    "screen",
+    "freeze",
+    "bye"
+  ],
+  "start": "grid",
+  "phases": {
+    "hear": "grid",
+    "hear2": "grid",
+    "weekend": "grid",
+    "cat": "grid",
+    "first": "grid",
+    "goahead": "grid",
+    "questions": "grid",
+    "anything_else": "grid",
+    "next_week": "grid",
+    "camera": "camera",
+    "cam_still": "camera",
+    "mute": "mute",
+    "paul_hear": "mute",
+    "screen": "screen",
+    "update": "screen",
+    "send_q": "screen",
+    "freeze": "freeze",
+    "freeze_q": "freeze",
+    "echo": "freeze",
+    "paul_leave": "bye",
+    "closing": "bye"
+  },
+  "focus": [
+    32,
+    34
+  ]
+}
