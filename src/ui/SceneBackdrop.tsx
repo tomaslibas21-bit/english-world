@@ -8,7 +8,8 @@ import { sceneFor, sceneUrl } from "./scenes";
 export function SceneBackdrop() {
   const conv = useStore((s) => s.conv);
   const on = useStore((s) => s.settings.scenes !== false);
-  const art = on && conv.active && conv.mode === "talk" ? sceneFor(conv.sitId, conv.hostId) : undefined;
+  // any conversation with a scene file, calls included (a call shows the person at their end of the line)
+  const art = on && conv.active ? sceneFor(conv.sitId, conv.hostId) : undefined;
 
   // a moment with its own picture shows it; after the task, other moments show the "done" picture;
   // a side question (or any other moment without a picture) keeps the current one

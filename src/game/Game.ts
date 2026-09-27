@@ -776,7 +776,7 @@ export class Game implements GameApi {
     this.fx?.frame(pp, !!this.zone.interior);
     this.sky.position.copy(this.rig.cam.position);
     // an illustrated scene covers the view during the conversation: save the phone's battery
-    const covered = talking && st.settings.scenes !== false && st.conv.mode === "talk" && !!sceneFor(st.conv.sitId, st.conv.hostId);
+    const covered = talking && st.settings.scenes !== false && !!sceneFor(st.conv.sitId, st.conv.hostId);
     if (!covered) {
       this.renderer.render(this.scene, this.rig.cam);
       this.updateTags();

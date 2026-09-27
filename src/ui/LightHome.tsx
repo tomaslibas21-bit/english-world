@@ -167,7 +167,7 @@ function SitCard({ s }: { s: SituationDef }) {
 function CallBackdrop() {
   const conv = useStore((s) => s.conv);
   const scenes = useStore((s) => s.settings.scenes !== false);
-  if (!conv.active || (scenes && conv.mode === "talk" && sceneFor(conv.sitId, conv.hostId))) return null;
+  if (!conv.active || (scenes && sceneFor(conv.sitId, conv.hostId))) return null;
   const npc = NPCS[conv.hostId];
   const sit = SITUATION_BY_ID[conv.sitId];
   const call = conv.mode !== "talk";

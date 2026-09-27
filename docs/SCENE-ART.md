@@ -135,3 +135,5 @@ Model: Higgsfield `nano_banana_pro` (Nano Banana Pro), `aspect_ratio: "16:9"`, `
   - Rare branches share a picture: the found-wallet twist at the police station, and a burger order getting the "wrong dish" burger.
   - The clothes shop shows jackets whatever the learner shops for.
   - A few people are framed full-length rather than waist up: Rita, Mr. Patel, and Vinnie at the taxi stand.
+
+**Calls:** phone and video calls can have scenes too (a scene file is enough; without one, the call screen stays). The pictures still wanted, with ready scene files, are in [`PICTURES-WANTED.md`](PICTURES-WANTED.md).
