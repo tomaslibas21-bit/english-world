@@ -743,7 +743,8 @@ export const salon: SituationDef = {
       ask: (c) => c.say(c.s.nameAsked ? "name_again" : "ask_name"), expects: ["name_ctx"],
       suggest: [{ lt: "Pasakyti savo vardą", hint: "name" }] },
     { id: "drink", when: (c) => !!c.s.checkedIn && c.s.askDrink, done: (c) => c.s.drink !== undefined,
-      ask: (c) => { c.say("have_seat"); c.say("offer_drink"); }, expects: ["drink_ans"],
+      // asked again after a side question: "Have a seat right here." only the first time
+      ask: (c) => { if (!c.s.seated) { c.s.seated = true; c.say("have_seat"); } c.say("offer_drink"); }, expects: ["drink_ans"],
       suggest: [{ lt: "Atsakyti, ar nori vandens ar kavos", hint: "drink" }],
       yes: (c) => { c.s.drink = "water"; c.say("drink_ok"); },
       no: (c) => { c.s.drink = "none"; c.say("no_problem"); } },
@@ -978,8 +979,9 @@ export const salon: SituationDef = {
     love_it(c) {
       if (!firstThisTurn(c, "love")) return;
       if (!c.s.cutDone) { c.say("ack"); return; }
-      if (!c.s.revealed && c.s.chatDone) { c.s.revealed = true; c.say("love_reply"); return; }
+      // "I love it!" after Jessie admitted she took off too much: "Aw, you're so sweet!"
       if (c.s.shortSaid && !c.s.revealed) { c.s.revealed = true; c.say("polite_reply"); return; }
+      if (!c.s.revealed && c.s.chatDone) { c.s.revealed = true; c.say("love_reply"); return; }
       c.say("love_reply");
     },
     more_off(c) {
@@ -1060,7 +1062,7 @@ export const salon: SituationDef = {
       if (!c.s.revealed) { c.say("card_later"); c.s.payMethod = "card"; return; }
       c.s.totalSaid = true;
       c.say("card_tip");
-      c.s.paid = true; c.s.payMethod = "card"; c.event("pay", { method: "card" });
+      markPaid(c); c.s.payMethod = "card"; c.event("pay", { method: "card" });
       c.expect({ id: "tip_q", optional: true, expects: ["add_tip", "no_tip"], hints: ["tip", "pay"], suggest: [{ lt: "Pasirinkti arbatpinigius", hint: "tip" }],
         on: { add_tip: (cc, sl, sg) => { salon.handlers.add_tip(cc, sl, sg); }, no_tip: (cc) => { cc.say("paid"); } },
         yes: (cc) => { cc.s.tip = true; cc.say("thanks_tip"); },
@@ -1076,13 +1078,13 @@ export const salon: SituationDef = {
     },
     here_you_go(c) {
       if (!c.s.revealed) { c.say("no_problem"); return; }
-      c.s.paid = true; c.event("pay", { method: c.s.payMethod || "cash" });
+      markPaid(c); c.event("pay", { method: c.s.payMethod || "cash" });
       if (/\bkeep\b|\bfor you\b|\btip\b/i.test(c.heard)) return; // "Here's fifty, keep the change": no change to give back
       if (c.s.payMethod === "card") c.say("paid"); else c.say("change_back");
     },
     keep_change(c) {
       if (!c.s.revealed) { c.say("no_problem"); return; }
-      c.s.paid = true; c.s.tip = true; c.event("pay", { method: "cash" });
+      markPaid(c); c.s.tip = true; c.event("pay", { method: "cash" });
       c.say("thanks_tip");
     },
     add_tip(c) {
@@ -1214,18 +1216,25 @@ export const salon: SituationDef = {
   ],
 
   sims: [
+    // The two generic "Yes, please." answer the wash and the blow-dry: no layers or bangs question, and no
+    // small-talk question after the cat story, takes them first.
     { name: "appointment, trim, wash, card with tip", turns: ["Hi! I have an appointment at three.", "It's Tomas.", "Just a trim, please.", "Just an inch.", "Yes, please.", "It's perfect.",
-      "That's so funny!", "Yes, please.", "Straight, please.", "I love it!", "Card, please.", "I'll add twenty percent.", "Thank you, bye!"], expect: { complete: true }, auto: AUTO },
+      "That's so funny!", "Yes, please.", "Straight, please.", "I love it!", "Card, please.", "I'll add twenty percent.", "Thank you, bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askLayers = false; s.askBangs = false; s.askWash = true; s.askDry = true; s.catFirst = true; s.askedTalk = true; } },
+    // The cat story comes first (the learner asks the cat's name); "Bye!" at the booking question: paid, so the task is done.
     { name: "walk-in, wash, centimeters, water, cash tip", turns: ["Hi, do you take walk-ins?", "A wash and a trim, please.", "Two centimeters, please.", "Yes, that's right.",
       "It's a little too hot.", "That's better, thanks.", "What's your cat's name?", "It looks great, thank you!", "How much do I owe you?", "Here's fifty. Keep the change!", "Bye!"],
-      expect: { complete: true }, auto: { ...AUTO, wait_q: "Sure, I can wait." } },
+      expect: { complete: true }, auto: { ...AUTO, wait_q: "Sure, I can wait." }, setup: (s) => { s.catFirst = true; s.askBook = true; } },
     { name: "bangs only, fringe, cash", turns: ["Hi! I don't have an appointment.", "Can you trim my fringe?", "I love it!", "Cash.", "Here you go.", "Not right now, thanks.", "Bye!"],
-      expect: { complete: true }, auto: { ...AUTO, wait_q: "Sure, I can wait.", blowdry: "No, thanks, I'll let it air-dry." } },
+      expect: { complete: true }, auto: { ...AUTO, wait_q: "Sure, I can wait.", blowdry: "No, thanks, I'll let it air-dry." }, setup: (s) => { s.askBook = true; } },
+    // The twist on every seed: Jessie took off more than agreed.
     { name: "shorter than expected: polite reaction", turns: ["I have an appointment at three.", "Tomas.", "I'd like a haircut.", "Not too short, please.", "About two inches.", "It's a little shorter than I expected.",
-      "It's okay. It'll grow back.", "Can I pay by card?", "Thank you!"], expect: { complete: true }, auto: AUTO },
+      "It's okay. It'll grow back.", "Can I pay by card?", "Thank you!"], expect: { complete: true }, auto: AUTO, setup: (s) => { s.tooShort = true; } },
+    // Jessie asks about the weekend (the party answer) and offers a blow-dry; the booking question comes.
     { name: "photo and small talk", turns: ["Hi! Yes, I have an appointment. The name is Tomas.", "Could you cut it like this photo?", "I'm going to a party this weekend.", "With some waves, please.",
       "Could you take a little more off?", "Perfect, thank you!", "Card.", "In six weeks, please.", "Thanks!"], expect: { complete: true },
-      auto: { ...AUTO, blowdry: "Yes, please.", style: "With some waves, please." } },
+      auto: { ...AUTO, blowdry: "Yes, please.", style: "With some waves, please." },
+      setup: (s) => { s.catFirst = false; s.talkTopic = "weekend"; s.askDry = true; s.askBook = true; s.tooShort = false; } },
   ],
 };
 
@@ -1241,6 +1250,12 @@ function firstThisTurn(c: Ctx, key: string): boolean {
   if (seen.has(key)) return false;
   seen.add(key);
   return true;
+}
+
+/** Paid: the task is done. Booking the next visit is optional, so "Thanks, bye!" at that question still counts. */
+function markPaid(c: Ctx) {
+  c.s.paid = true;
+  c.complete();
 }
 
 function checkIn(c: Ctx) {

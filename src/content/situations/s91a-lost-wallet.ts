@@ -941,7 +941,8 @@ export const lostWallet: SituationDef = {
 
   sims: [
     { name: "happy path", turns: ["Excuse me, can you help me, please?", "I've lost my wallet.", "At the café, when I paid for my coffee.", "It's brown, leather, and small.", "Where's the nearest police station?", "Thank you so much!"], expect: { complete: true }, auto: AUTO },
-    { name: "short answers, questions", turns: ["Hi! I can't find my wallet.", "About an hour ago.", "At the bakery.", "Should I call 911?", "Could you show me on the map?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
+    // the script goes on to the police station: no found wallet (twist) here
+    { name: "short answers, questions", setup: (s) => { s.foundTwist = false; }, turns: ["Hi! I can't find my wallet.", "About an hour ago.", "At the bakery.", "Should I call 911?", "Could you show me on the map?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
     { name: "stolen, bus, cards", turns: ["I think someone stole my wallet.", "I think I left it on the bus.", "Should I cancel my cards?", "No, where is it?", "Is it far?", "Thank you, you're very kind."], expect: { complete: true }, auto: AUTO },
   ],
 };

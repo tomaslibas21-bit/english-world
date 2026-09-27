@@ -445,5 +445,12 @@
   { "ctx": "resv", "say": "Great, and hungry!", "intent": "hungry", "not": ["name_ctx"] },
   { "ctx": "resv", "say": "Hungry!", "intent": "hungry" },
   { "ctx": "resv", "say": "Good, thanks. And very hungry", "intent": "hungry" },
-  { "ctx": "resv_name", "say": "Very hungry", "intent": "any", "not": ["name_ctx"] }
+  { "ctx": "resv_name", "say": "Very hungry", "intent": "any", "not": ["name_ctx"] },
+  { "ctx": "tip", "say": "Let's go with eighteen percent", "intent": "tip_ctx" },
+  { "ctx": "tip", "say": "We'll do fifteen", "intent": "tip_ctx" },
+  { "ctx": "tip", "say": "Make it twenty percent", "intent": "tip_ctx" },
+  { "ctx": "tip", "say": "Twenty percent for the tip", "intent": "tip_ctx" },
+  { "ctx": "tip", "say": "Add twenty percent", "intent": "tip_ctx" },
+  { "ctx": "tip", "say": "Twenty percent is too much", "intent": "any", "not": ["tip_ctx", "tip_give"] },
+  { "ctx": "tip", "say": "Let's not do twenty percent", "intent": "any", "not": ["tip_ctx", "tip_give"] }
 ]}

@@ -1,17 +1,16 @@
 // Checks the illustrated scenes (src/ui/scene-data/*.json, pictures in public/scenes/) and shows which
-// picture is on screen at each moment of the simulated conversations. It mirrors session.ts (the id of
-// the pending question or step when the person starts talking, "closing" for the goodbye turn) and
-// SceneBackdrop (a sticky picture once shown, else that id's picture, else the "done" picture once
-// the task is complete, else the current picture).
+// picture is on screen at each moment of the simulated conversations, played as in tools/sim-play.ts.
+// It mirrors session.ts (the id of the pending question or step when the person starts talking,
+// "closing" for the goodbye turn) and SceneBackdrop (a sticky picture once shown, else that id's
+// picture, else the "done" picture once the task is complete, else the current picture).
 //   npx tsx tools/scene-walk.ts                 every scene
 //   npx tsx tools/scene-walk.ts s72 s84-date    only these (prefix of the file name)
 //   --seeds=12   seeds per simulated conversation      --quiet   no picture sequences
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { SITUATION_BY_ID } from "../src/content/situations";
-import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
-import { Conversation } from "../src/convo/dialogue";
+import { playSim } from "./sim-play";
 import type { SituationDef } from "../src/content/types";
 import type { SceneFile } from "../src/ui/scenes";
 
@@ -45,32 +44,15 @@ function webpSize(file: string): [number, number] | null {
 
 function walk(sit: SituationDef, f: SceneFile, onTurn: (stepId: string | null, pic: string, sim: string, seed: number) => void) {
   for (const sim of sit.sims || []) for (let seed = 1; seed <= seeds; seed++) {
-    const defaults: Record<string, string> = { howareyou: "Good, thanks. And you?", closing: "Thank you, bye!", ...((sim as any).auto || {}) };
-    const conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: "m" }, visits: seed % 3, seed, memory: {} });
     let kept: string | undefined;
-    const show = () => {
-      const stepId = conv.ended ? "closing" : conv.pending?.id ?? conv.effectiveStep()?.id ?? null;
-      const pic = (kept && f.sticky?.includes(kept) && kept) || (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
-      kept = pic;
-      onTurn(stepId, pic, sim.name, seed);
-    };
-    conv.start();
-    show();
-    const usedAuto = new Set<string>();
-    let i = 0, guard = 0;
-    while (!conv.ended && guard++ < 30) {
-      const waiting = conv.pending?.id ?? conv.step ?? "";
-      const key = waiting + ":" + conv.history.length;
-      let say: string | undefined;
-      if (defaults[waiting] && !usedAuto.has(key) && !(i < sim.turns.length && conv.nlu.parse(sim.turns[i], conv.expectedIntents()).best?.segments.some((s) => conv.expectedIntents().includes(s.intent)))) {
-        say = defaults[waiting]; usedAuto.add(key);
-      } else if (i < sim.turns.length) say = sim.turns[i++];
-      else if (defaults[waiting]) say = defaults[waiting];
-      else break;
-      conv.input(say);
-      show();
-      if (conv.completed && i >= sim.turns.length && !conv.pending) break;
-    }
+    playSim(sit, sim, seed, {
+      onTurn: (conv) => {
+        const stepId = conv.ended ? "closing" : conv.pending?.id ?? conv.effectiveStep()?.id ?? null;
+        const pic = (kept && f.sticky?.includes(kept) && kept) || (stepId && f.phases[stepId]) || (conv.completed && f.done) || kept || f.start;
+        kept = pic;
+        onTurn(stepId, pic, sim.name, seed);
+      },
+    });
   }
 }
 

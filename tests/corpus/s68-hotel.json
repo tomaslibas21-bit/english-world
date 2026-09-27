@@ -251,5 +251,11 @@
   {"ctx": "walk_offer", "say": "I'll think about it, thanks.", "intent": "walk_leave_ctx"},
   {"ctx": "walk_offer", "say": "I'll look somewhere else.", "intent": "walk_leave_ctx"},
   {"ctx": "walk_offer", "say": "It's not too expensive.", "intent": "any", "not": ["too_expensive_ctx"]},
-  {"ctx": "late", "say": "Is there anything cheaper?", "intent": "cheaper_ctx"}
+  {"ctx": "late", "say": "Is there anything cheaper?", "intent": "cheaper_ctx"},
+  {"ctx": "p_report", "say": "The air conditioning in my room isn't working.", "intent": "pr_ac"},
+  {"ctx": "p_report", "say": "The Wi-Fi in my room doesn't work.", "intent": "pr_wifi"},
+  {"ctx": "p_report", "say": "The AC in my room is working fine now.", "intent": "any", "not": ["pr_ac"]},
+  {"ctx": "fan_or_room", "say": "Can I have another room, please?", "intent": "ch_move"},
+  {"ctx": "fan_or_room", "say": "I don't need a different room.", "intent": "any", "not": ["ch_move"]},
+  {"ctx": "anything", "say": "That's all I need, thank you.", "intent": "done"}
 ]}

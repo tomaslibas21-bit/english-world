@@ -364,6 +364,12 @@ export class Conversation {
     return this.step ? this.sit.steps.find((x) => x.id === this.step) ?? null : null;
   }
 
+  /** The steps not done yet, whose questions may still come (the scripted sims use it: tools/sim-play.ts). */
+  stepsLeft(): StepDef[] {
+    const c = this.ctx();
+    return this.sit.steps.filter((st) => { try { return !st.done(c); } catch { return true; } });
+  }
+
   /** The step whose answer we are waiting for: the last one asked, or (after an opener that asked
    *  implicitly) the next unfinished one. */
   effectiveStep(): StepDef | null {

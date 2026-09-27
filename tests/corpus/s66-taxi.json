@@ -226,5 +226,9 @@
   {"ctx": "dest", "say": "Main Street, please.", "intent": "dest_address"},
   {"ctx": "radio", "say": "Maybe a little.", "intent": "allow"},
   {"ctx": "radio", "say": "Not too loud, please.", "intent": "allow"},
-  {"ctx": "talk", "say": "No, actually, I don't want to go to the airport.", "intent": "any", "not": ["dest", "dest_fix"]}
+  {"ctx": "talk", "say": "No, actually, I don't want to go to the airport.", "intent": "any", "not": ["dest", "dest_fix"]},
+  {"ctx": "talk", "say": "I'll need a receipt, please.", "intent": "receipt"},
+  {"ctx": "pay", "say": "I'd like a receipt, please.", "intent": "receipt"},
+  {"ctx": "pay", "say": "Can I get a receipt at the end?", "intent": "receipt"},
+  {"ctx": "receipt", "say": "I won't need a receipt, thanks.", "intent": ["no_receipt", "yn:no"], "not": ["receipt"]}
 ]}

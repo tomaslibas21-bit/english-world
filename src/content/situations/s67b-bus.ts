@@ -226,6 +226,9 @@ export const bus: SituationDef = {
       "how much (do | should) i pay", "how much for (one | a ticket | a ride | one ride)", "(do | should) i pay (now | here)",
       "how much is the bus fare",
       "is it {price} [for (one ride | a ride | one trip | one person)]", "how much [is it]", "one (ticket | ride) [please]",
+      // the out-of-service bus: "How much is it on the 12?" / "Is the fare the same?"
+      "how much is (it | the fare | a ticket | a ride | one ride) (on | for) (@twelve | @thisbus)", "how much is @twelve",
+      "is (the fare | the price) the same [on @twelve]", "is it the same (fare | price) [on @twelve]",
     ] },
     pay_card: { patterns: [
       "[can | could] i pay (by | with) (card | credit card | debit card | my card) #h:pay_card",
@@ -907,6 +910,11 @@ export const bus: SituationDef = {
     { say: "Not the airport", intent: "dest_neg", not: ["ask_goes", "dest_ctx"] },
     { say: "Does the 12 go to the beach?", intent: "ask_goes" },
     { say: "How much is the fare?", intent: "ask_fare" },
+    { say: "How much is it on the 12?", intent: "ask_fare" },
+    { say: "How much is the 12?", intent: "ask_fare" },
+    { say: "Is the fare the same on the 12?", intent: "ask_fare" },
+    { say: "Is it the same price?", intent: "ask_fare" },
+    { say: "The fare is not the same on the 12", intent: "none" },
     { say: "Can I pay by card?", intent: "pay_card", step: "fare" },
     { say: "Can I tap my card?", intent: "pay_card" },
     { say: "Can I pay with my phone?", intent: "pay_phone" },
@@ -971,12 +979,16 @@ export const bus: SituationDef = {
   ],
 
   sims: [
+    // (the bus runs on every seed in these three; the out-of-service twist has its own sim)
     { name: "happy path, card", turns: ["Does this bus go to Old Town?", "Can I pay by card?", "Could you tell me when to get off?", "Thank you!", "Thanks a lot!"],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.oos = false; } },
     { name: "no exact change, day pass, questions", turns: ["I'm going to the beach.", "I only have a five.", "Yes, please.", "How long does it take?", "Where should I get off?", "Is this my stop?", "Thank you so much!"],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.oos = false; } },
     { name: "wrong bus first, then downtown", turns: ["Is this the bus to the airport?", "Does this bus go downtown?", "How much is it?", "Here you go.", "How many stops is it?", "Could you tell me when to get off?", "Okay, thanks."],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.oos = false; } },
+    // the twist on every seed: this bus is out of service, take the 12
+    { name: "twist: out of service, take the 12", turns: ["Oh, okay. Does the 12 go to Old Town?", "How much is it on the 12?", "No. Where should I get off?", "Thanks a lot!"],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.oos = true; s.askKnown = true; } },
   ],
 };
 

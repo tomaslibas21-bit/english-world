@@ -6,8 +6,8 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { SITUATIONS } from "../src/content/situations";
 import { GLOBAL } from "../src/content/global";
-import { NPCS } from "../src/content/npcs";
-import { Conversation } from "../src/convo/dialogue";
+import type { Conversation } from "../src/convo/dialogue";
+import { playSim } from "./sim-play";
 import type { SituationDef } from "../src/content/types";
 
 export interface AnswerContext {
@@ -58,26 +58,10 @@ export function situationContexts(sit: SituationDef): { contexts: Record<string,
       suggest: sup.suggest.map((s) => s.lt), options: [...new Set(options)],
     });
   };
+  // every moment the scripted conversations reach, played as in tools/sim-play.ts
   for (const sim of sit.sims || []) {
     for (let seed = 1; seed <= 12; seed++) {
-      const conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: "m" }, visits: seed % 3, seed, memory: {} });
-      let out = conv.start();
-      const auto: Record<string, string> = { howareyou: "Good, thanks. And you?", closing: "Thank you, bye!", ...((sim as any).auto || {}) };
-      let i = 0, guard = 0;
-      const used = new Set<string>();
-      while (!conv.ended && guard++ < 30) {
-        record(conv, out.lines.map((l) => l.sentence.en).join(" "));
-        const waiting = conv.pending?.id ?? conv.step ?? "";
-        const key = waiting + ":" + conv.history.length;
-        let say: string | undefined;
-        const nextFits = i < sim.turns.length && conv.nlu.parse(sim.turns[i], conv.expectedIntents()).best?.segments.some((s) => conv.expectedIntents().includes(s.intent));
-        if (auto[waiting] && !used.has(key) && !nextFits) { say = auto[waiting]; used.add(key); }
-        else if (i < sim.turns.length) say = sim.turns[i++];
-        else if (auto[waiting]) say = auto[waiting];
-        else break;
-        out = conv.input(say);
-        if (conv.completed && i >= sim.turns.length && !conv.pending) break;
-      }
+      playSim(sit, sim, seed, { onTurn: (conv, _t, out) => { if (!conv.ended) record(conv, out.lines.map((l) => l.sentence.en).join(" ")); } });
     }
   }
   return {

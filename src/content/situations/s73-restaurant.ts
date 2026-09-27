@@ -665,6 +665,9 @@ export const restaurant: SituationDef = {
       "{number} percent #h:tip_percent", "{number} [percent] (is fine | please) #h:tip_percent", "{number}",
       "(i will | let me | i would like to) (add | leave | give | do | tip) {number} percent",
       "is {number} [percent] (okay | ok | enough | fine | normal)",
+      // "Let's do twenty percent." "Make it eighteen." "A twenty percent tip."
+      "(let us | we will | i will) (do | go with | leave | add | give) {number} [percent]", "make it {number} [percent]",
+      "(add | leave) {number} percent", "[a] {number} percent tip", "{number} percent for the tip",
     ] },
     tip_give: { patterns: [
       "(this | here) is (a tip | something | a little something) for you", "(this | that) is for you", "here is (a | your) tip",
@@ -1205,6 +1208,12 @@ export const restaurant: SituationDef = {
         "Žinoma! | Tiesiog | pridėkite | savo | kortelę | čia. | Paklaus | jūsų | apie | — | arbatpinigius | pirmiausia.",
         "Žinoma! Tiesiog pridėkite kortelę čia. Pirmiausia aparatas paklaus apie arbatpinigius."),
     ],
+    // with the check, when the learner said earlier they'd pay by card
+    reader_here: [
+      t("And | here's | the | card | reader. | It'll ask | you | about | the | tip | first.",
+        "Ir | štai | — | kortelių | skaitytuvas. | Paklaus | jūsų | apie | — | arbatpinigius | pirmiausia.",
+        "O štai ir mokėjimo terminalas. Pirmiausia jis paklaus apie arbatpinigius."),
+    ],
     tip_screen: [
       t("Just | choose | the | tip | on the screen.", "Tiesiog | pasirinkite | — | arbatpinigius | ekrane.", "Tiesiog pasirinkite arbatpinigius ekrane."),
     ],
@@ -1576,6 +1585,14 @@ export const restaurant: SituationDef = {
         c.s.seated = true;
         c.speaker("marco");
         if (c.s.hay) { c.s.marcoGreeted = true; c.say("m_greet_hay"); expectHowAreYou(c); return; }
+        // Something was ordered at the host stand: Marco knows it and goes on from there
+        // ("Here's your Coke. Are you ready to order?"), instead of asking for drinks again.
+        if (items(c).length) {
+          c.s.marcoGreeted = true; c.say("m_greet");
+          const next = restaurant.steps.find((st) => (!st.when || st.when(c)) && !st.done(c));
+          if (next) c.ask(next.id);
+          return;
+        }
         c.ask("drinks");
       } },
     // Marco: drinks
@@ -1670,6 +1687,8 @@ export const restaurant: SituationDef = {
           c.s.wrongPhase = 1;
           c.s.wrongDish = main.id === "burger" ? "lasagna" : "burger";
           c.twist("wrong_dish");
+          const st = starters(c)[0]; // the starter comes too (it was never served on this path)
+          if (st) c.say("serve_starter", { X: st.id });
           c.say("serve", { X: c.s.wrongDish });
           return;
         }
@@ -1788,8 +1807,14 @@ export const restaurant: SituationDef = {
           c.s.checkBrought = true;
           if (c.s.split === "separate") c.say("bring_checks");
           else { c.say("bring_check"); c.say("total_is", { price: total(c) }); }
-          if (c.s.wantPay) { c.s.payMethod = c.s.wantPay; return; }
-          if (c.chance(0.5)) c.say("no_rush");
+          if (c.s.wantPay) {
+            c.s.payMethod = c.s.wantPay;
+            // the card was chosen before the check came: Marco brings the card reader with it, so the
+            // tip question comes now ("Twenty percent." was not understood while the check lay there)
+            if (c.s.payMethod === "card") c.ask("tip");
+            return;
+          }
+          if (c.s.split !== "separate" && c.chance(0.5)) c.say("no_rush"); // "Here are your checks. No rush." has it
           return;
         }
         c.say("ask_pay_method");
@@ -1801,7 +1826,7 @@ export const restaurant: SituationDef = {
       ] },
     { id: "tip", when: (c) => c.s.payMethod === "card" && !c.s.paid, done: (c) => !!c.s.paid,
       ask: (c) => {
-        if (!c.s.readerSaid) { c.s.readerSaid = true; c.say("card_reader"); return; }
+        if (!c.s.readerSaid) { c.s.readerSaid = true; c.say(c.s.wantPay ? "reader_here" : "card_reader"); return; }
         c.say("tip_screen");
       },
       expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip"],
@@ -1891,7 +1916,13 @@ export const restaurant: SituationDef = {
       if (/\bchips\b/i.test(c.heard)) c.tip(TIPS.uk_chips);
       for (const it of list) if (it.cat === "main" && byId(it.id).attrs?.doneness) it.done = doneFromText(c.heard) ?? it.done;
       addItems(c, list);
-      if (!c.s.seated) { if (!c.s.hostOrderSaid) { c.s.hostOrderSaid = true; c.say("host_order"); } return; }
+      if (!c.s.seated) {
+        // A drink ordered at the host stand is the drink order: Lucia passes it on, and Marco brings it
+        // (without this, no step asked for the food and the dinner ended right after seating).
+        if (list.some((i) => i.cat === "drink") && !drinks(c).some((d) => generic(d))) { c.s.drinksDone = true; c.s.drinksAcked = true; }
+        if (!c.s.hostOrderSaid) { c.s.hostOrderSaid = true; c.say("host_order"); }
+        return;
+      }
       // After the meal: dessert, coffee or another drink.
       if (c.s.served) {
         if (drinks(c).some((d) => generic(d))) return; // "Regular or decaf?" first
@@ -2234,6 +2265,11 @@ export const restaurant: SituationDef = {
     { say: "Is the tip included?", intent: "ask_tip" },
     { say: "Is service included?", intent: "ask_tip" },
     { say: "Twenty percent", intent: "tip_ctx", step: "tip" },
+    { say: "Let's do twenty percent.", intent: "tip_ctx", step: "tip", slots: { number: 20 } },
+    { say: "Make it eighteen.", intent: "tip_ctx", step: "tip", slots: { number: 18 } },
+    { say: "A twenty percent tip.", intent: "tip_ctx", step: "tip" },
+    { say: "Twenty percent is too much.", intent: "none", step: "tip" },
+    { say: "Not twenty percent.", intent: "none", step: "tip" },
     { say: "Can I pay by card?", intent: "pay_card", step: "pay" },
     { say: "Could I get a to-go box?", intent: "box_ask" },
     // meaning / negation
@@ -2298,22 +2334,34 @@ export const restaurant: SituationDef = {
     { name: "reservation, lasagna, card and tip",
       turns: ["Hi! I have a reservation for two at seven.", "It's under Tomas.", "A lemonade and a glass of red wine, please.",
         "I'll have the lasagna, please.", "Could we get the check, please?", "Can I pay by card?", "Twenty percent."],
+      // the plain dinner: the complaint twists have their own sim
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; },
       auto: omit(AUTO, ["resv", "resv_name", "drinks", "order", "check", "pay", "tip"]), expect: { complete: true } },
     { name: "walk-in, questions, steak with sides, dessert",
       turns: ["Hi! We don't have a reservation. Could we get a table for two by the window?", "What do you have to drink?", "Just water, please.",
         "Sparkling, please.", "What do you recommend?", "Is the penne spicy?", "I'd like the steak, please.", "Medium rare.", "Fries, please.",
         "It's delicious. Compliments to the chef!", "Could we see the dessert menu?", "The tiramisu, please.", "Could we get the check?",
         "Separate checks, please.", "Is the tip included?", "Card, please.", "Eighteen percent."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; },
       auto: omit(AUTO, ["resv", "drinks", "order", "doneness", "side", "check", "pay", "tip"]), expect: { complete: true } },
     { name: "complaints: wrong dish and cold soup",
       turns: ["Good evening! We have a reservation under Tomas.", "Nothing for me, thanks.", "I'll have the minestrone soup and the grilled salmon.",
         "Roasted potatoes, please.", "Excuse me, this isn't what I ordered. I ordered the salmon.", "No problem.",
-        "My soup is cold. Could you warm it up?", "Cash.", "Keep the change."],
-      auto: omit(AUTO, ["resv", "resv_name", "drinks", "order", "side"]), expect: { complete: true } },
+        "My soup is cold. Could you warm it up?", "No problem.", "Cash.", "Keep the change."],
+      // the wrong-dish twist on every seed; the cold soup is the learner's own complaint at the check-back
+      // (the two twists never come together; the "How's the soup?" twist has its own sim)
+      setup: (s) => { s.wrongTwist = true; s.soupTwist = false; },
+      auto: omit(AUTO, ["resv", "resv_name", "drinks", "order", "side", "pay"]), expect: { complete: true } },
+    { name: "cold soup twist: soup offered, warmed up",
+      turns: ["Good evening! We have a reservation under Tomas.", "An iced tea, please.", "I'll have the mushroom risotto.", "Yes, please.",
+        "It's a little cold.", "Just the check, please.", "Card, please.", "Eighteen percent."],
+      setup: (s) => { s.soupTwist = true; s.wrongTwist = false; },
+      auto: omit(AUTO, ["resv", "resv_name", "drinks", "order", "soup_offer", "checkback_soup", "check", "pay", "tip"]), expect: { complete: true } },
     { name: "changes of mind and British words",
       turns: ["Hello, a table for one, please.", "No, I don't.", "I'll have a Coke.", "We're still deciding.", "Okay, I'm ready. I'll have the burger.",
         "Actually, I don't want the burger.", "Could I have the chicken parmesan instead?", "The bill, please.", "Is service included?", "Card",
         "Fifteen percent", "Goodbye!"],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; },
       auto: omit(AUTO, ["resv", "drinks", "order", "side", "check", "pay", "tip"]), expect: { complete: true } },
   ],
 };
@@ -2372,7 +2420,13 @@ function requestLine(req: string): string {
 
 function choosePay(c: Ctx, method: "card" | "cash") {
   if (c.s.payMethod) return;
-  if (!c.s.checkBrought) { c.s.wantPay = method; c.s.checkAsked = true; c.s.dessertDone = true; return; }
+  if (!c.s.checkBrought) {
+    // "Can I pay by card?" during the meal (or while the check is on its way) gets an answer; after the
+    // meal, "I'll bring the check right over" answers it.
+    if (!c.s.wantPay && (!mealOver(c) || c.s.checkComing)) c.say("no_problem");
+    c.s.wantPay = method; c.s.checkAsked = true; c.s.dessertDone = true;
+    return;
+  }
   c.s.payMethod = method;
 }
 

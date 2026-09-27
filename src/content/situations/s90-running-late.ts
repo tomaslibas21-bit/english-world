@@ -1052,9 +1052,16 @@ export const runningLate: SituationDef = {
   ],
 
   sims: [
-    { name: "happy path", turns: ["Hi, Mr. Harris, it's Tomas. I'm running late.", "I missed the bus.", "In about twenty minutes.", "Thank you. See you soon!"], expect: { complete: true }, auto: AUTO },
-    { name: "all at once", turns: ["Good morning, Mr. Harris. This is Tomas. I'm stuck in traffic, I'll be there by 9:30.", "Could you save me a seat?", "I'm really sorry. It won't happen again.", "Bye!"], expect: { complete: true }, auto: AUTO },
-    { name: "short answers and questions", turns: ["Hello!", "It's Tomas.", "I'm going to be a little late.", "My alarm didn't go off.", "I'm on my way.", "Ten minutes.", "Which room is the meeting in?", "Okay, thanks. Bye!"], expect: { complete: true }, auto: AUTO },
+    // Harris asks why (the reason is scripted) and decides about the meeting himself (the goodbye comes right after the time)
+    { name: "happy path", setup: (s) => { s.askReason = true; s.planAsk = false; },
+      turns: ["Hi, Mr. Harris, it's Tomas. I'm running late.", "I missed the bus.", "In about twenty minutes.", "Thank you. See you soon!"], expect: { complete: true }, auto: AUTO },
+    // "Should we start without you?" on every seed: the apology comes first, then the seat request answers it
+    // (an apology at the goodbye ends the call, and the room news would take it on some seeds)
+    { name: "all at once", setup: (s) => { s.planAsk = true; s.roomTwist = false; },
+      turns: ["Good morning, Mr. Harris. This is Tomas. I'm stuck in traffic, I'll be there by 9:30.", "I'm really sorry. It won't happen again.", "Could you save me a seat?", "Bye!"], expect: { complete: true }, auto: AUTO },
+    // no caller ID (Harris asks who's calling), Harris asks why, and "Should we start without you?" gets a short "Yes, please."
+    { name: "short answers and questions", setup: (s) => { s.callerId = false; s.askReason = true; s.planAsk = true; },
+      turns: ["Hello!", "It's Tomas.", "I'm going to be a little late.", "My alarm didn't go off.", "I'm on my way.", "Ten minutes.", "Which room is the meeting in?", "Yes, please.", "Okay, thanks. Bye!"], expect: { complete: true }, auto: AUTO },
     { name: "car trouble, wait for me", turns: ["Hi, it's Tomas. My car won't start.", "No, it's okay, I'm getting a taxi.", "I'll be there in forty minutes.", "Could you wait for me?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
     { name: "hanging up while driving", turns: ["Hi, Mr. Harris, it's Tomas. I'm stuck in traffic.", "In about twenty minutes.", "Please start without me.", "Sorry, I have to go, I'm driving."], expect: { complete: true }, auto: AUTO },
   ],

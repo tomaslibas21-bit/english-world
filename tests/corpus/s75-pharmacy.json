@@ -315,5 +315,11 @@
   {"ctx": "howlong", "say": "My car is blue", "intent": "none"},
   {"ctx": "pay", "say": "I like football very much", "intent": "none"},
   {"ctx": "recommend", "say": "I don't want it", "intent": "any", "not": ["accept_rec"]},
-  {"ctx": "who", "say": "Not for my son", "intent": "any", "not": ["accept_rec"]}
+  {"ctx": "who", "say": "Not for my son", "intent": "any", "not": ["accept_rec"]},
+  {"ctx": "dosage", "say": "Do you know how many I can take?", "intent": "ask_dosage"},
+  {"ctx": "dosage", "say": "Do you know the dose?", "intent": "ask_dosage"},
+  {"ctx": "dosage", "say": "Tell me how to take it, please", "intent": "ask_dosage"},
+  {"ctx": "dosage", "say": "I don't know the dosage", "intent": "ask_dosage"},
+  {"ctx": "dosage", "say": "I know how to use it", "intent": "any", "not": ["ask_dosage"]},
+  {"ctx": "pay", "say": "Do you know how to take it?", "intent": "ask_dosage"}
 ]}

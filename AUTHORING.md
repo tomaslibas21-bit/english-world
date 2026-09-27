@@ -200,9 +200,15 @@ intents: { order: { patterns: ["@order_prefix {items} [@dine]", "{items}"] } },
   - British variants
   - at least 3 negation or meaning-preservation cases (`intent` other than the positive one, `not: ["order"]`)
   - at least 2 gibberish or unrelated sentences with `intent: "none"`
-- `sims`: at least 3 full conversations that must complete on all 12 seeds.
-  - Provide `auto` answers keyed by step or pending id for every optional question your steps may ask.
+- `sims`: at least 3 full conversations that must complete on all 12 seeds and use their whole script. check-content warns about scripted turns that are never said, because those weren't tested.
+  - **How a sim is played** (`tools/sim-play.ts`, the same in every tool): the learner says the next scripted turn.
+    - At a moment with an auto answer (the sim's `auto`, keyed by step or pending id, or the defaults for "howareyou" and "closing"), a turn meant for a later moment waits, and the auto answer is said instead. That covers a turn that answers a step not done yet or a pending question, and a bare yes/no/okay/thanks that this moment doesn't take.
+    - A question (ending in "?") never waits. A change of mind about an earlier step is said when its turn comes.
+  - Provide `auto` answers keyed by step or pending id for every optional question your steps may ask, and for moments that vary by seed.
+  - A generic answer ("Yes.", "Okay.") can't show which question it answers. When an optional question or a twist would take it on some seeds, pin it with `setup: (s) => { s.askScale = false; }` (it runs right after `init`, on every seed), or give the answer content ("Yes, I brought one.").
+  - A sim about a twist forces the twist with `setup`, so it tests it on all 12 seeds.
   - Cover the happy path, a path with questions and changes of mind, and a twist.
+  - `npx tsx tools/review.ts <id> --seed=N` prints every sim of a situation with "(auto)" marking the auto answers.
 - Check your conversations with `tools/sim.ts` (register your file in `index.ts` locally, or ask the lead). Read the output as a native speaker would. Is every NPC reply natural and appropriate, and do the Lithuanian glosses read correctly?
 
 ## 9. Don'ts

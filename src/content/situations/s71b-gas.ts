@@ -731,6 +731,12 @@ export const gas: SituationDef = {
       // "Sure, thanks!" to "Do you want a receipt?"
       if (c.step === "receipt" && c.s.receipt === undefined) { c.s.receipt = true; c.say("receipt_here"); c.event("give", { item: "receipt" }); }
     },
+    // "Thank you!" after "Pump 3 is on.": the task is done there, but the conversation goes on to Dot's
+    // next question (or the twist) and her goodbye. The global handler would hold it at "Pump 3 is on." for good.
+    g_thanks(c) {
+      c.say("g_welcome");
+      if (c.s.__finished) c.hold();
+    },
   },
 
   finish: (c) => {
@@ -832,16 +838,22 @@ export const gas: SituationDef = {
   ],
 
   sims: [
+    // pump 3 works (the out-of-order twist has its own sim)
     { name: "prepay forty on pump three, card",
       turns: ["Hi! Forty dollars on pump three, please.", "Can I pay by card?", "Thank you!"],
-      auto: omit(AUTO, ["order", "pay"]), expect: { complete: true } },
+      auto: omit(AUTO, ["order", "pay"]), expect: { complete: true }, setup: (s) => { s.oooTwist = false; } },
+    // "Thanks!" answers "Pump 2 is on." and "Thank you!" the change (no auto answers there)
     { name: "ZIP problem, fill up with cash, change",
       turns: ["Hi. The pump is asking for a ZIP code.", "Fill it up on pump two, please.", "Cash.", "Sixty dollars.", "Here you go.", "Thanks!", "Thank you!"],
-      auto: omit(AUTO, ["order", "fill_pay", "leave"]), expect: { complete: true } },
+      auto: omit(AUTO, ["order", "fill_pay", "leave", "pump_on", "after"]), expect: { complete: true } },
     { name: "snacks, questions and a flat tire",
       turns: ["Twenty on pump five, and a coffee, please.", "Where's the coffee?", "Card.", "Debit.", "Can I use the restroom?", "I have a flat tire.",
         "Is there a mechanic nearby?", "How do I get to the highway?", "Bye!"],
-      auto: omit(AUTO, ["order", "pay"]), expect: { complete: true } },
+      auto: omit(AUTO, ["order", "pay"]), expect: { complete: true }, setup: (s) => { s.troubleTwist = true; s.askDebit = true; } },
+    // "Can I pay by card?" before the total gets a "Sure." (then Dot's question again)
+    { name: "pump out of order (twist)",
+      turns: ["Forty on pump three, please.", "Can I pay by card?", "Sure, no problem.", "Thanks!"],
+      auto: omit(AUTO, ["order", "out_of_order", "pay"]), expect: { complete: true }, setup: (s) => { s.oooTwist = true; } },
     { name: "gas first, the pump after",
       turns: ["Hi! I need gas.", "Twenty dollars, please.", "I'm at pump four.", "Card, please.", "Thank you!"],
       auto: omit(AUTO, ["order", "pump", "pay"]), expect: { complete: true } },
@@ -865,6 +877,7 @@ function choosePay(c: Ctx, method: "card" | "cash") {
   c.s.method = method;
   if (c.s.fill) return; // fill-up: the fill_pay / leave / pay steps continue
   if (c.s.totalSaid) finishPay(c, method);
+  else c.say("ack"); // "Can I pay by card?" before the total: "Sure." (not silence; the total comes next)
 }
 
 function finishPay(c: Ctx, method: "card" | "cash") {

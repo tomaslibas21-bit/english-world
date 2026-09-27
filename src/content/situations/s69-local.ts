@@ -212,6 +212,12 @@ const H: Record<string, Handler> = {
       recommend(c, foodFor(c, undefined, !!c.s.cheap));
       return;
     }
+    // "I don't eat fish" to "What kind of food do you like?": a place without it (asking again offered "Seafood?")
+    if (c.step === "food_kind" && !c.s.foodRec) {
+      c.say("then_try");
+      recommend(c, foodFor(c, undefined, !!c.s.cheap));
+      return;
+    }
     if (!c.s.foodRec) c.s.wantFood = true;
   },
   budget(c, _slots, seg) {
@@ -278,6 +284,12 @@ const H: Record<string, Handler> = {
     if (c.step === "more") c.s.moreDone = true;
   },
   more_no(c) { c.s.moreDone = true; },
+  // "That sounds great! Bye!" to "Anything else, dear?": both tips are given, so the task is done. The global
+  // goodbye ends the conversation before Rosa's closing; a goodbye before the tips just ends it, as everywhere.
+  g_bye(c) {
+    if (c.s.foodRec && c.s.sightRec && !conv(c).completed) { c.s.moreDone = true; c.complete(); c.say("closing"); }
+    c.say("g_bye"); c.end(); c.hold();
+  },
   g_thanks(c) {
     c.say("thanks_reply");
     if (c.step === "more") c.s.moreDone = true;
@@ -1032,7 +1044,10 @@ export const local: SituationDef = {
   sims: [
     { name: "local, cheap food, what to see, follow-ups", turns: ["Excuse me, are you from around here?", "Can you recommend a place to eat? Not too expensive, please.", "Is it within walking distance?", "What's worth seeing here?", "Is it touristy?", "Thanks for the tip!"], expect: { complete: true }, auto: AUTO },
     { name: "vague question, seafood, too expensive, night", turns: ["Hi! What would you recommend?", "Food, please", "Seafood", "Is it expensive?", "Is there anything cheaper?", "What's there to do at night?", "Is it safe at night?", "You've been really helpful!"], expect: { complete: true }, auto: AUTO },
-    { name: "sights first, no fish, booking", turns: ["Hello!", "What should I see while I'm here?", "Do I need to book?", "Yes, please", "I don't eat fish", "Do I need to book?", "That sounds great! Bye!"], expect: { complete: true }, auto: AUTO },
+    // Rosa's optional "Where are you from?" is pinned on: the learner skips it with "Do I need to book?" (about the sight),
+    // and "Yes, please" answers "Are you hungry?" that follows. Without it, "Are you hungry?" comes at once with the sight.
+    { name: "sights first, no fish, booking", turns: ["Hello!", "What should I see while I'm here?", "Do I need to book?", "Yes, please", "I don't eat fish", "Do I need to book?", "That sounds great! Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askFrom = true; } },
     { name: "coffee, locals and a lot of questions", turns: ["Where's the best coffee in town?", "How do I get there?", "Where do the locals go?", "What's the best time to go?", "No", "I love art", "Is it open today?", "Thank you so much!"], expect: { complete: true }, auto: AUTO },
   ],
 };

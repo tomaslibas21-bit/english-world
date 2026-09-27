@@ -233,6 +233,8 @@ const AUTO: Record<string, string> = {
   quiz: "Right out the door", recheck: "Okay, got it", more: "No, that's all, thanks",
   police_ok: "Yes, everything's fine", pass: "No, thanks", pass_pay: "Here you go",
 };
+/** For a sim whose first turn also answers Chuck's opening "You look like you need a map! Am I right?" (seeds that open with it). */
+const AUTO_OWN_OPENING: Record<string, string> = Object.fromEntries(Object.entries(AUTO).filter(([k]) => k !== "greet_map"));
 
 /** A route is (still) part of this conversation — unless the learner turned down the café and asked for nothing else. */
 const routeGoal = (c: Ctx) => !!c.s.dest || !c.s.cafeNo;
@@ -769,6 +771,11 @@ const H: Record<string, Handler> = {
   },
   thanks_help(c, slots, seg) { H.g_thanks(c, slots, seg); },
   more_no(c) { c.s.moreDone = true; },
+  // "Bye!" / "No, that's it. Bye!" to "Anything else?": nothing else, so the visit is complete (finish says goodbye)
+  g_bye(c, slots) {
+    if (c.step === "more" && !conv(c).pending) { c.s.moreDone = true; c.s.byeNow = true; return; }
+    GLOBAL_HANDLERS.g_bye(c as ConvCtx, slots);
+  },
   just_arrived(c) { c.say("welcome_new"); },
   // "Great, thanks!" is thanks, not an answer to "How are you?" (the global handler would say "I'm great, thanks for asking!")
   g_howareyou_answer(c, slots) {
@@ -1948,6 +1955,7 @@ export const visitorCenter: SituationDef = {
     if (c.s.jazzTip && !c.s.events) { c.say("tw_jazz"); c.s.events = true; }
     c.complete();
     c.remember({ clarified: c.s.clar > 0 || !!c.memory.clarified });
+    if (c.s.byeNow) { c.say("g_bye"); c.end(); return; } // the learner already said goodbye
     c.say("closing");
     c.expect({ id: "closing", hints: ["g_social", "clarify_more"], suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "g_social" }],
       on: {
@@ -2102,8 +2110,11 @@ export const visitorCenter: SituationDef = {
     { name: "map first, café, repeat twice, then check", turns: ["Hi! Could I have a map, please?", "How do I get to Sunny Cup?", "Sorry, could you say that again?", "Sorry, could you say that again?", "So I turn right, go two blocks, and turn left at the bank?", "No, that's all. Thank you!"], expect: { complete: true }, auto: AUTO },
     { name: "museum first with questions and a quiz, then the café", turns: ["Excuse me, where's the museum?", "Is it far?", "Do you mean the big one?", "Yes, I think so", "Left", "Yes, please", "Sure, thanks!", "Could you speak more slowly, please?", "Left at the bank?", "Thanks for your patience!"], expect: { complete: true }, auto: AUTO },
     { name: "wrong check gets corrected, a word, write it down, no café", turns: ["Hello!", "I'm looking for the post office", "What does crosswalk mean?", "Could you write it down?", "So I turn right at the bank?", "Okay, got it", "Yes, please", "No, thanks", "That's all, thanks"], expect: { complete: true }, auto: AUTO },
-    { name: "side questions and still learning", turns: ["What's the Wi-Fi password?", "How do you spell that?", "I'm still learning English", "Where can I buy a bus pass?", "Yes, please", "Here you go", "The lighthouse, please", "How many blocks?", "Sure, thanks!", "So I turn right, go two blocks, and turn left at the bank?", "Bye!"], expect: { complete: true }, auto: AUTO },
-    { name: "just looking: the café offer, say it again slowly", turns: ["Hi! I'm just looking around.", "Sure, thanks!", "Sorry, could you say that again more slowly?", "Left at the bank?", "Yes, please", "That's all, thanks"], expect: { complete: true }, auto: AUTO },
+    // "Sure, thanks!" takes the map, "Yes, please" the café offer; "Bye!" answers "Anything else?" (pinned on)
+    { name: "side questions and still learning", turns: ["What's the Wi-Fi password?", "How do you spell that?", "I'm still learning English", "Where can I buy a bus pass?", "Yes, please", "Here you go", "The lighthouse, please", "How many blocks?", "Sure, thanks!", "Yes, please", "So I turn right, go two blocks, and turn left at the bank?", "Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // "I'm just looking around" also answers the opening map question on the seeds that start with it, so the map comes later
+    { name: "just looking: the café offer, say it again slowly", turns: ["Hi! I'm just looking around.", "Sure, thanks!", "Sorry, could you say that again more slowly?", "Left at the bank?", "Yes, please", "That's all, thanks"], expect: { complete: true }, auto: AUTO_OWN_OPENING },
   ],
 };
 

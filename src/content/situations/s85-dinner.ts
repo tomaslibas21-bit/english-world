@@ -103,7 +103,7 @@ function checkGoal(c: Ctx) {
 const AUTO: Record<string, string> = {
   drink: "Just some water, please", diet: "No, I eat everything", cat: "No, I love cats!", salad: "Sure!",
   pass: "Sure, here you go!", seconds: "Just a little, please", dessert: "Yes, please! Just a small piece", stay: "I wish I could, but I have work tomorrow",
-  howisit: "It's delicious!", closing: "Thanks for having me! Good night!",
+  howisit: "It's delicious!", burnt: "Don't worry, it's still delicious!", closing: "Thanks for having me! Good night!",
 };
 
 // ---------------------------------------------------------------------------
@@ -1013,9 +1013,10 @@ export const dinner: SituationDef = {
       "Hi! Thank you for inviting me!", "These are for you", "A glass of red wine would be great", "Can I help with anything?", "Something smells amazing!",
       "This is delicious!", "I should get going", "Thanks for having me! Good night!",
     ], expect: { complete: true }, auto: AUTO },
-    { name: "quiet guest, short answers", turns: [
-      "Hi!", "Thanks!", "Water, please", "Mmm, so good!", "I'm full, thanks", "It's getting late", "Thank you for a lovely evening", "Bye!",
-    ], expect: { complete: true }, auto: AUTO },
+    // "I'm full, thanks" answers the seconds question, asked on every seed here
+    { name: "quiet guest, short answers", setup: (s) => { s.askSeconds = true; }, turns: [
+      "Hi!", "Thanks!", "Water, please", "Mmm, so good!", "I'm full, thanks", "It's getting late", "Thank you for a lovely evening. Bye!",
+    ], expect: { complete: true }, auto: { ...AUTO, ready_soon: "Thanks!" } },
     { name: "chatty guest", turns: [
       "Hi Dan, hi Nora! I brought you some chocolates", "What do you have?", "Just some juice, please", "You have a lovely home!", "Could you pass the salt, please?",
       "You're a great cook! Did you make this yourself?", "Can I have the recipe?", "Well, I should get going. I have work tomorrow", "Thanks for everything!",

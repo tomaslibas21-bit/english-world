@@ -281,5 +281,10 @@
   {"ctx": "pay", "say": "How much is that?", "intent": "ask_price"},
   {"ctx": "pay", "say": "Here's twenty.", "intent": "here_you_go"},
   {"ctx": "more", "say": "Just one more thing.", "intent": "any", "not": ["qty_one"]},
-  {"ctx": "size", "say": "Not just one, two.", "intent": "any", "not": ["qty_one"]}
+  {"ctx": "size", "say": "Not just one, two.", "intent": "any", "not": ["qty_one"]},
+  {"ctx": "size", "say": "Could I have a mocha instead?", "intent": "change", "slots": {"item": {"drink": "mocha"}}, "not": ["order_partial"]},
+  {"ctx": "more", "say": "I'll take a flat white instead.", "intent": "change", "not": ["order_partial", "order_unknown"]},
+  {"ctx": "size", "say": "Can I get an americano instead?", "intent": "change", "not": ["ask_have"]},
+  {"ctx": "size", "say": "Can I have a latte instead of the cappuccino?", "intent": "correction", "not": ["order", "order_partial"]},
+  {"ctx": "more", "say": "I'd like a tea instead of the coffee.", "intent": "any", "not": ["order", "order_partial"]}
 ]}

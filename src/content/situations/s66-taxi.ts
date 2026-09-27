@@ -339,8 +339,10 @@ export const taxi: SituationDef = {
       "(i will | let me) (add | give you) a (small | little | good | big | nice) tip", "is {number} percent (okay | enough | fine | good)"] },
     tip_no_ctx: { patterns: ["[sorry] no tip [this time]", "i (do not | will not) (tip | add a tip) [this time]", "[no] not this time", "(i will | i would like to) skip (it | the tip)"] },
     receipt: { patterns: ["(can | could | may) i (have | get) a receipt #h:p_receipt", "i need a receipt", "receipt please", "[yes] (a receipt | the receipt) please", "do you have a receipt",
-      "[yes] i need (it | one | a receipt) for (work | my company | my job | business | my boss)", "(can | could) you (email | send | text) (it | the receipt) [to me]"] },
-    no_receipt: { patterns: ["(i do not need | no need for) a receipt", "no receipt"] },
+      "[yes] i need (it | one | a receipt) for (work | my company | my job | business | my boss)", "(can | could) you (email | send | text) (it | the receipt) [to me]",
+      "(can | could | may) i (have | get) a receipt (at the end | when we (get there | arrive))", "i (will | would | am going to) need a receipt [for (work | my company | my job | business | my boss)]",
+      "i would like a receipt", "i want a receipt #blunt"] },
+    no_receipt: { patterns: ["(i do not need | i will not need | i do not want | no need for) a receipt", "no receipt"] },
     talk_from: { patterns: [
       "i am from {country} #h:st_from", "(from | i come from) {country}", "{country}", "i live in {country}", "i am (lithuanian #lt | from lithuania)",
       "(i am | i come | we are | we come) from {country} [@from_tail]", "{country} [@from_tail]", "my country is {country}", "i was born in {country}",
@@ -505,6 +507,7 @@ export const taxi: SituationDef = {
     ],
     ask_receipt: [t("Need | a | receipt?", "Reikia | — | čekio?", "Čekio reikia?")],
     receipt_here: [t("Sure thing. | Here's | your | receipt.", "Žinoma. | Štai | jūsų | čekis.", "Žinoma. Štai jūsų čekis.")],
+    receipt_later: [t("No | problem. | I'll print | it | when | you | pay.", "Jokių | problemų. | Atspausdinsiu | jį, | kai | jūs | sumokėsite.", "Jokių problemų. Atspausdinsiu, kai sumokėsite.")],
     already_here: [t("We're | already | here!", "Mes esame | jau | čia!", "Mes jau atvažiavome!")],
     wait_ok: [t("Sure, | I'll wait | right | here.", "Žinoma, | palauksiu | būtent | čia.", "Žinoma, palauksiu čia.")],
     bag_out: [t("Let | me | get | your | bag | from | the | trunk.", "Leiskite | man | paimti | jūsų | krepšį | iš | — | bagažinės.", "Tuoj paimsiu jūsų krepšį iš bagažinės.")],
@@ -923,7 +926,12 @@ export const taxi: SituationDef = {
     need_change(c) { if (c.s.paid) c.say("change_here"); else c.say("fare", { price: fare(c) }); },
     tip_q(c) { c.say("tip_answer"); },
     tip_add(c) { if (!c.s.fareSaid) { c.say("card_later"); return; } c.s.tip = true; once(c, "thx", "thanks_lot"); },
-    receipt(c) { c.s.receipt = true; once(c, "rc", "receipt_here"); c.event("give", { item: "receipt" }); },
+    receipt(c) {
+      c.s.receipt = true;
+      // asked before paying ("Could I have a receipt?" on the way): Vinnie prints it after the payment (finish)
+      if (!c.s.paid) { c.s.receiptDue = true; once(c, "rc", "receipt_later"); return; }
+      once(c, "rc", "receipt_here"); c.event("give", { item: "receipt" });
+    },
     talk_from(c, slots, seg) {
       c.s.talked = true;
       const lt = slots.country === "lithuania" || seg.tags.includes("lt");
@@ -956,13 +964,14 @@ export const taxi: SituationDef = {
     bball_no_ctx(c) { c.say("ha_ok"); },
     stop_no_ctx(c) { c.say("where_stop"); c.hold(); },
     tip_no_ctx(c) { c.say("no_problem"); },
-    no_receipt(c) { c.s.receipt = false; once(c, "rc", "no_problem"); },
+    no_receipt(c) { c.s.receipt = false; c.s.receiptDue = false; once(c, "rc", "no_problem"); },
     thanks_ride(c) { if (c.s.paid) once(c, "close", "closing_thanks"); else ack(c, 1); },
   },
 
   finish: (c) => {
     c.complete();
     const to = c.s.dest ? byId(c.s.dest)!.attrs!.loc : c.s.addr ?? "visitor-center";
+    if (c.s.receiptDue) { c.s.receiptDue = false; c.say("receipt_here"); c.event("give", { item: "receipt" }); }
     if (c.s.trunk) c.say("bag_out");
     c.say("bye");
     c.event("taxi-ride", { to });
@@ -1012,6 +1021,12 @@ export const taxi: SituationDef = {
     { say: "No, keep the change.", intent: "keep_change", step: "pay" },
     { say: "How much should I tip?", intent: "tip_q" },
     { say: "Could I have a receipt?", intent: "receipt" },
+    { say: "I'll need a receipt.", intent: "receipt" },
+    { say: "I'm going to need a receipt for work.", intent: "receipt", not: ["dest_unknown"] },
+    { say: "I would like a receipt, please.", intent: "receipt" },
+    { say: "Can I get a receipt at the end?", intent: "receipt" },
+    { say: "I won't need a receipt.", intent: "no_receipt", not: ["receipt"] },
+    { say: "I don't want a receipt.", intent: "no_receipt", not: ["receipt"] },
     { say: "I'm from Lithuania.", intent: "talk_from", step: "talk", slots: { country: "lithuania" } },
     { say: "Yes, we love basketball!", intent: "talk_bball" },
     { say: "No, I need a taxi.", intent: "ride_no" },
@@ -1064,8 +1079,14 @@ export const taxi: SituationDef = {
       expect: { complete: true }, auto: TX_AUTO },
     { name: "questions, bag, cash and keep the change", turns: ["Could you take me to the museum? And could you put my bag in the trunk?", "How much will it be?", "In front of the museum, please.", "Here's thirty dollars. Keep the change."],
       expect: { complete: true }, auto: omit(TX_AUTO, ["stop", "pay"]) },
+    // on every seed Vinnie asks to turn the radio up (the learner changes the destination, then asks for it down);
+    // no bag, small talk or traffic questions in between
     { name: "vague place, change of mind, radio down, receipt", turns: ["Downtown, please.", "Sunny Cup.", "Actually, can we go to the Pier instead?", "Could you turn the music down, please?", "Could you stop at the corner?", "Here you go. Could I have a receipt?"],
-      expect: { complete: true }, auto: omit(TX_AUTO, ["dest", "vague", "stop", "pay"]) },
+      expect: { complete: true }, auto: omit(TX_AUTO, ["dest", "vague", "stop", "pay"]),
+      setup: (s) => { s.askBag = false; s.askTalk = false; s.askRadio = true; s.trafficTwist = false; } },
+    // a receipt asked for before paying: Vinnie prints it after the payment
+    { name: "receipt asked on the way", turns: ["To the museum, please. I'll need a receipt.", "In front of the museum, please.", "Can I pay by card?"],
+      expect: { complete: true }, auto: TX_AUTO },
   ],
 };
 

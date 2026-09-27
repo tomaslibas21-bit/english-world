@@ -180,6 +180,29 @@ function applyDetail(c: Ctx, key: "size" | "milk" | "temp", value: string | null
   return true;
 }
 
+/** Out of oat milk (twist): Mia offers almond or soy. A yes/no question that also takes another milk. */
+function offerAltMilk(c: Ctx) {
+  c.twist("out_of_oat");
+  c.s.oatOut = true;
+  c.say("out_of_oat"); c.say("offer_alt_milk");
+  c.expect({ id: "alt_milk", expects: ["milk_ans"], hints: ["milk"], suggest: [{ lt: "Pasirinkti kitą pieną", hint: "milk", options: ["almond", "soy", "whole"] }],
+    yes: (cc) => { applyDetail(cc, "milk", "almond"); cc.say("ack"); },
+    // one question, not two (and no list with oat milk in it)
+    no: (cc) => { cc.ask("milk"); },
+    on: { milk_ans: (cc, sl, sg) => { cafe.handlers.milk_ans(cc, sl, sg); } },
+    ask: (cc) => cc.say("offer_alt_milk") });
+}
+
+/** The order is complete: Mia serves it (the end of the conversation, or "Thanks, bye!" right after paying). */
+function serve(c: Ctx) {
+  if (c.s.served) return;
+  c.s.served = true;
+  c.complete();
+  if (drinks(c)[0]) c.remember({ lastDrink: drinks(c)[0] });
+  c.say(c.s.dine === "here" ? "closing_here" : "closing_togo");
+  c.event("serve", { items: items(c), dine: c.s.dine });
+}
+
 // Automatic answers the simulation uses when Mia asks one of her optional questions.
 const CAFE_AUTO: Record<string, string> = {
   order: "A latte, please", kind: "A latte", size: "Medium", milk: "Whole milk", whole_ok: "Yes", alt_milk: "Yes, that's fine",
@@ -254,6 +277,9 @@ export const cafe: SituationDef = {
       "[just] (a little | a bit of | some) milk #regular", "(let us do | let us go with | i will go with | i will take | i will do) {milk} [milk]",
       "{milk} [milk] (is fine | is good | is okay | would be fine | works | is perfect | is great)", "{milk} [milk] would be (great | good | perfect | nice | lovely)", "(any | whatever) [milk] is fine #regular", "then [just] {milk} [milk]", "then [just] black #nomilk", "(no | without) sugar [and] (no | without) milk #nomilk", "(no | without) milk [and] (no | without) sugar #nomilk",
       "(whatever | anything) you have #regular",
+      // a change of milk later on: "Can I get oat milk instead?", "Can I change the milk to soy?"
+      "[actually] (can | could | may) i (get | have) {milk} [milk] instead", "[actually] {milk} [milk] instead [please]",
+      "[actually] (can | could) i (change | switch) [the milk] to {milk} [milk]", "[actually] (can | could) you make (it | that) with {milk} [milk] [instead]",
     ] },
     temp_ans: { patterns: ["{temp}", "(i will have | i would like | can i (get | have)) it {temp}", "make it {temp}", "{temp} (is fine | would be great | please)", "{temp} [is] (good | okay | better)"] },
     dine_ans: { patterns: [
@@ -313,7 +339,7 @@ export const cafe: SituationDef = {
       "(what | how) about (food | something to eat | something to eat too)", "do you have (any | some) food", "(and | also) something to eat",
       "[and | also] something (sweet | small | small to eat)", "what (cakes | desserts | sweets | snacks) do you have", "do you have (any)? (cakes | desserts | sweets | snacks)",
     ] },
-    ask_have: { patterns: ["do you (have | sell | serve | make | do) [any] {thing} #h:q_have", "(is there | have you got) [any] {thing}", "(can | could) i get {thing} [instead]?"] },
+    ask_have: { patterns: ["do you (have | sell | serve | make | do) [any] {thing} #h:q_have", "(is there | have you got) [any] {thing}", "(can | could) i get {thing} [instead]? #get"] },
     ask_have_unknown: { patterns: ["do you (have | sell | serve | make | do) [any] {w:any}"] },
     ask_wifi: { patterns: ["do you have (wi fi | wifi | internet) #h:q_wifi", "is there (wi fi | wifi)", "what is the (wi fi | wifi | internet) password #h:q_password", "(wi fi | wifi) password", "(can | could) i (get | have) the (wi fi | wifi) password", "is the (wi fi | wifi) free"] },
     ask_restroom: { patterns: [
@@ -325,13 +351,15 @@ export const cafe: SituationDef = {
     change: { patterns: [
       "[actually] (can | could) i (change | switch) (that | it) (to | for) {item} #h:change", "[actually] make (that | it) {item}",
       "[actually] (make | change) (that | it) (a | to a | into a) {size}", "actually {item} instead", "{item} instead",
-      "actually (can | could) i (get | have) {item} instead",
+      // "Could I have a mocha instead?", "I'll have a mocha instead" (not an order with an unknown "instead")
+      "[actually] (can | could | may) i (get | have) {item} instead", "[actually] @order_prefix {item} instead",
     ] },
     reject: { patterns: [
       "[actually] i (do not | will not) (want | need) {item}", "[actually] no {item}", "not {item}", "[actually] (cancel | forget) the {item}", "i do not drink {item}",
       "[actually] i do not want (it | that) anymore", "[actually] never mind [the {item}]", "[actually] without the {item}", "i changed my mind",
     ] },
-    correction: { patterns: ["[no] not {item} [but] {item}", "no i said {item}", "{item} not {item}"] },
+    // "Can I have a latte instead of the cappuccino?": the first item replaces the second (never an order for the second)
+    correction: { patterns: ["[no] not {item} [but] {item}", "no i said {item}", "{item} not {item}", "[actually] [@order_prefix] {item} instead of {item}"] },
     // "Actually, just one." after ordering two
     qty_one: { patterns: ["(just | only) one [of them]", "make (it | that) [just | only] one", "[just] one is (enough | fine)", "i (only | just) (need | want) one"] },
     order_unknown: { patterns: ["@order_prefix {w:any}"] },
@@ -416,6 +444,9 @@ export const cafe: SituationDef = {
     ask_milk: [
       t("What | kind | of milk | would | you | like?", "Kokios | rūšies | pieno | — | jūs | norėtumėte?", "Kokio pieno norėtumėte?", { flags: { 3: "“would”: the conditional ending of norėtumėte carries it." } }),
       t("Which | milk? | We | have | whole, | skim, | oat | and | almond.", "Kokį | pieną? | Mes | turime | nenugriebtą, | liesą, | avižų | ir | migdolų.", "Kokio pieno? Turime nenugriebto, lieso, avižų ir migdolų."),
+    ],
+    milk_which: [
+      t("Which | milk | would | you | like?", "Kokio | pieno | — | jūs | norėtumėte?", "Kokio pieno norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it (linked to “like”)." } }),
     ],
     ask_whole_ok: [
       t("Is | whole | milk | okay?", "Ar | nenugriebtas | pienas | tinka?", "Ar tinka nenugriebtas pienas?", { flags: { 0: "“Is” in a yes/no question = the particle ar; the verb tinka takes over the copula (linked to “okay”)." } }),
@@ -777,10 +808,11 @@ export const cafe: SituationDef = {
           c.say("ask_whole_ok");
           c.expect({ id: "whole_ok", expects: ["milk_ans"], hints: ["milk"], suggest: [{ lt: "Sutikti arba pasirinkti kitą pieną", hint: "milk", options: "milk" }],
             yes: (cc) => { applyDetail(cc, "milk", "whole"); },
-            no: (cc) => { cc.say("milk_list"); cc.ask("milk"); },
+            // "No": one question (not the list twice, and not "Is whole milk okay?" again)
+            no: (cc) => { cc.say(cc.s.oatOut ? "milk_which" : "ask_milk"); cc.hold(); },
             on: { milk_ans: (cc, sl, seg) => { cafe.handlers.milk_ans(cc, sl, seg); } },
             ask: (cc) => cc.say("ask_whole_ok") });
-        } else c.say("ask_milk");
+        } else c.say(c.s.oatOut ? "milk_which" : "ask_milk"); // out of oat milk: not the list with oat in it
       },
       expects: ["milk_ans"],
       suggest: [{ lt: "Pasirinkti pieną (arba be pieno)", hint: "milk", options: "milk" }],
@@ -865,15 +897,9 @@ export const cafe: SituationDef = {
       const fixed = addItems(c, list, [...seg.tags, ...toArr(slots.items?.item).flatMap((x: any) => x.__tags || [])]);
       if (fixed) c.say("changed");
       if (oat && c.s.outOfOat) {
-        c.twist("out_of_oat");
         const d = items(c).find((i) => i.milk === "oat");
         if (d) d.milk = undefined;
-        c.say("out_of_oat"); c.say("offer_alt_milk");
-        c.expect({ id: "alt_milk", expects: ["milk_ans"], hints: ["milk"], suggest: [{ lt: "Pasirinkti kitą pieną", hint: "milk", options: ["almond", "soy", "whole"] }],
-          yes: (cc) => { applyDetail(cc, "milk", "almond"); cc.say("ack"); },
-          no: (cc) => { cc.say("ask_milk"); cc.ask("milk"); },
-          on: { milk_ans: (cc, sl, sg) => { cafe.handlers.milk_ans(cc, sl, sg); } },
-          ask: (cc) => cc.say("offer_alt_milk") });
+        offerAltMilk(c);
         return;
       }
       const added = items(c).slice(before);
@@ -891,8 +917,12 @@ export const cafe: SituationDef = {
       if (seg.tags.includes("nomilk")) { applyDetail(c, "milk", null, { noMilk: true }); return; }
       let m = slots.milk as string | undefined;
       if (!m && seg.tags.includes("regular")) m = "whole";
-      if (m === "oat" && c.s.outOfOat) { c.say("out_of_oat"); c.say("offer_alt_milk"); c.hold(); return; }
+      // "Oat milk" to "What kind of milk?" (twist): the same offer, so "Yes, that's fine" is understood
+      if (m === "oat" && c.s.outOfOat) { offerAltMilk(c); return; }
+      // every drink has its milk already: this is a change ("Oat milk instead")
+      const change = drinks(c).every((d) => d.milk || d.noMilk);
       applyDetail(c, "milk", m ?? "whole");
+      if (change) c.say("changed");
     },
     temp_ans(c, slots) { applyDetail(c, "temp", slots.temp); },
     dine_ans(c, _slots, seg) {
@@ -960,8 +990,10 @@ export const cafe: SituationDef = {
       c.say("unknown_order");
       cafe.handlers.order(c, slots, seg);
     },
-    ask_have(c, slots) {
+    ask_have(c, slots, seg) {
       const thing = slots.thing || {};
+      // "Can I get oat milk (instead)?" once a drink is ordered: a change of milk, not a question
+      if (thing.milk && seg.tags.includes("get") && drinks(c).length) { cafe.handlers.milk_ans(c, { milk: thing.milk }, { ...seg, tags: [] }); return; }
       if (thing.drink || thing.food || thing.milk || (thing.__tags || []).some((x: string) => ["decaf", "sugar", "wifi"].includes(x))) {
         if (thing.milk === "oat" && c.s.outOfOat) { c.say("out_of_oat"); return; }
         if ((thing.__tags || []).includes("wifi")) { c.say("wifi"); return; }
@@ -973,8 +1005,10 @@ export const cafe: SituationDef = {
     ask_restroom(c) { c.say("restroom"); },
     ask_water(c) { c.say("water"); c.event("give", { item: "water" }); },
     ask_sugar(c) { c.say("sugar"); },
-    change(c, slots) {
+    change(c, slots, seg) {
       const it = fromSlot(slots.item);
+      // "Could I have a mocha instead?" after "I don't want a cappuccino": nothing left to change, so it's the order
+      if (it && !items(c).length) { cafe.handlers.order(c, { items: { item: slots.item } }, seg); return; }
       if (it && items(c).length) {
         const last = items(c).filter((i) => i.cat === it.cat).at(-1) ?? items(c).at(-1)!;
         Object.assign(last, { ...it, size: it.size ?? last.size, milk: it.milk ?? last.milk });
@@ -1015,13 +1049,16 @@ export const cafe: SituationDef = {
     receipt_yes_ctx(c, slots, seg) { cafe.handlers.want_receipt(c, slots, seg); },
     want_receipt(c) { if (c.s.receipt !== true) { c.s.receipt = true; c.say("receipt_here"); c.event("give", { item: "receipt" }); } },
     togo_bag(c) { c.say("bag"); },
+    // Paid, then "Thanks, bye!" to "Do you need a receipt?": no receipt, and the order is still served
+    // (before paying, a goodbye just ends the conversation, as everywhere)
+    g_bye(c) {
+      if (c.s.paid && !c.s.served) { if (c.s.receipt === undefined) c.s.receipt = false; serve(c); }
+      c.say("g_bye"); c.end(); c.hold();
+    },
   },
 
   finish: (c) => {
-    c.complete();
-    if (drinks(c)[0]) c.remember({ lastDrink: drinks(c)[0] });
-    c.say(c.s.dine === "here" ? "closing_here" : "closing_togo");
-    c.event("serve", { items: items(c), dine: c.s.dine });
+    serve(c);
     c.say("bye_after");
     c.expect({ id: "closing", optional: true, hints: ["g_social"], suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "g_social" }],
       on: {
@@ -1126,14 +1163,42 @@ export const cafe: SituationDef = {
     { say: "I only need one", intent: "qty_one", step: "more" },
     { say: "Just one more thing", intent: "more_yes", step: "more", not: ["qty_one"] },
     { say: "Here's twenty", intent: "here_you_go", step: "pay" },
+    // "instead": a change, never "we don't have that" or an order for the old drink
+    { say: "Could I have a mocha instead?", intent: "change", step: "size", slots: { item: { drink: "mocha" } }, not: ["order_partial"] },
+    // a change of milk after choosing one
+    { say: "Can I get oat milk instead?", intent: "ask_have", step: "temp", slots: { thing: { milk: "oat" } } },
+    { say: "Actually, almond milk instead, please.", intent: "milk_ans", step: "more", slots: { milk: "almond" } },
+    { say: "Can I change the milk to soy?", intent: "milk_ans", step: "temp", slots: { milk: "soy" } },
+    { say: "Could you make it with oat milk instead?", intent: "milk_ans", step: "dine", slots: { milk: "oat" } },
+    { say: "Can I get a latte instead?", intent: "change", step: "temp", not: ["milk_ans"] },
+    { say: "I'll have a mocha instead", intent: "change", step: "more", slots: { item: { drink: "mocha" } }, not: ["order_partial", "order_unknown"] },
+    { say: "Can I get a mocha instead?", intent: "change", step: "size", not: ["ask_have"] },
+    { say: "Can I have a latte instead of the cappuccino?", intent: "correction", step: "size", not: ["order", "order_partial"] },
+    { say: "A latte instead of a cappuccino", intent: "correction", step: "more", not: ["order"] },
+    { say: "I don't want a mocha instead", intent: "none" },
   ],
 
   sims: [
-    { name: "full order, card", turns: ["Hi!", "Can I get a large latte with oat milk?", "To go, please", "That's all, thanks", "Card", "Thank you!"], expect: { complete: true }, auto: CAFE_AUTO },
-    { name: "short answers", turns: ["A coffee, please.", "A latte", "Medium", "Whole milk", "Hot", "No, that's it", "For here", "Here you go", "Thanks, bye!"], expect: { complete: true }, auto: CAFE_AUTO },
-    { name: "tea and a muffin, questions first", turns: ["What do you recommend?", "Do you have Wi-Fi?", "I'd like a cup of tea", "Green tea, please", "And a muffin", "Blueberry", "That's all", "To go", "It's Tomas", "Can I pay by card?", "No receipt, thanks", "Bye!"], expect: { complete: true }, auto: CAFE_AUTO },
-    { name: "change of mind", turns: ["I'll have a cappuccino", "Actually, I don't want a cappuccino", "Could I have a mocha instead?", "Small", "Oat milk", "Iced", "Nothing else", "For here", "Cash", "Thanks!"], expect: { complete: true }, auto: CAFE_AUTO },
-    { name: "two, then just one", turns: ["Two cappuccinos, please.", "Actually, just one cappuccino.", "That's all, thanks.", "For here.", "Cash.", "Thanks, bye!"], expect: { complete: true }, auto: CAFE_AUTO },
+    // Mia asks "Anything else?" before "For here or to go?"; oat milk is always there (the twist has its own sim)
+    { name: "full order, card", turns: ["Hi!", "Can I get a large latte with oat milk?", "That's all, thanks", "To go, please", "Card", "Thank you!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.outOfOat = false; } },
+    // the milk and hot-or-iced questions are pinned on (their short answers are in the script); "Thanks, bye!" may answer "Do you need a receipt?"
+    { name: "short answers", turns: ["A coffee, please.", "A latte", "Medium", "Whole milk", "Hot", "No, that's it", "For here", "Here you go", "Thanks, bye!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.askMilk = true; s.askTemp = true; } },
+    { name: "tea and a muffin, questions first", turns: ["What do you recommend?", "Do you have Wi-Fi?", "I'd like a cup of tea", "Green tea, please", "And a muffin", "Blueberry", "That's all", "To go", "It's Tomas", "Can I pay by card?", "No receipt, thanks", "Bye!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.askName = true; s.askReceipt = true; } },
+    { name: "change of mind", turns: ["I'll have a cappuccino", "Actually, I don't want a cappuccino", "Could I have a mocha instead?", "Small", "Oat milk", "Iced", "Nothing else", "For here", "Cash", "Thanks!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.askMilk = true; s.askTemp = true; } },
+    // no milk question: "That's all, thanks." would pass for a "no" to "Is whole milk okay?"
+    // "Can I get oat milk instead?" after choosing whole milk changes the milk (it isn't a question then)
+    { name: "milk changed: oat instead", turns: ["A latte, please.", "Medium.", "Whole milk.", "Can I get oat milk instead?", "Hot.", "Nothing else.", "For here.", "Cash.", "Thanks!"],
+      expect: { complete: true }, auto: CAFE_AUTO, setup: (s) => { s.askMilk = true; s.askTemp = true; s.outOfOat = false; } },
+    { name: "two, then just one", turns: ["Two cappuccinos, please.", "Actually, just one cappuccino.", "That's all, thanks.", "For here.", "Cash.", "Thanks, bye!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.askMilk = false; } },
+    { name: "out of oat milk (twist)", turns: ["Hi! Can I get a large latte with oat milk?", "Soy milk is fine.", "That's all.", "For here.", "Card.", "Thanks!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.outOfOat = true; } },
+    { name: "out of oat milk: no to almond or soy", turns: ["A medium latte, please.", "Oat milk, please.", "No, thanks.", "Whole milk, then.", "That's all.", "To go.", "Card.", "Thanks!"], expect: { complete: true }, auto: CAFE_AUTO,
+      setup: (s) => { s.outOfOat = true; s.askMilk = true; } },
   ],
 };
 

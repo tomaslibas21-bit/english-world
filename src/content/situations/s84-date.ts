@@ -164,12 +164,23 @@ function tell(c: Ctx, topic: Topic) {
   else c.say("own_music");
 }
 
+/** "Yes! Have you?", "Yes. And you?" at the travel question: the yes/no layer takes the answer and
+ *  only the question back is left as a piece, so the answer is handled first. */
+function travelYnFirst(c: Ctx) {
+  if (c.step !== "travel" || c.s.ans.travel) return;
+  const h = (c.heard || "").toLowerCase();
+  const st = date.steps.find((x) => x.id === "travel");
+  if (/^\W*(yes|yeah|yep|yup|of course)\b/.test(h)) { st?.yes?.(c); c.s.toldTurn = turnId(c); }
+  else if (/^\W*(no|nope|never|not yet)\b/.test(h)) st?.no?.(c);
+}
+
 /** Learner asked a topic question first: answer, then ask back ("What about you?"). */
 function askedAbout(c: Ctx, topic: Topic) {
   hi(c);
+  if (topic === "travel") travelYnFirst(c);
   c.s.lastTopic = topic;
   const already = c.s.told[topic];
-  if (already) c.say("told_you");
+  if (already && c.s.toldTurn !== turnId(c)) c.say("told_you");
   tell(c, topic);
   if (!c.s.ans[topic]) { c.s.askBackShort = topic; c.ask(topic); }
 }
@@ -309,6 +320,7 @@ const H: Record<string, Handler> = {
   ask_music(c) { askedAbout(c, "music"); },
   and_you(c) {
     hi(c);
+    travelYnFirst(c);
     const tp = c.s.lastTopic as Topic | undefined;
     if (tp && !c.s.told[tp]) { tell(c, tp); return; }
     if (c.s.toldTurn === turnId(c)) return; // a "me too" already answered it
@@ -526,6 +538,8 @@ export const date: SituationDef = {
   grammar: {
     macros: {
       ab: "(and you | what about you | how about you | and yourself | how about yourself | what about yourself | you) #askback",
+      // "No, never. Have you?", "Yes, I have. Have you been there?": the question back after a travel answer
+      abt: "((and you | what about you | how about you | and yourself | how about yourself | what about yourself | you) | [and | but] (have | did) you [ever] [been there | gone there | been]) #askback",
       look: "(look | are looking | look really | look so)",
       nice_adj: "(great | amazing | beautiful | lovely | nice | wonderful | fantastic | stunning | gorgeous | handsome | good | pretty | cute | fabulous)",
       clothes: "(dress | jacket | shirt | top | shoes | earrings | scarf | outfit | style | hair | smile | glasses | watch | sweater)",
@@ -653,20 +667,20 @@ export const date: SituationDef = {
     ] },
     // travel
     travel_yes_ctx: { patterns: [
-      "yes i have [been there] [@ab] #h:tr_yes", "i have (been there | been to {country}) [@ab]", "yes i went there [last (year | summer)] [@ab]",
-      "yes i was there [last (year | summer)] [@ab]", "yes (once | twice | many times) [@ab]", "(i have | i went | i was there) (once | twice) [@ab]",
-      "yes i loved it [@ab]", "(of course | yes) it was (amazing | beautiful | great | wonderful) [@ab]",
-      "yes [i was there] (two | three | a few | {number}) years ago [@ab]", "(yes | yeah | yep) i (went | was) there [last (year | summer | month | spring) | (two | a few | {number}) years ago] [@ab]", "yes i (was | have been) (in | to) {country} [@ab]",
-      "yes (on | for) (my | a) (vacation | holiday | honeymoon | business trip) [@ab]", "[yes] [only] (once | twice) [for work | on vacation | on holiday] [@ab]",
-      "i was there when i was (young | a child | a kid | a student) [@ab]",
+      "yes i have [been there] [@abt] #h:tr_yes", "i have (been there | been to {country}) [@abt]", "yes i went there [last (year | summer)] [@abt]",
+      "yes i was there [last (year | summer)] [@abt]", "yes (once | twice | many times) [@abt]", "(i have | i went | i was there) (once | twice) [@abt]",
+      "yes i loved it [@abt]", "(of course | yes) it was (amazing | beautiful | great | wonderful) [@abt]",
+      "yes [i was there] (two | three | a few | {number}) years ago [@abt]", "(yes | yeah | yep) i (went | was) there [last (year | summer | month | spring) | (two | a few | {number}) years ago] [@abt]", "yes i (was | have been) (in | to) {country} [@abt]",
+      "yes (on | for) (my | a) (vacation | holiday | honeymoon | business trip) [@abt]", "[yes] [only] (once | twice) [for work | on vacation | on holiday] [@abt]",
+      "i was there when i was (young | a child | a kid | a student) [@abt]",
     ] },
     travel_no_ctx: { patterns: [
-      "[no] i have not [been there] [yet] [@ab] #h:tr_no", "[no] never [@ab]", "[no] not yet [@ab] #h:tr_not_yet",
-      "[no] (never | not yet) but i would (love | like) to (go | visit) [one day | someday] [@ab]",
-      "[no] i have never been (there | to {country}) [@ab]", "[no] but i would (love | like) to [go] [@ab]", "no sadly [not]",
-      "[no] [not yet] but i (want | really want | hope | plan) to [go | visit] [someday | one day | soon] [@ab]",
-      "[no] i have not [been there] [yet] @isnice [@ab]", "[no] [not yet] [but] it is on my [bucket] list [@ab]", "[no] [never] but i (was | have been) (in | to) {country} [@ab]",
-      "[no] i was not there [@ab]", "[no] @isnice [@ab]", "unfortunately not [@ab]", "i would (love | like) to go [there] [someday | one day] [@ab]", "[no] never but i dream about it [@ab]", "[no] never but i [really] (want | would love | would like) to [go] [@ab]",
+      "[no] i have not [been there] [yet] [@abt] #h:tr_no", "[no] never [@abt]", "[no] not yet [@abt] #h:tr_not_yet",
+      "[no] (never | not yet) but i would (love | like) to (go | visit) [one day | someday] [@abt]",
+      "[no] i have never been (there | to {country}) [@abt]", "[no] but i would (love | like) to [go] [@abt]", "no sadly [not]",
+      "[no] [not yet] but i (want | really want | hope | plan) to [go | visit] [someday | one day | soon] [@abt]",
+      "[no] i have not [been there] [yet] @isnice [@abt]", "[no] [not yet] [but] it is on my [bucket] list [@abt]", "[no] [never] but i (was | have been) (in | to) {country} [@abt]",
+      "[no] i was not there [@abt]", "[no] @isnice [@abt]", "unfortunately not [@abt]", "i would (love | like) to go [there] [someday | one day] [@abt]", "[no] never but i dream about it [@abt]", "[no] never but i [really] (want | would love | would like) to [go] [@abt]",
     ] },
     ask_travel: { patterns: [
       "have you [ever] been to {country} #h:tr_ask", "do you (like | love) {country}", "have you ever been to lithuania",
@@ -1582,6 +1596,13 @@ export const date: SituationDef = {
     { say: "Wow, that sounds interesting.", intent: "react_nice" },
     { say: "I like reading and walking by the sea.", intent: "hobby_ans", step: "hobby", not: ["g_bye"] },
     { say: "I teach English at a school.", intent: "job_ans" },
+    // a travel answer with a question back ("Have you?" was lost or not understood)
+    { say: "Yes, I have! Have you?", intent: "travel_yes_ctx", step: "travel", not: ["travel_no_ctx"] },
+    { say: "Yes, I have. Have you been there?", intent: "travel_yes_ctx", step: "travel" },
+    { say: "No, never. Have you?", intent: "travel_no_ctx", step: "travel", not: ["travel_yes_ctx"] },
+    { say: "No, I haven't. Have you been there?", intent: "travel_no_ctx", step: "travel", not: ["travel_yes_ctx"] },
+    { say: "Not yet. Have you?", intent: "travel_no_ctx", step: "travel", not: ["travel_yes_ctx"] },
+    { say: "Have you?", intent: "and_you", step: "travel", not: ["travel_yes_ctx", "travel_no_ctx"] },
   ],
 
   sims: [
@@ -1592,15 +1613,25 @@ export const date: SituationDef = {
       "You look great! Sorry I'm late.", "What would you like to drink?", "Same for me", "Let me get this", "Thank you for a lovely evening",
       "Can I see you again?", "Would you like to get coffee on Sunday?", "You too! Good night!",
     ], expect: { complete: true }, auto: AUTO },
+    // the whole date in short answers: the compliment, the drink, two topics, then the walk home and a plan
     { name: "short answers and a plan", turns: [
-      "Hi!", "Thanks, you too!", "Can I walk you home?", "Me too!", "Yes!", "How about Friday?", "Good night!",
-    ], expect: { complete: true }, auto: AUTO },
+      "Hi! Thanks, you too!", "White wine, please.", "I'm a nurse.", "No, never.", "Can I walk you home?", "Let me get this.", "Me too!", "Yes!",
+      "How about Friday?", "Good night!",
+    ], expect: { complete: true }, auto: AUTO,
+      setup: (s) => {
+        s.opening = "early"; s.topics = ["job", "travel"]; s.askDrinks = true; s.likeJobQ = false; s.askCheck = true; s.partnerPays = false;
+        s.quick = false; s.busySat = false; s.coldTwist = false;
+      } },
     { name: "nervous, then almost leaving", turns: [
       "Hi! Sorry, I'm a little nervous.", "Sorry, I have to go.", "No, no, sorry!", "Let's split it", "I had a really nice time too", "I'd love that!", "Saturday works for me!", "I will! Good night!",
     ], expect: { complete: true }, auto: AUTO },
     { name: "questions back on every topic", turns: [
       "Hi, nice to meet you too!", "What are you having?", "I'll have a lemonade", "Let's split the check", "Me too!", "Absolutely!", "Sure!", "Bye!",
     ], expect: { complete: true }, auto: { ...AUTO, job: "I work at a hotel. What do you do?", hobby: "I love yoga. What about you?", travel: "Yes, I have! Have you?", music: "A bit of everything. And you?" } },
+    // "Yes! Have you?": the yes answers the travel question before the question back
+    { name: "travel: yes, then a question back", setup: (s) => { s.topics = ["job", "travel"]; s.askDrinks = false; }, turns: [
+      "Hi! Nice to meet you!", "I'm a teacher. And you?", "Yes! Have you?", "Let's split it", "I had a really nice time too", "I'd love that!", "Saturday works for me!", "I will! Good night!",
+    ], expect: { complete: true }, auto: AUTO },
   ],
 };
 

@@ -1058,9 +1058,17 @@ export const police: SituationDef = {
   ],
 
   sims: [
-    { name: "full report", turns: ["Good afternoon. I'd like to report a stolen wallet.", "At the farmers' market, around eleven.", "It's brown, leather, and small.", "My cards, my driver's license, and about $40 in cash.", "Tomas Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "It's 555-0142.", "No, that's all. Thank you, officer."], expect: { complete: true }, auto: AUTO },
-    { name: "theft, step by step", turns: ["I'd like to report a theft.", "My wallet.", "Someone bumped into me.", "At the market.", "About an hour ago.", "Black and small.", "Some cash and my ID card.", "About twenty dollars.", "My name is Tomas.", "Mikalauskas.", "It's 555-0199.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
-    { name: "lost, questions", turns: ["I lost my wallet.", "I think I dropped it at the café.", "This morning.", "Should I cancel my cards?", "It's a small red wallet.", "Just my cards.", "Tomas Mikalauskas.", "M I K A L A U S K A S", "555 0142", "How long does it take?", "Could I get a copy of the report?", "No, that's all, thanks."], expect: { complete: true }, auto: AUTO },
+    // The report sims go through the whole report: no found wallet (twist) there; "found wallet" tests it.
+    // The officer asks to spell the last name in the sims that spell it.
+    { name: "full report", setup: (s) => { s.foundTwist = false; s.askSpell = true; }, turns: ["Good afternoon. I'd like to report a stolen wallet.", "At the farmers' market, around eleven.", "It's brown, leather, and small.", "My cards, my driver's license, and about $40 in cash.", "Tomas Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "It's 555-0142.", "No, that's all. Thank you, officer."], expect: { complete: true }, auto: AUTO },
+    // every step asked: "What happened?" and "Please check the report and sign here." ("Okay.") too
+    { name: "theft, step by step", setup: (s) => { s.foundTwist = false; s.askHappened = true; s.askSign = true; },
+      turns: ["I'd like to report a theft.", "My wallet.", "Someone bumped into me.", "At the market.", "About an hour ago.", "Black and small.", "Some cash and my ID card.", "About twenty dollars.", "My name is Tomas.", "Mikalauskas.", "It's 555-0199.", "Okay.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
+    { name: "lost, questions", setup: (s) => { s.foundTwist = false; s.askSpell = true; }, turns: ["I lost my wallet.", "I think I dropped it at the café.", "This morning.", "Should I cancel my cards?", "It's a small red wallet.", "Just my cards.", "Tomas Mikalauskas.", "M I K A L A U S K A S", "555 0142", "How long does it take?", "Could I get a copy of the report?", "No, that's all, thanks."], expect: { complete: true }, auto: AUTO },
+    // twist on every seed: someone brings the wallet in during the report
+    { name: "found wallet", setup: (s) => { s.foundTwist = true; s.foundDifferent = null; }, turns: ["Good afternoon. I'd like to report a stolen wallet.",
+      "At the farmers' market, around eleven.", "It's brown, leather, and small.", "My cards, my driver's license, and about $40 in cash.", "Yes, that's mine!",
+      "Tomas Mikalauskas.", "Yes, everything's here.", "No, that's all. Thank you, officer."], expect: { complete: true }, auto: AUTO },
   ],
 };
 

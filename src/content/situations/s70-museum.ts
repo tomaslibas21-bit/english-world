@@ -1158,10 +1158,19 @@ export const museum: SituationDef = {
 
   sims: [
     { name: "one adult, audio guide in English, card, exhibition", turns: ["Hi! One adult ticket, please.", "Yes, please", "English, please", "Card", "Where's the new exhibition?", "No, that's all. Thanks!"], expect: { complete: true }, auto: AUTO },
-    { name: "two tickets, student without ID, Lithuanian audio guide", turns: ["Hello! Two tickets, please.", "One of us is a student", "Sorry, I don't have it with me", "Okay", "Do you have an audio guide?", "Do you have it in Lithuanian?", "Russian, then", "Cash", "Here you go", "Is it included in the ticket?", "Thank you!"], expect: { complete: true }, auto: AUTO },
-    { name: "questions first, no audio guide, photos", turns: ["How much is a ticket?", "Is there a student discount?", "Can I take photos?", "One senior ticket, please", "No, thanks", "No, just the ticket", "Here you go", "Where can I leave my coat?", "Nothing else, thanks", "Oh, sorry!"], expect: { complete: true }, auto: AUTO },
-    { name: "two adults, the audio guide after all, Harold denied", turns: ["Two tickets, please.", "No, just adults.", "No, thanks.", "Okay, I'll take one.", "In English, please.", "I'll pay in cash.", "Here you go.", "Is it included in the ticket?", "No, I'm good, thanks.", "I didn't touch anything!"], expect: { complete: true }, auto: AUTO },
-    { name: "student with ID and a family question", turns: ["I'm a student", "Here's my student ID", "Are kids free?", "I'd like an audio guide, please", "What languages do you have?", "Polish, please", "Can I pay with Apple Pay?", "What time do you close?", "That's all", "Sorry, I didn't know."], expect: { complete: true }, auto: AUTO },
+    // no guard at the end: "Thank you!" is the goodbye
+    { name: "two tickets, student without ID, Lithuanian audio guide", turns: ["Hello! Two tickets, please.", "One of us is a student", "Sorry, I don't have it with me", "Okay", "Do you have an audio guide?", "Do you have it in Lithuanian?", "Russian, then", "Cash", "Here you go", "Is it included in the ticket?", "Thank you!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = false; } },
+    // "Oh, sorry!" answers the guard (twist, pinned on)
+    { name: "questions first, no audio guide, photos", turns: ["How much is a ticket?", "Is there a student discount?", "Can I take photos?", "One senior ticket, please", "No, thanks", "No, just the ticket", "Here you go", "Where can I leave my coat?", "Nothing else, thanks", "Oh, sorry!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = true; } },
+    // "I'll pay in cash." comes with the language, before the total: once the total is said it pays at once, and a
+    // "Here you go." after it had nothing left to do. The guard (twist) is pinned on.
+    { name: "two adults, the audio guide after all, Harold denied", turns: ["Two tickets, please.", "No, just adults.", "No, thanks.", "Okay, I'll take one.", "In English, please. I'll pay in cash.", "Here you go.", "Is it included in the ticket?", "No, I'm good, thanks.", "I didn't touch anything!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = true; } },
+    // "Sorry, I didn't know." answers the guard (twist, pinned on)
+    { name: "student with ID and a family question", turns: ["I'm a student", "Here's my student ID", "Are kids free?", "I'd like an audio guide, please", "What languages do you have?", "Polish, please", "Can I pay with Apple Pay?", "What time do you close?", "That's all", "Sorry, I didn't know."], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = true; } },
   ],
 };
 

@@ -1785,29 +1785,42 @@ export const supermarket: SituationDef = {
   ],
 
   sims: [
+    // Twists and optional questions are pinned per sim (`setup` runs right after init): the self-checkout replaces
+    // the greeting, and the cash back question would take the "Okay." meant for "Tap it here and enter your PIN".
     { name: "happy path: card and PIN", auto: AUTO, expect: { complete: true },
+      setup: (s) => { s.sco = false; s.askCashback = false; },
       turns: ["Hi! Yes, I found everything, thanks.", "No, I don't have one.", "Paper, please.", "Card, please.", "Okay.", "Thank you, bye!"] },
+    // the first "Yes." is for the bag (the ID, rewards-signup and price questions would take it); the cash back
+    // question is always asked and gets its own short answers ("Yes." "Twenty.")
     { name: "short answers", expect: { complete: true },
+      setup: (s) => { s.sco = false; s.wineTwist = s.wine = false; s.joinOffer = false; s.priceCheck = false; s.askCashback = true; },
       auto: { ...AUTO, sco: "Excuse me!", sco_explain: "Unexpected item in the bagging area.", find: "No.", missing: "Eggs.", rewards: "No.", join: "No.", id: "Yes.", price: "No.",
         second: "No.", bags: "Yes.", bag_kind: "Paper.", pay: "Card.", debit: "Debit.", cashback: "Yes.", cb_amount: "Twenty.", charge: "Okay.", receipt: "No.", phone: "555-0142" },
-      turns: ["No.", "Eggs.", "No.", "Yes.", "Paper.", "Card.", "Okay.", "Bye!"] },
+      turns: ["No.", "Eggs.", "No.", "Yes.", "Paper.", "Card.", "Yes.", "Twenty.", "Okay.", "Bye!"] },
     { name: "questions first, joining rewards, Apple Pay", expect: { complete: true },
+      setup: (s) => { s.sco = false; },
       auto: { sco: AUTO.sco, sco_explain: AUTO.sco_explain, id: AUTO.id, price: AUTO.price, second: AUTO.second, charge: "Okay.", receipt: "No, thanks.", missing: "The eggs." },
       turns: ["Hi! Where are the eggs?", "Do you sell coffee?", "What's a loyalty card?", "Yes, please. Can I sign up?", "It's 555-0142.",
         "How much are the bags?", "I brought my own bag.", "Can I pay with Apple Pay?", "Okay.", "Bye!"] },
     // (no automatic bag answer: when Marcus doesn't ask about the chips, the learner brings it up at the bag question)
     { name: "price check: two for five", auto: omit(AUTO, ["bags", "bag_kind"]), expect: { complete: true },
+      setup: (s) => { s.sco = false; s.joinOffer = false; },
       turns: ["No, I don't have one.", "Excuse me, the chips are on sale. The sign said two for five.", "Sure, I'll take another one.",
         "No, thanks, I don't need a bag.", "Cash, please.", "Here you go.", "Thanks, bye!"] },
     { name: "self-checkout, ID and cash back", auto: AUTO, expect: { complete: true },
+      setup: (s) => { s.sco = true; s.wineTwist = s.wine = true; s.askDebit = true; s.askCashback = true; },
       turns: ["Excuse me! Can you help me?", "The machine says unexpected item in the bagging area.", "I forgot my card at home.", "It's 555-0142.",
         "Here's my passport.", "Card, please.", "Debit.", "Yes, twenty dollars, please.", "Okay.", "Thanks, bye!"] },
     { name: "change of mind: back to one bag of chips", auto: omit(AUTO, ["bags", "bag_kind"]), expect: { complete: true },
+      setup: (s) => { s.sco = false; s.joinOffer = false; },
       turns: ["No, I don't have one.", "I think they're on sale.", "Sure, I'll take another one.", "Actually, I don't need another bag of chips.",
         "Paper, please.", "Card, please.", "Hmm, I'll take two bags of chips after all.", "Okay.", "Thanks, bye!"] },
     { name: "cash: the change after the money", auto: AUTO, expect: { complete: true },
+      setup: (s) => { s.sco = false; },
       turns: ["No, I don't have one.", "No, thanks, I don't need a bag.", "Cash.", "Here's ten.", "Oh, sorry. Here's fifty dollars.", "Thanks, bye!"] },
+    // no wine: with it the total is over the $20 handed over
     { name: "eggs missing, cash, no bag, no receipt", auto: AUTO, expect: { complete: true },
+      setup: (s) => { s.sco = false; s.wineTwist = s.wine = false; s.askReceipt = true; },
       turns: ["Hi! No, I couldn't find the eggs.", "No, I'm not a member.", "I'll carry it.", "Here's twenty.", "No receipt, thanks.", "Bye!"] },
   ],
 };

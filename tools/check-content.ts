@@ -6,10 +6,11 @@ import path from "node:path";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { mergeRecord, mergeKey } from "../src/content/merges";
-import { buildNlu, Conversation } from "../src/convo/dialogue";
+import { buildNlu } from "../src/convo/dialogue";
 import { compose, splitUnits, placeholders } from "../src/convo/compose";
-import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
+import type { EntityDef, SentSrc, SimTest, SituationDef } from "../src/content/types";
 import { fuzzSituation } from "./enumerate";
+import { playSim } from "./sim-play";
 
 const args = process.argv.slice(2);
 const verbose = args.includes("--verbose");
@@ -125,20 +126,49 @@ for (const sit of sits) {
   }
   if (sit.tests?.length) console.log(`  NLU tests: ${pass}/${sit.tests.length}`);
 
-  // simulations (several seeds)
+  // simulations (several seeds), played as in tools/sim-play.ts
   for (const sim of sit.sims || []) {
     let okSeeds = 0; const seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const fails: string[] = [];
+    const unused: string[] = [];
+    const stuckAt = new Map<string, number>();
+    const unclear = new Map<string, number[]>();
+    const misplaced = new Map<string, number[]>();
     for (const seed of seeds) {
-      const r = simulate(sit, sim.turns, seed, (sim as any).auto || {});
+      const r = simulate(sit, sim, seed);
       // a completed conversation must have its whole checklist ticked (the checklist = what the task needs)
       const open = r.completed ? r.openAtCompletion : [];
-      if ((sim.expect.complete ?? true) === r.completed && !open.length) okSeeds++;
+      // `expect.state`: values the situation's state must have at the end
+      const badState = sim.expect.state && !deepPartial(r.conv.s, sim.expect.state);
+      if ((sim.expect.complete ?? true) === r.completed && !open.length && !badState) okSeeds++;
       else if (open.length) fails.push(`seed ${seed}: completed, but the checklist still shows ${open.map((x) => `„${x}“`).join(", ")}`);
+      else if (badState && (sim.expect.complete ?? true) === r.completed) fails.push(`seed ${seed}: the state doesn't match expect.state ${JSON.stringify(sim.expect.state)}`);
       else fails.push(`seed ${seed}: ${r.log.slice(-8).join(" / ")}`);
+      if (r.unused) {
+        unused.push(`${seed}${r.unused > 1 ? ` (${r.unused})` : ""}`);
+        stuckAt.set(r.firstUnused!, (stuckAt.get(r.firstUnused!) ?? 0) + 1);
+      }
+      for (const t of r.unclear) { if (!unclear.has(t)) unclear.set(t, []); unclear.get(t)!.push(seed); }
+      for (const t of r.misplaced) { if (!misplaced.has(t)) misplaced.set(t, []); misplaced.get(t)!.push(seed); }
     }
     if (okSeeds === seeds.length) console.log(`  sim "${sim.name}": ${okSeeds}/${seeds.length} seeds ✓`);
     else { err(`sim "${sim.name}": ${okSeeds}/${seeds.length} seeds`); for (const f of fails.slice(0, 3)) console.log("      " + f); }
+    // the conversation ended before the script did: those turns were never tested
+    if (unused.length) {
+      warnings++;
+      const first = [...stuckAt].sort((a, b) => b[1] - a[1])[0][0];
+      console.log(`  ! sim "${sim.name}": scripted turns never said on seed${unused.length > 1 ? "s" : ""} ${unused.join(", ")} (of ${sim.turns.length} turns); the first one never said: "${first}"`);
+    }
+    // a turn that waited for a moment that never came, said at last somewhere else: the script is out of step
+    if (misplaced.size) {
+      warnings++;
+      console.log(`  ! sim "${sim.name}": scripted turns said out of place (their moment never came): ${[...misplaced].map(([t, sd]) => `"${t}" (seed${sd.length > 1 ? "s" : ""} ${sd.join(", ")})`).join("; ")}`);
+    }
+    // a scripted turn the person didn't understand wasn't tested either
+    if (unclear.size) {
+      warnings++;
+      console.log(`  ! sim "${sim.name}": scripted turns not understood: ${[...unclear].map(([t, sd]) => `"${t}" (seed${sd.length > 1 ? "s" : ""} ${sd.join(", ")})`).join("; ")}`);
+    }
   }
 
   // random-order conversations must never crash a handler
@@ -155,36 +185,17 @@ function deepPartial(actual: any, exp: any): boolean {
   return actual === exp;
 }
 
-export function simulate(sit: SituationDef, turns: string[], seed: number, auto: Record<string, string>) {
-  const defaults: Record<string, string> = {
-    howareyou: "Good, thanks. And you?", closing: "Thank you, bye!", ...auto,
-  };
-  const conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: "m" }, visits: seed % 3, seed, memory: {} });
+export function simulate(sit: SituationDef, sim: SimTest, seed: number) {
   const log: string[] = [];
-  let openAtCompletion: string[] = [];
-  const out0 = conv.start();
-  log.push("NPC: " + out0.lines.map((l) => l.sentence.en).join(" "));
-  let i = 0, guard = 0;
-  const usedAuto = new Set<string>();
-  while (!conv.ended && guard++ < 30) {
-    const waiting = conv.pending?.id ?? conv.step ?? "";
-    let say: string | undefined;
-    const key = waiting + ":" + conv.history.length;
-    if (defaults[waiting] && !usedAuto.has(key) && !(i < turns.length && conv.nlu.parse(turns[i], conv.expectedIntents()).best?.segments.some((s) => conv.expectedIntents().includes(s.intent)))) {
-      say = defaults[waiting]; usedAuto.add(key);
-    } else if (i < turns.length) say = turns[i++];
-    else if (defaults[waiting]) say = defaults[waiting];
-    else break;
-    const wasCompleted = conv.completed;
-    const out = conv.input(say);
-    // the checklist as the learner sees it at the moment the task is completed
-    if (!wasCompleted && conv.completed) openAtCompletion = conv.checklist().filter((i) => !i.done).map((i) => i.lt);
-    log.push(`YOU: ${say}${out.understood ? "" : " (not understood)"}`);
-    log.push("NPC: " + out.lines.map((l) => l.sentence.en).join(" "));
-    if (conv.completed && i >= turns.length && !conv.pending) break;
-  }
+  const r = playSim(sit, sim, seed, {
+    onTurn: (_conv, t, out) => {
+      if (t) log.push(`YOU${t.auto ? " (auto)" : ""}: ${t.say}${out.understood ? "" : " (not understood)"}`);
+      log.push("NPC: " + out.lines.map((l) => l.sentence.en).join(" "));
+    },
+  });
   if (verbose) console.log("    " + log.join("\n    "));
-  return { completed: conv.completed, log, conv, openAtCompletion };
+  const unclear = r.turns.filter((t) => !t.auto && !t.out.understood).map((t) => t.say);
+  return { completed: r.conv.completed, log, conv: r.conv, openAtCompletion: r.openAtCompletion, unused: r.unused, firstUnused: r.firstUnused, unclear, misplaced: r.misplaced };
 }
 
 if (unregistered.size) {

@@ -1577,9 +1577,15 @@ export const bank: SituationDef = {
     { name: "the ATM kept my card (twist)",
       turns: ["Hi. The ATM outside kept my card.", "Here's my passport.", "Is my money safe?", "No, that's all. Thank you!"],
       expect: { complete: true }, auto: BANK_AUTO },
+    // a returning customer's side errands: euros exchanged at once, then cash from the account. The task
+    // (open an account, or the ATM card) isn't part of this visit, so it ends not completed.
+    { name: "customer: exchange euros, then take out cash",
+      turns: ["Hi! Could I exchange some euros?", "Three hundred euros, please.", "Yes, I'd like to take out some cash.", "Here's my passport.", "Two hundred dollars, please.", "Twenties are fine.", "No, that's all, thanks."],
+      expect: { complete: false }, auto: BANK_AUTO,
+      setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.offerCash = false; s.askBills = true; } },
     { name: "exchange euros, then open an account",
       turns: ["Could I exchange some euros?", "Checking, please.", "Here's my passport.", "Here's my lease.", "No, not yet.", "Where do I sign?", "Done.", "$100 in cash.", "No, I'm good, thanks."],
-      expect: { complete: true }, auto: BANK_AUTO },
+      expect: { complete: true }, auto: BANK_AUTO, setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; } },
   ],
 };
 

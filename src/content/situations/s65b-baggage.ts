@@ -1177,12 +1177,18 @@ export const baggage: SituationDef = {
   ],
 
   sims: [
+    // the bag is not in the system (so it is described), and Priya asks for the tag
     { name: "happy path: report, describe, deliver", turns: ["Hi, my bag didn't arrive.", "It was flight 482 from New York.", "Yes, here it is.", "It's a large blue suitcase with a red stripe on the side.", "Please deliver it to my hotel.", "At the Harborview Hotel.", "My number is 555 0142."],
-      expect: { complete: true }, auto: BG_AUTO },
-    { name: "short answers, side questions, spelling the reference", turns: ["I can't find my luggage.", "Flight 482.", "Blue.", "A suitcase.", "Please deliver it. When will I get it?", "Harborview.", "555 0142", "Could you spell that?", "Thanks, bye!"],
-      expect: { complete: true }, auto: omit(BG_AUTO, ["flight", "describe", "type", "delivery", "hotel", "phone", "ref"]) },
+      expect: { complete: true }, auto: BG_AUTO, setup: (s) => { s.foundTwist = false; s.askTag = true; } },
+    // the bag is described in three short answers (color, type, size; no other questions about it), and the overnight kit is offered
+    { name: "short answers, side questions, spelling the reference", turns: ["I can't find my luggage.", "Flight 482.", "Blue.", "A suitcase.", "Large.", "Please deliver it. When will I get it?", "Harborview.", "555 0142", "Yes, please.", "Could you spell that?", "Thanks, bye!"],
+      expect: { complete: true }, auto: omit(BG_AUTO, ["flight", "describe", "type", "size", "delivery", "hotel", "phone", "ref"]),
+      setup: (s) => { s.foundTwist = false; s.askSize = true; s.askMaterial = false; s.askMarks = false; s.askBrand = false; s.askContents = false; s.offerKit = true; } },
+    // the twist on every seed: the bag is found in the system (no description), on the next flight
+    { name: "twist: the bag is found, deliver it", turns: ["Hi, my bag didn't arrive.", "It was flight 482 from New York.", "Yes, here it is.", "Oh, good! Yes, please deliver it to my hotel.", "The Harborview Hotel.", "It's 555 0142.", "Thank you so much!"],
+      expect: { complete: true }, auto: BG_AUTO, setup: (s) => { s.foundTwist = true; s.askTag = true; } },
     { name: "no tag, no number, pick up, spell the reference", turns: ["Hello. I think my bag is lost.", "I don't remember the flight number.", "From Frankfurt.", "I think I lost it.", "It's a black backpack.", "I'll pick it up here.", "I'm staying at the Harborview Hotel.", "I don't have a US number.", "Could you write it down, please?", "Thank you!"],
-      expect: { complete: true }, auto: omit(BG_AUTO, ["flight", "tag", "describe", "delivery", "hotel", "phone"]) },
+      expect: { complete: true }, auto: omit(BG_AUTO, ["flight", "tag", "describe", "delivery", "hotel", "phone"]), setup: (s) => { s.askTag = true; s.foundTwist = false; } },
   ],
 };
 

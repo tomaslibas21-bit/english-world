@@ -1255,24 +1255,27 @@ export const post: SituationDef = {
   ],
 
   sims: [
+    // "Is it a gift?" on every seed, answered in words; the bare "Sure." signs the customs form.
     { name: "send to Lithuania, happy path",
-      turns: ["Hi! I'd like to send this package to Lithuania.", "No, just a scarf, chocolate and tea.", "Priority, please.", "About fifty dollars.", "Sure.", "Card, please.", "That's all, thank you."],
-      expect: { complete: true }, auto: POST_AUTO },
+      turns: ["Hi! I'd like to send this package to Lithuania.", "No, just a scarf, chocolate and tea.", "Priority, please.", "About fifty dollars.", "Yes, it's a gift for my mom.", "Sure.", "Card, please.", "That's all, thank you."],
+      expect: { complete: true }, auto: POST_AUTO, setup: (s) => { s.askGift = true; } },
     { name: "questions and a cheaper option",
       turns: ["Hello! Can I send this to my mom in Kaunas?", "What does perishable mean?", "No, nothing like that.", "How much is that in kilos?", "Is there anything cheaper?", "How long does it take?", "I'll take Priority.", "It's a scarf and some chocolate.", "Around sixty dollars.", "Okay, done.", "Can I pay in cash?", "Here you go.", "Can I track it?", "No, that's it, thanks."],
       expect: { complete: true }, auto: POST_AUTO },
+    // No gift question: the bare "Sure." signs the customs form.
     { name: "perfume has to come out",
       turns: ["Hi, I need to send this box to Lithuania.", "There's a bottle of perfume.", "Oh, okay. I'll take it out.", "Express, please.", "Just clothes and books.", "About eighty dollars.", "Sure.", "I'll pay by card.", "Nothing else, thanks."],
-      expect: { complete: true }, auto: POST_AUTO },
+      expect: { complete: true }, auto: POST_AUTO, setup: (s) => { s.askGift = false; } },
     { name: "picking up a package (twist), then sending one",
       turns: ["Hi, I got this notice. I missed a delivery.", "Here's my passport.", "Sure.", "I'd also like to send this box to Lithuania.", "No, just a scarf.", "Express, please.", "About thirty dollars.", "Okay, done.", "Card.", "That's all, thanks."],
       expect: { complete: true }, auto: POST_AUTO },
     { name: "no notice, just the name",
       turns: ["Where's my package? I missed a delivery.", "No, I lost it.", "Tomas Mikalauskas", "Here's my passport.", "Sure.", "No, that's it, thanks."],
       expect: { complete: true }, auto: POST_AUTO },
+    // No gift question: the bare "Sure." signs the customs form.
     { name: "stamps too",
       turns: ["Hi. I'd like to mail this to Lithuania.", "No, it's just clothes.", "Priority, please.", "About forty dollars.", "Sure.", "Could I also get some stamps for postcards?", "Five, please.", "Card.", "That's all, thanks."],
-      expect: { complete: true }, auto: POST_AUTO },
+      expect: { complete: true }, auto: POST_AUTO, setup: (s) => { s.askGift = false; } },
   ],
 };
 

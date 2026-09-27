@@ -452,6 +452,12 @@ export const pharmacy: SituationDef = {
       "how (often | many times) (per day | in a day)", "(what | which) is the (right | correct | normal) dose", "how (do | should) i use (@it_ref)",
       "(once | twice | two times | three times) a day", "every (how many | few) hours",
       "(can | should | do) i take (one | two | both | three) [of them] [at once | at the same time | together | a day]", "[can you | could you] remind me [how to take (it | them) | the dose]",
+      // "Do you know how to take it?" (Ar žinote, kaip jį vartoti?) · "How do you take it?" · "Tell me how to take it."
+      "do you know how (to take | to use | i (should | can) take | i take | i (should | can) use) (@it_ref)",
+      "do you know how (often | many times [a day]) (i | we) (should | can) take (@it_ref)", "do you know how (many | much) (i | we) (should | can) take [a day | at a time | at once]",
+      "do you know (the | what the) (dose | dosage) [is]", "how do you (take | use) (@it_ref)", "tell me how (to take | to use | i should take | often to take) (@it_ref)",
+      // "I don't know how to take it." as one request (not "I don't know" + a question)
+      "i do not know how (to take | to use | often to take | many to take) (@it_ref)", "i do not know (the | what the) (dose | dosage) [is]",
     ] },
     ask_drowsy: { patterns: [
       "(does | do | will | can) (@it_ref) make (me | you | him | her | them | kids | children | people) (drowsy | sleepy | tired) #h:q_drowsy", "is it non drowsy", "will i (be | get | feel) (drowsy | sleepy)",
@@ -1211,6 +1217,8 @@ export const pharmacy: SituationDef = {
       },
       expects: ["ask_dosage", "first_time", "not_first", "know_ctx", "ask_drowsy", "ask_food", "ask_alcohol", "ask_kids", "ask_how_long_take", "ask_rx_needed", "ask_side_effects"],
       suggest: [{ lt: "Paklausti, kaip vartoti", hint: "dose", options: "product" }, { lt: "Paklausti apie vaistą", hint: "ask", options: "product" }],
+      // "I don't know." to "Do you know how to take it?": the directions (not "Sure, take your time.")
+      help: (c) => { if (c.s.mode === "rx") c.say("rx_how"); giveDosage(c); },
       yes: (c) => {
         // "Yes, I know / I've taken it before" (or "yes, first time" to the Rx question)
         if (c.s.mode === "rx") { c.say("rx_how"); giveDosage(c); return; }
@@ -1493,19 +1501,29 @@ export const pharmacy: SituationDef = {
     },
     more_no(c) { c.s.moreDone = true; },
     pay_card(c) {
+      if (c.s.paid) return; // paid already: no second payment
       if (!c.s.totalSaid) { c.say("card_later"); c.s.payMethod = "card"; return; }
       c.say("card_tap"); c.s.paid = true; c.s.payMethod = "card"; c.event("pay", { method: "card" }); c.say("paid");
     },
     pay_cash(c) {
+      if (c.s.paid) return;
       c.say("cash_ok"); c.s.payMethod = "cash";
       if (c.s.totalSaid) { c.s.paid = true; c.event("pay", { method: "cash" }); c.say("change_back"); }
     },
     pay_phone(c) {
+      if (c.s.paid) return;
       c.s.payMethod = "phone";
       if (!c.s.totalSaid) { c.say("card_later"); return; }
       c.say("phone_ok"); c.s.paid = true; c.event("pay", { method: "phone" }); c.say("paid");
     },
+    // "Thanks, bye!" right after paying (at "Would you like a bag?"): the purchase is complete, as in the
+    // café. Before paying it ends the visit, not completed.
+    g_bye(c) {
+      if (c.s.paid) sold(c);
+      c.say("g_bye"); c.end(); c.hold();
+    },
     here_you_go(c) {
+      if (c.s.paid) return;
       if (!c.s.totalSaid) { c.say("no_problem"); return; }
       c.s.paid = true; c.event("pay", { method: c.s.payMethod || "cash" });
       if (c.s.payMethod === "card" || c.s.payMethod === "phone") c.say("paid"); else c.say("change_back");
@@ -1589,8 +1607,7 @@ export const pharmacy: SituationDef = {
 
   finish: (c) => {
     if (c.s.paid) {
-      c.complete();
-      c.event("give", { items: basket(c) });
+      sold(c);
       const sick = !!c.s.symptom || c.s.mode === "rx" || basket(c).some((id) => id !== "rx" && at(id).med);
       c.say(sick ? "feel_better" : "closing_other");
       if (c.s.symptom && !c.s.doctorSaid) c.say("see_doctor");
@@ -1667,6 +1684,13 @@ export const pharmacy: SituationDef = {
     { say: "Okay, I'll try them.", intent: "accept_rec", step: "recommend" },
     { say: "Do you have anything else?", intent: "other_option", step: "recommend" },
     { say: "No. How often should I take it?", intent: "ask_dosage", step: "dosage" },
+    // "Do you know how to take it?" asked by the learner (Ar žinote, kaip jį vartoti?)
+    { say: "Do you know how to take it?", intent: "ask_dosage", step: "dosage" },
+    { say: "Do you know how often I should take it?", intent: "ask_dosage" },
+    { say: "How do you take it?", intent: "ask_dosage" },
+    { say: "I don't know how to take it.", intent: "ask_dosage", step: "dosage", not: ["g_dontknow", "not_first"] },
+    { say: "I know how to take it.", intent: "not_first", step: "dosage", not: ["ask_dosage"] },
+    { say: "Do you know a good doctor?", intent: "none", step: "dosage" },
     { say: "Yes, I've taken it before.", intent: "not_first", step: "dosage" },
     { say: "Yes, it's my first time.", intent: "first_time", step: "dosage" },
     { say: "No, I don't have any allergies.", intent: "allergy_ans", step: "allergy", not: ["accept_rec"] },
@@ -1714,17 +1738,31 @@ export const pharmacy: SituationDef = {
       expect: { complete: true }, auto: AUTO },
     { name: "cold with other medication, asks questions", turns: ["I think I'm getting a cold.", "Since yesterday.", "I take blood pressure pills.", "Do I need a prescription?", "Okay, I'll try it.",
       "How many should I take?", "Can I get some Band-Aids too?", "That's all, thanks.", "Here you go.", "Thanks for the advice!"], expect: { complete: true },
+      // the other medication is what this sim is about: the "how long" and "other medicines" questions on every
+      // seed, and "Anything else?" for "That's all, thanks."
+      setup: (s) => { s.askHowLong = true; s.askMeds = true; s.askMore = true; },
       auto: { ...AUTO, meds: "I take blood pressure pills." } },
-    { name: "prescription pickup", turns: ["Hi, I'm here to pick up a prescription.", "It's Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "June 4th, 1980.", "No, I don't have insurance.",
-      "How often should I take it?", "Can I drink alcohol with it?", "Card.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
+    // In Mr. Okafor's order: the prescription is ready in ten minutes, "Is this your first time taking it?", then insurance.
+    { name: "prescription pickup", turns: ["Hi, I'm here to pick up a prescription.", "It's Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "June 4th, 1980.", "Sure, I'll wait.",
+      "How often should I take it?", "No, I don't have insurance.", "Can I drink alcohol with it?", "Card.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      // the script spells the name, waits for the prescription and answers the insurance question
+      setup: (s) => { s.askSpell = true; s.askIns = true; s.rxReadyNow = false; } },
     { name: "long cough: see a doctor twist", turns: ["I have a bad cough.", "About two weeks.", "Sure, I'll try it.", "Does it make you drowsy?", "How much is it?", "Card.", "Bye!"],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.askHowLong = true; } }, // "About two weeks." brings the twist on every seed
     { name: "declines the medicine (no purchase)", turns: ["Do you have something for a sore throat?", "No, thanks.", "No, thanks.", "Bye!"],
       expect: { complete: false }, auto: { ...AUTO, recommend: "No, thanks.", alt: "No, thanks." } },
-    { name: "direct product, British word, child", turns: ["Have you got any paracetamol?", "Is it safe for children?", "How much is it?", "Do you know how to take it?", "How often should I take it?", "Cash.", "Bye!"],
+    { name: "direct product, British word, child", turns: ["Have you got any paracetamol?", "Is it safe for children?", "Do you know how to take it?", "How much is it?", "How often should I take it?", "Cash.", "Bye!"],
       expect: { complete: true }, auto: { ...AUTO, dosage: "No, how often should I take it?" } },
   ],
 };
+
+/** Paid for: the learner gets the items (at the end, or on "Thanks, bye!" right after paying). */
+function sold(c: Ctx) {
+  if (c.s.soldDone) return;
+  c.s.soldDone = true;
+  c.complete();
+  c.event("give", { items: basket(c) });
+}
 
 function setSymptom(c: Ctx, s: string) {
   if (c.s.mode === "rx") { c.say("ack"); return; }

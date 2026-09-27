@@ -11,6 +11,7 @@
 // and the speaker in hints; both resolve to the player's gender).
 
 import type { Ctx, EntityDef, SituationDef } from "../types";
+import type { ConvCtx } from "../../convo/dialogue";
 import { ent, t } from "../dsl";
 import { readInt } from "../../convo/slots";
 import type { SlotFn, SlotResult } from "../../convo/grammar";
@@ -98,11 +99,12 @@ function asked(c: Ctx, topic: Topic) {
   if (c.s.qCount >= 2 && c.chance(0.15)) c.say("good_q");
 }
 
-/** Mr. Patel mentions the key terms the learner did not ask about. */
-function volunteer(c: Ctx) {
+/** Mr. Patel mentions the key terms the learner did not ask about. `plain`: "Oh, and by the way:", because
+ *  the line that follows starts with "Just so you know" (the someone-else twist). */
+function volunteer(c: Ctx, plain = false) {
   const missing = CORE.filter((k) => !c.s.asked[k]);
   if (!missing.length) return;
-  c.say("fyi");
+  if (plain) (c as ConvCtx).conv.pushLine("fyi", 0, {}); else c.say("fyi");
   for (const k of missing) { c.say(CORE_LINE[k]); c.s.asked[k] = true; }
 }
 
@@ -1302,8 +1304,9 @@ export const apartment: SituationDef = {
       // already thinking it over and asked to call back by tonight: don't start again
       if (c.s.decision === "think" && c.s.hurryAsked && !c.s.hurryDone) { hurryAnswer(c); return; }
       c.s.qDone = true; c.s.decision = "think";
-      volunteer(c);
-      c.say("think_ok");
+      volunteer(c, !!c.s.otherApplicant);
+      // someone else is coming: no "Just call me by Friday." before "Could you let me know by tonight?"
+      if (!c.s.otherApplicant) c.say("think_ok");
       if (c.s.otherApplicant) {
         c.twist("someone_else");
         c.s.hurryAsked = true;
@@ -1339,6 +1342,12 @@ export const apartment: SituationDef = {
 
     // --- documents and the lease ---
     here_you_go(c) {
+      // "Here's my passport." / "Here's the letter from my employer.": the documents, never the signature
+      // (Mr. Patel takes them, and the lease still needs signing)
+      if (/\b(passport|id|license|letter|statement|stubs?|offer)\b/i.test(c.heard) && !/\b(lease|contract|signed)\b/i.test(c.heard)) {
+        if (c.s.decision === "take" && !c.s.signed) { c.s.docsOk = true; c.say("docs_ok"); return; }
+        c.say("ack"); return;
+      }
       if (c.step === "sign" || (c.s.decision === "take" && (!c.s.askDocs || c.s.docsOk) && !c.s.signed)) { sign(c); return; }
       if (c.s.decision === "take" && !c.s.docsOk) { c.s.docsOk = true; c.say("docs_ok"); return; }
       c.say("ack");
@@ -1349,7 +1358,7 @@ export const apartment: SituationDef = {
     where_sign(c) {
       if (!view(c)) { c.say("ack"); return; }
       if (c.s.decision !== "take") { take(c); return; }
-      if (c.s.askDocs && !c.s.docsOk) { c.say("ack"); return; }
+      if ((c.s.askDocs && !c.s.docsOk) || c.s.signed) { c.say("ack"); return; }
       c.say("sign_where"); sign(c);
     },
     // "Here?" while signing / "Here." while handing over the ID
@@ -1510,14 +1519,26 @@ export const apartment: SituationDef = {
   ],
 
   sims: [
+    // A viewing on every seed. With no ID request, "Here's my passport." comes while Mr. Patel holds out the
+    // lease: he takes it, and the lease is signed only at "Where do I sign?".
     { name: "view, ask the key terms, take it", turns: ["Hi, I'm here to see the apartment.", "How much is the rent?", "Are utilities included?", "Is there parking?",
-      "No, that's all, thanks.", "I'll take it!", "Here's my passport.", "Where do I sign?", "Thank you, bye!"], expect: { complete: true }, auto: AUTO },
+      "No, that's all, thanks.", "I'll take it!", "Here's my passport.", "Where do I sign?", "Thank you, bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; } },
+    // "Okay, I'll call you tonight." answers the twist: someone else is coming tomorrow, "Could you let me know by tonight?"
     { name: "many questions, then think about it", turns: ["Hello! Is the apartment still available?", "Is it furnished?", "Are pets allowed?", "Is electricity included?",
-      "How long is the lease?", "Could you lower the rent a little?", "I need to think about it.", "Okay, I'll call you tonight.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
+      "How long is the lease?", "Could you lower the rent a little?", "I need to think about it.", "Okay, I'll call you tonight.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.otherApplicant = true; } },
+    // Mr. Patel asks all his questions (move-in, people, pets) and for an ID: each short answer has its question.
     { name: "short answers", turns: ["Hi!", "Yes.", "Next month.", "Just me.", "No.", "How much is it?", "And the deposit?", "That's all.", "I'll take it.", "Sure.", "Sure.", "Bye!"],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.mode = "view"; s.askMovein = true; s.askPeople = true; s.askPets = true; s.askDocs = true; } },
+    // No ID request: the passport handed over at the lease is taken, and the bare "Sure." signs (bug fix 27 Sep:
+    // the passport used to sign the lease, and "Sure." then ended the conversation).
+    { name: "passport offered at the lease", turns: ["Hi, I'm here to see the apartment.", "How much is the rent?", "No, that's all, thanks.", "I'll take it!", "Next month.", "Here's my passport.",
+      "Sure.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.askMovein = false; s.askPeople = false; s.askPets = false; s.askDocs = false; } },
+    // The twist on every seed: a returning tenant reports a problem.
     { name: "tenant reports a leak", turns: ["Hi, Mr. Patel!", "Sorry to bother you, but the kitchen faucet is leaking.", "No, I'll be at work.", "Yes, that's fine.", "Thank you!"],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.mode = "problem"; } },
   ],
 };
 
@@ -1575,6 +1596,7 @@ function decline(c: Ctx) {
 }
 
 function sign(c: Ctx) {
+  if (c.s.signed) { c.say("ack"); return; } // signed already: no second set of keys
   c.s.signed = true;
   c.s.docsOk = true;
   c.event("sign", { doc: "lease" });

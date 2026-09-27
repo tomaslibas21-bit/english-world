@@ -991,7 +991,10 @@ export const firstDay: SituationDef = {
     { name: "questions first, decline lunch", turns: ["Hello!", "Yes, it's my first day today.", "My name is Tomas.", "How do I log in?", "Is there a dress code?",
       "Where are the restrooms?", "What time do people have lunch?", "Can I use this mug?", "Nothing else, thanks.", "Sure, I can do that.",
       "Where is it?", "Thanks, but I brought my lunch today.", "It was great! Everyone is so nice.", "Thanks for everything!"], expect: { complete: true }, auto: AUTO },
-    { name: "short answers", turns: ["Yes.", "Tomas.", "Great, thanks!", "No.", "Thanks!", "Okay.", "Sure!", "Sure.", "Good.", "Bye!"], expect: { complete: true }, auto: AUTO },
+    // Short generic answers can't show which question they answer: the opening ("Are you new here?"), the offer to show
+    // the coffee machine and the working machine are pinned, so each answer meets the same question on every seed.
+    { name: "short answers", setup: (s) => { s.greetKind = "new"; s.showCoffee = true; s.coffeeBroken = false; },
+      turns: ["Yes.", "Tomas.", "Great, thanks!", "Thanks!", "No.", "Sure!", "Okay.", "Sure.", "Good.", "Bye!"], expect: { complete: true }, auto: AUTO },
   ],
 };
 
@@ -1028,7 +1031,8 @@ function coffeeWhere(c: Ctx) {
   c.s.topic = "coffee";
   c.say("a_coffee");
   if (c.s.coffeeBroken && !c.s.brokenSaid) { c.s.brokenSaid = true; c.twist("coffee_broken"); c.say("coffee_broken"); c.say("coffee_alt"); return; }
-  if (c.step === "coffee" && c.chance(0.5)) {
+  // s.showCoffee lets a sim pin the question; unset, it is decided here as before
+  if (c.step === "coffee" && (c.s.showCoffee ?? c.chance(0.5))) {
     c.say("a_coffee_more");
     // "Want me to show you how it works?" — a bare "Yes, please" gets the demo
     c.expect({ id: "coffee_show", optional: true, expects: ["q_how", "show_me", "coffee_want", "tea_ok", "coffee_later", "q_mug"], hints: ["coffee"],

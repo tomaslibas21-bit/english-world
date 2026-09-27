@@ -1098,7 +1098,7 @@ export const support: SituationDef = {
       expect: { complete: true }, auto: SUPPORT_AUTO },
     { name: "at work: someone else at home",
       turns: ["Two", "Tomas Mikalauskas.", "Sorry, I don't know my account number.", "555 201 7788", "I'm having trouble with my Wi-Fi.", "Since yesterday.", "There's a red light.", "No, not yet.", "Okay, done.", "It's still blinking red.", "Sorry, I'm at work then.", "My wife can be home.", "Could you text it to me?", "No, that's everything."],
-      expect: { complete: true }, auto: SUPPORT_AUTO },
+      expect: { complete: true }, auto: SUPPORT_AUTO, setup: (s) => { s.askSince = true; } },
     { name: "agent first, then Saturday",
       turns: ["Representative, please.", "Technical support.", "My name is Tomas.", "It's 742-9133.", "My internet isn't working.", "No lights at all.", "Yes, of course. Ten times.", "I'm at work then.", "No, I live alone.", "Do you have anything on Saturday?", "Saturday is fine.", "Could I get a reference number?", "No, that's all, thank you."],
       expect: { complete: true }, auto: SUPPORT_AUTO },

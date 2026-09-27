@@ -972,6 +972,8 @@ export const doctor: SituationDef = {
       t("Come | back | if | it doesn't get better.", "Ateikite | vėl | jei | nepagerės.", "Jei nepagerės, ateikite vėl."),
       t("And | come | back | if | it doesn't get better.", "Ir | ateikite | vėl | jei | nepagerės.", "Ir jei nepagerės, ateikite vėl."),
     ],
+    // the answer to "What if it doesn't get better?" (never "And come back…")
+    come_back_q: [t("Come | back | if | it doesn't get better.", "Ateikite | vėl | jei | nepagerės.", "Jei nepagerės, ateikite vėl.")],
     feel_better: [
       t("Feel | better!", "Jauskitės | geriau!", "Greičiau pasveikite!"),
       t("I | hope | you | feel | better | soon!", "Aš | tikiuosi | jūs | pasijusite | geriau | greitai!", "Tikiuosi, greitai pasijusite geriau!"),
@@ -1456,7 +1458,7 @@ export const doctor: SituationDef = {
       if (!c.s.examDone) { c.s.noteWanted = true; c.say("note_later"); return; }
       giveNote(c);
     },
-    ask_not_better(c) { c.say("come_back"); c.s.comeBackSaid = true; },
+    ask_not_better(c) { c.say("come_back_q"); c.s.comeBackSaid = true; },
     ask_eat(c) { c.say(dx(c) === "stomach" ? "eat_stomach" : "eat_any"); },
     ask_exercise(c) { if (!c.s.examDone) { c.say("exam_first"); return; } c.say("exercise_no"); },
     ask_cost(c) { c.say("cost_desk"); },
@@ -1640,36 +1642,55 @@ export const doctor: SituationDef = {
   ],
 
   sims: [
+    // Optional parts are pinned per sim (`setup` runs right after init): the short answers "Okay.", "Yes." and
+    // "No." would otherwise be taken by the blood-pressure sleeve, the chart question or the pharmacy question.
     { name: "song path: sore throat and a temperature, Celsius, questions",
+      setup: (s) => { s.bpTwist = false; s.chartTwist = false; },
       turns: ["I've got a sore throat and a temperature.", "Since Monday.", "38 degrees.", "Just ibuprofen.", "Okay.", "Aaah.", "Yes, a little.",
         "No, I'm not allergic to anything.", "Can I drink alcohol with it?", "Can I get a note for work?", "Thank you, doctor!"],
       expect: { complete: true }, auto: AUTO },
+    // "Okay, thanks." always answers "Do you have any questions?" (it used to get "Sure, go ahead.")
     { name: "short answers",
+      setup: (s) => { s.bpTwist = false; s.chartTwist = false; s.askPharmacy = false; s.offerNote = false; s.askQ = true; s.askMoreQ = false; },
       turns: ["Sore throat.", "Three days.", "Yes.", "39.", "No.", "Okay.", "Aaah.", "Yes.", "No.", "Okay, thanks.", "Bye!"],
       expect: { complete: true }, auto: AUTO },
     { name: "questions first, a virus",
+      setup: (s) => { s.bpTwist = false; s.askPharmacy = false; s.offerNote = false; },
       turns: ["I have a bad cough and a runny nose.", "Is it serious?", "About a week.", "I don't know, I didn't check.", "No, nothing.", "Okay.", "Aaah.",
         "No, it doesn't hurt.", "Do I need antibiotics?", "No.", "How often should I take it?", "Can I go to work?", "What if it doesn't get better?", "Thanks, bye!"],
       expect: { complete: true }, auto: AUTO },
+    // the chart twist stays random here (said on most seeds, in the chart on some); the next sim forces it
     { name: "penicillin allergy (said or in the chart)",
+      setup: (s) => { s.bpTwist = false; s.askScale = false; },
       turns: ["I have a sore throat and a fever since yesterday.", "101.", "No, nothing.", "Okay.", "Aaah.", "Yes, it hurts.", "I'm allergic to penicillin.",
         "For how long?", "Thank you!"],
       expect: { complete: true }, auto: { ...AUTO, allergy: "I'm allergic to penicillin." } },
-    { name: "stomachache, no fever, blood pressure possible",
+    { name: "the chart says penicillin: that's right",
+      setup: (s) => { s.chartTwist = true; s.bpTwist = false; s.askScale = false; s.askPharmacy = false; },
+      turns: ["I have a sore throat.", "Since Monday.", "No, I don't have a fever.", "No, nothing.", "Okay.", "Aaah.", "Yes, a little.", "Yes, that's right.",
+        "Are there any side effects?", "Thanks, bye!"],
+      expect: { complete: true }, auto: AUTO },
+    { name: "stomachache, no fever, blood pressure",
+      setup: (s) => { s.bpTwist = true; },
       turns: ["My stomach hurts.", "Since last night.", "No, I don't have a fever.", "I took some Pepto.", "Sure.", "Okay.", "Aaah.", "Yes, a lot.",
         "No allergies.", "What should I eat?", "Thanks, goodbye!"],
       expect: { complete: true }, auto: { ...AUTO, fever: "No fever." } },
     // review fixes 27 Sep (no automatic answer to the opening question: these only complete if it isn't asked again)
     { name: "left ear: the exam keeps the side",
+      setup: (s) => { s.bpTwist = false; },
       turns: ["My left ear hurts.", "Since Monday.", "No.", "Nothing.", "Okay.", "Aaah.", "Yes, a little.", "No allergies.", "Thanks, bye!"],
       expect: { complete: true }, auto: AUTO },
     { name: "four pieces in one sentence",
+      setup: (s) => { s.bpTwist = false; },
       turns: ["I have a sore throat and a fever of 38.5 since Monday. I'm allergic to penicillin.", "No, nothing.", "Okay.", "Aaah.", "Yes, it hurts.", "How often should I take it?", "Thanks, bye!"],
       expect: { complete: true }, auto: noOpening(AUTO) },
+    // "Any other symptoms?" comes because the reading is normal (so it isn't asked right after the complaint)
     { name: "a normal temperature keeps the complaint",
+      setup: (s) => { s.askMore = false; s.bpTwist = false; },
       turns: ["I have a fever.", "Two days.", "37", "No, that's all.", "No, nothing.", "Okay.", "Aaah.", "No.", "No.", "Thanks, bye!"],
       expect: { complete: true }, auto: noOpening({ ...AUTO, fever: "37" }) },
     { name: "back pain, learner-style English",
+      setup: (s) => { s.bpTwist = false; },
       turns: ["Hello doctor. I have problem, my back hurt very much.", "Since two days.", "No temperature.", "No.", "Okay.", "Yes, here hurts.", "No.",
         "Can I go to work?", "Thank you, bye."],
       expect: { complete: true }, auto: { ...AUTO, fever: "No fever.", hurt: "Yes." } },
@@ -1758,7 +1779,11 @@ function questionsPending(id: string): Pending {
   return { id, optional: true, hints: ["ask_rx", "ask_dx", "g_yesno"],
     expects: ["clear_ctx", "ask_dosage", "ask_meals", "ask_duration", "ask_side", "ask_alcohol", "ask_drive", "ask_better", "ask_work", "ask_note", "ask_contagious", "ask_serious", "ask_not_better"],
     suggest: [{ lt: "Paklausti apie vaistus", hint: "ask_rx" }, { lt: "Paklausti apie ligą", hint: "ask_dx" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
-    yes: (cc) => { cc.say("go_ahead"); cc.hold(); },
+    // "Okay, thanks." / "Okay." parse as a yes, but they acknowledge the advice: no questions
+    yes: (cc) => {
+      if (/^\W*(ok(ay)?|alright|all right)\b/i.test(cc.heard)) { cc.say(/\bthank/i.test(cc.heard) ? "g_welcome" : "ok_plain"); return; }
+      cc.say("go_ahead"); cc.hold();
+    },
     no: (cc) => { cc.say("ok_plain"); } };
 }
 

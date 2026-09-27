@@ -1838,7 +1838,7 @@ export const smallTalk: SituationDef = {
         week: "Very busy. Work, mostly." } },
     // "I'd better get going" before the bus comes: Frank laughs it off, the chat goes on
     { name: "early goodbye", turns: ["Sorry, I'd better get going.", "Oh, right! Yes, lovely weather!"], expect: { complete: true },
-      auto: { ...except(AUTO, "weather"), closing: "Bye, Frank! Have a good one!" } },
+      auto: { ...except(AUTO, "weather"), closing: "Bye, Frank! Have a good one!" }, setup: (s) => { s.howOpener = false; } },
   ],
 };
 

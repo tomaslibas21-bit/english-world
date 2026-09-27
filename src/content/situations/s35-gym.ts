@@ -413,7 +413,9 @@ export const gym: SituationDef = {
       "[much | a lot | a little | a bit] better [now] [thanks] #h:better", "i feel (much | a lot | a little | a bit) better [now]",
     ] },
     tired: { patterns: [
-      "[i am] [a little | a bit | very | so | really | super | pretty] (tired | exhausted | sweaty | hot) [now] #h:feel_tired", "i am [so | totally] done",
+      "[i am] [just] [a little | a bit | very | so | really | super | pretty] (tired | exhausted | sweaty | hot) [now] #h:feel_tired", "i am [so | totally] done",
+      // "I'm fine, just a little tired." (to "Whoa, are you okay?")
+      "i am (fine | okay | good | all right) [but] [i am] [just] [a little | a bit | very | so | really | pretty] (tired | exhausted)",
       "i feel [a little | a bit | very | so | really] (tired | exhausted | dizzy | weak)",
       "i (need | want) (a break | a rest | to rest | a minute | to sit down | a short break) #h:need_break",
       "(can | could) (i | we) (take | have) a (break | rest | minute | short break)", "i am dying",
@@ -821,6 +823,8 @@ export const gym: SituationDef = {
       { flags: { 1: FLAG_SOME } })],
     easy_today: [t("Okay, | nothing | heavy | today.", "Gerai, | nieko | sunkaus | šiandien.", "Gerai, šiandien nieko sunkaus.")],
     fine_reply: [t("Great! | But | tell | me | if | anything | hurts.", "Puiku! | Bet | pasakyk | man | jei | kas nors | skauda.", "Puiku! Bet pasakyk, jei kas nors skaudės.")],
+    // "Whoa, are you okay?" – "I'm just tired." / "I need a break."
+    okay_tired: [t("That's | normal! | But | tell | me | if | anything | hurts.", "Tai | normalu! | Bet | pasakyk | man | jei | kas nors | skauda.", "Tai normalu! Bet pasakyk, jei kas nors skaudės.")],
     what_hurts: [t("Oh | no! | What | hurts?", "O | ne! | Kas | skauda?", "O ne! Kas skauda?")],
 
     // --- spotting --------------------------------------------------------------------------------
@@ -1420,7 +1424,8 @@ export const gym: SituationDef = {
     // --- how are you feeling (outside the questions that ask it)
     feel_good(c) { c.say("feel_good_reply"); },
     not_tired(c) { c.say("feel_good_reply"); },
-    tired(c) { c.say("break_water"); },
+    // before the workout ("I'm good, just a little tired." at the door): no "Take a break" yet
+    tired(c) { c.say(c.s.warm ? "break_water" : "easy_today"); },
     out_breath(c) { c.say("break_water"); },
 
     // --- the machine
@@ -1482,12 +1487,12 @@ export const gym: SituationDef = {
     },
     next_later(c) {
       if (!c.s.breathDone) { c.say("ack"); return; }
-      c.s.next = "later"; c.say("book_later_ok");
+      bookLater(c);
     },
     later_ctx(c, slots, seg) { gym.handlers.next_later(c, slots, seg); },
     day_no(c) {
       if (!c.s.breathDone || c.s.next) { c.say("ack"); return; }
-      c.s.next = "later"; c.say("book_later_ok");
+      bookLater(c);
     },
     next_time_q(c) { c.say("same_as_today"); },
     when_ctx(c, slots) { if (slots.day) nextDay(c, slots.day); else setNext(c, "tomorrow"); },
@@ -1698,6 +1703,11 @@ export const gym: SituationDef = {
     { say: "Ouch, my knee hurts!", intent: "pain" },
     { say: "My knee still hurts.", intent: "pain", not: ["no_pain"] },
     { say: "Much better, thanks.", intent: "feel_good", step: "breath" },
+    // "Whoa, are you okay?" – just tired (27 Sep sims): tired, never "fine"; and the negation stays
+    { say: "I'm okay, just a little tired.", intent: "tired", not: ["feel_good"] },
+    { say: "Yes, just tired.", intent: "tired" },
+    { say: "I'm fine, not tired.", intent: "feel_good", not: ["tired"] },
+    { say: "I'm good, I'm not tired at all.", intent: "feel_good", not: ["tired"] },
     // unrelated
     { say: "banana treadmill purple singing", intent: "none" },
     { say: "the weather is nice on the moon", intent: "none" },
@@ -1705,33 +1715,59 @@ export const gym: SituationDef = {
   ],
 
   sims: [
+    // Optional moments pinned with `setup` where a scripted turn needs them one way: "How do you feel?" after the
+    // warm-up (askFeel; the next turn is often "Is this machine free?", a question that never waits) and the pain
+    // twist after the leg press (painTwist). The twist sims force their twist on every seed.
     { name: "new member: monthly, card, the full first workout", turns: ["Hi, I'm new here!", "I'll take the monthly membership.", "Here you go.", "Card, please.",
       "Yes. Where are the lockers?", "The bike, please.", "Is this machine free?", "How many sets should I do?", "Done!", "Can you spot me?", "I'm out of breath!",
-      "Sure! See you tomorrow!", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
-    { name: "short answers: day pass, cash", turns: ["First time here.", "A day pass.", "Done.", "Cash.", "No, I'm ready.", "Treadmill.", "Is it free?", "How many?", "Ten!",
-      "Spot me, please.", "I'm so tired!", "Yes.", "Yes."], expect: { complete: true }, auto: AUTO },
+      "Sure! See you tomorrow!", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      // the whole workout as planned: no pain twist after the leg press
+      setup: (s) => { s.askFeel = false; s.painTwist = false; } },
+    { name: "short answers: day pass, cash", turns: ["First time here.", "A day pass.", "Done.", "Cash.", "No, I'm ready.", "Treadmill.", "Great!", "Is it free?", "How many?", "Ten!",
+      "Spot me, please.", "I'm so tired!", "Yes.", "Yes."], expect: { complete: true }, auto: AUTO,
+      // "How do you feel?" after the warm-up on every seed (a short "Great!"), and no pain twist
+      setup: (s) => { s.askFeel = true; s.painTwist = false; } },
     { name: "questions first, then Thursday", turns: ["Hello! How much is a membership?", "Is there a sign-up fee?", "Can I cancel anytime?", "Do you have showers?",
       "I'd like a monthly membership, please.", "What is this form?", "Where do I sign?", "Can I pay by card?", "What are your hours?", "Where can I change?", "Do you have a pool?",
       "I'll take the treadmill.", "Is anyone using this?", "How much weight should I use?", "How many sets should I do?", "I can't!", "How much does the bar weigh?",
-      "Can you spot me?", "I need a break.", "Can we do Thursday?", "Thank you!"], expect: { complete: true }, auto: AUTO },
+      "Can you spot me?", "I need a break.", "Can we do Thursday?", "Thank you!"], expect: { complete: true }, auto: AUTO,
+      // "How much does the bar weigh?" and "Can you spot me?" are for the bench press: no pain twist before it
+      setup: (s) => { s.askFeel = false; s.painTwist = false; } },
     { name: "no monthly, no running, can't, back hurts, not tomorrow", turns: ["Hi! I'd like to join.", "I don't want a monthly membership.", "Yes, please.", "Okay, all done.",
       "Here you go.", "No, I'm already dressed.", "I don't like running.", "Are you using this?", "I'm ready.", "My back hurts.", "Okay.", "Much better, thanks.",
-      "I can't tomorrow.", "Yes, Thursday is fine.", "Bye!"], expect: { complete: true }, auto: AUTO },
+      "I can't tomorrow.", "Yes, Thursday is fine.", "Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; } },
     { name: "British words, kilos, no spot", turns: ["Hi! It's my first time here.", "What's included?", "The monthly one, please.", "Can I borrow a pen?", "Here you go.",
       "I'll pay in cash.", "Where's the changing room?", "I'll take the cross trainer.", "Excuse me, is this machine free?", "How many kilos is it?",
-      "How many sets should I do?", "Okay, one more!", "I don't need a spot.", "I'm out of breath!", "Same time tomorrow?", "Thanks!"], expect: { complete: true }, auto: AUTO },
+      "How many sets should I do?", "Okay, one more!", "I don't need a spot.", "I'm out of breath!", "Same time tomorrow?", "Thanks!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; } },
     { name: "how are you, then not okay: the knee; I'll call you", turns: ["Good, thanks. And you?", "I'm new here. How do I sign up?", "Just for today, please.", "Where do I sign?",
-      "Can I pay with my phone?", "Do you have towels?", "Yes, please.", "Either one is fine.", "Are you using this?", "No questions.", "Phew! That was hard!",
-      "Could you spot me, please?", "I'm dying!", "I'm not sure yet. I'll call you.", "Thank you so much!"],
-      expect: { complete: true }, auto: { ...AUTO, okay_q: "No, not really.", where_hurt: "My knee.", feel_q: "A little tired." } },
+      "Can I pay with my phone?", "Do you have towels?", "Yes, please.", "Either one is fine.", "A little tired.", "Are you using this?", "No questions.", "Phew! That was hard!",
+      "No, not really.", "My knee.", "Could you spot me, please?", "I'm dying!", "I'm not sure yet. I'll call you.", "Thank you so much!"],
+      expect: { complete: true }, auto: AUTO,
+      // the twist on every seed: "How's it going?" first, "How do you feel?" after the warm-up and "Whoa, are you okay?" after the leg press
+      setup: (s) => { s.hay = true; s.askFeel = true; s.outOfOrder = false; s.painTwist = true; } },
     // review 27 Sep: change of plan, the locker-room pause, "Ouch, my knee hurts!" (arms instead, then the light bench press)
     { name: "day pass instead, lockers pause, knee: arms instead", turns: ["Hi, I'm new here!", "The monthly membership, please.", "Actually, I'll take a day pass instead.",
       "Here you go.", "Cash.", "Where are the lockers?", "I'm back!", "The bike, please.", "Is this machine free?", "How many sets?", "Ouch, my knee hurts!",
-      "Can you spot me?", "I'm out of breath!", "See you tomorrow!", "Thanks!"], expect: { complete: true }, auto: AUTO },
+      "Can you spot me?", "I'm out of breath!", "See you tomorrow!", "Thanks!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; } },
     // review 27 Sep: both options refused, then the day pass; back pain on the bench: stretching, then "How do you feel now?"
     { name: "neither, then the day pass; back hurts on the bench", turns: ["Hi, I'm new here!", "No thanks, I don't want a membership.", "No, I don't want a day pass either.",
       "On second thought, the day pass.", "Done.", "Card.", "No, I'm ready.", "Treadmill.", "Is it free?", "How many?", "Ten!", "My back hurts a little.", "Okay.", "Much better, thanks.",
-      "Same time tomorrow?", "Bye!"], expect: { complete: true }, auto: AUTO },
+      "Same time tomorrow?", "Bye!"], expect: { complete: true }, auto: AUTO,
+      // the back hurts on the bench, not at "Whoa, are you okay?" after the leg press
+      setup: (s) => { s.askFeel = false; s.painTwist = false; } },
+    // twist on every seed: the leg press is out of order, so the learner asks what happened and whether the other one is free
+    { name: "twist: the leg press is out of order", turns: ["Hi! It's my first time here.", "A day pass, please.", "Here you go.", "Card.", "No, I'm ready.",
+      "The bike, please.", "What's wrong with it?", "Is the other one free?", "How many sets should I do?", "Done!", "Can you spot me?", "I'm out of breath!",
+      "See you tomorrow!", "Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.outOfOrder = true; s.painTwist = false; } },
+    // twist on every seed: "Whoa, are you okay?" after the leg press, and the learner is just tired (the workout goes on)
+    { name: "twist: are you okay? just tired", turns: ["Hello! I'd like to become a member.", "The monthly membership, please.", "Here you go.", "Can I pay with my phone?",
+      "No, I'm already dressed.", "The treadmill, please.", "Is this machine free?", "I'm ready.", "Done!", "I'm okay, just a little tired.", "Can you spot me?",
+      "I need a break.", "Same time tomorrow?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.outOfOrder = false; s.painTwist = true; } },
   ],
 };
 
@@ -1919,11 +1955,13 @@ function repDone(c: Ctx, couldnt: boolean) {
 
 function okayPending(): Pending {
   const fine = (cc: Ctx) => { cc.say("fine_reply"); };
+  // just tired or out of breath: normal after the leg press ("Great!" would not fit "I'm dying!")
+  const tiredO = (cc: Ctx) => { cc.say("okay_tired"); };
   const painH = (cc: Ctx, _sl: any, sg: { tags: string[] }) => { hurt(cc, sg.tags); };
-  return { id: "okay_q", expects: ["pain", "pain_ctx", "no_pain", "feel_good", "tired"], hints: ["pain"],
+  return { id: "okay_q", expects: ["pain", "pain_ctx", "no_pain", "feel_good", "tired", "out_breath"], hints: ["pain"],
     suggest: [{ lt: "Pasakyti, kad skauda kelį ar nugarą", hint: "pain" }],
     on: {
-      pain: painH, pain_ctx: painH, no_pain: fine, feel_good: fine, not_tired: fine, g_ok: fine, g_howareyou_answer: fine, tired: fine,
+      pain: painH, pain_ctx: painH, no_pain: fine, feel_good: fine, not_tired: fine, g_ok: fine, g_howareyou_answer: fine, tired: tiredO, out_breath: tiredO,
       g_howareyou_bad: (cc) => { cc.say("what_hurts"); cc.expect(whereHurtPending()); },
     },
     yes: fine,
@@ -2039,6 +2077,13 @@ function nextDay(c: Ctx, day: string | undefined) {
   else c.say("see_then");
 }
 
+/** "I'll call you." / "I'm not sure yet.": book later. Said once ("I'm not sure yet. I'll call you." is two pieces). */
+function bookLater(c: Ctx) {
+  if (c.s.next === "later") return;
+  c.s.next = "later";
+  c.say("book_later_ok");
+}
+
 function offerThursday(c: Ctx) {
   c.say("offer_thursday");
   c.expect({ id: "thursday_q", expects: ["next_day", "next_later", "later_ctx", "next_same", "when_ctx", "see_you_ctx", "cant"], hints: ["next", "g_yesno"],
@@ -2048,15 +2093,15 @@ function offerThursday(c: Ctx) {
       when_ctx: (cc, sl) => { nextDay(cc, sl.day ?? "thursday"); },
       next_same: (cc) => { setNext(cc, "tomorrow"); },
       see_you_ctx: (cc) => { nextDay(cc, "thursday"); },
-      next_later: (cc) => { cc.s.next = "later"; cc.say("book_later_ok"); },
-      later_ctx: (cc) => { cc.s.next = "later"; cc.say("book_later_ok"); },
+      next_later: (cc) => bookLater(cc),
+      later_ctx: (cc) => bookLater(cc),
       // "No, sorry, I can't." to "How about Thursday?"
-      cant: (cc) => { cc.s.next = "later"; cc.say("book_later_ok"); },
-      next_no: (cc) => { cc.s.next = "later"; cc.say("book_later_ok"); },
-      day_no: (cc) => { cc.s.next = "later"; cc.say("book_later_ok"); },
+      cant: (cc) => bookLater(cc),
+      next_no: (cc) => bookLater(cc),
+      day_no: (cc) => bookLater(cc),
     },
     yes: (cc) => nextDay(cc, "thursday"),
-    no: (cc) => { cc.s.next = "later"; cc.say("book_later_ok"); },
+    no: (cc) => bookLater(cc),
     ask: (cc) => cc.say("offer_thursday") });
 }
 

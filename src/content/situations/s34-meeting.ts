@@ -129,7 +129,8 @@ function thanksReply(c: Ctx, othersOnly = false) {
 
 // Intents that answer each point of the meeting
 const MUTE_EXPECTS = ["tell_mute", "tell_mute_ctx", "not_muted", "greet_team"];
-const UPDATE_EXPECTS = ["upd_done", "upd_working", "upd_behind", "upd_ok", "upd_ok_ctx", "upd_nothing"];
+// task_ctx: "The report." to "What are you working on?" (one of Kate's ways of asking)
+const UPDATE_EXPECTS = ["upd_done", "upd_working", "upd_behind", "upd_ok", "upd_ok_ctx", "upd_nothing", "task_ctx"];
 const CLARIFY_EXPECTS = ["clarify", "word_q", "term_echo_ctx", "nothing_more", "add_req"];
 const ADD_POINTS = ["add_test", "add_help", "add_customers", "add_feedback"];
 const ADD_EXPECTS = ["add_req", ...ADD_POINTS, "add_other_ctx", "nothing_more"];
@@ -419,17 +420,17 @@ function giveReason(c: Ctx, tags: string[]) {
   offlineTwo(c);
 }
 
-/** No reason (or "I don't know"): Paul accepts it and Kate takes it offline. */
+/** No reason (or "I don't know"): Paul accepts it and Kate takes it offline (without "Good points."). */
 function whyClose(c: Ctx) {
   if (c.s.whyDone) return;
   c.s.whyDone = true;
   P(c, "paul_fair_short");
-  offlineTwo(c);
+  offlineTwo(c, false);
 }
 
-function offlineTwo(c: Ctx) {
+function offlineTwo(c: Ctx, points = true) {
   c.s.offlineSaid = true; c.s.lastTerm = "offline";
-  K(c, "offline_two");
+  K(c, points ? "offline_two" : "offline_short");
   const fine = one("talk", (cc) => P(cc, "talk_later_ok"));
   c.expect({
     id: "talk_after", optional: true, expects: ["talk_later", "can_do", "agree"], hints: ["talk_after"],
@@ -1460,6 +1461,11 @@ export const meeting: SituationDef = {
       t("Good | points. | Let's take | this | offline. | Can | you | two | talk | after | the | meeting?", "Geros | pastabos. | Aptarkime | tai | atskirai. | Ar galite | jūs | abu | pasikalbėti | po | — | susirinkimo?",
         "Geros pastabos. Aptarkime tai atskirai. Ar jūs abu galite pasikalbėti po susirinkimo?", { flags: { 2: F_OFFLINE } }),
     ],
+    // after "I don't know." (no reason, so no "Good points.")
+    offline_short: [
+      t("Alright. | Let's take | this | offline. | Can | you | two | talk | after | the | meeting?", "Gerai. | Aptarkime | tai | atskirai. | Ar galite | jūs | abu | pasikalbėti | po | — | susirinkimo?",
+        "Gerai. Aptarkime tai atskirai. Ar jūs abu galite pasikalbėti po susirinkimo?", { flags: { 1: F_OFFLINE } }),
+    ],
     offline_sara: [
       t("Hmm. | Let's take | this | offline. | Paul | and | Sara, | can | you | talk | after | the | meeting?", "Hmm. | Aptarkime | tai | atskirai. | Paulai | ir | Sara, | ar galite | jūs | pasikalbėti | po | — | susirinkimo?",
         "Hmm. Aptarkime tai atskirai. Paulai ir Sara, ar galite pasikalbėti po susirinkimo?", { flags: { 1: F_OFFLINE } }),
@@ -2347,28 +2353,54 @@ export const meeting: SituationDef = {
     { say: "Who, me?", intent: "who_me", step: "owner" },
     { say: "You mean me?", intent: "who_me", step: "opinion" },
     { say: "Me!", intent: "can_do_ctx", step: "owner" },
+    // sims 27 Sep: "The report." to Kate's "What are you working on?" (the update step itself, not only its re-ask)
+    { say: "The report.", intent: "task_ctx", step: "update", slots: { task: "report" } },
+    { say: "On the presentation.", intent: "task_ctx", step: "update", slots: { task: "presentation" } },
+    { say: "I haven't started the report yet.", intent: "upd_behind", step: "update", not: ["task_ctx", "upd_working", "upd_done"] },
+    { say: "The slides aren't done yet.", intent: "upd_behind", step: "update", not: ["task_ctx", "upd_done"] },
   ],
 
   sims: [
     { name: "happy path", turns: [
-      "Sara, you're on mute!", "Yes, we can hear you now!", "I finished the report.", "Could you clarify that?", "Yes, thanks!",
+      "Sara, you're on mute!", "Yes, we can hear you now!", "I finished the report.", "Sure, I'll send it after the meeting.", "Could you clarify that?", "Yes, thanks!",
       "I'd like to add something.", "We should test it on older phones.", "I'm not sure I agree.", "It's too expensive.", "Sure, let's talk later.",
       "I can do that.", "No, nothing from me.", "Thanks, everyone!",
     ], expect: { complete: true }, auto: AUTO },
     { name: "short answers", turns: [
       "Sara, mute!", "Yes!", "Good, thanks!", "The report.", "By Friday.", "Sorry, what do you mean?", "Got it, thanks.", "No.",
       "Good idea!", "Me!", "No.", "Bye!",
-    ], expect: { complete: true }, auto: AUTO },
+    ], expect: { complete: true }, auto: AUTO,
+    // "Me!" answers "Who's taking this?": no deadline fight (its "What do you think?") before it
+    setup: (s) => { s.dlTwist = false; } },
     { name: "questions first", turns: [
       "Sara, we can't hear you.", "Yes, loud and clear!", "What's on the agenda?", "I'm working on the presentation. It'll be ready by Friday.",
       "What does go-live mean?", "Can I add something?", "I can help with the testing.", "What do you mean?",
       "I see your point, but it's a lot of money.", "Sounds good!", "Maybe Paul could do it?", "Can I work from home on Friday?",
       "No, that's all.", "Great meeting! Bye!",
-    ], expect: { complete: true }, auto: AUTO },
+    ], expect: { complete: true }, auto: AUTO,
+    // "Maybe Paul could do it?" answers "Who's taking this?": no deadline fight before it
+    setup: (s) => { s.dlTwist = false; } },
     { name: "review fixes: thanks, asked back, who me, bare okay", turns: [
       "Sara, you're on mute!", "Yes!", "Fine, thanks. And you?", "The report.", "By Friday.", "Could you clarify that?",
       "Thank you, Paul. That makes sense.", "Okay, thanks.", "Good idea!", "Who, me?", "Sure, I can do that.", "Thanks.", "Thanks, everyone!",
-    ], expect: { complete: true }, auto: AUTO },
+    ], expect: { complete: true }, auto: AUTO,
+    // "Fine, thanks. And you?" answers "How's it going?" and "Who, me?" answers "Who's taking this?": no "Could you
+    // take notes?" and no deadline fight (its "What do you think?") before them
+    setup: (s) => { s.notesTwist = false; s.dlTwist = false; } },
+    // the twists on every seed: "Could you take notes?" (no: Paul takes them), then Paul and Sara disagree about the deadline
+    { name: "twists: notes (Paul takes them), the deadline fight", turns: [
+      "Sara, you're on mute!", "Yes, we can hear you.", "Sorry, I can't take notes today.", "I'm working on the website. It'll be ready by Friday.",
+      "Could you say that more simply?", "It's clear now.", "No, nothing to add.", "I don't think that's a good idea.", "Because we should keep some money for later.",
+      "Sure, after the meeting works for me.", "I agree with you.", "With Paul.", "I can do it.", "No, nothing from me.", "Thanks, everyone!",
+    ], expect: { complete: true }, auto: AUTO,
+    setup: (s) => { s.notesTwist = true; s.notesKind = "notes"; s.dlTwist = true; } },
+    // the twist on every seed: "Could you send everyone a quick summary?" at the end (no: Kate does it)
+    { name: "twist: the summary at the end", turns: [
+      "Sara, can you hear us?", "Yes, perfectly.", "Not much, really.", "Sorry, what does that mean?", "Okay, thanks.",
+      "I'd like to add something: our customers are asking about the launch date.", "That makes sense.", "Sorry, I can't do it this week.",
+      "When's the team lunch?", "No, that's it from me.", "Sorry, I can't send it today.", "Okay. Bye, everyone!",
+    ], expect: { complete: true }, auto: AUTO,
+    setup: (s) => { s.notesTwist = true; s.notesKind = "summary"; s.dlTwist = false; } },
     { name: "problems: no sound, behind, no questions, busy", turns: [
       "Hi, Sara!", "Sara, you're on mute!", "No, still nothing.", "Yes, now we can hear you.", "I'm a bit behind with the budget.", "Next week.",
       "No questions from me.", "No, nothing to add.", "I'm not sure I agree.", "I don't know.", "Sure, let's talk later.",

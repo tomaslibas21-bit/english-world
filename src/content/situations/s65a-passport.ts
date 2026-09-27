@@ -1655,8 +1655,9 @@ export const passport: SituationDef = {
   sims: [
     { name: "happy path: vacation at the hotel", turns: ["Hi! Here's my passport.", "I'm here on vacation.", "Two weeks.", "At the Harborview Hotel.", "No, nothing to declare."],
       expect: { complete: true }, auto: PP_AUTO },
+    // the officer asks for the address on every seed (the script gives it)
     { name: "several facts at once, a side question, declaring cheese", turns: ["Hello. Here you go. Do you need my ESTA?", "I'm visiting my sister for ten days.", "I'm staying with her.", "It's 25 Oak Avenue.", "I have some cheese and chocolate for my family."],
-      expect: { complete: true }, auto: PP_AUTO },
+      expect: { complete: true }, auto: PP_AUTO, setup: (s) => { s.askAddress = true; } },
     { name: "clarifications, negation and corrections", turns: ["Here you go.", "I'm not on vacation. I'm here for a conference.", "Four months.", "Sorry. Two months.", "At a hotel.", "The Harborview Hotel.", "I don't have any meat. Just some chocolate."],
       expect: { complete: true }, auto: omit(PP_AUTO, ["purpose", "length", "stay", "declare"]) },
     { name: "work without a visa (ESTA rules), sausage in the bag", turns: ["Here's my passport.", "I'm here to work.", "No, I have an ESTA.", "Business, then. A job interview.", "One week.", "In an Airbnb.", "I have some sausage."],

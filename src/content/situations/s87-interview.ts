@@ -2149,8 +2149,10 @@ export const interview: SituationDef = {
     // --- closing (before the end: a polite answer) ---
     // said while Ms. Brooks waits for the learner's questions, these close the round ("no more questions")
     thanks_time(c) { if (c.step === "questions" && !c.s.qDone) { c.s.qDone = true; return; } if (!c.s.__finished) c.say("g_welcome"); },
-    look_forward(c) { if (c.step === "questions" && !c.s.qDone) { c.s.qDone = true; return; } c.say("ack"); },
-    nice_meet(c) { if (!c.s.named) return; c.say("ack"); },
+    // After the offer was accepted in the same turn ("Thank you for the opportunity. It was nice to meet you!"),
+    // the rest of the sentence is the goodbye.
+    look_forward(c) { if (c.s.closeOpen) { closingReply(c, "closing_bye"); return; } if (c.step === "questions" && !c.s.qDone) { c.s.qDone = true; return; } c.say("ack"); },
+    nice_meet(c) { if (c.s.closeOpen) { closingReply(c, "closing_nice"); return; } if (!c.s.named) return; c.say("ack"); },
 
     // --- job offer (outside the offer moment) ---
     accept_job(c) { c.say("ack"); },
@@ -2285,19 +2287,26 @@ export const interview: SituationDef = {
     { say: "Because your company is growing and I want to be part of it.", intent: "why_ans", step: "why" },
   ],
 
+  // The generic "No, that's all." / "Nothing else, thanks." / "No, thank you." answer the last "Any other
+  // questions?" in these sims: the optional "Are you authorized to work in the U.S.?" (a yes/no question) is off.
   sims: [
     { name: "classic interview", turns: ["Good morning! I have an interview at 9:30.", "Tomas Mikalauskas.", "I'm an accountant with ten years of experience.",
       "I love your company, and I'm ready for a new challenge.", "I'm very organized, and I learn fast.", "What are the working hours?",
       "No, I think you've answered everything.", "Thank you for your time!"], expect: { complete: true }, auto: AUTO },
-    { name: "short answers and questions", turns: ["Hello!", "I'm here for an interview.", "My name is Tomas.", "I'm a nurse.", "Fifteen years.",
+    { name: "short answers and questions", setup: (s) => { s.qs = (s.qs as string[]).filter((q) => q !== "authorized"); }, turns: ["Hello!", "I'm here for an interview.", "My name is Tomas.", "I'm a nurse.", "Fifteen years.",
       "I've heard great things about Brightline.", "Patient and reliable.", "Is there any training?", "Can I work from home?", "No, that's all.",
       "Thank you for the opportunity. It was nice to meet you!"], expect: { complete: true }, auto: AUTO },
-    { name: "side moves: wrong time, résumé, nervous, early questions", turns: ["Hi! Are you Ms. Brooks?", "I have an interview at ten.", "I'm Tomas Mikalauskas.",
+    // its last turn closes the interview: no job offer on the spot here ("job offer on the spot" tests it)
+    { name: "side moves: wrong time, résumé, nervous, early questions", setup: (s) => { s.qs = (s.qs as string[]).filter((q) => q !== "authorized"); s.offerTwist = false; }, turns: ["Hi! Are you Ms. Brooks?", "I have an interview at ten.", "I'm Tomas Mikalauskas.",
       "Here's my résumé.", "Sorry, I'm a little nervous.", "I work in sales.", "Eight years.", "I want to grow and learn new things.",
       "What's the salary range for this position?", "I'm a team player.", "When would I start?", "What does a typical day look like?", "Nothing else, thanks.",
       "I look forward to hearing from you."], expect: { complete: true }, auto: AUTO },
-    { name: "no experience yet", turns: ["Hi!", "Yes.", "Tomas.", "I just finished college. I studied marketing.", "I like working with people.", "I'm friendly and I'm never late.",
+    { name: "no experience yet", setup: (s) => { s.qs = (s.qs as string[]).filter((q) => q !== "authorized"); }, turns: ["Hi!", "Yes.", "Tomas.", "I just finished college. I studied marketing.", "I like working with people.", "I'm friendly and I'm never late.",
       "What are the next steps?", "No, thank you.", "Thank you, bye!"], expect: { complete: true }, auto: AUTO },
+    // the job offer (twist) on every seed: the thanks accepts it, and "It was nice to meet you!" gets the goodbye
+    { name: "job offer on the spot", setup: (s) => { s.offerTwist = true; }, turns: ["Good morning! I have an interview at 9:30.", "Tomas Mikalauskas.",
+      "I'm an accountant with ten years of experience.", "I love your company, and I'm ready for a new challenge.", "I'm very organized, and I learn fast.",
+      "No, I think you've answered everything.", "Thank you for the opportunity. It was nice to meet you!"], expect: { complete: true }, auto: AUTO },
   ],
 };
 
@@ -2505,10 +2514,14 @@ function offerYes(c: Ctx) {
   closeUp(c, true);
 }
 
+/** The interviewer's goodbye (said once per turn); it ends the interview. */
+function closingReply(cc: Ctx, line = "closing_reply") { if (!turn(cc).closed) { turn(cc).closed = true; cc.say(line); } cc.end(); }
+
 function closeUp(c: Ctx, hired: boolean) {
   void hired;
   c.complete();
-  const reply = (cc: Ctx, line = "closing_reply") => { if (!turn(cc).closed) { turn(cc).closed = true; cc.say(line); } cc.end(); };
+  c.s.closeOpen = true;
+  const reply = closingReply;
   c.expect({ id: "closing", hints: ["closing"], suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "closing" }],
     on: {
       thanks_time: (cc) => reply(cc), look_forward: (cc) => reply(cc, "closing_bye"), nice_meet: (cc) => reply(cc, "closing_nice"),

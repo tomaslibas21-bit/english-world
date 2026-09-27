@@ -87,6 +87,8 @@ function goal(c: Ctx, kind: string) {
   maybeComplete(c);
 }
 function maybeComplete(c: Ctx) {
+  // Rita complained about the music: that needs an answer first (a favor alone doesn't settle it)
+  if (c.s.complaint && !c.s.complaintDone && c.s.goal !== "apology") return;
   if (c.s.goal && (known(c) || (c.s.introduced && c.s.trashTold))) c.complete();
 }
 
@@ -95,6 +97,8 @@ const AUTO: Record<string, string> = {
   trash_q: "Where does the trash go?", needs: "Could you water my plants next week?", away_when: "Next Friday.", coffee: "I'd love to!", coffee_time: "Yes, two is perfect.",
   complaint: "Oh, I'm so sorry! It won't happen again.", howareyou: "Good, thanks. And you?",
 };
+/** Sims of the first meeting: Rita doesn't know the learner yet (no later-visit twist). */
+const FIRST_VISIT = (s: Record<string, any>) => { s.known = false; s.complaint = false; s.pkgTwist = false; };
 
 // ---------------------------------------------------------------------------
 
@@ -1036,16 +1040,29 @@ export const neighbor: SituationDef = {
     { say: "I'm not expecting a package", intent: "none" },
   ],
 
+  // A first meeting (Rita doesn't know the learner yet) unless the sim says otherwise. Rita's coffee
+  // invitation is pinned on where the script answers it, off where it doesn't. Rita closes right after
+  // granting a favor, so the learner's thanks and goodbye are one closing turn.
   sims: [
     { name: "first meeting, plants", turns: ["Hi! I'm Tomas. I just moved in next door.", "Where does the trash go?", "Could you water my plants next week?",
-      "I'd love to!", "Yes, two is perfect.", "It was nice to meet you!"], expect: { complete: true }, auto: AUTO },
+      "I'd love to!", "Yes, two is perfect.", "It was nice to meet you!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = true; } },
     { name: "apology for the noise", turns: ["Hi, I'm your new neighbor.", "Sorry about the noise last night. We had a little party.",
-      "Thanks, that's really kind of you!", "Sorry, I'm busy on Sunday.", "Bye!"], expect: { complete: true }, auto: AUTO },
+      "Thanks, that's really kind of you!", "Sorry, I'm busy on Sunday.", "Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = true; } },
     { name: "questions, then borrow a ladder", turns: ["Hello! I just moved in.", "Tomas.", "Where's the laundry room?", "When is trash day?",
-      "Could I borrow your ladder?", "Thank you so much!", "See you around!"], expect: { complete: true }, auto: AUTO },
-    { name: "asking Rita to be quieter", turns: ["Hi, Rita!", "Could you turn the music down a little?", "Thanks!", "Bye!"], expect: { complete: true }, auto: AUTO },
+      "Could I borrow your ladder?", "Thank you so much! See you around!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = false; } },
+    // A later visit: Rita knows the learner, no complaint or package twist, no coffee invitation.
+    { name: "asking Rita to be quieter", turns: ["Hi, Rita!", "Could you turn the music down a little?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.known = true; s.complaint = false; s.pkgTwist = false; s.coffeeInvite = false; } },
     { name: "plants while away, then when", turns: ["Hi, I'm your new neighbor.", "Could you water my plants while I'm on vacation?", "On Saturday.",
-      "Thanks, that's really kind of you!", "See you around!"], expect: { complete: true }, auto: AUTO },
+      "Thanks, that's really kind of you! See you around!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = false; } },
+    // The twist on every seed: Rita complains about the music. A favor first doesn't finish the task; Rita asks
+    // again, and the apology settles it (bug fix 27 Sep: the favor completed it with the complaint unanswered).
+    { name: "complaint (twist): a favor first, then sorry", turns: ["Could I borrow your ladder?", "Oh, I'm so sorry! It won't happen again.", "Thanks, bye!"],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.known = true; s.complaint = true; s.pkgTwist = false; s.coffeeInvite = false; } },
   ],
 };
 
@@ -1090,7 +1107,8 @@ function expectComplaint(c: Ctx, optional: boolean) {
     suggest: [{ lt: "Atsiprašyti ir pažadėti būti tyliau", hint: "noise" }],
     on: {
       noise_sorry: (cc) => { acceptApology(cc); }, noise_promise: (cc) => { acceptApology(cc); }, didnt_know: (cc) => { acceptApology(cc); },
-      g_sorry: (cc) => { acceptApology(cc); }, noise_reason: (cc) => { acceptApology(cc); }, noise_deny: (cc) => { cc.s.complaintDone = true; react(cc, "deny_react"); },
+      g_sorry: (cc) => { acceptApology(cc); }, noise_reason: (cc) => { acceptApology(cc); },
+      noise_deny: (cc) => { cc.s.complaintDone = true; react(cc, "deny_react"); maybeComplete(cc); },
     },
     yes: (cc) => { acceptApology(cc); }, no: (cc) => { cc.say("oh_okay"); },
     ask: optional ? undefined : (cc) => { cc.say("complain3"); expectComplaint(cc, true); } });

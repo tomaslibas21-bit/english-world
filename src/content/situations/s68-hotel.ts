@@ -10,6 +10,7 @@
 
 import type { Ctx, Pending, Segment, SituationDef } from "../types";
 import { t } from "../dsl";
+import type { ConvCtx } from "../../convo/dialogue";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -254,22 +255,24 @@ export const hotel: SituationDef = {
     ask_checkin_time: { patterns: ["what time is check in", "can i check in now"] },
     done: { patterns: [
       "[no] (that is | that will be) (all | it | everything) [for now] #h:dn_all", "[no] i am (good | fine | okay) #h:dn_good", "nothing else", "no more questions",
-      "[no] i think that is (all | it)", "[no] i do not have any [more] questions",
+      "[no] i think that is (all | it)", "[no] i do not have any [more] questions", "[no] (that is | that will be) all i need",
       "[no] i do not need anything [else]", "(that is | that will be) everything",
     ] },
     // Problem visit (twist)
     pr_ac: { patterns: [
       "[the] @ac (is not working | does not work | is broken | stopped working) [in my room] #h:pr_ac", "my @ac (is not working | does not work)",
+      // "The air conditioning in my room isn't working."
+      "[the] @ac in (my | the) room (is not working | does not work | is broken | stopped working)",
       "it is (too hot | very hot | really hot) in my room", "(my | the) room is too hot",
     ] },
     pr_hotwater: { patterns: ["there is no hot water [in (the shower | my room | the bathroom)] #h:pr_hotwater", "the (shower | water) is (cold | not hot)", "i do not have hot water",
-      "the shower (does not work | is not working | is broken)"] },
+      "the shower [in (my | the) (room | bathroom)] (does not work | is not working | is broken)"] },
     pr_key: { patterns: ["my key [card] (does not work | is not working) #h:pr_key", "i can not (open | get into) my room", "the key [card] (does not work | is not working)",
       "my key [card] (does not open | will not open) (the door | my room | my door)"] },
     pr_noisy: { patterns: ["my room is (very | too | really) noisy #h:pr_noisy", "it is (too | very | really) noisy", "the room is (noisy | loud)", "it is too loud",
       "it is (very | really | so) loud", "i can not sleep [because] (it is | the room is) (too | very | so | really) (noisy | loud)"] },
-    pr_wifi: { patterns: ["the @wifi (is not working | does not work) [in my room] #h:pr_wifi", "i can not connect to the @wifi"] },
-    pr_tv: { patterns: ["the tv (is not working | does not work)", "my tv (is not working | does not work)", "(the | my) tv is broken"] },
+    pr_wifi: { patterns: ["the @wifi (is not working | does not work) [in my room] #h:pr_wifi", "i can not connect to the @wifi", "the @wifi in (my | the) room (is not working | does not work)"] },
+    pr_tv: { patterns: ["the tv (is not working | does not work)", "my tv (is not working | does not work)", "(the | my) tv is broken", "the tv in (my | the) room (is not working | does not work | is broken)"] },
     pr_towels: { patterns: ["there are no towels [in (my room | the bathroom)]", "i need (some | more) towels #h:pr_towels"] },
     // "That's too expensive": noon instead of 2 p.m. (while the $30 late check-out is on the table), or a
     // cheaper room for a walk-in
@@ -295,6 +298,7 @@ export const hotel: SituationDef = {
     ch_fan: { patterns: ["a fan is fine #h:ch_fan", "a fan [please]", "(i will take | i would like) a fan", "the fan [please]", "(a | the) fan is (okay | ok | good | enough)", "[just] a fan for (tonight | now)"] },
     ch_move: { patterns: ["i would like to change rooms #h:ch_move", "(can | could) i (change | move) rooms", "(a different | another) room [please]", "i want (another | a different) room",
       "(can | could) i (move | change) to (another | a different | a new) room", "a new room", "i (prefer | would prefer) (a different | another | a new) room",
+      "(can | could | may) i (have | get) (a different | another | a new) room",
       "[no] i do not want a fan [(i would like | give me | can i have) (a different | another | a new) room]"] },
   },
 
@@ -781,7 +785,8 @@ export const hotel: SituationDef = {
         c.s.roomSaid = true;
         if (c.s.upgradeTwist && c.s.room === "412") { c.twist("upgrade"); c.s.room = "518"; c.say("upgrade"); }
         c.say("room_" + c.s.room);
-        c.say("keys_here");
+        // as many key cards as the learner asked for ("Just one, please." → "Here's your key card.")
+        if (c.s.keys) (c as ConvCtx).conv.pushLine("keys_here", c.s.keys > 1 ? 0 : 1, {}); else c.say("keys_here");
         c.event("give", { item: "key card", room: c.s.room });
         if (c.chance(0.5)) c.say("elevators");
         if (c.s.volunteerBreakfast) { c.s.breakfastSaid = true; c.say("breakfast_volunteer"); }
@@ -1072,17 +1077,28 @@ export const hotel: SituationDef = {
     { say: "No, I don't want to pay thirty dollars.", intent: "late_noon", not: ["late_two"] },
     { say: "I don't need anything else.", intent: "done", step: "anything" },
     { say: "The air conditioning is working fine.", intent: "none" },
+    // "in my room" before the verb; "Could I have …?"; "That's all I need."
+    { say: "The air conditioning in my room isn't working.", intent: "pr_ac", step: "p_report" },
+    { say: "The shower in my room is broken.", intent: "pr_hotwater", step: "p_report" },
+    { say: "The TV in my room doesn't work.", intent: "pr_tv", step: "p_report" },
+    { say: "The air conditioning in my room is working fine.", intent: "none" },
+    { say: "Could I have a different room, please?", intent: "ch_move", not: ["ch_fan"] },
+    { say: "I don't want a different room.", intent: "none" },
+    { say: "No, thanks. That's all I need.", intent: "done", step: "anything" },
   ],
 
   sims: [
     { name: "happy path: reservation, spelling, questions", turns: ["Hi, I have a reservation.", "Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "Yes.", "Here's my passport.", "Here you go.", "Sure.", "Is breakfast included?", "What's the Wi-Fi password?", "No, that's all, thanks."],
-      expect: { complete: true }, auto: HT_AUTO },
+      expect: { complete: true }, auto: HT_AUTO, setup: (s) => { s.mode = "checkin"; s.askSpell = true; } },
     { name: "late check-out, correction and more questions", turns: ["Hi, I have a reservation under Tomas Mikalauskas.", "M I K A L A U S K A S", "No, four nights.", "Here you go. What are incidentals?", "Here's my card.", "Where do I sign?", "Could I have a late check-out? Until two?", "Two, please.", "Can I leave my luggage here after check-out?", "That's all, thanks."],
-      expect: { complete: true }, auto: omit(HT_AUTO, ["name", "spell", "found", "card", "sign", "late", "anything"]) },
+      expect: { complete: true }, auto: omit(HT_AUTO, ["name", "spell", "found", "card", "sign", "late", "anything"]), setup: (s) => { s.mode = "checkin"; s.askSpell = true; } },
     { name: "walk-in without a reservation", turns: ["Hi! Do you have any rooms available?", "Two nights.", "Yes, I'll take it.", "Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "Here you go.", "Here's my card.", "Sure.", "What's included?", "Could you call me a taxi?", "Tomorrow at noon.", "No, thanks. That's all."],
-      expect: { complete: true }, auto: omit(HT_AUTO, ["walk_nights", "walk_offer", "name", "spell", "id", "card", "sign", "anything", "taxi_time"]) },
-    { name: "walk-in: too expensive, a cheaper room", turns: ["Do you have any rooms available?", "Two nights.", "That's too expensive.", "Okay, I'll take it.", "No, thanks. That's all."],
-      expect: { complete: true }, auto: omit(HT_AUTO, ["walk_nights", "walk_offer", "anything"]) },
+      expect: { complete: true }, auto: omit(HT_AUTO, ["walk_nights", "walk_offer", "name", "spell", "id", "card", "sign", "anything", "taxi_time"]), setup: (s) => { s.mode = "checkin"; s.askSpell = true; } },
+    // the last turn answers "Anything else I can do for you?": a bare "No, thanks. That's all." would pass for a "no" to "May I see your passport?"
+    { name: "walk-in: too expensive, a cheaper room", turns: ["Do you have any rooms available?", "Two nights.", "That's too expensive.", "Okay, I'll take it.", "No, thanks. That's all I need."],
+      expect: { complete: true }, auto: omit(HT_AUTO, ["walk_nights", "walk_offer", "anything"]), setup: (s) => { s.mode = "checkin"; } },
+    { name: "problem visit: no air conditioning, a different room (twist)", turns: ["Hi! The air conditioning in my room isn't working.", "Could I have a different room, please?", "No, that's all I need. Thank you!"],
+      expect: { complete: true }, auto: omit(HT_AUTO, ["p_report", "fan_or_room", "anything"]), setup: (s) => { s.mode = "problem"; } },
   ],
 };
 

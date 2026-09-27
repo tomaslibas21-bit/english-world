@@ -1439,7 +1439,12 @@ export const videoCall: SituationDef = {
 
   sims: [
     { name: "happy path", turns: ["Yes, I can hear you.", "Paul, you're on mute!", "Yes, we can hear you now!", "Yes, I can see it.", "I finished the report.", "Sure!", "Could you send us the slides?", "No, that's all.", "Sounds good! Bye, everyone!"], expect: { complete: true }, auto: AUTO },
-    { name: "problems and short answers", turns: ["Sorry, you're a bit quiet.", "Yes, much better.", "I think you're muted.", "Yes!", "No, I can only see your face.", "Yes, now I can see it.", "Kate, you froze.", "Yes.", "Sara, you go first.", "I'm working on the presentation.", "By Friday.", "No questions from me.", "See you next week!"], expect: { complete: true }, auto: AUTO },
+    // "Kate, you froze.": Kate's video freezes (a twist) on every seed here
+    { name: "problems and short answers", setup: (s) => { s.freeze = true; }, turns: ["Sorry, you're a bit quiet.", "Yes, much better.", "I think you're muted.", "Yes!", "No, I can only see your face.", "Yes, now I can see it.", "Kate, you froze.", "Yes.", "Sara, you go first.", "I'm working on the presentation.", "By Friday.", "No questions from me.", "See you next week!"], expect: { complete: true }, auto: AUTO },
+    // twist on every seed: Sara starts her update at the same time ("Oh, sorry! Go ahead!"), and the learner lets her go first
+    // (Paul doesn't leave early here: his "I have to jump off" would take the generic "No, that's all.")
+    { name: "talking at the same time", setup: (s) => { s.collide = true; s.paulLeaves = false; }, turns: ["Yes, I can hear you.", "Paul, you're on mute!", "Yes, we can hear you now!",
+      "Yes, I can see it.", "I can go first.", "Oh, sorry, go ahead.", "I finished the report.", "Sure!", "No, that's all.", "Sounds good! Bye, everyone!"], expect: { complete: true }, auto: AUTO },
     { name: "leaving early", turns: ["Morning, Kate! Yes, we can.", "Paul, click the microphone!", "Yes, loud and clear!", "Yes, we can see your screen.", "Sorry, I have to jump off. I have another call at 11.", "I'm a bit behind with the budget."], expect: { complete: true }, auto: AUTO },
   ],
 };

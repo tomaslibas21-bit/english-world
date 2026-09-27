@@ -351,7 +351,8 @@ function markAbout(c: Ctx, topic: Topic) {
     c.ask(st);
   }
 }
-const done = (c: Ctx, topic: Topic) => { c.s.done = c.s.done || {}; c.s.done[topic] = true; };
+/** A topic the learner has answered (and when: "And you?" in the same breath asks about it). */
+const done = (c: Ctx, topic: Topic) => { c.s.done = c.s.done || {}; c.s.done[topic] = true; c.s.__toldNow = { t: turn(c), topic }; };
 const isDone = (c: Ctx, topic: Topic) => !!c.s.done?.[topic];
 const planned = (c: Ctx, step: string) => !!c.s.plan?.includes(step);
 /** The goal (= the mission checklist): introduced, from, job (+ Sophie / free time when Mark asks),
@@ -1471,7 +1472,9 @@ export const party: SituationDef = {
     book_ctx(c) { if (!live(c)) return; if (!once(c, "book")) return; done(c, "reading"); M(c, "reading_react"); },
     ask_back(c) {
       if (!live(c)) return;
-      const tp = (c.s.lastTopic as Topic | null) ?? (isDone(c, "from") ? "job" : "from");
+      // "I work with Sophie. And you?": about what the learner has just told, else about Mark's last question
+      const now = c.s.__toldNow?.t === turn(c) ? (c.s.__toldNow.topic as Topic) : null;
+      const tp = now ?? (c.s.lastTopic as Topic | null) ?? (isDone(c, "from") ? "job" : "from");
       markAbout(c, tp);
     },
     q_from(c) { if (live(c)) markAbout(c, "from"); },
@@ -1629,9 +1632,21 @@ export const party: SituationDef = {
   ],
 
   sims: [
-    { name: "reciprocal small talk", turns: ["Hi, I'm Tomas. Nice to meet you!", "We work together. And you?", "I'm from Lithuania. How about you?", "Yes, that's right!", "I'm a nurse. And what do you do?", "About a year.", "Yes, I love it! People are so friendly.", "I like running and reading.", "A funny travel book.", "Sure! Here's mine: 555-0142.", "It was great to meet you too!"], expect: { complete: true }, auto: AUTO },
-    { name: "short answers, Mark prompts", turns: ["Nice to meet you!", "Tomas.", "Lithuania.", "Yes.", "A teacher.", "Two months.", "It's okay.", "Hiking.", "What do you do for fun?", "No, thanks.", "Sure!", "It's 555-0199.", "Bye!"], expect: { complete: true }, auto: AUTO },
-    { name: "learner leads", turns: ["Hi Mark, I'm Tomas. Where are you from?", "I'm from Vilnius.", "It's the capital of Lithuania.", "You should visit!", "I work in a hospital.", "I'm a doctor.", "Since May.", "Can I get your number?", "See you around!"], expect: { complete: true }, auto: AUTO },
+    // Mark's optional topics are pinned to the ones the script answers; no drink before "how do you know Sophie?",
+    // no mishearing ("Yes, that's right!" answers "That's by the Baltic Sea, right?")
+    { name: "reciprocal small talk", turns: ["Hi, I'm Tomas. Nice to meet you!", "We work together. And you?", "I'm from Lithuania. How about you?", "Yes, that's right!", "I'm a nurse. And what do you do?", "About a year.", "Yes, I love it! People are so friendly.", "I like running and reading.", "A funny travel book.", "Sure! Here's mine: 555-0142.", "It was great to meet you too!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.plan = s.plan.filter((k: string) => k !== "drink"); for (const k of ["know", "time", "like", "fun"]) if (!s.plan.includes(k)) s.plan.push(k); s.mishearTwist = false; } },
+    // every topic the short answers answer, then "Your turn!" (no café question to ask back at), "No, thanks." to another drink
+    { name: "short answers, Mark prompts", turns: ["Nice to meet you!", "Tomas.", "Lithuania.", "Yes.", "A teacher.", "Two months.", "It's okay.", "Hiking.", "What do you do for fun?", "No, thanks.", "Sure!", "It's 555-0199.", "Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { for (const k of ["time", "like", "fun", "drink2"]) if (!s.plan.includes(k)) s.plan.push(k); s.mishearTwist = false; s.cafeTwist = false; } },
+    { name: "learner leads", turns: ["Hi Mark, I'm Tomas. Where are you from?", "I'm from Vilnius.", "It's the capital of Lithuania.", "You should visit!", "I work in a hospital.", "I'm a doctor.", "Since May.", "Can I get your number?", "See you around!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { if (!s.plan.includes("time")) s.plan.push("time"); } },
+    // "I work with Sophie. And you?" before Mark asks: "And you?" is about how Mark knows Sophie
+    { name: "volunteers a fact and asks back", turns: ["Hi, I'm Tomas. I work with Sophie. And you?", "I'm from Lithuania. And you?", "Yes, it is!", "I'm a teacher. What about you?", "I like hiking. And you?", "Sure! It's 555-0142.", "Nice to meet you too! Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.plan = ["from", "job", "numbers", "know", "fun"]; s.mishearTwist = false; s.cafeTwist = false; } },
+    // the twist on every seed: "Oh, Latvia? Cool!" and the learner corrects Mark
+    { name: "twist: Mark mishears the country", turns: ["Hi, I'm Tomas. Nice to meet you!", "I'm from Lithuania.", "No, not Latvia. Lithuania!", "Yes, that's right!", "I'm a teacher.", "Sure! It's 555-0142.", "Bye!"], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.plan = ["from", "job", "numbers", "know"]; s.mishearTwist = true; s.cafeTwist = false; } },
   ],
 };
 

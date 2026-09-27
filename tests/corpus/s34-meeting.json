@@ -2233,6 +2233,32 @@
    "ctx": "opinion",
    "say": "Me?",
    "intent": "who_me"
+  },
+  {
+   "ctx": "update",
+   "say": "The report.",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "Mostly the budget.",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "budget"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I haven't started the slides yet.",
+   "intent": "any",
+   "not": [
+    "task_ctx",
+    "upd_working",
+    "upd_done"
+   ]
   }
  ]
 }

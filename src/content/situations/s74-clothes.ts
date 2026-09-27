@@ -1470,7 +1470,8 @@ export const clothes: SituationDef = {
       ask: (c) => {
         const total = Math.round(priceOf(c, cur(c)!) * TAX);
         c.say("total", { total });
-        if (!c.s.totalSaid) { c.s.totalSaid = true; if (c.chance(0.35)) c.say("ask_pay_method"); }
+        // ("Cash or card?" only when the learner hasn't said yet)
+        if (!c.s.totalSaid) { c.s.totalSaid = true; if (!c.s.payMethod && c.chance(0.35)) c.say("ask_pay_method"); }
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash"],
       suggest: [{ lt: "Susimokėti kortele, grynaisiais ar telefonu", hint: "pay" }] },
@@ -1793,15 +1794,20 @@ export const clothes: SituationDef = {
       else c.say("expensive_ok");
     },
     pay_card(c) {
-      if (c.s.decision !== "take") { c.say("card_later"); c.s.payMethod = "card"; return; }
+      if (c.s.paid) return;
+      // Before the total (e.g. at "Do you have a rewards account?"), card is the way the learner will pay,
+      // as for cash and phone: taking the payment here left the rewards question to be asked again.
+      if (c.s.decision !== "take" || !c.s.totalSaid) { c.say("card_later"); c.s.payMethod = "card"; return; }
       c.say("card_tap"); c.s.paid = true; c.s.payMethod = "card"; c.event("pay", { method: "card" }); c.say("paid");
     },
     pay_cash(c) {
+      if (c.s.paid) return;
       c.say("cash_ok"); c.s.payMethod = "cash";
       if (c.s.decision === "take" && c.s.totalSaid) { c.s.paid = true; c.event("pay", { method: "cash" }); c.say("change_back"); }
     },
     no_cash(c, slots, seg) { clothes.handlers.pay_card(c, slots, seg); },
     pay_phone(c) {
+      if (c.s.paid) return;
       c.s.payMethod = "phone";
       if (!(c.s.decision === "take" && c.s.totalSaid)) { c.say("phone_later"); return; }
       c.say("phone_ok");
@@ -1809,11 +1815,18 @@ export const clothes: SituationDef = {
     },
     here_you_go(c) {
       if (c.s.mode === "return" && ret(c) && ret(c).receipt === undefined) { ret(c).receipt = true; c.say("ret_receipt_thanks"); return; }
+      if (c.s.paid) return; // paid already: no second payment
       if (c.s.decision !== "take" || !c.s.totalSaid) { c.say("no_problem"); return; }
       c.s.paid = true; c.event("pay", { method: c.s.payMethod || "cash" });
       if (c.s.payMethod === "card" || c.s.payMethod === "phone") c.say("paid"); else c.say("change_back");
     },
-    keep_change(c) { if (c.s.decision === "take" && c.s.totalSaid) { c.s.paid = true; c.event("pay", { method: "cash" }); } c.say("thanks_tip"); },
+    keep_change(c) { if (c.s.decision === "take" && c.s.totalSaid && !c.s.paid) { c.s.paid = true; c.event("pay", { method: "cash" }); } c.say("thanks_tip"); },
+    // "Thanks, bye!" right after paying (at the bag or receipt question): the purchase is complete, as in
+    // the café. Before paying it ends the visit, not completed.
+    g_bye(c) {
+      if (c.s.mode !== "return" && c.s.paid) bought(c);
+      c.say("g_bye"); c.end(); c.hold();
+    },
     ask_where_pay(c) { c.say("pay_here"); },
     wear_it(c) {
       c.s.bag = false; c.s.wearing = true;
@@ -1902,9 +1915,7 @@ export const clothes: SituationDef = {
     }
     if (c.s.paid) {
       const g = cur(c)!;
-      c.complete();
-      c.remember({ lastBought: { ...g, paid: priceOf(c, g) } });
-      c.event("give", { item: g.id });
+      bought(c);
       sayN(c, "closing_bought", g);
       c.say("bye_after");
     } else {
@@ -2037,9 +2048,11 @@ export const clothes: SituationDef = {
       expect: { complete: true }, auto: AUTO },
     { name: "questions, colors, fit problem", turns: ["Hi, do you have this in blue?", "Black, please. I'm a small.", "Sure, where are the fitting rooms?", "It's a little tight.",
       "It fits perfectly.", "How much is it?", "Is it on sale?", "Is tax included?", "I'll take it.", "Cash.", "No, thanks, I'll wear it.", "Bye!"],
-      expect: { complete: true }, auto: AUTO },
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.askBag = true; } }, // "I'll wear it" answers the bag question
     { name: "shoes in a European size", turns: ["I'm looking for a pair of shoes.", "I'm a 43 in European sizes.", "Can I try them on?", "They're too small.", "They fit perfectly.", "How much are they?",
-      "I'll take them.", "Can I pay by card?", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
+      "I'll take them.", "Can I pay by card?", "Here you go.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO,
+      // "Can I pay by card?" at the rewards question, before the total, on every seed
+      setup: (s) => { s.askRewards = true; } },
     { name: "return with receipt, exchange", turns: ["Hi, I'd like to return this jacket.", "Yes, here it is.", "The color ran in the rain.", "I'd like to exchange it.", "Black, please.", "Thank you, bye!"],
       expect: { complete: true }, auto: AUTO },
     { name: "return without receipt, store credit", turns: ["I'd like to return these jeans.", "I don't have the receipt.", "They're too big.", "Can I get a refund?", "Store credit is fine.", "No, thanks. Bye!"],
@@ -2097,6 +2110,16 @@ function exchangeTo(c: Ctx, o: { size?: string; color?: string; shoe?: number; d
     if (colorsOf(id).includes(o.color)) r.newColor = o.color;
     else { sayN(c, "color_no", r.item, { C: o.color }); sayColors(c, r.item); c.hold(); }
   }
+}
+
+/** The garment is paid for and the learner's: at the end, or on "Thanks, bye!" right after paying. */
+function bought(c: Ctx) {
+  if (c.s.boughtDone) return;
+  c.s.boughtDone = true;
+  const g = cur(c)!;
+  c.complete();
+  c.remember({ lastBought: { ...g, paid: priceOf(c, g) } });
+  c.event("give", { item: g.id });
 }
 
 function closing(c: Ctx) {

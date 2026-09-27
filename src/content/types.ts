@@ -240,6 +240,8 @@ export interface SimTest {
   turns: string[];
   /** Answers used when the NPC asks an optional/random question (keyed by step or pending id). */
   auto?: Record<string, string>;
+  /** Runs right after `init` on every seed: forces the twist or choice the sim is about (`s` is `c.s`). */
+  setup?: (s: Record<string, any>) => void;
   /** Expected: completed, and optionally state checks. */
   expect: { complete?: boolean; state?: Record<string, any> };
 }
