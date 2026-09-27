@@ -1,0 +1,33 @@
+{
+  "npc": "Linda, dental office reception (phone call)",
+  "images": [
+    "greet",
+    "sorry",
+    "details",
+    "hold",
+    "slot"
+  ],
+  "start": "greet",
+  "phases": {
+    "help": "greet",
+    "help_move": "greet",
+    "reason": "greet",
+    "hear": "greet",
+    "more": "greet",
+    "closing": "greet",
+    "pain_len": "sorry",
+    "new_pt": "details",
+    "name": "details",
+    "surname": "details",
+    "spell": "details",
+    "dob": "details",
+    "phone": "details",
+    "insurance": "details",
+    "hold": "hold",
+    "slot": "slot"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
