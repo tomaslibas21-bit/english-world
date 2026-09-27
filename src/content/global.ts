@@ -218,7 +218,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "wait a (second | moment | minute)", "wait",
   ] },
   g_sorry: { patterns: ["i am [so | very | really] sorry", "sorry about that", "my bad", "oops", "sorry for (that | the trouble)"] },
-  g_dontknow: { patterns: ["i do not know", "i am not sure", "no idea", "i have no idea", "i can not decide", "i do not know yet"] },
+  g_dontknow: { patterns: ["i do not know", "i am not sure [yet]", "not sure [yet]", "no idea", "i have no idea", "i can not decide", "i do not know yet", "i have not decided [yet]"] },
   g_ok: { patterns: ["(got it | i see | i understand | understood | sounds good | fine | awesome | great | perfect | cool | nice | good | okay then | all right then)"] },
 };
 

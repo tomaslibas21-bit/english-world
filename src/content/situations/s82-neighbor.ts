@@ -86,9 +86,11 @@ function goal(c: Ctx, kind: string) {
   c.s.chatted = true;
   maybeComplete(c);
 }
+/** Rita complained about the learner's music and the learner hasn't answered it yet. */
+const complaintOpen = (c: Ctx) => !!c.s.complaint && !c.s.complaintDone && c.s.goal !== "apology";
 function maybeComplete(c: Ctx) {
   // Rita complained about the music: that needs an answer first (a favor alone doesn't settle it)
-  if (c.s.complaint && !c.s.complaintDone && c.s.goal !== "apology") return;
+  if (complaintOpen(c)) return;
   if (c.s.goal && (known(c) || (c.s.introduced && c.s.trashTold))) c.complete();
 }
 
@@ -496,6 +498,8 @@ export const neighbor: SituationDef = {
         { flags: { 4: F_DOWN } }),
     ],
     complain4: [t("The | walls | are | really | thin.", "— | Sienos | yra | labai | plonos.", "Sienos labai plonos.")],
+    // the learner asked Rita to turn her music down, but Rita meant the learner's music
+    complain_yours: [t("Ha! | No, | I | mean | your | music!", "Cha! | Ne, | aš | turiu omenyje | tavo | muziką!", "Cha! Ne, aš apie tavo muziką!")],
     deny_react: [
       t("Oh, | really? | Sorry! | Maybe | it | was | the | people | upstairs.", "O, | tikrai? | Atsiprašau! | Gal | tai | buvo | — | žmonės | viršuje.",
         "O, tikrai? Atsiprašau! Gal tai kaimynai iš viršaus."),
@@ -916,7 +920,12 @@ export const neighbor: SituationDef = {
     noise_reason(c) { react(c, "noise_reason_react"); },
     noise_promise(c) { goal(c, "apology"); if (!SAID.get(c)?.has("noise_ok")) react(c, "noise_thanks"); },
     didnt_know(c) { react(c, "ack"); },
-    noise_ask(c) { goal(c, "complain"); c.say("noise_sorry_rita"); if (c.chance(0.5)) c.say("noise_didnt_realize"); c.say("noise_turn_down"); },
+    noise_ask(c) {
+      // Rita complained about the learner's music: "Could you turn the music down?" back is a mix-up. She
+      // clears it up and asks again (bug fix 27 Sep: she apologized as if the music had been hers).
+      if (complaintOpen(c)) { react(c, "complain_yours"); react(c, "complain3"); expectComplaint(c, true); return; }
+      goal(c, "complain"); c.say("noise_sorry_rita"); if (c.chance(0.5)) c.say("noise_didnt_realize"); c.say("noise_turn_down");
+    },
     noise_deny(c) { react(c, "ack"); },
 
     // --- coffee ---
@@ -1063,6 +1072,16 @@ export const neighbor: SituationDef = {
     // again, and the apology settles it (bug fix 27 Sep: the favor completed it with the complaint unanswered).
     { name: "complaint (twist): a favor first, then sorry", turns: ["Could I borrow your ladder?", "Oh, I'm so sorry! It won't happen again.", "Thanks, bye!"],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.known = true; s.complaint = true; s.pkgTwist = false; s.coffeeInvite = false; } },
+    // The twist on every seed, and the learner mixes up whose music it was: Rita says "Ha! No, I mean your
+    // music!" and asks again. The mix-up isn't the task (bug fix 27 Sep: Rita apologized as if the music had
+    // been hers, and the goal became "complain").
+    { name: "complaint (twist): whose music?", turns: ["Could you turn the music down a little?", "Oh, I'm so sorry! It won't happen again.", "Thanks, bye!"],
+      expect: { complete: true, state: { goal: "apology", complaintDone: true } }, auto: AUTO,
+      setup: (s) => { s.known = true; s.complaint = true; s.pkgTwist = false; s.coffeeInvite = false; } },
+    // The twist on every seed: the delivery guy left a package with Rita. Thanks, then a favor.
+    { name: "package (twist): thanks, then a favor", turns: ["Thank you so much! I was waiting for this package.", "Could you water my plants next week?", "Thanks, bye!"],
+      expect: { complete: true, state: { pkgThanked: true, goal: "plants" } }, auto: AUTO,
+      setup: (s) => { s.known = true; s.complaint = false; s.pkgTwist = true; s.coffeeInvite = false; } },
   ],
 };
 

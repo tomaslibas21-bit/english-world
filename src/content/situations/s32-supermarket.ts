@@ -100,6 +100,27 @@ const omit = (o: Record<string, string>, keys: string[]) => Object.fromEntries(O
 /** The self-checkout machine speaks (its own recorded voice), then Marcus is the speaker again. */
 function machine(c: Ctx, line: string) { c.speaker("sco"); c.say(line); c.speaker("marcus"); }
 
+/** The learner called Marcus to the self-checkout. The engine builds a fresh ctx for every learner turn:
+ *  the turn of the call is marked here, and so is any line said after the call in that turn ("Excuse me,
+ *  where are the eggs?": Marcus answers the question first). */
+const spokeAfterCall = new WeakMap<Ctx, boolean>();
+function watchCall(c: Ctx) {
+  if (spokeAfterCall.has(c)) return;
+  spokeAfterCall.set(c, false);
+  const say = c.say;
+  c.say = (id, vars) => { spokeAfterCall.set(c, true); say(id, vars); };
+}
+
+/** Marcus asks what happened. Right after the call: "Sure! What's going on?" to a request for help, "Hi!
+ *  What's the problem?" to a greeting or "Excuse me!". Once he has said something else first (an answer
+ *  to "Where are the eggs?", small talk) or asks again: "What does the screen say?" */
+function scoWhat(c: Ctx) {
+  const fresh = !c.s.scoWhatAsked && spokeAfterCall.get(c) === false;
+  const kind = fresh ? (c.s.scoReq ? "sure" : "hi") : "screen";
+  if (!c.s.scoWhatAsked) c.s.scoWhatAsked = kind;
+  c.say(kind === "screen" ? "sco_what_again" : kind === "sure" ? "sco_what_sure" : "sco_what");
+}
+
 /** Something changed the total after Marcus said it: he says the new total. */
 function changed(c: Ctx) { if (c.s.totalSaid && !c.s.paid) c.s.totalSaid = false; }
 
@@ -306,13 +327,14 @@ export const supermarket: SituationDef = {
 
   intents: {
     // --- self-checkout (twist) ------------------------------------------------------------
+    // #req: a request for help ("Sure! What's going on?"); the rest only gets Marcus's attention ("Hi! What's the problem?")
     call_help_ctx: { patterns: [
       "excuse me", "(hi | hello | hey)", "(sir | marcus)",
-      "(can | could) (you | somebody | someone | anyone | anybody) help me #h:sco_help",
-      "(can | could) (you | somebody | someone) come (here | over here | over)",
-      "(i need | we need) (help | some help | assistance | a hand)", "help [me]",
+      "(can | could) (you | somebody | someone | anyone | anybody) help me #h:sco_help #req",
+      "(can | could) (you | somebody | someone) come (here | over here | over) #req",
+      "(i need | we need) (help | some help | assistance | a hand) #req", "help [me] #req",
       "(is anybody | is anyone | is someone) there",
-      "(can | could) you (check | look at) (this | the machine | it)",
+      "(can | could) you (check | look at) (this | the machine | it) #req",
       "(i have | there is) a problem [here | with the machine]",
     ] },
     sco_problem: { patterns: [
@@ -642,10 +664,8 @@ export const supermarket: SituationDef = {
       t("Please | wait | for | assistance.", "Prašome | palaukti | — | pagalbos.", "Prašome palaukti pagalbos.", { flags: { 2: "“for”: laukti takes the genitive pagalbos directly." } }),
     ],
     // --- Marcus at the self-checkout
-    sco_what: [
-      t("Hi! | What's | the | problem?", "Sveiki! | Kokia yra | — | problema?", "Sveiki! Kas nutiko?"),
-      t("Sure! | What's going on?", "Žinoma! | Kas vyksta?", "Žinoma! Kas nutiko?"),
-    ],
+    sco_what: [t("Hi! | What's | the | problem?", "Sveiki! | Kokia yra | — | problema?", "Sveiki! Kas nutiko?")],
+    sco_what_sure: [t("Sure! | What's going on?", "Žinoma! | Kas vyksta?", "Žinoma! Kas nutiko?")],
     sco_what_again: [
       t("What | does | the | screen | say?", "Ką | — | — | ekranas | rodo?", "Ką rodo ekranas?", { flags: { 1: "Question “does” has no Lithuanian word (linked to “say”)." } }),
     ],
@@ -1192,9 +1212,9 @@ export const supermarket: SituationDef = {
       ask: (c) => { if (!c.s.scoAsked) { c.s.scoAsked = true; machine(c, "sco_unexpected"); } machine(c, "sco_wait"); },
       expects: ["call_help_ctx", "sco_problem"],
       suggest: [{ lt: "Pasikviesti kasininką ir paaiškinti, kas nutiko", hint: "sco" }],
-      help: (c) => { c.s.scoCalled = true; c.say("sco_what"); } },
+      help: (c) => { c.s.scoCalled = true; watchCall(c); scoWhat(c); } },
     { id: "sco_explain", when: (c) => !!c.s.sco && !!c.s.scoCalled && !c.s.scoFixed, done: () => false,
-      ask: (c) => { c.say(c.s.scoWhatAsked ? "sco_what_again" : "sco_what"); c.s.scoWhatAsked = true; },
+      ask: (c) => scoWhat(c),
       expects: ["sco_problem"],
       suggest: [{ lt: "Paaiškinti, kas nutiko su savitarnos kasa", hint: "sco_what" }],
       help: (c) => { fixSco(c); chain(c); } },
@@ -1343,9 +1363,11 @@ export const supermarket: SituationDef = {
 
   handlers: {
     // --- self-checkout
-    call_help_ctx(c) {
+    call_help_ctx(c, _slots, seg) {
       if (!c.s.sco || c.s.scoFixed) { c.say("g_yes_what"); c.hold(); return; }
       c.s.scoCalled = true;
+      if (seg.tags.includes("req")) c.s.scoReq = true;
+      watchCall(c);
     },
     sco_problem(c, _slots, seg) {
       if (!c.s.sco || c.s.scoFixed) { c.say("ack"); return; }
@@ -1807,10 +1829,16 @@ export const supermarket: SituationDef = {
       setup: (s) => { s.sco = false; s.joinOffer = false; },
       turns: ["No, I don't have one.", "Excuse me, the chips are on sale. The sign said two for five.", "Sure, I'll take another one.",
         "No, thanks, I don't need a bag.", "Cash, please.", "Here you go.", "Thanks, bye!"] },
-    { name: "self-checkout, ID and cash back", auto: AUTO, expect: { complete: true },
+    // "Can you help me?" asks for help: "Sure! What's going on?"
+    { name: "self-checkout, ID and cash back", auto: AUTO, expect: { complete: true, state: { scoWhatAsked: "sure" } },
       setup: (s) => { s.sco = true; s.wineTwist = s.wine = true; s.askDebit = true; s.askCashback = true; },
       turns: ["Excuse me! Can you help me?", "The machine says unexpected item in the bagging area.", "I forgot my card at home.", "It's 555-0142.",
         "Here's my passport.", "Card, please.", "Debit.", "Yes, twenty dollars, please.", "Okay.", "Thanks, bye!"] },
+    // a question first: Marcus answers it, then asks "What does the screen say?" (not "Sure! What's going on?");
+    // the bag question comes only when the machine glitched (the learner's own bag: Marcus uses it)
+    { name: "self-checkout: a question first", auto: AUTO, expect: { complete: true, state: { scoWhatAsked: "screen" } },
+      setup: (s) => { s.sco = true; s.wineTwist = s.wine = false; s.askCashback = false; },
+      turns: ["Excuse me, where are the eggs?", "It says unexpected item in the bagging area.", "No, I don't have one.", "Card, please.", "Okay.", "Thanks, bye!"] },
     { name: "change of mind: back to one bag of chips", auto: omit(AUTO, ["bags", "bag_kind"]), expect: { complete: true },
       setup: (s) => { s.sco = false; s.joinOffer = false; },
       turns: ["No, I don't have one.", "I think they're on sale.", "Sure, I'll take another one.", "Actually, I don't need another bag of chips.",

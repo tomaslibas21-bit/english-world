@@ -771,9 +771,17 @@ const H: Record<string, Handler> = {
   },
   thanks_help(c, slots, seg) { H.g_thanks(c, slots, seg); },
   more_no(c) { c.s.moreDone = true; },
-  // "Bye!" / "No, that's it. Bye!" to "Anything else?": nothing else, so the visit is complete (finish says goodbye)
+  // "Bye!" once the visit's goal is reached completes it (finish says goodbye): "Bye!" / "No, that's it. Bye!"
+  // when only "Anything else?" is left, or any "Bye!" after a route has been checked, even while a newly
+  // asked route is still being checked or the café is on offer (leaving without it = no café).
   g_bye(c, slots) {
-    if (c.step === "more" && !conv(c).pending) { c.s.moreDone = true; c.s.byeNow = true; return; }
+    const p = conv(c).pending;
+    const rest = conv(c).nextStep(c as ConvCtx);
+    if ((!p && (!rest || rest.id === "more")) || (c.s.confirmed && (!p || isConfirmPending(p.id)))) {
+      clearConfirmPending(c);
+      if (!c.s.asked.includes("sunny_cup")) c.s.cafeNo = true;
+      c.s.moreDone = true; c.s.byeNow = true; return;
+    }
     GLOBAL_HANDLERS.g_bye(c as ConvCtx, slots);
   },
   just_arrived(c) { c.say("welcome_new"); },
@@ -1859,7 +1867,8 @@ export const visitorCenter: SituationDef = {
     { lt: "Paprašyk žemėlapio", optional: true, when: (c) => !c.s.mapNo, done: (c) => !!c.s.map },
     { lt: "Paklausk kelio į kavinę", optional: true, when: (c) => !c.s.cafeNo, done: (c) => c.s.asked.includes("sunny_cup") },
     { lt: "Paprašyk pakartoti lėčiau", optional: true, when: (c) => routeGoal(c) && (!c.s.confirmed || !!c.s.slowed), done: (c) => !!c.s.slowed },
-    { lt: "Pasitikslink kelią", optional: true, when: routeGoal, done: (c) => !!c.s.dest && !!c.s.conf[c.s.dest] },
+    // (a route already checked still counts when the learner leaves during the check of a newer one)
+    { lt: "Pasitikslink kelią", optional: true, when: routeGoal, done: (c) => (!!c.s.dest && !!c.s.conf[c.s.dest]) || (!!c.s.byeNow && !!c.s.confirmed) },
   ],
   steps: [
     { id: "need", when: (c) => !c.s.map && !c.s.dest && !c.s.need, done: (c) => !!c.s.need,
@@ -1872,7 +1881,7 @@ export const visitorCenter: SituationDef = {
         { lt: "Paprašyti pakartoti lėčiau", hint: "slower" },
       ],
       help: (c) => { c.say("need_help"); c.s.need = true; } },
-    { id: "confirm", when: (c) => !!c.s.dest, done: (c) => !!c.s.conf[c.s.dest],
+    { id: "confirm", when: (c) => !!c.s.dest && !c.s.byeNow, done: (c) => !!c.s.conf[c.s.dest],
       ask: (c) => { askConfirm(c); },
       // Not "confirm" or the global clarification intents: the expected-intent bonus is per segment,
       // so expecting them would make "Sorry, could you say that again?" or a multi-part check split.
@@ -1886,7 +1895,7 @@ export const visitorCenter: SituationDef = {
       yes: (c) => { quiz(c); },
       no: (c) => { sayAgainSlow(c); },
       help: (c) => { sayAgainSlow(c); } },
-    { id: "map", when: (c) => !c.s.map && !c.s.mapNo, done: (c) => !!c.s.map || !!c.s.mapNo,
+    { id: "map", when: (c) => !c.s.map && !c.s.mapNo && !c.s.byeNow, done: (c) => !!c.s.map || !!c.s.mapNo,
       ask: (c) => c.say("offer_map"),
       expects: ["ask_map", "map_no", "map_free", "accept_ctx", "decline_ctx"],
       suggest: [{ lt: "Sutikti ir paimti žemėlapį", hint: "yes_please" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
@@ -2115,6 +2124,11 @@ export const visitorCenter: SituationDef = {
       setup: (s) => { s.askMore = true; } },
     // "I'm just looking around" also answers the opening map question on the seeds that start with it, so the map comes later
     { name: "just looking: the café offer, say it again slowly", turns: ["Hi! I'm just looking around.", "Sure, thanks!", "Sorry, could you say that again more slowly?", "Left at the bank?", "Yes, please", "That's all, thanks"], expect: { complete: true }, auto: AUTO_OWN_OPENING },
+    // The café route is checked, so "Bye!" while a newly asked route is still being checked completes the visit ("Anything else?" pinned on)
+    { name: "a second route, then bye before checking it", turns: ["Hi! Could I have a map, please?", "How do I get to Sunny Cup?", "So I turn right and then left at the bank?", "How do I get to the museum?", "Bye!"], expect: { complete: true, state: { byeNow: true } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // After a checked route, "Bye!" to the café offer is a no to the café, and the visit is complete
+    { name: "museum checked, bye at the café offer", turns: ["Hi! Could I have a map, please?", "How do I get to the museum?", "So I turn left and it's on the left?", "Bye!"], expect: { complete: true, state: { cafeNo: true, byeNow: true } }, auto: AUTO },
   ],
 };
 

@@ -2259,6 +2259,90 @@
     "upd_working",
     "upd_done"
    ]
+  },
+  {
+   "ctx": "update",
+   "say": "Nothing much",
+   "intent": "upd_nothing_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "Not much, really",
+   "intent": "upd_nothing_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "Nothing special",
+   "intent": "upd_nothing_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "Not much time",
+   "intent": "none"
+  },
+  {
+   "ctx": "what_task",
+   "say": "Nothing much",
+   "intent": "upd_nothing_ctx"
+  },
+  {
+   "ctx": "what_task",
+   "say": "Nothing special this week",
+   "intent": "upd_nothing_ctx"
+  },
+  {
+   "ctx": "what_task",
+   "say": "Not much, just the report",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "aob",
+   "say": "Nothing much",
+   "intent": "nothing_more",
+   "not": [
+    "upd_nothing",
+    "upd_nothing_ctx"
+   ]
+  },
+  {
+   "ctx": "aob",
+   "say": "Nothing",
+   "intent": "nothing_more",
+   "not": [
+    "upd_nothing",
+    "upd_nothing_ctx"
+   ]
+  },
+  {
+   "ctx": "aob",
+   "say": "Not much",
+   "intent": "nothing_more",
+   "not": [
+    "upd_nothing",
+    "upd_nothing_ctx"
+   ]
+  },
+  {
+   "ctx": "add",
+   "say": "Nothing much, thanks",
+   "intent": "nothing_more",
+   "not": [
+    "upd_nothing",
+    "upd_nothing_ctx"
+   ]
+  },
+  {
+   "ctx": "send_q",
+   "say": "Could you clarify that?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sorry, what do you mean?",
+   "intent": "clarify"
   }
  ]
 }

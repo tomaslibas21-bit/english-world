@@ -160,6 +160,16 @@ function tipPending(): Pending {
   };
 }
 
+/** The ride takes a moment: when no ride question (small talk, radio, traffic) is left as the car starts,
+ *  Vinnie makes small talk before "Here we are!" (if that was done before the ride: the radio, then the traffic). */
+const RIDE_STEPS = ["talk", "first_time", "radio", "traffic"];
+function rideMoment(c: Ctx) {
+  if (taxi.steps.some((st) => RIDE_STEPS.includes(st.id) && (!st.when || st.when(c)) && !st.done(c))) return;
+  if (!c.s.talked) c.s.askTalk = true;
+  else if (c.s.radio === undefined) c.s.askRadio = true;
+  else c.s.trafficTwist = true;
+}
+
 function askNext(c: Ctx) {
   for (const st of taxi.steps) {
     if (st.when && !st.when(c)) continue;
@@ -723,6 +733,7 @@ export const taxi: SituationDef = {
         c.s.rolling = true;
         if (!turn(c).said_dest) c.say("lets_go");
         if (c.s.volunteerTime && !c.s.timeSaid) { c.s.timeSaid = true; c.say("est_time", { num: minutes(c) }); }
+        rideMoment(c);
         askNext(c);
       } },
     // Small talk: "Where are you from?" or "First time here?" (each question has its own model answers)
@@ -1084,6 +1095,10 @@ export const taxi: SituationDef = {
     { name: "vague place, change of mind, radio down, receipt", turns: ["Downtown, please.", "Sunny Cup.", "Actually, can we go to the Pier instead?", "Could you turn the music down, please?", "Could you stop at the corner?", "Here you go. Could I have a receipt?"],
       expect: { complete: true }, auto: omit(TX_AUTO, ["dest", "vague", "stop", "pay"]),
       setup: (s) => { s.askBag = false; s.askTalk = false; s.askRadio = true; s.trafficTwist = false; } },
+    // no optional ride questions on this visit: Vinnie still makes small talk on the way, so "Buckle up!" and "Here we are!" never share a turn
+    { name: "no optional questions: small talk on the way", turns: ["Hi! To the Harborview Hotel, please.", "Right here is fine.", "Can I pay by card?"],
+      expect: { complete: true, state: { talked: true } }, auto: TX_AUTO,
+      setup: (s) => { s.askBag = false; s.askTalk = false; s.askRadio = false; s.trafficTwist = false; s.rideshare = false; } },
     // a receipt asked for before paying: Vinnie prints it after the payment
     { name: "receipt asked on the way", turns: ["To the museum, please. I'll need a receipt.", "In front of the museum, please.", "Can I pay by card?"],
       expect: { complete: true }, auto: TX_AUTO },

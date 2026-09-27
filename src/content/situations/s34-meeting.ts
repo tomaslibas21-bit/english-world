@@ -130,7 +130,7 @@ function thanksReply(c: Ctx, othersOnly = false) {
 // Intents that answer each point of the meeting
 const MUTE_EXPECTS = ["tell_mute", "tell_mute_ctx", "not_muted", "greet_team"];
 // task_ctx: "The report." to "What are you working on?" (one of Kate's ways of asking)
-const UPDATE_EXPECTS = ["upd_done", "upd_working", "upd_behind", "upd_ok", "upd_ok_ctx", "upd_nothing", "task_ctx"];
+const UPDATE_EXPECTS = ["upd_done", "upd_working", "upd_behind", "upd_ok", "upd_ok_ctx", "upd_nothing", "upd_nothing_ctx", "task_ctx"];
 const CLARIFY_EXPECTS = ["clarify", "word_q", "term_echo_ctx", "nothing_more", "add_req"];
 const ADD_POINTS = ["add_test", "add_help", "add_customers", "add_feedback"];
 const ADD_EXPECTS = ["add_req", ...ADD_POINTS, "add_other_ctx", "nothing_more"];
@@ -222,35 +222,29 @@ function react(c: Ctx, kind: Upd, task?: string, when?: unknown, askedBack = fal
     c.s.okSaid = true;
     c.s.updOpen = true;
     c.expect({
-      id: "what_task", expects: ["task_ctx", "upd_working", "upd_done", "upd_behind"], hints: ["task"],
+      id: "what_task", expects: ["task_ctx", "upd_working", "upd_done", "upd_behind", "upd_nothing", "upd_nothing_ctx"], hints: ["task"],
       suggest: [{ lt: "Pasakyti, prie ko dirbi", hint: "task", options: "task" }],
       on: {
         task_ctx: (cc, sl) => react(cc, "working", sl.task),
         upd_working: (cc, sl) => react(cc, "working", sl.task, sl.whenr),
         upd_done: (cc, sl) => react(cc, "done", sl.task),
         upd_behind: (cc, sl) => react(cc, "behind", sl.task, sl.whenr),
+        // "Nothing much." answers "What are you working on right now?" too
+        upd_nothing: (cc) => react(cc, "nothing"),
+        upd_nothing_ctx: (cc) => react(cc, "nothing"),
       },
       ask: (cc) => K(cc, "what_task_reask"),
     });
     return;
   }
-  if (kind === "nothing" || kind === "ok" || kind === "busy") { K(c, "upd_nothing_resp"); return; }
+  // "Nothing much." / "Not much, really.": a light update, "Okay, thanks."
+  if (kind === "nothing") { K(c, "k_ok_agree"); return; }
+  if (kind === "ok" || kind === "busy") { K(c, "upd_nothing_resp"); return; }
   const X = taskVar(c.s.task);
   if (kind === "done") {
     K(c, "upd_done_resp", { X });
     c.s.updOpen = true;
-    c.expect({
-      id: "send_q", optional: true, expects: ["will_send", "cant_send", "can_do", "cant_do"], hints: ["send"],
-      suggest: [{ lt: "Sutikti atsiųsti", hint: "send" }],
-      yes: one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_yes"); }),
-      no: one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_no"); }),
-      on: {
-        will_send: one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_yes"); }),
-        can_do: one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_yes"); }),
-        cant_send: one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_no"); }),
-        cant_do: one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_no"); }),
-      },
-    });
+    expectSend(c);
     return;
   }
   // "I'm working on the report. It'll be ready by Friday.": the date is already there
@@ -266,6 +260,24 @@ function react(c: Ctx, kind: Upd, task?: string, when?: unknown, askedBack = fal
       g_dontknow: (cc) => { cc.s.updOpen = false; K(cc, "when_unsure"); afterWhen(cc); },
     },
     ask: (cc) => K(cc, "when_reask", { X: taskVar(cc.s.task) }),
+  });
+}
+
+/** "Could you send the report to everyone after the meeting?" is open. "Could you clarify that?" gets
+ *  Kate's short explanation (clarifyLast), then the question is open again. */
+function expectSend(c: Ctx) {
+  c.s.lastTerm = "send";
+  const yes = one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_yes"); });
+  const no = one("send", (cc) => { cc.s.updOpen = false; K(cc, "send_no"); });
+  c.expect({
+    id: "send_q", optional: true, expects: ["will_send", "cant_send", "can_do", "cant_do"], hints: ["send"],
+    suggest: [{ lt: "Sutikti atsiųsti", hint: "send" }],
+    yes, no,
+    on: {
+      will_send: yes, can_do: yes, cant_send: no, cant_do: no,
+      // a bare "Okay." is heard as the answer to "How's it going?" (upd_ok_ctx): here it agrees
+      upd_ok_ctx: (cc) => (bareAck(cc) ? yes(cc) : false),
+    },
   });
 }
 
@@ -341,6 +353,11 @@ function clarifyLast(c: Ctx): boolean {
     case "deadline_fight": K(c, "clarify_deadline"); return true;
     case "who": K(c, "clarify_who", { X: c.s.deliv }); return true;
     case "aob": K(c, "term_aob"); return true;
+    case "send": // "Could you send the report to everyone after the meeting?"
+      c.s.sendClarified = true;
+      K(c, byTask(c.s.task)?.attrs?.plural ? "clarify_send_them" : "clarify_send", { X: taskVar(c.s.task) });
+      if (c.s.updOpen) expectSend(c); // not answered yet: the question is open again
+      return true;
   }
   return false;
 }
@@ -814,8 +831,15 @@ export const meeting: SituationDef = {
       "[i am] (busy | pretty busy | very busy | really busy | super busy | crazy) [week] [thanks] [as (always | usual)] [@askback] #busy",
       "[it is going] (well | fine | great | okay) [thanks] [@askback]",
     ] },
-    upd_nothing: { patterns: ["(not much | nothing) (new | to report) [this week | today]", "nothing new [from me]", "not much [really]", "not much to (say | report | tell) [this week]"] },
-    task_ctx: { patterns: ["[it is] @tdet {task}", "[mostly] @tdet {task}", "on @tdet {task}"] },
+    upd_nothing: { patterns: ["(not much | nothing) (new | to report) [this week | today]", "nothing new [from me]", "not much to (say | report | tell) [this week]"] },
+    // a light update, only to Kate's "How's it going?" / "What are you working on?" (elsewhere "Nothing much." = nothing_more)
+    upd_nothing_ctx: { patterns: [
+      "(nothing | not) much [really] [going on | happening] [really] [this week | today | right now | at the moment]",
+      "nothing (special | exciting | big) [really] [this week | today | right now | at the moment]", "not a lot [really] [this week | today]",
+    ] },
+    task_ctx: { patterns: ["[it is] @tdet {task}", "[mostly] @tdet {task}", "on @tdet {task}",
+      // "Nothing much, just the report."
+      "(nothing | not) (much | special) [really] (just | only | mostly) [working on | on] @tdet {task}"] },
     when_ans: { patterns: [
       "[maybe | probably | hopefully | i think | i hope] [it will be (ready | done) | i will finish it | i can finish it | it should be (ready | done)] {whenr} #h:w_when",
       "(it is | it will be) ready {whenr} #h:w_ready",
@@ -936,6 +960,7 @@ export const meeting: SituationDef = {
       "[no] (nothing | not) from me #h:b_none",
       "[no] (nothing | not) from my side",
       "[no] nothing [else | more] [from me] [for now | today]",
+      "[no] (nothing | not) much [really] [from me]", "[no] nothing special [from me]",
       "[all] clear [now] [thanks]",
       "[no] i (do not | don't) (want to | need to) add anything",
       "[no] (it is | that is | everything is) [all] clear [now]",
@@ -1376,6 +1401,15 @@ export const meeting: SituationDef = {
     ],
     clarify_who: [
       t("I | mean: | who | can | do | {X.the}?", "Aš | turiu omenyje: | kas | gali | padaryti | {X.the:acc}?", "Turiu omenyje: kas gali padaryti {X.the:acc}?"),
+    ],
+    // "Could you send the report to everyone after the meeting?" said simply (X = the learner's task)
+    clarify_send: [
+      t("I | mean: | just | email | it | to the team.", "Aš | turiu omenyje: | tiesiog | išsiųsk el. paštu | {jis@X:acc} | komandai.",
+        "Turiu omenyje: tiesiog išsiųsk {jis@X:acc} komandai el. paštu."),
+    ],
+    clarify_send_them: [
+      t("I | mean: | just | email | them | to the team.", "Aš | turiu omenyje: | tiesiog | išsiųsk el. paštu | {jis@X:acc} | komandai.",
+        "Turiu omenyje: tiesiog išsiųsk {jis@X:acc} komandai el. paštu."),
     ],
 
     // --- adding something ------------------------------------------------------------------------------
@@ -2073,6 +2107,7 @@ export const meeting: SituationDef = {
     upd_ok(c, _sl, sg) { if (!live(c)) return; react(c, "ok", undefined, undefined, sg.tags.includes("askback")); },
     upd_ok_ctx(c, _sl, sg) { if (!live(c)) return; react(c, sg.tags.includes("busy") ? "busy" : "ok", undefined, undefined, sg.tags.includes("askback")); },
     upd_nothing(c) { if (!live(c)) return; react(c, "nothing"); },
+    upd_nothing_ctx(c) { if (!live(c)) return; react(c, "nothing"); },
     task_ctx(c, sl) { if (!live(c)) return; react(c, "working", sl.task); },
     when_ans(c) {
       if (!live(c)) return;
@@ -2358,6 +2393,24 @@ export const meeting: SituationDef = {
     { say: "On the presentation.", intent: "task_ctx", step: "update", slots: { task: "presentation" } },
     { say: "I haven't started the report yet.", intent: "upd_behind", step: "update", not: ["task_ctx", "upd_working", "upd_done"] },
     { say: "The slides aren't done yet.", intent: "upd_behind", step: "update", not: ["task_ctx", "upd_done"] },
+    // a light update to "How's it going?" / "What are you working on?"; at "Anything to add?" and "Any other
+    // business?" the same words mean "nothing"
+    { say: "Nothing much.", intent: "upd_nothing_ctx", step: "update", not: ["nothing_more"] },
+    { say: "Not much.", intent: "upd_nothing_ctx", step: "update", not: ["nothing_more"] },
+    { say: "Nothing special.", intent: "upd_nothing_ctx", step: "update", not: ["nothing_more"] },
+    { say: "Not much, really.", intent: "upd_nothing_ctx", step: "update" },
+    { say: "Nothing much going on this week.", intent: "upd_nothing_ctx", step: "update" },
+    { say: "Not a lot.", intent: "upd_nothing_ctx", step: "update" },
+    { say: "Nothing much, just the report.", intent: "task_ctx", step: "update", slots: { task: "report" }, not: ["upd_nothing_ctx", "reason"] },
+    { say: "Not much time.", intent: "none", step: "update" },
+    { say: "Nothing much.", intent: "nothing_more", step: "aob", not: ["upd_nothing", "upd_nothing_ctx"] },
+    { say: "Nothing.", intent: "nothing_more", step: "aob", not: ["upd_nothing", "upd_nothing_ctx"] },
+    { say: "Not much.", intent: "nothing_more", step: "aob", not: ["upd_nothing", "upd_nothing_ctx"] },
+    { say: "Nothing special.", intent: "nothing_more", step: "aob", not: ["upd_nothing", "upd_nothing_ctx"] },
+    { say: "No, nothing much.", intent: "nothing_more", step: "add", not: ["upd_nothing", "upd_nothing_ctx"] },
+    { say: "Not a lot.", intent: "none", step: "aob" },
+    // "Could you clarify that?" to "Could you send the report to everyone after the meeting?"
+    { say: "Could you clarify that?", intent: "clarify", step: "update", not: ["g_meaning"] },
   ],
 
   sims: [
@@ -2401,6 +2454,20 @@ export const meeting: SituationDef = {
       "When's the team lunch?", "No, that's it from me.", "Sorry, I can't send it today.", "Okay. Bye, everyone!",
     ], expect: { complete: true }, auto: AUTO,
     setup: (s) => { s.notesTwist = true; s.notesKind = "summary"; s.dlTwist = false; } },
+    // "Could you clarify that?" to "Could you send the report to everyone after the meeting?": Kate says it
+    // simply and the question is open again; "Nothing much." at "Any other business?" = nothing
+    { name: "clarifying the send request", turns: [
+      "Sara, you're on mute!", "Yes!", "I finished the report.", "Could you clarify that?", "Okay.", "Could you clarify that?",
+      "Yes, thanks!", "No, nothing to add.", "I agree with Paul.", "I can do that.", "Nothing much.", "Thanks, everyone!",
+    ], expect: { complete: true, state: { sendClarified: true, update: "done", updOpen: false, aobDone: true } }, auto: AUTO,
+    // "I can do that." answers "Who's taking this?": no notes question and no deadline fight before it
+    setup: (s) => { s.notesTwist = false; s.dlTwist = false; } },
+    // a light update to "What are you working on right now?"; "Not much." to "Anything to add?" = nothing
+    { name: "a light update: nothing much", turns: [
+      "Sara, you're on mute!", "Yes!", "Good, thanks!", "Nothing special.", "No questions from me.", "Not much.", "I agree with Paul.",
+      "I can do that.", "Not much.", "Thanks, everyone!",
+    ], expect: { complete: true, state: { update: "nothing", addDone: true, aobDone: true } }, auto: AUTO,
+    setup: (s) => { s.notesTwist = false; s.dlTwist = false; } },
     { name: "problems: no sound, behind, no questions, busy", turns: [
       "Hi, Sara!", "Sara, you're on mute!", "No, still nothing.", "Yes, now we can hear you.", "I'm a bit behind with the budget.", "Next week.",
       "No questions from me.", "No, nothing to add.", "I'm not sure I agree.", "I don't know.", "Sure, let's talk later.",

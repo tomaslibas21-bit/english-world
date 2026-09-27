@@ -881,9 +881,17 @@ export const police: SituationDef = {
       addName(c, slots.name);
       if (/\bsurname\b/i.test(c.heard)) c.tip(police.tips!.us_surname);
     },
-    spell_ctx(c, slots) {
+    spell_ctx(c, slots, seg) {
       if (!live(c)) return;
       if (c.step === "last_name") { c.s.lastName = true; }
+      // "Mikalauskas." said as a word reaches {letters} as one "joined" token: it's the last name, not a
+      // spelling. When the officer asks for the spelling on this visit, only letters count (owner's decision,
+      // 27 Sep): at "And your last name?" the spelling question comes next, and at the spelling question
+      // itself the officer asks for it letter by letter.
+      if (seg.tags.includes("joined") && spellQ(c)) {
+        if (c.step === "spell") c.s.spellAsked = true;
+        return;
+      }
       c.s.spelled = true;
       if (once(c, "spell")) c.say("spell_ok");
       void slots;
@@ -1065,6 +1073,12 @@ export const police: SituationDef = {
     { name: "theft, step by step", setup: (s) => { s.foundTwist = false; s.askHappened = true; s.askSign = true; },
       turns: ["I'd like to report a theft.", "My wallet.", "Someone bumped into me.", "At the market.", "About an hour ago.", "Black and small.", "Some cash and my ID card.", "About twenty dollars.", "My name is Tomas.", "Mikalauskas.", "It's 555-0199.", "Okay.", "Thanks, bye!"], expect: { complete: true }, auto: AUTO },
     { name: "lost, questions", setup: (s) => { s.foundTwist = false; s.askSpell = true; }, turns: ["I lost my wallet.", "I think I dropped it at the café.", "This morning.", "Should I cancel my cards?", "It's a small red wallet.", "Just my cards.", "Tomas Mikalauskas.", "M I K A L A U S K A S", "555 0142", "How long does it take?", "Could I get a copy of the report?", "No, that's all, thanks."], expect: { complete: true }, auto: AUTO },
+    // The last name said as a word is the name, not the spelling: "How do you spell your last name?" comes
+    // next, and a word there gets "Sorry, letter by letter, please." Only letters count as spelled (owner's
+    // decision, 27 Sep; before, "Mikalauskas." at "And your last name?" skipped the spelling question).
+    { name: "last name as a word, then spelled", setup: (s) => { s.foundTwist = false; s.askSpell = true; }, turns: ["I lost my wallet.",
+      "At the market, around eleven.", "It's black and small.", "Just my cards.", "My name is Tomas.", "Mikalauskas.", "Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.",
+      "It's 555-0142.", "No, that's all, thanks."], expect: { complete: true, state: { lastName: true, spellAsked: true, spelled: true } }, auto: AUTO },
     // twist on every seed: someone brings the wallet in during the report
     { name: "found wallet", setup: (s) => { s.foundTwist = true; s.foundDifferent = null; }, turns: ["Good afternoon. I'd like to report a stolen wallet.",
       "At the farmers' market, around eleven.", "It's brown, leather, and small.", "My cards, my driver's license, and about $40 in cash.", "Yes, that's mine!",

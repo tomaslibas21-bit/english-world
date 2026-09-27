@@ -153,6 +153,14 @@ const topicsDone = (c: Ctx) => !!c.s.wrapUp || ((c.s.topics || []) as string[]).
 /** Any learner turn counts as having said hello. */
 const hi = (c: Ctx) => { c.s.greeted = true; };
 
+/** The learner has ordered a drink: talk about the check is no longer "too early". */
+const ordered = (c: Ctx) => !!c.s.drink;
+/** Who pays, agreed before the check came ("Let's split it" after the drinks): settled at the check. */
+function settlePlan(c: Ctx) {
+  c.s.checkDone = c.s.checkPlan;
+  c.say(c.s.checkPlan === "split" ? "deal" : "thanks_pay");
+}
+
 /** The partner answers a topic about themselves. */
 function tell(c: Ctx, topic: Topic) {
   if (c.s.told[topic]) return;
@@ -332,17 +340,27 @@ const H: Record<string, Handler> = {
   like_it_ctx() { /* answered through the like_job pending */ },
   dislike_it_ctx() { /* answered through the like_job pending */ },
   // the check
+  // Before the check comes: "We haven't even ordered yet!" only while nothing is ordered. After the drinks
+  // the partner agrees for later, and the check then comes without an offer to pay (bug fix 27 Sep).
   pay_all(c) {
     hi(c);
     if (c.s.checkDone) { if (once(c, "pay")) c.say("already_paid"); return; }
-    if (!c.s.checkShown && !c.s.wrapUp) { if (once(c, "pay")) c.say("not_ordered_yet"); return; }
+    if (!c.s.checkShown && !c.s.wrapUp) {
+      if (ordered(c)) { c.s.checkPlan = "learner"; if (once(c, "pay")) c.say("if_you_insist"); }
+      else if (once(c, "pay")) c.say("not_ordered_yet");
+      return;
+    }
     c.s.checkDone = "learner";
     if (once(c, "pay")) c.say(c.s.partnerOffered ? "if_you_insist" : "thanks_pay");
   },
   split(c) {
     hi(c);
     if (c.s.checkDone === "split") return;
-    if (!c.s.checkShown && !c.s.wrapUp) { if (once(c, "pay")) c.say("not_ordered_yet"); return; }
+    if (!c.s.checkShown && !c.s.wrapUp) {
+      if (ordered(c)) { c.s.checkPlan = "split"; if (once(c, "pay")) c.say("when_it_comes"); }
+      else if (once(c, "pay")) c.say("not_ordered_yet");
+      return;
+    }
     c.s.checkDone = "split";
     if (once(c, "pay")) c.say("deal");
   },
@@ -1011,6 +1029,11 @@ export const date: SituationDef = {
       t("Ha! | We | haven't | even | ordered | yet!", "Cha! | Mes | — | net | neužsisakėme | dar!", "Cha! Mes dar net neužsisakėme!",
         { flags: { 2: "“haven't … ordered” is split by “even”: the negated verb neužsisakėme stands under “ordered”." } }),
     ],
+    // "Let's split the check." after ordering, before the check comes
+    when_it_comes: [
+      t("Sure, | when | it | comes!", "Žinoma, | kai | ji | atkeliaus!", "Žinoma, kai atneš sąskaitą!",
+        { flags: { 2: "“it” = the check (sąskaita), so ji.", 3: "“comes” = atkeliaus: after kai the future is used for a future time." } }),
+    ],
     so_check: [
       t("So, | what | do | you | think | about | the | check?", "Tai | ką | — | tu | manai | apie | — | sąskaitą?", "Tai ką manai dėl sąskaitos?",
         { flags: { 2: "Question “do” has no Lithuanian word (linked to “think”)." } }),
@@ -1363,7 +1386,7 @@ export const date: SituationDef = {
     { lt: "Užsisakyk gėrimą", optional: true, when: (c) => asked(c, "drinks") > 0 && !c.s.goalMet, done: (c) => asked(c, "drinks") > 0 && (!!c.s.drink || !!c.s.noAlcohol || asked(c, "drinks") >= 2 || !!c.s.wrapUp) },
     { lt: "Papasakok apie save", done: (c) => topicsDone(c) },
     { lt: "Atsakyk į greitus klausimus", optional: true, when: (c) => !!c.s.qfStarted && !c.s.goalMet, done: (c) => !!c.s.qfStarted && !!c.s.qfDone },
-    { lt: "Susitark dėl sąskaitos", optional: true, when: (c) => !!c.s.checkShown && !c.s.goalMet, done: (c) => !!c.s.checkShown && (!!c.s.checkDone || asked(c, "check") >= 2) },
+    { lt: "Susitark dėl sąskaitos", optional: true, when: (c) => !!c.s.checkShown && !c.s.goalMet, done: (c) => !!c.s.checkShown && (!!c.s.checkDone || asked(c, "check") >= 2 || !!c.s.checkPlan) },
     { lt: "Susitark vėl susitikti", done: (c) => !!c.s.dayAgreed },
   ],
   steps: [
@@ -1407,19 +1430,25 @@ export const date: SituationDef = {
     { id: "qf", when: (c) => !!c.s.quick && !c.s.wrapUp, done: (c) => !!c.s.qfDone,
       ask: (c) => { c.s.qfStarted = true; c.twist("quick_questions"); c.say("qf_intro"); c.say(QF[(c.s.qfOrder as number[])[0]].line); quick(c, 0); }, expects: ["qf_ctx"],
       suggest: [{ lt: "Greitai atsakyti", hint: "quick_coffee" }] },
-    { id: "check", when: (c) => c.s.askCheck && !(c.s.againOk && !c.s.dayAgreed), done: (c) => !!c.s.checkDone || asked(c, "check") >= 2,
+    // With a plan agreed before (checkPlan), the check just comes: no offer, no second ask.
+    { id: "check", when: (c) => c.s.askCheck && !(c.s.againOk && !c.s.dayAgreed),
+      done: (c) => !!c.s.checkDone || asked(c, "check") >= 2 || (!!c.s.checkPlan && !!c.s.checkShown),
       ask: (c) => {
         bump(c, "check");
         const first = !c.s.checkShown;
         if (first) { c.s.checkShown = true; c.say("check_here"); }
+        if (c.s.checkPlan) return;
         // Offers to pay at once on some visits, or when the learner says nothing about the check.
         if ((c.s.partnerPays || !first) && !c.s.partnerOffered) { c.ask("check_offer"); return; }
         if (!first) c.say("so_check");
       },
       expects: ["pay_all", "split", "accept_offer"],
       suggest: [{ lt: "Pasiūlyti sumokėti arba pasidalinti", hint: "check" }],
-      yes: (c) => { if (c.s.partnerOffered) { c.s.checkDone = "partner"; c.say("my_pleasure"); } } },
-    { id: "check_offer", when: (c) => !!c.s.checkShown && !c.s.checkDone && (!!c.s.partnerOffered || c.step === "check"), done: (c) => !!c.s.checkDone,
+      yes: (c) => {
+        if (c.s.partnerOffered) { c.s.checkDone = "partner"; c.say("my_pleasure"); }
+        else if (c.s.checkPlan && !c.s.checkDone) settlePlan(c);
+      } },
+    { id: "check_offer", when: (c) => !!c.s.checkShown && !c.s.checkDone && !c.s.checkPlan && (!!c.s.partnerOffered || c.step === "check"), done: (c) => !!c.s.checkDone,
       ask: (c) => {
         bump(c, "check_offer");
         if (!c.s.partnerOffered) { c.s.partnerOffered = true; c.say("partner_offers"); return; }
@@ -1603,6 +1632,9 @@ export const date: SituationDef = {
     { say: "No, I haven't. Have you been there?", intent: "travel_no_ctx", step: "travel", not: ["travel_yes_ctx"] },
     { say: "Not yet. Have you?", intent: "travel_no_ctx", step: "travel", not: ["travel_yes_ctx"] },
     { say: "Have you?", intent: "and_you", step: "travel", not: ["travel_yes_ctx", "travel_no_ctx"] },
+    // the check before it comes (during the small talk)
+    { say: "Let's split the check.", intent: "split", step: "job" },
+    { say: "Let's not split the check.", intent: "none", not: ["split"] },
   ],
 
   sims: [
@@ -1632,6 +1664,17 @@ export const date: SituationDef = {
     { name: "travel: yes, then a question back", setup: (s) => { s.topics = ["job", "travel"]; s.askDrinks = false; }, turns: [
       "Hi! Nice to meet you!", "I'm a teacher. And you?", "Yes! Have you?", "Let's split it", "I had a really nice time too", "I'd love that!", "Saturday works for me!", "I will! Good night!",
     ], expect: { complete: true }, auto: AUTO },
+    // Splitting the check after the drinks, before it comes: "Sure, when it comes!", and when it comes the partner
+    // doesn't offer to pay (bug fix 27 Sep: "Ha! We haven't even ordered yet!" after ordering). The partner would
+    // offer on this visit (partnerPays).
+    { name: "the check: splitting it before it comes", turns: [
+      "Hi! It's so nice to meet you!", "A glass of white wine, please", "Can we split the check?", "I'm a teacher. And you?", "No, never. But I'd love to go!",
+      "Let's split it", "I had a really nice time too", "I'd love that!", "Saturday works for me!", "I will! Good night!",
+    ], expect: { complete: true, state: { checkPlan: "split", checkDone: "split", partnerOffered: undefined } }, auto: AUTO,
+      setup: (s) => {
+        s.topics = ["job", "travel"]; s.askDrinks = true; s.likeJobQ = false; s.askCheck = true; s.partnerPays = true;
+        s.quick = false; s.busySat = false; s.coldTwist = false;
+      } },
   ],
 };
 

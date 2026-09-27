@@ -221,6 +221,10 @@ export const gas: SituationDef = {
         "O, | atsiprašau, | kolonėlė | Nr. {$num} | yra | neveikianti | šiandien. | Ar galėtumėte | jūs | naudoti | kolonėlę | Nr. 5?",
         "O, atsiprašau, kolonėlė Nr. {$num} šiandien neveikia. Ar galėtumėte naudotis kolonėle Nr. 5?"),
     ],
+    // the same question again after a side question (the pump problem was already explained)
+    ooo_again: [
+      t("So, | could | you | use | pump | five?", "Tai | ar galėtumėte | jūs | naudoti | kolonėlę | Nr. 5?", "Tai ar galėtumėte naudotis kolonėle Nr. 5?"),
+    ],
     fill_how_pay: [
       t("Sure. | Are | you | paying | with | cash | or | card?", "Žinoma. | Ar | jūs | mokate | — | grynaisiais | ar | kortele?", "Žinoma. Mokėsite grynaisiais ar kortele?",
         { flags: { 1: "Question “Are” = the particle ar; the present of mokate carries the progressive (linked to “paying”).", 4: "“with”: the instrumental grynaisiais / kortele carries it." } }),
@@ -534,7 +538,12 @@ export const gas: SituationDef = {
       ask: (c) => c.say("ask_pump"), expects: ["pump_ctx", "amount_change_ctx"],
       suggest: [{ lt: "Pasakyti kolonėlės numerį", hint: "pump" }] },
     { id: "out_of_order", when: (c) => !!c.s.pump && c.s.oooTwist && c.s.pump !== 5 && !c.s.oooDone, done: (c) => !!c.s.oooDone,
-      ask: (c) => { c.twist("out_of_order"); c.say("out_of_order", { num: c.s.pump }); },
+      // explained once; after a side question Dot only asks again ("So, could you use pump five?")
+      ask: (c) => {
+        c.s.oooAsks = (c.s.oooAsks || 0) + 1;
+        if (c.s.oooAsks > 1) { c.say("ooo_again"); return; }
+        c.twist("out_of_order"); c.say("out_of_order", { num: c.s.pump });
+      },
       expects: ["pump_ctx", "ok_ack"],
       suggest: [{ lt: "Sutikti naudoti kitą kolonėlę", hint: "agree" }],
       yes: (c) => { c.s.pump = 5; c.s.oooDone = true; c.say("ack"); },
@@ -850,10 +859,10 @@ export const gas: SituationDef = {
       turns: ["Twenty on pump five, and a coffee, please.", "Where's the coffee?", "Card.", "Debit.", "Can I use the restroom?", "I have a flat tire.",
         "Is there a mechanic nearby?", "How do I get to the highway?", "Bye!"],
       auto: omit(AUTO, ["order", "pay"]), expect: { complete: true }, setup: (s) => { s.troubleTwist = true; s.askDebit = true; } },
-    // "Can I pay by card?" before the total gets a "Sure." (then Dot's question again)
+    // "Can I pay by card?" before the total gets a "Sure." (then Dot's question again, briefly: asked twice, explained once)
     { name: "pump out of order (twist)",
       turns: ["Forty on pump three, please.", "Can I pay by card?", "Sure, no problem.", "Thanks!"],
-      auto: omit(AUTO, ["order", "out_of_order", "pay"]), expect: { complete: true }, setup: (s) => { s.oooTwist = true; } },
+      auto: omit(AUTO, ["order", "out_of_order", "pay"]), expect: { complete: true, state: { oooAsks: 2, oooDone: true, pump: 5 } }, setup: (s) => { s.oooTwist = true; } },
     { name: "gas first, the pump after",
       turns: ["Hi! I need gas.", "Twenty dollars, please.", "I'm at pump four.", "Card, please.", "Thank you!"],
       auto: omit(AUTO, ["order", "pump", "pay"]), expect: { complete: true } },

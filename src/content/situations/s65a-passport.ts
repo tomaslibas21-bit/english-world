@@ -401,12 +401,14 @@ const stepOpen = (c: Ctx, id: string) => applies(c, id) && !stepDef(id).done(c);
 /** The one extra question of a visit (return ticket, first time, job, travelling alone). */
 const EXTRA = ["return", "first", "job", "alone"];
 
-// Answers the simulation gives when Officer Diaz asks one of her optional questions.
+// Answers the simulation gives when Officer Diaz asks one of her optional questions. Each one fits every
+// wording of its question ("Do you have a return ticket?" / "When are you flying back?", "First time in the US?" /
+// "Have you been to the US before?").
 const PP_AUTO: Record<string, string> = {
   passport: "Here you go.", purpose: "I'm here on vacation.", biz_kind: "A conference.", who: "My sister.", visa: "Yes, here it is.",
   length: "Two weeks.", stay: "At the Harborview Hotel.", address: "It's 25 Oak Avenue.", show_address: "Here you go.",
-  return: "Yes, on June 5th.", show_ticket: "Sure, here it is.", ticket_check: "Oh, here it is.",
-  first: "Yes, it's my first time.", job: "I'm a teacher.", alone: "Yes, I'm traveling alone.",
+  return: "My return flight is on June 5th.", show_ticket: "Sure, here it is.", ticket_check: "Oh, here it is.",
+  first: "It's my first time.", job: "I'm a teacher.", alone: "Yes, I'm traveling alone.",
   declare: "No, nothing.", declare_what: "Some cheese.", dog: "Oh, sorry. I have some cheese.", bin: "Okay, sorry.",
   cash: "No, only about five hundred dollars.", fingers: "Okay.", thumb: "Okay.", left: "Okay.", photo: "Okay.", glasses: "Sure.",
 };
@@ -1600,6 +1602,7 @@ export const passport: SituationDef = {
     { say: "Oh, sorry.", intent: "bio_ok_ctx", step: "bio_photo" },
     { say: "A job interview.", intent: "purpose", step: "biz_kind", slots: { purpose: "business" } },
     { say: "On June 5th.", intent: "return_date", step: "return" },
+    { say: "My return flight is on June 5th.", intent: "return_date", step: "return" },
     { say: "It's my first time.", intent: "first_yes", step: "first" },
     { say: "Which hand?", intent: "which_hand_ctx", step: "bio_fingers" },
     { say: "Which hand?", intent: "none" },
@@ -1662,6 +1665,10 @@ export const passport: SituationDef = {
       expect: { complete: true }, auto: omit(PP_AUTO, ["purpose", "length", "stay", "declare"]) },
     { name: "work without a visa (ESTA rules), sausage in the bag", turns: ["Here's my passport.", "I'm here to work.", "No, I have an ESTA.", "Business, then. A job interview.", "One week.", "In an Airbnb.", "I have some sausage."],
       expect: { complete: true }, auto: omit(PP_AUTO, ["purpose", "visa", "length", "stay", "declare"]) },
+    // the other wordings on every seed: "When are you flying back?" and "Have you been to the US before?" (the auto answers fit both)
+    { name: "flying back when, been here before", turns: ["Hi! Here's my passport.", "I'm here on vacation.", "Two weeks.", "At the Harborview Hotel.", "No, nothing to declare."],
+      expect: { complete: true, state: { ret: true, first: true } }, auto: PP_AUTO,
+      setup: (s) => { s.askReturn = true; s.retQ = "when"; s.askFirst = true; s.firstQ = "before"; } },
   ],
 };
 

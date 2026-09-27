@@ -371,13 +371,14 @@ export const baggage: SituationDef = {
       "[no] i do not have anything (valuable | expensive | special | important) [in (it | there | the bag | the suitcase)]",
     ] },
     delivery: { patterns: [
-      "[yes] (can you | could you) deliver it [to (my | the) hotel] #h:dl_deliver", "[yes] [please] deliver it [to (my | the) hotel] [please] #h:dl_yes",
-      "[yes] (please | can you | could you) (bring | send) it to (my | the) hotel", "[yes] to my hotel [please]",
+      // #to_hotel: to the hotel, not named yet ("Where are you staying?" asks which); #to_home: somewhere else
+      "[yes] (can you | could you) deliver it [to (my | the) hotel #to_hotel] #h:dl_deliver", "[yes] [please] deliver it [to (my | the) hotel #to_hotel] [please] #h:dl_yes",
+      "[yes] (please | can you | could you) (bring | send) it to (my | the) hotel #to_hotel", "[yes] to my hotel [please] #to_hotel",
       "[yes] [(can you | could you)] (deliver | send | bring) it to [the] {hotel}",
-      "[yes] (delivery | deliver | home delivery | delivery to (my | the) hotel) [would be (great | good | nice | perfect)]",
-      "[yes] (send | bring) it [to (my | the) hotel | there]",
-      "[yes] [(can you | could you)] (deliver | send | bring) it to (my friends (house | place | apartment) | my address | my house | my apartment | this address | my airbnb)",
-      "[yes] i would like (delivery | it delivered | you to deliver it) [to (my | the) hotel]",
+      "[yes] (delivery | deliver | home delivery | delivery to (my | the) hotel #to_hotel) [would be (great | good | nice | perfect)]",
+      "[yes] (send | bring) it [to (my | the) hotel #to_hotel | there]",
+      "[yes] [(can you | could you)] (deliver | send | bring) it to (my friends (house | place | apartment) | my address | my house | my apartment | this address | my airbnb) #to_home",
+      "[yes] i would like (delivery | it delivered | you to deliver it) [to (my | the) hotel #to_hotel]",
     ] },
     pickup: { patterns: ["i will (pick it up | come back for it | come and get it) [myself | here | later] #h:dl_pickup", "i (can | will) come back [to (get | pick up) it]", "i will get it [myself]",
       "[no] i will (pick it up | collect it | come back for it | come and get it | get it | come back and (pick it up | get it | collect it)) [myself] [later | tomorrow | tonight] [here | at the airport | at the desk | at this desk] #h:dl_pickup",
@@ -926,10 +927,15 @@ export const baggage: SituationDef = {
       ask: (c) => c.say("ask_delivery"),
       expects: ["delivery", "pickup"],
       suggest: [{ lt: "Sutikti, kad pristatytų į viešbutį", hint: "g_yesno" }, { lt: "Atsiimti pačiam arba paklausti", hint: "delivery" }],
-      yes: (c) => { c.s.delivery = "deliver"; once(c, "dl", "delivery_ok"); turn(c).said_when = true; },
+      yes: (c) => { c.s.delivery = "deliver"; c.s.dlTo = "hotel"; once(c, "dl", "delivery_ok"); turn(c).said_when = true; },
       no: (c) => { c.s.delivery = "pickup"; c.say("pickup_ok"); } },
     { id: "hotel", done: (c) => !!c.s.hotel,
-      ask: (c) => c.say(c.s.delivery === "deliver" && c.chance(0.5) ? "ask_deliver_where" : "ask_hotel"),
+      // Only what's missing: to the hotel → which one ("Where are you staying?"); to a friend's place → where it is
+      ask: (c) => {
+        c.s.hotelQ = c.s.dlTo === "hotel" ? "ask_hotel" : c.s.dlTo === "home" ? "ask_deliver_where"
+          : c.s.delivery === "deliver" && c.chance(0.5) ? "ask_deliver_where" : "ask_hotel";
+        c.say(c.s.hotelQ);
+      },
       expects: ["stay"],
       suggest: [{ lt: "Pasakyti, kur apsistosi", hint: "hotel" }] },
     { id: "phone", done: (c) => !!c.s.phone,
@@ -1034,9 +1040,12 @@ export const baggage: SituationDef = {
       if (!T.contSaid) { T.contSaid = level; c.say(level === 3 ? "contents_medicine" : level === 2 ? "contents_valuables" : "contents_ok"); return; }
       if (level > T.contSaid) { T.contSaid = level; c.say(level === 3 ? "advice_medicine" : "advice_valuables"); }
     },
-    delivery(c, slots) {
+    delivery(c, slots, seg) {
       c.s.delivery = "deliver";
       if (slots.hotel) c.s.hotel = slots.hotel;
+      // where to: the hotel ("to my hotel", or a yes to Priya's "…to your hotel?"), or somewhere else ("to my friend's house")
+      if (seg.tags.includes("to_home")) c.s.dlTo = "home";
+      else if (seg.tags.includes("to_hotel") || c.step === "delivery") c.s.dlTo = "hotel";
       if (turn(c).said_when) once(c, "dl", "ack"); else { once(c, "dl", "delivery_ok"); turn(c).said_when = true; }
     },
     pickup(c) { c.s.delivery = "pickup"; once(c, "dl", "pickup_ok"); },
@@ -1122,6 +1131,7 @@ export const baggage: SituationDef = {
     { say: "Just clothes and shoes.", intent: "contents", step: "contents" },
     { say: "My medicine is in it.", intent: "contents", step: "contents" },
     { say: "Could you deliver it to my hotel?", intent: "delivery" },
+    { say: "Could you deliver it to my friend's house?", intent: "delivery", step: "delivery" },
     { say: "I'll pick it up here.", intent: "pickup" },
     { say: "I'm staying at the Harborview Hotel.", intent: "stay", step: "hotel" },
     { say: "My number is plus three seven zero six one two three four five six seven.", intent: "phone", step: "phone" },
@@ -1178,8 +1188,16 @@ export const baggage: SituationDef = {
 
   sims: [
     // the bag is not in the system (so it is described), and Priya asks for the tag
+    // "…to my hotel" is used: Priya asks which hotel ("Where are you staying?"), never "Where should we deliver it?"
     { name: "happy path: report, describe, deliver", turns: ["Hi, my bag didn't arrive.", "It was flight 482 from New York.", "Yes, here it is.", "It's a large blue suitcase with a red stripe on the side.", "Please deliver it to my hotel.", "At the Harborview Hotel.", "My number is 555 0142."],
-      expect: { complete: true }, auto: BG_AUTO, setup: (s) => { s.foundTwist = false; s.askTag = true; } },
+      expect: { complete: true, state: { dlTo: "hotel", hotelQ: "ask_hotel" } }, auto: BG_AUTO, setup: (s) => { s.foundTwist = false; s.askTag = true; } },
+    // a yes to "Would you like us to deliver it to your hotel?" also says where: only the hotel is missing (no other questions about the bag)
+    { name: "yes to delivery to the hotel", turns: ["Hi, my bag didn't arrive.", "It was flight 482 from New York.", "Yes, here it is.", "It's a large blue suitcase with a red stripe on the side.", "Yes, please.", "At the Harborview Hotel.", "My number is 555 0142."],
+      expect: { complete: true, state: { dlTo: "hotel", hotelQ: "ask_hotel" } }, auto: BG_AUTO,
+      setup: (s) => { s.foundTwist = false; s.askTag = true; s.askConnection = false; s.askSize = false; s.askMaterial = false; s.askMarks = false; s.askBrand = false; s.askContents = false; } },
+    // to a friend's house: Priya asks where that is, not where the learner is staying
+    { name: "deliver it to a friend's house", turns: ["Hi, my bag didn't arrive.", "It was flight 482 from New York.", "Yes, here it is.", "It's a large blue suitcase with a red stripe on the side.", "Could you deliver it to my friend's house?", "It's 25 Oak Avenue.", "My number is 555 0142."],
+      expect: { complete: true, state: { dlTo: "home", hotelQ: "ask_deliver_where" } }, auto: BG_AUTO, setup: (s) => { s.foundTwist = false; s.askTag = true; } },
     // the bag is described in three short answers (color, type, size; no other questions about it), and the overnight kit is offered
     { name: "short answers, side questions, spelling the reference", turns: ["I can't find my luggage.", "Flight 482.", "Blue.", "A suitcase.", "Large.", "Please deliver it. When will I get it?", "Harborview.", "555 0142", "Yes, please.", "Could you spell that?", "Thanks, bye!"],
       expect: { complete: true }, auto: omit(BG_AUTO, ["flight", "describe", "type", "size", "delivery", "hotel", "phone", "ref"]),
