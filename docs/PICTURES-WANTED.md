@@ -36,7 +36,10 @@ During a conversation, the game shows **one illustrated picture per phase** of t
   - lower-case names
 - **Scene file:** `src/ui/scene-data/<scene>.json`. It is given below for each new scene, ready to use. Optionally add `"jobs": { "<name>": "<generation id>" }` for later edits.
 - **Check:** if you can run code, `npx tsx tools/scene-walk.ts <scene>` must report 0 errors, and `npm test` and `npm run build` must pass.
-- **Please open a pull request.** Don't push to `main`, because `main` publishes the live site straight away. The owner reviews the pictures in the pull request.
+- **Push straight to `main`.** No one is using the game yet, so no pull request is needed.
+  - Every push publishes the live site in about a minute (GitHub Actions, "Deploy to GitHub Pages"). If a build fails, the previous version stays online.
+  - Commit one scene at a time: its pictures and its scene file together, so that a scene file never points to pictures that aren't there yet.
+  - After pushing, check the scene in the live game: https://tomaslibas21-bit.github.io/english-world/ → "Visos situacijos" → the call.
 
 ## A. The five calls (25 pictures)
 
