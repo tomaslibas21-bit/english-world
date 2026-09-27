@@ -1,0 +1,2089 @@
+{
+ "situation": "s32-supermarket",
+ "items": [
+  {
+   "ctx": "sco",
+   "say": "Excuse me!",
+   "intent": "call_help_ctx"
+  },
+  {
+   "ctx": "sco",
+   "say": "Excuse me, can you help me?",
+   "intent": "call_help_ctx"
+  },
+  {
+   "ctx": "sco",
+   "say": "Hello? Can somebody help me?",
+   "intent": "call_help_ctx"
+  },
+  {
+   "ctx": "sco",
+   "say": "Help, please!",
+   "intent": "call_help_ctx"
+  },
+  {
+   "ctx": "sco",
+   "say": "Sir, can you come here, please?",
+   "intent": "call_help_ctx"
+  },
+  {
+   "ctx": "sco",
+   "say": "I need help.",
+   "intent": "call_help_ctx"
+  },
+  {
+   "ctx": "sco",
+   "say": "Excuse me, I have a problem with the machine.",
+   "intent": [
+    "call_help_ctx",
+    "sco_problem"
+   ]
+  },
+  {
+   "ctx": "sco",
+   "say": "Excuse me, the machine says unexpected item in the bagging area.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "Unexpected item in the bagging area!",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "It says please wait for assistance.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "This machine doesn't work.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "The machine is broken, I think.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "Excuse me, it's not working.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "Excuse me, the till isn't working.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "It says there is an unexpected item.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "Machine not working",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco",
+   "say": "I don't need help.",
+   "intent": "any",
+   "not": [
+    "call_help_ctx"
+   ]
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "The machine says unexpected item in the bagging area.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "It says unexpected item.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "It says wait for assistance.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "It doesn't work.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "I put my bag there and it says unexpected item.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "It stopped.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "The screen is red.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "It's beeping.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "I don't know what happened.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "I can't pay.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "sco_explain",
+   "say": "Something is wrong with this machine.",
+   "intent": "sco_problem"
+  },
+  {
+   "ctx": "find",
+   "say": "Yes, thank you.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "find",
+   "say": "Yes, I found everything.",
+   "intent": "found_all"
+  },
+  {
+   "ctx": "find",
+   "say": "Yes, everything, thanks.",
+   "intent": "found_ctx"
+  },
+  {
+   "ctx": "find",
+   "say": "Yeah, all good.",
+   "intent": "found_ctx"
+  },
+  {
+   "ctx": "find",
+   "say": "I found all.",
+   "intent": "found_all"
+  },
+  {
+   "ctx": "find",
+   "say": "Everything is okay.",
+   "intent": "found_all"
+  },
+  {
+   "ctx": "find",
+   "say": "Everything fine, thank you.",
+   "intent": "found_all"
+  },
+  {
+   "ctx": "find",
+   "say": "Yes, I did.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "find",
+   "say": "I did, thanks.",
+   "intent": "found_ctx"
+  },
+  {
+   "ctx": "find",
+   "say": "Yes, I have everything.",
+   "intent": [
+    "found_all",
+    "found_ctx"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "I think I got everything.",
+   "intent": "found_all"
+  },
+  {
+   "ctx": "find",
+   "say": "No, I can't find eggs.",
+   "intent": "not_found",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "I couldn't find the butter.",
+   "intent": "not_found",
+   "slots": {
+    "product": "butter"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "I didn't find coffee.",
+   "intent": "not_found",
+   "slots": {
+    "product": "coffee"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "Almost everything.",
+   "intent": "not_found"
+  },
+  {
+   "ctx": "find",
+   "say": "No, not everything.",
+   "intent": "not_found"
+  },
+  {
+   "ctx": "find",
+   "say": "I found everything except the eggs.",
+   "intent": "not_found",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "Not really.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "find",
+   "say": "I was looking for the eggs.",
+   "intent": [
+    "not_found",
+    "product_ctx"
+   ],
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "You're out of eggs.",
+   "intent": "not_found",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "Where is the milk?",
+   "intent": "ask_where",
+   "slots": {
+    "product": "milk"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "Where can I find rice?",
+   "intent": "ask_where",
+   "slots": {
+    "product": "rice"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "Do you have tea?",
+   "intent": "ask_have",
+   "slots": {
+    "product": "tea"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "Where eggs?",
+   "intent": "ask_where",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "find",
+   "say": "I didn't find everything.",
+   "intent": "not_found",
+   "not": [
+    "found_all",
+    "found_ctx"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "No, I couldn't find the eggs.",
+   "intent": "not_found",
+   "not": [
+    "found_all",
+    "found_ctx"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "I not find the coffee.",
+   "intent": "not_found",
+   "slots": {
+    "product": "coffee"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "Eggs.",
+   "intent": "product_ctx",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "The eggs.",
+   "intent": "product_ctx",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "I need eggs.",
+   "intent": "product_ctx",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "Some coffee.",
+   "intent": "product_ctx",
+   "slots": {
+    "product": "coffee"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "Butter.",
+   "intent": "product_ctx",
+   "slots": {
+    "product": "butter"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "Toilet paper.",
+   "intent": "product_ctx",
+   "slots": {
+    "product": "toilet_paper"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "Where are the eggs?",
+   "intent": "ask_where",
+   "slots": {
+    "product": "eggs"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "I couldn't find the rice.",
+   "intent": "not_found",
+   "slots": {
+    "product": "rice"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "I was looking for yogurt.",
+   "intent": [
+    "not_found",
+    "product_ctx"
+   ],
+   "slots": {
+    "product": "yogurt"
+   }
+  },
+  {
+   "ctx": "missing",
+   "say": "Do you have pasta?",
+   "intent": "ask_have",
+   "slots": {
+    "product": "pasta"
+   }
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yes.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yes, I do.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yes, here it is.",
+   "intent": "rewards_have_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yes, here you go.",
+   "intent": "rewards_have_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yeah, I have one.",
+   "intent": "rewards_have"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yes, I'm a member.",
+   "intent": "rewards_have"
+  },
+  {
+   "ctx": "rewards",
+   "say": "I have it on my phone.",
+   "intent": "rewards_have"
+  },
+  {
+   "ctx": "rewards",
+   "say": "It's in the app.",
+   "intent": "rewards_have"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No, I don't.",
+   "intent": "rewards_no_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No, I don't have.",
+   "intent": "rewards_no_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "I don't have card.",
+   "intent": "rewards_no"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No, I am not member.",
+   "intent": "rewards_no"
+  },
+  {
+   "ctx": "rewards",
+   "say": "I'm a tourist.",
+   "intent": "rewards_no"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No, I'm just visiting.",
+   "intent": "rewards_no"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No, but I've got a heart!",
+   "intent": "rewards_no"
+  },
+  {
+   "ctx": "rewards",
+   "say": "I forgot it at home.",
+   "intent": "rewards_forgot_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "I left my card at home.",
+   "intent": "rewards_forgot"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Not with me.",
+   "intent": "rewards_forgot_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Yes, but I don't have it with me.",
+   "intent": "rewards_forgot_ctx",
+   "not": [
+    "rewards_have"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "What is it?",
+   "intent": "rewards_what_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "What is loyalty card?",
+   "intent": "rewards_what"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Is it free?",
+   "intent": "rewards_what_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Can you find me with my phone number?",
+   "intent": "rewards_lookup"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Can I use my phone number?",
+   "intent": "rewards_lookup"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Can you look me up by my phone number?",
+   "intent": "rewards_lookup"
+  },
+  {
+   "ctx": "rewards",
+   "say": "Can I get one?",
+   "intent": "rewards_join_ctx"
+  },
+  {
+   "ctx": "rewards",
+   "say": "No, I don't have a card.",
+   "intent": "rewards_no",
+   "not": [
+    "rewards_have"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "I'm not a member.",
+   "intent": "rewards_no",
+   "not": [
+    "rewards_have"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "I don't have it with me.",
+   "intent": "rewards_forgot_ctx",
+   "not": [
+    "rewards_have"
+   ]
+  },
+  {
+   "ctx": "join",
+   "say": "Yes, please.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "join",
+   "say": "Sure, why not?",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "join",
+   "say": "No, thanks.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "join",
+   "say": "No, thank you, maybe next time.",
+   "intent": [
+    "yn:no",
+    "join_no_ctx"
+   ]
+  },
+  {
+   "ctx": "join",
+   "say": "Not today.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "join",
+   "say": "How does it work?",
+   "intent": "rewards_what_ctx"
+  },
+  {
+   "ctx": "join",
+   "say": "What do I get?",
+   "intent": "rewards_what_ctx"
+  },
+  {
+   "ctx": "join",
+   "say": "Okay, sign me up!",
+   "intent": "rewards_join"
+  },
+  {
+   "ctx": "join",
+   "say": "Yes, I would like to join.",
+   "intent": "rewards_join"
+  },
+  {
+   "ctx": "join",
+   "say": "I'm just visiting.",
+   "intent": "rewards_no"
+  },
+  {
+   "ctx": "join",
+   "say": "No, I don't want to join.",
+   "intent": "join_no_ctx",
+   "not": [
+    "rewards_join"
+   ]
+  },
+  {
+   "ctx": "join",
+   "say": "I'm not interested, thanks.",
+   "intent": "join_no_ctx",
+   "not": [
+    "rewards_join"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "It's 555-0142.",
+   "intent": "phone_ctx",
+   "slots": {
+    "digits": "5550142"
+   }
+  },
+  {
+   "ctx": "phone",
+   "say": "555 0142.",
+   "intent": "phone_ctx",
+   "slots": {
+    "digits": "5550142"
+   }
+  },
+  {
+   "ctx": "phone",
+   "say": "My number is 555-0142.",
+   "intent": "phone_ctx",
+   "slots": {
+    "digits": "5550142"
+   }
+  },
+  {
+   "ctx": "phone",
+   "say": "Five five five, oh one four two.",
+   "intent": "phone_ctx",
+   "slots": {
+    "digits": "5550142"
+   }
+  },
+  {
+   "ctx": "phone",
+   "say": "207 555 0142",
+   "intent": "phone_ctx",
+   "slots": {
+    "digits": "2075550142"
+   }
+  },
+  {
+   "ctx": "phone",
+   "say": "I don't have an American number.",
+   "intent": "phone_none",
+   "not": [
+    "phone_ctx"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "I don't remember it.",
+   "intent": "phone_none"
+  },
+  {
+   "ctx": "phone",
+   "say": "Sorry, I only have a Lithuanian number.",
+   "intent": "phone_none"
+  },
+  {
+   "ctx": "phone",
+   "say": "I don't have a phone number.",
+   "intent": "phone_none",
+   "not": [
+    "phone_ctx"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "Sure, here you go.",
+   "intent": "id_show_ctx"
+  },
+  {
+   "ctx": "id",
+   "say": "Here's my passport.",
+   "intent": "id_show"
+  },
+  {
+   "ctx": "id",
+   "say": "Yes, of course.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "id",
+   "say": "Of course, here it is.",
+   "intent": "id_show_ctx"
+  },
+  {
+   "ctx": "id",
+   "say": "Is passport ok?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "Can I show you my passport?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "Is a Lithuanian ID okay?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "I have my driver's license.",
+   "intent": "id_show"
+  },
+  {
+   "ctx": "id",
+   "say": "I don't have it with me.",
+   "intent": "id_none_ctx",
+   "not": [
+    "id_show"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "I forgot my passport at the hotel.",
+   "intent": "id_none"
+  },
+  {
+   "ctx": "id",
+   "say": "Sorry, I have no ID.",
+   "intent": "id_none",
+   "not": [
+    "id_show"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "No, I didn't bring it.",
+   "intent": "id_none_ctx",
+   "not": [
+    "id_show"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "Really? I'm 50 years old!",
+   "intent": "id_age"
+  },
+  {
+   "ctx": "id",
+   "say": "Why do you need it?",
+   "intent": "id_why_ctx"
+  },
+  {
+   "ctx": "id",
+   "say": "Then forget the wine.",
+   "intent": "wine_remove"
+  },
+  {
+   "ctx": "id",
+   "say": "I don't need the wine then.",
+   "intent": "wine_remove",
+   "not": [
+    "id_show"
+   ]
+  },
+  {
+   "ctx": "price",
+   "say": "Yes, it said two for five.",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "I think they are on sale.",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "The sign said two for five dollars.",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "No, it's two for five.",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "They're two for five.",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "Chips is two for five",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "Is sale!",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "The crisps are on offer.",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "Aren't they on sale?",
+   "intent": "sale_claim"
+  },
+  {
+   "ctx": "price",
+   "say": "Can you check the price?",
+   "intent": "price_check_req"
+  },
+  {
+   "ctx": "price",
+   "say": "Could you do a price check, please?",
+   "intent": "price_check_req"
+  },
+  {
+   "ctx": "price",
+   "say": "Can I have a price check?",
+   "intent": "price_check_req"
+  },
+  {
+   "ctx": "price",
+   "say": "I think it's wrong.",
+   "intent": "price_wrong_ctx"
+  },
+  {
+   "ctx": "price",
+   "say": "That's too much.",
+   "intent": "price_wrong_ctx"
+  },
+  {
+   "ctx": "price",
+   "say": "It was cheaper on the shelf.",
+   "intent": "price_wrong"
+  },
+  {
+   "ctx": "price",
+   "say": "Okay, that's fine.",
+   "intent": "price_ok_ctx"
+  },
+  {
+   "ctx": "price",
+   "say": "Yes, that's right.",
+   "intent": "price_ok_ctx"
+  },
+  {
+   "ctx": "price",
+   "say": "No problem.",
+   "intent": "price_ok_ctx"
+  },
+  {
+   "ctx": "price",
+   "say": "I didn't see a sign.",
+   "intent": "no_sign_ctx",
+   "not": [
+    "sale_claim"
+   ]
+  },
+  {
+   "ctx": "price",
+   "say": "No, I didn't.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "price",
+   "say": "I'm not sure.",
+   "intent": "g_dontknow"
+  },
+  {
+   "ctx": "price",
+   "say": "Then I don't want them.",
+   "intent": "chips_remove_ctx",
+   "not": [
+    "sale_claim",
+    "price_ok_ctx"
+   ]
+  },
+  {
+   "ctx": "price",
+   "say": "Never mind the chips.",
+   "intent": "chips_remove"
+  },
+  {
+   "ctx": "price",
+   "say": "I don't want the chips.",
+   "intent": "chips_remove",
+   "not": [
+    "sale_claim"
+   ]
+  },
+  {
+   "ctx": "second",
+   "say": "Yes, please.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "second",
+   "say": "Sure!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "second",
+   "say": "Okay, I'll take two.",
+   "intent": "second_yes_ctx"
+  },
+  {
+   "ctx": "second",
+   "say": "Yes, give me another one.",
+   "intent": "second_yes_ctx"
+  },
+  {
+   "ctx": "second",
+   "say": "Why not!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "second",
+   "say": "Great, two please.",
+   "intent": "second_yes_ctx"
+  },
+  {
+   "ctx": "second",
+   "say": "Yes, one more.",
+   "intent": "second_yes_ctx"
+  },
+  {
+   "ctx": "second",
+   "say": "That's a good deal!",
+   "intent": "second_yes_ctx"
+  },
+  {
+   "ctx": "second",
+   "say": "No, thanks.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "second",
+   "say": "No, just one.",
+   "intent": "second_no_ctx"
+  },
+  {
+   "ctx": "second",
+   "say": "One is enough.",
+   "intent": [
+    "second_no_ctx",
+    "qty_one_ctx"
+   ]
+  },
+  {
+   "ctx": "second",
+   "say": "I don't need two.",
+   "intent": "second_no_ctx",
+   "not": [
+    "second_yes_ctx"
+   ]
+  },
+  {
+   "ctx": "second",
+   "say": "I don't want another one.",
+   "intent": "second_no_ctx",
+   "not": [
+    "second_yes_ctx"
+   ]
+  },
+  {
+   "ctx": "second",
+   "say": "No, I don't need the chips at all.",
+   "intent": "chips_remove",
+   "not": [
+    "second_yes_ctx"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "Yes, please.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "bags",
+   "say": "Paper, please.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bags",
+   "say": "Plastic.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bags",
+   "say": "A paper bag, please.",
+   "intent": "bag_want"
+  },
+  {
+   "ctx": "bags",
+   "say": "One bag.",
+   "intent": "bag_want"
+  },
+  {
+   "ctx": "bags",
+   "say": "Two bags, please.",
+   "intent": "bag_want"
+  },
+  {
+   "ctx": "bags",
+   "say": "A carrier bag, please.",
+   "intent": "bag_want"
+  },
+  {
+   "ctx": "bags",
+   "say": "Give me one bag.",
+   "intent": "bag_want"
+  },
+  {
+   "ctx": "bags",
+   "say": "No, thanks.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "bags",
+   "say": "No, I have my own bag.",
+   "intent": "bag_no"
+  },
+  {
+   "ctx": "bags",
+   "say": "I brought my bag.",
+   "intent": "bag_no"
+  },
+  {
+   "ctx": "bags",
+   "say": "I have bag.",
+   "intent": "bag_no"
+  },
+  {
+   "ctx": "bags",
+   "say": "I don't need a bag.",
+   "intent": "bag_no",
+   "not": [
+    "bag_want"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "No bag.",
+   "intent": "bag_no",
+   "not": [
+    "bag_want"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "No, I don't want a bag.",
+   "intent": "bag_no",
+   "not": [
+    "bag_want"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "I'll carry it.",
+   "intent": "bag_no"
+  },
+  {
+   "ctx": "bags",
+   "say": "How much is a bag?",
+   "intent": "bag_price_q"
+  },
+  {
+   "ctx": "bags",
+   "say": "Are the bags free?",
+   "intent": "bag_price_q"
+  },
+  {
+   "ctx": "bags",
+   "say": "Either one is fine.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bags",
+   "say": "Not plastic.",
+   "intent": "bag_kind_neg_ctx",
+   "not": [
+    "bag_kind_ctx"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "I don't need plastic.",
+   "intent": "bag_kind_neg_ctx",
+   "not": [
+    "bag_kind_ctx"
+   ]
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Paper.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Plastic, please.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Paper is fine.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Either.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Doesn't matter.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "I prefer paper.",
+   "intent": "bag_kind_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Not plastic, please.",
+   "intent": "bag_kind_neg_ctx",
+   "not": [
+    "bag_kind_ctx"
+   ]
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "Paper, not plastic.",
+   "intent": "bag_kind_neg_ctx"
+  },
+  {
+   "ctx": "bag_kind",
+   "say": "No bag, actually.",
+   "intent": "bag_no"
+  },
+  {
+   "ctx": "pay",
+   "say": "Card.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "Card, please.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "By card.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "With card, please.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "I'll pay by card.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "I pay card.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "Credit card.",
+   "intent": [
+    "pay_card",
+    "debit_credit"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "Do you take Visa?",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "pay",
+   "say": "Cash.",
+   "intent": "pay_cash"
+  },
+  {
+   "ctx": "pay",
+   "say": "In cash, please.",
+   "intent": "pay_cash"
+  },
+  {
+   "ctx": "pay",
+   "say": "Here you go.",
+   "intent": "here_you_go"
+  },
+  {
+   "ctx": "pay",
+   "say": "Here's twenty dollars.",
+   "intent": "here_you_go"
+  },
+  {
+   "ctx": "pay",
+   "say": "Can I use Apple Pay?",
+   "intent": "pay_phone"
+  },
+  {
+   "ctx": "pay",
+   "say": "Can I pay with my phone?",
+   "intent": "pay_phone"
+  },
+  {
+   "ctx": "pay",
+   "say": "How much?",
+   "intent": "total_q"
+  },
+  {
+   "ctx": "pay",
+   "say": "Sorry, how much is it?",
+   "intent": "total_q"
+  },
+  {
+   "ctx": "pay",
+   "say": "I don't have cash.",
+   "intent": "no_cash",
+   "not": [
+    "pay_cash"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "Not cash, card.",
+   "intent": "pay_card",
+   "not": [
+    "pay_cash"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "Not card, cash.",
+   "intent": "pay_cash",
+   "not": [
+    "pay_card"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "I don't want to pay cash.",
+   "intent": "no_cash",
+   "not": [
+    "pay_cash"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "No cash, only card.",
+   "intent": [
+    "no_cash",
+    "pay_card"
+   ],
+   "not": [
+    "pay_cash"
+   ]
+  },
+  {
+   "ctx": "debit",
+   "say": "Debit.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "Credit.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "Debit, please.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "It's a credit card.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "Visa debit.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "Credit is fine.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "Not credit, debit.",
+   "intent": "debit_credit"
+  },
+  {
+   "ctx": "debit",
+   "say": "I don't know my PIN.",
+   "intent": "no_pin"
+  },
+  {
+   "ctx": "debit",
+   "say": "I don't know.",
+   "intent": "g_dontknow"
+  },
+  {
+   "ctx": "cashback",
+   "say": "No, thanks.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "cashback",
+   "say": "No.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "cashback",
+   "say": "Yes, twenty, please.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cashback",
+   "say": "Yes, please.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "cashback",
+   "say": "Twenty dollars.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cashback",
+   "say": "Can I get forty?",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 4000
+   }
+  },
+  {
+   "ctx": "cashback",
+   "say": "No cash back, thank you.",
+   "intent": "cashback_no"
+  },
+  {
+   "ctx": "cashback",
+   "say": "Yes, can I have $20 cash back?",
+   "intent": [
+    "cashback_yes",
+    "cashback_amount_ctx"
+   ]
+  },
+  {
+   "ctx": "cashback",
+   "say": "I don't need cash.",
+   "intent": "cashback_no",
+   "not": [
+    "cashback_yes",
+    "cashback_amount_ctx"
+   ]
+  },
+  {
+   "ctx": "cashback",
+   "say": "No, I don't want cash back.",
+   "intent": "cashback_no",
+   "not": [
+    "cashback_yes",
+    "cashback_amount_ctx"
+   ]
+  },
+  {
+   "ctx": "cashback",
+   "say": "What is cash back?",
+   "intent": "cashback_what"
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "Twenty.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "Twenty dollars, please.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "$40.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 4000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "Forty dollars.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 4000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "Just twenty.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "Can I get sixty?",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 6000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "A hundred dollars.",
+   "intent": "cashback_amount_ctx",
+   "slots": {
+    "price": 10000
+   }
+  },
+  {
+   "ctx": "cb_amount",
+   "say": "Actually, no.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "charge",
+   "say": "Okay.",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "Okay, done.",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "Done.",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "Like this?",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "Here?",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "Thanks.",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "Yes.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "charge",
+   "say": "Is it okay?",
+   "intent": "done_ctx"
+  },
+  {
+   "ctx": "charge",
+   "say": "It didn't work.",
+   "intent": "card_fail",
+   "not": [
+    "done_ctx"
+   ]
+  },
+  {
+   "ctx": "charge",
+   "say": "My card was declined.",
+   "intent": "card_fail",
+   "not": [
+    "done_ctx"
+   ]
+  },
+  {
+   "ctx": "charge",
+   "say": "I don't know my PIN.",
+   "intent": "no_pin"
+  },
+  {
+   "ctx": "charge",
+   "say": "Do I need a PIN?",
+   "intent": "pin_q"
+  },
+  {
+   "ctx": "receipt",
+   "say": "Yes, please.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "receipt",
+   "say": "No, thanks.",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "receipt",
+   "say": "No receipt, thanks.",
+   "intent": "receipt_no",
+   "not": [
+    "receipt_yes"
+   ]
+  },
+  {
+   "ctx": "receipt",
+   "say": "Yes, in the bag, please.",
+   "intent": "receipt_yes"
+  },
+  {
+   "ctx": "receipt",
+   "say": "I don't need it.",
+   "intent": "receipt_no_ctx",
+   "not": [
+    "receipt_yes"
+   ]
+  },
+  {
+   "ctx": "receipt",
+   "say": "No, I don't need a receipt.",
+   "intent": "receipt_no",
+   "not": [
+    "receipt_yes"
+   ]
+  },
+  {
+   "ctx": "receipt",
+   "say": "Can I get a receipt?",
+   "intent": "receipt_yes"
+  },
+  {
+   "ctx": "howareyou",
+   "say": "Good, thanks. And you?",
+   "intent": "g_howareyou_answer"
+  },
+  {
+   "ctx": "howareyou",
+   "say": "Fine, thank you.",
+   "intent": "g_howareyou_answer"
+  },
+  {
+   "ctx": "howareyou",
+   "say": "Not bad.",
+   "intent": "g_howareyou_answer"
+  },
+  {
+   "ctx": "howareyou",
+   "say": "A bit tired.",
+   "intent": "g_howareyou_bad"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you!",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye!",
+   "intent": "g_bye"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks, you too!",
+   "intent": [
+    "g_thanks",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Have a nice day!",
+   "intent": "g_bye"
+  },
+  {
+   "ctx": "sco",
+   "say": "Everything is fine, I don't need help.",
+   "intent": "any",
+   "not": [
+    "call_help_ctx"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "No, I didn't find the eggs.",
+   "intent": "any",
+   "not": [
+    "found_all",
+    "found_ctx"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "I don't have a loyalty card.",
+   "intent": "any",
+   "not": [
+    "rewards_have"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "I'm not a rewards member.",
+   "intent": "any",
+   "not": [
+    "rewards_have"
+   ]
+  },
+  {
+   "ctx": "join",
+   "say": "I don't want to sign up.",
+   "intent": "any",
+   "not": [
+    "rewards_join"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "I don't want to give my number.",
+   "intent": "any",
+   "not": [
+    "phone_ctx"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "I don't have my passport here.",
+   "intent": "any",
+   "not": [
+    "id_show",
+    "id_ask_ok"
+   ]
+  },
+  {
+   "ctx": "price",
+   "say": "They are not on sale.",
+   "intent": "any",
+   "not": [
+    "sale_claim"
+   ]
+  },
+  {
+   "ctx": "price",
+   "say": "I don't think it's two for five.",
+   "intent": "any",
+   "not": [
+    "sale_claim"
+   ]
+  },
+  {
+   "ctx": "second",
+   "say": "No more chips.",
+   "intent": "any",
+   "not": [
+    "second_yes_ctx"
+   ]
+  },
+  {
+   "ctx": "second",
+   "say": "I don't want two bags.",
+   "intent": "any",
+   "not": [
+    "second_yes_ctx"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "I don't want two bags.",
+   "intent": "any",
+   "not": [
+    "bag_want"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "I don't need a paper bag.",
+   "intent": "any",
+   "not": [
+    "bag_want",
+    "bag_kind_ctx"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "I don't want to pay by card.",
+   "intent": "any",
+   "not": [
+    "pay_card"
+   ]
+  },
+  {
+   "ctx": "cashback",
+   "say": "I don't want twenty dollars.",
+   "intent": "any",
+   "not": [
+    "cashback_yes",
+    "cashback_amount_ctx"
+   ]
+  },
+  {
+   "ctx": "charge",
+   "say": "It's not working.",
+   "intent": "any",
+   "not": [
+    "done_ctx"
+   ]
+  },
+  {
+   "ctx": "receipt",
+   "say": "I don't want a receipt.",
+   "intent": "any",
+   "not": [
+    "receipt_yes"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "The weather is nice today",
+   "intent": "none"
+  },
+  {
+   "ctx": "bags",
+   "say": "My cat is sleeping at home",
+   "intent": "none"
+  },
+  {
+   "ctx": "id",
+   "say": "potato potato wine chips",
+   "intent": "none"
+  },
+  {
+   "ctx": "join",
+   "say": "I'm not sure.",
+   "intent": "g_dontknow",
+   "not": [
+    "rewards_no",
+    "rewards_no_ctx",
+    "price_ok_ctx"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "I'm not sure.",
+   "intent": "g_dontknow",
+   "not": [
+    "rewards_no",
+    "rewards_no_ctx",
+    "price_ok_ctx"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "I'm not sure.",
+   "intent": "any",
+   "not": [
+    "price_ok_ctx",
+    "bag_want",
+    "bag_kind_ctx"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "I don't want it.",
+   "intent": "any",
+   "not": [
+    "chips_remove",
+    "chips_remove_ctx",
+    "bag_no"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "I don't need it.",
+   "intent": "any",
+   "not": [
+    "bag_no",
+    "bag_no_ctx",
+    "chips_remove"
+   ]
+  },
+  {
+   "ctx": "price",
+   "say": "I don't think so.",
+   "intent": "yn:no",
+   "not": [
+    "price_ok_ctx",
+    "no_sign_ctx"
+   ]
+  },
+  {
+   "ctx": "receipt",
+   "say": "I don't want it.",
+   "intent": "any",
+   "not": [
+    "chips_remove",
+    "chips_remove_ctx"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "Is it free?",
+   "intent": "bag_price_ctx",
+   "not": [
+    "rewards_what",
+    "rewards_what_ctx"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "Here you go.",
+   "intent": "any",
+   "not": [
+    "rewards_have_ctx",
+    "id_show_ctx"
+   ]
+  },
+  {
+   "ctx": "find",
+   "say": "Never mind.",
+   "intent": "any",
+   "not": [
+    "price_ok_ctx",
+    "wine_remove_ctx"
+   ]
+  },
+  {
+   "ctx": "rewards",
+   "say": "Why?",
+   "intent": "any",
+   "not": [
+    "id_why",
+    "id_why_ctx"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "I don't want it then.",
+   "intent": "wine_remove_ctx"
+  },
+  {
+   "ctx": "pay",
+   "say": "That's too much!",
+   "intent": "price_wrong_ctx"
+  },
+  {
+   "ctx": "id",
+   "say": "Can I show my passport?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "Could I give you my passport?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "Would a passport be okay?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "My passport is okay?",
+   "intent": "id_ask_ok"
+  },
+  {
+   "ctx": "id",
+   "say": "I only have my passport.",
+   "intent": "id_show",
+   "not": [
+    "id_none",
+    "id_none_ctx"
+   ]
+  },
+  {
+   "ctx": "id",
+   "say": "Sure, I can show you.",
+   "intent": "id_show_ctx"
+  },
+  {
+   "ctx": "id",
+   "say": "I can show you my ID card.",
+   "intent": "id_show"
+  },
+  {
+   "ctx": "bags",
+   "say": "Actually, I don't need another bag of chips.",
+   "intent": "chips_one",
+   "not": [
+    "chips_remove",
+    "chips_two",
+    "bag_want"
+   ]
+  },
+  {
+   "ctx": "bags",
+   "say": "Just one.",
+   "intent": "qty_one_ctx"
+  },
+  {
+   "ctx": "pay",
+   "say": "Actually, just one.",
+   "intent": "qty_one_ctx"
+  },
+  {
+   "ctx": "pay",
+   "say": "I don't need the second one.",
+   "intent": "chips_one"
+  },
+  {
+   "ctx": "pay",
+   "say": "Only one bag of chips, please.",
+   "intent": "chips_one"
+  },
+  {
+   "ctx": "pay",
+   "say": "I'll take two bags of chips after all.",
+   "intent": "chips_two",
+   "not": [
+    "chips_one"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "I don't want another bag of chips.",
+   "intent": "chips_one",
+   "not": [
+    "chips_two",
+    "chips_remove",
+    "second_yes_ctx"
+   ]
+  },
+  {
+   "ctx": "charge",
+   "say": "Actually, I don't need the second one.",
+   "intent": "chips_one"
+  },
+  {
+   "ctx": "cash",
+   "say": "Here you go.",
+   "intent": "here_you_go"
+  },
+  {
+   "ctx": "cash",
+   "say": "Here's twenty.",
+   "intent": "here_you_go",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cash",
+   "say": "Twenty dollars.",
+   "intent": "cash_given_ctx",
+   "slots": {
+    "price": 2000
+   }
+  },
+  {
+   "ctx": "cash",
+   "say": "Sorry, I only have a fifty.",
+   "intent": "cash_given_ctx",
+   "slots": {
+    "price": 5000
+   }
+  },
+  {
+   "ctx": "cash",
+   "say": "Here's a hundred.",
+   "intent": "here_you_go",
+   "slots": {
+    "price": 10000
+   }
+  },
+  {
+   "ctx": "cash",
+   "say": "Do you have change for a fifty?",
+   "intent": "change_q_ctx",
+   "slots": {
+    "price": 5000
+   }
+  },
+  {
+   "ctx": "cash",
+   "say": "Oh wait, card, please.",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "cash",
+   "say": "Keep the change.",
+   "intent": "keep_change"
+  },
+  {
+   "ctx": "cash",
+   "say": "I don't have twenty.",
+   "intent": "any",
+   "not": [
+    "here_you_go",
+    "cash_given_ctx"
+   ]
+  },
+  {
+   "ctx": "cash",
+   "say": "I don't have any cash.",
+   "intent": "no_cash",
+   "not": [
+    "here_you_go",
+    "cash_given_ctx"
+   ]
+  },
+  {
+   "ctx": "pay",
+   "say": "purple elephants dance on the moon",
+   "intent": "none"
+  },
+  {
+   "ctx": "rewards",
+   "say": "banana banana register chips",
+   "intent": "none"
+  }
+ ]
+}

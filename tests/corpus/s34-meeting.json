@@ -1,0 +1,2238 @@
+{
+ "situation": "s34-meeting",
+ "items": [
+  {
+   "ctx": "mute",
+   "say": "Sara, you're on mute!",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, you are muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara you on mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "I think Sara is on mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, your microphone is off",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, turn on your mic",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, unmute please",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, click the mic button",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, you need to unmute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "She is muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, check your microphone",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Your mic is muted, Sara",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, mute!",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, you're still muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "I think you are on mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, we can't hear you",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "We can't hear Sara",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, can you hear us?",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, we don't hear you",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "There is no sound",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara, you're not on mute",
+   "intent": "not_muted",
+   "not": [
+    "tell_mute"
+   ]
+  },
+  {
+   "ctx": "mute",
+   "say": "Hi Sara!",
+   "intent": "greet_team",
+   "not": [
+    "tell_mute"
+   ]
+  },
+  {
+   "ctx": "mute",
+   "say": "Good morning, everyone",
+   "intent": "greet_team"
+  },
+  {
+   "ctx": "mute",
+   "say": "Sara is not muted",
+   "intent": "any",
+   "not": [
+    "tell_mute"
+   ]
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, we can hear you now!",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, loud and clear",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, now it's good",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, perfect",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, much better",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes I can hear you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "We hear you now",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Now yes",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, welcome Sara!",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes, the sound is good now",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "No, still nothing",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "No, we still can't hear you",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Still no sound",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Not yet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "You are very quiet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "You are still on mute",
+   "intent": [
+    "hear_no",
+    "tell_mute"
+   ]
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "Yes!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "No",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "I can't hear you",
+   "intent": [
+    "hear_no",
+    "tell_mute_ctx"
+   ],
+   "not": [
+    "hear_yes"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I finished the report",
+   "intent": "upd_done",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I finished the presentation yesterday",
+   "intent": "upd_done",
+   "slots": {
+    "task": "presentation"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "The website is ready",
+   "intent": "upd_done",
+   "slots": {
+    "task": "website"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm done with the budget",
+   "intent": "upd_done",
+   "slots": {
+    "task": "budget"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I sent the proposal to the client",
+   "intent": "upd_done",
+   "slots": {
+    "task": "proposal"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I finish report",
+   "intent": "upd_done",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "Report is ready",
+   "intent": "upd_done",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm working on the new website",
+   "intent": "upd_working",
+   "slots": {
+    "task": "website"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm still working on the report",
+   "intent": "upd_working",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm working on the survey, it will be ready by Friday",
+   "intent": "upd_working",
+   "slots": {
+    "task": "survey"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "Now I'm preparing the slides",
+   "intent": "upd_working",
+   "slots": {
+    "task": "slides"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm almost done with the presentation",
+   "intent": "upd_working",
+   "slots": {
+    "task": "presentation"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "The report will be ready tomorrow",
+   "intent": "upd_working",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I will finish the contract next week",
+   "intent": "upd_working",
+   "slots": {
+    "task": "contract"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I work on presentation",
+   "intent": "upd_working",
+   "slots": {
+    "task": "presentation"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I making the slides",
+   "intent": "upd_working",
+   "slots": {
+    "task": "slides"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm a bit behind with the invoices",
+   "intent": "upd_behind",
+   "slots": {
+    "task": "invoices"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I haven't finished the report yet",
+   "intent": "upd_behind",
+   "not": [
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "The survey isn't ready yet",
+   "intent": "upd_behind",
+   "not": [
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I need more time for the budget",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "I have some problems with the spreadsheet",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm late with the newsletter",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "Everything is going well",
+   "intent": "upd_ok"
+  },
+  {
+   "ctx": "update",
+   "say": "Everything is on track",
+   "intent": "upd_ok"
+  },
+  {
+   "ctx": "update",
+   "say": "Good, thanks!",
+   "intent": "upd_ok_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "Pretty busy",
+   "intent": "upd_ok_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "Busy week",
+   "intent": "upd_ok_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "Not much new",
+   "intent": "upd_nothing"
+  },
+  {
+   "ctx": "update",
+   "say": "Nothing new from me",
+   "intent": "upd_nothing"
+  },
+  {
+   "ctx": "update",
+   "say": "I didn't send the report",
+   "intent": "any",
+   "not": [
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "The report is not done",
+   "intent": "upd_behind",
+   "not": [
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "what_task",
+   "say": "The report",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "what_task",
+   "say": "The new website",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "website"
+   }
+  },
+  {
+   "ctx": "what_task",
+   "say": "Mostly the budget",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "budget"
+   }
+  },
+  {
+   "ctx": "what_task",
+   "say": "On the survey",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "survey"
+   }
+  },
+  {
+   "ctx": "what_task",
+   "say": "The sales numbers",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "numbers"
+   }
+  },
+  {
+   "ctx": "what_task",
+   "say": "The marketing campaign",
+   "intent": "task_ctx",
+   "slots": {
+    "task": "campaign"
+   }
+  },
+  {
+   "ctx": "what_task",
+   "say": "I'm working on the presentation",
+   "intent": "upd_working",
+   "slots": {
+    "task": "presentation"
+   }
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sure!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sure, I'll send it after the meeting",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Of course, I will send it today",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Yes, right after the meeting",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "I already sent it",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Yes, I will email it to everyone",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sure, I can do that",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "send_q",
+   "say": "No problem",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sorry, I can't send it today",
+   "intent": "cant_send",
+   "not": [
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "when_q",
+   "say": "By Friday",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "Tomorrow morning",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "Next week",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "It will be ready by Friday",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "I think by Monday",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "Maybe in two days",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "At the end of the week",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "Hopefully by Thursday",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "Friday",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "Before Friday",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "In a few days",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "It'll be done tomorrow",
+   "intent": "when_ans"
+  },
+  {
+   "ctx": "when_q",
+   "say": "I'm not sure yet",
+   "intent": "unsure"
+  },
+  {
+   "ctx": "when_q",
+   "say": "I don't know",
+   "intent": "unsure"
+  },
+  {
+   "ctx": "when_q",
+   "say": "It's hard to say",
+   "intent": "unsure"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Could you clarify that?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Can you clarify that, please?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Could you explain that?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Can you say it in simple words?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Could you say that more simply?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "What do you mean?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Sorry, what does that mean?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "I don't understand",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "I didn't understand that",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "I'm a bit lost",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "That's too technical",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "In plain English, please",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Can you explain please?",
+   "intent": "clarify"
+  },
+  {
+   "ctx": "clarify",
+   "say": "What do you mean by beta?",
+   "intent": "word_q",
+   "slots": {
+    "term": "beta"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What is QA?",
+   "intent": "word_q",
+   "slots": {
+    "term": "qa"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What does go live mean?",
+   "intent": "word_q",
+   "slots": {
+    "term": "golive"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What's a soft launch?",
+   "intent": "word_q",
+   "slots": {
+    "term": "soft"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What are blockers?",
+   "intent": "word_q",
+   "slots": {
+    "term": "blockers"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What does feature complete mean?",
+   "intent": "word_q",
+   "slots": {
+    "term": "feature"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What does slip mean?",
+   "intent": "word_q",
+   "slots": {
+    "term": "slip"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "Sorry, what is scale up?",
+   "intent": "word_q",
+   "slots": {
+    "term": "scale"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "What is the meaning of blockers?",
+   "intent": "word_q",
+   "slots": {
+    "term": "blockers"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "Scale up?",
+   "intent": "term_echo_ctx",
+   "slots": {
+    "term": "scale"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "Sorry, go live?",
+   "intent": "term_echo_ctx",
+   "slots": {
+    "term": "golive"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "Blockers?",
+   "intent": "term_echo_ctx",
+   "slots": {
+    "term": "blockers"
+   }
+  },
+  {
+   "ctx": "clarify",
+   "say": "No questions",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "clarify",
+   "say": "No questions from me",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "clarify",
+   "say": "No, it's clear",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Everything is clear",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "clarify",
+   "say": "No, I understand",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "clarify",
+   "say": "I have a question",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "clarify",
+   "say": "Yes, one question",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "clarify",
+   "say": "No, I don't understand",
+   "intent": "clarify",
+   "not": [
+    "nothing_more"
+   ]
+  },
+  {
+   "ctx": "clarify",
+   "say": "I don't have any questions",
+   "intent": "nothing_more",
+   "not": [
+    "add_req",
+    "clarify"
+   ]
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Yes, thanks!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Yes, now I understand",
+   "intent": [
+    "nothing_more",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Got it, thanks",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "That makes sense",
+   "intent": [
+    "nothing_more",
+    "agree"
+   ]
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Now it's clear",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Clear now, thank you",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Not really",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "I still don't understand",
+   "intent": "clarify",
+   "not": [
+    "nothing_more"
+   ]
+  },
+  {
+   "ctx": "add",
+   "say": "I'd like to add something",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "add",
+   "say": "Can I add something?",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "add",
+   "say": "Yes, one thing",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "add",
+   "say": "I have one point",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "add",
+   "say": "I want to add something",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "add",
+   "say": "We should test it on older phones",
+   "intent": "add_test"
+  },
+  {
+   "ctx": "add",
+   "say": "We need more testing",
+   "intent": "add_test"
+  },
+  {
+   "ctx": "add",
+   "say": "Maybe we could test it on old phones too",
+   "intent": "add_test"
+  },
+  {
+   "ctx": "add",
+   "say": "I'd like to add something: we need more testing",
+   "intent": "add_test"
+  },
+  {
+   "ctx": "add",
+   "say": "The app should work on older phones too",
+   "intent": "add_test"
+  },
+  {
+   "ctx": "add",
+   "say": "I can help with testing",
+   "intent": "add_help"
+  },
+  {
+   "ctx": "add",
+   "say": "I can help, Paul",
+   "intent": "add_help"
+  },
+  {
+   "ctx": "add",
+   "say": "I can test the app too",
+   "intent": "add_help"
+  },
+  {
+   "ctx": "add",
+   "say": "I'm happy to help with the testing",
+   "intent": "add_help"
+  },
+  {
+   "ctx": "add",
+   "say": "Our customers are asking about the launch date",
+   "intent": "add_customers"
+  },
+  {
+   "ctx": "add",
+   "say": "Customers ask when the app is ready",
+   "intent": "add_customers"
+  },
+  {
+   "ctx": "add",
+   "say": "The clients are waiting for the app",
+   "intent": "add_customers"
+  },
+  {
+   "ctx": "add",
+   "say": "We should ask users for feedback",
+   "intent": "add_feedback"
+  },
+  {
+   "ctx": "add",
+   "say": "We need feedback from customers",
+   "intent": "add_feedback"
+  },
+  {
+   "ctx": "add",
+   "say": "Let's ask the users for feedback",
+   "intent": "add_feedback"
+  },
+  {
+   "ctx": "add",
+   "say": "No, that's all from me",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "add",
+   "say": "Nothing to add",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "add",
+   "say": "No, nothing from me",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "add",
+   "say": "I don't want to add anything",
+   "intent": "nothing_more",
+   "not": [
+    "add_req"
+   ]
+  },
+  {
+   "ctx": "add",
+   "say": "We should make a video for the app",
+   "intent": "add_other_ctx"
+  },
+  {
+   "ctx": "add",
+   "say": "No",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "add",
+   "say": "I can't help with testing",
+   "intent": "any",
+   "not": [
+    "add_help"
+   ]
+  },
+  {
+   "ctx": "add_what",
+   "say": "We should test it on older phones",
+   "intent": "add_test"
+  },
+  {
+   "ctx": "add_what",
+   "say": "I can help with the testing",
+   "intent": "add_help"
+  },
+  {
+   "ctx": "add_what",
+   "say": "Our clients are asking about the release date",
+   "intent": "add_customers"
+  },
+  {
+   "ctx": "add_what",
+   "say": "We should ask for feedback",
+   "intent": "add_feedback"
+  },
+  {
+   "ctx": "add_what",
+   "say": "The client wants a dark mode",
+   "intent": "add_other_ctx"
+  },
+  {
+   "ctx": "add_what",
+   "say": "We should also update the website",
+   "intent": "add_other_ctx"
+  },
+  {
+   "ctx": "add_what",
+   "say": "Actually nothing, sorry",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "opinion",
+   "say": "I'm not sure I agree",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I'm not sure I agree with Paul",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I see your point, but it's too expensive",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I see what you mean, but I'm not sure",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I don't agree",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I disagree",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I don't think it's a good idea",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Not all the money",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Maybe not everything",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I'm not convinced",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I am not agree",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I don't think Paul is right",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "It's not a good idea",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I agree, but not all of it",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Good idea, but it's too risky",
+   "intent": [
+    "disagree",
+    "reason"
+   ],
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "It's too expensive",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "It's too risky",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Maybe we could split it",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Half and half",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "What about fifty fifty?",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "We should keep some money for later",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Our customers don't use social media much",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Don't put all your eggs in one basket",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Maybe half for ads and half for testing",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "That's a lot of money",
+   "intent": "reason"
+  },
+  {
+   "ctx": "opinion",
+   "say": "I agree with Paul",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I agree",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Good idea!",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Sounds good to me",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Paul is right",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I like the idea",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Yes, let's do it",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I am agree",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "That sounds like a good idea",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "That makes sense",
+   "intent": "agree"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Not a bad idea",
+   "intent": "agree",
+   "not": [
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I'm not sure",
+   "intent": "unsure",
+   "not": [
+    "agree",
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I don't know",
+   "intent": "unsure",
+   "not": [
+    "agree",
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Hard to say",
+   "intent": "unsure",
+   "not": [
+    "agree",
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I need to think about it",
+   "intent": "unsure",
+   "not": [
+    "agree",
+    "disagree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "What do you think, Kate?",
+   "intent": "ask_back"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Yes",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "why",
+   "say": "It's too expensive",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "Because it's too risky",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "Because we need money for testing",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "We should keep some money",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "Our customers are older",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "Parties are expensive",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "A party is only one night",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "Because social media ads are expensive",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "It's a lot of money",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "Maybe we could split the money",
+   "intent": "reason"
+  },
+  {
+   "ctx": "why",
+   "say": "I don't know",
+   "intent": "unsure"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Sure, let's talk later",
+   "intent": "talk_later"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Yes, we can talk after the meeting",
+   "intent": "talk_later"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Sure, let's grab a coffee",
+   "intent": "talk_later"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "I'm free after lunch",
+   "intent": "talk_later"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Sure!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Sounds good",
+   "intent": [
+    "yn:yes",
+    "agree"
+   ]
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Of course",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Okay, Paul",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "talk_after",
+   "say": "Sorry, I'm really busy",
+   "intent": "cant_do"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I agree with Sara",
+   "intent": "agree"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I agree with Paul",
+   "intent": "agree"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Sara is right",
+   "intent": "agree"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I think Paul is right",
+   "intent": "agree"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I agree with you",
+   "intent": "agree"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I'm not sure I agree with Paul",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I don't agree with Sara",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Friday is fine",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "We can do it by Friday",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "We need one more week",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Friday is too soon",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Maybe we could send a short version on Friday?",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "What about a first draft on Friday?",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Let's ask the client",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "We could ask the client for more time",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "The client is more important",
+   "intent": "dl_view"
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Friday is not possible",
+   "intent": "dl_view",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "dl_view",
+   "say": "I don't know",
+   "intent": "unsure"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can do that",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can do it",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I'll take it",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I'll do it",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "Sure, I'll take this one",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "Let me do it",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I'm happy to do it",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can write the user guide",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can make the video",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can take care of it",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "owner",
+   "say": "Me",
+   "intent": "can_do_ctx"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can",
+   "intent": "can_do_ctx"
+  },
+  {
+   "ctx": "owner",
+   "say": "Sorry, I'm really busy this week",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "I can't this week",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "I don't have time this week",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "Not me, sorry",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "I have too much work",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "Maybe Paul could do it",
+   "intent": "suggest_other"
+  },
+  {
+   "ctx": "owner",
+   "say": "What about Sara?",
+   "intent": "suggest_other"
+  },
+  {
+   "ctx": "owner",
+   "say": "Paul, can you do it?",
+   "intent": "suggest_other"
+  },
+  {
+   "ctx": "owner",
+   "say": "Maybe Sara can take it",
+   "intent": "suggest_other"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can do it with Paul",
+   "intent": "with_help"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can do it, but I need some help",
+   "intent": "with_help"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can help",
+   "intent": "add_help"
+  },
+  {
+   "ctx": "owner",
+   "say": "I can't do it",
+   "intent": "any",
+   "not": [
+    "can_do",
+    "can_do_ctx"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "I don't want to do it",
+   "intent": "any",
+   "not": [
+    "can_do",
+    "can_do_ctx"
+   ]
+  },
+  {
+   "ctx": "aob",
+   "say": "No, nothing from me",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob",
+   "say": "No, that's all",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob",
+   "say": "No other business",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'm good",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob",
+   "say": "Nothing from my side",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob",
+   "say": "Nothing else",
+   "intent": [
+    "nothing_more",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "aob",
+   "say": "No",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "aob",
+   "say": "Can I work from home on Friday?",
+   "intent": "aob_wfh"
+  },
+  {
+   "ctx": "aob",
+   "say": "Could I work from home tomorrow?",
+   "intent": "aob_wfh"
+  },
+  {
+   "ctx": "aob",
+   "say": "Is it okay if I work from home on Friday?",
+   "intent": "aob_wfh"
+  },
+  {
+   "ctx": "aob",
+   "say": "When is the team lunch?",
+   "intent": "aob_lunch"
+  },
+  {
+   "ctx": "aob",
+   "say": "Is there a team party this month?",
+   "intent": "aob_lunch"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'm on vacation next week",
+   "intent": "aob_vacation"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'll be out of the office next week",
+   "intent": "aob_vacation"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'm off next Friday",
+   "intent": "aob_vacation"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'm on holiday next week",
+   "intent": "aob_vacation"
+  },
+  {
+   "ctx": "aob",
+   "say": "The printer is broken again",
+   "intent": "aob_printer"
+  },
+  {
+   "ctx": "aob",
+   "say": "The printer doesn't work",
+   "intent": "aob_printer"
+  },
+  {
+   "ctx": "aob",
+   "say": "Can someone fix the printer?",
+   "intent": "aob_printer"
+  },
+  {
+   "ctx": "aob",
+   "say": "When is the next meeting?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "aob",
+   "say": "What about the new coffee machine?",
+   "intent": "aob_other_ctx"
+  },
+  {
+   "ctx": "aob",
+   "say": "Can we start at nine next week?",
+   "intent": "aob_other_ctx"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'd like to add something",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "aob",
+   "say": "Yes, one question",
+   "intent": "add_req"
+  },
+  {
+   "ctx": "aob",
+   "say": "I'm not on vacation next week",
+   "intent": "any",
+   "not": [
+    "aob_vacation"
+   ]
+  },
+  {
+   "ctx": "aob_more",
+   "say": "No, that's all",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob_more",
+   "say": "No, thanks",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "aob_more",
+   "say": "That's all from me",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "aob_more",
+   "say": "Nothing else, thanks",
+   "intent": [
+    "nothing_more",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "aob_more",
+   "say": "When is the team lunch?",
+   "intent": "aob_lunch"
+  },
+  {
+   "ctx": "aob_more",
+   "say": "Yes, can I work from home on Friday?",
+   "intent": "aob_wfh"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks, everyone!",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "See you later!",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Great meeting!",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks, Kate! See you later",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Have a nice day, everyone",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye, guys!",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye!",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you!",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "summary",
+   "say": "Sure, I'll send it today",
+   "intent": [
+    "can_do",
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "summary",
+   "say": "Sure!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "summary",
+   "say": "Of course, no problem",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "summary",
+   "say": "Sorry, I can't today",
+   "intent": [
+    "cant_do",
+    "cant_send"
+   ],
+   "not": [
+    "can_do",
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "summary",
+   "say": "Sorry, I don't have time today",
+   "intent": "cant_do"
+  },
+  {
+   "ctx": "summary",
+   "say": "Yes, I'll email it to everyone",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "notes",
+   "say": "Sure, no problem!",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "notes",
+   "say": "Of course, I can do that",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "notes",
+   "say": "Sure, I'll take notes",
+   "intent": "can_do"
+  },
+  {
+   "ctx": "notes",
+   "say": "Sorry, I don't have my laptop today",
+   "intent": "cant_do"
+  },
+  {
+   "ctx": "notes",
+   "say": "I can't today, sorry",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "notes",
+   "say": "Maybe Paul can do it?",
+   "intent": "suggest_other"
+  },
+  {
+   "ctx": "notes",
+   "say": "I can't take notes today",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "help_offer",
+   "say": "That would be great, thanks!",
+   "intent": "accept_help"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Thanks, Paul",
+   "intent": "accept_help"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Yes, please",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "No thanks, I'm fine",
+   "intent": "yn:no"
+  },
+  {
+   "ctx": "opinion",
+   "say": "banana window purple",
+   "intent": "none"
+  },
+  {
+   "ctx": "update",
+   "say": "My cat likes fish",
+   "intent": "none"
+  },
+  {
+   "ctx": "aob",
+   "say": "Elephant keyboard sunshine",
+   "intent": "none"
+  },
+  {
+   "ctx": "opinion",
+   "say": "I'm not sure it's a good idea",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "I don't like this idea",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "opinion",
+   "say": "Paul is not right",
+   "intent": "disagree",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "dl_view",
+   "say": "Friday is not enough",
+   "intent": "dl_view",
+   "not": [
+    "agree"
+   ]
+  },
+  {
+   "ctx": "owner",
+   "say": "I can't take it this week",
+   "intent": "cant_do",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "aob",
+   "say": "I don't need to work from home",
+   "intent": "any",
+   "not": [
+    "aob_wfh"
+   ]
+  },
+  {
+   "ctx": "notes",
+   "say": "I don't have time for notes today",
+   "intent": "any",
+   "not": [
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "clarify",
+   "say": "I understand everything",
+   "intent": "nothing_more",
+   "not": [
+    "clarify"
+   ]
+  },
+  {
+   "ctx": "send_q",
+   "say": "I didn't send it yet",
+   "intent": "any",
+   "not": [
+    "will_send",
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I haven't started the budget",
+   "intent": "upd_behind",
+   "not": [
+    "upd_working",
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "add",
+   "say": "We don't need more testing",
+   "intent": "any",
+   "not": [
+    "add_test"
+   ]
+  },
+  {
+   "ctx": "when_q",
+   "say": "Not by Friday",
+   "intent": "any",
+   "not": [
+    "when_ans"
+   ]
+  },
+  {
+   "ctx": "summary",
+   "say": "I won't send it today",
+   "intent": "any",
+   "not": [
+    "will_send",
+    "can_do"
+   ]
+  },
+  {
+   "ctx": "talk_after",
+   "say": "I can't talk after the meeting",
+   "intent": "any",
+   "not": [
+    "talk_later"
+   ]
+  },
+  {
+   "ctx": "sara_hear",
+   "say": "No, we can't hear you now",
+   "intent": "hear_no",
+   "not": [
+    "hear_yes"
+   ]
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Thank you, Paul. That makes sense.",
+   "intent": [
+    "nothing_more",
+    "agree"
+   ]
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Thanks, Paul, that's clear now.",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Thank you. It's clear now.",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "Thanks, Paul. Got it.",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "makes_sense",
+   "say": "It's clear now.",
+   "intent": "nothing_more"
+  },
+  {
+   "ctx": "update",
+   "say": "Fine, thanks. And you?",
+   "intent": "upd_ok_ctx"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm good, thanks. How about you?",
+   "intent": "upd_ok_ctx"
+  },
+  {
+   "ctx": "add",
+   "say": "Okay, thanks.",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "add",
+   "say": "Thanks.",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "owner",
+   "say": "Who, me?",
+   "intent": "who_me"
+  },
+  {
+   "ctx": "owner",
+   "say": "You mean me?",
+   "intent": "who_me"
+  },
+  {
+   "ctx": "opinion",
+   "say": "Me?",
+   "intent": "who_me"
+  }
+ ]
+}

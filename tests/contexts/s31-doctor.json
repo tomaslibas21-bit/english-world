@@ -1,0 +1,539 @@
+{
+ "situation": "s31-doctor",
+ "title": "Take a Deep Breath",
+ "goal": "Papasakok gydytojai, kas tau negerai, ir sužinok, kaip gydytis.",
+ "contexts": {
+  "feeling": {
+   "id": "feeling",
+   "kind": "pending",
+   "npc": [
+    "Hello again! How are you feeling?",
+    "Hi, I'm Dr. Carter. How are you feeling today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "feel_sick",
+    "feel_bad_ctx",
+    "symptom",
+    "symptom_ctx",
+    "g_ok",
+    "sym_neg",
+    "temp_ans",
+    "help_me"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip jautiesi (ir kas negerai)",
+    "Pasakyti, kas negerai"
+   ],
+   "options": [
+    "sore throat",
+    "fever",
+    "cough",
+    "headache",
+    "stomachache",
+    "earache",
+    "runny nose",
+    "stuffy nose",
+    "back pain",
+    "dizziness",
+    "fatigue",
+    "body aches",
+    "cold",
+    "flu"
+   ]
+  },
+  "howlong": {
+   "id": "howlong",
+   "kind": "step",
+   "npc": [
+    "Oh, I'm sorry to hear that. How long have you had it?",
+    "Oh no. Okay, let's see what we can do. How long have you had it?",
+    "I'm sorry to hear that. When did it start?"
+   ],
+   "expects": [
+    "howlong_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek laiko tai tęsiasi"
+   ],
+   "options": []
+  },
+  "fever": {
+   "id": "fever",
+   "kind": "step",
+   "npc": [
+    "Okay. How high is your temperature?",
+    "Got it. Did you take your temperature?",
+    "Okay, thanks. Did you take your temperature?"
+   ],
+   "expects": [
+    "temp_ans",
+    "fever_yes_ctx",
+    "temp_unknown",
+    "temp_dunno_ctx",
+    "symptom",
+    "symptom_ctx",
+    "sym_neg"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti temperatūrą (arba kad nematavai)",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "meds": {
+   "id": "meds",
+   "kind": "step",
+   "npc": [
+    "38 Celsius? That's about 100 Fahrenheit. So you have a fever. Are you taking anything for it?",
+    "38 Celsius? That's about 100 here, in Fahrenheit. That's a fever. Have you taken anything for it?",
+    "38 Celsius? That's about 100 here, in Fahrenheit. So you have a fever. Have you taken anything for it?"
+   ],
+   "expects": [
+    "meds_ans",
+    "meds_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar ką nors vartoji",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "sleeve": {
+   "id": "sleeve",
+   "kind": "pending",
+   "npc": [
+    "Okay, that's fine for now. Alright, let's take a look. Let me check your blood pressure first. Could you roll up your sleeve?",
+    "Okay, that's fine for now. I'd like to examine you now. Let me check your blood pressure first. Please roll up your sleeve.",
+    "Okay, that's fine for now. I'd like to examine you now. Let me check your blood pressure first. Could you roll up your sleeve?"
+   ],
+   "expects": [
+    "which_arm_ctx",
+    "like_this_ctx",
+    "ready_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasiraitoti rankovę (ir atsakyti)",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "breath": {
+   "id": "breath",
+   "kind": "pending",
+   "npc": [
+    "Great. Just relax for a moment. 118 over 76. That's great. I'll listen to your lungs. Take a deep breath for me… and out.",
+    "Okay, that's fine for now. Alright, let's take a look. I'll listen to your lungs. Take a deep breath for me… and out.",
+    "Okay, that's fine for now. I'd like to examine you now. I'll listen to your lungs. Take a deep breath… and out."
+   ],
+   "expects": [
+    "breath_ctx",
+    "like_this_ctx",
+    "ready_ctx",
+    "breath_hard"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Įkvėpti ir iškvėpti (ir atsakyti)",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "ah": {
+   "id": "ah",
+   "kind": "pending",
+   "npc": [
+    "Good. Once more… and out. Your lungs sound good. Now open your mouth and say “ah.”",
+    "Great. Your lungs sound clear. Now open your mouth and say “ah.”",
+    "Great. Your lungs sound good. Now open your mouth and say “ah.”"
+   ],
+   "expects": [
+    "ah_ctx",
+    "ready_ctx",
+    "like_this_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti „a-a-a“",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "hurt": {
+   "id": "hurt",
+   "kind": "pending",
+   "npc": [
+    "Hmm, your throat is very red. Now your neck. Does it hurt here?",
+    "Your throat is a little red. Now your neck. Does it hurt here?",
+    "Your throat looks fine. Now please lie down. Does it hurt here?"
+   ],
+   "expects": [
+    "hurt_yes_ctx",
+    "hurt_little_ctx",
+    "hurt_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar skauda",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "allergy": {
+   "id": "allergy",
+   "kind": "step",
+   "npc": [
+    "Just a little? Okay. Your glands are a little swollen. It looks like a throat infection. Don't worry, it's nothing serious. I'll prescribe an antibiotic. Do you have any allergies to medications?",
+    "Just a little? Okay. Your glands are a little swollen. It looks like a throat infection. I'll prescribe an antibiotic. Do you have any allergies to medications?",
+    "Just a little? Okay. Your glands are a little swollen. It looks like a throat infection. Before I prescribe anything, are you allergic to any medications?"
+   ],
+   "expects": [
+    "allergy_ans",
+    "allergy_ctx",
+    "allergy_dunno_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti apie alergijas vaistams",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "rx": {
+   "id": "rx",
+   "kind": "step",
+   "npc": [
+    "Okay, good. Take one pill twice a day, after meals. Take them for five days. And finish all of them, even if you feel better.",
+    "Good. One pill twice a day, after meals. Take them for five days. And finish all of them, even if you feel better.",
+    "Alright. Then I'll prescribe a different antibiotic. One pill twice a day, after meals. Take them for five days. And finish all of them, even if you feel better."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Stay home, rest and drink lots of fluids. Warm tea with honey helps, too. Come back if it doesn't get better. I hope you feel better soon!",
+    "Okay. Stay home, rest and drink lots of fluids. Warm tea with honey helps, too. And come back if it doesn't get better. Feel better!",
+    "Of course. I'll write you a note for three days. Rest and drink lots of fluids. Warm tea with honey helps, too. And come back if it doesn't get better. I hope you feel better soon!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "nice_meet"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "problem": {
+   "id": "problem",
+   "kind": "step",
+   "npc": [
+    "Hello again! What seems to be the problem today?",
+    "Good to see you again! What brings you in today?",
+    "Thank you. What seems to be the problem?"
+   ],
+   "expects": [
+    "symptom",
+    "symptom_ctx",
+    "feel_sick",
+    "sym_neg",
+    "temp_ans",
+    "help_me"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kas negerai"
+   ],
+   "options": [
+    "sore throat",
+    "fever",
+    "cough",
+    "headache",
+    "stomachache",
+    "earache",
+    "runny nose",
+    "stuffy nose",
+    "back pain",
+    "dizziness",
+    "fatigue",
+    "body aches",
+    "cold",
+    "flu"
+   ]
+  },
+  "questions": {
+   "id": "questions",
+   "kind": "pending",
+   "npc": [
+    "Any other questions for me?",
+    "Great. I'll send it to Harbor Pharmacy on Main Street. It'll be ready in about an hour. Do you have any other questions?",
+    "Of course. I'll write you a note for three days. Any other questions for me?"
+   ],
+   "expects": [
+    "clear_ctx",
+    "ask_dosage",
+    "ask_meals",
+    "ask_duration",
+    "ask_side",
+    "ask_alcohol",
+    "ask_drive",
+    "ask_better",
+    "ask_work",
+    "ask_note",
+    "ask_contagious",
+    "ask_serious",
+    "ask_not_better"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti apie vaistus",
+    "Paklausti apie ligą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "scale": {
+   "id": "scale",
+   "kind": "step",
+   "npc": [
+    "Got it. On a scale of one to ten, how bad is the pain?",
+    "Okay. On a scale of one to ten, how bad is the pain?",
+    "I see. On a scale of one to ten, how bad is the pain?"
+   ],
+   "expects": [
+    "scale_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Įvertinti skausmą nuo 1 iki 10"
+   ],
+   "options": []
+  },
+  "rx_q": {
+   "id": "rx_q",
+   "kind": "pending",
+   "npc": [
+    "Okay, good. One pill twice a day, after meals. Take them for five days. And finish all of them, even if you feel better. Do you have any questions?",
+    "Okay. Then I'll prescribe a different antibiotic. One pill twice a day, after meals. Take them for five days. And finish all of them, even if you feel better. Do you have any questions?",
+    "Alright. Then I'll prescribe a different antibiotic. Take one pill twice a day, after meals. Take them for five days. And finish all of them, even if you feel better. Do you have any questions?"
+   ],
+   "expects": [
+    "clear_ctx",
+    "ask_dosage",
+    "ask_meals",
+    "ask_duration",
+    "ask_side",
+    "ask_alcohol",
+    "ask_drive",
+    "ask_better",
+    "ask_work",
+    "ask_note",
+    "ask_contagious",
+    "ask_serious",
+    "ask_not_better"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti apie vaistus",
+    "Paklausti apie ligą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "note": {
+   "id": "note",
+   "kind": "pending",
+   "npc": [
+    "Alright. Do you need a note for work?",
+    "Do you need a note for work?",
+    "Great. I'll send it to Harbor Pharmacy on Main Street. It'll be ready in about an hour. Do you need a note for work?"
+   ],
+   "expects": [
+    "note_ctx",
+    "ask_note"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia pažymos darbui",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "pharmacy": {
+   "id": "pharmacy",
+   "kind": "step",
+   "npc": [
+    "Which pharmacy should I send it to?",
+    "Alright. Which pharmacy should I send it to?",
+    "Okay. Which pharmacy should I send it to?"
+   ],
+   "expects": [
+    "pharmacy_ans",
+    "pharmacy_dunno_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, į kurią vaistinę siųsti receptą"
+   ],
+   "options": []
+  },
+  "chart": {
+   "id": "chart",
+   "kind": "pending",
+   "npc": [
+    "Just a little? Okay. Your glands are a little swollen. It looks like a throat infection. I'll prescribe an antibiotic. I see in your chart that you're allergic to penicillin. Is that right?",
+    "Just a little? Okay. Your glands are a little swollen. It looks like a throat infection. Don't worry, it's nothing serious. I'll prescribe an antibiotic. I see in your chart that you're allergic to penicillin. Is that right?"
+   ],
+   "expects": [
+    "allergy_ans",
+    "allergy_ctx",
+    "allergy_dunno_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patvirtinti arba pataisyti",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "dob": {
+   "id": "dob",
+   "kind": "step",
+   "npc": [
+    "Hello again! Can you confirm your date of birth for me, please?",
+    "Hello again! Before we start, can you confirm your date of birth for me?",
+    "Hi, I'm Dr. Carter. Before we start, can you confirm your date of birth for me?"
+   ],
+   "expects": [
+    "dob_ans",
+    "year_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti gimimo datą (mėnuo, diena, metai)"
+   ],
+   "options": []
+  },
+  "more_sym": {
+   "id": "more_sym",
+   "kind": "step",
+   "npc": [
+    "Oh no. Okay, let's see what we can do. Any other symptoms?",
+    "I'm sorry to hear that. Any other symptoms?",
+    "Oh, I'm sorry to hear that. Anything else? A cough, a headache?"
+   ],
+   "expects": [
+    "symptom",
+    "symptom_ctx",
+    "sym_none",
+    "sym_neg"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti kitus simptomus (arba kad daugiau nieko)",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": [
+    "sore throat",
+    "fever",
+    "cough",
+    "headache",
+    "stomachache",
+    "earache",
+    "runny nose",
+    "stuffy nose",
+    "back pain",
+    "dizziness",
+    "fatigue",
+    "body aches",
+    "cold",
+    "flu"
+   ]
+  }
+ },
+ "intents": [
+  "symptom",
+  "symptom_ctx",
+  "sym_neg",
+  "sym_none",
+  "feel_sick",
+  "help_me",
+  "feel_bad_ctx",
+  "nice_meet",
+  "howlong_ans",
+  "scale_ctx",
+  "temp_ans",
+  "fever_yes_ctx",
+  "temp_unknown",
+  "temp_dunno_ctx",
+  "meds_ans",
+  "meds_ctx",
+  "allergy_ans",
+  "allergy_dunno_ctx",
+  "allergy_ctx",
+  "ready_ctx",
+  "like_this_ctx",
+  "breath_ctx",
+  "breath_hard",
+  "ah_ctx",
+  "hurt_yes_ctx",
+  "hurt_little_ctx",
+  "hurt_no_ctx",
+  "which_arm_ctx",
+  "ask_serious",
+  "ask_contagious",
+  "ask_antibiotics",
+  "ask_what",
+  "ask_better",
+  "ask_work",
+  "ask_note",
+  "ask_not_better",
+  "ask_eat",
+  "ask_exercise",
+  "ask_cost",
+  "ask_dosage",
+  "ask_meals",
+  "ask_duration",
+  "ask_side",
+  "ask_alcohol",
+  "ask_drive",
+  "clear_ctx",
+  "pharmacy_ans",
+  "pharmacy_dunno_ctx",
+  "note_ctx",
+  "dob_ans",
+  "year_ctx"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

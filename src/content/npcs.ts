@@ -97,11 +97,11 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.dark, hair: { style: "bob", color: HAIR.black }, top: "#2f3d58", bottom: "#2f3d58", acc: ["glasses", "earrings"] }),
   N("maria", "Maria", ["Coworker", "Kolegė"], "f", "af_nicole",
     { skin: SK.olive, hair: { style: "wavy", color: HAIR.brown }, top: "#e3b448", bottom: "#33394a", acc: ["lanyard"] }, { informal: true }),
-  N("kate", "Kate", ["Team lead (video call)", "Komandos vadovė (vaizdo skambutis)"], "f", "af_bella",
+  N("kate", "Kate", ["Team lead", "Komandos vadovė"], "f", "af_bella",
     { skin: SK.fair, hair: { style: "ponytail", color: HAIR.blonde }, top: "#4a7bb7", bottom: "#2a2f3a", acc: ["headset"] }, { informal: true }),
-  N("paul", "Paul", ["Colleague (video call)", "Kolega (vaizdo skambutis)"], "m", "am_eric",
+  N("paul", "Paul", ["Colleague", "Kolega"], "m", "am_eric",
     { skin: SK.tan, hair: { style: "short", color: HAIR.brown }, top: "#8a5a3a", bottom: "#2a2f3a", acc: ["glasses", "beard"] }, { informal: true }),
-  N("sara", "Sara", ["Colleague (video call)", "Kolegė (vaizdo skambutis)"], "f", "af_nova",
+  N("sara", "Sara", ["Colleague", "Kolegė"], "f", "af_nova",
     { skin: SK.brown, hair: { style: "curly", color: HAIR.black }, top: "#c24f6a", bottom: "#2a2f3a" }, { informal: true }),
   N("harris", "Mr. Harris", ["Your boss", "Tavo viršininkas"], "m", "am_fenrir",
     { skin: SK.light, hair: { style: "side", color: HAIR.gray }, top: "#dfe3ea", bottom: "#2b2f3b", acc: ["tie", "glasses"], accColor: "#8a2432" }),
@@ -126,6 +126,17 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.tan, hair: { style: "short", color: HAIR.gray }, top: "#7fb069", bottom: "#4a4a5a", acc: ["apron", "glasses"], accColor: "#e6aa68", height: 0.94 }),
   N("reyes", "Officer Reyes", ["Police officer", "Policininkas"], "m", "am_onyx",
     { skin: SK.olive, hair: { style: "buzz", color: HAIR.black }, top: "#2a3f66", bottom: "#1d2940", acc: ["police", "badge"] }),
+  // Songs 31–35
+  N("carter", "Dr. Carter", ["Family doctor", "Šeimos gydytoja"], "f", "af_sarah",
+    { skin: SK.brown, hair: { style: "bun", color: HAIR.black }, top: "#f4f6f8", bottom: "#2f4a6b", acc: ["glasses", "badge"] }, { bio: "Rami ir kruopšti šeimos gydytoja." }),
+  N("marcus", "Marcus", ["Cashier", "Kasininkas"], "m", "am_puck",
+    { skin: SK.dark, hair: { style: "buzz", color: HAIR.black }, top: "#2e8b57", bottom: "#2b2f3b", acc: ["apron", "badge"], accColor: "#1f5f3c" }),
+  N("sco", "Self-checkout", ["Self-checkout machine", "Savitarnos kasa"], "f", "af_river",
+    { skin: SK.fair, hair: { style: "bald", color: HAIR.gray }, top: "#2e8b57", bottom: "#2b2f3b" }),
+  N("frank", "Frank", ["Neighbor", "Kaimynas"], "m", "am_michael",
+    { skin: SK.light, hair: { style: "short", color: HAIR.white }, top: "#6b8e5a", bottom: "#3a3f4a", acc: ["glasses", "hat"], accColor: "#5b4636", build: 1.05 }, { informal: true, bio: "Išėjęs į pensiją, mėgsta pasikalbėti apie orus." }),
+  N("jordan", "Jordan", ["Personal trainer", "Asmeninė trenerė"], "f", "af_bella",
+    { skin: SK.tan, hair: { style: "ponytail", color: HAIR.black }, top: "#1f8a8a", bottom: "#23232e", acc: ["badge"] }, { informal: true, bio: "Energinga trenerė, visada šypsosi." }),
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

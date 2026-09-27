@@ -86,7 +86,7 @@ export function buildTown(): Town {
 
   // --- buildings --------------------------------------------------------------
   const signs: THREE.Mesh[] = [];
-  for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, r);
+  for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r);
 
   // --- street furniture & nature -----------------------------------------------
   addStreetProps(M, colliders, group, r);
@@ -271,7 +271,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // door
   const doorOff = b.doorOffset ?? 0;
   const dx = b.x + n[0] * halfDepth + t[0] * doorOff, dz = b.z + n[1] * halfDepth + t[1] * doorOff;
-  const doorW = b.style === "terminal" || b.style === "station" || b.style === "museum" || b.style === "hotel" ? 3.4 : 1.8;
+  const doorW = b.doorWidth ?? (b.style === "terminal" || b.style === "station" || b.style === "museum" || b.style === "hotel" ? 3.4 : 1.8);
   const rotY = Math.atan2(n[0], n[1]);
   const doorMat = b.style === "house" ? mat(b.trim === "#ffffff" ? "#8a5a44" : b.trim!) : darkGlass;
   M.add(`door-${key}`, doorMat, boxGeo(doorW, 2.5, 0.15, 0, 1.25, 0, 0).rotateY(rotY).translate(dx + n[0] * 0.05, 0, dz + n[1] * 0.05));
@@ -312,9 +312,9 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     }
   }
 
-  // awning over the entrance
+  // awning over the entrance (narrower over an off-centre door, so it stays on the facade)
   if (b.awning) {
-    const aw = Math.min(halfWidth * 2 - 1, b.style === "hotel" ? 7 : 9);
+    const aw = Math.min(halfWidth * 2 - 1 - 2 * Math.abs(doorOff), b.style === "hotel" ? 7 : 9);
     const ay = 3.15;
     const g = boxGeo(aw, 0.14, 1.8, 0, 0, 0);
     g.rotateX(0.32);
@@ -335,7 +335,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     const sw = Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     const sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
-    sign.position.set(dx + n[0] * 0.2, sy, dz + n[1] * 0.2);
+    // centred on the facade (the same place as the door, unless the door is off-centre)
+    sign.position.set(dx - t[0] * doorOff + n[0] * 0.2, sy, dz - t[1] * doorOff + n[1] * 0.2);
     sign.rotation.y = rotY;
     if (b.style !== "house") { group.add(sign); signs.push(sign); }
   }
@@ -437,6 +438,90 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
     M.add("flag", mat("#b22234"), boxGeo(1.8, 1.1, 0.04, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2));
   }
+  if (b.id === "market" || b.id === "clinic" || b.id === "gym") frontExtras(b.id, M, col, group, dx, dz, n, t, rotY);
+}
+
+/** Things in front of the Harbor Market, the clinic and the gym. `u` runs along the facade from the
+ *  door, `v` out from the wall (the same maths as the other buildings' extras). */
+function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, dx: number, dz: number, n: [number, number], t: [number, number], rotY: number) {
+  const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
+  const box = (key: string, m: THREE.Material, w: number, h: number, d: number, u: number, y: number, v: number, cast = true) => {
+    const [x, z] = P(u, v);
+    M.add(key, m, boxGeo(w, h, d, 0, y, 0).rotateY(rotY).translate(x, 0, z), cast);
+  };
+  /** A collider box of `a` metres along the facade and `b` out from it. */
+  const block = (u: number, v: number, a: number, b: number) => {
+    const [x, z] = P(u, v);
+    col.addBox(x, z, Math.abs(t[0]) * a + Math.abs(n[0]) * b, Math.abs(t[1]) * a + Math.abs(n[1]) * b);
+  };
+  /** A flat notice on the facade (or on a window), facing the street. */
+  const notice = (text: string, bg: string, fg: string, u: number, y: number, w: number, h: number, v = 0.12) => {
+    const [x, z] = P(u, v);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture(text, { bg, fg, w: 512, h: Math.round(512 * h / w) }), toneMapped: false }));
+    m.position.set(x, y, z); m.rotation.y = rotY;
+    group.add(m);
+  };
+  const metal = mat("#b9c2c9");
+  if (id === "market") {
+    // three nested shopping carts left of the door
+    for (let i = 0; i < 3; i++) {
+      const u = -6.6 + i * 0.36;
+      box("rack", metal, 0.9, 0.42, 0.56, u, 0.86, 1.1);
+      box("rack", metal, 0.72, 0.05, 0.5, u + 0.05, 0.3, 1.1);
+      for (const s of [-0.22, 0.22]) box("rack", metal, 0.05, 0.95, 0.05, u - 0.42, 0.55, 1.1 + s);
+      box("cart-handle", mat("#d9452b"), 0.07, 0.07, 0.62, u - 0.47, 1.12, 1.1);
+      for (const [a, c] of [[-0.36, -0.22], [-0.36, 0.22], [0.36, -0.22], [0.36, 0.22]]) box("wheel", mat("#222"), 0.12, 0.12, 0.06, u + a, 0.07, 1.1 + c, false);
+    }
+    block(-6.25, 1.1, 1.8, 0.7);
+    // a fruit stand right of the door
+    box("stall-table", mat("#9c6b43"), 2.6, 0.75, 0.8, 5.6, 0.375, 0.75);
+    const fruit = ["#e63946", "#f4a261", "#ffbe0b", "#8ab17d"];
+    for (let i = 0; i < 14; i++) {
+      const col7 = fruit[Math.floor((i % 7) / 2) % 4];
+      const [x, z] = P(4.55 + (i % 7) * 0.35, 0.55 + Math.floor(i / 7) * 0.38);
+      M.add("goods-" + col7, mat(col7, { flat: true }), new THREE.SphereGeometry(0.15, 6, 5).translate(x, 0.88, z), false);
+    }
+    block(5.6, 0.75, 2.7, 0.9);
+    // posters in the windows
+    notice("2 for $5 · Weekly Deals", "#ffd23f", "#b3261e", -3.6, 1.95, 2.1, 0.5);
+    notice("Harbor Rewards · Save more", "#ffffff", "#23704a", -7, 1.95, 2.1, 0.5);
+  } else if (id === "clinic") {
+    // a bench by the window, and a low sign on the lawn with a medical cross
+    streetBench(M, col, ...P(-2.6, 1.1), rotY);
+    box("plinth", mat("#d8d2c4"), 1.9, 0.9, 0.24, 3, 0.45, 1.25);
+    block(3, 1.25, 2, 0.4);
+    const cv = document.createElement("canvas"); cv.width = 512; cv.height = 228;
+    const x = cv.getContext("2d")!;
+    x.fillStyle = "#ffffff"; roundRect(x, 4, 4, 504, 220, 26); x.fill();
+    x.lineWidth = 10; x.strokeStyle = "#3a86b0"; x.stroke();
+    x.fillStyle = "#3a86b0"; x.fillRect(58, 64, 36, 100); x.fillRect(26, 96, 100, 36);
+    x.font = "800 50px Nunito, Arial"; x.textAlign = "left"; x.textBaseline = "middle";
+    x.fillText("Family Clinic", 150, 86);
+    x.fillStyle = "#52606d"; x.font = "700 38px Nunito, Arial"; x.fillText("Walk-ins welcome", 150, 150);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const [px, pz] = P(3, 1.25 + 0.14);
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.8), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    panel.position.set(px, 0.5, pz); panel.rotation.y = rotY;
+    group.add(panel);
+  } else if (id === "gym") {
+    // a bike rack right of the door, opening hours and an offer in the window
+    for (const u of [4.4, 5, 5.6]) {
+      for (const s of [-0.28, 0.28]) box("rack", metal, 0.05, 0.75, 0.05, u, 0.375, 1 + s);
+      box("rack", metal, 0.05, 0.05, 0.61, u, 0.75, 1);
+    }
+    block(5, 1, 1.6, 0.7);
+    notice("Open 5 AM – 11 PM", "#ffffff", "#1f7f8c", -2.2, 1.7, 1.1, 0.34);
+    notice("First session FREE!", "#f0883e", "#ffffff", 6.33, 1.95, 2.1, 0.5);
+  }
+}
+
+/** A park bench (its back towards -z before turning by `rot`). */
+function streetBench(M: Merger, col: Colliders, x: number, z: number, rot: number) {
+  const g1 = boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(x, 0, z);
+  const g2 = boxGeo(1.8, 0.5, 0.08, 0, 0.8, -0.22).rotateY(rot).translate(x, 0, z);
+  M.add("bench", mat("#9c6b43"), g1); M.add("bench", mat("#9c6b43"), g2);
+  for (const s of [-0.75, 0.75]) M.add("bench-leg", mat("#333"), boxGeo(0.08, 0.5, 0.4, s, 0.25, 0).rotateY(rot).translate(x, 0, z));
+  col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
 }
 
 function cafeTable(M: Merger, col: Colliders, x: number, z: number, umbrella: string) {
@@ -481,13 +566,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
     }
   }
   // benches, hydrants, trash cans along Main Street
-  const bench = (x: number, z: number, rot: number) => {
-    const g1 = boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(x, 0, z);
-    const g2 = boxGeo(1.8, 0.5, 0.08, 0, 0.8, -0.22).rotateY(rot).translate(x, 0, z);
-    M.add("bench", mat("#9c6b43"), g1); M.add("bench", mat("#9c6b43"), g2);
-    for (const s of [-0.75, 0.75]) M.add("bench-leg", mat("#333"), boxGeo(0.08, 0.5, 0.4, s, 0.25, 0).rotateY(rot).translate(x, 0, z));
-    col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
-  };
+  const bench = (x: number, z: number, rot: number) => streetBench(M, col, x, z, rot);
   for (const [x, z, rot] of [[-75, -17.5, 0], [-48, -17.5, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) bench(x, z, rot);
   const hydrant = (x: number, z: number) => {
     M.add("hydrant", mat("#d63b2f"), cylGeo(0.18, 0.2, 0.7, x, 0.35, z, 8));
@@ -530,8 +609,9 @@ function nearIntersection(x: number, z: number) {
 }
 function nearDoor(x: number, z: number) {
   for (const b of BUILDINGS) {
-    const { n, halfDepth } = faceInfo(b);
-    const dx = b.x + n[0] * halfDepth, dz = b.z + n[1] * halfDepth;
+    const { n, t, halfDepth } = faceInfo(b);
+    const off = b.doorOffset ?? 0; // the door itself (off-centre on the gym)
+    const dx = b.x + n[0] * halfDepth + t[0] * off, dz = b.z + n[1] * halfDepth + t[1] * off;
     if (Math.abs(x - dx) < 4.5 && Math.abs(z - dz) < 6) return true;
   }
   return false;
@@ -698,6 +778,8 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   // bus stop shelter
   const b = BUS_STOP;
   M.add("bus-shelter", mat("#2f3a40"), boxGeo(3.6, 0.12, 1.6, b.x, 2.6, b.z));
+  // the roof rests on two posts at the ends of the back glass (inside its collider, so the sidewalk stays open)
+  for (const s of [-1, 1]) M.add("bus-shelter", mat("#2f3a40"), boxGeo(0.1, 2.55, 0.1, b.x + s * 1.75, 1.275, b.z + 0.75));
   M.add("bus-glass", mat("#bfe3f2", { transparent: 0.45 }), boxGeo(3.6, 2.2, 0.06, b.x, 1.4, b.z + 0.75), false);
   M.add("bench", mat("#9c6b43"), boxGeo(2.4, 0.1, 0.45, b.x, 0.5, b.z + 0.4));
   col.addBox(b.x, b.z + 0.75, 3.6, 0.2);

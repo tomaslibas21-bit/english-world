@@ -17,6 +17,11 @@ export interface BuildingDef {
   awning?: string;
   /** door offset along the facade from its centre */
   doorOffset?: number;
+  /** door width (default: 3.4 for big public buildings, else 1.8) */
+  doorWidth?: number;
+  /** Buildings added later draw their decoration from their own random seed, so the rest of the town
+   *  (roof boxes, trees, market goods, rocks, clouds) keeps exactly the look it had. */
+  seed?: number;
 }
 
 export const WORLD = { minX: -112, maxX: 182, minZ: -104, maxZ: 96 };
@@ -62,6 +67,12 @@ export const BUILDINGS: BuildingDef[] = [
   // Harbor and airport
   { id: "pier", loc: "the-pier", sign: "The Pier", x: -30, z: -80, w: 18, d: 12, h: 6, face: "s", color: "#e9f2f7", trim: "#1d4e6b", roof: "gable", roofColor: "#1d4e6b", style: "restaurant", awning: "#1d4e6b" },
   { id: "terminal", loc: "airport", sign: "Maple Harbor Airport", x: 152, z: -8, w: 36, d: 44, h: 13, face: "w", color: "#dde6ee", trim: "#2b5d8a", roof: "flat", style: "terminal" },
+  // Songs 31–35: the supermarket on Harbor Road (between West Street and the museum), the family clinic on
+  // Oak Avenue (between the car rental lot and the gas station), the gym on Oak Avenue next to the bus stop.
+  // The gym's door is off-centre, west of the street tree behind the bus shelter.
+  { id: "market", loc: "market", sign: "Harbor Market", x: -52, z: -38.5, w: 19, d: 14, h: 6.8, face: "n", color: "#f6efe1", trim: "#23704a", roof: "flat", style: "shop", awning: "#d9452b", doorWidth: 3.4, seed: 32 },
+  { id: "clinic", loc: "clinic", sign: "Harbor Family Clinic", x: 98, z: 21.5, w: 11, d: 13, h: 6.5, face: "s", color: "#eef4f6", trim: "#3a86b0", roof: "flat", style: "civic", awning: "#3a86b0", seed: 31 },
+  { id: "gym", loc: "gym", sign: "Harbor Fitness", x: -15.5, z: 56, w: 13, d: 14, h: 7, face: "n", color: "#e3ebee", trim: "#1f7f8c", roof: "flat", style: "shop", awning: "#f0883e", doorOffset: -3, seed: 35 },
 ];
 
 /** Where each outdoor NPC stands (and which way they face, radians; 0 = facing +Z/south).
@@ -74,6 +85,9 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   // Sophie's backyard party (enter through the garden gate on the east side of the house)
   { npc: "sophie", x: -47.3, z: 61.3, rot: Math.PI / 2 },
   { npc: "mark", x: -50.6, z: 62.9, rot: Math.PI / 2 + 0.35 },
+  // Frank waits for the bus at the east end of the Oak Avenue shelter, looking out for it; you stand
+  // with him under the shelter roof
+  { npc: "frank", x: -7.5, z: 43.9, rot: Math.PI, ax: -9.5, az: 43.9 },
 ];
 
 /** Where a taxi (or the map's "go there") drops the player for outdoor places. */

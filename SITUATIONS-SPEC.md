@@ -463,3 +463,103 @@ Use the `chapter` and `order` values given for each part. **Address** is jūs un
   - "How have you been?"; "What have you been up to?"; news (moved, new job, learning English, married, kids)
   - her news (moved back, got married, twins); ask about family; mutual friend Mike's restaurant
   - "Have you got time for a coffee?"; "Let's keep in touch"; swap numbers; "It was so good to see you"
+
+---
+
+## Batch F: songs 31–35 (added 27 Sep 2026)
+
+These five parts come from the earlier situation songs, 31–35. The song's own phrases, quoted below, must all be covered: as the NPC's lines, as model answers, or both. Research the real American interaction and add what a learner genuinely needs, as for the other parts. **American English and US units:** °F, pounds, dollars, "restroom", "cell phone".
+
+### s31-doctor · song 31 "Take a Deep Breath" · ch 7, order 3
+- **Location** `clinic` (Harbor Family Clinic) · **NPC** `carter` (Dr. Carter, calm and kind; formal).
+- **Title** EN "Take a Deep Breath", LT "Giliai įkvėpkite". **Topic** "At the doctor's" / "Pas gydytoją".
+- **Goal** "Papasakok gydytojai, kas tau negerai, ir sužinok, kaip gydytis."
+- **Song phrases:** "What seems to be the problem?" · "I've got a sore throat and a temperature." · "How long have you had it?" · "Does it hurt here?" · "One pill twice a day, after meals." · "Come back if it doesn't get better."
+- **Cover:**
+  - "What brings you in today?"
+  - symptoms: sore throat, fever/temperature, cough, headache, stomachache, earache, runny/stuffy nose, back pain, feeling dizzy or tired
+  - how long (since Monday, for three days, a week)
+  - the temperature in °F. If the learner says Celsius, she converts it kindly ("38? That's about 100, okay").
+  - "Are you taking anything for it?"; allergies to any medicine
+  - the exam: "Take a deep breath… and out", "Open your mouth and say 'ah'", "Does it hurt here?" (yes / a little / no)
+  - what it is ("It looks like a throat infection / a virus")
+  - the prescription: "One pill twice a day, after meals", for five days, finish all of them; side effects; can I drink alcohol
+  - "Can I get a note for work?"
+  - rest and fluids; "Come back if it doesn't get better"; "Feel better!"
+- **Twists:**
+  - the learner is allergic to penicillin, so she prescribes something else
+  - "Let me check your blood pressure": "Roll up your sleeve."
+
+### s32-supermarket · song 32 "Unexpected Item" · ch 2, order 5
+- **Location** `market` (Harbor Market) · **NPC** `marcus` (cashier, friendly, formal). **Extra speaker** `sco`, the self-checkout machine's recorded voice, for the twist.
+- **Title** EN "Unexpected Item", LT "Netikėta prekė". **Topic** "At the supermarket checkout" / "Prekybos centro kasoje".
+- **Goal** "Susimokėk už pirkinius kasoje ir susitvarkyk su netikėtumais."
+- **Song phrases:** "Do you have a loyalty card?" · "Would you like a bag?" · "Cash or card?" · "Tap it here and enter your PIN." · "Here's your receipt." · "Can I have a price check?" · "It's two for five."
+- **Cover:**
+  - "Hi, did you find everything okay?"
+  - loyalty/rewards card (or "I can look you up by phone number")
+  - bags: "paper or plastic?", bags are 10 cents, "I brought my own"
+  - a price check: the shelf said it was on sale. "It's two for five" means the second one is almost free, or buy two.
+  - the total; "Cash or card?"; "Tap it here and enter your PIN"; "Debit or credit?"; "Would you like cash back?"
+  - "Here's your receipt"; "Have a nice day!"
+  - the learner's questions: "Where are the eggs?", "Do you have…?"
+- **Twists:**
+  - At the self-checkout, the machine says "Unexpected item in the bagging area." and "Please wait for assistance." The learner calls Marcus ("Excuse me, the machine says…"), and he fixes it.
+  - Alcohol in the basket: "Can I see your ID?"
+
+### s33-small-talk · song 33 "Lovely Weather" · ch 5, order 6
+- **Location** `bus-stop` (Oak Avenue; outdoors) · **NPC** `frank` (a retired neighbor, chatty, **informal: tu**).
+- **Title** EN "Lovely Weather", LT "Puikus oras". **Topic** "Small talk" / "Pasišnekėjimas".
+- **Goal** "Pasišnekėk su kaimynu apie orą ir savaitgalį, o atvažiavus autobusui mandagiai atsisveikink."
+- **Song phrases:** "Lovely weather, isn't it?" · "Looks like rain." · "Busy week?" · "How was your weekend?" · "Any plans for the weekend?" · "I'd better get going." · "Nice talking to you!"
+- **Cover:**
+  - greetings ("Morning!", "Hey there!")
+  - weather talk with tag questions ("Lovely day, isn't it?", "It's cold today, isn't it?", "Looks like rain")
+  - "Busy week?"; "How was your weekend?" (and "What did you do?")
+  - "Any plans for the weekend?"
+  - asking back ("How about you?") and showing interest ("Oh, nice!", "Really?", "That sounds fun")
+  - "Are you new around here?", where are you from
+  - ending politely when the bus comes: "I'd better get going", "Nice talking to you!", "You too! Have a good one!"
+  - Short answers ("Yeah, beautiful!") should work, but Frank gently invites more.
+- **Twists:**
+  - It starts to rain: "Oh, here it comes!", and he offers to share his umbrella.
+  - The bus is late again, so there's more time to chat.
+
+### s34-meeting · song 34 "Any Other Business?" · ch 4, order 5
+- **Location** `office` (Brightline, the meeting room) · **NPC** `kate` (team lead, informal). **Also** `paul` in the room and `sara` joining on the screen. All three are informal.
+- **Title** EN "Any Other Business?", LT "Ar yra kitų klausimų?". **Topic** "A work meeting" / "Darbo susirinkimas".
+- **Goal** "Dalyvauk komandos susirinkime: pristatyk savo naujienas, paprašyk paaiškinti ir padėk susirinkimą užbaigti."
+- **Song phrases:** "Let's get started." · "You're on mute!" · "Let's move on to…" · "I'd like to add something." · "Could you clarify that?" · "I'm not sure I agree." · "Let's take this offline." · "Let's wrap up."
+- **Cover:**
+  - "Let's get started"
+  - Sara speaks while muted, and the learner can say "Sara, you're on mute!"
+  - the agenda (the new app launch, the budget, the next deadline)
+  - the learner's update ("I finished the report", "I'm working on…", "It'll be ready by Friday")
+  - "I'd like to add something"; "Could you clarify that?" / "What do you mean by…?"
+  - disagreeing politely ("I'm not sure I agree", "I see your point, but…")
+  - "Let's take this offline"; action items ("Who's taking this?", "I can do that")
+  - "Any other business?"; "Let's wrap up"; "Thanks, everyone"
+  - Kate leads. Paul and Sara say only what they need to (use `c.speaker`).
+- **Twists:**
+  - Paul and Sara disagree about the deadline, and Kate asks the learner what they think.
+  - Kate asks the learner to take notes or send a summary.
+
+### s35-gym · song 35 "One More Rep" · ch 3, order 10
+- **Location** `gym` (Harbor Fitness) · **NPC** `jordan` (personal trainer, energetic, **informal: tu**).
+- **Title** EN "One More Rep", LT "Dar vienas pakartojimas". **Topic** "At the gym" / "Sporto klube".
+- **Goal** "Užsiregistruok sporto klube ir atlik pirmą treniruotę su trenere."
+- **Song phrases:** "Hi, I'm new here!" · "Where are the lockers?" · "Is this machine free?" · "Warm up first." · "How many sets should I do?" · "Can you spot me?" · "I'm out of breath!" · "Same time tomorrow?"
+- **Cover:**
+  - "Hi, I'm new here!"
+  - the membership: monthly $35 or a day pass $10; sign the form; a free first session with a trainer
+  - "Where are the lockers?" (the locker room; bring a lock); towels; water fountain
+  - "Is this machine free?" / "Are you using this?"
+  - "Warm up first" (five minutes on the treadmill or bike)
+  - "How many sets should I do?" ("Three sets of ten reps")
+  - "Can you spot me?" (bench press)
+  - "I'm out of breath!" ("Take a break, grab some water")
+  - "One more rep!"; "Good job!"
+  - "Same time tomorrow?" / "See you Thursday!"
+- **Twists:**
+  - The learner's knee or back hurts ("Stop right there. Let's try something easier").
+  - The machine is out of order, so they use another one.

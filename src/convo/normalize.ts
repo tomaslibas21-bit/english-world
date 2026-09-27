@@ -139,15 +139,17 @@ function invertedQuestion(toks: Tokens): Tokens | null {
  *  "no" was written as its own answer ("No, oat milk" / "No. Cash") rather than "no cash". */
 export function tokenizeInput(input: string): { variants: Tokens[]; please: boolean; noPause: boolean } {
   const noPause = /^\W*(no|nope|nah)\s*[,.!;:–—-]/i.test(String(input || ""));
-  let toks = surfaceTokens(input);
+  const raw = surfaceTokens(input);
   let please = false;
-  toks = toks.filter((t) => {
+  let toks = raw.filter((t) => {
     if (SOFT_FILLERS.has(t)) return false;
     if (t === "please" || t === "pls" || t === "plz") { please = true; return false; }
     return true;
   });
   // "please" alone means "yes, please".
   if (!toks.length && please) toks = ["yes"];
+  // a filler on its own can itself be the answer (the doctor: "Say 'ah'." – "Ah."): keep it then
+  else if (!toks.length) toks = raw.filter((t) => SOFT_FILLERS.has(t));
   const variants = normalizedVariants(toks, false);
   const inv = variants.length ? invertedQuestion(variants[0]) : null;
   if (inv) variants.push(inv);

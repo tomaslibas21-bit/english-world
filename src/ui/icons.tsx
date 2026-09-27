@@ -126,6 +126,11 @@ const ICONS = {
   building: [{ d: rr(5.5, 3, 13, 18, 1.75), k: "soft" }, dot(9.5, 7), dot(14.5, 7), dot(9.5, 10.5), dot(14.5, 10.5), dot(9.5, 14), dot(14.5, 14), "M10.5 21v-3h3v3"],
   briefcase: [{ d: rr(3, 7, 18, 13, 2.25), k: "soft" }, "M9 7V5.25c0-.7.55-1.25 1.25-1.25h3.5c.7 0 1.25.55 1.25 1.25V7", "M3 12.75h18", "M10.5 12.75v1.5h3v-1.5"],
   sunset: [{ d: "M7 13a5 5 0 0 1 10 0z", k: "soft" }, "M3 13h18", "M12 6.5V4.75", "M7.4 8.4 6.17 7.17", "M16.6 8.4l1.23-1.23", "M6 16.25h12", "M9 19.25h6"],
+  stethoscope: ["M4.25 3.75h1.5v5.25a3.5 3.5 0 0 0 7 0V3.75h1.5", "M9.25 12.5v2.25a4.5 4.5 0 0 0 9 0v-2", { d: c(18.25, 10.5, 2.25), k: "soft" }, dot(18.25, 10.5)],
+  cart: ["M2.75 4.25h2.2l2.55 12h10.75", { d: "M5.6 7.25h14.9l-1.6 6.5H6.98z", k: "soft" }, "M11 7.25v6.5", "M15.5 7.25v6.5",
+    { d: c(9, 19.5, 1.5), k: "soft" }, { d: c(16.75, 19.5, 1.5), k: "soft" }],
+  dumbbell: { rot: -45, parts: ["M8.25 12h7.5", { d: rr(5.25, 6.75, 3, 10.5, 1), k: "soft" }, { d: rr(15.75, 6.75, 3, 10.5, 1), k: "soft" },
+    rr(2.5, 9, 2.75, 6, 0.9), rr(18.75, 9, 2.75, 6, 0.9)] },
 
   // ---- things people hand you
   headphones: ["M4 15v-3a8 8 0 0 1 16 0v3", { d: rr(3, 13.5, 4.5, 7, 2), k: "soft" }, { d: rr(16.5, 13.5, 4.5, 7, 2), k: "soft" }],
@@ -235,6 +240,7 @@ const EMOJI: Record<string, IconName> = {
   "\u{1F3E8}": "bed", "\u{2139}": "info", "\u{1F5BC}": "frame", "\u{2615}": "coffee", "\u{1F35D}": "restaurant", "\u{1F455}": "shirt",
   "\u{1F48A}": "pill", "\u{2702}": "scissors", "\u{1F3E6}": "bank", "\u{1F4EE}": "mail", "\u{1F33B}": "flower", "\u{1F693}": "police",
   "\u{1F3E2}": "building", "\u{1F389}": "party", "\u{1F3E1}": "home", "\u{1F3E0}": "home", "\u{1F4BC}": "briefcase", "\u{1F305}": "sunset",
+  "\u{1FA7A}": "stethoscope", "\u{1F6D2}": "cart", "\u{1F3CB}": "dumbbell",
   "\u{1F4F1}": "smartphone", "\u{1F4DE}": "phoneCall", "\u{1F3A5}": "video", "\u{1F4CD}": "pin",
   // things people hand you, and other toasts (src/game/Game.ts, src/game/session.ts)
   "\u{1F3A7}": "headphones", "\u{1F4C4}": "document", "\u{1F3AB}": "ticket", "\u{1F39F}": "ticket", "\u{1F5D3}": "calendar", "\u{1F4C5}": "calendar",

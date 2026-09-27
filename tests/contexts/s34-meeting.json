@@ -1,0 +1,580 @@
+{
+ "situation": "s34-meeting",
+ "title": "Any Other Business?",
+ "goal": "Dalyvauk komandos susirinkime: pristatyk savo naujienas, paprašyk paaiškinti ir padėk susirinkimą užbaigti.",
+ "contexts": {
+  "mute": {
+   "id": "mute",
+   "kind": "step",
+   "npc": [
+    "Morning, everyone! Okay, let's get started. And Sara is joining us from home today. Hi, Sara! Hmm, she's talking, but there's no sound.",
+    "Hi, everyone! Thanks for coming. Let's get started. And Sara is joining us from home today. Hi, Sara! She's saying something, but we can't hear her.",
+    "Morning, everyone! Okay, let's get started. And Sara is joining us from home today. Hi, Sara! She's saying something, but we can't hear her."
+   ],
+   "expects": [
+    "tell_mute",
+    "tell_mute_ctx",
+    "not_muted",
+    "greet_team"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti Sarai, kad jos mikrofonas išjungtas"
+   ],
+   "options": []
+  },
+  "sara_hear": {
+   "id": "sara_hear",
+   "kind": "pending",
+   "npc": [
+    "Oops! Sorry! Can you hear me now?",
+    "Oh, sorry! Is this better?",
+    "What about now?"
+   ],
+   "expects": [
+    "hear_yes",
+    "hear_no",
+    "greet_team",
+    "tell_mute",
+    "tell_mute_ctx",
+    "not_muted"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti Sarai, ar dabar ją girdi"
+   ],
+   "options": []
+  },
+  "update": {
+   "id": "update",
+   "kind": "step",
+   "npc": [
+    "Great! Sorry about that, everyone. So, we have three things today: the app launch, the budget and the next deadline. But first, quick updates. Paul? The app is almost ready. We're just fixing a few bugs. Thanks, Paul. And you? How's it going?",
+    "Great! Sorry about that, everyone. Okay. Three things on the agenda: the app launch, the budget and the next deadline. But first, quick updates. Paul? The app is almost ready. We're just fixing a few bugs. Okay. What about you? What are you working on?",
+    "Great! Sorry about that, everyone. So, we have three things today: the app launch, the budget and the next deadline. But first, quick updates. Paul? The app is almost ready. We're just fixing a few bugs. Okay. What about you? What are you working on?"
+   ],
+   "expects": [
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "upd_ok_ctx",
+    "upd_nothing"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti savo naujienas"
+   ],
+   "options": [
+    "report",
+    "presentation",
+    "slides",
+    "budget",
+    "website",
+    "schedule",
+    "newsletter",
+    "proposal",
+    "survey",
+    "spreadsheet",
+    "sales numbers",
+    "app",
+    "contract",
+    "design",
+    "invoices",
+    "training plan",
+    "marketing campaign"
+   ]
+  },
+  "send_q": {
+   "id": "send_q",
+   "kind": "pending",
+   "npc": [
+    "Great job! Could you send the report to everyone after the meeting?"
+   ],
+   "expects": [
+    "will_send",
+    "cant_send",
+    "can_do",
+    "cant_do",
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "upd_ok_ctx",
+    "upd_nothing"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti atsiųsti"
+   ],
+   "options": []
+  },
+  "clarify": {
+   "id": "clarify",
+   "kind": "pending",
+   "npc": [
+    "Thanks! Now let's move on to the app launch. Paul? Sure. So, we're doing a soft launch next week, and then we'll scale up. Any questions for Paul?",
+    "Awesome, thank you! So, let's move on to the app launch. Paul? Sure. So, the app is feature-complete, but QA found a few blockers. Any questions for Paul?",
+    "Thanks! Now let's move on to the app launch. Paul? Sure. So, the app is feature-complete, but QA found a few blockers. Does anyone have questions for Paul?"
+   ],
+   "expects": [
+    "clarify",
+    "word_q",
+    "term_echo_ctx",
+    "nothing_more",
+    "add_req",
+    "g_dont_understand",
+    "g_meaning"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti Paulo paaiškinti"
+   ],
+   "options": []
+  },
+  "makes_sense": {
+   "id": "makes_sense",
+   "kind": "pending",
+   "npc": [
+    "Sorry! In plain English: next week, only a few users get the app. Later, everyone gets it. Does that make sense?",
+    "Sorry! In plain English: the app is ready, but the testers found some big problems. Does that make sense?",
+    "Sorry! In plain English: the app is ready, but the testers found some big problems. Is that clearer?"
+   ],
+   "expects": [
+    "nothing_more",
+    "agree",
+    "clarify",
+    "g_thanks",
+    "g_ok",
+    "g_dont_understand",
+    "word_q",
+    "term_echo_ctx",
+    "add_req"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar dabar aišku"
+   ],
+   "options": []
+  },
+  "add": {
+   "id": "add",
+   "kind": "step",
+   "npc": [
+    "Cool. Okay. Does anyone want to add anything?",
+    "Great! Okay. Does anyone want to add anything?",
+    "Cool. I'd like to add something: we need more testers. Good point. Anyone else?"
+   ],
+   "expects": [
+    "add_req",
+    "add_test",
+    "add_help",
+    "add_customers",
+    "add_feedback",
+    "add_other_ctx",
+    "nothing_more"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Ką nors pridurti arba pasakyti, kad tai viskas"
+   ],
+   "options": []
+  },
+  "add_what": {
+   "id": "add_what",
+   "kind": "pending",
+   "npc": [
+    "Sure, go ahead!",
+    "Of course. Go ahead."
+   ],
+   "expects": [
+    "add_test",
+    "add_help",
+    "add_customers",
+    "add_feedback",
+    "add_other_ctx",
+    "nothing_more",
+    "add_req"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ką nori pridurti"
+   ],
+   "options": []
+  },
+  "opinion": {
+   "id": "opinion",
+   "kind": "step",
+   "npc": [
+    "Good point! I'll add that to the test plan. Now, let's move on to the budget. We have $5,000 left for marketing this quarter. I think we should put everything into social media ads. Hmm. What do you think?",
+    "Good point! I'll add that to the test plan. So, let's move on to the budget. We have $5,000 left for marketing this quarter. I think we should put everything into social media ads. Interesting. What's your opinion?",
+    "Good point! I'll add that to the test plan. So, let's move on to the budget. We have $5,000 left for marketing this quarter. I think we should put everything into a big launch party. Hmm. What do you think?"
+   ],
+   "expects": [
+    "disagree",
+    "agree",
+    "reason",
+    "unsure",
+    "ask_back"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Mandagiai nesutikti su Paulu",
+    "Sutikti su Paulu"
+   ],
+   "options": []
+  },
+  "why": {
+   "id": "why",
+   "kind": "step",
+   "npc": [
+    "Really? Why?",
+    "Oh? Why not?"
+   ],
+   "expects": [
+    "reason",
+    "unsure",
+    "disagree",
+    "agree"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paaiškinti, kodėl nesutinki"
+   ],
+   "options": []
+  },
+  "talk_after": {
+   "id": "talk_after",
+   "kind": "pending",
+   "npc": [
+    "Hmm, fair point. Good points. Let's take this offline. Can you two talk after the meeting?",
+    "Okay, I see your point. Good points. Let's take this offline. Can you two talk after the meeting?",
+    "Okay, fair enough. Good points. Let's take this offline. Can you two talk after the meeting?"
+   ],
+   "expects": [
+    "talk_later",
+    "can_do",
+    "agree",
+    "cant_do",
+    "reason",
+    "unsure",
+    "disagree",
+    "ask_back"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti pasikalbėti su Paulu vėliau"
+   ],
+   "options": []
+  },
+  "dl_view": {
+   "id": "dl_view",
+   "kind": "step",
+   "npc": [
+    "Deal! Last thing: the next deadline. We need the launch email by Friday. Hmm, Friday is too soon. We need another week. I'm not sure I agree. The client needs it before the launch. Interesting. What's your opinion?",
+    "Deal! Last thing: the next deadline. We need the demo video by Friday. Hmm, Friday is too soon. We need another week. I'm not sure I agree. The client needs it before the launch. Hmm. What do you think?",
+    "Deal! Last thing: the next deadline. We need the user guide by Friday. Hmm, Friday is too soon. We need another week. I'm not sure I agree. The client needs it before the launch. Hmm. What do you think?"
+   ],
+   "expects": [
+    "agree",
+    "disagree",
+    "dl_view",
+    "unsure"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ką manai apie terminą"
+   ],
+   "options": []
+  },
+  "owner": {
+   "id": "owner",
+   "kind": "step",
+   "npc": [
+    "Okay. Friday is important for the client. Let's talk about it after the meeting. Who's taking this?",
+    "Sounds good. Last thing: the next deadline. We need the user guide by Friday. So, who's taking this one?",
+    "Sounds good. Last thing: the next deadline. We need the launch email by Friday. So, who's taking this one?"
+   ],
+   "expects": [
+    "can_do",
+    "can_do_ctx",
+    "cant_do",
+    "suggest_other",
+    "with_help",
+    "add_help"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasisiūlyti arba mandagiai atsisakyti"
+   ],
+   "options": []
+  },
+  "aob": {
+   "id": "aob",
+   "kind": "step",
+   "npc": [
+    "Perfect. Thank you! Alright, let's wrap up. Any other business?",
+    "Great, thanks! By Friday, then. Alright, let's wrap up. Any other business?",
+    "Perfect. Thank you! Okay, let's wrap up. Any other business?"
+   ],
+   "expects": [
+    "nothing_more",
+    "aob_wfh",
+    "aob_lunch",
+    "aob_vacation",
+    "aob_printer",
+    "aob_other_ctx",
+    "add_req",
+    "add_test",
+    "add_help",
+    "add_customers",
+    "add_feedback"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad klausimų nėra, arba ką nors iškelti"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "That's it for today. Thanks, everyone!",
+    "Great meeting, everyone. Thank you!",
+    "Thanks! You're the best."
+   ],
+   "expects": [
+    "bye_all",
+    "g_bye",
+    "g_thanks",
+    "nothing_more",
+    "g_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "summary": {
+   "id": "summary",
+   "kind": "pending",
+   "npc": [
+    "Great meeting, everyone. Thank you! Oh, and could you send everyone a quick summary?",
+    "That's it for today. Thanks, everyone! Oh, and could you send everyone a quick summary?"
+   ],
+   "expects": [
+    "can_do",
+    "cant_do",
+    "will_send",
+    "cant_send"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti atsiųsti santrauką arba atsisakyti"
+   ],
+   "options": []
+  },
+  "notes": {
+   "id": "notes",
+   "kind": "step",
+   "npc": [
+    "Great! Sorry about that, everyone. Oh, and could you take notes today?"
+   ],
+   "expects": [
+    "can_do",
+    "cant_do",
+    "suggest_other"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti užsirašinėti arba atsisakyti"
+   ],
+   "options": []
+  },
+  "what_task": {
+   "id": "what_task",
+   "kind": "pending",
+   "npc": [
+    "Good to hear! What are you working on right now?"
+   ],
+   "expects": [
+    "task_ctx",
+    "upd_working",
+    "upd_done",
+    "upd_behind",
+    "upd_ok",
+    "upd_ok_ctx",
+    "upd_nothing"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, prie ko dirbi"
+   ],
+   "options": [
+    "report",
+    "presentation",
+    "slides",
+    "budget",
+    "website",
+    "schedule",
+    "newsletter",
+    "proposal",
+    "survey",
+    "spreadsheet",
+    "sales numbers",
+    "app",
+    "contract",
+    "design",
+    "invoices",
+    "training plan",
+    "marketing campaign"
+   ]
+  },
+  "when_q": {
+   "id": "when_q",
+   "kind": "pending",
+   "npc": [
+    "Sounds good. When do you think the report will be ready?",
+    "No worries. When do you think the budget will be ready?"
+   ],
+   "expects": [
+    "when_ans",
+    "unsure",
+    "g_dontknow",
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "upd_ok_ctx",
+    "upd_nothing"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada bus paruošta"
+   ],
+   "options": []
+  },
+  "aob_more": {
+   "id": "aob_more",
+   "kind": "pending",
+   "npc": [
+    "Sure, no problem. Just put it in the calendar. Anything else?",
+    "Thanks for letting us know. Enjoy! Anything else?"
+   ],
+   "expects": [
+    "nothing_more",
+    "aob_wfh",
+    "aob_lunch",
+    "aob_vacation",
+    "aob_printer",
+    "aob_other_ctx",
+    "add_req",
+    "add_test",
+    "add_help",
+    "add_customers",
+    "add_feedback"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad daugiau nieko nėra",
+    "Iškelti dar ką nors"
+   ],
+   "options": []
+  },
+  "help_offer": {
+   "id": "help_offer",
+   "kind": "pending",
+   "npc": [
+    "Okay, great. Just keep me posted. I can help with that if you want.",
+    "Perfect, thanks! I can help with that if you want."
+   ],
+   "expects": [
+    "accept_help",
+    "g_thanks",
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "upd_ok_ctx",
+    "upd_nothing"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti Paulo pagalbą arba padėkoti"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "tell_mute",
+  "tell_mute_ctx",
+  "not_muted",
+  "greet_team",
+  "hear_yes",
+  "hear_no",
+  "upd_done",
+  "upd_working",
+  "upd_behind",
+  "upd_ok",
+  "upd_ok_ctx",
+  "upd_nothing",
+  "task_ctx",
+  "when_ans",
+  "unsure",
+  "will_send",
+  "cant_send",
+  "accept_help",
+  "clarify",
+  "word_q",
+  "term_echo_ctx",
+  "add_req",
+  "add_test",
+  "add_help",
+  "add_customers",
+  "add_feedback",
+  "add_other_ctx",
+  "nothing_more",
+  "disagree",
+  "agree",
+  "reason",
+  "ask_back",
+  "talk_later",
+  "dl_view",
+  "who_ctx",
+  "can_do",
+  "can_do_ctx",
+  "cant_do",
+  "suggest_other",
+  "with_help",
+  "aob_wfh",
+  "aob_lunch",
+  "aob_vacation",
+  "aob_printer",
+  "aob_other_ctx",
+  "q_agenda",
+  "q_deadline",
+  "q_next",
+  "bye_all"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

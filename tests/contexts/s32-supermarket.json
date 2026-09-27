@@ -1,0 +1,579 @@
+{
+ "situation": "s32-supermarket",
+ "title": "Unexpected Item",
+ "goal": "Susimokėk už pirkinius kasoje ir susitvarkyk su netikėtumais.",
+ "contexts": {
+  "find": {
+   "id": "find",
+   "kind": "step",
+   "npc": [
+    "Good morning! Did you find everything okay?",
+    "Hi there! Did you find everything okay?",
+    "Hi! Find everything okay today?"
+   ],
+   "expects": [
+    "found_all",
+    "found_ctx",
+    "not_found",
+    "not_found_ctx",
+    "ask_where",
+    "ask_have",
+    "product_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar viską radai",
+    "Paklausti, kur rasti prekę"
+   ],
+   "options": [
+    "eggs",
+    "coffee",
+    "rice",
+    "butter",
+    "milk",
+    "cheese",
+    "yogurt",
+    "tea",
+    "pasta",
+    "water",
+    "juice",
+    "snacks",
+    "bread",
+    "fruit",
+    "vegetables",
+    "toilet paper",
+    "wine"
+   ]
+  },
+  "rewards": {
+   "id": "rewards",
+   "kind": "step",
+   "npc": [
+    "Great! Do you have a loyalty card?",
+    "Great! Do you have a rewards card with us?",
+    "Good to hear! Do you have a rewards card with us?"
+   ],
+   "expects": [
+    "rewards_have",
+    "rewards_have_ctx",
+    "rewards_no",
+    "rewards_no_ctx",
+    "rewards_forgot",
+    "rewards_forgot_ctx",
+    "rewards_lookup",
+    "rewards_what",
+    "rewards_what_ctx",
+    "rewards_join",
+    "rewards_join_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi lojalumo kortelę",
+    "Paklausti, kur rasti prekę"
+   ],
+   "options": [
+    "eggs",
+    "milk",
+    "cheese",
+    "butter",
+    "yogurt",
+    "coffee",
+    "tea",
+    "rice",
+    "pasta",
+    "water",
+    "juice",
+    "snacks",
+    "bread",
+    "fruit",
+    "vegetables",
+    "toilet paper",
+    "wine"
+   ]
+  },
+  "join": {
+   "id": "join",
+   "kind": "step",
+   "npc": [
+    "Would you like to join? It's free.",
+    "Would you like to join Harbor Rewards? It's free.",
+    "It's a free card. You get sale prices and points. Would you like to join? It's free."
+   ],
+   "expects": [
+    "rewards_join",
+    "rewards_join_ctx",
+    "rewards_what",
+    "rewards_what_ctx",
+    "join_no_ctx",
+    "rewards_no",
+    "rewards_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar nori prisijungti prie lojalumo programos"
+   ],
+   "options": []
+  },
+  "bags": {
+   "id": "bags",
+   "kind": "step",
+   "npc": [
+    "No problem! Paper or plastic?",
+    "No worries! Paper or plastic?",
+    "Smart move! Two for five dollars. Paper or plastic?"
+   ],
+   "expects": [
+    "bag_want",
+    "bag_kind_ctx",
+    "bag_kind_neg_ctx",
+    "bag_no",
+    "bag_no_ctx",
+    "bag_price_q",
+    "bag_price_ctx",
+    "ask_bags"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia maišelio (popierinis ar plastikinis)"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Sure! Okay, that comes to $12.86. Cash or card?",
+    "Okay! That'll be $12.86.",
+    "Okay! Your total is $13.37."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "no_cash",
+    "no_card",
+    "total_q",
+    "price_wrong_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele, grynaisiais ar telefonu"
+   ],
+   "options": []
+  },
+  "charge": {
+   "id": "charge",
+   "kind": "step",
+   "npc": [
+    "Great! Just tap it here and enter your PIN.",
+    "Now just tap it here and enter your PIN.",
+    "Okay, $20 cash back. Now just tap it here and enter your PIN."
+   ],
+   "expects": [
+    "done_ctx",
+    "here_you_go",
+    "no_pin",
+    "pin_q",
+    "card_fail"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pridėti kortelę ir patvirtinti („Okay“)"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Perfect, thanks! And here's your receipt. Thanks for shopping with us!",
+    "Perfect, thanks! Here's your receipt. Have a nice day!",
+    "Thank you! Here's your receipt. Thanks for shopping with us!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hey! How's it going?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "found_all",
+    "found_ctx",
+    "not_found",
+    "not_found_ctx",
+    "ask_where",
+    "ask_have",
+    "product_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "cashback": {
+   "id": "cashback",
+   "kind": "step",
+   "npc": [
+    "Would you like any cash back?",
+    "Any cash back today?"
+   ],
+   "expects": [
+    "cashback_yes",
+    "cashback_no",
+    "cashback_amount_ctx",
+    "cashback_what"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar išsiimsi grynųjų (cash back)"
+   ],
+   "options": []
+  },
+  "price": {
+   "id": "price",
+   "kind": "step",
+   "npc": [
+    "No problem! Hmm, the chips came up at $4.49. Is that right?",
+    "Perfect, thank you. The chips came up at $4.49. Did you see a sale sign?",
+    "No problem! The chips came up at $4.49. Did you see a sale sign?"
+   ],
+   "expects": [
+    "sale_claim",
+    "price_wrong",
+    "price_wrong_ctx",
+    "price_check_req",
+    "price_check_ctx",
+    "price_ok_ctx",
+    "no_sign_ctx",
+    "chips_remove",
+    "chips_remove_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad lentynoje buvo akcija („2 for $5“), arba sutikti su kaina"
+   ],
+   "options": []
+  },
+  "second": {
+   "id": "second",
+   "kind": "step",
+   "npc": [
+    "I'll do a quick price check. Hi, can I have a price check on register four? Okay, thanks! You're right, they're on sale. It's two for five. One bag is $4.49, but two are just $5. The second one is almost free! Do you want another bag?",
+    "I'll do a quick price check. Hi, can I have a price check on register four? Okay, thanks! You're right, they're on sale. It's two for five. One bag is $4.49, but two are just $5. Want another one? The second one is almost free.",
+    "Let me check. Hi, can I have a price check on register four? Okay, thanks! You're right, they're on sale. It's two for five. One bag is $4.49, but two are just $5. The second one is almost free! Do you want another bag?"
+   ],
+   "expects": [
+    "second_yes_ctx",
+    "second_no_ctx",
+    "chips_remove",
+    "chips_remove_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Nuspręsti, ar imsi antrą traškučių pakelį"
+   ],
+   "options": []
+  },
+  "debit": {
+   "id": "debit",
+   "kind": "step",
+   "npc": [
+    "Debit or credit?"
+   ],
+   "expects": [
+    "debit_credit",
+    "no_pin"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti: debetinė ar kredito kortelė"
+   ],
+   "options": []
+  },
+  "id": {
+   "id": "id",
+   "kind": "step",
+   "npc": [
+    "No worries! Can I see your ID, please? It's for the wine.",
+    "No worries! I'll need to see your ID for the wine.",
+    "Done! You're a member now. I'll need to see your ID for the wine."
+   ],
+   "expects": [
+    "id_show",
+    "id_show_ctx",
+    "id_ask_ok",
+    "id_none",
+    "id_none_ctx",
+    "id_age",
+    "id_why",
+    "id_why_ctx",
+    "wine_remove",
+    "wine_remove_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti asmens dokumentą"
+   ],
+   "options": []
+  },
+  "receipt": {
+   "id": "receipt",
+   "kind": "step",
+   "npc": [
+    "Thank you! Receipt?",
+    "Perfect, thanks! Do you want your receipt?",
+    "Perfect, thanks! And here's your $20. Receipt?"
+   ],
+   "expects": [
+    "receipt_no",
+    "receipt_yes",
+    "receipt_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia čekio"
+   ],
+   "options": []
+  },
+  "sco": {
+   "id": "sco",
+   "kind": "step",
+   "npc": [
+    "Unexpected item in the bagging area. Please wait for assistance."
+   ],
+   "expects": [
+    "call_help_ctx",
+    "sco_problem"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasikviesti kasininką ir paaiškinti, kas nutiko"
+   ],
+   "options": []
+  },
+  "missing": {
+   "id": "missing",
+   "kind": "pending",
+   "npc": [
+    "Oh no! What were you looking for?",
+    "Oh, no! What did you need?"
+   ],
+   "expects": [
+    "product_ctx",
+    "not_found",
+    "not_found_ctx",
+    "ask_where",
+    "ask_have",
+    "found_all",
+    "found_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ko neradai"
+   ],
+   "options": [
+    "eggs",
+    "milk",
+    "cheese",
+    "butter",
+    "yogurt",
+    "coffee",
+    "tea",
+    "rice",
+    "pasta",
+    "water",
+    "juice",
+    "snacks",
+    "bread",
+    "fruit",
+    "vegetables",
+    "toilet paper",
+    "wine"
+   ]
+  },
+  "bag_kind": {
+   "id": "bag_kind",
+   "kind": "step",
+   "npc": [
+    "Sure! Paper or plastic?",
+    "Paper or plastic?"
+   ],
+   "expects": [
+    "bag_kind_ctx",
+    "bag_kind_neg_ctx",
+    "bag_want",
+    "bag_no",
+    "bag_no_ctx",
+    "bag_price_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti: popierinis ar plastikinis"
+   ],
+   "options": []
+  },
+  "cb_amount": {
+   "id": "cb_amount",
+   "kind": "step",
+   "npc": [
+    "Sure! How much?"
+   ],
+   "expects": [
+    "cashback_amount_ctx",
+    "cashback_yes",
+    "cashback_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kiek grynųjų nori"
+   ],
+   "options": []
+  },
+  "sco_explain": {
+   "id": "sco_explain",
+   "kind": "step",
+   "npc": [
+    "Hi! What's the problem?",
+    "Aisle seven, in the back. Sure! What's going on?"
+   ],
+   "expects": [
+    "sco_problem"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paaiškinti, kas nutiko su savitarnos kasa"
+   ],
+   "options": []
+  },
+  "phone": {
+   "id": "phone",
+   "kind": "step",
+   "npc": [
+    "Great! I just need your phone number.",
+    "No problem. I can look you up by phone number. What's your phone number?"
+   ],
+   "expects": [
+    "phone_ctx",
+    "phone_none"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti telefono numerį"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "call_help_ctx",
+  "sco_problem",
+  "found_all",
+  "found_ctx",
+  "not_found",
+  "not_found_ctx",
+  "product_ctx",
+  "ask_where",
+  "ask_have",
+  "ask_have_unknown",
+  "ask_where_unknown",
+  "ask_restroom",
+  "ask_atm",
+  "ask_bags",
+  "rewards_have",
+  "rewards_have_ctx",
+  "rewards_no",
+  "rewards_no_ctx",
+  "rewards_forgot",
+  "rewards_forgot_ctx",
+  "rewards_lookup",
+  "phone_ctx",
+  "phone_none",
+  "rewards_what",
+  "rewards_what_ctx",
+  "join_no_ctx",
+  "rewards_join",
+  "rewards_join_ctx",
+  "id_show",
+  "id_show_ctx",
+  "id_ask_ok",
+  "id_none",
+  "id_none_ctx",
+  "id_age",
+  "id_why",
+  "id_why_ctx",
+  "wine_remove",
+  "wine_remove_ctx",
+  "sale_claim",
+  "price_wrong",
+  "price_wrong_ctx",
+  "price_check_req",
+  "price_check_ctx",
+  "price_ok_ctx",
+  "no_sign_ctx",
+  "chips_remove",
+  "chips_remove_ctx",
+  "chips_price_q",
+  "second_yes_ctx",
+  "second_no_ctx",
+  "bag_want",
+  "bag_kind_ctx",
+  "bag_kind_neg_ctx",
+  "bag_no",
+  "bag_no_ctx",
+  "bag_price_ctx",
+  "bag_price_q",
+  "total_q",
+  "pay_card",
+  "no_cash",
+  "no_card",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "keep_change",
+  "debit_credit",
+  "no_pin",
+  "pin_q",
+  "cashback_yes",
+  "cashback_amount_ctx",
+  "cashback_no",
+  "cashback_what",
+  "done_ctx",
+  "card_fail",
+  "receipt_no",
+  "receipt_yes",
+  "receipt_no_ctx"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

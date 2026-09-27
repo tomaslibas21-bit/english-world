@@ -1,0 +1,643 @@
+{
+ "situation": "s35-gym",
+ "title": "One More Rep",
+ "goal": "Užsiregistruok sporto klube ir atlik pirmą treniruotę su trenere.",
+ "contexts": {
+  "new": {
+   "id": "new",
+   "kind": "step",
+   "npc": [
+    "Hi there! Welcome to Harbor Fitness! Is this your first time here?",
+    "Hey! Welcome to Harbor Fitness! First time here?",
+    "Hey! Welcome to Harbor Fitness! What can I do for you?"
+   ],
+   "expects": [
+    "im_new",
+    "want_join",
+    "choose_plan",
+    "not_new",
+    "ask_price",
+    "ask_trial"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad esi čia pirmą kartą",
+    "Paklausti apie narystę"
+   ],
+   "options": []
+  },
+  "plan": {
+   "id": "plan",
+   "kind": "step",
+   "npc": [
+    "Awesome, welcome! I'm Jordan, one of the trainers here. We have two options: a monthly membership for $35, or a day pass for $10. Which one would you like?",
+    "Nice! I'm Jordan. I'm a trainer here. There are two options: monthly for $35, or a day pass for $10. The monthly membership includes a free session with a trainer. Which one sounds good?",
+    "Awesome, welcome! I'm Jordan, one of the trainers here. There are two options: monthly for $35, or a day pass for $10. The monthly membership includes a free session with a trainer. Which one sounds good?"
+   ],
+   "expects": [
+    "choose_plan",
+    "plan_no",
+    "want_join",
+    "ask_price",
+    "ask_included",
+    "ask_fee",
+    "ask_cancel",
+    "ask_hours",
+    "ask_have",
+    "ask_trial",
+    "recommend_q",
+    "ask_discount"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti narystę",
+    "Paklausti apie narystę"
+   ],
+   "options": [
+    "monthly membership",
+    "day pass"
+   ]
+  },
+  "form": {
+   "id": "form",
+   "kind": "step",
+   "npc": [
+    "Great choice! And your first session with me is free! Now just fill out this form and sign at the bottom.",
+    "Great choice! Just sign this form at the bottom, please.",
+    "Awesome, the monthly membership! Now just fill out this form and sign at the bottom. And I'll need a photo ID."
+   ],
+   "expects": [
+    "here_you_go",
+    "form_done",
+    "sign_q",
+    "pen_q",
+    "form_what",
+    "check_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užpildyti ir pasirašyti anketą"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Got it, thank you! That's $35 for the first month.",
+    "Perfect, thanks! That's $35 for the first month.",
+    "Got it, thank you! That's $35 for the first month. Cash or card?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "no_cash",
+    "no_card"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Susimokėti"
+   ],
+   "options": []
+  },
+  "lockers": {
+   "id": "lockers",
+   "kind": "step",
+   "npc": [
+    "Great! Just tap your card here. Here's your membership card. Just scan it at the door. Okay! Do you want to change first?",
+    "Great! Just tap your card here. Here's your membership card. Just scan it at the door. Do you need to change before we start?",
+    "Thank you! Here's your wristband for today. Okay! Do you want to change first?"
+   ],
+   "expects": [
+    "lockers_q",
+    "change_no",
+    "change_no_ctx",
+    "ready",
+    "towel_q",
+    "water_q",
+    "ask_have",
+    "restroom_q",
+    "lock_need",
+    "lock_borrow"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kur persirengimo spintelės"
+   ],
+   "options": []
+  },
+  "lock_q": {
+   "id": "lock_q",
+   "kind": "pending",
+   "npc": [
+    "The locker room is right over there, on the left. Did you bring a lock?",
+    "The locker room is downstairs, on the right. Did you bring a lock?"
+   ],
+   "expects": [
+    "lock_have",
+    "lock_none",
+    "lock_borrow",
+    "lock_need",
+    "lockers_q",
+    "change_no",
+    "change_no_ctx",
+    "ready",
+    "towel_q",
+    "water_q",
+    "ask_have",
+    "restroom_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi spynelę"
+   ],
+   "options": []
+  },
+  "warmup": {
+   "id": "warmup",
+   "kind": "step",
+   "npc": [
+    "Perfect! Okay, let's start! Warm up first: five minutes on the treadmill or the bike. Which do you prefer?",
+    "The locker room is downstairs, on the right. Towels are free, and the water fountain is right next to the locker room. Okay, let's start! Warm up first: five minutes on the treadmill or the bike. Which do you prefer?",
+    "Perfect! Towels are free, and the water fountain is right next to the locker room. Let's start! Warm up first. Five minutes on the bike or the treadmill. Which one?"
+   ],
+   "expects": [
+    "warm_choice",
+    "warm_not",
+    "warm_any",
+    "warm_q",
+    "recommend_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti, kaip apšilti"
+   ],
+   "options": [
+    "treadmill",
+    "bike",
+    "elliptical"
+   ]
+  },
+  "machine": {
+   "id": "machine",
+   "kind": "step",
+   "npc": [
+    "Perfect! Start slow, nice and easy. Time's up! You're warmed up. Next: the leg press. Hmm, there's a towel on it.",
+    "Awesome! You're doing great. Next: the leg press. Hmm, there's a towel on it.",
+    "Great! Next: the leg press. Hmm, there's a towel on it."
+   ],
+   "expects": [
+    "machine_free_q",
+    "machine_free_ctx",
+    "machine_taken",
+    "broken_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, ar treniruoklis laisvas"
+   ],
+   "options": []
+  },
+  "sets": {
+   "id": "sets",
+   "kind": "step",
+   "npc": [
+    "Good question! He's done. It's all yours! Sit here, put your feet on the plate, and push slowly. Any questions before you start?",
+    "Good question! He's done. It's all yours! Sit here, put your feet on the plate, and push slowly. Any questions?",
+    "Let me check... Yep, it's free! Go ahead. Sit here, put your feet on the plate, and push slowly. Any questions before you start?"
+   ],
+   "expects": [
+    "ask_sets",
+    "sets_ctx",
+    "ask_weight",
+    "ask_rest",
+    "ask_how",
+    "check_ok",
+    "ready"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kiek serijų daryti"
+   ],
+   "options": []
+  },
+  "rep": {
+   "id": "rep",
+   "kind": "pending",
+   "npc": [
+    "Let's do three sets of ten. Okay, go! Last set! Eight, nine… One more rep!",
+    "Let's do three sets of ten. Push! Eight, nine… One more rep! You can do it!",
+    "Three sets of ten! I'll count them with you! Rest about a minute between sets. Push! Eight, nine… One more rep! You can do it!"
+   ],
+   "expects": [
+    "rep_done_ctx",
+    "cant",
+    "tired",
+    "out_breath",
+    "g_ok",
+    "feel_good",
+    "g_howareyou_answer",
+    "not_tired",
+    "pain",
+    "pain_ctx",
+    "ask_sets",
+    "sets_ctx",
+    "ask_weight",
+    "ask_rest",
+    "ask_how",
+    "check_ok",
+    "ready"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padaryti paskutinį pakartojimą"
+   ],
+   "options": []
+  },
+  "spot": {
+   "id": "spot",
+   "kind": "step",
+   "npc": [
+    "Yes! Nice work! Now, the bench press! Lie down on the bench.",
+    "Stop right there. Let's try something easier. Let's do some easy stretching instead. Let's try the bench press. Lie down on the bench. Just the bar today: forty-five pounds.",
+    "Yes! Nice work! Let's try the bench press. Lie down on the bench."
+   ],
+   "expects": [
+    "spot_q",
+    "no_spot",
+    "ask_weight",
+    "ready"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti trenerės padrausti"
+   ],
+   "options": []
+  },
+  "breath_q": {
+   "id": "breath_q",
+   "kind": "pending",
+   "npc": [
+    "Of course! I'll stay right here. Lower the bar slowly… and push! Good job! Last one: one minute on the rowing machine. Go, go, go! Time! How do you feel?",
+    "Sure thing! I'll spot you. Lower the bar slowly… and push! Good job! Last one: one easy minute on the bike. Time! How do you feel?",
+    "Sure thing! I'll spot you. Push! Push! One more rep! Yes! Great job! Last one: one easy minute on the bike. Time! How do you feel?"
+   ],
+   "expects": [
+    "out_breath",
+    "tired",
+    "feel_good",
+    "not_tired",
+    "water_q",
+    "g_howareyou_bad",
+    "g_ok",
+    "g_howareyou_answer",
+    "pain"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip jautiesi"
+   ],
+   "options": []
+  },
+  "next": {
+   "id": "next",
+   "kind": "step",
+   "npc": [
+    "That's normal! Take a break, grab some water. Great workout! So, when do you want to come back?",
+    "That's normal! Take a break, grab some water. You earned it! Nice work today! Same time tomorrow?",
+    "Take a break, grab some water. You earned it! You did great! Same time tomorrow?"
+   ],
+   "expects": [
+    "next_same",
+    "next_day",
+    "next_no",
+    "day_no",
+    "next_later",
+    "later_ctx",
+    "next_time_q",
+    "when_ctx",
+    "see_you_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Susitarti dėl kitos treniruotės"
+   ],
+   "options": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Awesome! See you tomorrow! You did great today. Drink lots of water!",
+    "Perfect! See you tomorrow, same time! You did great today. Drink lots of water!",
+    "Awesome! See you tomorrow! Great first workout! Don't forget to stretch!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "next_same",
+    "next_day",
+    "see_you_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "feel_q": {
+   "id": "feel_q",
+   "kind": "pending",
+   "npc": [
+    "Perfect! Start slow, nice and easy. Okay, that's five minutes! You're warmed up. How do you feel?",
+    "Great! Nice and easy. Not too fast. Okay, that's five minutes! You're warmed up. How are you feeling?",
+    "Perfect! Start slow, nice and easy. Time's up! You're warmed up. How are you feeling?"
+   ],
+   "expects": [
+    "feel_good",
+    "tired",
+    "out_breath",
+    "not_tired",
+    "g_ok",
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "warm_choice",
+    "warm_not",
+    "warm_any",
+    "warm_q",
+    "recommend_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip jautiesi"
+   ],
+   "options": []
+  },
+  "okay_q": {
+   "id": "okay_q",
+   "kind": "pending",
+   "npc": [
+    "Good job! That's three sets! Whoa, are you okay?",
+    "Yes! Nice work! Whoa, are you okay?",
+    "Yes, you can! Push! Yes! Good job! Whoa, are you okay?"
+   ],
+   "expects": [
+    "pain",
+    "pain_ctx",
+    "no_pain",
+    "feel_good",
+    "tired",
+    "not_tired",
+    "g_ok",
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "ask_sets",
+    "sets_ctx",
+    "ask_weight",
+    "ask_rest",
+    "ask_how",
+    "check_ok",
+    "ready"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad skauda kelį ar nugarą"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hey there! How's it going?",
+    "Hi! How are you doing today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "im_new",
+    "want_join",
+    "choose_plan",
+    "not_new",
+    "ask_price",
+    "ask_trial"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "broken": {
+   "id": "broken",
+   "kind": "pending",
+   "npc": [
+    "Great! Next: the leg press. Oh no, it's out of order today. Let's use the other one, by the wall. But there's a towel on it.",
+    "Awesome! You're doing great. Next: the leg press. Oh no, it's out of order today. Let's use the other one, by the wall. But there's a towel on it.",
+    "That's normal. You're doing great! Next: the leg press. Oh no, it's out of order today. Let's use the other one, by the wall. But there's a towel on it."
+   ],
+   "expects": [
+    "machine_free_q",
+    "machine_free_ctx",
+    "machine_taken",
+    "broken_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, ar kitas treniruoklis laisvas",
+    "Paklausti, kas nutiko"
+   ],
+   "options": []
+  },
+  "alt_plan": {
+   "id": "alt_plan",
+   "kind": "pending",
+   "npc": [
+    "No problem! How about a day pass? It's just ten dollars."
+   ],
+   "expects": [
+    "choose_plan",
+    "plan_no",
+    "want_join",
+    "ask_price",
+    "ask_included",
+    "ask_fee",
+    "ask_cancel",
+    "ask_hours",
+    "ask_have",
+    "ask_trial",
+    "recommend_q",
+    "ask_discount"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba pasirinkti kitą narystę"
+   ],
+   "options": [
+    "monthly membership",
+    "day pass"
+   ]
+  },
+  "thursday_q": {
+   "id": "thursday_q",
+   "kind": "pending",
+   "npc": [
+    "No problem! How about Thursday?"
+   ],
+   "expects": [
+    "next_day",
+    "next_later",
+    "later_ctx",
+    "next_same",
+    "when_ctx",
+    "see_you_ctx",
+    "cant",
+    "next_no",
+    "day_no",
+    "next_time_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba pasiūlyti kitą dieną"
+   ],
+   "options": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+   ]
+  },
+  "where_hurt": {
+   "id": "where_hurt",
+   "kind": "pending",
+   "npc": [
+    "Oh no! What hurts?"
+   ],
+   "expects": [
+    "pain",
+    "pain_ctx",
+    "no_pain",
+    "ask_sets",
+    "sets_ctx",
+    "ask_weight",
+    "ask_rest",
+    "ask_how",
+    "check_ok",
+    "ready"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kas skauda"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "im_new",
+  "not_new",
+  "want_join",
+  "ask_trial",
+  "nice_meet",
+  "choose_plan",
+  "plan_no",
+  "ask_price",
+  "ask_included",
+  "ask_fee",
+  "ask_cancel",
+  "ask_hours",
+  "ask_have",
+  "ask_discount",
+  "ask_have_unknown",
+  "ask_jordan",
+  "here_you_go",
+  "form_done",
+  "sign_q",
+  "pen_q",
+  "form_what",
+  "pay_card",
+  "no_cash",
+  "no_card",
+  "pay_cash",
+  "pay_phone",
+  "lockers_q",
+  "change_no",
+  "change_no_ctx",
+  "ready",
+  "lock_have",
+  "lock_none",
+  "lock_need",
+  "lock_borrow",
+  "towel_q",
+  "water_q",
+  "restroom_q",
+  "warm_choice",
+  "warm_not",
+  "warm_any",
+  "recommend_q",
+  "warm_q",
+  "feel_good",
+  "tired",
+  "out_breath",
+  "not_tired",
+  "machine_free_q",
+  "machine_free_ctx",
+  "machine_taken",
+  "broken_q",
+  "ask_sets",
+  "sets_ctx",
+  "ask_weight",
+  "ask_rest",
+  "ask_how",
+  "not_ready",
+  "check_ok",
+  "rep_done_ctx",
+  "cant",
+  "pain",
+  "pain_ctx",
+  "no_pain",
+  "spot_q",
+  "no_spot",
+  "next_same",
+  "next_day",
+  "next_no",
+  "day_no",
+  "next_later",
+  "later_ctx",
+  "next_time_q",
+  "when_ctx",
+  "see_you_ctx"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

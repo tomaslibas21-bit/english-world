@@ -443,9 +443,10 @@ export class Game implements GameApi {
 
   sitsForNpc(npc: string): SituationDef[] { return this.npcToSits.get(npc) ?? []; }
 
-  /** Which situation to start with this NPC: the objective, else the first not yet completed, else the first. */
+  /** Which situation to start with this NPC face to face: the objective, else the first not yet completed, else
+   *  the first. Calls never start this way (Kate calls you on video, and also leads the team meeting in the office). */
   pickSituation(npc: string): SituationDef | null {
-    const list = this.sitsForNpc(npc);
+    const list = this.sitsForNpc(npc).filter((s) => !isCall(s));
     if (!list.length) return null;
     const pr = useStore.getState().progress;
     const obj = list.find((s) => s.id === pr.objective);
@@ -487,7 +488,7 @@ export class Game implements GameApi {
         zone = sit.location;
         const it = this.getZone(zone)?.interior;
         const sp = it?.npcs.find((n) => n.npc === npc);
-        if (sp) spawn = inFrontOf(sp.x, sp.z, sp.rot, sp.sit ? 1.9 : 2.3);
+        if (sp) spawn = sp.ax !== undefined && sp.az !== undefined ? { x: sp.ax, z: sp.az, rot: Math.atan2(sp.x - sp.ax, sp.z - sp.az) } : inFrontOf(sp.x, sp.z, sp.rot, sp.sit ? 1.9 : 2.3);
       } else {
         const o = OUTDOOR_NPCS.find((n) => n.npc === npc);
         if (o) spawn = o.ax !== undefined && o.az !== undefined ? { x: o.ax, z: o.az, rot: Math.atan2(o.x - o.ax, o.z - o.az) } : inFrontOf(o.x, o.z, o.rot, 2.2);
@@ -896,7 +897,7 @@ export class Game implements GameApi {
       if (!visible) { n.tag.style.display = "none"; continue; }
       n.tag.style.display = "";
       n.tag.style.transform = `translate(-50%, -100%) translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px)`;
-      const isObj = !!obj && (obj.npc === n.id || ((obj.npc === "sam" || obj.npc === "emma") && (n.id === "sam" || n.id === "emma")));
+      const isObj = !!obj && !isCall(obj) && (obj.npc === n.id || ((obj.npc === "sam" || obj.npc === "emma") && (n.id === "sam" || n.id === "emma")));
       n.tag.classList.toggle("objective", isObj && !talking);
       n.tag.style.opacity = String(Math.max(0.35, 1 - (dist - 12) / 22));
     }

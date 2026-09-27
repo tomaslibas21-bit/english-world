@@ -383,6 +383,12 @@ export const bus: SituationDef = {
     dest_unknown: [
       t("Hmm, | I | don't know | that | place.", "Hmm, | aš | nežinau | tos | vietos.", "Hmm, tokios vietos nežinau."),
     ],
+    // the learner doesn't know where to go ("I'm not sure", "I don't know"): name the main stops
+    dest_help: [
+      t("No | problem. | This | bus | goes | downtown, | to | the | Town | Square, | to | the | museum | and | to | the | pier.",
+        "Jokių | problemų. | Šis | autobusas | važiuoja | į centrą, | į | — | Miesto | aikštę, | į | — | muziejų | ir | į | — | prieplauką.",
+        "Jokių problemų. Šis autobusas važiuoja į centrą, į Miesto aikštę, į muziejų ir į prieplauką."),
+    ],
     dest_neg_ack: [
       t("Oh, | okay. | Where | are | you | headed, | then?", "O, | gerai. | Kur | — | jūs | važiuojate, | tada?", "O, gerai. Tai kur važiuojate?",
         { flags: { 3: "“are … headed” = važiuojate; “are” has no separate word (linked to “headed”)." } }),
@@ -685,7 +691,8 @@ export const bus: SituationDef = {
       ask: (c) => c.say("ask_dest"),
       expects: ["ask_goes", "going_to", "dest_ctx"],
       suggest: [{ lt: "Paklausti, ar autobusas važiuoja ten, kur tau reikia", hint: "ask_bus", options: "dest" }, { lt: "Paklausti kainos", hint: "fare_q" }],
-      help: (c) => { c.say("dest_unknown"); c.say("ask_dest"); } },
+      help: (c) => { c.say("dest_help"); c.say("ask_dest"); },
+      no: (c) => { c.say("dest_help"); c.say("ask_dest"); } },
     { id: "fare", when: (c) => !c.s.oos && !!c.s.dest, done: (c) => !!c.s.paid,
       ask: (c) => {
         if (!c.s.fareSaid) { c.s.fareSaid = true; c.say("fare_is"); if (c.s.fareHow) c.say("fare_how"); }

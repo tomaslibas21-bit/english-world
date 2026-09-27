@@ -1,0 +1,508 @@
+{
+ "situation": "s33-small-talk",
+ "title": "Lovely Weather",
+ "goal": "Pasišnekėk su kaimynu apie orą ir savaitgalį, o atvažiavus autobusui mandagiai atsisveikink.",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hey, neighbor! How's it going?",
+    "Morning! How's it going?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "wx_agree",
+    "wx_adj",
+    "wx_short_ctx",
+    "wx_extra",
+    "wx_hope",
+    "wx_neg",
+    "wx_dislike",
+    "no_umbrella"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "weather": {
+   "id": "weather",
+   "kind": "pending",
+   "npc": [
+    "Pretty good, thanks! Looks like rain.",
+    "Hey, neighbor! Looks like rain.",
+    "Good, thank you! Lovely day, isn't it?"
+   ],
+   "expects": [
+    "wx_agree",
+    "wx_adj",
+    "wx_short_ctx",
+    "wx_extra",
+    "wx_hope",
+    "wx_neg",
+    "wx_dislike",
+    "no_umbrella"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Atsakyti į „Looks like rain“"
+   ],
+   "options": []
+  },
+  "weekend_plans": {
+   "id": "weekend_plans",
+   "kind": "step",
+   "npc": [
+    "Ha! I like your attitude! So, any plans for the weekend?",
+    "Ah, work. I don't miss it one bit! Ha! So, any plans for the weekend?",
+    "Ah, work. I don't miss it one bit! Ha! Any plans for the weekend?"
+   ],
+   "expects": [
+    "wk_act_ctx",
+    "act_ctx",
+    "wk_yes_ctx",
+    "wk_nothing_ctx",
+    "wk_notyet_ctx",
+    "ask_back",
+    "q_plans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti apie savaitgalio planus",
+    "Paklausti Franko atgal"
+   ],
+   "options": []
+  },
+  "rain": {
+   "id": "rain",
+   "kind": "step",
+   "npc": [
+    "Oh, nice! I love the beach. Oh, here it comes! Quick, get under my umbrella!",
+    "Oh, nice! I love the beach. Oh, here it comes! Here, share my umbrella!",
+    "Quiet weekends are the best! Oh, here it comes! Here, share my umbrella!"
+   ],
+   "expects": [
+    "umbrella_yes",
+    "umbrella_no",
+    "no_umbrella",
+    "g_thanks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti arba mandagiai atsisakyti skėčio"
+   ],
+   "options": []
+  },
+  "your_turn": {
+   "id": "your_turn",
+   "kind": "step",
+   "npc": [
+    "No problem! Plenty of room. Hey, don't you want to hear my plans? Ha!",
+    "Oh, nice! I love the beach. Hey, don't you want to hear my plans? Ha!",
+    "No problem! Plenty of room. Hey, aren't you going to ask about my weekend? Ha!"
+   ],
+   "expects": [
+    "ask_back",
+    "q_weekend",
+    "q_plans",
+    "q_week",
+    "q_from",
+    "q_live",
+    "q_job",
+    "q_where",
+    "interest"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti Franko apie jo savaitgalį"
+   ],
+   "options": []
+  },
+  "react": {
+   "id": "react",
+   "kind": "pending",
+   "npc": [
+    "Oh, I'm painting my old boat at the dock.",
+    "Oh, great! I took my grandson fishing at the pier.",
+    "No plans? Sometimes that's the best plan! Oh, I'm painting my old boat at the dock."
+   ],
+   "expects": [
+    "interest",
+    "same",
+    "q_story",
+    "g_ok",
+    "ask_back",
+    "q_weekend",
+    "q_plans",
+    "q_week",
+    "q_from",
+    "q_live",
+    "q_job",
+    "q_where",
+    "wk_act_ctx",
+    "act_ctx",
+    "wk_yes_ctx",
+    "wk_nothing_ctx",
+    "wk_notyet_ctx",
+    "week_busy_ctx",
+    "week_quiet_ctx",
+    "busy_why_ctx",
+    "wk_good_ctx",
+    "wk_bad_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti susidomėjimą („Oh, nice!“, „Really?“)"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "She's old, but she still floats! Ha! Oh, look, here comes your bus!",
+    "That's what I like to hear! Finally! Here comes your bus!",
+    "That's what I like to hear! Oh, there's my bus! I'd better get going. Nice talking to you!"
+   ],
+   "expects": [
+    "leave",
+    "nice_talk",
+    "bye_wish",
+    "nice_meet",
+    "g_bye",
+    "g_thanks"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Mandagiai atsisveikinti („I'd better get going…“)"
+   ],
+   "options": []
+  },
+  "week": {
+   "id": "week",
+   "kind": "step",
+   "npc": [
+    "Ha! I like your attitude! So, busy week?",
+    "Ha! Then our winters will be easy for you! Busy week?",
+    "Ha! I like your attitude! Busy week?"
+   ],
+   "expects": [
+    "week_busy_ctx",
+    "week_quiet_ctx",
+    "busy_why_ctx",
+    "ask_back",
+    "q_week"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti apie savo savaitę",
+    "Paklausti Franko atgal"
+   ],
+   "options": []
+  },
+  "busy_why": {
+   "id": "busy_why",
+   "kind": "pending",
+   "npc": [
+    "Oh yeah? Work or family?"
+   ],
+   "expects": [
+    "busy_why_ctx",
+    "week_busy_ctx",
+    "week_quiet_ctx",
+    "ask_back",
+    "q_week"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kas tave užima"
+   ],
+   "options": []
+  },
+  "like_q": {
+   "id": "like_q",
+   "kind": "step",
+   "npc": [
+    "She's old, but she still floats! Ha! Hmm, the bus is late again. Typical! Well, more time to chat! So, how do you like it here?",
+    "We didn't catch a thing! But we had a great time. Hmm, the bus is late again. Typical! Well, more time to chat! So, how do you like it here?",
+    "No problem! Plenty of room. Hmm, the bus is late again. Typical! Well, more time to chat! So, how do you like it here?"
+   ],
+   "expects": [
+    "like_yes_ctx",
+    "like_mixed_ctx",
+    "like_no_ctx",
+    "late_react_ctx",
+    "ask_back"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip tau čia patinka",
+    "Sureaguoti į vėluojantį autobusą"
+   ],
+   "options": []
+  },
+  "new_q": {
+   "id": "new_q",
+   "kind": "step",
+   "npc": [
+    "Perfect day for a walk! So, are you new around here?",
+    "I love this weather! Are you new around here? I haven't seen you before.",
+    "Ha! I like your attitude! Are you new around here? I haven't seen you before."
+   ],
+   "expects": [
+    "new_yes",
+    "new_no",
+    "new_when_ctx",
+    "intro_name",
+    "nice_meet"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar neseniai čia gyveni"
+   ],
+   "options": []
+  },
+  "intro": {
+   "id": "intro",
+   "kind": "pending",
+   "npc": [
+    "Oh, welcome to the neighborhood! I'm Frank, by the way. I live in the blue house on the corner."
+   ],
+   "expects": [
+    "nice_meet",
+    "intro_name",
+    "name_ctx",
+    "bare_name_ctx",
+    "new_yes",
+    "new_no",
+    "new_when_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Prisistatyti Frankui"
+   ],
+   "options": []
+  },
+  "from_q": {
+   "id": "from_q",
+   "kind": "step",
+   "npc": [
+    "Nice to meet you, too! Where are you from, originally?",
+    "Nice to meet you, too! So, where are you from?",
+    "Nice to meet you! Where are you from, originally?"
+   ],
+   "expects": [
+    "from_ans",
+    "from_ctx",
+    "from_other_ctx",
+    "q_from"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, iš kur esi"
+   ],
+   "options": [
+    "Lithuania",
+    "Latvia",
+    "Estonia",
+    "Poland",
+    "Germany",
+    "Ukraine",
+    "Belarus",
+    "Russia",
+    "Sweden",
+    "Norway",
+    "Finland",
+    "Denmark",
+    "England",
+    "Ireland",
+    "Scotland",
+    "France",
+    "Spain",
+    "Italy",
+    "Portugal",
+    "Greece",
+    "Czechia",
+    "Hungary",
+    "Romania",
+    "Canada",
+    "Mexico",
+    "Brazil",
+    "China",
+    "Japan",
+    "India",
+    "Turkey",
+    "Australia"
+   ]
+  },
+  "winter": {
+   "id": "winter",
+   "kind": "pending",
+   "npc": [
+    "Lithuania! Wow! Cold winters there, right?"
+   ],
+   "expects": [
+    "winter_yes_ctx",
+    "winter_no_ctx",
+    "from_ans",
+    "from_ctx",
+    "from_other_ctx",
+    "q_from"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti apie žiemas Lietuvoje"
+   ],
+   "options": []
+  },
+  "weekend_past": {
+   "id": "weekend_past",
+   "kind": "step",
+   "npc": [
+    "Ha! I like your attitude! Good weekend?",
+    "Perfect day for a walk! How was your weekend?",
+    "Ha! Then our winters will be easy for you! So, how was your weekend?"
+   ],
+   "expects": [
+    "wk_act_ctx",
+    "act_ctx",
+    "wk_good_ctx",
+    "wk_bad_ctx",
+    "wk_nothing_ctx",
+    "ask_back",
+    "q_weekend"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti, kaip praleidai savaitgalį",
+    "Paklausti Franko atgal"
+   ],
+   "options": []
+  },
+  "wkf_what": {
+   "id": "wkf_what",
+   "kind": "pending",
+   "npc": [
+    "Oh yeah? What are you up to?",
+    "Ooh, like what?"
+   ],
+   "expects": [
+    "wk_act_ctx",
+    "act_ctx",
+    "wk_nothing_ctx",
+    "wk_notyet_ctx",
+    "wk_bad_ctx",
+    "wk_yes_ctx",
+    "ask_back",
+    "q_plans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti, ką veiksi"
+   ],
+   "options": []
+  },
+  "wkp_what": {
+   "id": "wkp_what",
+   "kind": "pending",
+   "npc": [
+    "Oh yeah? What did you do?",
+    "Yeah? What did you get up to?"
+   ],
+   "expects": [
+    "wk_act_ctx",
+    "act_ctx",
+    "wk_nothing_ctx",
+    "wk_notyet_ctx",
+    "wk_bad_ctx",
+    "wk_good_ctx",
+    "ask_back",
+    "q_weekend"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti, ką veikei"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "wx_agree",
+  "wx_adj",
+  "wx_short_ctx",
+  "wx_extra",
+  "wx_hope",
+  "wx_neg",
+  "wx_dislike",
+  "no_umbrella",
+  "new_yes",
+  "new_no",
+  "new_when_ctx",
+  "nice_meet",
+  "intro_name",
+  "name_ctx",
+  "bare_name_ctx",
+  "from_ans",
+  "from_ctx",
+  "from_other_ctx",
+  "winter_yes_ctx",
+  "winter_no_ctx",
+  "week_busy_ctx",
+  "week_quiet_ctx",
+  "busy_why_ctx",
+  "wk_act_ctx",
+  "act_ctx",
+  "wk_good_ctx",
+  "wk_bad_ctx",
+  "wk_nothing_ctx",
+  "wk_yes_ctx",
+  "wk_notyet_ctx",
+  "howru_you",
+  "ask_back",
+  "q_weekend",
+  "q_plans",
+  "q_week",
+  "q_from",
+  "q_live",
+  "q_job",
+  "q_where",
+  "q_forecast",
+  "q_bus",
+  "q_story",
+  "q_name",
+  "interest",
+  "same",
+  "umbrella_yes",
+  "umbrella_no",
+  "late_react_ctx",
+  "like_yes_ctx",
+  "like_mixed_ctx",
+  "like_no_ctx",
+  "leave",
+  "nice_talk",
+  "bye_wish"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}
