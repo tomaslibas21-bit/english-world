@@ -1,0 +1,47 @@
+{
+  "npc": "Jordan, personal trainer",
+  "images": [
+    "welcome",
+    "form",
+    "lockers",
+    "warmup",
+    "machine",
+    "sets",
+    "rep",
+    "spot",
+    "breath",
+    "careful",
+    "stretch",
+    "next"
+  ],
+  "start": "welcome",
+  "phases": {
+    "new": "welcome",
+    "plan": "welcome",
+    "alt_plan": "welcome",
+    "howareyou": "welcome",
+    "form": "form",
+    "pay": "form",
+    "lockers": "lockers",
+    "lock_q": "lockers",
+    "changing": "lockers",
+    "warmup": "warmup",
+    "machine": "machine",
+    "broken": "machine",
+    "sets": "sets",
+    "rep": "rep",
+    "spot": "spot",
+    "breath": "breath",
+    "breath_q": "breath",
+    "okay_q": "careful",
+    "where_hurt": "careful",
+    "stretch": "stretch",
+    "next": "next",
+    "thursday_q": "next",
+    "closing": "next"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
