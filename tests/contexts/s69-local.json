@@ -1,0 +1,299 @@
+{
+ "situation": "s69-local",
+ "title": "What Would You Recommend?",
+ "goal": "Paprašyk vietinės gyventojos patarimų: kur pavalgyti ir ką pamatyti.",
+ "contexts": {
+  "need": {
+   "id": "need",
+   "kind": "step",
+   "npc": [
+    "Hello there! Can I help you with something?",
+    "I sure am! Born and raised. How can I help, dear?",
+    "Oh, hi! You look like you're exploring. Can I help?"
+   ],
+   "expects": [
+    "are_you_local",
+    "ask_food",
+    "ask_sight",
+    "recommend_vague",
+    "ask_coffee",
+    "ask_night",
+    "ask_locals"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, kur gerai pavalgyti",
+    "Paklausti, ką verta pamatyti",
+    "Paklausti, ar ji vietinė",
+    "Paprašyti patarimo"
+   ],
+   "options": [
+    "seafood",
+    "Italian food",
+    "coffee",
+    "breakfast",
+    "burgers",
+    "vegetarian food",
+    "something quick",
+    "local food"
+   ]
+  },
+  "sight": {
+   "id": "sight",
+   "kind": "step",
+   "npc": [
+    "Go to the food trucks by the harbor. The fish tacos are amazing, and they're only about ten dollars. And while you're here, is there anything you'd like to see?",
+    "Lithuania! How wonderful! My neighbor's grandmother was from Vilnius. And while you're here, is there anything you'd like to see?",
+    "If you like seafood, The Pier is the best. Try the clam chowder! It's a little pricey, though. And while you're here, is there anything you'd like to see?"
+   ],
+   "expects": [
+    "ask_sight",
+    "recommend_vague",
+    "spot_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, ką verta pamatyti",
+    "Pasitikslinti apie vietą"
+   ],
+   "options": []
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "Oh, the lighthouse, for sure! Go at sunset. It's beautiful. And if you like art, the museum is right there, across the square. Anything else, dear?",
+    "Oh, the lighthouse, for sure! Go at sunset. It's beautiful. Can I help you with anything else?",
+    "Wonderful! Let's go. I love a good walk. Anything else, dear?"
+   ],
+   "expects": [
+    "more_no",
+    "thanks_tip"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti už patarimus",
+    "Pasitikslinti apie vietą",
+    "Paklausti apie vakarus ir kavą"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "My pleasure! Enjoy Maple Harbor, dear!",
+    "My pleasure! Have a wonderful time!",
+    "Oh, anytime! Tell your friends about Maple Harbor! Have a wonderful time!"
+   ],
+   "expects": [
+    "g_thanks",
+    "thanks_tip",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "from": {
+   "id": "from",
+   "kind": "pending",
+   "npc": [
+    "Go to the food trucks by the harbor. The fish tacos are amazing, and they're only about ten dollars. So, where are you from, dear?",
+    "If you like seafood, The Pier is the best. Try the clam chowder! It's a little pricey, though. So, where are you from, dear?",
+    "You can't miss the lighthouse! The view is amazing. And if you like art, the museum is right there, across the square. So, where are you from, dear?"
+   ],
+   "expects": [
+    "from_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, iš kur esi"
+   ],
+   "options": []
+  },
+  "weather": {
+   "id": "weather",
+   "kind": "pending",
+   "npc": [
+    "Hi, dear! Beautiful day, isn't it?"
+   ],
+   "expects": [
+    "weather_ok",
+    "are_you_local",
+    "ask_food",
+    "ask_sight",
+    "recommend_vague",
+    "ask_coffee",
+    "ask_night",
+    "ask_locals"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti, kad graži diena",
+    "Paklausti, kur gerai pavalgyti"
+   ],
+   "options": [
+    "seafood",
+    "Italian food",
+    "coffee",
+    "breakfast",
+    "burgers",
+    "vegetarian food",
+    "something quick",
+    "local food"
+   ]
+  },
+  "walk": {
+   "id": "walk",
+   "kind": "pending",
+   "npc": [
+    "You can't miss the lighthouse! The view is amazing. You know what? I'm going that way myself. Want me to walk with you?",
+    "If you like seafood, The Pier is the best. Try the clam chowder! It's a little pricey, though. You know what? I'm going that way myself. Want me to walk with you?",
+    "You can't miss the lighthouse! The view is amazing. And if you like art, the museum is right there, across the square. You know what? I'm going that way myself. Want me to walk with you?"
+   ],
+   "expects": [
+    "walk_yes_ctx",
+    "walk_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti arba atsisakyti pasiūlymo"
+   ],
+   "options": []
+  },
+  "which_kind": {
+   "id": "which_kind",
+   "kind": "pending",
+   "npc": [
+    "Oh, lots of things! For food, or things to see?"
+   ],
+   "expects": [
+    "kind_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti: pavalgyti ar pamatyti"
+   ],
+   "options": []
+  },
+  "food_kind": {
+   "id": "food_kind",
+   "kind": "step",
+   "npc": [
+    "Of course! What kind of food do you like?",
+    "Sure! What do you feel like? Seafood? Italian? Something quick?"
+   ],
+   "expects": [
+    "food_ans",
+    "food_neg"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kokio maisto nori",
+    "Paprašyti pigesnės vietos"
+   ],
+   "options": [
+    "seafood",
+    "Italian food",
+    "coffee",
+    "breakfast",
+    "burgers",
+    "vegetarian food",
+    "something quick",
+    "local food"
+   ]
+  },
+  "food": {
+   "id": "food",
+   "kind": "step",
+   "npc": [
+    "Oh, the lighthouse, for sure! Go at sunset. It's beautiful. And are you hungry? I know all the good places to eat!",
+    "Lithuania! How wonderful! My neighbor's grandmother was from Vilnius. And are you hungry? I know all the good places to eat!",
+    "You can't miss the lighthouse! The view is amazing. And are you hungry? I know all the good places to eat!"
+   ],
+   "expects": [
+    "ask_food",
+    "food_ans",
+    "not_hungry"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad nori valgyti",
+    "Paklausti, kur pavalgyti",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": [
+    "seafood",
+    "Italian food",
+    "coffee",
+    "breakfast",
+    "burgers",
+    "vegetarian food",
+    "something quick",
+    "local food"
+   ]
+  }
+ },
+ "intents": [
+  "are_you_local",
+  "ask_rosa_from",
+  "recommend_vague",
+  "kind_ctx",
+  "ask_food",
+  "food_ans",
+  "food_neg",
+  "budget",
+  "too_expensive",
+  "not_hungry",
+  "ask_sight",
+  "spot_ctx",
+  "sight_neg",
+  "ask_about_spot",
+  "ask_favorite",
+  "ask_locals",
+  "ask_night",
+  "ask_coffee",
+  "ask_walk",
+  "ask_touristy",
+  "ask_best_time",
+  "ask_price",
+  "ask_book",
+  "ask_open",
+  "ask_worth",
+  "ask_safe",
+  "no_crowds",
+  "no_walk",
+  "thanks_tip",
+  "more_no",
+  "from_ctx",
+  "tried_yes_ctx",
+  "tried_no_ctx",
+  "weather_ok",
+  "walk_yes_ctx",
+  "walk_no_ctx",
+  "help_me",
+  "diet"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

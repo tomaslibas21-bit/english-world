@@ -1,0 +1,25 @@
+{
+  "npc": "Chuck, Visitor Center volunteer",
+  "images": ["greet", "map", "route", "cafe", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {
+    "need": "greet",
+    "greet_map": "map", "map": "map", "cafe": "map", "pass": "map",
+    "confirm": "route", "quiz": "route", "recheck": "route",
+    "confirm_sunny_cup": "route", "confirm_museum": "route", "confirm_bank": "route", "confirm_post_office": "route",
+    "confirm_pharmacy": "route", "confirm_salon": "route", "confirm_hotel": "route", "confirm_trattoria": "route",
+    "confirm_threads": "route", "confirm_square": "route", "confirm_market": "route", "confirm_police": "route",
+    "confirm_station": "route", "confirm_park": "route", "confirm_pier": "route", "confirm_lighthouse": "route",
+    "cafe_offer": "cafe",
+    "more": "bye", "closing": "bye"
+  },
+  "focus": [34, 31],
+  "jobs": {
+    "greet": "5faf6d4c-284f-4db5-9d58-50f48b2bdb56",
+    "map": "7efec79a-b662-41a0-b16f-fecfe949d046",
+    "route": "cc3e19a7-f877-4f4a-b990-2b38e13d6788",
+    "cafe": "75cbc8d1-a2f4-446a-82bb-bcc5a6c4a1b2",
+    "bye": "9a6de615-e981-4e4d-a6cc-c9fe69dfe0de"
+  }
+}

@@ -1,0 +1,2147 @@
+{
+ "situation": "s89-video-call",
+ "items": [
+  {
+   "ctx": "hear",
+   "say": "Yes, I can hear you well",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, I hear you and I see you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Hi Kate! Yes, I can hear you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yeah, I can hear you perfectly",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Hi! Yes, everything is fine",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, the sound is good",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Your voice is very quiet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "Sorry, I can't hear you very well",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "Your sound is breaking",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "I can see you, but I can't hear you",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, you are very clear",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Morning, Kate! Loud and clear",
+   "intent": [
+    "hear_yes",
+    "greet_team"
+   ]
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, we can hear you fine",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Good morning everyone",
+   "intent": "greet_team"
+  },
+  {
+   "ctx": "hear",
+   "say": "Hello! Yes, it's okay",
+   "intent": [
+    "hear_yes",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "hear",
+   "say": "There is no sound",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "Can you speak louder?",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "I hear you good",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, I can see you and hear you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, all good here",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear2",
+   "say": "Yes, much better now",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear2",
+   "say": "Yes, now it's good",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear2",
+   "say": "Still very quiet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear2",
+   "say": "Yes, now I can hear you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear2",
+   "say": "A little better",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear2",
+   "say": "No, still the same",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oh, sorry! Just a second",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, I will turn it on now",
+   "intent": [
+    "cam_fix_ctx",
+    "cam_fixed"
+   ]
+  },
+  {
+   "ctx": "camera",
+   "say": "Oops, sorry, now it's on",
+   "intent": [
+    "cam_fixed",
+    "cam_fix_ctx"
+   ]
+  },
+  {
+   "ctx": "camera",
+   "say": "Is it better now?",
+   "intent": "better_q"
+  },
+  {
+   "ctx": "camera",
+   "say": "Can you see me now?",
+   "intent": "cam_fixed"
+  },
+  {
+   "ctx": "camera",
+   "say": "My camera doesn't work today",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, my camera is broken",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "camera",
+   "say": "I don't have a camera on this computer",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, I forgot to turn it on",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Wait a moment, I'm turning it on",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Now you can see me?",
+   "intent": "cam_fixed"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oh no, sorry! There you go",
+   "intent": "cam_fixed"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, my internet is slow, I'll keep the camera off",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oh, I didn't know. Sorry!",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Let me fix it",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oh! Sorry, one moment",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you are muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, your microphone is off",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, turn on your mic",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you need to unmute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "I think Paul is on mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, press the microphone button",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "He is on mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, we don't hear you",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, can you hear us?",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, your mic is muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, check your microphone",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, unmute please",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, click on the red microphone",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "I can hear Paul",
+   "intent": "not_muted"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you're still muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Maybe Paul's microphone is off",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "I think he's muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, turn on the sound",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you are on mute, we can't hear you",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes, we can hear you now",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes, now it's okay",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes, perfect",
+   "intent": [
+    "hear_yes",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "No, still nothing",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes! Welcome, Paul",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Now yes",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Still no",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, I can see your screen",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, I see it",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, everything is okay",
+   "intent": [
+    "screen_yes",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "screen",
+   "say": "No, I only see a black screen",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Not yet",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "It's loading",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "It's very small, can you make it bigger?",
+   "intent": "screen_small"
+  },
+  {
+   "ctx": "screen",
+   "say": "I see only your camera",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, we see the presentation",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "Now I see it",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "Can you zoom in, please?",
+   "intent": "screen_small"
+  },
+  {
+   "ctx": "screen",
+   "say": "The letters are too small",
+   "intent": "screen_small"
+  },
+  {
+   "ctx": "screen",
+   "say": "I can't see anything",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, I can see the slides",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "Sorry, I see only the white screen",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, I can see it clearly",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you froze",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, we can't hear you",
+   "intent": "tell_freeze_ctx"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, are you there?",
+   "intent": "tell_freeze_ctx"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Your internet is bad",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, your video stopped",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, I think your connection is not good",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Hello? Kate?",
+   "intent": "tell_freeze_ctx"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you are frozen",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Sorry, Kate, you disappeared",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, your screen is frozen",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "We lost you, Kate",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "The picture is frozen",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, your wifi is bad",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "I can't hear you, Kate",
+   "intent": "tell_freeze_ctx"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you are stuck",
+   "intent": "tell_freeze_ctx"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you're breaking up a little",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze_q",
+   "say": "Yes, now it's better",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "freeze_q",
+   "say": "Yes, we can hear you again",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "freeze_q",
+   "say": "Yes, you're back",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "freeze_q",
+   "say": "Not really, you're still breaking up",
+   "intent": [
+    "hear_no",
+    "tell_freeze"
+   ]
+  },
+  {
+   "ctx": "freeze_q",
+   "say": "Yes, perfect",
+   "intent": [
+    "hear_yes",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "first",
+   "say": "I can start",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Me! I'll go first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Okay, I'll go",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Let me start",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sara can start",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sara, please, you start",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "I can go",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Maybe Paul first?",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sure, I'll start",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Me first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "I don't mind, I can start",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "You can start, Sara",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "Ladies first",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "I finished the report",
+   "intent": "upd_done",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "first",
+   "say": "I would like to start",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "I'll be first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Let Sara go first",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "I'm ready, I can go first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "goahead",
+   "say": "No, no, you go first",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "goahead",
+   "say": "Thanks, Sara",
+   "intent": "thanks_sara"
+  },
+  {
+   "ctx": "goahead",
+   "say": "Oh, sorry! Please, you start",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "goahead",
+   "say": "Okay, thank you",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "goahead",
+   "say": "No, please, go ahead",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "goahead",
+   "say": "Thank you! So, I finished the report",
+   "intent": [
+    "thanks_sara",
+    "g_thanks",
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "goahead",
+   "say": "Sorry, Sara, you first",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "goahead",
+   "say": "It's okay, you can start",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "update",
+   "say": "I finished the sales report",
+   "intent": "upd_done",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm still working on the presentation",
+   "intent": "upd_working",
+   "slots": {
+    "task": "presentation"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I finished the survey, and now I'm working on the budget",
+   "intent": [
+    "upd_done",
+    "upd_working"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I am doing the new website",
+   "intent": "upd_working",
+   "slots": {
+    "task": "website"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "The report is ready",
+   "intent": "upd_done"
+  },
+  {
+   "ctx": "update",
+   "say": "I sent the invoices yesterday",
+   "intent": "upd_done",
+   "slots": {
+    "task": "invoices"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm a little late with the budget",
+   "intent": "upd_behind",
+   "slots": {
+    "task": "budget"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I didn't finish the slides yet",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "Everything is going well",
+   "intent": "upd_ok"
+  },
+  {
+   "ctx": "update",
+   "say": "Nothing new this week",
+   "intent": "upd_nothing"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm preparing the newsletter",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "This week I worked on the new app",
+   "intent": "upd_working",
+   "slots": {
+    "task": "app"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I made the presentation",
+   "intent": "upd_done"
+  },
+  {
+   "ctx": "update",
+   "say": "The proposal is almost ready",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "I have some problems with the website",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "I need more time for the report",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm writing the proposal",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "The schedule is done",
+   "intent": "upd_done"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm working on the budget for next month",
+   "intent": "upd_working",
+   "slots": {
+    "task": "budget"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I prepared the contract",
+   "intent": "upd_done",
+   "slots": {
+    "task": "contract"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I finished the survey last week",
+   "intent": "upd_done"
+  },
+  {
+   "ctx": "update",
+   "say": "Last week I finished the training plan",
+   "intent": "upd_done",
+   "slots": {
+    "task": "training"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I will finish the report on Friday",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "The spreadsheet isn't finished",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "Not much to say, all good",
+   "intent": [
+    "upd_ok",
+    "upd_nothing"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "Me? I'm working on the marketing campaign",
+   "intent": "upd_working",
+   "slots": {
+    "task": "campaign"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "So far so good",
+   "intent": "upd_ok"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm late with the invoices",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sure, I'll send it",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Of course",
+   "intent": [
+    "yn:yes",
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "send_q",
+   "say": "Yes, no problem",
+   "intent": [
+    "yn:yes",
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sure, right after the call",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Yes, I'll email it to you",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "I already sent it",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you send us the presentation?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "questions",
+   "say": "Could you share the slides after the meeting?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you go back one slide?",
+   "intent": "q_back"
+  },
+  {
+   "ctx": "questions",
+   "say": "When is the deadline for the report?",
+   "intent": "q_deadline"
+  },
+  {
+   "ctx": "questions",
+   "say": "When do you need the report?",
+   "intent": "q_deadline"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is the meeting recorded?",
+   "intent": "q_record"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, nothing from me",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "No questions, thank you",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "Everything is clear",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "When is our next meeting?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you send the link?",
+   "intent": "q_link"
+  },
+  {
+   "ctx": "questions",
+   "say": "Could you put the slides in the chat?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can I see the previous slide again?",
+   "intent": "q_back"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you show the numbers again?",
+   "intent": "q_back"
+  },
+  {
+   "ctx": "questions",
+   "say": "Will you send the recording?",
+   "intent": "q_record"
+  },
+  {
+   "ctx": "questions",
+   "say": "Not from me, thanks",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "I have no questions",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "Yes, one question: when is the deadline?",
+   "intent": "q_deadline"
+  },
+  {
+   "ctx": "questions",
+   "say": "Where can I find the slides?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you share your presentation with us?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "anything_else",
+   "say": "No, that's all",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "anything_else",
+   "say": "No, thank you",
+   "intent": [
+    "yn:no",
+    "no_questions"
+   ]
+  },
+  {
+   "ctx": "anything_else",
+   "say": "That's it from me",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "anything_else",
+   "say": "Nothing else, thanks",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "anything_else",
+   "say": "Yes, when is the deadline?",
+   "intent": "q_deadline"
+  },
+  {
+   "ctx": "anything_else",
+   "say": "No, I'm good",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "echo",
+   "say": "Sure, I'll mute myself",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "echo",
+   "say": "Oh, sorry! Is it better now?",
+   "intent": "better_q"
+  },
+  {
+   "ctx": "echo",
+   "say": "Sorry, I'll turn off my microphone",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "echo",
+   "say": "Of course, sorry",
+   "intent": [
+    "yn:yes",
+    "mute_self"
+   ]
+  },
+  {
+   "ctx": "echo",
+   "say": "Sorry, done",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "echo",
+   "say": "Okay, I muted my mic",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "echo",
+   "say": "Oh, I'm sorry! Now?",
+   "intent": [
+    "better_q",
+    "better_now_ctx"
+   ]
+  },
+  {
+   "ctx": "echo",
+   "say": "Sure, no problem",
+   "intent": [
+    "yn:yes",
+    "mute_self"
+   ]
+  },
+  {
+   "ctx": "echo",
+   "say": "Sorry about that, I will use headphones",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "echo",
+   "say": "Yes, sorry, I'll mute it",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "weekend",
+   "say": "It was nice, thanks. And yours?",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Very good, I was at the sea with my family",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Relaxing, I stayed at home",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Good, I went to the beach",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Too short!",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "It was busy, I cleaned the house",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "I visited my parents",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Not bad, how about yours?",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "I played football with my son",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Great! We had a barbecue",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "It was quiet, I read a book",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Fine, I worked in the garden",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "I was sick all weekend",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Nice and sunny, we went for a walk",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Oh, it was wonderful, thank you for asking",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "I watched movies all weekend",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "It rained all weekend",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "paul_leave",
+   "say": "Bye, Paul!",
+   "intent": "bye_paul"
+  },
+  {
+   "ctx": "paul_leave",
+   "say": "No problem, see you later, Paul",
+   "intent": "bye_paul"
+  },
+  {
+   "ctx": "paul_leave",
+   "say": "Okay, bye Paul, have a good call",
+   "intent": "bye_paul"
+  },
+  {
+   "ctx": "paul_leave",
+   "say": "See you, Paul",
+   "intent": "bye_paul"
+  },
+  {
+   "ctx": "paul_leave",
+   "say": "Good luck, Paul",
+   "intent": "bye_paul"
+  },
+  {
+   "ctx": "paul_leave",
+   "say": "Take care, Paul",
+   "intent": "bye_paul"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Yes, see you next week!",
+   "intent": [
+    "next_week_yes",
+    "bye_all"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "Sure, same time",
+   "intent": "next_week_yes"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Sounds good, bye everyone",
+   "intent": [
+    "next_week_yes",
+    "bye_all"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "Next week I'm on vacation",
+   "intent": "on_vacation"
+  },
+  {
+   "ctx": "next_week",
+   "say": "I can't next week, I'm on holiday",
+   "intent": "on_vacation"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Perfect, see you then",
+   "intent": [
+    "next_week_yes",
+    "bye_all"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "Yes, thank you, bye",
+   "intent": [
+    "g_thanks",
+    "bye_all",
+    "g_bye",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "Great, have a nice week, everyone",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "next_week",
+   "say": "I'll be there",
+   "intent": "next_week_yes"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Next week I'm off, sorry",
+   "intent": "on_vacation"
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Oops! Sorry, bye!",
+   "intent": "oops"
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Oh no! Thanks!",
+   "intent": "oops"
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Ha ha, thanks, bye",
+   "intent": [
+    "g_thanks",
+    "oops",
+    "bye_all"
+   ]
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Oh, sorry, I'm turning it off",
+   "intent": [
+    "oops",
+    "mute_self"
+   ]
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Thanks for telling me!",
+   "intent": "oops"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, I can hear you. Hi everyone!",
+   "intent": [
+    "hear_yes",
+    "greet_team"
+   ]
+  },
+  {
+   "ctx": "hear",
+   "say": "Hi Kate, I can hear you fine",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yeah, all good",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "I can hear you, yes",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yep, loud and clear",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Good morning! Yes, the sound is fine",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Sorry, your sound is not very good",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "No, I can't hear anything",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "Kate, you are very quiet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oh! Sorry, I'll turn it on",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, my camera is not working",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "camera",
+   "say": "Just a second, please",
+   "intent": [
+    "cam_fix_ctx",
+    "g_wait"
+   ]
+  },
+  {
+   "ctx": "camera",
+   "say": "Is it on now?",
+   "intent": "cam_fixed"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oops, I forgot",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you're on mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, we can't hear you, you're muted",
+   "intent": [
+    "tell_mute_ctx",
+    "tell_mute"
+   ]
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, your microphone",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, unmute yourself",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, I think your mic is off",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes, now we can hear you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes, perfectly",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "No, we still can't hear you",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, I can see it",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, we can see the slides",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "No, not yet",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "I can't see it, it's black",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "It's too small for me",
+   "intent": "screen_small"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you're frozen",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, we lost you",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, your connection is bad",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Sorry, Kate, can you repeat?",
+   "intent": [
+    "g_repeat",
+    "tell_freeze_ctx"
+   ]
+  },
+  {
+   "ctx": "first",
+   "say": "I'll go first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sure, I can start",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sara, you can go first",
+   "intent": "defer"
+  },
+  {
+   "ctx": "first",
+   "say": "I don't mind going first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Me, please",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "goahead",
+   "say": "No, you go ahead, Sara",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "goahead",
+   "say": "Oh, sorry, go ahead",
+   "intent": "go_ahead"
+  },
+  {
+   "ctx": "goahead",
+   "say": "After you, Sara",
+   "intent": [
+    "go_ahead",
+    "defer"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I finished the report yesterday",
+   "intent": "upd_done",
+   "slots": {
+    "task": "report"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm working on the budget this week",
+   "intent": "upd_working",
+   "slots": {
+    "task": "budget"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "The website is almost done",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm a bit behind with the invoices",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "The presentation will be ready on Friday",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "Everything is on track",
+   "intent": "upd_ok"
+  },
+  {
+   "ctx": "update",
+   "say": "I sent the proposal to the client",
+   "intent": "upd_done",
+   "slots": {
+    "task": "proposal"
+   }
+  },
+  {
+   "ctx": "update",
+   "say": "I'm still working on the survey",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm fixing the app",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "I haven't finished the budget yet",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Sure, no problem",
+   "intent": [
+    "yn:yes",
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "send_q",
+   "say": "Yes, I'll send it after the call",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "send_q",
+   "say": "Of course, I'll send it today",
+   "intent": "will_send"
+  },
+  {
+   "ctx": "questions",
+   "say": "Could you send us the slides?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you share the link?",
+   "intent": "q_link"
+  },
+  {
+   "ctx": "questions",
+   "say": "When is the deadline?",
+   "intent": "q_deadline"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, that's all from me",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is the call recorded?",
+   "intent": "q_record"
+  },
+  {
+   "ctx": "questions",
+   "say": "When is the next call?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Sounds good! See you next week",
+   "intent": [
+    "next_week_yes",
+    "bye_all"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "Yes, same time. Bye!",
+   "intent": [
+    "next_week_yes",
+    "bye_all",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "Actually, I'm on vacation next week",
+   "intent": "on_vacation"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Bye everyone!",
+   "intent": "bye_all"
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Oops! Thanks, bye!",
+   "intent": [
+    "oops",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "cam_still",
+   "say": "Oh no! Bye!",
+   "intent": [
+    "oops",
+    "g_bye",
+    "bye_all"
+   ]
+  },
+  {
+   "ctx": "weekend",
+   "say": "Great, thanks! How was yours?",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "It was relaxing",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "I went fishing with my friends",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Not so good, I was sick",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Busy, I had to work",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "echo",
+   "say": "Sorry! I'll mute",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "echo",
+   "say": "Oh, sorry, is it better?",
+   "intent": "better_q"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, I can hear you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, I can hear you and see you",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "You're a little quiet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "camera",
+   "say": "Oh sorry, let me turn it on",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, my camera doesn't work",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you're on mute!",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, I think you're muted",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, we can't hear you",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "Yes, now it works",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "No, I can't see it yet",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "It's a bit small",
+   "intent": "screen_small"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you're breaking up",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, I think you froze",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, can you hear us?",
+   "intent": "tell_freeze_ctx"
+  },
+  {
+   "ctx": "first",
+   "say": "I can go first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sara can go first",
+   "intent": "defer"
+  },
+  {
+   "ctx": "update",
+   "say": "I'm a bit behind with the budget",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "The website is ready",
+   "intent": "upd_done"
+  },
+  {
+   "ctx": "questions",
+   "say": "No questions from me",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Sounds good, see you next week",
+   "intent": "next_week_yes"
+  },
+  {
+   "ctx": "weekend",
+   "say": "It was great, thanks! And yours?",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Too short, as always",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "echo",
+   "say": "Sorry, I'll mute myself",
+   "intent": "mute_self"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, I hear you good",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "I hear you, but little bit quiet",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "hear",
+   "say": "Yes, all okay",
+   "intent": "hear_yes"
+  },
+  {
+   "ctx": "hear",
+   "say": "No, I not hear you",
+   "intent": "hear_no"
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, I turn on now",
+   "intent": "cam_fix_ctx"
+  },
+  {
+   "ctx": "camera",
+   "say": "My camera not working",
+   "intent": "cam_broken"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, you are mute",
+   "intent": "tell_mute"
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul, we not hear you",
+   "intent": "tell_mute_ctx"
+  },
+  {
+   "ctx": "screen",
+   "say": "Yes, I see your screen",
+   "intent": "screen_yes"
+  },
+  {
+   "ctx": "screen",
+   "say": "I don't see nothing",
+   "intent": "screen_no"
+  },
+  {
+   "ctx": "screen",
+   "say": "Is too small",
+   "intent": "screen_small"
+  },
+  {
+   "ctx": "freeze",
+   "say": "Kate, you are frozen, we don't hear",
+   "intent": "tell_freeze"
+  },
+  {
+   "ctx": "first",
+   "say": "I can be first",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "first",
+   "say": "Sara, please, you first",
+   "intent": "defer"
+  },
+  {
+   "ctx": "update",
+   "say": "I finish the report",
+   "intent": "upd_done"
+  },
+  {
+   "ctx": "update",
+   "say": "I work on presentation now",
+   "intent": "upd_working"
+  },
+  {
+   "ctx": "update",
+   "say": "I am late with budget",
+   "intent": "upd_behind"
+  },
+  {
+   "ctx": "update",
+   "say": "All is good",
+   "intent": "upd_ok"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can you send me slides?",
+   "intent": "q_slides"
+  },
+  {
+   "ctx": "questions",
+   "say": "When is deadline?",
+   "intent": "q_deadline"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, no questions",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Yes, same time, bye",
+   "intent": "next_week_yes"
+  },
+  {
+   "ctx": "next_week",
+   "say": "Next week I am in vacation",
+   "intent": "on_vacation"
+  },
+  {
+   "ctx": "weekend",
+   "say": "Was good, I was with family",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "hear",
+   "say": "No, I can't hear you",
+   "intent": "any",
+   "not": [
+    "hear_yes"
+   ]
+  },
+  {
+   "ctx": "hear",
+   "say": "I can't hear you at all",
+   "intent": "any",
+   "not": [
+    "hear_yes"
+   ]
+  },
+  {
+   "ctx": "screen",
+   "say": "I can't see your screen",
+   "intent": "any",
+   "not": [
+    "screen_yes"
+   ]
+  },
+  {
+   "ctx": "screen",
+   "say": "No, I don't see it",
+   "intent": "any",
+   "not": [
+    "screen_yes"
+   ]
+  },
+  {
+   "ctx": "mute",
+   "say": "Paul is not muted",
+   "intent": "any",
+   "not": [
+    "tell_mute"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I haven't started the report",
+   "intent": "any",
+   "not": [
+    "upd_done",
+    "upd_working"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "The presentation isn't ready",
+   "intent": "any",
+   "not": [
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "first",
+   "say": "I don't want to go first",
+   "intent": "any",
+   "not": [
+    "volunteer"
+   ]
+  },
+  {
+   "ctx": "paul_hear",
+   "say": "No, we still can't hear you",
+   "intent": "any",
+   "not": [
+    "hear_yes"
+   ]
+  },
+  {
+   "ctx": "camera",
+   "say": "My camera doesn't work",
+   "intent": "any",
+   "not": [
+    "cam_fixed"
+   ]
+  },
+  {
+   "ctx": "next_week",
+   "say": "I can't come next week",
+   "intent": "any",
+   "not": [
+    "next_week_yes"
+   ]
+  },
+  {
+   "ctx": "questions",
+   "say": "I don't need the slides",
+   "intent": "any",
+   "not": [
+    "q_slides"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "I didn't send the invoices",
+   "intent": "any",
+   "not": [
+    "upd_done"
+   ]
+  },
+  {
+   "ctx": "screen",
+   "say": "My grandmother lives in Kaunas",
+   "intent": "none"
+  },
+  {
+   "ctx": "first",
+   "say": "Purple tables are dancing",
+   "intent": "none"
+  },
+  {
+   "ctx": "questions",
+   "say": "The dog ate my banana",
+   "intent": "none"
+  },
+  {
+   "ctx": "first",
+   "say": "I can't go first",
+   "intent": "any",
+   "not": [
+    "volunteer"
+   ]
+  },
+  {
+   "ctx": "send_q",
+   "say": "I can't send it today",
+   "intent": "any",
+   "not": [
+    "will_send"
+   ]
+  },
+  {
+   "ctx": "camera",
+   "say": "Sorry, I have to go",
+   "intent": [
+    "leave",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "hear",
+   "say": "I have to leave early today",
+   "intent": [
+    "leave",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "questions",
+   "say": "Sorry, I need to log off now",
+   "intent": [
+    "leave",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "first",
+   "say": "Can I go first?",
+   "intent": "volunteer"
+  },
+  {
+   "ctx": "goahead",
+   "say": "Can I go?",
+   "intent": "any",
+   "not": [
+    "leave",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "questions",
+   "say": "Sorry, I have to go, I'm driving",
+   "intent": [
+    "leave",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "update",
+   "say": "Sorry, I have to go. Bye, everyone!",
+   "intent": "leave"
+  },
+  {
+   "ctx": "weekend",
+   "say": "I had to go to work on Saturday",
+   "intent": "weekend_ans_ctx"
+  },
+  {
+   "ctx": "questions",
+   "say": "I have to go to work",
+   "intent": "any",
+   "not": [
+    "leave",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "first",
+   "say": "I have to go to work now",
+   "intent": "any",
+   "not": [
+    "leave",
+    "g_bye"
+   ]
+  }
+ ]
+}

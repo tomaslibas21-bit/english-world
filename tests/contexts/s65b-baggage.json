@@ -1,0 +1,486 @@
+{
+ "situation": "s65b-baggage",
+ "title": "My Bag Didn't Arrive",
+ "goal": "Pranešk, kad neatvyko tavo lagaminas, ir susitark dėl pristatymo.",
+ "contexts": {
+  "problem": {
+   "id": "problem",
+   "kind": "step",
+   "npc": [
+    "Hi! What can I do for you?",
+    "Next, please! How can I help?",
+    "Hi there! How can I help you?"
+   ],
+   "expects": [
+    "problem",
+    "need_help"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad neatvyko lagaminas"
+   ],
+   "options": []
+  },
+  "flight": {
+   "id": "flight",
+   "kind": "step",
+   "npc": [
+    "I'm sorry to hear that. Let's see what we can do. What flight were you on?",
+    "Oh no, I'm sorry about that. What flight were you on?",
+    "I'm sorry to hear that. Let's see what we can do. Can I have your flight number?"
+   ],
+   "expects": [
+    "flight",
+    "flight_num_ctx",
+    "dunno_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti skrydžio numerį"
+   ],
+   "options": [
+    "New York",
+    "Chicago",
+    "Boston",
+    "Frankfurt",
+    "London",
+    "Amsterdam",
+    "Copenhagen",
+    "Warsaw",
+    "Helsinki",
+    "Riga",
+    "Stockholm",
+    "Paris",
+    "Oslo",
+    "Toronto",
+    "Vilnius"
+   ]
+  },
+  "tag": {
+   "id": "tag",
+   "kind": "step",
+   "npc": [
+    "Okay. Do you have your baggage claim tag?",
+    "Can I see your bag tag? It's usually on your boarding pass.",
+    "Do you have your baggage claim tag?"
+   ],
+   "expects": [
+    "hand_over",
+    "tag_lost"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti bagažo žymą"
+   ],
+   "options": []
+  },
+  "describe": {
+   "id": "describe",
+   "kind": "step",
+   "npc": [
+    "Perfect, thank you. Let me check the system. Hmm, I can't see it in the system yet. Let's file a report. What does your bag look like?",
+    "Perfect, thank you. One moment, let me look. Hmm, I can't see it in the system yet. Let's file a report. What does your bag look like?",
+    "Perfect, thank you. One moment, let me look. Hmm, I can't see it in the system yet. Let's file a report. Can you describe your bag?"
+   ],
+   "expects": [
+    "describe",
+    "describe_fix",
+    "color_ctx",
+    "type_ctx",
+    "brand",
+    "marks_none"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Apibūdinti lagaminą: spalva, dydis, rūšis",
+    "Pasirinkti rūšį"
+   ],
+   "options": [
+    "black",
+    "blue",
+    "navy",
+    "red",
+    "green",
+    "gray",
+    "silver",
+    "white",
+    "yellow",
+    "orange",
+    "purple",
+    "pink",
+    "brown",
+    "beige",
+    "suitcase",
+    "backpack",
+    "duffel bag",
+    "bag"
+   ]
+  },
+  "delivery": {
+   "id": "delivery",
+   "kind": "step",
+   "npc": [
+    "So, a large blue suitcase. We can deliver it to your hotel. Would you like that?",
+    "Perfect, thank you. One moment, let me look. Good news! We found it. Your bag is still in New York. It's on the next flight. It lands at 6 p.m. Would you like us to deliver it to your hotel?",
+    "Perfect. Would you like us to deliver it to your hotel?"
+   ],
+   "expects": [
+    "delivery",
+    "pickup"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti, kad pristatytų į viešbutį",
+    "Atsiimti pačiam arba paklausti"
+   ],
+   "options": []
+  },
+  "hotel": {
+   "id": "hotel",
+   "kind": "step",
+   "npc": [
+    "Great. We'll deliver it within 24 hours. Where should we deliver it?",
+    "Great. We'll deliver it within 24 hours. Where are you staying?",
+    "Perfect. It usually takes less than a day. Where are you staying?"
+   ],
+   "expects": [
+    "stay"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur apsistosi"
+   ],
+   "options": []
+  },
+  "phone": {
+   "id": "phone",
+   "kind": "step",
+   "npc": [
+    "What's the best phone number to reach you?",
+    "Perfect. What's the best phone number to reach you?",
+    "And a phone number, please?"
+   ],
+   "expects": [
+    "phone",
+    "phone_ctx",
+    "phone_none"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti telefono numerį"
+   ],
+   "options": []
+  },
+  "kit": {
+   "id": "kit",
+   "kind": "step",
+   "npc": [
+    "Got it, thank you. Would you like an overnight kit? It has a toothbrush, toothpaste and a T-shirt.",
+    "That's okay. We'll call your hotel. Would you like an overnight kit? It has a toothbrush, toothpaste and a T-shirt."
+   ],
+   "expects": [
+    "q_reimburse",
+    "q_meantime",
+    "kit_yes_ctx",
+    "kit_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti rinkinį (taip / ne)",
+    "Paklausti apie išlaidas"
+   ],
+   "options": []
+  },
+  "ref": {
+   "id": "ref",
+   "kind": "pending",
+   "npc": [
+    "There you go. Here's your file reference number: MHR-58306. You can track your bag online.",
+    "Got it, thank you. Here's your file reference number: MHR-47219. You can track your bag online.",
+    "Here you are. Here's your file reference number: MHR-47219. It's on this copy of the report."
+   ],
+   "expects": [
+    "g_thanks",
+    "g_ok",
+    "g_bye",
+    "g_spell",
+    "g_write"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti",
+    "Paprašyti paraidžiui ar užrašyti"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Anything else I can do for you?",
+    "Can I help you with anything else?"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti",
+    "Paklausti dar ko nors"
+   ],
+   "options": []
+  },
+  "material": {
+   "id": "material",
+   "kind": "step",
+   "npc": [
+    "So, a large blue suitcase. Is it hard-shell or soft?",
+    "Okay. Is it hard-shell or soft?",
+    "So, a blue suitcase. Is it hard-shell or soft?"
+   ],
+   "expects": [
+    "describe",
+    "material_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ar kietas, ar minkštas"
+   ],
+   "options": [
+    "hard-shell",
+    "soft",
+    "leather"
+   ]
+  },
+  "brand": {
+   "id": "brand",
+   "kind": "step",
+   "npc": [
+    "Do you know the brand?",
+    "Great, that helps a lot. Do you know the brand?",
+    "So, a large blue suitcase. Do you know the brand?"
+   ],
+   "expects": [
+    "brand",
+    "dunno_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti markę (arba kad nežinai)"
+   ],
+   "options": []
+  },
+  "contents": {
+   "id": "contents",
+   "kind": "step",
+   "npc": [
+    "No problem. Is there anything valuable in it?",
+    "So, a large blue suitcase. What's in it, roughly?",
+    "Okay, a large blue suitcase. Got it. What's in it, roughly?"
+   ],
+   "expects": [
+    "contents"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kas lagamine"
+   ],
+   "options": []
+  },
+  "connection": {
+   "id": "connection",
+   "kind": "step",
+   "npc": [
+    "Did you have a connection?",
+    "Okay. Did you have a connection?",
+    "Perfect. Did you have a connection?"
+   ],
+   "expects": [
+    "flight",
+    "no_connection",
+    "via_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar persėdai (ir kur)"
+   ],
+   "options": [
+    "New York",
+    "Chicago",
+    "Boston",
+    "Frankfurt",
+    "London",
+    "Amsterdam",
+    "Copenhagen",
+    "Warsaw",
+    "Helsinki",
+    "Riga",
+    "Stockholm",
+    "Paris",
+    "Oslo",
+    "Toronto",
+    "Vilnius"
+   ]
+  },
+  "marks": {
+   "id": "marks",
+   "kind": "step",
+   "npc": [
+    "Okay, a large blue suitcase. Got it. Any ribbons, stickers or name tags on it?",
+    "So, a blue suitcase. Does it have anything special on it?",
+    "Does it have anything special on it?"
+   ],
+   "expects": [
+    "describe",
+    "marks_none",
+    "marks_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar yra žymių (juostelė, kaspinas, žyma su vardu)"
+   ],
+   "options": []
+  },
+  "type": {
+   "id": "type",
+   "kind": "step",
+   "npc": [
+    "Got it. Is it a suitcase, a backpack or a duffel bag?",
+    "Perfect. Is it a suitcase, a backpack or a duffel bag?",
+    "Is it a suitcase, a backpack or a duffel bag?"
+   ],
+   "expects": [
+    "describe",
+    "type_ctx",
+    "describe_fix"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ar tai lagaminas, kuprinė ar krepšys"
+   ],
+   "options": [
+    "suitcase",
+    "backpack",
+    "duffel bag",
+    "bag"
+   ]
+  },
+  "size": {
+   "id": "size",
+   "kind": "step",
+   "npc": [
+    "Okay, a blue suitcase. Got it. How big is it?",
+    "So, a blue suitcase. How big is it?",
+    "So, a blue suitcase. What size is it? Small, medium or large?"
+   ],
+   "expects": [
+    "describe",
+    "size_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti dydį"
+   ],
+   "options": [
+    "small",
+    "medium",
+    "large"
+   ]
+  },
+  "from_city": {
+   "id": "from_city",
+   "kind": "pending",
+   "npc": [
+    "That's okay. From which city?"
+   ],
+   "expects": [
+    "flight",
+    "city_ctx",
+    "dunno_ctx",
+    "flight_num_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, iš kokio miesto skridai"
+   ],
+   "options": [
+    "New York",
+    "Chicago",
+    "Boston",
+    "Frankfurt",
+    "London",
+    "Amsterdam",
+    "Copenhagen",
+    "Warsaw",
+    "Helsinki",
+    "Riga",
+    "Stockholm",
+    "Paris",
+    "Oslo",
+    "Toronto",
+    "Vilnius"
+   ]
+  }
+ },
+ "intents": [
+  "problem",
+  "need_help",
+  "flight",
+  "via_ctx",
+  "flight_num_ctx",
+  "city_ctx",
+  "no_connection",
+  "dunno_ctx",
+  "hand_over",
+  "tag_lost",
+  "describe",
+  "describe_fix",
+  "color_ctx",
+  "type_ctx",
+  "size_ctx",
+  "material_ctx",
+  "marks_ctx",
+  "marks_none",
+  "brand",
+  "contents",
+  "delivery",
+  "pickup",
+  "stay",
+  "phone",
+  "phone_ctx",
+  "phone_none",
+  "q_when",
+  "q_meantime",
+  "q_reimburse",
+  "kit_yes_ctx",
+  "kit_no_ctx",
+  "q_call",
+  "q_track",
+  "q_free",
+  "q_what_if",
+  "q_copy",
+  "q_taxi",
+  "q_shop",
+  "q_ref",
+  "g_spell",
+  "g_write"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

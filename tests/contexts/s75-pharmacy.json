@@ -1,0 +1,564 @@
+{
+ "situation": "s75-pharmacy",
+ "title": "Something for a Headache",
+ "goal": "Nusipirk vaistų ir pasiteirauk, kaip juos vartoti.",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hi there! How are you today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "need_symptom",
+    "symptom_state",
+    "need_product",
+    "rx_pickup",
+    "rx_dropoff",
+    "feel_sick",
+    "symptom_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "howlong": {
+   "id": "howlong",
+   "kind": "step",
+   "npc": [
+    "Oh, I'm sorry to hear that. How long have you had it?",
+    "Oh no! Let's see what we can do. How long have you had it?",
+    "Okay. When did it start?"
+   ],
+   "expects": [
+    "howlong_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek laiko tai tęsiasi"
+   ],
+   "options": []
+  },
+  "recommend": {
+   "id": "recommend",
+   "kind": "pending",
+   "npc": [
+    "Got it. I'd recommend ibuprofen. Would you like to try that?",
+    "Okay. I'd recommend ibuprofen. Do you want to try it?",
+    "Got it. For that, ibuprofen works really well. Do you want to try it?"
+   ],
+   "expects": [
+    "accept_rec",
+    "need_product",
+    "change_product",
+    "other_option",
+    "decline_rec",
+    "ask_drowsy",
+    "ask_rx_needed",
+    "ask_price",
+    "ask_kids",
+    "ask_food",
+    "ask_side_effects",
+    "ask_cheaper"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba paklausti daugiau",
+    "Paklausti apie vaistą"
+   ],
+   "options": []
+  },
+  "dosage": {
+   "id": "dosage",
+   "kind": "pending",
+   "npc": [
+    "Here it is. Do you know how to take it?",
+    "Here you go. Do you know how to take it?",
+    "Here you go. Have you taken it before?"
+   ],
+   "expects": [
+    "ask_dosage",
+    "first_time",
+    "not_first",
+    "know_ctx",
+    "ask_drowsy",
+    "ask_food",
+    "ask_alcohol",
+    "ask_kids",
+    "ask_how_long_take",
+    "ask_rx_needed",
+    "ask_side_effects"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kaip vartoti",
+    "Paklausti apie vaistą"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Take one or two tablets every six hours, with food. Don't take more than six a day. That'll be $8.99.",
+    "No, it shouldn't make you drowsy. Your total is $8.99.",
+    "Take one or two tablets every six hours, with food. Don't take more than six a day. Your total is $8.99."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "ask_drowsy",
+    "ask_food",
+    "ask_alcohol",
+    "ask_dosage",
+    "ask_kids",
+    "ask_rx_needed",
+    "need_product"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele, grynaisiais ar telefonu",
+    "Paklausti dar ko nors"
+   ],
+   "options": [
+    "ibuprofen",
+    "acetaminophen",
+    "cough syrup",
+    "throat lozenges",
+    "cold medicine",
+    "allergy medicine",
+    "antacid",
+    "aloe gel",
+    "sunscreen",
+    "Band-Aids",
+    "vitamins"
+   ]
+  },
+  "bag": {
+   "id": "bag",
+   "kind": "step",
+   "npc": [
+    "Sure! Just tap or insert your card. Perfect, thanks! Would you like a bag?",
+    "Of course. Just tap it here. Perfect, thanks! Would you like a bag?",
+    "Sure! Just tap or insert your card. Thank you! Would you like a bag?"
+   ],
+   "expects": [
+    "no_bag",
+    "bag_yes"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "No problem. Feel better! If you don't feel better in a few days, please see a doctor.",
+    "Sure! Just tap or insert your card. Thank you! Get well soon! If you don't feel better in a few days, please see a doctor.",
+    "Sure! Just tap or insert your card. Perfect, thanks! Feel better! If you don't feel better in a few days, please see a doctor."
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "thanks_help",
+    "will_do_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "rx_prompt": {
+   "id": "rx_prompt",
+   "kind": "pending",
+   "npc": [
+    "Hi, nice to see you again! Are you here to pick up a prescription?"
+   ],
+   "expects": [
+    "rx_pickup",
+    "rx_dropoff",
+    "need_symptom",
+    "symptom_state",
+    "need_product",
+    "feel_sick",
+    "symptom_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar atsiimi vaistus pagal receptą",
+    "Pasakyti, kas negerai"
+   ],
+   "options": [
+    "headache",
+    "sore throat",
+    "cough",
+    "cold",
+    "fever",
+    "allergies",
+    "upset stomach",
+    "sunburn"
+   ]
+  },
+  "meds": {
+   "id": "meds",
+   "kind": "step",
+   "npc": [
+    "I see. Are you taking any other medications?",
+    "Got it. Are you taking any other medications?",
+    "Oh, I'm sorry to hear that. Are you taking any other medications?"
+   ],
+   "expects": [
+    "meds_ans",
+    "meds_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar vartoji kitų vaistų",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "allergy": {
+   "id": "allergy",
+   "kind": "step",
+   "npc": [
+    "Okay. Do you have any allergies?",
+    "I see. Do you have any allergies?",
+    "Got it. Do you have any allergies?"
+   ],
+   "expects": [
+    "allergy_ans",
+    "allergy_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar turi alergijų",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "questions_q": {
+   "id": "questions_q",
+   "kind": "pending",
+   "npc": [
+    "Here it is. Take one or two tablets every six hours, with food. Don't take more than six a day. Do you have any questions for me?",
+    "Here you go. Take two tablets every six hours. They might make you drowsy, so don't drive. Do you have any questions for me?",
+    "Here it is. Take two tablets every six hours. They might make you drowsy, so don't drive. Do you have any questions for me?"
+   ],
+   "expects": [
+    "ask_dosage",
+    "ask_drowsy",
+    "ask_food",
+    "ask_alcohol",
+    "ask_kids",
+    "ask_rx_needed",
+    "no_questions",
+    "first_time",
+    "not_first",
+    "know_ctx",
+    "ask_how_long_take",
+    "ask_side_effects"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi klausimų",
+    "Paklausti apie vaistą"
+   ],
+   "options": []
+  },
+  "need": {
+   "id": "need",
+   "kind": "step",
+   "npc": [
+    "Hello! What can I do for you?",
+    "Hi, nice to see you again! What can I do for you today?",
+    "Hi! What brings you in today?"
+   ],
+   "expects": [
+    "need_symptom",
+    "symptom_state",
+    "need_product",
+    "rx_pickup",
+    "rx_dropoff",
+    "feel_sick",
+    "symptom_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kas negerai",
+    "Paprašyti konkretaus vaisto ar prekės",
+    "Atsiimti vaistus pagal receptą"
+   ],
+   "options": [
+    "headache",
+    "sore throat",
+    "cough",
+    "cold",
+    "fever",
+    "allergies",
+    "upset stomach",
+    "sunburn",
+    "ibuprofen",
+    "acetaminophen",
+    "cough syrup",
+    "throat lozenges",
+    "cold medicine",
+    "allergy medicine",
+    "antacid",
+    "aloe gel",
+    "sunscreen",
+    "Band-Aids",
+    "vitamins"
+   ]
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "Take one or two tablets every six hours, with food. Don't take more than six a day. Can I get you anything else?",
+    "Take two tablets every six hours. They might make you drowsy, so don't drive. Can I get you anything else?",
+    "Of course. Here they are. Anything else today?"
+   ],
+   "expects": [
+    "more_no",
+    "need_product"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar dar ko nors reikia",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": [
+    "ibuprofen",
+    "acetaminophen",
+    "cough syrup",
+    "throat lozenges",
+    "cold medicine",
+    "allergy medicine",
+    "antacid",
+    "aloe gel",
+    "sunscreen",
+    "Band-Aids",
+    "vitamins"
+   ]
+  },
+  "who": {
+   "id": "who",
+   "kind": "step",
+   "npc": [
+    "Oh, I'm sorry to hear that. Is it for you?",
+    "Oh, I'm sorry to hear that. Is this for you or for someone else?"
+   ],
+   "expects": [
+    "who_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kam vaistai",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "rx_name": {
+   "id": "rx_name",
+   "kind": "step",
+   "npc": [
+    "Sure. What's the last name?",
+    "Of course. Can I have your last name?"
+   ],
+   "expects": [
+    "name_ctx",
+    "spell_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo pavardę"
+   ],
+   "options": []
+  },
+  "rx_dob": {
+   "id": "rx_dob",
+   "kind": "step",
+   "npc": [
+    "Thank you. And your date of birth?",
+    "Got it, thanks. Great. And what's your date of birth?",
+    "Got it, thanks. And your date of birth?"
+   ],
+   "expects": [
+    "dob"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti gimimo datą"
+   ],
+   "options": []
+  },
+  "wait_q": {
+   "id": "wait_q",
+   "kind": "pending",
+   "npc": [
+    "Got it, thanks. Let me check… It'll be ready in about ten minutes. Would you like to wait?",
+    "Thank you. Let me check… It'll be ready in about ten minutes. Would you like to wait?"
+   ],
+   "expects": [
+    "wait_yes",
+    "wait_no",
+    "dob"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad palauksi",
+    "Pasakyti, kad grįši vėliau"
+   ],
+   "options": []
+  },
+  "rx_spell": {
+   "id": "rx_spell",
+   "kind": "step",
+   "npc": [
+    "Thank you. Could you spell that for me?",
+    "Got it, thanks. Could you spell that for me?"
+   ],
+   "expects": [
+    "letters_ctx",
+    "spell_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti pavardę paraidžiui"
+   ],
+   "options": []
+  },
+  "rx_ins": {
+   "id": "rx_ins",
+   "kind": "step",
+   "npc": [
+    "Okay, here's how to take it. Take one capsule three times a day, with food. Take them for seven days. And finish all of them, even if you feel better. Will you be using insurance today?",
+    "Okay, here's how to take it. Take one capsule three times a day, with food. Take them for seven days. And finish all of them, even if you feel better. Do you have insurance?"
+   ],
+   "expects": [
+    "ins_no",
+    "ins_yes"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie draudimą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "alt": {
+   "id": "alt",
+   "kind": "pending",
+   "npc": [
+    "We also have acetaminophen. Would that be better?"
+   ],
+   "expects": [
+    "accept_rec",
+    "need_product",
+    "change_product",
+    "decline_rec",
+    "other_option",
+    "ask_drowsy",
+    "ask_rx_needed",
+    "ask_price",
+    "ask_kids",
+    "ask_food",
+    "ask_side_effects",
+    "ask_cheaper"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti",
+    "Paklausti apie vaistą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "need_symptom",
+  "symptom_state",
+  "symptom_ctx",
+  "feel_sick",
+  "need_product",
+  "product_unknown",
+  "change_product",
+  "other_option",
+  "who_ans",
+  "howlong_ans",
+  "meds_ans",
+  "meds_ctx",
+  "allergy_ans",
+  "allergy_ctx",
+  "accept_rec",
+  "decline_rec",
+  "ask_dosage",
+  "ask_drowsy",
+  "ask_rx_needed",
+  "ask_food",
+  "ask_alcohol",
+  "ask_kids",
+  "ask_side_effects",
+  "ask_how_long_take",
+  "ask_price",
+  "ask_cheaper",
+  "no_rx_paper",
+  "ask_where",
+  "ask_how_long_ready",
+  "more_no",
+  "pay_card",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "no_bag",
+  "bag_yes",
+  "rx_pickup",
+  "rx_dropoff",
+  "name_ctx",
+  "letters_ctx",
+  "spell_ctx",
+  "dob",
+  "ins_no",
+  "ins_yes",
+  "wait_yes",
+  "wait_no",
+  "first_time",
+  "not_first",
+  "know_ctx",
+  "no_questions",
+  "thanks_help",
+  "will_do_ctx",
+  "help_me"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

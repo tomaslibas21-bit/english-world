@@ -1,0 +1,352 @@
+{
+ "situation": "s88-first-day",
+ "title": "Where's the Coffee Machine?",
+ "goal": "Pirmąją darbo dieną susipažink su kolege ir išsiaiškink, kur kas yra.",
+ "contexts": {
+  "hello": {
+   "id": "hello",
+   "kind": "step",
+   "npc": [
+    "Hi there! Can I help you?",
+    "Good morning! Can I help you?",
+    "Hi! Are you new here?"
+   ],
+   "expects": [
+    "first_day",
+    "intro_name",
+    "intro_ctx",
+    "nice_meet",
+    "not_new"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Prisistatyti ir pasakyti, kad tai tavo pirmoji diena"
+   ],
+   "options": []
+  },
+  "meet": {
+   "id": "meet",
+   "kind": "pending",
+   "npc": [
+    "Welcome to the team! I'm Maria. Nice to meet you!",
+    "Welcome! I'm Maria. Nice to meet you!",
+    "Welcome to the team! I'm Maria. Nice to meet you! Okay!"
+   ],
+   "expects": [
+    "nice_meet",
+    "intro_name",
+    "intro_ctx",
+    "g_thanks",
+    "first_day",
+    "not_new"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Atsakyti į pasisveikinimą"
+   ],
+   "options": []
+  },
+  "desk": {
+   "id": "desk",
+   "kind": "step",
+   "npc": [
+    "Come on, I'll show you around! So, this is your desk, and here's your laptop. Your login and password are on this card. Oh, and your badge isn't ready yet. I'll let you in tomorrow.",
+    "Let me show you around. This way! Here's your desk, and this is your laptop. Your login and password are on this card.",
+    "Come on, I'll show you around! Here's your desk, and this is your laptop. Your login and password are on this card."
+   ],
+   "expects": [
+    "desk_ok",
+    "q_password",
+    "q_login",
+    "q_badge",
+    "q_wifi",
+    "q_desk",
+    "q_it",
+    "show_me"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti arba paklausti apie kompiuterį ir slaptažodį",
+    "Paklausti, kur kas yra (kava, virtuvė, spausdintuvas)"
+   ],
+   "options": []
+  },
+  "tour": {
+   "id": "tour",
+   "kind": "pending",
+   "npc": [
+    "Glad you like it! The meeting room is over there, with the glass walls. And the restrooms are down the hall, on the left. If you have any questions, just ask!",
+    "It's in the kitchen, next to the fridge. The big one, black and green! Anything else?",
+    "Just press this button and wait a minute. And don't forget to wash your cup! Any other questions?"
+   ],
+   "expects": [
+    "q_coffee",
+    "q_how",
+    "q_kitchen",
+    "q_fridge",
+    "q_printer",
+    "q_restroom",
+    "q_meeting",
+    "q_dress",
+    "q_lunch_time",
+    "q_home_time",
+    "q_mug",
+    "q_who",
+    "q_parking",
+    "q_help",
+    "q_password",
+    "q_login",
+    "q_badge",
+    "q_wifi",
+    "q_desk",
+    "q_it",
+    "show_me",
+    "q_other_ctx",
+    "no_more",
+    "more_q"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, kur kas yra (kava, virtuvė, spausdintuvas)",
+    "Paklausti, kaip kas veikia",
+    "Pasakyti, kad kol kas klausimų nebėra"
+   ],
+   "options": []
+  },
+  "task": {
+   "id": "task",
+   "kind": "step",
+   "npc": [
+    "Okay! Your first task: we need to update the client list. It's in a file on my computer.",
+    "Of course! Log in, click “New”, then “Save”. See? It's easy!",
+    "Sure! Okay! Your first task: we need to update the client list. It's in a file on my computer."
+   ],
+   "expects": [
+    "show_me",
+    "send_file",
+    "task_ok",
+    "know_system",
+    "q_how",
+    "task_cant"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti parodyti ar atsiųsti failą"
+   ],
+   "options": []
+  },
+  "lunch": {
+   "id": "lunch",
+   "kind": "step",
+   "npc": [
+    "Sure! Done! It's in your inbox now. A few of us are going to the Thai place around the corner for lunch. Want to come?",
+    "Sure! Done! It's in your inbox now. Do you want to grab lunch with us? We usually go to the Thai place around the corner.",
+    "I'll send you the file. Great! Just shout if you need anything. Do you want to grab lunch with us? We usually go to the Thai place around the corner."
+   ],
+   "expects": [
+    "lunch_yes",
+    "lunch_no",
+    "lunch_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti kvietimą pietų arba atsisakyti"
+   ],
+   "options": []
+  },
+  "day": {
+   "id": "day",
+   "kind": "step",
+   "npc": [
+    "Great! We'll go at noon. Five o'clock! So, how was your first day?",
+    "Awesome! We leave at noon. Hey! Time to go home. So, how was your first day?",
+    "Awesome! We leave at noon. Five o'clock! So, how was your first day?"
+   ],
+   "expects": [
+    "day_good",
+    "day_tired",
+    "day_ctx",
+    "thanks_all"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti, kaip praėjo diena"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "The first day is always the hardest! You'll get used to it. See you tomorrow!",
+    "Glad to hear it! You'll get used to everything really fast. See you tomorrow!"
+   ],
+   "expects": [
+    "see_you",
+    "g_bye",
+    "g_thanks",
+    "thanks_all"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsisveikinti"
+   ],
+   "options": []
+  },
+  "coffee_show": {
+   "id": "coffee_show",
+   "kind": "pending",
+   "npc": [
+    "Sure! The mugs are in the cabinet above the sink. Oh, and the most important thing: the coffee machine! It's in the kitchen, next to the fridge. The big one, black and green! Want me to show you how it works?",
+    "Oh, and the most important thing: the coffee machine! It's in the kitchen, next to the fridge. The big one, black and green! Want me to show you how it works?"
+   ],
+   "expects": [
+    "q_how",
+    "show_me",
+    "coffee_want",
+    "tea_ok",
+    "coffee_later",
+    "q_mug",
+    "oops"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti arba paklausti, kaip jis veikia"
+   ],
+   "options": []
+  },
+  "coffee": {
+   "id": "coffee",
+   "kind": "step",
+   "npc": [
+    "Sure! The mugs are in the cabinet above the sink. Oh, and the most important thing: the coffee machine! It's in the kitchen, next to the fridge. The big one, black and green! Oh no, it's broken again! There's tea in the cabinet, though.",
+    "Oh, and the most important thing: the coffee machine! It's in the kitchen, next to the fridge. The big one, black and green! Oh no, it's broken again! There's tea in the cabinet, though.",
+    "Sure! The mugs are in the cabinet above the sink. Oh, and the most important thing: the coffee machine! It's in the kitchen, next to the fridge. The big one, black and green!"
+   ],
+   "expects": [
+    "q_how",
+    "show_me",
+    "q_mug",
+    "coffee_want",
+    "oops",
+    "tea_ok",
+    "coffee_later"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti arba paklausti, kaip jis veikia"
+   ],
+   "options": []
+  },
+  "mug": {
+   "id": "mug",
+   "kind": "pending",
+   "npc": [
+    "Oh, wait! Not that mug, that's Dave's! Here, use this one."
+   ],
+   "expects": [
+    "oops",
+    "g_sorry",
+    "g_thanks",
+    "q_coffee",
+    "q_how",
+    "q_kitchen",
+    "q_fridge",
+    "q_printer",
+    "q_restroom",
+    "q_meeting",
+    "q_dress",
+    "q_lunch_time",
+    "q_home_time",
+    "q_mug",
+    "q_who",
+    "q_parking",
+    "q_help",
+    "q_password",
+    "q_login",
+    "q_badge",
+    "q_wifi",
+    "q_desk",
+    "q_it",
+    "show_me",
+    "q_other_ctx",
+    "no_more",
+    "more_q"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Atsiprašyti"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "first_day",
+  "not_new",
+  "intro_name",
+  "intro_ctx",
+  "nice_meet",
+  "her_name",
+  "desk_ok",
+  "q_password",
+  "q_login",
+  "q_badge",
+  "q_wifi",
+  "q_desk",
+  "q_it",
+  "q_coffee",
+  "q_kitchen",
+  "q_fridge",
+  "q_printer",
+  "q_restroom",
+  "q_meeting",
+  "q_dress",
+  "q_lunch_time",
+  "q_home_time",
+  "q_mug",
+  "q_who",
+  "q_parking",
+  "q_help",
+  "q_how",
+  "show_me",
+  "q_other_ctx",
+  "more_q",
+  "no_more",
+  "send_file",
+  "task_ok",
+  "task_cant",
+  "know_system",
+  "lunch_yes",
+  "lunch_no",
+  "lunch_q",
+  "fancy_q",
+  "day_good",
+  "day_ctx",
+  "day_tired",
+  "see_you",
+  "thanks_all",
+  "oops",
+  "coffee_want",
+  "tea_ok",
+  "coffee_later"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

@@ -1,0 +1,240 @@
+{
+ "situation": "s71b-gas",
+ "title": "Fill It Up",
+ "goal": "Užsipilk degalų ir susimokėk kasoje.",
+ "contexts": {
+  "order": {
+   "id": "order",
+   "kind": "step",
+   "npc": [
+    "Hi there! How can I help you?",
+    "Morning! What pump are you on?",
+    "Hi, hon! What can I do for you?"
+   ],
+   "expects": [
+    "prepay",
+    "fill",
+    "zip_problem",
+    "pay_pump_q",
+    "pump_ctx",
+    "want_gas"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti sumą ir kolonėlės numerį (arba „pilną baką“)",
+    "Pasakyti, kad kolonėlė nepriima kortelės"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "That'll be $40.",
+    "Okay, that's $40. Cash or card?",
+    "That'll be $40. Cash or card?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "here_you_go",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele ar grynaisiais"
+   ],
+   "options": []
+  },
+  "debit": {
+   "id": "debit",
+   "kind": "step",
+   "npc": [
+    "Go ahead and tap your card. Debit or credit?"
+   ],
+   "expects": [
+    "credit_debit"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti: debetinė ar kredito kortelė"
+   ],
+   "options": []
+  },
+  "pump_on": {
+   "id": "pump_on",
+   "kind": "step",
+   "npc": [
+    "Okay. You're all set! Pump 3 is on.",
+    "You're welcome!",
+    "No problem!"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti",
+    "Paklausti (tualetas, kelias į greitkelį, oras padangoms)"
+   ],
+   "options": []
+  },
+  "receipt": {
+   "id": "receipt",
+   "kind": "step",
+   "npc": [
+    "Sure. Receipt?",
+    "Go ahead and tap your card. Receipt?",
+    "Thanks, hon! Receipt?"
+   ],
+   "expects": [
+    "receipt_ask",
+    "no_receipt",
+    "receipt_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia čekio"
+   ],
+   "options": []
+  },
+  "out_of_order": {
+   "id": "out_of_order",
+   "kind": "step",
+   "npc": [
+    "Oh, sorry, pump 3 is out of order today. Could you use pump five?",
+    "Oh, sorry, pump 2 is out of order today. Could you use pump five?",
+    "Oh, sorry, pump 4 is out of order today. Could you use pump five?"
+   ],
+   "expects": [
+    "pump_ctx",
+    "ok_ack"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti naudoti kitą kolonėlę"
+   ],
+   "options": []
+  },
+  "extras": {
+   "id": "extras",
+   "kind": "step",
+   "npc": [
+    "Anything else for you today?",
+    "Anything else? Coffee, snacks?"
+   ],
+   "expects": [
+    "snack_order",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar dar ko nors reikia"
+   ],
+   "options": [
+    "coffee",
+    "bottle of water",
+    "bag of chips",
+    "candy bar",
+    "map"
+   ]
+  },
+  "fill_pay": {
+   "id": "fill_pay",
+   "kind": "step",
+   "npc": [
+    "Sure. Are you paying with cash or card?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kaip mokėsi"
+   ],
+   "options": []
+  },
+  "leave": {
+   "id": "leave",
+   "kind": "step",
+   "npc": [
+    "Okay, how much do you want to leave? I'll give you your change after."
+   ],
+   "expects": [
+    "amount_ctx",
+    "here_you_go"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek pinigų palieki"
+   ],
+   "options": []
+  },
+  "pump": {
+   "id": "pump",
+   "kind": "step",
+   "npc": [
+    "Which pump?",
+    "Sure. What pump are you on?"
+   ],
+   "expects": [
+    "pump_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti kolonėlės numerį"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "prepay",
+  "want_gas",
+  "fill",
+  "pump_ctx",
+  "amount_ctx",
+  "grade_ans",
+  "grade_q",
+  "gas_price_q",
+  "zip_problem",
+  "pay_pump_q",
+  "snack_order",
+  "coffee_where",
+  "restroom",
+  "key_back",
+  "directions",
+  "air",
+  "atm",
+  "trouble",
+  "ask_mechanic",
+  "call_help",
+  "receipt_ask",
+  "receipt_no_ctx",
+  "no_receipt",
+  "pay_card",
+  "no_cash",
+  "pay_cash",
+  "here_you_go",
+  "credit_debit",
+  "more_no",
+  "ok_ack"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

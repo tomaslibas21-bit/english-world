@@ -1,0 +1,343 @@
+{
+ "situation": "s64c-gate",
+ "title": "Is This the Right Gate?",
+ "goal": "Pasitikslink vartus ir skrydžio laiką, tada įlipk į lėktuvą.",
+ "contexts": {
+  "gate": {
+   "id": "gate",
+   "kind": "step",
+   "npc": [
+    "Hi there! How can I help you?",
+    "Good morning! What can I do for you?",
+    "Hi! Can I help you?"
+   ],
+   "expects": [
+    "ask_gate",
+    "give_bp"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, ar tai tie vartai",
+    "Paklausti, ar skrydis laiku"
+   ],
+   "options": []
+  },
+  "time": {
+   "id": "time",
+   "kind": "step",
+   "npc": [
+    "Yes, you're in the right place. Can I help with anything else?",
+    "Actually, flight 223 just moved to gate 12. It's just down the hall, on the left. We're heading over there now, too. Anything else?",
+    "Yes, you're in the right place. Anything else?"
+   ],
+   "expects": [
+    "more_no",
+    "more_q",
+    "ask_ontime",
+    "ask_delayed",
+    "ask_delay_reason",
+    "ask_boarding_time",
+    "ask_departure",
+    "ask_group",
+    "ask_carryon",
+    "ask_wifi",
+    "ask_coffee",
+    "ask_food",
+    "ask_restroom",
+    "ask_charge",
+    "ask_duration",
+    "ask_full",
+    "ask_seat_change",
+    "ask_gate12",
+    "can_board"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, ar skrydis laiku",
+    "Paklausti apie bagažą, „Wi-Fi“, kavą…"
+   ],
+   "options": []
+  },
+  "help": {
+   "id": "help",
+   "kind": "step",
+   "npc": [
+    "Yes, we're on time today. We'll start boarding at 7:30. Anything else?",
+    "Yes, we're right on time. Boarding starts at 7:30. Can I help with anything else?",
+    "Yes, we're on time today. Boarding starts at 7:30. Can I help with anything else?"
+   ],
+   "expects": [
+    "more_no",
+    "more_q",
+    "ask_ontime",
+    "ask_delayed",
+    "ask_delay_reason",
+    "ask_boarding_time",
+    "ask_departure",
+    "ask_group",
+    "ask_carryon",
+    "ask_wifi",
+    "ask_coffee",
+    "ask_food",
+    "ask_restroom",
+    "ask_charge",
+    "ask_duration",
+    "ask_full",
+    "ask_seat_change",
+    "ask_gate12",
+    "can_board"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad klausimų nebeturi",
+    "Paklausti dar ko nors"
+   ],
+   "options": []
+  },
+  "wait": {
+   "id": "wait",
+   "kind": "pending",
+   "npc": [
+    "Okay! Please have a seat. We'll call your group.",
+    "Great. Have a seat, and we'll call your group soon."
+   ],
+   "expects": [
+    "can_board",
+    "g_thanks",
+    "g_ok",
+    "more_no",
+    "g_howareyou_answer",
+    "affirm",
+    "deny",
+    "more_q",
+    "ask_ontime",
+    "ask_delayed",
+    "ask_delay_reason",
+    "ask_boarding_time",
+    "ask_departure",
+    "ask_group",
+    "ask_carryon",
+    "ask_wifi",
+    "ask_coffee",
+    "ask_food",
+    "ask_restroom",
+    "ask_charge",
+    "ask_duration",
+    "ask_full",
+    "ask_seat_change",
+    "ask_gate12"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir palaukti",
+    "Dar ko nors paklausti"
+   ],
+   "options": []
+  },
+  "board": {
+   "id": "board",
+   "kind": "step",
+   "npc": [
+    "You're welcome! Good morning, everyone! Now boarding group 3 for flight 223 to Boston.",
+    "Anytime! Good morning, everyone! Now boarding group 3 for flight 223 to Boston.",
+    "Okay, everyone! Now boarding group 3 for flight 223 to Boston."
+   ],
+   "expects": [
+    "give_bp",
+    "can_board"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti įlaipinimo kortelę"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Thank you. Enjoy your flight!",
+    "Thanks! Have a great flight!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "offer": {
+   "id": "offer",
+   "kind": "pending",
+   "npc": [
+    "Anytime! This flight is full today, so we're checking carry-on bags for free. Would you like to check yours?",
+    "Oh, one more thing: this flight is full today, so we're checking carry-on bags for free. Would you like to check yours?",
+    "No problem! Oh, one more thing: this flight is full today, so we're checking carry-on bags for free. Would you like to check yours?"
+   ],
+   "expects": [
+    "bag_check_q",
+    "keep_bag",
+    "offer_yes",
+    "ask_free",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba atsisakyti"
+   ],
+   "options": []
+  },
+  "early": {
+   "id": "early",
+   "kind": "pending",
+   "npc": [
+    "No problem. Good morning, everyone! Now boarding group 2 for flight 223 to Boston.",
+    "Not yet. We're boarding group 2 right now. Group 3 is next.",
+    "No problem! Good morning, everyone! Now boarding group 2 for flight 223 to Boston."
+   ],
+   "expects": [
+    "can_board",
+    "give_bp",
+    "ask_group",
+    "g_ok",
+    "g_thanks",
+    "more_no",
+    "g_howareyou_answer",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, ar jau gali įlipti"
+   ],
+   "options": []
+  },
+  "which_flight": {
+   "id": "which_flight",
+   "kind": "pending",
+   "npc": [
+    "Which flight are you on?",
+    "What's your flight number?"
+   ],
+   "expects": [
+    "flight_info_ctx",
+    "ask_gate",
+    "give_bp"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo skrydį (223 į Bostoną)"
+   ],
+   "options": []
+  },
+  "wrong_flight": {
+   "id": "wrong_flight",
+   "kind": "pending",
+   "npc": [
+    "Hmm, this gate is for flight 223 to Boston. Can I see your boarding pass?"
+   ],
+   "expects": [
+    "give_bp",
+    "flight_info_ctx",
+    "ask_gate",
+    "affirm"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti įlaipinimo kortelę"
+   ],
+   "options": []
+  },
+  "seat_offer": {
+   "id": "seat_offer",
+   "kind": "pending",
+   "npc": [
+    "Let me see... I can move you to 16A, a window seat. Would you like that?"
+   ],
+   "expects": [
+    "more_no",
+    "affirm",
+    "deny",
+    "more_q",
+    "ask_ontime",
+    "ask_delayed",
+    "ask_delay_reason",
+    "ask_boarding_time",
+    "ask_departure",
+    "ask_group",
+    "ask_carryon",
+    "ask_wifi",
+    "ask_coffee",
+    "ask_food",
+    "ask_restroom",
+    "ask_charge",
+    "ask_duration",
+    "ask_full",
+    "ask_seat_change",
+    "ask_gate12",
+    "can_board"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba atsisakyti"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "affirm",
+  "deny",
+  "ask_gate",
+  "flight_info_ctx",
+  "give_bp",
+  "ask_ontime",
+  "ask_delayed",
+  "ask_delay_reason",
+  "why_short",
+  "ask_boarding_time",
+  "ask_departure",
+  "ask_group",
+  "ask_carryon",
+  "ask_wifi",
+  "ask_coffee",
+  "ask_food",
+  "ask_restroom",
+  "ask_charge",
+  "ask_duration",
+  "ask_full",
+  "ask_seat_change",
+  "ask_gate12",
+  "can_board",
+  "keep_bag",
+  "offer_yes",
+  "ask_free",
+  "bag_check_q",
+  "more_no",
+  "more_q"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

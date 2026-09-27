@@ -1,0 +1,16 @@
+{
+  "npc": "Kevin, airline check-in",
+  "images": ["greet", "passport", "bags", "overweight", "seat", "bp"],
+  "start": "greet",
+  "done": "bp",
+  "phases": {
+    "hello": "greet", "howareyou": "greet", "dest": "greet", "dest_confirm": "greet",
+    "passport": "passport",
+    "bags": "bags", "battery": "bags", "packed": "bags", "packed_follow": "bags", "scale": "bags",
+    "overweight": "overweight", "moving": "overweight", "fee": "overweight",
+    "seat": "seat", "no_window": "seat", "seat_clarify": "seat",
+    "bp": "bp", "closing": "bp"
+  },
+  "focus": [34, 28],
+  "jobs": { "greet": "977278cd-7245-4d30-8e00-df757223a870" }
+}

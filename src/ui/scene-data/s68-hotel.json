@@ -1,0 +1,16 @@
+{
+  "npc": "Olivia, hotel reception",
+  "images": ["welcome", "computer", "id", "sign", "keys", "sorry", "checkout"],
+  "start": "welcome",
+  "phases": {
+    "arrive": "welcome", "walk_nights": "welcome", "walk_offer": "welcome", "p_report": "welcome",
+    "name": "computer", "spell": "computer", "found": "computer",
+    "id": "id", "card": "id",
+    "sign": "sign",
+    "keys": "keys", "anything": "keys", "closing": "keys",
+    "fan_or_room": "sorry",
+    "late": "checkout"
+  },
+  "focus": [28, 30],
+  "jobs": { "welcome": "18cba9f2-7cd0-4cca-9dea-58a4f33e1de6" }
+}

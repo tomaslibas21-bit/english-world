@@ -1,0 +1,60 @@
+# Builds the game and publishes it on GitHub Pages, at https://<user>.github.io/<repository>/,
+# on every push to main. It can also be started by hand: Actions → "Deploy to GitHub Pages" → Run workflow.
+# One-time setup: Settings → Pages → Source: GitHub Actions (see docs/HOSTING.md).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A newer push waits for the running one instead of cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+        env:
+          # onnxruntime-node (only used by tools/build-audio.ts) would otherwise download CUDA files
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+
+      - name: Type-check and build
+        run: npm run build
+        env:
+          # The site lives under /<repository>/. With a custom domain, set the repository
+          # variable GAME_BASE to / (Settings → Secrets and variables → Actions → Variables).
+          GAME_BASE: ${{ vars.GAME_BASE || format('/{0}/', github.event.repository.name) }}
+
+      - name: Set up Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v5

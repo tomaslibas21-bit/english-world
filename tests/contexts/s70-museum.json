@@ -1,0 +1,331 @@
+{
+ "situation": "s70-museum",
+ "title": "Please Don't Touch",
+ "goal": "Nusipirk bilietą, pasiimk audiogidą ir sužinok, kur nauja paroda.",
+ "contexts": {
+  "tickets": {
+   "id": "tickets",
+   "kind": "step",
+   "npc": [
+    "Hi there! Tickets for today?",
+    "Perfect. How many tickets?",
+    "Hi! Welcome to the museum! How many tickets today?"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Paprašyti bilieto",
+    "Paklausti kainos ir nuolaidų",
+    "Paklausti apie audiogidą"
+   ],
+   "options": [
+    "adult",
+    "student",
+    "senior",
+    "child"
+   ]
+  },
+  "guide": {
+   "id": "guide",
+   "kind": "step",
+   "npc": [
+    "And an audio guide for five dollars?",
+    "Sure thing. Would you like an audio guide? It's five dollars.",
+    "Great. And an audio guide for five dollars?"
+   ],
+   "expects": [
+    "want_guide",
+    "no_guide",
+    "guide_price",
+    "guide_n_ctx",
+    "lang_q",
+    "guide_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paimti audiogidą",
+    "Paklausti apie audiogidą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "lang": {
+   "id": "lang",
+   "kind": "step",
+   "npc": [
+    "What language would you like?",
+    "Which language?"
+   ],
+   "expects": [
+    "lang_ctx",
+    "lang_q",
+    "langs_q",
+    "lang_not_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti audiogido kalbą"
+   ],
+   "options": [
+    "English",
+    "Lithuanian",
+    "Russian",
+    "Polish",
+    "German",
+    "Spanish"
+   ]
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Perfect. That'll be $23.",
+    "Great. Your total is $23.",
+    "Perfect. That's $23, please."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti"
+   ],
+   "options": []
+  },
+  "exhibit": {
+   "id": "exhibit",
+   "kind": "step",
+   "npc": [
+    "Sure, just tap your card here. Perfect, thanks! Here's your ticket. And here's your audio guide, in English. Just press the number next to each painting. Any questions?",
+    "Sure, just tap your card here. Perfect, thanks! Here's your ticket. And here's your audio guide, in English. Just press the number next to each painting. Can I help you with anything else?",
+    "Sure, just tap your card here. Thank you! Here's your ticket. And here's your audio guide, in English. Just press the number next to each painting. Any questions?"
+   ],
+   "expects": [
+    "ask_exhibit",
+    "ask_included",
+    "more_no",
+    "have_question"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kur nauja paroda",
+    "Paklausti apie muziejų"
+   ],
+   "options": []
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "The new exhibition, “The Colors of the Night”, is upstairs, on the right. Can I help you with anything else?",
+    "It's upstairs, on the right. Just take the stairs or the elevator. Can I help you with anything else?",
+    "The new exhibition, “The Colors of the Night”, is upstairs, on the right. Any questions?"
+   ],
+   "expects": [
+    "more_no",
+    "ask_exhibit",
+    "ask_included",
+    "have_question"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad klausimų nėra",
+    "Paklausti apie muziejų"
+   ],
+   "options": []
+  },
+  "harold": {
+   "id": "harold",
+   "kind": "pending",
+   "npc": [
+    "Enjoy your visit! Excuse me! Please don't touch the paintings.",
+    "Have a great time! Excuse me! Please don't touch the paintings.",
+    "Enjoy your visit! Excuse me! Please don't touch the art."
+   ],
+   "expects": [
+    "apology",
+    "g_sorry",
+    "deny",
+    "why_not",
+    "g_repeat",
+    "g_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsiprašyti prižiūrėtojo"
+   ],
+   "options": []
+  },
+  "late": {
+   "id": "late",
+   "kind": "pending",
+   "npc": [
+    "Hi there! Tickets for today? Just so you know, we close in forty-five minutes today.",
+    "Good morning! How can I help you? Just so you know, we close in forty-five minutes today."
+   ],
+   "expects": [
+    "enough_time",
+    "come_back"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Nusipirkti bilietą"
+   ],
+   "options": [
+    "adult",
+    "student",
+    "senior",
+    "child"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Have a great time!",
+    "Enjoy your visit!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "types": {
+   "id": "types",
+   "kind": "pending",
+   "npc": [
+    "Sure! Any students, seniors, or kids?",
+    "Sure! Are they all adults?"
+   ],
+   "expects": [
+    "types_ans",
+    "all_adults_ctx",
+    "mixed_types_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kokių bilietų reikia",
+    "Paklausti kainos ir nuolaidų"
+   ],
+   "options": []
+  },
+  "student_id": {
+   "id": "student_id",
+   "kind": "step",
+   "npc": [
+    "Great. Can I see your student ID, please?",
+    "Sure thing. Can I see your student ID, please?",
+    "Perfect. Can I see your student ID, please?"
+   ],
+   "expects": [
+    "have_id",
+    "no_id",
+    "here_you_go"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti studento pažymėjimą"
+   ],
+   "options": []
+  },
+  "id_price": {
+   "id": "id_price",
+   "kind": "pending",
+   "npc": [
+    "Sorry, without an ID, I have to charge the adult price. Is that okay?"
+   ],
+   "expects": [
+    "have_id",
+    "no_id",
+    "here_you_go"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti mokėti suaugusiojo kainą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "buy_tickets",
+  "buy_qty",
+  "all_adults_ctx",
+  "mixed_types_ctx",
+  "types_ans",
+  "change_tickets",
+  "reject_type",
+  "im_senior",
+  "child_age",
+  "im_student",
+  "ask_prices",
+  "ask_discount",
+  "kids_free",
+  "have_id",
+  "no_id",
+  "adult_ok",
+  "want_guide",
+  "no_guide",
+  "guide_no_ctx",
+  "guide_price",
+  "guide_n_ctx",
+  "lang_ctx",
+  "lang_q",
+  "lang_not_ctx",
+  "langs_q",
+  "pay_card",
+  "no_cash",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "ask_exhibit",
+  "ask_included",
+  "ask_exhibit_about",
+  "ask_photos",
+  "ask_coat",
+  "ask_shop",
+  "ask_cafe",
+  "ask_restroom",
+  "ask_hours",
+  "ask_map",
+  "ask_elevator",
+  "ask_duration",
+  "ask_tour",
+  "ask_start",
+  "enough_time",
+  "come_back",
+  "more_no",
+  "have_question",
+  "apology",
+  "deny",
+  "why_not"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

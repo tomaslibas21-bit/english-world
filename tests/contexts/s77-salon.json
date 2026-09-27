@@ -1,0 +1,613 @@
+{
+ "situation": "s77-salon",
+ "title": "Just a Trim",
+ "goal": "Pasakyk kirpėjai, ką nori, ir susimokėk.",
+ "contexts": {
+  "appt": {
+   "id": "appt",
+   "kind": "step",
+   "npc": [
+    "Welcome to Snip & Style! Do you have an appointment?",
+    "Hey, welcome back! Are you my three o'clock?",
+    "Hi there, welcome in! Do you have an appointment?"
+   ],
+   "expects": [
+    "appt_have",
+    "appt_none",
+    "walkin",
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar turi vizitą",
+    "Pasakyti savo vardą",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Great! Can I get your name?",
+    "Perfect. And what's the name?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo vardą"
+   ],
+   "options": []
+  },
+  "service": {
+   "id": "service",
+   "kind": "step",
+   "npc": [
+    "Perfect, I've got you right here. So, what are we doing today?",
+    "Perfect, I've got you right here. What can I do for you today?",
+    "Got it! You're all checked in. So, what are we doing today?"
+   ],
+   "expects": [
+    "trim",
+    "haircut",
+    "go_short",
+    "bangs_only",
+    "photo",
+    "length",
+    "not_short",
+    "wash_request"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kaip nori kirptis"
+   ],
+   "options": []
+  },
+  "length": {
+   "id": "length",
+   "kind": "step",
+   "npc": [
+    "Sure, just a trim. How much should I take off?",
+    "Sure, just a trim. And how much are we taking off?",
+    "Easy! And how much are we taking off?"
+   ],
+   "expects": [
+    "length",
+    "not_short",
+    "trim"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek nukirpti"
+   ],
+   "options": []
+  },
+  "layers": {
+   "id": "layers",
+   "kind": "step",
+   "npc": [
+    "Okay, just an inch. Do you want to keep your layers?",
+    "Okay! Do you want to keep your layers?",
+    "Got it. Do you want to keep your layers?"
+   ],
+   "expects": [
+    "keep_layers",
+    "no_layers"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "chat_vacation": {
+   "id": "chat_vacation",
+   "kind": "pending",
+   "npc": [
+    "Okay! Any vacation plans this year?",
+    "Sounds good. Any vacation plans this year?",
+    "Great! Any vacation plans this year?"
+   ],
+   "expects": [
+    "weekend_ctx",
+    "from_ans",
+    "vacation_ctx",
+    "pets_ans",
+    "weekend_unknown",
+    "ask_cat",
+    "ask_jessie",
+    "react_funny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti kirpėjai"
+   ],
+   "options": []
+  },
+  "reveal": {
+   "id": "reveal",
+   "kind": "step",
+   "npc": [
+    "That sounds nice! Okay, take a look! Do you like it?",
+    "I know, right? All done! Take a look. What do you think?",
+    "You got it! All done! Take a look. What do you think?"
+   ],
+   "expects": [
+    "love_it",
+    "more_off",
+    "shorter_than",
+    "polite_ok",
+    "dont_like",
+    "ask_cat"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip patinka"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "It really suits you! That'll be $35.",
+    "Yay! I'm so glad! That'll be $40.",
+    "It really suits you! That'll be $45, with the wash and blow-dry."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "keep_change",
+    "add_tip",
+    "ask_owe"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti (ir palikti arbatpinigių)"
+   ],
+   "options": []
+  },
+  "tip_q": {
+   "id": "tip_q",
+   "kind": "pending",
+   "npc": [
+    "Just tap here. The screen will ask about a tip."
+   ],
+   "expects": [
+    "add_tip",
+    "no_tip",
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "keep_change",
+    "ask_owe"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti arbatpinigius"
+   ],
+   "options": []
+  },
+  "book": {
+   "id": "book",
+   "kind": "step",
+   "npc": [
+    "Oh, that's so nice of you! Thank you! Would you like to book your next appointment?",
+    "Aw, thank you so much! Would you like to book your next appointment?",
+    "And here's your change. Would you like to book your next appointment?"
+   ],
+   "expects": [
+    "book_when",
+    "book_later"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užsirašyti kitam kartui (ar ne)",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "No problem. Just call us. Thanks for coming in! See you next time!",
+    "Oh, that's so nice of you! Thank you! Thanks for coming in! Have a great weekend!",
+    "No problem. Just call us. Enjoy your new look! See you next time!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "see_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "bangs_q": {
+   "id": "bangs_q",
+   "kind": "step",
+   "npc": [
+    "Okay, just an inch. Should I trim your bangs too?",
+    "Okay! Should I trim your bangs too?",
+    "Got it. Should I trim your bangs too?"
+   ],
+   "expects": [
+    "bangs_only",
+    "no_bangs"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "wash": {
+   "id": "wash",
+   "kind": "step",
+   "npc": [
+    "Okay! Would you like a wash first?",
+    "Got it. Would you like a wash first?",
+    "Okay, just an inch. Would you like a wash first?"
+   ],
+   "expects": [
+    "wash_request",
+    "no_wash"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "water": {
+   "id": "water",
+   "kind": "pending",
+   "npc": [
+    "Let's start with a wash. How's the water temperature?",
+    "Great, let's start at the sink. Is the water okay?",
+    "Great, let's start at the sink. How's the water temperature?"
+   ],
+   "expects": [
+    "water_temp",
+    "water_ok",
+    "g_ok",
+    "confirm_yes",
+    "wash_request",
+    "no_wash"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, koks vanduo"
+   ],
+   "options": []
+  },
+  "chat": {
+   "id": "chat",
+   "kind": "pending",
+   "npc": [
+    "Perfect. My cat learned how to open the fridge!",
+    "Perfect. My cat knocked my coffee off the table this morning!",
+    "Great! My cat sleeps on my head every night!"
+   ],
+   "expects": [
+    "react_funny",
+    "ask_cat",
+    "pets_ans",
+    "weekend_ctx",
+    "vacation_ctx",
+    "from_ans",
+    "g_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sureaguoti arba paklausti apie katę"
+   ],
+   "options": []
+  },
+  "chat_weekend": {
+   "id": "chat_weekend",
+   "kind": "pending",
+   "npc": [
+    "I know, right? So, are you doing anything fun this weekend?",
+    "Great! So, are you doing anything fun this weekend?",
+    "Mochi! She's a little troublemaker. So, are you doing anything fun this weekend?"
+   ],
+   "expects": [
+    "weekend_ctx",
+    "from_ans",
+    "vacation_ctx",
+    "pets_ans",
+    "weekend_unknown",
+    "ask_cat",
+    "ask_jessie",
+    "react_funny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti kirpėjai"
+   ],
+   "options": []
+  },
+  "blowdry": {
+   "id": "blowdry",
+   "kind": "step",
+   "npc": [
+    "Just relaxing? That sounds nice too. Do you want me to blow-dry it?",
+    "Aw, I love dogs! Should I blow-dry it?",
+    "Oh, cool! I've never been there. Do you want me to blow-dry it?"
+   ],
+   "expects": [
+    "style",
+    "ask_cat"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne",
+    "Pasakyti, kaip išdžiovinti"
+   ],
+   "options": []
+  },
+  "style": {
+   "id": "style",
+   "kind": "pending",
+   "npc": [
+    "Straight, or with some waves?"
+   ],
+   "expects": [
+    "style",
+    "ask_cat"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip išdžiovinti"
+   ],
+   "options": []
+  },
+  "chat_pets": {
+   "id": "chat_pets",
+   "kind": "pending",
+   "npc": [
+    "I know, right? Do you have any pets?",
+    "Mochi! She's a little troublemaker. Do you have any pets?"
+   ],
+   "expects": [
+    "weekend_ctx",
+    "from_ans",
+    "vacation_ctx",
+    "pets_ans",
+    "weekend_unknown",
+    "ask_cat",
+    "ask_jessie",
+    "react_funny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti kirpėjai"
+   ],
+   "options": []
+  },
+  "chat_from": {
+   "id": "chat_from",
+   "kind": "pending",
+   "npc": [
+    "Great! So, where are you from?",
+    "Mochi! She's a little troublemaker. So, where are you from?",
+    "I know, right? So, where are you from?"
+   ],
+   "expects": [
+    "weekend_ctx",
+    "from_ans",
+    "vacation_ctx",
+    "pets_ans",
+    "weekend_unknown",
+    "ask_cat",
+    "ask_jessie",
+    "react_funny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti kirpėjai"
+   ],
+   "options": []
+  },
+  "drink": {
+   "id": "drink",
+   "kind": "step",
+   "npc": [
+    "Perfect, I've got you right here. Have a seat right here. Can I get you some water or coffee?",
+    "Got it! You're all checked in. Have a seat right here. Can I get you some water or coffee?",
+    "You're in luck! I have an opening right now. Have a seat right here. Can I get you some water or coffee?"
+   ],
+   "expects": [
+    "drink_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar nori vandens ar kavos"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hi there! How are you today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "appt_have",
+    "appt_none",
+    "walkin",
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "cm_q": {
+   "id": "cm_q",
+   "kind": "pending",
+   "npc": [
+    "2 centimeters? That's about an inch. Here we use inches. Is that okay?"
+   ],
+   "expects": [
+    "confirm_yes",
+    "length",
+    "not_short",
+    "trim"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar tinka",
+    "Pasakyti, kiek nukirpti"
+   ],
+   "options": []
+  },
+  "wait_q": {
+   "id": "wait_q",
+   "kind": "pending",
+   "npc": [
+    "It'll be about fifteen minutes. Is that okay?",
+    "No problem! It'll be about fifteen minutes. Is that okay?"
+   ],
+   "expects": [
+    "wait_ok",
+    "wait_no",
+    "appt_have",
+    "appt_none",
+    "walkin",
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad palauksi",
+    "Pasakyti, kad grįši vėliau"
+   ],
+   "options": []
+  },
+  "service_q": {
+   "id": "service_q",
+   "kind": "pending",
+   "npc": [
+    "Sure! What did you have in mind?"
+   ],
+   "expects": [
+    "trim",
+    "go_short",
+    "bangs_only",
+    "photo",
+    "length",
+    "not_short",
+    "haircut",
+    "wash_request"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kaip nori kirptis",
+    "Pasakyti, kiek nukirpti"
+   ],
+   "options": []
+  },
+  "more_q": {
+   "id": "more_q",
+   "kind": "pending",
+   "npc": [
+    "Sure! Just a little more. How's that?"
+   ],
+   "expects": [
+    "love_it",
+    "more_off",
+    "polite_ok",
+    "g_ok",
+    "shorter_than",
+    "dont_like",
+    "ask_cat"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip patinka"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "appt_have",
+  "appt_none",
+  "walkin",
+  "name_ctx",
+  "wait_ok",
+  "wait_no",
+  "drink_ans",
+  "trim",
+  "haircut",
+  "go_short",
+  "bangs_only",
+  "photo",
+  "not_short",
+  "length",
+  "confirm_yes",
+  "wash_request",
+  "keep_layers",
+  "no_layers",
+  "water_temp",
+  "water_ok",
+  "no_wash",
+  "style",
+  "love_it",
+  "more_off",
+  "shorter_than",
+  "polite_ok",
+  "dont_like",
+  "react_funny",
+  "ask_cat",
+  "pets_ans",
+  "weekend_ctx",
+  "weekend_unknown",
+  "from_ans",
+  "vacation_ctx",
+  "ask_jessie",
+  "ask_owe",
+  "pay_card",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "keep_change",
+  "add_tip",
+  "no_tip",
+  "book_when",
+  "book_later",
+  "see_you",
+  "no_bangs"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

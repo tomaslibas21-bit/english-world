@@ -1,0 +1,342 @@
+{
+ "situation": "s64b-security",
+ "title": "Laptops Out, Please",
+ "goal": "Praeik saugumo patikrą.",
+ "contexts": {
+  "docs": {
+   "id": "docs",
+   "kind": "step",
+   "npc": [
+    "Next! Boarding pass and ID, please.",
+    "Hi there. Can I see your boarding pass and ID?",
+    "Good morning. ID and boarding pass, please."
+   ],
+   "expects": [
+    "give_docs",
+    "docs_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti įlaipinimo kortelę ir pasą"
+   ],
+   "options": []
+  },
+  "divest": {
+   "id": "divest",
+   "kind": "step",
+   "npc": [
+    "You're good. Go ahead. Take out your laptop and liquids, please. Jackets and belts go in the bin, and empty your pockets. Your shoes can stay on.",
+    "You're good. Go ahead. Laptops and liquids out of your bag, please. Jackets, belts and everything from your pockets in the bin. Your shoes can stay on.",
+    "You're good. Go ahead. Laptops and liquids out of your bag, please. Jackets and belts go in the bin, and empty your pockets. Your shoes can stay on."
+   ],
+   "expects": [
+    "ack_done",
+    "ask_shoes",
+    "ask_laptop",
+    "no_laptop",
+    "ask_liquids",
+    "no_liquids",
+    "no_plastic_bag",
+    "ask_phone",
+    "ask_jacket",
+    "ask_belt",
+    "ask_watch",
+    "ask_bins",
+    "ask_food",
+    "ask_water"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti ir susidėti daiktus",
+    "Paklausti apie batus, kompiuterį ar skysčius"
+   ],
+   "options": []
+  },
+  "walk": {
+   "id": "walk",
+   "kind": "step",
+   "npc": [
+    "Okay, step into the scanner, please. Feet on the yellow footprints, and arms up.",
+    "Next, please. Step in here. Feet on the yellow footprints, and arms up.",
+    "Okay, step into the scanner, please. Stand on the footprints and put your hands above your head."
+   ],
+   "expects": [
+    "ack_done"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Praeiti pro skenerį"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Perfect. Hold still... Okay, you're good. You're all set. Your bags are at the end of the belt. Have a good flight!",
+    "All clear. Thank you. You're good to go. Your bags are at the end of the belt. Enjoy your trip!",
+    "Okay, you're good. You're all set. Your bags are at the end of the belt. Have a good flight!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti",
+    "Paklausti, kur vartai"
+   ],
+   "options": []
+  },
+  "pockets": {
+   "id": "pockets",
+   "kind": "pending",
+   "npc": [
+    "Hmm, the scanner found something. Anything in your pockets?",
+    "Hmm, the scanner found something. Do you have anything in your pockets?",
+    "Oops, it beeped. Do you have anything in your pockets?"
+   ],
+   "expects": [
+    "pockets_item",
+    "pockets_nothing",
+    "g_dontknow",
+    "affirm",
+    "deny",
+    "ack_done"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kas kišenėje (arba kad nieko)"
+   ],
+   "options": []
+  },
+  "again": {
+   "id": "again",
+   "kind": "pending",
+   "npc": [
+    "No problem. Put them in a bin and try again.",
+    "Okay, put them in the bin and step through again.",
+    "Okay, step through again, please."
+   ],
+   "expects": [
+    "ack_done",
+    "g_ok",
+    "pockets_item",
+    "affirm"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Praeiti dar kartą"
+   ],
+   "options": []
+  },
+  "bag_q": {
+   "id": "bag_q",
+   "kind": "step",
+   "npc": [
+    "Okay, you're good. Is this your bag?",
+    "Okay, step out. You're all clear. Excuse me, is this your bag?",
+    "Okay, you're good. Excuse me, is this your bag?"
+   ],
+   "expects": [
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip, tai mano krepšys"
+   ],
+   "options": []
+  },
+  "bottle_found": {
+   "id": "bottle_found",
+   "kind": "pending",
+   "npc": [
+    "I need to check it. You have a water bottle in here.",
+    "I need to check it. There's a water bottle in your bag.",
+    "Okay. I need to take a quick look inside. You have a water bottle in here."
+   ],
+   "expects": [
+    "forgot",
+    "bottle_drink",
+    "bottle_throw",
+    "bottle_empty",
+    "bottle_keep",
+    "g_sorry",
+    "g_ok",
+    "ask_what",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsiprašyti: pamiršai",
+    "Pasakyti, ką daryti su buteliu"
+   ],
+   "options": []
+  },
+  "bottle": {
+   "id": "bottle",
+   "kind": "step",
+   "npc": [
+    "It happens all the time. Liquids over 3.4 ounces can't go through. You can drink it, or I can throw it away.",
+    "No worries. Liquids over 3.4 ounces can't go through. You can drink it, or I can throw it away.",
+    "No worries. Liquids over 3.4 ounces can't go through. You can drink it here, or leave it with me."
+   ],
+   "expects": [
+    "bottle_drink",
+    "bottle_throw",
+    "bottle_empty",
+    "bottle_keep"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ką daryti su buteliu"
+   ],
+   "options": []
+  },
+  "collect": {
+   "id": "collect",
+   "kind": "step",
+   "npc": [
+    "Okay, I'll toss it. Okay, everything else looks fine.",
+    "No problem. I'll take care of it. Okay, everything else looks fine.",
+    "Sure. You can empty it right here and refill it after security. Okay, everything else looks fine."
+   ],
+   "expects": [
+    "bag_back"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti grąžinti krepšį"
+   ],
+   "options": []
+  },
+  "camera": {
+   "id": "camera",
+   "kind": "step",
+   "npc": [
+    "Please look at the camera.",
+    "Look into the camera for a second, please.",
+    "Sure, just scan it here. Look into the camera for a second, please."
+   ],
+   "expects": [
+    "ack_done"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pažiūrėti į kamerą"
+   ],
+   "options": []
+  },
+  "docs_more": {
+   "id": "docs_more",
+   "kind": "pending",
+   "npc": [
+    "And your boarding pass?"
+   ],
+   "expects": [
+    "give_docs",
+    "affirm",
+    "docs_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti trūkstamą dokumentą"
+   ],
+   "options": []
+  },
+  "belt_watch": {
+   "id": "belt_watch",
+   "kind": "pending",
+   "npc": [
+    "Are you wearing a belt or a watch?"
+   ],
+   "expects": [
+    "pockets_item",
+    "pockets_nothing",
+    "affirm",
+    "deny",
+    "ack_done"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie diržą ar laikrodį"
+   ],
+   "options": []
+  },
+  "shoes_off": {
+   "id": "shoes_off",
+   "kind": "pending",
+   "npc": [
+    "It might be your shoes. Could you take them off, please?"
+   ],
+   "expects": [
+    "ack_done",
+    "g_ok",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Nusiauti batus"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "affirm",
+  "deny",
+  "give_docs",
+  "docs_q",
+  "is_this_line",
+  "ack_done",
+  "where_stand",
+  "ask_shoes",
+  "ask_laptop",
+  "no_laptop",
+  "ask_liquids",
+  "no_liquids",
+  "no_plastic_bag",
+  "ask_phone",
+  "ask_jacket",
+  "ask_belt",
+  "ask_watch",
+  "ask_bins",
+  "ask_food",
+  "ask_water",
+  "pockets_item",
+  "pockets_nothing",
+  "forgot",
+  "ask_what",
+  "bottle_drink",
+  "bottle_throw",
+  "bottle_empty",
+  "bottle_keep",
+  "bag_back",
+  "shoes_on",
+  "ask_gate",
+  "ask_restroom"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

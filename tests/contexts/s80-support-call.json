@@ -1,0 +1,344 @@
+{
+ "situation": "s80-support-call",
+ "title": "Your Call Is Important to Us",
+ "goal": "Paskambink interneto tiekėjui: pranešk apie gedimą ir susitark dėl meistro vizito.",
+ "contexts": {
+  "menu": {
+   "id": "menu",
+   "kind": "step",
+   "npc": [
+    "Thank you for calling NetWave. This call may be recorded for quality purposes. For billing, say “billing” or press 1. For technical support, say “support” or press 2.",
+    "Thank you for calling NetWave. This call may be recorded for quality purposes. For billing, say “billing” or press 1. For technical support, say “support” or press 2. For new service, say “sales” or press 3.",
+    "I can help with that. Are you calling about billing or technical support?"
+   ],
+   "expects": [
+    "menu_support",
+    "menu_billing",
+    "menu_sales",
+    "menu_agent",
+    "menu_num_ctx",
+    "internet_down",
+    "charged_twice"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti techninę pagalbą (pasakyti „support“ arba „two“)",
+    "Paprašyti tikro žmogaus (operatoriaus)"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Please hold while I connect you to technical support. Your call is important to us. The current wait time is about 5 minutes. Hi, thanks for calling NetWave! My name is Claire. Can I have your name, please?",
+    "Please hold while I connect you to technical support. Your call is important to us. The current wait time is about 5 minutes. Hello, this is Claire at NetWave. Could I get your name, please?",
+    "Please hold while I connect you to technical support. Your call is important to us. The current wait time is about 5 minutes. Hello, this is Claire at NetWave. Can I have your name, please?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti vardą ir pavardę",
+    "Jei blogai girdi – paprašyti kalbėti garsiau"
+   ],
+   "options": []
+  },
+  "account": {
+   "id": "account",
+   "kind": "step",
+   "npc": [
+    "Thank you. Could I have your account number, please?",
+    "Thank you. And what's your account number?",
+    "Sorry, you're breaking up a little. Could you say that again?"
+   ],
+   "expects": [
+    "account_ans",
+    "account_ctx",
+    "acct_unknown"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti kliento numerį: 742-9133",
+    "Jei blogai girdi – paprašyti kalbėti garsiau"
+   ],
+   "options": []
+  },
+  "problem_bill": {
+   "id": "problem_bill",
+   "kind": "step",
+   "npc": [
+    "Thank you. I have your account here. How can I help you today?",
+    "Great, I've got your account up. How can I help you today?",
+    "Great, I've got your account up. So, what's going on?"
+   ],
+   "expects": [
+    "internet_down",
+    "internet_slow",
+    "internet_drops",
+    "charged_twice",
+    "it_broken_ctx",
+    "slow_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad nuo vakar neveikia internetas",
+    "Pasakyti, kad šį mėnesį nuskaičiavo du kartus",
+    "Jei blogai girdi – paprašyti kalbėti garsiau"
+   ],
+   "options": []
+  },
+  "lights": {
+   "id": "lights",
+   "kind": "step",
+   "npc": [
+    "I'm sorry to hear that. Let me take a look. What color is the light on the router?",
+    "Okay. What color is the light on the router?",
+    "Got it. What lights do you see on the router?"
+   ],
+   "expects": [
+    "lights_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Apibūdinti lemputes (mirksi raudonai)"
+   ],
+   "options": []
+  },
+  "restart": {
+   "id": "restart",
+   "kind": "step",
+   "npc": [
+    "Okay, that usually means there's no signal. Have you tried turning it off and on again?",
+    "Okay, that usually means there's no signal. Have you tried restarting the router?",
+    "Okay. Have you tried turning it off and on again?"
+   ],
+   "expects": [
+    "restart_yes",
+    "restart_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar bandei išjungti ir vėl įjungti"
+   ],
+   "options": []
+  },
+  "tech": {
+   "id": "tech",
+   "kind": "step",
+   "npc": [
+    "Okay, thanks for trying that. Let me test your line. Okay, I see a problem with the line outside. We'll need to send a technician. I can send a technician Thursday, between 8 and 12. Would that work?",
+    "Okay, thanks for trying that. Let me test your line. Okay, I see a problem with the line outside. We'll need to send a technician. The earliest appointment is Thursday, between 8 and 12.",
+    "Okay, thanks for trying that. Let me test your line. Okay, I see a problem with the line outside. We'll need to send a technician. I can send a technician Friday, between 8 and 12. Would that work?"
+   ],
+   "expects": [
+    "tech_accept",
+    "tech_busy",
+    "tech_other",
+    "tech_cost_q",
+    "tech_time_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba paprašyti kito laiko"
+   ],
+   "options": []
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "Great! A technician will come Thursday, between 8 and 12. They'll call you 30 minutes before they arrive. Your reference number is NW-48213. Can I help you with anything else today?",
+    "Great! A technician will come Thursday, between 8 and 12. They'll call you 30 minutes before they arrive. Your reference number is NW-48213. Is there anything else today?",
+    "Great! A technician will come Friday, between 8 and 12. They'll call you 30 minutes before they arrive. Your reference number is NW-48213. Can I help you with anything else today?"
+   ],
+   "expects": [
+    "more_no",
+    "charged_twice",
+    "reference_q",
+    "text_me"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad tai viskas",
+    "Paprašyti numerio SMS žinute ar vadovo"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Thanks for your patience. Have a good night!",
+    "Thank you for calling NetWave. Have a great evening!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "since": {
+   "id": "since",
+   "kind": "step",
+   "npc": [
+    "I'm sorry to hear that. Let me take a look. When did it stop working?",
+    "Oh no, I'm sorry about that. When did it stop working?",
+    "I'm sorry to hear that. Let me take a look. Let me check... You're right, I'm sorry about that! I see two charges of $64.99 this month. I'll refund one of them. You'll see it in 3–5 business days. And I'll add a credit for the days without internet. When did it stop working?"
+   ],
+   "expects": [
+    "since_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, nuo kada neveikia"
+   ],
+   "options": []
+  },
+  "problem": {
+   "id": "problem",
+   "kind": "step",
+   "npc": [
+    "Thank you. I have your account here. So, what's going on?",
+    "Great, I've got your account up. So, what's going on?",
+    "Thank you. I have your account here. How can I help you today?"
+   ],
+   "expects": [
+    "internet_down",
+    "internet_slow",
+    "internet_drops",
+    "charged_twice",
+    "it_broken_ctx",
+    "slow_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad nuo vakar neveikia internetas",
+    "Jei blogai girdi – paprašyti kalbėti garsiau"
+   ],
+   "options": []
+  },
+  "restart_now": {
+   "id": "restart_now",
+   "kind": "pending",
+   "npc": [
+    "Could you unplug it for 30 seconds? I'll wait."
+   ],
+   "expects": [
+    "done_ctx",
+    "g_ok",
+    "g_wait",
+    "restart_yes",
+    "restart_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad išjungei maršrutizatorių"
+   ],
+   "options": []
+  },
+  "still_red": {
+   "id": "still_red",
+   "kind": "pending",
+   "npc": [
+    "Great. Now plug it back in. Is the light still red?"
+   ],
+   "expects": [
+    "still_red",
+    "green_now",
+    "restart_yes",
+    "restart_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar lemputė vis dar raudona"
+   ],
+   "options": []
+  },
+  "someone": {
+   "id": "someone",
+   "kind": "pending",
+   "npc": [
+    "Could someone else be home? It has to be someone 18 or older."
+   ],
+   "expects": [
+    "someone_yes",
+    "someone_no",
+    "tech_other",
+    "tech_accept",
+    "tech_busy",
+    "tech_cost_q",
+    "tech_time_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar kas nors kitas galės būti namie"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "menu_support",
+  "menu_billing",
+  "menu_sales",
+  "menu_agent",
+  "menu_num_ctx",
+  "name_ctx",
+  "account_ans",
+  "account_ctx",
+  "acct_unknown",
+  "internet_down",
+  "slow_ctx",
+  "internet_slow",
+  "internet_drops",
+  "it_broken_ctx",
+  "charged_twice",
+  "since_ans",
+  "lights_ans",
+  "restart_yes",
+  "restart_no",
+  "done_ctx",
+  "still_red",
+  "green_now",
+  "tech_accept",
+  "tech_busy",
+  "someone_yes",
+  "someone_no",
+  "tech_other",
+  "tech_cost_q",
+  "tech_time_q",
+  "manager",
+  "wait_complaint",
+  "reference_q",
+  "text_me",
+  "refund_q",
+  "speak_up",
+  "hear_me",
+  "hear_ok",
+  "more_no"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

@@ -1,0 +1,441 @@
+{
+ "situation": "s85-dinner",
+ "title": "Thanks for Having Me",
+ "goal": "Pabūk svečiuose vakarienėje: padėkok, pagirk maistą ir mandagiai atsisveikink.",
+ "contexts": {
+  "arrive": {
+   "id": "arrive",
+   "kind": "step",
+   "npc": [
+    "Hi! So glad you could make it! Come on in! Hi! Welcome!",
+    "Hi! So glad you could make it! Come on in! Hello! We're so happy you're here!",
+    "Hey! You made it! Come on in! Hello! We're so happy you're here!"
+   ],
+   "expects": [
+    "thanks_invite",
+    "gift",
+    "late_sorry"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasisveikinti ir padėkoti už kvietimą",
+    "Įteikti dovanėlę"
+   ],
+   "options": [
+    "flowers",
+    "wine",
+    "chocolates",
+    "dessert",
+    "cake",
+    "pie",
+    "cookies"
+   ]
+  },
+  "coat": {
+   "id": "coat",
+   "kind": "step",
+   "npc": [
+    "Our pleasure! Here, let me take your coat.",
+    "Of course! We're so glad you're here. Here, let me take your coat.",
+    "Our pleasure! Let me take your jacket."
+   ],
+   "expects": [
+    "gift",
+    "thanks_invite"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti",
+    "Įteikti dovanėlę"
+   ],
+   "options": [
+    "flowers",
+    "wine",
+    "chocolates",
+    "dessert",
+    "cake",
+    "pie",
+    "cookies"
+   ]
+  },
+  "drink": {
+   "id": "drink",
+   "kind": "step",
+   "npc": [
+    "Oh, thank you! You shouldn't have! Can I get you something to drink? We have wine, beer, lemonade, or water.",
+    "Great! Can I get you something to drink? We have wine, beer, lemonade, or water.",
+    "Oh, thank you! You shouldn't have! What can I get you to drink?"
+   ],
+   "expects": [
+    "drink_ans",
+    "no_drink",
+    "ask_drinks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti gėrimą"
+   ],
+   "options": [
+    "water",
+    "sparkling water",
+    "red wine",
+    "white wine",
+    "beer",
+    "lemonade",
+    "juice",
+    "tea",
+    "coffee",
+    "wine",
+    "soda"
+   ]
+  },
+  "ready_soon": {
+   "id": "ready_soon",
+   "kind": "step",
+   "npc": [
+    "Coming right up! Dinner's almost ready. Make yourself at home!",
+    "Sure thing! Dinner's almost ready. Make yourself at home!",
+    "Good! She loves guests. Dinner's almost ready. Make yourself at home!"
+   ],
+   "expects": [
+    "offer_help",
+    "praise_home",
+    "praise_smell"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasiūlyti pagalbą",
+    "Pagirti namus ar kvapą"
+   ],
+   "options": []
+  },
+  "dinner": {
+   "id": "dinner",
+   "kind": "step",
+   "npc": [
+    "No, no, just relax! Okay, everyone, dinner's ready! Help yourself!",
+    "Thanks! You're a star. Dinner is served! Please, help yourself!",
+    "That's so sweet, but we're fine. Just relax! Dinner is served! Please, help yourself!"
+   ],
+   "expects": [
+    "praise_food",
+    "praise_smell",
+    "pass"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pagirti maistą",
+    "Paprašyti ką nors paduoti"
+   ],
+   "options": [
+    "salt",
+    "pepper",
+    "bread",
+    "salad",
+    "water",
+    "butter",
+    "cheese",
+    "sauce"
+   ]
+  },
+  "burnt": {
+   "id": "burnt",
+   "kind": "step",
+   "npc": [
+    "Thanks! It's lasagna. Nora's recipe. Oh no, I think I burned the garlic bread!",
+    "Okay! Save room for dessert! Oh no, I think I burned the garlic bread!",
+    "Sure, here you go. Oh no, I think I burned the garlic bread!"
+   ],
+   "expects": [
+    "reassure"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Nuraminti šeimininkę"
+   ],
+   "options": []
+  },
+  "seconds": {
+   "id": "seconds",
+   "kind": "step",
+   "npc": [
+    "Aw, I'm so glad you like it! Would you like some more?",
+    "Thank you! Have some more! There's plenty! More?",
+    "Thank you! Have some more! Would you like some more?"
+   ],
+   "expects": [
+    "more_yes",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar dar norėsi"
+   ],
+   "options": []
+  },
+  "dessert": {
+   "id": "dessert",
+   "kind": "step",
+   "npc": [
+    "Just a little. Here you go. Who's ready for dessert? I made chocolate cake!",
+    "Thank you! Have some more! Who's ready for dessert? I made chocolate cake!",
+    "Okay! Save room for dessert! Who's ready for dessert? I made chocolate cake!"
+   ],
+   "expects": [
+    "more_yes",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti dėl deserto"
+   ],
+   "options": []
+  },
+  "late": {
+   "id": "late",
+   "kind": "step",
+   "npc": [
+    "A small piece, coming up! Wow, where did the time go?",
+    "A small piece, coming up! Wow, it's already almost eleven!",
+    "Just a little. Here you go. Wow, it's already almost eleven!"
+   ],
+   "expects": [
+    "leave",
+    "thanks_end"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad laikas eiti",
+    "Padėkoti už vakarą"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Of course! Thanks so much for coming!",
+    "Of course. We're so glad you came!"
+   ],
+   "expects": [
+    "thanks_end",
+    "thanks_invite",
+    "voc",
+    "greet_back",
+    "time_flies",
+    "gift",
+    "drink_ans",
+    "late_sorry",
+    "no_drink",
+    "ask_drinks",
+    "offer_help",
+    "praise_smell",
+    "praise_home",
+    "praise_food",
+    "food_meh",
+    "made_yourself",
+    "recipe",
+    "pass",
+    "here_you_go",
+    "more_yes",
+    "more_no",
+    "reassure",
+    "leave",
+    "stay",
+    "agree",
+    "no_sorry",
+    "g_bye",
+    "g_thanks",
+    "g_ok",
+    "g_hello"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "diet": {
+   "id": "diet",
+   "kind": "step",
+   "npc": [
+    "Oh, thank you! You shouldn't have! Oh, I forgot to ask: is there anything you don't eat?",
+    "Oh, I forgot to ask: is there anything you don't eat?",
+    "We have red and white wine, beer, lemonade, juice, or water. Oh, I forgot to ask: is there anything you don't eat?"
+   ],
+   "expects": [
+    "diet_ok_ctx",
+    "diet_veg_ctx",
+    "diet_allergy_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar ko nors nevalgai"
+   ],
+   "options": []
+  },
+  "salad": {
+   "id": "salad",
+   "kind": "step",
+   "npc": [
+    "Sure! Could you put the salad on the table?"
+   ],
+   "expects": [
+    "here_you_go",
+    "agree"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti padėti"
+   ],
+   "options": []
+  },
+  "howisit": {
+   "id": "howisit",
+   "kind": "step",
+   "npc": [
+    "Thanks! It's lasagna. Nora's recipe. How's the lasagna?",
+    "Thanks! How's the lasagna?",
+    "Thanks! It's lasagna. Nora's recipe. So... do you like it?"
+   ],
+   "expects": [
+    "praise_food",
+    "food_meh",
+    "made_yourself"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pagirti maistą"
+   ],
+   "options": []
+  },
+  "cat": {
+   "id": "cat",
+   "kind": "step",
+   "npc": [
+    "Coming right up! Oh, and this is Mittens. Are you allergic to cats?",
+    "Sure thing! Oh, and this is Mittens. Are you allergic to cats?"
+   ],
+   "expects": [
+    "cat_ok_ctx",
+    "cat_allergic_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie alergiją katėms"
+   ],
+   "options": []
+  },
+  "pass": {
+   "id": "pass",
+   "kind": "step",
+   "npc": [
+    "Thanks! It's lasagna. Nora's recipe. Could you pass the bread, please?",
+    "Okay! Save room for dessert! Could you pass the bread, please?",
+    "Here you go! Could you pass the bread, please?"
+   ],
+   "expects": [
+    "here_you_go"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti duoną"
+   ],
+   "options": []
+  },
+  "stay": {
+   "id": "stay",
+   "kind": "pending",
+   "npc": [
+    "Already? Can't you stay a little longer?"
+   ],
+   "expects": [
+    "leave",
+    "stay",
+    "thanks_end",
+    "thanks_invite",
+    "g_bye",
+    "g_thanks",
+    "no_sorry",
+    "agree",
+    "no_drink"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Mandagiai atsisakyti"
+   ],
+   "options": []
+  },
+  "leave": {
+   "id": "leave",
+   "kind": "step",
+   "npc": [
+    "Of course! I'll text it to you. More coffee?",
+    "Of course! I'll text it to you. Can I get you anything else?"
+   ],
+   "expects": [
+    "leave",
+    "thanks_end",
+    "no_drink"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad laikas eiti",
+    "Padėkoti už vakarą"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "voc",
+  "greet_back",
+  "time_flies",
+  "thanks_invite",
+  "gift",
+  "drink_ans",
+  "late_sorry",
+  "no_drink",
+  "ask_drinks",
+  "offer_help",
+  "praise_smell",
+  "praise_home",
+  "praise_food",
+  "food_meh",
+  "made_yourself",
+  "recipe",
+  "pass",
+  "here_you_go",
+  "more_yes",
+  "more_no",
+  "reassure",
+  "diet_ok_ctx",
+  "diet_veg_ctx",
+  "diet_allergy_ctx",
+  "cat_ok_ctx",
+  "cat_allergic_ctx",
+  "leave",
+  "stay",
+  "thanks_end",
+  "agree",
+  "no_sorry"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

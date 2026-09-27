@@ -1,0 +1,323 @@
+{
+ "situation": "s86-old-friend",
+ "title": "Long Time No See",
+ "goal": "Pasikalbėk su sena drauge: papasakok, kaip gyveni, ir susitarkite palaikyti ryšį.",
+ "contexts": {
+  "recognize": {
+   "id": "recognize",
+   "kind": "step",
+   "npc": [
+    "Oh my gosh, is that you?! Long time no see!",
+    "Wait... I know you! It's been forever!",
+    "No way! Is that really you?"
+   ],
+   "expects": [
+    "greet",
+    "who_are_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasisveikinti ir nustebti"
+   ],
+   "options": []
+  },
+  "changed": {
+   "id": "changed",
+   "kind": "step",
+   "npc": [
+    "Wow, you look great!",
+    "You haven't changed a bit!",
+    "It really is you! Wow, you look great!"
+   ],
+   "expects": [
+    "compliment_back",
+    "you_too"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Atsakyti į komplimentą",
+    "Paklausti, kaip ji gyvena"
+   ],
+   "options": []
+  },
+  "howbeen": {
+   "id": "howbeen",
+   "kind": "step",
+   "npc": [
+    "Ha! You're too kind. So, how have you been?",
+    "Ha! I wish! So, how have you been?",
+    "Ha! You're too kind. So... how are you?"
+   ],
+   "expects": [
+    "been_ans",
+    "ask_been",
+    "and_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Atsakyti, kaip gyveni (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "upto": {
+   "id": "upto",
+   "kind": "step",
+   "npc": [
+    "I'm great! Really good, actually. So, what have you been up to?",
+    "I'm great! Really good, actually. So, what's new with you?",
+    "Oh, good! Glad to hear it. So, what's new with you?"
+   ],
+   "expects": [
+    "news",
+    "ask_news",
+    "and_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti savo naujienas",
+    "Paklausti jos naujienų"
+   ],
+   "options": []
+  },
+  "lucy2": {
+   "id": "lucy2",
+   "kind": "step",
+   "npc": [
+    "Wow! So much news! No way! You live here now? That's amazing! Well, I moved back home last spring. And guess what? I got married! Thanks! And... we have twins!"
+   ],
+   "expects": [
+    "react_news"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasveikinti"
+   ],
+   "options": []
+  },
+  "mike": {
+   "id": "mike",
+   "kind": "step",
+   "npc": [
+    "Thank you! I'm so happy. Hey, do you remember Mike? From our class?",
+    "Aw, say hi to them from me! Hey, do you remember Mike? From our class?",
+    "Wow! So much news! No way! Congratulations! Hey, do you remember Mike? From our class?"
+   ],
+   "expects": [
+    "mike_yes",
+    "mike_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar prisimeni Maiką"
+   ],
+   "options": []
+  },
+  "numbers": {
+   "id": "numbers",
+   "kind": "step",
+   "npc": [
+    "He has a restaurant in town now! Mike's Grill. We should all go there together! Let's swap numbers!",
+    "Great! Let's sit over here. We should keep in touch! Can I get your number?",
+    "He has a restaurant in town now! Mike's Grill. We should all go there together! We should keep in touch! Can I get your number?"
+   ],
+   "expects": [
+    "number_ctx",
+    "give_phone",
+    "ask_number",
+    "keep_in_touch"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti savo numerį arba pasiūlyti apsikeisti"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Got it! I'll text you so you have mine. It was so good to see you!",
+    "Got it! I'll text you so you have mine. It was so great running into you!",
+    "Of course! Give me your phone. There! Text me anytime. It was so great running into you!"
+   ],
+   "expects": [
+    "nice_to_see",
+    "you_too",
+    "say_hi_to",
+    "voc",
+    "greet",
+    "who_are_you",
+    "compliment_back",
+    "been_ans",
+    "ask_been",
+    "news",
+    "ask_news",
+    "react_news",
+    "family_ans",
+    "ask_family",
+    "and_you",
+    "mike_yes",
+    "mike_no",
+    "ask_mike",
+    "good_idea",
+    "coffee_invite",
+    "decline",
+    "keep_in_touch",
+    "give_phone",
+    "ask_number",
+    "agree",
+    "no_sorry",
+    "g_bye",
+    "g_thanks",
+    "g_ok",
+    "g_hello"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsisveikinti"
+   ],
+   "options": []
+  },
+  "coffee": {
+   "id": "coffee",
+   "kind": "step",
+   "npc": [
+    "He has a restaurant in town now! Mike's Grill. We should all go there together! Hey, do you have time for a coffee?",
+    "Great! I'll ask him. Hey, do you have time for a coffee?",
+    "Aw, say hi to them from me! Hey, do you have time for a coffee?"
+   ],
+   "expects": [
+    "decline",
+    "coffee_invite"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti išgerti kavos"
+   ],
+   "options": []
+  },
+  "rush": {
+   "id": "rush",
+   "kind": "step",
+   "npc": [
+    "He has a restaurant in town now! Mike's Grill. We should all go there together! Oh no, I'm late! I'm meeting my husband at one. Quick, let's swap numbers!",
+    "Thank you! I'm so happy. Oh no, I'm late! I'm meeting my husband at one. Quick, let's swap numbers!",
+    "Wow! So much news! No way! Congratulations! Oh no, I'm late! I'm meeting my husband at one. Quick, let's swap numbers!"
+   ],
+   "expects": [
+    "number_ctx",
+    "give_phone",
+    "ask_number",
+    "keep_in_touch"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Apsikeisti numeriais"
+   ],
+   "options": []
+  },
+  "family": {
+   "id": "family",
+   "kind": "step",
+   "npc": [
+    "Thank you! I'm so happy. And how's your family?",
+    "Wow! So much news! No way! Congratulations! And how's your family?"
+   ],
+   "expects": [
+    "family_ans",
+    "ask_family",
+    "and_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti apie šeimą"
+   ],
+   "options": []
+  },
+  "mike_dinner": {
+   "id": "mike_dinner",
+   "kind": "pending",
+   "npc": [
+    "He has a restaurant in town now! Mike's Grill. Hey, why don't we all have dinner there on Friday?"
+   ],
+   "expects": [
+    "good_idea",
+    "decline",
+    "agree",
+    "g_ok",
+    "no_sorry",
+    "mike_yes",
+    "mike_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti"
+   ],
+   "options": []
+  },
+  "lucy1": {
+   "id": "lucy1",
+   "kind": "step",
+   "npc": [
+    "Ha, I know the feeling. Well, I moved back home last spring. And guess what? I got married!",
+    "Thanks! And... we have twins!"
+   ],
+   "expects": [
+    "react_news"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Sureaguoti į jos naujienas"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "voc",
+  "greet",
+  "who_are_you",
+  "compliment_back",
+  "you_too",
+  "been_ans",
+  "ask_been",
+  "news",
+  "ask_news",
+  "react_news",
+  "family_ans",
+  "ask_family",
+  "and_you",
+  "mike_yes",
+  "mike_no",
+  "ask_mike",
+  "good_idea",
+  "coffee_invite",
+  "decline",
+  "keep_in_touch",
+  "number_ctx",
+  "give_phone",
+  "ask_number",
+  "nice_to_see",
+  "say_hi_to",
+  "agree",
+  "no_sorry",
+  "g_bye"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

@@ -1,0 +1,25 @@
+{
+  "npc": "Jake, car rental agent",
+  "images": ["greet", "size", "license", "insurance", "card", "sign", "keys"],
+  "start": "greet",
+  "done": "keys",
+  "phases": {
+    "howareyou": "greet", "resv": "greet", "name": "greet", "spell": "greet",
+    "size": "size", "days": "size", "upgrade": "size", "free_up": "size",
+    "license": "license",
+    "insurance": "insurance",
+    "deposit": "card", "fuel": "card", "extras": "card",
+    "ret": "sign", "sign": "sign",
+    "keys": "keys", "keys_spot": "keys", "anything": "keys", "closing": "keys"
+  },
+  "focus": [27, 28],
+  "jobs": {
+    "greet": "3f6db1fc-17c4-418a-a9f7-e37aed3fa7f4",
+    "size": "da6b4dc2-f030-46cc-9afc-4b6552d81bfe",
+    "license": "72c26104-f936-40ad-9af7-e039f43c9276",
+    "insurance": "029a2dc9-7e84-4c41-aaa4-3af2a63d0526",
+    "card": "4a83a601-41cd-4a6e-9536-ee7de9d21b56",
+    "sign": "cb2d2ca6-2f89-4ed7-b822-f9b525c3d336",
+    "keys": "838cfef4-3147-4c13-af51-ce965dea44d1"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "npc": "Sam, your date",
+  "images": ["greet", "drinks", "talk", "check", "cold", "again"],
+  "start": "greet",
+  "phases": {
+    "greet_late": "greet", "greet_early": "greet", "greet_meet": "greet",
+    "drinks": "drinks",
+    "job": "talk", "like_job": "talk", "hobby": "talk", "travel": "talk", "music": "talk", "qf": "talk",
+    "check": "check", "check_offer": "check",
+    "cold": "cold",
+    "nice": "again", "again": "again", "day": "again", "closing": "again"
+  },
+  "focus": [35, 28],
+  "jobs": {
+    "greet": "d18f55df-aedb-4730-ab8f-d2309d7b12c5",
+    "drinks": "67790e67-51cc-4d03-aa03-78f3b976516d",
+    "talk": "83b6b88d-5492-4827-ace7-bac99653d603",
+    "check": "22b7b8cc-801c-4c0c-802d-d9207b2e3c3f",
+    "cold": "40883e45-1682-4f30-a1bc-509838d9890e",
+    "again": "8d2c0b2e-42c8-4d0a-bbb8-4c255fdca35d"
+  }
+}

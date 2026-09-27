@@ -1,0 +1,23 @@
+# Installed packages and the built site (GitHub Actions builds the site itself)
+node_modules/
+dist/
+
+# macOS
+.DS_Store
+
+# Local files that stay on this computer (.env.local, .env.production.local, …)
+*.local
+.claude/settings.local.json
+*.log
+npm-debug.log*
+.vite/
+*.tsbuildinfo
+.vscode/
+.idea/
+
+# full-quality originals of the scene pictures (kept locally, not published)
+.art-originals/
+
+# API keys (Higgsfield etc.) stay on this computer
+.env
+.env.*

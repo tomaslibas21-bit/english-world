@@ -1,0 +1,24 @@
+{
+  "npc": "Gloria, postal clerk",
+  "images": ["greet", "scale", "service", "customs", "pickup", "pay"],
+  "start": "greet",
+  "phases": {
+    "help": "greet", "help_pickup": "greet", "dest": "greet",
+    "hazmat": "scale", "perfume": "scale", "return_addr": "scale",
+    "service": "service",
+    "contents_list": "customs", "value": "customs", "gift": "customs", "sign_customs": "customs", "insurance": "customs",
+    "stamps_offer": "customs", "stamps_qty": "customs",
+    "pick_notice": "pickup", "pick_name": "pickup", "pick_id": "pickup", "pick_sign": "pickup",
+    "pay": "pay",
+    "more": "greet", "closing": "greet"
+  },
+  "focus": [35, 30],
+  "jobs": {
+    "greet": "3871690b-ad3b-4e5e-b90a-235f433dcf0c",
+    "scale": "bb665352-0161-4dd7-9148-ca8b4d871c31",
+    "service": "6465ef9a-3ec2-49d5-b8ea-0ca3d8516db9",
+    "customs": "a3dd2a74-7d9f-4043-88f3-a864fcd4a709",
+    "pickup": "52ea5c87-caa1-499d-bea8-76131c158d71",
+    "pay": "4dbf94a3-70f7-40ca-a205-2c0207d07898"
+  }
+}

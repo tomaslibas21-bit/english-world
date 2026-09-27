@@ -1,0 +1,711 @@
+{
+ "situation": "s63-party",
+ "title": "So, Where Are You From?",
+ "goal": "Susipažink su Marku Sofijos vakarėlyje: prisistatyk, papasakok apie save, paklausk jo ir apsikeiskite numeriais.",
+ "contexts": {
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Hi! So glad you came! Come meet Mark! Hey! I'm Mark.",
+    "Hi! So glad you came! Come meet Mark! Hi, I'm Mark.",
+    "Sorry, what's your name?"
+   ],
+   "expects": [
+    "intro_name",
+    "nice_meet",
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Prisistatyti Markui"
+   ],
+   "options": []
+  },
+  "know": {
+   "id": "know",
+   "kind": "step",
+   "npc": [
+    "Nice to meet you! So, how do you know Sophie?",
+    "Great to meet you! So, how do you know Sophie?",
+    "Sure, I'll grab you one! So, how do you know Sophie?"
+   ],
+   "expects": [
+    "know_ans",
+    "ask_back",
+    "q_know"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, iš kur pažįsti Sofiją",
+    "Paklausti Marko to paties"
+   ],
+   "options": []
+  },
+  "from": {
+   "id": "from",
+   "kind": "step",
+   "npc": [
+    "Oh, nice! So you work together. We met at a dance class, but I can't dance at all! So, where are you from?",
+    "Oh, nice! So you work together. We met at a dance class, but I can't dance at all! Where are you from, originally?",
+    "Great to meet you! Where are you from, originally?"
+   ],
+   "expects": [
+    "from_ans",
+    "from_ctx",
+    "ask_back",
+    "q_from"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, iš kur esi",
+    "Paklausti Marko to paties"
+   ],
+   "options": [
+    "Lithuania",
+    "Latvia",
+    "Estonia",
+    "Poland",
+    "Germany",
+    "Ukraine",
+    "Belarus",
+    "Russia",
+    "Sweden",
+    "Norway",
+    "Finland",
+    "Denmark",
+    "England",
+    "the UK",
+    "Ireland",
+    "Scotland",
+    "France",
+    "Spain",
+    "Italy",
+    "Portugal",
+    "Greece",
+    "the Netherlands",
+    "Belgium",
+    "Switzerland",
+    "Austria",
+    "Czechia",
+    "Slovakia",
+    "Slovenia",
+    "Croatia",
+    "Hungary",
+    "Romania",
+    "Bulgaria",
+    "Iceland",
+    "Moldova",
+    "Armenia",
+    "Canada",
+    "Mexico",
+    "Brazil",
+    "Argentina",
+    "China",
+    "Japan",
+    "India",
+    "Turkey",
+    "Australia",
+    "Israel",
+    "Egypt",
+    "the US"
+   ]
+  },
+  "sea_q": {
+   "id": "sea_q",
+   "kind": "pending",
+   "npc": [
+    "Oh, Lithuania! I'm originally from Chicago. That's by the Baltic Sea, right?",
+    "Oh, Lithuania! That's by the Baltic Sea, right?",
+    "Oh, sorry! Lithuania. Got it. That's by the Baltic Sea, right?"
+   ],
+   "expects": [
+    "visit_invite",
+    "confirm_yes",
+    "from_ans",
+    "from_ctx",
+    "ask_back",
+    "q_from"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patvirtinti ir pakviesti aplankyti"
+   ],
+   "options": []
+  },
+  "job": {
+   "id": "job",
+   "kind": "step",
+   "npc": [
+    "Cool! I'd love to visit someday. And what do you do?",
+    "Cool! I'd love to visit someday. So, what do you do?",
+    "So, what do you do?"
+   ],
+   "expects": [
+    "job_ans",
+    "job_ctx",
+    "ask_back",
+    "q_job"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kuo dirbi",
+    "Paklausti Marko to paties"
+   ],
+   "options": [
+    "nurse",
+    "doctor",
+    "teacher",
+    "engineer",
+    "software developer",
+    "IT specialist",
+    "accountant",
+    "manager",
+    "project manager",
+    "salesperson",
+    "cashier",
+    "chef",
+    "waiter",
+    "bartender",
+    "barista",
+    "driver",
+    "mechanic",
+    "electrician",
+    "plumber",
+    "builder",
+    "carpenter",
+    "farmer",
+    "lawyer",
+    "police officer",
+    "firefighter",
+    "pharmacist",
+    "dentist",
+    "vet",
+    "architect",
+    "designer",
+    "photographer",
+    "journalist",
+    "writer",
+    "translator",
+    "hairdresser",
+    "cleaner",
+    "student",
+    "scientist",
+    "musician",
+    "artist",
+    "receptionist",
+    "banker",
+    "psychologist",
+    "entrepreneur",
+    "factory worker",
+    "pilot",
+    "baker",
+    "tour guide",
+    "nanny",
+    "economist"
+   ]
+  },
+  "time": {
+   "id": "time",
+   "kind": "step",
+   "npc": [
+    "Oh, you're a nurse? Cool! I'm a chef at a little café downtown. How long have you been here?",
+    "Oh, a nurse! That must be interesting. I'm a chef at a little café downtown. How long have you been here?",
+    "Oh, you're a nurse? Cool! I'm a chef at a little café downtown. So, how long have you been here?"
+   ],
+   "expects": [
+    "time_ans",
+    "ask_back",
+    "q_time"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek laiko čia gyveni",
+    "Paklausti Marko to paties"
+   ],
+   "options": []
+  },
+  "drink2": {
+   "id": "drink2",
+   "kind": "step",
+   "npc": [
+    "Wow! I only moved here in May. Can I get you another drink?",
+    "Sounds good! Can I get you another drink?",
+    "I run, and I cook, of course! But at home I mostly eat toast. Can I get you another drink?"
+   ],
+   "expects": [
+    "drink_ans",
+    "drink2_yes",
+    "drink_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba padėkoti"
+   ],
+   "options": [
+    "water",
+    "sparkling water",
+    "lemonade",
+    "iced tea",
+    "soda",
+    "beer",
+    "wine",
+    "juice"
+   ]
+  },
+  "numbers": {
+   "id": "numbers",
+   "kind": "step",
+   "npc": [
+    "No worries! Oh, look at the time! It's almost half past nine. I should get going soon. Hey, let's swap numbers! We should hang out sometime.",
+    "Awesome! Oh, look at the time! It's almost half past nine. I should get going soon. Hey, let's swap numbers! We should hang out sometime.",
+    "Sounds good! Oh, look at the time! It's almost half past nine. I should get going soon. Hey, let's swap numbers! We should hang out sometime."
+   ],
+   "expects": [
+    "swap_propose",
+    "number_give",
+    "decline_number"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Apsikeisti numeriais"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Got it! I'll text you so you have mine. It was really nice to meet you!",
+    "Got it! I'll text you so you have mine. It was great to meet you!",
+    "Sure! Good idea. Here's mine: 555-0187. It was really nice to meet you!"
+   ],
+   "expects": [
+    "bye_nice",
+    "g_bye",
+    "g_thanks",
+    "nice_meet",
+    "g_howareyou"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsisveikinti"
+   ],
+   "options": []
+  },
+  "cafe": {
+   "id": "cafe",
+   "kind": "step",
+   "npc": [
+    "Wow! I only moved here in May. Have you been to the new café on the corner?",
+    "Sounds good! Have you been to the new café on the corner?",
+    "Oh, about the same as me! I moved here in May. Have you been to the new café on the corner?"
+   ],
+   "expects": [
+    "cafe_ans_no",
+    "cafe_ans_yes",
+    "cafe_which"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie naują kavinę"
+   ],
+   "options": []
+  },
+  "cafe_go": {
+   "id": "cafe_go",
+   "kind": "pending",
+   "npc": [
+    "Their cakes are amazing, right? Maybe we could go together sometime? Me too! Everyone is so friendly.",
+    "Oh, you should try it! Their cakes are amazing. Maybe we could go together sometime?"
+   ],
+   "expects": [
+    "agree_go",
+    "cafe_ans_no",
+    "cafe_ans_yes",
+    "cafe_which"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti nueiti kartu"
+   ],
+   "options": []
+  },
+  "like": {
+   "id": "like",
+   "kind": "step",
+   "npc": [
+    "Wow! I only moved here in May. Do you like it here so far?",
+    "Oh, about the same as me! I moved here in May. Do you like it here so far?"
+   ],
+   "expects": [
+    "like_yes",
+    "like_mixed",
+    "like_no",
+    "ask_back",
+    "q_like"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar čia patinka",
+    "Paklausti Marko to paties"
+   ],
+   "options": []
+  },
+  "fun": {
+   "id": "fun",
+   "kind": "step",
+   "npc": [
+    "Me too! Everyone is so friendly. So, what do you do for fun?",
+    "Wow! I only moved here in May. So, what do you do for fun?",
+    "Oh, you're a nurse? Cool! I'm a chef at a little café downtown. So, what do you do for fun?"
+   ],
+   "expects": [
+    "fun_ans",
+    "fun_ctx",
+    "fun_none",
+    "ask_back",
+    "q_fun"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti, ką veiki laisvalaikiu",
+    "Paklausti Marko to paties"
+   ],
+   "options": [
+    "running",
+    "reading",
+    "cooking",
+    "baking",
+    "hiking",
+    "walking",
+    "swimming",
+    "cycling",
+    "dancing",
+    "yoga",
+    "fitness",
+    "fishing",
+    "gardening",
+    "painting",
+    "drawing",
+    "photography",
+    "music",
+    "singing",
+    "traveling",
+    "camping",
+    "knitting",
+    "movies",
+    "mushroom picking",
+    "sauna",
+    "video games",
+    "board games",
+    "chess",
+    "soccer",
+    "basketball",
+    "tennis",
+    "volleyball",
+    "golf",
+    "guitar",
+    "piano",
+    "violin"
+   ]
+  },
+  "reading": {
+   "id": "reading",
+   "kind": "step",
+   "npc": [
+    "Me too! I love running. Oh, what are you reading right now?"
+   ],
+   "expects": [
+    "book_ctx",
+    "ask_back",
+    "q_reading"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ką skaitai",
+    "Paklausti Marko to paties"
+   ],
+   "options": []
+  },
+  "mishear": {
+   "id": "mishear",
+   "kind": "pending",
+   "npc": [
+    "Oh, Latvia? Cool! I'm originally from Chicago.",
+    "Oh, Latvia? Cool!"
+   ],
+   "expects": [
+    "correct_country",
+    "from_ctx",
+    "from_ans",
+    "confirm_yes",
+    "ask_back",
+    "q_from"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pataisyti Marką"
+   ],
+   "options": []
+  },
+  "drink": {
+   "id": "drink",
+   "kind": "step",
+   "npc": [
+    "Nice to meet you! Can I get you something to drink?",
+    "Great to meet you! Can I get you something to drink?",
+    "I'd love to! Can I get you something to drink?"
+   ],
+   "expects": [
+    "drink_ans",
+    "drink_menu",
+    "drink_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti gėrimą arba padėkoti"
+   ],
+   "options": [
+    "water",
+    "sparkling water",
+    "lemonade",
+    "iced tea",
+    "soda",
+    "beer",
+    "wine",
+    "juice"
+   ]
+  },
+  "your_turn": {
+   "id": "your_turn",
+   "kind": "step",
+   "npc": [
+    "Wow! I only moved here in May. Hey, I've been asking all the questions! Your turn. Ask me something!",
+    "Awesome! Hey, I've been asking all the questions! Your turn. Ask me something!",
+    "Sounds good! Hey, I've been asking all the questions! Your turn. Ask me something!"
+   ],
+   "expects": [
+    "q_from",
+    "q_job",
+    "q_know",
+    "q_time",
+    "q_like",
+    "q_fun",
+    "q_live",
+    "q_chef",
+    "q_dance",
+    "q_reading"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti Marko apie jį patį"
+   ],
+   "options": []
+  },
+  "city_q": {
+   "id": "city_q",
+   "kind": "pending",
+   "npc": [
+    "Oh! Where's that?"
+   ],
+   "expects": [
+    "city_country",
+    "from_ctx",
+    "from_ans",
+    "ask_back",
+    "q_from"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paaiškinti, kur tas miestas"
+   ],
+   "options": [
+    "Lithuania",
+    "Latvia",
+    "Estonia",
+    "Poland",
+    "Germany",
+    "Ukraine",
+    "Belarus",
+    "Russia",
+    "Sweden",
+    "Norway",
+    "Finland",
+    "Denmark",
+    "England",
+    "the UK",
+    "Ireland",
+    "Scotland",
+    "France",
+    "Spain",
+    "Italy",
+    "Portugal",
+    "Greece",
+    "the Netherlands",
+    "Belgium",
+    "Switzerland",
+    "Austria",
+    "Czechia",
+    "Slovakia",
+    "Slovenia",
+    "Croatia",
+    "Hungary",
+    "Romania",
+    "Bulgaria",
+    "Iceland",
+    "Moldova",
+    "Armenia",
+    "Canada",
+    "Mexico",
+    "Brazil",
+    "Argentina",
+    "China",
+    "Japan",
+    "India",
+    "Turkey",
+    "Australia",
+    "Israel",
+    "Egypt",
+    "the US"
+   ]
+  },
+  "field_q": {
+   "id": "field_q",
+   "kind": "pending",
+   "npc": [
+    "Oh, cool! What do you do there?"
+   ],
+   "expects": [
+    "job_ans",
+    "job_ctx",
+    "ask_back",
+    "q_job"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kuo dirbi"
+   ],
+   "options": [
+    "nurse",
+    "doctor",
+    "teacher",
+    "engineer",
+    "software developer",
+    "IT specialist",
+    "accountant",
+    "manager",
+    "project manager",
+    "salesperson",
+    "cashier",
+    "chef",
+    "waiter",
+    "bartender",
+    "barista",
+    "driver",
+    "mechanic",
+    "electrician",
+    "plumber",
+    "builder",
+    "carpenter",
+    "farmer",
+    "lawyer",
+    "police officer",
+    "firefighter",
+    "pharmacist",
+    "dentist",
+    "vet",
+    "architect",
+    "designer",
+    "photographer",
+    "journalist",
+    "writer",
+    "translator",
+    "hairdresser",
+    "cleaner",
+    "student",
+    "scientist",
+    "musician",
+    "artist",
+    "receptionist",
+    "banker",
+    "psychologist",
+    "entrepreneur",
+    "factory worker",
+    "pilot",
+    "baker",
+    "tour guide",
+    "nanny",
+    "economist"
+   ]
+  }
+ },
+ "intents": [
+  "intro_name",
+  "name_ctx",
+  "nice_meet",
+  "ask_name",
+  "drink_ans",
+  "drink_menu",
+  "know_ans",
+  "from_ans",
+  "from_ctx",
+  "city_country",
+  "correct_country",
+  "confirm_yes",
+  "visit_invite",
+  "job_ans",
+  "job_ctx",
+  "time_ans",
+  "like_yes",
+  "like_mixed",
+  "like_no",
+  "fun_ans",
+  "fun_ctx",
+  "fun_none",
+  "book_ctx",
+  "ask_back",
+  "q_from",
+  "q_job",
+  "q_know",
+  "q_time",
+  "q_like",
+  "q_fun",
+  "q_reading",
+  "q_live",
+  "q_chef",
+  "q_dance",
+  "q_lithuania",
+  "cafe_ans_no",
+  "cafe_ans_yes",
+  "cafe_which",
+  "agree_go",
+  "swap_propose",
+  "number_give",
+  "decline_number",
+  "drink_no",
+  "drink2_yes",
+  "bye_nice",
+  "me_neither",
+  "cute_mark"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

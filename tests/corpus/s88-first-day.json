@@ -1,0 +1,1909 @@
+{
+ "situation": "s88-first-day",
+ "items": [
+  {
+   "ctx": "hello",
+   "say": "Hi, I'm Tomas, I'm new here",
+   "intent": [
+    "intro_ctx",
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I just started today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hello, it's my first day",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, today is my first day at work",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I am new worker",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I'm the new employee",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I'm starting today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Good morning, my name is Tomas, I'm new",
+   "intent": "intro_name"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, first day",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hi! I'm the new accountant",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I'm looking for Maria",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I'm new. My name is Tomas",
+   "intent": [
+    "first_day",
+    "intro_name"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I am new here",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I started to work here today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "It's my first day at Brightline",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hello! I'm Tomas Mikalauskas, the new colleague",
+   "intent": [
+    "intro_ctx",
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I'm new in the team",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hi, I'm your new colleague",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Today I start working here",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I'm a new guy here",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I'm the new one",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I'm starting work here today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "meet",
+   "say": "Nice to meet you too, Maria",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Thank you! Nice to meet you",
+   "intent": [
+    "nice_meet",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "meet",
+   "say": "Hi Maria, I'm Tomas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "meet",
+   "say": "Nice to meet you, I'm Tomas",
+   "intent": [
+    "nice_meet",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "meet",
+   "say": "Thanks, happy to be here",
+   "intent": [
+    "nice_meet",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "meet",
+   "say": "Pleased to meet you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Likewise",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Glad to meet you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Thank you, I'm very happy to be part of the team",
+   "intent": [
+    "g_thanks",
+    "nice_meet"
+   ]
+  },
+  {
+   "ctx": "desk",
+   "say": "Thank you, it's a nice desk",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Wow, great view!",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Thanks, looks great",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Do I have to change the password?",
+   "intent": "q_password"
+  },
+  {
+   "ctx": "desk",
+   "say": "How do I log in to the laptop?",
+   "intent": "q_login"
+  },
+  {
+   "ctx": "desk",
+   "say": "What is my username?",
+   "intent": "q_login"
+  },
+  {
+   "ctx": "desk",
+   "say": "When will I get my badge?",
+   "intent": "q_badge"
+  },
+  {
+   "ctx": "desk",
+   "say": "Where is my badge?",
+   "intent": "q_badge"
+  },
+  {
+   "ctx": "desk",
+   "say": "What's the Wi-Fi password?",
+   "intent": "q_wifi"
+  },
+  {
+   "ctx": "desk",
+   "say": "Is this my computer?",
+   "intent": "q_desk"
+  },
+  {
+   "ctx": "desk",
+   "say": "Which desk is mine?",
+   "intent": "q_desk"
+  },
+  {
+   "ctx": "desk",
+   "say": "Who do I call if my laptop doesn't work?",
+   "intent": "q_it"
+  },
+  {
+   "ctx": "desk",
+   "say": "Can you show me how to log in?",
+   "intent": [
+    "show_me",
+    "q_login"
+   ]
+  },
+  {
+   "ctx": "desk",
+   "say": "I love the window",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "It's perfect, thank you",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Is the password on this card?",
+   "intent": "q_password"
+  },
+  {
+   "ctx": "desk",
+   "say": "Do I need a badge to come in?",
+   "intent": "q_badge"
+  },
+  {
+   "ctx": "desk",
+   "say": "Where do I sit?",
+   "intent": "q_desk"
+  },
+  {
+   "ctx": "desk",
+   "say": "What if I forget my password?",
+   "intent": [
+    "q_password",
+    "q_it"
+   ]
+  },
+  {
+   "ctx": "desk",
+   "say": "Can I connect to the wifi?",
+   "intent": "q_wifi"
+  },
+  {
+   "ctx": "desk",
+   "say": "Very nice, thank you",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Oh, a new laptop! Great",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "What's my login?",
+   "intent": "q_login"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where's the kitchen?",
+   "intent": "q_kitchen"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I get a coffee?",
+   "intent": "q_coffee"
+  },
+  {
+   "ctx": "tour",
+   "say": "Is there a coffee machine here?",
+   "intent": "q_coffee"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is the toilet?",
+   "intent": "q_restroom"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I print something?",
+   "intent": "q_printer"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time do we go home?",
+   "intent": "q_home_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "When is the lunch break?",
+   "intent": "q_lunch_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Can I put my food in the fridge?",
+   "intent": "q_fridge"
+  },
+  {
+   "ctx": "tour",
+   "say": "Who is that man?",
+   "intent": "q_who"
+  },
+  {
+   "ctx": "tour",
+   "say": "Do I need to wear a suit?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I park my car?",
+   "intent": "q_parking"
+  },
+  {
+   "ctx": "tour",
+   "say": "Which cup can I take?",
+   "intent": "q_mug"
+  },
+  {
+   "ctx": "tour",
+   "say": "No, that's all, thanks",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "Not right now, thanks",
+   "intent": [
+    "no_more",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "I think I'm okay for now",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is the meeting room?",
+   "intent": "q_meeting"
+  },
+  {
+   "ctx": "tour",
+   "say": "How do I book a meeting room?",
+   "intent": "q_meeting"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time does everyone go home?",
+   "intent": "q_home_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where do people eat lunch?",
+   "intent": "q_kitchen"
+  },
+  {
+   "ctx": "tour",
+   "say": "Yes, I have one more question",
+   "intent": "more_q"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is the coffee machine, please?",
+   "intent": "q_coffee"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I make tea?",
+   "intent": [
+    "q_coffee",
+    "q_kitchen"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is the bathroom?",
+   "intent": "q_restroom"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time do you usually eat lunch?",
+   "intent": "q_lunch_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I leave my lunch?",
+   "intent": "q_fridge"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where do I find the printer?",
+   "intent": "q_printer"
+  },
+  {
+   "ctx": "tour",
+   "say": "Who can I ask if I have a problem?",
+   "intent": [
+    "q_help",
+    "q_it"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "Where do I get water?",
+   "intent": [
+    "q_kitchen",
+    "q_other_ctx"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "I don't have any more questions",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time do we finish work?",
+   "intent": "q_home_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is a restroom?",
+   "intent": "q_restroom"
+  },
+  {
+   "ctx": "tour",
+   "say": "How long is the lunch?",
+   "intent": "q_lunch_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Is it okay to wear jeans?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where are the cups?",
+   "intent": "q_mug"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I have lunch?",
+   "intent": "q_kitchen"
+  },
+  {
+   "ctx": "tour",
+   "say": "Everything is clear, thanks",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Yes, please show me",
+   "intent": [
+    "show_me",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "How does it work?",
+   "intent": "q_how"
+  },
+  {
+   "ctx": "coffee",
+   "say": "How do I make coffee?",
+   "intent": "q_how"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Can you show me?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Where are the cups?",
+   "intent": "q_mug"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Great, I really need a coffee",
+   "intent": "coffee_want"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Oh no! Okay, tea is fine",
+   "intent": [
+    "coffee_want",
+    "tea_ok"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "Thanks, I'll try it later",
+   "intent": [
+    "coffee_later",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "Yes, show me please",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Is it difficult to use?",
+   "intent": "q_how"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Perfect, I love coffee",
+   "intent": "coffee_want"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Can I use any cup?",
+   "intent": "q_mug"
+  },
+  {
+   "ctx": "mug",
+   "say": "Oops, sorry!",
+   "intent": "oops"
+  },
+  {
+   "ctx": "mug",
+   "say": "Oh, I'm so sorry!",
+   "intent": [
+    "g_sorry",
+    "oops"
+   ]
+  },
+  {
+   "ctx": "mug",
+   "say": "Sorry, I didn't know",
+   "intent": "oops"
+  },
+  {
+   "ctx": "mug",
+   "say": "Oh no, sorry about that",
+   "intent": [
+    "oops",
+    "g_sorry"
+   ]
+  },
+  {
+   "ctx": "mug",
+   "say": "Thanks! Sorry, Dave",
+   "intent": [
+    "g_thanks",
+    "oops"
+   ]
+  },
+  {
+   "ctx": "mug",
+   "say": "My bad!",
+   "intent": [
+    "g_sorry",
+    "oops"
+   ]
+  },
+  {
+   "ctx": "mug",
+   "say": "Oh, okay, thank you",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "task",
+   "say": "Sure, can you send me the file?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Could you email me the file?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "No problem, I'll do it",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Can you show me how to do it?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "I know this program",
+   "intent": "know_system"
+  },
+  {
+   "ctx": "task",
+   "say": "I used this system before",
+   "intent": "know_system"
+  },
+  {
+   "ctx": "task",
+   "say": "Okay, where is the file?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "How do I open it?",
+   "intent": "q_how"
+  },
+  {
+   "ctx": "task",
+   "say": "Yes, of course",
+   "intent": [
+    "yn:yes",
+    "task_ok"
+   ]
+  },
+  {
+   "ctx": "task",
+   "say": "Can you share it with me?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "I'm not sure how to do it",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Sure, just send me the list",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Okay, I'll start now",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Can you explain how it works?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Yes, I can do that",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "What do I need to do exactly?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Where do I find the client list?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Please send it to my email",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "I'll try",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Can you help me a little?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Of course, no problem",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "I have done this before",
+   "intent": "know_system"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, I'd love to come!",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sure, why not!",
+   "intent": [
+    "lunch_yes",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sounds great, I love Thai food",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, count me in",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sorry, I brought lunch from home",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Maybe another day",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "I'm not hungry, thanks",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Thank you, but I have a lot of work",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Is it expensive?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "How far is it?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "What time are you going?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, with pleasure",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Of course, I'm hungry",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Good idea!",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, I will come with you",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "No, thank you, maybe next time",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "I'd like to, but I can't today",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Great, what time?",
+   "intent": [
+    "lunch_q",
+    "lunch_yes"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes! When do we go?",
+   "intent": [
+    "lunch_q",
+    "lunch_yes"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "I have a meeting at lunch",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Do they have vegetarian food?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, I'm coming",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "I love Thai food!",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sure, let's go",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "day",
+   "say": "It was really good, thank you",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Great! Everyone is very friendly",
+   "intent": [
+    "day_ctx",
+    "day_good"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "A little tiring, but good",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "Very interesting, I learned many new things",
+   "intent": [
+    "day_ctx",
+    "day_good"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "I'm very tired, but happy",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "It was a long day",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "Good, thanks for your help",
+   "intent": [
+    "day_ctx",
+    "thanks_all"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "I liked it very much",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Everything was great",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Not bad at all",
+   "intent": "day_ctx"
+  },
+  {
+   "ctx": "day",
+   "say": "Fantastic! I like my new job",
+   "intent": [
+    "day_ctx",
+    "day_good"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "Busy, but I like it",
+   "intent": [
+    "day_tired",
+    "day_ctx"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "It was OK",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Better than I thought",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "It was a bit stressful",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "Too much information!",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "Wonderful, thank you for everything",
+   "intent": [
+    "day_ctx",
+    "thanks_all"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "I think it was a good day",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Very good, I'm happy here",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Hard, but interesting",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "closing",
+   "say": "See you tomorrow, Maria!",
+   "intent": "see_you"
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye, have a nice evening",
+   "intent": [
+    "see_you",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks for everything, see you",
+   "intent": [
+    "thanks_all",
+    "see_you"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you for your help today",
+   "intent": "thanks_all"
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye, see you tomorrow",
+   "intent": [
+    "see_you",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Have a good night!",
+   "intent": [
+    "see_you",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "See you in the morning",
+   "intent": "see_you"
+  },
+  {
+   "ctx": "closing",
+   "say": "Goodbye and thank you",
+   "intent": [
+    "g_bye",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Hi! Yes, I'm new. I'm Tomas",
+   "intent": [
+    "first_day",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Good morning! I'm starting today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, it's my first day here",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hello, I'm Tomas, the new marketing specialist",
+   "intent": [
+    "intro_ctx",
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Yeah, first day today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hi, I'm new, today is my first day",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes. I work here from today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I'm the new girl",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I'm the new guy",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "meet",
+   "say": "Nice to meet you, Maria",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Hi Maria, nice to meet you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Great to meet you!",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Thank you! I'm happy to be here",
+   "intent": [
+    "g_thanks",
+    "nice_meet"
+   ]
+  },
+  {
+   "ctx": "meet",
+   "say": "Me too",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "desk",
+   "say": "Thank you, I like it",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Nice desk!",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "Where do I log in?",
+   "intent": "q_login"
+  },
+  {
+   "ctx": "desk",
+   "say": "How do I change my password?",
+   "intent": "q_password"
+  },
+  {
+   "ctx": "desk",
+   "say": "Do I need a badge?",
+   "intent": "q_badge"
+  },
+  {
+   "ctx": "desk",
+   "say": "Is there Wi-Fi?",
+   "intent": "q_wifi"
+  },
+  {
+   "ctx": "desk",
+   "say": "What's my password?",
+   "intent": "q_password"
+  },
+  {
+   "ctx": "desk",
+   "say": "Thanks, it's great",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I find the printer?",
+   "intent": "q_printer"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where's the coffee?",
+   "intent": "q_coffee"
+  },
+  {
+   "ctx": "tour",
+   "say": "Is there a microwave?",
+   "intent": [
+    "q_fridge",
+    "q_kitchen"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "Where's the ladies' room?",
+   "intent": "q_restroom"
+  },
+  {
+   "ctx": "tour",
+   "say": "What should I wear?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "tour",
+   "say": "When do people go home?",
+   "intent": "q_home_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Can I use any mug?",
+   "intent": "q_mug"
+  },
+  {
+   "ctx": "tour",
+   "say": "Who's that woman?",
+   "intent": "q_who"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where do we have lunch?",
+   "intent": "q_kitchen"
+  },
+  {
+   "ctx": "tour",
+   "say": "No, I think I'm fine",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "Nothing else for now",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "That's all, thank you",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is the fridge?",
+   "intent": "q_fridge"
+  },
+  {
+   "ctx": "tour",
+   "say": "How do I use the printer?",
+   "intent": [
+    "q_how",
+    "q_printer"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "Yes, please",
+   "intent": [
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "Sure, show me",
+   "intent": [
+    "show_me",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "Thank you! How does it work?",
+   "intent": "q_how"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Oh no! Okay, I'll have tea",
+   "intent": "tea_ok"
+  },
+  {
+   "ctx": "coffee",
+   "say": "No problem, I like tea",
+   "intent": "tea_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Could you send me the file, please?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Sure, no problem",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Can you show me how the system works?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Okay, I'll do it",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "I know Excel very well",
+   "intent": "know_system"
+  },
+  {
+   "ctx": "task",
+   "say": "Where can I find the file?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Send it to me, please",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Sure! What do I do first?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sure, I'd love to",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Thanks, but I brought my own lunch",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Where is the Thai place?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "When are you going?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sounds good!",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Not today, sorry",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Maybe tomorrow",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "I love Thai! Yes!",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Thank you for inviting me! Yes",
+   "intent": [
+    "lunch_yes",
+    "g_thanks",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes please, I'm really hungry",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "day",
+   "say": "Tiring, but good",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "It was great, thank you!",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Everyone is so nice",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "I learned a lot today",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Pretty good",
+   "intent": "day_ctx"
+  },
+  {
+   "ctx": "day",
+   "say": "Long, but good",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "It was fun",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "A lot of new names",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Really good, I like it here",
+   "intent": [
+    "day_ctx",
+    "day_good"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "Exhausting!",
+   "intent": "day_ctx"
+  },
+  {
+   "ctx": "closing",
+   "say": "See you!",
+   "intent": [
+    "see_you",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye! See you tomorrow",
+   "intent": [
+    "see_you",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks again, see you tomorrow",
+   "intent": "see_you"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hi, yes, it's my first day",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hello! Yes, I'm new. I'm Tomas",
+   "intent": [
+    "first_day",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I'm the new designer",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Good morning, I started today",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "meet",
+   "say": "Nice to meet you too! I'm Tomas",
+   "intent": [
+    "nice_meet",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "meet",
+   "say": "Thanks, it's nice to be here",
+   "intent": [
+    "g_thanks",
+    "nice_meet"
+   ]
+  },
+  {
+   "ctx": "desk",
+   "say": "This is nice, thank you",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "How do I change the password?",
+   "intent": "q_password"
+  },
+  {
+   "ctx": "desk",
+   "say": "Where do I get my badge?",
+   "intent": "q_badge"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where's the coffee machine?",
+   "intent": "q_coffee"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where can I print?",
+   "intent": "q_printer"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where are the restrooms?",
+   "intent": "q_restroom"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time is lunch?",
+   "intent": "q_lunch_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time do people leave?",
+   "intent": "q_home_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Is there a dress code?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "tour",
+   "say": "Who is that?",
+   "intent": "q_who"
+  },
+  {
+   "ctx": "tour",
+   "say": "No, that's all for now, thanks",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where's the fridge?",
+   "intent": "q_fridge"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Can you show me how to use it?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Could you send me the file?",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Sure, I can do that",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Okay, no problem",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Thanks, but I brought my lunch",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Where is it?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sounds great, count me in",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Sorry, I can't today",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "day",
+   "say": "It was great, thanks",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "A bit tiring, but good",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "Everyone is very nice",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "closing",
+   "say": "See you tomorrow!",
+   "intent": "see_you"
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye, have a good evening!",
+   "intent": "see_you"
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, I am new worker here",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "Hello, today my first day",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "hello",
+   "say": "I am Tomas, I start today",
+   "intent": [
+    "intro_ctx",
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "Yes, new",
+   "intent": "first_day"
+  },
+  {
+   "ctx": "meet",
+   "say": "Nice to meet you also",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "meet",
+   "say": "Very nice to meet you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "desk",
+   "say": "Thank you, very good",
+   "intent": "desk_ok"
+  },
+  {
+   "ctx": "desk",
+   "say": "What is password?",
+   "intent": "q_password"
+  },
+  {
+   "ctx": "desk",
+   "say": "How I log in?",
+   "intent": "q_login"
+  },
+  {
+   "ctx": "desk",
+   "say": "Where is my card for door?",
+   "intent": "q_badge"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is kitchen?",
+   "intent": "q_kitchen"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where I can drink coffee?",
+   "intent": "q_coffee"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where is toilet?",
+   "intent": "q_restroom"
+  },
+  {
+   "ctx": "tour",
+   "say": "When is lunch?",
+   "intent": "q_lunch_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time we go home?",
+   "intent": "q_home_time"
+  },
+  {
+   "ctx": "tour",
+   "say": "Where I can put my food?",
+   "intent": "q_fridge"
+  },
+  {
+   "ctx": "tour",
+   "say": "No, all is clear",
+   "intent": "no_more"
+  },
+  {
+   "ctx": "tour",
+   "say": "How I print?",
+   "intent": "q_printer"
+  },
+  {
+   "ctx": "coffee",
+   "say": "How it works?",
+   "intent": "q_how"
+  },
+  {
+   "ctx": "coffee",
+   "say": "Show me please",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "Please send me file",
+   "intent": "send_file"
+  },
+  {
+   "ctx": "task",
+   "say": "Okay, I do it",
+   "intent": "task_ok"
+  },
+  {
+   "ctx": "task",
+   "say": "Can you show me how?",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "task",
+   "say": "I don't understand how to do",
+   "intent": "show_me"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, I go with you",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "lunch",
+   "say": "No thank you, I have my food",
+   "intent": "lunch_no"
+  },
+  {
+   "ctx": "lunch",
+   "say": "It is far?",
+   "intent": "lunch_q"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Yes, with pleasure, I like Thai",
+   "intent": "lunch_yes"
+  },
+  {
+   "ctx": "day",
+   "say": "Very good day",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "day",
+   "say": "Good, but I am tired",
+   "intent": "day_tired"
+  },
+  {
+   "ctx": "day",
+   "say": "Was very interesting",
+   "intent": "day_good"
+  },
+  {
+   "ctx": "closing",
+   "say": "See you tomorrow, thank you for all",
+   "intent": "see_you"
+  },
+  {
+   "ctx": "hello",
+   "say": "No, I'm not new here",
+   "intent": "any",
+   "not": [
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "hello",
+   "say": "It's not my first day",
+   "intent": "any",
+   "not": [
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "I don't want to come",
+   "intent": "any",
+   "not": [
+    "lunch_yes"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "I can't come today, sorry",
+   "intent": "any",
+   "not": [
+    "lunch_yes"
+   ]
+  },
+  {
+   "ctx": "lunch",
+   "say": "No, I'm not hungry",
+   "intent": "any",
+   "not": [
+    "lunch_yes"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "It wasn't good",
+   "intent": "any",
+   "not": [
+    "day_good",
+    "day_ctx"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "It was not great",
+   "intent": "any",
+   "not": [
+    "day_good",
+    "day_ctx"
+   ]
+  },
+  {
+   "ctx": "desk",
+   "say": "I don't like my desk",
+   "intent": "any",
+   "not": [
+    "desk_ok"
+   ]
+  },
+  {
+   "ctx": "task",
+   "say": "I can't do it",
+   "intent": "any",
+   "not": [
+    "task_ok"
+   ]
+  },
+  {
+   "ctx": "task",
+   "say": "I don't know this program",
+   "intent": "any",
+   "not": [
+    "know_system"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "I don't need coffee",
+   "intent": "any",
+   "not": [
+    "coffee_want"
+   ]
+  },
+  {
+   "ctx": "task",
+   "say": "Don't send me the file",
+   "intent": "any",
+   "not": [
+    "send_file"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "The cat is sleeping on the roof",
+   "intent": "none"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Seven blue potatoes",
+   "intent": "none"
+  },
+  {
+   "ctx": "day",
+   "say": "My brother plays football in Kaunas",
+   "intent": "none"
+  },
+  {
+   "ctx": "lunch",
+   "say": "I'm not coming, sorry",
+   "intent": "any",
+   "not": [
+    "lunch_yes"
+   ]
+  },
+  {
+   "ctx": "desk",
+   "say": "It's not my desk",
+   "intent": "any",
+   "not": [
+    "desk_ok"
+   ]
+  },
+  {
+   "ctx": "day",
+   "say": "It was not easy",
+   "intent": "any",
+   "not": [
+    "day_good",
+    "day_ctx"
+   ]
+  },
+  {
+   "ctx": "coffee",
+   "say": "I don't like tea",
+   "intent": "any",
+   "not": [
+    "tea_ok"
+   ]
+  },
+  {
+   "ctx": "tour",
+   "say": "Do we have a dress code?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "meet",
+   "say": "Hi, I am Tomas. I am new here, today is my first day",
+   "intent": [
+    "intro_ctx",
+    "first_day"
+   ]
+  },
+  {
+   "ctx": "task",
+   "say": "Sure, no problem. Where can I find the file?",
+   "intent": "task_ok"
+  }
+ ]
+}

@@ -1,0 +1,326 @@
+{
+ "situation": "s67b-bus",
+ "title": "Does This Bus Go Downtown?",
+ "goal": "Sužinok, ar autobusas važiuoja ten, kur reikia, ir paprašyk pasakyti, kur išlipti.",
+ "contexts": {
+  "dest": {
+   "id": "dest",
+   "kind": "step",
+   "npc": [
+    "Hi there! Where are you going?",
+    "Morning! Where are you headed?",
+    "Hi! Come on in. Where are you going?"
+   ],
+   "expects": [
+    "ask_goes",
+    "going_to",
+    "dest_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, ar autobusas važiuoja ten, kur tau reikia",
+    "Paklausti kainos"
+   ],
+   "options": [
+    "downtown",
+    "Old Town",
+    "Town Square",
+    "the museum",
+    "the library",
+    "the hospital",
+    "the harbor",
+    "the beach",
+    "the hotel",
+    "the airport",
+    "the mall"
+   ]
+  },
+  "fare": {
+   "id": "fare",
+   "kind": "step",
+   "npc": [
+    "Yes, it does. That's $2.50. You can tap a card or pay cash. It has to be exact change.",
+    "Sure does! Hop on. The fare is $2.50. You can tap a card or pay cash. It has to be exact change.",
+    "Sure does! Hop on. That's $2.50."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_phone",
+    "pay_cash",
+    "give",
+    "no_change",
+    "day_pass",
+    "ask_fare",
+    "cash_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti (kortele, telefonu ar grynaisiais)",
+    "Paklausti apie grąžą ar dienos bilietą"
+   ],
+   "options": []
+  },
+  "card_tap": {
+   "id": "card_tap",
+   "kind": "pending",
+   "npc": [
+    "Sure, just tap it on the reader.",
+    "Yep, tap right here."
+   ],
+   "expects": [
+    "give",
+    "g_ok",
+    "ack",
+    "affirm",
+    "pay_card",
+    "pay_phone",
+    "pay_cash",
+    "no_change",
+    "day_pass",
+    "ask_fare",
+    "cash_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pridėti kortelę"
+   ],
+   "options": []
+  },
+  "stop": {
+   "id": "stop",
+   "kind": "step",
+   "npc": [
+    "Perfect, thanks. Have a seat.",
+    "You're all set. Go ahead and have a seat.",
+    "Perfect, thanks. Go ahead and have a seat."
+   ],
+   "expects": [
+    "ask_stop",
+    "ask_stops_count",
+    "ask_time"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paprašyti pasakyti, kur išlipti",
+    "Paklausti, kiek stotelių ar kiek laiko"
+   ],
+   "options": []
+  },
+  "seated": {
+   "id": "seated",
+   "kind": "pending",
+   "npc": [
+    "Sure! I'll let you know. It's about 7 stops. Just pull the cord when we get close. Sit back and relax.",
+    "No problem. I'll tell you when we get there. It's about 7 stops. Just pull the cord when we get close. Go ahead and have a seat.",
+    "Sure! I'll let you know. It's about 7 stops. Press the red button when you want to get off. Have a seat."
+   ],
+   "expects": [
+    "g_thanks",
+    "g_ok",
+    "ack",
+    "is_my_stop",
+    "ask_stops_count",
+    "ask_time",
+    "ask_button",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisėsti",
+    "Paklausti, kiek laiko važiuoti ar kiek stotelių"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "You're welcome! Okay, this is Old Town! This is your stop. Enjoy your day!",
+    "No problem! Water Street! This is your stop. Have a good one!",
+    "Anytime! Water Street! This is your stop. Enjoy your day!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "affirm",
+    "deny",
+    "is_my_stop",
+    "ask_button",
+    "ack"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "known": {
+   "id": "known",
+   "kind": "step",
+   "npc": [
+    "Thanks! Do you know where to get off?",
+    "You're all set. Do you know where to get off?",
+    "This bus isn't running, but the 12 goes there. Do you know where to get off?"
+   ],
+   "expects": [
+    "ask_stop",
+    "affirm",
+    "deny",
+    "tell_me_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti pasakyti, kur išlipti"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hey, how's it going?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "ask_goes",
+    "going_to",
+    "dest_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "mid": {
+   "id": "mid",
+   "kind": "pending",
+   "npc": [
+    "My pleasure! Next stop: Riverside.",
+    "No problem! Next stop: Riverside.",
+    "Anytime! Next stop: Riverside."
+   ],
+   "expects": [
+    "is_my_stop",
+    "g_thanks",
+    "g_ok",
+    "ack",
+    "affirm",
+    "deny",
+    "ask_button"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, ar čia tavo stotelė"
+   ],
+   "options": []
+  },
+  "oos_dest": {
+   "id": "oos_dest",
+   "kind": "pending",
+   "npc": [
+    "Sorry, this bus is out of service. Take the 12. It's right behind me."
+   ],
+   "expects": [
+    "ask_goes",
+    "going_to",
+    "dest_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, ar 12-asis važiuoja ten, kur reikia"
+   ],
+   "options": [
+    "downtown",
+    "Old Town",
+    "Town Square",
+    "the museum",
+    "the library",
+    "the hospital",
+    "the harbor",
+    "the beach",
+    "the hotel",
+    "the airport",
+    "the mall"
+   ]
+  },
+  "daypass": {
+   "id": "daypass",
+   "kind": "pending",
+   "npc": [
+    "Sorry, I can't give change. A day pass is $5. You can ride all day. Would you like one?",
+    "Sorry, the machine doesn't give change. A day pass is $5. You can ride all day. Would you like one?"
+   ],
+   "expects": [
+    "day_pass",
+    "no_day_pass",
+    "give",
+    "pay_card",
+    "affirm",
+    "deny",
+    "pay_phone",
+    "pay_cash",
+    "no_change",
+    "ask_fare",
+    "cash_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba atsisakyti"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "affirm",
+  "deny",
+  "ask_goes",
+  "going_to",
+  "dest_ctx",
+  "dest_unknown",
+  "dest_neg",
+  "ask_fare",
+  "pay_card",
+  "pay_phone",
+  "pay_cash",
+  "cash_ctx",
+  "give",
+  "no_change",
+  "day_pass",
+  "no_day_pass",
+  "transfer",
+  "ask_stop",
+  "tell_me_ctx",
+  "ask_stops_count",
+  "ask_time",
+  "ask_frequency",
+  "ask_last",
+  "ask_back",
+  "ask_button",
+  "is_my_stop",
+  "sit_q",
+  "ack"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

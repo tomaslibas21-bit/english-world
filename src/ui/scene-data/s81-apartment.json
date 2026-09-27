@@ -1,0 +1,43 @@
+{
+  "npc": "Mr. Patel, landlord",
+  "images": [
+    "hello",
+    "tour",
+    "questions",
+    "decision",
+    "lease",
+    "keys"
+  ],
+  "start": "hello",
+  "phases": {
+    "purpose": "hello",
+    "problem": "hello",
+    "movein_q": "tour",
+    "people_q": "tour",
+    "how_many": "tour",
+    "pets_q": "tour",
+    "pet_which": "tour",
+    "questions": "questions",
+    "visit": "questions",
+    "key_ok": "questions",
+    "other_time": "questions",
+    "decision": "decision",
+    "hurry": "decision",
+    "movein_take": "decision",
+    "docs": "lease",
+    "sign": "lease",
+    "closing": "keys"
+  },
+  "focus": [
+    33,
+    36
+  ],
+  "jobs": {
+    "hello": "58819c38-10c2-4fc1-8d2e-3ab4a838e565",
+    "tour": "df089c4f-d803-473f-80d8-34fcbf8523f3",
+    "questions": "b2a5a5dc-b28d-400e-a56a-28cda6763b7f",
+    "decision": "4b3a048f-86f0-490a-bd64-fc9a1c64d81e",
+    "lease": "0fdd28db-9f32-4996-8377-f2c3b6dc6e6c",
+    "keys": "5ff8f328-857e-44ab-a87a-66681e2eb148"
+  }
+}

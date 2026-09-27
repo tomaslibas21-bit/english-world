@@ -1,0 +1,19 @@
+{
+  "npc": "Ben, museum tickets (Harold, guard)",
+  "images": ["greet", "id", "guide", "pay", "exhibit", "harold"],
+  "start": "greet",
+  "phases": {
+    "tickets": "greet", "types": "greet", "late": "greet",
+    "student_id": "id", "id_price": "id",
+    "guide": "guide", "lang": "guide",
+    "pay": "pay",
+    "exhibit": "exhibit", "more": "exhibit",
+    "harold": "harold"
+  },
+  "focus": [40, 32],
+  "jobs": {
+    "greet": "4569211b-a7b0-4b77-8a73-fe4295dd8f54", "id": "945bdf68-234b-45c2-8099-e0fb2402634a",
+    "guide": "39476400-aae7-40df-bd5c-737e959e615c", "pay": "737b511b-3e83-488b-82fb-4f06389014b8",
+    "exhibit": "84a9e9c0-808a-4ad1-9790-8c7a4f3d2eaf", "harold": "a84a93b8-5565-46be-a306-b393499ab758"
+  }
+}

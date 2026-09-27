@@ -1,0 +1,682 @@
+{
+ "situation": "s87-interview",
+ "title": "Why Should We Hire You?",
+ "goal": "Sėkmingai atsakyk į darbo pokalbio klausimus.",
+ "contexts": {
+  "arrive": {
+   "id": "arrive",
+   "kind": "step",
+   "npc": [
+    "Good morning! Can I help you?",
+    "Hi there! How can I help you?",
+    "Good morning! Are you here for the interview?"
+   ],
+   "expects": [
+    "arrive",
+    "intro_name",
+    "intro_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad atvykai į darbo pokalbį (ir prisistatyti)",
+    "Pasakyti, kad jaudiniesi, arba paprašyti pakartoti"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Great! And your name, please?",
+    "Wonderful. And you are...?",
+    "Yes, that's me! Great! And your name, please?"
+   ],
+   "expects": [
+    "intro_name",
+    "intro_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo vardą ir pavardę"
+   ],
+   "options": []
+  },
+  "drink": {
+   "id": "drink",
+   "kind": "step",
+   "npc": [
+    "Nice to meet you! I'm the HR manager here. Please, have a seat. Would you like some water or coffee?",
+    "Nice to meet you! I'm the HR manager here. Please, have a seat. Can I get you anything? Water? Coffee?",
+    "Nice to meet you! I'm the HR manager here. Come in and have a seat. Can I get you anything? Water? Coffee?"
+   ],
+   "expects": [
+    "want_drink",
+    "no_drink"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar nori vandens ar kavos"
+   ],
+   "options": []
+  },
+  "about": {
+   "id": "about",
+   "kind": "pending",
+   "npc": [
+    "Okay, sure. So, tell me a little about yourself.",
+    "Great. So, tell me a little about yourself.",
+    "Great. First, could you tell me a little about yourself?"
+   ],
+   "expects": [
+    "job_is",
+    "job_ctx",
+    "job_does",
+    "field_is",
+    "field_ctx",
+    "experience",
+    "years_ctx",
+    "no_exp",
+    "no_exp_ctx",
+    "between_jobs",
+    "own_business",
+    "from",
+    "moved",
+    "family",
+    "age",
+    "about_name_ctx",
+    "about_end",
+    "what_know",
+    "intro_name"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kuo dirbi (ir kiek metų)",
+    "Pasakyti, kurioje srityje dirbi ir kiek metų",
+    "Papasakoti daugiau apie save"
+   ],
+   "options": [
+    "accountant",
+    "nurse",
+    "teacher",
+    "engineer",
+    "programmer",
+    "manager",
+    "salesperson",
+    "driver",
+    "project manager",
+    "office manager",
+    "sales manager",
+    "customer service representative",
+    "IT specialist",
+    "marketing specialist",
+    "recruiter",
+    "analyst",
+    "economist",
+    "designer",
+    "architect",
+    "lawyer",
+    "translator",
+    "journalist",
+    "photographer",
+    "doctor",
+    "pharmacist",
+    "dentist",
+    "psychologist",
+    "social worker",
+    "kindergarten teacher",
+    "lecturer",
+    "scientist",
+    "chef",
+    "waiter",
+    "bartender",
+    "barista",
+    "baker",
+    "cashier",
+    "store manager",
+    "truck driver",
+    "mechanic",
+    "electrician",
+    "plumber",
+    "construction worker",
+    "carpenter",
+    "factory worker",
+    "warehouse worker",
+    "logistics coordinator",
+    "security guard",
+    "cleaner",
+    "hairdresser",
+    "receptionist",
+    "bank clerk",
+    "farmer",
+    "police officer",
+    "tailor",
+    "real estate agent",
+    "tour guide",
+    "flight attendant",
+    "civil servant",
+    "librarian",
+    "student",
+    "sales",
+    "marketing",
+    "IT",
+    "finance",
+    "economics",
+    "business",
+    "accounting",
+    "banking",
+    "customer service",
+    "healthcare",
+    "education",
+    "construction",
+    "logistics",
+    "transportation",
+    "manufacturing",
+    "retail",
+    "hospitality",
+    "tourism",
+    "HR",
+    "law",
+    "engineering",
+    "design",
+    "media",
+    "agriculture",
+    "government",
+    "insurance",
+    "energy",
+    "administration"
+   ]
+  },
+  "why": {
+   "id": "why",
+   "kind": "step",
+   "npc": [
+    "Wow, that's a lot of experience! So, why do you want to work here?",
+    "I see. Why do you want to work at Brightline?",
+    "That's a lot of experience! So, why do you want to work here?"
+   ],
+   "expects": [
+    "why_ans",
+    "strength",
+    "hire_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kodėl nori čia dirbti"
+   ],
+   "options": []
+  },
+  "strengths": {
+   "id": "strengths",
+   "kind": "step",
+   "npc": [
+    "I appreciate that. So, what are your strengths?",
+    "I'm glad to hear that. What are your greatest strengths?",
+    "That's great to hear. So, what are your strengths?"
+   ],
+   "expects": [
+    "strength",
+    "strength_ctx",
+    "not_strength",
+    "hire_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo stiprybes",
+    "Papasakoti, ką darai gerai"
+   ],
+   "options": [
+    "organized",
+    "hardworking",
+    "reliable",
+    "responsible",
+    "patient",
+    "flexible",
+    "creative",
+    "friendly",
+    "punctual",
+    "motivated",
+    "positive",
+    "calm",
+    "honest",
+    "detail-oriented",
+    "energetic",
+    "independent",
+    "curious",
+    "ambitious",
+    "proactive",
+    "loyal",
+    "efficient",
+    "helpful",
+    "team player",
+    "good listener",
+    "problem solver",
+    "hard worker"
+   ]
+  },
+  "salary": {
+   "id": "salary",
+   "kind": "step",
+   "npc": [
+    "We love organized people here! What are your salary expectations?",
+    "Wow, that's impressive! What are your salary expectations?",
+    "Great, thank you. And what salary are you looking for?"
+   ],
+   "expects": [
+    "salary_ans",
+    "salary_flexible",
+    "salary_range_q",
+    "salary_more"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kokio atlyginimo tikiesi (arba paklausti intervalo)"
+   ],
+   "options": []
+  },
+  "questions": {
+   "id": "questions",
+   "kind": "pending",
+   "npc": [
+    "Okay, that's helpful. Thank you. So, what questions do you have for me?",
+    "We work nine to five, Monday to Friday. And you get an hour for lunch. Anything else?",
+    "Thank you. That's very clear. So, what questions do you have for me?"
+   ],
+   "expects": [
+    "q_hours",
+    "q_training",
+    "q_start",
+    "q_team",
+    "q_remote",
+    "q_benefits",
+    "q_day",
+    "q_next",
+    "q_dress",
+    "q_parking",
+    "q_like",
+    "salary_range_q",
+    "no_questions",
+    "can_ask",
+    "q_other_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti apie darbą: darbo laiką, mokymus, pradžią",
+    "Pasakyti, kad klausimų nebeturi"
+   ],
+   "options": []
+  },
+  "offer": {
+   "id": "offer",
+   "kind": "pending",
+   "npc": [
+    "Actually, I don't need to wait. We'd like to offer you the job!"
+   ],
+   "expects": [
+    "accept_job",
+    "think_offer",
+    "decline_offer",
+    "g_thanks",
+    "thanks_time"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti į darbo pasiūlymą"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Wonderful! Welcome to the team! We'll send you the contract today.",
+    "Thank you so much for your time today. We'll be in touch soon.",
+    "Thank you so much for your time today. We'll be in touch in a few days."
+   ],
+   "expects": [
+    "thanks_time",
+    "look_forward",
+    "nice_meet",
+    "g_thanks",
+    "accept_job",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "found": {
+   "id": "found",
+   "kind": "step",
+   "npc": [
+    "Nice to meet you! I'm the HR manager here. Come in and have a seat. Did you find us okay?",
+    "Nice to meet you! Thank you for coming in. Please, have a seat. Was it easy to find us?",
+    "Nice to meet you! I'm the HR manager here. Come in and have a seat. Was it easy to find us?"
+   ],
+   "expects": [
+    "found_ok",
+    "found_hard"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar lengvai radai biurą"
+   ],
+   "options": []
+  },
+  "leaving": {
+   "id": "leaving",
+   "kind": "step",
+   "npc": [
+    "Wow, that's a lot of experience! So, why are you looking for a new job?",
+    "Wow, that's a lot of experience! Why did you leave your last job?",
+    "That's a lot of experience! Why did you leave your last job?"
+   ],
+   "expects": [
+    "leaving_ans",
+    "moved",
+    "between_jobs"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kodėl ieškai naujo darbo"
+   ],
+   "options": []
+  },
+  "weakness": {
+   "id": "weakness",
+   "kind": "step",
+   "npc": [
+    "We love organized people here! And what about weaknesses?",
+    "We love organized people here! And your weaknesses?",
+    "We love organized people here! And what's your greatest weakness?"
+   ],
+   "expects": [
+    "weakness",
+    "working_on_it",
+    "no_weakness",
+    "no_weakness_ctx",
+    "not_strength"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti silpnybę (ir kaip ją tobulini)"
+   ],
+   "options": []
+  },
+  "hire": {
+   "id": "hire",
+   "kind": "step",
+   "npc": [
+    "I appreciate your honesty. So, why should we hire you?",
+    "Great, thank you. So, why should we hire you?",
+    "Thank you for being honest. So, why should we hire you?"
+   ],
+   "expects": [
+    "hire_ans",
+    "strength",
+    "strength_ctx",
+    "not_strength"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kodėl turėtų priimti būtent tave",
+    "Pasakyti savo stiprybes"
+   ],
+   "options": [
+    "organized",
+    "hardworking",
+    "reliable",
+    "responsible",
+    "patient",
+    "flexible",
+    "creative",
+    "friendly",
+    "punctual",
+    "motivated",
+    "positive",
+    "calm",
+    "honest",
+    "detail-oriented",
+    "energetic",
+    "independent",
+    "curious",
+    "ambitious",
+    "proactive",
+    "loyal",
+    "efficient",
+    "helpful",
+    "team player",
+    "good listener",
+    "problem solver",
+    "hard worker"
+   ]
+  },
+  "authorized": {
+   "id": "authorized",
+   "kind": "step",
+   "npc": [
+    "I appreciate your honesty. Are you authorized to work in the U.S.?",
+    "Okay, thank you for sharing that. Are you authorized to work in the U.S.?",
+    "Thank you for being honest. Are you authorized to work in the U.S.?"
+   ],
+   "expects": [
+    "auth_yes",
+    "auth_pending"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi teisę dirbti JAV"
+   ],
+   "options": []
+  },
+  "future": {
+   "id": "future",
+   "kind": "step",
+   "npc": [
+    "I appreciate your honesty. Where do you see yourself in five years?",
+    "Thank you for being honest. So, where do you see yourself in five years?",
+    "Okay, thank you for sharing that. Where do you see yourself in five years?"
+   ],
+   "expects": [
+    "future_ans",
+    "future_away"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur save matai po penkerių metų"
+   ],
+   "options": []
+  },
+  "start": {
+   "id": "start",
+   "kind": "step",
+   "npc": [
+    "I like that. And if we offer you the job, when could you start?",
+    "Okay, thank you. I'll note that down. When can you start?",
+    "That sounds great. When can you start?"
+   ],
+   "expects": [
+    "start_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada galėtum pradėti"
+   ],
+   "options": []
+  },
+  "languages": {
+   "id": "languages",
+   "kind": "step",
+   "npc": [
+    "Thank you for being honest. What languages do you speak?",
+    "That's a great example. What languages do you speak?",
+    "We love organized people here! What languages do you speak?"
+   ],
+   "expects": [
+    "languages_ans",
+    "languages_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kokiomis kalbomis kalbi"
+   ],
+   "options": [
+    "Lithuanian",
+    "English",
+    "Russian",
+    "Polish",
+    "German",
+    "French",
+    "Spanish",
+    "Latvian",
+    "Ukrainian",
+    "Italian",
+    "Norwegian",
+    "Swedish",
+    "Danish",
+    "Finnish",
+    "Estonian",
+    "Portuguese",
+    "Chinese",
+    "Belarusian"
+   ]
+  },
+  "phone": {
+   "id": "phone",
+   "kind": "step",
+   "npc": [
+    "I'm glad to hear that. Oh, I'm so sorry, I need to take this call. Just one second.",
+    "I appreciate that. Oh, I'm so sorry, I need to take this call. Just one second.",
+    "That's great to hear. Oh, I'm so sorry, I need to take this call. Just one second."
+   ],
+   "expects": [
+    "no_problem"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad nieko tokio"
+   ],
+   "options": []
+  },
+  "teamwork": {
+   "id": "teamwork",
+   "kind": "step",
+   "npc": [
+    "Thank you for being honest. Can you give me an example of teamwork?",
+    "Thank you for being honest. Can you tell me about a time you worked on a team?"
+   ],
+   "expects": [
+    "teamwork_ans",
+    "story_ctx",
+    "no_team",
+    "strength"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Trumpai papasakoti apie darbą komandoje"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "arrive",
+  "intro_name",
+  "intro_ctx",
+  "found_ok",
+  "found_hard",
+  "want_drink",
+  "no_drink",
+  "job_is",
+  "job_ctx",
+  "job_does",
+  "field_is",
+  "field_ctx",
+  "experience",
+  "years_ctx",
+  "no_exp",
+  "age",
+  "not_job",
+  "studied_unknown",
+  "about_name_ctx",
+  "no_exp_ctx",
+  "between_jobs",
+  "own_business",
+  "from",
+  "moved",
+  "family",
+  "free_time_unknown",
+  "about_end",
+  "what_know",
+  "leaving_ans",
+  "why_ans",
+  "why_neg",
+  "strength",
+  "strength_ctx",
+  "not_strength",
+  "weakness",
+  "working_on_it",
+  "no_weakness",
+  "no_weakness_ctx",
+  "future_ans",
+  "future_away",
+  "teamwork_ans",
+  "story_ctx",
+  "no_team",
+  "example_q",
+  "languages_ans",
+  "languages_ctx",
+  "auth_yes",
+  "auth_pending",
+  "salary_ans",
+  "salary_flexible",
+  "salary_more",
+  "salary_range_q",
+  "start_ans",
+  "hire_ans",
+  "can_ask",
+  "q_hours",
+  "q_training",
+  "q_start",
+  "q_team",
+  "q_remote",
+  "q_benefits",
+  "q_day",
+  "q_next",
+  "q_dress",
+  "q_parking",
+  "q_like",
+  "q_restroom",
+  "her_name",
+  "q_other_ctx",
+  "no_questions",
+  "thanks_time",
+  "look_forward",
+  "nice_meet",
+  "accept_job",
+  "think_offer",
+  "decline_offer",
+  "nervous",
+  "resume",
+  "no_problem"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

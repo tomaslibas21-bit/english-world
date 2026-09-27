@@ -1,0 +1,50 @@
+{
+  "npc": "Ms. Brooks, HR manager (Brightline)",
+  "images": [
+    "greet",
+    "call",
+    "about",
+    "why",
+    "strengths",
+    "salary",
+    "questions"
+  ],
+  "start": "greet",
+  "phases": {
+    "arrive": "greet",
+    "name": "greet",
+    "found": "greet",
+    "drink": "greet",
+    "phone": "call",
+    "about": "about",
+    "leaving": "why",
+    "why": "why",
+    "future": "why",
+    "hire": "why",
+    "strengths": "strengths",
+    "weakness": "strengths",
+    "improve": "strengths",
+    "teamwork": "strengths",
+    "languages": "strengths",
+    "authorized": "strengths",
+    "salary": "salary",
+    "range": "salary",
+    "start": "salary",
+    "questions": "questions",
+    "offer": "questions",
+    "closing": "questions"
+  },
+  "focus": [
+    30,
+    36
+  ],
+  "jobs": {
+    "greet": "1370caff-d31f-45b5-9f5e-638f58594714",
+    "about": "c160e339-6ccc-4030-8551-324849372558",
+    "why": "9df05361-8dca-440c-a733-68290a68fdb9",
+    "strengths": "255c6dae-97dc-4472-b665-17aac0eb8d8f",
+    "salary": "1ee973cc-8103-4610-aa46-ad3a3e9ac5a1",
+    "questions": "845703f4-7b2f-499e-8c12-790192ef828c",
+    "call": "a5525ee2-6e5f-49f6-bc4e-08ebe1978c56"
+  }
+}

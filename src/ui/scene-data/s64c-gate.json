@@ -1,0 +1,21 @@
+{
+  "npc": "Nina, gate agent",
+  "images": ["greet", "check", "seat", "announce", "scan"],
+  "start": "greet",
+  "done": "scan",
+  "phases": {
+    "howareyou": "greet", "gate": "greet", "which_flight": "greet", "wrong_flight": "greet",
+    "time": "check", "help": "check", "seat_offer": "check", "offer": "check",
+    "wait": "seat",
+    "board": "announce", "early": "announce",
+    "scan": "scan", "closing": "scan"
+  },
+  "focus": [50, 30],
+  "jobs": {
+    "greet": "ee87a8af-bc81-4218-98e3-fcc5a37642bc",
+    "check": "a7323ec2-14bd-4822-b5e6-0dd474f82eab",
+    "seat": "46c94c74-2098-49fe-a2ab-0761638ee17a",
+    "announce": "cdc30c41-d4eb-44b7-b687-583839ba3495",
+    "scan": "a22e5155-25af-4362-8443-619c044bd4af"
+  }
+}

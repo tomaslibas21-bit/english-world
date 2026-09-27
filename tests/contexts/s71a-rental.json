@@ -1,0 +1,432 @@
+{
+ "situation": "s71a-rental",
+ "title": "I've Booked a Car",
+ "goal": "Išsinuomok automobilį: pasitikslink draudimą, užstatą ir grąžinimo laiką.",
+ "contexts": {
+  "resv": {
+   "id": "resv",
+   "kind": "step",
+   "npc": [
+    "Next, please! Do you have a reservation with us?",
+    "Good morning! How can I help you?",
+    "Hi there! Welcome to Harbor Car Rental. Are you picking up a car today?"
+   ],
+   "expects": [
+    "have_resv",
+    "rent_walkin",
+    "resv_no_ctx",
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad esi užsisakęs automobilį",
+    "Išsinuomoti automobilį be rezervacijos"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Sure. What's the last name on the reservation?",
+    "Great. Can I get your last name?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti pavardę"
+   ],
+   "options": []
+  },
+  "spell": {
+   "id": "spell",
+   "kind": "step",
+   "npc": [
+    "Could you spell that for me?",
+    "And how do you spell that?"
+   ],
+   "expects": [
+    "letters_ctx",
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti pavardę paraidžiui"
+   ],
+   "options": []
+  },
+  "license": {
+   "id": "license",
+   "kind": "step",
+   "npc": [
+    "Thanks! Here it is: a compact car for three days. Can I see your driver's license and the credit card you'd like to use?",
+    "Thanks! Here it is: a compact car for three days. I'll need your driver's license and a credit card.",
+    "Hmm, I don't see it under that name... Oh, here it is! It was under your first name. It's a compact car for three days. Can I see your driver's license and the credit card you'd like to use?"
+   ],
+   "expects": [
+    "here_docs",
+    "license_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti vairuotojo pažymėjimą ir kortelę"
+   ],
+   "options": []
+  },
+  "insurance": {
+   "id": "insurance",
+   "kind": "step",
+   "npc": [
+    "Perfect, thank you. Basic liability is included. Would you like to add full coverage for $25 a day?",
+    "No problem. Do you want full coverage? It's $25 a day.",
+    "Perfect, thank you. Do you want full coverage? It's $25 a day."
+   ],
+   "expects": [
+    "ins_full",
+    "ins_basic",
+    "ins_own",
+    "ins_what",
+    "ins_no_ctx",
+    "polite_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti draudimą"
+   ],
+   "options": []
+  },
+  "deposit": {
+   "id": "deposit",
+   "kind": "step",
+   "npc": [
+    "No problem. Just the basic. We'll put a $300 hold on your card. You'll get it back when you return the car.",
+    "Perfect, you're fully covered. We'll put a $300 hold on your card. You'll get it back when you return the car.",
+    "Okay, you're covered by your card, then. We'll put a $300 hold on your card. You'll get it back when you return the car."
+   ],
+   "expects": [
+    "deposit_q",
+    "ok_ack"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Sutikti arba paklausti, kada atgausi užstatą",
+    "Paklausti apie sąlygas"
+   ],
+   "options": []
+  },
+  "fuel": {
+   "id": "fuel",
+   "kind": "step",
+   "npc": [
+    "It usually takes three to five business days after you return the car. It comes with a full tank. Please bring it back full.",
+    "It usually takes three to five business days after you return the car. It comes with a full tank. Please bring it back full. Or would you like to prepay for the gas?",
+    "It comes with a full tank. Please bring it back full."
+   ],
+   "expects": [
+    "fuel_full",
+    "prepay_yes",
+    "fuel_q",
+    "ok_ack",
+    "mileage_q",
+    "polite_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pažadėti grąžinti su pilnu baku",
+    "Paklausti apie sąlygas"
+   ],
+   "options": []
+  },
+  "ret": {
+   "id": "ret",
+   "kind": "step",
+   "npc": [
+    "And the car is due back on Friday by 5 PM.",
+    "You're bringing it back on Friday by 5 PM, right?",
+    "Great, full to full. And the car is due back on Friday by 5 PM."
+   ],
+   "expects": [
+    "ret_change",
+    "ret_q",
+    "ok_ack",
+    "yes_right",
+    "ret_day_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patvirtinti grąžinimo laiką"
+   ],
+   "options": []
+  },
+  "sign": {
+   "id": "sign",
+   "kind": "step",
+   "npc": [
+    "On Friday, by 5 PM, right here. Great. Just sign here, and initial here.",
+    "On Friday, by 5 PM, right here. Okay, I just need your signature here and here.",
+    "Great. Just sign here, and initial here."
+   ],
+   "expects": [
+    "sign_q",
+    "ok_ack",
+    "here_docs",
+    "sign_where_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirašyti sutartį"
+   ],
+   "options": []
+  },
+  "keys_spot": {
+   "id": "keys_spot",
+   "kind": "step",
+   "npc": [
+    "Here are your keys. It's the silver Toyota Corolla in spot B4. Take a look around the car before you go. If you see any scratches, just let us know.",
+    "All right, here are your keys. It's the silver Toyota Corolla in spot B4. Take a look around the car before you go. If you see any scratches, just let us know.",
+    "Here are your keys. It's the blue Toyota Camry in spot C2. Take a look around the car before you go. If you see any scratches, just let us know."
+   ],
+   "expects": [
+    "where_car",
+    "scratch_q",
+    "ok_ack",
+    "where_car_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti ir atsisveikinti",
+    "Paklausti apie automobilį"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "It's the silver Toyota Corolla in spot B4. The lot is right outside, on the left. Drive safe!",
+    "It's the silver Toyota Corolla in spot B4. Enjoy the car, and drive safe!",
+    "It's the blue Toyota Camry in spot C2. The lot is right outside, on the left. Drive safe!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "upgrade": {
+   "id": "upgrade",
+   "kind": "step",
+   "npc": [
+    "Great, thanks. Would you like to upgrade to a midsize for just ten dollars more a day?",
+    "Perfect, thank you. Would you like to upgrade to a midsize for just ten dollars more a day?"
+   ],
+   "expects": [
+    "keep_size",
+    "upgrade_yes",
+    "polite_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsisakyti arba sutikti su didesniu automobiliu"
+   ],
+   "options": []
+  },
+  "keys": {
+   "id": "keys",
+   "kind": "step",
+   "npc": [
+    "Here are your keys. Take a look around the car before you go. If you see any scratches, just let us know.",
+    "All right, here are your keys. Take a look around the car before you go. If you see any scratches, just let us know."
+   ],
+   "expects": [
+    "where_car",
+    "scratch_q",
+    "ok_ack",
+    "where_car_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, kur automobilis",
+    "Padėkoti"
+   ],
+   "options": []
+  },
+  "free_up": {
+   "id": "free_up",
+   "kind": "step",
+   "npc": [
+    "Great, thanks. Good news: we're out of compacts today, so I'm giving you a free upgrade to a midsize.",
+    "Perfect, thank you. Good news: we're out of compacts today, so I'm giving you a free upgrade to a midsize."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti"
+   ],
+   "options": []
+  },
+  "extras": {
+   "id": "extras",
+   "kind": "step",
+   "npc": [
+    "Great, full to full. Do you need a GPS or a child seat?",
+    "Do you need a GPS or a child seat?",
+    "There's a gas station right on this street. Do you need a GPS or a child seat?"
+   ],
+   "expects": [
+    "extras_yes",
+    "extras_no",
+    "polite_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia GPS ar vaikiškos kėdutės"
+   ],
+   "options": [
+    "GPS",
+    "child seat"
+   ]
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hey, good morning! How's it going?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "have_resv",
+    "rent_walkin",
+    "resv_no_ctx",
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "size": {
+   "id": "size",
+   "kind": "step",
+   "npc": [
+    "No problem! We have cars available. What size car are you looking for?"
+   ],
+   "expects": [
+    "size_ctx",
+    "sizes_q"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti automobilio dydį"
+   ],
+   "options": [
+    "economy car",
+    "compact car",
+    "midsize car",
+    "SUV",
+    "minivan"
+   ]
+  },
+  "days": {
+   "id": "days",
+   "kind": "step",
+   "npc": [
+    "And for how many days?"
+   ],
+   "expects": [
+    "days_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kelioms dienoms"
+   ],
+   "options": []
+  },
+  "anything": {
+   "id": "anything",
+   "kind": "step",
+   "npc": [
+    "Anything else I can do for you?"
+   ],
+   "expects": [
+    "where_car",
+    "more_no",
+    "scratch_q",
+    "where_car_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kur automobilis"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "have_resv",
+  "rent_walkin",
+  "resv_no_ctx",
+  "name_ctx",
+  "letters_ctx",
+  "here_docs",
+  "license_q",
+  "size_ctx",
+  "sizes_q",
+  "days_ctx",
+  "ins_full",
+  "ins_basic",
+  "ins_no_ctx",
+  "ins_own",
+  "ins_what",
+  "deposit_q",
+  "fuel_q",
+  "fuel_full",
+  "prepay_yes",
+  "mileage_q",
+  "auto_q",
+  "extras_yes",
+  "extras_no",
+  "ret_day_ctx",
+  "ret_change",
+  "ret_q",
+  "polite_no_ctx",
+  "where_car_ctx",
+  "sign_where_ctx",
+  "sign_q",
+  "where_car",
+  "scratch_q",
+  "price_q",
+  "more_no",
+  "keep_size",
+  "upgrade_yes",
+  "yes_right",
+  "ok_ack"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

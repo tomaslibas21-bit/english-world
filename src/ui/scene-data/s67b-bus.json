@@ -1,0 +1,22 @@
+{
+  "npc": "Denise, bus driver",
+  "images": ["greet", "fare", "seat", "cord", "stop"],
+  "start": "greet",
+  "done": "stop",
+  "phases": {
+    "howareyou": "greet", "dest": "greet",
+    "oos_dest": "seat",
+    "fare": "fare", "card_tap": "fare", "daypass": "fare",
+    "stop": "seat", "known": "seat",
+    "seated": "cord", "mid": "cord",
+    "ride": "stop", "closing": "stop"
+  },
+  "focus": [48, 31],
+  "jobs": {
+    "greet": "c7539db1-9113-4242-919c-6586ead6e338",
+    "fare": "bb6e35f7-e057-45cd-9184-6690c596c8c4",
+    "seat": "ee9c033a-24e5-4e2a-ba78-57d672d43550",
+    "cord": "85e19791-117e-4553-89ad-b72e5b0f434f",
+    "stop": "89a8567a-9b3d-4c7d-839e-c1aa52260028"
+  }
+}

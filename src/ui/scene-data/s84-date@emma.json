@@ -1,0 +1,22 @@
+{
+  "npc": "Emma, your date",
+  "images": ["greet", "drinks", "talk", "check", "cold", "again"],
+  "start": "greet",
+  "phases": {
+    "greet_late": "greet", "greet_early": "greet", "greet_meet": "greet",
+    "drinks": "drinks",
+    "job": "talk", "like_job": "talk", "hobby": "talk", "travel": "talk", "music": "talk", "qf": "talk",
+    "check": "check", "check_offer": "check",
+    "cold": "cold",
+    "nice": "again", "again": "again", "day": "again", "closing": "again"
+  },
+  "focus": [34, 30],
+  "jobs": {
+    "greet": "c9cbf1b9-86fc-40f3-b612-45acc6b2699c",
+    "drinks": "59708b55-16a5-4180-9819-d3131318fe89",
+    "talk": "12ae82e7-adb7-47e3-b4a6-a84e1bbd091f",
+    "check": "9b27a142-cc14-4032-98b6-91f28889c6f7",
+    "cold": "f72859b7-3e1d-48e7-818b-e3c8bc8c3da0",
+    "again": "31b055fe-3895-4409-9810-3d2c2d0b1283"
+  }
+}

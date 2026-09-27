@@ -1,0 +1,1231 @@
+{
+ "situation": "s91a-lost-wallet",
+ "items": [
+  {
+   "ctx": "problem",
+   "say": "Excuse me, I lost my wallet",
+   "intent": "lost",
+   "slots": {
+    "item": "wallet"
+   }
+  },
+  {
+   "ctx": "problem",
+   "say": "Hello, can you help me? I can't find my phone",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "I have a problem, my wallet is missing",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Sorry, I think I lost my bag",
+   "intent": "lost",
+   "slots": {
+    "item": "bag"
+   }
+  },
+  {
+   "ctx": "problem",
+   "say": "Please help me, somebody stole my wallet",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, ma'am, I need help",
+   "intent": "help_req"
+  },
+  {
+   "ctx": "problem",
+   "say": "No, I'm not okay. I lost my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "My wallet disappeared",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "I don't have my wallet anymore",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "I can't find my backpack anywhere",
+   "intent": "lost",
+   "slots": {
+    "item": "backpack"
+   }
+  },
+  {
+   "ctx": "problem",
+   "say": "Where is my wallet? I had it a minute ago",
+   "intent": [
+    "lost",
+    "last_seen"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "I lost my purse",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Yes, they're lovely, but I have a problem",
+   "intent": "help_req"
+  },
+  {
+   "ctx": "problem",
+   "say": "Could you help me, please? I lost my cell phone",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Sorry to bother you, I think I dropped my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "My phone is lost",
+   "intent": "lost",
+   "slots": {
+    "item": "phone"
+   }
+  },
+  {
+   "ctx": "problem",
+   "say": "I think my wallet was stolen",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "I've lost my money",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me! My bag is gone!",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Hi, sorry, I need your help, I lost my keys and my wallet",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Hello, I'm looking for my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Did you see a wallet here?",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, do you know where the lost and found is?",
+   "intent": [
+    "police_where",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "what_happened",
+   "say": "I lost my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "what_happened",
+   "say": "My phone is missing",
+   "intent": "lost"
+  },
+  {
+   "ctx": "what_happened",
+   "say": "I can't find my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "what_happened",
+   "say": "Someone took my bag",
+   "intent": "lost"
+  },
+  {
+   "ctx": "what_happened",
+   "say": "My wallet, I can't find it",
+   "intent": "lost"
+  },
+  {
+   "ctx": "what_happened",
+   "say": "I don't know where my phone is",
+   "intent": "lost"
+  },
+  {
+   "ctx": "what_happened",
+   "say": "It's my wallet. It's gone",
+   "intent": "lost"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "At the bakery, maybe twenty minutes ago",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I had it at the fruit stand when I bought strawberries",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I paid for my coffee at the café",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Maybe on the bus",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "In the taxi, I think",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Half an hour ago, at the ATM",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I took money from the ATM",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "This morning at home",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I think I left it on the bench in the park",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "When I was at the pharmacy",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I don't remember, maybe at the market",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "At the post office, when I bought stamps",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Ten minutes ago",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I used it at the supermarket",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Near the fountain",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I had it in the restaurant during lunch",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "The last time I saw it was at the bank",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Maybe I dropped it near the station",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "At the market, I bought vegetables",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I'm not sure. At the café?",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "When I paid for strawberries",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "where_then",
+   "say": "At the café",
+   "intent": [
+    "last_seen",
+    "place_ctx"
+   ]
+  },
+  {
+   "ctx": "where_then",
+   "say": "I was at the bakery",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "where_then",
+   "say": "In the park",
+   "intent": [
+    "last_seen",
+    "place_ctx"
+   ]
+  },
+  {
+   "ctx": "where_then",
+   "say": "The supermarket",
+   "intent": "place_ctx"
+  },
+  {
+   "ctx": "where_then",
+   "say": "I was in the museum",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "where_then",
+   "say": "Near the ATM",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "where_then",
+   "say": "On the bus",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "where_then",
+   "say": "I was shopping at the market",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's a small black leather wallet",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "Brown, leather",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's red and big",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's a black iPhone",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "A blue backpack with a zipper",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's small and brown, made of leather",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "Just a normal black wallet",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's dark brown",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "My wallet is black and it has a zipper",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's a big black bag",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's gray, with my initials on it",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's an old brown leather wallet",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "A black one",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It has a picture of my kids inside",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "Red. Red leather.",
+   "intent": "describe"
+  },
+  {
+   "ctx": "police",
+   "say": "No, I don't know. Where is it?",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "police",
+   "say": "No, where is it?",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "police",
+   "say": "Yes, I know where it is",
+   "intent": "police_known"
+  },
+  {
+   "ctx": "police",
+   "say": "No, can you show me on the map?",
+   "intent": "map"
+  },
+  {
+   "ctx": "police",
+   "say": "Is it far from here?",
+   "intent": "far"
+  },
+  {
+   "ctx": "police",
+   "say": "How do I get there?",
+   "intent": "how_get"
+  },
+  {
+   "ctx": "police",
+   "say": "No, I'm not from here",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "police",
+   "say": "Can you draw it on my map?",
+   "intent": "map"
+  },
+  {
+   "ctx": "police",
+   "say": "Yes, it's near the bank, right?",
+   "intent": "police_known"
+  },
+  {
+   "ctx": "police",
+   "say": "I think so, near the station",
+   "intent": "police_known"
+  },
+  {
+   "ctx": "police",
+   "say": "No idea",
+   "intent": [
+    "police_where",
+    "g_dontknow"
+   ]
+  },
+  {
+   "ctx": "police",
+   "say": "Which way is it?",
+   "intent": "how_get"
+  },
+  {
+   "ctx": "police",
+   "say": "Could you tell me how to get there?",
+   "intent": "how_get"
+  },
+  {
+   "ctx": "police",
+   "say": "Is it on this street?",
+   "intent": "how_get"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes! That's my wallet!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "Oh my God, yes, it's mine!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "No, mine is black",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, that's it! Thank you so much!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "Let me see... yes, it's mine",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "No, that's not my wallet",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, yes, it's mine, thank you!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "I think so! Yes!",
+   "intent": [
+    "yn:yes",
+    "its_mine"
+   ]
+  },
+  {
+   "ctx": "found",
+   "say": "Really? Yes, it is mine",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "No, my wallet is smaller",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, everything is here",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, my money and my cards are here",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Let me check... yes, everything is there",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, nothing is missing",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "My cards are here, but the money is gone",
+   "intent": "some_missing"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, all my documents are inside",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, it's all there, thank God",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Everything is okay",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Yes, I checked everywhere",
+   "intent": "checked"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Yes, it's not in my pockets",
+   "intent": "checked"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Yes, twice",
+   "intent": "checked"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Yes, and in my bag too",
+   "intent": "checked"
+  },
+  {
+   "ctx": "pockets",
+   "say": "No, wait... no, it's not here",
+   "intent": "checked"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Of course, I looked everywhere",
+   "intent": "checked"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you so much for your help!",
+   "intent": [
+    "thanks_kind",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks, you're very kind",
+   "intent": "thanks_kind"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you, have a nice day",
+   "intent": [
+    "g_thanks",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks a lot, bye",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "closing",
+   "say": "You helped me a lot, thank you",
+   "intent": "thanks_kind"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you, I hope so too",
+   "intent": [
+    "g_thanks",
+    "hope_so"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Bye, and thanks again",
+   "intent": [
+    "g_bye",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "advice",
+   "say": "Okay, I'll go back there",
+   "intent": "will_go_back"
+  },
+  {
+   "ctx": "advice",
+   "say": "Good idea, thank you",
+   "intent": "will_go_back"
+  },
+  {
+   "ctx": "advice",
+   "say": "Should I call the police?",
+   "intent": "call911"
+  },
+  {
+   "ctx": "advice",
+   "say": "Where is the police station?",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "advice",
+   "say": "Should I cancel my cards?",
+   "intent": "cancel_cards"
+  },
+  {
+   "ctx": "advice",
+   "say": "What if it's not there?",
+   "intent": "what_do"
+  },
+  {
+   "ctx": "advice",
+   "say": "Should I call 911?",
+   "intent": "call911"
+  },
+  {
+   "ctx": "advice",
+   "say": "Okay, thanks, I'll go and check",
+   "intent": "will_go_back"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, I can't find my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Hi! Could you help me? I lost my phone",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Help! My bag is gone!",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "I think I've lost my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, I need some help. My wallet is missing",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Oh, hi. Somebody stole my phone!",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "I lost my backpack somewhere",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Sorry, have you seen a black wallet?",
+   "intent": "lost"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "At the café, I think",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I had it at the bank, when I got some cash",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Maybe at the fruit stand",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "An hour ago",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "On the bus this morning",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I bought flowers at the market and I had it",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "When I paid for my coffee",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Near the bench, I think",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I was at the museum",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I had it at the pharmacy twenty minutes ago",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's black and small",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "Brown leather",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "A big red bag",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's blue, made of fabric",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "A small gray wallet with a zipper",
+   "intent": "describe"
+  },
+  {
+   "ctx": "police",
+   "say": "No, I don't know",
+   "intent": [
+    "police_where",
+    "g_dontknow",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "police",
+   "say": "Where is it?",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "police",
+   "say": "Yes, I know",
+   "intent": "police_known"
+  },
+  {
+   "ctx": "police",
+   "say": "Can you show me on my map?",
+   "intent": "map"
+  },
+  {
+   "ctx": "police",
+   "say": "How far is it?",
+   "intent": "far"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes! It's mine!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, that's my wallet! Thank you!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "No, it's not mine",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "Mine is brown",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, everything's here",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, my cards are still here",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Nothing is missing, thank you",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Yes, I did",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "pockets",
+   "say": "Yes, it's not there",
+   "intent": "checked"
+  },
+  {
+   "ctx": "pockets",
+   "say": "No, let me check",
+   "intent": [
+    "yn:no",
+    "checked"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you so much, you're very kind",
+   "intent": [
+    "g_thanks",
+    "thanks_kind"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks, bye!",
+   "intent": [
+    "g_thanks",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you for your help",
+   "intent": [
+    "thanks_kind",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "advice",
+   "say": "Okay, I'll go back and ask",
+   "intent": "will_go_back"
+  },
+  {
+   "ctx": "advice",
+   "say": "Should I cancel my credit cards?",
+   "intent": "cancel_cards"
+  },
+  {
+   "ctx": "advice",
+   "say": "What should I do now?",
+   "intent": "what_do"
+  },
+  {
+   "ctx": "advice",
+   "say": "Is there a police station near here?",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, can you help me? I lost my wallet",
+   "intent": [
+    "help_req",
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "Someone stole my wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, I think I lost my phone",
+   "intent": "lost"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "At the café, when I paid",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "About an hour ago",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I think I left it on the bus",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "At the bakery this morning",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "describe",
+   "say": "It's brown, leather, and small",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "A small black wallet",
+   "intent": "describe"
+  },
+  {
+   "ctx": "police",
+   "say": "Can you show me on the map?",
+   "intent": "map"
+  },
+  {
+   "ctx": "police",
+   "say": "Is it far?",
+   "intent": "far"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, that's mine!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "No, that's not mine",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you so much! Bye",
+   "intent": "g_thanks"
+  },
+  {
+   "ctx": "problem",
+   "say": "Help please, I lost wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Excuse me, I can't find wallet",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "Somebody steal my phone",
+   "intent": "lost"
+  },
+  {
+   "ctx": "problem",
+   "say": "I have problem, my wallet is lost",
+   "intent": "lost"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "In the cafe, one hour ago",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I think in bus",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "When I pay for coffee",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Near fountain",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "describe",
+   "say": "Black, small, leather",
+   "intent": "describe"
+  },
+  {
+   "ctx": "describe",
+   "say": "Is brown wallet",
+   "intent": "describe"
+  },
+  {
+   "ctx": "police",
+   "say": "No, I don't know where",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "police",
+   "say": "Where is police?",
+   "intent": "police_where"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, is my wallet!",
+   "intent": "its_mine"
+  },
+  {
+   "ctx": "found",
+   "say": "No, is not my",
+   "intent": "not_mine"
+  },
+  {
+   "ctx": "all_there",
+   "say": "Yes, all is here",
+   "intent": "all_there"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you very much, you are very good",
+   "intent": "thanks_kind"
+  },
+  {
+   "ctx": "problem",
+   "say": "I didn't lose anything",
+   "intent": "any",
+   "not": [
+    "lost"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "I found my wallet",
+   "intent": "any",
+   "not": [
+    "lost"
+   ]
+  },
+  {
+   "ctx": "found",
+   "say": "No, it's not mine",
+   "intent": "any",
+   "not": [
+    "its_mine"
+   ]
+  },
+  {
+   "ctx": "found",
+   "say": "That's not my wallet",
+   "intent": "any",
+   "not": [
+    "its_mine"
+   ]
+  },
+  {
+   "ctx": "all_there",
+   "say": "No, my money is gone",
+   "intent": "any",
+   "not": [
+    "all_there"
+   ]
+  },
+  {
+   "ctx": "all_there",
+   "say": "Not everything is here",
+   "intent": "any",
+   "not": [
+    "all_there"
+   ]
+  },
+  {
+   "ctx": "police",
+   "say": "No, I don't know where it is",
+   "intent": "any",
+   "not": [
+    "police_known"
+   ]
+  },
+  {
+   "ctx": "pockets",
+   "say": "No, I didn't check",
+   "intent": "any",
+   "not": [
+    "checked"
+   ]
+  },
+  {
+   "ctx": "problem",
+   "say": "My wallet is not lost",
+   "intent": "any",
+   "not": [
+    "lost"
+   ]
+  },
+  {
+   "ctx": "describe",
+   "say": "It's not black",
+   "intent": "any",
+   "not": [
+    "describe"
+   ]
+  },
+  {
+   "ctx": "describe",
+   "say": "My uncle likes football",
+   "intent": "none"
+  },
+  {
+   "ctx": "police",
+   "say": "The sky is green today",
+   "intent": "none"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Chocolate helicopter window",
+   "intent": "none"
+  },
+  {
+   "ctx": "found",
+   "say": "No, mine is black",
+   "intent": "any",
+   "not": [
+    "its_mine"
+   ]
+  },
+  {
+   "ctx": "found",
+   "say": "Mine is brown",
+   "intent": "any",
+   "not": [
+    "its_mine"
+   ]
+  },
+  {
+   "ctx": "what_happened",
+   "say": "I can not find my wallet. I think I lost it here at the market",
+   "intent": "lost"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I think I lost it here at the market",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I lost it at the fruit stand",
+   "intent": "last_seen"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I did not lose it at the market",
+   "intent": "any",
+   "not": [
+    "last_seen"
+   ]
+  }
+ ]
+}

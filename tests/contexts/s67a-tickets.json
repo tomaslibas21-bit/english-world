@@ -1,0 +1,329 @@
+{
+ "situation": "s67a-tickets",
+ "title": "One-Way or Round-Trip?",
+ "goal": "Nusipirk traukinio bilietą į pajūrį ir sužinok, kada ir iš kurio kelio išvyksta traukinys.",
+ "contexts": {
+  "dest": {
+   "id": "dest",
+   "kind": "step",
+   "npc": [
+    "Hi there. What can I do for you?",
+    "Next in line, please! Where to?",
+    "Good morning! Where are you headed today?"
+   ],
+   "expects": [
+    "buy",
+    "dest_ctx",
+    "ask_next"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paprašyti bilieto į norimą miestą",
+    "Paklausti, kada kitas traukinys"
+   ],
+   "options": [
+    "Seaside",
+    "Portland",
+    "Boston",
+    "New York"
+   ]
+  },
+  "trip": {
+   "id": "trip",
+   "kind": "step",
+   "npc": [
+    "Sure. One-way or round-trip?",
+    "Will that be one-way or round-trip?",
+    "One-way or round-trip?"
+   ],
+   "expects": [
+    "trip_ans",
+    "buy"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti: į vieną pusę ar į abi"
+   ],
+   "options": []
+  },
+  "ret": {
+   "id": "ret",
+   "kind": "step",
+   "npc": [
+    "What day are you coming back?",
+    "And when are you coming back?",
+    "Sure, no problem. And when are you coming back?"
+   ],
+   "expects": [
+    "ret_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada grįši"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Okay, returning on Sunday. That'll be $24. How would you like to pay?",
+    "Got it. Okay, that comes to $24.",
+    "Okay, returning on Sunday. That'll be $24. Cash or card?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "here_you_go",
+    "discount_ask"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele ar grynaisiais",
+    "Paklausti apie nuolaidą"
+   ],
+   "options": []
+  },
+  "ticket": {
+   "id": "ticket",
+   "kind": "step",
+   "npc": [
+    "Sure, just tap or insert your card. Here's your ticket. Your train leaves at 10:15 from Track 2.",
+    "You're welcome!",
+    "No problem!"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti",
+    "Paklausti, kada ir iš kurio kelio išvyksta traukinys"
+   ],
+   "options": []
+  },
+  "travel_day": {
+   "id": "travel_day",
+   "kind": "step",
+   "npc": [
+    "Okay, returning on Sunday. Are you traveling today?",
+    "Are you traveling today?"
+   ],
+   "expects": [
+    "travel_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kada keliauji"
+   ],
+   "options": []
+  },
+  "delay": {
+   "id": "delay",
+   "kind": "step",
+   "npc": [
+    "No problem! Oh, and heads up: the 10:15 is running about twenty minutes late today.",
+    "Anytime! Oh, and heads up: the 10:15 is running about twenty minutes late today.",
+    "You're welcome! Oh, and heads up: the 10:15 is running about twenty minutes late today."
+   ],
+   "expects": [
+    "ask_cancelled",
+    "ask_newtime",
+    "ask_wait",
+    "ask_coffee",
+    "ok_thanks"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, kada traukinys išvyks"
+   ],
+   "options": []
+  },
+  "info": {
+   "id": "info",
+   "kind": "step",
+   "npc": [
+    "Anything else I can help you with?",
+    "There's one at 10:35. Anything else?",
+    "My pleasure! Anything else I can help you with?"
+   ],
+   "expects": [
+    "ask_next",
+    "ask_track",
+    "ask_change",
+    "ask_duration",
+    "more_no",
+    "ask_ontime"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kada ir iš kurio kelio išvyksta traukinys",
+    "Pasakyti, kad tai viskas"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "It leaves from Track 2. Have a great trip!",
+    "Track 2. Just follow the signs. Enjoy your trip!",
+    "Track 2. Just follow the signs. Have a great trip!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "seat_taken"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti",
+    "Paklausti, ar vieta traukinyje laisva"
+   ],
+   "options": []
+  },
+  "discount": {
+   "id": "discount",
+   "kind": "step",
+   "npc": [
+    "Are you a senior or a student?",
+    "Yes! Seniors get ten percent off, and students get fifteen percent off. Are you a senior or a student?"
+   ],
+   "expects": [
+    "discount_claim",
+    "no_discount_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar esi studentas ar senjoras"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Morning! How are you doing today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "buy",
+    "dest_ctx",
+    "ask_next"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "count": {
+   "id": "count",
+   "kind": "step",
+   "npc": [
+    "A one-way ticket is $38. Round-trip is $76. Just one ticket?"
+   ],
+   "expects": [
+    "count_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kiek bilietų"
+   ],
+   "options": []
+  },
+  "cls": {
+   "id": "cls",
+   "kind": "step",
+   "npc": [
+    "Got it. Would you like coach or business class?",
+    "Would you like coach or business class?",
+    "Perfect. Would you like coach or business class?"
+   ],
+   "expects": [
+    "cls_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti klasę (ekonominė – „coach“)"
+   ],
+   "options": []
+  },
+  "student_id": {
+   "id": "student_id",
+   "kind": "step",
+   "npc": [
+    "Great! Can I see your student ID?"
+   ],
+   "expects": [
+    "show_id",
+    "here_you_go",
+    "no_id"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti pažymėjimą"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "buy",
+  "buy_unknown",
+  "dest_ctx",
+  "trip_ans",
+  "count_ctx",
+  "ret_ctx",
+  "travel_ctx",
+  "cls_ans",
+  "discount_ask",
+  "discount_claim",
+  "no_discount_ctx",
+  "no_id",
+  "show_id",
+  "pay_card",
+  "pay_cash",
+  "here_you_go",
+  "ask_next",
+  "ask_track",
+  "ask_change",
+  "ask_duration",
+  "ask_price",
+  "ask_ontime",
+  "ask_cancelled",
+  "ask_newtime",
+  "ask_wait",
+  "ask_coffee",
+  "ask_seat",
+  "ask_wifi",
+  "ask_food",
+  "ask_schedule",
+  "ask_restroom",
+  "seat_taken",
+  "more_no",
+  "ok_thanks",
+  "echo_info",
+  "change_trip",
+  "change_dest",
+  "not_dest"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

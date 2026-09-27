@@ -1,0 +1,26 @@
+{
+  "npc": "Dan (host) and Nora (Dan's wife)",
+  "images": ["door", "coat", "drink", "dinner", "cat", "burnt", "dessert"],
+  "start": "door",
+  "done": "door",
+  "phases": {
+    "arrive": "door",
+    "coat": "coat", "diet": "coat",
+    "drink": "drink", "ready_soon": "drink", "salad": "drink",
+    "cat": "cat",
+    "dinner": "dinner", "pass": "dinner", "howisit": "dinner", "seconds": "dinner",
+    "burnt": "burnt",
+    "dessert": "dessert",
+    "closing": "door"
+  },
+  "focus": [36, 32],
+  "jobs": {
+    "door": "fb154076-349c-42cf-b05e-3a21a4e404ef",
+    "coat": "2df841a0-fc0d-4bac-ac82-e261e90eabce",
+    "drink": "c850b727-c3de-4f77-b862-35346fc52573",
+    "dinner": "933e3a01-7103-4ce9-bc2b-119ec3d47e6b",
+    "cat": "040549f1-cfb5-4e66-a7c2-491eb56abb88",
+    "burnt": "2ccdfb71-6c9d-4a7e-a6c2-b347af823342",
+    "dessert": "7e79d6fc-3881-42bd-a121-67eb23648753"
+  }
+}

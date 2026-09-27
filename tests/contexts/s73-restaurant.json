@@ -1,0 +1,714 @@
+{
+ "situation": "s73-restaurant",
+ "title": "This Isn't What I Ordered",
+ "goal": "Pavakarieniauk restorane: užsisakyk, jei reikia – pasiskųsk, ir paprašyk sąskaitos.",
+ "contexts": {
+  "resv": {
+   "id": "resv",
+   "kind": "step",
+   "npc": [
+    "Good evening! Welcome to Lucia's! Do you have a reservation?",
+    "Hi, welcome to Lucia's! Do you have a reservation with us tonight?",
+    "Welcome back! Do you have a reservation tonight?"
+   ],
+   "expects": [
+    "resv_yes",
+    "resv_no",
+    "resv_no_ctx",
+    "table_for",
+    "name_ctx",
+    "party_ctx",
+    "resv_time_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad rezervavote staliuką (ir kuo vardu)",
+    "Pasakyti, kad rezervacijos neturite, ir paprašyti staliuko"
+   ],
+   "options": []
+  },
+  "resv_name": {
+   "id": "resv_name",
+   "kind": "step",
+   "npc": [
+    "Great! What's the name?",
+    "Perfect. Under what name?"
+   ],
+   "expects": [
+    "name_ctx",
+    "resv_yes"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti vardą, kuriuo rezervavote"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Perfect, I have you right here. Right this way. Here are your menus. Marco will be right with you. Hi, I'm Marco, your server. How are you doing tonight?",
+    "Sure, no problem. Follow me, please. Here's your table. Your server will be right with you. Hi, I'm Marco, your server. How are you doing tonight?",
+    "Okay, your table is ready! Right this way. Here are your menus. Marco will be right with you. Hi, I'm Marco, your server. How are you doing tonight?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "drinks": {
+   "id": "drinks",
+   "kind": "step",
+   "npc": [
+    "I'm great, thanks for asking! What can I get you to drink?",
+    "Great, I found your reservation. Follow me, please. Here's your table. Your server will be right with you. Hi, I'm Marco. I'll be your server tonight. Would you like something to drink?",
+    "Perfect, I have you right here. Follow me, please. Here's your table. Your server will be right with you. Hi, I'm Marco. I'll be your server tonight. Would you like something to drink?"
+   ],
+   "expects": [
+    "order",
+    "drinks_no",
+    "ask_menu",
+    "more_no",
+    "reject"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užsisakyti gėrimą",
+    "Paklausti, ką turi atsigerti"
+   ],
+   "options": [
+    "lemonade",
+    "iced tea",
+    "sparkling water",
+    "still water",
+    "tap water",
+    "Coke",
+    "red wine",
+    "white wine",
+    "beer"
+   ]
+  },
+  "drinks_ack": {
+   "id": "drinks_ack",
+   "kind": "step",
+   "npc": [
+    "Coming right up!",
+    "Great, I'll bring that right out."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti",
+    "Paklausti apie patiekalus"
+   ],
+   "options": []
+  },
+  "order": {
+   "id": "order",
+   "kind": "step",
+   "npc": [
+    "No problem! Here are your drinks. Are you ready to order?",
+    "My pleasure! Here are your drinks. Are you ready to order, or do you need a few more minutes?",
+    "My pleasure! Here are your drinks. Our specials tonight are the grilled salmon and a mushroom risotto. Have you decided?"
+   ],
+   "expects": [
+    "order",
+    "ready_yes",
+    "need_time",
+    "ask_recommend",
+    "ask_specials",
+    "ask_menu"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užsisakyti pagrindinį patiekalą",
+    "Užsisakyti užkandį",
+    "Paklausti apie patiekalus (rekomendacijos, aštrumas, alergijos)",
+    "Paprašyti dar kelių minučių"
+   ],
+   "options": [
+    "lasagna",
+    "penne arrabbiata",
+    "mushroom risotto",
+    "chicken parmesan",
+    "grilled salmon",
+    "steak",
+    "burger",
+    "margherita pizza",
+    "pasta",
+    "bruschetta",
+    "Caesar salad",
+    "minestrone soup",
+    "garlic bread"
+   ]
+  },
+  "soup_offer": {
+   "id": "soup_offer",
+   "kind": "step",
+   "npc": [
+    "Would you like to start with a cup of our minestrone soup? It's homemade."
+   ],
+   "expects": [
+    "order"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip ar ne"
+   ],
+   "options": []
+  },
+  "placed": {
+   "id": "placed",
+   "kind": "step",
+   "npc": [
+    "Excellent choice. It won't take long.",
+    "Great! I'll send your order to the kitchen."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti ir palaukti",
+    "Paprašyti ko nors (duonos, vandens)"
+   ],
+   "options": []
+  },
+  "serve": {
+   "id": "serve",
+   "kind": "step",
+   "npc": [
+    "My pleasure! Here you go: the lasagna. Enjoy!",
+    "Anytime! And here's the lasagna. Enjoy your meal!",
+    "No problem! And here's the lasagna. Enjoy your meal!"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti",
+    "Paprašyti daugiau duonos ar gėrimo"
+   ],
+   "options": []
+  },
+  "checkback": {
+   "id": "checkback",
+   "kind": "step",
+   "npc": [
+    "You're welcome! Is everything okay here?",
+    "My pleasure! How is everything?",
+    "Anytime! Is everything okay here?"
+   ],
+   "expects": [
+    "all_good",
+    "all_good_ctx",
+    "complain_cold",
+    "complain_other",
+    "request",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad viskas skanu",
+    "Paprašyti daugiau duonos ar gėrimo",
+    "Pasiskųsti, jei kas negerai"
+   ],
+   "options": []
+  },
+  "enjoy": {
+   "id": "enjoy",
+   "kind": "step",
+   "npc": [
+    "Great! Let me know if you need anything.",
+    "Glad to hear it! Enjoy!",
+    "Thank you! I'll tell the chef."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti",
+    "Paprašyti ko nors"
+   ],
+   "options": []
+  },
+  "dessert": {
+   "id": "dessert",
+   "kind": "step",
+   "npc": [
+    "My pleasure! Did you save room for dessert?",
+    "No problem! Did you save room for dessert?",
+    "No problem. Would you like to see the dessert menu?"
+   ],
+   "expects": [
+    "order",
+    "dessert_no",
+    "check_ask",
+    "ask_menu",
+    "ask_recommend",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užsisakyti desertą ar kavos",
+    "Atsisakyti ir paprašyti sąskaitos"
+   ],
+   "options": [
+    "tiramisu",
+    "chocolate cake",
+    "cheesecake",
+    "panna cotta",
+    "gelato",
+    "coffee",
+    "espresso"
+   ]
+  },
+  "split": {
+   "id": "split",
+   "kind": "step",
+   "npc": [
+    "Of course. I'll get your check. Will this be together or separate?",
+    "Of course. I'll get your check. Is this all on one check, or separate?",
+    "Sure! I'll bring the check right over. Will this be together or separate?"
+   ],
+   "expects": [
+    "split_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti: mokėsite kartu ar atskirai"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Perfect, one check. Here you go, here's your check. Your total is $34.",
+    "Perfect, one check. Here's your check. Your total is $34.",
+    "Perfect, one check. Here you go, here's your check. Your total is $34. No rush."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "ask_tip",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele ar grynaisiais",
+    "Paklausti, ar arbatpinigiai įskaičiuoti"
+   ],
+   "options": []
+  },
+  "tip": {
+   "id": "tip",
+   "kind": "step",
+   "npc": [
+    "Sure! Just tap your card here. It'll ask you about the tip first."
+   ],
+   "expects": [
+    "tip_ctx",
+    "tip_give",
+    "tip_none",
+    "ask_tip"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti arbatpinigius (paprastai 15–20 %)"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Perfect, you're all set. Have a great night! Good night! Thanks for coming!",
+    "That's very kind. You're all set! Have a great night!",
+    "That's very kind. You're all set! Thanks for coming! Come back soon!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "serve_wrong": {
+   "id": "serve_wrong",
+   "kind": "step",
+   "npc": [
+    "You're welcome! Here you go: the burger. Enjoy!",
+    "No problem! Wait, you ordered the lasagna, didn't you? I'm so sorry! This is for another table.",
+    "Anytime! Here's the lasagna. Sorry about the wait!"
+   ],
+   "expects": [
+    "complain_wrong",
+    "its_ok"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad atnešė ne tą patiekalą"
+   ],
+   "options": [
+    "lasagna",
+    "penne arrabbiata",
+    "mushroom risotto",
+    "chicken parmesan",
+    "grilled salmon",
+    "steak",
+    "burger",
+    "margherita pizza",
+    "pasta"
+   ]
+  },
+  "check_coming": {
+   "id": "check_coming",
+   "kind": "step",
+   "npc": [
+    "Of course. I'll get your check.",
+    "Sure! I'll bring the check right over."
+   ],
+   "expects": [
+    "split_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti"
+   ],
+   "options": []
+  },
+  "box": {
+   "id": "box",
+   "kind": "step",
+   "npc": [
+    "No problem! Can I get you a box for the rest?",
+    "Anytime! Can I get you a box for the rest?",
+    "My pleasure! Would you like a box for that?"
+   ],
+   "expects": [
+    "box_ask"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip ar ne",
+    "Paprašyti dėžutės likučiams"
+   ],
+   "options": []
+  },
+  "check": {
+   "id": "check",
+   "kind": "step",
+   "npc": [
+    "No problem! Anything else I can get for you tonight?",
+    "No problem. Anything else I can get for you tonight?",
+    "You're welcome! Anything else I can get for you tonight?"
+   ],
+   "expects": [
+    "check_ask",
+    "more_no",
+    "order",
+    "ask_menu",
+    "box_ask",
+    "dessert_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti sąskaitos",
+    "Užsisakyti desertą"
+   ],
+   "options": [
+    "tiramisu",
+    "chocolate cake",
+    "cheesecake",
+    "panna cotta",
+    "gelato"
+   ]
+  },
+  "seatpref": {
+   "id": "seatpref",
+   "kind": "step",
+   "npc": [
+    "Perfect, I have you right here. Would you like to sit inside or on the patio?",
+    "Great, I found your reservation. Would you like to sit inside or on the patio?",
+    "Great, I found your reservation. Inside or on the patio?"
+   ],
+   "expects": [
+    "seat_ans",
+    "seat_req"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti: viduje ar terasoje"
+   ],
+   "options": []
+  },
+  "wait": {
+   "id": "wait",
+   "kind": "step",
+   "npc": [
+    "Sure, we can do that. We're pretty busy tonight. It'll be about fifteen minutes. Is that okay?",
+    "Great. It won't take long.",
+    "Sure, we can do that. It'll be about a ten-minute wait. Is that okay?"
+   ],
+   "expects": [
+    "wait_ok_ctx",
+    "wait_no_ctx",
+    "ask_wait",
+    "its_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti palaukti arba pasakyti, kad skubate"
+   ],
+   "options": []
+  },
+  "drink_kind": {
+   "id": "drink_kind",
+   "kind": "step",
+   "npc": [
+    "Still or sparkling?",
+    "Sure! Tap, still or sparkling?"
+   ],
+   "expects": [
+    "order",
+    "kind_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Patikslinti gėrimą"
+   ],
+   "options": [
+    "still water",
+    "sparkling water",
+    "tap water",
+    "red wine",
+    "white wine",
+    "Coke",
+    "Diet Coke",
+    "Sprite",
+    "regular coffee",
+    "decaf"
+   ]
+  },
+  "doneness": {
+   "id": "doneness",
+   "kind": "step",
+   "npc": [
+    "Sounds good. How would you like your steak cooked?",
+    "Excellent. How would you like your steak cooked? Rare, medium or well-done?",
+    "How would you like your steak cooked?"
+   ],
+   "expects": [
+    "doneness_ans",
+    "order"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kaip iškepti kepsnį"
+   ],
+   "options": [
+    "rare",
+    "medium-rare",
+    "medium",
+    "medium-well",
+    "well-done"
+   ]
+  },
+  "side": {
+   "id": "side",
+   "kind": "step",
+   "npc": [
+    "Great, it comes with a side. Would you like fries, roasted potatoes, a green salad or grilled vegetables?",
+    "Perfect, medium-rare. And what side would you like with that?",
+    "Perfect, medium-rare. Great, it comes with a side. Would you like fries, roasted potatoes, a green salad or grilled vegetables?"
+   ],
+   "expects": [
+    "side_ans",
+    "order",
+    "reject"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti garnyrą"
+   ],
+   "options": [
+    "fries",
+    "roasted potatoes",
+    "green salad",
+    "grilled vegetables"
+   ]
+  },
+  "dessert_ack": {
+   "id": "dessert_ack",
+   "kind": "step",
+   "npc": [
+    "Great choice! I'll bring it right out.",
+    "Coming right up!"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti"
+   ],
+   "options": []
+  },
+  "dessert_serve": {
+   "id": "dessert_serve",
+   "kind": "step",
+   "npc": [
+    "My pleasure! Here's the tiramisu. Enjoy!",
+    "Anytime! Here's the tiramisu. Enjoy!",
+    "No problem! Here's the tiramisu. Enjoy!"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti"
+   ],
+   "options": []
+  },
+  "checkback_soup": {
+   "id": "checkback_soup",
+   "kind": "step",
+   "npc": [
+    "You're welcome! How's the soup?",
+    "My pleasure! How's the soup?"
+   ],
+   "expects": [
+    "complain_cold",
+    "all_good",
+    "all_good_ctx",
+    "complain_other",
+    "request",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad sriuba šalta, ir paprašyti pašildyti",
+    "Pasakyti, kad viskas skanu"
+   ],
+   "options": []
+  },
+  "fix": {
+   "id": "fix",
+   "kind": "step",
+   "npc": [
+    "Oh, I'm so sorry! I'll warm it up right away.",
+    "My pleasure! Here you go, nice and hot.",
+    "You're welcome! Here you go, nice and hot."
+   ],
+   "expects": [
+    "its_ok"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti"
+   ],
+   "options": []
+  },
+  "change": {
+   "id": "change",
+   "kind": "step",
+   "npc": [
+    "Great, I'll bring your change right over."
+   ],
+   "expects": [
+    "keep_change",
+    "tip_give"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Palikti grąžą arbatpinigiams arba palaukti grąžos"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "resv_yes",
+  "resv_time_ctx",
+  "resv_no",
+  "resv_no_ctx",
+  "table_for",
+  "party_ctx",
+  "name_ctx",
+  "ask_wait",
+  "wait_ok_ctx",
+  "wait_no_ctx",
+  "seat_req",
+  "seat_ans",
+  "order",
+  "order_unknown",
+  "kind_ctx",
+  "ready_yes",
+  "same",
+  "need_time",
+  "drinks_no",
+  "more_no",
+  "its_ok",
+  "ask_menu",
+  "ask_specials",
+  "ask_recommend",
+  "ask_desc",
+  "ask_spicy",
+  "ask_comes",
+  "ask_veg",
+  "ask_allergy",
+  "ask_price",
+  "ask_have",
+  "ask_have_unknown",
+  "ask_restroom",
+  "doneness_ans",
+  "side_ans",
+  "all_good",
+  "all_good_ctx",
+  "complain_cold",
+  "complain_other",
+  "complain_wrong",
+  "request",
+  "box_ask",
+  "dessert_no",
+  "check_ask",
+  "split_ans",
+  "pay_card",
+  "pay_cash",
+  "no_cash",
+  "pay_phone",
+  "here_you_go",
+  "keep_change",
+  "ask_tip",
+  "tip_ctx",
+  "tip_give",
+  "tip_none",
+  "reject",
+  "change",
+  "correction"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

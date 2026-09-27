@@ -1,0 +1,619 @@
+{
+ "situation": "s74-clothes",
+ "title": "Can I Try It On?",
+ "goal": "Išsirink drabužį, pasimatuok ir nusipirk (ar pasikeisk).",
+ "contexts": {
+  "item": {
+   "id": "item",
+   "kind": "step",
+   "npc": [
+    "Welcome to Threads! Can I help you find anything?",
+    "Welcome to Threads! What are you looking for today?",
+    "Hello! Can I help you find anything?"
+   ],
+   "expects": [
+    "looking_for",
+    "just_looking",
+    "ask_have_size",
+    "ask_have_color",
+    "try_on",
+    "return_item",
+    "exchange",
+    "vague_item",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ko ieškai",
+    "Pasakyti, kad tik apsidairai",
+    "Paklausti, ar yra kito dydžio",
+    "Paklausti apie spalvas"
+   ],
+   "options": [
+    "jacket",
+    "shirt",
+    "T-shirt",
+    "sweater",
+    "jeans",
+    "pants",
+    "dress",
+    "coat",
+    "scarf",
+    "shoes",
+    "sneakers",
+    "small",
+    "medium",
+    "large",
+    "extra-large",
+    "black",
+    "white",
+    "gray",
+    "navy",
+    "blue",
+    "red",
+    "green",
+    "yellow",
+    "pink",
+    "brown",
+    "beige",
+    "purple",
+    "orange"
+   ]
+  },
+  "size": {
+   "id": "size",
+   "kind": "step",
+   "npc": [
+    "Great choice! What size are you?",
+    "Sure! What size do you need?",
+    "Sure, right this way. What size do you need?"
+   ],
+   "expects": [
+    "size_ans",
+    "ask_have_size",
+    "size_unknown",
+    "ask_sizes",
+    "color_ans",
+    "ask_have_color",
+    "ask_colors"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo dydį"
+   ],
+   "options": [
+    "small",
+    "medium",
+    "large",
+    "extra-large"
+   ]
+  },
+  "tryon": {
+   "id": "tryon",
+   "kind": "pending",
+   "npc": [
+    "Perfect. Would you like to try it on?",
+    "You're lucky: that's the last one! Do you want to try it on?",
+    "Got it. Would you like to try it on?"
+   ],
+   "expects": [
+    "try_on",
+    "no_try",
+    "fit_good",
+    "take_it",
+    "ask_fitting_room",
+    "ask_price",
+    "ask_sale",
+    "try_yes_ctx",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar matuosies",
+    "Paklausti kainos ar nuolaidos"
+   ],
+   "options": [
+    "jacket",
+    "shirt",
+    "T-shirt",
+    "sweater",
+    "jeans",
+    "pants",
+    "dress",
+    "coat",
+    "scarf",
+    "shoes",
+    "sneakers"
+   ]
+  },
+  "fit": {
+   "id": "fit",
+   "kind": "pending",
+   "npc": [
+    "Here's a medium for you. The fitting rooms are right over there. Let me know how it fits!",
+    "The fitting rooms are in the back, on the left. Let me know how it fits!",
+    "Here's a medium for you. The fitting rooms are in the back, on the left. Let me know how it fits!"
+   ],
+   "expects": [
+    "fit_bad",
+    "fit_good",
+    "fit_unclear",
+    "take_it",
+    "g_ok",
+    "try_on",
+    "no_try",
+    "ask_fitting_room",
+    "ask_price",
+    "ask_sale",
+    "try_yes_ctx",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip tinka",
+    "Paprašyti kito dydžio"
+   ],
+   "options": [
+    "small",
+    "medium",
+    "large",
+    "extra-large"
+   ]
+  },
+  "decide": {
+   "id": "decide",
+   "kind": "pending",
+   "npc": [
+    "Wow, that color really suits you! So, would you like to get it?",
+    "Oh, it really suits you! So, what do you think?",
+    "Oh, it really suits you! So, would you like to get it?"
+   ],
+   "expects": [
+    "take_it",
+    "think_about_it",
+    "not_take",
+    "too_expensive",
+    "ask_price",
+    "ask_sale",
+    "ask_tax",
+    "ask_return_policy",
+    "dislike_color",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad imi, arba paklausti kainos",
+    "Pagalvoti arba atsisakyti",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": [
+    "jacket",
+    "shirt",
+    "T-shirt",
+    "sweater",
+    "jeans",
+    "pants",
+    "dress",
+    "coat",
+    "scarf",
+    "shoes",
+    "sneakers"
+   ]
+  },
+  "rewards": {
+   "id": "rewards",
+   "kind": "step",
+   "npc": [
+    "Awesome! I'll take it to the register for you. Do you have a rewards account with us?",
+    "Great! Let's go to the register. Do you have a rewards account with us?",
+    "Awesome! I'll take them to the register for you. Do you have a rewards account with us?"
+   ],
+   "expects": [
+    "rewards_member",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi lojalumo paskyrą"
+   ],
+   "options": []
+  },
+  "rewards_join": {
+   "id": "rewards_join",
+   "kind": "pending",
+   "npc": [
+    "Would you like to join? It's free."
+   ],
+   "expects": [
+    "rewards_member",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "No worries! Your total is $63.59, with tax.",
+    "Great! Let's go to the register. That'll be $63.59 with tax.",
+    "No problem! That'll be $63.59 with tax. Cash or card?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele, grynaisiais ar telefonu"
+   ],
+   "options": []
+  },
+  "bag": {
+   "id": "bag",
+   "kind": "pending",
+   "npc": [
+    "Sure! Just tap or insert your card. Perfect, thanks! Would you like a bag?",
+    "Of course. Just tap it here. Perfect, thanks! Would you like a bag?",
+    "Of course. Just tap it here. Thank you! Do you need a bag?"
+   ],
+   "expects": [
+    "wear_it",
+    "no_bag",
+    "gift_receipt",
+    "want_bag",
+    "im_fine_ctx",
+    "no_receipt"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia maišelio"
+   ],
+   "options": [
+    "jacket",
+    "shirt",
+    "T-shirt",
+    "sweater",
+    "jeans",
+    "pants",
+    "dress",
+    "coat",
+    "scarf",
+    "shoes",
+    "sneakers"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Sure, here you go. Thanks for shopping with us! Have a great day!",
+    "Here you go. Enjoy your new jacket! Have a great day!",
+    "Here's your receipt. Enjoy your new jacket! Have a great day!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "take_it"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hi! How are you today?",
+    "Hi there! How are you doing today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "looking_for",
+    "just_looking",
+    "ask_have_size",
+    "ask_have_color",
+    "try_on",
+    "return_item",
+    "exchange",
+    "vague_item",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "receipt": {
+   "id": "receipt",
+   "kind": "step",
+   "npc": [
+    "Here you go. Would you like your receipt printed or emailed?",
+    "Sure, here you go. Would you like your receipt printed or emailed?",
+    "Here you go. Would you like the receipt in the bag?"
+   ],
+   "expects": [
+    "receipt_bag",
+    "receipt_email",
+    "no_receipt",
+    "gift_receipt",
+    "receipt_no_ctx",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip gauti čekį"
+   ],
+   "options": []
+  },
+  "color": {
+   "id": "color",
+   "kind": "pending",
+   "npc": [
+    "Great. You're lucky: that's the last one! Which color would you like? We have it in yellow, black and navy.",
+    "Great. Which color would you like? We have it in yellow, black and navy.",
+    "Got it. What color would you like?"
+   ],
+   "expects": [
+    "color_ans",
+    "ask_have_color",
+    "ask_colors",
+    "size_ans",
+    "dislike_color"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti spalvą"
+   ],
+   "options": [
+    "yellow",
+    "black",
+    "navy",
+    "brown",
+    "white",
+    "gray",
+    "green",
+    "beige"
+   ]
+  },
+  "return_q": {
+   "id": "return_q",
+   "kind": "pending",
+   "npc": [
+    "Oh, hi again! Is that a return?"
+   ],
+   "expects": [
+    "return_item",
+    "exchange",
+    "problem",
+    "receipt_yes",
+    "fit_bad",
+    "just_looking",
+    "looking_for",
+    "item_short",
+    "ask_have_size",
+    "ask_have_color",
+    "try_on",
+    "vague_item",
+    "im_fine_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ką nori grąžinti ar pasikeisti",
+    "Pasakyti, kad tik apsidairai"
+   ],
+   "options": []
+  },
+  "shoe": {
+   "id": "shoe",
+   "kind": "step",
+   "npc": [
+    "Great choice! What size do you wear?",
+    "Sure! What size do you wear?",
+    "Sure, right this way. Sure! And what size are you?"
+   ],
+   "expects": [
+    "shoe_size",
+    "shoe_size_ctx",
+    "ask_have_size",
+    "size_unknown"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti batų dydį (JAV arba Europos)"
+   ],
+   "options": []
+  },
+  "r_receipt": {
+   "id": "r_receipt",
+   "kind": "step",
+   "npc": [
+    "Of course. Do you have the receipt?",
+    "Sure, no problem. Do you have your receipt?"
+   ],
+   "expects": [
+    "receipt_yes",
+    "receipt_none",
+    "here_you_go"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar turi čekį"
+   ],
+   "options": []
+  },
+  "r_reason": {
+   "id": "r_reason",
+   "kind": "pending",
+   "npc": [
+    "Perfect, thank you. Was there anything wrong with it?",
+    "Perfect, thank you. Can I ask why you're returning it?",
+    "Perfect, thank you. What's wrong with it?"
+   ],
+   "expects": [
+    "problem",
+    "fit_bad",
+    "fit_unclear",
+    "dislike_color"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paaiškinti, kas negerai",
+    "Pasakyti, kad netinka dydis"
+   ],
+   "options": [
+    "jacket",
+    "shirt",
+    "T-shirt",
+    "sweater",
+    "jeans",
+    "pants",
+    "dress",
+    "coat",
+    "scarf",
+    "shoes",
+    "sneakers"
+   ]
+  },
+  "r_choice": {
+   "id": "r_choice",
+   "kind": "step",
+   "npc": [
+    "Oh no, I'm so sorry about that! Would you like a refund or an exchange?",
+    "Oh no, I'm so sorry about that! Refund or exchange?",
+    "Oh, that happens! Without a receipt, I can offer you store credit or an exchange."
+   ],
+   "expects": [
+    "want_refund",
+    "exchange",
+    "want_credit",
+    "no_refund"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti: pinigai, pasikeitimas ar kreditas"
+   ],
+   "options": []
+  },
+  "r_new": {
+   "id": "r_new",
+   "kind": "pending",
+   "npc": [
+    "Which color would you like instead?"
+   ],
+   "expects": [
+    "size_ans",
+    "color_ans",
+    "ask_have_size",
+    "ask_have_color",
+    "shoe_size",
+    "shoe_size_ctx",
+    "exchange"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti kitą spalvą",
+    "Pasirinkti kitą dydį"
+   ],
+   "options": [
+    "yellow",
+    "black",
+    "navy",
+    "small",
+    "medium",
+    "large",
+    "extra-large"
+   ]
+  }
+ },
+ "intents": [
+  "just_looking",
+  "im_fine_ctx",
+  "vague_item",
+  "looking_for",
+  "item_short",
+  "looking_unknown",
+  "change_item",
+  "size_ans",
+  "ask_sizes",
+  "ask_have_size",
+  "size_unknown",
+  "shoe_size",
+  "shoe_size_ctx",
+  "color_ans",
+  "ask_have_color",
+  "ask_colors",
+  "dislike_color",
+  "try_on",
+  "try_yes_ctx",
+  "no_try",
+  "ask_fitting_room",
+  "fit_bad",
+  "fit_unclear",
+  "fit_good",
+  "sweet",
+  "ask_price",
+  "ask_sale",
+  "ask_tax",
+  "ask_return_policy",
+  "take_it",
+  "think_about_it",
+  "not_take",
+  "too_expensive",
+  "pay_card",
+  "no_cash",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "keep_change",
+  "ask_where_pay",
+  "wear_it",
+  "no_bag",
+  "want_bag",
+  "gift_receipt",
+  "receipt_bag",
+  "receipt_email",
+  "no_receipt",
+  "receipt_no_ctx",
+  "rewards_member",
+  "return_item",
+  "exchange",
+  "receipt_yes",
+  "receipt_none",
+  "problem",
+  "want_refund",
+  "no_refund",
+  "no_credit",
+  "want_credit"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

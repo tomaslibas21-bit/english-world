@@ -1,0 +1,356 @@
+{
+ "situation": "s76-dentist-call",
+ "title": "Could You Spell That?",
+ "goal": "Paskambink į odontologijos kliniką ir užsiregistruok vizitui.",
+ "contexts": {
+  "help": {
+   "id": "help",
+   "kind": "step",
+   "npc": [
+    "Good morning, Green Street Dental! Linda speaking. How may I help you?",
+    "Thank you for calling Green Street Dental. This is Linda. How can I help you today?",
+    "Green Street Dental, this is Linda. How can I help you?"
+   ],
+   "expects": [
+    "book",
+    "reason_ans",
+    "move",
+    "cancel"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad nori užsiregistruoti vizitui (ir kodėl)",
+    "Jei blogai girdi – paprašyti kalbėti garsiau"
+   ],
+   "options": [
+    "toothache",
+    "checkup",
+    "cleaning",
+    "broken tooth",
+    "lost filling"
+   ]
+  },
+  "pain_len": {
+   "id": "pain_len",
+   "kind": "step",
+   "npc": [
+    "Oh no, I'm sorry to hear that. How long have you had this pain?"
+   ],
+   "expects": [
+    "pain_len"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek laiko skauda"
+   ],
+   "options": []
+  },
+  "new_pt": {
+   "id": "new_pt",
+   "kind": "step",
+   "npc": [
+    "Okay, got it. Are you a new patient?",
+    "I see. Have you been to our office before?",
+    "Oh no, I'm sorry to hear that. Have you been to our office before?"
+   ],
+   "expects": [
+    "new_yes",
+    "new_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar esi naujas pacientas"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Great, welcome! Can I have your first and last name, please?",
+    "Great, welcome! And what's your name, please?",
+    "Okay, no problem. And what's your name, please?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti vardą ir pavardę",
+    "Paprašyti pakartoti"
+   ],
+   "options": []
+  },
+  "spell": {
+   "id": "spell",
+   "kind": "step",
+   "npc": [
+    "Could you spell your last name for me?",
+    "Thank you. And how do you spell that?"
+   ],
+   "expects": [
+    "spell_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti pavardę paraidžiui",
+    "Paprašyti pakartoti"
+   ],
+   "options": []
+  },
+  "dob": {
+   "id": "dob",
+   "kind": "step",
+   "npc": [
+    "Got it, thank you. And what's your date of birth?",
+    "Perfect, thanks. And what's your date of birth?",
+    "Got it, thank you. Can I have your date of birth, please?"
+   ],
+   "expects": [
+    "dob_ans",
+    "dob_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti gimimo datą (mėnuo, diena, metai)"
+   ],
+   "options": []
+  },
+  "phone": {
+   "id": "phone",
+   "kind": "step",
+   "npc": [
+    "Thank you. What's the best phone number to reach you?",
+    "Perfect. What's the best phone number to reach you?",
+    "Thank you. And a phone number, please?"
+   ],
+   "expects": [
+    "phone_ans",
+    "phone_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti telefono numerį"
+   ],
+   "options": []
+  },
+  "insurance": {
+   "id": "insurance",
+   "kind": "step",
+   "npc": [
+    "Great, thank you. Do you have dental insurance?"
+   ],
+   "expects": [
+    "insurance_no",
+    "insurance_yes",
+    "cost_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie draudimą (ar mokėsi pats)"
+   ],
+   "options": []
+  },
+  "slot": {
+   "id": "slot",
+   "kind": "step",
+   "npc": [
+    "No problem. If you pay yourself, the exam and X-rays are $150. Okay, let's find you something soon. I have an opening Tuesday at 10:00. Does that work for you?",
+    "We have tomorrow at 8:15. Would that work?",
+    "Thanks for holding! Okay, let's find you something soon. We have Tuesday at 10:00. Would that work?"
+   ],
+   "expects": [
+    "accept",
+    "earlier",
+    "later",
+    "morning",
+    "day_req",
+    "time_req",
+    "reject",
+    "availability_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba paprašyti kito laiko"
+   ],
+   "options": []
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "Great! So that's tomorrow at 8:15. Please come ten minutes early to fill out some forms. Can I help you with anything else?",
+    "Perfect! You're all set for tomorrow at 8:15. Please come ten minutes early to fill out some forms. Can I help you with anything else?",
+    "Perfect! You're all set for tomorrow at 8:15. Please come ten minutes early to fill out some forms. Anything else I can do for you?"
+   ],
+   "expects": [
+    "more_no",
+    "see_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti (ar dar ko paklausti)",
+    "Paklausti apie adresą, kainą ar ką atsinešti"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Thanks for calling. See you tomorrow!",
+    "See you tomorrow! Bye!",
+    "Thanks for calling. See you Thursday!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "see_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "hold": {
+   "id": "hold",
+   "kind": "step",
+   "npc": [
+    "No problem. If you pay yourself, the exam and X-rays are $150. Let me check the schedule. Can you hold for a moment?",
+    "No problem. If you pay yourself, the exam and X-rays are $150. No problem. If you pay yourself, the exam and X-rays are $150. Let me check the schedule. Can you hold for a moment?",
+    "Thank you. Let me check the schedule. Can you hold for a moment?"
+   ],
+   "expects": [
+    "hold_ok_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti palaukti"
+   ],
+   "options": []
+  },
+  "help_move": {
+   "id": "help_move",
+   "kind": "step",
+   "npc": [
+    "Good morning, Green Street Dental! Linda speaking. How may I help you?",
+    "Thank you for calling Green Street Dental. This is Linda. How can I help you today?"
+   ],
+   "expects": [
+    "book",
+    "reason_ans",
+    "move",
+    "cancel"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad nori perkelti rytojaus vizitą",
+    "Pasakyti, kad nori užsiregistruoti vizitui (ir kodėl)",
+    "Jei blogai girdi – paprašyti kalbėti garsiau"
+   ],
+   "options": [
+    "toothache",
+    "checkup",
+    "cleaning",
+    "broken tooth",
+    "lost filling"
+   ]
+  },
+  "hear": {
+   "id": "hear",
+   "kind": "pending",
+   "npc": [
+    "Oh, sorry! Is this better?",
+    "Sorry about that! Can you hear me now?"
+   ],
+   "expects": [
+    "hear_ok",
+    "name_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar dabar girdi"
+   ],
+   "options": []
+  },
+  "surname": {
+   "id": "surname",
+   "kind": "step",
+   "npc": [
+    "And your last name?"
+   ],
+   "expects": [
+    "name_ctx",
+    "spell_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti pavardę"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "book",
+  "reason_ans",
+  "help_me",
+  "pain_len",
+  "new_yes",
+  "new_no",
+  "intro_name",
+  "name_ctx",
+  "spell_ctx",
+  "dob_ans",
+  "dob_ctx",
+  "year_ctx",
+  "hold_ok_ctx",
+  "phone_ans",
+  "phone_ctx",
+  "insurance_no",
+  "insurance_yes",
+  "cost_q",
+  "earlier",
+  "later",
+  "morning",
+  "day_req",
+  "time_req",
+  "accept",
+  "reject",
+  "availability_q",
+  "speak_up",
+  "hear_me",
+  "hear_ok",
+  "address_q",
+  "parking_q",
+  "duration_q",
+  "bring_q",
+  "cancel_policy_q",
+  "forms_q",
+  "doctor_q",
+  "pain_q",
+  "move",
+  "cancel",
+  "more_no",
+  "see_you"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

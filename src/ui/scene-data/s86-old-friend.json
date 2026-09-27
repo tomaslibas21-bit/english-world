@@ -1,0 +1,20 @@
+{
+  "npc": "Lucy, old school friend",
+  "images": ["surprise", "chat", "news", "hurry", "numbers"],
+  "start": "surprise",
+  "phases": {
+    "recognize": "surprise", "changed": "surprise",
+    "howbeen": "chat", "upto": "chat", "family": "chat", "mike": "chat", "mike_dinner": "chat",
+    "lucy1": "news", "lucy2": "news",
+    "rush": "hurry", "coffee": "hurry",
+    "numbers": "numbers", "closing": "numbers"
+  },
+  "focus": [38, 24],
+  "jobs": {
+    "surprise": "30f02675-193a-4cbb-8476-f7e136e2143a",
+    "chat": "a525d759-07ed-4fee-98ca-65bf4dee37c5",
+    "news": "802baa81-0f7e-4e31-b818-8f8e49280cc7",
+    "hurry": "7153d057-2654-43d7-9480-2dd9a48d580e",
+    "numbers": "6bbcc93a-bfb1-4daa-b480-7f0df3eb4eff"
+  }
+}

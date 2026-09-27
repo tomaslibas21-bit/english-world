@@ -1,0 +1,24 @@
+{
+  "npc": "Sophie (host) and Mark (guest)",
+  "images": ["welcome", "drink", "chat", "me", "ask", "numbers", "bye"],
+  "start": "welcome",
+  "phases": {
+    "name": "welcome",
+    "drink": "drink",
+    "know": "chat", "from": "chat", "sea_q": "chat", "city_q": "chat", "mishear": "chat", "job": "chat", "field_q": "chat",
+    "time": "me", "like": "me", "fun": "me", "reading": "me", "cafe": "me", "cafe_go": "me", "drink2": "me",
+    "your_turn": "ask",
+    "numbers": "numbers",
+    "closing": "bye"
+  },
+  "focus": [33, 32],
+  "jobs": {
+    "welcome": "b8aa0d03-43e9-44aa-ab14-606ca8dbcdfd",
+    "drink": "382b3390-0898-4fed-89ac-734fd0f69e37",
+    "chat": "9aa62152-4bc7-49b4-99d2-617a16ce56d3",
+    "me": "1fd0381a-e0af-41e5-a83a-5e3a3b4c788e",
+    "ask": "72b2c7ea-09fe-4a04-9b16-60d095651f44",
+    "numbers": "1b329f89-cce5-4e17-97ba-a83996e8c01c",
+    "bye": "99a36260-d654-4865-957b-41418d6f186b"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "npc": "Priya, baggage services",
+  "images": ["greet", "tag", "describe", "delivery", "kit", "ref"],
+  "start": "greet",
+  "done": "ref",
+  "phases": {
+    "howareyou": "greet", "problem": "greet",
+    "flight": "tag", "connection": "tag", "from_city": "tag", "tag": "tag",
+    "lookup": "describe", "describe": "describe", "type": "describe", "color": "describe", "size": "describe",
+    "material": "describe", "marks": "describe", "brand": "describe", "contents": "describe",
+    "delivery": "delivery", "hotel": "delivery", "phone": "delivery",
+    "kit": "kit",
+    "ref": "ref", "closing": "ref"
+  },
+  "focus": [35, 30],
+  "jobs": {
+    "greet": "993444fd-d089-485a-a3b3-6a39ea626cd3",
+    "tag": "780b6b1f-3764-411e-bf54-d3606fbe562f",
+    "describe": "a2d779ff-c44a-4965-ab00-4de58db2185e",
+    "delivery": "6741d8cd-26a1-477a-a5dc-aadf4fe9943f",
+    "kit": "39b9689f-4564-431c-b7df-8d526ae84fdd",
+    "ref": "4df5cc29-8ccd-4129-9cab-3bc89a674f37"
+  }
+}

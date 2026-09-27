@@ -1,0 +1,20 @@
+{
+  "npc": "Mr. Okafor, pharmacist",
+  "images": ["greet", "questions", "recommend", "dosage", "rx", "pay"],
+  "start": "greet",
+  "done": "pay",
+  "phases": {
+    "howareyou": "greet", "need": "greet", "rx_prompt": "greet",
+    "who": "questions", "howlong": "questions", "meds": "questions", "allergy": "questions",
+    "recommend": "recommend", "alt": "recommend",
+    "dosage": "dosage", "questions_q": "dosage", "more": "dosage",
+    "rx_name": "rx", "rx_spell": "rx", "rx_dob": "rx", "wait_q": "rx", "rx_ins": "rx",
+    "pay": "pay", "bag": "pay"
+  },
+  "focus": [37, 30],
+  "jobs": {
+    "greet": "4a24c418-589e-4350-9e9c-4e51029dd97c", "questions": "c62e0af5-b23f-4684-8050-ec27a0028ddb",
+    "recommend": "af9d5ba7-b56a-4060-b96d-b7c1c98bed82", "dosage": "4d470fa1-15d5-4e11-ba8d-0d79d81ceb9b",
+    "rx": "ec3c7e02-f49c-4e31-a6be-f8a296c896d7", "pay": "934c35a1-ccad-48fc-9dcc-546adefee7e0"
+  }
+}

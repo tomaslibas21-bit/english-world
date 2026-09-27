@@ -1,0 +1,460 @@
+{
+ "situation": "s82-neighbor",
+ "title": "Sorry About the Noise",
+ "goal": "Susipažink su kaimyne ir paprašyk jos paslaugos (arba atsiprašyk dėl triukšmo).",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hey, neighbor! How's it going?",
+    "Oh, hi! How are you?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "ask_favor",
+    "water_plants",
+    "take_package",
+    "borrow",
+    "noise_sorry",
+    "noise_ask",
+    "noise_reason",
+    "ask_trash",
+    "ask_recycling",
+    "ask_trash_day",
+    "ask_boxes",
+    "ask_laundry",
+    "ask_mail",
+    "ask_parking",
+    "ask_internet",
+    "ask_quiet",
+    "ask_landlord",
+    "ask_store",
+    "no_more",
+    "invite_coffee",
+    "from_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "needs": {
+   "id": "needs",
+   "kind": "step",
+   "npc": [
+    "Good, thank you! What's up?",
+    "Good, thank you! So, what's up?",
+    "Trash and recycling go in the bins behind the building. Trash day is Monday. Anything else?"
+   ],
+   "expects": [
+    "ask_favor",
+    "water_plants",
+    "take_package",
+    "borrow",
+    "noise_sorry",
+    "noise_ask",
+    "noise_reason",
+    "ask_trash",
+    "ask_recycling",
+    "ask_trash_day",
+    "ask_boxes",
+    "ask_laundry",
+    "ask_mail",
+    "ask_parking",
+    "ask_internet",
+    "ask_quiet",
+    "ask_landlord",
+    "ask_store",
+    "no_more",
+    "invite_coffee",
+    "from_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti paslaugos: palaistyti augalus, priimti siuntinį",
+    "Ko nors pasiskolinti",
+    "Paklausti apie šiukšles, skalbyklą, paštą",
+    "Atsiprašyti dėl triukšmo arba paprašyti tylos"
+   ],
+   "options": [
+    "ladder",
+    "drill",
+    "hammer",
+    "screwdriver",
+    "vacuum",
+    "corkscrew",
+    "umbrella",
+    "flashlight",
+    "sugar",
+    "milk"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "No problem! Just leave me a key. Take care!",
+    "Awesome! I'll bake something. See you!",
+    "Awesome! I'll bake something. If you need anything, just knock! I'm right next door. It was so nice to meet you!"
+   ],
+   "expects": [
+    "nice_meet",
+    "see_around",
+    "thanks_kind",
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "coffee": {
+   "id": "coffee",
+   "kind": "pending",
+   "npc": [
+    "Sure! Just leave me your key. Have a great trip! Hey, would you like to come over for coffee on Sunday?",
+    "Sure! Just leave me your key. Have a great trip! Do you want to come over for coffee on Sunday?",
+    "Thank you! That means a lot. Do you want to come over for coffee on Sunday?"
+   ],
+   "expects": [
+    "coffee_yes",
+    "coffee_no",
+    "coffee_day",
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti arba mandagiai atsisakyti kvietimo"
+   ],
+   "options": []
+  },
+  "coffee_time": {
+   "id": "coffee_time",
+   "kind": "pending",
+   "npc": [
+    "Great! Is two o'clock okay?"
+   ],
+   "expects": [
+    "coffee_time_ctx",
+    "coffee_day",
+    "coffee_time_no",
+    "coffee_yes",
+    "coffee_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti dėl laiko arba pasiūlyti kitą"
+   ],
+   "options": []
+  },
+  "intro": {
+   "id": "intro",
+   "kind": "step",
+   "npc": [
+    "Oh, hi! You must be the new neighbor!",
+    "Hi there! Did you just move in?"
+   ],
+   "expects": [
+    "moved_in",
+    "im_name_ctx",
+    "my_name"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Prisistatyti: vardas ir kad ką tik atsikraustei"
+   ],
+   "options": []
+  },
+  "like_q": {
+   "id": "like_q",
+   "kind": "pending",
+   "npc": [
+    "Hi! I'm Rita. Nice to meet you! Welcome to the building! So, how do you like it so far?",
+    "Oh, cool! I've never met anyone from Lithuania! How do you like the building?",
+    "No worries! It was fine. Sounds like fun! So, how do you like it so far?"
+   ],
+   "expects": [
+    "like_ans_ctx",
+    "boxes"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kaip patinka naujoje vietoje"
+   ],
+   "options": []
+  },
+  "trash_q": {
+   "id": "trash_q",
+   "kind": "step",
+   "npc": [
+    "That's great! So, what can I do for you?",
+    "I'm so glad! So, do you need anything?",
+    "Oh, cool! I've never met anyone from Lithuania! So, what can I do for you?"
+   ],
+   "expects": [
+    "ask_trash",
+    "ask_recycling",
+    "ask_trash_day",
+    "ask_boxes",
+    "ask_laundry",
+    "ask_mail",
+    "ask_parking",
+    "ask_internet",
+    "ask_quiet",
+    "ask_landlord",
+    "ask_store",
+    "no_more",
+    "ask_favor",
+    "water_plants",
+    "take_package",
+    "borrow",
+    "noise_sorry",
+    "noise_ask",
+    "noise_reason",
+    "from_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kur mesti šiukšles",
+    "Paprašyti paslaugos"
+   ],
+   "options": []
+  },
+  "complaint": {
+   "id": "complaint",
+   "kind": "pending",
+   "npc": [
+    "Hey, sorry to bother you. The music was pretty loud last night. Could you turn it down a little at night?"
+   ],
+   "expects": [
+    "noise_sorry",
+    "noise_promise",
+    "didnt_know",
+    "noise_deny",
+    "noise_reason",
+    "g_sorry",
+    "ask_favor",
+    "water_plants",
+    "take_package",
+    "borrow",
+    "noise_ask",
+    "ask_trash",
+    "ask_recycling",
+    "ask_trash_day",
+    "ask_boxes",
+    "ask_laundry",
+    "ask_mail",
+    "ask_parking",
+    "ask_internet",
+    "ask_quiet",
+    "ask_landlord",
+    "ask_store",
+    "no_more",
+    "invite_coffee",
+    "from_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsiprašyti ir pažadėti būti tyliau"
+   ],
+   "options": []
+  },
+  "pkg": {
+   "id": "pkg",
+   "kind": "pending",
+   "npc": [
+    "Hey, neighbor! Oh, by the way, I have a package for you! The delivery guy left it with me."
+   ],
+   "expects": [
+    "g_thanks",
+    "thanks_kind",
+    "ask_favor",
+    "water_plants",
+    "take_package",
+    "borrow",
+    "noise_sorry",
+    "noise_ask",
+    "noise_reason",
+    "ask_trash",
+    "ask_recycling",
+    "ask_trash_day",
+    "ask_boxes",
+    "ask_laundry",
+    "ask_mail",
+    "ask_parking",
+    "ask_internet",
+    "ask_quiet",
+    "ask_landlord",
+    "ask_store",
+    "no_more",
+    "invite_coffee",
+    "from_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Padėkoti kaimynei"
+   ],
+   "options": []
+  },
+  "from_q": {
+   "id": "from_q",
+   "kind": "pending",
+   "npc": [
+    "Hi! I'm Rita. Nice to meet you! Welcome to the building! So, where are you from?",
+    "Nice to meet you! I'm Rita. Welcome to the building! So, where are you from?",
+    "Oh, don't worry about it! I didn't even hear it. Sounds like fun! So, where are you from?"
+   ],
+   "expects": [
+    "from_ans",
+    "from_ans_ctx",
+    "from_other_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, iš kur esi"
+   ],
+   "options": [
+    "Lithuania",
+    "Latvia",
+    "Poland",
+    "Ukraine",
+    "Germany",
+    "Ireland",
+    "England",
+    "Norway",
+    "Spain",
+    "Canada"
+   ]
+  },
+  "name": {
+   "id": "name",
+   "kind": "pending",
+   "npc": [
+    "Welcome to the building! I'm Rita, by the way. What's your name?"
+   ],
+   "expects": [
+    "im_name_ctx",
+    "my_name",
+    "bare_name_ctx",
+    "moved_in"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo vardą"
+   ],
+   "options": []
+  },
+  "away_when": {
+   "id": "away_when",
+   "kind": "pending",
+   "npc": [
+    "Of course! When are you leaving?"
+   ],
+   "expects": [
+    "away_when_ctx",
+    "moved_in",
+    "im_name_ctx",
+    "my_name",
+    "ask_favor",
+    "water_plants",
+    "take_package",
+    "borrow",
+    "noise_sorry",
+    "noise_ask",
+    "noise_reason",
+    "ask_trash",
+    "ask_recycling",
+    "ask_trash_day",
+    "ask_boxes",
+    "ask_laundry",
+    "ask_mail",
+    "ask_parking",
+    "ask_internet",
+    "ask_quiet",
+    "ask_landlord",
+    "ask_store",
+    "no_more",
+    "invite_coffee",
+    "from_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada išvyksti"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "moved_in",
+  "my_name",
+  "im_name_ctx",
+  "bare_name_ctx",
+  "vocative",
+  "from_ans",
+  "from_ans_ctx",
+  "from_other_ctx",
+  "like_ans_ctx",
+  "boxes",
+  "ask_trash",
+  "ask_recycling",
+  "ask_trash_day",
+  "ask_boxes",
+  "ask_laundry",
+  "ask_mail",
+  "ask_parking",
+  "ask_internet",
+  "ask_quiet",
+  "ask_landlord",
+  "ask_store",
+  "ask_unknown",
+  "no_more",
+  "ask_favor",
+  "water_plants",
+  "take_package",
+  "borrow",
+  "borrow_unknown",
+  "away_when_ctx",
+  "noise_sorry",
+  "noise_reason",
+  "noise_promise",
+  "didnt_know",
+  "noise_ask",
+  "noise_deny",
+  "coffee_yes",
+  "coffee_no",
+  "coffee_day",
+  "coffee_time_ctx",
+  "invite_coffee",
+  "nice_meet",
+  "thanks_kind",
+  "see_around",
+  "coffee_time_no",
+  "going_away"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

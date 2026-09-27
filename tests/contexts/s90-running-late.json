@@ -1,0 +1,224 @@
+{
+ "situation": "s90-running-late",
+ "title": "I'm Running Late",
+ "goal": "Paskambink viršininkui ir pranešk, kad vėluoji.",
+ "contexts": {
+  "opening": {
+   "id": "opening",
+   "kind": "step",
+   "npc": [
+    "Hello, this is Harris.",
+    "Good morning, Harris speaking.",
+    "Hello, Harris speaking."
+   ],
+   "expects": [
+    "identify",
+    "greet_harris",
+    "late",
+    "reason",
+    "eta",
+    "on_way",
+    "cant_come",
+    "identify_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasisveikinti ir pasakyti, kas skambina",
+    "Pasakyti, kad vėluoji"
+   ],
+   "options": []
+  },
+  "reason": {
+   "id": "reason",
+   "kind": "step",
+   "npc": [
+    "Ah, hi there! What happened?",
+    "Ah, hi there! Oh, is everything okay?",
+    "Hi! Good morning. What happened?"
+   ],
+   "expects": [
+    "reason",
+    "late"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paaiškinti, kodėl vėluoji"
+   ],
+   "options": []
+  },
+  "eta": {
+   "id": "eta",
+   "kind": "step",
+   "npc": [
+    "Oh, that's annoying. How long do you think you'll be?",
+    "Oh no! That's the worst. When do you think you'll get here?",
+    "Oh, that's annoying. When do you think you'll get here?"
+   ],
+   "expects": [
+    "eta",
+    "late",
+    "on_way"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada būsi"
+   ],
+   "options": []
+  },
+  "plan": {
+   "id": "plan",
+   "kind": "step",
+   "npc": [
+    "Okay, that works. No problem. We'll start without you. Thanks for letting me know.",
+    "Okay, that works. That's okay. We'll wait for you.",
+    "All right, that's not too bad. No problem. We'll start without you. Thanks for letting me know."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Paprašyti pradėti be tavęs ar palikti vietą",
+    "Atsiprašyti"
+   ],
+   "options": []
+  },
+  "plan_q": {
+   "id": "plan_q",
+   "kind": "pending",
+   "npc": [
+    "All right, that's not too bad. Should we start without you?",
+    "All right, that's not too bad. Do you want us to start without you?",
+    "Okay, that works. Do you want us to start without you?"
+   ],
+   "expects": [
+    "start_without",
+    "wait_for_me",
+    "save_seat",
+    "tell_team"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar pradėti be tavęs"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Sure, we'll start without you. Thanks for calling. See you soon!",
+    "Exactly. Okay, see you soon.",
+    "That's right. Thanks for calling. See you soon!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "apologize",
+    "g_ok",
+    "bye_meeting",
+    "thanks_info",
+    "g_howareyou"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "room": {
+   "id": "room",
+   "kind": "step",
+   "npc": [
+    "Okay, we'll get started, then. Oh, and by the way, the meeting's in the other building today. Room 302.",
+    "Oh, that's annoying. Oh, and by the way, the meeting's in the other building today. Room 302.",
+    "Okay, we'll get started, then. Of course. I'll save you a seat. Oh, and by the way, the meeting's in the other building today. Room 302."
+   ],
+   "expects": [
+    "confirm_room",
+    "ask_building",
+    "ask_room"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasitikslinti kabinetą ir pastatą"
+   ],
+   "options": []
+  },
+  "need_help": {
+   "id": "need_help",
+   "kind": "pending",
+   "npc": [
+    "Ah, hi there! Oh no! Do you need any help?",
+    "Hi! Good morning. Oh no! Do you need any help?",
+    "Oh, hello! Oh no! Do you need any help?"
+   ],
+   "expects": [
+    "taxi_ok",
+    "help_request",
+    "no_help",
+    "identify",
+    "greet_harris",
+    "late",
+    "reason",
+    "eta",
+    "on_way",
+    "cant_come",
+    "identify_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia pagalbos"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "identify",
+  "its_me",
+  "identify_ctx",
+  "name_ctx",
+  "greet_harris",
+  "is_harris",
+  "late",
+  "reason",
+  "eta",
+  "on_way",
+  "not_late",
+  "cant_come",
+  "start_without",
+  "wait_for_me",
+  "save_seat",
+  "tell_team",
+  "join_online",
+  "will_call",
+  "apologize",
+  "ask_room",
+  "ask_ok",
+  "confirm_room",
+  "thanks_info",
+  "bye_meeting",
+  "no_help",
+  "help_request",
+  "ask_building",
+  "taxi_ok",
+  "just_late"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

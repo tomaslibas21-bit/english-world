@@ -1,0 +1,21 @@
+{
+  "npc": "Rosa, local",
+  "images": ["greet", "food", "from", "point", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {
+    "need": "greet", "weather": "greet", "which_kind": "greet",
+    "food_kind": "food", "sight": "food",
+    "from": "from",
+    "food": "point", "walk": "point", "more": "point",
+    "closing": "bye"
+  },
+  "focus": [33, 35],
+  "jobs": {
+    "greet": "eb4434fb-660b-43fe-b9c0-39634d012ab7",
+    "food": "fca93b84-8911-4d9b-9d24-2970146b3840",
+    "from": "dd53e574-1b95-4bae-a317-28fa64ed439c",
+    "point": "5684053d-56f0-45df-8518-c49c7af0fd44",
+    "bye": "01c37a6d-9353-4844-85b6-e49df5488f7f"
+  }
+}

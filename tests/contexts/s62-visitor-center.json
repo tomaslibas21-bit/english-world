@@ -1,0 +1,467 @@
+{
+ "situation": "s62-visitor-center",
+ "title": "Could You Say That Again?",
+ "goal": "Gauk miesto žemėlapį ir sužinok, kaip nueiti į kavinę. Chuck kalba labai greitai – drąsiai prašyk pakartoti, kalbėti lėčiau ar paraidžiui.",
+ "contexts": {
+  "need": {
+   "id": "need",
+   "kind": "step",
+   "npc": [
+    "Hey there! Welcome, welcome! What can I help you find today?",
+    "Hi there! Welcome to Maple Harbor! What can I do for you today?",
+    "Well, hello! Welcome to the Visitor Center! How can I help you?"
+   ],
+   "expects": [
+    "ask_map",
+    "ask_where",
+    "map_free"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paprašyti miesto žemėlapio",
+    "Paklausti kelio į kavinę",
+    "Paklausti apie miestą",
+    "Paprašyti pakartoti lėčiau"
+   ],
+   "options": []
+  },
+  "cafe": {
+   "id": "cafe",
+   "kind": "step",
+   "npc": [
+    "Sure thing! Here's a map. We're right here, at the red star. Anywhere in particular you want to go?",
+    "Here you go! This is us, right here, on Main Street. Anywhere in particular you want to go?",
+    "Sure thing! Here's a map. We're right here, at the red star. Where would you like to go?"
+   ],
+   "expects": [
+    "ask_where",
+    "just_looking"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti kelio į kavinę",
+    "Paklausti kelio į kitą vietą",
+    "Paprašyti pakartoti lėčiau"
+   ],
+   "options": [
+    "museum",
+    "post office",
+    "pharmacy",
+    "bank",
+    "Lucia's",
+    "Town Square",
+    "lighthouse",
+    "Union Station",
+    "The Pier"
+   ]
+  },
+  "confirm_sunny_cup": {
+   "id": "confirm_sunny_cup",
+   "kind": "pending",
+   "npc": [
+    "Great choice! Go right out the door, two blocks to the bank, then left. It's on the right, across from the post office. Oh, and use the crosswalk, okay? People drive fast around here! Does that make sense?",
+    "Oh, am I talking too fast again? Sorry! Let me slow down. Okay. Turn right out the door. Go straight two blocks, to the bank. Turn left at the bank, onto Oak Avenue. The café is on the right, across from the post office. Oh, and use the crosswalk, okay? People drive fast around here! Does that make sense?",
+    "Sunny Cup? Easy! Hang a right out the door, go a couple of blocks to the bank, take a left, and it's on the right. Oh, and use the crosswalk, okay? People drive fast around here! Got all that?"
+   ],
+   "expects": [
+    "understood",
+    "did_i",
+    "lost",
+    "ask_side",
+    "ask_which_way",
+    "ask_turn_where",
+    "ask_blocks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti pakartoti lėčiau",
+    "Pasitikslinti, ar teisingai supratai kelią",
+    "Paklausti, ką reiškia žodis",
+    "Dar keli būdai pasitikslinti"
+   ],
+   "options": [
+    "crosswalk",
+    "courthouse",
+    "block",
+    "a couple",
+    "hang a right",
+    "you can't miss it",
+    "auctioneer",
+    "awning"
+   ]
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "That's exactly right! Anything else?",
+    "You got it! See? Easy. Anything else?",
+    "Exactly! You got it! Anything else?"
+   ],
+   "expects": [
+    "more_no",
+    "more_yes",
+    "ask_where",
+    "ask_hours",
+    "ask_events",
+    "ask_buspass",
+    "ask_wifi",
+    "ask_restroom",
+    "thanks_patience"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad daugiau nieko nereikia",
+    "Paklausti dar ko nors",
+    "Paklausti kelio į kitą vietą"
+   ],
+   "options": [
+    "Sunny Cup",
+    "museum",
+    "bank",
+    "post office",
+    "pharmacy",
+    "Snip & Style",
+    "hotel",
+    "Lucia's",
+    "Threads",
+    "Town Square",
+    "farmers' market",
+    "police station",
+    "Union Station",
+    "Harbor Park",
+    "The Pier",
+    "lighthouse"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "And hey, thanks for stopping me when I talk too fast. Most people just nod and smile! Have fun exploring!",
+    "You got it! See? Easy. Good job asking, by the way. That's the best way to learn! Oh, and don't miss the free jazz on Friday night! Come back anytime!",
+    "Exactly! You got it! Good job asking, by the way. That's the best way to learn! Have fun exploring!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "thanks_patience",
+    "thanks_help",
+    "more_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "greet_map": {
+   "id": "greet_map",
+   "kind": "pending",
+   "npc": [
+    "Hi! You look like you need a map! Am I right?"
+   ],
+   "expects": [
+    "ask_map",
+    "ask_where",
+    "map_no",
+    "accept_ctx",
+    "decline_ctx",
+    "map_free"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti ir paimti žemėlapį",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "confirm_museum": {
+   "id": "confirm_museum",
+   "kind": "pending",
+   "npc": [
+    "The Art Museum? Sure! Hang a left out the door and go straight two blocks. It's the big white building on the left. Oh, and if you see the old courthouse, you've gone too far! Does that make sense?",
+    "Not at all! It's about five minutes on foot. All good?",
+    "Yes, the big one. You can't miss it! Got it?"
+   ],
+   "expects": [
+    "understood",
+    "did_i",
+    "lost",
+    "ask_side",
+    "ask_which_way",
+    "ask_turn_where",
+    "ask_blocks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti pakartoti lėčiau",
+    "Pasitikslinti, ar teisingai supratai kelią",
+    "Paklausti, ką reiškia žodis",
+    "Dar keli būdai pasitikslinti"
+   ],
+   "options": [
+    "crosswalk",
+    "courthouse",
+    "block",
+    "a couple",
+    "hang a right",
+    "you can't miss it",
+    "auctioneer",
+    "awning"
+   ]
+  },
+  "quiz": {
+   "id": "quiz",
+   "kind": "pending",
+   "npc": [
+    "Great! Quick quiz: left or right out the door?",
+    "Great! Quick quiz: which way do you turn at the bank?"
+   ],
+   "expects": [
+    "dir_ans_ctx",
+    "understood",
+    "did_i",
+    "lost",
+    "ask_side",
+    "ask_which_way",
+    "ask_turn_where",
+    "ask_blocks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: į kairę ar į dešinę"
+   ],
+   "options": []
+  },
+  "map": {
+   "id": "map",
+   "kind": "step",
+   "npc": [
+    "That's exactly right! Would you like a map of the town? They're free!",
+    "You got it! See? Easy. Want a map? It's free!",
+    "Exactly! You got it! Would you like a map of the town? They're free!"
+   ],
+   "expects": [
+    "ask_map",
+    "map_no",
+    "map_free",
+    "accept_ctx",
+    "decline_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti ir paimti žemėlapį",
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "cafe_offer": {
+   "id": "cafe_offer",
+   "kind": "pending",
+   "npc": [
+    "Sure thing! Here's a map. We're right here, at the red star. Oh, and have you tried Sunny Cup? Best coffee in town! Should I tell you how to get there?",
+    "You bet! Here's a map of the town. The red star is us. Oh, and have you tried Sunny Cup? Best coffee in town! Should I tell you how to get there?",
+    "Here you go! This is us, right here, on Main Street. Oh, and have you tried Sunny Cup? Best coffee in town! Should I tell you how to get there?"
+   ],
+   "expects": [
+    "ask_where",
+    "accept_ctx",
+    "decline_ctx",
+    "no_coffee",
+    "just_looking",
+    "ask_map",
+    "map_no",
+    "map_free"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti, kad Chuckas paaiškintų kelią",
+    "Paklausti kelio į kitą vietą"
+   ],
+   "options": [
+    "Sunny Cup",
+    "museum",
+    "bank",
+    "post office",
+    "pharmacy",
+    "Snip & Style",
+    "hotel",
+    "Lucia's",
+    "Threads",
+    "Town Square",
+    "farmers' market",
+    "police station",
+    "Union Station",
+    "Harbor Park",
+    "The Pier",
+    "lighthouse"
+   ]
+  },
+  "confirm_post_office": {
+   "id": "confirm_post_office",
+   "kind": "pending",
+   "npc": [
+    "The post office? Hang a right, go two blocks to the bank, take a left, and it's on the left. Oh, and use the crosswalk, okay? People drive fast around here! Does that make sense?",
+    "A crosswalk? It's where you cross the street, with the white stripes.",
+    "Sure, here you go."
+   ],
+   "expects": [
+    "understood",
+    "did_i",
+    "lost",
+    "ask_side",
+    "ask_which_way",
+    "ask_turn_where",
+    "ask_blocks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paprašyti pakartoti lėčiau",
+    "Pasitikslinti, ar teisingai supratai kelią",
+    "Paklausti, ką reiškia žodis",
+    "Dar keli būdai pasitikslinti"
+   ],
+   "options": [
+    "crosswalk",
+    "courthouse",
+    "block",
+    "a couple",
+    "hang a right",
+    "you can't miss it",
+    "auctioneer",
+    "awning"
+   ]
+  },
+  "recheck": {
+   "id": "recheck",
+   "kind": "pending",
+   "npc": [
+    "Close! Left at the bank, not right. Okay? Got it now?",
+    "Close! Left at the bank, not right. Okay?"
+   ],
+   "expects": [
+    "understood",
+    "g_ok",
+    "dir_ans_ctx",
+    "did_i",
+    "lost",
+    "ask_side",
+    "ask_which_way",
+    "ask_turn_where",
+    "ask_blocks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad dabar supratai",
+    "Pasitikslinti dar kartą"
+   ],
+   "options": []
+  },
+  "pass": {
+   "id": "pass",
+   "kind": "pending",
+   "npc": [
+    "Oh, we sell them right here! A day pass is five dollars. Would you like one?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "here_you_go",
+    "accept_ctx",
+    "decline_ctx",
+    "understood",
+    "did_i",
+    "lost",
+    "ask_side",
+    "ask_which_way",
+    "ask_turn_where",
+    "ask_blocks"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Nusipirkti dienos bilietą arba atsisakyti"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "ask_map",
+  "map_free",
+  "map_here",
+  "map_no",
+  "ask_where",
+  "just_arrived",
+  "ask_language",
+  "is_visitor_center",
+  "ask_coffee",
+  "no_coffee",
+  "ask_where_unknown",
+  "dest_short",
+  "dest_neg",
+  "dest_correction",
+  "repeat_route",
+  "ask_downtown",
+  "confirm",
+  "ask_side",
+  "ask_which_way",
+  "ask_turn_where",
+  "ask_blocks",
+  "ask_street",
+  "ask_far",
+  "ask_which_one",
+  "show_map",
+  "did_i",
+  "understood",
+  "lost",
+  "lost_item",
+  "dir_ans_ctx",
+  "say_again_slowly",
+  "louder",
+  "spell_q",
+  "word_q",
+  "thanks_patience",
+  "thanks_help",
+  "just_looking",
+  "more_no",
+  "more_yes",
+  "ask_hours",
+  "ask_place_hours",
+  "ask_events",
+  "event_free",
+  "event_time",
+  "ask_buspass",
+  "ask_busstop",
+  "ask_schedule",
+  "ask_wifi",
+  "ask_restroom",
+  "ask_brochure",
+  "ask_recommend",
+  "ask_food",
+  "ask_map_lang",
+  "pay_card",
+  "pay_cash",
+  "here_you_go",
+  "accept_ctx",
+  "decline_ctx"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

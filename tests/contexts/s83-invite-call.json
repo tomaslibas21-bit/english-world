@@ -1,0 +1,422 @@
+{
+ "situation": "s83-invite-call",
+ "title": "Are You Free on Friday?",
+ "goal": "Pakviesk Lizzie į koncertą penktadienį ir susitarkite dėl laiko ir vietos.",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Hi! How are you doing?",
+    "Ha, I know! I saw your name. So, how are you?",
+    "Hey, you! How's it going?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "its_me_ctx",
+    "g_ok",
+    "invite",
+    "tickets",
+    "ask_free",
+    "good_time"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)",
+    "Iškart pakviesti į koncertą"
+   ],
+   "options": [
+    "jazz",
+    "rock",
+    "pop",
+    "country",
+    "blues",
+    "classical",
+    "folk",
+    "hip-hop"
+   ]
+  },
+  "invite": {
+   "id": "invite",
+   "kind": "step",
+   "npc": [
+    "Pretty good, thanks! So, what's up?",
+    "Hey! What's up?",
+    "Ha, I know! I saw your name. So, what's up?"
+   ],
+   "expects": [
+    "invite",
+    "tickets",
+    "ask_free",
+    "its_me_ctx",
+    "good_time"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pakviesti Lizzie į koncertą",
+    "Paklausti, ar ji laisva penktadienį"
+   ],
+   "options": [
+    "jazz",
+    "rock",
+    "pop",
+    "country",
+    "blues",
+    "classical",
+    "folk",
+    "hip-hop"
+   ]
+  },
+  "start": {
+   "id": "start",
+   "kind": "step",
+   "npc": [
+    "Oh my gosh, yes! I'd love to! I love jazz! What time does it start?",
+    "Oh my gosh, yes! I'd love to! And I love jazz! So when does it start?",
+    "Ooh, fun! Count me in! I love jazz! What time does it start?"
+   ],
+   "expects": [
+    "starts_at",
+    "time_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada prasideda koncertas"
+   ],
+   "options": []
+  },
+  "place": {
+   "id": "place",
+   "kind": "step",
+   "npc": [
+    "Okay, cool. Where should we meet?",
+    "Okay, cool. And where do you want to meet?",
+    "Got it. Where should we meet?"
+   ],
+   "expects": [
+    "meet",
+    "ask_where",
+    "meet_unknown",
+    "pickup"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasiūlyti, kur susitikti"
+   ],
+   "options": [
+    "station",
+    "café",
+    "entrance",
+    "bus stop"
+   ]
+  },
+  "meet_time": {
+   "id": "meet_time",
+   "kind": "step",
+   "npc": [
+    "Perfect. And what time?",
+    "Perfect. Cool. What time should we meet?",
+    "Okay, great. Cool. What time should we meet?"
+   ],
+   "expects": [
+    "time_ans",
+    "meet",
+    "ask_when"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasiūlyti, kada susitikti"
+   ],
+   "options": []
+  },
+  "sister": {
+   "id": "sister",
+   "kind": "step",
+   "npc": [
+    "Perfect. Hey, can I bring my sister?",
+    "Okay. Hey, can I bring my sister?",
+    "Great. Hey, can I bring my sister?"
+   ],
+   "expects": [
+    "sister_yes_ctx",
+    "sister_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar jos sesuo gali ateiti"
+   ],
+   "options": []
+  },
+  "bbq": {
+   "id": "bbq",
+   "kind": "step",
+   "npc": [
+    "Yay! Thanks! She'll be so happy! Oh, hey, are you free on Sunday? We're having a barbecue at my place.",
+    "Perfect. Oh, hey, are you free on Sunday? We're having a barbecue at my place.",
+    "Sounds good! Oh, hey, are you free on Sunday? We're having a barbecue at my place."
+   ],
+   "expects": [
+    "decline_ctx",
+    "cant_wait"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Priimti kvietimą arba mandagiai atsisakyti"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "No worries! Maybe next time. Okay, so Friday, 7:30, at the station. Yay! I can't wait!",
+    "Yay! Thanks! She'll be so happy! Okay, so Friday, 7:30, at the station. I can't wait!",
+    "Really? That's so sweet. Thanks! Okay, so Friday, 7:30, at the station. Yay! I can't wait!"
+   ],
+   "expects": [
+    "cant_wait",
+    "will_text",
+    "bye_ext",
+    "voc",
+    "ask_like",
+    "hear_me",
+    "good_time",
+    "ask_free",
+    "tickets",
+    "invite",
+    "day_ans",
+    "band_ans",
+    "band_forgot",
+    "starts_at",
+    "time_ans",
+    "meet",
+    "meet_unknown",
+    "pickup",
+    "ask_where",
+    "ask_when",
+    "on_me",
+    "agree",
+    "no_sorry",
+    "reassure",
+    "accept_inv",
+    "g_bye",
+    "g_thanks",
+    "g_hello",
+    "g_sorry",
+    "g_howareyou_answer",
+    "g_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užbaigti pokalbį"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Yay! Thanks! She'll be so happy! Oh, and what do I owe you for the ticket?",
+    "Perfect. Oh, and what do I owe you for the ticket?",
+    "Awesome! I'll tell her tonight. Oh, and what do I owe you for the ticket?"
+   ],
+   "expects": [
+    "on_me",
+    "price_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad vaišini, arba kiek kainavo bilietas"
+   ],
+   "options": []
+  },
+  "bad_line": {
+   "id": "bad_line",
+   "kind": "pending",
+   "npc": [
+    "Sorry, you're breaking up a little. Did you say Friday?"
+   ],
+   "expects": [
+    "day_ans",
+    "invite",
+    "agree",
+    "g_ok",
+    "no_sorry",
+    "tickets",
+    "ask_free",
+    "its_me_ctx",
+    "good_time"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patvirtinti: taip, penktadienį"
+   ],
+   "options": []
+  },
+  "hello": {
+   "id": "hello",
+   "kind": "step",
+   "npc": [
+    "Hello?"
+   ],
+   "expects": [
+    "its_me_ctx",
+    "invite",
+    "tickets",
+    "ask_free",
+    "good_time"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasisveikinti ir pasakyti, kas skambina"
+   ],
+   "options": []
+  },
+  "band": {
+   "id": "band",
+   "kind": "step",
+   "npc": [
+    "Oh my gosh, yes! I'd love to! Ooh, who's playing?",
+    "Yes! I'd love to! Thank you! Ooh, who's playing?",
+    "Are you kidding? I'd love to! Ooh, who's playing?"
+   ],
+   "expects": [
+    "band_ans",
+    "band_ctx",
+    "band_forgot"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kas groja"
+   ],
+   "options": [
+    "jazz",
+    "rock",
+    "pop",
+    "country",
+    "blues",
+    "classical",
+    "folk",
+    "hip-hop"
+   ]
+  },
+  "suggest_place": {
+   "id": "suggest_place",
+   "kind": "pending",
+   "npc": [
+    "How about outside the station?"
+   ],
+   "expects": [
+    "meet",
+    "g_ok",
+    "agree",
+    "no_sorry",
+    "ask_where",
+    "meet_unknown",
+    "pickup"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti",
+    "Pasiūlyti kitą vietą"
+   ],
+   "options": [
+    "station",
+    "café",
+    "entrance",
+    "bus stop"
+   ]
+  },
+  "suggest_time": {
+   "id": "suggest_time",
+   "kind": "pending",
+   "npc": [
+    "How about 7:30?"
+   ],
+   "expects": [
+    "time_ans",
+    "meet",
+    "g_ok",
+    "agree",
+    "no_sorry",
+    "ask_when"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti",
+    "Pasiūlyti kitą laiką"
+   ],
+   "options": []
+  },
+  "day": {
+   "id": "day",
+   "kind": "step",
+   "npc": [
+    "Oh my gosh, yes! I'd love to! Cool! When is it?",
+    "Oh my gosh, yes! I'd love to! When is the concert?",
+    "Ooh, fun! Count me in! Cool! When is it?"
+   ],
+   "expects": [
+    "day_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kurią dieną koncertas"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "voc",
+  "its_me_ctx",
+  "ask_like",
+  "hear_me",
+  "good_time",
+  "ask_free",
+  "tickets",
+  "invite",
+  "day_ans",
+  "band_ans",
+  "band_forgot",
+  "band_ctx",
+  "starts_at",
+  "time_ans",
+  "meet",
+  "meet_unknown",
+  "pickup",
+  "ask_where",
+  "ask_when",
+  "sister_yes_ctx",
+  "sister_no_ctx",
+  "on_me",
+  "price_ctx",
+  "will_text",
+  "cant_wait",
+  "agree",
+  "no_sorry",
+  "reassure",
+  "accept_inv",
+  "decline_ctx",
+  "bye_ext"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

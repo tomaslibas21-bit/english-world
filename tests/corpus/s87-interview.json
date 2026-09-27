@@ -1,0 +1,4025 @@
+{
+ "situation": "s87-interview",
+ "items": [
+  {
+   "ctx": "arrive",
+   "say": "Hi, I'm here for the job interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Good morning, I have an interview with Ms. Brooks at nine thirty",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Yes, I'm here for the interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Yes, that's right",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I came for the interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I have appointment with Miss Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm looking for Ms. Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm supposed to meet Ms. Brooks at 9:30",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hello, I came to the interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm here about the job",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hi, my name is Tomas Mikalauskas, I have an interview at 9:30",
+   "intent": [
+    "intro_name",
+    "arrive"
+   ]
+  },
+  {
+   "ctx": "arrive",
+   "say": "I have a job interview today",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I was invited for an interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm Tomas Mikalauskas, I'm here for the interview",
+   "intent": [
+    "intro_ctx",
+    "arrive"
+   ]
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm here for the accountant position",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm here to see Miss Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Is Ms. Brooks here?",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm here for the 9:30 interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I have an interview at half past nine",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I have a meeting with Ms. Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I came to the job interview, I'm a bit early",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Yes, I am. I have an interview at 9:30",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm the candidate for the interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm coming for the interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "name",
+   "say": "Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "My name is Tomas Mikalauskas",
+   "intent": "intro_name"
+  },
+  {
+   "ctx": "name",
+   "say": "I'm Tomas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "It's Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "My name's Tomas, and my surname is Mikalauskas",
+   "intent": "intro_name"
+  },
+  {
+   "ctx": "name",
+   "say": "My first name is Tomas and my last name is Mikalauskas",
+   "intent": "intro_name"
+  },
+  {
+   "ctx": "name",
+   "say": "You can call me Tomas",
+   "intent": [
+    "intro_name",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "name",
+   "say": "Tomas Mikalauskas, nice to meet you",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "I am called Tomas",
+   "intent": [
+    "intro_name",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "name",
+   "say": "My name is Tomas and I have an interview",
+   "intent": "intro_name"
+  },
+  {
+   "ctx": "name",
+   "say": "Tomas Mikalauskas, I have an interview at 9:30",
+   "intent": [
+    "intro_ctx",
+    "arrive"
+   ]
+  },
+  {
+   "ctx": "name",
+   "say": "The name is Tomas Mikalauskas",
+   "intent": [
+    "intro_ctx",
+    "intro_name"
+   ]
+  },
+  {
+   "ctx": "name",
+   "say": "Tomas is my name",
+   "intent": [
+    "intro_name",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "name",
+   "say": "My surname is Mikalauskas",
+   "intent": [
+    "intro_name",
+    "intro_ctx"
+   ]
+  },
+  {
+   "ctx": "name",
+   "say": "Mikalauskas. Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "Oh sorry, I'm Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "drink",
+   "say": "Water, please",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "A glass of water would be nice",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "I'd love a coffee",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "No thank you, I'm okay",
+   "intent": [
+    "no_drink",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "I'm good, thank you",
+   "intent": "no_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "Just water, thanks",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "Could I have a cup of coffee?",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "Nothing, thank you",
+   "intent": [
+    "no_drink",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "Coffee would be great, with milk please",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "Yes, a coffee, please",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, it was easy",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, no problem at all",
+   "intent": [
+    "found_ok",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, I used GPS",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "found",
+   "say": "It was a little difficult",
+   "intent": "found_hard"
+  },
+  {
+   "ctx": "found",
+   "say": "I got lost a little",
+   "intent": "found_hard"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, I came by bus",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "found",
+   "say": "No, I couldn't find the entrance",
+   "intent": "found_hard"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, easily",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "found",
+   "say": "Yeah, the GPS helped me",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm an accountant. I have ten years of experience.",
+   "intent": "job_is",
+   "slots": {
+    "job": "accountant"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I work like accountant ten years",
+   "intent": "job_is",
+   "slots": {
+    "job": "accountant"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I am working as a nurse for fifteen years",
+   "intent": "job_is",
+   "slots": {
+    "job": "nurse"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I've been working in logistics for about twelve years",
+   "intent": "field_is",
+   "slots": {
+    "field": "logistics"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a software developer",
+   "intent": "job_is",
+   "slots": {
+    "job": "programmer"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "My profession is teacher",
+   "intent": "job_is",
+   "slots": {
+    "job": "teacher"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "By profession I'm an engineer",
+   "intent": "job_is",
+   "slots": {
+    "job": "engineer"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I worked as a truck driver in Lithuania",
+   "intent": "job_is",
+   "slots": {
+    "job": "truck_driver"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I have been a manager since 2015",
+   "intent": "job_is",
+   "slots": {
+    "job": "manager"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm in sales, about eight years",
+   "intent": "field_is",
+   "slots": {
+    "field": "sales"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I have a lot of experience in construction",
+   "intent": "experience"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm from Lithuania and I work in IT",
+   "intent": [
+    "from",
+    "field_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I moved here two months ago with my family",
+   "intent": "moved"
+  },
+  {
+   "ctx": "about",
+   "say": "Right now I'm looking for a job",
+   "intent": "between_jobs"
+  },
+  {
+   "ctx": "about",
+   "say": "I just finished university",
+   "intent": "no_exp"
+  },
+  {
+   "ctx": "about",
+   "say": "I have my own small business",
+   "intent": "own_business"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a nurse with twenty years' experience",
+   "intent": "job_is",
+   "slots": {
+    "job": "nurse"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I have worked in a bank for ten years",
+   "intent": "field_is",
+   "slots": {
+    "field": "banking"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I am teacher already twenty years",
+   "intent": "job_is",
+   "slots": {
+    "job": "teacher"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "Ten years I work as a driver",
+   "intent": "job_is",
+   "slots": {
+    "job": "driver"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I studied economics and now I work as an accountant",
+   "intent": "job_is",
+   "slots": {
+    "job": "accountant"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "My job is in customer service",
+   "intent": "field_is",
+   "slots": {
+    "field": "customer_service"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm married and I have two kids",
+   "intent": "family"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm 45 years old",
+   "intent": "age"
+  },
+  {
+   "ctx": "about",
+   "say": "I do marketing",
+   "intent": "field_is",
+   "slots": {
+    "field": "marketing"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm working in a factory",
+   "intent": "field_is",
+   "slots": {
+    "field": "manufacturing"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I work in a hospital",
+   "intent": "field_is",
+   "slots": {
+    "field": "healthcare"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm unemployed right now",
+   "intent": "between_jobs"
+  },
+  {
+   "ctx": "about",
+   "say": "I have fifteen years of experience as a cook",
+   "intent": "experience",
+   "slots": {
+    "job": "chef"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a mechanic, I repair cars",
+   "intent": "job_is",
+   "slots": {
+    "job": "mechanic"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "I'm an electrician for more than ten years",
+   "intent": "job_is",
+   "slots": {
+    "job": "electrician"
+   }
+  },
+  {
+   "ctx": "about",
+   "say": "My last job was a warehouse worker",
+   "intent": "job_is",
+   "slots": {
+    "job": "warehouse_worker"
+   }
+  },
+  {
+   "ctx": "why",
+   "say": "Because I like your company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I heard many good things about your company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Your company is very good and famous",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to develop myself",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I think this job is perfect for me",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like what you do",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Brightline is a great place to work",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want new experience",
+   "intent": [
+    "why_ans",
+    "leaving_ans"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "I'm looking for a stable job",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because it's close to my home",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to work in an international company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like your products and your values",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I read about your company on the internet and I liked it",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because I want to grow with the company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "My friend works here and he says it's a great place",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to use my experience in a new place",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because I love working with people",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I'm interested in this position",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "It's a good opportunity for me",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "The job sounds interesting",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like the work you do here",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very organized and reliable",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I am hard worker",
+   "intent": "strength",
+   "slots": {
+    "strength": "hardworking"
+   }
+  },
+  {
+   "ctx": "strengths",
+   "say": "I think my strength is that I'm very patient",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm good at working with people",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I am responsible person",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I never give up",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I can work under pressure",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I learn new things very quickly",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "Communication skills",
+   "intent": [
+    "strength_ctx",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm a people person",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "My colleagues say I'm very helpful",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm always on time and I'm honest",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm good in teamwork",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "Punctuality and honesty",
+   "intent": [
+    "strength_ctx",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very accurate in my work",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I pay attention to details",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I work hard",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm a quick learner and a team player",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very friendly and open",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "My biggest strength is my experience",
+   "intent": [
+    "strength",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm good with numbers",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very good at organizing my time",
+   "intent": "strength"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I moved to America with my family",
+   "intent": [
+    "leaving_ans",
+    "moved"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "Because I moved here",
+   "intent": [
+    "leaving_ans",
+    "moved"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to grow",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want more responsibility",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "My company closed",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "The company went bankrupt",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "My contract ended",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to try something new",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "There were no opportunities to grow",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I need a change",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want a better salary",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I didn't like my boss",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "My family moved here, so I had to leave",
+   "intent": [
+    "leaving_ans",
+    "moved"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "The project finished",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "They closed our department",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to work closer to home",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I'm looking for new challenges",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to change my career",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I lost my job",
+   "intent": [
+    "between_jobs",
+    "leaving_ans"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "There was no possibility to grow there",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "weakness",
+   "say": "Sometimes I'm too perfectionist",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "My English is not so good yet",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I am too critical to myself",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I worry too much about details",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I can't say no to people",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm not very patient",
+   "intent": [
+    "weakness",
+    "not_strength"
+   ]
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm a little bit shy",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I get nervous when I speak in public",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I don't like to ask for help",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm bad at public speaking",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm too direct sometimes",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I work too much and forget to rest",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "Sometimes I'm impatient, but I'm working on it",
+   "intent": [
+    "weakness",
+    "working_on_it"
+   ]
+  },
+  {
+   "ctx": "weakness",
+   "say": "Maybe my weakness is my English",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm a bit slow sometimes",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I take on too many tasks",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm very emotional",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I have no weaknesses",
+   "intent": "no_weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "My weakness is that I'm too perfectionist",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I need more practice with English",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I have a lot of experience",
+   "intent": [
+    "hire_ans",
+    "experience"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm the best candidate for this job",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm a hard worker and I learn fast",
+   "intent": [
+    "strength",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I have the skills and experience you need",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I will work hard for your company",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I really want this job",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm reliable and I never give up",
+   "intent": [
+    "strength",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "You won't regret it",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I'm motivated and ready to learn",
+   "intent": [
+    "hire_ans",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I can bring a lot to your team",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I have exactly the experience you are looking for",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm perfect for this position",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm a good fit for the team",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm very organized and I love this work",
+   "intent": [
+    "strength",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I'm the right person for you",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I can do this job very well",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I am",
+   "intent": [
+    "yn:yes",
+    "auth_yes"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have a work permit",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have green card",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I am a permanent resident",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have all the documents",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have a work visa",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I have the right to work here",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I'm allowed to work in the US",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Not yet, my papers are in process",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I'm waiting for my green card",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I will get my work permit next month",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I'm a US citizen",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I applied for a work permit",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "authorized",
+   "say": "No, not yet",
+   "intent": [
+    "auth_pending",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, of course, I have a green card",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I'm a legal resident",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "future",
+   "say": "I see myself here, in a higher position",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to be a manager",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I hope I will still work here",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Maybe as a team leader",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I'd like to grow in this company",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "In five years I want to be a senior accountant",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Working here with more responsibility",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to be an expert in my field",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I see myself as a part of your team",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Leading my own team",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to learn a lot and get a promotion",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I don't know, maybe back in Lithuania",
+   "intent": "future_away"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to open my own business",
+   "intent": "future_away"
+  },
+  {
+   "ctx": "future",
+   "say": "I hope to have a good position in this company",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Here, but with more experience",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Still here, I hope",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "In management",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I would like to be a department head",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can start tomorrow",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Next Monday",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Immediately",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "From the first of next month",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "In two weeks",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I need two weeks to finish my current job",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Any time you want",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I'm ready to start right now",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Whenever you need me",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I'm free from next week",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Monday is good for me",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can start on October first",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "After two weeks",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "As soon as you want",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I have to give notice to my boss, so in two weeks",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can start in one month",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can come to work next week",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian, Russian and English",
+   "intent": "languages_ctx"
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak Lithuanian and Russian, and English a little",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "My native language is Lithuanian",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "I can speak Russian and Polish",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "I know English and German",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian is my mother tongue",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak fluent Russian",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Three languages: Lithuanian, Russian and English",
+   "intent": [
+    "languages_ans",
+    "languages_ctx"
+   ]
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak a little German",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Only Lithuanian and English",
+   "intent": [
+    "languages_ans",
+    "languages_ctx"
+   ]
+  },
+  {
+   "ctx": "languages",
+   "say": "I'm fluent in Russian",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "English and Lithuanian, of course",
+   "intent": "languages_ctx"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian, Russian, English and a bit of Polish",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "languages",
+   "say": "I understand Polish",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak four languages",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Russian and English, and Lithuanian is my first language",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "salary",
+   "say": "Around 50,000 a year",
+   "intent": "salary_ans",
+   "slots": {
+    "amount": 50000
+   }
+  },
+  {
+   "ctx": "salary",
+   "say": "I'd like to earn about 4,000 a month",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "Fifty thousand dollars per year",
+   "intent": "salary_ans",
+   "slots": {
+    "amount": 50000
+   }
+  },
+  {
+   "ctx": "salary",
+   "say": "I expect 25 dollars per hour",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "Between 45 and 50 thousand",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "I think 50k is fair",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "What is the salary for this position?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "How much do you pay?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "It's negotiable",
+   "intent": "salary_flexible"
+  },
+  {
+   "ctx": "salary",
+   "say": "I'm open to your offer",
+   "intent": "salary_flexible"
+  },
+  {
+   "ctx": "salary",
+   "say": "What do you offer?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "At least 45,000",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "Something like 3,500 dollars a month",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "I don't know, what is normal for this job?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "I'm flexible, it depends on the benefits",
+   "intent": "salary_flexible"
+  },
+  {
+   "ctx": "salary",
+   "say": "I was making 40,000 at my last job",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "My expectation is 50,000 a year",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "I would be happy with 48,000",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "Fifty thousand would be good",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "questions",
+   "say": "What time does the work start?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many hours a week will I work?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "Will I have a training?",
+   "intent": "q_training"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is it possible to work from home?",
+   "intent": "q_remote"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many vacation days do I get?",
+   "intent": "q_benefits"
+  },
+  {
+   "ctx": "questions",
+   "say": "Do you offer health insurance?",
+   "intent": "q_benefits"
+  },
+  {
+   "ctx": "questions",
+   "say": "When can I start?",
+   "intent": "q_start"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many people are in the team?",
+   "intent": "q_team"
+  },
+  {
+   "ctx": "questions",
+   "say": "Who will be my boss?",
+   "intent": "q_team"
+  },
+  {
+   "ctx": "questions",
+   "say": "What will I do every day?",
+   "intent": "q_day"
+  },
+  {
+   "ctx": "questions",
+   "say": "What are my responsibilities?",
+   "intent": "q_day"
+  },
+  {
+   "ctx": "questions",
+   "say": "When will I know your decision?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "questions",
+   "say": "When will you call me?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "questions",
+   "say": "What should I wear?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is there a parking?",
+   "intent": "q_parking"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, I have no questions",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, everything is clear",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "I think you answered all my questions",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "Yes, I have one question",
+   "intent": "can_ask"
+  },
+  {
+   "ctx": "questions",
+   "say": "What do you like about working here?",
+   "intent": "q_like"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is the job full-time?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "What's the salary?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "questions",
+   "say": "Do I need to work on weekends?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "How long is the lunch break?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "Will somebody train me?",
+   "intent": "q_training"
+  },
+  {
+   "ctx": "questions",
+   "say": "Who will I work with?",
+   "intent": "q_team"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can I sometimes work remotely?",
+   "intent": "q_remote"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is there a dress code?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "In my last job we organized a big event together",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "We worked together on a big project",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I always work in a team",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I helped my new colleagues",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "We had a difficult project and we finished it on time",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "In my team we always help each other",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "At the hospital we work as a team every day",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "Our team was five people and we made a new website",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I usually work alone",
+   "intent": "no_team"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I trained new people in my team",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "Me and my colleagues finished a big order before the deadline",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "We shared the tasks and helped each other",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I led a team of ten people",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "Once we had a very big order and everybody stayed late",
+   "intent": [
+    "story_ctx",
+    "teamwork_ans"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I'm a good team player",
+   "intent": "strength"
+  },
+  {
+   "ctx": "phone",
+   "say": "Sure, no problem",
+   "intent": [
+    "no_problem",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "Of course",
+   "intent": [
+    "yn:yes",
+    "no_problem"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "Take your time",
+   "intent": "no_problem"
+  },
+  {
+   "ctx": "phone",
+   "say": "It's okay",
+   "intent": [
+    "no_problem",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "No worries",
+   "intent": "no_problem"
+  },
+  {
+   "ctx": "phone",
+   "say": "Of course, go ahead",
+   "intent": [
+    "no_problem",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "phone",
+   "say": "Sure, I can wait",
+   "intent": [
+    "no_problem",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "Wow, thank you! I accept",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "offer",
+   "say": "Really? Thank you so much!",
+   "intent": [
+    "accept_job",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "Yes, of course!",
+   "intent": [
+    "yn:yes",
+    "accept_job"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "That's great news!",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "offer",
+   "say": "Can I think about it until tomorrow?",
+   "intent": "think_offer"
+  },
+  {
+   "ctx": "offer",
+   "say": "I'm very happy, thank you!",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "offer",
+   "say": "I need to talk to my family first",
+   "intent": "think_offer"
+  },
+  {
+   "ctx": "offer",
+   "say": "Sorry, I can't accept it",
+   "intent": "decline_offer"
+  },
+  {
+   "ctx": "offer",
+   "say": "I'd be happy to join your team",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you for your time",
+   "intent": "thanks_time"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you for the interview",
+   "intent": "thanks_time"
+  },
+  {
+   "ctx": "closing",
+   "say": "Nice meeting you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "closing",
+   "say": "I hope to hear from you soon",
+   "intent": "look_forward"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you, have a nice day",
+   "intent": [
+    "g_thanks",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thanks for this opportunity",
+   "intent": "thanks_time"
+  },
+  {
+   "ctx": "closing",
+   "say": "Goodbye, see you soon",
+   "intent": "g_bye"
+  },
+  {
+   "ctx": "closing",
+   "say": "It was a pleasure talking to you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "closing",
+   "say": "I'll wait for your call",
+   "intent": "look_forward"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hello, I'm here for an interview at nine thirty",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hi, I have a job interview at 9:30 with Ms. Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Good morning, I'm Tomas, I'm here for my interview",
+   "intent": [
+    "intro_ctx",
+    "arrive"
+   ]
+  },
+  {
+   "ctx": "arrive",
+   "say": "I have interview today",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Yes, for the interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Yeah, I'm here to interview for the job",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm here for a meeting with Ms. Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Ms. Brooks is expecting me",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm here to see the HR manager",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "My interview is at 9:30",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "name",
+   "say": "Tomas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "It's Tomas, Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "Name is Tomas",
+   "intent": "intro_name"
+  },
+  {
+   "ctx": "name",
+   "say": "I'm Tomas Mikalauskas, nice to meet you",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "drink",
+   "say": "Water would be great, thanks",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "Coffee, black please",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "A coffee would be nice",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "Yes please, water",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "drink",
+   "say": "No, thanks",
+   "intent": [
+    "yn:no",
+    "no_drink"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "Maybe just a glass of water",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, very easy",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "found",
+   "say": "It was fine",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "found",
+   "say": "Not really, I got lost",
+   "intent": "found_hard"
+  },
+  {
+   "ctx": "found",
+   "say": "The traffic was terrible, but I found it",
+   "intent": [
+    "found_hard",
+    "found_ok"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "Well, I'm a nurse. I've worked in a hospital for fifteen years.",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a teacher. I have worked at a school for twenty years.",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I have twenty years of experience in construction",
+   "intent": "experience"
+  },
+  {
+   "ctx": "about",
+   "say": "I've been in sales for fifteen years",
+   "intent": [
+    "field_is",
+    "experience"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a truck driver with twelve years of experience",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I am accountant, I work ten years in a big company",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I work in IT, I'm a programmer",
+   "intent": [
+    "field_is",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm from Lithuania, I'm an engineer",
+   "intent": [
+    "from",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I have been working as a cook for many years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a bookkeeper",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a student",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I finished university last year",
+   "intent": "no_exp"
+  },
+  {
+   "ctx": "about",
+   "say": "I studied marketing",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I graduated in economics",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I have a degree in finance",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I worked twelve years in logistics",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "Twelve years in logistics",
+   "intent": [
+    "field_ctx",
+    "field_is",
+    "experience"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "My name is Tomas, I'm 45, I'm an electrician",
+   "intent": [
+    "intro_name",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a mother of two",
+   "intent": "family"
+  },
+  {
+   "ctx": "why",
+   "say": "I like your company very much",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because your company is the best",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because I heard it's a good company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I think I can learn a lot here",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to be part of your team",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like the atmosphere here",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "It is a big and stable company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like the job description",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because the job is interesting for me",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to work with a good team",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to work for a company like yours",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm hard-working and responsible",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "Hard-working, reliable, and honest",
+   "intent": [
+    "strength_ctx",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm good at solving problems",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very patient with people",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I can work in a team and alone",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm flexible and I learn quickly",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I have good communication skills",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I think I'm a good listener",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I always finish my work on time",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I am very punctual person",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm calm under stress",
+   "intent": "strength"
+  },
+  {
+   "ctx": "leaving",
+   "say": "My contract finished",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to grow professionally",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "The company closed down",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I moved to the US",
+   "intent": [
+    "leaving_ans",
+    "moved"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "I'm looking for better opportunities",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want a job with more responsibility",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "My old job was too far from home",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I wanted something new",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm a perfectionist",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm too hard on myself",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "My English could be better",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm not very good at saying no",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm shy with new people",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I get stressed easily",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm afraid of public speaking",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I don't like to delegate",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I'm a hard worker",
+   "intent": [
+    "strength",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm experienced and reliable",
+   "intent": [
+    "strength",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I have ten years of experience in this field",
+   "intent": [
+    "hire_ans",
+    "experience"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I know this job very well",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I will do my best",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "Give me a chance, you won't be disappointed",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I do",
+   "intent": [
+    "yn:yes",
+    "auth_yes"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have all the papers",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Not yet, but soon",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "authorized",
+   "say": "My work permit is coming next month",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I got my green card last year",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "future",
+   "say": "I hope to be a team leader",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to grow with your company",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Still working here, maybe as a manager",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I'd like to have more responsibility",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I see myself leading a team",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Maybe as a supervisor",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Right away",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Tomorrow, if you want",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "In two weeks, I need to give notice",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "On Monday",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "The first of next month",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can start whenever you want",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "From Monday",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian and Russian, and some English",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak English, Russian and Lithuanian",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian is my native language, and I also speak Russian",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Russian, Polish, a little German",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "salary",
+   "say": "About fifty thousand a year",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "Fifty thousand",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "I'm looking for about 25 dollars an hour",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "What's the range for this position?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "I'd like to know the range first",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "Something around 50k",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "questions",
+   "say": "Actually, yes. What are the hours?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "Do you have a parking lot?",
+   "intent": "q_parking"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many vacation days are there?",
+   "intent": "q_benefits"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is there free parking?",
+   "intent": "q_parking"
+  },
+  {
+   "ctx": "questions",
+   "say": "What do I wear to work?",
+   "intent": "q_dress"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, thank you, I don't have any questions",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, I think that's all",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many people work in the team?",
+   "intent": "q_team"
+  },
+  {
+   "ctx": "questions",
+   "say": "Who is my manager?",
+   "intent": "q_team"
+  },
+  {
+   "ctx": "questions",
+   "say": "When is the first day?",
+   "intent": "q_start"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "At my last job, we worked together on a big project",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I was the leader of a small team",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "We all worked together to finish the order",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "In the kitchen, we always work as a team",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "Yes! Thank you so much!",
+   "intent": [
+    "accept_job",
+    "yn:yes",
+    "g_thanks"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "I accept, thank you",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "offer",
+   "say": "Of course I accept!",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "offer",
+   "say": "Thank you, but I need some time",
+   "intent": "think_offer"
+  },
+  {
+   "ctx": "offer",
+   "say": "That's amazing!",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "closing",
+   "say": "Nice to meet you too",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you for the opportunity, have a nice day",
+   "intent": "thanks_time"
+  },
+  {
+   "ctx": "phone",
+   "say": "Sure, go ahead",
+   "intent": [
+    "no_problem",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "arrive",
+   "say": "Good morning, I have a 9:30 interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hello, I'm here for the job interview with Ms. Brooks",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I'm Tomas, I have an interview",
+   "intent": [
+    "intro_ctx",
+    "arrive"
+   ]
+  },
+  {
+   "ctx": "arrive",
+   "say": "Yes, that's me",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "name",
+   "say": "Yes, Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "Sure, it's Tomas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "about",
+   "say": "Well, I'm an engineer. I've been working in construction for fifteen years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a cook, I worked in a restaurant for eight years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I've got twelve years of experience in logistics",
+   "intent": "experience"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a nurse. Twenty years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I've been a teacher for 10 years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "In Lithuania I was an accountant",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I work with computers, I'm a programmer",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I have a lot of experience in sales",
+   "intent": "experience"
+  },
+  {
+   "ctx": "about",
+   "say": "Sure! I'm from Lithuania, I'm 40, and I'm a driver",
+   "intent": [
+    "from",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I am working in hotel",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "why",
+   "say": "Because I like this company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I've heard a lot about Brightline",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I think it's a great company to work for",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to learn and grow here",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like your team and your products",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "This job is perfect for my experience",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm hardworking and very organized",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm reliable, and I always finish my work",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I work well with people",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very patient and friendly",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "Organization and teamwork",
+   "intent": "strength_ctx"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm too much of a perfectionist",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "Sometimes I'm not very patient",
+   "intent": [
+    "weakness",
+    "not_strength"
+   ]
+  },
+  {
+   "ctx": "weakness",
+   "say": "My English is not perfect",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I find it hard to say no",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm a bit shy at first",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I'm a hard worker and I have experience",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I have the experience and I'm ready to learn",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm the right person for this job",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I will be a great addition to your team",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I'd like to be a manager",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Still here, with more responsibility",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I hope in a senior position",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can start next week",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "As soon as possible",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "In two weeks, after I give notice",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "From October",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "I'm looking for around 50,000 a year",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "About 25 dollars an hour",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "What's the range?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian, English, and a little Russian",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak Lithuanian and English",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have a green card",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I'm allowed to work here",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "questions",
+   "say": "What are the hours?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is there training for new people?",
+   "intent": "q_training"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can I work from home sometimes?",
+   "intent": "q_remote"
+  },
+  {
+   "ctx": "questions",
+   "say": "What benefits do you offer?",
+   "intent": "q_benefits"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, I think that's everything. Thank you",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "When will I hear from you?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "At my old job, we had a big project and we did it together",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "We always helped each other in my team",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you for your time, it was nice to meet you",
+   "intent": "thanks_time"
+  },
+  {
+   "ctx": "offer",
+   "say": "Yes! Thank you! I accept the offer",
+   "intent": "accept_job"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I moved here with my family",
+   "intent": [
+    "leaving_ans",
+    "moved"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "I'm looking for a new challenge",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a professional driver, I drive buses",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I am economist, I work in a bank",
+   "intent": [
+    "job_is",
+    "field_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I finished economics at university in Vilnius",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a hairdresser with my own salon",
+   "intent": [
+    "job_is",
+    "own_business"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I work as a manager in a big store",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a builder, I build houses",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "Twenty years in construction",
+   "intent": "field_ctx"
+  },
+  {
+   "ctx": "about",
+   "say": "I was a teacher for many years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I have experience in customer service",
+   "intent": "experience"
+  },
+  {
+   "ctx": "about",
+   "say": "My name is Tomas and I'm a mechanic",
+   "intent": [
+    "intro_name",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a mom and I worked as a nurse before",
+   "intent": [
+    "family",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm good at my job, I'm an accountant",
+   "intent": [
+    "job_is",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I work in IT for ten years",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "Sales, about fifteen years",
+   "intent": [
+    "field_ctx"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm currently working as a cashier",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "why",
+   "say": "Because your company is growing",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I know your company is very good",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want a job where I can grow",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I like working in a team",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Your products are very good",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Brightline has a good name",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I think I can help your company",
+   "intent": [
+    "why_ans",
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "I'm interested in your company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm a very organized person",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I think I'm good with people",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm honest and I work hard",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I always do my best",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm calm and patient",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I learn fast and I like challenges",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm very responsible",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "My strong side is communication",
+   "intent": "strength"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm sometimes too serious",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I don't like to speak in front of many people",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I get stressed sometimes",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "Maybe that I work too much",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I'm a little slow with computers",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I want everything to be perfect",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm a very good worker",
+   "intent": [
+    "hire_ans",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I have ten years of experience",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I can learn quickly and I work hard",
+   "intent": [
+    "hire_ans",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm sure I can do this job well",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I'm motivated",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I know I can help your team",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I hope I'll be a team leader",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I see myself working here",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to have a higher position",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I'd like to grow in this job",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "We made a big project together with my colleagues",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I often help my colleagues",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "In my last job I worked in a team of six",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want a new challenge",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "My old company closed",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to grow and learn new things",
+   "intent": [
+    "leaving_ans",
+    "why_ans"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "We moved to the US last year",
+   "intent": [
+    "leaving_ans",
+    "moved"
+   ]
+  },
+  {
+   "ctx": "questions",
+   "say": "How many hours do I work?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "When do I start?",
+   "intent": "q_start"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is there a lunch break?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "What will my job be?",
+   "intent": "q_day"
+  },
+  {
+   "ctx": "questions",
+   "say": "Do you offer training?",
+   "intent": "q_training"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many people work here?",
+   "intent": "q_team"
+  },
+  {
+   "ctx": "questions",
+   "say": "No questions, thank you",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "salary",
+   "say": "Fifty thousand a year, maybe",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "I would like around 4,500 a month",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "What is the salary range?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "start",
+   "say": "Immediately, if you want",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "After two weeks notice",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "I can start on Monday",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "I speak Lithuanian, Russian and some English",
+   "intent": "languages_ans"
+  },
+  {
+   "ctx": "languages",
+   "say": "Lithuanian and English",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I can work here legally",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Not yet, I'm waiting for my documents",
+   "intent": "auth_pending"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you very much, goodbye",
+   "intent": [
+    "g_thanks",
+    "thanks_time",
+    "g_bye"
+   ]
+  },
+  {
+   "ctx": "closing",
+   "say": "It was nice talking to you",
+   "intent": "nice_meet"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hello, I come for interview",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Good morning. I have meeting with Miss Brooks at half past nine",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Hi, interview at nine thirty",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "arrive",
+   "say": "Excuse me, where is the interview?",
+   "intent": "arrive"
+  },
+  {
+   "ctx": "name",
+   "say": "Me Tomas Mikalauskas",
+   "intent": "intro_ctx"
+  },
+  {
+   "ctx": "name",
+   "say": "Tomas, and my surname is Mikalauskas",
+   "intent": [
+    "intro_ctx",
+    "intro_name"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I am driver of truck twenty years",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I working in factory ten years",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I was working in Norway on construction",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I'm a cleaner in the hotel",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I am from Lithuania, I have two children and I am cook",
+   "intent": [
+    "from",
+    "family",
+    "job_is"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "My work is logistics",
+   "intent": "field_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I worked 15 years like mechanic",
+   "intent": "job_is"
+  },
+  {
+   "ctx": "about",
+   "say": "I have big experience in sales",
+   "intent": "experience"
+  },
+  {
+   "ctx": "about",
+   "say": "Accountant, ten years",
+   "intent": "job_ctx"
+  },
+  {
+   "ctx": "why",
+   "say": "I like this job very much",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because is good company",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want stable work",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Good company, good people",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "I want to work with people",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "why",
+   "say": "Because I have experience in this area",
+   "intent": [
+    "hire_ans",
+    "why_ans"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I am very hard working",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I am punctual and I like order",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I am never late and I don't give up",
+   "intent": "strength"
+  },
+  {
+   "ctx": "strengths",
+   "say": "Friendly, honest, hardworking",
+   "intent": "strength_ctx"
+  },
+  {
+   "ctx": "strengths",
+   "say": "I can work alone and in a team",
+   "intent": "strength"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I am too emotional sometimes",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "My English is not so good",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I work too much",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "weakness",
+   "say": "I am bad with computers",
+   "intent": "weakness"
+  },
+  {
+   "ctx": "hire",
+   "say": "Because I am the best",
+   "intent": "hire_ans"
+  },
+  {
+   "ctx": "hire",
+   "say": "I have good experience and I am responsible",
+   "intent": [
+    "hire_ans",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I want to work and I work hard",
+   "intent": [
+    "hire_ans",
+    "strength"
+   ]
+  },
+  {
+   "ctx": "future",
+   "say": "Here, in your company",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "I want to be boss of the team",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "future",
+   "say": "Maybe manager",
+   "intent": "future_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "From Monday I can",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "Next month",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "start",
+   "say": "When you want",
+   "intent": "start_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "Four thousand dollars in month",
+   "intent": "salary_ans"
+  },
+  {
+   "ctx": "salary",
+   "say": "How much you pay?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "salary",
+   "say": "I don't know, what do you offer?",
+   "intent": "salary_range_q"
+  },
+  {
+   "ctx": "questions",
+   "say": "What time I start work?",
+   "intent": "q_hours"
+  },
+  {
+   "ctx": "questions",
+   "say": "I will have training?",
+   "intent": "q_training"
+  },
+  {
+   "ctx": "questions",
+   "say": "Can I work at home?",
+   "intent": "q_remote"
+  },
+  {
+   "ctx": "questions",
+   "say": "When you call me?",
+   "intent": "q_next"
+  },
+  {
+   "ctx": "questions",
+   "say": "No, everything is okay",
+   "intent": "no_questions"
+  },
+  {
+   "ctx": "questions",
+   "say": "How much vacation?",
+   "intent": "q_benefits"
+  },
+  {
+   "ctx": "authorized",
+   "say": "Yes, I have permission to work",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I have green card, yes",
+   "intent": "auth_yes"
+  },
+  {
+   "ctx": "languages",
+   "say": "Russian, Lithuanian, little English",
+   "intent": [
+    "languages_ctx",
+    "languages_ans"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "In my work we always work together",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I was a team leader",
+   "intent": "teamwork_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "Because I moved to America",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "The salary was too small",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want better job",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "closing",
+   "say": "Thank you very much, have a nice day",
+   "intent": [
+    "g_thanks",
+    "g_bye",
+    "thanks_time"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "Only water, please",
+   "intent": "want_drink"
+  },
+  {
+   "ctx": "found",
+   "say": "Yes, very easy to find",
+   "intent": "found_ok"
+  },
+  {
+   "ctx": "arrive",
+   "say": "I don't have an interview",
+   "intent": "any",
+   "not": [
+    "arrive"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I'm not a nurse",
+   "intent": "any",
+   "not": [
+    "job_is",
+    "job_ctx"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I don't have ten years of experience",
+   "intent": "any",
+   "not": [
+    "experience",
+    "years_ctx"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "I don't really like your company",
+   "intent": "any",
+   "not": [
+    "why_ans"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm not very patient",
+   "intent": "any",
+   "not": [
+    "strength",
+    "strength_ctx"
+   ]
+  },
+  {
+   "ctx": "weakness",
+   "say": "I don't have any weaknesses",
+   "intent": "any",
+   "not": [
+    "weakness"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "I don't have a green card",
+   "intent": "any",
+   "not": [
+    "auth_yes"
+   ]
+  },
+  {
+   "ctx": "future",
+   "say": "I don't want to be a manager",
+   "intent": "any",
+   "not": [
+    "future_ans"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "I can't accept the job",
+   "intent": "any",
+   "not": [
+    "accept_job"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I'm not the right person for this job",
+   "intent": "any",
+   "not": [
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I never worked in a team",
+   "intent": "any",
+   "not": [
+    "teamwork_ans",
+    "story_ctx"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "No coffee for me, thanks",
+   "intent": "any",
+   "not": [
+    "want_drink"
+   ]
+  },
+  {
+   "ctx": "found",
+   "say": "It wasn't easy to find",
+   "intent": "any",
+   "not": [
+    "found_ok"
+   ]
+  },
+  {
+   "ctx": "leaving",
+   "say": "I didn't lose my job",
+   "intent": "any",
+   "not": [
+    "between_jobs"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I don't work well under pressure",
+   "intent": "any",
+   "not": [
+    "strength"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "The red car is under the table",
+   "intent": "none"
+  },
+  {
+   "ctx": "questions",
+   "say": "My dog likes pizza and bananas",
+   "intent": "none"
+  },
+  {
+   "ctx": "about",
+   "say": "purple window elephant",
+   "intent": "none"
+  },
+  {
+   "ctx": "about",
+   "say": "I don't work as a nurse",
+   "intent": "any",
+   "not": [
+    "job_is",
+    "job_ctx",
+    "job_does"
+   ]
+  },
+  {
+   "ctx": "strengths",
+   "say": "I'm not a team player",
+   "intent": "any",
+   "not": [
+    "strength",
+    "strength_ctx"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "No, I'm not allowed to work here",
+   "intent": "any",
+   "not": [
+    "auth_yes"
+   ]
+  },
+  {
+   "ctx": "authorized",
+   "say": "I'm not a citizen",
+   "intent": "any",
+   "not": [
+    "auth_yes"
+   ]
+  },
+  {
+   "ctx": "hire",
+   "say": "I don't have the right experience",
+   "intent": "any",
+   "not": [
+    "hire_ans"
+   ]
+  },
+  {
+   "ctx": "future",
+   "say": "I don't want to stay here",
+   "intent": "any",
+   "not": [
+    "future_ans"
+   ]
+  },
+  {
+   "ctx": "questions",
+   "say": "I don't want to work from home",
+   "intent": "any",
+   "not": [
+    "q_remote"
+   ]
+  },
+  {
+   "ctx": "offer",
+   "say": "No, thank you, I don't want the job",
+   "intent": "any",
+   "not": [
+    "accept_job"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "I don't know much about your company",
+   "intent": "any",
+   "not": [
+    "why_ans"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "No water, thanks",
+   "intent": "any",
+   "not": [
+    "want_drink"
+   ]
+  },
+  {
+   "ctx": "about",
+   "say": "I don't teach anymore",
+   "intent": "any",
+   "not": [
+    "job_does"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "Because I want to work in a bigger team and learn new things",
+   "intent": "why_ans"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I want to work in a bigger team and learn new things",
+   "intent": "leaving_ans"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is there a parking place?",
+   "intent": "q_parking"
+  },
+  {
+   "ctx": "leaving",
+   "say": "I do not want to work in a big team",
+   "intent": "any",
+   "not": [
+    "leaving_ans"
+   ]
+  },
+  {
+   "ctx": "why",
+   "say": "Because your company is growing and I want to be part of it",
+   "intent": "why_ans"
+  }
+ ]
+}

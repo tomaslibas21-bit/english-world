@@ -1,0 +1,21 @@
+{
+  "npc": "Dot, gas station cashier",
+  "images": ["greet", "outoforder", "pay", "receipt", "trouble"],
+  "start": "greet",
+  "done": "receipt",
+  "phases": {
+    "order": "greet", "pump": "greet", "amount": "greet", "extras": "greet",
+    "out_of_order": "outoforder",
+    "fill_pay": "pay", "leave": "pay", "pay": "pay", "debit": "pay",
+    "receipt": "receipt", "pump_on": "receipt", "after": "receipt", "anything": "receipt", "closing": "receipt",
+    "trouble": "trouble", "trouble_help": "trouble"
+  },
+  "focus": [35, 34],
+  "jobs": {
+    "greet": "00175bc3-3690-42b9-a27c-84238ee733e5",
+    "outoforder": "fe189193-b601-4ee0-828d-804b3c177ae2",
+    "pay": "4b503ac8-2bf4-4bfd-bc3b-76265ed0f3fd",
+    "receipt": "2d08ce8a-c4c6-454d-b339-143e2f03e8cf",
+    "trouble": "7ec60a28-1bd5-464e-a38b-61870759ba5f"
+  }
+}

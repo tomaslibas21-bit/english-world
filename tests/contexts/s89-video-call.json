@@ -1,0 +1,477 @@
+{
+ "situation": "s89-video-call",
+ "title": "You're on Mute!",
+ "goal": "Dalyvauk komandos vaizdo skambutyje ir padėk kolegoms su technika.",
+ "contexts": {
+  "hear": {
+   "id": "hear",
+   "kind": "step",
+   "npc": [
+    "Hi! Can you hear me? Can you see me?",
+    "Morning, everyone! Can everyone hear me?",
+    "Hi, everyone! Can you hear me okay?"
+   ],
+   "expects": [
+    "hear_yes",
+    "hear_no",
+    "greet_team"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar girdi"
+   ],
+   "options": []
+  },
+  "camera": {
+   "id": "camera",
+   "kind": "step",
+   "npc": [
+    "Great! Oh, your camera's off.",
+    "Perfect. Oh, your camera's off.",
+    "That sounds lovely! Oh, your camera's off."
+   ],
+   "expects": [
+    "cam_fixed",
+    "cam_fix_ctx",
+    "cam_broken",
+    "better_q",
+    "better_now_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsiprašyti ir įsijungti kamerą"
+   ],
+   "options": []
+  },
+  "mute": {
+   "id": "mute",
+   "kind": "step",
+   "npc": [
+    "There you are! Oh, here's Paul! Hi, Paul! Paul? Paul... we can't hear you at all.",
+    "Yes! There you are! Oh, here's Paul! Hi, Paul! Paul? Paul... we can't hear you at all.",
+    "Perfect. Oh, here's Paul! Hi, Paul! Paul? Paul... we can't hear you at all."
+   ],
+   "expects": [
+    "tell_mute",
+    "tell_mute_ctx",
+    "not_muted",
+    "hear_no"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti Paului, kad jo mikrofonas išjungtas"
+   ],
+   "options": []
+  },
+  "paul_hear": {
+   "id": "paul_hear",
+   "kind": "pending",
+   "npc": [
+    "Oh, sorry! Can you hear me now?"
+   ],
+   "expects": [
+    "hear_yes",
+    "hear_no",
+    "tell_mute",
+    "tell_mute_ctx",
+    "not_muted"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti Paului, ar dabar jį girdi"
+   ],
+   "options": []
+  },
+  "screen": {
+   "id": "screen",
+   "kind": "step",
+   "npc": [
+    "Great. Sorry about that, guys! Okay, let's get started. I'm going to share my screen. Can everyone see my screen?",
+    "Great. Sorry about that, guys! Okay, let's get started. I'm going to share my screen. Can you all see it?",
+    "Great. Sorry about that, guys! Hi, everyone! Sorry I'm late! Okay, let's get started. I'm going to share my screen. Can you all see it?"
+   ],
+   "expects": [
+    "screen_yes",
+    "screen_no",
+    "screen_small"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar matai ekraną"
+   ],
+   "options": []
+  },
+  "first": {
+   "id": "first",
+   "kind": "step",
+   "npc": [
+    "So, this month our sales are up ten percent. Great work, everyone! Okay, quick updates. Who wants to go first?",
+    "Okay, where was I? So, this month our sales are up ten percent. Okay, quick updates. Who wants to go first?",
+    "Perfect, thanks! Okay, quick updates. Who wants to go first?"
+   ],
+   "expects": [
+    "volunteer",
+    "defer",
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasisiūlyti pradėti arba užleisti eilę"
+   ],
+   "options": []
+  },
+  "send_q": {
+   "id": "send_q",
+   "kind": "pending",
+   "npc": [
+    "Great job! Could you send me the report after the call?"
+   ],
+   "expects": [
+    "will_send",
+    "cant_send",
+    "volunteer",
+    "defer",
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "upd_nothing"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti atsiųsti"
+   ],
+   "options": []
+  },
+  "questions": {
+   "id": "questions",
+   "kind": "step",
+   "npc": [
+    "Thanks! Okay. Any questions?",
+    "Bye, Paul! See you! Great. Does anyone have any questions?",
+    "Awesome, thank you! Great. Does anyone have any questions?"
+   ],
+   "expects": [
+    "q_slides",
+    "q_link",
+    "q_deadline",
+    "q_next",
+    "q_back",
+    "q_record",
+    "no_questions",
+    "have_question"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti ko nors arba pasakyti, kad klausimų nėra"
+   ],
+   "options": []
+  },
+  "anything_else": {
+   "id": "anything_else",
+   "kind": "pending",
+   "npc": [
+    "Of course! I'll send them after the call. Anything else?"
+   ],
+   "expects": [
+    "no_questions",
+    "q_slides",
+    "q_link",
+    "q_deadline",
+    "q_next",
+    "q_back",
+    "q_record",
+    "have_question"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad daugiau klausimų nėra",
+    "Paklausti dar ko nors"
+   ],
+   "options": []
+  },
+  "next_week": {
+   "id": "next_week",
+   "kind": "pending",
+   "npc": [
+    "Great. Okay, that's all for today. Thanks, everyone! Same time next week?",
+    "Okay, good. Okay, that's all for today. Thanks, everyone! Same time next week?"
+   ],
+   "expects": [
+    "next_week_yes",
+    "on_vacation",
+    "bye_all",
+    "g_bye",
+    "g_thanks",
+    "g_howareyou"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "freeze": {
+   "id": "freeze",
+   "kind": "step",
+   "npc": [
+    "So, this month our sales are... are...",
+    "Perfect, thanks! So, this month our sales are... are..."
+   ],
+   "expects": [
+    "tell_freeze",
+    "tell_freeze_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti Keitei, kad jos ryšys trūkinėja",
+    "Paprašyti pakartoti"
+   ],
+   "options": []
+  },
+  "freeze_q": {
+   "id": "freeze_q",
+   "kind": "pending",
+   "npc": [
+    "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?"
+   ],
+   "expects": [
+    "hear_yes",
+    "hear_no",
+    "tell_freeze",
+    "tell_freeze_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar dabar girdi"
+   ],
+   "options": []
+  },
+  "paul_leave": {
+   "id": "paul_leave",
+   "kind": "pending",
+   "npc": [
+    "Thanks! Sorry, guys, I have to jump off. I have another call at 11.",
+    "Awesome, thank you! Sorry, guys, I have to jump off. I have another call at 11."
+   ],
+   "expects": [
+    "bye_paul",
+    "g_bye",
+    "bye_all"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsisveikinti su Paulu"
+   ],
+   "options": []
+  },
+  "cam_still": {
+   "id": "cam_still",
+   "kind": "pending",
+   "npc": [
+    "Bye, everyone! Bye, guys! Bye! Um... your camera's still on!",
+    "Bye, everyone! See you! Bye! Um... your camera's still on!",
+    "See you next week! Bye, guys! Bye! Um... your camera's still on!"
+   ],
+   "expects": [
+    "oops",
+    "g_bye",
+    "g_thanks",
+    "bye_all",
+    "mute_self"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sureaguoti ir atsijungti"
+   ],
+   "options": []
+  },
+  "echo": {
+   "id": "echo",
+   "kind": "step",
+   "npc": [
+    "Hmm, there's an echo. I think it's your mic. Could you mute it when you're not talking?",
+    "So, this month our sales are up ten percent. Great work, everyone! Hmm, there's an echo. I think it's your mic. Could you mute it when you're not talking?"
+   ],
+   "expects": [
+    "mute_self",
+    "better_q",
+    "better_now_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Išsijungti mikrofoną"
+   ],
+   "options": []
+  },
+  "weekend": {
+   "id": "weekend",
+   "kind": "step",
+   "npc": [
+    "Perfect. Let's give it two more minutes. A few people are still joining. So, how was your weekend?",
+    "Great! Let's give it two more minutes. A few people are still joining. So, how was your weekend?"
+   ],
+   "expects": [
+    "weekend_ans_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Papasakoti apie savaitgalį"
+   ],
+   "options": []
+  },
+  "hear2": {
+   "id": "hear2",
+   "kind": "pending",
+   "npc": [
+    "Oh, sorry! Is this better?"
+   ],
+   "expects": [
+    "hear_yes",
+    "hear_no",
+    "greet_team"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar dabar girdi"
+   ],
+   "options": []
+  },
+  "update": {
+   "id": "update",
+   "kind": "step",
+   "npc": [
+    "Great, go ahead!",
+    "Thanks! So, I finished the client survey, and now I'm working on the report. Thanks, Sara! And you?"
+   ],
+   "expects": [
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "upd_nothing"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti trumpai, kaip sekasi"
+   ],
+   "options": [
+    "report",
+    "presentation",
+    "slides",
+    "budget",
+    "website",
+    "schedule",
+    "newsletter",
+    "proposal",
+    "survey",
+    "spreadsheet",
+    "sales numbers",
+    "app",
+    "contract",
+    "design",
+    "invoices",
+    "training plan",
+    "marketing campaign"
+   ]
+  },
+  "goahead": {
+   "id": "goahead",
+   "kind": "pending",
+   "npc": [
+    "I can start... Oh, sorry! You go ahead."
+   ],
+   "expects": [
+    "go_ahead",
+    "thanks_sara",
+    "g_thanks",
+    "upd_done",
+    "upd_working",
+    "upd_behind",
+    "upd_ok",
+    "volunteer",
+    "defer"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti arba užleisti eilę Sarai"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "hear_yes",
+  "hear_no",
+  "greet_team",
+  "ask_hear_me",
+  "cam_fixed",
+  "better_q",
+  "better_now_ctx",
+  "cam_fix_ctx",
+  "cam_broken",
+  "tell_mute",
+  "tell_mute_ctx",
+  "not_muted",
+  "screen_yes",
+  "screen_no",
+  "screen_small",
+  "tell_freeze",
+  "tell_freeze_ctx",
+  "volunteer",
+  "defer",
+  "go_ahead",
+  "thanks_sara",
+  "upd_done",
+  "upd_working",
+  "upd_behind",
+  "upd_ok",
+  "upd_nothing",
+  "cant_send",
+  "will_send",
+  "have_question",
+  "task_ctx",
+  "when_ans",
+  "unsure",
+  "help_ask",
+  "accept_help",
+  "q_slides",
+  "q_link",
+  "q_deadline",
+  "q_next",
+  "q_back",
+  "q_record",
+  "no_questions",
+  "leave",
+  "next_week_yes",
+  "on_vacation",
+  "bye_all",
+  "bye_paul",
+  "hi_tiger",
+  "cute",
+  "oops",
+  "mute_self",
+  "weekend_ans_ctx"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

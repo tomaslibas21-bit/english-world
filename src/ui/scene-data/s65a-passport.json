@@ -1,0 +1,58 @@
+{
+  "npc": "Officer Diaz, passport control",
+  "images": [
+    "passport",
+    "purpose",
+    "stay",
+    "declare",
+    "fingers",
+    "photo",
+    "welcome"
+  ],
+  "start": "passport",
+  "done": "welcome",
+  "phases": {
+    "howareyou": "passport",
+    "passport": "passport",
+    "purpose": "purpose",
+    "biz_kind": "purpose",
+    "who": "purpose",
+    "visa": "purpose",
+    "length": "stay",
+    "stay": "stay",
+    "address": "stay",
+    "show_address": "stay",
+    "return": "stay",
+    "show_ticket": "stay",
+    "ticket_check": "stay",
+    "first": "purpose",
+    "job": "purpose",
+    "alone": "purpose",
+    "declare": "declare",
+    "declare_what": "declare",
+    "dog": "declare",
+    "bin": "declare",
+    "cash": "declare",
+    "bio_fingers": "fingers",
+    "fingers": "fingers",
+    "thumb": "fingers",
+    "left": "fingers",
+    "bio_photo": "photo",
+    "photo": "photo",
+    "glasses": "photo",
+    "closing": "welcome"
+  },
+  "focus": [
+    32,
+    36
+  ],
+  "jobs": {
+    "passport": "6dd24756-5ba2-4a42-a55f-7e041df74c6d",
+    "purpose": "7e6b7119-b976-49cb-9afd-3801897afbb1",
+    "declare": "309d8c66-35e7-443d-8e0e-e6d0a90af6fe",
+    "fingers": "f856ef3b-1743-43b8-a816-d2be064313ea",
+    "photo": "be07d3c5-cd8e-49ea-a330-6a458d11c98a",
+    "welcome": "0491839b-057c-43f4-8492-7d5a87431a13",
+    "stay": "7c900da3-15b3-41f2-bb4e-8d8492b3ddb1"
+  }
+}

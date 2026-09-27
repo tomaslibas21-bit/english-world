@@ -1,0 +1,483 @@
+{
+ "situation": "s65a-passport",
+ "title": "Business or Pleasure?",
+ "goal": "Praeik pasų kontrolę: atsakyk į pareigūnės klausimus.",
+ "contexts": {
+  "passport": {
+   "id": "passport",
+   "kind": "step",
+   "npc": [
+    "Next, please! Good evening. Passport, please.",
+    "Next! Hi there. Passport, please.",
+    "Next! Hello. May I see your passport, please?"
+   ],
+   "expects": [
+    "hand_over",
+    "q_esta",
+    "q_boarding"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti pasą",
+    "Pasisveikinti"
+   ],
+   "options": []
+  },
+  "purpose": {
+   "id": "purpose",
+   "kind": "step",
+   "npc": [
+    "Thank you. What's the purpose of your visit?",
+    "Thanks. Business or pleasure?",
+    "Are you here for business or pleasure?"
+   ],
+   "expects": [
+    "purpose",
+    "purpose_visit",
+    "purpose_neg",
+    "ask_mean"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti kelionės tikslą",
+    "Pasakyti, ką atvykai aplankyti",
+    "Pasitikslinti klausimą"
+   ],
+   "options": [
+    "family",
+    "sister",
+    "brother",
+    "son",
+    "daughter",
+    "friends",
+    "parents",
+    "cousin"
+   ]
+  },
+  "length": {
+   "id": "length",
+   "kind": "step",
+   "npc": [
+    "Alright. How long are you staying?",
+    "Got it. How long will you be in the US?",
+    "How long will you be in the US?"
+   ],
+   "expects": [
+    "length",
+    "length_vague",
+    "ask_mean"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek laiko būsi",
+    "Pasitikslinti klausimą"
+   ],
+   "options": []
+  },
+  "stay": {
+   "id": "stay",
+   "kind": "step",
+   "npc": [
+    "Got it. Where are you staying?",
+    "Where are you staying?",
+    "And where are you staying?"
+   ],
+   "expects": [
+    "stay",
+    "stay_with",
+    "stay_airbnb",
+    "hotel_other_ctx",
+    "ask_mean"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur apsistosi",
+    "Pasitikslinti klausimą"
+   ],
+   "options": []
+  },
+  "declare": {
+   "id": "declare",
+   "kind": "step",
+   "npc": [
+    "Okay. Do you have anything to declare?",
+    "Okay, thank you. Do you have any food with you?",
+    "Got it. Are you bringing any food, plants or animals?"
+   ],
+   "expects": [
+    "declare_nothing",
+    "declare_items",
+    "declare_neg_good",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ką veži (arba kad nieko)",
+    "Paklausti, ar galima įvežti"
+   ],
+   "options": [
+    "cheese",
+    "chocolate",
+    "cookies",
+    "candy",
+    "honey",
+    "sausage",
+    "fruit"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Got it. You're all set. Welcome to the United States!",
+    "Alright. Here you go. Welcome to the United States.",
+    "Perfect. Here you go. Welcome to the United States."
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "return": {
+   "id": "return",
+   "kind": "pending",
+   "npc": [
+    "When are you flying back?",
+    "Do you have a return ticket?",
+    "Alright. When are you flying back?"
+   ],
+   "expects": [
+    "return_yes",
+    "return_date",
+    "return_no",
+    "hand_over",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kada skrendi atgal"
+   ],
+   "options": []
+  },
+  "show_ticket": {
+   "id": "show_ticket",
+   "kind": "pending",
+   "npc": [
+    "Can I see it, please?",
+    "Can I see your return ticket?"
+   ],
+   "expects": [
+    "hand_over",
+    "return_yes",
+    "return_date",
+    "return_no",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti bilietą (telefone)"
+   ],
+   "options": []
+  },
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Next! Hi there. How are you doing today?",
+    "Next, please! Hi there. How are you doing today?",
+    "Next, please! Good evening. How are you?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "hand_over",
+    "q_esta",
+    "q_boarding"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "fingers": {
+   "id": "fingers",
+   "kind": "pending",
+   "npc": [
+    "Alright. Right hand, four fingers on the scanner, please.",
+    "Right hand, four fingers on the scanner, please.",
+    "No problem, that's allowed. Please put your four fingers on the scanner."
+   ],
+   "expects": [
+    "bio_ok_ctx",
+    "g_ok",
+    "like_this_ctx",
+    "which_hand_ctx",
+    "glasses"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėti pirštus ant skenerio ir pasakyti „Okay“"
+   ],
+   "options": []
+  },
+  "thumb": {
+   "id": "thumb",
+   "kind": "pending",
+   "npc": [
+    "Perfect. Now your thumb.",
+    "Perfect. And now just the thumb.",
+    "Good. And now just the thumb."
+   ],
+   "expects": [
+    "bio_ok_ctx",
+    "g_ok",
+    "like_this_ctx",
+    "which_hand_ctx",
+    "glasses"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėti nykštį ir pasakyti „Okay“"
+   ],
+   "options": []
+  },
+  "photo": {
+   "id": "photo",
+   "kind": "pending",
+   "npc": [
+    "Thanks. Now look at the camera, please.",
+    "Got it. Now look at the camera, please.",
+    "Please look into the camera."
+   ],
+   "expects": [
+    "bio_ok_ctx",
+    "g_ok",
+    "like_this_ctx",
+    "glasses"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pažiūrėti į kamerą ir pasakyti „Okay“"
+   ],
+   "options": []
+  },
+  "dog": {
+   "id": "dog",
+   "kind": "pending",
+   "npc": [
+    "Our dog really likes your bag. Are you sure there's no food in there?",
+    "Our dog really likes your bag. Do you have any food in there?"
+   ],
+   "expects": [
+    "declare_items",
+    "declare_nothing",
+    "declare_neg_good",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Prisipažinti, kad veži maisto (sūrio, šokolado…)"
+   ],
+   "options": [
+    "cheese",
+    "chocolate",
+    "cookies",
+    "honey",
+    "sausage"
+   ]
+  },
+  "cash": {
+   "id": "cash",
+   "kind": "step",
+   "npc": [
+    "Thanks for telling me. That's fine, you can bring cheese. Are you carrying more than $10,000 in cash?",
+    "No problem, that's allowed. Are you carrying more than $10,000 in cash?",
+    "That's fine, you can bring chocolate. Are you carrying more than $10,000 in cash?"
+   ],
+   "expects": [
+    "cash_no",
+    "cash_amount",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie grynuosius pinigus"
+   ],
+   "options": []
+  },
+  "glasses": {
+   "id": "glasses",
+   "kind": "pending",
+   "npc": [
+    "Thank you. Could you take off your glasses, please?",
+    "Alright. Could you take off your glasses, please?",
+    "Thanks. Could you take off your glasses, please?"
+   ],
+   "expects": [
+    "bio_ok_ctx",
+    "g_ok",
+    "g_sorry",
+    "like_this_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Nusiimti akinius ir pasakyti „Sure“"
+   ],
+   "options": []
+  },
+  "first": {
+   "id": "first",
+   "kind": "step",
+   "npc": [
+    "Have you been to the US before?",
+    "Thank you. Is this your first time in the US?",
+    "Got it. Is this your first time in the US?"
+   ],
+   "expects": [
+    "first_yes",
+    "first_no",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar esi čia pirmą kartą"
+   ],
+   "options": []
+  },
+  "address": {
+   "id": "address",
+   "kind": "step",
+   "npc": [
+    "Got it. What's the address?",
+    "What's the address?",
+    "Do you have the address?"
+   ],
+   "expects": [
+    "address_ctx",
+    "address_phone",
+    "address_dunno",
+    "hand_over"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti adresą (arba parodyti telefone)"
+   ],
+   "options": []
+  },
+  "visa": {
+   "id": "visa",
+   "kind": "step",
+   "npc": [
+    "Alright. To work? Do you have a work visa?",
+    "Got it. To work? Do you have a work visa?",
+    "To work? Do you have a work visa?"
+   ],
+   "expects": [
+    "hand_over",
+    "have_esta"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi vizą",
+    "Pasakyti, kad turi tik ESTA leidimą"
+   ],
+   "options": []
+  },
+  "bin": {
+   "id": "bin",
+   "kind": "pending",
+   "npc": [
+    "Sorry, you can't bring sausage into the US. Please put it in that bin over there."
+   ],
+   "expects": [
+    "sorry_ctx",
+    "g_sorry",
+    "g_ok",
+    "g_repeat",
+    "declare_nothing",
+    "declare_items",
+    "declare_neg_good",
+    "ask_mean"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti (arba atsiprašyti)"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "hand_over",
+  "find_it",
+  "long_flight",
+  "purpose",
+  "purpose_visit",
+  "purpose_neg",
+  "have_esta",
+  "who_ctx",
+  "length",
+  "length_vague",
+  "stay",
+  "stay_with",
+  "stay_airbnb",
+  "hotel_other_ctx",
+  "address_ctx",
+  "address_phone",
+  "address_dunno",
+  "return_yes",
+  "return_date",
+  "return_no",
+  "first_yes",
+  "first_no",
+  "job",
+  "job_other_ctx",
+  "alone_yes",
+  "alone_with",
+  "declare_nothing",
+  "declare_neg_good",
+  "declare_items",
+  "declare_q",
+  "cash_no",
+  "cash_amount",
+  "like_this_ctx",
+  "bio_ok_ctx",
+  "which_hand_ctx",
+  "word_meaning",
+  "glasses",
+  "sorry_ctx",
+  "q_esta",
+  "q_boarding",
+  "q_form",
+  "q_baggage",
+  "q_restroom",
+  "q_taxi",
+  "q_limit",
+  "ask_mean"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

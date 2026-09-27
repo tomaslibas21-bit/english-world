@@ -1,0 +1,20 @@
+{
+  "npc": "Jessie, hairdresser",
+  "images": ["welcome", "consult", "wash", "chat", "reveal", "pay"],
+  "start": "welcome",
+  "done": "pay",
+  "phases": {
+    "howareyou": "welcome", "appt": "welcome", "name": "welcome", "wait_q": "welcome", "drink": "welcome",
+    "service": "consult", "service_q": "consult", "length": "consult", "cm_q": "consult", "layers": "consult", "bangs_q": "consult",
+    "wash": "wash", "water": "wash",
+    "chat": "chat", "chat_weekend": "chat", "chat_from": "chat", "chat_vacation": "chat", "chat_pets": "chat", "blowdry": "chat", "style": "chat",
+    "reveal": "reveal", "more_q": "reveal",
+    "pay": "pay", "tip_q": "pay", "book": "pay"
+  },
+  "focus": [35, 28],
+  "jobs": {
+    "welcome": "2f3fe324-1d9d-4171-a421-3286f648ec32", "consult": "9ec7ded5-0723-4f3c-a57c-ab69e2434d2f",
+    "wash": "71f3e029-cff5-419d-ab99-ba00c17494d2", "chat": "dc9d401e-c07f-4b06-9445-b36e70342633",
+    "reveal": "9cc0b639-2665-495c-a429-e651fa3ca1a1", "pay": "6ded37e8-27d4-46a7-8c96-39e839195074"
+  }
+}

@@ -1,0 +1,468 @@
+{
+ "situation": "s79-post",
+ "title": "Where's My Package?",
+ "goal": "Išsiųsk siuntinį į Lietuvą ir gauk sekimo numerį.",
+ "contexts": {
+  "help_pickup": {
+   "id": "help_pickup",
+   "kind": "step",
+   "npc": [
+    "I can help whoever's next!",
+    "Next customer, please!"
+   ],
+   "expects": [
+    "send_package",
+    "pickup",
+    "buy_stamps"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Atsiimti siuntinį (turi pranešimą, kad kurjeris tavęs nerado)",
+    "Pasakyti, kad nori išsiųsti siuntinį į Lietuvą",
+    "Nusipirkti pašto ženklų atvirukams"
+   ],
+   "options": []
+  },
+  "hazmat": {
+   "id": "hazmat",
+   "kind": "step",
+   "npc": [
+    "Lithuania! Great. Anything liquid, fragile or perishable in there?",
+    "Lithuania, okay. Any perfume, batteries or anything fragile?",
+    "Lithuania, okay. Is there anything liquid, fragile, perishable or potentially hazardous inside?"
+   ],
+   "expects": [
+    "contents_ok",
+    "contents_fragile",
+    "contents_perfume",
+    "contents_liquid",
+    "contents_hazard",
+    "what_hazard"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kas viduje (ar nėra skysčių, dūžtančių daiktų, kvepalų)"
+   ],
+   "options": [
+    "scarf",
+    "chocolate",
+    "tea",
+    "clothes",
+    "books",
+    "toys",
+    "candy",
+    "coffee",
+    "photos",
+    "souvenirs"
+   ]
+  },
+  "service": {
+   "id": "service",
+   "kind": "step",
+   "npc": [
+    "Okay, great. Let me weigh it. It's 1 pound, 12 ounces. How would you like to send it? Priority takes 6–10 business days and costs $67.10. Express takes 3–5 business days and costs $86.30.",
+    "Thanks! That's perfect. How would you like to send it? Priority takes 6–10 business days and costs $67.10. Express takes 3–5 business days and costs $86.30.",
+    "Perfect. Let me weigh it. It's 1 pound, 12 ounces. Okay, so you have two options. Priority takes 6–10 business days and costs $67.10. Express takes 3–5 business days and costs $86.30."
+   ],
+   "expects": [
+    "service_ans",
+    "ask_cheaper",
+    "ask_faster",
+    "service_not"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti siuntimo būdą",
+    "Paklausti, ar yra pigiau"
+   ],
+   "options": [
+    "Priority",
+    "Express",
+    "First-Class"
+   ]
+  },
+  "value": {
+   "id": "value",
+   "kind": "step",
+   "npc": [
+    "Great choice. Since it's going overseas, I need a customs form. And the total value?",
+    "Perfect. Since it's going overseas, I need a customs form. And what's the total value?",
+    "Perfect. Since it's going overseas, I need a customs form. And the total value?"
+   ],
+   "expects": [
+    "value_ans",
+    "value_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti apytikslę vertę doleriais"
+   ],
+   "options": []
+  },
+  "sign_customs": {
+   "id": "sign_customs",
+   "kind": "step",
+   "npc": [
+    "Perfect. Great. Just sign here, please.",
+    "Okay, I'll mark it as a gift. Great. Just sign here, please.",
+    "Okay, I'll mark it as a gift. Could you sign here for me?"
+   ],
+   "expects": [
+    "signed",
+    "here_you_go",
+    "sign_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirašyti deklaraciją"
+   ],
+   "options": []
+  },
+  "stamps_offer": {
+   "id": "stamps_offer",
+   "kind": "step",
+   "npc": [
+    "Thank you. Do you need any stamps today?",
+    "No problem. Do you need any stamps today?",
+    "Perfect, thanks. Do you need any stamps today?"
+   ],
+   "expects": [
+    "buy_stamps",
+    "stamps_qty",
+    "no_stamps"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia pašto ženklų",
+    "Nusipirkti pašto ženklų atvirukams"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "That'll be $67.10.",
+    "Perfect, thanks. That'll be $67.10. How would you like to pay?",
+    "No problem. Your total is $67.10. How would you like to pay?"
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele ar grynaisiais"
+   ],
+   "options": []
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "Go ahead and insert your card. Here's your receipt. Your tracking number is CP 482 915 736 US. Is that everything for today?",
+    "You can tap your card right here. Here's your receipt. Your tracking number is CP 482 915 736 US. You can track it on usps.com. Anything else for you today?",
+    "Go ahead and insert your card. Here's your receipt. Your tracking number is CP 482 915 736 US. You can track it on usps.com. Anything else for you today?"
+   ],
+   "expects": [
+    "more_no",
+    "buy_stamps"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad tai viskas",
+    "Nusipirkti pašto ženklų atvirukams"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Thanks, and have a good one!",
+    "Have a great day!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "return_addr": {
+   "id": "return_addr",
+   "kind": "step",
+   "npc": [
+    "Okay, great. Let me weigh it. It's 1 pound, 12 ounces. Oh, there's no return address on it. Could you add it here, please?",
+    "Okay, great. Okay, let's put it on the scale. It's 1 pound, 12 ounces. Oh, there's no return address on it. Could you add it here, please?",
+    "Perfect. Okay, let's put it on the scale. It's 1 pound, 12 ounces. Oh, there's no return address on it. Could you add it here, please?"
+   ],
+   "expects": [
+    "return_ok",
+    "return_ctx",
+    "what_return"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsiprašyti ir užrašyti savo adresą"
+   ],
+   "options": []
+  },
+  "gift": {
+   "id": "gift",
+   "kind": "step",
+   "npc": [
+    "Perfect. Is it a gift?",
+    "Okay, great. Is it a gift?"
+   ],
+   "expects": [
+    "gift_yes",
+    "gift_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar tai dovana"
+   ],
+   "options": []
+  },
+  "help": {
+   "id": "help",
+   "kind": "step",
+   "npc": [
+    "I can help whoever's next!",
+    "Next customer, please!",
+    "Next in line, please!"
+   ],
+   "expects": [
+    "send_package",
+    "pickup",
+    "buy_stamps"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kad nori išsiųsti siuntinį į Lietuvą",
+    "Nusipirkti pašto ženklų atvirukams",
+    "Paklausti apie kainą, laiką ar sekimą"
+   ],
+   "options": []
+  },
+  "insurance": {
+   "id": "insurance",
+   "kind": "step",
+   "npc": [
+    "Perfect, thanks. It's insured up to $200. Would you like extra insurance?",
+    "Thank you. It's insured up to $200. Would you like extra insurance?"
+   ],
+   "expects": [
+    "insurance_yes",
+    "insurance_no"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti dėl papildomo draudimo"
+   ],
+   "options": []
+  },
+  "contents_list": {
+   "id": "contents_list",
+   "kind": "step",
+   "npc": [
+    "Great choice. Since it's going overseas, I need a customs form. So, what's inside?",
+    "Great choice. Since it's going overseas, I need a customs form. What's in the box?",
+    "Perfect. Since it's going overseas, I need a customs form. So, what's inside?"
+   ],
+   "expects": [
+    "contents_ok"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Išvardyti, kas dėžėje"
+   ],
+   "options": []
+  },
+  "perfume": {
+   "id": "perfume",
+   "kind": "pending",
+   "npc": [
+    "Oh, sorry, perfume can't go overseas by mail. You'll need to take it out."
+   ],
+   "expects": [
+    "take_out",
+    "g_ok",
+    "g_sorry",
+    "contents_ok",
+    "contents_fragile",
+    "contents_perfume",
+    "contents_liquid",
+    "contents_hazard",
+    "what_hazard"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti išimti kvepalus"
+   ],
+   "options": []
+  },
+  "pick_id": {
+   "id": "pick_id",
+   "kind": "step",
+   "npc": [
+    "Thank you. And can I see your ID?",
+    "Thank you. I'll also need a photo ID.",
+    "Thanks. Let me check. And can I see your ID?"
+   ],
+   "expects": [
+    "show_doc",
+    "here_you_go",
+    "doc_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti asmens dokumentą"
+   ],
+   "options": []
+  },
+  "pick_sign": {
+   "id": "pick_sign",
+   "kind": "step",
+   "npc": [
+    "Thanks! One moment, I'll go get it. Here it is! Could you sign here, please?"
+   ],
+   "expects": [
+    "signed",
+    "here_you_go",
+    "sign_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirašyti"
+   ],
+   "options": []
+  },
+  "pick_notice": {
+   "id": "pick_notice",
+   "kind": "step",
+   "npc": [
+    "Of course. Can I see the slip?",
+    "Sure! Do you have the notice?"
+   ],
+   "expects": [
+    "here_you_go",
+    "no_notice"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti pranešimą (arba pasakyti, kad jo neturi)"
+   ],
+   "options": []
+  },
+  "pick_name": {
+   "id": "pick_name",
+   "kind": "step",
+   "npc": [
+    "That's okay. What's the name on the package?"
+   ],
+   "expects": [
+    "name_ctx",
+    "tracking_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo vardą ir pavardę"
+   ],
+   "options": []
+  },
+  "stamps_qty": {
+   "id": "stamps_qty",
+   "kind": "step",
+   "npc": [
+    "For postcards to Europe, you need Global Forever stamps. They're $1.75 each. How many would you like?"
+   ],
+   "expects": [
+    "stamps_qty",
+    "stamps_ctx",
+    "no_stamps"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kiek pašto ženklų reikia"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "send_package",
+  "dest_ans",
+  "pickup",
+  "buy_stamps",
+  "contents_ok",
+  "contents_fragile",
+  "contents_perfume",
+  "contents_liquid",
+  "contents_hazard",
+  "take_out",
+  "what_hazard",
+  "service_ans",
+  "service_not",
+  "ask_cheaper",
+  "ask_faster",
+  "ask_options",
+  "ask_price",
+  "ask_time",
+  "ask_tracking",
+  "ask_insured",
+  "ask_kilos",
+  "ask_customs",
+  "what_write",
+  "value_ans",
+  "value_ctx",
+  "gift_yes",
+  "gift_no",
+  "return_ok",
+  "return_ctx",
+  "what_return",
+  "insurance_yes",
+  "insurance_no",
+  "stamps_qty",
+  "stamps_ctx",
+  "no_stamps",
+  "pay_card",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "show_doc",
+  "doc_ctx",
+  "no_notice",
+  "name_ctx",
+  "signed",
+  "sign_ctx",
+  "tracking_ctx",
+  "more_no",
+  "need_tape",
+  "ask_open"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

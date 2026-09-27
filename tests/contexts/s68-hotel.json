@@ -1,0 +1,423 @@
+{
+ "situation": "s68-hotel",
+ "title": "Late Check-Out",
+ "goal": "Užsiregistruok viešbutyje ir sužinok, kas įskaičiuota.",
+ "contexts": {
+  "arrive": {
+   "id": "arrive",
+   "kind": "step",
+   "npc": [
+    "Hello! Welcome to the Harborview Hotel. How can I help you?",
+    "Good evening! Checking in?",
+    "Good evening! Welcome to the Harborview. Checking in?"
+   ],
+   "expects": [
+    "checkin",
+    "walkin"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad turi rezervaciją",
+    "Paklausti, ar yra laisvų kambarių"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Can I have your last name, please?",
+    "Under what name?",
+    "Great! What's the last name on the reservation?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo pavardę"
+   ],
+   "options": []
+  },
+  "spell": {
+   "id": "spell",
+   "kind": "step",
+   "npc": [
+    "Thanks! Could you spell your last name?",
+    "How do you spell that?"
+   ],
+   "expects": [
+    "letters_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti pavardę paraidžiui"
+   ],
+   "options": []
+  },
+  "found": {
+   "id": "found",
+   "kind": "step",
+   "npc": [
+    "Got it, thanks. Perfect, I found it: a room with a king bed for three nights. Is that right?",
+    "Thank you. Perfect, I found it: a room with a king bed for three nights. Is that right?",
+    "Perfect, I found it: a room with a king bed for three nights. Is that right?"
+   ],
+   "expects": [
+    "nights_fix",
+    "nights_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patvirtinti (arba pataisyti naktų skaičių)",
+    "Pasakyti, kiek naktų"
+   ],
+   "options": []
+  },
+  "id": {
+   "id": "id",
+   "kind": "step",
+   "npc": [
+    "Okay. Can I see your ID, please?",
+    "Perfect. May I see your passport?",
+    "Great. May I see your passport?"
+   ],
+   "expects": [
+    "hand_over",
+    "id_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti pasą"
+   ],
+   "options": []
+  },
+  "card": {
+   "id": "card",
+   "kind": "step",
+   "npc": [
+    "Thank you. Your room is already paid. And I'll need a credit card for incidentals.",
+    "Thanks. Your room is already paid. And I'll need a credit card for incidentals.",
+    "Thanks. Could I also have a credit card, please?"
+   ],
+   "expects": [
+    "hand_over",
+    "incidentals_q",
+    "cash_q",
+    "debit_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti kredito kortelę",
+    "Paklausti apie kortelę"
+   ],
+   "options": []
+  },
+  "sign": {
+   "id": "sign",
+   "kind": "step",
+   "npc": [
+    "Thanks. Could you sign here, please?",
+    "Thank you. Please sign here.",
+    "Thank you. Could you sign here, please?"
+   ],
+   "expects": [
+    "sign_where",
+    "sign_ok_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirašyti ir pasakyti „Sure“"
+   ],
+   "options": []
+  },
+  "anything": {
+   "id": "anything",
+   "kind": "step",
+   "npc": [
+    "Thank you. You're in room 412, on the fourth floor. Here are your key cards. Anything else I can do for you?",
+    "Okay. You're in room 412, on the fourth floor. Here are your key cards. Anything else I can do for you?",
+    "Great. You're in room 412, on the fourth floor. Here are your key cards. Check-out is at 11. Anything else I can do for you?"
+   ],
+   "expects": [
+    "done",
+    "ask_breakfast",
+    "ask_breakfast_time",
+    "ask_wifi",
+    "ask_checkout",
+    "ask_late",
+    "ask_included",
+    "ask_luggage",
+    "ask_taxi",
+    "ask_towels",
+    "ask_view",
+    "ask_parking",
+    "ask_elevator"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paklausti, kas įskaičiuota, apie pusryčius ar „Wi-Fi“",
+    "Paprašyti vėlesnio išsiregistravimo",
+    "Pasakyti, kad daugiau klausimų nėra"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Oh, and breakfast is included, from 6:30 to 10. Enjoy your stay!",
+    "Enjoy your stay!",
+    "Oh, and breakfast is included, from 6:30 to 10. Have a wonderful stay!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "keys": {
+   "id": "keys",
+   "kind": "step",
+   "npc": [
+    "Thanks. How many keys would you like?",
+    "Thank you. How many keys would you like?",
+    "Right here, at the bottom. Thank you. How many keys would you like?"
+   ],
+   "expects": [
+    "keys_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek raktų"
+   ],
+   "options": []
+  },
+  "p_report": {
+   "id": "p_report",
+   "kind": "step",
+   "npc": [
+    "Hi again! How's everything with your room?",
+    "What's the problem?",
+    "Hello again! Is everything okay with your room?"
+   ],
+   "expects": [
+    "pr_ac",
+    "pr_hotwater",
+    "pr_key",
+    "pr_noisy",
+    "pr_wifi",
+    "pr_tv",
+    "pr_towels",
+    "p_fine",
+    "room_no",
+    "pr_vague_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pranešti, kas neveikia kambaryje"
+   ],
+   "options": []
+  },
+  "fan_or_room": {
+   "id": "fan_or_room",
+   "kind": "pending",
+   "npc": [
+    "Oh, I'm so sorry! I'll send someone from maintenance right away. Would you like a fan for now, or a different room?"
+   ],
+   "expects": [
+    "ch_fan",
+    "ch_move",
+    "pr_ac",
+    "pr_hotwater",
+    "pr_key",
+    "pr_noisy",
+    "pr_wifi",
+    "pr_tv",
+    "pr_towels",
+    "p_fine",
+    "room_no",
+    "pr_vague_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti ventiliatorių arba kitą kambarį"
+   ],
+   "options": []
+  },
+  "late": {
+   "id": "late",
+   "kind": "pending",
+   "npc": [
+    "Until 2 is $30. Is that okay?"
+   ],
+   "expects": [
+    "late_noon",
+    "late_two",
+    "too_expensive_ctx",
+    "done",
+    "ask_breakfast",
+    "ask_breakfast_time",
+    "ask_wifi",
+    "ask_checkout",
+    "ask_late",
+    "ask_included",
+    "ask_luggage",
+    "ask_taxi",
+    "ask_towels",
+    "ask_view",
+    "ask_parking",
+    "ask_elevator"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti (30 $) arba pasirinkti vidurdienį"
+   ],
+   "options": []
+  },
+  "walk_nights": {
+   "id": "walk_nights",
+   "kind": "step",
+   "npc": [
+    "Let me check. Yes, we have a few rooms left. How many nights?"
+   ],
+   "expects": [
+    "nights_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek naktų"
+   ],
+   "options": []
+  },
+  "walk_offer": {
+   "id": "walk_offer",
+   "kind": "step",
+   "npc": [
+    "A room with a king bed is $159 a night, plus tax. Would you like it?",
+    "Great. A room with a king bed is $159 a night, plus tax. Would you like it?",
+    "Okay. A room with a king bed is $159 a night, plus tax. Would you like it?"
+   ],
+   "expects": [
+    "take_it",
+    "ask_twobeds",
+    "ask_breakfast",
+    "ask_included"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti (arba paklausti apie kitą kambarį)",
+    "Paklausti, kas įskaičiuota"
+   ],
+   "options": []
+  },
+  "taxi_time": {
+   "id": "taxi_time",
+   "kind": "pending",
+   "npc": [
+    "Of course. What time do you need it?"
+   ],
+   "expects": [
+    "taxi_time_ctx",
+    "done",
+    "ask_breakfast",
+    "ask_breakfast_time",
+    "ask_wifi",
+    "ask_checkout",
+    "ask_late",
+    "ask_included",
+    "ask_luggage",
+    "ask_taxi",
+    "ask_towels",
+    "ask_view",
+    "ask_parking",
+    "ask_elevator"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kuriuo laiku reikia taksi"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "checkin",
+  "walkin",
+  "nights_ctx",
+  "name_ctx",
+  "letters_ctx",
+  "nights_fix",
+  "hand_over",
+  "id_q",
+  "incidentals_q",
+  "cash_q",
+  "debit_q",
+  "sign_where",
+  "sign_ok_ctx",
+  "keys_ctx",
+  "ask_breakfast",
+  "ask_breakfast_time",
+  "ask_wifi",
+  "ask_checkout",
+  "ask_late",
+  "late_noon",
+  "take_it",
+  "late_two",
+  "ask_included",
+  "ask_luggage",
+  "ask_taxi",
+  "taxi_time_ctx",
+  "ask_towels",
+  "ask_pillow",
+  "ask_elevator",
+  "ask_gym",
+  "ask_pool",
+  "ask_parking",
+  "ask_view",
+  "ask_quiet",
+  "ask_twobeds",
+  "ask_nonsmoking",
+  "ask_restaurant",
+  "ask_roomservice",
+  "ask_wakeup",
+  "ask_room",
+  "ask_checkin_time",
+  "done",
+  "pr_ac",
+  "pr_hotwater",
+  "pr_key",
+  "pr_noisy",
+  "pr_wifi",
+  "pr_tv",
+  "pr_towels",
+  "too_expensive_ctx",
+  "pr_vague_ctx",
+  "room_no",
+  "p_fine",
+  "ch_fan",
+  "ch_move"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

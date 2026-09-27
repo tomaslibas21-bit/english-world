@@ -1,0 +1,443 @@
+{
+ "situation": "s64a-checkin",
+ "title": "Window or Aisle?",
+ "goal": "Užsiregistruok skrydžiui: parodyk pasą, priduok lagaminą, išsirink vietą ir sužinok vartus.",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Good morning! How are you doing?",
+    "Hi there! How are you today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "dest_ans",
+    "checkin"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "dest": {
+   "id": "dest",
+   "kind": "step",
+   "npc": [
+    "Great! Where are you headed today?",
+    "Hi there! Where are you headed today?",
+    "Great! Where are you flying today?"
+   ],
+   "expects": [
+    "dest_ans",
+    "checkin"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur skrendi"
+   ],
+   "options": [
+    "Boston"
+   ]
+  },
+  "passport": {
+   "id": "passport",
+   "kind": "step",
+   "npc": [
+    "Perfect. May I see your ID, please?",
+    "Perfect. Can I see your passport, please?",
+    "Great. Can I see your passport, please?"
+   ],
+   "expects": [
+    "give"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Paduoti pasą"
+   ],
+   "options": []
+  },
+  "bags": {
+   "id": "bags",
+   "kind": "step",
+   "npc": [
+    "Thanks! Okay, flight 223 to Boston, departing at 8:10. How many bags are you checking?",
+    "Thanks! Great, I found your reservation: flight 223 to Boston. How many bags are you checking?",
+    "Thank you. Great, I found your reservation: flight 223 to Boston. How many bags are you checking?"
+   ],
+   "expects": [
+    "bags_ans",
+    "bags_num_ctx",
+    "bags_none"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kiek lagaminų registruosi",
+    "Paklausti apie svorį ar mokestį"
+   ],
+   "options": []
+  },
+  "battery": {
+   "id": "battery",
+   "kind": "pending",
+   "npc": [
+    "Okay, one bag. Are there any spare batteries or power banks in the bag?",
+    "One bag. Got it. Are there any spare batteries or power banks in the bag?",
+    "One bag. Got it. Any power banks or lithium batteries in it?"
+   ],
+   "expects": [
+    "battery_no",
+    "battery_yes",
+    "powerbank_q",
+    "what_ctx",
+    "g_dontknow",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar lagamine yra baterijų"
+   ],
+   "options": []
+  },
+  "scale": {
+   "id": "scale",
+   "kind": "step",
+   "npc": [
+    "Great, thanks. Could you put it on the scale, please?",
+    "Okay, one bag. Can you put it on the scale for me?",
+    "One bag. Got it. Can you put it on the scale for me?"
+   ],
+   "expects": [
+    "give",
+    "ack_done"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėti lagaminą ant svarstyklių",
+    "Paklausti, koks svorio limitas"
+   ],
+   "options": []
+  },
+  "seat": {
+   "id": "seat",
+   "kind": "step",
+   "npc": [
+    "Perfect, 47 pounds. Do you have a seat preference?",
+    "Let's try again... 49 pounds. You're good! Window or aisle?",
+    "44 pounds. You're good. Do you have a seat preference?"
+   ],
+   "expects": [
+    "seat_ans",
+    "seat_any",
+    "seat_neg"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti vietą: prie lango ar prie praėjimo"
+   ],
+   "options": [
+    "window",
+    "aisle",
+    "middle"
+   ]
+  },
+  "bp": {
+   "id": "bp",
+   "kind": "step",
+   "npc": [
+    "Okay, seat 12A, by the window. Here's your boarding pass. Boarding starts at 7:30 at gate 8. Here's your baggage claim tag. Any questions?",
+    "Okay, seat 12A, by the window. Here's your boarding pass. Boarding starts at 7:30 at gate 8. Do you have any questions?",
+    "Okay, seat 12A, by the window. And here's your boarding pass. Your gate is 8, and boarding starts at 7:30. Any questions?"
+   ],
+   "expects": [
+    "more_no",
+    "more_q",
+    "ask_ontime",
+    "ask_delayed",
+    "ask_gate",
+    "ask_boarding_time",
+    "ask_security",
+    "ask_duration",
+    "ask_carryon",
+    "ask_seatnum",
+    "ask_limit",
+    "ask_bagfee",
+    "ask_restroom"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad klausimų nebeturi",
+    "Paklausti apie skrydį, vartus ar saugumo patikrą"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Security is over there, on the left. Have a nice flight!",
+    "Security is straight ahead, past the café. Enjoy your flight!",
+    "Security is over there, on the left. Enjoy your flight!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "overweight": {
+   "id": "overweight",
+   "kind": "pending",
+   "npc": [
+    "Hmm, it's 53 pounds. The limit is 50. You can move a few things to your carry-on, or pay a $100 fee.",
+    "Hmm, it's 53 pounds. The limit is 50. There's a $100 fee for overweight bags, or you can move a few things to your carry-on.",
+    "Oh, it's 3 pounds over: 53, and the limit is 50. You can move a few things to your carry-on, or pay a $100 fee."
+   ],
+   "expects": [
+    "move_items",
+    "pay_fee",
+    "ask_fee",
+    "ask_over",
+    "ask_limit",
+    "affirm",
+    "deny",
+    "give",
+    "ack_done"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Perkelti kelis daiktus į rankinį bagažą",
+    "Sumokėti mokestį",
+    "Paklausti, kiek kainuoja ar koks limitas"
+   ],
+   "options": []
+  },
+  "moving": {
+   "id": "moving",
+   "kind": "pending",
+   "npc": [
+    "Sure, take your time.",
+    "No problem. Go ahead."
+   ],
+   "expects": [
+    "ack_done",
+    "give",
+    "g_ok",
+    "move_items",
+    "pay_fee",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad jau perkėlei daiktus"
+   ],
+   "options": []
+  },
+  "hello": {
+   "id": "hello",
+   "kind": "step",
+   "npc": [
+    "Hi! Checking in?",
+    "Good morning! Are you checking in?"
+   ],
+   "expects": [
+    "checkin",
+    "dest_ans",
+    "give"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad nori užsiregistruoti",
+    "Pasakyti, kur skrendi"
+   ],
+   "options": [
+    "Boston"
+   ]
+  },
+  "no_window": {
+   "id": "no_window",
+   "kind": "pending",
+   "npc": [
+    "Sorry, the window seats are all taken. Is an aisle seat okay?"
+   ],
+   "expects": [
+    "seat_ans",
+    "seat_any",
+    "seat_neg",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba atsisakyti",
+    "Pasirinkti kitą vietą"
+   ],
+   "options": [
+    "aisle",
+    "middle"
+   ]
+  },
+  "packed": {
+   "id": "packed",
+   "kind": "pending",
+   "npc": [
+    "Okay, one bag. Did you pack this bag yourself?",
+    "Okay, one bag. Perfect, thank you. Okay, flight 223 to Boston, departing at 8:10. Did you pack this bag yourself?",
+    "Okay, one bag. Thanks! Okay, flight 223 to Boston, departing at 8:10. Did you pack this bag yourself?"
+   ],
+   "expects": [
+    "packed_yes",
+    "packed_no",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kad lagaminą susikrovei pats"
+   ],
+   "options": []
+  },
+  "dest_confirm": {
+   "id": "dest_confirm",
+   "kind": "pending",
+   "npc": [
+    "Hmm, I don't see a reservation to Chicago today. I only see one to Boston. Is that your flight?",
+    "Hmm, I don't see a reservation to Chicago today. I only see one to Boston. Are you flying to Boston?"
+   ],
+   "expects": [
+    "dest_ans",
+    "affirm",
+    "deny",
+    "checkin",
+    "give"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patvirtinti, kad skrendi į Bostoną"
+   ],
+   "options": []
+  },
+  "seat_clarify": {
+   "id": "seat_clarify",
+   "kind": "pending",
+   "npc": [
+    "So, an aisle seat?"
+   ],
+   "expects": [
+    "seat_ans",
+    "seat_any",
+    "affirm",
+    "deny",
+    "seat_neg"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba pasirinkti kitą vietą"
+   ],
+   "options": [
+    "window",
+    "aisle",
+    "middle"
+   ]
+  },
+  "fee": {
+   "id": "fee",
+   "kind": "pending",
+   "npc": [
+    "Okay, that'll be $100. You can tap your card here."
+   ],
+   "expects": [
+    "give",
+    "pay_card",
+    "ack_done",
+    "g_ok",
+    "pay_fee",
+    "pay_cash",
+    "move_items",
+    "affirm",
+    "deny"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Susimokėti kortele",
+    "Vis dėlto perkelti daiktus"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "checkin",
+  "dest_ans",
+  "dest_unknown",
+  "lookup",
+  "dest_neg",
+  "affirm",
+  "deny",
+  "give",
+  "passport_q",
+  "find_it",
+  "bags_ans",
+  "bags_num_ctx",
+  "bags_none",
+  "packed_yes",
+  "packed_no",
+  "battery_no",
+  "battery_yes",
+  "powerbank_q",
+  "what_ctx",
+  "ack_done",
+  "scale_where",
+  "move_items",
+  "pay_fee",
+  "pay_card",
+  "pay_cash",
+  "ask_fee",
+  "ask_over",
+  "ask_limit",
+  "seat_ans",
+  "seat_any",
+  "seat_neg",
+  "more_no",
+  "more_q",
+  "ask_ontime",
+  "ask_delayed",
+  "ask_gate",
+  "ask_boarding_time",
+  "ask_security",
+  "ask_duration",
+  "ask_carryon",
+  "ask_seatnum",
+  "ask_bagfee",
+  "ask_restroom"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

@@ -1,0 +1,23 @@
+{
+  "npc": "Officer Grant, airport security",
+  "images": ["docs", "divest", "walk", "alarm", "bottle", "done"],
+  "start": "docs",
+  "done": "done",
+  "phases": {
+    "docs": "docs", "docs_more": "docs", "camera": "docs",
+    "divest": "divest",
+    "walk": "walk",
+    "pockets": "alarm", "check_pockets": "alarm", "belt_watch": "alarm", "shoes_off": "alarm", "again": "alarm",
+    "bag_q": "bottle", "bottle_found": "bottle", "bottle": "bottle", "bottle_keep": "bottle",
+    "collect": "done", "closing": "done"
+  },
+  "focus": [35, 22],
+  "jobs": {
+    "docs": "e445de12-164d-438c-a3fd-d3f08e2d4392",
+    "divest": "f54ee7d1-7b40-4db5-b748-75af6bc1adc8",
+    "walk": "c58b5341-3663-4cd5-9cf9-32e8bd5b0e8c",
+    "alarm": "72378d49-7bcf-436e-942c-e0fd5b91cb05",
+    "bottle": "e1664aae-0fac-406d-ab1d-05a9aaadf048",
+    "done": "0ad18217-d1cf-43ba-af9d-8c88240d0ade"
+  }
+}

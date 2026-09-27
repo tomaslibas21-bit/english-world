@@ -1,0 +1,367 @@
+{
+ "situation": "s66-taxi",
+ "title": "Keep the Change",
+ "goal": "Pasakyk vairuotojui, kur važiuoti, kur sustoti, ir susimokėk (kainos gali paklausti).",
+ "contexts": {
+  "dest": {
+   "id": "dest",
+   "kind": "step",
+   "npc": [
+    "Taxi? Hop in! Where are you headed?",
+    "Hey! Where can I take you?",
+    "Hi there! Hop in! Where to?"
+   ],
+   "expects": [
+    "dest",
+    "dest_ctx",
+    "dest_address",
+    "dest_fix"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur važiuoti",
+    "Paklausti kainos ar laiko",
+    "Paprašyti įdėti krepšį į bagažinę"
+   ],
+   "options": [
+    "Harborview Hotel",
+    "Union Station",
+    "museum",
+    "Town Square",
+    "Sunny Cup Café",
+    "airport",
+    "Maple Street Apartments",
+    "Brightline office",
+    "Pier"
+   ]
+  },
+  "talk": {
+   "id": "talk",
+   "kind": "step",
+   "npc": [
+    "Alright, the Harborview Hotel. Buckle up! About 15 minutes, depending on traffic. So, where are you from?",
+    "Sure thing! Heading to the Harborview Hotel. So, where are you from?",
+    "Oh, my mistake! Alright, the Harborview Hotel. Buckle up! So, where are you from?"
+   ],
+   "expects": [
+    "talk_from",
+    "talk_first",
+    "talk_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, iš kur esi"
+   ],
+   "options": []
+  },
+  "bball": {
+   "id": "bball",
+   "kind": "pending",
+   "npc": [
+    "Lithuania! Cool. Basketball country, right?"
+   ],
+   "expects": [
+    "talk_bball",
+    "bball_no_ctx",
+    "talk_from",
+    "talk_first",
+    "talk_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti apie krepšinį"
+   ],
+   "options": []
+  },
+  "stop": {
+   "id": "stop",
+   "kind": "step",
+   "npc": [
+    "I knew it! Sabonis was amazing! Here we are: the Harborview Hotel! Where do you want me to stop?",
+    "Great. We'll take Harbor Road. We're here: the Harborview Hotel! Where do you want me to stop?",
+    "You got it! Here we are: the Harborview Hotel! Is right here okay?"
+   ],
+   "expects": [
+    "stop",
+    "stop_no_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kur sustoti"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "You got it. That'll be $24.50.",
+    "No problem. That'll be $24.50.",
+    "No problem. So that's $24.50."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_amount",
+    "here_you_go",
+    "keep_change",
+    "tip_q"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele arba grynaisiais"
+   ],
+   "options": []
+  },
+  "tip_screen": {
+   "id": "tip_screen",
+   "kind": "pending",
+   "npc": [
+    "Sure, just tap your card here. You can add a tip on the screen."
+   ],
+   "expects": [
+    "tip_add",
+    "tip_q",
+    "tip_no_ctx",
+    "g_ok",
+    "pay_card",
+    "pay_cash",
+    "pay_amount",
+    "here_you_go",
+    "keep_change"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pridėti arbatpinigių ekrane"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Thanks a lot! Enjoy your stay!",
+    "Thanks a lot! Have a great day!",
+    "Thank you so much! Take care!"
+   ],
+   "expects": [
+    "g_thanks",
+    "thanks_ride",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "radio": {
+   "id": "radio",
+   "kind": "step",
+   "npc": [
+    "I knew it! Sabonis was amazing! Oh, I love this song! Can I turn it up?",
+    "Welcome! You'll love it here. Oh, I love this song! Can I turn it up?"
+   ],
+   "expects": [
+    "radio_up",
+    "radio_down",
+    "radio_off",
+    "allow",
+    "decline_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Leisti pagarsinti (arba ne)",
+    "Paprašyti patylinti"
+   ],
+   "options": []
+  },
+  "traffic": {
+   "id": "traffic",
+   "kind": "step",
+   "npc": [
+    "You got it! Ugh, look at this traffic. Is it okay if I take a different way? It's a little longer, but faster.",
+    "Welcome! You'll love it here. Ugh, look at this traffic. Is it okay if I take a different way? It's a little longer, but faster.",
+    "Sure thing! Okay, here we go! Ugh, look at this traffic. Is it okay if I take a different way? It's a little longer, but faster."
+   ],
+   "expects": [
+    "ask_time",
+    "ask_quicker",
+    "allow",
+    "decline_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Leisti važiuoti kitu keliu (arba ne)",
+    "Paklausti, kiek laiko užtruks"
+   ],
+   "options": []
+  },
+  "ride_check": {
+   "id": "ride_check",
+   "kind": "pending",
+   "npc": [
+    "Hi! Are you waiting for a ride to the airport?"
+   ],
+   "expects": [
+    "ride_no",
+    "dest",
+    "dest_ctx",
+    "dest_address",
+    "dest_fix"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kad ne (ir pasakyti, kur važiuoji)"
+   ],
+   "options": [
+    "Harborview Hotel",
+    "museum",
+    "Union Station",
+    "Town Square"
+   ]
+  },
+  "receipt": {
+   "id": "receipt",
+   "kind": "step",
+   "npc": [
+    "Thanks a lot! Need a receipt?",
+    "Thank you so much! Need a receipt?",
+    "Thanks a lot, my friend! Need a receipt?"
+   ],
+   "expects": [
+    "receipt",
+    "no_receipt"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia čekio"
+   ],
+   "options": []
+  },
+  "first_time": {
+   "id": "first_time",
+   "kind": "step",
+   "npc": [
+    "Alright, the Harborview Hotel. Buckle up! Maybe 15 minutes. First time here?",
+    "Sure thing! Okay, here we go! First time here?",
+    "Alright, the museum. Buckle up! And I'll put your bag in the trunk. About 15 minutes, depending on traffic. First time here?"
+   ],
+   "expects": [
+    "talk_first",
+    "talk_from",
+    "talk_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar čia pirmą kartą"
+   ],
+   "options": []
+  },
+  "bag": {
+   "id": "bag",
+   "kind": "step",
+   "npc": [
+    "Alright, the Harborview Hotel. Buckle up! Is that your bag? Want me to put it in the trunk?",
+    "Sure thing! Heading to the Harborview Hotel. Would you like me to put your bag in the trunk?",
+    "You got it. Next stop: the Harborview Hotel! Would you like me to put your bag in the trunk?"
+   ],
+   "expects": [
+    "bag_trunk",
+    "allow",
+    "decline_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar įdėti krepšį į bagažinę"
+   ],
+   "options": []
+  },
+  "vague": {
+   "id": "vague",
+   "kind": "pending",
+   "npc": [
+    "Sure. Where downtown?",
+    "Oh, my mistake! Sure. Where downtown?"
+   ],
+   "expects": [
+    "dest",
+    "dest_ctx",
+    "dest_address",
+    "dest_fix"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patikslinti, kur važiuoti"
+   ],
+   "options": [
+    "Harborview Hotel",
+    "museum",
+    "Town Square",
+    "Sunny Cup Café",
+    "Harbor Bank",
+    "Harbor Pharmacy"
+   ]
+  }
+ },
+ "intents": [
+  "dest",
+  "dest_ctx",
+  "allow",
+  "decline_ctx",
+  "dest_address",
+  "dest_unknown",
+  "dest_fix",
+  "ride_no",
+  "bag_trunk",
+  "ask_price",
+  "ask_time",
+  "ask_quicker",
+  "radio_up",
+  "radio_down",
+  "radio_off",
+  "window",
+  "ac",
+  "heat",
+  "stop",
+  "stop_no_ctx",
+  "pay_card",
+  "pay_cash",
+  "pay_amount",
+  "here_you_go",
+  "keep_change",
+  "need_change",
+  "tip_q",
+  "tip_add",
+  "tip_no_ctx",
+  "receipt",
+  "no_receipt",
+  "talk_from",
+  "talk_first",
+  "talk_bball",
+  "bball_no_ctx",
+  "thanks_ride",
+  "talk_you",
+  "sing",
+  "wait_q"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

@@ -1,0 +1,553 @@
+{
+ "situation": "s78-bank",
+ "title": "The ATM Ate My Card",
+ "goal": "Atsidaryk banko sąskaitą (ir sužinok, kaip pervesti pinigus į Lietuvą).",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Good morning! How are you today?",
+    "Hi there! How are you doing today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "open_account",
+    "card_kept",
+    "exchange_req",
+    "transfer_q",
+    "withdraw",
+    "new_in_town"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "acct_type": {
+   "id": "acct_type",
+   "kind": "step",
+   "npc": [
+    "Great! Are you looking for checking or savings?",
+    "Sure! Would you like a checking account or a savings account?",
+    "Of course. Checking or savings?"
+   ],
+   "expects": [
+    "acct_type_ans",
+    "open_account",
+    "ask_difference",
+    "acct_type_not"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti sąskaitos rūšį",
+    "Paklausti apie mokesčius"
+   ],
+   "options": [
+    "checking account",
+    "savings account"
+   ]
+  },
+  "id": {
+   "id": "id",
+   "kind": "step",
+   "npc": [
+    "Perfect. Okay. Can I see your ID? A passport is fine.",
+    "Sounds good. I'll need your ID and proof of address, like a lease or a utility bill.",
+    "Perfect. I'll need your ID and proof of address, like a lease or a utility bill."
+   ],
+   "expects": [
+    "show_doc",
+    "here_you_go",
+    "no_doc",
+    "give_proof",
+    "doc_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti asmens dokumentą",
+    "Parodyti adreso įrodymą"
+   ],
+   "options": [
+    "passport",
+    "driver's license",
+    "ID card",
+    "visa",
+    "lease",
+    "utility bill",
+    "bank statement"
+   ]
+  },
+  "proof": {
+   "id": "proof",
+   "kind": "step",
+   "npc": [
+    "Perfect, thanks. And do you have proof of address? A lease or a utility bill works.",
+    "Thank you. And proof of address?",
+    "Great, thank you. And proof of address?"
+   ],
+   "expects": [
+    "give_proof",
+    "no_proof",
+    "here_you_go",
+    "proof_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti adreso įrodymą (arba pasakyti, kad jo dar neturi)"
+   ],
+   "options": [
+    "lease",
+    "utility bill",
+    "bank statement"
+   ]
+  },
+  "ssn": {
+   "id": "ssn",
+   "kind": "step",
+   "npc": [
+    "That works, thanks. Do you have a Social Security number?",
+    "That works, thanks. And do you have a Social Security number yet?",
+    "Perfect. And do you have a Social Security number yet?"
+   ],
+   "expects": [
+    "ssn_none",
+    "ssn_yes",
+    "ask_ssn_what",
+    "ssn_problem",
+    "not_yet"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi socialinio draudimo numerį"
+   ],
+   "options": []
+  },
+  "form": {
+   "id": "form",
+   "kind": "step",
+   "npc": [
+    "That's okay. We can open it with your passport. You can add the number later. Now, please fill out this form and sign here, at the bottom.",
+    "Right here, on the line at the bottom.",
+    "Thanks for your patience! Okay, it's working again. Now, please fill out this form and sign here, at the bottom."
+   ],
+   "expects": [
+    "signed",
+    "here_you_go",
+    "where_sign",
+    "ask_pen",
+    "what_write"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Užpildyti formą, pasirašyti (ar paklausti)"
+   ],
+   "options": []
+  },
+  "deposit": {
+   "id": "deposit",
+   "kind": "step",
+   "npc": [
+    "Perfect, thank you. You need at least $25 to open the account. How much would you like to deposit today?",
+    "Perfect, thank you. You need at least $25 to open the account. How much are you depositing today?",
+    "Great, thanks. You need at least $25 to open the account. How much would you like to deposit today?"
+   ],
+   "expects": [
+    "deposit_ans",
+    "amount_ctx",
+    "minimum",
+    "ask_minimum"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek pinigų įneši"
+   ],
+   "options": []
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "And you're all set! Your account is open. Your card should arrive in 5–7 business days. The PIN comes separately, in a letter. Anything else I can do for you?",
+    "All done! Your new account is open. Your card should arrive in 5–7 business days. Here's your account number and our routing number for your employer. Anything else I can do for you?",
+    "No problem. You can download it later. Anything else I can do for you?"
+   ],
+   "expects": [
+    "more_no",
+    "have_question"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad tai viskas",
+    "Paklausti, kaip pervesti pinigų į Lietuvą",
+    "Paklausti apie mokesčius, kortelę ar programėlę",
+    "Išsikeisti eurų į dolerius"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Thank you for choosing Harbor Bank! Have a great day.",
+    "Thanks for coming in! Have a good one."
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "help": {
+   "id": "help",
+   "kind": "step",
+   "npc": [
+    "Hi there! Welcome to Harbor Bank. How can I help you today?",
+    "Good morning! What can I do for you today?",
+    "Good to see you again! What can I do for you?"
+   ],
+   "expects": [
+    "open_account",
+    "card_kept",
+    "exchange_req",
+    "transfer_q",
+    "withdraw",
+    "new_in_town"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad nori atsidaryti sąskaitą",
+    "Paklausti, kaip pervesti pinigų į Lietuvą",
+    "Išsikeisti eurų į dolerius"
+   ],
+   "options": [
+    "checking account",
+    "savings account"
+   ]
+  },
+  "slow": {
+   "id": "slow",
+   "kind": "step",
+   "npc": [
+    "That's okay. We can open it with your passport. You can add the number later. Sorry, our system is a little slow today. Could you bear with me for a moment?",
+    "No problem. You can add it later. Sorry, our system is a little slow today. Could you bear with me for a moment?"
+   ],
+   "expects": [
+    "no_problem"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad gali palaukti"
+   ],
+   "options": []
+  },
+  "app": {
+   "id": "app",
+   "kind": "step",
+   "npc": [
+    "All done! Your new account is open. Your card should arrive in 5–7 business days. Would you like to set up our mobile app?",
+    "And you're all set! Your account is open. You'll get your debit card by mail in 5–7 business days. Would you like to set up our mobile app?",
+    "All done! Your new account is open. You'll get your debit card by mail in 5–7 business days. Would you like to set up our mobile app?"
+   ],
+   "expects": [
+    "app_later",
+    "app_q"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne",
+    "Paklausti apie programėlę"
+   ],
+   "options": []
+  },
+  "savings": {
+   "id": "savings",
+   "kind": "step",
+   "npc": [
+    "And you're all set! Your account is open. Your card should arrive in 5–7 business days. Would you like a savings account too? There's no monthly fee.",
+    "All done! Your new account is open. You'll get your debit card by mail in 5–7 business days. Would you like a savings account too? There's no monthly fee.",
+    "All done! Your new account is open. Your card should arrive in 5–7 business days. Would you like a savings account too? There's no monthly fee."
+   ],
+   "expects": [
+    "acct_type_not"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "help_card": {
+   "id": "help_card",
+   "kind": "step",
+   "npc": [
+    "Good to see you again! What can I do for you?"
+   ],
+   "expects": [
+    "open_account",
+    "card_kept",
+    "exchange_req",
+    "transfer_q",
+    "withdraw",
+    "new_in_town"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pranešti, kad bankomatas lauke pasiliko tavo kortelę",
+    "Pasakyti, kad nori atsidaryti sąskaitą",
+    "Paklausti, kaip pervesti pinigų į Lietuvą",
+    "Išsikeisti eurų į dolerius"
+   ],
+   "options": [
+    "checking account",
+    "savings account"
+   ]
+  },
+  "acct_q": {
+   "id": "acct_q",
+   "kind": "pending",
+   "npc": [
+    "You can send an international wire transfer. It costs $40, and it usually takes 1–2 business days. Do you have an account with us?",
+    "The best way is an international wire transfer. It costs $40, and it usually takes 1–2 business days. Do you have an account with us?",
+    "Do you have an account with us?"
+   ],
+   "expects": [
+    "not_yet",
+    "open_account",
+    "card_kept",
+    "exchange_req",
+    "transfer_q",
+    "withdraw",
+    "new_in_town"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "open_offer": {
+   "id": "open_offer",
+   "kind": "pending",
+   "npc": [
+    "You'll need an account with us to send a wire. Would you like to open one? It only takes about 15 minutes.",
+    "I'm sorry, we only exchange currency for our customers. Would you like to open one? It only takes about 15 minutes."
+   ],
+   "expects": [
+    "open_account",
+    "card_kept",
+    "exchange_req",
+    "transfer_q",
+    "withdraw",
+    "new_in_town"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti atsidaryti sąskaitą",
+    "Pasakyti, kokios sąskaitos nori"
+   ],
+   "options": [
+    "checking account",
+    "savings account"
+   ]
+  },
+  "pin_q": {
+   "id": "pin_q",
+   "kind": "step",
+   "npc": [
+    "Oh no, I'm sorry about that! Did you enter the wrong PIN?",
+    "Oh no, I'm sorry about that! Did you type the wrong PIN a few times?",
+    "Oh no! That's frustrating. Did you type the wrong PIN a few times?"
+   ],
+   "expects": [
+    "wrong_pin",
+    "machine_error",
+    "pin_yes_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar įvedei neteisingą PIN kodą"
+   ],
+   "options": []
+  },
+  "card_id": {
+   "id": "card_id",
+   "kind": "step",
+   "npc": [
+    "That's probably why. After three wrong tries, the machine keeps the card. For your security, I'll cancel that card and order you a new one. Can I see your ID, please?",
+    "That's probably why. After three wrong tries, the machine keeps the card. For your security, I'll cancel that card and order you a new one. First, could I see your ID?",
+    "Oh no, I'm sorry about that! For your security, I'll cancel that card and order you a new one. Can I see your ID, please?"
+   ],
+   "expects": [
+    "show_doc",
+    "here_you_go",
+    "no_doc",
+    "doc_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Parodyti asmens dokumentą",
+    "Paklausti apie naują kortelę"
+   ],
+   "options": [
+    "passport",
+    "driver's license",
+    "ID card",
+    "visa"
+   ]
+  },
+  "cash_offer": {
+   "id": "cash_offer",
+   "kind": "step",
+   "npc": [
+    "Okay, the old card is blocked. Your new card should arrive in 5–7 business days. Do you need any cash in the meantime? I can give you some cash here at the counter."
+   ],
+   "expects": [
+    "withdraw",
+    "amount_ctx",
+    "no_cash_needed"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar reikia grynųjų",
+    "Pasakyti sumą"
+   ],
+   "options": []
+  },
+  "cash_amount": {
+   "id": "cash_amount",
+   "kind": "step",
+   "npc": [
+    "How much would you like to take out today?",
+    "Sure. How much would you like to take out?"
+   ],
+   "expects": [
+    "amount_ctx",
+    "withdraw"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek grynųjų nori išsiimti"
+   ],
+   "options": []
+  },
+  "bills": {
+   "id": "bills",
+   "kind": "step",
+   "npc": [
+    "Are twenties okay?",
+    "How would you like it? Twenties?"
+   ],
+   "expects": [
+    "bills_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kokiomis kupiūromis"
+   ],
+   "options": []
+  },
+  "euros": {
+   "id": "euros",
+   "kind": "step",
+   "npc": [
+    "Today, one euro is $1.15, and there's a $5 fee. How many euros would you like to exchange?"
+   ],
+   "expects": [
+    "euro_amount",
+    "euro_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kiek eurų keisi"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "open_account",
+  "new_in_town",
+  "card_kept",
+  "help_me",
+  "exchange_req",
+  "transfer_q",
+  "withdraw",
+  "acct_type_ans",
+  "acct_type_not",
+  "ask_difference",
+  "show_doc",
+  "doc_ctx",
+  "no_doc",
+  "give_proof",
+  "proof_ctx",
+  "no_proof",
+  "ssn_none",
+  "ssn_yes",
+  "ask_ssn_what",
+  "ssn_problem",
+  "ask_pen",
+  "where_sign",
+  "what_write",
+  "signed",
+  "here_you_go",
+  "deposit_ans",
+  "minimum",
+  "ask_minimum",
+  "amount_ctx",
+  "no_cash_needed",
+  "app_later",
+  "fee_q",
+  "minbal_q",
+  "interest_q",
+  "card_when_q",
+  "card_abroad_q",
+  "app_q",
+  "atm_q",
+  "cost_q",
+  "how_long_q",
+  "need_q",
+  "swift_q",
+  "app_transfer_q",
+  "rate_q",
+  "euro_amount",
+  "euro_ctx",
+  "wrong_pin",
+  "pin_yes_ctx",
+  "machine_error",
+  "block_req",
+  "new_card_q",
+  "old_card_q",
+  "account_safe_q",
+  "bills_ans",
+  "more_no",
+  "have_question",
+  "no_problem",
+  "not_yet"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

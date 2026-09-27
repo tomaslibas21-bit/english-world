@@ -1,0 +1,60 @@
+/* Help with speaking (Conversation.tsx; logic in src/convo/suggest.ts):
+   "Did you mean…?" in the miss box, "Listen and repeat" in the guide, and how an answer was given. */
+
+/* heard words that aren't in the suggestion, and model words that weren't heard */
+.hw-miss {
+  background: #fde4d5; color: #9a3b22; border-radius: 5px; padding: 0 3px; margin: 0 -1px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+
+/* ---- "Did you mean…?" ---- */
+.dym { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eadfcc; display: flex; flex-direction: column; gap: 6px; }
+.dym-q { font-weight: 800; color: var(--ink); }
+.dym-opt {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer; color: var(--ink);
+  border: 1.5px solid var(--accent-soft-2); background: var(--accent-soft); border-radius: 13px; padding: 7px 11px 7px 13px;
+  font-family: var(--ui); font-size: 1em; transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.dym-opt:hover { background: #d7ecea; border-color: #b7dad6; box-shadow: 0 4px 10px -6px rgba(31, 111, 120, 0.6); }
+.dym-opt:active { transform: translateY(1px); }
+.dym-opt:focus-visible { outline: none; box-shadow: var(--ring); }
+.dym-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dym-en { font-family: var(--en); font-size: 1.22em; line-height: 1.25; overflow-wrap: anywhere; }
+.dym-lt { font-size: 0.84em; color: var(--ink-soft); margin-top: 1px; }
+.dym-go { flex: none; color: var(--accent); }
+.dym-hint { font-size: 0.85em; color: var(--ink-soft); }
+
+/* ---- "Listen and repeat" (guide examples) ---- */
+.gx .rp-btn {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 12px 0 9px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--line); background: #fffdf9; color: var(--accent); font-family: var(--ui); font-weight: 800; font-size: 0.8em;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.gx .rp-btn:hover { background: var(--accent-soft); border-color: #b7dad6; }
+.gx .rp-btn:active { transform: scale(0.96); }
+.gx .rp-btn.playing { background: var(--accent-soft); border-color: #b7dad6; }
+.gx .rp-btn.listening { background: var(--bad); border-color: var(--bad); color: #fff; }
+.rp-res { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 5px; font-size: 0.86em; color: var(--ink-soft); line-height: 1.35; }
+.rp-res.wait { align-items: center; }
+.rp-verdict { font-weight: 900; }
+.rp-res.great .rp-verdict { color: var(--good); }
+.rp-res.almost .rp-verdict { color: #a86b00; }
+.rp-res.again .rp-verdict { color: #b0532b; }
+.rp-words { font-family: var(--en); font-size: 1.22em; color: var(--ink); }
+.rp-heard { font-size: 1em; }
+.rp-heard[lang="en"], .rp-heard [lang="en"] { font-family: var(--en); font-size: 1.12em; }
+.rp-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: rp-pulse 1.2s ease-in-out infinite; }
+@keyframes rp-pulse { 50% { opacity: 0.35; } }
+
+/* ---- the learner's bubble: spoken (mic), typed (keyboard) or a picked suggestion ---- */
+.msg.you .via { display: inline-grid; place-items: center; margin-right: 7px; vertical-align: -1px; opacity: 0.8; }
+.msg.you.miss .via { color: var(--ink-faint); opacity: 1; }
+
+@media (max-width: 480px) {
+  .gx .rp-btn { width: 40px; height: 40px; padding: 0; justify-content: center; }
+  .gx .rp-btn .rp-label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-dot { animation: none; }
+  .dym-opt, .gx .rp-btn { transition: none; }
+}

@@ -1,0 +1,424 @@
+{
+ "situation": "s91b-police",
+ "title": "I'd Like to Report a Theft",
+ "goal": "Pranešk policijai apie pamestą piniginę.",
+ "contexts": {
+  "report": {
+   "id": "report",
+   "kind": "step",
+   "npc": [
+    "Next, please. How can I help?",
+    "Hi there. What can I do for you?",
+    "Good afternoon. How can I help you?"
+   ],
+   "expects": [
+    "report"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pranešti apie pavogtą ar pamestą piniginę"
+   ],
+   "options": [
+    "wallet",
+    "phone",
+    "bag",
+    "backpack"
+   ]
+  },
+  "where": {
+   "id": "where",
+   "kind": "step",
+   "npc": [
+    "I'm sorry to hear that. Where were you when it happened?",
+    "Okay, I'm sorry about that. Where did it happen?",
+    "I'm sorry to hear that. Where did it happen?"
+   ],
+   "expects": [
+    "where_when",
+    "happened"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur tai buvo"
+   ],
+   "options": [
+    "café",
+    "bakery",
+    "fruit stand",
+    "market",
+    "bank",
+    "ATM",
+    "pharmacy",
+    "post office",
+    "supermarket",
+    "museum",
+    "restaurant",
+    "park",
+    "bench",
+    "fountain",
+    "station",
+    "bus",
+    "taxi"
+   ]
+  },
+  "describe": {
+   "id": "describe",
+   "kind": "step",
+   "npc": [
+    "Can you describe the wallet?",
+    "What does it look like?",
+    "Yes, call your bank right away and cancel them. What does it look like?"
+   ],
+   "expects": [
+    "describe"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Apibūdinti, kaip ji atrodo"
+   ],
+   "options": []
+  },
+  "contents": {
+   "id": "contents",
+   "kind": "step",
+   "npc": [
+    "Okay, a small brown leather wallet. What was in it?",
+    "Got it: a small brown leather wallet. And what was inside?",
+    "Okay, a small brown leather wallet. And what was inside?"
+   ],
+   "expects": [
+    "contents",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kas buvo viduje"
+   ],
+   "options": [
+    "cards",
+    "credit card",
+    "debit card",
+    "driver's license",
+    "ID card",
+    "passport",
+    "cash",
+    "photos",
+    "keys",
+    "insurance card",
+    "library card",
+    "bus pass",
+    "gift card",
+    "receipts",
+    "student ID"
+   ]
+  },
+  "found": {
+   "id": "found",
+   "kind": "step",
+   "npc": [
+    "Okay, I wrote that down. Oh, wait a second. Someone just brought in a small brown leather wallet. Is this yours?",
+    "About $20 in cash. Okay. Oh, wait a second. Someone just brought in a small black wallet. Is this yours?",
+    "Okay, I wrote that down. Oh, wait a second. Someone just brought in a small red wallet. Is this yours?"
+   ],
+   "expects": [
+    "its_mine",
+    "not_mine"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar tai tavo"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Great! Can you tell me your name? I'll check the ID inside.",
+    "Good. Okay, I'll need some details for the report. Can I get your name?",
+    "Right, of course. That's okay. Okay, I'll need some details for the report. What's your full name?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti vardą ir pavardę"
+   ],
+   "options": []
+  },
+  "check_all": {
+   "id": "check_all",
+   "kind": "step",
+   "npc": [
+    "Perfect, that matches. Here you go. Please check that everything's there.",
+    "Got it, thanks. Perfect, that matches. Here you go. Please check that everything's there."
+   ],
+   "expects": [
+    "all_there",
+    "missing_some"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Patikrinti ir pasakyti, ar viskas vietoje"
+   ],
+   "options": []
+  },
+  "anything_else": {
+   "id": "anything_else",
+   "kind": "pending",
+   "npc": [
+    "You're lucky! Anything else I can do for you?",
+    "Great, thank you. Here's your case number: 4471. If it turns up, we'll call you. Anything else I can do for you?",
+    "Thanks. Here's your case number: 4471. If it turns up, we'll call you. Anything else I can do for you?"
+   ],
+   "expects": [
+    "thats_all",
+    "g_thanks",
+    "thanks_officer",
+    "g_bye",
+    "g_howareyou"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti",
+    "Paklausti dar ko nors"
+   ],
+   "options": []
+  },
+  "bank": {
+   "id": "bank",
+   "kind": "step",
+   "npc": [
+    "Okay, got it. Have you called your bank yet?",
+    "Okay, I wrote that down. Have you called your bank yet?"
+   ],
+   "expects": [
+    "cancel_cards",
+    "bank_called",
+    "bank_not_yet"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar jau skambinai į banką"
+   ],
+   "options": []
+  },
+  "spell": {
+   "id": "spell",
+   "kind": "step",
+   "npc": [
+    "How do you spell your last name?",
+    "Could you spell your last name for me?"
+   ],
+   "expects": [
+    "spell_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti pavardę paraidžiui"
+   ],
+   "options": []
+  },
+  "phone": {
+   "id": "phone",
+   "kind": "step",
+   "npc": [
+    "Thank you. What's the best number to reach you?",
+    "What's the best number to reach you?",
+    "Got it, thanks. And a phone number where we can reach you?"
+   ],
+   "expects": [
+    "phone_ctx",
+    "no_phone"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti telefono numerį"
+   ],
+   "options": []
+  },
+  "sign": {
+   "id": "sign",
+   "kind": "step",
+   "npc": [
+    "Thanks. Please check the report and sign here.",
+    "Thanks. Please fill out this form and sign at the bottom."
+   ],
+   "expects": [
+    "sign_where",
+    "pen",
+    "signed",
+    "sign_where_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirašyti arba paklausti, kur pasirašyti"
+   ],
+   "options": []
+  },
+  "id_q": {
+   "id": "id_q",
+   "kind": "step",
+   "npc": [
+    "Good. Do you have any ID with you?",
+    "Okay, I wrote that down. Do you have any ID with you?",
+    "Okay, got it. Do you have any ID with you?"
+   ],
+   "expects": [
+    "no_id",
+    "have_id"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar turi dokumentą"
+   ],
+   "options": []
+  },
+  "happened": {
+   "id": "happened",
+   "kind": "step",
+   "npc": [
+    "Okay, I'm sorry about that. Can you tell me what happened?",
+    "Okay, I'm sorry about that. Okay. What happened?",
+    "I'm sorry to hear that. Can you tell me what happened?"
+   ],
+   "expects": [
+    "happened",
+    "where_when"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti, kas atsitiko"
+   ],
+   "options": []
+  },
+  "what_item": {
+   "id": "what_item",
+   "kind": "step",
+   "npc": [
+    "I'm sorry to hear that. What was stolen?",
+    "Okay, I'm sorry about that. What was stolen?"
+   ],
+   "expects": [
+    "what_item_ctx",
+    "report"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kas pavogta"
+   ],
+   "options": [
+    "wallet",
+    "phone",
+    "bag",
+    "backpack"
+   ]
+  },
+  "when": {
+   "id": "when",
+   "kind": "step",
+   "npc": [
+    "And what time was that?",
+    "When was this?",
+    "Okay. And what time was that?"
+   ],
+   "expects": [
+    "where_when"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kada tai buvo"
+   ],
+   "options": []
+  },
+  "cash_amount": {
+   "id": "cash_amount",
+   "kind": "step",
+   "npc": [
+    "Okay, I wrote that down. How much cash, roughly?",
+    "Okay, got it. How much cash, roughly?"
+   ],
+   "expects": [
+    "contents",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kiek buvo grynųjų"
+   ],
+   "options": []
+  },
+  "last_name": {
+   "id": "last_name",
+   "kind": "step",
+   "npc": [
+    "And your last name?"
+   ],
+   "expects": [
+    "name_ctx",
+    "spell_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti pavardę"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "report",
+  "problem",
+  "no_cash",
+  "what_item_ctx",
+  "happened",
+  "where_when",
+  "describe",
+  "contents",
+  "stolen_yes",
+  "stolen_no",
+  "name_ctx",
+  "spell_ctx",
+  "phone_ctx",
+  "no_phone",
+  "cancel_cards",
+  "what_now",
+  "how_long",
+  "chances",
+  "copy",
+  "pen",
+  "signed",
+  "sign_where_ctx",
+  "sign_where",
+  "fill_form",
+  "its_mine",
+  "not_mine",
+  "all_there",
+  "missing_some",
+  "bank_called",
+  "bank_not_yet",
+  "no_id",
+  "have_id",
+  "thanks_officer",
+  "thats_all"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

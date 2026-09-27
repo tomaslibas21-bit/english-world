@@ -1,0 +1,20 @@
+{
+  "npc": "Aaron, bank teller",
+  "images": ["greet", "card", "id", "form", "cash", "app"],
+  "start": "greet",
+  "phases": {
+    "howareyou": "greet", "help": "greet", "help_card": "greet", "acct_type": "greet", "acct_q": "greet", "open_offer": "greet",
+    "pin_q": "card",
+    "id": "id", "proof": "id", "card_id": "id", "cash_id": "id",
+    "ssn": "form", "slow": "form", "form": "form", "savings": "form",
+    "deposit": "cash", "cash_offer": "cash", "cash_amount": "cash", "bills": "cash", "euros": "cash",
+    "app": "app",
+    "more": "greet", "closing": "greet"
+  },
+  "focus": [31, 24],
+  "jobs": {
+    "greet": "ede27ffc-fbc0-4849-8d85-a8b2cd90bd4a", "card": "ca4297e2-c9bd-4fd2-bd26-7b3d1c1871d6",
+    "id": "567b494e-e6df-4933-abf5-447c61035e59", "form": "9db245b4-be3c-4780-8eb5-e5bb581e065a",
+    "cash": "a6f6706f-bd63-49f8-83aa-072230961c46", "app": "a432ecca-5c59-47bb-952d-a310628f2a94"
+  }
+}

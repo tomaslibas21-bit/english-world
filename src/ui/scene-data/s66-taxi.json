@@ -1,0 +1,22 @@
+{
+  "npc": "Vinnie, taxi driver",
+  "images": ["stand", "ride", "radio", "traffic", "stop", "pay"],
+  "start": "stand",
+  "phases": {
+    "ride_check": "stand", "dest": "stand", "vague": "stand", "bag": "stand",
+    "go": "ride", "talk": "ride", "first_time": "ride", "bball": "ride",
+    "radio": "radio",
+    "traffic": "traffic",
+    "stop": "stop",
+    "pay": "pay", "tip_screen": "pay", "change": "pay", "receipt": "pay", "closing": "pay"
+  },
+  "focus": [38, 30],
+  "jobs": {
+    "stand": "b0d57523-cb9c-46b9-8140-5abf1904c13e",
+    "ride": "02fc2b87-ded9-495a-b13e-f8fba774534b",
+    "radio": "941eae3d-fbc8-4498-86a8-eaea4f6de157",
+    "traffic": "2efef409-3df2-470c-9992-a95a006a007f",
+    "stop": "7a41aa58-f9f5-4981-99b5-031c108c5730",
+    "pay": "6cda8172-f43a-4ee5-806d-b2a1d3c45555"
+  }
+}

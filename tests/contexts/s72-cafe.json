@@ -1,0 +1,397 @@
+{
+ "situation": "s72-cafe",
+ "title": "For Here or To Go?",
+ "goal": "Užsisakyk gėrimą (ir, jei nori, ką nors užkąsti), pasakyk, ar gersi čia, ar išsineši, ir susimokėk.",
+ "contexts": {
+  "howareyou": {
+   "id": "howareyou",
+   "kind": "pending",
+   "npc": [
+    "Good morning! How are you?",
+    "Hi there! How are you doing today?"
+   ],
+   "expects": [
+    "g_howareyou_answer",
+    "g_howareyou_bad",
+    "g_ok",
+    "order",
+    "reject"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, kaip sekasi (ir paklausti atgal)"
+   ],
+   "options": []
+  },
+  "order": {
+   "id": "order",
+   "kind": "step",
+   "npc": [
+    "Pretty good, thanks! What would you like?",
+    "Good to see you again! What would you like today?",
+    "Hello! So, what can I get for you?"
+   ],
+   "expects": [
+    "order",
+    "reject"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Užsisakyti kavos ar kito gėrimo",
+    "Užsisakyti ką nors užkąsti",
+    "Paklausti, ką jie turi ar ką rekomenduoja",
+    "Paklausti, kiek kainuoja"
+   ],
+   "options": [
+    "latte",
+    "cappuccino",
+    "americano",
+    "espresso",
+    "flat white",
+    "mocha",
+    "drip coffee",
+    "coffee",
+    "hot chocolate",
+    "tea",
+    "black tea",
+    "green tea",
+    "mint tea",
+    "chamomile tea",
+    "croissant",
+    "muffin",
+    "blueberry muffin",
+    "chocolate muffin",
+    "cinnamon roll",
+    "bagel",
+    "cookie",
+    "turkey sandwich"
+   ]
+  },
+  "size": {
+   "id": "size",
+   "kind": "step",
+   "npc": [
+    "Small, medium, or large?",
+    "Sounds good! Small, medium, or large?",
+    "Perfect. What size would you like?"
+   ],
+   "expects": [
+    "size_ans",
+    "order"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti dydį",
+    "Paklausti kainos"
+   ],
+   "options": [
+    "small",
+    "medium",
+    "large",
+    "latte",
+    "cappuccino",
+    "americano",
+    "espresso",
+    "flat white",
+    "mocha",
+    "drip coffee",
+    "coffee",
+    "hot chocolate",
+    "tea",
+    "black tea",
+    "green tea",
+    "mint tea",
+    "chamomile tea"
+   ]
+  },
+  "milk": {
+   "id": "milk",
+   "kind": "step",
+   "npc": [
+    "What kind of milk would you like?",
+    "Which milk? We have whole, skim, oat and almond."
+   ],
+   "expects": [
+    "milk_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti pieną (arba be pieno)"
+   ],
+   "options": [
+    "whole milk",
+    "skim milk",
+    "oat milk",
+    "almond milk",
+    "soy milk"
+   ]
+  },
+  "temp": {
+   "id": "temp",
+   "kind": "step",
+   "npc": [
+    "Hot or iced?",
+    "Perfect. Hot or iced?",
+    "Sure! Hot or iced today?"
+   ],
+   "expects": [
+    "temp_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Karštą ar su ledu"
+   ],
+   "options": [
+    "hot",
+    "iced"
+   ]
+  },
+  "more": {
+   "id": "more",
+   "kind": "step",
+   "npc": [
+    "Would you like anything to eat with that?",
+    "Great choice! Can I get you anything else?",
+    "Perfect. Can I get you anything else?"
+   ],
+   "expects": [
+    "more_no",
+    "order",
+    "more_yes",
+    "want_food"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad tai viskas",
+    "Užsisakyti dar ką nors"
+   ],
+   "options": [
+    "croissant",
+    "muffin",
+    "blueberry muffin",
+    "chocolate muffin",
+    "cinnamon roll",
+    "bagel",
+    "cookie",
+    "turkey sandwich"
+   ]
+  },
+  "dine": {
+   "id": "dine",
+   "kind": "step",
+   "npc": [
+    "Is that for here or to go?",
+    "For here or to go?",
+    "And is that for here or to go?"
+   ],
+   "expects": [
+    "dine_ans"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ar gersi čia, ar išsineši"
+   ],
+   "options": []
+  },
+  "name": {
+   "id": "name",
+   "kind": "step",
+   "npc": [
+    "Can I get a name for the order?",
+    "And what's the name for the order?"
+   ],
+   "expects": [
+    "name_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti savo vardą"
+   ],
+   "options": []
+  },
+  "pay": {
+   "id": "pay",
+   "kind": "step",
+   "npc": [
+    "Thanks! I'll write it on the cup. That'll be $4.75. Cash or card?",
+    "Thanks! I'll write it on the cup. That'll be $6.",
+    "Great, thanks! Great. That'll be $6."
+   ],
+   "expects": [
+    "pay_card",
+    "pay_cash",
+    "pay_phone",
+    "here_you_go",
+    "no_cash"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Susimokėti kortele, grynaisiais ar telefonu"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Sure, just tap your card here. Perfect, thanks! Great! Your drink will be ready in a minute. Have a great day!",
+    "Sure, just tap your card here. Thank you! Coming right up! It'll be ready at the end of the counter. Have a great day!",
+    "No problem. Great! Your drink will be ready in a minute. Have a great day!"
+   ],
+   "expects": [
+    "g_thanks",
+    "g_bye"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "receipt": {
+   "id": "receipt",
+   "kind": "step",
+   "npc": [
+    "Of course. Go ahead and tap here. Perfect, thanks! Do you need a receipt?",
+    "Sure, just tap your card here. Thank you! Do you need a receipt?",
+    "Sure, just tap your card here. Thank you! Would you like a receipt?"
+   ],
+   "expects": [
+    "no_receipt",
+    "no_receipt_ctx",
+    "want_receipt",
+    "receipt_yes_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti: taip arba ne"
+   ],
+   "options": []
+  },
+  "alt_milk": {
+   "id": "alt_milk",
+   "kind": "pending",
+   "npc": [
+    "Oh, sorry, we're out of oat milk today. Would almond or soy milk be okay?"
+   ],
+   "expects": [
+    "milk_ans",
+    "order",
+    "reject"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasirinkti kitą pieną"
+   ],
+   "options": [
+    "almond milk",
+    "soy milk",
+    "whole milk"
+   ]
+  },
+  "kind": {
+   "id": "kind",
+   "kind": "step",
+   "npc": [
+    "What kind of coffee? We have lattes, cappuccinos, americanos and drip coffee.",
+    "Sure! What kind of coffee would you like?",
+    "Sure! What kind of coffee would you like? We have lattes, cappuccinos, americanos and drip coffee."
+   ],
+   "expects": [
+    "order"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti rūšį"
+   ],
+   "options": [
+    "latte",
+    "cappuccino",
+    "americano",
+    "drip coffee",
+    "black tea",
+    "green tea",
+    "mint tea",
+    "chamomile tea",
+    "blueberry muffin",
+    "chocolate muffin"
+   ]
+  },
+  "whole_ok": {
+   "id": "whole_ok",
+   "kind": "pending",
+   "npc": [
+    "Is whole milk okay?"
+   ],
+   "expects": [
+    "milk_ans"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti arba pasirinkti kitą pieną"
+   ],
+   "options": [
+    "whole milk",
+    "skim milk",
+    "oat milk",
+    "almond milk",
+    "soy milk"
+   ]
+  }
+ },
+ "intents": [
+  "order",
+  "size_ans",
+  "milk_ans",
+  "temp_ans",
+  "dine_ans",
+  "more_no",
+  "more_yes",
+  "pay_card",
+  "no_cash",
+  "pay_cash",
+  "pay_phone",
+  "here_you_go",
+  "keep_change",
+  "ask_price",
+  "ask_menu",
+  "ask_recommend",
+  "want_food",
+  "ask_have",
+  "ask_have_unknown",
+  "ask_wifi",
+  "ask_restroom",
+  "ask_water",
+  "ask_sugar",
+  "change",
+  "reject",
+  "correction",
+  "order_unknown",
+  "order_partial",
+  "name_ctx",
+  "no_receipt",
+  "no_receipt_ctx",
+  "receipt_yes_ctx",
+  "want_receipt",
+  "togo_bag"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

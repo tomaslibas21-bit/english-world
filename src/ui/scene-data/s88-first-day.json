@@ -1,0 +1,19 @@
+{
+  "npc": "Maria, coworker",
+  "images": ["hello", "desk", "tour", "coffee", "task", "lunch"],
+  "start": "hello",
+  "phases": {
+    "hello": "hello", "name": "hello", "meet": "hello",
+    "desk": "desk",
+    "tour": "tour",
+    "coffee": "coffee", "coffee_show": "coffee", "mug": "coffee",
+    "task": "task",
+    "lunch": "lunch", "day": "lunch", "closing": "lunch"
+  },
+  "focus": [36, 30],
+  "jobs": {
+    "hello": "07a02a19-11b4-49c1-9917-6be23fec879e", "desk": "ff822208-21f7-48a2-b578-f213f4408e93",
+    "tour": "4d73ebfe-7e5d-4866-a63b-0801ff451de8", "coffee": "f557c572-646e-420e-815c-c844e7424c81",
+    "task": "28da5225-4841-4fed-af0e-145121670922", "lunch": "ef4ba305-8845-4151-a847-2dc79a23bdb3"
+  }
+}

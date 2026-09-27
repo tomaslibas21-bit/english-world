@@ -1,0 +1,40 @@
+{
+  "npc": "Rita, neighbor",
+  "images": [
+    "hello",
+    "package",
+    "chat",
+    "trash",
+    "needs",
+    "coffee"
+  ],
+  "start": "hello",
+  "phases": {
+    "intro": "hello",
+    "name": "hello",
+    "howareyou": "hello",
+    "pkg": "package",
+    "from_q": "chat",
+    "complaint": "chat",
+    "like_q": "trash",
+    "trash_q": "needs",
+    "needs": "needs",
+    "away_when": "needs",
+    "coffee": "coffee",
+    "coffee_sunday": "coffee",
+    "coffee_time": "coffee",
+    "closing": "hello"
+  },
+  "focus": [
+    29,
+    30
+  ],
+  "jobs": {
+    "hello": "a9165241-8531-4d40-b6ab-30d425034a2e",
+    "chat": "6fe6eaa4-aa39-4d2c-9389-35aa405e59eb",
+    "trash": "8c08df3b-210c-4869-ad4e-fe859ec96f4e",
+    "needs": "37c72338-34d5-4741-a0d7-373fb90266e8",
+    "coffee": "e1feb1e3-0fdb-4a36-bbd8-14df69dfe6cf",
+    "package": "9be10875-4940-481e-b37c-8da90776b93d"
+  }
+}

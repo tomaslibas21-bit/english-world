@@ -1,0 +1,295 @@
+{
+ "situation": "s91a-lost-wallet",
+ "title": "Can You Help Me, Please?",
+ "goal": "Paprašyk pagalbos: pametei piniginę.",
+ "contexts": {
+  "problem": {
+   "id": "problem",
+   "kind": "step",
+   "npc": [
+    "Hello there! Aren't these tulips lovely?",
+    "Good morning! Can I help you with anything?",
+    "Hi! Are you okay? You look worried."
+   ],
+   "expects": [
+    "help_req",
+    "lost",
+    "not_lost"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Paprašyti pagalbos ir pasakyti, ką pametei"
+   ],
+   "options": [
+    "wallet",
+    "phone",
+    "bag",
+    "backpack"
+   ]
+  },
+  "what_happened": {
+   "id": "what_happened",
+   "kind": "pending",
+   "npc": [
+    "Of course, dear. What's wrong?",
+    "Sure! What happened?"
+   ],
+   "expects": [
+    "lost",
+    "not_lost",
+    "help_req"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, ką pametei"
+   ],
+   "options": [
+    "wallet",
+    "phone",
+    "bag",
+    "backpack"
+   ]
+  },
+  "last_seen": {
+   "id": "last_seen",
+   "kind": "step",
+   "npc": [
+    "Oh, dear! Don't panic. Okay, let's think. When did you last see it?",
+    "Oh, dear! Don't panic. Where did you last have it?",
+    "Oh no! Okay, stay calm. Okay, let's think. When did you last see it?"
+   ],
+   "expects": [
+    "last_seen",
+    "place_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kur ir kada paskutinį kartą ją turėjai"
+   ],
+   "options": [
+    "café",
+    "bakery",
+    "fruit stand",
+    "market",
+    "bank",
+    "ATM",
+    "pharmacy",
+    "post office",
+    "supermarket",
+    "museum",
+    "restaurant",
+    "park",
+    "bench",
+    "fountain",
+    "station",
+    "bus",
+    "taxi"
+   ]
+  },
+  "describe": {
+   "id": "describe",
+   "kind": "step",
+   "npc": [
+    "Then go back to the café and ask. Maybe it's still there. What does it look like? I'll keep an eye out.",
+    "Then go back to the café and ask. Maybe someone found it. What does it look like, in case someone brings it here?",
+    "Then go back to the café and ask. Maybe it's still there. What does it look like, in case someone brings it here?"
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Apibūdinti, kaip ji atrodo"
+   ],
+   "options": []
+  },
+  "police": {
+   "id": "police",
+   "kind": "step",
+   "npc": [
+    "Okay, a small brown leather wallet. Got it. And if it's not there, go to the police station. Do you know where it is?",
+    "Okay, a small brown leather wallet. I'll remember that. And if it's not there, go to the police station. Do you know where it is?",
+    "No, 911 is only for emergencies. Like a fire or a car accident. For a lost wallet, just go to the police station. And if it's not there, go to the police station. Do you know where it is?"
+   ],
+   "expects": [
+    "police_where",
+    "police_known",
+    "map"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar žinai, kur policija",
+    "Paklausti kelio"
+   ],
+   "options": []
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "It's just around the corner. Go down this street, and it's on the left. Good luck! I hope you find it.",
+    "Oh, I'm so glad! Take care, dear! Enjoy the rest of your day.",
+    "It's just around the corner. Go straight down this street. It's on the left. Good luck, dear!"
+   ],
+   "expects": [
+    "g_thanks",
+    "thanks_kind",
+    "hope_so",
+    "g_bye",
+    "g_ok",
+    "g_howareyou"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti ir atsisveikinti"
+   ],
+   "options": []
+  },
+  "found": {
+   "id": "found",
+   "kind": "step",
+   "npc": [
+    "Okay, a small brown leather wallet. Got it. Oh, wait! This little boy found a small brown leather wallet by the fountain! Is it yours?",
+    "Okay, a small brown leather wallet. I'll remember that. Oh, wait! This little boy found a small brown leather wallet by the fountain! Is it yours?",
+    "No, 911 is only for emergencies. Like a fire or a car accident. For a lost wallet, just go to the police station. Oh, wait! This little boy found a wallet by the fountain! Is it yours?"
+   ],
+   "expects": [
+    "its_mine",
+    "not_mine"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar tai tavo"
+   ],
+   "options": []
+  },
+  "all_there": {
+   "id": "all_there",
+   "kind": "step",
+   "npc": [
+    "Oh, wonderful! Is everything still there?"
+   ],
+   "expects": [
+    "all_there",
+    "some_missing"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, ar viskas vietoje"
+   ],
+   "options": []
+  },
+  "advice": {
+   "id": "advice",
+   "kind": "step",
+   "npc": [
+    "Then go back to the café and ask. Maybe someone found it.",
+    "Then go back to the café and ask. Maybe it's still there.",
+    "Then go back to the bakery and ask. Maybe someone found it."
+   ],
+   "expects": [],
+   "yesNo": false,
+   "suggest": [
+    "Paklausti, kur policija",
+    "Paklausti apie 911 ar korteles"
+   ],
+   "options": []
+  },
+  "pockets": {
+   "id": "pockets",
+   "kind": "pending",
+   "npc": [
+    "Oh, dear! Don't panic. Did you check all your pockets?",
+    "Oh no! Don't worry, we'll figure it out. Did you check all your pockets?",
+    "Oh no! Okay, stay calm. Did you check all your pockets?"
+   ],
+   "expects": [
+    "checked",
+    "last_seen",
+    "place_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar patikrinai kišenes"
+   ],
+   "options": []
+  },
+  "where_then": {
+   "id": "where_then",
+   "kind": "step",
+   "npc": [
+    "And where were you then?"
+   ],
+   "expects": [
+    "last_seen",
+    "place_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasakyti, kur buvai"
+   ],
+   "options": [
+    "café",
+    "bakery",
+    "fruit stand",
+    "market",
+    "bank",
+    "ATM",
+    "pharmacy",
+    "post office",
+    "supermarket",
+    "museum",
+    "restaurant",
+    "park",
+    "bench",
+    "fountain",
+    "station",
+    "bus",
+    "taxi"
+   ]
+  }
+ },
+ "intents": [
+  "help_req",
+  "lost",
+  "not_lost",
+  "last_seen",
+  "place_ctx",
+  "describe",
+  "police_where",
+  "police_known",
+  "map",
+  "far",
+  "how_get",
+  "call911",
+  "emergency_number",
+  "cancel_cards",
+  "what_do",
+  "will_go_back",
+  "hope_so",
+  "checked",
+  "its_mine",
+  "not_mine",
+  "all_there",
+  "some_missing",
+  "thanks_kind",
+  "flowers"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_bye",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

@@ -1,0 +1,43 @@
+{
+  "npc": "Walter, ticket office",
+  "images": [
+    "greet",
+    "trip",
+    "class",
+    "pay",
+    "ticket",
+    "late",
+    "track"
+  ],
+  "start": "greet",
+  "done": "track",
+  "phases": {
+    "howareyou": "greet",
+    "dest": "greet",
+    "count": "greet",
+    "trip": "trip",
+    "ret": "trip",
+    "travel_day": "trip",
+    "cls": "class",
+    "discount": "class",
+    "pay": "pay",
+    "student_id": "pay",
+    "ticket": "ticket",
+    "delay": "late",
+    "info": "track",
+    "closing": "track"
+  },
+  "focus": [
+    26,
+    33
+  ],
+  "jobs": {
+    "greet": "14b236f1-dfab-4155-94a2-377ed2cda9b8",
+    "trip": "043b7f9b-fc1b-44c6-b536-f2ce8006b729",
+    "class": "b12746d2-5599-4503-b49f-dc2b5b74f6d2",
+    "pay": "97cce6b6-3d0b-4b9e-a1b3-e967e6e3daf2",
+    "ticket": "40a1e6be-09b5-44af-9613-1b1d8c7369e7",
+    "track": "10c39f2a-6419-48ee-a168-35c25ef18ba9",
+    "late": "43a41b1c-1857-44dc-9a3e-2762a999438a"
+  }
+}

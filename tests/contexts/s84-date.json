@@ -1,0 +1,524 @@
+{
+ "situation": "s84-date",
+ "title": "Can I See You Again?",
+ "goal": "Pasikalbėk per pirmąjį pasimatymą ir susitarkite susitikti dar kartą.",
+ "contexts": {
+  "greet_early": {
+   "id": "greet_early",
+   "kind": "step",
+   "npc": [
+    "Hi! There you are! Wow, you look great!",
+    "Hey, you're here! You look amazing."
+   ],
+   "expects": [
+    "greet_back",
+    "compliment",
+    "sorry_late",
+    "reassure",
+    "you_too",
+    "intro_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti už komplimentą",
+    "Pagirti"
+   ],
+   "options": []
+  },
+  "job": {
+   "id": "job",
+   "kind": "step",
+   "npc": [
+    "So, tell me about yourself. What do you do?",
+    "So, what do you do?",
+    "Nice! So, what do you do?"
+   ],
+   "expects": [
+    "job_ans",
+    "job_ctx",
+    "no_job",
+    "ask_job",
+    "and_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti apie savo darbą",
+    "Paklausti to paties"
+   ],
+   "options": []
+  },
+  "travel": {
+   "id": "travel",
+   "kind": "step",
+   "npc": [
+    "Oh, cool! I'm a photographer. I mostly do weddings. Have you ever been to France?",
+    "Wow, that's great! I'm a photographer. I mostly do weddings. Have you ever been to Italy?",
+    "That sounds interesting! I'm a photographer. I mostly do weddings. Have you ever been to Italy?"
+   ],
+   "expects": [
+    "travel_yes_ctx",
+    "travel_no_ctx",
+    "ask_travel",
+    "ask_travel_general",
+    "and_you"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar esi ten buvęs(-usi)",
+    "Paklausti to paties"
+   ],
+   "options": []
+  },
+  "check": {
+   "id": "check",
+   "kind": "step",
+   "npc": [
+    "Oh, you have to go! France is beautiful. Oh, here's the check.",
+    "No way, I love cooking too! Oh, here's the check.",
+    "Me too! I love jazz. Oh, here's the check."
+   ],
+   "expects": [
+    "pay_all",
+    "split",
+    "accept_offer"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasiūlyti sumokėti arba pasidalinti"
+   ],
+   "options": []
+  },
+  "nice": {
+   "id": "nice",
+   "kind": "step",
+   "npc": [
+    "Sounds fair! I had a really nice time tonight.",
+    "Aw, you're so sweet! I had a really nice time tonight.",
+    "Deal! I had a really nice time tonight."
+   ],
+   "expects": [
+    "nice_time",
+    "thanks_evening",
+    "me_too_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad ir tau buvo smagu",
+    "Paklausti, ar galite vėl susitikti"
+   ],
+   "options": [
+    "get coffee",
+    "have dinner",
+    "see a movie",
+    "go to the beach",
+    "go to the museum",
+    "go dancing"
+   ]
+  },
+  "again": {
+   "id": "again",
+   "kind": "step",
+   "npc": [
+    "I'm so glad. So... can I see you again?",
+    "Perfect, two glasses of white, then! So... can I see you again?",
+    "Too late, it's done! So... can I see you again?"
+   ],
+   "expects": [
+    "agree_again",
+    "decline_again",
+    "see_again",
+    "propose_day",
+    "me_too_ctx",
+    "hesitate"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti susitikti vėl",
+    "Pasiūlyti, ką veiksite"
+   ],
+   "options": [
+    "get coffee",
+    "have dinner",
+    "see a movie",
+    "go to the beach",
+    "go to the museum",
+    "go dancing"
+   ]
+  },
+  "day": {
+   "id": "day",
+   "kind": "step",
+   "npc": [
+    "Yay! Great! How about Saturday? Are you free?",
+    "Yay! Great! Are you free on Saturday?",
+    "I'd like that. I'd really like that. How about Saturday? Are you free?"
+   ],
+   "expects": [
+    "propose_day",
+    "agree_again",
+    "decline_again",
+    "day_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Sutikti dėl dienos",
+    "Pasiūlyti kitą dieną ar veiklą"
+   ],
+   "options": [
+    "get coffee",
+    "have dinner",
+    "see a movie",
+    "go to the beach",
+    "go to the museum",
+    "go dancing"
+   ]
+  },
+  "closing": {
+   "id": "closing",
+   "kind": "pending",
+   "npc": [
+    "Great! It's a date! Text me when you get home, okay?",
+    "Perfect! It's a date! Text me when you get home, okay?",
+    "I'd love that. Great, Sunday works for me! It's a date! Text me when you get home, okay?"
+   ],
+   "expects": [
+    "text_reply",
+    "voc",
+    "greet_back",
+    "sorry_late",
+    "reassure",
+    "compliment",
+    "you_too",
+    "view",
+    "come_here_often",
+    "drink_ans",
+    "same_drink_ans",
+    "no_alcohol",
+    "ask_drink",
+    "job_ans",
+    "no_job",
+    "ask_job",
+    "hobby_ans",
+    "no_hobby",
+    "ask_hobby",
+    "ask_travel",
+    "ask_travel_general",
+    "music_ans",
+    "no_music",
+    "ask_music",
+    "and_you",
+    "pay_all",
+    "split",
+    "accept_offer",
+    "ask_check",
+    "nice_time",
+    "thanks_evening",
+    "see_again",
+    "propose_day",
+    "agree_again",
+    "thanks_compliment",
+    "decline_again",
+    "walk_home",
+    "offer_jacket",
+    "hesitate",
+    "no_sorry",
+    "agree",
+    "g_bye",
+    "g_thanks",
+    "g_ok",
+    "g_hello",
+    "g_howareyou_answer",
+    "g_sorry"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsisveikinti"
+   ],
+   "options": []
+  },
+  "greet_meet": {
+   "id": "greet_meet",
+   "kind": "step",
+   "npc": [
+    "Hi! Finally! It's great to meet you.",
+    "Hi! It's so nice to meet you in person!"
+   ],
+   "expects": [
+    "greet_back",
+    "compliment",
+    "sorry_late",
+    "reassure",
+    "you_too",
+    "intro_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasisveikinti",
+    "Pagirti"
+   ],
+   "options": []
+  },
+  "hobby": {
+   "id": "hobby",
+   "kind": "step",
+   "npc": [
+    "Oh, cool! I'm a photographer. I mostly do weddings. What do you do for fun?",
+    "That sounds interesting! I'm a photographer. I mostly do weddings. So, what are your hobbies?",
+    "So, what are your hobbies?"
+   ],
+   "expects": [
+    "hobby_ans",
+    "no_hobby",
+    "ask_hobby",
+    "and_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti apie pomėgius",
+    "Paklausti to paties"
+   ],
+   "options": [
+    "cooking",
+    "baking",
+    "traveling",
+    "hiking",
+    "reading",
+    "walking",
+    "go dancing",
+    "swimming",
+    "running",
+    "cycling",
+    "yoga",
+    "photography",
+    "painting",
+    "gardening",
+    "fishing",
+    "singing",
+    "playing the guitar",
+    "movies",
+    "soccer",
+    "basketball",
+    "tennis",
+    "working out"
+   ]
+  },
+  "check_offer": {
+   "id": "check_offer",
+   "kind": "step",
+   "npc": [
+    "No way, I love cooking too! Oh, here's the check. Let me get this.",
+    "Oh, you have to go! Italy is beautiful. Oh, here's the check. Let me get this.",
+    "Me too! I love jazz. Oh, here's the check. Let me get this."
+   ],
+   "expects": [
+    "accept_offer",
+    "split",
+    "pay_all"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Padėkoti arba pasiūlyti pasidalinti"
+   ],
+   "options": []
+  },
+  "cold": {
+   "id": "cold",
+   "kind": "step",
+   "npc": [
+    "Deal! Brr, it's getting cold.",
+    "Sounds fair! Brr, it's getting cold.",
+    "Okay, if you insist! Thank you! Brr, it's getting cold."
+   ],
+   "expects": [
+    "offer_jacket"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasiūlyti savo švarką"
+   ],
+   "options": []
+  },
+  "drinks": {
+   "id": "drinks",
+   "kind": "step",
+   "npc": [
+    "Should we get some drinks?",
+    "So, what would you like to drink?",
+    "I think I'll have a glass of white wine. And you?"
+   ],
+   "expects": [
+    "drink_ans",
+    "same_drink_ans",
+    "no_alcohol",
+    "ask_drink",
+    "me_too_ctx"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Pasirinkti gėrimą"
+   ],
+   "options": [
+    "white wine",
+    "red wine",
+    "beer",
+    "sparkling water",
+    "water",
+    "lemonade",
+    "iced tea",
+    "get coffee",
+    "tea",
+    "cocktail"
+   ]
+  },
+  "music": {
+   "id": "music",
+   "kind": "step",
+   "npc": [
+    "Oh, cool! I'm a photographer. I mostly do weddings. What kind of music do you like?",
+    "Oh, cool! I'm a photographer. I mostly do weddings. What music do you like?",
+    "Oh, you have to go! France is beautiful. What kind of music do you like?"
+   ],
+   "expects": [
+    "music_ans",
+    "no_music",
+    "ask_music",
+    "and_you"
+   ],
+   "yesNo": false,
+   "suggest": [
+    "Papasakoti, kokią muziką mėgsti",
+    "Paklausti to paties"
+   ],
+   "options": [
+    "jazz",
+    "rock",
+    "pop",
+    "country",
+    "classical music",
+    "hip-hop",
+    "disco",
+    "blues",
+    "folk music",
+    "electronic music"
+   ]
+  },
+  "greet_late": {
+   "id": "greet_late",
+   "kind": "step",
+   "npc": [
+    "Hey! So sorry I'm late! Parking was a nightmare.",
+    "Hi! Sorry I'm late! I turned left instead of right!"
+   ],
+   "expects": [
+    "greet_back",
+    "compliment",
+    "sorry_late",
+    "reassure",
+    "you_too",
+    "intro_ctx"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Pasakyti, kad nieko tokio",
+    "Pagirti"
+   ],
+   "options": []
+  },
+  "like_job": {
+   "id": "like_job",
+   "kind": "pending",
+   "npc": [
+    "Oh, cool! Do you like it? I'm a photographer. I mostly do weddings.",
+    "That sounds interesting! Do you like it? I'm a photographer. I mostly do weddings."
+   ],
+   "expects": [
+    "like_it_ctx",
+    "dislike_it_ctx",
+    "no_sorry",
+    "g_ok",
+    "agree",
+    "and_you",
+    "job_ans",
+    "job_ctx",
+    "no_job",
+    "ask_job"
+   ],
+   "yesNo": true,
+   "suggest": [
+    "Atsakyti, ar patinka darbas"
+   ],
+   "options": []
+  }
+ },
+ "intents": [
+  "voc",
+  "intro_ctx",
+  "greet_back",
+  "sorry_late",
+  "reassure",
+  "compliment",
+  "you_too",
+  "view",
+  "come_here_often",
+  "drink_ans",
+  "same_drink_ans",
+  "me_too_ctx",
+  "no_alcohol",
+  "ask_drink",
+  "job_ans",
+  "job_ctx",
+  "no_job",
+  "ask_job",
+  "hobby_ans",
+  "no_hobby",
+  "ask_hobby",
+  "travel_yes_ctx",
+  "travel_no_ctx",
+  "ask_travel",
+  "ask_travel_general",
+  "music_ans",
+  "no_music",
+  "ask_music",
+  "and_you",
+  "like_it_ctx",
+  "dislike_it_ctx",
+  "qf_ctx",
+  "pay_all",
+  "split",
+  "accept_offer",
+  "ask_check",
+  "nice_time",
+  "thanks_evening",
+  "see_again",
+  "propose_day",
+  "agree_again",
+  "day_ctx",
+  "thanks_compliment",
+  "decline_again",
+  "walk_home",
+  "offer_jacket",
+  "text_reply",
+  "hesitate",
+  "no_sorry",
+  "agree",
+  "g_bye"
+ ],
+ "globalIntents": [
+  "g_repeat",
+  "g_slower",
+  "g_dont_understand",
+  "g_spell",
+  "g_write",
+  "g_meaning",
+  "g_learning",
+  "g_thanks",
+  "g_hello",
+  "g_howareyou",
+  "g_howareyou_answer",
+  "g_howareyou_bad",
+  "g_wait",
+  "g_sorry",
+  "g_dontknow",
+  "g_ok"
+ ]
+}

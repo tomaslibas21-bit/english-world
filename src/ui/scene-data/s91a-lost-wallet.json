@@ -1,0 +1,20 @@
+{
+  "npc": "Mrs. Lee, flower stall",
+  "images": ["greet", "worried", "police", "found", "bye"],
+  "start": "greet",
+  "phases": {
+    "problem": "greet", "what_happened": "greet",
+    "pockets": "worried", "last_seen": "worried", "where_then": "worried", "advice": "worried", "describe": "worried",
+    "police": "police",
+    "found": "found", "all_there": "found",
+    "closing": "bye"
+  },
+  "focus": [30, 34],
+  "jobs": {
+    "greet": "6c6093ba-74ea-4dcc-9d90-954791507d6d",
+    "worried": "d5895c32-4ac0-44a4-bd61-5c3bc6222915",
+    "police": "455bb1f7-6239-4bdd-bff6-0533a93880d9",
+    "found": "94314d81-f086-41bf-8c24-a4b69e983d10",
+    "bye": "35c630e9-430a-47b5-bd00-4b7b60d2f220"
+  }
+}
