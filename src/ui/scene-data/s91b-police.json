@@ -6,12 +6,13 @@
     "describe",
     "contents",
     "name",
-    "report"
+    "report",
+    "found"
   ],
   "start": "greet",
   "phases": {
     "report": "greet",
-    "found": "greet",
+    "found": "found",
     "what_item": "notes",
     "stolen_q": "notes",
     "happened": "notes",
