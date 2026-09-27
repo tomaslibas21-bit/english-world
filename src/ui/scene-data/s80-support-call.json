@@ -1,0 +1,31 @@
+{
+  "npc": "Claire, NetWave customer service (phone call)",
+  "images": [
+    "menu",
+    "hello",
+    "problem",
+    "router",
+    "technician"
+  ],
+  "start": "menu",
+  "phases": {
+    "menu": "menu",
+    "name": "hello",
+    "account": "hello",
+    "someone": "hello",
+    "problem": "problem",
+    "problem_bill": "problem",
+    "since": "problem",
+    "lights": "router",
+    "restart": "router",
+    "restart_now": "router",
+    "still_red": "router",
+    "tech": "technician",
+    "more": "technician",
+    "closing": "technician"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
