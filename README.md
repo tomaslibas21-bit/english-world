@@ -40,10 +40,10 @@ The first `npm run audio` downloads the Kokoro-82M ONNX model (about 320 MB) fro
 
 ## Hosting
 
-The build is a static site: about 5 MB of code, 18 MB of scene pictures (WebP) and about 225 MB of voice clips (about 21,200 files in `audio/`). No server is needed.
+The build is a static site: about 5 MB of code, 22 MB of scene pictures (WebP) and about 190 MB of voice clips (about 21,500 files in `audio/`). No server is needed.
 
 - **GitHub Pages (live).** The game is published at https://tomaslibas21-bit.github.io/english-world/ from the public repository `tomaslibas21-bit/english-world`. `.github/workflows/deploy.yml` builds the site with Node 22 on every push to `main` and publishes it in about a minute; the base path comes from the repository name. The steps, in Lithuanian, are in `docs/HOSTING.md`.
-- **Inside English Master (planned).** Publish the built game as a section of the fluent-steps site (`/zaidimas`), so that it shares the site's origin and word cards. Serve the voice clips from Cloudflare R2: at about 21,000 files they exceed the 20,000-file limit of a Cloudflare Workers deploy.
+- **Inside English Master (planned).** Publish the built game as a section of the fluent-steps site (`/zaidimas`), so that it shares the site's origin and word cards. Serve the voice clips from Cloudflare R2: at about 21,500 files they exceed the 20,000-file limit of a Cloudflare Workers deploy.
 - **As a section of another site** (e.g. `https://your-site/game/`):
 
   ```bash
@@ -79,7 +79,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 ## Looks
 
 - **World styles.** Settings → *Pasaulio stilius*: **Kaladėlės** (the original block look, the default), **Animacija** (bright cartoon with outlines and big round heads), **Iliustracija** (the teal, orange and cream palette of the illustrated scenes) and **Tikroviškas** (natural proportions, realistic materials and reflections). All four are built in code. Adding `?style=toon`, `storybook`, `realistic` or `blocks` to the address tries a style in that tab only. Code: `src/game/style.ts`, `styleScene.ts`, `world/styled.ts`, `characters/`.
-- **Illustrated scenes.** In 36 of the 41 conversations, calls included, the game shows one picture per phase instead of the 3D view (225 WebP pictures in `public/scenes/`, about 18 MB; full-quality originals are kept locally in `.art-originals/`, which isn't published). Settings → *Iliustruotos scenos* turns this off. See `docs/SCENE-ART.md`; `npx tsx tools/scene-walk.ts` checks every scene against the simulated conversations. The five newest conversations (songs 31–35) show the 3D view until their pictures arrive; the brief is in `docs/PICTURES-WANTED.md`.
+- **Illustrated scenes.** In all 41 conversations, calls included, the game shows one picture per phase instead of the 3D view (265 WebP pictures in `public/scenes/`, about 22 MB; full-quality originals are kept locally in `.art-originals/`, which isn't published). Settings → *Iliustruotos scenos* turns this off. See `docs/SCENE-ART.md`; `npx tsx tools/scene-walk.ts` checks every scene against the simulated conversations.
 - **Icons.** Hand-drawn SVG icons (`src/ui/icons.tsx`), with no emoji anywhere in the interface.
 
 ## Learning features
@@ -123,7 +123,7 @@ So recognition needs an internet connection in most browsers. Audio sent to Goog
 - **Lithuanian translations and glosses:** written with AI assistance following TOMAS-INTERLINEAR-v2 and LIBRARY-MINIMUM-UNIT-v3. They still need a native-speaker review (see "Known limitations").
 - **Fonts:** Nunito, EB Garamond and Gentium Book Plus (SIL Open Font License), bundled through @fontsource.
 - **3D:** everything is procedural (Three.js geometry), so there are no third-party models.
-- **Scene illustrations** (`public/scenes/`): generated for this game with Nano Banana Pro through Higgsfield (see `docs/SCENE-ART.md`), and with ChatGPT for the calls and a few extras (see `docs/PICTURES-WANTED.md`). Any text in them was specified word for word and checked.
+- **Scene illustrations** (`public/scenes/`): generated for this game with Nano Banana Pro through Higgsfield (see `docs/SCENE-ART.md`), and with ChatGPT for the calls, a few extras and the five conversations of songs 31–35 (see `docs/PICTURES-WANTED.md`). Any text in them was specified word for word and checked.
 
 ## Testing status
 

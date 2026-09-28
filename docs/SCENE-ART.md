@@ -91,10 +91,15 @@ Model: Higgsfield `nano_banana_pro` (Nano Banana Pro), `aspect_ratio: "16:9"`, `
 
 ## Status
 
-**36 of the 41 situations have pictures:** 225 pictures in 37 scenes, for all 31 face-to-face situations of songs 62–91 and the 5 phone and video calls. The date has two scenes, one for Emma and one for Sam. The five newest situations, for songs 31–35, are waiting for theirs: the brief is in [`PICTURES-WANTED.md`](PICTURES-WANTED.md). Until then they show the 3D view.
+**All 41 situations have pictures:** 265 pictures in 42 scenes, for every face-to-face situation and the 5 phone and video calls. The date has two scenes, one for Emma and one for Sam.
 
 | Scene | Person | Pictures | Names |
 |---|---|---|---|
+| s31-doctor | Dr. Carter | 8 | greet · listen · sleeve · breath · ah · hurt · rx · bye |
+| s32-supermarket | Marcus, the self-checkout | 8 | greet · rewards · price · bags · pay · receipt · id · sco |
+| s33-small-talk | Frank | 6 | greet · weather · chat · rain · late · bye (rain is sticky) |
+| s34-meeting | Kate, Paul, Sara on the screen | 6 | mute · update · clarify · opinion · owner · wrap |
+| s35-gym | Jordan | 12 | welcome · form · lockers · warmup · machine · sets · rep · spot · breath · careful · stretch · next |
 | s62-visitor-center | Chuck | 5 | greet · map · route · cafe · bye |
 | s63-party | Sophie | 7 | welcome · drink · chat · me · ask · numbers · bye |
 | s64a-checkin | Kevin | 6 | greet · passport · bags · overweight · seat · bp |
@@ -142,4 +147,4 @@ Model: Higgsfield `nano_banana_pro` (Nano Banana Pro), `aspect_ratio: "16:9"`, `
   - A rare branch shares a picture: a burger order gets the "wrong dish" burger.
   - A few people are framed full-length rather than waist up: Rita, Mr. Patel, and Vinnie at the taxi stand.
 
-**Still wanted:** the pictures for s31–s35, with ready scene files, are in [`PICTURES-WANTED.md`](PICTURES-WANTED.md).
+**Songs 31–35 (28 Sep 2026):** ChatGPT made the 40 pictures of s31–s35 from [`PICTURES-WANTED.md`](PICTURES-WANTED.md), one commit per scene. They were checked for style, the people's looks, the text (the lane number, the self-checkout screen and the gym's price board) and `tools/scene-walk.ts`. One compromise: the bus stop (s33) has a sunny sky, although the brief asked for a soft, partly cloudy one that fits every weather Frank talks about.

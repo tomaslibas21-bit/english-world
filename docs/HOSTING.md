@@ -114,5 +114,5 @@ Kalbos atpažinimas (mikrofonas) naršyklėse veikia tik saugiuose puslapiuose, 
   ```
 
   Pages įjungiamas tik po pirmo push, nes tuščioje saugykloje GitHub jo gali neleisti įjungti. Todėl automatinis paleidimas po pirmo push gali nepavykti žingsnyje „Set up Pages“. Tai nieko blogo: rankinis paleidimas po to paskelbia svetainę.
-- **Dydis:** saugykloje apie 260 MB ir 21 700 failų, iš jų apie 21 200 MP3 failų (apie 225 MB) ir 225 WebP paveikslėliai (18 MB). Didžiausias failas yra `tools/data/cmudict.json` (4,5 MB). GitHub neleidžia failų, didesnių nei 100 MB (įspėja nuo 50 MB), ir rekomenduoja saugyklą iki 1 GB, todėl Git LFS nereikia. `.gitignore` neleidžia įkelti `node_modules/` ir `dist/`.
+- **Dydis:** saugykloje apie 220 MB ir 22 100 failų, iš jų apie 21 500 MP3 failų (apie 190 MB) ir 265 WebP paveikslėliai (22 MB). Didžiausias failas yra `tools/data/cmudict.json` (4,5 MB). GitHub neleidžia failų, didesnių nei 100 MB (įspėja nuo 50 MB), ir rekomenduoja saugyklą iki 1 GB, todėl Git LFS nereikia. `.gitignore` neleidžia įkelti `node_modules/` ir `dist/`.
 - **Jei push nepavyksta:** klaidą `RPC failed; HTTP 400` dažniausiai išsprendžia `git config http.postBuffer 524288000` ir pakartotas push. Jei push atmetamas dėl `workflow` teisės, reikia paleisti `gh auth refresh -s workflow`.

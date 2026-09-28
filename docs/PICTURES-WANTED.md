@@ -4,7 +4,9 @@
 - Live game: https://tomaslibas21-bit.github.io/english-world/
 - Code: https://github.com/tomaslibas21-bit/english-world
 
-During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel. 225 pictures exist for 36 of the 41 conversations. This brief lists the pictures still wanted: the **five new conversations for songs 31–35** (the doctor, the supermarket, small talk at the bus stop, a work meeting and the gym), 40 pictures in total. Adding the files below is enough, with no code changes.
+During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel.
+
+**Status (28 Sep 2026): nothing is wanted right now.** All 41 conversations have their pictures (265 in total). The 40 pictures for songs 31–35 below were made by ChatGPT from this brief. The sections stay as a record and as a template for the next brief: a new conversation gets a section like these, with a ready scene file.
 
 ## Where to look
 
@@ -42,7 +44,7 @@ During a conversation, the game shows **one illustrated picture per phase** of t
   - Commit as `tomaslibas21-bit <299487494+tomaslibas21-bit@users.noreply.github.com>` (set `git config user.name` and `user.email` in your copy of the repository), so that no personal name or email address appears in the public history.
   - After pushing, check the scene in the live game: https://tomaslibas21-bit.github.io/english-world/ → "Visos situacijos" → the conversation.
 
-## The five new conversations (40 pictures)
+## Done: the five conversations of songs 31–35 (40 pictures, 28 Sep 2026)
 
 ### s31-doctor: Dr. Carter, family doctor (8 pictures)
 
