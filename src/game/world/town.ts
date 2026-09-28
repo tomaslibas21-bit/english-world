@@ -41,10 +41,10 @@ export function buildTown(): Town {
   group.add(ground);
 
   // outer grass beyond the playable area + hills
-  const outer = new THREE.Mesh(new THREE.PlaneGeometry(900, STYLED ? 640 : 700), mat("#7fb85e"));
+  const outer = new THREE.Mesh(new THREE.PlaneGeometry(900, 640), mat("#7fb85e"));
   outer.rotation.x = -Math.PI / 2;
-  // (trial styles: the outer grass stops at the shore, so the sea near the beach is not hidden under it)
-  outer.position.set(35, -0.05, STYLED ? SEA_Z + 1 + 320 : 200);
+  // the outer grass stops at the shore, so the sea near the beach is not hidden under it
+  outer.position.set(35, -0.05, SEA_Z + 1 + 320);
   outer.receiveShadow = true;
   group.add(outer);
   const hillMat = mat("#79ad5a", { flat: true });
