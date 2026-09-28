@@ -8,6 +8,7 @@ import { NPCS, COACH_VOICE } from "../content/npcs";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
+import { STYLES_ENABLED } from "../game/worldStyles";
 import { speechSupported, localAvailability, installLocal, refreshLocalState, type LocalAvailability } from "../convo/speech";
 import { avatarColor } from "./Conversation";
 import { locIcon } from "./Hud";
@@ -347,7 +348,7 @@ function Settings({ close }: { close: () => void }) {
           <div className="txt"><b>Garsumas</b></div>
           <input type="range" min={0} max={1} step={0.05} value={s.volume} onChange={(e) => { set({ volume: +e.target.value }); audio.volume = +e.target.value; }} style={{ width: 160 }} />
         </div>
-        {s.play !== "light" && <div className="set-row">
+        {s.play !== "light" && STYLES_ENABLED && <div className="set-row">
           <div className="txt"><b>Pasaulio stilius</b><span>Bandomieji 3D miesto stiliai. Pakeitus puslapis persikrauna.</span></div>
           <div className="seg">{([["blocks", "Kaladėlės"], ["toon", "Animacija"], ["storybook", "Iliustracija"], ["realistic", "Tikroviškas"]] as const).map(([v, n]) => (
             <button key={v} className={s.worldStyle === v ? "on" : ""} onClick={() => { const u = new URL(location.href), forced = u.searchParams.has("style"); if (s.worldStyle === v && !forced) return; set({ worldStyle: v }); u.searchParams.delete("style"); setTimeout(() => forced ? location.replace(u.href) : location.reload(), 200); }}>{n}</button>

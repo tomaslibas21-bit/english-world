@@ -4,13 +4,18 @@
 //   storybook – "Iliustracija": the illustrated scenes' semi-flat look (teal, warm orange, cream, wood).
 //   realistic – "Tikroviškas": a "realistic cartoon" (PBR materials, filmic light, reflections).
 // The style is read once; the settings panel reloads the page when it changes.
+// Published builds show only "blocks" (owner's decision, 28 Sep 2026: keep the trial styles for later).
+// They stay here, switched on in `npm run dev` or in a build made with VITE_WORLD_STYLES=1.
 import * as THREE from "three";
 import { useStore, type WorldStyle } from "../state/store";
+import { STYLES_ENABLED } from "./worldStyles";
 
 export type { WorldStyle };
+export { STYLES_ENABLED };
 const STYLES: WorldStyle[] = ["blocks", "toon", "storybook", "realistic"];
 
 function readStyle(): WorldStyle {
+  if (!STYLES_ENABLED) return "blocks";
   try {
     // "?style=toon" etc. in the address overrides the saved setting (handy for comparing styles in tabs);
     // picking a style in Settings reloads without it
