@@ -13,7 +13,7 @@ import { sitProgress, stars } from "../state/progress";
 import { Conversation, avatarColor } from "./Conversation";
 import { SceneBackdrop } from "./SceneBackdrop";
 import { Panels, CHAPTERS, START_WITH } from "./Panels";
-import { useDueCards } from "./Hud";
+import { useDueCards, COURSE_URL } from "./Hud";
 import { Toasts } from "./Toasts";
 import { sceneFor } from "./scenes";
 import { switchPlayMode } from "./playMode";
@@ -98,6 +98,7 @@ function LightHome() {
           <div className="lh-brand"><span className="lh-logo">English World</span><span className="lh-town">Maple Harbor</span></div>
           <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title="Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis"><Icon name="map" size={22} /><span>Atidaryti 3D miestą</span></button>
           <nav className="lh-tools" aria-label="Įrankiai">
+            {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title="Grįžti į kursą"><Icon name="home" size={24} /><span>Kursas</span></a>}
             <button className="lh-tool" onClick={() => open("phrasebook")} title="Frazių knygelė" aria-label={due ? `Frazių knygelė (${due})` : "Frazių knygelė"}><Icon name="bookOpen" size={24} /><span>Frazės</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
             <button className="lh-tool" onClick={() => open("journal")} title="Užduotys" aria-label="Užduotys"><Icon name="journal" size={24} /><span>Užduotys</span></button>
             <button className="lh-tool" onClick={() => open("settings")} title="Nustatymai" aria-label="Nustatymai"><Icon name="settings" size={24} /><span>Nustatymai</span></button>

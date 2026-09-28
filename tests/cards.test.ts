@@ -3,6 +3,7 @@ import type { Sentence } from "../src/convo/compose";
 import {
   cleanText, cardKey, cardId, unitInput, sentenceInput, newCard, addCards, answerCard, isDue, dueCards, nextDue, daysUntil,
   removeCard, parseCards, loadCards, saveCards, exportCards, exportCardsJSON, useCards, startOfDay, addDays, INTERVALS, STORAGE_KEY,
+  fluentSlug, fluentCard, mirrorToFluentSteps, FLUENT_CARDS_KEY,
   type CardInput,
 } from "../src/state/cards";
 
@@ -213,5 +214,40 @@ describe("the store", () => {
     useCards.getState().remove(c.id);
     expect(useCards.getState().cards.some((x) => x.id === c.id)).toBe(false);
     expect(useCards.getState().keys.has("late check-out")).toBe(false);
+  });
+});
+
+describe("English Master (Fluent Steps) flashcards", () => {
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); } }; };
+  const word = newCard({ en: "Checking in", lt: "Registruojatės", sentence: { en: OLIVIA.en, lt: OLIVIA.nat }, situationId: "s68-hotel" }, 0);
+
+  it("uses the course's slugs for its card ids", () => {
+    expect(fluentSlug("Checking in?")).toBe("checking-in");
+    expect(fluentSlug("I’m (really) fine")).toBe("i'm-fine");
+    expect(fluentCard(word, 5).id).toBe("word:checking-in|registruojatės");
+  });
+
+  it("makes a new \"Mano žodžiai\" card: Lithuanian front, English back, the sentence as the note", () => {
+    const c = fluentCard(word, 5);
+    expect(c).toMatchObject({ deck: "words", kind: "phrase", front: "Registruojatės", back: "Checking in", note: OLIVIA.en, source: { kind: "custom" }, added: 5 });
+    expect(c.srs).toMatchObject({ reviews: 0, due_at: null, interval_days: 0, ease_factor: 2.5 });
+  });
+
+  it("adds new cards first, keeps the course's own cards, and skips ones already there", () => {
+    const st = mem();
+    st.setItem(FLUENT_CARDS_KEY, JSON.stringify({ version: 1, cards: [{ id: "line:s1:hello", deck: "lines" }] }));
+    expect(mirrorToFluentSteps([word], 5, st)).toBe(1);
+    expect(mirrorToFluentSteps([word], 6, st)).toBe(0);
+    const saved = JSON.parse(st.getItem(FLUENT_CARDS_KEY)!);
+    expect(saved.version).toBe(1);
+    expect(saved.cards.map((c: { id: string }) => c.id)).toEqual(["word:checking-in|registruojatės", "line:s1:hello"]);
+  });
+
+  it("starts the course's store when it has none, and survives broken data", () => {
+    const st = mem();
+    expect(mirrorToFluentSteps([word], 5, st)).toBe(1);
+    st.setItem(FLUENT_CARDS_KEY, "{not json");
+    expect(mirrorToFluentSteps([word], 5, st)).toBe(0);
+    expect(mirrorToFluentSteps([word], 5, null)).toBe(0);
   });
 });

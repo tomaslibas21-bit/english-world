@@ -86,6 +86,7 @@ input[type="range"] { accent-color: var(--accent); }
 .icon-btn .key { position: absolute; bottom: 2px; right: 5px; font-size: 10px; font-weight: 900; color: #98a3ae; line-height: 1.2; }
 .icon-btn:hover { background: #fff; color: var(--accent-strong); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(20, 30, 40, 0.08), 0 10px 22px -8px rgba(20, 30, 40, 0.38); }
 .icon-btn:active { transform: scale(0.95); }
+a.icon-btn, a.lh-tool { text-decoration: none; }
 
 /* ---------- name tags ---------- */
 .nametag {

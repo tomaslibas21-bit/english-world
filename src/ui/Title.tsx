@@ -70,7 +70,7 @@ function Create({ onDone, canCancel, onCancel }: { onDone: () => void; canCancel
     <div className="title-screen">
       <form className="title-card" style={{ textAlign: "left" }} onSubmit={(e) => { e.preventDefault(); start(); }}>
         <h1 className="logo" style={{ textAlign: "center" }}>English World<small>Kalbėk angliškai amerikietiškose situacijose</small></h1>
-        <p className="lead" style={{ textAlign: "center" }}>36 trumpi pokalbiai pagal dainas: kavinė, viešbutis, vaistinė, darbo pokalbis… Kiekviename pokalbyje matysi, ką daryti ir ką pasakyti.</p>
+        <p className="lead" style={{ textAlign: "center" }}>41 trumpas pokalbis pagal dainas: kavinė, viešbutis, gydytojas, darbo susirinkimas… Kiekviename pokalbyje matysi, ką daryti ir ką pasakyti.</p>
         <div className="field">
           <label htmlFor="nm">Tavo vardas</label>
           <input id="nm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Pvz., Rūta" autoComplete="given-name" autoFocus />

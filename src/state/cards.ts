@@ -303,6 +303,56 @@ export function exportCards(cards: Card[], now = Date.now()): CardsExport {
 export const exportCardsJSON = (cards: Card[], now = Date.now()) => JSON.stringify(exportCards(cards, now), null, 2);
 
 // ---------------------------------------------------------------------------------------------
+// English Master (Fluent Steps)
+
+/**
+ * Inside English Master (a build with VITE_CARDS_TARGET=fluentsteps, served from the course site), every
+ * card saved here also goes into the course's own flashcards: localStorage "fluentsteps.songcards.v1",
+ * deck "Mano žodžiai" ("words"), in the course's StudyCard format (fluent-steps
+ * src/lib/songs/cards-store.ts). The course reviews it with its own scheduler; the game keeps its copy
+ * too. Removing a card here doesn't remove the course's copy.
+ */
+export const FLUENT_CARDS_KEY = "fluentsteps.songcards.v1";
+const TO_FLUENT = import.meta.env?.VITE_CARDS_TARGET === "fluentsteps";
+
+/** The course's slugKey (its card ids are "word:<en>|<lt>" slugs). */
+export function fluentSlug(s: string): string {
+  return String(s || "").toLowerCase().replace(/[‘’`]/g, "'").replace(/\([^)]*\)/g, " ").replace(/[^\p{L}\p{N}']+/gu, " ").trim().replace(/\s+/g, "-");
+}
+
+/** A game card as a new course card: Lithuanian on the front, English on the back, and the sentence it
+ *  came from (or the IPA, for a whole sentence) as the note. */
+export function fluentCard(c: Card, now: number) {
+  const note = c.sentence.en && cardKey(c.sentence.en) !== cardKey(c.en) ? c.sentence.en : c.ipa ? `/${c.ipa}/` : undefined;
+  return {
+    id: `word:${fluentSlug(c.en)}|${fluentSlug(c.lt)}`,
+    deck: "words", kind: /\s/.test(c.en.trim()) ? "phrase" : "word",
+    front: c.lt, back: c.en, ...(note ? { note } : {}),
+    source: { kind: "custom" },
+    added: now,
+    srs: { interval_days: 0, ease_factor: 2.5, repetitions: 0, lapses: 0, due_at: null, last_grade: null, last_reviewed_at: null, reviews: 0 },
+  };
+}
+
+/** Adds the cards to the course's flashcards (newest first; cards already there are skipped).
+ *  Returns how many were added. */
+export function mirrorToFluentSteps(cards: Card[], now = Date.now(), storage: KV | null = defaultStorage()): number {
+  if (!storage || !cards.length) return 0;
+  try {
+    const raw = storage.getItem(FLUENT_CARDS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    const list: { id?: string }[] = Array.isArray(parsed?.cards) ? parsed.cards : [];
+    const ids = new Set(list.map((x) => x?.id));
+    const fresh = cards.map((c) => fluentCard(c, now)).filter((x) => !ids.has(x.id) && (ids.add(x.id), true));
+    if (!fresh.length) return 0;
+    storage.setItem(FLUENT_CARDS_KEY, JSON.stringify({ version: 1, cards: [...fresh.reverse(), ...list] }));
+    return fresh.length;
+  } catch {
+    return 0;
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
 // the store the UI uses
 
 interface CardsState {
@@ -325,12 +375,12 @@ export const useCards = create<CardsState>((set, get) => {
     ...withKeys(loadCards()),
     add: (input) => {
       const { cards, added } = addCards(get().cards, [input], Date.now());
-      if (added.length) commit(cards);
+      if (added.length) { commit(cards); if (TO_FLUENT) mirrorToFluentSteps(added); }
       return added[0] ?? get().cards.find((c) => cardKey(c.en) === cardKey(input.en)) ?? null;
     },
     addMany: (inputs) => {
       const { cards, added } = addCards(get().cards, inputs, Date.now());
-      if (added.length) commit(cards);
+      if (added.length) { commit(cards); if (TO_FLUENT) mirrorToFluentSteps(added); }
       return added.length;
     },
     answer: (id, knew) => commit(get().cards.map((c) => (c.id === id ? answerCard(c, knew, Date.now()) : c))),

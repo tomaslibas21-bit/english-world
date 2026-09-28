@@ -15,7 +15,8 @@ export class AudioSystem {
 
   async init() {
     try {
-      const r = await fetch(this.base + "manifest.json", { cache: "no-cache" });
+      // the clip list always ships with the game (same site, no CORS), even when the clips are elsewhere
+      const r = await fetch(`${import.meta.env.BASE_URL}audio/manifest.json`, { cache: "no-cache" });
       if (r.ok) this.manifest = await r.json();
     } catch { /* no clips yet: fallback voices */ }
     this.ready = true;

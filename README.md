@@ -43,7 +43,9 @@ The first `npm run audio` downloads the Kokoro-82M ONNX model (about 320 MB) fro
 The build is a static site: about 5 MB of code, 22 MB of scene pictures (WebP) and about 190 MB of voice clips (about 21,500 files in `audio/`). No server is needed.
 
 - **GitHub Pages (live).** The game is published at https://tomaslibas21-bit.github.io/english-world/ from the public repository `tomaslibas21-bit/english-world`. `.github/workflows/deploy.yml` builds the site with Node 22 on every push to `main` and publishes it in about a minute; the base path comes from the repository name. The steps, in Lithuanian, are in `docs/HOSTING.md`.
-- **Inside English Master (planned).** Publish the built game as a section of the fluent-steps site (`/zaidimas`), so that it shares the site's origin and word cards. Serve the voice clips from Cloudflare R2: at about 21,500 files they exceed the 20,000-file limit of a Cloudflare Workers deploy.
+- **Inside English Master (the fluent-steps site, at `/zaidimas/`).** `npx tsx tools/export-fluent-steps.ts <fluent-steps checkout>` builds the game for `/zaidimas/` and copies it into the site's `public/zaidimas/` (the code, the pictures and the clip list: about 370 files).
+  - The voice clips are served from Cloudflare R2: bucket `fluent-steps-audio`, folder `fluent-steps/game/audio/`, at https://audio.dvikalbesdainos.lt/fluent-steps/game/audio/. At about 21,500 files they exceed the 20,000-file limit of a site deploy. After `npm run audio` makes new clips, upload them there too.
+  - Words saved in the game also go into the course's own flashcards (deck „Mano žodžiai“), and a home button („Kursas“) leads back to the course.
 - **As a section of another site** (e.g. `https://your-site/game/`):
 
   ```bash

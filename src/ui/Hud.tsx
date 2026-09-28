@@ -10,6 +10,9 @@ import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
 import "./light.css";
 
+/** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
+export const COURSE_URL = import.meta.env.VITE_BACK_URL as string | undefined;
+
 function ToolButton({ icon, title, panel, hotkey, badge }: { icon: IconName; title: string; panel: "scenarios" | "map" | "journal" | "phone" | "phrasebook" | "settings"; hotkey?: string; badge?: number }) {
   return (
     <button className="icon-btn" onClick={() => useStore.getState().setHud({ panel })} title={title} aria-label={badge ? `${title} (${badge})` : title}>
@@ -37,6 +40,7 @@ export function Hud() {
       <Objective />
       <Minimap />
       <div className="toolbar">
+        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
         <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
         <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
         <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
