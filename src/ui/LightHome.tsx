@@ -16,7 +16,7 @@ import { Panels, CHAPTERS, START_WITH } from "./Panels";
 import { useDueCards, COURSE_URL } from "./Hud";
 import { Toasts } from "./Toasts";
 import { sceneFor } from "./scenes";
-import { switchPlayMode } from "./playMode";
+import { switchPlayMode, takeLinkedSituation } from "./playMode";
 import { Icon, InlineIcon, Stars, iconForEmoji, type IconName } from "./icons";
 import "./light.css";
 
@@ -39,7 +39,11 @@ export function LightPlay() {
   useEffect(() => {
     const g = new LightGame();
     setGame(g);
-    g.onReady = () => { setReady(true); useStore.getState().setScreen("play"); };
+    g.onReady = () => {
+      setReady(true); useStore.getState().setScreen("play");
+      const sit = takeLinkedSituation();
+      if (sit) g.startScenario(sit);
+    };
     g.init();
     (window as any).__ew = { game: g, store: useStore };
     document.body.classList.add("light-mode");

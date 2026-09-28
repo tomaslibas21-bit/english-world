@@ -9,7 +9,7 @@ import { SceneBackdrop } from "./SceneBackdrop";
 import { Panels } from "./Panels";
 import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
-import { takeAutoStart } from "./playMode";
+import { takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 
 export function App() {
@@ -35,7 +35,11 @@ function Play() {
       if (gone) return;
       g = new Game(stage.current!, tags.current!);
       setGame(g);
-      g.onReady = () => { setReady(true); useStore.getState().setScreen("play"); useStore.getState().setHud({ panel: "scenarios" }); };
+      g.onReady = () => {
+        setReady(true); useStore.getState().setScreen("play"); useStore.getState().setHud({ panel: "scenarios" });
+        const sit = takeLinkedSituation();
+        if (sit) g!.startScenario(sit);
+      };
       g.init();
       (window as any).__ew = { game: g, store: useStore };
     });
