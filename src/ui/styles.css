@@ -538,23 +538,19 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .seg button { border: 0; background: none; border-radius: 9px; padding: 6px 12px; font-weight: 800; color: var(--ink-soft); transition: background-color 0.15s, color 0.15s; }
 .seg button:hover { color: var(--ink); }
 .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-.title-card .seg button { padding: 8px 16px; }
-.title-card .seg button.on { background: var(--accent); color: var(--accent-ink); }
 .info-box { background: #f1f6f7; border: 1px solid #e1ecee; border-radius: 14px; padding: 12px 14px; font-size: 0.88em; line-height: 1.55; color: #3d4a55; }
 
-/* ---------- title & creation ---------- */
-.title-screen { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 30%, #bfe6fa 0%, #8fc7e8 55%, #6fb0d8 100%); overflow: auto; padding: 20px; }
-.title-card { background: var(--panel-solid); border-radius: 28px; box-shadow: var(--shadow); padding: 30px 30px 26px; width: min(640px, 100%); text-align: center; border: 1px solid rgba(255, 255, 255, 0.8); }
-.logo { font-family: var(--en); font-size: 3.2em; margin: 0; line-height: 1; color: var(--accent); }
-.logo small { display: block; font-family: var(--ui); font-size: 0.3em; color: var(--warm); font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 8px; }
-.title-card .lead { font-size: 1.05em; line-height: 1.5; color: var(--ink-soft); margin: 16px 0 20px; }
-.title-card .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.title-card .fine { font-size: 0.78em; color: var(--ink-faint); margin-top: 18px; line-height: 1.5; }
-.field { display: flex; flex-direction: column; gap: 6px; text-align: left; margin-bottom: 12px; }
-.field label { font-weight: 800; font-size: 0.92em; }
-.field input { border: 1.5px solid var(--line); border-radius: 14px; padding: 11px 13px; font-size: 1.05em; transition: border-color 0.15s, box-shadow 0.15s; }
-.field input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
-.loading { position: fixed; inset: 0; display: grid; place-items: center; background: #8fc7e8; z-index: 70; font-weight: 900; color: #fff; font-size: 1.3em; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+/* ---------- the 3D town loading (the start screen itself is title.css) ---------- */
+.loading {
+  position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: var(--lh-bg, #f5efe5); font-family: var(--en); font-weight: 600; font-size: 1.7em; color: var(--ink);
+}
+.loading::after {
+  content: ""; width: min(220px, 60vw); height: 6px; border-radius: 99px;
+  background: linear-gradient(90deg, rgba(31, 111, 120, 0) 0%, var(--accent) 50%, rgba(31, 111, 120, 0) 100%) 0 0 / 50% 100% no-repeat, #e7dfd2;
+  animation: loadbar 1.4s ease-in-out infinite;
+}
+@keyframes loadbar { from { background-position: -100% 0, 0 0; } to { background-position: 200% 0, 0 0; } }
 
 /* ---------- touch controls ---------- */
 .joy { position: fixed; left: 18px; bottom: 18px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.28); border: 3px solid rgba(255,255,255,0.6); z-index: 12; touch-action: none; }
@@ -595,7 +591,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .sheet-body { padding: 14px 14px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .yt-title.phase-you b::before, .ended-badge, .sheet { animation: none; }
+  .yt-title.phase-you b::before, .ended-badge, .sheet, .loading::after { animation: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }

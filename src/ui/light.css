@@ -1,5 +1,5 @@
 /* The light mode (no 3D town): the home screen with the situation list, the call screen behind calls,
-   the mode choice on the title screen, and the town's "Lengvas režimas" button. */
+   and the town's "Lengvas režimas" button. Its background (--lh-bg) is also the start screen's. */
 
 :root {
   --lh-bg:
@@ -114,14 +114,6 @@ body.light-mode { background: #f5efe5; }
 @media (prefers-reduced-motion: reduce) { .lc-avatar.talking::after, .lc { animation: none; } .lh-card, .lh-card:hover, .lh-tool, .lh-tool:hover { transition: none; transform: none; } }
 
 /* the journal's walking and taxi buttons need the town */
-
-/* ---------- title screen: how to play ---------- */
-.mode-choice { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
-.mode-choice .mode-label { font-weight: 800; font-size: 0.92em; color: var(--ink-soft); }
-.mode-choice .mode-sub { margin: 0; font-size: 0.84em; line-height: 1.45; color: var(--ink-soft); max-width: 30em; }
-.mode-choice.in-form { align-items: flex-start; margin-top: 0; padding-top: 0; border-top: 0; }
-.mode-choice .seg button { white-space: nowrap; }
-@media (max-width: 480px) { .title-card .mode-choice .seg button { padding: 8px 11px; font-size: 0.92em; } }
 
 /* ---------- the town: "Lengvas režimas" under the toolbar ---------- */
 .lite-btn {
