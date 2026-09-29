@@ -2080,15 +2080,16 @@ function itemHint(gid: string, id?: string | null): string { return id && clothe
  *  (the step's own suggestions stay as they are; yes/no and all intents behave exactly as for the step). */
 function guideFor(c: Ctx, stepId: string, garment?: string | null, main?: Suggestion, rest?: Suggestion[]) {
   const st = clothes.steps.find((x) => x.id === stepId)!;
-  const first = main ?? st.suggest![0];
+  const stSuggest = st.suggest as Suggestion[]; // these steps' suggestions are fixed lists
+  const first = main ?? stSuggest[0];
   const hint = main ? first.hint! : itemHint(first.hint!, garment);
-  const others = rest ?? st.suggest!.slice(1);
+  const others = rest ?? stSuggest.slice(1);
   // `on: {}`: a yes/no with more words ("Sure! Where's the fitting room?") goes to the intents, as for the step
   // phrase list: the tuned group, the other suggestions, then the step's groups (not the generic copy of the tuned one)
-  const all = [hint, ...others.map((x) => x.hint!), ...(st.hints ?? st.suggest!.map((x) => x.hint!))];
+  const all = [hint, ...others.map((x) => x.hint!), ...(st.hints ?? stSuggest.map((x) => x.hint!))];
   c.expect({ id: stepId, optional: true, expects: st.expects, yes: st.yes, no: st.no, on: {},
     suggest: [{ lt: first.lt, hint, options: first.options }, ...others],
-    hints: [...new Set(all.filter((h) => h === hint || h !== st.suggest![0].hint || !hint.startsWith(h + "_")))] });
+    hints: [...new Set(all.filter((h) => h === hint || h !== stSuggest[0].hint || !hint.startsWith(h + "_")))] });
 }
 
 function exchangeTo(c: Ctx, o: { size?: string; color?: string; shoe?: number; dir?: "up" | "down" }) {

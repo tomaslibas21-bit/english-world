@@ -25,6 +25,7 @@ npx tsx tools/sim.ts s72-cafe    # print a simulated conversation
 npx tsx tools/coverage.ts --fails                      # practice sentences (tests/corpus): how many are understood
 npx tsx tools/coverage.ts --dir=tests/heldout --half=even   # blind learner sentences (never tune on these)
 npx tsx tools/contexts.ts s72 --out=tests/contexts     # every point where the learner answers (for writing test sentences)
+npx tsx tools/offer-probe.ts s72                       # options someone offers ("Blueberry or chocolate?") that the learner can't pick
 ```
 
 Rebuilding generated assets (development only, never at runtime):

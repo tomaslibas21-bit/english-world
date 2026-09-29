@@ -165,7 +165,9 @@ export interface StepDef {
   ask: (ctx: Ctx) => void;
   /** Intents that answer this step. */
   expects?: string[];
-  suggest?: Suggestion[];
+  /** What to do now (the "your turn" guide). A function when it depends on the conversation so far
+   *  ("What kind of tea?" shows teas; "Anything else?" shows food first until some is ordered). */
+  suggest?: Suggestion[] | ((ctx: Ctx) => Suggestion[]);
   hints?: string[];
   yes?: (ctx: Ctx) => void;
   no?: (ctx: Ctx) => void;

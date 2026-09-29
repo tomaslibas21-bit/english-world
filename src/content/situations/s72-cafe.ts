@@ -2,7 +2,7 @@
 // Sunny Cup Café, barista Mia. The flagship situation and the reference example
 // for authoring (see AUTHORING.md).
 
-import type { Ctx, EntityDef, SituationDef } from "../types";
+import type { Ctx, EntityDef, SituationDef, Suggestion } from "../types";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
 
@@ -193,6 +193,41 @@ function offerAltMilk(c: Ctx) {
     ask: (cc) => cc.say("offer_alt_milk") });
 }
 
+/** "Do you have croissants?" – "Yes, we do! Would you like a croissant?" (a yes adds one). */
+function offerFood(c: Ctx, id: string) {
+  const X = { id, mods: [], qty: 1 };
+  c.s.offered = id;
+  c.say("offer_food", { X });
+  // "Yes, please." / "Yes, I'd love one." / "Two, please." (offer_ctx) / "A muffin instead." (an order)
+  c.expect({ id: "food_offer", optional: true, expects: ["order", "offer_ctx", "change"], hints: ["g_yesno", "order_food"],
+    suggest: [{ lt: "Sutikti arba atsisakyti", hint: "g_yesno" }, { lt: "Užsisakyti ką kita", hint: "order_food", options: "food" }],
+    // "Yes, two, please." is handled by offer_ctx (a yes with an answer runs both)
+    yes: (cc) => { if (cc.s.offered) cafe.handlers.offer_ctx(cc, {}, { intent: "offer_ctx", slots: {}, tags: [] }); },
+    // "Can I get a muffin instead?": instead of the offered cookie (nothing ordered is changed)
+    on: { change: (cc, sl, sg) => { if (!sl.item) return false; cc.s.offered = undefined; cafe.handlers.order(cc, { items: { item: sl.item } }, sg); return true; } },
+    // "Anything else?" next, not "Would you like anything to eat with that?" again
+    no: (cc) => { cc.s.offered = undefined; cc.s.foodDeclined = true; cc.say("no_problem"); },
+    ask: (cc) => cc.say("offer_food", { X }) });
+}
+
+/** What kind of coffee, tea or muffin is being chosen ("What kind of tea?"). */
+const kindAsked = (c: Ctx) => generic(items(c).find((i) => generic(i)) ?? items(c)[0] ?? { cat: "drink", id: "coffee", qty: 1 });
+// "What kind of tea?" – "Green." / "Black, please."; "Blueberry or chocolate?" – "Chocolate."; "What kind of coffee?" – "Black."
+const KIND_CHOICE: Record<string, Record<string, string>> = {
+  tea: { black: "black_tea", earl: "black_tea", plain: "black_tea", green: "green_tea", mint: "mint_tea", chamomile: "chamomile_tea" },
+  muffin: { blueberry: "blueberry_muffin", chocolate: "chocolate_muffin" },
+  coffee: { black: "drip_coffee", plain: "drip_coffee" },
+};
+const KIND_SUGGEST: Record<string, Suggestion[]> = {
+  tea: [{ lt: "Pasirinkti arbatą", hint: "kind_tea", options: ["black_tea", "green_tea", "mint_tea", "chamomile_tea"] }],
+  muffin: [{ lt: "Pasirinkti keksiuką", hint: "kind_muffin", options: ["blueberry_muffin", "chocolate_muffin"] }],
+  coffee: [{ lt: "Pasirinkti kavą", hint: "order_drink", options: ["latte", "cappuccino", "americano", "drip_coffee", "espresso", "flat_white", "mocha"] }],
+};
+function kindList(c: Ctx) {
+  const g = kindAsked(c);
+  c.say(g === "tea" ? "ask_kind_tea" : g === "muffin" ? "ask_kind_muffin" : "coffee_list");
+}
+
 /** The order is complete: Mia serves it (the end of the conversation, or "Thanks, bye!" right after paying). */
 function serve(c: Ctx) {
   if (c.s.served) return;
@@ -253,6 +288,14 @@ export const cafe: SituationDef = {
     },
     slots: {
       kind: { lexicon: [{ id: "plain", forms: ["regular", "plain", "normal", "drip", "house", "filter", "brewed"] }] },
+      // a short answer to "What kind of tea / coffee / muffin?" (see KIND_CHOICE)
+      choice: { lexicon: [
+        { id: "black", forms: ["black"] }, { id: "green", forms: ["green"] }, { id: "mint", forms: ["mint", "peppermint"] },
+        { id: "chamomile", forms: ["chamomile", "camomile"] }, { id: "earl", forms: ["earl grey", "english breakfast"] },
+        { id: "blueberry", forms: ["blueberry"] }, { id: "chocolate", forms: ["chocolate", "chocolate chip", "double chocolate"] },
+      ] },
+      // "Regular." alone (not "the regular one" or "filter": those name the drip coffee, an order)
+      plainw: { lexicon: [{ id: "plain", forms: ["regular", "plain", "normal", "house", "brewed"] }] },
       item: { pattern: [
         "[@qty] [@drink_pre] [@drink_pre] [@drink_pre] {drink} [@drink_post] [@drink_post] [@drink_post]",
         "[@qty] {food} [with cream cheese | warmed up | toasted | @dine]",
@@ -321,7 +364,7 @@ export const cafe: SituationDef = {
       "(what | how much) (cost | costs) [a | an | the | one] {item}", "[a | an | the] {item} (is | costs) how much",
     ] },
     ask_menu: { patterns: [
-      "what do you have #h:q_menu", "what (kinds | kind | types | sort) of (coffee | drinks | tea | teas | pastries | food | milk) do you have #h:q_kinds",
+      "what do you have #h:q_menu", "what (kinds | kind | types | sort) of (coffee | drinks | tea | teas | pastries | food | milk | muffins) do you have #h:q_kinds",
       "what (drinks | coffees | teas | pastries) do you have", "(can | could) i see the menu", "do you have a menu", "what is on the menu",
       "what are my options", "what (sizes | milks) do you have #h:q_sizes", "what kind of milk do you have", "what (sizes | kinds of milk) are there",
     ] },
@@ -338,6 +381,10 @@ export const cafe: SituationDef = {
       "what (kind of | kinds of) food (is there | do you have)", "what (do | can) you (have | offer) to eat",
       "(what | how) about (food | something to eat | something to eat too)", "do you have (any | some) food", "(and | also) something to eat",
       "[and | also] something (sweet | small | small to eat)", "what (cakes | desserts | sweets | snacks) do you have", "do you have (any)? (cakes | desserts | sweets | snacks)",
+      // "pastries" (Mia's own word: "We have coffee, tea, hot chocolate and pastries."): the list, then "Which one?"
+      "do you have (any)? (pastries | baked goods)", "(what | how) about (pastries | a pastry | a snack | dessert | something sweet)",
+      "@order_prefix [a | an | one | some] (pastry | pastries | snack | snacks | dessert | something sweet) [too | as well] #pick",
+      "[and | also | and also] [a | an | one | some] (pastry | pastries | snack | dessert) [too | as well] #pick",
     ] },
     ask_have: { patterns: ["do you (have | sell | serve | make | do) [any] {thing} #h:q_have", "(is there | have you got) [any] {thing}", "(can | could) i get {thing} [instead]? #get"] },
     ask_have_unknown: { patterns: ["do you (have | sell | serve | make | do) [any] {w:any}"] },
@@ -360,6 +407,12 @@ export const cafe: SituationDef = {
     ] },
     // "Can I have a latte instead of the cappuccino?": the first item replaces the second (never an order for the second)
     correction: { patterns: ["[no] not {item} [but] {item}", "no i said {item}", "{item} not {item}", "[actually] [@order_prefix] {item} instead of {item}"] },
+    // "Would you like a croissant?" – "Yes, I'd love one." / "Two, please." (only while that is asked)
+    offer_ctx: { patterns: ["@order_prefix (one | it | that | them | some | one of those | one of them)", "@order_prefix (two #q2 | three #q3) [of them | of those]",
+      "(one | just one | two #q2 | three #q3) [of them | of those]", "i would love (one | it | that | some | to)"] },
+    // "What kind of tea?" – "Green." / "The green one." / "Black, please." (only while the kind is asked)
+    kind_ctx: { patterns: ["[just] [the] {choice} [one]", "@order_prefix [the | a] {choice} [one]", "[the] {choice} [one] (is fine | sounds good | would be (great | nice | good | perfect))",
+      "(let us | let me) (go with | do | get) [the] {choice} [one]", "[just] {plainw}"] },
     // "Actually, just one." after ordering two
     qty_one: { patterns: ["(just | only) one [of them]", "make (it | that) [just | only] one", "[just] one is (enough | fine)", "i (only | just) (need | want) one"] },
     order_unknown: { patterns: ["@order_prefix {w:any}"] },
@@ -577,6 +630,10 @@ export const cafe: SituationDef = {
       t("Yes, | we | do!", "Taip, | mes | turime!", "Taip, turime!", { flags: { 2: "“do” (elliptical): Lithuanian repeats the verb, turime." } }),
       t("Sure | do!", "Žinoma, | turime!", "Žinoma, turime!"),
     ],
+    offer_food: [
+      t("Would | you | like | {X.np}?", "Ar | jūs | norėtumėte | {X.np:gen}?", "Gal norėtumėte {X.np:gen}?",
+        { flags: { 0: "“Would” in a yes/no question = the particle ar; the conditional sits on norėtumėte (linked to “like”)." } }),
+    ],
     have_no: [
       t("Sorry, | we | don't have | that.", "Atsiprašau, | mes | neturime | to.", "Atsiprašau, to neturime."),
     ],
@@ -666,6 +723,32 @@ export const cafe: SituationDef = {
         { id: "food_too", s: t("Could | I | get | {X.np} | too?", "Ar galėčiau | aš | gauti | {X.np:acc} | irgi?", "Ar galėčiau gauti ir {X.np:acc}?") },
         { id: "food_as_well", s: t("{X.np} | as well, | please.", "{X.np:acc} | taip pat, | prašau.", "Ir {X.np:acc}, prašau.") },
         { id: "ill_have", s: t("I'll have | {X.np}.", "Imsiu | {X.np:acc}.", "Imsiu {X.np:acc}.") },
+      ],
+    },
+    kind_tea: {
+      lt: "Pasirinkti arbatą", slot: "drink", examples: ["green_tea", "mint_tea", "black_tea"],
+      items: [
+        { id: "kind_please", s: t("{X}, | please.", "{X:acc}, | prašau.", "{X:acc}, prašau."), only: (e) => /_tea$/.test(e.id) },
+        { id: "id_like", s: t("I'd like | {X}, | please.", "Norėčiau | {X:gen}, | prašau.", "Norėčiau {X:gen}, prašau."), only: (e) => /_tea$/.test(e.id) },
+        { id: "ill_have", s: t("I'll have | {X}.", "Imsiu | {X:acc}.", "Imsiu {X:acc}."), only: (e) => /_tea$/.test(e.id) },
+      ],
+    },
+    kind_muffin: {
+      lt: "Pasirinkti keksiuką", slot: "food", examples: ["blueberry_muffin", "chocolate_muffin"],
+      items: [
+        { id: "kind_please", s: t("{X}, | please.", "{X:acc}, | prašau.", "{X:acc}, prašau."), only: (e) => /_muffin$/.test(e.id) },
+        { id: "ill_have", s: t("I'll have | {X.np}.", "Imsiu | {X.np:acc}.", "Imsiu {X.np:acc}."), only: (e) => /_muffin$/.test(e.id) },
+        { id: "id_like", s: t("I'd like | {X.np}, | please.", "Norėčiau | {X.np:gen}, | prašau.", "Norėčiau {X.np:gen}, prašau."), only: (e) => /_muffin$/.test(e.id) },
+      ],
+    },
+    // "Anything else?" / "Would you like anything to eat with that?" – yes, something to eat
+    more_food: {
+      lt: "Užsisakyti ką nors užkąsti", slot: "food", examples: ["croissant", "blueberry_muffin", "cinnamon_roll"],
+      items: [
+        { id: "food_yes", s: t("Yes, | {X.np}, | please.", "Taip, | {X.np:acc}, | prašau.", "Taip, {X.np:acc}, prašau.") },
+        { id: "food_id_also", s: t("I'd | also | like | {X.np}.", "Aš | taip pat | norėčiau | {X.np:gen}.", "Dar norėčiau {X.np:gen}.",
+          { flags: { 0: "“'d” (would) is carried by the conditional ending of norėčiau (linked to “like”)." } }) },
+        { id: "food_also", s: t("Can | I | also | get | {X.np}?", "Ar galiu | aš | taip pat | gauti | {X.np:acc}?", "Ar galiu dar gauti {X.np:acc}?") },
       ],
     },
     size: {
@@ -767,7 +850,7 @@ export const cafe: SituationDef = {
 
   mission: [
     { step: "order", lt: "Užsisakyk gėrimą" },
-    { step: "kind", lt: "Pasakyk, kokios kavos", optional: true },
+    { step: "kind", lt: "Pasirink rūšį", optional: true }, // coffee, tea or a muffin
     { step: "size", lt: "Pasirink dydį", optional: true },
     { step: "milk", lt: "Pasirink pieną", optional: true },
     { step: "temp", lt: "Karšta ar su ledu?", optional: true },
@@ -795,9 +878,10 @@ export const cafe: SituationDef = {
         else if (g === "tea") c.say("ask_kind_tea");
         else c.say("ask_kind_muffin");
       },
-      expects: ["order"],
-      suggest: [{ lt: "Pasirinkti rūšį", hint: "order_drink", options: ["latte", "cappuccino", "americano", "drip_coffee", "black_tea", "green_tea", "mint_tea", "chamomile_tea", "blueberry_muffin", "chocolate_muffin"] }],
-      help: (c) => { c.say("coffee_list"); } },
+      expects: ["order", "kind_ctx"],
+      // the kinds of what is being chosen (teas for "What kind of tea?")
+      suggest: (c) => KIND_SUGGEST[kindAsked(c) ?? "coffee"] ?? KIND_SUGGEST.coffee,
+      help: (c) => { kindList(c); } },
     { id: "size", when: (c) => drinks(c).some((d) => byId(d.id).attrs?.sized && !d.size && !generic(d)), done: () => false,
       ask: (c) => c.say("ask_size"), expects: ["size_ans", "order"],
       suggest: [{ lt: "Pasirinkti dydį", hint: "size", options: "size" }, { lt: "Paklausti kainos", hint: "ask_price", options: "drink" }],
@@ -826,8 +910,11 @@ export const cafe: SituationDef = {
         c.expect({ id: "warm", hints: ["g_yesno"], yes: (cc) => { cc.s.warm = true; cc.say("ack"); }, no: (cc) => { cc.s.warm = false; cc.say("ack"); }, ask: (cc) => cc.say("ask_warm") });
       } },
     { id: "more", when: (c) => items(c).length > 0, done: (c) => !!c.s.moreDone,
-      ask: (c) => c.say(!foods(c).length && c.chance(0.5) ? "ask_food_more" : "ask_more"), expects: ["more_no", "order", "more_yes", "want_food"],
-      suggest: [{ lt: "Pasakyti, kad tai viskas", hint: "more" }, { lt: "Užsisakyti dar ką nors", hint: "order_food", options: "food" }],
+      ask: (c) => c.say(!foods(c).length && !c.s.foodDeclined && c.chance(0.5) ? "ask_food_more" : "ask_more"), expects: ["more_no", "order", "more_yes", "want_food"],
+      // nothing to eat yet: "Yes, a croissant, please." first (owner feedback: the guide showed only ways to say no)
+      suggest: (c) => foods(c).length
+        ? [{ lt: "Pasakyti, kad tai viskas", hint: "more" }, { lt: "Užsisakyti dar ką nors", hint: "order_food", options: "food" }]
+        : [{ lt: "Užsisakyti ką nors užkąsti", hint: "more_food", options: "food" }, { lt: "Pasakyti, kad tai viskas", hint: "more" }],
       yes: (c) => { c.say("ask_what_else"); c.hold(); },
       no: (c) => { c.s.moreDone = true; } },
     { id: "dine", done: (c) => !!c.s.dine, ask: (c) => c.say("ask_dine"), expects: ["dine_ans"],
@@ -978,13 +1065,38 @@ export const cafe: SituationDef = {
       if (/size/.test(txt)) c.say("size_list");
       else if (/milk/.test(txt)) c.say("milk_list");
       else if (/tea/.test(txt)) c.say("ask_kind_tea");
+      else if (/muffin/.test(txt)) c.say("ask_kind_muffin");
       // asked about food, or "What do you have?" right after "Anything to eat with that?": the food, then a question
       else if (/pastr|food|eat/.test(txt) || c.step === "more") { c.say("food_list"); c.say("food_pick"); c.hold(); }
       else if (/coffee/.test(txt)) c.say("coffee_list");
+      else if (c.step === "kind") kindList(c); // "What do you have?" to "What kind of tea?": the teas
       else c.say("menu_line");
     },
     ask_recommend(c) { c.say(/\b(eat|food|hungry|snack|pastr)/i.test(c.heard) ? "rec_food" : "recommend"); },
-    want_food(c) { c.say("food_menu"); c.say(items(c).length ? "food_pick" : "ask_order"); c.hold(); },
+    want_food(c, _slots, seg) {
+      // "I'd like a pastry": what there is, then "Which one?"
+      if (seg.tags.includes("pick")) { c.say("food_list"); c.say("which_item"); c.hold(); return; }
+      c.say("food_menu"); c.say(items(c).length ? "food_pick" : "ask_order"); c.hold();
+    },
+    offer_ctx(c, _slots, seg) {
+      const id = c.s.offered as string | undefined;
+      if (!id) { c.say("ack"); return; }
+      const qty = seg.tags.includes("q3") ? 3 : seg.tags.includes("q2") ? 2 : 1;
+      items(c).push({ cat: "food", id, qty });
+      c.s.offered = undefined;
+      c.say("ack_order");
+      if (c.step === "more") c.s.moreDone = false;
+    },
+    kind_ctx(c, slots) {
+      const g = items(c).find((i) => generic(i));
+      const kind = g ? generic(g)! : undefined;
+      const choice = (slots.choice ?? slots.plainw) as string;
+      const id = kind ? KIND_CHOICE[kind]?.[choice] : undefined;
+      // "Chocolate." to "What kind of tea?": not a tea (the question comes again)
+      if (!g || !id) { c.say("have_no"); return; }
+      g.id = id;
+      if (kind === "coffee" && choice === "black") g.noMilk = true;
+    },
     order_partial(c, slots, seg) {
       // "A hot chocolate and a burger": say no to the unknown part, take the rest
       c.say("unknown_order");
@@ -998,6 +1110,8 @@ export const cafe: SituationDef = {
         if (thing.milk === "oat" && c.s.outOfOat) { c.say("out_of_oat"); return; }
         if ((thing.__tags || []).includes("wifi")) { c.say("wifi"); return; }
         c.say("have_yes");
+        // "Do you have croissants?": "Yes, we do! Would you like a croissant?" (not once the order is paid)
+        if (thing.food && !c.s.paid && !items(c).some((i) => i.id === thing.food)) offerFood(c, thing.food);
       } else c.say("have_no");
     },
     ask_have_unknown(c) { c.say("have_no"); c.say("menu_line"); },
@@ -1176,6 +1290,20 @@ export const cafe: SituationDef = {
     { say: "Can I have a latte instead of the cappuccino?", intent: "correction", step: "size", not: ["order", "order_partial"] },
     { say: "A latte instead of a cappuccino", intent: "correction", step: "more", not: ["order"] },
     { say: "I don't want a mocha instead", intent: "none" },
+    // "pastries" (Mia's own word) is something to eat, never "we don't have that"
+    { say: "I would like a pastries", intent: "want_food", step: "more", not: ["order_unknown"] },
+    { say: "Can I get a pastry?", intent: "want_food", step: "order", not: ["order_unknown"] },
+    { say: "Do you have pastries?", intent: "want_food", not: ["ask_have_unknown"] },
+    { say: "What about a snack?", intent: "want_food", step: "more" },
+    { say: "Do you have croissants?", intent: "ask_have", step: "more", slots: { thing: { food: "croissant" } } },
+    // short answers to "What kind of tea?" / "Blueberry or chocolate?"
+    { say: "Green.", intent: "kind_ctx", step: "kind", slots: { choice: "green" } },
+    { say: "Black, please.", intent: "kind_ctx", step: "kind", slots: { choice: "black" }, not: ["milk_ans"] },
+    { say: "Chocolate.", intent: "kind_ctx", step: "kind", slots: { choice: "chocolate" } },
+    { say: "The blueberry one", intent: "kind_ctx", step: "kind", slots: { choice: "blueberry" } },
+    { say: "I'll have the mint one", intent: "kind_ctx", step: "kind", slots: { choice: "mint" } },
+    { say: "Green tea, please", intent: "order", step: "kind", slots: { items: { item: { drink: "green_tea" } } } },
+    { say: "Green.", intent: "none" },
   ],
 
   sims: [
@@ -1197,6 +1325,12 @@ export const cafe: SituationDef = {
       setup: (s) => { s.askMilk = false; } },
     { name: "out of oat milk (twist)", turns: ["Hi! Can I get a large latte with oat milk?", "Soy milk is fine.", "That's all.", "For here.", "Card.", "Thanks!"], expect: { complete: true }, auto: CAFE_AUTO,
       setup: (s) => { s.outOfOat = true; } },
+    // "I'd like a pastry" – the list; "Do you have croissants?" – "Would you like a croissant?"
+    { name: "a pastry: the list, then a croissant offered", turns: ["A latte, please.", "Medium.", "I'd like a pastry.", "Do you have croissants?", "Yes, two, please.", "That's all.", "For here.", "Card.", "Thanks!"],
+      expect: { complete: true, state: { items: { 0: { id: "latte" }, 1: { id: "croissant", qty: 2 } } } }, auto: CAFE_AUTO, setup: (s) => { s.askMilk = false; s.askTemp = false; } },
+    // short answers to "What kind of tea?" and "Blueberry or chocolate?"
+    { name: "tea and a muffin, short answers", turns: ["A cup of tea, please.", "Green.", "And a muffin.", "Chocolate.", "That's all.", "To go.", "Card.", "Thanks!"],
+      expect: { complete: true, state: { items: { 0: { id: "green_tea" }, 1: { id: "chocolate_muffin" } } } }, auto: CAFE_AUTO, setup: (s) => { s.askName = false; } },
     { name: "out of oat milk: no to almond or soy", turns: ["A medium latte, please.", "Oat milk, please.", "No, thanks.", "Whole milk, then.", "That's all.", "To go.", "Card.", "Thanks!"], expect: { complete: true }, auto: CAFE_AUTO,
       setup: (s) => { s.outOfOat = true; s.askMilk = true; } },
   ],

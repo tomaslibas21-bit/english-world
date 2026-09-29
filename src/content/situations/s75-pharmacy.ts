@@ -1837,7 +1837,7 @@ function itemHint(gid: string, id?: string | null): string { return id && pharma
  *  to the intents). */
 function guideFor(c: Ctx, stepId: string, main: { lt?: string; hint: string }, rest: Suggestion[]) {
   const st = pharmacy.steps.find((x) => x.id === stepId)!;
-  const first = { lt: main.lt ?? st.suggest![0].lt, hint: main.hint };
+  const first = { lt: main.lt ?? (st.suggest as Suggestion[])[0].lt, hint: main.hint }; // a fixed list on these steps
   c.expect({ id: stepId, optional: true, expects: st.expects, yes: st.yes, no: st.no, on: {},
     suggest: [first, ...rest], hints: [first.hint, ...rest.map((x) => x.hint!), "g_yesno"] });
 }

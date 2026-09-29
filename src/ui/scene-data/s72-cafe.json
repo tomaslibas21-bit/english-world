@@ -8,7 +8,7 @@
     "size": "size",
     "milk": "milk", "whole_ok": "milk", "alt_milk": "milk",
     "temp": "temp", "warm": "temp",
-    "more": "food",
+    "more": "food", "food_offer": "food",
     "dine": "dine",
     "name": "name",
     "pay": "pay", "receipt": "pay",

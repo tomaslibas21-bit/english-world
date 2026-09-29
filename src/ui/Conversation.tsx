@@ -138,13 +138,13 @@ export function Conversation() {
           <div className={"yt-title phase-" + conv.phase}>
             <b>{conv.phase === "npc" ? `${npc?.name ?? ""} kalba…` : conv.phase === "thinking" ? "…" : "Tavo eilė"}</b>
             <div className="yt-actions">
-              {conv.phase === "you" && (settings.guide || conv.openHint !== null) && (
+              {conv.phase === "you" && (!conv.guideHidden || conv.openHint !== null) && (
                 <div className="toggles say-toggles" role="group" aria-label="Po tavo atsakymų pavyzdžiais">
                   <button className={"toggle" + (settings.sayLt ? " on" : "")} onClick={() => setSettings({ sayLt: !settings.sayLt })} aria-pressed={settings.sayLt} title="Vertimas po tavo atsakymų pavyzdžiais"><span className="long">Vertimas</span><span className="short">LT</span></button>
                   <button className={"toggle" + (settings.sayIpa ? " on" : "")} onClick={() => setSettings({ sayIpa: !settings.sayIpa })} aria-pressed={settings.sayIpa} title="Tarimas (IPA) po tavo atsakymų pavyzdžiais">IPA</button>
                 </div>
               )}
-              <button className="btn soft small" onClick={() => setSettings({ guide: !settings.guide })}>{settings.guide ? "Slėpti pagalbą" : "Ką sakyti?"}</button>
+              <button className="btn soft small" onClick={() => setConv({ guideHidden: !conv.guideHidden })}>{conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}</button>
             </div>
           </div>
 
@@ -161,7 +161,7 @@ export function Conversation() {
             </div>
           )}
 
-          {settings.guide && <Guide sit={sit} formal={formal} gender={gender} />}
+          {!conv.guideHidden && <Guide sit={sit} formal={formal} gender={gender} />}
 
           <Hints sit={sit} formal={formal} gender={gender} />
           </div>

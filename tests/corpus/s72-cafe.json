@@ -29,7 +29,7 @@
   {"ctx": "order", "say": "A latte with vanilla syrup", "intent": ["order", "order_partial"], "slots": {"items": {"item": {"drink": "latte"}}}},
   {"ctx": "kind", "say": "Latte", "intent": "order", "slots": {"items": {"item": {"drink": "latte"}}}},
   {"ctx": "kind", "say": "Just regular coffee", "intent": "order"},
-  {"ctx": "kind", "say": "Black, please", "intent": ["order", "milk_ans"]},
+  {"ctx": "kind", "say": "Black, please", "intent": ["order", "milk_ans", "kind_ctx"], "note": "kind_ctx: the short answer to “What kind of coffee?” (a black drip coffee)"},
   {"ctx": "kind", "say": "The normal one", "intent": "order", "slots": {"items": {"item": {"drink": "drip_coffee"}}}},
   {"ctx": "kind", "say": "Cappuccino, please", "intent": "order", "slots": {"items": {"item": {"drink": "cappuccino"}}}},
   {"ctx": "kind", "say": "An americano", "intent": "order", "slots": {"items": {"item": {"drink": "americano"}}}},

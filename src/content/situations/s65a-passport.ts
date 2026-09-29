@@ -608,6 +608,10 @@ export const passport: SituationDef = {
     declare_nothing: { patterns: [
       "[no] nothing [at all] #h:dec_nothing", "[no] nothing to declare #h:dec_nothing2", "[no] i have nothing [to declare]",
       "[no] i do not have anything [to declare]", "[no] i am not (bringing | carrying) anything", "[no] no (food | plants | animals) [no plants | no animals]",
+      // "No plants or animals.", "No food and no animals." (the officer's own list)
+      "[no] no (food | plants | animals) [,] (or | and | and no | or any | nor) (plants | animals) [(or | and | and no | nor) animals]",
+      "[no] (i am not | i am not bringing) any (food | plants | animals) [(or | and) (plants | animals)] [(or | and) animals]",
+      "[no] no food [,] plants (or | and | nor) animals", "[no] (i am not bringing | i do not have) any food [,] plants (or | and) animals",
       "[no] i do not have any (food | plants | animals) #h:dec_no_food", "[no] none", "[no] nothing like that",
       "[no] (just | only) [my] (clothes | personal things | personal items | things | stuff | own things)", "[no] nothing special", "[no] only my personal (things | items | stuff)",
     ] },
@@ -1547,6 +1551,10 @@ export const passport: SituationDef = {
   },
 
   tests: [
+    { say: "No plants or animals.", intent: "declare_nothing" },
+    { say: "No food and no animals", intent: "declare_nothing" },
+    { say: "I'm not bringing any food or plants", intent: "declare_nothing" },
+    { say: "No food, plants or animals.", intent: "declare_nothing" },
     { say: "Here you go.", intent: "hand_over", step: "passport" },
     { say: "Hi! Here's my passport.", intent: "hand_over", slots: { doc: "passport" } },
     { say: "Do you need my ESTA?", intent: "q_esta" },

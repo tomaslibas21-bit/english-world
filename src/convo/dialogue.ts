@@ -276,7 +276,10 @@ export class Conversation {
         const f = p.yn === "yes" ? pend.yes : pend.no;
         if (f && !pend.on) { f(c); handled = true; }
       }
-      if (!handled && !pend.optional) this.pending = pend; // keep it if the learner did something else
+      // keep it if the learner did something else; an optional question is dropped, except once the goodbye
+      // has started (finish ran): there is no step to go back to, so the closing stays open through a last
+      // side question ("Can I get a note for work?") and its suggestions stay, and "Thanks!" still ends it
+      if (!handled && (!pend.optional || this.s.__finished)) this.pending = pend;
     }
 
     // a yes/no (with only soft words) for the current step's question
@@ -419,7 +422,7 @@ export class Conversation {
       for (const st of this.sit.steps) {
         const { applies, done } = stepState(st);
         if (!applies && !done) continue;
-        const lt = st.label ?? st.suggest?.[0]?.lt;
+        const lt = st.label ?? this.stepSuggest(st)?.[0]?.lt;
         if (lt) out.push({ id: st.id, lt, done, current: false });
       }
     }
@@ -430,9 +433,15 @@ export class Conversation {
 
   support(): { suggest: Suggestion[]; hints: string[] } {
     const st = this.effectiveStep();
-    const suggest = this.pending?.suggest ?? st?.suggest ?? this.sit.suggest ?? [];
+    const suggest = this.pending?.suggest ?? (st ? this.stepSuggest(st) : undefined) ?? this.sit.suggest ?? [];
     const hints = this.pending?.hints ?? st?.hints ?? suggest.map((x) => x.hint).filter(Boolean) as string[];
     return { suggest, hints: [...new Set(hints)] };
+  }
+
+  /** A step's suggestions now (some depend on the conversation so far). */
+  stepSuggest(st: StepDef): Suggestion[] | undefined {
+    if (typeof st.suggest !== "function") return st.suggest;
+    try { return st.suggest(this.ctx()); } catch { return undefined; }
   }
 
   /** Repeat the NPC's last turn (UI button or "Could you say that again?"). */

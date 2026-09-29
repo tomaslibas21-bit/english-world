@@ -21,8 +21,6 @@ export interface Settings {
   quality: "high" | "low";
   cameraFollow: boolean;
   onDevice: boolean;
-  /** The "your turn" guide: what to do now and model answers. */
-  guide: boolean;
   /** Under your suggested answers (the guide and "More phrases"): the Lithuanian translation, and IPA.
    *  lt / ipa above are for what the other person says. */
   sayLt: boolean;
@@ -48,7 +46,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  autoListen: true, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: true, guide: true, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
+  autoListen: true, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: true, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),
 };
 
@@ -105,12 +103,15 @@ export interface ConvUI {
   /** Counts the conversations started, so that per-conversation display state (the scene picture)
    *  starts fresh when the same situation is played again. */
   run: number;
+  /** "Slėpti pagalbą": the "your turn" guide (what to do now and model answers) is hidden in this
+   *  conversation only; the next one starts with it shown again. */
+  guideHidden: boolean;
 }
 
 export const EMPTY_CONV: ConvUI = {
   active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
   mic: { status: "off", heard: "" }, failures: 0, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
-  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0,
+  typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false,
 };
 
 export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp"; title: string; body?: string; better?: string; ms?: number }
@@ -148,10 +149,13 @@ let toastId = 1;
 const initial = loadProgress();
 
 /** Saved settings plus new defaults. v2 (owner feedback: a calmer conversation panel): the natural
- *  Lithuanian sentence and the suggestion list start collapsed; both are one tap away. */
+ *  Lithuanian sentence and the suggestion list start collapsed; both are one tap away.
+ *  v3: "Slėpti pagalbą" no longer stays saved (a hidden guide made later conversations look as if
+ *  they had no suggestions); it hides the guide for one conversation (ConvUI.guideHidden). */
 function migrateSettings(saved?: Record<string, any>): Settings {
-  const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number };
+  const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number; guide?: boolean };
   if ((s.v ?? 1) < 2) { s.ltNatural = false; s.suggestions = false; s.v = 2; }
+  if ((s.v ?? 1) < 3) { delete s.guide; s.v = 3; }
   return s;
 }
 

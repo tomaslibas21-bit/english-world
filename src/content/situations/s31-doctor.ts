@@ -1151,6 +1151,15 @@ export const doctor: SituationDef = {
         { id: "note_no", s: t("No, | thanks. | I | work | from | home.", "Ne, | ačiū. | Aš | dirbu | iš | namų.", "Ne, ačiū. Dirbu iš namų.") },
       ],
     },
+    rx_ok: {
+      lt: "Padėkoti ir pasitikslinti",
+      items: [
+        { id: "rx_thanks", s: t("Okay, | thank | you, | doctor.", "Gerai, | dėkoju | jums, | daktare.", "Gerai, ačiū, daktare.") },
+        { id: "rx_got_it", s: t("Got it. | Thank | you!", "Supratau. | Dėkoju | jums!", "Supratau. Ačiū!") },
+        { id: "q_side", s: t("Are | there | any | side effects?", "Ar yra | — | kokių nors | šalutinių poveikių?", "Ar yra šalutinis poveikis?",
+          { flags: { 1: "Existential “there” has no Lithuanian word: yra (in Ar yra) carries it." } }) },
+      ],
+    },
     closing: {
       lt: "Padėkoti ir atsisveikinti",
       items: [
@@ -1277,7 +1286,9 @@ export const doctor: SituationDef = {
       no: (c) => { setAllergy(c, ["none"]); },
       help: (c) => { setAllergy(c, ["unsure"]); askNext(c); } },
     { id: "rx", when: (c) => !!c.s.examDone && !!c.s.allergy, done: (c) => !!c.s.rxGiven,
-      ask: (c) => { giveRx(c); } },
+      ask: (c) => { giveRx(c); },
+      // after "Take one tablet three times a day…" (when no "Any questions?" follows): okay, or a question
+      suggest: [{ lt: "Padėkoti ir pasitikslinti", hint: "rx_ok" }, { lt: "Paklausti apie vaistus", hint: "ask_rx" }] },
     { id: "pharmacy", when: (c) => !!c.s.rxGiven && !!c.s.askPharmacy, done: (c) => !!c.s.pharmacy,
       ask: (c) => c.say("ask_pharmacy"),
       expects: ["pharmacy_ans", "pharmacy_dunno_ctx"],

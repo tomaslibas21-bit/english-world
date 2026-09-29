@@ -102,7 +102,8 @@ for (const sit of sits) {
   // steps reference hints/intents
   for (const st of sit.steps) {
     for (const i of st.expects || []) if (!sit.intents[i] && !GLOBAL.intents[i]) err(`step ${st.id}: unknown intent ${i}`);
-    for (const sg of st.suggest || []) if (sg.hint && !sit.hints[sg.hint] && !GLOBAL.hints[sg.hint]) err(`step ${st.id}: unknown hint group ${sg.hint}`);
+    // (suggestions that depend on the conversation are checked as the simulations play, see simulate())
+    for (const sg of typeof st.suggest === "function" ? [] : st.suggest || []) if (sg.hint && !sit.hints[sg.hint] && !GLOBAL.hints[sg.hint]) err(`step ${st.id}: unknown hint group ${sg.hint}`);
   }
   for (const h of Object.keys(sit.handlers)) if (!sit.intents[h] && !GLOBAL.intents[h]) err(`handler ${h} has no intent`);
   for (const i of Object.keys(sit.intents)) if (!sit.handlers[i] && !GLOBAL.handlers[i]) warn(`intent ${i} has no handler`);
@@ -185,12 +186,20 @@ function deepPartial(actual: any, exp: any): boolean {
   return actual === exp;
 }
 
+const suggestErrs = new Set<string>();
+function suggestErr(m: string) { if (!suggestErrs.has(m)) { suggestErrs.add(m); err(m); } }
+
 export function simulate(sit: SituationDef, sim: SimTest, seed: number) {
   const log: string[] = [];
   const r = playSim(sit, sim, seed, {
-    onTurn: (_conv, t, out) => {
+    onTurn: (conv, t, out) => {
       if (t) log.push(`YOU${t.auto ? " (auto)" : ""}: ${t.say}${out.understood ? "" : " (not understood)"}`);
       log.push("NPC: " + out.lines.map((l) => l.sentence.en).join(" "));
+      // the help shown now: known hint groups and items (some suggestions depend on the conversation)
+      if (!conv.ended) for (const sg of conv.support().suggest) {
+        if (sg.hint && !sit.hints[sg.hint] && !GLOBAL.hints[sg.hint]) suggestErr(`${sit.id} at ${conv.step ?? "start"}: unknown hint group ${sg.hint}`);
+        if (Array.isArray(sg.options)) for (const id of sg.options) if (!Object.values(sit.entities || {}).some((l) => l.some((e) => e.id === id))) suggestErr(`${sit.id} at ${conv.step ?? "start"}: unknown option ${id}`);
+      }
     },
   });
   if (verbose) console.log("    " + log.join("\n    "));

@@ -193,6 +193,7 @@ export const post: SituationDef = {
       to_dest: "(to {dest} | to my (mom | mother | family | parents | sister | brother | friend) in {dest} #h:dest_mom | home to {dest})",
       qty: "(a | an | some | two | three | a few | a couple of | a box of | a bag of | a pack of | a bottle of)",
       frag: "((a | an | some | two) [glass | ceramic | small] (glass | glasses | vase | mug | mugs | candle | candles | picture frame | plate | plates | bowl | ornament) | glass)",
+      fresh: "(cheese | meat | sausage | sausages | fresh fruit | fruit | fish | cake | a cake | fresh food | homemade food | milk)",
       thingp: "([@qty] [old | new | warm | small | nice | some old] {thing} | [a bottle of | some] perfume #perfume | [some] batteries #hazard | @frag #fragile | [some | a jar of | a bottle of] (maple syrup | honey | jam) #liquid)",
       things: "(@thingp [[and] @thingp] [and @thingp] [and @thingp])",
     },
@@ -240,7 +241,7 @@ export const post: SituationDef = {
     // --- sending
     contents_ok: { patterns: [
       "[no] (just | only) @things #h:contents_just", "[no] it is (just | only) @things", "[no] there is (just | only) @things [inside | in it]",
-      "no nothing like that #h:contents_none", "@things [for my (family | mom | mother | kids | children | friends)] #h:items_list", "[no] (there is nothing | nothing) (liquid | fragile | dangerous | like that)", "no it is (all | just) (clothes | gifts | presents)",
+      "no nothing like that #h:contents_none", "@things [for my (family | mom | mother | kids | children | friends)] #h:items_list", "[no] (there is nothing | nothing) (liquid | fragile | dangerous | perishable | hazardous | like that) [(or | and | ,) (liquid | fragile | dangerous | perishable | hazardous)] [(or | and) (liquid | fragile | dangerous | perishable | hazardous)]", "no it is (all | just) (clothes | gifts | presents)",
       "[no] (just | only) @things for my (family | mom | mother | kids | children | friends)", "[no] (everything | it is all) (okay | fine | safe)", "[no] only dry (things | stuff | food)",
       "[no] there is no (glass | perfume | liquid | liquids | batteries | food) [inside | in it | in there]", "[no] there are no (liquids | batteries | glasses)",
       "no (liquids | liquid | batteries | perfume)", "[no] (nothing | none) (of that | of those)",
@@ -249,12 +250,20 @@ export const post: SituationDef = {
     contents_fragile: { patterns: [
       "yes (it is | there is something | something is) fragile #h:contents_fragile", "[yes] (there is | there are | it has) @frag [inside | in it | in there]",
       "[yes] @frag", "it is fragile", "(please be | be) careful it is fragile", "it is (a little | a bit) fragile", "yes (there is | it has) glass [in it | inside]",
+      // one word, as in the clerk's own list: "Fragile." / "Something fragile."
+      "[yes] [something | a little | a bit] fragile [inside | in it | in there]", "[yes] there is something fragile [inside | in it | in there]",
+    ] },
+    // "Anything … perishable?" – "Yes, some cheese." / "It's perishable." (fresh food can't go overseas)
+    contents_perishable: { patterns: [
+      "[yes] (it is | something | there is something | something is) perishable [inside | in it | in there]", "[yes] perishable",
+      "[yes] (there is | i have | it has) [some | a] @fresh [inside | in it | in there]", "[yes] [some | a] @fresh [for my (family | mom | mother | kids | friends)]",
+      "(is | can i send) [some] @fresh (okay | allowed)",
     ] },
     contents_perfume: { patterns: [
       "(there is | there are) [a bottle of | some] perfume [inside | in it | in there]", "yes (a bottle of | some) perfume", "[there is] perfume [for my mom]",
       "(is | can i send) perfume (okay | allowed)", "can i send perfume",
     ] },
-    contents_liquid: { patterns: ["(there is | yes) [some | a jar of | a bottle of] (maple syrup | honey | jam) [inside | in it]", "(is | can i send) (maple syrup | honey) (okay | allowed)"] },
+    contents_liquid: { patterns: ["(there is | yes) [some | a jar of | a bottle of] (maple syrup | honey | jam) [inside | in it]", "[yes] (it is | there is) [a | some] (liquid | something liquid) [inside | in it | in there]", "(is | can i send) (maple syrup | honey) (okay | allowed)"] },
     contents_hazard: { patterns: ["(there are | yes) [some] batteries [inside | in it]", "(is | can i send) (a battery | batteries) (okay | allowed)"] },
     take_out: { patterns: ["[oh] [okay] i will take (it | them) out #h:take_out", "[oh] [okay] i will remove (it | them)", "(okay | fine) take it out", "oh i did not know",
       "[okay | fine] no perfume [then]", "[okay] i will keep it [at home]"] },
@@ -382,6 +391,14 @@ export const post: SituationDef = {
     ],
     perfume_thanks: [t("Thank | you.", "Dėkoju | jums.", "Ačiū.")],
     perfume_rule: [t("I'm sorry, | it's | the | rule.", "Atsiprašau, | tai yra | — | taisyklė.", "Atsiprašau, tokia taisyklė.")],
+    perishable_no: [
+      t("Oh, | sorry, | we | can't send | perishable | food | overseas.", "O, | atsiprašau, | mes | negalime siųsti | greitai gendančio | maisto | į užsienį.",
+        "O, atsiprašau, greitai gendančio maisto į užsienį siųsti negalime."),
+    ],
+    perishable_out: [
+      t("You'll need | to take | it | out.", "Jums reikės | išimti | jį | —.", "Jį reikės išimti.",
+        { flags: { 3: "“out” (take … out): the prefix iš- of išimti carries it." } }),
+    ],
     battery_no: [
       t("Loose | batteries | can't go | overseas, | I'm afraid.", "Palaidų | baterijų | negalima siųsti | į užsienį, | deja.", "Deja, palaidų baterijų į užsienį siųsti negalima."),
     ],
@@ -852,7 +869,7 @@ export const post: SituationDef = {
       suggest: [{ lt: "Pasakyti, kur siunti", hint: "dest" }] },
     { id: "hazmat", when: (c) => sending(c) && !!c.s.dest, done: (c) => c.s.contents !== undefined,
       ask: (c) => c.say("ask_contents"),
-      expects: ["contents_ok", "contents_fragile", "contents_perfume", "contents_liquid", "contents_hazard", "what_hazard"],
+      expects: ["contents_ok", "contents_fragile", "contents_perfume", "contents_liquid", "contents_hazard", "contents_perishable", "what_hazard"],
       suggest: [{ lt: "Pasakyti, kas viduje (ar nėra skysčių, dūžtančių daiktų, kvepalų)", hint: "contents", options: "thing" }],
       yes: (c) => { c.s.contents = "fragile"; c.s.fragile = true; c.say("fragile_ok"); weigh(c); },
       no: (c) => { c.s.contents = "ok"; c.say("contents_ok"); weigh(c); },
@@ -1024,6 +1041,19 @@ export const post: SituationDef = {
         ask: (cc) => cc.say("perfume_out"),
       });
     },
+    contents_perishable(c) {
+      if (!c.s.sending) startSending(c);
+      c.s.perfume = c.s.perfume || "asked"; // (the same "take out what can't be sent" as perfume and batteries)
+      c.say("perishable_no");
+      c.say("perishable_out");
+      c.expect({
+        id: "perfume", expects: ["take_out"], hints: ["contents", "g_yesno"],
+        suggest: [{ lt: "Sutikti išimti maistą", hint: "remove" }],
+        yes: (cc) => { perfumeOut(cc); }, no: (cc) => { cc.say("perfume_rule"); },
+        on: { take_out: (cc) => { perfumeOut(cc); }, g_ok: (cc) => { perfumeOut(cc); } },
+        ask: (cc) => cc.say("perishable_out"),
+      });
+    },
     take_out(c) { c.say("perfume_thanks"); },
     what_hazard(c) { c.say("hazard_explain"); },
     service_ans(c, slots, seg) {
@@ -1170,6 +1200,14 @@ export const post: SituationDef = {
   },
 
   tests: [
+    { say: "Fragile.", intent: "contents_fragile", step: "hazmat" },
+    { say: "Something fragile.", intent: "contents_fragile", step: "hazmat" },
+    { say: "Yes, some cheese.", intent: "contents_perishable", step: "hazmat" },
+    { say: "It's perishable.", intent: "contents_perishable", step: "hazmat" },
+    { say: "Nothing perishable.", intent: "contents_ok", step: "hazmat", not: ["contents_perishable"] },
+    { say: "Nothing perishable.", intent: "contents_ok", step: "hazmat" },
+    { say: "No, nothing liquid or fragile.", intent: "contents_ok", step: "hazmat" },
+    { say: "It's a liquid.", intent: "contents_liquid", step: "hazmat" },
     { say: "Hi! I'd like to send this package to Lithuania.", intent: "send_package", slots: { dest: "lithuania" } },
     { say: "Could I mail this to Lithuania, please?", intent: "send_package", slots: { dest: "lithuania" } },
     { say: "I need to send this box to my mom in Kaunas.", intent: "send_package", slots: { dest: "lithuania" } },

@@ -69,7 +69,7 @@ export class Session {
       active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], phase: "npc",
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
-      checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: st.conv.run + 1,
+      checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: st.conv.run + 1, guideHidden: false,
     });
     const out = this.conv.start();
     await this.play(out);

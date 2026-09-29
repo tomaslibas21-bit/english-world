@@ -167,6 +167,13 @@ function aboutSpot(c: Ctx, slots: any, table: Record<string, string>, fallback: 
   c.say(table[id] ?? fallback);
 }
 
+/** "Something to eat or something to see?" – "Something to see." / "A place to eat." / "Both!" */
+function expectKind(c: Ctx) {
+  c.expect({ id: "which_kind", optional: true, expects: ["kind_ctx"], hints: ["kind"],
+    suggest: [{ lt: "Pasakyti: pavalgyti ar pamatyti", hint: "kind" }],
+    on: { kind_ctx: (cc, sl, sg) => { H.kind_ctx(cc, sl, sg); } } });
+}
+
 const H: Record<string, Handler> = {
   are_you_local(c) {
     c.s.local = true;
@@ -176,9 +183,7 @@ const H: Record<string, Handler> = {
     if (c.s.foodRec && !c.s.sightRec) { recommend(c, sightFor(c, [])); return; }
     if (c.s.sightRec && !c.s.foodRec) { c.s.wantFood = true; return; }
     c.say("which_kind");
-    c.expect({ id: "which_kind", optional: true, expects: ["kind_ctx"], hints: ["kind"],
-      suggest: [{ lt: "Pasakyti: pavalgyti ar pamatyti", hint: "kind" }],
-      on: { kind_ctx: (cc, sl, sg) => { H.kind_ctx(cc, sl, sg); } } });
+    expectKind(c);
   },
   kind_ctx(c, _slots, seg) {
     if (seg.tags.includes("both")) { c.say("both_ok"); recommend(c, sightFor(c, [])); c.s.wantFood = true; return; }
@@ -248,6 +253,11 @@ const H: Record<string, Handler> = {
     const id = slots.spot as string;
     if (!id) return;
     recommend(c, id);
+  },
+  buy_produce(c, _slots, seg) {
+    c.say(seg.tags.includes("where") ? "market_where" : "market_seller");
+    if (!c.s.marketTip) { c.s.marketTip = true; c.say("market_tip"); }
+    c.s.topic = "market"; // "When does it close?" is about the market now
   },
   ask_favorite(c) { c.say("favorite"); c.s.topic = "lighthouse"; if (!c.s.sightRec) { c.s.sightRec = true; c.s.recs.push("lighthouse"); } },
   ask_locals(c, _slots, seg) {
@@ -337,7 +347,8 @@ function wrap(hs: Record<string, Handler>): Record<string, Handler> {
   for (const [id, h] of Object.entries(hs)) {
     out[id] = (c, slots, seg) => {
       if (!onceThisTurn(c, "h:" + id)) return;
-      if (!["are_you_local", "weather_ok", "g_thanks", "help_me", "tried_yes_ctx", "tried_no_ctx"].includes(id)) c.s.asked = true;
+      // (not a request for tips: small talk, and trying to buy fruit from Rosa)
+      if (!["are_you_local", "weather_ok", "g_thanks", "help_me", "tried_yes_ctx", "tried_no_ctx", "buy_produce"].includes(id)) c.s.asked = true;
       h(c, slots, seg);
     };
   }
@@ -367,6 +378,8 @@ export const local: SituationDef = {
       place_w: "(place | places | restaurant | restaurants | spot | somewhere)",
       budget: "(cheap #cheap | not (too | very | that | so) expensive #cheap | inexpensive #cheap | affordable #cheap | on a budget #cheap | nothing (fancy | too fancy | expensive) #cheap | not too fancy #cheap | nice #nice | fancy #fancy | special #fancy | romantic #fancy | really good | good | great)",
       it_: "(it | that | there)",
+      // what the market stalls behind Rosa's bench sell (her picture shows them)
+      produce: "[fresh | some fresh | good] (fruit | fruits | vegetables | veggies | produce | apples | an apple | oranges | peaches | pears | plums | bananas | grapes | berries | strawberries | blueberries | tomatoes | potatoes | carrots | lettuce | leeks | onions | cabbage | flowers | a bouquet | bread | cheese | eggs | jam)",
     },
     slots: {
       budget: { pattern: "@budget" },
@@ -452,7 +465,8 @@ export const local: SituationDef = {
     ask_best_time: { patterns: ["what is the best time to (go | visit) [there | {spot}] #h:u_time", "when (should | can) (i | we) go [there]", "when is the best time to (go | visit) [there | {spot}]", "what time should (i | we) go [there]", "when should i visit {spot}"] },
     ask_price: { patterns: ["is @it_ expensive #h:u_expensive", "is {spot} expensive", "is @it_ (cheap | pricey | free)", "how much (is it | does it cost | are the tickets | is a ticket)", "how much is {spot}", "(is | are) {spot} (cheap | pricey | free)"] },
     ask_book: { patterns: ["do (i | we) need to (book | reserve | make a reservation) [a table | tickets | in advance | ahead] #h:u_book", "should (i | we) book [a table | tickets] [ahead | in advance]", "do (i | we) need (a reservation | tickets | to book tickets)", "(do | does) {spot} take reservations", "do i need to book {spot}", "can i book (it | a table | the tour) [online | by phone]"] },
-    ask_open: { patterns: ["is @it_ open (today | now | {day} | every day | on the weekend) #h:u_open", "when (does it | is it) open", "what time does it (open | close)", "is {spot} open (today | now | {day} | every day)", "when is {spot} open", "what time does {spot} (open | close)"] },
+    ask_open: { patterns: ["is @it_ open (today | now | {day} | every day | on the weekend) #h:u_open", "when (does it | is it) open", "what time does it (open | close)", "is {spot} open (today | now | {day} | every day)", "when is {spot} open", "what time does {spot} (open | close)",
+      "when does (it | {spot}) (open | close | finish | end)", "(how long | until when | till when) is (it | {spot}) open", "what are the (opening hours | hours) [of {spot}]", "is it open (late | all day)"] },
     ask_worth: { patterns: ["is @it_ worth (it | a visit | the trip | the walk | the money)", "is it worth (going | seeing)"] },
     ask_safe: { patterns: ["is (it | the town | this town | maple harbor | this area) safe [at night | to walk at night | for walking at night] #h:u_safe", "is it safe to walk (at night | around at night | back at night)"] },
     no_crowds: { patterns: ["i do not like (crowds | tourists | touristy places | crowded places | busy places)", "(i want | i would like) somewhere (quiet | not touristy | without tourists)"] },
@@ -478,6 +492,17 @@ export const local: SituationDef = {
     walk_no_ctx: { patterns: ["[no] i will (find it | be fine | find my way | manage) [myself | alone | on my own] #h:w_no",
       "(it is | that is) (okay | fine | all right) i will (find it | find my way | manage | be fine) #h:w_no",
       "[no] (it is | that is) (okay | fine | all right) i (can | will) (go | walk | manage) [alone | myself | on my own]", "[no] i can (go | walk) (alone | myself | on my own)", "[no] i (want to | prefer to | would like to) (walk | go) alone"] },
+    // The picture shows market stalls behind Rosa: "I'd like to buy some fruit" (she sells nothing, but points to the stalls).
+    // Only clear shopping sentences: a bare "Vegetables." may answer "What do you feel like?" (vegetarian food).
+    buy_produce: { patterns: [
+      "(i would like | i want | i need | i am going | i came here | i am here | i am trying) to buy [some | a few | a little] @produce",
+      "where (can | could | do | should) (i | we) (buy | get | find) [some | a few] @produce [@here_] #where",
+      "where (is | are) the (fruit | vegetables | vegetable | flower) (stall | stalls | stand | stands) #where", "is there a (fruit | vegetable | flower) (stall | stand) [@here_] #where",
+      "(can | could | may) (i | we) buy [some | a | an | one | a bag of | a kilo of | a pound of | a few] @produce",
+      "do you sell [any | some] @produce", "how much (is | are | do | does) [the | your | these | those] @produce [cost]",
+      "(i will | i would like to) buy [some | a | an | one | a bag of | a kilo of | a pound of | a few] @produce",
+      "i am (shopping | looking) for [some] @produce", "(a bag of | a kilo of | a pound of) @produce",
+    ] },
     help_me: { patterns: ["@could_you help me", "(can | could | may) i ask you (something | a question)", "i have a question"] },
     diet: { patterns: ["(i am | we are) (vegetarian | vegan | a vegetarian)", "i do not eat meat", "we do not eat meat"] },
   },
@@ -643,6 +668,17 @@ export const local: SituationDef = {
       t("You know what? | I'm going | that | way | myself. | Want | me | to walk | with | you?", "Žinote ką? | Einu | ta | kryptimi | pati. | Norite, | kad aš | eičiau | kartu su | jumis?", "Žinote ką? Aš pati einu ta kryptimi. Palydėti jus?"),
     ],
     walk_yes: [t("Wonderful! | Let's go. | I | love | a | good | walk.", "Puiku! | Eime. | Aš | mėgstu | — | gerą | pasivaikščiojimą.", "Puiku! Eime. Mėgstu gerai pasivaikščioti.")],
+    market_seller: [
+      t("Oh, | I | don't work | here, | dear! | The | stalls | are | right | behind | me.", "O, | aš | nedirbu | čia, | {m:mielasis|f:mieloji}! | — | Prekystaliai | yra | tiesiai | už | manęs.",
+        "O, aš čia nedirbu, {m:mielasis|f:mieloji}! Prekystaliai – tiesiai už manęs."),
+    ],
+    market_where: [
+      t("Right | here, | dear! | The | stalls | are | right | behind | me.", "Būtent | čia, | {m:mielasis|f:mieloji}! | — | Prekystaliai | yra | tiesiai | už | manęs.",
+        "Čia pat, {m:mielasis|f:mieloji}! Prekystaliai – tiesiai už manęs."),
+    ],
+    market_tip: [
+      t("The | peaches | are | wonderful | today.", "— | Persikai | yra | nuostabūs | šiandien.", "Persikai šiandien nuostabūs."),
+    ],
     walk_no: [t("No | problem, | dear!", "Jokių | problemų, | {m:mielasis|f:mieloji}!", "Jokių problemų, {m:mielasis|f:mieloji}!")],
 
     // --- the end ------------------------------------------------------------------------
@@ -855,8 +891,12 @@ export const local: SituationDef = {
     { step: "more", lt: "Padėkok už patarimus" },
   ],
   steps: [
-    { id: "need", when: (c) => !c.s.asked && !c.s.foodRec && !c.s.sightRec, done: (c) => !!c.s.asked,
-      ask: (c) => { c.s.needAsks = (c.s.needAsks || 0) + 1; c.say(c.s.needAsks > 1 ? "ask_need_again" : "ask_need"); },
+    // until there is a tip to follow up: a first question about something else ("Is it safe at night?",
+    // "When does the market close?") gets its answer, then "Are you looking for a place to eat, or something
+    // to see?" (it used to end the conversation, and count as done, with no tip at all)
+    { id: "need", done: (c) => !!(c.s.foodRec || c.s.sightRec || c.s.wantFood),
+      // the second time: "Are you looking for a place to eat, or something to see?" (the same answers as to which_kind)
+      ask: (c) => { c.s.needAsks = (c.s.needAsks || 0) + 1; if (c.s.needAsks > 1) { c.say("ask_need_again"); expectKind(c); } else c.say("ask_need"); },
       // no bare "kind_ctx" here: the expected-intent bonus is per segment and would split "local food"
       expects: ["are_you_local", "ask_food", "ask_sight", "recommend_vague", "ask_coffee", "ask_night", "ask_locals"],
       suggest: [
@@ -951,6 +991,15 @@ export const local: SituationDef = {
   },
 
   tests: [
+    // the market stalls in the picture: buying fruit gets a friendly pointer, never "I didn't understand"
+    { say: "I'd like to buy some fruit", intent: "buy_produce" },
+    { say: "Where can I buy vegetables?", intent: "buy_produce" },
+    { say: "How much are the apples?", intent: "buy_produce", not: ["ask_price"] },
+    { say: "Can I buy some tomatoes?", intent: "buy_produce" },
+    { say: "Vegetables.", intent: "none" },
+    { say: "Where can I get good seafood?", intent: "ask_food", not: ["buy_produce"] },
+    { say: "When does it close?", intent: "ask_open" },
+    { say: "How long is the market open?", intent: "ask_open" },
     { say: "Excuse me, are you from around here?", intent: "are_you_local" },
     { say: "Do you live here?", intent: "are_you_local" },
     { say: "Are you a local?", intent: "are_you_local" },
@@ -1048,6 +1097,9 @@ export const local: SituationDef = {
     // and "Yes, please" answers "Are you hungry?" that follows. Without it, "Are you hungry?" comes at once with the sight.
     { name: "sights first, no fish, booking", turns: ["Hello!", "What should I see while I'm here?", "Do I need to book?", "Yes, please", "I don't eat fish", "Do I need to book?", "That sounds great! Bye!"], expect: { complete: true }, auto: AUTO,
       setup: (s) => { s.askFrom = true; } },
+    // the picture shows market stalls behind Rosa: buying fruit, then a first question that isn't a tip
+    { name: "fruit at the market, safety first, then tips", turns: ["Hi!", "I'd like to buy some fruit.", "When does it close?", "Is it safe at night?", "Something to see.",
+      "Where's a good place to eat?", "Italian, please.", "Thank you so much!"], expect: { complete: true, state: { marketTip: true } }, auto: AUTO },
     { name: "coffee, locals and a lot of questions", turns: ["Where's the best coffee in town?", "How do I get there?", "Where do the locals go?", "What's the best time to go?", "No", "I love art", "Is it open today?", "Thank you so much!"], expect: { complete: true }, auto: AUTO },
   ],
 };
