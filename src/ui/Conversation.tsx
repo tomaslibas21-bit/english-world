@@ -318,8 +318,8 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
             <div className="gx" key={i}>
               <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(COACH_VOICE, 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
               <div className="gx-text">
-                <Interlinear s={ex} lt={false} ipa={settings.sayIpa} />
-                {settings.sayLt && <div className="gx-lt" lang="lt">{ex.nat}</div>}
+                {/* word by word, as the other person's lines: Lithuanian under each word, the natural sentence below */}
+                <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} />
                 <RepeatResult en={ex.en} />
               </div>
               <RepeatButton ex={ex} />
