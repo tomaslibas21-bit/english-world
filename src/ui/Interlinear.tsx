@@ -1,5 +1,6 @@
-// Interlinear sentence: each English unit with its Lithuanian gloss and optional IPA centred
-// together; wrapping only between units; natural Lithuanian as a separate line (LT toggle).
+// Interlinear sentence: each English unit with its optional IPA right under it and its Lithuanian gloss
+// below that, centred together; wrapping between units (a unit wider than the line wraps inside itself);
+// natural Lithuanian as a separate line (LT toggle).
 // Tapping a unit opens a small popover to save it (or the whole sentence) as a card (Cards.tsx);
 // saved units get a tiny dot.
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
@@ -35,8 +36,8 @@ export function Interlinear({ s, lt, ipa, nat, highlight }: { s: Sentence; lt: b
           return (
             <span className={"u tap" + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}</span>
-              {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang="lt">{u.lt}</span>}
               {ipa && <span className="ipa">{ipaForUnit(u.en) || " "}</span>}
+              {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang="lt">{u.lt}</span>}
             </span>
           );
         })}

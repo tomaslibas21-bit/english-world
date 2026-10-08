@@ -78,7 +78,8 @@ export const BUILDINGS: BuildingDef[] = [
 /** Where each outdoor NPC stands (and which way they face, radians; 0 = facing +Z/south).
  *  `ax/az` = where the player stops to talk (e.g. the customer side of a market stall). */
 export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit?: boolean; ax?: number; az?: number }[] = [
-  { npc: "rosa", x: 18, z: -23.4, rot: Math.PI, sit: true, ax: 18, az: -25.6 },
+  // Rosa sits on the bench south-west of the fountain, her back to it (as in her pictures), facing you
+  { npc: "rosa", x: 18, z: -23.2, rot: 0, sit: true, ax: 18, az: -21 },
   { npc: "lucy", x: 34, z: -38, rot: -0.6 },
   { npc: "mrs_lee", x: 14, z: -43.35, rot: 0, ax: 14, az: -40.3 },
   { npc: "vinnie", x: 124.5, z: -1.4, rot: -Math.PI / 2 },
@@ -104,6 +105,24 @@ export const STALLS = [
   { x: 26, z: -43, color: "#d95d39", goods: "fruit" },
   { x: 38, z: -42, color: "#7fb069", goods: "veg" },
   { x: 46, z: -36, color: "#f4d35e", goods: "bread" },
+];
+
+/** A car's footprint (the parked ones, the taxi and the passing cars are the same size). */
+export const CAR = { length: 4.2, width: 1.9 };
+
+/** The passing cars (src/game/ambient.ts), right-hand traffic: eastbound on the south half of each east–west street,
+ *  westbound on the north half. On Main Street and Oak Avenue the lanes keep to the middle of the road, so the cars
+ *  parked at the curb (PARKED_CARS) are never in their way. */
+export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }[] = [
+  { z: -6.5, dir: 1, from: -102, to: 116 }, { z: -9.5, dir: -1, from: -102, to: 116 }, // Main Street, z -13 … -3
+  { z: 39.2, dir: 1, from: -102, to: 124 }, { z: 36.8, dir: -1, from: -102, to: 124 }, // Oak Avenue, z 33.5 … 42.5
+  { z: -52.8, dir: 1, from: -102, to: 124 }, { z: -57.2, dir: -1, from: -102, to: 124 }, // Harbor Road, z -59.5 … -50.5
+];
+
+/** Cars parked at the curb: x, z and heading (π/2: facing east, −π/2: west, 0: south, π: north). */
+export const PARKED_CARS: [number, number, number][] = [
+  [-80, -4.2, Math.PI / 2], [-30, -4.2, Math.PI / 2], [34, -4.2, Math.PI / 2], [88, -11.8, -Math.PI / 2], [-40, -11.8, -Math.PI / 2],
+  [-60, 41.45, Math.PI / 2], [30, 34.55, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [96, 41.45, Math.PI / 2],
 ];
 
 export const TAXI = { x: 121, z: -4.8, rot: -Math.PI / 2 };

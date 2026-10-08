@@ -110,14 +110,16 @@ function shelf(c: Ctx, x: number, z: number, w: number, h: number, color: string
   const cw = Math.abs(Math.cos(rot)) * w + Math.abs(Math.sin(rot)) * depth, cd = Math.abs(Math.sin(rot)) * w + Math.abs(Math.cos(rot)) * depth;
   c.col.addBox(x, z, cw, cd);
 }
-function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: string; chairs?: number; w?: number; d?: number; chairColor?: string } = {}) {
+/** A table with chairs around it. `from`: the direction of the first chair from the table (radians from +x towards
+ *  +z; the default π/2 puts it on the south side, the others follow evenly around). */
+function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: string; chairs?: number; w?: number; d?: number; chairColor?: string; from?: number } = {}) {
   const top = opts.cloth ?? "#e8dccb";
   if (opts.round) c.M.add("table-" + top, mat(top), cylGeo(0.6, 0.6, 0.06, x, 0.76, z, 16));
   else c.M.add("table-" + top, mat(top), boxGeo(opts.w ?? 1.4, 0.06, opts.d ?? 0.9, x, 0.76, z));
   c.M.add("table-leg", mat("#5a4636"), cylGeo(0.06, 0.08, 0.74, x, 0.37, z, 6));
   const n = opts.chairs ?? 2;
   for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + Math.PI / 2;
+    const a = (i / n) * Math.PI * 2 + (opts.from ?? Math.PI / 2);
     const cx = x + Math.cos(a) * 0.95, cz = z + Math.sin(a) * 0.95;
     const cc = opts.chairColor ?? "#6b4a3a";
     c.M.add("chair-" + cc, mat(cc), boxGeo(0.45, 0.08, 0.45, cx, 0.46, cz));
@@ -592,6 +594,7 @@ const B: Record<string, () => Interior> = {
     c.M.add("glass-wall", mat("#dff3fb", { transparent: 0.28 }), boxGeo(3.5, 2.8, 0.08, -9.2, 1.4, -1.8), false);
     c.col.addBox(-3.2, -4.8, 0.2, 6); c.col.addBox(-9.2, -1.8, 3.5, 0.2);
     table(c, -7, -5.2, { cloth: "#e9e4da", chairs: 0, w: 2.4, d: 1.2 });
+    seat(c, -7, -6.4, 0, "#2d3a4a"); // Ms. Brooks's chair
     c.M.add("tv", mat("#1d1d1d"), boxGeo(2.4, 1.3, 0.08, -7, 2.2, -c.d / 2 + 0.1), false);
     // desks (open space)
     for (const [dx, dz] of [[1, -4.5], [4, -4.5], [1, -1], [4, -1], [7, -1]]) desk(c, dx, dz);
@@ -624,13 +627,17 @@ const B: Record<string, () => Interior> = {
 
   "the-pier": () => room("the-pier", 18, 14, "#8f6b4e", "#eaf3f7", (c) => {
     for (const wx of [-6, 0, 6]) windowBack(c, wx, 5, 2.6, 2.1, "#8fd3f0");
-    for (const [tx, tz] of [[-5, -3.5], [0, -3.5], [5, -3.5], [-5, 1], [5, 1]]) table(c, tx, tz, { round: true, cloth: "#f7f1e6", chairs: 2, chairColor: "#1d4e6b" });
+    // the date (Sam or Emma) waits at the middle table, on its one chair on the far side; you stand on the near side
+    for (const [tx, tz] of [[-5, -3.5], [0, -3.5], [5, -3.5], [-5, 1], [5, 1]]) {
+      const date = tx === 0 && tz === -3.5;
+      table(c, tx, tz, { round: true, cloth: "#f7f1e6", chairs: date ? 1 : 2, from: date ? -Math.PI / 2 : undefined, chairColor: "#1d4e6b" });
+    }
     for (const [tx, tz] of [[-5, -3.5], [0, -3.5], [5, -3.5], [-5, 1], [5, 1]]) c.M.add("candle", mat("#fff3c4", { emissive: "#c99a2e" }), cylGeo(0.04, 0.04, 0.18, tx, 0.88, tz, 6), false);
     counter(c, 0, 3.8, 5, 0.9, "#1d4e6b", "#eaf3f7");
     c.M.add("lifebuoy", mat("#e45b4f"), new THREE.TorusGeometry(0.4, 0.12, 8, 16).rotateY(Math.PI / 2).translate(-c.w / 2 + 0.2, 2.6, 0), false);
     lamp(c, -5, -3.5, 3.2); lamp(c, 0, -3.5, 3.2); lamp(c, 5, -3.5, 3.2);
     plant(c, 8, 5.5, 0.9);
-  }, [{ npc: "sam", x: 0.9, z: -3.9, rot: -Math.PI / 2, sit: true }, { npc: "emma", x: 0.9, z: -3.9, rot: -Math.PI / 2, sit: true }], { floorKind: "wood", accent: "#1d4e6b", warm: true }),
+  }, [{ npc: "sam", x: 0, z: -4.45, rot: 0, sit: true, ax: 0, az: -2.25 }, { npc: "emma", x: 0, z: -4.45, rot: 0, sit: true, ax: 0, az: -2.25 }], { floorKind: "wood", accent: "#1d4e6b", warm: true }),
 
   // Harbor Family Clinic: a small waiting corner by the door, the exam room behind it. Dr. Carter stands
   // beside the exam table.

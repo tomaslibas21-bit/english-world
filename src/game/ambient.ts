@@ -9,6 +9,7 @@ import { carGeometry as styledCarGeometry } from "./world/styled";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand } from "./world/util";
+import { CAR, TRAFFIC_LANES } from "./world/layout";
 
 interface Walker {
   ch: GameCharacter; female: boolean;
@@ -28,12 +29,7 @@ const F_HAIR: HairStyle[] = ["long", "bun", "ponytail", "curly", "bob", "wavy"];
 const M_HAIR: HairStyle[] = ["short", "buzz", "side", "bald", "curly", "wavy"];
 const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c14e", "#9b5de5", "#b0b7bf"];
 
-/** Lanes (right-hand traffic): eastbound on the south half of the road, westbound on the north half. */
-const LANES: { z: number; dir: 1 | -1; from: number; to: number }[] = [
-  { z: -5.5, dir: 1, from: -102, to: 116 }, { z: -10.5, dir: -1, from: -102, to: 116 },
-  { z: 40.2, dir: 1, from: -102, to: 124 }, { z: 35.8, dir: -1, from: -102, to: 124 },
-  { z: -52.8, dir: 1, from: -102, to: 124 }, { z: -57.2, dir: -1, from: -102, to: 124 },
-];
+const LANES = TRAFFIC_LANES;
 
 export class Ambient {
   group = new THREE.Group();
@@ -54,7 +50,9 @@ export class Ambient {
       mesh.castShadow = true;
       if (IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
       mesh.rotation.y = lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-      const t = (i * 0.37 + this.r() * 0.2) % 1;
+      // the cars sharing a lane start spread out along it (never on top of each other)
+      const k = Math.floor(i / LANES.length), inLane = Math.ceil((nc - (i % LANES.length)) / LANES.length);
+      const t = ((i * 0.37) % 1 + this.r() * 0.15 + k / inLane) % 1;
       const x = lane.from + (lane.to - lane.from) * t;
       mesh.position.set(x, 0, lane.z);
       this.group.add(mesh);
@@ -183,7 +181,7 @@ export class Ambient {
     for (const w of this.walkers) gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {
       const a = (o.x - c.x) * c.dir;
-      if (a > 0 && a < 14) gap = Math.min(gap, a - 3.5);
+      if (a > 0 && a < 16) gap = Math.min(gap, a - CAR.length + 0.7);
     }
     const want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
     c.speed += Math.max(-9 * dt, Math.min(3 * dt, want - c.speed));

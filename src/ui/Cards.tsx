@@ -136,8 +136,8 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
     <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
       <div className="wpop-en" lang="en">{shown}</div>
-      {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
+      {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
       <div className="wpop-acts">
         {!dash && (wordIn
           ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Kortelėse</span>

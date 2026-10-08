@@ -208,7 +208,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .convo-head .who { flex: 1; min-width: 0; padding-left: 2px; }
 .convo-head .who b { display: block; font-size: 1.14em; line-height: 1.15; font-weight: 900; }
-.convo-head .who span { display: block; margin-top: 2px; font-size: 0.8em; color: var(--ink-soft); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* who they are and where: shown in full (wrapping), never cut with "…" */
+.convo-head .who span { display: block; margin-top: 2px; font-size: 0.8em; line-height: 1.3; color: var(--ink-soft); font-weight: 700; overflow-wrap: break-word; }
 .toggles { display: flex; gap: 2px; padding: 3px; background: rgba(31, 42, 51, 0.06); border-radius: 12px; flex: none; }
 .toggle {
   border: 0; background: transparent; border-radius: 9px; padding: 4px 8px; font-weight: 900; font-size: 0.76em; letter-spacing: 0.03em; color: var(--ink-soft);
@@ -246,7 +247,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .mission-dots i { width: 8px; height: 8px; border-radius: 50%; background: #e0d8ca; display: block; transition: background-color 0.3s; }
 .mission-dots i.d { background: #3aa76d; }
 .mission-dots i.c { background: var(--gold); box-shadow: 0 0 0 3px rgba(244, 180, 0, 0.22); }
-.mission-now { flex: 1; min-width: 0; font-weight: 800; font-size: 0.92em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mission-now { flex: 1; min-width: 0; font-weight: 800; font-size: 0.92em; line-height: 1.3; overflow-wrap: break-word; }
 .mission-now .done-ico { color: #2f8f5b; vertical-align: -3px; margin-right: 1px; }
 .mission-bar .chev { color: var(--ink-faint); transition: transform 0.2s ease; }
 .mission-bar[aria-expanded="true"] .chev { transform: rotate(180deg); }
@@ -276,8 +277,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .gx-text { min-width: 0; flex: 1; }
 .gx .il { font-size: 1.28em; column-gap: 0.5em; row-gap: 0.35em; }
 .gx .il.plain { line-height: 1.25; }
-.gx .u { max-width: 100%; }
-.gx .u .ipa { font-size: 0.6em; white-space: normal; overflow-wrap: anywhere; }
+.gx .u .ipa { font-size: 0.6em; }
 .gx .nat { font-size: 0.84em; margin-top: 6px; padding: 1px 0 1px 9px; }
 .gx .play, .hint-row .play {
   flex: none; border: 0; background: var(--accent-soft); color: var(--accent); width: 40px; height: 40px; border-radius: 50%;
@@ -319,17 +319,20 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .msg.note .bubble { display: flex; gap: 10px; align-items: flex-start; background: #fff8dc; border: 1px solid #f1dd92; border-radius: 14px; padding: 10px 13px; font-family: var(--en); font-size: 1.2em; }
 .msg.note .note-ico { color: #a07400; margin-top: 1px; }
 
-/* interlinear units (as in the book reader: centred units, wrapping only between units) */
+/* interlinear units (as in the book reader: centred units, wrapping between units). A unit is never wider than its
+   line: one that would be (a long phrase in a narrow column) wraps inside itself, so nothing runs under the buttons
+   beside it or past the panel's edge. */
 .il { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 0.62em; row-gap: 0.55em; font-family: var(--en); font-size: calc(1.42em); line-height: 1.18; }
 .il.plain { display: block; line-height: 1.45; }
 .il.plain .u { display: inline; }
 .il.plain .u .en::after { content: " "; }
-.u { display: inline-flex; flex-direction: column; align-items: center; text-align: center; }
-.u .en { white-space: nowrap; color: var(--ink); }
-.u .lt { font-family: var(--ui); font-size: 0.6em; color: var(--lt); white-space: nowrap; margin-top: 0.16em; font-weight: 600; letter-spacing: 0.005em; }
+.u { display: inline-flex; flex-direction: column; align-items: center; text-align: center; max-width: 100%; }
+.u .en, .u .ipa, .u .lt { overflow-wrap: break-word; }
+.u .en { color: var(--ink); }
+.u .lt { font-family: var(--ui); font-size: 0.6em; color: var(--lt); margin-top: 0.16em; font-weight: 600; letter-spacing: 0.005em; }
 .u .lt.dash { color: var(--dash); }
 .u .lt.flag { border-bottom: 1px dotted var(--dash); cursor: help; }
-.u .ipa { font-family: var(--ipa-font); font-size: 0.56em; color: var(--ipa); white-space: nowrap; margin-top: 0.1em; }
+.u .ipa { font-family: var(--ipa-font); font-size: 0.56em; color: var(--ipa); margin-top: 0.1em; }
 .nat { font-family: var(--ui); font-size: 0.92em; color: #4e5963; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; margin-top: 8px; line-height: 1.4; }
 .hl .u .en { color: var(--accent); }
 
@@ -379,8 +382,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .hint-row .ex { grid-column: 1 / 2; }
 .hint-row .ex .il { font-size: 1.28em; }
 .hint-row .ex { min-width: 0; }
-.hint-row .u { max-width: 100%; }
-.hint-row .u .ipa, .hint-row .u .lt { white-space: normal; overflow-wrap: anywhere; }
 .hint-row .play { grid-row: 1 / 3; grid-column: 2; width: 42px; height: 42px; }
 .hint-row .tag { font-size: 0.7em; font-weight: 900; color: #fff; background: var(--ink-faint); border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; font-family: var(--ui); letter-spacing: 0.02em; }
 .hint-row .tag.polite { background: var(--good); }
@@ -524,16 +525,18 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 .contact.current { outline: 3px solid var(--gold); }
 
-.settings-grid { display: grid; gap: 10px; }
-.set-row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #ebe3d5; border-radius: 14px; padding: 11px 12px 11px 14px; box-shadow: 0 1px 2px rgba(20, 30, 40, 0.03); }
-.set-row .txt { flex: 1; }
+/* one column as wide as the panel (a wide row, such as the four world styles, wraps instead of widening them all) */
+.settings-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: #fff; border: 1px solid #ebe3d5; border-radius: 14px; padding: 11px 12px 11px 14px; box-shadow: 0 1px 2px rgba(20, 30, 40, 0.03); }
+.set-row .txt { flex: 1 1 12em; min-width: 0; overflow-wrap: break-word; }
+.set-row input[type="range"] { max-width: 100%; }
 .set-row .txt b { display: block; }
 .set-row .txt span { display: block; font-size: 0.82em; color: var(--ink-soft); line-height: 1.35; margin-top: 1px; }
 .switch { width: 58px; height: 34px; border-radius: 999px; border: 0; background: #d5dbe0; position: relative; flex: none; transition: background-color 0.2s; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1); }
 .switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: left 0.18s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
 .switch.on { background: var(--accent); }
 .switch.on::after { left: 28px; }
-.seg { display: inline-flex; background: #eef0f2; border-radius: 12px; padding: 3px; }
+.seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; background: #eef0f2; border-radius: 12px; padding: 3px; }
 .seg button { border: 0; background: none; border-radius: 9px; padding: 6px 12px; font-weight: 800; color: var(--ink-soft); transition: background-color 0.15s, color 0.15s; }
 .seg button:hover { color: var(--ink); }
 .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
@@ -561,6 +564,12 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @media (max-width: 900px) {
   .convo-head { gap: 6px; padding: 10px 10px 8px 12px; }
   .convo-head .avatar { display: none; }
+  /* the name on the buttons' row, who they are and where on a full-width row under it */
+  .convo-head { flex-wrap: wrap; row-gap: 1px; }
+  .convo-head .who { display: contents; }
+  .convo-head .who b { flex: 1 1 0; min-width: 0; padding-left: 2px; overflow-wrap: break-word; }
+  .convo-head .toggles, .convo-head .head-actions { order: 1; }
+  .convo-head .who span { order: 2; flex: 1 0 100%; margin-top: 0; padding-left: 2px; }
   .convo-head .toggles { padding: 2px; }
   .convo-head .toggle { min-height: 32px; min-width: 34px; padding: 4px 6px; }
   .convo-head .head-actions { gap: 3px; }
@@ -583,6 +592,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @media (max-width: 480px) {
   body { font-size: calc(17px * var(--scale)); }
+  .mission-dots { display: none; }
   .objective-card { left: 8px; top: 8px; padding: 9px 11px; }
   .minimap { top: 8px; right: 8px; }
   .sheet-head { padding: 12px 12px 12px 14px; gap: 10px; }

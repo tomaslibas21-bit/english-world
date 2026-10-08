@@ -1,6 +1,6 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect } from "./util";
 import { STYLED, IS_REAL, grade } from "../style";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
@@ -595,10 +595,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
     col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3);
   };
   let ci = 0;
-  for (const [x, z, rot] of [[-80, -4.6, Math.PI / 2], [-30, -4.6, Math.PI / 2], [34, -4.6, Math.PI / 2], [88, -11.4, -Math.PI / 2], [-40, -11.4, -Math.PI / 2],
-    [-60, 41.2, Math.PI / 2], [30, 34.8, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [96, 41.2, Math.PI / 2]] as [number, number, number][]) {
-    car(x, z, rot, colors[ci++ % colors.length]);
-  }
+  for (const [x, z, rot] of PARKED_CARS) car(x, z, rot, colors[ci++ % colors.length]);
   void group; void r;
 }
 
@@ -705,7 +702,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     sign.position.set(s.x, 2.2, s.z + 1.12);
     group.add(sign);
   }
-  // benches around the fountain (Rosa sits on the north one)
+  // benches around the fountain, their backs to it (Rosa sits on the south-west one, facing south)
   for (const [bx, bz, rot] of [[18, -23.2, Math.PI], [30, -22.6, Math.PI], [40, -30, -Math.PI / 2]] as [number, number, number][]) {
     M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(bx, 0, bz));
     M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.5, 0.08, 0, 0.8, 0.22).rotateY(rot).translate(bx, 0, bz));
