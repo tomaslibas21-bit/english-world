@@ -184,8 +184,9 @@ export interface SituationDef {
    *  `done` predicate on the conversation state. `when` (or the step's `when`) + `optional` hides items that
    *  don't apply ("Pasirink dydį" only for drinks with sizes). Without `mission`, the steps are listed. */
   mission?: MissionItem[];
-  /** Source song number (62–91). */
-  song: number;
+  /** Source song: its number (31–35, 62–91: the course's S96–S100, S62–S91) or, for the advanced songs, the course's
+   *  own id ("P25"). */
+  song: number | string;
   songTitle: string;
   title: { en: string; lt: string };
   topic: { en: string; lt: string };

@@ -1,6 +1,6 @@
 # English World · Maple Harbor
 
-A browser game for Lithuanian adults practising spoken **American English**. You arrive at a small, friendly American coastal town, walk around, go into places and talk with the people there. The 41 conversations cover 35 situation songs (31–35 and 62–91) and go well beyond their lyrics.
+A browser game for Lithuanian adults practising spoken **American English**. You arrive at a small, friendly American coastal town, walk around, go into places and talk with the people there. The 47 conversations cover 41 situation songs (31–35 and 62–91, and the advanced songs P25–P30) and go well beyond their lyrics.
 
 - **Say it your way.** People react to what you actually said. They fill in details you gave, don't ask again for them, accept short answers, keep negation ("I *don't* want a cappuccino") and ask when something is unclear.
 - **Lithuanian suggestions say _what_ you could say; English hints show _how_.** Clicking a suggestion never answers for you.
@@ -72,7 +72,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 | Folder | What is there |
 |---|---|
 | `src/convo/` | The conversation engine: normalizer (contractions, homophones, fillers, learner word forms), pattern grammar with full-coverage matching and learner tolerance (missing or extra small words, names used as address, safe fallback; see AUTHORING.md §5), NLU ranking with meaning-safety rules for negations, dialogue manager (steps, slot filling, pending questions, twists, memory), interlinear composer with Lithuanian agreement, IPA lookup, speech attempt |
-| `src/content/` | One file per situation (`situations/sNN-*.ts`), shared intents and hints (`global.ts`), people (`npcs.ts`), places (`locations.ts`), the merge registry for interlinear units (`merges.ts`) |
+| `src/content/` | One file per situation (`situations/sNN-*.ts`; the advanced songs' `pNN-*.ts`), shared intents and hints (`global.ts`), people (`npcs.ts`), places (`locations.ts`), the merge registry for interlinear units (`merges.ts`) |
 | `src/game/` | Three.js world: procedural town and interiors, characters, camera, collisions, A* navigation, guidance trail, conversation sessions, audio |
 | `src/ui/` | React overlay: conversation panel, HUD, map, journal, phone, settings, phrasebook |
 | `tools/` | Content validator, simulator, IPA builder, audio builder, index generator |
@@ -82,7 +82,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 ## Looks
 
 - **World styles (kept for later, not in the published game).** Besides the default block look, three trial looks for the 3D town are built in code: **Animacija** (bright cartoon with outlines and big round heads), **Iliustracija** (the teal, orange and cream palette of the illustrated scenes) and **Tikroviškas** (natural proportions, realistic materials and reflections). Published builds show only the block look (owner's decision, 28 Sep 2026). To try the others, run `npm run dev` (Settings → *Pasaulio stilius*, or `?style=toon`, `storybook`, `realistic`), or build with `VITE_WORLD_STYLES=1`. Code: `src/game/style.ts`, `worldStyles.ts`, `styleScene.ts`, `world/styled.ts`, `characters/`.
-- **Illustrated scenes.** In all 41 conversations, calls included, the game shows one picture per phase instead of the 3D view (265 WebP pictures in `public/scenes/`, about 22 MB; full-quality originals are kept locally in `.art-originals/`, which isn't published). Settings → *Iliustruotos scenos* turns this off. See `docs/SCENE-ART.md`; `npx tsx tools/scene-walk.ts` checks every scene against the simulated conversations.
+- **Illustrated scenes.** In the first 41 conversations, calls included, the game shows one picture per phase instead of the 3D view (the six advanced ones, P25–P30, wait for theirs: `docs/PICTURES-WANTED.md`) (265 WebP pictures in `public/scenes/`, about 22 MB; full-quality originals are kept locally in `.art-originals/`, which isn't published). Settings → *Iliustruotos scenos* turns this off. See `docs/SCENE-ART.md`; `npx tsx tools/scene-walk.ts` checks every scene against the simulated conversations.
 - **Icons.** Hand-drawn SVG icons (`src/ui/icons.tsx`), with no emoji anywhere in the interface.
 
 ## Learning features
@@ -131,7 +131,7 @@ So recognition needs an internet connection in most browsers. Audio sent to Goog
 ## Testing status
 
 - **Automated:** `npm test` (engine unit tests); `npm run check:content` over every conversation. The content check covers grammar validity, interlinear unit counts for both address forms and both genders, registered merges, per-situation NLU tests (3,600+), scripted simulations on 12 random seeds each, and 80 random-order conversations each, checking that no handler crashes. The simulations are played by `tools/sim-play.ts`, the same way in every tool: each scripted turn is said when its turn comes (a stock answer covers only a question the script answers later), and a turn that is never said is reported, because it wasn't tested.
-- **Understanding learner answers** (`tools/coverage.ts`). `tests/corpus/` holds about 11,600 practice sentences (every answer point of every situation: fluent, learner-style and short answers, plus meaning-flip traps); nearly all are understood and no trap is accepted. `tests/heldout/` is a separate **blind** set of about 4,700 sentences written without looking at the grammar; its even half was never used for tuning. On that half the original engine understood 58% correctly and the current one about 79%, with fewer traps accepted than before. The five newest conversations (songs 31–35) got their own blind sentences after they were written: 77% understood correctly, and 0 of 61 traps accepted. Don't tune patterns against `tests/heldout/`, or it stops being a fair measure.
+- **Understanding learner answers** (`tools/coverage.ts`). `tests/corpus/` holds about 13,100 practice sentences (every answer point of every situation: fluent, learner-style and short answers, plus meaning-flip traps); nearly all are understood and no trap is accepted. `tests/heldout/` is a separate **blind** set of about 4,700 sentences written without looking at the grammar; its even half was never used for tuning. On that half the original engine understood 58% correctly and the current one about 79%, with fewer traps accepted than before. The five newest conversations (songs 31–35) got their own blind sentences after they were written: 77% understood correctly, and 0 of 61 traps accepted. Don't tune patterns against `tests/heldout/`, or it stops being a fair measure.
 - **In the game (browser):** every conversation was played end to end through the real session code (typed input), in its real place with its NPC present, including phone and video calls and world events (taxi rides, bus rides, boarding, items handed over). The towns, all interiors, the mobile layout and touch controls were checked visually.
 
 ## Known limitations

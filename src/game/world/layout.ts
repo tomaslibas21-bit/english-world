@@ -89,7 +89,15 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   // Frank waits for the bus at the east end of the Oak Avenue shelter, looking out for it; you stand
   // with him under the shelter roof
   { npc: "frank", x: -7.5, z: 43.9, rot: Math.PI, ax: -9.5, az: 43.9 },
+  // Advanced song P25: Maggie Holt by her convertible for sale (CONVERTIBLE) in the drive on Cedar Lane, the quiet
+  // stretch between the two houses east of the clinic; you stand on the sidewalk
+  { npc: "maggie", x: 101.2, z: 47.7, rot: Math.PI, ax: 101.2, az: 45.5 },
 ];
+
+/** Maggie's cherry-red convertible, for sale in her drive (advanced song P25), facing the street. */
+export const CONVERTIBLE = { x: 99.25, z: 50.9, rot: Math.PI };
+/** Her drive, from Oak Avenue's curb back between the two houses: no street tree or lamp in the way. */
+export const CEDAR_DRIVE = { x1: 96, x2: 102.5, z1: 42.5, z2: 59 };
 
 /** Where a taxi (or the map's "go there") drops the player for outdoor places. */
 export const DROPOFF: Record<string, { x: number; z: number; rot: number }> = {
@@ -97,6 +105,7 @@ export const DROPOFF: Record<string, { x: number; z: number; rot: number }> = {
   "taxi-stand": { x: 124, z: 1.2, rot: Math.PI },
   "sophies-house": { x: -42.5, z: 44.4, rot: 0 },
   "bus-stop": { x: -6, z: 46, rot: Math.PI },
+  "cedar-lane": { x: 99.6, z: 44.9, rot: 0 },
 };
 
 /** Market stalls in the town square. */
@@ -122,7 +131,7 @@ export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }
 /** Cars parked at the curb: x, z and heading (π/2: facing east, −π/2: west, 0: south, π: north). */
 export const PARKED_CARS: [number, number, number][] = [
   [-80, -4.2, Math.PI / 2], [-30, -4.2, Math.PI / 2], [34, -4.2, Math.PI / 2], [88, -11.8, -Math.PI / 2], [-40, -11.8, -Math.PI / 2],
-  [-60, 41.45, Math.PI / 2], [30, 34.55, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [96, 41.45, Math.PI / 2],
+  [-60, 41.45, Math.PI / 2], [30, 34.55, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [88, 41.45, Math.PI / 2],
 ];
 
 export const TAXI = { x: 121, z: -4.8, rot: -Math.PI / 2 };

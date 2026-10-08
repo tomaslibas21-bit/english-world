@@ -137,6 +137,27 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.light, hair: { style: "short", color: HAIR.white }, top: "#6b8e5a", bottom: "#3a3f4a", acc: ["glasses", "hat"], accColor: "#5b4636", build: 1.05 }, { informal: true, bio: "Išėjęs į pensiją, mėgsta pasikalbėti apie orus." }),
   N("jordan", "Jordan", ["Personal trainer", "Asmeninė trenerė"], "f", "af_bella",
     { skin: SK.tan, hair: { style: "ponytail", color: HAIR.black }, top: "#1f8a8a", bottom: "#23232e", acc: ["badge"] }, { informal: true, bio: "Energinga trenerė, visada šypsosi." }),
+  // Advanced songs P25–P30 (chapter 8). Mr. Patel (P29), Rita, Dan and Nora (P30) are the people above.
+  N("maggie", "Maggie Holt", ["Selling her car", "Parduoda savo automobilį"], "f", "af_alloy",
+    { skin: SK.light, hair: { style: "bob", color: HAIR.gray }, top: "#5d7ea8", bottom: "#c9b48a", acc: ["earrings"], height: 0.97 },
+    { bio: "Buvusi teatro mokytoja. Savo kabrioletą vadina „ja“ ir mėgsta pasiderėti." }),
+  N("kyle", "Kyle", ["Customer service, Harbor Home", "„Harbor Home“ klientų aptarnavimas"], "m", "am_liam",
+    { skin: SK.tan, hair: { style: "short", color: HAIR.brown }, top: "#e07b39", bottom: "#2b2f3b", acc: ["headset", "badge"] }),
+  // Harbor Home's recorded hold message (P26), like netwave_bot
+  N("harbor_bot", "Harbor Home", ["Recorded message", "Įrašytas pranešimas"], "f", "af_river",
+    { skin: SK.fair, hair: { style: "bald", color: HAIR.gray }, top: "#2f6f8f", bottom: "#2a2a35" }),
+  N("brenda", "Brenda", ["Customer care manager, Harbor Home", "„Harbor Home“ klientų aptarnavimo vadovė"], "f", "af_sarah",
+    { skin: SK.dark, hair: { style: "bob", color: HAIR.black }, top: "#34495e", bottom: "#2b2f3b", acc: ["headset", "glasses", "earrings"] }),
+  N("vanessa", "Vanessa", ["Marketing lead, Brightline", "Rinkodaros vadovė, „Brightline“"], "f", "af_nova",
+    { skin: SK.fair, hair: { style: "curly", color: HAIR.black }, top: "#b0303a", bottom: "#2b2f3b", acc: ["lanyard", "earrings"] }, { informal: true }),
+  N("greg", "Greg", ["Team manager, Brightline", "Komandos vadovas, „Brightline“"], "m", "am_fenrir",
+    { skin: SK.light, hair: { style: "short", color: HAIR.gray }, top: "#7d8a87", bottom: "#33394a", acc: ["glasses", "cardigan", "beard"], accColor: "#5b6b78", build: 1.06 }, { informal: true }),
+  N("whitaker", "Chef Whitaker", ["Head chef, The Pier", "Vyriausiasis virėjas, „The Pier“"], "m", "am_onyx",
+    { skin: SK.brown, hair: { style: "short", color: HAIR.gray }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["chef", "apron", "beard"], accColor: "#f7f5f0", build: 1.05, height: 1.06 },
+    { bio: "Kalba tyliai, bet nieko nepraleidžia pro akis." }),
+  N("russo", "Mia Russo", ["Junior cook", "Jaunoji virėja"], "f", "af_sky",
+    { skin: SK.olive, hair: { style: "ponytail", color: HAIR.black }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["apron"], accColor: "#1d4e6b", height: 0.95 },
+    { informal: true, bio: "Pirmą savaitę virtuvėje, nervinasi, bet turi talentą." }),
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

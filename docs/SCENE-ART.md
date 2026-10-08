@@ -91,7 +91,7 @@ Model: Higgsfield `nano_banana_pro` (Nano Banana Pro), `aspect_ratio: "16:9"`, `
 
 ## Status
 
-**All 41 situations have pictures:** 265 pictures in 42 scenes, for every face-to-face situation and the 5 phone and video calls. The date has two scenes, one for Emma and one for Sam.
+**The first 41 situations have pictures:** 265 pictures in 42 scenes, for every face-to-face situation and the 5 phone and video calls. The date has two scenes, one for Emma and one for Sam. The six advanced conversations P25–P30 (8 Oct 2026) wait for theirs: 32 pictures, briefed with ready scene files in `docs/PICTURES-WANTED.md`.
 
 | Scene | Person | Pictures | Names |
 |---|---|---|---|

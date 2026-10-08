@@ -6,7 +6,7 @@
 
 During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel.
 
-**Status (28 Sep 2026): nothing is wanted right now.** All 41 conversations have their pictures (265 in total). The 40 pictures for songs 31–35 below were made by ChatGPT from this brief. The sections stay as a record and as a template for the next brief: a new conversation gets a section like these, with a ready scene file.
+**Status (8 Oct 2026): 32 pictures are wanted** for the six advanced conversations P25–P30: see "Wanted" below. The first 41 conversations have their pictures (265 in total); the 40 pictures for songs 31–35 were made by ChatGPT from this brief, and their sections stay as a record.
 
 ## Where to look
 
@@ -43,6 +43,207 @@ During a conversation, the game shows **one illustrated picture per phase** of t
   - Commit one scene at a time: its pictures and its scene file together, so that a scene file never points to pictures that aren't there yet.
   - Commit as `tomaslibas21-bit <299487494+tomaslibas21-bit@users.noreply.github.com>` (set `git config user.name` and `user.email` in your copy of the repository), so that no personal name or email address appears in the public history.
   - After pushing, check the scene in the live game: https://tomaslibas21-bit.github.io/english-world/ → "Visos situacijos" → the conversation.
+
+## Wanted: the six advanced conversations P25–P30 (32 pictures, 8 Oct 2026)
+
+These conversations come from the advanced situation songs P25–P30 (chapter 8, „Pažengusiems“). They play without pictures until these exist (the 3D view, or the call screen for the phone call). Each section has the people, the place, the pictures and the ready scene file. The scene files were checked against the simulated conversations: every picture shows up, and every moment name exists.
+
+- **Size, for every picture:** 2048 × 1152 px (16:9), WebP quality about 80, under 250 KB, as in "Files" above.
+- **People who are already in the game** (Mr. Patel, Rita, Dan, Nora) must look as in their existing pictures, which are linked. The others are new; their looks also match their 3D figures in `src/content/npcs.ts`.
+- **Text:** only the words given in **bold**, word for word.
+
+### p25-used-car: Maggie Holt sells her convertible on Cedar Lane (5 pictures)
+
+- **Maggie Holt** (new): about 60, light skin, short silver hair in a bob, big sunglasses pushed up on her head, a denim shirt with rolled-up sleeves, khaki trousers, small earrings, the car keys on a red keychain. A retired drama teacher: warm, funny, proud of her car, and she enjoys a good haggle.
+- **The car:** a cherry-red 1998-style convertible (no brand marks), top down, cream seats, chrome bumpers, a hand-written sign in the windshield with exactly **FOR SALE $9,000**.
+- **Place:** Maggie's drive on Cedar Lane, a quiet residential street, on a sunny late afternoon: a white clapboard house with a porch, a maple tree, a mailbox with a small dent at the curb. The car stands in the drive, facing the street.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `driveway` | Maggie beside the car, one hand on its door, smiling at the viewer, the keys on the red keychain in her other hand | arrive, look, drive, drive_q |
+| `back` | Seen from the driver's seat as the car rolls back into the drive after the test drive: the red hood in the foreground, Maggie waiting with her arms open ("Welcome back!") | opinion |
+| `haggle` | Maggie leaning against the car, arms folded, a sly smile (haggling) | talk, price, offer, confirm, final, flaw |
+| `phone` | The same, Maggie glancing at her buzzing phone (the screen shows only a message bubble, no readable text), eyebrows raised | rival (another buyer texts) |
+| `deal` | A handshake beside the car; the keys on the red keychain changing hands; Maggie beaming | shake, pay |
+
+```json
+{
+  "npc": "Maggie Holt, selling her car",
+  "images": ["driveway", "back", "haggle", "phone", "deal"],
+  "start": "driveway",
+  "phases": {
+    "arrive": "driveway", "look": "driveway", "drive": "driveway", "drive_q": "driveway", "howareyou": "driveway",
+    "opinion": "back",
+    "talk": "haggle", "haggle": "haggle", "decide": "haggle", "price": "haggle", "offer": "haggle", "confirm": "haggle", "final": "haggle", "flaw": "haggle",
+    "rival": "phone",
+    "shake": "deal", "pay": "deal"
+  },
+  "focus": [34, 32]
+}
+```
+
+### p26-complaint: Kyle and Brenda at Harbor Home, on the phone (5 pictures)
+
+A phone call: the pictures show the learner's kitchen and the other end of the line.
+
+- **Kyle** (new): early twenties, tan skin, short brown hair, an orange polo shirt, a headset and a blank name badge. Friendly and eager, reading from a script.
+- **Brenda** (new): in her fifties, dark skin, a short black bob, reading glasses on a chain, a navy cardigan, small earrings and a headset. Calm, experienced, kind but businesslike.
+- **Places:**
+  - the learner's kitchen in Maple Harbor: a shiny new fridge with a small screen on its door;
+  - Harbor Home's call center: bright and a little too cheerful, a wall of identical blue cubicles, a plain logo shape without letters;
+  - Brenda's neat glass office: a shelf of identical mugs behind her, a coupon pad on the desk.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `hold` | The kitchen: the new fridge, whose screen still glows green with exactly **Good morning, sunshine!**, while a puddle spreads in front of it; a phone on speaker on the counter | the start, problem, plugged |
+| `kyle` | Kyle in his cubicle, reading from a laminated script whose top line says exactly **1. Is it plugged in?**, a big helpful smile | name, history, offer_manager, book_tuesday |
+| `transfer` | The kitchen again: the phone held to the ear (only a hand and the phone are seen), small music notes and waves floating from it (on hold) | transfer |
+| `brenda` | Brenda in her glass office, glasses on, listening and taking notes, the coupon pad and the shelf of mugs behind her | offer, refund_or, anything |
+| `deal` | Brenda smiling, typing; a sticky note on her monitor says exactly **HH-4471** | deadline, which_day, confirm, reference, readback |
+
+```json
+{
+  "npc": "Kyle and Brenda, Harbor Home customer service (phone)",
+  "images": ["hold", "kyle", "transfer", "brenda", "deal"],
+  "start": "hold",
+  "phases": {
+    "problem": "hold", "plugged": "hold",
+    "name": "kyle", "history": "kyle", "offer_manager": "kyle", "book_tuesday": "kyle",
+    "transfer": "transfer",
+    "offer": "brenda", "refund_or": "brenda", "anything": "brenda",
+    "deadline": "deal", "which_day": "deal", "confirm": "deal", "reference": "deal", "readback": "deal"
+  },
+  "focus": [34, 32]
+}
+```
+
+### p27-meeting: Vanessa and Greg in the Brightline meeting room (5 pictures)
+
+- **Vanessa** (new): early 40s, fair skin, dark curly shoulder-length hair, a red blazer over a dark top, small earrings and a lanyard with a blank badge. Quick, confident and theatrical, warm underneath.
+- **Greg** (new): mid-50s, light skin, short gray hair, a gray beard, reading glasses pushed up on his head, a gray-green cardigan over a shirt. Calm, dry, always holding a huge coffee mug.
+- **Place:** the Brightline glass meeting room as in [`s34-meeting/update.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s34-meeting/update.webp): light wood table, sage-green chairs, a big wall screen, glass walls, plants; Monday-morning light, the harbor through the window. The learner's empty chair faces Vanessa; two young interns sit at the back of the room. The screen shows simple charts and shapes only, except where text is given below.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `pitch` | Vanessa by the wall screen (a rising bar chart), clicker in hand, mid-sentence and smiling; Greg at the head of the table with his huge mug; the two interns at the back sharing a bag of popcorn | pitch |
+| `charts` | Closer on Vanessa in full flow, one hand raised toward a screen full of charts; the interns lean in, popcorn halfway to their mouths | charts, reason |
+| `counter` | The screen shows a phone mockup of an old website and exactly **$4,000/month**; Vanessa turned toward the viewer, eyebrows raised; Greg sipping, amused | counter, alternative, twist |
+| `resolve` | Everyone leaning over the table; Greg with one hand raised, about to make the call | resolve, so_agree |
+| `teal` | The screen shows three button swatches: blue, green and a teal one between them; Vanessa half-smiling, two coffee cups on the table (shown at the end of a meeting that went well) | coffee, teal, teal2, and the end |
+
+```json
+{
+  "npc": "Vanessa, marketing lead (and Greg, team manager)",
+  "images": ["pitch", "charts", "counter", "resolve", "teal"],
+  "start": "pitch",
+  "done": "teal",
+  "phases": {
+    "pitch": "pitch",
+    "charts": "charts", "reason": "charts",
+    "counter": "counter", "alternative": "counter", "twist": "counter",
+    "resolve": "resolve", "so_agree": "resolve",
+    "coffee": "teal", "teal": "teal", "teal2": "teal"
+  },
+  "focus": [32, 30]
+}
+```
+
+### p28-kitchen: Chef Whitaker and Mia Russo in the kitchen of The Pier (5 pictures)
+
+- **Chef Whitaker** (new): early 60s, tall, brown skin, short gray hair, a gray beard, a white chef's jacket and apron, a tasting spoon. Quiet, precise and kind; nothing gets past him.
+- **Mia Russo** (new): 19, olive skin, black hair tied back in a ponytail, a white top and an oversized deep-blue apron. Her first week in the kitchen: nervous, but talented.
+- **Place:** the back kitchen of The Pier (the restaurant of [`s84-date-emma`](https://github.com/tomaslibas21-bit/english-world/tree/main/public/scenes/s84-date-emma), warm wood and lanterns out front): stainless steel, a rail of order tickets (no readable text), copper pans, a porthole window to the harbor. Across the pass, a bowl of bright-pink cold beet soup with dill and half a boiled egg: the learner's dish.
+- **Second set-up (`mia`, `done`):** the range in the same kitchen, with a pot of creamy clam chowder.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `serve` | Whitaker behind the pass, arms relaxed, looking at the pink soup the learner has just served | serve |
+| `taste` | The same, he tastes the soup from a spoon, eyes half closed, in thoughtful silence | consent, receive |
+| `lemon` | The same, he holds up half a lemon, a gentle smile | example, again, second, handoff |
+| `mia` | The range: Mia over the pot of clam chowder, holding out a wooden spoon toward the viewer, a nervous half-smile; Whitaker in the background, arms folded, smiling | mia_open, mia_worked, mia_try, mia_howmuch, mia_encourage |
+| `done` | The same as `mia`: Mia relieved and smiling, the chef laughing (shown at the end of a conversation that went well) | mia_back, and the end |
+
+```json
+{
+  "npc": "Chef Whitaker, head chef (and Mia Russo, junior cook)",
+  "images": ["serve", "taste", "lemon", "mia", "done"],
+  "start": "serve",
+  "done": "done",
+  "phases": {
+    "serve": "serve",
+    "consent": "taste", "receive": "taste",
+    "example": "lemon", "again": "lemon", "second": "lemon", "handoff": "lemon",
+    "mia_open": "mia", "mia_worked": "mia", "mia_try": "mia", "mia_howmuch": "mia", "mia_encourage": "mia",
+    "mia_back": "done"
+  },
+  "focus": [36, 30]
+}
+```
+
+### p29-landlord: Mr. Patel in the lobby of Maple Street Apartments (6 pictures)
+
+- **Mr. Patel** (as in [`s81-apartment/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s81-apartment/hello.webp): brown skin, short gray hair, a gray mustache, glasses), today dressed for his trip: a bright Hawaiian shirt under an open winter coat, sunglasses pushed up on his head, a rolling suitcase beside him. Friendly, a little guilty, in a hurry.
+- **Rita** (as in [`s82-neighbor/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s82-neighbor/hello.webp): curly red hair, a beige top and jeans), in one picture only.
+- **Place:** the first-floor lobby of Maple Street Apartments, cold in winter: a row of metal mailboxes on the left wall (no names or numbers), the stairs going up, the glass front door with frost on it. The learner's breath and Mr. Patel's show as small clouds in the cold air.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `hello` | Mr. Patel by the front door with his suitcase and keys, caught on his way out, a guilty smile | problem, guess, thermostat, duration |
+| `rita` | Rita at the mailboxes with a few letters in her hand, arms crossed, a "really?" look at Mr. Patel; he looks deadpan | rita |
+| `dodge` | Mr. Patel with his palms up and a shrug ("it's an old building"), then holding out a big wrench with a hopeful grin | dodge, offer |
+| `date` | Mr. Patel looking at the calendar on his phone (the screen shows only a simple grid), one finger raised ("let me see…") | date, home |
+| `rent` | Mr. Patel holding a small receipt pad and a pen (no readable text), the suitcase handle in his other hand | wrap, rent |
+| `bye` | Mr. Patel at the open front door, sunglasses down, waving, the suitcase rolling out behind him | the goodbye |
+
+```json
+{
+  "npc": "Mr. Patel, landlord",
+  "images": ["hello", "rita", "dodge", "date", "rent", "bye"],
+  "start": "hello",
+  "phases": {
+    "problem": "hello", "guess": "hello", "howareyou": "hello", "thermostat": "hello", "duration": "hello",
+    "rita": "rita",
+    "dodge": "dodge", "offer": "dodge",
+    "date": "date", "home": "date",
+    "wrap": "rent", "rent": "rent",
+    "closing": "bye"
+  },
+  "focus": [34, 30]
+}
+```
+
+### p30-start-over: Dan (and Nora) at their front door (6 pictures)
+
+- **Dan** (as in [`s85-dinner/door.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s85-dinner/door.webp): brown skin, short black hair, glasses, a light-blue chambray shirt). Today he is hurt and guarded at first, warm underneath.
+- **Nora** (as in the same picture: light skin, blonde hair in a bun, a rust-orange blouse), in one picture only.
+- **Mittens**, their cat, in the last picture.
+- **Place:** the front door of Dan and Nora's house as in `s85-dinner/door.webp` (dark teal door, gray-blue clapboard, a wall lantern), but on a sunny Saturday morning. To one side the garage door is open on a half-finished wooden boat on sawhorses, tools and a tarp around it.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `porch` | Dan in the half-open door, arms crossed, an unreadable face | door, apology |
+| `hurt` | The same, Dan leaning on the door frame, looking down, hurt | responsibility |
+| `turn` | Arms uncrossed, rubbing the back of his neck, a crooked half-smile ("I was wrong too") | turn |
+| `nora` | The door wide open; Nora leans out of the hall with a coffee pot, smiling; Dan rolls his eyes and smiles | nora |
+| `deal` | Dan smiling, holding out his hand for a handshake ("Deal.") | make_up, start_over |
+| `home` | The door wide open, Dan's hand reaching to the viewer's shoulder, inviting them in; Mittens the cat in the hall, the kitchen light on at the end (shown once they have made up) | the end |
+
+```json
+{
+  "npc": "Dan, your friend (and Nora)",
+  "images": ["porch", "hurt", "turn", "nora", "deal", "home"],
+  "start": "porch",
+  "done": "home",
+  "phases": {
+    "door": "porch", "apology": "porch",
+    "responsibility": "hurt",
+    "turn": "turn",
+    "nora": "nora",
+    "make_up": "deal", "start_over": "deal"
+  },
+  "focus": [36, 30]
+}
+```
 
 ## Done: the five conversations of songs 31–35 (40 pictures, 28 Sep 2026)
 

@@ -595,6 +595,7 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(-3.2, -4.8, 0.2, 6); c.col.addBox(-9.2, -1.8, 3.5, 0.2);
     table(c, -7, -5.2, { cloth: "#e9e4da", chairs: 0, w: 2.4, d: 1.2 });
     seat(c, -7, -6.4, 0, "#2d3a4a"); // Ms. Brooks's chair
+    seat(c, -6.1, -3.95, Math.PI, "#2d3a4a"); // Greg's (advanced song P27: Vanessa presents at the table's west end)
     c.M.add("tv", mat("#1d1d1d"), boxGeo(2.4, 1.3, 0.08, -7, 2.2, -c.d / 2 + 0.1), false);
     // desks (open space)
     for (const [dx, dz] of [[1, -4.5], [4, -4.5], [1, -1], [4, -1], [7, -1]]) desk(c, dx, dz);
@@ -622,6 +623,7 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 4; i++) lamp(c, -6 + i * 5, 0, 3.6);
   }, [
     { npc: "brooks", x: -7, z: -6.4, rot: 0, sit: true }, { npc: "maria", x: 5.5, z: 2.4, rot: Math.PI },
+    { npc: "vanessa", x: -9.4, z: -5.0, rot: Math.PI / 2, ax: -9.1, az: -3.05 }, { npc: "greg", x: -6.1, z: -3.95, rot: Math.PI, sit: true },
     { npc: "kate", x: 7.75, z: -6.75, rot: 0.1, sit: true, ax: 8.6, az: -4.35 }, { npc: "paul", x: 9.45, z: -6.75, rot: -0.15, sit: true },
   ], { floorKind: "carpet", accent: "#34495e" }),
 
@@ -634,10 +636,18 @@ const B: Record<string, () => Interior> = {
     }
     for (const [tx, tz] of [[-5, -3.5], [0, -3.5], [5, -3.5], [-5, 1], [5, 1]]) c.M.add("candle", mat("#fff3c4", { emissive: "#c99a2e" }), cylGeo(0.04, 0.04, 0.18, tx, 0.88, tz, 6), false);
     counter(c, 0, 3.8, 5, 0.9, "#1d4e6b", "#eaf3f7");
+    // the kitchen along the east wall (advanced song P28): a steel counter with the stove, Chef Whitaker and Mia
+    c.M.add("kitchen", mat("#c9ced3"), boxGeo(0.8, 1, 3.6, 8.5, 0.5, -0.8)); c.col.addBox(8.5, -0.8, 0.8, 3.6);
+    c.M.add("stove", mat("#2b2b2b"), boxGeo(0.66, 0.05, 1.3, 8.5, 1.03, -1.7), false);
+    for (const [pz, pc] of [[-2.05, "#9aa5ad"], [-1.35, "#b86b4b"]] as [number, string][]) c.M.add("pot-" + pc, mat(pc), cylGeo(0.2, 0.17, 0.24, 8.5, 1.17, pz, 10), false);
+    for (const pz of [-0.2, 0.25, 0.7]) c.M.add("plate", mat("#ffffff"), cylGeo(0.17, 0.17, 0.02, 8.4, 1.02, pz, 12), false);
+    wallPanel(c, textTexture("Kitchen", { bg: "#1d4e6b", fg: "#ffffff", w: 256, h: 64 }), c.w / 2 - 0.12, 2.5, -0.8, 1.4, 0.35, -Math.PI / 2);
     c.M.add("lifebuoy", mat("#e45b4f"), new THREE.TorusGeometry(0.4, 0.12, 8, 16).rotateY(Math.PI / 2).translate(-c.w / 2 + 0.2, 2.6, 0), false);
     lamp(c, -5, -3.5, 3.2); lamp(c, 0, -3.5, 3.2); lamp(c, 5, -3.5, 3.2);
     plant(c, 8, 5.5, 0.9);
-  }, [{ npc: "sam", x: 0, z: -4.45, rot: 0, sit: true, ax: 0, az: -2.25 }, { npc: "emma", x: 0, z: -4.45, rot: 0, sit: true, ax: 0, az: -2.25 }], { floorKind: "wood", accent: "#1d4e6b", warm: true }),
+  }, [{ npc: "sam", x: 0, z: -4.45, rot: 0, sit: true, ax: 0, az: -2.25 }, { npc: "emma", x: 0, z: -4.45, rot: 0, sit: true, ax: 0, az: -2.25 },
+    { npc: "whitaker", x: 7.5, z: -1.3, rot: -Math.PI / 2, ax: 5.95, az: -1.1 }, { npc: "russo", x: 7.55, z: 0.45, rot: -Math.PI / 2 - 0.35 }],
+    { floorKind: "wood", accent: "#1d4e6b", warm: true }),
 
   // Harbor Family Clinic: a small waiting corner by the door, the exam room behind it. Dr. Carter stands
   // beside the exam table.

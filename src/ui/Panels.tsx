@@ -18,7 +18,7 @@ import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/ca
 import { MyCards, Glyph } from "./Cards";
 import { showToast } from "./Toasts";
 
-export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba" };
+export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems" };
 
 /** The icon of a situation: the phone or camera for calls, else its place. */
 function sitIcon(s: SituationDef): IconName {

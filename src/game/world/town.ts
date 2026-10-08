@@ -1,6 +1,6 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect } from "./util";
 import { STYLED, IS_REAL, grade } from "../style";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
@@ -95,6 +95,7 @@ export function buildTown(): Town {
   addHarbor(M, colliders, group, r);
   addTransport(M, colliders, group, r);
   addBackyard(M, colliders, group);
+  addMaggiesCar(M, colliders, group);
 
   // world bounds
   colliders.addBox((WORLD.minX + WORLD.maxX) / 2, WORLD.minZ - 1, WORLD.maxX - WORLD.minX + 4, 2);
@@ -560,7 +561,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
         const off = rd.w / 2 + SIDEWALK - 0.6;
         const x = horiz ? rd.x1 + d : rd.x1 + s * off;
         const z = horiz ? rd.z1 + s * off : rd.z1 + d;
-        if (nearIntersection(x, z) || nearDoor(x, z)) continue;
+        if (nearIntersection(x, z) || nearDoor(x, z) || inDrive(x, z, 1)) continue;
         addLamp(x, z);
       }
     }
@@ -604,6 +605,11 @@ function nearIntersection(x: number, z: number) {
   for (const v of vs) for (const h of hs) if (Math.abs(x - v.x1) < v.w / 2 + 5 && Math.abs(z - h.z1) < h.w / 2 + 5) return true;
   return false;
 }
+/** In Maggie's drive on Cedar Lane (or within `margin` of it). */
+function inDrive(x: number, z: number, margin = 0) {
+  const d = CEDAR_DRIVE;
+  return x > d.x1 - margin && x < d.x2 + margin && z > d.z1 - margin && z < d.z2 + margin;
+}
 function nearDoor(x: number, z: number) {
   for (const b of BUILDINGS) {
     const { n, t, halfDepth } = faceInfo(b);
@@ -621,7 +627,12 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   const add = (x: number, z: number, s = 1) => { spots.push([x, z, s]); };
   // street trees along Oak Avenue and Harbor Road sidewalks
   for (let x = -96; x < 120; x += 14) {
-    if (!nearIntersection(x, 44.5) && !nearDoor(x, 46)) add(x + r() * 2, 44.8 + r() * 0.4, 0.9);
+    if (!nearIntersection(x, 44.5) && !nearDoor(x, 46)) {
+      // (the same random draws as before, so every other tree keeps its place, size and colour)
+      const tx = x + r() * 2, tz = 44.8 + r() * 0.4;
+      // the one in Maggie's drive moves to the west of it, out of the conversation camera's view (it frames from the east)
+      add(inDrive(tx, tz, 1.6) ? CEDAR_DRIVE.x1 - 3.2 : tx, tz, 0.9);
+    }
     if (!nearIntersection(x, -61.5)) add(x + 5 + r() * 2, -61.8, 0.85);
   }
   // park
@@ -816,6 +827,36 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     col.addBox(cx, 20, 2, 4.3);
   }
   void r;
+}
+
+/** Advanced song P25: Maggie's cherry-red convertible for sale in her drive on Cedar Lane: the top folded down, cream
+ *  seats, chrome bumpers and a "FOR SALE $9,000" sign behind the windshield. */
+function addMaggiesCar(M: Merger, col: Colliders, group: THREE.Group) {
+  const { x, z, rot } = CONVERTIBLE;
+  const at = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  const red = mat("#cf1f3a", { flat: true }), cream = mat("#efe3c8"), chrome = mat("#d8dde2");
+  M.add("car-convertible", red, at(boxGeo(1.9, 0.62, 4.3, 0, 0.62, 0)));
+  M.add("car-convertible", red, at(boxGeo(1.9, 0.12, 1.45, 0, 0.98, 1.4))); // the hood
+  M.add("car-convertible", red, at(boxGeo(1.9, 0.12, 0.9, 0, 0.98, -1.7))); // the trunk
+  M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), at(boxGeo(1.66, 0.44, 0.06, 0, 1.2, 0.6)), false);
+  for (const sx of [-0.42, 0.42]) M.add("car-seat", cream, at(boxGeo(0.6, 0.5, 0.16, sx, 1.16, -0.3)));
+  M.add("car-seat", cream, at(boxGeo(1.5, 0.4, 0.16, 0, 1.1, -1.12)));
+  M.add("car-top", mat("#2b2b30"), at(boxGeo(1.6, 0.2, 0.5, 0, 1.13, -1.62))); // the soft top, folded
+  for (const sz of [-2.17, 2.17]) M.add("car-chrome", chrome, at(boxGeo(1.96, 0.16, 0.12, 0, 0.42, sz)));
+  for (const sx of [-0.62, 0.62]) {
+    M.add("car-light", mat("#fff6c8", { emissive: "#6b6440" }), at(boxGeo(0.34, 0.15, 0.06, sx, 0.76, 2.16)), false);
+    M.add("car-light-red", mat("#d83a3a"), at(boxGeo(0.34, 0.13, 0.06, sx, 0.78, -2.16)), false);
+  }
+  for (const [wx, wz] of [[-0.9, 1.35], [0.9, 1.35], [-0.9, -1.35], [0.9, -1.35]]) {
+    M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
+  }
+  col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.4, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.4);
+  // the sign on the windshield, read from the street
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.32), new THREE.MeshBasicMaterial({ map: textTexture("FOR SALE $9,000", { bg: "#fffaf0", fg: "#c0182f", w: 384, h: 128, script: true }) }));
+  const off = new THREE.Vector3(0.25, 1.15, 0.645).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  sign.position.set(x + off.x, off.y, z + off.z);
+  sign.rotation.y = rot;
+  group.add(sign);
 }
 
 function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
