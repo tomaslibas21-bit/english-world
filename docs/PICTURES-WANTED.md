@@ -6,7 +6,7 @@
 
 During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel.
 
-**Status (27 Oct 2026): 50 pictures are wanted** for nine conversations: the six advanced ones P25–P30 (32) and the three newest, P28b, P18 and P24 (18). See the two "Wanted" sections below. The owner will have them made once all other work is finished. The first 41 conversations have their pictures (265 in total); the 40 pictures for songs 31–35 were made by ChatGPT from this brief, and their sections stay as a record.
+**Status (28 Oct 2026): all 50 pictures are in.** The nine newest conversations (P25–P30, P28b, P18, P24) got their pictures on 28 Oct, so all 50 conversations have them (315 pictures). Their sections below stay as a record, like those for songs 31–35.
 
 ## Where to look
 
@@ -49,7 +49,7 @@ During a conversation, the game shows **one illustrated picture per phase** of t
   - Commit as `tomaslibas21-bit <299487494+tomaslibas21-bit@users.noreply.github.com>` (set `git config user.name` and `user.email` in your copy of the repository), so that no personal name or email address appears in the public history.
   - Check the scene with `npx tsx tools/scene-walk.ts <scene>`, and in `npm run dev` → "Visos situacijos" → the conversation.
 
-## Wanted: the six advanced conversations P25–P30 (32 pictures, 8 Oct 2026)
+## Done: the six advanced conversations P25–P30 (32 pictures, 28 Oct 2026)
 
 These conversations come from the advanced situation songs P25–P30 (chapter 8, „Pažengusiems“). They play without pictures until these exist (the 3D view, or the call screen for the phone call). Each section has the people, the place, the pictures and the ready scene file. The scene files were checked against the simulated conversations: every picture shows up, and every moment name exists.
 
@@ -250,7 +250,7 @@ A phone call: the pictures show the learner's kitchen and the other end of the l
 }
 ```
 
-## Wanted: the three newest conversations (18 pictures, 27 Oct 2026)
+## Done: the three newest conversations (18 pictures, 28 Oct 2026)
 
 These come from the advanced songs P28, P18 and P24, and bring the game to 50 conversations. The rules are the same as for P25–P30 above. Make them together with P25–P30, when the owner gives the go.
 
