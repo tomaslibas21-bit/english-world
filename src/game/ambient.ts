@@ -31,6 +31,21 @@ const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c
 
 const LANES = TRAFFIC_LANES;
 
+/** A passer-by's look, drawn from `r` (the town's random stream; the dev lineup passes its own). */
+export function walkerLook(female: boolean, r: () => number): Look {
+  const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
+  const acc: Look["acc"] = [];
+  if (r() < 0.2) acc.push("glasses");
+  if (r() < 0.12) acc.push(female ? "earrings" : "cap");
+  if (!female && r() < 0.15) acc.push("beard");
+  if (r() < 0.08) acc.push("sunglasses");
+  return {
+    skin: pick(SKINS), hair: { style: pick(female ? F_HAIR : M_HAIR), color: pick(HAIRS) },
+    top: pick(TOPS), bottom: pick(BOTTOMS), skirt: female && r() < 0.3, acc,
+    height: 0.92 + r() * 0.14, build: 0.92 + r() * 0.2,
+  };
+}
+
 export class Ambient {
   group = new THREE.Group();
   private walkers: Walker[] = [];
@@ -60,23 +75,9 @@ export class Ambient {
     }
   }
 
-  private randomLook(female: boolean): Look {
-    const pick = <T,>(a: T[]) => a[Math.floor(this.r() * a.length)];
-    const acc: Look["acc"] = [];
-    if (this.r() < 0.2) acc.push("glasses");
-    if (this.r() < 0.12) acc.push(female ? "earrings" : "cap");
-    if (!female && this.r() < 0.15) acc.push("beard");
-    if (this.r() < 0.08) acc.push("sunglasses");
-    return {
-      skin: pick(SKINS), hair: { style: pick(female ? F_HAIR : M_HAIR), color: pick(HAIRS) },
-      top: pick(TOPS), bottom: pick(BOTTOMS), skirt: female && this.r() < 0.3, acc,
-      height: 0.92 + this.r() * 0.14, build: 0.92 + this.r() * 0.2,
-    };
-  }
-
   private addWalker(i: number) {
     const female = i % 2 === 0;
-    const ch = createCharacter(this.randomLook(female));
+    const ch = createCharacter(walkerLook(female, this.r));
     ch.root.traverse((o) => { o.castShadow = false; }); // passers-by skip the shadow pass (cheaper)
     const k = Math.floor(this.r() * this.places.length);
     const [x, z] = this.places[k];

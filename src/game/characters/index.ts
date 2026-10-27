@@ -13,6 +13,8 @@ export interface GameCharacter {
   setAnim(a: Anim): void;
   update(dt: number): void;
   talk(seconds: number): void;
+  /** The seat top's height for the "sit" pose (the original Character; StyledCharacter assumes 0.5 m). */
+  seatY?: number;
   /** Frees GPU memory the character doesn't share (Game calls it before removing an NPC). The styled
    *  characters need none: their geometry is cached per look, their materials are shared and the
    *  skeleton frees its bone texture when removed from the scene. */

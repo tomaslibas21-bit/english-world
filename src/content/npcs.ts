@@ -4,7 +4,9 @@ import type { NpcInfo } from "../convo/dialogue";
 
 export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald" | "buzz" | "bob" | "wavy" | "side";
 export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "tie" | "beard" | "mustache" | "headset" | "scarf"
-  | "badge" | "police" | "vest" | "bowtie" | "earrings" | "pilot" | "chef" | "cardigan" | "lanyard" | "flower";
+  | "badge" | "police" | "vest" | "bowtie" | "earrings" | "pilot" | "chef" | "cardigan" | "lanyard" | "flower"
+  // sunglasses / reading glasses pushed up on the head
+  | "shades" | "readers";
 
 export interface Look {
   skin: string;
