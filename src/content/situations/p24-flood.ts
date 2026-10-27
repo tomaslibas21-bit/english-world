@@ -1,6 +1,7 @@
 // Advanced song P24 "Kind Regards, I'm Drowning" (B2–C1): two phone calls on a flooded morning, the same facts in
-// two registers. Monday, seven a.m.: the learner's washing machine "kinda exploded", there's a river on the kitchen
-// tile and the cat is on the fridge, giving everyone the evil eye.
+// two registers. Saturday, half past eight in the morning (brunch at nine): the learner's washing machine "kinda
+// exploded" at about seven, there's a river on the kitchen tile and the cat is on the fridge, giving everyone the
+// evil eye.
 //   Call 1, Lizzie (the friend from s83, casual): she picks up on her way to brunch. The learner cancels brunch and
 //   explains, asks for a mop, towels or coffee ("Lots of coffee") or says no thanks, and says goodbye the way
 //   friends do ("Love you, thanks!" / "See you in a bit!").
@@ -56,6 +57,12 @@
 // "● Įrašoma" dot while the learner leaves the message; the recording itself never answers), "beep",
 // "hang-up", "incoming-call" ({ npc }: Mr. Grant calling back) and "knock" (Lizzie at the door); sounds for them
 // would help. (2) "outro" ({ outcome, lt }) carries a Lithuanian end-card line for each ending (as in p26).
+// (3) The engine takes at most 3 intents per turn (nlu.ts: intent + 2 more). A voicemail said in one breath has 4–6
+// pieces (who, what, the request, "Kind regards"), so this file reads it with `vm_unknown` (a catch-all built from
+// the pieces below). A higher cap (or one that lifts in the voicemail) would let the ordinary intents do it.
+// (4) During the voicemail the engine's "Sorry, I didn't catch that." (g_not_understood after two misses) is said in
+// Mr. Grant's voice, as if the recording answered. A way for a situation to keep it silent (a "recording" phase,
+// or a hook like `notUnderstood(c)`) would fix it; vm_unknown makes it rare.
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef, Tip } from "../types";
 import type { ConvCtx } from "../../convo/dialogue";
@@ -103,6 +110,8 @@ const TIPS: Record<string, Tip> = {
   master: { key: "master", lt: "Suprasta! „Meistras“ angliškai nėra „master“. Santechnikas – „plumber“, meistras apskritai – „repairman“ arba „handyman“.", better: "Could you send a plumber today, please?" },
   downstairs: { key: "downstairs", lt: "Suprasta! „Kaimynas iš apačios“ angliškai – „the neighbor downstairs“ arba „the apartment downstairs“.", better: "It's reaching the apartment downstairs." },
   uk_flat: { key: "uk_flat", lt: "Suprasta! „Flat“ – britiškas žodis. Amerikoje sakoma „apartment“.", better: "This is apartment 3B." },
+  uk_ring: { key: "uk_ring", lt: "Suprasta! „Ring me back“ – britiškai. Amerikoje sakoma „call me back“.", better: "Please call me back." },
+  uk_tap: { key: "uk_tap", lt: "Suprasta! Amerikoje čiaupas – „faucet“, o skalbimo mašinos vandenį užsuka ventilis („valve“).", better: "I've turned off the water valve." },
   rude: { key: "rude", lt: "Suprasta! Bet įsakmiai nuomotojui skamba šiurkščiai. Tvirtai, bet mandagiai:", better: "I'm afraid it can't wait until tomorrow." },
   love_landlord: { key: "love_landlord", lt: "Suprasta! „Love you“ – tik draugams ir šeimai. Nuomotojui užtenka mandagaus ačiū.", better: "Thank you for your prompt assistance." },
 };
@@ -140,10 +149,20 @@ const inLizzie = (c: Ctx) => c.s.phase === "lizzie";
 const inGrant = (c: Ctx) => c.s.phase === "grant";
 const inVm = (c: Ctx) => c.s.phase === "vm";
 const toArr = (x: any): any[] => (x == null ? [] : Array.isArray(x) ? x : [x]);
+/** A thanks inside another answer ("No, thank you.", "Nothing else, thanks.", "Thanks, bye!"). */
+const heardThanks = (c: Ctx) => /\b(thank|thanks|appreciate)\b/i.test(c.heard);
+
+/** The twist this visit showed is remembered (a replay prefers the other one), whatever the ending. */
+function rememberTwist(c: Ctx) {
+  if (!c.s.twistSeen || !c.s.twist) return;
+  c.s.twistSaved = c.s.twist; // (for the sims)
+  c.remember({ twists: [...new Set([...(c.memory.twists ?? []), c.s.twist])] });
+}
 
 /** Mr. Grant knows who, what and that a plumber is wanted (said live or in the message). */
 const grantKnows = (c: Ctx) => !!c.s.who && !!c.s.gFlood;
-/** Mission item 3: the learner explained it (not just "Yes" to his guess after the third try). */
+/** Mission item 3: the learner explained it (not just "Yes" to his guess "Is it that washing machine again?" after
+ *  the third try, which sets `guessed`; any later explanation clears it). */
 const explainedToGrant = (c: Ctx) => grantKnows(c) && !c.s.guessed;
 /** A one-off question was asked (the learner's reply settles it, whatever it is). */
 const asked = (c: Ctx, id: string) => (c.s.asks?.[id] ?? 0) >= 1;
@@ -210,7 +229,8 @@ function sayItems(c: Ctx) {
   if (things.length === 1) L(c, "l_bring1", { X: things[0] });
   else if (things.length >= 2) L(c, "l_bring2", { X: things[0], Y: things[1] });
   if (list.includes("coffee")) L(c, things.length ? "l_and_coffee" : "l_coffee_only");
-  if (!list.length) L(c, "l_coming");
+  // "Actually, could you come over?" to her "I can come over after brunch" takes up her offer
+  if (!list.length) L(c, c.step === "l_come" ? "l_coming_yes" : "l_coming");
   else if (!c.s.onWay) { c.s.onWay = true; c.s.coming = true; c.s.comeDone = true; L(c, "l_on_way"); }
 }
 
@@ -224,6 +244,14 @@ function needNothing(c: Ctx) {
   }
   c.s.helpAnswered = true;
   if (!c.s.items?.length) c.s.declined = true;
+}
+
+/** "Yes, I'm sure." / "Sure." / "I'm sure." to her "You sure? I can come over after brunch.": she stays at brunch.
+ *  Only a request ("Actually, could you come over?") brings her. */
+function sureNotComing(c: Ctx) {
+  c.s.comeDone = true;
+  c.s.coming = false;
+  if (once(c, "l_come")) L(c, "l_not_coming");
 }
 
 function notItem(c: Ctx, slots: any) {
@@ -248,6 +276,7 @@ function callGrant(c: Ctx) {
   if (c.s.twist === "voicemail") {
     c.s.phase = "vm";
     c.twist("voicemail");
+    c.s.twistSeen = true;
     c.ask("vm_msg"); // the greeting and the beep
     return;
   }
@@ -284,6 +313,29 @@ function vmEnd(c: Ctx) {
   // the next question comes from the steps (what happened, his questions, the plumber)
 }
 
+/** A message said in one breath (`vm_unknown`: four or more pieces, see NEEDS 3). Each piece is tagged (#vm_who,
+ *  #vm_flood …): the recording keeps all of it; said live to Mr. Grant, each piece gets its usual reaction. */
+function vmMessage(c: Ctx, seg: Segment) {
+  const has = (t: string) => seg.tags.includes(t);
+  if (inLizzie(c)) { if (has("vm_flood")) explain(c); else if (once(c, "l_ack")) L(c, "l_ack"); return; }
+  // said live, only the news gets a reaction (no "Got it." for what he already knows)
+  if (has("vm_who")) identified(c);
+  if (has("vm_flood")) { if (c.s.guessed) c.s.guessed = false; if (!c.s.gFlood || inVm(c)) grantFlood(c); }
+  if (has("vm_when")) c.s.sinceDone = true;
+  if (has("vm_hurt") && !c.s.hurtDone) nobodyHurt(c);
+  if (has("vm_down") && !c.s.downDone) downstairs(c, true);
+  if (has("vm_water") && !c.s.waterOff) waterOff(c);
+  if (has("vm_req") && !c.s.today && !c.s.tomorrow) askPlumber(c, seg);
+  if (inVm(c)) {
+    // the recording answers nothing; "Please call me back" or a goodbye ends the message, and so does a sign-off
+    // ("Kind regards", "Thank you") once the request is in
+    if (has("vm_end") || (has("vm_sign") && c.s.requested)) { c.s.vmClose = true; vmEnd(c); } else vmSilent(c);
+    return;
+  }
+  // a sign-off at the end of a long report: the thanks counts; he answers it once the plumber is settled
+  if (has("vm_sign")) { if (c.s.today || c.s.tomorrow) thankGrant(c, "formal"); else c.s.thanked = true; }
+}
+
 // ---------------------------------------------------------------------------
 // Mr. Grant's call
 
@@ -308,6 +360,22 @@ function nobodyHurt(c: Ctx) {
   c.s.hurtDone = true;
   if (inVm(c)) return;
   if (once(c, "g_ack")) G(c, "gr_relief");
+}
+
+/** "Yes" to "Is anybody hurt?": "What? Are you okay?", and he waits for the answer before his next question. */
+function hurtYes(c: Ctx) {
+  c.s.hurtDone = true;
+  G(c, "gr_hurt_yes");
+  c.expect({
+    id: "hurt_yes", optional: true, expects: ["nobody_hurt", "freaking_out"], hints: ["details"],
+    suggest: [{ lt: "Atsakyti, ar tau viskas gerai", hint: "details" }],
+    on: {
+      nobody_hurt: (cc) => { G(cc, "gr_careful"); },
+      freaking_out: (cc) => { G(cc, "gr_breathe"); },
+    },
+    yes: (cc) => { G(cc, "gr_careful"); },
+    no: (cc) => { G(cc, "gr_breathe"); },
+  });
 }
 
 function downstairs(c: Ctx, yes: boolean) {
@@ -377,6 +445,18 @@ function todayNow(c: Ctx) {
   G(c, "gr_joe");
 }
 
+/** "I don't know." to "Could it wait till tomorrow morning?": he doesn't risk it. The time question follows at
+ *  once (no hold). */
+function dontKnowToday(c: Ctx) {
+  if (c.s.today || !once(c, "g_today")) return;
+  c.s.today = true;
+  c.s.tomorrow = false;
+  c.s.sureQ = false;
+  G(c, "gr_no_risk");
+  G(c, "gr_ten_b");
+  G(c, "gr_joe");
+}
+
 function acceptTomorrow(c: Ctx) {
   if (inVm(c)) return;
   if (c.s.today) { if (once(c, "g_ack")) G(c, "gr_already_today"); return; }
@@ -390,10 +470,15 @@ function askSureTomorrow(c: Ctx) {
   c.s.sureQ = true;
   G(c, c.s.downstairs ? "gr_sure_down" : "gr_sure");
   c.expect({
-    id: "sure_tomorrow", expects: ["insist_today", "accept_tomorrow", "ask_plumber", "downstairs_yes"], hints: ["insist"],
+    id: "sure_tomorrow", expects: ["insist_today", "insist_ctx", "wait_no_ctx", "wait_yes_ctx", "sure_ctx", "accept_tomorrow", "ask_plumber", "downstairs_yes"],
+    hints: ["insist"],
     suggest: [{ lt: "Vis dėlto paprašyti, kad santechnikas atvyktų šiandien", hint: "insist" }, { lt: "Sutikti su rytdiena", hint: "insist" }],
     on: {
       insist_today: (cc) => { todayNow(cc); },
+      insist_ctx: (cc) => { todayNow(cc); },
+      wait_no_ctx: (cc) => { todayNow(cc); },
+      wait_yes_ctx: (cc) => { tomorrowFinal(cc); },
+      sure_ctx: (cc) => { tomorrowFinal(cc); },
       downstairs_yes: (cc) => { cc.s.downDone = true; cc.s.downstairs = true; todayNow(cc); },
       accept_tomorrow: (cc) => { tomorrowFinal(cc); },
       ask_plumber: (cc, _sl, sg) => { if (sg.tags.includes("tomorrow")) tomorrowFinal(cc); else todayNow(cc); },
@@ -423,9 +508,11 @@ function pickTime(c: Ctx, slots: any, seg: Segment) {
     const h = tm.h % 12;
     if (h === 11) which = "eleven";
     else if (h === 1) which = "one";
+    // "Eleven thirty?": Joe does eleven or one, not in between
+    if (tm.m) which = undefined;
   }
   if (!once(c, "g_time")) return;
-  if (!which) { G(c, "gr_time_only"); return; }
+  if (!which) { G(c, "gr_time_only"); c.hold(); return; }
   if (c.s.timeSet === which) { G(c, "gr_ok"); return; }
   c.s.timeSet = which;
   G(c, which === "eleven" ? "gr_time_11" : "gr_time_1");
@@ -469,7 +556,7 @@ function wrapUp(c: Ctx) {
       c.event("outro", { outcome: "done", lt: OUTRO.done });
     } else c.s.outcome = "partial";
   }
-  c.remember({ twists: [...new Set([...(c.memory.twists ?? []), ...(c.s.twist ? [c.s.twist] : [])])] });
+  rememberTwist(c);
   c.end();
   c.hold();
 }
@@ -478,7 +565,7 @@ function wrapUp(c: Ctx) {
 function grantBye(c: Ctx) {
   if (c.s.over) return;
   if (c.s.today || c.s.tomorrow) {
-    if (/\b(thank|thanks|appreciate)\b/i.test(c.heard)) c.s.thanked = true;
+    if (heardThanks(c)) c.s.thanked = true;
     wrapUp(c);
     return;
   }
@@ -487,6 +574,7 @@ function grantBye(c: Ctx) {
   G(c, "gr_bye_walk");
   c.s.outcome = "walked";
   c.event("outro", { outcome: "walked", lt: OUTRO.walked });
+  rememberTwist(c);
   c.end();
   c.hold();
 }
@@ -516,8 +604,12 @@ const LIZZIE: Record<string, H> = {
   unsure_ctx: (c) => { if (once(c, "l_ack")) L(c, "l_ack"); },
   // "Hi, it's Tomas." / "It's me!": she knows (her phone shows the name)
   intro: (c) => { if (once(c, "l_know")) L(c, "l_i_know"); },
-  intro_ctx: (c) => { if (once(c, "l_know")) L(c, "l_i_know"); },
   its_me: (c) => { if (once(c, "l_know")) L(c, "l_i_know"); },
+  sure_ctx: (c) => { if (c.step === "l_come") sureNotComing(c); else if (once(c, "l_ack")) L(c, "l_ack"); },
+  door_surprise: (c) => { doorSurprise(c); },
+  // "Can you come today?" to Lizzie: she comes over
+  ask_plumber: (c, _sl, sg) => { if (/\bcome\b/i.test(c.heard)) askHelp(c, {}, { ...sg, tags: [...sg.tags, "come"] }); else if (once(c, "l_ack")) L(c, "l_ack"); },
+  vm_unknown: (c, _sl, sg) => { vmMessage(c, sg); },
 };
 
 /** "Love you, thanks!" / "You're the best!": at the door it's the thanks, else (once help is settled) goodbye. */
@@ -525,6 +617,16 @@ function lizzieWarm(c: Ctx, kind: "love" | "bye") {
   if (c.s.twist === "door" && c.step === "l_door" && !c.s.doorDone) { doorThanks(c); return; }
   if (c.s.helpAnswered && (c.s.twist !== "door" || c.s.doorDone)) { c.s.comeDone = true; byeLizzie(c, kind); return; }
   if (once(c, "l_ack")) L(c, "l_anytime");
+}
+
+/** "What are you doing here?" / "No way!" at the door: "That's what friends are for", then the landlord call. */
+function doorSurprise(c: Ctx) {
+  if (c.s.twist !== "door" || c.step !== "l_door" || c.s.doorDone) return; // elsewhere it needs no answer
+  c.s.doorDone = true;
+  c.s.comeDone = true;
+  if (once(c, "l_door")) L(c, "l_door_friends");
+  c.s.byeL = true;
+  callGrant(c);
 }
 
 function doorThanks(c: Ctx) {
@@ -539,8 +641,12 @@ function doorThanks(c: Ctx) {
 const GRANT: Record<string, H> = {
   intro: (c) => { identified(c); },
   intro_ctx: (c) => { identified(c); },
+  // in the voicemail a name counts only when it's the player's own (or comes with the apartment): "Please ring
+  // me back" is no name
+  vm_who_ctx: (c, sl, sg) => { if (sg.tags.includes("known_name") || sl?.aptn != null || /\b(3 ?b|three b)\b/i.test(c.heard)) identified(c); },
+  its_me_ctx: (c) => { if (c.s.who || inVm(c)) return; if (once(c, "g_me")) G(c, "gr_its_me"); },
   its_me: (c) => { if (c.s.who || inVm(c)) return; if (once(c, "g_me")) G(c, "gr_its_me"); },
-  flood: (c) => { grantFlood(c); },
+  flood: (c) => { c.s.guessed = false; grantFlood(c); },
   when_happened: (c) => { c.s.sinceDone = true; if (!inVm(c) && once(c, "g_ack")) G(c, "gr_ok"); },
   when_ctx: (c) => { c.s.sinceDone = true; if (!inVm(c) && once(c, "g_ack")) G(c, "gr_ok"); },
   water_off: (c) => { waterOff(c); },
@@ -550,10 +656,22 @@ const GRANT: Record<string, H> = {
   // after his "Could it wait till tomorrow?", the water downstairs is the reason it can't
   downstairs_yes: (c) => { downstairs(c, true); if (c.s.offered && !c.s.today && !c.s.tomorrow && grantKnows(c)) insist(c); },
   downstairs_no: (c) => { downstairs(c, false); },
+  // "Yes, it has." / "I'm afraid so." / "No, it hasn't." to "Has it reached the apartment downstairs?"
+  down_yes_ctx: (c) => { downstairs(c, true); if (c.s.offered && !c.s.today && !c.s.tomorrow && grantKnows(c)) insist(c); },
+  down_no_ctx: (c) => { downstairs(c, false); },
   ask_plumber: (c, _sl, sg) => { askPlumber(c, sg); },
   today_ctx: (c, _sl, sg) => { askPlumber(c, { ...sg, tags: [...sg.tags, "today"] }); },
   insist_today: (c) => { insist(c); },
+  insist_ctx: (c) => { insist(c); },
   accept_tomorrow: (c) => { acceptTomorrow(c); },
+  // "No, it can't." / "Yes, it can." to "Could it wait till tomorrow morning?"
+  wait_no_ctx: (c) => { insist(c); },
+  wait_yes_ctx: (c) => { acceptTomorrow(c); },
+  // "A plumber." to "So what do you need from me?"
+  plumber_ctx: (c, _sl, sg) => { askPlumber(c, sg); },
+  // "I'm sure." to "Are you sure?" (a tomorrow plumber)
+  sure_ctx: (c) => { if (inVm(c)) return; if (c.s.sureQ && !c.s.today && !c.s.tomorrow) { tomorrowFinal(c); return; } if (once(c, "g_ack")) G(c, "gr_ok"); },
+  vm_unknown: (c, _sl, sg) => { vmMessage(c, sg); },
   pick_time: (c, sl, sg) => { pickTime(c, sl, sg); },
   time_ctx: (c, sl, sg) => { pickTime(c, sl, sg); },
   ask_confirmed: (c) => { askConfirmed(c); },
@@ -566,7 +684,7 @@ const GRANT: Record<string, H> = {
   warm: (c) => { c.tip(TIPS.love_landlord); thankGrant(c, "love"); },
   see_you: (c) => { if (inVm(c)) { vmEnd(c); return; } grantBye(c); },
   demand_rude: (c) => { c.tip(TIPS.rude); if (inVm(c)) { c.s.requested = true; return; } c.s.requested = true; if (once(c, "g_ack")) G(c, "gr_rude"); },
-  thats_all: (c) => { if (inVm(c)) { vmEnd(c); return; } c.s.closeNo = true; },
+  thats_all: (c) => { if (inVm(c)) { vmEnd(c); return; } c.s.closeNo = true; if (heardThanks(c)) c.s.thanked = true; },
   // "I'm not sure." to "Has it reached the apartment downstairs?" / "When did that start?"
   unsure_ctx: (c) => {
     if (inVm(c)) return;
@@ -581,6 +699,8 @@ const ALL_INTENTS = [
   "warm", "see_you", "intro", "intro_ctx", "its_me", "when_happened", "when_ctx", "water_off", "water_not_off", "downstairs_yes",
   "downstairs_no", "ask_plumber", "today_ctx", "insist_today", "accept_tomorrow", "pick_time", "time_ctx", "ask_confirmed", "ask_eta",
   "ask_damage", "formal_thanks", "apologize", "kind_regards", "vm_close", "demand_rude", "thats_all", "unsure_ctx",
+  "vm_who_ctx", "its_me_ctx", "sure_ctx", "door_surprise", "insist_ctx", "down_yes_ctx", "down_no_ctx", "wait_yes_ctx", "wait_no_ctx",
+  "plumber_ctx", "vm_unknown",
 ];
 
 function handle(intent: string): H {
@@ -609,6 +729,7 @@ const AUTO: Record<string, string> = {
   valve: "Okay, it's off now.", g_request: "I would be grateful if a plumber could be sent today.",
   g_offer: "I'm afraid it can't wait until tomorrow.", sure_tomorrow: "Actually, it really needs to be today.",
   g_time: "Eleven would be perfect.", g_close: "Thank you for your prompt assistance.",
+  hurt_yes: "Yes, I'm fine, just wet.",
   vm_msg: "Good morning, Mr. Grant. This is Tomas Mikalauskas from apartment 3B. I would be grateful if a plumber could be sent today. Kind regards.",
   closing: "Thank you for your prompt assistance.",
 };
@@ -628,7 +749,7 @@ export const flood: SituationDef = {
   npcs: ["mr_grant"],
   mode: "phone",
   goal: "Paskambink draugei ir nuomotojui: draugei papasakok laisvai, nuomotojui – mandagiai ir oficialiai, ir susitark, kad šiandien atvyktų santechnikas.",
-  intro: "Pirmadienis, septinta ryto, o tavo kojos šlapios: skalbimo mašina „kaip ir sprogo“, virtuvėje teka upė, o katė iš šaldytuvo viršaus žiūri piktai. Pirmiausia paskambink draugei Lizzie (su ja šiandien turėjai eiti į brunčą), paskui – nuomotojui ponui Grantui. Tie patys faktai, du skirtingi tonai.",
+  intro: "Šeštadienis, pusė devynių ryto, o tavo kojos šlapios: skalbimo mašina „kaip ir sprogo“, virtuvėje teka upė, o katė iš šaldytuvo viršaus žiūri piktai. Pirmiausia paskambink draugei Lizzie (su ja šiandien turėjai eiti į brunčą), paskui – nuomotojui ponui Grantui. Tie patys faktai, du skirtingi tonai.",
   entities: { stuff: STUFF },
 
   grammar: {
@@ -665,6 +786,92 @@ export const flood: SituationDef = {
       apt: "[apartment | unit | apt | number | flat #tip:uk_flat] @aptno",
       down: "(the apartment (downstairs | below [me | mine | us]) | downstairs | mister okoye's [apartment | place] | okoye's [apartment | place] | the neighbor's apartment | the neighbors | my neighbor downstairs | the (neighbor | gentleman | man | guy) downstairs)",
       plumber: "(a plumber | the plumber | your plumber | someone | somebody | a repairman | a repair man | a handyman | a technician | a (master | specialist) #tip:master)",
+
+      // --- the pieces of a report to Mr. Grant: the intents below use them, and so does a voicemail said in one
+      // breath (vm_unknown: four or more pieces; the engine takes at most three intents per turn, see NEEDS 3)
+      who: [
+        "this is {name} [calling] (from | in) @apt #h:this_is_apt",
+        "(my name is | it is | i am) {name} (from | in) @apt",
+        "(this is | it is) your tenant (from | in) @apt",
+        "i am (your tenant | the tenant) (from | in) @apt #h:tenant_in",
+        "i am calling from @apt #h:calling_from",
+        "my name is {name} [and i am your tenant] [(from | in) @apt]",
+        "(it is | this is) @apt",
+        "i (live | am) in @apt",
+      ],
+      report: [
+        "@fl",
+        "i regret to inform you that @what_formal #h:regret #formal #regret",
+        "i regret to inform you of a (leak | flood) [in (my | the) @place] #formal #regret",
+        "i am (writing | calling) to inform you (that @what_formal | of a (leak | flood)) #formal #regret",
+        "i am calling to report a (leak | flood | problem with the @washer) #h:report_leak",
+        "i am calling (about | regarding) (the | my) (@washer | leak | flood) [again]",
+        "i am afraid [that] @what_formal #h:afraid_flooded",
+        "i would like to report a (leak | flood)",
+        "@what_formal",
+        "the @washer [that | which] you [kindly] (fixed | repaired) [last (week | month)] (has failed | failed | broke | has broken | is leaking) [again] #formal",
+        "(i | we) have a problem with (the | my) @washer",
+        "there is a problem with (the | my) @washer",
+        "(the | my) @washer has a problem",
+      ],
+      when: [
+        "it (happened | started | began) (this morning | an hour ago | about an hour ago | half an hour ago | just now | a few minutes ago | {number} minutes ago) [this morning] #h:this_morning",
+        // "It happened this morning, at about seven." (the hint)
+        "it (happened | started | began) [this morning] (at | around | at about | about) {time} [this morning] #h:this_morning",
+        "since (this morning | {time} [this morning] | about {time})",
+        "about (an hour | half an hour | {number} minutes) ago",
+        "(this morning | an hour ago | about an hour ago | half an hour ago | just now | a few minutes ago) [(at | around | at about | about) {time}]",
+      ],
+      water: [
+        "i [have | already | have already] (turned | shut | switched) off the (water | main | valve | water valve | main valve | water supply | faucet) [and put down [some] towels] #h:water_off",
+        "i [have | already | have already] (turned | shut | switched) the (water | valve | faucet) off",
+        "i [have | already | have already] (closed | shut) the (valve | water valve | main valve | main)",
+        "i [have | already | have already] (turned | shut) off the (tap | taps) #tip:uk_tap",
+        "the water is (off | turned off | shut off) [now]",
+        "i [have] (put | put down | laid down | used) [some | all my | a few | all the] towels [on the floor] [and turned off the water] #h:towels",
+      ],
+      downy: [
+        "[as | because | since] [i am afraid] (it is | the water is) (reaching | leaking into | dripping into | going into | getting into | coming through to) @down #h:downstairs",
+        "[i am afraid] (it | the water) (has reached | reached | is going | went | is dripping) [to | into] @down",
+        "[as | because] the (neighbor | gentleman | man | guy) downstairs would like it fixed [without delay]",
+      ],
+      nohurt: ["(nobody | no one) (is | was | got) (hurt | injured) #h:nobody_hurt", "(everyone | everybody) is (fine | okay | safe | all right)"],
+      req: [
+        "i would be grateful if @plumber could (be sent | come | come over) [@today] #h:grateful_today #formal",
+        "(could | can | would) you [please] (send | get | call) [me] @plumber [over] [@today] #h:could_send",
+        "(could | can) @plumber (come | come over | come and fix it | come and look at it | take a look) [@today] #h:earliest",
+        "is there any way @plumber could come [@today] #h:any_way",
+        "is it possible (to get | for) @plumber [to come] [@today]",
+        "i need (@plumber | it fixed | this fixed) [@today]",
+        "(we | i) need @plumber to (fix | look at) it [@today]",
+        "(please)? send @plumber [@today]",
+        "i would like @plumber to come [@today]",
+        "i would like it (fixed | repaired) [@today]",
+        "(could | can) you (fix | repair) it [@today]",
+        "i would appreciate it if @plumber could come [@today]",
+      ],
+      callback: [
+        "please call me back [at your earliest convenience | as soon as possible | when you get this] #h:vm_call_back",
+        "(could | can) you (please)? call me back [when you get this]",
+        "call me back [please]",
+        "ring me back [when you get this | as soon as possible] #tip:uk_ring",
+        "i look forward to (hearing from you | your call | your reply | your swift reply) #h:look_forward #formal",
+      ],
+      signoff: [
+        "(kind | best | warm | warmest) regards #h:kind_regards #formal",
+        "yours (sincerely | faithfully) #formal",
+        "(thank you | thanks) [very much | so much | in advance] for your prompt (assistance | help | response) #h:prompt #formal",
+        "(thank you | thanks) [very much | so much | in advance] [for your (help | understanding)]",
+        "i apologize for (any | the) inconvenience [this may cause] #h:apologize #formal",
+      ],
+      vm_piece: [
+        "@who #vm_who", "this is {name} [your tenant] #vm_who",
+        "@report #vm_flood", "@when #vm_when", "@water #vm_water", "@downy #vm_down", "@nohurt #vm_hurt",
+        "@req #vm_req", "[i am afraid] it (can not | really can not) wait [(until | till) tomorrow] #vm_req #today",
+        "it (really)? (needs | has) to be today #vm_req #today",
+        "@callback #vm_end", "(bye | goodbye | bye bye) #vm_end", "@signoff #vm_sign",
+      ],
+      vm_and: "(and | so | also | and also | and then)",
     },
     slots: {},
   },
@@ -691,22 +898,13 @@ export const flood: SituationDef = {
       "i must (cancel | decline) [our] brunch #formal",
     ] },
     flood: { patterns: [
-      "@fl",
+      "@report",
       // "I can't make brunch, sorry. My washer exploded." (one piece: after a negation the engine starts no new one with "my")
       "@cant_brunch [so sorry | sorry | i am so sorry] [because | since] @fl #cancel",
       "@fl [so] (no brunch [for me] [today] | i can not (make | come to) brunch) #cancel",
       "it is (in the hallway | heading for the door | everywhere) [now]",
       "i am [literally] (swimming | standing in water) [on the floor | in my kitchen | here]",
       "(water | the water) is (everywhere | coming out | coming from the @washer | leaking | running | spreading)",
-      "i regret to inform you that @what_formal #h:regret #formal #regret",
-      "i regret to inform you of a (leak | flood) [in (my | the) @place] #formal #regret",
-      "i am (writing | calling) to inform you (that @what_formal | of a (leak | flood)) #formal #regret",
-      "i am calling to report a (leak | flood | problem with the @washer) #h:report_leak",
-      "i am calling (about | regarding) (the | my) (@washer | leak | flood) [again]",
-      "i am afraid [that] @what_formal #h:afraid_flooded",
-      "i would like to report a (leak | flood)",
-      "@what_formal",
-      "the @washer [that | which] you [kindly] (fixed | repaired) [last (week | month)] (has failed | failed | broke | has broken | is leaking) [again] #formal",
     ] },
     cat_fridge: { patterns: [
       "the cat is on (the | top of the) fridge [giving me the evil eye] #h:cat_fridge",
@@ -715,13 +913,16 @@ export const flood: SituationDef = {
       "the cat is giving me the evil eye",
     ] },
     nobody_hurt: { patterns: [
-      "[no] (nobody | no one) (is | was | got) hurt #h:nobody_hurt",
-      "[no] (everyone | everybody) is (fine | okay | safe | all right)",
+      "[no] @nohurt",
+      "[no] (nobody | no one) [at all]",
+      "[no] i am not (hurt | injured)",
       "[yes] i am (fine | okay | all right | good) [just (wet | a bit wet | a little wet) | thanks]",
       "[no] just my (socks | pride | shoes | feet) #h:just_socks",
       "only my (socks | shoes) are (hurt | wet | ruined)",
       "only the cat is (upset | offended | angry | mad)",
       "i am (okay | fine) but (wet | my feet are wet | my socks are wet)",
+      // "I'm wet." to "Are you okay?" (never a name: "Ha, I know! I saw your name.")
+      "i am [just | only] [a bit | a little | all | completely] (wet | soaked | soaking wet)",
       "(we are | i am) (all)? (safe | fine) [thank you]",
     ] },
     freaking_out: { patterns: [
@@ -730,6 +931,7 @@ export const flood: SituationDef = {
       "help i am (going to drown | drowning)",
       "kind regards i am drowning #formal",
       "i am not (okay | fine | really okay | good)",
+      "i am [so | really | a bit | a little | totally] (stressed | stressed out | upset | a mess | in shock | worried)",
     ] },
     // --- Lizzie: what to bring -------------------------------------------------------------
     ask_help: { patterns: [
@@ -765,6 +967,8 @@ export const flood: SituationDef = {
       "not (a | the) {stuff}",
       "forget the {stuff}",
       "i (have | already have) (a | my own) {stuff}",
+      // "I bought a mop." (never "Did you say boat?")
+      "i [already] (bought | got) (a | some | my own | a new) {stuff} [already]",
     ] },
     come_no: { patterns: [
       "[no] (please)? do not come [over] [enjoy [your] brunch]",
@@ -785,9 +989,16 @@ export const flood: SituationDef = {
       "you did not have to [do that] #h:didnt_have #casual",
       "come in [come in] #h:come_in",
       "get in here #casual",
-      "no way #casual",
-      "what are you doing here",
     ] },
+    // surprise at the door (she answers "That's what friends are for")
+    door_surprise: { patterns: [
+      "[oh my god | oh my gosh] what are you doing here",
+      "no way #casual",
+      "(are you serious | seriously) [what are you doing here]",
+      "how did you (know | get here [so fast])",
+    ] },
+    // "I'm sure." to "You sure?" (Lizzie) / "Are you sure?" (Mr. Grant)
+    sure_ctx: { patterns: ["[yes] i am [totally | really | absolutely | one hundred percent] sure", "[yes] i am positive", "(totally | absolutely | positive | one hundred percent) [sure]"] },
     see_you: { patterns: [
       "see you in a bit #h:see_bit #casual",
       "see you in (a few | twenty | twenty minutes | a minute)",
@@ -797,35 +1008,22 @@ export const flood: SituationDef = {
     ] },
 
     // --- Mr. Grant: who, what, when, what was done ------------------------------------------
-    intro: { patterns: [
-      "this is {name} [calling] (from | in) @apt #h:this_is_apt",
-      "(my name is | it is | i am) {name} (from | in) @apt",
-      "(this is | it is) your tenant (from | in) @apt",
-      "i am (your tenant | the tenant) (from | in) @apt #h:tenant_in",
-      "i am calling from @apt #h:calling_from",
-      "(this is | i am) {name} [your tenant]",
-      "my name is {name} [and i am your tenant] [(from | in) @apt]",
-      "it is me {name} [from @apt]",
-      "(it is | this is) @apt",
-      "i (live | am) in @apt",
-      "i am your tenant",
-    ] },
-    intro_ctx: { patterns: ["{name}", "it is {name}", "{name} (here | speaking)", "@apt"] },
-    its_me: { patterns: ["(it is | this is) me [your tenant] #casual", "me #casual", "guess who #casual"] },
+    // a bare name ("This is Tomas.", "I'm Tomas.") only answers "Who's this?": elsewhere {name} would swallow
+    // "I'm wet", "This is urgent" or "ring me back"
+    intro: { patterns: ["@who", "i am your tenant"] },
+    intro_ctx: { patterns: ["{name}", "it is {name}", "{name} (here | speaking)", "@apt", "(this is | i am) {name} [your tenant]", "it is me {name} [from @apt]"] },
+    // the voicemail: "This is Tomas." (the handler takes only the player's own name: "Please ring me back" is none)
+    vm_who_ctx: { patterns: ["(this is | it is) {name} [your tenant] [calling]", "it is me {name} [from @apt]"] },
+    its_me: { patterns: ["(it is | this is) me [your tenant] #casual", "guess who #casual"] },
+    its_me_ctx: { patterns: ["me #casual"] },
     when_happened: { patterns: [
-      "it (happened | started | began) (this morning | an hour ago | about an hour ago | half an hour ago | just now | a few minutes ago | at {time} | around {time} | at about {time} | {number} minutes ago) [this morning] #h:this_morning",
-      "since (this morning | {time} [this morning] | about {time})",
-      "about (an hour | half an hour | {number} minutes) ago",
+      "@when",
       "(it has been | for) (about | almost)? (an hour | half an hour | {number} minutes)",
       "i woke up and (the kitchen was flooded | there was water everywhere)",
-      "(this morning | an hour ago | about an hour ago | half an hour ago | just now | a few minutes ago) [at about {time}]",
     ] },
     when_ctx: { patterns: ["[at | around | at about | about] {time} [this morning]"] },
     water_off: { patterns: [
-      "i [have | already | have already] (turned | shut | switched) off the (water | main | valve | water valve | water supply) [and put down [some] towels] #h:water_off",
-      "i [have | already | have already] (turned | shut | switched) the water off",
-      "the water is (off | turned off | shut off) [now]",
-      "i [have] (put | put down | laid down | used) [some | all my | a few | all the] towels [on the floor] [and turned off the water] #h:towels",
+      "@water",
       "i [have] (unplugged | turned off) the @washer",
       "i [have] closed the (water | water pipe) #tip:close_water",
       "(it is | the water is) [already] off [now]",
@@ -841,11 +1039,9 @@ export const flood: SituationDef = {
       "i (have not | did not) (turned | turn) off the water [yet]",
     ] },
     downstairs_yes: { patterns: [
-      "[as | because | since] [i am afraid] (it is | the water is) (reaching | leaking into | dripping into | going into | getting into | coming through to) @down #h:downstairs",
-      "[yes] [i am afraid] (it | the water) (has reached | reached | is going | went | is dripping) [to | into] @down",
+      "[yes] @downy",
       "[yes] mister okoye (knocked | called | came up | is upset | is not happy)",
       "[yes] (his | the) ceiling [downstairs] is (wet | dripping | leaking)",
-      "[as | because] the (neighbor | gentleman | man | guy) downstairs would like it fixed [without delay]",
       "[yes] it is dripping downstairs",
       "[yes] (the | my) (neighbor | neighbors) (from below | under me | below me) [is | are] [upset | complaining] #tip:downstairs",
       "[yes] the (neighbor | gentleman | man | guy | lady | woman) downstairs (is upset | is not happy | is angry | knocked | called | came up | is complaining | has water [in his apartment])",
@@ -856,33 +1052,32 @@ export const flood: SituationDef = {
       "[no] (just | only) (my | the) kitchen",
       "[no] it is (only | just) in (my | the) @place",
     ] },
+    // short answers to "Has it reached the apartment downstairs?"
+    down_yes_ctx: { patterns: ["[yes] it has [reached it]", "[yes] i am afraid (so | it has | it is)", "[yes] it is [leaking | dripping]", "[yes] it did"] },
+    down_no_ctx: { patterns: ["[no] it has not [reached it] [yet]", "[no] it is not [yet]", "[no] it did not", "(i hope | hopefully) not"] },
 
     // --- Mr. Grant: the plumber -----------------------------------------------------------------
     ask_plumber: { patterns: [
-      "i would be grateful if @plumber could (be sent | come | come over) [@today] #h:grateful_today #formal",
-      "(could | can | would) you [please] (send | get | call) [me] @plumber [over] [@today] #h:could_send",
-      "(could | can) @plumber (come | come over | come and fix it | come and look at it | take a look) [@today] #h:earliest",
-      "is there any way @plumber could come [@today] #h:any_way",
-      "is it possible (to get | for) @plumber [to come] [@today]",
-      "i need (@plumber | it fixed | this fixed) [@today]",
-      "(we | i) need @plumber to (fix | look at) it [@today]",
-      "(please)? send @plumber [@today]",
-      "i would like @plumber to come [@today]",
-      "i would like it (fixed | repaired) [@today]",
-      "(could | can) you (fix | repair) it [@today]",
-      "i would appreciate it if @plumber could come [@today]",
+      "@req",
+      // "Can you come today?" (to Lizzie: she comes over)
+      "(could | can | would) you (come | come by | come and (fix | look at) it | come and take a look) [@today]",
       "(could | can | would) you send @plumber tomorrow #tomorrow",
       "(could | can) @plumber come tomorrow [morning] #tomorrow",
     ] },
     today_ctx: { patterns: ["[a plumber] @today [please | if possible]"] },
+    // "A plumber." to "So what do you need from me?"
+    plumber_ctx: { patterns: ["@plumber [@today]", "(a plumber | someone | somebody) to (fix | look at) it [@today]"] },
     insist_today: { patterns: [
       "[i am afraid] it (can not | really can not) wait [until tomorrow | till tomorrow] #h:cant_wait",
       "[i am afraid] (that | this) (can not | will not) wait [until tomorrow | till tomorrow]",
-      "(tomorrow | tomorrow morning) is too late",
+      "(tomorrow | tomorrow morning | that | it) is (too late | way too late | much too late) [i am afraid]",
       "(tomorrow | that) (is not | will not be) (good | okay | fine | possible | an option)",
       "(tomorrow | that) (does not | will not) work [for me]",
       "it (really)? (needs | has) to be today #h:really_today",
-      "it is (urgent | an emergency | really urgent | quite urgent)",
+      "(it | this | that) is (urgent | an emergency | really urgent | quite urgent | very urgent)",
+      // "I'm not sure it can wait." (not "I don't know" + "it can wait")
+      "i am not sure (it | that | this) (can | could) wait [(until | till) tomorrow]",
+      "i do not think (it | that | this) (can | could) wait [(until | till) tomorrow]",
       "(is there any way | is it possible) (it could be | someone could come | he could come | to do it) today",
       "i would (really)? appreciate it if (someone | a plumber | he | joe) could come today #h:appreciate_today",
       "today if (possible | at all possible)",
@@ -893,6 +1088,11 @@ export const flood: SituationDef = {
       "(actually)? (today | it) would be (better | much better)",
       "[actually] it really needs to be today",
     ] },
+    // "I'm worried." to "Could it wait till tomorrow morning?"
+    insist_ctx: { patterns: ["i am [really | very | a bit | a little] (worried | concerned | nervous) [about (it | the ceiling | the damage | mister okoye | the apartment downstairs | the neighbor)]"] },
+    // "No, it can't." / "Yes, it can." to "Could it wait till tomorrow morning?"
+    wait_no_ctx: { patterns: ["[no] it (can not | really can not)", "[no] i am afraid not"] },
+    wait_yes_ctx: { patterns: ["[yes] it can", "[yes] i (guess | suppose) (it can | so)"] },
     accept_tomorrow: { patterns: [
       "(tomorrow | tomorrow morning) (is | would be) (fine | okay | good | great | perfect) #h:tomorrow_fine",
       "(okay | fine | all right) (tomorrow | tomorrow morning) [then | works]",
@@ -907,6 +1107,7 @@ export const flood: SituationDef = {
       "(could | can) (he | joe | the plumber) come at {time} #h:could_he",
       "{time} works [for me] [better]",
       "let us (say | do | make it) {time}",
+      "i [would] prefer [it at] {time}",
       "(the earlier the better | as early as possible | the sooner the better) #early",
       "(any time | anytime) [is fine] [i am home all day | i will be home] #any",
       "i am (home | at home) all day #any",
@@ -915,7 +1116,15 @@ export const flood: SituationDef = {
       "(the first one | the earlier one) [please] #early",
       "(the second one | the later one) [please] #late",
     ] },
-    time_ctx: { patterns: ["[at] {time} [please | o'clock]"] },
+    time_ctx: { patterns: [
+      "[at] {time} [please | o'clock]",
+      // "Either is fine." / "I don't mind." (Joe's first slot)
+      "(either | either one | either time) [is | would be] [fine | okay | good] [for me | with me] #any",
+      "both (are | would be) fine #any",
+      "i do not mind [either way | which one] #any",
+      "(whichever | whatever) (is easier | is better | works) [for him | for joe] #any",
+      "it does not matter #any",
+    ] },
     ask_confirmed: { patterns: [
       "is (that | it) a confirmed time or (an estimate | just an estimate) #h:confirmed",
       "is (that | it | eleven | one | that time) (confirmed | definite | for sure | a firm time | an exact time)",
@@ -953,12 +1162,9 @@ export const flood: SituationDef = {
       "i am (so)? sorry to (bother you | call so early)",
     ] },
     kind_regards: { patterns: ["(kind | best | warm | warmest) regards #h:kind_regards #formal", "yours (sincerely | faithfully) #formal", "sincerely #formal"] },
-    vm_close: { patterns: [
-      "please call me back [at your earliest convenience | as soon as possible | when you get this] #h:vm_call_back",
-      "(could | can) you (please)? call me back [when you get this]",
-      "call me back [please]",
-      "i look forward to (hearing from you | your call | your reply | your swift reply) #h:look_forward #formal",
-    ] },
+    vm_close: { patterns: ["@callback"] },
+    // a voicemail said in one breath (four pieces or more): see the `vm_piece` macro and NEEDS 3
+    vm_unknown: { patterns: ["@vm_piece [@vm_and] @vm_piece [@vm_and] @vm_piece [@vm_and] @vm_piece [[@vm_and] @vm_piece] [[@vm_and] @vm_piece] [[@vm_and] @vm_piece] [[@vm_and] @vm_piece]"] },
     demand_rude: { patterns: [
       "(fix it | get over here | come now | do something) [now | right now] #casual",
       "this is your (problem | job | fault) #casual",
@@ -1069,6 +1275,11 @@ export const flood: SituationDef = {
       t("Anytime. | Now | go | call | your | landlord. | I'll start | mopping.", "Visada prašom. | O dabar | eik | paskambink | savo | nuomotojui. | Pradėsiu | plauti grindis.",
         "Visada prašom. O dabar eik paskambink nuomotojui, o aš pradėsiu plauti grindis."),
     ],
+    l_door_friends: [
+      t("Ha! | That's what friends are for. | Now | go | call | your | landlord. | I'll start | mopping.",
+        "Cha! | Tam ir yra draugai. | O dabar | eik | paskambink | savo | nuomotojui. | Pradėsiu | plauti grindis.",
+        "Cha! Tam ir yra draugai. O dabar eik paskambink nuomotojui, o aš pradėsiu plauti grindis."),
+    ],
     // at the end of Mr. Grant's call (door twist)
     l_shout: [t("Kind regards, | Mr. Grant!", "Pagarbiai, | pone Grantai!", "Pagarbiai, pone Grantai!")],
 
@@ -1176,6 +1387,7 @@ export const flood: SituationDef = {
     ],
     gr_texting: [t("Hang on, | I'm texting | Joe... | Okay!", "Palaukite, | rašau | Džo... | Gerai!", "Palaukite, rašau Džo žinutę... Gerai!")],
     gr_already_today: [t("Nah, | it's | today. | Already | decided.", "Ne, | tai | šiandien. | Jau | nuspręsta.", "Ne, šiandien. Jau nuspręsta.", { flags: { 1: F_ITS } })],
+    gr_no_risk: [t("Hmm. | Better safe than sorry.", "Hmm. | Atsargumas nepakenks.", "Hmm. Geriau nerizikuoti.")],
     gr_tomorrow_final: [
       t("Okay! | Joe | will be | there | tomorrow | at nine.", "Gerai! | Džo | bus | ten | rytoj | devintą.", "Gerai! Džo bus pas jus rytoj devintą."),
     ],
@@ -1455,6 +1667,8 @@ export const flood: SituationDef = {
     "be sent": { reason: "grammatical_fusion", split: "be → būti + sent → siųstas: the passive is one Lithuanian unit (būti atsiųstas).", minimal: "Two words." },
     "look forward": { reason: "lexical_expression", split: "look → žiūrėti + forward → pirmyn is false; = laukti (lauksiu).", minimal: "Verb and particle." },
     "will arrive": { reason: "grammatical_fusion", split: "“will” has no separate word: the future atvyks carries it.", minimal: "Two words." },
+    "that's what friends are for": { reason: "lexical_expression", split: "that's → tai yra, what → ką, friends → draugai, are → yra, for → dėl is a calque; = tam ir yra draugai.", minimal: "The saying." },
+    "better safe than sorry": { reason: "lexical_expression", split: "better → geriau, safe → saugus, than → negu, sorry → apgailestaujantis is a calque; = atsargumas nepakenks.", minimal: "The saying." },
     "this morning": { reason: "lexical_expression", split: "this → šis + morning → rytas; the time adverb = šįryt.", minimal: "Two words." },
   },
 
@@ -1507,6 +1721,7 @@ export const flood: SituationDef = {
         const n = bump(c, "l_door");
         if (n === 1) {
           c.twist("door");
+          c.s.twistSeen = true;
           L(c, "l_door1");
           c.event("knock");
           L(c, "l_door2");
@@ -1516,16 +1731,17 @@ export const flood: SituationDef = {
         }
         doorThanks(c);
       },
-      expects: ["warm", "see_you", "formal_thanks", "g_thanks", "g_bye"],
+      expects: ["warm", "door_surprise", "see_you", "formal_thanks", "g_thanks", "g_bye"],
       suggest: [{ lt: "Laisvai padėkoti draugei", hint: "door" }],
       yes: (c) => { doorThanks(c); }, no: (c) => { doorThanks(c); } },
     // after "No, I'm good": "You sure? I can come over after brunch."
     { id: "l_come", when: (c) => inLizzie(c) && !!c.s.helpAnswered && !!c.s.declined && c.s.twist !== "door", done: (c) => !!c.s.comeDone || asked(c, "l_come"),
       ask: (c) => { bump(c, "l_come"); L(c, "l_sure"); },
-      expects: ["need_nothing", "come_no", "ask_help", "item_ctx"],
+      expects: ["need_nothing", "come_no", "ask_help", "item_ctx", "sure_ctx"],
       suggest: [{ lt: "Sutikti arba vėl laisvai atsisakyti", hint: "need" }],
-      yes: (c) => { c.s.comeDone = true; c.s.coming = true; L(c, "l_coming_yes"); },
-      no: (c) => { c.s.comeDone = true; L(c, "l_not_coming"); } },
+      // "Yes, I'm sure." / "Sure." answers her "You sure?": she stays at brunch (so does a "No, no, it's fine")
+      yes: (c) => { sureNotComing(c); },
+      no: (c) => { sureNotComing(c); } },
     { id: "l_bye", when: (c) => inLizzie(c) && !!c.s.helpAnswered && (c.s.twist === "door" ? !!c.s.doorDone : (!c.s.declined || !!c.s.comeDone || asked(c, "l_come"))),
       done: (c) => !!c.s.byeL,
       ask: (c) => { if (bump(c, "l_bye") > 1) { byeLizzie(c, "bye"); return; } L(c, "l_bye_q"); },
@@ -1540,7 +1756,7 @@ export const flood: SituationDef = {
         if (bump(c, "vm_msg") === 1) { G(c, "vm_greet"); c.event("beep"); }
         vmSilent(c);
       },
-      expects: ["intro", "intro_ctx", "flood", "when_happened", "water_off", "downstairs_yes", "nobody_hurt", "ask_plumber", "today_ctx", "insist_today",
+      expects: ["vm_unknown", "intro", "vm_who_ctx", "flood", "when_happened", "water_off", "downstairs_yes", "nobody_hurt", "ask_plumber", "today_ctx", "insist_today",
         "vm_close", "kind_regards", "formal_thanks", "apologize"],
       suggest: (c) => [
         ...(!c.s.who ? [{ lt: "Pasisveikinti ir pasakyti, kas skambina", hint: "voicemail" }] : []),
@@ -1558,7 +1774,7 @@ export const flood: SituationDef = {
         if (n >= 3) { c.s.who = true; G(c, "gr_guess_who"); G(c, "gr_what_again"); return; }
         G(c, "gr_who_again");
       },
-      expects: ["intro", "intro_ctx", "its_me"],
+      expects: ["intro", "intro_ctx", "its_me", "its_me_ctx"],
       suggest: [{ lt: "Pasakyti, kas skambina (vardas ir butas)", hint: "who" }],
       yes: () => { /* he asks again */ }, no: () => { /* the same */ } },
     { id: "g_what", when: (c) => inGrant(c) && !!c.s.who, done: (c) => !!c.s.gFlood,
@@ -1571,7 +1787,8 @@ export const flood: SituationDef = {
       },
       expects: ["flood", "when_happened", "water_off", "downstairs_yes", "ask_plumber"],
       suggest: [{ lt: "Oficialiai paaiškinti, kas nutiko", hint: "report" }],
-      yes: (c) => { if ((c.s.asks?.g_what ?? 0) >= 3) grantFlood(c); },
+      // "Yes." to his guess: he knows now, but the learner hasn't explained it (mission item 3 stays open)
+      yes: (c) => { if ((c.s.asks?.g_what ?? 0) >= 3) { c.s.guessed = true; grantFlood(c); } },
       no: () => { /* he asks again */ },
       help: (c) => { G(c, "gr_guess_washer"); c.s.asks ||= {}; c.s.asks.g_what = 3; } },
     { id: "g_since", when: (c) => inGrant(c) && grantKnows(c) && !!c.s.askSince, done: sinceOk,
@@ -1584,12 +1801,12 @@ export const flood: SituationDef = {
       ask: (c) => { bump(c, "g_hurt"); G(c, "gr_hurt_q"); },
       expects: ["nobody_hurt", "freaking_out"],
       suggest: [{ lt: "Atsakyti, ar kas nukentėjo", hint: "details" }],
-      // "Yes" (somebody hurt?) – he worries; any answer then closes it
-      yes: (c) => { c.s.hurtDone = true; G(c, "gr_hurt_yes"); G(c, "gr_careful"); },
+      // "Yes" (somebody hurt?) – he worries and waits for "Yes, I am." / "I'm fine, just wet."
+      yes: (c) => { hurtYes(c); },
       no: (c) => { c.s.hurtDone = true; G(c, "gr_relief"); } },
     { id: "g_down", when: (c) => inGrant(c) && grantKnows(c), done: downOk,
       ask: (c) => { bump(c, "g_down"); G(c, "gr_down_q"); },
-      expects: ["downstairs_yes", "downstairs_no", "unsure_ctx"],
+      expects: ["downstairs_yes", "downstairs_no", "down_yes_ctx", "down_no_ctx", "unsure_ctx"],
       suggest: [{ lt: "Atsakyti, ar vanduo pasiekė butą apačioje", hint: "details" }],
       yes: (c) => { downstairs(c, true); }, no: (c) => { downstairs(c, false); },
       help: (c) => { c.s.downDone = true; G(c, "gr_down_unknown"); } },
@@ -1605,7 +1822,7 @@ export const flood: SituationDef = {
         if (n >= 3) { G(c, "gr_send_q"); return; }
         G(c, "gr_req_q");
       },
-      expects: ["ask_plumber", "today_ctx", "insist_today", "demand_rude"],
+      expects: ["ask_plumber", "plumber_ctx", "today_ctx", "insist_today", "demand_rude"],
       suggest: [{ lt: "Paprašyti, kad santechnikas atvyktų šiandien", hint: "request" }],
       yes: (c) => { if ((c.s.asks?.g_request ?? 0) >= 3) c.s.requested = true; },
       no: () => { /* he asks again */ },
@@ -1616,13 +1833,15 @@ export const flood: SituationDef = {
         if (c.s.insisted) { todayNow(c); return; }
         const n = bump(c, "g_offer");
         if (n === 1) { c.s.offered = true; G(c, "gr_offer_a"); G(c, "gr_offer_b"); return; }
+        // asked twice with no answer: he doesn't risk it (the time question follows)
+        if (n >= 3) { dontKnowToday(c); return; }
         G(c, "gr_offer_b");
       },
-      expects: ["insist_today", "accept_tomorrow", "ask_plumber", "today_ctx", "downstairs_yes"],
+      expects: ["insist_today", "insist_ctx", "wait_no_ctx", "wait_yes_ctx", "accept_tomorrow", "ask_plumber", "today_ctx", "downstairs_yes"],
       suggest: [{ lt: "Mandagiai, bet tvirtai paprašyti šiandien", hint: "insist" }, { lt: "Sutikti su rytdiena", hint: "insist" }],
       yes: (c) => { acceptTomorrow(c); },
       no: (c) => { todayNow(c); },
-      help: (c) => { todayNow(c); } },
+      help: (c) => { dontKnowToday(c); } },
     { id: "g_time", when: (c) => inGrant(c) && !!c.s.today, done: (c) => !!c.s.timeSet,
       ask: (c) => {
         const n = bump(c, "g_time");
@@ -1640,7 +1859,7 @@ export const flood: SituationDef = {
       expects: ["formal_thanks", "apologize", "kind_regards", "ask_confirmed", "ask_eta", "ask_damage", "thats_all", "warm", "g_thanks"],
       suggest: [{ lt: "Mandagiai padėkoti", hint: "thanks_g" }, { lt: "Paklausti, ar laikas tikslus", hint: "time" }],
       yes: (c) => { G(c, "gr_ok"); c.hold(); },
-      no: (c) => { c.s.closeNo = true; } },
+      no: (c) => { c.s.closeNo = true; if (heardThanks(c)) c.s.thanked = true; } },
   ],
 
   init: (c) => {
@@ -1698,7 +1917,12 @@ export const flood: SituationDef = {
     g_learning(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_learning(c as ConvCtx, slots); },
     g_repeat(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_repeat(c as ConvCtx, slots); },
     g_slower(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_slower(c as ConvCtx, slots); },
-    g_dontknow(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_dontknow(c as ConvCtx, slots); },
+    g_dontknow(c, slots) {
+      if (inVm(c)) { vmSilent(c); return; }
+      // "I don't know." to "Could it wait till tomorrow morning?": he decides, and the time question follows (no hold)
+      if (inGrant(c) && c.step === "g_offer" && !c.s.today && !c.s.tomorrow) { dontKnowToday(c); return; }
+      GLOBAL_HANDLERS.g_dontknow(c as ConvCtx, slots);
+    },
   },
 
   finish: (c) => {
@@ -1795,6 +2019,50 @@ export const flood: SituationDef = {
     { say: "Fix it now!", intent: "demand_rude", step: "g_request" },
     { say: "Please call me back at your earliest convenience.", intent: "vm_close", step: "vm_msg" },
     { say: "I look forward to hearing from you.", intent: "vm_close", step: "vm_msg" },
+    // --- review fixes (regressions) ---
+    // "Yes, I'm sure." / "I'm sure." to her "You sure? I can come over after brunch." keeps her at brunch
+    { say: "I'm sure.", intent: "sure_ctx", step: "l_come", not: ["ask_help", "item_ctx"] },
+    { say: "Yes, I'm sure.", intent: "sure_ctx", step: "l_come", not: ["ask_help", "item_ctx"] },
+    { say: "Nothing else, thank you.", intent: "thats_all", step: "g_close" },
+    // a bare {name} only answers "Who's this?"
+    { say: "I'm wet.", intent: "nobody_hurt", step: "l_okay", not: ["intro", "intro_ctx"] },
+    { say: "I'm stressed.", intent: "freaking_out", step: "l_okay", not: ["intro", "intro_ctx"] },
+    { say: "I'm home.", intent: "none" },
+    { say: "This is urgent.", intent: "insist_today", step: "g_offer", not: ["intro", "intro_ctx", "accept_tomorrow"] },
+    { say: "That's too late.", intent: "insist_today", step: "g_offer", not: ["intro", "intro_ctx", "accept_tomorrow"] },
+    { say: "I'm worried.", intent: "insist_ctx", step: "g_offer", not: ["intro", "intro_ctx", "accept_tomorrow"] },
+    { say: "Please ring me back.", intent: "vm_close", step: "vm_msg", not: ["vm_who_ctx", "intro_ctx", "its_me", "its_me_ctx"] },
+    { say: "This is Tomas.", intent: "intro_ctx", step: "g_who" },
+    { say: "This is Tomas.", intent: "vm_who_ctx", step: "vm_msg" },
+    { say: "Me!", intent: "its_me_ctx", step: "g_who" },
+    // a voicemail said in one breath (more pieces than the engine's three intents)
+    { say: "Good morning, Mr. Grant. This is Tomas Mikalauskas from apartment 3B. I regret to inform you that the kitchen is flooded. I would be grateful if a plumber could be sent today. Kind regards.", intent: "vm_unknown", step: "vm_msg" },
+    { say: "Hello, Mr. Grant, it's Tomas from 3B. I'm afraid the washing machine has flooded the kitchen. Nobody is hurt, and I've turned off the water. Could you send a plumber today? Please call me back.", intent: "vm_unknown", step: "vm_msg" },
+    // the hint example where the hint is shown
+    { say: "It happened this morning, at about seven.", intent: "when_happened", step: "g_hurt" },
+    { say: "It happened this morning, at about seven.", intent: "when_happened", step: "g_water" },
+    // short answers to Mr. Grant
+    { say: "No, it hasn't.", intent: "down_no_ctx", step: "g_down", not: ["downstairs_yes", "down_yes_ctx"] },
+    { say: "Yes, it has.", intent: "down_yes_ctx", step: "g_down", not: ["downstairs_no", "down_no_ctx"] },
+    { say: "I'm afraid so.", intent: "down_yes_ctx", step: "g_down" },
+    { say: "No, it can't.", intent: "wait_no_ctx", step: "g_offer", not: ["accept_tomorrow", "wait_yes_ctx"] },
+    { say: "Yes, it can.", intent: "wait_yes_ctx", step: "g_offer", not: ["insist_today", "wait_no_ctx"] },
+    { say: "Nobody.", intent: "nobody_hurt", step: "g_hurt" },
+    { say: "No one.", intent: "nobody_hurt", step: "g_hurt" },
+    { say: "I'm not hurt.", intent: "nobody_hurt", step: "g_hurt" },
+    { say: "I closed the valve.", intent: "water_off", step: "g_water" },
+    { say: "I turned off the tap.", intent: "water_off", step: "g_water" },
+    { say: "A plumber.", intent: "plumber_ctx", step: "g_request" },
+    { say: "Can you come today?", intent: "ask_plumber", step: "g_request" },
+    { say: "I have a problem with the washing machine.", intent: "flood", step: "g_what" },
+    { say: "I don't have a problem with the washing machine.", intent: "none" },
+    { say: "Either is fine.", intent: "time_ctx", step: "g_time" },
+    { say: "I don't mind.", intent: "time_ctx", step: "g_time" },
+    { say: "I'd prefer one.", intent: "pick_time", step: "g_time", slots: { time: { h: 1 } } },
+    { say: "I'm not sure it can wait.", intent: "insist_today", step: "g_offer", not: ["accept_tomorrow"] },
+    { say: "I don't think it can wait.", intent: "insist_today", step: "g_offer", not: ["accept_tomorrow"] },
+    { say: "What are you doing here?", intent: "door_surprise", step: "l_door", not: ["warm"] },
+    { say: "I bought a mop.", intent: "not_item", step: "l_need", not: ["ask_help", "item_ctx"] },
     // --- nothing understood ---
     { say: "Purple bananas dance on the roof", intent: "none" },
     { say: "I don't have a washing machine", intent: "none" },
@@ -1850,6 +2118,35 @@ export const flood: SituationDef = {
     { name: "hanging up on Mr. Grant (not done)", setup: (s) => { s.twist = null; s.askOkay = false; s.askSince = false; },
       turns: ["My washing machine exploded, so no brunch today.", "A bucket and some towels, please.", "Bye!", "Hi, it's Tomas from 3B.", "Bye.", "Goodbye."],
       expect: { complete: false, state: { outcome: "walked" } }, auto: AUTO },
+    // review fixes: short answers everywhere, "Yes, I'm sure", "Yes" to "Is anybody hurt?" (he waits), "No, thank you"
+    { name: "short answers: Lizzie stays at brunch, 'No, thank you' thanks", setup: (s) => { s.twist = null; s.askOkay = false; s.askSince = false; },
+      turns: ["I can't make brunch, my kitchen is flooded.", "No, I'm good, thanks.", "Yes, I'm sure.", "Bye!",
+        "Hi, this is Tomas from 3B.", "I have a problem with the washing machine.", "Yes.", "Yes, I am.", "No, it hasn't.", "I closed the valve.",
+        "A plumber.", "No, it can't.", "Either is fine.", "No, thank you."],
+      expect: { complete: true, state: { coming: false, hurtDone: true, downstairs: false, waterOff: true, today: true, timeSet: "eleven", thanked: true, outcome: "done" } }, auto: AUTO },
+    { name: "voicemail (twist) in one breath; 'Eleven thirty?' is not a slot", setup: (s) => { s.twist = "voicemail"; s.askOkay = false; s.askSince = false; },
+      turns: ["I can't make brunch, my kitchen is flooded.", "Can you bring a mop?", "Thanks, bye!",
+        "Hello, Mr. Grant, it's Tomas from 3B. I'm afraid the washing machine has flooded the kitchen. Nobody is hurt, and I've turned off the water. Could you send a plumber today? Please call me back.",
+        "No, not yet.", "Eleven thirty?", "Eleven, then.", "Nothing else, thank you."],
+      expect: { complete: true, state: { vmEnded: true, who: true, hurtDone: true, waterOff: true, today: true, timeSet: "eleven", thanked: true, outcome: "done" } }, auto: AUTO },
+    { name: "'I don't know' to tomorrow: he doesn't risk it, and asks the time", setup: (s) => { s.twist = null; s.askOkay = true; s.askSince = false; },
+      turns: ["My washer kinda exploded.", "I'm wet.", "Can I take a rain check?", "Could you grab some towels?", "Love you, thanks!",
+        "This is Tomas from apartment 3B.", "I'm afraid the washing machine is leaking.", "Nobody.", "I'm afraid so.", "I turned off the tap.",
+        "Could you send a plumber?", "I don't know.", "I'd prefer one.", "Thank you for your prompt assistance."],
+      expect: { complete: true, state: { okayDone: true, downstairs: true, today: true, tomorrow: false, timeSet: "one", outcome: "done" } }, auto: AUTO },
+    { name: "door (twist): 'What are you doing here?'", setup: (s) => { s.twist = "door"; s.askOkay = false; s.askSince = false; },
+      turns: ["I can't make brunch. My washing machine broke.", "I bought a mop. Could you bring coffee?", "What are you doing here?",
+        "Hi, Mr. Grant. This is Tomas from 3B.", "There's water everywhere.", "No one.", "Not yet.", "Yes.", "Can you come today?",
+        "This is urgent.", "Eleven.", "Thanks, I really appreciate it."],
+      expect: { complete: true, state: { doorDone: true, today: true, timeSet: "eleven", twistSaved: "door", outcome: "done" } }, auto: AUTO },
+    { name: "the guess: 'Yes' to 'that washing machine again?' is no explanation (not done)", setup: (s) => { s.twist = null; s.askOkay = false; s.askSince = false; },
+      turns: ["I can't make brunch, my kitchen is flooded.", "Can you bring a mop?", "Bye!", "Hi, this is Tomas from 3B.", "I don't know.", "Yes.",
+        "No.", "No.", "Yes.", "Could you send a plumber today?", "No.", "Eleven.", "Thank you for your prompt assistance."],
+      expect: { complete: false, state: { guessed: true, today: true, timeSet: "eleven", thanked: true, outcome: "partial" } }, auto: AUTO },
+    { name: "voicemail (twist), then hanging up: the twist is remembered (not done)", setup: (s) => { s.twist = "voicemail"; s.askOkay = false; s.askSince = false; },
+      turns: ["My washing machine exploded, so no brunch today.", "A bucket and some towels, please.", "Bye!",
+        "Hello, Mr. Grant. Please call me back.", "This is Tomas from 3B.", "Bye.", "Goodbye."],
+      expect: { complete: false, state: { vmEnded: true, outcome: "walked", twistSaved: "voicemail" } }, auto: AUTO },
   ],
 };
 
@@ -1864,10 +2161,12 @@ function expectClosing(c: Ctx) {
       kind_regards: (cc) => { cc.s.thanked = true; G(cc, "gr_regards"); wrapUp(cc); },
       warm: (cc) => { cc.tip(TIPS.love_landlord); cc.s.thanked = true; G(cc, "gr_love_you"); wrapUp(cc); },
       g_thanks: (cc) => { cc.s.thanked = true; wrapUp(cc); },
-      g_bye: (cc) => { wrapUp(cc); }, see_you: (cc) => { wrapUp(cc); },
+      // "No, thank you." / "Thanks, bye!": the thanks counts
+      g_bye: (cc) => { if (heardThanks(cc)) cc.s.thanked = true; wrapUp(cc); },
+      see_you: (cc) => { if (heardThanks(cc)) cc.s.thanked = true; wrapUp(cc); },
     },
     yes: (cc) => { G(cc, "gr_ok"); expectClosing(cc); },
-    no: (cc) => { wrapUp(cc); },
+    no: (cc) => { if (heardThanks(cc)) cc.s.thanked = true; wrapUp(cc); },
   };
   c.expect(p);
 }
