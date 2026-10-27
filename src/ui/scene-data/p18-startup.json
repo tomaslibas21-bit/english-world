@@ -1,0 +1,34 @@
+{
+  "npc": "Tyler, founder of Sproutly",
+  "images": [
+    "hello",
+    "pile",
+    "idioms",
+    "plan",
+    "twist",
+    "done"
+  ],
+  "start": "hello",
+  "done": "done",
+  "phases": {
+    "hello": "hello",
+    "pile": "pile",
+    "too_much": "pile",
+    "owner": "idioms",
+    "when": "idioms",
+    "priorities": "plan",
+    "pushback": "plan",
+    "deal": "plan",
+    "offer": "plan",
+    "tomorrow": "plan",
+    "crash": "twist",
+    "crash_ok": "twist",
+    "midnight": "twist",
+    "mid_deal": "twist",
+    "closing": "done"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
