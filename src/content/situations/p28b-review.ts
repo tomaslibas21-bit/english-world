@@ -9,7 +9,7 @@
 //   - her feedback: "Can I give you some feedback?" → "One thing you could try is speaking up earlier in client
 //     meetings." The learner accepts ("Thanks, that's really helpful. I'll work on that."), asks for an example,
 //     or explains politely that she presented their sections because the client was late ("Fair enough. That's
-//     on me.") and then proposes how to protect their speaking time (sections in the agenda). A rude push-back
+//     on me.") and then proposes how to protect their speaking time (sections on the agenda). A rude push-back
 //     ("That's not true") still works, with a tip;
 //   - goals for next year (chips: client presentations, a small project, a UX writing / data / leadership
 //     course, mentoring); asking for support counts ("Is there a training budget?" → "$1,500 per person");
@@ -217,7 +217,7 @@ const coreDone = (c: Ctx) => !!c.s.praiseOk && !!c.s.fbOk && !!c.s.goal;
 /** Sims: the plain review (no twist, no "What made it work?", no "What would help you?"). */
 const PLAIN = (s: Record<string, any>) => { s.twist = null; s.follow = false; s.supportQ = false; s.back = false; };
 const AUTO: Record<string, string> = {
-  made: "We planned everything early.", support: "Some regular feedback would help.", protect: "Could we put my sections in the agenda?",
+  made: "We planned everything early.", support: "Some regular feedback would help.", protect: "Could we put my sections on the agenda?",
   anything_else: "No, that's all. Thanks, that's really helpful.", checkin: "Sounds good.",
   rev_open: "Sure, I'd be happy to.", rev_worked: "What worked really well was your open door.", rev_try: "One thing you could try is clearer priorities.",
   tab: "I think that's someone else's review on the screen.", criteria: "What would I need to do to get a promotion?",
@@ -464,6 +464,13 @@ export const review: SituationDef = {
       "(that is | it is) not (quite | entirely | completely | exactly | really) (true | right | fair | accurate | how it was)",
       "(that is | it is) not the whole story",
       "can i (explain | add something | give some context | give you some context)",
+      // doubt is no agreement: "I'm not sure I agree" → "How so?" (never "Thanks for taking it so well")
+      "[i am] not (sure | so sure | convinced) [that] (i agree [with (that | you | this)] | (that is | it is | this is) (fair | true | right | accurate | correct) | you are right | i (can | will) (do | change | work on | try) (that | it | this) | it is that simple)",
+      "i am not sure about (that | this)",
+      "i do not agree [with (that | you | this)] (completely | entirely | one hundred percent)",
+      "i (kind of | partly | partially | respectfully) disagree [with (that | you | this)]",
+      "i do not (fully | completely | totally | quite) agree [with (that | you | this)]",
+      "i do not (really)? (think | feel) (that is | it is) (fair | true | right | accurate)",
       "[but] (in those meetings | in both meetings | in the last two | both times | that time | in those calls | in both calls | actually | well | to be fair | remember) you presented my @sections [@late_why] #ctx #h:you_presented",
       "you (presented | did | took | covered | ran | gave) my @sections [in (those | both | the last two | the) (meetings | calls)] [@late_why] #ctx",
       "[that is because | it was because | because] the client was (late | running late | in a hurry | short on time) [remember] #ctx #h:client_late",
@@ -486,6 +493,7 @@ export const review: SituationDef = {
       "(it was not | that was not | it is not) my fault",
       "you do not know what you are talking about",
       "i do not agree [with (that | you)] [at all]",
+      "i (disagree | totally disagree | completely disagree | strongly disagree) [with (that | you | this)]",
     ] },
     defensive_fb: { patterns: [
       "i (always | do) (speak | talk) [up] in (meetings | client meetings)",
@@ -524,6 +532,9 @@ export const review: SituationDef = {
     tab_point: { patterns: [
       "i think (that is | this is) (someone else's | somebody else's | ben's) @rev [on the screen] #h:someone_else",
       "(that is | this is) (someone else's | somebody else's | ben's | not my) @rev [on the screen]",
+      "(that is | this is | it is | that one is | this one is) (someone else's | somebody else's) [@rev] [on the screen]",
+      "(that is | this is | it is) not my @rev [on the screen]",
+      "(that is | this is | it is) (someone else's | somebody else's | ben's) [one]",
       "i do not think (that is | this is | that one is | this one is) (mine | my @rev) #h:not_mine",
       "(that is | this is | that one is | this one is) not (mine | me)",
       "(i think)? you (have | opened | have got) the wrong (tab | file | @rev | one | person) [open] #h:wrong_tab",
@@ -565,6 +576,25 @@ export const review: SituationDef = {
       "i (want | would like) to (grow | become) [into] a (team lead | lead | leader) #g:leadership",
       "{goal} (and | or) {goal2:goal}",
     ] },
+    // "I'd like to stop presenting." / "Less mentoring.": never the goal itself (answered like a vague goal)
+    goal_not: { patterns: [
+      "i (would like | would love | want | hope | plan | need) to (stop | quit | avoid | give up) [doing] [the] {goal} [next year]",
+      "i (would like | would love | want | hope) to (do | have) (less | fewer | no more) {goal} [next year]",
+      "i (would like | want) to (present | speak | mentor) less [next year]",
+      "i (would like | want) to stop (presenting | speaking | mentoring | leading) [next year]",
+      "(less | fewer | no more | not) {goal} [next year] [i think]",
+      "anything but {goal}",
+      "i do not want to (do | work on | focus on | take | lead | improve) [any] [more] {goal} [next year]",
+      "i would rather not (do | work on | focus on) [any] [more] {goal} [next year]",
+      "i do not want (any | more) {goal} [next year]",
+    ] },
+    // "A course." (from her own list of ideas): she asks which one
+    goal_course: { patterns: [
+      "i would (like | love) to (take | do | sign up for | attend | go to) (a | an | some) (course | class | training | workshop) [next year]",
+      "i (want | hope | plan) to (take | do) (a | an | some) (course | class | training | workshop) [next year]",
+      "(a | some) (course | class | training | workshop) would be (nice | great | good | interesting)",
+    ] },
+    goal_course_ctx: { patterns: ["[maybe | probably | i think] (a | some) (course | class | training | workshop) [maybe | i think | probably | next year]"] },
     // "UX writing." (only while she asks about goals)
     goal_ctx: { patterns: ["[the | a | some | maybe] {goal} [i think | maybe | probably | course | training | next year]"] },
     goal_vague: { patterns: [
@@ -619,6 +649,7 @@ export const review: SituationDef = {
       "you (stay | stayed | are | always stay) (calm | relaxed) [under pressure] #mg:calm",
       "you (support | supported | protect | protected | defend | defended | back | backed) (us | the team | me) #mg:support",
       "you are [very | really | so] (supportive | kind | positive) #mg:support",
+      "you are a [really | very] (good | great | wonderful | fantastic | fair | kind) (manager | boss | leader) [already] #mg:general",
       "you (are doing | have been doing | do) [a] (great | good | really good) (job | work) #mg:general",
       "(everything | a lot) (is working | works | worked)",
     ] },
@@ -640,6 +671,8 @@ export const review: SituationDef = {
       "(we | i) (need | would like) (clearer | clear) (priorities | goals | direction) #mt:priorities",
       "(tell us | make it clear) what is [most] (important | urgent) #mt:priorities",
       "(maybe | perhaps) (delegate | share) more [work | tasks] #mt:other",
+      "(the | your | our | some) meetings (are | can be | get | feel) [often | sometimes | a bit | a little | kind of | usually] (too | quite | really | very) long #mt:shorter_meetings",
+      "(the | your | our) meetings (could | should | can) be shorter #mt:shorter_meetings",
       "(maybe | perhaps) (relax | worry less | trust us more) #mt:other",
     ] },
     mt_ctx: { patterns: ["{mt:mtip}"] },
@@ -657,7 +690,7 @@ export const review: SituationDef = {
       "(rachel | someone else | ben | i) should (be | have been) the (manager | boss) #tip:kind",
       "you (do not | can not) (manage | lead) #tip:kind",
       "you are not (ready | a good manager | good at this) #tip:kind",
-      "(your | the) (emails | meetings) are (terrible | annoying | too long | stupid | useless) #tip:kind",
+      "(your | the) (emails | meetings) are (terrible | annoying | stupid | useless | a waste of time) #tip:kind",
     ] },
 
     // --- money and the closing -----------------------------------------------------------------------------------
@@ -674,6 +707,9 @@ export const review: SituationDef = {
       "(will | does) (this | the) @rev (affect | change | influence) (@pay | my @promo | the @raise) #h:affect_pay",
       "how does (this | the) @rev (affect | change) (@pay | my chances)",
       "(i think)? i deserve (@raise | @promo) #tip:money_blunt",
+      "i would (like | love) (to (get | have | ask for))? (@raise | @promo | more money) [this year | next year]",
+      "i was hoping (for | to get) (@raise | @promo) [this year | next year]",
+      "i (would like | want) to ask (for | about) (@raise | @promo)",
       "(i want | give me | i need) (more money | @raise | @promo) #tip:money_blunt",
       "what about (money | the money)",
       "[yes] about [my] (@pay | @raise | @promo)",
@@ -702,11 +738,12 @@ export const review: SituationDef = {
       "(i am | i think i am) good",
     ] },
     propose_checkin: { patterns: [
-      "(can | could | should) we (check in | meet | talk) again (in a month | next month | soon | in a few weeks) #h:check_again",
-      "let us (check in | meet | talk) again [in a month | next month | soon]",
-      "(same time | the same time) next month",
-      "see you (in a month | next month)",
-      "when is (our | the) next (check in | meeting | one on one | review)",
+      "(can | could | should) we (check in | meet | talk) again (in a month #month | next month #month | soon #soon | in a few weeks #weeks) #h:check_again",
+      "let us (check in | meet | talk) again [in a month #month | next month #month | soon #soon]",
+      "(same time | the same time) next month #month",
+      "see you (in a month | next month) #month",
+      "when (is | will be) (our | the) next (check in | meeting | one on one | review) #when",
+      "when (do | will | should | can) we (meet | talk | check in) again #when",
     ] },
     // "Good idea." / "Let's do that." (to her own suggestion)
     agree_idea: { patterns: [
@@ -720,8 +757,17 @@ export const review: SituationDef = {
     checkin_yes_ctx: { patterns: [
       "(same time | same time works | same time is (fine | good | perfect) | works for me | that works [for me] | let us do (that | it) | it is a date | deal | see you then | looking forward to it) #h:works_for_me",
       "sounds (good | great | perfect) #h:sounds_good",
+      "(next month | in a month | a month from now | one month) (is | sounds | would be) (fine | good | great | perfect) [for me]",
+      "(next month | in a month | a month) (works | is okay) [for me]",
+      "[yes] (next month | in a month) [then | is fine]",
     ] },
-    checkin_no_ctx: { patterns: ["(maybe | how about | could we do) (in)? (two months | two weeks | three weeks | six weeks)", "(maybe)? a different time"] },
+    checkin_no_ctx: { patterns: [
+      "(maybe | how about | what about | could we do) (in)? (two months | two weeks | three weeks | six weeks | a few weeks) [instead]",
+      "(can | could) we (make it | do it | do | meet | check in | talk) (in)? (two months | two weeks | three weeks | six weeks | a few weeks) [instead]",
+      "(two weeks | three weeks | two months | six weeks) (would be | is) better [for me]",
+      "(can | could) we (make it | do it | meet | check in | talk) (sooner | earlier | later)",
+      "(maybe)? a different time",
+    ] },
   },
 
   lines: {
@@ -743,8 +789,8 @@ export const review: SituationDef = {
     ],
     hello_back2: [t("Thanks | for | making | time | again.", "Ačiū, | kad | radai | laiko | vėl.", "Ačiū, kad vėl radai laiko.", { flags: { 1: F_FOR_KAD } })],
     plant_help: [
-      t("No, | no, | stay | where | you | are. | Wow. | That | sounded | very | managerial.", "Ne, | ne, | likis | ten, kur | tu | esi. | Oho. | Tai | nuskambėjo | labai | vadoviškai.",
-        "Ne, ne, likis, kur esi. Oho. Nuskambėjo labai vadoviškai."),
+      t("No, | no, | stay | where | you | are. | Wow. | That | sounded | very | managerial.", "Ne, | ne, | lik | ten, kur | tu | esi. | Oho. | Tai | nuskambėjo | labai | vadoviškai.",
+        "Ne, ne, lik, kur esi. Oho. Nuskambėjo labai vadoviškai."),
       t("It's | fine, | it's | just | dirt. | I'll deal | with | it | later.", "Viskas | gerai, | tai yra | tik | žemė. | Susitvarkysiu | su | tuo | vėliau.",
         "Viskas gerai, čia tik žemė. Susitvarkysiu vėliau.", { flags: { 0: "“It's” here = viskas (yra)." } }),
     ],
@@ -974,11 +1020,11 @@ export const review: SituationDef = {
     ],
     protect_again: [t("Any | ideas? | Even | a | small | one.", "Kokių nors | idėjų? | Net | — | mažą | idėją.", "Kokių nors minčių? Kad ir mažą.")],
     protect_help: [
-      t("What if | we | put | your | sections | in | the | agenda, | with | your | name?", "O jei | mes | įrašytume | tavo | dalis | į | — | darbotvarkę, | su | tavo | vardu?",
+      t("What if | we | put | your | sections | on | the | agenda, | with | your | name?", "O jei | mes | įrašytume | tavo | dalis | į | — | darbotvarkę, | su | tavo | vardu?",
         "O jei įrašytume tavo dalis į darbotvarkę su tavo vardu?"),
     ],
     protect_decide: [
-      t("Let's | put | your | sections | in | the | agenda, | with | your | name.", "— | Įrašykime | tavo | dalis | į | — | darbotvarkę, | su | tavo | vardu.",
+      t("Let's | put | your | sections | on | the | agenda, | with | your | name.", "— | Įrašykime | tavo | dalis | į | — | darbotvarkę, | su | tavo | vardu.",
         "Įrašykime tavo dalis į darbotvarkę su tavo vardu.", { flags: { 0: F_LETS } }),
     ],
     protect_yes: [t("Great. | Done.", "Puiku. | Sutarta.", "Puiku. Sutarta.")],
@@ -987,7 +1033,7 @@ export const review: SituationDef = {
         "Gerai. Pagalvok ir pasakyk man prieš kitą susitikimą."),
     ],
     protect_agenda: [
-      t("Good | idea. | Your | sections | go | in | the | agenda, | with | your | name.", "Gera | mintis. | Tavo | dalys | įrašomos | į | — | darbotvarkę, | su | tavo | vardu.",
+      t("Good | idea. | Your | sections | go | on | the | agenda, | with | your | name.", "Gera | mintis. | Tavo | dalys | įrašomos | į | — | darbotvarkę, | su | tavo | vardu.",
         "Gera mintis. Tavo dalys bus įrašytos į darbotvarkę su tavo vardu."),
     ],
     protect_keep: [
@@ -998,7 +1044,7 @@ export const review: SituationDef = {
       t("I | like | that. | Let's | try | it.", "Man | patinka | tai. | — | Pabandykime | tai.", "Man tai patinka. Pabandykime.", { flags: { 0: F_DAT_MAN, 3: F_LETS } }),
     ],
     protect_agenda_too: [
-      t("And | let's | put | your | sections | in | the | agenda, | too.", "Ir | — | įrašykime | tavo | dalis | į | — | darbotvarkę, | irgi.", "Ir dar įrašykime tavo dalis į darbotvarkę.",
+      t("And | let's | put | your | sections | on | the | agenda, | too.", "Ir | — | įrašykime | tavo | dalis | į | — | darbotvarkę, | irgi.", "Ir dar įrašykime tavo dalis į darbotvarkę.",
         { flags: { 1: F_LETS } }),
     ],
 
@@ -1055,6 +1101,18 @@ export const review: SituationDef = {
         "Geras pasirinkimas. Pavasarį vyksta puikus {X:gen} kursas."),
     ],
     goal_course: [t("Oh, | a | {X} | course? | Great | idea.", "O, | — | {X:gen} | kursas? | Puiki | mintis.", "O, {X:gen} kursas? Puiki mintis.")],
+    goal_which_course: [
+      t("Sure! | Which one? | There's | UX | writing, | data | analysis, | or | leadership.", "Žinoma! | Kurį? | Yra | UX | rašymo, | duomenų | analizės, | arba | lyderystės.",
+        "Žinoma! Kurį? Yra UX rašymo, duomenų analizės arba lyderystės kursai.", { flags: { 2: "“There's” = yra; the courses (kursai) are understood, so the subjects stand in the genitive." } }),
+    ],
+    goal_later: [
+      t("Okay. | Think | about | it, | and | we'll choose | one | next | time.", "Gerai. | Pagalvok | apie | tai, | ir | išsirinksime | vieną | kitą | kartą.",
+        "Gerai. Pagalvok, o kitą kartą išsirinksime vieną."),
+    ],
+    goal_not: [
+      t("Okay, | that's | fair. | Then | let's | find | something | else.", "Gerai, | tai yra | suprantama. | Tada | — | raskime | ką nors | kita.", "Gerai, suprantama. Tada raskime ką nors kita.",
+        { flags: { 4: F_LETS } }),
+    ],
     goal_mentor: [
       t("You'd | be | great | at | that. | We | have | two | new | interns | starting | in March.", "Tu | būtum | {m:puikus|f:puiki} | — | tame. | Mes | turime | du | naujus | praktikantus | pradedančius | kovą.",
         "Tau tai puikiai sektųsi. Kovą pas mus ateina du nauji praktikantai.",
@@ -1204,7 +1262,7 @@ export const review: SituationDef = {
       t("Okay. | Let | me | sum up.", "Gerai. | Leisk | man | apibendrinti.", "Gerai. Apibendrinsiu."),
       t("Okay, | so, | to sum up.", "Gerai, | taigi, | apibendrinant.", "Gerai, taigi apibendrinant."),
     ],
-    sum_agenda: [t("Your | sections | go | in | the | agenda, | with | your | name.", "Tavo | dalys | įrašomos | į | — | darbotvarkę, | su | tavo | vardu.", "Tavo dalys įrašomos į darbotvarkę su tavo vardu.")],
+    sum_agenda: [t("Your | sections | go | on | the | agenda, | with | your | name.", "Tavo | dalys | įrašomos | į | — | darbotvarkę, | su | tavo | vardu.", "Tavo dalys įrašomos į darbotvarkę su tavo vardu.")],
     sum_speak: [t("You'll speak | up | earlier | in | client | meetings.", "Prabilsi | — | anksčiau | per | klientų | susitikimus.", "Per susitikimus su klientais prabilsi anksčiau.",
       { flags: { 1: "“up” (speak up): prabilsi carries it." } })],
     sum_goal: [t("Your | goal: | {X}.", "Tavo | tikslas: | {X:nom}.", "Tavo tikslas – {X:nom}.")],
@@ -1226,6 +1284,16 @@ export const review: SituationDef = {
     ],
     checkin_early: [t("Definitely. | Let's | do | that.", "Žinoma. | — | Padarykime | taip.", "Žinoma. Taip ir padarykime.", { flags: { 1: F_LETS } })],
     checkin_like_said: [t("And | we | check in | again | in a month, | like | you | said.", "Ir | mes | pasikalbame | vėl | po mėnesio, | kaip | tu | sakei.", "Ir, kaip sakei, vėl pasikalbame po mėnesio.")],
+    checkin_like_said_weeks: [
+      t("And | we | check in | again | in a few weeks, | like | you | said.", "Ir | mes | pasikalbame | vėl | po kelių savaičių, | kaip | tu | sakei.", "Ir, kaip sakei, vėl pasikalbame po kelių savaičių."),
+    ],
+    checkin_like_said_other: [
+      t("And | we | check in | again | soon, | like | you | said. | I'll send | you | an | invite.", "Ir | mes | pasikalbame | vėl | netrukus, | kaip | tu | sakei. | Atsiųsiu | tau | — | kvietimą.",
+        "Ir, kaip sakei, netrukus vėl pasikalbame. Atsiųsiu tau kvietimą."),
+    ],
+    checkin_when: [
+      t("Good | question. | Let's | set | that | at the end.", "Geras | klausimas. | — | Nustatykime | tai | pabaigoje.", "Geras klausimas. Tai nustatykime pabaigoje.", { flags: { 2: F_LETS } }),
+    ],
     checkin_other: [
       t("Okay. | I'll send | you | an | invite, | and | you | pick | the | time.", "Gerai. | Atsiųsiu | tau | — | kvietimą, | o | tu | pasirinksi | — | laiką.",
         "Gerai. Atsiųsiu tau kvietimą, o laiką pasirinksi tu.", { flags: { 7: "Present for the future: Lithuanian uses the future pasirinksi." } }),
@@ -1341,12 +1409,12 @@ export const review: SituationDef = {
     protect: {
       lt: "Pasiūlyti, kaip apsaugoti savo kalbėjimo laiką",
       items: [
-        { id: "put_agenda", s: t("Could | we | put | my | sections | in | the | agenda?", "Ar galėtume | mes | įrašyti | mano | dalis | į | — | darbotvarkę?", "Gal galėtume mano dalis įrašyti į darbotvarkę?",
+        { id: "put_agenda", s: t("Could | we | put | my | sections | on | the | agenda?", "Ar galėtume | mes | įrašyti | mano | dalis | į | — | darbotvarkę?", "Gal galėtume mano dalis įrašyti į darbotvarkę?",
           { flags: { 0: F_COULD_Q } }) },
         { id: "present_own", s: t("Could | I | present | my | own | slides?", "Ar galėčiau | aš | pristatyti | savo | — | skaidres?", "Ar galėčiau {m:pats|f:pati} pristatyti savo skaidres?",
           { flags: { 0: F_COULD_Q, 4: "“own”: savo already says it." } }) },
-        { id: "keep_slot", s: t("Let's | keep | my | time, | even | if | the | client | is | late.", "— | Palikime | mano | laiką, | net | jei | — | klientas | — | vėluoja.",
-          "Palikime man skirtą laiką, net jei klientas vėluoja.", { flags: { 0: F_LETS, 9: "“is late” = the verb vėluoti: no copula." } }) },
+        { id: "keep_slot", s: t("Can | we | keep | my | slot, | even | if | the | client | is | late?", "Ar galime | mes | palikti | mano | laiką, | net | jei | — | klientas | — | vėluoja?",
+          "Ar galime palikti man skirtą laiką, net jei klientas vėluoja?", { flags: { 9: "“is late” = the verb vėluoti: no copula." } }) },
         { id: "prep_call", s: t("Maybe | a | quick | prep | call | before | the | meeting?", "Gal | — | trumpas | pasiruošimo | skambutis | prieš | — | susitikimą?", "Gal trumpas pasiruošimo skambutis prieš susitikimą?") },
       ],
     },
@@ -1506,6 +1574,7 @@ export const review: SituationDef = {
     "that makes one of us": { reason: "lexical_expression", split: "that → tai, makes → daro, one → vieną, of → iš, us → mūsų is a calque; the joke = bent vienas iš mūsų ramus.", minimal: "The whole idiom." },
     "good news": { reason: "lexical_expression", split: "good → geros + news → naujienos is possible but the fixed phrase = gera žinia.", minimal: "Two words." },
     "have noticed": { reason: "grammatical_fusion", split: "have → turėti + noticed → pastebėjęs is false; the perfect infinitive after should = pastebėti.", minimal: "Auxiliary and participle." },
+    "in a few weeks": { reason: "grammatical_fusion", split: "in → į + a few → kelios + weeks → savaitės gives “į kelias savaites” (into); time from now = po kelių savaičių.", minimal: "The time phrase, like “in a month”." },
     "uh-uh": { reason: "lexical_expression", split: "One interjection written with a hyphen: ne ne.", minimal: "One word." },
   },
 
@@ -1563,7 +1632,7 @@ export const review: SituationDef = {
           return;
         }
         if (n === 2) { c.say("praise_again"); return; }
-        c.s.praiseDone = true; askNext(c);
+        c.s.praiseDone = true; c.say("deflect_giveup"); askNext(c);
       },
       expects: ["thanks_praise", "team_effort", "deflect"],
       suggest: [{ lt: "Priimti pagyrimą", hint: "praise" }],
@@ -1578,7 +1647,7 @@ export const review: SituationDef = {
       expects: ["want_feedback", "no_feedback"],
       suggest: [{ lt: "Sutikti išklausyti pastabą", hint: "consent" }],
       yes: (c) => { c.s.consented = true; }, no: (c) => { consentNo(c); },
-      help: (c) => { c.s.consented = true; } },
+      help: (c) => { if (c.s.consented) return; c.s.consented = true; c.say("consent_just"); } },
     { id: "feedback", when: (c) => !!c.s.consented, done: (c) => !!c.s.fbDone,
       ask: (c) => {
         if (RUDE.has(c)) { RUDE.delete(c); HOWSO.delete(c); c.s.howSo = true; c.say("fb_rude_react"); return; }
@@ -1617,11 +1686,12 @@ export const review: SituationDef = {
         const n = bump(c, "goals");
         if (n === 1) { c.say("goals_ask"); return; }
         if (n === 2) { c.say("goals_options"); return; }
-        goalOffer(c);
+        goalsLast(c);
       },
-      expects: ["goal_name", "goal_ctx", "goal_vague", "ask_budget", "ask_support"],
+      expects: ["goal_name", "goal_ctx", "goal_vague", "goal_not", "goal_course", "goal_course_ctx", "ask_budget", "ask_support"],
       suggest: [{ lt: "Pasakyti, ką norėtum tobulinti kitais metais", hint: "goals", options: "goal" }, { lt: "Paklausti apie mokymų biudžetą", hint: "support" }],
-      help: (c) => { if (once(c, "goalsHelp")) { bump(c, "goals"); c.say("goals_options"); } } },
+      // her list of ideas; once she has given it, her own suggestion
+      help: (c) => { if (!once(c, "goalsHelp")) return; if (asks(c, "goals") >= 2) { goalsLast(c); return; } bump(c, "goals"); c.say("goals_options"); } },
     { id: "support", when: (c) => !!c.s.goal && !!c.s.supportQ, done: (c) => !!c.s.supportDone,
       ask: (c) => {
         const n = bump(c, "support");
@@ -1768,11 +1838,10 @@ export const review: SituationDef = {
       goalFrom(c, slots.goal ?? tagged);
     },
     goal_ctx(c, slots) { goalFrom(c, slots.goal); },
-    goal_vague(c) {
-      if (c.s.goalDone || c.step !== "goals" || !once(c, "vague")) return;
-      bump(c, "goals");
-      c.say("goals_options"); c.hold();
-    },
+    goal_not(c) { goalVague(c, "goal_not"); },
+    goal_course(c) { goalCourse(c); },
+    goal_course_ctx(c) { goalCourse(c); },
+    goal_vague(c) { goalVague(c); },
     ask_budget(c) { budget(c); },
     ask_support(c) { support(c); },
     support_ctx(c) { support(c); },
@@ -1793,9 +1862,11 @@ export const review: SituationDef = {
     ask_raise(c) { money(c, false); },
     ask_criteria(c) { money(c, true); },
     no_more(c) { if (c.step === "ask_me" && !c.s.askDone && !c.s.moneyAsked) c.s.askDone = true; },
-    propose_checkin(c) {
+    propose_checkin(c, _slots, seg) {
       if (c.s.checkinProposed) return;
-      c.s.checkinProposed = true;
+      // "When is our next check-in?" is a question, not a proposal: she sets it at the end
+      if (seg.tags.includes("when")) { if (once(c, "checkinEarly")) c.say("checkin_when"); return; }
+      checkinProposal(c, seg.tags);
       if (once(c, "checkinEarly")) c.say("checkin_early");
     },
     checkin_yes_ctx() { /* only while she proposes the check-in (the pending question handles it) */ },
@@ -1806,13 +1877,15 @@ export const review: SituationDef = {
     // --- global intents: the step decides what they mean here ---
     g_thanks(c) {
       if (praiseOpen(c)) { acceptPraise(c, "thanks"); return; }
-      if (fbOpen(c)) { fbAccept(c); return; }
+      // "Thanks, but I see it differently": an acknowledgement before a contrast is no acceptance
+      if (fbOpen(c)) { if (!contrast(c)) fbAccept(c); return; }
       if (c.step === "rev_open" && !c.s.revOpen) { c.s.revOpen = true; return; }
       if (once(c, "welcome")) c.say("g_welcome");
     },
     g_ok(c) {
       if (praiseOpen(c)) { acceptPraise(c, "thanks"); return; }
-      if (fbOpen(c)) { fbAccept(c); return; }
+      // "I understand, but that's not true." / "Got it, but I see it differently.": the part after "but" decides
+      if (fbOpen(c)) { if (!contrast(c)) fbAccept(c); return; }
       if (c.step === "consent" && !c.s.consented) { c.s.consented = true; return; }
       if (c.step === "rev_open" && !c.s.revOpen) { c.s.revOpen = true; return; }
       if (c.step === "tab" && !c.s.tabDone) { tabSelf(c); return; }
@@ -1906,9 +1979,9 @@ export const review: SituationDef = {
     { say: "That's not quite true.", intent: "pushback", step: "feedback", not: ["fb_thanks"] },
     { say: "I don't agree.", intent: "rude_push", step: "feedback", not: ["fb_thanks"] },
     { say: "That's not my job.", intent: "defensive_fb", step: "feedback", not: ["fb_work"] },
-    { say: "Could we put my sections in the agenda?", intent: "protect_idea", step: "protect" },
+    { say: "Could we put my sections on the agenda?", intent: "protect_idea", step: "protect" },
     { say: "Could I present my own slides?", intent: "protect_idea", step: "protect" },
-    { say: "Let's keep my time, even if the client is late.", intent: "protect_idea", step: "protect" },
+    { say: "Can we keep my slot, even if the client is late?", intent: "protect_idea", step: "protect" },
     { say: "Maybe a quick prep call before the meeting?", intent: "protect_idea", step: "protect" },
     // the wrong tab
     { say: "I think that's someone else's review on the screen.", intent: "tab_point", step: "tab" },
@@ -1950,6 +2023,25 @@ export const review: SituationDef = {
     { say: "Can we check in again next month?", intent: "propose_checkin", step: "ask_me" },
     { say: "Thanks for today.", intent: "thanks_today" },
     { say: "Good idea.", intent: "agree_idea" },
+    // review fixes: doubt is no agreement, a negative goal is no goal, natural short answers
+    { say: "I'm not sure I agree.", intent: "pushback", step: "feedback", not: ["fb_thanks", "g_dontknow"] },
+    { say: "I'm not sure that's fair.", intent: "pushback", step: "feedback", not: ["fb_thanks", "g_dontknow"] },
+    { say: "I'm not sure you're right.", intent: "pushback", step: "feedback", not: ["fb_thanks", "g_dontknow"] },
+    { say: "I'm not sure I can do that.", intent: "pushback", step: "feedback", not: ["fb_work", "g_dontknow"] },
+    { say: "I disagree.", intent: "rude_push", step: "feedback", not: ["fb_thanks"] },
+    { say: "I'd like to stop presenting.", intent: "goal_not", step: "goals", not: ["goal_name", "goal_ctx"] },
+    { say: "I'd like to present less.", intent: "goal_not", step: "goals", not: ["goal_name", "goal_ctx"] },
+    { say: "I'd like to stop mentoring.", intent: "goal_not", step: "goals", not: ["goal_name", "goal_ctx"] },
+    { say: "Less mentoring.", intent: "goal_not", step: "goals", not: ["goal_name", "goal_ctx"] },
+    { say: "I don't want to do presentations.", intent: "goal_not", step: "goals", not: ["goal_name", "goal_ctx"] },
+    { say: "A course.", intent: "goal_course_ctx", step: "goals" },
+    { say: "I'd like to take a course.", intent: "goal_course", step: "goals", not: ["goal_name"] },
+    { say: "I'd like a raise.", intent: "ask_raise", step: "ask_me" },
+    { say: "It's not my review.", intent: "tab_point", step: "tab", not: ["tab_check"] },
+    { say: "That's someone else's.", intent: "tab_point", step: "tab" },
+    { say: "You're a good manager.", intent: "rev_worked", step: "rev_worked" },
+    { say: "The meetings are too long.", intent: "rev_try", step: "rev_try", not: ["rev_rude"] },
+    { say: "When is our next check-in?", intent: "propose_checkin", step: "ask_me" },
     // not understood
     { say: "purple bicycle elephant", intent: "none" },
     { say: "My car is blue and very fast", intent: "none" },
@@ -1965,7 +2057,7 @@ export const review: SituationDef = {
     // question, and the learner proposes the check-in (follow-up and support pinned on)
     { name: "questions and push-back", turns: ["Are you okay? Can I help?", "I'm fine, thanks. A bit curious, actually.", "Probably the app launch.", "It was a team effort.",
       "Thanks, I really appreciate that.", "Of course. I'm listening.", "Could you give me an example?", "I see it a bit differently. In those meetings, you presented my sections.",
-      "Could we put my sections in the agenda?", "I want to grow.", "Is there a training budget?", "A leadership course.", "Could we practice before client meetings?",
+      "Could we put my sections on the agenda?", "I want to grow.", "Is there a training budget?", "A leadership course.", "Could we practice before client meetings?",
       "Can we check in again next month?", "Could you give me an example of what “exceeds expectations” means here?", "No, that's all. Thanks, that's really helpful."],
       expect: { complete: true, state: { pushed: true, protectDone: true, exAsked: true, goal: "leadership", moneyAsked: true, checkin: true } }, auto: AUTO,
       setup: (s) => { s.twist = null; s.follow = true; s.supportQ = true; s.back = false; } },
@@ -2004,6 +2096,28 @@ export const review: SituationDef = {
       "I see it differently.", "You presented my sections, the client was late.", "I don't know.", "Yes, good idea.", "I'd like to lead a small project.",
       "Thanks for today. Bye!"],
       expect: { complete: true, state: { moneyEarly: true, protectHow: "emily", goal: "leading", criteriaDone: true, checkin: true } }, auto: AUTO, setup: PLAIN },
+    // doubt and "…, but …" are no agreement ("How so?"), a negative goal, a course from her list, "I'd like a raise",
+    // and the check-in month accepted in other words
+    { name: "doubt, then the reason", turns: ["I'm fine.", "The app launch.", "Thanks!", "Sure.", "Got it, but I see it differently.",
+      "You presented my sections, the client was late.", "Could we put my sections on the agenda?", "I'd like to stop presenting.", "A course.", "UX writing.",
+      "I'd like a raise.", "No, that's all.", "Next month is fine."],
+      expect: { complete: true, state: { howSo: true, pushed: true, fbHow: "push", goal: "ux_writing", courseQ: true, moneyAsked: true, checkin: true } }, auto: AUTO,
+      setup: PLAIN },
+    // "I don't know" at every question: her help once, then each question's own way out (no loops); not done
+    { name: "I don't know, again and again", turns: ["I'm fine.", "The app launch.", "I don't know.", "I don't know.", "I don't know.", "I'm not sure I agree.",
+      "I don't know.", "I don't know.", "I don't know.", "I don't know.", "I don't know.", "I don't know.", "I don't know.", "Can we make it two weeks?"],
+      expect: { complete: false, state: { praiseOk: undefined, howSo: true, fbOk: undefined, fbDone: true, goalDone: true, goal: undefined, askDone: true, checkin: true } },
+      auto: AUTO, setup: PLAIN },
+    // the wrong tab in plain words, a course chosen from her list, and "When is our next check-in?" (she sets it at the end)
+    { name: "twist: the wrong tab, plain words", turns: ["I'm fine.", "The app launch.", "Thanks!", "Sure.", "Fair enough.", "That's someone else's.",
+      "I'd like to take a course.", "Data analysis.", "When is our next check-in?", "No, that's all.", "No, that's all.", "Next month is fine."],
+      expect: { complete: true, state: { tabHow: "tactful", goal: "data", checkin: true, checkinProposed: undefined } }, auto: AUTO,
+      setup: (s) => { s.twist = "tab"; s.follow = false; s.supportQ = false; s.back = false; } },
+    // the role reversal in plain words; the learner proposes "soon" and she repeats it ("…soon, like you said")
+    { name: "twist: a good manager", turns: ["I'm fine.", "The app launch.", "Thanks!", "Sure.", "I'll work on that.", "I'd like to do more mentoring.",
+      "Sure, I'd be happy to.", "You're a good manager.", "The meetings are too long.", "Can we check in again soon?", "No, that's all.", "No, that's all."],
+      expect: { complete: true, state: { revHow: "tip", revTry: "shorter_meetings", checkinWhen: "other", checkin: true } }, auto: AUTO,
+      setup: (s) => { s.twist = "reverse"; s.follow = false; s.supportQ = false; s.back = false; } },
     // walking away in the middle: not done
     { name: "walking away", turns: ["Fine, thanks.", "The guide.", "Sorry, I have to go."], expect: { complete: false }, auto: AUTO, setup: PLAIN },
   ],
@@ -2216,6 +2330,31 @@ function goalFrom(c: Ctx, id?: string, force = false) {
   c.say("goal_set");
 }
 
+/** "I want to grow." / "I'd like to stop presenting.": her list of ideas (a negative goal is never the goal). */
+function goalVague(c: Ctx, first?: string) {
+  if (c.s.goalDone || c.step !== "goals") return;
+  // the list was given already: a vague answer goes on to her own suggestion (the step's question)
+  if (asks(c, "goals") >= 2 && !first) return;
+  if (!once(c, "vague")) return;
+  if (first) c.say(first);
+  if (asks(c, "goals") < 2) { bump(c, "goals"); c.say("goals_options"); }
+  c.hold();
+}
+
+/** The goals question after her list: her own suggestion once; after that, the goal waits for next time (item 4
+ *  not ticked). */
+function goalsLast(c: Ctx) {
+  if (!c.s.goalOffered) { c.s.goalOffered = true; goalOffer(c); return; }
+  c.s.goalDone = true; c.say("goal_later"); askNext(c);
+}
+
+/** "A course." (one of her ideas): which one? */
+function goalCourse(c: Ctx) {
+  if (c.s.goalDone || c.step !== "goals" || c.s.courseQ || !once(c, "vague")) return;
+  c.s.courseQ = true;
+  c.say("goal_which_course"); c.hold();
+}
+
 /** After two tries she suggests a goal herself: yes counts (agreeing on a goal). */
 function goalOffer(c: Ctx) {
   c.say("goals_suggest");
@@ -2226,6 +2365,7 @@ function goalOffer(c: Ctx) {
       goal_name: (cc, slots, seg) => { goalFromOffer(cc, slots.goal ?? seg.tags.find((x) => x.startsWith("g:"))?.slice(2)); },
       goal_ctx: (cc, slots) => { goalFromOffer(cc, slots.goal); },
       agree_idea: (cc) => { set(cc); }, g_ok: (cc) => { set(cc); }, g_thanks: (cc) => { set(cc); },
+      goal_not: (cc) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("support_none"); },
     },
     yes: set,
     no: (cc) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("support_none"); } });
@@ -2372,10 +2512,13 @@ function expectAnything(c: Ctx) {
     hints: ["closing", "askme"],
     suggest: [{ lt: "Padėkoti ir užbaigti pokalbį", hint: "closing" }, { lt: "Paklausti apie atlyginimą ar paaukštinimą", hint: "askme" }],
     on: {
-      no_more: done, g_ok: done, fb_thanks: thanks, thanks_praise: thanks, g_thanks: thanks, thanks_today: thanks,
+      no_more: done, g_ok: done, g_dontknow: done, fb_thanks: thanks, thanks_praise: thanks, g_thanks: thanks, thanks_today: thanks,
       ask_raise: (cc) => { lateMoney(cc, false); }, ask_criteria: (cc) => { lateMoney(cc, true); },
       ask_budget: (cc) => { budget(cc); cc.say("askme_else"); expectAnything(cc); },
-      propose_checkin: (cc) => { cc.s.checkinProposed = true; agree(cc, false); },
+      propose_checkin: (cc, _s, seg) => {
+        if (seg.tags.includes("when")) { if (once(cc, "closeAns")) checkinAsk(cc, false); return; }
+        checkinProposal(cc, seg.tags); agree(cc, false);
+      },
       g_bye: (cc) => { if (!cc.s.checkinAsked) cc.say("checkin_ask"); agree(cc, false); },
     },
     yes: askMore, no: done,
@@ -2393,11 +2536,17 @@ function lateMoney(c: Ctx, criteria: boolean) {
   expectAnything(c);
 }
 
+/** The learner proposes the next check-in; "like you said" later repeats what they said (a month, a few weeks, soon). */
+function checkinProposal(c: Ctx, tags: string[]) {
+  c.s.checkinProposed = true;
+  c.s.checkinWhen = tags.includes("month") ? "month" : tags.includes("weeks") ? "weeks" : "other";
+}
+
 function checkinAsk(c: Ctx, thanks: boolean) {
   if (!once(c, "checkinAsk")) return;
   if (thanks && once(c, "glad")) c.say("anything_thanks");
   c.s.checkinAsked = true;
-  if (c.s.checkinProposed) { c.say("checkin_like_said"); agree(c, false); return; }
+  if (c.s.checkinProposed) { c.say("checkin_like_said" + (c.s.checkinWhen === "month" ? "" : c.s.checkinWhen === "weeks" ? "_weeks" : "_other")); agree(c, false); return; }
   c.say("checkin_ask");
   const yes = (cc: Ctx) => { agree(cc, false); };
   c.expect({
@@ -2407,18 +2556,30 @@ function checkinAsk(c: Ctx, thanks: boolean) {
     suggest: [{ lt: "Sutikti dėl kito susitikimo", hint: "checkin" }],
     on: {
       checkin_yes_ctx: yes, propose_checkin: yes, agree_idea: yes, g_ok: yes, g_thanks: yes, g_bye: yes, fb_thanks: yes, thanks_praise: yes, thanks_today: yes,
-      checkin_no_ctx: (cc) => { agree(cc, true); },
+      checkin_no_ctx: (cc) => { agree(cc, true); }, g_dontknow: (cc) => { agree(cc, true); },
     },
     yes, no: (cc) => { agree(cc, true); },
     ask: (cc) => { cc.say("checkin_ask"); },
   });
 }
 
-// A step's question after an "I don't know" that nothing else answered: its help instead.
+// A step's question after an "I don't know" that nothing else answered: its help instead, once per step. A second
+// "I don't know" takes the question's own way out (its last branch: she moves on, suggests, or decides herself), so
+// it never loops ("Do you agree? It's okay if you don't." again and again).
+const GIVE_UP = 99;
 for (const st of review.steps) {
   const ask = st.ask;
   st.ask = (c) => {
-    if (st.help && DONT_KNOW.get(c) === st.id) { DONT_KNOW.delete(c); st.help(c); return; }
+    if (st.help && DONT_KNOW.get(c) === st.id) {
+      DONT_KNOW.delete(c);
+      if (bump(c, "help_" + st.id) === 1) {
+        st.help(c);
+        // a help that settled its step ("Fair. Honestly, me neither.") goes on to the next question itself
+        if (c.step === st.id && st.done(c)) askNext(c);
+        return;
+      }
+      c.s.asks[st.id] = Math.max(asks(c, st.id), GIVE_UP);
+    }
     ask(c);
   };
 }
