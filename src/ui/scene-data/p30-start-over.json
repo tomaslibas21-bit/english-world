@@ -1,0 +1,26 @@
+{
+  "npc": "Dan, your friend (and Nora)",
+  "images": [
+    "porch",
+    "hurt",
+    "turn",
+    "nora",
+    "deal",
+    "home"
+  ],
+  "start": "porch",
+  "done": "home",
+  "phases": {
+    "door": "porch",
+    "apology": "porch",
+    "responsibility": "hurt",
+    "turn": "turn",
+    "nora": "nora",
+    "make_up": "deal",
+    "start_over": "deal"
+  },
+  "focus": [
+    36,
+    30
+  ]
+}
