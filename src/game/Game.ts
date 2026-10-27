@@ -26,7 +26,7 @@ import { givenItem } from "./given";
 import type { GameApi } from "./gameRef";
 export type { GameApi } from "./gameRef";
 
-interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
+interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
 const WALK = 4.4, RUN = 7.4;
@@ -273,11 +273,13 @@ export class Game implements GameApi {
       const ch = createCharacter(def.look);
       ch.root.position.set(sp.x, 0, sp.z);
       ch.root.rotation.y = sp.rot;
-      if (sp.sit) ch.setAnim("sit");
+      if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
       this.npcLayer.add(ch.root);
       const tag = document.createElement("div");
       tag.className = "nametag";
-      tag.innerHTML = `<b>${def.name}</b><span>${def.role.en}</span>`;
+      // who they are in English, and in Lithuanian under it (unless it is the same word, like "Barista")
+      const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="lt">${def.role.lt}</i>`;
+      tag.innerHTML = `<b>${def.name}</b><span lang="en">${def.role.en}</span>${lt}`;
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
@@ -535,14 +537,12 @@ export class Game implements GameApi {
     const st = useStore.getState();
     st.setHud({ prompt: null, panel: null });
     if (actor) {
-      // face each other and frame both characters
+      // face each other (both turn in a moment: updatePlayer and updateNpcs) and frame both characters
       const p = this.player.root.position, a = actor.ch.root.position;
       const dir = new THREE.Vector3(a.x - p.x, 0, a.z - p.z);
       if (dir.lengthSq() < 0.01) dir.set(0, 0, -1);
       dir.normalize();
       this.heading = Math.atan2(dir.x, dir.z);
-      this.player.root.rotation.y = this.heading;
-      if (!actor.sit) actor.ch.root.rotation.y = Math.atan2(-dir.x, -dir.z);
       // frame the player, the main NPC and anyone else taking part who stands nearby (Mark at the party, Nora at dinner…)
       const others = (sit.npcs ?? []).map((id) => this.npcs.find((n) => n.id === id)).filter((n): n is NpcActor => !!n && n !== actor && n.ch.root.position.distanceTo(a) < 7);
       const pts = [p, a, ...others.map((n) => n.ch.root.position)];
@@ -550,7 +550,10 @@ export class Game implements GameApi {
       const spread = Math.max(...pts.map((q) => Math.hypot(q.x - mid.x, q.z - mid.z)));
       const dist = Math.max(6, spread * 2.6);
       if (this.zone.interior) {
-        this.rig.talk = { pos: new THREE.Vector3(mid.x, 4.2 + dist * 0.07, mid.z + dist + 0.2), look: new THREE.Vector3(mid.x, 1.3, mid.z) };
+        // from the open front, a little to the person's side, so the player's head doesn't hide their face
+        const side = Math.sign(a.x - p.x) || 1, half = this.zone.interior.w / 2 - 1;
+        const cx = THREE.MathUtils.clamp(mid.x + side * 1.8, -half, half);
+        this.rig.talk = { pos: new THREE.Vector3(cx, 4.2 + dist * 0.07, mid.z + dist + 0.2), look: new THREE.Vector3(mid.x, 1.3, mid.z) };
       } else {
         const side = new THREE.Vector3(dir.z, 0, -dir.x);
         let pos = mid.clone().addScaledVector(side, dist).setY(3.2);
@@ -601,7 +604,7 @@ export class Game implements GameApi {
     this.rig.talk = null;
     this.rig.mode = this.zone.interior ? "interior" : "follow";
     this.rig.cam.clearViewOffset();
-    if (this.talkNpc && !this.talkNpc.sit) this.talkNpc.ch.root.rotation.y = this.talkNpc.rot;
+    // the person stays turned to the player and turns back home in their own time (updateNpcs)
     this.talkNpc = null;
     if (this.pendingRide) { const r = this.pendingRide; this.pendingRide = null; this.ride(r.to, r.by); }
     if (completed) this.advanceObjective(sit);
@@ -844,6 +847,11 @@ export class Game implements GameApi {
       d = Math.atan2(Math.sin(d), Math.cos(d));
       this.heading += d * Math.min(1, dt * 12);
       this.player.root.rotation.y = this.heading;
+    } else {
+      // standing still: finish turning to the heading (towards someone a conversation has just started with)
+      let d = this.heading - this.player.root.rotation.y;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      if (Math.abs(d) > 1e-3) this.player.root.rotation.y += d * Math.min(1, dt * 9);
     }
     this.player.setAnim(moved > 5.5 ? "run" : moved > 0.4 ? "walk" : "idle");
     this.player.update(dt);
@@ -870,9 +878,16 @@ export class Game implements GameApi {
 
   private updateNpcs(dt: number, talking: boolean) {
     const p = this.player.root.position;
+    const taking = talking ? this.session?.sit.npcs ?? [] : [];
     for (const n of this.npcs) {
       const d = n.ch.root.position.distanceTo(p);
-      if (!talking && !n.sit && d < 5.5) {
+      if (talking && !n.sit && d < 7 && (n === this.talkNpc || taking.includes(n.id))) {
+        // in a conversation the people taking part turn to the player
+        const want = Math.atan2(p.x - n.home.x, p.z - n.home.z);
+        let dd = want - n.ch.root.rotation.y;
+        dd = Math.atan2(Math.sin(dd), Math.cos(dd));
+        n.ch.root.rotation.y += dd * Math.min(1, dt * 7);
+      } else if (!talking && !n.sit && d < 5.5) {
         const want = Math.atan2(p.x - n.home.x, p.z - n.home.z);
         let dd = want - n.ch.root.rotation.y;
         dd = Math.atan2(Math.sin(dd), Math.cos(dd));
@@ -893,6 +908,7 @@ export class Game implements GameApi {
     const v = new THREE.Vector3();
     const obj = this.currentObjective();
     const talking = !!this.session?.active;
+    const shown: { n: NpcActor; x: number; y: number; dist: number }[] = [];
     for (const n of this.npcs) {
       v.set(n.ch.root.position.x, n.ch.height + (n.sit ? -0.1 : 0.45), n.ch.root.position.z);
       const dist = v.distanceTo(this.rig.cam.position);
@@ -900,10 +916,27 @@ export class Game implements GameApi {
       const visible = v.z < 1 && dist < 34 && !(talking && n !== this.talkNpc);
       if (!visible) { n.tag.style.display = "none"; continue; }
       n.tag.style.display = "";
-      n.tag.style.transform = `translate(-50%, -100%) translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px)`;
+      shown.push({ n, x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, dist });
       const isObj = !!obj && !isCall(obj) && (obj.npc === n.id || ((obj.npc === "sam" || obj.npc === "emma") && (n.id === "sam" || n.id === "emma")));
       n.tag.classList.toggle("objective", isObj && !talking);
       n.tag.style.opacity = String(Math.max(0.35, 1 - (dist - 12) / 22));
+    }
+    // people close together (Kate and Paul at their table): the nearer one's tag stays put and the other's moves
+    // aside (side by side), or up (one behind the other)
+    shown.sort((a, b) => a.dist - b.dist);
+    const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+    for (const s of shown) {
+      const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
+      let x = s.x, y = s.y;
+      for (let k = 0; k < 6; k++) {
+        const hit = placed.find((p) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0);
+        if (!hit) break;
+        const hx = (hit.x0 + hit.x1) / 2;
+        if (Math.abs(x - hx) > tw / 4) x = x > hx ? hit.x1 + tw / 2 + 4 : hit.x0 - tw / 2 - 4;
+        else y = hit.y0 - 4;
+      }
+      placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y });
+      s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
     }
   }
 

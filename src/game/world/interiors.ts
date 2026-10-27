@@ -4,8 +4,9 @@ import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect } 
 import { STYLED } from "../style";
 import { floorMaterial, floorColor } from "./styled";
 
-/** `ax/az`: where the player stops to talk, when that is not simply in front of the person (e.g. across a table). */
-export interface NpcSpot { npc: string; x: number; z: number; rot: number; sit?: boolean; ax?: number; az?: number }
+/** `ax/az`: where the player stops to talk, when that is not simply in front of the person (e.g. across a table).
+ *  `seat`: the height of the seat top for someone sitting (0.5 m when not given). */
+export interface NpcSpot { npc: string; x: number; z: number; rot: number; sit?: boolean; seat?: number; ax?: number; az?: number }
 export interface Interior {
   id: string;
   group: THREE.Group;
@@ -663,10 +664,11 @@ const B: Record<string, () => Interior> = {
     plant(c, -10.2, 6.8, 1.1); plant(c, 1, 6.8, 0.9);
     for (let i = 0; i < 4; i++) lamp(c, -6 + i * 5, 0, 3.6);
   }, [
-    { npc: "brooks", x: -7, z: -6.4, rot: 0, sit: true }, { npc: "maria", x: 5.5, z: 2.4, rot: Math.PI },
-    { npc: "vanessa", x: -9.4, z: -5.0, rot: Math.PI / 2, ax: -9.1, az: -3.05 }, { npc: "greg", x: -6.1, z: -3.95, rot: Math.PI, sit: true },
-    { npc: "kate", x: 7.75, z: -6.75, rot: 0.1, sit: true, ax: 8.6, az: -4.35 }, { npc: "paul", x: 9.45, z: -6.75, rot: -0.15, sit: true },
-    { npc: "emily", x: -8.9, z: 0.9, rot: 0, sit: true, ax: -8.9, az: 3.0 },
+    // the office chairs (seat) are 0.48 m high
+    { npc: "brooks", x: -7, z: -6.4, rot: 0, sit: true, seat: 0.48 }, { npc: "maria", x: 5.5, z: 2.4, rot: Math.PI },
+    { npc: "vanessa", x: -9.4, z: -5.0, rot: Math.PI / 2, ax: -9.1, az: -3.05 }, { npc: "greg", x: -6.1, z: -3.95, rot: Math.PI, sit: true, seat: 0.48 },
+    { npc: "kate", x: 7.75, z: -6.75, rot: 0.1, sit: true, seat: 0.48, ax: 8.6, az: -4.35 }, { npc: "paul", x: 9.45, z: -6.75, rot: -0.15, sit: true, seat: 0.48 },
+    { npc: "emily", x: -8.9, z: 0.9, rot: 0, sit: true, seat: 0.48, ax: -8.9, az: 3.0 },
   ], { floorKind: "carpet", accent: "#34495e" }),
 
   "the-pier": () => room("the-pier", 18, 14, "#8f6b4e", "#eaf3f7", (c) => {

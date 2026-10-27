@@ -86,9 +86,9 @@ export const SPROUTLY_LOT = { x1: 126, x2: 137, z1: -59.5, z2: -50.5 };
 
 /** Where each outdoor NPC stands (and which way they face, radians; 0 = facing +Z/south).
  *  `ax/az` = where the player stops to talk (e.g. the customer side of a market stall). */
-export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit?: boolean; ax?: number; az?: number }[] = [
+export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit?: boolean; seat?: number; ax?: number; az?: number }[] = [
   // Rosa sits on the bench south-west of the fountain, her back to it (as in her pictures), facing you
-  { npc: "rosa", x: 18, z: -23.2, rot: 0, sit: true, ax: 18, az: -21 },
+  { npc: "rosa", x: 18, z: -23.2, rot: 0, sit: true, seat: 0.55, ax: 18, az: -21 },
   { npc: "lucy", x: 34, z: -38, rot: -0.6 },
   { npc: "mrs_lee", x: 14, z: -43.35, rot: 0, ax: 14, az: -40.3 },
   { npc: "vinnie", x: 124.5, z: -1.4, rot: -Math.PI / 2 },

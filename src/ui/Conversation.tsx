@@ -94,6 +94,7 @@ export function Conversation() {
   if (!conv.active || !sit) return null;
   const loc = LOCATIONS[sit.location];
   const formal = !npc?.informal;
+  const ltRole = npc && npc.role.lt.toLowerCase() !== npc.role.en.toLowerCase() ? npc.role.lt : null;
   const gender = useStore.getState().progress.profile?.gender ?? "m";
 
   const send = () => {
@@ -109,7 +110,9 @@ export function Conversation() {
         <div className="avatar" style={{ background: avatarColor(conv.npcId) }}>{sit.mode === "phone" ? <Icon name="phoneCall" size={22} /> : sit.mode === "video" ? <Icon name="video" size={22} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
         <div className="who">
           <b>{npc?.name}</b>
-          <span>{npc?.role.en} · {sit.mode === "video" ? "Vaizdo skambutis" : loc?.lt ?? ""}</span>
+          {/* the role in English with the Lithuanian centred under it (as in the conversation lines), then the place */}
+          <span><i className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</i></span>
+          <span className="place">{sit.mode === "video" ? "Vaizdo skambutis" : loc?.lt ?? ""}</span>
         </div>
         <div className="toggles">
           <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title="Lietuviškas vertimas (L)" aria-pressed={settings.lt}>LT</button>
