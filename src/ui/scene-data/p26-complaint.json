@@ -1,0 +1,32 @@
+{
+  "npc": "Kyle and Brenda, Harbor Home customer service (phone)",
+  "images": [
+    "hold",
+    "kyle",
+    "transfer",
+    "brenda",
+    "deal"
+  ],
+  "start": "hold",
+  "phases": {
+    "problem": "hold",
+    "plugged": "hold",
+    "name": "kyle",
+    "history": "kyle",
+    "offer_manager": "kyle",
+    "book_tuesday": "kyle",
+    "transfer": "transfer",
+    "offer": "brenda",
+    "refund_or": "brenda",
+    "anything": "brenda",
+    "deadline": "deal",
+    "which_day": "deal",
+    "confirm": "deal",
+    "reference": "deal",
+    "readback": "deal"
+  },
+  "focus": [
+    34,
+    32
+  ]
+}
