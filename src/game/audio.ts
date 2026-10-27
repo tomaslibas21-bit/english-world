@@ -42,6 +42,8 @@ export class AudioSystem {
 
   play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean } = {}): Promise<void> {
     this.stop();
+    // nothing to say (a hint whose blank is still empty comes out as ".")
+    if (!/[a-z0-9]/i.test(text)) return Promise.resolve();
     let key = audioKey(voice, speed, text);
     if (!this.manifest[key]) {
       const alt = withoutAddressedNames(text, this.names);

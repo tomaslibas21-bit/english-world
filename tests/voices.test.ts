@@ -6,7 +6,7 @@ import { AMBIENT_VOICES } from "../src/content/ambient";
 import { ambientVoice, audioDir, coachVoice, coachVoices, npcVoice } from "../src/content/voices";
 import { CAST, COACH, AMBIENT, clashes, roleFor } from "../tools/casting";
 import { decodeAudio, geminiText } from "../tools/audio-util";
-import { likeness, numbersToDigits, request, sampleOf } from "../tools/voice-batch";
+import { likeness, numbersToDigits, request, sampleOf, saysMore, syllables, tooLong } from "../tools/voice-batch";
 
 describe("voice ids", () => {
   it("v1 keeps the voices the game plays now", () => {
@@ -101,6 +101,10 @@ describe("the Whisper check", () => {
     expect(numbersToDigits("change: twenty-seven sixty-four.")).toBe("change: 2764");
     expect(numbersToDigits("thirty-seven oh nine")).toBe("3709");
     expect(numbersToDigits("Oh, the blue one")).toBe("oh, the blue 1");
+    expect(likeness("It's a hundred and one point two.", "It's 101.2.")).toBe(1);
+    expect(likeness("That's about a hundred and seven Fahrenheit.", "That's about 107 Fahrenheit.")).toBe(1);
+    expect(likeness("Come in, come in!", "Come in. Come in.")).toBe(1);
+    expect(likeness("Mm.", "Mmm.")).toBe(1);
     // what Whisper wrote for the dry run's clips
     expect(likeness("Hold on, I said seven thousand seven hundred fifty. I won't take a cent more.", "Hold on, I said 7,750. I won't take a cent more.")).toBe(1);
     expect(likeness("Here you go: nine hundred fifteen dollars. Here's your receipt.", "Here you go. $915. Here's your receipt.")).toBe(1);
@@ -110,5 +114,29 @@ describe("the Whisper check", () => {
     expect(likeness("There are bags right here. Take one.", "There are bags right here. Take one. Take one. Take one.")).toBe(1);
     expect(likeness("Great, Wednesday works for me.", "Great, Wednesday works for me. Great, Wednesday works for me.")).toBe(1);
     expect(likeness("Great, Wednesday works for me.", "Great, Wednesday works for me. See you then.")).toBeLessThan(0.85);
+    // a line said twice in the audio (Gemini sometimes does) still counts as different
+    expect(likeness("No black pepper? Okay.", "N-no black pepper? Okay. N-no black pepper? Okay.")).toBeLessThan(0.85);
+  });
+  it("counts syllables roughly, numbers in words too", () => {
+    expect(syllables("Okay, that's thirty-six thirty-eight.")).toBe(9);
+    expect(syllables("Gate 4, please.")).toBe(3);
+    expect(syllables("M-I-K-A-S")).toBe(5);
+  });
+  // what real clips came out as (seconds), at the characters' paces (seconds per syllable)
+  it("finds a clip that says more than the line by what Whisper heard and how long the clip is", () => {
+    expect(saysMore("Debit, please.", "debit, please debit, please debit, please", 2.48, 0.22)).toBe(true);
+    expect(saysMore("Okay, that's thirty-six thirty-eight.", "Okay, that's 3638. Okay, that's 3638. Okay, that's 3638.", 5.3, 0.22)).toBe(true);
+    expect(saysMore("All done? That came to eight twenty-five.", "All done? All done? That came to 825.", 5.12, 0.23)).toBe(true);
+    // Whisper wrote it twice, but the clip is too short to say it twice
+    expect(saysMore("Okay. Just make sure you leave within ninety days.", "Okay, just make sure you leave within 90 days. Okay, just make sure you leave within 90 days.", 3.42, 0.23)).toBe(false);
+    expect(saysMore("Sure!", "Sure. Sure.", 0.85, 0.22)).toBe(false);
+    expect(saysMore("Sorry, Saturday?", "Sorry, Saturday?", 2.48, 0.22)).toBe(false);
+    expect(saysMore("Come in, come in!", "Come in. Come in.", 1.6, 0.22)).toBe(false);
+  });
+  it("leaves slow lines alone and records far too long ones again before Whisper hears them", () => {
+    expect(tooLong("Again: H, H, four, four, seven, one.", "Again, hh-h-four-four-seven-one.", 6.56, 0.25)).toBe(false);
+    expect(tooLong("Nice!", "Nice!", 1.23, 0.24)).toBe(false);
+    expect(tooLong("Where can I find sunscreen?", undefined, 5.2, 0.24)).toBe(true);
+    expect(tooLong("Where can I find sunscreen?", undefined, 2.1, 0.24)).toBe(false);
   });
 });

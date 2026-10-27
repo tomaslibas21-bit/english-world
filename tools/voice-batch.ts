@@ -11,7 +11,7 @@
 //   npx tsx tools/voice-batch.ts check                        Whisper listens to new clips (no key) → voicing/check.json
 //   npx tsx tools/voice-batch.ts redo [--below=0.8]           clips that failed the check go back to the next prepare
 //   npx tsx tools/voice-batch.ts sheet                        a page to listen to the casting sample: voicing/sample/
-//   npx tsx tools/voice-batch.ts upload                       clips not on R2 yet → fluent-steps/game/audio-v2/
+//   npx tsx tools/voice-batch.ts upload [--parallel=4]        clips not on R2 yet → fluent-steps/game/audio-v2/
 // The list of lines is cached in voicing/lines.json until the content changes (--fresh makes it again).
 // A clip is recorded again when its character's Gemini voice or style changes (voicing/recorded.json says which
 // voice and style made each clip), at most 4 times.
@@ -110,13 +110,18 @@ function utterances(): Utt[] {
   writeJson(cache, utts);
   return utts;
 }
+/** Lines Gemini refuses as written ("PROHIBITED_CONTENT", a false alarm on a name), sent with the name in quotes,
+ *  which it doesn't read out. The clip keeps the line's own key. */
+const SAY_AS: Record<string, string> = { "I'm looking for Threads.": "I'm looking for \"Threads\"." };
+
 function allLines(): Line[] {
   const out: Line[] = [];
   const nobody = new Set<string>();
   for (const u of utterances()) {
+    if (!/[a-z0-9]/i.test(u.say)) continue; // nothing to say: the game plays nothing (src/game/audio.ts)
     const r = roleFor(u.voice);
     if (!r) { nobody.add(u.voice); continue; }
-    out.push({ key: audioKey(u.voice, u.speed, u.say), voice: u.voice, speed: u.speed, say: u.say, text: geminiText(u.say), gv: r.voice, style: r.style, who: r.who, where: u.where });
+    out.push({ key: audioKey(u.voice, u.speed, u.say), voice: u.voice, speed: u.speed, say: u.say, text: geminiText(SAY_AS[u.say] ?? u.say), gv: r.voice, style: r.style, who: r.who, where: u.where });
   }
   if (nobody.size) { console.log(`no casting for: ${[...nobody].join(", ")}`); process.exit(1); }
   return out;
@@ -215,7 +220,42 @@ async function send() {
   const todo = files.map((f) => path.join("requests", f)).filter((f) => !jobs.some((j) => j.file === f));
   if (!todo.length) { console.log("nothing prepared to send (npx tsx tools/voice-batch.ts prepare)"); return; }
   KEY ||= apiKey();
-  for (const file of todo) {
+  // Google lets only so much batch work run at once (Tier 2: 100,000 "active concurrent batch tokens" for this
+  // model). A file it refuses waits while other batches run; a file refused with nothing running is split in two.
+  const queue = [...todo];
+  while (queue.length) {
+    const file = queue.shift()!;
+    try { await sendOne(file, jobs); } catch (e: any) {
+      if (!/→ 429/.test(e.message) || !/concurrent|enqueued/i.test(e.message)) throw e;
+      const running = jobs.some((j) => !j.fetched && /PENDING|RUNNING|QUEUED/.test(j.state ?? ""));
+      const lines = readJson<Line[]>(path.join(WORK, linesFile(file)), []);
+      if (running || lines.length < 200) { console.log(`no room for ${path.basename(file)} while other batches run: it waits (${queue.length + 1} files to send)`); return; }
+      queue.unshift(...splitRequestFile(file));
+      console.log(`${path.basename(file)} is too big to run alone: split in two`);
+    }
+  }
+}
+
+/** Splits a prepared, unsent request file into two halves (…-a, …-b) and returns them. */
+function splitRequestFile(file: string): string[] {
+  const rows = fs.readFileSync(path.join(WORK, file), "utf8").split("\n").filter(Boolean);
+  const lines = readJson<Line[]>(path.join(WORK, linesFile(file)), []);
+  const half = Math.ceil(rows.length / 2);
+  const out: string[] = [];
+  for (const [suffix, from, to] of [["a", 0, half], ["b", half, rows.length]] as const) {
+    const f = file.replace(/\.jsonl$/, `-${suffix}.jsonl`);
+    const keys = new Set(rows.slice(from, to).map((r) => JSON.parse(r).key));
+    fs.writeFileSync(path.join(WORK, f), rows.slice(from, to).join("\n") + "\n");
+    writeJson(path.join(WORK, linesFile(f)), lines.filter((l) => keys.has(l.key)));
+    out.push(f);
+  }
+  fs.rmSync(path.join(WORK, file));
+  fs.rmSync(path.join(WORK, linesFile(file)));
+  return out;
+}
+
+async function sendOne(file: string, jobs: Job[]) {
+  {
     const bytes = fs.readFileSync(path.join(WORK, file));
     const name = `maple-harbor-${path.basename(file, ".jsonl")}`;
     const start = await fetch(`${API}/upload/v1beta/files`, {
@@ -249,7 +289,15 @@ async function status(quiet = false): Promise<Job[]> {
     j.results = b.response?.responsesFile ?? md.output?.responsesFile ?? b.output?.responsesFile ?? b.dest?.fileName ?? md.dest?.fileName ?? j.results;
   }
   writeJson(JOBS, jobs);
-  if (!quiet) for (const j of jobs) console.log(`${path.basename(j.file)}  ${j.batch ?? "not sent"}  ${j.fetched ? "fetched" : j.state}  ${j.stats ? JSON.stringify(j.stats) : ""}`);
+  if (!quiet) {
+    for (const j of jobs) console.log(`${path.basename(j.file)}  ${j.batch ?? "not sent"}  ${j.fetched ? "fetched" : j.state}  ${j.stats ? JSON.stringify(j.stats) : ""}`);
+    const reqDir = path.join(WORK, "requests");
+    const unsent = (fs.existsSync(reqDir) ? fs.readdirSync(reqDir) : []).filter((f) => f.endsWith(".jsonl") && !jobs.some((j) => j.file === path.join("requests", f))).length;
+    const running = jobs.filter((j) => !j.fetched && /PENDING|RUNNING|QUEUED/.test(j.state ?? "")).length;
+    const toFetch = jobs.filter((j) => !j.fetched && /SUCCEEDED$/.test(j.state ?? "")).length;
+    const failed = jobs.filter((j) => !j.fetched && /FAILED|CANCELLED|EXPIRED/.test(j.state ?? "")).length;
+    console.log(`left: ${unsent} files to send, ${running} batches running, ${toFetch} to fetch, ${failed} failed`);
+  }
   return jobs;
 }
 
@@ -376,7 +424,7 @@ const TIMES: Record<string, number> = { hundred: 100, thousand: 1000, million: 1
  *  said in pieces run together: "twenty-seven sixty-four" → 2764, "thirty-seven oh nine" → 3709 (punctuation such as
  *  the dot in 42.1 doesn't count anyway). */
 export function numbersToDigits(s: string): string {
-  const words = s.toLowerCase().replace(/(\d),(\d)/g, "$1$2").split(/[\s-]+/);
+  const words = s.toLowerCase().replace(/(\d),(\d)/g, "$1$2").replace(/\ban? (hundred|thousand|million)\b/g, "one $1").split(/[\s-]+/);
   const bare = (w: string) => w.replace(/[^a-z]/g, "");
   const isNum = (w: string, prevNum: boolean) => w in UNITS || w in TENS || ((w in TIMES || w === "point") && prevNum) ? (w !== "oh" || prevNum) : false;
   const out: string[] = [];
@@ -385,8 +433,9 @@ export function numbersToDigits(s: string): string {
     const groups: string[] = [];
     let total = 0, cur = 0, last = "";
     const flush = () => { groups.push(String(total + cur)); total = 0; cur = 0; };
-    while (i < words.length && isNum(bare(words[i]), true)) {
+    while (i < words.length && (isNum(bare(words[i]), true) || (bare(words[i]) === "and" && last === "times" && i + 1 < words.length && isNum(bare(words[i + 1]), true)))) {
       const w = bare(words[i]);
+      if (w === "and") { i++; continue; } // "a hundred and one"
       if (w === "point") { flush(); last = "point"; } // "forty-two point one" → 42.1, written 421 without the dot
       else if (w in TIMES) { cur = (cur || 1) * TIMES[w]; if (TIMES[w] >= 1000) { total += cur; cur = 0; } last = "times"; }
       else if (w in TENS) { if (last === "unit" || last === "tens" || last === "teen") flush(); cur += TENS[w]; last = "tens"; }
@@ -399,39 +448,90 @@ export function numbersToDigits(s: string): string {
   return out.join(" ");
 }
 /** Letters and digits only, numbers as digits, without the money words a voice and Whisper write differently. */
-const letters = (s: string) => numbersToDigits(s.replace(/&/g, " and ")).replace(/\b(dollars?|bucks|cents?|percent)\b/g, "").replace(/[^a-z0-9]/g, "");
+const letters = (s: string) => numbersToDigits(s.replace(/&/g, " and ")).replace(/\b(dollars?|bucks|cents?|percent)\b/g, "").replace(/[^a-z0-9]/g, "").replace(/([a-z])\1{2,}/g, "$1$1");
 /** Whisper sometimes repeats a sentence it heard once ("Take one. Take one. Take one."): a sentence that comes again
  *  right after itself counts once, on both sides. */
 const onceEach = (s: string) => s.split(/(?<=[.!?])\s+/).filter((x, i, all) => i === 0 || letters(x) !== letters(all[i - 1])).join(" ");
 /** How alike the line and what Whisper heard are, 0…1, letter by letter (punctuation, spaces and how a number is
  *  written don't count). */
 export function likeness(said: string, heard: string): number {
-  const a = letters(onceEach(said)), b = letters(onceEach(heard));
+  return Math.max(alike(letters(said), letters(heard)), alike(letters(onceEach(said)), letters(onceEach(heard))));
+}
+function alike(a: string, b: string): number {
   if (!a || !b) return a === b ? 1 : 0;
   return 1 - levenshtein(a, b) / Math.max(a.length, b.length);
 }
+/** Syllables, roughly: vowel groups (a silent final e doesn't count) and digits one each. A speaking pace by syllables
+ *  isn't thrown off by numbers in words ("thirty-six thirty-eight") or long words the way a pace by words is. */
+export function syllables(s: string): number {
+  let n = 0;
+  for (const w of s.toLowerCase().split(/[\s-]+/)) {
+    const groups = (w.match(/[aeiouy]+/g) ?? []).length;
+    const silentE = groups > 1 && /[^aeiouy]e[^a-z0-9]*$/.test(w) ? 1 : 0;
+    n += (w.match(/\d/g)?.length ?? 0) + (/[a-z]/.test(w) ? Math.max(1, groups - silentE) : 0);
+  }
+  return n;
+}
+/** Every clip is about this much longer than its syllables alone (a one-word clip is about a second), and each comma,
+ *  colon or stop inside the line adds about PAUSE. */
+const CLIP_BASE = 0.45, PAUSE = 0.2;
+const pauses = (s: string) => (s.trim().replace(/[\s.!?…"”’)]+$/, "").match(/[,;:.!?…—]+/g) ?? []).length;
+/** Whisper heard a quarter more than the line or more (the line twice, a piece of it again, or words added). */
+const heardMore = (said: string, heard: string) => letters(heard).length >= 1.25 * letters(said).length && letters(said).length > 0;
+/** The clip says more than the line (Gemini sometimes says a line two or three times, or a piece of it again): Whisper
+ *  heard more, and the clip's length fits what Whisper heard better than the line. Whisper alone isn't enough: it
+ *  sometimes writes a sentence twice that the clip says once. `pace` is the character's usual seconds per syllable. */
+export function saysMore(said: string, heard: string, sec: number, pace: number): boolean {
+  if (!heardMore(said, heard)) return false;
+  const speech = pace * syllables(said);
+  const once = CLIP_BASE + PAUSE * pauses(said) + speech;
+  const more = CLIP_BASE + PAUSE * pauses(heard) + (speech * letters(heard).length) / letters(said).length;
+  return Math.abs(Math.log(sec / more)) < Math.abs(Math.log(sec / once));
+}
+/** A clip to record again for its length: it says more than the line (above), or it is far too long even without
+ *  Whisper's word for it (a long silence, the line three times). */
+export const tooLong = (said: string, heard: string | undefined, sec: number, pace: number) =>
+  (heard !== undefined && saysMore(said, heard, sec, pace)) || sec > 2.2 * (CLIP_BASE + PAUSE * pauses(said) + pace * syllables(said)) + 0.5;
+/** Each character's usual pace: seconds per syllable (beyond CLIP_BASE), the median of their clips of 4 syllables or
+ *  more. */
+export function paces(keys: string[], sec: Record<string, number>, said: Map<string, string>, whose: Map<string, string>): Map<string, number> {
+  const byWho = new Map<string, number[]>();
+  for (const k of keys) {
+    const n = syllables(said.get(k) ?? "");
+    if (!sec[k] || n < 4) continue;
+    const w = whose.get(k) ?? "?";
+    if (!byWho.has(w)) byWho.set(w, []);
+    byWho.get(w)!.push((sec[k] - CLIP_BASE - PAUSE * pauses(said.get(k)!)) / n);
+  }
+  return new Map([...byWho].map(([w, xs]) => [w, xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)]]));
+}
+/** What a check result was made from: the line, the clip's length and, for a clip recorded again, which try it is (a
+ *  new take can come out exactly as long as the old one). */
+const madeFrom = (r: Recorded) => r.text + "|" + r.sec + (r.tries > 1 ? "|" + r.tries : "");
 
 async function check() {
   const model = process.env.WHISPER_MODEL ?? path.join(WORK, "models/ggml-large-v3-turbo-q5_0.bin");
   if (!fs.existsSync(model)) { console.error(`no Whisper model at ${model} (set WHISPER_MODEL)`); process.exit(1); }
   const manifest: Record<string, number> = readJson(MANIFEST, {});
   const recorded: Record<string, Recorded> = readJson(RECORDED, {});
-  const results: Record<string, { heard: string; score: number; text: string }> = readJson(CHECK, {});
-  const todo = Object.keys(manifest).filter((k) => recorded[k]?.ok && fs.existsSync(path.join(WAV, k + ".wav")) && results[k]?.text !== recorded[k].text + "|" + recorded[k].sec);
+  const results: Record<string, { heard: string; score: number; text: string; full?: boolean; odd?: "long" }> = readJson(CHECK, {});
+  const todo = Object.keys(manifest).filter((k) => recorded[k]?.ok && fs.existsSync(path.join(WAV, k + ".wav")) && results[k]?.text !== madeFrom(recorded[k]));
   console.log(`${todo.length} clips to check`);
   const run = promisify(execFile);
-  const said = new Map<string, string>();
-  for (const f of fs.existsSync(path.join(WORK, "requests")) ? fs.readdirSync(path.join(WORK, "requests")).filter((f) => f.endsWith(".lines.json")) : []) for (const l of readJson<Line[]>(path.join(WORK, "requests", f), [])) said.set(l.key, l.say);
+  const said = new Map<string, string>(), whose = new Map<string, string>();
+  for (const f of fs.existsSync(path.join(WORK, "requests")) ? fs.readdirSync(path.join(WORK, "requests")).filter((f) => f.endsWith(".lines.json")) : []) for (const l of readJson<Line[]>(path.join(WORK, "requests", f), [])) { said.set(l.key, l.say); whose.set(l.key, l.who); }
+  // earlier results scored again, in case the comparison has improved since
+  for (const [k, r] of Object.entries(results)) if (said.has(k)) r.score = +likeness(said.get(k)!, r.heard).toFixed(3);
   let checked = 0;
-  const listen = async (keys: string[], window: string[]) => {
+  const listen = async (keys: string[], full: boolean) => {
     for (let i = 0; i < keys.length; i += 200) {
       const part = keys.slice(i, i + 200);
-      await run("whisper-cli", ["-m", model, "-l", "en", "-nt", "-np", "-otxt", "-t", "8", ...window, ...part.map((k) => path.join(WAV, k + ".wav"))], { maxBuffer: 64 << 20 });
+      await run("whisper-cli", ["-m", model, "-l", "en", "-nt", "-np", "-otxt", "-t", "8", ...(full ? [] : ["-ac", "512"]), ...part.map((k) => path.join(WAV, k + ".wav"))], { maxBuffer: 64 << 20 });
       for (const k of part) {
         const txt = path.join(WAV, k + ".wav.txt");
         const heard = fs.existsSync(txt) ? fs.readFileSync(txt, "utf8").replace(/\s+/g, " ").trim() : "";
         fs.rmSync(txt, { force: true });
-        results[k] = { heard, score: +likeness(said.get(k) ?? recorded[k].text, heard).toFixed(3), text: recorded[k].text + "|" + recorded[k].sec };
+        results[k] = { heard, score: +likeness(said.get(k) ?? recorded[k].text, heard).toFixed(3), text: madeFrom(recorded[k]), ...(full ? { full } : {}) };
       }
       writeJson(CHECK, results);
       checked += part.length;
@@ -439,13 +539,22 @@ async function check() {
     }
   };
   // most clips are short: Whisper first listens in a 10-second window instead of 30 for them, about twice as fast.
-  // That window sometimes makes it repeat what it heard, so a short clip that doesn't match is heard again in full.
-  const short = todo.filter((k) => manifest[k] <= 9.5);
-  await listen(short, ["-ac", "512"]);
-  await listen(todo.filter((k) => manifest[k] > 9.5), []);
-  await listen(short.filter((k) => results[k].score < 0.85), []);
+  // That window sometimes makes it repeat what it heard or lose words, so a clip that doesn't match, or where Whisper
+  // heard more than the line, is heard again in full (once).
+  await listen(todo.filter((k) => manifest[k] <= 9.5), false);
+  await listen(todo.filter((k) => manifest[k] > 9.5), true);
+  await listen(Object.keys(results).filter((k) => manifest[k] && recorded[k]?.ok && said.has(k) && !results[k].full && (results[k].score < 0.85 || heardMore(said.get(k)!, results[k].heard))), true);
+  // A line said twice scores well (a repeated sentence counts once), so the clip's length decides (see saysMore).
+  const pace = paces(Object.keys(results), manifest, said, whose);
+  for (const [k, r] of Object.entries(results)) {
+    if (manifest[k] && said.has(k) && tooLong(said.get(k)!, r.heard, manifest[k], pace.get(whose.get(k) ?? "?") ?? 0.2)) r.odd = "long";
+    else delete r.odd;
+  }
+  writeJson(CHECK, results);
   process.stdout.write("\n");
   const low = Object.entries(results).filter(([k, r]) => manifest[k] && r.score < 0.85).sort((a, b) => a[1].score - b[1].score);
+  const odd = Object.entries(results).filter(([k, r]) => manifest[k] && r.odd);
+  console.log(`${odd.length} clips that say more than the line (twice, or a piece of it again) or are far too long`);
   console.log(`${low.length} clips where Whisper heard something different (below 0.85):`);
   for (const [k, r] of low.slice(0, 40)) console.log(`  ${r.score.toFixed(2)} ${k}\n       said:  ${said.get(k) ?? recorded[k]?.text}\n       heard: ${r.heard}`);
 }
@@ -453,12 +562,12 @@ async function check() {
 function redo() {
   const below = Number(flag("below") ?? 0.8);
   const manifest: Record<string, number> = readJson(MANIFEST, {});
-  const results: Record<string, { score: number }> = readJson(CHECK, {});
+  const results: Record<string, { score: number; odd?: string }> = readJson(CHECK, {});
   const out = path.join(WORK, "rejected");
   fs.mkdirSync(out, { recursive: true });
   let n = 0;
   for (const [k, r] of Object.entries(results)) {
-    if (!manifest[k] || r.score >= below) continue;
+    if (!manifest[k] || (r.score >= below && !r.odd)) continue;
     if (fs.existsSync(mp3Of(k))) fs.renameSync(mp3Of(k), path.join(out, k + ".mp3"));
     delete manifest[k];
     n++;
@@ -518,7 +627,8 @@ async function upload() {
   console.log(`${todo.length} clips to upload`);
   const run = promisify(execFile);
   let n = 0, failed = 0;
-  await pool(todo, 4, async (k) => {
+  // Cloudflare's API takes about 4 requests a second per account; 4–6 uploads at a time stay under it
+  await pool(todo, Number(flag("parallel") ?? 4), async (k) => {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await run(wrangler, ["r2", "object", "put", `fluent-steps-audio/fluent-steps/game/audio-v2/${k}.mp3`, "--file", mp3Of(k), "--content-type", "audio/mpeg", "--remote"]);
