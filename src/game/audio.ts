@@ -4,6 +4,9 @@ import { audioKey, withoutAddressedNames } from "../audio-key";
 
 export class AudioSystem {
   manifest: Record<string, number> = {};
+  /** New content hashes for clips re-recorded at the same keys (public/audio/repair-versions.json): the version on
+   *  the clip's address makes browsers that cached the old recording fetch the new one. */
+  repairVersions: Record<string, string> = {};
   private ctx: AudioContext | null = null;
   private current: HTMLAudioElement | null = null;
   private cancelCurrent: (() => void) | null = null;
@@ -18,6 +21,8 @@ export class AudioSystem {
       // the clip list always ships with the game (same site, no CORS), even when the clips are elsewhere
       const r = await fetch(`${import.meta.env.BASE_URL}audio/manifest.json`, { cache: "no-cache" });
       if (r.ok) this.manifest = await r.json();
+      const repaired = await fetch(`${import.meta.env.BASE_URL}audio/repair-versions.json`, { cache: "no-cache" });
+      if (repaired.ok) this.repairVersions = await repaired.json();
     } catch { /* no clips yet: fallback voices */ }
     this.ready = true;
     if (typeof speechSynthesis !== "undefined") {
@@ -43,7 +48,8 @@ export class AudioSystem {
     }
     if (this.manifest[key]) {
       return new Promise((resolve) => {
-        const a = new Audio(this.base + key + ".mp3");
+        const version = this.repairVersions[key];
+        const a = new Audio(this.base + key + ".mp3" + (version ? `?v=${version.slice(0, 12)}` : ""));
         a.volume = this.volume;
         a.preservesPitch = true;
         a.playbackRate = opts.slow ? 0.82 : 1;

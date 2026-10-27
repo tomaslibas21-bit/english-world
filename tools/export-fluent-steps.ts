@@ -29,7 +29,7 @@ execFileSync("npx", ["vite", "build", "--outDir", out, "--emptyOutDir"], {
 });
 
 // the clips live on R2: keep only the clip list
-for (const f of readdirSync(path.join(out, "audio"))) if (f !== "manifest.json") rmSync(path.join(out, "audio", f));
+for (const f of readdirSync(path.join(out, "audio"))) if (f !== "manifest.json" && f !== "repair-versions.json") rmSync(path.join(out, "audio", f));
 
 const dest = path.join(target, "public/zaidimas");
 rmSync(dest, { recursive: true, force: true });
