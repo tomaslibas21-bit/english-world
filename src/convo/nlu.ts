@@ -212,6 +212,9 @@ export class Nlu {
     return g;
   }
 
+  /** A catch-all intent (`…_unknown`): understood, but only as "something we don't know". */
+  isCatchAll(intent: string): boolean { return this.catchAll.has(intent); }
+
   addIntent(id: string, patterns: string[], opts: { global?: boolean; catchAll?: boolean; contextual?: boolean } = {}) {
     const alts = patterns.map((p) => parsePattern(p));
     this.intents.set(id, mk.wrap("__intent", mk.alt(alts), { __id: id }));

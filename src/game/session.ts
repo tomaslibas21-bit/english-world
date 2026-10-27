@@ -2,6 +2,7 @@
 // turn (speech or typing), sends answers to the dialogue engine and records progress.
 import { Conversation, type TurnOut } from "../convo/dialogue";
 import { createSpeechAttempt, speechSupported } from "../convo/speech";
+import { bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
 import { COACH_VOICE, NPCS } from "../content/npcs";
 import { SITUATION_BY_ID } from "../content/situations";
@@ -188,6 +189,12 @@ export class Session {
     // use for the "yes" itself (a yes/no question is open): an understood answer is never replaced
     const guess = st.conv.guess;
     if (guess?.options.length && this.yesPicksGuess(clean, via === "voice")) { clean = guess.options[0].en; alts = []; via = "picked"; }
+    // the recogniser's other readings: one that names something this conversation knows beats a best guess that
+    // doesn't ("I'd like a lot of" vs "I'd like a latte"), and an understood one beats one that isn't
+    if (via === "voice" && alts.length) {
+      const best = this.bestReading(clean, alts);
+      if (best !== clean) { alts = [clean, ...alts.filter((a) => a !== best)]; clean = best; }
+    }
     st.setConv({ phase: "thinking", lastHeard: clean, guess: null, practice: null });
     let chosen = clean;
     let out = this.conv.input(clean);
@@ -214,6 +221,11 @@ export class Session {
       useStore.getState().setConv({ phase: "you" });
       if (useStore.getState().settings.autoListen && speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
     } else this.yourTurn();
+  }
+
+  /** Of the recogniser's readings, the most useful one (convo/readings.ts). */
+  private bestReading(text: string, alts: string[]): string {
+    return bestReading(this.conv.nlu, this.conv.expectedIntents(), text, alts);
   }
 
   /** "Did you mean…?": the 1–2 model answers of the current hint groups closest to what was heard

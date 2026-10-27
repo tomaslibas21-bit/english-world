@@ -334,6 +334,9 @@ function Settings({ close }: { close: () => void }) {
         <Toggle on={s.hintsOpen} onChange={(v) => set({ hintsOpen: v })} label="Frazės atidarytos iš karto" sub={<>Kitaip atsidaro paspaudus <InlineIcon name="bulb" label="lemputę" /> (H).</>} />
         <Toggle on={s.autoListen} onChange={(v) => set({ autoListen: v })} label="Mikrofonas įsijungia automatiškai" sub="Kai pašnekovas baigia kalbėti." />
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label="Žmonės kalba lėčiau" />
+        {(local === "available" || local === "downloadable" || local === "downloading") && (
+          <Toggle on={s.onDevice} onChange={(v) => { set({ onDevice: v }); refreshLocalState(); }} label="Atpažinti kalbą šiame įrenginyje" sub="Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą." />
+        )}
         <div className="set-row">
           <div className="txt"><b>Režimas</b><span>Lengvas – be 3D miesto, tik pokalbiai su piešiniais. Pakeitus puslapis persikrauna.</span></div>
           <div className="seg">{([["light", "Lengvas"], ["town", "3D miestas"]] as const).map(([v, n]) => <button key={v} className={s.play === v ? "on" : ""} onClick={() => { if (s.play !== v) switchPlayMode(v); }}>{n}</button>)}</div>
@@ -366,9 +369,10 @@ function Settings({ close }: { close: () => void }) {
         )}
         <div className="info-box">
           <b><InlineIcon name="mic" /> Kalbėjimas.</b> {speechSupported() ? "Tavo naršyklė moka atpažinti kalbą." : "Ši naršyklė neturi balso atpažinimo (pvz., Firefox) – atsakymus gali rašyti. Balsui naudok Chrome, Edge arba Safari."}{" "}
-          {local === "available" && "Anglų kalbos atpažinimas įdiegtas šiame įrenginyje – garsas niekur nesiunčiamas ir veikia be interneto."}
-          {(local === "downloadable" || local === "downloading") && <>Chrome gali atpažinti kalbą pačiame įrenginyje (be interneto, privačiau). <button className="btn small" onClick={async () => { const ok = await installLocal(); await refreshLocalState(); setLocal(await localAvailability()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? "Įdiegta!" : "Nepavyko įdiegti", body: ok ? "Atpažinimas vyks šiame įrenginyje." : "Bus naudojamas naršyklės internetinis atpažinimas." }); }}>Įdiegti anglų kalbą</button></>}
-          {(local === "unavailable" || local === "unsupported") && speechSupported() && "Kalbą atpažįsta pati naršyklė, dažniausiai savo gamintojo serveriuose (Chrome – Google, Edge – Microsoft; Safari – Apple, kartais pačiame įrenginyje). Tau ir žaidimui tai nieko nekainuoja, bet reikia interneto."}
+          {speechSupported() && (s.onDevice && local === "available"
+            ? "Anglų kalba atpažįstama šiame įrenginyje – garsas niekur nesiunčiamas ir veikia be interneto."
+            : "Kalbą atpažįsta pati naršyklė, dažniausiai savo gamintojo serveriuose (Chrome – Google, Edge – Microsoft, Safari – Apple): taip geriausiai suprantamas akcentas. Tau ir žaidimui tai nieko nekainuoja, bet reikia interneto.")}
+          {s.onDevice && (local === "downloadable" || local === "downloading") && <> Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą. <button className="btn small" onClick={async () => { const ok = await installLocal(); await refreshLocalState(); setLocal(await localAvailability()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? "Įdiegta!" : "Nepavyko įdiegti", body: ok ? "Atpažinimas vyks šiame įrenginyje." : "Bus naudojamas naršyklės internetinis atpažinimas." }); }}>Įdiegti anglų kalbą</button></>}
           <br />Žaidimas nenaudoja jokio mokamo dirbtinio intelekto: visi pokalbiai ir balsų įrašai paruošti iš anksto. Jei nenori kalbėti į mikrofoną, visada gali rašyti <InlineIcon name="keyboard" label="klaviatūra" />.
         </div>
         <div className="set-row">

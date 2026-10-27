@@ -1,40 +1,76 @@
-// Speech input via the browser's Web Speech API, adapted from the Dvikalbės Dainos
-// speech attempt (work/course/src/lib/speech-attempt.ts): one learner answer may span
-// several recogniser sessions; silence is never a wrong answer; restarts are bounded.
+// Speech input via the browser's Web Speech API. This is the Dvikalbės Dainos speech attempt, the engine the course's
+// flashcards use (fluent-steps src/lib/songs/speech-attempt.ts), with the conversation grammar in place of one
+// target sentence:
+//   - one learner answer may span several recogniser sessions, and silence is never a wrong answer;
+//   - the attempt never ends while the learner is still speaking (onspeechstart / onspeechend);
+//   - every alternative the recogniser offers is combined into a few candidates (up to 8), ranked by the grammar:
+//     complete → wait a moment of silence, then hand it over (the learner may add "please" or another item);
+//     prefix   → a valid unfinished answer: allow a long natural pause;
+//     none     → wait a short silence, then hand it over (the UI shows what was heard and "Did you mean…?").
+//   The candidates go to the conversation with the answer (onCommit's `alts`), which picks the most useful reading.
 //
-// Instead of one target sentence, the conversation grammar judges what has been heard:
-//   complete → commit after a short grace (the learner may add "please");
-//   prefix   → a valid unfinished answer: allow a long natural pause;
-//   none     → wait briefly for a final result, then hand it over (the UI shows what was heard).
-//
-// No paid or metered service is called by this code. Where supported (Chrome), recognition
-// runs on the device (processLocally); otherwise the browser's own speech service is used,
-// which may send audio to the browser vendor (Google for Chrome, Microsoft for Edge, Apple for Safari).
+// No paid or metered service is called by this code. The browser's own speech service is used, which may send
+// audio to the browser vendor (Google for Chrome, Microsoft for Edge, Apple for Safari). Recognition on the device
+// (Chrome's processLocally) is an opt-in setting: more private, but it hears accents less well.
 
 export const SPEECH_REC: any =
   typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 export const speechSupported = () => !!SPEECH_REC;
 
+/** App attempt limits, not browser endpointing (a browser may end its own recognition sooner and need restarting).
+ *  The same generous waits as the flashcards; `unclear` is the conversation's own. */
 export const SPEECH_TIMING = {
-  firstWord: 14_000,
-  betweenWords: 7_000,
-  afterNone: 1_500,
-  completeGrace: 550,
-  interimStable: 900,
-  session: 45_000,
-  startup: 12_000,
+  /** silence before the first word */
+  firstWord: 20_000,
+  /** a pause inside an unfinished answer (the grammar sees a valid beginning) */
+  betweenWords: 15_000,
+  /** silence after an answer the grammar understands */
+  finishedAnswer: 1_200,
+  /** silence after words the grammar can't use yet */
+  unclear: 2_500,
+  session: 60_000,
+  startup: 15_000,
 } as const;
 
 export type SpeechStatus = "idle" | "starting" | "listening" | "reconnecting" | "denied" | "error" | "nothing";
 export interface SpeechSnapshot { status: SpeechStatus; heard: string; error?: string; local?: boolean }
+export type Verdict = "complete" | "prefix" | "none";
+
+type RecognitionResult = ArrayLike<{ transcript: string }> & { isFinal: boolean };
+export interface RecognitionEvent { resultIndex?: number; results: ArrayLike<RecognitionResult> }
+export interface SpeechRecognizer {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  processLocally?: boolean;
+  phrases?: unknown;
+  onstart: (() => void) | null;
+  onresult: ((event: RecognitionEvent) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  onspeechstart: (() => void) | null;
+  onspeechend: (() => void) | null;
+  start(): void;
+  abort(): void;
+}
+
+interface Clock {
+  now(): number;
+  setTimeout(callback: () => void, delay: number): ReturnType<typeof setTimeout>;
+  clearTimeout(timer: ReturnType<typeof setTimeout>): void;
+}
 
 export interface SpeechOptions {
-  evaluate(text: string): "complete" | "prefix" | "none";
+  evaluate(text: string): Verdict;
   onUpdate(s: SpeechSnapshot): void;
-  /** A finished answer (complete, or given up waiting). `alts` are other hypotheses to try. */
+  /** A finished answer (understood, or given up waiting). `alts` are the other candidates, best first. */
   onCommit(text: string, alts: string[]): void;
   phrases?: string[];
   preferLocal?: boolean;
+  /** Tests: a fake recogniser and clock. */
+  createRecognition?: () => SpeechRecognizer;
+  clock?: Clock;
 }
 
 export type LocalAvailability = "available" | "downloadable" | "downloading" | "unavailable" | "unsupported";
@@ -55,165 +91,220 @@ export async function installLocal(): Promise<boolean> {
 
 let localState: LocalAvailability | null = null;
 export async function refreshLocalState() { localState = await localAvailability(); return localState; }
+/** A browser that refused the contextual word list once keeps refusing it: don't ask again on every answer. */
+let phrasesRefused = false;
+
+const MAX_CANDIDATES = 8;
+const MAX_ALTERNATIVES = 5;
 
 export function createSpeechAttempt(opt: SpeechOptions) {
-  let rec: any = null;
+  const clock: Clock = opt.clock ?? {
+    now: () => Date.now(),
+    setTimeout: (callback, delay) => setTimeout(callback, delay),
+    clearTimeout: (timer) => clearTimeout(timer),
+  };
+  const createRecognition = opt.createRecognition ?? (() => new SPEECH_REC() as SpeechRecognizer);
+  let rec: SpeechRecognizer | null = null;
   let running = false;
   let disposed = false;
   let generation = 0;
-  let base = "";                 // confirmed text from earlier recogniser sessions
-  let finals = "";               // finals of the current session
-  let interim = "";
-  let alts: string[] = [];
+  let finalCandidates: string[] = [""];
+  let interimCandidates: string[] = [""];
+  let pendingInterim = false;
   let hasSpeech = false;
+  let speaking = false;
+  let startedAt: number | null = null;
   let lastActivity = 0;
-  let startedAt = 0;
-  let restarts = 0;
-  let usePhrases = true;
+  let emptyRestarts = 0;
+  let transientRecoveries = 0;
   let useLocal = !!opt.preferLocal && localState === "available";
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let commitTimer: ReturnType<typeof setTimeout> | undefined;
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  let restartTimer: ReturnType<typeof setTimeout> | undefined;
+  let startupTimer: ReturnType<typeof setTimeout> | undefined;
   let snapshot: SpeechSnapshot = { status: "idle", heard: "" };
 
-  const update = (s: Partial<SpeechSnapshot>) => { snapshot = { ...snapshot, ...s, local: useLocal }; if (!disposed) opt.onUpdate(snapshot); };
-  const text = () => `${base} ${finals} ${interim}`.replace(/\s+/g, " ").trim();
-  const clear = () => { if (timer) clearTimeout(timer); if (commitTimer) clearTimeout(commitTimer); timer = commitTimer = undefined; };
+  // The grammar is asked about the same few texts again and again while results arrive: remember its verdicts.
+  const verdicts = new Map<string, Verdict>();
+  const verdict = (text: string): Verdict => {
+    const t = text.trim();
+    if (!t) return "none";
+    let v = verdicts.get(t);
+    if (!v) { v = opt.evaluate(t); verdicts.set(t, v); }
+    return v;
+  };
+  const rank = (text: string) => { const v = verdict(text); return v === "complete" ? 2 : v === "prefix" ? 1 : 0; };
+
+  const update = (s: Partial<SpeechSnapshot>) => {
+    snapshot = { ...snapshot, ...s, local: useLocal };
+    if (!disposed) opt.onUpdate(snapshot);
+  };
+  const heard = () => (pendingInterim ? interimCandidates[0] : finalCandidates[0]) ?? "";
+  const clearTimers = () => {
+    for (const t of [idleTimer, restartTimer, startupTimer]) if (t !== undefined) clock.clearTimeout(t);
+    idleTimer = restartTimer = startupTimer = undefined;
+  };
   const release = () => {
     const r = rec; rec = null;
     if (!r) return;
     r.onstart = r.onresult = r.onerror = r.onend = r.onspeechstart = r.onspeechend = null;
-    try { r.abort(); } catch { /* ended */ }
+    try { r.abort(); } catch { /* already ended */ }
   };
-  const stopRunning = () => { generation++; running = false; clear(); release(); };
+  const stopRunning = () => { generation++; running = false; speaking = false; clearTimers(); release(); };
+
+  /** Each new piece of speech (all of the recogniser's alternatives for it) continues every candidate so far. A
+   *  learner may also restart from the beginning ("I… I'd like a latte"): only a piece the grammar can use on its
+   *  own starts a new candidate, so an arbitrary tail is never salvaged and a negation is never dropped. */
+  const combine = (previous: string[], parts: string[]) => {
+    const out: string[] = [];
+    for (const part of parts) {
+      for (const prefix of previous) out.push(`${prefix} ${part}`.trim());
+      if (previous.some((p) => p) && rank(part) > 0) out.push(part);
+    }
+    const unique = [...new Set(out)].filter((t) => t.length <= 2_000);
+    // a stable sort: within the same verdict, the recogniser's own order (its best guess first) stays
+    return unique.map((text, i) => ({ text, i, r: rank(text) })).sort((a, b) => b.r - a.r || a.i - b.i).slice(0, MAX_CANDIDATES).map((x) => x.text);
+  };
 
   const commit = () => {
-    const t = text();
-    const others = alts.filter((a) => a && a !== t);
+    const cands = pendingInterim ? interimCandidates : finalCandidates;
+    const all = [...new Set([...cands, ...finalCandidates, ...interimCandidates].map((t) => t.trim()).filter(Boolean))];
+    all.sort((a, b) => rank(b) - rank(a));
+    const best = all[0] ?? "";
     stopRunning();
-    if (!t) { update({ status: "nothing", heard: "" }); return; }
-    update({ status: "idle", heard: t });
-    if (!disposed) opt.onCommit(t, others);
+    if (!best) { update({ status: "nothing", heard: "" }); return; }
+    update({ status: "idle", heard: best });
+    if (!disposed) opt.onCommit(best, all.slice(1));
   };
 
-  const schedule = () => {
-    if (timer) clearTimeout(timer);
-    if (!running) return;
-    const now = Date.now();
-    if (now - startedAt > SPEECH_TIMING.session) { commit(); return; }
-    const t = text();
-    let allowance: number = SPEECH_TIMING.firstWord;
-    if (hasSpeech && t) {
-      const v = opt.evaluate(t);
-      allowance = v === "prefix" ? SPEECH_TIMING.betweenWords : v === "complete" ? SPEECH_TIMING.completeGrace + 250 : SPEECH_TIMING.afterNone + 600;
-    }
-    const remaining = allowance - (now - lastActivity);
-    if (remaining <= 0) {
-      if (!hasSpeech || !t) { stopRunning(); update({ status: "nothing", heard: "" }); return; }
+  const scheduleIdle = () => {
+    if (idleTimer !== undefined) clock.clearTimeout(idleTimer);
+    idleTimer = undefined;
+    if (!running || startedAt === null) return;
+    const now = clock.now();
+    const totalRemaining = SPEECH_TIMING.session - (now - startedAt);
+    if (totalRemaining <= 0) { commit(); return; }
+    const best = heard();
+    const v = hasSpeech && best ? verdict(best) : null;
+    const allowance = !v ? SPEECH_TIMING.firstWord
+      : v === "complete" && !pendingInterim ? SPEECH_TIMING.finishedAnswer
+      : v === "prefix" ? SPEECH_TIMING.betweenWords
+      : v === "complete" ? SPEECH_TIMING.betweenWords // a complete reading with words still coming
+      : SPEECH_TIMING.unclear;
+    const silenceRemaining = allowance - (now - lastActivity);
+    if (!speaking && silenceRemaining <= 0) {
+      if (!hasSpeech || !best) { stopRunning(); update({ status: "nothing", heard: "" }); return; }
       commit(); return;
     }
-    timer = setTimeout(schedule, Math.min(remaining, 1000));
+    idleTimer = clock.setTimeout(scheduleIdle, Math.max(1, Math.min(totalRemaining, speaking ? 1_000 : silenceRemaining)));
   };
+  const activity = () => { hasSpeech = true; lastActivity = clock.now(); emptyRestarts = 0; scheduleIdle(); };
 
-  const judge = (isFinalChunk: boolean) => {
-    if (commitTimer) { clearTimeout(commitTimer); commitTimer = undefined; }
-    const t = text();
-    if (!t) return;
-    const v = opt.evaluate(t);
-    if (v === "complete") {
-      commitTimer = setTimeout(() => { if (running) commit(); }, isFinalChunk ? SPEECH_TIMING.completeGrace : SPEECH_TIMING.interimStable);
-      return;
-    }
-    // an alternative hypothesis may parse
-    if (isFinalChunk) {
-      const good = alts.find((a) => opt.evaluate(a) === "complete");
-      if (good) {
-        commitTimer = setTimeout(() => { if (running) { finals = ""; interim = ""; base = good; commit(); } }, SPEECH_TIMING.completeGrace);
-        return;
-      }
-      if (v === "none") commitTimer = setTimeout(() => { if (running) commit(); }, SPEECH_TIMING.afterNone);
-    }
+  const failService = (error: string) => {
+    stopRunning();
+    update({ status: error === "not-allowed" || error === "service-not-allowed" ? "denied" : "error", error });
+  };
+  const reconnectSoon = (run: number) => {
+    restartTimer = clock.setTimeout(() => { if (running && run === generation) connect(); }, 50);
   };
 
   const connect = () => {
     if (!running || disposed) return;
     const run = generation;
-    let r: any;
-    try { r = new SPEECH_REC(); } catch { update({ status: "error", error: "unavailable" }); running = false; return; }
+    let r: SpeechRecognizer;
+    try { r = createRecognition(); } catch { failService("unavailable"); return; }
     rec = r;
     const current = () => running && !disposed && run === generation && rec === r;
+    // Rebuild this session from its base: some mobile recognisers replace or shrink earlier result slots, even
+    // ones already marked final.
+    const sessionBase = finalCandidates.slice();
+    let previousResults = "";
+    pendingInterim = false;
     r.lang = "en-US";
     r.continuous = true;
     r.interimResults = true;
-    r.maxAlternatives = 5;
+    r.maxAlternatives = MAX_ALTERNATIVES;
     if (useLocal) { try { r.processLocally = true; } catch { useLocal = false; } }
-    if (usePhrases && opt.phrases?.length && typeof (window as any).SpeechRecognitionPhrase === "function") {
-      try { r.phrases = opt.phrases.slice(0, 60).map((p) => new (window as any).SpeechRecognitionPhrase(p, 3.0)); } catch { usePhrases = false; }
+    // The contextual word list only helps the on-device recogniser.
+    if (useLocal && !phrasesRefused && opt.phrases?.length && typeof (globalThis as any).SpeechRecognitionPhrase === "function") {
+      try { r.phrases = opt.phrases.slice(0, 60).map((p) => new (globalThis as any).SpeechRecognitionPhrase(p, 3.0)); } catch { phrasesRefused = true; }
     }
-    finals = ""; interim = "";
     r.onstart = () => {
       if (!current()) return;
-      if (!startedAt) { startedAt = Date.now(); lastActivity = startedAt; }
-      update({ status: "listening", heard: text() });
-      schedule();
+      if (startupTimer !== undefined) { clock.clearTimeout(startupTimer); startupTimer = undefined; }
+      if (startedAt === null) { startedAt = clock.now(); lastActivity = startedAt; }
+      update({ status: "listening", heard: heard() });
+      scheduleIdle();
     };
-    r.onspeechstart = () => { if (!current()) return; hasSpeech = true; lastActivity = Date.now(); if (commitTimer) { clearTimeout(commitTimer); commitTimer = undefined; } schedule(); };
-    r.onresult = (ev: any) => {
+    r.onspeechstart = () => { if (!current()) return; speaking = true; activity(); };
+    r.onspeechend = () => { if (!current()) return; speaking = false; lastActivity = clock.now(); scheduleIdle(); };
+    r.onresult = (ev) => {
       if (!current()) return;
-      const finalParts: string[] = [];
-      let i = "";
-      let lastFinalAlts: string[] = [];
-      let lastWasFinal = false;
-      for (let k = 0; k < ev.results.length; k++) {
-        const res = ev.results[k];
-        const top = (res[0]?.transcript || "").trim();
-        if (res.isFinal) {
-          finalParts.push(top);
-          lastWasFinal = true;
-          lastFinalAlts = Array.from(res as ArrayLike<any>).slice(1, 5).map((a: any) => (a.transcript || "").trim()).filter(Boolean);
-        } else { i += " " + top; lastWasFinal = false; }
+      const results = Array.from(ev.results);
+      const signature = JSON.stringify(results.map((res) => ({ f: res.isFinal, t: Array.from(res).slice(0, MAX_ALTERNATIVES).map((a) => (a.transcript || "").trim()) })));
+      const changed = signature !== previousResults;
+      previousResults = signature;
+      let finals = sessionBase.slice();
+      let interims = finals;
+      let interimText = "";
+      let hasFinal = false;
+      for (const res of results) {
+        const parts = Array.from(res).slice(0, MAX_ALTERNATIVES).map((a) => (a.transcript || "").trim()).filter(Boolean);
+        if (!parts.length) continue;
+        if (res.isFinal) { finals = combine(finals, parts); interims = finals; hasFinal = true; }
+        else { interims = combine(interims, parts); interimText += ` ${parts[0]}`; }
       }
-      finals = finalParts.join(" ").trim();
-      interim = i.trim();
-      // other hypotheses: the same text with the last final chunk replaced by each alternative
-      if (lastFinalAlts.length && finalParts.length) {
-        const head = finalParts.slice(0, -1).join(" ");
-        alts = lastFinalAlts.map((a) => `${base} ${head} ${a}`.replace(/\s+/g, " ").trim());
-      }
-      hasSpeech = true;
-      lastActivity = Date.now();
-      restarts = 0;
-      update({ status: "listening", heard: text() });
-      judge(lastWasFinal && !interim);
-      schedule();
+      finalCandidates = finals.length ? finals : [""];
+      interimCandidates = interims.length ? interims : [""];
+      pendingInterim = !!interimText.trim();
+      if (changed && hasFinal && !pendingInterim) speaking = false;
+      if (changed) activity();
+      if (!current()) return;
+      update({ status: "listening", heard: heard() });
     };
-    r.onerror = (e: any) => {
+    r.onerror = (e) => {
       if (!current()) return;
       const err = e?.error || "error";
-      if (err === "no-speech" || err === "aborted") { schedule(); return; }
-      if (err === "phrases-not-supported") { usePhrases = false; release(); setTimeout(() => { if (running && run === generation) connect(); }, 50); return; }
-      if ((err === "language-not-supported" || err === "service-not-allowed") && useLocal) { useLocal = false; release(); setTimeout(() => { if (running && run === generation) connect(); }, 50); return; }
-      stopRunning();
-      update({ status: err === "not-allowed" || err === "service-not-allowed" ? "denied" : "error", error: err });
+      if (err === "no-speech" || (err === "aborted" && transientRecoveries++ < 1)) {
+        // Normal silence is not a wrong answer: onend resumes the same attempt. Some browsers omit onend after an
+        // error, so don't leave a live mic showing.
+        speaking = false;
+        scheduleIdle();
+        if (current()) {
+          update({ status: "reconnecting", heard: heard() });
+          if (startupTimer !== undefined) clock.clearTimeout(startupTimer);
+          startupTimer = clock.setTimeout(() => { if (current()) r.onend?.(); }, 2_000);
+        }
+        return;
+      }
+      if (err === "phrases-not-supported") { phrasesRefused = true; release(); reconnectSoon(run); return; }
+      if ((err === "language-not-supported" || err === "service-not-allowed") && useLocal) { useLocal = false; release(); reconnectSoon(run); return; }
+      failService(err);
     };
     r.onend = () => {
       if (!current()) return;
-      base = text(); finals = ""; interim = "";
+      speaking = false;
       release();
+      if (startupTimer !== undefined) { clock.clearTimeout(startupTimer); startupTimer = undefined; }
+      scheduleIdle();
       if (!running) return;
-      if (++restarts > 6) { commit(); return; }
-      update({ status: "reconnecting", heard: base });
-      timer = setTimeout(() => { if (running && run === generation) connect(); }, Math.min(200 * 2 ** (restarts - 1), 1600));
+      // Bound restarts on browsers that end instantly or can't stay connected.
+      if (++emptyRestarts > 5) { commit(); return; }
+      update({ status: "reconnecting", heard: heard() });
+      restartTimer = clock.setTimeout(() => { if (running && run === generation) connect(); }, Math.min(250 * 2 ** (emptyRestarts - 1), 2_000));
     };
-    try { r.start(); } catch { if (current()) { stopRunning(); update({ status: "error", error: "start" }); } }
-    setTimeout(() => { if (current() && snapshot.status === "starting") { stopRunning(); update({ status: "error", error: "timeout" }); } }, SPEECH_TIMING.startup);
+    startupTimer = clock.setTimeout(() => { if (current()) failService("timeout"); }, SPEECH_TIMING.startup);
+    try { r.start(); } catch { if (current()) failService("start"); }
   };
 
   return {
     start() {
       if (disposed || running) return;
       stopRunning();
-      base = ""; finals = ""; interim = ""; alts = [];
-      hasSpeech = false; startedAt = 0; restarts = 0;
+      // Every explicit try is a new answer; only the browser's own restarts inside an attempt keep its words.
+      finalCandidates = [""]; interimCandidates = [""];
+      pendingInterim = false; hasSpeech = false; speaking = false;
+      startedAt = null; emptyRestarts = 0; transientRecoveries = 0;
+      verdicts.clear();
       running = true;
       update({ status: "starting", heard: "" });
       connect();
@@ -225,3 +316,6 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     get running() { return running; },
   };
 }
+
+/** Tests: forget a browser's refusal of the word list, and pretend the device has (or lacks) the language pack. */
+export function resetSpeechForTests(local: LocalAvailability | null = null) { phrasesRefused = false; localState = local; }

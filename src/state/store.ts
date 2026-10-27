@@ -46,7 +46,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  autoListen: true, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: true, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
+  autoListen: true, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),
 };
 
@@ -151,11 +151,14 @@ const initial = loadProgress();
 /** Saved settings plus new defaults. v2 (owner feedback: a calmer conversation panel): the natural
  *  Lithuanian sentence and the suggestion list start collapsed; both are one tap away.
  *  v3: "Slėpti pagalbą" no longer stays saved (a hidden guide made later conversations look as if
- *  they had no suggestions); it hides the guide for one conversation (ConvUI.guideHidden). */
+ *  they had no suggestions); it hides the guide for one conversation (ConvUI.guideHidden).
+ *  v4 (27 Oct 2026): speech is recognised by the browser's server recogniser, as in the course's flashcards: it
+ *  hears accents much better. Recognition on the device became an opt-in (it used to be on whenever installed). */
 function migrateSettings(saved?: Record<string, any>): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number; guide?: boolean };
   if ((s.v ?? 1) < 2) { s.ltNatural = false; s.suggestions = false; s.v = 2; }
   if ((s.v ?? 1) < 3) { delete s.guide; s.v = 3; }
+  if ((s.v ?? 1) < 4) { s.onDevice = false; s.v = 4; }
   return s;
 }
 
