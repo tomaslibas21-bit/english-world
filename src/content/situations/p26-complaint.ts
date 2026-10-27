@@ -33,6 +33,8 @@
 // 47 minutes") speaks with npcs.ts harbor_bot, Harbor Home's recorded voice (like netwave_bot in s80).
 // NEEDS (optional, the game ignores them now): "hold-music" { seconds } could play a few seconds of hold music
 //   (a soft song about the sea); "outro" { outcome, lt } carries the Lithuanian end-card line of each ending.
+// NEEDS (27 Oct 2026 review fixes): audio for Kyle's new lines kyle_plug_now, kyle_try_now, kyle_still_nothing
+//   (tools/build-audio.ts).
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "../types";
 import type { ConvCtx } from "../../convo/dialogue";
@@ -114,6 +116,8 @@ const atPlugged = (c: Ctx) => !c.s.transferred && c.step === "plugged" && !c.s.p
 const deadlineSet = (c: Ctx) => !!c.s.deadline && c.s.deadline !== "accepted";
 const heard = (c: Ctx) => c.heard.toLowerCase();
 const REMEDY_WORDS = /\b(refund|money back|replace|replacement|new one|new fridge|exchange)\b/;
+/** The refused remedy of "I don't want a new fridge" (what is left may still ask for the other one). */
+const NOT_REMEDY = /\b(do not|don't|dont) (want|need) (a |my |the |any )?(full )?(refund|money back|money|replacement|new one|new (fridge|refrigerator|freezer)|brand new one)\b/g;
 const DAY_OFF = /\b(day off|nobody came|no one came|never came|never showed up)\b/;
 /** "Yes, that works. Can I have that in writing?": Brenda's answer about the writing is the reply. */
 const YES_START = /^\W*(yes|yeah|yep|sure|okay|ok|fine|that works|that is fine|that's fine|perfect|great)\b/;
@@ -255,6 +259,22 @@ function pluggedAnswered(c: Ctx) {
   if (c.s.pluggedDone) return;
   c.s.pluggedDone = true;
   if (once(c, "k_ack")) K(c, "kyle_plugged_ok");
+}
+
+/** "No, it isn't." to "Is it plugged in?" (or "No." to "Have you tried turning it off and on again?"): Kyle asks
+ *  the learner to try it; whatever the answer, it still doesn't work. */
+function plugNow(c: Ctx) {
+  if (c.s.pluggedDone) return;
+  c.s.pluggedDone = true;
+  if (!once(c, "k_ack")) return;
+  K(c, c.s.offOn ? "kyle_try_now" : "kyle_plug_now");
+  const still = (cc: Ctx) => { if (once(cc, "k_ack")) K(cc, "kyle_still_nothing"); };
+  c.expect({
+    id: "plug_now", optional: true, expects: ["plugged_yes", "fridge_broke"], hints: ["plugged"],
+    suggest: [{ lt: "Pasakyti, kad vis tiek neveikia", hint: "plugged" }],
+    on: { plugged_yes: still, fridge_broke: still, plugged_no_ctx: still },
+    yes: still, no: still,
+  });
 }
 
 /** "Would you like to speak to my manager?" */
@@ -407,6 +427,9 @@ function grant(c: Ctx, kind: "refund" | "replacement") {
   c.s.offerClosed = false;
   c.s.confirmed = false;
   c.s.offerQ = false;
+  // "Would you prefer a refund or a replacement?" is answered now: it must not come back after later answers
+  const conv = (c as ConvCtx).conv;
+  if (conv?.pending?.id === "refund_or") conv.pending = null;
   B(c, kind === "refund" ? "brenda_refund_ok" : "brenda_replace_ok");
   if (!switching) B(c, "brenda_pickup");
   B(c, kind === "refund" ? "brenda_refund_time" : "brenda_timeline");
@@ -575,7 +598,11 @@ const BRENDA: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
   ask_replacement: (c, slots, seg) => { deadlineFact(c, slots, seg); grant(c, "replacement"); },
   refund_or: (c) => { if (!c.s.remedy) askRefundOr(c); },
   either_ctx: (c) => { if (!c.s.remedy) grant(c, "replacement"); },
-  not_remedy: (c) => { if (!c.s.remedy && once(c, "b_ack")) askRefundOr(c); },
+  // "I don't want a new fridge, I want my money back.": the remedy asked for in the same breath answers it
+  not_remedy: (c) => {
+    if (c.s.remedy || REMEDY_WORDS.test(heard(c).replace(NOT_REMEDY, " "))) return;
+    if (once(c, "b_ack")) askRefundOr(c);
+  },
   set_deadline: (c, slots, seg) => { brendaDeadline(c, slots, seg); },
   deadline_ctx: (c, slots, seg) => { brendaDeadline(c, slots, seg); },
   ask_writing: (c) => { brendaWriting(c); },
@@ -631,7 +658,11 @@ function handle(intent: string) {
         transferNow(c, intent === "can_hold" && seg.tags.includes("allday") ? "allday" : intent === "cant_hold" || intent === "rude" ? "no" : "yes");
         return;
       }
-      if (atPlugged(c)) { if (intent === "rude") c.s.rudeK = (c.s.rudeK ?? 0) + 1; pluggedAnswered(c); return; }
+      if (atPlugged(c)) {
+        if (intent === "rude") c.s.rudeK = (c.s.rudeK ?? 0) + 1;
+        if (intent === "plugged_no_ctx") plugNow(c); else pluggedAnswered(c);
+        return;
+      }
     }
     const h = (c.s.transferred ? BRENDA : KYLE)[intent];
     if (h) h(c, slots, seg);
@@ -643,7 +674,7 @@ const INTENT_IDS = [
   "intro_name", "intro_ctx", "intro_this_ctx", "can_hold", "cant_hold", "decline_offer", "accept_offer", "agree", "ask_refund",
   "ask_replacement", "refund_or", "either_ctx", "not_remedy", "set_deadline", "deadline_ctx", "ask_writing", "ask_reference",
   "pen_ready", "no_pen", "pen_wait", "ref_readback", "readback_unknown", "appreciate", "thats_all", "have_nice_day", "walk_away",
-  "rude", "ask_repeat", "ask_timeline", "ask_pickup", "no_manager",
+  "rude", "ask_repeat", "ask_timeline", "ask_pickup", "no_manager", "plugged_no_ctx",
 ];
 
 // Automatic answers the simulations give at moments that come on some seeds only (the plugged-in twist) or
@@ -681,7 +712,7 @@ export const complaint: SituationDef = {
       when: "[since | from] (last tuesday | on tuesday | yesterday | last week | a week ago | {number} days ago | a few days ago | {day} | this morning | last night)",
       for_days: "[already] [for] ({number} | a few | two | three) (days | weeks) [already | now]",
       ago: "({number} (days | weeks | months) ago | a (week | month) ago | a few (days | weeks) ago | last (week | month) | recently | in (june | july | august | september))",
-      deadl: "((by | before | no later than) ({day} | the end of (the | this) week #endweek) | {day} at the latest)",
+      deadl: "((by | before | no later than) ({day} | {day} at the latest | the end of (the | this) week #endweek) | {day} at the latest)",
       refund: "([a] [full] refund | my money back | (all | the whole amount of) my money back | my money)",
       newone: "(a replacement | a new one | a new @fr | another @fr | a different @fr | a new model | a brand new one)",
       refnum: "(4471 | 4 4 7 1 | four four seven one | forty four seventy one | 44 71)",
@@ -738,6 +769,10 @@ export const complaint: SituationDef = {
       "i bought (it | a @fr | the @fr) [from you | here | at harbor home] @ago #h:bought_ago",
       "i bought a @fr (from you | at harbor home | from harbor home | here) [@ago] [and it (broke | stopped working | died | is not working)]",
       "it (hummed | played) a (song | tune | melody) and (stopped | went quiet | died | went still)",
+      // after "Could you plug it in and check?"
+      "it [is plugged in now but it] still (does not | will not) (work | cool | turn on | start) [at all] #h:still_not",
+      "i plugged it in [now | again] but it still (does not | will not) (work | cool)",
+      "(still | there is still) nothing",
       "the (screen | display) (works | is on | still works | still says good morning) but (it | the @fr) (is not | does not) (cold | cooling | cool | working | work)",
     ] },
     no_show: { patterns: [
@@ -855,11 +890,21 @@ export const complaint: SituationDef = {
       "[yes] it is (plugged in | on | connected | in the outlet | in the socket | plugged in and on)",
       "[yes] i have already (checked | tried) (that | it | everything) #h:checked",
       "[yes] i [already] (checked | tried) (that | it | everything) [already | twice]",
+      // "Yes, I checked twice." / "I already did that." (no object)
+      "[yes] i [have] [already] (checked | tried | did) [it | that] (twice | two times | three times | many times | already)",
+      "[yes] i [have] already (did | done) (that | it | everything)",
+      "[yes] i (did | have done) (that | it) already",
       "[yes] i (turned | switched) it off and on [again] [twice | three times]",
       "[yes] i (unplugged | restarted) it [and plugged it back in] [already | twice]",
       "[yes] the (screen | light | display) is on [but it is not cold]",
       "[yes] it [still] says good morning [sunshine] [but it is not cold]",
       "the plug is in",
+    ] },
+    // "No, it isn't." to "Is it plugged in?" (never a yes): Kyle asks the learner to plug it in and try
+    plugged_no_ctx: { patterns: [
+      "[no] it is not [plugged in | on | connected]",
+      "[no] (it | the @fr) is (unplugged | not plugged in)",
+      "[no] i (did not | have not) (check | checked | try | tried) (that | it) [yet]",
     ] },
     intro_name: { patterns: [
       "my name is {name} #h:my_name",
@@ -1002,6 +1047,8 @@ export const complaint: SituationDef = {
       "i need (it | this) @deadl",
       "i (need | want | would like) (it | this | the @fr) (fixed | resolved | sorted | sorted out | done | replaced | delivered | solved) (@deadl | by {day})",
       "@deadl",
+      // "By Friday, not someday." (the hint, shortened)
+      "@deadl not (someday | some day | next week | in two weeks)",
       "(as soon as possible | asap | right away | immediately) #asap #h:asap",
       "(i would like it | i need it) (as soon as possible | asap | right away) #asap",
       "(two | 2) weeks is too long [i am afraid] #toolong #h:too_long",
@@ -1020,7 +1067,14 @@ export const complaint: SituationDef = {
       "i would like (this | it) (resolved | fixed | solved | done) until {day} #tip:by_until",
       "(until | till) {day} #tip:by_until",
     ] },
-    deadline_ctx: { patterns: ["[by | before] {day}"] },
+    // only while a day is being set (at Brenda's Wednesday visit, "Can they come on Thursday?" is not a deadline)
+    deadline_ctx: { patterns: [
+      "[by | before] {day}",
+      "(how about | what about | maybe) [by | on] {day}",
+      "is {day} (possible | okay | an option)", "is it possible (by | on) {day}", "(would | could) {day} (work | be possible)",
+      "(can | could) (they | you | it | someone | the delivery | the new @fr | the refund | the money) (come | be | arrive | be there | be done | deliver it) (on | by | before) {day}",
+      "(can | could) (they | you | someone) (come | deliver it | do it) {day}",
+    ] },
     ask_writing: { patterns: [
       "can i have that in writing #h:in_writing",
       "(can | could | may) i (have | get) (that | this | it | everything) in writing",
@@ -1057,7 +1111,7 @@ export const complaint: SituationDef = {
     ] },
     no_pen: { patterns: ["[no] i do not have (a pen | one | anything to write with)", "[no] i have no pen", "no pen", "i can not write (it | that) down [now | right now]"] },
     pen_wait: { patterns: ["(let me | i will | i need to) (get | grab | find) a (pen | pencil)"] },
-    ref_readback: { patterns: ["[so | okay] [that is] @ref [got it | right | correct | is that right] #h:readback", "[so | okay] [that is] @refnum [got it | right | correct | is that right]"] },
+    ref_readback: { patterns: ["[so | okay] [that is] (@ref | hh4471) [got it | right | correct | is that right] #h:readback","[so | okay] [that is] @refnum [got it | right | correct | is that right]"] },
     // a read-back with other digits ("H H 4 4 7 2?"): a catch-all, so the right number always wins
     readback_unknown: { patterns: ["[so | okay] [that is] (h h | hh | double h | h h dash) {digits} [right | correct | is that right | got it]"] },
     ask_repeat: { patterns: [
@@ -1186,6 +1240,20 @@ export const complaint: SituationDef = {
       t("Okay, | just | had | to ask. | It's | on | my | script.", "Gerai, | tiesiog | turėjau | paklausti. | Tai yra | — | mano | scenarijuje.",
         "Gerai, tiesiog turėjau paklausti. Taip parašyta mano scenarijuje.", { flags: { 5: "“on”: the locative scenarijuje carries it." } }),
     ],
+    // "No, it isn't." to "Is it plugged in?" / "No." to "Have you tried turning it off and on again?"
+    kyle_plug_now: [
+      t("Oh! | Could | you | plug | it | in | and | check, | please? | I'll | wait.", "O! | Ar galėtumėte | jūs | įjungti | jį | į lizdą | ir | patikrinti, | prašau? | Aš | palauksiu.",
+        "O! Ar galėtumėte jį įjungti į elektros lizdą ir patikrinti? Aš palauksiu.",
+        { flags: { 3: "“plug … in” = įjungti į lizdą: the verb here, the particle (unit 5) as į lizdą.", 9: "“I'll”: the future palauksiu (under “wait”) carries “will”." } }),
+    ],
+    kyle_try_now: [
+      t("Okay. | Could | you | try | that, | please? | I'll | wait.", "Gerai. | Ar galėtumėte | jūs | pabandyti | tai, | prašau? | Aš | palauksiu.",
+        "Gerai. Ar galėtumėte tai pabandyti? Aš palauksiu.", { flags: { 6: "“I'll”: the future palauksiu (under “wait”) carries “will”." } }),
+    ],
+    kyle_still_nothing: [
+      t("Still | nothing? | Okay, | I'll | note | that.", "Vis dar | nieko? | Gerai, | aš | pasižymėsiu | tai.", "Vis dar nieko? Gerai, pasižymėsiu.",
+        { flags: { 3: "“I'll”: the future pasižymėsiu (under “note”) carries “will”." } }),
+    ],
     kyle_ask_name: [
       t("Could | I | get | your | name, | please?", "Ar galėčiau | aš | sužinoti | jūsų | vardą, | prašau?", "Ar galėčiau sužinoti jūsų vardą?"),
       t("And | who | am | I | speaking | with?", "O | su kuo | — | aš | kalbu | [su kuo]?", "O su kuo kalbu?",
@@ -1312,7 +1380,7 @@ export const complaint: SituationDef = {
       t("I'm | so | sorry | for | the | trouble.", "Aš | labai | atsiprašau | dėl | — | nemalonumų.", "Labai atsiprašau dėl nemalonumų.", { flags: { 0: F_SORRY_AM } }),
     ],
     brenda_before: [
-      t("I | hear | you. | But | before | we | go there...", "Aš | suprantu | jus. | Bet | prieš tai, kai | mes | pereisime prie to...", "Suprantu jus. Bet prieš pereidami prie to…",
+      t("I | hear | you. | But | before | we | go there...", "Aš | suprantu | jus. | Bet | prieš tai, kai | mes | pereisime prie to...", "Suprantu jus. Bet prieš pereinant prie to…",
         { flags: { 1: "“hear” (I hear you) = suprantu." } }),
     ],
     brenda_offer_coupon: [
@@ -1462,8 +1530,8 @@ export const complaint: SituationDef = {
         { flags: { 0: F_GAILA, 5: "“out”: the particle of “sort … out”, carried by išspręsti." } }),
     ],
     brenda_rude: [
-      t("I | understand | you're | upset. | Let's see | what | I | can | do.", "Aš | suprantu, kad | jūs esate | {m:nusiminęs|f:nusiminusi}. | Pažiūrėkime | ką | aš | galiu | padaryti.",
-        "Suprantu, kad esate {m:nusiminęs|f:nusiminusi}. Pažiūrėkime, ką galiu padaryti."),
+      t("I | understand | you're | upset. | Let's see | what | I | can | do.", "Aš | suprantu, kad | jūs esate | {m:susierzinęs|f:susierzinusi}. | Pažiūrėkime | ką | aš | galiu | padaryti.",
+        "Suprantu, kad esate {m:susierzinęs|f:susierzinusi}. Pažiūrėkime, ką galiu padaryti."),
     ],
     brenda_rude2: [
       t("I'm | happy | to help, | but | let's keep | this | respectful.", "Aš | mielai | padėsiu, | bet | išlaikykime | šį pokalbį | pagarbų.", "Mielai padėsiu, bet kalbėkime pagarbiai.",
@@ -1495,6 +1563,8 @@ export const complaint: SituationDef = {
         { id: "plugged_yes", s: t("Yes, | it's | plugged in.", "Taip, | jis yra | įjungtas į lizdą.", "Taip, jis įjungtas į elektros lizdą.") },
         { id: "checked", s: t("I've | already | checked | that.", "Aš | jau | patikrinau | tai.", "Tai jau patikrinau.",
           { flags: { 0: "“'ve” (have): the past tense of patikrinau carries it." } }) },
+        { id: "still_not", s: t("It | still | doesn't | work.", "Jis | vis tiek | — | neveikia.", "Vis tiek neveikia.",
+          { flags: { 0: "“It” = jis (šaldytuvas).", 2: "“doesn't”: the ne- of neveikia (under “work”) carries it." } }) },
       ],
     },
     name: {
@@ -1660,10 +1730,11 @@ export const complaint: SituationDef = {
       help: (c) => { K(c, "kyle_ask_problem"); } },
     // Twist: Kyle reads from his script. Any answer will do.
     { id: "plugged", when: (c) => !!c.s.pluggedTwist && !!c.s.problem && !c.s.transferred, done: (c) => !!c.s.pluggedDone || !!c.s.over,
-      ask: (c) => { c.twist("plugged_in"); KG(c, "kyle_plugged"); if (c.chance(0.5)) K(c, "kyle_off_on"); },
-      expects: ["plugged_yes"],
+      ask: (c) => { c.twist("plugged_in"); KG(c, "kyle_plugged"); if (c.chance(0.5)) { c.s.offOn = true; K(c, "kyle_off_on"); } },
+      expects: ["plugged_yes", "plugged_no_ctx"],
       suggest: [{ lt: "Ramiai atsakyti, kad tai jau patikrinai", hint: "plugged" }],
-      yes: (c) => { pluggedAnswered(c); }, no: (c) => { pluggedAnswered(c); } },
+      // a bare "No." takes the question literally: Kyle asks the learner to try it
+      yes: (c) => { pluggedAnswered(c); }, no: (c) => { plugNow(c); } },
     // asked at most twice
     { id: "name", when: (c) => !!c.s.problem && pluggedOk(c), done: (c) => nameDone(c) || !!c.s.transferred || !!c.s.over,
       ask: (c) => { c.s.nameAsked = (c.s.nameAsked ?? 0) + 1; K(c, "kyle_ask_name"); },
@@ -1897,6 +1968,23 @@ export const complaint: SituationDef = {
     { say: "This is ridiculous!", intent: "rude" },
     { say: "Are you kidding me?", intent: "rude" },
     { say: "I'm very angry.", intent: "rude" },
+    // review fixes (27 Oct 2026): "by" in a deadline is never "bye"; short deadline proposals; the plugged-in twist
+    { say: "I want a refund by Monday at the latest.", intent: "ask_refund", step: "history", slots: { day: "monday" }, not: ["g_bye"] },
+    { say: "By Monday at the latest.", intent: "set_deadline", step: "deadline", slots: { day: "monday" }, not: ["g_bye"] },
+    { say: "I'd like this resolved by Friday at the latest.", intent: "set_deadline", step: "deadline", slots: { day: "friday" }, not: ["g_bye"] },
+    { say: "Could you replace it by Thursday at the latest?", intent: "ask_replacement", step: "offer", slots: { day: "thursday" }, not: ["g_bye"] },
+    { say: "By Friday, not someday.", intent: "set_deadline", step: "deadline", slots: { day: "friday" } },
+    { say: "How about Thursday?", intent: "deadline_ctx", step: "deadline", slots: { day: "thursday" } },
+    { say: "Is Friday possible?", intent: "deadline_ctx", step: "confirm", slots: { day: "friday" } },
+    { say: "Can they come on Thursday?", intent: "deadline_ctx", step: "deadline", slots: { day: "thursday" } },
+    { say: "Can they come on Thursday?", intent: "none", step: "offer" },
+    { say: "HH4471.", intent: "ref_readback", step: "reference" },
+    { say: "No, it isn't.", intent: "plugged_no_ctx", step: "plugged", not: ["plugged_yes"] },
+    { say: "It's not plugged in.", intent: "plugged_no_ctx", step: "plugged", not: ["plugged_yes"] },
+    { say: "Yes, I checked twice.", intent: "plugged_yes", step: "plugged" },
+    { say: "I already did that.", intent: "plugged_yes", step: "plugged" },
+    { say: "It still doesn't work.", intent: "fridge_broke" },
+    { say: "I don't want a new fridge, I want my money back.", intent: "not_remedy", step: "offer" },
     // nothing understood (and never the opposite meaning)
     { say: "Purple bananas dance on the roof", intent: "none" },
     { say: "My cat is very happy today", intent: "none" },
@@ -1954,6 +2042,23 @@ export const complaint: SituationDef = {
     { name: "walking away from Kyle (not done)",
       turns: ["My fridge stopped working.", "Forget it. I'll call back later."],
       expect: { complete: false, state: { outcome: "walked" } }, auto: AUTO },
+    // review fixes (27 Oct 2026)
+    { name: "a deadline 'by Monday at the latest' never hangs up (Kyle, then Brenda)", setup: (s) => { s.pluggedTwist = false; },
+      turns: ["Hi, I'd like to make a complaint. My new fridge stopped working.", "It's Tomas Mikalauskas.", "I want a refund by Monday at the latest.",
+        "Yes, please.", "Sure.", "No, thank you.", "Yes.", "Go ahead.", "HH4471.", "Thank you, bye!"],
+      expect: { complete: true, state: { remedy: "refund", deadline: "monday", ref: true, outcome: "success" } }, auto: AUTO },
+    { name: "the deadline said to Brenda: by Monday at the latest, in writing", setup: (s) => { s.pluggedTwist = false; s.offerKind = "visit"; },
+      turns: ["Hi, I'd like to make a complaint. My new fridge stopped working.", "It's Tomas Mikalauskas.", "Could I speak to your manager, please?", "Sure.",
+        "No, thank you. I'd like a full refund.", "By Monday at the latest.", "Can I have that in writing?", "Go ahead.", "Thanks, bye!"],
+      expect: { complete: true, state: { remedy: "refund", deadline: "monday", writing: true, confirmed: true, ref: true } }, auto: AUTO },
+    { name: "no to one remedy, yes to the other in one breath; a short deadline", setup: (s) => { s.pluggedTwist = false; s.offerKind = "coupon"; },
+      turns: ["My fridge stopped working.", "Tomas.", "Could I speak to your manager?", "Sure.", "I don't want a new fridge, I want my money back.",
+        "How about Thursday?", "Can I have that in writing?", "Go ahead.", "Thanks, bye!"],
+      expect: { complete: true, state: { remedy: "refund", deadline: "thursday", writing: true, ref: true } }, auto: AUTO },
+    { name: "plugged in (twist): no, it isn't; Kyle asks to try", setup: (s) => { s.pluggedTwist = true; s.offerKind = "coupon"; },
+      turns: ["I'd like to make a complaint. My fridge stopped working.", "No, it isn't.", "It still doesn't work.", "Tomas Mikalauskas.",
+        "Could I speak to your manager, please?", "Sure.", "I'd like a replacement, please.", "By Friday, not someday.", "Yes.", "Go ahead.", "Thanks, bye!"],
+      expect: { complete: true, state: { pluggedDone: true, remedy: "replacement", deadline: "friday", ref: true } }, auto: AUTO },
     { name: "walking away from Brenda (not done)", setup: (s) => { s.offerKind = "coupon"; },
       turns: ["My fridge stopped working.", "Tomas.", "Could I speak to your manager?", "Sure.", "I don't have time for this."],
       expect: { complete: false, state: { outcome: "walked", transferred: true } }, auto: AUTO },

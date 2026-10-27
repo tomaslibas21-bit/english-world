@@ -34,6 +34,8 @@
 //
 // NEEDS: (optional) the game ignores the "text-message" event sent when Mr. Patel texts the day; it could show
 // the text ("Gus · Friday · 9 a.m.–noon") as a note or a phone buzz.
+// NEEDS (27 Oct 2026 review fixes): new audio for greet_open's first variant ("Sorry, I can't stay.", was the British
+// "I can't stop"; tools/build-audio.ts).
 
 import type { Ctx, EntityDef, Pending, SituationDef, Suggestion, Tip } from "../types";
 import { ent, t } from "../dsl";
@@ -74,6 +76,7 @@ const SINCE: Record<string, number> = { monday: 2, tuesday: 1, wednesday: 7, thu
 /** How many days the learner's duration means (null: no duration in this answer). */
 function daysOf(slots: any, tags: string[], heard: string): number | null {
   const n = typeof slots?.number === "number" ? slots.number : null;
+  if (tags.includes("wkhalf")) return 10;
   if (tags.includes("wks")) return n && n < 20 ? n * 7 : 14;
   if (tags.includes("wk")) return 7;
   if (tags.includes("days")) return n ?? 3;
@@ -81,6 +84,8 @@ function daysOf(slots: any, tags: string[], heard: string): number | null {
   if (tags.includes("short")) return 1;
   if (typeof slots?.day === "string" && SINCE[slots.day] !== undefined) return SINCE[slots.day];
   if (/\b(all|whole) week\b|\blast week\b/i.test(heard)) return 7;
+  // today is a Wednesday: "since the weekend" is about four days
+  if (/\bweekend\b/i.test(heard)) return 4;
   return null;
 }
 
@@ -116,9 +121,20 @@ function rude(c: Ctx) {
 
 // --- duration -----------------------------------------------------------------
 
+/** He repeats "A week?" only for a week; other long spells get "That long?" ("Five days." is not a week). */
 function setDur(c: Ctx, days: number, react = true) {
   c.s.dur = days;
-  if (react) P(c, days >= 10 ? "dur_react_long" : days >= 5 ? "dur_react_week" : "dur_react_short");
+  if (react) P(c, days === 7 ? "dur_react_week" : days >= 4 ? "dur_react_long" : "dur_react_short");
+}
+
+// --- one reaction per turn -------------------------------------------------------------
+
+/** Per-turn scratch (the dialogue makes a fresh context object for every learner turn). */
+const turnData = new WeakMap<object, Record<string, any>>();
+function turn(c: Ctx): Record<string, any> {
+  let d = turnData.get(c);
+  if (!d) { d = {}; turnData.set(c, d); }
+  return d;
 }
 
 // --- the twist: Rita backs the learner up ------------------------------------------
@@ -221,6 +237,31 @@ function setDate(c: Ctx, day: string, confirm = true) {
 function pickDay(day: unknown): string {
   const list = (Array.isArray(day) ? day : [day]).map(String);
   return list.find((d) => d === "friday" || d === "saturday") ?? list[0];
+}
+
+/** The day Mr. Patel has on the table (none yet at "sometime next week"). */
+const dayOnTable = (c: Ctx) => (c.s.level === 1 ? "wednesday" : c.s.level === 2 ? "friday" : null);
+
+const DAY_WORD = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|tonight|weekend)\b/i;
+const NOT_REFUSAL = /\b(no problem|no worries|not bad|why not|no rush)\b/gi;
+const REFUSAL = /\b(no|nope|nah|not|never|too (late|long|far)|kidding|joking|serious|freezing|ridiculous|can ?not|can't|won't|forget it)\b/i;
+/** "Wednesday? No way." / "Next Wednesday? That's too late.": after the day, the same turn says no to it. */
+function refusedAfterDay(c: Ctx): boolean {
+  const h = c.heard;
+  const i = h.search(DAY_WORD);
+  return REFUSAL.test((i >= 0 ? h.slice(i) : h).replace(NOT_REFUSAL, " "));
+}
+
+/** "Before Friday" = Thursday at the latest. */
+const DAY_BEFORE: Record<string, string> = {
+  monday: "sunday", tuesday: "monday", wednesday: "tuesday", thursday: "wednesday", friday: "thursday", saturday: "friday", sunday: "saturday",
+};
+
+/** A "no" to the day on the table (one step sooner), said once however many pieces the turn has. */
+function dateNoOnce(c: Ctx) {
+  if (turn(c).dateNo) { c.hold(); return; }
+  turn(c).dateNo = true;
+  dateNo(c);
 }
 
 /** The learner named a day (or agreed to one: `agree`). */
@@ -356,7 +397,8 @@ export const landlord: SituationDef = {
 
   grammar: {
     macros: {
-      mr: "(mister | mr) patel",
+      // "petal": a common speech-recognition spelling of the name (only here, where he is addressed)
+      mr: "(mister | mr) (patel | petal)",
       apt: "(apartment | place | unit | home | flat #tip:uk_flat)",
       unit: "(2b | two b | 2 b | apartment 2b | apartment two b | apartment {number} | upstairs | the second floor | the apartment upstairs)",
       mypl: "(my @apt | my kitchen | my bedroom | my living room | my bathroom | 2b | apartment 2b | the @apt | here | in here | at home | at my place | upstairs)",
@@ -368,7 +410,7 @@ export const landlord: SituationDef = {
       contract: "(contract | lease | rental agreement | agreement | rental contract | tenancy agreement #tip:us_lease)",
       dur: [
         "[about | almost | nearly | over | more than | at least | already | just over] (a | one) [whole | full] week #wk",
-        "(a | one) week and a half #wk",
+        "(a | one) week and a half #wkhalf",
         "[about | almost | nearly | over | more than | at least | already] ({number} | a couple of) weeks #wks",
         "[about | almost | nearly | over | more than | at least | already] {number} days #days",
         "(a few | a couple of | several | two or three | three or four) days #few",
@@ -449,6 +491,9 @@ export const landlord: SituationDef = {
       "@dur ago", "since @dur #tip:tense_since",
       "it (is | was) broken since @dur #tip:tense_since", "it does not work (already @dur | @dur already) #tip:tense_since",
       "it is [already] @dur [now | already] #tip:tense_since", "from [last] {day} #tip:tense_since",
+      // calques without "for": "It's broken a week.", "It doesn't work one week."
+      "(it | @heat) (is | was) [already] (broken | not working | off | out | dead | cold) [already] @dur [now | already] #tip:tense_since",
+      "(it | @heat) (does not | did not | is not) (work | working) [already] @dur [now | already] #tip:tense_since",
     ] },
     // "Monday." / "Last Monday." while he asks how long
     dur_ctx: { patterns: ["[on | last] {day}"] },
@@ -472,7 +517,10 @@ export const landlord: SituationDef = {
       "of course i (did | have)", "[yes] it is (on | turned up | set to {number}) [all the way]",
       "[yes] (many | several | two | three) times", "i (checked | tried) everything",
     ] },
-    thermo_no: { patterns: ["i did not check [it | the thermostat]", "i have not checked [it | the thermostat]", "(what | which) thermostat", "where is the thermostat"] },
+    thermo_no: { patterns: [
+      "i did not check [it | the thermostat]", "i have not checked [it | the thermostat]", "(what | which) thermostat", "where is the thermostat",
+      "what is (a | the | that) thermostat", "what does thermostat mean", "i do not know what (a | the) thermostat is",
+    ] },
 
     // --- the dodge: whose job is it? -----------------------------------------------------
     responsibility: { patterns: [
@@ -541,7 +589,7 @@ export const landlord: SituationDef = {
       "i (do not | would not) want to (touch | fix) it [myself]", "i am not (going to | gonna) fix it [myself]", "i will not (do it | fix it) [myself]",
       "(that is | it is) not my (job | problem)", "half is not (enough | fair)", "[no] i do not want [to] [(do | fix) it] [myself]",
       "why should i (fix | repair | do) it [myself]", "[no] you (fix | repair) it", "i do not know how [to (fix | do) it]", "i can not [do (that | this | it)]", "i (will not | am not going to) pay for (it | the repair | that | the repairs)", "i (do not | can not) have (the tools | a wrench | tools | time)",
-      "no way #tip:bare_no",
+      "no way #tip:bare_no #noway",
     ] },
     accept_offer: { patterns: [
       "[okay] i will (do it | fix it | try) [myself]", "(fine | okay | sure | all right) i (can | will) try", "i can (fix it | do it) [myself]",
@@ -562,7 +610,7 @@ export const landlord: SituationDef = {
       "when will the master come #tip:master", "when will (the | a) (renovation | remont) be #tip:renovation",
     ] },
     too_late: { patterns: [
-      "next week is too late #h:too_late", "(that is | it is | wednesday is | next wednesday is | a week is | next week is) too (late | long) [to wait]",
+      "next week is too late #h:too_late", "(that is | it is | wednesday is | next wednesday is | a week is | next week is | friday is) [still] too (late | long) [to wait]",
       "(i | we) can not wait (that long | a week | until [next] wednesday | another week | so long | a whole week)",
       "(could | can) (@someone | he | gus) come (sooner | earlier | this week | before the weekend) #h:sooner",
       "is there any (way | chance) (@someone | he | gus) (could | can) come (sooner | earlier | this week)",
@@ -575,6 +623,12 @@ export const landlord: SituationDef = {
       "(could | can) (he | @someone | gus) come [on] {day} [morning | afternoon] [instead]",
       "{day} (would be better | is better) #h:saturday_better", "is {day} possible", "{day} if possible", "is it possible [on] {day}", "[on] {day} or [on] {day}",
       "(he | @someone | gus) (can | could) come [on] {day}",
+      // a deadline: "By Saturday." / "I need it fixed by Friday." (the whole "by {day}" in one piece: never "bye")
+      "by {day} [at the latest | morning]", "before {day} #before",
+      "i need (it | the heating | the heat | this) (fixed | repaired | done | working) by {day} [at the latest]",
+      "i need (it | the heating | the heat | this) (fixed | repaired | done | working) before {day} #before",
+      "(i need | i want) (@someone | him | gus) (here | to come | to come out) by {day} [at the latest]",
+      "(can | could) (it | the heating) be (fixed | repaired | done) by {day}",
     ] },
     // a bare day while a day is being agreed: "Friday." / "On Friday morning."
     day_ctx: { patterns: ["[on] {day} [morning | afternoon]"] },
@@ -614,6 +668,9 @@ export const landlord: SituationDef = {
     no_more: { patterns: ["[no] that is (all | everything) [i (needed | wanted)] #h:thats_all", "[no] nothing [else] [for now]", "[no] i am (good | fine | okay) [thanks]", "that is it"] },
     ask_discount: { patterns: [
       "(will | can | could) i (get | have) a discount [on | for] [the | my] [rent] [this month]",
+      // "…for this week" is the week without heat, not "this week" for Gus
+      "(will | can | could) i (get | have) a discount (for | on) [the rent] (this week | the cold week | the week | this month | the days without heat)",
+      "(can | could) you (lower | reduce) [the | my] rent (for this week | for this month | this week)",
       "(can | could) you (lower | reduce) [the | my] rent [this month]", "i (think i | should) pay less [this month]",
       "(will | can | could) you take (something | it | that) off [the | my] rent", "(off the rent | what about a discount | do i get a discount)",
     ] },
@@ -652,8 +709,8 @@ export const landlord: SituationDef = {
   lines: {
     // --- greeting --------------------------------------------------------------
     greet_open: [
-      t("Oh, | hi! | Sorry, | I | can't | stop. | I'm off | to | Florida!", "O, | sveiki! | Atsiprašau, | aš | negaliu | sustoti. | Išvykstu | į | Floridą!",
-        "O, sveiki! Atsiprašau, negaliu sustoti – išvykstu į Floridą!"),
+      t("Oh, | hi! | Sorry, | I | can't | stay. | I'm off | to | Florida!", "O, | sveiki! | Atsiprašau, | aš | negaliu | užsibūti. | Išvykstu | į | Floridą!",
+        "O, sveiki! Atsiprašau, negaliu užsibūti – išvykstu į Floridą!"),
       t("Hey, | good | morning! | Make it quick, | okay? | Florida | is waiting.", "Ei, | labas | rytas! | Tik trumpai, | gerai? | Florida | laukia.",
         "Labas rytas! Tik trumpai, gerai? Florida laukia."),
     ],
@@ -681,7 +738,7 @@ export const landlord: SituationDef = {
       t("Are | you | sure | the | thermostat | is | on?", "Ar | jūs | {m:tikras, kad|f:tikra, kad} | — | termostatas | yra | įjungtas?", "Ar tikrai termostatas įjungtas?",
         { flags: { 0: F_ARE_Q, 2: "Zero “that” in English; Lithuanian needs kad, glossed with “sure”." } }),
     ],
-    thermostat_ok: [t("Okay, | okay, | I | believe | you.", "Gerai, | gerai, | aš | tikiu | jumis.", "Gerai, gerai, tikiu jumis.")],
+    thermostat_ok: [t("Okay, | okay, | I | believe | you.", "Gerai, | gerai, | aš | tikiu | jums.", "Gerai, gerai, tikiu jums.")],
     thermostat_no: [t("Give it a try. | These | old | radiators | are | moody.", "Pabandykite. | Šitie | seni | radiatoriai | yra | kaprizingi.", "Pabandykite. Šitie seni radiatoriai kaprizingi.")],
     thermostat_no2: [
       t("Or | not. | Your | face | says | you | already | tried.", "Arba | ne. | Jūsų | veidas | sako, kad | jūs | jau | bandėte.", "O gal ir ne. Iš veido matau, kad jau bandėte.",
@@ -722,7 +779,7 @@ export const landlord: SituationDef = {
     rita_in: [t("Sorry, | I | couldn't help overhearing.", "Atsiprašau, | aš | negalėjau nenugirsti.", "Atsiprašau, negalėjau nenugirsti.")],
     rita_back: [
       t("It's | true, | Mr. | Patel. | I | can | feel | the | cold | through | the | wall.", "Tai | tiesa, | pone | Pateli. | Aš | galiu | jausti | — | šaltį | per | — | sieną.",
-        "Tai tiesa, pone Pateli. Šaltis jaučiasi net per sieną.", { flags: { 0: "“It's” = tai; Lithuanian needs no copula before tiesa." } }),
+        "Tai tiesa, pone Pateli. Net per sieną jaučiu šaltį.", { flags: { 0: "“It's” = tai; Lithuanian needs no copula before tiesa." } }),
     ],
     rita_irony: [t("And | you | always | fix | everything | so | fast!", "O | jūs | visada | sutaisote | viską | taip | greitai!", "O jūs juk visada viską taip greitai sutaisote!")],
     patel_rita: [t("Thank | you, | Rita. | Very | helpful.", "Ačiū | jums, | Rita. | Labai | naudinga.", "Ačiū, Rita. Labai padėjote.")],
@@ -754,8 +811,9 @@ export const landlord: SituationDef = {
         "Gerai, gerai. Matau, sutartį perskaitėte. Tai gerbiu.", { flags: { 2: "“You've”: the perfect auxiliary has no word; the past perskaitėte carries it." } }),
     ],
     resp_lease: [
-      t("Page | two, | line | ten. | Yes, | I | know | it | by heart.", "Puslapis | du, | eilutė | dešimt. | Taip, | aš | žinau | ją | mintinai.",
-        "Antras puslapis, dešimta eilutė. Taip, žinau ją mintinai.", { flags: { 7: "“it” = ją (the lease, sutartis, feminine)." } }),
+      t("Page | two, | line | ten. | Yes, | I | know | it | by heart.", "Puslapis | antras, | eilutė | dešimta. | Taip, | aš | žinau | ją | mintinai.",
+        "Antras puslapis, dešimta eilutė. Taip, žinau ją mintinai.",
+        { flags: { 1: "“two” after a noun (page two) = the ordinal antras.", 3: "“ten” after a noun (line ten) = the ordinal dešimta.", 7: "“it” = ją (the lease, sutartis, feminine)." } }),
     ],
     resp_heat: [
       t("Yes, | yes, | heat | is | included. | I | know | my | own | lease.", "Taip, | taip, | šildymas | yra | įskaičiuotas. | Aš | žinau | savo | paties | sutartį.",
@@ -1270,6 +1328,8 @@ export const landlord: SituationDef = {
       P(c, "i_know");
     },
     cold_detail(c, slots, seg) {
+      // "Wednesday? It's freezing!": the day's answer is the reaction
+      if (turn(c).dateNo) { c.s.problem = true; return; }
       if (seg.tags.includes("cat")) P(c, "cat_react");
       else if (/colder than outside/i.test(c.heard) && !c.s.colderSaid) { c.s.colderSaid = true; P(c, "cold_react_outside"); }
       else P(c, "cold_react");
@@ -1301,6 +1361,8 @@ export const landlord: SituationDef = {
       c.s.thermoAsked = true;
       if (c.s.thermoDone) { P(c, "ack"); return; }
       c.s.thermoDone = true;
+      // "What's a thermostat?": what it is, and try it
+      if (/\bwhat (is|does)\b|\bwhat's\b|know what\b/i.test(c.heard)) { P(c, "thermostat_where"); P(c, "thermostat_no"); return; }
       if (/\b(what|which|where)\b/i.test(c.heard)) { P(c, "thermostat_where"); P(c, "thermostat_no2"); return; }
       P(c, "thermostat_no"); P(c, "thermostat_no2");
     },
@@ -1350,6 +1412,8 @@ export const landlord: SituationDef = {
     you_kidding(c) {
       // "Are you kidding?" to "Fix it yourself": no to the offer
       if (offerOpen(c)) { refuse(c); return; }
+      // "Next Wednesday? Are you kidding?": no to the day on the table
+      if (c.s.offer && !c.s.date) { dateNoOnce(c); return; }
       P(c, c.s.sweater && !c.s.ritaShown ? "sorry_joke" : "kidding");
     },
     threat(c) { P(c, "not_enemy"); rude(c); },
@@ -1364,8 +1428,10 @@ export const landlord: SituationDef = {
     },
 
     // --- the offer ---
-    refuse_offer(c) {
+    refuse_offer(c, _slots, seg) {
       if (offerOpen(c)) { refuse(c); return; }
+      // "No way." while a day is being agreed: no to the day on the table
+      if (c.s.offer && !c.s.date && seg.tags.includes("noway")) { dateNoOnce(c); return; }
       // a change of mind after "Okay, I'll try": Gus comes anyway
       if (c.s.offer === "accepted") { c.s.offer = "refused"; P(c, "ack"); return; }
       if (!c.s.resp && c.s.dur) { landlord.handlers.request_fix(c, {}, { intent: "request_fix", slots: {}, tags: [] }); return; }
@@ -1392,6 +1458,9 @@ export const landlord: SituationDef = {
       P(c, "window"); askDate(c); c.hold();
     },
     too_late(c) {
+      // "That's too late. Could he come sooner?": one reaction
+      if (turn(c).tooLate || turn(c).dateNo) { c.hold(); return; }
+      turn(c).tooLate = true;
       if (c.s.date) {
         if (c.s.date === "wednesday") { c.s.date = "friday"; c.remember({ heatFixed: "friday" }); P(c, "sooner_react"); P(c, "window"); return; }
         P(c, "friday_best");
@@ -1399,14 +1468,25 @@ export const landlord: SituationDef = {
       }
       if (offerOpen(c)) { refuse(c); offerFriday(c); c.hold(); return; }
       if (!c.s.offer) { P(c, "one_thing"); return; }
+      turn(c).dateNo = true;
       if (c.s.level < 2) offerFriday(c); else P(c, "friday_best");
       c.hold();
     },
-    propose_day(c, slots) {
+    propose_day(c, slots, seg) {
       if (c.s.date) { P(c, "ack"); return; }
       if (offerOpen(c)) refuse(c);
       if (!c.s.offer) { P(c, "one_thing"); return; }
-      proposeDay(c, pickDay(slots.day));
+      let day = pickDay(slots.day);
+      if (seg?.tags?.includes("before")) day = DAY_BEFORE[day] ?? day;
+      // "Wednesday? No way." repeats the day on the table only to say no to it: never a yes
+      if (refusedAfterDay(c)) {
+        if (day === dayOnTable(c)) dateNoOnce(c);
+        // "Next week? No way." before he named a day: he jumps to Friday
+        else if (c.s.level === 0 && (day === "wednesday" || day === "next_week") && !turn(c).dateNo) { turn(c).dateNo = true; offerFriday(c); c.hold(); }
+        else c.hold();
+        return;
+      }
+      proposeDay(c, day);
       if (!c.s.date) c.hold();
     },
     day_ctx(c, slots) { landlord.handlers.propose_day(c, slots, { intent: "propose_day", slots, tags: [] }); },
@@ -1591,6 +1671,19 @@ export const landlord: SituationDef = {
     { say: "Enjoy the sun in Florida!", intent: "trip_wish" },
     { say: "Have a nice holiday!", intent: "trip_wish" },
     { say: "Never mind.", intent: "walk_away" },
+    // review fixes (27 Oct 2026): "by {day}" is never "bye"; echoes; calques; a misheard name
+    { say: "By Saturday.", intent: "propose_day", step: "date", slots: { day: "saturday" }, not: ["g_bye"] },
+    { say: "By Friday at the latest.", intent: "propose_day", step: "date", slots: { day: "friday" }, not: ["g_bye"] },
+    { say: "I need it fixed by Friday.", intent: "propose_day", step: "date", slots: { day: "friday" }, not: ["g_bye"] },
+    { say: "Wednesday? No way.", intent: "day_ctx", step: "date", not: ["accept_date"] },
+    { say: "Next Wednesday? That's too late.", intent: "day_ctx", step: "date", not: ["accept_date"] },
+    { say: "Friday? That's still too late.", intent: "day_ctx", step: "date", not: ["accept_date"] },
+    { say: "That's still too late.", intent: "too_late", step: "date" },
+    { say: "Can I get a discount for this week?", intent: "ask_discount", step: "rent", not: ["too_late"] },
+    { say: "It's broken a week.", intent: "heat_duration", step: "duration" },
+    { say: "It doesn't work one week.", intent: "heat_duration", step: "duration" },
+    { say: "What's a thermostat?", intent: "thermo_no", step: "thermostat", not: ["thermo_yes"] },
+    { say: "Mr. Petal, the heating isn't working.", intent: "greet_id", step: "problem" },
     // not understood
     { say: "banana keyboard elephant", intent: "none" },
     { say: "My brother plays the guitar.", intent: "none" },
@@ -1633,6 +1726,16 @@ export const landlord: SituationDef = {
       "No, thank you. Please send a professional.", "Can you put that in writing?", "How about Saturday?", "That's it.", "Sure.", "Could I get a receipt, please?", "Thank you!"],
       expect: { complete: true, state: { date: "saturday", writing: true, receipt: true } }, auto: AUTO,
       setup: (s) => { s.greetAgain = false; s.twist = null; } },
+    // review fixes (27 Oct 2026): "Wednesday? No way." is never a yes; "By Saturday." is never a goodbye
+    { name: "Wednesday? No way. Then by Saturday", turns: ["Hi, Mr. Patel! The heating isn't working.", "It's broken a week.", "According to the lease, repairs are your responsibility.",
+      "I'm sorry, but that's not what we agreed.", "When can someone come out?", "Wednesday? No way.", "By Saturday.", "No, that's all.", "Sure. Here's the check.", "Bye!"],
+      expect: { complete: true, state: { date: "saturday", dur: 7, offer: "refused" } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; } },
+    { name: "Next Wednesday? That's too late. Friday? Still too late. Okay.", turns: ["Mr. Petal, the heating isn't working.", "Five days.", "It's your responsibility to fix it.",
+      "I'm not a plumber.", "When can someone come out?", "Next Wednesday? That's too late.", "Friday? That's still too late.", "Okay.", "Can I get a discount for this week?",
+      "No, that's all.", "Here you go.", "Bye!"],
+      expect: { complete: true, state: { date: "friday", dur: 5 } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; } },
     // "I don't know" at the dodge: he gives in; Wednesday is accepted; the key goes to Rita
     { name: "the dodge gives in, Wednesday", turns: ["The heating is broken.", "Three days.", "I don't know.", "I'm not a plumber.", "When can someone come out?",
       "That works for me.", "I can leave a key with Rita.", "Thanks!", "I don't have the check with me.", "Bye!"],
