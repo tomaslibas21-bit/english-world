@@ -276,7 +276,8 @@ export class Conversation {
       this.out.failures = this.failures;
       this.out.prefix = res.prefix;
       if (this.failures >= 2) {
-        this.say("g_not_understood");
+        // a recording never answers back (a voicemail step or question marked silent)
+        if (!(this.pending?.silent || this.effectiveStep()?.silent)) this.say("g_not_understood");
         this.failures = 0;
       }
       return this.out;

@@ -195,7 +195,7 @@ export class Nlu {
   private globalIds = new Set<string>();
   /** Sentence grammars by the set of context-only intents the current question allows. */
   private tops = new Map<string, GNode>();
-  private shared: { lead: GNode; tail: GNode; yn: GNode; ynLead: GNode; ynConn: GNode; ynTwice: GNode; conn: GNode } | null = null;
+  private shared: { lead: GNode; tail: GNode; yn: GNode; ynLead: GNode; ynConn: GNode; ynTwice: GNode; conn: GNode; voc: GNode } | null = null;
   private catchAll = new Set<string>();
   /** Intents only accepted when the current step/pending question expects them (e.g. a bare name). */
   private contextual = new Set<string>();
@@ -267,7 +267,7 @@ export class Nlu {
       S([parsePattern(NO_LEAD, false), parsePattern(NO, false), mk.tag(["yn:no", "yn:twice"])]),
     ]);
     const conn = mk.opt(parsePattern("and | and also | also | plus | but | oh and | and then | then | so | or | actually | maybe", false));
-    return { lead, tail, yn, ynLead, ynConn, ynTwice, conn };
+    return { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc };
   }
 
   /** The sentence grammar for a turn. Context-only intents (`_ctx`: a bare name, a bare number) are
@@ -278,10 +278,11 @@ export class Nlu {
     const hit = this.tops.get(key);
     if (hit) return hit;
     if (!this.shared) this.shared = this.buildShared();
-    const { lead, tail, yn, ynLead, ynConn, ynTwice, conn } = this.shared;
+    const { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc } = this.shared;
     const S = (items: GNode[]) => mk.seq(items, true);
     const intent = mk.alt([...this.intents.entries()].filter(([id]) => !this.contextual.has(id) || allowed.includes(id)).map(([, n]) => n));
-    const intents = S([intent, mk.rep(S([conn, intent]), 0, 2)]);
+    // the person's name may also come between two pieces: "Thank you, Brenda, but you can keep the mug"
+    const intents = S([intent, mk.rep(S([mk.opt(voc), conn, intent]), 0, 2)]);
     const body = mk.alt([S([mk.opt(S([ynLead, ynConn])), intents]), yn, ynTwice]);
     const top = S([mk.rep(lead, 0, 3), body, mk.rep(tail, 0, 3)]);
     this.tops.set(key, top);

@@ -127,6 +127,8 @@ export interface Ctx {
 }
 
 export interface Pending {
+  /** No "Sorry, I didn't catch that" from the person while this is open (a voicemail recording: it can't answer). */
+  silent?: boolean;
   id: string;
   /** Drop this question if the learner does something else instead (small talk, offers). */
   optional?: boolean;
@@ -154,6 +156,8 @@ export interface MissionItem {
 }
 
 export interface StepDef {
+  /** No "Sorry, I didn't catch that" from the person at this step (a voicemail recording: it can't answer). */
+  silent?: boolean;
   id: string;
   /** Short Lithuanian checklist label ("Gėrimas", "Dydis"); default: the first suggestion. */
   label?: string;

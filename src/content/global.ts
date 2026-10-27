@@ -229,7 +229,9 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   ] },
   g_sorry: { patterns: ["i am [so | very | really] sorry", "sorry about that", "my bad", "oops", "sorry for (that | the trouble)"] },
   g_dontknow: { patterns: ["i do not know", "i am not sure [yet]", "not sure [yet]", "no idea", "i have no idea", "i can not decide", "i do not know yet", "i have not decided [yet]"] },
-  g_ok: { patterns: ["(got it | i see | i understand | understood | sounds good | fine | awesome | great | perfect | cool | nice | good | okay then | all right then)"] },
+  g_ok: { patterns: ["(got it | i see | i understand | understood | sounds good | fine | awesome | great | perfect | cool | nice | good | okay then | all right then)",
+    // "I see what you mean" is understanding, not a question about a word (g_meaning) or a request to repeat (g_repeat)
+    "i (see | know | understand | get) what you (mean | are saying | are getting at)"] },
 };
 
 // ---------------------------------------------------------------------------

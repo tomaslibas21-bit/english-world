@@ -177,7 +177,7 @@ export const gas: SituationDef = {
     receipt_no_ctx: { patterns: ["[no] i do not need (it | one | that)", "[no] (it is | that is) not necessary"] },
     no_receipt: { patterns: ["(no | i do not need a) receipt [thanks]", "(i do not | i don't) need (a | the) receipt"] },
     pay_card: { patterns: [
-      "[can | could] i pay (by | with) (card | credit card | debit card | my card | credit) #h:pay_card", "(by | with) card", "card #h:pay_card_short",
+      "[can | could] i pay (by | with) (card | credit card | debit card | my card | credit) #h:pay_card", "(by | with) [a] [my] (card | credit card | debit card)", "card #h:pay_card_short",
       "(i will | i would like to | i am going to) pay (by | with) (card | credit card | debit card | my card | a card)", "do you (take | accept) (cards | credit cards | visa | mastercard)", "(can | could) i (use | tap) my (card | phone)",
       "(can | could) i pay with (my phone | apple pay | google pay)",
       "here is my (card | credit card | debit card)", "(can | could) i tap [it | my card | here]", "(apple pay | google pay | visa | mastercard | contactless)",

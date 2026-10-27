@@ -191,10 +191,11 @@ export function tokenizePatternWords(words: string): Tokens {
 // ---------------------------------------------------------------------------
 // Token similarity (homophones, one likely recogniser spelling error).
 
+// "bye" is no homophone of "by": "…by Monday at the latest" must never say goodbye (a recogniser writes "bye" for it)
 const HOMOPHONE_CLASSES: readonly (readonly string[])[] = [
   ["for", "four", "fore"], ["to", "too", "two", "tu"], ["the", "thee", "thuh", "duh", "de", "tha"],
   ["a", "ay"], ["no", "know"], ["hear", "here"], ["their", "there", "they're"], ["one", "won"],
-  ["see", "sea"], ["right", "write", "wright"], ["sun", "son"], ["buy", "by", "bye"], ["i", "eye", "aye"],
+  ["see", "sea"], ["right", "write", "wright"], ["sun", "son"], ["buy", "by"], ["i", "eye", "aye"],
   ["ate", "eight"], ["meet", "meat"], ["week", "weak"], ["be", "bee"], ["wear", "where", "ware"],
   ["flower", "flour"], ["hour", "our"], ["mail", "male"], ["peace", "piece"], ["break", "brake"],
   ["or", "oar", "ore"], ["oh", "owe", "o"], ["so", "sew", "sow"], ["do", "due", "dew"], ["not", "knot"],

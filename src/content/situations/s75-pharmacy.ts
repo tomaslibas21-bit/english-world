@@ -506,7 +506,7 @@ export const pharmacy: SituationDef = {
       "[no] i do not (need | want) anything (else | more) [today]", "[no] that is (all | it | everything) for (today | now)", "[no] nothing more", "[no] (this | that) is enough",
     ] },
     pay_card: { patterns: [
-      "[can | could] i pay (by | with) (card | credit card | debit card | my card | credit) #h:pay_card", "(by | with) card", "card #h:pay_card_short",
+      "[can | could] i pay (by | with) (card | credit card | debit card | my card | credit) #h:pay_card", "(by | with) [a] [my] (card | credit card | debit card)", "card #h:pay_card_short",
       "(i will | i would like to | i am going to) pay (by | with) card", "do you (take | accept) (cards | credit cards | card | visa | mastercard)", "can i (use | tap) my card", "[a] (credit | debit) card",
       "(credit | debit | visa | mastercard)", "(can | could) i tap [my card | it | here]", "[i will | can you | could you] (put | charge) it (on | to) my [credit | debit] card", "contactless", "[by] tap [card]",
       "[can | could] i pay (by | with) (visa | mastercard | american express | amex | discover)", "card is (fine | okay | good)",

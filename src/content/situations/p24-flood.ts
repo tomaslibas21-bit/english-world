@@ -60,9 +60,8 @@
 // (3) The engine takes at most 3 intents per turn (nlu.ts: intent + 2 more). A voicemail said in one breath has 4–6
 // pieces (who, what, the request, "Kind regards"), so this file reads it with `vm_unknown` (a catch-all built from
 // the pieces below). A higher cap (or one that lifts in the voicemail) would let the ordinary intents do it.
-// (4) During the voicemail the engine's "Sorry, I didn't catch that." (g_not_understood after two misses) is said in
-// Mr. Grant's voice, as if the recording answered. A way for a situation to keep it silent (a "recording" phase,
-// or a hook like `notUnderstood(c)`) would fix it; vm_unknown makes it rare.
+// (4) Done (27 Oct 2026): the voicemail step is `silent: true`, so the engine's "Sorry, I didn't catch that." is never
+// said in Mr. Grant's voice during the recording.
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef, Tip } from "../types";
 import type { ConvCtx } from "../../convo/dialogue";
@@ -1751,7 +1750,7 @@ export const flood: SituationDef = {
 
     // --- the voicemail (the recording asks nothing: each step is silent) ---
     // one step for the whole message: the suggestions list what it still lacks
-    { id: "vm_msg", when: inVm, done: (c) => !!c.s.vmEnded,
+    { id: "vm_msg", silent: true, when: inVm, done: (c) => !!c.s.vmEnded,
       ask: (c) => {
         if (bump(c, "vm_msg") === 1) { G(c, "vm_greet"); c.event("beep"); }
         vmSilent(c);
