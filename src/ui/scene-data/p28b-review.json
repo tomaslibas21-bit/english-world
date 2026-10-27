@@ -1,0 +1,37 @@
+{
+  "npc": "Emily, your manager (Brightline)",
+  "images": [
+    "greet",
+    "praise",
+    "feedback",
+    "goals",
+    "twist",
+    "done"
+  ],
+  "start": "greet",
+  "done": "done",
+  "phases": {
+    "feeling": "greet",
+    "proud": "praise",
+    "made": "praise",
+    "praise": "praise",
+    "consent": "feedback",
+    "feedback": "feedback",
+    "protect": "feedback",
+    "protect_offer": "feedback",
+    "goals": "goals",
+    "support": "goals",
+    "ask_me": "goals",
+    "tab": "twist",
+    "rev_open": "twist",
+    "rev_worked": "twist",
+    "rev_try": "twist",
+    "anything_else": "done",
+    "checkin": "done",
+    "closing": "done"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
