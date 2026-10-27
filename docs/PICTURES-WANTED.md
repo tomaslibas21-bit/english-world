@@ -6,7 +6,7 @@
 
 During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel.
 
-**Status (8 Oct 2026): 32 pictures are wanted** for the six advanced conversations P25–P30: see "Wanted" below. The first 41 conversations have their pictures (265 in total); the 40 pictures for songs 31–35 were made by ChatGPT from this brief, and their sections stay as a record.
+**Status (27 Oct 2026): 50 pictures are wanted** for nine conversations: the six advanced ones P25–P30 (32) and the three newest, P28b, P18 and P24 (18). See the two "Wanted" sections below. The owner will have them made once all other work is finished. The first 41 conversations have their pictures (265 in total); the 40 pictures for songs 31–35 were made by ChatGPT from this brief, and their sections stay as a record.
 
 ## Where to look
 
@@ -242,6 +242,110 @@ A phone call: the pictures show the learner's kitchen and the other end of the l
     "make_up": "deal", "start_over": "deal"
   },
   "focus": [36, 30]
+}
+```
+
+## Wanted: the three newest conversations (18 pictures, 27 Oct 2026)
+
+These come from the advanced songs P28, P18 and P24, and bring the game to 50 conversations. The rules are the same as for P25–P30 above. Make them together with P25–P30, when the owner gives the go.
+
+### p28b-review: Emily, the learner's new manager, at Brightline (6 pictures)
+
+- **Emily** (new): late 30s, tan skin, dark-brown hair in a low bun, a mustard-yellow sweater over a white collar, small hoop earrings and a lanyard with a blank badge. Six weeks a manager: warm, and a little nervous in her first reviews.
+- **Place:** Emily's small glass office at Brightline, the office of [`s88-first-day/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s88-first-day/hello.webp): a light wood desk, a laptop, a printed agenda (lines only), a plant on the windowsill, the harbor through the window. The learner sits across the desk.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `greet` | Emily catching a falling plant pot by the window, a little soil on the desk, an embarrassed laugh | the start, feeling |
+| `praise` | Emily at the desk, smiling warmly, one hand open toward the viewer ("What worked really well was…") | proud, made, praise |
+| `feedback` | Emily leaning forward, hands together, kind but serious ("One thing you could try is…") | consent, feedback, protect, protect_offer |
+| `goals` | Emily writing on the printed agenda with a pen, nodding | goals, support, ask_me |
+| `twist` | Emily turning the laptop toward the viewer, open-handed and unsure; the screen shows only a blurred spreadsheet | tab, rev_open, rev_worked, rev_try |
+| `done` | Emily standing with the agenda, smiling; the plant now on a shelf behind her (shown at the end of a review that went well) | anything_else, checkin, and the end |
+
+```json
+{
+  "npc": "Emily, your manager (Brightline)",
+  "images": ["greet", "praise", "feedback", "goals", "twist", "done"],
+  "start": "greet",
+  "done": "done",
+  "phases": {
+    "feeling": "greet",
+    "proud": "praise", "made": "praise", "praise": "praise",
+    "consent": "feedback", "feedback": "feedback", "protect": "feedback", "protect_offer": "feedback",
+    "goals": "goals", "support": "goals", "ask_me": "goals",
+    "tab": "twist", "rev_open": "twist", "rev_worked": "twist", "rev_try": "twist",
+    "anything_else": "done", "checkin": "done", "closing": "done"
+  },
+  "focus": [34, 30]
+}
+```
+
+### p18-startup: Tyler and Wi-Fi the dog at Sproutly (6 pictures)
+
+- **Tyler** (new): about 30, light skin, messy blond hair, a short beard, a moss-green hoodie (a plain sprout shape, no letters), khaki shorts and flip-flops, often a coffee mug. The founder: enthusiastic, kind, chaotic, and he talks in business idioms.
+- **Wi-Fi:** a scruffy gray terrier.
+- **Place:** Sproutly, a plant-care app startup in an old harbor warehouse: brick walls, big windows, beanbags, a red slide from a mezzanine, a wall of colorful sticky notes (no writing), hanging plants, and a big screen with a plant-app mock-up (shapes only). Wi-Fi sleeps by the printer.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `hello` | Tyler waving with a coffee mug, leaning on a beanbag; Wi-Fi asleep by the printer | the start, hello |
+| `pile` | Tyler holding out three sticky notes (no writing) toward the viewer, a hopeful grin | pile, too_much |
+| `idioms` | Tyler with both hands up, explaining, eyebrows raised | owner, when |
+| `plan` | Tyler nodding at a whiteboard with three boxes and arrows (no words) | priorities, pushback, deal, offer, tomorrow |
+| `twist` | The big screen red, phones buzzing on the desk, a row of cactus pots, the wall clock at 6; Tyler with his hands on his head | crash, crash_ok, midnight, mid_deal |
+| `done` | Tyler giving a thumbs up; Wi-Fi awake and wagging (shown once the week is sorted) | the goodbye, and the end |
+
+```json
+{
+  "npc": "Tyler, founder of Sproutly",
+  "images": ["hello", "pile", "idioms", "plan", "twist", "done"],
+  "start": "hello",
+  "done": "done",
+  "phases": {
+    "hello": "hello",
+    "pile": "pile", "too_much": "pile",
+    "owner": "idioms", "when": "idioms",
+    "priorities": "plan", "pushback": "plan", "deal": "plan", "offer": "plan", "tomorrow": "plan",
+    "crash": "twist", "crash_ok": "twist", "midnight": "twist", "mid_deal": "twist",
+    "closing": "done"
+  },
+  "focus": [34, 30]
+}
+```
+
+### p24-flood: Lizzie and Mr. Grant, on the phone (6 pictures)
+
+Two phone calls on a flooded morning. The pictures show the learner's kitchen and the people on the other end.
+
+- **Lizzie:** the learner's friend, as in [`s83-invite-call/hello.webp`](https://github.com/tomaslibas21-bit/english-world/blob/main/public/scenes/s83-invite-call/hello.webp). Keep her face, hair and clothes.
+- **Mr. Grant** (new): the learner's landlord, about 60. Dark skin, bald, a neat gray beard, reading glasses pushed up on his head, a red plaid flannel shirt. A pickup truck with tools stands behind him.
+- **Place:** the learner's small apartment kitchen in Maple Harbor: a front-loading washing machine, water across the tile floor, the cat on top of the fridge glaring at it all, towels, a phone on the counter. No text anywhere.
+
+| Picture | Shows | Moments |
+|---|---|---|
+| `flood` | The kitchen: water spreading from the washing machine across the tile, the cat on the fridge with an evil eye, a phone on the counter | the start, l_news, l_okay |
+| `lizzie` | A hand holding the phone (only the hand); on its screen, Lizzie laughing in a café doorway | l_brunch, l_need, l_come, l_bye |
+| `calling` | The phone on the wet counter, its screen showing a ringing icon and a simple sound wave (no text) | vm_msg (the voicemail) |
+| `grant` | Mr. Grant on the phone beside his pickup, glasses on, listening seriously | g_who, g_what, g_since, g_hurt, g_down, g_water, valve, g_request |
+| `plumber` | Mr. Grant grinning, already climbing into his truck, the phone at his ear ("Gonna be there in ten!") | g_offer, sure_tomorrow, g_time, g_close, the goodbye |
+| `done` | Lizzie at the apartment door with a mop and two coffees, laughing; the wet floor behind (shown when she turns up, and at the end) | l_door, and the end |
+
+```json
+{
+  "npc": "Lizzie and Mr. Grant (phone)",
+  "images": ["flood", "lizzie", "calling", "grant", "plumber", "done"],
+  "start": "flood",
+  "done": "done",
+  "phases": {
+    "l_news": "flood", "l_okay": "flood",
+    "l_brunch": "lizzie", "l_need": "lizzie", "l_come": "lizzie", "l_bye": "lizzie",
+    "vm_msg": "calling",
+    "g_who": "grant", "g_what": "grant", "g_since": "grant", "g_hurt": "grant", "g_down": "grant", "g_water": "grant", "valve": "grant", "g_request": "grant",
+    "g_offer": "plumber", "sure_tomorrow": "plumber", "g_time": "plumber", "g_close": "plumber", "closing": "plumber",
+    "l_door": "done"
+  },
+  "focus": [34, 32]
 }
 ```
 

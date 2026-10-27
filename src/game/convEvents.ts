@@ -22,6 +22,9 @@ export function showConversationEvent(name: string, data: any) {
     // the kitchen (P28): someone walks over, someone tastes in silence
     case "enter": if (data?.npc) st.toast({ kind: "info", title: `${who(data.npc)} prieina`, ms: 1800 }); break;
     case "taste": st.toast({ kind: "info", title: data?.by === "player" ? "🥄 Ragauji…" : `🥄 ${who(data?.by) || "Jis"} ragauja…`, ms: 1800 }); break;
+    // the performance review (P28b): the plant falls as it starts; the laptop shows a colleague's review by mistake
+    case "plant": if (data?.fall) audio.sfx("door"); break;
+    case "screen": if (data?.tab === "ben") st.toast({ kind: "info", title: "💻 Ekrane – kolegos Beno vertinimas", ms: 3500 }); break;
     // how it ended, in a sentence (P24, P26)
     case "outro": if (data?.lt) st.toast({ kind: "info", title: String(data.lt), ms: 7000 }); break;
   }
