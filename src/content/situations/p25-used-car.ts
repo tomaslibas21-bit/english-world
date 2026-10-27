@@ -41,9 +41,10 @@
 // back!", "Let's shake on it.", "Oh, sorry, that's my phone.").
 
 import type { Ctx, Handler, Segment, SituationDef, Suggestion, Tip } from "../types";
-import type { SlotFn, SlotResult } from "../../convo/grammar";
+import { anyWords, type SlotFn, type SlotResult } from "../../convo/grammar";
 import { t } from "../dsl";
-import { readInt } from "../../convo/slots";
+import { nameSlot, readInt } from "../../convo/slots";
+import KNOWN_WORDS from "../../generated/known-words.json";
 import { numberWords } from "../../convo/compose";
 
 // ---------------------------------------------------------------------------
@@ -61,12 +62,19 @@ const F_CAR_IT = "“it” = the car: mašina is feminine, so ji/ją.";
 
 // ---------------------------------------------------------------------------
 // Car prices: "7000", "$7,000", "7 000", "7k", "7.5k", "seven thousand five hundred", "seventy-five
-// hundred", "seven grand", and the car-price shorthand of the song: a bare "seven" = $7,000, "seven and
-// a half" / "seven five" = $7,500, "eighty-two fifty" = $8,250. Value in dollars, rounded to $50;
-// $500–$20,000 only.
+// hundred", "seven grand", "seven and a half thousand", "8 thousand 500", the Lithuanian decimal comma
+// "7,5" (= $7,500), and the car-price shorthand of the song: a bare "seven" = $7,000, "seven and a half" /
+// "seven five" = $7,500, "eighty-two fifty" = $8,250. Value in dollars, rounded to $50; $500–$20,000 only.
+// A bare small number never reads as a price before a noun ("I have two questions", "one more thing").
 
 const DIGIT_WORD: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-const usdSlot: SlotFn = (tokens, pos) => {
+const THOUSAND = new Set(["thousand", "grand", "k"]);
+/** Words after a bare "two" that make it a count of things, not $2,000. */
+const COUNT_NOUN = new Set(("more other of question thing minute second hour day week month year time kid child person people " +
+  "door seat owner mile gallon problem").split(" "));
+const PLURAL_OK = new Set(["dollars", "bucks", "thanks", "is", "was", "this", "its", "yes", "tops", "plus", "us", "guess", "unless"]);
+const countsThings = (w: string | undefined) => !!w && (COUNT_NOUN.has(w) || (/^[a-z]{3,}s$/.test(w) && !PLURAL_OK.has(w)));
+function usdReadings(tokens: string[], pos: number, strict: boolean): SlotResult[] {
   const out: SlotResult[] = [];
   const push = (end: number, v: number, cost = 0) => {
     const r = Math.round(v / 50) * 50;
@@ -77,7 +85,10 @@ const usdSlot: SlotFn = (tokens, pos) => {
   let m = t0.match(/^(\d{1,2}(?:\.\d{1,3})?)k$/);
   if (m) push(pos + 1, parseFloat(m[1]) * 1000);
   m = t0.match(/^(\d{1,2})\.(\d{1,3})$/);
-  if (m) push(pos + 1, parseFloat(t0) * 1000, 0.1); // "7.5" = $7,500; "7.000" (a European thousands dot)
+  if (m) {
+    push(pos + 1, parseFloat(t0) * 1000, 0.1); // "7.5" = $7,500; "7.000" (a European thousands dot)
+    if (THOUSAND.has(tokens[pos + 1])) push(pos + 2, parseFloat(t0) * 1000); // "7.5 thousand"
+  }
   for (const r of readInt(tokens, pos, false)) {
     const v = r.value, i = r.end;
     // "seven thousand five" = $7,500 (not $7,005)
@@ -87,24 +98,61 @@ const usdSlot: SlotFn = (tokens, pos) => {
     if (v >= 50 && v <= 99 && r.words && tokens[i] === "fifty") push(i + 1, v * 100 + 50);
     if (v < 1 || v > 20) continue;
     const nx = tokens[i];
-    if (nx === "thousand" || nx === "grand" || nx === "k") {
+    const half = (k: number) => (tokens[k] === "and" && tokens[k + 1] === "a" && tokens[k + 2] === "half" ? k + 3 : tokens[k] === "and" && tokens[k + 1] === "half" ? k + 2 : 0);
+    if (THOUSAND.has(nx)) {
       push(i + 1, v * 1000);
-      if (tokens[i + 1] === "and" && tokens[i + 2] === "a" && tokens[i + 3] === "half") push(i + 4, v * 1000 + 500);
+      if (half(i + 1)) push(half(i + 1), v * 1000 + 500);
+      // "8 thousand 500", "eight thousand and five hundred"
+      const j = tokens[i + 1] === "and" ? i + 2 : i + 1;
+      for (const r2 of readInt(tokens, j, false)) if (r2.value >= 100 && r2.value <= 999) push(r2.end, v * 1000 + r2.value);
       continue;
     }
     if (!r.words && /^\d{3}$/.test(nx ?? "")) { push(i + 1, v * 1000 + parseInt(nx, 10)); continue; } // "7 500"
+    // "7,5" / "7,75" (a Lithuanian decimal comma: the tokens "7" "5") = $7,500 / $7,750
+    if (!r.words && /^\d{1,2}$/.test(nx ?? "")) {
+      const end = THOUSAND.has(tokens[i + 1]) ? i + 2 : i + 1;
+      push(end, v * 1000 + (nx.length === 1 ? parseInt(nx, 10) * 100 : parseInt(nx, 10) * 10), 0.1);
+    }
+    // "seven and a half thousand" = $7,500
+    const h = half(i);
+    if (h && THOUSAND.has(tokens[h])) { push(h + 1, v * 1000 + 500); continue; }
+    // a bare small number: never before a noun ("two questions"), never where an explicit amount is needed
+    if (strict || countsThings(nx)) continue;
     push(i, v * 1000, 0.2); // "seven" = $7,000
-    if (nx === "and" && tokens[i + 1] === "a" && tokens[i + 2] === "half") push(i + 3, v * 1000 + 500);
-    if (nx === "and" && tokens[i + 1] === "half") push(i + 2, v * 1000 + 500, 0.1);
+    if (h) push(h, v * 1000 + 500, nx === "and" && tokens[i + 1] === "half" ? 0.1 : 0);
     if (nx === "point" && DIGIT_WORD[tokens[i + 1]] !== undefined) push(i + 2, v * 1000 + DIGIT_WORD[tokens[i + 1]] * 100);
     if (r.words && DIGIT_WORD[nx] !== undefined) {
-      const h = v * 1000 + DIGIT_WORD[nx] * 100; // "seven five" = $7,500
-      push(i + 1, h, 0.1);
-      if (tokens[i + 2] === "fifty") push(i + 3, h + 50, 0.1); // "eight two fifty" = $8,250
+      const hh = v * 1000 + DIGIT_WORD[nx] * 100; // "seven five" = $7,500
+      push(i + 1, hh, 0.1);
+      if (tokens[i + 2] === "fifty") push(i + 3, hh + 50, 0.1); // "eight two fifty" = $8,250
     }
   }
   return out;
-};
+}
+const usdSlot: SlotFn = (tokens, pos) => usdReadings(tokens, pos, false);
+/** An explicit amount ("seven thousand", "7000", "seven grand"): after "I have …", a bare "two" is a count. */
+const usdStrictSlot: SlotFn = (tokens, pos) => usdReadings(tokens, pos, true);
+
+// "I'm Tomas." / "It's Tomas.": the player's registered name, or one or two words that can't be ordinary
+// English ("It's very clean.", "I'm retired.", "I'm from Lithuania." are small talk, not names).
+const COMMON_WORDS = new Set<string>([...(KNOWN_WORDS as string[]), ...("red blue green white black gray grey silver pink new old fine okay ok good " +
+  "great nice cool hot cold warm wet dry big small cheap clean dirty here there sure very so really just also too back late early ready " +
+  "sorry glad sad mad tired busy free fun from in at on not a an the lovely pretty quite all only still bit little lot such what").split(" ")]);
+const NOT_A_NAME_END = /^[a-z]{3,}(ed|ing|ly|ous|ful|ive|able|ible|ish|less|est|ness)$/;
+const playerNameSlot: SlotFn = (tokens, pos, prefix) => nameSlot(tokens, pos, prefix).filter((r) => {
+  if (r.tags?.includes("known_name")) return true;
+  const parts = tokens.slice(pos, r.end);
+  return parts.length <= 2 && parts.every((w) => !COMMON_WORDS.has(w) && !NOT_A_NAME_END.test(w));
+});
+
+// "Does it have cruise control?" / "What about the heater?": something about the car Maggie has no answer
+// for. Never the price, a discount, cash, a number or the test drive (those have their own answers).
+const NOT_A_THING = new Set(("price prices cost discount discounts deal offer offers cash money payment pay card transfer check cheque " +
+  "test drive ride spin dollars bucks thousand grand half hundred it her she that this me you we i a an the one two three four five six " +
+  "seven eight nine ten eleven twelve twenty thirty forty fifty sixty seventy eighty ninety").split(" "));
+const anyThing = anyWords(4);
+const qThingSlot: SlotFn = (tokens, pos, prefix) =>
+  anyThing(tokens, pos, prefix).filter((r) => r.partial || !tokens.slice(pos, r.end).some((w) => NOT_A_THING.has(w) || /^\d/.test(w)));
 
 /** A price as a value: "$8,500" / "8 500 dolerių" / "eight and a half". Prices are multiples of $50 from
  *  $500 up, so "dolerių" (genitive plural) is always the right Lithuanian case. */
@@ -153,8 +201,28 @@ const MOVE: Record<string, number> = {
   make_offer: 10, make_offer_ctx: 10, halfway: 9, accept_deal: 8, accept_ctx: 8, sleep_on_it: 8, walk_away: 8, walk_rude: 8,
   ask_best: 6, ask_better: 6, ask_flex: 5, too_high: 5, lets_talk: 4, ask_price: 4,
 };
+/** Pieces that push back: with one of them in the same breath, her own price (or more) said back is an echo. */
+const PUSHBACK = new Set(["too_high", "walk_away", "walk_rude", "rude_car", "use_flaw", "sleep_on_it", "ask_flex", "ask_better", "ask_best",
+  "halfway", "cash_lever", "no_cash", "ask_price", "lets_talk"]);
+const isOffer = (s: Segment) => s.intent === "make_offer" || s.intent === "make_offer_ctx";
+/** "Nine thousand? I can't." / "8,500 is still too high for me.": her price (or more) with a no, a push or a
+ *  question in the same turn repeats her number; it is never an offer (an offer at her price buys the car). */
+const ECHOES = new WeakMap<Ctx, Set<Segment>>();
+function echoOffer(c: Ctx, s: Segment): boolean {
+  // decided once per turn, against her price before this turn's handlers (cash or a fault) lower it
+  let e = ECHOES.get(c);
+  if (!e) {
+    const segs = turnSegments(c);
+    const push = (c as any).conv?.out?.parse?.yn === "no" || segs.some((x) => PUSHBACK.has(x.intent));
+    e = new Set(push ? segs.filter((x) => isOffer(x) && typeof x.slots.usd === "number" && x.slots.usd >= c.s.cur) : []);
+    ECHOES.set(c, e);
+  }
+  return e.has(s);
+}
+/** The learner's real offers this turn (echoes left out). */
+const turnOffers = (c: Ctx) => turnSegments(c).filter((s) => isOffer(s) && !echoOffer(c, s));
 function mainMove(c: Ctx, intent: string): boolean {
-  const best = Math.max(0, ...turnSegments(c).map((s) => MOVE[s.intent] ?? 0));
+  const best = Math.max(0, ...turnSegments(c).map((s) => (echoOffer(c, s) ? 0 : MOVE[s.intent] ?? 0)));
   if ((MOVE[intent] ?? 0) < best) return false;
   return once(c, "move");
 }
@@ -426,11 +494,22 @@ const AC_WORDS = /\b(ac|a c|air ?con\w*)\b/i;
 /** "But the AC doesn't work, so…": $250 off every price, once (only with a known fault). */
 function useFlaw(c: Ctx) {
   if (c.s.outcome) { c.say("ack"); return; }
+  // (decided before her price changes: an offer in the same sentence answers)
+  const withOffer = turnOffers(c).length > 0;
   const ac = AC_WORDS.test(c.heard);
+  const topic = ac ? "ac" : /\b(brakes?|steering)\b/i.test(c.heard) ? "brakes" : "any";
   if (ac && flawPending(c)) { ensureArrived(c); fireFlaw(c); c.say("a_problems_flaw"); if (c.s.talked) pendNow(c); return; }
-  if (!c.s.flawKnown && !c.s.complained) { c.say(ac ? "ac_fine" : "no_fault"); if (c.s.talked) pendNow(c); return; }
-  if (c.s.flawUsed) { c.say("already_off"); if (c.s.talked) pendNow(c); return; }
+  // the AC works (no AC fault this visit), whatever else the drive showed
+  if (ac && !c.s.flawKnown) { c.s.acOk = true; c.say("ac_fine"); if (c.s.talked) pendNow(c); return; }
+  if (!c.s.flawKnown && !c.s.complained) { c.say("no_fault"); if (c.s.talked) pendNow(c); return; }
+  if (c.s.flawUsed) {
+    // the $250 was for the other fault (the brakes, then the AC): one discount for repairs, that's it
+    const other = topic !== "any" && c.s.flawTopic !== "any" && topic !== c.s.flawTopic;
+    c.s.flawAgain = other ? "limit" : "same";
+    c.say(other ? "already_off_limit" : "already_off"); if (c.s.talked) pendNow(c); return;
+  }
   if (!once(c, "flaw")) return;
+  c.s.flawTopic = topic;
   startTalk(c);
   c.s.flawUsed = true;
   c.s.off = 250;
@@ -438,7 +517,7 @@ function useFlaw(c: Ctx) {
   c.s.cur -= 250;
   c.say("flaw_point");
   // with an offer in the same sentence, the offer answers ("…so would you take seven?")
-  if (turnSegments(c).some((s) => s.intent === "make_offer" || s.intent === "make_offer_ctx")) return;
+  if (withOffer) return;
   c.say("new_price", P(c));
   pendNow(c);
 }
@@ -520,6 +599,11 @@ const H: Record<string, Handler> = {
     if (c.s.named) return;
     c.s.named = true;
     c.say("nice_name");
+    if (arrive(c)) c.say("maggie_name");
+  },
+  weather(c) {
+    if (!once(c, "weather")) return;
+    c.say("weather_react");
     if (arrive(c)) c.say("maggie_name");
   },
   compliment_car(c) {
@@ -607,10 +691,12 @@ const H: Record<string, Handler> = {
   ask_flex(c, _slots, seg) { flex(c, seg, "ask_flex"); },
   too_high(c, _slots, seg) { flex(c, seg, "too_high"); },
   make_offer(c, slots, seg) {
+    // "Nine thousand? I can't.": her number said back with a no; the other piece answers
+    if (echoOffer(c, seg)) return;
     if (!mainMove(c, seg.intent)) return;
     if (c.s.outcome) { afterDeal(c); return; }
     // "Eight and a half? Hmm. How about eight?": the last number counts
-    const offers = turnSegments(c).filter((s) => (s.intent === "make_offer" || s.intent === "make_offer_ctx") && typeof s.slots.usd === "number");
+    const offers = turnOffers(c).filter((s) => typeof s.slots.usd === "number");
     const last = offers.at(-1) ?? seg;
     const q = (last.slots.usd ?? slots.usd) as number;
     // "Eight and a half?" (her own price, or more, as a question): an echo, not a yes
@@ -661,7 +747,7 @@ const H: Record<string, Handler> = {
     if (c.s.outcome === "deal") { H.pay_cash(c, {}, { intent: "pay_cash", slots: {}, tags: [] }); return; }
     if (c.s.outcome || !once(c, "cash")) return;
     // "I can pay cash. Would you take seven?": the offer takes the cash into account
-    if (turnSegments(c).some((s) => s.intent === "make_offer" || s.intent === "make_offer_ctx")) { c.s.cash = true; return; }
+    if (turnOffers(c).length) { c.s.cash = true; return; }
     cashLever(c, false);
   },
   use_flaw(c) { useFlaw(c); },
@@ -727,7 +813,8 @@ const H: Record<string, Handler> = {
   },
   pay_check(c) {
     if (c.s.outcome !== "deal") { c.say("pay_later"); return; }
-    paid(c, "pay_check_r", "check");
+    // a personal check ("Can I write you a check?"): she'd rather have a cashier's check
+    paid(c, /cashier|certified|bank/i.test(c.heard) ? "pay_check_r" : "pay_check_personal", "check");
   },
   no_cash(c) {
     c.s.cash = false;
@@ -831,6 +918,8 @@ export const usedCar: SituationDef = {
       the_car: "(the | your | this) [red | cherry red | old | beautiful | little] (car | convertible | cabrio | cabriolet)",
       ad: "(ad | listing | advertisement | advert | post | sign | ad online | online ad)",
       money: "[about | around | maybe | like | say | roughly | just | only] {usd} [dollars | bucks] [in cash #cash | cash #cash]",
+      // an explicit amount: "I have two questions" is no offer
+      bigmoney: "[about | around | maybe | like | say | roughly | just | only] {usd:usdx} [dollars | bucks] [in cash #cash | cash #cash]",
       num: "{usd} [dollars | bucks]",
       flex: "(flexibility | wiggle room | room for negotiation | room to negotiate | room to move | room)",
       ac: "(air conditioning | air conditioner | ac | a c | air con | aircon)",
@@ -840,7 +929,7 @@ export const usedCar: SituationDef = {
       ],
       bit: "(a bit | a little | a little bit | slightly | kind of | a tad)",
     },
-    slots: { usd: { fn: usdSlot } },
+    slots: { usd: { fn: usdSlot }, usdx: { fn: usdStrictSlot }, pname: { fn: playerNameSlot }, qthing: { fn: qThingSlot } },
   },
 
   intents: {
@@ -869,7 +958,8 @@ export const usedCar: SituationDef = {
     my_name: { patterns: ["my name is {name} #h:my_name"] },
     // "Hello, Maggie!": her name, not the learner's
     vocative: { patterns: ["maggie [holt]", "(missus | miss) holt"] },
-    im_name_ctx: { patterns: ["i am {name} #h:im_name", "it is {name}", "[you can] call me {name}", "i am {name} by the way", "by the way i am {name}"] },
+    // (pname: the player's name, never "It's very clean." or "I'm retired.")
+    im_name_ctx: { patterns: ["i am {name:pname} #h:im_name", "it is {name:pname}", "[you can] call me {name}", "i am {name:pname} by the way", "by the way i am {name:pname}"] },
     compliment_car: { patterns: [
       "the seats look great #h:seats",
       "the (seats | color | colour | paint | interior | wheels | top | car | convertible) (look | looks) (great | good | nice | amazing | new | perfect | beautiful | fantastic | wonderful | lovely)",
@@ -882,6 +972,12 @@ export const usedCar: SituationDef = {
       "(she | it) looks (great | good | nice | amazing | new | like new | beautiful) [for (her | its) age]",
       "(it | she) is in (great | good | very good | excellent | perfect) (shape | condition)",
       "the color is (amazing | beautiful | great | gorgeous)", "the (seats | car | ride) (is | are) [very | really | so] comfortable", "(wow | oh wow) [what a beauty | she is beautiful | nice car]", "cherry red [is my favorite color]",
+      "(she | it | the car | the interior) (is | looks) [very | really | so] (clean | shiny | spotless | red | tidy) [inside]", "(she | it) is so red",
+    ] },
+    // "It's lovely weather.": small talk about the day (never a compliment to the car, never a name)
+    weather: { patterns: [
+      "(it is | what) [a] (lovely | beautiful | nice | great | gorgeous | perfect | sunny | warm) (day | weather | afternoon)", "(lovely | nice | beautiful | great) (day | weather)",
+      "the weather is (lovely | beautiful | nice | great | perfect | so nice)", "(it is | what) [a] (hot | warm | sunny) [day] [today]",
     ] },
 
     // --- questions about the car -------------------------------------------------------------
@@ -967,9 +1063,10 @@ export const usedCar: SituationDef = {
     ] },
     q_seats: { patterns: ["are the seats original", "are (they | these) the original seats", "(what about | and) the seats", "are the seats [real] leather",
       "(can | could | may) i (see | sit) inside", "(can | could | may) i sit in (it | her)"] },
+    // (qthing: never the price, a discount, cash, a number or the test drive: those have their own answers)
     q_unknown: { patterns: [
-      "(does (it | she) have | is there | what about | how about | and) [a | an | the] {w:any}", "does the {w:any} work", "is the {w:any} (okay | good | working | original | new)",
-      "how is the {w:any}",
+      "(does (it | she) have | is there | what about | how about | and) [a | an | the] {w:qthing}", "does the {w:qthing} work",
+      "is the {w:qthing} (okay | good | working | original | new)", "how is the {w:qthing}",
     ] },
     no_more_q: { patterns: [
       "(that is | i think that is) (all | it | everything) [for now]", "[no] (nothing | no more questions) [else]", "i have no more questions", "no questions",
@@ -986,7 +1083,7 @@ export const usedCar: SituationDef = {
       "let us (go for | take | do) a (test drive | drive | spin | ride)", "(can | could) we go for a (test drive | drive | ride | spin)",
       "(can | could) i try @car [out] [first]", "(can | could) i see how (it | she) drives", "[yes] a test drive [would be great]", "test drive",
       "(sure | yes) [i would love to] (take | drive) (her | it) (around | round) the block", "i will take (her | it) (around | round) the block",
-      "let us go [for a (spin | drive | ride)]",
+      "let us go [for a (spin | drive | ride)]", "(how about | what about | and) a (test drive | spin | drive | ride | quick drive) [first]",
     ] },
     decline_drive: { patterns: [
       "[no] i trust you", "[no] (that is | it is) not necessary", "[no] i do not need (a test drive | to drive (it | her) | to test (it | her))",
@@ -1029,6 +1126,7 @@ export const usedCar: SituationDef = {
       "how much (do you want | are you asking) [for @car]", "how much is @car", "what is (the | your) [asking] price [for @car]",
       "what (are you asking | do you want) [for @car]", "how much [is it]", "how much (does | did) (it | she) cost", "is (it | the price) still (nine thousand | @num)",
       "the @ad said @num", "how much money (do you want | are you asking)", "what is your price now", "(and | so) how much",
+      "(and | so | how about) the price", "and (the | your) asking price [for @car]", "and how much (is it | do you want | are you asking)",
     ] },
     ask_flex: { patterns: [
       "is there any @flex (on | in | with) the price [friend | my friend] #h:flex", "is there any @flex [on (it | that)]",
@@ -1040,6 +1138,7 @@ export const usedCar: SituationDef = {
       "is there any room [on the price]", "how flexible are you [on the price]", "(do | would | will) you (take | accept) less", "can we make a deal",
       "(do you | would you) (take | accept) offers",
       "(can | could) you make (a | me a | some) discount #tip:make_discount", "make me a discount #tip:make_discount", "(can | could) you do a discount #tip:make_discount",
+      "(what about | how about | and) [a | some] [small | little] discount", "(what about | how about) a (better | lower) price",
       "give me a (discount | better price | good price) #rude", "(lower | drop) the price #rude",
     ] },
     too_high: { patterns: [
@@ -1055,6 +1154,9 @@ export const usedCar: SituationDef = {
       "(that is | it is) (too | so | really | very) expensive #tip:blunt_expensive", "(that is | it is) (too much | way too much) [money] [for me] #tip:blunt_expensive",
       "too (expensive | much) #tip:blunt_expensive", "(so | very) expensive #tip:blunt_expensive", "is too much money [for me] #tip:blunt_expensive",
       "(it | that) is (expensive | overpriced) #tip:blunt_expensive",
+      // her number said back as the subject: "Nine thousand is too much for me.", "8,500 is still too high." (no offer)
+      "(nine thousand | @num) is still (too | @bit) (much | high | steep | expensive) [for me]", "(nine thousand | @num) is [@bit] (high | steep | a lot | much) [for me]",
+      "(nine thousand | @num) is (too much | way too much | too expensive | too high) [money] [for me] #tip:blunt_expensive",
     ] },
     make_offer: { patterns: [
       "i was thinking [more] along the lines of @money #h:along_lines", "i was thinking [more] (of | about | around) @money", "i was thinking @money",
@@ -1063,7 +1165,7 @@ export const usedCar: SituationDef = {
       "i (want | would like) to (pay | offer | give) [you] @money", "for @money i take (it | her) #tip:ill_take",
       "make it @money [and i [will] take (it | her) [today | now]]", "(can | could) you make [it] @money",
       "i (could | can only | could only) (offer | pay | do | go to | go up to | spend | afford) [you] @money", "i (would | will) (offer | pay | give) [you] @money [for @car]",
-      "my (offer | best offer | budget | limit | max | maximum | final offer | last offer) is @money", "i (have | can spend | can afford | have got) [only] @money",
+      "my (offer | best offer | budget | limit | max | maximum | final offer | last offer) is @money", "i (have | have got) [only] @bigmoney", "i (can spend | can afford) [only] @money",
       "let us (say | do | make it) @money", "@money [and] (that is | it is) my (final | best | last) offer", "@money and that is it",
       "@money (would be | is) (fair | good | okay | fine | great | better | reasonable) [for me | for her]", "(is | would) @money (work | be okay | be possible | do | be enough) [for you]",
       "(does | would) @money work for you", "for @money i (will | would) take @car", "@money and i (will | can) take @car [today | now | right now]",
@@ -1072,6 +1174,11 @@ export const usedCar: SituationDef = {
       "i will take (it | her) for @money", "i would (buy | take) (it | her) for @money", "i (can | could) buy (it | her) for @money", "@money for (it | her | the car)",
       "@money and (it is | we have | you have) a deal", "(can | could | would | will) you (do | sell) (it | her) for @money", "@money is my (limit | max | maximum | budget | best offer | final offer | last offer)",
       "(can | could) we (go | do | make it | settle) (to | at | on | for) @money", "(can | could) we (do | say) @money", "i will do @money", "@money it is",
+      // a ceiling is an offer: "I don't want to pay more than seven." = seven
+      "i (do not want to | can not | will not | would not) (pay | spend | go) (more | higher) than @money [for @car]",
+      "i (can not | will not) go (higher | above | over | past) @money", "(not | no) more than @money", "[i can pay | i can go] up to @money [for @car]",
+      "@money is the (most | max | maximum | highest) i (can | could | am willing to | want to) (pay | do | spend | afford | go)",
+      "the (most | max | maximum | highest) i (can | could | am willing to) (pay | do | spend | afford | go) is @money",
       "i give you @money [for @car] #tip:i_give_you", "i (pay | buy) [it | her] [for] @money #tip:i_give_you", "i offer [you] @money #tip:i_give_you",
     ] },
     // a bare number ("Seven.", "$7,500?") only answers Maggie's price questions
@@ -1100,7 +1207,7 @@ export const usedCar: SituationDef = {
       "i can pay [in] cash [today | right now | if that helps] #h:cash_offer", "i (will | would) pay [in] cash [today]", "(what if | how about if) i (pay | paid) [in] cash",
       "[in] cash [today | right now] [if that helps]", "(does | would) cash help", "i have (cash | the cash | the money) [with me | right here | here | today]",
       "i can pay [you] (today | right now | right away)", "(i will | i can) give you cash [today | right now]", "(how about | what if) i pay [in] cash",
-      "(would | will) you take cash",
+      "(would | will) you take cash", "(how about | what about | and) [in] cash [today | right now]", "(how about | what about) if i pay [in] cash",
     ] },
     use_flaw: { patterns: [
       "[but] the @ac does not work [so] #h:ac_point", "[but] the @ac does not work so [can you | could you] (lower | come down on) the price",
@@ -1143,7 +1250,7 @@ export const usedCar: SituationDef = {
     ] },
     walk_rude: { patterns: [
       "forget (it | about it) #tip:blunt_no", "no way #tip:blunt_no", "no deal #tip:blunt_no", "never mind #tip:blunt_no", "(you are | are you) crazy #tip:blunt_no",
-      "(that is | it is) (crazy | ridiculous | insane | robbery) #tip:blunt_no", "(that is | it is) (a | a total) (joke | rip off | ripoff | scam) #tip:blunt_no",
+      "(that is | it is) (crazy | ridiculous | insane | robbery) #tip:blunt_no", "(nine thousand | @num) is (crazy | ridiculous | insane | robbery | a joke) #tip:blunt_no", "(that is | it is) (a | a total) (joke | rip off | ripoff | scam) #tip:blunt_no",
       "i am leaving #tip:blunt_no", "(bye | goodbye) then #tip:blunt_no", "(you are | are you) (joking | kidding) [me] #tip:blunt_no",
       "keep (it | your car) #tip:blunt_no", "(what | seriously) no way #tip:blunt_no",
     ] },
@@ -1164,11 +1271,14 @@ export const usedCar: SituationDef = {
       "i (will | can) (transfer | wire | send) [you] the money", "by (bank | wire) transfer", "(zelle | venmo | paypal)", "(can | could) i (use | pay with) (zelle | venmo | paypal)",
       "i will do a (bank | wire) transfer", "i (can | will) (make | do) [a] [bank | wire] transfer", "(with | via) [a] [bank | wire] transfer", "(can | could) i (transfer | wire) (it | the money)",
       "(can | could) i (send | pay | transfer) [you] the money (by | via | with) [a] [bank | wire] transfer",
+      "i (will | would like to | am going to | want to | can) pay (by | with | via) [a] (bank transfer | wire transfer | transfer | wire | zelle | venmo | paypal)",
+      "(by | via) [a] transfer [is (fine | okay)]",
     ] },
     pay_check: { patterns: [
       "is a cashiers check (okay | fine | good) #h:pay_check", "[a | by] (cashiers | certified | bank) check [is (fine | okay)]",
       "(can | could) i pay (with | by) [a] [cashiers | certified | bank] (check | cheque)", "(i will | i can) pay (with | by) [a] [cashiers | bank | certified] check",
-      "(by | with) [a] (check | cheque)",
+      "(by | with) [a] (check | cheque)", "(can | could | may) i (write | give) you a [cashiers | bank | certified] (check | cheque)",
+      "i (will | can) (write | give) you a [cashiers | bank | certified] (check | cheque)",
     ] },
     // "I don't have cash": never the cash lever
     no_cash: { patterns: ["(i | we) do not have [any | enough] cash [with me | on me]", "no cash", "i can not pay (in | with) cash", "i have no cash"] },
@@ -1220,6 +1330,7 @@ export const usedCar: SituationDef = {
         "Radijas veikia, sėdynės originalios, ir ji manęs niekada nenuvylė.",
         { flags: { 8: "“she's” = she has: the perfect is carried by the past tense nenuvylė.", 10: "“let … down” = nenuvylė; the ne- comes from “never” (negative concord).", 12: "“down” (let … down): nenuvylė (under “let”) carries it." } }),
     ],
+    weather_react: [t("Yes! | Perfect | convertible | weather.", "Taip! | Puikus | kabrioleto | oras.", "Taip! Kaip tik oras kabrioletui.")],
     compliment_react: [
       t("Thanks! | I | think | so | too.", "Ačiū! | Aš | manau | taip | irgi.", "Ačiū! Aš irgi taip manau."),
       t("Aw, | thank | you!", "Oi, | dėkoju | jums!", "Oi, ačiū!"),
@@ -1228,7 +1339,7 @@ export const usedCar: SituationDef = {
     // --- questions about the car ----------------------------------------------------------------------
     ask_first: [
       t("Any | questions | about | her?", "Kokių nors | klausimų | apie | ją?", "Turite klausimų apie ją?"),
-      t("So, | what | would | you | like | to know?", "Tai | ką | — | jūs | norėtumėte | žinoti?", "Tai ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
+      t("So, | what | would | you | like | to know?", "Tai, | ką | — | jūs | norėtumėte | žinoti?", "Tai ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } }),
     ],
     ask_what: [t("Sure! | What | would | you | like | to know?", "Žinoma! | Ką | — | jūs | norėtumėte | žinoti?", "Žinoma! Ką norėtumėte sužinoti?", { flags: { 2: F_WOULD } })],
     ask_more: [
@@ -1330,7 +1441,7 @@ export const usedCar: SituationDef = {
       t("Back | already? | Well? | Did | she | steal | your | heart?", "Grįžote | jau? | Na? | Ar | ji | pavogė | jūsų | širdį?", "Jau grįžote? Na? Ar ji pavogė jūsų širdį?",
         { flags: { 3: "Question “Did” = the particle ar; the past tense sits on pavogė." } }),
     ],
-    opinion_again: [t("So, | how | did | she | drive?", "Tai | kaip | — | ji | važiavo?", "Tai kaip ji važiavo?", { flags: { 2: F_WH_DID } })],
+    opinion_again: [t("So, | how | did | she | drive?", "Tai, | kaip | — | ji | važiavo?", "Tai kaip ji važiavo?", { flags: { 2: F_WH_DID } })],
     drive_good_react: [
       t("I | told | you. | She | still | drives | like a dream.", "Aš | sakiau | jums. | Ji | vis dar | važiuoja | puikiai.", "Sakiau gi. Ji vis dar važiuoja puikiai."),
     ],
@@ -1355,7 +1466,7 @@ export const usedCar: SituationDef = {
     flaw_sky: [t("But | it's | a | convertible. | You | have | the | whole | sky!", "Bet | tai yra | — | kabrioletas. | Jūs | turite | — | visą | dangų!", "Bet juk tai kabrioletas – turite visą dangų!")],
     glad_attitude: [t("I | like | your | attitude.", "Man | patinka | jūsų | požiūris.", "Man patinka jūsų požiūris.",
       { flags: { 0: "“I like” = Man patinka: the one who likes is in the dative." } })],
-    flaw_fair: [t("I | know. | Better | you | hear | it | from | me.", "Aš | žinau. | Geriau | jūs | išgirskite | tai | iš | manęs.", "Žinau. Geriau išgirskite tai iš manęs.")],
+    flaw_fair: [t("I | know. | Better | you | hear | it | from | me.", "Aš | žinau. | Geriau | jūs | girdite | tai | iš | manęs.", "Žinau. Geriau jau girdite tai iš manęs.")],
     no_fault: [t("Really? | She | drove | just | fine | this | morning.", "Tikrai? | Ji | važiavo | visai | gerai | šį | rytą.", "Tikrai? Šįryt ji važiavo visai gerai.")],
 
     // --- the price talk --------------------------------------------------------------------------------
@@ -1444,6 +1555,11 @@ export const usedCar: SituationDef = {
       t("I | already | took | $250 | off | for | that.", "Aš | jau | nuleidau | 250 dolerių | — | dėl | to.", "Už tai jau nuleidau 250 dolerių.",
         { say: "I already took two hundred fifty off for that.", flags: { 4: "“took … off”: nuleidau (under “took”) carries it." } }),
     ],
+    // a second fault after the first one's $250 (the brakes, then the AC): the discount for repairs is spent
+    already_off_limit: [
+      t("I | already | took | $250 | off. | That's | my | limit.", "Aš | jau | nuleidau | 250 dolerių | —. | Tai yra | mano | riba.", "Jau nuleidau 250 dolerių. Daugiau nenuleisiu.",
+        { say: "I already took two hundred fifty off. That's my limit.", flags: { 4: "“took … off”: nuleidau (under “took”) carries it." } }),
+    ],
     new_price: [t("So: | {$p}.", "Taigi: | {$p}.", "Taigi – {$p}.")],
     over_pay: [
       t("Hold on, | I | said | {$p}. | I | won't take | a | cent | more.", "Palaukite, | aš | sakiau | {$p}. | Aš | nepaimsiu | — | cento | daugiau.",
@@ -1487,7 +1603,7 @@ export const usedCar: SituationDef = {
       t("If | you | don't make | me | wait.", "Jei | jūs | neversite | manęs | laukti.", "…jei neversite manęs laukti.",
         { flags: { 2: "After “if”, English uses the present for the future; Lithuanian uses the future neversite." } }),
     ],
-    walk_ok: [t("I | understand. | No hard feelings.", "Aš | suprantu. | Nieko asmeniško.", "Suprantu. Nieko asmeniško.")],
+    walk_ok: [t("I | understand. | No hard feelings.", "Aš | suprantu. | Nepykstu.", "Suprantu. Nepykstu.")],
     walk_ok2: [
       t("If | you | change | your | mind, | you | know | where | she | lives.", "Jei | jūs | pakeisite | savo | nuomonę, | jūs | žinote, | kur | ji | gyvena.",
         "Jei persigalvosite – žinote, kur ji gyvena.", { flags: { 2: "After “if”, the English present = the Lithuanian future pakeisite." } }),
@@ -1507,7 +1623,7 @@ export const usedCar: SituationDef = {
     // --- deal, payment, goodbye ----------------------------------------------------------------------------
     shake_on_it: [t("Let's shake | on | it.", "Paspauskime rankas | dėl | to.", "Paspauskim rankas.")],
     ask_pay: [
-      t("So, | how | would | you | like | to pay?", "Tai | kaip | — | jūs | norėtumėte | sumokėti?", "Tai kaip norėtumėte sumokėti?",
+      t("So, | how | would | you | like | to pay?", "Tai, | kaip | — | jūs | norėtumėte | sumokėti?", "Tai kaip norėtumėte sumokėti?",
         { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
     cash_reminder: [t("Cash, | like | you | said?", "Grynaisiais, | kaip | jūs | sakėte?", "Grynaisiais, kaip sakėte?")],
@@ -1520,6 +1636,11 @@ export const usedCar: SituationDef = {
     pay_transfer_r: [
       t("A | bank | transfer | works | too. | I'll text | you | my | details.", "— | Banko | pavedimas | tinka | irgi. | Atsiųsiu žinute | jums | savo | duomenis.",
         "Banko pavedimas irgi tinka. Atsiųsiu jums savo duomenis žinute."),
+    ],
+    // "Can I write you a check?": a personal check for a car? Better a cashier's check
+    pay_check_personal: [
+      t("A | cashier's check | would | be | better. | My | bank | is | on the square.", "— | Banko čekis | — | būtų | geriau. | Mano | bankas | yra | aikštėje.",
+        "Geriau banko čekis. Mano bankas – aikštėje.", { flags: { 2: F_WOULD } }),
     ],
     pay_check_r: [
       t("A | cashier's check | is | fine. | My | bank | is | on the square.", "— | Banko čekis | yra | tinkamas. | Mano | bankas | yra | aikštėje.",
@@ -1575,8 +1696,7 @@ export const usedCar: SituationDef = {
       lt: "Pagirti automobilį",
       items: [
         { id: "seats", s: t("The | seats | look | great.", "— | Sėdynės | atrodo | puikiai.", "Sėdynės atrodo puikiai.") },
-        { id: "beauty", s: t("She's | a | beauty!", "Ji yra | tikra | gražuolė!", "Ji tikra gražuolė!",
-          { flags: { 1: "“a” = tikra (a real …): the praise needs an intensifier in Lithuanian." } }) },
+        { id: "beauty", s: t("She's | a | beauty!", "Ji yra | — | gražuolė!", "Ji tikra gražuolė!") },
       ],
     },
     ask: {
@@ -2014,6 +2134,43 @@ export const usedCar: SituationDef = {
     { say: "Is too much money for me", intent: "too_high", step: "haggle" },
     { say: "I can't do 8,000.", intent: "none" },
     { say: "I won't pay 9,000.", intent: "none" },
+    // review findings: her number said back with a no is no offer (the flips themselves: sims below)
+    { say: "Nine thousand is too much for me.", intent: "too_high", step: "haggle", not: ["make_offer", "make_offer_ctx"] },
+    { say: "8,500 is still too high for me.", intent: "too_high", step: "haggle", not: ["make_offer", "make_offer_ctx"] },
+    { say: "Nine thousand is crazy.", intent: "walk_rude", step: "haggle", not: ["make_offer", "make_offer_ctx"] },
+    // prices: "and a half thousand", "N thousand NNN", the Lithuanian decimal comma
+    { say: "Would you take seven and a half thousand?", intent: "make_offer", step: "haggle", slots: { usd: 7500 }, not: ["q_unknown"] },
+    { say: "Would you take eight and a half thousand?", intent: "make_offer", step: "haggle", slots: { usd: 8500 }, not: ["q_unknown"] },
+    { say: "Would you take 8 thousand 500?", intent: "make_offer", step: "haggle", slots: { usd: 8500 }, not: ["make_offer_ctx"] },
+    { say: "Would you take 7,5?", intent: "make_offer", step: "haggle", slots: { usd: 7500 }, not: ["make_offer_ctx"] },
+    { say: "I can offer 7,75.", intent: "make_offer", step: "haggle", slots: { usd: 7750 } },
+    { say: "Would you take seven point five?", intent: "make_offer", step: "haggle", slots: { usd: 7500 } },
+    // a small number before a noun is a count, not an offer
+    { say: "I have two questions.", intent: "none", step: "look" },
+    { say: "I have one question.", intent: "none", step: "look" },
+    { say: "I have two kids.", intent: "none", step: "look" },
+    { say: "I have seven thousand.", intent: "make_offer", step: "haggle", slots: { usd: 7000 } },
+    // small talk is not a name
+    { say: "It's very clean.", intent: "compliment_car", step: "look", not: ["im_name_ctx"] },
+    { say: "It's red!", intent: "compliment_car", step: "look", not: ["im_name_ctx"] },
+    { say: "I'm retired.", intent: "none", step: "look" },
+    { say: "I'm nervous.", intent: "none", step: "arrive" },
+    { say: "I'm from Lithuania.", intent: "none", step: "look" },
+    { say: "It's lovely weather.", intent: "weather", step: "look", not: ["im_name_ctx", "compliment_car"] },
+    { say: "It's Tomas.", intent: "im_name_ctx", step: "arrive", slots: { name: "Tomas" } },
+    // the catch-all question never takes the price, a discount, cash or the test drive
+    { say: "And the price?", intent: "ask_price", step: "haggle", not: ["q_unknown"] },
+    { say: "What about a discount?", intent: "ask_flex", step: "haggle", not: ["q_unknown"] },
+    { say: "How about cash?", intent: "cash_lever", step: "haggle", not: ["q_unknown"] },
+    { say: "How about cash?", intent: "cash_lever", step: "pay", not: ["q_unknown"] },
+    { say: "How about a test drive?", intent: "test_drive", step: "look", not: ["q_unknown"] },
+    { say: "Does it have a spare tire?", intent: "q_unknown", step: "look" },
+    // ceilings and payment words
+    { say: "I don't want to pay more than seven.", intent: "make_offer", step: "haggle", slots: { usd: 7000 } },
+    { say: "I can't go higher than seven.", intent: "make_offer", step: "haggle", slots: { usd: 7000 } },
+    { say: "8000 is the most I can pay.", intent: "make_offer", step: "haggle", slots: { usd: 8000 } },
+    { say: "I'll pay by transfer.", intent: "pay_transfer", step: "pay" },
+    { say: "Can I write you a check?", intent: "pay_check", step: "pay" },
   ],
 
   // Maggie's twist is pinned where the script depends on it (setup); the throw-in and the line variants
@@ -2068,6 +2225,23 @@ export const usedCar: SituationDef = {
     { name: "an offer before the drive", turns: ["Hi! I'm here about the car.", "Why are you selling it?", "Would you take seven thousand?", "Is that your best offer?",
       "That works for me.", "Let's shake on it.", "I'll pay cash.", "Thanks, bye!"],
       expect: { complete: true, state: { outcome: "deal", dealPrice: 8000 } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    // review findings: her price said back with a no never buys the car
+    { name: "an echo with a no: her last chance", turns: ["Hi! I'm here about the car.", "No questions.", "No, thanks.", "Okay… let's talk.", "Nine thousand? I can't.",
+      "That works for me.", "Let's shake on it.", "I'll pay cash.", "Thanks, bye!"],
+      expect: { complete: true, state: { outcome: "deal", dealPrice: 7500, lastChance: true } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    { name: "echoes with a push, then a ceiling", turns: ["Hi! I'm here about the car.", "No questions.", "No, thanks.", "Okay… let's talk.",
+      "Nine thousand? Can you do any better?", "Eight and a half? That's still too much.", "I don't want to pay more than seven.", "Eight thousand? Hmm, that's a lot.",
+      "That works for me.", "Let's shake on it.", "Can I write you a check?", "Thanks, bye!"],
+      expect: { complete: true, state: { outcome: "deal", dealPrice: 7750, payMethod: "check" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    // the brakes' $250, then the AC: it works (no AC fault this visit); with the AC fault, the discount is spent
+    { name: "the brakes, then the AC that works", turns: ["Hi! I'm here about the car.", "No, that's all.", "Can I take it around the block?", "The brakes feel a bit soft.",
+      "Okay… let's talk.", "But the brakes need some work, so…", "But the AC doesn't work.", "Would you take seven and a half thousand?", "That works for me.",
+      "Let's shake on it.", "I'll pay by transfer.", "Thanks, bye!"],
+      expect: { complete: true, state: { outcome: "deal", flawUsed: true, acOk: true, dealPrice: 8250, payMethod: "transfer" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    { name: "the brakes, then the AC fault (twist): one discount", turns: ["Hi! I'm here about the car.", "No, that's all.", "Can I take it around the block?",
+      "The brakes feel a bit soft.", "Oh no.", "Okay… let's talk.", "But the brakes need some work, so…", "But the AC doesn't work.", "And the price?", "How about cash?",
+      "Would you consider 8 thousand?", "Deal!", "Let's shake on it.", "Cash.", "Thanks, bye!"],
+      expect: { complete: true, state: { outcome: "deal", flawAgain: "limit", cashUsed: true, dealPrice: 8250 } }, auto: AUTO, setup: (s) => { s.twist = "ac_flaw"; } },
     { name: "leaving before the price: not done", turns: ["Hi! I'm here about the car.", "How old is it?", "Thanks, bye!"],
       expect: { complete: false }, auto: AUTO, setup: (s) => { s.twist = null; } },
   ],
