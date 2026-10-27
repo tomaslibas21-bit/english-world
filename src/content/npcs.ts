@@ -16,6 +16,10 @@ export interface Look {
   bottom: string;
   shoes?: string;
   skirt?: boolean;
+  /** Shorts instead of trousers (bare knees and shins). */
+  shorts?: boolean;
+  /** Flip-flops in the shoe colour instead of shoes (bare feet). */
+  flipflops?: boolean;
   acc?: Accessory[];
   accColor?: string;
   height?: number;
@@ -166,7 +170,7 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
     { skin: SK.tan, hair: { style: "bun", color: HAIR.brown }, top: "#d9a441", bottom: "#33394a", acc: ["lanyard", "earrings"] },
     { informal: true, bio: "Šešias savaites vadovauja komandai, kurioje pati dar neseniai dirbo dizainere." }),
   N("tyler", "Tyler", ["Founder, Sproutly", "Startuolio „Sproutly“ įkūrėjas"], "m", "am_echo",
-    { skin: SK.light, hair: { style: "wavy", color: HAIR.blonde }, top: "#6f8f5e", bottom: "#a89a7c", shoes: "#c9a77c", acc: ["beard"] },
+    { skin: SK.light, hair: { style: "wavy", color: HAIR.blonde }, top: "#6f8f5e", bottom: "#a89a7c", shoes: "#c9a77c", shorts: true, flipflops: true, acc: ["beard"] },
     { informal: true, bio: "Kalba beveik vien verslo idiomomis ir avi šlepetes." }),
   N("mr_grant", "Mr. Grant", ["Your landlord", "Tavo nuomotojas"], "m", "am_liam",
     { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "readers"] },

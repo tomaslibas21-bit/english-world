@@ -5,7 +5,9 @@
 //   ?view=walk   the follow camera while walking (10 m behind, pitch 0.42), at the game's pixel size
 //   ?view=room   the fixed camera indoors (about 12 m away, pitch 0.78), at the game's pixel size
 //   ?ids=mia,ben,…  which people (NPC ids, the player's looks f1…m3, or "walkers" for passers-by); default all NPCs
-//   ?yaw=30      turn them (degrees; 0 = facing the camera)   ?anim=idle|talk|blink|walk|wave|sit   ?t=1.3 (pose time)
+//   ?yaw=30      turn them (degrees; 0 = facing the camera)   ?anim=idle|talk|blink|walk|wave|sit|nod|puzzled   ?t=1.3 (pose time)
+//   ?level=0.7   with anim=talk: the voice's loudness the mouth follows   ?seat=0.55 with anim=sit: the seat's height (a
+//                bench and the floor are drawn)
 //   ?cols=10 &cell=150 (cell width in px) &screenH=800 (game viewport height the pixel size is matched to)
 import * as THREE from "three";
 import { NPCS, type Look } from "../content/npcs";
@@ -18,6 +20,7 @@ const q = new URLSearchParams(location.search);
 const view = q.get("view") ?? "face";
 const yaw = THREE.MathUtils.degToRad(+(q.get("yaw") ?? 0));
 const anim = q.get("anim") ?? "idle";
+const level = q.get("level"), seat = Number(q.get("seat") ?? 0.5);
 const poseT = +(q.get("t") ?? 0.6);
 const cols = +(q.get("cols") ?? 10);
 const cellW = +(q.get("cell") ?? 150);
@@ -101,11 +104,19 @@ function place(height: number) {
 
 renderer.setClearColor("#cfdde6");
 renderer.clear();
+if (anim === "sit") {
+  // the floor and a bench, to see the feet reach the floor
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: "#aeb9c1" }));
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(0.62, seat, 0.42).translate(0, seat / 2, -0.03), new THREE.MeshLambertMaterial({ color: "#a0703f" }));
+  scene.add(ground, bench);
+}
 people.forEach((p, i) => {
   const ch = createCharacter(p.look);
   ch.root.rotation.y = yaw;
+  if (anim === "sit") ch.seatY = seat;
   if (anim === "walk" || anim === "wave" || anim === "sit") ch.setAnim(anim);
-  if (anim === "talk") ch.talk(30);
+  if (anim === "talk") ch.talk(30, level === null ? undefined : () => Number(level));
+  if (anim === "nod" || anim === "puzzled") ch.react?.(anim);
   // pose at a fixed time: update() advances the character's own clock, which starts at a random value
   const c = ch as unknown as { t: number; blinkT: number };
   c.t = 0;

@@ -22,6 +22,8 @@ let lineId = 1;
 
 export interface SessionHooks {
   npcTalk(npcId: string, seconds: number): void;
+  /** The person's face as the learner's answer lands: a nod (understood), a puzzled look (not, or not sure). */
+  npcReact?(npcId: string, kind: "nod" | "puzzled"): void;
   onEvent(name: string, data: any): void;
   onEnd(sit: SituationDef, completed: boolean): void;
 }
@@ -225,6 +227,9 @@ export class Session {
       }
     }
     this.pushLine({ who: "you", text: displayUtterance(chosen), understood: out.understood, tips: out.tips, via });
+    // the one who answers (else the last to speak) shows at once whether they got it
+    const who = out.lines[0]?.npc ?? (useStore.getState().conv.npcId || this.sit.npc);
+    this.hooks.npcReact?.(who, out.understood && !out.checking && !out.checkNo ? "nod" : "puzzled");
     if (out.understood && out.checkNo) {
       // "No" to "Sorry, did you say a latte?": the person didn't get it, so it counts as a miss (the help comes)
       audio.sfx("soft");

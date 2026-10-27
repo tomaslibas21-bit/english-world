@@ -3,6 +3,9 @@
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
 
+/** The clips' loudness is worked out this many times a second. */
+const ENVELOPE_RATE = 30;
+
 export class AudioSystem {
   manifest: Record<string, number> = {};
   /** New content hashes for clips re-recorded at the same keys (repair-versions.json in the clip folder): the version on
@@ -16,6 +19,11 @@ export class AudioSystem {
   base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}${audioDir()}`;
   ready = false;
   private fallbackVoices: SpeechSynthesisVoice[] = [];
+  /** The clip playing now, and its loudness once worked out (see loudness()), for the speaker's mouth. */
+  private clip: { el: HTMLAudioElement; key: string; done: boolean } | null = null;
+  /** Each clip's loudness: null while being worked out, empty when that failed. */
+  private envelopes = new Map<string, Float32Array | null>();
+  private decoder: BaseAudioContext | null = null;
 
   async init() {
     try {
@@ -57,8 +65,10 @@ export class AudioSystem {
         a.preservesPitch = true;
         a.playbackRate = opts.slow ? 0.82 : 1;
         this.current = a;
+        const clip = { el: a, key, done: false };
+        this.clip = clip;
         let done = false;
-        const finish = () => { if (done) return; done = true; if (this.current === a) this.current = null; resolve(); };
+        const finish = () => { if (done) return; done = true; clip.done = true; if (this.current === a) this.current = null; resolve(); };
         this.cancelCurrent = () => { a.pause(); finish(); };
         a.onended = finish;
         a.onerror = () => { finish(); };
@@ -70,7 +80,56 @@ export class AudioSystem {
     return this.speakFallback(text, opts);
   }
 
+  /** How loud the line playing now is at this moment (0–1), for the speaker's mouth; -1 once it has ended; null when
+   *  that isn't known (the browser's own voice, or the clip's loudness could not be worked out). */
+  level(): number | null {
+    const c = this.clip;
+    if (!c) return null;
+    if (c.done || c.el.ended) return -1;
+    // worked out only for lines someone's mouth follows (not the example answers)
+    if (!this.envelopes.has(c.key)) this.loudness(c.key, c.el.src);
+    const env = this.envelopes.get(c.key);
+    // still being worked out: the mouth stays shut until the voice starts, then keeps a rhythm
+    if (env === null) return c.el.currentTime < 0.05 ? 0 : null;
+    if (!env?.length) return null;
+    return env[Math.min(env.length - 1, Math.floor(c.el.currentTime * ENVELOPE_RATE))] ?? 0;
+  }
+
+  /** Works out a clip's loudness, 30 times a second, from a second copy of the file (decoded, never played: the voice
+   *  itself keeps playing through the <audio> element as before). It costs one more small download; when it fails
+   *  (no fetch, no decoder) the mouth keeps its rhythm. */
+  private async loudness(key: string, url: string) {
+    if (this.envelopes.has(key)) return;
+    this.envelopes.set(key, null);
+    const failed = () => this.envelopes.set(key, new Float32Array(0));
+    try {
+      const OAC = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
+      if (!OAC) return failed();
+      const r = await fetch(url);
+      if (!r.ok) return failed();
+      const bytes = await r.arrayBuffer();
+      this.decoder ??= new OAC(1, 1, 44100);
+      const dec = this.decoder;
+      const buf = await new Promise<AudioBuffer>((res, rej) => dec.decodeAudioData(bytes, res, rej));
+      const data = buf.getChannelData(0), step = buf.sampleRate / ENVELOPE_RATE;
+      const env = new Float32Array(Math.ceil(data.length / step));
+      for (let i = 0; i < env.length; i++) {
+        let sum = 0;
+        const a = Math.floor(i * step), b = Math.min(data.length, Math.floor((i + 1) * step));
+        for (let j = a; j < b; j++) sum += data[j] * data[j];
+        env[i] = Math.sqrt(sum / Math.max(1, b - a));
+      }
+      // as loud as the line gets (its 90th percentile, so one peak doesn't decide it) is a wide-open mouth; quiet
+      // breaths and room noise keep it shut
+      const peak = Float32Array.from(env).sort()[Math.floor(env.length * 0.9)] || 1;
+      for (let i = 0; i < env.length; i++) { const v = env[i] / peak; env[i] = v < 0.12 ? 0 : Math.min(1, (v - 0.12) / 0.75); }
+      if (this.envelopes.size > 300) this.envelopes.delete(this.envelopes.keys().next().value!);
+      this.envelopes.set(key, env);
+    } catch { failed(); /* the mouth keeps its rhythm */ }
+  }
+
   private speakFallback(text: string, opts: { slow?: boolean; male?: boolean }): Promise<void> {
+    this.clip = null;
     if (typeof speechSynthesis === "undefined") return new Promise((r) => setTimeout(r, Math.min(6000, 600 + text.length * 55)));
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(text);

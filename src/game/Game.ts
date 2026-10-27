@@ -26,6 +26,8 @@ import { givenItem } from "./given";
 import type { GameApi } from "./gameRef";
 export type { GameApi } from "./gameRef";
 
+/** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
+type TagBox = { x0: number; x1: number; y0: number; y1: number };
 interface NpcActor { id: string; ch: GameCharacter; home: THREE.Vector3; rot: number; tag: HTMLDivElement; tagSize?: [number, number]; sit?: boolean; waved: boolean; approach?: THREE.Vector3 }
 interface ZoneState { id: string; group: THREE.Group; colliders: import("./world/util").Colliders; nav: NavGrid; interior?: Interior }
 
@@ -65,6 +67,8 @@ export class Game implements GameApi {
   private pathT = 0;
   private session: Session | null = null;
   private talkNpc: NpcActor | null = null;
+  private hudBoxCache: TagBox[] = [];
+  private hudCheck = 0;
   private tagLayer: HTMLDivElement;
   private nearest: { kind: "npc" | "door" | "exit"; id: string; label: string } | null = null;
   private pushDoorT = 0;
@@ -363,7 +367,9 @@ export class Game implements GameApi {
         const p = this.player.root.position;
         const { female } = this.ambient.greet(w, p.x, p.z);
         const line = AMBIENT_LINES[Math.floor(Math.random() * AMBIENT_LINES.length)];
-        audio.play(ambientVoice(female ? "f" : "m"), 1, line.en, { male: !female });
+        const voice = ambientVoice(female ? "f" : "m");
+        audio.play(voice, 1, line.en, { male: !female });
+        w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level());
         st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt });
         return;
       }
@@ -567,8 +573,10 @@ export class Game implements GameApi {
     const session: Session = new Session(sit.id, {
       npcTalk: (npcId, secs) => {
         const n = this.npcs.find((x) => x.id === npcId);
-        if (n) n.ch.talk(secs);
+        // the mouth follows the recording while the line is this person's
+        if (n) n.ch.talk(secs, () => (useStore.getState().conv.npcId === npcId ? audio.level() : -1));
       },
+      npcReact: (npcId, kind) => { this.npcs.find((x) => x.id === npcId)?.ch.react?.(kind); },
       // ignore events from a conversation already closed (e.g. Esc during the driver's goodbye):
       // its "taxi-ride" would otherwise be queued for the next, unrelated conversation
       onEvent: (name, data) => { if (this.session === session) this.onSessionEvent(name, data); },
@@ -907,13 +915,15 @@ export class Game implements GameApi {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     const v = new THREE.Vector3();
     const obj = this.currentObjective();
+    // in a conversation the header names the person and every line its speaker: no tags over heads
     const talking = !!this.session?.active;
     const shown: { n: NpcActor; x: number; y: number; dist: number }[] = [];
     for (const n of this.npcs) {
       v.set(n.ch.root.position.x, n.ch.height + (n.sit ? -0.1 : 0.45), n.ch.root.position.z);
       const dist = v.distanceTo(this.rig.cam.position);
       v.project(this.rig.cam);
-      const visible = v.z < 1 && dist < 34 && !(talking && n !== this.talkNpc);
+      // only for people in the picture (a tag kept inside it never points at someone out of sight)
+      const visible = !talking && v.z < 1 && dist < 34 && Math.abs(v.x) < 1.02 && Math.abs(v.y) < 1.02;
       if (!visible) { n.tag.style.display = "none"; continue; }
       n.tag.style.display = "";
       shown.push({ n, x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, dist });
@@ -921,23 +931,44 @@ export class Game implements GameApi {
       n.tag.classList.toggle("objective", isObj && !talking);
       n.tag.style.opacity = String(Math.max(0.35, 1 - (dist - 12) / 22));
     }
-    // people close together (Kate and Paul at their table): the nearer one's tag stays put and the other's moves
-    // aside (side by side), or up (one behind the other)
+    // Each tag takes the free spot nearest its person, the nearer people first: where it is; beside or above a tag
+    // already placed (Kate and Paul at their table; below one only when nothing else is free); beside, below or above
+    // the task card, the little map and the buttons, which would cover it. Always inside the picture.
     shown.sort((a, b) => a.dist - b.dist);
-    const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+    const hud = this.hudBoxes(), m = 6;
+    const placed: TagBox[] = [];
     for (const s of shown) {
       const [tw, th] = (s.n.tagSize ??= [s.n.tag.offsetWidth, s.n.tag.offsetHeight]);
-      let x = s.x, y = s.y;
-      for (let k = 0; k < 6; k++) {
-        const hit = placed.find((p) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0);
-        if (!hit) break;
-        const hx = (hit.x0 + hit.x1) / 2;
-        if (Math.abs(x - hx) > tw / 4) x = x > hx ? hit.x1 + tw / 2 + 4 : hit.x0 - tw / 2 - 4;
-        else y = hit.y0 - 4;
+      const spots: [number, number, number][] = [[s.x, s.y, 0]];
+      for (const p of placed) spots.push([p.x1 + tw / 2 + 4, s.y, 0], [p.x0 - tw / 2 - 4, s.y, 0], [s.x, p.y0 - 4, 0], [s.x, p.y1 + th + 4, 60]);
+      for (const p of hud) spots.push([p.x1 + tw / 2 + 6, s.y, 0], [p.x0 - tw / 2 - 6, s.y, 0], [s.x, p.y1 + th + 6, 0], [s.x, p.y0 - 6, 0]);
+      let best: [number, number] | null = null, bestD = Infinity;
+      for (const [sx, sy, extra] of spots) {
+        const x = Math.min(w - m - tw / 2, Math.max(m + tw / 2, sx)), y = Math.min(h - m, Math.max(m + th, sy));
+        const hits = (p: TagBox) => x - tw / 2 < p.x1 && x + tw / 2 > p.x0 && y - th < p.y1 && y > p.y0;
+        if (hud.some(hits) || placed.some(hits)) continue;
+        const d = Math.hypot(x - s.x, y - s.y) + extra;
+        if (d < bestD) { bestD = d; best = [x, y]; }
       }
+      const [x, y] = best ?? [Math.min(w - m - tw / 2, Math.max(m + tw / 2, s.x)), Math.min(h - m, Math.max(m + th, s.y))];
       placed.push({ x0: x - tw / 2, x1: x + tw / 2, y0: y - th, y1: y });
       s.n.tag.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
     }
+  }
+
+  /** Where the task card, the little map and the buttons are in the picture (the tags keep clear of them), read about
+   *  six times a second. */
+  private hudBoxes() {
+    if (--this.hudCheck > 0) return this.hudBoxCache;
+    this.hudCheck = 10;
+    const c = this.container.getBoundingClientRect();
+    this.hudBoxCache = [];
+    for (const el of document.querySelectorAll<HTMLElement>(".objective-card, .minimap, .toolbar")) {
+      if (!el.offsetParent) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width && r.height) this.hudBoxCache.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });
+    }
+    return this.hudBoxCache;
   }
 
   private updateHud() {

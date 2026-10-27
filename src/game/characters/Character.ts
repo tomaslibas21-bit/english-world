@@ -114,6 +114,9 @@ function headShell(k: number, phi0: number, phi1: number, top: (phi: number) => 
 
 export type Anim = "idle" | "walk" | "run" | "talk" | "wave" | "sit";
 
+/** Sitting, the thighs slope down this much from the hip (radians), and the shins hang straight down. */
+const SIT_DROOP = 0.1;
+
 export class Character {
   root = new THREE.Group();
   private body = new THREE.Group();
@@ -131,6 +134,17 @@ export class Character {
   private brows!: THREE.Mesh;
   private smile!: THREE.Mesh;
   private mouth!: THREE.Mesh;
+  /** The shins with their feet: standing, and longer ones for sitting (built when the character first sits). */
+  private shins: THREE.Mesh[] = [];
+  private seatShins: THREE.Mesh[] | null = null;
+  private seatShinExtra = 0;
+  private legLook!: { h: number; b: number; shin: THREE.ColorRepresentation; shoes: string; skin: THREE.ColorRepresentation; flipflops: boolean };
+  /** While talking: how loud the voice is right now (0–1; -1 once it has ended), or null with no recording to follow. */
+  private level: (() => number | null) | null = null;
+  private mouthOpen = 0;
+  private browLift = 0;
+  /** A short reaction to the learner's answer: a nod (understood) or a puzzled tilt (not understood). */
+  private reaction: { kind: "nod" | "puzzled"; t: number } | null = null;
   private t = Math.random() * 10;
   anim: Anim = "idle";
   talking = 0;
@@ -231,17 +245,20 @@ export class Character {
     this.body.add(torso);
 
     // legs: a thigh from the hip, a shin with the shoe from the knee (they bend for walking and sitting)
-    const legC = look.skirt ? skin : bottom;
+    const bare = look.skirt || look.shorts;
+    const legC = bare ? skin : bottom;
+    this.legLook = { h, b, shin: legC, shoes, skin, flipflops: !!look.flipflops };
     for (const [leg, shin, x] of [[this.legL, this.shinL, -0.12 * b], [this.legR, this.shinR, 0.12 * b]] as [THREE.Group, THREE.Group, number][]) {
       leg.position.set(x, 0.66 * h, 0);
       const T = new Parts();
       T.add(new THREE.CapsuleGeometry(0.1 * b, 0.21 * h, 4, 10).translate(0, -0.195 * h, 0), legC);
+      // shorts: a wide leg over the upper thigh
+      if (look.shorts) T.add(new THREE.CylinderGeometry(0.118 * b, 0.124 * b, 0.22 * h, 12).translate(0, -0.12 * h, 0), bottom);
       leg.add(T.mesh());
       shin.position.y = -0.3 * h;
-      const S = new Parts();
-      S.add(new THREE.CapsuleGeometry(0.096 * b, 0.21 * h, 4, 10).translate(0, -0.105 * h, 0), legC);
-      S.add(new THREE.BoxGeometry(0.17 * b, 0.1, 0.28).translate(0, -0.3 * h, 0.05), shoes);
-      shin.add(S.mesh());
+      const m = this.shinMesh(0);
+      this.shins.push(m);
+      shin.add(m);
       leg.add(shin);
       this.body.add(leg);
     }
@@ -255,6 +272,21 @@ export class Character {
       arm.add(A.mesh());
       this.body.add(arm);
     }
+  }
+
+  /** One shin with its foot, `extra` longer than a standing one (seated feet reach the floor). */
+  private shinMesh(extra: number) {
+    const { h, b, shin, shoes, skin, flipflops } = this.legLook;
+    const S = new Parts();
+    S.add(new THREE.CapsuleGeometry(0.096 * b, 0.21 * h + extra, 4, 10).translate(0, -0.105 * h - extra / 2, 0), shin);
+    const y = -0.3 * h - extra;
+    if (flipflops) {
+      // a sole, the bare foot on it and a strap across
+      S.add(new THREE.BoxGeometry(0.17 * b, 0.03, 0.28).translate(0, y - 0.035, 0.05), shoes);
+      S.add(new THREE.BoxGeometry(0.12 * b, 0.06, 0.22).translate(0, y + 0.01, 0.04), skin);
+      S.add(new THREE.BoxGeometry(0.135 * b, 0.016, 0.035).translate(0, y + 0.042, 0.08), new THREE.Color(shoes).multiplyScalar(0.55));
+    } else S.add(new THREE.BoxGeometry(0.17 * b, 0.1, 0.28).translate(0, y, 0.05), shoes);
+    return S.mesh();
   }
 
   // ------------------------------------------------------------------ head and face
@@ -452,7 +484,27 @@ export class Character {
 
   // ------------------------------------------------------------------ animation
 
-  setAnim(a: Anim) { this.anim = a; }
+  setAnim(a: Anim) {
+    if ((a === "sit") !== (this.anim === "sit")) this.fitLegs(a === "sit");
+    this.anim = a;
+  }
+
+  /** Seated, the shins reach down to the floor: on seats built for people the characters' short legs would leave
+   *  the feet hanging in the air. Standing, the usual shins come back. */
+  private fitLegs(seated: boolean) {
+    if (seated) {
+      const { h, b } = this.legLook;
+      const knee = this.seatY + 0.1 * b - 0.3 * h * Math.sin(SIT_DROOP);
+      const extra = Math.max(0, knee - 0.01 - 0.3 * h - 0.05);
+      if (!this.seatShins || Math.abs(extra - this.seatShinExtra) > 0.005) {
+        for (const m of this.seatShins ?? []) { m.removeFromParent(); m.geometry.dispose(); }
+        this.seatShins = [this.shinL, this.shinR].map((g) => { const m = this.shinMesh(extra); g.add(m); return m; });
+        this.seatShinExtra = extra;
+      }
+    }
+    for (const m of this.shins) m.visible = !seated;
+    for (const m of this.seatShins ?? []) m.visible = seated;
+  }
 
   update(dt: number) {
     this.t += dt;
@@ -475,28 +527,53 @@ export class Character {
     }
     this.armL.rotation.set(0, 0, 0);
     this.armR.rotation.set(0, 0, 0);
+    let browUp = 0, tilt = 0, mouthShape = 0;
+    // with a recording to follow, the talking lasts exactly as long as it plays (it often starts a moment late)
+    const lv = this.level?.() ?? null;
+    if (lv !== null) this.talking = lv < 0 ? 0 : Math.max(this.talking, 0.1);
     if (this.talking > 0) {
       this.talking -= dt;
-      headNod = Math.sin(t * 9) * 0.05;
+      // the mouth follows the recording's loudness (pauses between words and sentences close it); with no recording
+      // to follow (the browser's own voice), syllables come from two rhythms mixed
+      const target = lv ?? Math.max(0, Math.min(1, Math.sin(t * 13.5) * 0.55 + Math.sin(t * 7.1 + 1.3) * 0.4 + 0.3));
+      // it opens fast and closes a little slower, like a real one; the brows follow the phrase, not each syllable
+      this.mouthOpen += (target - this.mouthOpen) * Math.min(1, dt * (target > this.mouthOpen ? 28 : 16));
+      this.browLift += (this.mouthOpen - this.browLift) * Math.min(1, dt * 4);
+      headNod = Math.sin(t * 9) * 0.05 * (0.4 + 0.6 * this.mouthOpen);
       this.armR.rotation.z = -0.15 - Math.max(0, Math.sin(t * 3)) * 0.25;
       this.armR.rotation.x = -0.3 - Math.sin(t * 3) * 0.2;
-      // syllables: two rhythms mixed, now and then a short pause
-      const o = Math.sin(t * 13.5) * 0.55 + Math.sin(t * 7.1 + 1.3) * 0.4 + 0.3;
-      this.mouth.scale.y = 0.2 + Math.max(0, Math.min(1, o)) * 0.8;
-      this.brows.position.y = Math.max(0, Math.sin(t * 4.2)) * 0.012;
+      mouthShape = 0.15 + this.mouthOpen * 0.85;
+      browUp = this.browLift * 0.014;
     } else {
-      this.brows.position.y = 0;
+      this.level = null;
+      this.mouthOpen = this.browLift = 0;
     }
-    this.mouth.visible = this.talking > 0;
+    // reacting to the learner's answer: two small nods (understood), or the head tilted and the brows up (not)
+    if (this.reaction) {
+      const r = this.reaction;
+      r.t += dt;
+      if (r.kind === "nod") {
+        if (r.t < 0.8) headNod += Math.abs(Math.sin((r.t / 0.4) * Math.PI)) * 0.2;
+        else this.reaction = null;
+      } else if (r.t < 1.8) {
+        const e = Math.sin(Math.min(1, r.t / 1.8) * Math.PI) ** 0.5;
+        tilt = 0.2 * e;
+        browUp = Math.max(browUp, 0.024 * e);
+        if (this.talking <= 0) mouthShape = 0.3 * e;
+      } else this.reaction = null;
+    }
+    this.brows.position.y = browUp;
+    this.mouth.visible = mouthShape > 0.05;
+    if (this.mouth.visible) this.mouth.scale.y = mouthShape;
     this.smile.visible = !this.mouth.visible;
     if (this.anim === "wave") {
       this.armR.rotation.z = -2.6 + Math.sin(t * 10) * 0.3;
       this.armR.rotation.x = 0;
     }
     if (this.anim === "sit") {
-      // thighs along the seat, lower legs hanging, hands on the lap
-      this.legL.rotation.x = this.legR.rotation.x = -Math.PI / 2 + 0.06;
-      this.shinL.rotation.x = this.shinR.rotation.x = 1.36;
+      // thighs along the seat, the shins (longer, see fitLegs) straight down to the floor, hands on the lap
+      this.legL.rotation.x = this.legR.rotation.x = -Math.PI / 2 + SIT_DROOP;
+      this.shinL.rotation.x = this.shinR.rotation.x = Math.PI / 2 - SIT_DROOP;
       this.body.position.set(0, this.seatY + 0.1 * b - 0.66 * h, 0.04);
       this.armL.rotation.set(-0.55, 0, 0.22);
       if (this.talking <= 0) this.armR.rotation.set(-0.55, 0, -0.22);
@@ -514,6 +591,7 @@ export class Character {
     this.body.rotation.x = lean;
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;
+    this.head.rotation.z = tilt;
     // blinking: shut and open again in 0.16 s, now and then twice
     this.blinkT -= dt;
     let open = 1;
@@ -526,7 +604,14 @@ export class Character {
     if (this.blinkT < 0) this.blinkT = Math.random() < 0.15 ? 0.3 : 2.5 + Math.random() * 3.5;
   }
 
-  talk(seconds: number) { this.talking = Math.max(this.talking, seconds); }
+  /** Talk for `seconds`; `level` (optional) tells how loud the voice is right now, for the mouth (-1: it has ended). */
+  talk(seconds: number, level?: () => number | null) {
+    this.talking = Math.max(this.talking, seconds);
+    this.level = level ?? null;
+  }
+
+  /** React to the learner's answer: a nod when understood, a puzzled look when not. */
+  react(kind: "nod" | "puzzled") { this.reaction = { kind, t: 0 }; }
 
   /** Frees the GPU memory only this character uses: its geometries (built per character; NPCs are rebuilt
    *  on every zone change). The material is shared. */
