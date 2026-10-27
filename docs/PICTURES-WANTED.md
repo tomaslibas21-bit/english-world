@@ -1,7 +1,7 @@
 # Pictures wanted: brief for an image assistant
 
 **English World** is a browser game for Lithuanian adults practising spoken American English.
-- Live game: https://tomaslibas21-bit.github.io/english-world/
+- The game is played inside the English Master course (there is no public copy any more).
 - Code: https://github.com/tomaslibas21-bit/english-world
 
 During a conversation, the game shows **one illustrated picture per phase** of the conversation, behind the conversation panel.
@@ -32,17 +32,22 @@ During a conversation, the game shows **one illustrated picture per phase** of t
 
 ## Files
 
+- **With OpenAI's image API:**
+  - Its landscape size is 3:2 (1536×1024), not 16:9. Leave room above and below, then crop to 16:9 and scale to 2048×1152.
+  - Attach the style references above, and the existing picture of any returning character.
+  - Make each scene's first picture, then edit it for the others, so the room, the person and the clothes stay the same.
+
 - **Pictures:** `public/scenes/<scene>/<name>.webp`
   - 2048 px wide, 16:9 (2048×1152; about 1143 high is fine too)
   - WebP, quality about 80, under 250 KB each
   - lower-case names
 - **Scene file:** `src/ui/scene-data/<scene>.json`. It is given below for each scene, ready to use. Optionally add `"jobs": { "<name>": "<generation id>" }` for later edits.
 - **Check:** if you can run code, `npx tsx tools/scene-walk.ts <scene>` must report 0 errors, and `npm test` and `npm run build` must pass.
-- **Push straight to `main`.** No one is using the game yet, so no pull request is needed.
-  - Every push publishes the live site in about a minute (GitHub Actions, "Deploy to GitHub Pages"). If a build fails, the previous version stays online.
+- **Push straight to `main`.**
+  - A push publishes nothing by itself. When the pictures are in, the lead re-exports the game into English Master (fluent-steps `scripts/zaidimas/reexport.sh`).
   - Commit one scene at a time: its pictures and its scene file together, so that a scene file never points to pictures that aren't there yet.
   - Commit as `tomaslibas21-bit <299487494+tomaslibas21-bit@users.noreply.github.com>` (set `git config user.name` and `user.email` in your copy of the repository), so that no personal name or email address appears in the public history.
-  - After pushing, check the scene in the live game: https://tomaslibas21-bit.github.io/english-world/ → "Visos situacijos" → the conversation.
+  - Check the scene with `npx tsx tools/scene-walk.ts <scene>`, and in `npm run dev` → "Visos situacijos" → the conversation.
 
 ## Wanted: the six advanced conversations P25–P30 (32 pictures, 8 Oct 2026)
 
