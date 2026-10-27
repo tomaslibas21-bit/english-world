@@ -10,6 +10,8 @@ export interface SitProgress {
   twists: string[];
   memory: Record<string, any>;
   lastPlayed?: number;
+  /** The learner made this conversation speak slowly („Lėčiau“). */
+  slow?: boolean;
 }
 
 export interface Progress {

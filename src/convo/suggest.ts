@@ -205,7 +205,7 @@ export function pickSuggestions(ranked: Ranked[], understands: (en: string) => b
 
 export interface HeardWord { w: string; miss: boolean }
 /** "Did you mean…?": the suggestions (best first) and the heard words, marked where they are not in the first. */
-export interface Guess { options: { en: string; nat: string; say: string }[]; heard: HeardWord[] }
+export interface Guess { options: { en: string; nat: string; say: string }[]; heard: HeardWord[]; stuck?: boolean }
 
 /** The heard text word by word; `miss`: the word is not in `target`. Fillers and "please" are never marked. */
 export function markHeard(heard: string, target: string): HeardWord[] {

@@ -113,6 +113,10 @@ export function Conversation() {
         <div className="toggles">
           <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title="Lietuviškas vertimas (L)" aria-pressed={settings.lt}>LT</button>
           <button className={"toggle" + (settings.ipa ? " on" : "")} onClick={() => setSettings({ ipa: !settings.ipa })} title="Tarimas IPA (I)" aria-pressed={settings.ipa}>IPA</button>
+          <button className={"toggle slow-toggle" + (conv.slowMode || settings.slowVoice ? " on" : "")} onClick={() => game?.activeSession?.setSlowMode(!conv.slowMode)} disabled={settings.slowVoice}
+            title={settings.slowVoice ? "Visi kalba lėčiau (Nustatymai)" : conv.slowMode ? "Šis pašnekovas kalba lėčiau – paspausk, kad kalbėtų įprastai" : "Kad šis pašnekovas kalbėtų lėčiau"} aria-pressed={conv.slowMode || settings.slowVoice} aria-label="Lėčiau">
+            <Icon name="turtle" size={20} /><span className="long">Lėčiau</span>
+          </button>
         </div>
         <div className="head-actions">
           <button className="close-x" onClick={() => game?.restartScenario()} title="Pradėti šį pokalbį iš naujo" aria-label="Pradėti iš naujo"><Icon name="restart" /></button>
@@ -155,6 +159,7 @@ export function Conversation() {
               {conv.guess && <DidYouMean guess={conv.guess} lt={settings.sayLt} />}
               <div className="acts">
                 {speechSupported() && <button className="btn small" onClick={() => game?.activeSession?.listen()}><Icon name="mic" size={17} /> Bandyti dar</button>}
+                <button className="btn soft small" onClick={() => game?.activeSession?.repeatLast(true)}><Icon name="turtle" size={17} /> Paklausyk lėčiau</button>
                 <button className="btn soft small" onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true }); }}><Icon name="pencil" size={17} /> Pataisyti tekstą</button>
                 <button className="btn ghost small" onClick={() => copyConversation(sit)} title="Nukopijuok ir atsiųsk mokytojui"><Icon name="clipboard" size={17} /> Kopijuoti</button>
               </div>
@@ -491,6 +496,7 @@ const VIA: Record<NonNullable<TranscriptLine["via"]>, [IconName, string]> = {
   voice: ["mic", "Pasakyta balsu"],
   typed: ["keyboard", "Parašyta"],
   picked: ["bulb", "Pasirinkta iš pasiūlymų"],
+  helped: ["bulb", "Pasirinkta, kai nepavyko pasakyti"],
 };
 /** How the learner answered: a tiny mic (spoken) or keyboard (typed) in the bubble. */
 function Via({ via }: { via: NonNullable<TranscriptLine["via"]> }) {
@@ -507,11 +513,13 @@ function Marked({ words }: { words: (HeardWord | RepeatWord)[] }) {
 }
 
 function DidYouMean({ guess, lt }: { guess: Guess; lt: boolean }) {
+  // after two misses in a row the learner is never stuck: tap what you wanted to say, or skip this answer
+  const via = guess.stuck ? "helped" : "picked";
   return (
     <div className="dym">
-      <div className="dym-q">Ar norėjai pasakyti:</div>
+      <div className="dym-q">{guess.stuck ? "Nepavyksta? Pasirink, ką norėjai pasakyti:" : "Ar norėjai pasakyti:"}</div>
       {guess.options.map((o) => (
-        <button key={o.en} className="dym-opt" onClick={() => game?.activeSession?.submit(o.en, [], "picked")}>
+        <button key={o.en} className="dym-opt" onClick={() => game?.activeSession?.submit(o.en, [], via)}>
           <span className="dym-text">
             <span className="dym-en" lang="en">{o.en}</span>
             {lt && <span className="dym-lt" lang="lt">{o.nat}</span>}
@@ -519,7 +527,9 @@ function DidYouMean({ guess, lt }: { guess: Guess; lt: boolean }) {
           <Icon name="arrowRight" size={18} className="dym-go" />
         </button>
       ))}
-      <div className="dym-hint">Paliesk sakinį arba {speechSupported() ? "pasakyk" : "parašyk"} „yes“.</div>
+      <div className="dym-hint">Paliesk sakinį arba {speechSupported() ? "pasakyk" : "parašyk"} „yes“.
+        {guess.stuck && <> <button className="link-btn" onClick={() => game?.activeSession?.submit(guess.options[0].en, [], "helped")}>Praleisti</button></>}
+      </div>
     </div>
   );
 }

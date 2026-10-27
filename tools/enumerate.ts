@@ -13,6 +13,7 @@ import { withoutAddressedNames } from "../src/audio-key";
 import { Conversation, type SpokenLine } from "../src/convo/dialogue";
 import { compose, placeholders, type Sentence } from "../src/convo/compose";
 import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
+import { soundKey } from "../src/convo/soundalike";
 
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
 
@@ -102,6 +103,16 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       }
     }
     opts.log?.(`${sit.id}: ${out.size} sentences so far`);
+    // 3. "Sorry, a latte?" (convo/soundalike.ts): the check-back for every name a learner can say, in the voices of
+    //    this conversation's people. Only names a sound-alike can be heard for (two or more consonant sounds).
+    const checks = GLOBAL.lines.g_soundcheck ?? [];
+    for (const list of Object.values(sit.entities || {})) for (const e of list) {
+      const names = [e.en.split(" | ").join(" "), ...(e.forms ?? [])];
+      if (!names.some((nm) => soundKey(nm).length >= 2 && nm.replace(/[^a-z]/gi, "").length >= 4)) continue;
+      for (const n of voices) checks.forEach((src, ci) => {
+        try { add(n.voice, n.speed ?? 1, compose(src, { X: e.id }, { look, speaker: n.gender, formal: !n.informal }), `${sit.id}:soundcheck:${e.id}[${ci}]`); } catch { /* skip */ }
+      });
+    }
   }
   return finishEnumeration(out, errors, allNpcIds, opts);
 }

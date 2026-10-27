@@ -54,6 +54,8 @@ export class Session {
     this.conv = new Conversation(sit, {
       global: GLOBAL, npcs: NPCS, player, visits: sp.completions, memory: sp.memory, sharedNlu: nluCache,
     });
+    // „Lėčiau“ chosen last time in this situation
+    if (sp.slow) this.conv.slow = true;
     st.updateProgress((p) => {
       const s = sitProgress(p, sitId);
       s.visits++; s.lastPlayed = Date.now();
@@ -69,7 +71,7 @@ export class Session {
     st.setConv({
       active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], phase: "npc",
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
-      failures: 0, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
+      failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
       checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: st.conv.run + 1, guideHidden: false,
     });
     const out = this.conv.start();
@@ -178,7 +180,7 @@ export class Session {
 
   /** The learner's answer (spoken, typed, or a picked "Did you mean…?" suggestion). Tries recogniser
    *  alternatives if the first one is not understood. */
-  async submit(text: string, alts: string[] = [], via: "voice" | "typed" | "picked" = "typed") {
+  async submit(text: string, alts: string[] = [], via: "voice" | "typed" | "picked" | "helped" = "typed") {
     if (!this.alive || this.busy) return;
     let clean = text.trim();
     if (!clean) return;
@@ -207,12 +209,15 @@ export class Session {
     this.pushLine({ who: "you", text: displayUtterance(chosen), understood: out.understood, tips: out.tips, via });
     if (out.understood) {
       audio.sfx("success");
-      st.setConv({ failures: 0, prefix: false, mic: { status: "off", heard: "" } });
-      this.recordExpressions(out.hintsUsed);
+      st.setConv({ failures: 0, misses: 0, prefix: false, mic: { status: "off", heard: "" } });
+      // an answer chosen from the never-stuck help wasn't said: it earns no phrase
+      if (via !== "helped") this.recordExpressions(out.hintsUsed);
       for (const t of out.tips) st.toast({ kind: "tip", title: "Patarimas", body: t.lt, better: t.better });
     } else {
       audio.sfx("soft");
-      st.setConv({ failures: out.failures || this.conv.failures, prefix: !!out.prefix, guess: this.didYouMean(clean, alts) });
+      // never stuck: from the second miss in a row, the moment's own answers are offered too
+      const misses = useStore.getState().conv.misses + 1;
+      st.setConv({ failures: out.failures || this.conv.failures, misses, prefix: !!out.prefix, guess: this.didYouMean(clean, alts, misses >= 2) });
     }
     this.busy = false;
     if (out.lines.length) await this.play(out);
@@ -230,7 +235,7 @@ export class Session {
 
   /** "Did you mean…?": the 1–2 model answers of the current hint groups closest to what was heard
    *  (and understood by the engine right now), or null (silence, noise, nothing close). */
-  private didYouMean(heard: string, alts: string[]): Guess | null {
+  private didYouMean(heard: string, alts: string[], stuck = false): Guess | null {
     try {
       const st = useStore.getState();
       const c = st.conv;
@@ -240,9 +245,17 @@ export class Session {
       const prof = st.progress.profile;
       const opts = { formal: !NPCS[c.npcId]?.informal, gender: prof?.gender ?? "m", npcGender: NPCS[lastNpc]?.gender ?? "f", vars: playerVars(prof) } as const;
       const heardAll = [heard, ...alts.slice(0, 3)];
-      const ranked = rankAnswers(heardAll, answerCandidates(this.sit, groups, opts, heardAll));
+      const cands = answerCandidates(this.sit, groups, opts, heardAll);
+      const ranked = rankAnswers(heardAll, cands);
       const expected = this.conv.expectedIntents();
-      return makeGuess(heard, pickSuggestions(ranked, (en) => this.conv.nlu.parse(en, expected).ok));
+      const understands = (en: string) => this.conv.nlu.parse(en, expected).ok;
+      let picks = pickSuggestions(ranked, understands);
+      if (!stuck) return makeGuess(heard, picks);
+      // the moment's model answers in their own order (the first suggestion's first), up to three in all
+      const own = pickSuggestions(cands.map((s) => ({ s, score: 1 })), understands, 3);
+      picks = [...picks, ...own.filter((o) => !picks.some((p) => p.s.en === o.s.en))].slice(0, 3);
+      const g = makeGuess(heard, picks);
+      return g && { ...g, stuck: true };
     } catch { return null; }
   }
 
@@ -369,6 +382,18 @@ export class Session {
       useStore.getState().updateProgress((p) => { const s = sitProgress(p, this.sit.id); s.memory = { ...s.memory, ...this.conv.memoryOut }; p.sits[this.sit.id] = s; });
     }
     this.hooks.onEnd(this.sit, this.conv.completed);
+  }
+
+  /** „Lėčiau“: this conversation speaks slowly from now on (and next time), or normally again. */
+  setSlowMode(on: boolean) {
+    if (!this.alive) return;
+    this.conv.slow = on;
+    useStore.getState().setConv({ slowMode: on });
+    useStore.getState().updateProgress((p) => {
+      const s = sitProgress(p, this.sit.id);
+      if (on) s.slow = true; else delete s.slow;
+      p.sits[this.sit.id] = s;
+    });
   }
 
   repeatLast(slow: boolean) {

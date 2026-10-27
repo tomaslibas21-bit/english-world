@@ -10,6 +10,7 @@
 import type { Ctx, EntityDef, Handler, HintGroup, Pending, SentSrc, SituationDef, StepDef, Suggestion, Tip } from "../content/types";
 import { compose, type Sentence, type Vars } from "./compose";
 import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
+import { soundRepair } from "./soundalike";
 import type { Gender } from "./lt-morph";
 
 
@@ -123,6 +124,8 @@ export class Conversation {
   private rng: () => number;
   private out!: TurnOut;
   private held = false;
+  /** "Sorry, a latte?" is open: a yes says the answer with the name (soundalike.ts). */
+  private soundCheck: { fixed: string } | null = null;
   /** This turn replays the previous one ("Say that again", "Slower"): it never becomes the last turn. */
   private replayed = false;
   /** A later piece of an intent already handled this turn: its lines never repeat one already said. */
@@ -229,10 +232,30 @@ export class Conversation {
     this.held = false;
     this.replayed = false;
     this.quietRepeats = false;
+    // the answer to "Sorry, a latte?": yes says the answer with the name; no asks again; anything else is a new
+    // answer (the open question stays open)
+    if (this.soundCheck) {
+      const sc = this.soundCheck;
+      this.soundCheck = null;
+      const yn = this.bareYesNo(text);
+      if (yn === "yes") text = sc.fixed;
+      else if (yn === "no") { this.out.heard = text; this.say("g_soundcheck_no"); this.held = true; return this.finishTurn(); }
+    }
     const expected = this.expectedIntents();
     const primary = this.pending ? [...(this.pending.expects || []), ...Object.keys(this.pending.on || {})] : [];
     const res: NluResult = this.nlu.parse(text, expected, primary);
     this.out.heard = text;
+    // a name heard only by its sound ("I'd like a lot of" for "a latte"): check it instead of "Sorry?" or "We
+    // don't have that". Never accepted silently, and never a failure.
+    if (!res.ok || !res.best || (res.best.segments.length && res.best.segments.every((sg) => this.nlu.isCatchAll(sg.intent)))) {
+      const fix = soundRepair(this.nlu, this.sit.entities, expected, text);
+      if (fix) {
+        this.soundCheck = { fixed: fix.fixed };
+        this.say("g_soundcheck", { X: fix.entity });
+        this.held = true;
+        return this.finishTurn();
+      }
+    }
     if (!res.ok || !res.best) {
       this.failures++;
       this.out.understood = false;
@@ -477,6 +500,14 @@ export class Conversation {
     this.out.completed = this.completed;
     this.out.ended = this.ended;
     return this.out;
+  }
+
+  /** "Yes" / "No" (with only soft words such as "please" or "thanks") as the whole answer, else null. */
+  private bareYesNo(text: string): "yes" | "no" | null {
+    const r = this.nlu.parse(text, []);
+    const p = r.best;
+    if (!r.ok || !p?.yn) return null;
+    return p.segments.every((sg) => SOFT_INTENTS.has(sg.intent) && !this.sit.handlers[sg.intent]) ? p.yn : null;
   }
 
   /** For global handlers. */

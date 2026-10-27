@@ -27,6 +27,16 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("Got it.", "Supratau.", "Supratau."),
     t("Okay.", "Gerai.", "Gerai."),
   ],
+  /** A name heard only by its sound ("lot a" for "latte"): the person checks it, and the learner hears it said
+   *  right (convo/soundalike.ts). Yes takes the name, no gets g_soundcheck_no. */
+  g_soundcheck: [
+    t("Sorry, | {X.np}?", "Atsiprašau, | {X.np:nom}?", "Atsiprašau, {X.np:nom}?"),
+    t("Sorry, | did | you | say | {X.np}?", "Atsiprašau, | ar | {j:jūs|t:tu} | {j:sakėte|t:sakei} | {X.np:nom}?", "Atsiprašau, ar {j:sakėte|t:sakei} „{X.np:nom}“?"),
+  ],
+  g_soundcheck_no: [
+    t("Oh, | sorry! | Could | you | say | it | again?", "O, | atsiprašau! | Ar {j:galėtumėte|t:galėtum} | {j:jūs|t:tu} | pasakyti | tai | dar kartą?", "O, atsiprašau! Ar {j:galėtumėte|t:galėtum} pakartoti?"),
+    t("My | mistake! | What | was | it?", "Mano | klaida! | Kas | buvo | tai?", "Mano klaida! Ką {j:sakėte|t:sakei}?"),
+  ],
   g_repeat_intro: [
     t("Sure!", "Žinoma!", "Žinoma!"),
     t("Of course.", "Žinoma.", "Žinoma."),

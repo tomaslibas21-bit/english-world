@@ -60,8 +60,9 @@ export interface TranscriptLine {
   tips?: Tip[];
   lineKey?: string;
   slow?: boolean;
-  /** How the learner answered (a tiny mic or keyboard in the bubble); "picked": a "Did you mean…?" suggestion. */
-  via?: "voice" | "typed" | "picked";
+  /** How the learner answered (a tiny mic or keyboard in the bubble); "picked": a "Did you mean…?" suggestion;
+   *  "helped": chosen from the never-stuck help after two misses (it earns no phrase). */
+  via?: "voice" | "typed" | "picked" | "helped";
 }
 
 export type MicStatus = "off" | "unsupported" | "starting" | "listening" | "reconnecting" | "processing" | "denied" | "error" | "nothing";
@@ -82,6 +83,10 @@ export interface ConvUI {
   openHint: string | null;
   mic: { status: MicStatus; heard: string; error?: string };
   failures: number;
+  /** Answers not understood in a row (never-stuck help after the second, Conversation.tsx). */
+  misses: number;
+  /** This conversation speaks slowly („Lėčiau“ in the header; remembered per situation). */
+  slowMode: boolean;
   lastHeard: string;
   prefix: boolean;
   completed: boolean;
@@ -110,7 +115,7 @@ export interface ConvUI {
 
 export const EMPTY_CONV: ConvUI = {
   active: false, sitId: "", npcId: "", hostId: "", mode: "talk", transcript: [], phase: "npc", suggest: [], hints: [], chosen: {}, openHint: null,
-  mic: { status: "off", heard: "" }, failures: 0, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
+  mic: { status: "off", heard: "" }, failures: 0, misses: 0, slowMode: false, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null,
   typing: false, newExpressions: [], checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: 0, guideHidden: false,
 };
 
