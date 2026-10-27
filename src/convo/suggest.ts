@@ -13,7 +13,7 @@
 import { compose, type EntityLookup, type Sentence } from "./compose";
 import { entityForms } from "./dialogue";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
-import { levenshtein, NEGATION_TOKENS, normalizedVariants, SOFT_FILLERS, surfaceTokens, tokenizeInput, tokenSimilarity, type Tokens } from "./normalize";
+import { isConfirmation, levenshtein, NEGATION_TOKENS, normalizedVariants, SOFT_FILLERS, surfaceTokens, tokenizeInput, tokenSimilarity, type Tokens } from "./normalize";
 
 // ---------------------------------------------------------------------------------------------
 // Model answers (the guide and "Did you mean…?")
@@ -226,19 +226,8 @@ export function makeGuess(heard: string, picks: Ranked[]): Guess | null {
 // ---------------------------------------------------------------------------------------------
 // "Yes" after "Did you mean…?"
 
-const CONFIRM = new Set([
-  "yes", "yeah", "yep", "yup", "yes yes", "yeah yeah", "sure", "correct", "exactly", "yes exactly", "yes correct",
-  "that's right", "yes that's right", "yeah that's right", "yes i did", "i did", "taip", "taip taip", "jo",
-]);
-/** What an English recogniser writes for a spoken „taip“. */
-const SPOKEN_TAIP = new Set(["type", "tape", "tipe"]);
-
-/** A plain "yes" (or „taip“) and nothing else. `spoken`: also the recogniser's spellings of „taip“. */
-export function isConfirmation(text: string, spoken = false): boolean {
-  const toks = surfaceTokens(text).filter((t) => !SOFT_FILLERS.has(t) && !["oh", "please", "prasau", "okay", "ok"].includes(t));
-  const s = toks.join(" ");
-  return !!s && (CONFIRM.has(s) || (spoken && SPOKEN_TAIP.has(s)));
-}
+// isConfirmation lives in normalize.ts (the dialogue's sound check uses it too); re-exported here for its users
+export { isConfirmation } from "./normalize";
 
 /** Does this "yes" right after "Did you mean…?" pick the first suggestion? Only when the engine would
  *  not use it as an answer itself: it isn't understood at all („taip“), or it is a bare yes that no

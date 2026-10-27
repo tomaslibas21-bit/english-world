@@ -11,6 +11,7 @@ import type { Ctx, EntityDef, Handler, HintGroup, Pending, SentSrc, SituationDef
 import { compose, type Sentence, type Vars } from "./compose";
 import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
 import { soundRepair } from "./soundalike";
+import { isConfirmation } from "./normalize";
 import type { Gender } from "./lt-morph";
 
 
@@ -49,9 +50,14 @@ export interface TurnOut {
   hintsUsed: string[];
   completed: boolean;
   ended: boolean;
-  events: { name: string; data?: any }[];
+  /** World and screen events, each with the number of lines said before it (`at`): it happens right there. */
+  events: { name: string; data?: any; at?: number }[];
   note?: { en: string; lt?: string };
   showMeaning?: boolean;
+  /** This turn asks "Sorry, did you say a latte?" (soundalike.ts). */
+  checking?: boolean;
+  /** The learner said no to that check: for the session it counts as a miss. */
+  checkNo?: boolean;
 }
 
 export interface ConvOptions {
@@ -182,7 +188,7 @@ export class Conversation {
       complete: () => { if (!self.completed) { self.completed = true; self.out.completed = true; } },
       end: () => { self.ended = true; self.out.ended = true; },
       twist: (id) => { self.twists.add(id); },
-      event: (name, data) => { self.out.events.push({ name, data }); },
+      event: (name, data) => { self.out.events.push({ name, data, at: self.out.lines.length }); },
       memory: self.opt.memory || {},
       remember: (patch) => { Object.assign(self.memoryOut, patch); },
     };
@@ -232,14 +238,21 @@ export class Conversation {
     this.held = false;
     this.replayed = false;
     this.quietRepeats = false;
-    // the answer to "Sorry, a latte?": yes says the answer with the name; no asks again; anything else is a new
-    // answer (the open question stays open)
+    // the answer to "Sorry, a latte?": yes (or „taip“) says the answer with the name; no asks again; "No, a
+    // cappuccino" is the new answer. A replay ("Sorry?", "Slower, please"), a side question or a miss keeps the check
+    // open; any other understood answer closes it (below).
+    let checkOpen = false;
     if (this.soundCheck) {
       const sc = this.soundCheck;
-      this.soundCheck = null;
-      const yn = this.bareYesNo(text);
-      if (yn === "yes") text = sc.fixed;
-      else if (yn === "no") { this.out.heard = text; this.say("g_soundcheck_no"); this.held = true; return this.finishTurn(); }
+      const reply = this.checkReply(text);
+      if (reply === "yes") { this.soundCheck = null; text = sc.fixed; }
+      else if (reply === "no") {
+        this.soundCheck = null;
+        this.out.heard = text; this.out.checkNo = true;
+        this.say("g_soundcheck_no"); this.held = true;
+        return this.finishTurn();
+      } else if (reply) { this.soundCheck = null; text = reply.rest; }
+      else checkOpen = true;
     }
     const expected = this.expectedIntents();
     const primary = this.pending ? [...(this.pending.expects || []), ...Object.keys(this.pending.on || {})] : [];
@@ -251,6 +264,7 @@ export class Conversation {
       const fix = soundRepair(this.nlu, this.sit.entities, expected, text);
       if (fix) {
         this.soundCheck = { fixed: fix.fixed };
+        this.out.checking = true;
         this.say("g_soundcheck", { X: fix.entity });
         this.held = true;
         return this.finishTurn();
@@ -270,6 +284,9 @@ export class Conversation {
     this.failures = 0;
     const p = res.best;
     this.out.parse = p;
+    // an answer of this conversation's own closes an open check; the global skills (say that again, slower, what
+    // does it mean, spell it) keep it, so a yes after them still takes the name
+    if (checkOpen && p.segments.some((sg) => !this.opt.global.handlers[sg.intent])) this.soundCheck = null;
     this.history.push({ who: "you", text });
     this.collectTags(p);
     const c = this.ctx(text);
@@ -500,6 +517,18 @@ export class Conversation {
     this.out.completed = this.completed;
     this.out.ended = this.ended;
     return this.out;
+  }
+
+  /** The reply to a sound check: yes, no, a correction ("No, a cappuccino" → its rest), or null (something else). */
+  private checkReply(text: string): "yes" | "no" | { rest: string } | null {
+    if (isConfirmation(text, true)) return "yes";
+    const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
+    if (/^(yes|yeah|yep|yup|sure|right|correct|exactly)[,!]?\s+(that's it|that is it|that's right|that is right|exactly|correct|please|thanks|thank you)$/.test(t)) return "yes";
+    const yn = this.bareYesNo(text);
+    if (yn) return yn;
+    const m = /^(no|nope|nah)[,.!]?\s+(.+)$/i.exec(text.trim());
+    if (m && m[2].replace(/[^a-z]/gi, "")) return { rest: m[2] };
+    return null;
   }
 
   /** "Yes" / "No" (with only soft words such as "please" or "thanks") as the whole answer, else null. */

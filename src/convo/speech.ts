@@ -13,6 +13,8 @@
 // audio to the browser vendor (Google for Chrome, Microsoft for Edge, Apple for Safari). Recognition on the device
 // (Chrome's processLocally) is an opt-in setting: more private, but it hears accents less well.
 
+import { NEGATION_TOKENS } from "./normalize";
+
 export const SPEECH_REC: any =
   typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 export const speechSupported = () => !!SPEECH_REC;
@@ -28,6 +30,8 @@ export const SPEECH_TIMING = {
   finishedAnswer: 1_200,
   /** silence after words the grammar can't use yet */
   unclear: 2_500,
+  /** an understood answer the browser keeps as unfinished (Safari never marks results final): this long unchanged */
+  interimStable: 900,
   session: 60_000,
   startup: 15_000,
 } as const;
@@ -95,6 +99,8 @@ export async function refreshLocalState() { localState = await localAvailability
 let phrasesRefused = false;
 
 const MAX_CANDIDATES = 8;
+/** "not", "no", "never", "don't"…: a reading without the learner's negation is never preferred. */
+export const hasNegation = (text: string) => text.toLowerCase().split(/[^a-z']+/).some((w) => NEGATION_TOKENS.has(w) || w.endsWith("n't"));
 const MAX_ALTERNATIVES = 5;
 
 export function createSpeechAttempt(opt: SpeechOptions) {
@@ -119,6 +125,9 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   let transientRecoveries = 0;
   let useLocal = !!opt.preferLocal && localState === "available";
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  let stableTimer: ReturnType<typeof setTimeout> | undefined;
+  /** the recogniser's own best guess has a negation: readings that drop it rank last */
+  let topNegated = false;
   let restartTimer: ReturnType<typeof setTimeout> | undefined;
   let startupTimer: ReturnType<typeof setTimeout> | undefined;
   let snapshot: SpeechSnapshot = { status: "idle", heard: "" };
@@ -132,7 +141,11 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     if (!v) { v = opt.evaluate(t); verdicts.set(t, v); }
     return v;
   };
-  const rank = (text: string) => { const v = verdict(text); return v === "complete" ? 2 : v === "prefix" ? 1 : 0; };
+  const rank = (text: string) => {
+    if (topNegated && !hasNegation(text)) return -1;
+    const v = verdict(text);
+    return v === "complete" ? 2 : v === "prefix" ? 1 : 0;
+  };
 
   const update = (s: Partial<SpeechSnapshot>) => {
     snapshot = { ...snapshot, ...s, local: useLocal };
@@ -140,8 +153,8 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   };
   const heard = () => (pendingInterim ? interimCandidates[0] : finalCandidates[0]) ?? "";
   const clearTimers = () => {
-    for (const t of [idleTimer, restartTimer, startupTimer]) if (t !== undefined) clock.clearTimeout(t);
-    idleTimer = restartTimer = startupTimer = undefined;
+    for (const t of [idleTimer, restartTimer, startupTimer, stableTimer]) if (t !== undefined) clock.clearTimeout(t);
+    idleTimer = restartTimer = startupTimer = stableTimer = undefined;
   };
   const release = () => {
     const r = rec; rec = null;
@@ -156,9 +169,11 @@ export function createSpeechAttempt(opt: SpeechOptions) {
    *  own starts a new candidate, so an arbitrary tail is never salvaged and a negation is never dropped. */
   const combine = (previous: string[], parts: string[]) => {
     const out: string[] = [];
+    // after a negation, nothing restarts: "I don't want… oat milk" must never become "oat milk"
+    const restartable = previous.some((p) => p) && !previous.some(hasNegation);
     for (const part of parts) {
       for (const prefix of previous) out.push(`${prefix} ${part}`.trim());
-      if (previous.some((p) => p) && rank(part) > 0) out.push(part);
+      if (restartable && rank(part) > 0) out.push(part);
     }
     const unique = [...new Set(out)].filter((t) => t.length <= 2_000);
     // a stable sort: within the same verdict, the recogniser's own order (its best guess first) stays
@@ -198,6 +213,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     idleTimer = clock.setTimeout(scheduleIdle, Math.max(1, Math.min(totalRemaining, speaking ? 1_000 : silenceRemaining)));
   };
   const activity = () => { hasSpeech = true; lastActivity = clock.now(); emptyRestarts = 0; scheduleIdle(); };
+  const cancelStable = () => { if (stableTimer !== undefined) clock.clearTimeout(stableTimer); stableTimer = undefined; };
 
   const failService = (error: string) => {
     stopRunning();
@@ -235,7 +251,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       update({ status: "listening", heard: heard() });
       scheduleIdle();
     };
-    r.onspeechstart = () => { if (!current()) return; speaking = true; activity(); };
+    r.onspeechstart = () => { if (!current()) return; speaking = true; cancelStable(); activity(); };
     r.onspeechend = () => { if (!current()) return; speaking = false; lastActivity = clock.now(); scheduleIdle(); };
     r.onresult = (ev) => {
       if (!current()) return;
@@ -243,6 +259,10 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       const signature = JSON.stringify(results.map((res) => ({ f: res.isFinal, t: Array.from(res).slice(0, MAX_ALTERNATIVES).map((a) => (a.transcript || "").trim()) })));
       const changed = signature !== previousResults;
       previousResults = signature;
+      if (changed) cancelStable();
+      // the recogniser's best guess: its first alternative for each piece
+      const heardNow = results.map((res) => (res[0]?.transcript || "").trim()).filter(Boolean).join(" ");
+      topNegated = hasNegation(`${sessionBase[0] ?? ""} ${heardNow}`);
       let finals = sessionBase.slice();
       let interims = finals;
       let interimText = "";
@@ -257,9 +277,14 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       interimCandidates = interims.length ? interims : [""];
       pendingInterim = !!interimText.trim();
       if (changed && hasFinal && !pendingInterim) speaking = false;
-      if (changed) activity();
+      if (changed && heardNow) activity();
       if (!current()) return;
       update({ status: "listening", heard: heard() });
+      // an understood answer the browser still calls unfinished (Safari in continuous mode never marks results
+      // final): hand it over once it stays the same for a moment
+      if (pendingInterim && verdict(interimCandidates[0] ?? "") === "complete") {
+        stableTimer = clock.setTimeout(() => { stableTimer = undefined; if (current()) commit(); }, SPEECH_TIMING.interimStable);
+      }
     };
     r.onerror = (e) => {
       if (!current()) return;
@@ -278,11 +303,16 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       }
       if (err === "phrases-not-supported") { phrasesRefused = true; release(); reconnectSoon(run); return; }
       if ((err === "language-not-supported" || err === "service-not-allowed") && useLocal) { useLocal = false; release(); reconnectSoon(run); return; }
+      // a network hiccup after an understood answer: the answer stands
+      if ([...finalCandidates, ...(pendingInterim ? interimCandidates : [])].some((t) => t.trim() && verdict(t) === "complete")) { commit(); return; }
       failService(err);
     };
     r.onend = () => {
       if (!current()) return;
       speaking = false;
+      // words the browser hadn't finalised yet stay with the answer through its restart
+      if (pendingInterim) { finalCandidates = interimCandidates.slice(); pendingInterim = false; }
+      cancelStable();
       release();
       if (startupTimer !== undefined) { clock.clearTimeout(startupTimer); startupTimer = undefined; }
       scheduleIdle();
@@ -302,7 +332,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       stopRunning();
       // Every explicit try is a new answer; only the browser's own restarts inside an attempt keep its words.
       finalCandidates = [""]; interimCandidates = [""];
-      pendingInterim = false; hasSpeech = false; speaking = false;
+      pendingInterim = false; hasSpeech = false; speaking = false; topNegated = false;
       startedAt = null; emptyRestarts = 0; transientRecoveries = 0;
       verdicts.clear();
       running = true;

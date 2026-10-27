@@ -1,7 +1,7 @@
 // One conversation between the learner and an NPC: plays NPC lines, opens the learner's
 // turn (speech or typing), sends answers to the dialogue engine and records progress.
 import { Conversation, type TurnOut } from "../convo/dialogue";
-import { createSpeechAttempt, speechSupported } from "../convo/speech";
+import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/speech";
 import { bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
 import { COACH_VOICE, NPCS } from "../content/npcs";
@@ -29,6 +29,9 @@ export class Session {
   sit: SituationDef;
   conv: Conversation;
   private speech: ReturnType<typeof createSpeechAttempt> | null = null;
+  /** Answers already chosen from the never-stuck help, per moment: a twist that turned one down ("we're out of
+   *  oat milk") never gets it offered again. */
+  private helpedTried = new Set<string>();
   private alive = true;
   private busy = false;
   private hooks: SessionHooks;
@@ -92,8 +95,14 @@ export class Session {
     st.setConv({ phase: "npc", stepId: this.conv.ended ? "closing" : this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? null });
     this.stopListening();
     if (out.note) st.setConv({ note: out.note });
-    for (const l of out.lines) {
+    // "Slower, please" made this conversation slow: the „Lėčiau“ switch shows it, and it is remembered
+    if (this.conv.slow !== useStore.getState().conv.slowMode) this.setSlowMode(this.conv.slow);
+    // an event happens where it was raised among the lines: the phone rings before "Grant here", the plant falls
+    // before "The plant is fine"
+    const fire = (i: number) => { for (const e of out.events) if ((e.at ?? Infinity) === i) this.hooks.onEvent(e.name, e.data); };
+    for (const [i, l] of out.lines.entries()) {
       if (!this.alive) return;
+      fire(i);
       const npc = NPCS[l.npc];
       const id = this.pushLine({ who: "npc", npc: l.npc, sentence: l.sentence, slow: l.slow });
       const slow = !!l.slow || useStore.getState().settings.slowVoice;
@@ -114,7 +123,7 @@ export class Session {
       for (const t of tr.slice(-out.lines.length - 3)) if (t.who === "npc") rv[t.id] = true;
       useStore.getState().setConv((c) => ({ reveal: { ...c.reveal, ...rv } }));
     }
-    for (const e of out.events) this.hooks.onEvent(e.name, e.data);
+    for (const e of out.events) if ((e.at ?? Infinity) >= out.lines.length) this.hooks.onEvent(e.name, e.data);
     if (out.completed && !this.wasCompleted) this.onCompleted();
     if (this.conv.ended) { this.finish(); return; }
     this.yourTurn();
@@ -170,6 +179,12 @@ export class Session {
     this.speech.start();
   }
 
+  /** The mic button (or space) while listening: hand over what was heard so far, if anything, else just stop. */
+  finishListening() {
+    if (this.speech && !this.practicing && this.speech.running) { this.speech.finish(); return; }
+    this.stopListening();
+  }
+
   stopListening() {
     this.cancelAutoListen();
     this.cancelPractice();
@@ -190,25 +205,31 @@ export class Session {
     // "Yes" / „taip“ right after "Did you mean…?" takes the first suggestion, unless the engine has a
     // use for the "yes" itself (a yes/no question is open): an understood answer is never replaced
     const guess = st.conv.guess;
-    if (guess?.options.length && this.yesPicksGuess(clean, via === "voice")) { clean = guess.options[0].en; alts = []; via = "picked"; }
+    if (guess?.options.length && this.yesPicksGuess(clean, via === "voice")) { clean = guess.options[0].en; alts = []; via = guess.stuck ? "helped" : "picked"; }
     // the recogniser's other readings: one that names something this conversation knows beats a best guess that
     // doesn't ("I'd like a lot of" vs "I'd like a latte"), and an understood one beats one that isn't
     if (via === "voice" && alts.length) {
       const best = this.bestReading(clean, alts);
       if (best !== clean) { alts = [clean, ...alts.filter((a) => a !== best)]; clean = best; }
     }
+    if (via === "helped") this.helpedTried.add(`${this.momentId()}|${clean}`);
     st.setConv({ phase: "thinking", lastHeard: clean, guess: null, practice: null });
     let chosen = clean;
     let out = this.conv.input(clean);
     if (!out.understood) {
       for (const a of alts) {
+        if (hasNegation(clean) && !hasNegation(a)) continue;
         const probe = this.conv.nlu.parse(a, this.conv.expectedIntents());
         if (probe.ok) { this.conv.failures = Math.max(0, this.conv.failures - 1); chosen = a; out = this.conv.input(a); break; }
       }
     }
     this.pushLine({ who: "you", text: displayUtterance(chosen), understood: out.understood, tips: out.tips, via });
-    if (out.understood) {
-      audio.sfx("success");
+    if (out.understood && out.checkNo) {
+      // "No" to "Sorry, did you say a latte?": the person didn't get it, so it counts as a miss (the help comes)
+      audio.sfx("soft");
+      st.setConv({ misses: useStore.getState().conv.misses + 1, prefix: false, mic: { status: "off", heard: "" } });
+    } else if (out.understood) {
+      audio.sfx(out.checking ? "soft" : "success");
       st.setConv({ failures: 0, misses: 0, prefix: false, mic: { status: "off", heard: "" } });
       // an answer chosen from the never-stuck help wasn't said: it earns no phrase
       if (via !== "helped") this.recordExpressions(out.hintsUsed);
@@ -227,6 +248,9 @@ export class Session {
       if (useStore.getState().settings.autoListen && speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
     } else this.yourTurn();
   }
+
+  /** The moment the learner is answering: the open question, else the step. */
+  private momentId(): string { return this.conv.pending?.id ?? this.conv.effectiveStep()?.id ?? ""; }
 
   /** Of the recogniser's readings, the most useful one (convo/readings.ts). */
   private bestReading(text: string, alts: string[]): string {
@@ -252,7 +276,9 @@ export class Session {
       let picks = pickSuggestions(ranked, understands);
       if (!stuck) return makeGuess(heard, picks);
       // the moment's model answers in their own order (the first suggestion's first), up to three in all
-      const own = pickSuggestions(cands.map((s) => ({ s, score: 1 })), understands, 3);
+      const fresh = cands.filter((s) => !this.helpedTried.has(`${this.momentId()}|${s.en}`));
+      const own = pickSuggestions(fresh.map((s) => ({ s, score: 1 })), understands, 3);
+      picks = picks.filter((p) => !this.helpedTried.has(`${this.momentId()}|${p.s.en}`));
       picks = [...picks, ...own.filter((o) => !picks.some((p) => p.s.en === o.s.en))].slice(0, 3);
       const g = makeGuess(heard, picks);
       return g && { ...g, stuck: true };

@@ -55,6 +55,29 @@ describe("the café checks a name heard by its sound", () => {
     conv.input("An americano, please.");
     expect(conv.s.items.map((x: any) => x.id)).toEqual(["americano"]);
   });
+  it("asks with the bare name, never a wrong article", () => {
+    const conv = cafe();
+    expect(said(conv.input("Lata please"))).not.toMatch(/\b(a|an) latte\?/i);
+  });
+  it("keeps the check open through \"Sorry?\" and \"Slower, please\"", () => {
+    for (const between of ["Sorry?", "Could you say that again?", "Slower, please."]) {
+      const conv = cafe();
+      conv.input("Lata please");
+      expect(said(conv.input(between))).toMatch(/latte\?/i);
+      conv.input("Yes.");
+      expect(conv.s.items.map((x: any) => x.id)).toEqual(["latte"]);
+    }
+  });
+  it("takes „taip“ as yes, and \"No, a cappuccino\" as the new answer", () => {
+    const c1 = cafe();
+    c1.input("Lata please");
+    c1.input("taip");
+    expect(c1.s.items.map((x: any) => x.id)).toEqual(["latte"]);
+    const c2 = cafe();
+    c2.input("Lata please");
+    c2.input("No, a cappuccino.");
+    expect(c2.s.items.map((x: any) => x.id)).toEqual(["cappuccino"]);
+  });
   it("a new answer instead of yes or no is simply taken", () => {
     const conv = cafe();
     conv.input("Lata please");

@@ -334,3 +334,20 @@ export function displayUtterance(text: string): string {
   const s = t.charAt(0).toUpperCase() + t.slice(1);
   return s.replace(/\bi\b/g, "I").replace(/\bi'(m|ll|d|ve)\b/gi, (_m, x) => `I'${x}`);
 }
+
+// ---------------------------------------------------------------------------------------------
+// A plain "yes" ("Did you mean…?" in suggest.ts; the sound check in dialogue.ts)
+
+const CONFIRM = new Set([
+  "yes", "yeah", "yep", "yup", "yes yes", "yeah yeah", "sure", "correct", "exactly", "yes exactly", "yes correct",
+  "that's right", "yes that's right", "yeah that's right", "yes i did", "i did", "taip", "taip taip", "jo",
+]);
+/** What an English recogniser writes for a spoken „taip“. */
+const SPOKEN_TAIP = new Set(["type", "tape", "tipe"]);
+
+/** A plain "yes" (or „taip“) and nothing else. `spoken`: also the recogniser's spellings of „taip“. */
+export function isConfirmation(text: string, spoken = false): boolean {
+  const toks = surfaceTokens(text).filter((t) => !SOFT_FILLERS.has(t) && !["oh", "please", "prasau", "okay", "ok"].includes(t));
+  const s = toks.join(" ");
+  return !!s && (CONFIRM.has(s) || (spoken && SPOKEN_TAIP.has(s)));
+}

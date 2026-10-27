@@ -29,7 +29,8 @@ function wordsOf(en: string): string[] {
 function unquote(w: string): string {
   if (w.startsWith("'") && !/^'(cause|em|til|bout|n|tis|twas|round)$/.test(w)) w = w.slice(1);
   if (w.endsWith("'") && !/s'$/.test(w)) w = w.slice(0, -1);
-  return w;
+  // what was inside the quotes may end in punctuation of its own ("'I was wrong.'")
+  return w.replace(/^[^\p{L}0-9']+|[^\p{L}0-9']+$/gu, "");
 }
 
 export function ipaForUnit(en: string): string {

@@ -9,7 +9,7 @@ import { NPCS } from "../src/content/npcs";
 import { Conversation } from "../src/convo/dialogue";
 
 // A tiny grammar: these answers are complete, and any start of one is a valid beginning.
-const COMPLETE = ["i'd like a latte", "i'd like a latte please", "a latte please", "yes", "large", "i want to go there"];
+const COMPLETE = ["i'd like a latte", "i'd like a latte please", "a latte please", "yes", "large", "i want to go there", "oat milk"];
 const norm = (t: string) => t.toLowerCase().replace(/[^a-z' ]/g, "").replace(/\s+/g, " ").trim();
 function evaluate(text: string): Verdict {
   const t = norm(text);
@@ -104,13 +104,68 @@ describe("speech attempt", () => {
   it("lets the learner add a word to an understood answer", () => {
     const h = harness();
     h.rec().speech();
-    h.rec().results([{ final: true, alts: ["a latte"] }, { final: false, alts: ["please"] }]);
-    h.advance(SPEECH_TIMING.finishedAnswer + 500);
+    h.rec().results([{ final: true, alts: ["I'd like a latte"] }]);
+    h.advance(SPEECH_TIMING.finishedAnswer - 400);
+    h.rec().results([{ final: true, alts: ["I'd like a latte"] }, { final: false, alts: ["please"] }]);
+    h.advance(400);
     expect(h.commits).toHaveLength(0);
-    h.rec().results([{ final: true, alts: ["a latte"] }, { final: true, alts: ["please"] }]);
+    h.rec().results([{ final: true, alts: ["I'd like a latte"] }, { final: true, alts: ["please"] }]);
     h.rec().silence();
     h.advance(SPEECH_TIMING.finishedAnswer + 100);
-    expect(h.commits[0].text).toBe("a latte please");
+    expect(h.commits[0].text).toBe("I'd like a latte please");
+  });
+
+  it("hands over an understood answer the browser never marks final (Safari), once it stays the same", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: false, alts: ["I'd like a latte"] }]);
+    h.advance(SPEECH_TIMING.interimStable - 100);
+    expect(h.commits).toHaveLength(0);
+    h.advance(200);
+    expect(h.commits[0].text).toBe("I'd like a latte");
+  });
+
+  it("never drops the learner's negation after a pause", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["I don't want"] }, { final: true, alts: ["oat milk"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.betweenWords + 1_000);
+    expect(h.commits[0].text).toBe("I don't want oat milk");
+    expect(h.commits[0].alts).not.toContain("oat milk");
+  });
+
+  it("never prefers a guess without the negation the best guess has", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["I don't want oat milk", "oat milk"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.betweenWords + 1_000);
+    expect(h.commits[0].text).toBe("I don't want oat milk");
+  });
+
+  it("keeps words the browser hadn't finalised when it restarts", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.rec().end();
+    h.advance(300);
+    h.rec().emitStart();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["latte"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 100);
+    expect(h.commits[0].text).toBe("I'd like a latte");
+  });
+
+  it("keeps an understood answer when the network fails during the last pause", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["I'd like a latte"] }]);
+    h.rec().silence();
+    h.advance(600);
+    h.rec().error("network");
+    expect(h.commits[0].text).toBe("I'd like a latte");
   });
 
   it("never ends while the learner is still speaking", () => {

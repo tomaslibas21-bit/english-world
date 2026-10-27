@@ -51,6 +51,14 @@ export interface SoundFix {
   likeness: number;
 }
 
+/** Does a parsed answer's slot hold this entity (anywhere inside, as slot values nest)? */
+function mentions(v: unknown, id: string): boolean {
+  if (v === id) return true;
+  if (Array.isArray(v)) return v.some((x) => mentions(x, id));
+  if (v && typeof v === "object") return Object.entries(v).some(([k, x]) => k !== "__tags" && mentions(x, id));
+  return false;
+}
+
 /** The names this conversation knows, each with its spellings. */
 function surfaces(e: EntityDef): string[] {
   const join = (s?: string) => (s ? s.split(" | ").join(" ").trim() : "");
@@ -95,18 +103,21 @@ export function soundRepair(nlu: Nlu, entities: Record<string, EntityDef[]> | un
       // a name the conversation knows is no mishearing ("large" is never "latte"); inside a longer stretch a real
       // word may be part of one ("cup of chino")
       if (n === 1 ? realWords.has(win[0]) : realPhrases.has(win.join(" "))) continue;
+      const holdsReal = win.some((w) => realWords.has(w));
       // inside a sound-alike, a heard "of" or "a" is a vowel: "cup of chino", "lot of", "cap a chino"
       const joined = win.map((w, k) => (k > 0 && VOWELISH.has(w) ? "a" : w)).join("");
       const key = soundKey(joined);
       const cands = [...(known.get(key) ?? []), ...(key.endsWith("r") ? (known.get(key.slice(0, -1)) ?? []).filter((c) => c.vowelEnd) : [])];
       for (const c of cands) {
         const like = likeness(joined, c.surface);
-        if (like < 0.4) continue;
+        if (like < (holdsReal ? 0.6 : 0.4)) continue;
         const fixed = [...raw.slice(0, i), c.surface, ...raw.slice(i + n)].join(" ");
         const r = nlu.parse(fixed, expected);
         if (!r.ok || !r.best || r.best.flags.has("approx")) continue;
         if (r.best.segments.length && r.best.segments.every((sg) => nlu.isCatchAll(sg.intent))) continue;
         if (expected.length && !r.best.segments.some((sg) => expected.includes(sg.intent))) continue;
+        // the answer must be about that name ("Same one, but in large" is no "medium")
+        if (!r.best.segments.some((sg) => mentions(sg.slots, c.entity.id))) continue;
         fixes.push({ fixed, heard: raw.slice(i, i + n).join(" "), type: c.type, entity: c.entity.id, likeness: like });
       }
     }

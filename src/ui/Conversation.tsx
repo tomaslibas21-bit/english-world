@@ -82,7 +82,7 @@ export function Conversation() {
         e.preventDefault();
         const s = game?.activeSession;
         if (!s) return;
-        if (st.conv.mic.status === "listening" || st.conv.mic.status === "starting" || st.conv.mic.status === "reconnecting") s.stopListening();
+        if (st.conv.mic.status === "listening" || st.conv.mic.status === "starting" || st.conv.mic.status === "reconnecting") s.finishListening();
         else s.listen();
       }
     };
@@ -589,7 +589,7 @@ function MicButton() {
   return (
     <button className={"mic" + (listening ? " listening" : "")} disabled={conv.phase !== "you"} aria-pressed={listening}
       title={title} aria-label={title}
-      onClick={() => { const s = game?.activeSession; if (!s) return; if (listening) s.stopListening(); else s.listen(); }}>
+      onClick={() => { const s = game?.activeSession; if (!s) return; if (listening) s.finishListening(); else s.listen(); }}>
       {listening ? <Icon name="stop" size={24} /> : <Icon name="mic" size={30} />}
     </button>
   );
