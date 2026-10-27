@@ -25,7 +25,8 @@ fs.mkdirSync(OUT, { recursive: true });
 const MANIFEST = path.join(OUT, "manifest.json");
 const manifest: Record<string, number> = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, "utf8")) : {};
 
-const { utts, errors } = enumerateAll({ fuzzRuns: fuzz, only, sits, log: (s) => process.stdout.write("\r" + s.padEnd(70)) });
+// the Kokoro voices' lines (v1), whichever voices the game plays (src/content/voices.ts)
+const { utts, errors } = enumerateAll({ fuzzRuns: fuzz, only, sits, v2: false, log: (s) => process.stdout.write("\r" + s.padEnd(70)) });
 console.log(`\n${utts.length} sentences; ${errors.length} handler errors during fuzzing`);
 for (const e of errors.slice(0, 20)) console.log("  ! " + e);
 if (prune && !only.length && !sits) {

@@ -191,7 +191,8 @@ function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: S
 }
 
 export function sentencesForIpa(): string[] {
-  const { utts } = enumerateAll({ fuzzRuns: 40 });
+  // one coach voice (v1): with the Gemini voices' two, every example answer would come twice
+  const { utts } = enumerateAll({ fuzzRuns: 40, v2: false });
   const extra: string[] = [];
   for (const sit of SITUATIONS) for (const list of Object.values(sit.entities || {})) for (const e of list) {
     extra.push(e.en.split(" | ").join(" "));

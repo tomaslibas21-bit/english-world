@@ -105,6 +105,15 @@ describe("the Whisper check", () => {
     expect(likeness("That's about a hundred and seven Fahrenheit.", "That's about 107 Fahrenheit.")).toBe(1);
     expect(likeness("Come in, come in!", "Come in. Come in.")).toBe(1);
     expect(likeness("Mm.", "Mmm.")).toBe(1);
+    expect(likeness("Minus thirty-four?", "-34?")).toBe(1);
+    expect(likeness("Are twenties okay?", "Are 20s okay?")).toBe(1);
+    expect(likeness("Minus four?", "Four?")).toBeLessThan(0.85);
+    expect(likeness("June fourth, nineteen eighty.", "June 4, 1980.")).toBe(1);
+    expect(likeness("It's June fourth, nineteen ninety.", "It's June 4th, 1990.")).toBe(1);
+    expect(likeness("On the twenty-first floor.", "On the 21st floor.")).toBe(1);
+    expect(likeness("See you!", "See ya!")).toBe(1);
+    expect(likeness("Ha! I wish!", "I wish!")).toBe(1);
+    expect(likeness("Sorry, Saturday?", "Sorry, Sunday?")).toBeLessThan(0.85);
     // what Whisper wrote for the dry run's clips
     expect(likeness("Hold on, I said seven thousand seven hundred fifty. I won't take a cent more.", "Hold on, I said 7,750. I won't take a cent more.")).toBe(1);
     expect(likeness("Here you go: nine hundred fifteen dollars. Here's your receipt.", "Here you go. $915. Here's your receipt.")).toBe(1);

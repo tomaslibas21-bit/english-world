@@ -447,8 +447,20 @@ export function numbersToDigits(s: string): string {
   }
   return out.join(" ");
 }
+const ORDINAL: Record<string, string> = { first: "one", second: "two", third: "three", fifth: "five", eighth: "eight", ninth: "nine", twelfth: "twelve" };
+/** What a voice says and Whisper writes differently: "-4?" (minus four), "20s" (twenties), "June 4th" (fourth),
+ *  "See ya!" (see you); a laugh ("Ha!") it leaves out. */
+const spoken = (s: string) => s.toLowerCase().replace(/&/g, " and ")
+  .replace(/(^|[\s(])[-−](?=\d)/g, "$1minus ")
+  .replace(/\b(twent|thirt|fort|fift|sixt|sevent|eight|ninet)ies\b/g, "$1y s")
+  .replace(/\b(twent|thirt|fort|fift|sixt|sevent|eight|ninet)ieth\b/g, "$1y")
+  .replace(/\b(first|second|third|fifth|eighth|ninth|twelfth)\b/g, (w) => ORDINAL[w])
+  .replace(/\b(four|six|seven|ten|eleven|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)th\b/g, "$1")
+  .replace(/(\d)(st|nd|rd|th)\b/g, "$1")
+  .replace(/\bya\b/g, "you")
+  .replace(/\b(ha|hah|haha)\b/g, " ");
 /** Letters and digits only, numbers as digits, without the money words a voice and Whisper write differently. */
-const letters = (s: string) => numbersToDigits(s.replace(/&/g, " and ")).replace(/\b(dollars?|bucks|cents?|percent)\b/g, "").replace(/[^a-z0-9]/g, "").replace(/([a-z])\1{2,}/g, "$1$1");
+const letters = (s: string) => numbersToDigits(spoken(s)).replace(/\b(dollars?|bucks|cents?|percent)\b/g, "").replace(/[^a-z0-9]/g, "").replace(/([a-z])\1{2,}/g, "$1$1");
 /** Whisper sometimes repeats a sentence it heard once ("Take one. Take one. Take one."): a sentence that comes again
  *  right after itself counts once, on both sides. */
 const onceEach = (s: string) => s.split(/(?<=[.!?])\s+/).filter((x, i, all) => i === 0 || letters(x) !== letters(all[i - 1])).join(" ");
@@ -562,18 +574,22 @@ async function check() {
 function redo() {
   const below = Number(flag("below") ?? 0.8);
   const manifest: Record<string, number> = readJson(MANIFEST, {});
+  const recorded: Record<string, Recorded> = readJson(RECORDED, {});
   const results: Record<string, { score: number; odd?: string }> = readJson(CHECK, {});
   const out = path.join(WORK, "rejected");
   fs.mkdirSync(out, { recursive: true });
-  let n = 0;
+  let n = 0, kept = 0;
   for (const [k, r] of Object.entries(results)) {
     if (!manifest[k] || (r.score >= below && !r.odd)) continue;
-    if (fs.existsSync(mp3Of(k))) fs.renameSync(mp3Of(k), path.join(out, k + ".mp3"));
+    // a line that has had all its tries keeps its last take: better than no clip (and Whisper mishears some names)
+    if ((recorded[k]?.tries ?? 1) >= MAX_TRIES) { kept++; continue; }
+    if (fs.existsSync(mp3Of(k))) fs.renameSync(mp3Of(k), path.join(out, `${k}.${recorded[k]?.tries ?? 1}.mp3`));
     delete manifest[k];
     n++;
   }
   writeJson(MANIFEST, manifest);
   console.log(`${n} clips taken out (kept in voicing/rejected/); the next prepare asks for them again`);
+  if (kept) console.log(`${kept} flagged clips kept: their lines have had ${MAX_TRIES} tries (voicing/check.json)`);
 }
 
 // ---------------------------------------------------------------- the casting sample page

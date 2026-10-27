@@ -39,15 +39,15 @@ npm run audio -- s72 --dry       # count what would be generated for one situati
 
 The first `npm run audio` downloads the Kokoro-82M ONNX model (about 320 MB) from Hugging Face into the local cache. After that, generation runs offline on the CPU at about 1.6 clips per second.
 
-The Gemini voices (every character a voice of their own, a female and a male coach) are recorded with `npx tsx tools/voice-batch.ts` into `public/audio-v2/`, and the game plays them once `DEFAULT_VOICES` in `src/content/voices.ts` is `"v2"`. See docs/VOICING-PLAN.md.
+The game plays the Gemini voices (every character a voice of their own, a female and a male coach). They are recorded with `npx tsx tools/voice-batch.ts` into `public/audio-v2/` and switched on by `DEFAULT_VOICES = "v2"` in `src/content/voices.ts` (since 28 Oct 2026). The Kokoro clips above are the earlier set (v1): switching back is that one setting. See docs/VOICING-PLAN.md.
 
 ## Hosting
 
-The build is a static site: about 5 MB of code, 22 MB of scene pictures (WebP) and about 190 MB of voice clips (about 21,500 files in `audio/`). No server is needed.
+The build is a static site: about 5 MB of code, 22 MB of scene pictures (WebP) and the voice clips: about 450 MB of Gemini clips (33,682 files in `audio-v2/`), or about 190 MB of Kokoro clips (`audio/`). No server is needed.
 
-- **GitHub Pages (live).** The game is published at https://tomaslibas21-bit.github.io/english-world/ from the public repository `tomaslibas21-bit/english-world`. `.github/workflows/deploy.yml` builds the site with Node 22 on every push to `main` and publishes it in about a minute; the base path comes from the repository name. The steps, in Lithuanian, are in `docs/HOSTING.md`.
+- **GitHub Pages (off).** The game was published at https://tomaslibas21-bit.github.io/english-world/ from the public repository `tomaslibas21-bit/english-world`; the Pages copy and its workflow are switched off since the game moved into English Master (October 2026). Turned back on, `.github/workflows/deploy.yml` builds the site with Node 22 on every push to `main`; the base path comes from the repository name. The Gemini clips are not in git, so such a build needs `VITE_AUDIO_BASE=https://audio.dvikalbesdainos.lt/fluent-steps/game/audio-v2/`. The steps, in Lithuanian, are in `docs/HOSTING.md`.
 - **Inside English Master (the fluent-steps site, at `/zaidimas/`).** `npx tsx tools/export-fluent-steps.ts <fluent-steps checkout>` builds the game for `/zaidimas/` and copies it into the site's `public/zaidimas/` (the code, the pictures and the clip list: about 370 files).
-  - The voice clips are served from Cloudflare R2: bucket `fluent-steps-audio`, folder `fluent-steps/game/audio/`, at https://audio.dvikalbesdainos.lt/fluent-steps/game/audio/. At about 21,500 files they exceed the 20,000-file limit of a site deploy. After `npm run audio` makes new clips, upload them there too.
+  - The voice clips are served from Cloudflare R2, bucket `fluent-steps-audio`: the Gemini clips from `fluent-steps/game/audio-v2/` (https://audio.dvikalbesdainos.lt/fluent-steps/game/audio-v2/; `npx tsx tools/voice-batch.ts upload` puts them there), the Kokoro clips from `fluent-steps/game/audio/`. At 33,682 and about 21,500 files they exceed the 20,000-file limit of a site deploy. New clips have to be uploaded there too.
   - Words saved in the game also go into the course's own flashcards (deck „Mano žodžiai“), and a home button („Kursas“) leads back to the course.
 - **As a section of another site** (e.g. `https://your-site/game/`):
 
@@ -123,7 +123,7 @@ So recognition needs an internet connection in most browsers. Audio sent to Goog
 
 ## Assets and licences
 
-- **Voices:** [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0), run locally through `kokoro-js` during development. The generated clips can be used commercially.
+- **Voices:** Google's Gemini text-to-speech (`gemini-3.8-flash-tts`), recorded through the Gemini Batch API with the owner's key in October 2026, under Google's Gemini API terms. The earlier set (v1): [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0), run locally through `kokoro-js` during development; those clips can be used commercially.
 - **Pronunciation (IPA):** generated automatically from the CMU Pronouncing Dictionary (primary pronunciations), with the story course's `ipa.py` convention and overrides. It's AI/dictionary-generated and wasn't checked against the recordings.
 - **Lithuanian translations and glosses:** written with AI assistance following TOMAS-INTERLINEAR-v2 and LIBRARY-MINIMUM-UNIT-v3. They still need a native-speaker review (see "Known limitations").
 - **Fonts:** Nunito, EB Garamond and Gentium Book Plus (SIL Open Font License), bundled through @fontsource.
@@ -141,7 +141,7 @@ So recognition needs an internet connection in most browsers. Audio sent to Goog
 - **Speech recognition with a real microphone was not tested here.** The development browser has no microphone. The speech code (Web Speech API, on-device preference, timing, recovery) is ported from the Dvikalbės Dainos app and type-checks. Test it in Chrome, Edge and Safari on real devices.
 - **Lithuanian glosses and translations need a native review.** They follow the bilingual-book rules and pass the structural checks. The authors' open questions are collected in `REVIEW-NOTES.md`.
 - **IPA** is generated from the CMU dictionary and was not checked against the audio.
-- **Voices are synthetic** (Kokoro). Clips are pre-generated for every line the enumerator can produce, including dynamic lines found by fuzzing. A rare combination without a clip is read by the browser's own voice. The player's name can't be pre-recorded, so lines that address the player by name are voiced without it ("Thanks, Rūta!" plays "Thanks!"). Hint examples that contain the name ("My name is Rūta") use the browser voice.
-- **Hosting size:** about 18,300 small MP3 files (about 200 MB). Cloudflare allows at most 20,000 files per deployment (Pages, and Workers on the free plan; current Lovable sites deploy to Cloudflare Workers), so there the clips should live elsewhere (`VITE_AUDIO_BASE`). Netlify, GitHub Pages or any ordinary web host are fine.
+- **Voices are synthetic** (Gemini; Kokoro in v1). Clips are pre-generated for every line the enumerator can produce, including dynamic lines found by fuzzing. A rare combination without a clip is read by the browser's own voice. The player's name can't be pre-recorded, so lines that address the player by name are voiced without it ("Thanks, Rūta!" plays "Thanks!"). Hint examples that contain the name ("My name is Rūta") use the browser voice.
+- **Hosting size:** 33,682 small MP3 files (about 450 MB) for the Gemini voices. Cloudflare allows at most 20,000 files per deployment (Pages, and Workers on the free plan; current Lovable sites deploy to Cloudflare Workers), so there the clips should live elsewhere (`VITE_AUDIO_BASE`). Netlify, GitHub Pages or any ordinary web host are fine.
 - **Progress is saved per browser** (localStorage). There are no accounts and no sync between devices.
 - **Performance** was checked only in the development browser. On slow computers, use Settings → Grafika → „Paprasta“.

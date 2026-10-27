@@ -7,8 +7,8 @@
 import { COACH_VOICE, type NpcDef } from "./npcs";
 import { AMBIENT_VOICES } from "./ambient";
 
-/** v2 goes on only after the new clips are recorded, checked and uploaded. */
-const DEFAULT_VOICES: "v1" | "v2" = "v1";
+/** v2 since 28 Oct 2026: every clip recorded, checked with Whisper and uploaded (docs/VOICING-PLAN.md). */
+const DEFAULT_VOICES: "v1" | "v2" = "v2";
 const chosen = import.meta.env?.VITE_VOICES || (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.VITE_VOICES;
 export const VOICES_V2 = (chosen || DEFAULT_VOICES) === "v2";
 

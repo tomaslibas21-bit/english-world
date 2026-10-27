@@ -1,7 +1,10 @@
 # Voicing plan: the game with Gemini voices
 
-**Status (27 Oct 2026): the tools are ready; waiting for the key.** The owner adds `GEMINI_API_KEY=…` to this repo's
-git-ignored `.env.local` themselves (never in a chat). Nothing has been sent to any service yet.
+**Status (28 Oct 2026): done; the game plays the Gemini voices.** All 33,682 lines were recorded on 27–28 Oct
+with the owner's key through the Batch API: 2.32M audio tokens, about $10.4 at the batch price (plus 0.33M text
+tokens, cents). Whisper's check sent 819 lines back for another take (871 takes in all). `DEFAULT_VOICES` is `"v2"`
+since 28 Oct, and English Master's re-export of that day carries them. The key line was removed from `.env.local`
+afterwards: to record again, the owner adds a key there (never in a chat).
 
 ## Why
 
@@ -22,7 +25,7 @@ The characters never say the learner's lines.
 2. **Coach voices.** The example answers use `g_coach_f` or `g_coach_m`, by the learner's profile gender. The two coach voices belong to no character, so a model answer never sounds like the person you talk to.
 3. **Passers-by** in the town: `g_amb_f`, `g_amb_m`.
 4. **A new folder.** The new clips go to `public/audio-v2/` (R2: `fluent-steps/game/audio-v2/`) with their own `manifest.json`, so no browser plays a stale cached clip. The old clips stay where they are, so switching back is one setting. Only the manifest is kept in git; the clips live on R2.
-5. **The switch:** `DEFAULT_VOICES` in `src/content/voices.ts` (`"v1"` now). A build or the dev server can try v2 first with `VITE_VOICES=v2`; the English Master export follows the same switch (`tools/export-fluent-steps.ts`).
+5. **The switch:** `DEFAULT_VOICES` in `src/content/voices.ts` (`"v2"` since 28 Oct 2026). A build or the dev server can try v2 first with `VITE_VOICES=v2`; the English Master export follows the same switch (`tools/export-fluent-steps.ts`).
 
 ## How each line is asked for
 
@@ -54,15 +57,21 @@ so when a character is recast, `prepare` asks for their lines again. A line is t
 ## After the batch
 
 - **Format:** Gemini's 24 kHz audio becomes MP3 CBR, mono, 24 kHz, 40 kbps; silences are trimmed and loudness made even (`trimAndNormalize`, as for the Kokoro clips).
-- **Words:** Whisper (`whisper-cli`, large-v3-turbo) transcribes every clip and lists those where it heard something different; `redo` sends them back.
-- **Upload:** the clips go to R2 `fluent-steps/game/audio-v2/`, four at a time.
+- **Words:** Whisper (`whisper-cli`, large-v3-turbo) transcribes every clip (short clips first in a 10-second window, a doubtful one again in the full window) and lists those where it heard something different (below 0.85), and those whose length fits the line said more than once (`saysMore`: Gemini sometimes says a line twice, or a piece of it again). `redo` sends back those below 0.8 and the ones that say more; a line that has had 4 tries keeps its last take.
+- **Upload:** the clips go to R2 `fluent-steps/game/audio-v2/`, four at a time (`--parallel=6` for six); a clip recorded again goes up again (its MD5 changed).
 - **Switch:** `DEFAULT_VOICES = "v2"`, the game is re-exported to English Master, and it is pushed with the owner's OK. A clip re-recorded after the switch also needs a repair version (`repair-versions.json`), like the Kokoro repairs.
 
 ## Order
 
 1. **Casting sample:** `prepare --sample`, `send`, `fetch`, `sheet`: 3 lines per character, about 200 clips, cents. The owner listens and approves or swaps voices (`tools/casting.ts`).
 2. **The full batch:** `prepare`, `send`, then `status` / `fetch` until every batch is in.
-3. **Checks, upload, switch:** `check`, `redo` and one more small batch for those, `upload`, the switch.
+3. **Checks, upload, switch:** `check`, `redo` and small batches for those until nothing is flagged, `upload`, the switch.
+
+## What the run of 27 Oct 2026 taught
+
+- **Gemini's slips:** 819 of 33,682 lines (about 1 in 40) needed another take: most said the line twice or a piece of it again ("All done? All done?"), now and then a different line altogether ("Hi!" came out as "Bye."); Whisper's check and the length rule find them. It refused one line as `PROHIBITED_CONTENT` (a false alarm on the shop name in "I'm looking for Threads."): `SAY_AS` sends the name in quotes. A line with no letters (a hint's empty blank, ".") gets no clip: Gemini made up words for it.
+- **Whisper's slips:** in the 10-second window it sometimes repeats what it heard; it writes numbers its own way ("$17.97", "-4", "20s", "June 4th") and drops a laugh ("Ha!"), which the comparison allows for; Lithuanian place names come back as anything.
+- **Pace:** Whisper checks about 140–200 clips a minute on this Mac when nothing else runs, about 60 while uploads run; keep the Mac on the charger.
 
 ## Casting (`npx tsx tools/voice-casting.ts`)
 
