@@ -1,0 +1,31 @@
+{
+  "npc": "Mr. Patel, landlord",
+  "images": [
+    "hello",
+    "rita",
+    "dodge",
+    "date",
+    "rent",
+    "bye"
+  ],
+  "start": "hello",
+  "phases": {
+    "problem": "hello",
+    "guess": "hello",
+    "howareyou": "hello",
+    "thermostat": "hello",
+    "duration": "hello",
+    "rita": "rita",
+    "dodge": "dodge",
+    "offer": "dodge",
+    "date": "date",
+    "home": "date",
+    "wrap": "rent",
+    "rent": "rent",
+    "closing": "bye"
+  },
+  "focus": [
+    34,
+    30
+  ]
+}
