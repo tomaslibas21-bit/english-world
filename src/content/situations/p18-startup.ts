@@ -131,7 +131,7 @@ const IDIOMS = ["touch_base", "learning_curve", "ropes", "ball_rolling", "outsid
 const LINE_IDIOMS: Record<string, string[]> = {
   greet: ["touch_base"], hello_q: ["learning_curve"], hello_learn: ["crushing"], hello_skip: ["ropes"],
   pile_intro: ["ball_rolling"], pile_box: ["outside_box"], pile_weight: ["weight"], pile_know: ["ears"], rockstar: ["crushing"],
-  over_react: ["ears"], deal_yes: ["same_page"], deal_no: ["touch_base"], prio_ok: ["same_page"], prio_ok_generic: ["same_page"],
+  over_react: ["ears"], deal_yes: ["same_page"], deal_no: ["touch_base"], prio_ok: ["same_page"], prio_ok_generic: ["same_page"], prio_ok_then: ["same_page"],
   deleg_brad: ["weight"], push_no: ["corners"], prio_already: ["same_page"], same_page_yes: ["same_page"], who_brad: ["weight"],
   crash_2: ["corners"], crash_3: ["square_one", "court"], crash_end: ["corners"], ball_back_react: ["court"], owner_evasive: ["offline"],
   mid_2: ["call_day"], mid_limit: ["call_day"], mid_limit_generic: ["call_day"], close_q: ["touch_base"], call_day_react: ["call_day"],
@@ -143,7 +143,7 @@ const LINE_IDIOMS: Record<string, string[]> = {
 const IDIOM_WORDS: [RegExp, string][] = [
   [/\bbase\b/, "touch_base"], [/\bcurve\b|\bsteep\b/, "learning_curve"], [/\bropes?\b/, "ropes"], [/\brolling\b/, "ball_rolling"],
   [/\bbox\b/, "outside_box"], [/\bears?\b/, "ears"], [/\bpage\b/, "same_page"], [/\bweight\b/, "weight"], [/\bcorners?\b/, "corners"],
-  [/\bsquare\b/, "square_one"], [/\bcourt\b/, "court"], [/\bcall it a day\b|\bcalling it a day\b/, "call_day"], [/\boffline\b/, "offline"],
+  [/\bsquare\b/, "square_one"], [/\bcourt\b/, "court"], [/\bcall(s|ed|ing)? it a day\b/, "call_day"], [/\boffline\b/, "offline"],
   [/\bplate\b/, "plate"], [/\bcrush(ing)?\b/, "crushing"],
 ];
 function idiomFromWords(w: unknown): string | undefined {
@@ -151,6 +151,8 @@ function idiomFromWords(w: unknown): string | undefined {
   for (const [re, id] of IDIOM_WORDS) if (re.test(s)) return id;
   return undefined;
 }
+/** A hedge ("I'm not sure I can…", "I don't think I can…") is never a yes. */
+const HEDGE = /\b(not sure|don'?t think|do not think|doubt|maybe not|probably not)\b/i;
 
 // ---------------------------------------------------------------------------
 // Per-turn helpers
@@ -268,7 +270,8 @@ export const startup: SituationDef = {
         { id: "touch_base", forms: ["touch base", "touching base"] },
         { id: "ball_rolling", forms: ["get the ball rolling", "the ball rolling"] },
         { id: "outside_box", forms: ["think outside the box", "outside the box"] },
-        { id: "weight", forms: ["pull your weight", "pull his weight"] },
+        { id: "weight", forms: ["pull your weight", "pull his weight", "pull their weight"] },
+        { id: "ears", forms: ["up to your ears"] },
         { id: "corners", forms: ["cut corners", "cutting corners"] },
         { id: "square_one", forms: ["back to square one", "square one"] },
         { id: "court", forms: ["the ball is in my court", "in my court"] },
@@ -325,8 +328,11 @@ export const startup: SituationDef = {
       "i (already | still) have {t:task} [and {t2:task}] [to do] [too]",
       "[to be honest | to be fair] i am [already | still] (working on | busy with | stuck with | buried in | drowning in) {t:task} [and {t2:task}]",
       "[to be honest | to be fair] i am [so | really | totally | completely | very | a bit | pretty | already] (swamped | overloaded | overwhelmed | busy | buried | slammed | drowning) [right now | already | this week] [with ({t:task} [and {t2:task}] | work)] #h:swamped",
-      "i do not have (time | enough time) for (all | all of) (that | this | them | it)",
-      "i do not have (time | enough time) for everything",
+      "i do not have (time | enough time) [for (all | all of) (that | this | them | it)] [this week | right now]",
+      "i do not have (time | enough time) for (everything | that | this | more | more work | new tasks | all three)",
+      "(i am not sure | i do not think | i doubt) (i | if i) (can | could) (do | handle | finish | manage) (all | all of) (that | this | it | them) [this week | by friday] #hedge",
+      "(i am not sure | i do not think | i doubt) (i | if i) (can | could) (do | handle | finish | manage) (everything | it all | them all | all three) [this week | by friday] #hedge",
+      "(it is | that is | this is) not [really | that | so | very] (easy | doable | realistic) [for me | this week]",
       "there (is | are) not enough (time | hours) [in the day | in the week]",
       "i do not want to cut corners [on {t:task}] #idiom #h:corners",
       "i am only one person",
@@ -339,6 +345,7 @@ export const startup: SituationDef = {
       "(no problem | piece of cake | consider it done | sure thing | on it | you got it | i am on it | challenge accepted | easy)",
       "(it | that) (is | sounds) (easy | doable)",
       "i will (manage | figure it out | find a way)",
+      "(it is | that is | this is) not (too much | that much | a problem) [for me]",
     ] },
     refuse_all: { patterns: [
       "(no way | absolutely not | not a chance | forget it) #tip:blunt_no",
@@ -373,7 +380,7 @@ export const startup: SituationDef = {
     ] },
     propose: { patterns: [
       "i (can | will | could) (do | start with | focus on | take | finish | work on) {a:task} first [@tail_b] #first #h:first_rest",
-      "i (can | will | could) (do | start with | focus on | take | finish | work on) {a:task} first and the rest (next week | later) #first #h:first_rest",
+      "i (can | will | could) (do | start with | focus on | take | finish | work on) {a:task} first and the rest (next week | later) #first #rest #h:first_rest",
       "i (can | could) (do | take | handle | finish) {a:task} [this week | by friday] [but not {b:task}] #first",
       "i (can | could) do {a:task} but {b:task} (has to | needs to | must | will have to) wait #first",
       "i will focus on {a:task} [first | this week] #first #h:focus_on",
@@ -395,9 +402,17 @@ export const startup: SituationDef = {
       "i will do {b:task} (next week | later | on monday) #later",
       "(can | could) @ppl (do | take | handle | organize | take care of | work on) {d:task} #deleg #h:someone_else",
       "(maybe | perhaps) @ppl (can | could | should) (do | take | handle | organize | take care of) {d:task} #deleg #h:brad",
+      "@ppl (can | could | should | will | might) @dov {d:task} [instead | this week] #deleg",
+      "(let | ask) @ppl (do | take | handle | organize | take care of) {d:task} #deleg",
+      "(give | pass) {d:task} to @ppl #deleg",
       "(brad | kevin | someone else) (could | should | can) pull his weight [on {d:task}] #deleg #idiom",
       "(you should | we should | let us | maybe we should | can we | could we) hire (someone | somebody | a new person | an intern | more people | another person) #hire",
       "let us get the ball rolling (with | on) {a:task} #first #idiom",
+    ] },
+    // "I can't do the party.": that task later (the learner's own plan, never a plan to do it)
+    cant_task: { patterns: [
+      "i (can not | can not really) (do | take | handle | take on | finish | organize) {b:task} [this week | by friday | right now | too]",
+      "i (can not | can not really) do {b:task} and {b2:task} [this week | by friday]",
     ] },
     // "Yeah, a bit." (to "Steep learning curve, huh?")
     finding_ctx: { patterns: ["[yeah | yes] (a (little | bit) | kind of | totally | very | super | really | for sure | definitely | quite)"] },
@@ -503,11 +518,12 @@ export const startup: SituationDef = {
     // --- midnight ------------------------------------------------------------------------------
     stay_limit: { patterns: [
       "i (can | could) @stay_v [late] (until | till) {time} [tonight] [but (then | after that) i (will | have to | need to | am going to) (call it a day #idiom | go home | leave)] #h:until_time",
+      "i (can | could) only @stay_v [late] (until | till) {time} [tonight] [but (then | after that) i (will | have to | need to | am going to) (call it a day #idiom | go home | leave)]",
       "i (can | could) @stay_v (until | till) {time} if (it is | the overtime is) paid",
-      "(until | till) {time} [maybe] [but not (later | longer | after that | until midnight)]",
+      "[only] (until | till) {time} [maybe] [but not (later | longer | after that | until midnight)]",
       "(how about | what about | maybe) (until | till) {time}",
       "i will (leave | go home | call it a day) at {time} #limit",
-      "i (can | could) stay (a little | a bit | an hour | two hours | a couple of hours | for an hour | for two hours) [longer | late] [but not until midnight] #nohour",
+      "i (can | could) [only] stay (a little | a bit | an hour | two hours | a couple of hours | for an hour | for two hours) [longer | late] [but not until midnight] #nohour",
       "i (can | could) (stay | work) (a little | a bit) late [but not until midnight] #nohour",
       "i (can | could) stay but not until midnight #nohour",
     ] },
@@ -520,6 +536,8 @@ export const startup: SituationDef = {
       "i (can not | can not really | will not) (stay | work | be here) (late | until midnight | tonight | that late | so late | after six) [tonight] #h:cant_stay",
       "i (can not | can not really | will not) (stay | work | be here) [late] (until | till | after) {time} [tonight]",
       "i (can not | will not) stay [tonight]",
+      "(i am not sure | i do not think | i doubt) (i | if i) (can | could) @stay_v [late | until midnight | tonight | that late | so late] [tonight] #hedge",
+      "i (probably | really) can not @stay_v [late | until midnight | tonight | that late | so late] [tonight]",
       "i (have | already have) (plans | a plan | an appointment | a date | something) (tonight | this evening) #h:plans",
       "i (have to | need to | must) (go home | pick up my (kids | son | daughter | children) | be home) [at {time} | early | by {time} | tonight]",
       "i am going home at {time}",
@@ -528,6 +546,8 @@ export const startup: SituationDef = {
       "(not | no) (tonight | until midnight)",
       "i (can not | do not want to) work (until midnight | that late | so late | late tonight)",
     ] },
+    // "I can't." (to "Can you stay?", "Nine, paid. Deal?", "Eight tomorrow?")
+    cant_ctx: { patterns: ["i (can not | really can not | can not really) [sorry]", "i am afraid i can not", "sorry i can not"] },
     paid_q: { patterns: [
       "(will | is) (the overtime | it | that | this) [be] paid [overtime] #h:paid",
       "(will | do) (we | i) (get paid | be paid) [for (it | that | the overtime | the extra hours | the hours)]",
@@ -545,8 +565,10 @@ export const startup: SituationDef = {
       "make it {time} [instead] [or {time2:time}]",
       "(how about | what about) {time} [instead | tomorrow] #h:how_about",
       "(can | could) we (do | meet | say | do it) [at] {time} [instead | tomorrow]",
-      "(let us | can we) (say | do | meet | touch base) [at] {time} [instead | tomorrow] #idiom",
+      "(let us | can we) (say | do | meet) [at] {time} [instead | tomorrow]",
+      "(let us | can we) touch base [at] {time} [instead | tomorrow] #idiom",
       "{time} (is | would be) better [for me]",
+      "{time} (works | would work | suits me) better [for me]",
       "(i prefer | i would prefer) {time}",
       "(maybe | perhaps) {time} [instead]",
       "[sure] see you (at | around) {time} [tomorrow] #h:see_eight",
@@ -569,6 +591,11 @@ export const startup: SituationDef = {
       "(not | no) at eight",
       "i (have | already have) (something | a meeting | an appointment | plans) (at eight | tomorrow morning | then)",
       "i am not (a morning person | free at eight)",
+      "(eight | eight oclock | that | it | the morning) (does not | will not | would not) (work | suit me) [for me] [tomorrow]",
+      "{time} (does not | will not | would not) (work | suit me) [for me] [tomorrow]",
+      "(could | can) we (make it | do it | meet | touch base | move it | push it) (later | a bit later | a little later | another time | in the afternoon) [tomorrow] #later",
+      "(maybe | how about) [a (bit | little)] later [tomorrow] #later",
+      "later (would be | is | works) better [for me] #later",
     ] },
     call_day: { patterns: [
       "(let us | we should | maybe we should | can we | i think we should | i am going to | i will | i want to | it is time to) call it a day [now | today | for today] #idiom #h:call_day",
@@ -727,6 +754,13 @@ export const startup: SituationDef = {
         "Puiku. Pirmiausia {X:nom}, o visa kita – kitą savaitę. Mes vienoje bangoje."),
       t("Perfect. | {X.the} | first. | Now | we're | on the same page!", "Puiku. | {X.the:nom} | pirmiausia. | Dabar | mes esame | vienoje bangoje!",
         "Puiku. Pirmiausia {X:nom}. Dabar mes vienoje bangoje!"),
+    ],
+    prio_ok_then: [
+      t("Sure. | {X.the} | first, | then | the | slides. | We're | on the same page.", "Žinoma. | {X.the:nom} | pirmiausia, | tada | — | skaidrės. | Mes esame | vienoje bangoje.",
+        "Žinoma. Pirmiausia {X:nom}, tada skaidrės. Mes vienoje bangoje."),
+      t("Okay. | {X.the} | first, | then | the | slides | by | Friday. | We're | on the same page.",
+        "Gerai. | {X.the:nom} | pirmiausia, | tada | — | skaidrės | iki | penktadienio. | Mes esame | vienoje bangoje.",
+        "Gerai. Pirmiausia {X:nom}, tada skaidrės – iki penktadienio. Mes vienoje bangoje."),
     ],
     prio_ok_generic: [
       t("Perfect. | That | works | for me. | We're | on the same page.", "Puiku. | Tai | tinka | man. | Mes esame | vienoje bangoje.", "Puiku. Man tinka. Mes vienoje bangoje."),
@@ -904,6 +938,7 @@ export const startup: SituationDef = {
         "Geras klausimas. Devintą? Viršvalandžiai apmokami, aišku. Sutarta?"),
     ],
     mid_deal_reask: [t("So? | Nine, | paid. | Deal?", "Na? | Devintą, | apmokamai. | Sutarta?", "Na? Iki devintos, apmokamai. Sutarta?")],
+    mid_when_reask: [t("So? | Until | when?", "Na? | Iki | kada?", "Na? Iki kada?")],
     mid_deal_yes: [t("Deal. | Thanks | for stepping up.", "Sutarta. | Ačiū, | kad prisidedi.", "Sutarta. Ačiū, kad prisidedi.")],
     mid_when: [t("Okay. | What | works | for you?", "Gerai. | Kas | tinka | tau?", "Gerai. O kas tau tinka?")],
     mid_giveup: [t("Okay, | fine. | Everybody | goes | home | at eight.", "Gerai, | tebūnie. | Visi | eina | namo | aštuntą.", "Gerai, tebūnie. Visi eina namo aštuntą.")],
@@ -1036,7 +1071,7 @@ export const startup: SituationDef = {
     ],
     mean_corners: [
       t("It | means | doing | it | fast | and | cheap, | and | skipping | steps.", "Tai | reiškia | daryti | tai | greitai | ir | pigiai, | ir | praleisti | žingsnius.",
-        "Tai reiškia daryti greitai ir pigiai, praleidžiant žingsnius. Lietuviškai – dirbti atmestinai."),
+        "Tai reiškia daryti greitai ir pigiai, praleidžiant žingsnius."),
       t("Like | driving | across | the | grass | instead of | around | the | corner. | Faster, | but | messy.",
         "Kaip | važiuoti | per | — | veją | užuot | aplink | — | kampą. | Greičiau, | bet | netvarkingai.",
         "Kaip pervažiuoti per veją, užuot apsukus kampą. Greičiau, bet netvarkingai."),
@@ -1111,7 +1146,8 @@ export const startup: SituationDef = {
     priority: {
       lt: "Paklausti, kas svarbiausia",
       items: [
-        { id: "focus", s: t("What | should | I | focus | on | first?", "Į ką | turėčiau | aš | susitelkti | [į] | pirmiausia?", "Į ką pirmiausia turėčiau susitelkti?") },
+        { id: "focus", s: t("What | should | I | focus | on | first?", "Į ką | turėčiau | aš | susitelkti | — | pirmiausia?", "Į ką pirmiausia turėčiau susitelkti?",
+          { flags: { 4: "Stranded “on”: Lithuanian puts the preposition before the question word (Į ką)." } }) },
         { id: "priority", s: t("Which one | is | the | priority?", "Kuris | yra | — | prioritetas?", "Kas svarbiausia?") },
         { id: "most_important", s: t("What's | most | important?", "Kas yra | labiausiai | svarbu?", "Kas svarbiausia?") },
         { id: "can_wait", s: t("Which one | can | wait?", "Kuris | gali | palaukti?", "Kuris gali palaukti?") },
@@ -1128,7 +1164,7 @@ export const startup: SituationDef = {
         { id: "focus_on", s: t("I'll focus | on | {X.the} | first.", "Susitelksiu | į | {X.the:acc} | pirmiausia.", "Pirmiausia susitelksiu į {X:acc}.") },
         { id: "start_with", s: t("Let's start | with | {X.the}.", "Pradėkime | nuo | {X.the:gen}.", "Pradėkime nuo {X:gen}.") },
         { id: "wait_week", s: t("Can | {X.the} | wait | until | next | week?", "Ar gali | {X.the:nom} | palaukti | iki | kitos | savaitės?", "Ar {X:nom} gali palaukti iki kitos savaitės?",
-          { flags: { 0: F_CAN_Q } }), only: (e) => !!e.attrs?.fresh },
+          { flags: { 0: F_CAN_Q } }), only: (e) => !!e.attrs?.other },
         { id: "someone_else", s: t("Could | someone | else | do | {X.the}?", "Ar galėtų | kas nors | kitas | padaryti | {X.the:acc}?", "Gal {X:acc} galėtų padaryti kas nors kitas?",
           { flags: { 0: F_COULD_Q } }), only: (e) => !!e.attrs?.other },
         { id: "brad", s: t("Maybe | Brad | could | do | {X.the}?", "Gal | Bredas | galėtų | padaryti | {X.the:acc}?", "Gal {X:acc} galėtų padaryti Bredas?"), only: (e) => !!e.attrs?.other,
@@ -1335,7 +1371,7 @@ export const startup: SituationDef = {
         if (n <= 3) { T(c, "pile_reask"); return; }
         c.s.pileSkip = true; askNext(c);
       },
-      expects: ["overloaded", "can_do_all", "refuse_all", "ask_priority", "propose", "what_about"],
+      expects: ["overloaded", "can_do_all", "refuse_all", "ask_priority", "propose", "cant_task", "what_about"],
       suggest: [{ lt: "Pasakyti, kad darbų jau per daug", hint: "overload", options: ["bugs", "emails"] }, { lt: "Paklausti, kas svarbiausia", hint: "priority" },
         { lt: "Paklausti, ką reiškia idioma", hint: "idioms" }],
       // "Easy, right?" – "Sure!" (all of it) / "No." (flat)
@@ -1356,7 +1392,7 @@ export const startup: SituationDef = {
         if (n === 3) { T(c, "prio_deal"); c.expect(dealPending()); return; }
         c.s.prioSkip = true; T(c, "deal_no"); askNext(c);
       },
-      expects: ["propose", "propose_ctx", "ask_priority", "what_about", "refuse_all", "same_page_q"],
+      expects: ["propose", "propose_ctx", "cant_task", "ask_priority", "what_about", "refuse_all", "same_page_q"],
       suggest: [{ lt: "Pasiūlyti, ką daryti pirmiausia, o kas gali palaukti", hint: "propose", options: "task" }, { lt: "Paklausti, kas svarbiausia", hint: "priority" }],
       no: (c) => { c.tip(TIPS.blunt_no); refuse(c, false); },
       help: (c) => { if (!once(c, "deal")) return; T(c, "prio_deal"); c.expect(dealPending()); } },
@@ -1365,7 +1401,7 @@ export const startup: SituationDef = {
       ask: (c) => {
         if (resumed(c, "crash")) { T(c, "anyway"); T(c, "crash_reask"); return; }
         const n = bump(c, "crash");
-        if (n === 1) { c.s.crashSaid = true; c.twist("crash"); T(c, "crash_1"); T(c, "crash_2"); T(c, "crash_3"); return; }
+        if (n === 1) { c.s.crashSaid = true; seenTwist(c, "crash"); T(c, "crash_1"); T(c, "crash_2"); T(c, "crash_3"); return; }
         if (n === 2) { T(c, "crash_reask"); return; }
         if (n === 3) { T(c, "crash_help"); c.expect(crashOkPending()); return; }
         c.s.crashSkip = true; T(c, "crash_skip"); askNext(c);
@@ -1396,11 +1432,11 @@ export const startup: SituationDef = {
       ask: (c) => {
         if (resumed(c, "midnight")) { T(c, "anyway"); T(c, "mid_reask"); return; }
         const n = bump(c, "midnight");
-        if (n === 1) { c.s.midSaid = true; c.twist("midnight"); T(c, "mid_1"); T(c, "mid_2"); return; }
+        if (n === 1) { c.s.midSaid = true; seenTwist(c, "midnight"); T(c, "mid_1"); T(c, "mid_2"); return; }
         if (n <= 3) { T(c, "mid_reask"); return; }
         c.s.midDone = true; c.s.midHow = "tyler"; T(c, "mid_giveup"); askNext(c);
       },
-      expects: ["stay_limit", "stay_yes", "cant_stay", "paid_q", "mid_finish_q", "mid_why", "call_day"],
+      expects: ["stay_limit", "stay_yes", "cant_stay", "cant_ctx", "paid_q", "mid_finish_q", "mid_why", "call_day"],
       suggest: [{ lt: "Derėtis dėl darbo iki vidurnakčio", hint: "midnight", options: ["h6", "h7", "h8"] }, { lt: "Paklausti, ką reiškia idioma", hint: "idioms" }],
       // "Can you stay?" – "Yes." / "No."
       yes: (c) => { midResolve(c, "yes"); },
@@ -1415,7 +1451,7 @@ export const startup: SituationDef = {
         // Tyler fixes the time himself (item 4 not ticked)
         c.s.closeDone = true; c.s.closeHow = "tyler"; c.s.meet = "h8"; T(c, "close_skip"); askNext(c);
       },
-      expects: ["meet_time", "meet_time_ctx", "meet_ok", "cant_time", "call_day"],
+      expects: ["meet_time", "meet_time_ctx", "meet_ok", "cant_time", "cant_ctx", "call_day"],
       suggest: [{ lt: "Susitarti dėl rytdienos susitikimo", hint: "closing", options: ["h9", "h10", "noon", "h1"] }],
       // "Touch base again at eight tomorrow?" – "Sure." / "No."
       yes: (c) => { meetOk(c); },
@@ -1440,6 +1476,8 @@ export const startup: SituationDef = {
   handlers: {
     // --- the first week ---
     finding(c, _slots, seg) {
+      // "What do you mean, steep learning curve?" / "Steep learning curve?": a question, not an answer
+      if (idiomAsked(c)) return;
       if (c.s.helloDone) {
         // "Honestly, I'm a little lost" after the pile: that's too much work
         if (seg.tags.includes("hard") && c.s.pileSaid && !c.s.overloaded) overload(c, "said");
@@ -1466,6 +1504,7 @@ export const startup: SituationDef = {
       if (!c.s.prioDone && (c.step === "pile" || c.step === "priorities")) { setPrio(c, tk === "bugs" ? "bugs" : "slides", "asked"); afterPrio(c); }
     },
     propose(c, slots, seg) { proposal(c, slots, seg.tags); },
+    cant_task(c, slots, seg) { cantTask(c, slots, seg.tags); },
     propose_ctx(c, slots, seg) {
       // "And the customer emails?": a question about that task
       const tk = first(slots.a);
@@ -1492,7 +1531,7 @@ export const startup: SituationDef = {
     idiom_meta(c) { if (once(c, "meta")) T(c, "meta"); },
     // the global "What does that mean?" / "What do you mean?": the idiom Tyler just used, or the word asked about
     g_meaning(c, slots) {
-      const id = slots?.w ? idiomFromWords(slots.w) : recentIdiom(c);
+      const id = slots?.w ? idiomFromWords(slots.w) : idiomFromWords(c.heard) ?? recentIdiom(c);
       if (id) explain(c, id); else GLOBAL_HANDLERS.g_meaning(c as any, slots);
     },
     g_dont_understand(c, slots) {
@@ -1536,8 +1575,13 @@ export const startup: SituationDef = {
       if (h === "midnight") { midResolve(c, "yes"); return; }
       midResolve(c, "limit", h);
     },
-    stay_yes(c) { if (midLive(c)) midResolve(c, "yes"); },
+    stay_yes(c) { if (midLive(c) && !HEDGE.test(c.heard)) midResolve(c, "yes"); },
     cant_stay(c) { if (midLive(c)) midResolve(c, "cant"); },
+    cant_ctx(c) {
+      if (midLive(c)) { midResolve(c, "cant"); return; }
+      if (!closingLive(c) || !once(c, "meet")) return;
+      T(c, "when_q"); c.expect(whenPending());
+    },
     paid_q(c) { if (!midLive(c) || !once(c, "paidq")) return; T(c, "mid_paid"); c.expect(midDealPending()); },
     mid_finish_q(c) { if (!midLive(c) || !once(c, "paidq")) return; T(c, "mid_finish"); c.expect(midDealPending()); },
     mid_why(c) { if (midLive(c) && once(c, "midWhy")) T(c, "mid_why"); },
@@ -1547,7 +1591,7 @@ export const startup: SituationDef = {
     meet_time_ctx(c, slots) { meetTime(c, slots.time); },
     meet_ok(c) { meetOk(c); },
     cant_time(c) { if (!closingLive(c) || !once(c, "meet")) return; T(c, "when_q"); c.expect(whenPending()); },
-    call_day(c, _slots, seg) { praiseIdiom(c, seg); callDay(c); },
+    call_day(c, _slots, seg) { if (idiomAsked(c)) return; praiseIdiom(c, seg); callDay(c); },
 
     // --- small talk ---
     dog_q(c) { if (once(c, "dog")) T(c, "dog"); },
@@ -1710,6 +1754,29 @@ export const startup: SituationDef = {
     { say: "Who do I talk to about the code?", intent: "ask_owner", step: "owner", slots: { a: "code" } },
     { say: "I'm going home at six.", intent: "cant_stay", step: "midnight", not: ["stay_yes"] },
     { say: "I can't make it at eight.", intent: "cant_time", step: "tomorrow", not: ["meet_time"] },
+    // review fixes: a hedge is never a yes; delegating is not doing it first; the slides never slip quietly
+    { say: "I'm not sure I can stay.", intent: "cant_stay", step: "midnight", not: ["stay_yes", "g_dontknow"] },
+    { say: "I don't think I can stay late.", intent: "cant_stay", step: "midnight", not: ["stay_yes"] },
+    { say: "I'm not sure I can do all that.", intent: "overloaded", step: "pile", not: ["can_do_all", "g_dontknow"] },
+    { say: "Kevin could do the party.", intent: "propose", step: "priorities", slots: { d: "party" } },
+    { say: "Brad can take the photo.", intent: "propose", step: "priorities", slots: { d: "photo" } },
+    { say: "Let Kevin do the party.", intent: "propose", step: "priorities", slots: { d: "party" } },
+    { say: "The slides can wait.", intent: "propose", step: "priorities", slots: { b: "slides" } },
+    { say: "I can't do the party.", intent: "cant_task", step: "priorities", slots: { b: "party" }, not: ["propose"] },
+    // idiom questions are questions; only "touch base" is an idiom in a time
+    { say: "Pull their weight?", intent: "idiom_echo", step: "pile", slots: { id: "weight" } },
+    { say: "Up to your ears?", intent: "idiom_echo", step: "pile", slots: { id: "ears" }, not: ["overloaded"] },
+    { say: "Let's meet at nine.", intent: "meet_time", step: "tomorrow", slots: { time: { h: 9 } } },
+    // natural answers
+    { say: "I can't.", intent: "cant_ctx", step: "midnight", not: ["stay_yes"] },
+    { say: "I can only stay until seven.", intent: "stay_limit", step: "midnight", slots: { time: { h: 7 } }, not: ["stay_yes"] },
+    { say: "No, it's not easy.", intent: "overloaded", step: "pile", not: ["can_do_all"] },
+    { say: "It's not too much.", intent: "can_do_all", step: "pile", not: ["overloaded"] },
+    { say: "I don't have time.", intent: "overloaded", step: "pile" },
+    { say: "Eight doesn't work for me.", intent: "cant_time", step: "tomorrow", not: ["meet_time", "meet_ok"] },
+    { say: "Could we make it later?", intent: "cant_time", step: "tomorrow", not: ["meet_time"] },
+    { say: "Nine works better for me.", intent: "meet_time", step: "tomorrow", slots: { time: { h: 9 } } },
+    { say: "I can't.", intent: "cant_ctx", step: "tomorrow", not: ["meet_ok"] },
     // not understood
     { say: "purple bicycle elephant", intent: "none" },
     { say: "My car is blue and very fast", intent: "none" },
@@ -1749,6 +1816,22 @@ export const startup: SituationDef = {
     { name: "Tyler decides: deal and noon", turns: ["Hi! It's a lot.", "I don't know.", "Deal.", "Nothing else, thanks.", "Sorry, I can't at eight.",
       "I don't know.", "Sure, noon works.", "Thanks, bye!"],
       expect: { complete: true, state: { prioBy: "deal", meet: "noon", hello: "over" } }, auto: AUTO, setup: PLAIN },
+    // review fixes: a hedge is too much (never "Love it!"), delegating isn't doing the party first, "I'm not sure I can
+    // stay" never agrees to stay
+    { name: "hedges and delegation", turns: ["Hi! Good, thanks.", "I'm not sure I can do all that.", "Kevin could do the party.", "No, that's all.",
+      "I'm not sure I can stay.", "Sure, see you at eight."],
+      expect: { complete: true, state: { overHow: "said", first: "slides", pushed: undefined, midHow: "cant", meet: "h8" } }, auto: AUTO,
+      setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
+    // review fixes: idiom questions are questions (explained, not praised, not taken as answers); the slides can't
+    // slip without a push back; natural ways to move the meeting
+    { name: "idiom questions, the slides can't wait", turns: ["What do you mean, steep learning curve?", "Oh! There's a lot to learn.", "I don't have time.",
+      "The slides can wait.", "Okay, the slides first.", "Nothing else, thanks.", "Call it a day?", "Eight doesn't work for me.", "Nine works better for me.", "Bye!"],
+      expect: { complete: true, state: { asked: true, idiomPraised: undefined, hello: "learn", first: "slides", pushed: "other", meet: "h9" } }, auto: AUTO, setup: PLAIN },
+    // review fixes: "No." to Tyler's deal, then a bare hour to "What works for you?"; a bare "I can't." to the meeting
+    { name: "midnight: no deal, then seven", turns: ["Hi! It's going well.", "I'm up to my ears in bug reports.", "I'll focus on the bug reports first.", "No, I'm good.",
+      "Calls it a day?", "Will the overtime be paid?", "No.", "Seven.", "I can't.", "How about ten?", "Bye!"],
+      expect: { complete: true, state: { first: "bugs", midHow: "limit", stayUntil: "h7", meet: "h10" } }, auto: AUTO,
+      setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
     // no overload ("Rock star!"), then walking away: not done
     { name: "can do it all, then leaving: not done", turns: ["Hi Tyler!", "It's going well.", "Sure, no problem.", "No, I can do it all.", "Sorry, I have to go."],
       expect: { complete: false, state: { pileSkip: true, overloaded: undefined } }, auto: AUTO, setup: PLAIN },
@@ -1759,6 +1842,7 @@ export const startup: SituationDef = {
 // Handler helpers (hoisted function declarations)
 
 const TIPS = startup.tips as Record<string, Tip>;
+const PERSON = /\b(brad|kevin|ben|rachel|someone|somebody|another person|the intern|an intern)\b/i;
 const PLAN_TAGS = ["fix", "tell", "ben", "later", "rollback"];
 
 /** The next step's question right away (a step that settled itself while asking). */
@@ -1773,6 +1857,29 @@ function praiseIdiom(c: Ctx, seg: { tags: string[] }) {
   if (!seg.tags.includes("idiom") || c.s.idiomPraised) return;
   c.s.idiomPraised = true;
   T(c, "idiom_back");
+}
+
+/** "What do you mean, steep learning curve?", "Calls it a day?": the learner asks about Tyler's idiom (a meaning
+ *  question, or the idiom echoed with a "?") instead of answering with it. Tyler explains it; the answer doesn't
+ *  count and isn't praised. A real question with the idiom ("Can we call it a day?", "…, right?") still counts. */
+function idiomAsked(c: Ctx): boolean {
+  const h = c.heard.toLowerCase();
+  const segs: Segment[] = (c as any).conv?.out?.parse?.segments ?? [];
+  const meaning = /\bmean(s|ing)?\b/.test(h) || segs.some((x) => ["g_meaning", "g_dont_understand", "idiom_q", "idiom_plain"].includes(x.intent));
+  const echo = /\?\s*$/.test(h) && !/\b(right|huh|you know|is not it|isn'?t it)\W*$/.test(h)
+    && !/\b(can|could|shall|should|may|will) (we|i)\b|\b(let'?s|let us|how about|what about|why don'?t)\b/.test(h);
+  if (!meaning && !echo) return false;
+  const id = idiomFromWords(h);
+  if (!id) return false;
+  explain(c, id);
+  return true;
+}
+
+/** A twist is remembered as soon as the learner has seen it (the next visit prefers the other one). */
+function seenTwist(c: Ctx, id: string) {
+  c.twist(id);
+  const seen: string[] = Array.isArray(c.memory.sproutlyTwists) ? c.memory.sproutlyTwists : [];
+  if (!seen.includes(id)) c.remember({ sproutlyTwists: [...seen, id] });
 }
 
 /** The idiom to explain for "What does that mean?": the last one Tyler used and hasn't explained yet. */
@@ -1809,6 +1916,7 @@ function overload(c: Ctx, how: string) {
 
 /** "Sure, no problem!" to the pile: Tyler double-checks ("Is that too much?"). */
 function canDoAll(c: Ctx) {
+  if (HEDGE.test(c.heard)) { overload(c, "said"); return; }
   if (!c.s.pileSaid || c.s.overloaded || c.s.pileSkip || !once(c, "cando")) return;
   T(c, "pile_yes");
   askTooMuch(c, "q");
@@ -1822,7 +1930,7 @@ function askTooMuch(c: Ctx, kind: "q" | "honest") {
     no: (cc) => { notTooMuch(cc); },
     on: {
       overloaded: (cc, _s, seg) => { praiseIdiom(cc, seg); overload(cc, "said"); },
-      can_do_all: (cc) => { notTooMuch(cc); },
+      can_do_all: (cc) => { if (HEDGE.test(cc.heard)) overload(cc, "said"); else notTooMuch(cc); },
       refuse_all: (cc, _s, seg) => { refuse(cc, seg.tags.includes("tip:rude")); },
     },
     ask: (cc) => { T(cc, "too_much_reask"); },
@@ -1865,32 +1973,50 @@ function proposal(c: Ctx, slots: Record<string, any>, tags: string[]) {
   if (!c.s.pileSaid) return;
   praiseIdiom(c, { tags });
   if (tags.includes("hire")) { if (once(c, "hire")) T(c, "hire_react"); return; }
-  if (c.s.prioDone) { if (once(c, "prioAgain")) T(c, "prio_already"); return; }
-  if (!once(c, "propose")) return;
-  const a = first(slots.a), b = list(slots.b), d = first(slots.d);
-  // the party or the photo before the investor slides: one gentle push back
-  if (a === "party" || a === "photo") {
-    if (!c.s.pushed) { c.s.pushed = a; T(c, "pushback"); c.expect(pushPending()); return; }
-    T(c, "push_no"); setPrio(c, a, "learner"); afterPrio(c); return;
+  let a = first(slots.a), d = first(slots.d);
+  const b = list(slots.b);
+  // "Kevin could do the party": a task given to someone else is never the learner's own "first"
+  if (a && !d && PERSON.test(c.heard) && !/\b(i|i'?ll|i'?m|me|let'?s|let us|we)\b/i.test(c.heard)) { d = a; a = undefined; }
+  if (c.s.prioDone) {
+    // "I can do the slides, but Kevin could do the party": the second half of the plan just made
+    if (SAID.get(c)?.has("propose")) { if (d && once(c, "deleg")) T(c, /\bbrad\b/i.test(c.heard) ? "deleg_brad" : "deleg_other"); return; }
+    if (once(c, "prioAgain")) T(c, "prio_already");
+    return;
   }
-  if (d) T(c, /\bbrad\b/i.test(c.heard) ? "deleg_brad" : "deleg_other");
-  if (a) T(c, "prio_ok", { X: a });
+  if (!once(c, "propose")) return;
+  // the investor slides would slip (the party or the photo first, the slides later, "the rest next week"):
+  // one gentle push back
+  const slip = a !== "slides" && (a === "party" || a === "photo" || b.includes("slides") || (!!a && tags.includes("rest")));
+  if (slip) {
+    if (!c.s.pushed) { c.s.pushed = a ?? "other"; T(c, "pushback"); c.expect(pushPending()); return; }
+    T(c, "push_no"); setPrio(c, a ?? c.s.pushed, "learner"); afterPrio(c); return;
+  }
+  if (d && once(c, "deleg")) T(c, /\bbrad\b/i.test(c.heard) ? "deleg_brad" : "deleg_other");
+  // the bug reports or the emails first: the slides still come by Friday
+  if (a && a !== "slides") T(c, "prio_ok_then", { X: a });
+  else if (a) T(c, "prio_ok", { X: a });
   else if (b.length && !d) { T(c, "prio_wait", { X: b[0] }); T(c, "prio_ok_generic"); }
   else T(c, "prio_ok_generic");
   setPrio(c, a ?? "slides", "learner");
   afterPrio(c);
 }
 
+/** "I can't do the party (and the photo)": those tasks wait (the slides: Tyler pushes back). */
+function cantTask(c: Ctx, slots: Record<string, any>, tags: string[]) {
+  proposal(c, { b: [...list(slots.b), ...list(slots.b2)] }, [...tags, "later"]);
+}
+
 function pushPending(): Pending {
   const slidesFirst = (c: Ctx) => { if (!once(c, "push")) return; T(c, "prio_ok", { X: "slides" }); setPrio(c, "slides", "learner"); afterPrio(c); };
   return {
-    id: "pushback", expects: ["propose", "propose_ctx", "ask_priority", "agree_ctx"], hints: ["propose"],
+    id: "pushback", expects: ["propose", "propose_ctx", "cant_task", "ask_priority", "agree_ctx"], hints: ["propose"],
     suggest: [{ lt: "Sutikti arba palikti savo planą", hint: "propose", options: "task" }],
     yes: slidesFirst,
     no: (c) => { if (!once(c, "push")) return; T(c, "push_no"); setPrio(c, c.s.pushed, "learner"); afterPrio(c); },
     on: {
       propose: (c, s, seg) => { proposal(c, s, seg.tags); },
       propose_ctx: (c, s, seg) => { proposal(c, s, [...seg.tags, "first"]); },
+      cant_task: (c, s, seg) => { cantTask(c, s, seg.tags); },
       g_ok: slidesFirst, agree_ctx: slidesFirst,
     },
     ask: (c) => { T(c, "push_reask"); },
@@ -1901,13 +2027,14 @@ function pushPending(): Pending {
 function dealPending(): Pending {
   const yes = (c: Ctx) => { if (!once(c, "dealAns")) return; T(c, "deal_yes"); setPrio(c, "slides", "deal"); afterPrio(c); };
   return {
-    id: "deal", expects: ["propose", "propose_ctx", "ask_priority", "agree_ctx"], hints: ["propose"],
+    id: "deal", expects: ["propose", "propose_ctx", "cant_task", "ask_priority", "agree_ctx"], hints: ["propose"],
     suggest: [{ lt: "Sutikti su planu arba pasiūlyti savo", hint: "propose", options: "task" }],
     yes,
     no: (c) => { if (!once(c, "dealAns")) return; c.s.prioSkip = true; T(c, "deal_no"); },
     on: {
       propose: (c, s, seg) => { proposal(c, s, seg.tags); },
       propose_ctx: (c, s, seg) => { proposal(c, s, [...seg.tags, "first"]); },
+      cant_task: (c, s, seg) => { cantTask(c, s, seg.tags); },
       ask_priority: (c) => { askPriority(c); },
       g_ok: yes, agree_ctx: yes,
     },
@@ -1961,20 +2088,38 @@ function midResolve(c: Ctx, how: "limit" | "yes" | "cant" | "paid", h?: string) 
 }
 function midDealPending(): Pending {
   return {
-    id: "mid_deal", expects: ["stay_limit", "cant_stay", "stay_yes", "agree_ctx"], hints: ["midnight"],
+    id: "mid_deal", expects: ["stay_limit", "cant_stay", "cant_ctx", "stay_yes", "agree_ctx"], hints: ["midnight"],
     suggest: [{ lt: "Sutikti arba pasiūlyti savo laiką", hint: "midnight", options: ["h6", "h7", "h8"] }],
     yes: (c) => { midResolve(c, "paid"); },
-    no: (c) => { if (once(c, "midNo")) { T(c, "mid_when"); c.hold(); } },
+    no: midWhen,
     on: {
       stay_limit: (c, s) => { const h = hourId(s.time); if (h === "midnight") midResolve(c, "paid"); else midResolve(c, "limit", h); },
       cant_stay: (c) => { midResolve(c, "cant"); },
-      stay_yes: (c) => { midResolve(c, "paid"); },
-      call_day: (c) => { midResolve(c, "cant"); },
+      cant_ctx: (c) => { midResolve(c, "cant"); },
+      cant_time: midWhen,
+      stay_yes: (c) => { if (HEDGE.test(c.heard)) midWhen(c); else midResolve(c, "paid"); },
+      call_day: (c) => { if (idiomAsked(c)) return false; midResolve(c, "cant"); },
       g_ok: (c) => { midResolve(c, "paid"); },
       agree_ctx: (c) => { midResolve(c, "paid"); },
     },
     ask: (c) => { T(c, "mid_deal_reask"); },
   };
+}
+/** "Nine, paid. Deal?" – "No." / "That doesn't work for me.": "Okay. What works for you?" waits for an hour. */
+function midWhen(c: Ctx) {
+  if (!once(c, "midNo")) return;
+  T(c, "mid_when");
+  const limit = (cc: Ctx, s: any) => { const h = hourId(s.time); if (h === "midnight") midResolve(cc, "paid"); else midResolve(cc, "limit", h); };
+  c.expect({
+    id: "mid_when", expects: ["stay_limit", "meet_time", "meet_time_ctx", "cant_stay", "cant_ctx"], hints: ["midnight"],
+    suggest: [{ lt: "Pasiūlyti savo laiką", hint: "midnight", options: ["h6", "h7", "h8"] }],
+    on: {
+      stay_limit: limit, meet_time: limit, meet_time_ctx: limit,
+      cant_stay: (cc) => { midResolve(cc, "cant"); }, cant_ctx: (cc) => { midResolve(cc, "cant"); }, call_day: (cc) => { midResolve(cc, "cant"); },
+      g_dontknow: (cc) => { midResolve(cc, "paid"); },
+    },
+    ask: (cc) => { T(cc, "mid_when_reask"); },
+  });
 }
 
 /** Tomorrow's meeting (item 4). */
@@ -2002,11 +2147,14 @@ function offer(c: Ctx, h: string, line: string) {
   // "Sure, noon works." (the hour he offered) is a yes
   const time = (cc: Ctx, tm: any) => { if (hourId(tm) === cc.s.offer) accept(cc); else meetAgain(cc, tm); };
   c.expect({
-    id: "offer", expects: ["meet_time", "meet_time_ctx", "agree_ctx"], hints: ["closing"],
+    id: "offer", expects: ["meet_time", "meet_time_ctx", "cant_ctx", "agree_ctx"], hints: ["closing"],
     suggest: [{ lt: "Sutikti arba pasiūlyti kitą laiką", hint: "closing", options: ["h9", "h10", "noon", "h1"] }],
     yes: accept,
     no: (cc) => { if (!once(cc, "offerAns")) return; T(cc, "when_q"); cc.expect(whenPending()); },
-    on: { meet_time: (cc, s) => { time(cc, s.time); }, meet_time_ctx: (cc, s) => { time(cc, s.time); }, g_ok: accept, agree_ctx: accept },
+    on: {
+      meet_time: (cc, s) => { time(cc, s.time); }, meet_time_ctx: (cc, s) => { time(cc, s.time); }, g_ok: accept, agree_ctx: accept,
+      cant_ctx: (cc) => { if (!once(cc, "offerAns")) return; T(cc, "when_q"); cc.expect(whenPending()); },
+    },
     ask: (cc) => { T(cc, "offer_reask", { X: cc.s.offer }); },
   });
 }
@@ -2018,7 +2166,7 @@ function whenPending(): Pending {
       meet_time: (c, s) => { meetAgain(c, s.time); },
       meet_time_ctx: (c, s) => { meetAgain(c, s.time); },
       g_dontknow: (c) => { if (once(c, "whenHelp")) offer(c, "noon", "when_noon"); },
-      call_day: (c) => { callDay(c); },
+      call_day: (c) => { if (idiomAsked(c)) return false; callDay(c); },
     },
     ask: (c) => { T(c, "when_reask"); },
   };
@@ -2050,8 +2198,6 @@ function closing(c: Ctx) {
     if (c.s.closeHow !== "day") T(c, "close_good");
     c.s.goalMet = true;
     c.complete();
-    const seen: string[] = Array.isArray(c.memory.sproutlyTwists) ? c.memory.sproutlyTwists : [];
-    c.remember({ sproutlyTwists: c.s.twist && !seen.includes(c.s.twist) ? [...seen, c.s.twist] : seen });
   } else T(c, "close_partial");
   const close = (cc: Ctx) => { closeReply(cc); };
   const on: Record<string, (cc: Ctx, slots: any, seg: Segment) => boolean | void> = {};
