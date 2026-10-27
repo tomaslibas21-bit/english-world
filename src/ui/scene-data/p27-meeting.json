@@ -1,0 +1,29 @@
+{
+  "npc": "Vanessa, marketing lead (and Greg, team manager)",
+  "images": [
+    "pitch",
+    "charts",
+    "counter",
+    "resolve",
+    "teal"
+  ],
+  "start": "pitch",
+  "done": "teal",
+  "phases": {
+    "pitch": "pitch",
+    "charts": "charts",
+    "reason": "charts",
+    "counter": "counter",
+    "alternative": "counter",
+    "twist": "counter",
+    "resolve": "resolve",
+    "so_agree": "resolve",
+    "coffee": "teal",
+    "teal": "teal",
+    "teal2": "teal"
+  },
+  "focus": [
+    32,
+    30
+  ]
+}
