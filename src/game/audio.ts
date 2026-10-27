@@ -103,7 +103,7 @@ export class AudioSystem {
     return this.ctx;
   }
 
-  sfx(name: "success" | "pop" | "door" | "stamp" | "soft" | "listen" | "coin" | "car" | "error") {
+  sfx(name: "success" | "pop" | "door" | "stamp" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock") {
     const ctx = this.ac();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -130,6 +130,9 @@ export class AudioSystem {
       case "door": tone(180, 0, 0.18, "triangle", vol * 0.8); tone(140, 0.12, 0.2, "triangle", vol * 0.6); break;
       case "car": tone(90, 0, 0.9, "sawtooth", vol * 0.25); break;
       case "error": tone(300, 0, 0.15, "triangle", vol * 0.5); tone(240, 0.1, 0.2, "triangle", vol * 0.5); break;
+      case "ring": for (const at of [0, 0.5]) { tone(440, at, 0.35, "sine", vol * 0.45); tone(480, at, 0.35, "sine", vol * 0.45); } break;
+      case "beep": tone(1000, 0, 0.4, "sine", vol * 0.5); break;
+      case "knock": for (const at of [0, 0.16, 0.32]) tone(140, at, 0.07, "square", vol * 0.5); break;
     }
   }
 }

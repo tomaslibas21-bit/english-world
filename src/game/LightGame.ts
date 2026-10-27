@@ -2,6 +2,7 @@
 // 3D town (no Three.js scene, no WebGL), so it opens in seconds and saves a phone's battery. The UI
 // talks to it through the same members it uses on the 3D game (GameApi); the world ones do nothing.
 import type { GameApi } from "./gameRef";
+import { showConversationEvent } from "./convEvents";
 import type { Door } from "./world/town";
 import { Session } from "./session";
 import { audio } from "./audio";
@@ -136,6 +137,7 @@ export class LightGame implements GameApi {
   /** What happens in a conversation that the learner sees without the town: things handed over, paying,
    *  signing. Taxi and bus rides, boarding and marks on the map need the town, so they do nothing here. */
   private onSessionEvent(name: string, data: any) {
+    showConversationEvent(name, data);
     const st = useStore.getState();
     if (name === "pay") audio.sfx("coin");
     if (name === "give" && data?.item) {

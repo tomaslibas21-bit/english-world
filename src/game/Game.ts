@@ -1,5 +1,6 @@
 // The game: renderer, zones (town + interiors), player, NPCs, input, guidance and conversations.
 import * as THREE from "three";
+import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF } from "./world/layout";
@@ -574,6 +575,7 @@ export class Game implements GameApi {
   }
 
   private onSessionEvent(name: string, data: any) {
+    showConversationEvent(name, data);
     if (name === "pay") audio.sfx("coin");
     if (name === "taxi-ride" && data?.to) this.pendingRide = { to: data.to, by: "taxi" };
     if (name === "bus-ride" && data?.to) this.pendingRide = { to: data.to, by: "bus" };
