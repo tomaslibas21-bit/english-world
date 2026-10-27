@@ -74,6 +74,10 @@ function once(c: Ctx, key: string): boolean {
   s.add(key);
   return true;
 }
+/** The pieces of the learner's whole turn (one answer may arrive as several pieces). */
+const turnSegments = (c: Ctx): Segment[] => ((c as any).conv?.out?.parse?.segments ?? []) as Segment[];
+/** "Two weeks? How about a month?": the last counter-offer in the turn counts (the first is an echo). */
+const lastCounter = (c: Ctx, sg?: Segment): Segment | undefined => turnSegments(c).filter((s) => s.intent === "counter_offer").at(-1) ?? sg;
 /** A proposal made in this very turn (Vanessa may cut in only while the learner is proposing). */
 const FRESH = new WeakSet<Ctx>();
 
@@ -250,6 +254,18 @@ const NOTES: Record<string, string> = {
   gave_in: "Šįkart nusileidai. Pabandyk dar kartą – mandagiai apginti savo nuomonę.",
   walked: "Susirinkimas nebaigtas. Kitą kartą pabandyk sutarti.",
 };
+/** A deal (or Greg's call) without the stamp: say which items are missing, so the stamp is never lost silently. */
+function missedNote(c: Ctx): string {
+  const miss = [
+    (!c.s.disagreed || c.s.rudeOpen) && "mandagiai pasakyti, kad nesutinki",
+    !c.s.interruptedPolite && "mandagiai įsiterpti į Vanesos kalbą",
+    !c.s.reasonGiven && "paaiškinti, kodėl abejoji",
+    !c.s.acked && "pripažinti Vanesos argumentą",
+    !c.s.altGiven && "pasiūlyti kitą sprendimą",
+    c.s.twistFired && !c.s.twistDone && "mandagiai atsakyti, kai Vanesa įsiterpė",
+  ].filter(Boolean);
+  return `Susitarėte, bet antspaudo dar negavai. Kitą kartą nepamiršk: ${miss.join("; ")}.`;
+}
 
 // ---------------------------------------------------------------------------
 // The goodbye: "Same time Monday?", then coffee or the color of the buttons
@@ -349,10 +365,22 @@ function agreePlan(c: Ctx) {
     c.s.agreedOnce = true;
     V(c, "v_love");
     G(c, c.visits >= 1 ? "g_doubts" : "g_anyone");
+    c.s.anyoneAsked = c.visits < 1; // "No concerns at all?": a bare yes or no is unclear
     waitHere(c);
     return;
   }
   gaveIn(c);
+}
+
+/** A bare yes/no at the pitch that doesn't mean "I agree" / "I disagree": "Any thoughts? No? Perfect." – "Actually,
+ *  yes." (the learner has something to say) or "No." (no objections); Greg's "No concerns at all?" – "Yes." (which
+ *  way?): Vanessa asks plainly. False when the question is a plain one. */
+function pitchYesNo(c: Ctx, yes: boolean): boolean {
+  if (c.s.anyoneAsked) { c.s.anyoneAsked = false; c.s.thoughtsAny = false; V(c, "v_reask"); c.hold(); return true; }
+  if (!c.s.thoughtsAny) return false;
+  c.s.thoughtsAny = false;
+  if (yes) { V(c, "v_go_ahead"); c.hold(); } else agreePlan(c);
+  return true;
 }
 
 /** A positive remark about the plan ("The new site is ready."): nothing to answer; Vanessa asks again. */
@@ -573,6 +601,8 @@ function onInterrupt(c: Ctx, sg: Segment | undefined, polite: boolean) {
     waitHere(c);
     return;
   }
+  // asking for the floor politely later on (after her charts ran out) still counts as cutting in politely
+  if (ph !== "pitch") c.s.interruptedPolite = true;
   if (conc) { onDisagree(c, sg); return; } // the point that came with it
   if (!once(c, "react")) return;
   if (ph === "reason") c.s.floorGiven = true;
@@ -654,7 +684,7 @@ function resolveTurn(c: Ctx, kind: "accept" | "ack" | "offer" | "counter" | "dis
   if (off === "final" && kind === "unsure") { deal(c); return; } // anything that isn't a "no"
   if (kind === "counter") {
     if (off === "final") { gregDecides(c); return; }
-    const w = weeksOf(sg);
+    const w = weeksOf(lastCounter(c, sg));
     if (w > 0 && w <= 2) { deal(c); return; }
     c.s.offer = "final";
     V(c, "v_final_offer");
@@ -738,7 +768,9 @@ const COUNTER_EX = ["site_problem_ctx", "ack_point", "give_reason", "disagree_po
 const ALT_EX = ["offer_alt", "counter_offer", "agree_to_disagree", "give_in", "give_reason", "ack_point", "ask_boss", "walk_away"];
 const RESOLVE_EX = ["accept_deal", "counter_offer", "agree_to_disagree", "offer_alt", "disagree_polite", "ack_point", "agree_plan", "give_in", "ask_boss", "walk_away"];
 
-const SIM = (twist: boolean, stubborn: boolean, flair: "coffee" | "teal") => (s: Record<string, any>) => { s.twist = twist; s.stubborn = stubborn; s.flair = flair; };
+const SIM = (twist: boolean, stubborn: boolean, flair: "coffee" | "teal", thoughtsAny = false) => (s: Record<string, any>) => {
+  s.twist = twist; s.stubborn = stubborn; s.flair = flair; s.thoughtsAny = thoughtsAny;
+};
 
 // ---------------------------------------------------------------------------
 
@@ -765,7 +797,7 @@ export const meeting: SituationDef = {
       but: "(but | however | although | though | still | yet)",
       why: "(because | since | as | (the thing | the problem | the issue | my concern | my worry) is [that] | i am (worried | afraid | concerned) [that] | i think [that] | i feel [that] | i mean)",
       // what the concern is about ("My concern is the timing.", "I'm worried about the testing.")
-      concern_np: "(the | our) (timing #c_time | deadline #c_time | date #c_time | schedule #c_time | testing #c_test | customers #c_cust | older customers #c_cust | clients #c_cust | users #c_cust | support team #c_support | call center #c_support | bugs #c_bugs | risk #c_risk)",
+      concern_np: "(the | our) (timing #c_time | deadline #c_time | date #c_time | schedule #c_time | testing #c_test | [older | elderly | old] (customers | clients | users) #c_cust | support team #c_support | call center #c_support | bugs #c_bugs | risk #c_risk)",
       weeks: "(a #w1 | one #w1 | two #w2 | three #w3 | four #w4 | a couple of #w2 | a few #w3 | {wk:number}) (week | weeks)",
       dur: "(@weeks | a month #w4 | one month #w4 | two months #w8 | a few days | {number} days | a while | some time | a fortnight #w2 #tip:uk_fortnight)",
       reason_core: [
@@ -843,7 +875,7 @@ export const meeting: SituationDef = {
         "(postpone | delay | move | push back) (it | the launch | the date) [a little | a bit | by (@weeks | a few days)] #a_delay",
         "push (it | the launch | the date) back [a little | a bit | by (@weeks | a few days) | @weeks] #a_delay",
         "(give | take) (us | ourselves | the team) (more time | another week | (one | two | a | an) [more | extra] (week | weeks)) #a_delay",
-        "wait [a | one | another] (week | month) [more] #a_delay",
+        "wait (@weeks | a month #w4 | one month #w4 | another (week | month)) [more | longer] #a_delay",
         // training, telling the customers, fixing the bugs
         "(train | prepare) the (support | support team | team | call center) (first | before (the launch | friday)) #a_train",
         "train (the | our) (people | staff) first #a_train",
@@ -986,7 +1018,7 @@ export const meeting: SituationDef = {
     concern_ctx: { patterns: [
       "[the] (timing | time | date | deadline | schedule) [mostly] #c_time",
       "[the] (testing | tests) [mostly] #c_test",
-      "[the] (customers | clients | users | older customers) [mostly] #c_cust",
+      "[the] [older | elderly] (customers | clients | users) [mostly] #c_cust",
       "[the] (support team | support | call center | customer service) [mostly] #c_support",
       "[the] (bugs | errors) #c_bugs",
       "[the] risk #c_risk",
@@ -1001,6 +1033,7 @@ export const meeting: SituationDef = {
       "(sorry | excuse me) for interrupting [you] [but] [@rtail]",
       "[sorry | excuse me | wait | hold on] (can | could | may) i (add | say) something [here] [@rtail] #h:add_something",
       "[sorry | excuse me] (can | could | may) i ask a [quick] question",
+      "[sorry | excuse me] (can | could | may) i (interrupt | cut in) [you] [here] [for a (second | moment | minute)] [@rtail]",
       "[sorry | excuse me] (can | could | may) i [just] (stop | interrupt) you (there | for a second | for a moment) [@rtail]",
       "[sorry | excuse me] (can | could | may) i [just] get a word in [here]",
       "[sorry | excuse me] (can | could | may) i (say | add) (one thing | a word)",
@@ -1054,6 +1087,7 @@ export const meeting: SituationDef = {
       "@soft i agree (that | the) old @site is (a problem | slow | expensive | bad)",
       "@soft you have right [@ack_tail] #tip:have_right",
       "(i see | i understand | i get it | i hear you | understood | i know) #weak",
+      "i (see | know | understand | get) what you (mean | are saying) #weak",
     ] },
 
     // "Do you agree that the old site is a problem?" – "Yes, it is." / "It's not a problem." (only then)
@@ -1097,6 +1131,8 @@ export const meeting: SituationDef = {
       "(two | 2) weeks is not enough [how about (@weeks | a month #w4)] #more",
       "(one | a) month (would be better | is better) #w4",
       "@weeks (would be | is) better",
+      "i would (prefer | rather have | rather do | rather wait | like) (@weeks | a month #w4 | one month #w4) [instead]",
+      "(@weeks | a month #w4) would be (safer | nicer | more realistic)",
       "i (need | want) (@weeks | a month #w4)",
       "(at least | minimum) (@weeks | a month #w4)",
       "[okay | fine | yes] [but] (@weeks | a month #w4) [then]",
@@ -1237,7 +1273,7 @@ export const meeting: SituationDef = {
     // --- Greg ------------------------------------------------------------------------------------------------
     g_open: [
       t("Okay, | everyone, | let's get started.", "Gerai, | visi, | pradėkime.", "Gerai, visi, pradėkime."),
-      t("Morning, | everyone. | Let's be | quick.", "Labas rytas | visiems. | Būkime | greiti.", "Labas rytas visiems. Būkime greiti."),
+      t("Morning, | everyone. | Let's be | quick.", "Labas rytas, | visiems. | Būkime | greiti.", "Labas rytas visiems. Būkime greiti."),
     ],
     g_floor: [
       t("Vanessa, | the | floor | is | yours.", "Vanesa, | — | žodis | yra | tavo.", "Vanesa, tau žodis.", { flags: { 2: "“floor” here = the right to speak (žodis), not grindys." } }),
@@ -1307,7 +1343,10 @@ export const meeting: SituationDef = {
         { flags: { 5: "“one” has no word: the adjective senąją stands for “the old website”." } }),
     ],
     v_thoughts: [
-      t("So, | what | do | you | think?", "Tai | ką | — | tu | manai?", "Tai ką manai?", { flags: { 2: F_DO_WH } }),
+      t("So, | what | do | you | think?", "Tai, | ką | — | tu | manai?", "Tai ką manai?", { flags: { 2: F_DO_WH } }),
+    ],
+    // a yes here means "I do have thoughts", a no "no thoughts" (c.s.thoughtsAny)
+    v_thoughts_any: [
       t("Any | thoughts? | No? | Perfect.", "Kokių nors | minčių? | Ne? | Puiku.", "Kokių nors minčių? Ne? Puiku."),
     ],
     v_reask: [
@@ -1426,7 +1465,7 @@ export const meeting: SituationDef = {
         { say: "But here's the thing: the old site costs us four thousand dollars a month.", flags: { 3: "“thing” here = the key point (esmė).", 10: "Distributive “a” (a month) = per." } }),
     ],
     v_counter2: [
-      t("And | 60% | of | our | visitors | use | phones. | On a phone, | the | old | site | is | a | disaster.", "Ir | 60 % | — | mūsų | lankytojų | naudoja | telefonus. | Telefone | — | senoji | svetainė | yra | — | katastrofa.",
+      t("And | 60% | of | our | visitors | use | phones. | On a phone, | the | old | site | is | a | disaster.", "Ir | 60 % | — | mūsų | lankytojų | naudoja | telefonus. | Telefone, | — | senoji | svetainė | yra | — | katastrofa.",
         "O 60 % mūsų lankytojų naršo telefonu. O telefone senoji svetainė – tikra katastrofa.",
         { say: "And sixty percent of our visitors use phones. On a phone, the old site is a disaster.", flags: { 2: "“of”: the genitive lankytojų carries it (mūsų intervenes)." } }),
     ],
@@ -1754,14 +1793,16 @@ export const meeting: SituationDef = {
     { id: "pitch", when: (c) => !c.s.outcome, done: (c) => !!c.s.disagreed,
       ask: (c) => {
         if (quiet(c, "pitch")) return;
-        if (!c.s.pitched) { c.s.pitched = true; V(c, "v_pitch1"); V(c, "v_pitch2"); V(c, "v_thoughts"); return; }
+        if (!c.s.pitched) { c.s.pitched = true; V(c, "v_pitch1"); V(c, "v_pitch2"); V(c, c.s.thoughtsAny ? "v_thoughts_any" : "v_thoughts"); return; }
+        c.s.thoughtsAny = false; // "Are you with me on this?": a yes is a yes again
         V(c, "v_reask");
       },
       expects: PITCH_EX,
       suggest: [{ lt: "Mandagiai pasakyti, kad nesutinki", hint: "disagree" }, { lt: "Paklausti apie planą", hint: "questions" }],
-      yes: (c) => agreePlan(c),
-      no: (c) => bareNo(c),
-      help: (c) => G(c, "g_anyone") },
+      // "Any thoughts? No? Perfect." – "Actually, yes.": the learner has something to say; "No." = no objections
+      yes: (c) => { if (pitchYesNo(c, true)) return; agreePlan(c); },
+      no: (c) => { if (pitchYesNo(c, false)) return; bareNo(c); },
+      help: (c) => { G(c, "g_anyone"); c.s.anyoneAsked = true; } },
     { id: "charts", when: (c) => !c.s.outcome && !!c.s.disagreed, done: (c) => !!c.s.interrupted || c.s.tries.charts >= 3,
       ask: (c) => {
         if (quiet(c, "charts")) return;
@@ -1857,13 +1898,14 @@ export const meeting: SituationDef = {
       disagreed: false, rudeOpen: false, interrupted: false, interruptedPolite: false, chartsOver: false, chartsEnd: null, floorGiven: false,
       reason: null, reasonGiven: false, reasonHeard: false, acked: false, counterSaid: false, firstAgreeSaid: false,
       alt: null, altGiven: false, altHeard: false, altOther: false, heardAlts: [], softened: false,
-      offer: null, halfway: 0, round: 0, outcome: null, blunt: 0, friendlySaid: false, agreedOnce: false, notConvinced: false,
+      offer: null, halfway: 0, round: 0, outcome: null, blunt: 0, friendlySaid: false, agreedOnce: false, notConvinced: false, anyoneAsked: false,
       tries: { charts: 0, reason: 0, counter: 0, alternative: 0, resolve: 0 },
       twistFired: false, twistOpen: false, twistDone: false, twistTag: null, closingState: null, quiet: null, ended: false,
       // variety: Vanessa cuts in (twist), refuses the first proposal, and how the goodbye ends
       twist: c.chance(c.visits >= 1 ? 0.6 : 0.4),
       stubborn: c.chance(c.visits >= 1 ? 0.5 : 0.3),
       flair: c.chance(0.5) ? "teal" : "coffee",
+      thoughtsAny: c.chance(0.5), // the pitch ends "Any thoughts? No? Perfect." (yes/no turn around) or "So, what do you think?"
     });
   },
 
@@ -1874,7 +1916,12 @@ export const meeting: SituationDef = {
   },
 
   handlers: {
-    disagree_polite(c, _sl, sg) { onDisagree(c, sg); },
+    disagree_polite(c, _sl, sg) {
+      // "That's crazy." first, then "I see your point, but I'm not sure I agree.": the polite way counts after all
+      // (not in the same breath as the rude remark)
+      if (!c.s.outcome && !c.s.twistOpen && !turnSegments(c).some((x) => x.tags.includes("rude"))) c.s.rudeOpen = false;
+      onDisagree(c, sg);
+    },
     rude_disagree(c, _sl, sg) { onDisagree(c, sg, true); },
     agree_plan(c, _sl, sg) { onAck(c, sg, "agree"); },
     ask_q(c, _sl, sg) { onQuestion(c, sg); },
@@ -1963,7 +2010,7 @@ export const meeting: SituationDef = {
     G(c, "g_monday");
     const done = allDone(c);
     if (done) c.complete();
-    c.event("meeting-outcome", { outcome: c.s.outcome, done, note: NOTES[c.s.outcome] });
+    c.event("meeting-outcome", { outcome: c.s.outcome, done, note: NOTES[c.s.outcome] ?? (done ? undefined : missedNote(c)) });
     c.remember({ lastOutcome: c.s.outcome });
     c.expect(closingPending());
   },
@@ -2077,6 +2124,15 @@ export const meeting: SituationDef = {
     { say: "This is a waste of time.", intent: "walk_away" },
     { say: "Sorry, I have to go.", intent: "g_bye" },
     { say: "I'm not leaving.", intent: "none", not: ["walk_away"] },
+    // --- review fixes (Oct 2026) ---
+    { say: "I see what you mean.", intent: "ack_point", step: "counter", not: ["g_meaning"] },
+    { say: "I see what you're saying.", intent: "ack_point", step: "counter", not: ["g_meaning"] },
+    { say: "Sorry, may I interrupt?", intent: "interrupt_polite", step: "charts" },
+    { say: "I'm worried about our older users.", intent: "give_reason", step: "reason" },
+    { say: "Could we wait two weeks?", intent: "offer_alt", step: "alternative" },
+    { say: "We shouldn't wait two weeks.", intent: "none", step: "alternative", not: ["offer_alt"] },
+    { say: "I'd prefer three weeks.", intent: "counter_offer", step: "resolve" },
+    { say: "A month would be safer.", intent: "counter_offer", step: "resolve" },
     // --- nonsense ---
     { say: "banana rocket purple sky", intent: "none" },
     { say: "The cat is sleeping on the sofa", intent: "none" },
@@ -2159,6 +2215,35 @@ export const meeting: SituationDef = {
       "I'm not sure about that.", "Sorry, can I just come in here?", "We haven't tested it yet.", "Good point.",
       "Let's keep the old site for a month.", "I still think it's too risky.", "You're right.", "Yes.", "Bye.",
     ], expect: { complete: false, state: { outcome: "gave_in" } }, auto: AUTO, setup: SIM(false, true, "coffee") },
+    // "Two weeks? How about a month?": the echo of her two weeks is no yes; the month counts ("Three weeks. Final offer.").
+    { name: "an echo of her two weeks, then a month", turns: [
+      "I'm not sure about that.", "Sorry, can I just come in here?", "We haven't tested it yet.", "That's a fair point.",
+      "What if we launch it as a beta?", "Two weeks? How about a month?", "Agreed.", "See you Monday.", "Maybe next time.",
+    ], expect: { complete: true, state: { outcome: "deal", offer: "final" } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // Her charts run out by themselves, but the learner asks for the floor politely later: the item ticks after all.
+    { name: "a polite way in after the charts", turns: [
+      "I'm not sure about that.", "Okay.", "Right.", "Yes.", "We haven't tested it yet.", "Sorry, can I just come in here?",
+      "That's a fair point.", "What if we launch it as a beta?", "Agreed.", "See you Monday.", "Maybe next time.",
+    ], expect: { complete: true, state: { outcome: "deal", chartsOver: true, interruptedPolite: true } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // A rude opener, then the polite way ("I'm sorry. I see your point, but…"): the first item ticks after all.
+    { name: "rude first, then polite", turns: [
+      "That's crazy.", "Sorry, can I just come in here?", "I'm sorry. I see your point, but I'm not sure I agree.", "We haven't tested it yet.",
+      "That's a fair point.", "What if we launch it as a beta?", "Agreed.", "See you Monday.", "Maybe next time.",
+    ], expect: { complete: true, state: { outcome: "deal", rudeOpen: false } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // Rude and polite in the same breath: still rude (no stamp).
+    { name: "rude and polite in one breath", turns: [
+      "That's crazy. I'm not sure about that.", "Sorry, can I just come in here?", "We haven't tested it yet.",
+      "That's a fair point.", "What if we launch it as a beta?", "Agreed.", "See you Monday.", "Maybe next time.",
+    ], expect: { complete: false, state: { outcome: "deal", rudeOpen: true } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // "Any thoughts? No? Perfect." – "Actually, yes." is no agreement: "Oh, sorry. Go ahead."
+    { name: "any thoughts? actually, yes", turns: [
+      "Actually, yes.", "I'm not sure about that.", "Sorry, can I just come in here?", "We haven't tested it yet.", "That's a fair point.",
+      "What if we launch it as a beta?", "Agreed.", "See you Monday.", "Maybe next time.",
+    ], expect: { complete: true, state: { outcome: "deal", agreedOnce: false } }, auto: AUTO, setup: SIM(false, false, "coffee", true) },
+    // "Any thoughts? No? Perfect." – "No." is no objection; Greg's "No concerns at all?" – "Yes." is unclear (Vanessa
+    // asks plainly; a returning player hears "Are you sure?" and gives in at once); "Yes." to that gives in.
+    { name: "any thoughts? no; then giving in", turns: ["No.", "Yes.", "Yes."],
+      expect: { complete: false, state: { outcome: "gave_in", disagreed: false } }, auto: AUTO, setup: SIM(false, false, "coffee", true) },
     // "You're right." to Vanessa's refusal: "So you agree with me?" – "No, let's agree to disagree."
     { name: "stubborn: so you agree with me? no", turns: [
       "With respect, I see it a bit differently.", "Excuse me, Vanessa.", "We need more time.", "That makes sense.",

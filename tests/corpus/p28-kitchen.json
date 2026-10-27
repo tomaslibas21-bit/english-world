@@ -250,6 +250,22 @@
     {"ctx": "closing", "say": "Okay, bye!", "intent": ["g_bye", "yn:yes"]},
     {"ctx": "closing", "say": "Thank you for the lesson.", "intent": "thanks_today"},
     {"ctx": "serve", "say": "purple keyboard banana", "intent": "none"},
-    {"ctx": "mia_worked", "say": "My car is very fast and blue", "intent": "none"}
-  ]
-}
+    {"ctx": "mia_worked", "say": "My car is very fast and blue", "intent": "none"},
+  {"ctx": "mia_worked", "say": "It's pretty good.", "intent": "praise_general", "not": ["blunt_bad"]},
+  {"ctx": "mia_worked", "say": "Pretty good.", "intent": "praise_general"},
+  {"ctx": "mia_worked", "say": "It tastes pretty good, Mia.", "intent": "praise_general"},
+  {"ctx": "mia_worked", "say": "It's not pretty good.", "intent": "any", "not": ["praise_general"]},
+  {"ctx": "mia_worked", "say": "The smell is great.", "intent": "praise_part", "slots": {"good": "smell"}},
+  {"ctx": "mia_worked", "say": "The color is great.", "intent": "praise_part", "slots": {"good": "color"}},
+  {"ctx": "mia_worked", "say": "I like the bread.", "intent": "other_food_ctx", "not": ["praise_part"]},
+  {"ctx": "mia_encourage", "say": "No, you're not!", "intent": "encourage_ctx", "not": ["rush"]},
+  {"ctx": "mia_encourage", "say": "no you're not", "intent": "encourage_ctx", "not": ["rush"]},
+  {"ctx": "mia_encourage", "say": "You're not slow at all!", "intent": "encourage", "not": ["rush"]},
+  {"ctx": "mia_encourage", "say": "Of course not!", "intent": ["encourage_ctx", "yn:no"], "not": ["rush"]},
+  {"ctx": "mia_encourage", "say": "Yes, you are.", "intent": "any", "not": ["encourage", "encourage_ctx"]},
+  {"ctx": "mia_try", "say": "Add some pork.", "intent": "suggest_fix", "slots": {"fix": "pork"}},
+  {"ctx": "mia_try", "say": "Maybe a little salt pork.", "intent": "suggest_fix", "slots": {"fix": "pork"}},
+  {"ctx": "consent", "say": "I'd rather not.", "intent": "no_feedback", "not": ["keep_own", "want_feedback"]},
+  {"ctx": "consent", "say": "I'd prefer not to right now.", "intent": "no_feedback", "not": ["want_feedback"]},
+  {"ctx": "second", "say": "I'd rather not.", "intent": "keep_own", "not": ["no_feedback"]}
+] }

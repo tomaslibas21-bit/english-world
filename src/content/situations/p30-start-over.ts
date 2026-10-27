@@ -88,6 +88,8 @@ const timeOpen = (c: Ctx) => c.s.mood === "needs_time" && !!c.s.needSaid && !c.s
 const respDone = (c: Ctx) => !!c.s.ownDone && (!!c.s.whyAnswered || !!c.s.whySkipped);
 const stepIs = (c: Ctx, id: string) => c.step === id;
 /** "I'm sorry, but…" (the lead "sorry but" leaves only what follows "but" as the answer). */
+/** A non-apology about the other's feelings ("I'm sorry you feel that way", "…if you were offended"). */
+const NON_APOLOGY_YOU = /\b(you|anyone) (feel|felt|were|are|was|got|took|misunderstood)\b/i;
 const SORRY_BUT = /\b(sorry|apologi[sz]e)\b[^.!?;]*\bbut\b/i;
 
 /** Lithuanian end-card lines (sent with the "outro" event; see NEEDS). */
@@ -101,9 +103,10 @@ const OUTRO = {
 // Tips
 
 const TIPS: Record<string, Tip> = {
-  sorry_but: { key: "sorry_but", lt: "Suprasta! Bet angliškai „I'm sorry, but…“ panaikina atsiprašymą: viskas, kas prieš „but“, nebesiskaito. O „I'm sorry if you were offended“ skamba kaip atsiprašymas už kito jausmus, ne už savo žodžius. Atsiprašoma be jokio „bet“.", better: "I'm truly sorry. There's no excuse for what I said." },
+  sorry_but: { key: "sorry_but", lt: "Suprasta! Bet angliškai „I'm sorry, but…“ panaikina atsiprašymą: viskas, kas prieš „but“, nebegalioja. Atsiprašoma be jokio „bet“.", better: "I'm truly sorry. There's no excuse for what I said." },
+  non_apology: { key: "non_apology", lt: "Suprasta! Bet „I'm sorry you feel that way“ ar „I'm sorry if you were offended“ – ne atsiprašymas: taip apgailestaujama dėl kito jausmų, o ne dėl savo žodžių. Atsiprašoma už tai, ką pats pasakei.", better: "I'm truly sorry for what I said." },
   excuse: { key: "excuse", lt: "Suprasta! Tai paaiškinimas, o ne atsiprašymas. Nuoširdus atsiprašymas pasiteisinimų neieško.", better: "There's no excuse for what I said." },
-  blame: { key: "blame", lt: "Suprasta! Bet atsiprašant kaltinti kitą – blogas ženklas: pokalbis virsta ginču. Kalbėk apie save.", better: "I was wrong. It came from me." },
+  blame: { key: "blame", lt: "Suprasta! Bet atsiprašant kaltinti kitą – blogas ženklas: pokalbis virsta ginču. Kalbėk apie save.", better: "I was wrong. That's on me." },
   just_joke: { key: "just_joke", lt: "Suprasta! Bet taip sumenkinami kito jausmai. Geriau pripažinti, kad įskaudinai.", better: "That was out of line. You didn't deserve that." },
   forgive_me: { key: "forgive_me", lt: "Suprasta! Angliškai „Forgive me“ draugui skamba gana iškilmingai, beveik kaip filme. Paprasčiau ir šilčiau – paprašyti atleidimo švelniai.", better: "I'm really sorry. I hope you can forgive me." },
   push: { key: "push", lt: "Suprasta! Bet atleisti neįmanoma įsakyti. Jei draugui reikia laiko, parodyk, kad tai gerbi.", better: "I understand if you need time." },
@@ -251,7 +254,7 @@ export const startOver: SituationDef = {
     ] },
     own_it: { patterns: [
       "i was wrong [to (say that | walk away | stay away | disappear | let it grow | let it go this far | say those things | do that)] #h:was_wrong",
-      "i was wrong and it came from me #h:was_wrong", "i was (so | completely | totally | really) wrong",
+      "i was wrong and (that is | it is | it was | that was) [all] on me #h:was_wrong", "i was wrong and it came from me", "i was (so | completely | totally | really) wrong",
       "(it | that | this) (came | was coming) from me",
       "(the silence | it | that | this) was (my fault | on me | all me | all my fault)",
       "it (was | is) [all] my fault #h:my_fault", "[it is] (my | all my) fault", "my mistake", "i was not right", "(it is | that is) [all] on me", "(that | it) was my mistake",
@@ -420,6 +423,8 @@ export const startOver: SituationDef = {
     ] },
 
     // --- starting over ---------------------------------------------------------------------------------
+    // "Anything else you want to say?" – "Nothing, thanks." (only then)
+    nothing_else_ctx: { patterns: ["(nothing | nothing else | no nothing | that is (all | it | everything) | i think that is (all | it)) [really] [for now]"] },
     start_over: { patterns: [
       "can we start over #h:start_over",
       "can we start over (you and me | me and you) #h:start_over_me_you",
@@ -433,6 +438,7 @@ export const startOver: SituationDef = {
       "i (want | would like | would love) [us] to start over",
       "i (want | would like) (my friend back | us to be friends again | our friendship back)",
       "let us (start over | be friends again | put this behind us)", "start over [you and me]",
+      "let us (start | begin) (again | fresh | from scratch) [you and me | me and you]", "let us (try | give it a try) again", "(start | begin) (again | fresh) [you and me]",
       "(can | could) we (begin | start) (from new | from zero | anew | from the beginning) #tip:calque_new",
       "(can | could | shall) we make peace #tip:make_peace", "(can | could) we reconcile #tip:make_peace",
     ] },
@@ -508,7 +514,16 @@ export const startOver: SituationDef = {
     sorry_accept_vague: [t("Okay. | Okay. | I | hear | you.", "Gerai. | Gerai. | Aš | girdžiu | tave.", "Gerai, gerai. Girdžiu.")],
     sorry_but_react: [
       t("And | there it is: | the | “but.”", "Ir | štai ir jis: | — | „bet“.", "Ir štai jis – tas „bet“."),
-      t("Everything | before | the | “but” | doesn't count.", "Viskas | prieš | — | „bet“ | nesiskaito.", "Viskas, kas pasakyta prieš „bet“, nesiskaito."),
+      t("Everything | before | the | “but” | doesn't count.", "Viskas | prieš | — | „bet“ | negalioja.", "Viskas, kas pasakyta prieš „bet“, negalioja."),
+    ],
+    // "I'm sorry you feel that way." (no "but", and no apology either)
+    non_apology_react: [
+      t("That's | not | really | an | apology.", "Tai | nėra | iš tikrųjų | — | atsiprašymas.", "Tai ne visai atsiprašymas.", { flags: { 0: "“'s” (is): nėra (under “not”) carries it." } }),
+    ],
+    // "I'm sorry you feel that way." / "I'm sorry if you were offended.": about Dan's feelings
+    non_apology_you: [
+      t("So | now | it's | my | fault?", "Tai | dabar | tai yra | mano | kaltė?", "Tai dabar aš kaltas?"),
+      t("So | the | problem | is | my | feelings?", "Tai | — | problema | yra | mano | jausmai?", "Tai problema – mano jausmai?"),
     ],
     excuse_react: [
       t("That's | an | explanation, | not | an | apology.", "Tai | — | paaiškinimas, | ne | — | atsiprašymas.", "Tai paaiškinimas, o ne atsiprašymas.", { flags: { 0: F_THATS } }),
@@ -626,8 +641,8 @@ export const startOver: SituationDef = {
     cant_cook_react: [t("I | know. | That's | the | punishment.", "Aš | žinau. | Tai yra | — | bausmė.", "Žinau. Tai ir yra bausmė.")],
     offer_react: [
       t("Now you're talking.", "Va, čia jau kitas reikalas.", "Va, čia jau kitas reikalas."),
-      t("Deal. | But | I'm holding | you | to | it.", "Sutarta. | Bet | laikysiu | tave | prie | žodžio.", "Sutarta. Bet laikysiu tave prie žodžio.",
-        { flags: { 2: "Present progressive for a promise: Lithuanian uses the future laikysiu.", 5: "“it” (your promise) = žodžio, from the idiom laikyti prie žodžio." } }),
+      t("Deal. | But | I'm holding | you | to | it.", "Sutarta. | Bet | pagausiu | tave | už | žodžio.", "Sutarta. Bet pagausiu tave už žodžio.",
+        { flags: { 2: "Present progressive for a promise: Lithuanian uses the future pagausiu.", 5: "“it” (your promise) = žodžio, from the idiom pagauti už žodžio." } }),
     ],
     promise_react: [t("Words | are | cheap. | But | okay, | I'll watch.", "Žodžiai | yra | pigūs. | Bet | gerai, | stebėsiu.", "Žodžiai pigūs. Bet gerai – stebėsiu.")],
     start_over_early: [
@@ -720,7 +735,7 @@ export const startOver: SituationDef = {
     responsibility: {
       lt: "Prisiimti atsakomybę",
       items: [
-        { id: "was_wrong", s: t("I | was wrong, | and | it | came | from | me.", "Aš | klydau, | ir | tai | kilo | iš | manęs.", "Klydau, ir {m:kaltas|f:kalta} tik aš.") },
+        { id: "was_wrong", s: t("I | was wrong, | and | that's | on me.", "Aš | klydau, | ir | tai | mano kaltė.", "Klydau, ir tai tik mano kaltė.", { flags: { 3: F_THATS } }) },
         { id: "no_excuse", s: t("There's | no | excuse | for | what | I | said.", "Nėra | jokio | pateisinimo | — | tam, ką | aš | pasakiau.", "Tam, ką pasakiau, nėra jokio pateisinimo.",
           { flags: { 0: "Existential “There's” with “no”: Lithuanian negates the verb, nėra.", 3: "“for”: the dative tam (under “what”) carries it." } }) },
         { id: "you_right", s: t("You | were | right, | and | I | was | too | proud | to call.", "Tu | buvai | {sm:teisus|sf:teisi}, | o | aš | buvau | per daug | {m:išdidus|f:išdidi} | paskambinti.",
@@ -806,6 +821,7 @@ export const startOver: SituationDef = {
   tips: TIPS,
 
   merges: {
+    "on me": { reason: "lexical_expression", split: "on → ant + me → manęs is false; “that's on me” (my responsibility) = mano kaltė.", minimal: "Two words." },
     "it's been": { reason: "grammatical_fusion", split: "It's → tai yra + been → buvęs: dummy “it” + perfect; the time that passed = praėjo (C-DUMMY).", minimal: "Two words." },
     "a while": { reason: "lexical_expression", split: "a → — + while → kol (the conjunction) is false; the stretch of time = nemažai laiko.", minimal: "Two words." },
     "it is": { reason: "grammatical_fusion", split: "Dummy “it” → tai would add a false subject; the impersonal būna absorbs it (C-DUMMY).", minimal: "Two words." },
@@ -952,7 +968,7 @@ export const startOver: SituationDef = {
         if (!c.s.elseSaid) { c.s.elseSaid = true; dan(c, "anything_else"); return; }
         offerStart(c);
       },
-      expects: ["start_over", "missed_you", "thanks_hearing", "g_thanks", "promise"],
+      expects: ["start_over", "missed_you", "thanks_hearing", "g_thanks", "promise", "nothing_else_ctx"],
       suggest: [{ lt: "Paklausti, ar galite pradėti iš naujo", hint: "start_over" }, { lt: "Padėkoti, kad išklausė", hint: "thanks" }],
       yes: (c) => { if (!openYesNo(c, true)) { dan(c, "listening"); c.hold(); } },
       no: (c) => { if (!openYesNo(c, false)) offerStart(c); },
@@ -1033,6 +1049,13 @@ export const startOver: SituationDef = {
     { say: "I'm not here to apologize.", intent: "none", step: "apology", not: ["apologize"] },
     // responsibility
     { say: "I was wrong, and it came from me.", intent: "own_it", step: "responsibility" },
+    { say: "I was wrong, and that's on me.", intent: "own_it", step: "responsibility" },
+    { say: "Mistakes were made.", intent: "sorry_but", step: "apology", not: ["apologize", "own_it"] },
+    { say: "Nothing, thanks.", intent: "nothing_else_ctx", step: "start_over" },
+    { say: "That's all, really.", intent: "nothing_else_ctx", step: "start_over" },
+    { say: "Nothing.", intent: "none", not: ["nothing_else_ctx"] },
+    { say: "Let's start again.", intent: "start_over", step: "start_over" },
+    { say: "Let's not start again.", intent: "none", step: "start_over", not: ["start_over"] },
     { say: "There's no excuse for what I said.", intent: "own_it", step: "responsibility" },
     { say: "You were right, and I was too proud to call.", intent: "own_it", step: "responsibility" },
     { say: "It was my fault.", intent: "own_it", step: "responsibility" },
@@ -1107,6 +1130,30 @@ export const startOver: SituationDef = {
   ],
 
   sims: [
+    // "I'm sorry you feel that way." has no "but": a reply of its own ("So now it's my fault?"), then a real apology
+    { name: "a non-apology, then a real one", turns: [
+      "Hi Dan. Can we talk?", "I'm sorry you feel that way.", "I'm truly sorry for what I said at your barbecue.", "I was wrong, and that's on me.",
+      "Thank you for hearing me out.", "How can I make it up to you?", "Deal.", "Can we start over?", "Thanks.",
+    ], expect: { complete: true, state: { badMoves: 1, lastBad: "non_apology" } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
+    // "I'm sorry, but…" keeps the "but" reply
+    { name: "sorry, but…", turns: [
+      "Hi Dan. Can we talk?", "I'm sorry, but it was just a joke.", "I'm truly sorry for what I said at your barbecue.", "You were right, and I was too proud to call.",
+      "Thank you for hearing me out.", "How can I make it up to you?", "Deal.", "Can we start over?", "Thanks.",
+    ], expect: { complete: true, state: { badMoves: 1, lastBad: "sorry_but" } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "stay"; } },
+    // "Anything else you want to say?" – "Nothing, thanks." – "So. Are we starting over or what?" – "Let's start again."
+    { name: "nothing else; let's start again", turns: [
+      "Hi Dan. Can we talk?", "I'm truly sorry for what I said at your barbecue.", "You were right, and I was too proud to call.",
+      "How can I make it up to you?", "Deal.", "Nothing, thanks.", "Let's start again.", "Thank you for hearing me out.",
+    ], expect: { complete: true, state: { startOverDone: true, anytimeSaid: undefined } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "boat"; } },
+    // "Anything else you want to say?" – "Thank you." – "Anytime…" (not "Oh, hush. Come inside."), then the question
+    { name: "anything else? thank you", turns: [
+      "Hi Dan. Can we talk?", "I'm truly sorry for what I said at your barbecue.", "You were right, and I was too proud to call.",
+      "How can I make it up to you?", "Deal.", "Thank you.", "Yes.", "Thanks.",
+    ], expect: { complete: true, state: { startOverDone: true, anytimeSaid: true, closed: true } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
     // the open branch, no Nora: the classic way through
     { name: "open: the classic apology", turns: [
       "Hi Dan. Do you have a minute?", "I owe you an apology.", "For what I said at your barbecue. There's no excuse for it.", "I was too proud to call.",
@@ -1207,9 +1254,13 @@ function badMove(c: Ctx, kind: "sorry_but" | "excuse" | "blame" | "rude" | "didn
     return;
   }
   if (!once(c, "bad")) { c.hold(); return; }
-  const k = kind !== "push" && SORRY_BUT.test(c.heard) ? "sorry_but" : kind;
+  const k0 = kind !== "push" && SORRY_BUT.test(c.heard) ? "sorry_but" : kind;
+  // "I'm sorry you feel that way." / "Mistakes were made.": no "but", but no apology either
+  const k = k0 === "sorry_but" && !/\bbut\b/i.test(c.heard) ? "non_apology" : k0;
   c.s.badMoves = (c.s.badMoves ?? 0) + 1;
+  c.s.lastBad = k;
   if (k === "sorry_but") { dan(c, "sorry_but_react"); c.tip(TIPS.sorry_but); }
+  else if (k === "non_apology") { dan(c, NON_APOLOGY_YOU.test(c.heard) ? "non_apology_you" : "non_apology_react"); c.tip(TIPS.non_apology); }
   else if (k === "excuse") { dan(c, "excuse_react"); c.tip(TIPS.excuse); }
   else if (k === "blame") { dan(c, "blame_react"); c.tip(TIPS.blame); }
   else if (k === "rude") { dan(c, "rude_react"); c.tip(TIPS.just_joke); }
@@ -1281,7 +1332,9 @@ function thanks(c: Ctx, explicit: boolean) {
   c.s.thanked = true;
   if (!once(c, "thanks")) return;
   if (stepIs(c, "nora") || /\bnora\b/i.test(c.heard)) { if (!c.s.noraHi) { c.s.noraHi = true; nora(c, "nora_hi"); } return; }
-  if (stepIs(c, "start_over")) { dan(c, "hush"); if (!c.s.offerStart) offerStart(c); return; }
+  // ("Oh, hush. Come inside." would end the visit before "Are we starting over or what?")
+  if (stepIs(c, "start_over")) { if (!c.s.anytimeSaid) { c.s.anytimeSaid = true; dan(c, "anytime_wait"); } if (!c.s.offerStart) offerStart(c); return; }
+  c.s.anytimeSaid = true;
   dan(c, "anytime_wait");
 }
 
@@ -1374,6 +1427,11 @@ const HANDLERS: Record<string, H> = {
     answerWhy(c, seg.tags.includes("pride"));
   },
   sorry_but(c) { badMove(c, "sorry_but"); },
+  // "Anything else you want to say?" – "Nothing, thanks." (only then)
+  nothing_else_ctx(c) {
+    if (c.s.goalMet || !stepIs(c, "start_over") || !once(c, "nothing")) return;
+    offerStart(c);
+  },
   excuse(c) { badMove(c, "excuse"); },
   blame(c) { badMove(c, "blame"); },
   rude(c) { badMove(c, "rude"); },

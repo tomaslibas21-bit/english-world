@@ -255,5 +255,18 @@
   { "ctx": "closing", "say": "I missed you.", "intent": "missed_you" },
   { "ctx": "closing", "say": "I missed you guys.", "intent": "missed_you" },
   { "ctx": "closing", "say": "Okay.", "intent": "yn:yes" },
-  { "ctx": "closing", "say": "I didn't miss you.", "intent": "any", "not": ["missed_you"] }
+  { "ctx": "closing", "say": "I didn't miss you.", "intent": "any", "not": ["missed_you"] },
+  {"ctx": "apology", "say": "Mistakes were made.", "intent": "sorry_but", "not": ["apologize", "own_it"]},
+  {"ctx": "apology", "say": "I'm sorry you felt that way.", "intent": "sorry_but", "not": ["apologize"]},
+  {"ctx": "responsibility", "say": "I was wrong, and that's on me.", "intent": "own_it"},
+  {"ctx": "responsibility", "say": "I was wrong. That's on me.", "intent": "own_it"},
+  {"ctx": "responsibility", "say": "That's not on me.", "intent": "any", "not": ["own_it"]},
+  {"ctx": "start_over", "say": "Nothing, thanks.", "intent": "nothing_else_ctx"},
+  {"ctx": "start_over", "say": "Nothing else.", "intent": "nothing_else_ctx"},
+  {"ctx": "start_over", "say": "I think that's all.", "intent": "nothing_else_ctx"},
+  {"ctx": "start_over", "say": "Let's start again.", "intent": "start_over"},
+  {"ctx": "start_over", "say": "Let's start fresh, you and me.", "intent": "start_over"},
+  {"ctx": "start_over", "say": "Let's try again.", "intent": "start_over"},
+  {"ctx": "start_over", "say": "Let's not start again.", "intent": "any", "not": ["start_over"]},
+  {"ctx": "start_over", "say": "Thank you.", "intent": "g_thanks"}
 ] }

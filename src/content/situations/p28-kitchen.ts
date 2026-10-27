@@ -35,7 +35,8 @@
 // NEEDS: (1) the game ignores the events "taste" ({by, dish}: the chef tastes in silence, ~1.5 s pause and
 // a spoon sound in the spec) and "enter" ({npc: "russo"}: Mia walks over); a pause/sfx for them would help.
 // (2) An NPC flag for "addresses the player with tu" separate from "the player addresses them with jūs"
-// would let the copied global lines (g_not_understood … g_yes_what) go.
+// would let the copied global lines (g_not_understood … g_yes_what, g_soundcheck, g_soundcheck_no) go; until then a new
+// global line that switches {j:…|t:…} must be copied here too.
 
 import type { Ctx, EntityDef, Segment, SituationDef, Tip } from "../types";
 import { ent, t } from "../dsl";
@@ -105,6 +106,13 @@ const INGREDIENTS: EntityDef[] = [
   ent("celery", "celery", "salieras/saliero/salierui/salierą/salieru/saliere", "m", { art: "", chip: "salieras", forms: ["celery sticks"] }),
   ent("scallions", "green | onions", "laiškiniai/laiškinių/laiškiniams/laiškinius/laiškiniais/laiškiniuose | svogūnai/svogūnų/svogūnams/svogūnus/svogūnais/svogūnuose", "m",
     { art: "", chip: "laiškiniai svogūnai", forms: ["scallions", "scallion", "green onion"], attrs: { count: true } }),
+  // salt pork is the old New England way to start a chowder (and "pork" must never be heard as "paprika")
+  ent("pork", "pork", "kiauliena/kiaulienos/kiaulienai/kiaulieną/kiauliena/kiaulienoje", "f", { art: "", chip: "kiauliena", forms: ["salt pork", "pork belly"] }),
+];
+/** Foods that are not in the chowder: "I like the bread." – "Bread? That's not in my chowder." (and the sound check
+ *  knows they are real words: "bread" is no "broth"). */
+const OTHER_FOODS: EntityDef[] = [
+  ent("bread", "bread", "duona/duonos/duonai/duoną/duona/duonoje", "f", { art: "", forms: ["sourdough", "bread roll", "bread bowl"] }),
 ];
 const ingredient = (id?: string) => INGREDIENTS.find((e) => e.id === id);
 
@@ -165,7 +173,7 @@ export const kitchen: SituationDef = {
   npcs: ["russo"],
   goal: "Gražiai priimk šefo pastabas, o paskui konstruktyviai įvertink naujokės patiekalą.",
   intro: "„The Pier“ restorano virtuvė, 16.30 – valanda iki vakaro aptarnavimo. Šįvakar nori įtraukti savo šaltibarščius į dienos pasiūlymus, bet pirmiausia jų turi paragauti šefas Vitakeris. Jis kalba tyliai, bet nieko nepraleidžia pro akis – o po to, ko gero, paprašys tavęs padėti naujai virėjai Mijai.",
-  entities: { good_part: GOOD_PARTS, ingredient: INGREDIENTS },
+  entities: { good_part: GOOD_PARTS, ingredient: INGREDIENTS, other_food: OTHER_FOODS },
 
   grammar: {
     macros: {
@@ -274,6 +282,7 @@ export const kitchen: SituationDef = {
       "(can it | can we do it | could it | can this | can that) wait [until later]",
       "(can we do (it | this) | let us do it | can you do it) (later | after service | tomorrow)",
       "i am [a bit | too | really] busy [right now]",
+      "i would (rather not | prefer not) [to] [right now | today | now]",
       "i (know | think) it is (good | perfect | fine) [already] #tip:defensive",
       "it does not need (anything | any changes | feedback) #tip:defensive",
     ] },
@@ -537,6 +546,10 @@ export const kitchen: SituationDef = {
       "do not be sorry",
     ] },
     calm_down: { patterns: ["[just] (calm down | chill | chill out | cool down) [@vm] #tip:calm_down"] },
+    // "I like the bread." (while Mia asks what worked): there is none in the chowder
+    other_food_ctx: { patterns: ["i [really] (like | love | liked | loved) [the | your] {o:other_food}", "(the | your) {o:other_food} (is | was) [really | very | so] @good_adj"] },
+    // "Sorry I'm so slow." – "No, you're not!" (only then)
+    encourage_ctx: { patterns: ["[no] you are not", "[no] (not at all | of course not | you are really not)"] },
     intro_mia_ctx: { patterns: ["(i am | my name is) {name}"] },
     nice_meet: { patterns: ["nice to meet you [too] [@vm]", "(it is) nice to meet you"] },
     praise_part: { patterns: [
@@ -560,6 +573,7 @@ export const kitchen: SituationDef = {
     good_ctx: { patterns: ["[the | your] {good:good_part}", "[the] {good:good_part} for sure"] },
     praise_general: { patterns: [
       "it is [really | very | so | super | actually | honestly | just] (good | great | delicious | tasty | nice | lovely | excellent | amazing | wonderful | fantastic | perfect | yummy) [@vm] #h:really_good",
+      "[it is | this is | that is | it tastes] (pretty | quite | really pretty) (good | great | tasty | nice | delicious) [actually] [@vm]",
       "it is [really | so] brilliant [@vm] #tip:uk_brilliant",
       "(it tastes | that tastes | this tastes) [really | very | so | super] (good | great | delicious | amazing | wonderful | fantastic)",
       "(good | great | nice | excellent | amazing | fantastic) (job | work) [@vm] #h:great_job",
@@ -712,7 +726,7 @@ export const kitchen: SituationDef = {
       "(i believe in you | you can do it | you have got this | you got this)",
       "do not give up",
       "(good | great) chefs (are not | were not) fast @first",
-      "you are not (slow | that slow | too slow)",
+      "[no] you are not (slow | that slow | too slow | so slow) [at all]",
       "(it is | that is) (normal | okay) to be slow [@first]", "(it is | that is) normal [@first]",
       "(quality | good food | taste) (is | matters) more [important] than speed",
       "you are (good | talented | a good cook | a natural)",
@@ -801,7 +815,7 @@ export const kitchen: SituationDef = {
       t("Glad | it | helps.", "Džiaugiuosi, | kad tai | padeda.", "Džiaugiuosi, kad padeda.", { flags: { 1: F_KAD } }),
     ],
     receive_react_work: [
-      t("I | know | you | will.", "Aš | žinau, | kad tu | [padirbėsi].", "Žinau, kad padirbėsi.", { flags: { 2: F_KAD, 3: "Elliptical “will”: Lithuanian repeats the verb (padirbėsi)." } }),
+      t("I | know | you | will.", "Aš | žinau, | kad tu | [patobulinsi].", "Žinau, kad patobulinsi.", { flags: { 2: F_KAD, 3: "Elliptical “will”: Lithuanian repeats the verb (patobulinsi)." } }),
     ],
     receive_ok: [t("Good.", "Gerai.", "Gerai."), t("Okay. | Good.", "Gerai. | Puiku.", "Gerai. Puiku.")],
     receive_help: [
@@ -819,7 +833,7 @@ export const kitchen: SituationDef = {
         "Tikiu. Aš tik sakau, ką man sako mano šaukštas.", { flags: { 3: "“'m” (progressive): the present sakau carries it." } }),
     ],
     defensive_lt: [
-      t("In Lithuania, | people | know | what | to expect. | Table | nine | is | from | Ohio.", "Lietuvoje | žmonės | žino, | ko | tikėtis. | Staliukas | devintas | yra | iš | Ohajo.",
+      t("In Lithuania, | people | know | what | to expect. | Table | nine | is | from | Ohio.", "Lietuvoje, | žmonės | žino, | ko | tikėtis. | Staliukas | devintas | yra | iš | Ohajo.",
         "Lietuvoje žmonės žino, ko tikėtis. O devintas staliukas – iš Ohajo."),
     ],
     def_move_on: [t("Okay. | Just | think | about | it.", "Gerai. | Tiesiog | pagalvok | apie | tai.", "Gerai. Tiesiog pagalvok apie tai.")],
@@ -873,7 +887,7 @@ export const kitchen: SituationDef = {
       t("Ha! | Tell | me | how | you | really | feel. | Fair enough, | your | plate.", "Cha! | Pasakyk | man, | ką | tu | iš tikrųjų | jauti. | Na, gerai, | tavo | lėkštė.",
         "Cha! Sakyk, ką iš tikrųjų galvoji. Na, gerai – tavo lėkštė.", { flags: { 3: "“how you feel” = ką jauti (what you feel)." } }),
     ],
-    second_reask: [t("So, | croutons | or | no | croutons?", "Tai | skrebučiai | ar | jokių | skrebučių?", "Tai su skrebučiais ar be?")],
+    second_reask: [t("So, | croutons | or | no | croutons?", "Tai, | skrebučiai | ar | jokių | skrebučių?", "Tai su skrebučiais ar be?")],
     second_skip: [t("Think | about | it.", "Pagalvok | apie | tai.", "Pagalvok.")],
 
     // --- the favor ---------------------------------------------------------------------------------
@@ -976,6 +990,8 @@ export const kitchen: SituationDef = {
     mia_fix_it: [t("Okay. | I'll fix | that.", "Gerai. | Pataisysiu | tai.", "Gerai. Pataisysiu.")],
     mia_try_odd: [t("In | chowder? | Huh. | Okay, | I'll try | that.", "Į | sriubą? | Hm. | Gerai, | pabandysiu | tai.", "Į sriubą? Hm. Gerai, pabandysiu.")],
     mia_try_ok: [t("Okay. | I | can | do | that.", "Gerai. | Aš | galiu | padaryti | tai.", "Gerai. Tai galiu padaryti.")],
+    mia_other: [t("{X}? | That's | not | in | my | chowder.", "{X:nom}? | To | nėra | — | mano | sriuboje.", "{X:nom}? Mano sriuboje to nėra.",
+      { flags: { 1: "“That's” under the negation: the genitive to; nėra (under “not”) carries “is”.", 3: "“in”: the locative sriuboje carries it (mano intervenes)." } })],
     mia_try_x: [t("A little | {X}. | Got it.", "Truputį | {X:gen}. | Supratau.", "Truputį {X:gen}. Supratau.")],
     mia_must_react: [t("Okay... | I'll try.", "Gerai... | pabandysiu.", "Gerai… pabandysiu.")],
     mia_no_x: [t("No | {X}? | Okay.", "Be | {X:gen}? | Gerai.", "Be {X:gen}? Gerai.")],
@@ -1057,6 +1073,15 @@ export const kitchen: SituationDef = {
       t("Here, | let | me | explain.", "Štai, | leisk | man | paaiškinti.", "Tuoj paaiškinsiu."),
     ],
     g_yes_what: [t("Sure! | What | can | I | do | for you?", "Žinoma! | Ką | galiu | aš | padaryti | tau?", "Žinoma! Kuo galiu padėti?")],
+    // the sound check (a name heard by its sound: "Sorry, did you say salt?"), with tu
+    g_soundcheck: [
+      t("Sorry, | {X}?", "Atsiprašau, | {X:nom}?", "Atsiprašau, {X:nom}?"),
+      t("Sorry, | did | you | say | {X}?", "Atsiprašau, | ar | tu | sakei | {X:nom}?", "Atsiprašau, ar sakei „{X:nom}“?"),
+    ],
+    g_soundcheck_no: [
+      t("Oh, | sorry! | Could | you | say | it | again?", "O, | atsiprašau! | Ar galėtum | tu | pasakyti | tai | dar kartą?", "O, atsiprašau! Ar galėtum pakartoti?"),
+      t("My | mistake! | What | was | it?", "Mano | klaida! | Kas | buvo | tai?", "Mano klaida! Ką sakei?"),
+    ],
   },
 
   hints: {
@@ -1095,7 +1120,7 @@ export const kitchen: SituationDef = {
       lt: "Priimti pastabas",
       items: [
         { id: "thanks_helpful", s: t("Thanks, | that's | really | helpful.", "Ačiū, | tai yra | tikrai | naudinga.", "Ačiū, tai tikrai naudinga.") },
-        { id: "work_on_that", s: t("I'll work | on | that.", "Padirbėsiu | prie | to.", "Prie to padirbėsiu.") },
+        { id: "work_on_that", s: t("I'll work | on | that.", "Patobulinsiu | — | tai.", "Tai dar patobulinsiu.", { flags: { 1: "“on” (work on): patobulinsiu (under “I'll work”) carries it." } }) },
         { id: "makes_sense", s: t("That | makes sense.", "Tai | suprantama.", "Suprantu.") },
         { id: "thanks_for_fb", s: t("Thanks | for | the | feedback.", "Ačiū | už | — | pastabas.", "Ačiū už pastabas.") },
         { id: "youre_right", s: t("You're | right, | it's | a bit | flat.", "Jūs esate | teisus, | ji yra | šiek tiek | blanki.", "Jūs teisus, ji kiek blankoka.") },
@@ -1131,7 +1156,7 @@ export const kitchen: SituationDef = {
         { id: "try_both", s: t("I'll try | it | both | ways.", "Pabandysiu | — | abiem | būdais.", "Pabandysiu abiem būdais.", { flags: { 1: F_NO_OBJ } }) },
         { id: "see_point", s: t("I | see | your | point, | but | I'd like | to keep | it | traditional.", "Aš | suprantu | jūsų | mintį, | bet | norėčiau | palikti | ją | tradicinę.",
           "Suprantu, ką norite pasakyti, bet norėčiau palikti ją tradicinę."), note: "Mandagiai nesutikti: pirma pripažink kito mintį, tada pasakyk savo." },
-        { id: "lt_potatoes", s: t("In Lithuania, | we | serve | it | with | hot | potatoes | on the side.", "Lietuvoje | mes | patiekiame | ją | su | karštomis | bulvėmis | atskirai.",
+        { id: "lt_potatoes", s: t("In Lithuania, | we | serve | it | with | hot | potatoes | on the side.", "Lietuvoje, | mes | patiekiame | ją | su | karštomis | bulvėmis | atskirai.",
           "Lietuvoje ją patiekiame su karštomis bulvėmis atskirai.") },
         { id: "rather_simple", s: t("Thanks, | but | I'd | rather | keep | it | simple.", "Ačiū, | bet | aš | verčiau | palikčiau | ją | paprastą.", "Ačiū, bet verčiau palikčiau ją paprastą.",
           { flags: { 2: "“'d” (would): the conditional palikčiau carries it." } }) },
@@ -1172,9 +1197,10 @@ export const kitchen: SituationDef = {
         { id: "really_like", s: t("I | really | like | the | {X}.", "Man | labai | patinka | — | {X:nom}.", "Man labai patinka {X:nom}.", { flags: { 0: "“I” = man: patikti takes the dative." } }) },
         { id: "nailed", s: t("You | nailed | the | {X}.", "Tau | puikiai pavyko | — | {X:nom}.", "Tau puikiai pavyko {X:nom}.",
           { flags: { 0: "“You” = tau: pavykti takes the dative.", 1: "“nailed” (got it just right) = puikiai pavyko." } }), register: "casual" },
-        { id: "x_great", s: t("Your | {X} | is | great.", "Tavo | {X:nom} | yra | {puikus@X:nom}.", "Tavo {X:nom} – {puikus@X:nom}."), only: (e) => !e.attrs?.enPl && !e.attrs?.ltPl },
-        { id: "x_great", s: t("Your | {X} | is | great.", "Tavo | {X:nom} | yra | {puikus@X:nom:pl}.", "Tavo {X:nom} – {puikus@X:nom:pl}."), only: (e) => !e.attrs?.enPl && !!e.attrs?.ltPl },
-        { id: "x_great", s: t("Your | {X} | are | great.", "Tavo | {X:nom} | yra | {puikus@X:nom:pl}.", "Tavo {X:nom} – {puikus@X:nom:pl}."), only: (e) => !!e.attrs?.enPl },
+        // "The …" ("Your smell is great." would be about Mia herself)
+        { id: "x_great", s: t("The | {X} | is | great.", "— | {X:nom} | yra | {puikus@X:nom}.", "{X:nom} – {puikus@X:nom}."), only: (e) => !e.attrs?.enPl && !e.attrs?.ltPl },
+        { id: "x_great", s: t("The | {X} | is | great.", "— | {X:nom} | yra | {puikus@X:nom:pl}.", "{X:nom} – {puikus@X:nom:pl}."), only: (e) => !e.attrs?.enPl && !!e.attrs?.ltPl },
+        { id: "x_great", s: t("The | {X} | are | great.", "— | {X:nom} | yra | {puikus@X:nom:pl}.", "{X:nom} – {puikus@X:nom:pl}."), only: (e) => !!e.attrs?.enPl },
         { id: "really_good", s: t("It's | really | good, | Mia.", "Ji yra | tikrai | skani, | Mija.", "Ji tikrai skani, Mija.", { flags: { 2: F_FOOD } }) },
         { id: "great_job", s: t("Great | job, | Mia.", "Puikus | darbas, | Mija.", "Puikiai padirbėjai, Mija.") },
         { id: "love_it", s: t("I | love | it!", "Man | labai patinka | ji!", "Man ji labai patinka!", { flags: { 0: "“I” = man: patikti takes the dative.", 1: "“love” (food) = labai patikti." } }) },
@@ -1293,7 +1319,7 @@ export const kitchen: SituationDef = {
   mission: [
     // items 1, 3 and 4: not needed for the course report; they leave the list once their moment has passed
     { lt: "Paprašyk šefo paragauti tavo sriubos", optional: true, done: (c) => !!c.s.offered, when: (c) => !c.s.goalMet && !c.s.served },
-    { lt: "Priimk pastabas: padėkok ir pasakyk, kad prie to padirbėsi", done: (c) => !!c.s.received },
+    { lt: "Priimk pastabas: padėkok ir pasakyk, kad tai dar patobulinsi", done: (c) => !!c.s.received },
     { lt: "Paprašyk pavyzdžio", optional: true, done: (c) => !!c.s.exAsked, when: (c) => !c.s.goalMet && !c.s.exampleDone },
     { lt: "Atsakyk į šefo pasiūlymą (sutik arba mandagiai pasilik prie savo)", optional: true, done: (c) => !!c.s.secondAns, when: (c) => !c.s.goalMet && !c.s.secondDone },
     { lt: "Pasakyk Mijai, kas jai pavyko", done: (c) => !!c.s.praised },
@@ -1331,7 +1357,7 @@ export const kitchen: SituationDef = {
         C(c, "receive_again");
       },
       expects: ["thanks_helpful", "will_work", "defensive", "ask_example"],
-      suggest: [{ lt: "Padėkoti ir pasakyti, kad prie to padirbėsi", hint: "receive" }, { lt: "Paprašyti pavyzdžio", hint: "example" }],
+      suggest: [{ lt: "Padėkoti ir pasakyti, kad tai dar patobulinsi", hint: "receive" }, { lt: "Paprašyti pavyzdžio", hint: "example" }],
       yes: (c) => { receiveWell(c, "ok"); },
       no: (c) => { defend(c, []); },
       help: (c) => { C(c, "receive_help"); } },
@@ -1409,7 +1435,7 @@ export const kitchen: SituationDef = {
         if (n >= 5) { c.s.praiseSkip = true; askNext(c); return; }
         c.s.miaQ = "ask_good"; M(c, "mia_ask_good");
       },
-      expects: ["praise_part", "praise_general", "praise_short_ctx", "good_ctx", "blunt_bad", "problem_state"],
+      expects: ["praise_part", "praise_general", "praise_short_ctx", "good_ctx", "other_food_ctx", "blunt_bad", "problem_state"],
       suggest: [{ lt: "Pasakyti Mijai, kas jai pavyko", hint: "mia_worked", options: "good_part" }],
       // "Is anything good?" – "Yes." → "Really? What?"
       yes: (c) => { if (c.s.miaQ === "ask_good") { M(c, "mia_what"); c.hold(); } },
@@ -1447,7 +1473,7 @@ export const kitchen: SituationDef = {
         if (n <= 3) { M(c, "mia_slow_again"); return; }
         c.s.encSkip = true; M(c, "mia_try_harder"); askNext(c);
       },
-      expects: ["encourage", "reassure", "calm_down", "rush"],
+      expects: ["encourage", "encourage_ctx", "reassure", "calm_down", "rush"],
       suggest: [{ lt: "Padrąsinti Miją", hint: "mia_encourage" }],
       // "Sorry I'm so slow." – "Yes." agrees she is slow; "No." means she isn't
       yes: (c) => { rush(c, true); }, no: (c) => { encourage(c); },
@@ -1613,6 +1639,7 @@ export const kitchen: SituationDef = {
     },
     good_ctx(c, slots) { praise(c, slots.good); },
     praise_general(c) { praise(c, undefined); },
+    other_food_ctx(c, slots) { if (c.step === "mia_worked" && once(c, "praise")) M(c, "mia_other", { X: slots.o }); },
     praise_short_ctx(c) { praise(c, undefined); },
     blunt_bad(c) {
       if (!c.s.handoffDone) return;
@@ -1664,6 +1691,7 @@ export const kitchen: SituationDef = {
       if (c.step === "mia_back") { twistThanks(c); return; }
     },
     rush(c) { if (c.step === "mia_encourage" || (tryDone(c) && !encDone(c))) rush(c, false); },
+    encourage_ctx(c) { if (c.step === "mia_encourage") encourage(c); },
 
     // --- the goodbye (outside the closing question) ---
     yes_chef_ctx(c) { if (c.s.__finished) closeReply(c); else stepYes(c); },
@@ -1868,6 +1896,18 @@ export const kitchen: SituationDef = {
     { say: "My suggestion is a little lemon.", intent: "suggest_fix", step: "mia_try", slots: { fix: "lemon" } },
     { say: "Everybody is slow at the beginning.", intent: "encourage", step: "mia_encourage" },
     { say: "You will not get there.", intent: "none", step: "mia_encourage" },
+    // --- review fixes (Oct 2026) ---
+    { say: "The smell is great.", intent: "praise_part", step: "mia_worked", slots: { good: "smell" } },
+    { say: "It's pretty good.", intent: "praise_general", step: "mia_worked", not: ["blunt_bad"] },
+    { say: "Pretty good, actually.", intent: "praise_general", step: "mia_worked" },
+    { say: "It's not pretty good.", intent: "none", step: "mia_worked", not: ["praise_general"] },
+    { say: "No, you're not!", intent: "encourage_ctx", step: "mia_encourage", not: ["rush"] },
+    { say: "You're not slow at all!", intent: "encourage", step: "mia_encourage", not: ["rush"] },
+    { say: "You're not.", intent: "none" },
+    { say: "Add some pork.", intent: "suggest_fix", step: "mia_try", slots: { fix: "pork" } },
+    { say: "I like the bread.", intent: "other_food_ctx", step: "mia_worked", not: ["praise_part"] },
+    { say: "I'd rather not.", intent: "no_feedback", step: "consent", not: ["keep_own", "want_feedback"] },
+    { say: "I'd rather not.", intent: "keep_own", step: "second", not: ["no_feedback"] },
     { say: "I won't add pepper.", intent: "keep_own", step: "mia_back", not: ["will_work"] },
     { say: "Thank you for the lesson, Chef.", intent: "thanks_today" },
     // not understood
@@ -1922,6 +1962,17 @@ export const kitchen: SituationDef = {
     { name: "goodbye during the twist", turns: ["Here you go.", "Sure, go ahead.", "Thanks, that's really helpful.", "Like what?", "Taste it again, Chef!", "Good idea.",
       "Sure, I'd be happy to.", "Can I give you some feedback?", "I really like the seasoning.", "Maybe some garlic?", "You'll get there.", "Sorry, I have to go. Bye!"],
       expect: { complete: true, state: { backDone: undefined } }, auto: AUTO, setup: (s) => { s.howMuch = false; s.backTwist = true; } },
+    // real words are no sound-alikes: "I like the bread." is not checked back as "broth?" (the "Yes." would take it),
+    // and "Add some pork." is pork, not "smoked paprika?"
+    { name: "bread and pork are real words", turns: ["Hi, Chef! Here's my cold beet soup.", "Of course. Please be honest.", "Thanks, that's really helpful. I'll work on that.",
+      "Could you give me an example?", "Could you taste it again?", "I hadn't thought of it that way. I'll try it both ways.", "Sure, I'd be happy to.",
+      "Can I give you some feedback?", "I like the bread.", "Yes.", "What worked really well was the bacon.", "Add some pork.", "No, you're not!", "Yes, Chef!"],
+      expect: { complete: true, state: { good: "bacon", fix: "pork" } }, auto: AUTO, setup: PLAIN },
+    // "I'd rather not." to "Can I give you some feedback?" is a no (not "keeping my own way"); "It's pretty good."
+    { name: "rather not; pretty good", turns: ["Hi, Chef! Here's my cold beet soup.", "I'd rather not.", "Okay, go ahead.", "Thanks, that's really helpful.",
+      "Like what?", "Taste it again, Chef!", "Good idea.", "Sure, I'd be happy to.", "Can I give you some feedback?", "It's pretty good.",
+      "Maybe add some garlic.", "You're not slow at all!", "Yes, Chef!"],
+      expect: { complete: true, state: { praised: true, fix: "garlic" } }, auto: AUTO, setup: PLAIN },
   ],
 };
 
