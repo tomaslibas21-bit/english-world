@@ -135,7 +135,7 @@ export const startOver: SituationDef = {
   title: { en: "Can We Start Over?", lt: "Gal galime pradėti iš naujo?" },
   topic: { en: "Making up with a friend", lt: "Susitaikymas su draugu" },
   chapter: 8,
-  order: 6,
+  order: 7,
   location: "dans-house",
   npc: "dan",
   npcs: ["nora"],

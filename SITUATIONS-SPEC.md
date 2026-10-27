@@ -563,3 +563,158 @@ These five parts come from the earlier situation songs, 31–35. The song's own 
 - **Twists:**
   - The learner's knee or back hurts ("Stop right there. Let's try something easier").
   - The machine is out of order, so they use another one.
+
+## Batch H: three advanced conversations (added 27 Oct 2026)
+
+Three B2–C1 parts from the advanced songs P18, P24 and P28. Each also has an ADV story in the course, written for
+its song (ADV-018, ADV-024, ADV-028); borrow their situations and phrases. These parts bring the game to 50
+conversations. They follow the rules of the P25–P30 parts:
+- natural, fast, idiomatic NPC speech (contractions, idioms, register);
+- longer learner turns, accepted with the same meaning-safety rules;
+- a `mission` checklist (Lithuanian items, some `optional`) that drives the course report;
+- `c.complete()` once the goal items are ticked;
+- an `ART:` block in the file header naming each picture and the moments it covers.
+
+**Reference files:**
+- `p28-kitchen.ts`: feedback, two speakers, a role-reversal twist, the `mission` list.
+- `p26-complaint.ts`: phone mode, a second speaker after a transfer, formal register, hold.
+- `p27-meeting.ts`: the Brightline office, polite disagreement.
+- `s83-invite-call.ts`: Lizzie on the phone.
+
+**Targets for each part:**
+- `check-content` at 0 errors and 0 warnings;
+- at least 60 NLU `tests`, at least 4 `sims` (12/12 seeds);
+- a dev corpus `tests/corpus/<id>.json` with about 200 items, including traps (`"none"`, meaning flips with `not`).
+
+The new characters are already in `npcs.ts` (`emily`, `tyler`, `mr_grant`; `lizzie` is reused). Chapter 9 „Gyva
+kalba“ is in `CHAPTERS`, and the location `sproutly` is in `locations.ts`.
+
+### p28b-review · song P28 "Taste It Again" · ch 8, order 5 (right after p28-kitchen)
+- **Location** `office` (Brightline, Emily's small glass office) · **NPC** `emily`: Emily, the learner's new manager. Six weeks ago she was the team's most experienced designer and the learner's teammate. She is warm and a little nervous in her first round of reviews; **informal: tu** both ways.
+- **Title** EN "Taste It Again", LT "Paragaukite dar kartą" (the song's). **Topic** "A performance review" / "Metinis veiklos pokalbis".
+- **Goal** "Aptark su nauja vadove savo metus: priimk pagyrimą ir pastabas, paprašyk pavyzdžio, susitark dėl tikslų ir paklausk apie atlyginimą."
+- **Song and story phrases** (cover them as NPC lines, model answers or both):
+  - "Can I give you some feedback?"
+  - "What worked really well was…"
+  - "One thing you could try is…"
+  - "Thanks, that's really helpful."
+  - "I'll work on that."
+  - "Could you give me an example?"
+  - "You'll get there."
+  - From ADV-028: "Fair enough." · "I hadn't thought of it that way." · "Could you give me an example of what 'exceeds expectations' means here?" · "Have you thought about…?" · "I'd suggest…"
+- **Flow:**
+  1. **Start:** a plant falls off the windowsill as she starts ("Oh no! Sorry, sorry. Okay. Thanks for making time.").
+     - Short small talk: "How are you feeling about today?" (nervous / fine / curious).
+     - She explains the format: your self-assessment first, then hers, then goals.
+  2. **Your year:** "What are you most proud of this year?" The learner names one or two things from the review document, as chips (an entity type, 4–5 values):
+     - the scheduling tool guide (documented, so support needs you less);
+     - the client project rescued on time;
+     - helping the new intern;
+     - the app launch;
+     - the customer survey.
+
+     Follow-ups ask a little more ("What made it work?"). Accept "It was a team effort." Emily praises in the song's way: "What worked really well was…".
+  3. **Feedback:** "Can I give you some feedback?" → "One thing you could try is speaking up earlier in client meetings."
+     - The learner can accept ("That's fair. I'll work on that."), ask for an example ("Could you give me an example?") or push back with context, politely.
+     - From the story: "In those meetings, you presented my sections because the client was running late." → Emily: "Fair enough… you're right."
+     - She asks how to fix it ("How could we protect your speaking time?") → "Could we put my sections in the agenda?"
+     - A rude push-back ("That's not true", "You're wrong") still works, but the `#tip` shows a softer form ("I see it a bit differently…").
+  4. **Goals:** "What would you like to work on next year?" Options: presenting to clients, leading a small project, a course or training (UX writing, data, leadership), mentoring.
+     - Asking for support counts: "Is there a training budget?" → "We have $1,500 per person."
+  5. **Money:** the learner asks about a raise or a promotion.
+     - Emily: "Salary decisions happen next month, after the reviews."
+     - The learner asks what counts ("What would I need to do to get a promotion?" / the "exceeds expectations" question).
+     - She doesn't know yet, honestly, and promises an answer by a date ("Let me find out. I'll get back to you by Friday.").
+     - If the learner never asks, a mission item (optional) leaves once its moment passes.
+  6. **Closing:** she sums up the action items (your sections in the agenda, the training, her answer by Friday) and asks "Anything else?"
+     - The learner thanks her ("Thanks, that's really helpful").
+     - Next check-in: "Let's check in again in a month."
+- **Twists** (one per visit; an unseen one preferred later):
+  - **Role reversal (as in p28):** Emily asks the learner for feedback on her as a manager ("Can I ask you for some feedback?"). The learner gives it the song's way: what worked, then one thing she could try (clearer priorities, regular one-on-ones, less late-night email). She answers "I hadn't thought of it that way. Thank you."
+  - **The wrong tab:** her screen shows a colleague's review by mistake (Ben's ratings). The learner points it out tactfully ("I think that's someone else's review on the screen"). She closes it at once and thanks them. Never let the learner read it aloud: if they do, she still closes it, and a tip suggests discretion.
+- **Mission checklist** (goal = items 2, 3, 4, 5):
+  1. (optional) Papasakok, kuo šiais metais didžiuojiesi
+  2. Priimk pagyrimą
+  3. Priimk pastabą: padėkok arba mandagiai paaiškink savo pusę
+  4. Susitark dėl vieno tikslo kitiems metams
+  5. Užbaik pokalbį ir susitark dėl kito susitikimo
+  6. (optional) Paklausk apie atlyginimą ar paaukštinimą
+- **ART** (5–6 pictures, one set-up): Emily's small glass office at Brightline.
+  - Props: a plant (soil on the table in the first picture), a laptop with a spreadsheet (lines only), a printed agenda, the harbor through the window.
+  - Pictures: `greet` (the plant moment), `praise`, `feedback`, `goals`, `twist` (asking for feedback / the screen), `done`.
+
+### p18-startup · song P18 "Up to My Ears" · ch 9, order 1
+- **Location** `sproutly`: Sproutly, a plant-care app startup in an old harbor warehouse, with a slide, beanbags, a wall of sticky notes, and Wi-Fi the dog asleep by the printer.
+- **NPC** `tyler`: Tyler, the founder, about 30, in a hoodie and flip-flops. Enthusiastic, kind and chaotic, he talks almost only in business idioms. **informal: tu**.
+- **Title** EN "Up to My Ears", LT "Iki ausų". **Topic** "A week at a startup" / "Savaitė startuolyje".
+- **Goal** "Susikalbėk su startuolio vadovu, kuris kalba idiomomis: išsiaiškink, ką jos reiškia, pasakyk, kad darbų per daug, ir susitark dėl prioritetų."
+- **Song phrases:** "Let's get the ball rolling." · "Think outside the box." · "It's a steep learning curve." · "Let's touch base." · "I'm up to my ears in…" · "I'm learning the ropes." · "We're not on the same page." · "pull (his) weight" · "cut corners" · "back to square one" · "The ball is in your court." · "call it a day".
+- **Flow:**
+  1. **Start:** it's the learner's Wednesday of week one. Tyler: "Hey! Let's touch base!"
+     - He asks how the learner is finding it ("It's a steep learning curve, huh?").
+     - The learner may answer with the idioms ("I'm learning the ropes") or plainly.
+  2. **Idioms:** every one of Tyler's idioms can be asked about.
+     - "Sorry, what do you mean by 'touch base'?" / "What does 'pull your weight' mean?" / "Is that an idiom?"
+     - He explains in plain English, cheerfully ("Oh! It just means a quick check-in."), then goes on.
+     - Keep a short explanation line for each idiom in this part (about 12).
+     - The global "what does X mean" must not answer them generically.
+  3. **The pile:** he wants to add three new tasks: the investor slides by Friday, the launch party, and the newsletter photo. The learner already has the bug reports and the customer emails.
+     - The learner says they're overloaded ("I'm up to my ears in bug reports." / "I already have a lot on my plate.").
+     - The learner asks for priorities ("What should I focus on first?" / "Which one is the priority?") or proposes them ("I can do the slides first and the newsletter next week").
+     - Tyler accepts a reasonable proposal. To a flat "No." he asks "Okay… what can you do?"
+  4. **Clarifying ownership** (from ADV-018): "Who should I ask about the budget?" / "Who's in charge of the launch party?" / "What's the deadline?"
+     - Tyler is evasive ("Let's take that offline") the first time and gives a real answer when asked again (Rachel in sales, the deadline).
+  5. **Closing:** "Touch base again at eight tomorrow?"
+     - The learner may move it, as in the song: "Could we make it noon?" / "How about ten?"
+     - At the end he says "Let's call it a day!" or the learner does.
+- **Twists** (one per visit):
+  - **Launch crash** (the song): someone cut corners on the code; a million cactuses texted "Water me!"; the servers crashed. "Back to square one… the ball is in your court!"
+    - The learner proposes a plan (fix the bug first, tell the customers, ask for help from Ben the developer, launch next week).
+    - Or the learner asks what exactly Tyler wants.
+  - **Midnight:** Tyler asks everyone to stay until midnight ("nobody calls it a day here!").
+    - The learner negotiates kindly: "I can stay until seven, but then I'll call it a day." / "Will the overtime be paid?"
+    - From ADV-018, Tyler agrees to paid overtime with a finish time.
+- **Mission checklist** (goal = items 2, 3, 4):
+  1. (optional) Paklausk, ką reiškia bent viena idioma
+  2. Pasakyk, kad darbų jau per daug
+  3. Susitark, kas svarbiausia (prioritetai ar terminai)
+  4. Susitark dėl kito susitikimo arba užbaik dieną
+  5. (optional) Paklausk, kas už ką atsakingas
+- **ART** (5–6 pictures, one set-up): the warehouse office.
+  - Props: beanbags, a red slide, a wall of sticky notes, hanging plants, a big screen with a plant-app mock-up (shapes only, no text), and Wi-Fi the scruffy gray terrier asleep by the printer.
+  - Tyler: a moss-green hoodie, khaki shorts, flip-flops, a short beard, messy blond hair.
+  - Pictures: `hello`, `idioms` (hands up, explaining), `pile` (three sticky notes held out), `plan` (nodding at a whiteboard), `twist` (the crash: red screen, phones buzzing, cactus pots / or the clock at 6 p.m.), `done` (thumbs up, the dog awake).
+
+### p24-flood · song P24 "Kind Regards, I'm Drowning" · ch 9, order 2 · `mode: "phone"`
+- **Location** `phone` · **NPC** `lizzie` (the learner's friend from s83; **informal: tu**). **Also** `mr_grant`: Mr. Grant, the learner's landlord, about 60 and friendly. He's very formal in writing, but on the phone not formal at all. The learner says **jūs** to him, and he says **jūs** to the learner.
+- **Title** EN "Kind Regards, I'm Drowning", LT "Pagarbiai, skęstu". **Topic** "Two calls: casual and formal" / "Du skambučiai: draugei ir nuomotojui".
+- **Goal** "Paskambink draugei ir nuomotojui: draugei papasakok laisvai, nuomotojui – mandagiai ir oficialiai, ir susitark, kad šiandien atvyktų santechnikas."
+- **The point:** the same facts in two registers. Accept casual English with Lizzie and formal English with Mr. Grant.
+  - Wrong register still works, but a `#tip` notes it once per call: too stiff with Lizzie ("Dear Lizzie, I regret to inform you…" makes her laugh); too casual with the landlord ("Hey, my washer kinda exploded, fix it!").
+- **Song phrases:**
+  - casual: "Hey girl, can't make brunch, so sorry!" · "Gonna be a while." · "My washer kinda exploded." · "Can you bring a mop? And coffee?" · "Love you, thanks!"
+  - formal: "I regret to inform you…" · "at your earliest convenience" · "I would be grateful if a plumber could be sent today." · "I apologize for any inconvenience." · "Thank you for your prompt assistance."
+- **Flow:**
+  1. **Lizzie picks up** ("Hey! On my way to brunch, you?"). The learner cancels and explains: the washing machine, water everywhere, the cat on the fridge.
+     - Lizzie asks if they need anything. The learner asks for a mop, towels or coffee, or says no thanks.
+     - She offers to come over. Casual goodbye ("Love you, thanks!" / "See you in a bit!").
+  2. **Calling Mr. Grant.** Model the switch on p26's transfer: a "Calling Mr. Grant…" moment (event `call` with `{ npc: "mr_grant" }`). Then either he picks up, or the voicemail twist below.
+  3. **Formal explanation:** who is calling (the apartment number, as in s81), what happened, since when, what was done (the water is turned off, towels).
+     - He asks: "Is anyone hurt?" "Has it reached the apartment downstairs?" (the gentleman downstairs, Mr. Okoye).
+  4. **The request:** a plumber today ("I would be grateful if a plumber could come today, as the water is reaching the apartment downstairs.").
+     - He first offers tomorrow. The learner politely insists ("I'm afraid it can't wait until tomorrow.") or accepts.
+  5. **The time:** he answers casually ("Oh no, so sorry! Gonna be there in ten, I'll call the plumber!"). A time is agreed. Formal thanks ("Thank you for your prompt assistance.").
+- **Twists** (one per visit):
+  - **Voicemail** (the song: "he never picks up"): the learner leaves a formal message, accepted when it says who, what and a request. Then Mr. Grant calls back, casually.
+  - **Lizzie is already at the door** with a mop and coffee, before the landlord call. The learner thanks her casually and still has to call Mr. Grant. Hearing her makes Mr. Grant laugh at the end.
+- **Mission checklist** (goal = items 2, 3, 4, 5):
+  1. (optional) Atšauk susitikimą su drauge ir paaiškink kodėl
+  2. Paprašyk draugės pagalbos arba atsisakyk jos laisvai
+  3. Oficialiai paaiškink nuomotojui, kas nutiko
+  4. Paprašyk, kad santechnikas atvyktų šiandien
+  5. Susitark dėl laiko ir mandagiai padėkok
+- **ART** (5–6 pictures):
+  - The learner's flooded kitchen: the washing machine, water on the tile, the cat on the fridge with the evil eye, a phone on the counter.
+  - Lizzie on the call screen (as in s83).
+  - Mr. Grant: about 60, dark skin, bald, a neat gray beard, a red plaid flannel shirt, reading glasses on his head; a tool-filled pickup truck behind him on the call screen.
+  - Pictures: `flood` (start), `lizzie`, `calling`, `grant`, `plumber` (he's on his way), `done` (Lizzie at the door with a mop and coffee).

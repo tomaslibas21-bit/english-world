@@ -41,5 +41,7 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("gym", "Harbor Fitness", "Sporto klubas „Harbor Fitness“", "residential", "interior", "🏋️"),
   // Advanced songs P25–P30: Maggie's driveway, where her old convertible is for sale (P25)
   L("cedar-lane", "Cedar Lane", "Cedar gatvė", "residential", "outdoor", "🚗"),
+  // Batch H: Sproutly, a plant-care app startup in an old harbor warehouse (P18 "Up to My Ears")
+  L("sproutly", "Sproutly", "Startuolis „Sproutly“", "harbor", "interior", "🌱"),
   L("phone", "Phone call", "Skambutis telefonu", "phone", "phone", "📱"),
 ].map((l) => [l.id, l]));

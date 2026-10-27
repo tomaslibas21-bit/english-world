@@ -158,6 +158,16 @@ export const NPCS: Record<string, NpcDef> = Object.fromEntries([
   N("russo", "Mia Russo", ["Junior cook", "Jaunoji virėja"], "f", "af_sky",
     { skin: SK.olive, hair: { style: "ponytail", color: HAIR.black }, top: "#f7f5f0", bottom: "#2b2f3b", acc: ["apron"], accColor: "#1d4e6b", height: 0.95 },
     { informal: true, bio: "Pirmą savaitę virtuvėje, nervinasi, bet turi talentą." }),
+  // Batch H (27 Oct 2026): advanced songs P28 (a performance review), P18 (a startup) and P24 (two calls)
+  N("emily", "Emily", ["Your manager, Brightline", "Tavo vadovė, „Brightline“"], "f", "af_jessica",
+    { skin: SK.tan, hair: { style: "bun", color: HAIR.brown }, top: "#d9a441", bottom: "#33394a", acc: ["lanyard", "earrings"] },
+    { informal: true, bio: "Šešias savaites vadovauja komandai, kurioje pati dar neseniai dirbo dizainere." }),
+  N("tyler", "Tyler", ["Founder, Sproutly", "Startuolio „Sproutly“ įkūrėjas"], "m", "am_echo",
+    { skin: SK.light, hair: { style: "wavy", color: HAIR.blonde }, top: "#6f8f5e", bottom: "#a89a7c", shoes: "#c9a77c", acc: ["beard"] },
+    { informal: true, bio: "Kalba beveik vien verslo idiomomis ir avi šlepetes." }),
+  N("mr_grant", "Mr. Grant", ["Your landlord", "Tavo nuomotojas"], "m", "am_liam",
+    { skin: SK.dark, hair: { style: "bald", color: HAIR.gray }, top: "#9b3b36", bottom: "#3a3f4a", acc: ["beard", "glasses"] },
+    { bio: "Laiškuose labai oficialus, telefonu – visai ne." }),
 ].map((n) => [n.id, n]));
 
 /** Voice used for English hint examples (the learner's "model" voice). */

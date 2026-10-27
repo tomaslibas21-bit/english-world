@@ -346,7 +346,7 @@ export const landlord: SituationDef = {
   title: { en: "Landlord Blues", lt: "Nuomotojo bliuzas" },
   topic: { en: "A broken heater and the landlord", lt: "Neveikia šildymas: pokalbis su nuomotoju" },
   chapter: 8,
-  order: 5,
+  order: 6,
   location: "apartments",
   npc: "patel",
   npcs: ["rita"],
