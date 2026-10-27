@@ -17,10 +17,12 @@ export interface Interior {
   /** optional named spots for scripted moves */
   spots?: Record<string, { x: number; z: number }>;
   warm?: boolean;
+  /** small idle animations (Wi-Fi the dog breathing at Sproutly), called every frame while the player is inside */
+  update?(t: number, dt: number): void;
 }
 
 type Builder = (ctx: Ctx) => void;
-interface Ctx { M: Merger; col: Colliders; g: THREE.Group; w: number; d: number; r: () => number }
+interface Ctx { M: Merger; col: Colliders; g: THREE.Group; w: number; d: number; r: () => number; anim: ((t: number, dt: number) => void)[] }
 
 const WALL_H = 4.2;
 
@@ -83,9 +85,11 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   col.addBox(0, d / 2 + 1.4, gap + 2, 0.6); // beyond the exit mat
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
-  build({ M, col, g, w, d, r });
+  const anim: Ctx["anim"] = [];
+  build({ M, col, g, w, d, r, anim });
   M.build(g);
-  return { id, group: g, colliders: col, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm };
+  const update = anim.length ? (t: number, dt: number) => { for (const f of anim) f(t, dt); } : undefined;
+  return { id, group: g, colliders: col, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
 }
 
 // ---------------------------------------------------------------------------
@@ -619,12 +623,50 @@ const B: Record<string, () => Interior> = {
     // the printer, "by the window"
     windowBack(c, -1.6, 2.2, 1.8, 2.3);
     c.M.add("printer", mat("#d9dde2"), boxGeo(1, 1, 0.7, -1.6, 0.5, -7.25)); c.col.addBox(-1.6, -7.25, 1, 0.7);
+    // Emily's small glass office (advanced song P28, the review), south of the meeting room: its north wall is the
+    // meeting room's (made a little longer), the door is the gap at the south end of its east wall. Emily sits at
+    // her desk facing the door side, the window with the harbor and a plant on the sill on her right.
+    const glass = mat("#dff3fb", { transparent: 0.28 });
+    c.M.add("glass-wall", glass, boxGeo(1.05, 2.8, 0.08, -6.925, 1.4, -1.8), false); c.col.addBox(-6.925, -1.8, 1.05, 0.2);
+    c.M.add("glass-wall", glass, boxGeo(0.08, 2.8, 3.8, -6.4, 1.4, 0.1), false); c.col.addBox(-6.4, 0.1, 0.2, 3.8);
+    c.M.add("glass-wall", glass, boxGeo(4.6, 2.8, 0.08, -8.7, 1.4, 3.6), false); c.col.addBox(-8.7, 3.6, 4.6, 0.2);
+    for (const fz of [-1.8, 2.0, 3.6]) c.M.add("glass-frame", mat("#34495e"), boxGeo(0.1, 2.8, 0.1, -6.4, 1.4, fz), false);
+    c.M.add("glass-frame", mat("#34495e"), boxGeo(0.1, 0.1, 5.5, -6.4, 2.8, 0.9), false);
+    c.M.add("glass-frame", mat("#34495e"), boxGeo(4.6, 0.1, 0.1, -8.7, 2.8, 3.6), false);
+    c.M.add("glass-frame", mat("#34495e"), boxGeo(4.6, 0.1, 0.1, -8.7, 2.8, -1.8), false);
+    wallPanel(c, textTexture("Emily", { bg: "#34495e", fg: "#ffffff", w: 256, h: 96 }), -6.34, 1.75, 1.2, 0.6, 0.225, Math.PI / 2);
+    // the desk: a laptop with a spreadsheet (turned to her), the printed agenda and a pen, a mug
+    c.M.add("desk", mat("#e9e4da"), boxGeo(1.6, 0.06, 0.8, -8.9, 0.75, 1.95));
+    for (const s of [-0.72, 0.72]) c.M.add("desk-leg", mat("#7a7a7a"), boxGeo(0.06, 0.74, 0.7, -8.9 + s, 0.37, 1.95));
+    c.col.addBox(-8.9, 1.95, 1.6, 0.8);
+    c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.025, 0.28, -8.95, 0.79, 1.82), false);
+    c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.4, 0.26, 0.02, 0, 0, 0).rotateX(0.25).translate(-8.95, 0.92, 1.97), false);
+    c.M.add("screen", mat("#e8f1e8", { emissive: "#3a5a46" }), boxGeo(0.36, 0.22, 0.005, 0, 0, 0).rotateX(0.25).translate(-8.95, 0.92, 1.955), false);
+    c.M.add("paper", mat("#ffffff"), boxGeo(0.21, 0.004, 0.29, 0, 0.782, 0, 0.2).translate(-8.4, 0, 1.75), false);
+    c.M.add("pen", mat("#1f4f8a"), cylGeo(0.008, 0.008, 0.14, 0, 0, 0, 5).rotateZ(Math.PI / 2).rotateY(0.6).translate(-8.3, 0.79, 1.95), false);
+    c.M.add("mug-#2e8b57", mat("#2e8b57"), cylGeo(0.05, 0.045, 0.1, -9.5, 0.83, 1.7, 8), false);
+    seat(c, -8.9, 0.9, 0, "#2d3a4a"); // Emily's chair
+    // behind her: a low cabinet against the glass with binders and a little plant
+    c.M.add("cabinet", mat("#c9ced6"), boxGeo(3.4, 0.75, 0.45, -8.9, 0.375, -1.45)); c.col.addBox(-8.9, -1.45, 3.4, 0.45);
+    for (let i = 0; i < 6; i++) c.M.add("binder-" + i % 3, mat(["#2c4f8f", "#e8743b", "#2e8b57"][i % 3]), boxGeo(0.07, 0.3, 0.24, -10.2 + i * 0.09, 0.9, -1.45), false);
+    c.M.add("pot", mat("#b86b4b"), cylGeo(0.13, 0.1, 0.22, -7.65, 0.86, -1.45, 10), false);
+    c.M.add("leaves", mat("#4c8c3c", { flat: true }), new THREE.IcosahedronGeometry(0.22, 0).translate(-7.65, 1.1, -1.45), false);
+    // the window in the west wall: the harbor outside, and a plant pot on the sill
+    wallPanel(c, harborView(), -c.w / 2 + 0.03, 1.95, 1.2, 2.2, 1.4, Math.PI / 2);
+    c.M.add("win-frame", mat("#ffffff"), boxGeo(0.1, 1.5, 0.08, -c.w / 2 + 0.06, 1.95, 1.2), false);
+    for (const fz of [0.07, 2.33]) c.M.add("win-frame", mat("#ffffff"), boxGeo(0.1, 1.5, 0.08, -c.w / 2 + 0.06, 1.95, fz), false);
+    c.M.add("win-frame", mat("#ffffff"), boxGeo(0.1, 0.08, 2.34, -c.w / 2 + 0.06, 2.68, 1.2), false);
+    c.M.add("sill", mat("#ffffff"), boxGeo(0.3, 0.06, 2.4, -c.w / 2 + 0.15, 1.22, 1.2));
+    c.M.add("pot", mat("#b86b4b"), cylGeo(0.12, 0.09, 0.2, -c.w / 2 + 0.17, 1.35, 0.55, 10), false);
+    c.M.add("leaves", mat("#4c8c3c", { flat: true }), new THREE.IcosahedronGeometry(0.17, 0).translate(-c.w / 2 + 0.17, 1.56, 0.55), false);
+    c.M.add("leaves", mat("#5fa24b", { flat: true }), new THREE.IcosahedronGeometry(0.11, 0).translate(-c.w / 2 + 0.2, 1.7, 0.48), false);
     plant(c, -10.2, 6.8, 1.1); plant(c, 1, 6.8, 0.9);
     for (let i = 0; i < 4; i++) lamp(c, -6 + i * 5, 0, 3.6);
   }, [
     { npc: "brooks", x: -7, z: -6.4, rot: 0, sit: true }, { npc: "maria", x: 5.5, z: 2.4, rot: Math.PI },
     { npc: "vanessa", x: -9.4, z: -5.0, rot: Math.PI / 2, ax: -9.1, az: -3.05 }, { npc: "greg", x: -6.1, z: -3.95, rot: Math.PI, sit: true },
     { npc: "kate", x: 7.75, z: -6.75, rot: 0.1, sit: true, ax: 8.6, az: -4.35 }, { npc: "paul", x: 9.45, z: -6.75, rot: -0.15, sit: true },
+    { npc: "emily", x: -8.9, z: 0.9, rot: 0, sit: true, ax: -8.9, az: 3.0 },
   ], { floorKind: "carpet", accent: "#34495e" }),
 
   "the-pier": () => room("the-pier", 18, 14, "#8f6b4e", "#eaf3f7", (c) => {
@@ -847,7 +889,308 @@ const B: Record<string, () => Interior> = {
     plant(c, -9.1, 6.1, 1);
     lamp(c, -5.5, -3.2, 3.4); lamp(c, 3.4, -2.6, 3.4); lamp(c, -5.5, 2.4, 3.4);
   }, [{ npc: "jordan", x: 4.8, z: -2.6, rot: -0.3 }], { floorKind: "carpet", accent: "#1f7f8c" }),
+
+  // Sproutly (advanced song P18): a plant-care app startup in an old brick warehouse. The lounge with beanbags in
+  // front of the big screen (west), the wall of sticky notes in the middle with Tyler in front of it, facing the
+  // door, his whiteboard beside him, a mezzanine with the red slide (north-east), the long work table and the
+  // coffee bar (east), the ping-pong table, and Wi-Fi the scruffy gray terrier asleep by the printer (front, west).
+  sproutly: () => room("sproutly", 22, 16, "#b9b4aa", "#e6d3c1", (c) => {
+    brickWall(c, 0, -c.d / 2 + 0.02, c.w, 0); // back
+    brickWall(c, -c.w / 2 + 0.02, 0, c.d, Math.PI / 2); // west
+    brickWall(c, c.w / 2 - 0.02, 0, c.d, -Math.PI / 2); // east
+    // high steel-framed factory windows along the back wall
+    for (const wx of [-2.6, 0.4, 3.4, 6.2]) factoryWindow(c, wx, 2.4, 1.4, 3.3);
+    // the lounge: the big screen (the app on it), a low console and three beanbags on a rug
+    c.M.add("tv", mat("#1d1d1d"), boxGeo(3.9, 2.2, 0.08, -6.5, 2.3, -c.d / 2 + 0.1), false);
+    wallPanel(c, appScreen(), -6.5, 2.3, -c.d / 2 + 0.16, 3.7, 2.04);
+    c.M.add("console", mat("#8a6a4a"), boxGeo(3.2, 0.5, 0.45, -6.5, 0.25, -7.7)); c.col.addBox(-6.5, -7.7, 3.2, 0.45);
+    rug(c, -6.4, -5, 6.2, 3.6, "#d9c7a7");
+    for (const [bx, bz, bc] of [[-8.4, -4.7, "#e8a33d"], [-6.4, -4.2, "#3f8f8f"], [-4.4, -4.8, "#7a5ea8"]] as [number, number, string][]) beanbag(c, bx, bz, bc);
+    // the wall of sticky notes: a freestanding board in the middle, Tyler in front of it
+    c.M.add("partition", mat("#f4f1ea"), boxGeo(5.4, 2.3, 0.12, 2.2, 1.3, -5.4));
+    c.M.add("partition-frame", mat("#2f3a40"), boxGeo(5.5, 0.08, 0.16, 2.2, 2.48, -5.4), false);
+    for (const s of [-1, 1]) c.M.add("partition-frame", mat("#2f3a40"), boxGeo(0.12, 0.12, 0.8, 2.2 + s * 2.55, 0.06, -5.4));
+    for (const s of [-1, 1]) c.M.add("partition-frame", mat("#2f3a40"), boxGeo(0.08, 2.4, 0.16, 2.2 + s * 2.74, 1.25, -5.4), false);
+    wallPanel(c, stickyNotes(), 2.2, 1.35, -5.33, 5.2, 2.1);
+    c.col.addBox(2.2, -5.4, 5.6, 0.8);
+    // Tyler's rolling whiteboard: three boxes and arrows
+    const wb = new THREE.Group();
+    wb.position.set(5.6, 0, -4.1); wb.rotation.y = -0.45;
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.05, 0.05), mat("#f7f7f2"));
+    board.position.y = 1.55; wb.add(board);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.95), new THREE.MeshBasicMaterial({ map: whiteboardPlan(), toneMapped: false }));
+    face.position.set(0, 1.55, 0.03); wb.add(face);
+    for (const s of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.6, 0.05), mat("#9aa5ad"));
+      leg.position.set(s * 0.8, 0.8, 0); wb.add(leg);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.6), mat("#5b6670"));
+      foot.position.set(s * 0.8, 0.05, 0); wb.add(foot);
+    }
+    c.g.add(wb);
+    c.col.addCircle(5.6, -4.1, 0.75);
+    // the mezzanine in the north-east corner, a ladder up, and the red slide down to the floor
+    const wood = mat("#a8784f"), steel = mat("#2f3a40"), red = mat("#d7372f");
+    c.M.add("mezzanine", wood, boxGeo(3.4, 0.18, 3.4, 9.3, 2.5, -6.3));
+    c.M.add("mezzanine-edge", steel, boxGeo(3.4, 0.22, 0.08, 9.3, 2.48, -4.6), false);
+    for (const [px, pz] of [[7.7, -4.7], [10.9, -4.7], [7.7, -7.8]]) { c.M.add("mezzanine-post", steel, cylGeo(0.07, 0.07, 2.5, px, 1.25, pz, 8)); c.col.addCircle(px, pz, 0.15); }
+    for (const [x1, x2] of [[7.6, 8.9], [9.9, 11]]) {
+      c.M.add("rail", steel, boxGeo(x2 - x1, 0.05, 0.05, (x1 + x2) / 2, 3.45, -4.62), false);
+      for (let bx = x1 + 0.05; bx <= x2; bx += 0.32) c.M.add("rail", steel, boxGeo(0.03, 0.85, 0.03, bx, 3.02, -4.62), false);
+    }
+    for (const [z1, z2] of [[-8, -6.95], [-5.85, -4.6]]) {
+      c.M.add("rail", steel, boxGeo(0.05, 0.05, z2 - z1, 7.62, 3.45, (z1 + z2) / 2), false);
+      for (let bz = z1 + 0.05; bz <= z2; bz += 0.32) c.M.add("rail", steel, boxGeo(0.03, 0.85, 0.03, 7.62, 3.02, bz), false);
+    }
+    for (const lz of [-6.8, -6.0]) c.M.add("ladder", steel, boxGeo(0.06, 2.75, 0.06, 7.35, 1.37, lz), false);
+    for (let ly = 0.3; ly < 2.6; ly += 0.33) c.M.add("ladder", steel, boxGeo(0.06, 0.04, 0.8, 7.35, ly, -6.4), false);
+    c.col.addBox(7.35, -6.4, 0.4, 1);
+    const top = { y: 2.52, z: -4.6 }, end = { y: 0.4, z: -0.95 }, sx = 9.4;
+    const ang = Math.atan2(top.y - end.y, end.z - top.z), len = Math.hypot(top.y - end.y, end.z - top.z);
+    const chute = (g: THREE.BufferGeometry) => g.rotateX(ang).translate(sx, (top.y + end.y) / 2, (top.z + end.z) / 2);
+    c.M.add("slide", red, chute(boxGeo(0.9, 0.06, len, 0, 0, 0)));
+    for (const s of [-1, 1]) c.M.add("slide", red, chute(boxGeo(0.07, 0.32, len, s * 0.45, 0.14, 0)));
+    c.M.add("slide", red, boxGeo(0.9, 0.06, 0.8, sx, end.y - 0.02, end.z + 0.4));
+    for (const s of [-1, 1]) c.M.add("slide", red, boxGeo(0.07, 0.3, 0.8, sx + s * 0.45, end.y + 0.12, end.z + 0.4));
+    for (const [lz, lh] of [[-2.8, 1.45], [-0.6, 0.4]]) for (const s of [-1, 1]) c.M.add("slide-leg", steel, cylGeo(0.04, 0.04, lh, sx + s * 0.38, lh / 2, lz, 6), false);
+    c.col.addBox(sx, -2.6, 1.1, 4.2);
+    sign(c, "Sproutly", 9.3, 3.7, -c.d / 2 + 0.2, 2.4, "#2f7a4a", "#f4ffe8");
+    // under the mezzanine: a low shelf with a row of cactus pots (they text "Water me!" when the launch crashes)
+    c.M.add("shelf-low", wood, boxGeo(0.5, 0.9, 2.6, 10.7, 0.45, -6.4)); c.col.addBox(10.7, -6.4, 0.5, 2.6);
+    for (let i = 0; i < 6; i++) cactus(c, 10.7, -7.4 + i * 0.4, 0.9);
+    // the long work table: laptops, phones and mugs, stools on both sides
+    c.M.add("table-top", mat("#e3cfa8"), boxGeo(3.6, 0.07, 1.1, 4.6, 0.76, 2.2));
+    for (const [lx, lz] of [[-1.65, -0.45], [1.65, -0.45], [-1.65, 0.45], [1.65, 0.45]]) c.M.add("table-leg", steel, boxGeo(0.06, 0.74, 0.06, 4.6 + lx, 0.37, 2.2 + lz), false);
+    c.col.addBox(4.6, 2.2, 3.6, 1.1);
+    for (const [lx, lz, open] of [[3.5, 1.95, true], [5.7, 2.45, true], [4.6, 2.5, false]] as [number, number, boolean][]) laptop(c, lx, lz, open ? 0 : Math.PI, open);
+    for (const [px, pz] of [[3.0, 2.5], [6.2, 1.9]]) c.M.add("phone", mat("#1d1d1d"), boxGeo(0.08, 0.012, 0.15, px, 0.8, pz), false);
+    for (const [mx, mz, mc] of [[4.0, 2.55, "#ffffff"], [5.2, 1.8, "#e8a33d"]] as [number, number, string][]) c.M.add("mug-" + mc, mat(mc), cylGeo(0.05, 0.045, 0.1, mx, 0.85, mz, 8), false);
+    for (const sx2 of [3.4, 4.6, 5.8]) for (const sz of [1.3, 3.1]) {
+      c.M.add("stool", mat("#3f8f8f"), cylGeo(0.2, 0.2, 0.06, sx2, 0.62, sz, 10));
+      c.M.add("stool-leg", steel, cylGeo(0.03, 0.05, 0.6, sx2, 0.3, sz, 6), false);
+    }
+    // the coffee bar along the east wall
+    counter(c, 10.45, 3.7, 0.9, 3.4, "#2f7a4a", "#e8e2d6");
+    c.M.add("coffee-machine", mat("#c0c4c8"), boxGeo(0.55, 0.65, 0.5, 10.5, 1.4, 2.6));
+    c.M.add("coffee-machine-2", mat("#2b2b2b"), boxGeo(0.57, 0.1, 0.52, 10.5, 1.76, 2.6));
+    for (let i = 0; i < 4; i++) c.M.add("mug-#ffffff", mat("#ffffff"), cylGeo(0.05, 0.045, 0.1, 10.4, 1.14, 3.4 + i * 0.2, 8), false);
+    for (let i = 0; i < 5; i++) c.M.add("goods-" + ["#e63946", "#ffbe0b", "#8ab17d"][i % 3], mat(["#e63946", "#ffbe0b", "#8ab17d"][i % 3], { flat: true }), new THREE.SphereGeometry(0.08, 6, 5).translate(10.4 + (i % 2) * 0.12 - 0.06, 1.16 + Math.floor(i / 2) * 0.05, 4.7 + (i % 3) * 0.1), false);
+    sign(c, "Coffee · Kombucha · Good vibes", c.w / 2 - 0.12, 2.6, 3.7, 2.4, "#fffaf0", "#2f7a4a", -Math.PI / 2);
+    // the ping-pong table
+    c.M.add("pingpong", mat("#2e6b52"), boxGeo(2.74, 0.06, 1.52, -5.2, 0.76, 2.4));
+    c.M.add("pingpong-line", mat("#ffffff"), boxGeo(2.74, 0.005, 0.03, -5.2, 0.795, 2.4), false);
+    c.M.add("pingpong-net", mat("#f4f4f4", { transparent: 0.7 }), boxGeo(0.02, 0.16, 1.62, -5.2, 0.87, 2.4), false);
+    for (const [lx, lz] of [[-1.2, -0.6], [1.2, -0.6], [-1.2, 0.6], [1.2, 0.6]]) c.M.add("table-leg", steel, boxGeo(0.06, 0.74, 0.06, -5.2 + lx, 0.37, 2.4 + lz), false);
+    for (const [px, pz, pc] of [[-6.1, 2.0, "#d7372f"], [-4.4, 2.9, "#2b2b2b"]] as [number, number, string][]) c.M.add("paddle-" + pc, mat(pc), cylGeo(0.09, 0.09, 0.02, px, 0.8, pz, 10), false);
+    c.col.addBox(-5.2, 2.4, 2.8, 1.6);
+    // the printer by the front wall, Wi-Fi asleep on a cushion beside it
+    c.M.add("printer", mat("#d9dde2"), boxGeo(1, 0.95, 0.8, -8.4, 0.48, 7.35)); c.col.addBox(-8.4, 7.35, 1, 0.8);
+    c.M.add("printer-top", mat("#5b6670"), boxGeo(0.8, 0.06, 0.7, -8.4, 0.98, 7.35), false);
+    c.M.add("paper", mat("#ffffff"), boxGeo(0.42, 0.02, 0.3, -8.35, 1.02, 7.3), false);
+    wifiDog(c, -6.9, 6.3, -0.35);
+    c.col.addCircle(-6.9, 6.3, 0.6);
+    // the clock on the west wall, plants in pots and hanging from the ceiling, pendant lamps
+    wallPanel(c, wallClock(), -c.w / 2 + 0.06, 3, -3.6, 0.7, 0.7, Math.PI / 2);
+    plant(c, -10.3, 6.9, 1.2); plant(c, 10.3, 6.9, 1.1); plant(c, -0.9, -7.2, 1.3); plant(c, -10.3, -7.2, 1);
+    for (const [hx, hz] of [[-2.6, -2.4], [-9, -2.2], [6.8, -2.2], [-0.4, -6.6], [7.4, 5.2], [-7.6, 5.4]] as [number, number][]) hangingPlant(c, hx, hz);
+    for (const [lx, lz] of [[-6.5, -2], [-1.4, -1], [4.6, 2.2], [-5.2, 2.4]] as [number, number][]) lamp(c, lx, lz, 3.5);
+  }, [{ npc: "tyler", x: 2.2, z: -3.75, rot: 0 }], { floorKind: "stone", accent: "#2f7a4a", warm: true }),
 };
+
+// ---------------------------------------------------------------------------
+// Sproutly's props
+
+/** Exposed brick over a wall (`rotY` 0: the back wall, facing +z), drawn once and tiled. */
+let brickTexture: THREE.CanvasTexture | null = null;
+function brickWall(c: Ctx, x: number, z: number, w: number, rotY: number) {
+  if (!brickTexture) {
+    brickTexture = canvasTex(256, 128, (k) => {
+      k.fillStyle = "#cdbfae"; k.fillRect(0, 0, 256, 128);
+      const cols = ["#b5654a", "#a95a42", "#bf7056", "#9e5440", "#b86a4f"];
+      for (let row = 0; row < 8; row++) for (let i = -1; i < 5; i++) {
+        k.fillStyle = cols[(row * 3 + i * 7 + 10) % cols.length];
+        k.fillRect(i * 64 + (row % 2) * 32 + 2, row * 16 + 2, 60, 12);
+      }
+    });
+    brickTexture.wrapS = brickTexture.wrapT = THREE.RepeatWrapping;
+  }
+  const t = brickTexture.clone();
+  t.needsUpdate = true;
+  t.repeat.set(w / 2.4, WALL_H / 1.2);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, WALL_H), new THREE.MeshLambertMaterial({ map: t }));
+  m.position.set(x, WALL_H / 2, z); m.rotation.y = rotY;
+  m.receiveShadow = true;
+  c.g.add(m);
+}
+function factoryWindow(c: Ctx, x: number, w: number, h: number, y: number) {
+  const z = -c.d / 2 + 0.05;
+  c.M.add("win-#bfe3f7", mat("#bfe3f7", { emissive: "#4d7a90" }), boxGeo(w, h, 0.05, x, y, z), false);
+  for (let k = 0; k <= 4; k++) c.M.add("window-steel", mat("#2f3a40"), boxGeo(0.06, h, 0.08, x - w / 2 + (k * w) / 4, y, z + 0.03), false);
+  for (let k = 0; k <= 2; k++) c.M.add("window-steel", mat("#2f3a40"), boxGeo(w, 0.06, 0.08, x, y - h / 2 + (k * h) / 2, z + 0.03), false);
+}
+function beanbag(c: Ctx, x: number, z: number, color: string) {
+  c.M.add("beanbag-" + color, mat(color), new THREE.SphereGeometry(0.6, 12, 9).scale(1, 0.62, 1).translate(x, 0.36, z));
+  c.M.add("beanbag-" + color, mat(color), new THREE.SphereGeometry(0.42, 10, 7).scale(1, 0.75, 0.6).translate(x, 0.62, z - 0.3));
+  c.col.addCircle(x, z, 0.6);
+}
+function cactus(c: Ctx, x: number, z: number, y: number) {
+  c.M.add("pot", mat("#b86b4b"), cylGeo(0.13, 0.1, 0.18, x, y + 0.09, z, 8), false);
+  c.M.add("cactus", mat("#3f8a4f"), cylGeo(0.07, 0.08, 0.32, x, y + 0.34, z, 8), false);
+  c.M.add("cactus", mat("#3f8a4f"), boxGeo(0.12, 0.04, 0.04, x, y + 0.36, z + 0.05), false);
+  c.M.add("cactus", mat("#3f8a4f"), cylGeo(0.03, 0.03, 0.1, x, y + 0.42, z + 0.11, 6), false);
+}
+function laptop(c: Ctx, x: number, z: number, rotY: number, open: boolean) {
+  c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.38, 0.025, 0.26, 0, 0.8, 0).rotateY(rotY).translate(x, 0, z), false);
+  if (!open) return;
+  c.M.add("laptop", mat("#9aa5ad"), boxGeo(0.38, 0.25, 0.02, 0, 0.93, -0.13).rotateY(rotY).translate(x, 0, z), false);
+  c.M.add("screen", mat("#bfe8c8", { emissive: "#2c5a3a" }), boxGeo(0.34, 0.21, 0.005, 0, 0.93, -0.118).rotateY(rotY).translate(x, 0, z), false);
+}
+function hangingPlant(c: Ctx, x: number, z: number) {
+  c.M.add("hanging-cord", mat("#3b3b3b"), cylGeo(0.01, 0.01, 1, x, WALL_H - 0.5, z, 4), false);
+  c.M.add("pot-hanging", mat("#e8e2d6"), cylGeo(0.22, 0.16, 0.24, x, WALL_H - 1.1, z, 10), false);
+  c.M.add("leaves", mat("#4c8c3c", { flat: true }), new THREE.IcosahedronGeometry(0.28, 0).scale(1, 0.7, 1).translate(x, WALL_H - 0.92, z), false);
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI * 2 + x;
+    const l = 0.45 + ((k * 7 + Math.round(z * 3)) % 3) * 0.18;
+    c.M.add("leaves-trail", mat("#6fae4f", { flat: true }), boxGeo(0.07, l, 0.07, x + Math.cos(a) * 0.19, WALL_H - 1.2 - l / 2 + 0.1, z + Math.sin(a) * 0.19), false);
+  }
+}
+/** The plant-care app on the big screen: a phone with a happy plant, a water gauge and a growth chart (no words). */
+function appScreen() {
+  return canvasTex(512, 288, (x) => {
+    x.fillStyle = "#16352a"; x.fillRect(0, 0, 512, 288);
+    x.fillStyle = "#f4ffe8"; roundRect(x, 40, 22, 140, 244, 22); x.fill();
+    x.fillStyle = "#cfe9c0"; roundRect(x, 54, 50, 112, 112, 14); x.fill();
+    x.fillStyle = "#c56f4c"; x.fillRect(92, 118, 36, 32);
+    x.fillStyle = "#3f8f4f";
+    for (const [cx, cy, r] of [[110, 98, 20], [92, 88, 14], [128, 86, 15], [110, 76, 12]]) { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = "#1d1d1d"; for (const s of [-1, 1]) { x.beginPath(); x.arc(110 + s * 7, 100, 2.5, 0, Math.PI * 2); x.fill(); }
+    x.strokeStyle = "#1d1d1d"; x.lineWidth = 2; x.beginPath(); x.arc(110, 104, 6, 0.2, Math.PI - 0.2); x.stroke();
+    for (let i = 0; i < 3; i++) { x.fillStyle = i < 2 ? "#4aa3df" : "#d6e3ea"; roundRect(x, 58 + i * 36, 178, 30, 14, 7); x.fill(); }
+    x.fillStyle = "#2f7a4a"; roundRect(x, 60, 214, 100, 30, 15); x.fill();
+    x.fillStyle = "#24493b"; roundRect(x, 214, 30, 262, 150, 16); x.fill();
+    x.strokeStyle = "#7fd17a"; x.lineWidth = 6; x.lineJoin = "round"; x.beginPath();
+    [[236, 160], [276, 146], [316, 150], [356, 118], [396, 108], [436, 70], [456, 56]].forEach(([px, py], i) => i ? x.lineTo(px, py) : x.moveTo(px, py));
+    x.stroke();
+    for (let i = 0; i < 4; i++) { x.fillStyle = ["#7fd17a", "#4aa3df", "#f2c14e", "#e57b5a"][i]; roundRect(x, 214 + i * 68, 200, 56, 56, 12); x.fill(); }
+  });
+}
+/** The wall of sticky notes: rows of yellow, pink, green, blue and orange squares with scribbles, tape and arrows. */
+function stickyNotes() {
+  return canvasTex(1024, 412, (x) => {
+    x.fillStyle = "#f4f1ea"; x.fillRect(0, 0, 1024, 412);
+    const cols = ["#ffe066", "#ff9fb2", "#a8e6a1", "#9fd3f2", "#ffbe76", "#ffe066"];
+    let seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let col = 0; col < 4; col++) {
+      x.fillStyle = ["#2f7a4a", "#d7372f", "#4a7bb7", "#e8a33d"][col]; x.fillRect(24 + col * 250, 16, 200, 14);
+      for (let row = 0; row < 4; row++) for (let k = 0; k < 3; k++) {
+        if (rnd() < 0.18) continue;
+        const px = 30 + col * 250 + k * 66, py = 46 + row * 90;
+        x.save(); x.translate(px + 28, py + 30); x.rotate((rnd() - 0.5) * 0.25);
+        x.fillStyle = "rgba(0,0,0,0.12)"; x.fillRect(-26, -26, 58, 58);
+        x.fillStyle = cols[Math.floor(rnd() * cols.length)]; x.fillRect(-28, -28, 56, 56);
+        x.strokeStyle = "rgba(40,40,60,0.55)"; x.lineWidth = 3; x.lineCap = "round";
+        for (let l = 0; l < 3; l++) { x.beginPath(); x.moveTo(-20, -14 + l * 13); x.lineTo(-20 + 12 + rnd() * 26, -14 + l * 13 + (rnd() - 0.5) * 3); x.stroke(); }
+        x.restore();
+      }
+    }
+    x.strokeStyle = "#d7372f"; x.lineWidth = 5; x.beginPath(); x.moveTo(470, 200); x.quadraticCurveTo(500, 170, 540, 196); x.stroke();
+    x.beginPath(); x.moveTo(530, 186); x.lineTo(542, 198); x.lineTo(526, 204); x.stroke();
+  });
+}
+/** The harbor through Emily's window: the sea, a sailboat and the lighthouse. */
+function harborView() {
+  return canvasTex(352, 224, (x) => {
+    const sky = x.createLinearGradient(0, 0, 0, 130); sky.addColorStop(0, "#8fc9ec"); sky.addColorStop(1, "#d9eef7");
+    x.fillStyle = sky; x.fillRect(0, 0, 352, 130);
+    x.fillStyle = "#ffffff"; for (const [cx, cy] of [[70, 40], [96, 34], [250, 56], [272, 50]]) { x.beginPath(); x.arc(cx, cy, 16, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = "#3d8fb5"; x.fillRect(0, 130, 352, 94);
+    x.fillStyle = "#5aa9c9"; for (let i = 0; i < 9; i++) x.fillRect((i * 47) % 340, 150 + (i % 4) * 16, 26, 4);
+    x.fillStyle = "#8d8f93"; x.beginPath(); x.ellipse(290, 134, 42, 12, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#f5f5f0"; x.fillRect(280, 66, 18, 64);
+    x.fillStyle = "#c8392f"; x.fillRect(280, 84, 18, 10); x.fillRect(280, 108, 18, 10); x.fillRect(277, 58, 24, 9);
+    x.fillStyle = "#e45b4f"; x.fillRect(96, 156, 52, 10);
+    x.fillStyle = "#ffffff"; x.beginPath(); x.moveTo(122, 154); x.lineTo(122, 104); x.lineTo(150, 152); x.closePath(); x.fill();
+  });
+}
+/** Tyler's whiteboard: three boxes joined by arrows (no words). */
+function whiteboardPlan() {
+  return canvasTex(512, 304, (x) => {
+    x.fillStyle = "#fbfbf7"; x.fillRect(0, 0, 512, 304);
+    x.lineWidth = 6; x.lineJoin = "round"; x.lineCap = "round";
+    const boxes: [number, number, string][] = [[40, 60, "#2f7a4a"], [196, 150, "#4a7bb7"], [352, 60, "#d7372f"]];
+    for (const [bx, by, bc] of boxes) {
+      x.strokeStyle = bc; x.strokeRect(bx, by, 120, 80);
+      x.lineWidth = 4; for (let l = 0; l < 2; l++) { x.beginPath(); x.moveTo(bx + 18, by + 28 + l * 24); x.lineTo(bx + 90 - l * 22, by + 28 + l * 24); x.stroke(); }
+      x.lineWidth = 6;
+    }
+    x.strokeStyle = "#333";
+    for (const [x1, y1, x2, y2] of [[160, 110, 196, 170], [316, 170, 352, 110]]) {
+      x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2); x.stroke();
+      const a = Math.atan2(y2 - y1, x2 - x1);
+      x.beginPath(); x.moveTo(x2, y2); x.lineTo(x2 - 16 * Math.cos(a - 0.5), y2 - 16 * Math.sin(a - 0.5)); x.moveTo(x2, y2); x.lineTo(x2 - 16 * Math.cos(a + 0.5), y2 - 16 * Math.sin(a + 0.5)); x.stroke();
+    }
+  });
+}
+function wallClock() {
+  return canvasTex(128, 128, (x) => {
+    x.fillStyle = "#ffffff"; x.beginPath(); x.arc(64, 64, 60, 0, Math.PI * 2); x.fill();
+    x.lineWidth = 7; x.strokeStyle = "#2f3a40"; x.stroke();
+    x.lineCap = "round"; x.lineWidth = 6; x.beginPath(); x.moveTo(64, 64); x.lineTo(64, 30); x.stroke();
+    x.lineWidth = 4; x.beginPath(); x.moveTo(64, 64); x.lineTo(92, 74); x.stroke();
+    x.fillStyle = "#2f3a40"; for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; x.fillRect(64 + Math.cos(a) * 48 - 2, 64 + Math.sin(a) * 48 - 2, 4, 4); }
+  });
+}
+/** Wi-Fi, the scruffy gray terrier, asleep on a cushion (`rotY` turns her; she faces local +x). She breathes
+ *  slowly, her tail twitches now and then, and a "z" floats up. */
+function wifiDog(c: Ctx, x: number, z: number, rotY: number) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  const add = (geo: THREE.BufferGeometry, m: THREE.Material, parent: THREE.Object3D = g) => { const me = new THREE.Mesh(geo, m); me.castShadow = true; parent.add(me); return me; };
+  add(new THREE.CylinderGeometry(0.55, 0.5, 0.14, 16).translate(0, 0.07, 0), mat("#5b7fa6"));
+  add(new THREE.CylinderGeometry(0.44, 0.44, 0.05, 16).translate(0, 0.16, 0), mat("#a9c1da"));
+  const fur = mat("#8e9196", { flat: true }), dark = mat("#6f7277", { flat: true }), light = mat("#b4b6b9", { flat: true }), black = mat("#1d1d1d");
+  // the body breathes (scaled from its belly), the head rests on the front paws
+  const body = new THREE.Group(); body.position.set(-0.05, 0.18, 0); g.add(body);
+  add(new THREE.BoxGeometry(0.6, 0.24, 0.32).translate(0, 0.12, 0), fur, body);
+  const tufts: [number, number, number, number][] = [[-0.2, 0.25, 0.1, 0.1], [0, 0.26, -0.08, 0.09], [0.16, 0.25, 0.09, 0.08], [-0.26, 0.2, -0.14, 0.09], [0.08, 0.18, 0.17, 0.08], [-0.1, 0.15, -0.17, 0.08]];
+  tufts.forEach(([tx, ty, tz, s], i) => add(new THREE.BoxGeometry(s, s * 0.8, s).rotateY(i * 0.7).translate(tx, ty, tz), i % 2 ? dark : light, body));
+  add(new THREE.BoxGeometry(0.2, 0.18, 0.12).translate(-0.22, 0.09, 0.2), fur, body); // the hind leg, tucked in
+  const head = new THREE.Group(); head.position.set(0.36, 0.2, 0.02); g.add(head);
+  add(new THREE.BoxGeometry(0.22, 0.19, 0.22).translate(0, 0.08, 0), fur, head);
+  add(new THREE.BoxGeometry(0.13, 0.1, 0.13).translate(0.16, 0.03, 0), light, head); // the snout
+  add(new THREE.BoxGeometry(0.1, 0.06, 0.15).translate(0.17, -0.02, 0), light, head); // the beard
+  add(new THREE.BoxGeometry(0.04, 0.035, 0.05).translate(0.235, 0.06, 0), black, head); // the nose
+  for (const s of [-1, 1]) {
+    add(new THREE.BoxGeometry(0.06, 0.012, 0.012).translate(0.1, 0.11, s * 0.06), black, head); // closed eyes
+    add(new THREE.BoxGeometry(0.05, 0.03, 0.04).translate(0.1, 0.15, s * 0.07), light, head); // eyebrows
+    add(new THREE.BoxGeometry(0.08, 0.03, 0.07).rotateX(s * 0.5).translate(-0.02, 0.18, s * 0.1), dark, head); // folded ears
+    add(new THREE.BoxGeometry(0.2, 0.06, 0.07).translate(0.42, 0.21, s * 0.08), fur); // front paws
+  }
+  const tail = new THREE.Group(); tail.position.set(-0.35, 0.36, 0); g.add(tail);
+  add(new THREE.BoxGeometry(0.06, 0.16, 0.06).rotateZ(0.5).translate(-0.04, 0.07, 0), dark, tail);
+  // the "z" she breathes out
+  const zs = [0, 0.5].map(() => {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture("z", { bg: "rgba(0,0,0,0)", fg: "#4a7bb7", w: 64, h: 64 }), transparent: true, depthWrite: false }));
+    s.scale.set(0.16, 0.16, 1);
+    c.g.add(s);
+    return s;
+  });
+  c.g.add(g);
+  const hx = x + Math.cos(rotY) * 0.42, hz = z - Math.sin(rotY) * 0.42;
+  c.anim.push((t) => {
+    const b = Math.sin(t * 1.6);
+    body.scale.set(1, 1 + b * 0.05, 1 + b * 0.025);
+    head.position.y = 0.2 + b * 0.008;
+    tail.rotation.x = Math.sin(t * 9) * Math.max(0, Math.sin(t * 0.7) - 0.85) * 4;
+    zs.forEach((s, i) => {
+      const p = (t * 0.28 + i * 0.5) % 1;
+      s.position.set(hx + p * 0.15, 0.6 + p * 0.55, hz - p * 0.12);
+      (s.material as THREE.SpriteMaterial).opacity = Math.sin(p * Math.PI) * 0.85;
+      s.scale.setScalar(0.12 + p * 0.1);
+    });
+  });
+}
 
 const cache = new Map<string, Interior>();
 export function getInterior(loc: string): Interior | null {

@@ -746,6 +746,7 @@ export class Game implements GameApi {
     this.updateNpcs(dt, talking);
     if (!this.zone.interior) this.ambient.update(dt, this.player.root.position);
     this.town.update(this.t, dt);
+    this.zone.interior?.update?.(this.t, dt);
     this.guidance.visible = !talking;
     this.guidance.group.visible = !talking;
     this.guidance.update(dt);

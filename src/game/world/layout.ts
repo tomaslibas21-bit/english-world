@@ -1,4 +1,5 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
+import { LOCATIONS } from "../../content/locations";
 
 export type Face = "n" | "s" | "e" | "w";
 export interface Road { x1: number; z1: number; x2: number; z2: number; w: number; name?: string }
@@ -13,7 +14,7 @@ export interface BuildingDef {
   trim?: string;
   roof?: "flat" | "gable";
   roofColor?: string;
-  style: "shop" | "house" | "civic" | "office" | "terminal" | "station" | "hotel" | "apartments" | "museum" | "restaurant";
+  style: "shop" | "house" | "civic" | "office" | "terminal" | "station" | "hotel" | "apartments" | "museum" | "restaurant" | "warehouse";
   awning?: string;
   /** door offset along the facade from its centre */
   doorOffset?: number;
@@ -73,7 +74,15 @@ export const BUILDINGS: BuildingDef[] = [
   { id: "market", loc: "market", sign: "Harbor Market", x: -52, z: -38.5, w: 19, d: 14, h: 6.8, face: "n", color: "#f6efe1", trim: "#23704a", roof: "flat", style: "shop", awning: "#d9452b", doorWidth: 3.4, seed: 32 },
   { id: "clinic", loc: "clinic", sign: "Harbor Family Clinic", x: 98, z: 21.5, w: 11, d: 13, h: 6.5, face: "s", color: "#eef4f6", trim: "#3a86b0", roof: "flat", style: "civic", awning: "#3a86b0", seed: 31 },
   { id: "gym", loc: "gym", sign: "Harbor Fitness", x: -15.5, z: 56, w: 13, d: 14, h: 7, face: "n", color: "#e3ebee", trim: "#1f7f8c", roof: "flat", style: "shop", awning: "#f0883e", doorOffset: -3, seed: 35 },
+  // Advanced song P18: Sproutly, the plant-care app startup in an old brick warehouse on the waterfront where Harbor
+  // Road ends (past the park, the beach behind it). Its door faces west, straight down the road; a paved forecourt
+  // (SPROUTLY_LOT) leads to it from the road's end. Clear of the traffic (the lanes stop at x 124), the lamps at x 124,
+  // the street trees and the airport terminal (z -30 and south). The name on the sign and the door is LOCATIONS'.
+  { id: "sproutly", loc: "sproutly", sign: LOCATIONS.sproutly.name, x: 147, z: -55, w: 20, d: 14, h: 7.5, face: "w", color: "#b5654a", trim: "#2f7a4a", roof: "gable", roofColor: "#5d676e", style: "warehouse", seed: 18 },
 ];
+
+/** Sproutly's forecourt: paving from Harbor Road's east end (x 126) to the warehouse door (x 137). */
+export const SPROUTLY_LOT = { x1: 126, x2: 137, z1: -59.5, z2: -50.5 };
 
 /** Where each outdoor NPC stands (and which way they face, radians; 0 = facing +Z/south).
  *  `ax/az` = where the player stops to talk (e.g. the customer side of a market stall). */

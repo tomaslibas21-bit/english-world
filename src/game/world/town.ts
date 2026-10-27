@@ -1,6 +1,6 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
-import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, type BuildingDef } from "./layout";
+import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect } from "./util";
 import { STYLED, IS_REAL, grade } from "../style";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
@@ -167,6 +167,7 @@ function drawGround(): HTMLCanvasElement {
   rectW(x, 28, 45, 62, 48.5, P.lot);
   rectW(x, 126, -30, 134, 14, P.lot);
   rectW(x, 102, 1, 124, 12, P.gasLot); // gas forecourt
+  rectW(x, SPROUTLY_LOT.x1, SPROUTLY_LOT.z1, SPROUTLY_LOT.x2, SPROUTLY_LOT.z2, P.lot); // Sproutly's forecourt
   // sidewalks
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK, P.sidewalk);
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
@@ -254,7 +255,44 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   col.addBox(b.x, b.z, b.w, b.d, "building");
 
   // roof
-  if (b.roof === "gable") {
+  if (b.style === "warehouse") {
+    // a low front gable (the ridge runs back from the door facade), corrugated, with a skylight strip on each slope
+    // (two sloping slabs, so the brick gable and its logo show under the overhang)
+    const span = halfWidth * 2 + 0.8, rise = span * 0.2, len = halfDepth * 2 + 0.6;
+    const slope0 = Math.atan2(rise, span / 2), half0 = Math.hypot(span / 2, rise);
+    for (const s of [-1, 1]) {
+      const g = boxGeo(half0 + 0.1, 0.18, len, 0, 0, 0);
+      g.rotateZ(-s * slope0);
+      g.translate(s * span / 4, rise / 2 + 0.05, 0);
+      if (b.face === "e" || b.face === "w") g.rotateY(Math.PI / 2);
+      M.add(`roof-${b.roofColor}`, mat(b.roofColor ?? "#5d676e", { flat: true }), g.translate(b.x, b.h, b.z));
+    }
+    // the gable triangles in the wall colour (the roof overhangs them a little)
+    const tri = new THREE.Shape();
+    const tw = halfWidth * 2;
+    tri.moveTo(-tw / 2, 0); tri.lineTo(0, tw * 0.2); tri.lineTo(tw / 2, 0); tri.lineTo(-tw / 2, 0);
+    const tg = new THREE.ExtrudeGeometry(tri, { depth: halfDepth * 2, bevelEnabled: false });
+    tg.translate(0, 0, -halfDepth);
+    if (b.face === "e" || b.face === "w") tg.rotateY(Math.PI / 2);
+    tg.translate(b.x, b.h - 0.01, b.z);
+    M.add(`${key}-walls`, wallMat, tg);
+    // corrugation ribs and skylights along both slopes
+    const slope = Math.atan2(rise, span / 2), half = Math.hypot(span / 2, rise);
+    for (const s of [-1, 1]) {
+      for (let j = -len / 2 + 0.4; j < len / 2; j += 0.8) {
+        const rib = boxGeo(half, 0.05, 0.07, 0, 0, 0);
+        rib.rotateZ(-s * slope);
+        rib.translate(s * span / 4, rise / 2 + 0.17, j);
+        if (b.face === "e" || b.face === "w") rib.rotateY(Math.PI / 2);
+        M.add("roof-rib", mat("#4b545a"), rib.translate(b.x, b.h, b.z), false);
+      }
+      const sky = boxGeo(1.4, 0.06, len * 0.7, 0, 0, 0);
+      sky.rotateZ(-s * slope);
+      sky.translate(s * half * 0.45 * Math.cos(slope), rise - half * 0.45 * Math.sin(slope) + 0.19, 0);
+      if (b.face === "e" || b.face === "w") sky.rotateY(Math.PI / 2);
+      M.add("glass", glassMat, sky.translate(b.x, b.h, b.z), false);
+    }
+  } else if (b.roof === "gable") {
     const rw = (b.face === "n" || b.face === "s") ? b.w : b.d;
     const rd = (b.face === "n" || b.face === "s") ? b.d : b.w;
     const shape = new THREE.Shape();
@@ -301,7 +339,21 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       for (let i = 0; i < count; i++) {
         const o = -along / 2 + 1 + spacing / 2 + i * ((along - 2) / count);
         if (isFront && f === 0 && Math.abs(o - doorOff) < doorW / 2 + 1.1) continue;
+        // the warehouse's loading door (warehouseExtras) takes the front wall's ground floor north of the entrance
+        if (b.style === "warehouse" && isFront && f === 0 && Math.abs(o - WAREHOUSE_LOADING_U) < 2.4) continue;
+        // …and the sign the middle of the first floor
+        if (b.style === "warehouse" && isFront && f === 1 && Math.abs(o - doorOff) < 3) continue;
         const wx = b.x + fx * (hd + 0.04) + tx * o, wz = b.z + fz * (hd + 0.04) + tz * o;
+        if (b.style === "warehouse") {
+          // tall steel-framed factory windows: a grid of small panes
+          const ww = 2, wh = 1.8;
+          M.add("glass", glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y + 0.1, wz));
+          const steel = mat("#2f3a40");
+          for (const k of [-1, 0, 1]) M.add("window-steel", steel, boxGeo(0.06, wh, 0.12, k * ww / 3, 0, 0).rotateY(rot).translate(wx, y + 0.1, wz), false);
+          for (const k of [-1, 1]) M.add("window-steel", steel, boxGeo(ww, 0.06, 0.12, 0, k * wh / 6, 0).rotateY(rot).translate(wx, y + 0.1, wz), false);
+          M.add("sill-warehouse", mat("#d9cbb4"), boxGeo(ww + 0.25, 0.14, 0.18, 0, 0, 0).rotateY(rot).translate(wx, y + 0.1 - wh / 2 - 0.06, wz));
+          continue;
+        }
         const bigShop = isFront && f === 0 && (b.style === "shop" || b.style === "restaurant");
         const ww = b.style === "office" || b.style === "terminal" ? spacing - 0.3 : bigShop ? Math.min(2.6, spacing - 0.3) : 1.3;
         const wh = b.style === "office" || b.style === "terminal" ? 2.6 : bigShop ? 2.2 : 1.5;
@@ -440,6 +492,94 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("flag", mat("#b22234"), boxGeo(1.8, 1.1, 0.04, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2));
   }
   if (b.id === "market" || b.id === "clinic" || b.id === "gym") frontExtras(b.id, M, col, group, dx, dz, n, t, rotY);
+  if (b.style === "warehouse") warehouseExtras(b, M, col, group, dx, dz, n, t, rotY);
+}
+
+/** Where the warehouse's roll-up loading door sits along the front, from the entrance (metres along the facade). */
+const WAREHOUSE_LOADING_U = 4;
+
+/** Sproutly's old brick warehouse: a green roll-up loading door (half open, plants and a pallet inside), a steel
+ *  canopy over the entrance with two hanging plants, the leaf logo in the gable, crates of seedlings, a bike rack. */
+function warehouseExtras(b: BuildingDef, M: Merger, col: Colliders, group: THREE.Group, dx: number, dz: number, n: [number, number], t: [number, number], rotY: number) {
+  const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
+  const box = (key: string, m: THREE.Material, w: number, h: number, d: number, u: number, y: number, v: number, cast = true) => {
+    const [x, z] = P(u, v);
+    M.add(key, m, boxGeo(w, h, d, 0, y, 0).rotateY(rotY).translate(x, 0, z), cast);
+  };
+  const block = (u: number, v: number, a: number, bb: number) => {
+    const [x, z] = P(u, v);
+    col.addBox(x, z, Math.abs(t[0]) * a + Math.abs(n[0]) * bb, Math.abs(t[1]) * a + Math.abs(n[1]) * bb);
+  };
+  const green = mat(b.trim ?? "#2f7a4a"), steel = mat("#2f3a40"), wood = mat("#b8895a"), leaf = mat("#4c8c3c", { flat: true }), leaf2 = mat("#6fae4f", { flat: true });
+  // the loading door: a dark opening, the roll-up door half way up (slats), a frame, a pallet of plant pots inside
+  const U = WAREHOUSE_LOADING_U, LW = 3.6, LH = 3.6;
+  box("loading-dark", mat("#2a2622"), LW, LH, 0.06, U, LH / 2, 0.02, false);
+  for (let i = 0; i < 6; i++) box("loading-door", green, LW, 0.3, 0.1, U, LH - 0.15 - i * 0.29, 0.07);
+  box("loading-frame", steel, LW + 0.3, 0.2, 0.16, U, LH + 0.1, 0.06);
+  for (const s of [-1, 1]) box("loading-frame", steel, 0.15, LH, 0.16, U + s * (LW / 2 + 0.07), LH / 2, 0.06);
+  // a low step in front of the loading door, and on it a pallet of potted plants waiting to go in
+  box("loading-step", mat("#9c9a94"), LW, 0.12, 0.6, U, 0.06, 0.3, false);
+  box("pallet", wood, 1.2, 0.15, 1, U + 0.7, 0.08, 0.75, false);
+  for (const [pu, pv] of [[0.4, 0.5], [1, 0.5], [0.4, 1], [1, 1]]) {
+    box("pot-sproutly", mat("#c56f4c"), 0.3, 0.28, 0.3, U + pu, 0.3, pv, false);
+    const [x, z] = P(U + pu, pv);
+    M.add("leaves-sproutly", leaf2, new THREE.IcosahedronGeometry(0.22, 0).translate(x, 0.58, z), false);
+  }
+  block(U + 0.7, 0.75, 1.3, 1.1);
+  // a steel canopy over the entrance with a hanging plant at each end
+  box("canopy-sproutly", steel, 2.8, 0.1, 1.4, 0, 3.05, 0.7);
+  for (const s of [-1, 1]) {
+    const [hx, hz] = P(s * 1.15, 1.1);
+    M.add("hanging-cord", mat("#3b3b3b"), cylGeo(0.012, 0.012, 0.5, hx, 2.75, hz, 4), false);
+    M.add("pot-sproutly", mat("#e8e2d6"), cylGeo(0.2, 0.15, 0.24, hx, 2.4, hz, 10), false);
+    M.add("leaves-sproutly", leaf, new THREE.IcosahedronGeometry(0.26, 0).scale(1, 0.7, 1).translate(hx, 2.58, hz), false);
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2 + 0.4;
+      M.add("leaves-trail", leaf2, boxGeo(0.07, 0.5 + (k % 2) * 0.25, 0.07, 0, 0, 0).translate(hx + Math.cos(a) * 0.17, 2.1 - (k % 2) * 0.12, hz + Math.sin(a) * 0.17), false);
+    }
+  }
+  // the leaf logo in the gable, above the sign
+  const halfW = (b.face === "n" || b.face === "s" ? b.w : b.d) / 2;
+  const logo = canvasLogo();
+  const [lx, lz] = P(0, 0.12);
+  const lm = new THREE.Mesh(new THREE.CircleGeometry(Math.min(1, halfW * 0.4 * 0.36), 32), new THREE.MeshBasicMaterial({ map: logo, toneMapped: false }));
+  lm.position.set(lx, b.h + halfW * 0.4 * 0.42, lz); lm.rotation.y = rotY;
+  group.add(lm);
+  // crates of seedlings south of the door, and a green cargo bike leaning on the wall
+  for (const [cu, cv, ch] of [[-3.2, 0.7, 0], [-4.2, 0.75, 0], [-3.7, 0.7, 0.62]] as [number, number, number][]) {
+    box("crate", wood, 0.9, 0.6, 0.7, cu, ch + 0.3, cv);
+    for (const s of [-0.22, 0.22]) {
+      const [x, z] = P(cu + s, cv);
+      M.add("leaves-sproutly", leaf2, new THREE.IcosahedronGeometry(0.2, 0).translate(x, ch + 0.7, z), false);
+    }
+  }
+  block(-3.7, 0.72, 2, 0.8);
+  box("bike", green, 1.3, 0.08, 0.06, -5.55, 0.55, 1.7);
+  box("bike", green, 0.06, 0.5, 0.06, -5.9, 0.8, 1.7);
+  box("bike", steel, 0.5, 0.05, 0.06, -6.0, 1.06, 1.7);
+  box("crate", wood, 0.5, 0.35, 0.45, -4.95, 0.8, 1.7);
+  for (const s of [-0.6, 0.6]) {
+    const [x, z] = P(-5.55 + s, 1.7);
+    M.add("wheel", mat("#222"), cylGeo(0.3, 0.3, 0.06, 0, 0, 0, 12).rotateX(Math.PI / 2).rotateY(rotY).translate(x, 0.3, z), false);
+  }
+  block(-5.55, 1.7, 1.8, 0.5);
+}
+
+/** Sproutly's logo: a two-leaf sprout in a cream circle. */
+function canvasLogo() {
+  const cv = document.createElement("canvas"); cv.width = 256; cv.height = 256;
+  const x = cv.getContext("2d")!;
+  x.fillStyle = "#fffaf0"; x.beginPath(); x.arc(128, 128, 124, 0, Math.PI * 2); x.fill();
+  x.lineWidth = 10; x.strokeStyle = "#2f7a4a"; x.stroke();
+  x.strokeStyle = "#2f7a4a"; x.lineWidth = 12; x.lineCap = "round";
+  x.beginPath(); x.moveTo(128, 200); x.lineTo(128, 120); x.stroke();
+  x.fillStyle = "#4c9c4f";
+  x.beginPath(); x.moveTo(128, 130); x.bezierCurveTo(100, 70, 60, 80, 52, 96); x.bezierCurveTo(70, 132, 110, 140, 128, 130); x.fill();
+  x.fillStyle = "#6fbf5a";
+  x.beginPath(); x.moveTo(128, 118); x.bezierCurveTo(150, 52, 196, 50, 206, 66); x.bezierCurveTo(192, 110, 156, 126, 128, 118); x.fill();
+  x.fillStyle = "#8a5a3c"; x.fillRect(84, 196, 88, 10);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return tex;
 }
 
 /** Things in front of the Harbor Market, the clinic and the gym. `u` runs along the facade from the

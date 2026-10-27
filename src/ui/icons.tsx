@@ -122,6 +122,7 @@ const ICONS = {
   mail: [{ d: rr(3, 5.5, 18, 13, 2.25), k: "soft" }, "M3.75 7.25 12 13l8.25-5.75"],
   flower: [{ d: "M12 4.9A2.1 2.1 0 1 1 15.12 6.7A2.1 2.1 0 1 1 15.12 10.3A2.1 2.1 0 1 1 12 12.1A2.1 2.1 0 1 1 8.88 10.3A2.1 2.1 0 1 1 8.88 6.7A2.1 2.1 0 1 1 12 4.9Z", k: "soft" },
     { d: c(12, 8.5, 1.6), k: "fill" }, "M12 12.1V21", { d: "M12 18.25c0-2.25 1.75-3.75 4.25-3.75 0 2.25-1.75 3.75-4.25 3.75z", k: "soft" }],
+  sprout: ["M12 20.75v-8", { d: "M12 13.25c0-3.6-2.5-6-6.75-6 0 3.6 2.5 6 6.75 6z", k: "soft" }, { d: "M12 10.75c0-3.4 2.4-6.25 6.75-6.25 0 3.4-2.4 6.25-6.75 6.25z", k: "soft" }, "M7.5 20.75h9"],
   police: [{ d: "M12 3 19 5.75v5.5c0 4.5-3 8-7 9.75-4-1.75-7-5.25-7-9.75v-5.5z", k: "soft" }, { d: star(12, 11.9, 3.5, 1.55), k: "solid" }],
   building: [{ d: rr(5.5, 3, 13, 18, 1.75), k: "soft" }, dot(9.5, 7), dot(14.5, 7), dot(9.5, 10.5), dot(14.5, 10.5), dot(9.5, 14), dot(14.5, 14), "M10.5 21v-3h3v3"],
   briefcase: [{ d: rr(3, 7, 18, 13, 2.25), k: "soft" }, "M9 7V5.25c0-.7.55-1.25 1.25-1.25h3.5c.7 0 1.25.55 1.25 1.25V7", "M3 12.75h18", "M10.5 12.75v1.5h3v-1.5"],
@@ -240,7 +241,7 @@ const EMOJI: Record<string, IconName> = {
   "\u{1F3E8}": "bed", "\u{2139}": "info", "\u{1F5BC}": "frame", "\u{2615}": "coffee", "\u{1F35D}": "restaurant", "\u{1F455}": "shirt",
   "\u{1F48A}": "pill", "\u{2702}": "scissors", "\u{1F3E6}": "bank", "\u{1F4EE}": "mail", "\u{1F33B}": "flower", "\u{1F693}": "police",
   "\u{1F3E2}": "building", "\u{1F389}": "party", "\u{1F3E1}": "home", "\u{1F3E0}": "home", "\u{1F4BC}": "briefcase", "\u{1F305}": "sunset",
-  "\u{1FA7A}": "stethoscope", "\u{1F6D2}": "cart", "\u{1F3CB}": "dumbbell",
+  "\u{1FA7A}": "stethoscope", "\u{1F6D2}": "cart", "\u{1F3CB}": "dumbbell", "\u{1F331}": "sprout",
   "\u{1F4F1}": "smartphone", "\u{1F4DE}": "phoneCall", "\u{1F3A5}": "video", "\u{1F4CD}": "pin",
   // things people hand you, and other toasts (src/game/Game.ts, src/game/session.ts)
   "\u{1F3A7}": "headphones", "\u{1F4C4}": "document", "\u{1F3AB}": "ticket", "\u{1F39F}": "ticket", "\u{1F5D3}": "calendar", "\u{1F4C5}": "calendar",
