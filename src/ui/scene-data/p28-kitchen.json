@@ -1,0 +1,31 @@
+{
+  "npc": "Chef Whitaker, head chef (and Mia Russo, junior cook)",
+  "images": [
+    "serve",
+    "taste",
+    "lemon",
+    "mia",
+    "done"
+  ],
+  "start": "serve",
+  "done": "done",
+  "phases": {
+    "serve": "serve",
+    "consent": "taste",
+    "receive": "taste",
+    "example": "lemon",
+    "again": "lemon",
+    "second": "lemon",
+    "handoff": "lemon",
+    "mia_open": "mia",
+    "mia_worked": "mia",
+    "mia_try": "mia",
+    "mia_howmuch": "mia",
+    "mia_encourage": "mia",
+    "mia_back": "done"
+  },
+  "focus": [
+    36,
+    30
+  ]
+}
