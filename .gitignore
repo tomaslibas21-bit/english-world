@@ -21,3 +21,8 @@ npm-debug.log*
 # API keys (Higgsfield etc.) stay on this computer
 .env
 .env.*
+
+# Gemini voices (tools/voice-batch.ts): work files, and the clips themselves, which live on R2
+# (fluent-steps/game/audio-v2/); only public/audio-v2/manifest.json is kept here
+voicing/
+public/audio-v2/*.mp3

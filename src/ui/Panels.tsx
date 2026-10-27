@@ -4,7 +4,8 @@ import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import { LOCATIONS } from "../content/locations";
-import { NPCS, COACH_VOICE } from "../content/npcs";
+import { NPCS } from "../content/npcs";
+import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
 import { sitProgress, stars, emptyProgress } from "../state/progress";
 import { audio } from "../game/audio";
@@ -437,7 +438,7 @@ function Phrasebook({ close }: { close: () => void }) {
                     <div key={k} className="hint-row">
                       <div className="ex"><div style={{ fontFamily: "var(--en)", fontSize: "1.25em" }}>{v.en}</div>{lt && <div className="nat">{v.lt}</div>}</div>
                       <div className="pb-acts">
-                        <button className="play" onClick={() => audio.play(COACH_VOICE, 1, v.en)} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={20} /></button>
+                        <button className="play" onClick={() => audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, v.en)} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={20} /></button>
                         {inCards
                           ? <span className="pb-in" role="img" title="Jau kortelėse" aria-label="Jau kortelėse"><Icon name="check" size={20} strokeWidth={2.25} /></span>
                           : <button className="play add" onClick={() => useCards.getState().add(asCard(v))} title="Į korteles" aria-label="Į korteles"><Glyph name="plus" size={20} /></button>}

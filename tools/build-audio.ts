@@ -7,10 +7,10 @@
 // Resumable: existing clips are kept. Requires ffmpeg on PATH (MP3 encoding).
 import fs from "node:fs";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { enumerateAll } from "./enumerate";
 import { audioKey } from "../src/audio-key";
+import { encodeMp3, trimAndNormalize, ttsText } from "./audio-util";
 
 const args = process.argv.slice(2);
 const dry = args.includes("--dry");
@@ -24,43 +24,6 @@ const OUT = path.resolve("public/audio");
 fs.mkdirSync(OUT, { recursive: true });
 const MANIFEST = path.join(OUT, "manifest.json");
 const manifest: Record<string, number> = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, "utf8")) : {};
-
-/** Spelling the TTS reads better (the visible text is unchanged). */
-function ttsText(s: string): string {
-  return s
-    .replace(/\bMr\.\s/g, "Mister ").replace(/\bMrs\.\s/g, "Missus ").replace(/\bMs\.\s/g, "Miz ").replace(/\bDr\.\s/g, "Doctor ")
-    .replace(/\bATM\b/g, "A T M").replace(/\bTSA\b/g, "T S A").replace(/\bID\b/g, "I D").replace(/\bIDs\b/g, "I Ds")
-    .replace(/\bPIN\b/g, "pin").replace(/\bOK\b/g, "okay").replace(/\bUSPS\b/g, "U S P S").replace(/\bUS\b/g, "U S")
-    .replace(/\ba\.m\./gi, "A M").replace(/\bp\.m\./gi, "P M").replace(/&/g, " and ").replace(/#(\d)/g, "number $1")
-    .replace(/[“”„]/g, "\"").replace(/…/g, "...").replace(/—/g, ", ").replace(/\s+/g, " ").trim();
-}
-
-function trimAndNormalize(samples: Float32Array, sr: number): Float32Array {
-  const thr = 0.012;
-  let a = 0, b = samples.length - 1;
-  while (a < b && Math.abs(samples[a]) < thr) a++;
-  while (b > a && Math.abs(samples[b]) < thr) b--;
-  const pad = Math.round(sr * 0.06);
-  a = Math.max(0, a - pad); b = Math.min(samples.length - 1, b + Math.round(sr * 0.12));
-  const cut = samples.slice(a, b + 1);
-  let peak = 0, sum = 0;
-  for (const v of cut) { peak = Math.max(peak, Math.abs(v)); sum += v * v; }
-  const rms = Math.sqrt(sum / Math.max(1, cut.length));
-  const targetRms = Math.pow(10, -19 / 20);
-  const scale = Math.min(targetRms / Math.max(rms, 1e-6), 0.89 / Math.max(peak, 1e-6));
-  for (let i = 0; i < cut.length; i++) cut[i] *= scale;
-  return cut;
-}
-
-function encodeMp3(samples: Float32Array, sr: number, file: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "f32le", "-ar", String(sr), "-ac", "1", "-i", "pipe:0", "-b:a", "32k", "-ar", "24000", "-ac", "1", file]);
-    ff.on("error", reject);
-    ff.on("close", (code) => (code === 0 ? resolve() : reject(new Error("ffmpeg exited " + code))));
-    ff.stdin.write(Buffer.from(samples.buffer, samples.byteOffset, samples.byteLength));
-    ff.stdin.end();
-  });
-}
 
 const { utts, errors } = enumerateAll({ fuzzRuns: fuzz, only, sits, log: (s) => process.stdout.write("\r" + s.padEnd(70)) });
 console.log(`\n${utts.length} sentences; ${errors.length} handler errors during fuzzing`);

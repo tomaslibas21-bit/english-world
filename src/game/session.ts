@@ -4,7 +4,8 @@ import { Conversation, type TurnOut } from "../convo/dialogue";
 import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/speech";
 import { bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
-import { COACH_VOICE, NPCS } from "../content/npcs";
+import { NPCS } from "../content/npcs";
+import { coachVoice, npcVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import type { SituationDef } from "../content/types";
 import { useStore, type TranscriptLine } from "../state/store";
@@ -107,9 +108,9 @@ export class Session {
       const id = this.pushLine({ who: "npc", npc: l.npc, sentence: l.sentence, slow: l.slow });
       const slow = !!l.slow || useStore.getState().settings.slowVoice;
       useStore.getState().setConv({ speaking: id, npcId: l.npc });
-      const dur = audio.clipDuration(npc?.voice ?? "af_bella", npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
+      const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1));
-      await audio.play(npc?.voice ?? "af_bella", npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" });
+      await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" });
       await wait(160);
     }
     // the learner left (Esc, another situation) while the person was talking: no events (a taxi
@@ -300,7 +301,7 @@ export class Session {
     this.stopListening(); // the conversation's own mic off, and no auto-listen
     const run = ++this.practiceRun;
     useStore.getState().setConv({ practice: { en, status: "playing", heard: "" } });
-    await audio.play(COACH_VOICE, 1, say);
+    await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say);
     // cancelled meanwhile (another button, the mic, the person's turn, left)?
     if (run !== this.practiceRun || !this.alive || this.speech || useStore.getState().conv.phase !== "you") return;
     audio.sfx("listen");

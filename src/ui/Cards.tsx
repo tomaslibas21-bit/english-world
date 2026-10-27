@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { useStore } from "../state/store";
 import { useCards, unitInput, sentenceInput, cardKey, cleanText, isDashGloss, dueCards, daysUntil, nextDue, exportCardsJSON, type Card } from "../state/cards";
-import { NPCS, COACH_VOICE } from "../content/npcs";
+import { NPCS } from "../content/npcs";
+import { coachVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
@@ -161,7 +162,7 @@ function whenLt(days: number): string {
   return days <= 0 ? "šiandien" : days === 1 ? "rytoj" : days === 2 ? "poryt" : `po ${days} d.`;
 }
 
-const listen = (text: string) => { audio.play(COACH_VOICE, 1, text); };
+const listen = (text: string) => { audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, text); };
 const cardSay = (c: Card) => (c.en === c.sentence.en && c.sentence.say ? c.sentence.say : c.en);
 
 function Pips({ box }: { box: number }) {

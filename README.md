@@ -39,6 +39,8 @@ npm run audio -- s72 --dry       # count what would be generated for one situati
 
 The first `npm run audio` downloads the Kokoro-82M ONNX model (about 320 MB) from Hugging Face into the local cache. After that, generation runs offline on the CPU at about 1.6 clips per second.
 
+The Gemini voices (every character a voice of their own, a female and a male coach) are recorded with `npx tsx tools/voice-batch.ts` into `public/audio-v2/`, and the game plays them once `DEFAULT_VOICES` in `src/content/voices.ts` is `"v2"`. See docs/VOICING-PLAN.md.
+
 ## Hosting
 
 The build is a static site: about 5 MB of code, 22 MB of scene pictures (WebP) and about 190 MB of voice clips (about 21,500 files in `audio/`). No server is needed.

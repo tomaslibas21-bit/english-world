@@ -7,12 +7,14 @@
 //    dynamic renderings (prices, chosen items) and crash-tests every handler.
 import { SITUATIONS } from "../src/content/situations";
 import { GLOBAL } from "../src/content/global";
-import { NPCS, COACH_VOICE } from "../src/content/npcs";
-import { AMBIENT_LINES, AMBIENT_VOICES } from "../src/content/ambient";
+import { NPCS } from "../src/content/npcs";
+import { AMBIENT_LINES } from "../src/content/ambient";
+import { ambientVoice, coachVoices, npcVoice } from "../src/content/voices";
 import { withoutAddressedNames } from "../src/audio-key";
 import { Conversation, type SpokenLine } from "../src/convo/dialogue";
 import { compose, placeholders, type Sentence } from "../src/convo/compose";
 import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
+import type { NpcDef } from "../src/content/npcs";
 import { soundKey } from "../src/convo/soundalike";
 
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
@@ -29,7 +31,9 @@ function rng(seed: number) {
   return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void } = {}): { utts: Utt[]; errors: string[] } {
+/** `v2`: the voice ids of the Gemini voices (src/content/voices.ts) instead of the ones the game plays now. */
+export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: SituationDef[]; log?: (s: string) => void; v2?: boolean } = {}): { utts: Utt[]; errors: string[] } {
+  const voiceOf = (n: NpcDef) => npcVoice(n, opts.v2);
   const out = new Map<string, Utt>();
   const errors: string[] = [];
   const add = (voice: string, speed: number, s: Sentence, where: string) => {
@@ -64,7 +68,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
         const ln = id ? listOf.get(id) : undefined;
         if (ln) addTo(usedLists, line.lineId, ln);
       }
-    }));
+    }, voiceOf));
     // 1. static lines and value-domain lines
     for (const [lid, variants] of Object.entries(sit.lines)) {
       const speakers = usedBy.has(lid) ? voices.filter((n) => usedBy.get(lid)!.has(n.id)) : voices;
@@ -86,7 +90,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
           for (const [ln, list] of Object.entries(sit.entities || {})) if (!lists || lists.has(ln)) for (const e of list) bindings.push({ [ph.entities[0]]: e.id });
         }
         for (const b of bindings) for (const n of speakers) {
-          try { add(n.voice, n.speed ?? 1, compose(src, b, { look, addressee: "m", speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`); }
+          try { add(voiceOf(n), n.speed ?? 1, compose(src, b, { look, addressee: "m", speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`); }
           catch { /* this entity type doesn't fit this line */ }
         }
       });
@@ -97,8 +101,8 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       for (const it of g.items) {
         const pool = ents.filter((e) => !it.only || it.only(e));
         const binds = pool.length ? pool.map((e) => ({ X: e.id })) : [{}];
-        for (const b of binds) for (const formal of [true, false]) {
-          try { add(COACH_VOICE, 1, compose(it.s, { ...b, name: "Tomas" }, { look, formal }), `${sit.id}:hint:${gid}.${it.id}`); } catch { /* skip */ }
+        for (const b of binds) for (const formal of [true, false]) for (const coach of coachVoices(opts.v2)) {
+          try { add(coach, 1, compose(it.s, { ...b, name: "Tomas" }, { look, formal }), `${sit.id}:hint:${gid}.${it.id}`); } catch { /* skip */ }
         }
       }
     }
@@ -110,7 +114,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
       const names = [e.en.split(" | ").join(" "), ...(e.forms ?? [])];
       if (!names.some((nm) => soundKey(nm).length >= 2 && nm.replace(/[^a-z]/gi, "").length >= 4)) continue;
       for (const n of voices) checks.forEach((src, ci) => {
-        try { add(n.voice, n.speed ?? 1, compose(src, { X: e.id }, { look, speaker: n.gender, formal: !n.informal }), `${sit.id}:soundcheck:${e.id}[${ci}]`); } catch { /* skip */ }
+        try { add(voiceOf(n), n.speed ?? 1, compose(src, { X: e.id }, { look, speaker: n.gender, formal: !n.informal }), `${sit.id}:soundcheck:${e.id}[${ci}]`); } catch { /* skip */ }
       });
     }
   }
@@ -120,7 +124,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
 /** Random-order conversations built from a situation's tests, sims and hint examples. Returns
  *  handler crashes; `take` receives every NPC sentence spoken. */
 export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef | undefined, runs: number,
-  take?: (voice: string, speed: number, s: Sentence, line?: SpokenLine) => void): string[] {
+  take?: (voice: string, speed: number, s: Sentence, line?: SpokenLine) => void, voiceOf: (n: NpcDef) => string = (n) => n.voice): string[] {
   const errors: string[] = [];
   {
     const inputs: string[] = [];
@@ -144,7 +148,7 @@ export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef
         conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: rand() < 0.5 ? "m" : "f", datePartner: partner }, visits, seed: r + 1, memory: r % 3 === 0 ? {} : undefined });
       } catch (e: any) { errors.push(`${sit.id}: constructor: ${e.message}`); break; }
       const collect = (o: { lines: SpokenLine[] }) => {
-        for (const l of o.lines) { const n = NPCS[l.npc]; if (n && take) take(n.voice, n.speed ?? 1, l.sentence, l); }
+        for (const l of o.lines) { const n = NPCS[l.npc]; if (n && take) take(voiceOf(n), n.speed ?? 1, l.sentence, l); }
       };
       try { collect(conv.start()); } catch (e: any) { errors.push(`${sit.id}: start: ${e.message}`); continue; }
       for (let t = 0; t < 16 && !conv.ended; t++) {
@@ -157,7 +161,7 @@ export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef
   return errors;
 }
 
-function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: Set<string>, opts: { only?: string[]; sits?: SituationDef[] }): { utts: Utt[]; errors: string[] } {
+function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: Set<string>, opts: { only?: string[]; sits?: SituationDef[]; v2?: boolean }): { utts: Utt[]; errors: string[] } {
   const add = (voice: string, speed: number, s: Sentence, where: string) => {
     if (!s.say.trim() || /\s[.,!?]/.test(s.say)) return;
     const alt = withoutAddressedNames(s.say, ["Tomas", "Mikalauskas"]);
@@ -173,16 +177,16 @@ function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: S
       variants.forEach((src, i) => {
         const ph = placeholders(src);
         if (ph.entities.length || ph.values.length) return;
-        try { add(n.voice, n.speed ?? 1, compose(src, {}, { look: () => undefined, speaker: n.gender, formal: !n.informal }), `global:${lid}[${i}]`); } catch { /* skip */ }
+        try { add(npcVoice(n, opts.v2), n.speed ?? 1, compose(src, {}, { look: () => undefined, speaker: n.gender, formal: !n.informal }), `global:${lid}[${i}]`); } catch { /* skip */ }
       });
     }
   }
   // global hints (coach)
-  for (const [gid, g] of Object.entries(GLOBAL.hints)) for (const it of g.items) for (const formal of [true, false]) {
-    try { add(COACH_VOICE, 1, compose(it.s, {}, { look: () => undefined, formal }), `global:hint:${gid}.${it.id}`); } catch { /* skip */ }
+  for (const [gid, g] of Object.entries(GLOBAL.hints)) for (const it of g.items) for (const formal of [true, false]) for (const coach of coachVoices(opts.v2)) {
+    try { add(coach, 1, compose(it.s, {}, { look: () => undefined, formal }), `global:hint:${gid}.${it.id}`); } catch { /* skip */ }
   }
   // passers-by in the town
-  if (!opts.only?.length && !opts.sits) for (const l of AMBIENT_LINES) for (const v of Object.values(AMBIENT_VOICES)) add(v, 1, { say: l.en, en: l.en } as Sentence, "ambient");
+  if (!opts.only?.length && !opts.sits) for (const l of AMBIENT_LINES) for (const g of ["f", "m"] as const) add(ambientVoice(g, opts.v2), 1, { say: l.en, en: l.en } as Sentence, "ambient");
   return { utts: [...out.values()], errors };
 }
 

@@ -1,10 +1,11 @@
 // Voice playback (pre-generated clips; browser speech synthesis as a fallback for lines that
 // have no clip yet) and small synthesized sound effects. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
+import { audioDir } from "../content/voices";
 
 export class AudioSystem {
   manifest: Record<string, number> = {};
-  /** New content hashes for clips re-recorded at the same keys (public/audio/repair-versions.json): the version on
+  /** New content hashes for clips re-recorded at the same keys (repair-versions.json in the clip folder): the version on
    *  the clip's address makes browsers that cached the old recording fetch the new one. */
   repairVersions: Record<string, string> = {};
   private ctx: AudioContext | null = null;
@@ -12,16 +13,16 @@ export class AudioSystem {
   private cancelCurrent: (() => void) | null = null;
   volume = 0.9;
   /** Where the clips live: next to the game by default, or VITE_AUDIO_BASE (e.g. a CDN). */
-  base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}audio/`;
+  base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}${audioDir()}`;
   ready = false;
   private fallbackVoices: SpeechSynthesisVoice[] = [];
 
   async init() {
     try {
       // the clip list always ships with the game (same site, no CORS), even when the clips are elsewhere
-      const r = await fetch(`${import.meta.env.BASE_URL}audio/manifest.json`, { cache: "no-cache" });
+      const r = await fetch(`${import.meta.env.BASE_URL}${audioDir()}manifest.json`, { cache: "no-cache" });
       if (r.ok) this.manifest = await r.json();
-      const repaired = await fetch(`${import.meta.env.BASE_URL}audio/repair-versions.json`, { cache: "no-cache" });
+      const repaired = await fetch(`${import.meta.env.BASE_URL}${audioDir()}repair-versions.json`, { cache: "no-cache" });
       if (repaired.ok) this.repairVersions = await repaired.json();
     } catch { /* no clips yet: fallback voices */ }
     this.ready = true;

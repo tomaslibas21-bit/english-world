@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
-import { NPCS, COACH_VOICE } from "../content/npcs";
+import { NPCS } from "../content/npcs";
+import { coachVoice, npcVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import { GLOBAL } from "../content/global";
 import { LOCATIONS } from "../content/locations";
@@ -235,7 +236,7 @@ function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: Transcript
   const npc = NPCS[lines[0].npc!];
   const replay = async (slow: boolean) => {
     game?.activeSession?.stopListening();
-    for (const l of lines) await audio.play(npc?.voice ?? "af_bella", npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" });
+    for (const l of lines) await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" });
   };
   return (
     <div className={"msg npc" + (speaking ? " speaking" : "")}>
@@ -321,7 +322,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
         <div className="guide-examples">
           {examples.map((ex, i) => (
             <div className="gx" key={i}>
-              <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(COACH_VOICE, 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
+              <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
               <div className="gx-text">
                 {/* word by word, as the other person's lines: Lithuanian under each word, the natural sentence below */}
                 <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} />
@@ -391,7 +392,7 @@ function optionEntities(sit: SituationDef, options?: string | string[]): EntityD
 function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: boolean; lt: boolean; ipa: boolean; nat: boolean }) {
   if (l.who === "npc" && l.sentence) {
     const npc = NPCS[l.npc!];
-    const replay = (slow: boolean) => { game?.activeSession?.stopListening(); audio.play(npc?.voice ?? "af_bella", npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
+    const replay = (slow: boolean) => { game?.activeSession?.stopListening(); audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" }); };
     return (
       <div className={"msg npc" + (speaking ? " speaking" : "")}>
         <div className="meta">
@@ -485,7 +486,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
             {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : "laisviau"}</span>}
             {it.note && <div className="note">{it.note}</div>}
           </div>
-          <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(COACH_VOICE, 1, full.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={20} /></button>
+          <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={20} /></button>
         </div>
       ))}
     </div>

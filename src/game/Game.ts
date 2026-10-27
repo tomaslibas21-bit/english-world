@@ -11,7 +11,8 @@ import { Guidance } from "./guidance";
 import { NavGrid } from "./nav";
 import { Session } from "./session";
 import { Ambient } from "./ambient";
-import { AMBIENT_LINES, AMBIENT_VOICES } from "../content/ambient";
+import { AMBIENT_LINES } from "../content/ambient";
+import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
 import { NPCS, type Look } from "../content/npcs";
 import { LOCATIONS } from "../content/locations";
@@ -360,7 +361,7 @@ export class Game implements GameApi {
         const p = this.player.root.position;
         const { female } = this.ambient.greet(w, p.x, p.z);
         const line = AMBIENT_LINES[Math.floor(Math.random() * AMBIENT_LINES.length)];
-        audio.play(female ? AMBIENT_VOICES.f : AMBIENT_VOICES.m, 1, line.en, { male: !female });
+        audio.play(ambientVoice(female ? "f" : "m"), 1, line.en, { male: !female });
         st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt });
         return;
       }
