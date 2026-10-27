@@ -1,0 +1,40 @@
+{
+  "npc": "Lizzie and Mr. Grant (phone)",
+  "images": [
+    "flood",
+    "lizzie",
+    "calling",
+    "grant",
+    "plumber",
+    "done"
+  ],
+  "start": "flood",
+  "done": "done",
+  "phases": {
+    "l_news": "flood",
+    "l_okay": "flood",
+    "l_brunch": "lizzie",
+    "l_need": "lizzie",
+    "l_come": "lizzie",
+    "l_bye": "lizzie",
+    "vm_msg": "calling",
+    "g_who": "grant",
+    "g_what": "grant",
+    "g_since": "grant",
+    "g_hurt": "grant",
+    "g_down": "grant",
+    "g_water": "grant",
+    "valve": "grant",
+    "g_request": "grant",
+    "g_offer": "plumber",
+    "sure_tomorrow": "plumber",
+    "g_time": "plumber",
+    "g_close": "plumber",
+    "closing": "plumber",
+    "l_door": "done"
+  },
+  "focus": [
+    34,
+    32
+  ]
+}
