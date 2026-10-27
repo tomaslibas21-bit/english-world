@@ -1,0 +1,34 @@
+{
+  "npc": "Maggie Holt, selling her car",
+  "images": [
+    "driveway",
+    "back",
+    "haggle",
+    "phone",
+    "deal"
+  ],
+  "start": "driveway",
+  "phases": {
+    "arrive": "driveway",
+    "look": "driveway",
+    "drive": "driveway",
+    "drive_q": "driveway",
+    "howareyou": "driveway",
+    "opinion": "back",
+    "talk": "haggle",
+    "haggle": "haggle",
+    "decide": "haggle",
+    "price": "haggle",
+    "offer": "haggle",
+    "confirm": "haggle",
+    "final": "haggle",
+    "flaw": "haggle",
+    "rival": "phone",
+    "shake": "deal",
+    "pay": "deal"
+  },
+  "focus": [
+    34,
+    32
+  ]
+}
