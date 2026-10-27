@@ -17,11 +17,19 @@ function wordsOf(en: string): string[] {
       continue;
     }
     for (const part of tok.split(/[—–]+|-(?=[A-Za-z])/)) {
-      const w = part.replace(/^[^\p{L}0-9'’]+|[^\p{L}0-9'’]+$/gu, "").replace(/’/g, "'").toLowerCase();
+      const w = unquote(part.replace(/^[^\p{L}0-9'’]+|[^\p{L}0-9'’]+$/gu, "").replace(/’/g, "'").toLowerCase());
       if (w) out.push(w);
     }
   }
   return out;
+}
+
+/** A word in quotation marks ("'I regret to inform you'") loses the marks; contractions ('cause, 'em) and plural
+ *  possessives (parents') keep their apostrophe. */
+function unquote(w: string): string {
+  if (w.startsWith("'") && !/^'(cause|em|til|bout|n|tis|twas|round)$/.test(w)) w = w.slice(1);
+  if (w.endsWith("'") && !/s'$/.test(w)) w = w.slice(0, -1);
+  return w;
 }
 
 export function ipaForUnit(en: string): string {
