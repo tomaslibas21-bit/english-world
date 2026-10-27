@@ -229,7 +229,7 @@ export const review: SituationDef = {
   id: "p28b-review",
   song: "P28",
   songTitle: "Taste It Again",
-  title: { en: "Taste It Again", lt: "Paragaukite dar kartą" },
+  title: { en: "What Worked Really Well", lt: "Kas tikrai pavyko" },
   topic: { en: "A performance review", lt: "Metinis veiklos pokalbis" },
   chapter: 8,
   order: 5,
