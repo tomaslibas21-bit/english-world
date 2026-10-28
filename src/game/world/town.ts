@@ -9,10 +9,15 @@ import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial
 
 export interface Door { loc: string; bid: string; x: number; z: number; face: "n" | "s" | "e" | "w"; name: string; outX: number; outZ: number; rot: number }
 
+/** A place to sit (the café chairs and the benches): the seat's top `y`, facing `rot`; a café chair's table. */
+export interface Seat { x: number; z: number; rot: number; y: number; table?: [number, number] }
+
 export interface Town {
   group: THREE.Group;
   colliders: Colliders;
   doors: Door[];
+  /** Where townspeople can sit (Ambient seats some of them). */
+  seats: Seat[];
   groundCanvas: HTMLCanvasElement;
   update(t: number, dt: number): void;
   walkableAt(x: number, z: number): boolean;
@@ -30,6 +35,9 @@ export function buildTown(): Town {
   const M = new Merger();
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
+  seats.length = 0;
+  displays.length = 0;
+  displayGlass.length = 0;
 
   // --- ground -------------------------------------------------------------
   const groundCanvas = drawGround();
@@ -115,6 +123,13 @@ export function buildTown(): Town {
   colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60);
 
   if (!STYLED) { addMarkings(group); group.add(makeFlowers(rand(41))); }
+  if (displays.length) {
+    // the shop windows' goods (one mesh) and their glass (one more, see-through)
+    const goods = new THREE.Mesh(colourMerge(displays), displayMaterial());
+    goods.receiveShadow = true;
+    goods.name = "shop-windows";
+    group.add(goods, new THREE.Mesh(mergeGeometries(displayGlass, false)!, displayGlassMaterial()));
+  }
   M.build(group);
 
   const clouds = makeClouds(group, r);
@@ -122,7 +137,7 @@ export function buildTown(): Town {
   const gulls = STYLED ? [] : makeGulls(group);
 
   return {
-    group, colliders, doors, groundCanvas,
+    group, colliders, doors, seats: [...seats], groundCanvas,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
@@ -543,6 +558,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
 
   // windows on every facade
   const floors = Math.max(1, Math.floor((b.h - 1) / 3.2));
+  let displayN = 0;
   const facades: [number, number][] = [[0, -1], [0, 1], [1, 0], [-1, 0]];
   for (const [fx, fz] of facades) {
     const along = fx === 0 ? b.w : b.d;
@@ -576,6 +592,13 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
         const bigShop = isFront && f === 0 && (b.style === "shop" || b.style === "restaurant");
         const ww = b.style === "office" || b.style === "terminal" ? spacing - 0.3 : bigShop ? Math.min(2.6, spacing - 0.3) : 1.3;
         const wh = b.style === "office" || b.style === "terminal" ? 2.6 : bigShop ? 2.2 : 1.5;
+        // a shop window clear of the door's frame (and of the lamp on its other side) stands out from the wall with the
+        // shop's goods in it
+        const fromDoor = o - doorOff;
+        if (bigShop && !STYLED && GOODS[b.id] && Math.abs(fromDoor) > doorW / 2 + ww / 2 + (fromDoor > 0 ? 0.25 : 0.72)) {
+          shopWindow(b, M, col, fx, fz, hd, o, ww, wh, y - 0.35 - wh / 2, trimMat, frameMat, displayN++);
+          continue;
+        }
         M.add("glass", b.style === "office" ? darkGlass : glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
         if (b.style !== "office" && b.style !== "terminal") {
           const cy = y - (bigShop ? 0.35 : 0);
@@ -720,6 +743,216 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.id === "market" || b.id === "clinic" || b.id === "gym") frontExtras(b.id, M, col, group, dx, dz, n, t, rotY);
   if (b.style === "warehouse") warehouseExtras(b, M, col, group, dx, dz, n, t, rotY);
 }
+
+// --------------------------------------------------------------------------- shop windows
+
+/** The shop windows' insides and goods (merged into one vertex-coloured mesh) and their panes, gathered while the
+ *  town is built. */
+const displays: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+const displayGlass: THREE.BufferGeometry[] = [];
+
+/** The goods lit from inside the shop: some of each one's own colour glows. */
+function displayMaterial() {
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n      totalEmissiveRadiance += vColor.rgb * 0.3;");
+  };
+  return m;
+}
+/** Shop window glass: nearly clear looking straight in, the sky in it at a slant. */
+function displayGlassMaterial() {
+  const m = new THREE.MeshLambertMaterial({ color: "#e2f2f8", transparent: true, opacity: 0.16, depthWrite: false });
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+      float slant = 1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0);
+      totalEmissiveRadiance += vec3(0.55, 0.68, 0.8) * pow(slant, 2.0) * 0.7;
+      diffuseColor.a = mix(0.13, 0.72, pow(slant, 1.6));`);
+  };
+  return m;
+}
+
+/** A shop window that stands out half a metre from the wall: a riser under it, the shop's colour round it, a lit back
+ *  wall and a display floor inside, the goods (GOODS) on show, and clear glass in front. `o` is the window's place
+ *  along the facade, `y0` its sill; `k` counts the shop's display windows (they alternate what they show). */
+function shopWindow(b: BuildingDef, M: Merger, col: Colliders, fx: number, fz: number, hd: number, o: number, ww: number, wh: number, y0: number, trimMat: THREE.Material, frameMat: THREE.Material, k: number) {
+  const D = 0.5, tx = -fz, tz = fx, rot = Math.atan2(fx, fz);
+  const px = b.x + fx * hd + tx * o, pz = b.z + fz * hd + tz * o;
+  const at = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(px, 0, pz);
+  const y1 = y0 + wh, trim = `trim-${b.trim}`;
+  M.add(trim, trimMat, at(boxGeo(ww + 0.16, y0, D, 0, y0 / 2, D / 2)));
+  for (const s of [-1, 1]) M.add(trim, trimMat, at(boxGeo(0.08, wh, D, s * (ww / 2 + 0.04), y0 + wh / 2, D / 2)));
+  M.add(trim, trimMat, at(boxGeo(ww + 0.28, 0.16, D + 0.08, 0, y1 + 0.08, D / 2 + 0.02)));
+  displayGlass.push(at(new THREE.PlaneGeometry(ww, wh).translate(0, y0 + wh / 2, D - 0.03)));
+  // a painted frame round the glass
+  const fr = (w: number, h: number, ox: number, oy: number) => M.add("window-frame", frameMat, at(new THREE.PlaneGeometry(w, h).translate(ox, oy, D - 0.02)), false);
+  fr(ww + 0.06, 0.07, 0, y1 - 0.02); fr(ww + 0.06, 0.07, 0, y0 + 0.02);
+  for (const s of [-1, 1]) fr(0.07, wh, s * (ww / 2 - 0.02), y0 + wh / 2);
+  // inside: goods stand on the display floor (y 0 there), between the back wall (z 0) and the glass (z 0.47)
+  const add: Add = (g, c) => { displays.push([at(g.translate(0, y0 + 0.06, 0)), c]); };
+  add(new THREE.BoxGeometry(ww, wh - 0.06, 0.02).translate(0, (wh - 0.06) / 2 - 0.06, 0.01), new THREE.Color(b.color).lerp(new THREE.Color("#fff8ec"), 0.6));
+  add(new THREE.BoxGeometry(ww, 0.06, D - 0.04).translate(0, -0.03, D / 2 - 0.02), "#c9a57a");
+  GOODS[b.id](add, k);
+  col.addBox(px + fx * D / 2, pz + fz * D / 2, Math.abs(tx) * (ww + 0.3) + Math.abs(fx) * D, Math.abs(tz) * (ww + 0.3) + Math.abs(fz) * D);
+}
+
+type Add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => void;
+// shapes standing on the display floor at (x, y, z): a box, a cylinder (r at the top, r2 at the bottom), a ball (by its
+// centre), a ring lying flat or (upright) facing the street
+const gB = (w: number, h: number, d: number, x: number, y: number, z: number) => new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z);
+const gC = (r: number, h: number, x: number, y: number, z: number, seg = 10, r2 = r) => new THREE.CylinderGeometry(r, r2, h, seg).translate(x, y + h / 2, z);
+const gS = (r: number, x: number, y: number, z: number) => new THREE.SphereGeometry(r, 8, 6).translate(x, y, z);
+const gT = (r: number, tube: number, x: number, y: number, z: number, flat = true, arc = Math.PI * 2) => {
+  const g = new THREE.TorusGeometry(r, tube, 6, 16, arc);
+  if (flat) g.rotateX(Math.PI / 2);
+  return g.translate(x, y, z);
+};
+/** A bottle: the body, its shoulder and neck, a label. */
+function bottle(add: Add, x: number, y: number, z: number, c: string, h = 0.26, label = "#f4efe2") {
+  add(gC(0.045, h * 0.68, x, y, z), c);
+  add(gC(0.016, h * 0.32, x, y + h * 0.68, z, 8, 0.045), c);
+  add(gC(0.047, h * 0.22, x, y + h * 0.2, z), label);
+}
+
+/** Little flags on a string across the top of a window, in the shop's colours. */
+function bunting(add: Add, colors: string[]) {
+  const n = 13, sag = 0.12, y = 1.92, z = 0.32;
+  for (let i = 0; i < n; i++) {
+    const u = (i / (n - 1)) * 2 - 1, x = u * 1.12, yy = y - sag * (1 - u * u);
+    add(new THREE.ConeGeometry(0.07, 0.16, 3).rotateX(Math.PI).translate(x, yy - 0.08, z), colors[i % colors.length]);
+  }
+  for (let i = 0; i < n - 1; i++) {
+    const u0 = (i / (n - 1)) * 2 - 1, u1 = ((i + 1) / (n - 1)) * 2 - 1;
+    const a = new THREE.Vector3(u0 * 1.12, y - sag * (1 - u0 * u0), z), b = new THREE.Vector3(u1 * 1.12, y - sag * (1 - u1 * u1), z);
+    const len = a.distanceTo(b), g = new THREE.BoxGeometry(len, 0.01, 0.01);
+    g.rotateZ(Math.atan2(b.y - a.y, b.x - a.x)).translate((a.x + b.x) / 2, (a.y + b.y) / 2, z);
+    add(g, "#ece6dc");
+  }
+}
+/** A shelf across the window at height y (the things on it stand on y + 0.03). */
+const shelf = (add: Add, y: number) => add(gB(2.3, 0.03, 0.26, 0, y, 0.16), "#e8e2d6");
+/** A mug with its handle. */
+function mug(add: Add, x: number, y: number, z: number, c: string) {
+  add(gC(0.05, 0.1, x, y, z, 10), c);
+  add(new THREE.TorusGeometry(0.03, 0.01, 4, 8).translate(x + 0.055, y + 0.05, z), c);
+}
+
+/** What each shop shows in its windows. */
+const GOODS: Record<string, (add: Add, k: number) => void> = {
+  // Sunny Cup: a cake on a stand and donuts, or tiers of cupcakes and a cookie jar; bags of coffee beans
+  cafe: (add, k) => {
+    if (k % 2 === 0) {
+      add(gC(0.03, 0.26, -0.55, 0, 0.24), "#e8e2d6");
+      add(gC(0.24, 0.02, -0.55, 0.26, 0.24, 16), "#f4f1ea");
+      add(gC(0.18, 0.15, -0.55, 0.28, 0.24, 16), "#e9b98a");
+      add(gC(0.186, 0.04, -0.55, 0.42, 0.24, 16), "#fff4ec");
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; add(gS(0.026, -0.55 + Math.cos(a) * 0.12, 0.48, 0.24 + Math.sin(a) * 0.12), "#d62839"); }
+      ["#f28fad", "#6b3e26", "#f3c04f", "#f28fad", "#6b3e26"].forEach((c, i) => add(gT(0.055, 0.03, -0.05 + (i % 3) * 0.16, 0.03 + Math.floor(i / 3) * 0.06, 0.2 + (i % 2) * 0.08), c));
+    } else {
+      for (const [y, r] of [[0, 0.3], [0.32, 0.22], [0.6, 0.15]]) {
+        add(gC(0.022, 0.32, -0.45, y, 0.24), "#c9a54a");
+        add(gC(r, 0.02, -0.45, y + 0.3, 0.24, 14), "#f4f1ea");
+        const n = Math.round(r * 18);
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2, x = -0.45 + Math.cos(a) * r * 0.68, z = 0.24 + Math.sin(a) * r * 0.68;
+          add(gC(0.035, 0.05, x, y + 0.32, z, 8, 0.028), "#e9b07a");
+          add(gS(0.04, x, y + 0.39, z), ["#f7b2c4", "#fff1d6", "#b8e0d2", "#c9a0dc"][i % 4]);
+        }
+      }
+      add(gC(0.11, 0.26, 0.2, 0, 0.24, 14), "#e8d5b5");
+      add(gC(0.115, 0.04, 0.2, 0.26, 0.24, 14), "#b5651d");
+    }
+    for (let i = 0; i < 3; i++) { add(gB(0.13, 0.22, 0.08, 0.62 + i * 0.17, 0, 0.2), "#7a4b2a"); add(gB(0.132, 0.06, 0.082, 0.62 + i * 0.17, 0.09, 0.2), "#f4e3c3"); }
+    shelf(add, 1.05);
+    ["#f4f1ea", "#2a9d8f", "#e8743b", "#f4f1ea", "#f3c04f", "#2a9d8f"].forEach((c, i) => mug(add, 0.2 + i * 0.16, 1.08, 0.16, c));
+    bunting(add, ["#e8743b", "#fff4ec", "#b5651d"]);
+  },
+  // Lucia's: wine, jars of pasta, a wheel of cheese, a basket of tomatoes, the Italian colours on the back wall
+  trattoria: (add, k) => {
+    bunting(add, ["#2e6b3a", "#f4f1ea", "#c8102e"]);
+    shelf(add, 0.95);
+    for (let i = 0; i < 6; i++) bottle(add, -0.9 + i * 0.32, 0.98, 0.16, "#9aa53a", 0.24, "#f4efe2");
+    for (let i = 0; i < 5; i++) bottle(add, -1 + i * 0.13, 0, 0.18 + (i % 2) * 0.07, i % 2 ? "#5a1e2b" : "#1f4d2b", 0.3);
+    for (let i = 0; i < 2; i++) { add(gC(0.08, 0.3, -0.18 + i * 0.2, 0, 0.22, 12), "#f1e3b0"); add(gC(0.085, 0.04, -0.18 + i * 0.2, 0.3, 0.22, 12), "#8a1f2a"); }
+    if (k % 2 === 0) {
+      add(gC(0.17, 0.11, 0.45, 0, 0.24, 18), "#f3c94f");
+      add(gC(0.172, 0.012, 0.45, 0.11, 0.24, 18), "#e6b43a");
+    } else add(gB(0.4, 0.2, 0.18, 0.45, 0, 0.24), "#7a5a3a");
+    add(gB(0.34, 0.08, 0.22, 0.9, 0, 0.24), "#9c6b43");
+    for (let i = 0; i < 7; i++) add(gS(0.055, 0.78 + (i % 4) * 0.08, 0.11 + Math.floor(i / 4) * 0.06, 0.2 + (i % 2) * 0.07), "#d62828");
+  },
+  // Threads: two mannequins in the new season's tops, and a stack of folded shirts
+  threads: (add, k) => {
+    const tops = k % 2 ? ["#8e6bb0", "#e9c46a"] : ["#e76f51", "#2a9d8f"], bottoms = k % 2 ? ["#2b2d42", "#5c4b3a"] : ["#264653", "#3d405b"];
+    [-0.65, 0.2].forEach((x, i) => {
+      add(gC(0.17, 0.03, x, 0, 0.24, 14), "#3a3d42");
+      add(gC(0.022, 0.6, x, 0.03, 0.24), "#3a3d42");
+      add(gC(0.15, 0.26, x, 0.6, 0.24, 14, 0.16), bottoms[i]);
+      add(new THREE.CapsuleGeometry(0.17, 0.26, 4, 12).scale(1, 1, 0.72).translate(x, 1.08, 0.24), tops[i]);
+      add(gC(0.05, 0.08, x, 1.36, 0.24), "#ece6dc");
+      add(gS(0.11, x, 1.54, 0.24), "#ece6dc");
+    });
+    add(gB(0.5, 0.3, 0.3, 0.85, 0, 0.24), "#f4f1ea");
+    ["#457b9d", "#f2cc8f", "#81b29a", "#e07a5f"].forEach((c, i) => add(gB(0.34, 0.045, 0.22, 0.85, 0.3 + i * 0.047, 0.24), c));
+    add(gB(0.6, 0.03, 0.24, 0.85, 1.05, 0.16), "#e8e2d6");
+    for (const [x, c] of [[0.68, "#c8a272"], [1.0, "#2b2d42"]] as [number, string][]) { add(gC(0.13, 0.015, x, 1.08, 0.16, 16), c); add(gC(0.07, 0.09, x, 1.095, 0.16, 12, 0.075), c); }
+    bunting(add, k % 2 ? ["#6b4a8a", "#f4f1ea"] : ["#e76f51", "#f4f1ea"]);
+  },
+  // the pharmacy: a green cross on the back wall, shelves of boxes and bottles
+  pharmacy: (add) => {
+    add(new THREE.BoxGeometry(0.5, 0.15, 0.02).translate(0, 1.45, 0.03), "#2e8b57");
+    add(new THREE.BoxGeometry(0.15, 0.5, 0.02).translate(0, 1.45, 0.03), "#2e8b57");
+    for (const y of [0, 0.5]) {
+      add(gB(2.3, 0.03, 0.28, 0, y + 0.42, 0.16), "#f4f6f8");
+      if (y === 0) add(gB(2.3, 0.42, 0.04, 0, 0, 0.3), "#e3ebe6");
+      for (let i = 0; i < 9; i++) {
+        const x = -1 + i * 0.25, top = y + 0.45;
+        if (i % 3 === 1) bottle(add, x, top, 0.16, "#c77d2e", 0.16, "#ffffff");
+        else add(gB(0.12, 0.16 + (i % 2) * 0.04, 0.09, x, top, 0.16), ["#ffffff", "#4a90c2", "#2e8b57"][i % 3]);
+      }
+    }
+  },
+  // the car rental: a model car on a turntable, keys on a hook board
+  rental: (add, k) => {
+    add(gC(0.45, 0.08, -0.2, 0, 0.24, 24), "#e3f2ec");
+    for (const [g, c] of carParts(k % 2 ? "#4a7bb7" : "#e45b4f")) add(g.scale(0.17, 0.17, 0.17).rotateY(0.6).translate(-0.2, 0.08, 0.24), c);
+    add(new THREE.BoxGeometry(0.5, 0.36, 0.02).translate(0.8, 1.2, 0.03), "#1f8a70");
+    for (let i = 0; i < 6; i++) add(gS(0.025, 0.65 + (i % 3) * 0.15, 1.13 + Math.floor(i / 3) * 0.14, 0.05), "#e8c547");
+    bunting(add, ["#1f8a70", "#f4f1ea", "#e8c547"]);
+  },
+  // Gas & Go: cold drinks on two shelves, bags of chips
+  gas: (add) => {
+    for (const y of [0, 0.45]) {
+      add(gB(2.3, 0.03, 0.26, 0, y + 0.4, 0.16), "#e8e2d6");
+      for (let i = 0; i < 12; i++) bottle(add, -1.05 + i * 0.19, y + 0.43, 0.16, ["#d62828", "#2b6cb0", "#2a9d8f", "#f77f00"][i % 4], 0.22, "#ffffff");
+    }
+    ["#f3c04f", "#e63946", "#4a7bb7", "#6a994e", "#f3c04f", "#e63946"].forEach((c, i) => add(gB(0.2, 0.28, 0.07, -0.9 + i * 0.36, 0, 0.28).rotateZ(0.1 * ((i % 2) * 2 - 1)), c));
+  },
+  // Harbor Fitness: dumbbells on a rack, kettlebells, rolled yoga mats
+  gym: (add, k) => {
+    if (k % 2 === 0) bunting(add, ["#1f7f8c", "#f0883e"]);
+    add(gB(1.1, 0.04, 0.26, -0.45, 0.32, 0.2), "#3a3d42");
+    for (const x of [-0.9, 0]) add(gB(0.05, 0.32, 0.22, x, 0, 0.2), "#3a3d42");
+    for (let i = 0; i < 4; i++) {
+      const x = -0.85 + i * 0.27, s = 0.045 + i * 0.008;
+      add(new THREE.CylinderGeometry(0.014, 0.014, 0.26, 6).rotateZ(Math.PI / 2).translate(x, 0.4, 0.2), "#9aa0a6");
+      for (const e of [-0.11, 0.11]) add(gS(s, x + e, 0.4, 0.2), "#1f7f8c");
+    }
+    for (const [x, c] of [[0.35, "#2b2d42"], [0.6, "#f0883e"]] as [number, string][]) { add(gS(0.11, x, 0.11, 0.22), c); add(gT(0.06, 0.018, x, 0.24, 0.22, false, Math.PI), c); }
+    ["#8e6bb0", "#2a9d8f", "#f28fad"].forEach((c, i) => add(new THREE.CylinderGeometry(0.07, 0.07, 0.62, 12).translate(0.95 - i * 0.03, 0.31, 0.12 + i * 0.12), c));
+  },
+  // The Pier: a life ring and a ship's wheel on the back wall, coils of rope, a lantern
+  pier: (add, k) => {
+    for (let i = 0; i < 4; i++) add(new THREE.TorusGeometry(0.28, 0.065, 6, 8, Math.PI / 2).rotateZ((i * Math.PI) / 2).translate(-0.5, 1.2, 0.08), i % 2 ? "#f4f1ea" : "#d62828");
+    add(gT(0.22, 0.025, 0.45, 1.25, 0.06, false), "#7a4b2a");
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      add(new THREE.CylinderGeometry(0.015, 0.015, 0.52, 5).rotateZ(a).translate(0.45, 1.25, 0.06), "#7a4b2a");
+    }
+    for (let i = 0; i < 3; i++) add(gT(0.13 - i * 0.02, 0.03, k % 2 ? 0.6 : -0.6, 0.03 + i * 0.05, 0.24), "#d6c08f");
+    add(gB(0.16, 0.22, 0.16, k % 2 ? -0.5 : 0.5, 0, 0.24), "#3a3d42");
+    add(gB(0.12, 0.16, 0.12, k % 2 ? -0.5 : 0.5, 0.03, 0.24), "#ffd27a");
+  },
+};
 
 /** Where the warehouse's roll-up loading door sits along the front, from the entrance (metres along the facade). */
 const WAREHOUSE_LOADING_U = 4;
@@ -889,6 +1122,7 @@ function streetBench(M: Merger, col: Colliders, x: number, z: number, rot: numbe
   M.add("bench", mat("#9c6b43"), g1); M.add("bench", mat("#9c6b43"), g2);
   for (const s of [-0.75, 0.75]) M.add("bench-leg", mat("#333"), boxGeo(0.08, 0.5, 0.4, s, 0.25, 0).rotateY(rot).translate(x, 0, z));
   col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
+  for (const u of [-0.45, 0.45]) seats.push({ x: x + Math.cos(rot) * u, z: z - Math.sin(rot) * u, rot, y: 0.55 });
 }
 
 function cafeTable(M: Merger, col: Colliders, x: number, z: number, umbrella: string) {
@@ -896,7 +1130,11 @@ function cafeTable(M: Merger, col: Colliders, x: number, z: number, umbrella: st
   M.add("table-leg", mat("#555"), cylGeo(0.05, 0.05, 0.75, x, 0.37, z, 6));
   M.add("umbrella", mat(umbrella, { flat: true }), new THREE.ConeGeometry(1.4, 0.6, 8).translate(x, 2.4, z));
   M.add("umbrella-pole", mat("#ddd"), cylGeo(0.03, 0.03, 2.2, x, 1.2, z, 5));
-  for (const a of [0, Math.PI]) M.add("chair", mat("#3b5b4a"), boxGeo(0.45, 0.5, 0.45, x + Math.cos(a) * 0.8, 0.25, z + Math.sin(a) * 0.8));
+  for (const a of [0, Math.PI]) {
+    const cx = x + Math.cos(a) * 0.8, cz = z + Math.sin(a) * 0.8;
+    M.add("chair", mat("#3b5b4a"), boxGeo(0.45, 0.5, 0.45, cx, 0.25, cz));
+    seats.push({ x: cx, z: cz, rot: Math.atan2(x - cx, z - cz), y: 0.5, table: [x, z] });
+  }
   col.addCircle(x, z, 0.9);
 }
 
@@ -1096,6 +1334,8 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(bx, 0, bz));
     M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.5, 0.08, 0, 0.8, 0.22).rotateY(rot).translate(bx, 0, bz));
     col.addBox(bx, bz, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
+    // a place on each one facing away from the fountain (Rosa's bench is hers)
+    if (bx !== 18) seats.push({ x: bx, z: bz, rot: rot + Math.PI, y: 0.55 });
   }
   // bandstand-ish gazebo
   M.add("gazebo", mat("#ffffff"), cylGeo(3, 3, 0.4, 44, 0.2, -22, 8));
@@ -1163,6 +1403,8 @@ function makeBoats() {
 /** The fountain's spray: droplets that leave the top bowl all round and fall into the basin (one instanced mesh,
  *  moved by `spray.update`). */
 const sprays: ((t: number) => void)[] = [];
+/** The places to sit, gathered while the town is built (Town.seats). */
+const seats: Seat[] = [];
 function makeSpray(x: number, z: number) {
   const N = 60;
   const drops = new THREE.InstancedMesh(new THREE.SphereGeometry(0.075, 6, 4).scale(1, 1.6, 1), new THREE.MeshLambertMaterial({ color: "#eefaff", emissive: "#5aa6bd" }), N);

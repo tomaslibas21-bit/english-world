@@ -24,6 +24,11 @@ export interface Look {
   accColor?: string;
   height?: number;
   build?: number;
+  /** Something in the hands (townspeople): a coffee to go or a shopping bag while walking, a cup at a café table, a
+   *  newspaper on a bench. */
+  carry?: "coffee" | "bag" | "cup" | "paper";
+  /** A phone in the pocket, taken out now and then while waiting. */
+  phone?: boolean;
 }
 
 export interface NpcDef extends NpcInfo {

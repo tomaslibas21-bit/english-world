@@ -103,6 +103,13 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   { npc: "maggie", x: 101.2, z: 47.7, rot: Math.PI, ax: 101.2, az: 45.5 },
 ];
 
+/** Two townspeople standing and chatting (Ambient), face to face: [x, z] of one and [x, z] of the other. In the square
+ *  west of the fountain, on the promenade above the beach. */
+export const CHAT_SPOTS: [number, number, number, number][] = [
+  [21.9, -35.4, 23.1, -35.1],
+  [6.2, -61.3, 7.4, -61.1],
+];
+
 /** Maggie's cherry-red convertible, for sale in her drive (advanced song P25), facing the street. */
 export const CONVERTIBLE = { x: 99.25, z: 50.9, rot: Math.PI };
 /** Her drive, from Oak Avenue's curb back between the two houses: no street tree or lamp in the way. */

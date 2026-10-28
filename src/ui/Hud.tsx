@@ -78,6 +78,18 @@ function Fade() {
 function Objective() {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
+  // a new task (the last one done, or another picked): the card pops up for a moment
+  const [fresh, setFresh] = useState(false);
+  const lastTask = useRef(o?.sitId);
+  useEffect(() => {
+    if (!o?.sitId || o.sitId === lastTask.current) return;
+    const first = lastTask.current === undefined;
+    lastTask.current = o.sitId;
+    if (first) return;
+    setFresh(true);
+    const t = setTimeout(() => setFresh(false), 1300);
+    return () => clearTimeout(t);
+  }, [o?.sitId]);
   // on a phone it folds away by itself while you walk (and opens when you stop), until you fold or open it yourself
   const [manual, setManual] = useState<boolean | null>(null);
   const walking = useStore((s) => s.hud.walking);
@@ -95,7 +107,7 @@ function Objective() {
   const phone = sit?.mode === "phone" || sit?.mode === "video" || sit?.location === "phone";
   const st = stars(sitProgress(progress, o.sitId));
   return (
-    <div className={"objective-card" + (collapsed ? " collapsed" : "")}>
+    <div className={"objective-card" + (collapsed ? " collapsed" : "") + (fresh ? " fresh" : "")}>
       <div className="kicker">
         <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
         {st > 0 && <Stars n={st} size={14} />}

@@ -8,11 +8,14 @@
 //   ?yaw=30      turn them (degrees; 0 = facing the camera)   ?anim=idle|talk|blink|walk|wave|sit|nod|puzzled   ?t=1.3 (pose time)
 //   ?level=0.7   with anim=talk: the voice's loudness the mouth follows   ?seat=0.55 with anim=sit: the seat's height (a
 //                bench and the floor are drawn)
+//   ?carry=coffee|bag|cup|paper &phone=1   what they hold   ?busy=wipe|type|cup|paper   what their hands are busy with
+//   ?moment=glance|shift|scratch|phone|sip|type|wipe|lean   one of the little things people do while waiting, held
 //   ?cols=10 &cell=150 (cell width in px) &screenH=800 (game viewport height the pixel size is matched to)
 import * as THREE from "three";
 import { NPCS, type Look } from "../content/npcs";
 import { LOOKS } from "../ui/Title";
 import { createCharacter } from "../game/characters";
+import type { Moment } from "../game/characters/Character";
 import { walkerLook } from "../game/ambient";
 import { rand } from "../game/world/util";
 
@@ -21,6 +24,8 @@ const view = q.get("view") ?? "face";
 const yaw = THREE.MathUtils.degToRad(+(q.get("yaw") ?? 0));
 const anim = q.get("anim") ?? "idle";
 const level = q.get("level"), seat = Number(q.get("seat") ?? 0.5);
+const carry = q.get("carry") as Look["carry"] | null, phone = q.get("phone") === "1";
+const busy = q.get("busy") as "wipe" | "type" | "cup" | "paper" | null, moment = q.get("moment") as Moment | null;
 const poseT = +(q.get("t") ?? 0.6);
 const cols = +(q.get("cols") ?? 10);
 const cellW = +(q.get("cell") ?? 150);
@@ -111,10 +116,12 @@ if (anim === "sit") {
   scene.add(ground, bench);
 }
 people.forEach((p, i) => {
-  const ch = createCharacter(p.look);
+  const ch = createCharacter({ ...p.look, ...(carry ? { carry } : {}), ...(phone ? { phone } : {}) });
   ch.root.rotation.y = yaw;
   if (anim === "sit") ch.seatY = seat;
   if (anim === "walk" || anim === "wave" || anim === "sit") ch.setAnim(anim);
+  if (busy) ch.busy = busy;
+  if (moment) ch.holdMoment?.(moment);
   if (anim === "talk") ch.talk(30, level === null ? undefined : () => Number(level));
   if (anim === "nod" || anim === "puzzled") ch.react?.(anim);
   // pose at a fixed time: update() advances the character's own clock, which starts at a random value

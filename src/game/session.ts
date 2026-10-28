@@ -23,7 +23,7 @@ let lineId = 1;
 export interface SessionHooks {
   npcTalk(npcId: string, seconds: number): void;
   /** The person's face as the learner's answer lands: a nod (understood), a puzzled look (not, or not sure). */
-  npcReact?(npcId: string, kind: "nod" | "puzzled"): void;
+  npcReact?(npcId: string, kind: "nod" | "puzzled" | "clap"): void;
   onEvent(name: string, data: any): void;
   onEnd(sit: SituationDef, completed: boolean): void;
 }
@@ -388,7 +388,9 @@ export class Session {
       p.sits[this.sit.id] = s;
     });
     st.setConv({ completed: true, checklist: this.conv.checklist() });
-    audio.sfx("stamp");
+    audio.sfx("cheer");
+    // the person the learner is talking with is pleased: a little applause (after their nod and their last words)
+    this.hooks.npcReact?.(st.conv.npcId || this.sit.npc, "clap");
     st.toast({ kind: "stamp", title: after > before ? `${"★".repeat(after)} ${this.sit.title.en}` : `✓ ${this.sit.title.en}`, body: after > before ? "Nauja žvaigždutė! Situacija įveikta." : "Puiku! Situacija įveikta dar kartą." });
   }
 

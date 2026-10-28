@@ -110,7 +110,8 @@ export class AudioSystem {
       const bytes = await r.arrayBuffer();
       this.decoder ??= new OAC(1, 1, 44100);
       const dec = this.decoder;
-      const buf = await new Promise<AudioBuffer>((res, rej) => dec.decodeAudioData(bytes, res, rej));
+      // (the browser also rejects the promise it returns: the error callback has it already, so that one is let go)
+      const buf = await new Promise<AudioBuffer>((res, rej) => { void (dec.decodeAudioData(bytes, res, rej) as Promise<AudioBuffer> | undefined)?.catch(() => {}); });
       const data = buf.getChannelData(0), step = buf.sampleRate / ENVELOPE_RATE;
       const env = new Float32Array(Math.ceil(data.length / step));
       for (let i = 0; i < env.length; i++) {
@@ -320,7 +321,7 @@ export class AudioSystem {
     src.start(now); src.stop(now + 0.12);
   }
 
-  sfx(name: "success" | "pop" | "door" | "stamp" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
+  sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
     const ctx = this.ac();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -339,7 +340,12 @@ export class AudioSystem {
     };
     switch (name) {
       case "success": tone(784, 0, 0.18); tone(1175, 0.09, 0.3); break;
-      case "stamp": tone(523, 0, 0.2); tone(659, 0.1, 0.2); tone(784, 0.2, 0.25); tone(1047, 0.32, 0.45); break;
+      // a task done: a bright run up, a shimmering chord, a few twinkles on top
+      case "cheer":
+        tone(523, 0, 0.16); tone(659, 0.08, 0.16); tone(784, 0.16, 0.18); tone(1047, 0.25, 0.5);
+        for (const f of [1047, 1319, 1568]) tone(f, 0.42, 0.9, "sine", vol * 0.45);
+        for (const [f, at] of [[2093, 0.5], [2637, 0.6], [3136, 0.7], [2637, 0.82]]) tone(f, at, 0.14, "triangle", vol * 0.25);
+        break;
       case "pop": tone(660, 0, 0.08, "triangle", vol * 0.7); break;
       case "soft": tone(440, 0, 0.12, "sine", vol * 0.5); break;
       case "listen": tone(880, 0, 0.09, "sine", vol * 0.6); tone(1320, 0.07, 0.12, "sine", vol * 0.5); break;

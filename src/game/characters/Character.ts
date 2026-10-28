@@ -1,7 +1,8 @@
 // Procedural cartoon characters built from a Look (see content/npcs.ts), with simple
-// walk / idle / talk / wave / sit animations. No external assets.
-// Each moving part (body, head, arms, thighs, shins, eyes, brows, mouth) is one vertex-coloured mesh merged
-// from simple shapes, so a character costs about a dozen draw calls, and the face details cast no shadows.
+// walk / idle / talk / wave / sit animations, and little things they do while they wait. No external assets.
+// Each moving part (body, head, arms, thighs, shins, eyes, brows, mouth) is built from simple vertex-coloured shapes,
+// and then all of them are baked into one skinned mesh, each part following its own bone: a character is one draw
+// call (and one in the shadow pass), so the town can hold many people.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Look } from "../../content/npcs";
@@ -114,8 +115,28 @@ function headShell(k: number, phi0: number, phi1: number, top: (phi: number) => 
 
 export type Anim = "idle" | "walk" | "run" | "talk" | "wave" | "sit";
 
+/** The little things people do while they wait: look round, shift their weight, scratch their head, check their
+ *  phone, sip their coffee, type, wipe the counter, lean forward. */
+export type Moment = "glance" | "shift" | "scratch" | "phone" | "sip" | "type" | "wipe" | "lean";
+/** How long each one lasts (seconds, from–to). */
+const MOMENT_SECONDS: Record<Moment, [number, number]> = {
+  glance: [1.6, 3], shift: [4, 8], scratch: [1.3, 1.9], phone: [3, 6], sip: [1.8, 2.4], type: [3, 6], wipe: [3, 6], lean: [3, 5],
+};
+
+/** Shows or hides a part of the baked mesh: a hidden part's bone shrinks to a point. */
+function vis(o: THREE.Object3D, on: boolean) {
+  if (!on) o.scale.setScalar(1e-5);
+  else if (o.scale.x < 0.5) o.scale.setScalar(1);
+}
+
 /** Sitting, the thighs slope down this much from the hip (radians), and the shins hang straight down. */
 const SIT_DROOP = 0.1;
+/** Seated hands (the left arm's x and z turns, then the right's): on the lap, round a cup on a café table, on a desk,
+ *  holding a newspaper up. */
+const SEATED_HANDS: Record<string, [number, number, number, number]> = {
+  lap: [-0.55, 0.22, -0.55, -0.22], wipe: [-0.55, 0.22, -0.55, -0.22], cup: [-0.75, 0.1, -0.8, -0.1],
+  type: [-0.9, 0.12, -0.9, -0.12], paper: [-1.05, 0.32, -1.05, -0.32],
+};
 
 let blobGeo: THREE.PlaneGeometry | null = null, blobMat: THREE.MeshBasicMaterial | null = null;
 /** A soft round shadow under the feet (one shared geometry and material). */
@@ -151,24 +172,42 @@ export class Character {
   private legR = new THREE.Group();
   private shinL = new THREE.Group();
   private shinR = new THREE.Group();
+  // the parts are meshes while they are built, and bones of the baked mesh after (see bake)
   /** The skirt hangs from the waist (shortened while sitting, so it stays out of the seat). */
-  private skirt: THREE.Mesh | null = null;
+  private skirt: THREE.Object3D | null = null;
   private eyes = new THREE.Group();
-  private shine!: THREE.Mesh;
-  private brows!: THREE.Mesh;
-  private smile!: THREE.Mesh;
-  private mouth!: THREE.Mesh;
+  private shine!: THREE.Object3D;
+  private brows!: THREE.Object3D;
+  private smile!: THREE.Object3D;
+  private mouth!: THREE.Object3D;
+  /** The phone in the right hand, shown while they look at it. */
+  private phone: THREE.Object3D | null = null;
   /** The shins with their feet: standing, and longer ones for sitting (built when the character first sits). */
-  private shins: THREE.Mesh[] = [];
-  private seatShins: THREE.Mesh[] | null = null;
+  private shins: THREE.Object3D[] = [];
+  private seatShins: THREE.Object3D[] | null = null;
   private seatShinExtra = 0;
+  /** Every part's geometry (in its bone's space) and its bone; the baked mesh. */
+  private parts: { bone: THREE.Bone; geo: THREE.BufferGeometry }[] = [];
+  private skin: THREE.SkinnedMesh | null = null;
+  /** The player is close by or talking with them: no fidgeting, their attention is on the player. */
+  attentive = false;
+  /** Little things they do while they wait (looking round, shifting their weight…): townspeople do, the player
+   *  doesn't. */
+  fidgets = true;
+  /** What their hands are busy with while they wait: wiping a counter, typing (a till, a keyboard), a cup at a café
+   *  table, a newspaper. */
+  busy: "wipe" | "type" | "cup" | "paper" | null = null;
+  private moment: { kind: Moment; t: number; dur: number; s: number; w: number } | null = null;
+  private momentT = 1 + Math.random() * 5;
   private legLook!: { h: number; b: number; shin: THREE.ColorRepresentation; shoes: string; skin: THREE.ColorRepresentation; flipflops: boolean };
   /** While talking: how loud the voice is right now (0–1; -1 once it has ended), or null with no recording to follow. */
   private level: (() => number | null) | null = null;
   private mouthOpen = 0;
   private browLift = 0;
-  /** A short reaction to the learner's answer: a nod (understood) or a puzzled tilt (not understood). */
-  private reaction: { kind: "nod" | "puzzled"; t: number } | null = null;
+  /** A short reaction to the learner's answer: a nod (understood), a puzzled tilt (not understood), applause (the
+   *  task is done; `clapNext`: after the nod under way). */
+  private reaction: { kind: "nod" | "puzzled" | "clap"; t: number } | null = null;
+  private clapNext = false;
   private t = Math.random() * 10;
   anim: Anim = "idle";
   talking = 0;
@@ -198,6 +237,15 @@ export class Character {
     this.body.add(this.head);
     this.head.position.y = 1.52 * h;
     this.buildHead(look, acc);
+    this.buildCarried(look, h, b);
+    this.busy = look.carry === "cup" || look.carry === "paper" ? look.carry : null;
+    // from here on the parts are bones of one mesh
+    const bone = this.bake();
+    this.shine = bone(this.shine); this.brows = bone(this.brows); this.smile = bone(this.smile); this.mouth = bone(this.mouth);
+    if (this.skirt) this.skirt = bone(this.skirt);
+    if (this.phone) { this.phone = bone(this.phone); vis(this.phone, false); }
+    this.shins = this.shins.map(bone);
+    vis(this.mouth, false);
   }
 
   // ------------------------------------------------------------------ body
@@ -307,6 +355,54 @@ export class Character {
     }
   }
 
+  /** What they carry (Look.carry, Look.phone): a coffee to go in the right hand, a shopping bag in the left, a café
+   *  cup held on the table, a newspaper held in front with both hands, a phone (hidden until they look at it). Each is
+   *  its own part, so it follows its hand. */
+  private buildCarried(look: Look, h: number, b: number) {
+    const hand = -0.5 * h;
+    const part = (P: Parts, parent: THREE.Object3D) => { const m = P.mesh(); parent.add(m); return m; };
+    if (look.carry === "coffee") {
+      // upright in the hanging hand: a paper cup with a sleeve and a lid
+      const P = new Parts();
+      P.add(new THREE.CylinderGeometry(0.042, 0.034, 0.13, 12).translate(0, hand + 0.01, 0.07), "#f4f1ea");
+      P.add(new THREE.CylinderGeometry(0.041, 0.037, 0.05, 12).translate(0, hand + 0.0, 0.07), "#a8743f");
+      P.add(new THREE.CylinderGeometry(0.045, 0.045, 0.018, 12).translate(0, hand + 0.083, 0.07), "#ffffff");
+      part(P, this.armR);
+    } else if (look.carry === "bag") {
+      // a paper shopping bag hanging from the left hand, its handles in the fist
+      const c = ["#c8a272", "#e76f51", "#2a9d8f", "#f4f1ea"][Math.floor(new THREE.Color(look.top).r * 3.99)];
+      const P = new Parts();
+      P.add(new THREE.BoxGeometry(0.27, 0.3, 0.12).translate(0, hand - 0.24, 0), c);
+      P.add(new THREE.BoxGeometry(0.27, 0.035, 0.124).translate(0, hand - 0.105, 0), new THREE.Color(c).multiplyScalar(0.8));
+      for (const s of [-1, 1]) P.add(new THREE.BoxGeometry(0.014, 0.1, 0.014).translate(s * 0.05, hand - 0.05, 0), "#3a2f2a");
+      part(P, this.armL);
+    } else if (look.carry === "cup") {
+      // a café cup held on the table (the arm reaches forward to it, see update): turned so it stands upright there
+      const P = new Parts();
+      const g = (geo: THREE.BufferGeometry) => geo.rotateX(0.8).translate(0, hand, 0.05);
+      P.add(g(new THREE.CylinderGeometry(0.046, 0.038, 0.085, 12)), "#ffffff");
+      P.add(g(new THREE.CylinderGeometry(0.04, 0.04, 0.004, 12).translate(0, 0.041, 0)), "#5b3a26");
+      P.add(g(new THREE.TorusGeometry(0.022, 0.007, 4, 8, Math.PI).rotateZ(-Math.PI / 2).translate(0.046, 0.0, 0)), "#ffffff");
+      part(P, this.armR);
+    } else if (look.carry === "paper") {
+      // a newspaper held open in front, tipped back towards the reader (the arms hold it, see update)
+      const P = new Parts();
+      const g = (geo: THREE.BufferGeometry) => geo.rotateX(-0.45).translate(0, 1.04 * h, 0.4 * b);
+      P.add(g(new THREE.BoxGeometry(0.54, 0.38, 0.01)), "#f1ede3");
+      for (const [y, w] of [[0.13, 0.4], [0.08, 0.44], [0.02, 0.44], [-0.04, 0.44], [-0.1, 0.3]] as [number, number][]) {
+        for (const z of [-0.0065, 0.0065]) P.add(g(new THREE.BoxGeometry(w, y === 0.13 ? 0.04 : 0.016, 0.004).translate(0, y, z)), y === 0.13 ? "#3b3f45" : "#9aa0a6");
+      }
+      part(P, this.body);
+    }
+    if (look.phone) {
+      // flat along the hand, the screen towards the face while they look at it
+      const P = new Parts();
+      P.add(new THREE.BoxGeometry(0.072, 0.012, 0.14).translate(0, hand - 0.07, 0.02), "#26292e");
+      P.add(new THREE.BoxGeometry(0.06, 0.004, 0.12).translate(0, hand - 0.062, 0.02), "#9fd8ff");
+      this.phone = part(P, this.armR);
+    }
+  }
+
   /** One shin with its foot, `extra` longer than a standing one (seated feet reach the floor). */
   private shinMesh(extra: number) {
     const { h, b, shin, shoes, skin, flipflops } = this.legLook;
@@ -350,9 +446,9 @@ export class Character {
       L.add(onFace(new THREE.SphereGeometry(0.0115, 8, 6).scale(1, 1, 0.45).translate(-0.011, 0.016, front(-0.011, 0.016)), x, EYE_Y), "#ffffff");
       L.add(onFace(new THREE.SphereGeometry(0.0055, 6, 4).scale(1, 1, 0.45).translate(0.012, -0.017, front(0.012, -0.017)), x, EYE_Y), "#ffffff");
     }
-    const eyeMesh = E.mesh(false);
-    this.shine = L.mesh(false);
-    for (const m of [eyeMesh, this.shine]) { m.geometry.translate(0, -EYE_Y, 0); this.eyes.add(m); }
+    const eyeMesh = E.mesh(false), shine = L.mesh(false);
+    this.shine = shine;
+    for (const m of [eyeMesh, shine]) { m.geometry.translate(0, -EYE_Y, 0); this.eyes.add(m); }
     this.eyes.position.y = EYE_Y;
     this.head.add(this.eyes);
 
@@ -377,7 +473,6 @@ export class Character {
     O.add(new THREE.CylinderGeometry(0.04, 0.04, 0.012, 16, 1, false, -Math.PI / 2, Math.PI).rotateX(Math.PI / 2).scale(1.1, 1, 1), "#5a1e22");
     O.add(new THREE.CylinderGeometry(0.026, 0.026, 0.012, 12, 1, false, -Math.PI / 2, Math.PI).rotateX(Math.PI / 2).scale(1.05, 0.55, 1).translate(0, -0.019, 0.001), "#d4686e");
     this.mouth = O.mesh(false);
-    this.mouth.visible = false;
     mouthGroup.add(this.smile, this.mouth);
     this.head.add(mouthGroup);
   }
@@ -530,20 +625,79 @@ export class Character {
       const knee = this.seatY + 0.1 * b - 0.3 * h * Math.sin(SIT_DROOP);
       const extra = Math.max(0, knee - 0.01 - 0.3 * h - 0.05);
       if (!this.seatShins || Math.abs(extra - this.seatShinExtra) > 0.005) {
-        for (const m of this.seatShins ?? []) { m.removeFromParent(); m.geometry.dispose(); }
-        this.seatShins = [this.shinL, this.shinR].map((g) => { const m = this.shinMesh(extra); g.add(m); return m; });
+        // new seated shins (the old ones go), and the mesh baked again with them
+        for (const s of this.seatShins ?? []) this.dropPart(s);
+        const ms = [this.shinL, this.shinR].map((g) => { const m = this.shinMesh(extra); g.add(m); return m; });
+        const bone = this.bake();
+        this.seatShins = ms.map(bone);
         this.seatShinExtra = extra;
       }
     }
-    for (const m of this.shins) m.visible = !seated;
-    for (const m of this.seatShins ?? []) m.visible = seated;
+    for (const m of this.shins) vis(m, !seated);
+    for (const m of this.seatShins ?? []) vis(m, seated);
+  }
+
+  /** Bakes the parts into one skinned mesh. Each mesh built since the last bake gives way to a bone in its place and
+   *  keeps its geometry; then every part's vertices are put where the part is now (the bind pose), each following its
+   *  bone. Returns the bone that took each new mesh's place. */
+  private bake() {
+    const fresh: THREE.Mesh[] = [];
+    this.body.traverse((o) => { if ((o as THREE.Mesh).isMesh) fresh.push(o as THREE.Mesh); });
+    const swap = new Map<THREE.Object3D, THREE.Object3D>();
+    for (const m of fresh) {
+      const bone = new THREE.Bone();
+      bone.position.copy(m.position); bone.quaternion.copy(m.quaternion); bone.scale.copy(m.scale);
+      m.parent!.add(bone);
+      m.removeFromParent();
+      this.parts.push({ bone, geo: m.geometry });
+      swap.set(m, bone);
+    }
+    // the bind pose has every part at its full size (a hidden part's bone is shrunk, see vis)
+    const sizes = this.parts.map((p) => p.bone.scale.clone());
+    for (const p of this.parts) p.bone.scale.set(1, 1, 1);
+    this.root.updateMatrixWorld(true);
+    const toRoot = this.root.matrixWorld.clone().invert(), m4 = new THREE.Matrix4();
+    const geos = this.parts.map(({ bone, geo }, i) => {
+      const g = geo.clone().applyMatrix4(m4.multiplyMatrices(toRoot, bone.matrixWorld));
+      const n = g.attributes.position.count;
+      if (!g.index) g.setIndex([...Array(n).keys()]);
+      const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+      for (let k = 0; k < n; k++) { si[k * 4] = i; sw[k * 4] = 1; }
+      g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(si, 4));
+      g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4));
+      return g;
+    });
+    const castShadow = this.skin?.castShadow ?? true;
+    if (this.skin) { this.skin.removeFromParent(); this.skin.geometry.dispose(); this.skin.skeleton.dispose(); }
+    const skin = new THREE.SkinnedMesh(mergeGeometries(geos, false)!, charMaterial());
+    for (const g of geos) g.dispose();
+    skin.castShadow = castShadow;
+    // a generous fixed bound, as the pose changes every frame (an arm up for a wave still fits)
+    skin.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 1.5);
+    skin.boundingBox = new THREE.Box3(new THREE.Vector3(-1.1, -0.2, -1.1), new THREE.Vector3(1.1, 2.6, 1.1));
+    this.root.add(skin);
+    skin.updateMatrixWorld(true);
+    skin.bind(new THREE.Skeleton(this.parts.map((p) => p.bone)), skin.matrixWorld);
+    this.parts.forEach((p, i) => p.bone.scale.copy(sizes[i]));
+    this.skin = skin;
+    return (o: THREE.Object3D): THREE.Object3D => swap.get(o) ?? o;
+  }
+
+  /** Takes a part out (its geometry goes; the next bake leaves it out). */
+  private dropPart(bone: THREE.Object3D) {
+    const i = this.parts.findIndex((p) => p.bone === bone);
+    if (i >= 0) { this.parts[i].geo.dispose(); this.parts.splice(i, 1); }
+    bone.removeFromParent();
   }
 
   update(dt: number) {
     this.t += dt;
     this.blob.visible = Character.blobShadows;
     const t = this.t, h = this.look.height ?? 1, b = this.look.build ?? 1;
-    let legA = 0, kneeL = 0.03, kneeR = 0.03, armA = 0, bob = 0, lean = 0, headNod = 0, headTurn = 0;
+    const seated = this.anim === "sit";
+    let legA = 0, kneeL = 0.03, kneeR = 0.03, bob = 0, lean = 0, headNod = 0, headTurn = 0, tilt = 0, hip = 0;
+    // the arms: round x forward (negative) or back, round z out or in (the left arm + inwards, the right − inwards)
+    let lx = 0, lz = 0, rx = 0, rz = 0;
     if (this.anim === "walk" || this.anim === "run") {
       const run = this.anim === "run";
       // steps at the pace of the real speed when it is known (4.4 m/s walking, 7.4 running)
@@ -555,16 +709,51 @@ export class Character {
       // the knee folds while that foot swings forward
       kneeL = Math.max(0, -Math.cos(ph)) * (run ? 1.1 : 0.7) + 0.05;
       kneeR = Math.max(0, Math.cos(ph)) * (run ? 1.1 : 0.7) + 0.05;
-      armA = -legA * 0.9;
+      lx = -legA * 0.9;
+      rx = legA * 0.9;
       bob = Math.abs(Math.sin(ph)) * 0.05;
       lean = run ? 0.12 : 0.04;
-    } else if (this.anim !== "sit") {
+    } else if (seated) {
+      [lx, lz, rx, rz] = SEATED_HANDS[this.busy ?? "lap"];
+      headTurn = Math.sin(t * 0.5) * 0.06;
+      // a reader looks down at the paper
+      if (this.busy === "paper") headNod = 0.22;
+    } else {
       bob = Math.sin(t * 2) * 0.008;
       headTurn = Math.sin(t * 0.5) * 0.08;
     }
-    this.armL.rotation.set(0, 0, 0);
-    this.armR.rotation.set(0, 0, 0);
-    let browUp = 0, tilt = 0, mouthShape = 0;
+    // the little things people do while they wait (see fidget)
+    const m = this.fidget(dt, seated);
+    let phoneOut = false;
+    if (m) {
+      const k = m.w * m.w * (3 - 2 * m.w), s = m.s;
+      const reach = (side: "l" | "r", x: number, z: number) => {
+        if (side === "l") { lx += (x - lx) * k; lz += (z - lz) * k; } else { rx += (x - rx) * k; rz += (z - rz) * k; }
+      };
+      switch (m.kind) {
+        // looking round (a reader looks up from the paper)
+        case "glance": headTurn += s * 0.7 * k; if (this.busy === "paper") headNod -= 0.24 * k; break;
+        // the weight on one leg (below: the body tips over it, the other knee bends)
+        case "shift": hip = s * 0.035 * k; tilt -= s * 0.03 * k; break;
+        case "lean": lean += 0.07 * k; headNod -= 0.04 * k; break;
+        // a hand up to the head
+        case "scratch": reach("r", -0.1, -2.85 + Math.sin(t * 16) * 0.07); tilt -= 0.1 * k; headNod += 0.05 * k; break;
+        // the phone held up in front, eyes on it
+        case "phone": reach("r", -1.2, -0.3); reach("l", -0.35, 0.1); headNod += 0.32 * k; phoneOut = m.w > 0.3; break;
+        // the cup up to the mouth, the head back a little
+        case "sip": reach("r", -2.27, -0.76); headNod -= 0.12 * k; break;
+        // both hands on the counter or the desk, fingers busy, eyes down
+        case "type":
+          if (!seated) { reach("l", -0.85, 0.12); reach("r", -0.85, -0.12); }
+          lx += Math.sin(t * 12) * 0.05 * k; rx += Math.sin(t * 12 + 1.7) * 0.05 * k;
+          headNod += 0.2 * k;
+          break;
+        // circles on the counter with the right hand, the left one resting on it
+        case "wipe": reach("r", -1 + Math.sin(t * 5) * 0.12, -0.15 + Math.cos(t * 5) * 0.2); reach("l", -0.45, 0.05); headNod += 0.18 * k; break;
+      }
+    }
+    if (this.phone) vis(this.phone, phoneOut);
+    let browUp = 0, mouthShape = 0;
     // with a recording to follow, the talking lasts exactly as long as it plays (it often starts a moment late)
     const lv = this.level?.() ?? null;
     if (lv !== null) this.talking = lv < 0 ? 0 : Math.max(this.talking, 0.1);
@@ -576,9 +765,9 @@ export class Character {
       // it opens fast and closes a little slower, like a real one; the brows follow the phrase, not each syllable
       this.mouthOpen += (target - this.mouthOpen) * Math.min(1, dt * (target > this.mouthOpen ? 28 : 16));
       this.browLift += (this.mouthOpen - this.browLift) * Math.min(1, dt * 4);
-      headNod = Math.sin(t * 9) * 0.05 * (0.4 + 0.6 * this.mouthOpen);
-      this.armR.rotation.z = -0.15 - Math.max(0, Math.sin(t * 3)) * 0.25;
-      this.armR.rotation.x = -0.3 - Math.sin(t * 3) * 0.2;
+      headNod += Math.sin(t * 9) * 0.05 * (0.4 + 0.6 * this.mouthOpen);
+      rz = -0.15 - Math.max(0, Math.sin(t * 3)) * 0.25;
+      rx = -0.3 - Math.sin(t * 3) * 0.2;
       mouthShape = 0.15 + this.mouthOpen * 0.85;
       browUp = this.browLift * 0.014;
     } else {
@@ -591,56 +780,104 @@ export class Character {
       r.t += dt;
       if (r.kind === "nod") {
         if (r.t < 0.8) headNod += Math.abs(Math.sin((r.t / 0.4) * Math.PI)) * 0.2;
-        else this.reaction = null;
+        else { this.reaction = this.clapNext ? { kind: "clap", t: 0 } : null; this.clapNext = false; }
+      } else if (r.kind === "clap") {
+        // applause once they have had their say: the hands meet in front about three times a second, brows up, a bob
+        if (this.talking > 0) r.t = 0;
+        else if (r.t < 1.7) {
+          const e = Math.min(1, r.t / 0.25, (1.7 - r.t) / 0.3), k = e * e * (3 - 2 * e), c = 0.5 + 0.5 * Math.sin(r.t * 19);
+          lx += (-1.05 - lx) * k; rx += (-1.05 - rx) * k;
+          lz += (0.3 + 0.28 * c - lz) * k; rz += (-0.3 - 0.28 * c - rz) * k;
+          headNod += Math.sin(r.t * 9.5) * 0.06 * k;
+          browUp = Math.max(browUp, 0.016 * k);
+        } else this.reaction = null;
       } else if (r.t < 1.8) {
         const e = Math.sin(Math.min(1, r.t / 1.8) * Math.PI) ** 0.5;
-        tilt = 0.2 * e;
+        tilt += 0.2 * e;
         browUp = Math.max(browUp, 0.024 * e);
         if (this.talking <= 0) mouthShape = 0.3 * e;
       } else this.reaction = null;
     }
     this.brows.position.y = browUp;
-    this.mouth.visible = mouthShape > 0.05;
-    if (this.mouth.visible) this.mouth.scale.y = mouthShape;
-    this.smile.visible = !this.mouth.visible;
+    const open = mouthShape > 0.05;
+    if (open) this.mouth.scale.set(1, mouthShape, 1);
+    else vis(this.mouth, false);
+    vis(this.smile, !open);
     if (this.anim === "wave") {
-      this.armR.rotation.z = -2.6 + Math.sin(t * 10) * 0.3;
-      this.armR.rotation.x = 0;
+      rz = -2.6 + Math.sin(t * 10) * 0.3;
+      rx = 0;
     }
-    if (this.anim === "sit") {
-      // thighs along the seat, the shins (longer, see fitLegs) straight down to the floor, hands on the lap
-      this.legL.rotation.x = this.legR.rotation.x = -Math.PI / 2 + SIT_DROOP;
+    if (seated) {
+      // thighs along the seat, the shins (longer, see fitLegs) straight down to the floor
+      this.legL.rotation.set(-Math.PI / 2 + SIT_DROOP, 0, 0);
+      this.legR.rotation.set(-Math.PI / 2 + SIT_DROOP, 0, 0);
       this.shinL.rotation.x = this.shinR.rotation.x = Math.PI / 2 - SIT_DROOP;
       this.body.position.set(0, this.seatY + 0.1 * b - 0.66 * h, 0.04);
-      this.armL.rotation.set(-0.55, 0, 0.22);
-      if (this.talking <= 0) this.armR.rotation.set(-0.55, 0, -0.22);
       if (this.skirt) this.skirt.scale.y = 0.5;
     } else {
-      this.legL.rotation.x = legA;
-      this.legR.rotation.x = -legA;
-      this.shinL.rotation.x = kneeL;
-      this.shinR.rotation.x = kneeR;
-      this.armL.rotation.x = armA;
-      if (this.talking <= 0 && this.anim !== "wave") this.armR.rotation.x = -armA;
+      // the weight on one leg: the body tips over it, the legs stay upright and the other knee bends a little
+      this.legL.rotation.set(legA, 0, -hip);
+      this.legR.rotation.set(-legA, 0, -hip);
+      this.shinL.rotation.x = kneeL + Math.max(0, -hip) * 4;
+      this.shinR.rotation.x = kneeR + Math.max(0, hip) * 4;
       this.body.position.set(0, bob, 0);
       if (this.skirt) this.skirt.scale.y = 1;
     }
+    this.armL.rotation.set(lx, 0, lz);
+    this.armR.rotation.set(rx, 0, rz);
     this.body.rotation.x = lean;
-    this.body.rotation.z = this.bank;
+    this.body.rotation.z = this.bank + hip;
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;
     this.head.rotation.z = tilt;
     // blinking: shut and open again in 0.16 s, now and then twice
     this.blinkT -= dt;
-    let open = 1;
+    let eye = 1;
     if (this.blinkT < 0.16) {
       const p = 1 - Math.max(0, this.blinkT) / 0.16;
-      open = p < 0.35 ? 1 - p / 0.35 : p < 0.55 ? 0 : (p - 0.55) / 0.45;
+      eye = p < 0.35 ? 1 - p / 0.35 : p < 0.55 ? 0 : (p - 0.55) / 0.45;
     }
-    this.eyes.scale.y = 0.1 + 0.9 * open;
-    this.shine.visible = open > 0.6;
+    this.eyes.scale.y = 0.1 + 0.9 * eye;
+    vis(this.shine, eye > 0.6);
     if (this.blinkT < 0) this.blinkT = Math.random() < 0.15 ? 0.3 : 2.5 + Math.random() * 3.5;
   }
+
+  /** The little thing under way, if any: one at a time, a few seconds each, a pause between. It eases in and out, and
+   *  ends early (easing out) when the player comes close, a conversation starts or they start talking. */
+  private fidget(dt: number, seated: boolean) {
+    const calm = this.fidgets && !this.attentive && this.talking <= 0 && !this.reaction && (seated || this.anim === "idle");
+    let m = this.moment;
+    if (!m) {
+      if (!calm || (this.momentT -= dt) > 0) return null;
+      const kind = this.nextMoment(seated), [a, z] = MOMENT_SECONDS[kind];
+      m = this.moment = { kind, t: 0, dur: a + Math.random() * (z - a), s: Math.random() < 0.5 ? -1 : 1, w: 0 };
+    }
+    m.t += dt;
+    const ending = !calm || m.t > m.dur - 0.4;
+    m.w = THREE.MathUtils.clamp(m.w + (ending ? -dt : dt) / 0.4, 0, 1);
+    if (ending && m.w === 0) {
+      this.moment = null;
+      // people at work keep busier
+      this.momentT = (this.busy === "wipe" || this.busy === "type" ? 1.5 : 2.5) + Math.random() * 4;
+      return null;
+    }
+    return m;
+  }
+
+  private nextMoment(seated: boolean): Moment {
+    const r = Math.random(), busy = this.busy;
+    if (seated) {
+      if (busy === "cup") return r < 0.45 ? "sip" : r < 0.85 ? "glance" : "lean";
+      if (busy === "type") return r < 0.6 ? "type" : "glance";
+      return r < 0.65 ? "glance" : "lean";
+    }
+    if (busy === "wipe" || busy === "type") return r < 0.55 ? busy : r < 0.8 ? "glance" : "shift";
+    if (this.phone && r < 0.25) return "phone";
+    return r < 0.45 ? "glance" : r < 0.85 ? "shift" : "scratch";
+  }
+
+  /** Dev (the lineup page): one of the little things, held at its full extent. */
+  holdMoment(kind: Moment) { this.moment = { kind, t: 0, dur: 1e9, s: 1, w: 1 }; }
 
   /** Talk for `seconds`; `level` (optional) tells how loud the voice is right now, for the mouth (-1: it has ended). */
   talk(seconds: number, level?: () => number | null) {
@@ -648,12 +885,18 @@ export class Character {
     this.level = level ?? null;
   }
 
-  /** React to the learner's answer: a nod when understood, a puzzled look when not. */
-  react(kind: "nod" | "puzzled") { this.reaction = { kind, t: 0 }; }
+  /** React to the learner's answer: a nod when understood, a puzzled look when not; applause when the task is done
+   *  (after a nod under way). */
+  react(kind: "nod" | "puzzled" | "clap") {
+    if (kind === "clap" && this.reaction?.kind === "nod") { this.clapNext = true; return; }
+    this.reaction = { kind, t: 0 };
+  }
 
-  /** Frees the GPU memory only this character uses: its geometries (built per character; NPCs are rebuilt
-   *  on every zone change). The material is shared. */
+  /** Frees the GPU memory only this character uses: its baked mesh and its parts' geometries (built per character;
+   *  NPCs are rebuilt on every zone change), and the skeleton's bone texture. The material is shared. */
   dispose() {
-    this.root.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).geometry.dispose(); });
+    this.skin?.geometry.dispose();
+    this.skin?.skeleton.dispose();
+    for (const p of this.parts) p.geo.dispose();
   }
 }

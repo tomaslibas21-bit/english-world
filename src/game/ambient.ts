@@ -1,6 +1,6 @@
-// Ambient life in Maple Harbor: townspeople strolling between places and a few cars on the
-// east–west streets. Decorative only: they give way to the player (cars stop, people wait)
-// and never start conversations.
+// Ambient life in Maple Harbor: townspeople strolling between places, people at the café tables and on benches,
+// pairs chatting in the square and on the promenade, and a few cars on the east–west streets. Decorative only: they
+// give way to the player (cars stop, people wait) and never start conversations.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { createCharacter, type GameCharacter } from "./characters";
@@ -9,14 +9,20 @@ import { carGeometry as styledCarGeometry } from "./world/styled";
 import { carGeometry } from "./world/car";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
-import { rand } from "./world/util";
-import { CAR, TRAFFIC_LANES } from "./world/layout";
+import { rand, type Colliders } from "./world/util";
+import { CAR, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
+import type { Seat } from "./world/town";
 
+/** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
+ *  chatting with someone ("stand"). */
 interface Walker {
-  ch: GameCharacter; female: boolean;
+  ch: GameCharacter; female: boolean; kind: "walk" | "sit" | "stand";
   path: [number, number][] | null; wait: number; speed: number;
   heading: number; greetT: number; lastTarget: number;
+  chat?: Chat;
 }
+/** Two people talking in turns: one talks, the other listens (and nods now and then), with pauses between. */
+interface Chat { a: Walker; b: Walker; who: 0 | 1; t: number; talk: number; nod: number }
 interface Car {
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
@@ -47,17 +53,32 @@ export function walkerLook(female: boolean, r: () => number): Look {
   };
 }
 
+/** What a passer-by has with them (their own random stream, so the looks above stay as they were): a shopping bag or
+ *  a coffee to go now and then, a phone in the pocket for every other one. */
+export function walkerThings(look: Look, r: () => number): Look {
+  const x = r();
+  return { ...look, carry: x < 0.28 ? "bag" : x < 0.45 ? "coffee" : undefined, phone: r() < 0.55 };
+}
+
 export class Ambient {
   group = new THREE.Group();
   private walkers: Walker[] = [];
+  private chats: Chat[] = [];
   private cars: Car[] = [];
   private r = rand(4242);
+  /** Things in the passers-by's hands, and the people sitting and standing: streams of their own. */
+  private rThings = rand(5150);
+  private rPeople = rand(6060);
   private pathBudget = 0;
   private pathCooldown = 0;
 
-  constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low") {
-    const nw = quality === "high" ? 7 : 3, nc = quality === "high" ? 8 : 4;
+  constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
+    const high = quality === "high";
+    // each person is a single draw call (characters/Character.ts), so the town can hold a crowd
+    const nw = high ? 12 : 6, nc = high ? 8 : 4;
     for (let i = 0; i < nw; i++) this.addWalker(i);
+    this.seatPeople(seats, high);
+    this.standPairs(high ? CHAT_SPOTS.length : 1, colliders);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
@@ -76,17 +97,82 @@ export class Ambient {
     }
   }
 
+  /** A townsperson's character (no shadow of their own: cheaper; the blob under the feet in „Paprasta“). */
+  private person(look: Look, female: boolean, kind: Walker["kind"]): Walker {
+    const ch = createCharacter(look);
+    ch.root.traverse((o) => { o.castShadow = false; });
+    this.group.add(ch.root);
+    const w: Walker = { ch, female, kind, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: 0, greetT: 0, lastTarget: -1 };
+    this.walkers.push(w);
+    return w;
+  }
+
   private addWalker(i: number) {
     const female = i % 2 === 0;
-    const ch = createCharacter(walkerLook(female, this.r));
-    ch.root.traverse((o) => { o.castShadow = false; }); // passers-by skip the shadow pass (cheaper)
+    const w = this.person(walkerThings(walkerLook(female, this.r), this.rThings), female, "walk");
     const k = Math.floor(this.r() * this.places.length);
     const [x, z] = this.places[k];
     const cell = this.nav.nearestFree(x + (this.r() - 0.5) * 3, z + (this.r() - 0.5) * 3);
     const [cx, cz] = cell >= 0 ? this.nav.center(cell) : [x, z];
-    ch.root.position.set(cx, 0, cz);
-    this.group.add(ch.root);
-    this.walkers.push({ ch, female, path: null, wait: 0.5 + this.r() * 4, speed: 1.7 + this.r() * 0.6, heading: this.r() * Math.PI * 2, greetT: 0, lastTarget: k });
+    w.ch.root.position.set(cx, 0, cz);
+    w.heading = this.r() * Math.PI * 2;
+    w.lastTarget = k;
+  }
+
+  /** People at the café tables (two at some, chatting over their cups, one alone at others) and on the benches (a
+   *  reader with the paper, someone resting by the fountain). */
+  private seatPeople(seats: Seat[], high: boolean) {
+    const r = this.rPeople;
+    const sit = (s: Seat, carry?: Look["carry"]) => {
+      const female = r() < 0.5;
+      const w = this.person({ ...walkerLook(female, r), carry }, female, "sit");
+      w.ch.root.position.set(s.x, 0, s.z);
+      w.ch.root.rotation.y = s.rot;
+      w.ch.seatY = s.y;
+      w.ch.setAnim("sit");
+      return w;
+    };
+    const tables = new Map<string, Seat[]>();
+    for (const s of seats) if (s.table) { const k = s.table.join(); tables.set(k, [...(tables.get(k) ?? []), s]); }
+    [...tables.values()].forEach((pair, i) => {
+      // high: two at the first table of each place, one at the second; low: the first table only
+      const n = high ? (i % 2 === 0 ? 2 : 1) : i === 0 ? 2 : 0;
+      const people = pair.slice(0, n).map((s) => sit(s, "cup"));
+      if (people.length === 2) this.chat(people[0], people[1]);
+    });
+    const benches = seats.filter((s) => !s.table);
+    const reader = benches.find((s) => Math.abs(s.x + 48.45) < 0.2 && Math.abs(s.z + 17.5) < 0.2);
+    if (reader) sit(reader, "paper");
+    const resting = benches.find((s) => Math.abs(s.x - 30) < 0.2 && Math.abs(s.z + 22.6) < 0.2);
+    if (high && resting) sit(resting);
+  }
+
+  /** Pairs standing and chatting (layout CHAT_SPOTS): walkers' paths and the player go round them. */
+  private standPairs(n: number, colliders?: Colliders) {
+    const r = this.rPeople;
+    for (const [ax, az, bx, bz] of CHAT_SPOTS.slice(0, n)) {
+      const two = [[ax, az, bx, bz], [bx, bz, ax, az]].map(([x, z, ox, oz]) => {
+        const female = r() < 0.5;
+        const w = this.person(walkerThings(walkerLook(female, r), r), female, "stand");
+        w.ch.root.position.set(x, 0, z);
+        // facing the other one
+        w.ch.root.rotation.y = w.heading = Math.atan2(ox - x, oz - z);
+        colliders?.addCircle(x, z, 0.4);
+        // no paths through them (a cell around each)
+        if (this.nav.blocked) for (const [dx, dz] of [[0, 0], [0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) {
+          const c = this.nav.idx(x + dx, z + dz);
+          if (c >= 0) this.nav.blocked[c] = 1;
+        }
+        return w;
+      });
+      this.chat(two[0], two[1]);
+    }
+  }
+
+  private chat(a: Walker, b: Walker) {
+    const c: Chat = { a, b, who: this.rPeople() < 0.5 ? 0 : 1, t: this.rPeople() * 3, talk: 0, nod: 0 };
+    a.chat = b.chat = c;
+    this.chats.push(c);
   }
 
   /** Which walker (if any) owns this object (for clicks). */
@@ -96,12 +182,17 @@ export class Ambient {
   }
   get walkerRoots() { return this.walkers.map((w) => w.ch.root); }
 
-  /** A passer-by stops, turns to the player and waves. */
+  /** A townsperson answers the player: a passer-by stops, turns and waves; someone chatting waves (and their friend
+   *  waits); someone sitting nods. */
   greet(w: Walker, px: number, pz: number) {
-    w.path = null;
-    w.wait = 3.5;
-    w.heading = Math.atan2(px - w.ch.root.position.x, pz - w.ch.root.position.z);
-    w.ch.root.rotation.y = w.heading;
+    if (w.chat) { w.chat.t = 4; w.chat.talk = 0; w.chat.a.ch.attentive = w.chat.b.ch.attentive = false; }
+    if (w.kind === "sit") { w.ch.react?.("nod"); return { female: w.female }; }
+    if (w.kind === "walk") {
+      w.path = null;
+      w.wait = 3.5;
+      w.heading = Math.atan2(px - w.ch.root.position.x, pz - w.ch.root.position.z);
+      w.ch.root.rotation.y = w.heading;
+    }
     w.ch.setAnim("wave");
     setTimeout(() => { if (w.ch.anim === "wave") w.ch.setAnim("idle"); }, 1400);
     return { female: w.female };
@@ -111,8 +202,33 @@ export class Ambient {
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
-    for (const w of this.walkers) this.updateWalker(w, dt, player);
+    for (const c of this.chats) this.updateChat(c, dt);
+    for (const w of this.walkers) {
+      if (w.kind === "walk") this.updateWalker(w, dt, player);
+      else w.ch.update(dt);
+    }
     for (const c of this.cars) this.updateCar(c, dt, player);
+  }
+
+  /** Turns in a chat: one talks for a couple of seconds while the other listens (eyes on them, a nod halfway), then
+   *  the other; now and then a pause, when both may look round or sip their coffee. */
+  private updateChat(c: Chat, dt: number) {
+    const [speaker, listener] = c.who ? [c.b, c.a] : [c.a, c.b];
+    if (c.talk > 0) {
+      c.talk -= dt;
+      c.nod -= dt;
+      if (c.nod <= 0 && c.nod > -dt) listener.ch.react?.("nod");
+      if (c.talk <= 0) { c.who = c.who ? 0 : 1; c.t = 0.3 + this.rPeople() * 0.9; }
+      return;
+    }
+    c.a.ch.attentive = c.b.ch.attentive = false;
+    c.t -= dt;
+    if (c.t > 0) return;
+    if (this.rPeople() < 0.22) { c.t = 1.5 + this.rPeople() * 3; return; }
+    c.talk = 1.6 + this.rPeople() * 2.6;
+    c.nod = c.talk * (0.3 + this.rPeople() * 0.4);
+    speaker.ch.talk(c.talk);
+    speaker.ch.attentive = listener.ch.attentive = true;
   }
 
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
@@ -180,7 +296,7 @@ export class Ambient {
     }
     // obstacles: the player, people and the car ahead
     let gap = this.blockedAhead(c, player.x, player.z);
-    for (const w of this.walkers) gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
+    for (const w of this.walkers) if (w.kind === "walk") gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {
       const a = (o.x - c.x) * c.dir;
       if (a > 0 && a < 16) gap = Math.min(gap, a - CAR.length + 0.7);

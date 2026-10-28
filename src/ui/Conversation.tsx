@@ -15,6 +15,7 @@ import { sitProgress } from "../state/progress";
 import { toImperative } from "./lt";
 import { Icon, InlineIcon, type IconName } from "./icons";
 import { showToast } from "./Toasts";
+import { Confetti } from "./Confetti";
 import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
 
@@ -268,13 +269,26 @@ function ReplayButtons({ replay }: { replay: (slow: boolean) => void }) {
 function Mission() {
   const conv = useStore((s) => s.conv);
   const [open, setOpen] = useState(false);
+  // the moment the task is done: confetti from the bar (the chime is Session.onCompleted's)
+  const bar = useRef<HTMLButtonElement>(null);
+  const was = useRef(conv.completed);
+  const [burst, setBurst] = useState(0);
+  useEffect(() => {
+    if (conv.completed && !was.current) setBurst(Date.now());
+    was.current = conv.completed;
+  }, [conv.completed]);
+  useEffect(() => {
+    if (!burst) return;
+    const t = setTimeout(() => setBurst(0), 2600);
+    return () => clearTimeout(t);
+  }, [burst]);
   const items = conv.checklist;
   if (!items.length) return null;
   const done = items.filter((i) => i.done).length;
   const cur = items.find((i) => i.current) ?? items.find((i) => !i.done);
   return (
     <div className={"mission" + (conv.completed ? " complete" : "")}>
-      <button className="mission-bar" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <button ref={bar} className="mission-bar" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="mission-count">{done}/{items.length}</span>
         <span className="mission-dots" aria-hidden>{items.map((i) => <i key={i.id} className={i.done ? "d" : i.current ? "c" : ""} />)}</span>
         <span className="mission-now">{conv.completed ? <><Icon name="check" size={17} strokeWidth={2.25} className="done-ico" /> Užduotis įvykdyta!</> : cur ? toImperative(cur.lt) : ""}</span>
@@ -285,6 +299,7 @@ function Mission() {
           {items.map((i) => <li key={i.id} className={i.done ? "d" : i.current ? "c" : ""}><span className="mk"><Icon name={i.done ? "check" : i.current ? "arrowRight" : "ring"} size={16} strokeWidth={i.done ? 2.25 : 2} /></span>{toImperative(i.lt)}</li>)}
         </ol>
       )}
+      {burst > 0 && <Confetti key={burst} from={bar} />}
     </div>
   );
 }

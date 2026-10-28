@@ -113,6 +113,13 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px 13px;
   border: 1px solid rgba(255, 255, 255, 0.75);
 }
+/* a new task: the card pops up with a green glow for a moment */
+.objective-card.fresh { animation: cardpop 1.2s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+@keyframes cardpop {
+  0% { transform: scale(0.94); box-shadow: 0 0 0 0 rgba(58, 167, 109, 0.65), var(--shadow); }
+  35% { transform: scale(1.03); box-shadow: 0 0 0 12px rgba(58, 167, 109, 0), var(--shadow); }
+  100% { transform: none; box-shadow: var(--shadow); }
+}
 .objective-card .kicker { font-size: 12px; font-weight: 900; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; display: flex; gap: 8px; align-items: center; min-height: 20px; }
 .objective-card .kicker-label { display: inline-flex; align-items: center; gap: 6px; }
 .objective-card .collapse-btn {
@@ -439,6 +446,19 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
 .ended-title { font-weight: 900; font-size: 1.12em; margin-bottom: 6px; }
 .ended-sub { color: var(--ink-soft); margin-bottom: 8px; }
+/* a task done: confetti bursts from the task bar (ui/Confetti.tsx) */
+.confetti { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 80; }
+.confetti i {
+  position: absolute; left: -4px; top: -6px; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+  animation-name: confetti; animation-timing-function: cubic-bezier(0.2, 0.7, 0.35, 1); animation-fill-mode: forwards;
+}
+.confetti i.round { width: 9px; height: 9px; border-radius: 50%; }
+@keyframes confetti {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  30% { opacity: 1; transform: translate(calc(var(--x) * 0.55), var(--up)) rotate(calc(var(--r) * 0.4)); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); }
+}
 
 /* ---------- panels (map, journal, phone, settings) ---------- */
 .overlay { position: fixed; inset: 0; z-index: 30; background: rgba(15, 22, 28, 0.45); display: grid; place-items: center; padding: 16px; animation: fadeo 0.2s ease; }
@@ -609,7 +629,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .sheet-body { padding: 14px 14px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .yt-title.phase-you b::before, .ended-badge, .sheet, .loading::after { animation: none; }
+  .yt-title.phase-you b::before, .ended-badge, .sheet, .loading::after, .objective-card.fresh { animation: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }

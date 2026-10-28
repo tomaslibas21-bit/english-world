@@ -41,6 +41,16 @@ function inFrontOf(x: number, z: number, rot: number, d: number) {
   return { x: x + Math.sin(rot) * d, z: z + Math.cos(rot) * d, rot: rot + Math.PI };
 }
 
+/** What people at work do with their hands while they wait for you: wipe the counter, or type (a till, a keyboard,
+ *  the flowers on the stall). The rest look round, shift their weight, scratch their head. */
+const AT_WORK: Record<string, "wipe" | "type"> = {
+  mia: "wipe", marco: "wipe", dot: "wipe", whitaker: "wipe", russo: "wipe",
+  diaz: "type", priya: "type", olivia: "type", chuck: "type", ben: "type", chloe: "type", okafor: "type", aaron: "type",
+  gloria: "type", marco_host: "type", walter: "type", jake: "type", kevin: "type", nina: "type", reyes: "type",
+  carter: "type", marcus: "type", tyler: "type", mrs_lee: "type", brooks: "type", greg: "type", kate: "type", paul: "type",
+  emily: "type",
+};
+
 export class Game implements GameApi {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
@@ -148,7 +158,7 @@ export class Game implements GameApi {
     // passers-by walk between shop doors, the square, the beach and the bus stop
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
-    this.ambient = new Ambient(nav, places, st.settings.quality);
+    this.ambient = new Ambient(nav, places, st.settings.quality, this.town.seats, this.town.colliders);
     this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.dust.group);
     // camera never goes inside buildings
     const boxes = BUILDINGS.map((b) => ({ x0: b.x - b.w / 2 - 0.4, x1: b.x + b.w / 2 + 0.4, z0: b.z - b.d / 2 - 0.4, z1: b.z + b.d / 2 + 0.4, h: b.h + (b.roof === "gable" ? Math.min(b.w, b.d) * 0.32 : 0) + 0.8 }));
@@ -165,6 +175,7 @@ export class Game implements GameApi {
     };
     const prof = st.progress.profile!;
     this.player = createCharacter(prof.look);
+    this.player.fidgets = false;
     this.scene.add(this.player.root);
     await audio.init();
     audio.volume = st.settings.volume;
@@ -296,6 +307,7 @@ export class Game implements GameApi {
       ch.root.position.set(sp.x, 0, sp.z);
       ch.root.rotation.y = sp.rot;
       if (sp.sit) { ch.seatY = sp.seat ?? 0.5; ch.setAnim("sit"); }
+      ch.busy = AT_WORK[sp.npc] ?? null;
       this.npcLayer.add(ch.root);
       const tag = document.createElement("div");
       tag.className = "nametag";
@@ -974,6 +986,8 @@ export class Game implements GameApi {
     const taking = talking ? this.session?.sit.npcs ?? [] : [];
     for (const n of this.npcs) {
       const d = n.ch.root.position.distanceTo(p);
+      // with the player close by, or in the conversation, they stop what they were doing and pay attention
+      n.ch.attentive = d < 5.5 || (talking && (n === this.talkNpc || taking.includes(n.id)));
       if (talking && !n.sit && d < 7 && (n === this.talkNpc || taking.includes(n.id))) {
         // in a conversation the people taking part turn to the player
         const want = Math.atan2(p.x - n.home.x, p.z - n.home.z);
