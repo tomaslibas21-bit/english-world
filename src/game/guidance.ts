@@ -7,6 +7,7 @@ export class Guidance {
   private beacon: THREE.Group;
   private beam: THREE.Mesh;
   private gem: THREE.Mesh;
+  private ring: THREE.Mesh;
   private pts: [number, number][] = [];
   private t = 0;
   visible = true;
@@ -24,19 +25,23 @@ export class Guidance {
     this.beam.position.y = 7;
     this.gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), new THREE.MeshBasicMaterial({ color: "#ffb703" }));
     this.gem.position.y = 3.4;
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.05, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.8, depthWrite: false }));
-    ring.position.y = 0.04;
-    this.beacon.add(this.beam, this.gem, ring);
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.05, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: "#ffd166", transparent: true, opacity: 0.8, depthWrite: false }));
+    this.ring.position.y = 0.04;
+    this.beacon.add(this.beam, this.gem, this.ring);
     this.beacon.visible = false;
     this.group.add(this.beacon);
   }
 
   setPath(pts: [number, number][] | null) { this.pts = pts ?? []; }
-  setBeacon(x: number | null, z?: number, height = 3.4) {
+  /** The beacon over (x, z), its gem at `height`. With `stand` (where to stand to talk to the person under it, across a
+   *  counter), a smaller ring lies there instead of round the beacon's foot. */
+  setBeacon(x: number | null, z?: number, height = 3.4, stand?: { x: number; z: number }) {
     if (x === null || z === undefined) { this.beacon.visible = false; return; }
     this.beacon.visible = true;
     this.beacon.position.set(x, 0, z);
     this.gem.position.y = height;
+    this.ring.position.set(stand ? stand.x - x : 0, 0.04, stand ? stand.z - z : 0);
+    this.ring.scale.setScalar(stand ? 0.6 : 1);
   }
 
   update(dt: number) {

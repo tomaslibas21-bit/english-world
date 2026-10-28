@@ -41,6 +41,18 @@ const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || 
 function inFrontOf(x: number, z: number, rot: number, d: number) {
   return { x: x + Math.sin(rot) * d, z: z + Math.cos(rot) * d, rot: rot + Math.PI };
 }
+/** Where to go to talk to someone standing at `sp`: their `ax/az` when they have one (across a counter, a stall or a
+ *  table; then `person` is where they stand, for the beacon), else their own spot. */
+function talkAt(sp: { x: number; z: number; ax?: number; az?: number }) {
+  return sp.ax !== undefined && sp.az !== undefined ? { x: sp.ax, z: sp.az, person: { x: sp.x, z: sp.z } } : { x: sp.x, z: sp.z };
+}
+/** Close enough to talk to someone (the "Kalbėtis" prompt shows): `talkDist` under this. */
+const TALK_RANGE = 2.9;
+/** How far `p` is from talking to `n`: from them, or from their spot to talk from plus a metre. */
+function talkDist(n: NpcActor, p: THREE.Vector3) {
+  const d = Math.hypot(n.home.x - p.x, n.home.z - p.z);
+  return n.approach ? Math.min(d, Math.hypot(n.approach.x - p.x, n.approach.z - p.z) + 1) : d;
+}
 
 /** What people at work do with their hands while they wait for you: wipe the counter, or type (a till, a keyboard,
  *  the flowers on the stall). The rest look round, shift their weight, scratch their head. */
@@ -484,9 +496,7 @@ export class Game implements GameApi {
   autoWalkToObjective() {
     const tgt = this.objectiveTarget();
     if (!tgt) { useStore.getState().toast({ kind: "info", title: "Ši užduotis atliekama telefonu", body: "Atidaryk telefoną (P) ir paskambink." }); return; }
-    const actor = tgt.kind === "npc" ? this.npcs.find((n) => n.id === tgt.id) : undefined;
-    const to = actor?.approach ?? { x: tgt.x, z: tgt.z };
-    this.walkTo(to.x, to.z, tgt.kind === "npc" ? { kind: "npc", id: tgt.id } : tgt.kind === "door" ? { kind: "door", id: tgt.id } : { kind: "exit" });
+    this.walkTo(tgt.x, tgt.z, tgt.kind === "npc" ? { kind: "npc", id: tgt.id } : tgt.kind === "door" ? { kind: "door", id: tgt.id } : { kind: "exit" });
   }
 
   // ------------------------------------------------------------------ interaction
@@ -765,8 +775,9 @@ export class Game implements GameApi {
     return first;
   }
 
-  /** Where to guide the player right now for the current objective. */
-  objectiveTarget(): { kind: "npc" | "door" | "exit"; id?: string; x: number; z: number; label: string } | null {
+  /** Where to guide the player right now for the current objective; for a person, where to stand to talk to them (their
+   *  `ax/az` across a counter, a stall or a table, with `person` where they stand; else where they stand). */
+  objectiveTarget(): { kind: "npc" | "door" | "exit"; id?: string; x: number; z: number; person?: { x: number; z: number }; label: string } | null {
     const sit = this.currentObjective();
     if (!sit) return null;
     const loc = LOCATIONS[sit.location];
@@ -775,13 +786,13 @@ export class Game implements GameApi {
     if (loc.kind === "outdoor") {
       if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: "Išeiti į lauką" };
       const o = OUTDOOR_NPCS.find((n) => n.npc === sit.npc);
-      return o ? { kind: "npc", id: sit.npc, x: o.x, z: o.z, label: NPCS[sit.npc]?.name ?? "" } : null;
+      return o ? { kind: "npc", id: sit.npc, ...talkAt(o), label: NPCS[sit.npc]?.name ?? "" } : null;
     }
     if (this.zone.id === sit.location && this.zone.interior) {
       const s = npcSpotInterior(this.zone.interior);
       const npc = sit.npc === "sam" || sit.npc === "emma" ? this.chosenDatePartner() : sit.npc;
       const spot = this.zone.interior.npcs.find((n) => n.npc === npc) ?? s;
-      return { kind: "npc", id: spot.npc, x: spot.x, z: spot.z, label: NPCS[spot.npc]?.name ?? "" };
+      return { kind: "npc", id: spot.npc, ...talkAt(spot), label: NPCS[spot.npc]?.name ?? "" };
     }
     if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: "Išeiti į lauką" };
     if (sit.location === "airport") return { kind: "door", id: "airport", x: AIRPORT_EXIT.x, z: AIRPORT_EXIT.z, label: loc.name };
@@ -796,9 +807,16 @@ export class Game implements GameApi {
     const loc = LOCATIONS[sit.location];
     const tgt = this.objectiveTarget();
     st.setHud({ objective: { sitId: sit.id, title: sit.title.lt, goal: sit.goal, where: loc?.lt ?? "", dist: null, angle: null, inside: this.zone.id === sit.location } });
-    if (tgt) this.guidance.setBeacon(tgt.x, tgt.z, tgt.kind === "npc" ? 2.9 : 3.8);
-    else this.guidance.setBeacon(null);
+    this.showBeacon(tgt);
     this.pathT = 0;
+  }
+
+  /** The beacon over the objective's door or person; for someone talked to across a counter (a spot of their own), it
+   *  stays over them and its ring lies on that spot, where the trail ends. */
+  private showBeacon(tgt: ReturnType<Game["objectiveTarget"]>) {
+    if (!tgt) { this.guidance.setBeacon(null); return; }
+    const over = tgt.person ?? tgt;
+    this.guidance.setBeacon(over.x, over.z, tgt.kind === "npc" ? 2.9 : 3.8, tgt.person ? { x: tgt.x, z: tgt.z } : undefined);
   }
 
   // ------------------------------------------------------------------ loop
@@ -850,7 +868,7 @@ export class Game implements GameApi {
       const p = this.player.root.position;
       if (tgt && Math.hypot(tgt.x - p.x, tgt.z - p.z) > 2.2) this.guidance.setPath(this.zone.nav.path(p.x, p.z, tgt.x, tgt.z));
       else this.guidance.setPath(null);
-      if (tgt) this.guidance.setBeacon(tgt.x, tgt.z, tgt.kind === "npc" ? 2.9 : 3.8);
+      if (tgt) this.showBeacon(tgt);
     }
     // camera
     const moving = this.vel.lengthSq() > 0.5;
@@ -937,8 +955,14 @@ export class Game implements GameApi {
         want.set(tx - p.x, 0, tz - p.z).normalize();
         const remaining = d + this.autoPath.slice(1).reduce((a, b, i, arr) => a + (i ? Math.hypot(b[0] - arr[i - 1][0], b[1] - arr[i - 1][1]) : 0), 0);
         speed = remaining > 12 ? RUN : WALK;
-        // arrive next to an NPC rather than on top of them
-        if (this.autoTarget?.kind === "npc" && this.autoPath.length === 1 && d < 1.6) { this.autoPath = []; this.arrived(); want.set(0, 0, 0); }
+        // arrive next to an NPC rather than on top of them (a spot of their own to talk from, across a counter or a
+        // table, is walked onto); and, held up on the way (walking but getting nowhere: someone in the way), as soon
+        // as they are close enough to talk to
+        if (this.autoTarget?.kind === "npc") {
+          const a = this.npcs.find((n) => n.id === this.autoTarget!.id);
+          const heldUp = this.vel.lengthSq() > 4 && this.lastSpeed < 0.5;
+          if ((this.autoPath.length === 1 && d < 1.6 && !a?.approach) || (a && heldUp && talkDist(a, p) < TALK_RANGE)) { this.autoPath = []; this.arrived(); want.set(0, 0, 0); }
+        }
       }
     }
     const target = want.multiplyScalar(speed);
@@ -1113,9 +1137,8 @@ export class Game implements GameApi {
     let bd = Infinity;
     if (!this.session?.active) {
       for (const n of this.npcs) {
-        let d = Math.hypot(n.home.x - p.x, n.home.z - p.z);
-        if (n.approach) d = Math.min(d, Math.hypot(n.approach.x - p.x, n.approach.z - p.z) + 1);
-        if (d < 2.9 && d < bd) { bd = d; best = { kind: "npc", id: n.id, label: NPCS[n.id]?.name ?? n.id }; }
+        const d = talkDist(n, p);
+        if (d < TALK_RANGE && d < bd) { bd = d; best = { kind: "npc", id: n.id, label: NPCS[n.id]?.name ?? n.id }; }
       }
       if (!this.zone.interior) {
         for (const dd of this.town.doors) {

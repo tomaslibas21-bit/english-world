@@ -6,7 +6,9 @@ import { STYLED } from "../style";
 import { carParts } from "./car";
 import { floorMaterial, floorColor } from "./styled";
 
-/** `ax/az`: where the player stops to talk, when that is not simply in front of the person (e.g. across a table).
+/** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
+ *  there), when that is not simply in front of the person: across a table, or across a counter, 0.6 m in front of it
+ *  (without one, the walk to a clerk goes round the end of the counter to them).
  *  `seat`: the height of the seat top for someone sitting (0.5 m when not given). */
 export interface NpcSpot { npc: string; x: number; z: number; rot: number; sit?: boolean; seat?: number; ax?: number; az?: number }
 export interface Interior {
@@ -553,7 +555,7 @@ const B: Record<string, () => Interior> = {
     plant(c, -7.2, -5.2); plant(c, 7.2, 5, 0.8);
     lamp(c, -3, -1.5); lamp(c, 0, -1.5); lamp(c, 3.6, 0.8);
     rug(c, 0, 1, 6, 3.5, "#e8c07a");
-  }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0 }], { floorKind: "wood", accent: "#8a5a3c", warm: true }),
+  }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0, ax: -1.2, az: -2.05 }], { floorKind: "wood", accent: "#8a5a3c", warm: true }),
 
   trattoria: () => room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
     c.M.add("host-stand", mat("#5a3a2a"), boxGeo(0.9, 1.1, 0.6, -5.5, 0.55, 4.2)); c.col.addBox(-5.5, 4.2, 0.9, 0.6);
@@ -613,7 +615,7 @@ const B: Record<string, () => Interior> = {
     rug(c, 0, 4.9, 3, 1.4, "#8e6bb0");
     lamp(c, -4, 0.8, 3.4); lamp(c, 1, 2, 3.4); lamp(c, 4.6, -2, 3.4);
     S.done();
-  }, [{ npc: "chloe", x: 4.4, z: -4.6, rot: 0 }], { floorKind: "wood", accent: "#6b4a8a" }),
+  }, [{ npc: "chloe", x: 4.4, z: -4.6, rot: 0, ax: 4.4, az: -2.5 }], { floorKind: "wood", accent: "#6b4a8a" }),
 
   pharmacy: () => room("pharmacy", 14, 12, "#e8ecef", "#f4faf7", (c) => {
     const goods = ["#ffffff", "#e45b4f", "#4a7bb7", "#6fbf73", "#f2c14e", "#b5838d"];
@@ -659,7 +661,7 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(2.6, 5.2, 0.55, 0.4);
     lamp(c, -4.5, 1.2, 3.4); lamp(c, 1, -1.5, 3.4); lamp(c, 3.7, 3, 3.4);
     S.done();
-  }, [{ npc: "okafor", x: 1, z: -4.8, rot: 0 }], { floorKind: "tile", accent: "#2e8b57" }),
+  }, [{ npc: "okafor", x: 1, z: -4.8, rot: 0, ax: 1, az: -2.7 }], { floorKind: "tile", accent: "#2e8b57" }),
 
   salon: () => room("salon", 12, 10, "#f0e6e8", "#fdf0f4", (c) => {
     for (const sx of [-3, 1]) {
@@ -771,7 +773,7 @@ const B: Record<string, () => Interior> = {
     plant(c, -7.2, 5.1, 1); plant(c, -7.3, -5.2, 1.1);
     lamp(c, -3.6, 0.3, 3.4); lamp(c, 3.6, 0.3, 3.4); lamp(c, 6.3, 2.9, 3.3);
     S.done();
-  }, [{ npc: "aaron", x: 0, z: -4.8, rot: 0 }], { floorKind: "stone", accent: "#1f4f8a" }),
+  }, [{ npc: "aaron", x: 0, z: -4.8, rot: 0, ax: 0, az: -2.65 }], { floorKind: "stone", accent: "#1f4f8a" }),
 
   "post-office": () => room("post-office", 14, 11, "#d8dde6", "#eef2f8", (c) => {
     counter(c, 0, -3.4, 7, 1.1, "#2c4f8f", "#eef2f8");
@@ -838,7 +840,7 @@ const B: Record<string, () => Interior> = {
     wallPanel(c, postPoster("postcard"), c.w / 2 - 0.03, 2.1, 1.6, 1.0, 1.3, -Math.PI / 2);
     lamp(c, -3.5, 0.6, 3.4); lamp(c, 3.5, 0.6, 3.4);
     S.done();
-  }, [{ npc: "gloria", x: 0, z: -4.4, rot: 0 }], { floorKind: "tile", accent: "#2c4f8f" }),
+  }, [{ npc: "gloria", x: 0, z: -4.4, rot: 0, ax: 0, az: -2.25 }], { floorKind: "tile", accent: "#2c4f8f" }),
 
   hotel: () => room("hotel", 22, 16, "#b89f86", "#f3e8d8", (c) => {
     counter(c, 0, -4.6, 7, 1.2, "#7d5a44", "#e9d8c4");
@@ -869,7 +871,7 @@ const B: Record<string, () => Interior> = {
       c.M.add("suitcase-" + sc, mat(sc), boxGeo(0.46, sh, 0.7, sx, sy, -3.1));
     c.col.addBox(5.1, -3.1, 1.4, 1.4);
     plant(c, 10, -6.5, 1.3);
-  }, [{ npc: "olivia", x: 0, z: -5.6, rot: 0 }], { floorKind: "stone", accent: "#7d5a44", warm: true }),
+  }, [{ npc: "olivia", x: 0, z: -5.6, rot: 0, ax: 0, az: -3.4 }], { floorKind: "stone", accent: "#7d5a44", warm: true }),
 
   "visitor-center": () => room("visitor-center", 14, 12, "#b8c9b0", "#f1f6ec", (c) => {
     counter(c, 0, -3.3, 5, 1, "#2f6b4f", "#f4f1ea");
@@ -945,7 +947,7 @@ const B: Record<string, () => Interior> = {
     plant(c, -6.3, -5.2, 1.1); plant(c, 2.2, 4.9, 0.8);
     lamp(c, -2.0, 1.5, 3.3); lamp(c, 3.4, 0.4, 3.4);
     S.done();
-  }, [{ npc: "chuck", x: 0, z: -4.2, rot: 0 }], { floorKind: "wood", accent: "#2f6b4f" }),
+  }, [{ npc: "chuck", x: 0, z: -4.2, rot: 0, ax: 0, az: -2.2 }], { floorKind: "wood", accent: "#2f6b4f" }),
 
   museum: () => room("museum", 26, 20, "#d7d0c4", "#f7f4ee", (c) => {
     counter(c, -7, 3.5, 4, 1, "#9c8f7a", "#f7f4ee");
@@ -967,7 +969,7 @@ const B: Record<string, () => Interior> = {
     c.M.add("rope", mat("#8a1f2a"), boxGeo(12.6, 0.06, 0.06, -2.7, 0.9, -c.d / 2 + 1.6), false);
     c.col.addBox(-2.7, -c.d / 2 + 1.6, 12.6, 0.3);
     lamp(c, -6, -6); lamp(c, 0, -6); lamp(c, 6, 3);
-  }, [{ npc: "ben", x: -7, z: 2.5, rot: Math.PI }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
+  }, [{ npc: "ben", x: -7, z: 2.5, rot: 0, ax: -7, az: 4.6 }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
 
   station: () => room("station", 26, 18, "#c8b8a0", "#efe3d0", (c) => {
     counter(c, -6, -6, 6, 1.1, "#7a2e2e", "#efe3d0");
@@ -1036,7 +1038,7 @@ const B: Record<string, () => Interior> = {
     for (const [bx, bz] of [[5.0, 1.0], [-7.0, 5.2]]) { S.add(cylGeo(0.24, 0.22, 0.75, bx, 0.375, bz, 12), "#5a646e"); S.add(cylGeo(0.26, 0.26, 0.05, bx, 0.77, bz, 12), "#3a3d42"); c.col.addCircle(bx, bz, 0.26); }
     plant(c, -12.1, 8.1, 1.2); plant(c, 12.1, 8.1, 1.2);
     S.done();
-  }, [{ npc: "walter", x: -6, z: -7, rot: 0 }, { npc: "denise", x: 9, z: -1.2, rot: -Math.PI / 2 }], { floorKind: "stone", accent: "#7a2e2e" }),
+  }, [{ npc: "walter", x: -6, z: -7, rot: 0, ax: -6, az: -4.85 }, { npc: "denise", x: 9, z: -1.2, rot: -Math.PI / 2 }], { floorKind: "stone", accent: "#7a2e2e" }),
 
   airport: () => room("airport", 44, 26, "#d7dde3", "#f2f5f8", (c) => {
     // arrivals (west): passport booths, carousel, baggage desk
@@ -1082,10 +1084,10 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 6; i++) lamp(c, -18 + i * 7, -2, 3.6);
   }, [
     { npc: "diaz", x: -14, z: -8.7, rot: 0 },
-    { npc: "priya", x: -4, z: -9.3, rot: 0 },
-    { npc: "kevin", x: 6, z: -9.3, rot: 0 },
+    { npc: "priya", x: -4, z: -9.3, rot: 0, ax: -4, az: -7.1 },
+    { npc: "kevin", x: 6, z: -9.3, rot: 0, ax: 6, az: -7.1 },
     { npc: "grant", x: 15.8, z: 0.4, rot: -Math.PI / 2 },
-    { npc: "nina", x: 18.5, z: -9.4, rot: 0 },
+    { npc: "nina", x: 18.5, z: -9.4, rot: 0, ax: 18.5, az: -7.35 },
   ], { floorKind: "tile", accent: "#2b5d8a" }),
 
   "car-rental": () => room("car-rental", 14, 10, "#dfe7e3", "#f1f8f5", (c) => {
@@ -1116,7 +1118,7 @@ const B: Record<string, () => Interior> = {
     wallPanel(c, townMap(), -c.w / 2 + 0.03, 2.1, -0.4, 2.4, 1.6, Math.PI / 2);
     lamp(c, -3, 0, 3.4); lamp(c, 3, 0, 3.4);
     S.done();
-  }, [{ npc: "jake", x: 0, z: -3.8, rot: 0 }], { floorKind: "tile", accent: "#1f8a70" }),
+  }, [{ npc: "jake", x: 0, z: -3.8, rot: 0, ax: 0, az: -1.7 }], { floorKind: "tile", accent: "#1f8a70" }),
 
   "gas-station": () => room("gas-station", 14, 10, "#dcdcd6", "#f6f1ea", (c) => {
     counter(c, -3, -2.8, 4, 1, "#d94b3d", "#f4f4f4");
@@ -1154,7 +1156,7 @@ const B: Record<string, () => Interior> = {
     sign(c, "Fresh Coffee", -6, 2.7, -c.d / 2 + 0.2, 1.8, "#6b3e26", "#ffffff");
     lamp(c, -3, -1, 3.4); lamp(c, 2, 1.4, 3.4); lamp(c, -5.6, 2.4, 3.4);
     S.done();
-  }, [{ npc: "dot", x: -3, z: -3.8, rot: 0 }], { floorKind: "tile", accent: "#d94b3d" }),
+  }, [{ npc: "dot", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }], { floorKind: "tile", accent: "#d94b3d" }),
 
   police: () => room("police", 12, 10, "#c9ced6", "#eef1f5", (c) => {
     counter(c, 0, -2.6, 5, 1.1, "#2a3f66", "#e6e9ee");
@@ -1195,7 +1197,7 @@ const B: Record<string, () => Interior> = {
     coatRack(c, S, -5.4, 4.3);
     lamp(c, -3, 0.8, 3.4); lamp(c, 3, 0.8, 3.4);
     S.done();
-  }, [{ npc: "reyes", x: 0, z: -3.6, rot: 0 }], { floorKind: "tile", accent: "#2a3f66" }),
+  }, [{ npc: "reyes", x: 0, z: -3.6, rot: 0, ax: 0, az: -1.45 }], { floorKind: "tile", accent: "#2a3f66" }),
 
   apartments: () => room("apartments", 20, 14, "#b58b62", "#f5efe6", (c) => {
     // hallway (west) with Rita's door, and the vacant apartment (east)
@@ -1490,7 +1492,7 @@ const B: Record<string, () => Interior> = {
       c.M.add("cart-handle", mat("#d9452b"), boxGeo(0.07, 0.07, 0.62, cx - 0.47, 1.12, 6.2));
     }
     c.col.addBox(-6.4, 6.2, 1.4, 0.7);
-  }, [{ npc: "marcus", x: -2.6, z: 0.85, rot: 0 }], { floorKind: "tile", accent: "#23704a" }),
+  }, [{ npc: "marcus", x: -2.6, z: 0.85, rot: 0, ax: -2.6, az: 2.85 }], { floorKind: "tile", accent: "#23704a" }),
 
   // Harbor Fitness: treadmills under the back windows, the bench press and dumbbells by the mirror, mats and
   // balls on the west side, the front desk by the door, the locker-room door at the back. Jordan waits by the bench.

@@ -68,6 +68,7 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
   ],
   // visitors in front of the paintings
   museum: [{ x: -4.8, z: -7.3, rot: P }, { x: -0.6, z: -7.3, rot: P + 0.2 }, { x: -11.3, z: -1, rot: -P / 2 }],
-  // passengers queuing at check-in, one waiting at the baggage desk
-  airport: [{ x: 6, z: -6.8, rot: P, carry: "bag" }, { x: 6.2, z: -5.6, rot: P, carry: "bag" }, { x: -4, z: -7, rot: P }],
+  // passengers queuing at check-in and one waiting at the baggage desk, a step back and to the side: clear of where the
+  // player stands at each counter to talk (Kevin's and Priya's ax/az in interiors.ts) and of the way there from the door
+  airport: [{ x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -2.3, z: -6.7, rot: P }],
 };
