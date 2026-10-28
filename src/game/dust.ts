@@ -20,7 +20,7 @@ export class Dust {
     x.fillRect(0, 0, 64, 64);
     const tex = new THREE.CanvasTexture(c);
     for (let i = 0; i < 10; i++) {
-      const m = new THREE.SpriteMaterial({ map: tex, color: "#e9dfcd", transparent: true, depthWrite: false, opacity: 0 });
+      const m = new THREE.SpriteMaterial({ map: tex, color: "#c9b99c", transparent: true, depthWrite: false, opacity: 0 });
       const s = new THREE.Sprite(m);
       s.visible = false;
       this.group.add(s);
@@ -51,7 +51,7 @@ export class Dust {
       p.s.position.z += p.vz * dt;
       p.s.position.y += dt * 0.35;
       p.s.scale.setScalar((0.25 + t * 0.75) * p.s.userData.size);
-      p.m.opacity = 0.42 * (1 - t) * Math.min(1, t * 6);
+      p.m.opacity = 0.55 * (1 - t) * Math.min(1, t * 6);
     }
   }
 }

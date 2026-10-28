@@ -1,5 +1,6 @@
 // Interiors: dollhouse-style rooms (back and side walls, a low front wall) seen from the entrance.
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { floorMaterial, floorColor } from "./styled";
@@ -43,6 +44,30 @@ function outside(w: number, d: number) {
   const m = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
   m.receiveShadow = true;
   m.name = "outside";
+  return m;
+}
+
+let shadeMat: THREE.MeshBasicMaterial | null = null;
+/** A soft darkening of the floor along the back and side walls (where light reaches less), so a room's floor
+ *  meets its walls instead of looking pasted on. One mesh; the gradient is made from numbers. */
+function wallShade(w: number, d: number) {
+  if (!shadeMat) {
+    const H = 32, px = new Uint8Array(H * 4);
+    for (let i = 0; i < H; i++) { const v = i / (H - 1); px[i * 4 + 3] = Math.round(255 * v * v); }
+    const tex = new THREE.DataTexture(px, 1, H, THREE.RGBAFormat);
+    tex.magFilter = tex.minFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    shadeMat = new THREE.MeshBasicMaterial({ map: tex, color: "#2a2018", transparent: true, opacity: 0.32, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  }
+  const D = 0.9, y = 0.005;
+  const strips = [
+    new THREE.PlaneGeometry(w, D).rotateX(-Math.PI / 2).translate(0, y, -d / 2 + D / 2),
+    new THREE.PlaneGeometry(d, D).rotateX(-Math.PI / 2).rotateY(Math.PI / 2).translate(-w / 2 + D / 2, y, 0),
+    new THREE.PlaneGeometry(d, D).rotateX(-Math.PI / 2).rotateY(-Math.PI / 2).translate(w / 2 - D / 2, y, 0),
+  ];
+  const m = new THREE.Mesh(mergeGeometries(strips, false)!, shadeMat);
+  m.name = "wall-shade";
+  m.renderOrder = 1;
   return m;
 }
 
@@ -106,6 +131,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
   g.add(outside(w, d));
+  g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
   build({ M, col, g, w, d, r, anim });
   M.build(g);
@@ -429,6 +455,17 @@ const B: Record<string, () => Interior> = {
     plant(c, -10, -6.5, 1.2); plant(c, 10, 6.5, 1); plant(c, 3.6, -5.2, 0.8);
     lamp(c, 0, -2, 3.2); lamp(c, -5, 3, 3.2);
     framedArt(c, 1, -7, 2.4, -c.d / 2 + 0.2, 2.2, 1.5);
+    // the east half: a second seating corner by the elevators, a luggage cart, a tall plant
+    sofa(c, 7.2, 4.6, "#8a2f3b", Math.PI); sofa(c, 9.4, 2.4, "#8a2f3b", -Math.PI / 2);
+    table(c, 7.4, 2.6, { round: true, cloth: "#c9a27a", chairs: 0 });
+    rug(c, 7.8, 3.2, 4.4, 3.6, "#2d5d5b");
+    for (const [px, pz] of [[4.6, -2.6], [5.6, -2.6], [4.6, -3.6], [5.6, -3.6]] as [number, number][]) c.M.add("cart-post", mat("#c9a227"), cylGeo(0.03, 0.03, 1.7, px, 0.95, pz, 6), false);
+    c.M.add("cart-base", mat("#7d5a44"), boxGeo(1.3, 0.12, 1.3, 5.1, 0.2, -3.1));
+    c.M.add("cart-top", mat("#c9a227"), new THREE.TorusGeometry(0.62, 0.03, 6, 20).rotateX(Math.PI / 2).translate(5.1, 1.8, -3.1), false);
+    for (const [sx, sy, sh, sc] of [[4.85, 0.55, 0.62, "#2f4a6b"], [5.35, 0.5, 0.5, "#8a2f3b"], [5.0, 1.0, 0.36, "#c4a35a"]] as [number, number, number, string][])
+      c.M.add("suitcase-" + sc, mat(sc), boxGeo(0.46, sh, 0.7, sx, sy, -3.1));
+    c.col.addBox(5.1, -3.1, 1.4, 1.4);
+    plant(c, 10, -6.5, 1.3);
   }, [{ npc: "olivia", x: 0, z: -5.6, rot: 0 }], { floorKind: "stone", accent: "#7d5a44", warm: true }),
 
   "visitor-center": () => room("visitor-center", 14, 12, "#b8c9b0", "#f1f6ec", (c) => {

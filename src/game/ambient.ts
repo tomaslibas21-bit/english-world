@@ -197,6 +197,13 @@ export class Ambient {
     if (toEnd <= 0) { c.mesh.visible = false; c.hidden = 2 + this.r() * 6; }
   }
 
+  /** How loud the traffic is where the player stands (0–1): the cars in sight, louder the nearer and faster. */
+  carNoise(px: number, pz: number) {
+    let n = 0;
+    for (const c of this.cars) if (c.hidden <= 0 && this.group.visible) n += Math.max(0, 1 - Math.hypot(c.x - px, c.lane - pz) / 28) * (0.4 + 0.6 * Math.min(1, c.speed / 7));
+    return Math.min(1, n);
+  }
+
   /** Keep the player out of the cars. */
   resolvePlayer(p: THREE.Vector3, r: number) {
     for (const c of this.cars) {

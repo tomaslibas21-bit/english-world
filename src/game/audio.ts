@@ -166,6 +166,58 @@ export class AudioSystem {
   }
 
   private noise: AudioBuffer | null = null;
+  /** The town's sound around the player (see ambience). */
+  private amb: { sea: GainNode; traffic: GainNode; nextGull: number } | null = null;
+
+  /** The town's own sound, made on the spot (no files) and quiet: the sea, louder near the beach and swelling slowly;
+   *  gulls now and then by the harbour; a low hum of passing cars. `on` false (indoors, in a conversation) fades it out.
+   *  Called a few times a second with the levels for where the player is (0–1). */
+  ambience(on: boolean, sea: number, traffic: number, gulls: boolean) {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== "running") return; // only once a click or key has started the sound
+    if (!this.amb) {
+      const loop = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = loop.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const chain = (freq: number) => {
+        const src = ctx.createBufferSource(); src.buffer = loop; src.loop = true;
+        const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq;
+        const g = ctx.createGain(); g.gain.value = 0;
+        src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+        return g;
+      };
+      this.amb = { sea: chain(520), traffic: chain(170), nextGull: ctx.currentTime + 4 };
+    }
+    const now = ctx.currentTime, v = on ? this.volume : 0;
+    // the sea swells and draws back over about eight seconds
+    const swell = 0.62 + 0.38 * Math.sin(now * 0.78) * (0.75 + 0.25 * Math.sin(now * 0.21));
+    this.amb.sea.gain.setTargetAtTime(v * 0.06 * sea * swell, now, 0.25);
+    this.amb.traffic.gain.setTargetAtTime(v * 0.05 * traffic, now, 0.4);
+    if (on && gulls && now > this.amb.nextGull) {
+      this.amb.nextGull = now + 6 + Math.random() * 9;
+      const calls = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < calls; k++) this.gull(now + k * 0.42, v * 0.035 * Math.max(0.4, sea));
+    }
+  }
+
+  /** One gull's "kee-ow": a falling, wavering cry. */
+  private gull(at: number, vol: number) {
+    const ctx = this.ctx!;
+    const o = ctx.createOscillator(); o.type = "triangle";
+    const top = 1350 + Math.random() * 350;
+    o.frequency.setValueAtTime(top * 0.85, at);
+    o.frequency.linearRampToValueAtTime(top, at + 0.06);
+    o.frequency.exponentialRampToValueAtTime(top * 0.7, at + 0.34);
+    const wob = ctx.createOscillator(); wob.frequency.value = 26;
+    const wg = ctx.createGain(); wg.gain.value = 45;
+    wob.connect(wg); wg.connect(o.frequency);
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = top; f.Q.value = 1.6;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.38);
+    o.connect(f); f.connect(g); g.connect(ctx.destination);
+    o.start(at); wob.start(at); o.stop(at + 0.42); wob.stop(at + 0.42);
+  }
   /** One footstep: a short burst of filtered noise, a little different each time (lower and softer indoors). */
   step(indoor: boolean, run: boolean) {
     const ctx = this.ac();

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF } from "./world/layout";
+import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z } from "./world/layout";
 import { createCharacter, setBlobShadows, type GameCharacter } from "./characters";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
@@ -836,7 +836,14 @@ export class Game implements GameApi {
       this.updateTags();
     }
     this.hudT -= dt;
-    if (this.hudT <= 0) { this.hudT = 0.12; this.updateHud(); }
+    if (this.hudT <= 0) {
+      this.hudT = 0.12;
+      this.updateHud();
+      // the town's sound: the sea louder towards the beach, gulls near the harbour, the cars' hum; quiet indoors and
+      // while someone is talking
+      const pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
+      audio.ambience(!this.zone.interior && !talking && !st.hud.panel, sea, this.zone.interior ? 0 : this.ambient.carNoise(this.player.root.position.x, pz), sea > 0.4);
+    }
     // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
     // 1.2 s standing still
     if (this.vel.lengthSq() > 1) { this.moveT += dt; this.stillT = 0; } else { this.stillT += dt; this.moveT = 0; }

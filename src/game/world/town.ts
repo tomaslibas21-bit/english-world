@@ -124,6 +124,7 @@ export function buildTown(): Town {
     group, colliders, doors, groundCanvas,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
+      wind.value = t;
       for (const c of clouds) {
         c.position.x += dt * c.userData.v;
         if (c.position.x > 260) c.position.x = -200;
@@ -180,11 +181,29 @@ function withGrain(m: THREE.MeshLambertMaterial) {
   return m;
 }
 
+/** The wind in the trees: the crown sways a little, more towards the top, each tree in its own time (the instance's
+ *  position sets the phase). The time comes from `windTime` (TownWorld.update). */
+const wind = { value: 0 };
+function swaying(m: THREE.MeshLambertMaterial) {
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uWind = wind;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWind;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+        #ifdef USE_INSTANCING
+          float sway = max(0.0, position.y - 2.2) * 0.055;
+          vec2 ip = vec2(instanceMatrix[3][0], instanceMatrix[3][2]);
+          transformed.x += sin(uWind * 1.1 + ip.x * 0.31 + ip.y * 0.17) * sway;
+          transformed.z += cos(uWind * 0.85 + ip.x * 0.19 - ip.y * 0.23) * sway * 0.7;
+        #endif`);
+  };
+  return m;
+}
+
 /** Road markings and the plaza's tile lines as thin flat geometry (one mesh per colour), sharp at any distance: the
  *  ground texture has 6 px a metre, so lines thinner than a pixel smeared. Lines stop short of the crossings. */
 function addMarkings(group: THREE.Group) {
   const P = GROUND_BLOCKS, Y = 0.012;
-  const parts: Record<string, THREE.BufferGeometry[]> = { center: [], white: [], plaza: [] };
+  const parts: Record<string, THREE.BufferGeometry[]> = { center: [], white: [], plaza: [], curb: [] };
   const quad = (key: string, cx: number, cz: number, w: number, d: number) => parts[key].push(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2).translate(cx, Y, cz));
   const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
   // the crossings and their crosswalks: no lane lines there
@@ -212,6 +231,21 @@ function addMarkings(group: THREE.Group) {
       const [cx, cz] = at(u + 1.25, 0);
       quad("center", cx, cz, horiz ? 2.5 : 0.18, horiz ? 0.18 : 2.5);
     }
+    // a low kerb where the road meets the pavement (a sharp edge instead of the ground texture's blur), with gaps at
+    // the crossings like kerb ramps
+    for (const side of [-(rd.w / 2 + 0.06), rd.w / 2 + 0.06]) {
+      let start: number | null = null;
+      const flush = (end: number) => {
+        if (start === null || end - start < 0.5) return;
+        const [cx, cz] = at((start + end) / 2, side);
+        parts.curb.push(new THREE.BoxGeometry(horiz ? end - start : 0.14, 0.07, horiz ? 0.14 : end - start).translate(cx, 0.035, cz));
+      };
+      for (let u = a; u <= b; u += 1) {
+        const [px, pz] = at(Math.min(u + 0.5, b), side);
+        if (free(px, pz)) { if (start === null) start = u; } else { flush(u); start = null; }
+      }
+      flush(b);
+    }
     // white edge lines half a metre in from each side, in 1 m pieces that leave out the crossings
     for (const side of [-(rd.w / 2 - 0.5), rd.w / 2 - 0.5]) {
       let start: number | null = null;
@@ -231,7 +265,7 @@ function addMarkings(group: THREE.Group) {
   const plazaLine = new THREE.Color(P.plaza).lerp(new THREE.Color(160 / 255, 140 / 255, 110 / 255), 0.35);
   for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) quad("plaza", gx, (SQUARE.z1 + SQUARE.z2) / 2, 0.06, SQUARE.z2 - SQUARE.z1);
   for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) quad("plaza", (SQUARE.x1 + SQUARE.x2) / 2, gz, SQUARE.x2 - SQUARE.x1, 0.06);
-  const colors: Record<string, THREE.ColorRepresentation> = { center: P.centerLine, white: "#f4f4f0", plaza: plazaLine };
+  const colors: Record<string, THREE.ColorRepresentation> = { center: P.centerLine, white: "#f4f4f0", plaza: plazaLine, curb: "#cbc5b8" };
   for (const [key, geos] of Object.entries(parts)) {
     if (!geos.length) continue;
     // drawn over the ground (no fighting with it far away), lit and shadowed like it
@@ -362,6 +396,8 @@ function faceInfo(b: BuildingDef) {
 }
 
 function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number) {
+  // the details added later (roof kit, chimneys) draw from their own sequence, so `r`'s draws stay as they were
+  const dr = rand([...b.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 100000 + 911);
   const wallMat = mat(b.color);
   const trimMat = mat(b.trim ?? "#6b6b6b");
   const glassMat = mat("#9ccbe6", { emissive: "#1b3a4c" });
@@ -424,9 +460,39 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     g.rotateY(b.face === "n" || b.face === "s" ? Math.PI / 2 : 0);
     g.translate(b.x, b.h, b.z);
     M.add(`roof-${b.roofColor}`, mat(b.roofColor ?? "#6b4f3a", { flat: true }), g);
+    // a ridge cap along the top, and on a house a brick chimney through one slope
+    const alongX = b.face === "n" || b.face === "s", top = b.h + rd * 0.32;
+    M.add("roof-ridge", mat("#4a3b30", { flat: true }), boxGeo(alongX ? rw + 0.9 : 0.26, 0.14, alongX ? 0.26 : rw + 0.9, b.x, top + 0.02, b.z), false);
+    if (b.style === "house") {
+      const u = (dr() < 0.5 ? -1 : 1) * rw * 0.28, v = rd * 0.16, ch = rd * 0.32 + 1.1;
+      const [cx, cz] = alongX ? [b.x + u, b.z + v] : [b.x + v, b.z + u];
+      M.add("chimney", mat("#9a4f3c", { flat: true }), boxGeo(0.7, ch, 0.7, cx, b.h + ch / 2 - 0.2, cz));
+      M.add("chimney-cap", mat("#5b5550"), boxGeo(0.86, 0.12, 0.86, cx, b.h + ch - 0.14, cz), false);
+    }
   } else {
     M.add("roof-flat", mat("#8f8c86"), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + 0.02, b.z), false);
     if (r() < 0.7 && b.h < 14) M.add("roof-box", mat("#a6a39c"), boxGeo(2.2, 1.2, 1.6, b.x + (r() - 0.5) * b.w * 0.5, b.h + 0.6, b.z + (r() - 0.5) * b.d * 0.4));
+    // what a flat roof carries: a few vents, a hatch, an air-conditioning unit with its fan, and on a taller block a
+    // water tank on legs (kept back from the edges)
+    const spot = (m = 1.6): [number, number] => [b.x + (dr() - 0.5) * Math.max(0, b.w - 2 * m), b.z + (dr() - 0.5) * Math.max(0, b.d - 2 * m)];
+    for (let k = 0; k < 2 + Math.floor(dr() * 3); k++) {
+      const [vx, vz] = spot();
+      M.add("roof-vent", mat("#8b9096"), cylGeo(0.16, 0.16, 0.6, vx, b.h + 0.36, vz, 8), false);
+      M.add("roof-vent", mat("#8b9096"), cylGeo(0.26, 0.26, 0.08, vx, b.h + 0.7, vz, 8), false);
+    }
+    const [hx, hz] = spot(2);
+    M.add("roof-box", mat("#a6a39c"), boxGeo(0.9, 0.3, 0.9, hx, b.h + 0.2, hz), false);
+    if (b.w > 7 && b.d > 6) {
+      const [ax, az] = spot(2.2);
+      M.add("roof-box", mat("#a6a39c"), boxGeo(1.5, 0.8, 1.1, ax, b.h + 0.45, az));
+      M.add("roof-fan", mat("#4b4f54"), cylGeo(0.42, 0.42, 0.04, ax, b.h + 0.87, az, 14), false);
+    }
+    if (b.h > 9 && dr() < 0.6) {
+      const [tx2, tz2] = spot(2.4);
+      for (const [lx, lz] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) M.add("tank-legs", mat("#55595e"), cylGeo(0.05, 0.05, 1.2, tx2 + lx, b.h + 0.6, tz2 + lz, 5), false);
+      M.add("tank", mat("#9b6b4a", { flat: true }), cylGeo(0.85, 0.85, 1.6, tx2, b.h + 2.0, tz2, 12));
+      M.add("tank-top", mat("#6b4f3a", { flat: true }), new THREE.ConeGeometry(0.95, 0.6, 12).translate(tx2, b.h + 3.1, tz2));
+    }
   }
 
   // door
@@ -437,6 +503,14 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const doorMat = b.style === "house" ? mat(b.trim === "#ffffff" ? "#8a5a44" : b.trim!) : darkGlass;
   M.add(`door-${key}`, doorMat, boxGeo(doorW, 2.5, 0.15, 0, 1.25, 0, 0).rotateY(rotY).translate(dx + n[0] * 0.05, 0, dz + n[1] * 0.05));
   M.add(`trim-${b.trim}`, trimMat, boxGeo(doorW + 0.4, 0.25, 0.25, 0, 2.62, 0).rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08));
+  const atDoor = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08);
+  for (const sd of [-1, 1]) M.add(`trim-${b.trim}`, trimMat, atDoor(boxGeo(0.14, 2.5, 0.22, sd * (doorW / 2 + 0.07), 1.25, 0)), false);
+  if (b.style === "house") M.add("door-handle", mat("#c9a54a"), atDoor(boxGeo(0.07, 0.07, 0.1, doorW * 0.36, 1.05, 0.06)), false);
+  else M.add("door-handle", mat("#c9ced3"), atDoor(boxGeo(doorW * 0.7, 0.06, 0.08, 0, 1.05, 0.08)), false);
+  if (b.style !== "terminal" && b.style !== "station") {
+    M.add("wall-lamp", mat("#3a3d42"), atDoor(boxGeo(0.2, 0.3, 0.16, doorW / 2 + 0.5, 2.25, 0.06)), false);
+    M.add("lamp-warm", mat("#ffe6b0", { emissive: "#9c7a2a" }), atDoor(boxGeo(0.14, 0.2, 0.06, doorW / 2 + 0.5, 2.25, 0.14)), false);
+  }
   if (b.loc) {
     const out = 2.2;
     doors.push({ loc: b.loc, bid: b.id, x: dx, z: dz, face: b.face, name: b.sign || b.loc, outX: dx + n[0] * out, outZ: dz + n[1] * out, rot: Math.atan2(n[0], n[1]) });
@@ -925,9 +999,13 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
 
   const n = spots.length;
   const trunkGeo = STYLED ? trunkGeometry() : new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0);
-  const leafGeo = STYLED ? canopyGeometry() : new THREE.IcosahedronGeometry(1.6, 1).translate(0, 3.3, 0);
+  const leafGeo = STYLED ? canopyGeometry() : mergeGeometries([
+    new THREE.IcosahedronGeometry(1.6, 1).translate(0, 3.3, 0),
+    new THREE.IcosahedronGeometry(1.05, 1).translate(0.35, 4.45, -0.2),
+    new THREE.IcosahedronGeometry(0.9, 0).translate(-0.85, 3.7, 0.55),
+  ], false)!;
   const trunks = new THREE.InstancedMesh(trunkGeo, mat("#7a5236"), n);
-  const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : new THREE.MeshLambertMaterial({ flatShading: true }), n);
+  const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : swaying(new THREE.MeshLambertMaterial({ flatShading: true })), n);
   const palette = ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   spots.forEach(([x, z, sc], i) => {
