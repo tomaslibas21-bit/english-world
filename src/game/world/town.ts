@@ -29,6 +29,7 @@ export function buildTown(): Town {
   const doors: Door[] = [];
   const M = new Merger();
   const r = rand(7);
+  sprays.length = 0; // a new game builds a new town
 
   // --- ground -------------------------------------------------------------
   const groundCanvas = drawGround();
@@ -113,7 +114,7 @@ export function buildTown(): Town {
   colliders.addBox((WORLD.minX - 4 + -41.3) / 2, SEA_Z - 30, -41.3 - (WORLD.minX - 4), 60);
   colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60);
 
-  if (!STYLED) addMarkings(group);
+  if (!STYLED) { addMarkings(group); group.add(makeFlowers(rand(41))); }
   M.build(group);
 
   const clouds = makeClouds(group, r);
@@ -125,6 +126,7 @@ export function buildTown(): Town {
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
+      for (const s of sprays) s(t);
       for (const c of clouds) {
         c.position.x += dt * c.userData.v;
         if (c.position.x > 260) c.position.x = -200;
@@ -154,6 +156,9 @@ export function buildTown(): Town {
 
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
 
+/** The town's clock for the shaders that move (the trees' wind, the clouds' shadows). */
+const wind = { value: 0 };
+
 /** The ground's colours times a fine tiling grain (specks and soft blotches around mid grey, 4 m a tile): up close the
  *  asphalt, sand and grass get texture instead of the blur of their 6 px/m map; far away it averages out. */
 function withGrain(m: THREE.MeshLambertMaterial) {
@@ -171,19 +176,37 @@ function withGrain(m: THREE.MeshLambertMaterial) {
   const grain = new THREE.CanvasTexture(c);
   grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
   grain.anisotropy = 8;
+  // soft round clouds whose shadows drift over the town (110 m a tile, a metre and a bit a second)
+  const C = 128, cc = document.createElement("canvas");
+  cc.width = cc.height = C;
+  const cx2 = cc.getContext("2d")!, cr = rand(23);
+  for (let i = 0; i < 9; i++) {
+    const px = cr() * C, py = cr() * C, rad = 12 + cr() * 22;
+    for (const ox of [-C, 0, C]) for (const oy of [-C, 0, C]) {
+      const g = cx2.createRadialGradient(px + ox, py + oy, 0, px + ox, py + oy, rad);
+      g.addColorStop(0, "rgba(255,255,255,0.9)"); g.addColorStop(1, "rgba(255,255,255,0)");
+      cx2.fillStyle = g; cx2.beginPath(); cx2.arc(px + ox, py + oy, rad, 0, Math.PI * 2); cx2.fill();
+    }
+  }
+  const clouds = new THREE.CanvasTexture(cc);
+  clouds.wrapS = clouds.wrapT = THREE.RepeatWrapping;
   m.onBeforeCompile = (sh) => {
     sh.uniforms.grainMap = { value: grain };
+    sh.uniforms.cloudMap = { value: clouds };
+    sh.uniforms.uWind = wind;
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vGrainUv;")
       .replace("#include <project_vertex>", "#include <project_vertex>\nvGrainUv = (modelMatrix * vec4(transformed, 1.0)).xz / 4.0;");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D grainMap;\nvarying vec2 vGrainUv;")
-      .replace("#include <map_fragment>", "#include <map_fragment>\ndiffuseColor.rgb *= 0.78 + 0.44 * texture2D(grainMap, vGrainUv).r;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D grainMap;\nuniform sampler2D cloudMap;\nuniform float uWind;\nvarying vec2 vGrainUv;")
+      .replace("#include <map_fragment>", `#include <map_fragment>
+        diffuseColor.rgb *= 0.78 + 0.44 * texture2D(grainMap, vGrainUv).r;
+        float cloud = texture2D(cloudMap, (vGrainUv * 4.0 + vec2(uWind * 1.3, uWind * 0.55)) / 110.0).a;
+        diffuseColor.rgb *= 1.0 - 0.17 * smoothstep(0.3, 0.85, cloud);`);
   };
   return m;
 }
 
 /** The wind in the trees: the crown sways a little, more towards the top, each tree in its own time (the instance's
- *  position sets the phase). The time comes from `windTime` (TownWorld.update). */
-const wind = { value: 0 };
+ *  position sets the phase). The time (`wind`) comes from TownWorld.update. */
 function swaying(m: THREE.MeshLambertMaterial) {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWind = wind;
@@ -400,9 +423,9 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const dr = rand([...b.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 100000 + 911);
   const wallMat = mat(b.color);
   const trimMat = mat(b.trim ?? "#6b6b6b");
-  const glassMat = mat("#9ccbe6", { emissive: "#1b3a4c" });
+  const glassMat = reflective(mat("#9ccbe6", { emissive: "#1b3a4c" }));
   const frameMat = mat("#f3eee4");
-  const darkGlass = mat("#5f8fb0", { emissive: "#0e2233" });
+  const darkGlass = reflective(mat("#5f8fb0", { emissive: "#0e2233" }));
   const key = b.id;
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
   // walls
@@ -1051,6 +1074,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   M.add("fountain", mat("#d8d2c4"), cylGeo(1.2, 0.8, 0.3, x, 2.6, z, 16));
   M.add("fountain-water", mat("#9fe0ef", { emissive: "#174a57" }), new THREE.SphereGeometry(0.7, 12, 8).scale(1, 0.6, 1).translate(x, 2.9, z), false);
   col.addCircle(x, z, 3.7);
+  if (!STYLED) group.add(makeSpray(x, z));
   // stalls
   for (const s of STALLS) {
     M.add("stall-table", mat("#9c6b43"), boxGeo(4, 0.9, 1.6, s.x, 0.45, s.z));
@@ -1086,6 +1110,19 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
 const BOATS: [number, number, number, string][] = [[-10, -84, 0.3, "#e45b4f"], [10, -90, -0.6, "#4a7bb7"], [30, -80, 1.2, "#f2c14e"], [-58, -86, 0.1, "#ffffff"], [60, -96, 2.4, "#6fbf73"]];
 
 const coloured = colourMerge;
+
+/** Glass that catches the sky when seen at a slant (brighter towards the edges of the view): windows read as glass. */
+function reflective(m: THREE.Material) {
+  if (STYLED || m.userData.reflective) return m;
+  m.userData.reflective = true;
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+      float slant = 1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0);
+      totalEmissiveRadiance += vec3(0.5, 0.62, 0.74) * pow(slant, 2.5) * 0.55;`);
+  };
+  m.needsUpdate = true;
+  return m;
+}
 let boatMat: THREE.MeshLambertMaterial | null = null;
 
 /** Still shapes in their own colours as one mesh that casts shadows (the parked cars, the taxi). */
@@ -1121,6 +1158,55 @@ function makeBoats() {
     mesh.userData.boat = { phase: i * 1.7, rot };
     return mesh;
   });
+}
+
+/** The fountain's spray: droplets that leave the top bowl all round and fall into the basin (one instanced mesh,
+ *  moved by `spray.update`). */
+const sprays: ((t: number) => void)[] = [];
+function makeSpray(x: number, z: number) {
+  const N = 60;
+  const drops = new THREE.InstancedMesh(new THREE.SphereGeometry(0.075, 6, 4).scale(1, 1.6, 1), new THREE.MeshLambertMaterial({ color: "#eefaff", emissive: "#5aa6bd" }), N);
+  drops.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  drops.frustumCulled = false;
+  const m4 = new THREE.Matrix4(), p = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+  sprays.push((t) => {
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 + (i % 3) * 0.7, u = (t / 1.3 + (i * 0.618) % 1) % 1;
+      const r = 0.55 + 1.75 * u, y = 3.05 + 0.6 * u - 2.85 * u * u;
+      p.set(x + Math.cos(a) * r, y, z + Math.sin(a) * r);
+      sc.setScalar(1 - u * 0.4);
+      drops.setMatrixAt(i, m4.compose(p, q, sc));
+    }
+    drops.instanceMatrix.needsUpdate = true;
+  });
+  return drops;
+}
+
+/** Flowers in the park and in front of the houses: little coloured blooms in small clumps (one instanced mesh). */
+function makeFlowers(r: () => number) {
+  const spots: [number, number][] = [];
+  const clump = (x: number, z: number, n: number, spread: number) => { for (let i = 0; i < n; i++) spots.push([x + (r() - 0.5) * spread, z + (r() - 0.5) * spread]); };
+  for (let i = 0; i < 26; i++) {
+    const x = PARK.x1 + 3 + r() * (PARK.x2 - PARK.x1 - 6), z = PARK.z1 + 3 + r() * (PARK.z2 - PARK.z1 - 6);
+    if (Math.hypot(x - 108, z + 36) < 9) continue; // not in the pond
+    clump(x, z, 7 + Math.floor(r() * 6), 1.6);
+  }
+  for (const b of BUILDINGS) {
+    if (b.style !== "house") continue;
+    const { n: nn, t, halfDepth, halfWidth } = faceInfo(b);
+    for (const sd of [-1, 1]) {
+      const off = sd * (halfWidth - 1.2), out = halfDepth + 1.1;
+      clump(b.x + nn[0] * out + t[0] * off, b.z + nn[1] * out + t[1] * off, 6, 1.0);
+    }
+  }
+  const palette = ["#e84a5f", "#f2c14e", "#ffffff", "#b07cd8", "#ff8fab", "#f08a3c"];
+  const blooms = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.085, 0).translate(0, 0.16, 0), new THREE.MeshLambertMaterial({ flatShading: true }), spots.length);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
+  spots.forEach(([x, z], i) => {
+    blooms.setMatrixAt(i, m4.compose(p.set(x, 0, z), q, s.setScalar(0.8 + r() * 0.6)));
+    blooms.setColorAt(i, new THREE.Color(palette[Math.floor(r() * palette.length)]));
+  });
+  return blooms;
 }
 
 /** A few gulls circling over the harbour, flapping now and then and gliding. */

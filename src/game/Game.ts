@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
-import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z } from "./world/layout";
+import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, FOUNTAIN, PARK } from "./world/layout";
 import { createCharacter, setBlobShadows, type GameCharacter } from "./characters";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
@@ -15,6 +15,7 @@ import { AMBIENT_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
 import { Dust } from "./dust";
+import { Pigeons } from "./pigeons";
 import { NPCS, type Look } from "../content/npcs";
 import { LOCATIONS, placeLt } from "../content/locations";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
@@ -72,6 +73,7 @@ export class Game implements GameApi {
   private stepDist = 0;
   private lastSpeed = 0;
   private dust = new Dust();
+  private pigeons!: Pigeons;
   private pathT = 0;
   private session: Session | null = null;
   private talkNpc: NpcActor | null = null;
@@ -139,6 +141,10 @@ export class Game implements GameApi {
     }
     for (const cx of [-50, 22, 100]) nav.setCost(cx - 1.5, -13, cx + 1.5, -3, 1.2);
     this.zones.set("town", { id: "town", group: this.town.group, colliders: this.town.colliders, nav });
+    // pigeons round the fountain (in the town's group, so they are hidden indoors); their wings when they take off
+    this.pigeons = new Pigeons(FOUNTAIN.x, FOUNTAIN.z, 4.6, 9.5);
+    this.pigeons.onTakeOff = (n) => audio.flutter(Math.min(1, 0.5 + n * 0.15));
+    this.town.group.add(this.pigeons.group);
     // passers-by walk between shop doors, the square, the beach and the bus stop
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
@@ -841,8 +847,14 @@ export class Game implements GameApi {
       this.updateHud();
       // the town's sound: the sea louder towards the beach, gulls near the harbour, the cars' hum; quiet indoors and
       // while someone is talking
-      const pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
-      audio.ambience(!this.zone.interior && !talking && !st.hud.panel, sea, this.zone.interior ? 0 : this.ambient.carNoise(this.player.root.position.x, pz), sea > 0.4);
+      const px = this.player.root.position.x, pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
+      const out = !this.zone.interior;
+      // the fountain within about 18 m; birds in the park, and a little everywhere else outdoors
+      const fountain = out ? THREE.MathUtils.clamp(1 - Math.hypot(px - FOUNTAIN.x, pz - FOUNTAIN.z) / 18, 0, 1) : 0;
+      const inPark = px > PARK.x1 - 6 && px < PARK.x2 + 6 && pz > PARK.z1 - 6 && pz < PARK.z2 + 6;
+      const room = this.zone.interior ? (["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id) ? "cafe" : "quiet") : null;
+      audio.ambience(out && !talking && !st.hud.panel, sea, out ? this.ambient.carNoise(px, pz) : 0, sea > 0.4,
+        { fountain, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, room, talking });
     }
     // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
     // 1.2 s standing still
@@ -934,6 +946,7 @@ export class Game implements GameApi {
     if (fancy && this.lastSpeed > 6 && moved < 2.5) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 1.3);
     this.lastSpeed = moved;
     this.dust.update(dt);
+    if (!this.zone.interior) this.pigeons.update(dt, p, moved);
     this.player.update(dt);
   }
 
@@ -1069,6 +1082,7 @@ export class Game implements GameApi {
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
     this.nearest = best;
     if (changed) {
+      if (best) audio.sfx("tick");
       st.setHud({ prompt: best ? { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } : null });
     }
     // objective distance & minimap

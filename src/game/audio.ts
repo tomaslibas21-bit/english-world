@@ -167,25 +167,30 @@ export class AudioSystem {
 
   private noise: AudioBuffer | null = null;
   /** The town's sound around the player (see ambience). */
-  private amb: { sea: GainNode; traffic: GainNode; nextGull: number } | null = null;
+  private amb: { sea: GainNode; traffic: GainNode; fountain: GainNode; room: GainNode; murmur: GainNode; nextGull: number; nextBird: number; nextClink: number } | null = null;
 
   /** The town's own sound, made on the spot (no files) and quiet: the sea, louder near the beach and swelling slowly;
    *  gulls now and then by the harbour; a low hum of passing cars. `on` false (indoors, in a conversation) fades it out.
    *  Called a few times a second with the levels for where the player is (0–1). */
-  ambience(on: boolean, sea: number, traffic: number, gulls: boolean) {
+  ambience(on: boolean, sea: number, traffic: number, gulls: boolean, more: { fountain?: number; birds?: number; room?: "cafe" | "quiet" | null; talking?: boolean } = {}) {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== "running") return; // only once a click or key has started the sound
     if (!this.amb) {
       const loop = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = loop.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      const chain = (freq: number) => {
+      const chain = (freq: number, type: BiquadFilterType = "lowpass", q = 0.7) => {
         const src = ctx.createBufferSource(); src.buffer = loop; src.loop = true;
-        const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq;
+        src.playbackRate.value = 0.9 + Math.random() * 0.2; // the loops drift apart, so no two sound alike
+        const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
         const g = ctx.createGain(); g.gain.value = 0;
         src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
         return g;
       };
-      this.amb = { sea: chain(520), traffic: chain(170), nextGull: ctx.currentTime + 4 };
+      const t0 = ctx.currentTime;
+      this.amb = {
+        sea: chain(520), traffic: chain(170), fountain: chain(3200, "bandpass", 0.5), room: chain(220), murmur: chain(650, "bandpass", 0.9),
+        nextGull: t0 + 4, nextBird: t0 + 2, nextClink: t0 + 3,
+      };
     }
     const now = ctx.currentTime, v = on ? this.volume : 0;
     // the sea swells and draws back over about eight seconds
@@ -196,6 +201,72 @@ export class AudioSystem {
       this.amb.nextGull = now + 6 + Math.random() * 9;
       const calls = 1 + Math.floor(Math.random() * 3);
       for (let k = 0; k < calls; k++) this.gull(now + k * 0.42, v * 0.035 * Math.max(0.4, sea));
+    }
+    // the fountain's splashing, near the square
+    this.amb.fountain.gain.setTargetAtTime(v * 0.05 * (more.fountain ?? 0), now, 0.3);
+    // birdsong among the trees: a few quick chirps now and then
+    const birds = more.birds ?? 0;
+    if (on && birds > 0.05 && now > this.amb.nextBird) {
+      this.amb.nextBird = now + (2.5 + Math.random() * 6) / Math.max(0.3, birds);
+      const n = 2 + Math.floor(Math.random() * 4), top = 3200 + Math.random() * 1800;
+      for (let k = 0; k < n; k++) this.chirp(now + k * (0.09 + Math.random() * 0.05), top * (0.92 + Math.random() * 0.16), v * 0.022 * birds);
+    }
+    // indoors (`on` is false there): a café's murmur and a cup now and then, or a quiet room's hum; softer while
+    // someone talks, so the voice stays clear
+    const room = more.room ?? null, inside = this.volume * (more.talking ? 0.4 : 1);
+    const murmur = room === "cafe" ? 0.75 + 0.25 * Math.sin(now * 1.7) * Math.sin(now * 0.63 + 1) : 0;
+    this.amb.murmur.gain.setTargetAtTime(inside * 0.035 * murmur, now, 0.3);
+    this.amb.room.gain.setTargetAtTime(room ? inside * (room === "cafe" ? 0.012 : 0.02) : 0, now, 0.5);
+    if (room === "cafe" && now > this.amb.nextClink) {
+      this.amb.nextClink = now + 3 + Math.random() * 6;
+      this.clink(now + Math.random() * 0.2, inside * 0.03);
+    }
+  }
+
+  /** One bird's chirp: a quick rising and falling whistle. */
+  private chirp(at: number, f: number, vol: number) {
+    const ctx = this.ctx!;
+    const o = ctx.createOscillator(); o.type = "sine";
+    o.frequency.setValueAtTime(f * 0.8, at);
+    o.frequency.exponentialRampToValueAtTime(f * 1.15, at + 0.035);
+    o.frequency.exponentialRampToValueAtTime(f * 0.9, at + 0.07);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.08);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(at); o.stop(at + 0.1);
+  }
+
+  /** A cup set down on a saucer: two quick bright pings. */
+  private clink(at: number, vol: number) {
+    const ctx = this.ctx!;
+    for (const [f, dt] of [[2600 + Math.random() * 600, 0], [3700 + Math.random() * 500, 0.012]] as [number, number][]) {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, at + dt);
+      g.gain.linearRampToValueAtTime(vol, at + dt + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + dt + 0.25);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(at + dt); o.stop(at + dt + 0.3);
+    }
+  }
+
+  /** Birds taking off: a short flurry of wingbeats. */
+  flutter(vol = 1) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime, burst = this.noiseBurst(ctx);
+    for (let k = 0; k < 7; k++) {
+      const at = now + k * 0.055 + Math.random() * 0.02;
+      const src = ctx.createBufferSource(); src.buffer = burst; src.playbackRate.value = 1.6 + Math.random() * 0.5;
+      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 900 + Math.random() * 500; f.Q.value = 0.8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(this.volume * 0.06 * vol * (1 - k / 9), at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(at); src.stop(at + 0.07);
     }
   }
 
@@ -218,18 +289,23 @@ export class AudioSystem {
     o.connect(f); f.connect(g); g.connect(ctx.destination);
     o.start(at); wob.start(at); o.stop(at + 0.42); wob.stop(at + 0.42);
   }
-  /** One footstep: a short burst of filtered noise, a little different each time (lower and softer indoors). */
-  step(indoor: boolean, run: boolean) {
-    const ctx = this.ac();
-    if (!ctx || this.volume <= 0) return;
+  /** A short burst of noise that fades out (footsteps, wingbeats). */
+  private noiseBurst(ctx: AudioContext) {
     if (!this.noise) {
       this.noise = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.12), ctx.sampleRate);
       const d = this.noise.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
     }
+    return this.noise;
+  }
+
+  /** One footstep: a short burst of filtered noise, a little different each time (lower and softer indoors). */
+  step(indoor: boolean, run: boolean) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
     const now = ctx.currentTime;
     const src = ctx.createBufferSource();
-    src.buffer = this.noise;
+    src.buffer = this.noiseBurst(ctx);
     src.playbackRate.value = 0.85 + Math.random() * 0.3;
     const f = ctx.createBiquadFilter();
     f.type = "bandpass";
@@ -244,7 +320,7 @@ export class AudioSystem {
     src.start(now); src.stop(now + 0.12);
   }
 
-  sfx(name: "success" | "pop" | "door" | "stamp" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock") {
+  sfx(name: "success" | "pop" | "door" | "stamp" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
     const ctx = this.ac();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -274,6 +350,7 @@ export class AudioSystem {
       case "ring": for (const at of [0, 0.5]) { tone(440, at, 0.35, "sine", vol * 0.45); tone(480, at, 0.35, "sine", vol * 0.45); } break;
       case "beep": tone(1000, 0, 0.4, "sine", vol * 0.5); break;
       case "knock": for (const at of [0, 0.16, 0.32]) tone(140, at, 0.07, "square", vol * 0.5); break;
+      case "tick": tone(1180, 0, 0.05, "triangle", vol * 0.32); tone(1580, 0.03, 0.06, "triangle", vol * 0.22); break;
     }
   }
 }
