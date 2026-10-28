@@ -36,6 +36,7 @@ export function buildTown(): Town {
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
   seats.length = 0;
+  details.length = 0;
   displays.length = 0;
   displayGlass.length = 0;
 
@@ -123,6 +124,12 @@ export function buildTown(): Town {
   colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60);
 
   if (!STYLED) { addMarkings(group); group.add(makeFlowers(rand(41))); }
+  if (details.length) {
+    // the houses' flower boxes and the bikes in the gym's rack (one mesh)
+    const m = new THREE.Mesh(colourMerge(details), new THREE.MeshLambertMaterial({ vertexColors: true }));
+    m.castShadow = true;
+    group.add(m);
+  }
   if (displays.length) {
     // the shop windows' goods (one mesh) and their glass (one more, see-through)
     const goods = new THREE.Mesh(colourMerge(displays), displayMaterial());
@@ -600,6 +607,16 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
           continue;
         }
         M.add("glass", b.style === "office" ? darkGlass : glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
+        // a flower box under each of a house's front windows downstairs
+        if (b.style === "house" && isFront && f === 0 && !STYLED) {
+          const at = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(wx, 0, wz);
+          details.push([at(new THREE.BoxGeometry(ww + 0.14, 0.22, 0.26).translate(0, y - wh / 2 - 0.2, 0.15)), "#7a4b36"]);
+          for (let k = 0; k < 6; k++) {
+            const fx = -ww / 2 + 0.12 + k * ((ww - 0.24) / 5);
+            details.push([at(new THREE.IcosahedronGeometry(0.11, 0).translate(fx, y - wh / 2 - 0.04, 0.16)), "#4c8c3c"]);
+            details.push([at(new THREE.SphereGeometry(0.06, 6, 5).translate(fx + 0.03, y - wh / 2 + 0.04, 0.2)), ["#e84a5f", "#ffd166", "#f28fad", "#ffffff"][k % 4]]);
+          }
+        }
         if (b.style !== "office" && b.style !== "terminal") {
           const cy = y - (bigShop ? 0.35 : 0);
           M.add(`trim-${b.trim}`, trimMat, boxGeo(ww + 0.25, 0.14, 0.16, 0, 0, 0).rotateY(rot).translate(wx, cy - wh / 2 - 0.05, wz));
@@ -1109,6 +1126,19 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
       for (const s of [-0.28, 0.28]) box("rack", metal, 0.05, 0.75, 0.05, u, 0.375, 1 + s);
       box("rack", metal, 0.05, 0.05, 0.61, u, 0.75, 1);
     }
+    // two bikes parked in it, their front wheels in the rack
+    for (const [u, c] of [[4.7, "#e45b4f"], [5.3, "#2a9d8f"]] as [number, string][]) {
+      const [x, z] = P(u, 1.05);
+      const at = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(x, 0, z);
+      if (!STYLED) {
+        for (const v of [-0.48, 0.48]) details.push([at(new THREE.TorusGeometry(0.31, 0.035, 6, 18).rotateY(Math.PI / 2).translate(0, 0.33, v)), "#26292e"]);
+        details.push([at(new THREE.BoxGeometry(0.04, 0.04, 0.9).translate(0, 0.62, 0)), c]);
+        details.push([at(new THREE.BoxGeometry(0.04, 0.36, 0.04).rotateX(0.35).translate(0, 0.48, -0.15)), c]);
+        details.push([at(new THREE.BoxGeometry(0.04, 0.42, 0.04).rotateX(-0.3).translate(0, 0.5, 0.36)), c]);
+        details.push([at(new THREE.BoxGeometry(0.14, 0.05, 0.24).translate(0, 0.78, -0.22)), "#26292e"]);
+        details.push([at(new THREE.BoxGeometry(0.48, 0.035, 0.035).translate(0, 0.86, 0.42)), "#26292e"]);
+      }
+    }
     block(5, 1, 1.6, 0.7);
     notice("Open 5 AM – 11 PM", "#ffffff", "#1f7f8c", -2.2, 1.7, 1.1, 0.34);
     notice("First session FREE!", "#f0883e", "#ffffff", 6.33, 1.95, 2.1, 0.5);
@@ -1405,6 +1435,8 @@ function makeBoats() {
 const sprays: ((t: number) => void)[] = [];
 /** The places to sit, gathered while the town is built (Town.seats). */
 const seats: Seat[] = [];
+/** Small details in their own colours (flower boxes, bikes), merged into one mesh at the end. */
+const details: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
 function makeSpray(x: number, z: number) {
   const N = 60;
   const drops = new THREE.InstancedMesh(new THREE.SphereGeometry(0.075, 6, 4).scale(1, 1.6, 1), new THREE.MeshLambertMaterial({ color: "#eefaff", emissive: "#5aa6bd" }), N);
