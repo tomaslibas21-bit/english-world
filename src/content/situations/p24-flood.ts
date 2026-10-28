@@ -1069,7 +1069,7 @@ export const flood: SituationDef = {
     insist_today: { patterns: [
       "[i am afraid] it (can not | really can not) wait [until tomorrow | till tomorrow] #h:cant_wait",
       "[i am afraid] (that | this) (can not | will not) wait [until tomorrow | till tomorrow]",
-      "(tomorrow | tomorrow morning | that | it) is (too late | way too late | much too late) [i am afraid]",
+      "[no | nope] (tomorrow | tomorrow morning | that | it) is (too late | way too late | much too late) [i am afraid]",
       "(tomorrow | that) (is not | will not be) (good | okay | fine | possible | an option)",
       "(tomorrow | that) (does not | will not) work [for me]",
       "it (really)? (needs | has) to be today #h:really_today",

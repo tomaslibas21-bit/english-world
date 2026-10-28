@@ -136,9 +136,10 @@ function invertedQuestion(toks: Tokens): Tokens | null {
 }
 
 /** Tokenise learner input: returns variants plus flags for removed soft fillers. `noPause`: a leading
- *  "no" was written as its own answer ("No, oat milk" / "No. Cash") rather than "no cash". */
+ *  "no" was written as its own answer ("No, oat milk" / "No. Cash", also after a filler: "Um, no, cash") rather
+ *  than "no cash". */
 export function tokenizeInput(input: string): { variants: Tokens[]; please: boolean; noPause: boolean } {
-  const noPause = /^\W*(no|nope|nah)\s*[,.!;:–—-]/i.test(String(input || ""));
+  const noPause = /^\W*(?:(?:u+m+|u+h+m?|e+r+m*|h+m+|a+h+|eh)\W+)*(no|nope|nah)\s*[,.!;:–—-]/i.test(String(input || ""));
   const raw = surfaceTokens(input);
   let please = false;
   let toks = raw.filter((t) => {

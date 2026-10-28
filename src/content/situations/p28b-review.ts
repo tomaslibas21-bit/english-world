@@ -562,6 +562,7 @@ export const review: SituationDef = {
       "i would (like | love) to (work on | improve | focus on | get better at | develop | grow in | learn [more about] | study) [my] {goal} [next year] #h:work_on",
       "i (want | hope | plan) to (work on | improve | focus on | get better at | learn [more about] | study) [my] {goal} [next year]",
       "i would (like | love) to (take | do | sign up for | attend | go to) (a | an | some) (course | class | training | workshop) (in | on | about) {goal} #h:take_course",
+      "i (want | hope | plan | need) to (take | do | sign up for | attend | go to) (a | an | some) (course | class | training | workshop) (in | on | about) {goal}",
       "i (would like | would love | want | hope) to (take | do | sign up for) (a | an | some) {goal} (course | class | training | workshop)",
       "i (would like | would love | want) to (be | become) a mentor [for (the interns | new people | the new interns)] #g:mentoring",
       "i (want | would like | would love) to (do | try) [more | some] {goal}",

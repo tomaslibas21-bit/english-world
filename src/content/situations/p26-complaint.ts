@@ -1045,7 +1045,7 @@ export const complaint: SituationDef = {
       "i would like (this | it) (resolved | fixed | sorted | solved | done | sorted out | taken care of) @deadl",
       "i need (it | this | the @fr | a new @fr | the refund | my money | the new one) by {day} #h:need_by",
       "i need (it | this) @deadl",
-      "i (need | want | would like) (it | this | the @fr) (fixed | resolved | sorted | sorted out | done | replaced | delivered | solved) (@deadl | by {day})",
+      "i (need | want | would like) (it | this | the @fr) (fixed | resolved | sorted | sorted out | done | replaced | delivered | solved) (@deadl | by {day}) [not someday]",
       "@deadl",
       // "By Friday, not someday." (the hint, shortened)
       "@deadl not (someday | some day | next week | in two weeks)",

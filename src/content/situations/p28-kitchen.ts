@@ -555,7 +555,7 @@ export const kitchen: SituationDef = {
     praise_part: { patterns: [
       "what (worked | works) [really | very | so | super] well (was | is) [the] {good:good_part} #h:worked_well",
       "i [really] (like | love | liked | loved | enjoy | enjoyed) [the | your] {good:good_part} #h:really_like",
-      "(the | your) {good:good_part} (is | are | was | were | tastes | taste | smells) [really | very | so | super | absolutely] @good_adj #h:x_great",
+      "[the | your] {good:good_part} (is | are | was | were | tastes | taste | smells) [really | very | so | super | absolutely] @good_adj #h:x_great",
       "{good:good_part} [is | are] (really | very | so | super) @good_adj",
       "(great | nice | lovely | perfect | good | amazing | wonderful | delicious | beautiful) {good:good_part}",
       "the best (part | thing) (is | was) the {good:good_part}",
