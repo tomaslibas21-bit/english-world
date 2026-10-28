@@ -203,5 +203,11 @@
   {"ctx": "overweight", "say": "Can I just pay?", "intent": "pay_fee"},
   {"ctx": "overweight", "say": "I'll repack it.", "intent": "move_items"},
   {"ctx": "bp", "say": "When should I be at the gate?", "intent": "ask_boarding_time"},
-  {"ctx": "overweight", "say": "I won't repack it.", "intent": "any", "not": ["move_items"]}
+  {"ctx": "overweight", "say": "I won't repack it.", "intent": "any", "not": ["move_items"]},
+  {"ctx": "seat", "say": "By window, please", "intent": "seat_ans", "slots": {"seat": "window"}},
+  {"ctx": "seat", "say": "Near window", "intent": "seat_ans", "slots": {"seat": "window"}},
+  {"ctx": "seat", "say": "I'd like to sit by aisle", "intent": "seat_ans", "slots": {"seat": "aisle"}},
+  {"ctx": "seat", "say": "I want to sit by the aisle", "intent": "seat_ans", "slots": {"seat": "aisle"}},
+  {"ctx": "seat", "say": "Can I sit next to window?", "intent": "seat_ans", "slots": {"seat": "window"}},
+  {"ctx": "seat", "say": "Not by window", "intent": "seat_neg", "slots": {"seat": "window"}}
 ]}

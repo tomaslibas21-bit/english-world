@@ -114,6 +114,7 @@ const tempSlot: SlotFn = (tokens, pos) => {
     const d = /^\d$/.test(n2) ? Number(n2) : DIGIT_WORD[n2];
     if (n1 === "point" && d !== undefined) all.push({ end: b.end + 2, v: b.v + d / 10, dec: true });
     if (n1 === "and" && n2 === "a" && tokens[b.end + 2] === "half") all.push({ end: b.end + 3, v: b.v + 0.5, dec: true });
+    if (n1 === "and" && n2 === "half") all.push({ end: b.end + 2, v: b.v + 0.5, dec: true }); // "thirty eight and half"
   }
   for (const b of all) {
     const v = tenths(b.v) / 10;

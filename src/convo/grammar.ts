@@ -165,22 +165,33 @@ function keepLastWord(n: GNode) {
 // ---------------------------------------------------------------------------
 // Lexicon tries
 
-interface Trie { next: Map<string, Trie>; ids: { id: string; tags?: string[] }[] }
+interface Trie { next: Map<string, Trie>; ids: { id: string; tags?: string[]; cost?: number }[] }
+const ARTICLES = new Set(["a", "an", "the"]);
+/** A lexicon form without its articles ("by window", "beach", "cold beer": Lithuanian has none), as long as
+ *  a content word is left: "the one" never becomes "one". */
+function withoutArticles(toks: Tokens): Tokens | null {
+  if (!toks.some((t) => ARTICLES.has(t))) return null;
+  const rest = toks.filter((t) => !ARTICLES.has(t));
+  if (!rest.length || (rest.length === 1 && /^(one|ones|other|others|same|lot|bit|\d+)$/.test(rest[0]))) return null;
+  return rest;
+}
 function buildTrie(entries: LexEntry[]): Trie {
   const root: Trie = { next: new Map(), ids: [] };
-  for (const e of entries) {
-    for (const f of e.forms) {
-      const toks = tokenizePatternWords(f);
-      if (!toks.length) continue;
-      let node = root;
-      for (const t of toks) {
-        let n = node.next.get(t);
-        if (!n) { n = { next: new Map(), ids: [] }; node.next.set(t, n); }
-        node = n;
-      }
-      if (!node.ids.some((x) => x.id === e.id)) node.ids.push({ id: e.id, tags: e.tags });
+  const insert = (toks: Tokens, e: LexEntry, cost?: number) => {
+    let node = root;
+    for (const t of toks) {
+      let n = node.next.get(t);
+      if (!n) { n = { next: new Map(), ids: [] }; node.next.set(t, n); }
+      node = n;
     }
-  }
+    const had = node.ids.find((x) => x.id === e.id);
+    if (!had) node.ids.push({ id: e.id, tags: e.tags, cost });
+    else if (!cost) had.cost = undefined; // a form written that way wins over a form with its article left out
+  };
+  const forms = entries.flatMap((e) => e.forms.map((f) => ({ e, toks: tokenizePatternWords(f) }))).filter((x) => x.toks.length);
+  for (const { e, toks } of forms) insert(toks, e);
+  // the article left out costs as much as a pattern's left-out article (DROPPABLE)
+  for (const { e, toks } of forms) { const r = withoutArticles(toks); if (r) insert(r, e, 0.15); }
   return root;
 }
 
@@ -202,7 +213,7 @@ function matchTrie(root: Trie, tokens: Tokens, pos: number, prefix: boolean): Sl
         if (sim <= 0) continue;
         const cost = st.cost + (1 - sim) * 3;
         const ns = { node: child, at: st.at + 1, cost };
-        for (const x of child.ids) out.push({ end: ns.at, value: x.id, cost, tags: x.tags });
+        for (const x of child.ids) out.push({ end: ns.at, value: x.id, cost: cost + (x.cost ?? 0), tags: x.tags });
         if (child.next.size) nextF.push(ns);
       }
     }
