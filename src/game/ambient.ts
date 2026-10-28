@@ -12,6 +12,7 @@ import type { HairStyle, Look } from "../content/npcs";
 import { rand, type Colliders } from "./world/util";
 import { CAR, TRAFFIC_LANES, CHAT_SPOTS } from "./world/layout";
 import type { Seat } from "./world/town";
+import { Dog } from "./dog";
 
 /** A townsperson: one who strolls between places ("walk"), sits at a café table or on a bench ("sit"), or stands
  *  chatting with someone ("stand"). */
@@ -20,6 +21,7 @@ interface Walker {
   path: [number, number][] | null; wait: number; speed: number;
   heading: number; greetT: number; lastTarget: number;
   chat?: Chatter;
+  dog?: Dog;
 }
 
 /** Two people talking in turns: one talks for a couple of seconds while the other listens (eyes on them, a nod
@@ -69,6 +71,7 @@ const M_HAIR: HairStyle[] = ["short", "buzz", "side", "bald", "curly", "wavy"];
 const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c14e", "#9b5de5", "#b0b7bf"];
 
 const LANES = TRAFFIC_LANES;
+const _hand = new THREE.Vector3();
 
 /** A passer-by's look, drawn from `r` (the town's random stream; the dev lineup passes its own). */
 export function walkerLook(female: boolean, r: () => number): Look {
@@ -109,6 +112,13 @@ export class Ambient {
     // each person is a single draw call (characters/Character.ts), so the town can hold a crowd
     const nw = high ? 12 : 6, nc = high ? 8 : 4;
     for (let i = 0; i < nw; i++) this.addWalker(i);
+    // two of them (one in „Paprasta“) walk a dog, on the lead in the hand without a bag
+    this.walkers.filter((w) => w.ch.root.userData.carry !== "bag").slice(0, high ? 2 : 1).forEach((w, i) => {
+      const dog = new Dog(i * 2 + 1, 0.9 + (i % 2) * 0.25);
+      dog.root.position.copy(w.ch.root.position).add(new THREE.Vector3(0.6, 0, 0.3));
+      this.group.add(dog.root, dog.lead);
+      w.dog = dog;
+    });
     this.seatPeople(seats, high);
     this.standPairs(high ? CHAT_SPOTS.length : 1, colliders);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
@@ -141,7 +151,9 @@ export class Ambient {
 
   private addWalker(i: number) {
     const female = i % 2 === 0;
-    const w = this.person(walkerThings(walkerLook(female, this.r), this.rThings), female, "walk");
+    const look = walkerThings(walkerLook(female, this.r), this.rThings);
+    const w = this.person(look, female, "walk");
+    w.ch.root.userData.carry = look.carry;
     const k = Math.floor(this.r() * this.places.length);
     const [x, z] = this.places[k];
     const cell = this.nav.nearestFree(x + (this.r() - 0.5) * 3, z + (this.r() - 0.5) * 3);
@@ -238,6 +250,10 @@ export class Ambient {
     for (const w of this.walkers) {
       if (w.kind === "walk") this.updateWalker(w, dt, player);
       else w.ch.update(dt);
+      if (w.dog) {
+        const p = w.ch.root.position;
+        w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
+      }
     }
     for (const c of this.cars) this.updateCar(c, dt, player);
   }
