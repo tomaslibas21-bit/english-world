@@ -143,3 +143,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ts-slide, .ts-bubble, .ts-mode { transition: none; }
 }
+
+/* the town's name in Lithuanian, under the pin */
+.ts-placewrap { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ts-place-lt { font-size: 0.82em; color: var(--ink-soft); padding-left: 4px; line-height: 1.35; }

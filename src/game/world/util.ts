@@ -170,3 +170,21 @@ export class Colliders {
     return false;
   }
 }
+
+/** Shapes merged into one geometry with their colours in the vertices. */
+export function colourMerge(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][]) {
+  const c = new THREE.Color();
+  const geos = parts.map(([g0, col]) => {
+    const g = g0.index ? g0.toNonIndexed() : g0;
+    for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal") g.deleteAttribute(k);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    c.set(col);
+    const n = g.attributes.position.count, a = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+    g.setAttribute("color", new THREE.BufferAttribute(a, 3));
+    return g;
+  });
+  const merged = mergeGeometries(geos, false)!;
+  for (const g of geos) g.dispose();
+  return merged;
+}

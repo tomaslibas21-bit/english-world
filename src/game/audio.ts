@@ -165,6 +165,33 @@ export class AudioSystem {
     return this.ctx;
   }
 
+  private noise: AudioBuffer | null = null;
+  /** One footstep: a short burst of filtered noise, a little different each time (lower and softer indoors). */
+  step(indoor: boolean, run: boolean) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    if (!this.noise) {
+      this.noise = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.12), ctx.sampleRate);
+      const d = this.noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    }
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noise;
+    src.playbackRate.value = 0.85 + Math.random() * 0.3;
+    const f = ctx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = (indoor ? 650 : 1150) * (0.85 + Math.random() * 0.3);
+    f.Q.value = 1.1;
+    const g = ctx.createGain();
+    const v = this.volume * (indoor ? 0.09 : 0.07) * (run ? 1.3 : 1);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(v, now + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    src.connect(f); f.connect(g); g.connect(ctx.destination);
+    src.start(now); src.stop(now + 0.12);
+  }
+
   sfx(name: "success" | "pop" | "door" | "stamp" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock") {
     const ctx = this.ac();
     if (!ctx) return;

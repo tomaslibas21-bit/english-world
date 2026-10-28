@@ -126,3 +126,6 @@ body.light-mode { background: #f5efe5; }
 .lite-btn:active { transform: scale(0.96); }
 @media (max-width: 900px) { .lite-btn { right: 10px; top: 450px; min-height: 40px; padding: 0 12px 0 10px; } }
 @media (max-height: 520px) { .lite-btn { display: none; } }
+
+/* the town's name in Lithuanian, on its own line under the brand */
+.lh-town-lt { flex-basis: 100%; font-size: 0.78em; color: var(--ink-soft); line-height: 1.35; }

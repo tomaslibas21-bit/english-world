@@ -117,7 +117,31 @@ export type Anim = "idle" | "walk" | "run" | "talk" | "wave" | "sit";
 /** Sitting, the thighs slope down this much from the hip (radians), and the shins hang straight down. */
 const SIT_DROOP = 0.1;
 
+let blobGeo: THREE.PlaneGeometry | null = null, blobMat: THREE.MeshBasicMaterial | null = null;
+/** A soft round shadow under the feet (one shared geometry and material). */
+function blobShadow() {
+  if (!blobMat) {
+    // a dark disc that fades out towards its edge (made from numbers, so it needs no canvas)
+    const S = 32, px = new Uint8Array(S * S * 4);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const r = Math.hypot(x - S / 2 + 0.5, y - S / 2 + 0.5) / (S / 2), i = (y * S + x) * 4;
+      px[i] = 20; px[i + 1] = 28; px[i + 2] = 30; px[i + 3] = Math.round(140 * Math.max(0, 1 - r) ** 1.5);
+    }
+    const tex = new THREE.DataTexture(px, S, S, THREE.RGBAFormat);
+    tex.magFilter = tex.minFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    blobMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+    blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  }
+  const m = new THREE.Mesh(blobGeo!, blobMat);
+  m.position.y = 0.015;
+  m.renderOrder = -1;
+  return m;
+}
+
 export class Character {
+  /** Soft round shadows under the feet: on when the sun casts none (the „Paprasta“ quality). */
+  static blobShadows = false;
   root = new THREE.Group();
   private body = new THREE.Group();
   private head = new THREE.Group();
@@ -149,6 +173,12 @@ export class Character {
   anim: Anim = "idle";
   talking = 0;
   speed = 0;
+  /** How fast the character really moves (m/s): the steps keep pace with it, so the feet don't slide. */
+  moveSpeed = 0;
+  /** Leaning sideways into a turn (radians, + to the left). */
+  bank = 0;
+  private walkPhase = 0;
+  private blob: THREE.Mesh;
   seated = false;
   /** Height of the seat top when sitting (chairs and benches in the town are about half a metre). */
   seatY = 0.5;
@@ -161,6 +191,9 @@ export class Character {
     this.height = 1.75 * h;
     const acc = look.acc || [];
     this.root.add(this.body);
+    this.blob = blobShadow();
+    this.blob.scale.setScalar(0.95 * b);
+    this.root.add(this.blob);
     this.buildBody(look, acc, h, b);
     this.body.add(this.head);
     this.head.position.y = 1.52 * h;
@@ -508,18 +541,22 @@ export class Character {
 
   update(dt: number) {
     this.t += dt;
+    this.blob.visible = Character.blobShadows;
     const t = this.t, h = this.look.height ?? 1, b = this.look.build ?? 1;
     let legA = 0, kneeL = 0.03, kneeR = 0.03, armA = 0, bob = 0, lean = 0, headNod = 0, headTurn = 0;
     if (this.anim === "walk" || this.anim === "run") {
       const run = this.anim === "run";
-      const f = run ? 11 : 7.5;
-      const amp = run ? 0.75 : 0.55;
-      legA = Math.sin(t * f) * amp;
+      // steps at the pace of the real speed when it is known (4.4 m/s walking, 7.4 running)
+      const pace = this.moveSpeed > 0 ? THREE.MathUtils.clamp(this.moveSpeed / (run ? 7.4 : 4.4), 0.55, 1.3) : 1;
+      this.walkPhase += dt * (run ? 11 : 7.5) * pace;
+      const ph = this.walkPhase;
+      const amp = (run ? 0.75 : 0.55) * Math.min(1, 0.6 + pace * 0.4);
+      legA = Math.sin(ph) * amp;
       // the knee folds while that foot swings forward
-      kneeL = Math.max(0, -Math.cos(t * f)) * (run ? 1.1 : 0.7) + 0.05;
-      kneeR = Math.max(0, Math.cos(t * f)) * (run ? 1.1 : 0.7) + 0.05;
+      kneeL = Math.max(0, -Math.cos(ph)) * (run ? 1.1 : 0.7) + 0.05;
+      kneeR = Math.max(0, Math.cos(ph)) * (run ? 1.1 : 0.7) + 0.05;
       armA = -legA * 0.9;
-      bob = Math.abs(Math.sin(t * f)) * 0.05;
+      bob = Math.abs(Math.sin(ph)) * 0.05;
       lean = run ? 0.12 : 0.04;
     } else if (this.anim !== "sit") {
       bob = Math.sin(t * 2) * 0.008;
@@ -589,6 +626,7 @@ export class Character {
       if (this.skirt) this.skirt.scale.y = 1;
     }
     this.body.rotation.x = lean;
+    this.body.rotation.z = this.bank;
     this.head.rotation.x = headNod;
     this.head.rotation.y = headTurn;
     this.head.rotation.z = tilt;

@@ -124,7 +124,10 @@ export interface Toast { id: number; kind: "info" | "success" | "tip" | "stamp";
 export interface HudState {
   zoneName: string;
   zoneBanner: { title: string; sub?: string } | null;
-  prompt: { label: string; kind: "talk" | "enter" | "exit" | "taxi" } | null;
+  /** What E / the tap does here; `lt` is a second line (a door's place in Lithuanian and what its name means). */
+  prompt: { label: string; lt?: string; kind: "talk" | "enter" | "exit" | "taxi" } | null;
+  /** The player is on the move (the task card folds away on a phone meanwhile). */
+  walking: boolean;
   objective: { sitId: string; title: string; goal: string; where: string; dist: number | null; angle: number | null; inside: boolean } | null;
   minimap: { px: number; pz: number; heading: number; targetX?: number; targetZ?: number; zone: string };
   fade: number;
@@ -173,7 +176,7 @@ export const useStore = create<Store>((set, get) => ({
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
-    zoneName: "", zoneBanner: null, prompt: null, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
+    zoneName: "", zoneBanner: null, prompt: null, walking: false, objective: null, minimap: { px: 0, pz: 0, heading: 0, zone: "town" }, fade: 0, panel: null,
     showTouch: typeof window !== "undefined" && (("ontouchstart" in window) || navigator.maxTouchPoints > 1),
   },
   toasts: [],

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore, type PlayMode } from "../state/store";
 import type { Look } from "../content/npcs";
 import { NPCS } from "../content/npcs";
-import { LOCATIONS } from "../content/locations";
+import { LOCATIONS, TOWN_LT } from "../content/locations";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import { sitProgress, stars } from "../state/progress";
 import { ltCount } from "./lt";
@@ -129,7 +129,10 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
     <div className="ts">
       <div className="ts-in">
         <header className="ts-head">
-          <span className="ts-place"><Icon name="pin" size={15} strokeWidth={2} /> Maple Harbor · JAV</span>
+          <span className="ts-placewrap">
+            <span className="ts-place"><Icon name="pin" size={15} strokeWidth={2} /> Maple Harbor · JAV</span>
+            <span className="ts-place-lt" lang="lt">{TOWN_LT}</span>
+          </span>
           <h1 className="ts-title">English <em>World</em></h1>
           {head}
         </header>

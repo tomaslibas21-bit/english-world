@@ -1,7 +1,9 @@
 // Builds the outdoor town of Maple Harbor from layout.ts: ground, sea, buildings, props, colliders, doors.
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
-import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect } from "./util";
+import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
+import { carParts } from "./car";
 import { STYLED, IS_REAL, grade } from "../style";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
@@ -33,7 +35,7 @@ export function buildTown(): Town {
   const gtex = new THREE.CanvasTexture(groundCanvas);
   gtex.colorSpace = THREE.SRGBColorSpace;
   gtex.anisotropy = 8;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD), STYLED ? groundMaterial(gtex) : new THREE.MeshLambertMaterial({ map: gtex }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD), STYLED ? groundMaterial(gtex) : withGrain(new THREE.MeshLambertMaterial({ map: gtex })));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(WORLD.minX + GW / 2, 0, G0Z + GD / 2);
   ground.receiveShadow = true;
@@ -72,7 +74,12 @@ export function buildTown(): Town {
         vec3 deep = vec3(0.13,0.47,0.62); vec3 shallow = vec3(0.35,0.78,0.80);
         vec3 c = mix(shallow, deep, shore);
         float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);
-        c += vec3(0.08) * smoothstep(0.55, 1.0, w);
+        c += vec3(0.09) * smoothstep(0.5, 1.0, w);
+        c -= vec3(0.05, 0.06, 0.05) * smoothstep(0.45, 1.0, -w);
+        float chop = sin(vW.x*1.1 - uTime*1.7 + sin(vW.z*0.9)) * sin(vW.z*1.3 + uTime*1.4);
+        c += vec3(0.04) * chop;
+        float glint = pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0);
+        c += vec3(0.55) * glint * (0.4 + 0.6 * shore);
         float foam = smoothstep(${(SEA_Z - 1.2).toFixed(1)}, ${(SEA_Z + 0.6).toFixed(1)}, vW.z + sin(vW.x*0.25 + uTime*1.5)*0.5);
         c = mix(c, vec3(0.97,0.98,0.96), foam*0.85);
         float dist = length(vW.xz - cameraPosition.xz);
@@ -106,9 +113,12 @@ export function buildTown(): Town {
   colliders.addBox((WORLD.minX - 4 + -41.3) / 2, SEA_Z - 30, -41.3 - (WORLD.minX - 4), 60);
   colliders.addBox((-18.7 + WORLD.maxX + 4) / 2, SEA_Z - 30, WORLD.maxX + 4 - -18.7, 60);
 
+  if (!STYLED) addMarkings(group);
   M.build(group);
 
   const clouds = makeClouds(group, r);
+  const boats = group.children.filter((o) => o.userData.boat);
+  const gulls = STYLED ? [] : makeGulls(group);
 
   return {
     group, colliders, doors, groundCanvas,
@@ -117,6 +127,20 @@ export function buildTown(): Town {
       for (const c of clouds) {
         c.position.x += dt * c.userData.v;
         if (c.position.x > 260) c.position.x = -200;
+      }
+      for (const b of boats) {
+        const { phase, rot } = b.userData.boat;
+        b.position.y = Math.sin(t * 1.1 + phase) * 0.12;
+        b.rotation.set(Math.sin(t * 0.9 + phase) * 0.035, rot, Math.sin(t * 1.3 + phase * 1.3) * 0.05);
+      }
+      for (const g of gulls) {
+        const u = g.userData.gull;
+        u.a += dt * u.w;
+        g.position.set(u.cx + Math.cos(u.a) * u.r, u.h + Math.sin(t * 0.7 + u.cx) * 0.6, u.cz + Math.sin(u.a) * u.r);
+        g.rotation.set(0, -u.a + (u.w > 0 ? 0 : Math.PI), u.w > 0 ? -0.25 : 0.25);
+        // flap in bursts, then glide with the wings level
+        const flap = Math.sin(t * 0.45 + u.cx) > 0.2 ? Math.sin(t * 9 + u.cx) : 0.35;
+        g.scale.y = 1.2 * flap;
       }
     },
     walkableAt(x, z) {
@@ -128,6 +152,99 @@ export function buildTown(): Town {
 // ---------------------------------------------------------------------------
 
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
+
+/** The ground's colours times a fine tiling grain (specks and soft blotches around mid grey, 4 m a tile): up close the
+ *  asphalt, sand and grass get texture instead of the blur of their 6 px/m map; far away it averages out. */
+function withGrain(m: THREE.MeshLambertMaterial) {
+  const S = 256, c = document.createElement("canvas");
+  c.width = c.height = S;
+  const x = c.getContext("2d")!, r = rand(11);
+  x.fillStyle = "rgb(128,128,128)"; x.fillRect(0, 0, S, S);
+  // drawn on every side of the tile too, so it repeats without seams
+  const dot = (px: number, py: number, rad: number, v: number, a: number) => {
+    x.fillStyle = `rgba(${v},${v},${v},${a})`;
+    for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { x.beginPath(); x.arc(px + ox, py + oy, rad, 0, Math.PI * 2); x.fill(); }
+  };
+  for (let i = 0; i < 70; i++) dot(r() * S, r() * S, 10 + r() * 26, r() < 0.5 ? 160 : 98, 0.2);
+  for (let i = 0; i < 2600; i++) dot(r() * S, r() * S, 0.6 + r() * 1.3, r() < 0.5 ? 200 : 60, 0.45);
+  const grain = new THREE.CanvasTexture(c);
+  grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
+  grain.anisotropy = 8;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.grainMap = { value: grain };
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vGrainUv;")
+      .replace("#include <project_vertex>", "#include <project_vertex>\nvGrainUv = (modelMatrix * vec4(transformed, 1.0)).xz / 4.0;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D grainMap;\nvarying vec2 vGrainUv;")
+      .replace("#include <map_fragment>", "#include <map_fragment>\ndiffuseColor.rgb *= 0.78 + 0.44 * texture2D(grainMap, vGrainUv).r;");
+  };
+  return m;
+}
+
+/** Road markings and the plaza's tile lines as thin flat geometry (one mesh per colour), sharp at any distance: the
+ *  ground texture has 6 px a metre, so lines thinner than a pixel smeared. Lines stop short of the crossings. */
+function addMarkings(group: THREE.Group) {
+  const P = GROUND_BLOCKS, Y = 0.012;
+  const parts: Record<string, THREE.BufferGeometry[]> = { center: [], white: [], plaza: [] };
+  const quad = (key: string, cx: number, cz: number, w: number, d: number) => parts[key].push(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2).translate(cx, Y, cz));
+  const vs = ROADS.filter((d) => d.x1 === d.x2), hs = ROADS.filter((d) => d.z1 === d.z2);
+  // the crossings and their crosswalks: no lane lines there
+  const cross: { x0: number; x1: number; z0: number; z1: number }[] = [];
+  for (const v of vs) for (const h of hs) {
+    if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
+    cross.push({ x0: v.x1 - v.w / 2 - 1.8, x1: v.x1 + v.w / 2 + 1.8, z0: h.z1 - h.w / 2 - 1.8, z1: h.z1 + h.w / 2 + 1.8 });
+    for (let k = -v.w / 2 + 0.6; k < v.w / 2 - 0.4; k += 1.1) for (const dz of [-(h.w / 2 + 1.6), h.w / 2 + 0.4]) quad("white", v.x1 + k + 0.275, h.z1 + dz + 0.6, 0.55, 1.2);
+    for (let k = -h.w / 2 + 0.6; k < h.w / 2 - 0.4; k += 1.1) for (const dx of [-(v.w / 2 + 1.6), v.w / 2 + 0.4]) quad("white", v.x1 + dx + 0.6, h.z1 + k + 0.275, 1.2, 0.55);
+  }
+  // the mid-block crosswalks on Main Street (café ↔ museum, bank ↔ square)
+  for (const cx of [-50, 22, 100]) {
+    cross.push({ x0: cx - 1.6, x1: cx + 1.6, z0: -13, z1: -3 });
+    for (let k = -4.4; k < 4.6; k += 1.1) quad("white", cx, -8 + k + 0.275, 3, 0.55);
+  }
+  const free = (x: number, z: number) => !cross.some((c) => x > c.x0 && x < c.x1 && z > c.z0 && z < c.z1);
+  for (const rd of ROADS) {
+    const horiz = rd.z1 === rd.z2;
+    const a = horiz ? Math.min(rd.x1, rd.x2) : Math.min(rd.z1, rd.z2), b = horiz ? Math.max(rd.x1, rd.x2) : Math.max(rd.z1, rd.z2);
+    const at = (along: number, side: number): [number, number] => (horiz ? [along, rd.z1 + side] : [rd.x1 + side, along]);
+    // a dashed yellow centre line: 2.5 m dashes, 2 m gaps
+    for (let u = a + 1; u + 2.5 <= b; u += 4.5) {
+      const [x0, z0] = at(u, 0), [x1, z1] = at(u + 2.5, 0);
+      if (!free(x0, z0) || !free(x1, z1)) continue;
+      const [cx, cz] = at(u + 1.25, 0);
+      quad("center", cx, cz, horiz ? 2.5 : 0.18, horiz ? 0.18 : 2.5);
+    }
+    // white edge lines half a metre in from each side, in 1 m pieces that leave out the crossings
+    for (const side of [-(rd.w / 2 - 0.5), rd.w / 2 - 0.5]) {
+      let start: number | null = null;
+      const flush = (end: number) => {
+        if (start === null || end - start < 0.5) return;
+        const [cx, cz] = at((start + end) / 2, side);
+        quad("white", cx, cz, horiz ? end - start : 0.12, horiz ? 0.12 : end - start);
+      };
+      for (let u = a; u <= b; u += 1) {
+        const [px, pz] = at(Math.min(u + 0.5, b), side);
+        if (free(px, pz)) { if (start === null) start = u; } else { flush(u); start = null; }
+      }
+      flush(b);
+    }
+  }
+  // the plaza's tiles: lines every 2 m, a little darker than the paving
+  const plazaLine = new THREE.Color(P.plaza).lerp(new THREE.Color(160 / 255, 140 / 255, 110 / 255), 0.35);
+  for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) quad("plaza", gx, (SQUARE.z1 + SQUARE.z2) / 2, 0.06, SQUARE.z2 - SQUARE.z1);
+  for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) quad("plaza", (SQUARE.x1 + SQUARE.x2) / 2, gz, SQUARE.x2 - SQUARE.x1, 0.06);
+  const colors: Record<string, THREE.ColorRepresentation> = { center: P.centerLine, white: "#f4f4f0", plaza: plazaLine };
+  for (const [key, geos] of Object.entries(parts)) {
+    if (!geos.length) continue;
+    // drawn over the ground (no fighting with it far away), lit and shadowed like it
+    const m = new THREE.MeshLambertMaterial({ color: colors[key], polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const mesh = new THREE.Mesh(mergeGeometries(geos, false)!, m);
+    for (const g of geos) g.dispose();
+    mesh.name = "markings-" + key;
+    mesh.receiveShadow = true;
+    mesh.matrixAutoUpdate = false;
+    mesh.updateMatrix();
+    group.add(mesh);
+  }
+}
 
 function drawGround(): HTMLCanvasElement {
   const P = STYLED ? groundPalette() : GROUND_BLOCKS; // trial styles repaint the same map
@@ -160,8 +277,11 @@ function drawGround(): HTMLCanvasElement {
   // square plaza
   rectW(x, SQUARE.x1, SQUARE.z1, SQUARE.x2, SQUARE.z2, P.plaza);
   x.strokeStyle = P.plazaLines; x.lineWidth = 1;
-  for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) { x.beginPath(); x.moveTo(...toC(gx, SQUARE.z1)); x.lineTo(...toC(gx, SQUARE.z2)); x.stroke(); }
-  for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) { x.beginPath(); x.moveTo(...toC(SQUARE.x1, gz)); x.lineTo(...toC(SQUARE.x2, gz)); x.stroke(); }
+  // the plaza's tile lines (blocks style: drawn as geometry by addMarkings, sharp up close)
+  if (STYLED) {
+    for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) { x.beginPath(); x.moveTo(...toC(gx, SQUARE.z1)); x.lineTo(...toC(gx, SQUARE.z2)); x.stroke(); }
+    for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) { x.beginPath(); x.moveTo(...toC(SQUARE.x1, gz)); x.lineTo(...toC(SQUARE.x2, gz)); x.stroke(); }
+  }
   x.fillStyle = P.plazaCircle; x.beginPath(); x.arc(...toC(FOUNTAIN.x, FOUNTAIN.z), 8 * PPM, 0, Math.PI * 2); x.fill();
   // lots behind buildings / station forecourt / terminal forecourt
   rectW(x, 28, 45, 62, 48.5, P.lot);
@@ -173,8 +293,8 @@ function drawGround(): HTMLCanvasElement {
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2 + SIDEWALK - 0.25, P.sidewalkInner);
   // roads
   for (const rd of ROADS) roadRect(x, rd, rd.w / 2, P.road);
-  // markings
-  for (const rd of ROADS) {
+  // markings (blocks style: drawn as geometry by addMarkings, sharp up close)
+  for (const rd of STYLED ? ROADS : []) {
     const horiz = rd.z1 === rd.z2;
     x.strokeStyle = P.centerLine; x.lineWidth = 0.18 * PPM; x.setLineDash([2.5 * PPM, 2 * PPM]);
     x.beginPath(); x.moveTo(...toC(rd.x1, rd.z1)); x.lineTo(...toC(rd.x2, rd.z2)); x.stroke();
@@ -192,6 +312,7 @@ function drawGround(): HTMLCanvasElement {
   for (const v of vs) for (const h of hs) {
     if (v.x1 < h.x1 - 1 || v.x1 > h.x2 + 1 || h.z1 < v.z1 - 1 || h.z1 > v.z2 + 1) continue;
     rectW(x, v.x1 - v.w / 2, h.z1 - h.w / 2, v.x1 + v.w / 2, h.z1 + h.w / 2, P.road);
+    if (!STYLED) continue;
     x.fillStyle = P.crosswalk;
     for (let k = -v.w / 2 + 0.6; k < v.w / 2 - 0.4; k += 1.1) {
       for (const dz of [-(h.w / 2 + 1.6), h.w / 2 + 0.4]) rectFill(x, v.x1 + k, h.z1 + dz, 0.55, 1.2);
@@ -201,7 +322,7 @@ function drawGround(): HTMLCanvasElement {
     }
   }
   // mid-block crosswalks on Main Street (café ↔ museum, bank ↔ square)
-  for (const cx of [-50, 22, 100]) {
+  for (const cx of STYLED ? [-50, 22, 100] : []) {
     x.fillStyle = P.crosswalk;
     for (let k = -4.4; k < 4.6; k += 1.1) rectFill(x, cx - 1.5, -8 + k, 3, 0.55);
   }
@@ -244,6 +365,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const wallMat = mat(b.color);
   const trimMat = mat(b.trim ?? "#6b6b6b");
   const glassMat = mat("#9ccbe6", { emissive: "#1b3a4c" });
+  const frameMat = mat("#f3eee4");
   const darkGlass = mat("#5f8fb0", { emissive: "#0e2233" });
   const key = b.id;
   const { n, t, halfDepth, halfWidth } = faceInfo(b);
@@ -359,7 +481,14 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
         const wh = b.style === "office" || b.style === "terminal" ? 2.6 : bigShop ? 2.2 : 1.5;
         M.add("glass", b.style === "office" ? darkGlass : glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
         if (b.style !== "office" && b.style !== "terminal") {
-          M.add(`trim-${b.trim}`, trimMat, boxGeo(ww + 0.25, 0.14, 0.16, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0) - wh / 2 - 0.05, wz));
+          const cy = y - (bigShop ? 0.35 : 0);
+          M.add(`trim-${b.trim}`, trimMat, boxGeo(ww + 0.25, 0.14, 0.16, 0, 0, 0).rotateY(rot).translate(wx, cy - wh / 2 - 0.05, wz));
+          // a painted frame round the glass, and the window's cross (a shop window keeps one big pane): flat strips
+          // just in front of the glass (two triangles each; a town has hundreds of windows)
+          const fr = (w: number, h: number, ox: number, oy: number) => M.add("window-frame", frameMat, new THREE.PlaneGeometry(w, h).translate(ox, oy, 0.05).rotateY(rot).translate(wx, cy, wz), false);
+          fr(ww + 0.14, 0.09, 0, wh / 2 + 0.02);
+          for (const s of [-1, 1]) fr(0.08, wh + 0.06, s * (ww / 2 + 0.02), 0);
+          if (!bigShop) { fr(0.05, wh, 0, 0); fr(ww, 0.05, 0, wh * 0.12); }
         }
       }
     }
@@ -725,7 +854,13 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
   // parked cars
   const colors = ["#e45b4f", "#4a7bb7", "#f2c14e", "#6fbf73", "#f4f4f4", "#3d3d46", "#b5838d"];
+  const parked: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   const car = (x: number, z: number, rot: number, color: string) => {
+    if (!STYLED) {
+      for (const [g, c] of carParts(color)) parked.push([g.rotateY(rot).translate(x, 0, z), c]);
+      col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3);
+      return;
+    }
     const body = mat(color, { flat: true });
     M.add("car-" + color, body, boxGeo(1.9, 0.7, 4.2, 0, 0.65, 0).rotateY(rot).translate(x, 0, z));
     M.add("car-" + color, body, boxGeo(1.7, 0.6, 2.2, 0, 1.3, -0.2).rotateY(rot).translate(x, 0, z));
@@ -737,7 +872,8 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   };
   let ci = 0;
   for (const [x, z, rot] of PARKED_CARS) car(x, z, rot, colors[ci++ % colors.length]);
-  void group; void r;
+  if (parked.length) group.add(staticColoured(parked, "parked-cars"));
+  void r;
 }
 
 function nearIntersection(x: number, z: number) {
@@ -869,6 +1005,69 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   col.addCircle(44, -22, 3.1);
 }
 
+const BOATS: [number, number, number, string][] = [[-10, -84, 0.3, "#e45b4f"], [10, -90, -0.6, "#4a7bb7"], [30, -80, 1.2, "#f2c14e"], [-58, -86, 0.1, "#ffffff"], [60, -96, 2.4, "#6fbf73"]];
+
+const coloured = colourMerge;
+let boatMat: THREE.MeshLambertMaterial | null = null;
+
+/** Still shapes in their own colours as one mesh that casts shadows (the parked cars, the taxi). */
+function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation][], name: string) {
+  boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  const mesh = new THREE.Mesh(colourMerge(parts), boatMat);
+  mesh.name = name;
+  mesh.castShadow = mesh.receiveShadow = true;
+  mesh.matrixAutoUpdate = false;
+  mesh.updateMatrix();
+  return mesh;
+}
+
+function makeBoats() {
+  boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  // the hull seen from above: square stern, pointed bow
+  const shape = new THREE.Shape();
+  shape.moveTo(-1.1, -3); shape.lineTo(1.1, -3); shape.lineTo(1.1, 1.2); shape.quadraticCurveTo(1.0, 2.4, 0, 3.2);
+  shape.quadraticCurveTo(-1.0, 2.4, -1.1, 1.2); shape.lineTo(-1.1, -3);
+  return BOATS.map(([bx, bz, rot, c], i) => {
+    const hull = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).translate(0, -0.35, 0);
+    const deck = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).scale(0.9, 1, 0.9).translate(0, 0.56, 0);
+    const stripe = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false, curveSegments: 6 }).rotateX(-Math.PI / 2).scale(1.015, 1, 1.008).translate(0, 0.25, 0);
+    const mesh = new THREE.Mesh(coloured([
+      [hull, c], [stripe, c === "#ffffff" ? "#2f6db5" : "#ffffff"], [deck, "#c9a27a"],
+      [new THREE.BoxGeometry(1.4, 0.9, 1.8).translate(0, 1.05, -0.6), "#f4f6f8"],
+      [new THREE.BoxGeometry(1.42, 0.3, 1.3).translate(0, 1.2, -0.45), "#5f8fb0"], // the cabin's windows
+      [new THREE.CylinderGeometry(0.05, 0.05, 5, 5).translate(0, 3, 0.4), "#dddddd"],
+    ]), boatMat!);
+    mesh.position.set(bx, 0, bz);
+    mesh.rotation.y = rot;
+    mesh.castShadow = true;
+    mesh.userData.boat = { phase: i * 1.7, rot };
+    return mesh;
+  });
+}
+
+/** A few gulls circling over the harbour, flapping now and then and gliding. */
+function makeGulls(group: THREE.Group) {
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true });
+  const wing = (s: number) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0.18, s * 0.95, 0.35, 0, 0, 0, -0.16], 3));
+    g.computeVertexNormals();
+    return g;
+  };
+  const geo = coloured([
+    [wing(1), "#f4f6f8"], [wing(-1), "#f4f6f8"],
+    [new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([0.72, 0.266, 0.05, 0.95, 0.35, 0, 0.75, 0.277, -0.06, -0.72, 0.266, 0.05, -0.95, 0.35, 0, -0.75, 0.277, -0.06], 3)), "#3a3f45"], // dark wing tips
+    [new THREE.SphereGeometry(0.11, 6, 4).scale(1, 0.8, 2.2), "#ffffff"],
+  ]);
+  return Array.from({ length: 5 }, (_, i) => {
+    const g = new THREE.Mesh(geo, m);
+    g.userData.gull = { cx: -30 + i * 14, cz: -78 - (i % 2) * 8, r: 9 + i * 2.5, h: 10 + (i % 3) * 2.2, w: (i % 2 ? 1 : -1) * (0.22 + i * 0.03), a: i * 1.3 };
+    g.scale.setScalar(1.2);
+    group.add(g);
+    return g;
+  });
+}
+
 function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
   // pier walkway and deck
   const wood = mat("#b8895a");
@@ -890,13 +1089,15 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   for (const y of [4, 10]) M.add("lighthouse-red", mat("#c8392f"), cylGeo(2.35 - y * 0.03, 2.45 - y * 0.03, 2.4, x, y, z, 16));
   M.add("lighthouse-top", mat("#fff2b0", { emissive: "#c9a53a" }), cylGeo(1.5, 1.5, 2, x, 18, z, 12));
   M.add("lighthouse-cap", mat("#c8392f", { flat: true }), new THREE.ConeGeometry(2, 2, 12).translate(x, 20, z));
-  // boats
-  for (const [bx, bz, rot, c] of [[-10, -84, 0.3, "#e45b4f"], [10, -90, -0.6, "#4a7bb7"], [30, -80, 1.2, "#f2c14e"], [-58, -86, 0.1, "#ffffff"], [60, -96, 2.4, "#6fbf73"]] as [number, number, number, string][]) {
-    const hull = new THREE.BoxGeometry(2.2, 0.9, 6); hull.rotateY(rot); hull.translate(bx, 0.1, bz);
-    M.add("boat-" + c, mat(c, { flat: true }), hull);
-    M.add("boat-cabin", mat("#f4f6f8"), boxGeo(1.4, 0.9, 1.8, 0, 0, 0).rotateY(rot).translate(bx, 1, bz));
-    M.add("boat-mast", mat("#ddd"), cylGeo(0.05, 0.05, 5, bx, 3, bz, 5));
-  }
+  // boats: each one mesh (a hull with a pointed bow, a deck, a cabin, a mast) that rocks on the water (see update)
+  if (STYLED) {
+    for (const [bx, bz, rot, c] of BOATS) {
+      const hull = new THREE.BoxGeometry(2.2, 0.9, 6); hull.rotateY(rot); hull.translate(bx, 0.1, bz);
+      M.add("boat-" + c, mat(c, { flat: true }), hull);
+      M.add("boat-cabin", mat("#f4f6f8"), boxGeo(1.4, 0.9, 1.8, 0, 0, 0).rotateY(rot).translate(bx, 1, bz));
+      M.add("boat-mast", mat("#ddd"), cylGeo(0.05, 0.05, 5, bx, 3, bz, 5));
+    }
+  } else for (const b of makeBoats()) group.add(b);
   // beach umbrellas and seagull-free calm
   for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
     M.add("umbrella", mat(c, { flat: true }), new THREE.ConeGeometry(1.6, 0.7, 8).translate(ux, 2.4, uz));
@@ -910,13 +1111,16 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   // taxi
   const { x, z, rot } = TAXI;
   const yellow = mat("#f5c518", { flat: true });
-  M.add("taxi", yellow, boxGeo(1.9, 0.72, 4.4, 0, 0.66, 0).rotateY(rot).translate(x, 0, z));
-  M.add("taxi", yellow, boxGeo(1.7, 0.6, 2.3, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z));
-  M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(1.72, 0.45, 2.1, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z), false);
-  M.add("taxi-sign", mat("#ffffff", { emissive: "#666600" }), boxGeo(0.7, 0.25, 0.3, 0, 1.75, -0.1).rotateY(rot).translate(x, 0, z));
-  M.add("taxi-check", mat("#222"), boxGeo(1.92, 0.12, 4.42, 0, 0.72, 0).rotateY(rot).translate(x, 0, z), false);
-  for (const [wx, wz] of [[-0.9, 1.4], [0.9, 1.4], [-0.9, -1.4], [0.9, -1.4]]) {
-    M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
+  if (!STYLED) group.add(staticColoured(carParts("#f5c518", { taxi: true }).map(([g, c]) => [g.rotateY(rot).translate(x, 0, z), c]), "taxi"));
+  else M.add("taxi", yellow, boxGeo(1.9, 0.72, 4.4, 0, 0.66, 0).rotateY(rot).translate(x, 0, z));
+  if (STYLED) {
+    M.add("taxi", yellow, boxGeo(1.7, 0.6, 2.3, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z));
+    M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(1.72, 0.45, 2.1, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z), false);
+    M.add("taxi-sign", mat("#ffffff", { emissive: "#666600" }), boxGeo(0.7, 0.25, 0.3, 0, 1.75, -0.1).rotateY(rot).translate(x, 0, z));
+    M.add("taxi-check", mat("#222"), boxGeo(1.92, 0.12, 4.42, 0, 0.72, 0).rotateY(rot).translate(x, 0, z), false);
+    for (const [wx, wz] of [[-0.9, 1.4], [0.9, 1.4], [-0.9, -1.4], [0.9, -1.4]]) {
+      M.add("wheel", mat("#222"), cylGeo(0.36, 0.36, 0.3, 0, 0, 0, 10).rotateZ(Math.PI / 2).translate(wx, 0.36, wz).rotateY(rot).translate(x, 0, z));
+    }
   }
   col.addBox(x, z, 4.4, 2.1);
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));

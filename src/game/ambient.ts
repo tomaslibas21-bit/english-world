@@ -6,6 +6,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { createCharacter, type GameCharacter } from "./characters";
 import { STYLED, IS_TOON, vertexColorMaterial, makeOutline, outlineColorFor } from "./style";
 import { carGeometry as styledCarGeometry } from "./world/styled";
+import { carGeometry } from "./world/car";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand } from "./world/util";
@@ -57,7 +58,7 @@ export class Ambient {
   constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low") {
     const nw = quality === "high" ? 7 : 3, nc = quality === "high" ? 8 : 4;
     for (let i = 0; i < nw; i++) this.addWalker(i);
-    const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true });
+    const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
       const color = CAR_COLORS[i % CAR_COLORS.length];
@@ -211,27 +212,3 @@ export class Ambient {
   }
 }
 
-/** One low-poly car as a single vertex-coloured mesh (forward = +Z). */
-function carGeometry(color: string): THREE.BufferGeometry {
-  const parts: [THREE.BufferGeometry, string][] = [];
-  const box = (w: number, h: number, d: number, x: number, y: number, z: number, c: string) => parts.push([new THREE.BoxGeometry(w, h, d).translate(x, y, z), c]);
-  box(1.9, 0.7, 4.2, 0, 0.65, 0, color);
-  box(1.7, 0.58, 2.2, 0, 1.28, -0.15, color);
-  box(1.74, 0.42, 2.0, 0, 1.3, -0.15, "#9ccbe6");
-  box(1.92, 0.14, 4.22, 0, 0.36, 0, "#3a3a40");
-  for (const x of [-0.62, 0.62]) { box(0.36, 0.16, 0.06, x, 0.78, 2.11, "#fff6c8"); box(0.36, 0.14, 0.06, x, 0.8, -2.11, "#d83a3a"); }
-  for (const [x, z] of [[-0.9, 1.35], [0.9, 1.35], [-0.9, -1.35], [0.9, -1.35]]) {
-    parts.push([new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10).rotateZ(Math.PI / 2).translate(x, 0.36, z), "#222222"]);
-  }
-  const geos = parts.map(([g, c]) => {
-    const ng = g.toNonIndexed();
-    const col = new THREE.Color(c);
-    const n = ng.attributes.position.count;
-    const arr = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { arr[i * 3] = col.r; arr[i * 3 + 1] = col.g; arr[i * 3 + 2] = col.b; }
-    ng.setAttribute("color", new THREE.BufferAttribute(arr, 3));
-    ng.deleteAttribute("uv");
-    return ng;
-  });
-  return mergeGeometries(geos, false)!;
-}

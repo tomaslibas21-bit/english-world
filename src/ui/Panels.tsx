@@ -3,7 +3,7 @@ import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
 import { switchPlayMode } from "./playMode";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
-import { LOCATIONS } from "../content/locations";
+import { LOCATIONS, TOWN_LT, placeLt } from "../content/locations";
 import { NPCS } from "../content/npcs";
 import { coachVoice } from "../content/voices";
 import { OUTDOOR_NPCS, WORLD, SEA_Z, AIRPORT_EXIT } from "../game/world/layout";
@@ -241,6 +241,7 @@ function MapPanel({ close }: { close: () => void }) {
     <div className="sheet">
       <SheetHead icon="map" title="Maple Harbor" close={close} />
       <div className="sheet-body">
+        <div className="town-lt" lang="lt">{TOWN_LT}</div>
         <div className="map-wrap">
           <div className="map-canvas">
             <canvas ref={ref} />
@@ -263,7 +264,7 @@ function MapPanel({ close }: { close: () => void }) {
             {sel && (
               <div>
                 <h3 className="place-title"><span className="place-ico"><Icon name={locIcon(sel)} size={22} /></span>{LOCATIONS[sel].name}</h3>
-                <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{LOCATIONS[sel].lt}</div>
+                <div style={{ color: "var(--ink-soft)", marginBottom: 10 }}>{placeLt(sel)}</div>
                 <div className="sit-list">
                   {selSits.map((s) => (
                     <div key={s.id}>

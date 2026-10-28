@@ -1,6 +1,6 @@
 // Interiors: dollhouse-style rooms (back and side walls, a low front wall) seen from the entrance.
 import * as THREE from "three";
-import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect } from "./util";
+import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { floorMaterial, floorColor } from "./styled";
 
@@ -26,6 +26,25 @@ type Builder = (ctx: Ctx) => void;
 interface Ctx { M: Merger; col: Colliders; g: THREE.Group; w: number; d: number; r: () => number; anim: ((t: number, dt: number) => void)[] }
 
 const WALL_H = 4.2;
+
+/** What lies in front of a room's open front wall, where the camera looks past the floor: a doorstep, a pavement with
+ *  its kerb, and a strip of street with a dashed line (one mesh). */
+function outside(w: number, d: number) {
+  const z0 = d / 2 + 0.3, W = w + 24;
+  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [
+    [new THREE.BoxGeometry(2.6, 0.08, 0.9).translate(0, 0.0, z0 + 0.45), "#a59f95"], // the doorstep
+    [new THREE.PlaneGeometry(W, 4.2).rotateX(-Math.PI / 2).translate(0, -0.04, z0 + 2.1), "#d6d0c3"], // pavement
+    [new THREE.BoxGeometry(W, 0.16, 0.3).translate(0, -0.04, z0 + 4.3), "#bdb6a8"], // kerb
+    [new THREE.PlaneGeometry(W, 14).rotateX(-Math.PI / 2).translate(0, -0.12, z0 + 11.4), "#5b6067"], // street
+  ];
+  for (let x = -W / 2 + 1; x < W / 2; x += 4.5) parts.push([new THREE.PlaneGeometry(2.5, 0.16).rotateX(-Math.PI / 2).translate(x + 1.25, -0.1, z0 + 9), "#f2c84b"]);
+  // the pavement's slabs
+  for (let x = -W / 2; x <= W / 2; x += 1.6) parts.push([new THREE.PlaneGeometry(0.04, 4.2).rotateX(-Math.PI / 2).translate(x, -0.035, z0 + 2.1), "#c5bfb2"]);
+  const m = new THREE.Mesh(colourMerge(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  m.receiveShadow = true;
+  m.name = "outside";
+  return m;
+}
 
 function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: "wood" | "tile" | "carpet" | "stone"; accent?: string; warm?: boolean } = {}): Interior {
   const g = new THREE.Group();
@@ -86,6 +105,7 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   col.addBox(0, d / 2 + 1.4, gap + 2, 0.6); // beyond the exit mat
   // exit mat
   M.add("exit-mat", mat("#b5452f"), boxGeo(2.2, 0.03, 1.2, 0, 0.015, d / 2 - 0.4), false);
+  g.add(outside(w, d));
   const anim: Ctx["anim"] = [];
   build({ M, col, g, w, d, r, anim });
   M.build(g);

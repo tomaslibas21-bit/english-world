@@ -45,3 +45,41 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("sproutly", "Sproutly", "Startuolis „Sproutly“", "harbor", "interior", "🌱"),
   L("phone", "Phone call", "Skambutis telefonu", "phone", "phone", "📱"),
 ].map((l) => [l.id, l]));
+
+/** The town's name for beginners: how it sounds in Lithuanian and what it means. */
+export const TOWN_LT = "Meipl Harboras – miestelio pavadinimas (pažod. „Klevų uostas“)";
+
+/** What the English names mean, word for word, where the Lithuanian name doesn't already say it. Shown where the
+ *  learner meets the name (walking up to a door, the map); the signs in the town stay English. */
+export const NAME_MEANING: Record<string, string> = {
+  airport: "Meipl Harboro oro uostas",
+  station: "Sąjungos stotis",
+  "bus-stop": "Ąžuolų alėja",
+  "car-rental": "Uosto automobilių nuoma",
+  "gas-station": "Įsipilk ir važiuok",
+  hotel: "Vaizdas į uostą",
+  museum: "Meipl Harboro meno muziejus",
+  "sunny-cup": "Saulėtas puodelis",
+  trattoria: "Lucijos tratorija (itališkas restoranėlis)",
+  threads: "Siūlai (šnek. drabužiai)",
+  pharmacy: "Uosto vaistinė",
+  salon: "Kirpimas ir stilius",
+  bank: "Uosto bankas",
+  "post-office": "JAV paštas",
+  apartments: "Klevų gatvės butai",
+  office: "Šviesi linija",
+  "the-pier": "Prieplauka",
+  clinic: "Uosto šeimos klinika",
+  market: "Uosto prekyvietė",
+  gym: "Uosto sporto klubas",
+  "cedar-lane": "Kedrų gatvelė",
+  sproutly: "Daigelis (nuo sprout – daigas)",
+};
+
+/** A place in Lithuanian, with what its English name means: "Kavinė „Sunny Cup“ – pažod. „Saulėtas puodelis“". */
+export const placeLt = (id: string) => {
+  const l = LOCATIONS[id];
+  if (!l) return "";
+  const m = NAME_MEANING[id];
+  return m ? `${l.lt} – pažod. „${m}“` : l.lt;
+};

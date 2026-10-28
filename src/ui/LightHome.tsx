@@ -6,6 +6,7 @@ import { useStore } from "../state/store";
 import { setGame, game } from "../game/gameRef";
 import { LightGame } from "../game/LightGame";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
+import { TOWN_LT } from "../content/locations";
 import { LOCATIONS } from "../content/locations";
 import { NPCS } from "../content/npcs";
 import type { SituationDef } from "../content/types";
@@ -99,7 +100,7 @@ function LightHome() {
     <div className="lh" inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
-          <div className="lh-brand"><span className="lh-logo">English World</span><span className="lh-town">Maple Harbor</span></div>
+          <div className="lh-brand"><span className="lh-logo">English World</span><span className="lh-town">Maple Harbor</span><span className="lh-town-lt" lang="lt">{TOWN_LT}</span></div>
           <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title="Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis"><Icon name="map" size={22} /><span>Atidaryti 3D miestą</span></button>
           <nav className="lh-tools" aria-label="Įrankiai">
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title="Grįžti į kursą"><Icon name="home" size={24} /><span>Kursas</span></a>}

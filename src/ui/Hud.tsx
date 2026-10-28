@@ -52,7 +52,8 @@ export function Hud() {
       {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {hud.prompt && !hud.panel && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
-          <kbd>{hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>{hud.prompt.label}
+          <kbd>{hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
+          <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
         </button>
       )}
       {helpOpen && !hud.showTouch && (
@@ -77,7 +78,11 @@ function Fade() {
 function Objective() {
   const o = useStore((s) => s.hud.objective);
   const progress = useStore((s) => s.progress);
-  const [collapsed, setCollapsed] = useState(false);
+  // on a phone it folds away by itself while you walk (and opens when you stop), until you fold or open it yourself
+  const [manual, setManual] = useState<boolean | null>(null);
+  const walking = useStore((s) => s.hud.walking);
+  const collapsed = manual ?? (walking && typeof window !== "undefined" && window.innerWidth < 600);
+  const setCollapsed = (v: boolean) => setManual(v);
   if (!o) {
     return (
       <div className="objective-card">

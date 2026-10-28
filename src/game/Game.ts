@@ -4,7 +4,7 @@ import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF } from "./world/layout";
-import { createCharacter, type GameCharacter } from "./characters";
+import { createCharacter, setBlobShadows, type GameCharacter } from "./characters";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
 import { Guidance } from "./guidance";
@@ -14,8 +14,9 @@ import { Ambient } from "./ambient";
 import { AMBIENT_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
+import { Dust } from "./dust";
 import { NPCS, type Look } from "../content/npcs";
-import { LOCATIONS } from "../content/locations";
+import { LOCATIONS, placeLt } from "../content/locations";
 import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import type { SituationDef } from "../content/types";
 import { useStore } from "../state/store";
@@ -58,12 +59,19 @@ export class Game implements GameApi {
   private keys = new Set<string>();
   private joy = { x: 0, y: 0 };
   private vel = new THREE.Vector3();
+  private lastHeading = 0;
   private heading = Math.PI;
   private autoPath: [number, number][] | null = null;
   private autoTarget: { kind: "npc" | "door" | "exit" | "point"; id?: string } | null = null;
   private clock = new THREE.Clock();
   private t = 0;
   private hudT = 0;
+  private moveT = 0;
+  private stillT = 0;
+  /** Footsteps and dust: the distance walked since the last step, and the speed a moment ago (stopping short). */
+  private stepDist = 0;
+  private lastSpeed = 0;
+  private dust = new Dust();
   private pathT = 0;
   private session: Session | null = null;
   private talkNpc: NpcActor | null = null;
@@ -89,9 +97,11 @@ export class Game implements GameApi {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1));
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.shadowMap.enabled = q === "high";
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // soft edges come from the sun's shadow.radius (three.js no longer has PCFSoftShadowMap)
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    setBlobShadows(q !== "high");
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
     this.rig = new CameraRig(container.clientWidth / container.clientHeight);
@@ -133,7 +143,7 @@ export class Game implements GameApi {
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
     places.push([22, -20], [40, -46], [16, -36], [-12, -62], [30, -63], [-30, -61], [96, -30], [-6, 46], [62, 44], [-42, 44], [118, 2]);
     this.ambient = new Ambient(nav, places, st.settings.quality);
-    this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group);
+    this.scene.add(this.npcLayer, this.guidance.group, this.ambient.group, this.dust.group);
     // camera never goes inside buildings
     const boxes = BUILDINGS.map((b) => ({ x0: b.x - b.w / 2 - 0.4, x1: b.x + b.w / 2 + 0.4, z0: b.z - b.d / 2 - 0.4, z1: b.z + b.d / 2 + 0.4, h: b.h + (b.roof === "gable" ? Math.min(b.w, b.d) * 0.32 : 0) + 0.8 }));
     boxes.push({ x0: 125.5, x1: 134.5, z0: -18.5, z1: 2.5, h: 6.2 }); // terminal canopy
@@ -164,9 +174,9 @@ export class Game implements GameApi {
   }
 
   private setupLights() {
-    this.hemi = new THREE.HemisphereLight("#e4f3ff", "#8fbf6a", 1.6);
+    this.hemi = new THREE.HemisphereLight("#e4f3ff", "#8fbf6a", 1.4);
     this.scene.add(this.hemi);
-    this.sun = new THREE.DirectionalLight("#fff1dc", 2.5);
+    this.sun = new THREE.DirectionalLight("#fff0d8", 2.75);
     this.sun.position.set(-40, 70, 30);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -174,6 +184,7 @@ export class Game implements GameApi {
     Object.assign(this.sun.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 1, far: 200 });
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.03;
+    this.sun.shadow.radius = 2.5;
     this.scene.add(this.sun, this.sun.target);
     // sky dome
     const skyMat = new THREE.ShaderMaterial({
@@ -228,8 +239,9 @@ export class Game implements GameApi {
       this.ambient.group.visible = !indoor;
       this.scene.fog = indoor ? null : new THREE.Fog("#cfe8f5", 110, 420);
       this.scene.background = indoor ? new THREE.Color(z.interior?.warm ? "#2b2320" : "#23282e") : null;
-      this.hemi.intensity = indoor ? 1.9 : 1.6;
-      this.sun.intensity = indoor ? 1.6 : 2.5;
+      // outdoors a little less flat fill and a little more sun than before (deeper colours, clearer shapes)
+      this.hemi.intensity = indoor ? 1.9 : 1.4;
+      this.sun.intensity = indoor ? 1.6 : 2.75;
       this.fx?.zone(indoor, !!z.interior?.warm);
       this.rig.mode = indoor ? "interior" : "follow";
       if (indoor) this.rig.interiorBounds = { w: z.interior!.w, d: z.interior!.d };
@@ -747,8 +759,25 @@ export class Game implements GameApi {
     this.rig.cam.updateProjectionMatrix();
   };
 
+  /** Resolution that follows the phone: every 2 s, slow frames (under about 45 a second) lower the pixel ratio a
+   *  step, and 6 s of easy frames raise it again, between 1 and the quality's top. */
+  private perf = { last: 0, acc: 0, n: 0, easy: 0 };
+  private adaptResolution(now: number) {
+    const p = this.perf;
+    if (p.last) { p.acc += Math.min(now - p.last, 100); p.n++; }
+    p.last = now;
+    if (p.acc < 2000) return;
+    const avg = p.acc / p.n, q = useStore.getState().settings.quality;
+    p.acc = 0; p.n = 0;
+    const top = Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1), pr = this.renderer.getPixelRatio();
+    if (avg > 22 && pr > 1) { this.renderer.setPixelRatio(Math.max(1, pr - 0.25)); this.onResize(); p.easy = 0; }
+    else if (avg < 17 && pr < top) { if ((p.easy += 2) >= 6) { this.renderer.setPixelRatio(Math.min(top, pr + 0.25)); this.onResize(); p.easy = 0; } }
+    else p.easy = 0;
+  }
+
   private loop = () => {
     if (this.disposed) return;
+    this.adaptResolution(performance.now());
     const dt = Math.min(0.05, this.clock.getDelta());
     this.t += dt;
     const st = useStore.getState();
@@ -779,11 +808,20 @@ export class Game implements GameApi {
     const forwardish = velDir.dot(camFwd) > 0.35;
     this.rig.target.lerp(this.player.root.position, Math.min(1, dt * 10));
     this.rig.update(dt, this.heading, moving, forwardish, st.settings.cameraFollow && !this.pointer.down);
-    // shift the picture while the conversation panel is open
-    if (talking && this.talkNpc) {
+    // the picture widens a touch at a run (a sense of speed), and settles back when walking
+    const fov = this.rig.mode === "follow" && this.vel.lengthSq() > 30 ? 54 : 50;
+    if (Math.abs(this.rig.cam.fov - fov) > 0.01) {
+      this.rig.cam.fov += (fov - this.rig.cam.fov) * Math.min(1, dt * 3);
+      this.rig.cam.updateProjectionMatrix();
+    }
+    // shift the picture while the conversation panel is open; on a phone held upright, walking around, the player
+    // stands lower in the picture (about two thirds down), so the street ahead shows instead of the ground underfoot
+    {
       const w = this.container.clientWidth, h = this.container.clientHeight;
-      const wide = w > 900;
-      this.rig.applyViewShift(w, h, wide ? Math.min(w * 0.22, 380) : 0, wide ? 0 : h * 0.25);
+      if (talking && this.talkNpc) {
+        const wide = w > 900;
+        this.rig.applyViewShift(w, h, wide ? Math.min(w * 0.22, 380) : 0, wide ? 0 : h * 0.25);
+      } else this.rig.applyViewShift(w, h, 0, this.rig.mode === "follow" && h > w * 1.15 ? -h * 0.14 : 0);
     }
     // sun follows the player for crisp shadows
     const pp = this.player.root.position;
@@ -799,6 +837,11 @@ export class Game implements GameApi {
     }
     this.hudT -= dt;
     if (this.hudT <= 0) { this.hudT = 0.12; this.updateHud(); }
+    // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
+    // 1.2 s standing still
+    if (this.vel.lengthSq() > 1) { this.moveT += dt; this.stillT = 0; } else { this.stillT += dt; this.moveT = 0; }
+    const walking = st.hud.walking ? this.stillT < 1.2 : this.moveT > 0.4;
+    if (walking !== st.hud.walking) st.setHud({ walking });
   };
 
   private updatePlayer(dt: number, blocked: boolean) {
@@ -861,7 +904,29 @@ export class Game implements GameApi {
       d = Math.atan2(Math.sin(d), Math.cos(d));
       if (Math.abs(d) > 1e-3) this.player.root.rotation.y += d * Math.min(1, dt * 9);
     }
-    this.player.setAnim(moved > 5.5 ? "run" : moved > 0.4 ? "walk" : "idle");
+    const running = moved > 5.5;
+    this.player.setAnim(running ? "run" : moved > 0.4 ? "walk" : "idle");
+    this.player.moveSpeed = moved;
+    // a lean into turns, more the faster you go
+    const dh = Math.atan2(Math.sin(this.heading - this.lastHeading), Math.cos(this.heading - this.lastHeading));
+    const turn = this.vel.lengthSq() > 0.05 ? dh / Math.max(dt, 1e-4) : 0;
+    this.lastHeading = this.heading;
+    const bank = THREE.MathUtils.clamp(-turn * moved * 0.012, -0.14, 0.14);
+    this.player.bank = (this.player.bank ?? 0) + (bank - (this.player.bank ?? 0)) * Math.min(1, dt * 8);
+    // footsteps (a stride's distance apart) and, outdoors at a run, dust at the heels; a puff when stopping short
+    const fancy = useStore.getState().settings.quality === "high" && !this.zone.interior;
+    if (moved > 0.4) {
+      this.stepDist += moved * dt;
+      const stride = running ? 1.3 : 0.85;
+      if (this.stepDist > stride) {
+        this.stepDist -= stride;
+        audio.step(!!this.zone.interior, running);
+        if (fancy && running) this.dust.puff(p.x, p.z, this.vel.x / moved, this.vel.z / moved);
+      }
+    } else this.stepDist = 0.6;
+    if (fancy && this.lastSpeed > 6 && moved < 2.5) this.dust.puff(p.x, p.z, Math.sin(this.heading), Math.cos(this.heading), 1.3);
+    this.lastSpeed = moved;
+    this.dust.update(dt);
     this.player.update(dt);
   }
 
@@ -997,7 +1062,7 @@ export class Game implements GameApi {
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
     this.nearest = best;
     if (changed) {
-      st.setHud({ prompt: best ? { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } : null });
+      st.setHud({ prompt: best ? { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } : null });
     }
     // objective distance & minimap
     const tgt = this.objectiveTarget();
@@ -1029,6 +1094,7 @@ export class Game implements GameApi {
 
   setQuality(q: "high" | "low") {
     this.renderer.shadowMap.enabled = q === "high";
+    setBlobShadows(q !== "high");
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q === "high" ? 1.75 : 1));
     this.fx?.quality(q);
     this.onResize();
