@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
+import { carParts } from "./car";
 import { floorMaterial, floorColor } from "./styled";
 
 /** `ax/az`: where the player stops to talk, when that is not simply in front of the person (e.g. across a table).
@@ -327,6 +328,96 @@ function seat(c: Ctx, x: number, z: number, rot: number, color: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Small things: everything in a room's `smalls` is merged into one vertex-coloured mesh (one draw call for all of them)
+
+type Smalls = { add(g: THREE.BufferGeometry, color: THREE.ColorRepresentation): void; done(): void };
+let smallsMat: THREE.MeshLambertMaterial | null = null;
+function smalls(c: Ctx): Smalls {
+  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  return {
+    add: (g, color) => { parts.push([g, color]); },
+    done: () => {
+      if (!parts.length) return;
+      const m = new THREE.Mesh(colourMerge(parts), (smallsMat ??= new THREE.MeshLambertMaterial({ vertexColors: true })));
+      m.castShadow = m.receiveShadow = true;
+      c.g.add(m);
+    },
+  };
+}
+/** A till on a counter top at height y, its screen towards the cashier (north). */
+function till(S: Smalls, x: number, y: number, z: number) {
+  S.add(boxGeo(0.44, 0.1, 0.36, x, y + 0.05, z), "#3a3d42");
+  S.add(boxGeo(0.36, 0.26, 0.04, x, y + 0.26, z - 0.1), "#2b2f33");
+  S.add(boxGeo(0.3, 0.2, 0.01, x, y + 0.27, z - 0.125), "#7fb3d5");
+}
+/** A shop mannequin on its stand: trousers or a skirt, a top, a head. */
+function mannequin(c: Ctx, S: Smalls, x: number, z: number, top: string, bottom: string) {
+  S.add(cylGeo(0.22, 0.24, 0.04, x, 0.02, z, 14), "#3a3d42");
+  S.add(cylGeo(0.025, 0.025, 0.7, x, 0.38, z, 6), "#3a3d42");
+  S.add(cylGeo(0.16, 0.17, 0.32, x, 0.86, z, 14), bottom);
+  S.add(new THREE.CapsuleGeometry(0.19, 0.34, 4, 12).scale(1, 1, 0.7).translate(x, 1.32, z), top);
+  S.add(cylGeo(0.05, 0.05, 0.1, x, 1.66, z, 8), "#ece6dc");
+  S.add(new THREE.SphereGeometry(0.12, 12, 8).translate(x, 1.82, z), "#ece6dc");
+  c.col.addCircle(x, z, 0.3);
+}
+/** A low table with piles of folded clothes. */
+function foldedTable(c: Ctx, S: Smalls, x: number, z: number, colors: string[]) {
+  S.add(boxGeo(1.4, 0.06, 0.7, x, 0.74, z), "#f4f1ea");
+  for (const [lx, lz] of [[-0.62, -0.28], [0.62, -0.28], [-0.62, 0.28], [0.62, 0.28]]) S.add(boxGeo(0.05, 0.72, 0.05, x + lx, 0.36, z + lz), "#c9b79c");
+  for (let i = 0; i < 3; i++) for (let k = 0; k < 2 + (i % 2) * 2; k++) S.add(boxGeo(0.34, 0.045, 0.26, x - 0.42 + i * 0.42, 0.795 + k * 0.047, z), colors[(i * 2 + k) % colors.length]);
+  c.col.addBox(x, z, 1.4, 0.7);
+}
+/** A low table with a couple of magazines, and its legs. */
+function coffeeTable(c: Ctx, S: Smalls, x: number, z: number, wood = "#9c6b43") {
+  S.add(boxGeo(1.0, 0.05, 0.55, x, 0.42, z), wood);
+  for (const [lx, lz] of [[-0.44, -0.22], [0.44, -0.22], [-0.44, 0.22], [0.44, 0.22]]) S.add(boxGeo(0.05, 0.4, 0.05, x + lx, 0.2, z + lz), wood);
+  S.add(boxGeo(0.22, 0.012, 0.3, x - 0.22, 0.45, z, 0.3), "#e76f51");
+  S.add(boxGeo(0.22, 0.012, 0.3, x + 0.15, 0.452, z - 0.04, -0.2), "#457b9d");
+  c.col.addBox(x, z, 1.0, 0.55);
+}
+/** A water cooler with its blue bottle and a stack of paper cups. */
+function waterCooler(c: Ctx, S: Smalls, x: number, z: number) {
+  S.add(boxGeo(0.36, 1.0, 0.36, x, 0.5, z), "#f4f6f8");
+  S.add(cylGeo(0.15, 0.15, 0.42, x, 1.22, z, 12), "#9fd3ec");
+  S.add(boxGeo(0.06, 0.06, 0.05, x, 0.8, z + 0.2), "#4a90c2");
+  S.add(cylGeo(0.035, 0.03, 0.2, x + 0.24, 0.9, z, 8), "#ffffff");
+  c.col.addCircle(x, z, 0.3);
+}
+/** A pole with hooks and a coat hanging on it. */
+function coatRack(c: Ctx, S: Smalls, x: number, z: number) {
+  S.add(cylGeo(0.2, 0.22, 0.04, x, 0.02, z, 12), "#3a3d42");
+  S.add(cylGeo(0.025, 0.025, 1.75, x, 0.9, z, 6), "#3a3d42");
+  for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; S.add(boxGeo(0.18, 0.02, 0.02, 0, 0, 0).translate(0.09, 0, 0).rotateY(a).translate(x, 1.72, z), "#3a3d42"); }
+  S.add(new THREE.CapsuleGeometry(0.13, 0.55, 3, 8).scale(1, 1, 0.6).translate(x + 0.12, 1.25, z), "#8a5a3c");
+  c.col.addCircle(x, z, 0.25);
+}
+/** Maple Harbor on a poster: the streets, the park, the harbour and a pin on the car rental. */
+function townMap() {
+  return canvasTex(384, 256, (x) => {
+    x.fillStyle = "#d9ead0"; x.fillRect(0, 0, 384, 256);
+    x.fillStyle = "#7fb069"; x.fillRect(240, 40, 90, 70);
+    x.fillStyle = "#6cc3dc"; x.fillRect(0, 0, 384, 36);
+    x.strokeStyle = "#9aa3ab"; x.lineWidth = 10;
+    for (const y of [60, 120, 190]) { x.beginPath(); x.moveTo(0, y); x.lineTo(384, y); x.stroke(); }
+    for (const v of [60, 190, 320]) { x.beginPath(); x.moveTo(v, 36); x.lineTo(v, 256); x.stroke(); }
+    x.fillStyle = "#e45b4f"; x.beginPath(); x.arc(290, 132, 11, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#2f3a40"; x.font = "800 24px Nunito, Arial"; x.textAlign = "left"; x.fillText("Maple Harbor", 14, 240);
+    x.strokeStyle = "#1f8a70"; x.lineWidth = 8; x.strokeRect(4, 4, 376, 248);
+  });
+}
+/** The office whiteboard: this quarter's goals as bars, and sticky notes. */
+function officeBoard() {
+  return canvasTex(384, 224, (x) => {
+    x.fillStyle = "#fbfcfd"; x.fillRect(0, 0, 384, 224);
+    x.strokeStyle = "#9aa5ad"; x.lineWidth = 8; x.strokeRect(4, 4, 376, 216);
+    x.fillStyle = "#34495e"; x.font = "800 26px Nunito, Arial"; x.textAlign = "left"; x.fillText("Q4 Goals", 22, 40);
+    [[0.55, "#4a90c2"], [0.8, "#2e8b57"], [0.4, "#e8743b"], [0.68, "#8e6bb0"]].forEach(([h, c], i) => { x.fillStyle = c as string; x.fillRect(30 + i * 52, 196 - (h as number) * 130, 34, (h as number) * 130); });
+    x.strokeStyle = "#34495e"; x.lineWidth = 3; x.beginPath(); x.moveTo(24, 198); x.lineTo(240, 198); x.stroke();
+    ["#ffd166", "#f7a7b8", "#9fe0c4", "#ffd166"].forEach((c, i) => { x.fillStyle = c; x.fillRect(262 + (i % 2) * 54, 54 + Math.floor(i / 2) * 64, 46, 46); });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Rooms
 
 const B: Record<string, () => Interior> = {
@@ -382,6 +473,30 @@ const B: Record<string, () => Interior> = {
     c.M.add("mirror", mat("#dfeef6", { emissive: "#6f8a99" }), boxGeo(0.06, 2, 1, c.w / 2 - 0.08, 1.3, -1), false);
     sign(c, "SALE 20% OFF", -4, 3.2, -c.d / 2 + 0.2, 3, "#e45b4f", "#ffffff");
     plant(c, -7.2, 5.2);
+    // mannequins, tables of folded clothes, a wall of shoes, a bench by the fitting rooms, the till and shopping bags
+    const S = smalls(c);
+    mannequin(c, S, -6.6, -4.3, "#e76f51", "#264653");
+    mannequin(c, S, -1.2, -3.9, "#2a9d8f", "#3d405b");
+    mannequin(c, S, 6.9, 0.8, "#f2cc8f", "#5c4b3a");
+    foldedTable(c, S, -6.7, 0.8, ["#457b9d", "#f2cc8f", "#81b29a", "#e07a5f", "#f4f1ea", "#8e6bb0"]);
+    foldedTable(c, S, 4.2, 1.0, ["#e76f51", "#2a9d8f", "#e9c46a", "#3d5a80", "#f4f1ea", "#b5838d"]);
+    for (const y of [0.4, 0.85, 1.3, 1.75]) {
+      S.add(boxGeo(0.36, 0.03, 2.4, c.w / 2 - 0.2, y, -3.6), "#f4f4f4");
+      for (let k = 0; k < 5; k++) {
+        const sc = ["#3a2f2a", "#f4f1ea", "#bc4749", "#c8a272", "#264653"][(k + Math.round(y * 3)) % 5];
+        for (const e of [-0.06, 0.06]) S.add(boxGeo(0.24, 0.09, 0.1, c.w / 2 - 0.22, y + 0.06, -4.55 + k * 0.48 + e), sc);
+      }
+    }
+    c.col.addBox(c.w / 2 - 0.2, -3.6, 0.4, 2.4);
+    S.add(boxGeo(1.6, 0.08, 0.45, 6.4, 0.44, 2.5), "#8e6bb0");
+    for (const s of [-0.7, 0.7]) S.add(boxGeo(0.06, 0.42, 0.4, 6.4 + s, 0.21, 2.5), "#3a3d42");
+    c.col.addBox(6.4, 2.5, 1.6, 0.45);
+    till(S, 5.6, 1.08, -3.6);
+    for (const [bx, bc] of [[3.6, "#6b4a8a"], [3.95, "#f4f1ea"]] as [number, string][]) { S.add(boxGeo(0.28, 0.32, 0.12, bx, 1.24, -3.55), bc); S.add(boxGeo(0.12, 0.08, 0.01, bx, 1.44, -3.55), "#3a2f2a"); }
+    rug(c, -1.5, 1.2, 9.2, 5.8, "#c9b6e4");
+    rug(c, 0, 4.9, 3, 1.4, "#8e6bb0");
+    lamp(c, -4, 0.8, 3.4); lamp(c, 1, 2, 3.4); lamp(c, 4.6, -2, 3.4);
+    S.done();
   }, [{ npc: "chloe", x: 4.4, z: -4.6, rot: 0 }], { floorKind: "wood", accent: "#6b4a8a" }),
 
   pharmacy: () => room("pharmacy", 14, 12, "#e8ecef", "#f4faf7", (c) => {
@@ -395,6 +510,39 @@ const B: Record<string, () => Interior> = {
     c.M.add("cross", mat("#3cc46b", { emissive: "#1a6b3a" }), boxGeo(0.9, 0.3, 0.06, -5.2, 3.2, -c.d / 2 + 0.2), false);
     c.M.add("cross", mat("#3cc46b", { emissive: "#1a6b3a" }), boxGeo(0.3, 0.9, 0.06, -5.2, 3.2, -c.d / 2 + 0.2), false);
     plant(c, 6, 5.2, 0.8);
+    // a blood pressure corner, a vitamin stand, drop-off and pick-up signs over the counter, baskets by the door
+    const S = smalls(c);
+    S.add(boxGeo(0.6, 1.25, 0.7, -6.6, 0.625, 4.9), "#f4f6f8");
+    S.add(boxGeo(0.02, 0.3, 0.4, -6.29, 1.05, 4.9), "#7fd1c8");
+    S.add(new THREE.TorusGeometry(0.1, 0.04, 6, 12).rotateY(Math.PI / 2).translate(-6.22, 0.8, 4.9), "#2e8b57");
+    c.col.addBox(-6.6, 4.9, 0.6, 0.7);
+    seat(c, -5.8, 4.9, -Math.PI / 2, "#2e8b57");
+    c.col.addBox(-5.8, 4.9, 0.55, 0.55);
+    sign(c, "Blood Pressure", -c.w / 2 + 0.05, 2.0, 4.9, 1.4, "#2e8b57", "#ffffff", Math.PI / 2);
+    S.add(cylGeo(0.42, 0.45, 0.12, 3.7, 0.06, 1.5, 16), "#e3ebe6");
+    S.add(cylGeo(0.05, 0.05, 1.2, 3.7, 0.6, 1.5, 8), "#c9ced6");
+    for (const [y, r] of [[0.45, 0.38], [0.8, 0.3], [1.15, 0.22]] as [number, number][]) {
+      S.add(cylGeo(r, r, 0.03, 3.7, y, 1.5, 16), "#f4f6f8");
+      const n = Math.round(r * 22);
+      for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; S.add(cylGeo(0.035, 0.035, 0.12, 3.7 + Math.cos(a) * r * 0.75, y + 0.075, 1.5 + Math.sin(a) * r * 0.75, 8), ["#f2c14e", "#e45b4f", "#4a7bb7", "#6fbf73"][i % 4]); }
+    }
+    c.col.addCircle(3.7, 1.5, 0.48);
+    for (const [sx, text] of [[-0.4, "Drop off"], [2.4, "Pick up"]] as [number, string][]) {
+      sign(c, text, sx, 2.55, -3.6, 1.2, "#2e8b57", "#ffffff");
+      for (const e of [-0.5, 0.5]) S.add(cylGeo(0.006, 0.006, WALL_H - 2.7, sx + e, (WALL_H + 2.7) / 2, -3.6, 4), "#3a3d42");
+    }
+    till(S, 2.3, 1.08, -3.8);
+    S.add(boxGeo(3.6, 0.01, 0.08, 1, 0.006, -2.3), "#f2c14e");
+    // three chairs to wait on along the east side, and a stand of sun cream and sunglasses
+    for (const wz of [3.4, 4.1, 4.8]) { seat(c, 6.3, wz, -Math.PI / 2, "#2e8b57"); }
+    c.col.addBox(6.3, 4.1, 0.6, 2.1);
+    S.add(boxGeo(0.9, 1.5, 0.5, -1.8, 0.75, 1.2), "#e3ebe6");
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) S.add(boxGeo(0.16, 0.12, 0.06, -2.15 + k * 0.23, 0.55 + r * 0.38, 1.47), ["#f2c14e", "#f4a261", "#3a3d42", "#4a90c2"][(r + k) % 4]);
+    c.col.addBox(-1.8, 1.2, 0.9, 0.5);
+    for (let i = 0; i < 4; i++) S.add(boxGeo(0.52, 0.12, 0.36, 2.6, 0.06 + i * 0.1, 5.2), "#d62828");
+    c.col.addBox(2.6, 5.2, 0.55, 0.4);
+    lamp(c, -4.5, 1.2, 3.4); lamp(c, 1, -1.5, 3.4); lamp(c, 3.7, 3, 3.4);
+    S.done();
   }, [{ npc: "okafor", x: 1, z: -4.8, rot: 0 }], { floorKind: "tile", accent: "#2e8b57" }),
 
   salon: () => room("salon", 12, 10, "#f0e6e8", "#fdf0f4", (c) => {
@@ -411,6 +559,41 @@ const B: Record<string, () => Interior> = {
     sofa(c, 3.8, 3.2, "#f2c1d1", Math.PI, 2);
     plant(c, 5.2, 0.5, 0.8);
     sign(c, "Snip & Style", 0, 3.4, -c.d / 2 + 0.2, 3.2, "#c94f7c", "#ffffff");
+    // a wash basin with its reclining chair, a hood dryer, a trolley of tools, a waiting corner, products and pictures
+    const S = smalls(c);
+    S.add(cylGeo(0.3, 0.24, 0.12, 4.4, 0.96, -3.8, 14), "#f4f4f4"); S.add(cylGeo(0.22, 0.22, 0.02, 4.4, 1.02, -3.8, 14), "#9aa5ad");
+    S.add(boxGeo(0.7, 0.42, 0.7, 4.4, 0.42, -2.9), "#2b2b2b");
+    S.add(boxGeo(0.7, 0.75, 0.1, 0, 0, 0).rotateX(-0.6).translate(4.4, 0.86, -3.3), "#2b2b2b");
+    c.col.addBox(4.4, -2.9, 0.8, 0.8);
+    S.add(boxGeo(0.7, 0.42, 0.7, -5.1, 0.42, -0.6), "#c94f7c"); S.add(boxGeo(0.12, 0.7, 0.7, -5.45, 0.78, -0.6), "#c94f7c");
+    S.add(cylGeo(0.035, 0.035, 1.3, -5.6, 0.65, -0.6, 6), "#9aa5ad");
+    S.add(new THREE.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).rotateZ(-0.5).translate(-5.25, 1.4, -0.6), "#f7f1f3");
+    c.col.addBox(-5.2, -0.6, 0.9, 0.8);
+    for (const y of [0.3, 0.62, 0.94]) S.add(boxGeo(0.5, 0.03, 0.38, -1.0, y, -3.7), "#c9ced6");
+    for (const [lx, lz] of [[-0.23, -0.17], [0.23, -0.17], [-0.23, 0.17], [0.23, 0.17]]) S.add(cylGeo(0.015, 0.015, 0.96, -1.0 + lx, 0.48, -3.7 + lz, 5), "#9aa5ad");
+    ["#c94f7c", "#8e6bb0", "#2a9d8f", "#f4a261"].forEach((col, i) => S.add(cylGeo(0.035, 0.035, 0.16, -1.15 + i * 0.1, 1.04, -3.7, 8), col));
+    c.col.addBox(-1.0, -3.7, 0.55, 0.45);
+    shelf(c, -5.75, 1.05, 1.5, 1.7, "#f7f1f3", ["#c94f7c", "#8e6bb0", "#2a9d8f", "#f4a261", "#ffffff"], Math.PI / 2, 0.36);
+    rug(c, 3.8, 2.3, 3.2, 2.4, "#e7a3bd");
+    rug(c, -1, -1.6, 6.4, 2.6, "#f2c9d8");
+    // the manicure table: two chairs, a lamp, the polish bottles
+    S.add(boxGeo(1.1, 0.05, 0.6, -3.3, 0.74, 1.2), "#f7f1f3");
+    for (const [lx, lz] of [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]]) S.add(boxGeo(0.05, 0.72, 0.05, -3.3 + lx, 0.36, 1.2 + lz), "#c9ced6");
+    ["#c94f7c", "#e63946", "#8e6bb0", "#f4a261", "#2a9d8f"].forEach((col, i) => S.add(cylGeo(0.022, 0.022, 0.07, -3.6 + i * 0.08, 0.8, 1.05, 6), col));
+    S.add(cylGeo(0.012, 0.012, 0.32, -2.9, 0.92, 1.0, 5), "#3a3d42"); S.add(new THREE.ConeGeometry(0.09, 0.1, 10).translate(-2.9, 1.1, 1.08), "#f2c14e");
+    c.col.addBox(-3.3, 1.2, 1.1, 0.6);
+    seat(c, -3.3, 0.45, Math.PI, "#c94f7c"); seat(c, -3.3, 1.95, 0, "#c94f7c");
+    coffeeTable(c, S, 3.8, 1.9);
+    S.add(cylGeo(0.07, 0.05, 0.16, 3.5, 0.53, 1.85, 10), "#8e6bb0");
+    for (const [fx, fy] of [[3.45, 0.66], [3.55, 0.7], [3.5, 0.74]] as [number, number][]) S.add(new THREE.SphereGeometry(0.05, 6, 5).translate(fx, fy, 1.85), "#f28fad");
+    till(S, -4.6, 1.08, 2.8);
+    S.add(boxGeo(0.3, 0.03, 0.22, -3.6, 1.1, 2.8, 0.2), "#1f4f8a");
+    for (let i = 0; i < 4; i++) S.add(boxGeo(0.34, 0.08, 0.24, 4.4, 1.62 + i * 0.09, -c.d / 2 + 0.18), ["#ffffff", "#f7d6e0", "#ffffff", "#c94f7c"][i]);
+    S.add(boxGeo(0.9, 0.03, 0.3, 4.4, 1.57, -c.d / 2 + 0.16), "#c9ced6");
+    framedArt(c, 2, -5.1, 2.2, -c.d / 2 + 0.2, 0.9, 1.1);
+    framedArt(c, 7, 2.85, 2.2, -c.d / 2 + 0.2, 0.8, 1.0);
+    lamp(c, -3, -1.2, 3.3); lamp(c, 1, -1.2, 3.3); lamp(c, 3.8, 2.2, 3.3);
+    S.done();
   }, [{ npc: "jessie", x: -1.9, z: -2.3, rot: 0 }], { floorKind: "tile", accent: "#c94f7c" }),
 
   bank: () => room("bank", 16, 12, "#d9d2c3", "#efe9dd", (c) => {
@@ -586,6 +769,27 @@ const B: Record<string, () => Interior> = {
     for (const [px, cc] of [[-4.5, "#e45b4f"], [4.5, "#4a7bb7"]] as [number, string][]) wallPanel(c, textTexture("🚗", { bg: cc, fg: "#fff", w: 256, h: 256 }), px, 2.4, -c.d / 2 + 0.2, 1.8, 1.8);
     sofa(c, -4.5, 2.5, "#1f8a70", 0, 2);
     plant(c, 5.8, 3.6, 0.9);
+    // a model car on a stand, chairs at the counter, the counter's computer, a coffee table, a water cooler, the town map
+    const S = smalls(c);
+    S.add(cylGeo(0.55, 0.6, 0.75, 4.2, 0.375, 1.0, 20), "#e3f2ec");
+    S.add(cylGeo(0.58, 0.58, 0.04, 4.2, 0.77, 1.0, 20), "#1f8a70");
+    for (const [g, col] of carParts("#e45b4f")) S.add(g.scale(0.24, 0.24, 0.24).rotateY(0.6).translate(4.2, 0.79, 1.0), col);
+    c.col.addCircle(4.2, 1.0, 0.65);
+    for (const sx of [-0.85, 0.85]) { seat(c, sx, -1.75, Math.PI, "#1f8a70"); c.col.addCircle(sx, -1.75, 0.3); }
+    S.add(boxGeo(0.6, 0.38, 0.04, 1.2, 1.38, -3.0), "#1d1d1d");
+    S.add(boxGeo(0.06, 0.25, 0.06, 1.2, 1.17, -3.0), "#1d1d1d");
+    S.add(boxGeo(0.44, 0.02, 0.14, 1.2, 1.09, -3.3), "#2b2f33");
+    for (let i = 0; i < 3; i++) S.add(boxGeo(0.22, 0.012, 0.3, -1.4 + i * 0.26, 1.09, -2.6, 0.1 * i), ["#1f8a70", "#ffffff", "#e8c547"][i]);
+    rug(c, -4.5, 3.2, 3.4, 2.6, "#8fcbb8");
+    sofa(c, -2.4, 3.6, "#e8c547", -Math.PI / 2, 1.0);
+    S.add(boxGeo(0.7, 1.3, 0.3, 2.6, 0.65, 4.3), "#f4f4f4");
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) S.add(boxGeo(0.16, 0.24, 0.02, 0, 0, 0).rotateX(-0.2).translate(2.38 + k * 0.22, 0.45 + r * 0.36, 4.12), ["#1f8a70", "#e45b4f", "#4a7bb7", "#e8c547"][(r + k) % 4]);
+    c.col.addBox(2.6, 4.3, 0.75, 0.35);
+    coffeeTable(c, S, -4.5, 3.7);
+    waterCooler(c, S, -6.2, -4.2);
+    wallPanel(c, townMap(), -c.w / 2 + 0.03, 2.1, -0.4, 2.4, 1.6, Math.PI / 2);
+    lamp(c, -3, 0, 3.4); lamp(c, 3, 0, 3.4);
+    S.done();
   }, [{ npc: "jake", x: 0, z: -3.8, rot: 0 }], { floorKind: "tile", accent: "#1f8a70" }),
 
   "gas-station": () => room("gas-station", 14, 10, "#dcdcd6", "#f6f1ea", (c) => {
@@ -599,6 +803,31 @@ const B: Record<string, () => Interior> = {
     c.M.add("coffee-machine", mat("#2b2b2b"), boxGeo(0.8, 1, 0.6, -6, 1.5, -4.5));
     c.M.add("coffee-table", mat("#9c6b43"), boxGeo(1.6, 1, 0.8, -6, 0.5, -4.5)); c.col.addBox(-6, -4.5, 1.6, 0.8);
     wallPanel(c, textTexture("Gas & Go · Pay here", { bg: "#d94b3d", fg: "#ffffff", w: 768, h: 128 }), -3, 3.3, -c.d / 2 + 0.2, 4, 0.66);
+    // an ice-cream freezer, a magazine rack, an ATM, hot dogs on the roller, a trash can, the coffee sign
+    const S = smalls(c);
+    S.add(boxGeo(1.5, 0.8, 0.8, -5.6, 0.4, 0.6), "#f4f6f8");
+    for (const [w, d, ox, oz] of [[1.5, 0.06, 0, -0.37], [1.5, 0.06, 0, 0.37], [0.06, 0.8, -0.72, 0], [0.06, 0.8, 0.72, 0]] as [number, number, number, number][]) S.add(boxGeo(w, 0.06, d, -5.6 + ox, 0.83, 0.6 + oz), "#c9ced6");
+    for (let i = 0; i < 8; i++) S.add(boxGeo(0.28, 0.12, 0.26, -6.15 + (i % 4) * 0.36, 0.72, 0.42 + Math.floor(i / 4) * 0.36), ["#f7b2c4", "#fff1d6", "#b8e0d2", "#6b3e26"][i % 4]);
+    S.add(boxGeo(1.52, 0.3, 0.02, -5.6, 0.45, 1.01), "#4a90c2");
+    c.col.addBox(-5.6, 0.6, 1.5, 0.8);
+    S.add(boxGeo(1.2, 1.2, 0.12, -3.2, 0.6, 4.25), "#9aa5ad");
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) S.add(boxGeo(0.24, 0.3, 0.02, 0, 0, 0).rotateX(-0.25).translate(-3.65 + k * 0.3, 0.36 + r * 0.36, 4.33), ["#e45b4f", "#f2c14e", "#4a7bb7", "#6fbf73", "#8e6bb0", "#f28c28"][(r + k) % 6]);
+    c.col.addBox(-3.2, 4.3, 1.3, 0.3);
+    S.add(boxGeo(0.62, 1.7, 0.8, 6.6, 0.85, 2.6), "#1f4f8a");
+    S.add(boxGeo(0.02, 0.32, 0.42, 6.28, 1.3, 2.6), "#9fd8ff");
+    S.add(boxGeo(0.12, 0.12, 0.36, 6.32, 0.98, 2.6), "#c9ced6");
+    S.add(boxGeo(0.02, 0.16, 0.6, 6.28, 1.6, 2.6), "#f2c14e");
+    c.col.addBox(6.6, 2.6, 0.65, 0.8);
+    S.add(boxGeo(0.6, 0.16, 0.4, -4.4, 1.16, -2.8), "#c9ced6");
+    for (let i = 0; i < 5; i++) S.add(new THREE.CapsuleGeometry(0.022, 0.36, 3, 6).rotateZ(Math.PI / 2).translate(-4.4, 1.26, -2.95 + i * 0.075), "#b5651d");
+    S.add(cylGeo(0.22, 0.2, 0.75, -4.6, 0.375, -4.5, 12), "#3f5a4a");
+    S.add(boxGeo(1.4, 1.5, 0.35, 4.6, 0.75, 4.3), "#c9ced6");
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 5; k++) S.add(boxGeo(0.22, 0.28, 0.06, 4.08 + k * 0.26, 0.28 + r * 0.34, 4.1), ["#f3c04f", "#e63946", "#4a7bb7", "#6a994e", "#f28c28"][(r * 2 + k) % 5]);
+    c.col.addBox(4.6, 4.3, 1.45, 0.4);
+    c.col.addCircle(-4.6, -4.5, 0.25);
+    sign(c, "Fresh Coffee", -6, 2.7, -c.d / 2 + 0.2, 1.8, "#6b3e26", "#ffffff");
+    lamp(c, -3, -1, 3.4); lamp(c, 2, 1.4, 3.4); lamp(c, -5.6, 2.4, 3.4);
+    S.done();
   }, [{ npc: "dot", x: -3, z: -3.8, rot: 0 }], { floorKind: "tile", accent: "#d94b3d" }),
 
   police: () => room("police", 12, 10, "#c9ced6", "#eef1f5", (c) => {
@@ -720,6 +949,32 @@ const B: Record<string, () => Interior> = {
     c.M.add("leaves", mat("#5fa24b", { flat: true }), new THREE.IcosahedronGeometry(0.11, 0).translate(-c.w / 2 + 0.2, 1.7, 0.48), false);
     plant(c, -10.2, 6.8, 1.1); plant(c, 1, 6.8, 0.9);
     for (let i = 0; i < 4; i++) lamp(c, -6 + i * 5, 0, 3.6);
+    // the open-plan desks get their keyboards, mugs, papers and plants; a lounge corner, a whiteboard, a bookcase of
+    // binders, a coat rack by the door, a picture and a water cooler
+    const S = smalls(c);
+    [[1, -4.5], [4, -4.5], [1, -1], [4, -1], [7, -1]].forEach(([dx, dz], i) => {
+      S.add(boxGeo(0.46, 0.02, 0.15, dx, 0.79, dz + 0.08), "#2b2f33");
+      S.add(boxGeo(0.07, 0.03, 0.11, dx + 0.36, 0.795, dz + 0.1), "#2b2f33");
+      S.add(cylGeo(0.045, 0.04, 0.1, dx + 0.62, 0.83, dz + 0.05, 8), ["#e8743b", "#ffffff", "#2a9d8f", "#f2c14e", "#8e6bb0"][i]);
+      S.add(boxGeo(0.21, 0.006, 0.29, dx - 0.5, 0.782, dz + 0.05, 0.15 * (i - 2)), "#ffffff");
+      if (i % 2 === 0) { S.add(cylGeo(0.07, 0.055, 0.12, dx - 0.62, 0.84, dz - 0.25, 8), "#b86b4b"); S.add(new THREE.IcosahedronGeometry(0.12, 0).translate(dx - 0.62, 1.0, dz - 0.25), "#4c8c3c"); }
+      else S.add(boxGeo(0.14, 0.18, 0.02, dx - 0.6, 0.87, dz - 0.25), "#c9a227");
+    });
+    rug(c, -2.6, 4.7, 4.0, 3.0, "#5b7088");
+    table(c, -3.3, 0.9, { round: true, cloth: "#e9e4da", chairs: 4, chairColor: "#2d3a4a", from: Math.PI / 4 });
+    S.add(boxGeo(0.34, 0.02, 0.24, -3.4, 0.8, 0.8, 0.4), "#9aa5ad");
+    S.add(boxGeo(0.21, 0.006, 0.29, -3.0, 0.792, 1.1, -0.3), "#ffffff");
+    rug(c, -3.3, 0.9, 3.0, 3.0, "#d6dde5");
+    sofa(c, -2.6, 5.7, "#34495e", Math.PI, 2.4);
+    coffeeTable(c, S, -2.6, 4.4, "#e9e4da");
+    plant(c, -4.9, 5.8, 0.9);
+    wallPanel(c, officeBoard(), 2.6, 2.1, -c.d / 2 + 0.06, 2.4, 1.4);
+    S.add(boxGeo(2.5, 0.06, 0.12, 2.6, 1.34, -c.d / 2 + 0.1), "#c9ced6");
+    framedArt(c, 3, 4.9, 2.2, -c.d / 2 + 0.2, 1.1, 0.85);
+    shelf(c, c.w / 2 - 0.3, 0.4, 3.6, 2.2, "#c9ced6", ["#2c4f8f", "#e8743b", "#2e8b57", "#f4f4f4", "#8e6bb0"], -Math.PI / 2, 0.45);
+    coatRack(c, S, -2.2, 7.1);
+    waterCooler(c, S, 6.0, 5.45);
+    S.done();
   }, [
     // the office chairs (seat) are 0.48 m high
     { npc: "brooks", x: -7, z: -6.4, rot: 0, sit: true, seat: 0.48 }, { npc: "maria", x: 5.5, z: 2.4, rot: Math.PI },
