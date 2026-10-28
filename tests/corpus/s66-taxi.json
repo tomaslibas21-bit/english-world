@@ -230,5 +230,9 @@
   {"ctx": "talk", "say": "I'll need a receipt, please.", "intent": "receipt"},
   {"ctx": "pay", "say": "I'd like a receipt, please.", "intent": "receipt"},
   {"ctx": "pay", "say": "Can I get a receipt at the end?", "intent": "receipt"},
-  {"ctx": "receipt", "say": "I won't need a receipt, thanks.", "intent": ["no_receipt", "yn:no"], "not": ["receipt"]}
+  {"ctx": "receipt", "say": "I won't need a receipt, thanks.", "intent": ["no_receipt", "yn:no"], "not": ["receipt"]},
+  {"ctx": "dest", "say": "To station.", "intent": "dest"},
+  {"ctx": "dest", "say": "Can you take me to Italian restaurant?", "intent": "dest", "slots": {"place": {"dest": "trattoria"}}},
+  {"ctx": "pay", "say": "Sorry, I only have hundred.", "intent": "pay_amount", "slots": {"price": 10000}},
+  {"ctx": "ride_check", "say": "No, I just need taxi to hotel.", "intent": ["dest", "ride_no"]}
 ]}

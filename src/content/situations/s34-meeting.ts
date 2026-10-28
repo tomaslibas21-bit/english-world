@@ -113,7 +113,7 @@ const one = (key: string, f: (c: Ctx) => void) => (c: Ctx) => { if (once(c, key)
 /** "Okay." / "Okay, thanks." / "Thanks, Kate.": nothing but an acknowledgement. To "Anything to add?"
  *  or "Any other business?" it means "no, nothing". */
 const bareAck = (c: Ctx) =>
-  /^(?:[\s,.!]*(?:ok(?:ay)?|alright|all right|thanks(?: a lot| so much)?|thank you(?: very much| so much)?|great|cool|good|fine|perfect|got it|i see|nice|sounds good|kate|paul|sara|then))+[\s,.!]*$/i.test(c.heard || "");
+  /^(?:[\s,.!]*(?:u+m+|u+h+|e+r+m*|h+m+|ok(?:ay)?|alright|all right|thanks(?: a lot| so much)?|thank you(?: very much| so much)?|great|cool|good|fine|perfect|got it|i see|nice|sounds good|kate|paul|sara|then))+[\s,.!]*$/i.test(c.heard || "");
 
 /** "Thanks!": Paul or Sara answers if they just gave the learner something (an explanation, help),
  *  otherwise Kate. Nobody answers a thanks that came with a request already answered this turn. */

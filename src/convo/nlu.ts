@@ -120,13 +120,26 @@ const CORRECTION_STARTERS = new Set(["to", "for", "in", "with", "at", "by", "on"
   "the", "a", "an", "this", "that", "i", "we", "it", "you", "he", "she", "they", "there", "here", "my", "your", "our",
   "can", "could", "would", "will", "should", "do", "does", "did", "is", "are", "was", "were", "have", "has", "not", "never",
   "maybe", "please", "rather", "instead", "make", "let", "sorry", "thanks", "thank", "okay", "sure", "yes", "now", "then",
-  "what", "where", "when", "why", "how", "which", "who", "go", "come", "wait", "keep", "take", "give", "put"]);
-/** The piece right after a bare leading "no" starts with a noun ("no cash"): "no" is a determiner there. */
+  "what", "where", "when", "why", "how", "which", "who", "go", "come", "wait", "keep", "take", "give", "put", "tell",
+  // "no me and my wife", "no mine is black", "no all good", "no no questions", "no tomorrow" (speech recognition writes no comma)
+  "me", "us", "him", "them", "mine", "yours", "ours", "all", "no", "nothing", "none", "tomorrow", "today", "tonight", "next", "noon"]);
+/** "i want" / "we want" (not "i do not want", not "want" alone) as "i would like": null if there is none. */
+function wantAsWouldLike(toks: Tokens): Tokens | null {
+  let hit = false;
+  const out: Tokens = [];
+  toks.forEach((t, i) => {
+    if (t === "want" && (toks[i - 1] === "i" || toks[i - 1] === "we")) { out.push("would", "like"); hit = true; }
+    else out.push(t);
+  });
+  return hit ? out : null;
+}
+/** The piece right after a bare leading "no" starts with a noun ("no cash"): "no" is a determiner there.
+ *  ("nope" and "nah" never are: "nope all good" is "Nope, all good".) */
 function noIsDeterminer(r: { caps: { name: string; from: number }[] }, toks: Tokens): boolean {
   const first = r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from)[0];
   if (!first || first.from === 0) return false;
   const before = toks[first.from - 1];
-  return (before === "no" || before === "nope" || before === "nah") && !CORRECTION_STARTERS.has(toks[first.from]);
+  return before === "no" && !CORRECTION_STARTERS.has(toks[first.from]);
 }
 
 /** "Again", "What?", "Sorry?" asking to repeat only mean that on their own, not inside a longer
@@ -297,23 +310,36 @@ export class Nlu {
     const all: Parse[] = [];
     let prefix = false;
     let tokens: Tokens = variants[0] || [];
-    for (const toks of variants) {
-      if (!toks.length) continue;
-      const res = this.g.match(top, toks, false).filter((r) => r.end === toks.length && !r.partial && !negationCutOff(r, toks) && !strayRepeat(r) && !splitNames(r, toks) && !leavingCutOff(r, toks));
-      for (const r of res) {
-        const p = this.toParse(r, toks, please, expected, primary);
-        if (p.segments.some((sg) => this.contextual.has(sg.intent) && !expected.includes(sg.intent))) continue;
-        // "no cash", "no oat milk": "no" + a noun means absence, not "No. Cash." (unless written that way);
-        // "no to go", "no just water", "no the large one" are an answer plus a correction
-        if (p.yn === "no" && p.segments.length && !noPause && noIsDeterminer(r, toks)) continue;
-        all.push(p);
+    const readAll = (vars: Tokens[], into: Parse[]) => {
+      for (const toks of vars) {
+        if (!toks.length) continue;
+        const res = this.g.match(top, toks, false).filter((r) => r.end === toks.length && !r.partial && !negationCutOff(r, toks) && !strayRepeat(r) && !splitNames(r, toks) && !leavingCutOff(r, toks));
+        for (const r of res) {
+          const p = this.toParse(r, toks, please, expected, primary);
+          if (p.segments.some((sg) => this.contextual.has(sg.intent) && !expected.includes(sg.intent))) continue;
+          // "no cash", "no oat milk": "no" + a noun means absence, not "No. Cash." (unless written that way);
+          // "no to go", "no just water", "no the large one" are an answer plus a correction
+          if (p.yn === "no" && p.segments.length && !noPause && noIsDeterminer(r, toks)) continue;
+          into.push(p);
+        }
+        if (!res.length && !prefix) {
+          const pr = this.g.match(top, toks, true);
+          if (pr.some((r) => r.partial)) prefix = true;
+        }
       }
-      if (!res.length && !prefix) {
-        const pr = this.g.match(top, toks, true);
-        if (pr.some((r) => r.partial)) prefix = true;
-      }
-    }
+    };
+    readAll(variants, all);
     all.sort((a, b) => a.cost - b.cost);
+    // "I want to change rooms" where only "I'd like to change rooms" is written: nothing (or only a catch-all)
+    // understood, so read "I want" / "we want" as "I would like" / "we would like" (the same request)
+    const onlyCatchAll = (ps: Parse[]) => !ps.length || ps[0].segments.every((sg) => this.catchAll.has(sg.intent));
+    if (onlyCatchAll(all)) {
+      const wantVars = variants.map(wantAsWouldLike).filter((v): v is Tokens => !!v);
+      const more: Parse[] = [];
+      if (wantVars.length) readAll(wantVars, more);
+      more.sort((a, b) => a.cost - b.cost);
+      if (!onlyCatchAll(more)) all.unshift(...more.filter((p) => !p.segments.every((sg) => this.catchAll.has(sg.intent))));
+    }
     // Nothing (or only a catch-all) understood: a clear answer to the current question plus one or
     // two extra words ("Can I get a latte with caramel?") still counts. Negations and numbers are
     // never dropped, and only an answer the current question expects is accepted this way.

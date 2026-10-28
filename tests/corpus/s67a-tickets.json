@@ -227,5 +227,10 @@
   { "ctx": "closing", "say": "Actually, just one ticket", "intent": "change_count" },
   { "ctx": "closing", "say": "Sorry, can I change it to round-trip?", "intent": "change_trip" },
   { "ctx": "info", "say": "Actually, make it two tickets", "intent": "change_count" },
-  { "ctx": "closing", "say": "Oh, I only need one ticket", "intent": "change_count" }
+  { "ctx": "closing", "say": "Oh, I only need one ticket", "intent": "change_count" },
+  {"ctx": "dest", "say": "Two adults to coast, please.", "intent": "buy", "slots": {"dest": "seaside"}},
+  {"ctx": "dest", "say": "I want to go to beach.", "intent": "buy", "slots": {"dest": "seaside"}},
+  {"ctx": "dest", "say": "I want to buy a train ticket to Portland.", "intent": "buy", "slots": {"dest": "portland"}},
+  {"ctx": "travel_day", "say": "no tomorrow", "intent": "travel_ctx"},
+  {"ctx": "travel_day", "say": "no next week", "intent": "travel_ctx", "slots": {"day": "next_week"}}
 ]}

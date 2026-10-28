@@ -36,6 +36,8 @@ export function readInt(tokens: Tokens, pos: number, allowHomophones = false): {
   while (i < tokens.length) {
     const w = tokens[i];
     if (!started && w === "a" && (tokens[i + 1] === "hundred" || tokens[i + 1] === "thousand")) { chunk = 1; last = "unit"; started = true; i++; continue; }
+    // "hundred dollars", "around hundred" without the "a" (Lithuanian has no articles): one hundred
+    if (!started && (w === "hundred" || w === "thousand")) { chunk = 1; last = "unit"; started = true; continue; }
     if (w === "and" && last === "hundred") {
       const nx = tokens[i + 1];
       if (nx && (nx in UNITS || nx in TENS)) { i++; continue; }
