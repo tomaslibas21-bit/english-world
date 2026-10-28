@@ -10,7 +10,8 @@ import { CameraRig } from "./camera";
 import { Guidance } from "./guidance";
 import { NavGrid } from "./nav";
 import { Session } from "./session";
-import { Ambient } from "./ambient";
+import { Ambient, Chatter, walkerLook } from "./ambient";
+import { ROOM_PEOPLE } from "./world/roomPeople";
 import { AMBIENT_LINES } from "../content/ambient";
 import { ambientVoice } from "../content/voices";
 import { audio } from "./audio";
@@ -23,7 +24,7 @@ import type { SituationDef } from "../content/types";
 import { useStore } from "../state/store";
 import { sceneFor } from "../ui/scenes";
 import { sitProgress } from "../state/progress";
-import { textTexture } from "./world/util";
+import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
 import type { GameApi } from "./gameRef";
 export type { GameApi } from "./gameRef";
@@ -60,6 +61,9 @@ export class Game implements GameApi {
   private zones = new Map<string, ZoneState>();
   player!: GameCharacter;
   private npcs: NpcActor[] = [];
+  /** The room's townspeople (roomPeople.ts) and the pairs of them talking. */
+  private extras: GameCharacter[] = [];
+  private extraChats: Chatter[] = [];
   private npcLayer: THREE.Group = new THREE.Group();
   private guidance = new Guidance();
   private sun!: THREE.DirectionalLight;
@@ -320,6 +324,35 @@ export class Game implements GameApi {
       this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).npc || (c as any).npc !== sp.npc);
       const c = { x: sp.x, z: sp.z, r: 0.45, npc: sp.npc } as any;
       this.zone.colliders.circles.push(c);
+    }
+    this.spawnRoomPeople();
+  }
+
+  /** The room's townspeople: guests, customers, colleagues (roomPeople.ts), with looks drawn per room. Outdoors the
+   *  passers-by are Ambient's. */
+  private spawnRoomPeople() {
+    for (const ch of this.extras) { ch.dispose?.(); this.npcLayer.remove(ch.root); }
+    this.extras = [];
+    this.extraChats = [];
+    this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).extra);
+    const people = this.zone.interior ? ROOM_PEOPLE[this.zone.id] ?? [] : [];
+    const r = rand([...this.zone.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 100000, 17));
+    const talking = new Map<number, GameCharacter>();
+    for (const p of people) {
+      const female = r() < 0.5;
+      const ch = createCharacter({ ...walkerLook(female, r), carry: p.carry, phone: p.phone ?? (!p.sit && !p.run && r() < 0.5) });
+      ch.root.position.set(p.x, p.run ?? 0, p.z);
+      ch.root.rotation.y = p.rot;
+      if (p.sit !== undefined) { ch.seatY = p.sit; ch.setAnim("sit"); }
+      if (p.run !== undefined) { ch.setAnim("run"); ch.moveSpeed = 3.4; }
+      if (p.busy) ch.busy = p.busy;
+      this.npcLayer.add(ch.root);
+      this.extras.push(ch);
+      if (p.sit === undefined && p.run === undefined) this.zone.colliders.circles.push({ x: p.x, z: p.z, r: 0.38, extra: true } as any);
+      if (p.chat !== undefined) {
+        const other = talking.get(p.chat);
+        if (other) this.extraChats.push(new Chatter(other, ch, r)); else talking.set(p.chat, ch);
+      }
     }
   }
 
@@ -1008,6 +1041,8 @@ export class Game implements GameApi {
       }
       n.ch.update(dt);
     }
+    for (const c of this.extraChats) c.update(dt);
+    for (const ch of this.extras) ch.update(dt);
   }
 
   private updateTags() {

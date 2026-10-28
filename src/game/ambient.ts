@@ -19,10 +19,42 @@ interface Walker {
   ch: GameCharacter; female: boolean; kind: "walk" | "sit" | "stand";
   path: [number, number][] | null; wait: number; speed: number;
   heading: number; greetT: number; lastTarget: number;
-  chat?: Chat;
+  chat?: Chatter;
 }
-/** Two people talking in turns: one talks, the other listens (and nods now and then), with pauses between. */
-interface Chat { a: Walker; b: Walker; who: 0 | 1; t: number; talk: number; nod: number }
+
+/** Two people talking in turns: one talks for a couple of seconds while the other listens (eyes on them, a nod
+ *  halfway), then the other; now and then a pause, when both may look round or sip their coffee. Outdoors (the café
+ *  tables, the pairs in the square) and in the rooms (roomPeople.ts). */
+export class Chatter {
+  private who: 0 | 1;
+  private t: number;
+  private talk = 0;
+  private nod = 0;
+  constructor(private a: GameCharacter, private b: GameCharacter, private r: () => number) {
+    this.who = r() < 0.5 ? 0 : 1;
+    this.t = r() * 3;
+  }
+  /** A pause of `s` seconds (one of them is greeted by the player). */
+  hold(s: number) { this.t = s; this.talk = 0; this.a.attentive = this.b.attentive = false; }
+  update(dt: number) {
+    const [speaker, listener] = this.who ? [this.b, this.a] : [this.a, this.b];
+    if (this.talk > 0) {
+      this.talk -= dt;
+      this.nod -= dt;
+      if (this.nod <= 0 && this.nod > -dt) listener.react?.("nod");
+      if (this.talk <= 0) { this.who = this.who ? 0 : 1; this.t = 0.3 + this.r() * 0.9; }
+      return;
+    }
+    this.a.attentive = this.b.attentive = false;
+    this.t -= dt;
+    if (this.t > 0) return;
+    if (this.r() < 0.22) { this.t = 1.5 + this.r() * 3; return; }
+    this.talk = 1.6 + this.r() * 2.6;
+    this.nod = this.talk * (0.3 + this.r() * 0.4);
+    speaker.talk(this.talk);
+    speaker.attentive = listener.attentive = true;
+  }
+}
 interface Car {
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
@@ -63,7 +95,7 @@ export function walkerThings(look: Look, r: () => number): Look {
 export class Ambient {
   group = new THREE.Group();
   private walkers: Walker[] = [];
-  private chats: Chat[] = [];
+  private chats: Chatter[] = [];
   private cars: Car[] = [];
   private r = rand(4242);
   /** Things in the passers-by's hands, and the people sitting and standing: streams of their own. */
@@ -170,7 +202,7 @@ export class Ambient {
   }
 
   private chat(a: Walker, b: Walker) {
-    const c: Chat = { a, b, who: this.rPeople() < 0.5 ? 0 : 1, t: this.rPeople() * 3, talk: 0, nod: 0 };
+    const c = new Chatter(a.ch, b.ch, this.rPeople);
     a.chat = b.chat = c;
     this.chats.push(c);
   }
@@ -185,7 +217,7 @@ export class Ambient {
   /** A townsperson answers the player: a passer-by stops, turns and waves; someone chatting waves (and their friend
    *  waits); someone sitting nods. */
   greet(w: Walker, px: number, pz: number) {
-    if (w.chat) { w.chat.t = 4; w.chat.talk = 0; w.chat.a.ch.attentive = w.chat.b.ch.attentive = false; }
+    w.chat?.hold(4);
     if (w.kind === "sit") { w.ch.react?.("nod"); return { female: w.female }; }
     if (w.kind === "walk") {
       w.path = null;
@@ -202,33 +234,12 @@ export class Ambient {
     // at most one path search every 0.3 s (a long search takes a few milliseconds)
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
-    for (const c of this.chats) this.updateChat(c, dt);
+    for (const c of this.chats) c.update(dt);
     for (const w of this.walkers) {
       if (w.kind === "walk") this.updateWalker(w, dt, player);
       else w.ch.update(dt);
     }
     for (const c of this.cars) this.updateCar(c, dt, player);
-  }
-
-  /** Turns in a chat: one talks for a couple of seconds while the other listens (eyes on them, a nod halfway), then
-   *  the other; now and then a pause, when both may look round or sip their coffee. */
-  private updateChat(c: Chat, dt: number) {
-    const [speaker, listener] = c.who ? [c.b, c.a] : [c.a, c.b];
-    if (c.talk > 0) {
-      c.talk -= dt;
-      c.nod -= dt;
-      if (c.nod <= 0 && c.nod > -dt) listener.ch.react?.("nod");
-      if (c.talk <= 0) { c.who = c.who ? 0 : 1; c.t = 0.3 + this.rPeople() * 0.9; }
-      return;
-    }
-    c.a.ch.attentive = c.b.ch.attentive = false;
-    c.t -= dt;
-    if (c.t > 0) return;
-    if (this.rPeople() < 0.22) { c.t = 1.5 + this.rPeople() * 3; return; }
-    c.talk = 1.6 + this.rPeople() * 2.6;
-    c.nod = c.talk * (0.3 + this.rPeople() * 0.4);
-    speaker.ch.talk(c.talk);
-    speaker.ch.attentive = listener.ch.attentive = true;
   }
 
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
