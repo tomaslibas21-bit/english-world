@@ -26,6 +26,13 @@ export interface Town {
 const PPM = 6; // ground texture pixels per metre
 const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
+/** Open grass between the town's west edge and the foot of the hills beyond it (m). */
+const WEST_MEADOW = 40;
+/** How far a hill's footprint (centre, half-sizes) stays from the town's ground; negative when it reaches onto it. */
+function hillGap(x: number, z: number, fx: number, fz: number) {
+  const gx = Math.max(WORLD.minX - (x + fx), x - fx - WORLD.maxX), gz = Math.max(G0Z - (z + fz), z - fz - WORLD.maxZ);
+  return gx > 0 && gz > 0 ? Math.hypot(gx, gz) : Math.max(gx, gz);
+}
 
 export function buildTown(): Town {
   const group = new THREE.Group();
@@ -62,9 +69,17 @@ export function buildTown(): Town {
   const hillMat = mat("#79ad5a", { flat: true });
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 1.2 - 0.1;
-    const hx = 35 + Math.cos(a) * (230 + r() * 60), hz = 30 + Math.sin(a) * (170 + r() * 50);
+    let hx = 35 + Math.cos(a) * (230 + r() * 60), hz = 30 + Math.sin(a) * (170 + r() * 50);
     if (hz < SEA_Z + 10) continue;
     const s = 30 + r() * 40;
+    // west of the town a hill stands back behind a meadow, so the ends of Main Street, Oak Avenue and the other streets
+    // look out over grass to the hills instead of into a slope: it moves further out along the arc (the random numbers
+    // stay the same, and so does everything after them)
+    if (hx < WORLD.minX) {
+      const ox = hx - 35, oz = hz - 30;
+      let k = 1;
+      while (hillGap(hx, hz, 1.6 * s, 1.2 * s) < WEST_MEADOW && k < 2) { k += 0.02; hx = 35 + ox * k; hz = 30 + oz * k; }
+    }
     const g = new THREE.IcosahedronGeometry(s, 1);
     g.scale(1.6, 0.45 + r() * 0.3, 1.2);
     g.translate(hx, -s * 0.15, hz);

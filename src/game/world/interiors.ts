@@ -1338,7 +1338,9 @@ const B: Record<string, () => Interior> = {
     // the office chairs (seat) are 0.48 m high
     { npc: "brooks", x: -7, z: -6.4, rot: 0, sit: true, seat: 0.48 }, { npc: "maria", x: 5.5, z: 2.4, rot: Math.PI },
     { npc: "vanessa", x: -9.4, z: -5.0, rot: Math.PI / 2, ax: -9.1, az: -3.05 }, { npc: "greg", x: -6.1, z: -3.95, rot: Math.PI, sit: true, seat: 0.48 },
-    { npc: "kate", x: 7.75, z: -6.75, rot: 0.1, sit: true, seat: 0.48, ax: 8.6, az: -4.35 }, { npc: "paul", x: 9.45, z: -6.75, rot: -0.15, sit: true, seat: 0.48 },
+    // there is no way round the desk and the round table to Paul's chair: he is talked to from Kate's spot (he joins her
+    // meeting; listed after her, so there the "Kalbėtis" prompt names Kate and E starts it)
+    { npc: "kate", x: 7.75, z: -6.75, rot: 0.1, sit: true, seat: 0.48, ax: 8.6, az: -4.35 }, { npc: "paul", x: 9.45, z: -6.75, rot: -0.15, sit: true, seat: 0.48, ax: 8.6, az: -4.35 },
     { npc: "emily", x: -8.9, z: 0.9, rot: 0, sit: true, seat: 0.48, ax: -8.9, az: 3.0 },
   ], { floorKind: "carpet", accent: "#34495e" }),
 
