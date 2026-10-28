@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { withoutAddressedNames, audioKey } from "../src/audio-key";
 import { ltCount } from "../src/ui/lt";
+import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../src/content/locations";
 
 describe("voicing lines that address the player by name", () => {
   const N = ["Rūta", "Kazlauskienė"];
@@ -29,5 +30,16 @@ describe("Lithuanian number agreement", () => {
       "pokalbis", "pokalbiai", "pokalbiai", "pokalbių", "pokalbių", "pokalbių", "pokalbių",
       "pokalbis", "pokalbiai", "pokalbių", "pokalbiai", "pokalbis", "pokalbių",
     ]);
+  });
+});
+
+describe("place names in the conversation's header", () => {
+  it("says what the English name means, with the name itself where the Lithuanian one leaves it out", () => {
+    expect(placeLtNamed("sunny-cup")).toBe("Kavinė „Sunny Cup“ – pažod. „Saulėtas puodelis“");
+    expect(placeLtNamed("gas-station")).toBe("Degalinė „Gas & Go“ – pažod. „Įsipilk ir važiuok“");
+    expect(placeLtNamed("bus-stop")).toBe("Autobuso stotelė „Oak Avenue“ – pažod. „Ąžuolų alėja“");
+    expect(placeLtNamed("cedar-lane")).toBe("Cedar gatvė – pažod. „Kedrų gatvelė“");
+    expect(placeLtNamed("police")).toBe("Policijos nuovada");
+    for (const id of Object.keys(NAME_MEANING)) expect(placeLtNamed(id), id).toContain(LOCATIONS[id].name.split(" · ").pop()!.split(" ")[0]);
   });
 });

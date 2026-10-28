@@ -83,3 +83,12 @@ export const placeLt = (id: string) => {
   const m = NAME_MEANING[id];
   return m ? `${l.lt} – pažod. „${m}“` : l.lt;
 };
+
+/** The same with the English name put in where the Lithuanian one leaves it out ("Degalinė „Gas & Go“ – pažod.
+ *  „Įsipilk ir važiuok“"), for the conversation's header: there no door label or map shows the English name. */
+export const placeLtNamed = (id: string) => {
+  const l = LOCATIONS[id];
+  if (!l || !NAME_MEANING[id] || l.lt.includes("„") || l.lt.includes(l.name.split(" ")[0])) return placeLt(id);
+  const en = l.name.split(" · ").pop()!; // "Bus Stop · Oak Avenue": the meaning is Oak Avenue's
+  return `${l.lt} „${en}“ – pažod. „${NAME_MEANING[id]}“`;
+};

@@ -5,7 +5,7 @@ import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import { GLOBAL } from "../content/global";
-import { LOCATIONS } from "../content/locations";
+import { placeLtNamed } from "../content/locations";
 import { compose, type Sentence } from "../convo/compose";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
 import { audio } from "../game/audio";
@@ -93,7 +93,6 @@ export function Conversation() {
   }, []);
 
   if (!conv.active || !sit) return null;
-  const loc = LOCATIONS[sit.location];
   const formal = !npc?.informal;
   const ltRole = npc && npc.role.lt.toLowerCase() !== npc.role.en.toLowerCase() ? npc.role.lt : null;
   const gender = useStore.getState().progress.profile?.gender ?? "m";
@@ -111,9 +110,10 @@ export function Conversation() {
         <div className="avatar" style={{ background: avatarColor(conv.npcId) }}>{sit.mode === "phone" ? <Icon name="phoneCall" size={22} /> : sit.mode === "video" ? <Icon name="video" size={22} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
         <div className="who">
           <b>{npc?.name}</b>
-          {/* the role in English with the Lithuanian centred under it (as in the conversation lines), then the place */}
+          {/* the role in English with the Lithuanian centred under it (as in the conversation lines), then the place
+              with what its English name means (light mode never passes a door, where the 3D town says it) */}
           <span><i className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</i></span>
-          <span className="place">{sit.mode === "video" ? "Vaizdo skambutis" : loc?.lt ?? ""}</span>
+          <span className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</span>
         </div>
         <div className="toggles">
           <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title="Lietuviškas vertimas (L)" aria-pressed={settings.lt}>LT</button>
