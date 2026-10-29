@@ -28,6 +28,8 @@ const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
+/** Elsewhere (the east, behind the airport) a hill just stays off the town's ground: nobody walks into its slope. */
+const HILL_MARGIN = 6;
 /** How far a hill's footprint (centre, half-sizes) stays from the town's ground; negative when it reaches onto it. */
 function hillGap(x: number, z: number, fx: number, fz: number) {
   const gx = Math.max(WORLD.minX - (x + fx), x - fx - WORLD.maxX), gz = Math.max(G0Z - (z + fz), z - fz - WORLD.maxZ);
@@ -75,10 +77,11 @@ export function buildTown(): Town {
     // west of the town a hill stands back behind a meadow, so the ends of Main Street, Oak Avenue and the other streets
     // look out over grass to the hills instead of into a slope: it moves further out along the arc (the random numbers
     // stay the same, and so does everything after them)
-    if (hx < WORLD.minX) {
-      const ox = hx - 35, oz = hz - 30;
+    // elsewhere a hill reaching onto the town's ground moves out just far enough to stay off it
+    {
+      const ox = hx - 35, oz = hz - 30, gap = hx < WORLD.minX ? WEST_MEADOW : HILL_MARGIN;
       let k = 1;
-      while (hillGap(hx, hz, 1.6 * s, 1.2 * s) < WEST_MEADOW && k < 2) { k += 0.02; hx = 35 + ox * k; hz = 30 + oz * k; }
+      while (hillGap(hx, hz, 1.6 * s, 1.2 * s) < gap && k < 2) { k += 0.02; hx = 35 + ox * k; hz = 30 + oz * k; }
     }
     const g = new THREE.IcosahedronGeometry(s, 1);
     g.scale(1.6, 0.45 + r() * 0.3, 1.2);
@@ -700,6 +703,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       col.addCircle(dx + t[0] * s * 3.7 + n[0] * 3.8, dz + t[1] * s * 3.7 + n[1] * 3.8, 0.15);
       // flags
       M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx + t[0] * s * 7 + n[0] * 0.8, 9.5, dz + t[1] * s * 7 + n[1] * 0.8, 6));
+      col.addCircle(dx + t[0] * s * 7 + n[0] * 0.8, dz + t[1] * s * 7 + n[1] * 0.8, 0.12);
       M.add("flag", mat(s < 0 ? "#b22234" : "#3c3b6e"), boxGeo(1.6, 1, 0.04, 0, 0, 0).rotateY(rotY + Math.PI / 2).translate(dx + t[0] * s * 7 + n[0] * 0.8 + t[0] * 0.8, 13.4, dz + t[1] * s * 7 + n[1] * 0.8 + t[1] * 0.8));
     }
   }
@@ -720,6 +724,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("tower-cap", mat("#2b5d8a"), cylGeo(3.3, 3.3, 0.5, b.x + 12, 27.2, b.z + 16, 12));
     // parked plane
     buildPlane(M, 176, 12);
+    col.addBox(176, 42, 22, 2.8);
   }
   if (b.style === "apartments") {
     for (let f = 1; f < 5; f++) for (const o of [-7, 0, 7]) {
@@ -732,16 +737,23 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("porch", mat("#e8e2d6"), boxGeo(6, 0.35, 2.6, 0, 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
+    for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14);
     M.add("chimney", mat("#9a5b46"), boxGeo(1, 3, 1, b.x + b.w * 0.28, b.h + 1.8, b.z + 1.5));
     // mailbox
     M.add("mailbox-post", mat("#6b4f3a"), boxGeo(0.12, 1.1, 0.12, dx + t[0] * 4.5 + n[0] * 5, 0.55, dz + t[1] * 4.5 + n[1] * 5));
     M.add("mailbox", mat("#4a6fa5"), boxGeo(0.35, 0.3, 0.55, dx + t[0] * 4.5 + n[0] * 5, 1.2, dz + t[1] * 4.5 + n[1] * 5));
+    col.addCircle(dx + t[0] * 4.5 + n[0] * 5, dz + t[1] * 4.5 + n[1] * 5, 0.22);
     // picket fence along the front
     for (let i = -b.w / 2; i <= b.w / 2; i += 0.5) {
       if (Math.abs(i) < 1.4) continue;
       M.add("fence", mat("#ffffff"), boxGeo(0.1, 0.9, 0.06, dx + t[0] * i + n[0] * 5.6, 0.45, dz + t[1] * i + n[1] * 5.6));
     }
     M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
+    // the fence blocks on both sides of its gate
+    for (const sd of [-1, 1]) {
+      const len = b.w / 2 - 1.4, u = sd * (1.4 + len / 2), fx = dx + t[0] * u + n[0] * 5.6, fz = dz + t[1] * u + n[1] * 5.6;
+      col.addBox(fx, fz, Math.abs(t[0]) * len + Math.abs(n[0]) * 0.16, Math.abs(t[1]) * len + Math.abs(n[1]) * 0.16);
+    }
   }
   if (b.style === "office") {
     for (let f = 1; f <= 6; f++) M.add("office-band", mat("#34495e"), boxGeo(b.w + 0.2, 0.25, b.d + 0.2, b.x, f * 3.2 + 0.5, b.z));
@@ -750,6 +762,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     for (const s of [-1, 1]) {
       M.add("planter", mat("#8a5a3c"), boxGeo(1.6, 0.6, 0.6, dx + t[0] * s * 4.5 + n[0] * 1.2, 0.3, dz + t[1] * s * 4.5 + n[1] * 1.2));
       M.add("plants", mat("#4c8c3c", { flat: true }), new THREE.IcosahedronGeometry(0.55, 0).translate(dx + t[0] * s * 4.5 + n[0] * 1.2, 0.9, dz + t[1] * s * 4.5 + n[1] * 1.2));
+      col.addBox(dx + t[0] * s * 4.5 + n[0] * 1.2, dz + t[1] * s * 4.5 + n[1] * 1.2, Math.abs(t[0]) * 1.7 + Math.abs(n[0]) * 0.7, Math.abs(t[1]) * 1.7 + Math.abs(n[1]) * 0.7);
     }
     for (const s of [-1, 1]) cafeTable(M, col, dx + t[0] * s * 3 + n[0] * 3.2, dz + t[1] * s * 3 + n[1] * 3.2, "#2e6b3a");
   }
@@ -757,11 +770,13 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     for (const s of [-1, 1]) cafeTable(M, col, dx + t[0] * s * 3.4 + n[0] * 3.2, dz + t[1] * s * 3.4 + n[1] * 3.2, "#e8743b");
     // A-frame chalkboard
     M.add("board", mat("#2f3a33"), boxGeo(0.8, 1, 0.1, 0, 0.55, 0).rotateX(0.2).rotateY(rotY).translate(dx + t[0] * 1.8 + n[0] * 1.6, 0, dz + t[1] * 1.8 + n[1] * 1.6));
+    col.addBox(dx + t[0] * 1.8 + n[0] * 1.6, dz + t[1] * 1.8 + n[1] * 1.6, Math.abs(t[0]) * 0.9 + Math.abs(n[0]) * 0.45, Math.abs(t[1]) * 0.9 + Math.abs(n[1]) * 0.45);
   }
   if (b.id === "bank") {
     // ATM next to the door
     M.add("atm", mat("#34495e"), boxGeo(1, 2, 0.5, 0, 1, 0).rotateY(rotY).translate(dx + t[0] * 4 + n[0] * 0.3, 0, dz + t[1] * 4 + n[1] * 0.3));
     M.add("atm-screen", glassMat, boxGeo(0.6, 0.45, 0.04, 0, 1.5, 0).rotateY(rotY).translate(dx + t[0] * 4 + n[0] * 0.57, 0, dz + t[1] * 4 + n[1] * 0.57));
+    col.addBox(dx + t[0] * 4 + n[0] * 0.3, dz + t[1] * 4 + n[1] * 0.3, Math.abs(t[0]) * 1.05 + Math.abs(n[0]) * 0.6, Math.abs(t[1]) * 1.05 + Math.abs(n[1]) * 0.6);
     M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * -2.2 + n[0] * 0.6, 2.5, dz + t[1] * -2.2 + n[1] * 0.6, 10));
     M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * 2.2 + n[0] * 0.6, 2.5, dz + t[1] * 2.2 + n[1] * 0.6, 10));
   }
@@ -770,6 +785,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.4, 0.4, 0.8, dx + t[0] * 4 + n[0] * 1.6, 1.4, dz + t[1] * 4 + n[1] * 1.6, 12).rotateZ(Math.PI / 2).translate(0, 0, 0));
     col.addBox(dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, 0.9, 0.8);
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
+    col.addCircle(dx - t[0] * 6 + n[0] * 1.2, dz - t[1] * 6 + n[1] * 1.2, 0.12);
     M.add("flag", mat("#b22234"), boxGeo(1.8, 1.1, 0.04, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2));
   }
   if (b.id === "market" || b.id === "clinic" || b.id === "gym") frontExtras(b.id, M, col, group, dx, dz, n, t, rotY);
@@ -1154,6 +1170,7 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
         details.push([at(new THREE.BoxGeometry(0.48, 0.035, 0.035).translate(0, 0.86, 0.42)), "#26292e"]);
       }
     }
+    block(5, 1.05, 1.1, 1.65);
     block(5, 1, 1.6, 0.7);
     notice("Open 5 AM – 11 PM", "#ffffff", "#1f7f8c", -2.2, 1.7, 1.1, 0.34);
     notice("First session FREE!", "#f0883e", "#ffffff", 6.33, 1.95, 2.1, 0.5);
@@ -1230,6 +1247,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   const stop = (x: number, z: number) => {
     M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.04, 0.04, 2.4, x, 1.2, z, 6));
     M.add("stop", mat("#c62828", { flat: true }), new THREE.CylinderGeometry(0.4, 0.4, 0.05, 8).rotateX(Math.PI / 2).translate(x, 2.45, z));
+    col.addCircle(x, z, 0.1);
   };
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
   // parked cars
@@ -1340,6 +1358,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
       const x = b.x + nn[0] * (halfDepth + 0.6) + t[0] * sgn * off, z = b.z + nn[1] * (halfDepth + 0.6) + t[1] * sgn * off;
       m4.compose(v.set(x, 0.35, z), q.identity(), s.set(1, 0.8, 1));
       bushes.setMatrixAt(k++, m4);
+      col.addCircle(x, z, 0.62);
     }
   }
   bushes.count = k;
@@ -1555,6 +1574,7 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
   for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
     M.add("umbrella", mat(c, { flat: true }), new THREE.ConeGeometry(1.6, 0.7, 8).translate(ux, 2.4, uz));
     M.add("umbrella-pole", mat("#ddd"), cylGeo(0.04, 0.04, 2.4, ux, 1.2, uz, 5));
+    col.addCircle(ux, uz, 0.1);
     M.add("towel", mat("#ffffff"), boxGeo(1, 0.03, 1.9, ux + 1, 0.02, uz + 0.5), false);
   }
   void group;
@@ -1579,6 +1599,7 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   taxiSign.position.set(126.5, 2.4, 1.2); taxiSign.rotation.y = Math.PI;
   M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
+  col.addCircle(126.5, 1.25, 0.1);
   group.add(taxiSign);
   // bus stop shelter
   const b = BUS_STOP;
@@ -1587,10 +1608,13 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   for (const s of [-1, 1]) M.add("bus-shelter", mat("#2f3a40"), boxGeo(0.1, 2.55, 0.1, b.x + s * 1.75, 1.275, b.z + 0.75));
   M.add("bus-glass", mat("#bfe3f2", { transparent: 0.45 }), boxGeo(3.6, 2.2, 0.06, b.x, 1.4, b.z + 0.75), false);
   M.add("bench", mat("#9c6b43"), boxGeo(2.4, 0.1, 0.45, b.x, 0.5, b.z + 0.4));
+  // solid, only its back half, so Frank's talk spot under the shelter's roof stays open
+  col.addBox(b.x, b.z + 0.55, 2.4, 0.18);
   col.addBox(b.x, b.z + 0.75, 3.6, 0.2);
   const busSign = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), new THREE.MeshBasicMaterial({ map: textTexture("BUS", { bg: "#1f6f78", fg: "#fff", w: 128, h: 128 }) }));
   busSign.position.set(b.x - 2.2, 2.6, b.z - 0.2);
   M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 3, b.x - 2.2, 1.5, b.z - 0.25, 6));
+  col.addCircle(b.x - 2.2, b.z - 0.25, 0.1);
   group.add(busSign);
   // rail tracks and a waiting train south of the station
   for (let tx = -104; tx < 126; tx += 1.2) M.add("sleeper", mat("#6b4f3a"), boxGeo(0.25, 0.12, 2.6, tx, 0.06, 86), false);
@@ -1682,6 +1706,7 @@ function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
   });
   // a little sign in the front garden pointing to the party
   M.add("sign-pole", mat("#8a6a4a"), cylGeo(0.05, 0.05, 1.3, bx + 7.6, 0.65, bz - 18.4, 6));
+  col.addCircle(bx + 7.6, bz - 18.4, 0.1);
   const partySign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("Party → backyard", { bg: "#fff6e0", fg: "#b5485d", w: 384, h: 128 }) }));
   partySign.position.set(bx + 7.6, 1.35, bz - 18.47);
   partySign.rotation.y = Math.PI;
@@ -1698,7 +1723,10 @@ function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
     M.add("bulbs", bulbMat, new THREE.SphereGeometry(0.09, 6, 4).translate(x, y, bz - 0.5), false);
     M.add("bulbs", bulbMat, new THREE.SphereGeometry(0.09, 6, 4).translate(x, y, bz + 4.5), false);
   }
-  for (const [px, pz] of [[bx - 7.6, bz - 0.5], [bx + 7.6, bz - 0.5], [bx - 7.6, bz + 4.5], [bx + 7.6, bz + 4.5]]) M.add("canopy-post", mat("#8a6a4a"), cylGeo(0.06, 0.06, 3.3, px, 1.65, pz, 6));
+  for (const [px, pz] of [[bx - 7.6, bz - 0.5], [bx + 7.6, bz - 0.5], [bx - 7.6, bz + 4.5], [bx + 7.6, bz + 4.5]]) {
+    M.add("canopy-post", mat("#8a6a4a"), cylGeo(0.06, 0.06, 3.3, px, 1.65, pz, 6));
+    col.addCircle(px, pz, 0.12);
+  }
 }
 
 function makeClouds(group: THREE.Group, r: () => number) {

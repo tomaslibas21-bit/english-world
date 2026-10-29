@@ -41,8 +41,8 @@ const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || 
 function inFrontOf(x: number, z: number, rot: number, d: number) {
   return { x: x + Math.sin(rot) * d, z: z + Math.cos(rot) * d, rot: rot + Math.PI };
 }
-/** Marks the way-finding cells under a person (a circle of radius `r` at x, z) as taken, so walks are planned round them
- *  (a walk to the person themself still ends next to them: a taken goal moves to the nearest free cell). */
+/** Marks the way-finding cells under one of the room's townspeople (a circle of radius `r` at x, z) as taken, so walks
+ *  are planned round them. (Not the NPCs': a walk to one must end next to them, and their spots can be tucked in.) */
 function blockNav(nav: NavGrid, x: number, z: number, r: number) {
   const reach = r + nav.cell * 0.5;
   for (let ox = -reach; ox <= reach + 1e-6; ox += nav.cell * 0.5) for (let oz = -reach; oz <= reach + 1e-6; oz += nav.cell * 0.5) {
@@ -347,7 +347,6 @@ export class Game implements GameApi {
       this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).npc || (c as any).npc !== sp.npc);
       const c = { x: sp.x, z: sp.z, r: 0.45, npc: sp.npc } as any;
       this.zone.colliders.circles.push(c);
-      blockNav(this.zone.nav, sp.x, sp.z, 0.45);
     }
     // passers-by step round the people standing in town
     if (!this.zone.interior) this.ambient.obstacles = this.npcs.map((n) => [n.home.x, n.home.z]);

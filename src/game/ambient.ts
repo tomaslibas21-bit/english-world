@@ -266,6 +266,16 @@ export class Ambient {
   private updateWalker(w: Walker, dt: number, player: THREE.Vector3) {
     const p = w.ch.root.position;
     w.greetT -= dt;
+    // the player has right of way: a walker within arm's length steps aside (back and to one side), also while
+    // standing, so the player's walk is never held up by someone waiting for them to pass
+    {
+      const dx = p.x - player.x, dz = p.z - player.z, d = Math.hypot(dx, dz);
+      if (d < 0.75 && d > 1e-4) {
+        const k = 0.75 - d, ux = dx / d, uz = dz / d;
+        const nx = p.x + (ux * 0.7 - uz * 0.7) * k * 1.4, nz = p.z + (uz * 0.7 + ux * 0.7) * k * 1.4;
+        if (!this.colliders?.blocked(nx, nz, 0.2)) { p.x = nx; p.z = nz; }
+      }
+    }
     if (w.wait > 0) {
       w.wait -= dt;
       if (w.ch.anim === "walk") w.ch.setAnim("idle");

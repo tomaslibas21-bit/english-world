@@ -179,8 +179,11 @@ function table(c: Ctx, x: number, z: number, opts: { round?: boolean; cloth?: st
     c.M.add("chair-" + cc, mat(cc), boxGeo(0.45, 0.08, 0.45, cx, 0.46, cz));
     c.M.add("chair-" + cc, mat(cc), boxGeo(0.45, 0.55, 0.08, 0, 0.72, 0.2).rotateY(-a + Math.PI / 2).translate(cx, 0, cz));
     for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) c.M.add("chair-leg", mat("#3b2a20"), boxGeo(0.05, 0.44, 0.05, cx + lx, 0.22, cz + lz), false);
+    c.col.addCircle(cx, cz, 0.28);
   }
-  c.col.addCircle(x, z, opts.round ? 0.75 : 0.9);
+  // nobody walks through a table (a long one blocks end to end) or its chairs
+  if (opts.round) c.col.addCircle(x, z, 0.75);
+  else c.col.addBox(x, z, opts.w ?? 1.4, opts.d ?? 0.9);
 }
 function plant(c: Ctx, x: number, z: number, s = 1) {
   c.M.add("pot", mat("#b86b4b"), cylGeo(0.28 * s, 0.22 * s, 0.5 * s, x, 0.25 * s, z, 10));
@@ -267,6 +270,7 @@ function desk(c: Ctx, x: number, z: number, rot = 0) {
   c.M.add("chair-office", mat("#2d3a4a"), boxGeo(0.5, 0.1, 0.5, 0, 0.5, 0.65).rotateY(rot).translate(x, 0, z));
   c.M.add("chair-office", mat("#2d3a4a"), boxGeo(0.5, 0.6, 0.08, 0, 0.85, 0.9).rotateY(rot).translate(x, 0, z));
   c.col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.6 + Math.abs(Math.sin(rot)) * 0.8, Math.abs(Math.sin(rot)) * 1.6 + Math.abs(Math.cos(rot)) * 0.8);
+  c.col.addCircle(x + Math.sin(rot) * 0.75, z + Math.cos(rot) * 0.75, 0.3);
 }
 function sign(c: Ctx, text: string, x: number, y: number, z: number, w: number, bg: string, fg: string, rotY = 0) {
   wallPanel(c, textTexture(text, { bg, fg, w: 512, h: 128 }), x, y, z, w, w / 4, rotY);
@@ -327,6 +331,7 @@ function videoCall() {
 function seat(c: Ctx, x: number, z: number, rot: number, color: string) {
   c.M.add("chair-office", mat(color), boxGeo(0.5, 0.08, 0.5, 0, 0.44, 0).rotateY(rot).translate(x, 0, z));
   c.M.add("chair-office", mat(color), boxGeo(0.5, 0.62, 0.08, 0, 0.8, -0.28).rotateY(rot).translate(x, 0, z));
+  c.col.addCircle(x, z, 0.28);
 }
 
 // ---------------------------------------------------------------------------
@@ -465,6 +470,7 @@ function deskS(c: Ctx, S: Smalls, x: number, z: number, rot: number, chair = "#2
   S.add(P(cylGeo(0.03, 0.03, 0.42, 0, 0.22, 0.68, 6)), "#3a3d42");
   S.add(P(cylGeo(0.26, 0.26, 0.04, 0, 0.03, 0.68, 10)), "#3a3d42");
   c.col.addBox(x, z, Math.abs(Math.cos(rot)) * 1.6 + Math.abs(Math.sin(rot)) * 0.8, Math.abs(Math.sin(rot)) * 1.6 + Math.abs(Math.cos(rot)) * 0.8);
+  c.col.addCircle(x + Math.sin(rot) * 0.78, z + Math.cos(rot) * 0.78, 0.3);
 }
 /** The strip over the bank's windows: "Teller 1 · 2 · 3" over the three panes (x −3.3, 0, 3.3; the strip is 9.9 m). */
 function tellerStrip() {
@@ -779,6 +785,7 @@ const B: Record<string, () => Interior> = {
     counter(c, 0, -3.4, 7, 1.1, "#2c4f8f", "#eef2f8");
     c.M.add("scale", mat("#9aa5ad"), boxGeo(0.6, 0.12, 0.5, 2.2, 1.15, -3.3));
     for (let i = 0; i < 6; i++) c.M.add("parcel", mat(["#c8a27a", "#b38b5d"][i % 2]), boxGeo(0.5 + (i % 3) * 0.15, 0.4, 0.5, -3 + (i % 3) * 0.7, 0.2 + Math.floor(i / 3) * 0.4, -5.1), true);
+    c.col.addBox(-2.3, -5.1, 2.1, 0.55);
     // P.O. boxes on the west wall
     c.M.add("po-wall", mat("#8a7340"), boxGeo(0.06, 2.3, 3.6, -c.w / 2 + 0.05, 1.7, -1.63), false);
     for (let i = 0; i < 6; i++) for (let k = 0; k < 4; k++) c.M.add("po-box", mat("#c9a227"), boxGeo(0.05, 0.4, 0.45, -c.w / 2 + 0.1, 1 + k * 0.5, -3 + i * 0.55), false);
@@ -1407,6 +1414,7 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(6.9, -1.25, 0.6, 0.6);
     c.M.add("stool", mat("#34495e"), cylGeo(0.22, 0.22, 0.08, 2.75, 0.58, -5.05, 12));
     c.M.add("stool-leg", mat("#9aa5ad"), cylGeo(0.03, 0.03, 0.55, 2.75, 0.28, -5.05, 6));
+    c.col.addCircle(2.75, -5.05, 0.24);
     c.M.add("door-exam2", mat("#8fbcd0"), boxGeo(0.08, 2.3, 1.2, c.w / 2 - 0.05, 1.15, 1.6), false);
     c.M.add("door-handle", mat("#9aa5ad"), boxGeo(0.06, 0.06, 0.24, c.w / 2 - 0.12, 1.1, 1.15), false);
     wallPanel(c, textTexture("Exam Room 2", { bg: "#ffffff", fg: "#3a86b0", w: 384, h: 96 }), c.w / 2 - 0.06, 2.6, 1.6, 1.3, 0.33, -Math.PI / 2);
@@ -1620,6 +1628,8 @@ const B: Record<string, () => Interior> = {
     for (let ly = 0.3; ly < 2.6; ly += 0.33) c.M.add("ladder", steel, boxGeo(0.06, 0.04, 0.8, 7.35, ly, -6.4), false);
     c.col.addBox(7.35, -6.4, 0.4, 1);
     const top = { y: 2.52, z: -4.6 }, end = { y: 0.4, z: -0.95 }, sx = 9.4;
+    // the stairs up to the mezzanine are solid (nobody climbs them)
+    c.col.addBox(sx, (top.z + end.z) / 2 + 0.3, 1.1, end.z - top.z + 0.7);
     const ang = Math.atan2(top.y - end.y, end.z - top.z), len = Math.hypot(top.y - end.y, end.z - top.z);
     const chute = (g: THREE.BufferGeometry) => g.rotateX(ang).translate(sx, (top.y + end.y) / 2, (top.z + end.z) / 2);
     c.M.add("slide", red, chute(boxGeo(0.9, 0.06, len, 0, 0, 0)));
@@ -1642,6 +1652,7 @@ const B: Record<string, () => Interior> = {
     for (const sx2 of [3.4, 4.6, 5.8]) for (const sz of [1.3, 3.1]) {
       c.M.add("stool", mat("#3f8f8f"), cylGeo(0.2, 0.2, 0.06, sx2, 0.62, sz, 10));
       c.M.add("stool-leg", steel, cylGeo(0.03, 0.05, 0.6, sx2, 0.3, sz, 6), false);
+      c.col.addCircle(sx2, sz, 0.22);
     }
     // the coffee bar along the east wall
     counter(c, 10.45, 3.7, 0.9, 3.4, "#2f7a4a", "#e8e2d6");
