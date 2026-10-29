@@ -303,7 +303,9 @@ export const baggage: SituationDef = {
     via_ctx: { patterns: ["[yes] in {via:city} #h:cn_in", "[yes] (i changed | we changed) (planes | flights) in {via:city}", "[yes] {via:city}", "[yes] (i had | there was) (one | a connection) in {via:city}",
       "[yes] (only | just) one [connection | stop] in {via:city}", "[yes] (one | a) (stop | stopover | layover | connection | transfer) in {via:city}",
       "[yes] (i | we) (changed | transferred) in {via:city}", "[yes] (two | 2) (connections | stops | layovers) [in] {via:city} and {via2:city}",
-      "[yes] in {via:city} [in] @country"] },
+      "[yes] in {via:city} [in] @country",
+      // the owner's own answer (29 Oct 2026): "Yes, the connection was in New York."
+      "[yes] (the | my | our) (connection | layover | stopover | transfer | stop) (was | is) in {via:city}", "[yes] it was in {via:city}"] },
     flight_num_ctx: { patterns: ["{fnum}", "[the] number is {fnum}", "[it is] {fnum}"] },
     city_ctx: { patterns: ["{city}", "i think [from] {city}", "{city} [in] @country"] },
     no_connection: { patterns: ["[no] it was (a direct flight | direct | nonstop) #h:cn_direct", "[no] (no connection | a direct flight | direct | nonstop | non stop | a nonstop flight | straight)",

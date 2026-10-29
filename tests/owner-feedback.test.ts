@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SITUATION_BY_ID } from "../src/content/situations";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
-import { Conversation } from "../src/convo/dialogue";
+import { buildNlu, Conversation } from "../src/convo/dialogue";
 
 function play(sitId: string, turns: string[], set: Record<string, any> = {}, seed = 1) {
   const sit = SITUATION_BY_ID[sitId];
@@ -76,5 +76,30 @@ describe("Rosa at the market", () => {
     const { conv, last } = play("s69-local", ["Hi!", "Is it safe at night?"]);
     expect(conv.completed).toBe(false);
     expect(last).not.toMatch(/Enjoy Maple Harbor/);
+  });
+});
+
+// Owner feedback of 29 Oct 2026: "Yes", on the way to "Yes, the connection was in New York", was taken at once.
+describe("a short answer on the way to a longer one", () => {
+  const nlu = buildNlu(SITUATION_BY_ID["s65b-baggage"], GLOBAL, NPCS);
+  const connection = ["flight", "no_connection", "via_ctx"]; // "Did you have a connection?"
+  it("gives “Yes” and “No” time to grow when an answer to the question starts with them", () => {
+    expect(nlu.probe("Yes", connection)).toBe("open");
+    expect(nlu.probe("No", connection)).toBe("open");
+    expect(nlu.probe("Yes, in", connection)).toBe("prefix");
+  });
+  it("keeps a full sentence quick", () => {
+    expect(nlu.probe("Yes, in New York.", connection)).toBe("complete");
+    expect(nlu.probe("No, it was a direct flight.", connection)).toBe("complete");
+  });
+  it("keeps a short answer quick when no expected answer grows from it", () => {
+    expect(nlu.probe("No", ["via_ctx"])).toBe("complete");
+    expect(nlu.probe("Yes")).toBe("complete");
+  });
+  it("understands the owner's own answer", () => {
+    expect(nlu.probe("Yes, the connection was in New York.", connection)).toBe("complete");
+    const best = nlu.parse("Yes, the connection was in New York.", connection).best;
+    expect(best?.segments.map((s) => s.intent)).toEqual(["via_ctx"]);
+    expect(best?.segments[0].slots.via).toBe("new_york");
   });
 });

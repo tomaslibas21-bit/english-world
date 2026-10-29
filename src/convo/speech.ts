@@ -5,6 +5,7 @@
 //   - the attempt never ends while the learner is still speaking (onspeechstart / onspeechend);
 //   - every alternative the recogniser offers is combined into a few candidates (up to 8), ranked by the grammar:
 //     complete → wait a moment of silence, then hand it over (the learner may add "please" or another item);
+//     open     → a short complete answer that a longer one grows from ("Yes" → "Yes, in New York"): wait longer;
 //     prefix   → a valid unfinished answer: allow a long natural pause;
 //     none     → wait a short silence, then hand it over (the UI shows what was heard and "Did you mean…?").
 //   The candidates go to the conversation with the answer (onCommit's `alts`), which picks the most useful reading.
@@ -28,6 +29,9 @@ export const SPEECH_TIMING = {
   betweenWords: 15_000,
   /** silence after an answer the grammar understands */
   finishedAnswer: 1_200,
+  /** silence (or, in Safari, an unchanged result) after a short understood answer that may be the start of a longer
+   *  one ("Yes" → "Yes, in New York"): the learner who stops for breath isn't cut off (owner, 29 Oct 2026) */
+  openAnswer: 2_500,
   /** silence after words the grammar can't use yet */
   unclear: 2_500,
   /** an understood answer the browser keeps as unfinished (Safari never marks results final): this long unchanged */
@@ -38,7 +42,7 @@ export const SPEECH_TIMING = {
 
 export type SpeechStatus = "idle" | "starting" | "listening" | "reconnecting" | "denied" | "error" | "nothing";
 export interface SpeechSnapshot { status: SpeechStatus; heard: string; error?: string; local?: boolean }
-export type Verdict = "complete" | "prefix" | "none";
+export type Verdict = "complete" | "open" | "prefix" | "none";
 
 type RecognitionResult = ArrayLike<{ transcript: string }> & { isFinal: boolean };
 export interface RecognitionEvent { resultIndex?: number; results: ArrayLike<RecognitionResult> }
@@ -141,10 +145,12 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     if (!v) { v = opt.evaluate(t); verdicts.set(t, v); }
     return v;
   };
+  /** an answer the grammar understands as it is ("open" ones may still grow) */
+  const understood = (v: Verdict) => v === "complete" || v === "open";
   const rank = (text: string) => {
     if (topNegated && !hasNegation(text)) return -1;
     const v = verdict(text);
-    return v === "complete" ? 2 : v === "prefix" ? 1 : 0;
+    return understood(v) ? 2 : v === "prefix" ? 1 : 0;
   };
 
   const update = (s: Partial<SpeechSnapshot>) => {
@@ -202,8 +208,9 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     const v = hasSpeech && best ? verdict(best) : null;
     const allowance = !v ? SPEECH_TIMING.firstWord
       : v === "complete" && !pendingInterim ? SPEECH_TIMING.finishedAnswer
+      : v === "open" && !pendingInterim ? SPEECH_TIMING.openAnswer
       : v === "prefix" ? SPEECH_TIMING.betweenWords
-      : v === "complete" ? SPEECH_TIMING.betweenWords // a complete reading with words still coming
+      : understood(v) ? SPEECH_TIMING.betweenWords // a complete reading with words still coming
       : SPEECH_TIMING.unclear;
     const silenceRemaining = allowance - (now - lastActivity);
     if (!speaking && silenceRemaining <= 0) {
@@ -281,9 +288,11 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       if (!current()) return;
       update({ status: "listening", heard: heard() });
       // an understood answer the browser still calls unfinished (Safari in continuous mode never marks results
-      // final): hand it over once it stays the same for a moment
-      if (pendingInterim && verdict(interimCandidates[0] ?? "") === "complete") {
-        stableTimer = clock.setTimeout(() => { stableTimer = undefined; if (current()) commit(); }, SPEECH_TIMING.interimStable);
+      // final): hand it over once it stays the same for a moment (longer for a short one that may grow)
+      const interimVerdict = pendingInterim ? verdict(interimCandidates[0] ?? "") : "none";
+      if (understood(interimVerdict)) {
+        const wait = interimVerdict === "open" ? SPEECH_TIMING.openAnswer : SPEECH_TIMING.interimStable;
+        stableTimer = clock.setTimeout(() => { stableTimer = undefined; if (current()) commit(); }, wait);
       }
     };
     r.onerror = (e) => {
@@ -304,7 +313,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       if (err === "phrases-not-supported") { phrasesRefused = true; release(); reconnectSoon(run); return; }
       if ((err === "language-not-supported" || err === "service-not-allowed") && useLocal) { useLocal = false; release(); reconnectSoon(run); return; }
       // a network hiccup after an understood answer: the answer stands
-      if ([...finalCandidates, ...(pendingInterim ? interimCandidates : [])].some((t) => t.trim() && verdict(t) === "complete")) { commit(); return; }
+      if ([...finalCandidates, ...(pendingInterim ? interimCandidates : [])].some((t) => t.trim() && understood(verdict(t)))) { commit(); return; }
       failService(err);
     };
     r.onend = () => {

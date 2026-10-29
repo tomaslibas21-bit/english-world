@@ -7,6 +7,8 @@ import type { Door } from "./world/town";
 /** What the UI uses from the game: the 3D town (Game), or the light mode without 3D (LightGame, whose
  *  world members are no-ops). A new call from the UI goes here and into both classes. */
 export interface GameApi {
+  /** The light mode: no town to walk on in, so its end box leads to the next conversation. */
+  readonly light: boolean;
   readonly activeSession: Session | null;
   lastScenario: string | null;
   startScenario(sitId: string): void;

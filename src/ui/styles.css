@@ -446,6 +446,10 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
 .ended-title { font-weight: 900; font-size: 1.12em; margin-bottom: 6px; }
 .ended-sub { color: var(--ink-soft); margin-bottom: 8px; }
+/* in the town: "Tęsti" and "Kita situacija" side by side, the same size (one above the other on a narrow phone);
+   the smaller ones under them */
+.ended-main { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+.ended-main .btn { flex: 1 1 160px; max-width: 220px; white-space: nowrap; }
 /* a task done: confetti bursts from the task bar (ui/Confetti.tsx) */
 .confetti { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 80; }
 .confetti i {

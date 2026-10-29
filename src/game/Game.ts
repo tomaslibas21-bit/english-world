@@ -76,6 +76,7 @@ const AT_WORK: Record<string, "wipe" | "type"> = {
 };
 
 export class Game implements GameApi {
+  readonly light = false;
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   rig: CameraRig;

@@ -96,6 +96,8 @@ export function Conversation() {
   const formal = !npc?.informal;
   const ltRole = npc && npc.role.lt.toLowerCase() !== npc.role.en.toLowerCase() ? npc.role.lt : null;
   const gender = useStore.getState().progress.profile?.gender ?? "m";
+  const startNext = () => { const next = game?.nextScenarioId(sit.id); if (next) game?.startScenario(next); };
+  const showAll = () => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); };
 
   const send = () => {
     const v = typed.trim();
@@ -195,11 +197,26 @@ export function Conversation() {
           {conv.completed && <div className="ended-badge"><Icon name="check" size={30} strokeWidth={2.5} /></div>}
           <div className="ended-title">{conv.completed ? "Užduotis įvykdyta!" : "Pokalbis baigtas"}</div>
           {conv.newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {conv.newExpressions.length}</div>}
-          <div className="sit-actions" style={{ justifyContent: "center" }}>
-            <button className="btn" onClick={() => { const next = game?.nextScenarioId(sit.id); if (next) game?.startScenario(next); }}><Icon name="arrowRight" size={18} /> Kita situacija</button>
-            <button className="btn soft" onClick={() => game?.restartScenario()}><Icon name="restart" size={18} /> Dar kartą</button>
-            <button className="btn ghost" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }}><Icon name="list" size={18} /> Visos situacijos</button>
-          </div>
+          {game?.light ? (
+            <div className="sit-actions" style={{ justifyContent: "center" }}>
+              <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
+              <button className="btn soft" onClick={() => game?.restartScenario()}><Icon name="restart" size={18} /> Dar kartą</button>
+              <button className="btn ghost" onClick={showAll}><Icon name="list" size={18} /> Visos situacijos</button>
+            </div>
+          ) : (
+            <>
+              {/* in the town: walk on (the next task shows as usual), or straight into the next conversation, the
+                  two the same size (owner, 29 Oct 2026); the light mode above has no town, so it leads with the next */}
+              <div className="ended-main">
+                <button className="btn" onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> Tęsti</button>
+                <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
+              </div>
+              <div className="sit-actions" style={{ justifyContent: "center" }}>
+                <button className="btn soft small" onClick={() => game?.restartScenario()}><Icon name="restart" size={17} /> Dar kartą</button>
+                <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
+              </div>
+            </>
+          )}
           <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> Kopijuoti pokalbį mokytojui</button>
         </div>
       )}

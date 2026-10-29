@@ -13,6 +13,7 @@ import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
 
 export class LightGame implements GameApi {
+  readonly light = true;
   private session: Session | null = null;
   lastScenario: string | null = null;
   onReady?: () => void;

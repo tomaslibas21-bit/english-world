@@ -8,11 +8,15 @@ import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { Conversation } from "../src/convo/dialogue";
 
-// A tiny grammar: these answers are complete, and any start of one is a valid beginning.
-const COMPLETE = ["i'd like a latte", "i'd like a latte please", "a latte please", "yes", "large", "i want to go there", "oat milk"];
+// A tiny grammar: these answers are complete, and any start of one is a valid beginning. "No" is complete too, but
+// a longer answer grows from it ("open").
+const COMPLETE = ["i'd like a latte", "i'd like a latte please", "a latte please", "yes", "large", "i want to go there", "oat milk",
+  "no it was a direct flight"];
+const OPEN = ["no"];
 const norm = (t: string) => t.toLowerCase().replace(/[^a-z' ]/g, "").replace(/\s+/g, " ").trim();
 function evaluate(text: string): Verdict {
   const t = norm(text);
+  if (OPEN.includes(t)) return "open";
   if (COMPLETE.includes(t)) return "complete";
   return COMPLETE.some((c) => c.startsWith(t + " ")) ? "prefix" : "none";
 }
@@ -123,6 +127,42 @@ describe("speech attempt", () => {
     expect(h.commits).toHaveLength(0);
     h.advance(200);
     expect(h.commits[0].text).toBe("I'd like a latte");
+  });
+
+  // owner, 29 Oct 2026: "Yes" on the way to "Yes, the connection was in New York" was taken at once
+  it("gives a short answer that a longer one grows from a longer pause", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["No"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.openAnswer - 100);
+    expect(h.commits).toHaveLength(0);
+    h.advance(200);
+    expect(h.commits).toEqual([{ text: "No", alts: [] }]);
+  });
+
+  it("lets the learner finish after a breath: “No… it was a direct flight”", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["No"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 800);
+    expect(h.commits).toHaveLength(0);
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["No"] }, { final: true, alts: ["it was a direct flight"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 100);
+    expect(h.commits[0].text).toBe("No it was a direct flight");
+  });
+
+  it("waits as long for a short answer the browser never marks final (Safari)", () => {
+    const h = harness();
+    h.rec().speech();
+    h.rec().results([{ final: false, alts: ["No"] }]);
+    h.advance(SPEECH_TIMING.openAnswer - 100);
+    expect(h.commits).toHaveLength(0);
+    h.advance(200);
+    expect(h.commits[0].text).toBe("No");
   });
 
   it("never drops the learner's negation after a pause", () => {

@@ -154,6 +154,9 @@ function strayRepeat(r: { caps: { name: string; value: unknown; from: number; to
  *  goodbye: "I have to go | to the airport" and "I need to leave | at seven" are not goodbyes. */
 const AFTER_LEAVING = new Set(["g_bye", "g_thanks", "g_sorry", "g_ok"]);
 const isLeaving = (c: { name: string; value: unknown }) => c.name === "__intent" && !!((c.value as any)?.__tags as string[] | undefined)?.includes("leaving");
+/** Words in an answer short enough that it may be the start of a longer one ("Yes", "No, thanks"): speech waits
+ *  longer after it when an expected answer goes on from it (probe's "open"). */
+const SHORT_ANSWER = 2;
 function leavingCutOff(r: { caps: { name: string; value: unknown; from: number; to: number }[] }, toks: Tokens): boolean {
   const segs = r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from);
   const i = segs.findIndex(isLeaving);
@@ -394,8 +397,9 @@ export class Nlu {
     return best;
   }
 
-  /** Speech timing probe: is the (possibly unfinished) utterance complete, a valid prefix, or neither? */
-  probe(text: string, expected: string[] = []): "complete" | "prefix" | "none" {
+  /** Speech timing probe: is the (possibly unfinished) utterance complete, a valid prefix, or neither? "open" is a
+   *  short complete answer that an answer to the current question still grows from ("Yes" → "Yes, in New York"). */
+  probe(text: string, expected: string[] = []): "complete" | "open" | "prefix" | "none" {
     const { variants } = tokenizeInput(text);
     const top = this.build(expected);
     let pre = false;
@@ -406,8 +410,16 @@ export class Nlu {
       // "I need to go…" is a goodbye, unless another answer goes on from it ("…to the airport"): then
       // the learner gets time to finish the sentence
       const lastPiece = (r: Res) => r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from).at(-1);
-      const goesOn = () => res.some((r) => { const c = r.partial ? lastPiece(r) : undefined; return !!c && c.from < toks.length && !r.caps.some(isLeaving); });
-      if (full.length && !(full.every((r) => { const c = lastPiece(r); return !!c && isLeaving(c); }) && goesOn())) return "complete";
+      const goesOn = (only?: string[]) => res.some((r) => {
+        const c = r.partial ? lastPiece(r) : undefined;
+        return !!c && c.from < toks.length && !r.caps.some(isLeaving) && (!only || only.includes((c.value as any)?.__id));
+      });
+      if (full.length && !(full.every((r) => { const c = lastPiece(r); return !!c && isLeaving(c); }) && goesOn())) {
+        // "Yes" answers "Did you have a connection?", but the learner may be on the way to "Yes, in New York":
+        // a short answer that one of the expected answers goes on from gets a longer pause to finish. Only the
+        // expected ones: almost any answer could take an extra word, and a full sentence stays quick.
+        return toks.length <= SHORT_ANSWER && expected.length && goesOn(expected) ? "open" : "complete";
+      }
       if (res.some((r) => r.partial)) pre = true;
     }
     return pre ? "prefix" : "none";
