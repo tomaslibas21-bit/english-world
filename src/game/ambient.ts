@@ -64,14 +64,15 @@ interface Car {
 
 const SKINS = ["#f2d3bd", "#f6dcc8", "#d9a47e", "#c68e63", "#a0694a", "#6e4630", "#4f3223"];
 const HAIRS = ["#1f1a17", "#5a3a25", "#7b4a2a", "#d9b36a", "#a8472a", "#b8b3ac", "#e8e4dc"];
-const TOPS = ["#e76f51", "#2a9d8f", "#e9c46a", "#457b9d", "#8e6bb0", "#f4a261", "#6a994e", "#bc4749", "#3d5a80", "#ee6c4d", "#f2cc8f", "#81b29a"];
+// (none of the player's tops, ui/Title.tsx LOOKS: no passer-by is dressed like the player)
+const TOPS = ["#c9184a", "#606c38", "#e9c46a", "#5e548e", "#b56576", "#ddb892", "#6a994e", "#bc4749", "#3d5a80", "#a44a3f", "#f2cc8f", "#81b29a"];
 const BOTTOMS = ["#264653", "#3d405b", "#2b2d42", "#5c4b3a", "#4a5a7a", "#6b705c", "#22223b"];
 const F_HAIR: HairStyle[] = ["long", "bun", "ponytail", "curly", "bob", "wavy"];
 const M_HAIR: HairStyle[] = ["short", "buzz", "side", "bald", "curly", "wavy"];
 const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c14e", "#9b5de5", "#b0b7bf"];
 
 const LANES = TRAFFIC_LANES;
-const _hand = new THREE.Vector3();
+const _hand = new THREE.Vector3(), _steer = new THREE.Vector3();
 
 /** A passer-by's look, drawn from `r` (the town's random stream; the dev lineup passes its own). */
 export function walkerLook(female: boolean, r: () => number): Look {
@@ -106,8 +107,12 @@ export class Ambient {
   private rPeople = rand(6060);
   private pathBudget = 0;
   private pathCooldown = 0;
+  /** Where the town's NPCs stand (Game sets it): passers-by step round them. */
+  obstacles: [number, number][] = [];
+  private colliders?: Colliders;
 
   constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
+    this.colliders = colliders;
     const high = quality === "high";
     // each person is a single draw call (characters/Character.ts), so the town can hold a crowd
     const nw = high ? 12 : 6, nc = high ? 8 : 4;
@@ -295,9 +300,16 @@ export class Ambient {
       w.ch.update(dt);
       return;
     }
+    // round the people near by (the others walking, sitting and chatting, the NPCs, the player): never through them
+    const way = this.steerAround(w, dir, player);
+    if (!way) { if (w.ch.anim === "walk") w.ch.setAnim("idle"); w.wait = 0.2 + this.r() * 0.4; w.ch.update(dt); return; }
     const step = Math.min(d, w.speed * dt);
-    p.x += dir.x * step; p.z += dir.z * step;
-    const h = Math.atan2(dir.x, dir.z);
+    const nx = p.x + way.x * step, nz = p.z + way.z * step;
+    if (!this.colliders?.blocked(nx, nz, 0.25)) { p.x = nx; p.z = nz; } else { p.x += dir.x * step; p.z += dir.z * step; }
+    for (const o of this.walkers) if (o !== w) this.keepOut(p, o.ch.root.position.x, o.ch.root.position.z, 0.55);
+    for (const [x, z] of this.obstacles) this.keepOut(p, x, z, 0.62);
+    this.keepOut(p, player.x, player.z, 0.68);
+    const h = Math.atan2(way.x, way.z);
     let dh = h - w.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
     w.heading += dh * Math.min(1, dt * 8);
     w.ch.root.rotation.y = w.heading;
@@ -345,6 +357,47 @@ export class Ambient {
     let n = 0;
     for (const c of this.cars) if (c.hidden <= 0 && this.group.visible) n += Math.max(0, 1 - Math.hypot(c.x - px, c.lane - pz) / 28) * (0.4 + 0.6 * Math.min(1, c.speed / 7));
     return Math.min(1, n);
+  }
+
+  /** A walker's way round the people near it: its direction pushed away from everyone within about a metre (more the
+   *  closer, and a little to its right when someone is ahead, so two walking towards each other pass), or null when
+   *  someone is right in its way (it waits a moment). */
+  private steerAround(w: Walker, dir: THREE.Vector3, player: THREE.Vector3): THREE.Vector3 | null {
+    const p = w.ch.root.position, out = _steer.copy(dir);
+    let blocked = false;
+    const away = (x: number, z: number, reach: number) => {
+      const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);
+      if (d > reach || d < 1e-4) return;
+      const k = (reach - d) / reach, ahead = -(dx * dir.x + dz * dir.z) / d;
+      out.x += (dx / d) * k * 1.6; out.z += (dz / d) * k * 1.6;
+      if (ahead > 0.3) { out.x += dir.z * k * 0.9; out.z -= dir.x * k * 0.9; }
+      if (d < 0.5 && ahead > 0.75) blocked = true;
+    };
+    for (const o of this.walkers) if (o !== w) away(o.ch.root.position.x, o.ch.root.position.z, 1.1);
+    for (const [x, z] of this.obstacles) away(x, z, 1.15);
+    away(player.x, player.z, 1.25);
+    const len = Math.hypot(out.x, out.z);
+    if (blocked || len < 1e-3 || out.x * dir.x + out.z * dir.z < -0.25) return null;
+    return out.set(out.x / len, 0, out.z / len);
+  }
+
+  /** Moves `p` out to `min` from (x, z), unless that would put it into a wall or a bench. */
+  private keepOut(p: THREE.Vector3, x: number, z: number, min: number) {
+    const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);
+    if (d >= min || d < 1e-4) return;
+    const nx = x + (dx / d) * min, nz = z + (dz / d) * min;
+    if (!this.colliders?.blocked(nx, nz, 0.2)) { p.x = nx; p.z = nz; }
+  }
+
+  /** Keep the player out of the people walking about and their dogs (the others stand or sit where colliders are). */
+  resolvePeople(p: THREE.Vector3, r: number) {
+    for (const w of this.walkers) {
+      if (w.kind !== "walk") continue;
+      for (const [x, z, reach] of [[w.ch.root.position.x, w.ch.root.position.z, r + 0.3], ...(w.dog ? [[w.dog.root.position.x, w.dog.root.position.z, r + 0.22]] : [])]) {
+        const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);
+        if (d < reach && d > 1e-4) { p.x = x + (dx / d) * reach; p.z = z + (dz / d) * reach; }
+      }
+    }
   }
 
   /** Keep the player out of the cars. */

@@ -4,7 +4,7 @@ import { showConversationEvent } from "./convEvents";
 import { buildTown, type Town, type Door } from "./world/town";
 import { getInterior, type Interior } from "./world/interiors";
 import { OUTDOOR_NPCS, AIRPORT_EXIT, WORLD, BUILDINGS, ROADS, DROPOFF, SEA_Z, FOUNTAIN, PARK } from "./world/layout";
-import { createCharacter, setBlobShadows, type GameCharacter } from "./characters";
+import { createCharacter, setBlobShadows, withBackpack, type GameCharacter } from "./characters";
 import { styleRenderer, createStyleFx, type StyleFx } from "./styleScene";
 import { CameraRig } from "./camera";
 import { Guidance } from "./guidance";
@@ -41,6 +41,17 @@ const isCall = (s: SituationDef) => s.mode === "phone" || s.mode === "video" || 
 function inFrontOf(x: number, z: number, rot: number, d: number) {
   return { x: x + Math.sin(rot) * d, z: z + Math.cos(rot) * d, rot: rot + Math.PI };
 }
+/** Marks the way-finding cells under a person (a circle of radius `r` at x, z) as taken, so walks are planned round them
+ *  (a walk to the person themself still ends next to them: a taken goal moves to the nearest free cell). */
+function blockNav(nav: NavGrid, x: number, z: number, r: number) {
+  const reach = r + nav.cell * 0.5;
+  for (let ox = -reach; ox <= reach + 1e-6; ox += nav.cell * 0.5) for (let oz = -reach; oz <= reach + 1e-6; oz += nav.cell * 0.5) {
+    if (Math.hypot(ox, oz) > reach) continue;
+    const i = nav.idx(x + ox, z + oz);
+    if (i >= 0) nav.blocked[i] = 1;
+  }
+}
+
 /** Where to go to talk to someone standing at `sp`: their `ax/az` when they have one (across a counter, a stall or a
  *  table; then `person` is where they stand, for the beacon), else their own spot. */
 function talkAt(sp: { x: number; z: number; ax?: number; az?: number }) {
@@ -190,7 +201,7 @@ export class Game implements GameApi {
       return 1;
     };
     const prof = st.progress.profile!;
-    this.player = createCharacter(prof.look);
+    this.player = createCharacter(withBackpack(prof.look));
     this.player.fidgets = false;
     this.scene.add(this.player.root);
     await audio.init();
@@ -336,7 +347,10 @@ export class Game implements GameApi {
       this.zone.colliders.circles = this.zone.colliders.circles.filter((c) => !(c as any).npc || (c as any).npc !== sp.npc);
       const c = { x: sp.x, z: sp.z, r: 0.45, npc: sp.npc } as any;
       this.zone.colliders.circles.push(c);
+      blockNav(this.zone.nav, sp.x, sp.z, 0.45);
     }
+    // passers-by step round the people standing in town
+    if (!this.zone.interior) this.ambient.obstacles = this.npcs.map((n) => [n.home.x, n.home.z]);
     this.spawnRoomPeople();
   }
 
@@ -360,7 +374,12 @@ export class Game implements GameApi {
       if (p.busy) ch.busy = p.busy;
       this.npcLayer.add(ch.root);
       this.extras.push(ch);
-      if (p.sit === undefined && p.run === undefined) this.zone.colliders.circles.push({ x: p.x, z: p.z, r: 0.38, extra: true } as any);
+      // nobody walks through them, sitting or standing (and the way-finding goes round them)
+      if (p.run === undefined) {
+        const r = p.sit !== undefined ? 0.3 : 0.38;
+        this.zone.colliders.circles.push({ x: p.x, z: p.z, r, extra: true } as any);
+        blockNav(this.zone.nav, p.x, p.z, r);
+      }
       if (p.chat !== undefined) {
         const other = talking.get(p.chat);
         if (other) this.extraChats.push(new Chatter(other, ch, r)); else talking.set(p.chat, ch);
@@ -971,7 +990,7 @@ export class Game implements GameApi {
     const before = p.clone();
     p.addScaledVector(this.vel, dt);
     this.zone.colliders.resolve(p, 0.38);
-    if (!this.zone.interior) this.ambient.resolvePlayer(p, 0.38);
+    if (!this.zone.interior) { this.ambient.resolvePlayer(p, 0.38); this.ambient.resolvePeople(p, 0.38); }
     // interior bounds / door push
     if (this.zone.interior) {
       const it = this.zone.interior;

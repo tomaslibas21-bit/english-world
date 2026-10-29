@@ -29,6 +29,8 @@ export interface Look {
   carry?: "coffee" | "bag" | "cup" | "paper";
   /** A phone in the pocket, taken out now and then while waiting. */
   phone?: boolean;
+  /** A backpack in this colour: only the player has one (townspeople and NPCs never do), so they're told apart. */
+  backpack?: string;
 }
 
 export interface NpcDef extends NpcInfo {

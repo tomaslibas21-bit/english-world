@@ -4,7 +4,8 @@
 //   ?view=talk   the conversation camera outdoors (about 6 m away, from 3.2 m up), at the game's pixel size
 //   ?view=walk   the follow camera while walking (10 m behind, pitch 0.42), at the game's pixel size
 //   ?view=room   the fixed camera indoors (about 12 m away, pitch 0.78), at the game's pixel size
-//   ?ids=mia,ben,…  which people (NPC ids, the player's looks f1…m3, or "walkers" for passers-by); default all NPCs
+//   ?ids=mia,ben,…  which people (NPC ids, "player" for the player's looks f1…m3 with their backpacks, "player-plain"
+//                without, or "walkers" for passers-by); default all NPCs
 //   ?yaw=30      turn them (degrees; 0 = facing the camera)   ?anim=idle|talk|blink|walk|wave|sit|nod|puzzled   ?t=1.3 (pose time)
 //   ?level=0.7   with anim=talk: the voice's loudness the mouth follows   ?seat=0.55 with anim=sit: the seat's height (a
 //                bench and the floor are drawn)
@@ -14,7 +15,7 @@
 import * as THREE from "three";
 import { NPCS, type Look } from "../content/npcs";
 import { LOOKS } from "../ui/Title";
-import { createCharacter } from "../game/characters";
+import { createCharacter, withBackpack } from "../game/characters";
 import type { Moment } from "../game/characters/Character";
 import { walkerLook } from "../game/ambient";
 import { rand } from "../game/world/util";
@@ -35,8 +36,9 @@ const screenH = +(q.get("screenH") ?? 800);
 const people: { name: string; look: Look }[] = [];
 for (const id of (q.get("ids") ?? Object.keys(NPCS).join(",")).split(",")) {
   if (NPCS[id]) people.push({ name: NPCS[id].name, look: NPCS[id].look });
-  else if (id === "player") for (const l of LOOKS) people.push({ name: l.id, look: l.look });
-  else if (LOOKS.some((l) => l.id === id)) people.push({ name: id, look: LOOKS.find((l) => l.id === id)!.look });
+  // the player's looks as in the game (with the backpack); "player-plain" without it
+  else if (id === "player" || id === "player-plain") for (const l of LOOKS) people.push({ name: l.id, look: id === "player" ? withBackpack(l.look) : l.look });
+  else if (LOOKS.some((l) => l.id === id)) people.push({ name: id, look: withBackpack(LOOKS.find((l) => l.id === id)!.look) });
   else if (id.startsWith("walkers")) {
     // the same random stream as the town's passers-by (Ambient), so the first seven are the town's own
     const n = +(id.slice(7) || 12), r = rand(4242);

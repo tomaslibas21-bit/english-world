@@ -322,6 +322,19 @@ export class Character {
         P.add(g.translate(a.x, a.y, a.z), "#2c5d8a");
       }
     }
+    if (look.backpack) {
+      // the player's backpack: a pack on the back with a flap and a pocket, its straps over the shoulders and down the
+      // chest (so it shows from the front too)
+      const pack = new THREE.Color(look.backpack), strap = pack.clone().multiplyScalar(0.7);
+      const bz = -tr * 0.78 - 0.075;
+      P.add(new THREE.BoxGeometry(0.36 * b, 0.42 * h, 0.17).translate(0, 1.0 * h, bz), pack);
+      P.add(new THREE.BoxGeometry(0.38 * b, 0.1 * h, 0.18).translate(0, 1.19 * h, bz - 0.004), strap);
+      P.add(new THREE.BoxGeometry(0.24 * b, 0.15 * h, 0.06).translate(0, 0.9 * h, bz - 0.1), strap);
+      for (const s of [-1, 1]) {
+        P.add(new THREE.BoxGeometry(0.055, 0.05, 0.36).translate(s * 0.12 * b, 1.27 * h, -0.03), strap);
+        P.add(new THREE.BoxGeometry(0.055, 0.3 * h, 0.02).translate(s * 0.12 * b, 1.08 * h, front(1.08 * h) + 0.012), strap);
+      }
+    }
     const torso = P.mesh();
     this.body.add(torso);
 
