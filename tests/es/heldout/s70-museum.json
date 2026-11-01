@@ -1,0 +1,53 @@
+{ "situation": "s70-museum", "items": [
+  { "ctx": "tickets", "say": "Buenas tardes, dos boletos para adultos, por favor", "intent": "buy_tickets" },
+  { "ctx": "tickets", "say": "Me da una entrada general", "intent": "buy_tickets" },
+  { "ctx": "tickets", "say": "Quiero un boleto de estudiante", "intent": "buy_tickets", "slots": { "tks": { "tk": { "tt": "student" } } } },
+  { "ctx": "tickets", "say": "Dos adultos y un niño", "intent": "buy_tickets" },
+  { "ctx": "tickets", "say": "Tres boletos", "intent": ["buy_qty", "qty_ctx"] },
+  { "ctx": "tickets", "say": "Ponme dos entradas", "intent": ["buy_qty", "buy_tickets"], "note": "Spain: ponme" },
+  { "ctx": "tickets", "say": "¿Cuánto cuesta la entrada?", "intent": "ask_prices" },
+  { "ctx": "tickets", "say": "Hay descuento para estudiantes?", "intent": "ask_discount", "note": "no ¿" },
+  { "ctx": "tickets", "say": "¿Es gratis hoy?", "intent": "ask_free_day" },
+  { "ctx": "tickets", "say": "Soy residente, vivo aquí", "intent": "im_resident" },
+  { "ctx": "tickets", "say": "¿Puedo pagar con dólares?", "intent": "ask_dollars" },
+  { "ctx": "tickets", "say": "No soy estudiante, un boleto normal", "intent": ["buy_tickets", "adult_ok"], "not": ["im_student"], "note": "trap: negation" },
+  { "ctx": "tickets", "say": "No quiero audioguía, solo la entrada", "intent": "any", "not": ["want_guide", "guide_price"], "note": "trap: negation" },
+
+  { "ctx": "types", "say": "Sí, todos somos adultos", "intent": ["all_adults_ctx", "yn:yes"] },
+  { "ctx": "types", "say": "Uno es estudiante y el otro adulto", "intent": ["mixed_types_ctx", "types_ans", "buy_tickets"] },
+
+  { "ctx": "student_id", "say": "Aquí está mi credencial", "intent": ["have_id", "here_you_go"] },
+  { "ctx": "student_id", "say": "No la traigo conmigo", "intent": ["no_id", "yn:no"], "not": ["have_id", "here_you_go"], "note": "trap: negation" },
+
+  { "ctx": "id_price", "say": "Bueno, pago la general", "intent": ["adult_ok", "yn:yes"] },
+
+  { "ctx": "guide", "say": "Sí, quiero una audioguía", "intent": ["want_guide", "yn:yes"] },
+  { "ctx": "guide", "say": "No, gracias, no la necesito", "intent": ["no_guide", "guide_no_ctx", "yn:no"], "not": ["want_guide"], "note": "trap: negation" },
+  { "ctx": "guide", "say": "¿Cuánto cuesta la audioguía?", "intent": "guide_price" },
+
+  { "ctx": "lang", "say": "En inglés, por favor", "intent": "lang_ctx" },
+  { "ctx": "lang", "say": "¿La tienen en japonés?", "intent": "lang_q" },
+  { "ctx": "lang", "say": "¿Qué idiomas tienen?", "intent": "langs_q" },
+  { "ctx": "lang", "say": "No en español, en inglés", "intent": "lang_ctx", "not": ["lang_not_ctx"], "note": "trap: correction" },
+
+  { "ctx": "pay", "say": "Con tarjeta", "intent": "pay_card" },
+  { "ctx": "pay", "say": "Le pago en efectivo", "intent": "pay_cash" },
+  { "ctx": "pay", "say": "No traigo efectivo", "intent": "no_cash", "not": ["pay_cash"], "note": "trap: negation" },
+
+  { "ctx": "exhibit", "say": "¿Dónde está la exposición nueva?", "intent": "ask_exhibit" },
+  { "ctx": "exhibit", "say": "¿Está incluida en el boleto?", "intent": "ask_included" },
+  { "ctx": "more", "say": "¿Se pueden tomar fotos?", "intent": "ask_photos" },
+  { "ctx": "more", "say": "¿Dónde dejo mi mochila?", "intent": "ask_coat" },
+  { "ctx": "more", "say": "¿Dónde están los baños?", "intent": "ask_restroom" },
+  { "ctx": "more", "say": "¿A qué hora cierran?", "intent": "ask_hours" },
+  { "ctx": "more", "say": "No, es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "more", "say": "No necesito el mapa", "intent": "any", "not": ["ask_map"], "note": "trap: negation" },
+  { "ctx": "more", "say": "Mi perro baila salsa los jueves", "intent": "none" },
+
+  { "ctx": "harold", "say": "Ay, perdón, no sabía", "intent": ["apology", "g_sorry"] },
+  { "ctx": "harold", "say": "¿Por qué no?", "intent": "why_not" },
+  { "ctx": "harold", "say": "Yo no toqué nada", "intent": "deny", "not": ["apology", "g_sorry"], "note": "trap: negation" },
+
+  { "ctx": "late", "say": "Está bien, me alcanza el tiempo", "intent": ["enough_time", "yn:yes"] },
+  { "ctx": "late", "say": "Mejor regreso mañana", "intent": "come_back" }
+] }
