@@ -1,4 +1,6 @@
-// NEEDS: None. Places, streets, words, merges and every reaction to a clarification request are local.
+// NEEDS: the shared g_repeat / g_write / g_slower (global.ts) miss "¿Puede repetirlo?", "¿Lo puede repetir?",
+//   "¿Me lo escribe?" and the imperative "Hable más despacio"; local stand-ins here: repeat_it, write_it, say_again_slowly.
+// Places, streets, words, merges and every reaction to a clarification request are local.
 // Song 62 "Could You Say That Again?" → Puerto Colibrí: "¿Me lo puede repetir?" — the clarification lesson.
 // Información Turística, volunteer Don Chuy (usted): friendly, helpful and a very fast talker (NPC speed 1.18).
 // The learner gets a town map and the way to Café La Ceiba (or anywhere else in town) and practises
@@ -493,6 +495,8 @@ function replayContent(c: Ctx, slow: boolean) {
   for (const l of src) {
     const alt = slow && /^r_[a-z_]+$/.test(l.lineId) && !l.lineId.endsWith("_slow") ? `${l.lineId}_slow` : null;
     if (alt && ROUTE_LINE_IDS.has(alt)) c.say(alt, l.vars);
+    // after the slow version he asks "¿Ahora sí?", not "¿Me explico?" for the third time
+    else if (slow && (l.lineId === "confirm_ask" || l.lineId === "confirm_again")) c.say("confirm_after_slow");
     else cv.pushLine(l.lineId, l.variant, l.vars, slow);
   }
 }
@@ -740,6 +744,8 @@ const H: Record<string, Handler> = {
     c.hold();
   },
   say_again_slowly(c, slots, seg) { H.g_slower(c, slots, seg); },
+  repeat_it(c, slots, seg) { H.g_repeat(c, slots, seg); },
+  write_it(c, slots, seg) { H.g_write(c, slots, seg); },
   didnt_understand(c, slots, seg) { H.g_dont_understand(c, slots, seg); },
   g_dont_understand(c) {
     clar(c);
@@ -870,7 +876,7 @@ const H: Record<string, Handler> = {
   },
   event_time(c) { if (c.s.events) c.say("event_time"); else { c.say("events_music"); c.s.events = true; } },
   ask_buspass(c, _slots, seg) {
-    c.say(seg.tags.includes("price") ? "colectivo_price" : "colectivo");
+    c.say(seg.tags.includes("ticket") ? "ticket_none" : seg.tags.includes("price") ? "colectivo_price" : "colectivo");
   },
   ask_busstop(c, _slots, seg) { c.say(seg.tags.includes("which") ? "bus_which" : "busstop"); },
   ask_schedule(c) { c.say("bus_schedule"); c.event("give", { item: "bus-schedule" }); },
@@ -884,7 +890,7 @@ const H: Record<string, Handler> = {
 
 /** Situation handlers: any real request ends the opening question, and "Sí, por favor, y…"
  *  (or "No, gracias, pero…") answers the map offer as well. */
-const CLARIFY = new Set(["g_repeat", "g_slower", "say_again_slowly", "g_dont_understand", "didnt_understand", "g_learning", "louder", "g_spell", "g_write", "spell_q", "g_meaning", "word_q", "g_ok", "g_thanks", "thanks_help"]);
+const CLARIFY = new Set(["g_repeat", "repeat_it", "write_it", "g_slower", "say_again_slowly", "g_dont_understand", "didnt_understand", "g_learning", "louder", "g_spell", "g_write", "spell_q", "g_meaning", "word_q", "g_ok", "g_thanks", "thanks_help"]);
 function wrap(hs: Record<string, Handler>): Record<string, Handler> {
   const out: Record<string, Handler> = {};
   for (const [id, h] of Object.entries(hs)) {
@@ -1055,8 +1061,8 @@ export const visitorCenter: SituationDef = {
     ] },
     map_here: { patterns: ["(donde | en donde) (estamos | estoy) [en el mapa] #h:map_here", "@could_you (mostrar | ensenar) donde estamos", "donde esta (esta oficina | la oficina [de turismo]) en el mapa"] },
     map_no: { patterns: [
-      "no (necesito | quiero | ocupo) [un | el] mapa", "sin mapa", "ya tengo (un mapa #have | uno #have | el mapa #have)", "tengo (un mapa #have | uno #have) [ya]",
-      "(tengo | traigo) (el mapa | un mapa | mapas | google maps | uno) en (mi | el) celular #have", "(uso | voy a usar) (google maps | mi celular | el celular | el gps) #have",
+      "no (necesito | quiero | ocupo | busco) [un | el] mapa", "sin mapa", "ya tengo (un mapa #have | uno #have | el mapa #have)", "tengo (un mapa #have | uno #have) [ya]",
+      "[ya] (tengo | traigo) (el mapa | un mapa | mapas | google maps | uno) en (mi | el) celular #have", "(uso | voy a usar) (google maps | mi celular | el celular | el gps) #have",
     ] },
     // destinations
     ask_where: { patterns: [
@@ -1069,12 +1075,12 @@ export const visitorCenter: SituationDef = {
       "(quisiera | quiero | me gustaria | necesito | tengo que) (ir | llegar) (a | al) {place} #h:q_want_go", "(quisiera | quiero | me gustaria) (ver | visitar | conocer) {place}",
       "(hay | habra) {place} [@here_]", "(voy | vamos) (a | al) {place}", "para ir (a | al) {place}", "(a | al) {place} como (llego | voy | se llega)",
       "(me | nos) (indica | puede indicar | podria indicar) (como llegar | el camino) (a | al) {place}", "el camino (a | al | para) {place}", "direccion (de | del) {place}",
-      "(cual es | que es) la mejor manera de llegar (a | al) {place}", "(digame | expliqueme | me dice | me explica) como (llegar | llego | se llega) (a | al) {place}",
+      "(cual es | que es) la mejor manera de llegar (a | al) {place}", "(quisiera | quiero | me gustaria) saber (como llegar | como llego | como se llega | donde (esta | queda)) (a | al) {place}", "(digame | expliqueme | me dice | me explica) como (llegar | llego | se llega) (a | al) {place}",
       "(quiero | quisiera | me gustaria) (nadar | ir a nadar | bucear) (en | a) {place}", "(donde | en donde) (puedo | se puede) sacar dinero #atm", "necesito (sacar dinero | un cajero) #atm",
     ] },
     just_arrived: { patterns: [
-      "(acabo de llegar | llegue (hoy | ayer | anoche | esta manana)) [al pueblo | a puerto colibri]", "(soy | somos) (nuevo | nueva | nuevos) [aqui | en el pueblo]",
-      "es mi primer (dia | vez) [aqui | en puerto colibri | en el pueblo]", "es la primera vez que vengo", "(estoy | estamos) de (vacaciones | visita | paseo)", "(soy | somos) (turista | turistas)",
+      "(acabo de llegar | llegue (hoy | ayer | anoche | esta manana)) [al pueblo | a puerto colibri] [y] [es mi (primer dia | primera vez) [aqui | en el pueblo]]", "(soy | somos) (nuevo | nueva | nuevos) [aqui | en el pueblo]",
+      "es mi (primer dia | primera vez) [aqui | en puerto colibri | en el pueblo]", "es la primera vez que (vengo | estoy aqui)", "(estoy | estamos) de (vacaciones | visita | paseo)", "(soy | somos) (turista | turistas)",
       "(me acabo de mudar | me acabo de cambiar | me mude) [aqui | al pueblo | a puerto colibri] [hace poco]", "(ahora | ya) vivo aqui", "(vivo | voy a vivir) aqui [ahora]",
     ] },
     ask_language: { patterns: ["(habla | hablas) (ingles | aleman | frances | lituano | otro idioma | otros idiomas)", "(se habla | hablan) ingles [aqui]", "habla usted ingles"] },
@@ -1085,10 +1091,10 @@ export const visitorCenter: SituationDef = {
       "donde (puedo | se puede) tomar cafe",
     ] },
     // "No tomo café": an indirect no to Don Chuy's café tip
-    no_coffee: { patterns: ["no (tomo | bebo) cafe", "no me gusta el cafe", "no quiero (cafe | un cafe)", "nunca tomo cafe", "no soy de cafe", "no tomo"] },
+    no_coffee: { patterns: ["no (tomo | bebo) cafe", "no me gusta el cafe", "no quiero (cafe | un cafe)", "nunca tomo cafe", "no soy de cafe", "no tomo", "prefiero (el | un) te"] },
     ask_where_unknown: { patterns: ["como llego (a | al) {w:any}", "(donde | en donde) (esta | queda) {w:any}", "busco {w:any}"] },
     // A bare place ("Al museo.") is accepted anywhere but never listed in `expects` (see the English edition).
-    dest_short: { patterns: ["[a | al | hacia | para] {place} #h:q_short"] },
+    dest_short: { patterns: ["[mejor] [a | al | hacia | para] {place} #h:q_short"] },
     dest_neg: { patterns: ["no (quiero | necesito | voy a) ir (a | al) {place}", "no (a | al) {place}", "no (busco | voy a | voy al) {place}", "{place} no me interesa", "no me interesa {place}"] },
     dest_correction: { patterns: ["no (a | al) {place} [sino | mejor] (a | al) {place}", "no dije {place} [dije] {place}", "(dije | quise decir | me referia a | me referia al) {place}", "(a | al) {place} no (a | al) {place}", "no {place} sino {place}"] },
     repeat_route: { patterns: ["como llego (ahi | alla) [otra vez]", "(cual | como) era el camino", "@could_you (repetir | decir) (el camino | las indicaciones | como llegar) [otra vez | de nuevo]", "me (repite | dice) (el camino | las indicaciones | como llegar) [otra vez]", "por donde era", "como era [el camino]"] },
@@ -1132,7 +1138,7 @@ export const visitorCenter: SituationDef = {
       "cual (de los dos)? [es]", "(el | la) grande o (el | la) (chiquito | chiquita | pequeno | pequena | chico | chica)", "(es | se refiere a) el grande o el (chiquito | pequeno)",
     ] },
     show_map: { patterns: [
-      "(me lo | me la | lo | la) (marca | muestra | ensena | senala) en el mapa #h:k_show_map", "(me puede | puede | me podria | podria) (marcar | mostrar | ensenar | senalar) [lo | la] en el mapa",
+      "(me lo | me la | lo | la) (marca | muestra | ensena | senala) en el mapa #h:k_show_map", "(me puede | puede | me podria | podria) (marcar | mostrar | ensenar | senalar) [lo | la] en el mapa", "(me lo | me la | lo | la) (puede | podria) (marcar | mostrar | ensenar | senalar) en el mapa",
       "(marquemelo | muestremelo | ensenemelo) en el mapa", "me puedes (marcar | mostrar | ensenar) [lo] en el mapa #tip:tu_staff", "(donde | en donde) (esta | queda) en el mapa",
       "(me puede | puede | me podria) (mostrar | ensenar | marcar) {place} en el mapa #h:q_show", "(donde | en donde) (esta | queda) {place} en el mapa", "me (marca | senala) el camino en el mapa",
     ] },
@@ -1153,15 +1159,20 @@ export const visitorCenter: SituationDef = {
     need_help: { patterns: ["(me puede | puede | me podria | podria) ayudar", "necesito (ayuda | su ayuda)", "me puedes ayudar #tip:tu_staff"] },
     lost_item: { patterns: ["(perdi | se me perdio | se me perdieron) (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)", "(me robaron | alguien me robo) (mi | la | el) (cartera | pasaporte | celular | bolsa | mochila | billetera)", "no encuentro (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)"] },
     // "¿Derecho?" at "¿A la derecha o a la izquierda?": derecho is straight ahead, not right (a common slip)
-    straight_ans_ctx: { patterns: ["(derecho | todo derecho | derechito | recto | todo recto)", "(sigo | voy) (derecho | recto | derechito)"] },
-    dir_ans_ctx: { patterns: ["[a] [la] {dir} [primero]", "(doy vuelta | volteo | voy | giro) [a] [la] {dir} [ahi]", "[a] [la] {dir} no [a] [la] {other:dir}", "(perdon | me equivoque) [a] [la] {dir}", "creo que [a] [la] {dir}", "a mano {dir}"] },
-    // clarification extras (the rest are global skills)
+    straight_ans_ctx: { patterns: ["(derecho | todo derecho | derechito | recto | todo recto) [@ctail]", "(sigo | voy) (derecho | recto | derechito) [@ctail]"] },
+    dir_ans_ctx: { patterns: ["[a] [la] {dir} [primero]", "(doy vuelta | volteo | voy | giro | doblo) [a] [la] {dir} [ahi]", "[a] [la] {dir} no [a] [la] {other:dir}", "(perdon | me equivoque) [a] [la] {dir}", "creo que [a] [la] {dir}", "a mano {dir}",
+      // "No a la derecha, a la izquierda": the second direction is the answer
+      "[no] no [a] [la] {other:dir} [sino] [a] [la] {dir}", "(hacia | para) [la] {dir}", "(doy vuelta | volteo | voy | giro | doblo) (hacia | para) [la] {dir}", "[a] [la] {dir} creo"] },
+    // clarification extras (the rest are global skills). repeat_it / write_it: the lesson's common forms the
+    // shared g_repeat / g_write lack ("¿Puede repetirlo?", "¿Me lo escribe?"); they run the same reactions.
+    repeat_it: { patterns: ["[perdon] @could_you (repetirlo | repetirmelo) [otra vez | por favor]", "[perdon] lo (puede | podria) repetir [otra vez | por favor]", "(repitalo | repitamelo) [por favor]"] },
+    write_it: { patterns: ["[perdon] me lo escribe [por favor] [en el mapa | en un papel]", "[perdon] lo (escribe | puede escribir | podria escribir) [por favor] [en el mapa | en un papel]"] },
     say_again_slowly: { patterns: [
       "[perdon] me lo (repite | puede repetir | podria repetir | repites) (mas despacio | mas lento | despacito | despacio) #h:c_again_slowly",
       "[perdon] @could_you (repetir | repetirlo | decirlo | decir) [lo | eso] [otra vez | de nuevo] (mas despacio | mas lento | despacito | despacio)",
-      "(repita | repitalo | repitamelo | repitelo) [otra vez] (mas despacio | mas lento | despacito | despacio)",
+      "(repita | repitalo | repitamelo | repitelo) [otra vez] (mas despacio | mas lento | despacito | despacio)", "[perdon] (lo | me lo) (puede | podria) repetir [otra vez] (mas despacio | mas lento | despacito | despacio)", "[perdon] @could_you (repetirlo | repetirmelo) [otra vez] (mas despacio | mas lento | despacito | despacio)",
       "(otra vez | de nuevo | una vez mas) [pero] (mas despacio | mas despacito | despacito | mas lento | despacio)", "(mas despacio | mas despacito | despacito) (otra vez | de nuevo)",
-      "(mas despacito | despacito)", "@could_you hablar (mas despacito | despacito | mas lentito)",
+      "(mas despacito | despacito)", "@could_you hablar (mas despacito | despacito | mas lentito)", "[perdon | lo siento] (hable | hableme) (mas despacio | mas lento | despacio | mas despacito) [por favor]",
     ] },
     louder: { patterns: [
       "@could_you hablar (mas fuerte | mas alto | un poco mas fuerte) #h:x_speak_up", "(mas fuerte | mas alto | un poco mas fuerte)", "no (le | te)? (oigo | escucho) [bien | nada]",
@@ -1169,7 +1180,7 @@ export const visitorCenter: SituationDef = {
     ] },
     spell_q: { patterns: [
       "como se escribe (la calle #street | el nombre de la calle #street | la avenida #street | el nombre de la avenida #street)", "como se escribe (la contrasena #password | la clave #password)",
-      "como se escribe {sp:spot}", "@could_you deletrear (la calle #street | la contrasena #password | {sp:spot})", "{sp:spot} como se escribe",
+      "como se escribe {sp:spot}", "@could_you deletrear (la calle #street | el nombre de la calle #street | la contrasena #password | {sp:spot})", "{sp:spot} como se escribe",
     ] },
     word_q: { patterns: [
       "que (es | son) [un | una | el | la | los | las] {word} #h:x_whats_a", "que (significa | quiere decir) [la palabra] {word} #h:x_word", "[un | una | el | la] {word} que (es | significa | quiere decir)",
@@ -1179,14 +1190,14 @@ export const visitorCenter: SituationDef = {
     thanks_help: { patterns: ["(usted es | es usted) muy amable", "(eso | esto) (fue | me fue | es) muy util", "(fue | ha sido) de mucha ayuda", "me sirvio mucho"] },
     just_looking: { patterns: [
       "(solo | nomas | nada mas) (estoy | ando) (viendo | paseando | conociendo | mirando) [el pueblo]", "(estoy | ando) (paseando | conociendo el pueblo)",
-      "(solo | nomas) (vine a | quiero) (ver | pasear | conocer el pueblo)", "no se a donde ir", "no tengo (planes | plan) [todavia]", "(a ningun lado | a ninguna parte) en (especial | particular)",
+      "(solo | nomas) (vine a | quiero) (ver | pasear | conocer el pueblo)", "no se a donde ir", "no tengo (planes | plan) [todavia]", "(a ningun lado | a ninguna parte) [en (especial | particular)]",
       "nada en (especial | particular) [nomas conociendo el pueblo]", "no se (todavia | bien) a donde ir",
     ] },
     more_no: { patterns: [
       "(eso es | es) todo [por ahora | por hoy] #h:d_all", "nada mas [por ahora] #h:d_nothing", "(asi | ya) estoy bien #h:d_set", "no (necesito | ocupo) nada mas", "no tengo (mas | otras) preguntas",
       "ya con eso", "(eso | esto) seria todo", "seria todo", "con eso (es suficiente | tengo)", "ya tengo todo [lo que necesito]", "es todo por (hoy | ahora)",
     ] },
-    more_yes: { patterns: ["(una cosa mas | otra cosa | otra pregunta | una pregunta mas)", "tengo (una pregunta | otra pregunta)", "(puedo | le puedo) (hacer | preguntar) (otra cosa | algo mas | una pregunta | otra pregunta)", "si tengo otra pregunta"] },
+    more_yes: { patterns: ["(una cosa mas | otra cosa | otra pregunta | una pregunta mas)", "tengo (una pregunta | otra pregunta)", "(puedo | le puedo) (hacer | preguntar) (otra cosa | algo mas | una pregunta | otra pregunta)", "si tengo otra pregunta", "[no] (todavia | aun) no (es todo | termino)"] },
     // information
     ask_hours: { patterns: ["a que hora (cierran | abren) [hoy] #h:i_hours", "(cual es | que) (su | el) horario", "que horario tienen", "hasta que hora (estan abiertos | abren | atienden)", "(abren | estan abiertos) (el | los)? {day}", "cuando (cierran | abren)", "a que hora cierra (la oficina | esta oficina)"] },
     ask_place_hours: { patterns: ["a que hora (abre | cierra) {place}", "(esta | estara) abierto {place} [hoy | ahorita | el {day}]", "(que | cual es el) horario (tiene | de) {place}", "cuando (abre | cierra | se pone | es) {place}", "{place} (abre | esta abierto) (hoy | el {day} | los {day})", "que dia (es | se pone) {place}"] },
@@ -1198,8 +1209,8 @@ export const visitorCenter: SituationDef = {
     event_time: { patterns: ["a que hora (es | empieza)", "cuando (es | empieza)", "a que hora empieza (la musica | el concierto)"] },
     ask_buspass: { patterns: [
       "(donde | en donde) (tomo | agarro | paso | se toma | subo) (el | un) colectivo #h:i_buspass", "(hay | pasa) (un)? colectivo [(a | al) {place}]", "como funciona el colectivo", "(donde | en donde) (esta | queda | pasa) (la parada del colectivo | el colectivo)",
-      "cuanto (cuesta | sale | cobra) el colectivo #price", "(donde | en donde) (compro | venden | consigo) (boletos | el boleto) [para el (camion | autobus | colectivo)]",
-      "(venden | tienen) boletos [de camion | de autobus]", "cuanto (cuesta | sale) el (boleto | pasaje) #price", "(el colectivo | el pasaje) es caro #price", "es caro el colectivo #price",
+      "cuanto (cuesta | sale | cobra) el colectivo #price", "(donde | en donde) (compro | venden | consigo) (boletos | el boleto | un boleto) [para el (camion | autobus | colectivo)] #ticket",
+      "(venden | tienen) boletos [de camion | de autobus | para el (camion | autobus | colectivo)] #ticket", "cuanto (cuesta | sale) el (boleto | pasaje) #price", "(el colectivo | el pasaje) es caro #price", "es caro el colectivo #price",
     ] },
     ask_busstop: { patterns: ["(donde | en donde) (esta | queda) la parada [del camion | del autobus | de autobus | de camiones]", "(donde | por donde) pasa el (camion | autobus)", "(donde | en donde) (tomo | agarro) el (camion | autobus)",
       "(que | cual) (camion | autobus) (va | me lleva) (a | al) {place} #which", "hay (camion | autobus) (a | al | para) {place} #which"] },
@@ -1217,7 +1228,7 @@ export const visitorCenter: SituationDef = {
     ] },
     ask_food: { patterns: [
       "(donde | en donde) (puedo | se puede) comer [algo | bien] #h:i_food", "(donde | en donde) (puedo | se puede) (cenar | desayunar | almorzar | comer)", "(hay | conoce | me recomienda) (un | algun) [buen] (restaurante | lugar para comer) [@here_]", "(donde | en donde) (como | ceno | desayuno)",
-      "tengo hambre", "(quiero | quisiera) comer [algo]", "(donde | en donde) (hay | venden) (tacos | comida)", "donde come la gente de aqui", "(me puede | puede) recomendar un restaurante",
+      "tengo hambre", "(quiero | quisiera) comer [algo]", "(donde | en donde) (hay | venden) (tacos | comida)", "donde come la gente de aqui", "(me puede | puede) recomendar un restaurante", "(busco | estoy buscando | ando buscando) (un | algun) [buen] (restaurante | lugar para comer)",
     ] },
     ask_map_lang: { patterns: ["(tiene | tienen | hay) (el mapa | mapas | un mapa) en (ingles | frances | aleman | otro idioma | otros idiomas)", "el mapa (esta | viene) en ingles"] },
     // Saying yes or no to Don Chuy's offers in other words (a map, the way to the café)
@@ -1228,6 +1239,8 @@ export const visitorCenter: SituationDef = {
     decline_ctx: { patterns: [
       "no (lo | la)? (necesito | ocupo) [ahorita | ahora | por ahora | hoy]", "sin el estoy bien", "(tal vez | quizas | a lo mejor) (despues | mas tarde | otro dia | luego)", "(despues | mas tarde) (tal vez | quizas)",
       "(me voy | voy) caminando", "prefiero caminar", "ya no necesito (las indicaciones | el camino)",
+      // "¿Ya conoce La Ceiba? ¿Le digo cómo llegar?" — "Sí, ya lo conozco" = no directions needed
+      "[si | no] ya (lo | la) conozco", "[no] ya (se | conozco) (donde esta | donde queda | como llegar | el camino)",
     ] },
   },
 
@@ -1465,7 +1478,7 @@ export const visitorCenter: SituationDef = {
 
     // --- checking understanding ---------------------------------------------
     confirm_ask: [
-      t("¿Me | entendió?", "Me | did you understand?", "Did you get all that?"),
+      t("¿Me | entendió?", "(Me) | did you understand?", "Did you get all that?"),
       t("¿Me explico?", "Am I making sense?", "Does that make sense?"),
       t("¿Todo | claro?", "All | clear?", "All clear?"),
     ],
@@ -1549,8 +1562,8 @@ export const visitorCenter: SituationDef = {
     police_bad: [t("¡Ay, | no! | Bueno, | ahí | son | muy | amables.", "Oh, | no! | Well, | there | they-are | very | kind.", "Oh no! Well, they're really nice there.")],
 
     // --- information ----------------------------------------------------------
-    hours: [t("Abrimos | de | nueve | a | cinco, | de | lunes | a | sábado. | El | domingo | cerramos.", "We're open | from | nine | to | five, | from | Monday | to | Saturday. | On | Sunday | we close.", "We're open nine to five, Monday through Saturday. Closed on Sundays.",
-      { flags: { 9: "el before a weekday = on." } })],
+    hours: [t("Abrimos | de | nueve | a | cinco, | de | lunes | a | sábado. | Los | domingos | cerramos.", "We're open | from | nine | to | five, | from | Monday | to | Saturday. | On | Sundays | we close.", "We're open nine to five, Monday through Saturday. Closed on Sundays.",
+      { flags: { 9: "los before a weekday = on (every) …" } })],
     museum_hours: [t("El | museo | abre | de | diez | a | cinco. | Los | lunes | cierra.", "The | museum | opens | from | ten | to | five. | On | Mondays | it closes.", "The museum is open ten to five. It's closed on Mondays.", { flags: { 7: "los before a weekday = on (every) …" } })],
     market_hours: [t("El | tianguis | se pone | los | sábados, | de | siete | a | dos.", "The | street market | is set up | on | Saturdays, | from | seven | to | two.", "The street market is on Saturdays, from seven to two.",
       { flags: { 1: "Mexican: tianguis = an open-air street market held on a set day.", 3: "los before a weekday = on (every) …" }, neutral: t("El | mercado | se pone | los | sábados, | de | siete | a | dos.", "The | market | is set up | on | Saturdays, | from | seven | to | two.", "The market is on Saturdays, from seven to two.") })],
@@ -1567,6 +1580,14 @@ export const visitorCenter: SituationDef = {
     event_free: [t("¡Totalmente | gratis! | Llegue | temprano | para | encontrar | lugar.", "Totally | free! | Arrive | early | to | find | a spot.", "Totally free! Get there early to find a spot.")],
     event_time: [t("La | música | empieza | a | las | ocho.", "The | music | starts | at | — | eight.", "The music starts at eight.", { flags: { 4: "Spanish uses an article before clock times; English has no separate word." } })],
     colectivo: [t("Los | colectivos | pasan | aquí | enfrente, | en | la | avenida. | Para | subir, | levante | la | mano.", "The | shared vans | pass | here | in front, | on | the | avenue. | To | get on, | raise | your | hand.", "The colectivos stop right out front, on the avenue. Just wave one down.", { flags: { 11: "Spanish says la mano (the hand) for a body part; English says your hand." } })],
+    // "¿Dónde compro boletos?": no tickets in advance; the camión and the colectivo are paid on board
+    ticket_none: [t("Aquí | no vendemos | boletos. | En | el | camión | o | en | el | colectivo | se paga | al | subir, | en efectivo.",
+      "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | upon | getting on, | in cash.",
+      "We don't sell tickets here. On the bus or the colectivo, you pay when you get on, in cash.",
+      { flags: { 5: "Mexican: camión = city bus (autobús elsewhere)." },
+        neutral: t("Aquí | no vendemos | boletos. | En | el | autobús | o | en | el | colectivo | se paga | al | subir, | en efectivo.",
+          "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | upon | getting on, | in cash.",
+          "We don't sell tickets here. On the bus or the colectivo, you pay when you get on, in cash.") })],
     colectivo_price: [t("Es | barato. | Se paga | al | chofer, | en efectivo.", "It's | cheap. | You pay | the | driver, | in cash.", "It's cheap. You pay the driver, in cash.")],
     busstop: [t("La | parada | del | camión | está | aquí | enfrente.", "The | stop | of the | bus | is | here | in front.", "The bus stop is right out front.",
       { flags: { 3: "Mexican: camión = city bus (autobús elsewhere)." }, neutral: t("La | parada | del | autobús | está | aquí | enfrente.", "The | stop | of the | bus | is | here | in front.", "The bus stop is right out front.") })],
@@ -1919,6 +1940,7 @@ export const visitorCenter: SituationDef = {
     { say: "¿Qué hay que hacer esta semana?", intent: "ask_events" },
     { say: "¿Qué me recomienda visitar?", intent: "ask_recommend" },
     { say: "¿Dónde tomo el colectivo?", intent: "ask_buspass" },
+    { say: "¿Dónde compro boletos para el camión?", intent: "ask_buspass" },
     { say: "¿Tienen wifi?", intent: "ask_wifi" },
     { say: "¿Dónde está el baño?", intent: "ask_restroom" },
     { say: "¿Dónde puedo comer algo?", intent: "ask_food" },
@@ -1970,6 +1992,22 @@ export const visitorCenter: SituationDef = {
     { say: "Mi perro toca la guitarra", intent: "none" },
     { say: "plátano bicicleta azul mapa", intent: "none" },
     { say: "Ayer compré una camisa verde", intent: "none" },
+    // Review: natural forms learners use, and meaning safety
+    { say: "No, gracias, ya tengo uno en el celular", intent: "map_no", not: ["ask_map", "accept_ctx"] },
+    { say: "No busco el mapa", intent: "map_no", not: ["ask_map"] },
+    { say: "Acabo de llegar, es mi primera vez aquí", intent: "just_arrived" },
+    { say: "¿Puede repetirlo?", intent: "repeat_it" },
+    { say: "Perdón, ¿lo podría repetir?", intent: "repeat_it" },
+    { say: "¿Me lo escribe, por favor?", intent: "write_it" },
+    { say: "Lo siento, hable más despacio", intent: "say_again_slowly" },
+    { say: "¿Lo puede repetir más despacio?", intent: "say_again_slowly" },
+    { say: "¿Me lo puede marcar en el mapa?", intent: "show_map" },
+    { say: "Quisiera saber cómo llegar a la playa", intent: "ask_where", slots: { place: "beach" } },
+    { say: "Estoy buscando un restaurante", intent: "ask_food" },
+    { say: "Mejor al museo", intent: "dest_short", slots: { place: "museum" } },
+    { say: "¿Me puede deletrear el nombre de la calle?", intent: "spell_q" },
+    { say: "No, es todo, gracias", intent: "more_no", step: "more", not: ["more_yes"] },
+    { say: "No, todavía no es todo", intent: "more_yes", step: "more", not: ["more_no"] },
   ],
   sims: [
     { name: "map first, café, repeat twice, then check", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al Café La Ceiba?", "Perdón, ¿puede repetir?", "Perdón, ¿puede repetir?", "Entonces salgo a la derecha, camino dos cuadras y en el banco doy vuelta a la izquierda, ¿verdad?", "No, eso es todo. ¡Gracias!"], expect: { complete: true }, auto: AUTO },
@@ -1986,6 +2024,11 @@ export const visitorCenter: SituationDef = {
     { name: "recommendations outside town, spelling, then the café", turns: ["¿Qué me recomienda visitar?", "¿Cómo se escribe Xcacel?", "¿Qué es un cenote?", "¿Cómo llego a Chemuyil?", "¿Mande?", "Más despacio, por favor", "¿Cómo llego al Café La Ceiba?", "¿Dónde doy vuelta?", "Ya entendí, gracias", "Eso es todo"], expect: { complete: true, state: { trips: 1 } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
     { name: "short answers", turns: ["Un mapa, por favor", "Al museo", "Sí", "A la izquierda", "No, gracias", "No"], expect: { complete: true, state: { cafeNo: true } }, auto: {},
+      setup: (s) => { s.askMore = true; } },
+    // Review: "derecho" (straight) is never "derecha", and in "No a la derecha, a la izquierda" the second one counts
+    { name: "quiz: derecho, then a correction", turns: ["¿Me da un mapa?", "Al museo", "Sí", "Derecho, ¿no?", "No a la derecha, a la izquierda", "No, gracias", "No, es todo"], expect: { complete: true, state: { cafeNo: true, fixes: undefined, conf: { museum: true } } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    { name: "café offer: I already know it", turns: ["¿Me da un mapa?", "¿Dónde está el banco?", "¿Al salir, a la derecha?", "Sí, ya lo conozco", "Eso es todo"], expect: { complete: true, state: { cafeNo: true } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
   ],
 };
