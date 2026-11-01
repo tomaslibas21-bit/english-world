@@ -268,5 +268,20 @@
   {"ctx": "walk", "say": "No, todavía no estoy lista", "intent": "any", "not": ["ack_done"]},
   {"ctx": "collect", "say": "No es mi maleta", "intent": "any", "not": ["bag_back"]},
   {"ctx": "divest", "say": "No traigo nada de metal", "intent": "any", "not": ["ack_done"]},
-  {"ctx": "bag_q", "say": "No sé si es mía", "intent": "bag_unsure_ctx", "not": ["affirm", "deny"]}
+  {"ctx": "bag_q", "say": "No sé si es mía", "intent": "bag_unsure_ctx", "not": ["affirm", "deny"]},
+  {"ctx": "bottle", "say": "No la tiren, me la tomo", "intent": "bottle_drink", "not": ["bottle_throw"], "note": "review: clitic after no"},
+  {"ctx": "bottle", "say": "No la vacío, tírela", "intent": "bottle_throw", "not": ["bottle_empty"], "note": "review"},
+  {"ctx": "bottle", "say": "No la tire, mejor la vacío", "intent": "bottle_empty", "not": ["bottle_throw"], "note": "review"},
+  {"ctx": "bottle", "say": "No, mejor me la tomo", "intent": "bottle_drink", "not": ["bottle_neg", "bottle_throw"], "note": "review"},
+  {"ctx": "bottle", "say": "No me la tomo, tírela", "intent": "bottle_throw", "not": ["bottle_drink"], "note": "review"},
+  {"ctx": "bottle_keep", "say": "No la tire, la vacío", "intent": "bottle_empty", "not": ["bottle_throw"], "note": "review"},
+  {"ctx": "divest", "say": "¿Qué tengo que sacar?", "intent": "ask_what_out", "note": "review"},
+  {"ctx": "divest", "say": "¿El celular va en la charola?", "intent": "ask_phone", "note": "review"},
+  {"ctx": "divest", "say": "Ya casi", "intent": "not_ready", "not": ["ack_done"], "note": "review"},
+  {"ctx": "docs", "say": "Un momento, lo estoy buscando", "intent": "not_ready", "not": ["give_docs"], "note": "review"},
+  {"ctx": "bag_q", "say": "No, la negra no es mía", "intent": "deny", "not": ["affirm"], "note": "review"},
+  {"ctx": "shoes_off", "say": "¿Tengo que quitármelos?", "intent": "ask_shoes", "note": "review"},
+  {"ctx": "walk", "say": "Se me olvidó sacar las llaves", "intent": "pockets_item", "note": "review"},
+  {"ctx": "closing", "say": "¿Por dónde está la sala 12?", "intent": "ask_gate", "note": "review"},
+  {"ctx": "divest", "say": "No, la laptop no la traigo", "intent": "no_laptop", "not": ["ask_laptop"], "note": "review"}
 ] }
