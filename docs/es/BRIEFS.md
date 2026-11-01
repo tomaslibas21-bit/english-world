@@ -1,7 +1,7 @@
 # Briefs: the 47 conversations still to write
 
 One brief per conversation of Maple Harbor that Puerto Colibrí still needs (the café, the mercado and the taxi are
-done: they are the models). Each keeps its English file's id, steps, intents and twists unless the brief says
+done: they are the models; the hotel, s68, was the trial). Each keeps its English file's id, steps, intents and twists unless the brief says
 otherwise; the brief says what changes for a Mexican Caribbean town, who the person is, and what must be in it.
 Read `docs/es/AUTHORING-ES.md` and `docs/es/STYLE.md` first. "M:" = a Mexican-only word that needs a neutral twin.
 

@@ -5,8 +5,9 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 1. `AUTHORING.md` (the English edition's guide): the engine, the grammar syntax, steps, handlers, hints, tests and
    sims. Everything there holds, except what this file changes.
 2. `docs/es/STYLE.md`: the owner's decisions, usted/tú, glosses, money, the glossary, names.
-3. The three Spanish models, completely: `src/editions/es/content/situations/s72-cafe.ts`, `s32-mercado.ts`,
-   `s66-taxi.ts`. Copy their patterns of code; they pass every check.
+3. The Spanish models, completely: `src/editions/es/content/situations/s72-cafe.ts`, `s32-mercado.ts`,
+   `s66-taxi.ts`, and `s68-hotel.ts` (the trial, after the lead's review). Copy their patterns of code; they pass
+   every check. `docs/es/reviews/` says what each review changed and why: the same mistakes cost the most.
 4. Your conversation's English file in `src/content/situations/` and its brief in `docs/es/BRIEFS.md`.
 
 ## Where the file goes
@@ -86,8 +87,40 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 - Tags: `#h:<hintItemId>` on every hint's pattern (credits the phrasebook), `#tip:<key>` (define `tips`), `#blunt`.
 - Intent suffixes `_ctx` (only when expected) and `_unknown` (catch-all) work as in the English edition.
 
+## Rules from the reviews
+
+The trial (s68-hotel) passed every check and still had to change in about 10% of its lines: the checks prove what
+the tests say, not what learners say. These rules come from what the review fixed (`docs/es/reviews/s68-hotel.md`).
+
+1. **Never bend the grammar to a test.** Don't add a `_ctx` intent to a step's `expects` so that an NLU test can use
+   `step:`. An answer to a pending question (a taxi time, a choice) is tested in a sim. (The trial's worst bug: a
+   bare "A las dos" or "Por ahora es todo" at "¿Algo más?" ordered a taxi.)
+2. **A phrase that means something elsewhere never goes in a plain intent.** A bare yes ("está bien"), a refusal
+   ("no quiero pagar más"), a bare time or number belongs in the pending question's `yes`/`no` or in a `_ctx` intent
+   expected only where it makes sense.
+3. **Nothing paid or binding before its price or terms are said.** If the learner names the paid option first,
+   quote it and ask.
+4. **Spanish words that look like numbers.** A handler that reads `c.heard` matches "a la una", "las dos", never a
+   bare "una" or "dos" ("una salida tardía", "los dos"). In patterns, "cambiar(me)?" doesn't match "cambiarme":
+   write "(cambiar | cambiarme)".
+5. **Actions belong to their part of the conversation.** A handler shared by two modes (check-in and a problem
+   visit) checks the mode before it acts.
+6. **Breadth.** For every likely intent, the 5–8 commonest ways to say it: Mexican everyday verbs (no sirve, no
+   prende, el clima), verb-first questions ("¿Está incluido el desayuno?"), one-word answers at their step
+   ("¿Aquí?", "Tome", "Ya está"), corrections ("No son tres, son cuatro", "Mejor al mediodía"), closings ("Eso sería
+   todo", "Por ahora es todo").
+7. **A corpus before the grammar.** Write `tests/es/corpus/<id>.json` first: at least 100 things learners might say,
+   step by step, and at least 20 traps (an item with `"not": [...]`), in the format of
+   `tests/es/corpus/s68-hotel.json`. At the end `tools/coverage.ts <id>` must show at least 90% understood and no
+   trap accepted. (The trial's 131 tests all passed; a broad corpus found 60%.)
+8. **Read the transcripts twice:** the twist sims and two seeds, not only seed 3. No line twice in a row; every reply
+   answers what was asked; a repeated question gets a short reminder, not the same line again.
+9. **Spanish details:** se lo / se la agree with the noun (la almohada → se la llevamos); say information once (the
+   lodging tax); one word for one thing (the room key is la llave, the credit card la tarjeta).
+
 ## Tests and sims (the acceptance gate)
 
+- First, the **corpus** (rule 7): `tests/es/corpus/<id>.json`, before the grammar.
 - At least **40 NLU tests**: every hint pattern; natural alternatives; short answers with their `step`; tú to staff;
   gender slips; spellings without accents; the Mexican and the neutral word; **at least 3 Spain forms** (vosotros, a
   Spain word, vale: STYLE.md); **at least 5 negation / meaning-safety tests** (`not: [...]` or `intent: "none"`);
@@ -103,6 +136,7 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 
 ```sh
 EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/check-content.ts <id> --verbose   # 0 errors, 0 warnings
+EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/coverage.ts <id>                     # ≥ 90%, 0 false accepts
 npx tsc --noEmit -p .                                                                          # no errors
 npx vitest run                                                                                 # both editions green
 ```
