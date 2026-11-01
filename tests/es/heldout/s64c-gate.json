@@ -1,0 +1,50 @@
+{ "situation": "s64c-gate", "items": [
+  { "ctx": "gate", "say": "Buenos días, ¿es esta la sala para el vuelo 223?", "intent": "ask_gate" },
+  { "ctx": "gate", "say": "¿De aquí sale el vuelo a la Ciudad de México?", "intent": "ask_gate" },
+  { "ctx": "gate", "say": "Disculpe, ¿estoy en la sala correcta? Voy a México", "intent": ["ask_gate", "flight_info_ctx"] },
+  { "ctx": "gate", "say": "Aqui se aborda el vuelo dos dos tres?", "intent": "ask_gate", "note": "no accents" },
+  { "ctx": "gate", "say": "Busco la puerta cuatro", "intent": "ask_gate", "note": "neutral puerta" },
+  { "ctx": "gate", "say": "Tengo el vuelo a CDMX, ¿es aquí?", "intent": ["ask_gate", "flight_info_ctx"] },
+  { "ctx": "gate", "say": "Aquí está mi pase de abordar", "intent": ["give_bp", "give_bp_ctx"] },
+  { "ctx": "gate", "say": "No encuentro mi pase de abordar", "intent": "any", "not": ["give_bp", "give_bp_ctx"], "note": "trap: negation" },
+
+  { "ctx": "which_flight", "say": "El 223 a México", "intent": "flight_info_ctx" },
+  { "ctx": "which_flight", "say": "Voy a la Ciudad de México", "intent": ["flight_info_ctx", "ask_gate"] },
+  { "ctx": "which_flight", "say": "Vuelo doscientos veintitrés", "intent": ["flight_info_ctx", "ask_gate"], "slots": { "number": 223 } },
+  { "ctx": "which_flight", "say": "Tenga, aquí está mi pase", "intent": ["give_bp", "give_bp_ctx"] },
+  { "ctx": "which_flight", "say": "No sé el número del vuelo", "intent": ["flight_dunno_ctx", "g_dontknow"], "not": ["flight_info_ctx", "ask_gate"], "note": "trap: negation" },
+
+  { "ctx": "time", "say": "¿El vuelo va a tiempo?", "intent": "ask_ontime" },
+  { "ctx": "time", "say": "Sale a tiempo el avion?", "intent": ["ask_ontime", "ask_departure"], "note": "no accents" },
+  { "ctx": "time", "say": "¿Hay algún retraso?", "intent": "ask_delayed" },
+  { "ctx": "time", "say": "¿Viene retrasado el vuelo?", "intent": "ask_delayed" },
+  { "ctx": "time", "say": "¿Por qué se retrasó?", "intent": "ask_delay_reason" },
+  { "ctx": "time", "say": "¿A qué hora empiezan a abordar?", "intent": "ask_boarding_time" },
+  { "ctx": "time", "say": "¿Cuánto falta para el abordaje?", "intent": "ask_boarding_time" },
+  { "ctx": "time", "say": "¿A qué hora despega?", "intent": "ask_departure" },
+
+  { "ctx": "help", "say": "¿Puedo subir esta maleta al avión?", "intent": "ask_carryon" },
+  { "ctx": "help", "say": "¿Tienen wifi en el avión?", "intent": "ask_wifi" },
+  { "ctx": "help", "say": "¿Dónde puedo comprar un café?", "intent": "ask_coffee" },
+  { "ctx": "help", "say": "¿Dan algo de comer en el vuelo?", "intent": "ask_food" },
+  { "ctx": "help", "say": "¿Dónde está el baño?", "intent": "ask_restroom" },
+  { "ctx": "help", "say": "¿Hay algún lugar para cargar el móvil?", "intent": "ask_charge", "note": "Spain móvil" },
+  { "ctx": "help", "say": "¿Cuánto dura el vuelo?", "intent": "ask_duration" },
+  { "ctx": "help", "say": "¿Puedes cambiarme a un asiento de ventanilla?", "intent": "ask_seat_change", "note": "tú to staff" },
+  { "ctx": "help", "say": "¿En qué zona me toca abordar?", "intent": ["ask_group", "ask_boarding_time"] },
+  { "ctx": "help", "say": "No, eso es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "help", "say": "No quiero cambiar de asiento, solo quería saber si hay retraso", "intent": "any", "not": ["ask_seat_change"], "note": "trap: negation" },
+
+  { "ctx": "seat_offer", "say": "Sí, por favor, me encantaría", "intent": "yn:yes" },
+  { "ctx": "seat_offer", "say": "No, gracias, así estoy bien", "intent": ["yn:no", "more_no"], "not": ["yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "offer", "say": "Vale, documéntela", "intent": ["offer_yes", "yn:yes"], "note": "Spain vale" },
+  { "ctx": "offer", "say": "No, prefiero llevarla conmigo", "intent": ["keep_bag", "keep_bag_ctx", "yn:no"], "not": ["offer_yes"], "note": "trap: negation" },
+  { "ctx": "offer", "say": "No la documente, traigo mi computadora adentro", "intent": "any", "not": ["offer_yes", "yn:yes"], "note": "trap: negative command" },
+  { "ctx": "offer", "say": "¿Tengo que pagar algo?", "intent": "ask_free" },
+  { "ctx": "offer", "say": "¿Y dónde la recojo?", "intent": "bag_check_q" },
+
+  { "ctx": "board", "say": "¿Ya puedo abordar?", "intent": "can_board" },
+  { "ctx": "board", "say": "Soy de la zona tres", "intent": "can_board" },
+  { "ctx": "board", "say": "Todavía no encuentro mi pase", "intent": "any", "not": ["give_bp", "give_bp_ctx"], "note": "trap: negation" }
+] }
