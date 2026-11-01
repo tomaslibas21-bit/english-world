@@ -37,3 +37,44 @@ The one blind miss left: "Todavía no sé" at the length question goes to the gl
 - NEEDS (engine): the comma before "no" is lost, so "X, no Y" = "X no, Y" in every conversation with corrections. A lang.ts or normalize.ts marker for "no" after a comma would make `#amb` unnecessary.
 - Owner: the customs declaration and the beagle twist were dropped (INM doesn't ask about food). The writer's facts are still unverified and stay vague: the 30-day deadline to exchange the visa for the card, fingerprints at a small airport, the money question, stamped days rounded to 7/10/15/…, and "no form to fill out".
 - Glosses checked: about 40 of the ~110 line variants and hints. No gloss errors besides the one above.
+
+## Lead's check (2 Nov 2026)
+
+Looked at the risky parts only: the figures (days, dates, the stamp), the visa, and negations. 30 new edge and trap sentences (outside the repo), before the fixes: 9/22 understood, 5/8 traps accepted; after: 21/21, 0/9. Each flip below was confirmed before the fix (a played conversation, or the parse and its handler) and played as a whole conversation after it.
+
+| Check | After review | After the lead's check |
+|---|---|---|
+| check-content --verbose | 133/133 NLU, 18 sims 12/12 | 152/152 NLU, 28 sims 12/12, fuzz 80, 0 errors 0 warnings |
+| corpus | 158/158, 0/16 | 158/158, 0/16 |
+| blind set (heldout) | 38/39, 0/3 | 38/39, 0/3 (the same "Todavía no sé") |
+| tsc, vitest | clean | clean, 257/257 |
+
+**The stamp (binding; must-fix)**
+- "¿Me puede dar quince días más?" and "¿Me da una semana más?" were read as a figure smaller than hers, so she stamped the short stay and closed. A figure followed by "más" is now added to her days (two months asked, 30 given, "quince días más" → 45; "más o menos" is not "más").
+- "No, necesito más días" folds like "No necesito más días" and was accepted as her days. Now tagged `#amb`: a typed "No," reads it as the request; otherwise she asks "Entonces, ¿le pongo 15 días?" once, and the same sentence after that question is the no.
+- At her ticket question, "No necesito más días" (or "Con quince días está bien") left the question open, so a later "Sí" showed a ticket and granted the days. The question now takes her days and closes; "Treinta días está bien" asks for the ticket again.
+- "Aquí está mi pasaporte" at "¿Me muestra su boleto de regreso?" (the stamp and the return question) counted as the ticket. Now "Ya lo tengo, gracias." and the question again.
+- "No, no lo tengo en el celular" at her ticket question granted the days, and "No, no lo compré" at "¿Trae su boleto de regreso?" was a yes: the engine reads "No, no …" as the answer "No, no" plus "lo tengo / lo compré" when no pattern spells out the negative sentence. New `return_no_ctx` (the negative pronoun forms, only where a ticket is asked for); the same forms for the address (`address_dunno_ctx`) and the passport (find_it).
+
+**The visa (must-fix)**
+- A boarding pass or a ticket handed over at "¿Tiene visa de residente?" granted the resident visa; "Tengo la residencia en trámite" (still in process) did too. Now "¿Y su visa de residente?" and a no (new "en trámite" patterns, and a guard in have_visa).
+- "Sí, está en mi pasaporte" is now a yes, "No, solo mi pasaporte" a no (it was "¿Y su visa?", and "solo" was recorded as traveling alone).
+- "No, vengo de vacaciones" / "No, soy turista" there (folded like "No vengo de vacaciones") made her repeat the visa question; now it's the visa's no and the tourist's purpose ("Sin visa de residente, no puede trabajar ni vivir aquí." → how many days).
+
+**Meaning (should-fix)**
+- Traveling alone: her re-ask after a clarification was "¿Viene con alguien?", the opposite yes/no of "¿Viaja solo?", so "Sí" was recorded as alone. Now "¿Viene solo, sin familia ni amigos?" (new line, glossed and flagged; it needs recording). A bare "Solo" is read only at that question (`alone_yes_ctx`), and "¿Qué significa solo?" no longer records an answer.
+- "No (lo) tengo aquí" / "No me acuerdo" anywhere were the address ("¿La puede buscar en su celular?", then `address: "none"`): the pronoun-only forms are now `address_dunno_ctx` / `address_phone_ctx`.
+- "No, primera vez" / "No, la primera" to "¿Ya había venido?" were recorded as been before.
+- After "No vengo de vacaciones" she could ask "¿Viene por negocios o de vacaciones?" again: now "Entonces, ¿cuál es el motivo de su viaje?".
+- At the passport step, "Aquí está mi boleto" was taken as the passport: now "No, solo su pasaporte.".
+
+**Figures (understanding)**
+- "Un mes o dos semanas" came as two figures and the last won (15 days for a month's stay): with "o" the longer counts.
+- New: "Entre dos y tres semanas", "Dos semanas o tres", "Hasta el veinte", "Del cinco de junio al veinte de julio", "Un mes, mejor dos semanas" (the second counts; "X no, Y" stays `#amb`), "No sé, unas dos semanas", "Más de un mes" (vague: she asks), "Es de ida", "Sí, una vez", "Quince está bien".
+- Spoken figures checked: every stamp value 7…180 is said right ("cuarenta y cinco", "ciento veinte", "ciento ochenta"); the two lines with the digits 180 have their say.
+
+**Tests:** 19 NLU tests (133 → 152), 10 sims (18 → 28), all 12/12.
+
+**Left as is:** "No traigo tarjeta" at the money question is recorded as a card (only state, nothing said wrong); "No, está bien" at the stamp is read as a no and she asks for the ticket (folds with "No está bien"; the safe side); "¿No me puede dar más días?" is not understood (the corpus keeps it from more_days).
+
+**NEEDS (engine):** besides the comma before "no": `noLead` "no no" swallows the verb's own "no" ("No, no lo compré" → "lo compré"). Every conversation with pronoun-only positive patterns ("lo tengo…", "lo compré") has this hole until the engine keeps the second "no" with its verb.
