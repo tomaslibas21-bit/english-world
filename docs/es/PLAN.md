@@ -62,10 +62,11 @@ screenshots of Maple Harbor before and after).
 ## How finished work comes back
 
 - The executor works on GitHub `tomaslibas21-bit/english-world`, on a branch from `spanish-edition` (or from `main`
-  once the switch is merged there) named `es/<batch>` (e.g. `es/A-hotel`, `es/B-arrival`), and opens a pull request
-  into that base with: the conversations or tasks done, the gate's output, the review transcripts' file names,
+  once the switch is merged there) named `es-trial-hotel` for the trial and `es-batch-<letter>` after it (e.g.
+  `es-batch-B`), and opens a pull request into that base with: the conversations or tasks done, the gate's output, the review transcripts' file names,
   anything it was unsure about (a `// NEEDS:` or a question for the owner).
-- The lead reviews each pull request:
+- The lead reviews each pull request with a fresh helper or a short session (most of a long session's cost is
+  re-reading its own context), and notes the review's token use so the saving can be judged:
   1. **Automated first:** the gate above on the branch; the English fingerprint if any shared file changed (it
      shouldn't).
   2. **In full, the risky parts:** prices, numbers, names and spelling; negation and meaning flips (the lead adds its

@@ -8,7 +8,8 @@ You are writing one conversation of a language-learning game, in a TypeScript re
 47. Quality is checked by tests and by a careful review; read before you write.
 
 **Repository:** GitHub `tomaslibas21-bit/english-world`, branch `spanish-edition` (base your work on it). Create the
-branch `es/A-hotel` from it, and when you're done open a pull request from `es/A-hotel` into `spanish-edition`.
+branch `es-trial-hotel` from it, commit your work there, and when you're done open a pull request from
+`es-trial-hotel` into `spanish-edition` (not into `main`).
 
 **The game:** a 3D town where the learner walks up to people and talks to them by voice or by typing. There is no AI
 at runtime: every line a character says is written in advance, and what the learner may say is understood by a
@@ -57,4 +58,5 @@ gender slips; unaccented spellings; Mexican and neutral words; at least 3 learne
 twist forced with `setup`; short answers).
 
 **In the pull request, write:** what the conversation covers, the gate's output, any line you weren't sure about,
-any `// NEEDS:`, and how long the work took you. Then stop: the lead reviews the trial before the next batch.
+any `// NEEDS:`, and how long the work took you. If you could not run a command, say so plainly and don't claim it
+passes. Then stop: the lead reviews the trial before the next batch.
