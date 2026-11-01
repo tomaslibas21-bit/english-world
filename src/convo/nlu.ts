@@ -63,7 +63,7 @@ function negationCutOff(r: { caps: { name: string; value: unknown; from: number;
     // "I don't have | my passport" is not handing over the passport. Two pieces of the same answer are
     // fine ("Not much, the usual").
     const sameAnswer = (prev.value as any)?.__id === (c.value as any)?.__id;
-    if (!sameAnswer && toks.slice(prev.from, prev.to).some((t) => LANG.clauseNegators.has(t)) && !startsNewPart(toks, c.from, c.to)) return true;
+    if (!sameAnswer && toks.slice(prev.from, prev.to).some((t) => LANG.pieceNegators.has(t)) && !startsNewPart(toks, c.from, c.to)) return true;
     // a piece can't begin with the verb of the previous one: "tomorrow | doesn't work", "the steak | is not
     // good", "full coverage | would be too expensive" (a question is fine: "Not bad. | Are you free?")
     if (c.from === prev.to && PREDICATE_AUX.has(toks[c.from]) && !SUBJ_PRONOUNS.has(toks[c.from + 1])) return true;

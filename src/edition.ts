@@ -18,6 +18,8 @@ export interface Edition {
   storage: string;
   /** The learner the tools play (sims, enumerate, coverage); their name is registered as the player's. */
   simPlayer: { name: string; surname: string };
+  /** The stock answers the sims give to "How are you?" and at the closing (tools/sim-play.ts). */
+  simAuto: Record<string, string>;
   /** Practice sentences and the blind set (tools/coverage.ts). */
   corpusDir: string;
   heldoutDir: string;
@@ -33,6 +35,7 @@ export const EDITION: Edition = {
   title: "English World · Maple Harbor",
   storage: "english-world",
   simPlayer: { name: "Tomas", surname: "Mikalauskas" },
+  simAuto: { howareyou: "Good, thanks. And you?", closing: "Thank you, bye!" },
   corpusDir: "tests/corpus",
   heldoutDir: "tests/heldout",
   contentDir: "src/content",

@@ -7,6 +7,7 @@ import type { SituationDef } from "../src/content/types";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { Conversation, type TurnOut } from "../src/convo/dialogue";
+import { EDITION } from "../src/edition";
 
 const [id, seedS, ...turns] = process.argv.slice(2);
 // id may be a situation id or a path to a situation file
@@ -14,7 +15,7 @@ let sit: SituationDef | undefined = SITUATION_BY_ID[id];
 if (!sit && id.endsWith(".ts")) { const mod = await import(pathToFileURL(path.resolve(id)).href); sit = mod.default; }
 if (!sit) { console.error("Unknown situation " + id); process.exit(1); }
 const conv = new Conversation(sit, {
-  global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: (process.env.GENDER as any) || "m" },
+  global: GLOBAL, npcs: NPCS, player: { name: EDITION.simPlayer.name, surname: EDITION.simPlayer.surname, gender: (process.env.GENDER as any) || "m" },
   visits: Number(process.env.VISITS || 0), seed: Number(seedS), memory: {},
 });
 const show = (o: TurnOut) => {

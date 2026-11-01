@@ -90,6 +90,8 @@ export interface LangPack {
   possessives: ReadonlySet<string>;
   /** Words that negate the clause they end ("I don't | …"): what follows must start a new part. */
   clauseNegators: ReadonlySet<string>;
+  /** Words that make a piece negative: the next piece must start something new ("I don't have | my passport"). */
+  pieceNegators: ReadonlySet<string>;
   auxiliaries: ReadonlySet<string>;
   /** A verb that can't begin a piece right after another piece ("tomorrow | doesn't work"). */
   predicateAux: ReadonlySet<string>;
@@ -387,6 +389,7 @@ export const LANG: LangPack = {
     "may", "might", "must", "have", "has", "had"]),
   possessives: new Set(["my", "your", "his", "her", "our", "their", "its"]),
   clauseNegators: new Set(["not", "never"]),
+  pieceNegators: new Set(["not", "never"]),
   auxiliaries: new Set(["do", "does", "did", "is", "are", "was", "were", "will", "would", "can", "could", "should", "have", "has", "had"]),
   predicateAux: new Set(["does", "is", "was", "has", "would", "will", "are", "were"]),
   subjectPronouns: new Set(["i", "you", "we", "he", "she", "it", "they", "there", "this", "that"]),

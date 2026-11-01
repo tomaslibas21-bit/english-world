@@ -2,7 +2,8 @@
 import { SITUATION_BY_ID } from "../src/content/situations";
 import { setKnownNames } from "../src/convo/slots";
 import { playSim } from "./sim-play";
-setKnownNames(["Tomas", "Mikalauskas"]);
+import { EDITION } from "../src/edition";
+setKnownNames([EDITION.simPlayer.name, EDITION.simPlayer.surname]);
 const [id, simName, seedS, orig, changed] = process.argv.slice(2);
 const sit = SITUATION_BY_ID[id];
 const sim = sit.sims!.find((s) => s.name.startsWith(simName))!;

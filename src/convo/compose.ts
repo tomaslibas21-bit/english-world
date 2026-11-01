@@ -29,10 +29,17 @@ function binding(vars: Vars, name: string): NpBinding | null {
 
 // ---------------------------------------------------------------------------
 
+/** Which Spanish the learner hears (the Spanish edition's setting): "neutral" takes a line's neutral twin
+ *  (SentSrc.neutral) where it has one. The English edition never sets it. */
+let VARIETY: "default" | "neutral" = "default";
+export function setVariety(v: "default" | "neutral") { VARIETY = v; }
+export const variety = () => VARIETY;
+
 export interface ComposeOpts { look: EntityLookup; addressee?: Gender; speaker?: Gender; /** jūs (true, default) or tu (false) */ formal?: boolean }
 
 /** Compose a concrete sentence. Throws on authoring errors (validated at build time). */
-export function compose(src: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
+export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence {
+  const src: SentSrc = VARIETY === "neutral" && src0.neutral ? src0.neutral : src0;
   const g = opts.addressee ?? "m";
   const sp = opts.speaker ?? "f";
   const formal = opts.formal ?? true;

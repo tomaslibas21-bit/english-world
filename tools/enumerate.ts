@@ -16,6 +16,11 @@ import { compose, placeholders, type Sentence } from "../src/convo/compose";
 import type { EntityDef, SentSrc, SituationDef } from "../src/content/types";
 import type { NpcDef } from "../src/content/npcs";
 import { soundKey } from "../src/convo/soundalike";
+import { EDITION } from "../src/edition";
+
+/** The learner the tools play: lines that address them by name are voiced without the name. */
+const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
+const NAMES_RE = new RegExp(`\\b(${NAMES.join("|")})\\b`);
 
 export interface Utt { voice: string; speed: number; say: string; en: string; where: string }
 
@@ -40,9 +45,9 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
     if (!s.say.trim()) return;
     if (/\s[.,!?]/.test(s.say)) return; // a value was missing (e.g. "My last name is .")
     // lines that address the (simulated) player by name are voiced without the name
-    const alt = withoutAddressedNames(s.say, ["Tomas", "Mikalauskas"]);
+    const alt = withoutAddressedNames(s.say, NAMES);
     const say = alt ?? s.say;
-    if (alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return; // the name is part of the content: no clip (browser voice)
+    if (alt === null && NAMES_RE.test(say)) return; // the name is part of the content: no clip (browser voice)
     const k = `${voice}|${speed}|${say}`;
     if (!out.has(k)) out.set(k, { voice, speed, say, en: s.en, where });
   };
@@ -102,7 +107,7 @@ export function enumerateAll(opts: { fuzzRuns?: number; only?: string[]; sits?: 
         const pool = ents.filter((e) => !it.only || it.only(e));
         const binds = pool.length ? pool.map((e) => ({ X: e.id })) : [{}];
         for (const b of binds) for (const formal of [true, false]) for (const coach of coachVoices(opts.v2)) {
-          try { add(coach, 1, compose(it.s, { ...b, name: "Tomas" }, { look, formal }), `${sit.id}:hint:${gid}.${it.id}`); } catch { /* skip */ }
+          try { add(coach, 1, compose(it.s, { ...b, name: NAMES[0] }, { look, formal }), `${sit.id}:hint:${gid}.${it.id}`); } catch { /* skip */ }
         }
       }
     }
@@ -135,7 +140,7 @@ export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef
       for (const it of g.items) {
         const pool = ents.filter((e) => !it.only || it.only(e)).slice(0, 12);
         for (const e of pool.length ? pool : [null]) {
-          try { inputs.push(compose(it.s, e ? { X: e.id, name: "Tomas" } : { name: "Tomas" }, { look }).en); } catch { /* skip */ }
+          try { inputs.push(compose(it.s, e ? { X: e.id, name: NAMES[0] } : { name: NAMES[0] }, { look }).en); } catch { /* skip */ }
         }
       }
     }
@@ -145,7 +150,7 @@ export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef
       let conv: Conversation;
       const visits = Math.floor(rand() * 4);
       try {
-        conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: rand() < 0.5 ? "m" : "f", datePartner: partner }, visits, seed: r + 1, memory: r % 3 === 0 ? {} : undefined });
+        conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: EDITION.simPlayer.name, surname: EDITION.simPlayer.surname, gender: rand() < 0.5 ? "m" : "f", datePartner: partner }, visits, seed: r + 1, memory: r % 3 === 0 ? {} : undefined });
       } catch (e: any) { errors.push(`${sit.id}: constructor: ${e.message}`); break; }
       const collect = (o: { lines: SpokenLine[] }) => {
         for (const l of o.lines) { const n = NPCS[l.npc]; if (n && take) take(voiceOf(n), n.speed ?? 1, l.sentence, l); }
@@ -164,9 +169,9 @@ export function fuzzSituation(sit: SituationDef, look: (id: string) => EntityDef
 function finishEnumeration(out: Map<string, Utt>, errors: string[], allNpcIds: Set<string>, opts: { only?: string[]; sits?: SituationDef[]; v2?: boolean }): { utts: Utt[]; errors: string[] } {
   const add = (voice: string, speed: number, s: Sentence, where: string) => {
     if (!s.say.trim() || /\s[.,!?]/.test(s.say)) return;
-    const alt = withoutAddressedNames(s.say, ["Tomas", "Mikalauskas"]);
+    const alt = withoutAddressedNames(s.say, NAMES);
     const say = alt ?? s.say;
-    if (alt === null && /\b(Tomas|Mikalauskas)\b/.test(say)) return;
+    if (alt === null && NAMES_RE.test(say)) return;
     const k = `${voice}|${speed}|${say}`;
     if (!out.has(k)) out.set(k, { voice, speed, say, en: s.en, where });
   };

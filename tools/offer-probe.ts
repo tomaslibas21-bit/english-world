@@ -11,6 +11,7 @@ import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import { Conversation } from "../src/convo/dialogue";
 import { playSim } from "./sim-play";
+import { EDITION } from "../src/edition";
 
 const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const RUNS = Number(process.argv.find((a) => a.startsWith("--runs="))?.slice(7) ?? 40);
@@ -31,7 +32,7 @@ const snap = (c: any) => JSON.stringify([c.s, c.step, c.pending?.id ?? null]);
 type Opts = { gender: "m" | "f"; visits: number; seed: number; partner: string; setup?: (s: any) => void };
 function mk(sit: any, o: Opts) {
   const def = o.setup ? { ...sit, init: (c: any) => { sit.init?.(c); o.setup!(c.s); } } : sit;
-  return new Conversation(def, { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: o.gender, datePartner: o.partner }, visits: o.visits, seed: o.seed, memory: {} });
+  return new Conversation(def, { global: GLOBAL, npcs: NPCS, player: { name: EDITION.simPlayer.name, surname: EDITION.simPlayer.surname, gender: o.gender, datePartner: o.partner }, visits: o.visits, seed: o.seed, memory: {} });
 }
 function rng(seed: number) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 function offersIn(text: string) {

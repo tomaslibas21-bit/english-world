@@ -8,9 +8,11 @@ import { NPCS } from "../src/content/npcs";
 import { mergeRecord, mergeKey } from "../src/content/merges";
 import { buildNlu } from "../src/convo/dialogue";
 import { compose, splitUnits, placeholders } from "../src/convo/compose";
+import { resolveTarget } from "../src/convo/target";
 import type { EntityDef, SentSrc, SimTest, SituationDef } from "../src/content/types";
 import { fuzzSituation } from "./enumerate";
 import { playSim } from "./sim-play";
+import { EDITION } from "../src/edition";
 
 const args = process.argv.slice(2);
 const verbose = args.includes("--verbose");
@@ -34,7 +36,11 @@ const err = (s: string) => { errors++; console.log("  ✗ " + s); };
 const warn = (s: string) => { warnings++; if (verbose) console.log("  ! " + s); };
 const unregistered = new Map<string, string>();
 
-const ARTICLES = new Set(["a", "an", "the", "A", "An", "The"]);
+// The English edition glosses an article "—" (Lithuanian has none); the Spanish one with the English article, or "—"
+// with a flag where English has none (docs/es/STYLE.md).
+const ES = EDITION.id === "es";
+const ARTICLES = ES ? new Set(["el", "la", "los", "las", "un", "una", "unos", "unas"]) : new Set(["a", "an", "the", "A", "An", "The"]);
+const articleGlossOk = (gloss: string, flagged: boolean) => (ES ? /^(the|a|an|some|one)\b/i.test(gloss) || (/^—/.test(gloss) && flagged) : /^—/.test(gloss));
 function stripPunct(w: string) { return w.replace(/^[\s"“”'‘’(¿¡]+|[\s"“”'‘’.,!?;:)…]+$/g, ""); }
 
 function checkUnits(where: string, s: SentSrc, look: (id: string) => EntityDef | undefined, sampleVars: Record<string, any>[]) {
@@ -46,11 +52,13 @@ function checkUnits(where: string, s: SentSrc, look: (id: string) => EntityDef |
     }
     if (!ok) { err(`${where}: ${lastErr}`); return; }
   }
-  const en = splitUnits(s.en), lt = splitUnits(s.lt);
-  en.forEach((u, i) => {
+  const lt = splitUnits(s.lt);
+  // the practised language's units under each choice written into it (the Spanish edition's {u:…|t:…}, {m:…|f:…})
+  const variants = new Set([true, false].flatMap((formal) => (["m", "f"] as const).map((g) => resolveTarget(s.en, { player: g, speaker: g, formal }))));
+  for (const v of variants) splitUnits(v).forEach((u, i) => {
     if (u.includes("{")) return;
     const w = stripPunct(u);
-    if (ARTICLES.has(w) && !/^—/.test(lt[i] ?? "") && !(lt[i] || "").startsWith("{") && !s.flags?.[i]) warn(`${where}: article "${u}" glossed "${lt[i]}" (expected —)`);
+    if (ARTICLES.has(ES ? w.toLowerCase() : w) && !(lt[i] || "").startsWith("{") && (ES || !s.flags?.[i]) && !articleGlossOk(lt[i] ?? "", !!s.flags?.[i])) warn(`${where}: article "${u}" glossed "${lt[i]}" (expected ${ES ? "the / a / an / some, or — with a flag" : "—"})`);
     if (/\s/.test(w) && !mergeRecord(w) && !currentSit?.merges?.[mergeKey(w)]) unregistered.set(mergeKey(w), (currentSit?.id ?? "") + " " + where);
   });
   if (/\d|\$/.test(s.en.replace(/\{\$[a-z]+\}/gi, "")) && !s.say) warn(`${where}: digits without a spoken form (say)`);
@@ -60,7 +68,7 @@ function sampleVarsFor(s: SentSrc, sit: SituationDef): Record<string, any>[] {
   const ph = placeholders(s);
   const types = Object.values(sit.entities || {});
   const out: Record<string, any>[] = [];
-  const base: Record<string, any> = { price: 450, total: 1250, amount: 2000, time: { h: 10, m: 30 }, letters: "latte", num: 3, name: "Tomas", text: "text" };
+  const base: Record<string, any> = { price: 450, total: 1250, amount: 2000, time: { h: 10, m: 30 }, letters: "latte", num: 3, name: EDITION.simPlayer.name, text: "text" };
   if (!ph.entities.length) return [base];
   for (const list of types) {
     if (!list.length) continue;
@@ -92,10 +100,10 @@ for (const sit of sits) {
     for (const it of g.items) {
       const where = `hint ${gid}.${it.id}`;
       const usable = ents.filter((e) => !it.only || it.only(e));
-      const samples = usable.length ? usable.map((e) => ({ X: e.id, name: "Tomas" })) : [{ name: "Tomas" }];
+      const samples = usable.length ? usable.map((e) => ({ X: e.id, name: EDITION.simPlayer.name })) : [{ name: EDITION.simPlayer.name }];
       checkUnits(where, it.s, look, samples);
       if (usable.length) for (const e of usable) {
-        try { compose(it.s, { X: e.id, name: "Tomas" }, { look }); } catch (x: any) { err(`${where} with ${e.id}: ${x.message}`); }
+        try { compose(it.s, { X: e.id, name: EDITION.simPlayer.name }, { look }); } catch (x: any) { err(`${where} with ${e.id}: ${x.message}`); }
       }
     }
   }

@@ -127,7 +127,7 @@ export const LANG: LangPack = {
   droppable: new Map([
     ["el", 0.15], ["la", 0.15], ["los", 0.15], ["las", 0.15], ["un", 0.15], ["una", 0.15], ["unos", 0.2], ["unas", 0.2],
     ["de", 0.3], ["a", 0.3], ["al", 0.3], ["del", 0.3], ["en", 0.35], ["con", 0.35], ["por", 0.35], ["para", 0.35],
-    ["que", 0.3], ["me", 0.35], ["te", 0.35], ["le", 0.35], ["lo", 0.4], ["se", 0.35],
+    ["me", 0.35], ["te", 0.35], ["le", 0.35], ["lo", 0.4], ["se", 0.35],
     ["es", 0.35], ["esta", 0.35], ["son", 0.35], ["mi", 0.3], ["su", 0.3],
   ]),
   keepDroppable: () => false,
@@ -159,7 +159,7 @@ export const LANG: LangPack = {
 
   leads: [
     ["greet", "hola | buenos dias | buen dia | buenas tardes | buenas noches | buenas | hola buenos dias | hola buen dia | hola buenas tardes | hola buenas noches | hola buenas | hey | hola hola | ey | hola de nuevo | buenas buenas"],
-    ["open", "ah | oh | ok | bueno | pues | pues bueno | bueno pues | a ver | este | mira | mire | oye | oiga | entonces | y | ah ok | ah bueno | ah si | ah claro | ah perfecto | perfecto | muy bien | genial | que bien | claro | vale | sale | va | orale | ay | uy | creo que | yo creo que | tal vez | quizas | quiza | la verdad | fijese que | fijate que | es que | o sea | ahora | ahora si | tambien | y tambien | ademas | ah perdon | oh perdon | ah hola | ok entonces | bueno entonces | pues mire | a ver a ver | dejeme ver | dejame ver | dejeme pensar | dejame pensar | este pues | bueno este | wow | ah que bien | de hecho | en realidad | solo | nomas | mmm a ver"],
+    ["open", "yo | ah | oh | ok | bueno | pues | pues bueno | bueno pues | a ver | este | mira | mire | oye | oiga | entonces | y | ah ok | ah bueno | ah si | ah claro | ah perfecto | perfecto | muy bien | genial | que bien | claro | vale | sale | va | orale | ay | uy | creo que | yo creo que | tal vez | quizas | quiza | la verdad | fijese que | fijate que | es que | o sea | ahora | ahora si | tambien | y tambien | ademas | ah perdon | oh perdon | ah hola | ok entonces | bueno entonces | pues mire | a ver a ver | dejeme ver | dejame ver | dejeme pensar | dejame pensar | este pues | bueno este | wow | ah que bien | de hecho | en realidad | solo | nomas | mmm a ver"],
     ["sorry", "perdon | disculpe | disculpa | perdone | perdona | lo siento | con permiso | perdon que le moleste | perdon que te moleste | disculpe la molestia | una disculpa | perdon perdon | ay perdon | disculpe usted"],
     // courtesy before a refusal: only what follows "pero" is the answer ("Gracias, pero no puedo")
     ["but", "gracias pero | muchas gracias pero | me encantaria pero | me gustaria pero | suena bien pero | que amable pero | muy amable pero | lo siento pero | perdon pero | buena idea pero | ya se pero | si pero | claro pero"],
@@ -194,6 +194,8 @@ export const LANG: LangPack = {
   possessives: new Set(["mi", "mis", "tu", "tus", "su", "sus", "nuestro", "nuestra", "nuestros", "nuestras"]),
   // not "no": it is also the answer "No," (see correctionStarters)
   clauseNegators: new Set(["nunca", "jamas", "tampoco"]),
+  // "no un capuchino | un latte" is not a refusal plus an order (the correction intent reads it)
+  pieceNegators: new Set(["no", "nunca", "jamas", "tampoco", "ni"]),
   auxiliaries: new Set(["es", "son", "esta", "estan", "era", "fue", "va", "van", "tiene", "tienen", "hay", "puede", "pueden", "sera", "seria", "estaba"]),
   predicateAux: new Set(["es", "esta", "son", "estan", "era", "estaba", "fue", "va", "seria", "sera", "queda", "cuesta", "sale"]),
   subjectPronouns: new Set(["yo", "tu", "usted", "el", "ella", "nosotros", "ustedes", "ellos", "ellas", "eso", "esto", "este", "esta", "ese", "esa", "aqui", "ahi"]),

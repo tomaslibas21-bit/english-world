@@ -10,6 +10,7 @@ export const EDITION: Edition = {
   title: "Spanish World · Puerto Colibrí",
   storage: "puerto-colibri",
   simPlayer: { name: "Ryan", surname: "Miller" },
+  simAuto: { howareyou: "Bien, gracias. ¿Y usted?", closing: "¡Gracias, adiós!" },
   corpusDir: "tests/es/corpus",
   heldoutDir: "tests/es/heldout",
   contentDir: "src/editions/es/content",

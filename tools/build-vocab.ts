@@ -8,6 +8,11 @@ import path from "node:path";
 import { SITUATIONS } from "../src/content/situations";
 import { GLOBAL } from "../src/content/global";
 import { tokenizePatternWords } from "../src/convo/normalize";
+import { EDITION } from "../src/edition";
+
+// The Spanish edition has no dictionary here: its words are the content's own, without the entities' `forms` (which
+// list recognizer spellings), and land in its own file.
+const ES = EDITION.id === "es";
 
 const words = new Set<string>();
 const addText = (text: string) => {
@@ -34,16 +39,18 @@ for (const sit of SITUATIONS) {
   for (const list of Object.values(sit.entities || {})) for (const e of list) {
     addText(e.en.split(" | ").join(" "));
     if (e.pl) addText(e.pl.split(" | ").join(" "));
-    for (const f of e.forms || []) addText(f);
+    if (!ES) for (const f of e.forms || []) addText(f);
   }
   for (const lines of Object.values(sit.lines)) for (const l of lines) addText(l.en.split(" | ").join(" "));
   for (const g of Object.values(sit.hints)) for (const it of g.items) addText(it.s.en.split(" | ").join(" "));
 }
 
 // only real English words (CMU dictionary): recognizer spellings listed as forms ("cappucino") stay out
-const CMU: Record<string, unknown> = JSON.parse(fs.readFileSync(path.resolve("tools/data/cmudict.json"), "utf8"));
-for (const w of [...words]) if (!CMU[w]) words.delete(w);
+if (!ES) {
+  const CMU: Record<string, unknown> = JSON.parse(fs.readFileSync(path.resolve("tools/data/cmudict.json"), "utf8"));
+  for (const w of [...words]) if (!CMU[w]) words.delete(w);
+}
 
-const out = path.resolve("src/generated/known-words.json");
+const out = path.resolve(ES ? "src/editions/es/generated/known-words.json" : "src/generated/known-words.json");
 fs.writeFileSync(out, JSON.stringify([...words].sort()));
 console.log(`known words: ${words.size} → ${path.relative(process.cwd(), out)}`);

@@ -14,15 +14,16 @@ import { NPCS } from "../src/content/npcs";
 import { buildNlu } from "../src/convo/dialogue";
 import { setKnownNames } from "../src/convo/slots";
 import { situationContexts } from "./contexts";
+import { EDITION } from "../src/edition";
 
 // corpus sentences use this learner (as the game registers the player's own name)
-setKnownNames(["Tomas", "Mikalauskas"]);
+setKnownNames([EDITION.simPlayer.name, EDITION.simPlayer.surname]);
 
 interface Item { ctx?: string; say: string; intent: string | string[]; slots?: Record<string, unknown>; not?: string[]; note?: string }
 interface Corpus { situation: string; items: Item[] }
 
 const args = process.argv.slice(2);
-const dir = args.find((a) => a.startsWith("--dir="))?.slice(6) ?? "tests/corpus";
+const dir = args.find((a) => a.startsWith("--dir="))?.slice(6) ?? EDITION.corpusDir;
 const showFails = args.includes("--fails");
 const jsonOut = args.find((a) => a.startsWith("--json="))?.slice(7);
 const half = args.find((a) => a.startsWith("--half="))?.slice(7); // "odd" | "even": split a blind set into diagnosis / report halves

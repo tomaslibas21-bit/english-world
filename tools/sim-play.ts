@@ -26,8 +26,9 @@ import { Conversation, type TurnOut } from "../src/convo/dialogue";
 import { GLOBAL } from "../src/content/global";
 import { NPCS } from "../src/content/npcs";
 import type { SimTest, SituationDef } from "../src/content/types";
+import { EDITION } from "../src/edition";
 
-export const DEFAULT_AUTO: Record<string, string> = { howareyou: "Good, thanks. And you?", closing: "Thank you, bye!" };
+export const DEFAULT_AUTO: Record<string, string> = EDITION.simAuto;
 const SOFT = new Set(["g_ok", "g_thanks", "g_sorry"]);
 const ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -39,7 +40,7 @@ function pendingOnlyIntents(sit: SituationDef): Set<string> {
   if (hit) return hit;
   const stepIntents = new Set(sit.steps.flatMap((s) => s.expects ?? []));
   const set = new Set<string>();
-  for (const f of [path.join(ROOT, "src/content/situations", sit.id + ".ts"), path.join(ROOT, "src/content/global.ts")]) {
+  for (const f of [path.join(ROOT, EDITION.contentDir, "situations", sit.id + ".ts"), path.join(ROOT, EDITION.contentDir, "global.ts")]) {
     if (!existsSync(f)) continue;
     for (const m of readFileSync(f, "utf8").matchAll(/expects:\s*\[([^\]]*)\]/g)) {
       for (const q of m[1].matchAll(/"([A-Za-z0-9_]+)"/g)) if (!stepIntents.has(q[1])) set.add(q[1]);
@@ -127,7 +128,7 @@ export function playSim(sit: SituationDef, sim: SimTest, seed: number, opt: Play
   const setup = sim.setup;
   const def: SituationDef = setup ? { ...sit, init: (c) => { sit.init?.(c); setup(c.s); } } : sit;
   const conv = new Conversation(def, {
-    global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "Mikalauskas", gender: opt.gender ?? "m", datePartner: opt.datePartner },
+    global: GLOBAL, npcs: NPCS, player: { name: EDITION.simPlayer.name, surname: EDITION.simPlayer.surname, gender: opt.gender ?? "m", datePartner: opt.datePartner },
     visits: opt.visits ?? seed % 3, seed, memory: {},
   });
   const defaults: Record<string, string> = { ...DEFAULT_AUTO, ...(sim.auto ?? {}) };

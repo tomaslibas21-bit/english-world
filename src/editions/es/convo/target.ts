@@ -99,7 +99,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   // natural English: one-word modifiers before the noun ("a large iced latte"), phrases after it ("… with ice")
   const adj = mods.filter((m) => splitUnits(m.lt).length === 1).map((m) => m.lt);
   const phrases = mods.filter((m) => splitUnits(m.lt).length > 1).map((m) => splitUnits(m.lt).join(" "));
-  const core = [...adj, headG.join(" "), ...phrases];
+  // an entity may give its natural English name ("agua | de | jamaica" → "hibiscus water"): attrs.nat / attrs.natPl
+  const natHead = (plural ? e.attrs?.natPl : e.attrs?.nat) as string | undefined;
+  const core = [...adj, natHead ?? headG.join(" "), ...phrases];
   let natArt = artG;
   if (kind === "np" && !plural && art && artG !== "some") natArt = glossArticle(core[0] ?? "");
   const natLt = [...(natArt ? [natArt] : []), ...core];

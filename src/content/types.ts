@@ -19,6 +19,10 @@ export interface SentSrc {
   spell?: string;
   /** Text the NPC can write down if asked "Could you write it down?". */
   write?: string;
+  /** Spanish edition: the same sentence in neutral Latin American Spanish, for a line with a Mexican-only word
+   *  ("ahorita", "camión", "¿mande?"). Shown and played instead when the learner chooses neutral Spanish
+   *  (compose.ts `setVariety`). The grammar accepts both anyway. */
+  neutral?: Omit<SentSrc, "neutral">;
 }
 
 export interface EntityDef {

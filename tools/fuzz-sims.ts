@@ -10,8 +10,9 @@
 import { SITUATIONS } from "../src/content/situations";
 import { setKnownNames } from "../src/convo/slots";
 import { playSim } from "./sim-play";
+import { EDITION } from "../src/edition";
 
-setKnownNames(["Tomas", "Mikalauskas"]);
+setKnownNames([EDITION.simPlayer.name, EDITION.simPlayer.surname]);
 
 const VARIANTS: Record<string, (t: string) => string> = {
   asr: (t) => t.toLowerCase().replace(/[.,!?;:"“”]/g, "").replace(/\s+/g, " ").trim(),
