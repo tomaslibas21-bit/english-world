@@ -72,7 +72,7 @@ const KIND: Record<string, Kind> = Object.fromEntries(SPOTS.map((e) => [e.id, e.
 
 // Facts per place → line ids
 const WALK: Record<string, string> = { cenote: "walk_cenote", ruinas: "walk_ruinas", museo: "walk_museo", muelle: "walk_malecon", malecon: "walk_malecon", playa: "walk_malecon", lancha: "walk_malecon",
-  taqueria: "walk_close", cocina: "walk_close", cafe: "walk_close", trattoria: "walk_close", puestos: "walk_here", musica: "walk_here", marquesitas: "walk_here" };
+  taqueria: "walk_close", cocina: "walk_close", cafe: "walk_here", trattoria: "walk_close", puestos: "walk_here", musica: "walk_here", marquesitas: "walk_here" };
 const HOW: Record<string, string> = { cenote: "dir_cenote", ruinas: "dir_ruinas", museo: "walk_museo", muelle: "dir_malecon", malecon: "dir_malecon", playa: "dir_malecon", lancha: "dir_malecon",
   trattoria: "dir_trattoria", cafe: "dir_cafe", cocina: "dir_cocina", taqueria: "dir_mercado", puestos: "walk_here", musica: "walk_here", marquesitas: "walk_here" };
 const TOURISTY: Record<string, string> = { cenote: "tour_bit", ruinas: "tour_bit", lancha: "tour_bit", playa: "tour_bit", muelle: "tour_muelle", puestos: "tour_market",
@@ -82,7 +82,7 @@ const TIME: Record<string, string> = { cenote: "time_cenote", ruinas: "time_ruin
 const PRICE: Record<string, string> = { muelle: "price_muelle", trattoria: "price_trattoria", taqueria: "price_taqueria", cocina: "price_cocina", cafe: "price_cafe", marquesitas: "price_cheap",
   puestos: "price_cheap", malecon: "price_free", playa: "price_free", musica: "price_free", museo: "price_museo", ruinas: "price_ruinas", cenote: "price_cenote", lancha: "price_lancha" };
 const BOOK: Record<string, string> = { muelle: "book_muelle", trattoria: "book_trattoria", lancha: "book_lancha" };
-const OPEN: Record<string, string> = { museo: "open_museo", puestos: "open_market", musica: "open_musica", cocina: "open_cocina", cenote: "open_cenote", ruinas: "open_ruinas",
+const OPEN: Record<string, string> = { lancha: "time_lancha", museo: "open_museo", puestos: "open_market", musica: "open_musica", cocina: "open_cocina", cenote: "open_cenote", ruinas: "open_ruinas",
   taqueria: "time_taqueria", marquesitas: "time_night", malecon: "open_always", playa: "open_always" };
 
 const A_TELL = "a marks the person you tell; English needs no word for it.";
@@ -250,14 +250,20 @@ const H: Record<string, Handler> = {
     else if (!c.s.foodRec && c.s.cheap) recFood(c, undefined, true);
     else c.say("no_problem");
   },
-  too_expensive(c) {
+  too_expensive(c, slots, seg) {
+    // "¿Es muy caro?" asks the price; "Es muy caro" and "¿Hay algo más barato?" ask for something cheaper
+    const h = c.heard || "";
+    if (/\?/.test(h) && !/(barat|econ[oó]mic|alcanza|dinero|para m[ií])/i.test(h)) { H.ask_price(c, slots, seg); return; }
     c.s.cheap = true;
     const cur = c.s.topic;
     if (cur && KIND[cur] !== "food") { c.say("cheaper_sight"); recommend(c, cur === "playa" ? "malecon" : "playa", false, cur === "playa" ? "rec_malecon" : "cheaper_beach"); return; }
     c.say("cheaper");
     recommend(c, cur === "taqueria" ? "cocina" : "taqueria");
   },
-  not_hungry(c) {
+  not_hungry(c, slots) {
+    // "Ya comí tacos": not tacos again
+    const cu = slots.cuisine as string | undefined;
+    if (cu && !c.s.avoid.includes(cu)) c.s.avoid.push(cu);
     c.say("later_food");
     recFood(c, undefined, !!c.s.cheap);
   },
@@ -303,7 +309,12 @@ const H: Record<string, Handler> = {
   ask_walk(c, slots, seg) { aboutSpot(c, slots, seg.tags.includes("how") ? HOW : WALK, "walk_close"); },
   ask_touristy(c, slots) { aboutSpot(c, slots, TOURISTY, "tour_quiet"); },
   ask_best_time(c, slots) { aboutSpot(c, slots, TIME, "time_any"); },
-  ask_price(c, slots) { aboutSpot(c, slots, PRICE, "price_cheap"); },
+  ask_price(c, slots, seg) {
+    // "¿Cuánto cuesta el colectivo?": the ride, not the place
+    if (seg.tags.includes("ride")) { c.say("fare_colectivo"); return; }
+    if (seg.tags.includes("taxi")) { c.say("fare_taxi"); return; }
+    aboutSpot(c, slots, PRICE, "price_cheap");
+  },
   ask_book(c, slots) { aboutSpot(c, slots, BOOK, "book_no"); },
   ask_open(c, slots) { aboutSpot(c, slots, OPEN, "open_generic"); },
   ask_worth(c, slots) { aboutSpot(c, slots, {}, "worth"); },
@@ -429,7 +440,7 @@ export const local: SituationDef = {
       "(soy | estoy | somos | estamos) (nuevo | nueva | nuevos | nuevas | de visita | de vacaciones | de paseo | turista | turistas) [aqui | en el pueblo]",
       "(necesito | quisiera | me gustaria | busco) (unas | algunas)? (recomendaciones | ideas | sugerencias | consejos)", "que (me)? (aconseja | sugiere)", "que hay de bueno [@aqui_]",
       "@could_you ayudar con (una | unas | algunas)? (recomendacion | recomendaciones | ideas | sugerencias)", "@could_you (recomendar | recomendarme | dar | darme) algo",
-      "no se (que hacer | a donde ir | que hacer aqui | por donde empezar)",
+      "no se (que hacer | a donde ir | que hacer aqui | por donde empezar)", "no (soy | somos) de (aqui | por aqui | este pueblo) [que me @rec_v | (tiene | tienes #tip:tu_staff) (alguna | algunas)? (recomendacion | recomendaciones | consejos | ideas)]",
     ] },
     kind_ctx: { patterns: [
       "[para] (comer #food | comida #food | algo de comer #food | algo para comer #food | un lugar para comer #food | restaurantes #food | un restaurante #food) #h:kd_food",
@@ -444,7 +455,7 @@ export const local: SituationDef = {
       "hay (un | algun)? [buen] (restaurante | lugar para comer | lugar donde comer) [bueno] [@budget] [@aqui_]",
       "(busco | estoy buscando | ando buscando) (un | algun)? @lugar (para | donde) comer [@aqui_] [@budget] #h:f_cheap",
       "(busco | estoy buscando | ando buscando) (un | algun)? @lugar @budget [para comer] [@aqui_]",
-      "(tengo | tenemos) [mucha] hambre [donde (puedo | podemos) comer] #h:hg_hungry", "(me muero | nos morimos) de hambre",
+      "(tengo | tenemos) [mucha | muchisima | un poco de] hambre [donde (puedo | podemos) comer | a donde (voy | vamos | puedo ir | podemos ir) | que me @rec_v] #h:hg_hungry", "(me muero | nos morimos) de hambre",
       "donde (puedo | podemos) (comer | probar) {cuisine} [@aqui_] #h:f_cuisine",
       "donde (hay | venden | sirven | dan | preparan | hacen) [buenos | buenas | buen | buena | ricos | ricas | rico | rica | el mejor | la mejor | los mejores] {cuisine} [@aqui_]",
       "(hay | conoce) (un | algun)? [buen] (lugar | restaurante | sitio) de {cuisine} [@aqui_] #h:f_cuisine_place",
@@ -465,12 +476,12 @@ export const local: SituationDef = {
       "(me)? @rec_v (un | algun | alguna)? (restaurante | lugar | sitio | taqueria) [para comer] [@budget] [@aqui_]", "(que | cual) (restaurante | lugar | taqueria) (me)? @rec_v",
       "(tengo | tenemos) ganas de (comer | probar) {cuisine}", "(tengo | tenemos) ganas de (comer | cenar) [algo] [@budget]", "no se (donde | a donde) (comer | ir a comer | cenar)",
       "no hay (un | algun) @lugar @budget [@aqui_]", "(donde | que) (puedo | podemos) (comer | cenar) (hoy | esta noche | ahorita | ahora)",
-      "(algun | un) (restaurante | lugar) (bueno | rico | barato) [@aqui_]", "y (para | de) (comer | cenar | desayunar) (que | donde)",
+      "(algun | un) (restaurante | lugar) (bueno | rico | barato) [@aqui_]", "y (para | de) (comer | cenar | desayunar) (que | donde)", "y para (comer | cenar | almorzar | desayunar) [que me @rec_v | donde]", "y (un | algun) (restaurante | lugar para comer) [@aqui_]",
     ] },
     food_ans: { patterns: [
       "[me gustaria | quiero | quisiera | se me antoja | se me antojan | se me antojo | me apetece | me apetecen | me encanta | me encantan | me gusta | me gustan | prefiero | creo que | tal vez | algo de | yo creo que] {cuisine} [por favor | tal vez | creo] #h:k_cuisine",
       "(lo que sea | cualquier cosa | de todo | me da igual | lo que usted (diga | recomiende | me recomiende) | usted (diga | escoja | elija) | sorprendame | no importa | como guste | lo que me recomiende | lo que recomiende) #any #h:k_anything",
-      "lo que (sea | usted diga) esta bien #any", "(como | comemos) de todo #any", "(que | cual) es lo mas (popular | rico | pedido) #any",
+      "lo que (sea | usted diga) esta bien #any", "[lo que sea] no soy (exigente | delicado | delicada | especial | dificil) [para comer] [lo que sea] #any", "no se [lo que sea | lo que usted diga] #any", "(como | comemos) de todo #any", "(que | cual) es lo mas (popular | rico | pedido) #any",
       "(quiero | quisiera | me gustaria) probar {cuisine} #h:k_want",
       // corrections: "No tacos, mariscos", "Nada de tacos, mejor mariscos", "Mariscos, no tacos"
       "(no | nada de | sin | no quiero) {bad:cuisine} (sino | mejor | prefiero)? {cuisine}", "[el | la | los | las] {bad:cuisine} no (sino | mejor | prefiero)? {cuisine}", "{cuisine} (no | y no | pero no) {bad:cuisine}", "{cuisine} o {cuisine2:cuisine}", "(no tengo | sin) (preferencia | preferencias) #any", "lo que (coma | come | comen) la gente de aqui #typical", "algo (rico | bueno) #any", "no se (algo | lo que sea | cualquier cosa) [rico | bueno] #any", "algo con {cuisine}", "lo mas tipico #typical", "algo de la region #typical",
@@ -489,7 +500,7 @@ export const local: SituationDef = {
       "(no tengo | no traigo) tanto dinero", "(es | suena) mucho dinero [para mi]", "(algo | un lugar) que sea mas barato",
     ] },
     not_hungry: { patterns: [
-      "no tengo (mucha)? hambre [todavia | ahorita | ahora | ya]", "(todavia | ahorita | ahora) no tengo hambre", "(ya | acabo de) (comi | comer | desayune | desayunar | comimos | desayunamos)",
+      "no tengo (mucha)? hambre [todavia | ahorita | ahora | ya]", "(todavia | ahorita | ahora) no tengo hambre", "(ya | acabo de) (comi | comer | desayune | desayunar | comimos | desayunamos) [{cuisine}]",
       "(tal vez | quizas | a lo mejor) (mas tarde | despues | luego)", "(estoy | ya estoy) (lleno | llena)", "ahorita no",
     ] },
     ask_sight: { patterns: [
@@ -513,7 +524,7 @@ export const local: SituationDef = {
     spot_ctx: { patterns: ["[tal vez | y | que tal | y que tal | y si | quiza | a lo mejor | mejor | prefiero] {spot} [tal vez | quiza]"] },
     sight_neg: { patterns: [
       "no me (gusta | gustan | interesa | interesan | encanta | encantan) {spot}", "no me (gusta | interesa) (el arte #art | la historia #art | la playa #beach | nadar #beach)",
-      "no me (gustan | interesan) (los museos #art | las ruinas #ruins | las playas #beach)", "no (quiero | quisiera | pienso) (ir @a_ | ver | visitar | conocer) {spot}", "{spot} no [gracias]",
+      "no me (gustan | interesan) (los museos #art | las ruinas #ruins | las playas #beach)", "no (quiero | quisiera | pienso) (ir @a_ | ver | visitar | conocer) {spot}", "{spot} no [gracias]", "no me (gustaria | interesa | apetece) (ir @a_ | ver | visitar | conocer) {spot}", "prefiero no (ir @a_ | ver | visitar) {spot}", "(ya | ya lo | ya la | ya los | ya las) (conozco | vi | visite) {spot}", "ya (fui | estuve) (@a_ | en | en el | en la) {spot}",
     ] },
     ask_about_spot: { patterns: [
       "(vale | merece) la pena {spot} #h:p_worth", "(vale | merece) la pena (ir @a_ | visitar | conocer | ver) {spot}", "{spot} vale la pena", "que tal (es | esta)? {spot}", "(conoce | ha ido a | ha estado en | fue a) {spot}", "(que | como) es {spot}",
@@ -543,7 +554,7 @@ export const local: SituationDef = {
     ] },
     ask_walk: { patterns: [
       "(se puede | puedo | podemos) (ir | llegar) (caminando | a pie) [@a_ {spot}] #h:u_walk", "(esta | queda) (lejos | cerca) [de aqui] #h:u_far", "{spot} (esta | queda) (lejos | cerca) [de aqui]",
-      "(esta | queda) (lejos | cerca) {spot} [de aqui] #h:p_far", "que tan lejos (esta | queda) [{spot}]", "a cuanto (esta | queda) [{spot}]",
+      "(esta | queda) (lejos | cerca) {spot} [de aqui] #h:p_far", "{spot} (estan | quedan) (lejos | cerca) [de aqui]", "(estan | quedan) (lejos | cerca) [{spot}] [de aqui]", "que tan lejos (esta | queda) [{spot}]", "a cuanto (esta | queda) [{spot}]",
       "como (llego | llegamos | le hago para llegar | se llega | voy | vamos) [@a_ {spot} | ahi | alla] #how #h:u_how", "como (me voy | se va) [@a_ {spot} | para alla | alla] #how", "como (puedo | podemos) (ir | llegar) [@a_ {spot} | ahi | alla] #how", "como (le hago | hago) para (ir | llegar) [@a_ {spot} | ahi | alla] #how",
       "(que tan lejos | a que distancia) (esta | queda) [{spot}]", "(esta | queda) (lejos | cerca) (de aqui)? (caminando | a pie)",
       "cuanto (tiempo)? se hace [caminando | a pie | @a_ {spot}]", "cuanto (tiempo)? se (tarda | tardan | hacen) [caminando | a pie | en colectivo | @a_ {spot}]", "por donde (queda | esta) [{spot}] #how", "donde (queda | esta) {spot} #how",
@@ -557,22 +568,22 @@ export const local: SituationDef = {
       "(a que hora | cuando) (voy | debo ir | puedo ir) [@a_ {spot}]", "es mejor (ir)? (en la manana | en la tarde | temprano)", "cual es el mejor momento (para ir)?",
     ] },
     ask_price: { patterns: [
-      "(es | esta) (caro | cara) #h:u_expensive", "{spot} es (caro | cara)", "cuanto (cuesta | cobran | sale | es | vale) [la entrada | {spot}] #h:u_cost",
+      "(es | esta) (caro | cara) #h:u_expensive", "{spot} es (caro | cara)", "(es | son) (caro | cara | caros | caras) {spot}", "{spot} son (caros | caras)", "cuanto se paga [mas o menos | mas o menos ahi]", "(cuanto | que tanto) (cuesta | cobra | cobran | sale | es) (el colectivo #ride | la combi #ride | el pasaje #ride | el pasaje del colectivo #ride | el taxi #taxi | un taxi #taxi) [@a_ {spot} | para alla | hasta alla]", "(cuanto | que tanto) (cuesta | cuestan | sale) (mas o menos)?", "cuanto (cuesta | cuestan | es | sale) (la comida | comer | cenar | un cafe | la lancha | el paseo) [ahi | alla]", "cuanto (cuesta | cobran | sale | es | vale) [la entrada | {spot}] #h:u_cost",
       "(cobran | se paga | hay que pagar) [la]? entrada", "es (gratis | barato | barata)", "(cuanto | que tanto) se gasta", "cuanto (cuesta | cuestan | vale) (comer | la comida) ahi",
       "(es | sale) (muy)? barato", "(hay que | tengo que) pagar",
     ] },
     ask_book: { patterns: [
       "(hay que | tengo que | necesito | debo) (reservar | hacer reservacion | apartar | hacer una reservacion | reservar mesa) #h:u_book", "(se necesita | necesito) (reservacion | reserva)",
-      "(conviene | es mejor) reservar", "(hay que | tengo que) comprar (los)? boletos (antes)?", "(aceptan | toman | hacen) reservaciones",
+      "(conviene | es mejor) reservar", "no (hay que | tengo que | necesito) reservar", "(hay que | tengo que | necesito) (reservar | hacer reservacion) (antes | con tiempo)", "(hay que | tengo que) comprar (los)? boletos (antes)?", "(aceptan | toman | hacen) reservaciones",
     ] },
     ask_open: { patterns: [
       "(esta | estara) abierto (hoy | ahorita | ahora | {day} | todos los dias) #h:u_open", "a que hora (abre | abren | cierra | cierran)", "(que | cual es el) horario (tiene | tienen)?",
       "(cuando | que dias) (abre | abren | esta abierto)", "hasta (que hora | cuando) (abre | esta abierto | cierran | estan)", "{spot} (abre | esta abierto) (hoy | {day} | todos los dias)",
-      "abre (hoy | {day} | todos los dias)", "(cierran | cierra | abren | abre) (tarde | temprano | muy tarde)", "(abre | abren) (en la noche | de noche | en la manana)", "(abren | cierran) (los)? {day}",
+      "abre (hoy | {day} | todos los dias)", "(cierran | cierra | abren | abre) (tarde | temprano | muy tarde)", "(abre | abren) (en la noche | de noche | en la manana)", "(abren | cierran) (los)? {day}", "(estan | esta) (abiertos | abiertas | abierto | abierta) {spot} [hoy | ahorita | {day}]", "{spot} (estan | esta) (abiertos | abiertas | abierto | abierta) [hoy | ahorita | {day}]", "(que dia | que dias | cuando) hay (musica | musica en vivo | concierto)",
     ] },
     ask_worth: { patterns: ["(vale | merece) la pena [ir | verlo | verla | visitarlo | visitarla | el viaje]", "si vale la pena"] },
     ask_safe: { patterns: [
-      "es seguro [@aqui_ | el pueblo | caminar | salir | ir a la playa] (en la noche | de noche | por la noche)? #h:u_safe", "(es | sera) peligroso [@aqui_] (en la noche | de noche)?", "(es | sera) peligroso (caminar | salir | andar | ir a la playa) [@aqui_] (de noche | en la noche | por la noche)?",
+      "es seguro [@aqui_ | el pueblo | caminar | salir | ir a la playa] (en la noche | de noche | por la noche)? #h:u_safe", "(es | sera) peligroso [@aqui_] (en la noche | de noche)?", "no es (peligroso | peligrosa) [@aqui_] (en la noche | de noche)?", "(es | esta) (peligrosa | peligroso | segura | seguro) [la playa | el centro | el pueblo | el malecon] (en la noche | de noche | por la noche)", "(es | sera) (peligroso | seguro) [ir a | caminar por] (la playa | el malecon | el centro) (de noche | en la noche | por la noche)?", "no (es | sera) (seguro | segura) (en la noche | de noche)?", "(es | sera) peligroso (caminar | salir | andar | ir a la playa) [@aqui_] (de noche | en la noche | por la noche)?",
       "(se puede | puedo) (caminar | andar | salir | ir a la playa) (en la noche | de noche) [sin problema]", "(es | esta) segura la playa (de noche | en la noche)", "la playa es segura (de noche | en la noche)", "hay peligro [@aqui_]",
     ] },
     no_crowds: { patterns: [
@@ -585,7 +596,7 @@ export const local: SituationDef = {
       "donde (tomo | puedo tomar | se toma) el (colectivo | camion | autobus) #bus", "como me voy en (colectivo | taxi | camion) #bus",
     ] },
     thanks_tip: { patterns: [
-      "gracias por (el consejo | los consejos | la recomendacion | las recomendaciones | el dato | los datos | la informacion | la sugerencia | las sugerencias | el tip | los tips | las ideas) #h:t_tip",
+      "[muchas | mil | muchisimas] gracias por (el consejo | los consejos | la recomendacion | las recomendaciones | el dato | los datos | la informacion | la sugerencia | las sugerencias | el tip | los tips | las ideas | todo | su ayuda | la ayuda) #h:t_tip", "[muy | super | que] amable [muchas gracias | gracias]",
       "(me ha | me) (ayudado | ayudo) mucho #h:t_helpful", "(suena | se oye) (muy)? (bien | padre | chido | genial | delicioso | rico | increible | perfecto | interesante) #h:t_sounds",
       "(voy a | lo voy a | la voy a | las voy a) (ir | probar | visitar | conocer) [manana | hoy | esta noche | luego | mas tarde] #h:t_check", "(sin falta | seguro) (voy | ire)",
       "(que | muy) buena (idea | recomendacion)", "(muy | super) (util | buena idea)", "(excelente | perfecto | genial | padrisimo | que padre | que chido) [muchas] gracias",
@@ -598,7 +609,7 @@ export const local: SituationDef = {
       "(soy | vengo | somos | venimos) de {country} #h:o_from", "de {country}", "{country}", "(vivo | vivimos) en {country}",
       "(soy | somos) (estadounidense | estadounidenses | americano | americana | gringo | gringa) #usa", "(soy | somos) (canadiense | canadienses) #canada",
       "(soy | somos) (ingles | inglesa | britanico | britanica) #uk", "(soy | somos) (irlandes | irlandesa) #ireland", "(soy | somos) (australiano | australiana) #australia",
-      "(de)? (muy)? lejos de {country}",
+      "(de)? (muy)? lejos de {country}", "no soy de {bad:country} (soy | sino) de {country}", "no (soy | vengo) de {bad:country} (sino de | soy de | vengo de) {country}",
     ] },
     tried_yes_ctx: { patterns: [
       "[si] (estuvo | estaba | fue) (delicioso | riquisimo | buenisimo | muy rico | muy bueno | increible | padrisimo | deliciosa | riquisima) #h:tr_delicious",
@@ -615,7 +626,7 @@ export const local: SituationDef = {
     ] },
     walk_no_ctx: { patterns: [
       "[no] [gracias] no se (preocupe | moleste) [yo] [(llego | voy | me voy) (solo | sola)] [lo encuentro] #h:w_no", "[no] [gracias] (yo)? (llego | voy | me voy) (solo | sola)",
-      "[no] [gracias] (puedo | prefiero) ir (solo | sola)", "[no] [gracias] (lo | la) encuentro [yo] [solo | sola]",
+      "[no] [gracias] (puedo | prefiero) ir (solo | sola)", "[no] [gracias] (lo | la) encuentro [yo] [solo | sola]", "[no] [gracias] no (quiero | se) (molestarla | molestar) [gracias]", "[no] [gracias] no hace falta [gracias]",
     ] },
     // The square's stalls are right behind her bench: "Quiero comprar fruta" gets a friendly pointer.
     buy_produce: { patterns: [
@@ -691,10 +702,10 @@ export const local: SituationDef = {
         { flags: { 1: "cocina económica: a small family place with cheap home cooking.", 8: "panuchos, salbutes: small fried tortillas with toppings, from Yucatán." } }),
     ],
     rec_cafe: [
-      t("El | Café | La Ceiba, | aquí | a la vuelta. | Muy | buen | café, | y | el | pan dulce | está | riquísimo. | ¡Dígale | a | Mariana | que | {m:lo|f:la} | mando | yo!",
-        "The | Café | La Ceiba, | here | around the corner. | Very | good | coffee, | and | the | pan dulce | is | delicious. | Tell | — | Mariana | that | you | I-send | I!",
-        "Café La Ceiba, just around the corner. Great coffee, and the pan dulce is delicious. Tell Mariana I sent you!",
-        { flags: { 14: A_TELL, 17: LOLA } }),
+      t("El | Café | La Ceiba, | aquí | en | la | plaza. | Muy | buen | café, | y | el | pan dulce | está | riquísimo. | ¡Dígale | a | Mariana | que | {m:lo|f:la} | mando | yo!",
+        "The | Café | La Ceiba, | here | on | the | square. | Very | good | coffee, | and | the | pan dulce | is | delicious. | Tell | — | Mariana | that | you | I-send | I!",
+        "Café La Ceiba, right here on the square. Great coffee, and the pan dulce is delicious. Tell Mariana I sent you!",
+        { flags: { 16: A_TELL, 19: LOLA } }),
     ],
     rec_trattoria: [
       t("La | Trattoria | Lucía, | en | la | calle | principal. | Pasta | hecha | en | casa, | y | no es | tan | cara.",
@@ -781,10 +792,10 @@ export const local: SituationDef = {
 
     // --- follow-ups ----------------------------------------------------------------
     walk_cenote: [t("Caminando, | no. | Está | como | a | veinte | minutos | en | colectivo.", "Walking, | no. | It's | about | at | twenty | minutes | by | shared van.", "Not on foot. It's about twenty minutes by colectivo.")],
-    walk_ruinas: [t("Sí, | como | media | hora | caminando. | O | tome | un | taxi: | no es | caro.", "Yes, | about | half | hour | walking. | Or | take | a | taxi: | it's not | expensive.", "Yes, about half an hour on foot. Or take a taxi, it's not expensive.")],
+    walk_ruinas: [t("Está | como | a | media | hora | caminando. | O | tome | un | taxi: | no es | caro.", "It's | about | at | half | hour | walking. | Or | take | a | taxi: | it's not | expensive.", "It's about half an hour on foot. Or take a taxi, it's not expensive.")],
     walk_museo: [t("¡Está | aquí | enfrente, | cruzando | la | plaza!", "It's | here | opposite, | crossing | the | square!", "It's right there, across the square!")],
-    walk_malecon: [t("Sí, | como | diez | minutos | caminando, | bajando | hacia | el | mar.", "Yes, | about | ten | minutes | walking, | going down | toward | the | sea.", "Yes, about ten minutes on foot, down by the water.")],
-    walk_close: [t("Sí, | está | a | cinco | minutos | de | aquí.", "Yes, | it's | at | five | minutes | from | here.", "Yes, it's only five minutes from here.")],
+    walk_malecon: [t("Está | como | a | diez | minutos | caminando, | bajando | hacia | el | mar.", "It's | about | at | ten | minutes | walking, | going down | toward | the | sea.", "It's about ten minutes on foot, down by the water.")],
+    walk_close: [t("Está | aquí | cerquita, | a | cinco | minutos | caminando.", "It's | here | very close, | at | five | minutes | walking.", "It's really close, five minutes on foot.", { flags: { 2: "cerquita: cerca + -ita, “really close”." } })],
     walk_here: [t("¡Es | aquí | mismo, | en | la | plaza!", "It's | here | right, | in | the | square!", "It's right here, in the square!")],
     dir_cenote: [
       t("Tome | un | colectivo | en | la | avenida: | son | camionetas | blancas. | Dígale | al | chofer | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.",
@@ -794,7 +805,7 @@ export const local: SituationDef = {
     dir_ruinas: [t("Siga | la | calle | principal | hasta | el | final. | Ahí | está | la | entrada.", "Follow | the | street | main | until | the | end. | There | is | the | entrance.", "Follow the main street all the way to the end. The entrance is right there.")],
     dir_malecon: [t("Baje | por | la | calle | principal | hasta | el | mar. | Ahí | empieza | el | malecón.", "Go down | along | the | street | main | until | the | sea. | There | begins | the | waterfront.", "Head down the main street to the sea. That's where the waterfront starts.")],
     dir_trattoria: [t("Está | en | la | calle | principal, | a | una | cuadra, | por | allá.", "It's | on | the | street | main, | at | one | block, | over | there.", "It's on the main street, one block that way.")],
-    dir_cafe: [t("Siga | derecho | hasta | el | banco | y | dé vuelta | a la izquierda.", "Go | straight | until | the | bank | and | turn | to the left.", "Go straight to the bank and turn left.")],
+    dir_cafe: [t("¡Está | aquí | en | la | plaza, | bajo | la | ceiba | grande!", "It's | here | on | the | square, | under | the | ceiba tree | big!", "It's right here on the square, under the big ceiba tree!")],
     dir_cocina: [t("En | la | calle | Ceiba, | a | dos | cuadras | de | aquí.", "On | the | street | Ceiba, | at | two | blocks | from | here.", "On Ceiba Street, two blocks from here.")],
     dir_mercado: [t("Junto | al | mercado, | a | dos | cuadras | por | esa | calle.", "Next | to the | market, | at | two | blocks | along | that | street.", "Next to the market, two blocks down that street.")],
     tour_bit: [t("Un | poco, | al | mediodía. | Vaya | temprano: | ese | es | mi | consejo.", "A | little, | at | noon. | Go | early: | that | is | my | advice.", "A bit, around midday. Go early, that's my advice.")],
@@ -822,12 +833,12 @@ export const local: SituationDef = {
     time_cafe: [t("Cuando | quiera. | Pero | en | la | mañana | el | pan | está | recién | hecho.", "When | you-want. | But | in | the | morning | the | bread | is | freshly | made.", "Anytime. But in the morning the bread is fresh out of the oven.")],
     time_trattoria: [t("Temprano, | como | a | las | siete, | o | va | a | tener | que | esperar | mesa.", "Early, | about | at | — | seven, | or | you're-going | to | have | to | wait | table.", "Early, around seven, or you'll have to wait for a table.", { flags: { 3: ART_TIME } })],
     time_any: [t("¡Cuando | quiera! | Pero | temprano | es | mejor.", "When | you-want! | But | early | is | better.", "Anytime! But earlier is better.")],
-    price_muelle: [t("Como | trescientos | pesos | por | persona. | Es | un | poquito | caro.", "About | three hundred | pesos | per | person. | It's | a | little bit | pricey.", "About three hundred pesos a person. A little pricey.")],
+    price_muelle: [t("Como | trescientos | pesos | por | persona, | con | bebida.", "About | three hundred | pesos | per | person, | with | drink.", "About three hundred pesos a person, with a drink.")],
     price_trattoria: [t("Como | doscientos | pesos. | No está | mal.", "About | two hundred | pesos. | It's not | bad.", "About two hundred pesos. Not bad.")],
-    price_taqueria: [t("¡No, | es | barato! | Con | cien | pesos | come | muy | bien.", "No, | it's | cheap! | With | a hundred | pesos | you-eat | very | well.", "No, it's cheap! You can eat well for a hundred pesos.")],
-    price_cocina: [t("No, | es | barato. | La | comida corrida | cuesta | como | cien | pesos.", "No, | it's | cheap. | The | set lunch | costs | about | a hundred | pesos.", "No, it's cheap. The set lunch is about a hundred pesos.")],
-    price_cafe: [t("No. | Un | café | cuesta | como | cuarenta | y | cinco | pesos.", "No. | A | coffee | costs | about | forty | and | five | pesos.", "No. A coffee is about forty-five pesos.")],
-    price_cheap: [t("¡No, | es | barato!", "No, | it's | cheap!", "No, it's cheap!")],
+    price_taqueria: [t("¡Es | barato! | Con | cien | pesos | come | muy | bien.", "It's | cheap! | With | a hundred | pesos | you-eat | very | well.", "It's cheap! You can eat well for a hundred pesos.")],
+    price_cocina: [t("Es | barato: | la | comida corrida | cuesta | como | cien | pesos.", "It's | cheap: | the | set lunch | costs | about | a hundred | pesos.", "It's cheap: the set lunch is about a hundred pesos.")],
+    price_cafe: [t("Un | café | cuesta | como | cuarenta | y | cinco | pesos.", "A | coffee | costs | about | forty | and | five | pesos.", "A coffee is about forty-five pesos.")],
+    price_cheap: [t("¡Es | baratito!", "It's | very cheap!", "It's really cheap!", { flags: { 1: "baratito: barato + -ito, “nice and cheap”." } })],
     price_free: [t("¡Es | gratis!", "It's | free!", "It's free!")],
     price_museo: [t("Ochenta | pesos, | creo. | Los | estudiantes | pagan | menos.", "Eighty | pesos, | I-think. | The | students | pay | less.", "Eighty pesos, I think. Students pay less.")],
     price_ruinas: [
@@ -851,7 +862,7 @@ export const local: SituationDef = {
     open_cenote: [t("Abren | temprano, | como | a | las | ocho, | y | cierran | en | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.", "They open early, around eight, and close in the afternoon.", { flags: { 4: ART_TIME } })],
     open_ruinas: [t("Todos | los | días, | desde | las | ocho | de la mañana.", "All | the | days, | from | — | eight | a.m.", "Every day, from eight in the morning.", { flags: { 4: ART_TIME } })],
     open_always: [t("¡Siempre | se puede | ir!", "Always | you can | go!", "You can go anytime!")],
-    open_generic: [t("Creo | que | sí, | todos | los | días.", "I-think | that | yes, | all | the | days.", "I think so, every day.")],
+    open_generic: [t("Abre | todos | los | días, | desde | temprano, | creo.", "It-opens | all | the | days, | from | early, | I-think.", "It's open every day from early on, I think.")],
     worth: [t("¡Claro que sí! | Le | va | a | encantar.", "Of course! | (To) you | it's going | to | delight.", "Absolutely! You'll love it.")],
     safe: [
       t("El | centro, | sí: | hay | gente | hasta | tarde. | Pero | la | playa | de | noche, | mejor | no: | está | oscura. | Y | no se meta | al | mar | de | noche.",
@@ -863,6 +874,8 @@ export const local: SituationDef = {
       t("Entonces | tome | un | taxi. | El | sitio | está | ahí | en | la | esquina.", "Then | take | a | taxi. | The | taxi stand | is | there | on | the | corner.", "Then take a taxi. The taxi stand is right there on the corner.",
         { flags: { 5: "Mexican: sitio = taxi stand." }, neutral: t("Entonces | tome | un | taxi. | La | parada | de | taxis | está | ahí | en | la | esquina.", "Then | take | a | taxi. | The | stand | of | taxis | is | there | on | the | corner.", "Then take a taxi. The taxi stand is right there on the corner.") }),
     ],
+    fare_colectivo: [t("No es | caro. | Le | paga | al | chofer | al bajarse, | en | efectivo.", "It's not | expensive. | (To) him | you-pay | to the | driver | when you get off, | in | cash.", "It's not expensive. You pay the driver when you get off, in cash.")],
+    fare_taxi: [t("El | taxi | cuesta | más. | Pregunte | el | precio | antes de | subirse.", "The | taxi | costs | more. | Ask | the | price | before | getting in.", "A taxi costs more. Ask the price before you get in.")],
     bus_yes: [t("Sí, | pasan | colectivos | por | la | avenida | cada rato.", "Yes, | pass | shared vans | along | the | avenue | every few minutes.", "Yes, colectivos come along the main road every few minutes.")],
     which_spot: [t("¿De | cuál | me | habla, | {m:mijo|f:mija}?", "About | which | (to) me | you-speak, | dear?", "Which place do you mean, dear?", { flags: { 4: MIJA } })],
     no_problem: [t("Ah, | ¡está bien!", "Oh, | okay!", "Oh, okay!")],
@@ -901,7 +914,7 @@ export const local: SituationDef = {
     ],
     thanks_reply: [
       t("¡Con mucho gusto!", "With great pleasure!", "My pleasure!"),
-      t("¡Para | eso | estamos! | Y | cuénteles | a | sus | amigos | de | Puerto | Colibrí.", "For | that | we-are! | And | tell them | to | your | friends | about | Puerto | Colibrí.", "Anytime! And tell your friends about Puerto Colibrí!"),
+      t("¡Para | eso | estamos! | Y | hábleles | de | Puerto | Colibrí | a | sus | amigos.", "For | that | we-are! | And | tell-them | about | Puerto | Colibrí | — | your | friends.", "Anytime! And tell your friends about Puerto Colibrí!", { flags: { 8: A_TELL } }),
     ],
     closing: [
       t("¡Disfrute | mucho | Puerto | Colibrí! | Aquí | me | encuentra, | en | la | plaza.", "Enjoy | a lot | Puerto | Colibrí! | Here | me | you-find, | in | the | square.", "Enjoy Puerto Colibrí! You'll find me right here in the square."),
@@ -1059,10 +1072,10 @@ export const local: SituationDef = {
     "se le antoja": { reason: "grammatical_fusion", split: "se → itself + le → to you + antoja → craves; = do you feel like.", minimal: "Three words." },
     "de toda la vida": { reason: "lexical_expression", split: "de → of + toda → all + la → the + vida → life; = all my life.", minimal: "Four words." },
     "sin duda": { reason: "lexical_expression", split: "sin → without + duda → doubt; = no question, definitely.", minimal: "Two words." },
-    "dé vuelta": { reason: "lexical_expression", split: "dé → give + vuelta → turn is false; = turn.", minimal: "Two words." },
     "al bajarse": { reason: "grammatical_fusion", split: "al → to the + bajarse → get off is false; al + infinitive = when you…", minimal: "Two words." },
     "antes de que": { reason: "lexical_expression", split: "antes → before + de → of + que → that; one conjunction = before.", minimal: "Three words." },
     "entre semana": { reason: "lexical_expression", split: "entre → between + semana → week is false; = on weekdays.", minimal: "Two words." },
+    "antes de": { reason: "lexical_expression", split: "antes → before + de → of; one preposition = before.", minimal: "Two words." },
     "después de": { reason: "lexical_expression", split: "después → afterwards + de → of; one preposition = after.", minimal: "Two words." },
     "sobre todo": { reason: "lexical_expression", split: "sobre → on + todo → all is false; = especially.", minimal: "Two words." },
     "fin de semana": { reason: "lexical_expression", split: "fin → end + de → of + semana → week; = weekend.", minimal: "Three words." },
@@ -1269,6 +1282,27 @@ export const local: SituationDef = {
     { say: "No soy vegetariano", intent: "none" },
     { say: "No vivo aquí", intent: "none" },
     { say: "No necesito recomendaciones", intent: "none" },
+    // the review's traps and gaps
+    { say: "No me gustaría ir a la playa", intent: "sight_neg", step: "sight", not: ["ask_about_spot", "spot_ctx"], slots: { spot: "playa" } },
+    { say: "Prefiero no ir a la playa", intent: "sight_neg", step: "sight", not: ["ask_about_spot", "spot_ctx"] },
+    { say: "Ya conozco el cenote", intent: "sight_neg", step: "sight", not: ["ask_about_spot", "spot_ctx"], slots: { spot: "cenote" } },
+    { say: "Ya fui a las ruinas", intent: "sight_neg", step: "sight", not: ["ask_about_spot", "spot_ctx"] },
+    { say: "No, no tengo hambre", intent: "not_hungry", step: "food", not: ["ask_food", "hungry_ctx"] },
+    { say: "Ya comí tacos", intent: "not_hungry", step: "food", slots: { cuisine: "tacos" }, not: ["ask_food"] },
+    { say: "No soy de aquí", intent: "recommend_vague", not: ["are_you_local"] },
+    { say: "No soy de aquí, ¿qué me recomienda?", intent: "recommend_vague", not: ["are_you_local"] },
+    { say: "No soy de Estados Unidos, soy de Canadá", intent: "from_ctx", step: "from", slots: { country: "canada", bad: "usa" } },
+    { say: "¿No es peligroso de noche?", intent: "ask_safe" },
+    { say: "¿Es peligrosa la playa de noche?", intent: "ask_safe" },
+    { say: "¿Las ruinas están lejos?", intent: "ask_walk", slots: { spot: "ruinas" }, not: ["not_far"] },
+    { say: "¿Están abiertos los puestos hoy?", intent: "ask_open", slots: { spot: "puestos" } },
+    { say: "¿No hay que reservar?", intent: "ask_book" },
+    { say: "¿Cuánto cuesta el colectivo?", intent: "ask_price" },
+    { say: "Tengo mucha hambre, ¿a dónde voy?", intent: "ask_food" },
+    { say: "¿Y para cenar?", intent: "ask_food" },
+    { say: "Lo que sea, no soy exigente", intent: "food_ans", step: "food_kind" },
+    { say: "Muchas gracias por todo", intent: "thanks_tip" },
+    { say: "Mil gracias por los consejos", intent: "thanks_tip" },
     // not understood
     { say: "Mi perro se comió mis tacos", intent: "none" },
     { say: "lancha banana museo", intent: "none" },
@@ -1288,6 +1322,11 @@ export const local: SituationDef = {
       "¿Dónde se come bien por aquí?", "Comida italiana, por favor.", "¡Muchas gracias!"], expect: { complete: true, state: { marketTip: true } }, auto: AUTO, setup: (s) => { s.walkTwist = false; } },
     { name: "coffee, locals and a lot of questions", turns: ["¿Dónde hay buen café?", "¿Cómo llego?", "¿A dónde va la gente de aquí?", "¿A qué hora es mejor ir?", "Me gustan los museos", "¿Está abierto hoy?", "¡Muchas gracias!"],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.walkTwist = false; } },
+    // the review: "¿Es muy caro?" asks the price (not a complaint), "¿Está lejos?" never gets "Sí, cinco minutos"
+    { name: "price questions, a refusal of a sight, the colectivo fare", turns: ["¿Dónde puedo comer mariscos?", "¿Es muy caro?", "¿Está lejos?", "Ya conozco el cenote", "¿Cuánto cuesta el colectivo?", "No me gustaría ir a la playa", "Mil gracias por todo"],
+      expect: { complete: true, state: { cheap: undefined } }, auto: AUTO, setup: (s) => { s.walkTwist = false; s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; } },
+    { name: "not from here, already ate, no thanks to the walk", turns: ["No soy de aquí, ¿qué me recomienda?", "Algo que ver", "Ya comí tacos", "No quiero molestarla, gracias", "¿Está abierto hoy?", "No, eso es todo. Muchas gracias por los consejos"],
+      expect: { complete: true, state: { walkAnswered: true } }, auto: AUTO, setup: (s) => { s.walkTwist = true; s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; } },
     // the twists, forced on every seed
     { name: "twist: did you try my tip? then she walks with you", turns: ["Sí, ¡me encantó!", "Quiero ir a las ruinas", "¿Pasa un colectivo?", "Sí, tengo hambre", "Algo típico", "¡Me encantaría, gracias!", "Eso es todo, gracias"],
       expect: { complete: true, state: { walkAnswered: true } }, auto: AUTO, setup: (s) => { s.triedTip = "taqueria"; s.weatherOpen = false; s.walkTwist = true; s.askFrom = false; } },
