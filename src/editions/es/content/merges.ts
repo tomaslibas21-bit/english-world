@@ -68,6 +68,12 @@ export const MERGES: Record<string, MergeRecord> = {
   "pan dulce": LEX("pan → bread + dulce → sweet; Mexican sweet bread = pastries."),
   "apple pay": LEX("A brand name.", "Two words of one name."),
   "google pay": LEX("A brand name.", "Two words of one name."),
+  "cada uno": LEX("cada → each + uno → one; = each (per piece)."),
+  "cada una": LEX("cada → each + una → one; = each (per piece)."),
+  "me llevo": LEX("me → (for) myself + llevo → I carry; buying = I'll take."),
+  "a cómo": LEX("a → at + cómo → how; market Spanish = how much (per kilo, per piece)."),
+  "estados unidos": LEX("estados → states + unidos → united; one name = the United States.", "Two words of one name."),
+  "nueva zelanda": LEX("nueva → new + zelanda → Zealand; one name = New Zealand.", "Two words of one name."),
   // shopping and services
   "para llevar": LEX("para → for + llevar → to carry; takeaway = to go."),
   "para aquí": LEX("para → for + aquí → here; = for here."),

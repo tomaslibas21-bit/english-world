@@ -84,6 +84,10 @@ export const agreeGloss = (lemma: string, e: EntityDef, c: Case, plural: boolean
 
 /** Choices written into the practised language's text (the Spanish edition's {m:…|f:…}, {u:…|t:…}): none in English. */
 export const resolveTarget = (s: string, _o: { player: "m" | "f"; speaker: "m" | "f"; formal: boolean }) => s;
+/** Units joined after composing (the Spanish edition's "a" + "el" → "al"): none in English. */
+export const joinUnits = <U extends { en: string; lt: string; flag?: string }>(units: U[]): U[] => units;
+/** The same in the spoken text: none in English. */
+export const joinText = (s: string) => s;
 /** Agreement written into the practised language's text (the Spanish edition's {frío@X}): none in English. */
 export const agreeTarget = (s: string, _bind: (name: string) => { e: EntityDef; plural: boolean } | null) => s;
 

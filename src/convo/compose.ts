@@ -4,7 +4,7 @@
 
 import type { SentSrc } from "../content/types";
 import { genderChoice, type Case, type Gender } from "./lt-morph";
-import { PH_AGREE, PH_AGREE_TARGET, PH_LT, agreeGloss, agreeTarget, entityForPlayer, npUnits, resolveTarget, splitUnits, valueDisplay } from "./target";
+import { PH_AGREE, PH_AGREE_TARGET, PH_LT, agreeGloss, agreeTarget, entityForPlayer, joinText, joinUnits, npUnits, resolveTarget, splitUnits, valueDisplay } from "./target";
 
 // the practised language's noun phrases and values (./target.ts), also used from here
 export { entityForPlayer, npUnits, numberWords, priceEn, priceLt, priceSay, splitUnits, timeEn, timeSay } from "./target";
@@ -49,7 +49,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
   const enU = splitUnits(resolveTarget(src.en, { player: g, speaker: sp, formal }));
   const ltU = splitUnits(resolveGender(src.lt));
   if (enU.length !== ltU.length) throw new Error(`Unit count differs (EN ${enU.length}, LT ${ltU.length}): ${src.en}`);
-  const units: Unit[] = [];
+  let units: Unit[] = [];
   const sayParts: string[] = [];
 
   const agreeIn = (s: string) => s.replace(PH_AGREE, (_m, lemma: string, name: string, c: Case, pl?: string) => {
@@ -117,6 +117,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
   if (units.length && startsWithSlot(src.en)) units[0] = { ...units[0], en: capFirst(units[0].en) };
   if (units.length && startsWithSlot(src.lt)) units[0] = { ...units[0], lt: capFirst(units[0].lt) };
   if (startsWithSlot(src.nat)) nat = capFirst(nat);
+  units = joinUnits(units);
   const enClean = units.map((u) => u.en).join(" ");
   let say = src.say ? valuesIn(agreeEn(resolveTarget(src.say, { player: g, speaker: sp, formal })), "say") : sayParts.join(" ");
   if (startsWithSlot(src.say ?? src.en)) say = capFirst(say);
@@ -127,7 +128,7 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
       return npUnits(b, (kind || "head") as any, "nom", opts.look, g === "f").en.join(" ");
     });
   }
-  return { units, en: enClean, nat, say: say.replace(/\s+/g, " ").trim() };
+  return { units, en: enClean, nat, say: joinText(say.replace(/\s+/g, " ").trim()) };
 }
 
 function capFirst(t: string): string {

@@ -115,6 +115,25 @@ export function entityForPlayer(e: EntityDef, fem: boolean): EntityDef {
   return { ...e, en: e.enF, pl: e.plF ?? e.pl, g: e.gF ?? "f" };
 }
 
+/** "a" + "el" → "al", "de" + "el" → "del" (the article comes from a placeholder: "a {X.the}" → "al centro"). */
+export function joinUnits<U extends { en: string; lt: string; flag?: string }>(units: U[]): U[] {
+  const out: U[] = [];
+  for (const u of units) {
+    const prev = out[out.length - 1];
+    const m = prev && /^([¿¡"“(]*)(a|de)$/i.exec(prev.en);
+    if (m && /^el$/i.test(u.en.replace(/[.,!?;:)…]+$/, ""))) {
+      const tail = u.en.slice(2);
+      out[out.length - 1] = { ...prev, en: m[1] + m[2] + "l" + tail, lt: `${prev.lt} ${u.lt}` };
+      continue;
+    }
+    out.push(u);
+  }
+  return out;
+}
+
+/** The same in the spoken text ("él" with its accent is never touched). */
+export const joinText = (s: string) => s.replace(/(^|[\s¿¡"“(])(a|de) el\b/gi, (_m, pre: string, p: string) => `${pre}${p}l`);
+
 /** English glosses don't agree. */
 export const agreeGloss = (lemma: string, _e: EntityDef, _c: Case, _plural: boolean) => lemma;
 

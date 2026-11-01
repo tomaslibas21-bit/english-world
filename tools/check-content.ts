@@ -40,7 +40,7 @@ const unregistered = new Map<string, string>();
 // with a flag where English has none (docs/es/STYLE.md).
 const ES = EDITION.id === "es";
 const ARTICLES = ES ? new Set(["el", "la", "los", "las", "un", "una", "unos", "unas"]) : new Set(["a", "an", "the", "A", "An", "The"]);
-const articleGlossOk = (gloss: string, flagged: boolean) => (ES ? /^(the|a|an|some|one)\b/i.test(gloss) || (/^—/.test(gloss) && flagged) : /^—/.test(gloss));
+const articleGlossOk = (gloss: string) => (ES ? /^(the|a|an|some|one)\b/i.test(gloss) : /^—/.test(gloss));
 function stripPunct(w: string) { return w.replace(/^[\s"“”'‘’(¿¡]+|[\s"“”'‘’.,!?;:)…]+$/g, ""); }
 
 function checkUnits(where: string, s: SentSrc, look: (id: string) => EntityDef | undefined, sampleVars: Record<string, any>[]) {
@@ -58,7 +58,7 @@ function checkUnits(where: string, s: SentSrc, look: (id: string) => EntityDef |
   for (const v of variants) splitUnits(v).forEach((u, i) => {
     if (u.includes("{")) return;
     const w = stripPunct(u);
-    if (ARTICLES.has(ES ? w.toLowerCase() : w) && !(lt[i] || "").startsWith("{") && (ES || !s.flags?.[i]) && !articleGlossOk(lt[i] ?? "", !!s.flags?.[i])) warn(`${where}: article "${u}" glossed "${lt[i]}" (expected ${ES ? "the / a / an / some, or — with a flag" : "—"})`);
+    if (ARTICLES.has(ES ? w.toLowerCase() : w) && !(lt[i] || "").startsWith("{") && !s.flags?.[i] && !articleGlossOk(lt[i] ?? "")) warn(`${where}: article "${u}" glossed "${lt[i]}" (expected ${ES ? "the / a / an / some, or a flag saying why not" : "—"})`);
     if (/\s/.test(w) && !mergeRecord(w) && !currentSit?.merges?.[mergeKey(w)]) unregistered.set(mergeKey(w), (currentSit?.id ?? "") + " " + where);
   });
   if (/\d|\$/.test(s.en.replace(/\{\$[a-z]+\}/gi, "")) && !s.say) warn(`${where}: digits without a spoken form (say)`);
