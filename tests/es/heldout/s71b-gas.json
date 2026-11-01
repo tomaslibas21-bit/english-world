@@ -1,0 +1,53 @@
+{ "situation": "s71b-gas", "items": [
+  { "ctx": "order", "say": "Buenas, lleno por favor", "intent": "fill" },
+  { "ctx": "order", "say": "Llénelo de magna, por favor", "intent": ["fill", "grade_ans"] },
+  { "ctx": "order", "say": "Me pone quinientos pesos de verde", "intent": ["prepay", "amount_ctx"], "note": "Spain: me pone; la verde = magna" },
+  { "ctx": "order", "say": "Trescientos de magna", "intent": ["prepay", "amount_ctx"] },
+  { "ctx": "order", "say": "Necesito gasolina", "intent": "want_gas" },
+  { "ctx": "order", "say": "Ponme 20 litros", "intent": ["prepay", "amount_ctx"], "note": "Spain: ponme; litres" },
+  { "ctx": "order", "say": "No lo llene, solo doscientos pesos", "intent": ["prepay", "amount_ctx"], "not": ["fill"], "note": "trap: negation" },
+  { "ctx": "order", "say": "Cuanto cuesta el litro?", "intent": ["gas_price_q", "cost_q"], "note": "no accents" },
+  { "ctx": "order", "say": "¿Puedo pagar con tarjeta?", "intent": ["pay_card", "pay_pump_q"] },
+
+  { "ctx": "grade", "say": "Premium, por favor", "intent": "grade_ans" },
+  { "ctx": "grade", "say": "La roja", "intent": "grade_ans" },
+  { "ctx": "grade", "say": "Regular", "intent": "grade_ans" },
+  { "ctx": "grade", "say": "Cuál es más barata?", "intent": ["grade_q", "gas_price_q", "cost_q"] },
+  { "ctx": "grade", "say": "Premium no, magna", "intent": "grade_ans", "not": ["grade_no"], "note": "trap: correction" },
+  { "ctx": "grade", "say": "Mi carro es de diésel", "intent": "grade_ans" },
+
+  { "ctx": "amount", "say": "Cuatrocientos pesos", "intent": ["amount_ctx", "prepay"] },
+  { "ctx": "amount", "say": "Mejor llénelo", "intent": ["fill", "amount_change_ctx"] },
+  { "ctx": "amount", "say": "Unos mil pesos, más o menos", "intent": ["amount_ctx", "prepay"] },
+
+  { "ctx": "extras", "say": "Sí, revíseme el aceite por favor", "intent": ["check_order", "check_ctx"] },
+  { "ctx": "extras", "say": "¿Me puede checar las llantas?", "intent": ["check_order", "check_ctx", "air"] },
+  { "ctx": "extras", "say": "No, gracias, así está bien", "intent": ["check_no", "more_no", "yn:no"], "not": ["check_order", "check_ctx"] },
+  { "ctx": "extras", "say": "No hace falta revisar nada", "intent": "any", "not": ["check_order", "check_ctx"], "note": "trap: negation" },
+  { "ctx": "extras", "say": "¿Cuánto cuesta revisar el aceite?", "intent": ["cost_q", "check_order", "check_ctx"] },
+
+  { "ctx": "pay", "say": "Con tarjeta", "intent": "pay_card" },
+  { "ctx": "pay", "say": "Le pago en efectivo", "intent": "pay_cash" },
+  { "ctx": "pay", "say": "Aceptan dólares?", "intent": "pay_dollars" },
+  { "ctx": "pay", "say": "No tengo efectivo", "intent": ["no_cash", "pay_card"], "not": ["pay_cash"], "note": "trap: negation" },
+  { "ctx": "pay", "say": "Aquí tiene, quédese con el cambio", "intent": ["here_you_go", "tip", "no_change"] },
+
+  { "ctx": "debit", "say": "Es de débito", "intent": "credit_debit" },
+  { "ctx": "debit", "say": "Crédito", "intent": "credit_debit" },
+
+  { "ctx": "receipt", "say": "Sí, me da el ticket por favor", "intent": ["receipt_ask", "yn:yes"] },
+  { "ctx": "receipt", "say": "¿Me puede dar factura?", "intent": ["receipt_ask", "receipt_factura", "receipt_invoice"] },
+  { "ctx": "receipt", "say": "No, no necesito ticket", "intent": ["receipt_no", "no_receipt", "receipt_no_ctx", "yn:no"], "not": ["receipt_ask"], "note": "trap: negation" },
+
+  { "ctx": "anything", "say": "¿Dónde está el baño?", "intent": "restroom" },
+  { "ctx": "anything", "say": "Cómo llego a la carretera?", "intent": "directions" },
+  { "ctx": "anything", "say": "¿Hay un cajero por aquí?", "intent": "atm" },
+  { "ctx": "anything", "say": "¿Cuánto le doy de propina?", "intent": "tip_q" },
+  { "ctx": "anything", "say": "No, es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "anything", "say": "Mi gato come pizza los martes", "intent": "none" },
+
+  { "ctx": "trouble", "say": "Mi carro no arranca", "intent": "trouble" },
+  { "ctx": "trouble", "say": "Se me ponchó una llanta", "intent": "trouble" },
+  { "ctx": "trouble_help", "say": "¿Hay un mecánico cerca?", "intent": "ask_mechanic" },
+  { "ctx": "trouble_help", "say": "¿Puede llamar a alguien?", "intent": "call_help" }
+] }
