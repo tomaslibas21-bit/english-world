@@ -179,3 +179,48 @@ new `sign_here_ctx`:
 - Share changed: 94 of the executor's 966 lines changed or removed (10%), 166 lines added (the patterns and tests);
   about half of the work was must-fix (meaning safety, understanding), the rest tests and polish.
 - Cost: ~5 M input-equivalent tokens (the helper 3.9 M, the lead about 1.2 M).
+
+## 8. Facts (as of November 2026)
+
+The owner's answers (1 Nov 2026): use real numbers; the "Ya volví" jump is fine with a "(Más tarde…)" line; the keys
+stay "llave"; the tax as the sources say. Checked on 1 Nov 2026. The taxes and fees come from official texts only;
+the hotel's own prices are typical, rounded figures for a mid-range hotel in the Tulum area in November 2026.
+
+### Taxes and fees (official sources; taught in the lines)
+
+| Figure | In the conversation | Source |
+|---|---|---|
+| **State lodging tax: 5%** of the room charge (6% only for homes rented through digital platforms) | `lodging_tax` (once, before signing): "El impuesto de hospedaje, del 5%, no está incluido"; `tax_info` (when asked): "Es un impuesto del estado: el 5% de la tarifa" | *Ley del Impuesto al Hospedaje del Estado de Quintana Roo*, art. 8 (art. reformed POE 23-12-2022; consolidated text "última reforma publicada en el Periódico Oficial del Estado el 16 de diciembre de 2025"), Government of Quintana Roo, https://agqroo.qroo.gob.mx/wp-content/uploads/2026/01/1767992043_2_641.pdf (posted Jan 2026; read through the Wayback Machine copy of 4 Feb 2026, as the state server refused connections) |
+| The tax is charged **expressly and separately** to the guest | "se suma a su cuenta, por separado" | same law, art. 11 |
+| **Tulum's derecho de saneamiento ambiental:** per room per night, 30% of a UMA for one guest, then 20% for the second, 15% for the third, 10% from the fourth (50% / 65% / 75% in total); children under 12 don't count; collected by the hotel at check-in, or at checkout if paid afterwards | `eco_fee` (when asked about the tax, once): "el municipio cobra un derecho ambiental: unos $35 por noche por la primera persona, y menos por cada persona más" | *Ley de Hacienda del Municipio de Tulum del Estado de Quintana Roo*, arts. 139–143 (consolidated text, last reform POE 09-12-2024), Congreso del Estado de Quintana Roo, https://documentos.congresoqroo.gob.mx/leyes/L276-XVIII-20241209-L1820241209048-Ley-de-Hacienda-del-Mpio-de-Tulum.pdf |
+| **UMA 2026: $117.31 a day** (valid from 1 Feb 2026), so the fee is $35.19 a night for one guest and $58.66 for two | "unos $35" (rounded) | INEGI, "Unidad de Medida y Actualización (UMA) 2026", press release 1/26 (8 Jan 2026; DOF 9 Jan 2026), https://www.inegi.org.mx/contenidos/saladeprensa/boletines/2026/uma/uma2026.docx |
+| The fee still exists in 2026: Tulum's 2026 revenue law budgets $95,610,643 for it | (background) | *Ley de Ingresos del Municipio de Tulum para el Ejercicio Fiscal 2026* (POE 10-12-2025, decreto 162), https://documentos.congresoqroo.gob.mx/leyes/L341-XVIII-20251210-L1820251210162-Ley-de-Ingresos-de-Tulum-2026-5-enero.pdf |
+
+Caveats: the Congress read an initiative to reform Tulum's Ley de Hacienda on 24 Nov 2025 (session 27); I found no
+published reform of arts. 139–143, and the press (Tulum Times, 3 Aug 2026: "36 pesos per room per night for a single
+guest") agrees with the official $35. That is why the line says "unos $35" and "menos por cada persona más", not
+exact cents. IVA (16%) is federal and usually inside a Mexican hotel's quoted rate; the lines still don't mention it.
+
+### Hotel Mar Azul's prices (typical figures; not regulated, so no official source exists)
+
+| Figure (pesos) | Before | Now | Basis |
+|---|---|---|---|
+| Double room, a night | $2,400 | **$2,200** | Holiday Inn Tulum, from MXN 1,219 (reference date 15 Nov 2026) to MXN 2,074 (27 Oct 2026), as Bestday's Tulum listing showed in search results on 1 Nov 2026 (the page itself refuses scripted reads): https://www.bestday.com.mx/hoteles/hl/256147/i1/hoteles-en-tulum; Mimosa Tulum US$116 for 8 Nov 2026 and Hotel Posada 06 MXN 903–1,482: Despegar, https://www.despegar.com.ar/alojamientos/alojamientos-en-tulum/256147, and Kayak, https://www.kayak.com.mx/Tulum-Hoteles-Hotel-Posada-06-Tulum.329274.ksp. A town hotel with breakfast near the beach sits at the upper end. |
+| Two-bed room | $2,800 | **$2,500** | same sources, a bigger room |
+| Smaller single room | $1,800 | **$1,700** | same sources, the lower end |
+| Ocean view, extra a night | +$400 | **+$1,300** (≈ $3,500 a night) | Beach-zone rooms with a sea view cost far more (Cabañas Tulum around US$300–370 a night: Kayak, https://www.kayak.co.uk/Tulum-Hotels-Cabanas-Tulum.471849.ksp, June 2026); +$1,300 keeps a small town hotel's sea-view room within STYLE.md's $1,800–3,500. |
+| Late checkout until 2 p.m. | $500 | **$700** (noon still free, "when available") | Alea Tulum: late checkout USD 50, subject to availability (Sembo, https://ph.sembo.com/d/hotel-996828_alea_tulum_tulum); BT Live Tulum: a late-checkout fee, then 50% of a night after 1 p.m. (Cloudbeds, https://hotels.cloudbeds.com/reservation/MLJjrp); Hotel Cabañas Tulum: on request, subject to availability (https://www.hotelcabanastulum.com/booking/frequently-asked-questions/). Listings as search results showed them on 1 Nov 2026. |
+| Deposit: a card hold, or cash (debit: charged and refunded) | $2,000 a stay | **$2,000 a stay** (kept) | Eterna Tulum: MXN 2,000 per accommodation per stay (HalalBooking, https://halalbooking.com/en/eterna-tulum/p/477099); Tuki Hotel: MXN 2,000 per stay (ReservationDesk, https://www.reservationdesk.com/hotel/6949742/tuki-hotel); Holiday Inn Tulum: card, debit or cash deposit for incidentals (Hotels.com, https://nz.hotels.com/ho3450218976). Listings as search results showed them on 1 Nov 2026. |
+| Parking, a night | $150 | **$150** (kept) | Many Tulum hotels list free parking; paid lots in town 20–40 pesos an hour and 150–250 for a day near the ruins (Tulum Times, "Parking in Tulum: The Complete Guide", https://tulumtimes.com/tulum-parking); Motto by Hilton Tulum: self-parking US$15 a day (https://www.hilton.com/en/hotels/czmtuua-motto-tulum/hotel-info). |
+
+The learner's patterns follow the new fee ("Setecientos pesos está bien", "Sí, pago los setecientos", "No quiero pagar
+setecientos pesos") and the new questions ("¿De cuánto es el impuesto?", "¿Qué es el derecho de saneamiento
+ambiental?", "¿Hay otros cargos?"); the tests, a new sim (late checkout at two, then the tax) and the corpus
+(136 → 144 items, 140/144 understood, 0/30 traps) cover them.
+
+### The twist and the keys
+
+- **"(Más tarde…)":** the line that greets the returning learner (`room_ready`) now starts with the unit "(Más
+  tarde…)" / "(Later…)", flagged as not spoken; its `say:` leaves it out, so the voice says only "¡Gracias por
+  esperar! Su habitación ya está lista."
+- **Keys:** "la llave" throughout, as before; "tarjeta" stays only for the broken key card in the problem visit.

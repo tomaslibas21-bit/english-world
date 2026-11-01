@@ -115,11 +115,7 @@ Measure the first batch; if a review still costs as much as writing, change cour
    Master's situations journey does? The ids are Maple Harbor's (s32 became `s32-mercado`), so a map is easy either
    way.
 5. When to record the Spanish voices (Gemini, the owner's key; ~$10), and when to make the pictures.
-6. Hotel Mar Azul's made-up figures (from the trial): $1,800–2,800 a night, +$400 for the ocean view, a free noon
-   checkout or $500 until 2 p.m., $150 parking, a $2,000 deposit (a hold on a credit card; charged and refunded on
-   debit), breakfast 7–10:30, check-in at 3 p.m. All right?
-7. The hotel's room-not-ready twist: after "Regreso a las tres" the learner can say "Ya volví" at once (the game
-   can't skip time). Acceptable?
-8. Hotel keys: "la llave" (as now) or "la tarjeta" (which clashes with the credit card)?
-9. The lodging tax: the lines don't state a rate (the review couldn't verify Quintana Roo's figure, or whether hotels
-   there also collect a municipal environmental fee per night). Fine as it is?
+6. ~~Hotel Mar Azul's made-up figures~~ **Answered: "use real numbers".** Done: typical Tulum-area prices for Nov 2026 in s68 (sources: docs/es/reviews/s68-hotel.md §8).
+7. ~~The room-not-ready twist~~ **Answered: fine with a "(Más tarde…)" line.** Done: the returning learner's greeting starts with an unspoken "(Más tarde…)".
+8. ~~Hotel keys~~ **Answered: "llave".** Done: kept as it was ("tarjeta" only for the broken key card).
+9. ~~The lodging tax~~ **Answered: as the sources say.** Done: the lines teach Quintana Roo's 5% and Tulum's environmental fee (about $35 a night for the first guest).
