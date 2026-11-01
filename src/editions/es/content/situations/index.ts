@@ -7,7 +7,8 @@ import S_s65b_baggage from "./s65b-baggage";
 import S_s66_taxi from "./s66-taxi";
 import S_s68_hotel from "./s68-hotel";
 import S_s69_local from "./s69-local";
+import S_s70_museum from "./s70-museum";
 import S_s72_cafe from "./s72-cafe";
 
-export const SITUATIONS: SituationDef[] = [S_s32_mercado, S_s62_visitor_center, S_s65a_passport, S_s65b_baggage, S_s66_taxi, S_s68_hotel, S_s69_local, S_s72_cafe];
+export const SITUATIONS: SituationDef[] = [S_s32_mercado, S_s62_visitor_center, S_s65a_passport, S_s65b_baggage, S_s66_taxi, S_s68_hotel, S_s69_local, S_s70_museum, S_s72_cafe];
 export const SITUATION_BY_ID: Record<string, SituationDef> = Object.fromEntries(SITUATIONS.map((s) => [s.id, s]));
