@@ -1,0 +1,54 @@
+{ "situation": "s64b-security", "items": [
+  { "ctx": "docs", "say": "Buenos días, aquí tiene mi pasaporte y mi pase de abordar", "intent": "give_docs" },
+  { "ctx": "docs", "say": "Aquí está mi pasaporte", "intent": "give_docs" },
+  { "ctx": "docs", "say": "Tengo el pase de abordar en el celular", "intent": "give_docs" },
+  { "ctx": "docs", "say": "¿Necesita mi pasaporte?", "intent": "docs_q" },
+  { "ctx": "docs", "say": "Es esta la fila para seguridad?", "intent": "is_this_line", "note": "no accents, no ¿" },
+
+  { "ctx": "camera", "say": "Claro", "intent": ["ack_done", "yn:yes", "g_ok"] },
+
+  { "ctx": "divest", "say": "¿Tengo que quitarme los zapatos?", "intent": "ask_shoes" },
+  { "ctx": "divest", "say": "¿Saco la computadora?", "intent": "ask_laptop", "note": "neutral computadora" },
+  { "ctx": "divest", "say": "Puedo dejar la laptop en la mochila?", "intent": "ask_laptop" },
+  { "ctx": "divest", "say": "No traigo computadora", "intent": "no_laptop", "not": ["ask_laptop"], "note": "trap: negation" },
+  { "ctx": "divest", "say": "No tengo líquidos", "intent": "no_liquids", "not": ["ask_liquids"], "note": "trap: negation" },
+  { "ctx": "divest", "say": "¿Dónde pongo mi celular y mis llaves?", "intent": "ask_phone" },
+  { "ctx": "divest", "say": "¿Me quito la chamarra?", "intent": "ask_jacket" },
+  { "ctx": "divest", "say": "¿Puedo llevar comida?", "intent": "ask_food" },
+  { "ctx": "divest", "say": "Ya está todo en la charola", "intent": "ack_done" },
+  { "ctx": "divest", "say": "Listo", "intent": ["ack_done", "yn:yes"] },
+  { "ctx": "divest", "say": "No tengo bolsa de plástico", "intent": "no_plastic_bag", "not": ["no_liquids"] },
+  { "ctx": "divest", "say": "Todavía no estoy listo", "intent": "any", "not": ["ack_done", "yn:yes"], "note": "trap: not ready" },
+
+  { "ctx": "walk", "say": "¿Paso ya?", "intent": "ack_done" },
+  { "ctx": "walk", "say": "¿Dónde me paro?", "intent": "where_stand" },
+  { "ctx": "walk", "say": "Todavía no, un momento", "intent": "any", "not": ["ack_done", "yn:yes"], "note": "trap: not yet" },
+
+  { "ctx": "pockets", "say": "Solo mis llaves", "intent": "pockets_item" },
+  { "ctx": "pockets", "say": "Ay, mi celular", "intent": "pockets_item" },
+  { "ctx": "pockets", "say": "No, nada", "intent": ["pockets_nothing", "yn:no"], "not": ["pockets_item"], "note": "trap" },
+  { "ctx": "pockets", "say": "No traigo nada en las bolsas", "intent": ["pockets_nothing", "yn:no"], "not": ["pockets_item"], "note": "trap: Mexican bolsas = pockets" },
+
+  { "ctx": "belt_watch", "say": "Creo que es mi cinturón", "intent": "pockets_item" },
+  { "ctx": "belt_watch", "say": "No traigo cinturón ni reloj", "intent": ["pockets_nothing", "yn:no"], "not": ["pockets_item"], "note": "trap: ni" },
+
+  { "ctx": "shoes_off", "say": "Bueno, me los quito", "intent": ["ack_done", "yn:yes", "g_ok"] },
+
+  { "ctx": "bag_q", "say": "Sí, es mía", "intent": ["affirm", "yn:yes"] },
+  { "ctx": "bag_q", "say": "No, esa no es mía", "intent": ["deny", "yn:no"], "not": ["affirm", "yn:yes"], "note": "trap" },
+
+  { "ctx": "bottle_found", "say": "Ay, perdón, se me olvidó", "intent": "forgot" },
+
+  { "ctx": "bottle", "say": "Me la tomo ahorita", "intent": "bottle_drink" },
+  { "ctx": "bottle", "say": "Tírela, no hay problema", "intent": "bottle_throw" },
+  { "ctx": "bottle", "say": "¿Puedo vaciarla?", "intent": "bottle_empty" },
+  { "ctx": "bottle", "say": "No la tire, por favor, me la tomo", "intent": "bottle_drink", "not": ["bottle_throw"], "note": "trap: refusal then choice" },
+  { "ctx": "bottle", "say": "No quiero tirarla", "intent": "any", "not": ["bottle_throw"], "note": "trap" },
+
+  { "ctx": "collect", "say": "¿Me regresa mi maleta?", "intent": "bag_back" },
+  { "ctx": "collect", "say": "¿Ya me puedo ir?", "intent": "bag_back" },
+
+  { "ctx": "closing", "say": "¿Dónde está la sala 4?", "intent": "ask_gate" },
+  { "ctx": "closing", "say": "¿Dónde están los baños?", "intent": "ask_restroom" },
+  { "ctx": "closing", "say": "¿Dónde me pongo los zapatos?", "intent": "shoes_on" }
+] }
