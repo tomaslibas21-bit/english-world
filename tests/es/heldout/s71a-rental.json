@@ -1,0 +1,58 @@
+{ "situation": "s71a-rental", "items": [
+  { "ctx": "resv", "say": "Hola, buenas tardes. Tengo una reservación.", "intent": "have_resv" },
+  { "ctx": "resv", "say": "Vengo a recoger un carro que reservé por internet", "intent": "have_resv" },
+  { "ctx": "resv", "say": "Quiero rentar un carro, por favor", "intent": "rent_walkin" },
+  { "ctx": "resv", "say": "No tengo reservación, ¿tienen autos disponibles?", "intent": "rent_walkin", "not": ["have_resv"], "note": "trap: negation" },
+  { "ctx": "resv", "say": "Hice una reserva en línea", "intent": "have_resv", "note": "neutral reserva" },
+
+  { "ctx": "name", "say": "Está a nombre de Miller", "intent": "name_ctx" },
+  { "ctx": "spell", "say": "eme, i, ele, ele, e, erre", "intent": "letters_ctx" },
+
+  { "ctx": "size", "say": "Uno pequeño, por favor", "intent": "size_ctx" },
+  { "ctx": "size", "say": "¿Qué carros tienen?", "intent": "sizes_q" },
+  { "ctx": "size", "say": "Algo económico", "intent": "size_ctx" },
+  { "ctx": "size", "say": "Una camioneta, somos cinco", "intent": ["size_ctx", "party_ctx"] },
+
+  { "ctx": "days", "say": "Por cuatro días", "intent": "days_ctx" },
+  { "ctx": "days", "say": "Una semana", "intent": "days_ctx" },
+
+  { "ctx": "license", "say": "Aquí tiene mi licencia", "intent": ["here_docs", "hand_ctx"] },
+  { "ctx": "license", "say": "¿Sirve mi licencia de Estados Unidos?", "intent": "license_q" },
+  { "ctx": "license", "say": "No traigo mi licencia", "intent": "any", "not": ["here_docs", "hand_ctx"], "note": "trap: negation" },
+
+  { "ctx": "upgrade", "say": "No, gracias, el compacto está bien", "intent": ["keep_size", "polite_no_ctx", "yn:no"], "not": ["upgrade_yes"], "note": "trap" },
+  { "ctx": "upgrade", "say": "¿Cuánto cuesta el más grande?", "intent": ["price_q", "upgrade_q"] },
+
+  { "ctx": "insurance", "say": "Nada más el básico", "intent": "ins_basic" },
+  { "ctx": "insurance", "say": "Quiero la cobertura completa", "intent": "ins_full" },
+  { "ctx": "insurance", "say": "Mi tarjeta de crédito ya me cubre el seguro", "intent": "ins_own" },
+  { "ctx": "insurance", "say": "¿Qué cubre?", "intent": "ins_what" },
+  { "ctx": "insurance", "say": "No, no necesito el seguro completo", "intent": "any", "not": ["ins_full", "ins_yes_ctx"], "note": "trap: negation" },
+
+  { "ctx": "tpl", "say": "Pero ya pagué el seguro en línea", "intent": ["tpl_refuse_ctx", "tpl_q"] },
+  { "ctx": "tpl", "say": "¿Es obligatorio?", "intent": "tpl_q" },
+  { "ctx": "tpl", "say": "Bueno, está bien, lo pago", "intent": ["ok_ack", "yn:yes"] },
+
+  { "ctx": "deposit", "say": "¿Cuándo me lo devuelven?", "intent": "deposit_q" },
+  { "ctx": "deposit", "say": "Es mucho dinero", "intent": "deposit_much_ctx" },
+
+  { "ctx": "fuel", "say": "Lo devuelvo con el tanque lleno", "intent": "fuel_full" },
+  { "ctx": "fuel", "say": "¿Es automático?", "intent": "auto_q" },
+  { "ctx": "fuel", "say": "No quiero pagar la gasolina por adelantado", "intent": "any", "not": ["prepay_yes"], "note": "trap: negation" },
+
+  { "ctx": "extras", "say": "Sí, un GPS, por favor", "intent": "extras_yes" },
+  { "ctx": "extras", "say": "No, gracias, uso mi celular", "intent": ["extras_no", "extras_none_ctx"], "not": ["extras_yes"], "note": "trap" },
+  { "ctx": "extras", "say": "Una silla para niños", "intent": "extras_yes" },
+
+  { "ctx": "ret", "say": "¿Lo puedo dejar en el aeropuerto?", "intent": ["ret_change", "ret_q"] },
+  { "ctx": "ret", "say": "¿Qué pasa si llego tarde?", "intent": "ret_q" },
+  { "ctx": "ret", "say": "No el viernes, el sábado", "intent": ["ret_day_ctx", "ret_change"], "not": ["yes_right"], "note": "trap: correction" },
+
+  { "ctx": "sign", "say": "¿Dónde firmo?", "intent": "sign_q" },
+
+  { "ctx": "keys_thanks", "say": "¿Dónde está el carro?", "intent": ["where_car", "where_car_ctx"] },
+  { "ctx": "keys_thanks", "say": "¿Y si veo un rayón?", "intent": "scratch_q" },
+
+  { "ctx": "anything", "say": "No, es todo, gracias", "intent": "more_no" },
+  { "ctx": "anything", "say": "A las cinco", "intent": "any", "not": ["ret_day_ctx", "ret_change", "where_car"], "note": "trap: bare time" }
+] }
