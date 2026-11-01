@@ -144,8 +144,8 @@ export const LEAVING_PATTERNS = [
 export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_repeat: { patterns: [
     "(perdon | mande | como | que | disculpe | perdone | como dice | como dijo | como dijiste | otra vez | de nuevo | repita | repite)",
-    "[perdon] @could_you repetir [lo | eso | la pregunta] [otra vez | una vez mas] #h:c_say_again",
-    "[perdon] me lo (repite | repites | puede repetir | puedes repetir | podria repetir) #h:c_repeat",
+    "[perdon] @could_you (repetir | repetirlo | repetirmelo) [lo | eso | la pregunta] [otra vez | una vez mas] #h:c_say_again",
+    "[perdon] [me] lo (repite | repites | puede repetir | puedes repetir | podria repetir) [otra vez] #h:c_repeat",
     "[perdon] @could_you (decir | decirlo | decirmelo) (otra vez | de nuevo | una vez mas)",
     "[perdon] (que | como) (dijo | dijiste)",
     "[perdon] no (escuche | oi | entendi) [bien] [lo que dijo | lo que dijiste] #h:c_catch",
@@ -156,6 +156,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "[un poco] (mas despacio | mas lento | despacio | mas despacito)",
     "(habla | hablas | habla usted) (muy | demasiado) rapido",
     "(muy | tan | demasiado) rapido", "no tan rapido",
+    "[perdon] (hable | habla | hableme | hablame) (mas despacio | mas lento | despacio | mas despacito)",
   ] },
   g_dont_understand: { patterns: [
     "[perdon] no (entiendo | le entiendo | te entiendo | comprendo) #h:c_dont_understand",
@@ -164,12 +165,13 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   ] },
   g_spell: { patterns: [
     "como se escribe [eso | esto | su nombre | la palabra] #h:c_spell",
-    "@could_you deletrear[lo]", "como se deletrea", "letra por letra",
+    "@could_you (deletrear | deletrearlo | deletrearmelo)", "como se deletrea", "letra por letra",
   ] },
   g_write: { patterns: [
     "me lo (puede | puedes | podria) escribir #h:c_write",
     "@could_you (escribirlo | escribirmelo | escribir eso | escribirlo aqui)",
     "(escribalo | escribelo | escribamelo | escribemelo) [por favor]",
+    "(me lo | lo) (escribe | escribes | anota | anotas)",
   ] },
   g_meaning: { patterns: [
     "que (significa | quiere decir) [eso | esto] #h:c_meaning",
@@ -186,7 +188,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   ] },
   g_thanks: { patterns: [
     "[muchas | mil | muchisimas] gracias #h:s_thanks",
-    "gracias por (su ayuda | tu ayuda | la ayuda | todo | ayudarme | su tiempo | tu tiempo) #h:s_thanks_help",
+    "[muchas | mil | muchisimas] gracias por (su ayuda | tu ayuda | la ayuda | todo | ayudarme | su tiempo | tu tiempo | los consejos | la informacion | las recomendaciones) #h:s_thanks_help",
     "(se lo | te lo) agradezco [mucho]", "(muy | super | que) amable",
     "(perfecto | excelente | genial | que bien | buenisimo) [muchas] gracias",
     "me (ayudo | ayudaste) mucho", "(fue | ha sido) (muy | super) amable",

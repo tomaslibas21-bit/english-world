@@ -7,10 +7,12 @@ Master English. One engine with two editions (docs/es/EDITIONS.md); the English 
 
 - **Claude** (the lead): the plan, the engine and the edition switch, the model conversations and their tests, the
   reviews of every batch, anything that touches the shared engine.
-- **The executor** (ChatGPT "Sol 6.1", extra high reasoning): the remaining 47 conversations from their briefs, and
-  the town-restyling tasks, from this plan. Each conversation is about 1,000–2,000 lines of TypeScript with
-  hand-written Spanish understanding; weak work fails silently, so the acceptance gate below decides, and the lead
-  reads the risky parts in full.
+- **Claude's helpers** (since 1 Nov, the owner's decision after the trial: "All Claude"): every remaining
+  conversation, one fresh writer each (Opus, high), then one fresh reviewer each (Opus, high, its blind set written
+  before it reads the draft), then a max-effort check for the riskiest (prices and numbers, names and spelling,
+  negotiations) and anything a reviewer flags. Each conversation is about 1,300–2,000 lines of TypeScript with
+  hand-written Spanish understanding; weak work fails silently, so the acceptance gate below decides. The executor
+  (ChatGPT "Sol 6.1") wrote the trial; docs/es/HANDOFF-SOL.md stays as its prompt.
 - **The owner**: the decisions (docs/es/STYLE.md), the pictures (ChatGPT, later), the Gemini key for the voices
   (later, added by the owner), every publish.
 
@@ -24,10 +26,14 @@ Master English. One engine with two editions (docs/es/EDITIONS.md); the English 
    test, a grammar too narrow for natural sentences, a few Spanish slips. It also added tests: the blind set went from
    83% to 97% understood, a 136-sentence corpus from 60% to 97%, with no trap accepted. Details:
    docs/es/reviews/s68-hotel.md; the rules it taught are in docs/es/AUTHORING-ES.md ("Rules from the reviews").
-3. **Batches B–G**, in the order of docs/es/BRIEFS.md: B arrival and travel, C town services and help, D home and
-   neighbors, E social, F work, G the advanced chapters. The first batch after the trial is small (3–5
-   conversations, e.g. the airport, s64a–s65b) to check the new rules; then 6–8 each. docs/es/HANDOFF-SOL.md is the
-   prompt for every batch. The town tasks (docs/es/TOWN.md) run alongside, one per batch.
+3. **The conversations, chapter by chapter** (docs/es/BRIEFS.md). Each one: writer → reviewer → merged into
+   `spanish-edition` and pushed at once → the max check where needed → merged again. Progress, the weekly meter and
+   the next step are in the shared notes (PROGRESS.md), so a cutoff at the weekly limit loses nothing.
+   **Batch 1 (1 Nov):** s65a-passport, s65b-baggage, s62-visitor-center, s69-local. The reviews fixed 6–10
+   must-fix problems in each (meaning flips above all: lost commas, "No, no …", replies that didn't answer the
+   question); the passport's max check fixed 13 more that booked or granted the wrong thing. Their lessons are rules
+   10–16 in AUTHORING-ES.md. The town and the pictures wait until the dialogues are done (after the weekly reset of
+   4 Nov).
 4. **Voices:** the owner adds a Gemini key; the lead adapts `tools/voice-batch.ts` for Spanish voices (`es_<npcId>`,
    a female and a male coach), a casting sample for the owner, then the batch (~$10).
 5. **Pictures:** the owner makes them with ChatGPT from a brief per conversation (as docs/PICTURES-WANTED.md does for
@@ -98,7 +104,10 @@ Measured from the session transcripts, in input-equivalent tokens (input + 1.25 
 - the trial's review: ~5 M (the fresh helper 3.9 M, the lead about 1.2 M). That is about what Claude spends writing
   one conversation itself (~3–5 M, judging by the models).
 
-So the executor saves Claude's tokens only if reviews cost less than writing. The new rules (a corpus before the
+- batch 1, per conversation: writing ~3.2–3.6 M, reviewing ~1.4–1.8 M, so ~4.6–5.1 M in all; the max check
+  ~4.7 M; the lead's coordination ~1.5 M for the batch. The weekly meter went from 66% to 69%.
+
+(Before the owner chose "All Claude":) the executor saves Claude's tokens only if reviews cost less than writing. The new rules (a corpus before the
 grammar, no grammar bent to a test) should leave less to fix, and the review recipe above reads less. Target: about
 2–3 M per conversation reviewed, ~100–150 M for the remaining 46 (roughly 10–15% of a week, over several weeks).
 Measure the first batch; if a review still costs as much as writing, change course. Pace by the weekly reset

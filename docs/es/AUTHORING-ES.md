@@ -90,7 +90,8 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 ## Rules from the reviews
 
 The trial (s68-hotel) passed every check and still had to change in about 10% of its lines: the checks prove what
-the tests say, not what learners say. These rules come from what the review fixed (`docs/es/reviews/s68-hotel.md`).
+the tests say, not what learners say. These rules come from what the reviews fixed (`docs/es/reviews/`: rules 1–9 from the trial, 10–16 from
+batch 1: the passport, the baggage desk, the visitor center and the local).
 
 1. **Never bend the grammar to a test.** Don't add a `_ctx` intent to a step's `expects` so that an NLU test can use
    `step:`. An answer to a pending question (a taxi time, a choice) is tested in a sim. (The trial's worst bug: a
@@ -117,6 +118,28 @@ the tests say, not what learners say. These rules come from what the review fixe
    answers what was asked; a repeated question gets a short reminder, not the same line again.
 9. **Spanish details:** se lo / se la agree with the noun (la almohada → se la llevamos); say information once (the
    lodging tax); one word for one thing (the room key is la llave, the credit card la tarjeta).
+
+10. **Commas are lost, and voice never has them.** "Vacaciones, no negocios" and "Vacaciones no, negocios" read the
+    same; so do "No, es todo" and "No es todo", "No, fue directo" and "No fue directo". Where the two readings book
+    or record different things, tag the pattern `#amb` and have the character ask again ("Perdón, ¿cuál de los
+    dos?"); where they don't, keep the likelier reading. In "No X, Y" corrections the second item is the answer
+    ("No a la derecha, a la izquierda" → left).
+11. **Every reply answers the question that reached it.** Check each answer line against the yes/no and the wh-
+    forms that lead to it: "¿Está lejos?" gets "No, a cinco minutos", never "Sí, está a cinco minutos"; "¿Cuánto
+    cuesta?" gets a price, not "No, es barato". "¿Es muy caro?" is a question, not the too-expensive complaint.
+12. **Handlers check which question is pending.** "No, es mi primera vez" means "not before" only after "¿Ya había
+    venido?"; "No tengo tarjeta" is a plain no at "¿Trae tarjeta?". A bare "aquí", "tome", "no hace falta", "no
+    tengo nada" lives in a `_ctx` intent of the one step where it fits (rule 2).
+13. **Offer once, inform once, in order.** Don't offer the same thing twice (a kit already given or refused is
+    remembered); don't mention something before it's given ("con su número de reporte" before the number).
+14. **Facts agree across the town.** A place, a person or an opening time named in another conversation keeps its
+    facts (Café La Ceiba is on the zócalo, s72; El Muelle, the mercado, the kiosco: grep the Spanish models). Unsure
+    real-world figures (fees, deadlines, an office's practice) stay vague.
+15. **Flags point at real units.** A `flags` index counts the line's units from 0; check it in the transcript (the
+    Mexican-word flag must show on the Mexican word).
+16. **Clarification is global.** Repeat, slower, write it down, spell, "¿Qué significa…?" and thanks are in
+    `global.ts` (repetirlo, ¿Lo puede repetir?, ¿Me lo escribe?, Hable más despacio, Muchas gracias por todo). Don't
+    copy them into a conversation; if a common form is missing, write it under `// NEEDS:`.
 
 ## Tests and sims (the acceptance gate)
 
