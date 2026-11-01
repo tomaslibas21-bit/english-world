@@ -311,6 +311,8 @@ export const baggage: SituationDef = {
       "(tengo | hay) (una maleta | un equipaje | equipaje | una mochila) (perdida | perdido | extraviada | demorado | demorada | retrasada | retrasado)",
       "busco (mi | mis) @bag [y no (la | lo | las | los) encuentro]",
       "@my_bag no (salio | llego) (en | con) mi vuelo",
+      "(aqui | donde) se (reporta | reportan | puede reportar) (una maleta perdida | las maletas perdidas | el equipaje perdido | equipaje perdido | una maleta que no llego)",
+      "@my_bag si llego pero (mi | la | el) @bag no [@belt_tail]",
     ] },
     need_help: { patterns: [
       "(me puede | me podria | puede | podria | me puedes #tip:tu_staff) ayudar", "(puede | podria) ayudarme", "ayudeme", "(necesito | ocupo) ayuda",
@@ -333,7 +335,7 @@ export const baggage: SituationDef = {
     via_ctx: { patterns: [
       "[si] en {via:city} #h:cn_in", "[si] (hice | hicimos | tuve) (escala | una escala | conexion | una conexion | transbordo) en {via:city}", "[si] {via:city}",
       "[si] (una | solo una) (escala | conexion) en {via:city}", "[si] la (escala | conexion) (fue | era) en {via:city}",
-      "[si] (cambie | cambiamos) de avion en {via:city}", "[si] (dos escalas | dos conexiones) en {via:city} y {via2:city}", "[si] en {via:city} [en] @country",
+      "[si] (cambie | cambiamos) de avion en {via:city}", "no (fue | era) [un vuelo] directo (hice | tuvimos | hicimos | tuve) (escala | una escala | conexion) en {via:city}", "[si] (dos escalas | dos conexiones) en {via:city} y {via2:city}", "[si] en {via:city} [en] @country",
     ] },
     flight_num_ctx: { patterns: ["{fnum}", "[el] numero es {fnum}", "es el {fnum}", "el {fnum}"] },
     city_ctx: { patterns: ["{city}", "creo que (de | desde) {city}", "{city} [en] @country", "creo que {city}"] },
@@ -352,12 +354,14 @@ export const baggage: SituationDef = {
       "no creo que tenga marca", "no me acuerdo de la marca",
     ] },
     hand_over: { patterns: [
-      "aqui (esta | tiene | lo tiene | la tiene) #h:t_here", "tenga", "tome", "aqui", "[si] aqui (lo | la) tengo", "[si] (lo | la) tengo [aqui]",
+      "aqui (esta | tiene | lo tiene | la tiene) #h:t_here", "[si] aqui (lo | la) tengo",
       "aqui (esta | tiene) (mi | el) (talon | comprobante | pase de abordar | tarjeta de embarque | boleto | etiqueta | ticket) #h:t_heres",
       "(esta | el talon esta | la etiqueta esta | el comprobante esta | viene) (pegado | pegada) [en] (mi | el) (pase de abordar | tarjeta de embarque | boleto | pasaporte)",
       "(esta | viene) en (mi | el) (pase de abordar | tarjeta de embarque | boleto | pasaporte) #h:t_on_bp",
       "[si] tengo (el talon | la etiqueta | el comprobante | mi pase de abordar | mi tarjeta de embarque) [aqui]",
     ] },
+    // a bare "Aquí", "Tome", "Lo tengo" hands the tag over only at the tag question
+    hand_over_ctx: { patterns: ["aqui", "tenga", "tome", "[si] (lo | la) tengo [aqui]"] },
     tag_lost: { patterns: [
       "[no] creo que (perdi | se me perdio) (el talon | la etiqueta | el comprobante | mi talon | mi comprobante)", "no (tengo | traigo | encuentro) (el talon | la etiqueta | el comprobante | mi talon | mi comprobante | ningun talon)",
       "(perdi | tire | deje en el avion) (el talon | la etiqueta | el comprobante | mi talon | mi comprobante)",
@@ -388,20 +392,20 @@ export const baggage: SituationDef = {
     color_ctx: { patterns: ["{color} [y {color2:color}] #h:c_short", "(una | uno) {color}", "[de] color {color} [y {color2:color}]", "{color} con {color2:color}", "es de color {color}"] },
     type_ctx: { patterns: ["[una | un] {bagtype} #h:tp_short", "es (una | un) {bagtype} #h:tp_its", "(la primera | la primera opcion) [una {bagtype}]"] },
     size_ctx: { patterns: ["{size} #h:sz_short", "(muy | bastante) {size}", "(una | uno | la) {size}", "es {size} #h:sz_its", "[de] tamano {size}", "de las {size}",
-      "no (muy | tan) (grande | chica) [es] {size}", "[es] [como | mas o menos | aproximadamente | unos] [de] {cm:number} (centimetros | cm)",
+      "no (muy | tan) (grande | chica) [es] {size}", "[no] no es {wrong:size} [(es | sino)] {size}", "[es] [como | mas o menos | aproximadamente | unos] [de] {cm:number} (centimetros | cm)",
       "[es] [como | mas o menos] de {inch:number} pulgadas"] },
     material_ctx: { patterns: ["{material} #h:mt_short", "(una | uno) {material}", "{material} @with_feats", "es (una | uno) {material}", "[es] {material} [y] no {wrong:material}", "[no] no es {wrong:material} [(es | sino)] {material}", "(esta hecha | hecha) {material}"] },
     // a bare "Nada." / "Ninguna." means "no marks" only at the marks question
-    marks_bare_ctx: { patterns: ["[no] (nada | ninguna | ninguno | nada de eso)"] },
+    marks_bare_ctx: { patterns: ["[no] (nada | ninguna | ninguno | nada de eso)", "[no] no tiene nada"] },
     // the answer to "¿Tiene algo que la distinga?" without a verb: "Una franja roja", "Muchas calcomanías"
     marks_ctx: { patterns: ["[solo | nada mas] {feat_phrase} [y {feat_phrase}]"] },
     marks_none: { patterns: [
-      "[no] nada especial #h:m_none", "[no] (nada en particular | nada raro)", "[no] no tiene nada [especial | en particular]",
+      "[no] nada especial #h:m_none", "[no] (nada en particular | nada raro)", "[no] no tiene nada (especial | en particular)",
       "[no] no tiene (listones | liston | calcomanias | etiquetas | etiqueta | marcas | ninguna etiqueta | ningun liston | ninguna marca | nada de eso | stickers)",
       "[no] no tiene [ningun | ninguna | un | una] (etiqueta | liston | calcomania | sticker | franja | candado | marca) (con mi nombre | de colores | especial | de ningun tipo)",
       "[no] es (una maleta | una mochila | una bolsa) (normal | sencilla | lisa | comun)", "(sin | ni) (listones | calcomanias | etiquetas | marcas | stickers) [ni (listones | calcomanias | etiquetas | marcas | stickers)]",
     ] },
-    brand: { patterns: ["@it_is (una | un) {brand} #h:b_its", "{brand} #h:b_short", "la marca es {brand}", "creo que es [una | un] {brand}", "es [de] marca {brand}", "es [de] la marca {brand}", "marca {brand}"] },
+    brand: { patterns: ["@it_is (una | un) {brand} #h:b_its", "{brand} #h:b_short", "la marca es {brand}", "creo que es [una | un] {brand}", "[no se] creo que [una | un] {brand}", "es [de] marca {brand}", "es [de] la marca {brand}", "marca {brand}"] },
     contents: { patterns: [
       "[solo | nada mas | puro | pura | mas que nada | sobre todo] {cont_list} [@cont_tail] #h:c_clothes",
       "(hay | tengo | traigo | lleva | trae | llevo | viene) [solo | nada mas] {cont_list} [adentro | en (ella | la maleta)] [@cont_tail] #h:c_in",
@@ -416,7 +420,8 @@ export const baggage: SituationDef = {
       "[si] (llevenla | mandenla | entreguenla | llevenmela | mandenmela | me la llevan | me la mandan) [@to_hotel #to_hotel] #h:dl_yes",
       "[si] @to_hotel #to_hotel",
       // "Sí, pero no al hotel": delivered, but somewhere else (Itzel asks for the address)
-      "[si] [pero] (no al hotel | al hotel no | no a mi hotel | no a el hotel) [a otra direccion | a otro lugar] #to_home",
+      "(si | si pero | pero) (no al hotel | al hotel no | no a mi hotel | no a el hotel) [a otra direccion | a otro lugar] #to_home",
+      "[no] (no al hotel | al hotel no | no a mi hotel) (a otra direccion | a otro lugar | a otra parte) #to_home",
       "[si] (llevenla | mandenla | llevenmela | me la pueden llevar | me la llevan) (a | al) {hotel}",
       "[si] (quiero | prefiero | quisiera | me gustaria) que (me la lleven | la lleven | la manden | me la manden | me la entreguen) [@to_hotel #to_hotel]",
       "[si] (que me la lleven | entrega a domicilio | que la lleven) [@to_hotel #to_hotel]",
@@ -427,13 +432,17 @@ export const baggage: SituationDef = {
       "[yo] (paso por ella | vengo por ella | la recojo | regreso por ella | vuelvo por ella | vengo a recogerla) [aqui | manana | despues | mas tarde | yo] #h:dl_pickup",
       "(prefiero | quiero | quisiera) (recogerla | pasar por ella | venir por ella) [yo] [aqui | manana | en el aeropuerto]",
       "(puedo | podria) (recogerla | pasar por ella | venir por ella) [aqui | manana | en el aeropuerto | yo]",
-      "[no] no (me la lleven | la lleven | la manden | me la manden | necesito que la lleven | quiero que la lleven | quiero que me la lleven | hace falta) [al hotel] [yo (la recojo | paso por ella | vengo por ella)]",
+      "[no] no (me la lleven | la lleven | la manden | me la manden | necesito que la lleven | quiero que la lleven | quiero que me la lleven) [al hotel] [yo (la recojo | paso por ella | vengo por ella)]",
+      "[no] no hace falta (que me la lleven | que la lleven | que la manden | llevarla | mandarla) [al hotel] [yo (la recojo | paso por ella | vengo por ella)]",
+      // "No al hotel, prefiero recogerla": not delivered, picked up
+      "[no] (no al hotel | al hotel no) [gracias] [mejor | prefiero] (la recojo | paso por ella | vengo por ella | recogerla | pasar por ella) [yo] [aqui | manana]",
       "[no] mejor (la recojo | paso por ella | vengo por ella) [yo] [aqui | manana]",
       "la recojo (aqui | en el aeropuerto | en el mostrador) [manana]",
     ] },
     stay: { patterns: [
       "(en | al) [el] {hotel} [@hotel_tail] #h:h_at", "@stay_verb (en | con) [el] {hotel} [@hotel_tail] #h:h_hotel", "[el] {hotel} [@hotel_tail]",
       "[@stay_verb] (en casa de | con) (una amiga | un amigo | mi amiga | mi amigo | mi hermana | mi hermano | mi familia | unos amigos | mi hija | mi hijo) [@hotel_tail] #fam",
+      "no (estoy | me quedo | me hospedo | me estoy quedando) en (un | ningun) hotel [@stay_verb] (en casa de | con) (una amiga | un amigo | mi amiga | mi amigo | mi hermana | mi hermano | mi familia | unos amigos) #fam",
       "[@stay_verb] en (un airbnb | un departamento | una casa | un hostal | una posada | una cabana | un hotel) [@hotel_tail]",
       "[@stay_verb] en [la] (calle | avenida) {street} [numero] [{number}] [@between]",
       "[en] [la] (calle | avenida) {street} [numero] {number} [@between] #h:h_addr",
@@ -448,7 +457,7 @@ export const baggage: SituationDef = {
     phone_ctx: { patterns: ["[el] [mas] {digits}"] },
     phone_none: { patterns: [
       "no tengo (numero | celular | telefono | chip | linea) (mexicano | de aqui | local | de mexico | mexicana) [todavia | aun] #h:ph_none",
-      "[no] no tengo (telefono | celular | numero) aqui", "mi (celular | telefono) no (funciona | sirve | jala) [aqui | en mexico]",
+      "[no] no tengo (telefono | celular | numero) aqui", "[no] no tengo (telefono | celular | cel) [aqui | en mexico]", "mi (celular | telefono) no (funciona | sirve | jala) [aqui | en mexico]",
       "solo tengo (un numero | numero | celular | un celular) (extranjero | de estados unidos | de canada | americano | de fuera)",
       "[mejor] (llamen | llame | pueden llamar | puede llamar) al hotel", "no tengo (chip | sim | linea) [mexicano | mexicana | de aqui]",
     ] },
@@ -457,7 +466,7 @@ export const baggage: SituationDef = {
     q_meantime: { patterns: [
       "que hago (mientras | mientras tanto | esta noche | hoy | ahora | por mientras) [sin (mi ropa | mis cosas | mi maleta)] #h:q_meantime",
       "que (puedo | debo) hacer (mientras tanto | esta noche | hoy | por mientras)", "y (esta noche | hoy | mientras tanto) que hago", "y ahora que [hago]",
-      "no tengo (nada | ropa | mi cepillo de dientes | mis cosas) [para (hoy | esta noche)]",
+      "no tengo (ropa | mi cepillo de dientes | mis cosas) [para (hoy | esta noche)]", "no tengo nada (para (hoy | esta noche) | que ponerme)",
       "(me pueden dar | me dan | tienen | hay) (un kit | algo para la noche | un cepillo de dientes | una playera | una camiseta)",
     ] },
     q_reimburse: { patterns: [
@@ -472,7 +481,8 @@ export const baggage: SituationDef = {
       "[si] necesito (un cepillo de dientes | una playera | una camiseta | algo para esta noche)",
     ] },
     kit_no_ctx: { patterns: [
-      "[no] no (lo | la) necesito", "[no] no necesito (el kit | nada | un kit)", "[no] (tengo | traigo) (todo | mis cosas | mi cepillo | lo necesario) [en mi (mochila | equipaje de mano | maleta de mano | bolsa)]",
+      "[no] no (lo | la) necesito", "[no] no necesito (el kit | nada | un kit)", "[no] (tengo | traigo) (todo | lo necesario) [en mi (mochila | equipaje de mano | maleta de mano | bolsa)]",
+      "[no] (tengo | traigo) (mis cosas | mi cepillo | mi ropa) en mi (mochila | equipaje de mano | maleta de mano | bolsa)", "[no] no hace falta",
       "[no] (estoy bien | asi estoy bien)",
     ] },
     q_call: { patterns: ["(me van a | me va a | me pueden) (llamar | avisar | mandar un mensaje) #h:q_call", "como (voy a saber | me entero)", "(me avisan | me llaman | me escriben) [cuando llegue] [por (whatsapp | mensaje | telefono | correo)]"] },
@@ -523,7 +533,7 @@ export const baggage: SituationDef = {
       t("¿Tiene | el | comprobante | de | su | equipaje?", "Do you have | the | claim tag | of | your | luggage?", "Do you have your baggage claim tag?"),
       t("¿Me | permite | su | comprobante | de | equipaje? | Normalmente | viene | pegado | en | su | pase de abordar.", "(To) me | you-allow | your | claim tag | of | luggage? | Usually | it comes | stuck | on | your | boarding pass.",
         "Can I see your baggage claim tag? It's usually stuck to your boarding pass.",
-        { flags: { 12: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
+        { flags: { 11: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
           neutral: t("¿Me | permite | su | comprobante | de | equipaje? | Normalmente | viene | pegado | en | su | tarjeta de embarque.", "(To) me | you-allow | your | claim tag | of | luggage? | Usually | it comes | stuck | on | your | boarding pass.",
             "Can I see your baggage claim tag? It's usually stuck to your boarding pass.") }),
     ],
@@ -621,8 +631,8 @@ export const baggage: SituationDef = {
     ],
     phone_ok: [t("Listo, | gracias.", "Done, | thanks.", "Got it, thank you.")],
     phone_none_ok: [t("No se preocupe. | Llamamos | al | hotel.", "Don't worry. | We'll call | the | hotel.", "That's okay. We'll call your hotel.")],
-    phone_none_call_us: [t("No se preocupe. | Usted | nos | puede | llamar | con | su | número | de | reporte.", "Don't worry. | You | us | can | call | with | your | number | of | report.",
-      "That's okay. You can call us with your report number.")],
+    phone_none_call_us: [t("No se preocupe. | Usted | nos | puede | llamar: | el | teléfono | viene | en | el | reporte.", "Don't worry. | You | us | can | call: | the | phone number | comes | on | the | report.",
+      "That's okay. You can call us; our number is on the report.")],
     // Courtesy kit and reimbursement
     offer_kit: [
       t("¿Le | doy | un | kit | de | cortesía? | Tiene | cepillo | de | dientes, | pasta | y | una | playera.",
@@ -635,7 +645,7 @@ export const baggage: SituationDef = {
     ],
     kit_here: [t("Aquí tiene.", "Here you go.", "Here you go."), t("Tenga.", "Take it.", "Here you are.")],
     buy_basics: [t("Puede | comprar | lo | indispensable | para | hoy.", "You can | buy | the | essentials | for | today.", "You can buy the basics for tonight.")],
-    receipts: [t("Guarde | sus | recibos | y | le | reembolsamos | lo que | gaste.", "Keep | your | receipts | and | (to) you | we-refund | what | you spend.", "Keep your receipts, and we'll pay you back for what you spend.")],
+    receipts: [t("Guarde | sus | recibos: | le | reembolsamos | los | gastos | básicos.", "Keep | your | receipts: | (to) you | we-refund | the | expenses | basic.", "Keep your receipts, and we'll reimburse basic expenses.")],
     // Report number
     ref_a: [t("Este | es | su | número | de | reporte: | PC-47219.", "This | is | your | number | of | report: | PC-47219.", "Here's your report number: PC-47219.",
       { say: "Este es su número de reporte: pe, ce, cuatro, siete, dos, uno, nueve.", write: "Reporte de equipaje: PC-47219" })],
@@ -665,7 +675,7 @@ export const baggage: SituationDef = {
     ans_call: [t("Sí, | le | llamamos | o | le | mandamos | un | mensaje | cuando | llegue.", "Yes, | (to) you | we-call | or | (to) you | we-send | a | message | when | it arrives.",
       "Yes, we'll call or text you when it arrives.")],
     ans_track: [t("Sí, | en línea, | con | su | número | de | reporte.", "Yes, | online, | with | your | number | of | report.", "Yes, online, with your report number.")],
-    ans_free: [t("Sí, | la | entrega | no tiene | costo.", "Yes, | the | delivery | doesn't have | cost.", "Yes, delivery is free.")],
+    ans_free: [t("La | entrega | es | gratis, | no tiene | ningún | costo.", "The | delivery | is | free, | it doesn't have | any | cost.", "Delivery is free; there's no charge.")],
     ans_what_if: [t("No se preocupe. | Casi | todas | las | maletas | aparecen | en | unos | días.", "Don't worry. | Almost | all | the | bags | turn up | in | a few | days.",
       "Don't worry. Almost all bags turn up within a few days.")],
     ans_copy: [t("Claro, | le | doy | una | copia | del | reporte.", "Sure, | (to) you | I-give | a | copy | of the | report.", "Sure, I'll give you a copy of the report.")],
@@ -817,7 +827,7 @@ export const baggage: SituationDef = {
       lt: "Give your phone number",
       items: [
         { id: "ph_mine", s: t("Mi | número | es | 984 | 123 | 4567.", "My | number | is | 984 | 123 | 4567.", "My number is 984 123 4567.",
-          { say: "Mi número es el nueve ocho cuatro, uno dos tres, cuarenta y cinco, sesenta y siete." }), note: "Mexicans often read the last digits in pairs: cuarenta y cinco, sesenta y siete." },
+          { say: "Mi número es nueve ocho cuatro, uno dos tres, cuarenta y cinco, sesenta y siete." }), note: "Mexicans often read the last digits in pairs: cuarenta y cinco, sesenta y siete." },
         { id: "ph_its", s: t("Es | el | +1 | 512 | 555 | 0142.", "It's | — | +1 | 512 | 555 | 0142.", "It's +1 512 555 0142.",
           { say: "Es el más uno, cinco uno dos, cinco cinco cinco, cero uno, cuarenta y dos.", flags: { 1: "el (número): Spanish puts an article before a phone number; English has no word here." } }) },
         { id: "ph_none", s: t("No tengo | número | mexicano.", "I don't have | number | Mexican.", "I don't have a Mexican number.") },
@@ -911,7 +921,7 @@ export const baggage: SituationDef = {
       no: (c) => { c.s.via = null; ack(c, 0.7); } },
     { id: "tag", when: (c) => c.s.askTag, done: (c) => c.s.tag !== undefined,
       ask: (c) => c.say("ask_tag"),
-      expects: ["hand_over", "tag_lost", "tag_lost_ctx"],
+      expects: ["hand_over", "hand_over_ctx", "tag_lost", "tag_lost_ctx"],
       suggest: [{ lt: "Show your claim tag", hint: "tag" }],
       yes: (c) => { c.s.tag = true; c.say("tag_thanks"); },
       no: (c) => { c.s.tag = false; c.say("tag_none"); } },
@@ -994,8 +1004,8 @@ export const baggage: SituationDef = {
       ask: (c) => c.say("offer_kit"),
       expects: ["q_reimburse", "q_meantime", "kit_yes_ctx", "kit_no_ctx"],
       suggest: [{ lt: "Accept the kit (yes / no)", hint: "g_yesno" }, { lt: "Ask about the costs", hint: "kit" }],
-      yes: (c) => { c.s.kitDone = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
-      no: (c) => { c.s.kitDone = true; c.say("no_problem"); } },
+      yes: (c) => { c.s.kitDone = true; c.s.kitGiven = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
+      no: (c) => { c.s.kitDone = true; c.s.kitGiven = true; c.say("no_problem"); } },
     { id: "ref", done: (c) => !!c.s.refAck,
       ask: (c) => {
         // the number and the tracking line once; after a side question she just waits for the learner
@@ -1057,6 +1067,7 @@ export const baggage: SituationDef = {
       if (c.step === "tag" || (c.s.tag === undefined && c.s.askTag)) { c.s.tag = true; once(c, "tag", "tag_thanks"); return; }
       c.say("thank_you");
     },
+    hand_over_ctx(c) { baggage.handlers.hand_over(c, {}, { intent: "hand_over", slots: {}, tags: [] } as any); },
     tag_lost(c) { c.s.tag = false; c.say("tag_none"); },
     tag_lost_ctx(c) { c.s.tag = false; c.say("tag_none"); },
     describe(c, slots, seg) { takeDescription(c, slots, seg); echoDescription(c); },
@@ -1115,8 +1126,8 @@ export const baggage: SituationDef = {
       c.say("buy_basics"); c.say("receipts");
     },
     q_reimburse(c) { if (c.step === "kit") c.s.kitDone = true; c.say("buy_basics"); c.say("receipts"); },
-    kit_yes_ctx(c) { c.s.kitDone = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
-    kit_no_ctx(c) { c.s.kitDone = true; c.say("no_problem"); },
+    kit_yes_ctx(c) { c.s.kitDone = c.s.kitGiven = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
+    kit_no_ctx(c) { c.s.kitDone = c.s.kitGiven = true; c.say("no_problem"); },
     q_call(c) { c.say("ans_call"); },
     q_track(c) { c.say("ans_track"); },
     q_free(c) { c.say("ans_free"); },
@@ -1260,6 +1271,24 @@ export const baggage: SituationDef = {
     { say: "No perdí mi maleta", intent: "none" },
     { say: "No sé el nombre del hotel", intent: "none", step: "hotel" },
     { say: "No tengo WhatsApp", intent: "none", step: "phone" },
+    // Review traps (s65b review): a bare "no hace falta" is not a pickup, "No, al hotel no" is not a delivery
+    { say: "No, no hace falta", intent: "kit_no_ctx", step: "kit", not: ["pickup"] },
+    { say: "No hace falta", intent: "yn:no", step: "phone", not: ["pickup"] },
+    { say: "No, al hotel no", intent: "none", step: "delivery", not: ["delivery"] },
+    { say: "No al hotel, prefiero recogerla", intent: "pickup", step: "delivery", not: ["delivery"] },
+    { say: "¿Tengo que pagar algo?", intent: "q_free", step: "delivery", not: ["delivery"] },
+    { say: "No tengo mis cosas", intent: "q_meantime", step: "kit", not: ["kit_no_ctx"] },
+    { say: "No tengo nada", intent: "none", step: "phone", not: ["q_meantime", "marks_none"] },
+    { say: "No tengo nada", intent: "none", step: "tag", not: ["marks_none", "hand_over"] },
+    { say: "Aquí", intent: "hand_over_ctx", step: "tag" },
+    { say: "No fue directo, hice escala en Monterrey", intent: "via_ctx", step: "connection", slots: { via: "monterrey" }, not: ["no_connection"] },
+    { say: "No es grande, es chica", intent: "size_ctx", step: "size", slots: { size: "small" } },
+    { say: "No es grande", intent: "none", step: "size", not: ["size_ctx", "describe"] },
+    { say: "No es de tela", intent: "none", step: "material", not: ["material_ctx", "describe"] },
+    { say: "No tiene ruedas", intent: "none", step: "marks", not: ["describe", "marks_ctx"] },
+    { say: "No estoy en un hotel, estoy con unos amigos", intent: "stay", step: "hotel" },
+    { say: "No tengo celular", intent: "phone_none", step: "phone", not: ["phone"] },
+    { say: "No sé, creo que Samsonite", intent: "brand", step: "brand" },
     // Not understood
     { say: "Mi perro baila salsa en la playa", intent: "none" },
     { say: "Quiero un café con leche", intent: "none" },
@@ -1298,6 +1327,11 @@ export const baggage: SituationDef = {
       expect: { complete: true, state: { type: "suitcase", color: "navy", brand: "unknown", contents: "items", delivery: "pickup", hotel: "friend", phone: "none" } },
       auto: omit(BG_AUTO, ["flight", "describe", "color", "marks", "brand", "contents", "delivery", "hotel", "phone"]),
       setup: (s) => { s.foundTwist = false; s.askSize = false; s.askMarks = true; s.askBrand = true; s.askContents = true; } },
+    // the kit is declined with "no hace falta" (the delivery stays), then "¿Qué hago mientras tanto?" isn't answered with the kit again
+    { name: "kit declined, then what to do in the meantime", turns: ["Mi maleta no llegó.", "Vuelo 482 de Houston.", "Es una maleta negra.", "Sí, por favor.", "En el Hotel Mar Azul.", "984 123 4567",
+      "No, no hace falta, gracias.", "¿Qué hago mientras tanto?", "Gracias."],
+      expect: { complete: true, state: { delivery: "deliver", kitGiven: true, kitDone: true } }, auto: omit(BG_AUTO, ["describe", "delivery", "hotel", "phone", "kit", "ref"]),
+      setup: (s) => { s.foundTwist = false; s.askTag = false; s.askConnection = false; s.askSize = false; s.askMaterial = false; s.askMarks = false; s.askBrand = false; s.askContents = false; s.offerKit = true; } },
   ],
 };
 

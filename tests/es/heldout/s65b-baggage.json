@@ -1,0 +1,51 @@
+{ "situation": "s65b-baggage", "items": [
+  { "ctx": "problem", "say": "Hola, mi maleta no salió en la banda", "intent": "problem" },
+  { "ctx": "problem", "say": "Buenas tardes, no encuentro mi equipaje", "intent": "problem" },
+  { "ctx": "problem", "say": "Creo que perdieron mi maleta", "intent": "problem" },
+  { "ctx": "problem", "say": "Necesito ayuda, por favor", "intent": ["need_help", "problem"] },
+  { "ctx": "problem", "say": "Quiero reportar una maleta perdida", "intent": "problem" },
+  { "ctx": "problem", "say": "Ya encontré mi maleta, gracias", "intent": "any", "not": ["problem"], "note": "trap: the bag is found" },
+
+  { "ctx": "flight", "say": "Vengo de Chicago", "intent": ["flight", "city_ctx"] },
+  { "ctx": "flight", "say": "No me acuerdo del número de vuelo", "intent": ["dunno_ctx", "flight"] },
+  { "ctx": "flight", "say": "El vuelo cuatro ochenta y dos de Nueva York", "intent": ["flight", "flight_num_ctx"] },
+
+  { "ctx": "connection", "say": "Sí, hice escala en Houston", "intent": ["via_ctx", "flight"] },
+  { "ctx": "connection", "say": "No, fue un vuelo directo", "intent": "no_connection", "not": ["via_ctx"] },
+  { "ctx": "connection", "say": "No hice escala", "intent": "no_connection", "not": ["via_ctx"], "note": "trap: negation" },
+
+  { "ctx": "tag", "say": "Sí, aquí lo tiene", "intent": ["hand_over", "yn:yes"] },
+  { "ctx": "tag", "say": "Está pegado en mi pase de abordar", "intent": "hand_over" },
+  { "ctx": "tag", "say": "Creo que lo perdí", "intent": ["tag_lost", "yn:no"] },
+  { "ctx": "tag", "say": "No lo tengo", "intent": ["tag_lost", "yn:no"], "not": ["hand_over"], "note": "trap: negation" },
+
+  { "ctx": "describe", "say": "Es una maleta grande y negra con rueditas", "intent": "describe" },
+  { "ctx": "describe", "say": "Es una mochila azul", "intent": "describe" },
+  { "ctx": "type", "say": "Una maleta de rueditas", "intent": ["type_ctx", "describe"] },
+  { "ctx": "color", "say": "Gris oscuro", "intent": ["color_ctx", "describe"] },
+  { "ctx": "color", "say": "No es negra, es azul marino", "intent": ["describe_fix", "color_ctx", "describe"], "note": "trap: correction" },
+  { "ctx": "size", "say": "Mediana", "intent": ["size_ctx", "describe"] },
+  { "ctx": "material", "say": "Es de plástico duro", "intent": ["material_ctx", "describe"] },
+  { "ctx": "material", "say": "Es de tela, no es rígida", "intent": ["material_ctx", "describe"], "note": "trap: negation" },
+  { "ctx": "marks", "say": "Tiene un listón rojo en el asa", "intent": ["marks_ctx", "describe"] },
+  { "ctx": "marks", "say": "No, nada especial", "intent": ["marks_none", "yn:no"] },
+  { "ctx": "brand", "say": "No sé la marca", "intent": ["dunno_ctx", "yn:no", "brand"] },
+  { "ctx": "contents", "say": "Solo ropa y zapatos", "intent": "contents" },
+  { "ctx": "contents", "say": "Mis medicinas están adentro", "intent": "contents" },
+
+  { "ctx": "delivery", "say": "¿Me la pueden llevar al hotel?", "intent": ["delivery", "yn:yes"] },
+  { "ctx": "delivery", "say": "Prefiero recogerla aquí en el aeropuerto", "intent": "pickup", "not": ["delivery"] },
+  { "ctx": "delivery", "say": "No, no me la manden, yo vengo por ella", "intent": ["pickup", "yn:no"], "not": ["delivery"], "note": "trap: negation" },
+  { "ctx": "delivery", "say": "¿Cuánto cuesta la entrega?", "intent": "q_free", "not": ["delivery"], "note": "trap: asking the price is not a yes" },
+
+  { "ctx": "hotel", "say": "Me quedo en el Hotel Mar Azul", "intent": "stay" },
+  { "ctx": "phone", "say": "Mi celular es nueve ocho cuatro, uno dos tres, cuarenta y cinco, sesenta y siete", "intent": ["phone", "phone_ctx"] },
+  { "ctx": "phone", "say": "No tengo número mexicano", "intent": "phone_none", "not": ["phone", "phone_ctx"], "note": "trap: negation" },
+
+  { "ctx": "kit", "say": "Sí, gracias, me sirve mucho", "intent": ["kit_yes_ctx", "yn:yes"] },
+  { "ctx": "kit", "say": "No, gracias, no lo necesito", "intent": ["kit_no_ctx", "yn:no"], "not": ["kit_yes_ctx"], "note": "trap: negation" },
+  { "ctx": "kit", "say": "¿Me van a reembolsar la ropa que compre?", "intent": "q_reimburse" },
+
+  { "ctx": "ref", "say": "¿Me lo puede escribir, por favor?", "intent": "g_write" },
+  { "ctx": "ref", "say": "¿Cuándo me la entregan?", "intent": "q_when" }
+] }
