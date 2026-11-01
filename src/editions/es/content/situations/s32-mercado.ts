@@ -561,6 +561,10 @@ export const mercado: SituationDef = {
     { say: "No, mejor no quiero los mangos", intent: "reject", not: ["order"] },
     { say: "No cilantro", intent: "reject", not: ["order"] },
     // not understood
+    // learners' Spain forms are correct answers too: patata, vosotros, vale
+    { say: "¿Me pone un kilo de patatas?", intent: "order", slots: { items: { item: { product: "papa" } } } },
+    { say: "¿Tenéis aguacates?", intent: "ask_have", slots: { product: "aguacate" } },
+    { say: "Vale, es todo", intent: "more_no", step: "more" },
     { say: "kilo", intent: "none" },
     { say: "mi hermano trabaja en un banco", intent: "none" },
   ],

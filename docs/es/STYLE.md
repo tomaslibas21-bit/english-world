@@ -22,6 +22,18 @@ decisions and the rules every conversation follows. The models that show all of 
   - Words Mexico shares with most of Latin America are not "Mexican-only": celular, carro is Mexican (auto/coche are
     neutral — twin it), plátano, papa, jugo, departamento (twin: apartamento), manejar, estacionamiento,
     computadora, boleto (twin: pasaje where it matters), recámara (twin: dormitorio/habitación).
+- **Learners' Spain forms are correct answers** (owner, 1 Nov 2026). The town's people never say them (no Spain
+  voices, no vosotros in the game's own lines), but the checking accepts them like synonyms, with no tip:
+  - **vosotros** when the learner addresses two or more people: "¿Tenéis mesa?", "¿Qué queréis tomar?" (the engine
+    reads the common verbs' vosotros forms as their ustedes forms; `grammarClasses` in `src/editions/es/convo/lang.ts`);
+  - **Spain words**: coche (carro), móvil (celular), ordenador (computadora), zumo (jugo), patata (papa), coger (tomar),
+    conducir (manejar), aparcar (estacionar), gafas (lentes), melocotón (durazno), judías (frijoles), gamba (camarón):
+    the engine reads them as the Mexican word (`SPAIN` in lang.ts), so a pattern with "celular" also takes "móvil";
+  - **vale** (okay), **ponme / me pone** (Spain's way to order): in the yes answers and the order patterns.
+  - Each conversation's tests include a few of them (the models have three or four each). A Spain word that isn't
+    in `SPAIN` yet goes into the entity's `forms` or the pattern, or under `// NEEDS:`.
+  - Why: the town is Mexican, so Spain Spanish from its people would sound wrong, and a Spain switch would mean
+    voicing nearly every line twice; but a learner who learned "zumo" or "vosotros" is right and is understood.
 - **People:** a new Mexican cast with local names and looks (`src/editions/es/content/npcs.ts`). The owner makes new
   pictures with ChatGPT later; until then conversations show the 3D view. The 315 Maple Harbor pictures don't carry
   over.

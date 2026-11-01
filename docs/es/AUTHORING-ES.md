@@ -89,8 +89,9 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 ## Tests and sims (the acceptance gate)
 
 - At least **40 NLU tests**: every hint pattern; natural alternatives; short answers with their `step`; tú to staff;
-  gender slips; spellings without accents; the Mexican and the neutral word; **at least 5 negation / meaning-safety
-  tests** (`not: [...]` or `intent: "none"`); 3 or more sentences that must not be understood.
+  gender slips; spellings without accents; the Mexican and the neutral word; **at least 3 Spain forms** (vosotros, a
+  Spain word, vale: STYLE.md); **at least 5 negation / meaning-safety tests** (`not: [...]` or `intent: "none"`);
+  3 or more sentences that must not be understood.
 - At least **4 sims** that complete on all 12 seeds: the happy path, one with questions and changes of mind, one per
   twist (forced with `setup`), one with the learner's short answers. Use `auto` answers (in Spanish) for optional
   questions, as the models do. A sim's turns are what a learner really says, in Spanish, with accents or without.

@@ -19,13 +19,24 @@ const INFORMAL: Record<string, string> = {
   okey: "ok", oki: "ok", okis: "ok", okay: "ok", vale: "vale", aki: "aqui", ntp: "no te preocupes", grax: "gracias", graxias: "gracias",
 };
 
+/** Spain's words, which learners may know: read as the Mexican word the patterns use (owner's decision, 1 Nov 2026:
+ *  a learner's Spain forms count as correct; the town's people never say them). Applied to what the learner says and
+ *  to the patterns alike. */
+const SPAIN: Record<string, string> = {
+  movil: "celular", moviles: "celulares", ordenador: "computadora", ordenadores: "computadoras", zumo: "jugo", zumos: "jugos",
+  patata: "papa", patatas: "papas", coche: "carro", coches: "carros", coger: "tomar", cojo: "tomo", coge: "toma", coges: "tomas",
+  cogemos: "tomamos", conducir: "manejar", conduzco: "manejo", conduce: "maneja", aparcar: "estacionar", aparcamiento: "estacionamiento",
+  gafas: "lentes", melocoton: "durazno", melocotones: "duraznos", judias: "frijoles", gamba: "camaron", gambas: "camarones",
+  vosotros: "ustedes", vosotras: "ustedes", os: "les", vuestro: "su", vuestra: "su", vuestros: "sus", vuestras: "sus",
+};
+
 const PLEASE_ONE = new Set(["porfa", "porfavor", "porfis", "xfa", "plis", "please"]);
 
 /** Spanish endings, longest first: a stem shared by two forms is the same word ("pago", "pagar", "pagué"). */
-const ENDINGS = ["aciones", "acion", "iendo", "ando", "aron", "ieron", "abamos", "iamos", "arian", "erian", "irian",
+const ENDINGS = ["aciones", "acion", "asteis", "isteis", "areis", "ereis", "abais", "iais", "iendo", "ando", "aron", "ieron", "abamos", "iamos", "arian", "erian", "irian",
   "aria", "eria", "iria", "aras", "eras", "iras", "aste", "iste", "amos", "emos", "imos", "aban", "aba", "abas", "ian", "ias", "ia",
   "ados", "adas", "idos", "idas", "ado", "ada", "ido", "ida", "ara", "iera", "are", "ere", "ire",
-  "ar", "er", "ir", "as", "es", "an", "en", "os", "o", "a", "e", "s"] as const;
+  "ais", "eis", "ar", "er", "ir", "as", "es", "an", "en", "os", "is", "o", "a", "e", "s"] as const;
 function stems(w: string): string[] {
   const out = new Set([w]);
   for (const e of ENDINGS) if (w.endsWith(e) && w.length - e.length >= 3) out.add(w.slice(0, -e.length));
@@ -68,6 +79,7 @@ export const LANG: LangPack = {
   ordinalSuffix: /(\d)(er|ra|ro|do|da|to|ta|vo|va|mo|ma|no|na)\b/g,
   expand(tok) {
     if (INFORMAL[tok]) return [INFORMAL[tok]];
+    if (SPAIN[tok]) return [SPAIN[tok]];
     return [tok.replace(/'/g, "")];
   },
   softFillers: new Set(["eh", "ehh", "eeh", "em", "emm", "ehm", "mm", "mmm", "mmh", "hmm", "hm", "um", "umm", "uhm", "uh", "uhh", "er", "erm"]),
@@ -101,15 +113,15 @@ export const LANG: LangPack = {
     ["mi", "mis"], ["tu", "tus"], ["su", "sus"], ["nuestro", "nuestra", "nuestros", "nuestras"],
     ["usted", "tu"], ["le", "te"], ["por", "para"], ["que", "cual"], ["cuanto", "cuanta", "cuantos", "cuantas"],
     ["bien", "bueno", "buena"], ["mucho", "mucha", "muchos", "muchas", "muy"],
-    ["es", "son", "era", "fue", "sea"], ["soy", "estoy"], ["somos", "estamos"],
-    ["quiero", "quieres", "quiere", "queremos", "quieren", "quisiera", "quisieras", "queria", "querria"],
-    ["puedo", "puedes", "puede", "podemos", "pueden", "podria", "podrias", "pudiera", "pude", "pudo"],
-    ["tengo", "tienes", "tiene", "tenemos", "tienen", "tenia", "tuve"],
-    ["voy", "vas", "va", "vamos", "van", "iba"], ["hago", "haces", "hace", "hacemos", "hacen", "hice", "hizo"],
-    ["doy", "das", "da", "damos", "dan", "dio"], ["digo", "dices", "dice", "decimos", "dicen", "dije", "dijo"],
-    ["traigo", "traes", "trae", "traemos", "traen", "traje", "trajo"], ["pongo", "pones", "pone", "ponemos", "ponen", "puse", "puso"],
-    ["salgo", "sales", "sale", "salimos", "salen"], ["vengo", "vienes", "viene", "venimos", "vienen"],
-    ["necesito", "necesitas", "necesita", "necesitamos", "necesitan"], ["pago", "pagas", "paga", "pagamos", "pagan", "pague", "pagar"],
+    ["es", "son", "sois", "era", "fue", "sea"], ["soy", "estoy"], ["somos", "estamos"], ["estan", "estais"],
+    ["quiero", "quieres", "quiere", "queremos", "quieren", "quereis", "quisiera", "quisieras", "queria", "querria"],
+    ["puedo", "puedes", "puede", "podemos", "pueden", "podeis", "podria", "podrias", "pudiera", "pude", "pudo"],
+    ["tengo", "tienes", "tiene", "tenemos", "tienen", "teneis", "tenia", "tuve"],
+    ["voy", "vas", "va", "vamos", "van", "vais", "iba"], ["hago", "haces", "hace", "hacemos", "hacen", "haceis", "hice", "hizo"],
+    ["doy", "das", "da", "damos", "dan", "dais", "dio"], ["digo", "dices", "dice", "decimos", "dicen", "decis", "dije", "dijo"],
+    ["traigo", "traes", "trae", "traemos", "traen", "traeis", "traje", "trajo"], ["pongo", "pones", "pone", "ponemos", "ponen", "poneis", "puse", "puso"],
+    ["salgo", "sales", "sale", "salimos", "salen", "salis"], ["vengo", "vienes", "viene", "venimos", "vienen", "venis"],
+    ["necesito", "necesitas", "necesita", "necesitamos", "necesitan", "necesitais"], ["pago", "pagas", "paga", "pagamos", "pagan", "pagais", "pague", "pagar"],
   ],
   inflectionVariant(a, b) {
     if (Math.min(a.length, b.length) < 3) return false;
@@ -133,7 +145,7 @@ export const LANG: LangPack = {
   keepDroppable: () => false,
   // what an English speaker adds: subject pronouns above all ("yo quiero", "usted tiene"), and Mexican fillers
   skippable: new Map([
-    ["yo", 0.1], ["tu", 0.15], ["usted", 0.15], ["nosotros", 0.2],
+    ["yo", 0.1], ["tu", 0.15], ["usted", 0.15], ["ustedes", 0.15], ["nosotros", 0.2],
     ["el", 0.2], ["la", 0.2], ["los", 0.2], ["las", 0.2], ["un", 0.2], ["una", 0.2],
     ["de", 0.3], ["que", 0.3], ["a", 0.3], ["en", 0.3], ["es", 0.3], ["esta", 0.3], ["me", 0.25], ["se", 0.3],
     ["muy", 0.2], ["solo", 0.1], ["nomas", 0.1], ["tambien", 0.2], ["ya", 0.2], ["pues", 0.15], ["bueno", 0.2],
@@ -181,9 +193,9 @@ export const LANG: LangPack = {
     if (rest.length > 1) out.push(rest[rest.length - 1], rest[0]);
     return [...new Set(out)];
   },
-  yesLead: "si | claro | claro que si | por supuesto | sale | va | ok | esta bien | perfecto | de acuerdo | si gracias | exacto | asi es | correcto | eso | andale | orale | si si | si claro | si senor | si senora | con gusto | como no | desde luego | sin problema | no hay problema | si por favor | si exacto | si correcto | si es correcto | si esta bien | ah si | oh si | bueno si",
+  yesLead: "vale | si vale | si | claro | claro que si | por supuesto | sale | va | ok | esta bien | perfecto | de acuerdo | si gracias | exacto | asi es | correcto | eso | andale | orale | si si | si claro | si senor | si senora | con gusto | como no | desde luego | sin problema | no hay problema | si por favor | si exacto | si correcto | si es correcto | si esta bien | ah si | oh si | bueno si",
   noLead: "no | no gracias | no muchas gracias | todavia no | aun no | ahorita no | ahora no | hoy no | la verdad no | lo siento no | perdon no | mejor no | no perdon | no no",
-  yes: "si | claro | claro que si | por supuesto | con gusto | como no | desde luego | me parece bien | me parece perfecto | esta bien | perfecto | de acuerdo | muy bien | sale | va | sale y vale | orale | andale | dale | si claro | si exacto | eso es | exacto | correcto | asi es | si es correcto | si esta bien | si eso es | seria genial | si seria genial | me encantaria | si me encantaria | creo que si | yo creo que si | supongo que si | probablemente | si si | si senor | si senora | si joven | adelante | si adelante | ok | ok gracias | si gracias | si muchas gracias | claro gracias | perfecto gracias | si tengo | si quiero | si puedo | si es | si soy | si estoy | si hay | si lo tengo | si la tengo | si lo quiero | si lo necesito | si me gustaria | me gustaria | si por favor | si porfa | sin problema | no hay problema | si sin problema | ok perfecto | va perfecto | si de acuerdo | si esta perfecto | bueno si | ah si | si eso | asi esta bien",
+  yes: "vale | si vale | vale gracias | vale perfecto | vale vale | si | claro | claro que si | por supuesto | con gusto | como no | desde luego | me parece bien | me parece perfecto | esta bien | perfecto | de acuerdo | muy bien | sale | va | sale y vale | orale | andale | dale | si claro | si exacto | eso es | exacto | correcto | asi es | si es correcto | si esta bien | si eso es | seria genial | si seria genial | me encantaria | si me encantaria | creo que si | yo creo que si | supongo que si | probablemente | si si | si senor | si senora | si joven | adelante | si adelante | ok | ok gracias | si gracias | si muchas gracias | claro gracias | perfecto gracias | si tengo | si quiero | si puedo | si es | si soy | si estoy | si hay | si lo tengo | si la tengo | si lo quiero | si lo necesito | si me gustaria | me gustaria | si por favor | si porfa | sin problema | no hay problema | si sin problema | ok perfecto | va perfecto | si de acuerdo | si esta perfecto | bueno si | ah si | si eso | asi esta bien",
   no: "no | no gracias | no muchas gracias | no estoy bien gracias | no gracias estoy bien | estoy bien gracias | no asi esta bien | asi esta bien gracias | es todo | eso es todo | seria todo | nada mas | no nada mas | no es todo | no eso es todo | no seria todo | por ahora no | ahorita no | ahora no | hoy no | todavia no | aun no | no todavia | creo que no | no creo | no lo creo | para nada | no para nada | claro que no | por supuesto que no | no no | no tengo | no quiero | no puedo | no es | no soy | no estoy | no hay | no lo tengo | no la tengo | no lo quiero | no lo necesito | no hace falta | no es necesario | no se preocupe | no te preocupes | no perdon | lo siento no | no lo siento | la verdad no | no la verdad | no tanto | no mucho | no exactamente | no es correcto | no eso no | mejor no | no mejor no | no gracias asi estoy bien | no por ahora | no por hoy | paso | nel | nop",
   ynConnectors: "pero | y | entonces | tambien | y tambien | asi que",
   connectors: "y | y tambien | tambien | pero | ah y | y luego | luego | entonces | o | y ademas | ademas | ah y tambien | y otra cosa",

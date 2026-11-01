@@ -9,5 +9,8 @@ import "@fontsource/eb-garamond/600.css";
 import "@fontsource/gentium-book-plus/400.css";
 import "./ui/styles.css";
 import { App } from "./ui/App";
+import { initVariety } from "./state/variety";
 
+// the Spanish edition: Mexican or neutral Spanish, as the learner chose (nothing in the English edition)
+initVariety();
 createRoot(document.getElementById("root")!).render(<App />);

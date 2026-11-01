@@ -75,7 +75,7 @@ export const taxi: SituationDef = {
   intents: {
     dest: { patterns: [
       "@to {dest} #h:d_to", "@take_me @to {dest} #h:d_take", "@take_me {dest}", "(voy | vamos | necesito ir | quiero ir) @to {dest} #h:d_need",
-      "[es] @to {dest}", "{dest}", "para {dest}", "(al | a la) {dest} por favor",
+      "[es] @to {dest}", "{dest}", "para {dest}", "(al | a la) {dest} por favor", "(quiero | necesito) tomar un taxi @to {dest}",
     ] },
     ask_fare: { patterns: ["cuanto (me cobra | cobra | es | seria | cuesta) [@to {dest}] #h:f_cuanto", "cuanto (me cobra | cobra) hasta {dest}", "en cuanto (me lleva | sale) [@to {dest}]",
       "cuanto (es | cuesta) el viaje [@to {dest}]", "@take_me @to {dest} cuanto (me cobra | es)", "que precio [tiene | es] @to {dest}", "cuanto me cobras #tip:tu_staff"] },
@@ -94,7 +94,7 @@ export const taxi: SituationDef = {
     ] },
     pay_cash: { patterns: ["aqui tiene #h:p_here", "tenga", "aqui esta", "le pago en efectivo", "aqui tiene {price}", "tenga {price}"] },
     keep_change: { patterns: ["quedese con el cambio #h:p_keep", "(asi esta | asi) bien", "el cambio es para usted", "no me de cambio"] },
-    pay_card: { patterns: ["(acepta | aceptan) tarjeta #h:p_card", "puedo pagar con tarjeta", "con tarjeta"] },
+    pay_card: { patterns: ["(acepta | aceptan) tarjeta #h:p_card", "(puedo pagar | pago | le pago) con (tarjeta | el celular | mi celular)", "con (tarjeta | el celular)"] },
     ask_receipt: { patterns: ["(me da | me puede dar) (un)? (recibo | comprobante | ticket)", "(necesito | quisiera) (un)? (recibo | comprobante | ticket)"] },
     dest_unknown: { patterns: ["@to {w:any}", "@take_me @to {w:any}"] },
   },
@@ -408,6 +408,10 @@ export const taxi: SituationDef = {
     { say: "No voy al centro", intent: "none" },
     { say: "No quiero ir al aeropuerto", intent: "none" },
     // not understood
+    // learners' Spain forms are correct answers too: coger un taxi, vale, el móvil
+    { say: "Quiero coger un taxi al centro", intent: "dest", slots: { dest: "centro" } },
+    { say: "Vale, vamos", intent: "accept", step: "fare" },
+    { say: "Pago con el móvil", intent: "pay_card", step: "pay" },
     { say: "aeropuerto banana ventana", intent: "none" },
     { say: "Mi perro se llama Max", intent: "none" },
   ],

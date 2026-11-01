@@ -52,8 +52,8 @@ EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/review.ts s68-hotel -
 npx vitest run
 ```
 plus at least 40 NLU tests (every hint pattern; natural alternatives; short answers with their step; tú to staff;
-gender slips; unaccented spellings; Mexican and neutral words; at least 5 meaning-safety tests and 3 that must not be
-understood) and at least 4 sims that complete on 12/12 seeds (the happy path; questions and a change of mind; each
+gender slips; unaccented spellings; Mexican and neutral words; at least 3 learners' Spain forms such as vosotros,
+"zumo" or "vale", which count as correct; at least 5 meaning-safety tests and 3 that must not be understood) and at least 4 sims that complete on 12/12 seeds (the happy path; questions and a change of mind; each
 twist forced with `setup`; short answers).
 
 **In the pull request, write:** what the conversation covers, the gate's output, any line you weren't sure about,

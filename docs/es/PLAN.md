@@ -49,7 +49,7 @@ npx tsx tools/check-content.ts                                                  
 And the conversation itself must have:
 - the English conversation's steps, intents and twists (unless its brief changes them), written for a Mexican town;
 - at least 40 NLU tests (every hint pattern, alternatives, short answers, tú to staff, slips, unaccented spellings,
-  Mexican and neutral words), at least 5 meaning-safety tests and 3 not-understood ones;
+  Mexican and neutral words, at least 3 Spain forms), at least 5 meaning-safety tests and 3 not-understood ones;
 - at least 4 sims (happy path, questions and changes of mind, each twist forced, short answers), 12/12 seeds;
 - every line glossed by the conventions (docs/es/STYLE.md), every multiword unit registered;
 - a neutral twin on every line with a Mexican-only word, and not too many of those (about one line in eight);

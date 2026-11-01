@@ -254,7 +254,7 @@ export const cafe: SituationDef = {
         "quisiera #h:quisiera", "me gustaria #h:quisiera", "quisiera pedir", "quisiera ordenar", "me gustaria pedir",
         "me da #h:me_da", "me das #h:me_da #tip:tu_staff", "deme #h:deme", "dame #tip:tu_staff",
         "me puede dar #h:me_puede_dar", "me podria dar #h:me_puede_dar", "me puedes dar #tip:tu_staff", "me podrias dar #tip:tu_staff",
-        "me regala", "me trae", "me sirve", "sirvame",
+        "me regala", "me trae", "me sirve", "sirvame", "me pone", "pongame", "ponme #tip:tu_staff", "me pones #tip:tu_staff",
         "quiero #h:quiero", "quiero pedir", "quiero ordenar", "queremos", "quisieramos",
         "voy a querer #h:voy_a_querer", "vamos a querer", "voy a pedir", "voy a tomar", "le pido",
         "para mi #h:para_mi", "a mi me da", "tambien (quisiera | quiero | me da) #h:food_also", "y tambien (quisiera | me da)",
@@ -1213,6 +1213,11 @@ export const cafe: SituationDef = {
     { say: "Más despacio, por favor", intent: "g_slower" },
     { say: "Estoy aprendiendo español", intent: "g_learning" },
     // not understood
+    // learners' Spain forms are correct answers too (owner, 1 Nov 2026): vosotros, ponme, vale, móvil
+    { say: "¿Me pones un capuchino?", intent: "order", slots: { items: { item: { drink: "cappuccino" } } } },
+    { say: "¿Tenéis leche de avena?", intent: "ask_have", slots: { thing: { milk: "oat" } } },
+    { say: "Vale, para llevar", intent: "dine_ans", step: "dine" },
+    { say: "¿Puedo pagar con el móvil?", intent: "pay_phone", step: "pay" },
     { say: "Ryan", intent: "none" },
     { say: "la máquina banana bicicleta", intent: "none" },
     { say: "Ayer fui a la playa con mi perro", intent: "none" },
