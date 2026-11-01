@@ -1,0 +1,54 @@
+{ "situation": "s64a-checkin", "items": [
+  { "ctx": "hello", "say": "Buenos días, vengo a documentar mi maleta", "intent": "checkin" },
+  { "ctx": "hello", "say": "Hola, quiero hacer el check-in para mi vuelo a la Ciudad de México", "intent": ["checkin", "dest_ans"] },
+  { "ctx": "hello", "say": "¿Es aquí para el vuelo a México?", "intent": ["checkin", "dest_ans"] },
+
+  { "ctx": "dest", "say": "A la CDMX", "intent": "dest_ans", "note": "common abbreviation" },
+  { "ctx": "dest", "say": "Voy a la Ciudad de México, el vuelo PC 223", "intent": "dest_ans" },
+  { "ctx": "dest", "say": "No voy a Guadalajara, voy a la Ciudad de México", "intent": "dest_ans", "not": ["dest_neg", "dest_unknown"], "note": "trap: No X, Y correction" },
+
+  { "ctx": "dest_confirm", "say": "Sí, correcto", "intent": ["affirm", "yn:yes"] },
+  { "ctx": "dest_confirm", "say": "No, ese no es mi vuelo", "intent": ["deny", "yn:no"], "not": ["affirm", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "passport", "say": "Claro, aquí tiene mi pasaporte", "intent": "give" },
+  { "ctx": "passport", "say": "Tome", "intent": "give" },
+  { "ctx": "passport", "say": "Un momento, lo estoy buscando", "intent": "find_it" },
+
+  { "ctx": "bags", "say": "Una maleta nada más", "intent": ["bags_ans", "bags_num_ctx"] },
+  { "ctx": "bags", "say": "Solo esta", "intent": ["bags_ans", "bags_num_ctx"] },
+  { "ctx": "bags", "say": "Dos maletas", "intent": ["bags_ans", "bags_num_ctx"] },
+  { "ctx": "bags", "say": "No, solo traigo equipaje de mano", "intent": ["bags_none", "bags_none_ctx"], "not": ["bags_ans", "bags_num_ctx"], "note": "trap: negation" },
+  { "ctx": "bags", "say": "No voy a documentar nada, nada más llevo la mochila", "intent": ["bags_none", "bags_none_ctx"], "not": ["bags_ans", "bags_num_ctx"], "note": "trap: the backpack is not a checked bag" },
+
+  { "ctx": "packed", "say": "Sí, yo la hice", "intent": ["packed_yes", "yn:yes"] },
+  { "ctx": "packed", "say": "No, me la hizo mi esposa", "intent": ["packed_no", "yn:no"], "not": ["packed_yes", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "battery", "say": "No, ninguna", "intent": ["battery_no", "battery_no_ctx", "yn:no"] },
+  { "ctx": "battery", "say": "Sí, traigo un cargador portátil", "intent": ["battery_yes", "yn:yes"] },
+  { "ctx": "battery", "say": "¿Qué es un power bank?", "intent": ["powerbank_q", "what_ctx"] },
+  { "ctx": "battery", "say": "En la maleta no, la batería la traigo en la mochila", "intent": ["battery_no", "battery_no_ctx"], "not": ["battery_yes"], "note": "trap: lost comma, the power bank is in the carry-on" },
+
+  { "ctx": "scale", "say": "¿Aquí la pongo?", "intent": ["scale_where", "give"] },
+  { "ctx": "scale", "say": "Listo", "intent": ["ack_done", "give"] },
+
+  { "ctx": "overweight", "say": "¿Cuánto tengo que pagar?", "intent": "ask_fee" },
+  { "ctx": "overweight", "say": "Voy a sacar unas cosas y meterlas en mi mochila", "intent": ["move_items", "move_items_ctx"] },
+  { "ctx": "overweight", "say": "No quiero pagar, mejor saco algunas cosas", "intent": ["move_items", "move_items_ctx"], "not": ["pay_fee", "pay_fee_ctx"], "note": "trap: refusal then choice" },
+  { "ctx": "overweight", "say": "Está bien, pago el sobrepeso", "intent": ["pay_fee", "pay_fee_ctx"] },
+  { "ctx": "overweight", "say": "¿Cuál es el límite de peso?", "intent": "ask_limit" },
+
+  { "ctx": "fee", "say": "¿Puedo pagar con tarjeta?", "intent": ["pay_card", "give"] },
+  { "ctx": "fee", "say": "En efectivo", "intent": "pay_cash" },
+
+  { "ctx": "seat", "say": "Ventana, por favor", "intent": "seat_ans", "slots": { "seat": "window" } },
+  { "ctx": "seat", "say": "Me da igual", "intent": "seat_any" },
+  { "ctx": "seat", "say": "No quiero ventanilla, mejor pasillo", "intent": "seat_ans", "slots": { "seat": "aisle" }, "note": "trap: Spain ventanilla refused, aisle chosen" },
+
+  { "ctx": "no_window_middle", "say": "No, en medio no", "intent": ["seat_neg", "yn:no"], "not": ["seat_ans", "yn:yes"], "note": "trap: refusing the middle seat" },
+
+  { "ctx": "bp", "say": "¿A qué hora empiezan a abordar?", "intent": "ask_boarding_time" },
+  { "ctx": "bp", "say": "¿Cuál es mi puerta?", "intent": "ask_gate" },
+  { "ctx": "bp", "say": "¿El vuelo va a salir a tiempo?", "intent": ["ask_ontime", "ask_delayed"] },
+  { "ctx": "bp", "say": "Disculpe, ¿dónde está el aseo?", "intent": "ask_restroom", "note": "Spain: aseo" },
+  { "ctx": "bp", "say": "No, no tengo más preguntas, gracias", "intent": "more_no", "not": ["more_q"], "note": "trap: negation" }
+] }

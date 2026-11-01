@@ -224,7 +224,7 @@ function expectOverweight(c: Ctx) {
 function startMoving(c: Ctx) { c.say("ow_move_ok"); expectMoving(c); }
 function expectMoving(c: Ctx) {
   ask(c, {
-    id: "moving", expects: ["ack_done", "give", "give_ctx", "move_items"], hints: ["moving"],
+    id: "moving", expects: ["ack_done", "give", "give_ctx", "move_items", "pay_fee_ctx"], hints: ["moving"],
     suggest: [{ lt: "Say you've moved the things", hint: "moving" }],
     on: {
       ack_done: (cc) => { reweigh(cc); },
@@ -233,6 +233,8 @@ function expectMoving(c: Ctx) {
       g_ok: (cc) => { reweigh(cc); },
       move_items: (cc) => { reweigh(cc); },
       pay_fee: (cc) => { startFee(cc); },
+      // "No quiero sacar nada" after all: the fee (its price was said with the options)
+      pay_fee_ctx: (cc) => { startFee(cc); },
     },
     yes: (cc) => { reweigh(cc); },
     no: (cc) => { cc.say("g_take_time"); expectMoving(cc); },
@@ -253,11 +255,13 @@ function expectFee(c: Ctx) {
     cc.event("pay", { method: cc.s.payCash ? "cash" : "card", amount: FEE });
     cc.say("ow_fee_paid");
   };
+  // "No, ya no quiero pagar" may arrive as "ya" + a refusal: a "listo" / "ok" with a no in it never pays
+  const done = (cc: Ctx) => { if (/\bno\b/.test(fold(cc.heard))) { cc.say("ow_ask"); expectOverweight(cc); return; } paid(cc); };
   ask(c, {
-    id: "fee", expects: ["give", "give_ctx", "pay_card", "pay_cash", "ack_done", "move_items"], hints: ["fee"],
+    id: "fee", expects: ["give", "give_ctx", "pay_card", "pay_cash", "ack_done", "move_items", "move_items_ctx"], hints: ["fee"],
     suggest: [{ lt: "Pay by card or in cash", hint: "fee" }, { lt: "Move things after all", hint: "ow_move" }],
     on: {
-      give: (cc) => { paid(cc); }, give_ctx: (cc) => { paid(cc); }, ack_done: (cc) => { paid(cc); }, g_ok: (cc) => { paid(cc); },
+      give: (cc) => { paid(cc); }, give_ctx: (cc) => { paid(cc); }, ack_done: (cc) => { done(cc); }, g_ok: (cc) => { done(cc); },
       pay_fee: (cc) => { paid(cc); }, pay_fee_ctx: (cc) => { paid(cc); },
       pay_card: (cc) => { cc.s.payCash = false; paid(cc); },
       pay_cash: (cc) => { if (cc.s.payCash) { paid(cc); return; } cashOk(cc); },
@@ -334,7 +338,8 @@ function expectBagCount(c: Ctx, line = "bags_how_many") {
       bags_none: (cc) => { setBags(cc, 0); },
       bags_none_ctx: (cc) => { setBags(cc, 0); },
     },
-    yes: (cc) => { setBags(cc, 1); },
+    // a bare "Sí" to "¿Cuántas?" doesn't say how many: ask once more, then take one
+    yes: (cc) => { if (line === "bags_count_q") { setBags(cc, 1); return; } expectBagCount(cc, "bags_count_q"); },
     no: (cc) => { setBags(cc, 0); },
     ask: (cc) => cc.say("bags_how_many"),
   });
@@ -362,22 +367,22 @@ function expectPacked(c: Ctx) {
       ask: (c3) => c3.say("packed_follow") });
   };
   ask(c, {
-    id: "packed", expects: ["packed_yes", "packed_no"], hints: ["packed"],
+    id: "packed", expects: ["packed_yes", "packed_no", "packed_yes_ctx", "packed_no_ctx"], hints: ["packed"],
     suggest: [{ lt: "Say you packed it yourself", hint: "packed" }],
     yes: ok, no: follow,
-    on: { packed_yes: (cc) => { ok(cc); }, packed_no: (cc) => { follow(cc); } },
+    on: { packed_yes: (cc) => { ok(cc); }, packed_no: (cc) => { follow(cc); }, packed_yes_ctx: (cc) => { ok(cc); }, packed_no_ctx: (cc) => { follow(cc); } },
     ask: (cc) => cc.say(cc.s.bags >= 2 ? "ask_packed_many" : "ask_packed"),
   });
 }
 
 function expectBattery(c: Ctx) {
   const none = (cc: Ctx) => { cc.s.safetyDone = true; cc.say("battery_ok"); };
-  const has = (cc: Ctx) => {
-    cc.twist("power_bank");
-    cc.say("battery_move");
+  const has = (cc: Ctx, again = false) => {
+    if (!again) { cc.twist("power_bank"); cc.say("battery_move"); }
+    else { cc.say("battery_must"); cc.say("battery_move_q"); } // a refusal gets the reason and a short re-ask, not the whole line again
     ask(cc, { id: "battery_move", expects: ["ack_done", "give", "give_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Agree to move it", hint: "g_yesno" }],
       yes: (c3) => { c3.s.safetyDone = true; c3.say("battery_thanks"); },
-      no: (c3) => { c3.say("battery_must"); has(c3); },
+      no: (c3) => { has(c3, true); },
       on: {
         ack_done: (c3) => { c3.s.safetyDone = true; c3.say("battery_thanks"); },
         give: (c3) => { c3.s.safetyDone = true; c3.say("battery_thanks"); },
@@ -387,13 +392,14 @@ function expectBattery(c: Ctx) {
       ask: (c3) => c3.say("battery_move_q") });
   };
   ask(c, {
-    id: "battery", expects: ["battery_no", "battery_no_ctx", "battery_yes", "powerbank_q", "what_ctx"], hints: ["battery"],
+    id: "battery", expects: ["battery_no", "battery_no_ctx", "battery_yes", "battery_yes_ctx", "powerbank_q", "what_ctx"], hints: ["battery"],
     suggest: [{ lt: "Say whether there are batteries in the bag", hint: "battery" }],
-    yes: has, no: none,
+    yes: (cc) => { has(cc); }, no: none,
     on: {
       battery_no: (cc) => { none(cc); },
       battery_no_ctx: (cc) => { none(cc); },
       battery_yes: (cc) => { has(cc); },
+      battery_yes_ctx: (cc) => { has(cc); },
       g_dontknow: (cc) => { cc.s.safetyDone = true; cc.say("battery_unsure"); },
     },
     ask: (cc) => cc.say(cc.s.bags >= 2 ? "ask_battery_many" : "ask_battery"),
@@ -456,6 +462,7 @@ export const checkin: SituationDef = {
       "(es | aqui es | es aqui | este es) [el] (@ci | mostrador | fila | linea | cola) [(de | para) [el] vuelo [@city_to] | (de | para) {city} | @city_to] #isthis",
       "(aqui | es aqui | aqui es) donde (se documenta | se hace el @ci | documento | hago el @ci | se factura) [@for_flight] #isthis",
       "(es | aqui es) (la fila | el mostrador | la linea) (para | de) (documentar | el @ci) #isthis",
+      "(es aqui | aqui es | es aca) (para | de) [el | mi] (vuelo [@city_to] | @ci | {city}) #isthis",
     ] },
     dest_ans: { patterns: [
       "@city_to #h:dest_to",
@@ -467,11 +474,14 @@ export const checkin: SituationDef = {
       "(tengo | traigo) [un | mi] (vuelo | boleto | reservacion | reserva) @city_to [a {time} | hoy | en la manana]",
       "[mi vuelo es | es | tengo] [el] vuelo [pc | pe ce] [numero] {number} [@city_to]",
       "{number} @city_to",
-      "[es] el vuelo de {time} [@city_to] #time",
+      "[es | tengo | traigo] el vuelo de {time} [@city_to] #time",
       "@city_to (de ida | solo de ida | redondo | de ida y vuelta | por trabajo | de vacaciones | por negocios)",
       "(perdon | disculpe) [quise decir | quiero decir] [a] {city}",
       "(quise decir | quiero decir | digo | mejor dicho) [a] {city}",
       "{city} (es mi destino | es correcto)",
+      // a correction: the second city is the answer ("No voy a Guadalajara, voy a la Ciudad de México"; rule 10)
+      "no [voy | viajo | vuelo] (a | para) {bad:city} [sino] [(voy | viajo | vuelo)] @city_to #fix",
+      "(a | para) {bad:city} no [sino] [(voy | viajo | vuelo)] @city_to #fix",
     ] },
     dest_unknown: { patterns: [
       "(vuelo | viajo | volamos | viajamos) (a | para) {w:any}",
@@ -485,6 +495,8 @@ export const checkin: SituationDef = {
       "no (me acuerdo | recuerdo | se) (del | el | de mi | mi) (numero de vuelo | vuelo | destino | numero)",
       "(olvide | se me olvido) (el numero de vuelo | el numero | mi destino | el destino)",
     ] },
+    // a bare "No me acuerdo" answers "¿A dónde viaja?" only there
+    lookup_ctx: { patterns: ["[no] no (me acuerdo | recuerdo | lo recuerdo | estoy seguro | estoy segura)", "se me olvido", "(lo | la) olvide"] },
     dest_neg: { patterns: [
       "no @city_to", "no (voy | viajo | vuelo | vamos) @city_to", "no (quiero | voy a) (ir | viajar | volar) @city_to", "{city} no",
     ] },
@@ -520,9 +532,12 @@ export const checkin: SituationDef = {
       "(un momento | un segundo | un momentito) (lo | la) (busco | saco | encuentro)",
       "(lo | la) (busco | saco) [de (mi | la) (mochila | bolsa)]",
       "donde (esta | deje | puse) mi pasaporte", "(lo | la) (tengo | traigo) en (mi | la) (mochila | bolsa | bolsa de mano)",
+      "[un momento | un segundo | un momentito] (lo | la) estoy buscando", "[un momento | un segundo] estoy buscando (mi | el) pasaporte",
+      "(ahorita | ahora | enseguida | ya) se lo (doy | paso | entrego)",
     ] },
     bags_ans: { patterns: [
-      "(solo | nada mas | nomas | solamente) una [maleta | valija] #h:bags_one #one",
+      // a bare "Solo una" is bags_num_ctx: at "¿Algo más?" it means "just one question"
+      "(solo | nada mas | nomas | solamente) una (maleta | valija) #h:bags_one #one",
       "(solo | nada mas | nomas | solamente) (esta | esta maleta | esta de aqui | esta grande | la grande | mi maleta) #h:bags_this #one",
       "(voy a documentar | documento | quiero documentar | quisiera documentar | voy a facturar | facturo | quiero facturar) {number} [@bagword] #h:bags_checking",
       "(voy a documentar | documento | quiero documentar | voy a facturar | facturo) (esta | esta maleta | mi maleta | la maleta | esta de aqui) #one",
@@ -531,10 +546,12 @@ export const checkin: SituationDef = {
       "[traigo | tengo | llevo] {number} @bagword y [una | mi | un] (mochila | equipaje de mano | maleta de mano | bolsa | backpack | mochila de mano)",
       "(esta maleta | esta de aqui | la grande | esta grande | la maleta grande) [nada mas | nomas | solamente] #one",
       "(las dos | ambas | estas dos | los dos | las tres) #two",
-      "{number} [@bagword] [una] (grande | mediana | chica | pequena) y [una | otra] (grande | mediana | chica | pequena)",
+      // "Una grande y una chica" is two bags, not one
+      "[{number} [@bagword]] [una] (grande | mediana | chica | pequena) y [una | otra] (grande | mediana | chica | pequena) #pair",
     ] },
-    // a bare number answers "¿Cuántas?" / "¿Documenta equipaje?" only there
-    bags_num_ctx: { patterns: ["[solo | nada mas | nomas] {n:bagnum} [nada mas | nomas]", "{n:bagnum} de ellas"] },
+    // a bare number answers "¿Cuántas?" / "¿Documenta equipaje?" only there; a correction keeps the last number
+    bags_num_ctx: { patterns: ["[solo | nada mas | nomas] {n:bagnum} [nada mas | nomas]", "{n:bagnum} de ellas",
+      "no (es | son) (una | uno | dos | tres | cuatro) [@bagword] son {n:bagnum} [@bagword]", "(son | mejor) {n:bagnum} [@bagword]"] },
     bags_none: { patterns: [
       "[no] (solo | nada mas | nomas | solamente) (traigo | llevo | tengo | voy con) @carry_only #h:bags_none",
       "[no] (solo | nada mas | nomas | solamente) @carry_only [nada mas | nomas]",
@@ -555,7 +572,11 @@ export const checkin: SituationDef = {
       "(mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | mi familia | mi hermana | mi hermano) (la hizo | me ayudo | me la hizo | la empaco | las hizo)",
       "(la hizo | las hizo | la empaco) (mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | otra persona | alguien mas)",
       "no (la | las) hice yo", "no (la | las) hice", "me (ayudaron | ayudo alguien)",
+      "(me la hizo | me las hizo | me la empaco) (mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | mi familia | mi hermana | mi hermano | otra persona)",
     ] },
+    // bare "Sí, yo" / "No, mi esposa" answer "¿Usted mismo hizo su maleta?" only there
+    packed_yes_ctx: { patterns: ["[si] (yo | yo mismo | yo misma | yo sola | yo solo)"] },
+    packed_no_ctx: { patterns: ["[no] (mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | mi familia | mi hermana | mi hermano | otra persona | alguien mas)"] },
     battery_no: { patterns: [
       "no (traigo | llevo | tengo | hay | lleva) [ningun | ninguna | ningunas | ningunos | un | una | unas | unos] @batt [en (la maleta | ella | mi maleta)]",
       "(mi | el | la) (cargador portatil | power bank | bateria portatil | cargador | bateria) (esta | va) @in_carry #h:battery_carryon_x",
@@ -564,8 +585,10 @@ export const checkin: SituationDef = {
     ] },
     // "Lo traigo en mi mochila", "Nada de eso", "Solo ropa": answers to the battery question only
     battery_no_ctx: { patterns: [
-      "[no] no (traigo | llevo | tengo) nada (de eso | asi | parecido) #h:battery_no",
+      "[no] no (traigo | llevo | tengo) nada (de eso | asi | parecido) [en la maleta] #h:battery_no",
       "(lo | la | los | las) (traigo | llevo | tengo) @in_carry #h:battery_carryon",
+      // "En la maleta no, la batería la traigo en la mochila"
+      "(en la maleta no | no en la maleta | en la maleta nada)", "[mi | el | la] @batt (lo | la | los | las) (traigo | llevo | tengo) @in_carry",
       "(esta | estan | va | van) @in_carry",
       "[no] (nada | ninguno | ninguna) [de eso]",
       "[no] (solo | nada mas | nomas) (ropa | mi ropa | ropa y zapatos | el cargador del celular | un cargador | cables | libros | zapatos)",
@@ -574,9 +597,10 @@ export const checkin: SituationDef = {
     battery_yes: { patterns: [
       "[si] (traigo | llevo | tengo | hay | creo que traigo | creo que tengo | creo que hay) (un | una | mi | unas | unos | dos) @batt [en (la maleta | ella | mi maleta)] #h:battery_yes",
       "[si] (un | una | mi) (cargador portatil | power bank | bateria portatil | bateria externa)",
-      "si (traigo | tengo | llevo) (uno | una)",
       "(hay | traigo | va) (una laptop | mi laptop | una computadora | mi computadora | una camara | una tableta) en (la maleta | ella)",
     ] },
+    // a bare "Sí, traigo uno" answers the battery question only there (at "¿Alguna duda?" it was "Sí, tengo otra pregunta")
+    battery_yes_ctx: { patterns: ["si (traigo | tengo | llevo) (uno | una)", "(traigo | tengo | llevo) (uno | una)"] },
     powerbank_q: { patterns: [
       "que es (un | una | el | la) (power bank | cargador portatil | bateria portatil | bateria de litio | bateria externa) #h:q_powerbank",
       "que (significa | quiere decir) (power bank | cargador portatil | bateria portatil)",
@@ -599,8 +623,9 @@ export const checkin: SituationDef = {
     move_items: { patterns: [
       "(voy a | puedo | dejeme | dejame | quiero | prefiero | mejor) (pasar | cambiar | mover | poner | meter) @things (a | en) @carry #h:ow_move",
       "(paso | cambio | muevo | meto | pongo) @things (a | en) @carry",
-      "(puedo | voy a | dejeme | dejame | prefiero | mejor) (sacar | quitar) @things [de la maleta] #h:ow_take_out",
-      "(mejor | entonces) (saco | quito) @things [de la maleta]", "(saco | quito) @things [de la maleta]",
+      "(puedo | voy a | dejeme | dejame | prefiero | mejor) (sacar | quitar) @things [de la maleta] [y (meterlas | meterlos | pasarlas | pasarlos | ponerlas | ponerlos) (a | en) @carry] #h:ow_take_out",
+      "(mejor | entonces) (saco | quito) @things [de la maleta] [y (las | los) (meto | paso | pongo) (a | en) @carry]", "(saco | quito) @things [de la maleta]",
+      "(es mucho | es mucho dinero | esta caro | ni modo) [mejor | entonces] (saco | quito | paso) @things [(a | en) @carry]",
       "(me pongo | me voy a poner | voy a ponerme | puedo ponerme | mejor me pongo) @things #h:ow_wear",
       "(voy a | puedo | dejeme | dejame) (reacomodar | acomodar | arreglar) (la maleta | mi maleta | las cosas)",
       "(es | esta) (muy | demasiado) caro (mejor | entonces | asi que) (saco | paso | quito) @things [(a | en) @carry]",
@@ -608,13 +633,14 @@ export const checkin: SituationDef = {
     ] },
     // "No quiero pagar": a refusal of the fee only while the overweight question is open
     move_items_ctx: { patterns: [
-      "no (quiero | voy a) pagar [el sobrepeso | el cargo | eso | extra | tanto | el exceso]", "(prefiero | mejor) no pagar [el sobrepeso | eso]",
+      "[ya] no (quiero | voy a) pagar [el sobrepeso | el cargo | eso | extra | tanto | el exceso]", "(prefiero | mejor) no pagar [el sobrepeso | eso]",
+      "no pago [nada] [mejor] (saco | quito | paso) @things [(a | en) @carry]",
     ] },
     pay_fee: { patterns: [
       "(prefiero | quiero | voy a | mejor | puedo) pagar [el | ese] (sobrepeso | cargo | exceso | extra) #h:ow_pay",
       "(pago | mejor pago) [el | ese] (sobrepeso | cargo | exceso | extra)",
       "(lo pago | se lo pago | mejor lo pago | prefiero pagarlo | voy a pagarlo | lo voy a pagar | mejor pago)",
-      "(prefiero | mejor) pagar", "(esta bien | bueno) [lo] pago",
+      "(prefiero | mejor) pagar", "(esta bien | bueno) [lo] pago", "ni modo [lo | se lo] (pago | pagamos)",
     ] },
     // "No quiero sacar nada": then the fee, only while the overweight question is open
     pay_fee_ctx: { patterns: [
@@ -667,6 +693,8 @@ export const checkin: SituationDef = {
       "no (importa | me importa)", "no tengo preferencia", "(ventana o pasillo | cualquiera de los dos) (me da igual | da igual | no importa)",
       "lo que tenga [disponible]", "(el que | como) usted (quiera | diga)", "(da | es) igual", "me es indiferente",
     ] },
+    // Lost commas (rule 10): "Ventana no, pasillo" and "Ventana, no pasillo" sound the same, so Emilio asks which
+    seat_amb: { patterns: ["{seat} no [mejor] {other:seat} [por favor] #amb"] },
     // "¿Cuál me recomienda?": Emilio explains window and aisle
     seat_rec: { patterns: ["(cual | que) me (recomienda | recomiendas #tip:tu_staff | sugiere)", "(cual | que) es mejor [ventana o pasillo]", "(ventana o pasillo) cual es mejor"] },
     seat_neg: { patterns: [
@@ -682,7 +710,9 @@ export const checkin: SituationDef = {
       "no tengo (mas preguntas | otra pregunta | preguntas | dudas | ninguna pregunta | ninguna duda)",
       "(ninguna | ninguna pregunta | ninguna duda)", "(es | seria) todo por ahora",
     ] },
-    more_q: { patterns: ["(tengo | una) (una pregunta | pregunta | duda | una duda)", "(otra | una) pregunta [mas]", "(le puedo | puedo) preguntar algo", "si una pregunta"] },
+    more_q: { patterns: ["(tengo | una) (una pregunta | pregunta | duda | una duda)", "(otra | una) pregunta [mas]", "(le puedo | puedo) preguntar algo", "si una pregunta",
+      // "No, solo tengo una pregunta" (with or without the comma) still has a question
+      "[no] (solo | nada mas | nomas | solamente) [tengo] (una | otra) (pregunta | duda) [mas]", "(todavia | aun) tengo (una | otra) (pregunta | duda)", "[si] tengo otra (pregunta | duda)"] },
     ask_ontime: { patterns: [
       "[el vuelo | mi vuelo] (sale | va | esta | llega) a tiempo #h:q_ontime", "(sale | va) a tiempo [el vuelo | mi vuelo]", "(el vuelo | mi vuelo) (sale | va) a la hora",
       "(sale | va) puntual [el vuelo]", "(va | esta) en horario [el vuelo]",
@@ -707,7 +737,7 @@ export const checkin: SituationDef = {
       "(a donde | adonde | por donde) (voy | sigo | paso) (ahora | despues)", "que hago ahora",
     ] },
     ask_duration: { patterns: [
-      "cuanto (dura | tarda | tiempo dura | tiempo es) [el vuelo]", "a que hora (llegamos | llega el vuelo | aterrizamos) [a la ciudad de mexico]",
+      "cuanto (dura | tarda | tiempo dura | tiempo es) [el vuelo]", "a que hora (llegamos | llega el vuelo | aterrizamos | llego) [a la ciudad de mexico] #arrive",
       "cuanto (se hace | se tarda) [a la ciudad de mexico]", "cuantas horas (son | es) [de vuelo]",
     ] },
     ask_carryon: { patterns: [
@@ -715,7 +745,8 @@ export const checkin: SituationDef = {
       "(esta | mi) (mochila | bolsa | maleta de mano) (esta bien | cuenta | pasa | sirve) como equipaje de mano", "puedo llevar (esto | esta) conmigo",
       "(la mochila | mi mochila | esta mochila) (va | puede ir) conmigo",
     ] },
-    ask_seatnum: { patterns: ["cual es mi asiento", "(que | cual) asiento (tengo | me toco | me dio | es)", "donde me (siento | toco)", "(que | cual) numero de asiento [tengo]"] },
+    ask_seatnum: { patterns: ["cual es mi asiento", "(que | cual) asiento (tengo | me toco | me dio | es)", "donde me (siento | toco)", "(que | cual) numero de asiento [tengo]",
+      "cual es el numero de mi asiento", "(que | cual) es mi lugar"] },
     ask_bagfee: { patterns: [
       "(tengo que | hay que) pagar (por | la | el) (maleta | equipaje | mi maleta) #h:q_fee", "(la maleta | el equipaje | mi maleta) (tiene costo | cuesta | se paga | esta incluida | esta incluido)",
       "(cuesta | cuanto cuesta) documentar [la maleta | una maleta]", "(esta incluida | incluye) la maleta",
@@ -847,7 +878,7 @@ export const checkin: SituationDef = {
         { flags: { 1: "mismo / misma: yourself; it agrees with you (a man or a woman)." } }),
     ],
     packed_ok: [t("Perfecto, | gracias.", "Perfect, | thanks.", "Great, thank you."), t("Muy | bien.", "Very | good.", "Okay.")],
-    packed_follow: [t("Muy | bien. | ¿Sabe | qué | lleva | adentro?", "Very | good. | Do you know | what | it carries | inside?", "Okay. Do you know what's inside?")],
+    packed_follow: [t("Muy | bien. | ¿Sabe | qué | lleva | adentro?", "Very | good. | Do you know | what | you carry | inside?", "Okay. Do you know what's inside?")],
     packed_follow_ok: [t("Muy | bien, | gracias.", "Very | good, | thanks.", "Okay, thanks.")],
     ask_battery: [
       t("¿Lleva | baterías | de | litio | o | cargadores | portátiles | en | la | maleta?", "Do you carry | batteries | of | lithium | or | chargers | portable | in | the | suitcase?",
@@ -860,9 +891,9 @@ export const checkin: SituationDef = {
     ],
     battery_ok: [t("Perfecto, | gracias.", "Perfect, | thanks.", "Great, thanks."), t("Muy | bien, | perfecto.", "Very | good, | perfect.", "Okay, great.")],
     battery_move: [
-      t("Los | cargadores | portátiles | tienen | que | ir | en | el | equipaje de mano. | ¿Lo | puede | cambiar, | por favor?",
-        "The | chargers | portable | have | to | go | in | the | carry-on. | It | can you | move, | please?",
-        "Power banks have to go in your carry-on. Could you move it, please?", { flags: { 9: "lo: it, the power bank (el cargador)." } }),
+      t("Los | cargadores | portátiles | tienen | que | ir | en | el | equipaje de mano. | ¿Lo | puede | sacar, | por favor?",
+        "The | chargers | portable | have | to | go | in | the | carry-on. | It | can you | take out, | please?",
+        "Power banks have to go in your carry-on. Could you take it out, please?", { flags: { 9: "lo: it, the power bank (el cargador)." } }),
     ],
     battery_move_q: [t("¿Lo | puede | pasar | a | su | equipaje de mano, | por favor?", "It | can you | move | to | your | carry-on, | please?", "Could you move it to your carry-on, please?")],
     battery_must: [t("Lo siento, | no puede | ir | en | la | maleta | documentada.", "I'm sorry, | it can't | go | in | the | suitcase | checked.", "Sorry, it can't go in a checked bag.")],
@@ -900,10 +931,10 @@ export const checkin: SituationDef = {
     ow_options: [
       t("Hay | un | cargo | de | {$price} | por | sobrepeso, | o | puede | pasar | algunas | cosas | a | su | equipaje de mano.",
         "There is | a | charge | of | {$price} | for | excess weight, | or | you can | move | some | things | to | your | carry-on.",
-        "There's a {$price} overweight fee, or you can move a few things to your carry-on."),
+        "There's an overweight fee of {$price}, or you can move a few things to your carry-on."),
       t("Puede | pasar | algunas | cosas | a | su | equipaje de mano | o | pagar | {$price} | de | sobrepeso.",
         "You can | move | some | things | to | your | carry-on | or | pay | {$price} | of | excess weight.",
-        "You can move a few things to your carry-on or pay a {$price} overweight fee."),
+        "You can move a few things to your carry-on or pay an overweight fee of {$price}."),
     ],
     ow_ask: [t("¿Prefiere | sacar | algunas | cosas | o | pagar | el | sobrepeso?", "Do you prefer | to take out | some | things | or | to pay | the | excess weight?",
       "Would you rather take a few things out or pay the fee?")],
@@ -930,6 +961,8 @@ export const checkin: SituationDef = {
     no_need_bag: [t("No hace falta. | Su | maleta | pesa | menos | de | 25 | kilos.", "No need. | Your | suitcase | weighs | less | than | 25 | kilos.", "No need. Your bag is under 25 kilos.",
       { say: "No hace falta. Su maleta pesa menos de veinticinco kilos." })],
     nothing_to_pay: [t("Hoy | no tiene | que | pagar | nada.", "Today | you don't have | to | pay | anything.", "There's nothing to pay today.")],
+    // asked before the bag is weighed: the fee isn't known yet, so no "nothing to pay"
+    pay_methods: [t("Sí, | aceptamos | tarjeta | y | efectivo.", "Yes, | we-accept | card | and | cash.", "Yes, we take cards and cash.")],
     ask_seat: [
       t("¿Ventana | o | pasillo?", "Window | or | aisle?", "Window or aisle?"),
       t("¿Prefiere | ventana | o | pasillo?", "Do you prefer | window | or | aisle?", "Would you like a window or an aisle seat?"),
@@ -956,6 +989,7 @@ export const checkin: SituationDef = {
     seat_pref_middle: [t("Claro, | le | busco | uno | en medio.", "Sure, | (for) you | I-look-for | one | in the middle.", "Sure, I'll find you a middle seat.")],
     seat_neg_window: [t("Entonces, | ¿pasillo?", "Then, | aisle?", "So, an aisle seat?")],
     seat_neg_aisle: [t("Entonces, | ¿ventana?", "Then, | window?", "So, a window seat?")],
+    seat_which: [t("Perdón, | ¿{X} | o | {Y}?", "Sorry, | {X} | or | {Y}?", "Sorry, {X} or {Y}?")],
     seat_neg_both: [t("Claro. | Entonces, | ¿ventana | o | pasillo?", "Sure. | Then, | window | or | aisle?", "Sure. Window or aisle, then?")],
     no_window: [t("Lo siento, | ya | no hay | asientos | de | ventana.", "I'm sorry, | already | there are no | seats | of | window.", "Sorry, the window seats are all taken.")],
     no_window_q: [t("¿Le | doy | uno | de | pasillo?", "(To) you | I-give | one | of | aisle?", "Is an aisle seat okay?")],
@@ -1017,6 +1051,9 @@ export const checkin: SituationDef = {
       t("Seguridad | está | derecho, | pasando | la | cafetería.", "Security | is | straight ahead, | past | the | café.", "Security is straight ahead, past the café."),
     ],
     duration: [t("Son | más o menos | dos | horas.", "It's | more or less | two | hours.", "It's about two hours.")],
+    // "¿A qué hora llegamos?" gets a when, kept vague (the flight time and the time zones aren't stated)
+    arrive: [t("Son | más o menos | dos | horas | de | vuelo, | así que | llega | a | media mañana.", "It's | more or less | two | hours | of | flight, | so | you arrive | at | mid-morning.",
+      "It's about a two-hour flight, so you'll get there mid-morning.")],
     carryon_ok: [t("Sí, | esa | mochila | está bien | como | equipaje de mano.", "Yes, | that | backpack | is fine | as | carry-on.", "Sure, that backpack is fine as a carry-on.")],
     seatnum: [t("Su | asiento | es | el | {$seat}.", "Your | seat | is | — | {$seat}.", "Your seat is {$seat}.", { flags: { 3: "el (asiento): Spanish puts an article before the seat number." } })],
     bagfee_info: [t("Su | tarifa | incluye | una | maleta | documentada, | así que | no tiene | costo.", "Your | fare | includes | one | suitcase | checked, | so | it doesn't have | cost.",
@@ -1202,6 +1239,7 @@ export const checkin: SituationDef = {
     "con calma": { reason: "lexical_expression", split: "con → with + calma → calm is the fixed phrase: take your time.", minimal: "Two words." },
     "una por una": { reason: "lexical_expression", split: "una → one + por → by + una → one is the distributive adverb: one at a time.", minimal: "Three words." },
     "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less is the fixed adverb roughly.", minimal: "Three words." },
+    "media mañana": { reason: "lexical_expression", split: "media → half + mañana → morning misreads the fixed phrase: mid-morning.", minimal: "Two words." },
     "así que": { reason: "lexical_expression", split: "así → like this + que → that misreads the connector: so.", minimal: "Two words." },
     "no hace falta": { reason: "lexical_expression", split: "no → not + hace → makes + falta → lack misreads the fixed phrase: no need.", minimal: "Three words." },
   },
@@ -1227,7 +1265,7 @@ export const checkin: SituationDef = {
     { id: "dest", done: (c) => !!c.s.dest || !!c.s.lookup,
       // asked again (after "Quiero hacer el check-in"): a short "¿Y a dónde viaja?", not the same question
       ask: (c) => { c.say(c.s.destAsked ? "ask_dest_again" : "ask_dest"); c.s.destAsked = true; },
-      expects: ["dest_ans", "checkin", "lookup"],
+      expects: ["dest_ans", "checkin", "lookup", "lookup_ctx"],
       suggest: [{ lt: "Say where you're flying", hint: "dest" }],
       help: (c) => { c.s.lookup = true; c.say("lookup_help"); c.say("ask_passport"); } },
     { id: "passport", done: (c) => !!c.s.passport,
@@ -1263,7 +1301,7 @@ export const checkin: SituationDef = {
         }
         c.say("ask_seat");
       },
-      expects: ["seat_ans", "seat_any", "seat_neg", "seat_rec"],
+      expects: ["seat_ans", "seat_any", "seat_neg", "seat_rec", "seat_amb"],
       suggest: [{ lt: "Choose a seat: window or aisle", hint: "seat", options: "seat" }],
       help: (c) => { c.say("seat_help"); c.say("ask_seat"); } },
     { id: "bp", when: (c) => !!c.s.seatNo, done: (c) => !!c.s.moreDone,
@@ -1337,6 +1375,8 @@ export const checkin: SituationDef = {
     },
     give(c, slots) {
       const docs = [slots.doc, slots.doc2].filter(Boolean) as string[];
+      // the engine forgives o/a slips, so "Tengo…" can reach the pattern "Tenga": that hands nothing over
+      if (!docs.length && /^(si |no )?tengo\b/.test(fold(c.heard).trim())) return;
       const isId = docs.some((d) => d === "passport" || d === "resident" || d === "id");
       if (!c.s.passport && docs.length && !isId) { c.say("pp_only"); c.hold(); return; }
       if (!c.s.passport) { passportGiven(c); return; }
@@ -1355,7 +1395,10 @@ export const checkin: SituationDef = {
     find_it(c) { c.say("g_take_time"); c.hold(); },
     bags_ans(c, slots, seg) {
       const tags: string[] = seg.tags || [];
-      const n = typeof slots.number === "number" ? slots.number : tags.includes("two") ? (/tres/.test(fold(c.heard)) ? 3 : 2) : 1;
+      // once the bags are on the scale, a stray "una maleta" changes nothing
+      if (c.s.bags !== undefined && (c.s.weighed || c.s.owShown) && c.step !== "bags") { c.say("ack"); return; }
+      const said = typeof slots.number === "number" ? slots.number : undefined;
+      const n = tags.includes("pair") ? Math.max(said ?? 2, 2) : said ?? (tags.includes("two") ? (/tres/.test(fold(c.heard)) ? 3 : 2) : 1);
       if (n < 1 || n > 4) { expectBagCount(c); return; }
       setBags(c, n);
     },
@@ -1373,7 +1416,11 @@ export const checkin: SituationDef = {
       c.say("ack");
     },
     battery_no_ctx(c) { c.s.safetyDone = true; c.say("battery_ok"); },
-    battery_yes(c) { c.twist("power_bank"); c.say("battery_move"); },
+    battery_yes_ctx(c) { c.say("ack"); },
+    packed_yes_ctx(c, slots, seg) { checkin.handlers.packed_yes(c, slots, seg); },
+    packed_no_ctx(c, slots, seg) { checkin.handlers.packed_no(c, slots, seg); },
+    // volunteered outside the battery question: the rule, without a question nobody can answer
+    battery_yes(c) { c.say(c.s.bags > 0 ? "battery_unsure" : "ack"); },
     powerbank_q(c) { c.say("powerbank_what"); },
     what_ctx(c) { c.say("powerbank_what"); },
     ack_done(c) {
@@ -1399,12 +1446,13 @@ export const checkin: SituationDef = {
     },
     pay_fee_ctx(c) { if (c.s.owShown && !c.s.owDone) startFee(c); else c.say("nothing_to_pay"); },
     // "¿Puedo pagar con tarjeta?" while the overweight question is open = I'll pay the fee
-    pay_card(c) { if (c.s.owShown && !c.s.owDone) { startFee(c); return; } c.say("nothing_to_pay"); },
-    pay_cash(c) { if (c.s.owShown && !c.s.owDone) { cashOk(c); return; } c.say("nothing_to_pay"); },
+    pay_card(c) { if (c.s.owShown && !c.s.owDone) { startFee(c); return; } c.say(c.s.bags > 0 && !c.s.weighed ? "pay_methods" : "nothing_to_pay"); },
+    pay_cash(c) { if (c.s.owShown && !c.s.owDone) { cashOk(c); return; } c.say(c.s.bags > 0 && !c.s.weighed ? "pay_methods" : "nothing_to_pay"); },
     lookup(c) {
       if (c.s.dest || c.s.passport) { c.say("flight_ack"); return; }
       c.s.lookup = true; c.say("lookup_help"); c.say("ask_passport"); c.hold();
     },
+    lookup_ctx(c, slots, seg) { checkin.handlers.lookup(c, slots, seg); },
     ask_fee(c) {
       if (c.s.owShown && !c.s.owDone) { c.say("ow_fee_amount", { price: FEE }); return; }
       c.say(c.s.bags >= 2 ? "bagfee_many" : "bagfee_info");
@@ -1421,6 +1469,8 @@ export const checkin: SituationDef = {
       assignSeat(c, pref);
     },
     seat_any(c) {
+      // "Me da igual" / "Cualquiera" chooses a seat only when seats are the topic (at the overweight choice it booked an aisle seat)
+      if (c.step !== "seat" && !/ventana|pasillo|medio|asiento|lugar/.test(fold(c.heard))) return;
       c.say("seat_any_ack");
       if (!c.s.passport) { c.s.seatPref = "any"; return; }
       assignSeat(c, "aisle");
@@ -1444,6 +1494,15 @@ export const checkin: SituationDef = {
         on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
         ask: (cc) => cc.say(bad === "window" ? "seat_neg_window" : "seat_neg_aisle") });
     },
+    seat_amb(c, slots) {
+      const a = slots.seat as string, b = slots.other as string;
+      if (a === b) { checkin.handlers.seat_ans(c, { seat: a }, { intent: "seat_ans", slots: { seat: a }, tags: [] }); return; }
+      c.say("seat_which", { X: a, Y: b });
+      ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["seat"],
+        suggest: [{ lt: "Choose a seat", hint: "seat", options: [a, b] }],
+        on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
+        ask: (cc) => cc.say("seat_which", { X: a, Y: b }) });
+    },
     more_no(c) { if (c.step === "bp" || c.s.bpGiven) c.s.moreDone = true; else c.say("ack"); },
     more_q(c) { c.say("what_q"); c.hold(); },
     ask_ontime(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("ontime_yes"); },
@@ -1451,7 +1510,7 @@ export const checkin: SituationDef = {
     ask_gate(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("gate_is"); },
     ask_boarding_time(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("boarding_time"); },
     ask_security(c) { c.s.securityTold = true; c.say("security_dir"); },
-    ask_duration(c) { c.say("duration"); },
+    ask_duration(c, _slots, seg) { c.say(seg.tags.includes("arrive") ? "arrive" : "duration"); },
     ask_carryon(c) { c.say("carryon_ok"); },
     ask_seatnum(c) {
       if (c.s.seatNo) { c.say("seatnum", { seat: c.s.seatNo }); return; }
@@ -1575,6 +1634,22 @@ export const checkin: SituationDef = {
     { say: "No quiero hacer el check-in", intent: "none", not: ["checkin"] },
     { say: "No tengo tarjeta", intent: "none", step: "scale", not: ["pay_card", "give"] },
     { say: "No puedo levantarla", intent: "none", step: "scale", not: ["ack_done", "give"] },
+    // review: traps and gaps
+    { say: "No voy a Guadalajara, voy a la Ciudad de México", intent: "dest_ans", step: "dest", slots: { city: "cdmx" }, not: ["dest_neg"] },
+    { say: "A Guadalajara no, a la Ciudad de México", intent: "dest_ans", step: "dest", slots: { city: "cdmx" }, not: ["dest_neg"] },
+    { say: "Tengo el vuelo de las ocho y diez", intent: "dest_ans", step: "dest" },
+    { say: "Pasillo no, ventana", intent: "seat_amb", step: "seat", not: ["seat_ans", "seat_neg"] },
+    { say: "Ventana no pasillo", intent: "seat_amb", step: "seat", not: ["seat_ans", "seat_neg"] },
+    { say: "Una grande y una chica", intent: "bags_ans", step: "bags" },
+    { say: "No, solo tengo una pregunta", intent: "more_q", step: "bp", not: ["more_no"] },
+    { say: "No, solo una pregunta", intent: "more_q", step: "bp", not: ["more_no", "bags_ans", "bags_num_ctx"] },
+    { say: "Sí, tengo otra pregunta", intent: "more_q", step: "bp", not: ["battery_yes", "battery_yes_ctx"] },
+    { say: "¿Es aquí para el vuelo a México?", intent: "checkin", step: "hello" },
+    { say: "Un momento, lo estoy buscando", intent: "find_it", step: "passport" },
+    { say: "Voy a sacar unas cosas y meterlas en mi mochila", intent: "move_items" },
+    { say: "Ni modo, lo pago", intent: "pay_fee" },
+    { say: "¿Cuál es el número de mi asiento?", intent: "ask_seatnum", step: "bp" },
+    { say: "¿A qué hora llegamos?", intent: "ask_duration", step: "bp" },
     // not understood
     { say: "Mi perro come tacos en la playa", intent: "none" },
     { say: "Quiero un café con leche", intent: "none" },
@@ -1612,6 +1687,25 @@ export const checkin: SituationDef = {
     { name: "short answers", turns: ["Sí.", "Ciudad de México.", "Tenga.", "Sí.", "Una.", "Pasillo.", "No, gracias."],
       expect: { complete: true, state: { seat: "aisle", bags: 1 } }, auto: AUTO,
       setup: (s) => { s.greetKind = "checkin"; s.overweight = false; s.askSafety = false; s.bagsQ = "yn"; } },
+    // review: a refusal at the fee ("ya no quiero pagar" must not pay), a lost comma at the seat, "solo una pregunta"
+    { name: "review: fee refused, seat said without commas", turns: ["Hola, quisiera hacer el check-in.", "A la Ciudad de México.", "Aquí tiene.", "Una maleta.", "Claro.",
+      "¿Aceptan efectivo?", "No, ya no quiero pagar.", "Listo.", "Pasillo no, ventana.", "Ventana.", "No, solo una pregunta.", "¿A qué hora llegamos?", "No, es todo."],
+      expect: { complete: true, state: { seat: "window", kg: 24, owDone: true } }, auto: AUTO,
+      setup: (s) => { s.overweight = true; s.askSafety = false; s.noWindow = false; s.greetKind = "plain"; } },
+    // review: "¿Cuántas?" answered "Sí", two bags described, someone else packed them
+    { name: "review: bag count, packed by someone else", turns: ["Buenos días, vengo a documentar.", "No voy a Guadalajara, voy a la Ciudad de México.", "Tenga.", "Sí.", "Sí.",
+      "Una grande y una chica.", "No, mi esposa.", "Sí.", "Me da igual.", "Es todo."],
+      expect: { complete: true, state: { bags: 2, safetyDone: true, seat: "aisle" } }, auto: AUTO,
+      setup: (s) => { s.greetKind = "plain"; s.bagsQ = "yn"; s.askSafety = true; s.safetyKind = "packed"; s.overweight = false; s.noWindow = false; } },
+    // review: the power bank is in the backpack (no twist), then a power bank refused once and moved
+    { name: "review: battery in the backpack", turns: ["Hola, vengo a documentar.", "Voy a la Ciudad de México.", "Aquí está mi pasaporte.", "Solo una maleta.",
+      "En la maleta no, la batería la traigo en la mochila.", "Pasillo.", "No, es todo."],
+      expect: { complete: true, state: { safetyDone: true, seat: "aisle" } }, auto: AUTO,
+      setup: (s) => { s.askSafety = true; s.safetyKind = "battery"; s.overweight = false; s.noWindow = false; s.greetKind = "plain"; } },
+    { name: "review: power bank refused once", turns: ["Hola, vengo a documentar.", "A la Ciudad de México.", "Tenga.", "Solo una maleta.", "Sí, traigo uno.", "No.", "Bueno, sí.",
+      "Ventana.", "Es todo."],
+      expect: { complete: true, state: { safetyDone: true, seat: "window" } }, auto: AUTO,
+      setup: (s) => { s.askSafety = true; s.safetyKind = "battery"; s.overweight = false; s.noWindow = false; s.greetKind = "plain"; } },
   ],
 };
 

@@ -258,5 +258,16 @@
   {"ctx": "dest", "say": "Mi perro come tacos en la playa", "intent": "none"},
   {"ctx": "seat", "say": "Quiero un café con leche", "intent": "none"},
   {"ctx": "bp", "say": "Ayer compré una camisa verde", "intent": "none"},
-  {"ctx": "bags", "say": "La playa está muy bonita hoy", "intent": "none"}
+  {"ctx": "bags", "say": "La playa está muy bonita hoy", "intent": "none"},
+  {"ctx": "bp", "say": "No, solo tengo una pregunta", "intent": "more_q", "not": ["more_no"], "note": "review: was more_no (ended the talk)"},
+  {"ctx": "bp", "say": "No, solo una pregunta", "intent": "more_q", "not": ["more_no", "bags_ans"], "note": "review: was read as one bag"},
+  {"ctx": "bp", "say": "Sí, tengo otra pregunta", "intent": "more_q", "not": ["battery_yes", "give"], "note": "review: was a power bank"},
+  {"ctx": "dest", "say": "Tengo el vuelo de las ocho y diez", "intent": "dest_ans", "not": ["give"], "note": "review: tengo ~ tenga recorded the passport"},
+  {"ctx": "dest", "say": "A Guadalajara no, a la Ciudad de México", "intent": "dest_ans", "slots": {"city": "cdmx"}, "not": ["dest_neg"], "note": "review: rule 10"},
+  {"ctx": "seat", "say": "Pasillo no, ventana", "intent": "seat_amb", "not": ["seat_ans"], "note": "review: rule 10, ask which"},
+  {"ctx": "seat", "say": "Ventana, no pasillo", "intent": "seat_amb", "not": ["seat_ans"], "note": "review: rule 10, ask which"},
+  {"ctx": "fee", "say": "No, ya no quiero pagar", "intent": "move_items_ctx", "not": ["ack_done", "pay_fee"], "note": "review: was ya = done, paid"},
+  {"ctx": "bags", "say": "Una grande y una chica", "intent": "bags_ans", "note": "review: two bags, was one"},
+  {"ctx": "packed", "say": "No, mi esposa", "intent": "packed_no_ctx", "not": ["packed_yes"]},
+  {"ctx": "battery", "say": "En la maleta no, la batería la traigo en la mochila", "intent": "battery_no_ctx", "not": ["battery_yes"]}
 ] }
