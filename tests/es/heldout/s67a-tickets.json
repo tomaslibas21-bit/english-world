@@ -1,0 +1,55 @@
+{ "situation": "s67a-tickets", "items": [
+  { "ctx": "dest", "say": "Buenos días, un boleto a Cancún, por favor", "intent": "buy" },
+  { "ctx": "dest", "say": "Quiero ir a Mérida", "intent": ["buy", "dest_ctx"] },
+  { "ctx": "dest", "say": "Me da un pasaje para Playa del Carmen", "intent": "buy", "note": "neutral pasaje" },
+  { "ctx": "dest", "say": "A Playa", "intent": ["dest_ctx", "buy"], "note": "short Playa = Playa del Carmen" },
+  { "ctx": "dest", "say": "¿A qué hora sale el próximo autobús a Tulum?", "intent": "ask_next" },
+  { "ctx": "dest", "say": "Cuanto cuesta un boleto a Merida?", "intent": "ask_price", "note": "no accents" },
+  { "ctx": "dest", "say": "No voy a Cancún, voy a Mérida", "intent": ["buy", "dest_ctx", "not_dest", "change_dest"], "note": "trap: correction (check Mérida)" },
+
+  { "ctx": "count", "say": "Somos tres", "intent": "count_ctx" },
+  { "ctx": "count", "say": "Nada más yo", "intent": "count_ctx" },
+  { "ctx": "count", "say": "Para mí y mi esposa", "intent": "count_ctx" },
+
+  { "ctx": "trip", "say": "Redondo, por favor", "intent": "trip_ans" },
+  { "ctx": "trip", "say": "Nada más de ida", "intent": "trip_ans" },
+  { "ctx": "trip", "say": "Ida y vuelta", "intent": "trip_ans" },
+  { "ctx": "trip", "say": "No, redondo no, sencillo", "intent": "trip_ans", "note": "trap: correction (must be one-way or a re-ask)" },
+  { "ctx": "trip", "say": "¿Cuánto cuesta el redondo?", "intent": ["ask_price", "ask_diff"] },
+
+  { "ctx": "ret", "say": "Regreso el domingo", "intent": "ret_ctx" },
+  { "ctx": "ret", "say": "Todavía no sé cuándo regreso", "intent": "ret_ctx" },
+  { "ctx": "ret", "say": "El quince de diciembre", "intent": "ret_ctx" },
+
+  { "ctx": "travel_day", "say": "Hoy mismo", "intent": "travel_ctx" },
+  { "ctx": "travel_day", "say": "No, mañana", "intent": "travel_ctx" },
+
+  { "ctx": "time", "say": "En el de las diez y cuarto", "intent": "time_ctx" },
+  { "ctx": "time", "say": "El más temprano, por favor", "intent": "time_ctx" },
+  { "ctx": "time", "say": "¿Qué otros horarios tiene?", "intent": ["ask_other_ctx", "ask_schedule"] },
+
+  { "ctx": "seat", "say": "Ventanilla, por favor", "intent": "seat_ans" },
+  { "ctx": "seat", "say": "Me da igual", "intent": "seat_ans" },
+  { "ctx": "seat", "say": "Ventanilla no, mejor pasillo", "intent": "seat_ans", "note": "trap: correction (must be aisle)" },
+
+  { "ctx": "discount", "say": "Sí, soy estudiante", "intent": ["discount_claim", "yn:yes"] },
+  { "ctx": "discount", "say": "No, no soy estudiante", "intent": "any", "not": ["discount_claim"], "note": "trap: negation" },
+  { "ctx": "student_id", "say": "Aquí está mi credencial", "intent": ["show_id", "here_you_go", "here_you_go_ctx"] },
+  { "ctx": "student_id", "say": "No la traigo", "intent": "any", "not": ["show_id", "here_you_go", "here_you_go_ctx"], "note": "trap: negation" },
+
+  { "ctx": "name", "say": "Aquí tiene mi pasaporte", "intent": ["show_id", "here_you_go", "here_you_go_ctx"] },
+  { "ctx": "name", "say": "Me llamo Sarah Johnson", "intent": "name_ctx" },
+
+  { "ctx": "pay", "say": "Con tarjeta", "intent": "pay_card" },
+  { "ctx": "pay", "say": "¿Aceptan dólares?", "intent": "ask_dollars" },
+  { "ctx": "pay", "say": "No tengo efectivo", "intent": "any", "not": ["pay_cash"], "note": "trap: negation" },
+  { "ctx": "pay", "say": "Quiero un café con leche", "intent": "none", "note": "trap: off-topic" },
+
+  { "ctx": "sold_out", "say": "Sí, el de las cinco y cuarto está bien", "intent": ["yn:yes", "time_ctx"] },
+  { "ctx": "sold_out", "say": "No, esa hora no me sirve", "intent": "any", "not": ["yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "info", "say": "¿De qué andén sale?", "intent": "ask_track" },
+  { "ctx": "info", "say": "¿Cuánto tiempo se hace a Mérida?", "intent": "ask_duration" },
+  { "ctx": "info", "say": "¿Tiene baño el autobús?", "intent": "ask_restroom" },
+  { "ctx": "info", "say": "¿Hay que cambiar de autobús?", "intent": "ask_change" }
+] }

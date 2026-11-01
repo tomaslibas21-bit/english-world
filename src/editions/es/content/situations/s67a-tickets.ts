@@ -72,6 +72,8 @@ function clock(t: Clock): { en: string; lt: string; say: string } {
 // ---------------------------------------------------------------------------
 // State helpers
 
+/** The morning bus is full (twist) and the learner travels today. */
+const fullNow = (c: Ctx) => !!c.s.full && (!c.s.travel || c.s.travel === "today");
 const depTime = (c: Ctx): Clock | undefined => (c.s.dest ? (c.s.dep === "late" ? LATE : dest(c.s.dest).time) : undefined);
 const count = (c: Ctx) => (c.s.count as number | undefined) ?? 1;
 
@@ -201,7 +203,7 @@ export const tickets: SituationDef = {
     count_ctx: { patterns: [
       "(solo | nada mas | nomas | solamente) (uno | un boleto | yo) #n1 #h:c_one",
       "somos {number} #h:c_two", "no somos {number}", "{number} [boletos | pasajeros | personas | adultos]", "(una persona | un adulto | un pasajero) #n1",
-      "(para | solo para) mi #n1", "(viajo | voy) (solo | sola) #n1",
+      "(para | solo para) mi #n1", "(viajo | voy) (solo | sola) #n1", "si [voy | viajo] (solo | sola) #n1",
       "[para] (mi | yo) y mi @kin #n2", "[no] (voy | viajo | vamos) con mi @kin #n2",
       "no (viajo | voy) (solo | sola) #more", "(uno | un boleto) para mi y (otro | uno) para mi @kin #n2",
     ] },
@@ -211,12 +213,13 @@ export const tickets: SituationDef = {
       "[el] {date}", "(regreso | vuelvo | regresamos) [el] {date}",
       "[regreso | vuelvo] el mismo dia #sameday", "[regreso | vuelvo] al dia siguiente #nextday",
       "[regreso | vuelvo] (en | dentro de) (una semana | dos dias | tres dias | unos dias | {number} dias | quince dias | un mes | dos semanas) #later",
-      "(todavia | aun) no (se | lo se) #open #h:r_not_sure", "no se todavia #open", "no estoy (seguro | segura) [todavia] #open",
+      "(todavia | aun) no (se | lo se) [cuando (regreso | vuelvo | regresamos | volvemos | voy a regresar)] #open #h:r_not_sure", "no se todavia #open", "no estoy (seguro | segura) [todavia] #open",
+      "no (se | lo se) [cuando (regreso | vuelvo | regresamos | volvemos | voy a regresar)] #open", "{day} mismo", "(ese | el) mismo dia #sameday",
       "(lo dejo | dejelo | dejarlo) abierto #open", "no tengo fecha [de regreso] #open",
       "no {wrong:day} [sino] {day}", "{day} no {wrong:day} #amb",
     ] },
     travel_ctx: { patterns: [
-      "[para] {day} #h:tr_day", "(viajo | voy | salgo | me voy | nos vamos | viajamos) {day}",
+      "[para] {day} #h:tr_day", "[para] {day} mismo", "(viajo | voy | salgo | me voy | nos vamos | viajamos) {day}",
       "(mejor | prefiero) [para] {day}", "no [para] {wrong:day} [sino] [para] {day}", "{wrong:day} no [sino] [para] {day} #amb",
     ] },
     time_ctx: { patterns: [
@@ -225,9 +228,13 @@ export const tickets: SituationDef = {
       "[@pref] el (primer | proximo | siguiente) @bus #first",
       "[@pref] el (de la tarde | ultimo | mas tarde | otro | segundo) #late #h:tm_late",
       "[@pref] (en | por) la manana #first", "[@pref] (en | por) la tarde #late",
-      "lo (antes | mas pronto) posible #first", "(ahorita | ahora | ya) [mismo] #first", "el que sale (ahorita | ahora | primero | mas pronto) #first",
+      "el primero que (salga | sale | haya) #first", "lo (antes | mas pronto) posible #first", "(ahorita | ahora | ya) [mismo] #first", "el que sale (ahorita | ahora | primero | mas pronto) #first",
       "no el (de la manana | proximo | primero) [sino] el (de la tarde | otro | ultimo) #late",
       "no el (de la tarde | ultimo) [sino] el (de la manana | proximo | primero) #first",
+      "el (de la manana | proximo | primero) no (mejor | sino) el (de la tarde | otro | ultimo) #late",
+      "el (de la tarde | ultimo) no (mejor | sino) el (de la manana | proximo | primero) #first",
+      // commas are lost: "el de la mañana no, el de la tarde" / "el de la mañana, no el de la tarde" (rule 10): ask again
+      "el (de la manana | proximo | primero | de la tarde | ultimo) no el (de la manana | proximo | primero | de la tarde | ultimo) #amb",
       "no (a | el de) {wrong:time} [sino] [a | el de] {time}",
     ] },
     // "¿Hay uno más tarde?" at the departure question: both departures again
@@ -238,6 +245,13 @@ export const tickets: SituationDef = {
       "ni modo [deme | me da] [el] [@bus] de {time}", "ni modo [deme | me da] el (de la tarde | otro)",
       "ni modo", "(ese | el de la tarde | el otro) esta bien", "[esta bien | ni modo] me espero", "[si] (lo | me lo) llevo", "(acepto | lo tomo)",
     ] },
+    // "No, esa hora no me sirve" at the sold-out question: a no to the 5:15
+    late_no_ctx: { patterns: [
+      "[no] (esa hora | ese | ese no | el de la tarde | a esa hora) no me (sirve | conviene | queda)", "[no] no me (sirve | conviene | queda) [esa hora | ese | a esa hora | tan tarde]",
+      "[no] (es | esta | sale) (muy | demasiado) tarde [para mi | para nosotros]", "[no] (no puedo | no podemos) (a esa hora | tan tarde | en la tarde | a las cinco)",
+    ] },
+    // "Mañana no puedo" at tomorrow's offer: a no
+    tomorrow_no_ctx: { patterns: ["[no] manana no [puedo | podemos | me sirve | me conviene]", "[no] (no puedo | no podemos) manana", "[no] tiene que ser hoy", "[no] (necesito | tengo que) (ir | viajar | llegar) hoy"] },
     ask_earlier_ctx: { patterns: [
       "(no hay | hay) (otro | alguno | uno | otro autobus | algo) (antes | mas temprano) #h:so_earlier",
       "no (hay | tiene | tienen) (nada | algo | ninguno) (antes | mas temprano)",
@@ -251,8 +265,11 @@ export const tickets: SituationDef = {
       "[@pref] (adelante | hasta adelante | al frente | cerca del chofer | cerca del conductor) [si se puede] #front",
       "[@pref] (atras | hasta atras | al fondo) [si se puede] #back",
       "no [la] (ventanilla | ventana) [sino] [el] pasillo #aisle", "no [el] pasillo [sino] [la] (ventanilla | ventana) #window",
+      "[la] (ventanilla | ventana) no (mejor | sino) [el] pasillo #aisle", "[el] pasillo no (mejor | sino) [la] (ventanilla | ventana) #window",
+      "[@pref] cerca de la (ventanilla | ventana) #window",
     ] },
-    seat_not_ctx: { patterns: ["no (quiero | me gusta) [la] (ventanilla | ventana) #aisle", "no (quiero | me gusta) [el] pasillo #window"] },
+    seat_not_ctx: { patterns: ["no (quiero | me gusta) [la] (ventanilla | ventana) #aisle", "no (quiero | me gusta) [el] pasillo #window",
+      "[la] (ventanilla | ventana) no #aisle", "[el] pasillo no #window"] },
     name_ctx: { patterns: ["[a nombre de | me llamo | mi nombre es | soy | es] {name} #h:id_name", "a nombre de {name} {name2:name}"] },
     show_id: { patterns: [
       "(aqui (tiene | esta) | tome | tenga | le doy | le presto) (mi | el) (pasaporte #passport | identificacion #doc | ine #doc | credencial de elector #doc | licencia #doc | licencia de manejo #doc) #h:id_here",
@@ -265,7 +282,7 @@ export const tickets: SituationDef = {
     no_id: { patterns: [
       "no (traigo | tengo) [mi | una | la] (pasaporte | identificacion | credencial | ine) [conmigo | aqui] #h:id_none",
       "no (la | lo) (traigo | tengo) [conmigo | aqui]", "(lo | la) (deje | olvide) en (el hotel | la casa | casa)",
-      "se me olvido [mi | el | la] (pasaporte | identificacion | credencial)", "(deje | olvide) mi (pasaporte | identificacion | credencial) en (el hotel | la casa | casa)",
+      "se me olvido [mi | el | la] (pasaporte | identificacion | credencial)", "(lo | la) (tengo | traigo) en (el hotel | la casa | casa)", "(se quedo | esta) en (el hotel | la casa | casa)", "(deje | olvide) mi (pasaporte | identificacion | credencial) en (el hotel | la casa | casa)",
     ] },
     discount_ask: { patterns: [
       "(hay | tienen | tiene | hacen | dan | manejan) descuento [para | de] (estudiantes #student | estudiante #student | maestros #student) #h:q_student",
@@ -357,6 +374,7 @@ export const tickets: SituationDef = {
       "(me puedo | puedo) sentar (donde sea | donde quiera | en cualquier lugar) #anywhere"] },
     seat_taken: { patterns: ["(esta) (ocupado | libre | desocupado) (este | ese) (asiento | lugar) #h:seat_taken", "(este | ese) (asiento | lugar) (esta) (ocupado | libre | desocupado) #h:seat_free",
       "(hay | esta) alguien (aqui | sentado aqui)"] },
+    question_ctx: { patterns: ["[si] (una pregunta | tengo una pregunta | una duda | tengo una duda | una cosa mas | otra cosa | otra pregunta)"] },
     more_no: { patterns: ["(eso | esto) (es | seria | fue) todo [por ahora]", "(es | seria) todo [por ahora]", "(nada | ninguna) mas", "(ya | asi) estoy bien", "no necesito nada mas", "ya con eso", "con eso (es | esta) bien"] },
     ok_thanks: { patterns: ["[ok | esta bien | que bueno | bueno] gracias por (avisarme | avisar | decirme | la informacion)", "(que mala suerte | que lastima)"] },
     // the learner repeats the time / gate back ("Andén dos, a las diez y cuarto")
@@ -368,6 +386,7 @@ export const tickets: SituationDef = {
     change_dest: { patterns: [
       "(mejor | siempre no mejor | siempre no) (a | para) {dest}", "(me lo puede | lo puede | puede | me lo podria) cambiar (a | para) {dest}", "cambielo (a | para) {dest}",
       "no (a | para) {wrong:dest} [sino] (a | para) {dest}", "(a | para) {dest} no (a | para) {wrong:dest}",
+      "no (voy | vamos | viajo) (a | para) {wrong:dest} [sino] [que] [voy | vamos | viajo] (a | para) {dest}",
       "(lo puedo | puedo) cambiar (a | para) {dest}",
     ] },
     change_count: { patterns: [
@@ -375,6 +394,7 @@ export const tickets: SituationDef = {
       "(mejor | siempre no) [nada mas | solo] {number} boletos", "no (son | somos) {wrong:number} [sino] [son | somos] {number}",
       "(son | somos) {number} no {wrong:number}", "(me lo puede | lo puede | puede) cambiar a {number} boletos",
       "(quiero | necesito) {number} boletos (en vez de | no) {wrong:number}",
+      "(somos | vamos a ser | seriamos) {number} [personas | pasajeros]",
     ] },
   },
 
@@ -392,6 +412,7 @@ export const tickets: SituationDef = {
       t("¿Para | dónde | quiere | su | boleto?", "For | where | do you want | your | ticket?", "Where would you like your ticket to?"),
     ],
     dest_list: [t("Tenemos | salidas | a | Tulum, | Playa del Carmen, | Cancún | y | Mérida.", "We have | departures | to | Tulum, | Playa del Carmen, | Cancún | and | Mérida.", "We have buses to Tulum, Playa del Carmen, Cancún, and Mérida.")],
+    ask_playa: [t("¿A | Playa del Carmen?", "To | Playa del Carmen?", "To Playa del Carmen?")],
     dest_unknown: [t("Lo siento, | de | aquí | no hay | salidas | para | allá.", "I'm sorry, | from | here | there are no | departures | for | there.", "Sorry, we don't have buses there from here.")],
     ask_count: [t("¿Viaja | {m:solo|f:sola}?", "Are you traveling | alone?", "Just you?", { flags: { 1: "solo / sola: alone, agreeing with you, the traveler." } })],
     ask_how_many: [t("¿Cuántos | boletos?", "How many | tickets?", "How many tickets?"), t("¿Cuántos | pasajeros | son?", "How many | passengers | are there?", "How many passengers?")],
@@ -421,7 +442,9 @@ export const tickets: SituationDef = {
       t("Hay | salida | a | {$at} | y | a | {$late}. | ¿Cuál | le | doy?", "There's | a departure | at | {$at} | and | at | {$late}. | Which one | (to) you | do I give?",
         "There's a bus at {$at} and one at {$late}. Which one would you like?"),
     ],
-    time_again: [t("¿Y | para | qué | hora: | a | {$at} | o | a | {$late}?", "And | for | what | time: | at | {$at} | or | at | {$late}?", "And which bus: {$at} or {$late}?")],
+    deps_info: [t("Hay | uno | a | {$at} | y | otro | a | {$late}.", "There's | one | at | {$at} | and | another | at | {$late}.", "There's one at {$at} and another at {$late}.")],
+    time_again: [t("¿Y | para | qué | hora: | a | {$at} | o | a | {$late}?", "And | for | what | time: | at | {$at} | or | at | {$late}?", "And which bus: {$at} or {$late}?"),
+      t("¿Cuál | le | doy: | el | de | {$at} | o | el | de | {$late}?", "Which one | (to) you | do I give: | the one | at | {$at} | or | the one | at | {$late}?", "Which one would you like: the {$at} or the {$late}?")],
     travel_tomorrow: [t("Muy | bien, | para | mañana.", "Very | good, | for | tomorrow.", "Okay, for tomorrow.")],
     other_name: [t("¿Y | el | nombre | de | la | otra | persona?", "And | the | name | of | the | other | person?", "And the other person's name?")],
     other_names: [t("¿Y | los | nombres | de | los | demás?", "And | the | names | of | the | others?", "And the others' names?")],
@@ -442,6 +465,8 @@ export const tickets: SituationDef = {
     still_full: [t("El | de | {$at} | ya | no tiene | lugares, | lo siento.", "The one | at | {$at} | already | doesn't have | seats, | I'm sorry.", "The {$at} bus has no seats left, I'm sorry.")],
     only_late: [t("No, | antes | no hay | otro. | El | que | sigue | es | el | de | {$late}.", "No, | before | there isn't | another. | The one | that | follows | is | the one | at | {$late}.",
       "No, there's nothing earlier. The next one is the {$late} bus.")],
+    today_only: [t("Hoy | solo | queda | el | de | {$late}. | ¿Se lo | doy?", "Today | only | there's left | the one | at | {$late}. | It to you | shall I give?",
+      "Today there's only the {$late} bus left. Shall I give you that one?")],
     tomorrow_offer: [t("Hoy | ya | no hay | otro. | Mañana | sale | uno | a | {$at}. | ¿Se lo | doy | para | mañana?",
       "Today | anymore | there isn't | another. | Tomorrow | leaves | one | at | {$at}. | It to you | shall I give | for | tomorrow?",
       "There's nothing else today. Tomorrow there's one at {$at}. Shall I give you that one?")],
@@ -466,6 +491,7 @@ export const tickets: SituationDef = {
     ask_id_many: [t("¿Me | permite | una | identificación? | Los | boletos | van | a nombre de | los | pasajeros.",
       "(To) me | you-allow | an | ID? | The | tickets | go | in the name of | the | passengers.", "May I see an ID? The tickets go in the passengers' names.")],
     ask_full_name: [t("No se preocupe. | Nada más | dígame | su | nombre | completo.", "Don't worry. | Just | tell me | your | name | full.", "Don't worry. Just tell me your full name.")],
+    name_remind: [t("Con | su | nombre | completo | basta.", "With | your | name | full | it's enough.", "Your full name is enough.")],
     passport_back: [t("Gracias. | Aquí | tiene | su | pasaporte.", "Thanks. | Here | you have | your | passport.", "Thanks. Here's your passport back.")],
     id_back: [t("Gracias. | Aquí | se la | devuelvo.", "Thanks. | Here | it to you | I-return.", "Thanks. Here it is back.", { flags: { 2: "se la: it (la identificación) to you." } })],
     name_ok: [t("Gracias, | ya | lo | anoté.", "Thanks, | already | it | I-wrote-down.", "Thanks, I've got it.")],
@@ -474,6 +500,7 @@ export const tickets: SituationDef = {
       "Do you have a student card or an INAPAM senior card?", { flags: { 6: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } })],
     discount_info: [t("Sí. | Con | credencial, | estudiantes | y | adultos mayores | pagan | la mitad.", "Yes. | With | a card, | students | and | seniors | pay | half.",
       "Yes. With a valid card, students and seniors pay half.")],
+    child_disc: [t("Los | niños | también | tienen | descuento, | según | la | edad.", "The | children | also | have | a discount, | depending on | the | age.", "Kids get a discount too, depending on their age.")],
     ask_card_id: [t("¿Me | permite | su | credencial?", "(To) me | you-allow | your | card?", "May I see your card?")],
     discount_ok: [t("Gracias. | Le | hago | el | descuento | de | la mitad.", "Thanks. | (For) you | I-do | the | discount | of | half.", "Thanks. You get the half-price discount.")],
     no_card_disc: [t("Sin | la | credencial | no le puedo | hacer | el | descuento, | lo siento.", "Without | the | card | I can't for you | do | the | discount, | I'm sorry.",
@@ -504,6 +531,8 @@ export const tickets: SituationDef = {
     ],
     which_dest_first: [t("Claro. | ¿A | dónde | va?", "Sure. | To | where | are you going?", "Sure. Where are you headed?")],
     direct_yes: [t("Sí, | es | directo.", "Yes, | it's | direct.", "Yes, it's direct.")],
+    direct_stops: [t("Sí, | no tiene | que | cambiar | de | autobús.", "Yes, | you don't have | to | change | — | bus.", "Yes, you don't have to change buses.",
+      { flags: { 4: "cambiar de autobús: change buses; de marks what is changed." } })],
     no_change: [t("No, | es | directo; | no tiene | que | cambiar.", "No, | it's | direct; | you don't have | to | change.", "No, it's direct; you don't have to change.")],
     no_stops: [t("No, | va | directo.", "No, | it-goes | direct.", "No, it goes straight there.")],
     stops_tulum: [t("Nada más | hace | parada | en | Tulum.", "Only | it-makes | a stop | in | Tulum.", "It just stops in Tulum.")],
@@ -791,7 +820,7 @@ export const tickets: SituationDef = {
       ask: (c) => askTime(c),
       expects: ["time_ctx", "travel_ctx", "ask_other_ctx"],
       suggest: [{ lt: "Choose a departure", hint: "time" }] },
-    { id: "soldout", when: (c) => c.s.dep === "first" && c.s.travel !== "tomorrow" && c.s.soldTwist && !c.s.soldTold && !c.s.paid, done: (c) => !!c.s.soldTold,
+    { id: "soldout", when: (c) => c.s.dep === "first" && (!c.s.travel || c.s.travel === "today") && c.s.soldTwist && !c.s.soldTold && !c.s.paid, done: (c) => !!c.s.soldTold,
       ask: (c) => {
         c.twist("sold_out");
         c.s.soldTold = true; c.s.full = true; c.s.dep = undefined;
@@ -805,7 +834,8 @@ export const tickets: SituationDef = {
       ask: (c) => c.say(count(c) > 1 ? "ask_id_many" : "ask_id"),
       expects: ["show_id", "here_you_go_ctx", "name_ctx", "id_q", "no_id"],
       suggest: [{ lt: "Show your ID or give your name", hint: "idcard" }],
-      yes: (c) => { idDone(c, "paid_thanks"); } },
+      yes: (c) => { idDone(c, "paid_thanks"); },
+      no: (c) => { tickets.handlers.no_id(c, {}, { intent: "no_id", slots: {}, tags: [] }); } },
     { id: "pay", when: (c) => !!c.s.trip && !!c.s.dep, done: (c) => !!c.s.paid,
       ask: (c) => {
         if (!c.s.totalSaid) {
@@ -825,13 +855,16 @@ export const tickets: SituationDef = {
         c.say(count(c) > 1 ? "ticket_many" : "ticket_one");
         if (c.s.volunteer) tellInfo(c);
       },
+      // "No, eso es todo" to "Aquí tiene su boleto": Don Raúl still says when and where (not "¿Algo más?")
+      expects: ["more_no"],
+      no: (c) => { if (!c.s.knowTime || !c.s.knowTrack) { c.say("just_so"); tellInfo(c); } },
       suggest: [
         { lt: "Say thank you", hint: "g_social" },
         { lt: "Ask when and from which gate your bus leaves", hint: "info" },
       ] },
     { id: "info", when: (c) => !!c.s.ticketGiven && (!c.s.knowTime || !c.s.knowTrack), done: () => false,
       ask: (c) => c.say("anything_else"),
-      expects: ["ask_next", "ask_track", "ask_change", "ask_duration", "more_no", "ask_ontime", "ask_luggage", "ask_early"],
+      expects: ["ask_next", "ask_track", "ask_change", "ask_duration", "more_no", "ask_ontime", "ask_luggage", "ask_early", "question_ctx"],
       suggest: [
         { lt: "Ask when and from which gate your bus leaves", hint: "info" },
         { lt: "Say that's all", hint: "g_yesno" },
@@ -858,6 +891,7 @@ export const tickets: SituationDef = {
       // a new destination, number or trip after the total was said: Don Raúl says the new total
       const order = () => `${c.s.dest}|${count(c)}|${c.s.trip}`;
       const before = order();
+      if (slots.dest === "playa" && !c.s.paid && beachOnly(c.heard)) { askPlaya(c); return; }
       if (slots.dest && !c.s.paid) setDest(c, slots.dest);
       const n = countOf(tags);
       if (n && !c.s.paid) c.s.count = n;
@@ -873,6 +907,7 @@ export const tickets: SituationDef = {
     buy_unknown(c) { c.say("dest_unknown"); c.say("dest_list"); },
     dest_ctx(c, slots, seg) {
       if (c.s.paid) return;
+      if (slots.dest === "playa" && beachOnly(c.heard)) { askPlaya(c); return; }
       setDest(c, slots.dest);
       const trip = tripOf(allTags(slots, seg));
       if (trip) c.s.trip = trip;
@@ -936,21 +971,24 @@ export const tickets: SituationDef = {
       if (c.s.paid || !c.s.dest) return;
       const tags = allTags(slots, seg);
       if (slots.day) setTravel(c, slots.day);
+      if (tags.includes("amb")) { askTime(c); c.hold(); return; }
       let dep: "first" | "late" | undefined = tags.includes("late") ? "late" : tags.includes("first") ? "first" : undefined;
       if (!dep && slots.time) dep = depOf(c, slots.time);
       if (!dep) { c.say("no_such_time", { at: clock(dest(c.s.dest).time), late: clock(LATE) }); c.hold(); return; }
-      if (dep === "first" && c.s.full && c.s.travel !== "tomorrow") { c.say("still_full", { at: clock(dest(c.s.dest).time) }); askTime(c); return; }
+      if (dep === "first" && fullNow(c)) { c.say("still_full", { at: clock(dest(c.s.dest).time) }); askTime(c); return; }
       if (c.s.totalSaid && dep !== c.s.dep) c.s.totalSaid = false;
       c.s.dep = dep;
       if (!(dep === "first" && c.s.soldTwist && !c.s.soldTold)) c.say("time_ok", { at: clock(depTime(c)!) });
     },
     // outside the sold-out question, these mean nothing yet
     accept_ctx(c) { c.say("ack"); },
+    late_no_ctx(c) { c.say("ack"); },
+    tomorrow_no_ctx(c) { c.say("ack"); },
     ask_earlier_ctx(c) { if (c.s.dest) askTime(c); },
     ask_other_ctx(c, slots, seg) {
       if (!c.s.dest) return;
       const tags = allTags(slots, seg);
-      if (c.s.full || !(tags.includes("later") || tags.includes("earlier"))) { askTime(c); c.hold(); return; }
+      if (fullNow(c) || !(tags.includes("later") || tags.includes("earlier"))) { askTime(c); c.hold(); return; }
       if (tags.includes("later")) c.say("later_one", { late: clock(LATE) }); else c.say("first_one", { at: clock(dest(c.s.dest).time) });
       c.hold();
     },
@@ -987,7 +1025,8 @@ export const tickets: SituationDef = {
     no_id(c) {
       if (c.s.discPending && c.s.disc === undefined) { noCard(c); return; }
       if (!c.s.named && c.s.dep) {
-        c.say("ask_full_name");
+        c.say(c.s.fullAsked ? "name_remind" : "ask_full_name"); // said again: a short reminder, not the same line (rule 8)
+        c.s.fullAsked = true;
         c.expect({ id: "full_name", expects: ["name_ctx"], hints: ["idcard"], suggest: [{ lt: "Say your full name", hint: "idcard" }],
           on: { name_ctx: (cc) => { idDone(cc, "name_ok"); } },
           ask: (cc) => cc.say("ask_full_name") });
@@ -995,7 +1034,8 @@ export const tickets: SituationDef = {
       }
       c.say("ack");
     },
-    discount_ask(c) {
+    discount_ask(c, slots, seg) {
+      if (allTags(slots, seg).includes("child")) { c.say("child_disc"); return; }
       c.say("discount_info");
       if (c.s.disc === undefined && !c.s.paid && !c.s.discPending) { c.s.askDiscount = true; c.s.discAsked = true; }
     },
@@ -1019,6 +1059,12 @@ export const tickets: SituationDef = {
       const d = said ?? c.s.dest;
       if (!d) { destFirst(c); return; }
       if (d !== c.s.dest) { c.say("other_leaves", { at: clock(dest(d).time) }); return; }
+      if (!c.s.dep && c.step !== "time") {
+        // asked before "¿Para qué hora?": the two departures as information; the current step asks its own question
+        if (fullNow(c)) c.say("later_one", { late: clock(LATE) });
+        else { c.say("deps_info", { at: clock(dest(d).time), late: clock(LATE) }); c.s.timeAsked = true; }
+        return;
+      }
       if (!c.s.dep) { askTime(c); c.hold(); return; }
       c.say("leaves_at", { at: clock(depTime(c)!) });
       c.s.knowTime = true;
@@ -1037,7 +1083,8 @@ export const tickets: SituationDef = {
       const tags = allTags(slots, seg), stops = dest(c.s.dest).stops;
       // "¿Es directo?" → "Sí…"; "¿Tengo que cambiar?" → "No…"; "¿Hace paradas?" → the stops (rule 11)
       if (tags.includes("stops")) { if (stops) c.say(stops); else c.say("no_stops"); return; }
-      c.say(tags.includes("change") ? "no_change" : "direct_yes");
+      // a bus with stops on the way: "directo" here means no change of bus, said that way (not "Sí, es directo" + stops)
+      c.say(tags.includes("change") ? "no_change" : stops ? "direct_stops" : "direct_yes");
       if (stops) c.say(stops);
     },
     ask_duration(c, slots, seg) {
@@ -1074,9 +1121,10 @@ export const tickets: SituationDef = {
     ask_seat(c, slots, seg) { c.say(allTags(slots, seg).includes("anywhere") ? "seat_assigned" : "seat_numbered"); },
     seat_taken(c) { c.say("seat_joke"); },
     more_no(c) {
-      if (c.step === "info" && (!c.s.knowTime || !c.s.knowTrack)) { c.say("just_so"); tellInfo(c); }
+      if (c.s.ticketGiven && (!c.s.knowTime || !c.s.knowTrack)) { c.say("just_so"); tellInfo(c); }
     },
     ok_thanks() { /* acknowledged; Don Raúl moves on */ },
+    question_ctx(c) { c.say("tell_me"); c.hold(); },
     echo_info(c, slots) {
       if (!c.s.dest || !c.s.dep) { c.say("ack"); return; }
       const d = dest(c.s.dest);
@@ -1242,6 +1290,24 @@ export const tickets: SituationDef = {
     { say: "No tengo que cambiar de autobús", intent: "none", step: "info" },
     { say: "No necesito un boleto", intent: "none", step: "dest" },
     { say: "No quiero pagar con tarjeta", intent: "none", step: "pay" },
+    // review: corrections, short answers and traps a blind set found
+    { say: "No voy a Cancún, voy a Mérida", intent: "change_dest", step: "trip", slots: { dest: "merida" }, not: ["not_dest"] },
+    { say: "Ventanilla no, mejor pasillo", intent: "seat_ans", step: "seat" },
+    { say: "Pasillo no", intent: "seat_not_ctx", step: "seat", not: ["seat_ans"] },
+    { say: "Cerca de la ventana", intent: "seat_ans", step: "seat" },
+    { say: "Todavía no sé cuándo regreso", intent: "ret_ctx", step: "ret" },
+    { say: "No sé", intent: "ret_ctx", step: "ret" },
+    { say: "Hoy mismo", intent: "travel_ctx", step: "travel_day" },
+    { say: "Sí, solo", intent: "count_ctx", step: "count" },
+    { say: "Somos dos", intent: "change_count", step: "trip", slots: { number: 2 } },
+    { say: "El primero que salga", intent: "time_ctx", step: "time" },
+    { say: "El de la mañana no, el de la tarde", intent: "time_ctx", step: "time" },
+    { say: "Lo tengo en el hotel", intent: "no_id", step: "name", not: ["show_id", "here_you_go_ctx"] },
+    { say: "¿Hay descuento para niños?", intent: "discount_ask" },
+    { say: "Sí, una pregunta", intent: "question_ctx", step: "info" },
+    { say: "Soy de Canadá", intent: "none", step: "name" },
+    { say: "Ya no soy estudiante", intent: "none", step: "discount" },
+    { say: "No tengo tarjeta ni efectivo", intent: "none", step: "pay" },
     // not understood
     { say: "Mi perro come boletos azules", intent: "none" },
     { say: "autobús plátano ventanilla", intent: "none" },
@@ -1297,6 +1363,23 @@ export const tickets: SituationDef = {
         "¿Dónde están los aseos?", "Vale, gracias."],
       auto: omit(AUTO, ["dest", "trip", "ret", "time", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { volunteer: true }); },
       expect: { complete: true, state: { dest: "cancun", trip: "oneway", ret: "open", dep: "late" } } },
+    { name: "sold out (twist forced): no to the 5:15, no to tomorrow (walks off, no ticket)",
+      turns: ["Un boleto a Cancún.", "Sencillo.", "El próximo.", "No, esa hora no me sirve.", "Mañana no puedo."],
+      auto: omit(AUTO, ["dest", "trip", "time", "sold_out", "seat", "name", "pay"]), setup: (s) => { Object.assign(s, FIXED, { soldTwist: true, volunteer: false }); },
+      expect: { complete: false, state: { dest: "cancun", full: true, tomorrowOffered: true } } },
+    { name: "sold out (twist forced): no, then \"hoy\" at tomorrow's offer: the 5:15",
+      turns: ["Un boleto a Tulum.", "Sencillo.", "El próximo.", "No.", "Hoy.", "Sí, está bien.", "Pasillo.", "Aquí tiene mi pasaporte.", "En efectivo.", "Gracias."],
+      auto: omit(AUTO, ["dest", "trip", "time", "sold_out", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { soldTwist: true, volunteer: true }); },
+      expect: { complete: true, state: { dest: "tulum", dep: "late", paid: true } } },
+    { name: "travels on Friday: no sold-out twist for today's bus",
+      turns: ["Un boleto a Mérida.", "Sencillo.", "No, el viernes.", "El primero.", "Ventanilla.", "Aquí tiene mi pasaporte.", "Con tarjeta.", "Gracias."],
+      auto: omit(AUTO, ["dest", "trip", "travel_day", "time", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { askDay: true, soldTwist: true, volunteer: true }); },
+      expect: { complete: true, state: { dest: "merida", travel: "friday", dep: "first", paid: true } } },
+    { name: "the beach is not Playa del Carmen; a question first; corrections",
+      turns: ["Quiero ir a la playa.", "No, a Tulum.", "¿A qué hora sale el próximo autobús?", "Sencillo.", "No voy a Tulum, voy a Mérida.", "El de la tarde.",
+        "Pasillo no.", "No.", "Lo tengo en el hotel.", "Ryan Miller.", "Con tarjeta.", "No, eso es todo."],
+      auto: omit(AUTO, ["dest", "trip", "time", "seat", "name", "pay", "ticket", "info"]), setup: (s) => { Object.assign(s, FIXED, { volunteer: false }); },
+      expect: { complete: true, state: { dest: "merida", trip: "oneway", dep: "late", seat: "window", named: true, paid: true } } },
   ],
 };
 
@@ -1306,14 +1389,20 @@ export const tickets: SituationDef = {
 function soldPending(): Pending {
   const late = (cc: Ctx) => { cc.s.dep = "late"; cc.s.totalSaid = false; cc.say("time_ok", { at: clock(LATE) }); };
   const tomorrow = (cc: Ctx) => { cc.s.travel = "tomorrow"; cc.s.dep = "first"; cc.say("tomorrow_ok", { at: clock(dest(cc.s.dest).time) }); };
+  // another day said ("Mejor el viernes"): that day's morning bus; today ("Hoy") leaves only the 5:15
+  const onDay = (cc: Ctx, day: string | undefined, again: () => void) => {
+    if (!day || day === "today" || day === "tonight" || day === "this_afternoon" || day === "this_morning") { cc.say("today_only", { late: clock(LATE) }); again(); return; }
+    if (day === "tomorrow") { tomorrow(cc); return; }
+    setTravel(cc, day); cc.s.dep = "first"; cc.say("time_ok", { at: clock(dest(cc.s.dest).time) });
+  };
   return {
-    id: "sold_out", expects: ["accept_ctx", "time_ctx", "ask_earlier_ctx", "travel_ctx", "ok_thanks"], hints: ["sold_out"],
+    id: "sold_out", expects: ["accept_ctx", "time_ctx", "ask_earlier_ctx", "travel_ctx", "ok_thanks", "late_no_ctx"], hints: ["sold_out"],
     suggest: [{ lt: "Take the 5:15 bus, or ask about another", hint: "sold_out" }],
     on: {
       accept_ctx: (cc, sl) => { if (sl.time && depOf(cc, sl.time) === "first") { cc.say("still_full", { at: clock(dest(cc.s.dest).time) }); cc.say("sold_remind", { late: clock(LATE) }); cc.expect(soldPending()); return; } late(cc); },
       time_ctx: (cc, sl, sg) => {
         const tags = allTags(sl, sg);
-        if (sl.day === "tomorrow" || sl.day === "day_after_tomorrow") { tomorrow(cc); return; }
+        if (sl.day && sl.day !== "today") { onDay(cc, sl.day, () => cc.expect(soldPending())); return; }
         const dep = tags.includes("late") ? "late" : tags.includes("first") ? "first" : depOf(cc, sl.time);
         if (dep === "late") { late(cc); return; }
         cc.say("still_full", { at: clock(dest(cc.s.dest).time) });
@@ -1321,22 +1410,32 @@ function soldPending(): Pending {
         cc.expect(soldPending());
       },
       ask_earlier_ctx: (cc) => { cc.say("only_late", { late: clock(LATE) }); cc.expect(soldPending()); },
-      travel_ctx: (cc, sl) => { if (sl.day && sl.day !== "today") tomorrow(cc); else { cc.say("only_late", { late: clock(LATE) }); cc.expect(soldPending()); } },
+      travel_ctx: (cc, sl) => { onDay(cc, sl.day, () => cc.expect(soldPending())); },
       ok_thanks: (cc) => { cc.say("sold_remind", { late: clock(LATE) }); cc.expect(soldPending()); },
+      late_no_ctx: (cc) => { declineLate(cc); },
     },
     yes: late,
-    no: (cc) => {
-      cc.say("tomorrow_offer", { at: clock(dest(cc.s.dest).time) });
-      cc.expect({
-        id: "sold_out_tomorrow", expects: ["travel_ctx", "accept_ctx", "time_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Take tomorrow's bus or not", hint: "g_yesno" }],
-        on: { travel_ctx: tomorrow, accept_ctx: tomorrow, time_ctx: (cc2, sl, sg) => { if (allTags(sl, sg).includes("late") || depOf(cc2, sl.time) === "late") late(cc2); else tomorrow(cc2); } },
-        yes: tomorrow,
-        no: (cc2) => { cc2.say("walk_off"); cc2.end(); },
-        ask: (cc2) => cc2.say("tomorrow_offer", { at: clock(dest(cc2.s.dest).time) }),
-      });
-    },
+    no: (cc) => { declineLate(cc); },
     ask: (cc) => cc.say("sold_remind", { late: clock(LATE) }),
   };
+  /** No to the 5:15: tomorrow's first bus, or nothing. */
+  function declineLate(cc: Ctx) {
+    const walkOff = (cc2: Ctx) => { cc2.say("walk_off"); cc2.end(); };
+    if (cc.s.tomorrowOffered) { walkOff(cc); return; } // offered and declined once already (rule 13)
+    cc.s.tomorrowOffered = true;
+    cc.say("tomorrow_offer", { at: clock(dest(cc.s.dest).time) });
+    const offer: Pending = {
+      id: "sold_out_tomorrow", expects: ["travel_ctx", "accept_ctx", "time_ctx", "tomorrow_no_ctx", "late_no_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Take tomorrow's bus or not", hint: "g_yesno" }],
+      on: { tomorrow_no_ctx: walkOff, late_no_ctx: walkOff,
+        // "Hoy" here is not a yes to tomorrow: today only the 5:15 is left
+        travel_ctx: (cc2, sl) => { onDay(cc2, sl.day, () => cc2.expect(soldPending())); }, accept_ctx: tomorrow,
+        time_ctx: (cc2, sl, sg) => { if (allTags(sl, sg).includes("late") || depOf(cc2, sl.time) === "late") late(cc2); else if (sl.day && sl.day !== "tomorrow") onDay(cc2, sl.day, () => cc2.expect(soldPending())); else tomorrow(cc2); } },
+      yes: tomorrow,
+      no: walkOff,
+      ask: (cc2) => cc2.say("tomorrow_offer", { at: clock(dest(cc2.s.dest).time) }),
+    };
+    cc.expect(offer);
+  }
 }
 
 /** The ID or the name for the ticket; with more passengers, Don Raúl asks for the other names too. */
@@ -1356,7 +1455,7 @@ function idDone(c: Ctx, line: string) {
 
 /** "¿Para qué hora?" with both departures; once the morning bus is full, only the 5:15 is offered. */
 function askTime(c: Ctx) {
-  if (c.s.full && c.s.travel !== "tomorrow") { c.say("sold_remind", { late: clock(LATE) }); c.expect(soldPending()); return; }
+  if (fullNow(c)) { c.say("sold_remind", { late: clock(LATE) }); c.expect(soldPending()); return; }
   c.say(c.s.timeAsked ? "time_again" : "ask_time", { at: clock(dest(c.s.dest).time), late: clock(LATE) });
   c.s.timeAsked = true;
 }
@@ -1366,6 +1465,18 @@ function destFromText(heard: string): string | undefined {
   const h = " " + heard.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ") + " ";
   for (const e of DESTS) for (const f of [e.en.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""), ...(e.forms || [])]) if (f !== "playa" && h.includes(" " + f + " ")) return e.id;
   return undefined;
+}
+
+/** "a la playa" (the beach) said without "del Carmen": Don Raúl checks which one is meant. */
+function beachOnly(heard: string): boolean {
+  const h = " " + heard.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ") + " ";
+  return / la playa /.test(h) && !/ playa (del? )?carmen /.test(h);
+}
+function askPlaya(c: Ctx) {
+  c.say("ask_playa");
+  c.expect({ id: "playa_q", expects: ["dest_ctx", "buy"], hints: ["buy"], suggest: [{ lt: "Say yes, or say where you're going", hint: "buy", options: "dest" }],
+    yes: (cc) => { setDest(cc, "playa"); cc.say("ack"); }, no: (cc) => { cc.say("dest_list"); },
+    ask: (cc) => cc.say("ask_playa") });
 }
 
 function setDest(c: Ctx, id: string) {
