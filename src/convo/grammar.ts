@@ -13,7 +13,8 @@
 // silently skipped. A prefix mode tells the speech layer whether an unfinished
 // utterance is still heading towards an accepted response.
 
-import { tokenizePatternWords, tokenSimilarity, NEGATION_TOKENS, DROPPABLE, SKIPPABLE, SUBJECT_IT_BEFORE, type Tokens } from "./normalize";
+import { tokenizePatternWords, tokenSimilarity, NEGATION_TOKENS, DROPPABLE, SKIPPABLE, type Tokens } from "./normalize";
+import { LANG } from "./lang";
 
 export interface Cap { name: string; value: unknown; from: number; to: number }
 /** A match. `d`: optional function words left out; `kl`: literal words matched, `kc` of them content
@@ -65,7 +66,7 @@ export const mk = {
     // literal word and no fewer words kept than left out
     return mk.seq(toks.map((t, i) => {
       let drop = soft ? DROPPABLE.get(t) : undefined;
-      if (t === "it" && !SUBJECT_IT_BEFORE.has(toks[i + 1])) drop = undefined; // the object "it" stays
+      if (LANG.keepDroppable(t, toks[i + 1])) drop = undefined; // the object "it" stays
       return drop !== undefined ? mk.opt(mk.lit(t), drop) : mk.lit(t);
     }), !soft);
   },
@@ -166,13 +167,13 @@ function keepLastWord(n: GNode) {
 // Lexicon tries
 
 interface Trie { next: Map<string, Trie>; ids: { id: string; tags?: string[]; cost?: number }[] }
-const ARTICLES = new Set(["a", "an", "the"]);
+const ARTICLES = LANG.articles;
 /** A lexicon form without its articles ("by window", "beach", "cold beer": Lithuanian has none), as long as
  *  a content word is left: "the one" never becomes "one". */
 function withoutArticles(toks: Tokens): Tokens | null {
   if (!toks.some((t) => ARTICLES.has(t))) return null;
   const rest = toks.filter((t) => !ARTICLES.has(t));
-  if (!rest.length || (rest.length === 1 && /^(one|ones|other|others|same|lot|bit|\d+)$/.test(rest[0]))) return null;
+  if (!rest.length || (rest.length === 1 && LANG.aloneAfterArticle.test(rest[0]))) return null;
   return rest;
 }
 function buildTrie(entries: LexEntry[]): Trie {
@@ -480,8 +481,7 @@ export function capsToObject(caps: Cap[]): Record<string, unknown> {
  *  graceful "I'm not sure we have that" replies, never for normal meaning. */
 /** An unknown thing starts like a noun phrase, not with a pronoun, auxiliary or "to" ("I'll take it",
  *  "I need to…", "I am leaving" are not requests for an unknown item). */
-const NOT_A_THING_START = new Set(["it", "to", "i", "you", "we", "he", "she", "they", "them", "him", "her", "me", "us",
-  "am", "is", "are", "was", "were", "be", "been", "do", "does", "did", "have", "has", "had", "will", "would", "can", "could", "should", "not"]);
+const NOT_A_THING_START = LANG.notAThingStart;
 export function anyWords(max = 5): SlotFn {
   return (tokens, pos, prefix) => {
     const out: SlotResult[] = [];

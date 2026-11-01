@@ -27,8 +27,11 @@ export interface EntityDef {
   en: string;
   /** Plural head with the same unit count. */
   pl?: string;
-  /** Article used in {X.np}: computed from the first word if omitted; "" = none (uncountable); "some"; "the" for places like "the museum". */
-  art?: "a" | "an" | "" | "some" | "the";
+  /** Article used in {X.np}: computed from the first word if omitted; "" = none (uncountable); "some"; "the" for places like "the museum".
+   *  Spanish edition: "un" / "una" ("un agua"), or "" for a mass noun. */
+  art?: "a" | "an" | "" | "some" | "the" | "un" | "una";
+  /** Spanish edition: the definite article when it isn't the gender's ("el agua"). */
+  def?: "el" | "la";
   /** Lithuanian case forms per unit: "latė/latės/latei/latę/late/latėje"; one form = indeclinable. Units separated by " | ". */
   lt: string;
   ltPl?: string;
@@ -40,6 +43,9 @@ export interface EntityDef {
   ltPlF?: string;
   /** Gender of the feminine forms (default "f"). */
   gF?: Gender;
+  /** Spanish edition: the practised language's feminine forms for an entity that describes the player ("enfermera"). */
+  enF?: string;
+  plF?: string;
   /** Lithuanian label for suggestion chips (default: the nominative). */
   chip?: string;
   /** Extra recognised surface forms (synonyms, common mis-recognitions). EN singular/plural are added automatically. */

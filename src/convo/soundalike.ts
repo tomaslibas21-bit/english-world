@@ -5,25 +5,11 @@
 // back ("Sorry, a latte?"), as a real barista would, and the learner hears the word said right.
 import type { EntityDef } from "../content/types";
 import { levenshtein, NEGATION_TOKENS } from "./normalize";
+import { LANG } from "./lang";
 import type { Nlu } from "./nlu";
 
-/** A rough sound key: English spelling folded to its consonants, with the differences a Lithuanian accent or a
- *  recogniser blurs (t/d, p/b, k/g, s/z, v/w, ch/j) made equal. "latte", "lotta", "lady", "la tay" → "lt". */
-export function soundKey(word: string): string {
-  let s = word.toLowerCase().replace(/[^a-z]/g, "");
-  if (!s) return "";
-  s = s
-    .replace(/cch/g, "k").replace(/cc(?=[ie])/g, "ch") // Italian: macchiato, cappuccino
-    .replace(/tch/g, "C").replace(/ch/g, "C").replace(/j/g, "C")
-    .replace(/ph/g, "f").replace(/gh/g, "").replace(/ck/g, "k").replace(/qu/g, "kv").replace(/q/g, "k")
-    .replace(/x/g, "ks").replace(/th/g, "t").replace(/sh/g, "s")
-    .replace(/c(?=[eiy])/g, "s").replace(/c/g, "k")
-    .replace(/d/g, "t").replace(/b/g, "p").replace(/g/g, "k").replace(/z/g, "s").replace(/w/g, "v")
-    .replace(/h/g, "")
-    .replace(/[aeiouy]/g, "")
-    .replace(/(.)\1+/g, "$1");
-  return s;
-}
+/** A rough sound key (the practised language's, src/convo/lang.ts): "latte", "lotta", "lady", "la tay" → "lt". */
+export const soundKey = (word: string): string => LANG.soundKey(word);
 
 const letters = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 /** How alike two spellings are, 0…1. */
@@ -34,12 +20,12 @@ function likeness(a: string, b: string): number {
 }
 
 /** Words that never start or end a sound-alike: they are the sentence around the name. */
-const EDGE = new Set(["a", "an", "the", "of", "to", "and", "or", "i", "you", "it", "is", "am", "are", "be", "please", "one", "some", "my", "your", "for", "with", "in", "on", "at", "can", "could", "get", "have", "like", "want", "would", "just", "yes", "yeah", "okay", "ok", "thanks", "thank", "uh", "um"]);
+const EDGE = LANG.soundEdge;
 
 /** Short words a recogniser writes for an unstressed vowel inside a name. */
-const VOWELISH = new Set(["of", "a", "uh"]);
+const VOWELISH = LANG.soundVowelish;
 /** What may follow a name at the end of an answer. */
-const TAIL = new Set(["please", "thanks", "thank", "you"]);
+const TAIL = LANG.soundTail;
 
 export interface SoundFix {
   /** the answer with the heard words replaced by the name */

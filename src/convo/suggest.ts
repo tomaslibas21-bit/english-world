@@ -11,6 +11,7 @@
 // said, and each word is marked as said or missed.
 
 import { compose, type EntityLookup, type Sentence } from "./compose";
+import { LANG } from "./lang";
 import { entityForms } from "./dialogue";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
 import { isConfirmation, levenshtein, NEGATION_TOKENS, normalizedVariants, SOFT_FILLERS, surfaceTokens, tokenizeInput, tokenSimilarity, type Tokens } from "./normalize";
@@ -115,16 +116,10 @@ export function answerCandidates(sit: SituationDef, groups: { g: HintGroup; chos
 // Ranking
 
 /** Words that carry little meaning of their own: a match on "latte" says more than one on "a". */
-const LIGHT = new Set([
-  "a", "an", "the", "i", "you", "we", "he", "she", "it", "they", "me", "my", "your", "our", "us", "him", "her", "them",
-  "to", "of", "for", "in", "on", "at", "with", "by", "from", "and", "or", "but", "so", "if",
-  "is", "am", "are", "was", "were", "be", "been", "do", "does", "did", "have", "has", "had",
-  "can", "could", "would", "will", "shall", "should", "may", "might", "must",
-  "some", "this", "that", "these", "those", "there", "here", "just", "oh", "okay", "yeah", "well", "please", "too", "also", "very",
-]);
+const LIGHT = LANG.light;
 const weight = (t: string) => (LIGHT.has(t) ? 0.35 : 1);
 /** Question words matter for meaning, but one alone ("what…") doesn't make two sentences alike. */
-const WH = new Set(["what", "where", "when", "why", "how", "who", "which", "whose"]);
+const WH = LANG.wh;
 const hasNegation = (t: Tokens) => t.some((x) => NEGATION_TOKENS.has(x));
 
 /** How alike two words sound or look, for ranking only (never for understanding): the engine's own
@@ -211,7 +206,7 @@ export interface Guess { options: { en: string; nat: string; say: string }[]; he
 export function markHeard(heard: string, target: string): HeardWord[] {
   const known = [...new Set(normalizedVariants(surfaceTokens(target), false).flat())];
   return heard.trim().split(/\s+/).filter(Boolean).map((w) => {
-    const toks = surfaceTokens(w).filter((t) => !SOFT_FILLERS.has(t) && t !== "please");
+    const toks = surfaceTokens(w).filter((t) => !SOFT_FILLERS.has(t) && !LANG.markIgnore.has(t));
     if (!toks.length) return { w, miss: false };
     const ok = normalizedVariants(toks, false).some((v) => v.every((t) => known.some((k) => tokenSimilarity(t, k) >= 0.9)));
     return { w, miss: !ok };
@@ -256,8 +251,7 @@ export interface Practice {
   result?: RepeatResult;
 }
 
-const DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
-  "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
+const DIGITS = LANG.digitWords;
 const spell = (toks: Tokens) => toks.map((t) => (/^\d+$/.test(t) && +t <= 20 ? DIGITS[+t] : t));
 
 function heardVariants(heard: string): Tokens[] {

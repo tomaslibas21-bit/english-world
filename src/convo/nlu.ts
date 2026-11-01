@@ -10,6 +10,7 @@
 import { Grammar, mk, parsePattern, type GNode, type Res } from "./grammar";
 import { tokenizeInput, NEGATION_TOKENS, DROPPABLE, SKIPPABLE, type Tokens } from "./normalize";
 import { BUILTIN_SLOTS, isKnownName } from "./slots";
+import { LANG } from "./lang";
 
 export interface ParsedSegment { intent: string; slots: Record<string, any>; tags: string[] }
 export interface Parse {
@@ -29,39 +30,21 @@ export interface NluResult {
   tokens: Tokens;
 }
 
-const LEADS: [string, string][] = [
-  ["greet", "hi | hello | hey | hi there | hello there | hey there | good morning | good afternoon | good evening | morning | evening | howdy | hello again | hi again | yes hello | good day"],
-  ["open", "oh | okay | so | well | right | all right | alright | great | perfect | cool | awesome | nice | good | actually | hmm | ah | wow | now | also | and also | plus | and | um so | so um | okay so | okay um | yeah so | so yeah | well actually | oh okay | ah okay | oh right | oh yes | right so | okay good | okay then | let me see | let me think | i think | i guess | maybe | just | honestly | basically | you know | i mean | listen | look | yes so | oh sorry | oh well | oh hi | aw | aww | oh wow | really | oh really | wow really"],
-  ["sorry", "sorry | excuse me | pardon me | i am sorry | so sorry | sorry to bother you | excuse me please | sorry sorry"],
-  // courtesy before a refusal: only what follows "but" is the answer ("Thank you, but I can't accept it")
-  ["but", "thank you but | thanks but | thank you so much but | thank you very much but | i would love to but | i would like to but | i would really like to but | that sounds great but | sounds great but | that sounds nice but | sounds good but | that is very kind but | that is so kind but | that is nice but | it sounds good but | i am sorry but | sorry but | good idea but | i know but"],
-  ["help", "one question | quick question | i have a question | i have a quick question | can you help me | could you help me | can you help me please | i need help | i need your help | i have a problem | i have a small problem | we have a problem"],
-];
-const TAILS: [string, string][] = [
-  ["thanks", "thanks | thank you | thank you very much | thank you so much | thanks a lot | thanks so much | many thanks | cheers | ta | thanks again | thank you again | thanks a bunch | much appreciated | i appreciate it | appreciate it"],
-  // "Card is fine", "Medium would be great", "Two nights works": an answer plus its own acceptance
-  ["accept", "is fine | is good | is okay | is ok | is great | is perfect | is fine for me | would be great | would be fine | would be nice | would be perfect | will do | works | works for me | sounds good | is all right"],
-  ["soft", "then | for me | too | as well | if possible | if you can | if that is okay | if that is ok | if it is possible | if you do not mind | right | okay | i think | i guess | maybe | for now | right now | now | also | is that okay | is that all right | is that possible | is it possible | if that is possible | if you have it | if you have one | ok | yeah | you know | sorry | if that is all right | actually | is it okay | is it ok | it is okay | it is ok | is it fine | is it possible | it is possible | is this okay | is this ok | is that fine | yes"],
-];
+const LEADS = LANG.leads;
+const TAILS = LANG.tails;
 /** Generic ways of addressing someone; the situation adds its NPCs' names (see setVocatives). */
-const VOCATIVES = "sir | madam | miss | officer | doctor | buddy | man | dude | my friend | guys | mister | folks | everyone";
+const VOCATIVES = LANG.vocatives;
 /** Short yes/no interjections that may lead into another intent ("No, to go"). */
-const YES_LEAD = "that is fine | that is okay | that sounds good | sounds good | no problem | no worries | yes | yeah | yep | yup | sure | okay | ok | of course | definitely | absolutely | yes please | yeah please | sure thing | exactly | yes exactly | that is right | yes that is right | you are right | correct | why not | yes i am | yes i do | yes i have | yes i can | yes i would | yes it is | yes we are | yes we do";
-const NO_LEAD = "no | nope | nah | no thanks | no thank you | not really | not now | not yet | not exactly | i do not think so | no sorry | sorry no | not today | not right now | unfortunately not | i am afraid not | maybe later | no i am not | no i do not | no i have not | no i can not | no it is not | no we do not | no i would not";
-const YES = "yes go ahead | i would like to | yes i would like to | yes it is correct | yes it is right | yeah it is correct | it is correct | [yes | yeah | sure | oh] [that | it] (would be | sounds | is) [very | really | so] (nice | great | good | perfect | wonderful | lovely | helpful | kind | amazing) | i think so | i guess so | yes i think so | probably | yes do | yes it does | yes there is | yes i have | yes i did | yes i will | yes we are | yes we have | yes we did | that is fine | that is okay | that is good | that works for me | works for me | that sounds good | okay sure | sure okay | yeah sure | yes okay | okay yes | no problem | sure no problem | of course yes | yes yes | yeah yeah | deal | let us do (it | that) | yes sir | yes madam | yes please thank you | yes thank you | yeah thanks | sure thanks | okay thanks | okay thank you | why not | yes | yeah | yep | yup | sure | of course | definitely | absolutely | okay | ok | yes please | yeah please | sure thing | why not | that would be great | that would be nice | sounds good | that is right | that is correct | correct | right | exactly | yes it is | yes i do | yes i am | yes i would | yes i can | yes we do | i do | i would | i would love to | i would like that | yes definitely | uh huh | [yes | sure | yeah] (that is | that would be | that will be) (fine | okay | great | perfect | good | lovely) | that works | fine | fine by me | sounds great | perfect | yes sure | sure why not | go ahead | yes of course | yes that works | [yes | yeah | yep] that is (right | correct) | yes correct | yes exactly | yes right | yes indeed | yes it is | yes that is me | that is me";
-const NO = "no i am (fine | okay | good) [thanks | thank you] | no (thank you | thanks) it is (okay | fine | all right) | no it is okay thanks | that is all | that is everything | that is all for now | that is all for today | that is everything for today | no that is all | no that is everything | nothing else | no nothing else | i am all set | no i am all set | all set | not today | not right now | unfortunately not | i am afraid not | i am afraid not sorry | maybe later | maybe next time | not this time thanks | i do not think so | no i do not think so | not really no | no not really | no no | no i did not | no i have not | no it does not | no there is not | no we did not | no i will not | no i can not | not now thanks | no that is fine | no that is all right | no it is all right | no need thanks | nope sorry | no sir | no madam | definitely not | absolutely not | of course not | no thanks i am fine | no thank you i am fine | no | nope | nah | no thanks | no thank you | not really | not today | not now | not this time | no i do not | no i am not | no i would not | no it is not | no it is fine | no that is okay | i do not | no need | not at all | no it is okay | no thanks i am good | not for me | i will pass | no i am good | no that is not (right | correct) | that is not (right | correct) | not quite | no that is wrong | no sorry | sorry no | no i am sorry | sorry not really | no we do not | we do not | no we are not | we are not | no we have not | not yet";
+const YES_LEAD = LANG.yesLead;
+const NO_LEAD = LANG.noLead;
+const YES = LANG.yes;
+const NO = LANG.no;
 
-const NUMBER_WORDS = new Set(["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
-  "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty", "sixty",
-  "seventy", "eighty", "ninety", "hundred", "thousand", "half", "quarter", "first", "second", "third"]);
+const NUMBER_WORDS = LANG.numberWords;
 
 /** Question words and auxiliaries: they decide whether a sentence is a question, a statement or a request. */
-const KEY_WORDS = new Set(["what", "where", "when", "why", "how", "which", "who", "whose", "whom",
-  "is", "are", "am", "was", "were", "do", "does", "did", "can", "could", "will", "would", "should", "shall",
-  "may", "might", "must", "have", "has", "had"]);
-const POSSESSIVES = new Set(["my", "your", "his", "her", "our", "their", "its"]);
-/** Words that start a new clause with its own subject ("No, I'm not. I need a taxi."). */
-const SUBJECTS = new Set(["i", "we", "you", "he", "she", "it", "they", "that", "this", "there", "my", "our", "your", "no", "yes"]);
+const KEY_WORDS = LANG.keyWords;
+const POSSESSIVES = LANG.possessives;
 
 /** A reading that cuts a negation off from what follows it: "I don't | want to open an account",
  *  "Please don't | turn it up". A piece may end in "not"/"never" only if the next piece starts a new
@@ -73,73 +56,50 @@ function negationCutOff(r: { caps: { name: string; value: unknown; from: number;
     // a piece right after "not"/"never" (after another piece, or after "No, I don't") must start a new
     // clause: "No, I don't | want coffee" is not "no" + an order
     const before = c.from > 0 ? toks[c.from - 1] : "";
-    if ((before === "not" || before === "never") && !startsNewPart(toks, c.from, c.to, true)) return true;
+    if (LANG.clauseNegators.has(before) && !startsNewPart(toks, c.from, c.to, true)) return true;
     if (i === 0) continue;
     const prev = segs[i - 1];
     // after a negative piece, the next one must start something new (a clause, a question, a contrast):
     // "I don't have | my passport" is not handing over the passport. Two pieces of the same answer are
     // fine ("Not much, the usual").
     const sameAnswer = (prev.value as any)?.__id === (c.value as any)?.__id;
-    if (!sameAnswer && toks.slice(prev.from, prev.to).some((t) => t === "not" || t === "never") && !startsNewPart(toks, c.from, c.to)) return true;
+    if (!sameAnswer && toks.slice(prev.from, prev.to).some((t) => LANG.clauseNegators.has(t)) && !startsNewPart(toks, c.from, c.to)) return true;
     // a piece can't begin with the verb of the previous one: "tomorrow | doesn't work", "the steak | is not
     // good", "full coverage | would be too expensive" (a question is fine: "Not bad. | Are you free?")
     if (c.from === prev.to && PREDICATE_AUX.has(toks[c.from]) && !SUBJ_PRONOUNS.has(toks[c.from + 1])) return true;
   }
   return false;
 }
-const AUXILIARIES = new Set(["do", "does", "did", "is", "are", "was", "were", "will", "would", "can", "could", "should", "have", "has", "had"]);
-const PREDICATE_AUX = new Set(["does", "is", "was", "has", "would", "will", "are", "were"]);
-const SUBJ_PRONOUNS = new Set(["i", "you", "we", "he", "she", "it", "they", "there", "this", "that"]);
+const AUXILIARIES = LANG.auxiliaries;
+const PREDICATE_AUX = LANG.predicateAux;
+const SUBJ_PRONOUNS = LANG.subjectPronouns;
 /** Words that begin a new clause, question, command, contrast or aside (not an object of what came before). */
-const NEW_PART = new Set(["i", "we", "you", "he", "she", "it", "they", "there", "this", "that", "yes", "no",
-  "just", "only", "but", "instead", "rather", "actually", "maybe", "probably", "perhaps", "about", "around",
-  "can", "could", "would", "will", "do", "does", "did", "is", "are", "was", "were", "should", "may", "shall",
-  "what", "where", "when", "why", "how", "which", "who",
-  "since", "because", "so", "and", "or", "then", "now", "today", "tomorrow", "yesterday", "anymore", "yet",
-  "thanks", "thank", "bye", "goodbye", "see", "hi", "hello", "sorry", "please", "okay", "sure",
-  "throw", "keep", "take", "give", "put", "send", "call", "tell", "show", "bring", "let", "wait", "start", "go",
-  "come", "check", "try", "make", "look", "leave", "stop", "turn", "help"]);
-const DETERMINERS = new Set(["the", "a", "an", "my", "your", "our", "his", "her", "their"]);
+const NEW_PART = LANG.newPart;
+const DETERMINERS = LANG.determiners;
 /** Words that would continue a negated verb ("don't | turn it up", "not | today"): after "not" itself they
  *  never start a new part. */
-const VERB_OR_ASIDE = new Set(["throw", "keep", "take", "give", "put", "send", "call", "tell", "show", "bring", "let", "wait",
-  "start", "go", "come", "check", "try", "make", "look", "leave", "stop", "turn", "help", "maybe", "probably", "perhaps",
-  "about", "around", "since", "because", "so", "then", "now", "today", "tomorrow", "yesterday", "anymore", "yet", "please"]);
+const VERB_OR_ASIDE = LANG.verbOrAside;
 function startsNewPart(toks: Tokens, from: number, to: number, rightAfterNot = false): boolean {
   const t = toks[from];
   if (rightAfterNot && VERB_OR_ASIDE.has(t)) return false;
   if (NEW_PART.has(t)) return true;
-  if (t === "a" && (toks[from + 1] === "little" || toks[from + 1] === "bit")) return true; // "not bad, a little tired"
+  if (LANG.newPartPair(t, toks[from + 1])) return true; // "not bad, a little tired"
   // "the heating isn't working": a noun phrase that is the subject of its own verb
   if (DETERMINERS.has(t)) return toks.slice(from + 1, to).some((w) => AUXILIARIES.has(w) || w === "am");
   return false;
 }
 
 // after "no", a noun or adjective makes "no" a determiner ("no cash"); anything else starts a correction or a clause
-const CORRECTION_STARTERS = new Set(["to", "for", "in", "with", "at", "by", "on", "from", "just", "only", "actually", "but",
-  "the", "a", "an", "this", "that", "i", "we", "it", "you", "he", "she", "they", "there", "here", "my", "your", "our",
-  "can", "could", "would", "will", "should", "do", "does", "did", "is", "are", "was", "were", "have", "has", "not", "never",
-  "maybe", "please", "rather", "instead", "make", "let", "sorry", "thanks", "thank", "okay", "sure", "yes", "now", "then",
-  "what", "where", "when", "why", "how", "which", "who", "go", "come", "wait", "keep", "take", "give", "put", "tell",
-  // "no me and my wife", "no mine is black", "no all good", "no no questions", "no tomorrow" (speech recognition writes no comma)
-  "me", "us", "him", "them", "mine", "yours", "ours", "all", "no", "nothing", "none", "tomorrow", "today", "tonight", "next", "noon"]);
+const CORRECTION_STARTERS = LANG.correctionStarters;
 /** "i want" / "we want" (not "i do not want", not "want" alone) as "i would like": null if there is none. */
-function wantAsWouldLike(toks: Tokens): Tokens | null {
-  let hit = false;
-  const out: Tokens = [];
-  toks.forEach((t, i) => {
-    if (t === "want" && (toks[i - 1] === "i" || toks[i - 1] === "we")) { out.push("would", "like"); hit = true; }
-    else out.push(t);
-  });
-  return hit ? out : null;
-}
+const wantAsWouldLike = LANG.wantAsWouldLike;
 /** The piece right after a bare leading "no" starts with a noun ("no cash"): "no" is a determiner there.
  *  ("nope" and "nah" never are: "nope all good" is "Nope, all good".) */
 function noIsDeterminer(r: { caps: { name: string; from: number }[] }, toks: Tokens): boolean {
   const first = r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from)[0];
   if (!first || first.from === 0) return false;
   const before = toks[first.from - 1];
-  return before === "no" && !CORRECTION_STARTERS.has(toks[first.from]);
+  return before === LANG.noWord && !CORRECTION_STARTERS.has(toks[first.from]);
 }
 
 /** "Again", "What?", "Sorry?" asking to repeat only mean that on their own, not inside a longer
@@ -164,7 +124,7 @@ function leavingCutOff(r: { caps: { name: string; value: unknown; from: number; 
   // nor inside a question ("Where do | I have to go?", "Where do I | have to go?"); "…go to work" is no
   // "go" + the tails "too" and "works"
   const b1 = toks[segs[i].from - 1] ?? "", b2 = toks[segs[i].from - 2] ?? "";
-  if (KEY_WORDS.has(b1) || (SUBJ_PRONOUNS.has(b1) && KEY_WORDS.has(b2)) || toks[segs[i].to] === "to") return true;
+  if (KEY_WORDS.has(b1) || (SUBJ_PRONOUNS.has(b1) && KEY_WORDS.has(b2)) || LANG.leavingContinues.has(toks[segs[i].to])) return true;
   return segs.slice(i + 1).some((c) => !AFTER_LEAVING.has((c.value as any)?.__id));
 }
 
@@ -242,12 +202,7 @@ export class Nlu {
   /** Names the learner may use to address the NPCs of this situation ("Hi Mia, …", "Thanks, officer"). */
   setVocatives(names: string[]) {
     const alts = new Set<string>();
-    for (const name of names) {
-      const words = name.toLowerCase().replace(/[^a-z\s'-]/g, " ").split(/[\s-]+/).filter(Boolean);
-      if (!words.length) continue;
-      alts.add(words.join(" "));
-      if (words.length > 1) { alts.add(words[words.length - 1]); alts.add(words[0]); }
-    }
+    for (const name of names) for (const f of LANG.vocativeForms(name)) alts.add(f);
     this.vocatives = [VOCATIVES, ...alts].join(" | ");
     this.shared = null;
     this.tops.clear();
@@ -276,13 +231,13 @@ export class Nlu {
       S([parsePattern(NO_LEAD, false), mk.tag(["yn:no"])]),
     ]);
     // "Yes, but can I have two beds?", "No, and …"
-    const ynConn = mk.opt(parsePattern("but | and | so | also | and also", false));
+    const ynConn = mk.opt(parsePattern(LANG.ynConnectors, false));
     // a yes/no word may also come before a longer yes/no phrase: "Yes, why not", "No, not really"
     const ynTwice = mk.alt([
       S([parsePattern(YES_LEAD, false), parsePattern(YES, false), mk.tag(["yn:yes", "yn:twice"])]),
       S([parsePattern(NO_LEAD, false), parsePattern(NO, false), mk.tag(["yn:no", "yn:twice"])]),
     ]);
-    const conn = mk.opt(parsePattern("and | and also | also | plus | but | oh and | and then | then | so | or | actually | maybe", false));
+    const conn = mk.opt(parsePattern(LANG.connectors, false));
     return { lead, tail, yn, ynLead, ynConn, ynTwice, conn, voc };
   }
 

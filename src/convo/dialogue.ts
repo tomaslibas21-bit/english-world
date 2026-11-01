@@ -12,6 +12,7 @@ import { compose, type Sentence, type Vars } from "./compose";
 import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
 import { soundRepair } from "./soundalike";
 import { isConfirmation } from "./normalize";
+import { LANG } from "./lang";
 import type { Gender } from "./lt-morph";
 
 
@@ -524,10 +525,10 @@ export class Conversation {
   private checkReply(text: string): "yes" | "no" | { rest: string } | null {
     if (isConfirmation(text, true)) return "yes";
     const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
-    if (/^(yes|yeah|yep|yup|sure|right|correct|exactly)[,!]?\s+(that's it|that is it|that's right|that is right|exactly|correct|please|thanks|thank you)$/.test(t)) return "yes";
+    if (LANG.checkYes.test(t)) return "yes";
     const yn = this.bareYesNo(text);
     if (yn) return yn;
-    const m = /^(no|nope|nah)[,.!]?\s+(.+)$/i.exec(text.trim());
+    const m = LANG.checkNo.exec(text.trim());
     if (m && m[2].replace(/[^a-z]/gi, "")) return { rest: m[2] };
     return null;
   }
