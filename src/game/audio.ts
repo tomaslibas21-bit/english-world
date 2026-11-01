@@ -6,6 +6,28 @@ import { audioDir } from "../content/voices";
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
 
+/** The token the course opened the game's page with (?t=), if any. */
+const PAGE_TOKEN = (() => {
+  try { return new URL(location.href).searchParams.get("t"); } catch { return null; }
+})();
+
+/** The course's files token (fluent-steps docs/FILE-PROTECTION.md, docs/GAME.md): in the course, the clips on its
+ *  files host are only for learners who have the course. The course opens the game's page with one (?t=) and keeps a
+ *  newer one in localStorage ("fs-files-token") as it renews it; the newer one wins. None outside the course. */
+export function filesToken(): string | null {
+  try {
+    const k = JSON.parse(localStorage.getItem("fs-files-token") ?? "null") as { token?: unknown; exp?: unknown } | null;
+    if (k && typeof k.token === "string" && typeof k.exp === "number" && k.exp > Date.now() / 1000 + 60) return k.token;
+  } catch { /* no storage */ }
+  return PAGE_TOKEN;
+}
+
+/** A clip's address: its folder and key, the version of a re-recorded clip, and the files token when there is one. */
+export function clipUrl(base: string, key: string, version?: string, token?: string | null): string {
+  const query = [version ? `v=${version.slice(0, 12)}` : "", token ? `t=${encodeURIComponent(token)}` : ""].filter(Boolean).join("&");
+  return base + key + ".mp3" + (query ? `?${query}` : "");
+}
+
 export class AudioSystem {
   manifest: Record<string, number> = {};
   /** New content hashes for clips re-recorded at the same keys (repair-versions.json in the clip folder): the version on
@@ -59,8 +81,7 @@ export class AudioSystem {
     }
     if (this.manifest[key]) {
       return new Promise((resolve) => {
-        const version = this.repairVersions[key];
-        const a = new Audio(this.base + key + ".mp3" + (version ? `?v=${version.slice(0, 12)}` : ""));
+        const a = new Audio(clipUrl(this.base, key, this.repairVersions[key], filesToken()));
         a.volume = this.volume;
         a.preservesPitch = true;
         a.playbackRate = opts.slow ? 0.82 : 1;
