@@ -8,6 +8,8 @@ import type { Sentence } from "../convo/compose";
 import { ipaForUnit } from "../convo/ipa";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover } from "./Cards";
+import { TL } from "./i18n";
+import { EDITION } from "../edition";
 
 const unitOf = (t: EventTarget | null) => (t instanceof Element ? t.closest<HTMLElement>(".u[data-i]") : null);
 
@@ -29,7 +31,7 @@ export function Interlinear({ s, lt, ipa, nat, highlight }: { s: Sentence; lt: b
   };
   return (
     <div>
-      <div className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang="en" onPointerDown={(e) => { down.current = unitOf(e.target); }} onClick={onClick}>
+      <div className={"il" + (plain ? " plain" : "") + (highlight ? " hl" : "")} lang={TL} onPointerDown={(e) => { down.current = unitOf(e.target); }} onClick={onClick}>
         {s.units.map((u, i) => {
           const dash = u.lt.startsWith("—");
           const isSaved = !dash && saved.has(cardKey(u.en));
@@ -37,12 +39,12 @@ export function Interlinear({ s, lt, ipa, nat, highlight }: { s: Sentence; lt: b
             <span className={"u tap" + (isSaved ? " saved" : "") + (open?.i === i ? " open" : "")} key={i} data-i={i}>
               <span className="en">{u.en}{isSaved && <span className="u-dot" aria-hidden />}</span>
               {ipa && <span className="ipa">{ipaForUnit(u.en) || " "}</span>}
-              {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang="lt">{u.lt}</span>}
+              {lt && <span className={"lt" + (dash ? " dash" : "") + (u.flag ? " flag" : "")} title={u.flag || undefined} lang={EDITION.helper}>{u.lt}</span>}
             </span>
           );
         })}
       </div>
-      {lt && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
+      {lt && nat !== false && s.nat && <div className="nat" lang={EDITION.helper}>{s.nat}</div>}
       {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} />}
     </div>
   );

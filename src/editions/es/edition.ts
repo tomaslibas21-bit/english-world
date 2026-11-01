@@ -6,6 +6,7 @@ export const EDITION: Edition = {
   id: "es",
   target: "es-MX",
   helper: "en",
+  brand: "Spanish World",
   town: "Puerto Colibrí",
   title: "Spanish World · Puerto Colibrí",
   storage: "puerto-colibri",

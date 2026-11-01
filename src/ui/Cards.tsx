@@ -12,6 +12,8 @@ import { SITUATION_BY_ID } from "../content/situations";
 import { audio } from "../game/audio";
 import { Icon } from "./icons";
 import { ltCount } from "./lt";
+import { L, Lx, TL } from "./i18n";
+import { EDITION } from "../edition";
 import "./cards.css";
 
 // ---------------------------------------------------------------------------------------------
@@ -134,20 +136,20 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
   const sentIn = keys.has(cardKey(whole.en));
   const shown = word?.en ?? cleanText(u.en);
   return createPortal(
-    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={`Žodis „${shown}“`}
+    <div ref={ref} className={"wpop" + (spot && !spot.below ? " above" : "")} role="dialog" aria-label={L("Žodis „{word}“", { word: shown })}
       style={(spot ? { left: spot.left, top: spot.top, "--arrow": spot.arrow + "px" } : { left: 0, top: 0, visibility: "hidden" }) as CSSProperties}>
-      <div className="wpop-en" lang="en">{shown}</div>
+      <div className="wpop-en" lang={TL}>{shown}</div>
       {!dash && word.ipa && <div className="wpop-ipa">{word.ipa}</div>}
-      {dash ? <div className="wpop-none">Atskirai neverčiama – išsaugok visą sakinį.</div> : <div className="wpop-lt" lang="lt">{word.lt}</div>}
+      {dash ? <div className="wpop-none">{L("Atskirai neverčiama – išsaugok visą sakinį.")}</div> : <div className="wpop-lt" lang={EDITION.helper}>{word.lt}</div>}
       <div className="wpop-acts">
         {!dash && (wordIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Kortelėse</span>
-          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> Į korteles</button>)}
+          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Kortelėse")}</span>
+          : <button className="btn small" onClick={() => add(word)}><Glyph name="plus" size={16} /> {L("Į korteles")}</button>)}
         {sentIn
-          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> Sakinys kortelėse</span>
-          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> Visą sakinį</button>}
+          ? <span className="wpop-in"><Icon name="check" size={16} strokeWidth={2.25} /> {L("Sakinys kortelėse")}</span>
+          : <button className={"btn small" + (dash ? "" : " soft")} onClick={() => add(whole)}><Glyph name="plus" size={16} /> {L("Visą sakinį")}</button>}
       </div>
-      {saved && <div className="wpop-hint">Kortelę rasi „Frazių knygelėje“.</div>}
+      {saved && <div className="wpop-hint">{L("Kortelę rasi „Frazių knygelėje“.")}</div>}
     </div>,
     document.body,
   );
@@ -159,7 +161,7 @@ export function WordPopover({ s, index, anchor, onClose }: { s: Sentence; index:
 const ROUND = 20;
 
 function whenLt(days: number): string {
-  return days <= 0 ? "šiandien" : days === 1 ? "rytoj" : days === 2 ? "poryt" : `po ${days} d.`;
+  return days <= 0 ? L("šiandien") : days === 1 ? L("rytoj") : days === 2 ? L("poryt") : L("po {n} d.", { n: days });
 }
 
 const listen = (text: string) => { audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, text); };
@@ -167,7 +169,7 @@ const cardSay = (c: Card) => (c.en === c.sentence.en && c.sentence.say ? c.sente
 
 function Pips({ box }: { box: number }) {
   return (
-    <span className="cd-pips" role="img" aria-label={`Lygis ${box} iš 5`} title={`Lygis ${box} iš 5`}>
+    <span className="cd-pips" role="img" aria-label={L("Lygis {n} iš 5", { n: box })} title={L("Lygis {n} iš 5", { n: box })}>
       {[1, 2, 3, 4, 5].map((i) => <i key={i} className={i <= box ? "on" : ""} />)}
     </span>
   );
@@ -196,8 +198,8 @@ export function MyCards() {
     return (
       <div className="cards-empty">
         <span className="cards-empty-ico"><Glyph name="cards" size={30} /></span>
-        <b>Kol kas kortelių nėra</b>
-        <p>Pokalbyje paspausk anglišką žodį – pamatysi jo vertimą ir galėsi išsaugoti jį ar visą sakinį. Frazes iš knygelės pridėsi mygtuku <span className="cards-plus"><Glyph name="plus" size="1em" /></span>.</p>
+        <b>{L("Kol kas kortelių nėra")}</b>
+        <p>{Lx("Pokalbyje paspausk anglišką žodį – pamatysi jo vertimą ir galėsi išsaugoti jį ar visą sakinį. Frazes iš knygelės pridėsi mygtuku {plus}.", { plus: <span className="cards-plus"><Glyph name="plus" size="1em" /></span> })}</p>
       </div>
     );
   }
@@ -209,17 +211,17 @@ export function MyCards() {
         <span className="hero-ico">{due.length ? <Glyph name="cards" size={26} /> : <Icon name="checkCircle" size={26} />}</span>
         <div className="hero-txt">
           {due.length ? (
-            <><b>Šiandien kartoti: {due.length}</b><span>Pamatysi lietuviškai – pasakyk angliškai ir pasitikrink.</span></>
+            <><b>{L("Šiandien kartoti: {n}", { n: due.length })}</b><span>{L("Pamatysi lietuviškai – pasakyk angliškai ir pasitikrink.")}</span></>
           ) : (
-            <><b>Šiandien viskas pakartota!</b><span>{next ? `Kitos kortelės laukia ${whenLt(daysUntil(next, now))}.` : "Puikiai sekasi."}</span></>
+            <><b>{L("Šiandien viskas pakartota!")}</b><span>{next ? L("Kitos kortelės laukia {when}.", { when: whenLt(daysUntil(next, now)) }) : L("Puikiai sekasi.")}</span></>
           )}
         </div>
-        {due.length > 0 && <button className="btn" onClick={start}><Icon name="play" size={15} /> Kartoti</button>}
+        {due.length > 0 && <button className="btn" onClick={start}><Icon name="play" size={15} /> {L("Kartoti")}</button>}
       </div>
-      <h3 className="cards-h">Visos kortelės · {cards.length}</h3>
+      <h3 className="cards-h">{L("Visos kortelės · {n}", { n: cards.length })}</h3>
       <div className="cd-list">{list.map((c) => <CardRow key={c.id} c={c} now={now} />)}</div>
-      <button className="cards-export" onClick={() => download("english-world-korteles.json", exportCardsJSON(useCards.getState().cards))}>
-        <Glyph name="download" size={16} /> Atsisiųsti korteles (JSON)
+      <button className="cards-export" onClick={() => download(L("english-world-korteles.json"), exportCardsJSON(useCards.getState().cards))}>
+        <Glyph name="download" size={16} /> {L("Atsisiųsti korteles (JSON)")}
       </button>
     </div>
   );
@@ -232,17 +234,17 @@ function CardRow({ c, now }: { c: Card; now: number }) {
   return (
     <div className="cd-row">
       <div className="cd-txt">
-        <div className="cd-en" lang="en">{c.en}</div>
-        <div className="cd-lt" lang="lt">{c.lt}</div>
+        <div className="cd-en" lang={TL}>{c.en}</div>
+        <div className="cd-lt" lang={EDITION.helper}>{c.lt}</div>
       </div>
       <div className="cd-meta">
         <Pips box={c.box} />
         <span className={"cd-when" + (days <= 0 ? " now" : "")}>{whenLt(days)}</span>
       </div>
-      <button className="cd-btn" onClick={() => listen(cardSay(c))} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
+      <button className="cd-btn" onClick={() => listen(cardSay(c))} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={19} /></button>
       {confirm
-        ? <button className="cd-btn del sure" onClick={() => useCards.getState().remove(c.id)} aria-label="Taip, ištrinti">Ištrinti?</button>
-        : <button className="cd-btn del" onClick={() => setConfirm(true)} title="Ištrinti kortelę" aria-label="Ištrinti kortelę"><Glyph name="trash" size={19} /></button>}
+        ? <button className="cd-btn del sure" onClick={() => useCards.getState().remove(c.id)} aria-label={L("Taip, ištrinti")}>{L("Ištrinti?")}</button>
+        : <button className="cd-btn del" onClick={() => setConfirm(true)} title={L("Ištrinti kortelę")} aria-label={L("Ištrinti kortelę")}><Glyph name="trash" size={19} /></button>}
     </div>
   );
 }
@@ -293,11 +295,11 @@ function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; on
     return (
       <div className="rv-done">
         <div className="rv-badge"><Icon name="check" size={30} strokeWidth={2.5} /></div>
-        <b>{more ? "Puiku!" : "Šiandien viskas!"}</b>
-        <p>Pakartojai {done} {ltCount(done, "kortelę", "korteles", "kortelių")}.{done > 0 && <> Mokėjai – {stats.knew}, dar kartą – {stats.again}.</>}</p>
+        <b>{more ? L("Puiku!") : L("Šiandien viskas!")}</b>
+        <p>{L("Pakartojai {done} {cards}.", { done, cards: ltCount(done, "kortelę", "korteles", "kortelių") })}{done > 0 && <> {L("Mokėjai – {knew}, dar kartą – {again}.", { knew: stats.knew, again: stats.again })}</>}</p>
         <div className="rv-done-acts">
-          {more > 0 && <button className="btn" onClick={onMore} ref={focusRef}><Icon name="play" size={15} /> Kartoti dar ({more})</button>}
-          <button className={"btn " + (more ? "ghost" : "soft")} onClick={onExit} ref={more ? undefined : focusRef}>Grįžti į korteles</button>
+          {more > 0 && <button className="btn" onClick={onMore} ref={focusRef}><Icon name="play" size={15} /> {L("Kartoti dar ({n})", { n: more })}</button>}
+          <button className={"btn " + (more ? "ghost" : "soft")} onClick={onExit} ref={more ? undefined : focusRef}>{L("Grįžti į korteles")}</button>
         </div>
       </div>
     );
@@ -309,35 +311,35 @@ function Review({ ids, onExit, onMore }: { ids: string[]; onExit: () => void; on
   return (
     <div className="review">
       <div className="rv-top">
-        <button className="btn ghost small" onClick={onExit}><Icon name="arrowLeft" size={16} /> Baigti</button>
+        <button className="btn ghost small" onClick={onExit}><Icon name="arrowLeft" size={16} /> {L("Baigti")}</button>
         <div className="rv-progress" aria-hidden><i style={{ width: `${(p / queue.length) * 100}%` }} /></div>
-        <span className="rv-count" aria-label={`Kortelė ${p + 1} iš ${queue.length}`}>{p + 1}/{queue.length}</span>
+        <span className="rv-count" aria-label={L("Kortelė {n} iš {total}", { n: p + 1, total: queue.length })}>{p + 1}/{queue.length}</span>
       </div>
       <div className={"rv-card" + (shown ? " shown" : "") + (long ? " long" : "")} onClick={() => !shown && setShown(true)}>
-        <div className="rv-label">Pasakyk angliškai{sit ? <span className="rv-sit"> · {sit.title.lt}</span> : null}</div>
-        <div className="rv-lt" lang="lt">{card.lt}</div>
+        <div className="rv-label">{L("Pasakyk angliškai")}{sit ? <span className="rv-sit"> · {sit.title.lt}</span> : null}</div>
+        <div className="rv-lt" lang={EDITION.helper}>{card.lt}</div>
         {shown ? (
           <div className="rv-answer">
             <div className="rv-en-row">
-              <span className="rv-en" lang="en">{card.en}</span>
-              <button className="rv-play" onClick={(e) => { e.stopPropagation(); listen(cardSay(card)); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={21} /></button>
+              <span className="rv-en" lang={TL}>{card.en}</span>
+              <button className="rv-play" onClick={(e) => { e.stopPropagation(); listen(cardSay(card)); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={21} /></button>
             </div>
             {card.ipa && <div className="rv-ipa">{card.ipa}</div>}
             {!isSentence && (
               <div className="rv-src">
-                <div className="rv-src-en" lang="en">{marked(card.sentence.en, card.en)}</div>
-                <div className="rv-src-lt" lang="lt">{card.sentence.lt}</div>
+                <div className="rv-src-en" lang={TL}>{marked(card.sentence.en, card.en)}</div>
+                <div className="rv-src-lt" lang={EDITION.helper}>{card.sentence.lt}</div>
               </div>
             )}
           </div>
         ) : (
-          <button className="btn soft rv-reveal" ref={focusRef} onClick={(e) => { e.stopPropagation(); setShown(true); }}>Rodyti atsakymą</button>
+          <button className="btn soft rv-reveal" ref={focusRef} onClick={(e) => { e.stopPropagation(); setShown(true); }}>{L("Rodyti atsakymą")}</button>
         )}
       </div>
       {shown && (
         <div className="rv-acts">
-          <button className="btn ghost" onClick={() => answer(false)}><Icon name="restart" size={17} /> Dar kartą</button>
-          <button className="btn" onClick={() => answer(true)} ref={focusRef}><Icon name="check" size={17} strokeWidth={2.25} /> Mokėjau</button>
+          <button className="btn ghost" onClick={() => answer(false)}><Icon name="restart" size={17} /> {L("Dar kartą")}</button>
+          <button className="btn" onClick={() => answer(true)} ref={focusRef}><Icon name="check" size={17} strokeWidth={2.25} /> {L("Mokėjau")}</button>
         </div>
       )}
     </div>

@@ -26,7 +26,10 @@ import { sceneFor } from "../ui/scenes";
 import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
+import { L, TL } from "../ui/i18n";
+import { EDITION } from "../edition";
 import type { GameApi } from "./gameRef";
+import { THEME } from "./world/theme";
 export type { GameApi } from "./gameRef";
 
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
@@ -295,8 +298,8 @@ export class Game implements GameApi {
       this.rig.snap();
       const st = useStore.getState();
       const loc = LOCATIONS[id];
-      const name = id === "town" ? "Maple Harbor" : loc?.name ?? id;
-      st.setHud({ zoneName: name, zoneBanner: { title: name, sub: id === "town" ? "Maple Harbor" : loc?.lt }, prompt: null });
+      const name = id === "town" ? EDITION.town : loc?.name ?? id;
+      st.setHud({ zoneName: name, zoneBanner: { title: name, sub: id === "town" ? EDITION.town : loc?.lt }, prompt: null });
       setTimeout(() => { if (useStore.getState().hud.zoneBanner?.title === name) useStore.getState().setHud({ zoneBanner: null }); }, 2600);
       this.refreshObjective();
       this.savePlace();
@@ -340,8 +343,8 @@ export class Game implements GameApi {
       const tag = document.createElement("div");
       tag.className = "nametag";
       // who they are in English, and in Lithuanian under it (unless it is the same word, like "Barista")
-      const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="lt">${def.role.lt}</i>`;
-      tag.innerHTML = `<b>${def.name}</b><span lang="en">${def.role.en}</span>${lt}`;
+      const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="${EDITION.helper}">${def.role.lt}</i>`;
+      tag.innerHTML = `<b>${def.name}</b><span lang="${TL}">${def.role.en}</span>${lt}`;
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
@@ -464,7 +467,7 @@ export class Game implements GameApi {
         const voice = ambientVoice(female ? "f" : "m");
         audio.play(voice, 1, line.en, { male: !female });
         w.ch.talk(audio.clipDuration(voice, 1, line.en) ?? 1.2, () => audio.level());
-        st.toast({ kind: "info", title: `„${line.en}“`, body: line.lt });
+        st.toast({ kind: "info", title: L("„{line}“", { line: line.en }), body: line.lt });
         return;
       }
     }
@@ -507,14 +510,14 @@ export class Game implements GameApi {
   walkTo(x: number, z: number, target: Game["autoTarget"]) {
     const p = this.player.root.position;
     const path = this.zone.nav.path(p.x, p.z, x, z);
-    if (!path) { useStore.getState().toast({ kind: "info", title: "Ten nueiti negalima" }); return; }
+    if (!path) { useStore.getState().toast({ kind: "info", title: L("Ten nueiti negalima") }); return; }
     this.autoPath = path.slice(1);
     this.autoTarget = target;
   }
 
   autoWalkToObjective() {
     const tgt = this.objectiveTarget();
-    if (!tgt) { useStore.getState().toast({ kind: "info", title: "Ši užduotis atliekama telefonu", body: "Atidaryk telefoną (P) ir paskambink." }); return; }
+    if (!tgt) { useStore.getState().toast({ kind: "info", title: L("Ši užduotis atliekama telefonu"), body: L("Atidaryk telefoną (P) ir paskambink.") }); return; }
     this.walkTo(tgt.x, tgt.z, tgt.kind === "npc" ? { kind: "npc", id: tgt.id } : tgt.kind === "door" ? { kind: "door", id: tgt.id } : { kind: "exit" });
   }
 
@@ -564,8 +567,8 @@ export class Game implements GameApi {
       const main = this.secondary.get(npc);
       const mainNpc = main ? NPCS[main.npc] : null;
       if (def) { const a = this.npcs.find((n) => n.id === npc); a?.ch.setAnim("wave"); setTimeout(() => { if (a?.ch.anim === "wave") a.ch.setAnim(a.sit ? "sit" : "idle"); }, 1400); }
-      useStore.getState().toast({ kind: "info", title: def ? `${def.name}: „Hi there!“` : "Hi!",
-        body: mainNpc ? `Pirmiausia pasikalbėk su ${mainNpc.name} – ${def?.name ?? "šis žmogus"} prisijungs prie pokalbio.` : "Šis žmogus kol kas tik pasisveikina." });
+      useStore.getState().toast({ kind: "info", title: def ? L("{name}: „Hi there!“", { name: def.name }) : "Hi!",
+        body: mainNpc ? L("Pirmiausia pasikalbėk su {main} – {name} prisijungs prie pokalbio.", { main: mainNpc.name, name: def?.name ?? L("šis žmogus") }) : L("Šis žmogus kol kas tik pasisveikina.") });
       return;
     }
     const actor = this.npcs.find((n) => n.id === npc) ?? null;
@@ -689,12 +692,12 @@ export class Game implements GameApi {
     if (name === "give" && data?.item) {
       // known props, else the situation's own item (a jacket, a medicine…) in the accusative
       const it = givenItem(this.session?.sit, data.item);
-      st.toast({ kind: "success", title: `${it[0]} Gavai: ${it[1]}`, ms: 2600 });
+      st.toast({ kind: "success", title: `${it[0]} ${L("Gavai: {item}", { item: it[1] })}`, ms: 2600 });
     }
     if ((name === "mark-map" || name === "mark-location") && data?.to && LOCATIONS[data.to]) {
-      st.toast({ kind: "info", title: `📍 Pažymėta žemėlapyje: ${LOCATIONS[data.to].lt}`, body: "Žemėlapis – M.", ms: 4000 });
+      st.toast({ kind: "info", title: `📍 ${L("Pažymėta žemėlapyje: {place}", { place: LOCATIONS[data.to].lt })}`, body: L("Žemėlapis – M."), ms: 4000 });
     }
-    if (name === "sign") st.toast({ kind: "success", title: "✍️ Pasirašyta", ms: 2200 });
+    if (name === "sign") st.toast({ kind: "success", title: "✍️ " + L("Pasirašyta"), ms: 2200 });
   }
   private pendingRide: { to: string; by: "taxi" | "bus" | "plane" } | null = null;
 
@@ -720,8 +723,8 @@ export class Game implements GameApi {
     const st = useStore.getState();
     const dest = by === "plane" ? AIRPORT_EXIT : this.arrivalPoint(to);
     if (!dest) return;
-    const banner = by === "plane" ? { title: "✈️ Gero skrydžio!", sub: "…ir sveiki sugrįžę į Maple Harbor" }
-      : { title: by === "bus" ? "🚌 Važiuojame autobusu…" : "🚕 Važiuojame…", sub: LOCATIONS[to]?.name };
+    const banner = by === "plane" ? { title: "✈️ " + L("Gero skrydžio!"), sub: L("…ir sveiki sugrįžę į Maple Harbor") }
+      : { title: by === "bus" ? "🚌 " + L("Važiuojame autobusu…") : "🚕 " + L("Važiuojame…"), sub: LOCATIONS[to]?.name };
     st.setHud({ fade: 1, zoneBanner: banner });
     audio.sfx("car");
     clearTimeout(this.rideTimer);
@@ -784,7 +787,7 @@ export class Game implements GameApi {
     const next = this.orderedSituations().find((s) => !sitProgress(pr, s.id).completions);
     this.setObjective(next?.id ?? null);
     // (in the situation picker flow the end-of-conversation buttons offer the next one instead)
-    if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", title: "Kita užduotis", body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
+    if (next && !this.lastScenario) setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Kita užduotis"), body: `${next.title.lt} — ${LOCATIONS[next.location]?.lt ?? ""}` }), 2500);
   }
 
   currentObjective(): SituationDef | null {
@@ -803,7 +806,7 @@ export class Game implements GameApi {
     if (!loc || loc.kind === "phone" || sit.mode === "phone" || sit.mode === "video") return null;
     const npcSpotInterior = (it: Interior) => it.npcs.find((n) => n.npc === sit.npc) ?? it.npcs[0];
     if (loc.kind === "outdoor") {
-      if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: "Išeiti į lauką" };
+      if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: L("Išeiti į lauką") };
       const o = OUTDOOR_NPCS.find((n) => n.npc === sit.npc);
       return o ? { kind: "npc", id: sit.npc, ...talkAt(o), label: NPCS[sit.npc]?.name ?? "" } : null;
     }
@@ -813,7 +816,7 @@ export class Game implements GameApi {
       const spot = this.zone.interior.npcs.find((n) => n.npc === npc) ?? s;
       return { kind: "npc", id: spot.npc, ...talkAt(spot), label: NPCS[spot.npc]?.name ?? "" };
     }
-    if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: "Išeiti į lauką" };
+    if (this.zone.interior) return { kind: "exit", x: this.zone.interior.exit.x, z: this.zone.interior.exit.z - 0.4, label: L("Išeiti į lauką") };
     if (sit.location === "airport") return { kind: "door", id: "airport", x: AIRPORT_EXIT.x, z: AIRPORT_EXIT.z, label: loc.name };
     const d = this.town.doors.find((dd) => dd.loc === sit.location);
     return d ? { kind: "door", id: d.loc, x: d.outX, z: d.outZ, label: d.name } : null;
@@ -932,7 +935,7 @@ export class Game implements GameApi {
       const px = this.player.root.position.x, pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
       const out = !this.zone.interior;
       // the fountain within about 18 m; birds in the park, and a little everywhere else outdoors
-      const fountain = out ? THREE.MathUtils.clamp(1 - Math.hypot(px - FOUNTAIN.x, pz - FOUNTAIN.z) / 18, 0, 1) : 0;
+      const fountain = out && THEME.centrepiece === "fountain" ? THREE.MathUtils.clamp(1 - Math.hypot(px - FOUNTAIN.x, pz - FOUNTAIN.z) / 18, 0, 1) : 0;
       const inPark = px > PARK.x1 - 6 && px < PARK.x2 + 6 && pz > PARK.z1 - 6 && pz < PARK.z2 + 6;
       const room = this.zone.interior ? (["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id) ? "cafe" : "quiet") : null;
       audio.ambience(out && !talking && !st.hud.panel, sea, out ? this.ambient.carNoise(px, pz) : 0, sea > 0.4,
@@ -1167,14 +1170,14 @@ export class Game implements GameApi {
       } else {
         const ex = this.zone.interior.exit;
         const d = Math.hypot(ex.x - p.x, ex.z - p.z);
-        if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: "Išeiti" }; }
+        if (d < 1.8 && d < bd) { bd = d; best = { kind: "exit", id: "exit", label: L("Išeiti") }; }
       }
     }
     const changed = (best?.kind + ":" + best?.id) !== (this.nearest?.kind + ":" + this.nearest?.id);
     this.nearest = best;
     if (changed) {
       if (best) audio.sfx("tick");
-      st.setHud({ prompt: best ? { label: best.kind === "npc" ? `Kalbėtis: ${best.label}` : best.kind === "door" ? `Įeiti: ${best.label}` : "Išeiti į lauką", lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } : null });
+      st.setHud({ prompt: best ? { label: best.kind === "npc" ? L("Kalbėtis: {name}", { name: best.label }) : best.kind === "door" ? L("Įeiti: {place}", { place: best.label }) : L("Išeiti į lauką"), lt: best.kind === "door" ? placeLt(best.id) : undefined, kind: best.kind === "npc" ? "talk" : best.kind === "door" ? "enter" : "exit" } : null });
     }
     // objective distance & minimap
     const tgt = this.objectiveTarget();

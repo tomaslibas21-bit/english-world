@@ -8,6 +8,8 @@ import { sitProgress, stars } from "../state/progress";
 import { Icon, InlineIcon, Stars, drawIcon, iconForEmoji, splitLead, type IconName } from "./icons";
 import { switchPlayMode } from "./playMode";
 import { useCards, dueCards } from "../state/cards";
+import { L, Lx } from "./i18n";
+import { EDITION } from "../edition";
 import "./light.css";
 
 /** Inside English Master (VITE_BACK_URL, e.g. "/"): the way back to the course site. */
@@ -40,28 +42,32 @@ export function Hud() {
       <Objective />
       <Minimap />
       <div className="toolbar">
-        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
-        <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
-        <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
-        <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
-        <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
-        <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
-        <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
+        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title={L("Grįžti į kursą")} aria-label={L("Grįžti į kursą")}><Icon name="home" size={25} /></a>}
+        <ToolButton icon="clapper" title={L("Visos situacijos")} panel="scenarios" />
+        <ToolButton icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" />
+        <ToolButton icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" />
+        <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" />
+        <ToolButton icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />
+        <ToolButton icon="settings" title={L("Nustatymai (Esc)")} panel="settings" />
       </div>
-      <button className="lite-btn" onClick={() => switchPlayMode("light")} title="Be 3D miesto: tik pokalbiai su piešiniais. Greičiau atsidaro ir taupo bateriją."><Icon name="list" size={18} strokeWidth={2} /> Lengvas režimas</button>
+      <button className="lite-btn" onClick={() => switchPlayMode("light")} title={L("Be 3D miesto: tik pokalbiai su piešiniais. Greičiau atsidaro ir taupo bateriją.")}><Icon name="list" size={18} strokeWidth={2} /> {L("Lengvas režimas")}</button>
       {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {hud.prompt && !hud.panel && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
           <kbd>{hud.showTouch ? <Icon name="tap" size={18} /> : "E"}</kbd>
-          <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang="lt">{hud.prompt.lt}</small>}</span>
+          <span className="prompt-text">{hud.prompt.label}{hud.prompt.lt && <small lang={EDITION.helper}>{hud.prompt.lt}</small>}</span>
         </button>
       )}
       {helpOpen && !hud.showTouch && (
         <div className="help-strip">
-          Vaikščiok <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · bėgti <kbd>Shift</kbd><br />
-          Spustelėk žemę – nueisi ten · tempk pele – apsidairyk · <kbd>E</kbd> – kalbėtis / įeiti<br />
-          <kbd>G</kbd> – nueiti iki užduoties · <kbd>M</kbd> žemėlapis · <kbd>J</kbd> užduotys · <kbd>P</kbd> telefonas
-          <button onClick={() => { setHelpOpen(false); try { localStorage.setItem("ew-help-closed", "1"); } catch { /* ignore */ } }}>Supratau <Icon name="close" size={15} strokeWidth={2.25} /></button>
+          {Lx("Vaikščiok {arrows} arba {wasd} · bėgti {shift}", {
+            arrows: <><kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label={L("aukštyn")} /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label={L("žemyn")} /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label={L("kairėn")} /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label={L("dešinėn")} /></kbd></>,
+            wasd: <><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></>,
+            shift: <kbd>Shift</kbd>,
+          })}<br />
+          {Lx("Spustelėk žemę – nueisi ten · tempk pele – apsidairyk · {e} – kalbėtis / įeiti", { e: <kbd>E</kbd> })}<br />
+          {Lx("{g} – nueiti iki užduoties · {m} žemėlapis · {j} užduotys · {p} telefonas", { g: <kbd>G</kbd>, m: <kbd>M</kbd>, j: <kbd>J</kbd>, p: <kbd>P</kbd> })}
+          <button onClick={() => { setHelpOpen(false); try { localStorage.setItem("ew-help-closed", "1"); } catch { /* ignore */ } }}>{L("Supratau")} <Icon name="close" size={15} strokeWidth={2.25} /></button>
         </div>
       )}
       {hud.showTouch && <TouchControls />}
@@ -98,8 +104,8 @@ function Objective() {
   if (!o) {
     return (
       <div className="objective-card">
-        <div className="kicker">Visos užduotys atliktos <InlineIcon name="party" /></div>
-        <p>Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.</p>
+        <div className="kicker">{L("Visos užduotys atliktos")} <InlineIcon name="party" /></div>
+        <p>{L("Grįžk į bet kurią vietą ir pabandyk pasakyti kitaip – žmonės kaskart kalba šiek tiek skirtingai.")}</p>
       </div>
     );
   }
@@ -109,25 +115,25 @@ function Objective() {
   return (
     <div className={"objective-card" + (collapsed ? " collapsed" : "") + (fresh ? " fresh" : "")}>
       <div className="kicker">
-        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> Užduotis</span>
+        <span className="kicker-label"><Icon name="target" size={15} strokeWidth={2} /> {L("Užduotis")}</span>
         {st > 0 && <Stars n={st} size={14} />}
-        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Suskleisti" aria-expanded={!collapsed}><Icon name={collapsed ? "chevronDown" : "chevronUp"} size={18} strokeWidth={2} /></button>
+        <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label={L("Suskleisti")} aria-expanded={!collapsed}><Icon name={collapsed ? "chevronDown" : "chevronUp"} size={18} strokeWidth={2} /></button>
       </div>
       <h3>{o.title} <span className="en-title">· {sit?.title.en}</span></h3>
       <p>{o.goal}</p>
       <div className="row">
         {phone ? (
-          <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> Paskambinti</button>
+          <button className="btn small" onClick={() => useStore.getState().setHud({ panel: "phone" })}><Icon name="smartphone" size={17} /> {L("Paskambinti")}</button>
         ) : (
           <>
             <span className="dist">
               {o.angle !== null && <Arrow angle={o.angle} />}
-              {o.inside && o.dist !== null && o.dist < 4 ? "Čia pat!" : o.dist !== null ? `${o.dist} m` : ""} · {o.where}
+              {o.inside && o.dist !== null && o.dist < 4 ? L("Čia pat!") : o.dist !== null ? `${o.dist} m` : ""} · {o.where}
             </span>
-            <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> Nuvesk mane</button>
+            <button className="btn small" onClick={() => game?.autoWalkToObjective()} title="G"><Icon name="walk" size={17} /> {L("Nuvesk mane")}</button>
           </>
         )}
-        <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>Kita užduotis</button>
+        <button className="btn ghost small" onClick={() => useStore.getState().setHud({ panel: "journal" })}>{L("Kita užduotis")}</button>
       </div>
     </div>
   );
@@ -159,7 +165,7 @@ function Minimap() {
       x.fillStyle = "#f3eadb"; x.fillRect(0, 0, S, S);
       drawIcon(x, "home", S / 2, S / 2 - 14, 46, "#1f6f78");
       x.font = "800 15px Nunito"; x.fillStyle = "#52606d"; x.textAlign = "center";
-      x.fillText("Viduje", S / 2, S / 2 + 28);
+      x.fillText(L("Viduje"), S / 2, S / 2 + 28);
       return;
     }
     if (!g) return;
@@ -184,7 +190,7 @@ function Minimap() {
     x.restore();
   }, [mm]);
   return (
-    <div className="minimap" onClick={() => useStore.getState().setHud({ panel: "map" })} title="Žemėlapis (M)">
+    <div className="minimap" onClick={() => useStore.getState().setHud({ panel: "map" })} title={L("Žemėlapis (M)")}>
       <canvas ref={ref} />
       <div className="label">{zoneName}</div>
     </div>
@@ -216,7 +222,7 @@ function TouchControls() {
   return (
     <>
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : "Įeiti"}</button>}
+      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? L("Kalbėti") : prompt.kind === "exit" ? L("Išeiti") : L("Įeiti")}</button>}
     </>
   );
 }

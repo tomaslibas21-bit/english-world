@@ -2,18 +2,19 @@
 // Shared by the 3D town (Game) and the light mode (LightGame).
 import type { SituationDef } from "../content/types";
 import { parseForms } from "../convo/lt-morph";
+import { L } from "../ui/i18n";
 
 /** Known props: icon and Lithuanian name (accusative). */
 export const GIVEN: Record<string, [string, string]> = {
-  "audio-guide": ["🎧", "audiogidą"], "baggage report": ["📄", "pranešimo apie bagažą kopiją"], "boarding-pass": ["🎫", "įlaipinimo taloną"],
-  "bus-pass": ["🎫", "autobuso bilietą"], "bus-schedule": ["🗓️", "autobusų tvarkaraštį"], "car-keys": ["🔑", "automobilio raktelius"],
-  cash: ["💵", "grynuosius"], "day-pass": ["🎫", "dienos bilietą"], "floor-plan": ["🗺️", "muziejaus planą"], keys: ["🔑", "raktus"],
-  map: ["🗺️", "miesto žemėlapį"], "museum-ticket": ["🎟️", "muziejaus bilietą"], "overnight kit": ["🧴", "nakvynės rinkinį"],
-  package: ["📦", "siuntinį"], passport: ["🛂", "pasą"], prescription: ["💊", "vaistus"], receipt: ["🧾", "kvitą"],
-  "store-credit": ["💳", "parduotuvės kreditą"], "train-ticket": ["🎫", "traukinio bilietą"], water: ["💧", "vandens"],
-  "key card": ["🔑", "kambario kortelę"], "key-card": ["🔑", "kambario kortelę"], laptop: ["💻", "nešiojamąjį kompiuterį"],
-  badge: ["🪪", "darbuotojo kortelę"], "password card": ["🔐", "kortelę su slaptažodžiu"], "business card": ["📇", "vizitinę kortelę"],
-  "phone number": ["📱", "telefono numerį"], ticket: ["🎫", "bilietą"], coffee: ["☕", "kavos"], form: ["📝", "anketą"],
+  "audio-guide": ["🎧", L("audiogidą")], "baggage report": ["📄", L("pranešimo apie bagažą kopiją")], "boarding-pass": ["🎫", L("įlaipinimo taloną")],
+  "bus-pass": ["🎫", L("autobuso bilietą")], "bus-schedule": ["🗓️", L("autobusų tvarkaraštį")], "car-keys": ["🔑", L("automobilio raktelius")],
+  cash: ["💵", L("grynuosius")], "day-pass": ["🎫", L("dienos bilietą")], "floor-plan": ["🗺️", L("muziejaus planą")], keys: ["🔑", L("raktus")],
+  map: ["🗺️", L("miesto žemėlapį")], "museum-ticket": ["🎟️", L("muziejaus bilietą")], "overnight kit": ["🧴", L("nakvynės rinkinį")],
+  package: ["📦", L("siuntinį")], passport: ["🛂", L("pasą")], prescription: ["💊", L("vaistus")], receipt: ["🧾", L("kvitą")],
+  "store-credit": ["💳", L("parduotuvės kreditą")], "train-ticket": ["🎫", L("traukinio bilietą")], water: ["💧", L("vandens")],
+  "key card": ["🔑", L("kambario kortelę")], "key-card": ["🔑", L("kambario kortelę")], laptop: ["💻", L("nešiojamąjį kompiuterį")],
+  badge: ["🪪", L("darbuotojo kortelę")], "password card": ["🔐", L("kortelę su slaptažodžiu")], "business card": ["📇", L("vizitinę kortelę")],
+  "phone number": ["📱", L("telefono numerį")], ticket: ["🎫", L("bilietą")], coffee: ["☕", L("kavos")], form: ["📝", L("anketą")],
 };
 
 /** Icon and Lithuanian name of a handed-over item: a known prop, else the situation's own item

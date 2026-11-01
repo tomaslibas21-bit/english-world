@@ -15,6 +15,7 @@ import { displayUtterance } from "../convo/normalize";
 import { compose } from "../convo/compose";
 import { setKnownNames } from "../convo/slots";
 import type { Nlu } from "../convo/nlu";
+import { L } from "../ui/i18n";
 import { answerCandidates, compareRepeat, makeGuess, pickSuggestions, playerVars, rankAnswers, repeatProgress, yesPicksGuess, type Guess } from "../convo/suggest";
 
 const nluCache = new Map<string, Nlu>();
@@ -239,7 +240,7 @@ export class Session {
       st.setConv({ failures: 0, misses: 0, prefix: false, mic: { status: "off", heard: "" } });
       // an answer chosen from the never-stuck help wasn't said: it earns no phrase
       if (via !== "helped") this.recordExpressions(out.hintsUsed);
-      for (const t of out.tips) st.toast({ kind: "tip", title: "Patarimas", body: t.lt, better: t.better });
+      for (const t of out.tips) st.toast({ kind: "tip", title: L("Patarimas"), body: t.lt, better: t.better });
     } else {
       audio.sfx("soft");
       // never stuck: from the second miss in a row, the moment's own answers are offered too
@@ -391,7 +392,7 @@ export class Session {
     audio.sfx("cheer");
     // the person the learner is talking with is pleased: a little applause (after their nod and their last words)
     this.hooks.npcReact?.(st.conv.npcId || this.sit.npc, "clap");
-    st.toast({ kind: "stamp", title: after > before ? `${"★".repeat(after)} ${this.sit.title.en}` : `✓ ${this.sit.title.en}`, body: after > before ? "Nauja žvaigždutė! Situacija įveikta." : "Puiku! Situacija įveikta dar kartą." });
+    st.toast({ kind: "stamp", title: after > before ? `${"★".repeat(after)} ${this.sit.title.en}` : `✓ ${this.sit.title.en}`, body: after > before ? L("Nauja žvaigždutė! Situacija įveikta.") : L("Puiku! Situacija įveikta dar kartą.") });
   }
 
   /** The learner leaves the conversation (Esc, a button, another situation). */

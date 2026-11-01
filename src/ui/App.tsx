@@ -11,6 +11,7 @@ import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
 import { takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
+import { L } from "./i18n";
 
 export function App() {
   const screen = useStore((s) => s.screen);
@@ -51,7 +52,7 @@ function Play() {
       <div className="tag-layer" ref={tags} />
       {ready && game && <><Hud /><SceneBackdrop /><Conversation /><Panels /></>}
       <Toasts />
-      {!ready && <div className="loading">Kuriamas Maple Harbor…</div>}
+      {!ready && <div className="loading">{L("Kuriamas Maple Harbor…")}</div>}
     </>
   );
 }

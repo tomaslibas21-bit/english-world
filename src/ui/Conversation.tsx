@@ -16,6 +16,8 @@ import { toImperative } from "./lt";
 import { Icon, InlineIcon, type IconName } from "./icons";
 import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
+import { L, Lx, TL } from "./i18n";
+import { EDITION } from "../edition";
 import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
 
@@ -107,28 +109,28 @@ export function Conversation() {
   };
 
   return (
-    <div className="convo" role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
+    <div className="convo" role="dialog" aria-label={L("Pokalbis: {name}", { name: npc?.name ?? "" })}>
       <div className="convo-head">
         <div className="avatar" style={{ background: avatarColor(conv.npcId) }}>{sit.mode === "phone" ? <Icon name="phoneCall" size={22} /> : sit.mode === "video" ? <Icon name="video" size={22} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
         <div className="who">
           <b>{npc?.name}</b>
           {/* the role in English with the Lithuanian centred under it (as in the conversation lines), then the place
               with what its English name means (light mode never passes a door, where the 3D town says it) */}
-          <span><i className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</i></span>
-          <span className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</span>
+          <span><i className="role"><em lang={TL}>{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</i></span>
+          <span className="place" lang={EDITION.helper}>{sit.mode === "video" ? L("Vaizdo skambutis") : placeLtNamed(sit.location)}</span>
         </div>
         <div className="toggles">
-          <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title="Lietuviškas vertimas (L)" aria-pressed={settings.lt}>LT</button>
-          <button className={"toggle" + (settings.ipa ? " on" : "")} onClick={() => setSettings({ ipa: !settings.ipa })} title="Tarimas IPA (I)" aria-pressed={settings.ipa}>IPA</button>
+          <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title={L("Lietuviškas vertimas (L)")} aria-pressed={settings.lt}>{L("LT")}</button>
+          <button className={"toggle" + (settings.ipa ? " on" : "")} onClick={() => setSettings({ ipa: !settings.ipa })} title={L("Tarimas IPA (I)")} aria-pressed={settings.ipa}>IPA</button>
           <button className={"toggle slow-toggle" + (conv.slowMode || settings.slowVoice ? " on" : "")} onClick={() => game?.activeSession?.setSlowMode(!conv.slowMode)} disabled={settings.slowVoice}
-            title={settings.slowVoice ? "Visi kalba lėčiau (Nustatymai)" : conv.slowMode ? "Šis pašnekovas kalba lėčiau – paspausk, kad kalbėtų įprastai" : "Kad šis pašnekovas kalbėtų lėčiau"} aria-pressed={conv.slowMode || settings.slowVoice} aria-label="Lėčiau">
-            <Icon name="turtle" size={20} /><span className="long">Lėčiau</span>
+            title={settings.slowVoice ? L("Visi kalba lėčiau (Nustatymai)") : conv.slowMode ? L("Šis pašnekovas kalba lėčiau – paspausk, kad kalbėtų įprastai") : L("Kad šis pašnekovas kalbėtų lėčiau")} aria-pressed={conv.slowMode || settings.slowVoice} aria-label={L("Lėčiau")}>
+            <Icon name="turtle" size={20} /><span className="long">{L("Lėčiau")}</span>
           </button>
         </div>
         <div className="head-actions">
-          <button className="close-x" onClick={() => game?.restartScenario()} title="Pradėti šį pokalbį iš naujo" aria-label="Pradėti iš naujo"><Icon name="restart" /></button>
-          <button className="close-x" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }} title="Visos situacijos" aria-label="Visos situacijos"><Icon name="list" /></button>
-          <button className="close-x" onClick={() => game?.closeConversation()} title="Baigti pokalbį (Esc)" aria-label="Baigti pokalbį"><Icon name="close" /></button>
+          <button className="close-x" onClick={() => game?.restartScenario()} title={L("Pradėti šį pokalbį iš naujo")} aria-label={L("Pradėti iš naujo")}><Icon name="restart" /></button>
+          <button className="close-x" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }} title={L("Visos situacijos")} aria-label={L("Visos situacijos")}><Icon name="list" /></button>
+          <button className="close-x" onClick={() => game?.closeConversation()} title={L("Baigti pokalbį (Esc)")} aria-label={L("Baigti pokalbį")}><Icon name="close" /></button>
         </div>
       </div>
 
@@ -147,28 +149,28 @@ export function Conversation() {
         <div className="yourturn">
           <div className="yt-scroll">
           <div className={"yt-title phase-" + conv.phase}>
-            <b>{conv.phase === "npc" ? `${npc?.name ?? ""} kalba…` : conv.phase === "thinking" ? "…" : "Tavo eilė"}</b>
+            <b>{conv.phase === "npc" ? L("{name} kalba…", { name: npc?.name ?? "" }) : conv.phase === "thinking" ? "…" : L("Tavo eilė")}</b>
             <div className="yt-actions">
               {conv.phase === "you" && (!conv.guideHidden || conv.openHint !== null) && (
-                <div className="toggles say-toggles" role="group" aria-label="Po tavo atsakymų pavyzdžiais">
-                  <button className={"toggle" + (settings.sayLt ? " on" : "")} onClick={() => setSettings({ sayLt: !settings.sayLt })} aria-pressed={settings.sayLt} title="Vertimas po tavo atsakymų pavyzdžiais"><span className="long">Vertimas</span><span className="short">LT</span></button>
-                  <button className={"toggle" + (settings.sayIpa ? " on" : "")} onClick={() => setSettings({ sayIpa: !settings.sayIpa })} aria-pressed={settings.sayIpa} title="Tarimas (IPA) po tavo atsakymų pavyzdžiais">IPA</button>
+                <div className="toggles say-toggles" role="group" aria-label={L("Po tavo atsakymų pavyzdžiais")}>
+                  <button className={"toggle" + (settings.sayLt ? " on" : "")} onClick={() => setSettings({ sayLt: !settings.sayLt })} aria-pressed={settings.sayLt} title={L("Vertimas po tavo atsakymų pavyzdžiais")}><span className="long">{L("Vertimas")}</span><span className="short">{L("LT")}</span></button>
+                  <button className={"toggle" + (settings.sayIpa ? " on" : "")} onClick={() => setSettings({ sayIpa: !settings.sayIpa })} aria-pressed={settings.sayIpa} title={L("Tarimas (IPA) po tavo atsakymų pavyzdžiais")}>IPA</button>
                 </div>
               )}
-              <button className="btn soft small" onClick={() => setConv({ guideHidden: !conv.guideHidden })}>{conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}</button>
+              <button className="btn soft small" onClick={() => setConv({ guideHidden: !conv.guideHidden })}>{conv.guideHidden ? L("Ką sakyti?") : L("Slėpti pagalbą")}</button>
             </div>
           </div>
 
           {conv.failures > 0 && conv.phase === "you" && conv.lastHeard && (
             <div className="miss-box" ref={missRef}>
-              <div>Neatpažinau{conv.prefix ? " – atrodo, sakinys nebaigtas" : ""}. Girdėjau:</div>
-              <div className="heard" lang="en">„{conv.guess ? <Marked words={conv.guess.heard} /> : conv.lastHeard}“</div>
+              <div>{conv.prefix ? L("Neatpažinau – atrodo, sakinys nebaigtas. Girdėjau:") : L("Neatpažinau. Girdėjau:")}</div>
+              <div className="heard" lang={TL}>{Lx("„{heard}“", { heard: conv.guess ? <Marked words={conv.guess.heard} /> : conv.lastHeard })}</div>
               {conv.guess && <DidYouMean guess={conv.guess} lt={settings.sayLt} />}
               <div className="acts">
-                {speechSupported() && <button className="btn small" onClick={() => game?.activeSession?.listen()}><Icon name="mic" size={17} /> Bandyti dar</button>}
-                <button className="btn soft small" onClick={() => game?.activeSession?.repeatLast(true)}><Icon name="turtle" size={17} /> Paklausyk lėčiau</button>
-                <button className="btn soft small" onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true }); }}><Icon name="pencil" size={17} /> Pataisyti tekstą</button>
-                <button className="btn ghost small" onClick={() => copyConversation(sit)} title="Nukopijuok ir atsiųsk mokytojui"><Icon name="clipboard" size={17} /> Kopijuoti</button>
+                {speechSupported() && <button className="btn small" onClick={() => game?.activeSession?.listen()}><Icon name="mic" size={17} /> {L("Bandyti dar")}</button>}
+                <button className="btn soft small" onClick={() => game?.activeSession?.repeatLast(true)}><Icon name="turtle" size={17} /> {L("Paklausyk lėčiau")}</button>
+                <button className="btn soft small" onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true }); }}><Icon name="pencil" size={17} /> {L("Pataisyti tekstą")}</button>
+                <button className="btn ghost small" onClick={() => copyConversation(sit)} title={L("Nukopijuok ir atsiųsk mokytojui")}><Icon name="clipboard" size={17} /> {L("Kopijuoti")}</button>
               </div>
             </div>
           )}
@@ -182,12 +184,12 @@ export function Conversation() {
           <div className="inputbar">
             <MicButton />
             <MicStatus />
-            <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => setConv({ typing: !conv.typing })} title="Rašyti (T)" aria-label="Rašyti (T)" aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
+            <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => setConv({ typing: !conv.typing })} title={L("Rašyti (T)")} aria-label={L("Rašyti (T)")} aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
           </div>
           {conv.typing && (
             <form className="typebox" onSubmit={(e) => { e.preventDefault(); send(); }}>
-              <input ref={inputRef} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Parašyk angliškai…" lang="en" autoCapitalize="sentences" autoComplete="off" disabled={conv.phase !== "you"} />
-              <button className="btn" type="submit" disabled={conv.phase !== "you" || !typed.trim()}>Siųsti</button>
+              <input ref={inputRef} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={L("Parašyk angliškai…")} lang={TL} autoCapitalize="sentences" autoComplete="off" disabled={conv.phase !== "you"} />
+              <button className="btn" type="submit" disabled={conv.phase !== "you" || !typed.trim()}>{L("Siųsti")}</button>
             </form>
           )}
           </div>
@@ -195,29 +197,29 @@ export function Conversation() {
       ) : (
         <div className="yourturn ended-box">
           {conv.completed && <div className="ended-badge"><Icon name="check" size={30} strokeWidth={2.5} /></div>}
-          <div className="ended-title">{conv.completed ? "Užduotis įvykdyta!" : "Pokalbis baigtas"}</div>
-          {conv.newExpressions.length > 0 && <div className="ended-sub">Naujų frazių knygelėje: {conv.newExpressions.length}</div>}
+          <div className="ended-title">{conv.completed ? L("Užduotis įvykdyta!") : L("Pokalbis baigtas")}</div>
+          {conv.newExpressions.length > 0 && <div className="ended-sub">{L("Naujų frazių knygelėje: {n}", { n: conv.newExpressions.length })}</div>}
           {game?.light ? (
             <div className="sit-actions" style={{ justifyContent: "center" }}>
-              <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
-              <button className="btn soft" onClick={() => game?.restartScenario()}><Icon name="restart" size={18} /> Dar kartą</button>
-              <button className="btn ghost" onClick={showAll}><Icon name="list" size={18} /> Visos situacijos</button>
+              <button className="btn" onClick={startNext}><Icon name="arrowRight" size={18} /> {L("Kita situacija")}</button>
+              <button className="btn soft" onClick={() => game?.restartScenario()}><Icon name="restart" size={18} /> {L("Dar kartą")}</button>
+              <button className="btn ghost" onClick={showAll}><Icon name="list" size={18} /> {L("Visos situacijos")}</button>
             </div>
           ) : (
             <>
               {/* in the town: walk on (the next task shows as usual), or straight into the next conversation, the
                   two the same size (owner, 29 Oct 2026); the light mode above has no town, so it leads with the next */}
               <div className="ended-main">
-                <button className="btn" onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> Tęsti</button>
-                <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> Kita situacija</button>
+                <button className="btn" onClick={() => game?.closeConversation()}><Icon name="walk" size={18} /> {L("Tęsti")}</button>
+                <button className="btn soft" onClick={startNext}><Icon name="arrowRight" size={18} /> {L("Kita situacija")}</button>
               </div>
               <div className="sit-actions" style={{ justifyContent: "center" }}>
-                <button className="btn soft small" onClick={() => game?.restartScenario()}><Icon name="restart" size={17} /> Dar kartą</button>
-                <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> Visos situacijos</button>
+                <button className="btn soft small" onClick={() => game?.restartScenario()}><Icon name="restart" size={17} /> {L("Dar kartą")}</button>
+                <button className="btn ghost small" onClick={showAll}><Icon name="list" size={17} /> {L("Visos situacijos")}</button>
               </div>
             </>
           )}
-          <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> Kopijuoti pokalbį mokytojui</button>
+          <button className="copy-link" onClick={() => copyConversation(sit)}><Icon name="clipboard" size={17} /> {L("Kopijuoti pokalbį mokytojui")}</button>
         </div>
       )}
     </div>
@@ -230,16 +232,16 @@ async function copyConversation(sit: SituationDef) {
   const when = new Date().toLocaleString("lt-LT");
   const lines = conv.transcript.map((l) => l.who === "npc"
     ? `${NPCS[l.npc ?? ""]?.name ?? "NPC"}: ${l.sentence?.en ?? ""}`
-    : l.who === "you" ? `Aš: ${l.text ?? ""}${l.understood ? "" : "   ← NEATPAŽINTA"}` : "");
-  const text = [`English World – „${sit.title.lt}“ (${sit.title.en}) · ${when}`, "", ...lines.filter(Boolean)].join("\n");
+    : l.who === "you" ? `${L("Aš:")} ${l.text ?? ""}${l.understood ? "" : "   ← " + L("NEATPAŽINTA")}` : "");
+  const text = [L("English World – „{title}“ ({en}) · {when}", { title: sit.title.lt, en: sit.title.en, when }), "", ...lines.filter(Boolean)].join("\n");
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; } catch {
     const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
     try { ok = document.execCommand("copy"); } catch { ok = false; }
     ta.remove();
   }
-  showToast(ok ? { kind: "success", icon: "clipboard", title: "Pokalbis nukopijuotas", body: "Įklijuok jį žinutėje mokytojui (Ctrl/Cmd + V).", ms: 5000 }
-    : { kind: "info", title: "Nepavyko nukopijuoti", body: "Padaryk ekrano nuotrauką ir atsiųsk ją mokytojui." });
+  showToast(ok ? { kind: "success", icon: "clipboard", title: L("Pokalbis nukopijuotas"), body: L("Įklijuok jį žinutėje mokytojui (Ctrl/Cmd + V)."), ms: 5000 }
+    : { kind: "info", title: L("Nepavyko nukopijuoti"), body: L("Padaryk ekrano nuotrauką ir atsiųsk ją mokytojui.") });
 }
 
 /** Consecutive lines of the same NPC (one turn) are shown as one message. */
@@ -276,8 +278,8 @@ function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: Transcript
 function ReplayButtons({ replay }: { replay: (slow: boolean) => void }) {
   return (
     <>
-      <button onClick={() => replay(false)} title="Pakartoti" aria-label="Pakartoti"><Icon name="speaker" size={18} /></button>
-      <button onClick={() => replay(true)} title="Lėčiau" aria-label="Lėčiau"><Icon name="turtle" size={23} /></button>
+      <button onClick={() => replay(false)} title={L("Pakartoti")} aria-label={L("Pakartoti")}><Icon name="speaker" size={18} /></button>
+      <button onClick={() => replay(true)} title={L("Lėčiau")} aria-label={L("Lėčiau")}><Icon name="turtle" size={23} /></button>
     </>
   );
 }
@@ -308,7 +310,7 @@ function Mission() {
       <button ref={bar} className="mission-bar" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="mission-count">{done}/{items.length}</span>
         <span className="mission-dots" aria-hidden>{items.map((i) => <i key={i.id} className={i.done ? "d" : i.current ? "c" : ""} />)}</span>
-        <span className="mission-now">{conv.completed ? <><Icon name="check" size={17} strokeWidth={2.25} className="done-ico" /> Užduotis įvykdyta!</> : cur ? toImperative(cur.lt) : ""}</span>
+        <span className="mission-now">{conv.completed ? <><Icon name="check" size={17} strokeWidth={2.25} className="done-ico" /> {L("Užduotis įvykdyta!")}</> : cur ? toImperative(cur.lt) : ""}</span>
         <Icon name="chevronDown" size={18} className="chev" />
       </button>
       {open && (
@@ -357,7 +359,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
         <div className="guide-examples">
           {examples.map((ex, i) => (
             <div className="gx" key={i}>
-              <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
+              <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={19} /></button>
               <div className="gx-text">
                 {/* word by word, as the other person's lines: Lithuanian under each word, the natural sentence below */}
                 <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} />
@@ -370,7 +372,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
       )}
       {conv.suggest.length > 1 && (
         <div className="guide-alt">
-          <span>Arba:</span>
+          <span>{L("Arba:")}</span>
           {conv.suggest.map((x, i) => i === focus ? null : <button key={i} onClick={() => setConv({ focus: i })}>{toImperative(x.lt)}</button>)}
         </div>
       )}
@@ -390,11 +392,11 @@ function CallStrip({ sit }: { sit: SituationDef }) {
   const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
   const clock = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   if (sit.mode === "phone") {
-    return <div className="call-strip phone">{ended ? "Skambutis baigtas" : <><span className="dot" /> Skambutis</>} · {clock}</div>;
+    return <div className="call-strip phone">{ended ? L("Skambutis baigtas") : <><span className="dot" /> {L("Skambutis")}</>} · {clock}</div>;
   }
   const people = [sit.npc, ...(sit.npcs ?? [])].filter((id, i, a) => NPCS[id] && a.indexOf(id) === i);
   return (
-    <div className="call-strip video" aria-label="Vaizdo skambutis">
+    <div className="call-strip video" aria-label={L("Vaizdo skambutis")}>
       {people.map((id) => (
         <div key={id} className={"tile" + (speakingNpc === id ? " talking" : "")}>
           <span className="face" style={{ background: avatarColor(id) }}>{NPCS[id].name.charAt(0)}</span>
@@ -402,8 +404,8 @@ function CallStrip({ sit }: { sit: SituationDef }) {
         </div>
       ))}
       <div className={"tile you" + (listening ? " talking" : "")}>
-        <span className="face" style={{ background: "#1f6f78" }}>{(profile?.name ?? "Tu").charAt(0)}</span>
-        <span className="nm">{profile?.name ?? "Tu"}</span>
+        <span className="face" style={{ background: "#1f6f78" }}>{(profile?.name ?? L("Tu")).charAt(0)}</span>
+        <span className="nm">{profile?.name ?? L("Tu")}</span>
       </div>
       <span className="clock">{clock}</span>
     </div>
@@ -441,7 +443,7 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
   if (l.who === "you") {
     return (
       <div className={"msg you" + (l.understood ? "" : " miss")}>
-        <div className="bubble">{l.via && <Via via={l.via} />}{l.text}{l.understood ? <span className="ok"><Icon name="check" size={14} strokeWidth={2.5} label="Suprasta" /></span> : null}</div>
+        <div className="bubble">{l.via && <Via via={l.via} />}{l.text}{l.understood ? <span className="ok"><Icon name="check" size={14} strokeWidth={2.5} label={L("Suprasta")} /></span> : null}</div>
       </div>
     );
   }
@@ -468,14 +470,14 @@ function Hints({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
   return (
     <div className="hints">
       <button className={"hint-toggle" + (open ? " open" : "")} onClick={() => setConv({ openHint: open ? null : (conv.hints[0] ?? "g_clarify") })} aria-expanded={open}>
-        <Icon name="bulb" size={21} className="bulb" /> Daugiau frazių <span className="key">(H)</span><Icon name="chevronDown" size={18} className="chev" />
+        <Icon name="bulb" size={21} className="bulb" /> {L("Daugiau frazių")} <span className="key">(H)</span><Icon name="chevronDown" size={18} className="chev" />
       </button>
       {open && (
         <div>
           {groups.map(([id, g]) => <HintGroupView key={id} id={id} g={g} sit={sit} formal={formal} gender={gender} chosen={conv.chosen[id]} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />)}
           {!conv.hints.includes("g_clarify") && (
             <details className="hint-group">
-              <summary style={{ cursor: "pointer", fontWeight: 800, color: "var(--ink-soft)", margin: "6px 2px" }}>Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…</summary>
+              <summary style={{ cursor: "pointer", fontWeight: 800, color: "var(--ink-soft)", margin: "6px 2px" }}>{L("Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…")}</summary>
               <HintGroupView id="g_clarify" g={GLOBAL.hints.g_clarify} sit={sit} formal={formal} gender={gender} lt={settings.sayLt} ipa={settings.sayIpa} used={used} />
             </details>
           )}
@@ -515,13 +517,13 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
       <h4>{g.lt}</h4>
       {items.map(({ it, gap, full, hasGap }, i) => (
         <div className={"hint-row" + (used.includes(it.id) ? " used" : "")} key={it.id + i}>
-          {hasGap && <div className="pat">{renderGap(gap.en)}{it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : it.register === "casual" ? "laisviau" : ""}</span>}</div>}
+          {hasGap && <div className="pat">{renderGap(gap.en)}{it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : it.register === "casual" ? L("laisviau") : ""}</span>}</div>}
           <div className="ex">
             <Interlinear s={full} lt={lt} ipa={ipa} nat={lt} />
-            {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : "laisviau"}</span>}
+            {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? L("mandagu") : L("laisviau")}</span>}
             {it.note && <div className="note">{it.note}</div>}
           </div>
-          <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={20} /></button>
+          <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, full.say); }} title={L("Klausyti")} aria-label={L("Klausyti")}><Icon name="speaker" size={20} /></button>
         </div>
       ))}
     </div>
@@ -529,10 +531,10 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
 }
 
 const VIA: Record<NonNullable<TranscriptLine["via"]>, [IconName, string]> = {
-  voice: ["mic", "Pasakyta balsu"],
-  typed: ["keyboard", "Parašyta"],
-  picked: ["bulb", "Pasirinkta iš pasiūlymų"],
-  helped: ["bulb", "Pasirinkta, kai nepavyko pasakyti"],
+  voice: ["mic", L("Pasakyta balsu")],
+  typed: ["keyboard", L("Parašyta")],
+  picked: ["bulb", L("Pasirinkta iš pasiūlymų")],
+  helped: ["bulb", L("Pasirinkta, kai nepavyko pasakyti")],
 };
 /** How the learner answered: a tiny mic (spoken) or keyboard (typed) in the bubble. */
 function Via({ via }: { via: NonNullable<TranscriptLine["via"]> }) {
@@ -553,18 +555,18 @@ function DidYouMean({ guess, lt }: { guess: Guess; lt: boolean }) {
   const via = guess.stuck ? "helped" : "picked";
   return (
     <div className="dym">
-      <div className="dym-q">{guess.stuck ? "Nepavyksta? Pasirink, ką norėjai pasakyti:" : "Ar norėjai pasakyti:"}</div>
+      <div className="dym-q">{guess.stuck ? L("Nepavyksta? Pasirink, ką norėjai pasakyti:") : L("Ar norėjai pasakyti:")}</div>
       {guess.options.map((o) => (
         <button key={o.en} className="dym-opt" onClick={() => game?.activeSession?.submit(o.en, [], via)}>
           <span className="dym-text">
-            <span className="dym-en" lang="en">{o.en}</span>
-            {lt && <span className="dym-lt" lang="lt">{o.nat}</span>}
+            <span className="dym-en" lang={TL}>{o.en}</span>
+            {lt && <span className="dym-lt" lang={EDITION.helper}>{o.nat}</span>}
           </span>
           <Icon name="arrowRight" size={18} className="dym-go" />
         </button>
       ))}
-      <div className="dym-hint">Paliesk sakinį arba {speechSupported() ? "pasakyk" : "parašyk"} „yes“.
-        {guess.stuck && <> <button className="link-btn" onClick={() => game?.activeSession?.submit(guess.options[0].en, [], "helped")}>Praleisti</button></>}
+      <div className="dym-hint">{speechSupported() ? L("Paliesk sakinį arba pasakyk „yes“.") : L("Paliesk sakinį arba parašyk „yes“.")}
+        {guess.stuck && <> <button className="link-btn" onClick={() => game?.activeSession?.submit(guess.options[0].en, [], "helped")}>{L("Praleisti")}</button></>}
       </div>
     </div>
   );
@@ -575,36 +577,36 @@ function RepeatButton({ ex }: { ex: Sentence }) {
   const p = useStore((s) => s.conv.practice);
   if (!speechSupported()) return null;
   const state = p?.en === ex.en && (p.status === "playing" || p.status === "listening") ? p.status : null;
-  const label = state === "listening" ? "Baigti" : state === "playing" ? "Atšaukti" : "Pakartok";
+  const label = state === "listening" ? L("Baigti") : state === "playing" ? L("Atšaukti") : L("Pakartok");
   return (
     <button className={"rp-btn" + (state ? " " + state : "")} aria-pressed={!!state} aria-label={label}
-      title={state ? label : "Paklausyk ir pakartok garsiai"}
+      title={state ? label : L("Paklausyk ir pakartok garsiai")}
       onClick={() => { const s = game?.activeSession; if (!s) return; if (state) s.stopPractice(); else s.practice(ex.en, ex.say); }}>
       <Icon name={state === "listening" ? "stop" : "mic"} size={18} /><span className="rp-label">{label}</span>
     </button>
   );
 }
 
-const VERDICT = { great: "Puiku!", almost: "Beveik!", again: "Pabandyk dar kartą" } as const;
+const VERDICT = { great: L("Puiku!"), almost: L("Beveik!"), again: L("Pabandyk dar kartą") } as const;
 
 /** Under a guide example: what happens now, then which words were said and a short verdict. */
 function RepeatResult({ en }: { en: string }) {
   const p = useStore((s) => s.conv.practice);
   if (!p || p.en !== en) return null;
   switch (p.status) {
-    case "playing": return <div className="rp-res wait">Klausyk…</div>;
-    case "listening": return <div className="rp-res wait"><span className="rp-dot" />{p.heard ? <span className="rp-heard" lang="en">„{p.heard}“</span> : "Dabar tu – pakartok garsiai"}</div>;
-    case "nothing": return <div className="rp-res">Nieko negirdėjau. Spausk „Pakartok“ ir kalbėk.</div>;
-    case "denied": return <div className="rp-res">Leisk naršyklei naudoti mikrofoną ir bandyk dar.</div>;
-    case "error": return <div className="rp-res">Nepavyko išgirsti. Pabandyk dar kartą.</div>;
+    case "playing": return <div className="rp-res wait">{L("Klausyk…")}</div>;
+    case "listening": return <div className="rp-res wait"><span className="rp-dot" />{p.heard ? <span className="rp-heard" lang={TL}>{Lx("„{heard}“", { heard: p.heard })}</span> : L("Dabar tu – pakartok garsiai")}</div>;
+    case "nothing": return <div className="rp-res">{L("Nieko negirdėjau. Spausk „Pakartok“ ir kalbėk.")}</div>;
+    case "denied": return <div className="rp-res">{L("Leisk naršyklei naudoti mikrofoną ir bandyk dar.")}</div>;
+    case "error": return <div className="rp-res">{L("Nepavyko išgirsti. Pabandyk dar kartą.")}</div>;
   }
   const r = p.result;
   if (!r) return null;
   return (
     <div className={"rp-res done " + r.verdict} aria-live="polite">
       <span className="rp-verdict">{VERDICT[r.verdict]}</span>
-      <span className="rp-words" lang="en"><Marked words={r.words} /></span>
-      {r.verdict !== "great" && <span className="rp-heard">Girdėjau: <span lang="en">„{p.heard}“</span></span>}
+      <span className="rp-words" lang={TL}><Marked words={r.words} /></span>
+      {r.verdict !== "great" && <span className="rp-heard">{L("Girdėjau:")} <span lang={TL}>{Lx("„{heard}“", { heard: p.heard })}</span></span>}
     </div>
   );
 }
@@ -620,8 +622,8 @@ function MicButton() {
   const conv = useStore((s) => s.conv);
   const supported = speechSupported();
   const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
-  if (!supported) return <button className="mic" disabled title="Balso atpažinimas šioje naršyklėje nepalaikomas" aria-label="Balso atpažinimas šioje naršyklėje nepalaikomas"><Icon name="mic" size={30} /></button>;
-  const title = listening ? "Baigti klausytis (tarpo klavišas)" : "Kalbėti (tarpo klavišas)";
+  if (!supported) return <button className="mic" disabled title={L("Balso atpažinimas šioje naršyklėje nepalaikomas")} aria-label={L("Balso atpažinimas šioje naršyklėje nepalaikomas")}><Icon name="mic" size={30} /></button>;
+  const title = listening ? L("Baigti klausytis (tarpo klavišas)") : L("Kalbėti (tarpo klavišas)");
   return (
     <button className={"mic" + (listening ? " listening" : "")} disabled={conv.phase !== "you"} aria-pressed={listening}
       title={title} aria-label={title}
@@ -631,23 +633,23 @@ function MicButton() {
   );
 }
 
-const MIC = <InlineIcon name="mic" label="mikrofono mygtuką" />;
-const KEYS = <InlineIcon name="keyboard" label="klaviatūra" />;
+const MIC = <InlineIcon name="mic" label={L("mikrofono mygtuką")} />;
+const KEYS = <InlineIcon name="keyboard" label={L("klaviatūra")} />;
 
 function MicStatus() {
   const conv = useStore((s) => s.conv);
   const f = useStore((s) => s.progress.profile?.gender === "f");
   const m = conv.mic;
-  if (!speechSupported()) return <div className="mic-status"><b>Rašyk atsakymą</b><span className="sub">Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).</span></div>;
-  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)</span></div>;
+  if (!speechSupported()) return <div className="mic-status"><b>{L("Rašyk atsakymą")}</b><span className="sub">{L("Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).")}</span></div>;
+  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">{L("Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)")}</span></div>;
   if (conv.phase === "thinking") return <div className="mic-status"><span className="sub">…</span></div>;
   switch (m.status) {
-    case "starting": return <div className="mic-status"><b>Jungiamas mikrofonas…</b></div>;
+    case "starting": return <div className="mic-status"><b>{L("Jungiamas mikrofonas…")}</b></div>;
     case "listening": case "reconnecting":
-      return <div className="mic-status"><b>Klausau – kalbėk {f ? "neskubėdama" : "neskubėdamas"}</b>{m.heard ? <span className="heard">„{m.heard}“</span> : <span className="sub">Gali daryti pauzes – palauksiu.</span>}</div>;
-    case "denied": return <div className="mic-status"><b>Leisk naudoti mikrofoną</b><span className="sub">Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</span></div>;
-    case "error": return <div className="mic-status"><b>{m.error === "network" ? "Nepavyko prisijungti prie atpažinimo" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko"}</b><span className="sub">Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</span></div>;
-    case "nothing": return <div className="mic-status"><b>Nieko negirdėjau</b><span className="sub">Spausk {MIC} (arba tarpo klavišą), kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</span></div>;
-    default: return <div className="mic-status"><b>Spausk {MIC} ir kalbėk</b><span className="sub">arba tarpo klavišą · rašyti {KEYS} (T)</span></div>;
+      return <div className="mic-status"><b>{L("Klausau – kalbėk {calmly}", { calmly: f ? L("neskubėdama") : L("neskubėdamas") })}</b>{m.heard ? <span className="heard">{Lx("„{heard}“", { heard: m.heard })}</span> : <span className="sub">{L("Gali daryti pauzes – palauksiu.")}</span>}</div>;
+    case "denied": return <div className="mic-status"><b>{L("Leisk naudoti mikrofoną")}</b><span className="sub">{Lx("Naršyklės adreso juostoje leisk mikrofoną ir spausk {mic} dar kartą. Arba rašyk {keys}.", { mic: MIC, keys: KEYS })}</span></div>;
+    case "error": return <div className="mic-status"><b>{m.error === "network" ? L("Nepavyko prisijungti prie atpažinimo") : m.error === "audio-capture" ? L("Nerastas mikrofonas") : L("Klausymas nepavyko")}</b><span className="sub">{Lx("Spausk {mic} ir bandyk dar arba rašyk {keys}.", { mic: MIC, keys: KEYS })}</span></div>;
+    case "nothing": return <div className="mic-status"><b>{L("Nieko negirdėjau")}</b><span className="sub">{Lx("Spausk {mic} (arba tarpo klavišą), kai būsi {ready}.", { mic: MIC, ready: f ? L("pasiruošusi") : L("pasiruošęs") })}</span></div>;
+    default: return <div className="mic-status"><b>{Lx("Spausk {mic} ir kalbėk", { mic: MIC })}</b><span className="sub">{Lx("arba tarpo klavišą · rašyti {keys} (T)", { keys: KEYS })}</span></div>;
   }
 }

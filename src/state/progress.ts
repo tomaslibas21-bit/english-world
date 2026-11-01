@@ -1,6 +1,7 @@
 // Saved progress (this browser only). All reads/writes are guarded: private windows or
 // blocked storage simply start fresh.
 import type { Look } from "../content/npcs";
+import { EDITION } from "../edition";
 
 export interface SitProgress {
   visits: number;
@@ -27,7 +28,7 @@ export interface Progress {
   started: number;
 }
 
-const KEY = "english-world-progress-v1";
+const KEY = `${EDITION.storage}-progress-v1`;
 
 export function emptyProgress(): Progress {
   return { version: 1, profile: null, sits: {}, phrases: {}, objective: null, place: null, seenIntro: {}, started: Date.now() };

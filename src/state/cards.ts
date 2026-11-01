@@ -6,6 +6,7 @@
 import { create } from "zustand";
 import type { Sentence } from "../convo/compose";
 import { ipaForUnit } from "../convo/ipa";
+import { EDITION } from "../edition";
 
 export interface Card {
   /** Stable per English text: the same phrase gets the same id on any device (see cardId). */
@@ -53,7 +54,7 @@ export function cleanText(s: string): string {
     t = t.replace(/^[\s"«(\[¿¡…–—-]+/, "").replace(/[\s,!?;:…"»)\]–—-]+$/, "");
     if (t.endsWith(".") && !ABBR.test(t)) t = t.replace(/\.+$/, "");
     // quotes that belong to the rest of the sentence: keep only balanced pairs („…“ “…” ‘…’)
-    for (const [open, close] of [["„", "“"], ["“", "”"], ["‘", "’"]] as const) {
+    for (const [open, close] of [["„", "“"], ["“", "”"], ["‘", "’"]] as const) { // i18n-ok: quote characters
       if (t.startsWith(open) && !t.slice(1).includes(close)) t = t.slice(1);
       if (t.endsWith(close) && !t.slice(0, -1).includes(open) && !(close === "’" && /\w’$/.test(t))) t = t.slice(0, -1);
     }
@@ -192,7 +193,7 @@ export function removeCard(cards: Card[], id: string): Card[] { return cards.fil
 // ---------------------------------------------------------------------------------------------
 // storage
 
-export const STORAGE_KEY = "english-world-cards-v1";
+export const STORAGE_KEY = `${EDITION.storage}-cards-v1`;
 type KV = Pick<Storage, "getItem" | "setItem">;
 function defaultStorage(): KV | null { try { return typeof localStorage === "undefined" ? null : localStorage; } catch { return null; } }
 

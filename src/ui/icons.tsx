@@ -3,6 +3,7 @@
 // `iconForEmoji` maps the emojis that still come from content and game data (place icons,
 // items people hand you, toast and banner titles) to these icons at render time.
 import type { CSSProperties, ReactNode } from "react";
+import { L } from "./i18n";
 
 // ---------------------------------------------------------------------------------------------
 // geometry helpers
@@ -204,7 +205,7 @@ export function InlineIcon({ name, label }: { name: IconName; label?: string }) 
 
 /** Star rating: `n` gold stars of `of` (read out as "n iš of" unless another label is given). */
 export function Stars({ n: filled, of = 3, size = 16, label }: { n: number; of?: number; size?: number | string; label?: string | false }) {
-  const name = label === undefined ? `${filled} iš ${of}` : label;
+  const name = label === undefined ? L("{n} iš {of}", { n: filled, of }) : label;
   return (
     <span className="stars" {...(name ? { role: "img", "aria-label": name } : { "aria-hidden": true })}>
       {Array.from({ length: of }, (_, i) => <Icon key={i} name="star" size={size} className={i < filled ? "on" : "off"} />)}

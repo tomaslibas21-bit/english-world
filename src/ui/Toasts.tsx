@@ -1,5 +1,6 @@
 import { useStore, type Toast } from "../state/store";
 import { Icon, Stars, splitLead, withIcons, type IconName } from "./icons";
+import { L } from "./i18n";
 
 /** A toast from the UI can name its own icon (game toasts put an emoji at the start of the title). */
 export type ToastInput = Omit<Toast, "id"> & { icon?: IconName };
@@ -19,11 +20,11 @@ export function Toasts() {
           <div key={t.id} className={"toast " + t.kind}>
             <span className="t-icon"><Icon name={icon} size={22} /></span>
             <div className="t-text">
-              <b>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={`${lead.stars} iš 3`} />}{withIcons(lead.rest)}</b>
+              <b>{lead.stars > 0 && <Stars n={lead.stars} of={lead.stars} size={17} label={L("{n} iš 3", { n: lead.stars })} />}{withIcons(lead.rest)}</b>
               {t.body && <p>{withIcons(t.body)}</p>}
               {t.better && <div className="better">{t.better}</div>}
             </div>
-            <button className="x" onClick={() => dismiss(t.id)} aria-label="Uždaryti"><Icon name="close" size={18} /></button>
+            <button className="x" onClick={() => dismiss(t.id)} aria-label={L("Uždaryti")}><Icon name="close" size={18} /></button>
           </div>
         );
       })}

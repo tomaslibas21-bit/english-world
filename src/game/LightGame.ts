@@ -11,6 +11,7 @@ import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import type { SituationDef } from "../content/types";
 import { useStore } from "../state/store";
 import { sitProgress } from "../state/progress";
+import { L } from "../ui/i18n";
 
 export class LightGame implements GameApi {
   readonly light = true;
@@ -61,7 +62,7 @@ export class LightGame implements GameApi {
     const ticket = ++this.pending;
     const go = () => { if (ticket === this.pending && !this.disposed && !this.session?.active) this.begin(sit); };
     if (this.loaded || !this.loading) { go(); return; }
-    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: "Ruošiami balsai…", ms: 2500 }), 500);
+    const slow = setTimeout(() => useStore.getState().toast({ kind: "info", title: L("Ruošiami balsai…"), ms: 2500 }), 500);
     this.loading.then(() => { clearTimeout(slow); go(); });
   }
 
@@ -143,9 +144,9 @@ export class LightGame implements GameApi {
     if (name === "pay") audio.sfx("coin");
     if (name === "give" && data?.item) {
       const it = givenItem(this.session?.sit, data.item);
-      st.toast({ kind: "success", title: `${it[0]} Gavai: ${it[1]}`, ms: 2600 });
+      st.toast({ kind: "success", title: `${it[0]} ${L("Gavai: {item}", { item: it[1] })}`, ms: 2600 });
     }
-    if (name === "sign") st.toast({ kind: "success", title: "✍️ Pasirašyta", ms: 2200 });
+    if (name === "sign") st.toast({ kind: "success", title: "✍️ " + L("Pasirašyta"), ms: 2200 });
   }
 
   /** The task is done: the next one not yet completed becomes the task (as in the town). */

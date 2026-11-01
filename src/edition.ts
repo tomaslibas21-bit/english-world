@@ -10,7 +10,8 @@ export interface Edition {
   target: string;
   /** The learner's own language: help, glosses and the interface. */
   helper: string;
-  /** The town. */
+  /** The game's name and the town. */
+  brand: string;
   town: string;
   /** The page title. */
   title: string;
@@ -31,6 +32,7 @@ export const EDITION: Edition = {
   id: "en",
   target: "en-US",
   helper: "lt",
+  brand: "English World",
   town: "Maple Harbor",
   title: "English World · Maple Harbor",
   storage: "english-world",

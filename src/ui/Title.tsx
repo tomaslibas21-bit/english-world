@@ -7,6 +7,8 @@ import { SITUATIONS, SITUATION_BY_ID } from "../content/situations";
 import { sitProgress, stars } from "../state/progress";
 import { ltCount } from "./lt";
 import { Icon } from "./icons";
+import { L, Lx, TL } from "./i18n";
+import { EDITION } from "../edition";
 import "./light.css";
 import "./title.css";
 
@@ -17,13 +19,13 @@ import "./title.css";
 type Pair = [en: string, lt: string];
 interface Slide { img: string; sit: string; focus: string; npc: Pair; you: Pair | ((name: string) => Pair) }
 const SLIDES: Slide[] = [
-  { img: "cafe", sit: "s72-cafe", focus: "36% 28%", npc: ["Hi! What can I get you?", "Sveiki! Ką jums paduoti?"], you: ["I'll have a latte.", "Imsiu latę."] },
-  { img: "market", sit: "s69-local", focus: "33% 35%", npc: ["Hello there! Can I help you with something?", "Sveiki! Ar galiu kuo nors padėti?"], you: ["What would you recommend?", "Ką rekomenduotumėte?"] },
-  { img: "taxi", sit: "s66-taxi", focus: "38% 30%", npc: ["Hi there! Hop in! Where to?", "Sveiki! Lipkite! Kur važiuojame?"], you: ["To the Harborview Hotel, please.", "Į „Harborview“ viešbutį, prašau."] },
-  { img: "passport", sit: "s65a-passport", focus: "32% 36%", npc: ["Next! Hi there. Passport, please.", "Kitas! Sveiki. Pasą, prašau."], you: ["Here you go.", "Prašom."] },
-  { img: "party", sit: "s63-party", focus: "33% 32%", npc: ["Hi! So glad you came!", "Labas! Kaip gerai, kad atėjai!"],
-    you: (name) => (name ? [`Hi, I'm ${name}. Nice to meet you!`, `Labas, aš ${name}. Malonu susipažinti!`] : ["Hi! Nice to meet you!", "Labas! Malonu susipažinti!"]) },
-  { img: "hotel", sit: "s68-hotel", focus: "28% 30%", npc: ["Good evening! Checking in?", "Labas vakaras! Registruojatės?"], you: ["I have a reservation.", "Turiu rezervaciją."] },
+  { img: "cafe", sit: "s72-cafe", focus: "36% 28%", npc: ["Hi! What can I get you?", L("Sveiki! Ką jums paduoti?")], you: ["I'll have a latte.", L("Imsiu latę.")] },
+  { img: "market", sit: "s69-local", focus: "33% 35%", npc: ["Hello there! Can I help you with something?", L("Sveiki! Ar galiu kuo nors padėti?")], you: ["What would you recommend?", L("Ką rekomenduotumėte?")] },
+  { img: "taxi", sit: "s66-taxi", focus: "38% 30%", npc: ["Hi there! Hop in! Where to?", L("Sveiki! Lipkite! Kur važiuojame?")], you: ["To the Harborview Hotel, please.", L("Į „Harborview“ viešbutį, prašau.")] },
+  { img: "passport", sit: "s65a-passport", focus: "32% 36%", npc: ["Next! Hi there. Passport, please.", L("Kitas! Sveiki. Pasą, prašau.")], you: ["Here you go.", L("Prašom.")] },
+  { img: "party", sit: "s63-party", focus: "33% 32%", npc: ["Hi! So glad you came!", L("Labas! Kaip gerai, kad atėjai!")],
+    you: (name) => (name ? [`Hi, I'm ${name}. Nice to meet you!`, L("Labas, aš {name}. Malonu susipažinti!", { name })] : ["Hi! Nice to meet you!", L("Labas! Malonu susipažinti!")]) },
+  { img: "hotel", sit: "s68-hotel", focus: "28% 30%", npc: ["Good evening! Checking in?", L("Labas vakaras! Registruojatės?")], you: ["I have a reservation.", L("Turiu rezervaciją.")] },
 ];
 const ART = (img: string) => `${import.meta.env.BASE_URL}title/${img}.webp`;
 const TURN_MS = 6500;
@@ -74,13 +76,13 @@ function Showcase({ name }: { name: string }) {
       <div className="ts-chat" key={i}>
         <div className={"ts-bubble ts-npc" + (talk >= 1 ? " in" : "")}>
           <span className="who">{who}{where ? ` · ${where}` : ""}</span>
-          <span className="en" lang="en">{s.npc[0]}</span>
+          <span className="en" lang={TL}>{s.npc[0]}</span>
           <span className="lt">{s.npc[1]}</span>
         </div>
         <div className={"ts-bubble ts-you" + (talk >= 2 ? " in" : "")}>
           <span className="mic"><Icon name="mic" size={16} strokeWidth={2} /></span>
           <span className="txt">
-            <span className="en" lang="en">{you[0]}</span>
+            <span className="en" lang={TL}>{you[0]}</span>
             <span className="lt">{you[1]}</span>
           </span>
         </div>
@@ -94,12 +96,12 @@ function ModeChoice() {
   const play = useStore((s) => s.settings.play);
   const set = (p: PlayMode) => useStore.getState().setSettings({ play: p });
   const modes: { id: PlayMode; icon: "frame" | "walk"; name: string; sub: string }[] = [
-    { id: "light", icon: "frame", name: "Lengvas režimas", sub: "Pokalbiai su piešiniais. Greitai atsidaro, taupo bateriją." },
-    { id: "town", icon: "walk", name: "3D miestas", sub: "Vaikščiok po miestą ir kalbink žmones. Geriausia – kompiuteryje." },
+    { id: "light", icon: "frame", name: L("Lengvas režimas"), sub: L("Pokalbiai su piešiniais. Greitai atsidaro, taupo bateriją.") },
+    { id: "town", icon: "walk", name: L("3D miestas"), sub: L("Vaikščiok po miestą ir kalbink žmones. Geriausia – kompiuteryje.") },
   ];
   return (
     <div className="ts-field">
-      <span className="ts-label" id="ts-mode">Kaip nori žaisti?</span>
+      <span className="ts-label" id="ts-mode">{L("Kaip nori žaisti?")}</span>
       <div className="ts-modes" role="radiogroup" aria-labelledby="ts-mode">
         {modes.map((m) => (
           <button key={m.id} type="button" role="radio" aria-checked={play === m.id} aria-label={m.name} aria-describedby={`ts-mode-${m.id}`}
@@ -117,9 +119,9 @@ function Perks() {
   const n = SITUATIONS.length;
   return (
     <ul className="ts-perks">
-      <li><Icon name="mic" size={18} /> Kalbėk balsu arba rašyk</li>
-      <li><Icon name="bulb" size={18} /> Patarimai lietuviškai</li>
-      <li><Icon name="star" size={18} /> {n} {ltCount(n, "pokalbis", "pokalbiai", "pokalbių")} pagal dainas</li>
+      <li><Icon name="mic" size={18} /> {L("Kalbėk balsu arba rašyk")}</li>
+      <li><Icon name="bulb" size={18} /> {L("Patarimai lietuviškai")}</li>
+      <li><Icon name="star" size={18} /> {L("{n} {conversations} pagal dainas", { n, conversations: ltCount(n, "pokalbis", "pokalbiai", "pokalbių") })}</li>
     </ul>
   );
 }
@@ -130,14 +132,14 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
       <div className="ts-in">
         <header className="ts-head">
           <span className="ts-placewrap">
-            <span className="ts-place"><Icon name="pin" size={15} strokeWidth={2} /> Maple Harbor · JAV</span>
-            <span className="ts-place-lt" lang="lt">{TOWN_LT}</span>
+            <span className="ts-place"><Icon name="pin" size={15} strokeWidth={2} /> {L("Maple Harbor · JAV")}</span>
+            <span className="ts-place-lt" lang={EDITION.helper}>{TOWN_LT}</span>
           </span>
-          <h1 className="ts-title">English <em>World</em></h1>
+          <h1 className="ts-title">{EDITION.brand.split(" ")[0]} <em>{EDITION.brand.split(" ").slice(1).join(" ")}</em></h1>
           {head}
         </header>
         <div className="ts-show">
-          <Showcase name={name} />
+          {EDITION.id === "en" && <Showcase name={name} />}
           <Perks />
         </div>
         <div className="ts-body">{body}</div>
@@ -164,18 +166,18 @@ export function Title({ onPlay }: { onPlay: () => void }) {
   const totalStars = SITUATIONS.reduce((a, s) => a + stars(sitProgress(progress, s.id)), 0);
   return (
     <Frame name={profile.name}
-      head={<p className="ts-lead">Tavo miestelis laukia – kavinė, stotis, parduotuvės ir {SITUATIONS.length} {ltCount(SITUATIONS.length, "pokalbis", "pokalbiai", "pokalbių")} su jo žmonėmis.</p>}
+      head={<p className="ts-lead">{L("Tavo miestelis laukia – kavinė, stotis, parduotuvės ir {n} {conversations} su jo žmonėmis.", { n: SITUATIONS.length, conversations: ltCount(SITUATIONS.length, "pokalbis", "pokalbiai", "pokalbių") })}</p>}
       body={
         <div className="ts-card">
-          <p className="ts-hello">{profile.gender === "f" ? "Sveika sugrįžusi" : "Sveikas sugrįžęs"}, <b>{profile.name}</b>!</p>
+          <p className="ts-hello">{profile.gender === "f" ? L("Sveika sugrįžusi") : L("Sveikas sugrįžęs")}, <b>{profile.name}</b>!</p>
           <div className="ts-progress">
-            <div className="ts-bar" role="progressbar" aria-valuemin={0} aria-valuemax={SITUATIONS.length} aria-valuenow={done} aria-label="Įveiktos situacijos"><i style={{ width: `${Math.max(3, (done / SITUATIONS.length) * 100)}%` }} /></div>
-            <span>Įveikta <b>{done}</b> iš {SITUATIONS.length}</span>
-            {totalStars > 0 && <span className="ts-stars"><Icon name="star" size={16} label="Žvaigždučių:" /> {totalStars}</span>}
+            <div className="ts-bar" role="progressbar" aria-valuemin={0} aria-valuemax={SITUATIONS.length} aria-valuenow={done} aria-label={L("Įveiktos situacijos")}><i style={{ width: `${Math.max(3, (done / SITUATIONS.length) * 100)}%` }} /></div>
+            <span>{Lx("Įveikta {done} iš {total}", { done: <b>{done}</b>, total: SITUATIONS.length })}</span>
+            {totalStars > 0 && <span className="ts-stars"><Icon name="star" size={16} label={L("Žvaigždučių:")} /> {totalStars}</span>}
           </div>
-          <button className="btn ts-go" onClick={onPlay} autoFocus>Tęsti <Icon name="play" size={17} /></button>
+          <button className="btn ts-go" onClick={onPlay} autoFocus>{L("Tęsti")} <Icon name="play" size={17} /></button>
           <ModeChoice />
-          <button type="button" className="ts-link" onClick={() => setCreating(true)}><Icon name="pencil" size={16} /> Keisti vardą</button>
+          <button type="button" className="ts-link" onClick={() => setCreating(true)}><Icon name="pencil" size={16} /> {L("Keisti vardą")}</button>
         </div>
       } />
   );
@@ -196,33 +198,33 @@ function Create({ onDone, canCancel, onCancel }: { onDone: () => void; canCancel
   };
   return (
     <Frame name={name}
-      head={<p className="ts-lead">Kalbėk angliškai su miestelio žmonėmis – kavinėje, taksi, oro uoste ar pas gydytoją. Kiekviename pokalbyje matysi, ką daryti ir ką pasakyti.</p>}
+      head={<p className="ts-lead">{L("Kalbėk angliškai su miestelio žmonėmis – kavinėje, taksi, oro uoste ar pas gydytoją. Kiekviename pokalbyje matysi, ką daryti ir ką pasakyti.")}</p>}
       body={
         <form className="ts-card" onSubmit={(e) => { e.preventDefault(); start(); }}>
           <div className="ts-row">
             <div className="ts-field">
-              <label htmlFor="nm">Tavo vardas</label>
-              <input id="nm" className="ts-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Pvz., Rūta" autoComplete="given-name" autoFocus />
+              <label htmlFor="nm">{L("Tavo vardas")}</label>
+              <input id="nm" className="ts-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={L("Pvz., Rūta")} autoComplete="given-name" autoFocus />
             </div>
             <div className="ts-field">
-              <label htmlFor="sn">Pavardė <small>(nebūtina)</small></label>
-              <input id="sn" className="ts-input" value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="Pvz., Petraitė" autoComplete="family-name" aria-describedby="sn-help" />
+              <label htmlFor="sn">{L("Pavardė")} <small>{L("(nebūtina)")}</small></label>
+              <input id="sn" className="ts-input" value={surname} onChange={(e) => setSurname(e.target.value)} placeholder={L("Pvz., Petraitė")} autoComplete="family-name" aria-describedby="sn-help" />
             </div>
           </div>
-          <p className="ts-help" id="sn-help">Pavardė pravers, kai kas nors paprašys ją pasakyti paraidžiui.</p>
+          <p className="ts-help" id="sn-help">{L("Pavardė pravers, kai kas nors paprašys ją pasakyti paraidžiui.")}</p>
           <div className="ts-field">
-            <span className="ts-label" id="ts-gender">Kaip į Tave kreiptis?</span>
+            <span className="ts-label" id="ts-gender">{L("Kaip į Tave kreiptis?")}</span>
             <div className="ts-pills" role="radiogroup" aria-labelledby="ts-gender">
-              <button type="button" role="radio" aria-checked={gender === "m"} className={"ts-pill" + (gender === "m" ? " on" : "")} onClick={() => setGender("m")}>Vyras</button>
-              <button type="button" role="radio" aria-checked={gender === "f"} className={"ts-pill" + (gender === "f" ? " on" : "")} onClick={() => setGender("f")}>Moteris</button>
+              <button type="button" role="radio" aria-checked={gender === "m"} className={"ts-pill" + (gender === "m" ? " on" : "")} onClick={() => setGender("m")}>{L("Vyras")}</button>
+              <button type="button" role="radio" aria-checked={gender === "f"} className={"ts-pill" + (gender === "f" ? " on" : "")} onClick={() => setGender("f")}>{L("Moteris")}</button>
             </div>
           </div>
           <ModeChoice />
           <div className="ts-actions">
-            {canCancel && <button type="button" className="btn ghost" onClick={onCancel}>Atgal</button>}
-            <button className="btn ts-go" type="submit" disabled={!ready}>Pradėti <Icon name="play" size={17} /></button>
+            {canCancel && <button type="button" className="btn ghost" onClick={onCancel}>{L("Atgal")}</button>}
+            <button className="btn ts-go" type="submit" disabled={!ready}>{L("Pradėti")} <Icon name="play" size={17} /></button>
           </div>
-          <p className="ts-fine">Geriausia – kompiuteris su mikrofonu ir Chrome naršyklė. Galima ir rašyti. Pažanga saugoma šioje naršyklėje.</p>
+          <p className="ts-fine">{L("Geriausia – kompiuteris su mikrofonu ir Chrome naršyklė. Galima ir rašyti. Pažanga saugoma šioje naršyklėje.")}</p>
         </form>
       } />
   );
