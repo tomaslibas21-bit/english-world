@@ -76,7 +76,9 @@ const QUESTION_LINES: Record<string, (c: Ctx) => void> = {
     c.s.timeKnown = true;
   },
   delayed: (c) => {
-    if (c.s.delay) { c.say("delayed_yes"); c.say("delay"); reason(c); } else c.say("delayed_no");
+    // "¿Cuánto es el retraso?" is not a yes/no question: no "Sí," / "No," in front (rule 11)
+    const wh = /\bcuanto\b/.test(fold(c.s.qHeard ?? c.heard));
+    if (c.s.delay) { if (!wh) c.say("delayed_yes"); c.say("delay"); reason(c); } else c.say(wh ? "delay_none" : "delayed_no");
     boardingInfo(c);
     c.s.timeKnown = true;
   },
@@ -95,6 +97,7 @@ const QUESTION_LINES: Record<string, (c: Ctx) => void> = {
 
 /** Flight-specific questions need the flight first ("¿En qué vuelo viaja?"), then get answered. */
 function withFlight(c: Ctx, key: string) {
+  c.s.qHeard = c.heard; // the question itself, for the answer's form after "¿En qué vuelo viaja?"
   if (c.s.gateOk) { QUESTION_LINES[key](c); if (key !== "boarding" && key !== "departure") c.s.delayTold = true; return; }
   c.s.afterFlight = key;
   c.say("which_flight");
@@ -189,6 +192,12 @@ function expectScan(c: Ctx) {
 }
 
 /** "¿Dónde la recojo?" gets the place; "¿La recojo en la Ciudad de México?" gets "Sí, …" (rule 11). */
+/** "¿Es gratis?" → "Sí, es sin costo."; "¿Tengo que pagar algo?" / "¿Tiene costo?" → "No, no tiene costo."; "¿Cuánto cuesta?" →
+ *  "No cuesta nada." (rule 11: never "Sí, es sin costo" to "Do I have to pay?"). */
+const freeAnswer = (c: Ctx) => {
+  const h = fold(c.heard);
+  c.say(/gratis|sin costo/.test(h) ? "free_yes" : /\bcuanto\b/.test(h) ? "free_how" : "free_no");
+};
 const bagWhere = (c: Ctx) => c.say(/\bdonde\b/.test(fold(c.heard)) ? "bag_back_cdmx_short" : "bag_back_yes");
 const checkBag = (cc: Ctx) => { cc.s.bagChecked = true; cc.say("bag_tagged"); cc.say("bag_back_cdmx"); };
 const keepBag = (cc: Ctx) => { cc.s.bagChecked = false; cc.say("no_problem"); };
@@ -199,7 +208,7 @@ function offerGateCheck(c: Ctx, fromQuestion = false) {
   c.say(fromQuestion ? "full_offer_short" : "full_offer");
   c.say("full_offer_q");
   ask(c, {
-    id: "offer", expects: ["bag_check_q", "keep_bag", "keep_bag_ctx", "offer_yes", "ask_free"], hints: ["g_yesno", "offer"],
+    id: "offer", expects: ["bag_check_q", "keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_amb_ctx"], hints: ["g_yesno", "offer"],
     suggest: [{ lt: "Say yes or no", hint: "offer" }],
     yes: checkBag,
     no: keepBag,
@@ -208,13 +217,14 @@ function offerGateCheck(c: Ctx, fromQuestion = false) {
       keep_bag_ctx: keepBag,
       offer_yes: checkBag,
       bag_check_q: (cc) => { cc.say("bag_back_cdmx"); ask(cc, offerPending()); },
-      ask_free: (cc) => { cc.say("free_yes"); ask(cc, offerPending()); },
+      ask_free: (cc) => { freeAnswer(cc); ask(cc, offerPending()); },
+      bag_amb_ctx: (cc) => { cc.say("bag_which"); ask(cc, offerPending()); },
     },
     ask: (cc) => cc.say("full_offer_q"),
   });
 }
 const offerPending = (): Pending => ({
-  id: "offer", expects: ["keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_check_q"], hints: ["g_yesno", "offer"],
+  id: "offer", expects: ["keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_check_q", "bag_amb_ctx"], hints: ["g_yesno", "offer"],
   suggest: [{ lt: "Say yes or no", hint: "offer" }],
   yes: checkBag,
   no: keepBag,
@@ -224,7 +234,8 @@ const offerPending = (): Pending => ({
     offer_yes: checkBag,
     // a second question: answered, and the offer stays open without repeating the whole question
     bag_check_q: (cc) => { bagWhere(cc); ask(cc, offerPending()); },
-    ask_free: (cc) => { cc.say("free_yes"); ask(cc, offerPending()); },
+    ask_free: (cc) => { freeAnswer(cc); ask(cc, offerPending()); },
+    bag_amb_ctx: (cc) => { cc.say("bag_which"); ask(cc, offerPending()); },
   },
   ask: (cc) => cc.say("full_offer_q"),
 });
@@ -283,6 +294,8 @@ export const gate: SituationDef = {
       "[no] [gracias] (me quedo | prefiero quedarme) (en | con) (mi asiento | el mismo asiento | mi lugar | donde estoy)",
       "[no] [gracias] (asi | asi estoy) bien (con mi asiento | en mi asiento | con mi lugar)",
       "[no] [gracias] (me gusta | prefiero) (mi asiento | el pasillo | mi lugar)",
+      "[no] [gracias] no (me lo | lo) (cambie | cambien)", "[no] [gracias] me quedo (en el pasillo | en la ventanilla | aqui | con el mio | con el que tengo | como estoy)",
+      "[no] [gracias] (asi esta bien | esta bien asi)",
     ] },
     ask_gate: { patterns: [
       "es [esta] la @sala (del | de | para el) @flt [@dest] #h:q_gate",
@@ -325,6 +338,8 @@ export const gate: SituationDef = {
       "(el vuelo | el de) @dest",
       "{city}", "{number} [@dest]",
       "(perdon | me equivoque | quise decir | digo | perdon quise decir | perdon me equivoque) [es] [el] (@flt | {number} | {f:fnum}) [@dest]",
+      // "No es el 225, es el 223": in "No X, Y" the second number is the answer (rule 10)
+      "no (es | era) [el] [vuelo] {neg:number} [es | sino] [el] [vuelo] ({number} | {f:fnum}) [@dest]",
     ] },
     give_bp: { patterns: [
       "aqui (esta | tiene) [mi | el] @bp #h:bd_bp",
@@ -374,6 +389,7 @@ export const gate: SituationDef = {
       "cuanto (falta | tiempo falta) para (abordar | el abordaje | el embarque | subir)",
       "cuanto (tiempo) (tengo que | hay que | tenemos que) esperar", "cuanto (hay que | tengo que) esperar",
       "a que hora puedo abordar", "cuando puedo abordar", "cuanto tiempo (tengo | tenemos) [antes de abordar | para abordar]",
+      "cual es la hora de (abordaje | abordar | embarque)", "cuanto falta [todavia]",
     ] },
     ask_departure: { patterns: [
       "a que hora (sale el vuelo | sale el avion | salimos | despegamos | sale | despega el avion | despega) #h:q_departure",
@@ -384,7 +400,7 @@ export const gate: SituationDef = {
       "en que @zone (voy | estoy | me toca | ando) #h:q_group",
       "(cual | que) es mi @zone", "(que | cual) @zone (soy | tengo | me toca)",
       "cuando (aborda | pasa | sube | le toca a) la @zone {number}",
-      "(que | cual) @zone (esta abordando | estan abordando | esta pasando | pasa | va) [ahora | ahorita]",
+      "(que | cual) @zone (esta abordando | estan abordando | esta pasando | pasa | va) [ahora | ahorita] #now",
       "que (significa | quiere decir) [la] @zone {number}",
       "cuando (me toca | le toca a mi @zone | pasa mi @zone)", "mi @zone es la {number}",
     ] },
@@ -401,6 +417,7 @@ export const gate: SituationDef = {
       "hay @wifi (en el avion | a bordo | en el vuelo) #h:q_wifi",
       "(el avion | el vuelo) tiene @wifi", "hay @wifi [aqui | en la sala]", "(tienen | tiene) @wifi [en el avion | a bordo]", "no hay @wifi [a bordo | en el avion]",
       "el @wifi es gratis", "puedo usar (el @wifi | @wifi) (en el avion | a bordo)",
+      "cuanto (cuesta | cobran) [por] el @wifi", "(se paga | hay que pagar) el @wifi", "hay @wifi en el aeropuerto",
     ] },
     ask_coffee: { patterns: [
       "donde (puedo comprar | compro | venden | hay | puedo conseguir | consigo) [un | una] (cafe | cafecito) #h:q_coffee",
@@ -422,7 +439,7 @@ export const gate: SituationDef = {
     ] },
     ask_restroom: { patterns: [
       "donde (esta | estan | queda | quedan) (el bano | los banos | el sanitario | los sanitarios | el servicio | los servicios | el aseo | los aseos | el wc) #h:q_restroom",
-      "hay (un bano | banos | sanitarios | aseos) (por aqui | cerca | aqui)",
+      "hay (un bano | banos | sanitarios | aseos) (por aqui | cerca | aqui)", "donde hay (un bano | banos | sanitarios | un sanitario)",
       "(el bano | los banos) (por favor | donde)", "puedo ir al bano", "(tengo | me da) tiempo (de | para) ir al bano", "(me (dice | puede decir | podria decir) | sabe) donde (esta | estan | queda) (el bano | los banos | el sanitario)",
     ] },
     ask_charge: { patterns: [
@@ -431,6 +448,7 @@ export const gate: SituationDef = {
       "donde (hay | estan) (contactos | enchufes | tomas de corriente)",
       "puedo cargar (mi | el) @phone_thing [aqui | en algun lado | en algun lugar]",
       "donde (hay | esta) (un enchufe | un contacto | una toma de corriente)", "necesito cargar (mi | el) @phone_thing", "hay donde cargar [(el | mi) @phone_thing]",
+      "hay (algun lugar | un lugar | algun sitio | un sitio) (para | donde) cargar [(el | mi) @phone_thing]",
     ] },
     ask_duration: { patterns: ["cuanto (dura | tarda | se tarda) [el vuelo]", "cuanto tiempo (dura | es | tarda) el vuelo", "a que hora (llegamos | aterrizamos | llega el vuelo) [a {city}]", "cuantas horas (son | es el vuelo | de vuelo)"] },
     ask_full: { patterns: ["(el vuelo | el avion) (va | esta | viene) lleno", "(va | viene) lleno [el vuelo | el avion]", "(hay | quedan) (asientos | lugares) (libres | vacios | disponibles)", "esta lleno [el vuelo]"] },
@@ -445,6 +463,9 @@ export const gate: SituationDef = {
       "(hay | tiene | quedan) asientos (de | en) (ventanilla | pasillo) [libres | disponibles]",
       "(quiero | quisiera | me gustaria) sentarme (con | junto a) mi (esposa | esposo | familia | amigo | amiga | hijo | hija | pareja | novio | novia)",
       "prefiero (ventanilla | la ventanilla | pasillo | el pasillo)",
+      "(me puede | puede | me podria | podria) (cambiar | cambiarme) a (un asiento (de | en) (ventanilla | pasillo) | la ventanilla | el pasillo | otro asiento | ventanilla | pasillo)",
+      "(me puedes | puedes | me podrias | podrias) (cambiar | cambiarme) (a | de) (un asiento (de | en) (ventanilla | pasillo) | la ventanilla | el pasillo | otro asiento | asiento | lugar) #tip:tu_staff",
+      "(puedo | podemos | quiero | quisiera | me gustaria) (sentarme | sentarnos) (junto a | con | al lado de) mi (esposa | esposo | familia | amigo | amiga | hijo | hija | pareja | novio | novia)",
     ] },
     ask_gate12: { patterns: [
       "(donde esta | donde queda | como llego a | por donde (es | queda) | hacia donde (es | queda) | para donde es) la @sala (7 | siete) #h:q_gate12",
@@ -458,7 +479,7 @@ export const gate: SituationDef = {
       "(ya | ahora) (estan abordando | estan llamando | pasa | estan pasando) [a] la @zone {number}",
       "(voy | estoy | soy) (en | de) la @zone {number} #h:bd_group",
       "(tengo | traigo) la @zone {number}",
-      "@zone {number}", "la {number}",
+      "@zone {number}",
       "(esa | esta) es mi @zone", "(esa | esta) es la mia",
       "(es | esa es) la @zone {number}",
       "(me toca | mi turno | es mi turno)",
@@ -469,15 +490,19 @@ export const gate: SituationDef = {
       "(prefiero | quiero | me gustaria) (llevarla | llevarlo | quedarmela | quedarmelo | tenerla | tenerlo) conmigo",
       "(prefiero | quiero) (llevarla | llevarlo) (a bordo | en el avion | arriba)",
       "no (la | lo) quiero documentar", "no quiero documentar(la | lo)?", "no (la | lo) documente", "no me (la | lo) documente",
-      "(la | lo) necesito (en el avion | conmigo | a bordo | durante el vuelo)",
       "[es que] (traigo | llevo | tengo) (mi laptop | mi computadora | medicinas | mis medicinas | cosas de valor | mi camara | cosas fragiles | mis documentos) (adentro | ahi | en la maleta | en la mochila)",
       "(es | esta) (chica | pequena | ligera | chiquita) [la llevo conmigo]",
       "mejor (la | lo) llevo [conmigo]",
-      "mejor no (la | lo) documento", "prefiero no documentarla",
+      "mejor no (la | lo) documento", "prefiero no documentarla", "[no gracias] (me la | me lo) (llevo | quedo) [conmigo]",
     ] },
     // "Es que traigo cosas frágiles": a reason to keep the bag, only as an answer to the offer
-    keep_bag_ctx: { patterns: ["[es que] (traigo | llevo | tengo) (mi laptop | mi computadora | medicinas | mis medicinas | cosas de valor | mi camara | cosas fragiles | mis documentos | algo fragil | algo de valor)"] },
-    flight_dunno_ctx: { patterns: ["no (me acuerdo | recuerdo) [del numero | el numero | de que vuelo | cual es]", "no se (el numero | cual es | de que vuelo)", "[no se] (no lo tengo | no lo traigo) a la mano"] },
+    // "La necesito en el avión" only at the offer: with a "no" in front it's ambiguous (bag_amb_ctx), never a plain keep
+    keep_bag_ctx: { patterns: ["(la | lo) necesito (en el avion | conmigo | a bordo | durante el vuelo)", "[es que] (traigo | llevo | tengo) (mi laptop | mi computadora | medicinas | mis medicinas | cosas de valor | mi camara | cosas fragiles | mis documentos | algo fragil | algo de valor)"] },
+    // "¿La tres?" right after a zone is called: only at the boarding call (a bare "la cuatro" elsewhere is the gate or a time)
+    zone_ctx: { patterns: ["[y] la {number}", "[y] (la | mi) @zone {number}"] },
+    // "No la necesito en el avión" (check it) and "No, la necesito en el avión" (keep it) read the same (rule 10)
+    bag_amb_ctx: { patterns: ["no (la | lo) necesito (en el avion | conmigo | a bordo | arriba | durante el vuelo) #amb"] },
+    flight_dunno_ctx: { patterns: ["no (me acuerdo | recuerdo) [del numero | el numero | de que vuelo | cual es]", "no se (el numero | cual es | de que vuelo)", "no se (el | mi) numero (de | del) vuelo", "no se (que | cual) (vuelo | numero) [es]", "[no se] (no lo tengo | no lo traigo) a la mano"] },
     offer_yes: { patterns: [
       "[si] (seria | estaria) (genial | perfecto | muy bien | bien | excelente) #h:of_yes",
       "[si] (documentela | documentelo | documentenla | llevesela | llevensela | facturela | facturemela) [por favor]",
@@ -486,7 +511,6 @@ export const gate: SituationDef = {
       "[si] (quiero | me gustaria) documentarla",
       "[si] (es | me parece) (buena idea | bien)", "buena idea",
       "[si] (puede | pueden) (llevarsela | documentarla)",
-      "no (la | lo) necesito (en el avion | conmigo | a bordo | arriba)",
       "[si] documentela [por favor] #h:of_yes",
     ] },
     ask_free: { patterns: ["(es | seria | sale) gratis #h:of_free", "(tiene | lleva) (costo | algun costo | cargo | algun cargo)", "(tengo | hay) que pagar [algo | por eso | extra]", "cuanto (cuesta | es | cobran | sale)", "no (cuesta | tiene costo) nada", "es sin costo"] },
@@ -504,7 +528,7 @@ export const gate: SituationDef = {
       "(voy a | me voy a) (esperar | sentar) [aqui | alla | por alla | ahi]",
       "[ok | bueno | perfecto] (espero | lo espero | me siento | me espero) (aqui | alla | ahi | por alla)",
       "(no | ya no) (gracias) (eso es todo | es todo)",
-      "(todo | ya) (claro | entendido)", "ya es todo", "estoy bien asi [gracias]", "ya esta [gracias]", "no necesito nada [mas]",
+      "(todo | ya) (claro | entendido)", "ya es todo", "estoy bien asi [gracias]", "ya esta [gracias]", "no necesito nada [mas]", "[no] todo bien [gracias]",
       "(puedo | me puedo) (esperar | sentar | sentarme) (aqui | alla | ahi | por aqui)", "hay donde sentarse",
     ] },
     more_q: { patterns: ["tengo (una | otra) (pregunta | duda)", "una pregunta [mas]", "(puedo | le puedo) hacer (una | otra) pregunta", "otra (cosa | pregunta)", "(le | te) puedo preguntar (algo | otra cosa)", "puedo preguntar (algo | otra cosa)"] },
@@ -636,16 +660,26 @@ export const gate: SituationDef = {
         "Yes, | you can | take | a | carry-on | and | a | item | personal, | like | a | purse | or | a | backpack.",
         "Yes, you can bring one carry-on and one personal item, like a purse or a backpack."),
     ],
+    carryon_how: [
+      t("Puede | llevar | una | maleta de mano | y | un | artículo | personal, | como | una | bolsa | o | una | mochila.",
+        "You can | take | a | carry-on | and | a | item | personal, | like | a | purse | or | a | backpack.",
+        "You can bring one carry-on and one personal item, like a purse or a backpack."),
+    ],
     carryon_full: [
       t("Sí, | pero | hoy | el | vuelo | va | lleno | y | casi | no hay | espacio | arriba.", "Yes, | but | today | the | flight | is going | full | and | almost | there's no | space | overhead.",
         "Yes, but the flight is full today, so overhead space is tight."),
     ],
     wifi: [
       t("En | este | avión | no hay | wifi, | lo siento. | Aquí | en | la | sala | sí | hay.", "On | this | plane | there's no | Wi-Fi, | I'm sorry. | Here | in | the | gate area | indeed | there is.",
-        "There's no Wi-Fi on this plane, I'm sorry. There is Wi-Fi here at the gate, though.", { flags: { 11: "sí before a verb stresses it: there IS (here)." } }),
+        "There's no Wi-Fi on this plane, I'm sorry. There is Wi-Fi here at the gate, though.", { flags: { 10: "sí before a verb stresses it: there IS (here)." } }),
+    ],
+    wifi_here: [
+      t("Sí, | aquí | en | la | sala | hay | wifi. | En | el | avión, | no.", "Yes, | here | in | the | gate area | there is | Wi-Fi. | On | the | plane, | no.",
+        "Yes, there's Wi-Fi here at the gate. Not on the plane, though."),
     ],
     free_wifi: [
-      t("El | de | la | sala, | sí. | En | el | avión | no hay.", "The one | of | the | gate area, | yes. | On | the | plane | there isn't any.", "The one here at the gate, yes. There's none on the plane."),
+      t("El | de | la | sala | es | gratis. | En | el | avión | no hay.", "The one | of | the | gate area | is | free. | On | the | plane | there isn't any.",
+        "The Wi-Fi here at the gate is free. There's none on the plane."),
     ],
     coffee: [
       t("Hay | una | cafetería | enfrente de | la | sala | 2.", "There's | a | coffee shop | across from | the | gate | 2.", "There's a coffee shop across from gate 2.",
@@ -661,6 +695,10 @@ export const gate: SituationDef = {
     food_bring: [
       t("Sí, | claro, | lo | puede | subir | al | avión.", "Yes, | of course, | it | you can | take up | onto the | plane.", "Yes, of course, you can take it on the plane."),
     ],
+    food_bring_f: [
+      t("Sí, | claro, | la | puede | subir | al | avión.", "Yes, | of course, | it | you can | take up | onto the | plane.", "Yes, of course, you can take it on the plane.",
+        { flags: { 2: "la: it, for a feminine noun (la comida, el agua, la botella)." } }),
+    ],
     restroom: [
       t("Los | baños | están | aquí | a la derecha, | junto | a | la | sala | 3.", "The | restrooms | are | here | on the right, | next | to | the | gate | 3.",
         "The restrooms are right here on the right, next to gate 3.", { say: "Los baños están aquí a la derecha, junto a la sala tres." }),
@@ -673,6 +711,12 @@ export const gate: SituationDef = {
     duration: [
       t("Son | unas | dos | horas | y cuarto, | más o menos.", "It's | some | two | hours | and a quarter, | more or less.", "About two and a quarter hours."),
     ],
+    arrival: [
+      t("Llegamos | en | unas | dos | horas | y cuarto, | más o menos.", "We arrive | in | some | two | hours | and a quarter, | more or less.", "We get in about two and a quarter hours from now."),
+    ],
+    full_seats_no: [
+      t("No, | hoy | va | lleno.", "No, | today | it's going | full.", "No, the flight's full today."),
+    ],
     full_yes: [
       t("Sí, | hoy | va | lleno.", "Yes, | today | it's going | full.", "Yes, it's a full flight today."),
     ],
@@ -682,6 +726,10 @@ export const gate: SituationDef = {
     seat_offer: [
       t("Déjeme | ver… | Le | puedo | dar | el | 16A, | junto | a | la | ventanilla.", "Let me | see… | (to) you | I can | give | the | 16A, | next | to | the | window.",
         "Let me see… I can give you 16A, a window seat.", { say: "Déjeme ver… Le puedo dar el dieciséis A, junto a la ventanilla." }),
+    ],
+    seat_offer_aisle: [
+      t("Déjeme | ver… | Le | puedo | dar | el | 14C, | en | el | pasillo.", "Let me | see… | (to) you | I can | give | the | 14C, | on | the | aisle.",
+        "Let me see… I can give you 14C, an aisle seat.", { say: "Déjeme ver… Le puedo dar el catorce C, en el pasillo." }),
     ],
     seat_offer_q: [
       t("¿Se lo | cambio?", "It for you | I-change?", "Shall I switch it for you?"),
@@ -693,6 +741,13 @@ export const gate: SituationDef = {
     ],
     seat_now: [
       t("Ahora | su | asiento | es | el | 16A.", "Now | your | seat | is | the | 16A.", "Your seat is 16A now.", { say: "Ahora su asiento es el dieciséis A." }),
+    ],
+    seat_now_aisle: [
+      t("Ahora | su | asiento | es | el | 14C.", "Now | your | seat | is | the | 14C.", "Your seat is 14C now.", { say: "Ahora su asiento es el catorce C." }),
+    ],
+    gate7_is: [
+      t("Sí, | ahora | es | la | sala | 7.", "Yes, | now | it's | — | gate | 7.", "Yes, it's gate 7 now.",
+        { say: "Sí, ahora es la sala siete.", flags: { 3: "Spanish says la sala 7; English has no article." } }),
     ],
     gate7_dir: [
       t("La | sala | 7 | está | aquí | adelante, | a la izquierda.", "The | gate | 7 | is | here | ahead, | on the left.", "Gate 7 is just up ahead, on the left.",
@@ -750,6 +805,12 @@ export const gate: SituationDef = {
     free_yes: [
       t("Sí, | es | sin | costo.", "Yes, | it's | without | cost.", "Yes, it's free."),
     ],
+    free_no: [
+      t("No, | no tiene | costo.", "No, | it doesn't have | cost.", "No, there's no charge."),
+    ],
+    free_how: [
+      t("No cuesta | nada.", "It doesn't cost | anything.", "It doesn't cost anything."),
+    ],
     bag_tagged: [
       t("¡Perfecto! | Aquí está | su | comprobante.", "Perfect! | Here is | your | claim tag.", "Great! Here's your claim tag."),
     ],
@@ -757,6 +818,10 @@ export const gate: SituationDef = {
       t("La | recoge | en | la | Ciudad de México, | en | la | banda | de | equipaje.", "It | you-pick-up | in | — | Mexico City, | at | the | belt | of | baggage.",
         "You'll pick it up in Mexico City, at baggage claim.",
         { flags: { 0: "la: it, your bag (la maleta).", 3: "Spanish says la Ciudad de México; English has no article." } }),
+    ],
+    bag_which: [
+      t("Perdón, | ¿se la | documento | o | la | lleva | con | usted?", "Sorry, | it for you | I-check | or | it | you-take | with | you?",
+        "Sorry, should I check it, or are you keeping it with you?", { flags: { 1: "se la: it (la maleta) for you; le becomes se before la.", 4: "la: it, your bag (la maleta)." } }),
     ],
     bag_back_yes: [
       t("Sí, | en | la | banda | de | equipaje, | al | llegar.", "Yes, | at | the | belt | of | baggage, | upon | arriving.", "Yes, at baggage claim, when you land."),
@@ -780,6 +845,14 @@ export const gate: SituationDef = {
         "Flight 223 to Mexico City: we're now boarding zone {$num}.",
         { say: "Vuelo doscientos veintitrés con destino a la Ciudad de México: iniciamos el abordaje de la zona {$num}.",
           flags: { 3: "Spanish says la Ciudad de México; English has no article.", 9: "Spanish says la zona; English has no article." } }),
+    ],
+    zone_now: [
+      t("Ahora | está | pasando | la | zona | {$num}.", "Now | is | going through | the | zone | {$num}.", "Zone {$num} is boarding now.",
+        { flags: { 3: "Spanish says la zona; English has no article." } }),
+    ],
+    boarding_not_started: [
+      t("El | abordaje | todavía | no empieza.", "The | boarding | still | doesn't start.", "Boarding hasn't started yet.",
+        { flags: { 3: "todavía no empieza: Mexican Spanish uses the present here (it hasn't started yet)." } }),
     ],
     not_yet_short: [
       t("Todavía no.", "Not yet.", "Not yet."),
@@ -981,7 +1054,7 @@ export const gate: SituationDef = {
         if (c.s.called !== 3) { announce(c, 3); return; }
         c.say("scan_ask");
       },
-      expects: ["give_bp", "give_bp_ctx", "can_board"],
+      expects: ["give_bp", "give_bp_ctx", "can_board", "zone_ctx"],
       suggest: [{ lt: "Hand over your boarding pass", hint: "board" }],
       yes: (c) => { expectScan(c); } },
   ],
@@ -1013,6 +1086,16 @@ export const gate: SituationDef = {
         c.say("gate4_for_223"); confirmGate(c, true);
         return;
       }
+      // "¿Es la sala 7?": a gate number, not a flight number ("Mmm, de esta sala sale el vuelo 223" was wrong after the change)
+      const gm = h.match(/\b(?:sala|puerta) (\d{1,2}|uno|dos|tres|cinco|seis|siete|ocho|nueve|diez)\b/);
+      if (gm && !slots.city && !slots.f && !/223|doscientos|vuelo|ciudad de mexico|cdmx|\bmexico\b|\bdf\b/.test(h)) {
+        const seven = gm[1] === "7" || gm[1] === "siete";
+        if (seven && c.s.gateChange && !c.s.gateOk) { confirmGate(c); return; }
+        if (c.s.moved) { c.say(seven ? "gate7_is" : "gate7_not4"); return; }
+        c.say("gate4_here");
+        if (!c.s.gateOk) { c.say("which_flight"); expectFlight(c); }
+        return;
+      }
       if (slots.number === undefined && !slots.f && !slots.city) {
         // "¿Es aquí? Voy en el vuelo 223.": the flight comes in another part of the same turn, which answers it
         if (/\d|doscientos|ciudad de mexico|cdmx|\bmexico\b|\bdf\b/.test(h)) { if (/223|doscientos veintitres|ciudad de mexico|cdmx|\bmexico\b|\bdf\b/.test(h)) confirmGate(c); return; }
@@ -1040,23 +1123,48 @@ export const gate: SituationDef = {
       withFlight(c, "boarding");
     },
     ask_departure(c) { withFlight(c, "departure"); },
-    ask_group(c) { c.say("group_info"); },
+    ask_group(c, _slots, seg) {
+      // "¿Qué zona está pasando?" asks about the call, not the learner's own zone
+      if ((seg?.tags || []).includes("now")) {
+        if (c.s.called) { c.say("zone_now", { num: c.s.called }); if (c.s.called === 2) c.say("group_after"); }
+        else { c.say("boarding_not_started"); boardingInfo(c); }
+        return;
+      }
+      c.say("group_info");
+    },
     ask_carryon(c) {
       c.s.topic = "carryon";
-      if (c.s.fullFlight && !c.s.offerDone) { c.say("carryon_full"); offerGateCheck(c, true); return; }
-      c.say("carryon_ok");
+      // "¿Cuántas maletas puedo llevar?" gets the allowance, not "Sí, …" (rule 11)
+      const wh = /\bcuant[oa]s?\b/.test(fold(c.heard));
+      if (c.s.fullFlight && !c.s.offerDone) { if (wh) { c.say("carryon_how"); offerGateCheck(c); } else { c.say("carryon_full"); offerGateCheck(c, true); } return; }
+      c.say(wh ? "carryon_how" : "carryon_ok");
     },
-    ask_wifi(c) { c.s.topic = "wifi"; c.say("wifi"); },
+    ask_wifi(c) {
+      c.s.topic = "wifi";
+      const h = fold(c.heard);
+      // "¿El wifi es gratis?" / "¿Hay wifi aquí?" get their own answers (rule 11)
+      if (/gratis|cuanto|cobran|pagar|se paga/.test(h)) c.say("free_wifi");
+      else if (/\b(aqui|sala|aeropuerto)\b/.test(h) && !/avion|bordo|vuelo/.test(h)) c.say("wifi_here");
+      else c.say("wifi");
+    },
     ask_coffee(c) { c.say("coffee"); if (!c.s.helpDone) c.say("coffee_time"); },
-    ask_food(c, _slots, seg) { c.say((seg?.tags || []).includes("bring") ? "food_bring" : "food_onboard"); },
+    // lo / la agree with what's taken on board: mi café → lo, mi agua / mi comida / mi torta → la (rule 9)
+    ask_food(c, _slots, seg) {
+      if (!(seg?.tags || []).includes("bring")) { c.say("food_onboard"); return; }
+      c.say(/\b(comida|agua|torta|botella|bebida)\b/.test(fold(c.heard)) ? "food_bring_f" : "food_bring");
+    },
     ask_restroom(c) { c.say("restroom"); },
     ask_charge(c) { c.say("charge"); },
-    ask_duration(c) { c.say("duration"); },
-    ask_full(c) { c.say(c.s.fullFlight ? "full_yes" : "full_no"); },
+    ask_duration(c) { c.say(/a que hora|cuando/.test(fold(c.heard)) ? "arrival" : "duration"); },
+    // "¿Hay asientos libres?" on a full flight is "No, …", not "Sí, hoy va lleno" (rule 11)
+    ask_full(c) { c.say(!c.s.fullFlight ? "full_no" : /\b(hay|quedan)\b/.test(fold(c.heard)) ? "full_seats_no" : "full_yes"); },
     ask_seat_change(c) {
-      if (c.s.seatChanged) { c.say("seat_now"); return; }
-      c.say("seat_offer"); c.say("seat_offer_q");
-      const seatYes = (cc: Ctx) => { cc.s.seatChanged = true; cc.say("seat_changed"); cc.event("give", { item: "boarding-pass" }); };
+      c.s.topic = "seat";
+      if (c.s.seatChanged) { c.say(c.s.newSeat === "aisle" ? "seat_now_aisle" : "seat_now"); return; }
+      // an aisle seat when the learner asks for the aisle (the window seat 16A otherwise)
+      const aisle = /pasillo/.test(fold(c.heard));
+      c.say(aisle ? "seat_offer_aisle" : "seat_offer"); c.say("seat_offer_q");
+      const seatYes = (cc: Ctx) => { cc.s.seatChanged = true; cc.s.newSeat = aisle ? "aisle" : "window"; cc.say("seat_changed"); cc.event("give", { item: "boarding-pass" }); };
       ask(c, { id: "seat_offer", hints: ["g_yesno"], suggest: [{ lt: "Say yes or no", hint: "g_yesno" }],
         yes: seatYes,
         no: (cc) => { cc.say("no_problem"); },
@@ -1077,6 +1185,8 @@ export const gate: SituationDef = {
       c.s.timeKnown = true;
     },
     keep_bag(c) { if (c.s.bagChecked) { c.s.bagChecked = false; } c.say("no_problem"); },
+    zone_ctx(c, slots, seg) { gate.handlers.can_board(c, slots, seg); },
+    bag_amb_ctx(c) { c.say("bag_which"); },
     keep_bag_ctx(c) { gate.handlers.keep_bag(c, {}, undefined as any); },
     flight_dunno_ctx(c) { c.say("flight_help"); },
     offer_yes(c) {
@@ -1087,7 +1197,7 @@ export const gate: SituationDef = {
     ask_free(c) {
       const topic = c.s.topic as string | undefined;
       if (topic === "wifi") c.say("free_wifi");
-      else if (topic === "carryon" || c.s.offerDone) c.say("free_yes");
+      else if (topic === "carryon" || topic === "seat" || c.s.offerDone) freeAnswer(c);
       else c.say("clarify_what");
     },
     more_no(c) { if (c.s.gateOk && !c.s.helpDone) helpDone(c); },
@@ -1161,7 +1271,7 @@ export const gate: SituationDef = {
     { say: "Tengo otra pregunta.", intent: "more_q", step: "help" },
     { say: "Muchas gracias", intent: "g_thanks", step: "help" },
     { say: "Prefiero llevarla conmigo.", intent: "keep_bag" },
-    { say: "No la necesito en el avión.", intent: "offer_yes", not: ["keep_bag"] },
+    { say: "No la necesito en el avión.", intent: "none", not: ["offer_yes", "keep_bag"] },
     { say: "¿Dónde la recojo?", intent: "bag_check_q" },
     { say: "Esa es mi zona.", intent: "can_board" },
     { say: "Lo tengo en el celular.", intent: "give_bp" },
@@ -1181,6 +1291,22 @@ export const gate: SituationDef = {
     { say: "No tengo hambre.", intent: "none" },
     { say: "¿No hay retraso?", intent: "ask_delayed", not: ["ask_ontime"] },
     { say: "Tengo hambre, ¿hay algún lugar para comer?", intent: "ask_coffee" },
+    // review: breadth and meaning safety
+    { say: "¿Cuánto cuesta el wifi?", intent: "ask_wifi" },
+    { say: "¿Dónde hay un baño?", intent: "ask_restroom" },
+    { say: "¿Cuál es la hora de abordaje?", intent: "ask_boarding_time" },
+    { say: "¿Puedo sentarme junto a mi esposa?", intent: "ask_seat_change" },
+    { say: "¿Puedes cambiarme a un asiento de ventanilla?", intent: "ask_seat_change" },
+    { say: "¿Hay algún lugar para cargar el móvil?", intent: "ask_charge" },
+    { say: "¿Me puede dar un asiento de pasillo?", intent: "ask_seat_change" },
+    { say: "No, no me lo cambie.", intent: "deny", not: ["affirm"] },
+    { say: "No, me quedo en el pasillo.", intent: "deny", not: ["affirm"] },
+    { say: "No, gracias, me la llevo.", intent: "keep_bag", not: ["offer_yes"] },
+    { say: "No la documente, traigo mi computadora adentro.", intent: "keep_bag", not: ["offer_yes"] },
+    { say: "¿La cuatro?", intent: "none", not: ["can_board"] },
+    { say: "No encuentro mi pase de abordar.", intent: "none", not: ["give_bp", "give_bp_ctx"] },
+    { say: "Todavía no encuentro mi pase.", intent: "none", not: ["give_bp", "give_bp_ctx"] },
+    { say: "No quiero cambiar de asiento, solo quería saber si hay retraso.", intent: "none", not: ["ask_seat_change"] },
     // not understood
     { say: "Me gustan los aviones azules.", intent: "none" },
     { say: "El perro come pizza en la luna.", intent: "none" },
@@ -1196,12 +1322,16 @@ export const gate: SituationDef = {
       expect: { complete: true, state: { seatChanged: true } }, auto: { ...AUTO, seat_offer: "Sí, por favor." }, setup: (s) => { s.gateChange = false; s.fullFlight = false; } },
     { name: "change of mind: no seat change after all, then the bag questions", turns: ["¿De aquí sale el vuelo a la Ciudad de México?", "¿A qué hora empieza el abordaje?", "Quisiera cambiar de asiento.", "No, gracias, me quedo en mi asiento.", "¿Puedo subir esta maleta al avión?", "¿Dónde están los baños?", "Nada más, gracias.", "Gracias.", "Aquí tiene."],
       expect: { complete: true, state: { seatChanged: undefined } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = false; } },
-    { name: "twist: gate change", turns: ["¿Es la sala 4?", "¿Dónde está la sala 7?", "¿Va a tiempo?", "Es todo, gracias.", "Gracias.", "Aquí está mi pase de abordar."],
+    { name: "twist: gate change", turns: ["¿Es la sala 4?", "¿Es la sala 7?", "¿Dónde está la sala 7?", "¿Va a tiempo?", "Es todo, gracias.", "Gracias.", "Aquí está mi pase de abordar."],
       expect: { complete: true, state: { moved: true } }, auto: AUTO, setup: (s) => { s.gateChange = true; s.fullFlight = false; } },
-    { name: "twist: full flight, the bag is checked at the gate", turns: ["Voy en el vuelo 223 a la Ciudad de México.", "¿El vuelo viene retrasado?", "¿Puedo subir esta maleta al avión?", "¿Es gratis?", "Sí, documéntela, por favor.", "¿La recojo en la Ciudad de México?", "Eso es todo, gracias.", "Gracias.", "Aquí tiene."],
+    { name: "twist: full flight, the bag is checked at the gate", turns: ["Voy en el vuelo 223 a la Ciudad de México.", "¿El vuelo viene retrasado?", "¿Puedo subir esta maleta al avión?", "¿Tengo que pagar algo?", "Sí, documéntela, por favor.", "¿La recojo en la Ciudad de México?", "¿Hay asientos libres?", "Eso es todo, gracias.", "Gracias.", "Aquí tiene."],
       expect: { complete: true, state: { bagChecked: true, offerDone: true } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = true; } },
     { name: "twist: full flight offered at the end, kept", turns: ["¿Estoy en la sala correcta? Voy en el vuelo 223.", "¿A qué hora salimos?", "No, no tengo más preguntas.", "No, gracias, la llevo conmigo. Traigo mi laptop adentro.", "Aquí tiene mi pase y mi pasaporte."],
       expect: { complete: true, state: { offerDone: true, bagChecked: false } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = true; } },
+    { name: "twist: full flight, an ambiguous no is asked again", turns: ["¿Es la sala del vuelo 223?", "¿A qué hora empieza el abordaje?", "Eso es todo, gracias.", "Gracias.", "No la necesito en el avión.", "Documéntela, por favor.", "Aquí tiene."],
+      expect: { complete: true, state: { bagChecked: true, offerDone: true } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = true; s.earlyGroup = false; } },
+    { name: "a corrected flight, an aisle seat, zone 2 called first", turns: ["¿El vuelo va a tiempo?", "No es el 225, es el 223.", "¿Me puede dar un asiento de pasillo?", "¿Tiene costo?", "Sí, por favor.", "¿Cuántas maletas puedo llevar?", "No, todo bien.", "Gracias.", "¿La tres?", "¿Qué zona está pasando?", "Aquí tiene."],
+      expect: { complete: true, state: { seatChanged: true, newSeat: "aisle" } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = false; s.earlyGroup = true; } },
     { name: "short answers", turns: ["¿Es aquí?", "El 223.", "¿A tiempo?", "Nada más.", "Ok.", "Tenga."],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = false; } },
   ],
@@ -1210,13 +1340,17 @@ export const gate: SituationDef = {
 function expectEarly(c: Ctx) {
   const notYet = (cc: Ctx) => { if (!cc.s.notYetTold) { cc.s.notYetTold = true; cc.say("not_yet"); expectEarly(cc); } };
   ask(c, {
-    id: "early", hints: ["board_early"], expects: ["can_board", "give_bp", "give_bp_ctx", "ask_group"],
+    id: "early", hints: ["board_early"], expects: ["can_board", "zone_ctx", "give_bp", "give_bp_ctx", "ask_group"],
     suggest: [{ lt: "Ask if you can board yet", hint: "board_early" }],
     on: {
       can_board: (cc) => { notYet(cc); },
+      zone_ctx: (cc) => { notYet(cc); },
       give_bp: (cc) => { notYet(cc); },
       give_bp_ctx: (cc) => { notYet(cc); },
-      ask_group: (cc) => { cc.say("group_info"); cc.say("group_after"); expectEarly(cc); },
+      ask_group: (cc, _sl, seg) => {
+        if ((seg?.tags || []).includes("now")) cc.say("zone_now", { num: 2 }); else cc.say("group_info");
+        cc.say("group_after"); expectEarly(cc);
+      },
       g_ok: () => {}, g_thanks: () => {}, more_no: () => {}, g_howareyou_answer: () => {},
     },
     yes: () => {}, no: () => {},
