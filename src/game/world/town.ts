@@ -4,6 +4,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts } from "./car";
+import { THEME } from "./theme";
+import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
 
@@ -121,12 +123,15 @@ export function buildTown(): Town {
 
   // --- buildings --------------------------------------------------------------
   const signs: THREE.Mesh[] = [];
-  for (const b of BUILDINGS) buildBuilding(b, M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r);
+  for (const b of BUILDINGS) buildBuilding(themed(b), M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r);
 
   // --- street furniture & nature -----------------------------------------------
   addStreetProps(M, colliders, group, r);
   addTrees(group, colliders, r);
   addSquareAndMarket(M, colliders, group, r);
+  // the edition's own additions (theme.ts): none in Maple Harbor
+  if (THEME.papelPicado.length) group.add(makePapelPicado());
+  if (THEME.palms.length) group.add(makePalms(colliders));
   addHarbor(M, colliders, group, r);
   addTransport(M, colliders, group, r);
   addBackyard(M, colliders, group);
@@ -1368,8 +1373,10 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
 }
 
 function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
-  // fountain
   const { x, z } = FOUNTAIN;
+  if (THEME.centrepiece === "kiosco") addKiosco(M, col, x, z);
+  else {
+  // fountain
   M.add("fountain", mat("#d8d2c4"), cylGeo(3.4, 3.6, 0.8, x, 0.4, z, 24));
   M.add("fountain-water", mat("#6cc3dc", { emissive: "#0f3b48" }), cylGeo(3.0, 3.0, 0.1, x, 0.76, z, 24), false);
   M.add("fountain", mat("#d8d2c4"), cylGeo(0.4, 0.6, 2.2, x, 1.5, z, 12));
@@ -1377,6 +1384,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   M.add("fountain-water", mat("#9fe0ef", { emissive: "#174a57" }), new THREE.SphereGeometry(0.7, 12, 8).scale(1, 0.6, 1).translate(x, 2.9, z), false);
   col.addCircle(x, z, 3.7);
   if (!STYLED) group.add(makeSpray(x, z));
+  }
   // stalls
   for (const s of STALLS) {
     M.add("stall-table", mat("#9c6b43"), boxGeo(4, 0.9, 1.6, s.x, 0.45, s.z));
@@ -1389,7 +1397,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
       M.add("goods-" + goodsCol[i % goodsCol.length], mat(goodsCol[i % goodsCol.length], { flat: true }), g, false);
     }
     col.addBox(s.x, s.z, 4.2, 1.8);
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), new THREE.MeshBasicMaterial({ map: textTexture({ flowers: "Flowers", fruit: "Fresh Fruit", veg: "Farm Veggies", bread: "Bakery" }[s.goods] || "", { bg: "#fffaf0", fg: "#5a3a25", w: 256, h: 64 }) }));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), new THREE.MeshBasicMaterial({ map: textTexture(THEME.stallSigns[s.goods] ?? { flowers: "Flowers", fruit: "Fresh Fruit", veg: "Farm Veggies", bread: "Bakery" }[s.goods] ?? "", { bg: "#fffaf0", fg: "#5a3a25", w: 256, h: 64 }) }));
     sign.position.set(s.x, 2.2, s.z + 1.12);
     group.add(sign);
   }
@@ -1402,6 +1410,7 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     if (bx !== 18) seats.push({ x: bx, z: bz, rot: rot + Math.PI, y: 0.55 });
   }
   // bandstand-ish gazebo
+  if (!THEME.gazebo) return;
   M.add("gazebo", mat("#ffffff"), cylGeo(3, 3, 0.4, 44, 0.2, -22, 8));
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
@@ -1409,6 +1418,150 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   }
   M.add("gazebo-roof", mat("#2e6b3a", { flat: true }), new THREE.ConeGeometry(3.6, 1.8, 8).translate(44, 4.1, -22));
   col.addCircle(44, -22, 3.1);
+}
+
+/** A building as this edition shows it (theme.ts): its colours and its sign. In Maple Harbor, as layout.ts has it. */
+function themed(b: BuildingDef): BuildingDef {
+  const look = THEME.buildings[b.id];
+  const sign = THEME.locationSigns && b.loc && LOCATIONS[b.loc] ? LOCATIONS[b.loc].name : b.sign;
+  return look || sign !== b.sign ? { ...b, ...look, sign } : b;
+}
+
+/** A Mexican kiosco in the middle of the square (the Spanish edition's zócalo): an octagonal stone platform with
+ *  steps on the south side, green iron columns and railing, a red tiled cupola with a lantern on top. */
+function addKiosco(M: Merger, col: Colliders, x: number, z: number) {
+  const stone = mat("#e6d7bd"), band = mat("#b98a5e"), iron = mat("#2f6b4f"), roof = mat("#c0533a", { flat: true }), trim = mat("#f7f1e3");
+  M.add("kiosco-stone", stone, cylGeo(4.2, 4.4, 1.0, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 0.5, z));
+  M.add("kiosco-band", band, cylGeo(4.45, 4.45, 0.18, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 0.12, z));
+  M.add("kiosco-band", band, cylGeo(4.28, 4.28, 0.12, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 1.04, z));
+  // steps up on the south side (towards Main Street)
+  for (let i = 0; i < 3; i++) M.add("kiosco-stone", stone, boxGeo(2.6, 0.33 * (i + 1), 0.45, x, 0.165 * (i + 1), z + 5.15 - i * 0.45));
+  // eight columns and a railing between them (open where the steps arrive)
+  const R = 3.75;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    M.add("kiosco-iron", iron, cylGeo(0.11, 0.13, 3.3, x + Math.cos(a) * R, 2.75, z + Math.sin(a) * R, 8));
+    M.add("kiosco-trim", trim, cylGeo(0.2, 0.2, 0.16, x + Math.cos(a) * R, 4.42, z + Math.sin(a) * R, 8));
+    const b = a + Math.PI / 4, mid = (a + b) / 2, len = 2 * R * Math.sin(Math.PI / 8);
+    if (Math.abs(Math.sin(mid) - 1) < 0.05) continue; // the opening above the steps
+    for (const y of [1.55, 2.05]) M.add("kiosco-iron", iron, boxGeo(len, 0.07, 0.07, 0, 0, 0).rotateY(-mid + Math.PI / 2).translate(x + Math.cos(mid) * R * 0.92, y, z + Math.sin(mid) * R * 0.92));
+  }
+  // the cupola: a band under the eaves, the tiled roof, a lantern and a finial
+  M.add("kiosco-trim", trim, cylGeo(4.3, 4.3, 0.28, 0, 0, 0, 8).rotateY(Math.PI / 8).translate(x, 4.6, z));
+  M.add("kiosco-roof", roof, new THREE.ConeGeometry(4.75, 1.9, 8).rotateY(Math.PI / 8).translate(x, 5.7, z));
+  M.add("kiosco-trim", trim, cylGeo(0.55, 0.6, 0.6, x, 6.9, z, 8));
+  M.add("kiosco-roof", roof, new THREE.ConeGeometry(0.75, 0.7, 8).rotateY(Math.PI / 8).translate(x, 7.5, z));
+  M.add("kiosco-band", band, new THREE.SphereGeometry(0.16, 8, 6).translate(x, 7.95, z));
+  col.addCircle(x, z, 4.5);
+  col.addBox(x, z + 4.9, 2.7, 1.5);
+}
+
+/** Papel picado: strings of cut-paper flags from the kiosco's eaves to the square's edges (theme.ts), all in one mesh
+ *  (one draw call) that sways a little in the wind. */
+function makePapelPicado(): THREE.Mesh {
+  const { x: cx, z: cz } = FOUNTAIN;
+  const COLORS = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
+  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  THEME.papelPicado.forEach(([tx, tz, ty], k) => {
+    const a = Math.atan2(tz - cz, tx - cx);
+    const sx = cx + Math.cos(a) * 4.2, sz = cz + Math.sin(a) * 4.2, sy = 4.75;
+    const len = Math.hypot(tx - sx, tz - sz);
+    const n = Math.floor(len / 0.62);
+    for (let i = 1; i < n; i++) {
+      const f = i / n;
+      const y = sy + (ty - sy) * f - Math.sin(f * Math.PI) * 0.9;
+      const g = new THREE.PlaneGeometry(0.42, 0.52).translate(0, -0.29, 0).rotateY(-a).translate(sx + (tx - sx) * f, y, sz + (tz - sz) * f);
+      parts.push([g, COLORS[(i + k * 3) % COLORS.length]]);
+    }
+    // the string itself
+    for (let i = 0; i < n; i++) {
+      const f0 = i / n, f1 = (i + 1) / n;
+      const y0 = sy + (ty - sy) * f0 - Math.sin(f0 * Math.PI) * 0.9, y1 = sy + (ty - sy) * f1 - Math.sin(f1 * Math.PI) * 0.9;
+      const seg = new THREE.BoxGeometry(0.02, 0.02, len / n + 0.02);
+      seg.lookAt(new THREE.Vector3((tx - sx) / n, y1 - y0, (tz - sz) / n));
+      seg.translate(sx + (tx - sx) * (f0 + f1) / 2, (y0 + y1) / 2, sz + (tz - sz) * (f0 + f1) / 2);
+      parts.push([seg, "#f4f1ea"]);
+    }
+  });
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, map: papelTexture(), alphaTest: 0.5, side: THREE.DoubleSide });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uWind = wind;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWind;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+        transformed.x += sin(uWind * 2.1 + position.x * 0.9 + position.z * 0.7) * 0.04;
+        transformed.z += cos(uWind * 1.7 + position.x * 0.6) * 0.04;`);
+  };
+  const mesh = new THREE.Mesh(colourMerge(parts), m);
+  mesh.name = "papel-picado";
+  return mesh;
+}
+
+/** One flag of papel picado: white paper with cut-out holes (the vertex colour tints it); the strings use its
+ *  plain middle. */
+function papelTexture() {
+  const cv = document.createElement("canvas");
+  cv.width = 64; cv.height = 80;
+  const x = cv.getContext("2d")!;
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, 64, 80);
+  x.globalCompositeOperation = "destination-out";
+  // a scalloped bottom edge, diamonds and dots
+  for (let i = 0; i < 6; i++) { x.beginPath(); x.arc(5 + i * 10.8, 80, 5, 0, Math.PI * 2); x.fill(); }
+  for (const [px, py] of [[16, 26], [48, 26], [32, 44], [16, 60], [48, 60]]) {
+    x.beginPath(); x.moveTo(px, py - 6); x.lineTo(px + 5, py); x.lineTo(px, py + 6); x.lineTo(px - 5, py); x.closePath(); x.fill();
+  }
+  for (const [px, py] of [[32, 18], [8, 44], [56, 44], [32, 66]]) { x.beginPath(); x.arc(px, py, 2.6, 0, Math.PI * 2); x.fill(); }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** Palm trees (theme.ts): a slightly bent ringed trunk, eight drooping fronds and a few coconuts, one instanced mesh
+ *  (one draw call, and one in the shadow pass) whose crowns sway in the wind. */
+function makePalms(col: Colliders): THREE.InstancedMesh {
+  const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  let px = 0, pz = 0;
+  for (let i = 0; i < 6; i++) {
+    const h = 1.05, y = 0.5 + i * h;
+    parts.push([new THREE.CylinderGeometry(0.2 - i * 0.012, 0.24 - i * 0.012, h, 8).translate(px, y, pz), i % 2 ? "#8b6a4f" : "#9a7a5c"]);
+    px += 0.07 + i * 0.012;
+  }
+  const top = new THREE.Vector3(px, 6.6, pz);
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2;
+    const frond = new THREE.BoxGeometry(0.6, 0.05, 3.1).translate(0, 0, 1.55);
+    frond.rotateX(0.55 + (i % 3) * 0.12);
+    frond.rotateY(a);
+    frond.translate(top.x, top.y, top.z);
+    parts.push([frond, i % 2 ? "#3f8f3a" : "#4fa64a"]);
+  }
+  for (let i = 0; i < 3; i++) parts.push([new THREE.SphereGeometry(0.17, 7, 5).translate(top.x + Math.cos(i * 2.1) * 0.25, top.y - 0.25, top.z + Math.sin(i * 2.1) * 0.25), "#6b4a2b"]);
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uWind = wind;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWind;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+        #ifdef USE_INSTANCING
+          float sway = max(0.0, position.y - 4.0) * 0.07;
+          vec2 ip = vec2(instanceMatrix[3][0], instanceMatrix[3][2]);
+          transformed.x += sin(uWind * 0.9 + ip.x * 0.31 + ip.y * 0.17) * sway;
+          transformed.z += cos(uWind * 0.7 + ip.x * 0.19 - ip.y * 0.23) * sway * 0.7;
+        #endif`);
+  };
+  const spots = THEME.palms.filter(([x, z]) => !col.blocked(x, z, 0.5));
+  const mesh = new THREE.InstancedMesh(colourMerge(parts), m, spots.length);
+  const r = rand(77);
+  const o = new THREE.Object3D();
+  spots.forEach(([x, z], i) => {
+    o.position.set(x, 0, z);
+    o.rotation.set(0, r() * Math.PI * 2, 0);
+    o.scale.setScalar(0.9 + r() * 0.25);
+    o.updateMatrix();
+    mesh.setMatrixAt(i, o.matrix);
+    col.addCircle(x, z, 0.4);
+  });
+  mesh.castShadow = true;
+  mesh.name = "palms";
+  return mesh;
 }
 
 const BOATS: [number, number, number, string][] = [[-10, -84, 0.3, "#e45b4f"], [10, -90, -0.6, "#4a7bb7"], [30, -80, 1.2, "#f2c14e"], [-58, -86, 0.1, "#ffffff"], [60, -96, 2.4, "#6fbf73"]];

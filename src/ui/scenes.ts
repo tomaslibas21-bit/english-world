@@ -8,6 +8,8 @@
 // with "@" written as "-" in the folder name. tools/scene-walk.ts checks the files against the
 // simulated conversations.
 
+import { SCENE_FILES } from "./scene-files";
+
 /** A scene file as written in ./scene-data/ (picture names without folder or extension). */
 export interface SceneFile {
   /** Who is in the pictures (for people editing the file). */
@@ -47,7 +49,7 @@ function resolve(key: string, f: SceneFile): SceneArt {
   };
 }
 
-const files = import.meta.glob<SceneFile>("./scene-data/*.json", { eager: true, import: "default" });
+const files = SCENE_FILES;
 
 /** By situation id, or "<situation id>@<npc id>". */
 export const SCENES: Record<string, SceneArt> = Object.fromEntries(

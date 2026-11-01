@@ -4,6 +4,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { carParts } from "./car";
+import { THEME } from "./theme";
 import { floorMaterial, floorColor } from "./styled";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
@@ -1426,7 +1427,7 @@ const B: Record<string, () => Interior> = {
   // Harbor Market: fruit, vegetables and bread at the front by the door (west), two aisles, the dairy fridges
   // along the back, two checkout lanes and the self-checkout. Marcus works lane 1. The aisle numbers follow
   // the conversation (rice and pasta in aisle 3, coffee and tea in aisle 4, dairy in aisle 7 at the back).
-  market: () => room("market", 22, 16, "#ece8df", "#f7f2e8", (c) => {
+  market: () => THEME.market === "mercado" ? mercado() : room("market", 22, 16, "#ece8df", "#f7f2e8", (c) => {
     const fruit = ["#e63946", "#f4a261", "#ffbe0b", "#8ab17d", "#2a9d8f", "#e76f51"];
     // produce tables, then a table of bread (front, west)
     [0.2, 2.6].forEach((pz, k) => {
@@ -1879,6 +1880,87 @@ function wifiDog(c: Ctx, x: number, z: number, rotY: number) {
 }
 
 const cache = new Map<string, Interior>();
+/** The Spanish edition's market hall (theme.ts `market: "mercado"`): Doña Lupe's fruit and vegetable stall where the
+ *  supermarket's checkout is in Maple Harbor (her spot and yours are the same), crates of produce, a scale, bananas
+ *  hanging from a beam, a chili and spice stall, a juice stand, a back wall of groceries and papel picado under the
+ *  roof. The small things are one mesh. */
+function mercado(): Interior {
+  return room("market", 22, 16, "#d6bf9c", "#f6e7c8", (c) => {
+    const S = smalls(c);
+    const ball = (x: number, y: number, z: number, r: number, col: string, sy = 1) => S.add(new THREE.SphereGeometry(r, 7, 5).scale(1, sy, 1).translate(x, y, z), col);
+    const pile = (x: number, z: number, w: number, d: number, r: number, cols: string[], k: number) => {
+      for (let i = 0; i < Math.floor(w / (2 * r)); i++) for (let j = 0; j < Math.floor(d / (2 * r)); j++)
+        ball(x - w / 2 + r + i * 2 * r, 1.12 + r * 0.8 + ((i + j) % 2) * r * 0.25, z - d / 2 + r + j * 2 * r, r, cols[(i * 3 + j + k) % cols.length]);
+    };
+    const crate = (x: number, y: number, z: number, w: number, d: number, fill: string[], r: number, k: number) => {
+      S.add(boxGeo(w, 0.28, d, x, y + 0.14, z), "#c79a6b");
+      for (let i = 0; i < Math.floor(w / (2 * r)); i++) for (let j = 0; j < Math.floor(d / (2 * r)); j++) ball(x - w / 2 + r + i * 2 * r, y + 0.3, z - d / 2 + r + j * 2 * r, r, fill[(i + j + k) % fill.length]);
+    };
+    // Lupe's stall: a long wooden counter, its produce in sloping rows, a hanging scale and a sign above
+    counter(c, -2.6, 1.8, 5.2, 1.0, "#8a5a3c", "#c79a6b");
+    pile(-4.4, 1.8, 1.4, 0.8, 0.12, ["#2f5a2a", "#3b6b32", "#24452a"], 0); // avocados
+    pile(-3.0, 1.8, 1.2, 0.8, 0.12, ["#d62828", "#e63946", "#c1121f"], 1); // tomatoes
+    pile(-1.75, 1.8, 1.0, 0.8, 0.07, ["#7cb518", "#5c940d", "#8ac926"], 2); // limes
+    pile(-0.6, 1.8, 1.0, 0.8, 0.14, ["#ffb703", "#fb8500", "#f4a261"], 3); // mangoes
+    S.add(boxGeo(0.34, 0.1, 0.34, -0.1, 1.13, 1.45), "#d9d4c7"); // the scale's pan…
+    S.add(boxGeo(0.3, 0.3, 0.16, -0.1, 1.3, 1.25), "#c0392b"); // …and its dial
+    S.add(cylGeo(0.1, 0.1, 0.02, 0, 0, 0, 14).rotateX(Math.PI / 2).translate(-0.1, 1.33, 1.34), "#fdfcf7");
+    // a beam on two posts over the stall, bananas hanging from it
+    for (const px of [-5.3, 0.1]) c.M.add("stall-pole", mat("#6f4a2c"), cylGeo(0.07, 0.07, 3.0, px, 1.5, 2.25, 6));
+    c.M.add("stall-pole", mat("#6f4a2c"), boxGeo(5.6, 0.12, 0.12, -2.6, 2.95, 2.25));
+    for (let i = 0; i < 4; i++) for (let k = 0; k < 5; k++) {
+      const bx = -4.6 + i * 1.3, by = 2.6 - k * 0.12;
+      S.add(new THREE.CapsuleGeometry(0.045, 0.24, 2, 5).rotateZ(0.5 - k * 0.25).translate(bx + (k - 2) * 0.06, by, 2.25), "#f2d24b");
+    }
+    sign(c, "Frutas y Verduras · Doña Lupe", -2.6, 3.45, 2.25, 3.6, "#2a9d8f", "#fff7e6");
+    // crates behind her, on the floor and on a low bench
+    const FRUIT = [["#ffb703", "#fb8500"], ["#e63946", "#d62828"], ["#7cb518", "#5c940d"], ["#f77f00", "#fcbf49"], ["#6a994e", "#a7c957"], ["#9d0208", "#d00000"]];
+    for (let i = 0; i < 6; i++) crate(-5.2 + i * 1.05, 0, -0.6, 0.95, 0.7, FRUIT[i], 0.11, i);
+    c.M.add("counter-#8a5a3c", mat("#8a5a3c"), boxGeo(6.4, 0.5, 0.8, -2.6, 0.25, -1.6));
+    for (let i = 0; i < 5; i++) crate(-5.0 + i * 1.2, 0.5, -1.6, 1.0, 0.7, FRUIT[(i + 2) % 6], 0.12, i + 3);
+    c.col.addBox(-2.6, -1.1, 6.6, 1.8);
+    // pineapples and papayas at the stall's east end
+    for (let i = 0; i < 3; i++) {
+      S.add(new THREE.SphereGeometry(0.17, 8, 6).scale(1, 1.45, 1).translate(0.9 + i * 0.35, 0.25, 1.1), "#d4a017");
+      S.add(new THREE.ConeGeometry(0.14, 0.28, 6).translate(0.9 + i * 0.35, 0.62, 1.1), "#3a7d2c");
+    }
+    for (let i = 0; i < 3; i++) ball(0.95 + i * 0.32, 0.2, 0.55, 0.15, "#f08a24", 1.5);
+    c.col.addBox(1.25, 0.85, 1.3, 0.9);
+    // the chili and spice stall (west): baskets of red and green chilis, sacks of beans
+    counter(c, -9.0, 0.4, 1.4, 3.6, "#9c6b43", "#c79a6b");
+    for (let i = 0; i < 6; i++) {
+      const z = -1.0 + i * 0.55, col = ["#d00000", "#2b9348", "#9d0208", "#f48c06", "#55a630", "#6a040f"][i];
+      S.add(cylGeo(0.24, 0.2, 0.16, -9.0, 1.12, z, 10), "#b08968");
+      for (let k = 0; k < 7; k++) S.add(new THREE.CapsuleGeometry(0.03, 0.1, 2, 4).rotateZ(k).rotateX(k * 0.7).translate(-9.0 + Math.cos(k) * 0.12, 1.24, z + Math.sin(k) * 0.12), col);
+    }
+    for (let i = 0; i < 3; i++) S.add(cylGeo(0.26, 0.3, 0.6, -10.1, 0.3, -0.9 + i * 0.75, 10), ["#e9d8a6", "#ddb892", "#e6ccb2"][i]);
+    c.col.addBox(-10.1, -0.15, 0.7, 2.4);
+    sign(c, "Chiles y Especias", -9.0, 2.6, 0.4, 2.4, "#d00000", "#fff7e6", Math.PI / 2);
+    // the juice stand (east): a counter with a blender and glasses of juice, oranges in a crate
+    counter(c, 6.0, 0.6, 3.2, 1.0, "#2a9d8f", "#f4f1de");
+    S.add(cylGeo(0.13, 0.11, 0.38, 5.2, 1.27, 0.55, 10), "#dff3fb");
+    S.add(cylGeo(0.16, 0.18, 0.14, 5.2, 1.15, 0.55, 10), "#3d405b");
+    for (let i = 0; i < 6; i++) S.add(cylGeo(0.06, 0.05, 0.16, 5.8 + i * 0.28, 1.16, 0.75, 8), ["#fb8500", "#e63946", "#ffb703", "#8ac926", "#fb8500", "#ff006e"][i]);
+    crate(7.2, 0, -0.4, 1.0, 0.7, ["#f77f00", "#fb8500"], 0.11, 0);
+    sign(c, "Jugos y Licuados", 6.0, 2.5, 0.05, 2.6, "#f6bd60", "#5f0f40");
+    // the back wall: groceries on shelves, sacks of rice and beans, a cooler of drinks
+    shelf(c, 2.6, -7.55, 8.0, 2.0, "#a47148", ["#e63946", "#ffb703", "#2a9d8f", "#f4f1de", "#8ab17d", "#e76f51", "#264653"], 0, 0.5);
+    for (let i = 0; i < 4; i++) S.add(cylGeo(0.28, 0.32, 0.7, -6.5 + i * 0.7, 0.35, -7.2, 10), ["#e9d8a6", "#ddb892", "#f2e8cf", "#e6ccb2"][i]);
+    c.col.addBox(-5.45, -7.2, 3.0, 0.8);
+    sign(c, "MERCADO MUNICIPAL", 2.6, 3.5, -c.d / 2 + 0.2, 4.4, "#e76f51", "#fff7e6");
+    // papel picado under the roof: three strings across the hall (one mesh with the rest)
+    const PAPEL = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
+    for (const [z, k] of [[-4.5, 0], [-0.8, 2], [3.6, 4]] as [number, number][]) {
+      S.add(boxGeo(c.w - 1, 0.02, 0.02, 0, 3.75, z), "#f4f1ea");
+      for (let i = 0; i < 26; i++) {
+        const x = -c.w / 2 + 1 + i * ((c.w - 2) / 26);
+        S.add(boxGeo(0.34, 0.42, 0.01, x, 3.5 - Math.sin((i / 26) * Math.PI) * 0.25, z), PAPEL[(i + k) % PAPEL.length]);
+      }
+    }
+    S.done();
+  }, [{ npc: "marcus", x: -2.6, z: 0.85, rot: 0, ax: -2.6, az: 2.85 }], { floorKind: "tile", accent: "#e76f51", warm: true });
+}
+
 export function getInterior(loc: string): Interior | null {
   if (cache.has(loc)) return cache.get(loc)!;
   const b = B[loc];

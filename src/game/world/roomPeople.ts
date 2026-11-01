@@ -4,6 +4,7 @@
 // do the little things people do while waiting (characters/Character.ts). Two with the same `chat` talk in turns.
 // Game.spawnNpcs places them; their looks come from the passers-by's (walkerLook), drawn per room.
 import type { Look } from "../../content/npcs";
+import { THEME } from "./theme";
 
 export interface RoomPerson {
   x: number; z: number;
@@ -54,7 +55,10 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
     { x: -2.1, z: 5.62, rot: P, sit: 0.58, carry: "paper" },
   ],
   hotel: [{ x: -4.4, z: 4.75, rot: P, sit: 0.58, carry: "paper" }, { x: 2.8, z: -2.6, rot: P, carry: "bag" }],
-  market: [{ x: 2, z: -3.2, rot: P, carry: "bag" }, { x: -4, z: -0.6, rot: P, carry: "bag" }, { x: -7.9, z: 0.2, rot: -P / 2 }],
+  market: THEME.market === "mercado"
+    // the market hall's stalls (interiors.ts mercado): at the juice stand, among the crates, at the chili stall
+    ? [{ x: 2, z: -3.2, rot: P, carry: "bag" }, { x: 5.2, z: 1.8, rot: P, carry: "bag" }, { x: -7.9, z: 0.2, rot: -P / 2 }]
+    : [{ x: 2, z: -3.2, rot: P, carry: "bag" }, { x: -4, z: -0.6, rot: P, carry: "bag" }, { x: -7.9, z: 0.2, rot: -P / 2 }],
   gym: [{ x: -5.5, z: -4.85, rot: P, run: 0.25 }],
   // a couple at a table and one diner (the middle table is the date's), away from the kitchen
   "the-pier": [

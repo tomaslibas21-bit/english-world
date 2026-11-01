@@ -2,6 +2,10 @@
 // have no clip yet) and small synthesized sound effects. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
+import { EDITION } from "../edition";
+
+/** The browser voices that can stand in for a missing clip: the practised language as this edition speaks it (en-US, es-MX). */
+const VOICE_LANG = new RegExp(`^${EDITION.target.replace("-", "[-_]")}`, "i");
 
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
@@ -57,7 +61,12 @@ export class AudioSystem {
     } catch { /* no clips yet: fallback voices */ }
     this.ready = true;
     if (typeof speechSynthesis !== "undefined") {
-      const load = () => { this.fallbackVoices = speechSynthesis.getVoices().filter((v) => /^en[-_]US/i.test(v.lang)); };
+      const load = () => {
+        const voices = speechSynthesis.getVoices();
+        this.fallbackVoices = voices.filter((v) => VOICE_LANG.test(v.lang));
+        // the Spanish edition: any Spanish voice when the device has no Mexican one
+        if (!this.fallbackVoices.length && EDITION.id !== "en") this.fallbackVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(EDITION.target.slice(0, 2)));
+      };
       load();
       speechSynthesis.onvoiceschanged = load;
     }
@@ -155,7 +164,7 @@ export class AudioSystem {
     if (typeof speechSynthesis === "undefined") return new Promise((r) => setTimeout(r, Math.min(6000, 600 + text.length * 55)));
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "en-US";
+      u.lang = EDITION.target;
       u.rate = opts.slow ? 0.78 : 0.95;
       u.volume = this.volume;
       const vs = this.fallbackVoices;
