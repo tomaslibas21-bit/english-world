@@ -1,0 +1,57 @@
+{ "situation": "s65a-passport", "items": [
+  { "ctx": "passport", "say": "Aquí tiene mi pasaporte", "intent": "hand_over" },
+  { "ctx": "passport", "say": "Sí, claro, tome", "intent": ["hand_over", "yn:yes"] },
+  { "ctx": "passport", "say": "Un momento, está en mi mochila", "intent": "find_it" },
+  { "ctx": "passport", "say": "¿Necesita también mi pase de abordar?", "intent": "q_boarding" },
+
+  { "ctx": "purpose", "say": "Vengo de vacaciones", "intent": "purpose" },
+  { "ctx": "purpose", "say": "Por turismo", "intent": "purpose" },
+  { "ctx": "purpose", "say": "Vine por trabajo, tengo una reunión", "intent": "purpose" },
+  { "ctx": "purpose", "say": "Vengo a visitar a mi hermana", "intent": "purpose_visit" },
+  { "ctx": "purpose", "say": "Estoy aquí para la boda de mi prima", "intent": ["purpose", "purpose_visit"] },
+  { "ctx": "purpose", "say": "No es por negocios", "intent": "purpose_neg", "not": ["purpose"], "note": "trap: negation" },
+  { "ctx": "purpose", "say": "Me voy a mudar aquí, vine a vivir", "intent": "purpose", "note": "mover" },
+  { "ctx": "purpose", "say": "Un poco de los dos", "intent": "purpose" },
+  { "ctx": "purpose", "say": "Quiero un café con leche", "intent": "none", "note": "trap: off-topic" },
+
+  { "ctx": "biz_kind", "say": "Una conferencia de medicina", "intent": "purpose" },
+  { "ctx": "who", "say": "A mis papás", "intent": "who_ctx" },
+
+  { "ctx": "visa", "say": "Sí, aquí está mi visa", "intent": ["hand_over", "have_visa", "yn:yes"] },
+  { "ctx": "visa", "say": "No, no tengo visa", "intent": "any", "not": ["hand_over", "have_visa", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "length", "say": "Dos semanas", "intent": "length" },
+  { "ctx": "length", "say": "Me quedo diez días", "intent": "length" },
+  { "ctx": "length", "say": "Como un mes", "intent": "length" },
+  { "ctx": "length", "say": "Hasta el quince de marzo", "intent": "length" },
+  { "ctx": "length", "say": "Todavía no sé", "intent": "length_vague" },
+
+  { "ctx": "stay", "say": "En el Hotel Mar Azul", "intent": "stay" },
+  { "ctx": "stay", "say": "Con unos amigos", "intent": "stay_with" },
+  { "ctx": "stay", "say": "En un Airbnb en el centro", "intent": "stay_airbnb" },
+  { "ctx": "stay", "say": "Rento un departamento", "intent": ["stay_airbnb", "stay"] },
+
+  { "ctx": "address", "say": "Lo tengo en mi celular", "intent": "address_phone" },
+
+  { "ctx": "return", "say": "Sí, regreso el veinte de abril", "intent": ["return_date", "return_yes"] },
+  { "ctx": "return", "say": "Todavía no lo compro", "intent": "return_no", "not": ["return_yes"] },
+  { "ctx": "return", "say": "No, no tengo boleto de regreso", "intent": "return_no", "not": ["return_yes", "hand_over"], "note": "trap: negation" },
+
+  { "ctx": "first", "say": "Es mi primera vez", "intent": "first_yes" },
+  { "ctx": "first", "say": "No, ya vine hace dos años", "intent": "first_no", "not": ["first_yes"], "note": "trap: negation" },
+
+  { "ctx": "job", "say": "Soy maestra", "intent": "job" },
+  { "ctx": "job", "say": "Trabajo en una oficina", "intent": "job" },
+
+  { "ctx": "alone", "say": "Sí, vengo solo", "intent": "alone_yes" },
+  { "ctx": "alone", "say": "No, viajo con mi esposo", "intent": "alone_with", "not": ["alone_yes"], "note": "trap: negation" },
+
+  { "ctx": "cash", "say": "Traigo como quinientos dólares", "intent": "cash_amount" },
+  { "ctx": "cash", "say": "Unos dos mil pesos en efectivo", "intent": "cash_amount" },
+
+  { "ctx": "days", "say": "¿Me puede dar treinta días, por favor?", "intent": "more_days" },
+  { "ctx": "days", "say": "No, quince días no me alcanzan", "intent": "any", "not": ["accept_days_ctx", "yn:yes"], "note": "trap: refusal is not acceptance" },
+
+  { "ctx": "fingers", "say": "¿Así?", "intent": "like_this_ctx" },
+  { "ctx": "fingers", "say": "¿Con qué mano?", "intent": "which_hand_ctx" }
+] }

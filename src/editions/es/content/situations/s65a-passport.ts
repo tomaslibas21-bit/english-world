@@ -51,6 +51,7 @@ const PURPOSES = [
   L("vacation", ["vacaciones", "unas vacaciones", "turismo", "paseo", "descanso", "un viaje de placer", "viaje de placer", "una visita", "unos dias de vacaciones", "viaje de turismo", "luna de miel", "mi luna de miel"], ["h:p_vac"]),
   L("business", ["negocios", "un viaje de negocios", "viaje de negocios", "asuntos de negocios"], ["h:p_business"]),
   L("business", ["trabajo", "un viaje de trabajo", "viaje de trabajo", "asuntos de trabajo", "cosas de trabajo", "mi trabajo", "mi empresa", "la empresa"], ["h:p_work_trip"]),
+  L("business", ["una visita de trabajo", "visita de trabajo", "una visita de negocios", "visita de negocios"]),
   L("business", ["una conferencia", "conferencia", "un congreso", "congreso", "una convencion", "un evento de trabajo", "un evento"], ["ev:conference", "h:bz_conf"]),
   L("business", ["una reunion", "reuniones", "unas reuniones", "una junta", "juntas", "unas juntas", "reuniones de trabajo", "una reunion de trabajo", "unas reuniones de trabajo", "juntas de trabajo", "unas juntas de trabajo", "juntas con clientes", "unas juntas con clientes", "reuniones con clientes", "unas reuniones con clientes", "una reunion con un cliente", "una junta con un cliente"], ["ev:meeting", "h:bz_meet"]),
   L("business", ["una entrevista de trabajo", "entrevista de trabajo", "una entrevista"], ["ev:interview", "h:bz_interview"]),
@@ -173,7 +174,7 @@ function daysFrom(slots: any): number | "until" | "vague" | undefined {
   if (fixed) return fixed;
   const n = typeof d.max === "number" ? d.max : typeof d.number === "number" ? d.number : tags.includes("n2") ? 2 : 1;
   const unit = tagVal(tags, "u:");
-  return n * (unit === "w" ? 7 : unit === "m" ? 30 : unit === "y" ? 365 : 1);
+  return Math.round((n + (tags.includes("half") ? 0.5 : 0)) * (unit === "w" ? 7 : unit === "m" ? 30 : unit === "y" ? 365 : 1));
 }
 
 function givePassport(c: Ctx) {
@@ -266,12 +267,18 @@ function showAddressPending(line: string): Pending {
   };
 }
 
+const fold = (x: string) => (x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const noCard = (c: Ctx) => /\bno (traigo|tengo|uso|cargo) (\w+ )?tarjetas?\b/.test(fold(c.heard)) && !/\bpero\b/.test(fold(c.heard));
 /** "¿Y trae tarjeta?" after "No" to the money question. */
 function cardPending(): Pending {
   return {
     id: "cash_card", expects: ["cash_no", "cash_amount"], hints: ["g_yesno", "cash"],
     suggest: [{ lt: "Say whether you have a card", hint: "g_yesno" }],
-    on: { cash_no: (cc) => { cc.s.cash = "card"; ack(cc, 1); }, cash_amount: (cc) => { cc.s.cash = "yes"; ack(cc, 1); } },
+    on: {
+      // "No traigo tarjeta" folds like "No, traigo tarjeta": at this question it is the plain no
+      cash_no: (cc) => { if (noCard(cc)) { cc.s.cash = "none"; cc.say("cash_none"); return; } cc.s.cash = "card"; ack(cc, 1); },
+      cash_amount: (cc) => { cc.s.cash = "yes"; ack(cc, 1); },
+    },
     yes: (cc) => { cc.s.cash = "card"; ack(cc, 1); },
     no: (cc) => { cc.s.cash = "none"; cc.say("cash_none"); },
     ask: (cc) => cc.say("cash_card_q"),
@@ -354,6 +361,8 @@ function moreDays(c: Ctx, want?: number | "until" | "vague") {
   const T = turn(c);
   if (T.moreDone) return;
   T.moreDone = true;
+  // "Diez días" when she gives fifteen asks for nothing more
+  if (typeof want === "number" && want < (c.s.short ?? 0) && !/\bno\b/.test(fold(c.heard))) { acceptShort(c); return; }
   if (typeof want === "number" && want > (c.s.short ?? 0)) c.s.days = Math.min(want, 180);
   if (want === "until") c.s.length = "until";
   if (c.s.ret === true) { grantMore(c); return; }
@@ -445,6 +454,8 @@ export const passport: SituationDef = {
       word: { lexicon: WORDS },
       dur: { pattern: [
         "[@approx] (un #n1 | una #n1 | {number}) @unit",
+        "[@approx] {number} @unit y (media | medio) #half",
+        "(del | desde el) {number} (al | hasta el) {date} #until",
         "[@approx] un par de #n2 @unit",
         "[@approx] (unos #vague | unas #vague | algunos #vague | algunas #vague | varios #vague | varias #vague | pocos #vague | pocas #vague) @unit",
         "[@approx] una semana y media #n10", "[@approx] una semana o dos #n14", "[@approx] un mes o dos #n60", "[@approx] (un | el) fin de semana #n3", "[@approx] (un | el) puente #n4", "[@approx] una quincena #n15", "[@approx] un mes y medio #n45", "[@approx] medio ano #n180",
@@ -466,7 +477,7 @@ export const passport: SituationDef = {
     // Looking for the passport ("Está en mi mochila…")
     find_it: { patterns: [
       "(dejeme | permitame | dejame) (buscarlo | buscarla | encontrarlo | sacarlo)", "(esta | lo tengo | mi pasaporte esta) en (mi | la) (mochila | bolsa | bolso | chamarra | chaqueta | bolsillo | maleta | cartera)",
-      "donde (esta | deje | puse) mi pasaporte", "(un momento | un segundo | un momentito | perdon | espere) (esta | lo tengo | lo traigo) en (mi | la) (mochila | bolsa | bolso | chamarra | chaqueta | bolsillo | maleta | cartera)", "no encuentro (mi pasaporte | el pasaporte | mi boleto | mi visa)", "ahorita lo (busco | saco)", "[un momento] lo estoy buscando",
+      "donde (esta | deje | puse) mi pasaporte", "(un momento | un segundo | un momentito | perdon | espere) (esta | lo tengo | lo traigo) en (mi | la) (mochila | bolsa | bolso | chamarra | chaqueta | bolsillo | maleta | cartera)", "no encuentro (mi pasaporte | el pasaporte | mi boleto | mi visa)", "ahorita lo (busco | saco)", "[un momento] lo estoy buscando", "no (lo | la) encuentro",
     ] },
     // "Fue un vuelo muy largo" (to "¿Qué tal el vuelo?")
     long_flight: { patterns: [
@@ -484,13 +495,17 @@ export const passport: SituationDef = {
       "(es | este es) un viaje de {purpose}", "(es | estoy) (de | por) {purpose}", "es (por | para) {purpose}",
       "(soy | somos) (turista | turistas) #pv:vacation #h:p_tourist", "turista #pv:vacation", "[@vengo] (a | para) hacer turismo #pv:vacation",
       "(@vengo | vine) a @sights #pv:vacation",
-      "{neg:purpose} no [sino] [@vengo] [de | por | en | para | a] {purpose}", "(vengo | estoy | vine) como (turista | turistas) #pv:vacation",
+      // "Vacaciones, no negocios" and "Negocios no, vacaciones" fold to the same words: #amb asks again
+      "{neg:purpose} no [@vengo] [de | por | en | para | a] {purpose} #amb", "{neg:purpose} no sino [@vengo] [de | por | en | para | a] {purpose}",
+      "(vengo | estoy | vine) como (turista | turistas) #pv:vacation",
+      "[@vengo] [a | por | para] (una | un) (conferencia #ev:conference | congreso #ev:conference | convencion #ev:conference | feria #ev:fair | expo #ev:fair | seminario #ev:training | taller #ev:training | capacitacion #ev:training) (de | sobre) {w:any} #pv:business",
       "(@vengo | vine) a (descansar | pasear | relajarme | disfrutar | bucear | nadar | vacacionar | conocer) #pv:vacation",
       "[@vengo] a (conocer | ver | visitar | recorrer) @sights [y @sights] #pv:vacation",
       "[@vengo] a estudiar [espanol] #pv:study #h:p_study", "(voy a | quiero) estudiar espanol [aqui] #pv:study",
       "[@vengo] a trabajar (aqui | en mexico | en puerto colibri) #pv:work #h:p_work", "[@vengo] a trabajar #pv:work",
       "(tengo | consegui) (un | una) (trabajo | chamba) (aqui | en mexico | en puerto colibri) #pv:work", "voy a trabajar (aqui | en mexico | en puerto colibri) #pv:work",
-      "(vine | vengo | venimos | vinimos) a vivir (aqui | a mexico | en mexico | a puerto colibri | en puerto colibri) #pv:live #h:p_live", "[vengo] a vivir #pv:live",
+      "(vine | vengo | venimos | vinimos) a vivir (aqui | a mexico | en mexico | a puerto colibri | en puerto colibri) #pv:live #h:p_live", "[@vengo] a vivir [aqui] #pv:live",
+      "[@vengo] a (jubilarme | retirarme) [aqui | a mexico | en mexico | a puerto colibri | en puerto colibri] #pv:live",
       "me (mude | mudo | estoy mudando | voy a mudar | vengo a mudar) [a mexico | a puerto colibri | aqui] #pv:live", "nos (mudamos | estamos mudando | vamos a mudar) [a mexico | a puerto colibri | aqui] #pv:live",
       "(ahora | ya) (vivo | vivimos) aqui #pv:live", "(vivo | vivimos) (aqui | en puerto colibri | en mexico) #pv:live",
       "(un poco de | de) (los dos | ambos | las dos cosas) #pv:both", "(las dos cosas | ambos | los dos) #pv:both", "negocios y (placer | turismo | vacaciones) #pv:both",
@@ -516,12 +531,12 @@ export const passport: SituationDef = {
     have_esta: { patterns: [
       "[no] no (tengo | traigo) [ninguna] visa [todavia]", "[no] (solo | nomas | nada mas) (tengo | traigo) (mi | el) pasaporte #h:vs_no",
       "[no] (vengo | estoy | entro) como turista [nada mas | nomas]", "[no] (solo | nomas) soy turista", "[no] (todavia | aun) no tengo [la] visa",
-      "[no] no tengo (residencia | tarjeta de residente | visa de residente | visa de trabajo)",
+      "[no] no tengo (residencia | tarjeta de residente | visa de residente | visa de trabajo)", "[no] (todavia | aun) no la (tengo | traigo)",
     ] },
     have_visa: { patterns: [
       "[si] (tengo | traigo) [mi | la | una] visa [de residente [temporal | permanente] | de trabajo] #h:vs_yes",
       "[si] (tengo | traigo) (residencia | mi residencia | tarjeta de residente | mi tarjeta de residente) [temporal | permanente]",
-      "[si] soy residente [temporal | permanente]",
+      "[si] soy residente [temporal | permanente]", "[si] (la | mi) visa (esta | va) en (mi | el) pasaporte",
     ] },
     who_ctx: { patterns: ["[a] (mi | mis | unos | unas) {rel} #h:v_my", "[a] {rel}", "(visito | veo) [a] (mi | mis | unos | unas) {rel}"] },
     length: { patterns: [
@@ -531,7 +546,8 @@ export const passport: SituationDef = {
       "(no mas de | maximo | menos de | como maximo) {dur}",
       "(necesito | quisiera | quiero | me gustaria) {dur}",
       // a correction in one breath: "Un mes no, dos semanas" (the second figure counts)
-      "{neg:dur} no [sino] [mejor] {dur}", "no {neg:dur} sino {dur}",
+      // "Un mes no, dos semanas" and "Dos semanas, no un mes" fold to the same words: #amb asks again
+      "{neg:dur} no [mejor] {dur} #amb", "{neg:dur} no sino [mejor] {dur}", "no {neg:dur} sino {dur}",
     ] },
     length_vague: { patterns: [
       "[por] (un tiempo | un rato | poco tiempo | no mucho tiempo | una temporada | un buen tiempo | un tiempito)", "(todo | todo el) (verano | invierno | ano)",
@@ -578,7 +594,7 @@ export const passport: SituationDef = {
     return_yes: { patterns: [
       "[si] (lo | la) (tengo | traigo) en (el | mi) (celular | telefono | correo) #h:r_yes", "[si] (esta | lo tengo) en (mi | el) (celular | telefono | correo)",
       "[si] (tengo | traigo) [mi | el] @ticket [de regreso | de vuelta] [aqui]", "[si] (tengo | ya tengo) (vuelo | boleto | billete) de (regreso | vuelta)",
-      "[si] es (viaje | boleto | vuelo) redondo", "[si] (ya lo compre | lo compre)", "[si] (es | tengo) (ida y vuelta | viaje redondo)",
+      "[si] es (viaje | boleto | vuelo) redondo", "[si] (ya lo compre | lo compre)", "[si] (es | tengo) (ida y vuelta | viaje redondo)", "[si] (tengo | es) [un | mi] (boleto | vuelo) (de ida y vuelta | redondo)",
     ] },
     return_date: { patterns: [
       "[si] [el] {date} #h:r_date", "[si] el {day}",
@@ -592,10 +608,11 @@ export const passport: SituationDef = {
       "[no] todavia no (lo compro | lo he comprado | lo tengo | tengo boleto | tengo el boleto) #h:r_no", "[no] no (tengo | traigo) [el | mi] @ticket [de regreso | de vuelta] [todavia]",
       "[no] (lo voy a comprar | voy a comprarlo | lo compro) (despues | aqui | luego | mas tarde)", "[no] no se cuando (regreso | me voy)",
       "[no] (es | tengo | compre) (solo | nomas) (de ida | ida | el vuelo de ida)", "[no] no he comprado [el @ticket de regreso]",
+      "[es] [un | mi] [boleto | vuelo] de ida (nomas | nada mas | solamente)", "[pero] (lo voy a comprar | voy a comprarlo) [despues | aqui | luego | mas tarde]",
     ] },
     first_yes: { patterns: [
       "[si] es mi primera vez [en mexico | aqui] #h:f_first", "[si] (la | mi) primera vez", "[si] primera vez [aqui | en mexico]",
-      "[si] nunca (he venido | habia venido | he estado | vine | habia estado) [a mexico | aqui | en mexico] [antes]", "[si] nunca", "[si] es la primera vez", "[si] es (mi | la) primera vez que (vengo | estoy aqui | vengo a mexico | estoy en mexico)",
+      "[si] nunca (he venido | habia venido | he estado | vine | habia estado) [a mexico | aqui | en mexico] [antes]", "[si] nunca", "[si] es la primera vez", "[si] (es | esta es) la primera", "[si] es (mi | la) primera vez que (vengo | estoy aqui | vengo a mexico | estoy en mexico)",
     ] },
     first_no: { patterns: [
       "[no] ya (vine | he venido | estuve | habia venido) [aqui | a mexico | en mexico] [antes | una vez | dos veces | muchas veces | varias veces | el ano pasado | hace {number} anos | hace unos anos | en {year}] #h:f_before",
@@ -638,7 +655,7 @@ export const passport: SituationDef = {
     bio_ok_ctx: { patterns: [
       "(listo | ya | ya esta | okey) #h:b_okay", "claro #h:b_sure", "(si claro | claro que si | con gusto)", "(perdon | ay perdon)", "ya lo puse", "(ya | listo) (ya esta | listo)",
     ] },
-    which_hand_ctx: { patterns: ["(cual | que) (mano | dedo) #h:b_which", "(la | mi) [mano] (derecha | izquierda)", "(derecha | izquierda) o (derecha | izquierda)", "el (indice | pulgar | dedo indice)", "(todos | cuatro) (los dedos | dedos)"] },
+    which_hand_ctx: { patterns: ["(cual | que) (mano | dedo) #h:b_which", "(la | mi) [mano] (derecha | izquierda)", "(derecha | izquierda) o (derecha | izquierda)", "el (indice | pulgar | dedo indice)", "(todos | cuatro) (los dedos | dedos)", "con (cual | que) (mano | dedo)", "(cual | que) (mano | dedo) (pongo | uso)"] },
     word_meaning: { patterns: [
       "que (significa | quiere decir) [la palabra] {word} #h:c_meaning", "no (entiendo | conozco) [la palabra] {word}", "que es [eso de] {word}",
     ] },
@@ -669,7 +686,7 @@ export const passport: SituationDef = {
       "(puede | podria | me puede | me podria) (darme | ponerme) (mas dias | mas tiempo | {number} [dias] | {dur})", "(puedes | podrias) (darme | ponerme) (mas dias | {number} [dias] | {dur}) #tip:tu_staff",
       "(me da | me pone) (mas dias | {number} dias | {dur})", "no me (puede | podria) (dar | poner) {number} [dias]",
       "por que (solo | nomas | nada mas)? {number} [dias]",
-      "(necesito | quisiera | me gustaria | quiero) (mas dias | mas tiempo)",
+      "(necesito | quisiera | me gustaria | quiero) (mas dias | mas tiempo)", "prefiero (mas dias | {number} dias | {dur})",
       "(es que | pero) (voy a estar | me quedo | necesito | voy a quedarme) {dur} #h:dy_more2",
       "(puedo tener | podria tener) (mas dias | {dur})", "son (pocos | muy pocos) dias", "(yo) (pedi | dije) {dur}",
       "no me (alcanza | alcanzan) [con] [{number} dias | los dias]", "no (es | son) (suficiente | suficientes) [{number} dias]",
@@ -710,6 +727,7 @@ export const passport: SituationDef = {
       t("¿Negocios | o | placer?", "Business | or | pleasure?", "Business or pleasure?"),
     ],
     purpose_retry: [t("Entonces, | ¿cuál | es | el | motivo | de | su | viaje?", "So, | what | is | the | reason | for | your | trip?", "So what's the purpose of your trip?")],
+    purpose_which: [t("Perdón, | ¿cuál | de | los | dos?", "Sorry, | which | of | the | two?", "Sorry, which one is it?")],
     purpose_retry_tourist: [t("Entonces, | ¿viene | como | turista?", "Then, | are you coming | as | a tourist?", "So are you here as a tourist?")],
     purpose_help: [t("¿Vacaciones? | ¿Negocios? | ¿Visita | a | familiares?", "Vacation? | Business? | A visit | to | relatives?", "Vacation? Business? Visiting family?")],
     simple_purpose: [t("¿Por qué | viene | a | México? | ¿Vacaciones? | ¿Trabajo?", "Why | are you coming | to | Mexico? | Vacation? | Work?", "Why are you coming to Mexico? Vacation? Work?")],
@@ -720,6 +738,7 @@ export const passport: SituationDef = {
     good_luck: [t("¡Mucha | suerte | con | su | entrevista!", "Much | luck | with | your | interview!", "Good luck with your interview!")],
     who_visit: [t("¿A | quién | visita?", "— | Whom | are you visiting?", "Who are you visiting?", { flags: { 0: "Personal a: Spanish marks a person as the object; English needs no word." } })],
     visa_q: [t("¿Tiene | visa | de | residente?", "Do you have | a visa | as a | resident?", "Do you have a resident visa?")],
+    visa_again: [t("Gracias. | ¿Y | su | visa | de | residente?", "Thanks. | And | your | visa | as a | resident?", "Thanks. And your resident visa?")],
     visa_ok_res: [t("Muy | bien. | Tiene | treinta | días | para | tramitar | su | tarjeta | de | residente | en | una | oficina | de | migración.", "Very | good. | You have | thirty | days | to | apply for | your | card | of | resident | at | an | office | of | immigration.", "All right. You have thirty days to get your resident card at an immigration office.")],
     no_visa_work: [t("Sin | visa | de | residente, | no puede | trabajar | ni | vivir | aquí.", "Without | a visa | as a | resident, | you can't | work | or | live | here.", "Without a resident visa, you can't work or live here.")],
     tourist_can: [t("Como | turista, | puede | entrar | de | vacaciones | o | por | negocios.", "As | a tourist, | you can | come in | on | vacation | or | for | business.", "As a tourist, you can come on vacation or on business.")],
@@ -762,7 +781,7 @@ export const passport: SituationDef = {
     ask_first: [t("¿Es | su | primera | vez | en | México?", "Is it | your | first | time | in | Mexico?", "Is this your first time in Mexico?")],
     ask_before: [t("¿Ya | había | venido | a | México?", "Already | had you | come | to | Mexico?", "Have you been to Mexico before?")],
     first_welcome: [t("¡Pues | {m:bienvenido|f:bienvenida}!", "Well | welcome!", "Well, welcome!")],
-    welcome_back: [t("¡Qué | bueno | que | regresa!", "How | good | that | you're back!", "Nice to have you back!")],
+    welcome_back: [t("¡Qué | bueno | que | regresó!", "How | good | that | you came back!", "Nice to have you back!")],
     ask_job: [t("¿A | qué | se dedica?", "To | what | do you devote yourself?", "What do you do for a living?")],
     simple_job: [t("¿Cuál | es | su | trabajo?", "What | is | your | job?", "What's your job?")],
     retired_ack: [t("¡Qué | bien! | A | descansar.", "How | nice! | To | rest.", "How nice! Time to relax.")],
@@ -805,7 +824,7 @@ export const passport: SituationDef = {
     // Side questions
     ans_boarding: [t("No, | solo | su | pasaporte.", "No, | only | your | passport.", "No, just your passport.")],
     ans_form: [t("No, | no hay | que | llenar | nada. | Solo | le | pongo | un | sello.", "No, | there's no need | to | fill out | anything. | Just | (for) you | I-put | a | stamp.", "No, there's nothing to fill out. I'll just stamp your passport.")],
-    ans_baggage: [t("El | equipaje | está | saliendo | de | aquí, | a la derecha.", "The | baggage | is | going out | from | here, | on the right.", "Baggage claim is just past here, on the right.")],
+    ans_baggage: [t("El | equipaje | está | saliendo | de | aquí, | a la derecha.", "The | baggage | is | as you leave | — | here, | on the right.", "Baggage claim is just past here, on the right.", { flags: { 3: "saliendo de aquí: right after you leave here, a common way to give directions in Mexico." } })],
     ans_restroom: [t("Hay | baños | después de | migración.", "There are | restrooms | after | immigration.", "There are restrooms right after immigration.")],
     ans_taxi: [t("Los | taxis | están | afuera, | a la salida.", "The | taxis | are | outside, | at the exit.", "Taxis are outside, by the exit.")],
     ans_limit: [t("Como | visitante, | hasta | 180 | días. | Yo | le | pongo | los | días | de | su | viaje.", "As | a visitor, | up to | 180 | days. | I | (for) you | I-put | the | days | of | your | trip.", "As a visitor, up to 180 days. I give you the days for your trip.", { say: "Como visitante, hasta ciento ochenta días. Yo le pongo los días de su viaje." })],
@@ -1127,6 +1146,8 @@ export const passport: SituationDef = {
     hand_over(c, slots) {
       const docs = toArr(slots.doc);
       if (!c.s.passport && (!docs.length || docs.includes("passport") || c.step === "passport")) { givePassport(c); if (docs.includes("visa") && (c.s.purpose === "work" || c.s.purpose === "live")) visaOk(c); return; }
+      // the passport alone at "¿Tiene visa de residente?" answers nothing: the visa is a sticker inside it
+      if (c.step === "visa" && docs.includes("passport") && !docs.includes("visa")) { c.say("visa_again"); c.hold(); return; }
       if (c.step === "visa" || (docs.includes("visa") && (c.s.purpose === "work" || c.s.purpose === "live"))) { visaOk(c); return; }
       if (c.step === "address") { c.s.address = true; once(c, "ty", "thank_you"); return; }
       if (c.step === "return") { retYes(c); return; }
@@ -1141,6 +1162,8 @@ export const passport: SituationDef = {
       const tags = allTags(slots, seg);
       const p = (slots.purpose as string | undefined) ?? tagVal(tags, "pv:");
       if (!p) { c.say("purpose_help"); c.hold(); return; }
+      // "Vacaciones no negocios": which one is meant depends on a comma the engine never sees
+      if (tags.includes("amb") && slots.neg && slots.neg !== p) { c.say("purpose_which"); c.hold(); return; }
       // "No vengo a una conferencia, vengo de vacaciones": an event there belongs to the refused purpose
       setPurpose(c, p, slots.neg === "business" ? undefined : tagVal(tags, "ev:"));
     },
@@ -1165,11 +1188,12 @@ export const passport: SituationDef = {
       c.say("ack");
     },
     who_ctx(c, slots) { c.s.visitRel = slots.rel || "familia"; ack(c, 0.6); },
-    length(c, slots) {
+    length(c, slots, seg) {
       const d = daysFrom(slots);
       // At the stamp (twist), a figure is a request for more days
       if (c.step === "days") { moreDays(c, d); return; }
       if (d === undefined) return;
+      if (allTags(slots, seg).includes("amb") && slots.neg) { c.say("ask_length_again"); c.hold(); return; }
       if (d === "vague") { c.say("vague_length"); c.hold(); return; }
       if (d === "until") { c.s.length = "until"; ack(c, 0.5); return; }
       if (d > 180) { c.say("max_180"); c.say("ask_length_again"); c.hold(); return; }
@@ -1211,9 +1235,21 @@ export const passport: SituationDef = {
       if (c.step === "length") { c.s.length = "until"; ack(c, 0.5); return; }
       retYes(c);
     },
-    return_no(c) { if (c.step === "days") { keepShort(c); return; } retNo(c); },
+    return_no(c) {
+      const T = turn(c);
+      if (T.retNo) return;
+      T.retNo = true;
+      if (c.step === "days") { keepShort(c); return; }
+      // "Todavía no la tengo" at "¿Tiene visa de residente?" is about the visa, not a ticket
+      if (c.step === "visa") { noVisa(c); return; }
+      retNo(c);
+    },
     first_yes(c) { c.s.first = true; if (c.chance(0.6)) c.say("first_welcome"); },
-    first_no(c) { c.s.first = false; c.say(c.chance(0.5) ? "welcome_back" : "ack"); },
+    first_no(c) {
+      // "No, es mi primera vez" (to "¿Ya había venido?") folds like "No es mi primera vez" (to "¿Es su primera vez?")
+      if (c.s.firstQ === "before" && /^no (es|esta es) (mi|la) primera\b/.test(fold(c.heard).replace(/[^a-z ]/g, "").trim())) { passport.handlers.first_yes(c, {}, { intent: "first_yes", slots: {}, tags: [] }); return; }
+      c.s.first = false; c.say(c.chance(0.5) ? "welcome_back" : "ack");
+    },
     job(c, slots, seg) {
       c.s.job = (slots.job as string | undefined) ?? tagVal(seg.tags, "j:") ?? (slots.field ? "field" : "other");
       if (c.s.job === "retired" && c.chance(0.5)) c.say("retired_ack"); else ack(c, 0.6);
@@ -1403,6 +1439,22 @@ export const passport: SituationDef = {
     { say: "¿Puede darme treinta días?", intent: "more_days", step: "days", slots: { number: 30 } },
     { say: "Vengo a la playa", intent: "purpose", step: "purpose" },
     { say: "El domingo", intent: "return_date", step: "return" },
+    // The review's traps and gaps
+    { say: "Todavía no la tengo", intent: "have_esta", step: "visa", not: ["return_no"] },
+    { say: "Sí, la visa está en mi pasaporte", intent: "have_visa", step: "visa" },
+    { say: "Una visita de trabajo", intent: "purpose", step: "purpose", slots: { purpose: "business" } },
+    { say: "Vine a vivir", intent: "purpose", step: "purpose" },
+    { say: "Vengo a jubilarme aquí", intent: "purpose", step: "purpose" },
+    { say: "Una conferencia de medicina", intent: "purpose", step: "biz_kind" },
+    { say: "¿Con qué mano?", intent: "which_hand_ctx", step: "bio_fingers" },
+    { say: "Prefiero treinta días", intent: "more_days", step: "days", slots: { number: 30 } },
+    { say: "Sí, tengo boleto de ida y vuelta", intent: "return_yes", step: "return" },
+    { say: "Es de ida nomás", intent: "return_no", step: "return", not: ["return_yes"] },
+    { say: "Sí, es la primera", intent: "first_yes", step: "first" },
+    { say: "Tres semanas y media", intent: "length", step: "length", not: ["job"] },
+    { say: "Del cinco al veinte de junio", intent: "length", step: "length" },
+    { say: "Quince días no son suficientes", intent: "length", step: "days", not: ["accept_days_ctx"] },
+    { say: "No me alcanza", intent: "more_days", step: "days", not: ["accept_days_ctx"] },
     // Must not be understood
     { say: "Mi perro come plátanos azules", intent: "none" },
     { say: "Ayer compré una camisa verde", intent: "none" },
@@ -1443,6 +1495,22 @@ export const passport: SituationDef = {
     { name: "the other wordings: when do you fly back, been here before, job", turns: ["Aquí tiene.", "Vengo de vacaciones.", "Dos semanas.", "En el Hotel Mar Azul.", "Gracias."],
       expect: { complete: true, state: { ret: true, first: true } }, auto: PP_AUTO,
       setup: (s) => { s.askReturn = true; s.retQ = "when"; s.askFirst = true; s.firstQ = "before"; s.askJob = true; s.shortTwist = false; s.showTicket = false; } },
+    // The review: folds that mean two things, and answers that must not flip
+    { name: "the passport is not a visa; no visa yet means a tourist", turns: ["Aquí tiene.", "Vengo a vivir aquí.", "Aquí está mi pasaporte.", "Todavía no la tengo.", "Sí.", "Dos semanas.", "En el Hotel Mar Azul.", "Gracias."],
+      expect: { complete: true, state: { purpose: "vacation", days: 14 } }, auto: omit(PP_AUTO, ["purpose", "visa", "length", "stay"]),
+      setup: (s) => { quiet(s); s.shortTwist = false; } },
+    { name: "a contrast without its comma is asked again", turns: ["Aquí tiene.", "Vacaciones, no negocios.", "Vacaciones.", "Un mes, no dos semanas.", "Dos semanas.", "En el Hotel Mar Azul.", "Gracias."],
+      expect: { complete: true, state: { purpose: "vacation", days: 14 } }, auto: omit(PP_AUTO, ["purpose", "length", "stay"]),
+      setup: (s) => { quiet(s); s.shortTwist = false; } },
+    { name: "no cash, and no card either", turns: ["Aquí tiene.", "De vacaciones.", "Diez días.", "En el Hotel Mar Azul.", "No.", "No tengo tarjeta.", "Gracias."],
+      expect: { complete: true, state: { cash: "none" } }, auto: omit(PP_AUTO, ["cash", "cash_card"]),
+      setup: (s) => { quiet(s); s.askCash = true; s.shortTwist = false; } },
+    { name: "been here before? No, it's my first time", turns: ["Aquí tiene.", "De vacaciones.", "Diez días.", "En el Hotel Mar Azul.", "No, es mi primera vez.", "Gracias."],
+      expect: { complete: true, state: { first: true } }, auto: omit(PP_AUTO, ["first"]),
+      setup: (s) => { quiet(s); s.askFirst = true; s.firstQ = "before"; s.shortTwist = false; } },
+    { name: "fewer days: thanks first, then a month in one breath (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "Gracias.", "Está bien, pero voy a estar un mes.", "Sí, aquí está.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 30 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
   ],
 };
 
