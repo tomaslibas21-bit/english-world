@@ -2,11 +2,12 @@
 import type { SituationDef } from "@/content/types";
 import S_s32_mercado from "./s32-mercado";
 import S_s62_visitor_center from "./s62-visitor-center";
+import S_s65a_passport from "./s65a-passport";
 import S_s65b_baggage from "./s65b-baggage";
 import S_s66_taxi from "./s66-taxi";
 import S_s68_hotel from "./s68-hotel";
 import S_s69_local from "./s69-local";
 import S_s72_cafe from "./s72-cafe";
 
-export const SITUATIONS: SituationDef[] = [S_s32_mercado, S_s62_visitor_center, S_s65b_baggage, S_s66_taxi, S_s68_hotel, S_s69_local, S_s72_cafe];
+export const SITUATIONS: SituationDef[] = [S_s32_mercado, S_s62_visitor_center, S_s65a_passport, S_s65b_baggage, S_s66_taxi, S_s68_hotel, S_s69_local, S_s72_cafe];
 export const SITUATION_BY_ID: Record<string, SituationDef> = Object.fromEntries(SITUATIONS.map((s) => [s.id, s]));
