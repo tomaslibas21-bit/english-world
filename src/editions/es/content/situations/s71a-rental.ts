@@ -1,4 +1,5 @@
-// NEEDS: None. All vocabulary, merges, the pending questions and their grammar are local.
+// NEEDS: global.ts / lang.ts: the shared yes list has "así está bien", a yes to a confirmation but a no to an offer
+// ("¿Le agrego la cobertura amplia?" → "Así está bien"). Handled here with offerReply(); other offers may need the same.
 // Song 71 "Fill It Up" (part 1) → Renta de Autos Colibrí, Puerto Colibrí. Andrés at the counter (usted).
 // Keeps the base situation's agenda, intent IDs and twists (free upgrade, reservation under the first name).
 // The brief adds the Mexican twist: an online booking that leaves out the mandatory liability insurance
@@ -80,10 +81,32 @@ const allTags = (v: any, seg?: Segment): string[] => {
   return out;
 };
 
+/** A reply to an offer with a price: "Así está bien" / "Estoy bien así" / "Claro que no" decline it (the engine's
+ *  yes list has "así está bien", right for a confirmation, not for an offer); "Está bien, gracias" may decline or
+ *  accept, so Andrés asks again before adding anything paid. */
+function offerReply(c: Ctx): "yes" | "no" | "unsure" {
+  const h = heard(c).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+  if (/\b(claro|por supuesto) que no\b/.test(h) || /^(no|nop|nel)\b(?! hay problema)/.test(h)) return "no";
+  if (/^(no )?((asi|con eso) (esta|estoy) bien|(esta|estoy) bien asi|estoy bien)( asi)?( (muchas )?gracias)?$/.test(h)) return "no";
+  if (/^(esta bien|bueno|ok|okay) (muchas )?gracias$/.test(h)) return "unsure";
+  return "yes";
+}
+/** Wrap the yes of a paid offer: a decline reads as no, an unclear answer is asked again (`again` re-opens it). */
+function offerYes(yes: (c: Ctx) => void, no: (c: Ctx) => void, again?: (c: Ctx) => void) {
+  return (c: Ctx) => {
+    const r = offerReply(c);
+    if (r === "no") { no(c); return; }
+    if (r === "unsure") { again?.(c); c.say("yes_or_no"); c.hold(); return; }
+    yes(c);
+  };
+}
+
 const size = (c: Ctx) => (c.s.size as string | undefined) ?? "compact";
 const rate = (c: Ctx) => byId(size(c)).attrs!.rate as number;
 const days = (c: Ctx) => (c.s.days as number | undefined) ?? 3;
-const retDay = (c: Ctx) => (c.s.retDay as string | undefined) ?? dayAfter(days(c));
+/** The return as a number of days after the Tuesday pickup (a week = 7, the next Tuesday; more = "en 10 días"). */
+const retN = (c: Ctx) => (c.s.retN as number | undefined) ?? (c.s.retDay ? daysTo(c.s.retDay) : days(c));
+const retDay = (c: Ctx) => (c.s.retDay as string | undefined) ?? dayAfter(retN(c));
 const depositOf = (c: Ctx) => (c.s.ins === "full" ? DEPOSIT_FULL : DEPOSIT_BASIC);
 
 /** Days from a {dur} slot ("tres días", "una semana", "el fin de semana") or a {day} ("hasta el sábado"). */
@@ -122,6 +145,9 @@ function giveKeys(c: Ctx) {
 const sign = (c: Ctx) => { if (!c.s.signed) { c.s.signed = true; c.event("sign"); } };
 const stepOf = (c: Ctx) => rental.steps.find((x) => x.id === c.step);
 
+/** No car without the mandatory insurance: said once in full, then a short question (keep it or cancel). */
+function tplRequired(c: Ctx) { if (c.s.tplRefused) c.say("tpl_required_again"); else { c.s.tplRefused = true; c.say("tpl_required"); } }
+
 /** The mandatory liability insurance accepted (the twist). */
 function tplAccept(c: Ctx) { if (c.s.tplOk) return; c.s.tplOk = true; c.say("tpl_ok"); }
 
@@ -129,23 +155,26 @@ function tplAccept(c: Ctx) { if (c.s.tplOk) return; c.s.tplOk = true; c.say("tpl
 function upgradeYes(c: Ctx) { if (c.s.upgrade !== undefined) return; c.s.upgrade = "paid"; c.s.size = "midsize"; c.say("upgrade_ok"); }
 function upgradeNo(c: Ctx) { if (c.s.upgrade !== undefined) return; c.s.upgrade = "no"; c.say("no_problem"); }
 function upgradePending(): Pending {
+  const yes = offerYes(upgradeYes, upgradeNo, (cc) => cc.expect(upgradePending()));
   return {
-    id: "upgrade_q", expects: ["keep_size", "upgrade_yes", "ok_ack"], hints: ["upgrade"],
+    id: "upgrade_q", expects: ["keep_size", "upgrade_yes", "ok_ack", "pricey_ctx"], hints: ["upgrade"],
     suggest: [{ lt: "Accept or keep the compact", hint: "upgrade" }],
-    on: { ok_ack: (cc) => { upgradeYes(cc); } },
-    yes: (cc) => upgradeYes(cc), no: (cc) => upgradeNo(cc),
+    on: { ok_ack: (cc) => { yes(cc); }, pricey_ctx: (cc) => { upgradeNo(cc); },
+      keep_size: (cc, sl) => { if (sl.size === "midsize") upgradeYes(cc); else upgradeNo(cc); }, upgrade_yes: (cc) => { upgradeYes(cc); } },
+    yes, no: (cc) => upgradeNo(cc),
     ask: (cc) => cc.say("ask_upgrade", { price: UPGRADE }),
   };
 }
 
 /** The economy car is a manual: switch to an automatic compact? */
 function manualPending(): Pending {
-  const yes = (cc: Ctx) => { cc.s.size = "compact"; once(cc, "switch", "switch_ok"); };
+  const no = (cc: Ctx) => { once(cc, "switch", "no_problem"); };
+  const yes = offerYes((cc) => { cc.s.size = "compact"; once(cc, "switch", "switch_ok"); }, no, (cc) => cc.expect(manualPending()));
   return {
-    id: "estandar", expects: ["size_ctx", "ok_ack"], hints: ["g_yesno"],
+    id: "estandar", expects: ["size_ctx", "ok_ack", "pricey_ctx", "manual_ok_ctx"], hints: ["g_yesno"],
     suggest: [{ lt: "Keep the manual or switch to the automatic", hint: "g_yesno" }],
-    on: { ok_ack: (cc) => { yes(cc); } },
-    yes, no: (cc) => { once(cc, "switch", "no_problem"); },
+    on: { ok_ack: (cc) => { yes(cc); }, pricey_ctx: (cc) => { no(cc); }, manual_ok_ctx: (cc) => { no(cc); } },
+    yes, no,
     ask: (cc) => cc.say("economy_manual", { price: byId("compact").attrs!.rate }),
   };
 }
@@ -155,11 +184,11 @@ function prepayPending(): Pending {
   const prepay = (cc: Ctx) => { if (cc.s.fuel === "prepaid") return; cc.s.fuel = "prepaid"; cc.say("prepay_ok"); };
   const full = (cc: Ctx) => { if (cc.s.fuel === "full") return; cc.s.fuel = "full"; cc.say("full_ok"); };
   return {
-    id: "prepay", expects: ["fuel_full", "prepay_yes", "fuel_q", "mileage_q", "auto_q", "fuel_no_ctx"], hints: ["fuel"],
+    id: "prepay", expects: ["fuel_full", "prepay_yes", "fuel_q", "mileage_q", "auto_q", "fuel_no_ctx", "pricey_ctx"], hints: ["fuel"],
     suggest: [{ lt: "Prepay the tank or bring it back full", hint: "fuel" }],
     // "No, lo devuelvo lleno" reads like "No lo devuelvo lleno" (commas are lost): at this question it means "no, full"
-    on: { fuel_full: (cc) => { full(cc); }, prepay_yes: (cc) => { prepay(cc); }, fuel_no_ctx: (cc) => { full(cc); } },
-    yes: prepay, no: full,
+    on: { fuel_full: (cc) => { full(cc); }, prepay_yes: (cc) => { prepay(cc); }, fuel_no_ctx: (cc) => { full(cc); }, pricey_ctx: (cc) => { full(cc); } },
+    yes: offerYes(prepay, full, (cc) => cc.expect(prepayPending())), no: full,
     ask: (cc) => { cc.s.prepayAsked = true; cc.say("prepay_quote", { price: PREPAY }); },
   };
 }
@@ -167,67 +196,99 @@ function prepayPending(): Pending {
 /** An extra quoted ("El GPS cuesta $150 al día. ¿Se lo agrego?"). */
 function extraPending(ids: string[]): Pending {
   const price = ids.reduce((a, id) => a + (byId(id).attrs!.rate as number), 0);
-  const yes = (cc: Ctx) => { cc.s.extras ??= []; for (const id of ids) if (!cc.s.extras.includes(id)) cc.s.extras.push(id); once(cc, "extra", "extra_added"); };
+  const no = (cc: Ctx) => { cc.s.extras ??= []; once(cc, "extra", "no_extras"); };
+  const yes = offerYes((cc) => { cc.s.extras ??= []; for (const id of ids) if (!cc.s.extras.includes(id)) cc.s.extras.push(id); once(cc, "extra", "extra_added"); },
+    no, (cc) => cc.expect(extraPending(ids)));
   return {
-    id: "extra_add", expects: ["ok_ack", "extras_no", "ins_no_ctx"], hints: ["g_yesno"],
+    id: "extra_add", expects: ["ok_ack", "extras_no", "ins_no_ctx", "pricey_ctx"], hints: ["g_yesno"],
     suggest: [{ lt: "Say whether to add it", hint: "g_yesno" }],
-    on: { ok_ack: (cc) => { yes(cc); }, extras_no: (cc) => { cc.s.extras ??= []; once(cc, "extra", "no_extras"); }, ins_no_ctx: (cc) => { cc.s.extras ??= []; once(cc, "extra", "no_extras"); } },
-    yes, no: (cc) => { cc.s.extras ??= []; once(cc, "extra", "no_extras"); },
+    on: { ok_ack: (cc) => { yes(cc); }, extras_no: (cc) => { no(cc); }, ins_no_ctx: (cc) => { no(cc); }, pricey_ctx: (cc) => { no(cc); } },
+    yes, no,
     ask: (cc) => { if (ids.length > 1) cc.say("extra_quote_both", { price }); else cc.say("extra_quote", { X: ids[0], price }); },
+  };
+}
+
+/** "Es mucho": full coverage lowers the hold (quoted first). */
+function lowerPending(): Pending {
+  const no = (cc: Ctx) => { cc.say("no_problem"); };
+  const take = (cc: Ctx) => { cc.s.ins = "full"; cc.say("ins_full_ok"); cc.say("deposit_now", { deposit: DEPOSIT_FULL }); };
+  const yes = offerYes(take, no, (cc) => cc.expect(lowerPending()));
+  return {
+    id: "lower", expects: ["ok_ack", "ins_full", "pricey_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Say whether to add full coverage", hint: "g_yesno" }],
+    on: { ok_ack: (cc) => { yes(cc); }, ins_full: (cc) => { take(cc); }, pricey_ctx: (cc) => { no(cc); } }, yes, no,
+    ask: (cc) => cc.say("deposit_lower", { price: FULL_COVERAGE, deposit: DEPOSIT_FULL }),
   };
 }
 
 /** Drop-off at the airport, with its fee. */
 function airportPending(): Pending {
-  const yes = (cc: Ctx) => { cc.s.retPlace = "airport"; if (cc.s.retTold) cc.s.retOk = true; once(cc, "airport", "ret_airport_ok"); };
   const no = (cc: Ctx) => { cc.s.retPlace = "here"; if (cc.s.retTold) cc.s.retOk = true; once(cc, "airport", "ret_here"); };
+  const yes = offerYes((cc) => { cc.s.retPlace = "airport"; if (cc.s.retTold) cc.s.retOk = true; once(cc, "airport", "ret_airport_ok"); },
+    no, (cc) => cc.expect(airportPending()));
   return {
-    id: "airport", expects: ["airport_yes_ctx", "airport_no_ctx", "ok_ack"], hints: ["g_yesno"],
+    id: "airport", expects: ["airport_yes_ctx", "airport_no_ctx", "ok_ack", "pricey_ctx"], hints: ["g_yesno"],
     suggest: [{ lt: "Say whether you'll return it at the airport", hint: "g_yesno" }],
-    on: { airport_yes_ctx: (cc) => { yes(cc); }, airport_no_ctx: (cc) => { no(cc); }, ok_ack: (cc) => { yes(cc); } },
+    on: { airport_yes_ctx: (cc) => { yes(cc); }, airport_no_ctx: (cc) => { no(cc); }, ok_ack: (cc) => { yes(cc); }, pricey_ctx: (cc) => { no(cc); } },
     yes, no,
     ask: (cc) => cc.say("ret_airport_q", { price: AIRPORT }),
   };
 }
 
 /** A later return day costs more days: quote, then change it on a yes. */
-function retMorePending(day: string, price: number): Pending {
-  const yes = (cc: Ctx) => { cc.s.retDay = day; cc.s.retOk = true; once(cc, "retmore", "ret_changed_ok", { X: day }); };
-  const no = (cc: Ctx) => { cc.s.retOk = true; once(cc, "retmore", "ret_keep", { X: retDay(cc) }); };
+function retMorePending(n: number, price: number): Pending {
+  const day = dayAfter(n);
+  const no = (cc: Ctx) => { cc.s.retOk = true; if (retN(cc) > 7) once(cc, "retmore", "ret_long", { num: retN(cc), X: retDay(cc) }); else once(cc, "retmore", "ret_keep", { X: retDay(cc) }); };
+  const yes = offerYes((cc) => { setRet(cc, n); if (n > 7) once(cc, "retmore", "ret_long", { num: n, X: dayAfter(n) }); else once(cc, "retmore", "ret_changed_ok", { X: day }); },
+    no, (cc) => cc.expect(retMorePending(n, price)));
   return {
-    id: "ret_more", expects: ["ok_ack", "ret_day_ctx", "ins_no_ctx", "ret_cant_ctx"], hints: ["g_yesno"],
+    id: "ret_more", expects: ["ok_ack", "ret_day_ctx", "ins_no_ctx", "ret_cant_ctx", "pricey_ctx"], hints: ["g_yesno"],
     suggest: [{ lt: "Accept the later day or keep the old one", hint: "g_yesno" }],
     on: {
-      ok_ack: (cc) => { yes(cc); }, ins_no_ctx: (cc) => { no(cc); }, ret_cant_ctx: (cc) => { no(cc); },
+      ok_ack: (cc) => { yes(cc); }, ins_no_ctx: (cc) => { no(cc); }, ret_cant_ctx: (cc) => { no(cc); }, pricey_ctx: (cc) => { no(cc); },
       ret_day_ctx: (cc, sl) => { if (sl.day === day) yes(cc); else if (!sl.day || sl.day === retDay(cc)) no(cc); else changeDay(cc, sl.day); },
     },
     yes, no,
-    ask: (cc) => cc.say("ret_more_q", { price, X: day }),
+    ask: (cc) => cc.say(n > 7 ? "ret_more_q_long" : "ret_more_q", { price, X: day, num: n }),
   };
 }
+const setRet = (c: Ctx, n: number) => { c.s.retN = n; c.s.retDay = dayAfter(n); c.s.retOk = true; };
 
 /** "¿Qué día lo va a devolver?" after a no at the return question. */
 function retDayPending(): Pending {
   return {
     id: "ret_day", expects: ["ret_day_ctx", "ret_change", "days_ctx"], hints: ["ret"],
     suggest: [{ lt: "Say which day you'll return it", hint: "ret" }],
-    on: { days_ctx: (cc, sl) => { if (typeof sl.day === "string") changeDay(cc, sl.day); else retAnswer(cc); } },
+    on: { days_ctx: (cc, sl, seg) => { const d = durFrom(sl, seg); if (typeof sl.day === "string") changeDay(cc, sl.day); else if (d.n) changeTo(cc, d.n); else retAnswer(cc); } },
     ask: (cc) => cc.say("ret_which"),
   };
 }
 
-const retAnswer = (c: Ctx) => c.say(daysTo(retDay(c)) >= 7 ? "ret_answer_next" : "ret_answer", { X: retDay(c) });
+const retAnswer = (c: Ctx) => {
+  const n = retN(c);
+  if (n > 7) c.say("ret_answer_long", { num: n, X: retDay(c) });
+  else c.say(n === 7 ? "ret_answer_next" : "ret_answer", { X: retDay(c) });
+};
 
-/** Another return day: earlier is free, later is quoted first. */
-function changeDay(c: Ctx, day: string) {
-  if (day === "tomorrow") day = "wednesday";
+/** Another return day by its weekday: the nearest one (or, for "¿Me lo puedo quedar hasta…?", the next one after
+ *  the current return day). Pickup is day 0, a Tuesday. */
+function changeDay(c: Ctx, day: string, later = false) {
+  if (day === "tomorrow") { changeTo(c, 1); return; }
+  if (day === "day_after_tomorrow") { changeTo(c, 2); return; }
   if (!ORDER.includes(day)) { retAnswer(c); return; }
-  const cur = retDay(c);
-  if (day === cur) { c.s.retOk = true; retAnswer(c); return; }
-  const more = daysTo(day) - daysTo(cur);
-  if (more < 0) { c.s.retDay = day; c.s.retOk = true; c.say("ret_changed", { X: day }); return; }
-  c.expect(retMorePending(day, rate(c) * more));
-  c.say("ret_more_q", { price: rate(c) * more, X: day });
+  const cur = retN(c);
+  const base = daysTo(day);
+  const options = [0, 1, 2, 3, 4].map((w) => base + 7 * w).filter((n) => n >= 1 && n <= 30);
+  const pick = later ? options.find((n) => n > cur) : [...options].sort((a, b) => Math.abs(a - cur) - Math.abs(b - cur) || a - b)[0];
+  changeTo(c, pick ?? cur);
+}
+/** Another return: earlier is free, later is quoted first. */
+function changeTo(c: Ctx, n: number) {
+  const cur = retN(c);
+  if (n === cur) { c.s.retOk = true; retAnswer(c); return; }
+  if (n < cur) { setRet(c, n); if (n > 7) c.say("ret_long", { num: n, X: dayAfter(n) }); else c.say("ret_changed", { X: dayAfter(n) }); return; }
+  const price = rate(c) * (n - cur);
+  c.expect(retMorePending(n, price));
+  c.say(n > 7 ? "ret_more_q_long" : "ret_more_q", { price, X: dayAfter(n), num: n });
 }
 
 // Automatic answers the simulation uses when Andrés asks an optional question.
@@ -340,9 +401,11 @@ export const rental: SituationDef = {
       "(aceptan | acepta | puedo usar | puedo pagar con | se puede con) [una | mi] tarjeta de debito #h:q_debit",
       "solo (tengo | traigo) [tarjeta de] debito", "no (tengo | traigo) tarjeta de credito [solo (de debito | debito | efectivo)]", "solo (tengo | traigo) efectivo",
       "(puedo | se puede) dejar (la garantia | el deposito) en efectivo", "(aceptan | puedo pagar en) efectivo",
+      "(puedo pagar | se puede pagar | aceptan | acepta) con (debito | tarjeta de debito | efectivo)",
+      "(puedo | se puede) (pagar | dejar) (la garantia | el deposito) (en efectivo | con debito | con tarjeta de debito | con mi tarjeta de debito)",
     ] },
     size_ctx: { patterns: [
-      "[un | una] {size} #h:size_short",
+      "[un | una | el | la] {size} #h:size_short", "(ok | bueno | va | entonces | perfecto) [un | una | el | la] {size} [por favor]",
       "(quisiera | quiero | necesito | me gustaria | me da | deme | prefiero | busco | mejor) [un | una] {size} #h:size_want",
       "[un | una] {size} (esta bien | me sirve | estaria bien)",
       "[un | una] {size} [porque | ya que] somos {number} [personas]", "[un | una] {size} para ({number} personas | mi familia)",
@@ -372,7 +435,7 @@ export const rental: SituationDef = {
       "(prefiero | quiero) [solo] el [seguro] (basico | obligatorio)",
       "no (necesito | quiero) (la cobertura amplia | la cobertura completa | mas seguro | seguro extra | otro seguro | cobertura extra | la proteccion | mas cobertura | el seguro completo | el seguro total)",
       "sin (cobertura amplia | la cobertura amplia | seguro extra | cobertura extra)", "no me interesa (la cobertura amplia | la cobertura completa | el seguro completo)",
-      "(la cobertura amplia | el seguro completo) (es | esta) [muy | demasiado] caro",
+      "(la cobertura amplia | el seguro completo) (es | esta) (muy | demasiado) (caro | cara)",
       "con el obligatorio [es suficiente | esta bien]",
     ] },
     // "No, no la necesito" / "Es muy caro": only as an answer to the full-coverage offer
@@ -382,6 +445,7 @@ export const rental: SituationDef = {
       "(tengo | ya tengo) (seguro | mi propio seguro | seguro de viaje) [con mi tarjeta | por mi tarjeta]",
       "estoy (cubierto | cubierta) (por | con) mi (tarjeta | seguro)", "mi seguro de viaje (me cubre | cubre)",
       "(mi tarjeta | mi tarjeta de credito) tiene seguro (para (carros | autos) rentados | de renta de autos | de auto)",
+      "(mi tarjeta | mi tarjeta de credito) [ya] (lo | la) cubre", "(mi tarjeta | mi tarjeta de credito) [ya] incluye (ese | el) seguro",
     ] },
     ins_what: { patterns: [
       "que cubre [la cobertura amplia | el seguro | la proteccion] #h:q_cover", "que incluye (la cobertura [amplia] | el seguro)",
@@ -390,6 +454,7 @@ export const rental: SituationDef = {
       "(hay | tiene) deducible", "cuanto es el deducible", "cubre (robo | el robo | los danos | danos | choques | accidentes | las llantas | los vidrios)",
       "que pasa si (choco | tengo un accidente | le pego al @car | rayo el @car | hay un accidente | me roban el @car)",
       "(es | necesito | es necesaria | es obligatoria) (la cobertura [amplia] | el seguro completo)", "cual es la diferencia",
+      "(la cobertura [amplia] | el seguro completo) (es | sale) (caro | cara)", "(es | sale) (caro | cara) (la cobertura [amplia] | el seguro completo)",
     ] },
     tpl_q: { patterns: [
       "[y] (es | por que es) obligatorio [por ley | en mexico] #h:tpl_must", "no es opcional",
@@ -400,13 +465,13 @@ export const rental: SituationDef = {
     tpl_refuse_ctx: { patterns: [
       "no (quiero | voy a) pagar (eso | ese seguro | el seguro | mas | extra | nada mas)", "no quiero pagarlo", "no lo (voy a | quiero) pagar", "no lo pago", "no quiero (el | ese) seguro", "no estoy de acuerdo",
       "(en internet | en la pagina | en la reservacion) (decia | dice | estaba) que [todo] (estaba | esta) incluido",
-      "[pero] ya (pague | lo pague | estaba pagado | esta pagado | pague en linea | pague por internet)",
+      "[pero] ya (pague | lo pague | estaba pagado | esta pagado | pague en linea | pague por internet)", "[pero] ya (pague | habia pagado) (el seguro | todo | eso) [en linea | por internet]",
       "no me (dijeron | avisaron) [eso | nada]", "(es | esta) (muy | demasiado) caro", "[eso] no (es | me parece) justo",
       "[eso] no estaba en (el precio | la reservacion)", "no (sabia | lo sabia | sabia eso)", "[yo] ya pague todo", "[pero] ya (pague | estaba pagado) todo",
     ] },
     tpl_leave_ctx: { patterns: [
       "entonces no (voy a rentar | lo voy a rentar | lo rento | lo quiero | quiero) [el @car]",
-      "[mejor] (voy a buscar | busco) otra (agencia | renta | compania)", "(cancelo | quiero cancelar) [la reservacion]",
+      "[mejor] (voy a buscar | busco) otra (agencia | renta | compania)", "[mejor] (cancelo | cancelar | cancelamos | quiero cancelar | prefiero cancelar) [la reservacion]",
     ] },
     // "¿Veinte mil pesos?" (echoing the amount) and "Es mucho" (only at the deposit)
     deposit_echo_ctx: { patterns: ["[son] {price}"] },
@@ -480,7 +545,8 @@ export const rental: SituationDef = {
       "(puedo | podria) @back un dia despues #extra_day", "(puedo | podria) quedarme [con el @car | con el] un dia mas #extra_day",
       "[me lo] (puedo | podria) quedar hasta el {day} #h:keep_until", "(puedo | podria) (quedarmelo | tenerlo | quedarme con el) hasta el {day} #h:keep_until",
       "(puedo | podria) @back el {day}", "(quiero | quisiera | necesito | tengo que) @back el {day}", "lo (necesito | quiero) hasta el {day}", "(necesito | quiero) el @car hasta el {day}",
-      "(puedo | podria) @back en (otra ciudad | otra oficina | otro lugar | cancun | playa del carmen | tulum | merida) #other",
+      "[lo | me lo] (puedo | podria) @back en (otra ciudad | otra oficina | otro lugar | cancun | playa del carmen | tulum | merida) #other",
+      "(y | o) en (otra ciudad | otra oficina | cancun | playa del carmen | tulum | merida) #other", "(y | o) en el aeropuerto #airport",
     ] },
     ret_q: { patterns: [
       "(cuando | que dia | a que hora) [lo] (tengo que | debo | hay que) (devolver | entregar | regresar) [el @car] #h:q_return",
@@ -491,7 +557,11 @@ export const rental: SituationDef = {
     airport_yes_ctx: { patterns: ["[si] en el aeropuerto", "[si] alla"] },
     airport_no_ctx: { patterns: ["[mejor] aqui [en la oficina]", "[mejor] lo devuelvo aqui", "en el aeropuerto no"] },
     // "No, gracias, así está bien": a polite no to the offer on the table
-    polite_no_ctx: { patterns: ["[no] gracias (asi | con eso) (esta bien | estoy bien)", "no me interesa", "prefiero no", "[no] mejor no", "no quiero pagar (mas | extra)"] },
+    polite_no_ctx: { patterns: ["[no] gracias (asi | con eso) (esta bien | estoy bien)", "(asi | con eso) (estoy bien | esta bien) [gracias]", "[no] estoy bien asi [gracias]", "no me interesa", "prefiero no", "[no] mejor no", "no quiero pagar (mas | extra)"] },
+    // "Es caro" / "No, gracias, es mucho": a no to a price just quoted (only where one is on the table)
+    pricey_ctx: { patterns: ["[no] [gracias] (es | esta | sale) [muy | un poco | algo | demasiado] (caro | cara)", "[no] [gracias] (es | son) (mucho | demasiado) [dinero]", "[no] [gracias] no me alcanza", "[no] [gracias] es mucho para mi"] },
+    // "Sé manejar estándar": keeping the manual (only at that question)
+    manual_ok_ctx: { patterns: ["[no] [gracias] [asi esta bien] (se | puedo) manejar (estandar | manual | de velocidades) [sin problema]", "[no] [gracias] (el | un) (estandar | manual | economico) (esta bien | me sirve) [gracias]", "[no] no me importa [que sea (estandar | manual)]"] },
     where_car_ctx: { patterns: ["donde [exactamente | esta]", "en donde"] },
     sign_where_ctx: { patterns: ["(aqui | aca) [abajo]", "donde [exactamente]", "en donde"] },
     sign_q: { patterns: [
@@ -503,13 +573,14 @@ export const rental: SituationDef = {
       "donde esta (estacionado | el estacionamiento)", "(de que | que) color es", "(es | cual es) (el | la) (rojo | roja | azul | blanco | blanca | negro | negra | gris | plateado)", "que @car es", "(en que | cual) lugar", "esta lejos",
     ] },
     scratch_q: { patterns: [
-      "que (hago | pasa) si (veo | hay | encuentro) un (rayon | golpe | dano) #h:q_scratch", "que (hago | pasa) si (veo | hay | encuentro) (rayones | golpes | danos)",
+      "[y] que (hago | pasa) si (veo | hay | encuentro) un (rayon | golpe | dano) #h:q_scratch", "y si (veo | hay | encuentro) (un rayon | un golpe | un dano | rayones | golpes | danos)", "que (hago | pasa) si (veo | hay | encuentro) (rayones | golpes | danos)",
       "(hay | tiene) (un rayon | un golpe | rayones | golpes) [en la puerta | en la defensa | en el @car | atras | adelante]",
       "(tengo que | debo) revisar el @car", "[le | lo] (tomo | tengo que tomar) fotos", "(le | lo) tomo una foto", "(puedo | podemos) (ver | revisar) el @car [primero | antes]", "(el @car | la puerta | la defensa) (tiene | esta) (un rayon | un golpe | rayado | rayada | golpeado | golpeada)",
     ] },
     price_q: { patterns: [
       "cuanto (cuesta | es | sale | cobran) [al dia | por dia | diario]", "cuanto (cuesta | es | sale) [un | una | el | la] {size} [al dia | por dia]",
       "cuanto (cuesta | sale | es) (rentar | alquilar) un @car [al dia | por dia]", "cuanto (mas | extra) (es | cuesta | seria)", "cual es la tarifa [diaria | por dia]", "cuanto (es | seria | sale) en total", "cuanto (es | cuesta) (el intermedio | el cambio | la diferencia)",
+      "cuanto (cuesta | es | sale) (el mas grande | uno mas grande | el grande | el mediano)",
     ] },
     more_no: { patterns: [
       "(eso | esto) (es | seria) todo", "(es | seria) todo [por ahora]", "nada mas [gracias]", "no necesito nada mas", "(asi | ya) estoy bien", "no necesito nada",
@@ -523,7 +594,7 @@ export const rental: SituationDef = {
     upgrade_yes: { patterns: [
       "[si] (cambieme | cambiemelo | cambiame #tip:tu_staff | me cambio | me paso) (al | a un) (intermedio | mediano) #h:upgrade_yes",
       "[si] (me cambio | cambiemelo | cambieme)", "[si] (quiero | prefiero | tomo | deme | me da | me quedo con) (el | un) (intermedio | mediano)",
-      "[si] (quiero | prefiero | necesito) (uno | un @car | algo) mas grande", "[si] (uno | algo) mas grande", "[el | un] (intermedio | mediano) [esta bien | me parece bien]",
+      "[si] (quiero | prefiero | necesito) (uno | un @car | algo) mas grande", "(tiene | tienen | hay) (algo | uno | un @car) mas grande", "[si] (uno | algo) mas grande", "[el | un] (intermedio | mediano) [esta bien | me parece bien]",
     ] },
     yes_right: { patterns: ["[si] (es | esta) correcto #h:yes_right", "[si] asi es", "[si] (esta | me parece) bien el (viernes | dia)", "[si] a las cinco [esta bien]"] },
     ok_ack: { patterns: [
@@ -586,7 +657,7 @@ export const rental: SituationDef = {
     see_car: [t("Claro, | salimos | y | lo | revisamos | juntos.", "Sure, | we go out | and | it | we-check | together.", "Sure, we'll go out and check it together.")],
     passport_ok: [t("Sí, | su | pasaporte | también, | por favor.", "Yes, | your | passport | too, | please.", "Yes, your passport too, please.")],
     fuel_type: [t("Usa | gasolina | regular; | en | la | gasolinera | es | la | verde.", "It uses | gas | regular; | at | the | gas station | it's | the | green one.", "It takes regular gas; at the gas station, it's the green pump.",
-      { flags: { 9: "la verde: the green one, the color of the regular-gas pump in Mexico." } })],
+      { flags: { 8: "la verde: the green one, the color of the regular-gas pump in Mexico." } })],
     deposit_lower: [t("Si | toma | la | cobertura | amplia, | por | {$price} | al | día, | la | garantía | baja | a | {$deposit}. | ¿Se la | agrego?", "If | you-take | the | coverage | full, | for | {$price} | per | day, | the | deposit | goes down | to | {$deposit}. | It for you | shall I add?",
       "If you take full coverage, for {$price} a day, the deposit goes down to {$deposit}. Shall I add it?")],
     deposit_now: [t("Entonces | le | retenemos | solo | {$deposit}.", "Then | (from) you | we-hold | only | {$deposit}.", "Then we'll only hold {$deposit}.")],
@@ -630,6 +701,8 @@ export const rental: SituationDef = {
       "Your card may cover damage to the car, but not liability. Mexican law requires that one.",
       { flags: { 14: "la: it, the object pronoun for la responsabilidad civil (not an article)." } })],
     tpl_price: [t("Son | {$price} | más | al | día | por | el | seguro | obligatorio.", "It's | {$price} | more | per | day | for | the | insurance | mandatory.", "It's {$price} more a day for the mandatory insurance.")],
+    tpl_required_again: [t("Sin | ese | seguro | no se puede, | lo siento. | ¿Se lo | agrego, | o | prefiere | cancelar?", "Without | that | insurance | it's not possible, | I'm sorry. | It for you | shall I add, | or | do you prefer | to cancel?",
+      "I can't do it without that insurance, I'm sorry. Shall I add it, or would you rather cancel?")],
     tpl_again: [t("¿Seguimos, | entonces?", "Shall we continue, | then?", "So, shall we go ahead?")],
     tpl_ok: [t("Gracias | por | entender. | Ya | queda | incluido.", "Thanks | for | understanding. | Now | it's | included.", "Thanks for understanding. It's included now.")],
     tpl_leave: [t("Entiendo. | Si | cambia | de | opinión, | aquí | estamos.", "I understand. | If | you-change | — | opinion, | here | we are.", "I understand. If you change your mind, we're here.",
@@ -667,7 +740,7 @@ export const rental: SituationDef = {
       "We release it when you return the car; your bank may take a few business days to show it.")],
     deposit_hold: [t("Es | una | retención, | no | un | cargo: | el | dinero | no sale | de | su | cuenta.", "It's | a | hold, | not | a | charge: | the | money | doesn't leave | — | your | account.", "It's a hold, not a charge: the money doesn't leave your account.",
       { flags: { 9: "de: from; salir de = to leave (a place)." } })],
-    deposit_why: [t("Es | por si | hay | daños, | multas | o | falta | gasolina.", "It's | in case | there are | damages, | fines | or | is missing | gas.", "It's in case of damage, fines, or a tank that isn't full.")],
+    deposit_why: [t("Es | por si | hay | daños, | multas | o | si | falta | gasolina.", "It's | in case | there are | damages, | fines | or | if | is missing | gas.", "It's in case of damage, fines, or a tank that isn't full.")],
     // --- fuel
     fuel_ask: [t("Se lo | entregamos | con | el | tanque | lleno. | ¿Lo | devuelve | con | el | tanque | lleno?", "It to you | we-hand-over | with | the | tank | full. | It | will you return | with | the | tank | full?", "It comes with a full tank. Will you bring it back full?")],
     fuel_info: [t("Se lo | entregamos | con | el | tanque | lleno, | y | lo | devuelve | lleno.", "It to you | we-hand-over | with | the | tank | full, | and | it | you-return | full.", "It comes with a full tank, and you bring it back full.")],
@@ -709,6 +782,13 @@ export const rental: SituationDef = {
       { flags: { 0: "el before próximo + weekday; English says next Tuesday with no article.", 4: "Spanish uses an article before clock times; English has no separate word." } })],
     ret_again: [t("Entonces, | ¿el | {X} | antes de | las | cinco | está bien?", "So, | — | {X} | before | — | five | is that okay?", "So, is {X} by 5 p.m. okay?",
       { flags: { 1: "el before a weekday; English says just the day here.", 4: "Spanish uses an article before clock times; English has no separate word." } })],
+    ret_confirm_long: [t("Lo | devuelve | en | {$num} | días, | el | {X}, | antes de | las | cinco | de la tarde, | ¿verdad?", "It | you-return | in | {$num} | days, | on | {X}, | before | — | five | p.m., | right?", "You're bringing it back in {$num} days, on {X}, by 5 p.m., right?",
+      { flags: { 5: "el before a weekday means on.", 8: "Spanish uses an article before clock times; English has no separate word." } })],
+    ret_answer_long: [t("En | {$num} | días, | el | {X}, | antes de | las | cinco | de la tarde, | aquí mismo.", "In | {$num} | days, | on | {X}, | before | — | five | p.m., | right here.", "In {$num} days, on {X}, by 5 p.m., right here.",
+      { flags: { 3: "el before a weekday means on.", 6: "Spanish uses an article before clock times; English has no separate word." } })],
+    ret_long: [t("Listo: | lo | devuelve | el | {X}, | en | {$num} | días.", "Done: | it | you-return | on | {X}, | in | {$num} | days.", "All set: you'll bring it back on {X}, in {$num} days.",
+      { flags: { 3: "el before a weekday means on." } })],
+    ret_more_q_long: [t("Claro. | Serían | {$price} | más. | ¿Se lo | cambio?", "Sure. | It would be | {$price} | more. | It for you | shall I change?", "Sure. That would be {$price} more. Shall I change it?")],
     ret_which: [t("¿Qué | día | lo | va | a | devolver?", "What | day | it | are you going | to | return?", "What day will you bring it back?")],
     ret_where: [t("Aquí mismo, | en | esta | oficina.", "Right here, | at | this | office.", "Right here, at this office.")],
     ret_where_airport: [t("En | el | aeropuerto, | como | quedamos.", "At | the | airport, | as | we agreed.", "At the airport, as we agreed.")],
@@ -759,6 +839,7 @@ export const rental: SituationDef = {
     ack_ok: [t("Muy | bien.", "Very | good.", "Okay.")],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Perfecto.", "Perfect.", "Perfect."), t("Claro.", "Sure.", "Sure.")],
     no_problem: [t("Sin problema.", "No problem.", "No problem.")],
+    yes_or_no: [t("Perdón, | ¿eso | es | un | sí | o | un | no?", "Sorry, | that | is | a | yes | or | a | no?", "Sorry, is that a yes or a no?")],
   },
 
   domains: {
@@ -770,6 +851,7 @@ export const rental: SituationDef = {
       return [...s].sort((a, b) => a - b);
     },
     deposit: () => [DEPOSIT_FULL, DEPOSIT_BASIC],
+    num: () => Array.from({ length: 23 }, (_, i) => i + 8),
   },
 
   hints: {
@@ -932,9 +1014,9 @@ export const rental: SituationDef = {
       suggest: [{ lt: "Say thank you", hint: "g_social" }] },
     { id: "upgrade", when: (c) => !!c.s.docs && size(c) === "compact" && !!c.s.askUpgrade && !c.s.freeUpgrade && c.s.upgrade === undefined, done: (c) => c.s.upgrade !== undefined,
       ask: (c) => { c.s.upgradeQuoted = true; c.say("ask_upgrade", { price: UPGRADE }); },
-      expects: ["keep_size", "upgrade_yes", "polite_no_ctx", "price_q", "upgrade_q"],
+      expects: ["keep_size", "upgrade_yes", "polite_no_ctx", "price_q", "upgrade_q", "pricey_ctx"],
       suggest: [{ lt: "Keep the compact or upgrade", hint: "upgrade" }],
-      yes: (c) => upgradeYes(c), no: (c) => upgradeNo(c) },
+      yes: offerYes(upgradeYes, upgradeNo), no: (c) => upgradeNo(c) },
     // The twist: the online booking left out the mandatory liability insurance.
     { id: "tpl", when: (c) => !!c.s.docs && c.s.resv === true && !!c.s.tplTwist, done: (c) => !!c.s.tplOk || !!c.s.left,
       ask: (c) => {
@@ -944,7 +1026,7 @@ export const rental: SituationDef = {
       expects: ["tpl_q", "tpl_refuse_ctx", "tpl_leave_ctx", "ins_own", "ok_ack", "price_q", "ins_what"],
       suggest: [{ lt: "Accept or ask about the mandatory insurance", hint: "tpl" }],
       yes: (c) => tplAccept(c),
-      no: (c) => { c.say("tpl_required"); c.hold(); } },
+      no: (c) => { tplRequired(c); c.hold(); } },
     { id: "insurance", when: (c) => !!c.s.docs, done: (c) => !!c.s.ins,
       ask: (c) => {
         if (c.s.insAsked) { c.say("ask_insurance_again"); return; }
@@ -952,7 +1034,7 @@ export const rental: SituationDef = {
       },
       expects: ["ins_full", "ins_yes_ctx", "ins_basic", "ins_own", "ins_what", "ins_no_ctx", "polite_no_ctx", "price_q", "recommend_q"],
       suggest: [{ lt: "Choose your insurance", hint: "insurance" }],
-      yes: (c) => { c.s.ins = "full"; c.say("ins_full_ok"); },
+      yes: offerYes((c) => { c.s.ins = "full"; c.say("ins_full_ok"); }, (c) => { c.s.ins = "basic"; c.say("ins_basic_ok"); }),
       no: (c) => { c.s.ins = "basic"; c.say("ins_basic_ok"); } },
     { id: "deposit", when: (c) => !!c.s.ins, done: (c) => !!c.s.depositTold,
       ask: (c) => { c.s.depositTold = true; c.say(c.s.ins === "full" ? "deposit_full" : "deposit_basic", { deposit: depositOf(c) }); },
@@ -972,13 +1054,15 @@ export const rental: SituationDef = {
     { id: "extras", when: (c) => !!c.s.fuel && !!c.s.askExtras && c.s.extras === undefined, done: (c) => c.s.extras !== undefined,
       ask: (c) => c.say("ask_extras"), expects: ["extras_yes", "extras_no", "extras_none_ctx", "polite_no_ctx", "more_no"],
       suggest: [{ lt: "Say if you need a GPS or a child seat", hint: "extras", options: "extra" }],
-      yes: (c) => { c.say("which_extra"); c.hold(); },
+      yes: offerYes((c) => { c.say("which_extra"); c.hold(); }, (c) => { c.s.extras = []; c.say("no_extras"); }),
       no: (c) => { c.s.extras = []; c.say("no_extras"); } },
     { id: "ret", when: (c) => !!c.s.fuel, done: (c) => !!c.s.retOk,
       ask: (c) => {
-        const next = daysTo(retDay(c)) >= 7;
-        if (c.s.retTold && !next) { c.say("ret_again", { X: retDay(c) }); return; }
-        c.s.retTold = true; c.say(next ? "ret_confirm_next" : "ret_confirm", { X: retDay(c) });
+        const n = retN(c);
+        if (c.s.retTold && n < 7) { c.say("ret_again", { X: retDay(c) }); return; }
+        c.s.retTold = true;
+        if (n > 7) c.say("ret_confirm_long", { num: n, X: retDay(c) });
+        else c.say(n === 7 ? "ret_confirm_next" : "ret_confirm", { X: retDay(c) });
       },
       expects: ["ret_change", "ret_q", "ok_ack", "yes_right", "ret_day_ctx", "ret_cant_ctx"],
       suggest: [{ lt: "Confirm or change the return", hint: "ret" }],
@@ -1004,6 +1088,7 @@ export const rental: SituationDef = {
       ask: (c) => c.say("anything_else"),
       expects: ["where_car", "more_no", "scratch_q", "where_car_ctx"],
       suggest: [{ lt: "Ask where the car is", hint: "car" }],
+      yes: (c) => { c.say("which_extra"); c.hold(); },
       no: (c) => { c.s.spotKnown = true; c.say("ack_ok"); c.say(byId(size(c)).attrs!.car); } },
   ],
 
@@ -1080,10 +1165,7 @@ export const rental: SituationDef = {
     deposit_echo_ctx(c) { c.say("deposit_amount", { deposit: depositOf(c) }); },
     deposit_much_ctx(c) {
       if (c.s.ins === "full" || c.s.keysGiven) { c.say("deposit_why"); return; }
-      const yes = (cc: Ctx) => { cc.s.ins = "full"; cc.say("ins_full_ok"); cc.say("deposit_now", { deposit: DEPOSIT_FULL }); };
-      c.expect({ id: "lower", expects: ["ok_ack", "ins_full"], hints: ["g_yesno"], suggest: [{ lt: "Say whether to add full coverage", hint: "g_yesno" }],
-        on: { ok_ack: (cc) => { yes(cc); }, ins_full: (cc) => { yes(cc); } }, yes, no: (cc) => { cc.say("no_problem"); },
-        ask: (cc) => cc.say("deposit_lower", { price: FULL_COVERAGE, deposit: DEPOSIT_FULL }) });
+      c.expect(lowerPending());
       c.say("deposit_lower", { price: FULL_COVERAGE, deposit: DEPOSIT_FULL });
     },
     fuel_type_q(c) { c.say("fuel_type"); },
@@ -1100,6 +1182,8 @@ export const rental: SituationDef = {
       if (c.s.fuel) return;
       // after the prepay offer, "No, lo devuelvo lleno" (the comma is lost) is the likelier reading
       if (c.s.prepayAsked) { c.s.fuel = "full"; c.say("full_ok"); return; }
+      // "No lo devuelvo lleno" or "No, lo devuelvo lleno"? (the comma is lost): ask again
+      if (/^\W*no,? lo (devuelvo|regreso|entrego|traigo) (lleno|con el tanque lleno)\W*$/.test(heard(c))) { c.say("yes_or_no"); c.hold(); return; }
       c.s.fuel = "charge"; c.say("fuel_charge");
     },
     days_ctx(c, slots, seg) {
@@ -1130,7 +1214,7 @@ export const rental: SituationDef = {
       if (c.step === "tpl" && !c.s.tplOk) { rental.handlers.tpl_q(c, slots, seg); return; }
       const h = heard(c);
       if (/deducible/.test(h)) c.say("deductible");
-      else if (/cuanto/.test(h)) c.say("price_day", { price: FULL_COVERAGE });
+      else if (/cuanto|\bcar[oa]\b/.test(h)) c.say("price_day", { price: FULL_COVERAGE });
       else if (/(esta|va) incluido|incluye el seguro|incluye seguro|trae (el )?seguro|el seguro (esta|va)/.test(h)) c.say("ins_included");
       else if (/obligatori|necesari|necesito/.test(h)) c.say("ins_optional");
       else c.say("cover_info");
@@ -1138,17 +1222,17 @@ export const rental: SituationDef = {
     tpl_q(c, slots, seg) {
       if (c.step !== "tpl" || c.s.tplOk) { if (c.s.docs) c.say(/obligatori|opcional/.test(heard(c)) ? "ins_optional" : "ins_included"); return; }
       const h = heard(c);
-      if (/si no lo/.test(h)) c.say("tpl_required");
+      if (/si no lo/.test(h)) tplRequired(c);
       else if (/por que|porque|incluid|internet|pagina/.test(h)) c.say("tpl_why");
       else if (/que (es|cubre)/.test(h)) c.say("tpl_must");
-      else if (/pagar|cuanto/.test(h)) c.say("tpl_price", { price: TPL });
+      else if (/cuanto/.test(h)) c.say("tpl_price", { price: TPL });
       else c.say("tpl_must");
     },
     tpl_refuse_ctx(c) {
       if (c.step !== "tpl" || c.s.tplOk) return;
       const h = heard(c);
-      if (/internet|pagina|decia|dice|dijeron|avisaron|pague|pagado|reservacion|precio/.test(h)) once(c, "tplsorry", "tpl_sorry");
-      else c.say("tpl_required");
+      if (/internet|pagina|decia|dice|dijeron|avisaron|pague|pagado|reservacion|precio/.test(h) && !c.s.tplSorry) { c.s.tplSorry = true; c.say("tpl_sorry"); }
+      else tplRequired(c);
     },
     tpl_leave_ctx(c) {
       if (c.step !== "tpl" || c.s.tplOk) return;
@@ -1166,7 +1250,10 @@ export const rental: SituationDef = {
       if (/gasolinera|cargar|poner gasolina|echar gasolina/.test(heard(c))) { c.say("gas_station"); return; }
       c.say("fuel_info");
     },
-    fuel_full(c) { if (c.s.fuel !== "full" && c.s.fuel !== "prepaid") { c.s.fuel = "full"; c.s.fuelTold = true; c.say("full_ok"); } },
+    fuel_full(c) {
+      if (c.s.fuel === "full") { once(c, "fullagain", "full_ok"); return; } // said again: confirm, don't ask the next question twice
+      if (c.s.fuel !== "prepaid") { c.s.fuel = "full"; c.s.fuelTold = true; c.say("full_ok"); }
+    },
     prepay_yes(c) {
       if (c.s.fuel === "prepaid") return;
       // never charged before its price is said: quote the tank first
@@ -1203,8 +1290,8 @@ export const rental: SituationDef = {
         c.expect(airportPending()); c.say("ret_airport_q", { price: AIRPORT }); return;
       }
       if (tags.includes("other")) { c.say("ret_other"); return; }
-      if (tags.includes("extra_day")) { changeDay(c, ORDER[Math.min(6, daysTo(retDay(c)))]); return; }
-      if (typeof slots.day === "string") { changeDay(c, slots.day); return; }
+      if (tags.includes("extra_day")) { changeTo(c, Math.min(30, retN(c) + 1)); return; }
+      if (typeof slots.day === "string") { changeDay(c, slots.day, /hasta|quedar|tener|necesito|quiero/.test(heard(c))); return; }
       retAnswer(c);
     },
     ret_day_ctx(c, slots) {
@@ -1241,10 +1328,13 @@ export const rental: SituationDef = {
       if (c.step === "upgrade" || (/(mas|extra|diferencia|intermedio|cambio)/.test(h) && c.s.upgradeQuoted && c.s.upgrade === undefined)) { c.say("price_more", { price: UPGRADE }); return; }
       if (c.step === "tpl" && !c.s.tplOk) { c.say("tpl_price", { price: TPL }); return; }
       if (c.step === "insurance") { c.say("price_day", { price: FULL_COVERAGE }); return; }
+      if (c.step === "deposit") { c.say("deposit_amount", { deposit: depositOf(c) }); return; }
       if (slots.size) { c.say("rate_size", { X: slots.size, price: byId(slots.size).attrs!.rate }); return; }
       c.say("rate_is", { price: rate(c) });
     },
     polite_no_ctx(c) { stepOf(c)?.no?.(c); },
+    pricey_ctx(c) { if (c.step === "upgrade") upgradeNo(c); },
+    manual_ok_ctx(c) { ack(c); },
     more_no(c) {
       if (c.step === "anything" && !c.s.spotKnown) { c.s.spotKnown = true; once(c, "ackok", "ack_ok"); c.say(byId(size(c)).attrs!.car); return; }
       if (c.step === "extras" && c.s.extras === undefined) { c.s.extras = []; c.say("no_extras"); }
@@ -1266,6 +1356,10 @@ export const rental: SituationDef = {
     ok_ack(c) {
       // "No, está bien" / "No está bien" (commas are lost): a no, never an agreement
       if (/^(no|nop|nel)\b(?! hay problema)/.test(heard(c).replace(/^[^a-z]+/, ""))) return;
+      // "Claro que no": a no
+      if (/\b(claro|por supuesto) que no\b/.test(heard(c))) { if (c.step === "tpl") { tplRequired(c); c.hold(); return; } stepOf(c)?.no?.(c); return; }
+      // "¿Por qué no?" to the mandatory insurance is a question, not a yes
+      if (c.step === "tpl" && /^\W*por ?que no\W*$/.test(heard(c))) { c.say("tpl_why"); c.hold(); return; }
       // "Okay / está bien": agreement with what Andrés just said.
       if (c.step === "sign") { sign(c); return; }
       if (c.step === "tpl") { tplAccept(c); return; }
@@ -1416,6 +1510,24 @@ export const rental: SituationDef = {
     { say: "Tengo una pregunta", intent: "none", step: "resv", not: ["have_resv"] },
     { say: "No quiero pagar más", intent: "polite_no_ctx", step: "upgrade", not: ["upgrade_yes"] },
     { say: "No me interesa la cobertura amplia", intent: "ins_basic", step: "insurance", not: ["ins_full"] },
+    // Review: questions, declines and corrections the draft missed or misread.
+    { say: "¿La cobertura amplia es cara?", intent: "ins_what", step: "insurance", not: ["ins_basic", "ins_no_ctx", "ins_full"] },
+    { say: "No, gracias, así está bien", intent: "polite_no_ctx", step: "insurance", not: ["ins_full", "ins_yes_ctx"] },
+    { say: "Así estoy bien, gracias", intent: "polite_no_ctx", step: "upgrade", not: ["upgrade_yes"] },
+    { say: "No, gracias, es caro", intent: "pricey_ctx", step: "upgrade", not: ["upgrade_yes"] },
+    { say: "¿Cuánto cuesta el más grande?", intent: "price_q", step: "upgrade", not: ["upgrade_yes"] },
+    { say: "¿Tiene algo más grande?", intent: "upgrade_yes", step: "insurance", not: ["rent_walkin"] },
+    { say: "El económico", intent: "size_ctx", step: "size", slots: { size: "economy" } },
+    { say: "Ok, el compacto", intent: "size_ctx", step: "size", slots: { size: "compact" } },
+    { say: "Por dos semanas", intent: "days_ctx", step: "days" },
+    { say: "¿Puedo pagar con débito?", intent: "debit_q", step: "license", not: ["here_docs", "hand_ctx"] },
+    { say: "¿Puedo pagar la garantía en efectivo?", intent: "debit_q", step: "deposit" },
+    { say: "Mi tarjeta lo cubre", intent: "ins_own", step: "tpl", not: ["ok_ack"] },
+    { say: "Pero ya pagué el seguro en línea", intent: "tpl_refuse_ctx", step: "tpl", not: ["ok_ack"] },
+    { say: "Mejor cancelo la reservación", intent: "tpl_leave_ctx", step: "tpl", not: ["ok_ack", "have_resv"] },
+    { say: "¿Lo puedo devolver en Cancún?", intent: "ret_change", step: "ret" },
+    { say: "¿Y en el aeropuerto?", intent: "ret_change", step: "ret" },
+    { say: "¿Y si veo un rayón?", intent: "scratch_q", step: "keys" },
     // Not understood: no free-text catch-all.
     { say: "Miller", intent: "none" },
     { say: "Mi perro come plátanos azules", intent: "none" },
@@ -1477,6 +1589,24 @@ export const rental: SituationDef = {
       auto: omit(["resv", "size", "days", "license", "estandar", "insurance", "deposit", "prepay", "fuel", "extra_add", "extras", "ret", "sign"]),
       setup: (s) => { s.hay = false; s.askPrepay = false; s.askExtras = true; s.askUpgrade = false; s.freeUpgrade = false; },
       expect: { complete: true, state: { size: "compact", days: 7, fuel: "prepaid" } } },
+    // Review: offers answered with "Está bien, gracias" (asked again) and "Así está bien" (a no): nothing paid is added.
+    { name: "offers declined politely: 'Está bien, gracias' is asked again, 'Así está bien' is a no",
+      turns: ["Tengo una reservación", "Miller", "Aquí tiene", "Está bien, gracias", "No, gracias", "Así está bien", "Está bien",
+        "Está bien, gracias", "No, gracias", "Está bien, gracias", "No", "Sí, es correcto", "Claro", "Gracias"],
+      auto: {},
+      setup: (s) => { s.hay = false; s.askSpell = false; s.askUpgrade = true; s.askPrepay = true; s.askExtras = true; s.tellSpot = true; s.tplTwist = false; s.freeUpgrade = false; s.firstNameTwist = false; },
+      expect: { complete: true, state: { upgrade: "no", size: undefined, ins: "basic", fuel: "full" } } },
+    { name: "the mandatory insurance refused: '¿Por qué no?' is a question, 'Claro que no' a no, then cancelled (twist forced)",
+      turns: ["Tengo una reservación", "Miller", "Aquí tiene", "¿Por qué no?", "No, gracias", "Claro que no", "Mejor cancelo"],
+      auto: {},
+      setup: (s) => { s.hay = false; s.askSpell = false; s.tplTwist = true; s.freeUpgrade = false; s.firstNameTwist = false; s.askUpgrade = false; },
+      expect: { complete: false, state: { left: true, tplOk: undefined, ins: undefined } } },
+    { name: "walk-in for ten days: back in days, not a weekday; an earlier day is free; the manual kept",
+      turns: ["Quisiera rentar un auto", "El económico", "Diez días", "Aquí tiene", "¿Es automático?", "No, así está bien, sé manejar estándar", "Solo el obligatorio",
+        "Está bien", "Sí, lo devuelvo lleno", "¿Lo puedo devolver el miércoles?", "Claro", "Gracias"],
+      auto: omit(["resv", "size", "days", "license", "estandar", "insurance", "deposit", "fuel", "ret", "sign"]),
+      setup: (s) => { s.hay = false; s.askPrepay = false; s.askExtras = false; s.askUpgrade = false; s.freeUpgrade = false; s.tellSpot = true; },
+      expect: { complete: true, state: { size: "economy", days: 10, retN: 8, retDay: "wednesday", ins: "basic" } } },
   ],
 };
 
