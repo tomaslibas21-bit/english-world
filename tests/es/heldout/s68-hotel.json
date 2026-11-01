@@ -1,0 +1,56 @@
+{ "situation": "s68-hotel", "items": [
+  { "ctx": "arrive", "say": "Hola, tengo una reservación", "intent": "checkin", "note": "Mexican reservación" },
+  { "ctx": "arrive", "say": "Buenas tardes, tengo una reserva a nombre de Miller", "intent": ["checkin", "name_ctx"], "note": "neutral reserva" },
+  { "ctx": "arrive", "say": "Me gustaría hacer el check-in, por favor", "intent": "checkin" },
+  { "ctx": "arrive", "say": "Tienes un cuarto para esta noche?", "intent": "walkin", "note": "tú to staff, no ¿" },
+  { "ctx": "arrive", "say": "No tengo reservación. ¿Hay habitaciones libres?", "intent": "walkin", "not": ["checkin"], "note": "trap: negation" },
+
+  { "ctx": "walk_nights", "say": "Dos noches", "intent": "nights_ctx" },
+
+  { "ctx": "walk_offer", "say": "Está bien, me la quedo", "intent": ["take_it", "yn:yes"] },
+  { "ctx": "walk_offer", "say": "Es demasiado caro para mí", "intent": ["too_expensive_ctx", "cheaper_ctx"] },
+  { "ctx": "walk_offer", "say": "¿No tiene algo más barato?", "intent": ["cheaper_ctx", "too_expensive_ctx"] },
+
+  { "ctx": "name", "say": "Miller", "intent": "name_ctx" },
+
+  { "ctx": "spell", "say": "M-I-L-L-E-R", "intent": "letters_ctx" },
+  { "ctx": "spell", "say": "eme, i, ele, ele, e, erre", "intent": "letters_ctx" },
+
+  { "ctx": "found", "say": "No, son cuatro noches", "intent": ["nights_fix", "nights_ctx"] },
+  { "ctx": "found", "say": "No son tres noches, son dos", "intent": ["nights_fix", "nights_ctx"], "not": ["yn:yes"], "note": "trap: correction" },
+
+  { "ctx": "id", "say": "Claro, aquí está mi pasaporte", "intent": "hand_over" },
+
+  { "ctx": "card", "say": "Aquí tiene mi tarjeta", "intent": "hand_over" },
+  { "ctx": "card", "say": "Para que es el deposito?", "intent": "incidentals_q", "note": "no accents" },
+  { "ctx": "card", "say": "Solo tengo tarjeta de débito, ¿está bien?", "intent": "debit_q" },
+  { "ctx": "card", "say": "No tengo tarjeta de crédito", "intent": "any", "not": ["hand_over"], "note": "trap: negation" },
+
+  { "ctx": "sign", "say": "Donde firmo?", "intent": "sign_where", "note": "no accents" },
+
+  { "ctx": "keys", "say": "Dos llaves, por favor", "intent": "keys_ctx" },
+
+  { "ctx": "anything", "say": "A que hora es el desayuno?", "intent": "ask_breakfast_time", "note": "no accents" },
+  { "ctx": "anything", "say": "¿Tenéis wifi?", "intent": "ask_wifi", "note": "Spain: vosotros" },
+  { "ctx": "anything", "say": "¿A qué hora es el check-out?", "intent": "ask_checkout" },
+  { "ctx": "anything", "say": "¿Puedo hacer el check-out más tarde?", "intent": "ask_late" },
+  { "ctx": "anything", "say": "¿Hay alberca?", "intent": "ask_pool", "note": "Mexican alberca" },
+  { "ctx": "anything", "say": "¿Dónde puedo aparcar el coche?", "intent": "ask_parking", "note": "Spain: aparcar, coche" },
+  { "ctx": "anything", "say": "¿Me puedes llamar un taxi para mañana?", "intent": "ask_taxi", "note": "tú to staff" },
+  { "ctx": "anything", "say": "¿Tiene un habitación con vista al mar?", "intent": "ask_view", "note": "gender slip" },
+  { "ctx": "anything", "say": "Vale, eso es todo, gracias", "intent": ["done", "g_thanks"], "note": "Spain: vale" },
+  { "ctx": "anything", "say": "No necesito taxi, gracias", "intent": "any", "not": ["ask_taxi"], "note": "trap: negation" },
+  { "ctx": "anything", "say": "No quiero desayuno", "intent": "any", "not": ["ask_breakfast", "ask_breakfast_time"], "note": "trap: negation" },
+  { "ctx": "anything", "say": "Mi gato come pizza los martes", "intent": "none" },
+
+  { "ctx": "late", "say": "Sí, a las dos está bien", "intent": ["late_two", "yn:yes"] },
+  { "ctx": "late", "say": "No quiero pagar más, mejor a las doce", "intent": "late_noon", "not": ["late_two"], "note": "trap: refusal" },
+
+  { "ctx": "taxi_time", "say": "Mañana a las ocho y media", "intent": "taxi_time_ctx" },
+
+  { "ctx": "p_report", "say": "El aire acondicionado no funciona", "intent": "pr_ac" },
+  { "ctx": "p_report", "say": "No hay agua caliente en la regadera", "intent": "pr_hotwater", "note": "Mexican regadera" },
+  { "ctx": "p_report", "say": "El aire funciona bien, pero la tele no", "intent": "pr_tv", "not": ["pr_ac"], "note": "trap: meaning flip" },
+
+  { "ctx": "fan_or_room", "say": "No quiero un ventilador, prefiero otro cuarto", "intent": "ch_move", "not": ["ch_fan"], "note": "trap: negation" }
+] }
