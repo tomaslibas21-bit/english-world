@@ -21,7 +21,7 @@
 // Cleanings around Playa del Carmen are listed from about $800 to $1,500 (doctoralia.com.mx, Nov 2026); this office's
 // valoración is $400 (a plausible round figure; the line says no more than that).
 
-import type { Ctx, EntityDef, SituationDef, StepDef, Suggestion } from "@/content/types";
+import type { Ctx, EntityDef, Segment, SituationDef, StepDef, Suggestion } from "@/content/types";
 import type { SlotFn } from "@/convo/grammar";
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
@@ -92,11 +92,16 @@ const EXISTING: Offer = { d: "tomorrow", h: 9, m: 30 };
 const WEEKEND = ["saturday", "sunday", "this_weekend", "next_weekend"];
 const TODAYISH = ["today", "tonight", "this_afternoon", "this_morning"];
 
+/** A birth year said with two digits: "del noventa" 1990, "del cinco" 2005, "del treinta" 1930 (never a year to come). */
+const twoDigitYear = (n: number) => (n > 25 ? 1900 + n : 2000 + n);
+/** A year someone calling was born in. */
+const birthYear = (y: number) => y >= 1900 && y <= 2025;
+
 /** Numeric dates, day first as in Mexico: "04/06/1990", "4-6-90", "4.6.1990"; month first (US) only when the second
  *  number can't be a month ("06/24/1990", with a tip). */
 const numDate: SlotFn = (tokens, pos) => {
   const read = (a: number, b: number, z: number, end: number) => {
-    const year = z < 100 ? (z > 30 ? 1900 + z : 2000 + z) : z;
+    const year = z < 100 ? twoDigitYear(z) : z;
     if (year < 1900 || year > 2025) return [];
     if (a >= 1 && a <= 31 && b >= 1 && b <= 12) return [{ end, value: { day: a, month: b, year } }];
     if (a >= 1 && a <= 12 && b >= 13 && b <= 31) return [{ end, value: { day: b, month: a, year }, tags: ["tip:us_date"] }];
@@ -140,6 +145,28 @@ function partOf(slots: any, seg?: { tags: string[] }): "am" | "pm" | undefined {
 }
 const fitsPart = (k: string, part?: "am" | "pm") => !part || (part === "am" ? OFFERS[k].h < 12 : OFFERS[k].h >= 12);
 const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
+const plain = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+/** Every piece of this turn's parse ("El martes a las diez | no puedo"). */
+const turnSegments = (c: Ctx): Segment[] => ((c as any).conv?.out?.parse?.segments ?? []) as Segment[];
+/** Next week's day: "el martes de la próxima semana", "el próximo martes", "el martes que viene". */
+const nextWeek = (c: Ctx, slots: any, seg?: { tags: string[] }) =>
+  allTags(slots, seg).includes("next") || /proxima semana|semana que viene/.test(plain(c.heard));
+/** The opening Lorena has on a day the learner names. This week's opening is never next week's: next week she knows
+ *  Monday and Tuesday afternoon (next_tue), so another weekday "de la próxima semana" has none (undefined). */
+function keyForDay(c: Ctx, d: string, slots: any, seg?: { tags: string[] }): string | undefined {
+  if (THIS_WEEK.includes(d) && d !== "tomorrow" && nextWeek(c, slots, seg)) return d === "tuesday" ? "next_tue" : undefined;
+  return DAY_OFFER[d];
+}
+/** Is opening k on the day the learner names? Next Tuesday's is "el martes" too; this week's is not "el martes de la
+ *  próxima semana". */
+function onDay(k: string, d: string, next: boolean): boolean {
+  const od = OFFERS[k].d;
+  if (od === "next_tuesday") return d === "tuesday";
+  if (next && THIS_WEEK.includes(od)) return false;
+  return od === d;
+}
+/** Pieces that answer the time question themselves: a named offer refused next to one of them is left to it. */
+const PICK_ACTS = new Set(["reject", "day_req", "time_req", "pick_ctx", "earlier", "later", "morning", "accept", "availability_q"]);
 /** Days, months and day words are never a spelled surname typed as one word. */
 const NOT_SPELLED = /^(lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|ayer|tarde|noche|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)$/i;
 
@@ -205,6 +232,16 @@ const weekFull = (c: Ctx) => !!c.s.onlyTwist && !moving(c) && !!c.s.onlyRejected
 function weekFullAgain(c: Ctx) { c.say("week_full"); offer(c, c.s.offer, true); c.hold(); }
 function onlyOne(c: Ctx) { c.say("only_one"); offer(c, "only", true); c.hold(); }
 
+/** Asked to change the time just booked, the learner keeps it after all ("Mejor déjela como estaba", "Así está bien"):
+ *  the booked time stands again. false when nothing was being changed. */
+function keepOld(c: Ctx): boolean {
+  const old = c.s.prevAppt as string | undefined;
+  if (!old || c.s.appt) return false;
+  c.s.offer = old; c.s.appt = old; c.s.prevAppt = undefined; c.s.moreDone = false;
+  c.say("appt_set", { slot: slotVal(OFFERS[old]) });
+  return true;
+}
+
 /** The first opening Lorena has: tomorrow at 9:30, or Tuesday at 10 when that 9:30 is the appointment being moved. */
 const earliest = (c: Ctx) => (moving(c) ? "first" : "early");
 
@@ -222,6 +259,7 @@ function accept(c: Ctx) {
   if (!key) return;
   const o = OFFERS[key];
   c.s.appt = key;
+  c.s.prevAppt = undefined;
   c.say(moving(c) ? "moved" : "booked", { slot: slotVal(o) });
   // said once per call, even when the appointment is booked again after a change
   if (!c.s.toldArrive) {
@@ -235,16 +273,16 @@ function accept(c: Ctx) {
 
 /** The offered or still-free opening at a said clock time (never the one being moved, never this week's only opening
  *  unless it is the twist's). */
-function slotAt(c: Ctx, tm: { h: number; m: number; ampm?: string }, day?: string): string | undefined {
+function slotAt(c: Ctx, tm: { h: number; m: number; ampm?: string }, day?: string, next = false): string | undefined {
   const match = (k: string) => {
     const o = OFFERS[k];
     if (tm.ampm === "am" && o.h >= 12) return false;
     if (tm.ampm === "pm" && o.h < 12) return false;
-    return o.h % 12 === tm.h % 12 && o.m === tm.m && (!day || o.d === day);
+    return o.h % 12 === tm.h % 12 && o.m === tm.m && (!day || onDay(k, day, next));
   };
   const offered = (c.s.offered || []).find((k: string) => match(k));
   if (offered) return offered;
-  const pool = weekFull(c) ? [...NEXT_WEEK, "only"] : Object.keys(OFFERS).filter((k) => !NEXT_WEEK.includes(k) || k === "monday");
+  const pool = weekFull(c) ? [...NEXT_WEEK, "only"] : Object.keys(OFFERS).filter((k) => !NEXT_WEEK.includes(k) || k === "monday" || (next && k === "next_tue"));
   return pool.find((k) => (moving(c) ? k !== "early" : k !== "move") && (k !== "only" || !!c.s.onlyTwist) && match(k));
 }
 
@@ -429,13 +467,20 @@ export const dentist: SituationDef = {
       "[no] (pago | voy a pagar | lo pago) (en efectivo | con tarjeta | en efectivo o con tarjeta)", "[no] sin seguro",
       "[no] [pero] [solo | nada mas | solamente] tengo (seguro de viaje | seguro de viajero)", "[no] (todavia | aun) no tengo seguro [dental | aqui]",
       "[si] (tengo seguro | tengo) [medico | de gastos medicos] pero no (dental | para el dentista)", "[si] pero no (es dental | dental)",
+      // one answer each, never the insurance line and the self-pay line together: "No tengo seguro dental, pero tengo
+      // seguro médico" (only the dental one counts), "Sí, tengo seguro, pero voy a pagar yo"
+      "[no] no tengo seguro dental [pero] [solo | nada mas | solamente] [tengo] [seguro | uno] (medico | de gastos medicos | de viaje | de viajero)",
+      "[si] tengo seguro [dental | medico] pero (voy a pagar | pago | prefiero pagar | lo voy a pagar | lo pago) (yo | particular | yo mismo | yo misma)",
+      "mi seguro no (cubre | paga) (dental | lo dental | el dentista | dentista | la consulta)", "[no] no (estoy asegurado | estoy asegurada)",
     ] },
     insurance_yes: { patterns: [
       "[si] tengo [un] seguro [dental | de gastos medicos | medico] #h:ins_have", "[si] tengo (una poliza | un seguro) [dental | de gastos medicos]",
       "[si] (estoy asegurado | estoy asegurada) [por (mi trabajo | la empresa)]", "[si] mi (trabajo | empresa) me da seguro [dental]",
-      // "No voy a pagar yo, tengo seguro": the insurance pays (one segment, so no self-pay line first)
-      "[no] no (voy a pagar | pago | lo pago | lo voy a pagar) yo [porque | ya que] (tengo [un] seguro [dental] | lo paga mi seguro | lo cubre mi seguro)",
+      // "No voy a pagar yo, tengo seguro" / "No voy a pagar particular, tengo seguro": the insurance pays (one segment,
+      // so no self-pay line first)
+      "[no] no (voy a pagar | pago | lo pago | lo voy a pagar) (yo | particular) [porque | ya que] (tengo [un] seguro [dental] | lo paga mi seguro | lo cubre mi seguro)",
       "(lo paga | lo cubre | lo va a pagar | paga) (mi | el) seguro",
+      "[si] con (seguro | mi seguro | el seguro) [dental]", "(voy a pagar | pago | lo pago | lo voy a pagar) con (mi | el) seguro [dental]",
     ] },
     insurance_q: { patterns: [
       "(aceptan | reciben | trabajan con | toman) (seguro | seguros | mi seguro | seguro dental | seguros (americanos | extranjeros | internacionales | de estados unidos | de canada))",
@@ -445,6 +490,9 @@ export const dentist: SituationDef = {
       "cuanto (cuesta | cobran | sale | es) [la consulta | la valoracion | la revision | la limpieza | la cita | la primera consulta] #h:q_cost",
       "cuanto me (va a costar | va a salir | van a cobrar | cobran)", "(que | cual es el) precio (tiene | de) (la consulta | la valoracion | la limpieza | la revision)",
       "cuanto (cuesta | sale | cobran por) (una | la) {reason}", "(cual es | cuanto es) el costo [de la consulta | de la valoracion]", "es (caro | cara) [la consulta]",
+      // "¿Es gratis la valoración?" gets its price (rule 11)
+      "(es | sera) gratis [la consulta | la valoracion | la primera consulta | la primera vez]",
+      "(la consulta | la valoracion | la primera consulta) (es gratis | tiene costo | cuesta algo | se cobra)", "tiene (costo | algun costo) [la consulta | la valoracion]",
     ] },
 
     // --- finding a time
@@ -466,19 +514,24 @@ export const dentist: SituationDef = {
       "(salgo del trabajo | salgo de trabajar) a {time}", "despues de {time} [seria mejor | me queda mejor | puedo]",
       "(puedo | podria) (ir | llegar) (mas tarde | en la tarde | despues de {time})",
       "[si] pero (en la tarde | por la tarde | mas tarde)", "prefiero no (en la manana | temprano)",
+      "no puedo (en la manana | por la manana | en las mananas | por las mananas | temprano)",
     ] },
     morning: { patterns: [
       "(tiene | tienen | hay) algo (en la manana | por la manana | temprano)", "(prefiero | mejor) (en la manana | por la manana | temprano)",
       "(en la manana | por la manana | las mananas) (me queda mejor | me quedan mejor | es mejor | seria mejor)", "algo (en la manana | por la manana)",
       "[si] pero (en la manana | por la manana)",
+      "no puedo (en la tarde | por la tarde | en las tardes | por las tardes)", "(en la tarde | por la tarde | en las tardes | por las tardes) (no puedo | trabajo | estoy trabajando)",
     ] },
+    // #ask: a question ("¿Tiene algo el martes?") naming the opening on offer asks again; it never books it (rule 17)
     day_req: { patterns: [
-      "(puedo | podria) ir {day} [@dpart] [a {time}] [mejor | en vez] #h:slot_day", "(y | que tal | y que tal) {day} [@dpart] [a {time}]",
-      "(tiene | tienen | hay) (algo | lugar | espacio | citas) [para] {day} [@dpart]", "no (tiene | tienen | hay) (algo | nada | lugar) [para] {day} [@dpart]", "mejor {day} [@dpart] [a {time}]",
-      "{day} [@dpart] (me queda mejor | seria mejor | es mejor | me conviene mas)", "(abren | trabajan | atienden) {day}",
+      "(puedo | podria) ir {day} [@dpart] [a {time}] [mejor | en vez] #ask #h:slot_day", "(y | que tal | y que tal) {day} [@dpart] [a {time}] #ask",
+      "(tiene | tienen | hay) (algo | lugar | espacio | citas) [para] {day} [@dpart] #ask", "no (tiene | tienen | hay) (algo | nada | lugar) [para] {day} [@dpart] #ask", "mejor {day} [@dpart] [a {time}]",
+      "[no] (tiene | tienen | hay) (algo | lugar | espacio | citas | nada) [para] {day} de la (proxima semana | semana que viene) [@dpart] #ask",
+      "{day} [@dpart] (me queda mejor | seria mejor | es mejor | me conviene mas)", "(abren | trabajan | atienden) {day} #ask", "(prefiero | preferiria) {day} [@dpart] [a {time}]",
       "{no_day:day} no [mejor | pero] {day} [@dpart] [a {time}]", "no {no_day:day} [sino | mejor | pero] {day} [@dpart] [a {time}]",
       "{no_day:day} no (puedo | me queda | me sirve) [pero] [y | que tal | mejor | puede ser] {day} [@dpart] [a {time}]",
-      "(se puede | puede ser) {day} [@dpart] [a {time}]", "[y | que tal | mejor | puede ser] {day} de la (proxima semana | semana que viene) [@dpart] [a {time}]", "(la puedo | puedo | me la puede | la puede | podria) (cambiar | pasar | mover) (para | a | al) {day} [@dpart]",
+      "(se puede | puede ser) {day} [@dpart] [a {time}] #ask", "(y | que tal | puede ser) {day} de la (proxima semana | semana que viene) [@dpart] [a {time}] #ask",
+      "[mejor] {day} de la (proxima semana | semana que viene) [@dpart] [a {time}]", "(la puedo | puedo | me la puede | la puede | podria) (cambiar | pasar | mover) (para | a | al) {day} [@dpart] #ask",
     ] },
     time_req: { patterns: [
       "(puedo | podria) ir a {time}", "(y | que tal) a {time}", "(tiene | hay) algo a {time}", "a {time} (seria mejor | me queda mejor | es mejor)",
@@ -501,6 +554,8 @@ export const dentist: SituationDef = {
       "(hay | tiene | tienen) (otro (dia | horario) | otra (opcion | fecha | hora))",
       "[no] (ese dia | esa hora | a esa hora | {day}) no", "no tengo tiempo [ese dia | a esa hora | {day}]",
       "[no] mejor (otro dia | otra hora | otro horario | otra fecha)", "no me (queda | sirve) [bien] {day} [a {time}]",
+      "[no] tampoco (me queda | me sirve | puedo | me conviene) [ese dia | a esa hora | {day} | a {time}]",
+      "(ese | esa | ese dia | esa hora | ese horario | {day}) tampoco [me queda | me sirve | puedo]", "[no] (ninguno | ninguna) (me queda | me sirve)", "[no] tampoco",
     ] },
     availability_q: { patterns: [
       "que (horarios | dias | horas) (tiene | tienen | hay) [disponibles | libres]", "(cuando | que dia) (puedo ir | tiene lugar | hay lugar | tiene espacio)",
@@ -557,6 +612,14 @@ export const dentist: SituationDef = {
       "(quisiera | quiero | necesito | tengo que | me gustaria) cancelar (mi | la) cita [de manana | de {day}]", "@staff cancelar (mi | la) cita",
       "(puedo | podria) cancelar (mi | la) cita", "cancele mi cita",
       "[no] [solo | nada mas | mejor] (cancelela | cancelemela) [por favor]", "[no] (solo | nada mas) (quiero | quisiera | necesito) cancelarla",
+      // "Sí, quiero cancelarla" at "¿Quiere cambiarla?": the yes is to canceling
+      "si (quiero | quisiera | necesito) cancelarla [por favor]",
+    ] },
+    // After asking to change a time just booked: keep the one booked
+    keep_appt: { patterns: [
+      "[no] [mejor] (dejela | dejemela) (como (estaba | esta) | asi | igual) [por favor]", "[no] mejor (dejela | dejemela) [por favor]",
+      "[no] [mejor] (la dejo | la dejamos) (como (estaba | esta) | asi | igual)", "[no] mejor no la (cambie | cambio | cambiamos | mueva | muevo)",
+      "[no] [mejor] (dejela | dejemela) [para] {day} [a {time}]", "[no] mejor me quedo con (la | la cita | la de | la del) [{day}] [a {time}]",
     ] },
 
     // --- general
@@ -656,6 +719,8 @@ export const dentist: SituationDef = {
       t("¿Y | un | teléfono, | por favor?", "And | a | phone number, | please?", "And a phone number, please?"),
     ],
     phone_thanks: [t("Muy | bien, | gracias.", "Very | good, | thanks.", "Great, thank you.")],
+    // a number read in pieces ("nueve ochenta y cuatro…"): Lorena waits for the rest
+    phone_more: [t("Ajá...", "Uh-huh...", "Uh-huh, go on.")],
     breaking_up: [
       t("Disculpe, | se está cortando | la | llamada. | ¿Me | lo | repite?", "Excuse me, | is breaking up | the | call. | (To) me | it | you-repeat?",
         "Sorry, the call is breaking up. Could you say that again?"),
@@ -775,6 +840,11 @@ export const dentist: SituationDef = {
         "In the meantime, you can take a painkiller, like ibuprofen. If the pain gets worse, call us."),
     ],
     pay: [t("Aceptamos | efectivo, | tarjeta | y | transferencia.", "We accept | cash, | card | and | bank transfer.", "We take cash, cards, and bank transfers.")],
+    // "¿Aceptan dólares?" gets an answer about dollars (rule 11); pesos only in cash, as at the bus terminal (s67a)
+    pay_dollars: [
+      t("En | efectivo, | solo | pesos; | también | aceptamos | tarjeta | y | transferencia.", "In | cash, | only | pesos; | also | we accept | card | and | bank transfer.",
+        "Cash in pesos only; we also take cards and bank transfers."),
+    ],
     insurance_info: [
       t("Depende | del | seguro. | Traiga | sus | datos | y | lo | revisamos | aquí.", "It depends | on the | insurance. | Bring | your | details | and | it | we-check | here.",
         "It depends on the insurance. Bring your details and we'll look into it here."),
@@ -1120,6 +1190,8 @@ export const dentist: SituationDef = {
       // "Así está bien" at the time question could mean "that's fine": Lorena asks again rather than move on
       no: (c) => {
         if (/(^|[\s¿¡,])as[ií]([\s,.!?]|$)/i.test(c.heard)) {
+          // while changing the time just booked, "Así está bien" keeps it ("leave it as it is")
+          if (/as[ií] est[aá] bien/i.test(c.heard) && !/as[ií] no/i.test(c.heard) && keepOld(c)) return;
           // only "así está bien" said again books; "así no" is a no
           if (c.s.politeAsked && /as[ií] est[aá] bien/i.test(c.heard) && !/as[ií] no/i.test(c.heard)) { accept(c); return; }
           if (c.s.politeAsked) { dentist.handlers.reject(c, {}, { intent: "reject", slots: {}, tags: [] }); return; }
@@ -1153,7 +1225,9 @@ export const dentist: SituationDef = {
       startBooking(c);
       if (seg.tags.includes("urgent")) c.s.urgent = true;
       const d = slots.day as string | undefined;
-      if (d && DAY_OFFER[d] && !c.s.wantDay) c.s.wantDay = DAY_OFFER[d];
+      // "…para el próximo martes": next week's Tuesday, never this week's
+      const k = d ? keyForDay(c, d, slots, seg) : undefined;
+      if (k && !c.s.wantDay) c.s.wantDay = k;
       if (slots.reason) setReason(c, toArr(slots.reason)[0], seg.tags);
     },
     reason_ans(c, slots, seg) {
@@ -1165,6 +1239,8 @@ export const dentist: SituationDef = {
       if (slots.number && c.s.pain) c.s.painLen = slots.number;
     },
     pain_len(c) {
+      // "Hace mucho tiempo" / "Ayer" answering "¿Ya había venido antes?" is a yes (been here before), never pain
+      if (c.step === "new_pt") { if (c.s.npVariant === 1) setNew(c, false); return; }
       if (c.s.painLen) return;
       c.s.painLen = true;
       if (!c.s.pain) { c.s.pain = true; if (!c.s.reason) c.s.reason = "toothache"; }
@@ -1237,7 +1313,11 @@ export const dentist: SituationDef = {
     },
     insurance_yes(c) { if (c.s.insurance === true) return; c.s.insurance = true; c.say("insurance_card"); },
     insurance_q(c) { c.say("insurance_info"); },
-    cost_q(c) { c.say("price_info", { price: 40000 }); },
+    cost_q(c) {
+      // "¿Cuánto cobran si cancelo?" asks about canceling, never the price of the exam
+      if (/cancel/.test(plain(c.heard))) { dentist.handlers.cancel_policy_q(c, {}, { intent: "cancel_policy_q", slots: {}, tags: [] }); return; }
+      c.say("price_info", { price: 40000 });
+    },
 
     earlier(c) {
       holdOk(c);
@@ -1282,22 +1362,38 @@ export const dentist: SituationDef = {
       if (!d) return;
       if (!c.s.task) startBooking(c);
       if (c.s.appt) { if (WEEKEND.includes(d)) c.say("hours"); else booked(c); return; }
+      const nextWk = nextWeek(c, slots, seg);
+      // a question ("¿Tiene algo el martes?", "¿Y el martes?", "¿Abren el martes?") or a correction naming the opening
+      // on offer gets it offered again; only a statement ("Mejor el martes") takes it (rule 17)
+      const ask = seg.tags.includes("ask") || !!slots.no_day;
       // moving: "early" (tomorrow 9:30) is the appointment being moved, so Lorena keeps her own offer instead
       const early = moving(c) ? (c.s.offer ?? "move") : "early";
       if (WEEKEND.includes(d)) { c.say("closed_weekend"); if (readyForSlot(c)) { offer(c, c.s.offer ?? "morning", !!c.s.offer); c.hold(); } return; }
       if (TODAYISH.includes(d)) { c.say("no_today"); if (readyForSlot(c)) { if (onlyNow(c)) { onlyOne(c); return; } offer(c, early, early === c.s.offer); c.hold(); } return; }
       if (moving(c) && d === EXISTING.d) { if (readyForSlot(c)) { c.say("not_that_time"); offer(c, early, early === c.s.offer); c.hold(); } return; }
+      // Twist: next week ("la próxima semana", "el lunes", "el martes de la próxima semana") turns this week's only
+      // opening down; Lorena offers next week's, never this week's
+      if (onlyNow(c) && (d === "next_week" || d === "monday" || (nextWk && THIS_WEEK.includes(d)))) c.s.onlyRejected = true;
       if (weekFull(c) && readyForSlot(c)) {
         if (d === "day_after_tomorrow") { c.s.onlyRejected = false; offer(c, "only", true); c.hold(); return; }
-        const nextTue = d === "tuesday" && /proxim|que viene/.test(c.heard.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-        if (THIS_WEEK.includes(d) && !nextTue) { weekFullAgain(c); return; }
+        if (THIS_WEEK.includes(d) && !nextWk) { weekFullAgain(c); return; }
+        const nextTue = d === "tuesday" && nextWk;
+        // "El miércoles de la próxima semana": next week she has Monday and Tuesday afternoon only
+        if (nextWk && THIS_WEEK.includes(d) && !nextTue) c.say("day_full");
         const k = nextTue ? "next_tue" : part === "am" ? "monday_am" : part === "pm" ? "monday" : c.s.offer === "monday_am" ? "monday_am" : "monday";
-        if (c.s.offer === k) { accept(c); return; }
+        if (c.s.offer === k) { if (ask) { offer(c, k, true); c.hold(); } else accept(c); return; }
         offer(c, k, (c.s.offered || []).includes(k)); c.hold(); return;
       }
-      let key: string | undefined = DAY_OFFER[d];
-      if (moving(c) && d === "thursday") key = "move";
+      let key: string | undefined = keyForDay(c, d, slots, seg);
+      if (moving(c) && d === "thursday" && !nextWk) key = "move";
+      if (!key && nextWk && THIS_WEEK.includes(d)) {
+        // "El miércoles de la próxima semana": that day is full; next week's known opening is Tuesday afternoon
+        if (!readyForSlot(c)) { c.s.wantDay = c.s.wantDay ?? "next_tue"; return; }
+        c.say("day_full"); offer(c, "next_tue", (c.s.offered || []).includes("next_tue")); c.hold(); return;
+      }
       if (!key) return;
+      // "El lunes en la mañana": Monday has a morning opening too
+      if (key === "monday" && part === "am") key = "monday_am";
       if (key === "only" && !c.s.onlyTwist) {
         // "Pasado mañana" without the twist: that day is full (never tomorrow instead, nor the appointment being moved)
         if (!readyForSlot(c)) return;
@@ -1307,16 +1403,16 @@ export const dentist: SituationDef = {
         if (fitsPart(key, part)) c.s.wantDay = key; else if (part === "am") c.s.wantMorning = true; else c.s.wantLate = true;
         return;
       }
-      if (onlyNow(c) && d !== "next_week" && key !== "only") { onlyOne(c); return; }
-      if (onlyNow(c) && d === "next_week") { c.s.onlyRejected = true; }
+      if (onlyNow(c) && key !== "only") { onlyOne(c); return; }
       // "El martes en la tarde" when Tuesday's opening is in the morning: another opening in that part of the day
       if (!fitsPart(key, part)) {
         c.say("not_that_time");
         const alt = (part === "pm" ? ["wednesday", "monday", "late"] : ["first", "morning", "early"]).filter((k) => !(moving(c) && k === "early"));
         key = alt.find((k) => k !== c.s.offer && OFFERS[k].d !== d) ?? alt[0];
       }
-      // "El martes, no el miércoles" and "El martes no, el miércoles" lose their comma: a correction only offers, it never books
-      if (c.s.offer === key) { if (slots.no_day) { offer(c, key, true); c.hold(); } else accept(c); return; }
+      // "El martes, no el miércoles" and "El martes no, el miércoles" lose their comma: a correction only offers, it
+      // never books; nor does a question
+      if (c.s.offer === key) { if (ask) { offer(c, key, true); c.hold(); } else accept(c); return; }
       offer(c, key, (c.s.offered || []).includes(key) && key !== "move"); c.hold();
     },
     time_req(c, slots) {
@@ -1338,48 +1434,61 @@ export const dentist: SituationDef = {
       const o = OFFERS[c.s.offer];
       const d = slots.day as string | undefined;
       const tm = slots.time as { h: number; m: number; ampm?: string } | undefined;
-      const sameDay = (!d || d === o.d) && fitsPart(c.s.offer, partOf(slots, seg));
+      // "El próximo martes" is not this week's Tuesday
+      const sameDay = (!d || onDay(c.s.offer, d, nextWeek(c, slots, seg))) && fitsPart(c.s.offer, partOf(slots, seg));
       const sameTime = !tm || (o.h % 12 === tm.h % 12 && o.m === tm.m && !(tm.ampm === "am" && o.h >= 12) && !(tm.ampm === "pm" && o.h < 12));
       // "No el martes, el miércoles": a turn with "no" in it never books the offer it names
       const neg = /(^|\s)no(\s|$)/.test(c.heard.toLowerCase().replace(/[¿?¡!,.]/g, " "));
-      if (sameDay && sameTime && neg) { if (!turn(c).picked) { turn(c).picked = true; offer(c, c.s.offer, true); c.hold(); } return; }
+      if (sameDay && sameTime && neg) {
+        // "El martes a las diez | no puedo", "No a las diez, | a las once": the other piece answers (one offer, not the
+        // refused one again)
+        if (turnSegments(c).some((x) => x !== seg && PICK_ACTS.has(x.intent))) return;
+        if (!turn(c).picked) { turn(c).picked = true; offer(c, c.s.offer, true); c.hold(); }
+        return;
+      }
       if (sameDay && sameTime) { accept(c); return; }
       if (tm) { dentist.handlers.time_req(c, slots, seg); return; }
       dentist.handlers.day_req(c, slots, seg);
     },
-    accept(c, slots) {
+    accept(c, slots, seg) {
       if (c.step === "hold" && !c.s.holdDone) {
         holdOk(c, true);
         // "El miércoles está bien." while Lorena asks to hold: she offers that day first
         const d = slots.day as string | undefined;
-        if (d && DAY_OFFER[d] && !(moving(c) && DAY_OFFER[d] === "early")) c.s.wantDay = DAY_OFFER[d];
+        const k = d ? keyForDay(c, d, slots, seg) : undefined;
+        if (k && !(moving(c) && k === "early")) c.s.wantDay = k;
         return;
       }
       if (c.s.appt) { if (slots.day || slots.time) booked(c); return; }
       if (!readyForSlot(c) || !c.s.offer) return;
       const tm = slots.time as { h: number; m: number; ampm?: string } | undefined;
       const d0 = slots.day as string | undefined;
+      const nx = nextWeek(c, slots, seg);
       if (tm) {
         // "A las cuatro y media está perfecto": the offered slot with that time, if any
         const hit = (c.s.offered || []).find((k: string) => {
           const o = OFFERS[k];
-          return o.h % 12 === tm.h % 12 && o.m === tm.m && (!d0 || o.d === d0);
+          return o.h % 12 === tm.h % 12 && o.m === tm.m && (!d0 || onDay(k, d0, nx));
         });
         if (hit) { if (hit !== c.s.offer) c.s.offer = hit; accept(c); return; }
         if (onlyNow(c)) { onlyOne(c); return; }
         // "El viernes a las once está perfecto": an opening Lorena has but hasn't offered yet
-        const has = slotAt(c, tm, d0);
+        const has = slotAt(c, tm, d0, nx);
         if (has && d0) { c.s.offer = has; accept(c); return; }
         if (has) { offer(c, has); c.hold(); return; }
         dentist.handlers.time_req(c, slots, { intent: "time_req", slots, tags: [] }); return;
       }
-      // "El miércoles está bien" when Lorena offered Thursday: that day, please (never the offered one)
-      if (d0 && OFFERS[c.s.offer].d !== d0) { dentist.handlers.day_req(c, slots, { intent: "day_req", slots, tags: [] }); return; }
+      // "El miércoles está bien" when Lorena offered Thursday: that day, please (never the offered one); "El próximo
+      // martes está bien" when this Tuesday is on offer: next week's
+      if (d0 && !onDay(c.s.offer, d0, nx)) { dentist.handlers.day_req(c, slots, { intent: "day_req", slots, tags: seg?.tags ?? [] }); return; }
       accept(c);
     },
-    reject(c) {
+    reject(c, slots) {
       if (!readyForSlot(c) || !c.s.offer) return;
       if (booked(c)) return;
+      // "¿El martes, no?" typed with its question mark checks the offer ("Tuesday, right?"): Lorena asks again
+      const d = slots?.day as string | undefined;
+      if (d && /\bno\s*\?\s*$/i.test(c.heard.trim()) && onDay(c.s.offer, d, false)) { offer(c, c.s.offer, true); c.hold(); return; }
       if (c.s.onlyTwist && !moving(c) && !c.s.onlyRejected) {
         c.s.onlyRejected = true;
         c.s.offer = "monday"; c.s.offered = [...(c.s.offered || []), "monday"];
@@ -1412,7 +1521,8 @@ export const dentist: SituationDef = {
         suggest: [{ lt: "Say if you can hear her now", hint: "hear" }],
         yes: (cc) => { cc.say("hear_great"); },
         no: (cc) => { cc.say("speak_up_ok"); },
-        on: { hear_ok: (cc) => { cc.say("hear_great"); } },
+        // "No, todavía no" here answers "¿Así me escucha mejor?" (still can't hear), never "¿Ya había venido antes?"
+        on: { hear_ok: (cc) => { cc.say("hear_great"); }, new_yes: (cc, _sl, sg) => { if (!sg.tags.includes("notyet")) return false; cc.say("speak_up_ok"); } },
       });
     },
     hear_me(c) { c.say("hear_you"); },
@@ -1422,20 +1532,24 @@ export const dentist: SituationDef = {
     parking_q(c) { c.say("parking"); },
     duration_q(c) { c.say(c.s.newPt === true && !moving(c) && c.s.reason !== "cleaning" ? "duration" : "duration_short"); },
     bring_q(c) { c.say("bring"); },
-    cancel_policy_q(c) { c.say("cancel_policy"); },
+    cancel_policy_q(c) { if (turn(c).policy) return; turn(c).policy = true; c.say("cancel_policy"); },
     forms_q(c) { c.say("forms"); },
     doctor_q(c) { c.say("doctor"); },
     pain_q(c) { c.say("pain_advice"); },
-    pay_q(c) { c.say("pay"); },
+    pay_q(c) { c.say(/dolar/.test(plain(c.heard)) ? "pay_dollars" : "pay"); },
     english_q(c) { c.say("english"); },
 
-    move(c, slots) {
+    move(c, slots, seg) {
       const tgt0 = slots?.target as string | undefined;
+      // "…para el próximo martes": next week's Tuesday, never this week's
+      const tk = tgt0 ? keyForDay(c, tgt0, slots, seg) : undefined;
       // "¿Puedo cambiar la cita?" right after booking it (or "Sí" to "¿Quiere cambiarla para otro día?"): Lorena
       // frees that time and offers another one (the day asked for, if any)
       if (c.s.booking && !c.s.moving && c.s.appt) {
         const old = c.s.appt as string;
-        const asked = tgt0 && DAY_OFFER[tgt0] && DAY_OFFER[tgt0] !== "only" ? DAY_OFFER[tgt0] : undefined;
+        // kept until a new time is agreed: "Mejor déjela como estaba" / "Así está bien" gives it back (keepOld)
+        c.s.prevAppt = old;
+        const asked = tk && tk !== "only" ? tk : undefined;
         c.s.wantDay = asked ?? ["first", "early", "late", "morning", "monday", "wednesday"].find((k) => k !== old && !(c.s.offered || []).includes(k)) ?? (old === "first" ? "late" : "first");
         c.s.appt = undefined; c.s.offer = undefined; c.s.moreDone = false;
         c.say("reason_ok");
@@ -1446,8 +1560,7 @@ export const dentist: SituationDef = {
       c.s.task = c.s.task || "move";
       c.s.moreDone = false;
       // "…¿la puedo pasar para el miércoles?": Lorena offers that day first (never tomorrow 9:30, the slot being moved)
-      const tgt = slots?.target as string | undefined;
-      if (tgt && DAY_OFFER[tgt] && DAY_OFFER[tgt] !== "early" && DAY_OFFER[tgt] !== "only" && !c.s.offer) c.s.wantDay = tgt === "thursday" ? "move" : DAY_OFFER[tgt];
+      if (tk && tk !== "early" && tk !== "only" && !c.s.offer) c.s.wantDay = tk === "late" ? "move" : tk;
       if (c.s.moving) return;
       c.s.moving = true;
       c.s.booking = false;
@@ -1461,12 +1574,21 @@ export const dentist: SituationDef = {
         id: "reschedule_q", expects: ["move"], hints: ["g_yesno", "move"],
         suggest: [{ lt: "Say if you'd like to move it", hint: "g_yesno" }, { lt: "Move your appointment", hint: "move" }],
         yes: (cc) => { dentist.handlers.move(cc, {}, { intent: "move", slots: {}, tags: [] }); },
-        no: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.say("canceled"); },
-        on: { move: (cc, sl, sg) => { dentist.handlers.move(cc, sl, sg); }, cancel: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.say("canceled"); } },
+        no: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.s.prevAppt = undefined; cc.say("canceled"); },
+        on: { move: (cc, sl, sg) => { dentist.handlers.move(cc, sl, sg); }, cancel: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.s.prevAppt = undefined; cc.say("canceled"); } },
         ask: (cc) => cc.say("offer_reschedule"),
       });
     },
 
+    keep_appt(c, slots, seg) {
+      // "No, mejor déjela como estaba": the time just booked stands; "Déjela el viernes" names another day
+      const old = c.s.prevAppt as string | undefined;
+      const d = slots.day as string | undefined;
+      const tm = slots.time as { h: number; m: number } | undefined;
+      const same = !!old && (!d || onDay(old, d, false)) && (!tm || (OFFERS[old].h % 12 === tm.h % 12 && OFFERS[old].m === tm.m));
+      if (same && keepOld(c)) return;
+      if ((d || tm) && readyForSlot(c) && c.s.offer && !c.s.appt) dentist.handlers.pick_ctx(c, slots, seg);
+    },
     more_no(c) {
       const st = dentist.steps.find((x) => x.id === c.step);
       if (st && st.id !== "more" && st.no && !st.done(c)) { st.no(c); return; }
@@ -1621,6 +1743,31 @@ export const dentist: SituationDef = {
     { say: "Sí, pero en la tarde", intent: "later", step: "slot", not: ["accept"] },
     { say: "¿Dónde están ubicados?", intent: "address_q" },
     { say: "Gracias, es todo", intent: "more_no", step: "more" },
+    // lead's check: questions never book, next week is never this week, one answer per turn, money answers
+    { say: "¿Tiene algo el martes?", intent: "day_req", step: "slot", slots: { day: "tuesday" }, not: ["accept"] },
+    { say: "¿Abren el martes?", intent: "day_req", step: "slot", not: ["accept"] },
+    { say: "Mejor el martes de la próxima semana", intent: "day_req", step: "slot", slots: { day: "tuesday" }, not: ["accept"] },
+    { say: "¿No tiene nada el miércoles de la próxima semana?", intent: "day_req", step: "slot", slots: { day: "wednesday" }, not: ["accept"] },
+    // pick_ctx + reject: the handler leaves the refused offer to the reject (one offer, probe)
+    { say: "El martes a las diez no puedo", intent: "pick_ctx", step: "slot", not: ["accept"] },
+    { say: "No a las diez, a las once", intent: "pick_ctx", step: "slot", not: ["accept"] },
+    { say: "¿El martes, no?", intent: "reject", step: "slot", not: ["accept"] },
+    { say: "Tampoco me queda", intent: "reject", step: "slot", not: ["accept"] },
+    { say: "Prefiero el jueves", intent: "day_req", step: "slot", slots: { day: "thursday" } },
+    { say: "No puedo en la tarde", intent: "morning", step: "slot", not: ["later", "accept"] },
+    { say: "No puedo en la mañana", intent: "later", step: "slot", not: ["morning", "accept"] },
+    { say: "No tengo seguro dental, pero tengo seguro médico", intent: "insurance_no", step: "insurance", not: ["insurance_yes"] },
+    { say: "No voy a pagar particular, tengo seguro", intent: "insurance_yes", step: "insurance", not: ["insurance_no"] },
+    { say: "Sí, tengo seguro, pero voy a pagar yo", intent: "insurance_no", step: "insurance", not: ["insurance_yes"] },
+    { say: "Con mi seguro", intent: "insurance_yes", step: "insurance", not: ["insurance_no"] },
+    { say: "¿Es gratis la valoración?", intent: "cost_q", not: ["insurance_no", "insurance_yes"] },
+    { say: "¿Aceptan dólares?", intent: "pay_q" },
+    // cost_q + cancel_policy_q: the handler answers the cancel policy only, never the exam price (probe)
+    { say: "¿Cuánto cobran si cancelo?", intent: "cost_q", not: ["cancel"] },
+    { say: "Sí, quiero cancelarla", intent: "cancel", not: ["move"] },
+    { say: "No quiero cancelarla", intent: "none", not: ["cancel"] },
+    { say: "No, mejor déjela como estaba", intent: "keep_appt", step: "slot", not: ["accept", "move"] },
+    { say: "Nueve ochenta y cuatro", intent: "phone_ctx", step: "phone", slots: { digits: "984" } },
   ],
 
   sims: [
@@ -1661,6 +1808,26 @@ export const dentist: SituationDef = {
     { name: "\"No es mi primera vez\" without its comma: Lorena asks again",
       turns: ["Necesito una cita para una limpieza.", "No es mi primera vez.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "4 de junio de 1990", "Sí, me queda bien.", "Es todo."],
       setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 1; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first", newPt: false } }, auto: DENTIST_AUTO },
+    // lead's check
+    { name: "a question about the day on offer asks again; next week's Tuesday, never this week's",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "¿Tiene algo el martes?", "Mejor el martes de la próxima semana.", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "next_tue" } }, auto: DENTIST_AUTO },
+    { name: "a phone number in two pieces, no dental insurance but medical, dollars",
+      turns: ["Quisiera hacer una cita para una limpieza.", "Sí, es mi primera vez.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "Nueve ochenta y cuatro", "Uno veintitrés, cuarenta y cinco, sesenta y siete", "No tengo seguro dental, pero tengo seguro médico", "¿Aceptan dólares?", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first", phone: "9841234567", insurance: false } }, auto: DENTIST_AUTO },
+    { name: "a change right after booking, then keeping the time booked",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "Sí, me queda bien.", "¿Puedo cambiar la cita para el viernes?", "No, mejor déjela como estaba.", "Es todo, gracias."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first" } }, auto: DENTIST_AUTO },
+    { name: "only one opening this week, next week in the morning (twist forced)",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "¿Tiene algo la próxima semana en la mañana?", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = true; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "monday_am", onlyRejected: true } }, auto: DENTIST_AUTO },
+    { name: "still can't hear at \"¿Ya había venido antes?\": \"No, todavía no\" is no new patient",
+      turns: ["Quisiera hacer una cita para una revisión.", "¿Puede hablar más fuerte?", "No, todavía no", "Sí, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 1; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first", newPt: false } }, auto: DENTIST_AUTO },
+    // painLen set only so the sim player doesn't save "Hace mucho tiempo" for the pain question
+    { name: "\"Hace mucho tiempo\" at \"¿Ya había venido antes?\" is a yes, never pain",
+      turns: ["Quisiera hacer una cita para una revisión.", "Hace mucho tiempo.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 1; s.badLineAt = undefined; s.painLen = true; }, expect: { complete: true, state: { appt: "first", newPt: false, pain: undefined } }, auto: DENTIST_AUTO },
   ],
 };
 
@@ -1689,7 +1856,7 @@ function setNew(c: Ctx, isNew: boolean) {
 function yearFrom(slots: any, seg: { tags: string[] }) {
   if (slots.year) return slots;
   const n = typeof slots.number === "number" ? slots.number : undefined;
-  if (seg.tags.includes("yy") && n !== undefined && n >= 0 && n <= 99) return { year: n > 30 ? 1900 + n : 2000 + n };
+  if (seg.tags.includes("yy") && n !== undefined && n >= 0 && n <= 99) return { year: twoDigitYear(n) };
   return {};
 }
 
@@ -1702,7 +1869,9 @@ function setDob(c: Ctx, slots: any) {
   }
   const nd = slots.numdate;
   const date = nd ? { day: nd.day, month: nd.month } : slots.date;
-  const year = nd ? nd.year : slots.year;
+  // "dos mil treinta" can't be a birth year: Lorena asks for the year again
+  const y0 = nd ? nd.year : slots.year;
+  const year = typeof y0 === "number" && birthYear(y0) ? y0 : undefined;
   if (date) c.s.dobPartial = { ...(c.s.dobPartial || {}), ...date };
   if (year) c.s.dobYear = year;
   if (c.s.dobPartial && c.s.dobYear) {
@@ -1717,6 +1886,19 @@ function setPhone(c: Ctx, digits: string | undefined) {
   if (c.s.badLineAt === "phone" && !c.s.badLineDone && c.step === "phone") {
     c.s.badLineDone = true; td.phoneRejected = true;
     c.twist("bad_line"); c.say("breaking_up"); c.hold(); return;
+  }
+  // A number read in pieces ("Es el nueve ochenta y cuatro…" | "uno veintitrés, cuarenta y cinco, sesenta y siete"):
+  // fewer than 7 digits is no phone number yet, so Lorena waits for the rest and joins the pieces (10 or more digits
+  // at once are a whole number, said again). Decided once per turn, on every number said in it.
+  if (!c.s.phone && /^\d+$/.test(digits)) {
+    if (td.phoneDone) return;
+    td.phoneDone = true;
+    const said = turnSegments(c).filter((s) => (s.intent === "phone_ans" || s.intent === "phone_ctx") && /^\d+$/.test(String(s.slots?.digits ?? "")))
+      .map((s) => String(s.slots.digits)).join("") || digits;
+    const whole = said.length >= 10 || !c.s.phonePart ? said : c.s.phonePart + said;
+    if (whole.length < 7) { c.s.phonePart = whole; c.say("phone_more"); c.hold(); return; }
+    c.s.phonePart = undefined;
+    c.s.phone = whole; c.say("phone_thanks"); return;
   }
   td.phone = (td.phone ?? "") + digits;
   if (!td.phoneAck) { td.phoneAck = true; if (!c.s.phone) { c.s.phone = td.phone; c.say("phone_thanks"); return; } }
