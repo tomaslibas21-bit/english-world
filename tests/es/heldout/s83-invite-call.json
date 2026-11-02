@@ -1,0 +1,56 @@
+{ "situation": "s83-invite-call", "items": [
+  { "ctx": "hello", "say": "Hola Andrea, soy yo", "intent": "its_me_ctx" },
+  { "ctx": "hello", "say": "¿Qué onda, Andrea? ¿Cómo estás?", "intent": ["its_me_ctx", "voc", "g_howareyou"], "note": "Mexican greeting back" },
+
+  { "ctx": "howareyou", "say": "Muy bien, ¿y tú?", "intent": "g_howareyou_answer" },
+  { "ctx": "howareyou", "say": "Mas o menos, un poco cansada", "intent": ["g_howareyou_answer", "g_howareyou_bad"], "note": "no accent" },
+
+  { "ctx": "invite", "say": "¿Quieres ir a un concierto el viernes?", "intent": "invite" },
+  { "ctx": "invite", "say": "Tengo dos boletos para un concierto, ¿vienes conmigo?", "intent": ["invite", "tickets"] },
+  { "ctx": "invite", "say": "¿Te gustaría venir conmigo al concierto de jazz?", "intent": "invite" },
+  { "ctx": "invite", "say": "¿Estás libre el viernes en la noche?", "intent": "ask_free" },
+  { "ctx": "invite", "say": "¿Tienes planes para el viernes?", "intent": "ask_free" },
+  { "ctx": "invite", "say": "Me sobra una entrada para el viernes, ¿te animas?", "intent": ["invite", "tickets"], "note": "neutral entrada, te animas" },
+  { "ctx": "invite", "say": "¿Tienes un minuto?", "intent": "good_time" },
+  { "ctx": "invite", "say": "Mi hermana no quiere ir al concierto", "intent": "any", "not": ["invite"], "note": "trap: not an invitation" },
+  { "ctx": "invite", "say": "No me gusta mucho el jazz", "intent": "any", "not": ["invite", "accept_inv"], "note": "trap" },
+
+  { "ctx": "day", "say": "Este viernes en la noche", "intent": "day_ans" },
+
+  { "ctx": "band", "say": "Es una banda de rock", "intent": "band_ans" },
+  { "ctx": "band", "say": "No me acuerdo del nombre", "intent": "band_forgot" },
+  { "ctx": "band", "say": "Se llama Los Colibríes", "intent": ["band_ctx", "band_ans"] },
+
+  { "ctx": "start", "say": "Empieza a las nueve", "intent": ["starts_at", "time_ans"] },
+  { "ctx": "start", "say": "A las nueve y media, creo", "intent": ["starts_at", "time_ans"] },
+  { "ctx": "start", "say": "La verdad no sé a qué hora empieza", "intent": "start_unknown_ctx" },
+
+  { "ctx": "place", "say": "¿Nos vemos en el kiosco?", "intent": "meet" },
+  { "ctx": "place", "say": "¿Dónde quieres que nos veamos?", "intent": "ask_where" },
+  { "ctx": "place", "say": "Si quieres paso por ti a tu casa", "intent": "pickup" },
+  { "ctx": "place", "say": "Te recojo en tu casa", "intent": "pickup" },
+
+  { "ctx": "suggest_place", "say": "Va, perfecto", "intent": ["agree", "g_ok", "yn:yes"] },
+  { "ctx": "suggest_place", "say": "Mejor enfrente del mercado", "intent": "meet" },
+  { "ctx": "suggest_place", "say": "No, en el kiosco no", "intent": ["meet_not", "no_sorry", "yn:no"], "not": ["agree", "g_ok", "yn:yes"], "note": "trap: refuses the kiosco" },
+
+  { "ctx": "suggest_time", "say": "A las ocho está bien", "intent": ["time_ans", "agree", "g_ok", "yn:yes"] },
+  { "ctx": "suggest_time", "say": "Mejor a las siete y media", "intent": "time_ans" },
+  { "ctx": "suggest_time", "say": "Un poco más temprano, ¿no?", "intent": "time_shift_ctx" },
+  { "ctx": "suggest_time", "say": "A las ocho no puedo", "intent": "any", "not": ["agree", "g_ok", "yn:yes"], "note": "trap: refusal of the time" },
+  { "ctx": "meet_time", "say": "¿A qué hora nos vemos?", "intent": "ask_when" },
+
+  { "ctx": "sister", "say": "¡Claro, que venga!", "intent": ["sister_yes_ctx", "yn:yes"] },
+  { "ctx": "sister", "say": "Lo siento, nada más tengo dos boletos", "intent": "sister_no_ctx" },
+  { "ctx": "sister", "say": "No hay problema", "intent": ["sister_yes_ctx", "yn:yes"], "not": ["sister_no_ctx", "yn:no"], "note": "trap: 'no' in a yes" },
+
+  { "ctx": "pay", "say": "No te preocupes, yo invito", "intent": "on_me" },
+  { "ctx": "pay", "say": "Fueron trescientos cincuenta pesos", "intent": "price_ctx" },
+  { "ctx": "pay", "say": "No me debes nada", "intent": "on_me", "not": ["price_ctx"], "note": "trap" },
+
+  { "ctx": "bbq", "say": "¡Claro que sí! ¿Llevo algo?", "intent": "accept_inv" },
+  { "ctx": "bbq", "say": "Me encantaría, pero el domingo trabajo", "intent": "decline_ctx", "not": ["accept_inv"], "note": "trap: but-refusal" },
+
+  { "ctx": "closing", "say": "Te mando un mensaje mañana", "intent": "will_text" },
+  { "ctx": "closing", "say": "Sale, nos vemos el viernes", "intent": ["bye_ext", "g_bye"] }
+] }
