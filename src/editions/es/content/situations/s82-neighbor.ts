@@ -151,7 +151,7 @@ function fromReact(c: Ctx, country: string | undefined, tags: string[]) {
 }
 
 function trashTold(c: Ctx) { c.s.trashTold = true; maybeComplete(c); }
-function building(c: Ctx) { c.s.qCount = (c.s.qCount ?? 0) + 1; }
+function building(c: Ctx, topic?: string) { c.s.qCount = (c.s.qCount ?? 0) + 1; c.s.lastQ = topic; }
 
 /** Her complaint about the music: asked again once if the learner talks about something else, then dropped. */
 function expectComplaint(c: Ctx, optional: boolean) {
@@ -161,6 +161,13 @@ function expectComplaint(c: Ctx, optional: boolean) {
       noise_sorry: (cc) => { acceptApology(cc); }, noise_promise: (cc) => { acceptApology(cc); }, didnt_know: (cc) => { acceptApology(cc); },
       g_sorry: (cc) => { acceptApology(cc); }, noise_reason: (cc) => { acceptApology(cc); },
       noise_deny: (cc) => { cc.s.complaintDone = true; react(cc, "deny_react"); maybeComplete(cc); },
+      // "Sí, perdón" / "Ay, perdón": sorry, not "pardon?" (a bare "¿Perdón?" still gets the complaint again)
+      g_repeat: (cc) => {
+        if (!/\b(si|ay|ah|uy|oh|ups|lo siento|perdoneme|disculpeme|una disculpa)\b/.test(heard(cc))) return false;
+        acceptApology(cc); return true;
+      },
+      // "¿Qué música?": hers was the learner's music, not the gas truck's tune
+      ask_gas: (cc) => { react(cc, "complain_which"); expectComplaint(cc, true); },
     },
     yes: (cc) => { acceptApology(cc); }, no: (cc) => { cc.say("oh_okay"); },
     ask: optional ? undefined : (cc) => { cc.say("complain_again"); expectComplaint(cc, true); } });
@@ -180,11 +187,26 @@ function askCoffeeTime(c: Ctx) {
   c.expect({ id: "coffee_time", optional: true, expects: ["coffee_time_ctx", "coffee_day", "coffee_time_no"], hints: ["coffee_time"],
     suggest: [{ lt: "Agree to the time or suggest another", hint: "coffee_time" }],
     on: {
-      coffee_time_ctx: (cc, sl) => { if (!isFive(sl.time)) cc.say("coffee_other_day"); cc.say("coffee_confirm"); },
-      coffee_day: (cc) => { cc.say("coffee_other_day"); cc.say("coffee_confirm"); },
-      coffee_time_no: (cc) => { cc.say("coffee_whenever"); },
+      // coffeeAt records the agreed hour (her five, or the learner's own time); coffeeOff, no coffee
+      coffee_time_ctx: (cc, sl) => { cc.s.coffeeAt = sl.time?.h ?? "other"; if (!isFive(sl.time)) cc.say("coffee_other_day"); cc.say("coffee_confirm"); },
+      coffee_day: (cc) => { cc.s.coffeeAt = "other"; cc.say("coffee_other_day"); cc.say("coffee_confirm"); },
+      coffee_time_no: (cc) => { cc.s.coffeeOff = true; cc.say("coffee_whenever"); },
     },
-    yes: (cc) => { cc.say("coffee_confirm"); }, no: (cc) => { cc.say("coffee_whenever"); } });
+    yes: (cc) => { cc.s.coffeeAt = 5; cc.say("coffee_confirm"); }, no: (cc) => { cc.s.coffeeOff = true; cc.say("coffee_whenever"); } });
+}
+
+/** "El sábado me queda bien" to her Sunday: another day, said before the time (never a silent Sunday). */
+const otherDay = (sl: Record<string, any>) => !!sl.day && sl.day !== "sunday";
+
+/** "No, gracias" / "Sí, gracias" / "Está bien, gracias" to her invitation: the thanks never swallows the answer.
+ *  "Está bien" could be a yes or a polite no, so she asks again. */
+function coffeeThanks(c: Ctx, onYes: (c: Ctx) => void, onNo: (c: Ctx) => void): boolean {
+  const h = heard(c);
+  if (/\b(adios|hasta luego|nos vemos|bye|chao|cuidese)\b/.test(h)) return false;
+  if (/^\s*no\b/.test(h)) { onNo(c); return true; }
+  if (/^\s*(si|claro|con gusto|me encantaria|encantad[oa])\b/.test(h)) { onYes(c); return true; }
+  if (/^\s*(esta bien|bueno|ok|okay|vale|ah)\b/.test(h)) { c.say("coffee_reask"); c.hold(); return true; }
+  return false;
 }
 
 /** She suggested five o'clock: "A las cinco está bien" agrees, another time is a new suggestion. */
@@ -215,11 +237,20 @@ const H: Record<string, Handler> = {
   boxes(c) { react(c, "boxes_react"); },
 
   // --- the building ---
-  ask_trash(c) { building(c); c.say("trash"); c.say("trash_day"); trashTold(c); },
-  ask_recycling(c) { building(c); c.say("recycling"); if (!c.s.trashTold) c.say("fyi_trash"); trashTold(c); },
-  ask_trash_day(c) { building(c); c.say("trash_day"); trashTold(c); },
-  ask_boxes(c) { building(c); c.say("boxes"); if (!c.s.trashTold) c.say("fyi_trash"); trashTold(c); },
-  ask_gas(c, _slots, seg) { building(c); if (seg.tags.includes("what")) { c.say("gas_what"); c.say("gas_buy"); } else c.say("gas"); },
+  ask_trash(c) { building(c, "trash"); c.say("trash"); c.say("trash_day"); trashTold(c); },
+  ask_recycling(c) { building(c, "trash"); c.say("recycling"); if (!c.s.trashTold) c.say("fyi_trash"); trashTold(c); },
+  ask_trash_day(c, slots, seg) {
+    // "¿Cuándo pasa el camión del gas?" is the gas truck
+    if (/\bgas\b/.test(heard(c))) { H.ask_gas(c, slots, seg); return; }
+    building(c, "trash"); c.say("trash_day"); trashTold(c);
+  },
+  ask_boxes(c) { building(c, "trash"); c.say("boxes"); if (!c.s.trashTold) c.say("fyi_trash"); trashTold(c); },
+  ask_gas(c, _slots, seg) {
+    building(c, "gas");
+    // "¿Qué era esa música anoche?": the party upstairs, not the gas truck's morning tune
+    if (seg.tags.includes("what") && /\b(anoche|ayer|fiesta|noche)\b/.test(heard(c))) { c.say("others_noise"); return; }
+    if (seg.tags.includes("what")) { c.say("gas_what"); c.say("gas_buy"); } else c.say("gas");
+  },
   ask_water(c) { building(c); c.say("water"); },
   ask_laundry(c) { building(c); c.say("laundry"); if (c.chance(0.6)) c.say("laundry2"); },
   ask_mail(c, _slots, seg) { building(c); if (!seg.tags.includes("pkg")) c.say("mail"); c.say("packages_door"); },
@@ -282,7 +313,14 @@ const H: Record<string, Handler> = {
   noise_deny(c) { react(c, "ack"); },
 
   // --- coffee ---
-  coffee_yes(c) { if (c.s.coffeePending) askCoffeeTime(c); else react(c, "like_react"); },
+  coffee_yes(c) {
+    if (c.s.coffeePending) { askCoffeeTime(c); return; }
+    // no invitation open: "No tengo nada" is "nothing to ask", "¿A qué hora?" asks about the trucks
+    const h = heard(c);
+    if (/\bno tengo nada\b/.test(h)) { H.no_more(c, {}, { intent: "no_more", slots: {}, tags: [] } as any); return; }
+    if (/\ba que hora\b/.test(h)) { react(c, c.s.lastQ === "trash" || c.s.lastQ === "gas" ? "morning" : "ack"); return; }
+    react(c, "like_react");
+  },
   coffee_no(c) { if (c.s.coffeeDone && PROPOSES_DAY.test(heard(c))) { react(c, "coffee_other_day"); return; } react(c, c.s.coffeeDone ? "coffee_decline_ok" : "ack"); },
   coffee_day(c) { react(c, "coffee_other_day"); },
   coffee_time_ctx(c, slots) { if (!isFive(slots.time)) c.say("coffee_other_day"); else c.say("coffee_confirm"); },
@@ -291,12 +329,15 @@ const H: Record<string, Handler> = {
   invite_coffee(c) {
     c.s.coffeeDone = true;
     c.say("coffee_learner_react");
-    c.expect({ id: "coffee_sunday", optional: true, expects: ["coffee_day", "coffee_no", "coffee_yes"], hints: ["sunday"],
+    c.expect({ id: "coffee_sunday", optional: true, expects: ["coffee_day", "coffee_no", "coffee_yes", "coffee_time_ctx"], hints: ["sunday"],
       suggest: [{ lt: "Agree on a day", hint: "sunday" }],
       on: {
         coffee_day: (cc) => { react(cc, "coffee_other_day"); },
         coffee_no: (cc) => { react(cc, PROPOSES_DAY.test(heard(cc)) ? "coffee_other_day" : "coffee_whenever"); },
-        coffee_yes: (cc) => { cc.say("coffee_confirm"); },
+        coffee_yes: (cc, sl) => { cc.say(otherDay(sl) ? "coffee_other_day" : "coffee_confirm"); },
+        // "A las cinco": a time on Sunday afternoon is a yes
+        coffee_time_ctx: (cc) => { cc.say("coffee_confirm"); },
+        g_thanks: (cc) => coffeeThanks(cc, (c2) => c2.say("coffee_confirm"), (c2) => c2.say("coffee_whenever")),
       },
       yes: (cc) => { cc.say("coffee_confirm"); }, no: (cc) => { cc.say("coffee_whenever"); } });
   },
@@ -356,7 +397,10 @@ export const neighbor: SituationDef = {
       music: "(la musica | su musica | la tele | el radio | la television | el volumen | tu musica #tip:tu_older)",
       could: "(podria | puede | pudiera | podrias #tip:tu_older | puedes #tip:tu_older)",
       lend: "(presta | prestaria | prestas #tip:tu_older | deja | dejas #tip:tu_older | podria prestar | puede prestar | podrias prestar #tip:tu_older)",
-      away_pre: "(me voy | salgo | voy a salir | viajo | voy a viajar | nos vamos | salimos) (de viaje | de vacaciones | a {country} | fuera) [@away] [@away]",
+      away_pre: [
+        "(me voy | salgo | voy a salir | viajo | voy a viajar | nos vamos | salimos) (de viaje | de vacaciones | a {country} | fuera) [@away] [@away]",
+        "(voy a estar | vamos a estar) (fuera | de viaje | de vacaciones) [@away] [@away]", "(no voy a estar | no vamos a estar) (aqui | en casa) [@away] [@away]",
+      ],
       no_core: "(no puedo [ir] | no voy a poder | (estoy | voy a estar) (ocupado | ocupada | ocupados) | (tengo | ya tengo) (planes | un compromiso | otro compromiso) | (trabajo | voy a trabajar) | (me voy | voy a salir | voy a estar fuera) [de viaje]) [el domingo | ese dia | este domingo | este fin de semana]",
       other_day: "((el)? {day} | la (proxima | otra) semana | el (otro | proximo) fin de semana | otro dia de la semana)",
     },
@@ -371,7 +415,7 @@ export const neighbor: SituationDef = {
       "(acabo | acabamos) de (mudarme | mudarnos | llegar | cambiarme) [aqui] [@al_lado | al edificio | al @apt [de al lado]]",
       "(soy | somos) (el | la | los | las) @nuevo @vecino [@al_lado | del @apt de al lado] #h:new_neighbor", "(soy | somos) (su | sus) [@nuevo] @vecino [@al_lado | del @apt de al lado]",
       "(soy | somos) @nuevo (aqui | en el edificio | en el pueblo)", "(soy | somos) @nuevo @vecino",
-      "(vivo | vivimos) (@al_lado | aqui | en el @apt de al lado) [ahora | desde (ayer | el {day} | la semana pasada)]",
+      "(vivo | vivimos) (@al_lado | aqui | en el @apt de al lado | en el @apt (de enfrente | de arriba | de abajo)) [ahora | desde (ayer | el {day} | la semana pasada)]",
       "(llegué | llegamos) [aqui | al edificio] @when_past", "(estoy | estamos) (viviendo | recien llegado | recien llegada) (aqui | @al_lado)",
       "(es | hoy es) mi (primera semana | primer dia | primera noche) [aqui | en el edificio]", "(renté | rentamos) el @apt de al lado",
       "[si] (soy | somos) (el | la | los | las) de al lado",
@@ -438,7 +482,8 @@ export const neighbor: SituationDef = {
     ask_boxes: { patterns: ["(que hago con | donde pongo | donde dejo | donde tiro) (las cajas | el carton | mis cajas | las cajas de la mudanza | las cajas vacias)"] },
     ask_gas: { patterns: [
       "(como | donde) (compro | consigo | pido | se compra | se pide | puedo comprar) [el] gas #h:q_gas", "(se me acabó | se acabó | ya no hay | ya no tengo) [el] gas",
-      "(que es | que era) (esa | la) (musica | musiquita | cancion) [de la manana | de las mananas | que pasa] #what", "que es (eso | ese ruido | esa musica | esa cancion) #what",
+      "(que es | que era) (esa | la) (musica | musiquita | cancion) [de la manana | de las mananas | que pasa] #what", "que es (ese ruido | esa musica | esa cancion | esa musiquita) #what",
+      "(cuando | a que hora | que dias | cada cuando) pasa (el gas | el camion del gas | el camion de gas | el gasero)",
       "(de donde | como) (viene | llega) el gas", "(pasa | hay) (un)? camion (del | de) gas", "como funciona (el gas | lo del gas)", "(tiene | hay) gas (el @apt | el edificio)",
     ] },
     ask_water: { patterns: [
@@ -480,6 +525,7 @@ export const neighbor: SituationDef = {
     ] },
     ask_unknown: { patterns: ["(hay | sabe donde hay | donde esta | donde hay | donde queda) [un | una | el | la] {w:any}"] },
     no_more: { patterns: [
+      "no (quiero | necesito) pedirle nada",
       "(es | eso es | seria | eso seria) todo [por ahora | por el momento]", "[no] nada [mas] [por ahora]", "[no] (estoy bien | todo bien) [por ahora]",
       "[no] no necesito nada [por ahora | por el momento]", "[no] no tengo (mas | otras) preguntas", "[no] (solo | nada mas | nomas) (queria | vine a) (saludar | presentarme | conocerla) [y presentarme]",
       "[no] por ahora (es todo | nada)", "[no] (ya | con eso) estoy", "[no] ya no necesito nada",
@@ -501,13 +547,14 @@ export const neighbor: SituationDef = {
     ] },
     take_package: { patterns: [
       "(me)? @could (recibir | recoger | guardar | agarrar) (un | mi | el) @pkg [@away | el {day} | manana] #h:package",
+      "me (recibe | guarda) (un | mi | el) @pkg [@away | el {day} | manana] [por favor]",
       "(espero | estoy esperando) (un | una)? @pkg [@away | el {day} | manana] [(me lo | lo) @could (recibir | guardar)]",
       "si (llega | viene) (un | mi) @pkg [@away | el {day} | manana] [(me lo | lo) @could (recibir | guardar)]",
     ] },
     borrow: { patterns: [
       "(me)? @lend [su | una | un | la | el | tu | un poco de | tantito | tantita | algo de] {thing} #h:borrow",
       // corrections: "No, la escalera no, el martillo", "No quiero la escalera, mejor el martillo"
-      "no (quiero | necesito)? [la | el | una | un | su] {bad:thing} (sino | mejor)? [la | el | una | un | su] {thing}", "[la | el | su] {bad:thing} no (sino | mejor)? [la | el | una | un | su] {thing}",
+      "no (quiero | necesito)? [la | el | una | un | su] {bad:thing} (sino | mejor)? [la | el | una | un | su] {thing}", "[la | el | su] {bad:thing} no (sino | mejor) [la | el | una | un | su] {thing}",
       "(me)? @lend [su | una | un | la | el | tu] {thing} (hasta (manana | la noche | el {day}) | un rato | una hora | un ratito | el fin de semana | unos minutos)",
       "(tiene | tendra | tienes #tip:tu_older) (un | una | unos | unas | algo de | un poco de)? {thing} [que me (preste | pueda prestar)] #h:have_one",
       "(necesito | ocupo) (un | una | un poco de)? {thing} #blunt", "(necesito | ocupo) (un | una | un poco de)? {thing} (me)? @lend (la | el | uno | una | la suya | el suyo)",
@@ -524,7 +571,8 @@ export const neighbor: SituationDef = {
     noise_sorry: { patterns: [
       "(perdon | perdone | perdoneme | disculpe | disculpeme | disculpa #tip:tu_older | lo siento | una disculpa | mil disculpas) (por)? (el ruido | la musica | lo de anoche | la fiesta | el escandalo) [de anoche | de ayer | de la otra noche] #h:sorry_noise",
       "(perdon | perdone | disculpe | lo siento) (si | porque) (hicimos | hice) (mucho | tanto) ruido [anoche | ayer]",
-      "(perdon | lo siento) [mucho] (si | porque) (la musica | el ruido) (estaba | estuvo) muy fuerte [anoche]",
+      "(perdon | perdone | disculpe | lo siento) [mucho] [si | porque] (la musica | el ruido | mi musica) (estaba | estuvo) (muy | tan | demasiado) fuerte [anoche]",
+      "(perdon | perdone | disculpe | lo siento) [mucho] [si] (le | la) (molesto | molestamos | molestó) [la musica | el ruido] [anoche]",
       "espero (que)? no (haber hecho | hayamos hecho | haya sido) (mucho | tanto) ruido [anoche]",
       "(estuvo | estaba) (muy | demasiado) fuerte (la musica | el ruido) [anoche]", "(estuvo | estaba) (muy | demasiado) fuerte [anoche]",
       "(le pido | le pedimos) (una)? disculpa [por el ruido | por lo de anoche]",
@@ -544,11 +592,12 @@ export const neighbor: SituationDef = {
     didnt_know: { patterns: ["no (sabia | me di cuenta | pense) [que] [(se oia | se escuchaba) (tanto | todo) | (estaba | era) tan fuerte | las paredes eran tan delgadas]"] },
     noise_ask: { patterns: [
       "(le | me)? @could (bajar | bajarle) [un poco | un poquito] [a] @music [un poco | un poquito] [en la noche] #h:turn_down",
-      "(le)? @could bajar (el volumen | a la musica | a la tele)", "(su | la) (musica | tele | television | radio) (esta | estaba | es) (muy | demasiado | bien) fuerte [en la noche | anoche]",
+      "(le)? @could bajar (el volumen | a la musica | a la tele)", "su (musica | tele | television | radio) (esta | estaba | es) (muy | demasiado | bien) fuerte [en la noche | anoche]",
       "@could hacer menos ruido [en la noche]", "@could poner la musica mas baja",
     ] },
     noise_deny: { patterns: [
-      "(no fui yo | no fuimos nosotros | no era yo | no era mi musica | no era la mia) [yo no estaba en casa | no estabamos en casa]",
+      "(no fui yo | no fuimos nosotros | no era yo | no era mi musica | no era la mia | no fue mi musica | no era nuestra musica | no fue la mia) [yo no estaba en casa | no estabamos en casa | (fueron | eran) los de arriba]",
+      "[no fui yo] (fueron | eran) los (de arriba | vecinos de arriba | de abajo)",
       "(yo)? (no estaba | no estabamos | no estuve | no estuvimos) (en casa | aqui | ahi) [anoche]", "(yo)? (estaba | estuve) (dormido | dormida | trabajando | fuera | de viaje | en el trabajo) [anoche]",
       "(no hice | no hicimos | no tuve | no tuvimos) (ninguna | una)? (fiesta | ruido | reunion)", "no (puse | pusimos) musica",
       "no (estaba | estuvo) (tan | muy)? (fuerte | alta)", "la musica no (estaba | estuvo) (tan | muy)? (fuerte | alta)", "(seguro | creo que) (fueron | eran) los de arriba", "anoche [yo] (no estaba | no estuve | no estabamos) [en casa | aqui]",
@@ -559,16 +608,17 @@ export const neighbor: SituationDef = {
       "[si] (me encantaria | con mucho gusto | con gusto | encantado | encantada) #h:love_to", "[si] (que buena idea | suena bien | suena muy bien | que padre | que rico) #h:sounds_great",
       "[claro | si] a que hora #h:what_time", "[si] (me gustaria | me gustaria mucho)", "[el] {day} (me queda bien | esta bien | puedo | perfecto) #h:sunday_ok",
       "[si] (estoy libre | no tengo planes | no tengo nada) [el {day}]", "[si] no estoy (ocupado | ocupada) [el {day}]", "[si] (llevo | puedo llevar | traigo) algo",
-      "(gracias | muchas gracias) (por la invitacion | por invitarme)", "[si] me (encanta | gusta) el cafe", "[si] (ahi estare | ahi nos vemos | cuente conmigo | claro que si)", "[el] domingo [si] (claro | con gusto | perfecto | por supuesto)",
+      "(gracias | muchas gracias) (por la invitacion | por invitarme)", "[si] me (encanta | gusta) el cafe", "[si] (ahi estare | ahi nos vemos | cuente conmigo | claro que si)", "[el] domingo [si] (claro | con gusto | perfecto | por supuesto)", "si [el] {day} [en la (tarde | manana)]",
       "[si] (prefiero | mejor) (un)? (te | tecito)", "(no tomo | no me gusta el) cafe pero (un te | te | un tecito) (si)?",
     ] },
     coffee_no: { patterns: [
-      "[el] domingo no puedo #h:busy_sunday", "[lo siento | perdon] @no_core", "(otro dia | otra vez | otra ocasion | en otra ocasion) [tal vez | quiza | mejor] #h:another_time",
+      "[el] domingo [creo que] no puedo #h:busy_sunday", "[lo siento | perdon] [creo que] @no_core", "(otro dia | otra vez | otra ocasion | en otra ocasion) [tal vez | quiza | mejor] #h:another_time",
       "(tal vez | quiza | mejor) (otro dia | otra vez | otra ocasion)", "(este | el) domingo no", "(gracias | muchas gracias | me encantaria | me gustaria) pero @no_core",
       "[el] {day} no (puedo | me queda | me queda bien)", "(el domingo | ese dia | este domingo) @no_core", "no me queda (bien)? [el domingo | ese dia]",
     ] },
     coffee_day: { patterns: [
-      "(que tal | y si | mejor | podria ser | puede ser) @other_day [mejor | en vez] [le parece] #h:how_saturday", "(podemos | podriamos) (vernos)? @other_day", "@other_day (seria mejor | me queda mejor)",
+      "(que tal | y si | mejor | podria ser | puede ser) @other_day [a {time}] [mejor | en vez] [le parece] #h:how_saturday", "@other_day mejor",
+      "[el] {no_day:day} no [mejor | pero] @other_day", "no puedo [el] {no_day:day} pero [el] {day} si [puedo]", "(podemos | podriamos) (vernos)? @other_day", "@other_day (seria mejor | me queda mejor)",
       "[gracias pero] [lo siento] @no_core [pero] (que tal | y si | mejor | podria ser | podemos) @other_day [mejor] [le parece]",
       "[el] {no_day:day} no (puedo | me queda) [pero] (que tal | y si | mejor | podria ser) @other_day",
     ] },
@@ -576,6 +626,7 @@ export const neighbor: SituationDef = {
       "[si] [a] {time} (esta bien | me queda bien | perfecto | esta perfecto) #h:five_fine", "[si] a {time}", "(que tal | y si | mejor | podria ser | podemos) [a] {time} #h:how_six",
       "un (poco | poquito) mas (tarde | temprano) [si se puede] #h:later", "(mas tarde | mas temprano) (es | seria | me queda) mejor", "mejor (mas tarde | mas temprano)", "(nos vemos | ahi estoy | ahi estare | ahi nos vemos) [a] {time}",
       "[si] [a] {time} (nos vemos | ahi nos vemos | ahi estoy | ahi estare)", "[a] {bad:time} no [mejor | pero] [a] {time}",
+      "[a] {bad:time} no (puedo | me queda | me queda bien) [pero] [mejor | que tal | y | puede ser] [a] {time}",
     ] },
     invite_coffee: { patterns: [
       "(quiere | le gustaria | quieres #tip:tu_older | te gustaria #tip:tu_older) (venir | pasar) (a tomar | por) un (cafe | cafecito) [a mi casa | a mi @apt] [algun dia | el {day} | un dia de estos] #h:invite_coffee",
@@ -720,6 +771,7 @@ export const neighbor: SituationDef = {
     gas_what: [
       t("¡Es | el | camión | del | gas! | Pasa | todas | las | mañanas.", "It's | the | truck | of the | gas! | It-comes-by | all | the | mornings.", "That's the gas truck! It comes by every morning."),
     ],
+    morning: [t("En | la | mañana, | temprano.", "In | the | morning, | early.", "In the morning, early.")],
     gas_buy: [t("Si | necesita | gas, | nada más | lo | para.", "If | you-need | gas, | just | it | stop.", "If you need gas, just flag it down.")],
     water: [
       t("El | agua | de | la | llave | no se toma. | Compre | garrafones | en | la | tiendita | de | la | esquina.",
@@ -834,6 +886,7 @@ export const neighbor: SituationDef = {
     complain4: [t("Es que | las | paredes | son | muy | delgadas.", "It's that | the | walls | are | very | thin.", "The walls are really thin, you see.")],
     // the learner asked her to turn her music down, but she meant the learner's music
     complain_yours: [t("¡Ay, | no! | Le | hablo | de | su | música, | la | de | anoche.", "Oh, | no! | (To) you | I-speak | about | your | music, | the one | from | last night.", "Oh, no! I mean your music last night!")],
+    complain_which: [t("Su | música, | la | de | anoche.", "Your | music, | the one | from | last night.", "Your music, last night!")],
     complain_again: [
       t("Y | lo | de | la | música, | ¿eh? | Un | poquito | más | bajo | en | la | noche.", "And | the thing | about | the | music, | okay? | A | little bit | more | low | at | — | night.",
         "And about the music, okay? Just a little quieter at night.", { flags: { 11: "en la noche: at night; the article has no English word." } }),
@@ -1118,8 +1171,9 @@ export const neighbor: SituationDef = {
         c.say("ask_like");
         c.expect({ id: "like_q", optional: true, expects: ["like_ans_ctx", "like_hard_ctx", "boxes"], hints: ["like"],
           suggest: [{ lt: "Say how you like it here", hint: "like" }],
-          on: { like_ans_ctx: (cc) => { react(cc, "like_react"); }, like_hard_ctx: (cc) => { react(cc, "like_hard"); }, boxes: (cc) => { react(cc, "boxes_react"); } },
-          yes: (cc) => { cc.say("like_react"); } });
+          on: { like_ans_ctx: (cc) => { react(cc, "like_react"); }, like_hard_ctx: (cc) => { react(cc, "like_hard"); }, boxes: (cc) => { react(cc, "boxes_react"); },
+            g_dontknow: (cc) => { react(cc, "like_hard"); } },
+          yes: (cc) => { cc.say("like_react"); }, no: (cc) => { cc.say("like_hard"); } });
       },
       expects: ["like_ans_ctx", "like_hard_ctx", "boxes"] },
     { id: "trash_q", when: (c) => !known(c) && !!c.s.introduced, done: (c) => !!c.s.trashTold || !!c.s.goal,
@@ -1160,18 +1214,22 @@ export const neighbor: SituationDef = {
         c.expect({ id: "coffee", expects: ["coffee_yes", "coffee_no", "coffee_day"], hints: ["coffee"],
           suggest: [{ lt: "Accept, or politely say no", hint: "coffee" }],
           on: {
-            coffee_yes: (cc) => { askCoffeeTime(cc); },
-            coffee_no: (cc) => { react(cc, PROPOSES_DAY.test(heard(cc)) ? "coffee_other_day" : "coffee_decline_ok"); },
+            coffee_yes: (cc, sl) => { if (otherDay(sl)) react(cc, "coffee_other_day"); askCoffeeTime(cc); },
+            coffee_no: (cc) => { if (PROPOSES_DAY.test(heard(cc))) react(cc, "coffee_other_day"); else { cc.s.coffeeOff = true; react(cc, "coffee_decline_ok"); } },
             // (no "¡Ahí nos vemos!" twice after another day)
             coffee_day: (cc) => { react(cc, "coffee_other_day"); },
             // "Gracias, ¡adiós!": thank first, then say goodbye (a plain "¡Gracias!" is left to the normal handler).
-            g_thanks: (cc) => { if (!/\b(adios|hasta luego|nos vemos|bye|chao|cuidese)\b/.test(heard(cc))) return false; cc.say("g_welcome"); return true; },
+            g_thanks: (cc) => {
+              if (coffeeThanks(cc, askCoffeeTime, (c2) => { c2.s.coffeeOff = true; c2.say("coffee_decline_ok"); })) return true;
+              if (!/\b(adios|hasta luego|nos vemos|bye|chao|cuidese)\b/.test(heard(cc))) return false;
+              cc.say("g_welcome"); return true;
+            },
             g_bye: (cc) => {
               if (!known(cc) && !cc.s.trashTold) { cc.say("fyi_trash"); cc.s.trashTold = true; }
               maybeComplete(cc); cc.say("see_around"); cc.end();
             },
           },
-          yes: (cc) => { askCoffeeTime(cc); }, no: (cc) => { cc.say("coffee_decline_ok"); },
+          yes: (cc) => { askCoffeeTime(cc); }, no: (cc) => { cc.s.coffeeOff = true; cc.say("coffee_decline_ok"); },
           ask: (cc) => cc.say("coffee_reask") });
       },
       expects: ["coffee_yes", "coffee_no", "coffee_day"] },
@@ -1328,6 +1386,22 @@ export const neighbor: SituationDef = {
     { say: "Que le vaya bien", intent: "bye_wish" },
     { say: "¿Le molestaría regar mis plantas?", intent: "water_plants" },
     { say: "Ya no necesito nada", intent: "no_more", step: "needs" },
+    // the reviewer's traps (2 Nov 2026)
+    { say: "Perdón, la música estaba muy fuerte anoche", intent: "noise_sorry", not: ["noise_ask"] },
+    { say: "No fue mi música, fueron los de arriba", intent: "noise_deny", not: ["noise_sorry", "noise_reason"] },
+    { say: "Ah, perdón, ¿le molestó?", intent: "noise_sorry" },
+    { say: "¿Cuándo pasa el camión del gas?", intent: "ask_gas", not: ["ask_trash_day"] },
+    { say: "¿A qué hora pasa el gas?", intent: "ask_gas" },
+    { say: "¿Me recibe un paquete el lunes?", intent: "take_package" },
+    { say: "Recibo un paquete mañana", intent: "none", not: ["take_package"] },
+    { say: "La escalera, no el martillo", intent: "none" },
+    { say: "Voy a estar fuera unos días, ¿podría regar mis plantas?", intent: "water_plants" },
+    { say: "Vivo en el departamento de enfrente", intent: "moved_in" },
+    { say: "No quiero pedirle nada", intent: "no_more", step: "needs", not: ["ask_favor"] },
+    { say: "El sábado me queda bien", intent: "coffee_yes", step: "coffee", slots: { day: "saturday" } },
+    { say: "¿Qué tal el sábado a las seis?", intent: "coffee_day", step: "coffee", slots: { day: "saturday" } },
+    { say: "No puedo el domingo pero el sábado sí", intent: "coffee_day", step: "coffee", not: ["coffee_no"] },
+    { say: "¿El domingo? Creo que no puedo", intent: "coffee_no", step: "coffee", not: ["coffee_yes"] },
     // not understood
     { say: "Mi carro es azul", intent: "none" },
     { say: "El perro come plátanos", intent: "none" },
@@ -1366,6 +1440,15 @@ export const neighbor: SituationDef = {
     { name: "a package, coffee yes, five o'clock no", turns: ["Hola, soy Ryan, su vecino de al lado.", "¿Me podría recibir un paquete el lunes?", "¡Claro! ¿A qué hora?",
       "A las cinco no puedo.", "¡Gracias por todo! ¡Hasta luego!"], expect: { complete: true, state: { goal: "package" } }, auto: AUTO,
       setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = true; } },
+    // "No, gracias" is a no (never "¡Con gusto!" and the invitation again); a refused time with a new one is the new one
+    { name: "coffee: no, thanks", turns: ["Hola, soy Ryan, su nuevo vecino.", "¿Dónde se tira la basura?", "¿Me presta su escalera?", "No, gracias.", "¡Adiós!"],
+      expect: { complete: true, state: { goal: "borrow", coffeeOff: true } }, auto: AUTO, setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = true; s.askFrom = false; s.askLike = false; } },
+    { name: "coffee: five no, six yes", turns: ["Hola, soy Ryan, su nuevo vecino.", "¿Me recibe un paquete el lunes?", "¡Me encantaría!", "A las cinco no puedo, ¿a las seis?",
+      "¡Gracias, adiós!"], expect: { complete: true, state: { goal: "package", coffeeAt: 6 } }, auto: AUTO, setup: (s) => { FIRST_VISIT(s); s.coffeeInvite = true; s.askFrom = false; s.askLike = false; } },
+    // The twist: "Sí, perdón" is an apology (not "pardon?"), "¿Qué música?" gets "Su música, la de anoche."
+    { name: "complaint (twist): which music, then sorry", turns: ["¿Qué música?", "Sí, perdón.", "Gracias, adiós."],
+      expect: { complete: true, state: { goal: "apology", complaintDone: true } }, auto: AUTO,
+      setup: (s) => { s.known = true; s.complaint = true; s.pkgTwist = false; s.coffeeInvite = false; } },
     // The twist on every seed: she complains about the music. A favor first doesn't finish the task; she asks
     // again, and the apology settles it.
     { name: "complaint (twist): a favor first, then sorry", turns: ["¿Me presta su escalera?", "¡Ay, perdón! No vuelve a pasar.", "Gracias, ¡adiós!"],

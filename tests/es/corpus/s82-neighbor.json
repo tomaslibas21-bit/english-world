@@ -286,5 +286,17 @@
   {"ctx": "coffee", "say": "Prefiero té", "intent": "coffee_yes"},
   {"ctx": "coffee_time", "say": "Sí, a las cinco nos vemos", "intent": "coffee_time_ctx", "not": ["g_bye"]},
   {"ctx": "coffee_time", "say": "A las cinco no, mejor a las seis", "intent": "coffee_time_ctx", "slots": {"time": {"h": 6}}},
-  {"ctx": "coffee_time", "say": "A las cinco no", "intent": "coffee_time_no", "not": ["coffee_time_ctx"]}
+  {"ctx": "coffee_time", "say": "A las cinco no", "intent": "coffee_time_no", "not": ["coffee_time_ctx"]},
+  {"ctx": "coffee_time", "say": "A las cinco no puedo, ¿a las seis?", "intent": "coffee_time_ctx", "slots": {"time": {"h": 6}}, "not": ["coffee_time_no"], "note": "review: one new time, never 'five' agreed"},
+  {"ctx": "coffee", "say": "No puedo el domingo pero el sábado sí", "intent": "coffee_day", "not": ["coffee_no", "coffee_yes"]},
+  {"ctx": "coffee", "say": "¿El domingo? Creo que no puedo", "intent": "coffee_no", "not": ["coffee_yes"]},
+  {"ctx": "coffee", "say": "¿Qué tal el sábado a las seis?", "intent": "coffee_day"},
+  {"ctx": "coffee_sunday", "say": "A las cinco", "intent": "coffee_time_ctx"},
+  {"ctx": "complaint", "say": "Perdón, la música estaba muy fuerte", "intent": "noise_sorry", "not": ["noise_ask"], "note": "review: the learner's apology"},
+  {"ctx": "complaint", "say": "No fue mi música, fueron los de arriba", "intent": "noise_deny", "not": ["noise_sorry"]},
+  {"ctx": "complaint", "say": "Ah, perdón, ¿le molestó?", "intent": "noise_sorry"},
+  {"ctx": "needs", "say": "¿Cuándo pasa el camión del gas?", "intent": "ask_gas", "not": ["ask_trash_day"]},
+  {"ctx": "needs", "say": "Perdón, la música estaba muy fuerte anoche", "intent": "noise_sorry", "not": ["noise_ask"]},
+  {"ctx": "needs", "say": "¿Me recibe un paquete?", "intent": "take_package"},
+  {"ctx": "needs", "say": "La escalera, no el martillo", "intent": "none", "not": ["borrow"], "note": "review: lost comma, two readings"}
 ] }
