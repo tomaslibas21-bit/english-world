@@ -227,6 +227,8 @@ export const apartment: SituationDef = {
       "(estan | van | vienen) @incl @util_all #h:q_util", "@util_all (estan | van | vienen) @incl",
       "(la @rent_w | el precio) incluye (@util_all | [el | la] {utility} [y [el | la] {utility}])", "incluye (@util_all | [el | la] {utility})",
       "(esta | va | viene) (incluido | incluida) [el | la] {utility}", "[el | la] {utility} (esta | va | viene) @incl #h:q_util2",
+      // "¿El agua no está incluida?": the replies fit a negative question too ("Sí, el agua está incluida")
+      "[el | la] {utility} no (esta | va | viene) @incl",
       "[el | la] {utility} (es | va | se paga) aparte", "(tengo que | hay que) pagar [el | la] {utility} [aparte]", "(pago | se paga | yo pago) [el | la] {utility} [aparte]",
       "quien paga [el | la] {utility}", "(y | que pasa con) [el | la] {utility}",
       "cuanto (sale | cuesta | se paga | es | pago) [de] [el | la] {utility} [@per_month | al bimestre | mas o menos]",
@@ -242,6 +244,9 @@ export const apartment: SituationDef = {
       "cuanto (tengo que | hay que) pagar (al principio | para entrar | para mudarme | al firmar | por adelantado)",
       "cuantos meses de @dep [son | pide | piden | hay que dejar]", "(pide | piden) @dep",
       "cuanto (hay que | tengo que | se tiene que) (dejar | pagar | dar) de @dep", "cuanto (se deja | dejo | pido) de @dep",
+      // "¿Son dos meses de depósito?" (never "$2 a month"), "¿El depósito es de catorce mil?", "¿El depósito no se devuelve?"
+      "[son | es] (un mes | dos meses | tres meses) de @dep", "(el | la) @dep es de ({price} | un mes | dos meses)",
+      "(el | la) @dep no (se devuelve | me lo devuelve | es reembolsable)",
     ] },
     ask_furnished: { patterns: [
       "(esta | viene) (amueblado | amueblada) [@the_apt] #h:q_furnished", "@the_apt (esta | viene) (amueblado | amueblada)",
@@ -255,14 +260,14 @@ export const apartment: SituationDef = {
     ] },
     ask_pets: { patterns: [
       "(se aceptan | acepta | aceptan | se permiten | permite | se admiten) (mascotas | animales | {pet}) #h:q_pets",
-      "(puedo | se puede | podemos) tener (mascotas | una mascota | animales | [un | una] {pet})",
-      "(puedo | se puede) (traer | llevar) (a mi {pet} | mi mascota | mascotas | [un | una] {pet})", "(y | que tal) las mascotas",
+      "(puedo | se puede | podemos) tener (mascotas | una mascota | animales | [un | una | dos | tres] {pet})",
+      "(puedo | se puede) (traer | llevar) (a mi {pet} | a mis {pet} | mi mascota | mis mascotas | mascotas | [un | una | dos | tres] {pet})", "(y | que tal) las mascotas",
       "(esta bien | hay problema) si tengo [un | una] {pet}", "(esta bien | hay problema) si tengo (mascotas | una mascota)",
       "(se vale | se permite) tener (mascotas | {pet})",
     ] },
     have_pet: { patterns: [
-      "[si] tengo (un | una | dos) {pet} [esta bien | hay problema] #h:have_cat", "[si] (solo | nomas) (un | una) {pet}",
-      "[si] (un | una | dos) {pet} #h:have_dog", "(tenemos | traigo) (un | una | dos) {pet}", "mi {pet}",
+      "[si] tengo (un | una | dos | tres) {pet} [esta bien | hay problema] #h:have_cat", "[si] (solo | nomas) (un | una) {pet}",
+      "[si] (un | una | dos | tres) {pet} #h:have_dog", "(tenemos | traigo) (un | una | dos | tres) {pet}", "(mi | mis) {pet}",
       "[si] tengo (un | una) {pet} pero (es | esta) [muy] (tranquilo | tranquila | chiquito | chiquita | chico | chica | limpio | limpia | viejito | viejita | educado | educada)",
     ] },
     no_pets: { patterns: [
@@ -275,6 +280,11 @@ export const apartment: SituationDef = {
       "cual es el (minimo | plazo minimo | tiempo minimo)", "(puedo | se puede) (rentarlo | rentar | firmar | alquilarlo | alquilar) (por | solo por) (seis | tres | {number}) meses",
       "(puedo | se puede) (rentar | alquilar) por mes", "(hay que | tengo que) firmar [un] contrato", "(y | que tal) el contrato",
       "(por cuanto tiempo | cuanto tiempo) (tengo que | hay que) quedarme", "es (un contrato | contrato) (de | por) un ano",
+      // "¿Seis meses?": a lease length, never "$6 a month"
+      "[y] [por] (seis | tres | {number}) meses",
+      // "Quiero rentarlo por seis meses" / "Lo rento por seis meses": a shorter lease asked for, never a take (the minimum)
+      "(quiero | quisiera | me gustaria) (rentarlo | alquilarlo | rentar @the_apt) (por | solo por) (seis | tres | {number}) (meses | mes)",
+      "(lo rento | lo rentaria | lo tomo | me lo quedo | lo quiero) (por | solo por) (seis | tres | {number}) (meses | mes)",
     ] },
     ask_movein: { patterns: [
       "cuando (puedo mudarme | me puedo mudar) #h:q_movein", "cuando (puedo entrar | me puedo cambiar | me dan las llaves | puedo cambiarme)",
@@ -334,7 +344,7 @@ export const apartment: SituationDef = {
     ] },
     ask_poliza: { patterns: [
       "que es (una | la) poliza [juridica] #h:poliza_q", "cuanto (cuesta | sale | es) la poliza [juridica]", "(hay | tiene) otra (opcion | alternativa | forma) #h:q_poliza",
-      "(como | que) funciona la poliza", "quien paga la poliza", "que otra opcion (hay | tengo)",
+      "(como | que) funciona la poliza", "quien paga la poliza", "que otra opcion (hay | tengo)", "[y | pero] quien la paga",
     ] },
     ask_landlord: { patterns: [
       "usted vive (aqui | en el edificio)", "(a quien | a quien le) (llamo | hablo | aviso) si (algo se descompone | hay un problema | se descompone algo)",
@@ -364,6 +374,7 @@ export const apartment: SituationDef = {
     ] },
     take: { patterns: [
       "[si] me lo quedo #h:take_it", "[si] (lo rento | lo tomo | lo quiero | me quedo con el | me lo llevo | lo alquilo)",
+      "[si] (me lo quedo | lo rento | lo tomo | lo quiero) por un ano",
       "(quiero | quisiera | me gustaria) (rentarlo | alquilarlo | rentar @the_apt | firmar el contrato) #h:like_to_rent",
       "[si] me interesa", "vamos a hacerlo", "(estoy | estamos) (listo | lista | listos) para firmar", "[si] lo rentamos",
       "@like_pre (lo tomo | lo rento | me lo quedo | lo quiero)", "[si] ya me decidi", "trato hecho",
@@ -434,8 +445,10 @@ export const apartment: SituationDef = {
     id_ctx: { patterns: ["[mi] (pasaporte | identificacion | ine | credencial | licencia | tarjeta de residente)"] },
     // a bare "¿Aquí?" only while Don Ernesto holds out the lease
     sign_here_ctx: { patterns: ["(aqui | aca) [abajo]", "(aqui | aca) mero"] },
-    // "Todavía no firmo." / "No voy a firmar todavía.": not now, without refusing the apartment
-    sign_later: { patterns: ["no (voy a | quiero | puedo) firmar (todavia | ahorita | hoy | ahora)", "todavia no (firmo | voy a firmar | quiero firmar)", "(prefiero | quiero) firmar (despues | manana | luego | otro dia)"] },
+    // "Todavía no firmo." / "No voy a firmar todavía." / "No quiero firmar.": not now (nothing signed), without refusing
+    // the apartment
+    sign_later: { patterns: ["no (voy a | quiero | puedo) firmar [todavia | ahorita | hoy | ahora]", "todavia no (firmo | voy a firmar | quiero firmar)",
+      "(prefiero | quiero) firmar (despues | manana | luego | otro dia)", "(puedo | podria) firmar (despues | manana | luego | otro dia)"] },
     read_first: { patterns: [
       "(lo | la) puedo leer (primero | antes) #h:read_first", "(puedo | me deja) leerlo (primero | antes [de firmar])",
       "(quisiera | me gustaria | quiero | necesito) leerlo (primero | antes [de firmar])", "dejeme leerlo [primero]", "(me lo puedo | puedo) llevar para leerlo",
@@ -450,6 +463,7 @@ export const apartment: SituationDef = {
     // --- the guarantor (aval) ------------------------------------------------
     aval_none: { patterns: [
       "[no] no tengo (aval | fiador | garante) [aqui] #h:aval_none", "[no] no tengo quien sea mi aval", "(y si | que pasa si) no tengo aval", "[no] no conozco a nadie que (sea | pueda ser) mi aval",
+      "[no] no tengo a nadie que (sea | pueda ser) mi (aval | fiador)",
     ] },
     aval_none_ctx: { patterns: [
       "no tengo", "no tengo a nadie [aqui] [que (firme | pueda firmar)]", "no conozco a nadie [aqui | en el pueblo | en puerto colibri]", "acabo de llegar [no (tengo | conozco) a nadie [aqui]]",
@@ -461,7 +475,9 @@ export const apartment: SituationDef = {
     ] },
     aval_yes_ctx: { patterns: ["si tengo", "mi (jefe | jefa | empresa) [puede firmar]", "un amigo (puede firmar | de aqui)"] },
     // "¿Cuánto es?" / "¿Cuánto sería en total?" while an amount is on the table
-    amount_q_ctx: { patterns: ["cuanto (es | seria | serian | son | sale | cuesta | costaria) [en total | entonces | todo]", "cuanto (tengo que | hay que) (pagar | dejar) [en total | entonces]", "de cuanto (es | seria) [el deposito]"] },
+    // also the amount echoed back ("¿Dos meses?", "¿Veintiocho mil?", "¿Veinte mil?"): the amount is said again, nothing agreed
+    amount_q_ctx: { patterns: ["cuanto (es | seria | serian | son | sale | cuesta | costaria) [en total | entonces | todo]", "cuanto (tengo que | hay que) (pagar | dejar) [en total | entonces]", "de cuanto (es | seria) [el deposito]",
+      "[son | serian] (dos meses | los dos meses) [de deposito]", "[son | serian] {price} [pesos]"] },
     // a no to the extra deposit: refused, too much, or a what-if about the money
     aval_deposit_no_ctx: { patterns: [
       "no (quiero | puedo) (dejar | pagar) (dos meses | tanto | mas | eso) [de @dep]", "(es | son) (mucho | demasiado) dinero", "no tengo (tanto dinero | ese dinero | tanto)",
@@ -474,6 +490,8 @@ export const apartment: SituationDef = {
       "(puedo | prefiero | quiero) (dejar | pagar) (dos meses de @dep | mas @dep | un mes mas de @dep) [en vez del aval] #h:aval_dep", "[si] puedo (dejar | pagar) (dos meses | los dos meses)",
       "(mejor | entonces) (dejo | pago) (los dos meses | dos meses de @dep | un mes mas de @dep)", "(dejo | pago) los dos meses [de @dep]",
       "le dejo (dos meses | un mes mas) de @dep",
+      // an amount ("Sí, puedo pagar los veintiocho mil"): agreed only if it is the amount he asked (aval_deposit handler)
+      "[si] (puedo | le puedo) (dejar | pagar | dar) [los | esos] {price} [pesos] [de @dep]", "[si] (dejo | pago | le dejo | le pago) [los | esos] {price} [pesos] [de @dep]",
     ] },
 
     // --- tenant mode: reporting a problem --------------------------------------
@@ -527,8 +545,9 @@ export const apartment: SituationDef = {
     ] },
     // "A las diez no puedo." → Don Ernesto asks for another time
     time_bad: { patterns: [
-      "(a las diez | las diez | manana | en la manana | a esa hora | esa hora) no (puedo | me queda | me queda bien | me conviene)",
-      "no puedo (a las diez | manana | a esa hora)", "(a las diez | esa hora) es muy temprano [para mi]",
+      // "Mañana a las diez no puedo" / "A las diez no está bien": the time he offered, refused (never booked)
+      "(a las diez | las diez | manana | manana a las diez | en la manana | manana en la manana | a esa hora | esa hora) no (puedo | me queda | me queda bien | me conviene | esta bien | me parece bien | me sirve)",
+      "no puedo (a las diez | manana | manana a las diez | a esa hora | en la manana)", "(a las diez | esa hora) es muy temprano [para mi]",
       "(a las diez | manana | en la manana | a esa hora) no (estoy | voy a estar) [en casa | aqui]", "(prefiero | mejor) (otro dia | otra hora | otro horario)", "prefiero estar (yo | en casa | presente)",
     ] },
     time_ok: { patterns: ["(manana a las diez | a las diez | las diez | manana | en la manana) (esta bien | me queda bien | me parece bien | perfecto) #h:ten_fine", "(a las diez | manana) si (puedo | estoy)"] },
@@ -578,13 +597,17 @@ export const apartment: SituationDef = {
     ],
     ask_how_many: [t("Entonces, | ¿cuántas | personas?", "Then, | how many | people?", "How many people, then?")],
     people_ack: [t("Muy | bien.", "Very | good.", "Okay, great."), t("Perfecto.", "Perfect.", "Perfect.")],
-    people_small: [t("Mmm, | tiene | una | sola | recámara; | para | cuatro | personas | puede | quedar | un poco | chico.", "Hmm, | it has | one | single | bedroom; | for | four | people | it may | turn out | a little | small.", "Hmm, it's a one-bedroom, so it might be a little small for four.",
-      { flags: { 4: F_RECAMARA }, neutral: t("Mmm, | tiene | una | sola | habitación; | para | cuatro | personas | puede | quedar | un poco | chico.", "Hmm, | it has | one | single | bedroom; | for | four | people | it may | turn out | a little | small.", "Hmm, it's a one-bedroom, so it might be a little small for four.") })],
+    // four or more ("Somos cinco", "Mi esposa, mis dos hijos y yo"): no number in the line, so it never says the wrong one
+    people_small: [t("Mmm, | tiene | una | sola | recámara; | para | tantas | personas | puede | quedar | un poco | chico.", "Hmm, | it has | one | single | bedroom; | for | so many | people | it may | turn out | a little | small.", "Hmm, it's a one-bedroom, so it might be a little small for that many people.",
+      { flags: { 4: F_RECAMARA }, neutral: t("Mmm, | tiene | una | sola | habitación; | para | tantas | personas | puede | quedar | un poco | chico.", "Hmm, | it has | one | single | bedroom; | for | so many | people | it may | turn out | a little | small.", "Hmm, it's a one-bedroom, so it might be a little small for that many people.") })],
     ask_pets_q: [t("¿Tiene | mascotas?", "Do you have | pets?", "Do you have any pets?"), t("¿Trae | alguna | mascota?", "Are you bringing | any | pet?", "Any pets?")],
     ask_pet_which: [t("Ah, | ¿qué | mascota | tiene?", "Oh, | what | pet | do you have?", "Oh, what pet do you have?")],
     pets_policy: [t("Se aceptan | gatos | y | perros | chicos.", "Are allowed | cats | and | dogs | small.", "Cats are allowed, and small dogs too.")],
     pet_cat_ok: [t("Un | gato, | no hay | problema.", "A | cat, | there's no | problem.", "A cat is fine.")],
     pet_dog_ok: [t("Un | perro | chico | también | está bien.", "A | dog | small | also | is fine.", "A small dog is fine too.")],
+    // two or more ("Tengo dos gatos", "¿Se aceptan perros?"): never "Un gato…"
+    pet_cats_ok: [t("Con | gatos | no hay | problema.", "With | cats | there's no | problem.", "Cats are no problem.")],
+    pet_dogs_ok: [t("Con | perros | chicos | no hay | problema.", "With | dogs | small | there's no | problem.", "Small dogs are no problem.")],
     pet_bigdog: [t("Lo siento, | solo | se aceptan | perros | chicos.", "I'm sorry, | only | are allowed | dogs | small.", "Sorry, only small dogs are allowed.")],
     pet_other_ok: [t("No hay | problema.", "There's no | problem.", "That's no problem.")],
     ask_questions_first: [
@@ -633,6 +656,8 @@ export const apartment: SituationDef = {
       t("El | depósito | es | de | un | mes | de | renta.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT } }),
       t("Es | un | mes | de | renta: | {$deposit}.", "It's | one | month | of | rent: | {$deposit}.", "It's one month's rent, so {$deposit}."),
     ],
+    // after two months' deposit was agreed (no guarantor)
+    deposit_two: [t("Son | {$deposit} | de | depósito: | dos | meses | de | renta.", "It's | {$deposit} | of | deposit: | two | months | of | rent.", "It's {$deposit} for the deposit: two months' rent.")],
     deposit_first: [t("Y | el | primer | mes | de | renta, | al | firmar | el | contrato.", "And | the | first | month | of | rent, | upon | signing | the | lease.", "And the first month's rent when you sign the lease.")],
     deposit_back: [t("Se lo | devuelvo | cuando | se vaya, | si | todo | está | en orden.", "It to you | I'll return | when | you leave, | if | everything | is | in order.", "You get it back when you move out, if everything's in order.")],
     furnished_semi: [t("Está | semiamueblado: | tiene | estufa, | refrigerador | y | clósets, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.",
@@ -704,6 +729,12 @@ export const apartment: SituationDef = {
     decision_ask: [
       t("Entonces, | ¿qué | le parece?", "So, | what | do you think?", "So, what do you think?"),
       t("¿Qué | dice? | ¿Le interesa?", "What | do you say? | Are you interested?", "So, are you interested?"),
+    ],
+    // "No me lo quedo" said without its comma to another question, or "Está bien, gracias" at "¿Le interesa?": either
+    // way, so he asks
+    take_or_not: [
+      t("Perdón, | ¿entonces | se lo queda | o | no?", "Sorry, | so | you'll take it | or | not?", "Sorry, so are you taking it or not?"),
+      t("Entonces, | ¿se lo queda?", "So, | you'll take it?", "So, are you taking it?"),
     ],
     // "Me lo quedo" before the terms were said: the terms first, then the question again
     terms_first: [t("¡Qué | bueno! | Antes, | para | que | sepa:", "How | good! | First, | so | that | you know:", "Great! But first, just so you know:")],
@@ -948,6 +979,7 @@ export const apartment: SituationDef = {
     "le parecen": { reason: "grammatical_fusion", split: "le → to you + parecen → they seem is one English question: do they seem okay to you.", minimal: "Pronoun and verb." },
     "qué pena": { reason: "lexical_expression", split: "qué → what + pena → sorrow; the exclamation = what a shame / I'm sorry.", minimal: "Two words." },
     "me lo quedo": { reason: "lexical_expression", split: "me → myself + lo → it + quedo → I stay is a false literal; the set phrase = I'll take it.", minimal: "Three words." },
+    "se lo queda": { reason: "lexical_expression", split: "se → yourself + lo → it + queda → you stay is a false literal; quedarse con algo = to take it (you'll take it).", minimal: "Three words." },
     "lo antes posible": { reason: "lexical_expression", split: "lo → it + antes → before + posible → possible is a word salad; = as soon as possible.", minimal: "Three words." },
     "de una vez": { reason: "lexical_expression", split: "de → of + una → one + vez → time misreads the adverb: right now, once and for all.", minimal: "Three words." },
   },
@@ -1045,10 +1077,12 @@ export const apartment: SituationDef = {
       yes: (c) => { c.say("go_ahead"); c.hold(); },
       no: (c) => { c.s.qDone = true; volunteer(c); } },
     { id: "decision", when: (c) => view(c) && !!c.s.qDone, done: (c) => !!c.s.decision,
-      ask: (c) => c.say("decision_ask"), expects: ["take", "think", "decline", "like_it", "too_x", "call_back", "think_ctx", "price_ok"],
+      // ask_lease: "Quiero rentarlo por seis meses" is a shorter lease asked for (the minimum is a year), never take + a question
+      ask: (c) => c.say("decision_ask"), expects: ["take", "think", "decline", "like_it", "too_x", "call_back", "think_ctx", "price_ok", "ask_lease"],
       suggest: [{ lt: "Decide: take it, or think it over", hint: "decide" }],
       help: (c) => { apartment.handlers.think(c, {}, { intent: "think", slots: {}, tags: [] }); },
-      yes: (c) => take(c), no: (c) => decline(c) },
+      // "Está bien, gracias" / "Ok, gracias" could be a yes or a polite no (rule 17): he asks again
+      yes: (c) => { if (politeClosing(c)) { c.say("take_or_not"); c.hold(); return; } take(c); }, no: (c) => decline(c) },
     { id: "movein_take", when: (c) => view(c) && c.s.decision === "take", done: (c) => !!c.s.moveinKnown,
       ask: (c) => askMovein(c, false), expects: ["movein_ans_ctx", "ask_movein"],
       suggest: [{ lt: "Say when you'd like to move in", hint: "movein" }],
@@ -1065,13 +1099,16 @@ export const apartment: SituationDef = {
         if (c.s.avalAsked) { c.say("aval_reask"); return; }
         c.s.avalAsked = true; c.say("aval_ask");
       },
-      expects: ["aval_none", "aval_none_ctx", "aval_yes", "aval_yes_ctx", "ask_aval", "aval_deposit", "ask_poliza"],
+      // "No, prefiero la póliza": the póliza is explained (who pays) and asked
+      expects: ["aval_none", "aval_none_ctx", "aval_yes", "aval_yes_ctx", "ask_aval", "aval_deposit", "ask_poliza", "poliza_yes_ctx"],
       suggest: [{ lt: "Say whether you have a guarantor", hint: "aval" }],
       yes: (c) => avalYes(c), no: (c) => avalNone(c) },
     { id: "sign", when: (c) => view(c) && c.s.decision === "take", done: (c) => !!c.s.signed,
       ask: (c) => { c.say(c.s.signAsked ? "sign_remind" : "sign_ask"); c.s.signAsked = true; }, expects: ["where_sign", "here_you_go", "read_first", "copy", "sign_here_ctx", "pen", "sign_later"],
       suggest: [{ lt: "Sign the lease", hint: "sign" }],
-      yes: (c) => sign(c) },
+      // a polite closing never signs (rule 17): the reminder; a no ("No, gracias", "Todavía no") signs nothing either
+      yes: (c) => { if (politeClosing(c)) { c.say("sign_remind"); c.hold(); return; } sign(c); },
+      no: (c) => { apartment.handlers.sign_later(c, {}, { intent: "sign_later", slots: {}, tags: [] }); } },
   ],
 
   init: (c) => {
@@ -1141,7 +1178,10 @@ export const apartment: SituationDef = {
       asked(c, "deposit");
       const h = heard(c);
       if (/devuelve|regresa|reembolsable/.test(h)) { c.say("deposit_back"); return; }
-      c.say("deposit", { deposit: RENT });
+      // without a guarantor the deposit is two months: agreed ($28,000), or quoted (still open, or no deal yet)
+      if (c.s.depositMonths === 2) c.say("deposit_two", { deposit: RENT * 2 });
+      else if (c.s.depositQuoted && ((avalOpen(c) && !c.s.polizaOffered) || c.s.aval === "none")) c.say("aval_deposit_amount", { deposit: RENT * 2 });
+      else c.say("deposit", { deposit: RENT });
       if (/al principio|para entrar|para mudarme|al firmar|por adelantado/.test(h) || c.chance(0.4)) c.say("deposit_first");
     },
     ask_furnished(c) { asked(c, "furnished"); c.say(/vaci|sin muebles|semiamueblad/.test(heard(c)) ? "furnished_semi" : "furnished"); },
@@ -1155,12 +1195,15 @@ export const apartment: SituationDef = {
       else if (e?.attrs?.kitchen) c.say("app_kitchen", { X: a });
       else c.say("app_yes", { X: a });
     },
-    ask_pets(c, slots) { asked(c, "pets"); c.s.petsKnown = true; petAnswer(c, slots.pet); },
-    have_pet(c, slots) { c.s.petsKnown = true; petAnswer(c, slots.pet ?? "cat"); },
+    ask_pets(c, slots) { asked(c, "pets"); c.s.petsKnown = true; petAnswer(c, slots.pet, petPlural(c, slots.pet)); },
+    have_pet(c, slots) { c.s.petsKnown = true; petAnswer(c, slots.pet ?? "cat", petPlural(c, slots.pet ?? "cat")); },
     no_pets(c) { c.s.petsKnown = true; c.say("ack"); },
-    ask_lease(c) {
+    ask_lease(c, slots) {
       asked(c, "lease");
-      if (/\b(seis|tres|dos|cuatro|cinco|6|3|2) meses\b|por mes|\bmedio ano\b/.test(heard(c))) c.say("lease_min");
+      // "¿Puedo rentarlo por ocho meses?", "…por un mes?", "¿Seis meses?": less than a year gets the minimum
+      const h = heard(c);
+      const months = typeof slots.number === "number" ? slots.number : undefined;
+      if (/\bpor mes\b|\bmedio ano\b/.test(h) || (/\bmes(es)?\b/.test(h) && (months === undefined || months < 12))) c.say("lease_min");
       else c.say("lease");
     },
     ask_movein(c) { asked(c, "movein"); c.say("movein_info"); },
@@ -1245,13 +1288,17 @@ export const apartment: SituationDef = {
         c.say("someone_else"); c.say("hurry");
         c.expect({ id: "hurry", expects: ["call_back", "take"], hints: ["hurry"],
           suggest: [{ lt: "Promise to call by tonight", hint: "hurry" }],
-          on: { call_back: (cc) => { cc.s.hurryDone = true; cc.say("wait_call"); }, take: (cc) => { cc.s.hurryDone = true; cc.s.decision = null; take(cc); },
-            think: (cc) => { hurryAnswer(cc); } },
+          on: { call_back: (cc) => { cc.s.hurryDone = true; cc.say("wait_call"); },
+            // "Lo quiero, pero tengo que hablarlo con mi esposa": the part after "pero" answers
+            take: (cc) => { if (takeButNot(cc)) return false; cc.s.hurryDone = true; cc.s.decision = null; take(cc); },
+            think: (cc) => { hurryAnswer(cc); },
+            // a decline closes this question too ("No, mejor me lo quedo" takes it; "No me lo quedo" is asked again)
+            decline: (cc) => { cc.s.hurryDone = true; declineSaid(cc, true); } },
           yes: (cc) => { cc.s.hurryDone = true; cc.say("wait_call"); }, no: (cc) => { cc.s.hurryDone = true; cc.say("understand"); },
           ask: (cc) => cc.say("hurry") });
       }
     },
-    decline(c) { if (!view(c)) { c.say("ack"); return; } decline(c); },
+    decline(c) { if (!view(c)) { c.say("ack"); return; } declineSaid(c, c.step === "questions" && !c.s.qDone); },
     think_ctx(c, slots, seg) { apartment.handlers.think(c, slots, seg); },
     have_questions(c) { c.say("go_ahead"); c.hold(); },
     id_ctx(c, slots, seg) { apartment.handlers.here_you_go(c, slots, seg); },
@@ -1263,11 +1310,16 @@ export const apartment: SituationDef = {
     },
 
     // --- Don Ernesto's questions ---
-    movein_ans_ctx(c) { c.s.moveinKnown = true; c.say("movein_ack"); if (c.chance(0.5)) c.say("movein_info"); },
+    movein_ans_ctx(c) {
+      c.s.moveinKnown = true;
+      // "Hoy mismo." / "Ya." / "Mañana.": it's free only from the first of the month, so no "Sí, se puede"
+      if (/\b(ya|ahorita|ahora|de inmediato|hoy|manana|luego luego|esta semana|este fin de semana|lo antes posible|lo mas pronto|cuanto antes|lo mas rapido)\b/.test(heard(c))
+        && !/\bprimero\b/.test(heard(c))) { c.say("movein_info"); return; }
+      c.say("movein_ack"); if (c.chance(0.5)) c.say("movein_info");
+    },
     people_ans(c) {
       c.s.peopleKnown = true;
-      const h = heard(c);
-      peopleAnswer(c, /\bhijos\b|\bhijas\b|\bfamilia\b/.test(h) ? 3 : /\bsolo\b|\bsola\b|\bnomas\b|\bsolamente\b/.test(h) && !/\bcon\b/.test(h) ? 1 : 2);
+      peopleAnswer(c, headCount(heard(c)));
     },
     people_num_ctx(c, slots) {
       c.s.peopleKnown = true;
@@ -1333,9 +1385,12 @@ export const apartment: SituationDef = {
     poliza_yes_ctx(c) { if (avalOpen(c) && !c.s.polizaOffered) offerPoliza(c); else c.say("ack"); },
     poliza_no_ctx(c) { c.say("ack"); },
     aval_deposit_no_ctx(c) { if (avalOpen(c) && c.s.depositQuoted && !c.s.polizaOffered) offerPoliza(c); else c.say("understand"); },
-    aval_deposit(c) {
+    aval_deposit(c, slots) {
       if (!view(c)) { c.say("ack"); return; }
       if (!c.s.avalTwist) { c.say("aval_not_needed"); return; }
+      // an amount that isn't the two months ("Puedo dejar veinte mil"): never agreed; the amount and the question again
+      if (wrongAmount(slots) && avalOpen(c)) { c.s.avalAsked = true; quoteDeposit(c, c.s.depositQuoted ? "aval_deposit_amount" : "aval_deposit_q"); return; }
+      if (wrongAmount(slots) && c.s.aval === "none") { c.say("aval_deposit_amount", { deposit: RENT * 2 }); return; }
       // back after no deal ("Bueno, dejo los dos meses."): the amount was quoted, so it's a yes now
       if (c.s.aval === "none" && c.s.depositQuoted) { c.s.decision = "take"; acceptDeposit(c); resume(c); return; }
       if (c.s.aval) { c.say("ack"); return; }
@@ -1381,8 +1436,13 @@ export const apartment: SituationDef = {
     time_pref(c, slots) { if (repairOpen(c)) { timeNoted(c, slots); c.s.visitOk = true; } else c.say("ack"); },
     use_key(c) { if (repairOpen(c)) { c.say("key_done"); c.s.visitOk = true; dropPending(c); } else c.say("ack"); },
     time_ok(c) { if (repairOpen(c)) { c.say("home_yes_ok"); c.s.visitOk = true; } else c.say("ack"); },
-    time_bad(c) { if (repairOpen(c)) { if (keyOffered(c) || c.s.visitQ === c.heard) return; askOtherTime(c); } else c.say("ack"); },
-    time_ctx(c, slots, seg) { apartment.handlers.time_pref(c, slots, seg); },
+    // "A las diez no puedo, ¿puede venir a las cinco?": the other time answers (time_pref)
+    time_bad(c) { if (repairOpen(c)) { if (keyOffered(c) || c.s.visitQ === c.heard || timeOffered(c)) return; askOtherTime(c); } else c.say("ack"); },
+    // the time he offered, inside a refusal ("Mañana a las diez no puedo", "A las diez no está bien"): never booked
+    time_ctx(c, slots, seg) {
+      if (refusedTime(c, slots)) { if (repairOpen(c) && c.s.visitQ !== c.heard) askOtherTime(c); return; }
+      apartment.handlers.time_pref(c, slots, seg);
+    },
 
     // --- small talk overrides ---
     g_howareyou_answer(c) {
@@ -1549,6 +1609,23 @@ export const apartment: SituationDef = {
     { say: "¿Hay mucho ruido?", intent: "ask_quiet" },
     { say: "¿Está vacío?", intent: "ask_furnished" },
     { say: "¿Quién paga el agua?", intent: "ask_utilities", slots: { utility: "water" } },
+    // lead's check: numbers, money and refusals
+    { say: "¿Son dos meses de depósito?", intent: "ask_deposit", not: ["ask_rent"] },
+    { say: "¿Seis meses?", intent: "ask_lease", not: ["ask_rent"] },
+    { say: "Quiero rentarlo por seis meses", intent: "ask_lease", step: "decision", not: ["take"] },
+    { say: "Me lo quedo por un año", intent: "take", step: "decision" },
+    { say: "¿El agua no está incluida?", intent: "ask_utilities", slots: { utility: "water" } },
+    { say: "¿Puedo tener dos gatos?", intent: "ask_pets", slots: { pet: "cat" } },
+    { say: "Tengo tres gatos", intent: "have_pet", step: "pets_q", slots: { pet: "cat" } },
+    { say: "No tengo a nadie que pueda ser mi aval", intent: "aval_none", step: "aval", not: ["aval_yes", "aval_yes_ctx"] },
+    { say: "Mi jefe no puede ser mi aval", intent: "none", step: "aval", not: ["aval_yes", "aval_yes_ctx"] },
+    { say: "No, prefiero la póliza", intent: "poliza_yes_ctx", step: "aval", not: ["aval_yes", "aval_deposit"] },
+    { say: "Sí, puedo pagar los veintiocho mil", intent: "aval_deposit", step: "aval", slots: { price: 2800000 } },
+    { say: "¿Quién la paga?", intent: "ask_poliza" },
+    { say: "No quiero firmar", intent: "sign_later", step: "sign", not: ["where_sign", "here_you_go", "sign_here_ctx"] },
+    { say: "¿Puedo firmar mañana?", intent: "sign_later", step: "sign", not: ["where_sign", "here_you_go"] },
+    { say: "Mañana a las diez no puedo", intent: "time_bad", step: "visit", not: ["time_ctx", "time_pref", "time_ok", "home_yes"] },
+    { say: "A las diez no está bien", intent: "time_bad", step: "visit", not: ["time_ctx", "time_ok"] },
     // not understood
     { say: "Mi perro toca la guitarra", intent: "none" },
     { say: "plátano ventana azul", intent: "none" },
@@ -1616,6 +1693,25 @@ export const apartment: SituationDef = {
     // The tenant twist: the AC, ten doesn't work, another time.
     { name: "tenant: the AC, another time for the repair", turns: ["Bien, pero el clima no enfría.", "A las diez no puedo.", "Después de las cinco, por favor.", "Muchas gracias."],
       expect: { complete: true, state: { problem: "ac", visitOk: true } }, auto: AUTO, setup: (s) => { s.mode = "problem"; } },
+    // Lead's check. "Mañana a las diez no puedo" is never booked for tomorrow: he asks for another time.
+    { name: "tenant: tomorrow at ten refused, Saturday instead", turns: ["El aire no enfría.", "Mañana a las diez no puedo.", "Mejor el sábado.", "Gracias."],
+      expect: { complete: true, state: { problem: "ac", visitOk: true, visitAnswered: true } }, auto: AUTO, setup: (s) => { s.mode = "problem"; } },
+    // "No, me lo quedo." (typed with its comma) to "¿Alguna otra pregunta?" takes it, after the terms.
+    { name: "no more questions, I'll take it", turns: ["Vengo a ver el departamento.", "¿Cuánto es la renta?", "No, me lo quedo.", "Sí.", "El próximo mes.", "¿Dónde firmo?", "Gracias."],
+      expect: { complete: true, state: { decision: "take", signed: true } }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.avalTwist = false; s.askDocs = false; s.askMovein = false; s.askPeople = false; s.askPets = false; } },
+    // Said aloud, "No me lo quedo" to "¿Alguna otra pregunta?" could be either: he asks, and the no declines.
+    { name: "no me lo quedo said aloud: asked, then no", turns: ["Vengo a ver el departamento.", "¿Cuánto es la renta?", "No me lo quedo", "No.", "Gracias."],
+      expect: { complete: true, state: { decision: "no" } }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.avalTwist = false; s.askDocs = false; s.askMovein = false; s.askPeople = false; s.askPets = false; } },
+    // A polite closing at "¿Le interesa?" takes nothing (asked again); a haggle inside "Me lo quedo" commits nothing.
+    { name: "polite closing and a haggle at the decision", turns: ["Vengo a ver el departamento.", "No, es todo.", "Está bien, gracias.", "Me lo quedo, pero ¿me puede bajar la renta?",
+      "No, gracias.", "Gracias."], expect: { complete: true, state: { decision: "no" } }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.avalTwist = false; s.askDocs = false; s.askMovein = false; s.askPeople = false; s.askPets = false; } },
+    // A polite closing or a no at the lease signs nothing; thinking it over after all.
+    { name: "nothing signed on a polite closing", turns: ["Vengo a ver el departamento.", "No, es todo.", "Me lo quedo.", "El próximo mes.", "Está bien, gracias.", "No, gracias.",
+      "Lo voy a pensar.", "Gracias."], expect: { complete: true, state: { decision: "think", signed: undefined } }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.avalTwist = false; s.askDocs = false; s.askMovein = false; s.askPeople = false; s.askPets = false; s.otherApplicant = false; } },
   ],
 };
 
@@ -1643,24 +1739,56 @@ function askMovein(c: Ctx, optional: boolean) {
     ask: optional ? undefined : (cc) => cc.say("ask_movein_q") });
 }
 
-function petAnswer(c: Ctx, pet?: string) {
-  if (pet === "cat") c.say("pet_cat_ok");
-  else if (pet === "dog") c.say("pet_dog_ok");
+function petAnswer(c: Ctx, pet?: string, plural = false) {
+  if (pet === "cat") c.say(plural ? "pet_cats_ok" : "pet_cat_ok");
+  else if (pet === "dog") c.say(plural ? "pet_dogs_ok" : "pet_dog_ok");
   else if (pet === "bigdog") c.say("pet_bigdog");
   else if (pet === "other") c.say("pet_other_ok");
   else c.say("pets_policy");
 }
+
+/** "Tengo dos gatos", "¿Se aceptan perros?": more than one of that pet ("Un perro y dos gatos": one dog, two cats). */
+const petPlural = (c: Ctx, pet?: string) => {
+  const stem = pet === "cat" ? "gat" : pet === "dog" ? "perr" : null;
+  return !!stem && new RegExp(`\\b((dos|tres|cuatro|[2-4]) ${stem}|${stem}(os|itos|as)\\b)`).test(heard(c));
+};
 
 function peopleAnswer(c: Ctx, n: number) {
   if (n >= 4) c.say("people_small");
   else c.say("people_ack");
 }
 
+/** Who will live there, counted from the answer: "Mi esposa, mis dos hijos y yo" is four, "Con mi esposa y mis tres
+ *  hijos" five, "Solo yo" one; "Con mi familia" (no number) counts as three. */
+function headCount(h: string): number {
+  const NUM: Record<string, number> = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5 };
+  let n = 1; // the learner
+  let family = false;
+  for (const m of h.matchAll(/\b(?:(un|una|dos|tres|cuatro|cinco|[1-5])\s+)?(hijos|hijas|ninos|ninas|hijo|hija|bebe|esposa|esposo|pareja|novia|novio|amigo|amiga|mama|papa|hermana|hermano|familia)\b/g)) {
+    const [, num, who] = m;
+    if (who === "familia") { family = true; continue; }
+    n += num ? NUM[num] ?? Number(num) : /s$/.test(who) ? 2 : 1;
+  }
+  if (/\b(los|las) dos\b/.test(h)) n = Math.max(n, 2);
+  return family ? Math.max(n, 3) : n;
+}
+
+/** "Me lo quedo, pero ¿me puede bajar la renta?", "Lo quiero, pero tengo que hablarlo con mi esposa", "Me interesa, pero
+ *  está un poco caro": a haggle or a hedge after "pero" never commits; that part's own piece answers. ("Me lo quedo,
+ *  pero no tengo aval" or "…, pero primero quiero leer el contrato" still take it.) Nor does a shorter lease than the
+ *  year ("Quiero rentarlo por seis meses": ask_lease says the minimum, and the question comes again). */
+const takeButNot = (c: Ctx) => {
+  const h = heard(c);
+  return /\bpero\b.*\b(bajar\w*|rebaja\w*|descuento|negocia\w*|deja en|dejaria en|menos|caro|cara|chico|chica|pequen[oa]|lejos|dinero|presupuesto|alcanza|pensar\w*|hablar\w*|platicar\w*|consultar\w*|segur[oa]|decid\w*|otros)\b/.test(h)
+    || /\bpor (un|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|[1-9]|1[01]) mes(es)?\b|\bpor mes\b|\bmedio ano\b/.test(h);
+};
+
 function take(c: Ctx) {
   if (!view(c)) { c.say("ack"); return; }
   if (c.s.decision === "take") { c.say("ack"); return; }
   // "Sí, me interesa." / "Quiero rentarlo." at the door: he shows the apartment first
   if (!c.s.purpose) { enter(c); return; }
+  if (takeButNot(c)) return;
   // "Lo voy a pensar… ¿Sabe qué? Me lo quedo.": after no deal on the guarantor, the options are offered again
   if (c.s.aval === "none") { c.s.aval = undefined; c.s.depositQuoted = false; c.s.polizaOffered = false; c.s.avalNoneSaid = true; }
   c.s.purpose = true;
@@ -1699,6 +1827,32 @@ function decline(c: Ctx) {
   c.say("decline_ok");
 }
 
+/** A decline phrase heard. "No, me lo quedo" (its comma typed) and "No, mejor me lo quedo" take it. Said aloud, the
+ *  comma is lost (rule 10): to another question ("¿Alguna otra pregunta?", "¿Me puede avisar hoy en la noche?") "No me
+ *  lo quedo" could be "No, I'll take it" or "I won't take it", so he asks (`ambiguous`); at "¿Le interesa?" it's a no. */
+function declineSaid(c: Ctx, ambiguous: boolean) {
+  const h = heard(c);
+  if (/^[\s¡¿]*no\s*([,.;!]\s*(mejor\s+)?|\s+mejor\s+)(si\s+)?me lo quedo\b/.test(h)) { take(c); return; }
+  if (ambiguous && /^[\s¡¿]*no me lo quedo\b/.test(h)) { takeOrNot(c); return; }
+  decline(c);
+}
+
+function takeOrNot(c: Ctx) {
+  c.s.qDone = true;
+  c.say("take_or_not");
+  c.expect({ id: "take_or_not", expects: ["take", "decline", "think", "think_ctx"], hints: ["decide"],
+    suggest: [{ lt: "Say whether you'll take it", hint: "decide" }],
+    on: {
+      take: (cc) => { if (takeButNot(cc)) return false; take(cc); },
+      decline: (cc) => { declineSaid(cc, false); },
+      think: (cc) => { apartment.handlers.think(cc, {}, { intent: "think", slots: {}, tags: [] }); },
+      think_ctx: (cc) => { apartment.handlers.think(cc, {}, { intent: "think", slots: {}, tags: [] }); },
+    },
+    yes: (cc) => { if (politeClosing(cc)) { takeOrNot(cc); return; } take(cc); },
+    no: (cc) => decline(cc),
+    ask: (cc) => cc.say("take_or_not") });
+}
+
 /** The aval question is open: the twist is on, the learner is taking it and hasn't settled it. */
 const avalOpen = (c: Ctx) => view(c) && c.s.decision === "take" && !!c.s.avalTwist && !c.s.aval;
 
@@ -1728,10 +1882,19 @@ function avalNone(c: Ctx) {
   quoteDeposit(c);
 }
 
-function quoteDeposit(c: Ctx) {
+function quoteDeposit(c: Ctx, line = "aval_deposit_q") {
   c.s.depositQuoted = true;
-  c.say("aval_deposit_q", { deposit: RENT * 2 });
+  c.say(line, { deposit: RENT * 2 });
   c.expect(depositPending());
+}
+
+/** An amount said with the extra deposit that isn't the two months ($28,000): "Puedo dejar veinte mil". */
+const wrongAmount = (slots: Record<string, any>) => typeof slots.price === "number" && slots.price !== RENT * 2;
+
+/** A yes to the extra deposit with its amount: only the amount he asked for agrees (rule 18). */
+function depositAnswer(c: Ctx, slots: Record<string, any>) {
+  if (wrongAmount(slots)) { c.say("aval_deposit_amount", { deposit: RENT * 2 }); c.expect(depositPending()); return; }
+  acceptDeposit(c);
 }
 
 /** "Está bien, gracias" / "Ok, gracias" at a paid offer could be a yes or a polite no: the question again. */
@@ -1741,7 +1904,7 @@ function depositPending(): import("@/content/types").Pending {
   return { id: "extra_deposit", expects: ["aval_deposit", "aval_deposit_no_ctx", "amount_q_ctx", "ask_poliza", "poliza_yes_ctx", "aval_yes", "aval_yes_ctx"], hints: ["g_yesno", "extra_dep"],
     suggest: [{ lt: "Accept two months' deposit, or decline", hint: "g_yesno" }, { lt: "Ask about other options", hint: "extra_dep" }],
     on: {
-      aval_deposit: (cc) => acceptDeposit(cc), aval_deposit_no_ctx: (cc) => offerPoliza(cc), ask_poliza: (cc) => offerPoliza(cc),
+      aval_deposit: (cc, sl) => depositAnswer(cc, sl), aval_deposit_no_ctx: (cc) => offerPoliza(cc), ask_poliza: (cc) => offerPoliza(cc),
       // "No, mejor la póliza.": the póliza is explained (who pays) and asked, never recorded unexplained
       poliza_yes_ctx: (cc) => offerPoliza(cc),
       amount_q_ctx: (cc) => { cc.say("aval_deposit_amount", { deposit: RENT * 2 }); cc.expect(depositPending()); },
@@ -1764,7 +1927,7 @@ function polizaPending(): import("@/content/types").Pending {
     on: {
       ask_poliza: (cc) => { cc.say("poliza_info"); cc.expect(polizaPending()); },
       amount_q_ctx: (cc) => { cc.say("poliza_price"); cc.expect(polizaPending()); },
-      aval_deposit: (cc) => acceptDeposit(cc), aval_yes: (cc) => avalYes(cc), aval_yes_ctx: (cc) => avalYes(cc),
+      aval_deposit: (cc, sl) => depositAnswer(cc, sl), aval_yes: (cc) => avalYes(cc), aval_yes_ctx: (cc) => avalYes(cc),
       poliza_yes_ctx: (cc) => { cc.s.aval = "poliza"; cc.say("poliza_ok"); }, poliza_no_ctx: (cc) => noDeal(cc),
     },
     yes: (cc) => { if (politeClosing(cc)) { cc.say("poliza_reask"); cc.expect(polizaPending()); return; } cc.s.aval = "poliza"; cc.say("poliza_ok"); },
@@ -1794,6 +1957,17 @@ function dropPending(c: Ctx) { const conv = (c as ConvCtx).conv; if (conv) conv.
 /** "A las diez no estoy, pero puede usar su llave": the key part answers (use_key). */
 const keyOffered = (c: Ctx) => /\b(llave|abrale|abrirle|dejelo (pasar|entrar))\b/.test(heard(c));
 
+/** A refusal of a time: "no puedo", "no me queda", "no está bien"… */
+const timeRefused = (c: Ctx) => /\bno (puedo|me queda|me conviene|estoy|voy a estar|estare|esta bien|me parece bien|me sirve)\b|\bmuy temprano\b/.test(heard(c));
+
+/** The time he offered (tomorrow at ten) inside a refusal: "Mañana a las diez no puedo" heard as "Mañana" + "a las diez
+ *  no puedo", "A las diez no está bien" as "A las diez" + …. */
+const refusedTime = (c: Ctx, slots: Record<string, any> = {}) => timeRefused(c)
+  && ((slots.time?.h === 10 && !slots.time?.m) || (slots.day === "tomorrow" && !slots.time) || (!slots.time && !slots.day));
+
+/** Another time or day than tomorrow at ten: "…, ¿puede venir a las cinco?", "…, mejor el sábado". */
+const timeOffered = (c: Ctx) => /\b(las|la) (?!diez\b|10\b)(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|once|doce|\d)|\b(lunes|martes|miercoles|jueves|viernes|sabado|domingo|pasado manana|fin de semana|mas tarde)\b|\b(en|por) la (tarde|noche)\b/.test(heard(c));
+
 /** "No tengo aval, pero mi jefe puede firmar": a guarantor after all. */
 const guarantorAfterAll = (c: Ctx) => /\bpero\b.*\b(jefe|jefa|empresa|amigo|amiga|conocido|conocida|puede firmar|puede ser mi aval)\b/.test(heard(c));
 
@@ -1815,8 +1989,8 @@ function homeNo(c: Ctx) {
     on: {
       use_key: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
       time_pref: (cc, sl) => { timeNoted(cc, sl); cc.s.visitOk = true; },
-      time_ctx: (cc, sl) => { timeNoted(cc, sl); cc.s.visitOk = true; },
-      time_bad: (cc) => { askOtherTime(cc); },
+      time_ctx: (cc, sl) => { if (refusedTime(cc, sl)) return false; timeNoted(cc, sl); cc.s.visitOk = true; },
+      time_bad: (cc) => { if (timeOffered(cc)) return false; askOtherTime(cc); },
     },
     yes: (cc) => { cc.say("key_done"); cc.s.visitOk = true; },
     no: (cc) => { askOtherTime(cc); },
@@ -1838,8 +2012,8 @@ function askOtherTime(c: Ctx) {
     on: {
       use_key: (c3) => { c3.say("key_done"); c3.s.visitOk = true; },
       time_pref: (c3, sl) => { timeNoted(c3, sl); c3.s.visitOk = true; },
-      time_ok: (c3) => { c3.say("home_yes_ok"); c3.s.visitOk = true; },
-      time_ctx: (c3, sl) => { timeNoted(c3, sl); c3.s.visitOk = true; },
+      time_ok: (c3) => { if (timeRefused(c3)) return false; c3.say("home_yes_ok"); c3.s.visitOk = true; },
+      time_ctx: (c3, sl) => { if (refusedTime(c3, sl)) return false; timeNoted(c3, sl); c3.s.visitOk = true; },
     },
     ask: (c3) => c3.say("other_time_q") });
 }
