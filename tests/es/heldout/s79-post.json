@@ -1,0 +1,57 @@
+{ "situation": "s79-post", "items": [
+  { "ctx": "help", "say": "Hola, quiero mandar este paquete a Estados Unidos", "intent": ["send_package", "dest_ans"] },
+  { "ctx": "help", "say": "Buenos días, vengo a recoger un paquete", "intent": "pickup" },
+  { "ctx": "help", "say": "Me dejaron un aviso en la puerta", "intent": "pickup" },
+  { "ctx": "help", "say": "¿Venden timbres para postales?", "intent": "buy_stamps" },
+  { "ctx": "help", "say": "Quisiera enviar una caja a Canada", "intent": ["send_package", "dest_ans"], "note": "no accent" },
+  { "ctx": "help", "say": "No vengo a recoger nada, quiero enviar esto", "intent": "send_package", "not": ["pickup"], "note": "trap: negation" },
+
+  { "ctx": "pick_notice", "say": "Sí, aquí está el aviso", "intent": ["here_you_go", "yn:yes"] },
+  { "ctx": "pick_notice", "say": "No, lo perdí", "intent": ["no_notice", "yn:no"] },
+  { "ctx": "pick_notice", "say": "No traigo el aviso, pero tengo el número de guía", "intent": ["no_notice", "tracking_ctx"], "not": ["here_you_go", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "pick_name", "say": "A nombre de Sarah Miller", "intent": "name_ctx" },
+
+  { "ctx": "pick_id", "say": "Aquí tiene mi pasaporte", "intent": ["show_doc", "here_you_go"] },
+  { "ctx": "pick_id", "say": "¿Sirve mi licencia de manejo?", "intent": ["doc_ctx", "show_doc"] },
+  { "ctx": "pick_id", "say": "No traigo identificación", "intent": "any", "not": ["show_doc", "here_you_go", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "pick_sign", "say": "¿Dónde firmo?", "intent": ["sign_ctx", "signed"] },
+  { "ctx": "pick_sign", "say": "Listo, ya firmé", "intent": ["signed", "here_you_go"] },
+
+  { "ctx": "dest", "say": "Es para mi hermana en Canadá", "intent": "dest_ans" },
+  { "ctx": "dest", "say": "A Texas, en Estados Unidos", "intent": "dest_ans" },
+
+  { "ctx": "hazmat", "say": "No, nada de eso, solo ropa y libros", "intent": ["contents_ok", "yn:no"] },
+  { "ctx": "hazmat", "say": "Hay una botella de tequila", "intent": "contents_liquid" },
+  { "ctx": "hazmat", "say": "Sí, es frágil, son unas tazas de cerámica", "intent": ["contents_fragile", "yn:yes"] },
+  { "ctx": "hazmat", "say": "¿Qué cosas no se pueden mandar?", "intent": "what_hazard" },
+  { "ctx": "hazmat", "say": "No hay nada frágil", "intent": ["contents_ok", "yn:no"], "not": ["contents_fragile", "yn:yes"], "note": "trap: negation" },
+  { "ctx": "hazmat", "say": "No lleva perfume ni nada así", "intent": ["contents_ok", "yn:no"], "not": ["contents_perfume"], "note": "trap: negation" },
+
+  { "ctx": "service", "say": "El más barato, por favor", "intent": ["service_ans", "ask_cheaper"] },
+  { "ctx": "service", "say": "¿Cuánto tarda el express?", "intent": "ask_time" },
+  { "ctx": "service", "say": "¿Se puede rastrear?", "intent": "ask_tracking" },
+
+  { "ctx": "contents_list", "say": "Ropa, unos dulces mexicanos y un libro", "intent": "contents_ok" },
+
+  { "ctx": "value", "say": "Como cincuenta dólares", "intent": ["value_ans", "value_ctx"] },
+  { "ctx": "value", "say": "Unos ochocientos pesos", "intent": ["value_ans", "value_ctx"] },
+
+  { "ctx": "gift", "say": "Sí, es un regalo para mi mamá", "intent": ["gift_yes", "yn:yes"] },
+  { "ctx": "gift", "say": "No es regalo, son cosas mías", "intent": ["gift_no", "yn:no"], "not": ["gift_yes", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "sign_customs", "say": "Claro, ¿aquí?", "intent": ["sign_ctx", "signed", "yn:yes"] },
+
+  { "ctx": "insurance", "say": "¿Cuánto cuesta el seguro?", "intent": ["ask_insured", "ask_price"], "not": ["insurance_yes", "yn:yes"], "note": "trap: price question" },
+  { "ctx": "insurance", "say": "No necesito seguro, gracias", "intent": ["insurance_no", "yn:no"], "not": ["insurance_yes", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "stamps_offer", "say": "Sí, deme cinco timbres", "intent": ["stamps_qty", "buy_stamps", "yn:yes"] },
+
+  { "ctx": "pay", "say": "Con tarjeta, por favor", "intent": "pay_card" },
+  { "ctx": "pay", "say": "No traigo tarjeta, le pago en efectivo", "intent": "pay_cash", "not": ["pay_card"], "note": "trap: negation" },
+  { "ctx": "pay", "say": "¿Aceptan pago con el celular?", "intent": "pay_phone" },
+
+  { "ctx": "more", "say": "No, es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "more", "say": "Eso sería todo", "intent": ["more_no", "yn:no"] }
+] }
