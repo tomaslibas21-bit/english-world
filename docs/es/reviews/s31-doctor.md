@@ -37,3 +37,46 @@ short cash / a $2,000 bill / goodbye before paying all record the right state.
 **For the lead or the owner**: the fee ($500 MXN) and the unnamed second antibiotic stay vague as written. When the
 learner names a method before hearing the fee ("Con tarjeta" right after the directions), she says the price and
 charges in the same turn; it is a fixed fee for a visit already given, so I kept it.
+
+## Lead's check (2 Nov 2026)
+Numbers, money, the binding choices and the open points. 30 new edge and trap sentences (scratch set: 12/25 understood
+with 4 misreadings and 0/5 traps accepted before, 25/25 and 0/5 after) and probe runs of every paid or binding outcome
+found these; about 30 lines changed, 110 added (fixes, 15 NLU tests, 2 sims, 2 new lines).
+
+**Must-fix (all fixed):**
+1. **A bare "Aquí tiene" / "Tenga" wasn't understood once paying started early.** When the fee came up in the first turn
+   after the directions (a price question, a method, some cash, a goodbye, a lost comma), she held the turn and the
+   conversation stayed on the directions, so the pay step's own answers and hints never came: "¿Cuánto le debo?… En
+   efectivo… Aquí tiene" (the hint's own words) got "Perdón, ¿puede repetir?", also right after "faltan $300". The pay
+   step now becomes the current one without asking again (`payNow`).
+2. **A question about both ways paid.** "¿Puedo pagar con tarjeta o en efectivo?" charged the card and then said "Ya
+   está pagado, gracias"; "¿Acepta tarjeta o solo efectivo?" at the pay step recorded cash. Two ways joined by "o" are a
+   question (whole patterns `#either`, and any turn that names two different ways around an "o", spelled by sound too):
+   "Sí, como prefiera." (new line), the fee if it wasn't said, nothing charged. "¿Cómo le pago?" was "how are you?": now
+   the fee and "¿Cómo va a pagar…?".
+3. **The card after some cash.** "Aquí tiene doscientos… faltan $300… Mejor con tarjeta" tapped the card with no word
+   on the $200: she says "Faltan $300." before the tap (the pay event carries the rest), and her reminder after some
+   cash is "Faltan $300", not "Son $300" after "son $500". "No traigo más efectivo", "No me alcanza", "Es todo lo que
+   traigo" are understood (the last two at paying only: "Es todo lo que tengo" ends the symptoms at "¿Algún otro
+   síntoma?").
+4. **An allergy in two pieces.** "Soy alérgico a la penicilina, no tengo otras alergias", "Solo a la penicilina, a nada
+   más", "Sí, a la penicilina, ninguna otra" weren't understood. The "no other" piece (`#others`) keeps the allergy
+   named, and a "none" piece never undoes an allergy named in the same answer (at the chart question too), whatever
+   the order. "No sé si soy alérgica a la penicilina" gets one reply (the other antibiotic), not "Le voy a dar algo muy
+   seguro" plus "Qué bueno que me lo dice".
+5. **"No sé, como 38"** said "No se preocupe, ahorita se la tomo" and then "Eso ya es fiebre" (38 recorded): the number
+   counts, one reply (fever question only, so "No, cien" at paying is never a temperature).
+
+**Numbers (polish):** a body temperature is 35–43 °C / 95–109 °F (34 °C was "normal: no tiene fiebre", and 93 or
+110 °F gave a Celsius outside the voiced domain); "Un siete u ocho", "Desde hace unas horas", "Nací en 1980" (then
+"¿Y el día y el mes?", new line, not the date question again), "Junio 4 de 1980" (an American's order, with the
+day-first tip); a bare "Aquí tiene" records the cash handed over.
+
+**Open points:** as the review: the $500 fee and the unnamed second antibiotic stay vague, and a method named right
+after the directions says the fee and charges it in the same turn (a fixed fee for a visit already given). Not changed:
+"Creo que no" at the chart question corrects the chart (the learner's own answer, as the twist intends); "Dos billetes
+de doscientos y uno de cien", dollars, "Ya pagué en recepción" and "No, como 37" aren't understood (she asks again;
+nothing is paid or recorded).
+
+**Gate:** tsc clean; check-content 120/120 NLU tests, 16 sims all 12/12, fuzz 80, 0/0; corpus 295/295, 0/29 traps;
+held-out 41/41, 0/3; vitest 288/288.
