@@ -1,0 +1,60 @@
+{ "situation": "s85-dinner", "items": [
+  { "ctx": "arrive", "say": "¡Hola! Muchas gracias por invitarme", "intent": "thanks_invite" },
+  { "ctx": "arrive", "say": "Gracias por la invitación, qué gusto verlos", "intent": "thanks_invite" },
+  { "ctx": "arrive", "say": "Les traje unas flores", "intent": "gift" },
+  { "ctx": "arrive", "say": "Traje una botella de vino para la cena", "intent": "gift" },
+  { "ctx": "arrive", "say": "Perdón por llegar tarde, había mucho tráfico", "intent": "late_sorry" },
+  { "ctx": "arrive", "say": "No traje nada, perdón", "intent": "any", "not": ["gift"], "note": "trap: negation" },
+
+  { "ctx": "coat", "say": "Gracias, qué amables", "intent": ["thanks_invite", "g_thanks"] },
+
+  { "ctx": "diet", "say": "No, como de todo", "intent": "diet_ok_ctx" },
+  { "ctx": "diet", "say": "Soy vegetariana", "intent": "diet_veg_ctx" },
+  { "ctx": "diet", "say": "Soy alergico a los cacahuates", "intent": "diet_allergy_ctx", "note": "Mexican cacahuate, no accent" },
+  { "ctx": "diet", "say": "No como carne", "intent": "diet_veg_ctx", "not": ["diet_ok_ctx"], "note": "trap: negation" },
+
+  { "ctx": "drink", "say": "Un vaso de agua, por favor", "intent": "drink_ans" },
+  { "ctx": "drink", "say": "Una cerveza bien fría", "intent": "drink_ans" },
+  { "ctx": "drink", "say": "¿Qué tienen de tomar?", "intent": "ask_drinks" },
+  { "ctx": "drink", "say": "Por ahora nada, gracias", "intent": "no_drink" },
+  { "ctx": "drink", "say": "¿Tenéis zumo de naranja?", "intent": ["drink_ans", "ask_drinks"], "note": "Spain: vosotros, zumo" },
+
+  { "ctx": "cat", "say": "No, no soy alérgica", "intent": "cat_ok_ctx", "not": ["cat_allergic_ctx"], "note": "trap: negation" },
+  { "ctx": "cat", "say": "Sí, soy un poco alérgico", "intent": "cat_allergic_ctx", "not": ["cat_ok_ctx"], "note": "trap" },
+  { "ctx": "cat", "say": "Me encantan los gatos", "intent": "cat_ok_ctx" },
+
+  { "ctx": "salad", "say": "Claro, con mucho gusto", "intent": ["agree", "yn:yes"] },
+
+  { "ctx": "ready_soon", "say": "¿Les ayudo en algo?", "intent": "offer_help" },
+  { "ctx": "ready_soon", "say": "¡Qué bonita casa tienen!", "intent": "praise_home" },
+  { "ctx": "ready_soon", "say": "Mmm, huele delicioso", "intent": "praise_smell" },
+
+  { "ctx": "dinner", "say": "¿Me pasas la sal, por favor?", "intent": "pass" },
+  { "ctx": "dinner", "say": "¡Está riquísimo!", "intent": "praise_food" },
+  { "ctx": "dinner", "say": "Mi coche es azul", "intent": "none" },
+
+  { "ctx": "pass", "say": "Sí, toma", "intent": ["here_you_go", "yn:yes"] },
+
+  { "ctx": "burnt", "say": "No te preocupes, así está bien", "intent": "reassure" },
+
+  { "ctx": "howisit", "say": "Está buenísimo", "intent": "praise_food" },
+  { "ctx": "howisit", "say": "¿Tú lo cocinaste?", "intent": "made_yourself" },
+  { "ctx": "howisit", "say": "¿Me das la receta?", "intent": "recipe" },
+  { "ctx": "howisit", "say": "Está un poco picante", "intent": "food_meh" },
+  { "ctx": "howisit", "say": "No está nada picante, está muy rico", "intent": "praise_food", "not": ["food_meh"], "note": "trap: negation" },
+
+  { "ctx": "seconds", "say": "Sí, un poquito más, por favor", "intent": ["more_yes", "yn:yes"] },
+  { "ctx": "seconds", "say": "No, gracias, ya no puedo más", "intent": ["more_no", "yn:no"], "not": ["more_yes"], "note": "trap: negation" },
+  { "ctx": "seconds", "say": "No me sirvas más, por favor", "intent": "any", "not": ["more_yes"], "note": "trap: negation" },
+
+  { "ctx": "dessert", "say": "¡Claro que sí! Un pedacito", "intent": ["more_yes", "yn:yes"] },
+  { "ctx": "dessert", "say": "Postre no, gracias, estoy llena", "intent": ["more_no", "yn:no"], "not": ["more_yes"], "note": "trap: negation" },
+
+  { "ctx": "late", "say": "Bueno, ya me tengo que ir", "intent": "leave" },
+  { "ctx": "late", "say": "No me quiero ir, pero ya es tarde", "intent": "leave", "not": ["stay"], "note": "trap" },
+
+  { "ctx": "stay", "say": "Bueno, un ratito más", "intent": ["stay", "yn:yes"] },
+  { "ctx": "stay", "say": "Me encantaría, pero mañana trabajo temprano", "intent": ["leave", "thanks_end", "no_sorry", "yn:no"], "not": ["stay"], "note": "trap" },
+
+  { "ctx": "closing", "say": "Gracias por todo, la pasé muy bien", "intent": "thanks_end" }
+] }
