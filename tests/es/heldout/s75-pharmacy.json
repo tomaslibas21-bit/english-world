@@ -1,0 +1,52 @@
+{ "situation": "s75-pharmacy", "items": [
+  { "ctx": "need", "say": "Buenas, ¿tiene algo para el dolor de cabeza?", "intent": ["need_symptom", "need_product"] },
+  { "ctx": "need", "say": "Me duele mucho la garganta", "intent": ["symptom_state", "need_symptom"] },
+  { "ctx": "need", "say": "Tengo gripa desde ayer", "intent": ["symptom_state", "need_symptom"], "note": "Mexican gripa" },
+  { "ctx": "need", "say": "Creo que tengo fiebre", "intent": ["symptom_state", "need_symptom"] },
+  { "ctx": "need", "say": "Me picaron los mosquitos y me pica todo", "intent": ["symptom_state", "need_symptom"] },
+  { "ctx": "need", "say": "Quería un ibuprofeno, por favor", "intent": "need_product" },
+  { "ctx": "need", "say": "Necesito amoxicilina pero no tengo receta", "intent": ["need_product", "no_rx_paper"], "not": ["rx_pickup"], "note": "trap: no prescription" },
+  { "ctx": "need", "say": "Vengo a surtir una receta", "intent": ["rx_pickup", "rx_dropoff"] },
+  { "ctx": "need", "say": "No me siento bien, me duele el estómago", "intent": ["symptom_state", "need_symptom", "feel_sick"] },
+
+  { "ctx": "who", "say": "Es para mi hija, tiene seis años", "intent": "who_ans" },
+  { "ctx": "who", "say": "Para mí", "intent": "who_ans" },
+  { "ctx": "who", "say": "No es para mí, es para mi esposo", "intent": "who_ans", "slots": {}, "note": "trap: not for me" },
+
+  { "ctx": "howlong", "say": "Desde hace tres días", "intent": "howlong_ans" },
+  { "ctx": "howlong", "say": "Empezó anoche", "intent": "howlong_ans" },
+  { "ctx": "howlong", "say": "Como una semana", "intent": ["howlong_ans", "howlong_ctx"], "note": "the draft names the bare answer howlong_ctx (intent name only, added after the first run)" },
+
+  { "ctx": "meds", "say": "No, no estoy tomando nada", "intent": ["meds_ans", "meds_ctx", "yn:no"] },
+  { "ctx": "meds", "say": "Solo una pastilla para la presión", "intent": ["meds_ans", "meds_ctx"] },
+  { "ctx": "meds", "say": "Ya tomé paracetamol pero no me hizo nada", "intent": ["meds_ans", "meds_ctx"], "not": ["need_product", "accept_rec"], "note": "trap: past, not an order" },
+
+  { "ctx": "allergy", "say": "No, ninguna alergia", "intent": ["allergy_ans", "allergy_ctx", "yn:no"] },
+  { "ctx": "allergy", "say": "Sí, soy alérgico a la penicilina", "intent": ["allergy_ans", "allergy_ctx"] },
+  { "ctx": "allergy", "say": "No que yo sepa", "intent": ["allergy_ans", "allergy_ctx", "yn:no"] },
+
+  { "ctx": "recommend", "say": "Está bien, me lo llevo", "intent": ["accept_rec", "yn:yes"] },
+  { "ctx": "recommend", "say": "¿Me da sueño?", "intent": "ask_drowsy" },
+  { "ctx": "recommend", "say": "¿Cuánto cuesta?", "intent": "ask_price", "not": ["accept_rec"], "note": "trap: price question" },
+  { "ctx": "recommend", "say": "¿No tiene algo más barato?", "intent": ["ask_cheaper", "other_option"], "not": ["accept_rec"] },
+  { "ctx": "recommend", "say": "No, gracias, mejor no", "intent": ["decline_rec", "yn:no"], "not": ["accept_rec"], "note": "trap: decline" },
+  { "ctx": "recommend", "say": "¿Se necesita receta para eso?", "intent": "ask_rx_needed" },
+  { "ctx": "recommend", "say": "¿Se lo puedo dar a un niño?", "intent": "ask_kids" },
+
+  { "ctx": "dosage", "say": "¿Cada cuánto lo tomo?", "intent": "ask_dosage" },
+  { "ctx": "dosage", "say": "¿Lo tomo con comida?", "intent": "ask_food" },
+  { "ctx": "dosage", "say": "¿Puedo tomar alcohol?", "intent": "ask_alcohol" },
+  { "ctx": "dosage", "say": "Ya lo he tomado antes", "intent": ["not_first", "know_ctx"], "not": ["first_time"] },
+
+  { "ctx": "more", "say": "No, es todo, gracias", "intent": ["more_no", "yn:no"], "not": ["need_product"] },
+  { "ctx": "more", "say": "Sí, también un bloqueador solar", "intent": "need_product" },
+  { "ctx": "more", "say": "Eso sería todo", "intent": ["more_no", "yn:no"] },
+
+  { "ctx": "pay", "say": "Con tarjeta, por favor", "intent": "pay_card" },
+  { "ctx": "pay", "say": "No traigo tarjeta, le pago en efectivo", "intent": "pay_cash", "not": ["pay_card"], "note": "trap: not card" },
+  { "ctx": "pay", "say": "Aquí tiene", "intent": ["here_you_go", "hand_over", "hand_over_ctx"] },
+  { "ctx": "pay", "say": "¿Ya le pagué?", "intent": "any", "not": ["pay_card", "pay_cash", "here_you_go", "hand_over", "hand_over_ctx"], "note": "trap: question, not paying" },
+
+  { "ctx": "bag", "say": "No, así está bien", "intent": ["no_bag", "yn:no"], "not": ["bag_yes"] },
+  { "ctx": "bag", "say": "Sí, una bolsita por favor", "intent": ["bag_yes", "yn:yes"] }
+]}
