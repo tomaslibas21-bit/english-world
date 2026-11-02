@@ -294,4 +294,24 @@
   {"ctx": "breath_q", "say": "No me falta el aire", "intent": "any", "not": ["out_breath"]},
   {"ctx": "next", "say": "Mañana sí puedo", "intent": "next_same"},
   {"ctx": "next", "say": "El viernes no, mejor el sábado", "intent": "next_day", "slots": {"day": "saturday"}},
-  {"ctx": "next", "say": "No sé si mañana", "intent": "any", "not": ["next_same"]}]}
+  {"ctx": "next", "say": "No sé si mañana", "intent": "any", "not": ["next_same"]},
+
+  {"ctx": "sets", "say": "No entiendo", "intent": "any", "not": ["ready"], "note": "review trap: a leading [no] made this start the sets"},
+  {"ctx": "sets", "say": "No entendí nada", "intent": "any", "not": ["ready"], "note": "review trap"},
+  {"ctx": "rep", "say": "No entendí", "intent": "any", "not": ["ready", "rep_done_ctx"], "note": "review trap"},
+  {"ctx": "sets", "say": "No, ya entendí", "intent": "ready"},
+  {"ctx": "sets", "say": "No entiendo cómo se usa", "intent": "ask_how"},
+  {"ctx": "pay", "say": "No quiero pagar en efectivo", "intent": "no_cash", "not": ["pay_cash"], "note": "review: rule 18"},
+  {"ctx": "pay", "say": "Aquí está mi tarjeta", "intent": "here_you_go"},
+  {"ctx": "plan", "say": "¿Cuánto es por un mes?", "intent": "ask_price", "not": ["choose_plan"], "note": "review trap: a price question chose the plan"},
+  {"ctx": "plan", "say": "¿Es cara la mensualidad?", "intent": "ask_price", "not": ["choose_plan", "plan_no"]},
+  {"ctx": "plan", "say": "¿Tienen pesas?", "intent": "ask_have", "not": ["ask_have_unknown"], "note": "review: was 'eso no lo tenemos'"},
+  {"ctx": "plan", "say": "¿Hay baños?", "intent": "ask_have", "not": ["ask_have_unknown"]},
+  {"ctx": "plan", "say": "¿Tienen clima?", "intent": "ask_have", "not": ["ask_have_unknown"], "note": "Mexican clima = AC"},
+  {"ctx": "warmup", "say": "¿Puedo usar la bici?", "intent": "warm_choice", "slots": {"cardio": "bike"}},
+  {"ctx": "next", "say": "Mañana no puedo, ¿el jueves?", "intent": "next_day", "slots": {"day": "thursday"}, "not": ["next_same", "when_ctx"], "note": "review trap: booked tomorrow"},
+  {"ctx": "next", "say": "No puedo mañana, ¿qué tal el viernes?", "intent": "next_day", "slots": {"day": "friday"}, "not": ["next_same", "when_ctx"]},
+  {"ctx": "okay_q", "say": "No me duele", "intent": "no_pain", "not": ["pain"], "note": "rule 10: #amb, she asks"},
+  {"ctx": "okay_q", "say": "No, no me duele", "intent": "no_pain", "not": ["pain"]},
+  {"ctx": "machine", "say": "¿Está ocupada?", "intent": ["machine_free_q", "machine_free_ctx"]}
+]}

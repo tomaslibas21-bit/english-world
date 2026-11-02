@@ -1,0 +1,52 @@
+{ "situation": "s35-gym", "items": [
+  { "ctx": "new", "say": "Hola, es mi primera vez aquí", "intent": "im_new" },
+  { "ctx": "new", "say": "Quiero inscribirme al gimnasio", "intent": "want_join" },
+  { "ctx": "new", "say": "Me gustaría hacerme socia", "intent": "want_join", "note": "socia" },
+  { "ctx": "new", "say": "No, ya había venido antes", "intent": ["not_new", "yn:no"], "not": ["im_new"], "note": "trap: past, negation" },
+  { "ctx": "new", "say": "¿Tienen clase de prueba gratis?", "intent": "ask_trial" },
+
+  { "ctx": "plan", "say": "¿Cuánto cuesta la mensualidad?", "intent": "ask_price" },
+  { "ctx": "plan", "say": "¿Cuánto sale el día?", "intent": "ask_price", "not": ["choose_plan"], "note": "trap: price question, not a choice" },
+  { "ctx": "plan", "say": "Quiero la mensualidad", "intent": "choose_plan", "slots": { "plan": "monthly" } },
+  { "ctx": "plan", "say": "Nomás por hoy", "intent": "choose_plan", "slots": { "plan": "day_pass" } },
+  { "ctx": "plan", "say": "Mejor solo la visita de hoy", "intent": "choose_plan", "slots": { "plan": "day_pass" } },
+  { "ctx": "plan", "say": "No quiero la mensualidad, solo hoy", "intent": ["choose_plan", "plan_no"], "not": ["yn:yes"], "note": "trap: negation then the other plan" },
+  { "ctx": "plan", "say": "¿Y si me inscribo por un mes?", "intent": "any", "not": ["choose_plan"], "note": "trap: what-if" },
+  { "ctx": "plan", "say": "¿Hay que pagar inscripción?", "intent": "ask_fee" },
+  { "ctx": "plan", "say": "¿Puedo cancelar cuando quiera?", "intent": "ask_cancel" },
+  { "ctx": "plan", "say": "¿A qué hora abren?", "intent": "ask_hours" },
+  { "ctx": "plan", "say": "¿Tienen regaderas?", "intent": "ask_have", "slots": { "amenity": "showers" } },
+  { "ctx": "plan", "say": "¿Hay alberca?", "intent": ["ask_have", "ask_have_unknown"] },
+  { "ctx": "plan", "say": "¿Hay descuento para estudiantes?", "intent": "ask_discount" },
+
+  { "ctx": "form", "say": "¿Dónde firmo?", "intent": "sign_q" },
+  { "ctx": "form", "say": "¿Me prestas una pluma?", "intent": "pen_q" },
+  { "ctx": "form", "say": "Ya está, aquí tienes", "intent": ["here_you_go", "form_done"] },
+
+  { "ctx": "pay", "say": "¿Aceptan tarjeta?", "intent": "pay_card" },
+  { "ctx": "pay", "say": "Pago en efectivo", "intent": "pay_cash" },
+  { "ctx": "pay", "say": "No traigo tarjeta", "intent": ["no_card"], "not": ["pay_card"], "note": "trap: negation" },
+  { "ctx": "pay", "say": "No quiero pagar con tarjeta", "intent": "any", "not": ["pay_card"], "note": "trap: negation of a method" },
+  { "ctx": "pay", "say": "Ya pagué la semana pasada", "intent": "any", "not": ["pay_card", "pay_cash", "here_you_go", "yn:yes"], "note": "trap: past tense" },
+
+  { "ctx": "lockers", "say": "¿Dónde están los vestidores?", "intent": "lockers_q" },
+  { "ctx": "lockers", "say": "¿Dónde me puedo cambiar?", "intent": "lockers_q" },
+  { "ctx": "lockers", "say": "No, ya vengo cambiada", "intent": ["change_no", "change_no_ctx", "ready"] },
+  { "ctx": "lock_q", "say": "No, se me olvidó", "intent": ["lock_none", "yn:no"], "not": ["lock_have"] },
+
+  { "ctx": "warmup", "say": "Prefiero la bici", "intent": "warm_choice", "slots": { "cardio": "bike" } },
+  { "ctx": "warmup", "say": "La caminadora no, mejor la bicicleta", "intent": ["warm_choice", "warm_not"], "note": "trap: correction" },
+
+  { "ctx": "machine", "say": "¿Está ocupada esta máquina?", "intent": ["machine_free_q", "machine_free_ctx"] },
+  { "ctx": "sets", "say": "¿Cuántas repeticiones hago?", "intent": ["ask_sets", "sets_ctx"] },
+  { "ctx": "sets", "say": "¿Cuánto peso le pongo?", "intent": ["ask_weight", "sets_ctx"] },
+  { "ctx": "rep", "say": "¡Ya no puedo más!", "intent": ["cant", "tired", "yn:no"], "not": ["rep_done_ctx"], "note": "trap: negation" },
+  { "ctx": "okay_q", "say": "Me duele un poco la espalda", "intent": ["pain", "pain_ctx"] },
+  { "ctx": "okay_q", "say": "No me duele nada, estoy bien", "intent": ["no_pain", "feel_good", "yn:yes"], "not": ["pain", "pain_ctx"], "note": "trap: negated pain" },
+  { "ctx": "spot", "say": "¿Me ayudas con la barra?", "intent": "spot_q" },
+  { "ctx": "breath_q", "say": "Estoy muerta, necesito agua", "intent": ["out_breath", "tired", "water_q"] },
+
+  { "ctx": "next", "say": "¿Mañana a la misma hora?", "intent": "next_same" },
+  { "ctx": "next", "say": "Mañana no puedo, ¿el jueves?", "intent": ["next_day", "next_no"], "not": ["next_same"], "note": "trap: refused tomorrow" },
+  { "ctx": "next", "say": "Nos vemos el lunes", "intent": ["next_day", "see_you_ctx"], "slots": { "day": "monday" } }
+]}

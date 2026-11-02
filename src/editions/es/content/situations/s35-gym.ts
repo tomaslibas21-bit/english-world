@@ -75,6 +75,12 @@ const F_DUELE = "me duele: Spanish says “the knee hurts me”, with la (the) w
 const F_ME_FALTA = "me falta: “it's missing to me” = I'm short of.";
 
 const heard = (c: Ctx) => (c.heard || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const ID_RE = /\b(identificacion|ine|pasaporte|licencia|credencial)\b/;
+/** What the learner hands over at the total, when the words say it: "Aquí está mi tarjeta", "Ten, en efectivo". */
+const handedMethod = (c: Ctx): string | undefined => {
+  const h = heard(c);
+  return /\btarjeta\b/.test(h) ? "card" : /\b(efectivo|billete|dinero|cambio)\b/.test(h) ? "cash" : undefined;
+};
 const planPrice = (c: Ctx) => (c.s.plan === "monthly" ? MONTHLY : VISIT);
 /** The warm-up can start: paid, and the learner has changed (or didn't need to). */
 const warmupOpen = (c: Ctx) => !!c.s.paid && !!c.s.changeDone;
@@ -163,6 +169,9 @@ export const gym: SituationDef = {
           "pilates", "box", "boxeo", "clases de box", "crossfit", "baile", "aerobics", "aerobicos"] },
         { id: "wifi", forms: ["wifi", "wi fi", "internet"] },
         { id: "water", forms: ["agua", "agua purificada", "bebedero", "garrafon", "agua para tomar"] },
+        // what any gym has: "¿Tienen pesas?", "¿Hay baños?", "¿Tienen aire acondicionado?" (never "eso no lo tenemos")
+        { id: "basics", forms: ["pesas", "mancuernas", "barras", "discos", "maquinas", "aparatos", "maquinas de cardio", "caminadoras", "bicis", "bicicletas",
+          "elipticas", "remadora", "banos", "bano", "sanitarios", "aire acondicionado", "clima", "espejos", "musica"] },
         { id: "trainer", forms: ["entrenador", "entrenadora", "entrenador personal", "entrenadores", "entrenadora personal", "coach", "instructor", "instructora"] },
       ] },
     },
@@ -237,8 +246,8 @@ export const gym: SituationDef = {
     ask_price: { patterns: [
       "cuanto (cuesta | es | sale | cobran | vale) [la | el | una | un] {plan} [al mes | por mes | por dia] #h:q_price",
       "cuanto (cuesta | es | sale | cobran | cobras | vale) (el gimnasio | el gym | al mes | por mes | por dia | el dia | la entrada | por visita | entrar)",
-      "cuanto (cuesta | es | sale | cobran)", "(cuales son | que) (los precios | precios | costos | tarifas) [tienen | manejan | hay]",
-      "(cual es | que) precio tiene [la | el] {plan}", "es caro", "a como (esta | sale) [la | el] {plan}", "(puedo | se puede) pagar (por mes | mes por mes | cada mes)",
+      "cuanto (cuesta | es | sale | cobran | vale) (por | para) [la | el | una | un] {plan}", "cuanto (cuesta | es | sale | cobran)", "(cuales son | que) (los precios | precios | costos | tarifas) [tienen | manejan | hay]",
+      "(cual es | que) precio tiene [la | el] {plan}", "es caro", "(es | sale) (caro | cara) [la | el] {plan}", "a como (esta | sale) [la | el] {plan}", "(puedo | se puede) pagar (por mes | mes por mes | cada mes)",
     ] },
     ask_included: { patterns: [
       "que incluye [la | el] {plan} #h:q_included", "que (incluye | entra | viene) (en | con) [la | el] {plan}", "que incluye [el precio]",
@@ -304,7 +313,8 @@ export const gym: SituationDef = {
       // "Efectivo no, tarjeta" / "No en efectivo, con tarjeta": the second one is the answer
       "[en] efectivo no [con] tarjeta", "no [en] efectivo [con] tarjeta", "(con | en) (debito | credito)",
     ] },
-    no_cash: { patterns: ["no (traigo | tengo | cargo) (efectivo | cash | dinero en efectivo | suficiente efectivo)", "sin efectivo"] },
+    no_cash: { patterns: ["no (traigo | tengo | cargo) (efectivo | cash | dinero en efectivo | suficiente efectivo)", "sin efectivo",
+      "no (puedo | quiero) pagar (en | con) efectivo", "[no] en efectivo no", "no en efectivo"] },
     no_card: { patterns: [
       "no (traigo | tengo) (tarjeta | mi tarjeta)", "no (puedo | quiero) pagar con tarjeta", "[no] con tarjeta no", "no con tarjeta",
       // "No con tarjeta, en efectivo." (the comma is lost): cash
@@ -336,7 +346,9 @@ export const gym: SituationDef = {
     change_no_ctx: { patterns: ["[no] estoy bien [asi] [gracias]", "no hace falta", "[no] asi"] },
     ready: { patterns: [
       "[si | no] ya estoy (listo | lista) [para empezar] #h:ready", "[si] estoy (listo | lista) [para empezar]", "[ya] (listo | lista)", "vamos [a empezar | a darle | pues]", "(empecemos | empezamos | dale)",
-      "[no] no tengo [mas | ninguna | otra] (pregunta | preguntas)", "[no] ninguna [pregunta | mas]", "[no] (todo | ya) (claro | esta claro)", "[no] (ya)? (entendi | entiendo) [todo]",
+      "[no] no tengo [mas | ninguna | otra] (pregunta | preguntas)", "[no] ninguna [pregunta | mas]",
+      // never "[no]" before these: "No entiendo" / "No entendí" / "No todo está claro" are the opposite
+      "(todo | ya) (claro | esta claro)", "(ya)? (entendi | entiendo) [todo]", "no ya (entendi | entiendo | esta claro | quedo claro)",
     ] },
     lock_have: { patterns: ["[si] (traigo | traje | tengo) (uno | el mio | mi candado | candado | un candado) #h:lock_have", "[si] (lo | aqui lo) traigo", "[si] esta en mi mochila"] },
     lock_none: { patterns: [
@@ -360,7 +372,7 @@ export const gym: SituationDef = {
     // --- the warm-up -----------------------------------------------------------------------------
     warm_choice: { patterns: [
       "[la | el] {cardio} #h:warm_the", "voy a usar [la | el] {cardio} #h:warm_take", "prefiero [la | el] {cardio} #h:warm_prefer",
-      "(me quedo con | quiero | quisiera | escojo | elijo | tomo | uso | voy a hacer | voy en) [la | el] {cardio}", "(mejor | entonces) [la | el] {cardio}",
+      "(me quedo con | quiero | quisiera | escojo | elijo | tomo | uso | voy a hacer | voy en | puedo usar | puedo ir en) [la | el] {cardio}", "(mejor | entonces) [la | el] {cardio}",
       "[la | el] {cardio} (esta bien | me gusta | me parece bien)", "me gusta [la | el] {cardio}",
       "no [la | el] {not:cardio} [sino | mejor] [la | el] {cardio}", "[la | el] {not:cardio} no [mejor] [la | el] {cardio}",
       "(quiero | voy a | prefiero | puedo) (correr | caminar | trotar) [en la caminadora] #tread",
@@ -443,7 +455,7 @@ export const gym: SituationDef = {
     ] },
     ask_how: { patterns: [
       "como (funciona | se usa | la uso | se hace | lo hago | uso) [esta maquina | esto | la maquina | esta | la prensa] #h:q_how", "(me | me puedes) (ensenas | ensenar | explicas | explicar) [como (se usa | funciona | se hace)]",
-      "que hago [ahora]", "como me (siento | pongo | acomodo)",
+      "que hago [ahora]", "como me (siento | pongo | acomodo)", "no (entiendo | entendi) como (funciona | se usa | se hace | la uso)",
     ] },
     not_ready: { patterns: ["[todavia | aun] no estoy (listo | lista) [todavia]", "todavia no [termino]", "(esperame | espérame | aguanta) [un momento | tantito | un segundo]", "no he terminado"] },
     // "¿Así está bien?" about the form (signs it) or the exercise (Mónica checks it)
@@ -474,6 +486,8 @@ export const gym: SituationDef = {
     no_pain: { patterns: [
       "[no] no me duele nada", "[no] ya no me duele [nada | @art @part]", "[no] nada me duele", "[no] no tengo dolor", "[no] no siento dolor", "no estoy (lastimado | lastimada)",
       "no me lastimé", "[no] no me (duele | duelen) [@art] @part [ya] #amb",
+      // "No me duele" (= "No, me duele" aloud) asks too; "No, no me duele" is clear
+      "no me (duele | duelen) #amb", "no no me (duele | duelen) [@art @part]",
     ] },
 
     // --- spotting ----------------------------------------------------------------------------------
@@ -500,6 +514,9 @@ export const gym: SituationDef = {
       "(que tal | y si | como ves | mejor) el {day} [a la misma hora] #h:how_about_day", "(puedo | podemos) (venir | vernos | entrenar)? el {day}",
       "[el] {day} (esta | estaria | me queda | seria) (mejor | bien)", "[si | claro] nos vemos el {weekday} #h:see_you_day", "(vengo | regreso | vuelvo) el {day}",
       "puede ser el {day}", "[si] el {day} si [puedo | me queda]", "el {day} a la misma hora", "mejor {day}", "[el] {not:day} no [mejor] el {day}",
+      // "Mañana no puedo, ¿el jueves?" in one piece: never "mañana" + "no puedo el jueves" (that booked tomorrow)
+      "[no] manana no (puedo | me queda | se puede) [pero] [que tal | mejor | y | puede ser | como ves] el {day} [a la misma hora]",
+      "[no] no puedo manana [pero] [que tal | mejor | y | puede ser | como ves] el {day} [a la misma hora]", "[no] manana no [mejor] el {day} [a la misma hora]",
     ] },
     next_no: { patterns: [
       "[no] manana no (puedo | me queda | me queda bien | vengo | se puede) #h:cant_tomorrow", "[no] no puedo manana",
@@ -545,11 +562,11 @@ export const gym: SituationDef = {
       t("¡Ah, | qué | bueno | verte | otra vez! | ¿En | qué | te | ayudo?", "Oh, | how | nice | to see you | again! | In | what | (to) you | I-help?", "Oh, good to see you again! What can I do for you?"),
     ],
     intro_jordan: [
-      t("¡Qué | padre, | {m:bienvenido|f:bienvenida}! | Soy | Mónica, | una | de | las | entrenadoras.", "How | cool, | welcome! | I am | Mónica, | one | of | the | trainers.",
-        "Awesome, welcome! I'm Mónica, one of the trainers here.",
+      t("¡Qué | padre! | Soy | Mónica, | una | de | las | entrenadoras.", "How | cool! | I am | Mónica, | one | of | the | trainers.",
+        "Awesome! I'm Mónica, one of the trainers here.",
         { flags: { 1: "Mexican: qué padre = how cool, great." },
-          neutral: t("¡Qué | bien, | {m:bienvenido|f:bienvenida}! | Soy | Mónica, | una | de | las | entrenadoras.", "How | nice, | welcome! | I am | Mónica, | one | of | the | trainers.",
-            "Great, welcome! I'm Mónica, one of the trainers here.") }),
+          neutral: t("¡Qué | bien! | Soy | Mónica, | una | de | las | entrenadoras.", "How | nice! | I am | Mónica, | one | of | the | trainers.",
+            "Great! I'm Mónica, one of the trainers here.") }),
       t("¡Perfecto! | Yo | soy | Mónica | y | voy | a | ser | tu | entrenadora.", "Perfect! | I | am | Mónica | and | I'm going | to | be | your | trainer.", "Great! I'm Mónica, and I'll be your trainer."),
     ],
     nice_meet: [t("¡Igualmente!", "Likewise!", "Nice to meet you too!"), t("¡Mucho gusto!", "Nice to meet you!", "Nice to meet you!")],
@@ -641,6 +658,7 @@ export const gym: SituationDef = {
     ],
     parking_info: [t("Estacionamiento | no tenemos, | pero | puedes | estacionarte | en | la | calle.", "Parking | we don't have, | but | you can | park | on | the | street.", "We don't have a parking lot, but you can park on the street.")],
     classes_info: [t("¡Sí! | Zumba, | spinning | y | box. | Para | los | socios | son | gratis.", "Yes! | Zumba, | spinning | and | boxing. | For | the | members | they're | free.", "Yes! Zumba, spinning and boxing. They're free for members.")],
+    classes_other: [t("Esa | clase | no, | perdón. | Tenemos | zumba, | spinning | y | box.", "That | class | no, | sorry. | We have | Zumba, | spinning | and | boxing.", "Sorry, not that class. We have Zumba, spinning, and boxing.")],
     wifi_info: [t("Sí, | la | contraseña | está | en | la | recepción.", "Yes, | the | password | is | at | the | front desk.", "Yes, the password is at the front desk.")],
     water_info: [t("Hay | agua | purificada | junto a | los | vestidores.", "There's | water | purified | next to | the | locker rooms.", "There's drinking water next to the locker rooms.",
       { flags: { 2: "agua purificada: drinking water; in Mexico you don't drink tap water." } })],
@@ -678,11 +696,17 @@ export const gym: SituationDef = {
     phone_later: [t("Claro, | con | el | celular | también | se puede.", "Sure, | with | the | phone | also | it's possible.", "Sure, you can pay with your phone too.")],
     transfer_later: [t("Claro, | también | aceptamos | transferencia.", "Sure, | also | we accept | transfer.", "Sure, we take bank transfers too.")],
     // "No tengo tarjeta" / "No traigo efectivo" at the total: the other way is offered, nothing is charged yet
+    // no card and no cash
+    pay_alt: [t("Bueno, | también | puedes | pagar | con | el | celular | o | por | transferencia.", "Okay, | also | you can | pay | with | the | phone | or | by | transfer.",
+      "Okay, you can also pay with your phone or by bank transfer.")],
     cash_then: [t("Claro, | entonces | en efectivo.", "Sure, | then | in cash.", "Sure, cash then.")],
     card_then: [t("No hay problema, | con | tarjeta | entonces.", "No problem, | with | card | then.", "No problem, card then.")],
     phone_ok: [t("¡Claro! | Acerca | tu | celular | a | la | terminal.", "Sure! | Bring close | your | phone | to | the | terminal.", "Sure! Just hold your phone to the terminal.")],
     transfer_ok: [t("Claro. | Te | paso | la | cuenta | y | me | enseñas | el | comprobante.", "Sure. | (To) you | I give | the | account | and | (to) me | you show | the | confirmation.",
       "Sure. I'll give you the account number, and you show me the confirmation.")],
+    // the ID handed over at the total (asked for at the form): it goes back, nothing is paid
+    id_back: [t("Gracias. | Aquí | te | la | regreso.", "Thanks. | Here | (to) you | it | I give back.", "Thanks. Here's your ID back.",
+      { flags: { 3: "la: it (la identificación)." } })],
     paid: [t("¡Gracias!", "Thanks!", "Thank you!"), t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!")],
     member_card: [
       t("Aquí está | tu | credencial. | La | pasas | por | el | lector | en | la | entrada.", "Here's | your | membership card. | It | you swipe | through | the | reader | at | the | entrance.",
@@ -693,7 +717,7 @@ export const gym: SituationDef = {
     // --- the locker room -------------------------------------------------------------------------
     ask_change: [
       t("¡Muy | bien! | ¿Te | quieres | cambiar | primero?", "Very | good! | (Yourself) | you want | to change | first?", "Great! Do you want to change first?",
-        { flags: { 3: "te: cambiarse (to change your clothes) takes a pronoun for the person." } }),
+        { flags: { 2: "te: cambiarse (to change your clothes) takes a pronoun for the person." } }),
       t("¿Necesitas | cambiarte | antes de | empezar?", "Do you need | to change | before | starting?", "Do you need to change before we start?"),
     ],
     // asked again after a side question
@@ -771,15 +795,15 @@ export const gym: SituationDef = {
     other_towel: [t("Pero | tiene | una | toalla | encima.", "But | it has | a | towel | on top.", "But there's a towel on it.")],
     machine_nudge: [t("Anda, | pregunta | si | está | libre.", "Go on, | ask | if | it's | free.", "Go ahead and ask if it's free.")],
     machine_ok_asked: [
-      t("A ver... | ¡Sí, | está | libre! | Adelante.", "Let's see... | Yes, | it's | free! | Go ahead.", "Let me check... Yep, it's free! Go ahead."),
+      t("A ver... | ¡Está | libre! | Adelante.", "Let's see... | It's | free! | Go ahead.", "Let me check... It's free! Go ahead."),
       t("¡Buena | pregunta! | Ya | terminó. | La | máquina | es | toda | tuya.", "Good | question! | Already | he's finished. | The | machine | is | all | yours.",
         "Good question! He's done. It's all yours!"),
     ],
-    machine_ok: [t("A ver... | ¡Sí, | está | libre! | Adelante.", "Let's see... | Yes, | it's | free! | Go ahead.", "Let me check... Yep, it's free! Go ahead.")],
+    machine_ok: [t("A ver... | ¡Está | libre! | Adelante.", "Let's see... | It's | free! | Go ahead.", "Let me check... It's free! Go ahead.")],
     this_is_x: [t("Esta | es | {X.the}.", "This | is | {X.the}.", "This is {X.the}.")],
     machine_nudge_other: [t("Anda, | pregunta | si | la | otra | está | libre.", "Go on, | ask | if | the | other one | is | free.", "Go ahead and ask if the other one is free.")],
     broken_info: [t("Está | descompuesta. | Mañana | la | arreglan.", "It's | broken. | Tomorrow | it | they fix.", "It's broken. They're fixing it tomorrow.", { flags: { 3: "la before a verb is a pronoun: it (the machine)." } })],
-    not_broken: [t("No, | está | bien.", "No, | it's | fine.", "No, it's fine!")],
+    not_broken: [t("Nada, | funciona | bien.", "Nothing, | it works | fine.", "Nothing, it works fine!")],
 
     // --- sets, reps, weight ----------------------------------------------------------------------
     sets_explain_leg: [
@@ -807,7 +831,7 @@ export const gym: SituationDef = {
     bar_weight: [t("Es | nada más | la | barra: | veinte | kilos.", "It's | just | the | bar: | twenty | kilos.", "It's just the bar: twenty kilos.")],
     lb_note: [
       t("Aquí | hablamos | en | kilos. | Un | kilo | son | como | dos | libras.", "Here | we talk | in | kilos. | One | kilo | is | about | two | pounds.",
-        "We use kilos here. One kilo is about two pounds.", { flags: { 8: "como before a number = about, roughly." } }),
+        "We use kilos here. One kilo is about two pounds.", { flags: { 7: "como before a number = about, roughly." } }),
     ],
     how_right: [t("¡Sí, | perfecto! | Despacio | y | con | control.", "Yes, | perfect! | Slowly | and | with | control.", "Yes, perfect! Nice and slow.")],
     rep_count: [
@@ -894,13 +918,14 @@ export const gym: SituationDef = {
       t("¡Perfecto! | ¡Nos vemos | mañana!", "Perfect! | See you | tomorrow!", "Awesome! See you tomorrow!"),
       t("¡Excelente! | Mañana, | a | la | misma | hora.", "Excellent! | Tomorrow, | at | the | same | time.", "Perfect! See you tomorrow, same time!"),
     ],
+    see_tomorrow_plain: [t("¡Perfecto! | ¡Nos vemos | mañana!", "Perfect! | See you | tomorrow!", "Awesome! See you tomorrow!")],
     see_day: [t("¿El | {X}? | ¡Claro! | ¡Nos vemos | el | {X}!", "On | {X}? | Sure! | See you | on | {X}!", "{X}? Sure! See you {X}!", { flags: { 0: F_EL_DAY, 4: F_EL_DAY } })],
     offer_thursday: [t("¡No hay problema! | ¿Qué tal | el | jueves?", "No problem! | How about | — | Thursday?", "No problem! How about Thursday?", { flags: { 2: F_EL_DAY } })],
     see_then: [t("¡Perfecto! | ¡Nos vemos!", "Perfect! | See you!", "Sounds good! See you then!")],
     book_later_ok: [t("¡No hay problema! | Nada más | me | mandas | un | mensaje.", "No problem! | Just | (to) me | you send | a | message.", "No problem! Just send me a message.")],
     same_as_today: [t("A | la | misma | hora | que | hoy.", "At | the | same | time | as | today.", "Same time as today!")],
     closing: [
-      t("¡Excelente | primer | entrenamiento! | No olvides | estirar.", "Excellent | first | workout! | Don't forget | to stretch.", "Great first workout! Don't forget to stretch!"),
+      t("¡Y | no olvides | estirar!", "And | don't forget | to stretch!", "And don't forget to stretch!"),
       t("Lo | hiciste | muy | bien | hoy. | ¡Toma | mucha | agua!", "It | you did | very | well | today. | Drink | a lot of | water!", "You did great today. Drink lots of water!"),
     ],
 
@@ -1160,7 +1185,7 @@ export const gym: SituationDef = {
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card"],
       suggest: [{ lt: "Pay", hint: "pay" }],
       // "Está bien, gracias" could be a yes or a polite no: never a payment (rule 17)
-      yes: (c) => { if (c.s.payMethod && !politeClosing(c)) { pay(c, c.s.payMethod, true); return; } c.say(c.s.payMethod ? "pay_reask" : "ask_pay_method"); c.hold(); },
+      yes: (c) => { if (c.s.payMethod && !politeClosing(c)) { pay(c, c.s.payMethod, true); return; } c.say(c.s.payMethod || c.s.payAltSaid ? "pay_reask" : "ask_pay_method"); c.hold(); },
       no: (c) => { c.say("ask_pay_method"); c.hold(); },
       help: (c) => { c.say("ask_pay_method"); } },
     { id: "lockers", when: (c) => !!c.s.paid, done: (c) => !!c.s.changeDone,
@@ -1305,6 +1330,8 @@ export const gym: SituationDef = {
     choose_plan(c, slots, seg) {
       const tags = allTags(slots, seg);
       const plan = (slots.plan as string | undefined) ?? (tags.includes("day") ? "day_pass" : tags.includes("monthly") ? "monthly" : undefined);
+      // "¿Cuánto es por un mes?": a price question in the same turn never chooses (rule 17); ask_price answers it
+      if (/\b(cuanto|cuesta|precio|costo)\b/.test(heard(c))) { gym.handlers.ask_price(c, slots, seg); return; }
       if (!plan) { c.say("plan_which2"); c.hold(); return; }
       choosePlan(c, plan);
     },
@@ -1324,9 +1351,11 @@ export const gym: SituationDef = {
       c.say("plan_which2"); c.hold();
     },
     ask_price(c, slots) {
+      if (!firstThisTurn(c, "price")) return;
       const h = heard(c);
       const plan = (slots.plan as string | undefined) ?? (/\b(visita|dia|hoy|entrada)\b/.test(h) ? "day_pass" : /\b(mes|mensual\w*)\b/.test(h) ? "monthly" : c.s.plan);
-      if (/\bcaro\b/.test(h) && c.s.plan) { c.say("price_fair"); if (c.step === "pay") c.hold(); return; }
+      // "¿Es caro?" gets an answer, never the options again (rule 11)
+      if (/\b(caro|cara)\b/.test(h)) { c.say("price_fair"); if (c.step === "pay") c.hold(); return; }
       if (c.step === "pay" && c.s.plan && plan === c.s.plan) { c.say(c.s.totalSaid ? "total_again" : c.s.plan === "monthly" ? "total_monthly" : "total_day", { price: planPrice(c) }); c.hold(); return; }
       // before the options were said: both options with their prices (the plan step then only asks which)
       if (!c.s.optionsSaid && !c.s.plan) { c.s.optionsSaid = true; c.s.introduced = true; c.say("plan_offer", { price: MONTHLY, amount: VISIT }); return; }
@@ -1354,10 +1383,12 @@ export const gym: SituationDef = {
         case "towels": c.s.towelsSaid = true; c.say("towels_info"); break;
         case "lockers": tellLockers(c); break;
         case "parking": c.say("parking_info"); break;
-        case "classes": c.say("classes_info"); break;
+        // only zumba, spinning and box: "¿Tienen yoga?" is not a yes
+        case "classes": c.say(/\b(yoga|pilates|crossfit|baile|aerobic\w*)\b/.test(heard(c)) ? "classes_other" : "classes_info"); break;
         case "wifi": c.say("wifi_info"); break;
         case "water": c.say("water_info"); break;
         case "trainer": c.say("trainer_info"); break;
+        case "basics": c.say(/\b(banos?|sanitarios)\b/.test(heard(c)) ? "restroom_info" : "have_yes"); break;
         default: c.say("have_yes");
       }
     },
@@ -1371,8 +1402,12 @@ export const gym: SituationDef = {
     // --- the form and paying
     here_you_go(c) {
       if (c.s.plan && !c.s.signed) { sign(c); return; }
-      // handing over a card or the money: just thanks
-      if (c.s.signed && !c.s.paid) { pay(c, (c.s.payMethod as string | undefined) ?? "cash", true); return; }
+      // handing over a card or the money: just thanks. "Aquí está mi tarjeta" is the card; the ID she asked for
+      // at the form ("Aquí está mi identificación") pays nothing.
+      if (c.s.signed && !c.s.paid) {
+        if (ID_RE.test(heard(c))) { c.say("id_back"); c.hold(); return; }
+        pay(c, handedMethod(c) ?? (c.s.payMethod as string | undefined) ?? "cash", true); return;
+      }
       c.say("ack");
     },
     form_done(c) { if (c.s.plan && !c.s.signed) sign(c); else c.say("ack"); },
@@ -1688,6 +1723,25 @@ export const gym: SituationDef = {
     { say: "Mañana sí puedo.", intent: "next_same", step: "next", not: ["next_no"] },
     { say: "No me siento bien.", intent: "g_howareyou_bad", not: ["feel_good"] },
     { say: "No me falta el aire.", intent: "none", step: "breath", not: ["out_breath"] },
+    // review: meaning safety and breadth
+    { say: "No entiendo.", intent: "g_dont_understand", step: "sets", not: ["ready"] },
+    { say: "No entendí.", intent: "g_dont_understand", step: "sets", not: ["ready"] },
+    { say: "No, ya entendí.", intent: "ready", step: "sets" },
+    { say: "No entiendo cómo funciona.", intent: "ask_how", step: "sets", not: ["ready"] },
+    { say: "No quiero pagar en efectivo.", intent: "no_cash", step: "pay", not: ["pay_cash"] },
+    { say: "No en efectivo.", intent: "no_cash", step: "pay", not: ["pay_cash"] },
+    { say: "Aquí está mi tarjeta.", intent: "here_you_go", step: "pay" },
+    { say: "¿Cuánto es por un mes?", intent: "ask_price", step: "plan", slots: { plan: "monthly" }, not: ["choose_plan"] },
+    { say: "¿Es cara la mensualidad?", intent: "ask_price", step: "plan", not: ["plan_no", "choose_plan"] },
+    { say: "¿Tienen clases de yoga?", intent: "ask_have", slots: { amenity: "classes" } },
+    { say: "¿Hay baños?", intent: "ask_have", slots: { amenity: "basics" }, not: ["ask_have_unknown"] },
+    { say: "¿Tienen pesas?", intent: "ask_have", slots: { amenity: "basics" }, not: ["ask_have_unknown"] },
+    { say: "¿Tienen aire acondicionado?", intent: "ask_have", slots: { amenity: "basics" }, not: ["ask_have_unknown"] },
+    { say: "¿Puedo usar la bici?", intent: "warm_choice", step: "warmup", slots: { cardio: "bike" } },
+    { say: "Mañana no puedo, ¿el jueves?", intent: "next_day", step: "next", slots: { day: "thursday" }, not: ["next_same", "when_ctx"] },
+    { say: "No puedo mañana, ¿qué tal el viernes?", intent: "next_day", step: "next", slots: { day: "friday" }, not: ["next_same", "when_ctx"] },
+    { say: "No me duele.", intent: "no_pain", not: ["pain"] },
+    { say: "No, no me duele.", intent: "no_pain", not: ["pain"] },
     // not understood
     { say: "Mi perro toca la guitarra", intent: "none" },
     { say: "plátano ventana azul", intent: "none" },
@@ -1756,6 +1810,17 @@ export const gym: SituationDef = {
       "¡Listo!", "No me duele la rodilla.", "No.", "¿Me ayudas con la barra?", "¡Me falta el aire!", "¡Nos vemos mañana!", "¡Adiós!"],
       expect: { complete: true, state: { pain: undefined, painAsked: true } }, auto: AUTO,
       setup: (s) => { s.askFeel = false; s.outOfOrder = false; s.painTwist = true; } },
+    // review (rule 22): the card handed over is a card payment, the ID handed back pays nothing; "No entiendo" never
+    // starts the sets; "Mañana no puedo, ¿el jueves?" books Thursday, not tomorrow
+    { name: "hand-overs at the total, no entiendo, not tomorrow", turns: ["Hola, soy nueva aquí.", "La mensualidad.", "¿Dónde firmo?", "Aquí está mi identificación.",
+      "Aquí está mi tarjeta.", "No, ya estoy lista.", "La bici.", "¿Está ocupada esta máquina?", "No entiendo.", "No, ya entendí.", "¡Listo!", "¿Me ayudas?", "¡Me falta el aire!",
+      "Mañana no puedo, ¿el jueves?", "¡Adiós!"], expect: { complete: true, state: { plan: "monthly", payMethod: "card", paid: true, next: "thursday" } }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; s.outOfOrder = false; } },
+    // no card and no cash: nothing is paid on a "Sí"; the phone pays
+    { name: "no card, no cash: the phone", turns: ["Hola, soy nuevo aquí.", "La visita.", "Listo.", "No tengo tarjeta.", "No traigo efectivo.", "Sí.", "Con el celular.",
+      "No, ya estoy listo.", "La bici.", "¿Está libre?", "Estoy listo.", "¡Listo!", "¿Me ayudas?", "¡Me falta el aire!", "Mañana a las siete.", "¡Adiós!"],
+      expect: { complete: true, state: { plan: "day_pass", payMethod: "phone", paid: true, next: "tomorrow" } }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; s.outOfOrder = false; } },
   ],
 };
 
@@ -1821,15 +1886,23 @@ function otherMethod(c: Ctx, method: string) {
     suggest: [{ lt: "Pay", hint: "pay" }],
     on: {
       g_ok: (cc) => pay(cc, method, true),
-      here_you_go: (cc) => pay(cc, method, true),
+      here_you_go: (cc, sl, sg) => { gym.handlers.here_you_go(cc, sl, sg); },
       pay_cash: (cc) => pay(cc, "cash"), pay_card: (cc) => pay(cc, "card"),
       pay_phone: (cc, sl, sg) => { gym.handlers.pay_phone(cc, sl, sg); },
-      no_cash: (cc) => { if (method === "cash") { cc.say("ask_pay_method"); return; } pay(cc, method, true); },
-      no_card: (cc) => { if (method === "card") { cc.say("ask_pay_method"); return; } pay(cc, method, true); },
+      // neither card nor cash: the phone or a transfer; the stored method is gone, so a later "Sí" pays nothing
+      no_cash: (cc) => { if (method === "cash") { noCashNoCard(cc); return; } pay(cc, method, true); },
+      no_card: (cc) => { if (method === "card") { noCashNoCard(cc); return; } pay(cc, method, true); },
     },
     yes: (cc) => { if (politeClosing(cc)) { cc.say("pay_reask"); cc.hold(); return; } pay(cc, method, true); },
     no: (cc) => { cc.say("pay_reask"); cc.hold(); },
     ask: (cc) => cc.say("pay_reask") });
+}
+
+function noCashNoCard(c: Ctx) {
+  c.s.payMethod = undefined;
+  c.s.payAltSaid = true;
+  c.say("pay_alt");
+  c.hold();
 }
 
 function sign(c: Ctx) {
@@ -2003,14 +2076,16 @@ function whereHurtPending(): Pending {
  *  "no pain" answer is fine. */
 function noPainAnswer(c: Ctx, tags: string[]) {
   if (!tags.includes("amb")) { c.say("fine_reply"); return; }
-  c.s.ambPart = hurtPart(c, tags);
+  // "No me duele" names no part: a "Sí" then asks which
+  c.s.ambPart = PARTS.some((x) => tags.includes(x)) || /\b(rodilla|espalda|cintura|pierna|tobillo|cadera|pie|hombro|brazo|muneca|codo|cuello)s?\b/.test(heard(c)) ? hurtPart(c, tags) : undefined;
   c.say("pain_amb");
   const painH = (cc: Ctx, _sl: any, sg: { tags: string[] }) => { hurt(cc, sg.tags); };
   c.expect({ id: "pain_amb", expects: ["pain", "pain_ctx", "no_pain"], hints: ["g_yesno", "pain"],
     suggest: [{ lt: "Say whether it hurts", hint: "pain" }],
     // "Sí, me duele." names no part: the one just said
-    on: { pain: (cc, _sl, sg) => { hurt(cc, PARTS.some((x) => sg.tags.includes(x)) ? sg.tags : [cc.s.ambPart as string]); }, pain_ctx: painH, no_pain: (cc) => { cc.say("fine_reply"); } },
-    yes: (cc) => { hurt(cc, [cc.s.ambPart as string]); },
+    on: { pain: (cc, _sl, sg) => { if (!cc.s.ambPart && !PARTS.some((x) => sg.tags.includes(x))) { cc.say("what_hurts"); cc.expect(whereHurtPending()); return; }
+      hurt(cc, PARTS.some((x) => sg.tags.includes(x)) ? sg.tags : [cc.s.ambPart as string]); }, pain_ctx: painH, no_pain: (cc) => { cc.say("fine_reply"); } },
+    yes: (cc) => { if (!cc.s.ambPart) { cc.say("what_hurts"); cc.expect(whereHurtPending()); return; } hurt(cc, [cc.s.ambPart as string]); },
     no: (cc) => { cc.say("fine_reply"); },
     ask: (cc) => cc.say("pain_amb") });
 }
@@ -2102,7 +2177,8 @@ function breathPending(c: Ctx): Pending {
 function setNext(c: Ctx, value: string) {
   if (c.s.next) { c.say("ack"); return; }
   c.s.next = value;
-  c.say("see_tomorrow");
+  // "Mañana a las siete": another time, so never "Mañana, a la misma hora"
+  c.say(/\ba (las|la) \w+/.test(heard(c)) && !/misma hora/.test(heard(c)) ? "see_tomorrow_plain" : "see_tomorrow");
 }
 
 function nextDay(c: Ctx, day: string | undefined) {
