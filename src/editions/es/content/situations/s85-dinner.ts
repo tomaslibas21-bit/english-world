@@ -183,10 +183,18 @@ const H: Record<string, Handler> = {
   drink_ans(c, slots) {
     hi(c);
     const d = toArr(slots.drink)[0];
-    c.s.drink = d || "same";
+    // "Sí, un cafecito" to "¿Te sirvo algo más?": the after-dinner coffee, not the evening's drink
+    if (c.step === "leave" && c.s.drink) { c.s.coffee = d || "coffee"; c.s.coffeeSettled = true; }
+    else c.s.drink = d || "same";
     if (once(c, "drink")) dan(c, "drink_ok");
   },
-  no_drink(c) { hi(c); c.s.drink = "none"; if (once(c, "drink")) dan(c, "just_say"); },
+  no_drink(c) {
+    hi(c);
+    // "Nada, gracias" to the after-dinner coffee keeps the evening's drink on record
+    if (c.step === "leave" && c.s.drink) { c.s.coffeeSettled = true; if (c.s.stayed || asked(c, "leave") >= 2) { H.leave(c, {}, seg0("leave")); return; } }
+    else c.s.drink = "none";
+    if (once(c, "drink")) dan(c, "just_say");
+  },
   ask_drinks(c, _slots, seg) {
     hi(c);
     c.s.listed = true;
@@ -218,8 +226,10 @@ const H: Record<string, Handler> = {
     if (seg.tags.includes("pictures")) nora(c, "pictures");
     else nora(c, "home_thanks");
   },
-  praise_food(c) {
+  praise_food(c, _slots, seg) {
     hi(c);
+    // "No, está picante" typed with its comma answers "¿Te gusta?" with a no (by voice it stays "not spicy", rule 10)
+    if (/^[\s¡¿]*no\s*[,.;!]\s*(esta|es)\s+(muy |un poco |algo |bien )?(picante|picos|salad|fuerte)/.test(heard(c))) { H.food_meh(c, {}, { ...seg, intent: "food_meh" }); return; }
     // "Sí, está buenísima" answering "¿Te sirvo otro poquito?" is a yes as well.
     if ((c.step === "seconds" || c.step === "dessert") && /^\W*(si|claro|pues si|ay si)\b|\bsi\W*$/.test(heard(c))) H.more_yes(c, {}, seg0("more_yes"));
     c.s.foodPraised = true;
@@ -242,7 +252,7 @@ const H: Record<string, Handler> = {
     if (!once(c, "pass")) return;
     dan(c, it === "water_jug" ? "here_water" : "here_you_go");
   },
-  late_sorry(c) { hi(c); if (once(c, "late")) dan(c, "on_time"); },
+  late_sorry(c) { hi(c); if (!c.s.lateSorry && once(c, "late")) { c.s.lateSorry = true; dan(c, "on_time"); } },
   done_ctx(c) { H.here_you_go(c, {}, seg0("here_you_go")); },
   here_you_go(c) {
     hi(c);
@@ -307,6 +317,8 @@ const H: Record<string, Handler> = {
   leave(c) {
     hi(c);
     if (!once(c, "leave")) return; // "Ya me voy, mañana trabajo temprano" is one wish to leave
+    // "Se me hizo tarde, perdón" at the door: I'm late, not I must go
+    if (!c.s.dinnerSaid && /se me hizo tarde|llegue tarde/.test(heard(c)) && (c.step === "arrive" || c.step === "coat" || !c.s.drink)) { H.late_sorry(c, {}, seg0("late_sorry")); return; }
     if (c.s.leaving) { goodbyeThanks(c); return; }
     if (!c.s.dinnerSaid && !c.s.earlyLeave) { c.s.earlyLeave = true; nora(c, "but_dinner"); return; }
     if (c.s.stayTwist && !c.s.stayAsked) {
@@ -323,7 +335,9 @@ const H: Record<string, Handler> = {
         suggest: [{ lt: "Stay a little, or say no politely", hint: "stay" }],
         yes: (cc) => H.stay(cc, {}, seg0("stay")),
         no: go,
-        on: { leave: go, thanks_end: go, thanks_invite: go, g_bye: go, g_thanks: go, good_night: go, no_sorry: go, stay: (cc, sl, sg) => H.stay(cc, sl, sg), agree: (cc, sl, sg) => H.stay(cc, sl, sg) },
+        on: { leave: go, thanks_end: go, thanks_invite: go, g_bye: go, good_night: go, no_sorry: go,
+          // "Está bien, gracias" / "Bueno, gracias" could be "okay, I'll stay" or "no, thanks": the question again (rule 17)
+          g_thanks: (cc) => { if (/^\W*(esta bien|bueno|ok|okay|vale|va|sale)\W+gracias\W*$/.test(heard(cc)) && !cc.s.stayReasked) return false; go(cc); }, stay: (cc, sl, sg) => H.stay(cc, sl, sg), agree: (cc, sl, sg) => H.stay(cc, sl, sg) },
         ask: (cc) => { if (cc.s.stayReasked) { letGo(cc); return; } cc.s.stayReasked = true; nora(cc, "stay_reask"); },
       }));
       return;
@@ -486,7 +500,8 @@ export const dinner: SituationDef = {
     ] },
     late_sorry: { patterns: [
       "(perdon | perdona | perdonen | disculpa | disculpen | lo siento) (por llegar tarde | por la tardanza | la tardanza | por el retraso | el retraso | la demora | por hacerlos esperar)",
-      "(perdon | lo siento) (llegué | llegue) [un poco] tarde", "(siento | sentimos) llegar tarde", "(perdon | perdonen) (se me hizo tarde | habia mucho trafico | habia trafico)",
+      "(perdon | lo siento) (llegué | llegue) [un poco] tarde", "(siento | sentimos) llegar tarde", "(perdon | perdonen) (se me hizo tarde | habia mucho trafico | habia trafico)", "se me hizo (un poco)? tarde [perdon | lo siento | perdonen]",
+      "(perdon | perdona | perdonen | disculpa | disculpen | lo siento) por llegar tarde [es que]? (habia (mucho)? trafico | se me hizo tarde | no encontraba la casa)",
       "(perdon | perdona | perdonen | disculpa | disculpen) (la tardanza | el retraso | la demora) [es que]? habia (mucho)? trafico",
       // arriving early is the faux pas in Mexico: "¿Llegué muy temprano?"
       "(llegué | llegue) (muy | demasiado)? temprano", "(soy | fui) (el primero | la primera)",
@@ -499,7 +514,7 @@ export const dinner: SituationDef = {
       "que (tienes | tienen | hay | me ofreces | ofreces | me recomiendas) [de tomar | para tomar]", "que (opciones | bebidas) (hay | tienen | tienes)", "que (cerveza | cervezas | vino | vinos | refresco | refrescos | jugo) (tienes | tienen | hay)",
       "(hay | tienen | tienes) algo sin alcohol #noalc", "algo sin alcohol #noalc", "(nada de | sin) alcohol [para mi] #noalc", "[no] no (tomo | bebo) (alcohol | nada de alcohol | bebidas alcoholicas) #noalc", "[no] no puedo tomar alcohol #noalc",
     ] },
-    drink_neg: { patterns: ["no (quiero | tomo | bebo | me gusta | me gustan) {drink} [gracias]", "(nada de | sin) {drink} [gracias]"] },
+    drink_neg: { patterns: ["no (quiero | tomo | bebo | me gusta | me gustan) {drink} [gracias]", "(nada de | sin) {drink} [gracias]", "{drink} no [gracias]"] },
     offer_help: { patterns: [
       "(te | les | os)? ayudo [en algo | con algo | con la mesa | con los platos | con los trastes | en la cocina] #h:hp_can_i",
       "(puedo | podria) (ayudar | ayudarte | ayudarles | ayudarlos | ayudaros) [en algo | con algo | con la mesa | con la cena | en la cocina]",
@@ -529,7 +544,7 @@ export const dinner: SituationDef = {
       "(cocinas | cocinan | guisas | cocinais) (muy | super | bien)? (bien | rico | delicioso) #h:cm_cook", "(eres | son) (un | una | unos)? (gran | buen | buena | excelente | muy buen | muy buena) (cocinero | cocinera | cocineros | chef)",
       "que (rico | rica | delicioso | deliciosa | bien) se (ve | ven) [@food]", "(se ve | se ven | huele | sabe) (muy | super | bien)? (rico | rica | delicioso | deliciosa | riquisimo | riquisima | buenisimo | buenisima | bien) [@food]",
       "nunca (he comido | habia comido | comí | comi | he probado) (algo | nada) tan (rico | bueno | delicioso | sabroso)", "es la mejor cochinita (que he comido | que he probado | de mi vida)",
-      "(esta | es) (de)? (para chuparse los dedos | chuparse los dedos)", "no pica [nada | mucho | tanto] [esta (perfecta | perfecto | rica | rico)]", "no (esta | es) (picante | picosa | picoso | salada | salado | fuerte) [nada | para nada] [esta (perfecta | perfecto | rica | rico)]",
+      "(esta | es) (de)? (para chuparse los dedos | chuparse los dedos)", "no pica [nada | mucho | tanto] [esta (perfecta | perfecto | rica | rico)]", "no (esta | es) [nada | para nada] (picante | picosa | picoso | salada | salado | fuerte) [nada | para nada] [(y | pero)] [(esta | es) [muy | super | bien] @great]",
       // "Bueno" alone is a filler, never praise: "buena / bueno" needs the dish named
       "(esta | es) (normal | aceptable) #tip:weak_praise", "@food (esta | es) (buena | bueno | bien) #tip:weak_praise", "(no esta | nada | no esta nada | no esta tan) mal #tip:weak_praise",
     ] },
@@ -572,7 +587,8 @@ export const dinner: SituationDef = {
       "[si] [(solo | nomas | nada mas)] @little [de (flan | cochinita | arroz | postre | eso | frijoles)] [nada mas | nomas | por favor] #little #h:mo_little", "[si] [un poco] mas [por favor]",
       "[si] (me encantaria | con gusto | claro que si) [gracias] #h:mo_love",
       "[bueno | va | sale | ok | esta bien | venga | vale] @little #little",
-      "(todavia | aun) no estoy @full", "no estoy @full [todavia | aun]",
+      // a bare "No estoy lleno" is heard as "No, estoy lleno" (rule 10): the yes needs todavía / aún / tan
+      "(todavia | aun) no estoy @full", "no estoy @full (todavia | aun)", "no estoy tan @full",
       "yo [quiero] [uno | postre]", "yo si [quiero]", "(me encanta | me encantan) (el flan | el postre | lo dulce | los postres)",
       "(para el postre siempre hay | siempre hay) (lugar | espacio) [para el postre]", "si (flan | el flan) [por favor]", "(flan | el flan) si", "como (decir | les digo | te digo) que no",
       "[si] (sirveme | dame | ponme) (mas | un poco mas | otro poquito)", "(quiero | quisiera) (mas | otro poco | un poco mas)", "[si] (un pedacito | un pedazo) (chiquito | pequeno)? [por favor] #little #h:mo_small",
@@ -580,12 +596,13 @@ export const dinner: SituationDef = {
     more_no: { patterns: [
       "[no] [gracias] (estoy | ya estoy | quedé | quede) @full [gracias] #h:mo_full", "[no] [gracias] (estoy | ya estoy) bien [gracias]",
       "[no] ya no (puedo | puedo mas | puedo comer mas | quepo) [gracias] #h:mo_cant", "estoy que reviento", "ya no me cabe (nada | nada mas | ni un taco | otro taco)",
-      "[no] [gracias] ya (comí | comi) (mucho | bastante | demasiado)", "[no] no (quiero | puedo) (mas | nada mas | comer mas) [gracias]",
+      "[no] [gracias] ya (comí | comi | cené | cene) (mucho | bastante | demasiado) [gracias]", "[no] no (quiero | puedo) (mas | nada mas | comer mas) [gracias]",
       "[no] (nada mas | no mas | ya no) para mi [gracias]", "ya no [gracias]",
       "no [gracias] (estuvo | estaba) @great [pero estoy @full]", "(estuvo | estaba) @great pero (estoy | ya estoy) @full",
       "(mas tarde | luego | al rato) [tal vez | quizas | quiza]", "(tal vez | quizas | quiza | a lo mejor) (mas tarde | luego | al rato)",
       "[no] no (como | me gusta | me gustan | me gusta mucho) @sweet_thing", "[no] (estoy | ando) a dieta", "ya no [gracias] (estoy | ando) a dieta", "[no] (ya)? no tengo (hambre | espacio | lugar)",
-      "(ahorita | ahora) no [gracias]", "[no] (me encantaria | quisiera) pero (estoy | ya estoy) @full", "[no] no (quiero | voy a querer) [mas] (postre | flan | el flan | nada de postre | cochinita | tacos | comida | arroz)",
+      "(ahorita | ahora) no [gracias]", "[no] (me encantaria | quisiera) pero (estoy | ya estoy) @full", "[no] (me encantaria | quisiera) pero ya no (puedo | quepo) [mas]",
+      "[no] (postre | el postre | flan | el flan) no [gracias] [(estoy | ya estoy) @full] [gracias]", "[no] no (quiero | voy a querer) [mas] (postre | flan | el flan | nada de postre | cochinita | tacos | comida | arroz)",
     ] },
     reassure: { patterns: [
       "no te preocupes [por eso] [(esta | sigue) (rico | rica | delicioso | bien | bueno)] #h:tw_dont_worry", "[no pasa nada] (asi | igual) (esta | sabe | queda) (bien | rico | rica | bueno)",
@@ -766,7 +783,8 @@ export const dinner: SituationDef = {
         "Oh, and this is Michi. Are you allergic to cats?", { flags: { 4: "Michi: a typical cat's name (michi = kitty).", 8: ART_GEN } }),
     ],
     cat_reask: [
-      t("Entonces, | ¿no | te | molestan | los | gatos?", "So, | not | (to) you | they-bother | — | cats?", "So, cats don't bother you?", { flags: { 1: "no in a question: “they don't…, do they?”.", 4: ART_GEN } }),
+      // the same polarity as "¿Eres alérgico?": sí = they bother you (Michi goes out), no = fine
+      t("Entonces, | ¿te | molestan | los | gatos?", "So, | (to) you | they-bother | — | cats?", "So, do cats bother you?", { flags: { 3: ART_GEN } }),
     ],
     cat_good: [
       t("¡Qué | bueno! | Le encantan | las | visitas.", "How | good! | She loves | — | visitors.", "Good! She loves visitors.", { flags: { 3: ART_GEN } }),
@@ -945,6 +963,10 @@ export const dinner: SituationDef = {
         { flags: { 5: "cafecito: café with the diminutive, friendly." } }),
       t("¿Quieres | un | cafecito?", "Do-you-want | a | little coffee?", "Would you like a coffee?"),
     ],
+    chat_then: [
+      t("¡Bueno! | Entonces | seguimos | con | la | sobremesa.", "Okay! | Then | we-continue | with | the | after-dinner chat.", "Okay! Then let's just keep chatting.",
+        { flags: { 5: SOBREMESA } }),
+    ],
     // after the sobremesa coffee
     more_coffee: [
       t("¿Otro | cafecito?", "Another | little coffee?", "More coffee?"),
@@ -979,7 +1001,7 @@ export const dinner: SituationDef = {
         { flags: { 2: "aquí tienes tu casa: the Mexican “my home is your home”." } }),
     ],
     get_home_safe: [
-      t("¡Que | llegues | bien! | Avísanos | cuando | llegues.", "— | May-you-arrive | well! | Let us know | when | you-arrive.", "Get home safe! Text us when you get there.",
+      t("¡Que | descanses! | Avísanos | cuando | llegues.", "— | May-you-rest! | Let us know | when | you-arrive.", "Sleep well! Text us when you get home.",
         { flags: { 0: "que + verb: a wish." } }),
       t("¡Buenas noches! | Nos | avisas | cuando | llegues, | ¿eh?", "Good night! | (To) us | you-let-know | when | you-arrive, | okay?", "Good night! Let us know when you get home, okay?"),
     ],
@@ -1260,10 +1282,13 @@ export const dinner: SituationDef = {
       expects: ["leave", "thanks_end", "time_flies"],
       suggest: [{ lt: "Say it's time to go", hint: "leave" }, { lt: "Thank them for the evening", hint: "goodbye" }] },
     { id: "leave", when: (c) => !c.s.leaving, done: (c) => !!c.s.leaving,
-      ask: (c) => { bump(c, "leave"); dan(c, c.s.stayed ? "more_coffee" : "anything_else"); },
+      // once the coffee is settled (served or declined), no new offer: the hints show how to say goodbye
+      ask: (c) => { bump(c, "leave"); if (c.s.coffeeSettled) return; dan(c, c.s.stayed ? "more_coffee" : "anything_else"); },
       expects: ["leave", "thanks_end", "no_drink", "drink_ans"],
       suggest: [{ lt: "Say it's time to go", hint: "leave" }, { lt: "Thank them for the evening", hint: "goodbye" }],
-      no: (c) => { if (asked(c, "leave") >= 2) H.leave(c, {}, seg0("leave")); } },
+      yes: (c) => { c.s.coffee = "coffee"; c.s.coffeeSettled = true; dan(c, "drink_ok"); },
+      // "No, gracias" to another coffee after the sobremesa is the goodbye; the first one just declines it
+      no: (c) => { c.s.coffeeSettled = true; if (c.s.stayed || asked(c, "leave") >= 2) { H.leave(c, {}, seg0("leave")); return; } nora(c, "chat_then"); } },
   ],
 
   init: (c) => {
@@ -1400,6 +1425,18 @@ export const dinner: SituationDef = {
     { say: "Vale, un poquito", intent: "more_yes", step: "seconds" },
     // usted to a friend is understood too
     { say: "¿Me da la pimienta?", intent: "pass", slots: { pass: "pepper" } },
+    // reviewer's traps (blind set and probes)
+    { say: "Se me hizo tarde, perdón", intent: "late_sorry", step: "arrive", not: ["leave"] },
+    { say: "Perdón por llegar tarde, había mucho tráfico", intent: "late_sorry", step: "arrive" },
+    { say: "Cerveza no, gracias", intent: "drink_neg", step: "drink", not: ["drink_ans"] },
+    { say: "No, estoy lleno", intent: "more_no", step: "dessert", not: ["more_yes"] },
+    { say: "No estoy llena", intent: "more_no", step: "seconds", not: ["more_yes"] },
+    { say: "Postre no, gracias, estoy llena", intent: "more_no", step: "dessert", not: ["more_yes"] },
+    { say: "Me encantaría, pero ya no puedo", intent: "more_no", step: "dessert", not: ["more_yes", "thanks_end"] },
+    { say: "No está nada picante, está muy rico", intent: "praise_food", step: "howisit", not: ["food_meh"] },
+    { say: "No me quiero ir, pero ya es tarde", intent: "leave", step: "late", not: ["stay"] },
+    { say: "No, no soy alérgica", intent: "cat_ok_ctx", step: "cat", not: ["cat_allergic_ctx"] },
+    { say: "No traje nada, perdón", intent: "no_gift", step: "arrive", not: ["gift"] },
     // not understood
     { say: "El elefante morado baila en la cocina", intent: "none" },
     { say: "Mi tía vive en Guadalajara", intent: "none" },
@@ -1438,6 +1475,16 @@ export const dinner: SituationDef = {
       turns: ["¡Hola! Os he traído unos bombones.", "Un zumo de naranja.", "¿Queréis que os ayude?", "Listo.", "¡Qué rico!",
         "Vale, un poquito.", "Se me hizo tarde.", "¡Gracias por todo!"],
       expect: { complete: true, state: { saladDone: true, seconds: "yes" } }, auto: AUTO },
+    // late at the door is an apology, not a goodbye; "No, estoy llena" twice; the after-dinner coffee declined once
+    { name: "late at the door, full, no coffee", setup: (s) => { PLAIN(s); s.askSeconds = true; s.askDessert = true; },
+      turns: ["Se me hizo tarde, perdón.", "Gracias por invitarme.", "Cerveza no, gracias.", "Agua natural.", "¡Qué rico huele!", "No, está picante.", "Pero está muy rica.",
+        "No, estoy llena.", "Postre no, gracias.", "Gracias.", "No, gracias.", "Bueno, ya me voy.", "¡Gracias por todo!"],
+      expect: { complete: true, state: { lateSorry: true, drink: "water", seconds: "no", dessert: "no", coffeeSettled: true } }, auto: AUTO },
+    // a yes to the after-dinner coffee is served once; "Está bien, gracias" to "¡Quédate!" gets the question again
+    { name: "coffee yes, stay asked again", setup: (s) => { PLAIN(s); s.stayTwist = true; s.askSeconds = false; s.askDessert = false; },
+      turns: ["¡Hola! Gracias por invitarme.", "Una limonada.", "¡Qué bonita casa!", "¡Está riquísima!", "Ya me voy, que es tarde.", "Está bien, gracias.", "Sí, un ratito.",
+        "Sí, por favor.", "Ya me tengo que ir.", "¡Gracias por todo!"],
+      expect: { complete: true, state: { stayed: true, coffee: "coffee", drink: "lemonade" } }, auto: AUTO },
     // Twists, forced on every seed (they happen on returning visits)
     { name: "twist: Michi the cat", setup: (s) => { PLAIN(s); s.catTwist = true; },
       turns: ["¡Hola! Gracias por la invitación.", "Les traje flores.", "Una cerveza, por favor.", "Sí, un poco, la verdad.", "¿Te ayudo?", "¡Está deliciosa!",
