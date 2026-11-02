@@ -2,6 +2,7 @@
 import type { SituationDef } from "@/content/types";
 import S_s31_doctor from "./s31-doctor";
 import S_s32_mercado from "./s32-mercado";
+import S_s34_meeting from "./s34-meeting";
 import S_s35_gym from "./s35-gym";
 import S_s62_visitor_center from "./s62-visitor-center";
 import S_s64a_checkin from "./s64a-checkin";
@@ -33,5 +34,5 @@ import S_s90_running_late from "./s90-running-late";
 import S_s91a_lost_wallet from "./s91a-lost-wallet";
 import S_s91b_police from "./s91b-police";
 
-export const SITUATIONS: SituationDef[] = [S_s31_doctor, S_s32_mercado, S_s35_gym, S_s62_visitor_center, S_s64a_checkin, S_s64b_security, S_s64c_gate, S_s65a_passport, S_s65b_baggage, S_s66_taxi, S_s67a_tickets, S_s67b_bus, S_s68_hotel, S_s69_local, S_s70_museum, S_s71a_rental, S_s71b_gas, S_s72_cafe, S_s74_clothes, S_s75_pharmacy, S_s76_dentist_call, S_s78_bank, S_s79_post, S_s80_support_call, S_s81_apartment, S_s82_neighbor, S_s87_interview, S_s88_first_day, S_s89_video_call, S_s90_running_late, S_s91a_lost_wallet, S_s91b_police];
+export const SITUATIONS: SituationDef[] = [S_s31_doctor, S_s32_mercado, S_s34_meeting, S_s35_gym, S_s62_visitor_center, S_s64a_checkin, S_s64b_security, S_s64c_gate, S_s65a_passport, S_s65b_baggage, S_s66_taxi, S_s67a_tickets, S_s67b_bus, S_s68_hotel, S_s69_local, S_s70_museum, S_s71a_rental, S_s71b_gas, S_s72_cafe, S_s74_clothes, S_s75_pharmacy, S_s76_dentist_call, S_s78_bank, S_s79_post, S_s80_support_call, S_s81_apartment, S_s82_neighbor, S_s87_interview, S_s88_first_day, S_s89_video_call, S_s90_running_late, S_s91a_lost_wallet, S_s91b_police];
 export const SITUATION_BY_ID: Record<string, SituationDef> = Object.fromEntries(SITUATIONS.map((s) => [s.id, s]));

@@ -1,0 +1,57 @@
+{ "situation": "s34-meeting", "items": [
+  { "ctx": "mute", "say": "Sara, estás en silencio", "intent": "tell_mute" },
+  { "ctx": "mute", "say": "Sara, no te escuchamos", "intent": "tell_mute" },
+  { "ctx": "mute", "say": "Sara, tienes el micrófono apagado", "intent": "tell_mute" },
+  { "ctx": "mute", "say": "Hola a todos, buenos días", "intent": "greet_team" },
+
+  { "ctx": "sara_hear", "say": "Sí, ya te escuchamos", "intent": ["hear_yes", "yn:yes"] },
+  { "ctx": "sara_hear", "say": "No, todavía no te oigo", "intent": ["hear_no", "yn:no"], "not": ["hear_yes", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "notes", "say": "Sí, claro, yo tomo notas", "intent": ["can_do", "yn:yes"] },
+  { "ctx": "notes", "say": "Lo siento, hoy no puedo tomar notas", "intent": ["cant_do", "yn:no"], "not": ["can_do", "yn:yes"], "note": "trap: negation" },
+  { "ctx": "notes", "say": "Mejor que lo haga Pablo", "intent": "suggest_other" },
+
+  { "ctx": "update", "say": "Terminé el informe", "intent": "upd_done" },
+  { "ctx": "update", "say": "Estoy trabajando en la presentación", "intent": "upd_working" },
+  { "ctx": "update", "say": "Voy un poco atrasado con el presupuesto", "intent": "upd_behind" },
+  { "ctx": "update", "say": "Todo va bien, gracias", "intent": ["upd_ok", "upd_ok_ctx"] },
+  { "ctx": "update", "say": "Todavia no termine el informe", "intent": "any", "not": ["upd_done"], "note": "trap: negation, no accents" },
+
+  { "ctx": "when_q", "say": "Para el viernes", "intent": ["when_ans", "when_ctx"], "note": "bare dates moved to when_ctx in review (rule 2)" },
+  { "ctx": "when_q", "say": "Todavía no sé", "intent": ["unsure", "g_dontknow"] },
+
+  { "ctx": "send_q", "say": "Sí, te lo mando hoy", "intent": ["will_send", "yn:yes"] },
+
+  { "ctx": "clarify", "say": "¿Puedes explicarlo otra vez?", "intent": "clarify" },
+  { "ctx": "clarify", "say": "¿Qué significa QA?", "intent": ["word_q", "g_meaning"] },
+  { "ctx": "clarify", "say": "No tengo preguntas", "intent": "nothing_more" },
+
+  { "ctx": "makes_sense", "say": "No entendí muy bien", "intent": ["clarify", "yn:no", "g_dont_understand"], "not": ["nothing_more", "agree", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "add", "say": "Quiero agregar algo", "intent": "add_req" },
+  { "ctx": "add", "say": "Deberíamos probarla en teléfonos viejos", "intent": "add_test" },
+  { "ctx": "add", "say": "Puedo ayudar con las pruebas", "intent": "add_help" },
+  { "ctx": "add", "say": "No, nada más de mi parte", "intent": ["nothing_more", "yn:no"] },
+
+  { "ctx": "opinion", "say": "No estoy seguro de estar de acuerdo", "intent": ["disagree", "unsure"], "not": ["agree"], "note": "trap: polite disagreement" },
+  { "ctx": "opinion", "say": "Entiendo tu punto, pero creo que es muy caro", "intent": ["disagree", "reason"], "not": ["agree"], "note": "trap: but" },
+  { "ctx": "opinion", "say": "Estoy de acuerdo con Pablo", "intent": ["agree", "yn:yes"] },
+  { "ctx": "opinion", "say": "No estoy de acuerdo", "intent": ["disagree", "yn:no"], "not": ["agree", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "why", "say": "Porque es demasiado arriesgado", "intent": "reason" },
+  { "ctx": "why", "say": "Podríamos dividir el dinero a la mitad", "intent": "reason" },
+
+  { "ctx": "dl_view", "say": "Creo que Sara tiene razón", "intent": ["dl_view", "agree"] },
+
+  { "ctx": "owner", "say": "Yo me encargo", "intent": ["can_do", "yn:yes"] },
+  { "ctx": "owner", "say": "No puedo, tengo mucho trabajo esta semana", "intent": ["cant_do", "yn:no"], "not": ["can_do", "yn:yes"], "note": "trap: negation" },
+  { "ctx": "owner", "say": "Lo puede hacer Sara", "intent": "suggest_other", "not": ["can_do", "yn:yes"], "note": "trap: someone else" },
+
+  { "ctx": "aob", "say": "No, nada más", "intent": ["nothing_more", "yn:no"] },
+  { "ctx": "aob", "say": "¿Puedo trabajar desde casa el viernes?", "intent": "aob_wfh" },
+  { "ctx": "aob", "say": "¿Cuándo es la próxima reunión?", "intent": "q_next" },
+
+  { "ctx": "summary", "say": "Claro, les mando un resumen esta tarde", "intent": ["will_send", "can_do", "yn:yes"] },
+
+  { "ctx": "closing", "say": "Gracias a todos, nos vemos", "intent": "bye_all" }
+] }
