@@ -377,6 +377,7 @@ function Settings({ close }: { close: () => void }) {
           {s.onDevice && (local === "downloadable" || local === "downloading") && <> Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą. <button className="btn small" onClick={async () => { const ok = await installLocal(); await refreshLocalState(); setLocal(await localAvailability()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? "Įdiegta!" : "Nepavyko įdiegti", body: ok ? "Atpažinimas vyks šiame įrenginyje." : "Bus naudojamas naršyklės internetinis atpažinimas." }); }}>Įdiegti anglų kalbą</button></>}
           <br />Žaidimas nenaudoja jokio mokamo dirbtinio intelekto: visi pokalbiai ir balsų įrašai paruošti iš anksto. Jei nenori kalbėti į mikrofoną, visada gali rašyti <InlineIcon name="keyboard" label="klaviatūra" />.
         </div>
+        {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">Atsisiuntimai ir failų pašalinimas</a></div>}
         <div className="set-row">
           <div className="txt"><b>Pradėti iš naujo</b><span>Ištrina šios naršyklės išsaugotą progresą.</span></div>
           <button className="btn ghost small" onClick={() => { if (confirm("Tikrai ištrinti progresą?")) { useStore.getState().updateProgress((p) => { Object.assign(p, emptyProgress()); }); location.reload(); } }}>Ištrinti</button>

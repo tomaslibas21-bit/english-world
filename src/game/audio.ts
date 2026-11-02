@@ -57,7 +57,7 @@ export class AudioSystem {
     } catch { /* no clips yet: fallback voices */ }
     this.ready = true;
     if (typeof speechSynthesis !== "undefined") {
-      const load = () => { this.fallbackVoices = speechSynthesis.getVoices().filter((v) => /^en[-_]US/i.test(v.lang)); };
+      const load = () => { this.fallbackVoices = speechSynthesis.getVoices().filter((v) => /^en(?:[-_]|$)/i.test(v.lang)); };
       load();
       speechSynthesis.onvoiceschanged = load;
     }
@@ -79,6 +79,7 @@ export class AudioSystem {
       const alt = withoutAddressedNames(text, this.names);
       if (alt && this.manifest[audioKey(voice, speed, alt)]) key = audioKey(voice, speed, alt);
     }
+    if (!navigator.onLine) return this.speakFallback(text, opts);
     if (this.manifest[key]) {
       return new Promise((resolve) => {
         const a = new Audio(clipUrl(this.base, key, this.repairVersions[key], filesToken()));
@@ -158,10 +159,15 @@ export class AudioSystem {
       u.lang = "en-US";
       u.rate = opts.slow ? 0.78 : 0.95;
       u.volume = this.volume;
-      const vs = this.fallbackVoices;
+      const vs = navigator.onLine ? this.fallbackVoices : this.fallbackVoices.filter(v => v.localService);
+      if (!navigator.onLine && !vs.length) {
+        const timer = setTimeout(resolve, Math.min(6000, 600 + text.length * 55));
+        this.cancelCurrent = () => { clearTimeout(timer); resolve(); };
+        return;
+      }
       const pick = vs.find((v) => (opts.male ? /(male|daniel|fred|alex|aaron|arthur|guy|david|mark)/i : /(female|samantha|victoria|allison|ava|susan|zira|aria|jenny)/i).test(v.name) && v.localService)
         ?? vs.find((v) => v.localService) ?? vs[0];
-      if (pick) u.voice = pick;
+      if (pick) { u.voice = pick; u.lang = pick.lang; }
       let done = false;
       const finish = () => { if (!done) { done = true; resolve(); } };
       u.onend = finish; u.onerror = finish;
