@@ -202,5 +202,20 @@
   {"ctx": "invite", "say": "Tengo boletos para la tocada del viernes", "intent": ["tickets", "invite"]},
   {"ctx": "place", "say": "¿Nos vemos en el kiosco?", "intent": "meet"},
   {"ctx": "meet_time", "say": "A las ocho te veo", "intent": ["time_ans", "meet"]},
-  {"ctx": "howareyou", "say": "Bien, bien. Oye, tengo dos boletos para un concierto", "intent": ["tickets", "invite"]}
+  {"ctx": "howareyou", "say": "Bien, bien. Oye, tengo dos boletos para un concierto", "intent": ["tickets", "invite"]},
+  {"ctx": "pay", "say": "No me acuerdo", "intent": "band_forgot", "note": "review: answered as the price (pay_later), never the band"},
+  {"ctx": "suggest_time", "say": "A las ocho no puedo", "intent": "time_shift_ctx", "not": ["agree", "g_ok", "yn:yes", "time_ans"], "note": "review trap: refusal of her time"},
+  {"ctx": "suggest_time", "say": "No, a las ocho no", "intent": "time_shift_ctx", "not": ["agree", "g_ok", "yn:yes"], "note": "review trap"},
+  {"ctx": "suggest_time", "say": "Así está bien, gracias", "intent": ["agree", "yn:yes"], "note": "review: her time is fine"},
+  {"ctx": "time_change", "say": "No puedo a las ocho", "intent": "time_shift_ctx", "not": ["agree", "g_ok", "yn:yes"], "note": "review trap"},
+  {"ctx": "suggest_place", "say": "No me gusta el kiosco", "intent": "meet_not", "not": ["meet", "agree", "yn:yes"], "note": "review trap"},
+  {"ctx": "suggest_place", "say": "Me gusta el kiosco", "intent": "any", "not": ["meet_not"], "note": "review trap"},
+  {"ctx": "meet_change", "say": "¿Dónde queda la taquería?", "intent": "where_is_ctx", "not": ["meet", "agree"], "note": "review trap: a question, not a yes"},
+  {"ctx": "place", "say": "Mejor en el mercado", "intent": "meet", "slots": {"place": "mercado"}},
+  {"ctx": "place", "say": "Si quieres paso por ti a tu casa", "intent": "pickup"},
+  {"ctx": "invite", "say": "Me sobran dos boletos para el viernes, ¿te animas?", "intent": "invite"},
+  {"ctx": "invite", "say": "No quiero ir contigo", "intent": "any", "not": ["invite"], "note": "review trap: why the negative question stays out"},
+  {"ctx": "bbq", "say": "¿A qué hora es?", "intent": "accept_inv", "note": "review: answered with the time; bbqDone stays open (sim)"},
+  {"ctx": "bbq", "say": "¡Qué padre! Sí voy", "intent": "accept_inv"},
+  {"ctx": "bbq", "say": "Claro que no voy", "intent": "any", "not": ["accept_inv"], "note": "review trap"}
 ] }
