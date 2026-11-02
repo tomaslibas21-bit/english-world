@@ -1,0 +1,52 @@
+{ "situation": "s81-apartment", "items": [
+  { "ctx": "purpose", "say": "Buenas tardes, vengo a ver el departamento", "intent": ["see_apartment", "yn:yes"] },
+  { "ctx": "purpose", "say": "Hola, vi el anuncio del departamento en renta", "intent": "see_apartment" },
+  { "ctx": "purpose", "say": "Sí, hablamos ayer por teléfono", "intent": ["see_apartment", "yn:yes"] },
+  { "ctx": "purpose", "say": "¿Todavía está disponible el apartamento?", "intent": "see_apartment", "note": "neutral apartamento" },
+
+  { "ctx": "questions", "say": "¿Cuánto cuesta la renta al mes?", "intent": "ask_rent" },
+  { "ctx": "questions", "say": "¿Cuánto es el alquiler?", "intent": "ask_rent", "note": "Spain alquiler" },
+  { "ctx": "questions", "say": "¿La luz está incluida?", "intent": "ask_utilities" },
+  { "ctx": "questions", "say": "¿Están incluidos los servicios?", "intent": "ask_utilities" },
+  { "ctx": "questions", "say": "¿El agua y el gas van aparte?", "intent": "ask_utilities" },
+  { "ctx": "questions", "say": "¿Cuánto hay que dejar de depósito?", "intent": "ask_deposit" },
+  { "ctx": "questions", "say": "¿Viene con muebles?", "intent": "ask_furnished" },
+  { "ctx": "questions", "say": "¿Se permiten perros?", "intent": "ask_pets" },
+  { "ctx": "questions", "say": "¿De cuánto tiempo es el contrato?", "intent": "ask_lease" },
+  { "ctx": "questions", "say": "¿Hay lugar para estacionar el carro?", "intent": "ask_parking" },
+  { "ctx": "questions", "say": "¿Dónde puedo lavar la ropa?", "intent": "ask_laundry" },
+  { "ctx": "questions", "say": "¿Es una zona tranquila?", "intent": "ask_quiet" },
+  { "ctx": "questions", "say": "¿En qué piso está?", "intent": "ask_floor" },
+  { "ctx": "questions", "say": "¿Me puede bajar un poco la renta?", "intent": "ask_lower" },
+  { "ctx": "questions", "say": "¿Qué día se paga la renta?", "intent": "ask_payrent" },
+  { "ctx": "questions", "say": "¿Tiene refri y estufa?", "intent": "ask_appliance" },
+  { "ctx": "questions", "say": "No, es todo, gracias", "intent": ["no_more", "yn:no"], "not": ["take"] },
+  { "ctx": "questions", "say": "¿Y si no me gusta, puedo cancelar el contrato?", "intent": "any", "not": ["take", "decline"], "note": "trap: what-if" },
+
+  { "ctx": "movein_q", "say": "El próximo mes, si se puede", "intent": "movein_ans_ctx" },
+  { "ctx": "people_q", "say": "No, somos dos, mi esposa y yo", "intent": ["people_ans", "people_num_ctx"], "not": ["yn:yes"], "note": "trap: no + count" },
+  { "ctx": "pets_q", "say": "No, no tengo", "intent": ["no_pets", "yn:no"], "not": ["have_pet"] },
+  { "ctx": "pets_q", "say": "Sí, tengo un gato", "intent": "have_pet" },
+
+  { "ctx": "decision", "say": "Me lo quedo", "intent": ["take", "yn:yes"] },
+  { "ctx": "decision", "say": "Lo tengo que pensar", "intent": ["think", "think_ctx"], "not": ["take"] },
+  { "ctx": "decision", "say": "No, gracias, es muy caro para mí", "intent": ["decline", "too_x", "yn:no"], "not": ["take"] },
+  { "ctx": "decision", "say": "No sé si me lo quedo", "intent": "any", "not": ["take"], "note": "trap: hedged" },
+  { "ctx": "decision", "say": "¿Cuánto era el depósito?", "intent": "ask_deposit", "not": ["take"], "note": "trap: price question at decision" },
+
+  { "ctx": "docs", "say": "Aquí tiene mi pasaporte", "intent": ["here_you_go", "id_ctx"] },
+  { "ctx": "docs", "say": "No tengo trabajo aquí todavía", "intent": "no_job", "not": ["have_job"] },
+
+  { "ctx": "aval", "say": "No, no tengo aval", "intent": ["aval_none", "aval_none_ctx", "yn:no"], "not": ["aval_yes", "aval_yes_ctx"] },
+  { "ctx": "aval", "say": "¿Qué es un aval?", "intent": "ask_aval", "not": ["aval_yes", "aval_none"] },
+  { "ctx": "extra_deposit", "say": "Sí, puedo pagar los dos meses", "intent": ["aval_deposit", "yn:yes"] },
+  { "ctx": "extra_deposit", "say": "Es mucho dinero, no puedo", "intent": ["aval_deposit_no_ctx", "yn:no"], "not": ["aval_deposit", "yn:yes"], "note": "trap" },
+
+  { "ctx": "sign", "say": "¿Dónde firmo?", "intent": "where_sign" },
+  { "ctx": "sign", "say": "Primero quiero leerlo", "intent": "read_first", "not": ["where_sign"] },
+
+  { "ctx": "problem", "say": "El aire acondicionado no enfría", "intent": "report_problem" },
+  { "ctx": "problem", "say": "Gotea la llave del baño", "intent": "report_problem" },
+  { "ctx": "visit", "say": "No, mañana no puedo, estoy en el trabajo", "intent": ["at_work", "time_bad", "yn:no"], "not": ["home_yes", "time_ok"], "note": "trap" },
+  { "ctx": "visit", "say": "Sí, voy a estar en casa", "intent": ["home_yes", "yn:yes"] }
+] }

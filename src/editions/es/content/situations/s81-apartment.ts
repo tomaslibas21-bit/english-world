@@ -151,7 +151,9 @@ export const apartment: SituationDef = {
         "(necesito | quiero) ver otros (departamentos | lugares) [primero]",
         "(necesito | quiero) (mas tiempo | un dia mas | unos dias | un poco de tiempo) [para (pensarlo | decidir | decidirme)]",
         "todavia no (estoy | me siento) (seguro | segura)", "no estoy (seguro | segura) todavia", "todavia no me decido",
-        "lo consulto con la almohada", "(voy a | tengo que) pensarlo bien", "no se (dejeme | deje) pensarlo", "no se (lo voy a | lo tengo que | tengo que) (pensar | pensarlo)",
+        "lo consulto con la almohada", "(voy a | tengo que) pensarlo bien",
+        "no se si (me lo quedo | me lo voy a quedar | lo rento | lo voy a rentar | lo tomo | lo quiero | rentarlo | me interesa | me conviene | es para mi)",
+        "no estoy (seguro | segura) (si | de) (me lo quedo | rentarlo | quedarmelo | que me interese)", "no se (dejeme | deje) pensarlo", "no se (lo voy a | lo tengo que | tengo que) (pensar | pensarlo)",
       ],
     },
     slots: {
@@ -195,11 +197,11 @@ export const apartment: SituationDef = {
       "(puedo | podemos | se puede) ver @the_apt",
       "(estoy | estamos) (interesado | interesada | interesados) en @the_apt", "me interesa @the_apt",
       "(estoy | ando | estamos) buscando (un | una) @apt [para (rentar | alquilar) | en renta]",
-      "(hablamos | platicamos) por telefono [ayer | hoy | el {day} | esta manana] #h:spoke_phone",
+      "(hablamos | platicamos) por telefono [ayer | hoy | el {day} | esta manana] #h:spoke_phone", "(hablamos | platicamos) (ayer | hoy | el {day} | esta manana) por telefono",
       "le (llamé | hablé | escribí) [por telefono | por whatsapp] [ayer | hoy | el {day} | esta manana] [por @the_apt]",
       "le mandé un mensaje [ayer | hoy | por whatsapp]",
       "(tengo | tenemos) una cita [para ver @the_apt] [a {time}]",
-      "(vi | vimos) (su | el) anuncio [en internet | en facebook | en la pagina | en marketplace | en el periodico]",
+      "(vi | vimos) (su | el | un) anuncio [(del | de un | de) @apt [en renta | que se renta]] [en internet | en facebook | en la pagina | en marketplace | en el periodico]",
       "(vengo | vine) por el anuncio",
       "(todavia | aun) esta disponible @the_apt #h:still_avail", "@the_apt (todavia | aun | sigue) (esta disponible | disponible)",
       "(sigue | todavia esta | aun esta) (disponible | libre) [@the_apt]",
@@ -239,6 +241,7 @@ export const apartment: SituationDef = {
       "(y | que pasa con) (el | la) @dep", "(me | se) (devuelve | regresa) (el | la) @dep", "(el | la) @dep (se devuelve | me lo devuelve | es reembolsable)",
       "cuanto (tengo que | hay que) pagar (al principio | para entrar | para mudarme | al firmar | por adelantado)",
       "cuantos meses de @dep [son | pide | piden | hay que dejar]", "(pide | piden) @dep",
+      "cuanto (hay que | tengo que | se tiene que) (dejar | pagar | dar) de @dep", "cuanto (se deja | dejo | pido) de @dep",
     ] },
     ask_furnished: { patterns: [
       "(esta | viene) (amueblado | amueblada) [@the_apt] #h:q_furnished", "@the_apt (esta | viene) (amueblado | amueblada)",
@@ -378,7 +381,9 @@ export const apartment: SituationDef = {
       "no me interesa", "no (lo quiero | quiero rentarlo | lo quiero rentar)", "no lo (rento | tomo)", "[no gracias] sigo buscando", "no me gusta", "(voy a | mejor voy a) seguir buscando", "voy a buscar otra cosa",
     ] },
     // "Sí, tengo unas preguntas." (to "¿Tiene alguna pregunta?")
-    have_questions: { patterns: ["[si] tengo (unas | algunas | un par de | varias | muchas | dos | tres) preguntas", "[si] tengo una pregunta"] },
+    have_questions: { patterns: ["[si] tengo (unas | algunas | un par de | varias | muchas | dos | tres) preguntas", "[si] tengo una pregunta",
+      // "No es todo, tengo otra pregunta.": the comma is lost, so "no es todo" + a question is never "that's all"
+      "[no es todo] (tengo | todavia tengo | me falta) (otra | una) pregunta [mas]", "una pregunta mas"] },
     // "Tal vez." / "Lo estoy pensando." only as an answer to "¿Qué le parece?"
     think_ctx: { patterns: ["(tal vez | quizas | quiza | a lo mejor | puede ser)", "(lo | todavia lo) estoy pensando", "(todavia | aun) no (me decido | estoy (seguro | segura) | lo se)", "(todavia | aun) no"] },
     call_back: { patterns: [
@@ -418,7 +423,7 @@ export const apartment: SituationDef = {
       "tengo (mis estados de cuenta | recibos de nomina | mis recibos de nomina)", "(le mando | le paso | le traigo) (mis estados de cuenta | mi contrato [de trabajo] | mi carta | mis recibos de nomina) [por correo | manana]",
     ] },
     no_job: { patterns: [
-      "(todavia | aun) no tengo (trabajo | chamba)", "no tengo (trabajo | chamba | carta [de trabajo] | recibos de nomina | comprobante de ingresos) [todavia | aun]",
+      "(todavia | aun) no tengo (trabajo | chamba)", "no tengo (trabajo | chamba | carta [de trabajo] | recibos de nomina | comprobante de ingresos) [aqui | en mexico] [todavia | aun]",
       "(estoy | ando) buscando (trabajo | chamba)", "no estoy trabajando [todavia | ahorita]",
     ] },
     where_sign: { patterns: [
@@ -434,6 +439,7 @@ export const apartment: SituationDef = {
     read_first: { patterns: [
       "(lo | la) puedo leer (primero | antes) #h:read_first", "(puedo | me deja) leerlo (primero | antes [de firmar])",
       "(quisiera | me gustaria | quiero | necesito) leerlo (primero | antes [de firmar])", "dejeme leerlo [primero]", "(me lo puedo | puedo) llevar para leerlo",
+      "primero (quiero | quisiera | me gustaria | necesito) leerlo", "(no quiero | prefiero no) firmar sin leerlo [primero]",
     ] },
     copy: { patterns: [
       "(me da | me puede dar | puedo tener | me quedo con) una copia [del contrato] #h:copy", "(me | me puede) (manda | mandar | envia | enviar) una copia [por correo]",
@@ -455,11 +461,12 @@ export const apartment: SituationDef = {
     ] },
     aval_yes_ctx: { patterns: ["si tengo", "mi (jefe | jefa | empresa) [puede firmar]", "un amigo (puede firmar | de aqui)"] },
     // "¿Cuánto es?" / "¿Cuánto sería en total?" while an amount is on the table
-    amount_q_ctx: { patterns: ["cuanto (es | seria | serian | son | sale) [en total | entonces | todo]", "cuanto (tengo que | hay que) (pagar | dejar) [en total | entonces]", "de cuanto (es | seria) [el deposito]"] },
+    amount_q_ctx: { patterns: ["cuanto (es | seria | serian | son | sale | cuesta | costaria) [en total | entonces | todo]", "cuanto (tengo que | hay que) (pagar | dejar) [en total | entonces]", "de cuanto (es | seria) [el deposito]"] },
     // a no to the extra deposit: refused, too much, or a what-if about the money
     aval_deposit_no_ctx: { patterns: [
       "no (quiero | puedo) (dejar | pagar) (dos meses | tanto | mas | eso) [de @dep]", "(es | son) (mucho | demasiado) dinero", "no tengo (tanto dinero | ese dinero | tanto)",
       "(y si | que pasa si) no tengo (tanto | ese | el) dinero", "(es | esta) muy caro", "no me alcanza",
+      "[(es | son) (mucho | demasiado) [dinero] [para mi]] no (puedo | me alcanza) [pagar (eso | tanto | dos meses)]",
     ] },
     poliza_yes_ctx: { patterns: ["(esta bien | prefiero | mejor | si) [la] poliza", "(acepto | contrato) la poliza"] },
     poliza_no_ctx: { patterns: ["no (quiero | necesito) [la] poliza", "(prefiero | mejor) no", "no gracias [la] poliza no"] },
@@ -492,6 +499,8 @@ export const apartment: SituationDef = {
       "(no muy bien | no tan bien | mas o menos | regular) [la verdad]", "(hay | tengo) un (problema | problemita) [con el departamento]",
       "algo (no funciona | esta descompuesto | se descompuso)",
     ] },
+    // "No, nada." / "Solo pasaba a saludar." to "¿En qué le puedo ayudar?" in tenant mode: all good
+    nothing_ctx: { patterns: ["[no] nada [mas] [gracias]", "[no] [nada] solo (pasaba | vine | queria) [a] saludar"] },
     sorry_bother: { patterns: ["(perdon | disculpe) (que lo moleste | por molestarlo | la molestia) #h:sorry_bother", "siento molestarlo", "perdon que lo moleste"] },
     fix_request: { patterns: [
       "@staff mandar a alguien [a (arreglarlo | revisarlo | verlo)] #h:fix", "(lo | la) (puede | podria) (arreglar | revisar)", "(puede | podria) (arreglarlo | arreglarla | revisarlo)",
@@ -609,6 +618,11 @@ export const apartment: SituationDef = {
     ],
     util_yes: [t("Sí, | {X.the} | está | {incluido@X}.", "Yes, | {X.the} | is | included.", "Yes, {X} is included.")],
     util_no: [t("No, | {X.the} | no está | {incluido@X}.", "No, | {X.the} | isn't | included.", "No, {X} isn't included.")],
+    // "¿Tengo que pagar el agua?" / "¿El agua se paga aparte?": no, it's included
+    util_incl_no: [t("No, | {X.the} | ya | está | {incluido@X} | en | la | renta.", "No, | {X.the} | already | is | included | in | the | rent.", "No, {X} is already included in the rent.")],
+    // "¿Quién paga el agua?" / "¿Cuánto cuesta el agua?": no yes or no
+    util_incl: [t("{X.the} | ya | está | {incluido@X} | en | la | renta.", "{X.the} | already | is | included | in | the | rent.", "{X} is already included in the rent.")],
+    util_depends: [t("Eso | se paga | aparte; | depende | de | cuánto | use.", "That | is paid | separately; | it depends | on | how much | you use.", "That's extra, and it depends on how much you use.")],
     util_separate: [t("Eso | se paga | aparte.", "That | is paid | separately.", "You'd pay for that separately.")],
     util_internet: [t("Casi | todos | los | vecinos | tienen | NetWave.", "Almost | all | the | neighbors | have | NetWave.", "Most of the neighbors use NetWave.")],
     util_cost: [t("La | luz | depende | de | cuánto | use | el | aire | acondicionado. | El | recibo | llega | cada | dos | meses.", "The | electricity | depends | on | how much | you use | the | air | conditioning. | The | bill | comes | every | two | months.", "Electricity depends on how much you use the AC. The bill comes every two months.")],
@@ -621,6 +635,8 @@ export const apartment: SituationDef = {
     ],
     deposit_first: [t("Y | el | primer | mes | de | renta, | al | firmar | el | contrato.", "And | the | first | month | of | rent, | upon | signing | the | lease.", "And the first month's rent when you sign the lease.")],
     deposit_back: [t("Se lo | devuelvo | cuando | se vaya, | si | todo | está | en orden.", "It to you | I'll return | when | you leave, | if | everything | is | in order.", "You get it back when you move out, if everything's in order.")],
+    furnished_semi: [t("Está | semiamueblado: | tiene | estufa, | refrigerador | y | clósets, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.",
+      { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." } })],
     furnished: [
       t("Está | semiamueblado: | tiene | estufa, | refrigerador | y | clósets, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.",
         { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." } }),
@@ -639,7 +655,7 @@ export const apartment: SituationDef = {
     parking: [
       t("Tiene | un | cajón | de | estacionamiento | atrás | del | edificio.", "It has | a | space | of | parking | behind | the | building.", "You get one parking space behind the building.",
         { flags: { 2: "Mexican: cajón (de estacionamiento) = a parking space; lugar is more widely used." }, neutral: t("Tiene | un | lugar | de | estacionamiento | atrás | del | edificio.", "It has | a | space | of | parking | behind | the | building.", "You get one parking space behind the building.") }),
-      t("Sí, | hay | estacionamiento | gratis | atrás | del | edificio.", "Yes, | there's | parking | free | behind | the | building.", "Yes, there's free parking behind the building."),
+      t("Hay | estacionamiento | gratis | atrás | del | edificio.", "There's | parking | free | behind | the | building.", "There's free parking behind the building."),
     ],
     laundry: [
       t("En | la | azotea | hay | un | área | de | lavado | con | lavadora.", "On | the | roof | there's | an | area | for | washing | with | washing machine.", "There's a laundry area with a washing machine up on the roof.",
@@ -650,6 +666,9 @@ export const apartment: SituationDef = {
       t("Sí, | es | un | edificio | muy | tranquilo.", "Yes, | it's | a | building | very | quiet.", "Yes, it's a very quiet building."),
       t("Muy | tranquilo. | Casi | todos | los | vecinos | son | jubilados.", "Very | quiet. | Almost | all | the | neighbors | are | retired.", "Very quiet. Most of the neighbors are retired."),
     ],
+    quiet_noise: [t("No, | es | un | edificio | muy | tranquilo.", "No, | it's | a | building | very | quiet.", "No, it's a very quiet building.")],
+    quiet_neighbors: [t("Muy | tranquilos: | casi | todos | son | jubilados.", "Very | quiet: | almost | all | are | retired.", "Very quiet. Most of them are retired.")],
+    quiet_area: [t("Es | una | zona | tranquila | y | segura.", "It's | an | area | quiet | and | safe.", "It's a quiet, safe neighborhood.")],
     safe: [t("Sí, | es | una | zona | segura.", "Yes, | it's | an | area | safe.", "Yes, it's a safe neighborhood.")],
     bus: [
       t("La | parada | del | colectivo | está | en | la | esquina.", "The | stop | of the | colectivo | is | on | the | corner.", "The colectivo stop is right on the corner.",
@@ -686,6 +705,8 @@ export const apartment: SituationDef = {
       t("Entonces, | ¿qué | le parece?", "So, | what | do you think?", "So, what do you think?"),
       t("¿Qué | dice? | ¿Le interesa?", "What | do you say? | Are you interested?", "So, are you interested?"),
     ],
+    // "Me lo quedo" before the terms were said: the terms first, then the question again
+    terms_first: [t("¡Qué | bueno! | Antes, | para | que | sepa:", "How | good! | First, | so | that | you know:", "Great! But first, just so you know:")],
     take_ok: [
       t("¡Excelente! | Creo | que | aquí | va | a | estar | muy | a gusto.", "Excellent! | I think | that | here | you're going | to | be | very | comfortable.", "Wonderful! I think you'll be very happy here."),
       t("¡Qué | bueno | que | le gustó!", "How | good | that | you liked it!", "Great! I'm glad you like it."),
@@ -725,7 +746,7 @@ export const apartment: SituationDef = {
       t("Entiendo. | ¡Gracias | por | venir!", "I understand. | Thank you | for | coming!", "I understand. Thanks for coming!"),
     ],
     bye_take: [t("Si | necesita | algo, | vivo | en | la | planta baja.", "If | you need | anything, | I live | on | the | ground floor.", "If you need anything, I live on the ground floor.")],
-    bye_think: [t("¡Ojalá | me | avise | pronto!", "Hopefully | (to) me | you let know | soon!", "Hope to hear from you soon!")],
+    bye_think: [t("¡Gracias | por | venir!", "Thank you | for | coming!", "Thanks for coming!")],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Claro.", "Sure.", "Sure.")],
 
     // --- the guarantor (aval) ---
@@ -742,9 +763,10 @@ export const apartment: SituationDef = {
     aval_deposit_ok: [t("Muy | bien: | dos | meses | de | depósito | y | listo.", "Very | good: | two | months | of | deposit | and | done.", "All right: two months' deposit, and we're all set.")],
     aval_deposit_amount: [t("Serían | {$deposit} | de | depósito: | dos | meses | de | renta.", "It would be | {$deposit} | of | deposit: | two | months | of | rent.", "That would be {$deposit} for the deposit: two months' rent.")],
     aval_deposit_fine: [t("No hace falta; | con | un | mes | es | suficiente.", "It's not needed; | with | one | month | it's | enough.", "No need; one month is enough.")],
-    poliza_offer: [t("Entonces | puede | contratar | una | póliza | jurídica: | una | empresa | revisa | sus | datos | y | responde | por | usted. | ¿Le parece?", "Then | you can | take out | a | policy | legal: | a | company | checks | your | details | and | answers | for | you. | Does that work for you?", "Then you can take out a rental guarantee policy: a company checks your details and vouches for you. Would that work?",
-      { flags: { 4: "póliza jurídica: a rental guarantee from a legal firm, common in Mexico when there's no guarantor." } })],
+    poliza_offer: [t("Entonces | puede | contratar | una | póliza | jurídica: | una | empresa | revisa | sus | datos | y | responde | por | usted. | Usted | la | paga | una | sola | vez. | ¿Le parece?", "Then | you can | take out | a | policy | legal: | a | company | checks | your | details | and | answers | for | you. | You | it | pay | one | single | time. | Does that work for you?", "Then you can take out a rental guarantee policy: a company checks your details and vouches for you. You pay for it once. Would that work?",
+      { flags: { 4: "póliza jurídica: a rental guarantee from a legal firm, common in Mexico when there's no guarantor.", 16: "la before a verb is a pronoun: it (the policy)." } })],
     poliza_info: [t("Usted | paga | la | póliza | una | sola | vez. | El | precio | depende | de | la | empresa.", "You | pay | the | policy | one | single | time. | The | price | depends | on | the | company.", "You pay for the policy once. The price depends on the company.")],
+    poliza_price: [t("El | precio | depende | de | la | empresa.", "The | price | depends | on | the | company.", "The price depends on the company.")],
     poliza_reask: [t("¿Entonces | le parece | bien | la | póliza?", "So | does it seem to you | fine | the | policy?", "So, does the policy work for you?")],
     poliza_ok: [t("Perfecto. | Le | paso | el | contacto | de | la | empresa.", "Perfect. | (To) you | I'll pass | the | contact | of | the | company.", "Perfect. I'll give you the company's contact.")],
     aval_no_deal: [t("Entiendo. | Piénselo | con | calma | y | me | avisa.", "I understand. | Think it over | with | calm | and | (to) me | you let know.", "I understand. Think it over and let me know.")],
@@ -951,7 +973,7 @@ export const apartment: SituationDef = {
     { id: "problem", when: (c) => c.s.mode === "problem", done: (c) => !!c.s.problem,
       ask: (c) => { if (!c.s.howisSaid) { c.s.howisSaid = true; c.say("howis"); } else c.say("problem_reask"); },
       // "Bien, gracias." answers "¿Qué tal todo en el departamento?" (all good)
-      expects: ["report_problem", "all_good", "sorry_bother", "fix_request", "have_problem", "g_howareyou_answer"],
+      expects: ["report_problem", "all_good", "sorry_bother", "fix_request", "have_problem", "g_howareyou_answer", "nothing_ctx"],
       suggest: [{ lt: "Report a problem: the AC, a dripping faucet…", hint: "problem" }],
       yes: (c) => { apartment.handlers.all_good(c, {}, { intent: "all_good", slots: {}, tags: [] }); },
       no: (c) => { c.say("problem_what"); c.hold(); } },
@@ -1104,8 +1126,13 @@ export const apartment: SituationDef = {
       }
       c.s.utilSaid = true;
       if (!u) { c.say("utilities_all"); return; }
-      if (INCLUDED.includes(u)) { c.say("util_yes", { X: u }); return; }
-      if (/\bquien\b/.test(h) || /\bpag/.test(h)) c.say("util_separate"); else c.say("util_no", { X: u });
+      // every reply answers its question: "¿Tengo que pagar el agua?" → "No, ya está incluida"; "¿Quién paga…?",
+      // "¿Cuánto cuesta…?" get no yes or no
+      const payQ = /\bpag|aparte/.test(h);
+      const whQ = /\b(quien|cuanto|cuanta)\b/.test(h);
+      if (INCLUDED.includes(u)) { c.say(whQ ? "util_incl" : payQ ? "util_incl_no" : "util_yes", { X: u }); return; }
+      if (/\bcuanto\b/.test(h)) c.say("util_depends");
+      else if (/\bquien\b/.test(h) || payQ) c.say("util_separate"); else c.say("util_no", { X: u });
       if (u === "gas") c.say("util_gas");
       else if (u === "internet" && c.chance(0.7)) c.say("util_internet");
       else if (u === "electricity" && c.chance(0.5)) c.say("util_cost");
@@ -1117,7 +1144,7 @@ export const apartment: SituationDef = {
       c.say("deposit", { deposit: RENT });
       if (/al principio|para entrar|para mudarme|al firmar|por adelantado/.test(h) || c.chance(0.4)) c.say("deposit_first");
     },
-    ask_furnished(c) { asked(c, "furnished"); c.say("furnished"); },
+    ask_furnished(c) { asked(c, "furnished"); c.say(/vaci|sin muebles|semiamueblad/.test(heard(c)) ? "furnished_semi" : "furnished"); },
     ask_appliance(c, slots, seg) {
       asked(c, "furnished");
       const a = (seg.tags.includes("heater") ? "heater" : slots.appliance) as string;
@@ -1139,7 +1166,12 @@ export const apartment: SituationDef = {
     ask_movein(c) { asked(c, "movein"); c.say("movein_info"); },
     ask_parking(c) { asked(c, "parking"); c.say("parking"); },
     ask_laundry(c) { asked(c, "laundry"); c.say("laundry"); },
-    ask_quiet(c) { asked(c, "quiet"); c.say(/segur/.test(heard(c)) ? "safe" : "quiet"); },
+    ask_quiet(c) {
+      asked(c, "quiet");
+      const h = heard(c);
+      // "¿Hay mucho ruido?" gets a no; "¿Cómo son los vecinos?" / "¿Qué tal la colonia?" get no yes or no
+      c.say(/ruid/.test(h) ? "quiet_noise" : /vecinos/.test(h) ? "quiet_neighbors" : /\b(que tal|como es)\b/.test(h) ? "quiet_area" : /segur/.test(h) ? "safe" : "quiet");
+    },
     ask_bus(c) {
       asked(c, "bus");
       const h = heard(c);
@@ -1177,6 +1209,8 @@ export const apartment: SituationDef = {
     ask_landlord(c) { asked(c, "landlord"); c.say("landlord_here"); },
     ask_lower(c) { asked(c, "lower"); c.say("rent_firm"); },
     too_x(c) {
+      // "Está un poco caro, ¿me puede bajar la renta?": haggling, not a refusal (ask_lower answers it)
+      if (/bajar|rebajar|descuento|negocia|dejar en|deja en/.test(heard(c))) return;
       if (view(c) && c.step === "decision") { decline(c); return; }
       if (/caro|dinero|presupuesto|alcanza|barato|economico|pagar/.test(heard(c))) { asked(c, "lower"); c.say("rent_firm"); return; }
       c.say("understand");
@@ -1185,7 +1219,12 @@ export const apartment: SituationDef = {
     ask_unknown(c) { c.say("unknown_q"); },
 
     // --- deciding ---
-    no_more(c) { if (!view(c)) { c.say("ack"); return; } c.s.qDone = true; volunteer(c); },
+    no_more(c) {
+      if (!view(c)) { c.say("ack"); return; }
+      // "No es todo, tengo otra pregunta": the comma is lost; the question that follows decides
+      if (/\b(tengo|me falta) (otra|una) pregunta\b/.test(heard(c)) && !/\bno (tengo|me falta)\b/.test(heard(c))) { c.say("go_ahead"); c.hold(); return; }
+      c.s.qDone = true; volunteer(c);
+    },
     take(c) { take(c); },
     like_it(c) {
       if (view(c) && c.step === "decision") { take(c); return; }
@@ -1246,6 +1285,8 @@ export const apartment: SituationDef = {
         if (c.s.decision === "take" && !c.s.signed && !c.s.docsOk) { c.s.docsOk = true; c.say("docs_ok"); return; }
         c.say("ack"); return;
       }
+      // "Aquí tiene." while the guarantor question is open: the question again, not "Enseguida"
+      if (avalOpen(c) && c.step === "aval") { c.say("ack"); return; }
       if (c.step === "sign" || (c.s.decision === "take" && (!c.s.askDocs || c.s.docsOk) && !c.s.signed)) { sign(c); return; }
       if (c.s.decision === "take" && !c.s.docsOk) { c.s.docsOk = true; c.say("docs_ok"); return; }
       c.say("ack");
@@ -1273,13 +1314,14 @@ export const apartment: SituationDef = {
     // --- the guarantor ---
     aval_none(c) {
       if (!view(c)) { c.say("ack"); return; }
+      if (guarantorAfterAll(c)) return; // the aval_yes(_ctx) part of the same sentence answers
       if (!c.s.avalTwist) { c.say("aval_not_needed"); return; }
       if (avalOpen(c)) { avalNone(c); return; }
       // said before the lease: remembered, and the extra deposit is offered when it's time
       c.s.avalNoneSaid = true;
       c.say("aval_needed");
     },
-    aval_none_ctx(c) { if (avalOpen(c)) avalNone(c); else c.say("ack"); },
+    aval_none_ctx(c) { if (guarantorAfterAll(c)) return; if (avalOpen(c)) avalNone(c); else c.say("ack"); },
     aval_yes(c) {
       if (!view(c)) { c.say("ack"); return; }
       if (!c.s.avalTwist) { c.say("aval_not_needed"); return; }
@@ -1288,7 +1330,7 @@ export const apartment: SituationDef = {
     },
     aval_yes_ctx(c) { if (avalOpen(c)) avalYes(c); else c.say("ack"); },
     amount_q_ctx(c) { c.say("rent", { rent: RENT }); },
-    poliza_yes_ctx(c) { c.say("ack"); },
+    poliza_yes_ctx(c) { if (avalOpen(c) && !c.s.polizaOffered) offerPoliza(c); else c.say("ack"); },
     poliza_no_ctx(c) { c.say("ack"); },
     aval_deposit_no_ctx(c) { if (avalOpen(c) && c.s.depositQuoted && !c.s.polizaOffered) offerPoliza(c); else c.say("understand"); },
     aval_deposit(c) {
@@ -1322,6 +1364,7 @@ export const apartment: SituationDef = {
       c.say("all_good_ack"); c.say("g_bye"); c.end();
     },
     sorry_bother(c) { c.say("no_bother"); },
+    nothing_ctx(c, slots, seg) { apartment.handlers.all_good(c, slots, seg); },
     have_problem(c) {
       if (view(c) || c.s.problem) { c.say("ack"); return; }
       if (/problema|descompu|no funciona/.test(heard(c))) c.say("what_problem"); else c.say("problem_what");
@@ -1333,11 +1376,12 @@ export const apartment: SituationDef = {
       c.say("ack");
     },
     home_yes(c) { if (repairOpen(c)) { c.say("home_yes_ok"); c.s.visitOk = true; } else c.say("ack"); },
-    at_work(c) { if (repairOpen(c)) homeNo(c); else c.say("ack"); },
+    // "No, mañana no puedo, estoy en el trabajo" (time_bad + at_work) asks one question; "…pero puede usar su llave" is a yes
+    at_work(c) { if (repairOpen(c)) { if (keyOffered(c) || c.s.visitQ === c.heard) return; homeNo(c); } else c.say("ack"); },
     time_pref(c, slots) { if (repairOpen(c)) { timeNoted(c, slots); c.s.visitOk = true; } else c.say("ack"); },
-    use_key(c) { if (repairOpen(c)) { c.say("key_done"); c.s.visitOk = true; } else c.say("ack"); },
+    use_key(c) { if (repairOpen(c)) { c.say("key_done"); c.s.visitOk = true; dropPending(c); } else c.say("ack"); },
     time_ok(c) { if (repairOpen(c)) { c.say("home_yes_ok"); c.s.visitOk = true; } else c.say("ack"); },
-    time_bad(c) { if (repairOpen(c)) askOtherTime(c); else c.say("ack"); },
+    time_bad(c) { if (repairOpen(c)) { if (keyOffered(c) || c.s.visitQ === c.heard) return; askOtherTime(c); } else c.say("ack"); },
     time_ctx(c, slots, seg) { apartment.handlers.time_pref(c, slots, seg); },
 
     // --- small talk overrides ---
@@ -1490,6 +1534,21 @@ export const apartment: SituationDef = {
     { say: "La llave no gotea", intent: "none", step: "problem", not: ["report_problem"] },
     // "¿Cómo va todo?" answered like "¿Cómo está?"
     { say: "Bien, gracias", intent: "g_howareyou_answer", step: "problem" },
+    // review: replies, hedges and corrections (blind set and probes)
+    { say: "No sé si me lo quedo", intent: "think", step: "decision", not: ["take"] },
+    { say: "No sé si me interesa", intent: "think", step: "decision", not: ["take"] },
+    { say: "No es todo, tengo otra pregunta", intent: "have_questions", step: "questions", not: ["no_more"] },
+    { say: "No, es todo", intent: "no_more", step: "questions", not: ["have_questions"] },
+    { say: "¿Cuánto hay que dejar de depósito?", intent: "ask_deposit" },
+    { say: "Vi el anuncio del departamento en renta", intent: "see_apartment" },
+    { say: "Sí, hablamos ayer por teléfono", intent: "see_apartment", step: "purpose" },
+    { say: "Primero quiero leerlo", intent: "read_first", step: "sign", not: ["where_sign", "here_you_go"] },
+    { say: "No quiero firmar sin leerlo", intent: "read_first", step: "sign", not: ["where_sign", "here_you_go"] },
+    { say: "No tengo trabajo aquí todavía", intent: "no_job", step: "docs", not: ["have_job"] },
+    { say: "No, nada", intent: "nothing_ctx", step: "problem", not: ["report_problem"] },
+    { say: "¿Hay mucho ruido?", intent: "ask_quiet" },
+    { say: "¿Está vacío?", intent: "ask_furnished" },
+    { say: "¿Quién paga el agua?", intent: "ask_utilities", slots: { utility: "water" } },
     // not understood
     { say: "Mi perro toca la guitarra", intent: "none" },
     { say: "plátano ventana azul", intent: "none" },
@@ -1539,6 +1598,18 @@ export const apartment: SituationDef = {
     { name: "a guarantor of her own (aval twist)", turns: ["Vengo a ver el departamento.", "¿Necesito aval?", "Sí, tengo aval.", "Es todo.", "Me lo quedo.", "El próximo mes.", "Aquí tiene mi pasaporte.", "¿Dónde firmo?", "Gracias."],
       expect: { complete: true, state: { aval: "yes", signed: true } }, auto: omit(["questions", "decision", "movein_take", "docs", "sign"]),
       setup: (s) => { s.mode = "view"; s.avalTwist = true; s.askDocs = true; s.askMovein = false; s.askPeople = false; s.askPets = false; } },
+    // "¡Me lo quedo!" before the terms: he says the rent, deposit and lease first and asks again.
+    { name: "takes it before hearing the terms", turns: ["Hola, vengo a ver el departamento.", "¡Me lo quedo!", "Sí, me lo quedo.", "El próximo mes.", "¿Dónde firmo?", "Gracias."],
+      expect: { complete: true, state: { decision: "take", signed: true } }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.avalTwist = false; s.askDocs = false; s.askMovein = false; s.askPeople = false; s.askPets = false; } },
+    // Haggling at the decision is not a refusal; "No tengo aval, pero mi jefe puede firmar" is a guarantor.
+    { name: "haggles, then a guarantor after all (aval twist)", turns: ["Vengo a ver el departamento.", "Es todo.", "Está un poco caro, ¿me puede bajar la renta?", "Bueno, me lo quedo.",
+      "El próximo mes.", "Aquí tiene mi pasaporte.", "No tengo aval, pero mi jefe puede firmar.", "¿Dónde firmo?", "Gracias."],
+      expect: { complete: true, state: { decision: "take", aval: "yes", depositMonths: 1, signed: true } }, auto: AUTO,
+      setup: (s) => { s.mode = "view"; s.avalTwist = true; s.askDocs = true; s.askMovein = false; s.askPeople = false; s.askPets = false; } },
+    // The tenant twist: at work and ten doesn't suit in one sentence (one question back), then the key.
+    { name: "tenant: at work, then the landlord's key", turns: ["El aire no enfría.", "No, mañana no puedo, estoy en el trabajo.", "Puede usar su llave.", "Gracias."],
+      expect: { complete: true, state: { problem: "ac", visitOk: true } }, auto: AUTO, setup: (s) => { s.mode = "problem"; } },
     // The tenant twist: a returning tenant reports a leak.
     { name: "tenant reports a leak", turns: ["¡Hola, Don Ernesto!", "Perdón que lo moleste, pero la llave de la cocina gotea.", "No, voy a estar trabajando.", "Sí, está bien.", "¡Gracias!"],
       expect: { complete: true, state: { problem: "faucet", visitOk: true } }, auto: AUTO, setup: (s) => { s.mode = "problem"; } },
@@ -1594,6 +1665,14 @@ function take(c: Ctx) {
   if (c.s.aval === "none") { c.s.aval = undefined; c.s.depositQuoted = false; c.s.polizaOffered = false; c.s.avalNoneSaid = true; }
   c.s.purpose = true;
   c.s.qDone = true;
+  // "¡Me lo quedo!" before the rent, deposit and lease were said: nothing binding before its terms (rule 3).
+  // He says them, and the decision step asks again.
+  if (!c.s.decision && CORE.some((k) => !c.s.asked[k])) {
+    c.say("terms_first");
+    for (const k of CORE.filter((x) => !c.s.asked[x])) { c.say(CORE_LINE[k], { rent: RENT }); c.s.asked[k] = true; }
+    resume(c);
+    return;
+  }
   c.s.decision = "take";
   c.say("take_ok");
   volunteer(c);
@@ -1636,6 +1715,7 @@ function sign(c: Ctx) {
 function avalYes(c: Ctx) {
   c.s.avalAsked = true;
   c.s.aval = "yes";
+  dropPending(c); // no open question about the deposit or the póliza is left
   c.say("aval_yes_ok");
 }
 
@@ -1658,10 +1738,12 @@ function quoteDeposit(c: Ctx) {
 const politeClosing = (c: Ctx) => /^\s*(esta bien|ok|okay|vale|bueno|asi esta bien)\b.*\bgracias\b/.test(heard(c));
 
 function depositPending(): import("@/content/types").Pending {
-  return { id: "extra_deposit", expects: ["aval_deposit", "aval_deposit_no_ctx", "amount_q_ctx", "ask_poliza", "aval_yes", "aval_yes_ctx"], hints: ["g_yesno", "extra_dep"],
+  return { id: "extra_deposit", expects: ["aval_deposit", "aval_deposit_no_ctx", "amount_q_ctx", "ask_poliza", "poliza_yes_ctx", "aval_yes", "aval_yes_ctx"], hints: ["g_yesno", "extra_dep"],
     suggest: [{ lt: "Accept two months' deposit, or decline", hint: "g_yesno" }, { lt: "Ask about other options", hint: "extra_dep" }],
     on: {
       aval_deposit: (cc) => acceptDeposit(cc), aval_deposit_no_ctx: (cc) => offerPoliza(cc), ask_poliza: (cc) => offerPoliza(cc),
+      // "No, mejor la póliza.": the póliza is explained (who pays) and asked, never recorded unexplained
+      poliza_yes_ctx: (cc) => offerPoliza(cc),
       amount_q_ctx: (cc) => { cc.say("aval_deposit_amount", { deposit: RENT * 2 }); cc.expect(depositPending()); },
       aval_yes: (cc) => avalYes(cc), aval_yes_ctx: (cc) => avalYes(cc),
     },
@@ -1677,10 +1759,11 @@ function acceptDeposit(c: Ctx) {
 }
 
 function polizaPending(): import("@/content/types").Pending {
-  return { id: "poliza", expects: ["ask_poliza", "aval_deposit", "aval_yes", "aval_yes_ctx", "poliza_yes_ctx", "poliza_no_ctx"], hints: ["g_yesno", "extra_dep"],
+  return { id: "poliza", expects: ["ask_poliza", "amount_q_ctx", "aval_deposit", "aval_yes", "aval_yes_ctx", "poliza_yes_ctx", "poliza_no_ctx"], hints: ["g_yesno", "extra_dep"],
     suggest: [{ lt: "Accept the policy, or decline", hint: "g_yesno" }],
     on: {
       ask_poliza: (cc) => { cc.say("poliza_info"); cc.expect(polizaPending()); },
+      amount_q_ctx: (cc) => { cc.say("poliza_price"); cc.expect(polizaPending()); },
       aval_deposit: (cc) => acceptDeposit(cc), aval_yes: (cc) => avalYes(cc), aval_yes_ctx: (cc) => avalYes(cc),
       poliza_yes_ctx: (cc) => { cc.s.aval = "poliza"; cc.say("poliza_ok"); }, poliza_no_ctx: (cc) => noDeal(cc),
     },
@@ -1705,6 +1788,15 @@ function noDeal(c: Ctx) {
 
 function repairOpen(c: Ctx) { return c.s.mode === "problem" && !!c.s.problem && !c.s.visitOk; }
 
+/** Close an open question without holding the turn (c.expect(null) would hold it, and the next step wouldn't be asked). */
+function dropPending(c: Ctx) { const conv = (c as ConvCtx).conv; if (conv) conv.pending = null; }
+
+/** "A las diez no estoy, pero puede usar su llave": the key part answers (use_key). */
+const keyOffered = (c: Ctx) => /\b(llave|abrale|abrirle|dejelo (pasar|entrar))\b/.test(heard(c));
+
+/** "No tengo aval, pero mi jefe puede firmar": a guarantor after all. */
+const guarantorAfterAll = (c: Ctx) => /\bpero\b.*\b(jefe|jefa|empresa|amigo|amiga|conocido|conocida|puede firmar|puede ser mi aval)\b/.test(heard(c));
+
 /** "¿Me puede avisar hoy en la noche?" answered with a think-phrase ("Le aviso mañana"): a promise for today is a
  *  yes, a later day is understood. */
 function hurryAnswer(c: Ctx) {
@@ -1716,6 +1808,7 @@ const taking = (c: Ctx) => view(c) && c.s.decision === "take";
 
 function homeNo(c: Ctx) {
   c.s.visitAnswered = true;
+  c.s.visitQ = c.heard;
   c.say("home_no"); c.say("key_ok_q");
   c.expect({ id: "key_ok", expects: ["use_key", "time_pref", "time_ctx", "time_bad"], hints: ["g_yesno", "key_ok"],
     suggest: [{ lt: "Agree to let him in", hint: "key_ok" }],
@@ -1738,10 +1831,12 @@ function timeNoted(c: Ctx, slots: Record<string, any> = {}) {
 /** "¿A qué hora le queda bien?" */
 function askOtherTime(c: Ctx) {
   c.s.visitAnswered = true;
+  c.s.visitQ = c.heard;
   c.say("other_time_q");
-  c.expect({ id: "other_time", expects: ["time_pref", "time_ok", "time_ctx"], hints: ["other_time"],
+  c.expect({ id: "other_time", expects: ["time_pref", "time_ok", "time_ctx", "use_key"], hints: ["other_time"],
     suggest: [{ lt: "Suggest another time", hint: "other_time" }],
     on: {
+      use_key: (c3) => { c3.say("key_done"); c3.s.visitOk = true; },
       time_pref: (c3, sl) => { timeNoted(c3, sl); c3.s.visitOk = true; },
       time_ok: (c3) => { c3.say("home_yes_ok"); c3.s.visitOk = true; },
       time_ctx: (c3, sl) => { timeNoted(c3, sl); c3.s.visitOk = true; },

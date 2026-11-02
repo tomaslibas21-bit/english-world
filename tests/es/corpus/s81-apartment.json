@@ -381,5 +381,17 @@
   {"ctx": "docs", "say": "No tengo mi pasaporte", "intent": "any", "not": ["here_you_go", "passport_ok"]},
   {"ctx": "aval", "say": "No necesito póliza, tengo aval", "intent": "any", "not": ["aval_none", "aval_none_ctx"]},
   {"ctx": "poliza", "say": "No, prefiero no contratar la póliza", "intent": "any", "not": ["poliza_yes_ctx", "yn:yes"]},
-  {"ctx": "visit", "say": "No, a las diez no voy a estar", "intent": "any", "not": ["home_yes", "time_ok"]}
+  {"ctx": "visit", "say": "No, a las diez no voy a estar", "intent": "any", "not": ["home_yes", "time_ok"]},
+  {"ctx": "decision", "say": "No sé si me lo quedo", "intent": "any", "not": ["take"], "note": "review: hedge"},
+  {"ctx": "decision", "say": "No sé si me interesa", "intent": "any", "not": ["take"], "note": "review: hedge"},
+  {"ctx": "questions", "say": "No es todo, tengo otra pregunta", "intent": "have_questions", "not": ["no_more"], "note": "review: lost comma"},
+  {"ctx": "decision", "say": "Está un poco caro, ¿me puede bajar la renta?", "intent": "any", "not": ["decline", "take"], "note": "review: haggling is no refusal"},
+  {"ctx": "extra_deposit", "say": "Es mucho dinero, no puedo", "intent": ["aval_deposit_no_ctx", "yn:no"], "not": ["aval_deposit", "yn:yes"]},
+  {"ctx": "extra_deposit", "say": "No, mejor la póliza", "intent": ["poliza_yes_ctx", "yn:no"], "not": ["aval_deposit"]},
+  {"ctx": "extra_deposit", "say": "¿Y si dejo dos meses de depósito?", "intent": "any", "not": ["aval_deposit", "yn:yes"], "note": "what-if"},
+  {"ctx": "poliza", "say": "¿Cuánto cuesta?", "intent": "amount_q_ctx", "not": ["poliza_yes_ctx", "yn:yes"]},
+  {"ctx": "visit", "say": "A las diez no estoy, pero puede usar su llave", "intent": ["use_key", "time_bad"], "not": ["home_yes"]},
+  {"ctx": "problem", "say": "No, nada", "intent": "nothing_ctx", "not": ["report_problem"]},
+  {"ctx": "questions", "say": "¿Hay mucho ruido?", "intent": "ask_quiet"},
+  {"ctx": "questions", "say": "¿Quién paga el agua?", "intent": "ask_utilities"}
 ] }
