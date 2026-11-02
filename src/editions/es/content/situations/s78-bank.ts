@@ -92,8 +92,18 @@ const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const words = (c: Ctx) => fold(c.heard || "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 const isQuestion = (c: Ctx) => /\?/.test(c.heard || "");
-/** "Diez mil dólares": the number slot stops at 9,999 (it reads "diez" + "mil"), so a big amount is read here. */
-const bigUsd = (c: Ctx) => /\b(\d{5,}|\d{1,3} 000|(diez|once|doce|trece|catorce|quince|dieci\w+|veinte|veinti\w+|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa|cien|ciento|\w*cientos) mil)\b/.test(words(c));
+/** "Diez mil dólares": the number slot stops at 9,999 (it reads "diez" + "mil"), so a big amount is read here. Typed
+ *  digits count by their value ("10,000", "15 mil" are over the limit; "1,000" and "2.000" are not). */
+const bigUsd = (c: Ctx) => {
+  const w = words(c);
+  for (const m of w.matchAll(/\b(\d{1,3}(?: \d{3})+|\d+)( mil\b)?/g)) if (Number(m[1].replace(/ /g, "")) * (m[2] ? 1000 : 1) > MAX_USD) return true;
+  return /\b(diez|once|doce|trece|catorce|quince|dieci\w+|veinte|veinti\w+|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa|cien|ciento|\w*cientos) mil\b/.test(w);
+};
+/** "Dos mil pesos" where dollars are asked: a peso amount is no dollar amount ("Mil a pesos" is: pesos are the target). */
+const saysPesos = (c: Ctx) => {
+  const w = words(c).replace(/\b(a|en|por) pesos\b/g, " ");
+  return /\b(pesos?|varos?)\b/.test(w) && !/\bdolar(es)?\b/.test(w);
+};
 /** "¿Y si…?" / "¿Qué pasa si…?" / "¿Qué tal si…?": a question about an option, never the choice. */
 const whatIf = (c: Ctx) => /^((oiga|disculpe|perdon|bueno|pues|este|a ver|mmm|eh) )*((y|pero y|entonces y) si|(y )?que pasa si|(y )?que tal si)\b/.test(words(c))
   || /^\s*¿\s*(y\s+)?si\b/i.test(c.heard || "");
@@ -107,9 +117,10 @@ function moneyYes(again: () => Pending, act: (c: Ctx) => void) {
   return (c: Ctx) => { if (unsureYes(c)) { c.say("yes_or_no"); c.expect(again()); return; } act(c); };
 }
 
-/** More than the monthly limit: said once, nothing changed. */
-function overLimit(c: Ctx, usd: number | undefined): boolean {
-  if (!bigUsd(c) && !(usd != null && usd > MAX_USD)) return false;
+/** More than the monthly limit (with what was changed today, unless it's only a question): said once, nothing changed. */
+function overLimit(c: Ctx, usd: number | undefined, withChanged = true): boolean {
+  const before = withChanged ? c.s.usdChanged ?? 0 : 0;
+  if (!bigUsd(c) && !(usd != null && usd + before > MAX_USD)) return false;
   once(c, "limit", "ex_limit");
   return true;
 }
@@ -176,6 +187,8 @@ function afterId(c: Ctx) {
     return;
   }
   c.say("id_thanks");
+  // "Quiero sacar dos mil pesos" said before the ID: paid out now
+  if (c.s.cash === "id" && c.s.cashWant != null) { const w = c.s.cashWant; c.s.cashWant = undefined; payCash(c, w); }
 }
 
 /** A foreign driver's license is no official ID here: the passport or the residence card. */
@@ -219,10 +232,15 @@ function answerNo(c: Ctx): boolean {
   return false;
 }
 
+/** The step the conversation asks next (the engine's order). */
+const nextStepId = (c: Ctx) => bank.steps.find((st) => (!st.when || st.when(c)) && !st.done(c))?.id;
+
 function depositAmount(c: Ctx, cents: number | undefined) {
   if (cents == null) { c.say("min_is", { price: MIN_DEPOSIT }); return; }
   if (c.step !== "deposit" && !opening(c)) { c.say("no_problem"); return; }
   if (cents < MIN_DEPOSIT) { c.say("deposit_min", { price: MIN_DEPOSIT }); return; }
+  // The deposit comes last: said with the request or at the ID ("…con mil pesos"), it never opens the account early
+  if (c.step !== "deposit" && nextStepId(c) !== "deposit") { once(c, "deplater", "deposit_later"); return; }
   c.s.deposit = cents;
   c.event("pay", { method: "cash", amount: cents });
   openAccount(c);
@@ -251,18 +269,24 @@ function giveCash(c: Ctx) {
   c.event("give", { item: "cash" });
 }
 
+/** Cash at the counter: the amount asked for is paid out (the bills question first for $1,000 or more). */
+function payCash(c: Ctx, cents: number) {
+  c.s.cash = "amount"; c.s.cashAmount = cents;
+  if (!billsAsked(c)) giveCash(c);
+}
+
 /** "¿Y si saco dos mil?": a yes pays it out. */
 function cashConfirm(cents: number): Pending {
   return {
     id: "cash_confirm", expects: ["amount_ctx", "sure_ctx", "not_that"], hints: ["g_yesno", "cash"],
     suggest: [{ lt: "Say yes, or give another amount", hint: "cash" }],
     on: {
-      sure_ctx: (cc) => { cc.s.cash = "amount"; cc.s.cashAmount = cents; if (!billsAsked(cc)) giveCash(cc); },
+      sure_ctx: (cc) => { payCash(cc, cents); },
       not_that: (cc) => { cc.s.cash = false; cc.say("no_problem"); },
       // "No, mejor dos mil"
       amount_ctx: (cc, sl, sg) => { bank.handlers.amount_ctx(cc, sl, sg); }, deposit_ans: (cc, sl, sg) => { bank.handlers.amount_ctx(cc, sl, sg); },
     },
-    yes: moneyYes(() => cashConfirm(cents), (cc) => { cc.s.cash = "amount"; cc.s.cashAmount = cents; if (!billsAsked(cc)) giveCash(cc); }),
+    yes: moneyYes(() => cashConfirm(cents), (cc) => { payCash(cc, cents); }),
     no: () => { /* the cash step asks again */ },
     ask: (cc) => cc.say("cash_confirm"),
   };
@@ -271,11 +295,13 @@ function cashConfirm(cents: number): Pending {
 /** The day's rate, said once; asked again ("¿A cuánto está?") it is said again by rate_q. */
 function sayRate(c: Ctx) { if (c.s.rateSaid) return; c.s.rateSaid = true; c.say("exchange_rate"); }
 
-function exchangeDollars(c: Ctx, usd: number | undefined) {
+/** The dollars handed over are changed ("all": "Todos los que traigo", counted at the counter). */
+function exchangeDollars(c: Ctx, usd: number | "all" | undefined) {
   if (c.s.exchange !== "amount" || !usd) { c.say("no_problem"); return; }
   c.s.exchange = "done";
   c.s.served = true;
-  if (inAmountDomain(usd)) c.say("exchange_done", { amount: exchanged(usd) });
+  if (usd !== "all") c.s.usdChanged = (c.s.usdChanged ?? 0) + usd;
+  if (usd !== "all" && inAmountDomain(usd)) c.say("exchange_done", { amount: exchanged(usd) });
   else c.say("exchange_done_generic");
   c.event("give", { item: "cash" });
 }
@@ -325,9 +351,11 @@ function openOffer(): Pending {
   };
 }
 
-/** "¿Tiene cuenta con nosotros?" before changing dollars or sending a transfer. */
+/** "¿Tiene cuenta con nosotros?" before changing dollars or sending a transfer. An amount said with the request
+ *  (c.s.wantUsd) is quoted on a yes and forgotten otherwise: after the opening the dollars step asks again. */
 function customerPending(kind: "exchange" | "transfer"): Pending {
-  const no = (cc: Ctx) => { cc.s.newcomer = true; if (kind === "exchange") cc.s.exchangeLater = true; cc.say(kind === "exchange" ? "customers_only" : "need_account_wire"); offerOpen(cc); };
+  const newcomer = (cc: Ctx) => { cc.s.newcomer = true; cc.s.wantUsd = undefined; if (kind === "exchange") cc.s.exchangeLater = true; };
+  const no = (cc: Ctx) => { newcomer(cc); cc.say(kind === "exchange" ? "customers_only" : "need_account_wire"); offerOpen(cc); };
   const yes = (cc: Ctx) => {
     cc.s.customer = true;
     if (kind === "exchange") {
@@ -342,7 +370,8 @@ function customerPending(kind: "exchange" | "transfer"): Pending {
     on: {
       not_yet: no,
       customer_ctx: yes,
-      open_account: (cc, sl, sg) => { bank.handlers.open_account(cc, sl, sg); },
+      // "No, pero quiero abrir una": the opening, and the dollars after it
+      open_account: (cc, sl, sg) => { newcomer(cc); bank.handlers.open_account(cc, sl, sg); },
     },
     ask: (cc) => { if (bump(cc, "acct_q") === 0) cc.say("ask_customer_again"); },
   };
@@ -487,7 +516,7 @@ export const bank: SituationDef = {
       "(tambien | y tambien) (quiero | quisiera | necesito) cambiar [unos | mis] dolares [a pesos]",
       "(puedo | podria | se puede) cambiar [unos | mis] dolares [aqui] [a pesos] #h:ex_could",
       "(cambian | compran | aceptan) dolares [aqui]", "(me | nos) (cambia | puede cambiar | podria cambiar) [unos | estos | mis] dolares [a pesos]",
-      "(me cambias | me puedes cambiar | puedes cambiarme) [unos | estos | mis] dolares #tip:tu_staff", "(puede | podria | me pueden | pueden) (cambiarme | cambiar) [unos | estos | mis] dolares [a pesos]", "(quiero | quisiera | necesito | vengo a) cambiar {number} dolares [a pesos] #amt",
+      "(me cambias | me puedes cambiar | puedes cambiarme) [unos | estos | mis] dolares #tip:tu_staff", "(puede | podria | me pueden | pueden) (cambiarme | cambiar) [unos | estos | mis] dolares [a pesos]", "(quiero | quisiera | necesito | vengo a) cambiar [otros] {number} dolares [a pesos | mas] #amt",
       "(necesito | quiero | quisiera) pesos [mexicanos]", "[aqui] (cambian | cambia) (dinero | moneda | divisas)", "(traigo | tengo) [unos] dolares [y (necesito | quiero) pesos]", "cambio de (dolares | divisas | moneda)",
       "(quiero | quisiera) (vender | cambiar) [mis] dolares", "(hacen | hay) cambio de (dolares | moneda | divisas)", "(quiero | quisiera | necesito) cambiar dinero",
       "(puedo | podria | se puede | me puede | me podria) cambiar {number} dolares [aqui] [a pesos] #amt",
@@ -513,6 +542,9 @@ export const bank: SituationDef = {
       "(puedo | podria | se puede) (sacar | retirar) [dinero | efectivo] [de mi cuenta] [aqui | en ventanilla] [sin tarjeta] #h:cash_take",
       "(tambien | y tambien) (quiero | quisiera | necesito) (sacar | retirar) [dinero | efectivo]",
       "necesito (efectivo | dinero [en efectivo])", "(me puede | me podria) dar [algo de] efectivo", "(necesito | quiero) (sacar | retirar) (dinero | efectivo) pero no (tengo | traigo) [mi | la] tarjeta",
+      // "Quiero sacar dos mil pesos": the amount is paid out once the ID is checked
+      "[tambien | y tambien] (quiero | quisiera | necesito | vengo a | voy a) (sacar | retirar) {price} [de mi cuenta] [en efectivo] [aqui | en ventanilla] #amt",
+      "(puedo | podria) (sacar | retirar) {price} [de mi cuenta] [aqui | en ventanilla] #amt",
     ] },
 
     // --- account opening
@@ -627,7 +659,7 @@ export const bank: SituationDef = {
     cash_amb_ctx: { patterns: ["no (tengo | traigo) (efectivo | dinero | nada de efectivo) #amb"] },
     // "No quiero depositar nada" at "¿Con cuánto la quiere abrir?"
     no_deposit_ctx: { patterns: ["no (quiero | puedo | voy a) (depositar | meter | poner) [nada | dinero] [todavia | hoy | ahorita | por ahora]",
-      "no (tengo | traigo) (dinero | efectivo) (para depositar | ahorita | hoy | conmigo)"] },
+      "no (tengo | traigo) (dinero | efectivo) [para depositar | ahorita | hoy | conmigo | aqui]"] },
     // "Todavía no termino" / "Un momento" at the form
     not_done_ctx: { patterns: ["(todavia | aun) no (termino | he terminado | acabo | he acabado | firmo | he firmado)", "no he (firmado | terminado | acabado)",
       "(un momento | un momentito | espere | permitame | deme un momento) [por favor]"] },
@@ -704,11 +736,11 @@ export const bank: SituationDef = {
       "cuantos pesos (son | serian | me dan por | me da por) {number} [dolares] #amt", "cuanto (es | son | seria | serian) {number} dolares [en pesos] #amt", "cuanto me (dan | da | darian) por {number} dolares #amt",
     ] },
     euro_amount: { patterns: [
-      "{number} dolares #h:ex_amount", "(quiero | quisiera | necesito | voy a) cambiar {number} [dolares]", "(tengo | traigo) {number} dolares",
-      "(cambieme | me cambia) {number} [dolares]", "son {number} dolares", "(todos | todo) (los que traigo | lo que traigo) #h:ex_all", "todos mis dolares",
+      "{number} dolares #h:ex_amount", "(quiero | quisiera | necesito | voy a) cambiar [otros] {number} [dolares]", "(tengo | traigo) {number} dolares",
+      "(cambieme | me cambia) {number} [dolares]", "son {number} dolares", "(todos | todo) (los que traigo | lo que traigo) #h:ex_all #all", "todos mis dolares #all",
       "(y si | que tal si) cambio {number} [dolares] #q",
     ] },
-    euro_ctx: { patterns: ["{number}", "(solo | nomas | como | unos) {number}", "(todos | todo)", "[no] (mejor | prefiero) {number} [dolares]"] },
+    euro_ctx: { patterns: ["{number}", "(solo | nomas | como | unos) {number}", "(todos | todo) #all", "[no] (mejor | prefiero) {number} [dolares]"] },
 
     // --- the card (twist)
     wrong_pin: { patterns: [
@@ -813,7 +845,7 @@ export const bank: SituationDef = {
     ask_type: [
       t("¡Claro! | ¿Qué | tipo | de | cuenta | busca: | de | débito | o | de | ahorro?", "Sure! | What | kind | of | account | are you looking for: | — | debit | or | — | savings?",
         "Sure! What kind of account are you looking for: checking or savings?",
-        { flags: { 7: "de débito: a debit account, the everyday account with a debit card (a checking account).", 10: "de: of; cuenta de ahorro is a savings account." } }),
+        { flags: { 7: "de débito: a debit account, the everyday account with a debit card (a checking account).", 9: "de: of; cuenta de ahorro is a savings account." } }),
       t("Con gusto. | ¿La | quiere | de | débito | o | de | ahorro?", "Gladly. | It | do you want | — | debit | or | — | savings?", "Of course. Would you like checking or savings?",
         { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." } }),
     ],
@@ -839,7 +871,7 @@ export const bank: SituationDef = {
       t("Muy | bien.", "Very | good.", "Sounds good."),
     ],
     type_which: [t("Perdón, | ¿cuál | de | las | dos: | de | débito | o | de | ahorro?", "Sorry, | which | of | the | two: | — | debit | or | — | savings?",
-      "Sorry, which one: checking or savings?", { flags: { 4: "de: of; English says just checking or savings." } })],
+      "Sorry, which one: checking or savings?", { flags: { 5: "de: of; English says just checking or savings." } })],
     ack_both: [t("Perfecto, | abrimos | las | dos.", "Perfect, | we'll-open | the | two.", "Great, we'll open both.")],
     ack_not_type: [t("Bueno, | entonces | solo | la | de | débito.", "Okay, | then | only | the | — | debit one.", "Okay, just checking then.",
       { flags: { 4: "la de débito: the debit one (la cuenta is understood)." } })],
@@ -945,6 +977,8 @@ export const bank: SituationDef = {
     deposit_min: [t("Lo siento, | el | mínimo | es | {$price}.", "I'm sorry, | the | minimum | is | {$price}.", "Sorry, the minimum is {$price}.")],
     min_is: [t("El | mínimo | es | {$price}.", "The | minimum | is | {$price}.", "The minimum is {$price}.")],
     deposit_enough: [t("Sí, | con | eso | alcanza. | ¿Lo | deposito, | entonces?", "Yes, | with | that | it's enough. | It | shall I deposit, | then?", "Yes, that's enough. Shall I deposit it, then?")],
+    deposit_later: [t("El | depósito | lo | hacemos | al | final.", "The | deposit | it | we-do | at the | end.", "We'll do the deposit at the end.",
+      { flags: { 2: "lo: it, repeating el depósito; Spanish repeats an object that comes first." } })],
 
     // opened
     opened: [
@@ -1074,6 +1108,7 @@ export const bank: SituationDef = {
     pesos_only: [t("Su | cuenta | es | en | pesos.", "Your | account | is | in | pesos.", "Your account is in pesos.")],
     exchange_other_no: [t("Lo siento, | aquí | solo | cambiamos | dólares | americanos.", "I'm sorry, | here | only | we-change | dollars | American.", "I'm sorry, we only change US dollars here.")],
     ask_euros: [t("¿Cuántos | dólares | quiere | cambiar?", "How many | dollars | do you want | to change?", "How many dollars would you like to change?")],
+    ask_euros_again: [t("Entonces, | ¿cuántos | dólares?", "So, | how many | dollars?", "So, how many dollars?")],
     exchange_done: [t("Aquí | tiene: | {$amount}. | Y | su | comprobante.", "Here | you have: | {$amount}. | And | your | receipt.", "Here you go: {$amount}. And here's your receipt.")],
     exchange_done_generic: [t("Aquí | tiene. | El | tipo de cambio | viene | en | su | comprobante.", "Here | you have. | The | exchange rate | comes | on | your | receipt.",
       "Here you go. The exchange rate is on your receipt.")],
@@ -1392,7 +1427,7 @@ export const bank: SituationDef = {
       no: (c) => { giveCash(c); } },
     // exchange (step id kept from the English edition: here it's US dollars into pesos)
     { id: "euros", when: (c) => c.s.exchange === "amount", done: (c) => c.s.exchange === "done",
-      ask: (c) => { if (!c.s.rateSaid) sayRate(c); c.say("ask_euros"); }, expects: ["euro_amount", "euro_ctx", "rate_q"],
+      ask: (c) => { if (!c.s.rateSaid) sayRate(c); c.say(bump(c, "euros") === 0 ? "ask_euros" : "ask_euros_again"); }, expects: ["euro_amount", "euro_ctx", "rate_q"],
       suggest: [{ lt: "Say how many dollars you'll change", hint: "euros" }],
       no: (c) => { c.s.exchange = "cancelled"; c.say("no_problem"); } },
     // anything else
@@ -1457,27 +1492,29 @@ export const bank: SituationDef = {
     turn_q(c) { once(c, "turnq", "turn_where"); },
     exchange_req(c, slots, seg) {
       c.s.hay = c.s.hay === "asked" ? "done" : c.s.hay;
-      // "Quiero cambiar cien dólares": the amount is kept for when the rate is said
+      // "Quiero cambiar cien dólares": the amount said in this turn (only this turn's: an old one is never changed)
       const usd = seg.tags.includes("amt") && typeof slots.number === "number" ? slots.number : undefined;
-      if (usd || (seg.tags.includes("amt") && bigUsd(c))) c.s.wantUsd = usd ?? MAX_USD + 1;
+      let want = usd || (seg.tags.includes("amt") && bigUsd(c)) ? usd ?? MAX_USD + 1 : undefined;
       c.s.task = c.s.task || "exchange";
       c.s.topic = "exchange";
       c.s.moreDone = false;
-      if (c.s.wantUsd && overLimit(c, c.s.wantUsd)) c.s.wantUsd = undefined;
+      // the month's limit already changed: said, and no new "¿Cuántos dólares…?"
+      if (c.s.exchange !== "amount" && (c.s.usdChanged ?? 0) >= MAX_USD) { once(c, "limit", "ex_limit"); return; }
+      if (want && overLimit(c, want)) want = undefined;
       if (c.s.exchange === "amount") { // the dollars step asks, or the amount said now is changed (quoted if the rate wasn't said)
-        const u = c.s.wantUsd; c.s.wantUsd = undefined;
-        if (u) { if (c.s.rateSaid) exchangeDollars(c, u); else { sayRate(c); quoteExchange(c, u); } }
+        if (want) { if (c.s.rateSaid) exchangeDollars(c, want); else { sayRate(c); quoteExchange(c, want); } }
         return;
       }
-      if (c.s.exchange === "done" || c.s.exchange === "cancelled") { c.s.exchange = "amount"; c.s.wantUsd = undefined; return; }
+      // a second exchange: the rate was said, an amount is quoted ("Quiero cambiar otros cien dólares")
+      if (c.s.exchange === "done" || c.s.exchange === "cancelled") { c.s.exchange = "amount"; if (want) quoteExchange(c, want); return; }
       // during the opening: changed once the account is open
-      if (opening(c)) { c.s.exchangeLater = true; c.s.wantUsd = undefined; once(c, "exlater", "exchange_after"); return; }
+      if (opening(c)) { c.s.exchangeLater = true; once(c, "exlater", "exchange_after"); return; }
       if (!customer(c) && c.s.newcomer) { c.s.exchangeLater = true; c.say("customers_only"); if (!c.s.declinedOpen) offerOpen(c); return; }
-      if (!customer(c)) { c.say("ask_customer"); c.expect(customerPending("exchange")); return; }
+      if (!customer(c)) { c.s.wantUsd = want; c.say("ask_customer"); c.expect(customerPending("exchange")); return; }
       sayRate(c);
       c.s.exchange = "amount";
       // an amount said before the rate is quoted and asked, never changed at once ("¿Y si cambio quinientos?")
-      if (c.s.wantUsd) { const u = c.s.wantUsd; c.s.wantUsd = undefined; quoteExchange(c, u); }
+      if (want) quoteExchange(c, want);
     },
     exchange_other(c) {
       c.s.topic = "exchange";
@@ -1498,15 +1535,20 @@ export const bank: SituationDef = {
         c.expect(customerPending("transfer"));
       }
     },
-    withdraw(c) {
+    withdraw(c, slots, seg) {
       c.s.hay = c.s.hay === "asked" ? "done" : c.s.hay;
       c.s.topic = "cash";
-      if (c.step === "cash_offer") { c.s.cash = "amount"; return; }
-      if (c.s.cash === "amount" || c.s.cash === "id") return;
+      // "Quiero sacar dos mil pesos": paid out once the ID is checked (at the cash questions, the amount answers them)
+      const want = seg.tags.includes("amt") && typeof slots.price === "number" ? (slots.price as number) : undefined;
+      if (c.step === "cash_offer" || c.step === "cash_amount") { if (want != null) bank.handlers.amount_ctx(c, slots, seg); else if (c.step === "cash_offer") c.s.cash = "amount"; return; }
+      if (c.s.cash === "id") { if (want != null) c.s.cashWant = want; return; }
+      if (c.s.cash === "amount") { if (want != null && c.s.cashAmount === undefined) payCash(c, want); return; }
       c.s.task = c.s.task || "cash";
       c.s.moreDone = false;
       if (!customer(c)) { c.say("need_account_cash"); offerOpen(c); return; }
+      if (c.s.id && want != null) { payCash(c, want); return; }
       c.s.cash = c.s.id ? "amount" : "id";
+      if (want != null) c.s.cashWant = want;
     },
     help_me(c) { if (!/(tarjeta|cajero|cuenta|dolar|dinero)/.test(words(c))) { c.say("go_ahead"); c.hold(); } },
 
@@ -1597,8 +1639,14 @@ export const bank: SituationDef = {
       c.say("no_problem");
     },
     customer_ctx(c) { c.say("no_problem"); },
-    // "No quiero sacar dinero" at the cash offer is its no; elsewhere the next part says what they want
-    not_that(c) { if (c.step === "cash_offer" && c.s.cash === undefined) { c.s.cash = false; c.say("no_problem"); } },
+    // "No quiero sacar dinero" at the cash offer is its no, "No quiero cambiar nada" at "¿Cuántos dólares…?" and "No
+    // quiero sacar nada" at "¿Cuánto quiere retirar?" too; elsewhere the next part says what they want
+    not_that(c) {
+      if (c.step === "cash_offer" && c.s.cash === undefined) { c.s.cash = false; c.say("no_problem"); return; }
+      const refuses = /\bno (quiero|necesito)\b/.test(words(c));
+      if (c.step === "euros" && c.s.exchange === "amount" && refuses && /\bcambiar\b/.test(words(c))) { c.s.exchange = "cancelled"; c.say("no_problem"); return; }
+      if (c.step === "cash_amount" && c.s.cashAmount === undefined && refuses && /\b(sacar|retirar)\b/.test(words(c))) { c.s.cash = false; c.say("no_problem"); }
+    },
     no_open(c) { if (c.step === "savings") { if (c.s.savings === undefined) c.s.savings = false; c.say("no_problem"); } },
     ask_ssn_what(c) { c.say("ssn_explain"); },
     ssn_problem(c) {
@@ -1623,7 +1671,14 @@ export const bank: SituationDef = {
       if (c.step !== "form") { if (c.s.signed) c.say("form_thanks"); return; }
       c.s.signed = true; c.event("sign"); c.say("form_thanks");
     },
-    signed_ctx(c, slots, seg) { bank.handlers.signed(c, slots, seg); },
+    // "Está bien" said to "llene esta solicitud y firme" is an okay, not "it's done" (that's the step's yes: "take your
+    // time"); "¿Así está bien?", "¿Está bien?" and "Ya está" hand it over
+    signed_ctx(c, slots, seg) {
+      if (c.step === "form" && !c.s.signed && !isQuestion(c) && /^((si|ok|bueno|vale|sale) )?(esta|queda) bien( (gracias|ok))?$/.test(words(c))) {
+        bank.steps.find((x) => x.id === "form")?.yes?.(c); return;
+      }
+      bank.handlers.signed(c, slots, seg);
+    },
     here_you_go(c) {
       switch (c.step) {
         case "id": case "card_id": case "cash_id": c.s.id = c.s.id || "passport"; afterId(c); return;
@@ -1636,8 +1691,8 @@ export const bank: SituationDef = {
     deposit_ans(c, slots, seg) {
       if (c.step === "cash_amount" || c.step === "cash_offer") { bank.handlers.amount_ctx(c, slots, seg); return; }
       const cents = slots.price as number | undefined;
-      // "¿Con quinientos alcanza?" / "¿Y si deposito dos mil?": the answer, then the question
-      if (cents != null && (whatIf(c) || isQuestion(c)) && c.step === "deposit") {
+      // "¿Con quinientos alcanza?" / "¿Y si deposito dos mil?": the answer, then the question (said, it has no "?": #q)
+      if (cents != null && (whatIf(c) || isQuestion(c) || seg.tags.includes("q")) && c.step === "deposit") {
         if (cents < MIN_DEPOSIT) { c.say("deposit_min", { price: MIN_DEPOSIT }); return; }
         const p = depositConfirm(cents); c.expect(p); p.ask!(c); return;
       }
@@ -1651,7 +1706,7 @@ export const bank: SituationDef = {
       if (c.step === "cash_amount" || c.step === "cash_offer") {
         if (cents == null) return;
         if (whatIf(c)) { const p = cashConfirm(cents); c.expect(p); p.ask!(c); return; }
-        c.s.cash = "amount"; c.s.cashAmount = cents; if (!billsAsked(c)) giveCash(c); return;
+        payCash(c, cents); return;
       }
     },
 
@@ -1695,7 +1750,7 @@ export const bank: SituationDef = {
       const tags = [...(seg.tags || [])];
       const usd = typeof slots.number === "number" ? slots.number : undefined;
       if (tags.includes("amt") && (usd || bigUsd(c))) {
-        if (overLimit(c, usd)) return;
+        if (overLimit(c, usd, false)) return;
         if (c.s.exchange === "amount") { quoteExchange(c, usd!); return; }
         if (inAmountDomain(usd)) { c.say("exchange_would", { amount: exchanged(usd) }); return; }
       }
@@ -1706,16 +1761,19 @@ export const bank: SituationDef = {
       const usd = typeof slots.number === "number" ? slots.number : undefined;
       // "Cien dólares" for the opening deposit or the cash: the account is in pesos
       if (["deposit", "cash_offer", "cash_amount"].includes(c.step ?? "") && c.s.exchange !== "amount") { once(c, "pesos", "pesos_only"); return; }
+      // "Quiero cambiar dos mil pesos": no dollar amount (the dollars step asks again; before it, the request alone)
+      if (usd && saysPesos(c)) { if (c.s.exchange !== "amount") bank.handlers.exchange_req(c, {}, { ...seg, tags: seg.tags.filter((x) => x !== "amt") }); return; }
       if (c.s.exchange === "amount" && overLimit(c, usd)) return;
       // "Tengo doscientos dólares" before any exchange: the request, with its amount
       if (c.s.exchange !== "amount") { bank.handlers.exchange_req(c, slots, { ...seg, tags: [...seg.tags, "amt"] }); return; }
-      if (usd && c.s.exchange === "amount" && (whatIf(c) || seg.tags.includes("q"))) { quoteExchange(c, usd); return; }
-      exchangeDollars(c, usd);
+      if (usd && (whatIf(c) || seg.tags.includes("q"))) { quoteExchange(c, usd); return; }
+      exchangeDollars(c, seg.tags.includes("all") ? "all" : usd);
     },
-    euro_ctx(c, slots) {
+    euro_ctx(c, slots, seg) {
       const usd = typeof slots.number === "number" ? slots.number : undefined;
+      if (usd && saysPesos(c)) return; // "No, mejor dos mil pesos": the dollars step asks again
       if (overLimit(c, usd)) return;
-      exchangeDollars(c, usd);
+      exchangeDollars(c, seg.tags.includes("all") ? "all" : usd);
     },
 
     // --- the card
@@ -1886,6 +1944,13 @@ export const bank: SituationDef = {
     { say: "Mi tarjeta se quedó atorada en el cajero", intent: "card_kept", step: "help_card" },
     { say: "No, el NIP estaba bien, el cajero se trabó", intent: "machine_error", step: "pin_q", not: ["wrong_pin", "pin_yes_ctx"] },
     { say: "No tengo comprobante de domicilio todavía", intent: "no_proof", step: "proof", not: ["give_proof", "proof_ctx"] },
+    // Lead's check: amounts as typed, refusals at the amount questions, cash asked for with its amount.
+    { say: "Quiero cambiar 1,000 dólares", intent: "exchange_req", step: "help", slots: { number: 1000 } },
+    { say: "Quiero sacar dos mil pesos", intent: "withdraw", step: "help", slots: { price: 200000 } },
+    { say: "No quiero cambiar nada", intent: "not_that", step: "euros", not: ["euro_amount", "euro_ctx", "exchange_req"] },
+    { say: "No quiero sacar nada", intent: "not_that", step: "cash_amount", not: ["amount_ctx", "withdraw", "deposit_ans"] },
+    { say: "No traigo efectivo", intent: "no_deposit_ctx", step: "deposit", not: ["deposit_ans", "amount_ctx", "minimum"] },
+    { say: "Ya los cambié", intent: "none", step: "euros" },
     // Not understood: no free-text catch-all.
     { say: "Mi perro come plátanos azules", intent: "none" },
     { say: "bicicleta ventana guitarra", intent: "none" },
@@ -1963,6 +2028,20 @@ export const bank: SituationDef = {
         "Doscientos dólares", "Es todo"],
       expect: { complete: true, state: { exchange: "done", deposit: 100000 } }, auto: BANK_AUTO,
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
+    { name: "lead: a deposit said with the request waits for its step; the form's 'Está bien' is no signature",
+      turns: ["Quiero abrir una cuenta de débito con mil pesos", "Aquí está mi pasaporte", "Tengo un recibo de luz", "No, todavía no la tengo", "Está bien",
+        "Listo, ya firmé", "Mil pesos", "No, es todo"],
+      expect: { complete: true, state: { type: "checking", id: "passport", proof: "utility_bill", ssn: "none", signed: true, deposit: 100000 } }, auto: BANK_AUTO,
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
+    { name: "lead: pesos at the dollars step, '15 mil' typed refused, a refusal, then 1,000 typed with its comma",
+      turns: ["Quiero cambiar dólares", "Quiero cambiar dos mil pesos", "Quiero cambiar 15 mil dólares", "No quiero cambiar nada", "Quiero cambiar 1,000 dólares", "Sí",
+        "Eso es todo"],
+      expect: { complete: false, state: { exchange: "done", usdChanged: 1000 } }, auto: {},
+      setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; } },
+    { name: "lead: cash asked for with its amount is paid out after the ID",
+      turns: ["Quiero sacar dos mil pesos", "Aquí está mi pasaporte", "De quinientos está bien", "No, es todo, gracias"],
+      expect: { complete: false, state: { cash: "amount", cashAmount: 200000, billsDone: true } }, auto: {},
+      setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.askBills = true; } },
     { name: "no ID at all: come back later",
       turns: ["Quiero abrir una cuenta de ahorro", "No traigo mi pasaporte", "No"],
       expect: { complete: false, state: { type: "savings", id: undefined } }, auto: {},
