@@ -1,0 +1,1447 @@
+{
+"situation": "s79-post",
+"items": [
+{
+"ctx": "help",
+"say": "Buenos días, quisiera mandar este paquete a Estados Unidos",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Quiero enviar esta caja a Canadá",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "¿Puedo mandar esto a Inglaterra?",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Necesito enviar un paquete a Australia",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Tengo un paquete para Irlanda",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Esto va para Estados Unidos",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "¿Cuánto cuesta mandar esta caja a Estados Unidos?",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Quisiera hacer un envío internacional",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Hola, vengo a mandar un paquete",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "quiero mandar esto a mi mama en canada",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "¿Me puede ayudar a mandar este paquete?",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "¿Podéis enviar este paquete a Nueva Zelanda?",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Un paquete para Estados Unidos, por favor",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "quisiera enviar esta cajita a los estados unidos",
+"intent": "send_package"
+},
+{
+"ctx": "help_pickup",
+"say": "Vengo a recoger un paquete",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "Me dejaron un aviso",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "Tengo este aviso",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "¿Dónde está mi paquete?",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "No estaba en casa y me dejaron un aviso",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "Quisiera recoger mi paquete",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "Estoy esperando un paquete de Estados Unidos",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "Busco mi paquete",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "vine por un paquete",
+"intent": "pickup"
+},
+{
+"ctx": "help",
+"say": "¿Me da timbres para postales?",
+"intent": "buy_stamps"
+},
+{
+"ctx": "help",
+"say": "Quisiera unos timbres",
+"intent": "buy_stamps"
+},
+{
+"ctx": "help",
+"say": "¿Venden estampillas?",
+"intent": "buy_stamps"
+},
+{
+"ctx": "help",
+"say": "Necesito timbres para mandar unas postales a Canadá",
+"intent": "buy_stamps"
+},
+{
+"ctx": "help",
+"say": "Quiero mandar unas postales",
+"intent": "buy_stamps"
+},
+{
+"ctx": "help",
+"say": "¿Me vende sellos?",
+"intent": "buy_stamps"
+},
+{
+"ctx": "help",
+"say": "No vengo a mandar nada, vengo a recoger un paquete",
+"intent": "pickup",
+"not": [
+"send_package"
+]
+},
+{
+"ctx": "help",
+"say": "No quiero mandar esto a Estados Unidos",
+"intent": "any",
+"not": [
+"send_package"
+]
+},
+{
+"ctx": "help",
+"say": "No necesito timbres",
+"intent": "any",
+"not": [
+"buy_stamps"
+]
+},
+{
+"ctx": "dest",
+"say": "A Estados Unidos",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "Para Canadá",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "A mi familia en Australia",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "Va para Irlanda",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "Inglaterra",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "para mi mamá en estados unidos",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "A Nueva Zelanda, por favor",
+"intent": "dest_ans"
+},
+{
+"ctx": "dest",
+"say": "No a Canadá, a Estados Unidos",
+"intent": "dest_ans",
+"slots": {
+"dest": "usa"
+}
+},
+{
+"ctx": "dest",
+"say": "No es para Inglaterra, es para Irlanda",
+"intent": "dest_ans",
+"slots": {
+"dest": "ireland"
+}
+},
+{
+"ctx": "hazmat",
+"say": "No, solo un rebozo, chocolate y café",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No, nada de eso",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No, nada frágil",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No trae nada peligroso",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No, nada líquido ni frágil",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "Solo ropa y libros",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No, nomás ropa",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No hay perfume ni baterías",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No, puras cosas secas",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No trae líquidos",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "Unos juguetes y dulces para mis sobrinos",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "No, todo está bien",
+"intent": "contents_ok"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, es frágil",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "Trae una taza de barro",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, unos platos de Talavera",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "Es un poco frágil",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "Algo frágil",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "Trae un perfume",
+"intent": "contents_perfume"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, una botella de perfume",
+"intent": "contents_perfume"
+},
+{
+"ctx": "hazmat",
+"say": "¿Puedo mandar perfume?",
+"intent": "contents_perfume"
+},
+{
+"ctx": "hazmat",
+"say": "Trae una botella de tequila",
+"intent": "contents_perfume"
+},
+{
+"ctx": "hazmat",
+"say": "Trae una botella de vainilla",
+"intent": "contents_liquid"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, algo líquido",
+"intent": "contents_liquid"
+},
+{
+"ctx": "hazmat",
+"say": "Hay un frasco de miel",
+"intent": "contents_liquid"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, unas pilas",
+"intent": "contents_hazard"
+},
+{
+"ctx": "hazmat",
+"say": "Trae baterías",
+"intent": "contents_hazard"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, un poco de queso",
+"intent": "contents_perishable"
+},
+{
+"ctx": "hazmat",
+"say": "Trae comida casera",
+"intent": "contents_perishable"
+},
+{
+"ctx": "hazmat",
+"say": "Es perecedero",
+"intent": "contents_perishable"
+},
+{
+"ctx": "hazmat",
+"say": "¿Qué significa perecedero?",
+"intent": "what_hazard"
+},
+{
+"ctx": "hazmat",
+"say": "No hay nada frágil",
+"intent": "contents_ok",
+"not": [
+"contents_fragile"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No trae perfume",
+"intent": "any",
+"not": [
+"contents_perfume"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No tiene baterías",
+"intent": "any",
+"not": [
+"contents_hazard"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No es frágil",
+"intent": "any",
+"not": [
+"contents_fragile"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No hay comida",
+"intent": "any",
+"not": [
+"contents_perishable"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No trae nada líquido",
+"intent": "any",
+"not": [
+"contents_liquid"
+]
+},
+{
+"ctx": "perfume",
+"say": "Ah, bueno. Lo saco",
+"intent": "take_out"
+},
+{
+"ctx": "perfume",
+"say": "Está bien, lo quito",
+"intent": "take_out"
+},
+{
+"ctx": "perfume",
+"say": "Bueno, lo dejo en casa",
+"intent": "take_out"
+},
+{
+"ctx": "perfume",
+"say": "Ok, sin perfume entonces",
+"intent": "take_out"
+},
+{
+"ctx": "perfume",
+"say": "No lo quiero sacar",
+"intent": "any",
+"not": [
+"take_out"
+]
+},
+{
+"ctx": "service",
+"say": "El normal, por favor",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "Me llevo el express",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "El más barato, por favor",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "El más rápido",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "Express",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "Mejor el express",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "El normal, no tengo prisa",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "Quiero el económico",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "No quiero el express",
+"intent": "service_not",
+"not": [
+"service_ans"
+]
+},
+{
+"ctx": "service",
+"say": "¿Hay algo más barato?",
+"intent": "ask_cheaper"
+},
+{
+"ctx": "service",
+"say": "¿No hay algo más barato?",
+"intent": "ask_cheaper"
+},
+{
+"ctx": "service",
+"say": "¿Cuál es el más rápido?",
+"intent": "ask_faster"
+},
+{
+"ctx": "service",
+"say": "¿Cuánto tarda?",
+"intent": "ask_time"
+},
+{
+"ctx": "service",
+"say": "¿Cuánto tarda el normal?",
+"intent": "ask_time"
+},
+{
+"ctx": "service",
+"say": "¿Cuánto cuesta el express?",
+"intent": "ask_price",
+"not": [
+"service_ans"
+]
+},
+{
+"ctx": "service",
+"say": "¿Cuánto es en libras?",
+"intent": "ask_kilos"
+},
+{
+"ctx": "service",
+"say": "¿Cuánto pesa?",
+"intent": "ask_kilos"
+},
+{
+"ctx": "service",
+"say": "¿Lo puedo rastrear?",
+"intent": "ask_tracking"
+},
+{
+"ctx": "service",
+"say": "¿Tiene número de guía?",
+"intent": "ask_tracking"
+},
+{
+"ctx": "service",
+"say": "¿Qué opciones hay?",
+"intent": "ask_options"
+},
+{
+"ctx": "service",
+"say": "¿Cuál es la diferencia?",
+"intent": "ask_options"
+},
+{
+"ctx": "contents_list",
+"say": "Un rebozo, chocolate y café",
+"intent": "contents_ok"
+},
+{
+"ctx": "contents_list",
+"say": "Ropa y unos recuerdos",
+"intent": "contents_ok"
+},
+{
+"ctx": "contents_list",
+"say": "Una hamaca y unos dulces",
+"intent": "contents_ok"
+},
+{
+"ctx": "contents_list",
+"say": "Solo ropa",
+"intent": "contents_ok"
+},
+{
+"ctx": "value",
+"say": "Como ochocientos pesos",
+"intent": [
+"value_ans",
+"value_ctx"
+]
+},
+{
+"ctx": "value",
+"say": "Unos mil pesos",
+"intent": [
+"value_ans",
+"value_ctx"
+]
+},
+{
+"ctx": "value",
+"say": "Vale unos quinientos pesos",
+"intent": [
+"value_ans",
+"value_ctx"
+]
+},
+{
+"ctx": "value",
+"say": "Más o menos 1500 pesos",
+"intent": [
+"value_ans",
+"value_ctx"
+]
+},
+{
+"ctx": "value",
+"say": "Mil doscientos",
+"intent": [
+"value_ans",
+"value_ctx"
+]
+},
+{
+"ctx": "value",
+"say": "Alrededor de 600 pesos",
+"intent": [
+"value_ans",
+"value_ctx"
+]
+},
+{
+"ctx": "value",
+"say": "¿Qué pongo aquí?",
+"intent": "what_write"
+},
+{
+"ctx": "value",
+"say": "¿Para qué es eso?",
+"intent": "ask_customs"
+},
+{
+"ctx": "gift",
+"say": "Sí, es un regalo para mi mamá",
+"intent": "gift_yes"
+},
+{
+"ctx": "gift",
+"say": "Sí, son regalos",
+"intent": "gift_yes"
+},
+{
+"ctx": "gift",
+"say": "Es para mi familia",
+"intent": "gift_yes"
+},
+{
+"ctx": "gift",
+"say": "Sí, regalo de cumpleaños",
+"intent": "gift_yes"
+},
+{
+"ctx": "gift",
+"say": "No, no es regalo",
+"intent": "gift_no"
+},
+{
+"ctx": "gift",
+"say": "No, son mis cosas",
+"intent": "gift_no"
+},
+{
+"ctx": "gift",
+"say": "No es un regalo",
+"intent": "gift_no",
+"not": [
+"gift_yes"
+]
+},
+{
+"ctx": "gift",
+"say": "No son regalos",
+"intent": "any",
+"not": [
+"gift_yes"
+]
+},
+{
+"ctx": "sign_customs",
+"say": "Claro",
+"intent": [
+"sign_ctx",
+"signed",
+"here_you_go",
+"yn:yes"
+]
+},
+{
+"ctx": "sign_customs",
+"say": "Ya firmé",
+"intent": [
+"sign_ctx",
+"signed",
+"here_you_go",
+"yn:yes"
+]
+},
+{
+"ctx": "sign_customs",
+"say": "Listo",
+"intent": [
+"sign_ctx",
+"signed",
+"here_you_go",
+"yn:yes"
+]
+},
+{
+"ctx": "sign_customs",
+"say": "Aquí tiene",
+"intent": [
+"sign_ctx",
+"signed",
+"here_you_go",
+"yn:yes"
+]
+},
+{
+"ctx": "sign_customs",
+"say": "¿Dónde firmo?",
+"intent": "signed"
+},
+{
+"ctx": "return_addr",
+"say": "¡Ay, perdón! Claro",
+"intent": "return_ctx"
+},
+{
+"ctx": "return_addr",
+"say": "Ahorita lo pongo",
+"intent": "return_ok"
+},
+{
+"ctx": "return_addr",
+"say": "¿Qué es el remitente?",
+"intent": "what_return"
+},
+{
+"ctx": "return_addr",
+"say": "¿Pongo mi dirección de aquí?",
+"intent": "what_return"
+},
+{
+"ctx": "return_addr",
+"say": "Se me olvidó, perdón",
+"intent": "return_ok"
+},
+{
+"ctx": "insurance",
+"say": "No, gracias, no hace falta",
+"intent": [
+"insurance_no",
+"yn:no"
+]
+},
+{
+"ctx": "insurance",
+"say": "No necesito el seguro",
+"intent": [
+"insurance_no",
+"yn:no"
+]
+},
+{
+"ctx": "insurance",
+"say": "Sin seguro, gracias",
+"intent": [
+"insurance_no",
+"yn:no"
+]
+},
+{
+"ctx": "insurance",
+"say": "No, con el seguro básico está bien",
+"intent": [
+"insurance_no",
+"yn:no"
+]
+},
+{
+"ctx": "insurance",
+"say": "Sí, quiero asegurarlo",
+"intent": [
+"insurance_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "insurance",
+"say": "Sí, por si acaso",
+"intent": [
+"insurance_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "insurance",
+"say": "No quiero el seguro",
+"intent": "any",
+"not": [
+"insurance_yes"
+]
+},
+{
+"ctx": "insurance",
+"say": "¿Cuánto cuesta el seguro?",
+"intent": "any",
+"not": [
+"insurance_yes"
+]
+},
+{
+"ctx": "insurance",
+"say": "¿Y si se pierde?",
+"intent": "any",
+"not": [
+"insurance_yes"
+]
+},
+{
+"ctx": "insurance",
+"say": "¿Está asegurado?",
+"intent": "ask_insured"
+},
+{
+"ctx": "stamps_offer",
+"say": "Sí, para unas postales",
+"intent": "buy_stamps"
+},
+{
+"ctx": "stamps_offer",
+"say": "No necesito timbres, gracias",
+"intent": "no_stamps",
+"not": [
+"buy_stamps",
+"stamps_qty"
+]
+},
+{
+"ctx": "stamps_qty",
+"say": "Cinco, por favor",
+"intent": "stamps_ctx",
+"slots": {
+"number": 5
+}
+},
+{
+"ctx": "stamps_qty",
+"say": "Quiero diez timbres",
+"intent": "stamps_qty",
+"slots": {
+"number": 10
+}
+},
+{
+"ctx": "stamps_qty",
+"say": "Nada más uno",
+"intent": "stamps_ctx"
+},
+{
+"ctx": "stamps_qty",
+"say": "Deme tres",
+"intent": "stamps_qty",
+"slots": {
+"number": 3
+}
+},
+{
+"ctx": "pay",
+"say": "Con tarjeta, por favor",
+"intent": [
+"pay_card",
+"no_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Puedo pagar con tarjeta?",
+"intent": [
+"pay_card",
+"no_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "Tarjeta",
+"intent": [
+"pay_card",
+"no_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Aceptan tarjeta de crédito?",
+"intent": [
+"pay_card",
+"no_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "No tengo efectivo",
+"intent": [
+"pay_card",
+"no_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "Pago en efectivo",
+"intent": [
+"pay_cash",
+"no_card_ctx"
+]
+},
+{
+"ctx": "pay",
+"say": "En efectivo",
+"intent": [
+"pay_cash",
+"no_card_ctx"
+]
+},
+{
+"ctx": "pay",
+"say": "No tengo tarjeta, pago en efectivo",
+"intent": [
+"pay_cash",
+"no_card_ctx"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Puedo pagar con el celular?",
+"intent": "pay_phone"
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene",
+"intent": "here_you_go"
+},
+{
+"ctx": "pay",
+"say": "No con tarjeta, en efectivo",
+"intent": "pay_cash",
+"not": [
+"pay_card"
+]
+},
+{
+"ctx": "pay",
+"say": "No quiero pagar con tarjeta",
+"intent": "any",
+"not": [
+"pay_card"
+]
+},
+{
+"ctx": "pay",
+"say": "Ya pagué",
+"intent": "any",
+"not": [
+"pay_card",
+"pay_cash",
+"here_you_go"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "Aquí está",
+"intent": [
+"here_you_go",
+"yn:yes",
+"tracking_ctx"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "Sí, aquí lo tiene",
+"intent": [
+"here_you_go",
+"yn:yes",
+"tracking_ctx"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "Lo tengo en mi celular",
+"intent": [
+"here_you_go",
+"yn:yes",
+"tracking_ctx"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "No, lo perdí",
+"intent": [
+"no_notice",
+"yn:no"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "Lo dejé en el hotel",
+"intent": [
+"no_notice",
+"yn:no"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "No me dejaron ningún aviso",
+"intent": [
+"no_notice",
+"yn:no"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "No lo traigo",
+"intent": [
+"no_notice",
+"yn:no"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "No tengo el aviso",
+"intent": "no_notice",
+"not": [
+"here_you_go"
+]
+},
+{
+"ctx": "pick_name",
+"say": "Ryan Miller",
+"intent": "name_ctx"
+},
+{
+"ctx": "pick_name",
+"say": "Está a nombre de Ryan Miller",
+"intent": "name_ctx"
+},
+{
+"ctx": "pick_name",
+"say": "Viene a mi nombre",
+"intent": "name_ctx"
+},
+{
+"ctx": "pick_name",
+"say": "El número de guía es 4829157361",
+"intent": "tracking_ctx"
+},
+{
+"ctx": "pick_name",
+"say": "¿Mande?",
+"intent": "g_repeat",
+"not": [
+"name_ctx"
+]
+},
+{
+"ctx": "pick_id",
+"say": "Aquí está mi pasaporte",
+"intent": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+]
+},
+{
+"ctx": "pick_id",
+"say": "Mi pasaporte",
+"intent": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+]
+},
+{
+"ctx": "pick_id",
+"say": "Aquí tiene mi tarjeta de residente",
+"intent": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+]
+},
+{
+"ctx": "pick_id",
+"say": "¿Sirve mi licencia de manejo?",
+"intent": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+]
+},
+{
+"ctx": "pick_id",
+"say": "No traigo mi pasaporte",
+"intent": "any",
+"not": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+]
+},
+{
+"ctx": "pick_sign",
+"say": "Claro",
+"intent": "any",
+"not": [
+"pay_card",
+"pay_cash"
+]
+},
+{
+"ctx": "pick_sign",
+"say": "¿Dónde firmo?",
+"intent": "signed"
+},
+{
+"ctx": "more",
+"say": "Es todo, gracias",
+"intent": [
+"more_no",
+"yn:no",
+"yn:yes"
+]
+},
+{
+"ctx": "more",
+"say": "No, eso es todo",
+"intent": [
+"more_no",
+"yn:no",
+"yn:yes"
+]
+},
+{
+"ctx": "more",
+"say": "Sería todo",
+"intent": [
+"more_no",
+"yn:no",
+"yn:yes"
+]
+},
+{
+"ctx": "more",
+"say": "Por ahora es todo",
+"intent": [
+"more_no",
+"yn:no",
+"yn:yes"
+]
+},
+{
+"ctx": "more",
+"say": "Sí, también quiero timbres",
+"intent": "buy_stamps"
+},
+{
+"ctx": "more",
+"say": "¿Me presta cinta?",
+"intent": "need_tape"
+},
+{
+"ctx": "more",
+"say": "¿A qué hora cierran?",
+"intent": "ask_open"
+},
+{
+"ctx": "more",
+"say": "¿Abren los sábados?",
+"intent": "ask_open"
+},
+{
+"ctx": "customs",
+"say": "¿Tengo que pagar algo?",
+"intent": "customs_q_ctx"
+},
+{
+"ctx": "customs",
+"say": "¿Qué hago?",
+"intent": "customs_q_ctx"
+},
+{
+"ctx": "customs",
+"say": "¿Cuándo lo liberan?",
+"intent": "customs_q_ctx"
+},
+{
+"ctx": "customs",
+"say": "¿Cuánto tarda?",
+"intent": [
+"ask_time",
+"customs_q_ctx"
+]
+},
+{
+"ctx": "customs",
+"say": "¿Me van a avisar?",
+"intent": "customs_q_ctx"
+},
+{
+"ctx": "service",
+"say": "Mi gato toca la guitarra",
+"intent": "none"
+},
+{
+"ctx": "service",
+"say": "Quiero un café con leche",
+"intent": "none"
+},
+{
+"ctx": "service",
+"say": "¿Dónde está la playa?",
+"intent": "none"
+},
+{
+"ctx": "help",
+"say": "Buenas tardes, ¿aquí se mandan paquetes?",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Quisiera mandar esto por correo a Canadá",
+"intent": "send_package"
+},
+{
+"ctx": "help",
+"say": "Necesito mandar un paquete a mi hermana en Inglaterra",
+"intent": "send_package"
+},
+{
+"ctx": "help_pickup",
+"say": "Vengo por un paquete, me dejaron un aviso",
+"intent": "pickup"
+},
+{
+"ctx": "help_pickup",
+"say": "Me lo mandaron de Estados Unidos y no ha llegado",
+"intent": "pickup"
+},
+{
+"ctx": "hazmat",
+"say": "No, nada",
+"intent": "contents_none_ctx"
+},
+{
+"ctx": "hazmat",
+"say": "No, no trae nada",
+"intent": "contents_none_ctx"
+},
+{
+"ctx": "hazmat",
+"say": "Unos platos de barro, son frágiles",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "Cosas para mis hijos",
+"intent": "contents_ok",
+"not": [
+"contents_fragile"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No son frágiles",
+"intent": "any",
+"not": [
+"contents_fragile"
+]
+},
+{
+"ctx": "hazmat",
+"say": "No, el perfume lo dejé en casa",
+"intent": "contents_ok",
+"not": [
+"contents_perfume"
+]
+},
+{
+"ctx": "hazmat",
+"say": "¿Se puede mandar tequila?",
+"intent": "contents_perfume"
+},
+{
+"ctx": "perfume",
+"say": "No las quiero sacar",
+"intent": "keep_it_ctx",
+"not": [
+"take_out"
+]
+},
+{
+"ctx": "perfume",
+"say": "No lo saco",
+"intent": "any",
+"not": [
+"take_out"
+]
+},
+{
+"ctx": "perfume",
+"say": "No sabía, bueno, lo saco",
+"intent": "take_out"
+},
+{
+"ctx": "service",
+"say": "Prefiero el rápido",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "Quiero el que tenga rastreo",
+"intent": "service_ans"
+},
+{
+"ctx": "service",
+"say": "No, el normal",
+"intent": "service_ans"
+},
+{
+"ctx": "insurance",
+"say": "Mejor sí",
+"intent": "insurance_yes"
+},
+{
+"ctx": "insurance",
+"say": "¿Cuánto es?",
+"intent": "ask_price",
+"not": [
+"insurance_yes"
+]
+},
+{
+"ctx": "insurance",
+"say": "No lo necesito",
+"intent": [
+"no_need_ctx",
+"insurance_no"
+],
+"not": [
+"insurance_yes"
+]
+},
+{
+"ctx": "stamps_offer",
+"say": "No necesito",
+"intent": "no_need_ctx",
+"not": [
+"buy_stamps"
+]
+},
+{
+"ctx": "stamps_offer",
+"say": "Sí, cinco",
+"intent": [
+"stamps_ctx",
+"stamps_qty"
+]
+},
+{
+"ctx": "stamps_qty",
+"say": "Dame cinco",
+"intent": "stamps_qty"
+},
+{
+"ctx": "stamps_qty",
+"say": "Ninguno",
+"intent": "no_need_ctx",
+"not": [
+"stamps_qty",
+"stamps_ctx"
+]
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene quinientos",
+"intent": "here_you_go",
+"not": [
+"stamps_qty",
+"stamps_ctx"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Aceptan dólares?",
+"intent": "ask_dollars",
+"not": [
+"pay_cash"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "No lo encuentro",
+"intent": "no_notice",
+"not": [
+"here_you_go"
+]
+},
+{
+"ctx": "pick_notice",
+"say": "Tengo una foto en mi celular",
+"intent": "here_you_go"
+},
+{
+"ctx": "pick_name",
+"say": "Es para Ryan Miller",
+"intent": "name_ctx"
+},
+{
+"ctx": "customs",
+"say": "¿Por qué está en la aduana?",
+"intent": "customs_q_ctx"
+},
+{
+"ctx": "customs",
+"say": "¿Hay que pagar impuestos?",
+"intent": "customs_q_ctx"
+},
+{
+"ctx": "gift",
+"say": "No es para mí, es para mi hermana",
+"intent": "any",
+"not": [
+"gift_no"
+]
+},
+{
+"ctx": "value",
+"say": "No vale mucho",
+"intent": "value_ans"
+}
+]
+}
