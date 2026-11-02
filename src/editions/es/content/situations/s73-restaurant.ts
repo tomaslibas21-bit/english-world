@@ -212,6 +212,8 @@ function freshItems(c: Ctx, list: Item[]): Item[] {
 /** The término from the words actually said ("término medio" may reach us as two segments). */
 function doneFromText(txt: string): string | undefined {
   const s = fold(txt);
+  // "ni muy roja ni muy cocida", "no muy cocida": in between, never "roja" or "cocida" out of it
+  if (/\bni (muy |tan )?(roj|crud)[oa]\b|\b(no|ni) (muy |tan |demasiado )?(cocid|asad|hech|cocinad)[oa]\b/.test(s)) return "medium";
   if (/\bmedio roj[oa]\b|\btermino medio rojo\b/.test(s)) return "medium_rare";
   if (/\btres cuartos\b|\b3\/4\b|\b3 cuartos\b/.test(s)) return "medium_well";
   if (/\bbien (cocid|asad|hech|cocinad)[oa]\b|\bsin sangre\b/.test(s)) return "well_done";
@@ -388,6 +390,8 @@ export const restaurant: SituationDef = {
       "(somos | seriamos) (yo | nosotros) [dos]",
       // "No somos dos, somos tres": the second number is the answer
       "no (somos | seremos) {number} (somos | seremos | sino) {party}",
+      // "Somos cuatro adultos y dos niños": everybody at the table
+      "(somos | seremos) {party} y (un nino #k1 | una nina #k1 | {number} (ninos | ninas | menores) #kn)",
     ] },
     // "¡Muy bien, y con hambre!" to the host's greeting
     hungry: { patterns: [
@@ -453,7 +457,14 @@ export const restaurant: SituationDef = {
     ] },
     same: { patterns: [
       "lo mismo [para mi | por favor] #h:same", "(yo | para mi) lo mismo", "(quiero | quisiera | voy a querer | me da | me trae) lo mismo [que (ella | el | mi esposa | mi esposo)]",
-      "(que sean | mejor) dos", "dos de esos", "otro igual", "otra igual",
+      "(que sean | mejor) dos", "dos de esos", "otro igual", "otra igual", "(una | uno | otra | otro) mas [igual] [por favor]",
+    ] },
+    // "Dos cervezas" – "Perdón, solo una": the quantity of the last thing ordered (only while it can still change)
+    // (never a bare "mejor una": "Mejor una limonada" is a change of drink)
+    qty_ctx: { patterns: [
+      "[no] [perdon] [mejor] (solo | nada mas | nomas | solamente) (una | uno) [por favor] #n1",
+      "(que sea | mejor que sea) [solo] (una | uno) [nada mas] #n1", "no (son | eran) dos (son | sino)? (una | uno) #n1",
+      "(que sean | mejor que sean) (tres #n3 | cuatro #n4)", "no (son | eran) (dos | tres | cuatro) (son | sino)? (dos #n2 | tres #n3 | cuatro #n4)",
     ] },
     need_time: { patterns: [
       "(nos | me) (da | puede dar | podria dar) (unos | un par de) minutos [mas] #h:need_minutes",
@@ -527,7 +538,15 @@ export const restaurant: SituationDef = {
       "(soy | es) (celiaco #gluten | celiaca #gluten | intolerante a la lactosa #dairy | intolerante al gluten #gluten)",
     ] },
     ask_price: { patterns: [
-      "cuanto (cuesta | cuestan | es | sale | salen) (el | la | los | las | un | una) {dish} #h:q_price", "cuanto (cuesta | sale) [eso]", "cuanto (es | seria | sale | va a ser) [todo | eso | en total] #total",
+      "cuanto (cuesta | cuestan | es | sale | salen) (el | la | los | las | un | una) {dish} #h:q_price", "cuanto (cuesta | sale) [eso]", "cuanto (es | seria | sale | va a ser) [eso] #total",
+      // "¿Cuánto es todo?": the whole bill so far, at any time
+      "cuanto (es | seria | sale | va a ser | llevamos | llevo) (todo | en total | todo junto | la cuenta | hasta ahorita | hasta ahora) #total #all", "cual es el total [hasta ahorita | hasta ahora] #total #all", "(son | es | serian | seria) {price} [pesos] [en total] (verdad | cierto | no) #total #all",
+      // "¿Cuánto cuestan dos cervezas?": that many
+      "cuanto (cuestan | cuesta | son | salen | serian | seria) (dos #q2 | tres #q3 | cuatro #q4) {dish}",
+      // "¿Cuesta algo la factura?" / "¿Cobran el recipiente?" (both free)
+      "(cuesta | cobran | cobra) algo [extra] [la factura | eso | el recipiente | la cajita | el contenedor] #extra", "(la factura | el recipiente | la cajita) (cuesta | tiene costo) [algo] #extra",
+      "(tiene | hay) (algun)? (costo | cargo) [extra] [la factura | por la factura | el recipiente | por el recipiente] #extra", "(es | la factura es | el recipiente es) gratis #extra",
+      "(cobran | cobra) (la factura | por la factura | el recipiente | por el recipiente | la cajita) #extra",
       "a como (esta | estan | sale) (el | la | los | las) {dish}", "que precio tiene (el | la | los | las) {dish}", "cual es el precio de (el | la | los | las) {dish}",
       "(el | la | los | las) {dish} cuanto (cuesta | cuestan | es)",
     ] },
@@ -545,6 +564,8 @@ export const restaurant: SituationDef = {
       "[{doneness}] [pero] (que)? no (muy | tan | demasiado)? (roja | rojo | cruda | crudo | jugosa) #notrare",
       // "No muy cocida": less than well-done
       "(no | que no este | pero no) (muy | tan | demasiado) (cocida | cocido | asada | asado | hecha | hecho) #notwell",
+      // "Ni muy roja ni muy cocida": in between (never "roja" out of it)
+      "ni (muy | tan)? (roja | rojo | cruda | crudo) ni (muy | tan)? (cocida | cocido | asada | asado | hecha | hecho) #between",
       // "Roja no, término medio": the second one is the answer
       "{doneness} no [mejor] {doneness} #second", "{doneness} no #neg", "no (la | lo) quiero {doneness} #neg",
     ] },
@@ -636,7 +657,7 @@ export const restaurant: SituationDef = {
       "(no junto | no junta | junto no | junta no) (separado | separada | separadas | por separado) #separate",
       "no (separado | separada | separadas | junto | junta | juntos) #amb",
     ] },
-    pay_card: { patterns: ["no (en | con)? efectivo [mejor] con tarjeta",
+    pay_card: { patterns: ["no (en | con)? efectivo [mejor] con tarjeta", "(mejor | prefiero) [pagar] con tarjeta", "(es | va a ser | seria) con tarjeta",
       "[puedo | podemos] pagar con tarjeta #h:pay_card", "(con)? tarjeta [de credito | de debito] #h:pay_card_short",
       "(aceptan | acepta | reciben | toman) tarjeta[s]? [de credito | de debito]", "(aceptan | acepta) (tarjeta | visa | mastercard | american express | amex)",
       "(pago | voy a pagar | le pago | vamos a pagar) con tarjeta", "con (mi | la) tarjeta", "(aqui tiene | aqui esta) mi tarjeta", "(visa | mastercard | amex)",
@@ -644,14 +665,20 @@ export const restaurant: SituationDef = {
     ] },
     // "No con tarjeta" / "No, con tarjeta": the comma is lost, so Luis asks again (rule 10); "No con tarjeta, en efectivo" is cash
     pay_amb: { patterns: ["no (con | en) (tarjeta | efectivo) #amb", "no (tarjeta | efectivo) #amb"] },
-    pay_cash: { patterns: ["no (tengo | traigo | tenemos | traemos) tarjeta", "no (quiero | queremos | puedo | podemos) pagar con tarjeta", "no (con tarjeta | tarjeta) [mejor] (en | con)? efectivo","[puedo | podemos] pagar en efectivo", "(en | con) efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago | vamos a pagar) en efectivo #h:pay_cash"] },
+    pay_cash: { patterns: ["no (tengo | traigo | tenemos | traemos) tarjeta", "no (quiero | queremos | puedo | podemos) pagar con tarjeta", "no (con tarjeta | tarjeta) [mejor] (en | con)? efectivo","[puedo | podemos] pagar en efectivo", "(en | con) efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago | vamos a pagar) en efectivo #h:pay_cash",
+      "(mejor | prefiero) [pagar] (en | con) efectivo", "(es | va a ser | seria) (en | con) efectivo"] },
     // "No traigo efectivo": so it's the card (never read as "efectivo")
-    no_cash: { patterns: ["no (tengo | traigo | tenemos | traemos) [suficiente] efectivo", "sin efectivo", "no (puedo | podemos) pagar en efectivo", "no (quiero | queremos) pagar en efectivo"] },
+    no_cash: { patterns: ["no (tengo | traigo | tenemos | traemos) [suficiente | mas] efectivo", "sin efectivo", "no (puedo | podemos) pagar en efectivo", "no (quiero | queremos) pagar en efectivo"] },
     // "¿Y si pago con tarjeta?": a what-if answers, never pays (rule 17)
     pay_whatif: { patterns: ["(y si | que pasa si | que tal si) (pago | pagamos | le pago) (con tarjeta | en efectivo | con efectivo | con el celular | con dolares)",
       "(se puede | puedo | podemos) pagar con (dolares | euros) #dollars", "(aceptan | acepta | reciben | toman) (dolares | euros) #dollars"] },
     pay_phone: { patterns: ["(puedo | podemos) pagar con (el | mi)? (celular | telefono)", "(aceptan | acepta) (apple pay | google pay)", "apple pay", "google pay", "con (el | mi) (celular | telefono)"] },
-    here_you_go: { patterns: ["aqui tiene #h:here_you_go", "aqui esta", "tenga", "aqui le dejo [el dinero]", "aqui tiene {price}", "aqui (tiene | estan | le dejo) [los] {price}"] },
+    here_you_go: { patterns: ["aqui tiene #h:here_you_go", "aqui esta", "tenga", "aqui le dejo [el dinero]", "aqui tiene {price}", "aqui (tiene | estan | le dejo) [los] {price}",
+      // "Tenga, doscientos", "Le doy quinientos", "Con un billete de quinientos", "Aquí tiene cien más" (the rest)
+      "(aqui tiene | tenga | tome | le doy | aqui le doy | ahi le van | ahi van) {price} [pesos] [mas]", "(aqui tiene | tenga | aqui estan | aqui le doy) (los | otros) {price} [pesos] [que faltan | que faltaban]",
+      "[le pago] con un billete de {price} [pesos]", "(aqui tiene | tenga) un billete de {price} [pesos]", "(aqui tiene | aqui esta | tenga) (el resto | lo que falta | lo que faltaba)"] },
+    // "¿Tiene cambio de quinientos?": a question before handing a big bill (cash, nothing counted yet)
+    change_q: { patterns: ["(tiene | trae | tendra | tienen) cambio [de {price}] [pesos]", "(me puede | puede | podria) cambiar un billete de {price} [pesos]", "(tiene | trae) cambio para un billete de {price} [pesos]"] },
     // "El cambio, por favor": the change is brought
     want_change: { patterns: ["no se quede con el cambio", "[quiero | me da | me trae | me puede dar] [mi | el | su] cambio [por favor]", "(espero | esperamos) el cambio", "(me | nos) (trae | da) el cambio"] },
     keep_change: { patterns: ["quedese con el cambio #h:keep_change", "el cambio es para usted", "no (necesito | quiero) [el] cambio", "(asi | asi esta) bien #asi", "(asi | asi esta) bien quedese con el cambio", "quedate con el cambio #tip:tu_staff"] },
@@ -665,15 +692,24 @@ export const restaurant: SituationDef = {
       "[el] {number} por ciento #h:tip_percent", "[el] {number} [por ciento] (esta bien | por favor) #h:tip_percent", "{number}",
       "(pongale | agreguele | ponga | agregue | ponle | agregale) [el] {number} [por ciento] #h:tip_pesos", "(le dejo | le pongo | dejo | pongo | le doy) [el] {number} por ciento",
       "es normal [dejar] el {number} [por ciento] #q", "(esta bien | es suficiente) [con] el {number} [por ciento] #qok", "(es mucho | es poco | es demasiado | no es mucho) [dejar] [con] el {number} [por ciento] #q #much",
-      "(pongale | agreguele | ponga | agregue | le dejo | le pongo) {price} [de propina] #pesos", "{price} de propina #pesos", "{price} pesos [de propina] [por favor] #pesos",
+      "(pongale | agreguele | ponga | agregue | le dejo | le pongo | le doy) {price} [de propina] #pesos", "{price} de propina #pesos", "{price} pesos [de propina] [por favor] #pesos",
       "[el] {number} por ciento de propina",
+      // "Quiero dejar el diez por ciento" / "Le voy a dejar cien pesos"
+      "(quiero | quisiera | voy a | le voy a | vamos a | le quiero) (dejar | dejarle | poner | ponerle | dar | darle | agregar | agregarle) [el] {number} [por ciento] [de propina]",
+      "(quiero | quisiera | voy a | le voy a | vamos a | le quiero) (dejar | dejarle | poner | ponerle | dar | darle | agregar | agregarle) {price} pesos [de propina] #pesos",
+      // "¿Cuánto es el diez por ciento?": the amount, nothing paid
+      "cuanto (es | seria | serian | sale | queda | da) [con] [el] {number} por ciento [de propina] #howmuch", "cuanto (es | seria | serian | sale | queda) [con] el {number} [de propina] #howmuch", "cuanto (es | seria) (la propina | de propina) (con | del) [el] {number} [por ciento] #howmuch",
       // "No el quince, el diez" / "Quince no, diez": the second number is the tip
       "no [el] {number} [por ciento] [sino] [el] {number} [por ciento] #second", "[el] {number} no [mejor] [el] {number} [por ciento] #second",
     ] },
     tip_give: { patterns: [
       "(esto | esto es) para usted", "aqui (tiene | le dejo) (la | su | una) propina", "(le dejo | le voy a dejar | voy a dejar) (una)? propina",
       "(quiero | quisiera) dejar (una)? propina",
+      // with cash: "Le dejo cincuenta de propina" (the rest of the change comes back)
+      "(le dejo | le voy a dejar | voy a dejar | dejo | le doy) {price} [pesos] de propina", "(le dejo | le voy a dejar | voy a dejar | dejo | le doy) el {number} por ciento [de propina]",
     ] },
+    // "Sí, estoy seguro" to "¿$1,000 de propina? ¿Está seguro?"
+    sure_ctx: { patterns: ["[si] (estoy | estamos) (seguro | segura | seguros | seguras) [gracias]", "[si] (seguro | segura | seguros | seguras)", "[si] (se lo | se la) (merece | ganó)", "[si] (son | es) para usted"] },
     // "Nada." / "Ninguna." to "¿Cuánto le agrego de propina?"
     tip_none_ctx: { patterns: ["(nada | ninguna | cero | nada gracias) [de propina]"] },
     tip_none: { patterns: ["sin propina", "no (quiero | voy a) dejar propina", "no (le pongo | pongo | dejo | le dejo) propina", "nada de propina", "(cero | 0) [por ciento] [de propina]", "no (quiero | queremos) dar propina"] },
@@ -685,15 +721,22 @@ export const restaurant: SituationDef = {
     // --- Changes of mind
     reject: { patterns: [
       "[mejor] no (quiero | voy a querer | vamos a querer) [el | la | los | las | un | una] {item}", "[mejor] no {item}", "(cancele | quite | olvide) [el | la | los | las] {item}",
-      "[mejor] ya no (lo | la | los | las) (quiero | queremos)", "cambié de opinion", "olvidelo", "no tomo {item}", "no (como | comemos) {item}",
+      "[mejor] ya no (lo | la | los | las) (quiero | queremos)", "[mejor] ya no (quiero | queremos | voy a querer) [el | la | los | las | un | una] {item}", "cambié de opinion", "olvidelo", "no tomo {item}", "no (como | comemos) {item}",
       "no me gusta [el | la | los | las] {item}", "sin {item}", "nada de {item}", "[el | la | los | las] {item} no [gracias]", "[el | la | los | las] {item} no (me | nos) (gusta | gustan | convence)",
     ] },
     change: { patterns: [
       "[mejor] (puede | podria) cambiar(lo | la | los)? (por | a) {item}", "[mejor] (me | nos) (lo | la) cambia (por | a) {item}", "mejor {item}",
       "{item} en (vez | lugar) [de eso]", "(mejor | quiero | quisiera) {item} en (vez | lugar) [de eso]", "@order_prefix {item} en (vez | lugar) [de eso]", "mejor (quiero | quisiera | voy a querer | me da | me trae) {item}",
+      // "No, mejor el poc chuc": a change, never "no poc chuc"
+      "no [gracias | perdon] mejor {item}", "no [no | perdon] mejor (quiero | quisiera | voy a querer | me da | me trae | traigame) {item}",
     ] },
     // "No la cochinita, el poc chuc": the second item replaces the first (never an order for the first)
-    correction: { patterns: ["[no] no (quiero | voy a querer) {item} [sino | mejor] [quiero | voy a querer | me trae | me da] {item}", "[no] no {item} sino {item}", "[no] no {item} [mejor] {item}", "[no] {item} no [mejor] {item}", "[mejor] {item} en (vez | lugar) de {item}", "dije {item}"] },
+    correction: { patterns: ["[no | ya] no (quiero | voy a querer) {item} [sino | mejor] [quiero | voy a querer | me trae | me da] {item}", "[no] no {item} sino {item}", "[no] no {item} [mejor] {item}", "[no] {item} no [mejor] {item}", "[mejor] {item} en (vez | lugar) de {item}", "dije {item}",
+      // "Quiero el poc chuc en lugar de la cochinita", "En vez de la cochinita, el poc chuc", "Cámbieme la cochinita por el poc chuc"
+      "@order_prefix {item} en (vez | lugar) de {item}", "en (vez | lugar) de {item} [mejor] [quiero | quisiera | voy a querer | me trae | me da | traigame] {item}",
+      "(cambieme | cambiame | me cambia | me puede cambiar | me podria cambiar | puede cambiar | podria cambiar | cambie) {item} por {item}"] },
+    // "Sí, una" to "¿Gusta una (sopa) para empezar?"
+    soup_yes_ctx: { patterns: ["si (una | uno) [por favor] [para empezar | para mi]", "si (traigame | me trae | traiganos | nos trae) una [por favor]", "[si] una para (compartir | los dos | empezar)"] },
   },
 
   lines: {
@@ -1238,7 +1281,9 @@ export const restaurant: SituationDef = {
       "Yes, that's normal. Most people leave ten to fifteen percent.")],
     tip_fine: [t("No, | está | bien. | Se acostumbra | del | diez | al | quince | por ciento.", "No, | it's | fine. | It's customary | from | ten | to | fifteen | percent.",
       "No, that's fine. People usually leave ten to fifteen percent.")],
-    tip_big: [t("¿{$amount} | de | propina? | ¿Está | {m:seguro|f:segura}?", "{$amount} | of | tip? | Are you | sure?", "{$amount} as a tip? Are you sure?")],
+    tip_big: [t("¿{$price} | de | propina? | ¿Está | {m:seguro|f:segura}?", "{$price} | of | tip? | Are you | sure?", "{$price} as a tip? Are you sure?")],
+    tip_again: [t("Ah, | perdón. | ¿Cuánto | le | pongo, | entonces?", "Oh, | sorry. | How much | (for) you | I-put, | then?", "Oh, sorry. How much should I put, then?")],
+    tip_amount: [t("Serían | como | {$amount} | de | propina.", "It'd-be | about | {$amount} | as | tip.", "That'd be about {$amount} for the tip.", { flags: { 1: "como before an amount: “about”." } })],
     tip_normal_range: [t("Se acostumbra | del | diez | al | quince | por ciento.", "It's customary | from | ten | to | fifteen | percent.", "People usually leave ten to fifteen percent.")],
     confirm_keep: [t("¿Entonces | me quedo | con | el | cambio?", "So | I keep | with | the | change?", "So I can keep the change?", { flags: { 1: "me quedo con = I keep (quedarse con)." } })],
     tip_thanks: [
@@ -1247,7 +1292,9 @@ export const restaurant: SituationDef = {
     ],
     tip_none_ok: [t("Ah... | muy | bien. | Listo.", "Oh... | very | well. | Done.", "Oh... okay. You're all set.")],
     cash_ok: [t("Muy | bien, | enseguida | le | traigo | su | cambio.", "Very | good, | right away | (to) you | I-bring | your | change.", "Great, I'll bring your change right over.")],
-    cash_short: [t("Perdón, | son | {$total}; | faltan | {$price}.", "Sorry, | it's | {$total}; | they're-missing | {$price}.", "Sorry, it's {$total}; you're {$price} short.")],
+    cash_short: [t("Perdón, | son | {$price}.", "Sorry, | it's | {$price}.", "Sorry, it's {$price}.")],
+    cash_missing: [t("Faltan | {$price}.", "They're-missing | {$price}.", "You're {$price} short.", { flags: { 0: "faltan: “are missing”, the pesos still to pay." } })],
+    cash_still: [t("Todavía | faltan | {$price}.", "Still | they're-missing | {$price}.", "You're still {$price} short.")],
     cash_exact: [t("Gracias, | está | completo.", "Thanks, | it's | complete.", "Thanks, that's exactly right.")],
     change_back: [t("Y | aquí tiene | su | cambio.", "And | here's | your | change.", "And here's your change."), t("Aquí tiene | su | cambio.", "Here's | your | change.", "Here's your change.")],
     thanks_tip: [t("¡Ay, | muchas | gracias! | Muy | amable.", "Oh, | many | thanks! | Very | kind.", "Oh, thank you! That's very generous.")],
@@ -1286,6 +1333,13 @@ export const restaurant: SituationDef = {
     price: () => {
       const s = new Set<number>();
       for (let c = 0; c <= 300000; c += 500) s.add(c);
+      return [...s];
+    },
+    // a tip worked out for "¿Cuánto es el diez por ciento?", in whole pesos (tipAmount)
+    amount: () => {
+      const s = new Set<number>();
+      for (let c = 100; c <= 20000; c += 100) s.add(c);
+      for (let c = 20500; c <= 60000; c += 500) s.add(c);
       return [...s];
     },
   },
@@ -1656,6 +1710,7 @@ export const restaurant: SituationDef = {
       help: (c) => { c.say("drinks_list"); } },
     { id: "drinks_ack", when: (c) => !!c.s.drinksDone && drinks(c).length > 0 && !food(c).length && !c.s.served, done: (c) => !!c.s.drinksAcked,
       ask: (c) => { c.s.drinksAcked = true; c.say(drinks(c).length > 1 || drinks(c)[0].qty > 1 ? "drinks_ack_pl" : "drinks_ack"); },
+      expects: ["qty_ctx"],
       suggest: [{ lt: "Say thank you", hint: "g_social" }, { lt: "Ask about the food", hint: "ask_food" }] },
     // Food
     { id: "order", when: (c) => !!c.s.seated && !!c.s.drinksDone, done: (c) => food(c).length > 0,
@@ -1688,12 +1743,12 @@ export const restaurant: SituationDef = {
       suggest: [{ lt: "Choose the dish", hint: "order_food", options: ["cochinita", "pollo_pibil"] }] },
     { id: "doneness", when: (c) => mains(c).some((m) => needsDone(m) && !m.done), done: () => false,
       ask: (c) => { c.say("ask_doneness"); if (c.chance(0.4)) c.say("doneness_options"); },
-      expects: ["doneness_ans", "order"],
+      expects: ["doneness_ans", "order", "qty_ctx"],
       suggest: [{ lt: "Say how you want your steak", hint: "doneness", options: "doneness" }],
       help: (c) => { c.say("doneness_list"); } },
     { id: "side", when: (c) => mains(c).some((m) => needsSide(m) && !m.side), done: () => false,
       ask: (c) => c.say("ask_side", { X: B(mains(c).find((m) => needsSide(m) && !m.side)!.id) }),
-      expects: ["side_ans", "order", "reject"],
+      expects: ["side_ans", "order", "reject", "qty_ctx"],
       suggest: [{ lt: "Choose a side", hint: "side", options: "side" }],
       help: (c) => { c.say("side_list"); } },
     { id: "main_q", when: (c) => starters(c).length > 0 && !mains(c).length && !c.s.noMain && !c.s.placed, done: () => false,
@@ -1702,7 +1757,7 @@ export const restaurant: SituationDef = {
       no: (c) => { c.s.noMain = true; } },
     { id: "soup_offer", when: (c) => c.s.soupTwist && !soupItem(c) && c.s.soupOffer === undefined && mains(c).length > 0 && !c.s.placed, done: () => false,
       ask: (c) => { if (c.s.soupAsked) { c.say("soup_offer_again"); return; } c.s.soupAsked = true; c.say("soup_offer", { price: byId("sopa_lima").attrs!.price }); },
-      expects: ["order", "more_no", "ask_price", "ask_desc"],
+      expects: ["order", "more_no", "ask_price", "ask_desc", "soup_yes_ctx"],
       suggest: [{ lt: "Answer yes or no", hint: "g_yesno" }],
       yes: (c) => { c.s.soupOffer = true; items(c).push({ cat: "starter", id: "sopa_lima", qty: 1 }); },
       no: (c) => { c.s.soupOffer = false; } },
@@ -1712,6 +1767,7 @@ export const restaurant: SituationDef = {
         c.say("placed");
         if (drinks(c).length && !c.s.drinksServed) { c.s.drinksServed = true; c.say("drinks_served"); }
       },
+      expects: ["qty_ctx"],
       suggest: [
         { lt: "Say thank you and wait", hint: "g_social" },
         { lt: "Ask for something (tortillas, water)", hint: "meal" },
@@ -1796,7 +1852,8 @@ export const restaurant: SituationDef = {
     // Dessert
     { id: "dessert", when: (c) => c.s.askDessert && mealOver(c) && !c.s.checkAsked, done: (c) => !!c.s.dessertDone,
       ask: (c) => sayP(c, c.s.dessertMenu ? "which_dessert" : "ask_dessert"),
-      expects: ["order", "dessert_no", "check_ask", "ask_menu", "ask_recommend", "more_no", "reject", "ask_price", "ask_desc", "ask_allergy"],
+      // "change" / "correction" too: "No, mejor un flan" is a flan, never "no flan"
+      expects: ["order", "dessert_no", "check_ask", "ask_menu", "ask_recommend", "more_no", "reject", "ask_price", "ask_desc", "ask_allergy", "change", "correction"],
       suggest: [
         { lt: "Order dessert or coffee", hint: "dessert", options: ["flan", "caballeros", "papaya", "helado", "cafe_de_olla", "americano"] },
         { lt: "Say no and ask for the check", hint: "check" },
@@ -1848,7 +1905,11 @@ export const restaurant: SituationDef = {
             c.s.payMethod = c.s.wantPay;
             // the card was chosen before the check came: Luis brings the terminal with it
             if (c.s.payMethod === "card") c.ask(needFactura(c) ? "factura" : "tip");
-            else if (needFactura(c)) c.ask("factura");
+            else {
+              // cash handed over before the check came is counted against it now (rule 18)
+              if (cashShort(c)) c.say("cash_missing", { price: total(c) - (c.s.cashGiven as number) });
+              if (needFactura(c)) c.ask("factura");
+            }
             return;
           }
           if (c.s.split !== "separate" && c.chance(0.5)) c.say("no_rush");
@@ -1856,7 +1917,7 @@ export const restaurant: SituationDef = {
         }
         sayP(c, "ask_pay_method");
       },
-      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "ask_tip", "no_cash", "factura_ask", "pay_whatif", "ask_price", "pay_amb"],
+      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "ask_tip", "no_cash", "factura_ask", "pay_whatif", "ask_price", "pay_amb", "change_q"],
       suggest: [
         { lt: "Pay by card or in cash", hint: "pay" },
         { lt: "Ask if the tip is included", hint: "tip_ask" },
@@ -1864,7 +1925,8 @@ export const restaurant: SituationDef = {
     // Twist (the brief): "¿Va a requerir factura?"
     { id: "factura", when: (c) => needFactura(c), done: (c) => c.s.factura !== undefined,
       ask: (c) => { c.twist("factura"); c.say("ask_factura"); },
-      expects: ["factura_yes_ctx", "factura_no_ctx", "factura_ask"],
+      // "¿Cuesta algo (la factura)?" is a question: "No cuesta nada" (never a yes)
+      expects: ["factura_yes_ctx", "factura_no_ctx", "factura_ask", "ask_price"],
       suggest: [{ lt: "Say if you need a tax invoice", hint: "factura" }],
       yes: (c) => { c.s.factura = true; c.say("factura_yes"); },
       no: (c) => { c.s.factura = false; c.say("factura_no"); } },
@@ -1873,15 +1935,22 @@ export const restaurant: SituationDef = {
         if (!c.s.readerSaid) { c.s.readerSaid = true; c.say(c.s.wantPay ? "reader_here" : "card_reader"); return; }
         c.say("tip_screen");
       },
-      expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip", "tip_none_ctx"],
+      // "Mejor en efectivo": nothing is paid yet, so the other way is still open (rule 18)
+      expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip", "tip_none_ctx", "pay_cash", "pay_card", "no_cash", "pay_phone"],
       suggest: [{ lt: "Choose the tip (usually 10–15%)", hint: "tip" }],
       no: (c) => { restaurant.handlers.tip_none(c, {}, { intent: "tip_none", slots: {}, tags: [] } as any); } },
     { id: "change", when: (c) => c.s.payMethod === "cash" && !c.s.paid, done: (c) => !!c.s.paid,
       ask: (c) => {
-        if (!c.s.changeOffered) { c.s.changeOffered = true; c.say("cash_ok"); return; }
-        c.s.paid = true; c.complete(); c.say("change_back"); c.event("pay", { method: "cash" });
+        // short of the total: the rest first, whatever else was said (rule 18)
+        if (cashShort(c)) { c.say("cash_still", { price: total(c) - (c.s.cashGiven as number) }); return; }
+        if (!c.s.changeOffered) {
+          c.s.changeOffered = true;
+          if (counted(c) && c.s.cashGiven === total(c)) { payCash(c); c.say("cash_exact"); return; } // handed before the check, exact
+          c.say("cash_ok"); return;
+        }
+        payCash(c); c.say("change_back");
       },
-      expects: ["keep_change", "tip_give", "want_change"],
+      expects: ["keep_change", "tip_give", "want_change", "here_you_go", "pay_card", "no_cash", "pay_phone"],
       suggest: [{ lt: "Leave the change as a tip, or wait for it", hint: "change" }] },
   ],
 
@@ -1909,20 +1978,16 @@ export const restaurant: SituationDef = {
     // --- Host
     resv_yes(c, slots) {
       c.s.resv = true;
+      // "Reservamos para cuatro" is four people, not four o'clock (rule 4)
+      if (timeIsParty(c, slots)) slots = { ...slots, party: { number: (slots.time as { h: number }).h }, time: undefined };
       const p = partyOf(slots.party);
       if (p) c.s.party = p;
       if (slots.time) c.s.time = slots.time;
       if (slots.name && !c.s.name) { c.s.name = slots.name; c.s.party ??= 2; c.say("resv_found"); }
     },
     resv_no(c) { c.s.resv = false; },
-    resv_time_ctx(c, slots, seg) {
-      // "Sí, para dos" is two people, not two o'clock: a time needs "las / la una", a clock or "de la noche" (rule 4)
-      const t0 = slots.time as { h?: number } | undefined;
-      if (t0 && !slots.party && !/\b(las|la una)\b|\d:\d|\b(de la|en la) (noche|tarde)\b/.test(fold(c.heard)) && (t0.h ?? 0) >= 1 && (t0.h ?? 0) <= 20) {
-        restaurant.handlers.resv_yes(c, { party: { number: t0.h } }, seg); return;
-      }
-      restaurant.handlers.resv_yes(c, slots, seg);
-    },
+    // "Sí, para dos" is two people, not two o'clock (resv_yes reads it, rule 4)
+    resv_time_ctx(c, slots, seg) { restaurant.handlers.resv_yes(c, slots, seg); },
     resv_no_ctx(c) { if (c.s.resv === undefined) c.s.resv = false; },
     table_for(c, slots, seg) {
       const p = partyOf(slots.party);
@@ -1933,7 +1998,10 @@ export const restaurant: SituationDef = {
       if (["window", "patio", "inside", "quiet"].some((x) => seg.tags.includes(x))) seatPref(c, seg.tags);
     },
     party_ctx(c, slots, seg) {
-      const p = partyOf(slots.party) ?? (seg.tags.includes("h:party_just_me") ? 1 : undefined);
+      const p0 = partyOf(slots.party) ?? (seg.tags.includes("h:party_just_me") ? 1 : undefined);
+      // "Somos cuatro adultos y dos niños": the children sit at the table too
+      const kids = seg.tags.includes("k1") ? 1 : seg.tags.includes("kn") ? Number(toArr(slots.number).at(-1) ?? 0) : 0;
+      const p = p0 ? p0 + kids : undefined;
       if (p) c.s.party = p;
       else if (/\b(yo|nosotros)\b/.test(fold(c.heard))) c.s.party = /\bnosotros\b/.test(fold(c.heard)) ? 2 : 1;
     },
@@ -1966,9 +2034,29 @@ export const restaurant: SituationDef = {
       if (/\?/.test(c.heard) && /^\W*(y\s+)?(que|cual|cuales|como|cuanto|cuanta|cuantos|donde|es|son|esta|estan|lleva|llevan|viene|vienen|pica|pican)\b/.test(fold(c.heard))) return;
       // "¿La horchata lleva leche?" / "¿El flan cuánto cuesta?": a question about the dish, not an order
       if (/\b(lleva|llevan|pica|pican|cuesta|cuestan|cuanto|trae carne|tiene carne)\b/.test(fold(c.heard)) && !/@?\b(me trae|nos trae|me da|nos da|quiero|quisiera|voy a querer)\b/.test(fold(c.heard))) return;
-      const list = freshItems(c, toArr(slots.items?.item).map(fromSlot).filter(Boolean) as Item[]);
-      if (!list.length) return;
-      for (const it of list) if (it.cat === "main" && byId(it.id).attrs?.doneness) it.done = doneFromText(c.heard) ?? it.done;
+      const fresh = freshItems(c, toArr(slots.items?.item).map(fromSlot).filter(Boolean) as Item[]);
+      if (!fresh.length) return;
+      for (const it of fresh) if (it.cat === "main" && byId(it.id).attrs?.doneness) it.done = doneFromText(c.heard) ?? it.done;
+      // "Sí, la cochinita" after "Ahorita paso su orden", "La arrachera término medio" at "¿En qué término…?": the same
+      // dish said again (in an earlier turn) is that dish, never a second one on the bill; "otra", "una más", "también"
+      // or another diner ("para ella") orders one more, and "Dos cochinitas" makes it two in all. At a table of two or
+      // more a plain "La cochinita" may be the next diner's: only a "Sí, …" or the dish's own follow-up question
+      // (término, side, which one) keeps it the same dish. After the meal is served a drink named again is another one.
+      const h = fold(c.heard);
+      const followUp = ["doneness", "side", "drink_kind", "food_kind"].includes(c.step ?? "");
+      const more = /\b(otr[oa]s?|tambien|igual)\b|(?<!\bnada )\bmas\b|\bpara (el|ella|ellos|todos|mi (esposa|esposo|pareja|amig[oa]|hij[oa]|novi[oa]))\b/.test(h);
+      const nextDiner = party(c) >= 2 && !followUp && !/^\W*(si|eso|exacto|correcto|asi es)\b/.test(h);
+      const thisTurn: Item[] = (c as any).__uttItems ?? [];
+      const list = fresh.filter((it) => {
+        if (c.s.served || more) return true;
+        const old = items(c).find((x) => x.id === it.id && x.cat === it.cat && !thisTurn.includes(x));
+        if (!old || (nextDiner && it.qty <= 1)) return true;
+        if (it.done) old.done = it.done;
+        if (it.side) old.side = it.side;
+        if (it.qty > old.qty) old.qty = it.qty;
+        return false;
+      });
+      if (!list.length) { if (c.s.placed && !c.s.served) c.say("ack"); return; }
       addItems(c, list);
       if (!c.s.seated) {
         // A drink ordered at the host stand is the drink order: Lucía passes it on, and Luis brings it.
@@ -2014,7 +2102,14 @@ export const restaurant: SituationDef = {
     ready_yes(c) { if (c.step === "order" || c.step === "drinks") c.s.readyNow = true; },
     need_time(c) { c.s.moreTime = true; sayP(c, "take_time"); c.hold(); },
     drinks_no(c) { if (!c.s.drinksDone) { c.s.drinksDone = true; c.say("no_problem"); } },
-    more_no(c) {
+    more_no(c, slots, seg) {
+      // "No, gracias, solo un café" once the meal is served (the check-back, the dessert, "¿Algo más?"): the coffee is
+      // ordered (never "that's all")
+      const named = dishOf(slots.dish);
+      if (named && c.s.served && !items(c).some((i) => i.id === named)) {
+        restaurant.handlers.order(c, { items: { item: { ...slots.dish, __tags: ["q1"] } } }, seg);
+        return;
+      }
       switch (c.step) {
         case "main_q": c.s.noMain = true; return;
         case "dessert": c.s.dessertDone = true; c.s.dessertDeclined = true; return;
@@ -2054,7 +2149,16 @@ export const restaurant: SituationDef = {
     same(c) {
       const last = items(c).filter((i) => i.cat !== "side").at(-1);
       if (!last || c.s.placed) { c.say("which_item"); return; }
-      last.qty += 1;
+      // "Que sean dos" / "Dos de esos" makes it two (never three after "Dos cervezas"); "Lo mismo para mí" is one more
+      last.qty = /\b(que sean|mejor) dos\b|\bdos de esos\b/.test(fold(c.heard)) ? Math.max(last.qty, 2) : last.qty + 1;
+      c.say("ack");
+    },
+    qty_ctx(c, _slots, seg) {
+      const n = seg.tags.includes("n1") ? 1 : seg.tags.includes("n3") ? 3 : seg.tags.includes("n4") ? 4 : 2;
+      const pool = items(c).filter((i) => i.cat !== "side");
+      const it = (n === 1 ? pool.filter((i) => i.qty > 1).at(-1) : undefined) ?? pool.at(-1);
+      if (!it || c.s.served) { c.say("which_item"); return; }
+      it.qty = n;
       c.say("ack");
     },
     ask_desc(c, slots) {
@@ -2101,18 +2205,28 @@ export const restaurant: SituationDef = {
       c.say("allergy_noted");
     },
     ask_price(c, slots, seg) {
+      const tags = seg.tags;
+      // "¿Cuánto es el diez por ciento?" at the terminal: the tip answers it (tip_ctx)
+      if (c.step === "tip" && /\bpor ciento\b|%/.test(fold(c.heard))) return;
       // "¿Cuánto es?" at an open offer gets that offer's price (rule 17)
       if (!slots.dish && c.step === "soup_offer") { c.say("price_is", { price: byId("sopa_lima").attrs!.price }); return; }
-      if (!slots.dish && c.step === "box") { c.say("box_free"); return; }
-      // "¿Cuánto es?" with the (one) check on the table: the total, not the last dish's price
-      if (!slots.dish && (c.s.checkBrought || (seg.tags.includes("total") && (c.s.checkAsked || mealOver(c)))) && c.s.split !== "separate") {
-        c.s.totalSaid = true; c.say("total_is", { price: total(c) }); return;
+      // the to-go box and the factura cost nothing ("¿Cuesta algo la factura?")
+      if (!slots.dish && (c.step === "box" || c.step === "factura" || (tags.includes("extra") && /\b(factura|recipiente|cajita|contenedor)\b/.test(fold(c.heard))))) { c.say("box_free"); return; }
+      if (!slots.dish && tags.includes("extra")) { c.say("which_item"); return; } // "¿Tiene costo?" about something else
+      // "¿Cuánto es todo?" at any time, "¿Cuánto es?" once the check is asked or on the table: the (one) total so far
+      if (!slots.dish && items(c).length && c.s.split !== "separate" && (tags.includes("all") || c.s.checkBrought || (tags.includes("total") && (c.s.checkAsked || mealOver(c))))) {
+        if (c.s.checkAsked || c.s.checkBrought) c.s.totalSaid = true;
+        c.say("total_is", { price: total(c) }); return;
       }
-      if (!slots.dish && seg.tags.includes("total") && !items(c).length) { c.say("which_item"); return; }
+      if (!slots.dish && (tags.includes("total") || tags.includes("extra")) && !items(c).length) { c.say("which_item"); return; }
       const id = dishOf(slots.dish) ?? lastDish(c);
-      if (!id || byId(id).attrs?.generic) { c.say("which_item"); return; }
+      if (!id) { c.say("which_item"); return; }
+      // a kind not chosen yet ("¿Cuánto cuesta el agua fresca?"): its price when every kind costs the same
+      const kinds = byId(id).attrs?.generic ? ALL.filter((e) => e.attrs?.family === byId(id).attrs!.generic) : [];
+      if (kinds.length && kinds.some((e) => e.attrs!.price !== kinds[0].attrs!.price)) { c.say("which_item"); return; }
+      const qty = tags.includes("q4") ? 4 : tags.includes("q3") ? 3 : tags.includes("q2") ? 2 : 1;
       c.s.mentioned = id;
-      c.say("price_is", { price: byId(id).attrs?.price ?? 0 });
+      c.say("price_is", { price: (((kinds[0] ?? byId(id)).attrs?.price as number | undefined) ?? 0) * qty });
     },
     ask_have(c, slots) {
       const th = slots.thing || {};
@@ -2132,7 +2246,7 @@ export const restaurant: SituationDef = {
       if (!steak) { c.say("for_which"); c.hold(); return; }
       const said = doneFromText(c.heard);
       if (seg.tags.includes("neg")) { (c as any).__doneSet = false; c.say("doneness_options"); c.hold(); return; }
-      if (seg.tags.includes("notwell")) steak.done = "medium";
+      if (seg.tags.includes("notwell") || seg.tags.includes("between")) steak.done = "medium";
       else if (seg.tags.includes("second")) steak.done = toArr(slots.doneness).at(-1) ?? said;
       else if (seg.tags.includes("notrare")) steak.done = said ?? (slots.doneness && slots.doneness !== "rare" ? slots.doneness : "medium");
       else steak.done = said ?? slots.doneness;
@@ -2223,27 +2337,42 @@ export const restaurant: SituationDef = {
     pay_cash(c) { choosePay(c, "cash"); },
     no_cash(c) { choosePay(c, "card"); },
     here_you_go(c, slots) {
-      // "Aquí tiene 500 pesos": cash
-      if (typeof slots.price === "number" && !c.s.payMethod) { choosePay(c, "cash"); if (c.s.payMethod !== "cash") return; }
+      const amount = typeof slots.price === "number" ? (slots.price as number) : undefined;
+      // "Aquí tiene 500 pesos": cash; before the check comes, it is counted when the check comes
+      if (amount !== undefined && !c.s.payMethod) {
+        choosePay(c, "cash");
+        if (!c.s.payMethod && c.s.wantPay === "cash") { c.s.cashGiven = ((c.s.cashGiven as number | undefined) ?? 0) + amount; return; }
+        if (c.s.payMethod !== "cash") return;
+      }
       if (c.s.payMethod === "cash" && !c.s.paid) {
         // An amount is counted: short asks for the rest, exact needs no change (rule 18); one check for everybody only
-        if (typeof slots.price === "number" && c.s.split !== "separate") {
-          const given = ((c.s.cashGiven as number | undefined) ?? 0) + (slots.price as number);
+        if (amount !== undefined && c.s.split !== "separate") {
+          const given = ((c.s.cashGiven as number | undefined) ?? 0) + amount;
           const due = total(c);
-          if (given < due) { c.s.cashGiven = given; c.say("cash_short", { total: due, price: due - given }); c.hold(); return; }
           c.s.cashGiven = given;
-          if (given === due) { c.s.paid = true; c.complete(); c.event("pay", { method: "cash" }); c.say("cash_exact"); return; }
+          if (given < due) { (c as any).__shortSaid = true; c.say("cash_short", { price: due }); c.say("cash_missing", { price: due - given }); c.hold(); return; }
+          if (keepsChange(c)) return; // "…, quédese con el cambio": keep_change, later in this turn, takes it as the tip
+          if (given === due) { payCash(c); c.say("cash_exact"); return; }
         }
-        c.s.paid = true; c.complete(); c.event("pay", { method: "cash" }); c.say("change_back"); return;
+        if (keepsChange(c)) return;
+        payCash(c); c.say("change_back"); return;
       }
       if (c.s.checkBrought && !c.s.payMethod) choosePay(c, "card");
     },
+    // "¿Tiene cambio de quinientos?": yes; with the check on the table it means cash (nothing counted until it is handed over)
+    change_q(c) {
+      c.say("have_yes");
+      if (c.s.checkBrought && !c.s.payMethod && !c.s.paid) choosePay(c, "cash");
+    },
     want_change(c) {
       if (c.s.payMethod !== "cash" || c.s.paid) return;
-      c.s.paid = true; c.complete(); c.say("change_back"); c.event("pay", { method: "cash" });
+      if (shortReminder(c)) return;
+      payCash(c); c.say("change_back");
     },
     keep_change(c, slots, seg) {
       if (c.s.paid) return;
+      // short of the total, there is no change to keep: the rest first (rule 18)
+      if (c.s.payMethod === "cash" && shortReminder(c)) return;
       // "Así está bien" alone could also be a polite "that's all": Luis asks before he keeps anything (rule 17)
       if (seg.tags.includes("asi") && c.s.payMethod === "cash") {
         c.say("confirm_keep");
@@ -2262,27 +2391,46 @@ export const restaurant: SituationDef = {
     ask_tip(c, _slots, seg) { c.say(seg.tags.includes("how") ? "tip_normal_range" : "tip_included_no"); c.tip(TIPS.tipping); },
     tip_ctx(c, slots, seg) {
       if (c.s.payMethod !== "card" || c.s.paid) return;
-      const pesos = seg.tags.includes("pesos") && typeof slots.price === "number";
       const nums = toArr(slots.number).map(Number);
-      const n = pesos ? 0 : (seg.tags.includes("second") ? nums.at(-1) : nums[0]) ?? 0;
+      const n0 = (seg.tags.includes("second") ? nums.at(-1) : nums[0]) ?? 0;
+      // "Cincuenta", "Cien", "No, quinientos" (no "por ciento"): above 30 a bare number is pesos, never 50 % (rule 20)
+      const bigBare = !seg.tags.includes("pesos") && n0 > 30 && !/\bpor ciento\b|%/.test(fold(c.heard)) && !seg.tags.includes("howmuch")
+        && !seg.tags.includes("q") && !/\?\s*$/.test(c.heard);
+      if (bigBare) slots = { ...slots, price: n0 * 100 };
+      const pesos = (seg.tags.includes("pesos") || bigBare) && typeof slots.price === "number";
+      const n = pesos ? 0 : n0;
+      // "¿Cuánto es el diez por ciento?": the amount, nothing paid (rule 11)
+      if (seg.tags.includes("howmuch")) {
+        if (n >= 1 && n <= 30) c.say("tip_amount", { amount: tipAmount(c, n) }); else c.say("tip_normal_range");
+        c.hold(); return;
+      }
       // "¿Es normal el diez?" is a question: answered, nothing paid; "¿Es mucho el quince?" gets "No, está bien"
       if (!pesos && (seg.tags.includes("q") || (seg.tags.includes("qok") && /\?\s*$/.test(c.heard)) || /\?\s*$/.test(c.heard))) {
         if (seg.tags.includes("much")) c.say(n >= 10 && n <= 15 ? "tip_fine" : "tip_normal_range");
-        else c.say(n >= 10 && n <= 20 ? "tip_normal_yes" : "tip_normal_range");
+        else c.say(n >= 10 && n <= 15 ? "tip_normal_yes" : "tip_normal_range"); // "¿Es normal el veinte?": the usual range, never "Sí"
         c.hold(); return;
       }
       if (!pesos && n > 30) { c.say("tip_normal_range"); c.hold(); return; }
-      // "Póngale mil pesos" on a $270 check: Luis checks once (a misheard amount is not charged unasked)
+      // "Póngale mil pesos" on a $270 check: Luis checks once (a misheard amount is not charged unasked); "Sí" charges
+      // it, "No" asks again (never "no tip"), another amount is the tip
       if (pesos && (slots.price as number) > total(c) / 2 && !c.s.bigTipChecked) {
-        c.s.bigTipChecked = true; c.say("tip_big", { amount: slots.price as number }); c.hold(); return;
+        const big = { pesos: (slots.price as number) / 100 };
+        c.s.bigTipChecked = true; c.say("tip_big", { price: slots.price as number });
+        const on = (intent: string) => (cc: Ctx, sl: any, sg: any) => { restaurant.handlers[intent](cc, sl, sg); };
+        c.expect({ id: "tip_big", hints: ["tip"], suggest: [{ lt: "Say yes, or give another amount", hint: "tip" }],
+          yes: (cc) => { chargeTip(cc, big); },
+          no: (cc) => { cc.say("tip_again"); cc.hold(); },
+          on: { sure_ctx: (cc) => { chargeTip(cc, big); }, tip_ctx: on("tip_ctx"), tip_none: on("tip_none"), tip_none_ctx: on("tip_none"),
+            pay_cash: on("pay_cash"), no_cash: on("no_cash"), pay_card: on("pay_card") },
+          ask: (cc) => cc.say("tip_screen") });
+        return;
       }
-      c.s.tip = pesos ? { pesos: (slots.price as number) / 100 } : n; c.s.paid = true; c.complete();
-      c.event("pay", { method: "card", tip: c.s.tip });
-      c.say(pesos || n > 0 ? "tip_thanks" : "tip_none_ok");
-      if (!pesos && n < 10) c.tip(TIPS.tipping);
+      chargeTip(c, pesos ? { pesos: (slots.price as number) / 100 } : n);
     },
+    sure_ctx() { /* only inside the big-tip check (pending "tip_big") */ },
     tip_give(c) {
       if (c.s.paid) return;
+      if (c.s.payMethod === "cash" && shortReminder(c)) return;
       c.s.tip = true;
       if (c.s.payMethod === "card") { c.say("tip_screen"); c.hold(); return; }
       if (c.s.payMethod) { c.s.paid = true; c.complete(); c.event("pay", { method: c.s.payMethod, tip: true }); }
@@ -2290,9 +2438,11 @@ export const restaurant: SituationDef = {
     },
     tip_none(c) {
       c.tip(TIPS.tipping);
-      if (c.s.payMethod === "card" && !c.s.paid) { c.s.paid = true; c.complete(); c.s.tip = 0; c.event("pay", { method: "card", tip: 0 }); c.say("tip_none_ok"); }
+      if (c.s.payMethod === "card" && !c.s.paid) chargeTip(c, 0);
     },
     tip_none_ctx(c, slots, seg) { restaurant.handlers.tip_none(c, slots, seg); },
+    // "Sí, una" to the soup offer: the offer's own yes
+    soup_yes_ctx(c) { if (c.step === "soup_offer") restaurant.steps.find((x) => x.id === "soup_offer")!.yes!(c); },
     factura_ask(c) {
       if (c.s.factura) { c.say("factura_yes"); return; }
       c.s.factura = true;
@@ -2304,7 +2454,17 @@ export const restaurant: SituationDef = {
     reject(c, slots) {
       const it = fromSlot(slots.item);
       // until the food is on the table, a change of mind still counts (the kitchen just got the order)
-      if (c.s.served) { noProblemOnce(c); return; }
+      if (c.s.served) {
+        // "Ya no quiero el flan" before it comes: it is taken off the bill (and the dessert question is not asked again)
+        const waiting = c.s.dessertOrdered && !c.s.dessertServed ? items(c).at(-1) : undefined;
+        if (it && waiting && (waiting.id === it.id || generic(it) === family(waiting.id))) {
+          items(c).pop();
+          Object.assign(c.s, { dessertOrdered: false, dessertAcked: false, dessertServed: false, dessertDone: true });
+          c.say("removed", { X: B(waiting.id) });
+          return;
+        }
+        noProblemOnce(c); return;
+      }
       // "No quiero papas" at "¿Con qué la acompaña?": the side question comes again
       if (c.step === "side" && it?.cat === "side") return;
       if (it) {
@@ -2320,21 +2480,29 @@ export const restaurant: SituationDef = {
       }
       sayP(c, "reject_ok"); c.hold();
     },
-    change(c, slots) {
+    change(c, slots, seg) {
       const it = fromSlot(slots.item);
+      // "Mejor un flan", "No, gracias, mejor un café" after the meal: the dessert (or coffee) is ordered or swapped
+      if (it && dessertTime(c, it)) { dessertChange(c, undefined, it, slots.item, seg); return; }
       if (!it || c.s.served) { noProblemOnce(c); return; }
       const last = items(c).filter((i) => i.cat === it.cat).at(-1);
       if (last) { Object.assign(last, { ...it, done: it.done ?? doneFromText(c.heard) }); c.say("changed"); drinksSettled(c); return; }
       addItems(c, [it]);
       drinksSettled(c);
     },
-    correction(c, slots) {
-      if (c.s.served) { noProblemOnce(c); return; }
-      const list = toArr(slots.item).map(fromSlot).filter(Boolean) as Item[];
+    correction(c, slots, seg) {
+      const raws = toArr(slots.item).filter((r) => fromSlot(r));
+      const list = raws.map(fromSlot) as Item[];
       const txt = fold(c.heard);
-      // "no la cochinita, (sino) el poc chuc" / "la cochinita no, el poc chuc": the first is the wrong one;
-      // "el poc chuc en vez de la cochinita": the second; "dije el poc chuc": only the good one
-      const [bad, good] = /\b(en vez|en lugar)\b/.test(txt) ? [list[1], list[0]] : /^\s*dije\b/.test(txt) ? [undefined, list[0]] : [list[0], list[1]];
+      // "no la cochinita, (sino) el poc chuc" / "la cochinita no, el poc chuc" / "cámbieme la cochinita por el poc chuc":
+      // the first is the wrong one; "el poc chuc en vez de la cochinita": the second, but "en vez de la cochinita, el
+      // poc chuc": the first again; "dije el poc chuc": only the good one
+      const enVez = /\ben (vez|lugar) de\b/.exec(txt);
+      const [bad, good] = enVez ? (named(txt.slice(0, enVez.index), list[0]) ? [list[1], list[0]] : [list[0], list[1]])
+        : /^\s*dije\b/.test(txt) ? [undefined, list[0]] : [list[0], list[1]];
+      // "No el flan, el helado" after the meal: the dessert (or coffee) still to come is swapped
+      if (good && dessertTime(c, good)) { dessertChange(c, bad, good, raws[list.indexOf(good)], seg); return; }
+      if (c.s.served) { noProblemOnce(c); return; }
       if (bad) { const idx = items(c).findIndex((i) => i.id === bad.id); if (idx >= 0) items(c).splice(idx, 1); }
       if (good) {
         const same = items(c).filter((i) => i.cat === good.cat).at(-1);
@@ -2478,6 +2646,29 @@ export const restaurant: SituationDef = {
     { say: "No quiero cerveza, una limonada natural", intent: "correction", step: "drinks", not: ["order"] },
     { say: "¿Me da mi cambio, por favor?", intent: "want_change", step: "change", not: ["keep_change"] },
     { say: "¿Es mucho el quince por ciento?", intent: "tip_ctx", step: "tip", not: ["tip_none"] },
+    // the lead's check: cash counted, a big tip checked, the other way at the terminal, the same dish said twice
+    { say: "Tenga, doscientos pesos", intent: "here_you_go", step: "change", slots: { price: 20000 } },
+    { say: "Le doy quinientos", intent: "here_you_go", step: "change", slots: { price: 50000 } },
+    { say: "Ah, perdón, aquí tiene cien más", intent: "here_you_go", step: "change", slots: { price: 10000 } },
+    { say: "Le dejo cincuenta de propina", intent: "tip_give", step: "change", not: ["here_you_go"] },
+    { say: "No traigo más efectivo", intent: "no_cash", step: "change", not: ["pay_cash", "keep_change"] },
+    { say: "Mejor con tarjeta", intent: "pay_card", step: "change", not: ["keep_change", "want_change"] },
+    { say: "Mejor en efectivo", intent: "pay_cash", step: "tip", not: ["tip_ctx", "tip_none", "tip_none_ctx"] },
+    { say: "Quiero dejar el diez por ciento", intent: "tip_ctx", step: "tip", slots: { number: 10 }, not: ["order_unknown"] },
+    { say: "¿Cuánto es el diez por ciento?", intent: "tip_ctx", step: "tip", not: ["ask_price", "tip_none"] },
+    { say: "¿Tiene cambio de quinientos?", intent: "change_q", step: "pay", not: ["here_you_go", "ask_have_unknown"] },
+    { say: "¿Cuesta algo la factura?", intent: "ask_price", step: "factura", not: ["factura_ask", "factura_yes_ctx"] },
+    { say: "No, mejor el poc chuc", intent: "change", step: "placed", not: ["reject", "order"] },
+    { say: "Mejor una limonada natural", intent: "change", step: "drinks_ack", not: ["qty_ctx", "order"] },
+    { say: "Ya no quiero la cerveza", intent: "reject", step: "drinks_ack", not: ["order"] },
+    { say: "En vez de la cochinita, el poc chuc", intent: "correction", step: "placed", not: ["order"] },
+    { say: "Cámbieme la cochinita por el poc chuc", intent: "correction", step: "placed", not: ["order"] },
+    { say: "Perdón, solo una", intent: "qty_ctx", step: "placed", not: ["order", "party_ctx"] },
+    { say: "¿Cuánto es todo?", intent: "ask_price", step: "placed", not: ["check_ask"] },
+    { say: "Ni muy roja ni muy cocida", intent: "doneness_ans", step: "doneness" },
+    { say: "Sí, una, por favor", intent: "soup_yes_ctx", step: "soup_offer" },
+    { say: "No, mejor un flan", intent: "change", step: "dessert", not: ["dessert_no", "reject"] },
+    { say: "No, gracias, mejor un café americano", intent: "change", step: "dessert", not: ["dessert_no", "more_no"] },
     // Spain forms (correct answers too): vosotros, ponme, patatas, móvil, vale
     { say: "Vale, una limonada", intent: "order", step: "drinks" },
     // not understood
@@ -2541,8 +2732,87 @@ export const restaurant: SituationDef = {
         "Póngale mil pesos.", "Cien pesos."],
       setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; },
       auto: omit(AUTO, ["resv", "drinks", "order", "check", "pay", "tip"]), expect: { complete: true, state: { party: 1, tip: { pesos: 100 } } } },
+    // the lead's check: a big tip is charged only on a yes, and a "No" asks again (never "no tip")
+    { name: "a big tip, confirmed",
+      turns: ["Mesa para uno.", "Una horchata, por favor.", "Quiero el pollo pibil.", "La cuenta, por favor.", "Con tarjeta.", "Póngale quinientos pesos.", "Sí, estoy seguro."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; },
+      auto: omit(AUTO, ["resv", "drinks", "order", "check", "pay", "tip"]), expect: { complete: true, state: { party: 1, tip: { pesos: 500 }, paid: true } } },
+    { name: "a big tip, then no: asked again",
+      turns: ["Mesa para uno.", "Una horchata, por favor.", "Quiero el pollo pibil.", "La cuenta, por favor.", "Con tarjeta.", "Póngale mil pesos.", "No.", "Quince por ciento."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; },
+      auto: omit(AUTO, ["resv", "drinks", "order", "check", "pay", "tip"]), expect: { complete: true, state: { tip: 15, paid: true } } },
+    // cash short of the total: the rest first, whatever else is said; then the change is kept as the tip
+    { name: "cash short, the rest, keep the change",
+      turns: ["Mesa para uno.", "Una horchata, por favor.", "Quiero el pollo pibil.", "La cuenta, por favor.", "En efectivo.", "Tenga, doscientos pesos.",
+        "Quédese con el cambio.", "Ah, perdón. Le doy cincuenta más, quédese con el cambio."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; },
+      auto: omit(AUTO, ["resv", "drinks", "order", "check", "pay", "change"]), expect: { complete: true, state: { paid: true, tip: true, cashGiven: 25000 } } },
+    // one beer instead of two; the steak named again at its término and after the order is the same steak
+    { name: "one instead of two, the same dish said again",
+      turns: ["Mesa para uno.", "Dos cervezas.", "Perdón, solo una.", "La arrachera.", "La arrachera término medio.", "Con papas.", "Sí, la arrachera, gracias.",
+        "La cuenta, por favor.", "Con tarjeta.", "El diez por ciento."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; },
+      auto: omit(AUTO, ["resv", "drinks", "drinks_ack", "order", "doneness", "side", "placed", "check", "pay", "tip"]),
+      expect: { complete: true, state: { items: { length: 2, 0: { id: "beer", qty: 1 }, 1: { id: "arrachera", qty: 1, done: "medium", side: "fries" } }, tip: 10 } } },
+    // "No, mejor…" and "Cámbieme… por…" change the order; "No, gracias, solo un café" orders the coffee
+    { name: "changes after ordering, a coffee instead of dessert",
+      turns: ["Mesa para uno.", "Una cerveza.", "No, mejor una limonada natural.", "Quiero la cochinita.", "Cámbieme la cochinita por el poc chuc.", "Con arroz.",
+        "Todo muy rico.", "No, gracias, solo un café americano.", "La cuenta, por favor.", "En efectivo.", "Aquí tiene quinientos, quédese con el cambio."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; s.askDessert = true; },
+      auto: omit(AUTO, ["resv", "drinks", "drinks_ack", "order", "placed", "side", "checkback", "dessert", "check", "pay", "change"]),
+      expect: { complete: true, state: { items: { length: 3, 0: { id: "lemonade_still" }, 1: { id: "poc_chuc", side: "rice" }, 2: { id: "americano" } }, paid: true, tip: true, cashGiven: 50000 } } },
+    // a dessert swapped before it comes: the bill has the new one only
+    { name: "a dessert swapped before it comes",
+      turns: ["Mesa para uno.", "Una horchata, por favor.", "Quiero el pollo pibil.", "Todo muy rico.", "Un flan.", "No el flan, el helado.", "La cuenta, por favor.",
+        "Con tarjeta.", "Diez por ciento."],
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; s.askDessert = true; },
+      auto: omit(AUTO, ["resv", "drinks", "order", "checkback", "dessert", "dessert_ack", "check", "pay", "tip"]),
+      expect: { complete: true, state: { items: { length: 3, 2: { id: "helado" } }, tip: 10, paid: true } } },
   ],
 };
+
+/** "Para cuatro" / "Sí, para dos" is a party, not a clock time: a time says "las cuatro", "la una" or "4:00" (rule 4).
+ *  The number itself is looked for, so "Reservamos para cuatro a las 8:30" is four people at 8:30. */
+const NUM_WORDS = ["", "una|uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "trece",
+  "catorce", "quince", "dieciseis", "diecisiete", "dieciocho", "diecinueve", "veinte"];
+function timeIsParty(c: Ctx, slots: any): boolean {
+  const t0 = slots.time as { h?: number; m?: number } | undefined;
+  const h = t0?.h ?? 0;
+  if (!t0 || slots.party || t0.m || h < 1 || h > 20) return false;
+  return !new RegExp(`\\b(las|la) (${NUM_WORDS[h]}|${h})\\b|\\b${h}:\\d`).test(fold(c.heard));
+}
+
+/** Is a dish named in this piece of text? (its Spanish name or one of its forms) */
+function named(txt: string, it: Item | undefined): boolean {
+  if (!it) return false;
+  const e = byId(it.id);
+  return [e.en.split(" | ").join(" "), ...(e.forms || [])].map(fold)
+    .some((f) => new RegExp(`\\b${f.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}\\b`).test(txt));
+}
+
+// --- Cash: what was handed over, counted against the one check (separate checks are each guest's own business)
+const counted = (c: Ctx) => typeof c.s.cashGiven === "number" && c.s.split !== "separate";
+const cashShort = (c: Ctx) => counted(c) && (c.s.cashGiven as number) < total(c);
+/** "…, quédese con el cambio" in the same turn as the money: keep_change takes the change as the tip. */
+const keepsChange = (c: Ctx) => /\b(quedese|quedate) con (el|su) cambio\b|\bel cambio es para (usted|ti)\b|\bno (necesito|quiero) (el |mi |su )?cambio\b/.test(fold(c.heard));
+function payCash(c: Ctx) { c.s.paid = true; c.complete(); c.event("pay", { method: "cash" }); }
+/** Short of the total: "Todavía faltan $35" (once a turn: here_you_go may have just said it). */
+function shortReminder(c: Ctx): boolean {
+  if (!cashShort(c)) return false;
+  if (!(c as any).__shortSaid) { (c as any).__shortSaid = true; c.say("cash_still", { price: total(c) - (c.s.cashGiven as number) }); }
+  c.hold();
+  return true;
+}
+
+// --- Card: the tip is the last step
+function chargeTip(c: Ctx, tip: number | { pesos: number }) {
+  c.s.tip = tip; c.s.paid = true; c.complete();
+  c.event("pay", { method: "card", tip });
+  c.say((typeof tip === "number" ? tip : tip.pesos) > 0 ? "tip_thanks" : "tip_none_ok");
+  if (typeof tip === "number" && tip < 10) c.tip(TIPS.tipping);
+}
+/** n % of the check, in whole pesos (said as "como $35"). */
+const tipAmount = (c: Ctx, n: number) => Math.max(100, Math.round((total(c) * n) / 10000) * 100);
 
 function partyOf(v: any): number | undefined {
   if (!v) return undefined;
@@ -2598,6 +2868,21 @@ function drinksSettled(c: Ctx) {
   if (c.s.seated && !c.s.served && drinks(c).length && !drinks(c).some((d) => generic(d))) c.s.drinksDone = true;
 }
 
+/** After the meal (or once a dessert is ordered) and before the dessert or the coffee comes, a change of mind about
+ *  it still counts. */
+const dessertTime = (c: Ctx, it: Item) => !!c.s.served && (mealOver(c) || !!c.s.dessertOrdered) && !c.s.dessertServed && (it.cat === "dessert" || it.cat === "drink");
+
+/** At dessert time: the dessert ordered last and not served yet is swapped for the new one; with none, it is ordered. */
+function dessertChange(c: Ctx, bad: Item | undefined, good: Item, goodSlot: any, seg: any) {
+  const waiting = c.s.dessertOrdered && !c.s.dessertServed ? items(c).at(-1) : undefined;
+  if (waiting && (waiting.cat === "dessert" || waiting.cat === "drink") && (!bad || bad.id === waiting.id)) {
+    Object.assign(waiting, { ...good, qty: waiting.qty, bare: false });
+    c.say("changed");
+    return;
+  }
+  restaurant.handlers.order(c, { items: { item: { ...goodSlot, __tags: goodSlot?.__tags?.length ? goodSlot.__tags : ["q1"] } } }, seg);
+}
+
 /** "No hay problema" once per turn, when two pieces of one answer (a reject and a change) reach it. */
 function noProblemOnce(c: Ctx) {
   if ((c as any).__noProblem) return;
@@ -2610,7 +2895,15 @@ function requestLine(req: string): string {
 }
 
 function choosePay(c: Ctx, method: "card" | "cash") {
-  if (c.s.payMethod) return;
+  if (c.s.payMethod) {
+    // "Mejor en efectivo" at the terminal, "Mejor con tarjeta" before the change: nothing is paid yet, so the other
+    // way is still open (rule 18); the tip or the change step takes it from there
+    if (c.s.payMethod !== method && !c.s.paid && c.s.checkBrought) {
+      c.s.payMethod = method; c.s.readerSaid = false; c.s.changeOffered = false; c.s.cashGiven = undefined;
+      c.say("no_problem");
+    }
+    return;
+  }
   if (!c.s.checkBrought) {
     // "¿Puedo pagar con tarjeta?" during the meal (or while the check is on its way) gets an answer; after the meal,
     // "Ahorita se la traigo" answers it.

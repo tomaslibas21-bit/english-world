@@ -38,3 +38,68 @@ Blind misses: "No, gracias, mejor regresamos otro día", "Disculpe, yo pedí el 
 - The writer's NEEDS stand: the global goodbye says "¡Que tenga buen día!" at dinner, and s69-local still says "Trattoria Lucía".
 - Doneness words are feminine (roja, bien cocida) to agree with la arrachera; many Mexican waiters use the masculine (término rojo). Both are accepted.
 - The writer's other unsure points are kept as they were: estimated prices, the vague factura line, "No está fría" → #amb asks again. "No, gracias" at "¿Se le ofrece algo más?" brings the check, as in the English edition. A dairy or egg question gets only "Déjeme preguntar en la cocina" (no follow-up), so the facts stay vague.
+
+## Lead's check (2 Nov 2026)
+Checked: prices and totals said and read (the total at any time, quantities, kinds), cash counted against the check
+(short, exact, handed before the check, the rest, keep the change), the tip (percent, pesos, bare numbers, the big-tip
+check, how-much questions), a reservation's party and time, the factura, and every paid or binding outcome played whole
+with probe.ts (a dish said twice, quantities, changes and corrections up to the dessert, the other way of paying). 30 new
+edge and trap sentences: 9/29 understood and 0/1 traps accepted before, 29/29 and 0/1 after; about 70 lines changed and
+290 added (fixes, 22 NLU tests, 6 sims).
+
+**Must-fix (all fixed):**
+1. **The big-tip check had no yes, and its "No" paid no tip.** At "¿$1,000 de propina? ¿Está seguro?", "Sí, estoy
+   seguro" wasn't understood and "No." charged a 0 tip and ended the dinner. It's a pending question now (tip_big): a yes
+   or "Sí, estoy seguro" charges it, "No" gets "Ah, perdón. ¿Cuánto le pongo, entonces?", another amount is the tip.
+2. **Short cash still paid.** After "Perdón, son $235; faltan $35" the next turn paid anyway: "Gracias" and "¿Me da mi
+   cambio?" with change, "Quédese con el cambio" / "Esto es para usted" with a tip; "Aquí tiene cien, quédese con el
+   cambio" on $235 recorded the tip too. Short now gets "Todavía faltan $35" until the rest comes (rule 18).
+3. **"Aquí tiene trescientos, quédese con el cambio" gave the change back** and lost the tip (the hand-over paid first).
+   The money and the tip are one payment now.
+4. **Cash handed before the check was dropped.** "Aquí tiene cien pesos" at "¿Algo más?" later paid a $235 check with
+   change. It's counted when the check comes ("Son $235 en total. Faltan $135.").
+5. **"¿Cuánto es todo?" during the meal got the last dish's price** ($190 on a $235 bill): now the total so far, at any
+   time. "¿Cuánto cuestan dos cervezas?" got "¿Cuál?" (now $110); a kind not chosen yet gets its price when every kind
+   costs the same.
+6. **The same dish said again was billed twice.** "Sí, la cochinita, gracias" after "Ahorita paso su orden" ($440),
+   "Sí, una cerveza" after "¡Enseguida!", and "La arrachera término medio" at "¿En qué término…?" (two steaks, and the
+   término asked again for the first). A dish named again is that dish; "otra", "una más", "también", "para mi esposa"
+   or, at a table of two or more, a plain repeat without "Sí" orders another; "Dos cochinitas" makes it two in all.
+7. **"Que sean dos" after "Dos cervezas" billed three**, and "Perdón, solo una" wasn't understood. Now two, and qty_ctx
+   sets the count while the order can still change.
+8. **"No, mejor X" removed X instead of ordering it.** "No, mejor el poc chuc" after "Ahorita paso su orden" (and "No,
+   mejor una limonada" after "¡Enseguida!") was a reject: the cochinita (the beer) stayed on the bill. It's a change now.
+   Understood too: "Ya no quiero la cerveza", "Cámbieme la cochinita por el poc chuc", "En vez de la cochinita, el poc
+   chuc" (the swap reads which one comes after "en vez de"), "Quiero el poc chuc en lugar de la cochinita" (without a
+   stray "eso no lo tenemos").
+9. **Dessert-time orders were lost.** "No, gracias, solo un café" at the dessert or "¿Algo más?" said "Cuando quiera la
+   cuenta" and brought nothing; "No, mejor un flan" was "no flan"; "Mejor un flan" got "No hay problema" and nothing;
+   "No el flan, el helado" / "Mejor el helado" after ordering the flan served the flan; "Ya no quiero el flan" kept it on
+   the bill. They order, swap or cancel now until the dessert comes.
+10. **"Reservamos para cuatro" was four o'clock** (the party stayed at the default 2; rule 4). A number is a time only
+    as "las cuatro", "la una" or "4:00", so "Reservamos para cuatro a las 8:30" is four people at 8:30.
+11. **"¿Cuánto es el diez por ciento?" got "Su total es de $235. Sí, es lo normal…"** (rule 11), and "¿Es normal el
+    veinte?" got "Sí, es lo normal" before "del diez al quince". Now "Serían como $24 de propina." (new line, whole
+    pesos, its own `amount` domain) and the range for twenty.
+12. **Two money lines had no recordings.** cash_short said {$total} and {$price} (no total domain, and two values can't
+    be enumerated) and tip_big {$amount} (no domain). One value per line now ("Perdón, son $235." / "Faltan $35." /
+    "Todavía faltan $35."), tip_big on the price domain.
+
+**Polish / understanding:** the other way while nothing is paid (rule 18): "Mejor en efectivo" / "Perdón, es en
+efectivo" at the terminal (also after a bare "Aquí tiene" was taken as the card) and "Mejor con tarjeta" / "No traigo
+más efectivo" before the change. "Quiero dejar el diez por ciento" said "eso no lo tenemos" first. A bare tip number above
+30 ("Cincuenta", "No, quinientos") is pesos, never 50 %; "Le dejo cincuenta de propina" pays cash with the tip. "¿Tiene
+cambio de quinientos?" got "Perdón, eso no lo tenemos. Tenemos comida yucateca…" (now "¡Sí, claro!" and cash). "¿Cuesta
+algo la factura?" registered a factura (now "No cuesta nada": a factura is free in Mexico). Understood now: "Tenga,
+doscientos pesos", "Le doy quinientos", "Con un billete de quinientos", "Aquí tiene cien más", "Son doscientos,
+¿verdad?" (the real total back), "Ni muy roja ni muy cocida" (término medio; by its words it would have been roja),
+"Sí, una, por favor" at the soup, "Somos cuatro adultos y dos niños", "Una más". Spoken forms of every money line checked.
+
+**Open points:** the review's stand (the global goodbye's "¡Que tenga buen día!" and s69-local's "Trattoria Lucía" under
+NEEDS; the feminine término; "No, gracias" at "¿Se le ofrece algo más?" brings the check; allergy questions without a
+known answer). Not changed: "En efectivo" still gets "Muy bien, enseguida le traigo su cambio" before any amount; a $1
+shortfall would say "Faltan un peso"; cash for separate checks isn't counted; "Yo también" at a table of two, "¿Y si le
+dejo cien pesos?" and "Ya pagué con tarjeta" aren't understood (nothing paid).
+
+**Gate:** tsc clean; check-content 134/134 NLU tests, 15 sims all 12/12, fuzz 80, 0/0; corpus 236/236, 0/21; heldout
+40/40, 0/5; lead's set 29/29, 0/1; vitest 288/288.
