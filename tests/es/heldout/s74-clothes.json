@@ -1,0 +1,51 @@
+{ "situation": "s74-clothes", "items": [
+  { "ctx": "item", "say": "Hola, busco un vestido para la playa", "intent": "looking_for" },
+  { "ctx": "item", "say": "Solo estoy viendo, gracias", "intent": "just_looking" },
+  { "ctx": "item", "say": "Nada mas estoy mirando", "intent": "just_looking", "note": "no accent" },
+  { "ctx": "item", "say": "¿Tienen sandalias?", "intent": "looking_for" },
+  { "ctx": "item", "say": "Quisiera unos shorts", "intent": "looking_for" },
+  { "ctx": "item", "say": "No busco nada en especial, gracias", "intent": "just_looking", "not": ["looking_for"], "note": "trap: negation" },
+  { "ctx": "item", "say": "Quiero devolver esta blusa", "intent": ["return_item", "exchange"] },
+
+  { "ctx": "size", "say": "Mediana, por favor", "intent": "size_ans" },
+  { "ctx": "size", "say": "Soy talla chica", "intent": "size_ans" },
+  { "ctx": "size", "say": "Creo que grande", "intent": "size_ans" },
+  { "ctx": "size", "say": "No sé qué talla soy", "intent": "size_unknown", "not": ["size_ans"], "note": "trap: no size said" },
+  { "ctx": "size", "say": "¿Qué tallas tiene?", "intent": "ask_sizes" },
+
+  { "ctx": "shoe", "say": "Calzo del veinticinco", "intent": ["shoe_size", "shoe_size_ctx"] },
+  { "ctx": "shoe", "say": "En Estados Unidos uso el ocho", "intent": ["shoe_size", "shoe_size_ctx"] },
+  { "ctx": "shoe", "say": "Treinta y ocho europeo", "intent": ["shoe_size", "shoe_size_ctx"] },
+
+  { "ctx": "color", "say": "La blanca", "intent": "color_ans" },
+  { "ctx": "color", "say": "¿La tiene en azul?", "intent": ["ask_have_color", "color_ans"] },
+  { "ctx": "color", "say": "¿Qué colores hay?", "intent": "ask_colors" },
+
+  { "ctx": "tryon", "say": "Sí, me la quiero probar", "intent": ["try_on", "try_yes_ctx", "yn:yes"] },
+  { "ctx": "tryon", "say": "¿Dónde están los probadores?", "intent": "ask_fitting_room" },
+  { "ctx": "tryon", "say": "No, no me la voy a probar", "intent": ["no_try", "yn:no"], "not": ["try_on", "try_yes_ctx"], "note": "trap: negation" },
+
+  { "ctx": "fit", "say": "Me queda un poco grande", "intent": "fit_bad" },
+  { "ctx": "fit", "say": "Me queda perfecta", "intent": "fit_good" },
+  { "ctx": "fit", "say": "No me queda bien", "intent": "fit_bad", "not": ["fit_good"], "note": "trap: negation" },
+  { "ctx": "fit", "say": "Está muy apretada", "intent": "fit_bad" },
+
+  { "ctx": "decide", "say": "Me la llevo", "intent": ["take_it", "yn:yes"] },
+  { "ctx": "decide", "say": "Lo voy a pensar", "intent": "think_about_it" },
+  { "ctx": "decide", "say": "Está muy cara", "intent": "too_expensive" },
+  { "ctx": "decide", "say": "¿Cuánto cuesta?", "intent": "ask_price", "not": ["take_it", "yn:yes"], "note": "trap: price question" },
+  { "ctx": "decide", "say": "¿Tiene algún descuento?", "intent": "ask_sale" },
+  { "ctx": "decide", "say": "No me la llevo, gracias", "intent": ["not_take", "yn:no"], "not": ["take_it"], "note": "trap: negation" },
+
+  { "ctx": "pay", "say": "Con tarjeta", "intent": "pay_card" },
+  { "ctx": "pay", "say": "No quiero pagar con tarjeta, en efectivo", "intent": "pay_cash", "not": ["pay_card"], "note": "trap: the other way" },
+  { "ctx": "pay", "say": "¿Aceptan dólares?", "intent": "ask_dollars" },
+
+  { "ctx": "bag", "say": "No necesito bolsa, gracias", "intent": ["no_bag", "yn:no"], "not": ["want_bag"], "note": "trap: negation" },
+  { "ctx": "bag", "say": "Me lo llevo puesto", "intent": "wear_it" },
+
+  { "ctx": "r_receipt", "say": "Sí, aquí está el ticket", "intent": ["receipt_yes", "here_ctx", "here_you_go"] },
+  { "ctx": "r_reason", "say": "Me queda chica", "intent": "fit_bad" },
+  { "ctx": "r_choice", "say": "No quiero el dinero, mejor un cambio", "intent": "exchange", "not": ["want_refund"], "note": "trap: correction" },
+  { "ctx": "rewards", "say": "No, no tengo", "intent": "yn:no", "not": ["rewards_member"], "note": "trap: negation" }
+] }
