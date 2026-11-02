@@ -1,0 +1,55 @@
+{ "situation": "s63-party", "items": [
+  { "ctx": "name", "say": "Hola, me llamo Sarah. Mucho gusto", "intent": "intro_name" },
+  { "ctx": "name", "say": "Mucho gusto, Marcos. Yo soy Kevin", "intent": ["intro_name", "nice_meet"] },
+  { "ctx": "name", "say": "Encantada", "intent": "nice_meet", "note": "f learner" },
+  { "ctx": "name", "say": "Soy maestro", "intent": "any", "not": ["intro_name", "name_ctx"], "note": "trap: a job is not a name" },
+
+  { "ctx": "drink", "say": "Sí, una cerveza, por favor", "intent": "drink_ans" },
+  { "ctx": "drink", "say": "¿Qué hay para tomar?", "intent": "drink_menu" },
+  { "ctx": "drink", "say": "Un agua de jamaica, gracias", "intent": "drink_ans" },
+  { "ctx": "drink", "say": "No quiero cerveza, gracias", "intent": "drink_no", "not": ["drink_ans"], "note": "trap: negation" },
+  { "ctx": "drink", "say": "Estoy bien así, gracias", "intent": ["drink_no", "yn:no"] },
+
+  { "ctx": "know", "say": "Trabajamos juntas", "intent": "know_ans" },
+  { "ctx": "know", "say": "Somos vecinos", "intent": "know_ans" },
+  { "ctx": "know", "say": "Nos conocimos en la clase de yoga", "intent": "know_ans" },
+
+  { "ctx": "from", "say": "Soy de Canadá", "intent": ["from_ans", "from_ctx"] },
+  { "ctx": "from", "say": "De Estados Unidos, de Texas", "intent": ["from_ans", "from_ctx"] },
+  { "ctx": "from", "say": "Soy irlandés", "intent": ["from_ans", "from_ctx"], "note": "nationality" },
+  { "ctx": "from", "say": "Soy de Inglaterra, ¿y tú?", "intent": ["from_ans", "ask_back"] },
+
+  { "ctx": "mishear", "say": "No, Irlanda, no Islandia", "intent": ["correct_country", "from_ctx", "from_ans"], "not": ["yn:yes", "confirm_yes"], "note": "trap: correction" },
+
+  { "ctx": "job", "say": "Soy enfermera", "intent": ["job_ans", "job_ctx"] },
+  { "ctx": "job", "say": "Trabajo en un hotel", "intent": ["job_ans", "job_ctx"] },
+  { "ctx": "job", "say": "Ahorita estoy buscando trabajo", "intent": "job_ans" },
+  { "ctx": "job", "say": "Ya no trabajo, estoy jubilado", "intent": "job_ans" },
+  { "ctx": "job", "say": "Trabajo desde casa, soy programador", "intent": ["job_ans", "job_ctx"] },
+
+  { "ctx": "time", "say": "Como seis meses", "intent": "time_ans" },
+  { "ctx": "time", "say": "Acabo de llegar", "intent": "time_ans" },
+  { "ctx": "time", "say": "Llevo un año aquí", "intent": "time_ans" },
+
+  { "ctx": "like", "say": "Sí, me encanta", "intent": ["like_yes", "yn:yes"] },
+  { "ctx": "like", "say": "Me gusta, pero hace mucho calor", "intent": "like_mixed", "not": ["like_no"] },
+  { "ctx": "like", "say": "No me gusta mucho, la verdad", "intent": ["like_no", "like_mixed"], "not": ["like_yes"], "note": "trap: negation" },
+
+  { "ctx": "fun", "say": "Me gusta nadar y leer", "intent": ["fun_ans", "fun_ctx"] },
+  { "ctx": "fun", "say": "Juego futbol los fines de semana", "intent": ["fun_ans", "fun_ctx"] },
+  { "ctx": "fun", "say": "No tengo mucho tiempo libre", "intent": ["fun_none", "fun_none_ctx"], "not": ["fun_ans"], "note": "trap: negation" },
+
+  { "ctx": "cafe", "say": "No, todavía no", "intent": ["cafe_ans_no", "cafe_no_ctx"], "not": ["cafe_ans_yes"], "note": "trap" },
+  { "ctx": "cafe", "say": "Sí, ya fui, el café está muy rico", "intent": "cafe_ans_yes" },
+
+  { "ctx": "your_turn", "say": "¿Y a qué te dedicas?", "intent": "q_job" },
+  { "ctx": "your_turn", "say": "¿Cuánto tiempo llevas aquí?", "intent": "q_time" },
+  { "ctx": "your_turn", "say": "¿Qué haces en tu tiempo libre?", "intent": "q_fun" },
+
+  { "ctx": "drink2", "say": "No, otra no, gracias", "intent": ["drink_no", "yn:no"], "not": ["drink2_yes"], "note": "trap: negation" },
+  { "ctx": "drink2", "say": "Sí, otra, por favor", "intent": ["drink2_yes", "yn:yes"] },
+
+  { "ctx": "numbers", "say": "Claro, ¿me das tu número?", "intent": ["swap_propose", "yn:yes"] },
+  { "ctx": "numbers", "say": "Prefiero no dar mi número", "intent": ["decline_number", "yn:no"], "not": ["number_give", "swap_propose"], "note": "trap: refusal" },
+  { "ctx": "numbers", "say": "¿Por qué no? ¿Tienes WhatsApp?", "intent": ["swap_propose", "yn:yes"] }
+] }
