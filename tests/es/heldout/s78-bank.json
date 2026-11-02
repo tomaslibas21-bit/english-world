@@ -1,0 +1,58 @@
+{ "situation": "s78-bank", "items": [
+  { "ctx": "help", "say": "Buenos días, quiero abrir una cuenta", "intent": "open_account" },
+  { "ctx": "help", "say": "Quisiera abrir una cuenta de ahorro, por favor", "intent": ["open_account", "acct_type_ans"] },
+  { "ctx": "help", "say": "Hola, acabo de mudarme aquí", "intent": "new_in_town" },
+  { "ctx": "help", "say": "Quiero cambiar dólares a pesos", "intent": "exchange_req" },
+  { "ctx": "help", "say": "¿Cómo puedo mandar dinero a Estados Unidos?", "intent": "transfer_q" },
+  { "ctx": "help", "say": "Necesito sacar dinero", "intent": "withdraw" },
+  { "ctx": "help", "say": "No quiero abrir una cuenta, solo cambiar dólares", "intent": "exchange_req", "not": ["open_account"], "note": "trap: negation" },
+  { "ctx": "help", "say": "Tengo un problema con mi tarjeta", "intent": ["card_kept", "help_me"] },
+
+  { "ctx": "help_card", "say": "El cajero de afuera se tragó mi tarjeta", "intent": "card_kept" },
+  { "ctx": "help_card", "say": "Mi tarjeta se quedó atorada en el cajero", "intent": "card_kept", "note": "Mexican atorada" },
+
+  { "ctx": "acct_type", "say": "Una cuenta de débito, por favor", "intent": "acct_type_ans" },
+  { "ctx": "acct_type", "say": "¿Cuál es la diferencia?", "intent": "ask_difference" },
+  { "ctx": "acct_type", "say": "Las dos, por favor", "intent": "acct_type_ans" },
+  { "ctx": "acct_type", "say": "¿Hay comisión mensual?", "intent": "fee_q" },
+
+  { "ctx": "id", "say": "Aquí está mi pasaporte", "intent": ["show_doc", "here_you_go"] },
+  { "ctx": "id", "say": "Tome", "intent": "here_you_go" },
+  { "ctx": "id", "say": "No traigo mi pasaporte", "intent": "no_doc", "not": ["show_doc", "here_you_go", "doc_ctx"], "note": "trap: negation" },
+  { "ctx": "id", "say": "¿Sirve mi licencia de manejo?", "intent": ["show_doc", "doc_ctx"] },
+  { "ctx": "id", "say": "Tengo mi tarjeta de residente", "intent": ["show_doc", "doc_ctx"] },
+
+  { "ctx": "proof", "say": "Tengo un recibo de luz", "intent": ["give_proof", "proof_ctx"] },
+  { "ctx": "proof", "say": "No tengo comprobante de domicilio todavía", "intent": "no_proof", "not": ["give_proof", "proof_ctx"], "note": "trap: negation" },
+  { "ctx": "proof", "say": "Aquí está mi contrato de renta", "intent": ["give_proof", "proof_ctx", "here_you_go"] },
+
+  { "ctx": "ssn", "say": "No, todavía no tengo CURP", "intent": ["ssn_none", "not_yet", "yn:no"], "not": ["ssn_yes"], "note": "trap: negation" },
+  { "ctx": "ssn", "say": "¿Qué es la CURP?", "intent": "ask_ssn_what" },
+  { "ctx": "ssn", "say": "Sí, aquí tiene mi CURP", "intent": ["ssn_yes", "here_you_go", "yn:yes"] },
+
+  { "ctx": "slow", "say": "No hay problema, no tengo prisa", "intent": "no_problem" },
+
+  { "ctx": "form", "say": "¿Dónde firmo?", "intent": "where_sign" },
+  { "ctx": "form", "say": "¿Me presta una pluma?", "intent": "ask_pen", "note": "Mexican pluma" },
+  { "ctx": "form", "say": "Ya lo firmé", "intent": "signed" },
+
+  { "ctx": "deposit", "say": "Quiero depositar dos mil pesos", "intent": ["deposit_ans", "amount_ctx"] },
+  { "ctx": "deposit", "say": "¿Cuál es el depósito mínimo?", "intent": "ask_minimum" },
+  { "ctx": "deposit", "say": "Solo el mínimo", "intent": "minimum" },
+
+  { "ctx": "pin_q", "say": "Creo que puse mal el NIP", "intent": "wrong_pin" },
+  { "ctx": "pin_q", "say": "No, el NIP estaba bien, el cajero se trabó", "intent": ["machine_error", "yn:no"], "not": ["wrong_pin", "pin_yes_ctx"], "note": "trap: negation" },
+
+  { "ctx": "card_id", "say": "¿Me pueden dar una tarjeta nueva?", "intent": "new_card_q" },
+
+  { "ctx": "cash_offer", "say": "No, gracias, tengo efectivo", "intent": ["no_cash_needed", "yn:no"], "not": ["withdraw", "amount_ctx"], "note": "trap: refusal" },
+  { "ctx": "cash_offer", "say": "Sí, quiero sacar mil pesos", "intent": ["withdraw", "amount_ctx"] },
+
+  { "ctx": "bills", "say": "En billetes de doscientos, por favor", "intent": "bills_ans" },
+
+  { "ctx": "euros", "say": "Trescientos dólares", "intent": ["euro_amount", "euro_ctx"] },
+  { "ctx": "more", "say": "¿A cuánto está el dólar hoy?", "intent": "rate_q" },
+  { "ctx": "more", "say": "No, es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "more", "say": "Tengo otra pregunta", "intent": "have_question" },
+  { "ctx": "more", "say": "Mi gato come pizza los martes", "intent": "none", "note": "trap: nonsense" }
+] }
