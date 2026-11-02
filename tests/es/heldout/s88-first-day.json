@@ -1,0 +1,53 @@
+{ "situation": "s88-first-day", "items": [
+  { "ctx": "hello", "say": "Hola, soy nuevo, hoy es mi primer día", "intent": ["first_day", "yn:yes"] },
+  { "ctx": "hello", "say": "Sí, hoy empiezo", "intent": ["first_day", "yn:yes"] },
+  { "ctx": "hello", "say": "Buenos días, me llamo Ryan", "intent": ["intro_name", "intro_ctx"] },
+  { "ctx": "hello", "say": "No, no soy nuevo, nomás vengo a una reunión", "intent": "any", "not": ["first_day", "yn:yes"], "note": "trap: negation" },
+  { "ctx": "hello", "say": "Mucho gusto", "intent": "nice_meet" },
+
+  { "ctx": "name", "say": "Ryan", "intent": ["intro_ctx", "intro_name", "bare_name_ctx"] },
+  { "ctx": "name", "say": "Me llamo Ryan, ¿y tú?", "intent": ["intro_name", "intro_ctx"] },
+
+  { "ctx": "desk", "say": "¡Qué padre! Me gusta mucho", "intent": "desk_ok" },
+  { "ctx": "desk", "say": "¿Cuál es mi contraseña?", "intent": "q_password" },
+  { "ctx": "desk", "say": "¿Cómo entro a la computadora?", "intent": "q_login" },
+  { "ctx": "desk", "say": "¿Cuál es la clave del wifi?", "intent": "q_wifi" },
+  { "ctx": "desk", "say": "¿Me van a dar un gafete?", "intent": "q_badge" },
+  { "ctx": "desk", "say": "¿Tengo que cambiar la contraseña?", "intent": ["q_password", "q_login", "q_change"] },
+  { "ctx": "desk", "say": "No me gusta mucho esta silla", "intent": "any", "not": ["desk_ok"], "note": "trap: negation" },
+
+  { "ctx": "tour", "say": "¿Dónde está el baño?", "intent": "q_restroom" },
+  { "ctx": "tour", "say": "¿Dónde puedo imprimir algo?", "intent": "q_printer" },
+  { "ctx": "tour", "say": "¿A qué hora comen aquí?", "intent": "q_lunch_time" },
+  { "ctx": "tour", "say": "¿A qué hora salimos?", "intent": "q_home_time" },
+  { "ctx": "tour", "say": "¿Puedo venir en tenis?", "intent": "q_dress" },
+  { "ctx": "tour", "say": "¿Dónde guardo mi comida?", "intent": "q_fridge" },
+  { "ctx": "tour", "say": "¿Quién es ella?", "intent": "q_who" },
+  { "ctx": "tour", "say": "No, por ahora es todo, gracias", "intent": "no_more" },
+  { "ctx": "tour", "say": "Sí, tengo otra pregunta", "intent": ["more_q", "yn:yes"] },
+  { "ctx": "tour", "say": "No necesito el baño, gracias", "intent": "any", "not": ["q_restroom"], "note": "trap: negation" },
+
+  { "ctx": "coffee", "say": "¿Cómo funciona?", "intent": "q_how" },
+  { "ctx": "coffee", "say": "¿Puedo usar esta taza?", "intent": "q_mug" },
+  { "ctx": "mug", "say": "¡Ay, perdón, no sabía!", "intent": "oops" },
+  { "ctx": "coffee", "say": "No tomo café, ¿hay té?", "intent": ["tea_ok"], "not": ["coffee_want"], "note": "trap: negation" },
+  { "ctx": "coffee", "say": "Ahorita no, gracias, más tarde", "intent": "coffee_later", "not": ["coffee_want"] },
+
+  { "ctx": "task", "say": "¿Me puedes enseñar cómo funciona el sistema?", "intent": "show_me" },
+  { "ctx": "task", "say": "¿Me mandas el archivo?", "intent": "send_file" },
+  { "ctx": "task", "say": "Claro, yo lo hago", "intent": ["task_ok", "yn:yes"] },
+  { "ctx": "task", "say": "No sé usar el sistema", "intent": ["task_cant", "show_me"], "not": ["know_system", "task_ok"], "note": "trap: negation" },
+  { "ctx": "task", "say": "Ya conozco este sistema", "intent": "know_system" },
+
+  { "ctx": "lunch", "say": "¡Me encantaría!", "intent": ["lunch_yes", "yn:yes"] },
+  { "ctx": "lunch", "say": "Gracias, pero hoy traje mi comida", "intent": ["lunch_no", "yn:no"], "not": ["lunch_yes"], "note": "trap: polite no" },
+  { "ctx": "lunch", "say": "¿Dónde es?", "intent": "lunch_q" },
+  { "ctx": "lunch", "say": "No puedo, tengo una junta a las dos", "intent": ["lunch_no", "yn:no"], "not": ["lunch_yes", "yn:yes"], "note": "trap: a time inside a no" },
+
+  { "ctx": "day", "say": "¡Muy bien, todos son muy amables!", "intent": ["day_good", "day_ctx"] },
+  { "ctx": "day", "say": "Cansada, pero me gusta mucho", "intent": ["day_tired", "day_ctx"] },
+  { "ctx": "day", "say": "No estuvo nada mal", "intent": ["day_good", "day_ctx", "yn:yes"], "not": ["day_tired"], "note": "trap: negation that means good" },
+
+  { "ctx": "closing", "say": "¡Nos vemos mañana!", "intent": "see_you" },
+  { "ctx": "closing", "say": "Gracias por todo", "intent": ["thanks_all", "g_thanks"] }
+]}
