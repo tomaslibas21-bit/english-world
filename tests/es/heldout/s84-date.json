@@ -1,0 +1,48 @@
+{ "situation": "s84-date", "items": [
+  { "ctx": "greet_late", "say": "Perdón por llegar tarde, había mucho tráfico", "intent": "sorry_late" },
+  { "ctx": "greet_late", "say": "No pasa nada, yo también acabo de llegar", "intent": "reassure" },
+  { "ctx": "greet_early", "say": "Gracias, tú también te ves muy bien", "intent": ["you_too", "compliment"], "not": ["g_bye"], "note": "trap: tú también is not a goodbye" },
+  { "ctx": "greet_meet", "say": "¡Hola! Qué gusto conocerte por fin", "intent": "greet_back" },
+  { "ctx": "greet_meet", "say": "Me encanta tu vestido", "intent": "compliment" },
+  { "ctx": "greet_meet", "say": "Estoy un poco nerviosa, la verdad", "intent": "nervous" },
+  { "ctx": "greet_meet", "say": "No estoy nervioso", "intent": "any", "not": ["nervous"], "note": "trap: negation" },
+
+  { "ctx": "drinks", "say": "Una michelada, por favor", "intent": "drink_ans" },
+  { "ctx": "drinks", "say": "Para mí un agua de jamaica", "intent": "drink_ans" },
+  { "ctx": "drinks", "say": "Lo mismo que tú", "intent": "same_drink_ans" },
+  { "ctx": "drinks", "say": "No tomo alcohol", "intent": "no_alcohol", "not": ["drink_ans"], "note": "trap: negation" },
+  { "ctx": "drinks", "say": "No me gusta la cerveza", "intent": "any", "not": ["drink_ans"], "note": "trap: dislike is not an order" },
+  { "ctx": "drinks", "say": "Que vas a tomar tu?", "intent": "ask_drink", "note": "no accents" },
+
+  { "ctx": "job", "say": "Soy maestra de inglés", "intent": "job_ans" },
+  { "ctx": "job", "say": "Trabajo en una oficina, ¿y tú?", "intent": ["job_ans", "and_you"] },
+  { "ctx": "job", "say": "Ahorita no tengo trabajo", "intent": "no_job" },
+  { "ctx": "like_job", "say": "No me gusta mucho, la verdad", "intent": "dislike_it_ctx", "not": ["like_it_ctx"], "note": "trap: negation" },
+  { "ctx": "like_job", "say": "Sí, me encanta", "intent": ["like_it_ctx", "yn:yes"] },
+
+  { "ctx": "hobby", "say": "Me gusta leer y nadar", "intent": "hobby_ans" },
+  { "ctx": "hobby", "say": "No tengo mucho tiempo libre", "intent": "no_hobby" },
+  { "ctx": "travel", "say": "Sí, fui el año pasado", "intent": ["travel_yes_ctx", "yn:yes"] },
+  { "ctx": "travel", "say": "No, nunca he ido", "intent": ["travel_no_ctx", "yn:no"], "not": ["travel_yes_ctx"], "note": "trap: negation" },
+  { "ctx": "travel", "say": "¿Y tú has viajado mucho?", "intent": ["ask_travel", "ask_travel_general", "and_you"] },
+  { "ctx": "music", "say": "Me gusta mucho el rock", "intent": "music_ans" },
+  { "ctx": "music", "say": "No escucho mucha música", "intent": "no_music" },
+
+  { "ctx": "qf", "say": "Prefiero los perros", "intent": "qf_ctx" },
+
+  { "ctx": "check", "say": "Yo invito", "intent": "pay_all" },
+  { "ctx": "check", "say": "¿Pagamos a la mitad?", "intent": "split" },
+  { "ctx": "check", "say": "¿Cuánto es?", "intent": "any", "not": ["pay_all", "split", "accept_offer"], "note": "trap: a price question pays nothing" },
+  { "ctx": "check_offer", "say": "Muchas gracias, eres muy amable", "intent": ["accept_offer", "yn:yes"] },
+  { "ctx": "check_offer", "say": "No, gracias, mejor dividimos", "intent": "split", "not": ["accept_offer"], "note": "trap: no + split" },
+  { "ctx": "check_offer", "say": "No hace falta, yo pago", "intent": "pay_all", "not": ["accept_offer"], "note": "trap: refusing the offer" },
+
+  { "ctx": "cold", "say": "¿Quieres mi chamarra?", "intent": "offer_jacket" },
+  { "ctx": "nice", "say": "Yo también la pasé muy bien", "intent": ["nice_time", "me_too_ctx"] },
+  { "ctx": "again", "say": "¡Claro que sí! Me encantaría", "intent": ["agree_again", "yn:yes"] },
+  { "ctx": "again", "say": "No sé, tal vez", "intent": "hesitate", "not": ["agree_again"], "note": "trap: maybe is not yes" },
+  { "ctx": "again", "say": "No creo que sea buena idea", "intent": ["decline_again", "yn:no"], "not": ["agree_again"], "note": "trap: negation" },
+  { "ctx": "again", "say": "¿Te gustaría ir al cine el viernes?", "intent": "propose_day", "slots": { "day": "friday" } },
+  { "ctx": "day", "say": "El sábado no puedo, ¿qué tal el domingo?", "intent": "propose_day", "slots": { "day": "sunday" }, "not": ["agree_again"], "note": "trap: correction" },
+  { "ctx": "closing", "say": "Sí, te mando un mensaje cuando llegue", "intent": ["text_reply", "yn:yes"] }
+] }
