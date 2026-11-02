@@ -670,3 +670,10 @@ body.scene-on .tag-layer { display: none; }
 .prompt-text { display: flex; flex-direction: column; align-items: flex-start; text-align: left; line-height: 1.2; }
 .prompt-text small { font-weight: 600; font-size: 0.74em; color: var(--ink-soft); margin-top: 2px; }
 .sheet-body .town-lt { color: var(--ink-soft); font-size: 0.9em; margin: -2px 0 10px; }
+
+/* Keep the person's name and place readable beside all conversation controls. */
+.convo .convo-head { flex-wrap:wrap; }
+.convo .convo-head .who { display:block;flex:1 1 calc(100% - 64px); }
+.convo .convo-head .who b { display:block;padding-left:0; }
+.convo .convo-head .who span { padding-left:0; }
+.convo .convo-head .toggles { margin-left:54px;flex:1; }
