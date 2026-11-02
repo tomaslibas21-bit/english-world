@@ -38,3 +38,72 @@ A probe written after reading the draft: 37/53 (70%) before, 52/53 after, 0 fals
 - Global grammar gap (// NEEDS for global.ts): "muchas gracias por todo" isn't g_thanks (only "[muchas] gracias" or "gracias por todo" alone). I covered it here in thanks_tip.
 - The writer's open questions still stand: fixture prices (El Muelle ~$300, comida corrida ~$100, Trattoria ~$200),
   music Fridays at seven, the museum's hours, and mijo/mija. I added no new numbers.
+
+## Revision 2 Nov 2026: La Cocina de Lucía (the Trattoria is gone)
+
+The owner's choice (s73, 2 Nov): the restaurant at the Trattoria's place is **La Cocina de Lucía**, a sit-down Yucatecan
+restaurant. The place id stays `trattoria` (the code and the world use it); its name, forms and lines change.
+- **The place.** Forms: "La Cocina de Lucía", "el restaurante de Lucía", "Lucía", "el restaurante yucateco". Where it is
+  agrees with s62 and TOWN.md: avenida Juárez, one block from the square, the red awning (dir_trattoria). A bit
+  pricier than the cocina económica (said once, in rec_trattoria; price_trattoria keeps "como doscientos pesos").
+  rec_trattoria: two variants (poc chuc; sopa de lima). "¿Ya fue a La Cocina de Lucía?" for the tried-tip twist.
+  "¿Hay un restaurante yucateco?" gets Lucía's (a restaurant), "comida yucateca" still the cocina económica.
+- **Italian.** There is no Italian place in town: `no_italian` (two variants: "¡Ay, mijo, aquí no hay restaurante
+  italiano! Pero la comida de aquí le va a encantar:") once, then Lucía's, or the cocina económica when the learner
+  wants it cheap ("¿Hay un restaurante italiano barato?"). The hint "¿Hay un buen lugar de comida italiana…?" no longer
+  offers Italian. Not wanting Italian or vegetarian food no longer rules out Lucía's (`placeOf`).
+- **Vegetarian.** Papadzules at Lucía's (rec_trattoria_veg: egg in pumpkin-seed sauce, no meat). Vegans ("vegano", "no
+  como carne ni huevo") and vegetarians on a budget get the cocina económica, with no dish named ("Dígales que no come
+  carne [ni huevo]: ahí le preparan algo"). Once the learner is vegetarian, every later tip for Lucía's or the cocina
+  uses the meatless line, and "too expensive" never sends them to the taquería.
+- **A fix on the way:** "Somos veganos. ¿Dónde podemos comer?" said "Entonces, mire:" with no tip after it (a second
+  food question in one turn); ask_food now stays quiet when the turn already has a tip.
+- **Tests:** +51 corpus items (11 traps), +19 NLU tests (6 meaning-safety), +7 sims (Italian, cheap Italian,
+  vegetarian, vegans, vegetarian too pricey, cheap then no meat, the tried-tip twist at Lucía's). Gate: tsc clean;
+  check-content 0 errors 0 warnings, 120/120 NLU, 18 sims 12/12, fuzz 80; corpus 351/351 (100%), 0/64 false
+  accepts; blind set 38/39 (97.4%), 0 traps accepted (unchanged; the miss is the known "¿No es muy caro?").
+- **Sources** (read 2 Nov 2026): Wikipedia "Papadzules" (https://en.wikipedia.org/wiki/Papadzules: corn tortillas,
+  hard-boiled egg, pumpkin-seed sauce, no meat); "Poc chuc" (https://en.wikipedia.org/wiki/Poc_Chuc: grilled pork in a
+  citrus marinade, a Yucatán signature dish); "Sopa de lima" (https://en.wikipedia.org/wiki/Sopa_de_lima: chicken and
+  lime, from Yucatán, so never in a vegetarian tip). Whether the cocina económica cooks without meat is not sourced and
+  stays vague ("ahí le preparan algo"). The menu is s73's brief; s73 isn't written yet, so its writer should keep
+  poc chuc, sopa de lima and papadzules on Lucía's menu and its "no reservations" (book_trattoria) or tell s69.
+
+## Review of the revision (2 Nov 2026, writer's commit a0e4a716)
+
+| Check | Writer's commit | After the review |
+|---|---|---|
+| tsc / vitest | clean / 288/288 | clean / 288/288 |
+| check-content | 120/120 NLU, 18 sims 12/12, fuzz 80, 0/0 | 128/128 NLU, 18 sims 12/12, fuzz 80, 0/0 |
+| corpus | 351/351, 0/64 false accepts | 364/364, 0/64 false accepts (+13 items) |
+| blind, batch-1 part (39) | 38/39 | 38/39 (the known "¿No es muy caro?") |
+| blind, new part (20, written before reading the revision; 6 traps) | 15/20, 0 traps accepted | 20/20, 0 traps accepted |
+
+Two of the five new misses were my labels ("Soy vegetariano" is the draft's `diet` intent, read correctly); I added
+`diet` to those two items after scoring. Counted that way the writer's new-part score is 17/20.
+
+**Meaning safety (must-fix, ~25 lines):**
+- "Somos vegetarianos y buscamos algo barato, ¿hay pizza?" (diet + budget + ask_food in one turn) sent the learner to
+  Lucía's ($200), then said "¿Algo más barato? Claro." with no tip after it. Now `readTurn` reads the whole utterance
+  (meatless, cheap, Italian) before the one tip of the turn: "no hay italiano" + the cheap meatless cocina line;
+  `budget` and `too_expensive` stay quiet once the turn has its tip. "Busco algo barato. Soy vegetariano." no longer
+  gives the taquería; "Somos veganos, ¿algo no muy caro?" lost a stray "Ah, ¡está bien!" after the tip.
+- `setVeg` marked as vegan anyone whose sentence held "vegan" or "huevo": "No soy vegana, pero no como carne" and
+  "Soy vegetariano, pero sí como huevo" would have lost the papadzules. Now only a positive vegan / "ni huevo".
+- "Soy vegetariana, ¿hay comida italiana?" never answered the Italian question (rule 11): now no_italian first.
+- "Pizza no, mejor algo de aquí" and "No quiero comida italiana" never trigger "aquí no hay italiano".
+**Understanding (~10 lines):** "¿Dónde puedo probar el poc chuc?" went to the cocina económica ("la cochinita es
+buenísima") although Carmen herself names poc chuc at Lucía's: poc chuc, papadzules, sopa de lima, tikin xic now go to
+Lucía's (cheap or vegan: the cocina). New patterns: "Ah, pero no como carne", "No soy vegana, pero no como carne",
+"Soy vegetariano, pero sí como huevo", "No soy vegetariana, como de todo", "¿Y no hay pizza?", "¿Y otro lugar para
+comer?" (was ask_sight), "Sí, ya fui, me encantó el poc chuc" (tried twist), the form "lo de Lucía".
+**Spanish (polish, 9 lines):** the three meatless lines started with "Entonces," which doubled after "Entonces, mire:"
+and hung after no_italian's colon; now "Vaya a … y pida …", and `diet` says "Ah, ¡está bien!" first. Flags moved.
+**Facts (polish, 2 lines):** checked against the listed sources. Wikipedia says citrus marinade (not sour orange) for
+poc chuc and names no lime variety for sopa de lima (chicken "or some other meat"): both flags made vaguer.
+Papadzules hold. Lucía's place (Juárez, one block from the zócalo, red awning) agrees with s62's geography.
+**Tests:** +8 NLU tests (3 meaning-safety), +13 corpus items (2 traps), +20 blind items.
+
+**For the lead / owner:** unchanged from the writer: Lucía's ~$200 and "no aceptan reservaciones" wait for s73.
+Not fixed (old part): at the food_kind step "No, eso es todo, gracias" is read as a no and she asks again what
+food they'd like; the step has no way out but an answer.
