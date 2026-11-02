@@ -226,5 +226,19 @@
   {"ctx": "closing", "say": "No te olvides de escribirme", "intent": "keep_in_touch"},
   {"ctx": "closing", "say": "¡Me dio mucho gusto!", "intent": "nice_to_see"},
   {"ctx": "rush", "say": "Claro, ¡rápido! 984 123 4567", "intent": "number_ctx"},
-  {"ctx": "rush", "say": "Toma mi celular", "intent": "give_phone"}
+  {"ctx": "rush", "say": "Toma mi celular", "intent": "give_phone"},
+  {"ctx": "coffee", "say": "No es mala idea", "intent": ["agree", "yn:yes"], "not": ["decline"], "note": "review trap: no es mala idea = yes"},
+  {"ctx": "coffee", "say": "Sí, pero no tengo mucho tiempo", "intent": "agree", "not": ["decline"]},
+  {"ctx": "mike_dinner", "say": "No es mala idea", "intent": ["agree", "good_idea", "yn:yes"], "not": ["decline"], "note": "review trap"},
+  {"ctx": "mike_dinner", "say": "Me gustaría, pero el viernes trabajo", "intent": "decline", "not": ["good_idea", "agree", "yn:yes"], "note": "review trap"},
+  {"ctx": "mike_dinner", "say": "Sí, claro, ¿a qué hora?", "intent": ["agree", "dinner_ask_ctx"]},
+  {"ctx": "mike", "say": "¿Memo? ¿Quién es?", "intent": "mike_who_ctx", "not": ["mike_yes"], "note": "review trap: bare Memo was a yes"},
+  {"ctx": "mike", "say": "No sé", "intent": "any", "not": ["mike_yes"]},
+  {"ctx": "upto", "say": "Nunca me casé", "intent": "news_not", "not": ["news"], "note": "review trap"},
+  {"ctx": "upto", "say": "Estoy buscando trabajo", "intent": "news_not", "not": ["news"]},
+  {"ctx": "upto", "say": "Me voy a casar el próximo año", "intent": "news"},
+  {"ctx": "howbeen", "say": "No muy bien, la verdad. Mi mamá estuvo enferma.", "intent": "been_ans"},
+  {"ctx": "numbers", "say": "Sigamos en contacto", "intent": "keep_in_touch"},
+  {"ctx": "numbers", "say": "No tengo celular mexicano todavía", "intent": "no_phone", "not": ["number_ctx", "give_phone"]},
+  {"ctx": "numbers", "say": "No quiero darte mi número", "intent": "any", "not": ["number_ctx", "give_phone", "ask_number", "keep_in_touch"], "note": "review trap"}
 ] }
