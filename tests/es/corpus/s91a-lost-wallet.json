@@ -232,5 +232,16 @@
   {"ctx": "problem", "say": "No, perdí mi cartera", "intent": "any", "not": ["lost"]},
   {"ctx": "problem", "say": "No, no estoy bien. Perdí mi cartera", "intent": "lost", "not": ["not_lost"]},
   {"ctx": "police", "say": "No sé si está lejos", "intent": "any", "not": ["its_mine", "its_mine_ctx", "police_known", "police_known_ctx"]},
-  {"ctx": "police", "say": "Sí, está bien", "intent": "any", "not": ["its_mine", "its_mine_ctx"]}
+  {"ctx": "police", "say": "Sí, está bien", "intent": "any", "not": ["its_mine", "its_mine_ctx"]},
+  {"ctx": "all_there", "say": "No sé, ¿está todo?", "intent": "unsure_all_ctx", "not": ["some_missing", "all_there"], "note": "review: was some_missing"},
+  {"ctx": "all_there", "say": "Las tarjetas sí, pero el dinero no", "intent": "some_missing", "not": ["all_there"]},
+  {"ctx": "all_there", "say": "El dinero sí, pero las tarjetas no", "intent": "some_missing", "not": ["all_there"]},
+  {"ctx": "last_seen", "say": "A lo mejor la dejé en mi casa", "intent": "last_seen"},
+  {"ctx": "last_seen", "say": "No la encontré", "intent": "any", "not": ["not_lost"], "note": "trap: rule 19"},
+  {"ctx": "found", "say": "¿Puedo verla?", "intent": "unsure_mine_ctx", "not": ["its_mine", "its_mine_ctx"]},
+  {"ctx": "found", "say": "¿Usted la encontró?", "intent": "any", "not": ["not_lost"], "note": "trap: encontró/encontré"},
+  {"ctx": "pockets", "say": "Ay, espere, ya la encontré, estaba en mi mochila", "intent": "not_lost", "not": ["lost"]},
+  {"ctx": "advice", "say": "Bueno, voy a regresar al café a preguntar", "intent": "will_go_back"},
+  {"ctx": "police", "say": "¿Está abierta los sábados?", "intent": "police_open"},
+  {"ctx": "problem", "say": "Es una emergencia", "intent": "any", "not": ["call911"], "note": "she would answer 'No, el 911 es solo para emergencias'"}
 ] }
