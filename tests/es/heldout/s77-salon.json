@@ -1,0 +1,60 @@
+{ "situation": "s77-salon", "items": [
+  { "ctx": "appt", "say": "Hola, tengo cita a las tres", "intent": "appt_have" },
+  { "ctx": "appt", "say": "Buenas tardes, hice una cita para las tres", "intent": "appt_have", "note": "past: made an appointment" },
+  { "ctx": "appt", "say": "Tengo una cita a nombre de Sarah", "intent": ["appt_have", "name_ctx"] },
+  { "ctx": "appt", "say": "No tengo cita, ¿me puede atender ahorita?", "intent": ["walkin", "appt_none"], "not": ["appt_have"], "note": "trap: negation" },
+  { "ctx": "appt", "say": "Atienden sin cita?", "intent": ["walkin", "appt_none"], "note": "no ¿" },
+
+  { "ctx": "name", "say": "Sarah Miller", "intent": "name_ctx" },
+
+  { "ctx": "wait_q", "say": "Sí, no hay problema, espero", "intent": ["wait_ok", "yn:yes"] },
+  { "ctx": "wait_q", "say": "No puedo esperar, regreso mañana", "intent": "wait_no", "not": ["wait_ok"], "note": "trap: negation" },
+
+  { "ctx": "drink", "say": "Un vasito de agua, por favor", "intent": "drink_ans" },
+  { "ctx": "drink", "say": "No, gracias, estoy bien", "intent": ["drink_ans", "drink_no_ctx", "yn:no"] },
+
+  { "ctx": "service", "say": "Nada más las puntas, por favor", "intent": "trim" },
+  { "ctx": "service", "say": "Quiero cortarme el pelo", "intent": "haircut" },
+  { "ctx": "service", "say": "Quiero un cambio, algo mucho más corto", "intent": "go_short" },
+  { "ctx": "service", "say": "Solo el fleco, por favor", "intent": "bangs_only" },
+  { "ctx": "service", "say": "¿Me lo puede cortar como en esta foto?", "intent": "photo" },
+  { "ctx": "service", "say": "Que no quede muy corto, por favor", "intent": "not_short", "not": ["go_short"], "note": "trap: negation" },
+  { "ctx": "service", "say": "No lo quiero corto", "intent": "any", "not": ["go_short"], "note": "trap: negation" },
+
+  { "ctx": "length", "say": "Unos dos centímetros", "intent": "length" },
+  { "ctx": "length", "say": "Más cortito de los lados", "intent": ["length", "go_short"] },
+  { "ctx": "length", "say": "Nomás un poquito", "intent": ["length", "trim"], "note": "Mexican nomás" },
+
+  { "ctx": "cm_q", "say": "Sí, está bien", "intent": ["confirm_yes", "yn:yes"] },
+  { "ctx": "cm_q", "say": "No, mejor un centímetro", "intent": "length", "not": ["confirm_yes", "yn:yes"], "note": "trap: correction" },
+
+  { "ctx": "layers", "say": "Sí, déjeme las capas", "intent": "keep_layers" },
+  { "ctx": "layers", "say": "No quiero capas", "intent": "any", "not": ["keep_layers"], "note": "trap: negation" },
+
+  { "ctx": "bangs_q", "say": "No, el fleco déjelo así", "intent": "any", "not": ["bangs_only"], "note": "trap: leave the bangs" },
+
+  { "ctx": "wash", "say": "Sí, lávemelo por favor", "intent": "wash_request" },
+  { "ctx": "wash", "say": "No, ya me lo lavé en la mañana", "intent": "no_wash", "not": ["wash_request"], "note": "trap: past" },
+
+  { "ctx": "water", "say": "Está muy caliente", "intent": "water_temp" },
+
+  { "ctx": "chat", "say": "¿Cómo se llama su gato?", "intent": "ask_cat" },
+  { "ctx": "chat", "say": "Soy de Canadá", "intent": "from_ans" },
+
+  { "ctx": "blowdry", "say": "Lacio, por favor", "intent": "style" },
+
+  { "ctx": "reveal", "say": "¡Me encanta, quedó muy bonito!", "intent": "love_it" },
+  { "ctx": "reveal", "say": "Me lo dejó demasiado corto", "intent": ["shorter_than", "dont_like"], "not": ["love_it"] },
+  { "ctx": "reveal", "say": "No me gusta", "intent": "any", "not": ["love_it"], "note": "trap: negation" },
+
+  { "ctx": "pay", "say": "¿Cuánto le debo?", "intent": "ask_owe" },
+  { "ctx": "pay", "say": "¿Puedo pagar con tarjeta?", "intent": "pay_card" },
+  { "ctx": "pay", "say": "No quiero pagar con tarjeta", "intent": "any", "not": ["pay_card"], "note": "trap: the other way" },
+  { "ctx": "pay", "say": "Ya pagué", "intent": "any", "not": ["pay_card", "pay_cash", "pay_phone", "here_you_go"], "note": "trap: past" },
+
+  { "ctx": "tip_q", "say": "No, sin propina, gracias", "intent": "no_tip", "not": ["add_tip"] },
+  { "ctx": "tip_q", "say": "Sí, el diez por ciento", "intent": "add_tip" },
+
+  { "ctx": "book", "say": "Sí, en seis semanas", "intent": "book_when" },
+  { "ctx": "book", "say": "Ahorita no, yo le llamo", "intent": "book_later", "not": ["book_when"], "note": "trap: not now" }
+] }
