@@ -33,7 +33,7 @@ const SPOTS: EntityDef[] = [
   P("taqueria", "taquería", "taco place", "f", "food", ["la taqueria", "taqueria", "la taqueria del mercado", "los tacos", "el puesto de tacos", "los puestos de tacos"]),
   P("cocina", "cocina económica", "home-style diner", "f", "food", ["la cocina economica", "cocina economica", "la fonda", "fonda", "las fondas", "la comida corrida"]),
   P("cafe", "Café | La Ceiba", "Café | La Ceiba", "m", "food", ["cafe la ceiba", "el cafe la ceiba", "la ceiba", "la cafeteria", "el cafe de mariana"], { name: true, nat: "Café La Ceiba" }),
-  P("trattoria", "La Cocina de Lucía", "La Cocina de Lucía", "f", "food", ["la cocina de lucia", "cocina de lucia", "el restaurante de lucia", "restaurante de lucia", "el restaurante de dona lucia", "lucia", "el restaurante yucateco", "un restaurante yucateco", "restaurante yucateco", "el yucateco"], { name: true, nat: "La Cocina de Lucía" }),
+  P("trattoria", "La Cocina de Lucía", "La Cocina de Lucía", "f", "food", ["la cocina de lucia", "cocina de lucia", "el restaurante de lucia", "restaurante de lucia", "el restaurante de dona lucia", "lo de lucia", "lo de dona lucia", "lucia", "el restaurante yucateco", "un restaurante yucateco", "restaurante yucateco", "el yucateco"], { name: true, nat: "La Cocina de Lucía" }),
   P("marquesitas", "marquesitas", "marquesitas", "f", "food", ["las marquesitas", "marquesita", "una marquesita", "el carrito de marquesitas"], { pl: true }),
   P("cenote", "cenote", "cenote", "m", "sight", ["el cenote", "un cenote", "los cenotes", "cenotes"]),
   P("playa", "playa", "beach", "f", "sight", ["la playa", "la playa publica", "playa publica", "las playas"]),
@@ -98,7 +98,7 @@ const MIJA = "mijo / mija: “dear” (from mi hijo / mi hija), warm, from an ol
 const LOLA = "lo / la: “you” (usted), for a man / a woman.";
 const ART_TIME = "The article before a clock time has no English word.";
 const COCINA_EC = "cocina económica: a small family place with cheap home cooking.";
-const POC_CHUC = "poc chuc: pork marinated in sour orange and grilled over charcoal, a Yucatán classic.";
+const POC_CHUC = "poc chuc: pork in a citrus marinade, grilled, a Yucatán classic.";
 
 /** "Did you try …?" on a later visit, one line per food tip. */
 const TRIED: Record<string, SentSrc> = {
@@ -154,9 +154,21 @@ function recFree(c: Ctx, fromStep = false): boolean {
 /** "Soy vegetariana", "algo sin carne", "soy vegano / no como huevo": no tacos, no seafood, the meatless lines. */
 function setVeg(c: Ctx) {
   c.s.veg = true;
-  if (/vegan|huevo/i.test(c.heard || "")) c.s.vegan = true;
+  // "no soy vegana" and "sí como huevo" are not vegan
+  if (/(?<!no (soy|somos) )vegan|(ni|sin) huevos?|no (como|comemos) (carne ni )?huevos?|animal/.test(plain(c.heard))) c.s.vegan = true;
   for (const a of ["tacos", "mariscos"]) if (!c.s.avoid.includes(a)) c.s.avoid.push(a);
 }
+
+const plain = (h?: string) => (h || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+/** What the whole utterance says, whichever of its pieces gives the tip: "Somos vegetarianos y buscamos algo barato,
+ *  ¿hay pizza?" is a meatless, cheap tip after "no Italian here". */
+function readTurn(c: Ctx) {
+  const h = plain(c.heard);
+  if (/(?<!no (soy|somos) )(vegetarian|vegan)|no (como|comemos) carne|sin carne/.test(h)) setVeg(c);
+  if (/barat|economic|no (sea|es|este|tan|muy) (muy |tan )?car|gastar mucho|poco dinero/.test(h)) c.s.cheap = true;
+}
+const ITALIAN = /(?<!no (quiero|como|me gusta|me gustan|se me antoja) [a-z ]{0,12})\b(italian[oa]s?|pizzas?|pastas?|espagueti|spaghetti|lasana)\b(?!,? (no|tampoco)\b)/;
 
 function foodFor(c: Ctx, cuisine: string | undefined, cheap: boolean, fancy = false): string {
   const avoid: string[] = c.s.avoid || [];
@@ -164,6 +176,8 @@ function foodFor(c: Ctx, cuisine: string | undefined, cheap: boolean, fancy = fa
   if (cuisine === "mariscos" && cheap) id = "taqueria";
   // "¿Hay un restaurante yucateco?": a sit-down restaurant, La Cocina de Lucía (the fonda is the cheap one)
   if (cuisine === "yucateca" && !cheap && /restaurantes? (yucatec|mexican|tipic|típic)/i.test(c.heard || "")) id = "trattoria";
+  // the dishes she names at Lucía's are Lucía's: "¿Dónde puedo probar el poc chuc?"
+  if (cuisine === "yucateca" && !cheap && /poc chuc|papadzul|sopa de lima|tikin/.test(plain(c.heard))) id = "trattoria";
   if (cheap && !CHEAP.has(id)) id = "cocina";
   // the papadzules have egg: a vegan goes to the cocina económica
   if (c.s.vegan && id === "trattoria") id = "cocina";
@@ -176,9 +190,12 @@ function foodFor(c: Ctx, cuisine: string | undefined, cheap: boolean, fancy = fa
 /** A food tip, with the fish-taco line when the learner wants cheap seafood. */
 function recFood(c: Ctx, cuisine: string | undefined, cheap: boolean, fancy = false, fromStep = false) {
   if (cuisine === "vegetariana") setVeg(c);
-  // no Italian place in town: she says so kindly, then a local tip
-  if (cuisine === "italiana" && !c.s.noItalian && recFree(c, fromStep)) { c.s.noItalian = true; c.say("no_italian"); }
-  const id = foodFor(c, cuisine, cheap, fancy);
+  if (recFree(c, fromStep)) readTurn(c);
+  cheap = cheap || !!c.s.cheap;
+  // no Italian place in town: she says so kindly, then a local tip (also when the pizza came after "soy vegetariana")
+  const italian = cuisine === "italiana" || ITALIAN.test(plain(c.heard));
+  if (italian && !c.s.noItalian && recFree(c, fromStep)) { c.s.noItalian = true; c.say("no_italian"); }
+  const id = foodFor(c, cuisine === "italiana" && c.s.veg ? "vegetariana" : cuisine, cheap, fancy);
   recommend(c, id, fromStep, id === "taqueria" && cuisine === "mariscos" ? "rec_taqueria_fish" : undefined);
 }
 
@@ -277,6 +294,8 @@ const H: Record<string, Handler> = {
   },
   budget(c, _slots, seg) {
     if (seg.tags.includes("cheap")) c.s.cheap = true;
+    // "Somos veganos, ¿algo no muy caro?": the tip of this turn already took it in (readTurn)
+    if (!recFree(c)) return;
     if ((c.s.wantFood || c.step === "food_kind" || c.step === "food") && !c.s.foodRec) recFood(c, undefined, !!c.s.cheap, seg.tags.includes("fancy"));
     else if (c.s.topic && KIND[c.s.topic] === "food" && c.s.cheap && !CHEAP.has(c.s.topic)) H.too_expensive(c, {}, seg);
     else if (!c.s.foodRec && c.s.cheap) recFood(c, undefined, true);
@@ -292,6 +311,7 @@ const H: Record<string, Handler> = {
     // no tacos for a vegetarian (or someone who said no to them): the cocina económica
     const cheaper = cur === "taqueria" || (c.s.avoid as string[]).includes("tacos") ? "cocina" : "taqueria";
     if (cheaper === cur) { c.say("price_cocina"); return; }
+    if (!recFree(c)) return;
     c.say("cheaper");
     recommend(c, cheaper);
   },
@@ -401,6 +421,7 @@ const H: Record<string, Handler> = {
   // vegetarian: the papadzules at Lucía's; vegan or on a budget: the cocina económica
   diet(c) {
     setVeg(c);
+    if (recFree(c)) c.say("no_problem");
     recFood(c, "vegetariana", !!c.s.cheap);
   },
   // a place named on its own while she asks what they'd like to see: "El cenote, tal vez"
@@ -512,13 +533,13 @@ export const local: SituationDef = {
       "(me)? @rec_v (un | algun | alguna)? (restaurante | lugar | sitio | taqueria) [para comer] [@budget] [@aqui_]", "(que | cual) (restaurante | lugar | taqueria) (me)? @rec_v",
       "(tengo | tenemos) ganas de (comer | probar) {cuisine}", "(tengo | tenemos) ganas de (comer | cenar) [algo] [@budget]", "no se (donde | a donde) (comer | ir a comer | cenar)",
       "no hay (un | algun) @lugar @budget [@aqui_]", "(donde | que) (puedo | podemos) (comer | cenar) (hoy | esta noche | ahorita | ahora)",
-      "(algun | un) (restaurante | lugar) (bueno | rico | barato) [@aqui_]", "hay [algo | algun lugar | un lugar] [de] {cuisine} [@aqui_]", "(conoce | conoces #tip:tu_staff) {cuisine} [@aqui_]",
+      "(algun | un) (restaurante | lugar) (bueno | rico | barato) [@aqui_]", "hay [algo | algun lugar | un lugar] [de] {cuisine} [@aqui_]", "y no hay {cuisine} [@aqui_]", "[y] (otro | algun otro) (restaurante | lugar para comer | lugar donde comer | lugar para cenar) [@aqui_]", "(conoce | conoces #tip:tu_staff) {cuisine} [@aqui_]",
       "(hay | conoce | conoces #tip:tu_staff | busco) (un | algun)? (lugar | restaurante | sitio) @budget de {cuisine} [@aqui_]", "(hay | conoce | conoces #tip:tu_staff | busco) [algo | algun lugar | un lugar] [de] {cuisine} @budget [@aqui_]", "y (para | de) (comer | cenar | desayunar) (que | donde)", "y para (comer | cenar | almorzar | desayunar) [que me @rec_v | donde]", "y (un | algun) (restaurante | lugar para comer) [@aqui_]",
     ] },
     food_ans: { patterns: [
       "[me gustaria | quiero | quisiera | se me antoja | se me antojan | se me antojo | me apetece | me apetecen | me encanta | me encantan | me gusta | me gustan | prefiero | creo que | tal vez | algo de | yo creo que] {cuisine} [por favor | tal vez | creo] #h:k_cuisine",
       "(lo que sea | cualquier cosa | de todo | me da igual | lo que usted (diga | recomiende | me recomiende) | usted (diga | escoja | elija) | sorprendame | no importa | como guste | lo que me recomiende | lo que recomiende) #any #h:k_anything",
-      "lo que (sea | usted diga) esta bien #any", "[lo que sea] no soy (exigente | delicado | delicada | especial | dificil) [para comer] [lo que sea] #any", "no se [lo que sea | lo que usted diga] #any", "(como | comemos) de todo #any", "(que | cual) es lo mas (popular | rico | pedido) #any",
+      "lo que (sea | usted diga) esta bien #any", "[lo que sea] no soy (exigente | delicado | delicada | especial | dificil) [para comer] [lo que sea] #any", "no se [lo que sea | lo que usted diga] #any", "(como | comemos) de todo #any", "no (soy | somos) (vegetariano | vegetariana | vegetarianos | vegetarianas | vegano | vegana | veganos | veganas) [pero | asi que] (como | comemos) de todo #any", "(que | cual) es lo mas (popular | rico | pedido) #any",
       "(quiero | quisiera | me gustaria) probar {cuisine} #h:k_want",
       // corrections: "No tacos, mariscos", "Nada de tacos, mejor mariscos", "Mariscos, no tacos"
       "(no | nada de | sin | no quiero) {bad:cuisine} (sino | mejor | prefiero)? {cuisine}", "[el | la | los | las] {bad:cuisine} no (sino | mejor | prefiero)? {cuisine}", "{cuisine} (no | y no | pero no) {bad:cuisine}", "{cuisine} o {cuisine2:cuisine}", "(no tengo | sin) (preferencia | preferencias) #any", "lo que (coma | come | comen) la gente de aqui #typical", "algo (rico | bueno) #any", "no se (algo | lo que sea | cualquier cosa) [rico | bueno] #any", "algo con {cuisine}", "lo mas tipico #typical", "algo de la region #typical",
@@ -651,6 +672,7 @@ export const local: SituationDef = {
     tried_yes_ctx: { patterns: [
       "[si] (estuvo | estaba | fue) (delicioso | riquisimo | buenisimo | muy rico | muy bueno | increible | padrisimo | deliciosa | riquisima) #h:tr_delicious",
       "[si] me (encantó | encantaron | gustó | gustaron) [mucho] #h:tr_great", "[si] ya (fui | lo probé | la probé | las probé | los probé | comi ahi | cené ahi)", "[si] (estuvo | fue) (muy)? (bueno | rico | padre | sabroso | buena | rica)", "[si] (fui | fuimos) (ayer | anoche | el otro dia | hoy | esta manana | el lunes | el fin de semana)", "[si] ya (fuimos | comimos ahi | las probé)", "[si] ya (fui | fuimos) (a | al) {spot}",
+      "[si] [ya] (fui | fuimos) [y] me (encantó | encantaron | gustó | gustaron) [mucho] (el | la | los | las) {cuisine}", "[si] me (encantó | encantaron | gustó | gustaron) [mucho] (el | la | los | las) {cuisine}",
     ] },
     tried_no_ctx: { patterns: ["[no] todavia no [pero (voy a ir | ya voy | quiero ir)] #h:tr_not_yet", "[no] (aun | todavia) no (he ido | lo he probado | la he probado | fui) [(a | al) {spot}]", "no (he ido | fui | pude ir | tuve tiempo | he tenido tiempo | he podido) [todavia | ir]", "aun no", "[no] (todavia | aun) no (tengo | he tenido) tiempo"] },
     weather_ok: { patterns: [
@@ -675,7 +697,10 @@ export const local: SituationDef = {
     not_far: { patterns: ["no (esta | queda) (lejos | tan lejos | muy lejos) [{spot}] [de aqui]", "{spot} no (esta | queda) (lejos | tan lejos | muy lejos) [de aqui]", "no (es | esta) (caro | cara) #price", "no (cuesta | es) mucho #price"] },
     // "¿Y tiene hambre?" – "Sí, mucha." / "Un poco."
     hungry_ctx: { patterns: ["[si] (mucha | muchisima | un poco | bastante | un poquito) [hambre]", "[si] (ya)? me dio hambre"] },
-    diet: { patterns: ["(soy | somos) (vegetariano | vegetariana | vegetarianos | vegetarianas | vegano | vegana | veganos | veganas)", "no (como | comemos) (carne | nada de carne) [ni (pescado | pollo | huevo | mariscos)]", "no (como | comemos) (productos animales | nada de origen animal)"] },
+    diet: { patterns: ["(soy | somos) (vegetariano | vegetariana | vegetarianos | vegetarianas | vegano | vegana | veganos | veganas)", "no (como | comemos) (carne | nada de carne) [ni (pescado | pollo | huevo | mariscos)]", "no (como | comemos) (productos animales | nada de origen animal)",
+      "[ah | oh] pero (soy | somos) (vegetariano | vegetariana | vegetarianos | vegetarianas | vegano | vegana | veganos | veganas)", "[ah | oh] pero no (como | comemos) carne",
+      "(soy | somos) (vegetariano | vegetariana | vegetarianos | vegetarianas) [pero] (si)? (como | comemos) (huevo | huevos | lacteos | queso)",
+      "no (soy | somos) (vegano | vegana | veganos | veganas) [pero] no (como | comemos) carne"] },
   },
 
   lines: {
@@ -752,23 +777,23 @@ export const local: SituationDef = {
       t("Vaya | a | La Cocina de Lucía, | a | una | cuadra | de | aquí. | Es | un | restaurante | yucateco, | un | poco | más | caro | que | la | cocina económica. | Pida | la | sopa | de | lima.",
         "Go | to | La Cocina de Lucía, | at | one | block | from | here. | It's | a | restaurant | Yucatecan, | a | little | more | expensive | than | the | home-style diner. | Order | the | soup | of | lime.",
         "Go to La Cocina de Lucía, a block from here. It's a Yucatán restaurant, a bit pricier than the little diner. Get the sopa de lima, the lime soup.",
-        { flags: { 18: COCINA_EC, 21: "sopa de lima: Yucatán's chicken soup with a local lime and crispy tortilla strips." } }),
+        { flags: { 18: COCINA_EC, 21: "sopa de lima: Yucatán's lime soup, usually with chicken, served with crispy tortilla strips." } }),
     ],
     rec_trattoria_veg: [
-      t("Entonces, | La Cocina de Lucía. | Pida | los | papadzules: | son | de | huevo, | con | salsa | de | pepita, | y | no llevan | carne.",
-        "Then, | La Cocina de Lucía. | Order | the | papadzules: | they're | of | egg, | with | sauce | of | pumpkin seed, | and | they don't have | meat.",
-        "Then La Cocina de Lucía. Order the papadzules: egg in a pumpkin-seed sauce, and no meat.",
-        { flags: { 4: "papadzules: corn tortillas rolled around chopped hard-boiled egg, in a pumpkin-seed sauce (Yucatán)." } }),
+      t("Vaya | a | La Cocina de Lucía | y | pida | los | papadzules: | son | de | huevo, | con | salsa | de | pepita, | y | no llevan | carne.",
+        "Go | to | La Cocina de Lucía | and | order | the | papadzules: | they're | of | egg, | with | sauce | of | pumpkin seed, | and | they don't have | meat.",
+        "Go to La Cocina de Lucía and order the papadzules: egg in a pumpkin-seed sauce, and no meat.",
+        { flags: { 6: "papadzules: corn tortillas rolled around chopped hard-boiled egg, in a pumpkin-seed sauce (Yucatán)." } }),
     ],
     rec_cocina_veg: [
-      t("Entonces, | la | cocina económica | de | la | calle | Ceiba. | Dígales | que | no come | carne: | ahí | le | preparan | algo.",
-        "Then, | the | home-style diner | on | the | street | Ceiba. | Tell them | that | you don't eat | meat: | there | (for) you | they-make | something.",
-        "Then the little diner on Ceiba Street. Tell them you don't eat meat, and they'll make you something.", { flags: { 2: COCINA_EC } }),
+      t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Dígales | que | no come | carne: | ahí | le | preparan | algo.",
+        "Go | to | the | home-style diner | on | the | street | Ceiba. | Tell them | that | you don't eat | meat: | there | (for) you | they-make | something.",
+        "Go to the little diner on Ceiba Street. Tell them you don't eat meat, and they'll make you something.", { flags: { 3: COCINA_EC } }),
     ],
     rec_cocina_vegan: [
-      t("Entonces, | la | cocina económica | de | la | calle | Ceiba. | Dígales | que | no come | carne | ni | huevo: | ahí | le | preparan | algo.",
-        "Then, | the | home-style diner | on | the | street | Ceiba. | Tell them | that | you don't eat | meat | or | egg: | there | (for) you | they-make | something.",
-        "Then the little diner on Ceiba Street. Tell them you don't eat meat or eggs, and they'll make you something.", { flags: { 2: COCINA_EC, 11: "ni: “nor”; after a negative English says “or”." } }),
+      t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Dígales | que | no come | carne | ni | huevo: | ahí | le | preparan | algo.",
+        "Go | to | the | home-style diner | on | the | street | Ceiba. | Tell them | that | you don't eat | meat | or | eggs: | there | (for) you | they-make | something.",
+        "Go to the little diner on Ceiba Street. Tell them you don't eat meat or eggs, and they'll make you something.", { flags: { 3: COCINA_EC, 12: "ni: “nor”; after a negative English says “or”." } }),
     ],
     no_italian: [
       t("¡Ay, | {m:mijo|f:mija}, | aquí | no hay | restaurante | italiano! | Pero | la | comida | de | aquí | le | va | a | encantar:",
@@ -1388,6 +1413,15 @@ export const local: SituationDef = {
     { say: "Pizza no, mejor algo de aquí", intent: "food_ans", step: "food_kind", slots: { cuisine: "yucateca", bad: "italiana" } },
     { say: "No soy vegana", intent: "none" },
     { say: "Mi amiga Lucía cocina muy bien", intent: "none" },
+    // review 2 Nov 2026
+    { say: "No soy vegana, pero no como carne", intent: "diet" },
+    { say: "Soy vegetariano, pero sí como huevo", intent: "diet" },
+    { say: "No soy vegetariana, como de todo", intent: "food_ans", step: "food_kind", not: ["diet", "food_neg"] },
+    { say: "Ah, pero no como carne", intent: "diet" },
+    { say: "¿Y no hay pizza?", intent: "ask_food", slots: { cuisine: "italiana" } },
+    { say: "¿Y otro lugar para comer?", intent: "ask_food", not: ["ask_sight"] },
+    { say: "¿Dónde puedo probar el poc chuc?", intent: "ask_food", slots: { cuisine: "yucateca" } },
+    { say: "No quiero gastar mucho, ¿dónde como?", intent: "budget", not: ["too_expensive"] },
     // not understood
     { say: "Mi perro se comió mis tacos", intent: "none" },
     { say: "lancha banana museo", intent: "none" },

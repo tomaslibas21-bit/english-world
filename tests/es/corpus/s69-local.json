@@ -413,5 +413,18 @@
   {"ctx": "food_kind", "say": "Sí como carne", "intent": "any", "not": ["diet"], "note": "revision 2 Nov: La Cocina de Lucía"},
   {"ctx": "need", "say": "Mi amiga Lucía cocina muy bien", "intent": "none", "note": "revision 2 Nov: La Cocina de Lucía"},
   {"ctx": "need", "say": "No como pizza", "intent": "food_neg", "not": ["ask_food", "food_ans"], "note": "revision 2 Nov: La Cocina de Lucía"},
-  {"ctx": "food_kind", "say": "No vegetariano", "intent": "food_neg", "not": ["diet", "food_ans"], "note": "revision 2 Nov: La Cocina de Lucía"}
+  {"ctx": "food_kind", "say": "No vegetariano", "intent": "food_neg", "not": ["diet", "food_ans"], "note": "revision 2 Nov: La Cocina de Lucía"},
+  {"ctx": "need", "say": "Soy vegetariana, ¿hay comida italiana?", "intent": "diet", "note": "review: no_italian, then the papadzules"},
+  {"ctx": "need", "say": "Somos vegetarianos y buscamos algo barato, ¿hay pizza?", "intent": "diet", "note": "review: one cheap meatless tip, no dangling 'cheaper'"},
+  {"ctx": "need", "say": "Somos veganos, ¿algo no muy caro?", "intent": "diet"},
+  {"ctx": "need", "say": "No soy vegana, pero no como carne", "intent": "diet", "note": "review: veg, not vegan"},
+  {"ctx": "need", "say": "Soy vegetariano, pero sí como huevo", "intent": "diet", "note": "review: veg, not vegan"},
+  {"ctx": "food_kind", "say": "No soy vegetariana, como de todo", "intent": "food_ans", "not": ["diet", "food_neg"], "note": "review trap: negated vegetarian"},
+  {"ctx": "sight", "say": "Ah, pero no como carne", "intent": "diet"},
+  {"ctx": "sight", "say": "¿Y no hay pizza?", "intent": "ask_food"},
+  {"ctx": "sight", "say": "¿Y otro lugar para comer?", "intent": "ask_food", "not": ["ask_sight"], "note": "review trap: food, not a sight"},
+  {"ctx": "need", "say": "¿Dónde puedo probar el poc chuc?", "intent": "ask_food", "note": "review: Lucía's, where she says to try it"},
+  {"ctx": "tried", "say": "Sí, ya fui, me encantó el poc chuc", "intent": ["tried_yes_ctx", "yn:yes"]},
+  {"ctx": "tried", "say": "Todavía no, pero quiero ir", "intent": ["tried_no_ctx", "yn:no"], "not": ["tried_yes_ctx", "yn:yes"]},
+  {"ctx": "more", "say": "¿A qué hora abre lo de Lucía?", "intent": "ask_open"}
 ] }
