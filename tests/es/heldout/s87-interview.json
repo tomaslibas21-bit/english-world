@@ -1,0 +1,60 @@
+{ "situation": "s87-interview", "items": [
+  { "ctx": "arrive", "say": "Buenos días, vengo a una entrevista de trabajo", "intent": "arrive" },
+  { "ctx": "arrive", "say": "Hola, tengo una cita con la licenciada Salinas a las nueve y media", "intent": "arrive" },
+  { "ctx": "arrive", "say": "Buenas, vengo por lo del puesto", "intent": "arrive" },
+
+  { "ctx": "name", "say": "Me llamo Alex Miller", "intent": ["intro_name", "intro_ctx"] },
+  { "ctx": "name", "say": "Alex Miller, mucho gusto", "intent": ["intro_ctx", "intro_name"] },
+
+  { "ctx": "found", "say": "Sí, lo encontré muy fácil", "intent": ["found_ok", "yn:yes"] },
+  { "ctx": "found", "say": "Me perdí un poquito, pero ya estoy aquí", "intent": ["found_hard", "yn:no"] },
+
+  { "ctx": "drink", "say": "Un vaso de agua, por favor", "intent": ["want_drink", "yn:yes"] },
+  { "ctx": "drink", "say": "No, gracias, estoy bien", "intent": ["no_drink", "yn:no"], "not": ["want_drink"], "note": "trap: no" },
+
+  { "ctx": "about", "say": "Soy contador y tengo ocho años de experiencia", "intent": ["job_is", "experience", "job_ctx"] },
+  { "ctx": "about", "say": "Trabajo en ventas desde hace cinco años", "intent": ["field_is", "experience", "job_is", "field_ctx"] },
+  { "ctx": "about", "say": "Fui maestra de inglés durante diez años", "intent": ["job_is", "experience", "job_ctx"], "note": "past + female" },
+  { "ctx": "about", "say": "Acabo de terminar la universidad, todavía no tengo experiencia", "intent": ["no_exp", "no_exp_ctx"] },
+  { "ctx": "about", "say": "No soy programador, soy diseñador gráfico", "intent": ["job_is", "job_ctx"], "not": ["no_exp"], "note": "trap: correction" },
+  { "ctx": "about", "say": "Me mudé aquí hace tres meses con mi familia", "intent": ["moved", "family"] },
+
+  { "ctx": "leaving", "say": "Quiero un nuevo reto", "intent": "leaving_ans" },
+  { "ctx": "leaving", "say": "Porque me mudé a México", "intent": ["moved", "leaving_ans"] },
+
+  { "ctx": "why", "say": "Porque me gusta mucho su empresa y quiero crecer", "intent": "why_ans" },
+  { "ctx": "why", "say": "He oído cosas muy buenas de Línea Clara", "intent": "why_ans" },
+
+  { "ctx": "strengths", "say": "Soy muy organizada y puntual", "intent": ["strength", "strength_ctx"], "note": "female" },
+  { "ctx": "strengths", "say": "Trabajo bien en equipo y aprendo rápido", "intent": ["strength", "strength_ctx"] },
+  { "ctx": "strengths", "say": "No soy muy paciente, la verdad", "intent": "any", "not": ["strength", "strength_ctx"], "note": "trap: negated strength" },
+
+  { "ctx": "weakness", "say": "A veces soy demasiado perfeccionista", "intent": ["weakness", "working_on_it"] },
+  { "ctx": "weakness", "say": "Mi español todavía no es muy bueno, pero estoy tomando clases", "intent": ["weakness", "working_on_it"] },
+
+  { "ctx": "future", "say": "En cinco años me veo como gerente de un equipo", "intent": "future_ans" },
+
+  { "ctx": "languages", "say": "Hablo inglés y un poco de español", "intent": ["languages_ans", "languages_ctx"] },
+
+  { "ctx": "authorized", "say": "Sí, ya tengo mi residencia temporal", "intent": ["auth_yes", "yn:yes"] },
+  { "ctx": "authorized", "say": "Todavía no, estoy esperando el permiso", "intent": ["auth_pending", "yn:no"], "not": ["auth_yes"], "note": "trap: pending" },
+
+  { "ctx": "salary", "say": "Unos quince mil pesos al mes", "intent": "salary_ans" },
+  { "ctx": "salary", "say": "¿Cuál es el rango para este puesto?", "intent": "salary_range_q" },
+  { "ctx": "salary", "say": "Soy flexible, depende de las prestaciones", "intent": ["salary_flexible"] },
+
+  { "ctx": "start", "say": "Puedo empezar el próximo lunes", "intent": "start_ans" },
+
+  { "ctx": "hire", "say": "Porque tengo experiencia y soy muy responsable", "intent": ["hire_ans", "strength"] },
+
+  { "ctx": "questions", "say": "¿Cuál es el horario de trabajo?", "intent": "q_hours" },
+  { "ctx": "questions", "say": "¿Se puede trabajar desde casa?", "intent": "q_remote" },
+  { "ctx": "questions", "say": "¿Cuáles son los siguientes pasos?", "intent": "q_next" },
+  { "ctx": "questions", "say": "No, creo que eso es todo, gracias", "intent": ["no_questions", "yn:no"] },
+
+  { "ctx": "offer", "say": "¡Sí, acepto con mucho gusto!", "intent": ["accept_job", "yn:yes"] },
+  { "ctx": "offer", "say": "¿Puedo pensarlo un par de días?", "intent": "think_offer", "not": ["accept_job"], "note": "trap: think it over" },
+  { "ctx": "offer", "say": "¿Cuánto es el sueldo?", "intent": "any", "not": ["accept_job", "yn:yes"], "note": "trap: price question" },
+  { "ctx": "offer", "say": "Lo siento, ya acepté otra oferta", "intent": "any", "not": ["accept_job", "yn:yes"], "note": "trap: past tense + decline" },
+  { "ctx": "offer", "say": "¿Y si no puedo empezar el lunes?", "intent": "any", "not": ["accept_job", "yn:yes"], "note": "trap: what-if" }
+] }
