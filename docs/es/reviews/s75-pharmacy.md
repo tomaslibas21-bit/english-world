@@ -31,3 +31,21 @@ I checked every flag index against its unit (all right) and about a third of the
 
 ## tests (~50 lines)
 11 NLU tests (traps: past tense, questions, a plan "Si no se me quita, voy al doctor"), 3 sims (questions and closings never buy plus the total said again; an ambiguous answer asked again plus cash in two goes; a plain yes to the doctor), 15 corpus items.
+
+## Lead's check (2 Nov 2026)
+Numbers, money, the binding choices and the open points. 30 new edge and trap sentences (scratch set: 14/22 understood and 1/7 traps accepted before, 23/23 and 0/7 after) and probe runs of every paid or binding outcome found these; about 45 lines changed, 135 added (fixes, 10 NLU tests, 2 sims).
+
+**Must-fix (all fixed):**
+1. **Lost commas in the brand answers (rule 10).** "No, el genérico" and "No, mejor el genérico" chose the brand-name one ($95 for $35); "No, el de patente" and "No, el de patente está bien" at "¿Quiere el genérico, entonces?" switched to the generic. "No" + a verb stays a negation ("No quiero el genérico"); a bare "No(,) el X" is `#amb`: "Perdón, ¿cuál de los dos?" at the brand question, and the choice stays as it is at the switch question (a no to a yes/no question). "No, mejor X" and "No, X está bien" choose X.
+2. **A question by voice bought.** The review's "?" test misses speech: "y el generico" took the generic at the recommendation. A "y …" with no ordering verb is a question (the prices again), at the brand question too.
+3. **A yes and the choice in one breath** ("si el generico", "ok el de patente" by voice: two pieces) asked the brand question, answered it in the same turn and then kept asking it. The choice said with the yes is taken and the question isn't asked.
+4. **After paying, more was free.** "¿Me da también unas curitas?" at the bag question or the goodbye, the extra for a second symptom and a prescription handed over then all went on the counter and were never charged; "Mejor el de patente" after paying for the generic handed over the $95 one. Something added after paying is now a second sale (`paidSum`, `due`: the pay step says only what is new), what was paid can't be switched or put back ("Eso ya está pagado."), and each sale's items are given once.
+5. **Change.** After "Aquí tiene cincuenta… faltan $15", "Aquí tiene cien" gave $35 back and kept the fifty; every bill handed over counts now ($85). Money handed over at "¿Algo más?" no longer gets "¿Algo más?" again.
+6. **Numbers.** "Deme dos cajas de paracetamol" was read as a yes + "dosis" + the product (directions given unasked, one box charged). "dos / tres (cajas de) X" and "Sí, deme dos" count the boxes ("Claro, dos."), also through a swap.
+7. **Negation.** "No tomo nada para la presión" was recorded as blood-pressure pills (the ibuprofen swapped, "Con la presión alta…"), and "No tengo la presión alta" wasn't understood: both are a no.
+
+**Polish:** "¿Cuánto es?" before the prescription is read gets "Depende del medicamento" (was "¿En qué le puedo ayudar?"); "Aquí tiene un billete de quinientos", "Mejor en efectivo", "No, solo a la aspirina", "Sí, cámbiemelo" are understood; the see-a-doctor line is said once.
+
+**Open points:** the consultorio is the pharmacy's own door (TOWN.md: the pharmacy room's "Consultorio médico" sign), so "la puerta de al lado" and s62's "junto a la estética" agree. The stamp line stays vague (rule 14); with the whole seven-day treatment filled at once the pharmacy would keep the prescription, and no line says otherwise. Not changed: a lone "dos" still reads as "dosis" where no number is expected (an engine match; harmless here), change above $1,500 is outside the price domain's audio, and cash handed over before switching to the card isn't handed back in words.
+
+**Gate:** tsc clean; check-content 123/123 NLU tests, 18 sims all 12/12, fuzz 80, 0/0; corpus 276/276, 0/29 traps; blind set 40/40, 0/1; vitest 287/287.

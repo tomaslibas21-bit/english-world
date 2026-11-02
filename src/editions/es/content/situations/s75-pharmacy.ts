@@ -77,7 +77,7 @@ const PRODUCTS: EntityDef[] = [
     forms: ["aloe", "aloe vera", "gel de aloe vera", "sabila", "gel de sabila", "crema para las quemaduras", "algo para despues del sol", "after sun"] }),
   ent("sunscreen", "protector | solar", "protector | sun", "m", { art: "", attrs: { nat: "sunscreen", price: 29500, pro: "lo", skin: true },
     forms: ["bloqueador", "bloqueador solar", "un bloqueador", "protector", "protector solar", "crema solar", "crema para el sol", "filtro solar", "bloqueador biodegradable",
-      "protector biodegradable", "bloquiador"] }),
+      "protector biodegradable", "bloquiador", "protectores solares", "protectores", "bloqueadores", "bloqueadores solares"] }),
   ent("itch_cream", "crema | para | la | comezón", "cream | for | the | itch", "f", { attrs: { nat: "anti-itch cream", price: 8000, pro: "la", skin: true },
     forms: ["crema para los piquetes", "pomada para los piquetes", "crema para la comezon", "pomada", "una pomada", "crema para la picazon", "calamina", "crema de calamina",
       "hidrocortisona", "crema con hidrocortisona", "crema para las picaduras"] }),
@@ -113,7 +113,18 @@ function priceOf(c: Ctx, id: string): number {
   const a = at(id);
   return a.generic && gen(c)[id] !== false ? a.generic : a.price;
 }
-const total = (c: Ctx) => basket(c).reduce((s, id) => s + priceOf(c, id), 0);
+/** Boxes of one product ("Deme dos cajas de paracetamol"); one unless a number was said. */
+const qtyOf = (c: Ctx, id: string) => ((c.s.qty as Record<string, number> | undefined)?.[id] ?? 1);
+const qtyFromTags = (tags: string[]) => (tags.includes("q3") ? 3 : tags.includes("q2") ? 2 : 1);
+function setQty(c: Ctx, id: string, q: number) {
+  const m = (c.s.qty ??= {}) as Record<string, number>;
+  if (q > 1) m[id] = q; else delete m[id];
+}
+const total = (c: Ctx) => basket(c).reduce((s, id) => s + priceOf(c, id) * qtyOf(c, id), 0);
+/** What is still to pay: the counter less what was paid already (something asked for after paying is a second sale). */
+const due = (c: Ctx) => total(c) - ((c.s.paidSum as number | undefined) ?? 0);
+/** Paid for already: never switched, swapped or put back. */
+const locked = (c: Ctx, id: string) => ((c.s.paidIds as string[] | undefined) ?? []).includes(id);
 
 /** The recommended product for the symptom, adjusted for an aspirin allergy or blood-pressure pills. */
 function recommendation(c: Ctx): string {
@@ -177,6 +188,9 @@ export const pharmacy: SituationDef = {
       kid: "(un nino | una nina | ninos | los ninos | mi hijo | mi hija | un bebe | bebes | mis hijos | ninos chiquitos | criaturas)",
       when: "(anoche | ayer | hoy | esta manana | en la playa | en la noche | ayer en la noche | en el cenote | en la tarde)",
       gen: "(generico #gen | generica #gen | el generico #gen | la generica #gen | genericos #gen | de patente #pat | el de patente #pat | la de patente #pat | original #pat | el original #pat | de marca #pat | el de marca #pat)",
+      // "Deme dos cajas de paracetamol": the number is counted (never read as "dosis")
+      qty: "(dos #q2 | tres #q3)",
+      unit: "(cajas | cajitas | frascos | tubos | botes | paquetes | botellas | sobres)",
     },
     slots: {
       // "me duele la cabeza": the body part says the symptom
@@ -230,6 +244,7 @@ export const pharmacy: SituationDef = {
       "(quiero | necesito | quisiera) (comprar | llevar | llevarme) [un | una | unas] {product}", "(me llevo | llevo) [tambien] [un | una | unas] {product}",
       "{product} [@gen] (tiene | tienen | hay | venden)", "(tenéis | teneis | vendéis | vendeis) {product}",
       "(solo | nada mas | nomas) @need_pre [un | una | unas | unos] {product} [@gen]", "(no es todo | todavia no | aun no) [tambien] @need_pre [un | una | unas | unos] {product}",
+      "@need_pre @qty [@unit de] {product} [@gen]", "@qty [@unit de] {product} [@gen]", "(y | tambien | y tambien) [@need_pre] @qty [@unit de] {product} [@gen]",
     ] },
     // "No quiero ibuprofeno": never an order (it takes it back, or refuses the offer)
     not_product: { patterns: ["no (quiero | necesito | me de | me des #tip:tu_staff) [el | la | los | las | un | una | unas] {product}", "[el | la | los | las | un | una | unas] {product} no [gracias]", "sin {product}", "no (quiero | necesito) {product} [gracias]"] },
@@ -269,6 +284,9 @@ export const pharmacy: SituationDef = {
       "no (tomo | estoy tomando | uso | consumo) (nada | ningun medicamento | ninguna medicina | otro medicamento | ninguno | ningun otro | nada mas | otra cosa) #none #h:meds_none",
       "[pero] (tomo | estoy tomando | uso) (pastillas | algo | medicina | medicamento | un medicamento | una pastilla) para la (presion #bp | presion alta #bp | hipertension #bp)  #h:meds_bp",
       "(solo | nada mas | nomas) (una pastilla | pastillas | algo | un medicamento | medicina) para la (presion | presion alta | hipertension) #bp",
+      // "No tomo nada para la presión", "No tengo la presión alta": no (never the blood-pressure reading)
+      "no (tomo | estoy tomando | uso) (nada | ningun medicamento | ninguna medicina | ninguna pastilla | pastillas | medicina | medicamento | algo) para la (presion | presion alta | hipertension) #none",
+      "no (tengo | soy de) (la presion alta | presion alta | hipertension) #none", "no soy (hipertenso | hipertensa) #none",
       // "Ya tomé paracetamol, pero no me hizo nada": what they already took (never an order)
       "ya (tomé | me tomé | tome | me tome) [un | una | unas] {product} [pero no me (hizo nada | sirvio | funciono | hizo efecto) | y no me (hizo nada | sirvio | funciono)] #took",
       "(tomo | estoy tomando) (pastillas | algo | medicina | medicamento | insulina) para (la diabetes | la tiroides | el corazon | la depresion | el colesterol | dormir | la ansiedad) #other",
@@ -283,12 +301,15 @@ export const pharmacy: SituationDef = {
       "que yo sepa no #none", "[no] ninguna alergia #none", "[no] no tengo ninguna alergia #none", "(no que yo sepa | creo que no) #none", "no soy (alergico | alergica) #none",
       "no (soy | es) (alergico | alergica) (a | al) @allergen #neg", "no (tengo | tiene) alergia (a | al) @allergen #neg", "[no] [a | al] @allergen no #neg",
       "(soy | es) (alergico | alergica) (a | al) @allergen #h:allergy_pen", "(tengo | tiene) alergia (a | al) @allergen", "me (hace | hacen | cae | caen) mal @allergen", "(si)? soy (alergico | alergica) [a] @allergen",
+      // "No, solo a la aspirina": that one
+      "[no] (solo | nada mas | nomas | nomas a | solamente) [a | al] @allergen",
     ] },
     allergy_ctx: { patterns: ["[si] [a | al] @allergen", "(nada | ninguno | ninguna | a nada | a ninguno | a ninguna)", "no tengo (ninguna | ninguno)"] },
     // --- the recommendation -------------------------------------------------------------------------
     accept_rec: { patterns: [
       "[si] (me lo | me la | me los | me las) llevo #h:take_it", "[si] @it llevo", "[si] @it (pruebo | voy a probar | quiero probar)", "[si] (deme | me da) (ese | esa | esos | esas | eso | uno | una)",
       "[si] (demelo | demela | demelos | demelas | damelo #tip:tu_staff)", "(esta bien | perfecto | ok | va | sale | bueno | de acuerdo) (demelo | demela | demelos | demelas | me lo llevo | me la llevo | me los llevo | me las llevo)",
+      "[si] (deme | me da | me llevo) @qty [@unit]",
       "si @it quiero", "(ese | esa | eso) (esta bien | me sirve)", "[si] (me lo | me la) da", "[si] (lo | la) compro", "[si] (ese | esa | eso) (por favor)?",
     ] },
     // "Sí, está bien" / "Perfecto" (an ordinary yes, credited to the phrasebook where the offer is open)
@@ -361,13 +382,15 @@ export const pharmacy: SituationDef = {
     ] },
     no_cash: { patterns: ["no (tengo | traigo) [suficiente] efectivo", "sin efectivo", "no (tengo | traigo) (cash | dinero en efectivo | pesos)", "no puedo pagar en efectivo"] },
     no_card: { patterns: ["no (tengo | traigo) tarjeta", "no (pago | puedo pagar | quiero pagar) con tarjeta", "sin tarjeta"] },
-    pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "con efectivo", "(tarjeta | con tarjeta) no [mejor] en efectivo"] },
+    pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "con efectivo", "(tarjeta | con tarjeta) no [mejor] en efectivo",
+      "(mejor | prefiero) [pagar] (en | con) efectivo"] },
     pay_phone: { patterns: [
       "(puedo | se puede) pagar con (el | mi)? (celular | telefono) #h:pay_phone", "(pago | le pago) con (el | mi) (celular | telefono)", "con (el | mi) celular",
       "(acepta | aceptan | puedo pagar con) (apple pay | google pay)", "con (apple pay | google pay)",
     ] },
     here_you_go: { patterns: [
       "aqui tiene #h:here_you_go", "aqui esta", "tenga", "tome", "(aqui tiene | tenga | tome | le doy | aqui le doy) [son] {price}", "(aqui (tiene | esta) | tenga | tome) (otros | los otros) {price}", "aqui (tiene | estan) (los | sus) {price}", "(le pago | pago) con (un billete de)? {price}",
+      "(aqui tiene | aqui le doy | tenga | tome | le doy) un billete de {price}",
     ] },
     no_bag: { patterns: ["no (necesito | quiero) [una] (bolsa | bolsita) #h:no_bag", "sin bolsa", "(traigo | tengo) (mi | una)? bolsa", "(asi | asi esta) bien sin bolsa", "(bolsa | bolsita) no [gracias]"] },
     bag_yes: { patterns: ["si (una)? (bolsa | bolsita)", "(me da | deme | me puede dar) (una)? (bolsa | bolsita)", "(una)? (bolsa | bolsita) (por favor)?"] },
@@ -388,15 +411,24 @@ export const pharmacy: SituationDef = {
     // --- brand-name or generic -------------------------------------------------------------------------
     generic_ans: { patterns: [
       "(el | la | uno | una)? (generico | generica) #gen #h:generic", "[el | la] de patente #pat #h:patent", "(el | la)? (original | de marca) #pat", "(el | la)? (mas barato | mas barata | mas economico | mas economica) #gen",
-      "(deme | quiero | prefiero | mejor | me da) (el | la)? (generico | generica) #gen", "(deme | quiero | prefiero | mejor | me da) (el | la)? de patente #pat", "(deme | quiero | prefiero | me da) (el | la)? (original | de marca) #pat",
-      "no (quiero | me de)? (el | la)? (generico | generica) #notgen", "no (quiero | me de)? (el | la)? de patente #notpat",
+      "(deme | quiero | prefiero | mejor | me da) (el | la)? (generico | generica) [mejor] #gen", "(deme | quiero | prefiero | mejor | me da) (el | la)? de patente [mejor] #pat", "(deme | quiero | prefiero | me da) (el | la)? (original | de marca) [mejor] #pat",
+      // "No quiero el genérico": a verb after "no" is what it negates
+      "no (quiero | me de | necesito) (el | la)? (generico | generica) #notgen", "no (quiero | me de | necesito) (el | la)? de patente #notpat",
       "[no] (el | la)? (generico | generica) no #notgen", "[no] (el | la)? de patente no #notpat",
+      // "No, el genérico" (that one) and "No el genérico" (not that one) are the same words once the comma is gone:
+      // he asks which (rule 10)
+      "no (el | la)? (generico | generica) #amb", "no (el | la)? de patente #amb",
+      // "No, mejor el genérico", "No, el de patente está bien": the correction is the answer
+      "no [gracias] (mejor | prefiero | mejor deme | deme) (el | la)? (generico | generica) #gen", "no [gracias] (mejor | prefiero | mejor deme | deme) (el | la)? de patente #pat",
+      "no [gracias] (el | la)? (generico | generica) esta bien #gen", "no [gracias] (el | la)? de patente esta bien #pat",
       "(el | la)? (generico | generica) no (mejor | sino) (el | la)? de patente #pat", "(el | la)? de patente no (mejor | sino) (el | la)? (generico | generica) #gen",
       // "Genérico no, de patente" and "Genérico, no de patente" fold to the same words: #amb asks again (rule 10)
       "(el | la)? (generico | generica) no (el | la)? de patente #amb", "(el | la)? de patente no (el | la)? (generico | generica) #amb",
       "(el | la)? (generico | generica) esta bien #gen", "(el | la)? de patente esta bien #pat",
     ] },
     generic_ctx: { patterns: ["(cualquiera | el que sea | la que sea | lo que sea | el que usted diga | la que usted diga | me da igual | da igual | el que me recomiende | la que me recomiende | como usted diga | no se cual | no se cual es mejor | usted digame)"] },
+    // "Sí, cámbiemelo" only answers "¿Quiere el genérico, entonces?"
+    switch_ctx: { patterns: ["[si] (cambiemelo | cambiemela | cambielo | cambiela | cambiamelo #tip:tu_staff) [por el generico | por la generica]"] },
     generic_q: { patterns: [
       "(cual es | que) (la)? diferencia #diff #h:q_diff", "que diferencia hay #diff", "(es | son) (lo mismo | igual | iguales) #same", "(el generico | la generica) (es | funciona | sirve) (igual | lo mismo) [de bueno]? #same",
       "(funciona | sirve) igual #same", "(cual | que) me recomienda #which", "(cual | que) es mejor #which", "(cual | que) (seria | es) mejor #which", "cuanto (cuesta | sale | cuestan) cada (uno | una) #price", "cuanto (cuesta | sale) (el generico | la generica | el de patente | la de patente) #price",
@@ -538,6 +570,9 @@ export const pharmacy: SituationDef = {
       { flags: { 4: "lo/la: “you”, for a man or a woman (usted)." } })],
     // --- products
     product_ok: [t("Claro.", "Sure.", "Sure."), t("Con gusto.", "Gladly.", "Sure thing.")],
+    qty_two: [t("Claro, | dos.", "Sure, | two.", "Sure, two.")],
+    qty_three: [t("Claro, | tres.", "Sure, | three.", "Sure, three.")],
+    paid_already: [t("Eso | ya | está | pagado.", "That | already | is | paid.", "That's already paid for.")],
     here_it_is: [t("Aquí tiene.", "Here you go.", "Here you go."), t("Aquí está.", "Here it is.", "Here it is.")],
     where_it_is: [t("Todo | está | aquí | atrás | del | mostrador; | yo | se lo | doy.", "Everything | is | here | behind | the | counter; | I | it to you | give.",
       "Everything's back here behind the counter; I'll get it for you.")],
@@ -1000,6 +1035,7 @@ export const pharmacy: SituationDef = {
     c.s.mode = "otc";
     c.s.basket = [];
     c.s.gen = {};
+    c.s.qty = {};
     c.s.askWho = c.chance(0.35);
     c.s.askHowLong = c.chance(0.6);
     c.s.askMeds = c.chance(0.45);
@@ -1080,8 +1116,14 @@ export const pharmacy: SituationDef = {
       if (at(id).rx && c.s.mode !== "rx") { refuseRx(c); return; }
       if (c.s.mode === "rx" && id === "antibiotic") { if (!c.s.rxRead) return; c.say("ack"); return; }
       if (c.step === "more") c.s.moreDone = false;
-      if (basket(c).includes(id)) { c.say("ack"); return; }
-      c.say("product_ok");
+      // "Deme dos cajas": the number is said back and counted in the total
+      const q = qtyFromTags(seg.tags);
+      if (basket(c).includes(id)) {
+        if (q !== qtyOf(c, id) && q > 1 && !locked(c, id)) { setQty(c, id, q); c.say(q === 3 ? "qty_three" : "qty_two"); } else c.say("ack");
+        return;
+      }
+      setQty(c, id, q);
+      c.say(q === 3 ? "qty_three" : q === 2 ? "qty_two" : "product_ok");
       addProduct(c, id);
     },
     product_unknown(c) {
@@ -1094,15 +1136,20 @@ export const pharmacy: SituationDef = {
       setGenFromTags(c, id, seg.tags);
       if (at(id).rx && c.s.mode !== "rx") { refuseRx(c); return; }
       const cur = product(c);
-      if (cur && cur !== id && at(cur).med && at(id).med && !c.s.paid) {
+      let boxes = 1; // "Mejor paracetamol" after two boxes of ibuprofen: two boxes of it
+      // (one paid for already stays: the new one is a second sale)
+      if (cur && cur !== id && at(cur).med && at(id).med && !locked(c, cur)) {
+        boxes = qtyOf(c, cur);
         const i = basket(c).indexOf(cur);
         if (i >= 0) basket(c).splice(i, 1);
+        setQty(c, cur, 1);
         c.s.product = undefined;
         c.s.dosageGiven = false;
         if (c.s.genFor === cur) c.s.genFor = undefined;
       }
       c.s.offer = id;
       c.say("product_ok");
+      if (boxes > 1 && !basket(c).includes(id)) setQty(c, id, boxes);
       addProduct(c, id);
     },
     other_option(c) {
@@ -1113,7 +1160,14 @@ export const pharmacy: SituationDef = {
       if (alt && !basket(c).includes(alt)) { c.s.offer = alt; c.say("rec_alt", { X: alt }); sayRecQ(c, alt); c.expect(altPending(alt, true)); }
       else c.say("cheaper_none");
     },
-    accept_rec(c) { if (!product(c) && c.s.offer) acceptOffer(c); else if (!product(c) && c.s.symptom) acceptOffer(c); else if (product(c)) c.say("product_ok"); },
+    accept_rec(c, _slots, seg) {
+      if (!product(c) && (c.s.offer || c.s.symptom)) {
+        // "Sí, deme dos": two boxes of what he recommends
+        const q = qtyFromTags(seg?.tags ?? []);
+        if (q > 1) { setQty(c, c.s.offer ?? recommendation(c), q); c.say(q === 3 ? "qty_three" : "qty_two"); }
+        acceptOffer(c);
+      } else if (product(c)) c.say("product_ok");
+    },
     accept_ctx(c) {
       // "Está bien, gracias" / "Vale, gracias" at an offer could be "no, thanks": the question again (rule 17)
       if (POLITE.test(c.heard)) return;
@@ -1149,7 +1203,7 @@ export const pharmacy: SituationDef = {
       else c.s.meds = "none";
       if (c.s.meds === "other") c.say("meds_ok"); else c.say("ack");
       // blood-pressure pills and ibuprofen already on the counter: acetaminophen instead
-      if (c.s.meds === "bp" && (product(c) === "ibuprofen" || product(c) === "cold_medicine") && !c.s.paid) swapToAceta(c, product(c)!, product(c) === "ibuprofen" ? "bp_reason" : "bp_reason_cold");
+      if (c.s.meds === "bp" && (product(c) === "ibuprofen" || product(c) === "cold_medicine") && !locked(c, product(c)!)) swapToAceta(c, product(c)!, product(c) === "ibuprofen" ? "bp_reason" : "bp_reason_cold");
       else if (c.s.meds === "bp" && !product(c) && (c.s.offer === "ibuprofen" || c.s.offer === "cold_medicine")) { c.s.offer = undefined; c.s.recSaid = false; }
     },
     allergy_ans(c, _slots, seg) {
@@ -1161,7 +1215,7 @@ export const pharmacy: SituationDef = {
         c.say(c.s.allergy === "none" ? "ack" : "allergy_ok");
         return;
       }
-      if (c.s.allergy === "nsaid" && product(c) === "ibuprofen" && !c.s.paid) { swapToAceta(c, "ibuprofen", "nsaid_reason"); return; }
+      if (c.s.allergy === "nsaid" && product(c) === "ibuprofen" && !locked(c, "ibuprofen")) { swapToAceta(c, "ibuprofen", "nsaid_reason"); return; }
       if (c.s.allergy === "nsaid" && !product(c) && c.s.offer === "ibuprofen") { c.s.offer = undefined; c.s.recSaid = false; c.say("allergy_ok"); return; }
       c.say(c.s.allergy === "none" ? "ack" : "allergy_ok");
     },
@@ -1214,9 +1268,11 @@ export const pharmacy: SituationDef = {
       if (payReady(c) && !slots.product) { sayTotal(c); c.hold(); return; }
       if (c.s.genFor && !slots.product) { genPrices(c, c.s.genFor); return; }
       const id = (slots.product ? last(slots.product) : undefined) ?? product(c) ?? c.s.offer;
-      if (!id) { if (c.s.symptom) c.say("depends"); else { c.say("ask_need"); c.hold(); } return; }
+      // (a prescription not read yet: it depends on what's on it, and he asks for it again)
+      if (!id) { if (c.s.symptom || c.s.mode === "rx") c.say("depends"); else { c.say("ask_need"); c.hold(); } return; }
       if (at(id).generic && gen(c)[id] === undefined) { genPrices(c, id); return; }
-      c.say("price_is", { price: priceOf(c, id) });
+      // "¿Cuánto es?" with two boxes on the counter: both
+      c.say("price_is", { price: priceOf(c, id) * (slots.product ? 1 : qtyOf(c, id)) });
     },
     ask_cheaper(c, _slots, seg) {
       // "¿Es muy caro?" (a question) gets the price
@@ -1226,7 +1282,7 @@ export const pharmacy: SituationDef = {
         if (gen(c)[id] === true) { c.say("cheaper_already"); return; }
         if (c.s.genFor === id) { genPrices(c, id); return; }
         c.say("cheaper_yes", { price: at(id).generic });
-        if (gen(c)[id] === false && basket(c).includes(id)) { if (!c.s.paid) { c.say("switch_q"); c.expect(switchPending(id)); } return; }
+        if (gen(c)[id] === false && basket(c).includes(id)) { if (!locked(c, id)) { c.say("switch_q"); c.expect(switchPending(id)); } return; }
         gen(c)[id] = true;
         return;
       }
@@ -1286,30 +1342,35 @@ export const pharmacy: SituationDef = {
     hand_over_ctx(c, slots, seg) { pharmacy.handlers.hand_over(c, slots, seg); },
     // --- brand-name or generic
     generic_ans(c, _slots, seg) {
+      if (markedThisTurn(c, "genq")) return; // settled earlier in this turn (askGenericOrTwist)
       const id = c.s.genFor ?? product(c) ?? c.s.offer;
       if (!id || !at(id).generic) { c.say("ack"); return; }
       const t = seg.tags;
-      // "Genérico no, de patente" / "Genérico, no de patente": which one? (rule 10)
-      if (t.includes("amb")) { c.say("which_one"); if (c.s.genFor) c.expect(genericPending()); return; }
+      // paid for already: it isn't switched now (that would hand over the other one unpaid)
+      if (!c.s.genFor && locked(c, id)) { c.say("paid_already"); return; }
+      // "Genérico no, de patente" / "No el genérico" (no comma): which one? (rule 10)
+      if (t.includes("amb")) { c.say("which_one"); if (c.s.genFor) c.expect(genericPending()); else c.hold(); return; }
       // "¿Cuánto cuesta el genérico?": the price question answers; never a choice (rule 17)
       if (/cu[aá]nto|precio|a c[oó]mo/i.test(c.heard)) { if (c.s.genFor) c.expect(genericPending()); return; }
       const g = t.includes("notgen") ? false : t.includes("notpat") ? true : t.includes("pat") ? false : true;
-      // At his recommendation, a question ("¿Y el genérico?") gets the prices, and "No quiero el de patente"
-      // only says which one: neither takes the medicine
-      if (!c.s.genFor && !product(c) && c.s.offer === id && c.s.mode !== "rx" && (/\?/.test(c.heard) || t.includes("notgen") || t.includes("notpat"))) {
-        if (/\?/.test(c.heard)) { genPrices(c, id); return; }
-        gen(c)[id] = g; c.say("ack"); return;
-      }
+      const onOffer = !c.s.genFor && !product(c) && c.s.offer === id && c.s.mode !== "rx";
+      // A question ("¿Y el genérico?", by voice "y el genérico") gets the prices while nothing is chosen yet
+      if ((onOffer || c.s.genFor === id) && asksAbout(c.heard)) { genPrices(c, id); if (c.s.genFor) c.expect(genericPending()); return; }
+      // At his recommendation, "No quiero el de patente" only says which one: it doesn't take the medicine
+      if (onOffer && (t.includes("notgen") || t.includes("notpat"))) { gen(c)[id] = g; c.say("ack"); return; }
       // "El genérico" while his recommendation is on offer: that one, as a generic
-      if (!c.s.genFor && !product(c) && c.s.offer === id && c.s.mode !== "rx") {
+      if (onOffer) {
         gen(c)[id] = g;
         c.say((g ? "gen_ok" : "pat_ok") + (at(id).pro === "la" ? "_f" : ""));
+        if (c.s.paid) reopenSale(c);
         basket(c).push(id);
         c.s.product = id; c.s.dosageGiven = false;
         return;
       }
       chooseGeneric(c, id, g);
     },
+    // (only expected at "¿Quiere el genérico, entonces?", whose own handler switches)
+    switch_ctx(c) { c.say("ack"); },
     generic_ctx(c) {
       const id = c.s.genFor;
       if (!id) { c.say("ack"); return; }
@@ -1337,11 +1398,13 @@ export const pharmacy: SituationDef = {
       const id = last(slots.product) as string | undefined;
       if (!id) return;
       // on the counter and not paid: he puts it back
-      if (basket(c).includes(id) && !c.s.paid) {
+      if (basket(c).includes(id) && !locked(c, id)) {
         basket(c).splice(basket(c).indexOf(id), 1);
+        setQty(c, id, 1);
         if (c.s.genFor === id) c.s.genFor = undefined;
         if (product(c) === id) { c.s.product = basket(c)[0]; c.s.dosageGiven = !c.s.product || !!at(c.s.product).noDose; }
         c.say("ok");
+        settle(c);
         if (!basket(c).length && c.s.symptom) { c.s.offer = undefined; c.s.recSaid = false; }
         return;
       }
@@ -1363,7 +1426,7 @@ export const pharmacy: SituationDef = {
       const sick = !!c.s.symptom || c.s.mode === "rx" || basket(c).some((id) => at(id).med);
       c.say(sick ? "feel_better" : "closing_other");
       if (c.s.doctorLater) c.say("doctor_bye");
-      else if (c.s.symptom && !c.s.doctorOffered && !c.s.doctorSaid && !c.s.rxRead && (!c.s.forWho || c.s.forWho === "me")) c.say("see_doctor");
+      else if (c.s.symptom && !c.s.doctorOffered && !c.s.doctorSaid && !c.s.rxRead && (!c.s.forWho || c.s.forWho === "me")) { c.say("see_doctor"); c.s.doctorSaid = true; }
     } else if (c.s.decision === "doctor") {
       c.say("doctor_bye");
     } else {
@@ -1509,6 +1572,17 @@ export const pharmacy: SituationDef = {
     { say: "¿Necesito receta para la amoxicilina?", intent: "ask_rx_needed", not: ["need_product"] },
     { say: "No, solo vengo por un bloqueador", intent: "need_product", slots: { product: "sunscreen" }, not: ["rx_pickup"] },
     { say: "Si no se me quita, voy al doctor", step: "dosage", intent: "none", not: ["go_doctor"] },
+    // lead's check: a no before "para la presión", numbers counted (never "dosis"), bills, corrections
+    { say: "No tomo nada para la presión", intent: "meds_ans", step: "meds", not: ["meds_ctx"] },
+    { say: "No tengo la presión alta", intent: "meds_ans", step: "meds" },
+    { say: "Deme dos cajas de paracetamol", intent: "need_product", step: "need", slots: { product: "acetaminophen" }, not: ["ask_dosage", "accept_rec"] },
+    { say: "Me da dos protectores solares", intent: "need_product", slots: { product: "sunscreen" }, not: ["ask_dosage", "accept_rec"] },
+    { say: "Sí, deme dos", intent: "accept_rec", step: "recommend", not: ["ask_dosage"] },
+    { say: "Aquí tiene un billete de quinientos", intent: "here_you_go", step: "pay", slots: { price: 50000 } },
+    { say: "Mejor en efectivo", intent: "pay_cash", step: "pay", not: ["pay_card"] },
+    { say: "No, solo a la aspirina", intent: "allergy_ans", step: "allergy" },
+    { say: "No, mejor el genérico", intent: "generic_ans", not: ["decline_rec"] },
+    { say: "Ya le pagué", step: "pay", intent: "none", not: ["pay_card", "pay_cash", "here_you_go"] },
     // not understood
     { say: "banana jarabe ventana", intent: "none" },
     { say: "Mi perro come curitas azules", intent: "none" },
@@ -1581,6 +1655,17 @@ export const pharmacy: SituationDef = {
       auto: omit(AUTO, ["need", "generic_q", "dosage", "pay"]),
       expect: { complete: true, state: { product: "allergy_medicine", paid: true, payMethod: "cash", cashIn: 10000 } },
       setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askMore = false; s.volunteer = false; } },
+    { name: "lead: two boxes; a no-comma brand answer is asked again; a no to the switch keeps the brand-name one",
+      turns: ["Deme dos cajas de paracetamol", "No, el genérico", "No, mejor el de patente", "No", "¿Hay algo más barato?", "No, el de patente", "Con tarjeta", "Gracias"],
+      auto: omit(AUTO, ["need", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { product: "acetaminophen", gen: { acetaminophen: false }, qty: { acetaminophen: 2 }, totalSaid: 13000, paid: true, payMethod: "card" } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askMore = false; s.askBag = false; s.volunteer = false; } },
+    { name: "lead: by voice; no blood-pressure pills; every bill counts; after paying, more is a second sale and a paid one isn't switched",
+      turns: ["me duele la cabeza", "no tomo nada para la presion", "y el generico", "si el generico", "no", "en efectivo", "aqui tiene veinte", "aqui tiene cincuenta",
+        "me da tambien unas curitas", "mejor el de patente", "aqui tiene cincuenta", "gracias"],
+      auto: omit(AUTO, ["need", "meds", "recommend", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { meds: "none", product: "ibuprofen", gen: { ibuprofen: true }, paid: true, paidSum: 8000, givenIds: { 0: "ibuprofen", 1: "bandaids" } } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = true; s.askAllergy = false; s.askMore = false; s.askBag = false; s.volunteer = false; } },
     { name: "review: a week of fever, a plain yes to the doctor (nothing bought)",
       turns: ["Tengo fiebre", "Hace una semana", "Sí", "Gracias"],
       auto: omit(AUTO, ["need", "howlong", "doctor_q"]), expect: { complete: false, state: { decision: "doctor", long: true } },
@@ -1593,17 +1678,32 @@ export const pharmacy: SituationDef = {
 /** "Está bien, gracias" / "Vale, gracias": could be a yes or a polite no (rule 17). */
 const POLITE = /^[\s¡¿]*(est[aá] bien|vale|ok(ay)?|bueno|muy bien)[\s,.!]+(muchas )?gracias[\s.!]*$/i;
 
+/** "¿Y el genérico?" is a question, also by voice (no question mark) when it starts with "y" and orders nothing. */
+const ORDER = /\b(deme|d[eé]me(lo|la|los|las)|me da|me pone|ponme|quiero|quisiera|me (lo |la |los |las )?llevo|por favor)\b/i;
+const asksAbout = (h: string) => (/\?/.test(h) || /^[\s¿¡]*y\s/i.test(h)) && !ORDER.test(h);
+
 /** The total he said is still the total (nothing added or switched since). */
-const totalFresh = (c: Ctx) => c.s.totalSaid === total(c);
-function sayTotal(c: Ctx) { c.s.totalSaid = total(c); c.say("total", { price: total(c) }); }
+const totalFresh = (c: Ctx) => c.s.totalSaid === due(c);
+function sayTotal(c: Ctx) { c.s.totalSaid = due(c); c.say("total", { price: due(c) }); }
+
+/** Something more after paying ("¿Me da también unas curitas?"): a second sale; the pay step asks for the rest. */
+function reopenSale(c: Ctx) {
+  c.s.paid = false;
+  c.s.payMethod = undefined; c.s.cashIn = undefined; c.s.totalSaid = undefined;
+  c.s.__finished = false;
+}
+/** A second sale whose new things were all put back: nothing more to pay. */
+function settle(c: Ctx) { if (!c.s.paid && c.s.paidSum !== undefined && due(c) <= 0) c.s.paid = true; }
 
 /** "¿Hay algo más barato?" with the brand-name one already chosen: "¿Quiere el genérico, entonces?" */
 function switchPending(id: string): Pending {
   const sw = (cc: Ctx) => { gen(cc)[id] = true; cc.say(at(id).pro === "la" ? "gen_ok_f" : "gen_ok"); };
-  return { id: "switch_q", optional: true, expects: ["generic_ans", "accept_ctx", "decline_rec"], hints: ["generic", "g_yesno"],
+  return { id: "switch_q", optional: true, expects: ["generic_ans", "accept_ctx", "decline_rec", "switch_ctx"], hints: ["generic", "g_yesno"],
     suggest: [{ lt: "Say yes or no", hint: "g_yesno" }],
     on: {
-      generic_ans: (cc, _sl, sg) => { if (sg.tags.includes("pat") || sg.tags.includes("notgen")) cc.say("ok"); else if (!sg.tags.includes("amb")) sw(cc); },
+      switch_ctx: (cc) => { sw(cc); },
+      // "No, el de patente" (no comma, #amb): the no answers his question, so it stays as it is
+      generic_ans: (cc, _sl, sg) => { if (sg.tags.includes("pat") || sg.tags.includes("notgen") || sg.tags.includes("amb")) cc.say("ok"); else sw(cc); },
       accept_ctx: (cc) => { if (POLITE.test(cc.heard)) { cc.say("ok"); return; } sw(cc); },
       decline_rec: (cc) => { cc.say("ok"); },
     },
@@ -1614,9 +1714,11 @@ function switchPending(id: string): Pending {
 /** Everything is on the counter and the total can be said (the pay step's condition). */
 const payReady = (c: Ctx) => !!pharmacy.steps.find((x) => x.id === "pay")!.when!(c) && !c.s.paid;
 
-/** At the goodbye without a purchase, the learner asks for something after all: the visit goes on. */
+/** At the goodbye the learner asks for something after all: the visit goes on (after paying, a second sale:
+ *  addProduct reopens it and the pay step asks for the rest). */
 function reopen(c: Ctx, run: () => void): boolean | void {
-  if (c.s.paid || c.s.decision === "doctor") return false;
+  if (c.s.paid) { run(); return; }
+  if (c.s.decision === "doctor") return false;
   c.s.decision = undefined;
   c.s.__finished = false;
   run();
@@ -1693,7 +1795,7 @@ function handOver(c: Ctx) {
   c.s.rxRead = true;
   c.s.mode = "rx";
   c.s.product = "antibiotic";
-  if (!basket(c).includes("antibiotic")) basket(c).push("antibiotic");
+  if (!basket(c).includes("antibiotic")) { if (c.s.paid) reopenSale(c); basket(c).push("antibiotic"); } // (after paying: a second sale)
   c.event("give", { item: "prescription", to: "pharmacist" });
   c.say("rx_read");
   c.s.dosageGiven = true;
@@ -1764,6 +1866,10 @@ function goDoctor(c: Ctx) {
 /** "¿De patente o genérico?" (or the twist: the brand-name one is out). */
 function askGenericOrTwist(c: Ctx, id: string) {
   if (!at(id).generic || gen(c)[id] !== undefined) { afterGeneric(c, id, false); return; }
+  // the brand choice of this turn is settled here: a choice said in the same breath ("si el generico", one piece
+  // for the yes and another for the choice) is taken now, and generic_ans adds nothing after it (no question
+  // asked and answered at once, then asked again)
+  firstThisTurn(c, "genq");
   if (c.s.storeBrand && !c.s.storeBrandUsed) {
     c.s.storeBrandUsed = true;
     c.twist("store_brand");
@@ -1772,10 +1878,24 @@ function askGenericOrTwist(c: Ctx, id: string) {
     afterGeneric(c, id, false);
     return;
   }
+  const said = choiceSaid(c.heard);
+  if (said !== undefined) {
+    gen(c)[id] = said;
+    c.say((said ? "gen_ok" : "pat_ok") + (c.s.mode === "rx" ? "_rx" : at(id).pro === "la" ? "_f" : ""));
+    afterGeneric(c, id, true);
+    return;
+  }
   c.s.genFor = id;
   c.s.genAsked = true;
   c.say("generic_q");
   c.expect(genericPending());
+}
+
+/** "Sí, el genérico" / "Me lo llevo, de patente": one clear choice in the words (no "no", no question, not both). */
+function choiceSaid(h: string): boolean | undefined {
+  const g = /gen[eé]ric[oa]/i.test(h), p = /patente|de marca|\boriginal\b/i.test(h);
+  if (g === p || /\bno\b|\?/i.test(h) || asksAbout(h) || /cu[aá]nto|precio|a c[oó]mo|diferencia/i.test(h)) return undefined;
+  return g;
 }
 
 function genericPending(): Pending {
@@ -1799,8 +1919,10 @@ function dropPending(c: Ctx) {
   c.s.genFor = undefined;
   if (!id || c.s.mode === "rx") { c.say("rec_none"); if (id) { c.s.decision = "none"; } return; }
   const i = basket(c).indexOf(id); if (i >= 0) basket(c).splice(i, 1);
+  setQty(c, id, 1);
   if (product(c) === id) { c.s.product = basket(c)[0]; c.s.dosageGiven = !c.s.product || !!at(c.s.product).noDose; }
   c.say("rec_none");
+  settle(c);
   if (!basket(c).length) c.s.decision = "none";
 }
 
@@ -1834,6 +1956,7 @@ function genPrices(c: Ctx, id: string) {
 }
 
 function addProduct(c: Ctx, id: string) {
+  if (c.s.paid && !basket(c).includes(id)) reopenSale(c); // after paying: a second sale, never handed over unpaid
   if (!basket(c).includes(id)) basket(c).push(id);
   const cur = product(c);
   if (!cur) { c.s.product = id; c.s.dosageGiven = !!at(id).noDose; }
@@ -1870,7 +1993,8 @@ function altPending(alt: string, main: boolean): Pending {
     hints: ["accept", "ask", "g_yesno"],
     suggest: [{ lt: "Take it, or ask for something else", hint: "accept" }, { lt: "Ask about the medicine", hint: "ask" }],
     on: {
-      accept_rec: (cc) => { take(cc); },
+      // "Sí, deme dos": two of them
+      accept_rec: (cc, _sl, sg) => { const q = qtyFromTags(sg.tags); if (q > 1 && !basket(cc).includes(alt)) { setQty(cc, alt, q); cc.say(q === 3 ? "qty_three" : "qty_two"); } take(cc); },
       accept_ctx: (cc) => { if (POLITE.test(cc.heard)) { sayRecQ(cc, alt, true); cc.expect(altPending(alt, main)); return; } take(cc); },
       other_option: (cc) => { refuse(cc); },
       decline_rec: (cc) => { refuse(cc); },
@@ -1890,11 +2014,14 @@ function altPending(alt: string, main: boolean): Pending {
 
 /** Aspirin allergy or blood-pressure pills with ibuprofen on the counter: acetaminophen instead. */
 function swapToAceta(c: Ctx, from: string, reason: string) {
+  const boxes = qtyOf(c, from); // the same number of boxes
   const i = basket(c).indexOf(from); if (i >= 0) basket(c).splice(i, 1);
+  setQty(c, from, 1);
   if (c.s.genFor === from) c.s.genFor = undefined;
   c.s.product = undefined; c.s.dosageGiven = false;
   c.say(reason); c.say("switch_aceta");
   c.s.offer = "acetaminophen";
+  if (boxes > 1 && !basket(c).includes("acetaminophen")) setQty(c, "acetaminophen", boxes);
   addProduct(c, "acetaminophen");
 }
 
@@ -1938,10 +2065,13 @@ function knowsIt(c: Ctx) {
 
 /** Paid for: the learner gets the items (at the end, or on "¡Gracias, adiós!" right after paying). */
 function sold(c: Ctx) {
-  if (c.s.soldDone) return;
-  c.s.soldDone = true;
-  c.complete();
-  c.event("give", { items: basket(c) });
+  if (!c.s.soldDone) { c.s.soldDone = true; c.complete(); }
+  // (a second sale gives only what it added)
+  const given = (c.s.givenIds as string[] | undefined) ?? [];
+  const items = basket(c).filter((id) => !given.includes(id));
+  if (!items.length) return;
+  c.s.givenIds = [...given, ...items];
+  c.event("give", { items });
 }
 
 function choosePay(c: Ctx, method: "card" | "cash" | "phone") {
@@ -1957,20 +2087,23 @@ function choosePay(c: Ctx, method: "card" | "cash" | "phone") {
 
 function finishPay(c: Ctx, method: "card" | "cash" | "phone", given?: number) {
   if (c.s.paid) return;
-  const due = total(c);
-  // a bill that doesn't cover it: he says what's missing and waits (never paid)
-  // "Aquí tiene otros cien" after "faltan $95": the second bill adds to the first (a bill that covers it alone replaces it)
-  if (method === "cash" && given && given < due) {
-    const sum = (c.s.cashIn ?? 0) + given;
-    if (c.s.cashIn && sum >= due) given = sum;
-    else { c.s.payMethod = "cash"; c.s.cashIn = sum; c.say("short", { total: due, price: due - sum }); c.hold(); return; }
+  const amount = due(c);
+  // a bill that doesn't cover it: he says what's missing and waits (never paid). Every bill handed over counts:
+  // "Aquí tiene cincuenta" … "faltan $15" … "Aquí tiene cien" gets $85 back, the fifty included
+  if (method === "cash" && given) {
+    const sum = ((c.s.cashIn as number | undefined) ?? 0) + given;
+    if (sum < amount) { c.s.payMethod = "cash"; c.s.cashIn = sum; c.say("short", { total: amount, price: amount - sum }); c.hold(); return; }
+    given = sum;
   }
   c.s.paid = true;
   c.s.payMethod = method;
-  c.event("pay", { method, amount: due });
+  c.s.paidSum = total(c);
+  c.s.paidIds = [...basket(c)];
+  c.s.moreDone = true; // money handed over at "¿Algo más?" ends the list
+  c.event("pay", { method, amount });
   if (method === "card") c.say("card_tap");
   else if (method === "phone") c.say("phone_ok");
-  else if (given && given > due) c.say("change_is", { price: given - due });
+  else if (given && given > amount) c.say("change_is", { price: given - amount });
   else c.say("change_back");
 }
 
@@ -1983,5 +2116,6 @@ function firstThisTurn(c: Ctx, key: string): boolean {
   seen.add(key);
   return true;
 }
+const markedThisTurn = (c: Ctx, key: string) => !!TURN.get(c)?.has(key);
 
 export default pharmacy;
