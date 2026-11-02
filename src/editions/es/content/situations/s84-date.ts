@@ -164,7 +164,13 @@ const partnerOf = (c: Ctx) => (c.player.datePartner === "sam" || c.player.datePa
   ? c.player.datePartner : c.player.gender === "m" ? "emma" : "sam");
 const askedBack = (seg: Segment) => seg.tags.includes("askback");
 /** "…¿y tú?" anywhere in the utterance (a job answer may come in two pieces). */
-const backAll = (c: Ctx) => /\b(y tu|y a ti|tu que|que tal tu|y usted|y a usted|tu has ido|has ido tu)\b/.test(heard(c));
+const backAll = (c: Ctx) => /\b(y tu|y a ti|tu que|que tal tu|y usted|y a usted|tu has ido|has ido tu)\b|(^|\W)tu\W*$/.test(heard(c));
+/** The learner pays or splits in the same breath ("No, de verdad, yo pago", "Gracias, pero mejor dividimos"): their
+ *  thanks or "¿de verdad?" doesn't accept the partner's offer. "La próxima pago yo" is about next time. */
+const paysToo = (c: Ctx) => /\b(yo (pago|invito)|(pago|invito) yo|dejame (pagar|invitar\w*)|insisto|divid\w*|mitad|medias|pachas|cada (quien|uno)|lo mio|mi parte)\b/
+  .test(heard(c).replace(/\b(la )?(proxima|siguiente)( vez)?( (yo )?(invito|pago|me toca|invitas|pagas)( yo| tu| a mi)?)?/g, ""));
+/** Dinner for two at El Muelle (seafood on the malecón, "un poquito caro"), drinks included: only said when asked. */
+const CHECK_TOTAL = 128000;
 
 const asked = (c: Ctx, id: string) => (c.s.asks?.[id] ?? 0) as number;
 const bump = (c: Ctx, id: string) => { c.s.asks ||= {}; c.s.asks[id] = asked(c, id) + 1; };
@@ -290,6 +296,7 @@ const H: Record<string, Handler> = {
     if (!c.s.toldDrink) { c.s.toldDrink = true; c.say("own_drink"); c.say("same_drink"); } else if (once(c, "drink")) c.say("same_drink");
   },
   no_alcohol(c) { hi(c); c.s.noAlcohol = true; if (once(c, "drink")) c.say("no_alcohol_ok"); },
+  no_drink_ctx(c, slots, seg) { H.no_alcohol(c, slots, seg); },
   ask_drink(c) {
     hi(c);
     if (!c.s.toldDrink) { c.s.toldDrink = true; c.say("own_drink"); }
@@ -395,6 +402,7 @@ const H: Record<string, Handler> = {
   },
   accept_offer(c, slots, seg) {
     hi(c);
+    if (paysToo(c)) return;
     if (c.s.partnerOffered && !c.s.checkDone) { c.s.checkDone = "partner"; if (once(c, "pay")) c.say("my_pleasure"); return; }
     if (/^\W*(muchas |mil )?gracias\b/.test(heard(c))) H.g_thanks(c, slots, seg);
   },
@@ -402,7 +410,12 @@ const H: Record<string, Handler> = {
     hi(c);
     if (!once(c, "amount")) return;
     // after "Yo invito": that is the answer, and the offer stays open (no "¿cómo hacemos con la cuenta?" after it)
-    if (c.s.partnerOffered && !c.s.checkDone) { c.say("amount_treat"); c.hold(); } else c.say("amount_small");
+    if (c.s.partnerOffered && !c.s.checkDone) { c.say("amount_treat"); c.hold(); return; }
+    if (!c.s.checkShown) { c.say("amount_not_yet"); return; }
+    if (c.s.checkDone === "partner") { c.say("amount_paid"); return; }
+    if (c.s.checkDone === "split") { c.say("amount_half", { total: CHECK_TOTAL, amount: CHECK_TOTAL / 2 }); return; }
+    c.say("amount_total", { total: CHECK_TOTAL });
+    if (c.step === "check" && !c.s.checkDone) c.hold(); // the learner answers who pays next
   },
   ask_check(c) { hi(c); if (!c.s.checkShown) { c.s.checkShown = true; c.say("check_here"); } },
   // the end of the evening
@@ -430,14 +443,19 @@ const H: Record<string, Handler> = {
     if (c.step === "day" || c.s.dayOffered) { if (toArr(slots?.day).length) { proposeDay(c, slots); return; } dayYes(c); return; }
     if (c.s.againOk) proposeDay(c, slots);
   },
-  decline_again(c) {
+  decline_again(c, slots) {
     hi(c);
+    if (c.s.declined) return;
+    const said = toArr(slots?.day)[0] as string | undefined;
     if (c.s.againOk) { // a day that doesn't work
-      if (once(c, "dayno")) {
-        if (c.s.offerDay !== "sunday") { c.say("how_about_sunday"); c.s.offerDay = "sunday"; c.s.dayOffered = true; }
-        else { c.say("when_free"); c.s.offerDay = undefined; }
-      }
+      if (once(c, "dayno")) dayNo(c, said);
       c.hold();
+      return;
+    }
+    // "Sí, pero este fin de semana no puedo", "El domingo no puedo": yes to meeting again, not that day
+    if (said) {
+      c.s.againOk = true; c.s.partnerAsked = true;
+      if (once(c, "dayno")) dayNo(c, said, true);
       return;
     }
     c.s.declined = true;
@@ -458,6 +476,7 @@ const H: Record<string, Handler> = {
     c.say(c.s.livesClose ? "live_close" : "id_like_walk");
   },
   offer_jacket(c) { hi(c); if (once(c, "jacket")) c.say("so_sweet"); c.s.coldDone = true; },
+  cold_q_ctx(c) { hi(c); if (c.s.coldDone || !once(c, "coldq")) return; c.say("a_little_cold"); if (!c.s.coldQ) { c.s.coldQ = true; c.hold(); } },
   day_ctx(c, slots, seg) { H.propose_day(c, slots, seg); },
   thanks_compliment(c) { hi(c); c.s.thankedCompliment = true; },
   text_reply(c) { hi(c); c.s.textOk = true; },
@@ -466,7 +485,7 @@ const H: Record<string, Handler> = {
     // "¡Gracias!" after a compliment or a treat needs no "De nada".
     hi(c);
     if (c.s.gotCompliment && !c.s.thankedCompliment) { c.s.thankedCompliment = true; return; }
-    if (c.s.partnerOffered && !c.s.checkDone) { c.s.checkDone = "partner"; if (once(c, "pay")) c.say("my_pleasure"); return; }
+    if (c.s.partnerOffered && !c.s.checkDone && !paysToo(c)) { c.s.checkDone = "partner"; if (once(c, "pay")) c.say("my_pleasure"); return; }
     // otherwise a smile is enough
   },
   g_ok(c) { hi(c); stepYes(c); },
@@ -591,6 +610,26 @@ function agreeDay(c: Ctx, byLearner = true) {
   else if (!c.s.loveSaid) c.say("perfect");
   c.say("its_a_date");
 }
+/** The day just named (or the one offered) doesn't work: Sunday instead of Saturday, otherwise "¿Cuándo tienes tiempo?".
+ *  fresh: said at "¿Te puedo volver a ver?" (the day step asks next, so nothing is said here). */
+function dayNo(c: Ctx, said?: string, fresh = false) {
+  const weekend = said === "this_weekend" || said === "next_weekend";
+  const refused: string[] = (c.s.noDays ||= []);
+  const no = weekend ? undefined : said || c.s.offerDay;
+  if (no && !refused.includes(no)) refused.push(no);
+  if (weekend) c.s.noWeekend = true;
+  const alt = nextWeekendDay(c);
+  if (alt) {
+    c.s.offerDay = alt; c.s.dayOffered = true;
+    if (!fresh) { if (alt === "sunday") c.say("how_about_sunday"); else c.say("are_you_free_on", { D: alt }); }
+    return;
+  }
+  c.s.offerDay = undefined;
+  if (fresh) c.s.whenFree = true; else c.say("when_free");
+}
+/** The weekend day the partner can still offer: not one the learner turned down, not the parents' Saturday (twist). */
+const nextWeekendDay = (c: Ctx) => (c.s.noWeekend ? undefined
+  : ["saturday", "sunday"].find((d) => !((c.s.noDays || []) as string[]).includes(d) && !(d === "saturday" && c.s.busySat)));
 function dayYes(c: Ctx) {
   if (c.s.offerDay) { c.s.day = c.s.offerDay; agreeDay(c, false); }
 }
@@ -651,6 +690,7 @@ export const date: SituationDef = {
         { id: "cats", forms: ["gatos", "gato", "los gatos", "gatitos"] }, { id: "dogs", forms: ["perros", "perro", "los perros", "perritos"] },
         { id: "beach", forms: ["playa", "la playa", "el mar"] }, { id: "mountain", forms: ["montana", "la montana", "las montanas", "el bosque"] },
         { id: "both", forms: ["los dos", "las dos", "ambos", "ambas", "las dos cosas", "me gustan los dos", "me gustan las dos"] },
+        { id: "neither", forms: ["ninguno", "ninguna", "ninguno de los dos", "ninguna de las dos", "ni uno ni otro"] },
       ] },
     },
   },
@@ -700,6 +740,8 @@ export const date: SituationDef = {
       "@have @drink_np [para mi] #h:dr_have", "@drink_np [para mi] #h:dr_short", "[@have] una copa de {drink} #h:dr_glass",
       "(solo | nomas | nada mas) @drink_np [para mi]", "creo que @drink_np", "[un | una] {drink} (suena bien | esta bien | me parece bien)",
       "(estoy manejando | voy a manejar | tengo que manejar) [asi que] [solo | nomas] @drink_np", "(pidamos | pedimos | vamos a pedir) @drink_np",
+      // "Una cerveza... no, mejor una limonada": the second one counts
+      "[@have] [un | una] {nd:drink} [no] (mejor | perdon | bueno no) [@have] @drink_np", "no {nd:drink} no [@have] @drink_np",
     ] },
     same_drink_ans: { patterns: [
       "lo mismo [para mi | que tu] #h:dr_same", "(yo | yo tambien) (quiero | pido | tomo) lo mismo [que tu]", "(que sean | entonces) dos",
@@ -710,8 +752,13 @@ export const date: SituationDef = {
     no_alcohol: { patterns: [
       "no (tomo | bebo) [alcohol]", "nada de alcohol [para mi]", "no voy a tomar [alcohol] [hoy | esta noche]", "(sin | nada con) alcohol [para mi]",
       "(estoy manejando | voy a manejar | tengo que manejar) [hoy | esta noche]", "no (alcohol | vino | cerveza | {drink}) para mi [hoy | esta noche]",
-      "no quiero [nada de] (alcohol | vino | cerveza | {drink}) [hoy | esta noche]", "algo sin alcohol", "no tomo {drink}",
-      "(nada | ahorita nada | por ahora nada | todavia nada) [para mi] [gracias]",
+      "no quiero [nada de] (alcohol | vino | cerveza) [hoy | esta noche]", "algo sin alcohol",
+    ] },
+    // "Nada, gracias", "No quiero cerveza": only an answer to "¿Qué quieres tomar?" (elsewhere "nada" or "no tomo café"
+    // answers another question)
+    no_drink_ctx: { patterns: [
+      "(nada | ahorita nada | por ahora nada | todavia nada | nada por ahora) [para mi] [gracias]", "no (tomo | quiero) {drink} [hoy | esta noche] [gracias]",
+      "no (quiero | voy a tomar) nada [por ahora | ahorita] [gracias]",
     ] },
     ask_drink: { patterns: [
       "[y] [tu] que vas a (tomar | pedir) [tu] #h:dr_ask", "que (quieres | te gustaria) (tomar | pedir)", "que (tomas | pides) [tu]",
@@ -726,6 +773,7 @@ export const date: SituationDef = {
       "trabajo (desde casa | en casa | en una oficina | en linea | remoto | a distancia | por internet | en el centro | en linea clara) [@ab]",
       "trabajo (en linea | desde casa | remoto) [y] soy {job} [@ab]",
       "trabajo con (computadoras | ninos | gente | carros | animales | pacientes | clientes | turistas) [@ab]",
+      "tengo (un trabajo | una chamba | trabajo | chamba) (en | para) {field} [@ab]", "(chambeo | trabajo) en {field} [@ab]",
       "mi (trabajo | profesion) es [ser] {job} [@ab]", "(soy | trabajo como) {job} y me (gusta | encanta) [mucho] [@ab]",
       "trabajo (para | en) una empresa (grande | pequena | chica | internacional | local | americana | canadiense | inglesa) [@ab]",
       "(estoy en | me dedico a) {field} [@ab]", "trabajo (para | en) una (empresa | compania) de {field} [@ab]",
@@ -735,7 +783,7 @@ export const date: SituationDef = {
     job_ctx: { patterns: ["(soy | trabajo como) (un | una) {w:any} [@ab]", "trabajo (como | de) {w:any} [@ab]", "trabajo en {w:any} [@ab]", "me dedico a {w:any} [@ab]"] },
     // "Estoy un poco nervioso." (the partner is too)
     nervous: { patterns: [
-      "[perdon] (estoy | me siento) [un poco | un poquito | algo | muy | bien | super | medio] (nervioso | nerviosa | timido | timida) [hoy | ahorita | ahora | esta noche] [@ab]",
+      "[perdon] [la verdad] (estoy | me siento) [un poco | un poquito | algo | muy | bien | super | medio] (nervioso | nerviosa | timido | timida) [hoy | ahorita | ahora | esta noche] [la verdad] [@ab]",
       "[perdon] (es | esta es) mi primera cita [en (mucho tiempo | anos | un buen rato | mucho)] [@ab]",
       "hace (mucho tiempo | anos | mucho) que no (tengo | salgo a) una cita",
     ] },
@@ -745,7 +793,8 @@ export const date: SituationDef = {
       "(no trabajo | ahorita no trabajo | ya no trabajo) [por ahora | ahorita | en este momento] [@ab]",
       "estoy (sin trabajo | desempleado | desempleada | entre trabajos) [@ab]", "soy (ama de casa | amo de casa) [@ab]",
       "estoy aprendiendo espanol y buscando (trabajo | chamba) [@ab]",
-      "(ahorita | ahora) estoy de (vacaciones | viaje) #vacation [@ab]", "estoy de (vacaciones | ano sabatico) #vacation [@ab]", "(me tomé | estoy tomando) un ano sabatico [@ab]",
+      "antes (era | trabajaba como | trabajaba de) [un | una] {job} [pero] (ya no | ahora no) [trabajo] [@ab]",
+      "(ahorita | ahora | nada) [ahorita] estoy de (vacaciones | viaje) #vacation [@ab]", "estoy de (vacaciones | ano sabatico) #vacation [@ab]", "(me tomé | estoy tomando) un ano sabatico [@ab]",
     ] },
     ask_like_job: { patterns: [
       "[y] (te gusta | te encanta | disfrutas) (tu trabajo | tu chamba | ser fotografo | ser fotografa | la fotografia | tomar fotos | hacer bodas | las bodas)",
@@ -813,7 +862,7 @@ export const date: SituationDef = {
       "me gusta (toda la musica | todo tipo de musica | de todo | un poco de todo) [@ab]", "escucho (de todo | un poco de todo | todo tipo de musica) [@ab]",
       "{genre} (a veces | o | pero tambien | y a veces) {genre} [@ab]", "me gusta de todo pero (sobre todo | mas) {genre} [@ab]",
       "@like {genre} (mexicano | mexicana | americano | americana | clasico | clasica | viejo | vieja | de los ochenta) [@ab]",
-      "mi (grupo | banda | cantante | artista) (favorito | favorita) es {w:any} #anymusic [@ab]", "me gusta [mucho] la musica [@ab]",
+      "mi (grupo | banda | cantante | artista) (favorito | favorita) es {w:any} #anymusic [@ab]", "@like [mucho] la musica #anymusic [@ab]",
       "[@like] [la] musica (mexicana | latina | de mi pais | en vivo | vieja | nueva | tranquila | alegre | de los ochenta | de los noventa | americana) #anymusic [@ab]",
     ] },
     no_music: { patterns: ["no me gusta [mucho] la musica [@ab]", "no escucho [mucha] musica [@ab]", "(no mucho | la verdad no mucho) [@ab]"] },
@@ -831,14 +880,14 @@ export const date: SituationDef = {
       "[pues] esta bien #h:lj_okay", "[si] mucho",
     ] },
     dislike_it_ctx: { patterns: [
-      "[no] no me (gusta | encanta) [mucho | tanto]", "[no] (es | puede ser) (aburrido | muy pesado | muy cansado | muy dificil | demasiado)", "lo odio",
+      "[no] [la verdad] no me (gusta | encanta) [mucho | tanto] [mi trabajo] [la verdad]", "[no] (es | puede ser) (aburrido | muy pesado | muy cansado | muy dificil | demasiado)", "lo odio",
       "(no mucho | la verdad no | no tanto | mas o menos) [la verdad] #h:lj_not",
     ] },
     // quick questions
     qf_ctx: { patterns: [
       "[obvio | definitivamente | claro | sin duda | uy] {qf} [obvio | definitivamente | sin duda | claro | por supuesto] #h:qf_pick",
       "(soy | yo soy) [mas] de {qf} #h:qf_pick", "prefiero {qf}", "{qf} creo", "me (gusta | gustan) mas {qf}",
-      "no me (gusta | gustan) [mucho | tanto] {qf} #neg", "(odio | no soporto) {qf} #neg", "{qf} no #neg",
+      "no me (gusta | gustan) [mucho | tanto] {qf} #neg", "(odio | no soporto) {qf} #neg", "{qf} no #neg", "no (tomo | bebo) {qf} #neg",
     ] },
     // the check
     pay_all: { patterns: [
@@ -847,6 +896,8 @@ export const date: SituationDef = {
       "(esta vez | hoy) (invito | pago) yo", "yo me encargo [de la cuenta]", "insisto",
       "(quiero | me gustaria | me encantaria) (pagar | invitarte) [yo] [la cuenta | la cena | esta vez]", "(puedo | podria) (pagar | invitarte) [yo] [la cuenta | esta vez | hoy]",
       "[no] no (yo pago | yo invito | dejame pagar | dejame invitarte) [a mi | yo]", "es mi invitacion", "yo la pago", "(y si | que tal si) (pago | invito) yo [la cuenta | esta vez]", "(me toca | a mi me toca) [pagar | invitar]", "yo (pago | invito) todo", "la cuenta es mia",
+      "[no] (no hace falta | no es necesario | no te preocupes | de verdad | en serio) [yo] (pago | invito) [yo]",
+      "[gracias] pero (yo pago | yo invito | pago yo | invito yo | dejame pagar | dejame invitarte)",
     ] },
     split: { patterns: [
       "(dividimos | dividamos | partimos) la cuenta #h:ck_split", "(podemos | queremos | quieres) dividir la cuenta", "(y si | que tal si) dividimos [la cuenta]", "(y si | que tal si) pagamos [la cuenta] (a la mitad | mitad y mitad | a medias | por separado)",
@@ -855,6 +906,11 @@ export const date: SituationDef = {
       "[mejor] (mitad y mitad | a la mitad | a medias)", "cada (quien | uno) (paga lo suyo | lo suyo | paga)", "(nos cooperamos | cooperamos)",
       "cuentas separadas", "(podemos | queremos) pagar (por separado | a la mitad | cada quien lo suyo)", "[mejor] la (dividimos | pagamos a medias)",
       "vamos a medias", "(cincuenta y cincuenta | fifty fifty)", "hacemos cuentas", "(dividimos | compartimos) [la cuenta]",
+      // "Yo pago la mitad", "Pago lo mío": my half, not the whole check
+      "[yo] (pago | invito) [yo] (la mitad | mi parte | mi mitad | lo mio | lo que me toca | lo que me corresponde)",
+      "(la mitad | mitad) cada (uno | quien | una)", "(quieres | te parece) que (paguemos | pagemos | dividamos) [la cuenta] [a la mitad | a medias | por separado]",
+      "[no] [gracias] [pero] (seguro | segura | de verdad | en serio) [mejor] (dividimos | dividamos | la dividimos | pagamos a la mitad)",
+      "[no] gracias pero (mejor) (dividimos | dividamos | la dividimos | pagamos a la mitad) [la cuenta]", "mejor (dividimos | dividamos | la dividimos)",
     ] },
     accept_offer: { patterns: [
       "(estas | de verdad estas) (seguro | segura) [gracias] #h:ck_sure", "(de verdad | en serio) [gracias]", "(muchas | mil) gracias #h:ck_thanks",
@@ -895,12 +951,16 @@ export const date: SituationDef = {
       "(me gustaria | quiero | quisiera) invitarte a {activity} [@when_d]", "(te gustaria | quieres) {activity} conmigo [@when_d]",
       "@when_d (esta bien | me parece bien | perfecto | genial)",
       "@sorry no puedo {nd:day} [pero] (que tal | y) @when_d", "@sorry {nd:day} no puedo [pero] (que tal | y) @when_d",
+      // "El sábado no, el domingo", "Mejor el viernes", "Tal vez la próxima semana"
+      "@sorry [no] {nd:day} no [puedo] [pero] [mejor] @when_d [si | mejor]", "mejor @when_d", "(tal vez | quizas | a lo mejor) @when_d",
+      "(que tal si | y si | por que no) (vamos | salimos | vamos a | nos vemos para) {activity} [@when_d]",
     ] },
     agree_again: { patterns: [
       "me encantaria [volver a verte] #h:ag_id_love", "si me (gustaria | encantaria) [mucho] [@when_d] #h:ag_yes", "claro que si", "(si | claro) por supuesto",
       "[si | claro] me queda bien #h:dy_works", "[si] estoy libre [ese dia] #h:dy_free", "(si | claro) (me encantaria | quiero) volver a verte",
       "seria (genial | padre | increible | lindo)", "yo te iba a preguntar lo mismo", "[si | claro] a que hora", "[si | claro] cuando [estas libre | tienes tiempo]",
-      "claro que quiero", "[vale] {day} me (queda | va) bien a que hora",
+      "claro que quiero", "[vale] {day} me (queda | va) bien a que hora", "[yo] te iba a preguntar [lo mismo | eso]",
+      "[si] me (gustaria | encantaria) [mucho] pero no se cuando", "[si] [claro] cuando quieras",
     ] },
     // "¿El domingo en la noche?" (to "¿Qué tal el domingo? ¿Tienes tiempo?")
     day_ctx: { patterns: ["@when_d [(a las | como a las) {time}]"] },
@@ -910,21 +970,25 @@ export const date: SituationDef = {
       "@sorry (no creo | creo que no) [que sea buena idea] #h:ag_no", "@sorry no puedo [{day}]", "@sorry (estoy | voy a estar) (ocupado | ocupada) [{day} | ese dia] #h:dy_busy",
       "@sorry (ese dia | {day}) (estoy | voy a estar) (ocupado | ocupada)", "@sorry {day} no [puedo]", "@sorry (tengo | ya tengo) planes [{day}]", "no creo que seamos compatibles",
       "@sorry (trabajo | tengo que trabajar) {day}", "@sorry no estoy (libre | disponible) [{day} | ese dia]", "@sorry ese dia no (puedo | estoy libre)",
-      "[no] {day} (no puedo | trabajo | tengo planes)", "[no] no quiero (volver a verte | salir otra vez | vernos otra vez | salir contigo)", "@sorry {day} no me (queda | va) [bien]", "@sorry no me (queda | va) [bien] {day}",
+      "[no] {day} (no puedo | trabajo | tengo planes)", "@sorry no puedo (ese dia | ese)", "[no] [ese dia | {day}] tampoco [puedo]",
+      // "Sí, pero no el sábado": yes to meeting again, not that day
+      "[si | claro | claro que si | me encantaria] [pero] no {day} [puedo]", "[no] no quiero (volver a verte | salir otra vez | vernos otra vez | salir contigo)", "@sorry {day} no me (queda | va) [bien]", "@sorry no me (queda | va) [bien] {day}",
     ] },
     walk_home: { patterns: [
       "te acompano [a tu casa | a tu carro | a tu coche] #h:wk_walk", "(quieres | te gustaria) que te acompane [a tu casa]", "(dejame | puedo) acompanarte [a tu casa]",
       "te puedo acompanar [a tu casa]", "te llevo a tu casa",
     ] },
+    // "¿Tienes frío?" to "Ya hace fresco": the partner answers, and a sweater may follow
+    cold_q_ctx: { patterns: ["[estas bien] (tienes | te da | sientes) [mucho] frio", "(estas bien | todo bien) [no tienes frio]"] },
     offer_jacket: { patterns: [
       "[ten | toma] (ponte | usa) mi @jacket #h:jk_take", "(quieres | te presto) mi @jacket #h:jk_want", "(toma | ten) mi @jacket",
       "puedes (usar | ponerte) mi @jacket", "te (presto | doy) mi @jacket",
     ] },
     text_reply: { patterns: [
       "[si | claro | va | sale] (te escribo | te mando un mensaje | te aviso) [cuando llegue] #h:tx_will", "tu tambien #h:tx_you_too",
-      "(mandame | escribeme) (un mensaje | uno) tu tambien", "[si] te lo prometo", "te escribo no te preocupes", "(claro | va | si) tu tambien",
+      "(mandame | escribeme) (un mensaje | uno) tu tambien", "[si] te lo prometo", "[no] tu (mandame | escribeme) [un mensaje | uno] [tambien]", "te escribo no te preocupes", "(claro | va | si) tu tambien",
     ] },
-    hesitate: { patterns: ["(tal vez | quizas | quiza | a lo mejor | puede ser)", "lo (voy a pensar | pienso)", "dejame pensarlo", "ya veremos"] },
+    hesitate: { patterns: ["(tal vez | quizas | quiza | a lo mejor | puede ser)", "no se (tal vez | quizas | a lo mejor | todavia)", "no estoy (seguro | segura) [todavia]", "lo (voy a pensar | pienso)", "dejame pensarlo", "ya veremos"] },
     no_sorry: { patterns: ["(no | nel) perdon", "perdon no", "lo siento no", "no lo siento"] },
     // "¡Qué interesante!", "¡Órale, qué padre!": a reaction to what the partner said (no yes/no meaning)
     react_nice: { patterns: [
@@ -1017,7 +1081,7 @@ export const date: SituationDef = {
     ],
     ask_back: [
       t("¿Y | tú?", "And | you?", "What about you?"),
-      t("¿Y | tú | qué?", "And | you | what?", "How about you?"),
+      t("¿Y | tú, | qué | me | cuentas?", "And | you, | what | (to) me | you-tell?", "How about you?"),
     ],
     job_react: [
       t("¡Ah, | qué | padre!", "Oh, | how | cool!", "Oh, cool!", { flags: { 2: PADRE }, neutral: t("¡Ah, | qué | bien!", "Oh, | how | nice!", "Oh, cool!") }),
@@ -1181,8 +1245,17 @@ export const date: SituationDef = {
     so_check: [
       t("Bueno, | ¿cómo | hacemos | con | la | cuenta?", "So, | how | do we do | with | the | check?", "So, what should we do about the check?"),
     ],
-    amount_small: [
-      t("No es | mucho, | no te preocupes.", "It isn't | much, | don't worry.", "It's not much, don't worry."),
+    amount_not_yet: [
+      t("Todavía | no nos traen | la | cuenta.", "Still | they haven't brought us | the | check.", "They haven't brought us the check yet."),
+    ],
+    amount_total: [
+      t("A ver... | son | {$total}.", "Let's see... | it's | {$total}.", "Let's see... it's {$total}."),
+    ],
+    amount_half: [
+      t("Son | {$total}, | o sea, | {$amount} | cada quien.", "It's | {$total}, | that is, | {$amount} | each.", "It's {$total}, so {$amount} each."),
+    ],
+    amount_paid: [
+      t("¡Ya | está | pagada! | No te preocupes.", "Already | it's | paid! | Don't worry.", "It's already paid! Don't worry."),
     ],
     amount_treat: [
       t("¡Ni lo pienses! | Yo | invito.", "Don't even think about it! | I | treat.", "Don't even think about it! It's on me.", { flags: { 2: INVITAR } }),
@@ -1212,6 +1285,9 @@ export const date: SituationDef = {
     // the end of the evening
     cold: [
       t("Brr, | ya | hace | fresco | con | el | aire | del | mar.", "Brr, | already | it's | cool | with | the | air | of the | sea.", "Brr, it's getting chilly with the sea breeze."),
+    ],
+    a_little_cold: [
+      t("Un | poquito, | sí.", "A | little bit, | yes.", "A little, yeah."),
     ],
     so_sweet: [
       t("¡Ay, | qué | {m:lindo|f:linda} | eres!", "Oh, | how | sweet | you-are!", "Aw, you're so sweet!"),
@@ -1404,7 +1480,7 @@ export const date: SituationDef = {
         { id: "ck_let_me", s: t("Déjame | invitarte.", "Let me | treat you.", "Let me get this."), note: "In Mexico whoever invites usually pays." },
         { id: "ck_split", s: t("¿Dividimos | la | cuenta?", "Do we split | the | check?", "Should we split the check?") },
         { id: "ck_on_me", s: t("Yo | invito.", "I | treat.", "It's on me.") },
-        { id: "ck_half", s: t("¿Pagamos | a | la | mitad?", "Do we pay | at | the | half?", "Shall we go halves?") },
+        { id: "ck_half", s: t("¿Pagamos | a | la | mitad?", "Do we pay | at | the | half?", "Should we split it fifty-fifty?") },
         { id: "ck_sure", s: t("¿Estás | {sm:seguro|sf:segura}? | ¡Gracias!", "Are you | sure? | Thanks!", "Are you sure? Thank you!") },
       ],
     },
@@ -1544,6 +1620,8 @@ export const date: SituationDef = {
     "no deja": { reason: "grammatical_fusion", split: "no → not + deja → it leaves; = doesn't leave.", minimal: "Two words." },
     "qué tal": { reason: "lexical_expression", split: "qué → what + tal → such; before a day or a plan = how about.", minimal: "Two words." },
     "ni lo pienses": { reason: "lexical_expression", split: "ni → not even + lo → it + pienses → you think; = don't even think about it.", minimal: "Three words." },
+    "no nos traen": { reason: "grammatical_fusion", split: "no → not + nos → (to) us + traen → they bring; = they haven't brought us.", minimal: "Three words." },
+    "cada quien": { reason: "lexical_expression", split: "cada → each + quien → who; = each person (cada uno elsewhere).", minimal: "Two words." },
     "te lo": { reason: "grammatical_fusion", split: "Two object pronouns before the verb are glossed together (it to you).", minimal: "Two words." },
   },
 
@@ -1573,7 +1651,7 @@ export const date: SituationDef = {
     })),
     { id: "drinks", when: (c) => c.s.askDrinks && !c.s.wrapUp, done: (c) => !!c.s.drink || !!c.s.noAlcohol || asked(c, "drinks") >= 2,
       ask: (c) => { bump(c, "drinks"); if (c.s.drinkBack) { c.s.drinkBack = false; c.say("ask_drinks_back"); } else c.say("ask_drinks"); },
-      expects: ["drink_ans", "same_drink_ans", "no_alcohol", "ask_drink", "me_too_ctx"],
+      expects: ["drink_ans", "same_drink_ans", "no_alcohol", "no_drink_ctx", "ask_drink", "me_too_ctx"],
       suggest: [{ lt: "Choose a drink", hint: "drinks", options: "drink" }] },
     ...(["job", "hobby", "travel", "music"] as Topic[]).map((tp) => ({
       id: tp,
@@ -1631,7 +1709,7 @@ export const date: SituationDef = {
       no: (c) => { c.s.checkDone = "split"; c.say("deal"); } },
     { id: "cold", when: (c) => !!c.s.coldTwist, done: (c) => !!c.s.coldAsked,
       ask: (c) => { c.s.coldAsked = true; c.twist("cold"); c.say("cold"); },
-      expects: ["offer_jacket"], suggest: [{ lt: "Offer your sweater", hint: "jacket" }] },
+      expects: ["offer_jacket", "cold_q_ctx"], suggest: [{ lt: "Offer your sweater", hint: "jacket" }] },
     { id: "nice", done: (c) => !!c.s.niceTime || !!c.s.niceSaid,
       ask: (c) => { c.s.niceSaid = true; c.say("nice_time"); },
       expects: ["nice_time", "thanks_evening", "me_too_ctx"],
@@ -1639,24 +1717,24 @@ export const date: SituationDef = {
       yes: (c) => { c.s.niceTime = true; } },
     { id: "again", when: (c) => !c.s.declined, done: (c) => !!c.s.againOk || !!c.s.declined,
       ask: (c) => { c.s.partnerAsked = true; c.say("can_i_see_you"); },
-      expects: ["agree_again", "decline_again", "see_again", "propose_day", "me_too_ctx", "hesitate"],
+      expects: ["agree_again", "decline_again", "see_again", "propose_day", "day_ctx", "me_too_ctx", "hesitate"],
       suggest: [{ lt: "Say yes to meeting again", hint: "again_answer" }, { lt: "Suggest what to do", hint: "again", options: "activity" }],
       yes: (c) => { c.s.againOk = true; c.say("yay_great"); },
-      no: (c) => { c.s.declined = true; c.say("no_pressure"); },
-      help: (c) => { c.say("think_about_it"); } },
+      no: (c) => { if (c.s.declined) return; c.s.declined = true; if (once(c, "decline")) c.say("no_pressure"); },
+      help: (c) => { if (!c.s.againOk) c.say("think_about_it"); } },
     { id: "day", when: (c) => !!c.s.againOk && !c.s.declined, done: (c) => !!c.s.dayAgreed,
       ask: (c) => {
+        if (c.s.whenFree) { c.s.whenFree = false; c.say("when_free"); return; }
         if (c.s.offerDay) { c.say("are_you_free_on", { D: c.s.offerDay }); return; }
-        c.s.offerDay = c.s.busySat ? "sunday" : "saturday"; c.s.dayOffered = true;
+        const d = nextWeekendDay(c);
+        if (!d) { c.say("when_free"); return; } // "Este fin de semana no puedo"
+        c.s.offerDay = d; c.s.dayOffered = true;
         c.say("are_you_free_on", { D: c.s.offerDay });
       },
       expects: ["propose_day", "agree_again", "decline_again", "day_ctx"],
       suggest: [{ lt: "Agree on a day", hint: "day_answer" }, { lt: "Suggest another day or a plan", hint: "again", options: "activity" }],
       yes: (c) => dayYes(c),
-      no: (c) => {
-        if (c.s.offerDay === "saturday") { c.s.offerDay = "sunday"; c.say("how_about_sunday"); c.hold(); }
-        else { c.s.offerDay = undefined; c.say("when_free"); c.hold(); }
-      } },
+      no: (c) => { if (once(c, "dayno")) dayNo(c); c.hold(); } },
   ],
 
   init: (c) => {
@@ -1694,7 +1772,7 @@ export const date: SituationDef = {
     win(c);
     c.say("text_me");
     const bye = (cc: Ctx) => {
-      if (once(cc, "bye")) cc.say(/\b(tu tambien|mandame uno|escribeme tu|tu me escribes)\b/.test(heard(cc)) ? "will_too" : "good_night");
+      if (once(cc, "bye")) cc.say(/\b(tu tambien|mandame uno|escribeme tu|tu me escribes|tu mandame|tu escribeme)\b/.test(heard(cc)) ? "will_too" : "good_night");
       cc.end();
     };
     // The evening is over: any friendly answer ends it with a goodbye.
@@ -1781,7 +1859,7 @@ export const date: SituationDef = {
     { say: "¿Y si pago yo?", intent: "pay_all", step: "check_offer", not: ["split"] },
     { say: "Gracias por invitarme", intent: "accept_offer", step: "check_offer" },
     { say: "Gracias por invitarme", intent: "thanks_evening", step: "nice" },
-    { say: "Nada para mí, gracias", intent: "no_alcohol", step: "drinks", not: ["drink_ans"] },
+    { say: "Nada para mí, gracias", intent: "no_drink_ctx", step: "drinks", not: ["drink_ans"] },
     { say: "No, mejor dividimos la cuenta", intent: "split", step: "check_offer", not: ["pay_all"] },
     { say: "¿Te gustaría ir a un cenote este fin de semana?", intent: "propose_day", step: "again", slots: { activity: "cenote", day: "this_weekend" } },
     { say: "No me gustan los gatos", intent: "qf_ctx", step: "qf" },
@@ -1812,6 +1890,33 @@ export const date: SituationDef = {
     { say: "Me lo he pasado genial", intent: "nice_time", step: "nice" },
     { say: "¿Pagamos a pachas?", intent: "split", step: "check" },
     { say: "Vale, el domingo me va bien", intent: "propose_day", step: "day", slots: { day: "sunday" } },
+    // the review's traps and fixes (2 Nov 2026)
+    { say: "Gracias, tú también te ves muy bien", intent: "compliment", step: "greet_early", not: ["g_bye"] },
+    { say: "Estoy un poco nerviosa, la verdad", intent: "nervous", step: "greet_meet" },
+    { say: "No me gusta la cerveza", intent: "none", step: "drinks", not: ["drink_ans"] },
+    { say: "Una cerveza. No, mejor una limonada", intent: "drink_ans", step: "drinks", slots: { drink: "lemonade" } },
+    { say: "Nada, estoy de vacaciones", intent: "no_job", step: "job", not: ["no_alcohol", "no_drink_ctx"] },
+    { say: "No tomo café", intent: "none", step: "job", not: ["no_alcohol"] },
+    { say: "Tengo una chamba en un hotel", intent: "job_ans", step: "job" },
+    { say: "Me encanta la música", intent: "music_ans", step: "music" },
+    { say: "Yo pago la mitad", intent: "split", step: "check", not: ["pay_all"] },
+    { say: "Pago lo mío", intent: "split", step: "check", not: ["pay_all"] },
+    { say: "No hace falta, yo pago", intent: "pay_all", step: "check_offer", not: ["accept_offer"] },
+    { say: "No, de verdad, yo pago", intent: "pay_all", step: "check_offer", not: ["accept_offer"] },
+    { say: "Gracias, pero mejor la dividimos", intent: "split", step: "check_offer", not: ["accept_offer"] },
+    { say: "Nada", intent: "none", step: "check", not: ["no_alcohol"] },
+    { say: "No sé, tal vez", intent: "hesitate", step: "again", not: ["agree_again"] },
+    { say: "¡Claro que no!", intent: "yn:no", step: "again", not: ["hesitate", "agree_again"] },
+    { say: "Sí, pero no el sábado", intent: "decline_again", step: "again", slots: { day: "saturday" }, not: ["day_ctx", "agree_again"] },
+    { say: "Sí, claro, pero este fin de semana no puedo", intent: "decline_again", step: "again", not: ["agree_again", "propose_day"] },
+    { say: "Me gustaría, pero no sé cuándo", intent: "agree_again", step: "again", not: ["decline_again"] },
+    { say: "Te iba a preguntar lo mismo", intent: "agree_again", step: "again" },
+    { say: "Tal vez la próxima semana", intent: "propose_day", step: "again", slots: { day: "next_week" } },
+    { say: "El sábado no, el domingo", intent: "propose_day", step: "day", slots: { day: "sunday" }, not: ["agree_again", "decline_again"] },
+    { say: "No puedo ese día", intent: "decline_again", step: "day", not: ["agree_again"] },
+    { say: "No, tampoco", intent: "decline_again", step: "day", not: ["agree_again"] },
+    { say: "¿Tienes frío?", intent: "cold_q_ctx", step: "cold", not: ["offer_jacket"] },
+    { say: "No, tú mándame un mensaje", intent: "text_reply" },
     // not understood
     { say: "la bicicleta azul canta en la luna", intent: "none" },
     { say: "Ayer compré un carro nuevo", intent: "none" },
@@ -1891,6 +1996,14 @@ export const date: SituationDef = {
       "¡Hola! Mucho gusto.", "¿Cuánto fue?", "Muchas gracias", "La pasé muy bien", "¡Claro que sí!", "¿La próxima semana?", "El martes en la noche", "¡Te escribo!",
     ], expect: { complete: true, state: { day: "tuesday", checkDone: "partner" } }, auto: AUTO,
       setup: (s) => { s.opening = "meet"; s.askCheck = true; s.partnerPays = true; s.quick = false; s.coldTwist = false; s.busySat = false; } },
+    // the review: the price asked at the check, my half, and "yes, but not this weekend" (not a no to a second date)
+    { name: "the price, my half, not this weekend", turns: [
+      "¡Hola! Mucho gusto.", "Soy enfermero. ¿Y tú?", "Sobre todo jazz. ¿Y tú?", "¿Cuánto es?", "Pago lo mío", "La pasé muy bien", "Sí, claro, pero este fin de semana no puedo", "El martes", "¡Te escribo!",
+    ], expect: { complete: true, state: { checkDone: "split", day: "tuesday", noWeekend: true } }, auto: AUTO,
+      setup: (s) => {
+        s.opening = "meet"; s.topics = ["job", "music"]; s.askDrinks = false; s.likeJobQ = false; s.askCheck = true; s.partnerPays = false;
+        s.quick = false; s.busySat = false; s.coldTwist = false;
+      } },
   ],
 };
 
