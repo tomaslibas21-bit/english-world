@@ -76,11 +76,21 @@ const F_ME_FALTA = "me falta: “it's missing to me” = I'm short of.";
 
 const heard = (c: Ctx) => (c.heard || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const ID_RE = /\b(identificacion|ine|pasaporte|licencia|credencial)\b/;
-/** What the learner hands over at the total, when the words say it: "Aquí está mi tarjeta", "Ten, en efectivo". */
+/** What the learner hands over at the total, when the words say it: "Aquí está mi tarjeta", "Ten, en efectivo". A
+ *  way said with "no" or "sin" is not the one handed over ("No tengo tarjeta, aquí tienes" is cash). */
 const handedMethod = (c: Ctx): string | undefined => {
-  const h = heard(c);
+  const h = heard(c).replace(/\b(no|sin)\s+(\w+\s+){0,2}(tarjeta|efectivo|billetes?|dinero|cambio)\b/g, " ");
   return /\btarjeta\b/.test(h) ? "card" : /\b(efectivo|billete|dinero|cambio)\b/.test(h) ? "cash" : undefined;
 };
+/** The two prices said as amounts ("¿Seiscientos?", "¿Cien pesos por un día?"). */
+const AMOUNT_RE = /\b(cien|seiscientos|100|600)\b/;
+/** A question about a plan ("La mensualidad, ¿qué incluye?", "¿La mensualidad tiene contrato?"): never a choice. */
+const PLAN_Q_RE = /\b(incluye|incluyen|incluid[oa]s?|cobran|cobras|inscripcion(?! mensual)|contrato|cancelar|permanencia|plazo|horarios?|descuentos?|promocion(es)?)\b/;
+/** "¿Puedo pagar con tarjeta o en efectivo?", "¿Aceptas tarjeta o solo efectivo?": a question about two ways. */
+const METHODS = [/\b(tarjeta|debito|credito)\b/, /\befectivo\b/, /\b(celular|telefono|movil|transferencia|apple pay|google pay)\b/];
+const bothMethods = (c: Ctx) => { const h = heard(c); return /\bo\b/.test(h) && !/\bno\b/.test(h) && METHODS.filter((r) => r.test(h)).length >= 2; };
+/** "Estoy bien, pero me duele un poco la rodilla": the pain piece of the turn answers. */
+const painToo = (c: Ctx) => /\bme (duele|duelen|lastime)\b/.test(heard(c)) && !/\bno me (duele|duelen|lastime)\b/.test(heard(c));
 const planPrice = (c: Ctx) => (c.s.plan === "monthly" ? MONTHLY : VISIT);
 /** The warm-up can start: paid, and the learner has changed (or didn't need to). */
 const warmupOpen = (c: Ctx) => !!c.s.paid && !!c.s.changeDone;
@@ -227,7 +237,7 @@ export const gym: SituationDef = {
       "(solo | nomas | nada mas) (quiero | vengo a) probar [hoy | un dia | el gimnasio] #day",
       "(voy a | pienso | quiero) venir (seguido | diario | todos los dias | mucho | cada semana | tres veces por semana | varias veces a la semana) #monthly",
       "(por | para) (un mes | el mes | todo el mes) #monthly", "pago (el mes | por mes) #monthly",
-      "[la | el] (mas barata | mas barato | barata | economica) #day", "[la | el] de (cien | 100) [pesos] #day", "[la | el] de (seiscientos | 600) [pesos] #monthly",
+      "[mejor] [la | el] (mas barata | mas barato | barata | economica) #day", "[mejor] [la | el] de (cien | 100) [pesos] #day", "[mejor] [la | el] de (seiscientos | 600) [pesos] #monthly",
     ] },
     plan_no: { patterns: [
       "[no] no (quiero | necesito) [la | el | una | un] {plan} [tampoco | todavia | por ahora | gracias]", "[no] tampoco [quiero] [la | el | una | un] {plan}",
@@ -248,6 +258,8 @@ export const gym: SituationDef = {
       "cuanto (cuesta | es | sale | cobran | cobras | vale) (el gimnasio | el gym | al mes | por mes | por dia | el dia | la entrada | por visita | entrar)",
       "cuanto (cuesta | es | sale | cobran | vale) (por | para) [la | el | una | un] {plan}", "cuanto (cuesta | es | sale | cobran)", "(cuales son | que) (los precios | precios | costos | tarifas) [tienen | manejan | hay]",
       "(cual es | que) precio tiene [la | el] {plan}", "es caro", "(es | sale) (caro | cara) [la | el] {plan}", "a como (esta | sale) [la | el] {plan}", "(puedo | se puede) pagar (por mes | mes por mes | cada mes)",
+      // lead's check: "¿Cuántos pesos son?" (never "pesos" ~ "peso", the weight), "¿Son seiscientos al mes?"
+      "cuantos pesos (son | es | cobran)", "(son | es | cuesta | sale) {price} (al mes | por mes | por dia | el dia | la visita | la mensualidad | por la visita | por la mensualidad)",
     ] },
     ask_included: { patterns: [
       "que incluye [la | el] {plan} #h:q_included", "que (incluye | entra | viene) (en | con) [la | el] {plan}", "que incluye [el precio]",
@@ -263,6 +275,8 @@ export const gym: SituationDef = {
       "(puedo | se puede) (cancelar | dejar de venir | darme de baja | salirme) cuando (quiera | sea) #h:q_cancel", "(hay que | tengo que) firmar [un] contrato",
       "(hay | es con) [un] (contrato | plazo minimo | permanencia)", "como (cancelo | me doy de baja)", "(y si | que pasa si) (quiero cancelar | ya no vengo | dejo de venir)",
       "(puedo | se puede) cancelar",
+      // "¿La mensualidad tiene contrato?" asks; it never chooses the plan
+      "[la | el] [{plan}] (tiene | lleva) [un] (contrato | plazo minimo | permanencia)",
     ] },
     ask_hours: { patterns: [
       "(que | cual es el) horario (tienen | tiene | manejan | es) #h:q_hours", "a que hora (abren | cierran | abre | cierra | abres)", "(que | cuales) (son los | son sus) horarios",
@@ -290,6 +304,10 @@ export const gym: SituationDef = {
       "aqui (tienes | tiene | esta | lo tienes | la tienes) #h:here_you_go", "(ten | tenga | toma | tome)", "(ahi | aqui) va",
       "aqui (esta | tienes | tiene) (mi | la) (tarjeta | identificacion | ine | pasaporte | ficha | hoja | credencial | licencia)",
       "(te | le) (doy | paso) (mi | la) (tarjeta | identificacion | pasaporte | ficha)",
+      // cash with its amount (rule 18): less than the total asks for it, more gets change
+      "(aqui tienes | aqui tiene | ahi va | ahi van | aqui van | ten | tenga | toma | tome) [son] {price}", "(te | le) (doy | pago con) {price}",
+      "(aqui tienes | aqui tiene | ten | tenga | toma | tome | te doy | le doy | te pago con | le pago con) (un billete de | uno de) {price}",
+      "(solo | nomas | nada mas) (tengo | traigo) [un billete de | uno de] {price}",
     ] },
     form_done: { patterns: [
       "listo ya (esta | la firmé | la llené | firmé | terminé) #h:form_done", "ya (esta | la llené | la firmé | firmé | terminé | acabé | quedó)", "(terminé | acabé)",
@@ -307,26 +325,31 @@ export const gym: SituationDef = {
       "(que es | para que es) (esto | esta hoja | esta ficha | este papel | este formato | este formulario | la hoja) #h:q_form", "que (pongo | escribo) aqui", "que (es | dice) esto",
     ] },
     pay_card: { patterns: [
-      "(con | en) tarjeta [de credito | de debito] #h:pay_card_short", "tarjeta", "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card",
-      "(aceptas | aceptan | acepta | reciben | recibes) tarjeta [de credito | de debito]", "(pago | voy a pagar | te pago | le pago | quiero pagar) con tarjeta",
+      "[mejor] (con | en) tarjeta [de credito | de debito] #h:pay_card_short", "tarjeta", "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card",
+      "(aceptas | aceptan | acepta | reciben | recibes) tarjeta [de credito | de debito]", "[mejor] (pago | voy a pagar | te pago | le pago | quiero pagar) con tarjeta",
       "(visa | mastercard | amex | american express)", "se puede con tarjeta", "(aceptas | aceptan | acepta) (visa | mastercard | amex)", "(puedo | se puede) pagar con (visa | mastercard | amex)",
       // "Efectivo no, tarjeta" / "No en efectivo, con tarjeta": the second one is the answer
       "[en] efectivo no [con] tarjeta", "no [en] efectivo [con] tarjeta", "(con | en) (debito | credito)",
     ] },
     no_cash: { patterns: ["no (traigo | tengo | cargo) (efectivo | cash | dinero en efectivo | suficiente efectivo)", "sin efectivo",
-      "no (puedo | quiero) pagar (en | con) efectivo", "[no] en efectivo no", "no en efectivo"] },
+      "no (puedo | quiero) pagar (en | con) efectivo", "[no] en efectivo no", "no en efectivo",
+      // "No tengo efectivo ni tarjeta": the phone or a transfer (nothing on file)
+      "no (traigo | tengo) [ni] (efectivo | tarjeta) ni (tarjeta | efectivo) #both"] },
     no_card: { patterns: [
       "no (traigo | tengo) (tarjeta | mi tarjeta)", "no (puedo | quiero) pagar con tarjeta", "[no] con tarjeta no", "no con tarjeta",
       // "No con tarjeta, en efectivo." (the comma is lost): cash
       "no con tarjeta (en | con) efectivo",
     ] },
     pay_cash: { patterns: [
-      "(pago | voy a pagar | te pago | le pago | quiero pagar) en efectivo #h:pay_cash", "[con] tarjeta no [en] efectivo", "(puedo | se puede) pagar en efectivo", "[en] efectivo",
+      "[mejor] (pago | voy a pagar | te pago | le pago | quiero pagar) en efectivo #h:pay_cash", "[con] tarjeta no [en] efectivo", "(puedo | se puede) pagar en efectivo", "[mejor] [en] efectivo",
+      // "No tengo tarjeta, pero tengo efectivo" (never "¿Tienen efectivo?")
+      "[pero] (tengo | traigo) efectivo",
     ] },
     pay_phone: { patterns: [
       "(puedo | se puede) pagar con (el celular | mi celular | el telefono | apple pay | google pay) #h:pay_phone",
-      "(aceptas | aceptan | acepta) (apple pay | google pay | transferencia | transferencias)", "(con | por) (transferencia | el celular | mi celular | apple pay | google pay)",
-      "(te | le) (hago | mando) una transferencia", "(pago | te pago | le pago) (con el celular | por transferencia)", "(puedo | se puede) pagar (por | con) transferencia",
+      "(aceptas | aceptan | acepta) (apple pay | google pay | transferencia | transferencias)", "[mejor] (con | por) (transferencia | el celular | mi celular | apple pay | google pay)",
+      "(te | le) (hago | mando) una transferencia", "[mejor] (pago | te pago | le pago) (con el celular | por transferencia | con transferencia)", "(puedo | se puede) pagar (por | con) transferencia",
+      "(te | le) transfiero",
     ] },
 
     // --- the locker room -------------------------------------------------------------------------
@@ -349,6 +372,11 @@ export const gym: SituationDef = {
       "[no] no tengo [mas | ninguna | otra] (pregunta | preguntas)", "[no] ninguna [pregunta | mas]",
       // never "[no]" before these: "No entiendo" / "No entendí" / "No todo está claro" are the opposite
       "(todo | ya) (claro | esta claro)", "(ya)? (entendi | entiendo) [todo]", "no ya (entendi | entiendo | esta claro | quedo claro)",
+    ] },
+    // "Tengo una pregunta" (never "¿Tienen preguntas?": eso no lo tenemos)
+    have_q: { patterns: [
+      "[si] (tengo | traigo) (una pregunta | otra pregunta | una duda | otra duda | dudas | preguntas)", "[si] (una | otra) (pregunta | duda) [mas]",
+      "(te | le)? puedo preguntar (algo | otra cosa)", "[no] (solo | nomas | nada mas) (tengo)? una (pregunta | duda)",
     ] },
     lock_have: { patterns: ["[si] (traigo | traje | tengo) (uno | el mio | mi candado | candado | un candado) #h:lock_have", "[si] (lo | aqui lo) traigo", "[si] esta en mi mochila"] },
     lock_none: { patterns: [
@@ -479,15 +507,20 @@ export const gym: SituationDef = {
       "me (duele | duelen) [@much] [@art] @part [@much]", "(tengo | siento) [un] dolor (en | de) [@art] @part", "me (lastimé | jalé | torcí) [@art] @part",
       "[@art] @part me (duele | duelen)", "[ay] me duele [@much]", "(ay | auch) [@art] @part", "algo me duele", "siento dolor",
       "(todavia | aun) me (duele | duelen) [@much] [@art] @part #h:still_hurts", "me sigue doliendo [@art] @part", "(todavia | aun) me duele [@much]",
+      "(nada mas | solo | nomas) me (duele | duelen) [@much] [@art @part] [@much]",
     ] },
     // "La rodilla." as the answer to "¿Qué te duele?"
-    pain_ctx: { patterns: ["[@art] @part", "[@art] @part y [@art] @part", "es [@art] @part"] },
+    pain_ctx: { patterns: ["[@much] [@art] @part", "[@art] @part y [@art] @part", "es [@art] @part"] },
     // "No me duele la rodilla" said aloud could be "No, me duele la rodilla" (rule 10): #amb, Mónica asks
     no_pain: { patterns: [
       "[no] no me duele nada", "[no] ya no me duele [nada | @art @part]", "[no] nada me duele", "[no] no tengo dolor", "[no] no siento dolor", "no estoy (lastimado | lastimada)",
       "no me lastimé", "[no] no me (duele | duelen) [@art] @part [ya] #amb",
       // "No me duele" (= "No, me duele" aloud) asks too; "No, no me duele" is clear
       "no me (duele | duelen) #amb", "no no me (duele | duelen) [@art @part]",
+      // lead's check: the part first ("La rodilla no me duele", "La espalda está bien") is never "the knee" + pain
+      "[@art] @part no me (duele | duelen) [nada | ya]", "[@art] @part ya no me (duele | duelen) [nada]", "[@art] @part (esta | estan) bien [gracias]",
+      // "No me duele mucho" said aloud is also "No, me duele mucho": she asks
+      "no me (duele | duelen) (mucho | tanto) #amb",
     ] },
 
     // --- spotting ----------------------------------------------------------------------------------
@@ -521,16 +554,22 @@ export const gym: SituationDef = {
     next_no: { patterns: [
       "[no] manana no (puedo | me queda | me queda bien | vengo | se puede) #h:cant_tomorrow", "[no] no puedo manana",
       "[no] manana (trabajo | tengo trabajo | estoy ocupado | estoy ocupada | tengo que trabajar)", "[no] manana no", "[no] no (tengo tiempo | estoy libre) manana",
+      // lead's check: the time doesn't suit ("A la misma hora no puedo", "Mañana a las seis no puedo"): never "mañana" + a no
+      "[no] [manana] a (la misma hora | esa hora | {time}) no (puedo | me queda | se puede) #time", "[no] no puedo [manana] a (la misma hora | esa hora | {time}) #time",
     ] },
     // "El jueves no puedo", "Tampoco el viernes"
-    day_no: { patterns: ["[no] el {day} no (puedo | me queda | se puede)", "[no] el {day} no", "[no] no puedo el {day}", "[no] el {day} tampoco", "[no] tampoco el {day}"] },
+    // "No puedo el jueves" is also "No puedo, ¿el jueves?" aloud (rule 10): #amb, she asks when nothing else was offered
+    day_no: { patterns: ["[no] el {day} no (puedo | me queda | se puede)", "[no] el {day} no", "[no] no puedo el {day} #amb", "[no] el {day} tampoco", "[no] tampoco el {day}",
+      "[no] el {day} a (la misma hora | esa hora | {time}) no (puedo | me queda | se puede)"] },
     next_later: { patterns: [
       "(te | le) (aviso | escribo | confirmo | mando un mensaje) [luego | despues | mas tarde | manana | por whatsapp]",
       "(tengo que | necesito) (ver | revisar | checar) mi (agenda | horario | calendario)", "(luego | despues) (te | le) (digo | aviso)",
       "(tal vez | quizas) (otro dia | luego | la otra semana | la proxima semana)",
     ] },
     // "Todavía no sé": only as the answer to "¿Mañana a la misma hora?"
-    later_ctx: { patterns: ["(todavia | aun) no (se | estoy seguro | estoy segura)", "no se (todavia | cuando | si puedo)", "no estoy (seguro | segura) [todavia]"] },
+    later_ctx: { patterns: ["(todavia | aun) no (se | estoy seguro | estoy segura)", "no se (todavia | cuando | si puedo)", "no estoy (seguro | segura) [todavia]",
+      // lead's check: unsure is "send me a message", never a booking ("Mañana no sé" booked tomorrow)
+      "no se", "[y] manana no se", "no se si manana [puedo]", "[no se] (tal vez | quizas | a lo mejor) manana", "manana (tal vez | quizas | a lo mejor)"] },
     next_time_q: { patterns: ["a que hora [manana | el {day}]", "a que hora (vengo | es | nos vemos)", "(cuando | a que hora) (vengo | regreso)"] },
     // bare answers to "¿Cuándo quieres regresar?" / "¿Qué tal el jueves?"
     when_ctx: { patterns: ["[el] {day} [a la misma hora]", "a la misma hora"] },
@@ -620,6 +659,12 @@ export const gym: SituationDef = {
         "It includes all the machines, the classes, and a free session with me."),
     ],
     included_day: [t("Puedes | usar | todas | las | máquinas | todo | el | día.", "You can | use | all | the | machines | all | the | day.", "You can use all the machines for the whole day.")],
+    // "¿La visita incluye las clases?" (the classes are free for members: classes_info)
+    included_day_classes: [t("Con | la | visita, | solo | las | máquinas. | Las | clases | son | para | los | socios.", "With | the | visit, | only | the | machines. | The | classes | are | for | the | members.",
+      "A single visit is just the machines. The classes are for members.", { flags: { 2: F_VISITA } })],
+    // "¿Seiscientos?" / "¿Cien pesos?" once a plan is chosen: the price on file, yes or no (rule 20)
+    price_yes: [t("Sí, | son | {$price}.", "Yes, | it's | {$price}.", "Yes, it's {$price}.")],
+    price_not: [t("No, | son | {$price}.", "No, | it's | {$price}.", "No, it's {$price}.")],
     no_fee: [t("¡Este | mes | no cobramos | inscripción!", "This | month | we don't charge | a sign-up fee!", "No sign-up fee this month!",
       { flags: { 3: "inscripción: the one-time sign-up fee most Mexican gyms charge." } })],
     cancel_info: [
@@ -704,6 +749,11 @@ export const gym: SituationDef = {
     phone_ok: [t("¡Claro! | Acerca | tu | celular | a | la | terminal.", "Sure! | Bring close | your | phone | to | the | terminal.", "Sure! Just hold your phone to the terminal.")],
     transfer_ok: [t("Claro. | Te | paso | la | cuenta | y | me | enseñas | el | comprobante.", "Sure. | (To) you | I give | the | account | and | (to) me | you show | the | confirmation.",
       "Sure. I'll give you the account number, and you show me the confirmation.")],
+    // "¿Puedo pagar con tarjeta o en efectivo?": a question about both, never a payment
+    pay_both: [t("Sí, | aceptamos | las | dos.", "Yes, | we accept | the | two.", "Yes, we take both.")],
+    // cash with an amount (rule 18): less than the total, or more (change)
+    cash_short: [t("Perdón, | son | {$price}.", "Sorry, | it's | {$price}.", "Sorry, it's {$price}.")],
+    your_change: [t("Y | tu | cambio.", "And | your | change.", "And here's your change.")],
     // the ID handed over at the total (asked for at the form): it goes back, nothing is paid
     id_back: [t("Gracias. | Aquí | te | la | regreso.", "Thanks. | Here | (to) you | it | I give back.", "Thanks. Here's your ID back.",
       { flags: { 3: "la: it (la identificación)." } })],
@@ -920,7 +970,11 @@ export const gym: SituationDef = {
     ],
     see_tomorrow_plain: [t("¡Perfecto! | ¡Nos vemos | mañana!", "Perfect! | See you | tomorrow!", "Awesome! See you tomorrow!")],
     see_day: [t("¿El | {X}? | ¡Claro! | ¡Nos vemos | el | {X}!", "On | {X}? | Sure! | See you | on | {X}!", "{X}? Sure! See you {X}!", { flags: { 0: F_EL_DAY, 4: F_EL_DAY } })],
+    // the day she offered herself ("¿Qué tal el jueves?" → "Sí"): no "¿El jueves?" back
+    see_day_plain: [t("¡Perfecto! | ¡Nos vemos | el | {X}!", "Perfect! | See you | on | {X}!", "Great! See you {X}!", { flags: { 2: F_EL_DAY } })],
     offer_thursday: [t("¡No hay problema! | ¿Qué tal | el | jueves?", "No problem! | How about | — | Thursday?", "No problem! How about Thursday?", { flags: { 2: F_EL_DAY } })],
+    // "No puedo el jueves" at "¿Mañana a la misma hora?": "can't on Thursday" or "can't; Thursday?" (rule 10)
+    day_amb: [t("Perdón, | ¿entonces | el | {X}?", "Sorry, | so | — | {X}?", "Sorry, so {X}, then?", { flags: { 2: F_EL_DAY } })],
     see_then: [t("¡Perfecto! | ¡Nos vemos!", "Perfect! | See you!", "Sounds good! See you then!")],
     book_later_ok: [t("¡No hay problema! | Nada más | me | mandas | un | mensaje.", "No problem! | Just | (to) me | you send | a | message.", "No problem! Just send me a message.")],
     same_as_today: [t("A | la | misma | hora | que | hoy.", "At | the | same | time | as | today.", "Same time as today!")],
@@ -1177,9 +1231,16 @@ export const gym: SituationDef = {
       help: (c) => { c.say("sign_where"); } },
     { id: "pay", when: (c) => !!c.s.signed, done: (c) => !!c.s.paid,
       ask: (c) => {
-        if (c.s.totalSaid) { c.say("pay_reask"); return; }
-        c.say(c.s.plan === "monthly" ? "total_monthly" : "total_day", { price: planPrice(c) });
-        c.s.totalSaid = true;
+        // "No tengo tarjeta": the other way is offered here, after the total, so that a piece paying in the same turn
+        // ("No traigo efectivo, ¿puedo pagar con tarjeta?") pays alone, with no question left open
+        const other = c.s.otherOffer as string | undefined;
+        c.s.otherOffer = undefined;
+        if (c.s.totalSaid && !other) { c.say("pay_reask"); return; }
+        if (!c.s.totalSaid) {
+          c.say(c.s.plan === "monthly" ? "total_monthly" : "total_day", { price: planPrice(c) });
+          c.s.totalSaid = true;
+        }
+        if (other) { offerOther(c, other); return; }
         if (c.s.askPayMethod && !c.s.methodAsked) { c.s.methodAsked = true; c.say("ask_pay_method"); }
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card"],
@@ -1328,10 +1389,27 @@ export const gym: SituationDef = {
 
     // --- the membership
     choose_plan(c, slots, seg) {
+      // the price was checked this turn ("¿Cien pesos por un día?" is two pieces), or the money was just handed over
+      if (turnSeen(c, "amount") || (c.s.paid && turnSeen(c, "paid"))) return;
       const tags = allTags(slots, seg);
+      const h = heard(c);
+      const typedQ = /\?/.test(c.heard || "");
       const plan = (slots.plan as string | undefined) ?? (tags.includes("day") ? "day_pass" : tags.includes("monthly") ? "monthly" : undefined);
       // "¿Cuánto es por un mes?": a price question in the same turn never chooses (rule 17); ask_price answers it
-      if (/\b(cuanto|cuesta|precio|costo)\b/.test(heard(c))) { gym.handlers.ask_price(c, slots, seg); return; }
+      if (/\b(cuanto|cuesta|precio|costo)\b/.test(h)) { gym.handlers.ask_price(c, slots, seg); return; }
+      // an amount (lead's check): "¿Seiscientos?" once a plan is chosen checks the price on file and never changes the
+      // plan (rule 20); "¿Cien pesos por un día?" before choosing asks the price, by voice too ("cien pesos por un dia").
+      // "La de cien" and "Seiscientos está bien" still choose.
+      if (AMOUNT_RE.test(h) && !/\b(la|el) de (cien|seiscientos|100|600)\b/.test(h) && !(slots.plan && slots.plan !== c.s.plan)) {
+        if (c.s.plan && !c.s.paid && !turnSeen(c, "chose")) { firstThisTurn(c, "amount"); checkAmount(c); return; }
+        if (!c.s.plan && (typedQ || /\b(por|al|el) (un )?(dia|mes)\b/.test(h))) { firstThisTurn(c, "amount"); gym.handlers.ask_price(c, slots, seg); return; }
+      }
+      // a question about the plan just named ("La mensualidad, ¿qué incluye?", "¿La mensualidad tiene contrato?", "¿Y la
+      // visita?", by voice "y la visita" too: no "?" in speech): the question piece answers, nothing is chosen (rule 17)
+      if (seg.tags.includes("h:plan_short")) {
+        if (PLAN_Q_RE.test(h)) return;
+        if (/^\W*y\b/.test(h) && !/\b(por favor|quiero|me quedo)\b/.test(h)) { gym.handlers.ask_price(c, slots, seg); return; }
+      }
       if (!plan) { c.say("plan_which2"); c.hold(); return; }
       choosePlan(c, plan);
     },
@@ -1353,7 +1431,11 @@ export const gym: SituationDef = {
     ask_price(c, slots) {
       if (!firstThisTurn(c, "price")) return;
       const h = heard(c);
-      const plan = (slots.plan as string | undefined) ?? (/\b(visita|dia|hoy|entrada)\b/.test(h) ? "day_pass" : /\b(mes|mensual\w*)\b/.test(h) ? "monthly" : c.s.plan);
+      // the plan asked about: named, or by its amount ("¿Seiscientos?"), or the one chosen, or the one just offered
+      // ("¿Qué tal una visita?" → "¿Cuánto cuesta?": that offer's price, rule 17)
+      const offered = c.s.offered && !((c.s.refused as string[] | undefined) ?? []).includes(c.s.offered) ? c.s.offered as string : undefined;
+      const plan = (slots.plan as string | undefined) ?? (/\b(visita|dia|hoy|entrada)\b/.test(h) ? "day_pass" : /\b(mes|mensual\w*)\b/.test(h) ? "monthly"
+        : /\b(seiscientos|600)\b/.test(h) ? "monthly" : /\b(cien|100)\b/.test(h) ? "day_pass" : c.s.plan ?? offered);
       // "¿Es caro?" gets an answer, never the options again (rule 11)
       if (/\b(caro|cara)\b/.test(h)) { c.say("price_fair"); if (c.step === "pay") c.hold(); return; }
       if (c.step === "pay" && c.s.plan && plan === c.s.plan) { c.say(c.s.totalSaid ? "total_again" : c.s.plan === "monthly" ? "total_monthly" : "total_day", { price: planPrice(c) }); c.hold(); return; }
@@ -1370,6 +1452,8 @@ export const gym: SituationDef = {
       if (/\b(entrenador\w*|sesion|entrenamiento)\b/.test(h)) { c.say("trial_info"); c.s.freeSaid = true; return; }
       const plan = (slots.plan as string | undefined) ?? (/\b(visita|dia|hoy)\b/.test(h) ? "day_pass" : c.s.plan ?? "monthly");
       if (plan !== "day_pass") c.s.freeSaid = true;
+      // "¿La visita incluye las clases?": no, the classes are for members (rule 11)
+      if (plan === "day_pass" && /\bclases?\b/.test(h)) { c.say("included_day_classes"); return; }
       c.say(plan === "day_pass" ? "included_day" : "included_monthly");
     },
     ask_fee(c) { c.say("no_fee"); },
@@ -1392,7 +1476,9 @@ export const gym: SituationDef = {
         default: c.say("have_yes");
       }
     },
-    ask_have_unknown(c) { c.say("have_no"); },
+    // "Tengo X" is a statement, not "¿Tienen X?" (the engine forgives the person): never "eso no lo tenemos"
+    ask_have_unknown(c) { if (/\btengo\b/.test(heard(c))) return; c.say("have_no"); },
+    have_q(c) { c.say("ask_away"); c.hold(); },
     ask_discount(c) { c.say("no_discount"); },
     ask_jordan(c) {
       const h = heard(c);
@@ -1400,14 +1486,19 @@ export const gym: SituationDef = {
     },
 
     // --- the form and paying
-    here_you_go(c) {
+    here_you_go(c, slots) {
       if (c.s.plan && !c.s.signed) { sign(c); return; }
       // handing over a card or the money: just thanks. "Aquí está mi tarjeta" is the card; the ID she asked for
       // at the form ("Aquí está mi identificación") pays nothing.
       if (c.s.signed && !c.s.paid) {
         if (ID_RE.test(heard(c))) { c.say("id_back"); c.hold(); return; }
+        // cash with its amount (rule 18): less than the total pays nothing and she says the total; more gets change
+        const amount = typeof slots?.price === "number" ? slots.price as number : undefined;
+        if (amount !== undefined && amount < planPrice(c)) { c.say("cash_short", { price: planPrice(c) }); c.hold(); return; }
+        if (amount !== undefined) { pay(c, "cash", true, amount > planPrice(c)); return; }
         pay(c, handedMethod(c) ?? (c.s.payMethod as string | undefined) ?? "cash", true); return;
       }
+      if (c.s.paid && turnSeen(c, "paid")) return;
       c.say("ack");
     },
     form_done(c) { if (c.s.plan && !c.s.signed) sign(c); else c.say("ack"); },
@@ -1418,22 +1509,33 @@ export const gym: SituationDef = {
     pen_q(c) { c.say("pen_here"); if (c.step === "form") c.hold(); },
     form_what(c) { c.say("form_is"); },
     pay_card(c) {
-      if (c.s.paid) { c.say("ack"); return; }
-      if (!c.s.signed) { c.s.payMethod = "card"; c.say("card_later"); return; }
+      if (c.s.paid) { if (!turnSeen(c, "paid")) c.say("ack"); return; }
+      if (bothMethods(c)) { askedBoth(c); return; }
+      if (!c.s.signed) { c.s.payMethod = "card"; sayOnce(c, "card_later"); return; }
       pay(c, "card");
     },
     // "No traigo efectivo" / "No tengo tarjeta": the other way is offered; nothing is charged until the learner pays
-    no_cash(c) { otherMethod(c, "card"); },
+    no_cash(c, _slots, seg) {
+      // "No tengo efectivo ni tarjeta": the phone or a transfer, and no way on file
+      if (seg?.tags?.includes("both")) {
+        if (c.s.paid) { if (!turnSeen(c, "paid")) c.say("ack"); return; }
+        if (c.s.signed) { c.s.otherOffer = undefined; noCashNoCard(c); return; }
+        c.s.payMethod = undefined; c.s.payAltSaid = true; c.say("pay_alt"); return;
+      }
+      otherMethod(c, "card");
+    },
     pay_cash(c) {
-      if (c.s.paid) { c.say("ack"); return; }
-      if (!c.s.signed) { c.s.payMethod = "cash"; c.say("cash_ok"); return; }
+      if (c.s.paid) { if (!turnSeen(c, "paid")) c.say("ack"); return; }
+      if (bothMethods(c)) { askedBoth(c); return; }
+      if (!c.s.signed) { c.s.payMethod = "cash"; sayOnce(c, "cash_ok"); return; }
       pay(c, "cash");
     },
     // "No tengo tarjeta" / "No quiero pagar con tarjeta": cash (nothing is charged to a card)
     no_card(c) { otherMethod(c, "cash"); },
     pay_phone(c) {
-      if (c.s.paid) { c.say("ack"); return; }
-      const method = /transferencia/.test(heard(c)) ? "transfer" : "phone";
+      if (c.s.paid) { if (!turnSeen(c, "paid")) c.say("ack"); return; }
+      if (bothMethods(c)) { askedBoth(c); return; }
+      const method = /transferencia|transfiero/.test(heard(c)) ? "transfer" : "phone";
       if (!c.s.signed) { c.s.payMethod = method; c.say(method === "transfer" ? "transfer_later" : "phone_later"); return; }
       pay(c, method);
     },
@@ -1496,7 +1598,8 @@ export const gym: SituationDef = {
     },
 
     // --- how are you feeling (outside the questions that ask it)
-    feel_good(c) { c.say("feel_good_reply"); },
+    // a bare "mejor" before the workout is "rather" ("Mejor la de cien"), never "I feel better"
+    feel_good(c, _slots, seg) { if (!c.s.warm && seg.tags.includes("h:better")) return; c.say("feel_good_reply"); },
     not_tired(c) { c.say("feel_good_reply"); },
     // before the workout ("Bien, nada más un poco cansado" at the door): no "Descansa" yet
     tired(c) { c.say(c.s.warm ? "break_water" : "easy_today"); },
@@ -1522,7 +1625,9 @@ export const gym: SituationDef = {
       if (/\bcuanto\b/.test(heard(c))) { gym.handlers.ask_weight(c, slots, seg); return; }
       gym.handlers.ask_sets(c, slots, seg);
     },
-    ask_weight(c, _slots, seg) {
+    ask_weight(c, slots, seg) {
+      // "¿Cuántos pesos son?": money ("pesos" sounds like "peso"), never a weight
+      if (/\bpesos\b/.test(heard(c))) { gym.handlers.ask_price(c, slots, seg); return; }
       if (/\b(es|esta) (liger|pesad)/.test(heard(c))) { c.say("light_answer"); return; }
       c.say(c.step === "spot" || c.s.repDone ? "bar_weight" : exercise(c) === "leg_press" ? "weight_leg" : "weight_chest");
       if (seg.tags.includes("lb")) c.say("lb_note");
@@ -1536,6 +1641,8 @@ export const gym: SituationDef = {
     },
     rep_done_ctx(c) { repDone(c, false); },
     cant(c, slots, seg) {
+      // "¿Cien pesos por un día?": "pesos" sounds like "pesado"; a price is never "I can't"
+      if (/\bpesos\b/.test(heard(c))) return;
       if (c.step === "next") { gym.handlers.next_no(c, slots, seg); return; }
       // "¿Es muy pesado?" is a question about the weight, not "I can't"
       if (/\?/.test(c.heard || "")) { c.say("light_answer"); return; }
@@ -1559,14 +1666,24 @@ export const gym: SituationDef = {
     },
 
     // --- next time
-    next_same(c) { if (!c.s.breathDone) { c.s.nextPref = "tomorrow"; c.say("ack"); return; } setNext(c, "tomorrow"); },
+    next_same(c) {
+      if (!c.s.breathDone) { c.s.nextPref = "tomorrow"; c.say("ack"); return; }
+      if (bareBookingBlocked(c)) return;
+      setNext(c, "tomorrow");
+    },
     next_day(c, slots) {
       const d = (slots.day ?? slots.weekday) as string | undefined;
       nextDay(c, d);
     },
-    next_no(c) {
+    next_no(c, _slots, seg) {
       if (!c.s.breathDone) { c.say("ack"); return; }
       if (DAY_RE.test(heard(c))) return; // "Mañana no puedo, ¿qué tal el viernes?": the day answers it
+      // another day is already booked; tomorrow, booked and now refused ("Ah, no, mañana no puedo" at the goodbye), is
+      // undone, so the Thursday she offers can be booked (a "Sí" kept tomorrow before the lead's check)
+      if (c.s.next && c.s.next !== "tomorrow") { c.say("ack"); return; }
+      if (c.s.next) { c.s.next = undefined; keepNext(c); }
+      // "A la misma hora no puedo": another time is arranged by message
+      if (seg?.tags?.includes("time")) { bookLater(c); return; }
       offerThursday(c);
     },
     next_later(c) {
@@ -1576,11 +1693,18 @@ export const gym: SituationDef = {
     later_ctx(c, slots, seg) { gym.handlers.next_later(c, slots, seg); },
     day_no(c, slots, seg) {
       if (slots.day === "tomorrow") { gym.handlers.next_no(c, slots, seg); return; }
-      if (!c.s.breathDone || c.s.next) { c.say("ack"); return; }
+      if (!c.s.breathDone) { c.say("ack"); return; }
+      // the day booked doesn't suit after all ("El jueves no puedo" after "¡Nos vemos el jueves!"): undone
+      if (c.s.next && c.s.next === slots.day) { c.s.next = undefined; keepNext(c); }
+      if (c.s.next) { c.say("ack"); return; }
+      if (seg?.tags?.includes("amb") && DAY_IDS.includes(slots.day as string)) { askDay(c, slots.day as string); return; }
       bookLater(c);
     },
     next_time_q(c) { c.say("same_as_today"); },
-    when_ctx(c, slots) { if (slots.day) nextDay(c, slots.day as string); else setNext(c, "tomorrow"); },
+    when_ctx(c, slots) {
+      if (c.s.breathDone && bareBookingBlocked(c)) return;
+      if (slots.day) nextDay(c, slots.day as string); else setNext(c, "tomorrow");
+    },
     see_you_ctx(c) {
       if (!c.s.breathDone) { c.say("ack"); return; }
       if (c.s.nextAsk === "same") setNext(c, "tomorrow");
@@ -1598,7 +1722,12 @@ export const gym: SituationDef = {
         g_thanks: (cc) => { cc.say("g_welcome"); cc.end(); },
         g_bye: (cc) => { cc.say("bye_tu"); cc.end(); },
         next_same: (cc) => { cc.say("bye_tu"); cc.end(); },
-        next_day: (cc) => { cc.say("bye_tu"); cc.end(); },
+        // "¡Nos vemos el jueves!" after "¡Nos vemos mañana!": that day is booked instead (lead's check)
+        next_day: (cc, sl) => {
+          const d = (sl.day ?? sl.weekday) as string | undefined;
+          if (d && DAY_IDS.includes(d) && d !== cc.s.next) { cc.s.next = undefined; nextDay(cc, d); cc.end(); return; }
+          cc.say("bye_tu"); cc.end();
+        },
         see_you_ctx: (cc) => { cc.say("bye_tu"); cc.end(); },
       },
       yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
@@ -1742,6 +1871,25 @@ export const gym: SituationDef = {
     { say: "No puedo mañana, ¿qué tal el viernes?", intent: "next_day", step: "next", slots: { day: "friday" }, not: ["next_same", "when_ctx"] },
     { say: "No me duele.", intent: "no_pain", not: ["pain"] },
     { say: "No, no me duele.", intent: "no_pain", not: ["pain"] },
+    // lead's check: cash amounts, money words, plan questions, unsure or refused times, the part that doesn't hurt
+    { say: "Aquí tienes quinientos.", intent: "here_you_go", step: "pay", slots: { price: 50000 }, not: ["ask_have_unknown"] },
+    { say: "Te doy mil.", intent: "here_you_go", step: "pay", slots: { price: 100000 } },
+    { say: "¿Cuántos pesos son?", intent: "ask_price", step: "pay", not: ["ask_weight"] },
+    { say: "Mejor en efectivo.", intent: "pay_cash", step: "pay", not: ["feel_good"] },
+    { say: "No tengo efectivo ni tarjeta.", intent: "no_cash", step: "pay", not: ["pay_cash", "pay_card"] },
+    { say: "No tengo tarjeta, pero tengo efectivo.", intent: "no_card", step: "pay", not: ["pay_card", "ask_have_unknown"] },
+    { say: "Pago con transferencia.", intent: "pay_phone", step: "pay" },
+    { say: "¿La mensualidad tiene contrato?", intent: "ask_cancel", step: "plan", not: ["choose_plan"] },
+    { say: "¿Son seiscientos al mes?", intent: "ask_price", step: "plan", not: ["choose_plan"] },
+    { say: "Mañana no sé.", intent: "later_ctx", step: "next", not: ["next_same", "when_ctx"] },
+    { say: "Mañana tal vez.", intent: "later_ctx", step: "next", not: ["next_same", "when_ctx"] },
+    { say: "A la misma hora no puedo.", intent: "next_no", step: "next", not: ["when_ctx", "next_same"] },
+    { say: "Mañana a las seis no puedo.", intent: "next_no", step: "next", not: ["next_same"] },
+    { say: "El jueves a la misma hora no puedo.", intent: "day_no", step: "next", not: ["next_day", "when_ctx"] },
+    { say: "La rodilla no me duele.", intent: "no_pain", not: ["pain", "pain_ctx"] },
+    { say: "La rodilla está bien.", intent: "no_pain", not: ["pain", "pain_ctx"] },
+    { say: "No me duele mucho.", intent: "no_pain", not: ["pain"] },
+    { say: "Tengo una pregunta.", intent: "have_q", step: "sets", not: ["ask_have_unknown", "ready"] },
     // not understood
     { say: "Mi perro toca la guitarra", intent: "none" },
     { say: "plátano ventana azul", intent: "none" },
@@ -1821,6 +1969,27 @@ export const gym: SituationDef = {
       "No, ya estoy listo.", "La bici.", "¿Está libre?", "Estoy listo.", "¡Listo!", "¿Me ayudas?", "¡Me falta el aire!", "Mañana a las siete.", "¡Adiós!"],
       expect: { complete: true, state: { plan: "day_pass", payMethod: "phone", paid: true, next: "tomorrow" } }, auto: AUTO,
       setup: (s) => { s.askFeel = false; s.painTwist = false; s.outOfOrder = false; } },
+    // lead's check (rule 22): a question about both ways pays nothing; "¿Cien pesos?" at the $600 total checks the price
+    // and keeps the plan; $500 handed over pays nothing, $1,000 pays with change; "Mañana no sé" books nothing
+    { name: "lead's check: amounts at the total, unsure about tomorrow", turns: ["Hola, soy nueva aquí.", "La mensualidad.", "Listo.",
+      "¿Puedo pagar con tarjeta o en efectivo?", "¿Cien pesos?", "Aquí tienes quinientos.", "Aquí tienes mil.", "No, ya estoy lista.", "La bici.", "¿Está libre?",
+      "Tengo una pregunta.", "¿Cuántas series hago?", "¡Listo!", "¿Me ayudas?", "¡Me falta el aire!", "Mañana no sé.", "¡Adiós!"],
+      expect: { complete: true, state: { plan: "monthly", payMethod: "cash", paid: true, next: "later" } }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; s.outOfOrder = false; } },
+    // lead's check: "Con tarjeta no, con el celular" pays once, by phone (a "Sí" after it paid cash a second time); "La
+    // rodilla está bien" is no pain; "A la misma hora no puedo" books nothing (it booked tomorrow and offered Thursday)
+    { name: "lead's check: the phone instead, the knee is fine, not the same time", turns: ["Hola, soy nuevo aquí.", "La visita.", "Listo.",
+      "Con tarjeta no, con el celular.", "Sí.", "¡Ya volví!", "La caminadora.", "¿Está libre?", "Estoy listo.", "¡Listo!", "La rodilla está bien.", "¿Me ayudas?",
+      "¡Me falta el aire!", "A la misma hora no puedo.", "¡Adiós!"],
+      expect: { complete: true, state: { plan: "day_pass", payMethod: "phone", paid: true, pain: undefined, painAsked: true, next: "later" } }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = true; s.outOfOrder = false; s.askLock = false; } },
+    // lead's check: questions about a plan choose nothing; no cash but the card pays once; "No puedo, ¿el jueves?" (aloud
+    // "No puedo el jueves") is asked again, and a yes books Thursday
+    { name: "lead's check: plan questions, card instead of cash, which Thursday", turns: ["Hola, soy nueva aquí.", "¿La mensualidad tiene contrato?",
+      "La mensualidad, ¿qué incluye?", "Va, la mensualidad.", "Listo.", "No traigo efectivo, ¿puedo pagar con tarjeta?", "No, ya estoy lista.", "La bici.",
+      "¿Está libre?", "Estoy lista.", "¡Listo!", "¿Me ayudas?", "¡Me falta el aire!", "No puedo, ¿el jueves?", "Sí.", "¡Adiós!"],
+      expect: { complete: true, state: { plan: "monthly", payMethod: "card", paid: true, next: "thursday" } }, auto: AUTO,
+      setup: (s) => { s.askFeel = false; s.painTwist = false; s.outOfOrder = false; } },
   ],
 };
 
@@ -1835,8 +2004,9 @@ function introduce(c: Ctx) {
 function choosePlan(c: Ctx, plan: string) {
   if (c.s.paid) { c.say("ack"); return; }
   const first = !c.s.plan;
-  // changing one's mind ("Pensándolo bien, mejor una visita"): fine before paying
-  if (!first && c.s.plan !== plan) c.say("no_problem");
+  firstThisTurn(c, "chose");
+  // changing one's mind ("Pensándolo bien, mejor una visita"): fine before paying, and the new total is said again
+  if (!first && c.s.plan !== plan) { c.say("no_problem"); c.s.totalSaid = false; }
   // named at the door ("Quiero la mensualidad."): Mónica says who she is first
   if (!c.s.introduced) introduce(c);
   c.s.plan = plan;
@@ -1876,11 +2046,18 @@ function altPending(which: string, other: string): Pending {
 /** "Está bien, gracias" / "Ok, gracias": a yes or a polite no (rule 17). */
 const politeClosing = (c: Ctx) => /^\s*(esta bien|ok|okay|vale|bueno|asi esta bien)\b.*\bgracias\b/.test(heard(c));
 
-/** "No tengo tarjeta" at the total: cash is offered and nothing is charged; a yes or the money pays. */
+/** "No tengo tarjeta" at the total: cash is offered and nothing is charged; a yes or the money pays. The offer is said
+ *  by the pay step's ask (lead's check), after the turn's other pieces: one that pays in the same turn ("No traigo
+ *  efectivo, ¿puedo pagar con tarjeta?", "Con tarjeta no, con el celular", "No tengo tarjeta, aquí tienes") pays alone,
+ *  and no "¿entonces en efectivo?" is left open to take a second payment. */
 function otherMethod(c: Ctx, method: string) {
-  if (c.s.paid) { c.say("ack"); return; }
+  if (c.s.paid) { if (!turnSeen(c, "paid")) c.say("ack"); return; }
   c.s.payMethod = method;
-  if (!c.s.signed) { c.say(method === "cash" ? "cash_ok" : "card_later"); return; }
+  if (!c.s.signed) { sayOnce(c, method === "cash" ? "cash_ok" : "card_later"); return; }
+  c.s.otherOffer = method;
+}
+
+function offerOther(c: Ctx, method: string) {
   c.say(method === "cash" ? "cash_then" : "card_then");
   c.expect({ id: "pay_other", expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card"], hints: ["pay"],
     suggest: [{ lt: "Pay", hint: "pay" }],
@@ -1890,7 +2067,7 @@ function otherMethod(c: Ctx, method: string) {
       pay_cash: (cc) => pay(cc, "cash"), pay_card: (cc) => pay(cc, "card"),
       pay_phone: (cc, sl, sg) => { gym.handlers.pay_phone(cc, sl, sg); },
       // neither card nor cash: the phone or a transfer; the stored method is gone, so a later "Sí" pays nothing
-      no_cash: (cc) => { if (method === "cash") { noCashNoCard(cc); return; } pay(cc, method, true); },
+      no_cash: (cc, _sl, sg) => { if (method === "cash" || sg.tags.includes("both")) { noCashNoCard(cc); return; } pay(cc, method, true); },
       no_card: (cc) => { if (method === "card") { noCashNoCard(cc); return; } pay(cc, method, true); },
     },
     yes: (cc) => { if (politeClosing(cc)) { cc.say("pay_reask"); cc.hold(); return; } pay(cc, method, true); },
@@ -1912,11 +2089,16 @@ function sign(c: Ctx) {
   c.say("form_ok");
 }
 
-function pay(c: Ctx, method: string, handed = false) {
+function pay(c: Ctx, method: string, handed = false, change = false) {
+  // never twice (a question left open after paying took a second payment before the lead's check)
+  if (c.s.paid) { if (!turnSeen(c, "paid")) c.say("ack"); return; }
   c.s.paid = true;
   c.s.payMethod = method;
+  c.s.otherOffer = undefined;
+  firstThisTurn(c, "paid");
   c.event("pay", { method, amount: planPrice(c) });
   c.say(handed ? "paid" : method === "card" ? "card_tap" : method === "phone" ? "phone_ok" : method === "transfer" ? "transfer_ok" : "paid");
+  if (change) c.say("your_change");
   if (c.s.plan === "monthly") { c.say("member_card"); c.event("give", { item: "membership_card" }); }
   else { c.say("wristband"); c.event("give", { item: "wristband" }); }
 }
@@ -2047,19 +2229,24 @@ function repDone(c: Ctx, couldnt: boolean) {
 }
 
 function okayPending(): Pending {
-  const fine = (cc: Ctx) => { cc.say("fine_reply"); };
+  // "Estoy bien, pero me duele un poco la rodilla": the pain piece answers, never "¡Qué bueno!" first
+  const fine = (cc: Ctx) => { if (painToo(cc)) return; cc.say("fine_reply"); };
   // just tired or out of breath: normal after the leg press
-  const tiredO = (cc: Ctx) => { cc.say("okay_tired"); };
-  const painH = (cc: Ctx, _sl: any, sg: { tags: string[] }) => { hurt(cc, sg.tags); };
+  const tiredO = (cc: Ctx) => { if (painToo(cc)) return; cc.say("okay_tired"); };
+  // "Me duele un poco" names no part: she asks which, never assumes the knee (lead's check); asked once
+  const painH = (cc: Ctx, _sl: any, sg: { tags: string[] }) => {
+    if (!cc.s.pain && !cc.s.whereAsked && !partNamed(cc, sg.tags)) { if (firstThisTurn(cc, "pain")) askWhere(cc); return; }
+    hurt(cc, sg.tags);
+  };
   return { id: "okay_q", expects: ["pain", "pain_ctx", "no_pain", "feel_good", "tired", "out_breath"], hints: ["pain"],
     suggest: [{ lt: "Say that your knee or back hurts", hint: "pain" }],
     on: {
       pain: painH, pain_ctx: painH, no_pain: (cc, _sl, sg) => noPainAnswer(cc, sg.tags), feel_good: fine, not_tired: fine, g_ok: fine, g_howareyou_answer: fine,
       tired: tiredO, out_breath: tiredO,
-      g_howareyou_bad: (cc) => { cc.say("what_hurts"); cc.expect(whereHurtPending()); },
+      g_howareyou_bad: (cc) => { askWhere(cc); },
     },
     yes: fine,
-    no: (cc) => { cc.say("what_hurts"); cc.expect(whereHurtPending()); },
+    no: (cc) => { askWhere(cc); },
     ask: (cc) => cc.say("okay_q") };
 }
 
@@ -2083,9 +2270,9 @@ function noPainAnswer(c: Ctx, tags: string[]) {
   c.expect({ id: "pain_amb", expects: ["pain", "pain_ctx", "no_pain"], hints: ["g_yesno", "pain"],
     suggest: [{ lt: "Say whether it hurts", hint: "pain" }],
     // "Sí, me duele." names no part: the one just said
-    on: { pain: (cc, _sl, sg) => { if (!cc.s.ambPart && !PARTS.some((x) => sg.tags.includes(x))) { cc.say("what_hurts"); cc.expect(whereHurtPending()); return; }
+    on: { pain: (cc, _sl, sg) => { if (!cc.s.ambPart && !PARTS.some((x) => sg.tags.includes(x))) { askWhere(cc); return; }
       hurt(cc, PARTS.some((x) => sg.tags.includes(x)) ? sg.tags : [cc.s.ambPart as string]); }, pain_ctx: painH, no_pain: (cc) => { cc.say("fine_reply"); } },
-    yes: (cc) => { if (!cc.s.ambPart) { cc.say("what_hurts"); cc.expect(whereHurtPending()); return; } hurt(cc, [cc.s.ambPart as string]); },
+    yes: (cc) => { if (!cc.s.ambPart) { askWhere(cc); return; } hurt(cc, [cc.s.ambPart as string]); },
     no: (cc) => { cc.say("fine_reply"); },
     ask: (cc) => cc.say("pain_amb") });
 }
@@ -2100,9 +2287,44 @@ function firstThisTurn(c: Ctx, key: string): boolean {
   seen.add(key);
   return true;
 }
+/** Has `key` come up in this learner turn (without marking it)? */
+const turnSeen = (c: Ctx, key: string) => !!TURN.get(c)?.has(key);
+/** A line said once per turn ("No traigo efectivo, ¿puedo pagar con tarjeta?" before the form: one "con tarjeta no hay
+ *  problema"). */
+function sayOnce(c: Ctx, line: string) { if (firstThisTurn(c, `line:${line}`)) c.say(line); }
+
+/** "¿Seiscientos?" with the visit chosen: "No, son $100." (rule 20); the plan never changes on an amount. */
+function checkAmount(c: Ctx) {
+  const said = /\b(seiscientos|600)\b/.test(heard(c)) ? MONTHLY : VISIT;
+  c.say(said === planPrice(c) ? "price_yes" : "price_not", { price: planPrice(c) });
+  // at the total the price is the answer (no "¿cómo vas a pagar?" again right after it)
+  if (c.step === "pay") c.hold();
+}
+
+/** "¿Puedo pagar con tarjeta o en efectivo?": both are fine, nothing is paid; the pay step then asks how. */
+function askedBoth(c: Ctx) { if (firstThisTurn(c, "both")) c.say("pay_both"); }
+
+/** A bare "mañana" or "a la misma hora" in a turn that says "no puedo" or "no sé" books nothing (lead's check): "A la
+ *  misma hora no puedo" is answered by its "no puedo"; "Mañana no sé", "Mañana tal vez" are "send me a message". */
+function bareBookingBlocked(c: Ctx): boolean {
+  const h = heard(c);
+  if (/\b(no se(?! puede)|tal vez|quizas?|a lo mejor|no estoy segur[oa])\b/.test(h)) { bookLater(c); return true; }
+  return /\bno (puedo|me queda|se puede)\b/.test(h);
+}
 
 /** Which part hurts: the piece's own tag, else the whole sentence ("¡Ay, la espalda!"). */
 const PARTS = ["knee", "back", "leg", "shoulder", "arm", "neck"];
+/** Is a body part named ("Me duele la rodilla", "¡Ay, la espalda!")? */
+const partNamed = (c: Ctx, tags: string[]) => PARTS.some((x) => tags.includes(x))
+  || /\b(rodillas?|espalda|cintura|piernas?|tobillos?|caderas?|pies?|hombros?|brazos?|munecas?|codos?|cuello)\b/.test(heard(c));
+
+/** "¡Ay, no! ¿Qué te duele?" (asked once: a second part-less answer takes the likeliest part, the knee). */
+function askWhere(c: Ctx) {
+  c.s.whereAsked = true;
+  c.say("what_hurts");
+  c.expect(whereHurtPending());
+}
+
 function hurtPart(c: Ctx, tags: string[]): string {
   for (const x of PARTS) if (tags.includes(x)) return x === "shoulder" || x === "neck" ? "arm" : x;
   const h = heard(c);
@@ -2155,7 +2377,8 @@ function stretchInstead(c: Ctx) {
 function spotGo(c: Ctx, asked: boolean) {
   if (c.s.spotDone) { c.say("ack"); return; }
   c.s.spotDone = true;
-  c.say(asked ? "spot_yes" : "spot_offer");
+  // she already said "¡Claro! Yo te cuido." when asked earlier: no second "yo te cuido" (rule 13)
+  if (asked || !c.s.spotAgreed) c.say(asked ? "spot_yes" : "spot_offer");
   c.say("bench_go");
 }
 
@@ -2177,8 +2400,11 @@ function breathPending(c: Ctx): Pending {
 function setNext(c: Ctx, value: string) {
   if (c.s.next) { c.say("ack"); return; }
   c.s.next = value;
+  keepNext(c);
   // "Mañana a las siete": another time, so never "Mañana, a la misma hora"
-  c.say(/\ba (las|la) \w+/.test(heard(c)) && !/misma hora/.test(heard(c)) ? "see_tomorrow_plain" : "see_tomorrow");
+  // (and "Mañana en la tarde", "más temprano": lead's check)
+  const h = heard(c);
+  c.say(/\b(a (las|la) \w+|en la (manana|tarde|noche)|por la (manana|tarde|noche)|temprano|mas tarde)\b/.test(h) && !/misma hora/.test(h) ? "see_tomorrow_plain" : "see_tomorrow");
 }
 
 function nextDay(c: Ctx, day: string | undefined) {
@@ -2187,7 +2413,8 @@ function nextDay(c: Ctx, day: string | undefined) {
   if (c.s.next) { c.say("ack"); return; }
   if (day === "today") { c.s.nextAsk = "same"; c.say("same_time_short"); c.hold(); return; }
   c.s.next = day;
-  if (DAY_IDS.includes(day)) c.say("see_day", { X: day });
+  keepNext(c);
+  if (DAY_IDS.includes(day)) c.say(day === c.s.offeredDay ? "see_day_plain" : "see_day", { X: day });
   else c.say("see_then");
 }
 
@@ -2195,17 +2422,41 @@ function nextDay(c: Ctx, day: string | undefined) {
 function bookLater(c: Ctx) {
   if (c.s.next === "later") return;
   c.s.next = "later";
+  keepNext(c);
   c.say("book_later_ok");
 }
 
+/** A change after the goodbye started (finish already remembered the old day): remember the new one. */
+function keepNext(c: Ctx) { if (c.s.__finished) c.remember({ next: c.s.next }); }
+
+/** "No puedo el jueves" (aloud also "No puedo, ¿el jueves?"): "¿Entonces el jueves?" A yes books that day, a no is
+ *  "send me a message". */
+function askDay(c: Ctx, day: string) {
+  c.s.offeredDay = day;
+  c.say("day_amb", { X: day });
+  c.expect({ id: "day_amb", expects: ["next_day", "when_ctx", "day_no", "next_no", "next_later", "later_ctx", "cant", "next_same"], hints: ["next", "g_yesno"],
+    suggest: [{ lt: "Say whether that day works", hint: "next", options: "weekday" }],
+    on: {
+      next_day: (cc, sl) => { nextDay(cc, ((sl.day ?? sl.weekday) as string | undefined) ?? day); },
+      when_ctx: (cc, sl) => { if (bareBookingBlocked(cc)) return; nextDay(cc, (sl.day as string | undefined) ?? day); },
+      next_same: (cc) => { if (bareBookingBlocked(cc)) return; setNext(cc, "tomorrow"); },
+      day_no: (cc) => bookLater(cc), next_no: (cc) => bookLater(cc), cant: (cc) => bookLater(cc),
+      next_later: (cc) => bookLater(cc), later_ctx: (cc) => bookLater(cc),
+    },
+    yes: (cc) => nextDay(cc, day),
+    no: (cc) => bookLater(cc),
+    ask: (cc) => cc.say("day_amb", { X: day }) });
+}
+
 function offerThursday(c: Ctx) {
+  c.s.offeredDay = "thursday";
   c.say("offer_thursday");
   c.expect({ id: "thursday_q", expects: ["next_day", "next_later", "later_ctx", "next_same", "when_ctx", "see_you_ctx", "cant", "day_no"], hints: ["next", "g_yesno"],
     suggest: [{ lt: "Agree, or suggest another day", hint: "next", options: "weekday" }],
     on: {
       next_day: (cc, sl) => { nextDay(cc, (sl.day ?? sl.weekday) as string | undefined); },
-      when_ctx: (cc, sl) => { nextDay(cc, (sl.day as string | undefined) ?? "thursday"); },
-      next_same: (cc) => { setNext(cc, "tomorrow"); },
+      when_ctx: (cc, sl) => { if (bareBookingBlocked(cc)) return; nextDay(cc, (sl.day as string | undefined) ?? "thursday"); },
+      next_same: (cc) => { if (bareBookingBlocked(cc)) return; setNext(cc, "tomorrow"); },
       see_you_ctx: (cc) => { nextDay(cc, "thursday"); },
       next_later: (cc) => bookLater(cc),
       later_ctx: (cc) => bookLater(cc),
