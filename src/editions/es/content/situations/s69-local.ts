@@ -852,7 +852,7 @@ export const local: SituationDef = {
     book_trattoria: [t("No aceptan | reservaciones. | Vaya | temprano, | y ya.", "They don't take | reservations. | Go | early, | and that's it.", "They don't take reservations. Just go early.")],
     book_lancha: [t("Sí, | mejor | un | día | antes, | en | el | muelle.", "Yes, | better | one | day | before, | at | the | pier.", "Yes, best to book the day before, at the pier.")],
     book_no: [t("No, | no hace falta. | Llegue | y ya.", "No, | there's no need. | Arrive | and that's it.", "No, no need. Just go.")],
-    open_museo: [t("De | nueve | a | cinco, | pero | los | lunes | está | cerrado.", "From | nine | to | five, | but | on | Mondays | it's | closed.", "Nine to five, but it's closed on Mondays.", { flags: { 5: "los lunes: on Mondays (the article stands for “on”)." } })],
+    open_museo: [t("De | diez | a | cinco, | pero | los | lunes | está | cerrado.", "From | ten | to | five, | but | on | Mondays | it's | closed.", "Ten to five, but it's closed on Mondays.", { flags: { 5: "los lunes: on Mondays (the article stands for “on”)." } })],
     open_market: [
       t("Todos | los | días, | en | la | mañana, | hasta | como | las | dos. | El | sábado | hay | más | puestos.", "All | the | days, | in | the | morning, | until | about | — | two. | On | Saturday | there-are | more | stalls.",
         "Every morning, until about two. On Saturdays there are more stalls.", { flags: { 8: ART_TIME, 10: "El sábado: on Saturday (the article stands for “on”)." } }),

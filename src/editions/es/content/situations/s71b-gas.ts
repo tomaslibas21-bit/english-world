@@ -11,9 +11,7 @@
 // attendant's checks (check_order); new: the tip.
 // Mexican-only words have a neutral twin (ahorita, checar, ticket, carro, vulcanizadora).
 //
-// NEEDS: npcs.ts: dot is "Cajera de la gasolinera / Gas station cashier"; in this scene she is the attendant at the
-//   pump: "Despachadora / Gas station attendant".
-// NEEDS: locations.ts: gas-station is an "interior"; the conversation happens outside, at the pump.
+// NEEDS: locations.ts: gas-station is an "interior"; the conversation happens outside, at the pump (town work).
 
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";

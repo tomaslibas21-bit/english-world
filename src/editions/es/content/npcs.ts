@@ -38,7 +38,7 @@ const CAST: Record<string, Cast> = {
   walter: ["Don Raúl", "Taquilla de autobuses", "Bus ticket office"],
   denise: ["Ana", "Conductora de autobús", "Bus driver"],
   jake: ["Andrés", "Renta de autos", "Car rental agent"],
-  dot: ["Doña Chela", "Cajera de la gasolinera", "Gas station cashier"],
+  dot: ["Doña Chela", "Despachadora de gasolina", "Gas station attendant"],
   kevin: ["Emilio", "Documentación de la aerolínea", "Airline check-in"],
   grant: ["Oficial Torres", "Seguridad del aeropuerto", "Airport security"],
   nina: ["Daniela", "Agente de la puerta", "Gate agent"],

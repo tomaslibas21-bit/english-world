@@ -91,7 +91,8 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 
 The trial (s68-hotel) passed every check and still had to change in about 10% of its lines: the checks prove what
 the tests say, not what learners say. These rules come from what the reviews fixed (`docs/es/reviews/`: rules 1–9 from the trial, 10–16 from
-batch 1: the passport, the baggage desk, the visitor center and the local).
+batch 1: the passport, the baggage desk, the visitor center and the local; 17–22 from batch 2: the museum and the
+travel chapter).
 
 1. **Never bend the grammar to a test.** Don't add a `_ctx` intent to a step's `expects` so that an NLU test can use
    `step:`. An answer to a pending question (a taxi time, a choice) is tested in a sim. (The trial's worst bug: a
@@ -141,6 +142,31 @@ batch 1: the passport, the baggage desk, the visitor center and the local).
     `global.ts` (repetirlo, ¿Lo puede repetir?, ¿Me lo escribe?, Hable más despacio, Muchas gracias por todo). Don't
     copy them into a conversation; if a common form is missing, write it under `// NEEDS:`.
 
+17. **Money and bookings move only on a present yes or a hand-over.** A past tense ("Pagué todo", "Ya lo pagué"), a
+    what-if ("¿Y si cancelo?", "¿Y si quiero la cobertura?"), a price question ("¿Cuánto es?", "¿Es cara?") and a
+    polite closing ("Así está bien", "Está bien, gracias", "Vale, gracias") never pay, book or add an extra. At a paid
+    offer "Así está bien" is a no; a closing that could be either gets the question again; "¿Cuánto es?" at an open
+    offer gets that offer's price.
+18. **The other way, the other choice.** "No quiero pagar con tarjeta" offers cash and charges nothing; "No con
+    tarjeta, en efectivo" is cash; "Pasillo no, ventana" could be either once its comma is gone: `#amb` (rule 10). A
+    cash amount smaller than the total asks for the rest ("Son $861.50; faltan $361.50"); one over the maximum is
+    capped and said.
+19. **Words one slip apart.** The engine forgives small slips and drops accents, so a pattern word can match its
+    neighbor: "Tenga" ← "Tengo el vuelo…", "Tome" ← "Tomo el de las…", "sala" ← "salida", "sí" ← "si" ("¿Y si
+    cancelo?"). Test every hand-over and yes intent against such statements with `not:`, and keep near-identical
+    words out of each other's intents.
+20. **Numbers as people say them.** Flight, room and phone numbers whole, in pairs and digit by digit
+    ("doscientos veintitrés", "dos veintitrés", "dos dos tres"); amounts with and without "pesos"; every count the
+    grammar accepts has its total in the price domain; a number that isn't the one on file is noticed ("Su
+    reservación es para el vuelo 223").
+21. **A held turn keeps its step, and a yes belongs to the last question.** After `c.hold()` the next turn is parsed
+    with that step's expects; an offer's yes counts only right after the offer; "No, solo una pregunta" answers
+    "¿Algo más?" without ending the conversation.
+22. **Play the binding outcomes.** For every paid or binding choice, play whole conversations with `tools/probe.ts`
+    (exact turns, how each was parsed, the recorded state): a plain no, a correction, a what-if, a price question, a
+    polite closing, a past tense. A reply can sound right and still record the wrong thing; batch 2's max checks
+    found such bugs in every conversation with money.
+
 ## Tests and sims (the acceptance gate)
 
 - First, the **corpus** (rule 7): `tests/es/corpus/<id>.json`, before the grammar.
@@ -151,6 +177,10 @@ batch 1: the passport, the baggage desk, the visitor center and the local).
 - At least **4 sims** that complete on all 12 seeds: the happy path, one with questions and changes of mind, one per
   twist (forced with `setup`), one with the learner's short answers. Use `auto` answers (in Spanish) for optional
   questions, as the models do. A sim's turns are what a learner really says, in Spanish, with accents or without.
+- Play the binding outcomes (rule 22) with
+  `EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/probe.ts <id> <scenarios.json> [--keys=a,b]`: a JSON
+  list of `{ "name", "turns": [...], "setup": {...} }`; it prints each turn's step or pending question, its parse,
+  the replies and the recorded state.
 - Read your sims' transcripts as a native speaker would:
   `EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/review.ts <id> --seed=3`. Every line must be natural
   Mexican Spanish in its context, every gloss right, every natural English line idiomatic.
