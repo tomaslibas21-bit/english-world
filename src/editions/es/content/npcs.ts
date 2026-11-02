@@ -84,6 +84,12 @@ const CAST: Record<string, Cast> = {
   mr_grant: ["Don Gilberto", "Tu casero", "Your landlord"],
 };
 
+/** Characters only Puerto Colibrí has, each on a Maple Harbor character's base (build, voice) under an id of its own. */
+const EXTRA: Record<string, [base: string, ...cast: Cast]> = {
+  // customs after the baggage hall (s65b): another agency than immigration (s65a), so another officer
+  aduana: ["diaz", "Agente Medina", "Aduana", "Customs", { look: { top: "#2f3b4c" } }],
+};
+
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 /** Maple Harbor's look with Mexican colouring: a skin tone from the cast's palette, dark hair (grey stays grey). */
@@ -97,11 +103,13 @@ function mexican(id: string, look: Look): Look {
   };
 }
 
-export const NPCS: Record<string, NpcDef> = Object.fromEntries(Object.entries(BASE).map(([id, n]) => {
-  const c = CAST[id];
-  if (!c) return [id, { ...n, look: mexican(id, n.look) }];
-  const [name, es, en, extra = {}] = c;
+function cast(id: string, n: NpcDef, [name, es, en, extra = {}]: Cast): NpcDef {
   const { look: lookPatch, ...rest } = extra;
   const look = { ...mexican(id, n.look), ...(lookPatch ?? {}) } as Look;
-  return [id, { ...n, name, role: { en: es, lt: en }, bio: undefined, look, ...rest }];
-}));
+  return { ...n, id, name, role: { en: es, lt: en }, bio: undefined, look, ...rest };
+}
+
+export const NPCS: Record<string, NpcDef> = Object.fromEntries([
+  ...Object.entries(BASE).map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: mexican(id, n.look) }]),
+  ...Object.entries(EXTRA).map(([id, [base, ...c]]) => [id, cast(id, BASE[base], c)]),
+]);

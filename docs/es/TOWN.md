@@ -23,6 +23,28 @@ every switch off, so Maple Harbor is built exactly as before).
   stalls (roomPeople.ts).
 - **Draw calls** (phone size, the camera on the square; `game.renderer.info.render.calls`): see docs/es/REPORT.md.
 
+## Town facts from the conversations
+
+The conversations name places and say where they are; the 3D town must agree (and so must new conversations).
+
+- **Calle Ceiba** runs along the zócalo. From the visitor center: right, two blocks to the bank (corner of Juárez and
+  Ceiba), left into calle Ceiba (s62). On it, facing the zócalo: **Café La Ceiba** ("aquí en la plaza", s69) on the
+  right, **Correos** opposite it, then the **mercado** after Correos; the bus **terminal** at the end of the street
+  (s62). A cocina económica on calle Ceiba serves comida corrida (s69, s88).
+- **The zócalo**: the kiosco (where a boy finds the wallet, s91a), Doña Mari's flower stall and the Saturday
+  tianguis (s91a), the church (STYLE.md). The **Policía Municipal** is across the square, next to the **museum**
+  (s62, s91a, s91b); the museum is open 10 to 5, closed on Mondays (s62, s69, s70).
+- **Farmacia del Puerto** sits between the estética (s62) and the doctor's consultorio next door (s75).
+- **The gas station**: the conversation happens outside at the pump, not in the shop (s71b; `locations.ts` still says
+  interior).
+- **La Cocina de Lucía** (s73), a Yucatecan restaurant: left out of the visitor center, one block, red awning, across
+  from Boutique Hilos (s62). It is the Maple Harbor trattoria's building (location id `trattoria`); there is no
+  Italian restaurant in town.
+- **The arrivals hall**: Itzel's baggage desk, then customs with Agente Medina (`aduana`, a Spanish-only character on
+  Officer Diaz's base) and the sniffer dog (s65b).
+- **The airport**: flight 223 to Mexico City, check-in → security → sala 4 (boarding 7:30, departure 8:10) (s64a–c).
+- **City bus route 7**: centro (zócalo), mercado, clínica, malecón / muelle, Hotel Mar Azul, the beach; $12 (s67b).
+
 ## How a restyling task is done
 
 1. Read `src/game/world/layout.ts` (where everything is), `town.ts` (how the outdoors is built) or `interiors.ts`

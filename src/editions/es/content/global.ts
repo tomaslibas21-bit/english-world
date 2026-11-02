@@ -68,7 +68,7 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buen día!", "Bye! | (I hope) | you have | a good day!", "Bye! Have a good day!"),
     t("¡{u:Cuídese|t:Cuídate}!", "Take care!", "Take care!"),
     t("¡Nos vemos!", "See you!", "See you!"),
-    t("¡Hasta luego! | ¡Que | le | vaya | bien!", "See you later! | (I hope) | (for) you | it-goes | well!", "See you! All the best!"),
+    t("¡Hasta luego! | ¡Que | {u:le|t:te} | vaya | bien!", "See you later! | (I hope) | (for) you | it-goes | well!", "See you! All the best!"),
   ],
   g_take_time: [
     t("Claro, | {u:tómese su tiempo|t:tómate tu tiempo}.", "Sure, | take your time.", "Sure, take your time."),
@@ -189,14 +189,14 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_thanks: { patterns: [
     "[muchas | mil | muchisimas] gracias #h:s_thanks",
     "[muchas | mil | muchisimas] gracias por (su ayuda | tu ayuda | la ayuda | todo | ayudarme | su tiempo | tu tiempo | los consejos | la informacion | las recomendaciones) #h:s_thanks_help",
-    "(se lo | te lo) agradezco [mucho]", "(muy | super | que) amable",
+    "(se lo | te lo) agradezco [mucho]", "(muy | super | que) amable", "[muchas] gracias (a todos | a todas | equipo | chicos)",
     "(perfecto | excelente | genial | que bien | buenisimo) [muchas] gracias",
     "me (ayudó | ayudaste) mucho", "(fue | ha sido) (muy | super) amable",
   ] },
   g_bye: { patterns: [
     "(adios | hasta luego | nos vemos | hasta pronto | hasta manana | bye | chao | hasta la proxima) #h:s_bye2",
     "que (tenga | tengas) (buen dia | un buen dia | buena tarde | buenas tardes | buena noche | buen fin de semana | bonito dia) #h:s_bye",
-    "que (le | te) vaya [muy] bien", "que (este | estes) [muy] bien",
+    "que (le | te) vaya [muy] bien", "que (este | estes) [muy] bien", "que (descanse | descanses)",
     "(igualmente | usted tambien | tu tambien)",
     "(cuidese | cuidate) [mucho]",
     ...LEAVING_PATTERNS,
@@ -219,7 +219,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "(espere | espera | permitame | permiteme) [un momento | un segundo]",
   ] },
   g_sorry: { patterns: ["lo siento [mucho]", "(perdon | disculpe | disculpa) (por eso | por la molestia)", "una disculpa", "ups", "me equivoqué", "fue mi error"] },
-  g_dontknow: { patterns: ["no se", "no lo se", "no estoy (seguro | segura) [todavia]", "no tengo idea", "ni idea", "no se todavia", "todavia no se", "no me decido", "no he decidido [todavia]"] },
+  g_dontknow: { patterns: ["no se", "no lo se", "no estoy (seguro | segura) [todavia]", "no tengo idea", "ni idea", "no se todavia", "todavia no se", "no me decido", "no he decidido [todavia]", "[ya] no (me acuerdo | recuerdo) [bien]"] },
   g_ok: { patterns: ["(entendido | ya veo | ya entendi | entiendo | perfecto | genial | que bien | bueno | muy bien | ok entonces | va pues | sale pues)",
     // "Ya sé lo que quiere decir" is understanding, not a question about a word (g_meaning)
     "(ya | si) (entiendo | se) lo que (quiere decir | quieres decir | dice | dices)"] },

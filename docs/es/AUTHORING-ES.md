@@ -153,7 +153,8 @@ travel chapter).
 13. **Offer once, inform once, in order.** Don't offer the same thing twice (a kit already given or refused is
     remembered); don't mention something before it's given ("con su número de reporte" before the number).
 14. **Facts agree across the town.** A place, a person or an opening time named in another conversation keeps its
-    facts (Café La Ceiba is on the zócalo, s72; El Muelle, the mercado, the kiosco: grep the Spanish models). Unsure
+    facts (`docs/es/TOWN.md`, "Town facts from the conversations": Café La Ceiba is on calle Ceiba, facing the zócalo;
+    the Policía Municipal is across the square, next to the museum; grep the Spanish conversations too). Unsure
     real-world figures (fees, deadlines, an office's practice) stay vague.
 15. **Flags point at real units.** A `flags` index counts the line's units from 0; check it in the transcript (the
     Mexican-word flag must show on the Mexican word).

@@ -20,7 +20,10 @@ trabajo", "vine a vivir aquí" (a mover: "¿Tiene visa de residente?" — a resi
 **s65b-baggage · "Mi maleta no llegó"** — Itzel (f), baggage services, usted. Lost luggage form: flight number
 (letters + digits: "AM 123" said "a, eme, ciento veintitrés"), describing the bag (color, size, brand, "con
 ruedas", "de tela / rígida"), the hotel address, a phone number (digits in pairs). The twist: the bag is in Cancún
-and comes "mañana en el primer vuelo". Teaches maleta / equipaje / reclamo de equipaje.
+and comes "mañana en el primer vuelo". Teaches maleta / equipaje / reclamo de equipaje. **Customs at the end** (the
+owner's choice, 2 Nov: customs left the passport conversation): "¿Trae algo que declarar?", fruit and food, the
+sniffer dog, with Agente Medina (id `aduana`, Aduana), as Cancún airport does it now: only what official sources
+confirm (ANAM / SAT, SENASICA, the airport), sources in docs/es/reviews/s65b-baggage.md.
 
 **s66-taxi** — done (model).
 
@@ -49,9 +52,12 @@ Costa Maya: tickets ("general", "con descuento para estudiantes / INAPAM" — sa
 free for nationals, not for visitors (a realistic twist), the audio guide, the lockers ("paquetería": leave the
 backpack), no flash photos, "no se puede tocar". Numbers: ticket prices ($80, $40), times.
 
-**s73-restaurant · "Esto no es lo que pedí"** — Lucía (f) the host and Luis (m) the waiter at Trattoria Lucía (an
-Italian restaurant in a Mexican beach town is real; or move the scene to a Mexican restaurant if the owner prefers —
-ask). Mexico: "¿Mesa para cuántos?", "¿Qué les traigo de tomar?", "la cuenta, por favor" (the waiter never brings it
+**s73-restaurant · "Esto no es lo que pedí"** — Lucía (f) the host and Luis (m) the waiter at **La Cocina de Lucía**, a
+Yucatecan restaurant (the owner's choice, 2 Nov: a Mexican restaurant instead of the Trattoria; it keeps the place:
+left out of the visitor center, one block, the red awning, across from Boutique Hilos, as s62 says). The menu, for
+the writer to research and trim: sopa de lima, cochinita pibil, poc chuc, pescado tikin xic, panuchos, salbutes,
+papadzules; aguas frescas (horchata, jamaica, chaya con piña); flan or caballeros pobres. Prices plausible for a
+sit-down place in the town (El Muelle's dishes are about $300, s69). Mexico: "¿Mesa para cuántos?", "¿Qué les traigo de tomar?", "la cuenta, por favor" (the waiter never brings it
 unasked), "¿Va a pagar con tarjeta? Le traigo la terminal", the tip (propina, 10–15%) added by the learner, the
 "servicio" sometimes on the bill. Twist: the wrong dish ("Disculpe, yo pedí…"). The factura question ("¿Va a
 requerir factura?") as a small twist. Numbers: the bill, the tip.
@@ -75,8 +81,7 @@ appointment: name and surname spelled (Spanish letter names: "be grande", "doble
 las cuatro y media"), phone number in pairs, "¿Es su primera vez con nosotros?". Twist: the only slot is "pasado
 mañana a las nueve".
 
-**s77-salon · "Nada más las puntas"** — Paty (f), Estética Tijeras, usted (or tú if the owner wants a young casual
-stylist — the English Jessie is formal). "Un corte", "nada más despuntar / las puntas", "el fleco" (bangs), "más
+**s77-salon · "Nada más las puntas"** — Paty (f), Estética Tijeras, usted (the owner's choice, 2 Nov). "Un corte", "nada más despuntar / las puntas", "el fleco" (bangs), "más
 corto de los lados", "¿Con máquina o tijera?", the price, "¿Le lavo el cabello?". Twist: she cut too much.
 
 **s78-bank · "El cajero se tragó mi tarjeta"** — Ricardo (m), Banco del Puerto, usted. For movers and visitors:
@@ -191,7 +196,7 @@ seguro". The officer may send the learner to the Ministerio Público for a forma
 **s35-gym · "Una más"** — Mónica (f), personal trainer, tú (gyms in Mexico use tú). Membership ("la mensualidad",
 "la inscripción"), the first session, exercises, counting reps in Spanish ("¡una más!"), the locker, the schedule.
 
-## Chapter 8 · Advanced (batch G: longer, idiomatic; each needs the owner's OK on its scene first)
+## Chapter 8 · Advanced (batch G: longer, idiomatic; the owner OK'd all seven scenes as briefed, 2 Nov)
 
 **p25-used-car · "¿Y si lo dejamos en…?"** — Doña Margarita (f), selling her car in her drive, usted. Big numbers
 ("ochenta y cinco mil"), haggling, the papers ("la factura original", "la tarjeta de circulación", "¿Está al

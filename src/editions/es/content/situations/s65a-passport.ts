@@ -1556,7 +1556,7 @@ export const passport: SituationDef = {
     { say: "No, solo mi pasaporte", intent: "have_esta", step: "visa", not: ["alone_yes", "alone_yes_ctx", "have_visa"] },
     { say: "No, no lo compré", intent: "return_no_ctx", step: "return", not: ["return_yes"] },
     { say: "No, no lo tengo en el celular", intent: "return_no_ctx", step: "return", not: ["hand_over", "return_yes"] },
-    { say: "No me acuerdo", intent: "none", step: "return" },
+    { say: "No me acuerdo", intent: "g_dontknow", step: "return", not: ["return_no_ctx", "return_yes"] },
     { say: "No, no lo tengo aquí", intent: "find_it", step: "passport", not: ["address_phone_ctx", "address_dunno_ctx", "hand_over"] },
     { say: "No, no la tengo en el celular", intent: "address_dunno_ctx", step: "address", not: ["address_phone"] },
     { say: "Solo yo", intent: "alone_yes_ctx", step: "alone" },

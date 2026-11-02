@@ -115,11 +115,11 @@ Measure the first batch; if a review still costs as much as writing, change cour
 
 ## Open questions for the owner
 
-1. s73 restaurant: keep Trattoria Lucía (an Italian restaurant, common in Mexican beach towns) or make it a Mexican
-   restaurant (cochinita pibil, the factura question)?
+1. ~~s73 restaurant~~ **Answered (2 Nov): a Mexican restaurant.** La Cocina de Lucía, Yucatecan, at the Trattoria's
+   place; s62's directions renamed; s69's tip revised with it.
 2. The church on the zócalo: on its north side (the stalls move a little) or at the east end beside the Policía
    Municipal?
-3. s77 salon: a formal stylist (usted, as Jessie is) or a young one who says tú?
+3. ~~s77 salon~~ **Answered (2 Nov): usted, as briefed.**
 4. The course: does Spanish Master English map the game's conversations to its own songs and stories, as English
    Master's situations journey does? The ids are Maple Harbor's (s32 became `s32-mercado`), so a map is easy either
    way.
@@ -128,3 +128,6 @@ Measure the first batch; if a review still costs as much as writing, change cour
 7. ~~The room-not-ready twist~~ **Answered: fine with a "(Más tarde…)" line.** Done: the returning learner's greeting starts with an unspoken "(Más tarde…)".
 8. ~~Hotel keys~~ **Answered: "llave".** Done: kept as it was ("tarjeta" only for the broken key card).
 9. ~~The lodging tax~~ **Answered: as the sources say.** Done: the lines teach Quintana Roo's 5% and Tulum's environmental fee (about $35 a night for the first guest).
+10. ~~Chapter 8~~ **Answered (2 Nov): all seven scenes as briefed.**
+11. ~~s65a customs~~ **Answered (2 Nov): customs moves to the end of s65b-baggage** ("¿Trae algo que declarar?", food, the
+    sniffer dog), as Cancún airport works now, from official sources; s65b gets a fresh review.
