@@ -1,0 +1,56 @@
+{ "situation": "s31-doctor", "items": [
+  { "ctx": "dob", "say": "El cuatro de junio de mil novecientos ochenta", "intent": ["dob_ans", "dob_ctx"] },
+  { "ctx": "dob", "say": "Nací el 12 de marzo del 92", "intent": ["dob_ans", "dob_ctx"] },
+
+  { "ctx": "problem", "say": "Me duele mucho la garganta", "intent": ["symptom", "symptom_ctx"] },
+  { "ctx": "problem", "say": "Tengo tos y me duele la cabeza", "intent": ["symptom", "symptom_ctx"] },
+  { "ctx": "problem", "say": "Creo que tengo gripa", "intent": ["symptom", "symptom_ctx"], "note": "Mexican gripa" },
+  { "ctx": "problem", "say": "Me siento muy mal, doctora", "intent": ["feel_sick", "feel_bad_ctx"] },
+  { "ctx": "problem", "say": "Tengo diarrea desde ayer", "intent": ["symptom", "symptom_ctx"] },
+  { "ctx": "problem", "say": "Estoy muy mareada", "intent": ["symptom", "symptom_ctx"] },
+
+  { "ctx": "more_sym", "say": "No, nada más", "intent": ["sym_none", "sym_none_ctx", "yn:no"] },
+  { "ctx": "more_sym", "say": "No, no tengo fiebre", "intent": ["sym_neg", "sym_none", "sym_none_ctx", "yn:no"], "not": ["symptom", "symptom_ctx"], "note": "trap: negated symptom" },
+  { "ctx": "more_sym", "say": "También tengo mocos", "intent": ["symptom", "symptom_ctx"] },
+
+  { "ctx": "howlong", "say": "Desde el lunes", "intent": ["howlong_ans", "howlong_ctx"] },
+  { "ctx": "howlong", "say": "Hace tres días", "intent": ["howlong_ans", "howlong_ctx"] },
+  { "ctx": "howlong", "say": "Como una semana", "intent": ["howlong_ans", "howlong_ctx"] },
+
+  { "ctx": "scale", "say": "Como un siete", "intent": "scale_ctx" },
+
+  { "ctx": "fever", "say": "Treinta y ocho y medio", "intent": ["temp_ans", "temp_ctx"] },
+  { "ctx": "fever", "say": "No sé, no tengo termómetro", "intent": ["temp_unknown", "temp_dunno_ctx"] },
+  { "ctx": "fever", "say": "No, no tengo fiebre", "intent": ["sym_neg", "yn:no"], "not": ["fever_yes_ctx", "temp_ans", "temp_ctx"], "note": "trap: negation" },
+
+  { "ctx": "meds", "say": "No, no he tomado nada", "intent": ["meds_ans", "meds_ctx", "yn:no"] },
+  { "ctx": "meds", "say": "Nada más paracetamol", "intent": ["meds_ans", "meds_ctx"] },
+
+  { "ctx": "breath", "say": "¿Así está bien?", "intent": ["like_this_ctx", "ready_ctx", "breath_ctx"] },
+  { "ctx": "hurt", "say": "No, ahí no me duele", "intent": "hurt_no_ctx", "not": ["hurt_yes_ctx", "hurt_little_ctx"], "note": "trap: negation" },
+  { "ctx": "hurt", "say": "Sí, un poquito", "intent": ["hurt_little_ctx", "hurt_yes_ctx"] },
+  { "ctx": "sleeve", "say": "¿Cuál brazo?", "intent": "which_arm_ctx" },
+
+  { "ctx": "allergy", "say": "Soy alérgico a la penicilina", "intent": ["allergy_ans", "allergy_ctx"] },
+  { "ctx": "allergy", "say": "No tengo ninguna alergia", "intent": ["allergy_ans", "allergy_ctx", "yn:no"] },
+  { "ctx": "chart", "say": "Sí, así es", "intent": ["chart_ctx", "yn:yes", "allergy_ans"] },
+
+  { "ctx": "rx_q", "say": "¿Cada cuánto me la tomo?", "intent": "ask_dosage" },
+  { "ctx": "rx_q", "say": "¿Antes o después de comer?", "intent": "ask_meals" },
+  { "ctx": "questions", "say": "¿Puedo tomar una cerveza?", "intent": "ask_alcohol" },
+  { "ctx": "questions", "say": "¿Puedo ir a trabajar mañana?", "intent": "ask_work" },
+  { "ctx": "questions", "say": "¿Es contagioso?", "intent": "ask_contagious" },
+  { "ctx": "questions", "say": "No, todo claro, gracias", "intent": ["clear_ctx", "g_thanks"] },
+  { "ctx": "pharmacy", "say": "No sé, soy nueva aquí", "intent": "pharmacy_dunno_ctx" },
+  { "ctx": "note", "say": "Sí, por favor, para mi trabajo", "intent": ["note_ctx", "yn:yes", "ask_note"] },
+
+  { "ctx": "pay", "say": "Con tarjeta, por favor", "intent": "pay_card" },
+  { "ctx": "pay", "say": "Le pago en efectivo", "intent": "pay_cash" },
+  { "ctx": "pay", "say": "¿Le puedo hacer una transferencia?", "intent": "pay_transfer" },
+  { "ctx": "pay", "say": "¿Cuánto le debo?", "intent": "ask_cost", "not": ["pay_card", "pay_cash", "pay_transfer", "here_you_go", "here_you_go_ctx"], "note": "trap: price question" },
+  { "ctx": "pay", "say": "No quiero pagar con tarjeta", "intent": "any", "not": ["pay_card"], "note": "trap: rule 18" },
+  { "ctx": "pay", "say": "Ya pagué en la recepción", "intent": "any", "not": ["pay_card", "pay_cash", "pay_transfer", "here_you_go", "here_you_go_ctx"], "note": "trap: past tense" },
+  { "ctx": "pay", "say": "¿Y si pago con tarjeta?", "intent": "any", "not": ["pay_card"], "note": "trap: what-if" },
+  { "ctx": "pay", "say": "No traigo efectivo, ¿aceptan tarjeta?", "intent": ["pay_card", "no_cash"], "not": ["pay_cash"], "note": "trap: negation" },
+  { "ctx": "pay", "say": "¿Me da una factura, por favor?", "intent": "ask_receipt" }
+] }

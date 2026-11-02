@@ -92,8 +92,8 @@ function sayTemp(v: number): string {
 const fmtT = (v: number) => (tenths(v) % 10 ? (tenths(v) / 10).toFixed(1) : String(tenths(v) / 10));
 const tempVal = (v: number) => ({ en: fmtT(v), lt: fmtT(v), say: sayTemp(v) });
 const toC = (f: number) => ((f - 32) * 5) / 9;
-/** The Celsius value she says after a Fahrenheit answer, to the half degree (98.6 → 37). */
-const roundC = (c: number) => Math.round(c * 2) / 2;
+/** The Celsius value she says after a Fahrenheit answer, to the tenth (98.6 → 37, 100 → 37.8). */
+const roundC = (c: number) => Math.round(c * 10) / 10;
 
 const DIG: Record<string, number> = { cero: 0, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9 };
 const tempSlot: SlotFn = (tokens, pos) => {
@@ -440,7 +440,7 @@ export const doctor: SituationDef = {
       "(tengo | traigo | siento) [un]? dolor [muy]? [fuerte]? en {part} [@dur_tail]",
       "me (duele | arde) [la garganta | mucho] (al | cuando) (tragar | trago | como | hablo | paso saliva | paso la comida) [@dur_tail] #s_sore_throat #h:swallow",
       "no puedo (tragar | comer | hablar) [bien | nada] [por la garganta] #s_sore_throat",
-      "me arde la garganta [@dur_tail] #s_sore_throat",
+      "(me arde | me pica | me raspa) la garganta [@dur_tail] #s_sore_throat", "(tengo | traigo | siento) la garganta (rasposa | irritada | inflamada) [@dur_tail] #s_sore_throat",
       "(estoy | ando | me siento | me he sentido | me siento muy) [muy | un poco | bien | algo]? (mareado | mareada) [@dur_tail] #s_dizzy #h:dizzy",
       "(me mareo | me dan mareos | me da mareo | tengo mareos | todo me da vueltas | me da vueltas la cabeza) [@dur_tail] #s_dizzy",
       "(estoy | ando | me siento | me he sentido) [muy | super | bien | un poco | algo | demasiado]? (cansado | cansada | agotado | agotada | debil | sin energia) [todo el tiempo | todo el dia | siempre] [@dur_tail] #s_fatigue #h:tired",
@@ -451,7 +451,9 @@ export const doctor: SituationDef = {
       "me (lastimé | lastime | torcí | torci | jalé | jale) (la espalda | la cintura) [cargando algo | en la playa] [@dur_tail] #s_back_pain",
       "[ya] (no tengo | no tuve) {neg:symptom} pero @duele {part} [@dur_tail]",
       "[ya] (no tengo | no tuve) {neg:symptom} pero @have_pre {syms} [@dur_tail]",
-      "[ya] (no tengo | no tuve) {neg:symptom} pero (tengo)? {syms} [@dur_tail]",
+      "[ya] (no tengo | no tuve) {neg:symptom} pero [si] (tengo)? {syms} [si] [@dur_tail]",
+      // "No, fiebre no, pero tos sí": the second item is what she has (rule 10)
+      "[no] {neg:symptom} no [pero] {syms} si [@dur_tail]",
       "me (escurre | gotea | moquea) la nariz [@dur_tail] #s_runny_nose #h:nose",
       "(estornudo | estoy estornudando) [mucho] [@dur_tail] #s_runny_nose",
       "(tengo | traigo) la nariz (tapada | congestionada) [@dur_tail] #s_stuffy_nose #h:nose_stuffy",
@@ -462,7 +464,7 @@ export const doctor: SituationDef = {
       "(me siento | estoy | ando) (caliente | afiebrado | afiebrada | con calentura | con fiebre | calenturiento | calenturienta) [@dur_tail] #s_fever",
       "(vomité | he vomitado | estoy vomitando | tengo ganas de vomitar | tengo nauseas | tengo diarrea | estoy mal del estomago | ando mal del estomago | voy mucho al bano) [@when_tail] [@dur_tail] #s_stomachache",
       "(algo me cayó mal | me cayó mal la comida | me cayó mal algo | comí algo que me cayó mal | creo que comí algo malo) [@when_tail] #s_stomachache",
-      "(tengo | traigo) el (cuerpo cortado | estomago revuelto) [@dur_tail] #s_aches",
+      "(tengo | traigo) el cuerpo cortado [@dur_tail] #s_aches", "(tengo | traigo) el estomago (revuelto | suelto) [@dur_tail] #s_stomachache",
       "(estoy | ando) (resfriado | resfriada | engripado | engripada | agripado | agripada) [@dur_tail] #s_cold",
       "(estoy | ando) (constipado | constipada) [@dur_tail] #s_cold #tip:constipado",
       "(creo que)? (me esta dando | me va a dar | me agarro | me dio | me pego) {syms}",
@@ -471,7 +473,7 @@ export const doctor: SituationDef = {
     symptom_ctx: { patterns: ["[solo | nada mas | sobre todo | mas que nada] {syms} [@dur_tail]", "(fiebre | temperatura | calentura) [de | como de] {temp} [@when_tail] [@dur_tail] #s_fever",
       "[la | el | mi] {part} [@dur_tail]", "[la | el | mi] {part} y [la | el | mi] {part2:part}"] },
     sym_neg: { patterns: [
-      "(no tengo | no he tenido | no tuve | no creo que tenga | no traigo) [ni] [@badly]? {symptom} [@badly]",
+      "[ya] (no tengo | no he tenido | no tuve | no creo que tenga | no traigo) [ni] [@badly]? {symptom} [@badly]",
       "(no | ni) {symptom} [no]", "{symptom} no [tengo]", "sin {symptom}",
       "no me duele {part}", "{part} no me duele", "ya no me duele {part}", "no me (duele | duelen) ni {part} ni {part2:part}",
       "no (estoy | me siento | ando) (mareado #s_dizzy | mareada #s_dizzy | cansado #s_fatigue | cansada #s_fatigue)",
@@ -485,7 +487,7 @@ export const doctor: SituationDef = {
     feel_sick: { patterns: [
       "(me siento | estoy | ando | me he sentido) [muy | bien | un poco | bastante | super]? (mal | enfermo | enferma | fatal | malito | malita | pesimo | pesima | terrible | horrible)",
       "no me siento [muy | tan]? bien #h:feel_sick", "no me he sentido bien", "no me siento nada bien",
-      "creo que me estoy enfermando", "(algo me pasa | no se que tengo | no se que me pasa)",
+      "(creo que)? me (estoy enfermando | enferme | enfermé | voy a enfermar)", "(algo me pasa | no se que tengo | no se que me pasa)",
     ] },
     help_me: { patterns: ["(me | le) (puede | podria) ayudar", "(tengo | traigo) (un)? problema [doctora]", "(necesito | ocupo) [su]? ayuda", "(tengo | traigo) una (pregunta | duda)",
       "[si] (una | otra) (pregunta | duda) [mas]", "[si] (le puedo | puedo) (hacer una pregunta | preguntar algo | preguntarle algo)", "[si] (nada mas | solo) una (pregunta | cosa)"] },
@@ -500,6 +502,7 @@ export const doctor: SituationDef = {
       "(llevo | ya llevo | tengo | ya tengo | ando) @dur_amount [asi | con esto | con eso | con (el dolor | la tos | la fiebre | {symptom})]",
       "(empezó | comenzó | me empezó | me comenzó | me dio | empecé) (ayer #d1 | anoche #d1 | antier #d2 | hoy #d0 | esta manana #d0 | en la manana #d0 | el fin de semana #d3 | la semana pasada #d7 | el {day} #dday | hace @dur_amount)",
       "(empezó | comenzó | me empezó | me dio) @dur_since",
+      "(empezó | comenzó | me empezó | me comenzó | me dio | empecé) (ayer #d1 | anoche #d1 | hoy #d0 | antier #d2) en la (manana | noche | tarde)",
       "(apenas | nada mas | solo) (hoy #d0 | desde hoy #d0 | desde ayer #d1 | ayer #d1 | desde anoche #d1 | anoche #d1)",
       "(hoy | ayer) en la (manana | noche | tarde) #d1",
       "(como | unos | mas o menos) (desde)? hace @dur_amount",
@@ -511,6 +514,7 @@ export const doctor: SituationDef = {
       "(muy fuerte #sc8 | fuertisimo #sc9 | insoportable #sc10 | bastante fuerte #sc7 | fuerte #sc7 | regular #sc5 | mas o menos #sc5 | leve #sc2 | poquito #sc2 | no mucho #sc3 | un poco #sc3 | no tan fuerte #sc4 | horrible #sc9)",
       "(no mucho | no tan fuerte | poquito) [como]? un {n:number}", "(muy fuerte | bastante fuerte | fuerte) [como]? un {n:number}",
       "(entre | como entre) {n:number} y {n2:number}",
+      "(es | esta) muy fuerte #sc8", "(es | esta) (fuerte | bastante fuerte) #sc7", "(es | esta) (fuerte | muy fuerte) [como]? un {n:number}", "no es (tan | muy)? fuerte #sc4",
       "no me duele (mucho | tanto) #sc3", "me duele (mucho | muchisimo | bastante) #sc8", "me duele (un poco | poquito) #sc3",
     ] },
     // --- the temperature ----------------------------------------------------------------------
@@ -605,7 +609,7 @@ export const doctor: SituationDef = {
     ask_exercise: { patterns: ["puedo (hacer ejercicio | ir al gimnasio | correr | nadar | meterme al mar | ir a la playa | bucear | meterme al cenote | nadar en el cenote | hacer deporte | surfear) #h:q_exercise",
       "(se puede | esta bien) (hacer ejercicio | nadar | meterse al mar)"] },
     ask_cost: { patterns: [
-      "cuanto (es | cuesta | sale | seria) [la consulta | la visita] #h:q_cost", "cuanto le debo", "(acepta | aceptan | toman) [mi]? seguro #ins", "(tengo | traigo) seguro [de viaje | medico | de gastos medicos | internacional] #ins",
+      "cuanto (es | cuesta | sale | seria) [la consulta | la visita] #h:q_cost", "cuanto le debo", "cuanto (falta | le falta | me falta | le debo todavia) #left", "(acepta | aceptan | toman) [mi]? seguro #ins", "(tengo | traigo) seguro [de viaje | medico | de gastos medicos | internacional] #ins",
       "(donde | a quien) (pago | se paga | le pago)", "(se paga | le pago) (aqui | a usted | en recepcion)", "cuanto (es | cuesta) (la consulta | la visita)",
     ] },
     ask_dosage: { patterns: [
@@ -615,7 +619,7 @@ export const doctor: SituationDef = {
     ask_meals: { patterns: ["(antes | despues) o (antes | despues) de (comer | los alimentos) #h:q_meals", "(con | sin) (comida | alimentos)", "[@it_med] (me lo | lo | la | me la)? tomo (con comida | con el estomago lleno | en ayunas)",
       "(antes | despues) de (comer | los alimentos)", "(se toma | lo tomo) en ayunas"] },
     ask_duration: { patterns: ["(por | durante)? cuantos dias #h:q_how_long", "cuantos dias (tengo que | debo | hay que) (tomarlo | tomarla | tomarlos | tomarlas | tomar el antibiotico | tomar la medicina)", "(por | durante)? cuanto tiempo [lo | la | me lo | me la]? (tomo | tengo que tomar)", "hasta cuando [lo tomo]", "(por | durante) cuanto tiempo"] },
-    ask_side: { patterns: ["(tiene | da | causa) (efectos secundarios | algun efecto secundario | reacciones | contraindicaciones) #h:q_side", "(es | esta) (fuerte | seguro)", "(me | le) (puede caer | cae) mal (al estomago)?"] },
+    ask_side: { patterns: ["(tiene | da | causa) (efectos secundarios | algun efecto secundario | reacciones | contraindicaciones) #h:q_side", "es seguro", "(es | esta) (muy)? fuerte (el medicamento | la medicina | el antibiotico | la pastilla | el tratamiento)", "(el medicamento | la medicina | el antibiotico | la pastilla) (es | esta) (muy)? (fuerte | seguro | segura)", "(me | le) (puede caer | cae) mal (al estomago)?"] },
     ask_alcohol: { patterns: ["(puedo | se puede) (tomar | beber) @alcohol [con (esto | eso | el medicamento | el antibiotico)] #h:q_alcohol", "me puedo tomar @alcohol", "(y)? el alcohol", "puedo tomar (con | si tomo) (esto | eso)"] },
     ask_drive: { patterns: ["(puedo | se puede) manejar [con (esto | eso)] #h:q_drive", "(da | me da | me va a dar | causa) sueno", "me va a dar sueno", "(puedo | se puede) manejar si (lo | la) tomo"] },
     clear_ctx: { patterns: [
@@ -628,9 +632,10 @@ export const doctor: SituationDef = {
       "[si] [en | a]? la farmacia del puerto #harbor #h:ph_name", "[si] (la del puerto | la de aqui | la que esta en el centro | la del centro | la de la esquina) #harbor",
       "[si] (conozco | se de) una [aqui]? cerca #harbor", "[si] (hay | conozco) una (cerca de mi hotel | cerca de mi casa | en mi hotel | junto a mi casa | en la esquina | aqui cerca | cerca del hotel | por mi casa) #other #h:ph_other",
       "(en | a)? cualquiera #any", "no se (donde | de ninguna | cual | donde hay una) #unknown", "[no] (donde hay | hay) una (farmacia)? (cerca | por aqui) #unknown #h:ph_new",
-      "no conozco (ninguna | farmacias | ninguna farmacia) #unknown", "[no] no soy de aqui #unknown", "[si] (ya se | si se) (donde) #harbor",
+      "no conozco (ninguna | farmacias | ninguna farmacia) #unknown", "[no] [pero]? (conozco | se de) otra [farmacia] [cerca | aqui cerca | por mi casa] #other",
+      "[si] (hay | conozco) una (al lado de mi casa | al lado del hotel | enfrente de mi hotel | enfrente de mi casa | a la vuelta | junto al hotel) #other", "[no] no soy de aqui #unknown", "[si] (ya se | si se) (donde) #harbor",
     ] },
-    pharmacy_dunno_ctx: { patterns: ["(no lo se | ni idea | no estoy seguro | no estoy segura | no tengo idea) [soy nuevo | soy nueva | no soy de aqui | no conozco]", "no se (soy nuevo | soy nueva | no soy de aqui | no conozco)"] },
+    pharmacy_dunno_ctx: { patterns: ["(no lo se | ni idea | no estoy seguro | no estoy segura | no tengo idea) [soy nuevo | soy nueva | no soy de aqui | no conozco]", "no se [la verdad] (soy nuevo | soy nueva | no soy de aqui | no conozco) [aqui | el pueblo]", "(soy nuevo | soy nueva) (aqui | en el pueblo)"] },
     note_ctx: { patterns: ["[si] (para el trabajo | para mi trabajo | para mi jefe | para la escuela | para la empresa | para la oficina) #yes #h:note_yes",
       "no (necesito | ocupo | quiero) [el | un | ningun]? @note_n [gracias] #no",
       "[no] (estoy de vacaciones | trabajo desde casa | no trabajo | soy jubilado | soy jubilada | estoy jubilado | estoy jubilada | no lo necesito | no hace falta | no me hace falta | no gracias no lo necesito | trabajo en casa) #no #h:note_no"] },
@@ -645,11 +650,15 @@ export const doctor: SituationDef = {
       "(aceptas | tomas) tarjeta #tip:tu_staff", "(aceptais | acepteis) tarjeta",
       // "No traigo efectivo, ¿acepta tarjeta?": the card (a request, at the end of the visit)
       "(no tengo | no traigo | sin) [suficiente] (efectivo | cambio | dinero en efectivo) (acepta | aceptan | toma | reciben | puedo pagar con | mejor con | con) (tarjeta | tarjetas)",
-      "(no tengo | no traigo) efectivo (tarjeta | mejor tarjeta)",
+      "(no tengo | no traigo) efectivo (tarjeta | mejor tarjeta)", "(mejor | prefiero) [pagar] con tarjeta",
+      // "No en efectivo, con tarjeta": the second item is the answer (rule 18); "Efectivo no, tarjeta" loses its comma: #amb
+      "no (en | con) efectivo [sino] con tarjeta", "(en | con)? efectivo no [con]? tarjeta #amb",
     ] },
-    pay_cash: { patterns: ["en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "(mejor | prefiero) [pagar] (en | con) efectivo", "con efectivo", "[puedo] pagar en efectivo"] },
+    pay_cash: { patterns: ["en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "(mejor | prefiero) [pagar] (en | con) efectivo", "con efectivo", "[puedo] pagar en efectivo",
+      "no con tarjeta [sino] (en | con) efectivo", "[con]? tarjeta no (en | con)? efectivo #amb"] },
     pay_transfer: { patterns: ["(puedo | se puede) pagar (con | por) transferencia #h:pay_transfer", "(le hago | le puedo hacer | puedo hacer | le mando) (una)? transferencia", "(por | con) transferencia", "transferencia",
-      "(acepta | aceptan) transferencia"] },
+      "(acepta | aceptan) transferencia", "(mejor | prefiero) [pagar] (con | por) transferencia",
+      "no (con | en) (tarjeta | efectivo) [sino] (por | con) transferencia"] },
     no_cash: { patterns: ["no (tengo | traigo) [suficiente]? efectivo", "no (quiero | puedo) pagar (en | con) efectivo", "no (traigo | tengo) (dinero en efectivo | cash | pesos | dinero)", "no puedo pagar en efectivo"] },
     no_card: { patterns: ["no (tengo | traigo) tarjeta", "no (puedo | quiero) pagar con tarjeta", "sin tarjeta", "no (tengo | traigo) (mi | la)? tarjeta (conmigo)?"] },
     here_you_go: { patterns: ["(aqui tiene | tenga | le doy | aqui le doy | aqui esta) [son] {price} #h:here_you_go_amount", "(aqui tiene | aqui le doy | tenga | le doy) un billete de {price}",
@@ -657,7 +666,7 @@ export const doctor: SituationDef = {
     // a bare "Aquí tiene" / "Tenga" only at the pay step (rule 12)
     here_you_go_ctx: { patterns: ["(aqui tiene | aqui esta | tenga | aqui le doy | tome) #h:here_you_go"] },
     ask_receipt: { patterns: ["(me da | me puede dar | me podria dar | necesito | quiero) (un)? (recibo | comprobante | ticket | nota) #h:q_receipt", "(da | hace | emite | dan) factura #fact",
-      "(necesito | quiero | me puede hacer | me hace) (una)? factura #fact", "(me puedes dar | me das) (un)? recibo #tip:tu_staff"] },
+      "(necesito | quiero | me puede hacer | me hace | me da | me puede dar | me podria dar) (una)? factura #fact", "(me puedes dar | me das) (un)? recibo #tip:tu_staff"] },
   },
 
   lines: {
@@ -721,7 +730,7 @@ export const doctor: SituationDef = {
     scale_help: [t("Nada más | calcule. | ¿Es | fuerte, | o | no | tanto?", "Just | estimate. | Is it | strong, | or | not | so much?", "Just guess. Is it bad, or not too bad?")],
     scale_high: [t("Uy, | eso | es | bastante | dolor.", "Ooh, | that | is | quite a lot of | pain.", "Ooh, that sounds pretty bad.")],
     scale_low: [t("Bueno, | no | tan | fuerte, | entonces.", "Okay, | not | so | strong, | then.", "Okay, not too bad, then.")],
-    scale_mid: [t("Muy | bien, | gracias.", "Very | good, | thanks.", "Okay, thanks.")],
+    scale_mid: [t("Ajá, | gracias.", "Uh-huh, | thanks.", "Okay, thanks.")],
     ask_fever: [t("¿Ha | tenido | fiebre?", "Have you | had | fever?", "Have you had a fever?"), t("¿Tiene | fiebre?", "Do you have | fever?", "Do you have a fever?")],
     ask_temp_took: [t("¿Se tomó | la | temperatura?", "Did you take | the | temperature?", "Did you take your temperature?", { flags: { 1: FLAG_YOUR("la temperatura", "temperature") } })],
     ask_temp_high: [
@@ -951,10 +960,15 @@ export const doctor: SituationDef = {
     cash_exact: [t("Exacto, | gracias.", "Exact, | thanks.", "That's exactly right, thanks.")],
     change_is: [t("Gracias. | Su | cambio: | {$price}.", "Thanks. | Your | change: | {$price}.", "Thanks. Your change is {$price}.")],
     short: [t("Perdón, | son | {$total}; | faltan | {$price}.", "Sorry, | it's | {$total}; | they're-missing | {$price}.", "Sorry, it's {$total}; you're {$price} short.")],
+    left_is: [t("Faltan | {$price}.", "They're-missing | {$price}.", "You still owe {$price}.")],
     no_change: [t("Uy, | no tengo | cambio | para | tanto. | ¿No tiene | un | billete | más | chico?", "Ooh, | I don't have | change | for | so much. | Don't you have | a | bill | more | small?",
       "Oh, I don't have change for that much. Do you have a smaller bill?")],
     no_cash_ok: [t("No se preocupe: | también | acepto | tarjeta | y | transferencia.", "Don't worry: | also | I-accept | card | and | transfer.", "Don't worry, I also take cards and bank transfers.")],
     no_card_ok: [t("Entonces | en efectivo | o | por | transferencia.", "Then | in cash | or | by | transfer.", "Then cash or a bank transfer.")],
+    pay_later_card: [t("Sí, | acepto | tarjeta; | me | paga | al | final.", "Yes, | I-accept | card; | (to) me | you-pay | at the | end.", "Yes, I take cards. You can pay at the end.")],
+    pay_later_transfer: [t("Sí, | también | acepto | transferencia; | me | paga | al | final.", "Yes, | also | I-accept | transfer; | (to) me | you-pay | at the | end.",
+      "Yes, I take bank transfers too. You can pay at the end.")],
+    pay_which: [t("Perdón, | ¿en efectivo | o | con | tarjeta?", "Sorry, | in cash | or | with | card?", "Sorry, was that cash or card?")],
     pay_at_end: [t("Al | final | me | paga, | no se preocupe.", "At the | end | (to) me | you-pay, | don't worry.", "You can pay me at the end, don't worry.")],
     receipt_ok: [t("Claro, | aquí tiene | su | recibo.", "Sure, | here's | your | receipt.", "Sure, here's your receipt.")],
     receipt_later: [t("Claro, | al | pagar | le | doy | su | recibo.", "Sure, | on | paying | (to) you | I-give | your | receipt.", "Sure, I'll give you a receipt when you pay.")],
@@ -964,7 +978,7 @@ export const doctor: SituationDef = {
   },
 
   domains: {
-    tc: () => Array.from({ length: 19 }, (_, i) => tempVal(34 + i / 2)),
+    tc: () => Array.from({ length: 91 }, (_, i) => tempVal(34 + i / 10)),
     tf: () => Array.from({ length: 171 }, (_, i) => tempVal(93 + i / 10)),
     tm: () => [...new Set(Object.values(MEASURED))].map(tempVal),
     price: () => {
@@ -1261,7 +1275,7 @@ export const doctor: SituationDef = {
       ask: (c) => c.say("ask_pharmacy"),
       expects: ["pharmacy_ans", "pharmacy_dunno_ctx"],
       suggest: [{ lt: "Say whether you know a pharmacy", hint: "pharmacy" }, { lt: "Say yes or no", hint: "g_yesno" }],
-      yes: (c) => { c.s.pharmacy = "harbor"; c.say("pharmacy_other"); pharmacyEnd(c); },
+      yes: (c) => { c.s.pharmacy = "other"; c.say("pharmacy_other"); pharmacyEnd(c); },
       no: (c) => { c.s.pharmacy = "harbor"; c.say("pharmacy_suggest"); pharmacyEnd(c); },
       help: (c) => { c.s.pharmacy = "harbor"; c.say("pharmacy_suggest"); pharmacyEnd(c); } },
     // offered once: if the learner talks about something else, the offer is simply dropped
@@ -1462,6 +1476,8 @@ export const doctor: SituationDef = {
     ask_cost(c, _slots, seg) {
       if (c.s.paid) { c.say("paid_already"); return; }
       // after the directions the fee is due now: the price and how to pay, said once
+      const cashIn = (c.s.cashIn as number | undefined) ?? 0;
+      if (c.s.rxGiven && cashIn > 0) { c.say("left_is", { price: FEE - cashIn }); c.hold(); return; }
       if (c.s.rxGiven) {
         c.s.totalSaid = true;
         c.say("consult_price", { price: FEE });
@@ -1515,18 +1531,18 @@ export const doctor: SituationDef = {
     year_ctx(c, slots) { setDob(c, slots); },
 
     // --- paying
-    pay_card(c) { choosePay(c, "card"); },
-    pay_transfer(c) { choosePay(c, "transfer"); },
-    pay_cash(c) { choosePay(c, "cash"); },
+    pay_card(c, _slots, seg) { choosePay(c, "card", seg.tags); },
+    pay_transfer(c, _slots, seg) { choosePay(c, "transfer", seg.tags); },
+    pay_cash(c, _slots, seg) { choosePay(c, "cash", seg.tags); },
     no_cash(c) {
       if (c.s.paid) { c.say("paid_already"); return; }
-      if (!c.s.rxGiven) { c.say("pay_at_end"); return; }
+      if (!c.s.rxGiven) { c.say("no_cash_ok"); return; }
       if (c.s.payMethod === "cash") c.s.payMethod = undefined;
       c.say("no_cash_ok"); c.hold();
     },
     no_card(c) {
       if (c.s.paid) { c.say("paid_already"); return; }
-      if (!c.s.rxGiven) { c.say("pay_at_end"); return; }
+      if (!c.s.rxGiven) { c.say("no_card_ok"); return; }
       if (c.s.payMethod === "card") c.s.payMethod = undefined;
       c.say("no_card_ok"); c.hold();
     },
@@ -1660,6 +1676,24 @@ export const doctor: SituationDef = {
     { say: "No quiero pagar en efectivo", step: "pay", intent: "no_cash", not: ["pay_cash"] },
     { say: "No tengo efectivo, ¿acepta tarjeta?", step: "pay", intent: "pay_card" },
     { say: "Ya pagué en recepción", step: "pay", intent: "none", not: ["here_you_go", "pay_cash", "pay_card"] },
+    // review: corrections, lost commas, past tense and what-ifs at paying; symptoms read right
+    { say: "No con tarjeta, en efectivo", step: "pay", intent: "pay_cash", not: ["pay_card"] },
+    { say: "No en efectivo, con tarjeta", step: "pay", intent: "pay_card", not: ["pay_cash"] },
+    { say: "Tarjeta no efectivo", step: "pay", intent: "pay_cash", slots: {}, not: ["pay_card"] },
+    { say: "Prefiero pagar con transferencia", step: "pay", intent: "pay_transfer" },
+    { say: "¿Me da factura?", step: "pay", intent: "ask_receipt" },
+    { say: "¿Cuánto falta?", step: "pay", intent: "ask_cost", not: ["here_you_go", "here_you_go_ctx"] },
+    { say: "¿Y si pago con tarjeta?", step: "pay", intent: "none", not: ["pay_card"] },
+    { say: "Pagué con tarjeta", step: "pay", intent: "none", not: ["pay_card"] },
+    { say: "Tengo el estómago revuelto", intent: "symptom", step: "problem" },
+    { say: "Me pica la garganta", intent: "symptom", step: "problem" },
+    { say: "Es muy fuerte", step: "scale", intent: "scale_ctx", not: ["ask_side"] },
+    { say: "¿Es fuerte el medicamento?", intent: "ask_side" },
+    { say: "Ya no tengo fiebre", step: "fever", intent: "sym_neg", not: ["fever_yes_ctx", "temp_ans", "symptom"] },
+    { say: "No, fiebre no, pero tos sí", step: "more_sym", intent: "symptom", slots: { neg: "fever" } },
+    { say: "No, conozco otra", step: "pharmacy", intent: "pharmacy_ans" },
+    { say: "No sé, soy nueva aquí", step: "pharmacy", intent: "pharmacy_dunno_ctx" },
+    { say: "Empezó ayer en la noche", step: "howlong", intent: "howlong_ans" },
   ],
 
   sims: [
@@ -1727,6 +1761,12 @@ export const doctor: SituationDef = {
       turns: ["El 4 de junio de 1980", "Estoy constipado y tengo tos", "Desde hace tres días", "No", "Me he tomado un ibuprofeno", "Vale", "Aaa", "No", "No",
         "¿Puedo conducir?", "Vale, con tarjeta", "Gracias, adiós"],
       expect: { complete: true, state: { dob: { day: 4, month: 6, year: 1980 }, dx: "virus", paid: true } }, auto: { ...AUTO, fever: "No" } },
+    // review: "estómago revuelto" is the stomach; "Tarjeta no efectivo" is asked again; "¿Cuánto falta?" gets what's left
+    { name: "review: an upset stomach, a lost comma at paying, cash in two goes",
+      setup: (s) => { s.bpTwist = false; s.chartTwist = false; s.askPharmacy = false; s.offerNote = false; s.askQ = false; s.askMoreQ = false; s.askMore = false; s.askScale = false; s.askDob = false; s.feelingOpener = false; },
+      turns: ["Tengo el estómago revuelto", "Empezó ayer en la noche", "No", "No, nada", "Ok", "Aaa", "Sí, un poco", "No", "Tarjeta no efectivo", "En efectivo",
+        "Aquí tiene doscientos", "¿Cuánto falta?", "Aquí tiene trescientos", "Gracias, adiós"],
+      expect: { complete: true, state: { dx: "stomach", paid: true, payMethod: "cash", cashIn: 50000 } }, auto: { ...AUTO, fever: "No" } },
   ],
 };
 
@@ -1879,9 +1919,12 @@ function askNext(c: Ctx) {
 // ---------------------------------------------------------------------------
 // Paying for the visit: card or transfer at once; cash counts every bill handed over.
 
-function choosePay(c: Ctx, method: "card" | "cash" | "transfer") {
+function choosePay(c: Ctx, method: "card" | "cash" | "transfer", tags: string[] = []) {
   if (c.s.paid) { c.say("paid_already"); return; }
-  if (!c.s.rxGiven) { c.say("pay_at_end"); return; }
+  // "¿Acepta tarjeta?" during the visit: yes, and it's paid at the end
+  if (!c.s.rxGiven) { c.say(method === "card" ? "pay_later_card" : method === "transfer" ? "pay_later_transfer" : "pay_at_end"); return; }
+  // "Tarjeta no efectivo": the comma decides, and voice has none (rule 10): she asks again
+  if (tags.includes("amb")) { if (firstThisTurn(c, "method")) c.say("pay_which"); c.hold(); return; }
   if (!c.s.totalSaid) { c.s.totalSaid = true; c.say("consult_price", { price: FEE }); }
   c.s.payMethod = method;
   if (method === "cash") { c.say("cash_ok"); c.hold(); return; } // she waits for the money
