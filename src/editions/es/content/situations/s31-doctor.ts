@@ -72,7 +72,7 @@ const MAX_CASH = 200000;
 // ---------------------------------------------------------------------------
 // Temperatures: Celsius by default ("38", "38.5", "treinta y ocho y medio", "38 punto 2", "38 grados"); an American
 // learner may say Fahrenheit ("101", "ciento uno", "100.4 Fahrenheit"). Values are {v, unit}; the unit is decided by
-// the number when it isn't said (34–43 °C, 93–110 °F).
+// the number when it isn't said (up to 45: °C; from 90: °F), and a body temperature is 35–43 °C (95–109 °F).
 
 const U = ["cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
 const TENS_ES: Record<number, string> = { 3: "treinta", 4: "cuarenta", 9: "noventa" };
@@ -141,6 +141,14 @@ const numDate: SlotFn = (tokens, pos) => {
   if (n2 >= 1 && n2 <= 12 && n1 >= 1 && n1 <= 31) return [{ end: pos + 3, value: { day: n1, month: n2, year } }];
   if (n1 >= 1 && n1 <= 12 && n2 >= 13 && n2 <= 31) return [{ end: pos + 3, value: { day: n2, month: n1, year }, tags: ["tip:mx_date"] }];
   return [];
+};
+
+/** "Junio 4 de 1980", "junio cuatro": an American learner's month-first order is read too, with the tip on Mexico's. */
+const MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const usDate: SlotFn = (tokens, pos) => {
+  const m = tokens[pos] === "setiembre" ? 9 : MONTHS_ES.indexOf(tokens[pos] ?? "") + 1;
+  if (!m) return [];
+  return readInt(tokens, pos + 1).filter((r) => r.value >= 1 && r.value <= 31).map((r) => ({ end: r.end, value: { day: r.value, month: m }, tags: ["tip:mx_date"] }));
 };
 
 // ---------------------------------------------------------------------------
@@ -243,13 +251,14 @@ function setTemp(c: Ctx, tv: { v: number; unit: "c" | "f" | null }) {
   if (!firstThisTurn(c, "temp")) return;
   const v = tv.v;
   const scale = tv.unit ?? (v <= 45 ? "c" : v >= 90 ? "f" : null);
-  const ok = scale === "c" ? v >= 34 && v <= 43 : scale === "f" ? v >= 93 && v <= 110 : false;
+  const cel = scale === "f" ? toC(v) : v;
+  // a body temperature: 35–43 °C (95–109 °F); 34 is no "normal", and the Celsius she says stays in its domain
+  const ok = scale !== null && roundC(cel) >= 35 && roundC(cel) <= 43;
   if (!ok) {
     if (c.s.temp === undefined) { c.s.temp = "check"; if (c.s.fever === undefined) c.s.fever = true; }
     c.say("temp_weird");
     return;
   }
-  const cel = scale === "f" ? toC(v) : v;
   if (scale === "f") { c.say("f_echo", { tf: tempVal(v) }); c.say("f_conv", { tc: tempVal(roundC(cel)) }); }
   c.s.temp = { c: Math.round(cel * 10) / 10, f: scale === "f" ? v : undefined };
   c.s.fever = cel >= 37.5;
@@ -266,8 +275,19 @@ function assess(c: Ctx, cel: number) {
   else c.say("temp_high");
 }
 
+/** An allergy already named stays: "…, a nada más" / "No tengo otras alergias" (#others) keep it, and a "none" never
+ *  undoes one named in the same answer ("Solo a la penicilina, a nada más": the pieces may come in either order). */
+function allergyKept(c: Ctx, a: string, tags: string[]): boolean {
+  const sameTurn = !firstThisTurn(c, "allergy");
+  const named = !!c.s.allergy && c.s.allergy !== "none";
+  if (!named || !(tags.includes("others") || (a === "none" && sameTurn))) return false;
+  if (!sameTurn) okOnce(c);
+  return true;
+}
+
 function setAllergy(c: Ctx, tags: string[]) {
   const a = tags.includes("neg") ? "none" : tags.includes("pen") ? "pen" : tags.includes("unsure") ? "unsure" : tags.includes("other") || tags.includes("nsaid") ? "other" : "none";
+  if (allergyKept(c, a, tags)) return;
   c.s.allergy = a;
   if (!c.s.examDone) { c.say(a === "none" ? "allergy_none_ok" : "meds_other_ok"); return; }
   if (a === "pen" && kind(c) === "ab") {
@@ -398,7 +418,7 @@ export const doctor: SituationDef = {
       sym_np: "[un | una | mucho | mucha | un poco de | algo de | bastante | un poquito de] {symptom} [@badly]",
       have_pre: "(tengo | traigo | ando con | estoy con | creo que tengo | me dio | me pego | me agarro | tambien tengo | y tengo | ademas tengo | he tenido | tuve | tenia | he estado con | me esta dando | creo que me esta dando)",
       duele: "(me duele | me duelen | me esta doliendo | me anda doliendo | me ha dolido | me dolio)",
-      dur_amount: "[como | unos | unas | mas o menos | casi | ya | apenas | solo] ({n:number} o {n2:number} (dias #unit_d | semanas #unit_w) | {n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h | meses #unit_m | mes #unit_m) | un dia #d1 | una semana #d7 | un par de dias #d2 | unos dias #d3 | unos cuantos dias #d3 | varios dias #d4 | un mes #d30 | dos semanas #d14 | una semana y media #d10)",
+      dur_amount: "[como | unos | unas | mas o menos | casi | ya | apenas | solo] ({n:number} o {n2:number} (dias #unit_d | semanas #unit_w) | {n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h | meses #unit_m | mes #unit_m) | un dia #d1 | una semana #d7 | un par de dias #d2 | unos dias #d3 | unos cuantos dias #d3 | varios dias #d4 | un mes #d30 | dos semanas #d14 | una semana y media #d10 | unas horas #d0 | unas cuantas horas #d0 | un par de horas #d0 | unas pocas horas #d0 | pocas horas #d0)",
       dur_since: "(desde (ayer #d1 | anoche #d1 | antier #d2 | antenoche #d2 | antes de ayer #d2 | hoy #d0 | esta manana #d0 | hoy en la manana #d0 | en la manana #d0 | la manana #d0 | el fin de semana #d3 | la semana pasada #d7 | el mes pasado #d30 | el {day} #dday | ayer en la noche #d1 | ayer en la manana #d1 | ayer en la tarde #d1 | hace @dur_amount) | hace @dur_amount)",
       dur_tail: "(@dur_since | (por | durante) @dur_amount)",
       when_tail: "(esta manana | anoche | ayer | hoy | en la manana | en la noche | ayer en la noche | en la tarde | antes de venir | en la casa | en el hotel | hace un rato)",
@@ -413,6 +433,7 @@ export const doctor: SituationDef = {
     slots: {
       temp: { fn: tempSlot },
       numdate: { fn: numDate },
+      usdate: { fn: usDate },
       syms: { pattern: "@sym_np [(y | y tambien | con | y un poco de | y mucha | y mucho | ademas de) @sym_np] [[y] @sym_np]" },
       part: { lexicon: [
         { id: "sore_throat", forms: ["la garganta", "garganta", "mi garganta", "las anginas"] },
@@ -483,7 +504,7 @@ export const doctor: SituationDef = {
     sym_none: { patterns: ["[no] no tengo (ningun | otro | ningun otro) sintoma #h:no_other", "[no] (solo | nada mas | nomas) (eso | lo que le dije | la garganta | el dolor)",
       "[no] (eso es todo | es todo | nada mas eso | ningun otro sintoma | nada mas que eso)"] },
     // bare "Nada" / "Ninguno" only after "¿Algún otro síntoma?"
-    sym_none_ctx: { patterns: ["[no] (nada | nada mas | ninguno | ninguno mas | nada nada | solo eso | eso)", "[no] no (nada | ninguno)"] },
+    sym_none_ctx: { patterns: ["[no] (nada | nada mas | ninguno | ninguno mas | nada nada | solo eso | eso)", "[no] no (nada | ninguno)", "[no] (es | eso es) todo lo que tengo"] },
     feel_sick: { patterns: [
       "(me siento | estoy | ando | me he sentido) [muy | bien | un poco | bastante | super]? (mal | enfermo | enferma | fatal | malito | malita | pesimo | pesima | terrible | horrible)",
       "no me siento [muy | tan]? bien #h:feel_sick", "no me he sentido bien", "no me siento nada bien",
@@ -513,7 +534,7 @@ export const doctor: SituationDef = {
       "[un | como un | mas o menos un | como | yo diria que un | diria que un | creo que un | un como | ya un | casi un] {n:number} [de diez | mas o menos | o mas] #h:scale",
       "(muy fuerte #sc8 | fuertisimo #sc9 | insoportable #sc10 | bastante fuerte #sc7 | fuerte #sc7 | regular #sc5 | mas o menos #sc5 | leve #sc2 | poquito #sc2 | no mucho #sc3 | un poco #sc3 | no tan fuerte #sc4 | horrible #sc9)",
       "(no mucho | no tan fuerte | poquito) [como]? un {n:number}", "(muy fuerte | bastante fuerte | fuerte) [como]? un {n:number}",
-      "(entre | como entre) {n:number} y {n2:number}",
+      "(entre | como entre) {n:number} y {n2:number}", "[un | como un | como] {n:number} (o | u) {n2:number}",
       "(es | esta) muy fuerte #sc8", "(es | esta) (fuerte | bastante fuerte) #sc7", "(es | esta) (fuerte | muy fuerte) [como]? un {n:number}", "no es (tan | muy)? fuerte #sc4",
       "no me duele (mucho | tanto) #sc3", "me duele (mucho | muchisimo | bastante) #sc8", "me duele (un poco | poquito) #sc3",
     ] },
@@ -527,7 +548,9 @@ export const doctor: SituationDef = {
       "[si] [la fiebre]? (fue | es | era) de [como]? {temp} [@when_tail]",
     ] },
     // a bare "38" / "Treinta y ocho y medio" only answers the temperature question
-    temp_ctx: { patterns: ["[si] [de] {temp} [@when_tail]", "[si] (tengo | tuve | tenia) {temp} [@when_tail]"] },
+    temp_ctx: { patterns: ["[si] [de] {temp} [@when_tail]", "[si] (tengo | tuve | tenia) {temp} [@when_tail]",
+      // "No sé, como 38": a number after all (never "I'll take it myself" and the number in one breath)
+      "(no se | no lo se | no se bien | no estoy seguro | no estoy segura) [pero] [creo que] [como | unos | mas o menos | casi | tal vez | quiza] {temp} [@when_tail]"] },
     fever_yes_ctx: { patterns: ["[si] [un poco | poquita | algo] [de]? (fiebre | calentura | temperatura)", "[si] (creo que si | me siento caliente | eso creo | un poco | poquita | algo)",
       "[si] (me la tomé | me la tome | me la medí | me la medi | la medí | si la medi)"] },
     temp_unknown: { patterns: [
@@ -558,12 +581,18 @@ export const doctor: SituationDef = {
       "no (soy | es) (alergico | alergica) (a | al) @allergen #neg", "no (tengo | tiene) alergia (a | al) @allergen #neg", "[no] [a | al] @allergen no #neg",
       "[si] (soy | es) (alergico | alergica) (a | al) @allergen #h:allergy_pen", "[si] (tengo | tiene) alergia (a | al) @allergen", "me (hace | hacen | cae | caen) mal @allergen",
       "[no] (solo | nada mas | nomas | solamente) (a | al) @allergen", "[si] soy (alergico | alergica) [a] @allergen [y a @allergen]",
+      // "No sé si soy alérgica a la penicilina": one answer, read as the allergy (the safe side)
+      "no (se | estoy seguro | estoy segura) si (soy | sea) (alergico | alergica) (a | al) @allergen",
+      // "…, no tengo otras alergias": keeps an allergy already named (#others; setAllergy)
+      "[no] no (tengo | tiene) (otras alergias | otra alergia | ninguna otra alergia | ninguna otra) #others",
     ] },
     allergy_dunno_ctx: { patterns: ["(no lo se | no estoy seguro | no estoy segura | no me acuerdo | no recuerdo | ni idea | no sabria decirle | no tengo idea) [la verdad]"] },
     // "Sí, es correcto" / "No, eso no es cierto" only answer "En su expediente dice…, ¿es correcto?"
     chart_ctx: { patterns: ["[no] (eso)? no es (cierto | correcto | asi | verdad) #none", "[si] (es | eso es) (correcto | cierto | verdad) #pen", "(correcto | asi es | exacto | efectivamente) #pen",
       "[no] (eso)? (esta mal | es un error) #none"] },
-    allergy_ctx: { patterns: ["[si] [solo | nada mas] [a | al] @allergen", "(a nada | a ninguno | a ninguna | ninguno | ninguna | nada) #none"] },
+    allergy_ctx: { patterns: ["[si] [solo | nada mas] [a | al] @allergen", "(a nada | a ninguno | a ninguna | ninguno | ninguna | nada) #none",
+      // "Solo a la penicilina, a nada más": the "nothing else" piece keeps it (#others)
+      "[y] (a nada mas | a ninguna otra | a ningun otro | ninguna otra | ningun otro | a nada mas que eso) #others"] },
 
     // --- the exam -----------------------------------------------------------------------------
     ready_ctx: { patterns: ["(listo | lista | ya | ya esta | ya estoy | ahi esta | ya quedo | ya me la subi | ya me la subí | ya la subi | ya esta arriba)"] },
@@ -610,7 +639,7 @@ export const doctor: SituationDef = {
       "(se puede | esta bien) (hacer ejercicio | nadar | meterse al mar)"] },
     ask_cost: { patterns: [
       "cuanto (es | cuesta | sale | seria) [la consulta | la visita] #h:q_cost", "cuanto le debo", "cuanto (falta | le falta | me falta | le debo todavia) #left", "(acepta | aceptan | toman) [mi]? seguro #ins", "(tengo | traigo) seguro [de viaje | medico | de gastos medicos | internacional] #ins",
-      "(donde | a quien) (pago | se paga | le pago)", "(se paga | le pago) (aqui | a usted | en recepcion)", "cuanto (es | cuesta) (la consulta | la visita)",
+      "(donde | a quien | como) (pago | se paga | le pago)", "(se paga | le pago) (aqui | a usted | en recepcion)", "cuanto (es | cuesta) (la consulta | la visita)",
     ] },
     ask_dosage: { patterns: [
       "(cada cuanto | como | cuantas veces al dia) (me lo tomo | lo tomo | se toma | me la tomo | la tomo | tomo | me las tomo | las tomo) #h:q_dose", "cuantas (pastillas | capsulas | tabletas | al dia) [al dia | por dia]",
@@ -639,9 +668,10 @@ export const doctor: SituationDef = {
     note_ctx: { patterns: ["[si] (para el trabajo | para mi trabajo | para mi jefe | para la escuela | para la empresa | para la oficina) #yes #h:note_yes",
       "no (necesito | ocupo | quiero) [el | un | ningun]? @note_n [gracias] #no",
       "[no] (estoy de vacaciones | trabajo desde casa | no trabajo | soy jubilado | soy jubilada | estoy jubilado | estoy jubilada | no lo necesito | no hace falta | no me hace falta | no gracias no lo necesito | trabajo en casa) #no #h:note_no"] },
-    dob_ans: { patterns: ["[naci] {date} (de | del) {year} #h:dob", "[naci] {date} {year}", "{numdate}", "[naci] {date} del {yy:number}", "[naci] {date} de {yy:number}"] },
-    dob_ctx: { patterns: ["[naci] {date}"] },
-    year_ctx: { patterns: ["[en | de | del] {year}", "del {yy:number}"] },
+    dob_ans: { patterns: ["[naci] {date} (de | del) {year} #h:dob", "[naci] {date} {year}", "{numdate}", "[naci] {date} del {yy:number}", "[naci] {date} de {yy:number}",
+      "[naci] [el] {date:usdate} [de | del] {year}", "[naci] [el] {date:usdate} del {yy:number}"] },
+    dob_ctx: { patterns: ["[naci] {date}", "[naci] [el] {date:usdate}"] },
+    year_ctx: { patterns: ["[naci] [en | de | del] {year}", "del {yy:number}", "naci en el {yy:number}"] },
 
     // --- paying for the visit ---------------------------------------------------------------
     pay_card: { patterns: [
@@ -653,13 +683,20 @@ export const doctor: SituationDef = {
       "(no tengo | no traigo) efectivo (tarjeta | mejor tarjeta)", "(mejor | prefiero) [pagar] con tarjeta",
       // "No en efectivo, con tarjeta": the second item is the answer (rule 18); "Efectivo no, tarjeta" loses its comma: #amb
       "no (en | con) efectivo [sino] con tarjeta", "(en | con)? efectivo no [con]? tarjeta #amb",
+      // "¿Puedo pagar con tarjeta o en efectivo?", "¿Acepta tarjeta o solo efectivo?": a question about both, nothing chosen
+      "(puedo | se puede) pagar (con tarjeta o (en | con) efectivo | (en | con) efectivo o con tarjeta) #either",
+      "(puedo | se puede) pagar (con tarjeta | en efectivo) o (por | con) transferencia #either",
+      "(acepta | aceptan | toma | reciben) (tarjeta o [solo | nada mas | nomas] efectivo | efectivo o tarjeta | tarjeta o transferencia | efectivo o transferencia) #either",
     ] },
     pay_cash: { patterns: ["en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "(mejor | prefiero) [pagar] (en | con) efectivo", "con efectivo", "[puedo] pagar en efectivo",
       "no con tarjeta [sino] (en | con) efectivo", "[con]? tarjeta no (en | con)? efectivo #amb"] },
     pay_transfer: { patterns: ["(puedo | se puede) pagar (con | por) transferencia #h:pay_transfer", "(le hago | le puedo hacer | puedo hacer | le mando) (una)? transferencia", "(por | con) transferencia", "transferencia",
       "(acepta | aceptan) transferencia", "(mejor | prefiero) [pagar] (con | por) transferencia",
       "no (con | en) (tarjeta | efectivo) [sino] (por | con) transferencia"] },
-    no_cash: { patterns: ["no (tengo | traigo) [suficiente]? efectivo", "no (quiero | puedo) pagar (en | con) efectivo", "no (traigo | tengo) (dinero en efectivo | cash | pesos | dinero)", "no puedo pagar en efectivo"] },
+    no_cash: { patterns: ["no (tengo | traigo) [suficiente | mas]? efectivo", "no (quiero | puedo) pagar (en | con) efectivo", "no (traigo | tengo) (dinero en efectivo | cash | pesos | dinero)", "no puedo pagar en efectivo",
+      "ya no (tengo | traigo) [mas]? (efectivo | dinero | pesos)"] },
+    // after part of it in cash, only when paying ("Es todo lo que tengo" also ends a list of symptoms)
+    no_cash_ctx: { patterns: ["no me alcanza [el efectivo | el dinero | para todo]", "(es | eso es) todo lo que (tengo | traigo) [en efectivo]"] },
     no_card: { patterns: ["no (tengo | traigo) tarjeta", "no (puedo | quiero) pagar con tarjeta", "sin tarjeta", "no (tengo | traigo) (mi | la)? tarjeta (conmigo)?"] },
     here_you_go: { patterns: ["(aqui tiene | tenga | le doy | aqui le doy | aqui esta) [son] {price} #h:here_you_go_amount", "(aqui tiene | aqui le doy | tenga | le doy) un billete de {price}",
       "(aqui tiene | tenga | aqui esta) (otros | los otros) {price}", "(le pago | pago) con (un billete de)? {price}", "(aqui tiene | aqui estan) (los | sus) {price}"] },
@@ -696,6 +733,7 @@ export const doctor: SituationDef = {
       t("Primero, | ¿me | da | su | fecha | de | nacimiento, | por favor?", "First, | (to) me | you-give | your | date | of | birth, | please?", "First, can I have your date of birth, please?"),
     ],
     dob_year: [t("¿Y | el | año?", "And | the | year?", "And the year?")],
+    dob_daymonth: [t("¿Y | el | día | y | el | mes?", "And | the | day | and | the | month?", "And the day and month?")],
     dob_thanks: [t("Gracias.", "Thanks.", "Thank you."), t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thanks.")],
     fine_glad: [t("¡Qué | bueno! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "How | good! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 4: FLAG_LOLA } })],
     ask_problem: [
@@ -969,6 +1007,7 @@ export const doctor: SituationDef = {
     pay_later_transfer: [t("Sí, | también | acepto | transferencia; | me | paga | al | final.", "Yes, | also | I-accept | transfer; | (to) me | you-pay | at the | end.",
       "Yes, I take bank transfers too. You can pay at the end.")],
     pay_which: [t("Perdón, | ¿en efectivo | o | con | tarjeta?", "Sorry, | in cash | or | with | card?", "Sorry, was that cash or card?")],
+    pay_either: [t("Sí, | como | prefiera.", "Yes, | as | you-prefer.", "Sure, whichever you prefer.")],
     pay_at_end: [t("Al | final | me | paga, | no se preocupe.", "At the | end | (to) me | you-pay, | don't worry.", "You can pay me at the end, don't worry.")],
     receipt_ok: [t("Claro, | aquí tiene | su | recibo.", "Sure, | here's | your | receipt.", "Sure, here's your receipt.")],
     receipt_later: [t("Claro, | al | pagar | le | doy | su | recibo.", "Sure, | on | paying | (to) you | I-give | your | receipt.", "Sure, I'll give you a receipt when you pay.")],
@@ -1179,7 +1218,7 @@ export const doctor: SituationDef = {
   steps: [
     // the date-of-birth check is dropped when the learner goes straight to what's wrong (or after three tries)
     { id: "dob", when: (c) => !!c.s.askDob && !dobSkipped(c), done: (c) => !!c.s.dob,
-      ask: (c) => { c.s.dobAsks = (c.s.dobAsks ?? 0) + 1; c.say(c.s.dobPartial && !c.s.dobYear ? "dob_year" : "ask_dob"); },
+      ask: (c) => { c.s.dobAsks = (c.s.dobAsks ?? 0) + 1; c.say(c.s.dobPartial && !c.s.dobYear ? "dob_year" : c.s.dobYear && !c.s.dobPartial ? "dob_daymonth" : "ask_dob"); },
       expects: ["dob_ans", "dob_ctx", "year_ctx"],
       suggest: [{ lt: "Say your date of birth (day, month, year)", hint: "dob" }] },
     { id: "problem", done: (c) => syms(c).length > 0,
@@ -1294,11 +1333,14 @@ export const doctor: SituationDef = {
     // a private clinic: the visit is paid at the end
     { id: "pay", when: (c) => !!c.s.rxGiven, done: (c) => !!c.s.paid,
       ask: (c) => {
+        if (c.s.payQuiet) { c.s.payQuiet = undefined; return; } // payNow: the fee was just dealt with this turn
         if (!c.s.totalSaid) { c.s.totalSaid = true; c.say("consult_price", { price: FEE }); if (!c.s.payMethod) c.say("ask_pay_method"); return; }
-        if (c.s.payMethod === "cash") c.say("cash_wait", { price: FEE - ((c.s.cashIn as number | undefined) ?? 0) });
+        const cashIn = (c.s.cashIn as number | undefined) ?? 0;
+        // part of it in cash already: what's left ("Faltan $300"), never "Son $300" after "son $500"
+        if (c.s.payMethod === "cash") c.say(cashIn > 0 ? "left_is" : "cash_wait", { price: FEE - cashIn });
         else c.say("pay_method_again");
       },
-      expects: ["pay_card", "pay_cash", "pay_transfer", "here_you_go", "here_you_go_ctx", "no_cash", "no_card", "ask_cost", "ask_receipt"],
+      expects: ["pay_card", "pay_cash", "pay_transfer", "here_you_go", "here_you_go_ctx", "no_cash", "no_cash_ctx", "no_card", "ask_cost", "ask_receipt"],
       suggest: [{ lt: "Pay for the visit", hint: "pay" }] },
   ],
 
@@ -1477,13 +1519,13 @@ export const doctor: SituationDef = {
       if (c.s.paid) { c.say("paid_already"); return; }
       // after the directions the fee is due now: the price and how to pay, said once
       const cashIn = (c.s.cashIn as number | undefined) ?? 0;
-      if (c.s.rxGiven && cashIn > 0) { c.say("left_is", { price: FEE - cashIn }); c.hold(); return; }
+      if (c.s.rxGiven && cashIn > 0) { c.say("left_is", { price: FEE - cashIn }); payNow(c); return; }
       if (c.s.rxGiven) {
         c.s.totalSaid = true;
         c.say("consult_price", { price: FEE });
         if (seg.tags.includes("ins")) c.say("ins_receipt");
         if (!c.s.payMethod && firstThisTurn(c, "method")) c.say("ask_pay_method");
-        c.hold();
+        payNow(c);
         return;
       }
       c.say("cost_info", { price: FEE });
@@ -1538,13 +1580,14 @@ export const doctor: SituationDef = {
       if (c.s.paid) { c.say("paid_already"); return; }
       if (!c.s.rxGiven) { c.say("no_cash_ok"); return; }
       if (c.s.payMethod === "cash") c.s.payMethod = undefined;
-      c.say("no_cash_ok"); c.hold();
+      c.say("no_cash_ok"); payNow(c);
     },
+    no_cash_ctx(c, slots, seg) { doctor.handlers.no_cash(c, slots, seg); },
     no_card(c) {
       if (c.s.paid) { c.say("paid_already"); return; }
       if (!c.s.rxGiven) { c.say("no_card_ok"); return; }
       if (c.s.payMethod === "card") c.s.payMethod = undefined;
-      c.say("no_card_ok"); c.hold();
+      c.say("no_card_ok"); payNow(c);
     },
     here_you_go(c, slots) { handMoney(c, slots.price as number | undefined); },
     here_you_go_ctx(c) { handMoney(c, undefined); },
@@ -1558,7 +1601,7 @@ export const doctor: SituationDef = {
     // Thanks and goodbyes: once the visit is paid, "Gracias, adiós" gets the doctor's wrap-up; before paying, the fee.
     g_thanks(c) { c.say("g_welcome"); if (c.s.__finished || c.s.wrapped) c.hold(); },
     g_bye(c) {
-      if (c.s.rxGiven && !c.s.paid) { c.s.totalSaid = true; c.say("pay_first", { price: FEE }); c.hold(); return; }
+      if (c.s.rxGiven && !c.s.paid) { c.s.totalSaid = true; c.say("pay_first", { price: FEE }); payNow(c); return; }
       if (c.s.paid && !c.s.wrapped) wrapUp(c);
       else c.say("g_bye");
       c.end(); c.hold();
@@ -1694,6 +1737,23 @@ export const doctor: SituationDef = {
     { say: "No, conozco otra", step: "pharmacy", intent: "pharmacy_ans" },
     { say: "No sé, soy nueva aquí", step: "pharmacy", intent: "pharmacy_dunno_ctx" },
     { say: "Empezó ayer en la noche", step: "howlong", intent: "howlong_ans" },
+    // lead's check: two ways joined by "o" are a question (nothing charged); short of cash; the allergy kept;
+    // a hedged temperature; numbers and dates as learners say them
+    { say: "¿Puedo pagar con tarjeta o en efectivo?", step: "pay", intent: "pay_card", not: ["pay_cash"] },
+    { say: "¿Acepta tarjeta o solo efectivo?", step: "pay", intent: "pay_card", not: ["pay_cash"] },
+    { say: "¿Cómo le pago?", intent: "ask_cost", not: ["g_howareyou"] },
+    { say: "No me alcanza", step: "pay", intent: "no_cash_ctx", not: ["pay_cash", "here_you_go"] },
+    { say: "No traigo más efectivo", step: "pay", intent: "no_cash", not: ["pay_cash"] },
+    { say: "Es todo lo que tengo", step: "more_sym", intent: "sym_none_ctx", not: ["no_cash", "no_cash_ctx"] },
+    { say: "No, cien", step: "pay", intent: "none" },
+    { say: "No sé, como 38", step: "fever", intent: "temp_ctx", slots: { temp: { v: 38 } }, not: ["temp_dunno_ctx", "temp_unknown"] },
+    { say: "Soy alérgico a la penicilina, no tengo otras alergias", step: "allergy", intent: "allergy_ans" },
+    { say: "Solo a la penicilina, a nada más", step: "allergy", intent: "allergy_ans" },
+    { say: "No sé si soy alérgica a la penicilina", step: "allergy", intent: "allergy_ans", not: ["allergy_dunno_ctx"] },
+    { say: "Un siete u ocho", step: "scale", intent: "scale_ctx", slots: { n: 7, n2: 8 } },
+    { say: "Desde hace unas horas", step: "howlong", intent: "howlong_ans" },
+    { say: "Nací en 1980", step: "dob", intent: "year_ctx", slots: { year: 1980 } },
+    { say: "Junio 4 de 1980", step: "dob", intent: "dob_ans", slots: { date: { day: 4, month: 6 }, year: 1980 } },
   ],
 
   sims: [
@@ -1767,6 +1827,17 @@ export const doctor: SituationDef = {
       turns: ["Tengo el estómago revuelto", "Empezó ayer en la noche", "No", "No, nada", "Ok", "Aaa", "Sí, un poco", "No", "Tarjeta no efectivo", "En efectivo",
         "Aquí tiene doscientos", "¿Cuánto falta?", "Aquí tiene trescientos", "Gracias, adiós"],
       expect: { complete: true, state: { dx: "stomach", paid: true, payMethod: "cash", cashIn: 50000 } }, auto: { ...AUTO, fever: "No" } },
+    // lead's check: the fee asked first (a bare "Aquí tiene" then pays), both ways asked, some cash and the card for the rest
+    { name: "lead: the fee first, both ways asked, some cash, the card for the rest",
+      setup: (s) => { s.bpTwist = false; s.chartTwist = false; s.askPharmacy = false; s.offerNote = false; s.askQ = false; s.askMoreQ = false; s.askMore = false; s.askScale = false; s.askDob = false; s.feelingOpener = false; },
+      turns: ["Tengo dolor de cabeza", "Desde ayer", "No", "No, nada", "Ok", "Aaa", "No", "No", "¿Cuánto le debo?", "¿Le pago con tarjeta o en efectivo?", "En efectivo",
+        "Aquí tiene doscientos", "No me alcanza", "Con tarjeta", "Gracias, adiós"],
+      expect: { complete: true, state: { dx: "tension", paid: true, payMethod: "card", cashIn: 20000 } }, auto: { ...AUTO, fever: "No" } },
+    { name: "lead: a hedged temperature, penicillin and nothing else, a bare «Tenga» after the price",
+      setup: (s) => { s.bpTwist = false; s.chartTwist = false; s.askPharmacy = false; s.offerNote = false; s.askQ = false; s.askMoreQ = false; s.askMore = false; s.askScale = false; s.askDob = false; s.feelingOpener = false; },
+      turns: ["Me duele la garganta", "Desde el lunes", "No sé, como 38", "No, nada", "Ok", "Aaa", "Sí", "Solo a la penicilina, a nada más", "¿Cuánto es?", "En efectivo", "Tenga",
+        "Gracias, adiós"],
+      expect: { complete: true, state: { dx: "throat", allergy: "pen", temp: { c: 38 }, paid: true, payMethod: "cash", cashIn: 50000 } }, auto: { ...AUTO, fever: "No sé, como 38" } },
   ],
 };
 
@@ -1815,9 +1886,12 @@ function tempUnknown(c: Ctx) {
 }
 
 function chartAnswer(c: Ctx, tags: string[]) {
-  const a = tags.includes("neg") ? "none" : tags.includes("pen") ? "pen" : tags.includes("other") || tags.includes("nsaid") ? "other" : tags.includes("unsure") ? "pen" : "none";
-  if (a === "none") { c.s.allergy = "none"; c.say("chart_fixed"); return; }
-  setAllergy(c, [a]);
+  // unsure, or "ninguna otra" (no other one), keeps the chart's penicillin
+  const a = tags.includes("neg") ? "none" : tags.includes("pen") ? "pen" : tags.includes("other") || tags.includes("nsaid") ? "other"
+    : tags.includes("unsure") || tags.includes("others") ? "pen" : "none";
+  if (a !== "none") { setAllergy(c, tags.includes("others") ? [a, "others"] : [a]); return; }
+  if (allergyKept(c, a, tags)) return;
+  c.s.allergy = "none"; c.say("chart_fixed");
 }
 
 /** What she'll prescribe, said once (before the allergy question, or at the prescription). */
@@ -1919,16 +1993,48 @@ function askNext(c: Ctx) {
 // ---------------------------------------------------------------------------
 // Paying for the visit: card or transfer at once; cash counts every bill handed over.
 
+/** Two ways to pay joined by "o" ("¿Le pago con tarjeta o en efectivo?", "¿Tarjetas o efectivo?"): a question.
+ *  Read on the words as heard, spelled by sound too ("targeta", "efectibo"), as the grammar forgives them. */
+const wayOf = (w: string) => (/^tar[jg]e/.test(w) ? "card" : /^e[fv]e[ck]t/.test(w) ? "cash" : /^trans?f/.test(w) ? "transfer" : "");
+function askedEither(heard: string): boolean {
+  const words = heard.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[^a-zñ]+/).filter(Boolean);
+  return words.some((w, i) => {
+    if (w !== "o" && w !== "u") return false;
+    const before = words.slice(0, i).map(wayOf).filter(Boolean).pop();
+    const after = words.slice(i + 1).map(wayOf).find(Boolean);
+    return !!before && !!after && before !== after;
+  });
+}
+
 function choosePay(c: Ctx, method: "card" | "cash" | "transfer", tags: string[] = []) {
   if (c.s.paid) { c.say("paid_already"); return; }
+  // "¿Puedo pagar con tarjeta o en efectivo?": either is fine, and nothing is chosen yet (never the card charged
+  // and then "Ya está pagado" for the second word)
+  if (tags.includes("either") || askedEither(c.heard)) {
+    if (!firstThisTurn(c, "method")) return;
+    c.say("pay_either");
+    if (!c.s.rxGiven) { c.say("pay_at_end"); return; }
+    if (!c.s.totalSaid) { c.s.totalSaid = true; c.say("consult_price", { price: FEE }); }
+    payNow(c);
+    return;
+  }
   // "¿Acepta tarjeta?" during the visit: yes, and it's paid at the end
   if (!c.s.rxGiven) { c.say(method === "card" ? "pay_later_card" : method === "transfer" ? "pay_later_transfer" : "pay_at_end"); return; }
   // "Tarjeta no efectivo": the comma decides, and voice has none (rule 10): she asks again
-  if (tags.includes("amb")) { if (firstThisTurn(c, "method")) c.say("pay_which"); c.hold(); return; }
+  if (tags.includes("amb")) { if (firstThisTurn(c, "method")) c.say("pay_which"); payNow(c); return; }
   if (!c.s.totalSaid) { c.s.totalSaid = true; c.say("consult_price", { price: FEE }); }
   c.s.payMethod = method;
-  if (method === "cash") { c.say("cash_ok"); c.hold(); return; } // she waits for the money
+  if (method === "cash") { c.say("cash_ok"); payNow(c); return; } // she waits for the money
   finishPay(c, method);
+}
+
+/** The fee is dealt with before the pay step was asked (a price question, a method, some money or a goodbye right
+ *  after the directions): the pay step becomes the current one, so a bare "Aquí tiene" / "Tenga" and the paying
+ *  hints work on the next turn, and nothing more is said now. */
+function payNow(c: Ctx) {
+  if (c.step === "pay") { c.hold(); return; }
+  c.s.payQuiet = true;
+  c.ask("pay");
 }
 
 function handMoney(c: Ctx, given?: number) {
@@ -1944,16 +2050,20 @@ function finishPay(c: Ctx, method: "card" | "cash" | "transfer", given?: number)
   if (c.s.paid) return;
   if (method === "cash" && given) {
     // a bill she can't change: not counted, she asks for a smaller one
-    if (given > MAX_CASH) { c.say("no_change"); c.hold(); return; }
+    if (given > MAX_CASH) { c.say("no_change"); payNow(c); return; }
     const sum = ((c.s.cashIn as number | undefined) ?? 0) + given;
     c.s.cashIn = sum;
-    if (sum < FEE) { c.s.payMethod = "cash"; c.say("short", { total: FEE, price: FEE - sum }); c.hold(); return; }
+    if (sum < FEE) { c.s.payMethod = "cash"; c.say("short", { total: FEE, price: FEE - sum }); payNow(c); return; }
     given = sum;
-  }
+  } else if (method === "cash") c.s.cashIn = FEE; // a bare "Aquí tiene": the amount due (or the rest of it)
+  // the rest by card or transfer after some cash ("Aquí tiene doscientos… Mejor con tarjeta"): only what's left
+  const cashIn = (c.s.cashIn as number | undefined) ?? 0;
+  const rest = method !== "cash" && cashIn > 0 && cashIn < FEE ? FEE - cashIn : 0;
   c.s.paid = true;
   c.s.payMethod = method;
-  c.event("pay", { method, amount: FEE });
+  c.event("pay", { method, amount: rest || FEE });
   c.complete(); // the goal: told the doctor, got the directions, paid
+  if (rest) c.say("left_is", { price: rest });
   if (method === "card") c.say("card_tap");
   else if (method === "transfer") c.say("transfer_ok");
   else if (given && given > FEE) c.say("change_is", { price: given - FEE });
