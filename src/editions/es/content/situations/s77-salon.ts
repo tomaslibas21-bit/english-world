@@ -118,13 +118,13 @@ export const salon: SituationDef = {
       "[si] (mi | la) cita es a {time} [con usted]", "[si] (soy | yo soy) (su | la) cita de {time}", "[si] mi cita es con usted [a {time}]",
       "[si] (vengo | estoy aqui) (a | por | para) (mi cita | la cita | una cita) [de {time} | a {time}]", "[si] (tengo | hice) (una)? (reservacion | reserva) [a {time}]",
       // "¿Usted es mi cita de las tres?" – "No, tengo cita a las cuatro" (its comma lost: the likelier reading)
-      "no (tengo | tenia) (cita | mi cita | la cita) a {time}",
+      "no (tengo | tenia) (cita | mi cita | la cita) a {time} #notat",
     ] },
     // a bare "A las tres" / "Sí, soy yo": only at "¿Tiene cita?"
     appt_time_ctx: { patterns: ["[si] (a | para) {time}", "[si] soy yo", "[si] (a | para) {time} con usted"] },
     appt_none: { patterns: [
       "[no] no tengo [una | ninguna] cita #h:no_appt", "[no] sin cita", "[no] no (hice | agendé | reservé | saqué) [una | la | ninguna] cita", "[no] no tengo (reservacion | reserva)",
-      "[no] vengo sin cita", "[no] no hice ninguna", "[no] (no)? tengo cita (no)?",
+      "[no] vengo sin cita", "[no] no hice ninguna", "[no] no tengo cita no",
     ] },
     walkin: { patterns: [
       "(atienden | atiende | aceptan | acepta) sin cita #h:walkin", "(puedo | se puede) (venir | pasar) sin cita",
@@ -157,6 +157,7 @@ export const salon: SituationDef = {
       "[si] (un tecito | una taza de te | te verde | te helado | un te helado | un te verde)", "[si] (agua | un cafe | un cafecito | un vaso de agua) (esta bien | estaria bien | me caeria bien)",
       "[si] (me da | me regala | quiero | quisiera | me gustaria) (agua | un vaso de agua | un cafe | un cafecito | un vasito de agua)", "(tiene | hay) (cafe | agua)",
       "[si] (agua | un cafe | cafe | un cafecito) (con hielo | sin azucar | con azucar | con leche | fria | negro)", "(dame | me das) (agua | un cafe | un vaso de agua) #tip:tu_staff",
+      "(cafe | agua) no [mejor] (agua | un vaso de agua | un vasito de agua | cafe | un cafe | un cafecito) [por favor]",
     ] },
     // "No quiero nada, gracias" at "¿Le ofrezco agua o un cafecito?"
     drink_no_ctx: { patterns: ["[no] no quiero nada [gracias]", "[no] nada [gracias]", "[no] no gracias acabo de tomar (cafe | agua | un cafe)", "[no] no quiero (cafe | agua | nada de tomar)"] },
@@ -184,7 +185,8 @@ export const salon: SituationDef = {
       "(quiero | quisiera | me gustaria) (un cambio de look | un cambio | un look nuevo | un nuevo look | cambiar de look | cambiar mi look) #h:new_look",
       "(quiero | quisiera | me gustaria) (algo diferente | algo nuevo | cambiar mi corte | cambiar de estilo | un cambio radical | un estilo nuevo | algo distinto)",
       "(quiero | quisiera | me gustaria) (un corte | algo)? (mas corto | corto | mucho mas corto | bien corto | cortito)", "(lo quiero | lo quisiera) (corto | mas corto | cortito | bien corto | mucho mas corto)",
-      "(cortelo | corte) (corto | mas corto | bien corto)", "(cortalo) (corto | mas corto) #tip:tu_staff", "algo (mas corto | corto | cortito | fresco) [para el calor]",
+      "(cortelo | corte) (corto | mas corto | bien corto)", "(cortalo) (corto | mas corto) #tip:tu_staff", "algo (mas corto | corto | cortito | fresco | mucho mas corto | bien corto) [para el calor]",
+      "(quiero | quisiera | me gustaria) (un cambio | algo diferente | algo nuevo | un cambio de look) [y | algo] (mas corto | mucho mas corto | bien corto | corto | cortito)",
       "(un | quiero un | quisiera un)? (degradado | fade | bob | pixie | corte bob | corte pixie | corte militar | rapado | casquete corto | undercut)",
       "(cortarme | me quiero cortar) [el pelo | el cabello] (corto | bien corto | mucho)", "estoy (listo | lista) para un cambio", "[mucho] mas corto",
       "(quiero | quisiera) (cortarme | cortar) (el pelo | el cabello) (muy | bien | mas)? (corto | cortito)", "(quiero | quisiera | lo quiero) (el pelo | el cabello) (corto | mas corto | cortito | bien corto)",
@@ -203,6 +205,7 @@ export const salon: SituationDef = {
     not_short: { patterns: [
       "no (muy | tan | demasiado) corto #h:not_short", "no (me lo | lo) (deje | corte) (muy | tan | demasiado)? corto", "no (lo quiero | quiero que quede | quiero que me quede) (muy | tan | demasiado)? corto",
       "no (mucho | tanto | demasiado)", "no (le corte | me corte | corte) (mucho | demasiado)", "(no quiero | no lo quiero) (mas)? corto", "[pero] (cuidado con | cuide) el largo", "no (quiero | quisiera) (mucho | tanto)", "no (quiero | quisiera) que (me corte | le corte | corte) (mucho | demasiado)",
+      "que no (quede | me quede | lo deje | me lo deje | me lo corte | lo corte) (muy | tan | demasiado)? corto", "no (mas | mucho mas) corto", "(no tan | no muy) corto [por favor]",
     ] },
 
     // --- how much off --------------------------------------------------------------------------
@@ -243,7 +246,7 @@ export const salon: SituationDef = {
     keep_layers: { patterns: ["[si] (dejeme | deje | dejele) las capas", "[si] (quiero | me gustan) (las | mis) capas", "[si] (con capas | unas capas)", "[si] (quiero | quisiera) (unas | algunas)? capas",
       "[si] (mantenga | conserve) las capas", "[si] (dejelas | dejalas)"] },
     no_layers: { patterns: ["[no] sin capas", "[no] no (quiero | me gustan | necesito) (las)? capas", "[no] (todo | todo el pelo) parejo", "[no] (parejo | todo al mismo largo | del mismo largo)",
-      "[no] (quite | quiteme) las capas", "[no] no (me deje | deje | me haga | haga) capas"] },
+      "[no] (quite | quiteme) las capas", "[no] no (me deje | deje | me haga | haga) capas", "[no] capas no [gracias]"] },
 
     // --- wash and water ------------------------------------------------------------------------
     water_temp: { patterns: [
@@ -255,7 +258,7 @@ export const salon: SituationDef = {
     water_ok: { patterns: [
       "[el agua] esta (perfecta | bien | rica | muy bien | super bien | agradable | tibia | muy rica) [gracias] #h:water_ok", "(perfecta | rica | muy rica | deliciosa)",
       "[si] (asi | ahora | ya) esta (perfecta | mejor | muy bien | rica)", "[si] (ahora | ya) (si)? esta (perfecta | bien | mejor)", "(mucho)? mejor [gracias]",
-      "no (esta)? (muy | tan)? (caliente | fria)", "esta tibia esta bien",
+      "esta tibia esta bien",
     ] },
     no_wash: { patterns: [
       "[no] (me lo lavé | ya me lo lavé | lo lavé | me lavé el pelo | me lavé el cabello | ya me bañé | me bañé) [en la manana | hoy | esta manana | antes de venir | en casa]",
@@ -278,8 +281,8 @@ export const salon: SituationDef = {
     // --- blow-dry and style ------------------------------------------------------------------
     style: { patterns: [
       "[nada mas] (lacio | planchado | liso) #straight #h:straight", "con ondas #waves #h:waves", "(con | unas) (ondas | rizos | chinos) #waves", "(ondulado | rizado | chino) #waves",
-      "con (volumen | un poco de volumen | mucho volumen) #volume #h:volume", "[al] natural #natural",
-      "(lo quiero | quisiera | prefiero | me gusta) (lacio #straight | con ondas #waves | ondulado #waves | con volumen #volume | natural #natural | al natural #natural)",
+      "con (volumen | un poco de volumen | mucho volumen) #volume #h:volume", "[al] natural #nodry",
+      "(lo quiero | quisiera | prefiero | me gusta) (lacio #straight | con ondas #waves | ondulado #waves | con volumen #volume | natural #nodry | al natural #nodry)",
       "que se seque solo #nodry #h:no_blowdry", "(dejelo | lo dejo) (secar solo | que se seque solo | al aire) #nodry", "[no] sin (secadora | secar | secado) #nodry",
       "(se seca | lo dejo secar) (solo | al aire) #nodry", "(lacio #straight | con ondas #waves) esta bien", "(sequelo | secarlo) (lacio #straight | con ondas #waves)", "(normal | como siempre | asi nomas | sencillo) #natural",
       "[no] no (quiero que me lo seque | lo seque | hace falta secarlo | necesito secadora) #nodry",
@@ -292,7 +295,7 @@ export const salon: SituationDef = {
       "(esta | quedó) (perfecto | precioso | padrisimo | divino | genial)", "(perfecto | precioso | hermoso | genial | excelente | increible | divino | padrisimo | bellisimo)",
       "(que | muy) (bonito | bien | padre | lindo) [quedó | se ve | me queda]", "me veo (muy)? (bien | joven | mas joven | guapo | guapa | diferente | increible)",
       "(buen | excelente) (trabajo | corte)", "(estoy | quedé) (muy | super)? (contento | contenta | feliz) [con el corte]", "es (justo | exactamente) lo que queria",
-      "(wow | guau | orale)", "no esta mal", "no (esta | quedó | se ve) (muy | tan | demasiado)? corto", "me (queda | quedó) (muy | super)? (bien | bonito | padre)", "no (me | le)? cortó (mucho | demasiado | tanto)",
+      "(wow | guau | orale)", "no esta mal", "me (queda | quedó) (muy | super)? (bien | bonito | padre)", "no se ve mal",
     ] },
     more_off: { patterns: [
       "(me puede | me podria | puede | podria) (cortar | quitar | cortarle) (un poco | un poquito | un poquitito | tantito)? mas [de (atras | los lados | arriba | adelante)] #h:more_off",
@@ -303,7 +306,10 @@ export const salon: SituationDef = {
       "(esta | quedó | lo veo) [@deg] mas corto de lo que (pensaba | queria | esperaba | dijimos | le pedi) #h:shorter", "(me | lo) cortó (demasiado | de mas | mucho | muy corto)",
       "(esta | quedó) (muy | demasiado | super | bien) corto", "es (mas | mucho mas) de lo que dijimos", "no es lo que (queria | pedi | esperaba)", "(esta | quedó) (diferente | distinto)",
       "creo que (cortó | me cortó) (mucho | demasiado | de mas)", "(esta | quedó) [un poco | un poquito] corto",
+      "(me lo | lo | me) (dejó | cortó) (muy | demasiado | super | bien) corto", "(me | le)? (cortó | quitó) (mas de lo que | mas de lo que le) (pedi | dije | dijimos)", "(esta | quedó) (mas corto | muy corto) de lo que (pedi | dije)",
     ] },
+    // "No está muy corto" / "No, está muy corto", "No me cortó demasiado" / "No, me cortó demasiado": the comma decides, so Paty asks
+    short_amb_ctx: { patterns: ["no (esta | quedó | se ve | lo veo) [@deg] corto #amb", "no (me | le | lo | me lo)? cortó (mucho | demasiado | tanto | de mas) #amb", "no (me | lo | me lo)? dejó (muy | demasiado | tan | bien) corto #amb"] },
     polite_ok: { patterns: [
       "no pasa nada #h:grow_back", "ya crecerá #h:grow_back", "(el pelo | el cabello)? (crece | va a crecer | ya crece | vuelve a crecer) [rapido]", "(no se preocupe | no te preocupes) [ya crecerá | el pelo crece]",
       "aun asi me gusta #h:still_like", "(de todos modos | igual | aun asi) me gusta", "(igual | aun asi) se ve bien", "(esta bien | no importa) (me gusta | ya crecerá | crece rapido)",
@@ -344,13 +350,13 @@ export const salon: SituationDef = {
     from_ans: { patterns: [
       "soy de estados unidos #far #h:from_us", "soy de canada #far #h:from_ca", "[soy] [de] @country #far", "(vengo de | soy originario de | soy originaria de | naci en) @country #far",
       "soy (estadounidense | americano | americana | canadiense | ingles | inglesa | irlandes | irlandesa | escoces | escocesa | australiano | australiana | neozelandes | neozelandesa | britanico | britanica | gringo | gringa) #far",
-      "no soy de aqui [soy de @country] #far", "(me acabo de mudar | acabo de mudarme | me mudé) (aqui | a puerto colibri | al pueblo | hace poco) [de @country] #moved #h:from_moved",
+      "no soy de aqui", "no soy de aqui soy de @country #far", "(me acabo de mudar | acabo de mudarme | me mudé) (aqui | a puerto colibri | al pueblo | hace poco) [de @country] #moved #h:from_moved",
       "(vivo | ya vivo) aqui [desde hace {n:number} (meses | anos)] #moved", "[soy de] @country pero vivo aqui #moved",
     ] },
     vacation_ctx: { patterns: [
       "[si] (quiero | me gustaria | pienso) ir a @place [@when_trip] #h:vacation", "[si] (voy | vamos) a (ir a)? @place [@when_trip]",
       "[si] voy a visitar a (mi familia | mis papas | mis padres | mis hijos | unos amigos) [en @country] [@when_trip] #h:vac_family",
-      "(todavia no | aun no | no todavia) [lo se | tengo planes] #relax #h:vac_not_yet", "[no] no tengo planes [todavia | este ano] #relax", "[no] este ano no #relax",
+      "(todavia no | aun no | no todavia) [lo se | tengo planes] #unsure #h:vac_not_yet", "[no] no tengo planes [todavia | este ano] #unsure", "[no] este ano no #relax",
       "(voy | regreso | vuelvo) a (casa | mi pais) [@when_trip]", "@trip [tal vez | creo]", "(no se todavia | todavia no se | aun no se | no se a donde) #unsure",
     ] },
     ask_jessie: { patterns: ["[y] usted [que va a hacer | que hace | que planes tiene | tiene planes]", "y usted que", "(que | y que) va a hacer usted", "y tu #tip:tu_staff"] },
@@ -368,6 +374,7 @@ export const salon: SituationDef = {
     pay_card: { patterns: [
       "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toma | toman | recibe | reciben) tarjeta",
       "(pago | voy a pagar | le pago) con tarjeta", "(con)? tarjeta de (credito | debito)", "con (mi | la) tarjeta", "(aceptas | tomas) tarjeta #tip:tu_staff", "efectivo no [mejor] [con] tarjeta", "no (acepta | aceptan) tarjeta",
+      "no (en | con)? efectivo [no] [sino | mejor] (con)? tarjeta", "en efectivo no [sino | mejor] (con)? tarjeta",
     ] },
     // "¿Y si pago con tarjeta?" (a what-if) and "Ya pagué" (a past): never a payment
     pay_whatif: { patterns: ["(y si | que pasa si | que tal si) (pago | le pago | pagara | pagamos) (con tarjeta #card | en efectivo #cash | con efectivo #cash | con transferencia #transfer | por transferencia #transfer)"] },
@@ -378,11 +385,14 @@ export const salon: SituationDef = {
     invoice_q: { patterns: ["(me da | me puede dar | me puede hacer | dan | da | hacen | hace) factura", "(necesito | quiero | quisiera) (una)? factura", "(me | lo | se puede) facturar", "factura"] },
     no_card: { patterns: ["no (quiero | puedo) pagar con tarjeta", "no pago con tarjeta", "no (tengo | traigo) tarjeta", "sin tarjeta"] },
     no_cash: { patterns: ["no (tengo | traigo) [suficiente] efectivo", "sin efectivo", "no (puedo | quiero) pagar en efectivo"] },
-    pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo", "efectivo", "(pago | voy a pagar | le pago) en efectivo #h:pay_cash", "con efectivo", "tarjeta no [mejor] [en] efectivo"] },
+    pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo", "efectivo", "(pago | voy a pagar | le pago) en efectivo #h:pay_cash", "con efectivo", "tarjeta no [mejor] [en] efectivo",
+      // "No con tarjeta, en efectivo": one pattern, so the card half never pays
+      "no (con)? tarjeta [no] [sino | mejor] (en | con)? efectivo", "con tarjeta no [sino | mejor] (en | con)? efectivo"] },
     pay_phone: { patterns: [
       "(puedo | le puedo | se puede) (hacer | mandar) (una)? transferencia #h:pay_transfer", "(por | con) transferencia", "(acepta | aceptan) transferencia", "(le | se lo) (transfiero | deposito)",
       "(puedo | se puede) pagar con (el | mi)? (celular | telefono)", "con (el | mi)? (celular | telefono)", "(apple pay | google pay)", "(le pago | pago) (por | con) transferencia", "transferencia",
       "no (tengo | traigo) (tarjeta | efectivo) [pero] (acepta | aceptan | puedo hacer | le hago | le puedo hacer) [una] transferencia",
+      "no (con tarjeta | en efectivo | con efectivo) [sino | mejor] (por | con) transferencia",
     ] },
     here_you_go: { patterns: ["aqui tiene #h:here_you_go", "aqui (esta | le dejo | le doy)", "tenga", "aqui tiene (mi tarjeta | el dinero)", "(aqui tiene | tenga | le doy | aqui le dejo) {price}",
       "tenga son {price}", "aqui (estan | tiene) los {price}"] },
@@ -404,6 +414,7 @@ export const salon: SituationDef = {
       "[no] por ahora no #h:book_later", "[no] (despues | luego | mas tarde) (le llamo | le mando un mensaje | le escribo | le marco | agendo)",
       "[no] (le llamo | le marco | le escribo | le mando (un)? (mensaje | whatsapp)) (despues | luego | mas tarde | para agendar)", "[no] (tengo que | necesito) (revisar | ver | checar) mi (agenda | calendario | horario)",
       "[no] no se (mi horario | cuando puedo)", "[no] (le llamo | le marco | le escribo | le mando un mensaje | yo le aviso | le aviso)", "[no] no quiero agendar [todavia | ahorita | por ahora | otra cita]", "[no] (mejor)? (despues | luego) (agendo | veo)", "(puedo | se puede) agendar por (mensaje | whatsapp | telefono)",
+      "(ahorita | ahora | hoy) no [gracias] [yo] [le (llamo | marco | escribo | aviso | mando un mensaje)] [despues | luego | mas tarde]", "[no] yo le (llamo | marco | escribo | aviso | mando un mensaje) [despues | luego | mas tarde | para agendar]",
     ] },
     // "¡Nos vemos en un mes!" at the end
     see_you: { patterns: ["[gracias] nos vemos (en un mes | en seis semanas | la proxima | pronto | el proximo mes)", "[gracias] hasta (la proxima | el proximo mes)"] },
@@ -495,6 +506,7 @@ export const salon: SituationDef = {
     len_sides: [t("Claro, | más | corto | de | los | lados.", "Sure, | more | short | on | the | sides.", "Sure, shorter on the sides.")],
     inch_1: [t("¿Una | pulgada? | Son | como | dos | centímetros | y medio.", "One | inch? | It's | about | two | centimeters | and a half.", "An inch? That's about two and a half centimeters.")],
     inch_half: [t("¿Media | pulgada? | Es | como | un | centímetro.", "Half | inch? | It's | about | one | centimeter.", "Half an inch? That's about one centimeter.")],
+    inch_15: [t("¿Una | pulgada | y media? | Son | como | cuatro | centímetros.", "One | inch | and a half? | It's | about | four | centimeters.", "An inch and a half? That's about four centimeters.")],
     inch_n: [t("¿{$num} | pulgadas? | Son | como | {$cm} | centímetros.", "{$num} | inches? | It's | about | {$cm} | centimeters.", "{$num} inches? That's about {$cm} centimeters.")],
     cm_note: [t("Aquí | medimos | en | centímetros.", "Here | we-measure | in | centimeters.", "We use centimeters here.")],
     cm_big: [t("¿{$cm} | centímetros? | ¡Va | a | ser | un | cambio | grande!", "{$cm} | centimeters? | It's going | to | be | a | change | big!", "{$cm} centimeters? That's a big change!")],
@@ -554,6 +566,11 @@ export const salon: SituationDef = {
     react_unsure: [t("Bueno, | ¡todavía | hay | tiempo!", "Well, | still | there-is | time!", "Well, there's still time!")],
     react_far: [t("¡Ah, | qué | bien! | Yo | nunca | he | ido.", "Oh, | how | nice! | I | never | have | gone.", "Oh, cool! I've never been there.")],
     react_moved: [t("¡Ah, | {m:bienvenido|f:bienvenida} | al | pueblo!", "Oh, | welcome | to the | town!", "Oh, welcome to town!")],
+    jessie_from: [t("¿Yo? | Soy | de | aquí. | Nací | en | el | pueblo.", "Me? | I'm | from | here. | I-was-born | in | the | town.", "Me? I'm from here. I was born in this town.")],
+    jessie_vacation: [t("¿Yo? | Ojalá | ir | a | Bacalar, | pero | no sé | cuándo.", "Me? | Hopefully | to go | to | Bacalar, | but | I don't know | when.", "Me? I'd love to go to Bacalar, but I don't know when.",
+      { flags: { 1: "ojalá: “I hope / if only”, very common." } })],
+    jessie_pets: [t("¿Yo? | Nada más | tengo | a | Canela, | ¡y | con | ella | basta!", "Me? | Just | I-have | — | Canela, | and | with | her | it's enough!", "Me? Just Canela, and she's plenty!",
+      { flags: { 3: "Personal a: Spanish puts a before a pet it treats as a person." } })],
     jessie_weekend: [t("¿Yo? | Nada más | voy | a | estar | en | mi | casa | con | mi | gata.", "Me? | Just | I'm-going | to | be | at | my | house | with | my | cat.",
       "Me? I'm just hanging out at home with my cat.")],
 
@@ -610,7 +627,7 @@ export const salon: SituationDef = {
     receipt_after: [t("Claro, | cuando | pague | se lo | doy.", "Sure, | when | you-pay | it to you | I-give.", "Sure, I'll give you one when you pay.")],
     invoice_line: [t("Claro. | Mándeme | sus | datos | fiscales | por | mensaje | y | se la | hago.", "Sure. | Send me | your | details | tax | by | message | and | it for you | I-make.",
       "Sure. Send me your tax details by message and I'll make it out.", { flags: { 3: "datos fiscales: the details a Mexican tax invoice (factura) needs, like the RFC (tax ID)." } })],
-    no_cash_card: [t("Entonces | con | tarjeta.", "Then | with | card.", "Card, then.")],
+    no_cash_line: [t("No hay problema. | Puede | pagar | con | tarjeta | o | con | transferencia.", "No problem. | You-can | pay | with | card | or | by | transfer.", "No problem. You can pay by card or bank transfer.")],
     card_later: [t("Claro, | aceptamos | tarjeta.", "Sure, | we-accept | card.", "Sure, card is fine.")],
     no_card_line: [t("No hay problema. | Puede | pagar | en efectivo | o | con | transferencia.", "No problem. | You-can | pay | in cash | or | by | transfer.", "No problem. You can pay cash or by bank transfer.")],
     cash_ok: [t("Claro, | en efectivo | está | bien.", "Sure, | in cash | is | fine.", "Sure, cash is fine.")],
@@ -626,6 +643,7 @@ export const salon: SituationDef = {
     ask_book: [t("¿Le | agendo | su | próxima | cita?", "(For) you | I-schedule | your | next | appointment?", "Would you like to book your next appointment?")],
     book_offer: [t("¡Muy | bien! | ¿En | seis | semanas, | a | la | misma | hora?", "Very | good! | In | six | weeks, | at | the | same | time?", "Great! Same time in six weeks?")],
     book_done: [t("¡Listo, | ya | quedó | agendada!", "Done, | already | it-is | scheduled!", "You're all set!", { flags: { 3: "agendada agrees with la cita (the appointment)." } })],
+    book_amb: [t("Perdón, | ¿entonces | se la | agendo?", "Sorry, | so | it for you | I-schedule?", "Sorry, so should I book it?", { flags: { 2: "se la: la = la cita (the appointment)." } })],
     book_later_ok: [t("No hay problema. | Nada más | mándeme | un | mensaje.", "No problem. | Just | send me | a | message.", "No problem. Just send me a message.")],
     closing: [t("¡Gracias | por | venir!", "Thanks | for | coming!", "Thanks for coming in!"), t("¡Que | disfrute | su | corte | nuevo!", "May | you-enjoy | your | haircut | new!", "Enjoy your new look!")],
     bye_after: [t("¡Que | tenga | buen | fin de semana!", "May | you-have | good | weekend!", "Have a great weekend!"), t("¡Hasta | la | próxima!", "Until | the | next (time)!", "See you next time!")],
@@ -949,7 +967,7 @@ export const salon: SituationDef = {
         c.say(c.s.revealAsked ? "reveal_again" : "reveal");
         c.s.revealAsked = true;
       },
-      expects: ["love_it", "more_off", "shorter_than", "polite_ok", "dont_like", "ask_cat", "fine_ctx"],
+      expects: ["love_it", "more_off", "shorter_than", "polite_ok", "dont_like", "ask_cat", "fine_ctx", "short_amb_ctx"],
       suggest: [{ lt: "Say how you like it", hint: "result" }],
       yes: (c) => { c.s.revealed = true; c.say("love_reply"); },
       no: (c) => { salon.handlers.dont_like(c, {}, { intent: "dont_like", slots: {}, tags: [] }); } },
@@ -968,12 +986,7 @@ export const salon: SituationDef = {
       suggest: [{ lt: "Book your next visit (or not)", hint: "book" }, { lt: "Say yes or no", hint: "g_yesno" }],
       yes: (c) => {
         c.say("book_offer");
-        c.expect({ id: "book_when", optional: true, expects: ["book_when", "book_later"], hints: ["book", "g_yesno"],
-          suggest: [{ lt: "Agree or suggest another time", hint: "book" }],
-          on: { book_when: (cc) => { cc.s.booked = true; cc.say("book_done"); }, book_later: (cc) => { cc.s.booked = false; cc.say("book_later_ok"); } },
-          yes: (cc) => { cc.s.booked = true; cc.say("book_done"); },
-          no: (cc) => { cc.s.booked = false; cc.say("book_later_ok"); },
-          ask: (cc) => cc.say("book_offer") });
+        c.expect(bookWhenPending());
       },
       no: (c) => { c.s.booked = false; c.say("book_later_ok"); } },
   ],
@@ -1003,9 +1016,11 @@ export const salon: SituationDef = {
   },
 
   handlers: {
-    appt_have(c, slots) {
+    appt_have(c, slots, seg) {
       c.s.appt = true;
       const tm = slots.time;
+      // "No tengo cita a las tres": the three o'clock is someone else's, so no appointment (at another hour: "No, tengo cita a las cuatro")
+      if (seg.tags.includes("notat") && (!tm || tm.h === 3 || tm.h === 15)) { salon.handlers.appt_none(c, {}, { intent: "appt_none", slots: {}, tags: [] }); return; }
       if (tm && tm.h !== 3 && tm.h !== 15) { c.s.otherTime = true; }
       if (c.s.name) { checkIn(c); return; }
     },
@@ -1094,6 +1109,7 @@ export const salon: SituationDef = {
         c.s.cm = cm; c.s.lengthSet = true;
         if (inches === 0.5) c.say("inch_half");
         else if (inches === 1) c.say("inch_1");
+        else if (inches === 1.5) c.say("inch_15"); // not "¿2 pulgadas?"
         else c.say("inch_n", { num: clamp(Math.round(inches), 2, 8), cm: clamp(cm, 2, 20) });
         c.say("cm_note");
         c.say("cm_confirm");
@@ -1123,6 +1139,7 @@ export const salon: SituationDef = {
       maybeAskTool(c);
     },
     confirm_yes(c) { c.say("ack"); },
+    short_amb_ctx(c) { if (c.s.cutDone && !c.s.revealed) askAmbResult(c); else c.say("ack"); },
     less_ctx(c) { c.s.lengthSet = false; c.say("less_line"); c.hold(); },
     bangs_yes_ctx(c) { c.s.bangs = true; c.say("ack"); },
     tip_num_ctx(c, slots, seg) { salon.handlers.add_tip(c, slots, seg); },
@@ -1193,7 +1210,7 @@ export const salon: SituationDef = {
       if (!c.s.cutDone) { c.say("ack"); return; }
       c.say("more_ok");
       c.say("more_done");
-      c.expect({ id: "more_q", expects: ["love_it", "more_off", "polite_ok", "fine_ctx"], hints: ["result"], suggest: [{ lt: "Say how you like it", hint: "result" }],
+      c.expect({ id: "more_q", expects: ["love_it", "more_off", "polite_ok", "fine_ctx", "short_amb_ctx"], hints: ["result"], suggest: [{ lt: "Say how you like it", hint: "result" }],
         on: {
           love_it: (cc) => { cc.s.revealed = true; cc.say("love_reply"); },
           polite_ok: (cc) => { cc.s.revealed = true; cc.say("love_reply"); },
@@ -1222,7 +1239,7 @@ export const salon: SituationDef = {
     dont_like(c) {
       if (!c.s.cutDone) { c.say("ack"); return; }
       c.say("dont_like_reply");
-      c.expect({ id: "fix_q", expects: ["more_off", "shorter_than", "love_it", "polite_ok", "fine_ctx"], hints: ["fix", "result"], suggest: [{ lt: "Say what to change", hint: "fix" }],
+      c.expect({ id: "fix_q", expects: ["more_off", "shorter_than", "love_it", "polite_ok", "fine_ctx", "short_amb_ctx"], hints: ["fix", "result"], suggest: [{ lt: "Say what to change", hint: "fix" }],
         on: {
           more_off: (cc, sl, sg) => { salon.handlers.more_off(cc, sl, sg); },
           shorter_than: (cc, sl, sg) => { salon.handlers.shorter_than(cc, sl, sg); },
@@ -1260,10 +1277,12 @@ export const salon: SituationDef = {
       if (!firstThisTurn(c, "react")) return;
       if (seg.tags.includes("unsure")) c.say("react_unsure"); else if (seg.tags.includes("relax")) c.say("react_relax"); else c.say("react_fun");
     },
-    ask_jessie(c) { c.say("jessie_weekend"); },
+    ask_jessie(c) { sayJessie(c); },
     pets_none_ctx(c) { c.say("react_nopet"); },
     ask_owe(c) {
       if (!c.s.cutDone) {
+        // "¿Cuánto cuesta el lavado?" at the wash question: the extras only
+        if (/lavad|secad|lavar|secar/.test(fold(c.heard)) && !/corte|cortar|fleco/.test(fold(c.heard))) { c.say("price_extras"); return; }
         c.say(c.s.service === "bangs" ? "price_bangs" : "price_cut", { price: c.s.service === "bangs" ? BANGS : CUT });
         c.say("price_extras");
         return;
@@ -1298,7 +1317,8 @@ export const salon: SituationDef = {
       if (c.s.cutDone) { c.say("not_paid_yet", { price: total(c) }); if (c.step === "pay") c.hold(); return; }
       c.say("pay_later");
     },
-    no_cash(c, slots, seg) { if (c.s.revealed && !c.s.paid) c.say("no_cash_card"); salon.handlers.pay_card(c, slots, seg); },
+    // "No traigo efectivo": the other ways, nothing charged until the learner picks one (rule 18)
+    no_cash(c) { if (c.s.paid) { c.say("paid"); return; } c.s.payMethod = undefined; c.say("no_cash_line"); if (c.step === "pay") c.hold(); },
     pay_phone(c) {
       if (c.s.paid) { c.say("paid"); return; }
       skipToPay(c);
@@ -1338,7 +1358,7 @@ export const salon: SituationDef = {
       c.say("thanks_tip");
     },
     add_tip(c) {
-      if (!c.s.cutDone) { c.say("tip_later"); return; }
+      if (!c.s.cutDone || !c.s.revealed) { c.say("tip_later"); return; }
       c.s.tip = true;
       c.say("thanks_tip");
       if (c.s.revealed && !c.s.paid) { c.s.tipLater = true; }
@@ -1437,7 +1457,22 @@ export const salon: SituationDef = {
     { say: "No me gusta", intent: "dont_like", step: "reveal", not: ["love_it"] },
     { say: "No me gusta mucho", intent: "dont_like", step: "reveal", not: ["love_it"] },
     { say: "No está mal", intent: "love_it", step: "reveal", not: ["dont_like"] },
-    { say: "No está muy caliente", intent: "water_ok", not: ["water_temp"] },
+    // the reviewer's traps: lost commas, the other way to pay, a past, a what-if, "al natural"
+    { say: "No, está muy caliente", intent: "water_temp", not: ["water_ok"] },
+    { say: "Tengo cita", intent: "appt_have", step: "appt", not: ["appt_none"] },
+    { say: "Tengo cita, sí", intent: "appt_have", step: "appt", not: ["appt_none"] },
+    { say: "No, está demasiado corto", intent: "short_amb_ctx", step: "reveal", not: ["love_it"] },
+    { say: "No me cortó demasiado", intent: "short_amb_ctx", step: "reveal", not: ["love_it"] },
+    { say: "Me lo dejó demasiado corto", intent: "shorter_than", step: "reveal", not: ["love_it"] },
+    { say: "No con tarjeta, en efectivo", intent: "pay_cash", step: "pay", not: ["pay_card"] },
+    { say: "No en efectivo, con tarjeta", intent: "pay_card", step: "pay", not: ["pay_cash"] },
+    { say: "No, al natural", intent: "style", step: "blowdry" },
+    { say: "Que no quede muy corto, por favor", intent: "not_short", step: "service", not: ["go_short"] },
+    { say: "No más corto", intent: "not_short", step: "service", not: ["go_short"] },
+    { say: "Quiero un cambio, algo mucho más corto", intent: "go_short", step: "service" },
+    { say: "Ahorita no, yo le llamo", intent: "book_later", step: "book", not: ["book_when"] },
+    { say: "¿Y si le dejo propina?", intent: "none", step: "pay" },
+    { say: "Café no, agua", intent: "drink_ans", step: "drink" },
     { say: "No quiero pagar con tarjeta", intent: "no_card", step: "pay", not: ["pay_card"] },
     { say: "No traigo efectivo", intent: "no_cash", step: "pay", not: ["pay_cash"] },
     { say: "Efectivo no, con tarjeta", intent: "pay_card", step: "pay", not: ["pay_cash"] },
@@ -1491,7 +1526,7 @@ export const salon: SituationDef = {
     // Questions and changes of mind: the price first, a new look, scissors, no wash, the cat, "¿Y usted?", no blow-dry, "Así está bien".
     { name: "questions and changes of mind", turns: ["Hola, tengo cita a las tres.", "A nombre de Ryan.", "¿Cuánto cuesta el corte?", "Quiero un cambio de look.", "Más corto de los lados.",
       "Con tijera, por favor.", "No, ya lo traigo limpio.", "¿Cuántos años tiene?", "Nada especial, voy a descansar.", "¿Y usted?", "No, gracias, que se seque solo.", "Así está bien.",
-      "¿Cuánto se deja de propina?", "No traigo efectivo.", "Sin propina, gracias.", "Por ahora no, gracias.", "¡Hasta luego!"],
+      "¿Cuánto se deja de propina?", "No traigo efectivo.", "Con tarjeta.", "Sin propina, gracias.", "Por ahora no, gracias.", "¡Hasta luego!"],
       expect: { complete: true, state: { service: "short", tool: "scissors", wash: false, blowdry: false, paid: true, booked: false } }, auto: AUTO,
       setup: (s) => { s.askDrink = false; s.askLayers = false; s.askBangs = false; s.askWash = true; s.askDry = true; s.catFirst = true; s.talkAfterCat = true; s.talkTopic = "weekend"; s.askBook = true; } },
     // Doesn't like it: what to change, a little more off the sides, then happy.
@@ -1504,6 +1539,14 @@ export const salon: SituationDef = {
     // The walk-in waits (twist): a client before them.
     { name: "walk-in waits fifteen minutes (twist)", turns: ["¿Tienen lugar ahorita?", "Sí, puedo esperar.", "Nada más las puntas.", "¡Me encanta!", "Con tarjeta.", "Gracias, adiós."],
       expect: { complete: true, state: { walkin: true, paid: true } }, auto: AUTO, setup: (s) => { s.walkinWait = true; s.askDrink = false; } },
+    // The reviewer's money and comma checks: no cash (nothing charged), a transfer, "Así está bien" at the booking offer (asked again).
+    { name: "no cash, transfer, booking asked again", turns: ["Tengo cita a las tres.", "Ryan.", "Nada más las puntas.", "¡Qué chistoso!", "¡Me encanta!", "No traigo efectivo.", "Con transferencia.", "Sí.", "Así está bien.", "Sí, por favor.", "Adiós."],
+      expect: { complete: true, state: { paid: true, payMethod: "transfer", booked: true } }, auto: AUTO,
+      setup: (s) => { s.askDrink = false; s.askLayers = false; s.askBangs = false; s.askWash = false; s.askDry = false; s.catFirst = true; s.talkAfterCat = false; s.askBook = true; s.tooShort = false; } },
+    // The twist with its comma lost: "No, está demasiado corto" could be "No está demasiado corto"; Paty asks, then the discount.
+    { name: "shorter than expected (twist): lost comma", turns: ["Tengo cita a las tres.", "Ryan.", "Nada más las puntas.", "¡Qué chistoso!", "No, está demasiado corto.", "Me lo dejó muy corto.", "En efectivo.", "Tenga.", "Adiós."],
+      expect: { complete: true, state: { discount: true, paid: true } }, auto: AUTO,
+      setup: (s) => { s.tooShort = true; s.askBook = false; s.askDrink = false; s.askLayers = false; s.askBangs = false; s.askWash = false; s.askDry = false; s.catFirst = true; s.talkAfterCat = false; } },
     { name: "walk-in won't wait (twist)", turns: ["No tengo cita.", "Mejor regreso más tarde."], expect: { complete: false, state: { gaveUp: true } }, auto: AUTO, setup: (s) => { s.walkinWait = true; } },
   ],
 };
@@ -1656,6 +1699,24 @@ function catPending(_c: Ctx): Pending {
     no: (cc) => { cc.say("cat_anyway"); endChat(cc); } };
 }
 
+/** "¿Y usted?": Paty answers the question she asked (the weekend when no topic came up). */
+function sayJessie(c: Ctx) {
+  const topic = c.s.askedTalk ? (c.s.talkTopic as string) : "weekend";
+  c.say(topic === "from" ? "jessie_from" : topic === "vacation" ? "jessie_vacation" : topic === "pets" ? "jessie_pets" : "jessie_weekend");
+}
+
+/** "¿En seis semanas, a la misma hora?" */
+function bookWhenPending(): Pending {
+  return { id: "book_when", optional: true, expects: ["book_when", "book_later", "fine_ctx"], hints: ["book", "g_yesno"],
+    suggest: [{ lt: "Agree or suggest another time", hint: "book" }],
+    on: { book_when: (cc) => { cc.s.booked = true; cc.say("book_done"); }, book_later: (cc) => { cc.s.booked = false; cc.say("book_later_ok"); },
+      // "Así está bien": "that works" or "I'm fine, thanks"? Paty asks again (rule 17)
+      fine_ctx: (cc) => { cc.say("book_amb"); cc.expect(bookWhenPending()); } },
+    yes: (cc) => { cc.s.booked = true; cc.say("book_done"); },
+    no: (cc) => { cc.s.booked = false; cc.say("book_later_ok"); },
+    ask: (cc) => cc.say("book_offer") };
+}
+
 function endChat(c: Ctx) {
   // After the cat story, Paty sometimes asks one small-talk question (decided in init).
   if (!c.s.askedTalk && c.s.talkAfterCat) askSmallTalk(c);
@@ -1674,12 +1735,12 @@ function askSmallTalk(c: Ctx) {
       from_ans: (cc, sl, sg) => { salon.handlers.from_ans(cc, sl, sg); },
       vacation_ctx: (cc, sl, sg) => { salon.handlers.vacation_ctx(cc, sl, sg); },
       pets_ans: (cc, sl, sg) => { salon.handlers.pets_ans(cc, sl, sg); },
-      ask_jessie: (cc) => { cc.say("jessie_weekend"); },
+      ask_jessie: (cc) => { sayJessie(cc); },
       ask_cat: (cc, _sl, sg) => { sayCat(cc, sg.tags); },
       pets_none_ctx: (cc) => { cc.say("react_nopet"); },
     },
     yes: (cc) => { cc.say("react_fun"); },
-    no: (cc) => { cc.say(topic === "pets" ? "react_nopet" : "react_relax"); },
+    no: (cc) => { cc.say(topic === "pets" ? "react_nopet" : topic === "from" ? "cat_anyway" : topic === "vacation" ? "react_unsure" : "react_relax"); },
     ask: (cc) => cc.say(line) });
 }
 
