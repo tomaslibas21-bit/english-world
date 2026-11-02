@@ -13,13 +13,10 @@
 //
 // The learner's gender: {m:…|f:…}; Doña Lupita's: {sm:…|sf:…} (she is female).
 //
-// NEEDS: src/editions/es/content/npcs.ts: Doña Lupita ("rita") inherits `informal: true` from Maple Harbor's Rita,
-//   so shared lines with {u:…|t:…} come out in tú ("¡Que tengas buen día!", "No te entendí") and the global
-//   g_clarify hints show tú. The brief says usted (she is older): her CAST entry needs `{ informal: false }`.
-//   Until then this file answers the common global intents itself with usted lines (H: g_bye, g_howareyou,
-//   g_sorry, g_wait, g_dontknow, g_learning, g_slower, g_meaning); the engine's own "didn't understand" line can't
-//   be covered here.
-// NEEDS: global.ts g_bye: "que le vaya bien", "que esté bien" (covered here by bye_wish).
+// Doña Lupita ("rita") speaks usted: `{ informal: false }` in npcs.ts since 2 Nov (she used to inherit Maple Harbor
+//   Rita's tú). This file still answers the common global intents itself with usted lines (H: g_bye, g_howareyou,
+//   g_sorry, g_wait, g_dontknow, g_learning, g_slower, g_meaning); global g_bye also has "que le vaya bien" and "que
+//   esté bien" now (bye_wish here stays).
 
 import type { Ctx, EntityDef, Handler, SituationDef } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
@@ -349,7 +346,7 @@ const H: Record<string, Handler> = {
   thanks_kind(c) { react(c, /esperando|llego|salvo/.test(heard(c)) ? "star_react" : "kind_react"); },
   see_around(c) { c.say("see_around"); c.end(); },
 
-  // --- global intents, answered with usted (see NEEDS at the top) ---
+  // --- global intents, answered with usted (see the note at the top) ---
   g_bye(c) { c.say("bye_usted"); c.end(); c.hold(); },
   bye_wish(c) { c.say("bye_usted"); c.end(); c.hold(); },
   g_howareyou(c) { c.say("howareyou_reply"); expectHowAreYou(c); },
@@ -951,7 +948,7 @@ export const neighbor: SituationDef = {
       t("Bueno, | aquí | estoy | para | lo que | se le ofrezca.", "Well, | here | I-am | for | whatever | you-may-need.", "Well, I'm right here if you need anything."),
     ],
 
-    // --- the global intents in usted (see NEEDS at the top) ---
+    // --- the global intents in usted (see the note at the top) ---
     bye_usted: [
       t("¡Adiós! | ¡Que | le | vaya | bien!", "Bye! | (I hope) | for you | it-goes | well!", "Bye! Take care!"),
       t("¡Cuídese | mucho!", "Take care | a lot!", "Take good care!"),

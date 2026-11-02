@@ -46,7 +46,7 @@ const CAST: Record<string, Cast> = {
   claire: ["Karla", "Atención a clientes", "Customer service"],
   netwave_bot: ["NetWave", "Menú telefónico", "Automated phone menu"],
   patel: ["Don Ernesto", "Dueño del departamento", "Landlord"],
-  rita: ["Doña Lupita", "Vecina", "Neighbor"],
+  rita: ["Doña Lupita", "Vecina", "Neighbor", { informal: false }],
   brooks: ["Licenciada Salinas", "Gerente de recursos humanos", "HR manager"],
   maria: ["María", "Compañera de trabajo", "Coworker"],
   kate: ["Sofía", "Líder de equipo", "Team lead"],

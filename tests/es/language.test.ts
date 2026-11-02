@@ -360,6 +360,11 @@ describe("7. 'Claro que no' is a no", () => {
     expect(read(nlu, "Claro que no hay ningún problema")).toEqual(["yn:yes"]);
     expect(read(nlu, "¿Por qué no?", ["ok_ack"])).toEqual(["ok_ack"]);
   });
+  it("'Sí / Claro, ¿por qué no?' is a yes; a bare '¿Por qué no?' is a question for the conversation", () => {
+    const nlu = toy({ thanks: ["gracias"] });
+    for (const s of ["Sí, ¿por qué no?", "si porque no", "Claro, ¿por qué no?"]) expect(read(nlu, s)).toEqual(["yn:yes"]);
+    expect(read(nlu, "¿Por qué no?")).toEqual([]);
+  });
 });
 
 describe("8. 'Así está bien' (as it is) is a no", () => {

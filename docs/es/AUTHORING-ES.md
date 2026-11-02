@@ -128,7 +128,8 @@ travel chapter).
 6. **Breadth.** For every likely intent, the 5–8 commonest ways to say it: Mexican everyday verbs (no sirve, no
    prende, el clima), verb-first questions ("¿Está incluido el desayuno?"), one-word answers at their step
    ("¿Aquí?", "Tome", "Ya está"), corrections ("No son tres, son cuatro", "Mejor al mediodía"), closings ("Eso sería
-   todo", "Por ahora es todo").
+   todo", "Por ahora es todo"). An intent counts once per turn, so an answer in two pieces of one intent ("Sí, es
+   frágil, son unas tazas") needs one whole pattern.
 7. **A corpus before the grammar.** Write `tests/es/corpus/<id>.json` first: at least 100 things learners might say,
    step by step, and at least 20 traps (an item with `"not": [...]`), in the format of
    `tests/es/corpus/s68-hotel.json`. At the end `tools/coverage.ts <id>` must show at least 90% understood and no
@@ -171,7 +172,7 @@ travel chapter).
     cash amount smaller than the total asks for the rest ("Son $861.50; faltan $361.50"); one over the maximum is
     capped and said.
 19. **Words one slip apart.** The engine forgives small slips and drops accents, so a pattern word can match its
-    neighbor: "sala" ← "salida". (Since 2 Nov 2026 it no longer forgives a verb's last vowel, "Tenga" ← "Tengo el
+    neighbor: "sala" ← "salida", "playera" ← "playa" (a shared stem). (Since 2 Nov 2026 it no longer forgives a verb's last vowel, "Tenga" ← "Tengo el
     vuelo…", "Tome" ← "Tomo el de las…", nor reads "¿Y si cancelo?" as "Sí, cancelo".) Test every hand-over and yes
     intent against such statements with `not:`, and keep near-identical words out of each other's intents.
 20. **Numbers as people say them.** Flight, room and phone numbers whole, in pairs and digit by digit

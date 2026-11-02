@@ -96,7 +96,7 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
     t("Pues | aquí | andamos, | gracias.", "Well | here | we-go-on, | thanks.", "Hanging in there, thanks!", { flags: { 2: "Mexican: “aquí andamos” = getting by, fine." } }),
   ],
   g_sorry_to_hear: [
-    t("¡Ay, | qué | pena!", "Oh, | what | a pity!", "Oh no, I'm sorry to hear that."),
+    t("¡Ay, | lo siento!", "Oh, | I'm sorry!", "Oh no, I'm sorry to hear that."),
   ],
   g_hello: [
     t("¡Hola!", "Hi!", "Hi!"),
@@ -196,6 +196,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_bye: { patterns: [
     "(adios | hasta luego | nos vemos | hasta pronto | hasta manana | bye | chao | hasta la proxima) #h:s_bye2",
     "que (tenga | tengas) (buen dia | un buen dia | buena tarde | buenas tardes | buena noche | buen fin de semana | bonito dia) #h:s_bye",
+    "que (le | te) vaya [muy] bien", "que (este | estes) [muy] bien",
     "(igualmente | usted tambien | tu tambien)",
     "(cuidese | cuidate) [mucho]",
     ...LEAVING_PATTERNS,

@@ -14,7 +14,7 @@
 // Guide: as in the English edition, steps whose answers depend on the garment re-state their question as an optional
 // pending that points the guide at a per-garment copy of the hint group (lo / la / los / las in the model answers).
 
-// NEEDS: global.ts yes layer: "¿Por qué no?" / "Sí, ¿por qué no?" as a yes (meanwhile the local why_not_ctx covers decide, the sold-out offer and the sign-up).
+// The shared yes list has "Sí / Claro, ¿por qué no?" since 2 Nov; a bare "¿Por qué no?" stays local (why_not_ctx at decide, the sold-out offer and the sign-up).
 // NEEDS: engine: "playa" is read as this file's "playera" (a recognizer slip); worked around with beach_unknown and a guard in looking_for (a bare "La playa" still parses as playera, but Valeria answers about the beach).
 
 import type { Ctx, EntityDef, HintItem, Pending, SentSrc, SituationDef, Suggestion } from "@/content/types";

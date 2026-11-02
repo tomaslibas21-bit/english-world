@@ -1,5 +1,5 @@
-// NEEDS: global.ts g_sorry_to_hear "¡Ay, qué pena!" first means "how embarrassing" in Mexico (suggest "¡Ay, lo siento!");
-// this file uses its own sorry_pain line. Every merge, entity, value and pending question is local.
+// NEEDS: None (global g_sorry_to_hear says "¡Ay, lo siento!" since 2 Nov; "¡Ay, qué pena!" first meant "how embarrassing").
+// This file uses its own sorry_pain line. Every merge, entity, value and pending question is local.
 // Song 76 "Could You Spell That?" → Puerto Colibrí: "¿Cómo se escribe?"
 // A phone call to Clínica Dental Coral; Lorena at reception (usted). Booking an appointment, Mexican style: the
 // reason ("una revisión", "una limpieza", "me duele una muela", "se me cayó una resina"), "¿Es su primera vez con

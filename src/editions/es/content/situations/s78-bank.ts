@@ -12,8 +12,8 @@
 // average balance of $3,000, otherwise $150; savings about 4% a year; an international transfer $750, one to three
 // business days; the bank buys the dollar at $17.20 and sells it at $18.10. Cards: "ready in a few days, here at the
 // branch" (kept vague).
-// NEEDS: global.ts — "Sí, ¿por qué no?" / "Me parece bien" are not in the shared yes list; covered here by sure_ctx at
-// this conversation's offers.
+// The shared yes list has "Me parece bien" and, since 2 Nov, "Sí / Claro, ¿por qué no?"; sure_ctx at this
+// conversation's offers stays.
 // Local guards (as in s71a): a what-if ("¿Y si cambio mil?") or a question ("¿Con quinientos alcanza?") never
 // deposits, exchanges or pays out: the amount is quoted and asked again.
 
