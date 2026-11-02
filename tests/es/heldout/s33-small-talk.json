@@ -1,0 +1,56 @@
+{ "situation": "s33-small-talk", "items": [
+  { "ctx": "weather", "say": "Sí, hace muchísimo calor hoy", "intent": ["wx_agree", "wx_adj", "wx_short_ctx", "wx_extra"] },
+  { "ctx": "weather", "say": "¡Qué bochorno!", "intent": ["wx_agree", "wx_adj", "wx_short_ctx", "wx_extra"] },
+  { "ctx": "weather", "say": "Si, esta muy humedo, verdad?", "intent": ["wx_agree", "wx_adj", "wx_short_ctx", "wx_extra"], "note": "no accents, tag question" },
+  { "ctx": "weather", "say": "Hace como treinta grados", "intent": ["wx_temp", "wx_temp_ctx"] },
+  { "ctx": "weather", "say": "Ojalá que no llueva", "intent": "wx_hope" },
+  { "ctx": "weather", "say": "Ay no, no traje paraguas", "intent": "no_umbrella", "not": ["umbrella_no"], "note": "trap: negation" },
+  { "ctx": "weather", "say": "La verdad no me gusta tanto calor", "intent": ["wx_dislike", "wx_neg"], "not": ["wx_agree"], "note": "trap: negation" },
+  { "ctx": "weather", "say": "Quiero comprar un boleto de avión", "intent": "none" },
+
+  { "ctx": "new_q", "say": "Sí, me mudé hace dos semanas", "intent": ["new_yes", "new_when_ctx"] },
+  { "ctx": "new_q", "say": "No, ya llevo un año viviendo aquí", "intent": "new_no", "not": ["new_yes"], "note": "trap: no + time" },
+  { "ctx": "new_q", "say": "Sí, soy nueva aquí", "intent": "new_yes" },
+  { "ctx": "new_q", "say": "Llegué el mes pasado", "intent": ["new_when_ctx", "new_yes"] },
+
+  { "ctx": "intro", "say": "Mucho gusto, don Pancho. Me llamo Tomás.", "intent": ["nice_meet", "intro_name"] },
+  { "ctx": "intro", "say": "Igualmente", "intent": "nice_meet" },
+
+  { "ctx": "from_q", "say": "Soy de Estados Unidos", "intent": ["from_ans", "from_ctx"] },
+  { "ctx": "from_q", "say": "De Canadá, ¿y usted?", "intent": ["from_ans", "from_ctx"] },
+  { "ctx": "from_q", "say": "Soy estadounidense", "intent": ["from_ans", "from_ctx"] },
+
+  { "ctx": "week", "say": "Sí, muy ocupado, con mucho trabajo", "intent": ["week_busy_ctx", "busy_why_ctx"] },
+  { "ctx": "week", "say": "No, bastante tranquila", "intent": "week_quiet_ctx", "not": ["week_busy_ctx"], "note": "trap: no" },
+  { "ctx": "week", "say": "No tan ocupado, la verdad", "intent": "week_quiet_ctx", "not": ["week_busy_ctx"], "note": "trap: negated busy" },
+  { "ctx": "busy_why", "say": "Por el trabajo, sobre todo", "intent": "busy_why_ctx" },
+
+  { "ctx": "weekend_past", "say": "Muy bien, fui a la playa", "intent": ["wk_act_ctx", "act_ctx", "wk_good_ctx"] },
+  { "ctx": "weekend_past", "say": "Fui al cenote con unos amigos", "intent": ["wk_act_ctx", "act_ctx"] },
+  { "ctx": "weekend_past", "say": "Nada especial, me quedé en casa", "intent": ["wk_nothing_ctx", "wk_act_ctx", "act_ctx"] },
+  { "ctx": "weekend_past", "say": "No muy bien, estuve enfermo", "intent": "wk_bad_ctx", "not": ["wk_good_ctx"], "note": "trap: no muy bien" },
+  { "ctx": "weekend_past", "say": "Estuvo padrísimo, gracias", "intent": ["wk_good_ctx", "wk_act_ctx"] },
+
+  { "ctx": "weekend_plans", "say": "Voy a ir a la playa", "intent": ["wk_act_ctx", "act_ctx"] },
+  { "ctx": "weekend_plans", "say": "Todavía no sé", "intent": "wk_notyet_ctx" },
+  { "ctx": "weekend_plans", "say": "No voy a hacer nada", "intent": "wk_nothing_ctx", "not": ["wk_act_ctx", "wk_yes_ctx"], "note": "trap: negation" },
+  { "ctx": "weekend_plans", "say": "Tengo que trabajar, desafortunadamente", "intent": ["wk_act_ctx", "act_ctx"] },
+
+  { "ctx": "your_turn", "say": "¿Y usted qué hizo el fin de semana?", "intent": ["q_weekend", "ask_back"] },
+  { "ctx": "your_turn", "say": "Perdón, ¿y usted?", "intent": "ask_back" },
+
+  { "ctx": "react", "say": "¡Qué bien!", "intent": ["interest", "same"] },
+  { "ctx": "react", "say": "¿De veras?", "intent": ["interest", "q_story"] },
+
+  { "ctx": "rain", "say": "Gracias, es usted muy amable", "intent": ["umbrella_yes", "g_thanks"] },
+  { "ctx": "rain", "say": "No, gracias, traigo el mío", "intent": "umbrella_no", "not": ["umbrella_yes"], "note": "trap: refusal" },
+  { "ctx": "rain", "say": "No traigo paraguas", "intent": "no_umbrella", "not": ["umbrella_no"], "note": "trap: negation" },
+
+  { "ctx": "like_q", "say": "Me encanta, es muy bonito", "intent": "like_yes_ctx" },
+  { "ctx": "like_q", "say": "Me gusta, pero hace demasiado calor", "intent": ["like_mixed_ctx"], "not": ["like_no_ctx"] },
+  { "ctx": "like_q", "say": "Otra vez se retrasó el camión", "intent": "late_react_ctx" },
+
+  { "ctx": "closing", "say": "Bueno, ya me voy. Fue un gusto platicar con usted", "intent": ["leave", "nice_talk"] },
+  { "ctx": "closing", "say": "Que le vaya bien", "intent": ["bye_wish", "g_bye"] },
+  { "ctx": "closing", "say": "Igualmente, que tenga buen día", "intent": ["bye_wish", "nice_talk", "g_bye"] }
+] }

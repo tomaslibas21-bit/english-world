@@ -202,7 +202,7 @@ function tellMore(c: Ctx) {
   if (!SAID.get(c)?.has("more") && once(c, "int")) c.say("ha_right");
 }
 /** A question about his story: the story's next part when it answers it, or a straight answer. */
-const STORY: Record<string, string> = { catch: "story_catch", grandson: "story_grandson", boat: "story_boat", boatname: "story_boat_name", daughter: "story_daughter", work: "story_work", every: "story_every" };
+const STORY: Record<string, string> = { catch: "story_catch", grandson: "story_grandson", boat: "story_boat", boatwhere: "story_boat_where", color: "story_color", boatname: "story_boat_name", daughter: "story_daughter", work: "story_work", every: "story_every" };
 function storyQ(c: Ctx, seg: Segment) {
   const k = Object.keys(STORY).find((x) => seg.tags.includes(x));
   // "¿Pescaron algo?" right after the fishing story: "¡No pescamos nada!" is its next part
@@ -217,7 +217,10 @@ function askTopic(c: Ctx, topic: Topic, line: string, andYou: string) {
   c.s.lastTopic = topic;
   // asked again after a side question: a short reminder, not the whole question
   c.s.asks = { ...(c.s.asks || {}), [topic]: (c.s.asks?.[topic] ?? 0) + 1 };
-  c.say(c.s.told[topic] ? andYou : c.s.asks[topic] > 1 ? `${topic}_again` : line);
+  // after his own side: "¿Y usted?" once, then the short reminders
+  const back = c.s.told[topic] && !c.s.andYou?.[topic];
+  if (back) c.s.andYou = { ...(c.s.andYou || {}), [topic]: true };
+  c.say(back ? andYou : c.s.asks[topic] > 1 ? `${topic}_again` : line);
 }
 /** "¿Y usted?": the topic he asked about last. */
 function askBack(c: Ctx) {
@@ -310,9 +313,11 @@ function weekendShort(c: Ctx, seg: Segment | null) {
 }
 function weekendBad(c: Ctx, seg: Segment | null) {
   // being sick matters more than what the learner did
-  if (!seg?.tags.includes("sick") && activityToo(c, seg)) return;
+  // "No muy bien, estuve enfermo" comes in two pieces: the sickness counts wherever it is
+  const sick = !!seg?.tags.includes("sick") || turnTags(c).includes("sick");
+  if (!sick && activityToo(c, seg)) return;
   weekendStart(c);
-  if (once(c, "wk")) c.say(seg?.tags.includes("sick") ? "react_sick" : MON(c) ? "react_bad" : "react_none");
+  if (once(c, "wk")) c.say(sick ? "react_sick" : MON(c) ? "react_bad" : "react_none");
   if (askedBackSeg(seg)) tell(c, wkTopic(c));
 }
 function weekendNothing(c: Ctx, seg: Segment | null) {
@@ -619,10 +624,11 @@ export const smallTalk: SituationDef = {
     ] },
     wx_neg: { patterns: [
       "no (hace | esta | esta haciendo) [tanto | tan | muy] {wx} [@wx_when]", "no creo que (llueva | vaya a llover)", "[hoy] no va a llover [hoy]",
-      "no esta tan (mal | feo)", "no hay [tanta | mucha] {wx} [@wx_when]", "no tengo [tanto | mucho] (calor | frio)", "para mi no", "no se ve tan feo", "[pero] no (tanto | tan) como ayer",
+      "no esta tan (mal | feo)", "no (esta | hace) nada {wx} [@wx_when]", "no hay [tanta | mucha] {wx} [@wx_when]", "no tengo [tanto | mucho] (calor | frio)", "para mi no", "no se ve tan feo", "[pero] no (tanto | tan) como ayer",
     ] },
     wx_dislike: { patterns: [
-      "no me (gusta | gustan | encanta) [mucho] (el calor #hot | la humedad #hot | el frio #cold | la lluvia #rain | el bochorno #hot | este clima | el clima | las tormentas #rain | el sol #nice) #h:w_dislike",
+      "[la verdad | pues | a mi | yo] no me (gusta | gustan | encanta) [mucho] (el calor #hot | la humedad #hot | el frio #cold | la lluvia #rain | el bochorno #hot | este clima | el clima | las tormentas #rain | el sol #nice) [la verdad] #h:w_dislike",
+      "[la verdad | pues | a mi | yo] no me gusta (tanto calor #hot | tanta humedad #hot | tanto bochorno #hot | tanto frio #cold | tanta lluvia #rain) [la verdad]",
       "(odio | detesto) (el calor #hot | la humedad #hot | el frio #cold | la lluvia #rain | el bochorno #hot | este clima | los mosquitos #hot)",
       "no (soporto | aguanto) (el calor #hot | la humedad #hot | el frio #cold | la lluvia #rain | el bochorno #hot)",
       "no estoy (acostumbrado | acostumbrada) (al calor #hot | a la humedad #hot | al frio #cold)",
@@ -636,6 +642,7 @@ export const smallTalk: SituationDef = {
     no_umbrella: { patterns: [
       "no (traigo | tengo | traje) @umb [hoy] #h:w_no_umbrella",
       "se me (olvidó | quedó) @umb [en casa | en la casa]", "dejé @umb en (casa | la casa)", "y yo sin @umb",
+      "(hoy | yo | y yo | yo hoy) no (traigo | tengo | traje) @umb", "[yo] tampoco (traigo | tengo | traje) @umb", "olvidé @umb [en casa | en la casa]",
     ] },
 
     // --- first visit: new here, names, where from ----------------------------------------
@@ -654,7 +661,8 @@ export const smallTalk: SituationDef = {
     new_no: { patterns: [
       "[no] [ya] (llevo | llevamos | tengo | tenemos) (mucho tiempo | anos | un ano | {number} anos | varios anos | bastante tiempo | mas de un ano | rato) [aqui | viviendo aqui | en el pueblo] #h:n_no",
       "[no] no (soy | somos) (nuevo | nueva | nuevos | nuevas) [aqui | por aqui]",
-      "[no] (vivo | vivimos) aqui (desde hace | hace) (anos | mucho tiempo | un ano | {number} anos | mucho)",
+      "[no] (vivo | vivimos) aqui (desde hace | hace) (anos | mucho tiempo | un ano | {number} anos | mucho | tiempo | bastante tiempo | rato)",
+      "no ya (vivo | vivimos) aqui", "ya (vivo | vivimos) aqui desde hace (tiempo | anos | mucho | mucho tiempo | {number} anos)",
       "[no] (me mudé | llegué | nos mudamos | llegamos) hace (anos | mucho tiempo | {number} anos | un ano | mucho)",
       "no (me acabo de mudar | acabo de llegar) [(llevo | tengo) (anos | {number} anos | un ano | mucho tiempo) [aqui]]",
     ] },
@@ -734,7 +742,7 @@ export const smallTalk: SituationDef = {
     ] },
     wk_bad_ctx: { patterns: [
       "[estuvo | fue | me fue | nos fue] (mal | muy mal | aburrido | regular | feo | horrible | fatal | pesimo) [@ab]",
-      "no (me fue | nos fue | estuvo | fue) [muy | tan] (bien | bueno | divertido) [@ab]",
+      "no (me fue | nos fue | estuvo | fue) [muy | tan] (bien | bueno | divertido) [@ab]", "[pues | la verdad] no (muy | tan) (bien | bueno) [la verdad] [@ab]",
       "(estuve | estuvimos) (enfermo | enferma | enfermos | malo | mala) [todo el fin de semana | el sabado | el domingo] [@ab] #sick",
       "me (enfermé | resfrié) [@ab] #sick", "(mi | el) (hijo | hija | esposo | esposa | nieto | perro | mama | papa) (estuvo | se enfermó | se puso) [enfermo | enferma | malo | mala] [@ab] #sick",
       "llovió (todo el fin de semana | todo el sabado | todo el domingo | mucho) [@ab]", "no me (gustó | diverti) [mucho | nada] [@ab]", "mas o menos [@ab]",
@@ -744,6 +752,8 @@ export const smallTalk: SituationDef = {
       "no (hice | hicimos) (nada | mucho | gran cosa) [especial] [@ab]", "no (fui | fuimos | salí | salimos) [a ningun lado | a ninguna parte] [@ab]",
       "[todavia | aun] no (tengo | tenemos) (planes | ningun plan) [todavia | aun] [@ab] #h:wf_none", "(sin | ningun) (planes | plan) [todavia] [@ab]",
       "no (voy | vamos) a hacer (nada | mucho | gran cosa) [especial] [@ab]", "no (voy | vamos) a (salir | ir a ningun lado) [@ab]",
+      "no (fui | fuimos | pude ir | pudimos ir) (a | al) @act_n [porque llovio | por la lluvia] [@ab]",
+      "no (voy | vamos) a (ir | poder ir) (a | al) @act_n [@ab]", "no (puedo | podemos) ir (a | al) @act_n [@ab]",
       "no hay planes [todavia] [@ab]", "nada planeado [todavia] [@ab]", "[no] (ninguno | ningun plan) [todavia] [@ab]",
     ] },
     wk_yes_ctx: { patterns: [
@@ -768,14 +778,14 @@ export const smallTalk: SituationDef = {
     ] },
     q_plans: { patterns: [
       "[y] [usted] tiene planes [para el fin de semana] #h:b_plans", "que (planes tiene | va a hacer) [este | el] fin de semana", "[y] [usted] que planes tiene",
-      "[usted] va a hacer algo [especial | divertido] [este | el] fin de semana", "y usted que va a hacer", "tienes planes [para el fin de semana] #tip:tu_neighbor",
+      "[usted] va a hacer algo [especial | divertido] [este | el] fin de semana", "[y] usted que va a hacer [el | este] [fin de semana]", "[y] que va a hacer usted [el | este] [fin de semana]", "tienes planes [para el fin de semana] #tip:tu_neighbor",
     ] },
     q_week: { patterns: [
       "[y] (que tal | como va | como estuvo) su semana #h:b_week", "[y] [usted] (tiene | tuvo) mucho trabajo [esta semana]", "(esta | anda) muy ocupado [esta semana]", "y su semana",
     ] },
     q_from: { patterns: ["[y] [usted] es de aqui #h:b_from", "de donde es [usted]", "[usted] (nació | creció) aqui", "es de puerto colibri", "eres de aqui #tip:tu_neighbor"] },
     q_live: { patterns: [
-      "(cuanto tiempo | hace cuanto) (lleva | tiene) (aqui | viviendo aqui | en el pueblo)", "hace cuanto (vive | que vive) aqui", "[usted] vive (aqui | por aqui | cerca | en esta calle)", "donde vive",
+      "(cuanto tiempo | hace cuanto) (lleva | tiene) (aqui | viviendo aqui | en el pueblo)", "hace cuanto (vive | que vive) aqui", "[usted] vive (aqui | por aqui | cerca | en esta calle)", "[y] [usted] donde vive [usted] #house", "(cual es | donde esta) su casa #house",
       "lleva mucho tiempo aqui", "hace cuanto (vive | que vive) en (puerto colibri | el pueblo)",
     ] },
     q_job: { patterns: ["[usted] (esta | ya esta) jubilado", "(a que | en que) se dedica", "[usted] (trabaja todavia | todavia trabaja | aun trabaja)", "(en que | de que) trabajaba", "que hacia antes", "es pescador"] },
@@ -794,15 +804,15 @@ export const smallTalk: SituationDef = {
     q_story: { patterns: [
       "[y] (pescaron | pescó | sacaron | agarraron) (algo | algun pescado | muchos pescados) #catch", "[y] que pescaron #catch",
       "(cuantos anos tiene | que edad tiene) su nieto #grandson", "su nieto tiene cuantos anos #grandson", "su nieto (pesca | sabe pescar) #grandson",
-      "(es | esta) grande su lancha #boat", "que (lancha | tipo de lancha) tiene #boat", "que tipo de lancha [es] #boat", "(tiene | usted tiene) una lancha #boat", "donde esta su lancha #boat",
-      "de que color la va a pintar #boat", "es mucho trabajo #work", "como se llama su lancha #boatname", "que dice su hija #daughter", "(de veras | en serio) todos los dias #every",
+      "(es | esta) grande su lancha #boat", "que (lancha | tipo de lancha) tiene #boat", "que tipo de lancha [es] #boat", "(tiene | usted tiene) una lancha #boat", "donde (esta | tiene) su lancha #boatwhere",
+      "de que color la va a pintar #color", "(que | de que) color (es | va a ser) [su lancha] #color", "es mucho trabajo #work", "como se llama su lancha #boatname", "que dice su hija #daughter", "(de veras | en serio) todos los dias #every",
     ] },
     q_family: { patterns: ["[y] su familia", "(tiene | usted tiene) (nietos | hijos | familia) [aqui]", "cuantos (nietos | hijos) tiene", "vive con su familia"] },
     q_name: { patterns: ["como se llama [usted]", "perdon como dijo que se llamaba", "cual es su nombre"] },
     // the climate here (the brief's real Caribbean small talk)
     q_season: { patterns: [
-      "cuando llueve (mas | mucho)", "(cuando es | cuando empieza | cuando termina | cuando acaba) la temporada de lluvias #h:q_rainy", "siempre llueve (asi | tanto)", "llueve mucho aqui",
-      "siempre hace [tanto] (calor | bochorno) [aqui]", "(siempre | todo el ano) (hace | esta) (asi | tanto calor) [aqui]", "hace (calor | frio) todo el ano",
+      "cuando llueve (mas | mucho) #when", "(cuando es | cuando empieza | cuando termina | cuando acaba) la temporada de lluvias #when #h:q_rainy", "siempre llueve (asi | tanto)", "llueve mucho aqui",
+      "siempre hace [tanto] (calor | bochorno) [aqui] #always", "(siempre | todo el ano) (hace | esta) (asi | tanto calor) [aqui] #always", "hace calor todo el ano #always",
     ] },
     q_hurricane: { patterns: [
       "hay huracanes [aqui | por aqui] #h:q_hurricane", "(cuando es | cuando empieza | cuando termina) la temporada de huracanes", "(ha pasado | ha llegado | pasó | llegó) (algun | un) huracan [aqui | por aqui]",
@@ -831,7 +841,7 @@ export const smallTalk: SituationDef = {
       "me (gusta | encanta) la lluvia", "[no] [esta bien] no me (importa | molesta) (mojarme | la lluvia)", "(es | solo es) un poco de lluvia",
     ] },
     late_react_ctx: { patterns: [
-      "(otra vez | como siempre | lo de siempre | todos los dias | ni modo | de nuevo | para variar | tipico) #typical #h:l_typical", "siempre (llega | viene) tarde #typical",
+      "(otra vez | como siempre | lo de siempre | todos los dias | ni modo | de nuevo | para variar | tipico) #typical #h:l_typical", "siempre (llega | viene) tarde #typical", "(otra vez | de nuevo) (se retrasó | se tardó | se está tardando | viene tarde | llega tarde) [el @bus] #typical", "[el @bus] (se retrasó | se tardó | viene tarde | llega tarde) (otra vez | de nuevo) #typical",
       "[uy | ay] (voy a llegar | ya voy) tarde [al trabajo | a mi cita | a la escuela | a clase] #worry #h:l_late_work", "(ay | uy | oh) no (voy a llegar | ya voy) tarde [al trabajo | a mi cita | a la escuela | a clase] #worry", "no puedo llegar tarde [otra vez] #worry", "ojala (llegue | venga) (pronto | ya) #worry", "(tengo | traigo) prisa #worry",
       "(no pasa nada | no hay problema | no importa) [tengo tiempo | no tengo prisa] #ok #h:l_no_hurry", "no (tengo | traigo) prisa #ok", "(tengo | hay) tiempo #ok", "(que bien | mejor) asi platicamos [mas] #ok",
     ] },
@@ -844,7 +854,7 @@ export const smallTalk: SituationDef = {
     ] },
     like_mixed_ctx: { patterns: [
       "[si] [me gusta] pero extraño (a mi familia | mi casa | mi pais | a mis amigos | mi tierra) #h:lk_miss", "extraño [mucho] (mi casa | a mi familia | mi pais)",
-      "mas o menos", "es diferente [pero me gusta]", "no me (gusta | encanta) (el calor | la humedad | los mosquitos)", "[si] [me gusta] pero (hace | hay) [mucho | muchisimo | demasiado] (calor | humedad | mosquitos)", "todavia me estoy acostumbrando [al calor]", "(me cuesta | es dificil) el calor",
+      "mas o menos", "es diferente [pero me gusta]", "no me (gusta | encanta) (el calor | la humedad | los mosquitos) #heat", "[si] [me gusta] pero (hace | hay) [mucho | muchisimo | demasiado] (calor | humedad | mosquitos) #heat", "todavia me estoy acostumbrando al calor #heat", "todavia me estoy acostumbrando", "(me cuesta | es dificil) el calor #heat",
     ] },
     like_no_ctx: { patterns: [
       "[no] no me gusta (mucho | tanto) [aqui]", "no (mucho | tanto) [la verdad]", "no me (gusta | encanta)", "es [muy] (dificil | aburrido | caro) [aqui | para mi]", "quiero regresar a (mi casa | mi pais)",
@@ -890,6 +900,9 @@ export const smallTalk: SituationDef = {
     g_speak_slowly: [t("Le | hablo | más despacio.", "(To) you | I'll-speak | more slowly.", "I'll speak more slowly.")],
     g_take_time: [t("Claro, | tómese su tiempo.", "Sure, | take your time.", "Sure, take your time.")],
     g_no_worries: [t("¡No se preocupe!", "Don't worry!", "Don't worry!")],
+    g_soundcheck: [t("Perdón, | ¿{X}?", "Sorry, | {X}?", "Sorry, {X}?"), t("Perdón, | ¿dijo | {X}?", "Sorry, | did you say | {X}?", "Sorry, did you say {X}?")],
+    g_meaning: [t("¡Buena | pregunta! | Déjeme | mostrarle.", "Good | question! | Let me | show you.", "Good question! Let me show you."), t("Mire, | le | explico.", "Look, | (to) you | I'll-explain.", "Here, let me explain.")],
+    g_write: [t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go.")],
 
     // --- greetings --------------------------------------------------------------------------
     hello: [
@@ -964,7 +977,7 @@ export const smallTalk: SituationDef = {
     umbrella_ready: [t("Pero | yo | traigo | mi | paraguas, | por si acaso.", "But | I | I-have | my | umbrella, | just in case.", "But I brought my umbrella, just in case.")],
     dislike_react: [t("¡Ja! | ¡A mí | tampoco!", "Ha! | Me | neither!", "Ha! Me neither!")],
     not_today: [t("Bueno, | ¡por lo menos | hoy | no!", "Well, | at least | today | not!", "Well, at least not today!")],
-    umbrella_have: [t("¡No se preocupe, | yo | traigo | uno | grande!", "Don't worry, | I | I-have | one | big!", "Don't worry, I've got a big one!")],
+    umbrella_have: [t("¡No se preocupe, | yo | traigo | uno | grande!", "Don't worry, | I | I-have | one | big!", "Don't worry, I've got a big umbrella!")],
     temp_echo: [t("¿{$f} | grados?", "{$f} | degrees?", "{$f} degrees?")],
     temp_fahr: [
       t("¡Ah, | en | Fahrenheit! | Aquí | serían | como | {$c} | grados.", "Oh, | in | Fahrenheit! | Here | it-would-be | about | {$c} | degrees.", "Oh, Fahrenheit! Here that'd be about {$c} degrees.",
@@ -979,14 +992,24 @@ export const smallTalk: SituationDef = {
     great_minds: [t("¡Ja! | ¡Pensamos | igual!", "Ha! | We-think | the same!", "Ha! Great minds think alike!")],
     ok: [t("Ah, | ¡qué | bien!", "Oh, | how | nice!", "Oh, nice."), t("Ah, | ya veo.", "Oh, | I see.", "Oh, I see.")],
     // the climate here
+    frank_rainy_when: [
+      t("Más o menos | de | mayo | a | octubre. | Muchas | tardes | cae | un | aguacero, | pero | rápido | se quita.",
+        "More or less | from | May | to | October. | Many | afternoons | falls | a | downpour, | but | quickly | it-clears-up.",
+        "Roughly May to October. A lot of afternoons there's a downpour, but it clears up fast."),
+    ],
+    frank_always: [
+      t("Casi | todo | el | año, | sí. | Nada más | en | invierno | entra | un | norte | de vez en cuando | y | refresca.",
+        "Almost | all | the | year, | yes. | Only | in | winter | comes-in | a | norte | once in a while | and | it-cools-down.",
+        "Most of the year, yes. Only in the winter a norte blows in now and then and cools things down.", { flags: { 10: F_NORTE } }),
+    ],
     frank_rainy: [
       t("En | temporada | de | lluvias, | muchas | tardes | cae | un | aguacero. | Pero | rápido | se quita.", "In | season | of | rains, | many | afternoons | falls | a | downpour. | But | quickly | it-clears-up.",
         "In the rainy season there's a downpour a lot of afternoons. But it clears up fast."),
     ],
     frank_hurricane: [
-      t("La | temporada | de | huracanes | es | de | junio | a | noviembre. | Casi | nunca | pasa | nada, | pero | hay que | estar | pendiente.",
-        "The | season | of | hurricanes | is | from | June | to | November. | Almost | never | happens | anything, | but | one has to | be | watchful.",
-        "Hurricane season runs from June to November. Usually nothing happens, but you have to keep an eye out.", { flags: { 12: "Spanish uses a double negative: nunca … nada = never … anything." } }),
+      t("La | temporada | de | huracanes | es | de | junio | a | noviembre. | No | todos | los | años | llega | uno, | pero | hay que | estar | pendiente.",
+        "The | season | of | hurricanes | is | from | June | to | November. | Not | all | the | years | arrives | one, | but | one has to | be | watchful.",
+        "Hurricane season runs from June to November. One doesn't come every year, but you have to keep an eye out."),
     ],
     frank_sargazo: [
       t("Depende. | Hay | temporadas | en | que | llega | mucho | sargazo, | y | otras | en | que | no hay | nada.",
@@ -1130,11 +1153,13 @@ export const smallTalk: SituationDef = {
     frank_plans: [t("Ah, | voy | a | pintar | mi | lancha, | allá | en | el | muelle.", "Oh, | I'm going | to | paint | my | boat, | over there | at | the | pier.", "Oh, I'm painting my boat down at the pier.")],
     frank_plans_more: [t("Ya | está | viejita, | ¡pero | todavía | flota! | ¡Ja!", "Already | she's | old, | but | still | she-floats! | Ha!", "She's old, but she still floats! Ha!", { flags: { 2: "viejita: vieja + -ita, said with affection." } })],
     frank_week: [t("¿Yo? | ¡Estoy | jubilado! | ¡Para | mí | todos | los | días | son | sábado! | ¡Ja!", "Me? | I'm | retired! | For | me | all | the | days | are | Saturday! | Ha!", "Me? I'm retired! Every day is Saturday! Ha!")],
-    story_catch: [t("¡Nada! | ¡Ni | un | pescadito! | ¡Ja!", "Nothing! | Not even | a | little fish! | Ha!", "Nothing! Not even a tiddler! Ha!")],
+    story_catch: [t("¡Nada! | ¡Ni | un | pescadito! | ¡Ja!", "Nothing! | Not even | a | little fish! | Ha!", "Nothing! Not even a little one! Ha!")],
     story_catch_when: [t("¿Cuándo? | ¿El | domingo? | ¡Nada! | Pero | nos | divertimos | mucho.", "When? | — | Sunday? | Nothing! | But | ourselves | we-enjoyed | a lot.", "When, on Sunday? Nothing! But we had a great time.", { flags: { 1: "El domingo: on Sunday (the article stands for “on”)." } })],
     story_grandson: [t("Tiene | diez | años. | ¡Y | ya | pesca | mejor | que | yo! | ¡Ja!", "He-has | ten | years. | And | already | he-fishes | better | than | me! | Ha!", "He's ten. And he already fishes better than I do! Ha!")],
     story_boat: [t("Es | chiquita, | de | madera. | ¡Pero | es | mi | orgullo!", "It's | small, | of | wood. | But | it's | my | pride!", "She's small, made of wood. But she's my pride and joy!", { flags: { 1: "chiquita: chica + -ita, “little”." } })],
-    story_boat_name: [t("Se llama | La Lupita, | como | mi | esposa. | ¡Ja!", "It's called | La Lupita, | like | my | wife. | Ha!", "She's called La Lupita, after my wife. Ha!", { flags: { 1: "Lupita: the pet form of Guadalupe." } })],
+    story_boat_name: [t("Se llama | La Rosita, | como | mi | esposa. | ¡Ja!", "It's called | La Rosita, | like | my | wife. | Ha!", "She's called La Rosita, after my wife. Ha!", { flags: { 1: "Rosita: Rosa + -ita, a pet name." } })],
+    story_boat_where: [t("Allá | en | el | muelle, | con | las | otras | lanchas.", "Over there | at | the | pier, | with | the | other | boats.", "Down at the pier, with the other boats.")],
+    story_color: [t("¡Azul, | como | mi | casa! | ¡Ja!", "Blue, | like | my | house! | Ha!", "Blue, like my house! Ha!")],
     story_daughter: [t("Que | no paro | ni | un | momento. | ¡Ja!", "That | I don't stop | not even | a | moment. | Ha!", "That I never sit still! Ha!")],
     story_work: [t("Un | poquito, | ¡pero | me gusta!", "A | little bit, | but | I like it!", "A bit, but I enjoy it!")],
     story_every: [t("¡Todos! | ¡Ja!", "All! | Ha!", "Every single one! Ha!")],
@@ -1155,6 +1180,7 @@ export const smallTalk: SituationDef = {
     frank_temp_cold: [t("Como | veinte | grados. | ¡Para | nosotros, | eso | es | frío!", "About | twenty | degrees. | For | us, | that | is | cold!", "About 20 degrees. For us, that's cold!")],
     frank_temp_hot: [t("Como | treinta y dos | grados, | dice | mi | celular.", "About | thirty-two | degrees, | says | my | phone.", "About 32 degrees, my phone says.")],
     frank_temp_cloudy: [t("Como | veintisiete | grados, | pero | con | esta | humedad | se siente | más.", "About | twenty-seven | degrees, | but | with | this | humidity | it-feels | more.", "About 27 degrees, but with this humidity it feels hotter.")],
+    frank_house: [t("Aquí | a la vuelta, | en | la | casa | azul | de | la | esquina.", "Here | around the corner, | in | the | house | blue | of | the | corner.", "Right around the corner, in the blue house on the corner.")],
     frank_family: [t("Tengo | una | hija | y | dos | nietos. | Viven | aquí | cerca.", "I-have | a | daughter | and | two | grandkids. | They-live | here | nearby.", "I've got a daughter and two grandkids. They live close by.")],
     frank_bus: [t("Ya | no debe | tardar. | Bueno, | ¡eso | dicen! | ¡Ja!", "Now | it shouldn't | take long. | Well, | that | they-say! | Ha!", "It shouldn't be long now. Well, that's the theory! Ha!")],
     told_already: [t("¡Ja! | ¡Como | le | decía!", "Ha! | As | (to) you | I-was-saying!", "Ha! Like I said!")],
@@ -1192,6 +1218,7 @@ export const smallTalk: SituationDef = {
     like_q_again: [t("Pero | dígame, | ¿le | gusta | el | pueblo?", "But | tell me, | (to) you | it-pleases | the | town?", "But tell me, do you like the town?")],
     like_yes_react: [t("¡Eso | es | lo que | me gusta | oír!", "That | is | what | I like | to hear!", "That's what I like to hear!")],
     like_mixed_react: [t("Lo | entiendo. | Uno | siempre | extraña | su | tierra.", "It | I-understand. | One | always | misses | one's | homeland.", "I get it. You always miss home.")],
+    like_heat_react: [t("¡Ja! | Al | calor | uno | se acostumbra... | ¡más o menos!", "Ha! | To the | heat | one | gets used... | more or less!", "Ha! You get used to the heat... sort of!")],
     like_no_react: [t("¡Ay, | no! | Dele | tiempo.", "Oh, | no! | Give-it | time.", "Oh no! Give it time.")],
 
     // --- the bus and the goodbye --------------------------------------------------------------------
@@ -1331,7 +1358,7 @@ export const smallTalk: SituationDef = {
       items: [
         { id: "wi_cold", s: t("Sí, | muchísimo | frío.", "Yes, | very much | cold.", "Yes, really cold!") },
         { id: "wi_snow", s: t("Sí, | y | mucha | nieve.", "Yes, | and | much | snow.", "Yes, and lots of snow!") },
-        { id: "wi_not_bad", s: t("No | tanto, | la verdad.", "Not | so much, | the truth.", "Not so bad, actually.") },
+        { id: "wi_not_bad", s: t("No | tanto, | la verdad.", "Not | so much, | honestly.", "Not so bad, actually.") },
       ],
     },
     week: {
@@ -1497,7 +1524,10 @@ export const smallTalk: SituationDef = {
     "don pancho": { reason: "lexical_expression", split: "Don (a title of respect) + Pancho: one name.", minimal: "Two words." },
     "treinta y dos": { reason: "lexical_expression", split: "One number in three words: thirty-two.", minimal: "Three words." },
     "tengo que": { reason: "grammatical_fusion", split: "tengo → I have + que → that is false; tener que + infinitive = have to.", minimal: "Two words." },
-    "la lupita": { reason: "lexical_expression", split: "The boat's name; la → the would translate part of a name.", minimal: "Two words." },
+    "la rosita": { reason: "lexical_expression", split: "The boat's name; la → the would translate part of a name.", minimal: "Two words." },
+    "de vez en cuando": { reason: "lexical_expression", split: "de → of + vez → time + en → in + cuando → when; = once in a while.", minimal: "Four words." },
+    "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less; = roughly, sort of.", minimal: "Three words." },
+    "se acostumbra": { reason: "grammatical_fusion", split: "se → oneself + acostumbra → accustoms; one English verb = gets used to it.", minimal: "Two words." },
     "acaba de": { reason: "grammatical_fusion", split: "acaba → you finish + de → of is false; acabar de + infinitive = have just.", minimal: "Two words." },
     "acabo de": { reason: "grammatical_fusion", split: "acabo → I finish + de → of is false; acabar de + infinitive = have just.", minimal: "Two words." },
     "carne asada": { reason: "lexical_expression", split: "carne → meat + asada → grilled; the gathering = a cookout.", minimal: "Two words." },
@@ -1661,7 +1691,14 @@ export const smallTalk: SituationDef = {
       c.s.umbrellaSaid = true;
       if (once(c, "umb")) c.say("umbrella_have");
     },
-    q_season(c) { c.s.weatherDone = true; local(c, "rainy", W(c) === "cold" ? "frank_norte" : "frank_rainy"); },
+    // "¿Cuándo es la temporada de lluvias?" gets when; "¿Siempre hace tanto calor?" gets the year round
+    q_season(c, _slots, seg) {
+      c.s.weatherDone = true;
+      if (seg.tags.includes("when")) local(c, "rainy_when", "frank_rainy_when");
+      // on a norte morning "¿Siempre está así?" is about the norte
+      else if (seg.tags.includes("always")) { if (W(c) === "cold") local(c, "norte", "frank_norte"); else local(c, "always", "frank_always"); }
+      else local(c, "rainy", "frank_rainy");
+    },
     q_hurricane(c) { c.s.weatherDone = true; local(c, "hurricane", "frank_hurricane"); },
     q_beach(c) { c.s.weatherDone = true; local(c, "sargazo", "frank_sargazo"); },
     q_norte(c) { c.s.weatherDone = true; local(c, "norte", "frank_norte"); },
@@ -1702,7 +1739,11 @@ export const smallTalk: SituationDef = {
     q_plans(c) { tell(c, "plans"); },
     q_week(c) { tell(c, "week"); },
     q_from(c) { tell(c, "from"); },
-    q_live(c) { tell(c, "live"); },
+    q_live(c, _slots, seg) {
+      // "¿Dónde vive?" gets the house, not how long
+      if (seg.tags.includes("house")) { c.s.askedBack = true; if (once(c, "house")) c.say(c.s.frankIntro ? "told_already" : "frank_house"); return; }
+      tell(c, "live");
+    },
     q_job(c) { tell(c, "job"); },
     q_where(c) { tell(c, "where"); },
     q_forecast(c) {
@@ -1734,7 +1775,7 @@ export const smallTalk: SituationDef = {
       c.say(seg.tags.includes("worry") ? "late_worry" : seg.tags.includes("ok") ? "late_ok" : "late_typical");
     },
     like_yes_ctx(c) { likeAnswer(c, "like_yes_react"); },
-    like_mixed_ctx(c) { likeAnswer(c, "like_mixed_react"); },
+    like_mixed_ctx(c, _slots, seg) { likeAnswer(c, seg.tags.includes("heat") ? "like_heat_react" : "like_mixed_react"); },
     like_no_ctx(c) { likeAnswer(c, "like_no_react"); },
 
     // --- the goodbye ---
@@ -1899,6 +1940,25 @@ export const smallTalk: SituationDef = {
     { say: "No me encanta", intent: "like_no_ctx", step: "like_q", not: ["like_yes_ctx"] },
     { say: "No me tengo que ir todavía", intent: "none", not: ["leave", "g_bye"] },
     { say: "No me gusta la lluvia", intent: "wx_dislike", step: "rain", not: ["umbrella_no"] },
+    // review: negations and corrections that must not flip
+    { say: "La verdad no me gusta tanto calor", intent: "wx_dislike", step: "weather", not: ["wx_extra", "wx_adj"] },
+    { say: "No está nada bonito", intent: "wx_neg", step: "weather", not: ["wx_adj", "wx_short_ctx"] },
+    { say: "Hoy no traje paraguas", intent: "no_umbrella", step: "weather", not: ["wx_extra", "umbrella_no"] },
+    { say: "Olvidé mi paraguas", intent: "no_umbrella", step: "weather", not: ["wx_extra"] },
+    { say: "No, vivo aquí desde hace tiempo", intent: "new_no", step: "new_q", not: ["new_yes"] },
+    { say: "Sí, ya vivo aquí", intent: "new_yes", step: "new_q", not: ["new_no"] },
+    { say: "No muy bien, estuve enfermo", intent: "wk_bad_ctx", step: "weekend_past", not: ["wk_good_ctx"] },
+    { say: "No fui a la playa", intent: "wk_nothing_ctx", step: "weekend_past", not: ["wk_act_ctx", "act_ctx"] },
+    { say: "No voy a ir a la playa", intent: "wk_nothing_ctx", step: "weekend_plans", not: ["wk_act_ctx", "act_ctx"] },
+    { say: "No vamos a ir al cenote", intent: "wk_nothing_ctx", step: "weekend_plans", not: ["wk_act_ctx", "act_ctx"] },
+    { say: "No me gusta el calor", intent: "like_mixed_ctx", step: "like_q", not: ["like_yes_ctx"] },
+    { say: "No, gracias, no me molesta mojarme", intent: "umbrella_no", step: "rain", not: ["umbrella_yes"] },
+    // review: questions that get their own answer
+    { say: "¿Usted qué va a hacer?", intent: "q_plans" },
+    { say: "¿Dónde vive usted?", intent: "q_live" },
+    { say: "¿Dónde está su lancha?", intent: "q_story" },
+    { say: "¿De qué color la va a pintar?", intent: "q_story" },
+    { say: "Otra vez se retrasó el camión", intent: "late_react_ctx", step: "like_q" },
     // not understood
     { say: "El perro come banana", intent: "none" },
     { say: "Lancha camión paraguas", intent: "none" },
@@ -1926,6 +1986,10 @@ export const smallTalk: SituationDef = {
     { name: "returning neighbor, his questions, a change of plan", turns: ["¿Hay sargazo en la playa?", "¿Y usted está jubilado?", "¿Qué tal su semana?", "¡Qué bien!", "Voy a ir a la playa. Bueno, mejor al cenote."],
       expect: { complete: true, state: { sargazoTip: undefined } }, auto: AUTO,
       setup: (s) => { s.known = true; s.howOpener = false; s.rainTwist = false; s.lateTwist = false; s.busFrank = false; s.day = "fri"; s.askWeek = false; } },
+    // review: side questions about the climate and about him, each answered in its own way, then the chat goes on
+    { name: "side questions", turns: ["¿Siempre hace tanto calor aquí?", "¿Cuándo es la temporada de lluvias?", "¿Dónde vive usted?", "¿Y usted tiene planes?", "¿De qué color la va a pintar?", "¿Dónde está su lancha?"],
+      expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.known = true; s.howOpener = false; s.rainTwist = false; s.lateTwist = false; s.busFrank = false; s.day = "fri"; s.askWeek = false; s.weather = "hot"; } },
     // the twists, forced on every seed: the downpour (umbrella declined), the late bus, his own bus
     { name: "twist: downpour, late bus, his bus first", turns: ["Sí, parece que va a llover, ¿verdad?"], expect: { complete: true, state: { rainDone: true, lateSaid: true, likeDone: true } },
       auto: except(AUTO_TWIST, "weather"),
