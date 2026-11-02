@@ -33,3 +33,120 @@ Kept as written: usted throughout; the twins (pase de abordar, listón, playera)
 ## For the lead
 - The engine can't tell "No fue un vuelo directo" (not direct) from the hint "No, fue un vuelo directo", because punctuation is stripped. The same goes for "No volé directo", "No es una maleta normal", "No lo perdí" and "No estoy bien". I kept the "No," reading, which is the likelier one at those questions. Fixing it would need comma awareness in the NLU (a shared file).
 - A bare "Aquí" at the delivery question still reaches `hand_over` in coverage (it gets a "Gracias."). That is harmless, but it is not understood as "pick it up here".
+
+## Revision (2 Nov 2026): customs at the end
+
+The owner moved customs out of the passport conversation (s65a) to the end of this one. After Itzel's goodbye
+(now a step, `bye`, with the pending `itzel_bye`), the learner walks out with the backpack past **Agente Medina**
+(`aduana`, usted, the Spanish-only character on Officer Diaz's base in npcs.ts). The lost-bag part is unchanged,
+except that the task now completes at Medina's "Puede pasar", not at the report number, and Itzel's desk topics
+asked at customs get "Eso lo ve en el mostrador de equipaje" (and customs questions at the desk get "Eso lo ve en
+la aduana, a la salida"; a form question at the desk is Itzel's report).
+
+What happens: "¿Trae algo que declarar?" (sometimes with "¿Fruta, carne, algún alimento?", sometimes a separate food
+question); nothing to declare passes; declared fresh fruit or vegetables, meat or a ham/cheese sandwich "no pueden
+entrar al país" and stay there; other food is "declared and checked" (no rule is taught for it); gifts get "¿Más de
+500 dólares?" (within the allowance, or the self-declaration lane where duties are paid); cash only over 10,000
+dollars (the money declaration). Learner questions: a form (none needed here), the red/green button (not used
+here any more), the allowance, cash, why fruit can't come in. Twist (visits ≥ 1, `setup` in two sims): the sniffer
+dog sits by the backpack ("se sentó junto a su mochila" / "marcó su mochila"): owning up, "Sí" + what, or "Aquí está"
+hands over the snack (an apple or a ham sandwich from the plane); "No" gets the backpack checked, the snack found
+and "La próxima vez, declare la comida".
+
+### Sources (read 2 Nov 2026)
+- ANAM, "Nuevo Modelo de Atención a Pasajeros Internacionales en Aeropuertos",
+  https://www.anam.gob.mx/nuevo-modelo-de-atencion-a-pasajeros-internacionales-en-aeropuertos/ — a "Nada que
+  declarar" lane and an "Auto declaración" lane; Cancún T4 since 1 Nov 2017, T3 since 27 Oct 2020, T2 since 25 May
+  2024, Tulum since 28 Mar 2024.
+- ANAM, Boletín 10/2024 (10 Jun 2024), https://www.anam.gob.mx/boletin-10-2024/ — RGCE 3.2.6: with only luggage and
+  the allowance, the "nada que declarar" lane, no D2 form and no "mecanismo de selección automatizado" (the
+  semáforo); extra goods: the "Auto declaración" lane, describe them and pay; cash over 10,000 USD on form D4;
+  customs may still check baggage. (Boletín 11/2024 says the same for Tulum.)
+- ANAM, "Equipaje y franquicia", https://www.anam.gob.mx/equipaje-y-franquicia/ — 500 USD of goods besides personal
+  luggage (laptops, phones, medicines are luggage).
+- ANAM, "Declaración de dinero", https://www.anam.gob.mx/declaracion-de-dinero/ — over 10,000 USD must be declared.
+- ANAM, "Declaración de mercancía", https://www.anam.gob.mx/declaracion-de-mercancia/ — the generic page still
+  describes the paper form and the semáforo (airports without the new model); not used for Cancún.
+- SENASICA, "Productos prohibidos" (27 Apr 2026), https://www.gob.mx/senasica/documentos/productos-prohibidos —
+  fresh fruit and vegetables, fresh meat, sandwiches/tortas with meat and dairy without sealed packaging, fresh
+  cheeses.
+- SENASICA, "No traigas productos derivados de cerdo del extranjero" (1 Dec 2025),
+  https://www.gob.mx/senasica/acciones-y-programas/no-traigas-productos-derivados-de-cerdo-del-extranjero-341116 —
+  "sándwich con jamón" among the pork products tourists may not bring.
+- SENASICA press release (23 Dec 2019), https://www.gob.mx/senasica/prensa/incrementa-agricultura-presencia-de-binomios-caninos-para-prevenir-entrada-de-enfermedades-que-afectan-a-cerdos-y-platano-230599
+  — nine canine teams in Cancún; the dogs "marcaron" bags.
+- SENASICA profile of the dog Rosseta (gob.mx PDF), https://www.gob.mx/cms/uploads/attachment/file/785208/Rosseta_ENG.pdf
+  — trained on citrus, mango, apple, pork and beef, the commonest products travelers bring.
+- SENASICA comic "Falco" (gob.mx PDF), https://www.gob.mx/cms/uploads/attachment/file/457517/QR-historieta_FALCO.pdf
+  — the airport dog sits when it finds food in a suitcase or hand bag.
+- SENASICA, "Inspección turística" (28 Jul 2026), https://www.gob.mx/senasica/acciones-y-programas/informacion-para-viajeros-193524 — general.
+- ASUR, Cancún airport pages, https://www.asur.com.mx/es/aeropuertos/cancun — no customs procedure there; nothing taught from them.
+
+Kept vague (no source confirms): fines, what happens to the confiscated food (Sader says it is incinerated; not
+said), whether packaged sweets or aged cheese pass (Medina only "checks" them), how duties are computed ("se lo
+calculan en el carril"), what the cash form looks like.
+
+### Numbers
+| Check | Before | After |
+|---|---|---|
+| check-content --verbose | 121/121 NLU, 9 sims 12/12, 0/0 | 156/156 NLU (35 new, 14 meaning-safety), 17 sims 12/12 (8 new), fuzz 80, 0/0 |
+| corpus | 184/184 (old part) | 231/231 (59 new items, 17 traps), 0/37 false accepts |
+| blind set (old, 40) | 37/40, 0 traps | 37/40, 0 traps (the same three `_ctx` readings) |
+| vitest | — | 288/288 |
+
+Played with `tools/probe.ts` (19 scenarios): a plain no, a bare yes then nothing, "Está bien, gracias" (asked
+again, never a yes), "No traigo fruta, traigo chocolates" (chocolates only), "Traigo chocolates, pero no fruta",
+"¿Puedo traer una manzana?" (a question, nothing declared), "Me comí la manzana", a vague "comida" then what, gifts
+with a what-if, a price question and a number over/under, "Me costaron trescientos dólares", the dog with yes, "Aquí
+está", a correction ("No es una manzana, es un plátano"), "No" + "¿Por qué?" + "Perdón, no me acordaba", and desk
+questions asked at customs.
+
+### For the lead
+- NEEDS (slots.ts): `{number}` reads "diez mil" as 10 + "mil"; a local `amount` slot reads it whole here.
+- NEEDS (lang.ts, optional): "traigo", "llevo", "traje" in PART_VERBS, so "No traigo fruta, | traigo chocolates"
+  splits like "tengo"; a whole pattern in `declare_items` covers it meanwhile.
+- TOWN.md already names the arrivals hall's customs with Agente Medina and the dog; the airport restyle's
+  "Aduana with the red-green traffic light" (TOWN.md task 6) no longer matches Cancún: lanes "Nada que declarar" /
+  "Auto declaración" instead.
+
+## Review of the revision (2 Nov 2026), writer's commit 4862d7e5
+
+**Gate after the fixes:** tsc clean; check-content 0 errors, 0 warnings, 18/18 sims 12/12 seeds (one new), fuzz 80 ok;
+corpus 242/242 (100%), 0/37 false accepts (11 items added); vitest 288/288.
+**Blind set** (tests/es/heldout, 20 customs items written before reading the new code, 5 of them traps):
+before: old part 37/40, customs 15/16, 0 traps accepted; after: old part 37/40 (the same three `_ctx` readings,
+meaning right), customs 16/16, 0 traps accepted. Total 52/56 → 53/56 (94.6%). 53 probe scenarios played (rule 22).
+
+**Meaning-safety (must-fix, ~20 lines)**
+- "Traigo más de diez mil dólares" recorded cash under the line and "no hace falta declararla" (10,000 is not > 10,000):
+  "más de" now counts. Euros and pesos near the line got a verdict at a 1:1 or 200,000-peso rate; ANAM's line is
+  10,000 dollars "or the equivalent", so near it Medina states the rule (`cash_equiv`), far from it she decides.
+- "Está bien" at "¿Más de 500 dólares?" was a yes and sent the learner to pay duties (rule 17): the polite check now
+  guards the gift, food and dog questions too.
+- "Una manzana y un sándwich" kept the sandwich silently: every banned kind is said and all of it stays (`stays_here_all`).
+- "No traigo fruta, solo chocolates": a whole pattern now, so it never rests on two pieces (it read "declare_none{fruit}" first).
+
+**Facts (must-fix, ~10 lines)** — checked against SENASICA "Productos prohibidos" and ANAM Boletín 10/2024:
+- SENASICA bars "carne fresca", but cured or dried pork (jamón, chorizo, salami, carne seca) only from countries with
+  African swine fever, and fresh cheese only. "La carne no puede entrar" was said for jerky and ham, and cheese got
+  "Todo bien". Now: `meat` = fresh meat; ham, cured meat and cheese go to SENASICA's inspectors ("Eso lo revisa
+  SENASICA. Pase por aquí"), no verdict. The ham sandwich rule (meat or dairy without sealed packaging) stays.
+- After the cash-over line, "¿Algún formulario?" said "no form": now "Solo la declaración de dinero"; `ans_cash` adds "o su equivalente".
+
+**Understanding (must-fix where the NPC's own words fail, ~25 lines)**
+- "Algo empacado", offered in Medina's own "¿Fruta, carne, algo empacado?", wasn't understood: new `packaged` (papitas,
+  cacahuates, nueces, barras de granola…).
+- Not understood before: "No pasan de quinientos", "¿Y si son menos?" (and its reply now answers less, not more:
+  rule 11), "No sé si tengo que declarar algo" ("Dígame qué trae y le digo", held), "¿Y si traigo una manzana?"
+  (what-if = a question), "Tengo una manzana pero es del avión", "Tenía una manzana pero me la comí", "No sé, creo
+  que no" at the dog, "Traigo una manzana, no, perdón, un plátano", "¿Cuándo llega mi maleta?" (q_when with the noun).
+- "¿Cuánto dinero puedo traer?" got "Only if you bring more than 10,000" (rule 11): its own reply `ans_cash_amount`.
+- Rule 21: "No, solo una pregunta" at Itzel's "¿Algo más?" wasn't understood; and a bare "Sí" there got "¿Qué pasó?".
+  Now `one_more_q_ctx` and "Claro, dígame", her part stays open.
+
+**Tests:** 16 NLU tests (8 traps) and one sim (polite answers never pay; gifts under with cash over).
+Kept: the structure, the dog twist, the lane and allowance facts (match ANAM), Spanish and glosses (read on seeds 3, 8).
+
+**For the lead:** the rough rates in `declare_cash` (18 pesos, 0.9 euros to the dollar) only decide "clearly under /
+clearly over"; between 8,500 and 11,500 dollars' worth Medina states the rule. The writer's NEEDS stand (slots.ts
+"diez mil"; PART_VERBS traigo/llevo/traje; TOWN.md task 6 lanes instead of the semáforo).
