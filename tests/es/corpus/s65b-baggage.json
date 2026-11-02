@@ -266,5 +266,16 @@
   {"ctx": "gift_value", "say": "Como ochocientos dólares", "intent": "gift_value_ctx"},
   {"ctx": "gift_value", "say": "No sé cuánto valen", "intent": "any", "not": ["gift_value_ctx"]},
   {"ctx": "closing", "say": "Gracias, adiós", "intent": "g_thanks"},
-  {"ctx": "closing", "say": "¿Por qué no puede pasar la fruta?", "intent": "q_why"}
+  {"ctx": "closing", "say": "¿Por qué no puede pasar la fruta?", "intent": "q_why"},
+  {"ctx": "declare", "say": "Traigo más de diez mil dólares en efectivo", "intent": ["declare_cash", "declare_cash_ctx"], "note": "review: más de = over the line"},
+  {"ctx": "declare", "say": "¿Cuánto dinero puedo traer?", "intent": "q_cash_amount", "not": ["declare_cash", "declare_cash_ctx"]},
+  {"ctx": "declare", "say": "¿Y si traigo una manzana?", "intent": "declare_q", "not": ["declare_items", "declare_items_ctx"], "note": "review trap: what-if"},
+  {"ctx": "declare", "say": "Traigo jamón y queso", "intent": ["declare_items", "declare_items_ctx"]},
+  {"ctx": "declare_what", "say": "Algo empacado", "intent": ["declare_items", "declare_items_ctx"]},
+  {"ctx": "declare_what", "say": "Unas papitas y unos cacahuates", "intent": ["declare_items", "declare_items_ctx"]},
+  {"ctx": "gift_value", "say": "No pasan de quinientos", "intent": "gift_value_ctx"},
+  {"ctx": "gift_value", "say": "¿Y si son menos?", "intent": "gift_whatif_ctx", "not": ["gift_value_ctx"], "note": "review trap: what-if"},
+  {"ctx": "dog", "say": "Tenía una manzana pero ya me la comí", "intent": ["declare_none", "declare_none_ctx"], "not": ["declare_items", "declare_items_ctx"], "note": "review trap: past"},
+  {"ctx": "dog", "say": "No sé, creo que no", "intent": ["declare_none", "declare_none_ctx"], "not": ["declare_items", "declare_items_ctx", "hand_over"]},
+  {"ctx": "itzel_bye", "say": "No, solo una pregunta", "intent": "one_more_q_ctx", "not": ["g_bye"], "note": "review: rule 21"}
 ] }
