@@ -1,0 +1,51 @@
+{ "situation": "s86-old-friend", "items": [
+  { "ctx": "recognize", "say": "¡Paola! ¡Cuánto tiempo!", "intent": "greet" },
+  { "ctx": "recognize", "say": "¡No lo puedo creer! ¿Eres tú?", "intent": "greet" },
+  { "ctx": "recognize", "say": "Sí, soy yo. ¡Qué sorpresa!", "intent": "greet" },
+  { "ctx": "recognize", "say": "Que gusto verte!", "intent": "greet", "note": "no accents" },
+  { "ctx": "recognize", "say": "Perdón, ¿quién eres?", "intent": "who_are_you" },
+  { "ctx": "recognize", "say": "Lo siento, no te reconozco", "intent": "who_are_you", "not": ["greet"], "note": "trap: negation" },
+
+  { "ctx": "changed", "say": "¡Tú tampoco has cambiado!", "intent": "compliment_back" },
+  { "ctx": "changed", "say": "Gracias, tú también te ves muy bien", "intent": ["compliment_back", "you_too"] },
+
+  { "ctx": "howbeen", "say": "Muy bien, gracias. ¿Y tú?", "intent": "been_ans" },
+  { "ctx": "howbeen", "say": "Pues, no me puedo quejar", "intent": "been_ans" },
+  { "ctx": "howbeen", "say": "No muy bien, la verdad. Mi mamá estuvo enferma.", "intent": "been_ans" },
+  { "ctx": "howbeen", "say": "Lo siento, tengo que irme", "intent": ["g_bye", "decline"] },
+
+  { "ctx": "upto", "say": "Me mudé aquí el año pasado", "intent": "news" },
+  { "ctx": "upto", "say": "Ahora trabajo en un hotel", "intent": "news" },
+  { "ctx": "upto", "say": "Estoy aprendiendo español", "intent": "news" },
+  { "ctx": "upto", "say": "Nada nuevo, lo de siempre", "intent": "news" },
+  { "ctx": "upto", "say": "Me casé hace dos años. ¿Y tú?", "intent": "news" },
+  { "ctx": "upto", "say": "No me he casado y todavía no tengo hijos", "intent": "news_not", "not": ["news"], "note": "trap: negated news" },
+  { "ctx": "upto", "say": "¿Y tú, qué has hecho?", "intent": ["ask_news", "and_you"] },
+
+  { "ctx": "lucy1", "say": "¡Felicidades!", "intent": "react_news" },
+  { "ctx": "lucy1", "say": "¡No manches! ¡Qué padre!", "intent": "react_news", "note": "Mexican slang" },
+  { "ctx": "lucy1", "say": "¿Con quién te casaste?", "intent": "react_news" },
+
+  { "ctx": "lucy2", "say": "¡Gemelos! ¡Qué bonito!", "intent": "react_news" },
+  { "ctx": "lucy2", "say": "¿Cuántos años tienen?", "intent": "react_news" },
+  { "ctx": "lucy2", "say": "¡Enhorabuena!", "intent": "react_news", "note": "Spain" },
+
+  { "ctx": "family", "say": "Todos bien, gracias", "intent": "family_ans" },
+  { "ctx": "family", "say": "Mis papás siguen en Canadá", "intent": "family_ans" },
+
+  { "ctx": "mike", "say": "¡Claro que me acuerdo! ¿Cómo está?", "intent": "mike_yes" },
+  { "ctx": "mike", "say": "No me acuerdo de él", "intent": "mike_no", "not": ["mike_yes"], "note": "trap: negation" },
+  { "ctx": "mike", "say": "¿Memo? ¿Quién es?", "intent": ["mike_no", "mike_who_ctx"], "not": ["mike_yes"] },
+
+  { "ctx": "coffee", "say": "¡Sí, me encantaría!", "intent": ["agree", "yn:yes", "coffee_invite"] },
+  { "ctx": "coffee", "say": "Hoy no puedo, tengo prisa", "intent": "decline", "not": ["agree", "coffee_invite", "yn:yes"], "note": "trap" },
+  { "ctx": "coffee", "say": "No tengo tiempo, pero otro día sí", "intent": "decline", "not": ["agree", "coffee_invite", "yn:yes"], "note": "trap: sí at the end" },
+  { "ctx": "coffee", "say": "Lo siento, ahora no", "intent": ["decline", "no_sorry", "yn:no"] },
+
+  { "ctx": "numbers", "say": "Mi número es 984 555 0142", "intent": "number_ctx" },
+  { "ctx": "numbers", "say": "¿Me das tu número?", "intent": "ask_number" },
+  { "ctx": "numbers", "say": "¿Tienes WhatsApp?", "intent": "ask_number" },
+  { "ctx": "numbers", "say": "Sigamos en contacto", "intent": "keep_in_touch" },
+  { "ctx": "numbers", "say": "Toma mi móvil, apúntalo", "intent": "give_phone", "note": "Spain: móvil" },
+  { "ctx": "numbers", "say": "No quiero darte mi número", "intent": "any", "not": ["number_ctx", "give_phone", "ask_number", "keep_in_touch"], "note": "trap: refusal" }
+] }
