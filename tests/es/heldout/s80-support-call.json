@@ -1,0 +1,60 @@
+{ "situation": "s80-support-call", "items": [
+  { "ctx": "menu", "say": "Soporte técnico, por favor", "intent": "menu_support" },
+  { "ctx": "menu", "say": "Dos", "intent": "menu_num_ctx" },
+  { "ctx": "menu", "say": "Quiero hablar con una persona", "intent": "menu_agent" },
+  { "ctx": "menu", "say": "Es sobre mi recibo", "intent": ["menu_billing", "charged_twice"] },
+  { "ctx": "menu", "say": "Mi internet no funciona", "intent": ["menu_support", "internet_down"] },
+
+  { "ctx": "name", "say": "Me llamo Ana García", "intent": "name_ctx" },
+
+  { "ctx": "account", "say": "No tengo el número a la mano", "intent": "acct_unknown", "note": "Mexican a la mano" },
+  { "ctx": "account", "say": "No me acuerdo de mi número de cuenta", "intent": "acct_unknown" },
+
+  { "ctx": "problem", "say": "No tengo internet desde ayer", "intent": "internet_down" },
+  { "ctx": "problem", "say": "El wifi está muy lento", "intent": "internet_slow" },
+  { "ctx": "problem", "say": "Se me cae la conexión a cada rato", "intent": "internet_drops" },
+  { "ctx": "problem", "say": "No sirve el internet", "intent": "internet_down", "note": "Mexican no sirve" },
+
+  { "ctx": "problem_bill", "say": "Me cobraron dos veces este mes", "intent": "charged_twice" },
+  { "ctx": "problem_bill", "say": "No es un problema de pago, es que no tengo internet", "intent": "internet_down", "not": ["charged_twice", "menu_billing"], "note": "trap: negation" },
+
+  { "ctx": "since", "say": "Desde anoche", "intent": "since_ans" },
+  { "ctx": "since", "say": "Hace dos días", "intent": "since_ans" },
+
+  { "ctx": "lights", "say": "La luz está parpadeando en rojo", "intent": "lights_ans" },
+  { "ctx": "lights", "say": "No hay ninguna luz prendida", "intent": "lights_ans", "note": "Mexican prendida" },
+
+  { "ctx": "restart", "say": "Sí, ya lo reinicié dos veces", "intent": "restart_yes" },
+  { "ctx": "restart", "say": "No, todavía no", "intent": ["restart_no", "yn:no"] },
+  { "ctx": "restart", "say": "No, no lo he reiniciado", "intent": ["restart_no", "yn:no"], "not": ["restart_yes"], "note": "trap: negation" },
+
+  { "ctx": "restart_now", "say": "Listo, ya lo desconecté", "intent": "done_ctx" },
+  { "ctx": "restart_now", "say": "Espere, todavía no lo desconecto", "intent": "any", "not": ["done_ctx"], "note": "trap: not done yet" },
+
+  { "ctx": "still_red", "say": "Sigue en rojo", "intent": "still_red" },
+  { "ctx": "still_red", "say": "Ya está en verde", "intent": "green_now" },
+  { "ctx": "still_red", "say": "No, ya no está en rojo", "intent": "green_now", "not": ["still_red"], "note": "trap: negation" },
+  { "ctx": "still_red", "say": "Sigue sin funcionar", "intent": "still_red", "not": ["green_now"], "note": "trap: sin funcionar" },
+
+  { "ctx": "tech", "say": "Sí, el jueves me queda bien", "intent": ["tech_accept", "yn:yes"] },
+  { "ctx": "tech", "say": "Ese día trabajo", "intent": ["tech_busy", "yn:no"] },
+  { "ctx": "tech", "say": "¿Puede venir el sábado?", "intent": "tech_other" },
+  { "ctx": "tech", "say": "¿Cuánto cuesta la visita?", "intent": "tech_cost_q", "not": ["tech_accept", "yn:yes"], "note": "trap: price question" },
+  { "ctx": "tech", "say": "No puedo el jueves en la mañana", "intent": ["tech_busy", "yn:no"], "not": ["tech_accept"], "note": "trap: negation" },
+  { "ctx": "tech", "say": "¿Y si no estoy en casa?", "intent": "any", "not": ["tech_accept", "yn:yes"], "note": "trap: what-if" },
+
+  { "ctx": "someone", "say": "Sí, mi esposo puede estar en casa", "intent": "someone_yes" },
+  { "ctx": "someone", "say": "No, vivo sola", "intent": ["someone_no", "yn:no"] },
+  { "ctx": "someone", "say": "Mi esposa no puede, trabaja todo el día", "intent": ["someone_no", "yn:no"], "not": ["someone_yes"], "note": "trap: negation" },
+
+  { "ctx": "more", "say": "No, es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "more", "say": "¿Me puede dar un número de reporte?", "intent": "reference_q" },
+  { "ctx": "more", "say": "¿Me lo puede mandar por mensaje?", "intent": "text_me" },
+  { "ctx": "more", "say": "Quiero hablar con un supervisor", "intent": "manager" },
+  { "ctx": "more", "say": "¿Cuándo me regresan mi dinero?", "intent": "refund_q" },
+
+  { "ctx": "account", "say": "Perdón, no le escucho bien, ¿puede hablar más fuerte?", "intent": "speak_up" },
+  { "ctx": "hear", "say": "Sí, ya la escucho mejor", "intent": "hear_ok" },
+
+  { "ctx": "more", "say": "Mi perro se llama Pancho", "intent": "none" }
+] }
