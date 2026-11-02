@@ -38,3 +38,40 @@ The blind misses: "¿Cuánto cuesta el más grande?", "Pero ya pagué el seguro 
 ## For the lead or the owner
 - **Lead:** `global` / `lang.ts` has "así está bien" in the yes list. At an offer it means no. Other conversations with paid offers probably have the same bug (see the `// NEEDS:` note at the top of the file).
 - **Owner:** the writer's "unsure" list still stands: the prices, the $5,000 and $20,000 holds, the one-hour grace period, the office hours and "la verde". The rates were not checked against a source.
+
+## Lead's check (2 Nov 2026)
+
+Looked at the risky parts only: the money (the offers, the twist, the hold, the tank), the return days, and questions or complaints that read as a yes. 30 new edge and trap sentences (outside the repo), before the fixes: 9/27 understood, 3 misread (two of them took money), 0/3 traps; after: 27/27, 0/3. Each flip below was played as a whole conversation before and after the fix.
+
+| Check | After review | After the lead's check |
+|---|---|---|
+| check-content --verbose | 144/144 NLU, 13 sims 12/12, fuzz 80 | 161/161 NLU, 16 sims 12/12, fuzz 80, 0 errors 0 warnings |
+| corpus | 258/258, 0/30 | 258/258, 0/30 |
+| blind set (heldout) | 38/38, 0/4 | 38/38, 0/4 |
+| tsc, vitest | clean, 257/257 | clean, 257/257 |
+
+**Money taken on a complaint or a question (must-fix)**
+- "Pagué todo", "Lo pagué todo", "Todo está pagado", "Pagamos todo" at the twist accepted the $350 a day ("Gracias por entender. Ya queda incluido."), and "Pagué todo" booked the upgrade and full coverage: the engine reads pagué (folded "pague") and pagado as forms of "pago", so they matched "Lo pago". Now `tpl_refuse_ctx` patterns ("Lo entiendo, y lo siento…"), and a `paidPast` guard in tplAccept and offerReply (asked again). "Lo pago todo" and "Pago todo" still accept.
+- "¿Y si cancelo?" ended the rental (the "si" folds to "sí": "Sí, cancelo"); "¿Puedo cancelar?" wasn't understood. New `cancel_q_ctx` (twist only) and line `tpl_cancel_q` "Si quiere, puede cancelar la reservación. ¿Se la cancelo?": a yes cancels, a no goes back to "¿Seguimos, entonces?". The same "¿Y si…?" no longer books full coverage ("Entonces, ¿le agrego la cobertura amplia?", or the lower-hold quote after the deposit), the upgrade ("Son $200 más al día.") or the prepaid tank (its quote again).
+- The tank, asked as "¿O prefiere pagar el tanque por adelantado?" right after "…y lo devuelve lleno": "Está bien", "Ok", "Órale" prepaid $1,200; "Va", "Vale, gracias", "Muy bien, gracias" got "Perfecto, con el tanque lleno" and then "¿Se lo cobro?" (that pending had no ok_ack); "No lo voy a llenar" and "No tengo tiempo de llenarlo" got "Perfecto, con el tanque lleno". Now only a clear yes (sí, claro, lo pago…) prepays there; another agreement or those sentences get the new line `prepay_confirm` "Entonces, ¿le cobro el tanque por adelantado?". "No, lo devuelvo lleno" is still the full tank.
+- "Vale, gracias", "Muy bien, gracias", "Sale, gracias" booked full coverage, the upgrade and the lower hold; like "Ok, gracias" they are now asked again.
+- "Claro que no hay problema" was a no (the twist refused, the upgrade declined); "Claro que no" still is.
+
+**Answers given to the wrong question, wrong prices (should-fix)**
+- At the manual-car question (asked inside the insurance step), "No, así está bien" recorded basic insurance and the question came back; "Mejor el compacto" switched the car and the question came back; "¿Cuánto más es?" got "Son $450 al día" (the insurance). Every paid offer now takes the polite no ("No, está bien así", "Déjelo así", "Mejor no") itself, the manual question takes a size, and "¿Cuánto es?" at an open offer gets that offer's price: the new line `price_once` "Son {$price}." for the tank, the airport fee and a later day, "Son $100 más al día." for the switch (added to the price domain).
+- "Aquí tiene mi licencia y mi tarjeta de débito" was taken right after "con débito o efectivo no se puede": now `debit_no` and the documents again.
+- "¿Cuánto cuesta?" before a walk-in has chosen: "Un compacto cuesta $750 al día…", not a bare "Son $750".
+
+**Understanding:** "No, está bien así", "Déjelo así", "Mejor el compacto", "No, con el compacto estoy bien", "El GPS, por favor", "No necesito el GPS, pero sí la silla" (the second is the answer, as in size_ctx), "No puedo devolverlo el viernes", "Hasta el domingo" at the return, "¿Y si no lo lleno?" (the charge, nothing recorded), "No lo acepto", "Cancélela".
+
+**English:** "with a 800 pesos drop-off fee" → "for a drop-off fee of 800 pesos".
+
+**Checked, fine:** the days (8 → miércoles, 10 → viernes, 11 → sábado, 7 → "el próximo martes", "Hasta mañana" → miércoles, an earlier day free), every price and hold as said ("mil cuatrocientos pesos", "veinte mil pesos"), "B4" said "be cuatro", the deposit echo.
+
+**Tests:** 17 NLU tests (144 → 161), 3 sims (13 → 16), all 12/12.
+
+**Left as is:** "¿Mi tarjeta me cubre?" spoken reads like the statement and records the card (the learner can still add full coverage); "Vale, gracias" said twice gets "¿eso es un sí o un no?" twice.
+
+**For the owner:** a later return is quoted at the car's rate only ("Serían $750 más"), without full coverage or extras for those days; quoting the full daily cost would multiply the price domain and its clips.
+
+**NEEDS (global):** `lang.ts` grammarClasses put "pague" (folded "pagué", I paid) with "pago", and "pagado" matches it as an inflection: every conversation with "lo pago" as a yes reads "Pagué todo" as one. The `{letters}` slot doesn't know "doble ele" (ll): "eme, i, doble ele, e, erre" → "mi" + "doble" + "ler", and spelled before the name it becomes "Eme I Doble". The reviewer's "así está bien" note stands.
