@@ -145,19 +145,26 @@ function weigh(c: Ctx) {
 }
 
 function setService(c: Ctx, svc: string) {
-  if (svc === "first" && !prof(c).first) { c.say("too_heavy_first"); c.say("no_cheaper"); return; }
+  if (svc === "first" && !prof(c).first) { tooHeavy(c); return; }
   const had = c.s.service;
   c.s.service = svc;
   if (had !== svc) c.say("ack", { X: svc });
+}
+
+/** "El económico es solo hasta 2 kilos": once; after that only "el normal es lo más barato". */
+function tooHeavy(c: Ctx) {
+  if (!c.s.toldHeavy) { c.s.toldHeavy = true; c.say("too_heavy_first"); }
+  c.say("no_cheaper");
 }
 
 function finishSending(c: Ctx) {
   c.s.sent = true;
   c.s.served = true;
   c.say("receipt");
-  c.say("tracking_number");
+  // economy has no tracking (opt_first): no número de guía for it
+  if (c.s.service !== "first") c.say("tracking_number");
   if (c.s.trackTip && c.s.service !== "first") c.say("track_online");
-  c.event("give", { item: "receipt", text: TRACKING_WRITE });
+  c.event("give", c.s.service !== "first" ? { item: "receipt", text: TRACKING_WRITE } : { item: "receipt" });
   c.s.donePath = c.s.donePath || "send";
   c.complete();
 }
@@ -247,10 +254,11 @@ export const post: SituationDef = {
       "(me ayuda | me puede ayudar | puede ayudarme | me puedes ayudar #tip:tu_staff) a @sendv @pkg [por correo] [@to_dest]",
       "(quisiera | quiero | necesito) hacer un envio [internacional] [@to_dest]", "(es | seria) un envio [internacional] @to_dest",
       "como (mando | envio | puedo mandar | puedo enviar) @pkg [@to_dest]",
+      "no (vengo | vine) a recoger [nada] [sino que] (quiero | quisiera | necesito | vengo a | vine a) @sendv @pkg [por correo] [@to_dest]",
       "[aqui] se (mandan | envian | pueden mandar | pueden enviar) paquetes [al extranjero | internacionales | @to_dest]", "(aqui | donde) (puedo | se puede) (mandar | enviar) (un paquete | paquetes) [al extranjero | @to_dest]",
     ] },
     dest_ans: { patterns: [
-      "@to_dest #h:dest_to", "{dest}", "(va | es) @to_dest", "(lo | la) (mando | envio) @to_dest", "es para @fam en {dest}", "@fam en {dest}",
+      "@to_dest #h:dest_to", "{dest}", "(va | es) @to_dest", "(lo | la) (mando | envio) @to_dest", "es para @fam en {dest}", "@fam en {dest}", "(a | para) {dest} en {country:dest}",
       // corrections: the second country is the answer
       "no (a | para) {wrong:dest} [sino] @to_dest", "no es (a | para) {wrong:dest} es @to_dest", "(a | para) {wrong:dest} no @to_dest",
     ] },
@@ -283,13 +291,13 @@ export const post: SituationDef = {
       "@things [para @fam] #h:items_list", "(es | son | trae | hay | lleva | contiene | traigo) @things [para @fam] [adentro]",
       "[no] no (trae | traigo | tiene | hay | lleva | llevo | contiene) nada @danger [(ni | o | y) @danger] [(ni | o | y) @danger]",
       "[no] nada @danger [(ni | o | y) @danger] [(ni | o | y) @danger]",
-      "[no] no (trae | traigo | tiene | hay | lleva) @nodanger [ni @nodanger] [ni @nodanger]",
-      "[no] no es (fragil | peligroso | liquido)", "[no] (el perfume | la botella | las baterias | las pilas | la comida) (lo | la | las) (dejé | saqué | quité) [en casa | en el hotel]", "[no] (todo | todo esta) (bien | normal | seguro)", "[no] (puras | solo) cosas secas", "[no] (es | son) (pura | solo) ropa",
+      "[no] no (trae | traigo | tiene | hay | lleva) @nodanger [ni @nodanger] [ni @nodanger] [ni nada (asi | de eso | por el estilo | parecido)]",
+      "[no] no es (fragil | peligroso | liquido)", "[no] (nada de | sin) @nodanger [ni @nodanger]", "(perfume | perfumes | baterias | pilas | liquidos | alcohol) no", "[no] (el perfume | la botella | las baterias | las pilas | la comida) (lo | la | las) (dejé | saqué | quité) [en casa | en el hotel]", "[no] (todo | todo esta) (bien | normal | seguro)", "[no] (puras | solo) cosas secas", "[no] (es | son) (pura | solo) ropa",
     ] },
     // "No, nada." / "No, no trae nada.": only at the contents question
     contents_none_ctx: { patterns: ["[no] nada", "[no] no (trae | tiene | hay | lleva | traigo | llevo) nada", "[no] ninguna cosa"] },
     contents_fragile: { patterns: [
-      "[si] es fragil #h:contents_fragile", "[si] (trae | hay | lleva | traigo | tiene | son) @frag [adentro]", "[si] @frag [para @fam]",
+      "[si] es fragil #h:contents_fragile", "[si] es fragil (son | es | trae | hay | lleva) @frag", "[si] (trae | hay | lleva | traigo | tiene | son) @frag [adentro]", "[si] @frag [para @fam]",
       "(es | esta) (un poco | algo | muy) fragil", "[si] (algo | un poco) fragil [adentro]", "[si] (trae | hay | lleva) algo fragil [adentro]",
       "(con cuidado | cuidado | tenga cuidado) es fragil", "[si] (son | es) cosas fragiles", "[si] son fragiles", "@frag (son | es) (fragil | fragiles)",
     ] },
@@ -318,9 +326,10 @@ export const post: SituationDef = {
     ] },
     // "No lo saco", "No los quiero sacar": the learner won't take it out
     keep_it_ctx: { patterns: ["no (lo | la | los | las) (saco | quito)", "no (lo | la | los | las) (quiero | voy a | puedo) (sacar | quitar)", "no quiero sacar(lo | la | los | las)?", "prefiero no sacar(lo | la | los | las)?"] },
-    what_hazard: { patterns: ["que (significa | quiere decir | es) (perecedero | peligroso | perecederos) [y (perecedero | peligroso)]", "(perecedero | peligroso) que (significa | es)"] },
+    what_hazard: { patterns: ["que (significa | quiere decir | es) (perecedero | peligroso | perecederos) [y (perecedero | peligroso)]", "(perecedero | peligroso) que (significa | es)",
+      "que (cosas)? no (se pueden | se puede | puedo) (mandar | enviar) [al extranjero]", "que (cosas | articulos) (estan prohibidos | no estan permitidos)", "que es lo que no se puede (mandar | enviar)"] },
     service_ans: { patterns: [
-      "[el] {service} [por favor] #h:svc_please", "(me llevo | quiero | quisiera | prefiero | deme | me da | voy a querer | mejor | me quedo con | escojo | elijo) @svcnp #h:svc_take",
+      "[el] {service} [por favor] #bare #h:svc_please", "(me llevo | quiero | quisiera | prefiero | deme | me da | voy a querer | mejor | me quedo con | escojo | elijo) @svcnp #h:svc_take",
       "@svcnp (esta bien | me parece bien | por favor | estaria bien)", "[el] (mas barato | mas economico) #cheap #h:svc_cheaper",
       "[el] (mas rapido) #fast #h:svc_faster", "creo que @svcnp", "@svcnp creo",
       "(quiero | prefiero) (lo mas barato | la opcion mas barata) #cheap", "(quiero | prefiero) (lo mas rapido | la opcion mas rapida) #fast",
@@ -328,41 +337,46 @@ export const post: SituationDef = {
       "no [el] {wrong:service} (sino | mejor) @svcnp", "{wrong:service} no mejor @svcnp",
       "(quiero | prefiero) (el | uno) (que tenga | con) (rastreo | numero de guia) #std",
     ] },
-    service_not: { patterns: ["[no] no (quiero | necesito) [el] {service}", "{service} no", "[no] no el (caro | mas caro)", "[no] el {service} no"] },
+    service_not: { patterns: ["[no] no (quiero | necesito) [el] {service}", "{service} no", "[no] el {service} no"] },
+    // "No el caro": only at the choice of service ("No es caro" is one slip away)
+    not_dear_ctx: { patterns: ["[no] no el (caro | mas caro) [el otro]", "el caro no [el otro]"] },
     ask_cheaper: { patterns: [
       "(hay | tiene | tienen) (algo | uno | alguno | otro | alguna opcion) mas barat(o | a) #h:q_cheaper", "no (hay | tiene | tienen) (algo | uno | otro | alguna opcion) mas (barato | barata | economico)",
-      "cual es (el | la opcion) mas (barato | barata | economico | economica)", "(esta | es) (muy | un poco | algo | bastante) caro", "que tal (algo | uno) mas barato", "hay (una | otra) opcion mas (barata | economica)",
+      "cual es (el | la opcion) mas (barato | barata | economico | economica)", "(esta | es) (muy | un poco | algo | bastante) caro", "(es | esta) [muy | un poco | algo | bastante | tan] caro el {service}", "[el] {service} (es | esta) [muy | un poco | algo | bastante | tan] caro", "que tal (algo | uno) mas barato", "hay (una | otra) opcion mas (barata | economica)",
     ] },
     ask_faster: { patterns: ["cual es (el | la opcion) mas rapid(o | a)", "(hay | tiene | tienen) (algo | uno | otro) mas rapido", "cual llega mas rapido", "cual (es | sale) mas rapido"] },
     ask_options: { patterns: ["que opciones (hay | tiene | tienen)", "cuales son las opciones", "cual es la diferencia", "como lo puedo mandar", "que me recomienda", "que servicios (hay | tiene | tienen)"] },
     ask_price: { patterns: [
       "cuanto (cuesta | es | sale | seria | me cobra | va a costar | cobran) #h:q_price", "cuanto (cuesta | es | sale) el {service}", "cual es el precio", "que precio tiene",
       "cuanto (cuesta | es | sale) el seguro #ins", "cuanto (cuesta | cuestan | vale | valen | sale | salen) (un timbre | los timbres | una estampilla | las estampillas | mandar una postal) [(a | para) {dest}] #stamp",
-      "cuanto es en total", "cuanto (seria | es) todo",
+      "cuanto es en total", "cuanto (seria | es) todo", "[y] [el] {service} cuanto (cuesta | es | sale)",
     ] },
     ask_time: { patterns: [
       "cuanto (tarda | tiempo tarda | se tarda | tardaria | va a tardar | tiempo se tarda | tiempo) [en llegar] [el {service}] #h:q_long", "(cuando | en cuanto tiempo) (llega | llegaria | va a llegar)",
-      "cuantos dias (tarda | son | se tarda)", "(llega | llegaria | va a llegar) antes (de navidad | de la proxima semana | del {day})", "que tan rapido (es | llega)",
+      "cuantos dias (tarda | son | se tarda)", "[el {service}] (llega | llegaria | va a llegar) antes (de navidad | de la proxima semana | del {day})", "que tan rapido (es | llega) [el {service}]",
+      "[y] [el] {service} (cuanto | cuanto tiempo | en cuanto tiempo) (tarda | se tarda | llega) [en llegar]", "(cuando | en cuanto tiempo) (llega | llegaria) el {service}",
     ] },
     ask_tracking: { patterns: [
       "(lo | la) (puedo | podre) rastrear #h:q_track", "(puedo | se puede) rastrear(lo | la)? [en linea | por internet]", "(tiene | trae | lleva | incluye) (rastreo | numero de guia | guia | seguimiento)",
       "(como | donde) (lo | la) rastreo", "donde (esta | viene) el numero de guia", "(me da | me dan) (un | el) numero de guia", "hay (rastreo | seguimiento)",
+      "[y] [el] {service} (tiene | trae | incluye | lleva) (rastreo | numero de guia | guia | seguimiento)", "[y] el {service} se puede rastrear", "(tiene | trae | incluye | lleva) (rastreo | numero de guia | seguimiento) el {service}",
     ] },
-    ask_insured: { patterns: ["(esta | va) asegurado #h:q_insured", "(tiene | incluye | lleva | trae) seguro", "hay seguro", "y si se pierde", "que pasa si se pierde"] },
+    ask_insured: { patterns: ["(esta | va) asegurado #h:q_insured", "(tiene | incluye | lleva | trae) seguro [el {service}]", "hay seguro", "y si se pierde", "que pasa si se pierde",
+      "[y] [el] {service} [no] (tiene | incluye | lleva | trae) seguro"] },
     ask_kilos: { patterns: ["cuanto es en libras #h:q_kilos", "(y | eso) en libras", "cuantas libras (son | es | pesa)", "cuanto pesa", "cuanto pesa en libras"] },
     ask_customs: { patterns: ["(necesito | tengo que | hay que) llenar (algo | una forma | un formulario | la declaracion | un formato)", "que es (la | una) declaracion [de aduana]", "para que es (eso | esto | la declaracion)", "por que (necesita | necesito) (eso | la declaracion)"] },
     what_write: { patterns: ["que (pongo | escribo) [aqui | ahi]", "que (le | tengo que | debo) (poner | escribir)", "que necesita saber"] },
     value_ans: { patterns: [
       "[son | es | vale | valen | todo vale] (como | unos | mas o menos | aproximadamente | menos de | alrededor de | casi) {price} [pesos | en total] #h:value_about",
       "(vale | valen | cuesta | todo vale | el valor es | en total son | en total) {price} [pesos | en total] #h:value_is",
-      "{price} [pesos] (en total | todo)", "[no] no (vale | es) (mucho | tanto | caro)", "(como | unos) {price} dolares #usd", "[vale] (como | unos) {price} [pesos] creo",
+      "{price} [pesos] (en total | todo)", "(como | unos) {price} dolares #usd", "[vale] (como | unos) {price} [pesos] creo",
     ] },
-    value_ctx: { patterns: ["{price}", "{price} pesos"] },
+    value_ctx: { patterns: ["{price}", "{price} pesos", "[no] no (vale | es) (mucho | tanto | caro) #low"] },
     gift_yes: { patterns: [
       "[si] es (un | una) regalo [para @fam] #h:gift_yes", "[si] (son | es) regalos [para @fam]", "[si] es para @fam", "[si] es un regalo de (cumpleanos | navidad | aniversario)",
       "[si] regalo [para @fam]", "[si] son (unos regalos | regalitos)", "[si] es regalo",
     ] },
-    gift_no: { patterns: ["[no] no es [un] regalo #h:gift_no", "[no] no son regalos", "[no] (son | es) (mis cosas | cosas mias | mi ropa | para mi | mio | mias)"] },
+    gift_no: { patterns: ["[no] no es [un] regalo #h:gift_no", "[no] no (es | son) [un] (regalo | regalos) [(son | es)] (mis cosas | cosas mias | mi ropa | para mi | mio | mias | mios)", "[no] no son regalos", "[no] (son | es) (mis cosas | cosas mias | mi ropa | para mi | mio | mias)"] },
     return_ok: { patterns: [
       "[ah] (claro | por supuesto | si) (ahorita lo pongo | lo pongo | se lo pongo | lo escribo | ahorita lo escribo | ahora lo pongo)", "(ahorita | ahora) (lo | se lo) (pongo | escribo)",
       "(donde | en donde) lo (pongo | escribo)", "[ay] se me olvidó [ponerlo]", "[perdon] (lo olvidé | se me pasó)",
@@ -371,7 +385,7 @@ export const post: SituationDef = {
     what_return: { patterns: [
       "que es (el | un) remitente #h:what_return", "que (significa | quiere decir) remitente", "(mi | cual) direccion", "(cual | que) direccion (pongo | escribo)",
       "(pongo | escribo) (mi | la) direccion (de aqui | de mexico | de puerto colibri | de aca) #here", "(la | mi) direccion (de aqui | de mexico | de puerto colibri) #here",
-      "(pongo | escribo) (mi | la) direccion de (mi pais | estados unidos | canada | mi casa)",
+      "(pongo | escribo) (mi | la) direccion de (mi pais | estados unidos | canada | mi casa) #home", "no tengo (direccion | casa) (aqui | en mexico) #home",
     ] },
     insurance_yes: { patterns: [
       "[si] (quiero | quisiera) (asegurarlo | el seguro | seguro adicional | el seguro completo | el seguro adicional) #h:ins_yes", "[si] (asegurelo | aseguremelo | agreguele el seguro | con seguro)",
@@ -382,10 +396,10 @@ export const post: SituationDef = {
       "[no] el (seguro | seguro basico) (esta bien | es suficiente | basta)", "[no] no vale tanto",
     ] },
     stamps_qty: { patterns: [
-      "{number} (timbres | estampillas | sellos)", "(quiero | quisiera | necesito | me da | deme | me puede dar) {number} [timbres | estampillas | sellos]", "dame {number} [timbres | estampillas | sellos] #tip:tu_staff",
+      "{number} (timbres | estampillas | sellos)", "(quiero | quisiera | necesito | me da | deme | me puede dar) {number} (timbres | estampillas | sellos)", "dame {number} (timbres | estampillas | sellos) #tip:tu_staff",
       "(solo | nada mas | nomas) (uno | una) [timbre | estampilla] #h:stamps_one", "(son | es) para {number} postales",
     ] },
-    stamps_ctx: { patterns: ["{number} #h:stamps_qty", "(solo | nada mas | nomas) {number}"] },
+    stamps_ctx: { patterns: ["{number} #h:stamps_qty", "(solo | nada mas | nomas) {number}", "(quiero | quisiera | necesito | me da | deme | me puede dar) {number}", "dame {number} #tip:tu_staff"] },
     // "No necesito", "Ninguno": a no to the offer that is open (insurance, stamps)
     no_need_ctx: { patterns: ["[no] no (lo | la | los | las)? (necesito | quiero) [nada] [gracias]", "[no] (ninguno | ninguna | ya no | mejor ninguno)"] },
     no_stamps: { patterns: ["[no] no (necesito | quiero) (timbres | estampillas | sellos) [hoy | por ahora | gracias]", "[no] (timbres | estampillas) no", "[no] sin timbres"] },
@@ -464,7 +478,7 @@ export const post: SituationDef = {
       t("Con gusto. | ¿A | qué | país | va?", "Gladly. | To | what | country | is it going?", "Sure. What country is it going to?"),
     ],
     dest_ok: [
-      t("Claro, | es | un | envío | internacional.", "Sure, | it's | an | shipment | international.", "Sure, so it's an international shipment."),
+      t("Claro, | es | un | envío | internacional.", "Sure, | it's | a | shipment | international.", "Sure, so it's an international shipment."),
       t("Claro, | con gusto.", "Sure, | gladly.", "Sure, happy to help."),
     ],
     dest_set: [t("Muy | bien, | a | {X}.", "Very | good, | to | {X}.", "Okay, to {X}.")],
@@ -480,7 +494,7 @@ export const post: SituationDef = {
     ],
     contents_ok: [t("Muy | bien.", "Very | good.", "Okay, great."), t("Perfecto.", "Perfect.", "Perfect.")],
     fragile_ok: [t("Muy | bien, | le | pongo | una | etiqueta | de | “Frágil”.", "Very | good, | (on) it | I-put | a | label | of | “Fragile”.", "Okay, I'll put a “Fragile” sticker on it.",
-      { flags: { 3: "le: on it, the box." } })],
+      { flags: { 2: "le: on it, the box." } })],
     liquid_ok: [t("Está bien, | siempre y cuando | vaya | bien | cerrado.", "That's fine, | as long as | it goes | well | sealed.", "That's fine, as long as it's sealed well.")],
     perfume_no: [t("Ay, | perdón, | los | perfumes | no se pueden | mandar | al extranjero | por | correo.", "Oh, | sorry, | — | perfumes | can't be | sent | abroad | by | mail.", "Oh, sorry, perfume can't be mailed abroad.",
       { flags: { 2: "los: Spanish uses the article for things in general." } })],
@@ -508,8 +522,10 @@ export const post: SituationDef = {
       t("¿Cómo | lo | quiere | mandar?", "How | it | do you want | to send?", "How would you like to send it?"),
       t("Tiene | dos | opciones.", "You have | two | options.", "You have two options."),
     ],
+    first_q: [t("¿Le | parece | bien | el | económico?", "(To) you | does it seem | good | the | economy (one)?", "Is economy okay with you?")],
     ask_service_which: [t("Entonces, | ¿cuál | prefiere?", "So, | which | do you prefer?", "So, which one would you like?")],
-    ask_service_again: [t("Entonces, | ¿normal | o | express?", "So, | standard | or | express?", "So, standard or express?")],
+    ask_service_again: [t("Entonces, | ¿normal | o | express?", "So, | standard | or | express?", "So, standard or express?"),
+      t("¿Cuál | prefiere, | el | normal | o | el | express?", "Which | do you prefer, | the | standard (one) | or | the | express (one)?", "Which would you like, standard or express?")],
     opt_priority: [t("El | normal | tarda | de | dos | a | tres | semanas | y | cuesta | {$price}.", "The | standard (one) | takes | from | two | to | three | weeks | and | costs | {$price}.",
       "Standard takes two to three weeks and costs {$price}.")],
     opt_express: [t("El | express | tarda | más o menos | una | semana | y | cuesta | {$price}.", "The | express (one) | takes | more or less | one | week | and | costs | {$price}.",
@@ -521,6 +537,7 @@ export const post: SituationDef = {
       { say: "El económico es solo hasta dos kilos." })],
     no_cheaper: [t("Para | esta | caja, | el | normal | es | lo | más | barato.", "For | this | box, | the | standard (one) | is | the | most | cheap.", "For this box, standard is the cheapest option.")],
     fastest: [t("El | express | es | el | más | rápido: | más o menos | una | semana.", "The | express (one) | is | the | most | fast: | more or less | one | week.", "Express is the fastest: about a week.")],
+    svc_later: [t("Claro, | en | un | momento | vemos | eso.", "Sure, | in | a | moment | we-see | that.", "Sure, we'll get to that in a moment.")],
     svc_then: [t("Muy | bien, | entonces | el | {X}.", "Very | good, | then | the | {X}.", "Okay, {X} then.")],
     ack: [t("Buena | elección.", "Good | choice.", "Good choice."), t("De acuerdo.", "Agreed.", "All right."), t("Muy | bien, | el | {X}.", "Very | good, | the | {X}.", "Okay, {X} it is.")],
     value_ok: [t("Muy | bien, | lo | anoto.", "Very | good, | it | I-write-down.", "Okay, I'll put that down."), t("Anotado.", "Noted.", "Got it.")],
@@ -562,12 +579,14 @@ export const post: SituationDef = {
     return_explain: [t("Es | su | nombre | y | su | dirección, | por si | lo | tienen | que | regresar.", "It's | your | name | and | your | address, | in case | it | they have | to | return.",
       "It's your name and address, in case it has to be sent back.")],
     return_here: [t("Sí, | la | de | aquí, | de | Puerto Colibrí.", "Yes, | the (one) | of | here, | of | Puerto Colibrí.", "Yes, your address here in Puerto Colibrí.")],
+    return_either: [t("Puede | ser | la | de | aquí | o | la | de | su | país.", "It can | be | the (one) | of | here | or | the (one) | of | your | country.", "It can be your address here or back home.")],
     return_thanks: [t("¡Gracias! | Así | está | perfecto.", "Thanks! | Like this | it's | perfect.", "Thanks! That's perfect.")],
     ask_insurance: [t("Ya | incluye | un | seguro | básico. | ¿Quiere | asegurarlo | por | el | valor | completo? | Son | $50 | más.",
       "Already | it includes | a | insurance | basic. | Do you want | to insure it | for | the | value | full? | It's | 50 pesos | more.",
       "It already includes basic insurance. Would you like to insure it for the full value? It's 50 pesos more.",
       { say: "Ya incluye un seguro básico. ¿Quiere asegurarlo por el valor completo? Son cincuenta pesos más." })],
     ask_insurance_again: [t("¿Lo | asegura, | entonces?", "It | do you insure, | then?", "So, would you like the full insurance?")],
+    insured_first: [t("El | económico | no | lleva | seguro.", "The | economy (one) | not | carries | insurance.", "Economy doesn't come with insurance.")],
     insured_info: [t("Ya | incluye | un | seguro | básico.", "Already | it includes | a | insurance | basic.", "It already includes basic insurance.")],
     insurance_price: [t("El | seguro | completo | son | $50 | más.", "The | insurance | full | is | 50 pesos | more.", "Full insurance is 50 pesos more.", { say: "El seguro completo son cincuenta pesos más." })],
     insurance_added: [t("Muy | bien, | son | $50 | más.", "Very | good, | it's | 50 pesos | more.", "Okay, that's 50 pesos more.", { say: "Muy bien, son cincuenta pesos más." })],
@@ -600,6 +619,7 @@ export const post: SituationDef = {
     ],
     card_later: [t("Sí, | aceptamos | tarjeta.", "Yes, | we-accept | card.", "Yes, we take cards.")],
     cash_yes: [t("Sí, | claro.", "Yes, | of course.", "Yes, of course.")],
+    card_then: [t("No hay problema, | con | tarjeta | entonces.", "No problem, | with | card | then.", "No problem, card then.")],
     cash_then: [t("No hay problema, | en efectivo | entonces.", "No problem, | in cash | then.", "No problem, cash then.")],
     no_dollars: [t("Lo siento, | solo | aceptamos | pesos. | También | puede | pagar | con | tarjeta.", "I'm sorry, | only | we-accept | pesos. | Also | you-can | pay | with | card.", "Sorry, we only take pesos. You can also pay by card.")],
     no_phone_pay: [t("Lo siento, | aquí | solo | aceptamos | efectivo | o | tarjeta.", "I'm sorry, | here | only | we-accept | cash | or | card.", "Sorry, we only take cash or card here.")],
@@ -637,6 +657,7 @@ export const post: SituationDef = {
     ask_pickup_name: [t("No se preocupe. | ¿Tiene | el | número | de | guía? | Si | no, | ¿a | nombre | de | quién | viene?",
       "Don't worry. | Do you have | the | number | of | waybill? | If | not, | under | name | of | whom | does it come?",
       "Don't worry. Do you have the tracking number? If not, whose name is it under?")],
+    ask_name_only: [t("Entonces, | ¿a | nombre | de | quién | viene?", "Then, | under | name | of | whom | does it come?", "Okay, so whose name is it under?")],
     ask_guia: [t("¿Me | lo | dicta, | por favor?", "(To) me | it | you-read-out, | please?", "Could you read it to me, please?", { flags: { 2: "dictar: to read something out for someone to write down." } })],
     name_thanks: [t("Gracias. | Déjeme | revisar.", "Thanks. | Let me | check.", "Thanks. Let me check.")],
     ask_pickup_id: [
@@ -899,12 +920,13 @@ export const post: SituationDef = {
     { id: "pick_notice", when: (c) => !!c.s.pickup && c.s.notice === undefined, done: (c) => c.s.notice !== undefined,
       ask: (c) => c.say("pickup_notice_q"), expects: ["here_you_go", "no_notice", "tracking_ctx"],
       suggest: [{ lt: "Show the notice (or say you don't have it)", hint: "notice" }],
-      yes: (c) => { c.s.notice = true; c.say("notice_thanks"); },
+      yes: (c) => { if (c.s.notice !== undefined) return; c.s.notice = true; c.say("notice_thanks"); },
       no: (c) => { c.s.notice = false; } },
     { id: "pick_name", when: (c) => !!c.s.pickup && c.s.notice === false && !c.s.pickName, done: (c) => !!c.s.pickName,
-      ask: (c) => c.say("ask_pickup_name"), expects: ["name_ctx", "tracking_ctx"],
+      ask: (c) => c.say(c.s.noGuia ? "ask_name_only" : "ask_pickup_name"), expects: ["name_ctx", "tracking_ctx"],
       suggest: [{ lt: "Give the tracking number or your full name", hint: "pname" }],
-      yes: (c) => { c.say("ask_guia"); c.hold(); } },
+      yes: (c) => { c.say("ask_guia"); c.expect(guiaPending()); },
+      no: (c) => { c.s.noGuia = true; } },
     { id: "pick_id", when: (c) => !!c.s.pickup && !c.s.customs && c.s.notice !== undefined && (c.s.notice || !!c.s.pickName) && !c.s.pickId, done: (c) => !!c.s.pickId,
       ask: (c) => c.say("ask_pickup_id"), expects: ["show_doc", "here_you_go", "doc_ctx", "no_id_ctx"],
       suggest: [{ lt: "Show your ID", hint: "pid" }],
@@ -930,7 +952,8 @@ export const post: SituationDef = {
       ask: (c) => { if (bump(c, "return_addr") === 0) { c.say("return_missing"); c.twist("return_address"); } c.say("return_ask"); },
       expects: ["return_ok", "return_ctx", "what_return"],
       suggest: [{ lt: "Apologize and add your address", hint: "return" }],
-      yes: (c) => { c.s.returnDone = true; c.say("return_thanks"); } },
+      yes: (c) => { c.s.returnDone = true; c.say("return_thanks"); },
+      no: (c) => { c.say("return_explain"); } },
     { id: "service", when: (c) => sending(c) && !!c.s.weighed, done: (c) => !!c.s.service,
       ask: (c) => {
         if (bump(c, "service") === 0) {
@@ -939,7 +962,7 @@ export const post: SituationDef = {
           c.say("opt_express", { price: priceOf(c, "express") });
         } else c.say(c.s.toldFirst ? "ask_service_which" : "ask_service_again");
       },
-      expects: ["service_ans", "ask_cheaper", "ask_faster", "service_not", "ask_price", "ask_time"],
+      expects: ["service_ans", "ask_cheaper", "ask_faster", "service_not", "not_dear_ctx", "ask_price", "ask_time", "ask_tracking", "ask_insured"],
       suggest: [{ lt: "Choose how to send it", hint: "service", options: "service" }, { lt: "Ask if there's anything cheaper", hint: "service" }],
       help: (c) => { c.say("opt_priority", { price: priceOf(c, "priority") }); c.say("opt_express", { price: priceOf(c, "express") }); } },
     { id: "contents_list", when: (c) => sending(c) && !!c.s.service && !c.s.items, done: (c) => !!c.s.items,
@@ -987,7 +1010,7 @@ export const post: SituationDef = {
       suggest: [{ lt: "Say that's all", hint: "more" }, S_STAMPS],
       // "¿Sería todo?" (ask_more variant 1) turns a bare yes/no around
       yes: (c) => { if (askedEverything(c)) { c.s.moreDone = true; return; } c.say("ask_more_yes"); c.hold(); },
-      no: (c) => { if (askedEverything(c)) { c.say("ask_more_yes"); c.hold(); return; } c.s.moreDone = true; } },
+      no: (c) => { if (askedEverything(c) && !/\bgracias\b/.test(c.heard.toLowerCase())) { c.say("ask_more_yes"); c.hold(); return; } c.s.moreDone = true; } },
   ],
 
   init: (c) => {
@@ -1070,6 +1093,8 @@ export const post: SituationDef = {
     contents_perfume(c, _slots, seg) {
       if (!c.s.sending) startSending(c);
       const alcohol = seg.tags.includes("alcohol");
+      // already told and still waiting for "Lo saco": no second announcement
+      if (c.s.perfume === "asked") { c.expect(removePending("Agree to take it out", alcohol ? "alcohol_out" : "perfume_out")); return; }
       c.s.perfume = c.s.perfume || "asked";
       c.twist("perfume");
       c.say(alcohol ? "alcohol_no" : "perfume_no");
@@ -1107,6 +1132,8 @@ export const post: SituationDef = {
     service_ans(c, slots, seg) {
       let svc = slots.service as string | undefined;
       const tags = allTags(slots, seg);
+      // "¿El express tiene rastreo?" read as "El express" + a question: the question is answered, nothing chosen
+      if (tags.includes("bare") && /\b(tiene|trae|incluye|lleva|tarda|cuesta|cuanto|sale|rastre\w*|seguro|llega|caro|barato|que tal)\b/.test(c.heard.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))) return;
       if (!svc && tags.includes("cheap")) svc = prof(c).first ? "first" : "priority";
       if (!svc && tags.includes("fast")) svc = "express";
       if (!svc && tags.includes("std")) svc = "priority";
@@ -1115,21 +1142,35 @@ export const post: SituationDef = {
       if (!svc && tags.includes("third")) svc = prof(c).first && c.s.toldFirst ? "first" : undefined;
       if (!svc) return;
       if (!c.s.sending) startSending(c);
-      if (svc === "first" && c.step === "service" && !c.s.toldFirst && prof(c).first) {
+      // the prices come with the weight: nothing is chosen before them
+      if (!c.s.weighed && !c.s.service) { c.say("svc_later"); return; }
+      // economy hasn't been offered yet: quote it (price, no tracking, a month) and ask before choosing it
+      if (svc === "first" && !c.s.toldFirst && prof(c).first && !c.s.service) {
         c.s.toldFirst = true;
         c.say("opt_first", { price: priceOf(c, "first") });
+        c.say("first_q");
+        c.expect(firstPending());
+        return;
       }
       setService(c, svc);
     },
     service_not(c, slots) {
       const other = slots.service === "express" ? "priority" : slots.service === "priority" ? "express" : undefined;
-      if (/\bcaro\b/.test(c.heard.toLowerCase())) { setService(c, "priority"); return; }
       if (other && c.step === "service") { c.s.service = other; c.say("svc_then", { X: other }); }
+      // "No quiero el express" after choosing it (and before paying): back to the other one, whose price was said
+      else if (slots.service && slots.service === c.s.service && !c.s.paid) {
+        const back = slots.service === "priority" ? "express" : "priority";
+        c.s.service = back;
+        c.say("svc_then", { X: back });
+      }
       else c.say("no_problem");
     },
+    not_dear_ctx(c) { setService(c, "priority"); },
     ask_cheaper(c) {
+      // "Es un poco caro" at the insurance offer: no full insurance
+      if (c.step === "insurance" && c.s.insurance === undefined) { c.s.insurance = false; c.say("no_problem"); return; }
       if (prof(c).first) { c.s.toldFirst = true; c.say("opt_first", { price: priceOf(c, "first") }); }
-      else { c.say("too_heavy_first"); c.say("no_cheaper"); }
+      else tooHeavy(c);
     },
     ask_faster(c) { c.say("fastest"); },
     ask_options(c) {
@@ -1146,7 +1187,8 @@ export const post: SituationDef = {
       if (svc === "first") { if (prof(c).first) c.say("opt_first", { price: priceOf(c, "first") }); else c.say("too_heavy_first"); return; }
       if (svc === "express") { c.say("opt_express", { price: priceOf(c, "express") }); return; }
       if (svc === "priority") { c.say("opt_priority", { price: priceOf(c, "priority") }); return; }
-      if (total(c) > 0) { c.say("say_total", { total: total(c) }); return; }
+      // at the payment the total was just said: say it once, and don't ask again right after
+      if (total(c) > 0) { c.say("say_total", { total: total(c) }); if (c.step === "pay") c.hold(); return; }
       if (!c.s.weighed && c.s.sending) weigh(c);
       if (!c.s.weighed && !c.s.sending) { c.say("ask_dest"); if (!c.s.task) startSending(c); return; }
       c.say("opt_priority", { price: priceOf(c, "priority") }); c.say("opt_express", { price: priceOf(c, "express") });
@@ -1161,16 +1203,18 @@ export const post: SituationDef = {
     },
     ask_tracking(c) {
       if (c.s.customs && !c.s.sending) { c.say("customs_track"); return; }
-      if (c.s.sent) { c.say("tracking_on_receipt"); return; }
+      if (c.s.sent) { c.say(c.s.service === "first" ? "tracking_no_first" : "tracking_on_receipt"); return; }
       c.say(c.s.service === "first" ? "tracking_no_first" : "tracking_yes");
     },
-    ask_insured(c) { c.say(c.s.service === "first" ? "no_problem" : "insured_info"); },
+    ask_insured(c, slots) { c.say((slots.service ?? c.s.service) === "first" ? "insured_first" : "insured_info"); },
     ask_kilos(c) { if (c.s.weighed) c.say(prof(c).kilos); else if (c.s.sending && c.s.dest && c.s.contents !== undefined) weigh(c); else c.say(c.s.sending ? "ask_contents" : "ask_dest"); },
     ask_customs(c) { c.say("customs_explain"); },
     what_write(c) { c.say("write_help"); },
     value_ans(c, slots) {
       if (c.s.value !== undefined && c.step !== "value") { c.say("contents_ok"); return; }
       const p = walkSlots(slots, "price");
+      // "No vale mucho" without a number: Gloria asks for a rough figure (only at "¿Cuánto vale?")
+      if (typeof p !== "number") { if (c.step === "value") c.say("value_help"); return; }
       c.s.value = typeof p === "number" ? p : 50000;
       if (!c.s.items) c.s.items = true;
       c.say("value_ok");
@@ -1192,7 +1236,7 @@ export const post: SituationDef = {
       if (c.step === "return_addr" || (c.s.returnTwist && c.s.weighed && !c.s.returnDone)) { c.s.returnDone = true; c.say("return_thanks"); }
     },
     return_ctx(c) { post.handlers.return_ok(c, {}, { intent: "return_ok", slots: {}, tags: [] }); },
-    what_return(c, _slots, seg) { c.say(seg.tags.includes("here") ? "return_here" : "return_explain"); },
+    what_return(c, _slots, seg) { c.say(seg.tags.includes("here") ? "return_here" : seg.tags.includes("home") ? "return_either" : "return_explain"); },
     insurance_yes(c) { if (c.s.insurance === true) return; c.s.insurance = true; c.say("insurance_added"); },
     insurance_no(c) { c.s.insurance = false; c.say("no_problem"); },
     stamps_qty(c, slots) {
@@ -1209,7 +1253,13 @@ export const post: SituationDef = {
 
     // --- paying
     pay_card(c) { pay(c, "card"); },
-    no_cash(c) { pay(c, "card"); },
+    // "No tengo efectivo": the card, then; the money moves when the card is handed over
+    no_cash(c) {
+      if (c.s.paid) { c.say("already_paid"); return; }
+      c.s.payMethod = "card";
+      c.say("card_then");
+      if (readyToPay(c) && c.step === "pay") c.hold();
+    },
     pay_cash(c, _slots, seg) {
       // "¿Puedo pagar en efectivo?" is a question: the money comes with "Aquí tiene"
       if (seg.tags.includes("q") && readyToPay(c) && c.step === "pay") { c.s.payMethod = "cash"; c.say("cash_yes"); c.hold(); return; }
@@ -1229,6 +1279,7 @@ export const post: SituationDef = {
         case "pick_id": gotPickupId(c); return;
         case "pick_sign": pickedUp(c); return;
         case "sign_customs": c.s.customsSigned = true; c.event("sign"); c.say("signed_thanks"); return;
+        case "return_addr": c.s.returnDone = true; c.say("return_thanks"); return;
         case "pay": pay(c, c.s.payMethod || "cash"); return;
         default: c.say("signed_thanks");
       }
@@ -1254,8 +1305,8 @@ export const post: SituationDef = {
       if (!c.s.pickName && c.s.pickup) { c.s.pickName = part || "?"; c.say("name_thanks"); afterLookup(c); }
     },
     tracking_ctx(c, _slots, seg) {
-      if (seg.tags.includes("have") && !c.s.pickName) { c.say("ask_guia"); c.hold(); return; }
       if (c.step === "pick_notice" && c.s.notice === undefined) { c.s.notice = false; }
+      if (seg.tags.includes("have") && !c.s.pickName) { c.say("ask_guia"); c.expect(guiaPending()); return; }
       if (!c.s.pickName) { c.s.pickName = "tracking"; c.say("name_thanks"); afterLookup(c); }
     },
     sign_ctx(c) { post.handlers.signed(c, {}, { intent: "signed", slots: {}, tags: [] }); },
@@ -1263,6 +1314,7 @@ export const post: SituationDef = {
       if (/\bdonde\b/.test(c.heard.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""))) { c.say("sign_where"); c.hold(); return; }
       if (c.step === "pick_sign") { pickedUp(c); return; }
       if (c.step === "sign_customs") { c.s.customsSigned = true; c.event("sign"); c.say("signed_thanks"); return; }
+      if (c.step === "return_addr") { c.s.returnDone = true; c.say("return_thanks"); return; }
       c.say("signed_thanks");
     },
     customs_q_ctx(c, _slots, seg) {
@@ -1405,6 +1457,24 @@ export const post: SituationDef = {
     { say: "Es el 4829157361", intent: "tracking_ctx", step: "pick_name" },
     { say: "No sabía, bueno, lo saco", intent: "take_out", step: "perfume" },
     { say: "Quisiera mandar esto por correo a Canadá", intent: "send_package", slots: { dest: "canada" } },
+    // review traps: a question about a service never chooses it; bare numbers and "no es caro" only where asked
+    { say: "¿El express tiene rastreo?", intent: "ask_tracking", step: "service", not: ["service_ans"] },
+    { say: "¿Y el express cuánto tarda?", intent: "ask_time", step: "value", not: ["service_ans"] },
+    { say: "¿El normal llega antes de Navidad?", intent: "ask_time", step: "value", not: ["service_ans"] },
+    { say: "¿Es muy caro el express?", intent: "ask_cheaper", step: "service", not: ["service_ans"] },
+    { say: "¿El express no tiene seguro?", intent: "ask_insured", step: "service", not: ["service_ans", "service_not"] },
+    { say: "Necesito dos", intent: "none", step: "pay", not: ["stamps_qty", "stamps_ctx"] },
+    { say: "No es caro", intent: "none", step: "hazmat", not: ["value_ans", "value_ctx"] },
+    { say: "No es regalo, son cosas mías", intent: "gift_no", step: "gift", not: ["gift_yes"] },
+    { say: "Sí, es frágil, son unas tazas de cerámica", intent: "contents_fragile", step: "hazmat" },
+    { say: "No lleva perfume ni nada así", intent: "contents_ok", step: "hazmat", not: ["contents_perfume"] },
+    { say: "¿Qué cosas no se pueden mandar?", intent: "what_hazard", step: "hazmat" },
+    { say: "No vengo a recoger nada, quiero enviar esto", intent: "send_package", not: ["pickup"] },
+    { say: "A Texas, en Estados Unidos", intent: "dest_ans", step: "dest", slots: { dest: "usa" } },
+    { say: "No el caro, el otro", intent: "not_dear_ctx", step: "service", not: ["service_ans"] },
+    { say: "¿Pongo mi dirección de Canadá?", intent: "what_return", step: "return_addr" },
+    { say: "Perfume no", intent: "contents_ok", step: "hazmat", not: ["contents_perfume"] },
+    { say: "Nada de perfume ni pilas", intent: "contents_ok", step: "hazmat", not: ["contents_perfume", "contents_hazard"] },
     // not understood
     { say: "Mi gato toca la guitarra", intent: "none" },
     { say: "Quiero un café con leche", intent: "none" },
@@ -1446,11 +1516,16 @@ export const post: SituationDef = {
       turns: ["Un paquete para Estados Unidos.", "No.", "Normal.", "Ropa.", "Quinientos.", "Sí.", "Ya.", "Tarjeta.", "Es todo."],
       expect: { complete: true, state: { service: "priority", gift: true, contents: "ok" } }, auto: omit(POST_AUTO, ["gift"]),
       setup: (s) => { s.pickupTwist = false; s.returnTwist = false; s.askGift = true; s.askInsurance = false; s.offerStamps = false; } },
-    // insurance asked on every seed: a price question first, then a no; no cash, so the card; phone payment refused
+    // insurance asked on every seed: a price question first, then a no; no cash, so the card (paid when handed over); phone payment refused
     { name: "insurance question, no cash",
-      turns: ["Buenas. Necesito enviar esta caja a Canadá.", "No trae nada peligroso.", "El express.", "Unos juguetes y dulces para mis sobrinos.", "Como novecientos pesos.", "Ya firmé.", "¿Cuánto cuesta el seguro?", "No, con el seguro básico está bien.", "¿Puedo pagar con el celular?", "No tengo efectivo.", "Gracias, es todo."],
+      turns: ["Buenas. Necesito enviar esta caja a Canadá.", "No trae nada peligroso.", "El express.", "Unos juguetes y dulces para mis sobrinos.", "Como novecientos pesos.", "Ya firmé.", "¿Cuánto cuesta el seguro?", "No, con el seguro básico está bien.", "¿Puedo pagar con el celular?", "No tengo efectivo.", "Aquí tiene mi tarjeta.", "Gracias, es todo."],
       expect: { complete: true, state: { insurance: false, payMethod: "card", service: "express" } }, auto: POST_AUTO,
       setup: (s) => { s.pickupTwist = false; s.returnTwist = false; s.askGift = false; s.askInsurance = true; s.offerStamps = false; } },
+    // the light box: "el más barato" quotes economy and asks; a question about it, then yes; "¿Está asegurado?" answered for economy
+    { name: "economy quoted before it's chosen",
+      turns: ["Quisiera mandar este paquete a Irlanda.", "No, nada de eso.", "El más barato, por favor.", "¿Lo puedo rastrear?", "Sí, está bien.", "Unos dulces y fotos.", "Como trescientos pesos.", "Claro.", "¿Está asegurado?", "Aquí tiene.", "Es todo, gracias."],
+      expect: { complete: true, state: { service: "first", toldFirst: true, sent: true } }, auto: POST_AUTO,
+      setup: (s) => { s.profile = 1; s.pickupTwist = false; s.returnTwist = false; s.askGift = false; s.askInsurance = false; s.offerStamps = false; } },
     // stamps offered on every seed, and taken; a correction of the country
     { name: "stamps offered, country corrected",
       turns: ["Quiero mandar una caja.", "No a Canadá, a Estados Unidos.", "Unas tazas de Talavera.", "El normal, por favor.", "Como mil pesos.", "Sí, es un regalo.", "Claro.", "Sí, para unas postales.", "Tres.", "Con tarjeta.", "Es todo, gracias."],
@@ -1470,10 +1545,43 @@ function removePending(lt: string, again: string): Pending {
     id: "perfume", expects: ["take_out", "keep_it_ctx"], hints: ["remove", "g_yesno"],
     suggest: [{ lt, hint: "remove" }],
     yes: (cc) => { perfumeOut(cc); },
-    no: (cc) => { cc.say("perfume_rule"); },
+    // a no keeps the question open: it can't go with it inside
+    no: (cc) => { cc.say(bump(cc, "keep") === 0 ? "perfume_keep" : "perfume_rule"); cc.expect(removePending(lt, again)); },
     on: { take_out: (cc) => { perfumeOut(cc); }, g_ok: (cc) => { perfumeOut(cc); }, g_sorry: (cc) => { perfumeOut(cc); },
       keep_it_ctx: (cc) => { cc.say("perfume_keep"); cc.expect(removePending(lt, again)); } },
     ask: (cc) => cc.say(again),
+  };
+}
+
+/** "¿Le parece bien el económico?": economy is chosen only on a yes (or by naming it again). */
+function firstPending(): Pending {
+  // questions while it's open are about economy
+  const about = (line: string) => (cc: Ctx) => { cc.say(line, { price: priceOf(cc, "first") }); cc.expect(firstPending()); };
+  return {
+    id: "first_offer", expects: ["service_ans", "service_not", "ask_time", "ask_tracking", "ask_insured", "ask_price"],
+    hints: ["service", "g_yesno"], suggest: [{ lt: "Say whether economy is okay", hint: "g_yesno" }, { lt: "Choose how to send it", hint: "service", options: "service" }],
+    yes: (cc) => { setService(cc, "first"); },
+    no: () => { /* the service step asks "Entonces, ¿cuál prefiere?" */ },
+    on: {
+      service_ans: (cc, sl, sg) => { post.handlers.service_ans(cc as ConvCtx, sl, sg); },
+      service_not: (cc, sl, sg) => { post.handlers.service_not(cc as ConvCtx, sl, sg); },
+      ask_tracking: about("tracking_no_first"), ask_time: about("time_first"), ask_insured: about("insured_first"), ask_price: about("opt_first"),
+    },
+    ask: (cc) => cc.say("first_q"),
+  };
+}
+
+/** "¿Me lo dicta?": the tracking number (or, without it, the name). */
+function guiaPending(): Pending {
+  return {
+    id: "guia", optional: true, expects: ["tracking_ctx", "name_ctx", "no_notice"], hints: ["pname"],
+    suggest: [{ lt: "Read out the tracking number (or give your name)", hint: "pname" }],
+    on: {
+      no_notice: (cc) => { cc.s.noGuia = true; },
+      tracking_ctx: (cc, sl, sg) => { post.handlers.tracking_ctx(cc as ConvCtx, sl, sg); },
+      name_ctx: (cc, sl, sg) => { post.handlers.name_ctx(cc as ConvCtx, sl, sg); },
+    },
+    no: (cc) => { cc.s.noGuia = true; },
   };
 }
 

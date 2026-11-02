@@ -867,7 +867,10 @@
 {
 "ctx": "stamps_qty",
 "say": "Deme tres",
-"intent": "stamps_qty",
+"intent": [
+"stamps_ctx",
+"stamps_qty"
+],
 "slots": {
 "number": 3
 }
@@ -1374,7 +1377,10 @@
 {
 "ctx": "stamps_qty",
 "say": "Dame cinco",
-"intent": "stamps_qty"
+"intent": [
+"stamps_ctx",
+"stamps_qty"
+]
 },
 {
 "ctx": "stamps_qty",
@@ -1441,7 +1447,159 @@
 {
 "ctx": "value",
 "say": "No vale mucho",
-"intent": "value_ans"
+"intent": [
+"value_ctx",
+"value_ans"
+]
+},
+{
+"ctx": "service",
+"say": "¿El express tiene rastreo?",
+"intent": "ask_tracking",
+"not": [
+"service_ans"
+],
+"note": "trap: a question about a service never chooses it"
+},
+{
+"ctx": "service",
+"say": "¿Y el express cuánto tarda?",
+"intent": "ask_time",
+"not": [
+"service_ans"
+],
+"note": "trap: question"
+},
+{
+"ctx": "value",
+"say": "¿El normal llega antes de Navidad?",
+"intent": "ask_time",
+"not": [
+"service_ans"
+],
+"note": "trap: question after choosing"
+},
+{
+"ctx": "service",
+"say": "¿Es muy caro el express?",
+"intent": [
+"ask_cheaper",
+"ask_price"
+],
+"not": [
+"service_ans"
+],
+"note": "trap: question"
+},
+{
+"ctx": "service",
+"say": "¿El express no tiene seguro?",
+"intent": "ask_insured",
+"not": [
+"service_ans",
+"service_not"
+],
+"note": "trap: question with no"
+},
+{
+"ctx": "pay",
+"say": "Necesito dos",
+"intent": "any",
+"not": [
+"stamps_qty",
+"stamps_ctx"
+],
+"note": "trap: bare number away from the stamps question"
+},
+{
+"ctx": "hazmat",
+"say": "No es caro",
+"intent": "any",
+"not": [
+"value_ans",
+"value_ctx"
+],
+"note": "trap: not a customs value here"
+},
+{
+"ctx": "gift",
+"say": "No es regalo, son cosas mías",
+"intent": "gift_no",
+"not": [
+"gift_yes"
+],
+"note": "trap: negation"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, es frágil, son unas tazas de cerámica",
+"intent": "contents_fragile"
+},
+{
+"ctx": "hazmat",
+"say": "No lleva perfume ni nada así",
+"intent": "contents_ok",
+"not": [
+"contents_perfume"
+],
+"note": "trap: negation"
+},
+{
+"ctx": "hazmat",
+"say": "¿Qué cosas no se pueden mandar?",
+"intent": "what_hazard"
+},
+{
+"ctx": "help",
+"say": "No vengo a recoger nada, quiero enviar esto",
+"intent": "send_package",
+"not": [
+"pickup"
+],
+"note": "trap: negation"
+},
+{
+"ctx": "dest",
+"say": "A Texas, en Estados Unidos",
+"intent": "dest_ans"
+},
+{
+"ctx": "pay",
+"say": "No tengo efectivo",
+"intent": "no_cash",
+"not": [
+"pay_cash",
+"pay_card"
+],
+"note": "trap: no charge until the card is handed over"
+},
+{
+"ctx": "service",
+"say": "No el caro, el otro",
+"intent": "not_dear_ctx"
+},
+{
+"ctx": "return_addr",
+"say": "No tengo dirección aquí",
+"intent": "what_return"
+},
+{
+"ctx": "hazmat",
+"say": "Perfume no",
+"intent": "contents_ok",
+"not": [
+"contents_perfume"
+],
+"note": "trap: negation after the noun"
+},
+{
+"ctx": "hazmat",
+"say": "Nada de perfume",
+"intent": "contents_ok",
+"not": [
+"contents_perfume"
+],
+"note": "trap: negation"
 }
 ]
 }
