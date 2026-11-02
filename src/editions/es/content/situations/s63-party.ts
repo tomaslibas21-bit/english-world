@@ -521,14 +521,20 @@ export const party: SituationDef = {
       "[si] (me das | dame | quiero | se me antoja | un | una | unos | unas) {food} #food",
       "[si] (tienes | hay) {food} #food", "[si] [solo | nada mas] (un | una | unos | unas) {food} [porfa] #food",
     ] },
-    drink_menu: { patterns: ["(tienes | tienen | hay) algo sin alcohol #soft", "(que | cual) (tienes | tienen | hay) sin alcohol #soft", "que (tienes | tienen | hay) [de tomar | para tomar | de beber | para beber]", "que (bebidas | cosas) (tienes | hay)", "que me recomiendas", "que estan tomando"] },
+    drink_menu: { patterns: ["(tienes | tienen | hay) algo sin alcohol #soft", "[mejor] algo sin alcohol [porfa] #soft", "(que | cual) (tienes | tienen | hay) sin alcohol #soft", "que (tienes | tienen | hay) [de tomar | para tomar | de beber | para beber]", "que (bebidas | cosas) (tienes | hay)", "que me recomiendas", "que estan tomando"] },
+    // the bare refusals ("Mejor no", "Estoy bien", "Ahorita no") mean something else at other questions: drink_no_ctx
     drink_no: { patterns: [
-      "[no] [gracias] [ahorita | por ahora | ahora] (estoy bien | asi estoy bien | todo bien | ya tengo | ya tengo algo | todavia tengo | ya estoy servido | ya estoy servida) #h:d_no",
       "[no] [gracias] ya tengo mi (cerveza | bebida | vaso | refresco | agua | trago)",
-      "(ahorita | ahora | por ahora | por el momento) no [gracias]", "mejor no [gracias]",
       "[no] [gracias] no (tomo | bebo) [alcohol | nada de alcohol] #noalc",
+      "[no] [un | una | unos | unas | otra | otro] ({neg:drink} | {neg:food}) no [gracias] [ya] [estoy (bien | lleno | llena | satisfecho | satisfecha)]",
+      "[no] (otra | otro | otra cerveza | otra chela) no [gracias] [estoy bien]",
       "no (puedo | debo) tomar [hoy | ahorita] #noalc", "(vengo | voy | ando) manejando [y] [no puedo tomar] #noalc",
-      "no (quiero | tomo) {drink} #noalc", "no quiero (otra | otro | mas | nada [mas] | nada de tomar)", "[no] [gracias] ya (tomé | bebí) (mucho | suficiente | bastante)", "[no] [gracias] (estoy | ya estoy) (lleno | llena | satisfecho | satisfecha)", "[no] [gracias] ya (comí | cené) [mucho | bastante | suficiente]",
+      "no (quiero | tomo) {drink} #noalc", "no quiero (otra | otro | mas | nada [mas] | nada de tomar)", 
+    ] },
+    drink_no_ctx: { patterns: [
+      "[no] [gracias] [ahorita | por ahora | ahora] (estoy bien | asi estoy bien | todo bien | ya tengo | ya tengo algo | todavia tengo | ya estoy servido | ya estoy servida) #h:d_no",
+      "(ahorita | ahora | por ahora | por el momento) no [gracias]", "mejor no [gracias]", "[no] nada [gracias] [estoy bien]",
+      "[no] [gracias] ya (tomé | bebí) (mucho | suficiente | bastante)", "[no] [gracias] (estoy | ya estoy) (lleno | llena | satisfecho | satisfecha)", "[no] [gracias] ya (comí | cené) [mucho | bastante | suficiente]",
     ] },
     drink2_yes: { patterns: ["[si] (otra | otro | otra igual | lo mismo | la misma | otra ronda | otra por favor) [porfa]", "[si] otra (cerveza | chela | igual) [porfa]"] },
     cheers: { patterns: ["(salud | salucita | chin chin | arriba abajo al centro y pa dentro)"] },
@@ -551,7 +557,10 @@ export const party: SituationDef = {
       "por (una amiga | un amigo | mi esposo | mi esposa | mi pareja | un amigo en comun | una amiga en comun) #friends",
       "es amiga de (mi esposo | mi esposa | mi pareja | una amiga | un amigo) #friends", "soy [su | un | una] @amigo [de (ximena | ella)] #friends",
       "soy [su] (vecino | vecina) [de (ximena | ella)] #neigh", "soy [su] (companero | companera | colega) [de trabajo] [de (ximena | ella)] #work",
-      "[la verdad] no la conozco [muy bien | mucho | bien | todavia] #none", "la acabo de conocer #none", "(apenas | hoy) la conocí #none", "nos acabamos de conocer #none",
+      "[la verdad] no la conozco [muy bien | mucho | bien | todavia] #none",
+      "[no la conozco (muy bien | mucho)] (vine | vengo) con (un amigo | una amiga | mi esposo | mi esposa | mi pareja | mi novio | mi novia | unos amigos | un vecino | una vecina) #friends",
+      "no (trabajamos (juntos | juntas) | somos (companeros | companeras | colegas)) [solo] somos (vecinos | vecinas) #neigh",
+      "no (trabajamos (juntos | juntas) | somos (vecinos | vecinas)) [solo] somos @amigo #friends", "la acabo de conocer #none", "(apenas | hoy) la conocí #none", "nos acabamos de conocer #none",
       "no conozco a nadie [aqui] [todavia] #none", "(es | esta es) mi primera vez aqui #none",
     ] },
 
@@ -571,7 +580,7 @@ export const party: SituationDef = {
       "[esta | queda] en el (norte | sur | este | oeste | centro) de {country}", "es una ciudad (en | de) el (norte | sur | este | oeste | centro) de {country}",
     ] },
     correct_country: { patterns: [
-      "[no] no de {bad:country} [sino] de {country} #h:mh_not", "no [no] [soy] de {country} #h:mh_no", "no {country} [no {bad:country}]", "{country} no {bad:country}",
+      "[no] no de {bad:country} [sino] de {country} #h:mh_not", "[no] [de] {bad:country} no [perdon]", "no [no] [soy] de {country} #h:mh_no", "no {country} [no {bad:country}]", "{country} no {bad:country}",
       "no [no] [de] {bad:country} no [sino] [de] {country}", "[no] dije {country}", "(ja | jaja | jeje) no [no] [soy] [de] {country} [no [de] {bad:country}]", "[no] [de] {country} no [de] {bad:country}", "[perdon] (dije | soy de) {country} no {bad:country}",
     ] },
     confirm_yes: { patterns: [
@@ -600,6 +609,7 @@ export const party: SituationDef = {
       "(estoy | ando) buscando (trabajo | chamba | empleo | un trabajo nuevo | un trabajo aqui) #looking #h:j_looking",
       "(ahorita | ahora | por ahora | por el momento) no (trabajo | tengo trabajo) #looking", "no tengo trabajo [ahorita | ahora | todavia] #looking",
       "estoy (desempleado | desempleada | sin trabajo | entre trabajos) #looking", "no trabajo [ahorita | ahora] #looking",
+      "[no] [ahorita | ahora] no (trabajo | estoy trabajando) [ahorita | ahora] estoy de (vacaciones | visita | viaje) #vacation", "estoy de (vacaciones | viaje | ano sabatico) #vacation",
       "soy ama de casa #home", "me dedico (al hogar | a mi casa | a mi familia | a mis hijos) #home", "(cuido | me encargo de) (a mis hijos | a mis ninos | la casa | a mi familia) #home",
       "tengo (mi propio negocio | mi negocio | una empresa | mi propia empresa | una tienda | un restaurante | un hotel | un hostal | una cafeteria | un bar) [aqui | en el centro | en la playa] #own",
       "soy (dueno | duena) de (un | una) (negocio | tienda | restaurante | hotel | hostal | cafe | bar) #own", "trabajo por mi cuenta #own", "soy (emprendedor | emprendedora | empresario | empresaria) #own",
@@ -623,7 +633,7 @@ export const party: SituationDef = {
       "(voy a estar | me quedo) [aqui] {dur} #visit", "(he estado | estoy) aqui por {dur} #tip:llevo",
     ] },
     why_ans: { patterns: [
-      "(por | vine por) (el | mi) trabajo #work #h:w_work", "(vine | me mudé) (a | para) trabajar [aqui] #work", "me (ofrecieron | dieron) (un | una)? (trabajo | chamba | puesto) [aqui] #work",
+      "(por | vine por) (el | mi) trabajo #work #h:w_work", "[vine] por (trabajo | negocios) #work", "(vine | me mudé) (a | para) trabajar [aqui] #work", "me (ofrecieron | dieron) (un | una)? (trabajo | chamba | puesto) [aqui] #work",
       "(mi empresa | mi trabajo) me (mandó | trajo) [aqui] #work", "por (la | mi) chamba #work",
       "por @reason_sea [y @reason_sea] [y @reason_sea] #sea #h:w_sea", "(me gustó | me encantó) [mucho] [el pueblo | el lugar | aqui | cuando vine | la primera vez] #sea", "me (encanta | gusta | encantan | gustan) @reason_sea [y @reason_sea] [y @reason_sea] #sea",
       "(queria | quiero) vivir (cerca del mar | en la playa | en un lugar tranquilo | en un lugar calido | aqui) #sea", "aqui es muy (tranquilo | bonito) #sea",
@@ -636,6 +646,7 @@ export const party: SituationDef = {
       "(queria | quise) (una aventura | algo diferente | vivir en otro pais) #change",
       "(puedo | podia) trabajar desde cualquier (lugar | parte) #remote", "por el trabajo remoto #remote",
       "(nada mas | solo) (estoy | vine) de (vacaciones | visita) #visit", "de (vacaciones | visita) #visit",
+      "(vine | vinimos) de (vacaciones | visita) y me (quedé | enamoré) #sea", "(vine | vinimos) de (vacaciones | visita) y nos quedamos #sea",
     ] },
 
     // --- liking it ----------------------------------------------------------------------------------
@@ -647,19 +658,23 @@ export const party: SituationDef = {
       "[si] (estoy | me siento) [muy | super] (feliz | contento | contenta | a gusto | como en casa) [aqui]", "[si] (hasta ahora | por ahora) (todo bien | muy bien | me encanta)",
       "[si] (me encanta | me gusta) [mucho] (el mar | la playa | la comida | la gente | el clima | el pueblo) [de aqui]", "mejor de lo que (pensaba | esperaba)",
       "[si] (me encanta | me gusta) [mucho] [es] (muy)? (tranquilo | bonito)",
+      "[si] (aqui | el pueblo | puerto colibri) (es | esta) [muy | super | bien] (bonito | lindo | tranquilo | padre | hermoso | precioso | agradable | increible | genial)",
+      "[si] (estoy | me siento) [muy | super] bien [aqui] [gracias]",
     ] },
     like_mixed: { patterns: [
-      "[si] [me gusta | me encanta | es bonito] pero (extrano | echo de menos) (a mi familia | mi casa | a mis amigos | mi pais | mi familia | mi ciudad) #h:l_miss",
-      "(extrano | echo de menos) (a mi familia | mi casa | a mis amigos | mi pais | mi familia | mi ciudad)",
+      "[si] [me gusta | me encanta | es bonito] pero (extrano | echo de menos) (a mi familia | mi casa | a mis amigos | mi pais | mi familia | mi ciudad) #miss #h:l_miss",
+      "(extrano | echo de menos) (a mi familia | mi casa | a mis amigos | mi pais | mi familia | mi ciudad) #miss",
       "[si] [me gusta | me encanta | es bonito | esta bonito] (pero | aunque) (que calor | hace (mucho | demasiado | un) calor | el calor | hay muchos mosquitos | los mosquitos) #heat #h:l_heat",
-      "[me gusta pero] (hace | es) demasiado calor [para mi] #heat",
-      "(es | esta) (un poco | algo) caro", "no me encanta",
-      "todavia me estoy acostumbrando", "(es | todo es) (diferente | muy diferente | un cambio grande)", "[si] (pero | aunque) (todo es caro | es caro | el sargazo | hay mucho sargazo | el ruido)",
+      "[me gusta pero] (hace | es) demasiado calor [para mi] #heat", "[me gusta pero] no me gusta (el calor | tanto calor | la humedad) #heat", "[si] [me gusta | me encanta] (pero | aunque) (hay mucha humedad | la humedad) #heat",
+      "(es | esta) (un poco | algo) caro #cost", "no me encanta",
+      "todavia me estoy acostumbrando", "(es | todo es) (diferente | muy diferente | un cambio grande)",
+      "[si] [me gusta | me encanta | es bonito | esta bonito] (pero | aunque) (todo es caro | es caro | todo esta caro | es un poco caro) #cost",
+      "[si] [me gusta | me encanta | es bonito | esta bonito] (pero | aunque) (el sargazo | hay mucho sargazo | el ruido | hay mucho ruido | hay muchos turistas)",
     ] },
     // the like step's short answers ("Muchísimo", "Más o menos"): they mean something else elsewhere
     like_ctx: { patterns: ["[si] (mucho | muchisimo | bastante | claro | por supuesto) [me gusta] #pos", "(mas o menos | asi asi | regular | no esta mal | no esta tan mal | ahi va | ahi vamos) #mixed"] },
     like_no: { patterns: [
-      "no me gusta [mucho | tanto | nada] [vivir aqui | aqui | el pueblo]", "(es | esta) muy (caro | aburrido | dificil) [aqui | para mi]", "(todo es | la vida es) (muy | demasiado)? caro [aqui]",
+      "[la verdad] no me gusta [mucho | tanto | nada] [vivir aqui | aqui | el pueblo] [la verdad]", "(es | esta) muy (caro | aburrido | dificil) [aqui | para mi]", "(todo es | la vida es) (muy | demasiado)? caro [aqui]",
       "no me (acostumbro | puedo acostumbrar)", "(quiero | me quiero) (regresar | ir) [a mi pais | a casa]",
     ] },
 
@@ -669,6 +684,7 @@ export const party: SituationDef = {
       "(juego | practico) {hobbies} @freq @with_who #h:f_play", "toco {hobbies} @freq #h:f_instr", "hago {hobbies} @freq @with_who #h:f_do",
       "@when_pre [me gusta | me encanta] {hobbies} @freq", "@when_pre [yo] {hv} [y {hv}] [y {hv}] @freq", "@when_pre (juego | hago | toco) {hobbies} @freq",
       "[yo] {hv} [y | e] {hv} [[y | e] {hv}] @freq #h:f_verbs", "[yo] {hv} @with_who (los fines de semana | todos los fines de semana | todos los dias | todas las mananas | todas las tardes | diario | en las mananas | en las tardes | seguido | mucho)",
+      "no me gusta {neg:hobby} pero (me gusta | me encanta) {hobbies} @freq",
       "mi (pasatiempo | hobby) [favorito] es {hobbies}", "mis (pasatiempos | hobbies) son {hobbies}",
       "me gusta (pasar tiempo | estar) con (mi familia | mis hijos | mis amigos | mi pareja | mi perro | mis nietos) #other",
       "me gusta (estar en casa | la naturaleza | estar al aire libre | conocer gente) #other",
@@ -710,7 +726,7 @@ export const party: SituationDef = {
     q_reading: { patterns: ["que (estas leyendo | lees)", "te gusta leer", "que libro (estas leyendo | lees)"] },
     q_live: { patterns: ["@tu donde vives", "vives (cerca | por aqui | lejos)", "en que (parte | colonia | calle) vives"] },
     q_chef: { patterns: [
-      "te gusta (ser chef | tu trabajo | cocinar)", "que (cocinas | tipo de comida cocinas | haces en el restaurante)", "(cual | que) restaurante", "donde (esta | queda) (el | tu) restaurante",
+      "te gusta (ser chef | tu trabajo | cocinar)", "que (cocinas | tipo de comida cocinas | tipo de comida haces | haces en el restaurante) #what", "(cual | que) restaurante", "donde (esta | queda) (el | tu) restaurante",
       "como se llama (el | tu) restaurante", "cual es tu (comida | platillo | plato) favorito #fav", "(tu hiciste | hiciste tu) (la salsa | los tacos | la carne) #salsa", "(tu cocinaste | cocinaste tu) [la carne | los tacos] #salsa",
     ] },
     q_dance: { patterns: ["(sabes | te gusta) bailar", "bailas [salsa]"] },
@@ -740,7 +756,7 @@ export const party: SituationDef = {
     swap_propose: { patterns: [
       "[oye] (me pasas | me das | me puedes pasar | me puedes dar | me compartes | pasame | dame) tu @tel #h:n_can", "(intercambiamos | nos pasamos | nos damos) (numeros | los numeros | el numero | whatsapp) #h:n_swap",
       "(tienes | usas) (whatsapp | wasap | instagram | facebook)", "(dame | pasame) tu @tel [y te (mando | escribo) (un mensaje | un whatsapp)]", "(cual es | como es) tu @tel", "(te | le) (paso | doy) mi @tel #mine", "(quieres | te paso) mi numero #mine",
-      "(te puedo | puedo) agregar (en | a) (instagram | facebook | whatsapp)", "hay que seguir en contacto", "mejor (dame | pasame) (el tuyo | tu numero)",
+      "(te puedo | puedo) agregar (en | a) (instagram | facebook | whatsapp)", "[si] [claro] por que no (tienes | usas) (whatsapp | wasap)", "hay que seguir en contacto", "mejor (dame | pasame) (el tuyo | tu numero)",
     ] },
     number_give: { patterns: [
       "[claro] [si] (es el | mi numero es [el] | mi cel es [el] | mi celular es [el] | apuntalo | anota | es) {digits} #h:n_mine", "[claro] (aqui esta | este es) mi @tel {digits}",
@@ -817,8 +833,8 @@ export const party: SituationDef = {
 
     // --- how they know Ximena -----------------------------------------------------------------------------
     know_q: [
-      t("¿Y | tú | de | dónde | conoces | a | Ximena?", "And | you | from | where | you-know | — | Ximena?", "So how do you know Ximena?", { flags: { 6: PERS_A } }),
-      t("¿Y | cómo | conociste | a | Ximena?", "And | how | did-you-meet | — | Ximena?", "So how did you meet Ximena?", { flags: { 4: PERS_A } }),
+      t("¿Y | tú | de | dónde | conoces | a | Ximena?", "And | you | from | where | you-know | — | Ximena?", "So how do you know Ximena?", { flags: { 5: PERS_A } }),
+      t("¿Y | cómo | conociste | a | Ximena?", "And | how | did-you-meet | — | Ximena?", "So how did you meet Ximena?", { flags: { 3: PERS_A } }),
     ],
     and_you: [t("¿Y | tú?", "And | you?", "And you?")],
     know_work: [t("¡Ah, | qué | bien! | Entonces | trabajan | {m:juntos|f:juntas}.", "Oh, | how | nice! | So | you-work | together.", "Oh, nice! So you work together.")],
@@ -843,21 +859,20 @@ export const party: SituationDef = {
     country_react: [
       t("¡Ah, | de | {X}! | ¡Qué | padre! | Nunca | he | ido.", "Oh, | from | {X}! | How | cool! | Never | I-have | gone.", "Oh, {X}! Cool! I've never been.",
         { flags: { 4: PADRE }, neutral: t("¡Ah, | de | {X}! | ¡Qué | bien! | Nunca | he | ido.", "Oh, | from | {X}! | How | nice! | Never | I-have | gone.", "Oh, {X}! Nice! I've never been.") }),
-      t("¡De | {X}! | Me encantaría | conocer | algún | día.", "From | {X}! | I'd love | to-visit | some | day.", "{X}! I'd love to go someday.",
-        { flags: { 3: "conocer a place = to visit it, to see it." } }),
+      t("¡De | {X}! | Me encantaría | ir | algún | día.", "From | {X}! | I'd love | to-go | some | day.", "{X}! I'd love to go someday."),
     ],
     country_short: [t("¡Ah, | {X}!", "Oh, | {X}!", "Oh, {X}!")],
     cold_q: [t("Allá | hace | muchísimo | frío, | ¿no?", "There | it-makes | very much | cold, | right?", "It's really cold there, isn't it?",
       { flags: { 1: "hacer + frío / calor: weather is “made” in Spanish (hace frío = it's cold)." } })],
     rain_q: [t("Allá | llueve | mucho, | ¿verdad?", "There | it-rains | a lot, | right?", "It rains a lot there, right?")],
     // after Marcos has said where he is from, "allá" would point at Mexico City: the country is named
-    cold_q_named: [t("¿Y | en | {X} | hace | muchísimo | frío?", "And | in | {X} | it-makes | very much | cold?", "And it's really cold in {X}, isn't it?",
+    cold_q_named: [t("¿Y | en | {X} | hace | muchísimo | frío?", "And | in | {X} | it-makes | very much | cold?", "And is it really cold in {X}?",
       { flags: { 3: "hacer + frío / calor: weather is “made” in Spanish (hace frío = it's cold)." } })],
-    rain_q_named: [t("¿Y | en | {X} | llueve | mucho?", "And | in | {X} | it-rains | a lot?", "And it rains a lot in {X}, right?")],
+    rain_q_named: [t("¿Y | en | {X} | llueve | mucho?", "And | in | {X} | it-rains | a lot?", "And does it rain a lot in {X}?")],
     cold_yes: [t("¡Uf! | Pues | aquí | nunca | vas | a | pasar | frío.", "Phew! | Well, | here | never | you're-going | to | feel | cold.", "Wow! Well, you'll never be cold here.")],
     rain_yes: [t("¡Ja! | Aquí | también | llueve, | pero | la | lluvia | es | calientita.", "Ha! | Here | also | it-rains, | but | the | rain | is | nice and warm.",
-      "Ha! It rains here too, but the rain is warm.", { flags: { 9: "calientita: a diminutive of caliente, “nice and warm”." } })],
-    bad_geography: [t("¿Ah, | no? | ¡Ja, | perdón, | no sé | nada | de | geografía!", "Oh, | no? | Ha, | sorry, | I don't know | anything | about | geography!", "Oh, no? Ha, sorry, I'm terrible at geography!")],
+      "Ha! It rains here too, but the rain is warm.", { flags: { 8: "calientita: a diminutive of caliente, “nice and warm”." } })],
+    bad_geography: [t("¿Ah, | no? | ¡Yo | pensaba | que | sí!", "Oh, | no? | I | was-thinking | that | yes!", "Oh, really? I thought so!")],
     id_love_to: [t("¡Me encantaría!", "I'd love to!", "I'd love to!")],
     city_where: [t("¿Ah, | sí? | ¿Y | eso | dónde | queda?", "Oh, | yes? | And | that | where | is-it?", "Oh yeah? Where's that?",
       { flags: { 5: "quedar = to be (located) somewhere." } })],
@@ -886,22 +901,23 @@ export const party: SituationDef = {
     own_react: [t("¡Qué | bien, | tu | propio | negocio!", "How | nice, | your | own | business!", "Wow, your own business! That's great.")],
     remote_react: [t("¡Qué | suerte! | Trabajar | con | vista | al | mar.", "How | lucky! | To-work | with | view | to-the | sea.", "Lucky you! Working with an ocean view.")],
     mark_job: [t("Yo | soy | chef | en | un | restaurantito | del | centro.", "I | am | chef | in | a | little restaurant | of-the | downtown.", "I'm a chef at a little restaurant downtown.",
-      { flags: { 6: "-ito: a diminutive (a small, nice place)." } })],
+      { flags: { 5: "-ito: a diminutive (a small, nice place)." } })],
     mark_chef: [
       t("Me encanta, | pero | es | mucha | chamba.", "I love it, | but | it's | a lot of | work.", "I love it, but it's a lot of work.",
         { flags: { 4: CHAMBA }, neutral: t("Me encanta, | pero | es | mucho | trabajo.", "I love it, | but | it's | a lot of | work.", "I love it, but it's a lot of work.") }),
     ],
+    mark_cook: [t("Comida | mexicana… | ¡de | todo | un | poco!", "Food | Mexican… | of | everything | a | little!", "Mexican food… a little bit of everything!")],
     mark_salsa: [t("¡Sí, | la | salsa | es | mía! | Es | receta | de | mi | abuela.", "Yes, | the | salsa | is | mine! | It's | recipe | of | my | grandmother.", "Yes, the salsa's mine! It's my grandma's recipe.")],
     mark_fav: [t("¡La | cochinita pibil! | Es | de | aquí, | de | la | península.", "The | cochinita pibil! | It's | from | here, | from | the | peninsula.",
       "Cochinita pibil! It's from here, from the Yucatán.", { flags: { 1: "cochinita pibil: slow-roasted pork in achiote, a Yucatán dish." } })],
 
     // --- how long, why -------------------------------------------------------------------------------------
     time_q: [
-      t("¿Y | cuánto | tiempo | llevas | aquí?", "And | how much | time | you've-been | here?", "And how long have you been here?", { flags: { 4: LLEVAS } }),
+      t("¿Y | cuánto | tiempo | llevas | aquí?", "And | how much | time | you've-been | here?", "And how long have you been here?", { flags: { 3: LLEVAS } }),
       t("¿Y | hace | cuánto | que | vives | en | Puerto Colibrí?", "And | it-makes | how much | that | you-live | in | Puerto Colibrí?", "And how long have you lived in Puerto Colibrí?",
         { flags: { 1: "hace cuánto que…: how long (it has been) since…" } }),
     ],
-    time_long: [t("¡Ah, | entonces | llevas | más | que | yo! | Yo | llegué | en | mayo.", "Oh, | so | you've-been-here | more | than | me! | I | arrived | in | May.", "Oh, so you've been here longer than me! I only got here in May.",
+    time_long: [t("¡Ah, | entonces | llevas | más | tiempo | que | yo! | Yo | llegué | en | mayo.", "Oh, | so | you've-been-here | more | time | than | me! | I | arrived | in | May.", "Oh, so you've been here longer than me! I only got here in May.",
       { flags: { 2: LLEVAS } })],
     time_same: [t("¡Como | yo! | Yo | llegué | en | mayo.", "Like | me! | I | arrived | in | May.", "About the same as me! I got here in May.")],
     time_short: [t("¡Ah, | entonces | también | eres | {m:nuevo|f:nueva}! | Yo | llegué | en | mayo.", "Oh, | so | also | you-are | new! | I | arrived | in | May.", "Oh, so you're new too! I got here in May.")],
@@ -927,10 +943,12 @@ export const party: SituationDef = {
       t("¿Y | te gusta | vivir | aquí?", "And | you like | to-live | here?", "And do you like living here?"),
     ],
     like_yes: [
-      t("¡A mí también! | La | gente | es | muy | buena onda.", "Me too! | The | people | are | very | nice.", "Me too! People here are so nice.",
-        { flags: { 5: ONDA }, neutral: t("¡A mí también! | La | gente | es | muy | amable.", "Me too! | The | people | are | very | kind.", "Me too! People here are so nice.") }),
+      t("¡Qué | bueno! | A mí también | me encanta. | ¡Todos | son | muy | buena onda!", "How | good! | Me too: | I-love-it. | Everyone | is | very | nice!", "Great! I love it too. Everyone's so nice!",
+        { flags: { 7: ONDA }, neutral: t("¡Qué | bueno! | A mí también | me encanta. | ¡Todos | son | muy | amables!", "How | good! | Me too: | I-love-it. | Everyone | is | very | kind!", "Great! I love it too. Everyone's so nice!") }),
     ],
     like_mixed: [t("Te | entiendo. | Yo | también | extraño | la Ciudad de México | a veces.", "(To) you | I-understand. | I | also | miss | Mexico City | sometimes.", "I get it. I miss Mexico City sometimes, too.")],
+    like_cost: [t("Sí, | aquí | todo | está | caro, | ¿verdad? | Por | los | turistas.", "Yes, | here | everything | is | expensive, | right? | Because of | the | tourists.", "Yeah, everything's expensive here, right? It's the tourists.")],
+    like_adjust: [t("Te | entiendo. | Al principio | todo | es | diferente.", "(To) you | I-understand. | At first | everything | is | different.", "I get it. Everything's different at first.")],
     like_heat: [t("¡Uf, | sí! | Al | calor | nadie | se acostumbra.", "Phew, | yes! | To-the | heat | nobody | gets-used.", "Ugh, yes! Nobody ever gets used to the heat.")],
     like_no: [t("¡Ay, | no! | Dale | tiempo. | ¡Luego | te acostumbras!", "Oh, | no! | Give-it | time. | Later | you-get-used-to-it!", "Oh no! Give it time. You'll get used to it!")],
     mark_like: [t("¡Me encanta! | Y | el | mar | está | increíble.", "I love it! | And | the | sea | is | amazing.", "I love it! And the ocean is amazing.")],
@@ -948,11 +966,10 @@ export const party: SituationDef = {
     knew_it: [t("¡Lo | sabía!", "It | I-knew!", "I knew it!")],
     fun_diving: [t("¿Bucear? | ¡Aquí | hay | cenotes | increíbles!", "To-dive? | Here | there-are | cenotes | amazing!", "Diving? There are amazing cenotes here!",
       { flags: { 3: "cenote: a natural sinkhole pool, typical of the Yucatán." } })],
+    fun_swim: [t("¡Qué | bien! | Aquí | el | mar | es | perfecto | para | nadar.", "How | nice! | Here | the | sea | is | perfect | for | to-swim.", "Nice! The ocean here is perfect for swimming.")],
     fun_soccer: [t("¡Aquí | el | fútbol | es | casi | una | religión!", "Here | the | soccer | is | almost | a | religion!", "Soccer is almost a religion here!")],
-    fun_generic: [
-      t("¡Ah, | qué | bien! | Suena | divertido.", "Oh, | how | nice! | It-sounds | fun.", "Oh, cool! That sounds fun."),
-      t("¡Qué | bien! | Siempre | he | querido | intentarlo.", "How | nice! | Always | I-have | wanted | to-try-it.", "Nice! I've always wanted to try that."),
-    ],
+    fun_generic: [t("¡Ah, | qué | bien! | Suena | divertido.", "Oh, | how | nice! | It-sounds | fun.", "Oh, cool! That sounds fun.")],
+    fun_try: [t("¡Qué | bien! | Siempre | he | querido | intentarlo.", "How | nice! | Always | I-have | wanted | to-try-it.", "Nice! I've always wanted to try that.")],
     fun_none: [t("¡Ja, | te | entiendo!", "Ha, | (to) you | I-understand!", "Ha, I know the feeling!")],
     mark_fun: [
       t("Corro | y | cocino, | ¡claro! | Pero | en | mi | casa | nada más | como | quesadillas.", "I-run | and | I-cook, | of course! | But | in | my | house | only | I-eat | quesadillas.",
@@ -991,7 +1008,7 @@ export const party: SituationDef = {
       t("¡Ja! | Bueno, | te | cuento: | soy | de | la Ciudad de México | y | soy | chef.", "Ha! | Okay, | (to) you | I-tell: | I'm | from | Mexico City | and | I'm | chef.",
         "Ha! Okay, I'll tell you. I'm from Mexico City, and I'm a chef."),
     ],
-    drink2_q: [t("¿Te | traigo | otra | cosa | de | tomar? | ¿O | un | taquito?", "(For) you | I-bring | another | thing | of | to-drink? | Or | a | little taco?", "Can I get you another drink? Or a taco?")],
+    drink2_q: [t("¿Te | traigo | algo | más | de | tomar? | ¿O | un | taquito?", "(For) you | I-bring | something | more | of | to-drink? | Or | a | little taco?", "Can I get you anything else to drink? Or a taco?")],
     drink2_ok: [t("¡Claro, | ya | vengo!", "Sure, | right | I'm-back!", "Sure, be right back!", { flags: { 1: "ya vengo: “I'll be right back”." } })],
     food_ok: [
       t("¡Claro! | Ahorita | te | traigo. | ¡Cuidado, | la | salsa | pica!", "Sure! | Right away | (for) you | I-bring. | Careful, | the | salsa | is-spicy!", "Sure! I'll get you some right away. Careful, the salsa's hot!",
@@ -1077,7 +1094,7 @@ export const party: SituationDef = {
         { id: "b_and_you", s: t("¿Y | tú?", "And | you?", "And you?") },
         { id: "b_from", s: t("¿Y | tú | de | dónde | eres?", "And | you | from | where | are-you?", "Where are you from?") },
         { id: "b_job", s: t("¿Y | tú | a | qué | te dedicas?", "And | you | to | what | you-devote-yourself?", "And what do you do?") },
-        { id: "b_know", s: t("¿Y | tú | de | dónde | conoces | a | Ximena?", "And | you | from | where | you-know | — | Ximena?", "How do you know Ximena?", { flags: { 6: PERS_A } }) },
+        { id: "b_know", s: t("¿Y | tú | de | dónde | conoces | a | Ximena?", "And | you | from | where | you-know | — | Ximena?", "How do you know Ximena?", { flags: { 5: PERS_A } }) },
         { id: "b_fun", s: t("¿Y | tú | qué | haces | en | tu | tiempo | libre?", "And | you | what | you-do | in | your | time | free?", "What do you do for fun?") },
       ],
     },
@@ -1242,6 +1259,7 @@ export const party: SituationDef = {
     "por ahora": { reason: "lexical_expression", split: "por → for + ahora → now; = for now.", minimal: "Two words." },
     "estoy buscando": { reason: "grammatical_fusion", split: "estoy → I am + buscando → looking for; one progressive verb.", minimal: "Two words." },
     "nos pasamos": { reason: "grammatical_fusion", split: "nos → each other + pasamos → we pass; = shall we swap.", minimal: "Two words." },
+    "al principio": { reason: "lexical_expression", split: "al → to the + principio → beginning; = at first.", minimal: "Two words." },
     "cochinita pibil": { reason: "lexical_expression", split: "cochinita → little pig + pibil → pit-cooked (Maya); the dish's name.", minimal: "Two words." },
   },
 
@@ -1262,7 +1280,7 @@ export const party: SituationDef = {
       suggest: [{ lt: "Introduce yourself to Marcos", hint: "intro" }] },
     { id: "drink", when: (c) => !!c.s.plan.includes("drink") && !!c.s.named, done: (c) => !!c.s.drinkDone,
       ask: (c) => { SO(c, "drink_q"); },
-      expects: ["drink_ans", "drink_menu", "drink_no", "cheers"],
+      expects: ["drink_ans", "drink_menu", "drink_no", "drink_no_ctx", "cheers"],
       suggest: [{ lt: "Choose a drink, or say no thanks", hint: "drink", options: "drink" }],
       yes: (c) => { c.s.drinkDone = true; SO(c, "drink_pick"); },
       no: (c) => { c.s.drinkDone = true; SO(c, "drink_no"); } },
@@ -1318,7 +1336,7 @@ export const party: SituationDef = {
       help: (c) => { c.s.turnSkipped = true; M(c, "just_tell"); } },
     { id: "drink2", when: (c) => !!c.s.plan.includes("drink2") && isDone(c, "job"), done: (c) => !!c.s.drink2Done,
       ask: (c) => M(c, "drink2_q"),
-      expects: ["drink_ans", "drink2_yes", "drink_no"],
+      expects: ["drink_ans", "drink2_yes", "drink_no", "drink_no_ctx"],
       suggest: [{ lt: "Say yes, or no thanks", hint: "drink", options: "drink" }],
       yes: (c) => { c.s.drink2Done = true; M(c, "drink2_ok"); },
       no: (c) => { c.s.drink2Done = true; M(c, "decline_ok"); } },
@@ -1356,7 +1374,8 @@ export const party: SituationDef = {
   handlers: {
     intro_name(c, slots, seg) {
       if (!live(c)) return;
-      if (!c.s.named) { c.s.named = true; M(c, "nice"); }
+      // "Soy Ryan, mucho gusto": the learner said it first, so Marcos answers "¡Igualmente!"
+      if (!c.s.named) { c.s.named = true; M(c, /\b(mucho gusto|encantad[oa]|un gusto|un placer)\b/.test(heard(c)) ? "nice_too" : "nice"); }
       if (seg.tags.includes("from") && (slots.country || slots.city)) fromAnswer(c, slots);
     },
     name_ctx(c) {
@@ -1400,6 +1419,7 @@ export const party: SituationDef = {
       if (c.step === "drink" || !c.s.drinkDone) { c.s.drinkDone = true; SO(c, "drink_no"); return; }
       M(c, "ok");
     },
+    drink_no_ctx(c, slots, seg) { party.handlers.drink_no(c, slots, seg); },
     drink2_yes(c) { if (!live(c)) return; c.s.drink2Done = true; M(c, "drink2_ok"); },
     cheers(c) { if (!live(c)) return; if (!once(c, "cheers")) return; M(c, c.s.cheered ? "ha" : "cheers_back"); c.s.cheered = true; },
     know_ans(c, slots, seg) {
@@ -1417,6 +1437,8 @@ export const party: SituationDef = {
       if (!live(c)) return;
       // "No, Islandia no, Irlanda" / "Irlanda, no Islandia": without commas the order can't tell; the misheard one is the wrong one
       const named = [...([] as string[]).concat(slots.country ?? []), ...([] as string[]).concat(slots.bad ?? [])];
+      // "Islandia no": only the misheard country is named; the right one is what the learner said first
+      if (!slots.country) { if (c.s.misheard && c.s.heardRight && named.includes(c.s.country)) named.unshift(c.s.heardRight); else return; }
       const right = named.find((x) => x !== c.s.country) ?? named[0];
       if (!right) return;
       const fixed = !!c.s.country && c.s.country !== right;
@@ -1447,9 +1469,13 @@ export const party: SituationDef = {
       M(c, line);
     },
     like_yes(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_yes"); },
-    like_mixed(c, _slots, seg) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, seg.tags.includes("heat") ? "like_heat" : "like_mixed"); },
+    like_mixed(c, _slots, seg) {
+      if (!live(c)) return; if (!once(c, "like")) return; done(c, "like");
+      const tg = seg.tags;
+      M(c, tg.includes("heat") ? "like_heat" : tg.includes("miss") ? "like_mixed" : tg.includes("cost") ? "like_cost" : "like_adjust");
+    },
     like_no(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_no"); },
-    like_ctx(c, _slots, seg) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, seg.tags.includes("mixed") ? "like_mixed" : "like_yes"); },
+    like_ctx(c, _slots, seg) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, seg.tags.includes("mixed") ? "like_adjust" : "like_yes"); },
     fun_ans(c, slots, seg) { if (!live(c)) return; funAnswer(c, slots, seg.tags); },
     fun_ctx(c, slots) { if (!live(c)) return; funAnswer(c, slots); },
     fun_none(c) { if (!live(c)) return; done(c, "fun"); if (once(c, "fun_none")) M(c, "fun_none"); },
@@ -1475,7 +1501,7 @@ export const party: SituationDef = {
       if (!live(c)) return;
       c.s.askedBack = (c.s.askedBack || 0) + 1;
       const h = heard(c);
-      M(c, seg.tags.includes("salsa") ? "mark_salsa" : seg.tags.includes("fav") ? "mark_fav" : /\brestaurante\b/.test(h) ? "mark_job" : "mark_chef");
+      M(c, seg.tags.includes("salsa") ? "mark_salsa" : seg.tags.includes("fav") ? "mark_fav" : seg.tags.includes("what") ? "mark_cook" : /\brestaurante\b/.test(h) ? "mark_job" : "mark_chef");
     },
     q_dance(c) { if (!live(c)) return; c.s.askedBack = (c.s.askedBack || 0) + 1; c.s.danceTold = true; M(c, "mark_dance"); },
     q_lithuania(c) { if (!live(c)) return; c.s.askedBack = (c.s.askedBack || 0) + 1; M(c, "mark_lithuania"); },
@@ -1484,7 +1510,10 @@ export const party: SituationDef = {
     cafe_which(c) { if (!live(c)) return; if (!c.s.cafeTwist) { M(c, "mark_cafe_which"); return; } M(c, "cafe_which"); },
     cafe_where_ctx(c) { if (!live(c)) return; M(c, "cafe_which"); },
     // only the café invitation is agreed to (the pending answers it); elsewhere it says nothing
-    agree_go() { /* answered by the cafe_go question */ },
+    agree_go(c) {
+      // "¡Buena idea!", "¡Por qué no!" to "¿Me pasas tu número? Hay que vernos pronto.": a yes
+      if (live(c) && c.step === "numbers" && !c.s.numbersDone && once(c, "swap")) { M(c, "ask_number"); expectNumber(c); }
+    },
     cafe_no_ctx() { /* answered by the cafe_go question */ },
     swap_propose(c, _slots, seg) {
       if (!live(c)) return;
@@ -1548,7 +1577,7 @@ export const party: SituationDef = {
     { say: "Vale, un zumo de naranja", intent: "drink_ans", step: "drink", slots: { drink: "juice" } },
     { say: "¿Tenéis agua mineral?", intent: "drink_ans", step: "drink", slots: { drink: "sparkling" } },
     { say: "¿Qué hay de tomar?", intent: "drink_menu", step: "drink" },
-    { say: "No, gracias, estoy bien", intent: "drink_no", step: "drink" },
+    { say: "No, gracias, estoy bien", intent: "drink_no_ctx", step: "drink" },
     { say: "No tomo alcohol", intent: "drink_no", step: "drink", not: ["drink_ans"] },
     { say: "No quiero cerveza", intent: "drink_no", step: "drink", not: ["drink_ans"] },
     { say: "Cerveza no, mejor un refresco", intent: "drink_ans", step: "drink", slots: { drink: "soda" } },
@@ -1630,6 +1659,20 @@ export const party: SituationDef = {
     { say: "Por mi esposa", intent: "why_ans", step: "why" },
     { say: "Corro todas las mañanas", intent: "fun_ans", step: "fun" },
     { say: "¿Cuál es tu comida favorita?", intent: "q_chef" },
+    // review: refusals and negations that flipped or leaked
+    { say: "Cerveza no, gracias", intent: "drink_no", step: "drink", not: ["drink_ans"] },
+    { say: "Un taco no, gracias, estoy lleno", intent: "drink_no", step: "drink2", not: ["drink_ans"] },
+    { say: "Otra no, gracias", intent: "drink_no", step: "drink2", not: ["drink2_yes"] },
+    { say: "Mejor no, gracias", intent: "yn:no", step: "numbers", not: ["drink_no", "drink_no_ctx"] },
+    { say: "Ahorita no", intent: "yn:no", step: "numbers", not: ["drink_no", "drink_no_ctx"] },
+    { say: "Me gusta, pero todo es caro", intent: "like_mixed", step: "like", not: ["like_yes"] },
+    { say: "Aquí es muy bonito", intent: "like_yes", step: "like", not: ["why_ans"] },
+    { say: "No me gusta el calor", intent: "like_mixed", step: "like", not: ["like_yes"] },
+    { say: "No trabajo, estoy de vacaciones", intent: "job_ans", step: "job", not: ["time_ans"] },
+    { say: "Por trabajo", intent: "why_ans", step: "why" },
+    { say: "No trabajamos juntos, somos vecinos", intent: "know_ans", step: "know" },
+    { say: "No me gusta correr, pero me gusta nadar", intent: "fun_ans", step: "fun" },
+    { say: "¿Qué cocinas?", intent: "q_chef" },
     // not understood
     { say: "El elefante morado come teclados", intent: "none" },
     { say: "Mi tía vive en Guadalajara", intent: "none" },
@@ -1707,6 +1750,7 @@ function reactAfterMishear(c: Ctx, id: string) {
   const wrong = COUNTRIES.find((e) => e.id === ctry)?.attrs?.mishear as string | undefined;
   if (c.s.mishearTwist && wrong && !c.s.misheard && id === ctry) {
     c.s.misheard = true;
+    c.s.heardRight = ctry;
     c.twist("mishear");
     c.s.country = wrong;
     M(c, "mishear", { X: wrong });
@@ -1758,7 +1802,7 @@ function jobAnswer(c: Ctx, slots: any, tags: string[]) {
   // "Doy clases de inglés": the job comes from what the learner does
   const job: string | undefined = slots.job ?? (slots.duty && jobIds.has(slots.duty) ? slots.duty : undefined);
   const say = (line: string) => { done(c, "job"); M(c, line); };
-  if (tags.includes("retired")) return say("retired_react");
+  if (tags.includes("retired") || tags.includes("vacation")) return say("retired_react");
   if (tags.includes("looking")) return say("looking_react");
   if (tags.includes("home")) return say("home_react");
   if (tags.includes("own")) return say("own_react");
@@ -1807,13 +1851,15 @@ function funAnswer(c: Ctx, slots: any, tags: string[] = []) {
       yes: (cc) => M(cc, "knew_it"), no: (cc) => M(cc, "ha"), on: { confirm_yes: (cc) => M(cc, "knew_it") } });
     return;
   }
-  if (list.includes("diving") || list.includes("swimming")) { M(c, "fun_diving"); return; }
+  if (list.includes("diving")) { M(c, "fun_diving"); return; }
+  if (list.includes("swimming")) { M(c, "fun_swim"); return; }
   if (list.includes("dancing")) { M(c, "fun_dancing"); return; }
   if (list.includes("soccer")) { M(c, "fun_soccer"); return; }
   if (list.includes("running")) { M(c, "fun_running"); return; }
   if (list.includes("reading")) { M(c, "fun_reading"); return; }
   void MARCOS_HOBBIES;
-  M(c, "fun_generic");
+  const kind = HOBBIES.find((e) => e.id === list[0])?.attrs?.kind;
+  M(c, kind === "play" || kind === "instr" || kind === "do" ? "fun_try" : "fun_generic");
 }
 
 /** Months since the learner arrived (Infinity = all their life). */
