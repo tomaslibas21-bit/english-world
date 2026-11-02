@@ -36,3 +36,59 @@ The blind misses were "No sé, a lo mejor se me cayó", "Un señor se me acercó
 ## For the lead / owner
 - The writer's open questions stand: whether the report is free ("El reporte es gratis"), the patrol line, and how Mexicans read the folio 4471 aloud. The folio is said digit by digit; pairs ("cuarenta y cuatro, setenta y uno") may be more natural. The owner could pick one.
 - A phone number said out of turn at an early step ("984 123 4567" at "¿Dónde pasó?") still parses as cash or a time. This is unlikely, so I left it.
+
+## Lead's check (2 Nov 2026)
+Checked: cash amounts read and said back (counts, bills, bounds, dollars, amounts with no recording), times and street or
+route numbers, phone numbers (pairs, digit by digit, +1), the name and its spelling, the fee answers, every binding
+outcome played whole with probe.ts (the turned-in wallet, everything there or missing, the signature, the ID, the bank, the
+phone), the reviewer's open points, every flag's unit. 30 new edge and trap sentences: 7/24 understood and 4/6 traps
+accepted before, 24/24 and 0/6 after; about 60 lines changed, 190 added (fixes, 19 NLU tests, 4 sims).
+
+**Must-fix (all fixed):**
+1. **Counts recorded as cash.** "Traía 500 pesos y dos tarjetas" recorded $2 (the count overwrote the $500); "Mil pesos
+   en efectivo y tres tarjetas" $3; "12 tarjetas de regalo" $12. A number right before a thing is a count now.
+   "Dos billetes de quinientos" is $1,000 (was $500).
+2. **He said back a number nobody said.** The echo took the nearest recorded amount: "quince pesos" → "Unos $10",
+   "cuarenta y cinco" → "$40", "85.50" → "$90", "8,800" → "$9,000", "Menos de cien pesos" → "Unos $100". He now says an
+   amount back only when it has a recording and isn't a bound (else "Bien, ya lo anoté"), and not the pesos alone when
+   dollars were said too. "Como cinco" at "¿Cuánto efectivo?" got "Bien, ya lo anoté" and then the same question again;
+   the $5 is taken now.
+3. **A stray number at an early step.** "En el camión 25" at "¿Dónde pasó?" recorded $25 cash, so the contents question was
+   never asked; "En la calle 12" recorded twelve o'clock, so "¿A qué hora?" was skipped. Street and route numbers are
+   neither now, and a lone number with no money word before the contents question isn't cash (this also covers the
+   reviewer's phone number at "¿Dónde pasó?": no cash; its digits can still read as a time).
+4. **Negated contents written down.** "Traía mis tarjetas pero no el pasaporte", "Tarjetas y dinero, pero no mi
+   pasaporte", "El pasaporte no estaba, solo dinero", "Solo dinero, el pasaporte lo dejé en el hotel" recorded the
+   passport and said "avise también a su consulado". Patterns with the passport as `{neg:ci}` plus a guard in the
+   handler (no / ni / sin before a thing, "X no estaba", "X lo dejé…", a final "X no").
+5. **The turned-in wallet refused.** "Sí, la mía es negra" about the black wallet he holds kept it and went on with the
+   report. A description that matches the wallet turned in (with no "no") is a yes now (and asks "¿Está seguro?" when
+   it contradicts the learner's own earlier color).
+6. **Everything there or missing.** "No, todo está bien" (typed) made it partial ("Lo siento…"); "Está todo menos los
+   trescientos pesos" made it complete ("¡Qué suerte tuvo!"). Rule 10: "No está todo" / "No todo está bien" said aloud
+   gets "Perdón, ¿falta algo o está todo?", with a typed comma it's all there; "menos" / "falta" never completes;
+   "Solo faltan doscientos pesos", "Falta el dinero, todo lo demás está" are understood.
+7. **Bare answers outside their question (rules 2, 12).** "No, no tengo otra" at "¿Trae alguna otra identificación?"
+   recorded no phone (the phone question was skipped) and asked the ID question again; "Se me olvidó en el hotel" there
+   got "Llame al banco…"; "Ya lo hice" at the signature or the end was the bank; "Sí, seguro" at the signature or after
+   "¿Está seguro?" was "it was stolen". New `_ctx` intents: bank_called_ctx / bank_not_yet_ctx (bank question),
+   no_phone_ctx (phone), the bare seguro / probablemente in sure_ctx (stolen_q, found); "No tengo otra / ninguna" is no
+   ID; "Ya lo hice" signs at the signature.
+8. **A purse's wallet as "it's mine".** "Mi celular, mi cartera y una toalla" read "mi cartera" as its_mine; "Mi celular
+   estaba en la bolsa" recorded no phone. A wallet is now a content (wallet_in), and the phone said that way goes on the
+   list (the phone question then asks for another number).
+
+**Polish:** "¿Cuánto cuesta la denuncia?" and any cost question once the Ministerio Público has come up get the new
+"Ni el reporte ni la denuncia cuestan nada" (a denuncia is free in Mexico; was "El reporte es gratis" only). "No sé" gets
+"Revise bien, por favor" at "¿Es suya?" and at the check, "Aquí abajo, en la línea" at the signature (not a signature),
+and no number at the phone (it went on to the end only when nothing else was left). The check asked again is "Perdón,
+¿falta algo o está todo?", not the hand-over again; "No, nada" there gets it too. Understood now: "El del hotel es el
+984…", "No me lo sé de memoria", "¿Tengo que firmar?" / "No firmo nada sin leerlo" (sign_need), "Tal vez" / "Puede ser" at
+"¿Cree que se la robaron?", "Se parece a la mía", "¿Y si no aparece?". 8 corpus items accept the new `_ctx` intents.
+
+**Open points:** the writer's three stand (the report free, now also the denuncia line; the patrol line; folio 4471 digit
+by digit): owner's call. Not changed: "Veinte dólares y quinientos pesos" records only the pesos (no echo); an unparsed
+answer with "creo" in it can get the engine's sound check "Perdón, ¿correo?" (engine-level, only after a miss).
+
+**Gate after:** tsc clean; check-content 157/157 NLU, 18 sims 12/12, fuzz 80, 0/0; corpus 361/361, 0/28; held-out 43/43,
+0/2; lead's set 24/24, 0/6; vitest 288/288.
