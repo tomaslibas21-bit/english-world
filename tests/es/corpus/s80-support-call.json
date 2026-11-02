@@ -228,5 +228,20 @@
   {"ctx": "tech", "say": "Mejor otro día", "intent": "tech_other"},
   {"ctx": "lights", "say": "No está en rojo", "intent": "any", "not": ["lights_ans"]},
   {"ctx": "lights", "say": "No parpadea", "intent": "any", "not": ["lights_ans"]},
-  {"ctx": "restart", "say": "No, ya no", "intent": "any", "not": ["restart_yes"]}
+  {"ctx": "restart", "say": "No, ya no", "intent": "any", "not": ["restart_yes"]},
+  {"ctx": "restart", "say": "No sé cómo", "intent": "restart_no", "not": ["restart_yes"], "note": "review: was ¿cómo está?"},
+  {"ctx": "restart_now", "say": "Todavía no lo desconecto", "intent": "doing_ctx", "not": ["done_ctx"], "note": "review"},
+  {"ctx": "restart_now", "say": "No, todavía no", "intent": ["restart_no", "doing_ctx", "yn:no"], "not": ["done_ctx"], "note": "review"},
+  {"ctx": "tech", "say": "Estoy en casa todo el día", "intent": "tech_accept", "note": "review"},
+  {"ctx": "tech", "say": "¿Y si mejor el sábado?", "intent": "tech_other", "not": ["tech_accept"], "note": "review: what-if"},
+  {"ctx": "tech", "say": "Jueves no, viernes", "intent": "tech_other", "not": ["tech_accept"], "note": "review: lost comma"},
+  {"ctx": "tech", "say": "El jueves en la mañana no, mejor en la tarde", "intent": "tech_other", "not": ["tech_accept"], "note": "review"},
+  {"ctx": "someone", "say": "Mi esposa no puede, trabaja todo el día", "intent": ["someone_no", "yn:no"], "not": ["someone_yes"], "note": "review"},
+  {"ctx": "problem", "say": "Se me cae la conexión a cada rato", "intent": "internet_drops", "note": "review"},
+  {"ctx": "lights", "say": "La luz verde está prendida pero la roja parpadea", "intent": "lights_ans", "note": "review"},
+  {"ctx": "lights", "say": "No hay luz roja", "intent": "lights_neg", "not": ["lights_ans"], "note": "review"},
+  {"ctx": "since", "say": "No me acuerdo, creo que ayer", "intent": ["since_ctx", "since_ans"], "note": "review"},
+  {"ctx": "more", "say": "Sí, una cosa más", "intent": "more_yes_ctx", "not": ["more_no"], "note": "review"},
+  {"ctx": "more", "say": "Ya no necesito nada", "intent": "more_no", "note": "review"},
+  {"ctx": "more", "say": "No, solo una pregunta", "intent": "more_yes_ctx", "not": ["more_no"], "note": "review: rule 21"}
 ] }

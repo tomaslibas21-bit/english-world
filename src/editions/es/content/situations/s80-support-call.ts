@@ -206,12 +206,13 @@ export const support: SituationDef = {
       "(tengo | hay) (una falla | fallas) (con | en) (el | mi) (internet | servicio | wifi | modem)",
       "[el | mi] (internet | wifi | wi fi)", "(necesito | quiero | ocupo) (soporte | soporte tecnico | asistencia tecnica)", "(es | tengo) un problema tecnico",
       "(quiero | necesito | vengo a | llamo para) reportar una falla", "(problema | problemas) (tecnico | tecnicos | de internet | con el internet)",
+      "(necesito | ocupo | quiero) (un tecnico | que venga un tecnico)",
       "no (quiero | es) (pagos | ventas | facturacion | para pagos) [es] [quiero | necesito] soporte [tecnico]",
     ] },
     menu_billing: { patterns: [
       "pagos #h:menu_billing", "(facturacion | factura | pago | cobros | cobranza | mi recibo | el recibo | mi factura | pagos y facturacion)",
       "(tengo una pregunta | una pregunta | tengo una duda | una duda) (sobre | de | con) (mi recibo | mi factura | un cobro | mi pago | el pago | mi cuenta)",
-      "(quiero | necesito) (pagar | hacer un pago)",
+      "(quiero | necesito) (pagar | hacer un pago)", "[es | llamo] (sobre | por) (mi | el | un) (recibo | factura | pago | cobro)",
     ] },
     menu_sales: { patterns: [
       "ventas", "(contratar | nuevo servicio | nuevos servicios | un servicio nuevo | contratar un servicio | contratar un servicio nuevo)",
@@ -275,6 +276,7 @@ export const support: SituationDef = {
       "nada funciona", "no funciona nada", "(sin | estoy sin | me quedé sin | nos quedamos sin) (internet | servicio | wifi) [@since_tail]",
       "(necesito | ocupo) ayuda con (mi | el) (internet | wifi | modem)", "no hay (internet | servicio | senal | conexion) [@since_tail]",
       "(llamo | hablo) para reportar una falla [de internet | en mi servicio]",
+      "no es (un problema de | por | de) (pago | pagos | el pago | el recibo | mi recibo | un cobro | facturacion) [es que | sino que] (no tengo (internet | servicio | wifi) | @net @notw)",
     ] },
     // "La conexión está muy mala." as the answer to "¿En qué le puedo ayudar?" (elsewhere it's about the phone line)
     slow_ctx: { patterns: ["(la conexion | el internet | la senal | el wifi) (esta | anda) [muy | bien | super] (mala | malo | fallando)", "(la conexion | la senal) es (muy | bien) mala"] },
@@ -284,8 +286,8 @@ export const support: SituationDef = {
       "(el internet | mi internet | todo) (esta | va | anda) (lentisimo | lentisima)",
     ] },
     internet_drops: { patterns: [
-      "(mi internet | el internet | el wifi | la conexion | la senal) se (corta | va | cae | desconecta) (a cada rato | todo el tiempo | cada rato | mucho | seguido | cada cinco minutos)",
-      "se (corta | va | cae | desconecta) (a cada rato | todo el tiempo | seguido | mucho)", "(se corta | se va | se cae) y (regresa | vuelve)", "(es | esta) intermitente",
+      "(mi internet | el internet | el wifi | la conexion | la senal) se [me] (corta | va | cae | desconecta) (a cada rato | todo el tiempo | cada rato | mucho | seguido | cada cinco minutos)",
+      "se [me] (corta | va | cae | desconecta) [el internet | la conexion | el wifi | la senal] (a cada rato | todo el tiempo | seguido | mucho)", "(se corta | se va | se cae) y (regresa | vuelve)", "(es | esta) intermitente",
     ] },
     it_broken_ctx: { patterns: ["no (funciona | sirve | jala | conecta | se conecta)", "(ya no) (funciona | sirve)", "dejó de funcionar", "se cayó", "esta (descompuesto | descompuesta | caido)"] },
     charged_twice: { patterns: [
@@ -295,14 +297,14 @@ export const support: SituationDef = {
       "me cobraron (doble | de mas | dos veces lo mismo)", "me (han | habeis) cobrado dos veces [este mes]",
     ] },
     since_ans: { patterns: [
-      "[no se | no estoy seguro | no estoy segura] [creo que] desde (ayer | anoche | esta manana | hoy en la manana | ayer en la tarde | ayer en la noche | el fin de semana | {day} | hace {number} dias | hace unos dias | hace un rato | antier) [creo] #h:since_y",
+      "[no se | no estoy seguro | no estoy segura | no me acuerdo | no recuerdo] [creo que] desde (ayer | anoche | esta manana | hoy en la manana | ayer en la tarde | ayer en la noche | el fin de semana | {day} | hace {number} dias | hace unos dias | hace un rato | antier) [creo] #h:since_y",
       "(dejó de funcionar | se fue | se cayó | se cortó) (ayer | anoche | esta manana | hoy en la manana | el {day}) [(como a | a eso de | a) {time}]",
       "desde (ayer | anoche | esta manana | el {day}) (a | como a | a eso de) {time}", "(como | mas o menos) (desde ayer | desde anoche | un dia | dos dias)",
       "(un dia | dos dias | unos dias | {number} dias) [sin internet | sin servicio]", "ayer (a | como a | a eso de) {time}", "creo que desde (ayer | anoche | el {day})",
     ] },
     // a bare time ("Ayer", "El lunes") answers only "¿Desde cuándo no tiene servicio?"
     since_ctx: { patterns: [
-      "[no se | no estoy seguro | no estoy segura] [creo que] (ayer | anoche | esta manana | hoy en la manana | hoy temprano | ayer en la tarde | ayer en la noche | antier | hace dos dias | hace unos dias | hace {number} dias | el {day}) [creo] #h:since_when",
+      "[no se | no estoy seguro | no estoy segura | no me acuerdo | no recuerdo] [creo que] (ayer | anoche | esta manana | hoy en la manana | hoy temprano | ayer en la tarde | ayer en la noche | antier | hace dos dias | hace unos dias | hace {number} dias | el {day}) [creo] #h:since_when",
     ] },
     lights_ans: { patterns: [
       "(la | una | el | un) @light [de internet | del internet | del modem] (esta | esta prendida | esta encendida | esta prendido) [en] @red #h:lights_red",
@@ -315,9 +317,10 @@ export const support: SituationDef = {
       "(estan | estan todas) (apagadas | en verde | verdes)", "(la | una) luz [de internet] (esta | esta en) (apagada | verde)",
       "(veo | tengo) (una | solo una) (luz | lucecita) (@red | que parpadea)", "(mi | el) (modem | router | aparato) tiene (una | un) @light (@red | que parpadea)",
       "(el | mi) (modem | router | aparato) @blink [en] @red", "la (luz | lucecita) @red @blink", "(esta | esta todo) apagado",
+      "[la | las] (luz | luces) (verde | verdes) (esta | estan) (prendida | prendidas | encendida | encendidas) (pero | y) la (roja | naranja | de internet) (@blink | esta prendida | esta en rojo)",
     ] },
     // "No está en rojo", "No parpadea": a light that is not red (never the red-light reading)
-    lights_neg: { patterns: ["no (esta | estan | es) [en] @red", "no (parpadea | esta parpadeando) [en] [@red]", "no (es | esta) (roja | rojo) (es | esta) (verde | en verde)"] },
+    lights_neg: { patterns: ["no (esta | estan | es) [en] @red", "no (parpadea | esta parpadeando) [en] [@red]", "no (es | esta) (roja | rojo) (es | esta) (verde | en verde)", "no hay (luz | ninguna luz) @red"] },
     // a bare color or "Ninguna" describes the light only while Karla asks about it
     lights_ctx: { patterns: ["[en] @red [parpadeando]", "(ninguna | ninguna luz | ninguno | nada)", "[todas] (verde | en verde | verdes)", "(apagada | apagadas | todas apagadas)"] },
     restart_yes: { patterns: [
@@ -333,6 +336,7 @@ export const support: SituationDef = {
       "[no] (todavia no | aun no | no todavia) [lo he (intentado | hecho | reiniciado)] #h:restart_not",
       "[no] no (lo he intentado | lo he hecho | lo hice | lo intenté | lo reinicié | lo he reiniciado | lo probé | lo apagué | lo desconecté | he intentado | intenté | he probado | lo he apagado)",
       "[no] todavia no lo (he reiniciado | reinicié | he intentado | intenté | hice | he hecho | apagué)", "[no] no se me ocurrió", "[no] nunca lo (reinicié | apagué | desconecté)",
+      "[no] no se (como | como hacerlo | como se hace | hacerlo)",
     ] },
     done_ctx: { patterns: [
       "listo #h:done", "(ya | listo ya) (esta | quedó | lo hice)", "[listo] ya lo (desconecté | apagué | hice) #h:done_unplugged",
@@ -343,6 +347,7 @@ export const support: SituationDef = {
     doing_ctx: { patterns: [
       "[ok | va | sale | claro | si] (ahorita | ahora | ya) lo (hago | desconecto | estoy haciendo | estoy desconectando)", "lo estoy (haciendo | desconectando) [ahorita]",
       "[ok | si | claro] (ahorita | ahora) (lo hago | voy)", "(deje | dejeme | permitame) (lo desconecto | lo hago)", "[ahorita] lo (hago | desconecto) [ahorita]",
+      "[no] [espere] (todavia | aun) no (lo desconecto | lo he desconectado | lo hago | lo he hecho | termino | acabo)",
     ] },
     still_red: { patterns: [
       "[si] (sigue | todavia esta | aun esta | continua) [parpadeando] [en] (@red | igual | parpadeando) [parpadeando] #h:still_red",
@@ -362,7 +367,7 @@ export const support: SituationDef = {
       "[si] [el | ese] {day} [en la manana | en la tarde] (me queda bien | me queda perfecto | esta bien | me acomoda | me sirve | me funciona | perfecto | me viene bien)",
       "(voy a estar | estoy | puedo estar) (en casa | ahi | en mi casa) [ese dia | a esa hora | el {day}]",
       "(agendelo | apartelo | reserveme | agendemelo) [por favor]", "entre las {n1:number} y (las | la) {n2:number} (esta bien | me queda bien | me sirve)",
-      "(trabajo | estoy trabajando | voy a estar trabajando) desde (casa | mi casa) [ese dia]", "asi (esta bien | esta perfecto)", "(esta bien | esta perfecto) asi",
+      "(trabajo | estoy trabajando | voy a estar trabajando) desde (casa | mi casa) [ese dia]", "(estoy | voy a estar) en (casa | mi casa) todo el dia", "asi (esta bien | esta perfecto)", "(esta bien | esta perfecto) asi",
     ] },
     tech_busy: { patterns: [
       "[perdon | lo siento] (a esa hora | ese dia | el {day} | en la manana) (estoy | voy a estar) (en el trabajo | trabajando | en la oficina | fuera) #h:tech_work",
@@ -385,6 +390,7 @@ export const support: SituationDef = {
       "[no] vivo (solo | sola) #h:someone_no", "[no] (nadie | no hay nadie) [puede estar | mas | en casa | ese dia]", "[no] no hay nadie [mas] [en casa]",
       "[no] nadie (puede | va a estar | esta) [en casa | ahi]", "[no] (estoy | vivo) (solo | sola)",
       "[no] @who (tambien trabaja | trabaja | no puede | tampoco puede | no va a estar | tampoco esta | no esta)",
+      "[no] @who (no puede | tampoco puede | tampoco) [porque | es que] [tambien] (trabaja | esta trabajando) [todo el dia]",
     ] },
     tech_other: { patterns: [
       "(tiene | hay | tienen) (algo | algun horario | alguna cita | lugar | espacio) (el sabado | el fin de semana | en fin de semana) #h:tech_weekend",
@@ -398,7 +404,10 @@ export const support: SituationDef = {
       "(el sabado | el fin de semana | en la tarde) (seria mejor | me queda mejor | estaria mejor)",
       "(no hay | no tiene | hay | tiene | tienen) (algo | algun horario | espacio) mas temprano", "(puede | podria | pueden) (venir | ir) mas temprano",
       "[no] [el | ese] {wrong:day} no [puedo | me queda] [pero] (mejor | prefiero | que tal | y | puede ser) [el] {day} [en la manana | en la tarde]",
-      "no [el] {wrong:day} (sino | mejor) [el] {day} [en la manana | en la tarde]", "[si] pero (en la tarde | por la tarde | mas tarde | el fin de semana | otro dia | [el] {day})",
+      "no [el] {wrong:day} (sino | mejor) [el] {day} [en la manana | en la tarde]", "[el] {wrong:day} no [el] {day}",
+      "[no] [el | ese] {wrong:day} [en la manana | en la tarde] no [puedo | me queda] [pero] [mejor | prefiero | que tal | y] (en la tarde | por la tarde | mas tarde | en la manana)",
+      "(y si | que tal si) [mejor] (viene | vienen | va) [el] {day} [en la manana | en la tarde]", "(y si | que tal si) [mejor] [el] {day} [en la manana | en la tarde]",
+      "(y si | que tal si) [mejor] (en la tarde | por la tarde | el fin de semana | otro dia)", "[si] pero (en la tarde | por la tarde | mas tarde | el fin de semana | otro dia | [el] {day})",
     ] },
     // a bare day or part of the day ("¿El sábado?", "No, en la tarde") answers only the technician's offer
     tech_other_ctx: { patterns: ["[el] {day} [en la manana | en la tarde | por la tarde]", "(en la tarde | por la tarde | mas tarde | en la noche | mas temprano | en la manana | el fin de semana)"] },
@@ -452,7 +461,10 @@ export const support: SituationDef = {
     more_no: { patterns: [
       "[no] [gracias] (eso es todo | es todo | seria todo) [gracias] #h:more_all", "[no] (ya | ya con eso) (es todo | quedó | estoy)", "[no] (eso | con eso) (seria todo | es suficiente)",
       "[no] (todo bien | estoy bien) gracias", "[no] fue (muy | super) amable", "ya quedó todo",
+      "[no] [gracias] [ya] no necesito nada [mas] [gracias]", "[no] nada mas [gracias]",
     ] },
+    // "Sí, una cosa más": there is something else (only at "¿Algo más?")
+    more_yes_ctx: { patterns: ["[si] (una cosa mas | otra cosa | una pregunta mas | otra pregunta | tengo otra pregunta | tengo una pregunta | una pregunta) [por favor]", "[no] solo una pregunta"] },
     g_spell: { patterns: ["como se escribe [eso | el numero | el folio]", "me lo (deletrea | puede deletrear)"] },
   },
 
@@ -529,7 +541,7 @@ export const support: SituationDef = {
       t("Veo | que | tiene | problemas | con | su | internet.", "I see | that | you have | problems | with | your | internet.", "I see you're having trouble with your internet."),
     ],
     ask_name: [
-      t("¿Con | quién | tengo | el | gusto?", "With | whom | do I have | the | pleasure?", "And who am I speaking with?",
+      t("¿Con | quién | tengo | el | gusto?", "With | whom | do I have | the | pleasure?", "Who am I speaking with?",
         { flags: { 0: "A polite Mexican way to ask your name on the phone." } }),
       t("¿Me | da | su | nombre | completo, | por favor?", "(To) me | you-give | your | name | full, | please?", "Can I have your full name, please?"),
     ],
@@ -566,6 +578,7 @@ export const support: SituationDef = {
     ],
     ask_since: [t("¿Desde | cuándo | no tiene | servicio?", "Since | when | you don't have | service?", "How long has it been out?")],
     // asked a second time after another answer: a short reminder
+    since_unknown: [t("No se preocupe.", "Don't worry.", "That's okay.")],
     ask_since_again: [t("¿Y | desde | cuándo | está | sin | servicio?", "And | since | when | are you | without | service?", "And since when has it been out?")],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Entendido.", "Understood.", "Got it."), t("De acuerdo, | gracias.", "Agreed, | thanks.", "Okay, thanks.")],
     ask_lights: [
@@ -701,6 +714,10 @@ export const support: SituationDef = {
     credit: [
       t("Y | le | voy | a | hacer | una | bonificación | por | los | días | sin | internet.", "And | (to) you | I'm going | to | make | a | credit | for | the | days | without | internet.",
         "And I'll add a credit for the days without internet."),
+    ],
+    refund_none: [
+      t("Mmm, | no veo | ningún | cargo | por | reembolsar | en | su | cuenta.", "Hmm, | I don't see | any | charge | to | refund | on | your | account.",
+        "Hmm, I don't see any charge to refund on your account."),
     ],
     refund_when: [
       t("En | unos | días | hábiles; | depende | de | su | banco.", "In | a few | days | business; | it depends | on | your | bank.", "In a few business days; it depends on your bank."),
@@ -965,7 +982,7 @@ export const support: SituationDef = {
       yes: (c) => { bookTech(c); },
       no: (c) => { support.handlers.tech_busy(c, {}, { intent: "tech_busy", slots: {}, tags: [] }); } },
     { id: "more", when: (c) => !!c.s.techBooked || (!!c.s.refunded && !internet(c)), done: (c) => !!c.s.moreDone,
-      ask: (c) => c.say("anything_else"), expects: ["more_no", "charged_twice", "reference_q", "text_me"],
+      ask: (c) => c.say("anything_else"), expects: ["more_no", "more_yes_ctx", "charged_twice", "reference_q", "text_me"],
       suggest: [{ lt: "Say that's all", hint: "more" }, { lt: "Ask for the number by text, or for a supervisor", hint: "other" }],
       yes: (c) => { c.say("anything_else_yes"); c.hold(); },
       no: (c) => { c.s.moreDone = true; } },
@@ -995,7 +1012,11 @@ export const support: SituationDef = {
     menu_billing(c) { route(c, "billing"); },
     menu_sales(c) { if (c.s.routed) return; c.speaker("netwave_bot"); c.say("bot_sales"); c.s.routed = "sales"; },
     menu_agent(c) {
-      if (c.s.routed) { support.handlers.manager(c, {}, { intent: "manager", slots: {}, tags: [] }); return; }
+      if (c.s.routed) {
+        // talking to Karla: "Necesito ayuda" is for her; only an agent or a person asked for is the supervisor request
+        if (!/asesor|operador|ejecutiv|agente|persona|humano/.test(heard(c))) { claireOn(c); goAhead(c); return; }
+        support.handlers.manager(c, {}, { intent: "manager", slots: {}, tags: [] }); return;
+      }
       if (!c.s.agentAsked) {
         c.s.agentAsked = true;
         c.speaker("netwave_bot");
@@ -1027,6 +1048,8 @@ export const support: SituationDef = {
     account_ctx(c, slots) { setAccount(c, slots.digits); },
     // "No sé" / "No me lo sé" at the account question: the number is what isn't known
     g_dontknow(c) {
+      // "No sé" at "¿Desde cuándo…?": Karla doesn't need it (asked again, it would be a loop of "Tómese su tiempo")
+      if (c.step === "since" && !c.s.since) { c.s.since = "unknown"; c.say("since_unknown"); return; }
       if (c.step === "account" && !c.s.account) { support.handlers.acct_unknown(c, {}, { intent: "acct_unknown", slots: {}, tags: [] }); return; }
       GLOBAL_HANDLERS.g_dontknow?.(c as ConvCtx, {});
     },
@@ -1060,7 +1083,8 @@ export const support: SituationDef = {
       c.say("refund");
       if (internet(c) || c.s.techBooked) { c.s.creditSaid = true; c.say("credit"); }
     },
-    since_ans(c) { if (!c.s.since) { c.s.since = true; c.say("ack"); } },
+    // a time said once the technician is on the table is about the visit, not the outage
+    since_ans(c) { if (c.s.window) return; if (!c.s.since) { c.s.since = true; c.say("ack"); } },
     since_ctx(c) { support.handlers.since_ans(c, {}, { intent: "since_ans", slots: {}, tags: [] }); },
     lights_ans(c) {
       if (c.s.lights) return;
@@ -1074,12 +1098,21 @@ export const support: SituationDef = {
     },
     lights_neg(c) { if (c.s.lights) return; c.s.lights = true; c.s.orange = false; if (!internet(c)) problem(c, "down", true); c.say("ack"); },
     lights_ctx(c) { support.handlers.lights_ans(c, {}, { intent: "lights_ans", slots: {}, tags: [] }); },
-    restart_yes(c) { if (c.s.restarted !== undefined) return; c.s.restarted = true; c.say("restart_ok"); },
-    restart_no(c) { if (c.s.restarted !== undefined) return; askRestartNow(c); },
+    restart_yes(c) { if (c.s.restarted !== undefined || c.s.restartPending) return; c.s.restarted = true; c.say("restart_ok"); },
+    restart_no(c) {
+      // "Todavía no" while Karla waits for the unplugging: she keeps waiting (not the same request again)
+      if (c.s.restartPending) { c.say("wait_here"); c.expect(restartNowPending()); return; }
+      if (c.s.restarted !== undefined) return;
+      askRestartNow(c);
+    },
     done_ctx() { /* handled by the pending questions */ },
     doing_ctx() { /* handled by the pending question */ },
     still_red(c) { if (c.s.restartPending) stillRed(c); },
-    green_now(c) { if (c.s.restartPending) { c.s.restartPending = false; c.s.restarted = true; c.say("green_ok"); } },
+    green_now(c) {
+      if (c.s.restartPending) { c.s.restartPending = false; c.s.restarted = true; c.say("green_ok"); return; }
+      // "Ya funciona" at the technician's offer: the line test still shows the fault
+      if (c.s.window && !c.s.techBooked) c.say("green_ok");
+    },
 
     // --- technician
     tech_accept(c, slots) {
@@ -1092,6 +1125,10 @@ export const support: SituationDef = {
     },
     tech_busy(c) {
       if (!c.s.window || c.s.techBooked) return;
+      // "No puedo el jueves, ¿y el viernes?": the other day is the answer (one question per turn)
+      const alt = altAsked(c);
+      if (alt) { support.handlers.tech_other(c, alt, { intent: "tech_other", slots: alt, tags: [] }); turn(c).altDone = true; return; }
+      turn(c).busy = true;
       if (!c.s.askedSomeone) {
         c.s.askedSomeone = true;
         c.say("ask_someone");
@@ -1101,10 +1138,12 @@ export const support: SituationDef = {
           yes: (cc) => { cc.say("someone_ok"); bookTech(cc); },
           no: (cc) => { cc.say("no_problem_alt"); otherWindow(cc); },
           on: {
-            someone_yes: (cc) => { cc.say("someone_ok"); bookTech(cc); },
+            someone_yes: (cc, sl) => { support.handlers.someone_yes(cc, sl, { intent: "someone_yes", slots: sl, tags: [] }); },
             someone_no: (cc) => { cc.say("no_problem_alt"); otherWindow(cc); },
             tech_other: (cc, sl) => { support.handlers.tech_other(cc, sl, { intent: "tech_other", slots: sl, tags: [] }); },
             tech_other_ctx: (cc, sl) => { support.handlers.tech_other(cc, sl, { intent: "tech_other", slots: sl, tags: [] }); },
+            // "No sé": nobody sure to be home, so another window
+            g_dontknow: (cc) => { cc.say("no_problem_alt"); otherWindow(cc); },
           },
           ask: (cc) => cc.say("ask_someone"),
         });
@@ -1112,10 +1151,16 @@ export const support: SituationDef = {
       }
       otherWindow(c);
     },
-    someone_yes(c) { if (c.s.window && !c.s.techBooked) { c.say("someone_ok"); bookTech(c); } },
+    someone_yes(c) {
+      if (!c.s.window || c.s.techBooked) return;
+      // "Mi esposo, pero solo en la tarde": not this window; offer the one asked for
+      const alt = altAsked(c);
+      if (alt) { support.handlers.tech_other(c, alt, { intent: "tech_other", slots: alt, tags: [] }); turn(c).altDone = true; return; }
+      c.say("someone_ok"); bookTech(c);
+    },
     someone_no(c) { if (c.s.window && !c.s.techBooked) { c.say("no_problem_alt"); otherWindow(c); } },
     tech_other(c, slots) {
-      if (!c.s.window || c.s.techBooked) return;
+      if (!c.s.window || c.s.techBooked || turn(c).altDone) return;
       const h = heard(c);
       const d = slots.day as string | undefined;
       const notOffered = (ks: string[], other = false) => ks.find((x) => !(c.s.offered || []).includes(x) && x !== c.s.window && (!other || WINDOWS[x].d !== WINDOWS[c.s.window].d));
@@ -1123,13 +1168,15 @@ export const support: SituationDef = {
         : /temprano/.test(h) ? notOffered(["thu_am", "fri_am", "sat"]) : /otro dia/.test(h) ? notOffered(["fri_am", "sat", "thu_am", "thu_pm"], true) : undefined;
       // "¿No hay algo más temprano?" when the morning slot is already on offer: it's the earliest
       if (/temprano/.test(h) && !d && !WINDOWS[c.s.window].pm) { c.say("no_earlier"); c.say("tech_offer_again", { D: WINDOWS[c.s.window].d, win: win(c.s.window) }); c.hold(); return; }
-      if (d && !["saturday", "friday", "thursday"].includes(d) && !k) { c.say("no_day"); k = ["thu_pm", "sat", "fri_am", "thu_am"].find((x) => !(c.s.offered || []).includes(x)) ?? "sat"; }
+      // a day with no visits: another day than the one on offer (the caller may be busy all that day)
+      if (d && !["saturday", "friday", "thursday"].includes(d) && !k) { c.say("no_day"); k = notOffered(["sat", "fri_am", "thu_pm"], true) ?? ["thu_pm", "sat", "fri_am", "thu_am"].find((x) => !(c.s.offered || []).includes(x)) ?? "sat"; }
       if (!k) k = ["thu_pm", "sat", "fri_am", "thu_am"].find((x) => !(c.s.offered || []).includes(x)) ?? "sat";
       if (k === c.s.window) { bookTech(c); return; }
       offerWindow(c, k);
       c.hold();
     },
-    tech_other_ctx(c, slots) { support.handlers.tech_other(c, slots, { intent: "tech_other", slots, tags: [] }); },
+    // "Trabajo en la tarde": the part of the day belongs to the busy answer, not a new request
+    tech_other_ctx(c, slots) { if (turn(c).busy) return; support.handlers.tech_other(c, slots, { intent: "tech_other", slots, tags: [] }); },
     tech_cost_q(c) { c.say("tech_free"); },
     tech_cost_ctx(c) { c.say("tech_free"); },
     tech_time_q(c) { c.say("tech_takes"); },
@@ -1151,7 +1198,12 @@ export const support: SituationDef = {
       if (c.s.techBooked) { c.say("spell_ref"); c.hold(); return; }
       GLOBAL_HANDLERS.g_spell(c as ConvCtx, {});
     },
-    refund_q(c) { c.say(c.s.refunded ? "refund_when" : "no_problem_alt"); },
+    refund_q(c) {
+      if (c.s.refunded) { c.say("refund_when"); return; }
+      // the double charge is on the account (the twist): asking about the money back reports it
+      if (c.s.chargeTwist && c.s.routed) { support.handlers.charged_twice(c, {}, { intent: "charged_twice", slots: {}, tags: [] }); return; }
+      claireOn(c); c.say("refund_none");
+    },
 
     // --- the phone line
     speak_up(c) {
@@ -1167,6 +1219,7 @@ export const support: SituationDef = {
     hear_me(c) { c.say("hear_you"); },
     hear_ok(c) { c.say("hear_great"); },
 
+    more_yes_ctx(c) { if (c.step === "more" && !c.s.moreDone) { c.say("anything_else_yes"); c.hold(); } },
     more_no(c) {
       const st = support.steps.find((x) => x.id === c.step);
       // "No, es todo. Adiós." is a goodbye (the bye handler ends the call), not a "no" to the open question
@@ -1290,6 +1343,24 @@ export const support: SituationDef = {
     { say: "Sí, lo reinicié esta mañana", intent: "restart_yes", step: "restart" },
     { say: "Ya no funciona", intent: "still_red", not: ["green_now"] },
     { say: "No, ya está verde", intent: "green_now", not: ["still_red"] },
+    // review (2 Nov 2026): traps and forms the blind set found
+    { say: "No sé cómo", intent: "restart_no", step: "restart", not: ["restart_yes", "g_howareyou"] },
+    { say: "Mi esposa no puede, trabaja todo el día", intent: "someone_no", not: ["someone_yes"] },
+    { say: "Mi esposa también trabaja", intent: "someone_no", not: ["someone_yes"] },
+    { say: "Estoy en casa todo el día", intent: "tech_accept", step: "tech" },
+    { say: "No voy a estar en casa", intent: "tech_busy", step: "tech", not: ["tech_accept"] },
+    { say: "¿Y si mejor el sábado?", intent: "tech_other", step: "tech", not: ["tech_accept"] },
+    { say: "Jueves no, viernes", intent: "tech_other", step: "tech", slots: { day: "friday" }, not: ["tech_accept"] },
+    { say: "El jueves en la mañana no, mejor en la tarde", intent: "tech_other", step: "tech", not: ["tech_accept"] },
+    { say: "¿Cuánto cuesta la visita?", intent: "tech_cost_q", step: "tech", not: ["tech_accept"] },
+    { say: "Se me cae la conexión a cada rato", intent: "internet_drops" },
+    { say: "No es un problema de pago, es que no tengo internet", intent: "internet_down", not: ["charged_twice", "menu_billing"] },
+    { say: "Es sobre mi recibo", intent: "menu_billing", step: "menu" },
+    { say: "Necesito un técnico", intent: "menu_support", step: "menu" },
+    { say: "No hay luz roja", intent: "lights_neg", step: "lights", not: ["lights_ans"] },
+    { say: "Ya no necesito nada", intent: "more_no", step: "more" },
+    { say: "Sí, una cosa más", intent: "more_yes_ctx", step: "more", not: ["more_no"] },
+    { say: "No me acuerdo, creo que ayer", intent: "since_ctx", step: "since" },
     // not understood
     { say: "Me gusta la pizza con piña", intent: "none" },
     { say: "Mi perro baila salsa en la playa", intent: "none" },
@@ -1297,6 +1368,12 @@ export const support: SituationDef = {
   ],
 
   sims: [
+    { name: "review: can't unplug yet, another day in the same breath, someone only in the afternoon",
+      turns: ["Soporte técnico.", "Ryan Miller.", "Es el 742 9133.", "Mi internet no funciona.", "Hay una luz roja.", "No sé cómo.", "Todavía no lo desconecto.",
+        "Listo.", "Sigue en rojo.", "No puedo el jueves, ¿y el viernes?", "Trabajo.", "Mi esposo, pero solo en la tarde.", "Sí, me queda bien.",
+        "Sí, una cosa más.", "¿Cuándo me regresan mi dinero?", "No, es todo."],
+      expect: { complete: true, state: { techBooked: "thu_pm" } }, auto: SUPPORT_AUTO,
+      setup: (s) => { s.badLine = false; s.askSince = false; s.chargeTwist = false; s.longHold = false; s.firstWindow = "thu_am"; } },
     { name: "internet down, technician on the first day offered",
       turns: ["Soporte técnico.", "Hola, me llamo Ryan Miller.", "Mi número de cuenta es 742 9133.", "Mi internet dejó de funcionar ayer.", "La luz parpadea en rojo.",
         "Sí, ya lo reinicié tres veces.", "Me queda bien.", "No, gracias, es todo."],
@@ -1378,10 +1455,16 @@ function restartNowPending() {
   return {
     id: "restart_now", expects: ["done_ctx", "doing_ctx"], hints: ["done", "g_yesno"],
     suggest: [{ lt: "Say you've unplugged it", hint: "done" }],
-    yes: (cc: Ctx) => { plugBack(cc); }, no: (cc: Ctx) => { plugBack(cc); },
+    yes: (cc: Ctx) => { plugBack(cc); },
+    // a no to "¿Lo puede desconectar…?": not yet (she waits) or can't (she goes on to the line test)
+    no: (cc: Ctx) => {
+      if (/todavia|aun|espere|momento|ahorita/.test(heard(cc))) { cc.say("wait_here"); cc.expect(restartNowPending()); return; }
+      cc.s.restartPending = false; cc.s.restarted = false; cc.say("no_problem_alt");
+    },
     on: {
       done_ctx: (cc: Ctx) => { plugBack(cc); }, g_ok: (cc: Ctx) => { plugBack(cc); }, restart_yes: (cc: Ctx) => { plugBack(cc); }, g_wait: () => false,
       doing_ctx: (cc: Ctx) => { cc.say("wait_here"); cc.expect(restartNowPending()); },
+      restart_no: (cc: Ctx) => { cc.say("wait_here"); cc.expect(restartNowPending()); },
     },
     ask: (cc: Ctx) => cc.say("restart_now"),
   };
@@ -1404,6 +1487,20 @@ function stillRed(c: Ctx) {
   c.s.restartPending = false;
   c.s.restarted = true;
   c.say("still_red_ok");
+}
+
+const DAY_KEY: Record<string, string> = {
+  lunes: "monday", martes: "tuesday", miercoles: "wednesday", jueves: "thursday", viernes: "friday", sabado: "saturday", domingo: "sunday",
+};
+const ALT_RE = /\b(y|mejor|prefiero|que tal|pero|sino|puede|podria|solo|nomas)\s+(?:(?:venir|ir)\s+)?(el\s+)?(lunes|martes|miercoles|jueves|viernes|sabado|domingo|fin de semana|otro dia)\b/;
+/** A turn that refuses the window and names another one ("No puedo el jueves, ¿y el viernes?", "…, mejor en la tarde"):
+ *  the slots for tech_other (the other day only, never the refused one), or null. */
+function altAsked(c: Ctx): Record<string, any> | null {
+  const h = heard(c);
+  const w = WINDOWS[c.s.window];
+  const m = h.match(ALT_RE);
+  if (m && DAY_KEY[m[3]] !== w.d) return DAY_KEY[m[3]] ? { day: DAY_KEY[m[3]] } : {};
+  return !w.pm && /\b(y|mejor|prefiero|que tal|pero|sino|solo|nomas)\s+(en la tarde|por la tarde|mas tarde)\b/.test(h) ? {} : null;
 }
 
 function otherWindow(c: Ctx) {
