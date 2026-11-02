@@ -1,0 +1,52 @@
+{ "situation": "s90-running-late", "items": [
+  { "ctx": "opening", "say": "Bueno, ingeniero, habla Tomás", "intent": "identify", "note": "Mexican phone opener" },
+  { "ctx": "opening", "say": "Buenos días, ingeniero Montes. Soy Ana, voy a llegar tarde", "intent": ["identify", "late"] },
+  { "ctx": "opening", "say": "Hola, perdón, se me hizo tarde", "intent": "late", "note": "Mexican se me hizo tarde" },
+  { "ctx": "opening", "say": "Lo siento mucho, estoy atorado en el tráfico", "intent": ["reason", "late"] },
+  { "ctx": "opening", "say": "Ingeniero, le llamo para avisarle que voy a llegar unos minutos tarde", "intent": "late" },
+
+  { "ctx": "who", "say": "Soy Sara, de su equipo", "intent": ["identify", "name_ctx"] },
+  { "ctx": "who", "say": "Habla Miguel", "intent": ["identify", "name_ctx"] },
+
+  { "ctx": "late", "say": "Voy retrasado", "intent": "late" },
+  { "ctx": "late", "say": "No voy a llegar a tiempo a la junta", "intent": "late", "not": ["not_late"], "note": "trap: negation is the lateness" },
+  { "ctx": "late", "say": "No puedo llegar a tiempo", "intent": "late", "not": ["not_late", "cant_come"], "note": "trap: late, not can't come" },
+  { "ctx": "late", "say": "No voy a poder ir hoy, estoy enferma", "intent": "cant_come", "not": ["not_late"], "note": "trap" },
+  { "ctx": "late", "say": "No llego tarde, voy a tiempo", "intent": "not_late", "not": ["late"], "note": "trap: correction" },
+  { "ctx": "late", "say": "Llego un poquito tarde", "intent": "late" },
+
+  { "ctx": "reason", "say": "Perdí el camión", "intent": "reason", "note": "Mexican camión" },
+  { "ctx": "reason", "say": "Se me fue el autobús", "intent": "reason" },
+  { "ctx": "reason", "say": "Hay mucho tráfico en la carretera", "intent": "reason" },
+  { "ctx": "reason", "say": "No sonó mi despertador", "intent": "reason" },
+  { "ctx": "reason", "say": "Me quedé dormida", "intent": "reason" },
+  { "ctx": "reason", "say": "Se descompuso mi carro", "intent": "reason" },
+  { "ctx": "reason", "say": "Tuve que llevar a mi hijo al doctor", "intent": "reason" },
+  { "ctx": "reason", "say": "Hubo un accidente en la carretera", "intent": "reason" },
+  { "ctx": "reason", "say": "Se le ponchó una llanta al coche", "intent": "reason", "note": "Spain coche" },
+
+  { "ctx": "eta", "say": "Llego en veinte minutos", "intent": ["eta", "eta_ctx"] },
+  { "ctx": "eta", "say": "Como en media hora", "intent": ["eta", "eta_ctx"] },
+  { "ctx": "eta", "say": "Estoy a diez minutos", "intent": ["eta", "eta_ctx"] },
+  { "ctx": "eta", "say": "Para las nueve y media estoy allá", "intent": ["eta", "eta_ctx"] },
+  { "ctx": "eta", "say": "Ya casi llego", "intent": ["eta", "eta_ctx"] },
+  { "ctx": "eta", "say": "Quince", "intent": ["eta", "eta_ctx"] },
+  { "ctx": "eta", "say": "No sé, tal vez una hora", "intent": ["eta", "eta_ctx"] },
+
+  { "ctx": "plan_q", "say": "Sí, empiecen sin mí", "intent": "start_without" },
+  { "ctx": "plan_q", "say": "No me esperen, por favor", "intent": "start_without", "not": ["wait_for_me"], "note": "trap: negated wait" },
+  { "ctx": "plan_q", "say": "No, no empiecen sin mí, por favor", "intent": "wait_for_me", "not": ["start_without"], "note": "trap: negated start" },
+  { "ctx": "plan_q", "say": "Mejor espérenme, por favor", "intent": "wait_for_me" },
+  { "ctx": "plan_q", "say": "¿Me puede guardar un lugar?", "intent": "save_seat" },
+  { "ctx": "plan_q", "say": "Pueden empezar, yo los alcanzo", "intent": "start_without" },
+  { "ctx": "plan_q", "say": "Vale, empezad sin mí", "intent": ["start_without", "yn:yes"], "note": "Spain: vale + vosotros" },
+
+  { "ctx": "need_help", "say": "No, gracias, voy a tomar un taxi", "intent": ["taxi_ok", "taxi_ok_ctx"], "not": ["help_request"], "note": "trap" },
+  { "ctx": "need_help", "say": "No necesito ayuda, gracias", "intent": ["no_help", "yn:no"], "not": ["help_request"], "note": "trap" },
+
+  { "ctx": "cant_q", "say": "No, nada más voy a llegar tarde", "intent": ["just_late", "just_late_ctx", "late"], "not": ["cant_come"], "note": "trap" },
+
+  { "ctx": "room", "say": "Muy bien, sala trescientos dos", "intent": ["confirm_room", "confirm_room_ctx"] },
+  { "ctx": "room", "say": "¿Dónde queda el otro edificio?", "intent": "ask_building" },
+  { "ctx": "closing", "say": "Muchas gracias por su comprensión", "intent": "thanks_understanding" }
+] }

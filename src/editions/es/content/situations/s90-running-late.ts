@@ -51,7 +51,10 @@ function etaOf(v: any): Eta | null {
   if (tags.includes("m5")) return { min: 5 };
   if (tags.includes("m15")) return { min: 15 };
   if (tags.includes("m30")) return { min: 30 };
+  if (tags.includes("m45")) return { min: 45 };
   if (tags.includes("m60")) return { min: 60 };
+  if (tags.includes("m90")) return { min: 90 };
+  if (tags.includes("hrs") && typeof v.number === "number") return { min: v.number * 60 };
   if (typeof v.number === "number") return { min: Math.max(v.number, typeof v.n2 === "number" ? v.n2 : 0) };
   if (v.time && typeof v.time === "object") {
     let h = v.time.h as number;
@@ -128,6 +131,9 @@ const REACT: Record<Reason, string> = {
 
 function sendHelp(c: Ctx) { if (!c.s.helpSent) { c.s.helpSent = true; c.say("help_send"); } else c.say("ok_fine"); }
 
+/** "Voy a tomar un taxi" is a good idea; "Ya viene mi esposo", "Ya llamé a la grúa" is good news. */
+function taxiOk(c: Ctx) { c.say(/\b(taxi|uber|colectivo|camion|autobus)\b/.test(plain(c.heard)) ? "good_idea" : "help_no"); }
+
 function doReason(c: Ctx, why: any) {
   const r = reasonOf(why) ?? "generic";
   const first = !c.s.reason;
@@ -141,7 +147,9 @@ function doReason(c: Ctx, why: any) {
       suggest: [{ lt: "Say whether you need help", hint: "g_yesno" }],
       yes: (cc) => { sendHelp(cc); },
       no: (cc) => { cc.say("help_no"); },
-      on: { taxi_ok: (cc) => { cc.say("good_idea"); }, taxi_ok_ctx: (cc) => { cc.say("good_idea"); }, help_request: (cc) => { sendHelp(cc); }, no_help: (cc) => { cc.say("help_no"); } },
+      on: { taxi_ok: (cc) => taxiOk(cc), taxi_ok_ctx: (cc) => taxiOk(cc), help_request: (cc) => { sendHelp(cc); }, no_help: (cc) => { cc.say("help_no"); },
+        // "Sí, gracias" is a yes; a bare "Gracias" (or "No, gracias") to an offer is a polite no
+        g_thanks: (cc) => { if (ynLead(cc) === "yes") sendHelp(cc); else cc.say("help_any"); } },
     });
   }
 }
@@ -174,6 +182,8 @@ function bareEta(c: Ctx, slots: any, tags: string[]): any {
   let n: number | undefined = typeof slots.number === "number" ? slots.number : undefined;
   if (n === undefined && slots.time && !art && slots.time.m === 0 && !slots.time.ampm) n = slots.time.h;
   if (n !== undefined) {
+    // "Dos horas." (the clock slot reads "dos" as 2:00)
+    if (/\bhoras?\b/.test(plain(c.heard)) && n <= 4) return { number: n, __tags: [...tags, "hrs"] };
     if (c.s.etaAsk === "when" && n >= 9 && n <= 12 && typeof slots.n2 !== "number") return { time: { h: n, m: 0 }, __tags: tags };
     return { number: n, n2: slots.n2, __tags: tags };
   }
@@ -205,19 +215,26 @@ function planWait(c: Ctx) {
   maybeComplete(c);
 }
 
-/** "¿Empezamos sin usted?" A yes starts, a no waits; "Así está bien" could be either: Montes asks which. */
+/** "¿Empezamos sin usted?" A yes starts, a no waits; "Así está bien", a bare "No, no hace falta" and "No pueden
+ *  empezar sin mí" (its comma lost) could be either: Montes asks which. */
 function planQ(): Pending {
+  const amb = (cc: Ctx) => { if (cc.s.planAmb) return false; cc.s.planAmb = true; cc.say("amb_plan"); cc.expect(planQ()); return true; };
   return {
-    id: "plan_q", expects: ["start_without", "wait_for_me"], hints: ["requests"],
+    id: "plan_q", expects: ["start_without", "wait_for_me", "wait_ctx", "start_ctx", "plan_amb_ctx"], hints: ["requests"],
     suggest: [{ lt: "Say whether to start without you", hint: "requests" }],
     yes: (cc) => planStart(cc),
     no: (cc) => {
-      if (/\basi\b/.test(plain(cc.heard)) && !cc.s.planAmb) { cc.s.planAmb = true; cc.say("amb_plan"); cc.expect(planQ()); return; }
+      const h = plain(cc.heard);
+      if ((/\basi\b/.test(h) || (/\b(hace falta|es necesario)\b/.test(h) && !/\bespera/.test(h))) && amb(cc)) return;
       planWait(cc);
     },
     on: {
       start_without: (cc) => planStart(cc),
+      start_ctx: (cc) => planStart(cc),
       wait_for_me: (cc) => planWait(cc),
+      // "Espere, ¿en qué sala?" is "hold on": only a bare "Espere(n)" waits
+      wait_ctx: (cc) => { if (turnSegments(cc).every((x) => x.intent === "wait_ctx" || x.intent === "wait_for_me")) planWait(cc); },
+      plan_amb_ctx: (cc) => { if (!amb(cc)) planWait(cc); },
       save_seat: (cc) => { if (ynLead(cc) === "no") planWait(cc); else planStart(cc); cc.say("ok_seat"); },
       tell_team: (cc) => { planStart(cc); cc.say("ok_tell"); },
     },
@@ -225,7 +242,7 @@ function planQ(): Pending {
   };
 }
 
-/** Can't come today: Montes is told why in the same breath, or asks "¿Entonces hoy no viene?". */
+/** Can't come today: Montes is told why in the same breath, or asks "¿Entonces hoy va a faltar?". */
 function cantCome(c: Ctx, why?: any) {
   c.s.cantCome = true;
   c.s.late = false;
@@ -275,7 +292,7 @@ export const runningLate: SituationDef = {
       bitlate: "[un poco | un poquito | algo | un rato | un poco mas]",
       post: "[perdon | lo siento [mucho] | una disculpa | disculpe]",
       approx: "[mas o menos | maximo | a lo mucho | aproximadamente | o algo asi | o asi]",
-      unsure: "[(no se | no estoy (seguro | segura) | no se bien) [pero]] [creo que | espero que | ojala | calculo que | yo creo que | pienso que | si todo va bien | supongo que]",
+      unsure: "[(no se | no estoy (seguro | segura) | no se bien) [pero]] [creo que | espero que | ojala | calculo que | yo creo que | pienso que | si todo va bien | supongo que | tal vez | quizas | quiza | a lo mejor | probablemente]",
       on_road: "[en la (carretera | avenida | federal | autopista | entrada del pueblo) | en el (centro | puente | camino)]",
       be_there: "(llego | voy a llegar | estoy ahi | estoy alla | estoy en la oficina | voy a estar ahi | voy a estar alla | llegare | estare ahi | estare alla | puedo estar ahi | puedo llegar | creo que llego | espero llegar | espero estar ahi)",
       // the reason said with "can't come" in one breath ("Hoy no voy a poder ir, amanecí enfermo")
@@ -297,6 +314,8 @@ export const runningLate: SituationDef = {
         "(voy a llegar | llego) (despues de las nueve | mas tarde | un poco mas tarde | un poquito mas tarde) @for_mtg",
         "me voy a perder (el principio | el inicio | el comienzo | los primeros minutos | los primeros (diez | quince) minutos) de la (junta | reunion)",
         "no voy a llegar al (principio | inicio | comienzo) de la (junta | reunion)",
+        "no (puedo | voy a poder | podre) llegar (a tiempo | a la hora | puntual | a las nueve) @for_mtg",
+        "(voy a llegar | llego) (unos minutos | unos minutitos | un rato | un ratito) tarde @for_mtg",
       ],
     },
     slots: {
@@ -318,6 +337,7 @@ export const runningLate: SituationDef = {
         "(tuve que | tengo que) esperar el (siguiente | otro) (camion | autobus) #r:bus",
         "el (camion | autobus) (venia | iba | viene) lleno y (tuve que | tengo que) esperar el (siguiente | otro) #r:bus",
         "no hay (camion | camiones | autobus | autobuses) #r:bus",
+        "(estoy esperando | sigo esperando) el (camion | autobus) #r:bus", "(el | por el) (camion | autobus) #r:bus",
         // the colectivo (shared van) and the train
         "se me (fue | pasó) el (colectivo | tren) #r:train", "(perdí | perdi) el (colectivo | tren) #r:train",
         "el (colectivo | tren) (no pasó | no ha pasado | no llegó | no ha llegado | se tardó | viene tarde | viene lleno | venia lleno | se retrasó | viene retrasado | va retrasado | se descompuso) #r:train #h:r_train",
@@ -335,16 +355,21 @@ export const runningLate: SituationDef = {
         "(hay | estan haciendo) (obras | trabajos) @on_road #r:traffic", "(estan arreglando | arreglan) la (calle | carretera) #r:traffic",
         "hay (un reten | un bloqueo | una manifestacion) @on_road #r:traffic",
         "[puro | mucho] (trafico | transito) #r:traffic",
+        "(estoy | estamos | voy) en el (trafico | transito) @on_road #r:traffic", "hay (trafico | transito) @on_road #r:traffic",
+        "(habia | hubo) un (choque | accidente) @on_road #r:traffic",
         "(por | es por) el (trafico | transito) #r:traffic",
         // rain (the Caribbean coast: downpours and flooded streets)
         "(esta | estaba) lloviendo (mucho | muchisimo | a cantaros | fuerte | horrible) #r:rain #h:r_rain",
         "llueve (mucho | muchisimo) #r:rain", "hay (mucha lluvia | una tormenta | un tormenton) #r:rain",
         "las calles (estan | estaban) (inundadas | llenas de agua) #r:rain", "se (inundó | inundaron) (la calle | las calles | mi calle) #r:rain",
-        "(por | es por) (la lluvia | la tormenta) #r:rain",
+        "(por | es por | con) (la lluvia | la tormenta | esta lluvia) #r:rain",
+        "(esta | estaba) lloviendo #r:rain", "llovió (mucho | muchisimo | fuerte | toda la noche | a cantaros) #r:rain",
         // the car
         "se me descompuso el (carro | coche | auto) #r:car #h:r_car",
         "(mi | el) (carro | coche | auto) (no arranca | no prende | no quiere arrancar | no quiso arrancar | se descompuso | esta descompuesto | esta en el taller) #r:car",
-        "se me (ponchó | pinchó) (una llanta | una rueda | la llanta) #r:car", "(tengo | traigo) (una llanta | una rueda) (ponchada | pinchada) #r:car",
+        "se (me | le) (ponchó | pinchó) (una llanta | una rueda | la llanta) [al (carro | coche | auto) | del (carro | coche | auto)] #r:car",
+        "se (ponchó | pinchó) (una llanta | una rueda | la llanta) #r:car", "se (descompuso | murió) (mi | el) (carro | coche | auto) #r:car",
+        "tuve un accidente #r:car", "(tengo | traigo) (una llanta | una rueda) (ponchada | pinchada) #r:car",
         "tuve un pinchazo #r:car",
         "(se me acabó | me quedé sin) (la gasolina | gasolina) #r:car",
         "se me (descargó | murió) la bateria del (carro | coche | auto) #r:car",
@@ -365,12 +390,15 @@ export const runningLate: SituationDef = {
         "(mi hijo | mi hija | mi esposa | mi esposo | mi mama | mi papa | mi pareja | el nino | la nina) (esta | amaneció) (enfermo | enferma | mal) #r:family",
         "(estoy | me siento | amanecí) (enfermo | enferma | mal | malo | mala) #r:sick",
         "no me siento bien #r:sick",
+        "(me enfermé | me puse (malo | mala) | tengo (gripa | gripe | fiebre | calentura) | estoy (resfriado | resfriada))  #r:sick",
+        "(mi hijo | mi hija | mi esposa | mi esposo | mi mama | mi papa | mi pareja | el nino | la nina) se (enfermó | puso (malo | mala)) #r:family",
         "(tuve que | tengo que) ir al (doctor | medico | dentista | hospital) #r:appt",
         "(tengo | tenia | tuve) (una cita | cita) (con el | con la | en el | al) (doctor | doctora | medico | dentista | hospital) #r:appt",
         // anything else
         "(tuve | tengo) (un problema | un problemita | una emergencia | una emergencia familiar) [en (la casa | casa)] #r:generic",
         "se me (presentó | complicó) algo #r:generic", "(me surgió | surgió) algo #r:generic",
         "es una historia larga #r:generic", "es una larga historia #r:generic",
+        "(es | fue) (algo | un asunto | un tema) personal #r:generic", "es personal #r:generic", "prefiero no (decir | decirlo | hablar de eso) #r:generic",
         "(tuve que | tenia que) esperar (al plomero | al tecnico | al del gas | el gas | una entrega | un paquete) #r:generic",
         // a taxi that doesn't come
         "el (taxi | uber) (no llegó | no ha llegado | se tardó | viene tarde | no viene) #r:taxi",
@@ -400,6 +428,10 @@ export const runningLate: SituationDef = {
         "[como | unos | mas o menos] {number} minutos [mas o menos]",
         "[como | unos] {number} o {n2:number} minutos",
         "[como] (media hora #m30 | una hora #m60)",
+        "[@be_there] en [como | unos | mas o menos] {number} horas #hrs", "[como | unos] {number} horas #hrs",
+        "[@be_there] en [como | mas o menos] (una hora y media | hora y media) #m90", "[como] (una hora y media | hora y media) #m90",
+        "[@be_there] en [como | mas o menos] tres cuartos de hora #m45",
+        "ahorita [voy | llego] #ahorita",
       ] },
     },
   },
@@ -414,10 +446,10 @@ export const runningLate: SituationDef = {
       "[@mh] (me llamo | mi nombre es) {name}",
     ] },
     its_me: { patterns: ["[@mh] soy yo", "[si] soy yo"] },
-    // "Ryan." alone as the answer to the phone greeting
-    identify_ctx: { patterns: ["[es] {name}", "{name} [aqui]"] },
+    // "Es Ryan." as the answer to the phone greeting (a bare word is not a name here: "Ingeniero", "¿Y si nadie viene?")
+    identify_ctx: { patterns: ["es {name}"] },
     name_ctx: { patterns: ["{name}", "(me llamo | mi nombre es | soy | habla | es) {name}"] },
-    greet_harris: { patterns: ["(hola | buenos dias | buen dia | buenas) @mh"] },
+    greet_harris: { patterns: ["(hola | buenos dias | buen dia | buenas) @mh", "[oiga | oye] @mh"] },
     is_harris: { patterns: ["(hablo | estoy hablando) con [el] @mh", "se encuentra [el] @mh", "[el] @mh (es usted | eres tu)", "(es usted | usted es) [el] @mh"] },
     late: { patterns: [
       "@pre @late_core @post",
@@ -425,7 +457,7 @@ export const runningLate: SituationDef = {
       "@pre @late_core [y] [pero] {eta}",
       "@pre @late_core [porque | es que] {why} [y] {eta}",
       "[si] todo bien [pero] [solo | nada mas | nomas] @late_core",
-      "[no es] nada grave [solo | nada mas | nomas] @late_core",
+      "[no es] nada [grave] [solo | nada mas | nomas] @late_core",
     ] },
     reason: { patterns: [
       "[si] todo bien [solo | nada mas | nomas] [que] {why}",
@@ -433,6 +465,8 @@ export const runningLate: SituationDef = {
       "@pre {why} [y] [por eso | entonces | asi que] @late_core",
       "@pre {why} [y] {eta}",
       "[no es] nada grave [solo | nada mas | nomas] {why}",
+      // a correction: "No es por el tráfico, se me fue el camión" (the second reason is the answer)
+      "no (es | fue) por (el trafico | el transito | la lluvia | el camion | el autobus | el carro | el coche) [es que | sino que | sino] {why}",
     ] },
     eta: { patterns: ["@pre @unsure {eta} @approx"] },
     // a bare number or clock time: only at the time question (read by bareEta)
@@ -447,6 +481,8 @@ export const runningLate: SituationDef = {
       "no (voy a llegar | llego) tarde #amb",
       "(voy a llegar | llego | voy a estar ahi | estoy ahi) (a tiempo | puntual | a la hora)",
       "si (llego | voy a llegar) a tiempo",
+      "no (voy a llegar | llego) tarde [voy a llegar | llego | voy | estoy] (a tiempo | puntual | a la hora)",
+      "no no (voy a llegar | llego) tarde",
     ] },
     cant_come: { patterns: [
       "@pre [hoy] no (voy a poder | puedo | podre) (ir | venir | llegar | trabajar) [hoy] [a la (junta | reunion | oficina) | al trabajo | a trabajar] [hoy] @cwhy",
@@ -461,9 +497,9 @@ export const runningLate: SituationDef = {
       "[si] (puedes | empieza | comienza) [empezar] [la (junta | reunion)] sin mi #tip:tu_staff",
       "[no] [mejor] no me esperen #h:dont_wait",
       "(y si | que tal si) (empiezan | comienzan | empiezan ustedes) [la (junta | reunion)] sin mi",
-      "(como (quiera | usted quiera | prefiera | usted prefiera | guste | usted diga) | lo que usted (diga | decida | prefiera))",
       "[no] no (es necesario | hace falta | tienen que | tienen por que) (que me esperen | esperarme)",
-      "[si] (sigan | adelante) [sin mi]",
+      "[si] (sigan | adelante) sin mi",
+      "(prefiero | mejor) que (empiecen | comiencen) [la (junta | reunion)] [sin mi]", "(empiecen | comiencen) ustedes", "que (empiecen | comiencen) [la (junta | reunion)] sin mi",
       "[si] (mejor | por favor) (empiecen | comiencen) [sin mi]",
       "(empezad | comenzad) [la reunion] sin mi", "no me espereis",
       "[si] (empiecen | adelante | arranquen) [no hay problema] [yo (me pongo al corriente | los alcanzo | llego despues)]",
@@ -471,15 +507,25 @@ export const runningLate: SituationDef = {
       "(es | seria) mejor que empiecen sin mi",
     ] },
     wait_for_me: { patterns: [
-      "[no] no (empiecen | comiencen) [la (junta | reunion)] sin mi",
+      "[no] no (empiecen | comiencen) [todavia | aun] [la (junta | reunion)] sin mi [todavia]",
+      "[no] no (empiecen | comiencen) (todavia | aun)", "no no (empiecen | comiencen)",
+      "(y si | que tal si) me (esperan | espera) [unos minutos | {number} minutos | un poco | un ratito]",
       "(me pueden | me puede | me podrian | me podria | pueden | puede) @wait_v [unos minutos | {number} minutos | un poco | un ratito | tantito]",
       "(me puedes | puedes) @wait_v [unos minutos | {number} minutos | un poco | un ratito] #tip:tu_staff",
       "[no] [mejor] (esperenme | espereme) [por favor] [unos minutos | {number} minutos | un poquito | un ratito | tantito]",
       "prefiero que me (esperen | espere)",
       "(quiero | quisiera | me gustaria) estar desde el (principio | inicio | comienzo)",
       "[si] (se puede | es posible) (esperenme | que me esperen)",
-      "(esperen | espere) [un poco | unos minutos | {number} minutos] [por favor]",
     ] },
+    // only at "¿Empezamos sin usted?": a bare "Espere" elsewhere is "hold on" ("Espere, ¿en qué sala?"), and "Como
+    // usted quiera" / "Adelante" answer only this question
+    wait_ctx: { patterns: ["[si] [mejor] (esperen | espere) [un poco | unos minutos | {number} minutos | un ratito | tantito] [por favor]"] },
+    start_ctx: { patterns: [
+      "[no se] (como (quiera | usted quiera | prefiera | usted prefiera | guste | usted diga) | lo que usted (diga | decida | prefiera))",
+      "[si] (sigan | adelante) [por favor]",
+    ] },
+    // "No pueden empezar sin mí" and "No, pueden empezar sin mí" read the same once the comma is lost: Montes asks
+    plan_amb_ctx: { patterns: ["no (pueden | puede | podrian) (empezar | comenzar | arrancar) [la (junta | reunion)] [sin mi]"] },
     save_seat: { patterns: [
       "(me guarda | me aparta | me puede guardar | me puede apartar | me podria guardar | me guardan | me apartan | me pueden guardar) un (lugar | asiento | lugarcito) #h:save_seat",
       "(me puedes guardar | me guardas | me apartas) un (lugar | asiento) #tip:tu_staff",
@@ -500,18 +546,18 @@ export const runningLate: SituationDef = {
       "(hay | tienen | tiene) (liga | link | enlace | una liga | un link | un enlace) [para (conectarme | entrar | la junta | la reunion)]",
     ] },
     will_call: { patterns: [
-      "(le | te) (aviso | marco | llamo | hablo | escribo | mando un mensaje) (cuando (este | ya este | vaya) (cerca | llegando) | cuando llegue | si algo cambia | cuando sepa mas | en cuanto llegue)",
+      "(le | te | les) (aviso | marco | llamo | hablo | escribo | mando un mensaje) (cuando (este | ya este | vaya) (cerca | llegando) | cuando llegue | si algo cambia | cuando sepa mas | en cuanto llegue)",
     ] },
     apologize: { patterns: [
       "(perdon | disculpe | una disculpa | lo siento [mucho] | mil disculpas | disculpa #tip:tu_staff) (por | por llegar) (tarde | el retraso | la tardanza | la molestia | las molestias | esto | el inconveniente) #h:sorry_trouble",
-      "(lo siento mucho | de verdad lo siento | lo siento muchisimo | mil disculpas | le pido una disculpa | le ofrezco una disculpa | disculpeme) #h:sorry",
+      "(lo siento mucho | de verdad lo siento | lo siento muchisimo | mil disculpas | le pido una disculpa | le ofrezco una disculpa | disculpeme | una disculpa) [@mh] #h:sorry",
       "[y] no (va a volver | vuelve | volvera) a (pasar | suceder | ocurrir) #h:wont_happen",
       "(lo siento mucho | mil disculpas | una disculpa) no (va a volver | vuelve | volvera) a pasar",
       "(perdon | lo siento) otra vez",
     ] },
     ask_room: { patterns: [
       "(en | a) (que | cual) sala (es | va a ser | sera) [la (junta | reunion)]", "donde (es | va a ser | sera) la (junta | reunion)",
-      "(es | sera) en la (sala | misma sala) de siempre", "(en | a) (que | cual) sala #h:q_room", "en que piso [es]",
+      "(es | sera) en la (sala | misma sala) de siempre", "[es] la (sala) de siempre", "[es] la de siempre", "(en | a) (que | cual) sala #h:q_room", "en que piso [es]",
     ] },
     ask_ok: { patterns: [
       "(hay | habra) (algun | algún) problema", "espero que no (haya | sea) (problema | ningun problema)",
@@ -525,7 +571,7 @@ export const runningLate: SituationDef = {
     // a bare room number, only at the room news
     confirm_room_ctx: { patterns: ["[la] {room:digits}"] },
     thanks_info: { patterns: ["[muchas] gracias por (avisarme | avisar | decirme | el aviso | la informacion | el dato)"] },
-    thanks_understanding: { patterns: ["[muchas] gracias por (entender | comprender | su comprension | la comprension | su paciencia | la paciencia | ser tan comprensivo | entenderme)"] },
+    thanks_understanding: { patterns: ["[muchas] gracias por (entender | comprender | su comprension | la comprension | su paciencia | la paciencia | ser tan comprensivo | entenderme | esperarme | esperar)"] },
     bye_meeting: { patterns: [
       "nos vemos (en la (junta | reunion | oficina) | en la sala {room:digits} | alla | ahi | en un rato | al rato | ahorita | en unos minutos | en un ratito | en un momento)",
       "(ahi | alla) nos vemos", "hasta (ahorita | al rato | en un rato)",
@@ -538,7 +584,7 @@ export const runningLate: SituationDef = {
     ] },
     ask_building: { patterns: [
       "donde (esta | queda) el otro edificio #h:q_building", "(cual | que) edificio", "donde (esta | queda) (eso | ese edificio)",
-      "el otro edificio", "como llego [ahi | alla | al otro edificio]",
+      "el otro edificio", "como llego [ahi | alla | al otro edificio]", "(en | a) (que | cual) edificio", "[es] el de enfrente",
     ] },
     taxi_ok: { patterns: [
       "[@nothanks] (voy a tomar | voy a pedir | ya pedí | ya llamé | pedí | llamé | tomo | agarro | voy a agarrar) un (taxi | uber | colectivo)",
@@ -546,6 +592,8 @@ export const runningLate: SituationDef = {
       "[@nothanks] (estoy esperando | ya viene) (la grua | el mecanico | al mecanico | el seguro | al ajustador | el ajustador)",
       "[@nothanks] (mi (esposo | esposa | pareja | hermano | hermana | vecino | vecina) | un amigo | una amiga) (viene por mi | me va a llevar | me lleva | me va a recoger | me esta ayudando | me va a ayudar)",
       "[@nothanks] (voy a tomar | tomo) el (camion | autobus | colectivo)",
+      "[@nothanks] ya (viene | va a venir) (mi (esposo | esposa | pareja | hermano | hermana | vecino | vecina) | un amigo | una amiga | la grua | el mecanico) [por mi]",
+      "[@nothanks] [ya] (llamé | pedí) (a la grua | una grua | al seguro | al mecanico)",
     ] },
     // "No, voy a tomar un taxi" without its comma: at "¿Necesita ayuda?" only (elsewhere it is "I won't take a taxi")
     taxi_ok_ctx: { patterns: ["no (voy a tomar | voy a pedir | tomo | me voy en) (un taxi | taxi | un colectivo | el camion | el autobus | el colectivo)", "no (ya pedí | ya llamé) un taxi"] },
@@ -555,8 +603,10 @@ export const runningLate: SituationDef = {
       "(voy a llegar | llego) (mas tarde | un poco mas tarde)", "[no] si (voy a ir | voy) pero (tarde | mas tarde)",
       "[no] [no] si (voy | voy a ir | llego | voy a llegar) [pero] [nada mas que] [(tarde | mas tarde | un poco tarde | un poco mas tarde)]",
     ] },
-    // "No, voy a llegar más tarde" without its comma: at "¿Entonces hoy no viene?" only
-    just_late_ctx: { patterns: ["no (voy a llegar | llego) (mas tarde | un poco mas tarde | tarde | un poco tarde)", "no (voy tarde | se me hizo tarde)"] },
+    // "Sí, no voy a poder" / "No, no voy": a bare can't at "¿Entonces hoy va a faltar?" only
+    cant_ctx: { patterns: ["[si] [no] [hoy] no (voy a poder | puedo | voy | voy a ir) [hoy] [lo siento]", "[si] [hoy] voy a faltar [hoy] [lo siento]"] },
+    // "No, voy a llegar más tarde" without its comma: at "¿Entonces hoy va a faltar?" only
+    just_late_ctx: { patterns: ["no (voy a llegar | llego) (mas tarde | un poco mas tarde | tarde | un poco tarde)", "no (voy tarde | se me hizo tarde)", "[no] no (voy a faltar | falto) [hoy] [solo | nada mas] [voy tarde | voy a llegar tarde]"] },
     // the answer to "¿Va a llegar tarde, o a tiempo?"
     amb_ctx: { patterns: ["[no] [mejor] tarde #late", "[no] [si] a tiempo #ontime", "[no] [si] [voy a llegar] puntual #ontime"] },
     english_q: { patterns: ["(habla | hablas | usted habla) ingles", "(se puede | puedo) hablar en ingles"] },
@@ -577,7 +627,7 @@ export const runningLate: SituationDef = {
     hello_again: [
       t("¿Bueno? | ¿Quién | habla?", "Hello? | Who | is speaking?", "Hello? Who's calling?",
         { flags: { 0: F_BUENO }, neutral: t("¿Hola? | ¿Quién | habla?", "Hello? | Who | is speaking?", "Hello? Who's calling?") }),
-      t("Perdón, | ¿quién | habla?", "Sorry, | who | is speaking?", "Sorry, who's calling?"),
+      t("Hola, | ¿quién | habla?", "Hi, | who | is speaking?", "Hi, who's calling?"),
     ],
     yes_hi: [
       t("Ah, | sí, | buenos días.", "Ah, | yes, | good morning.", "Oh, yes, good morning."),
@@ -609,6 +659,9 @@ export const runningLate: SituationDef = {
       t("¿Y | qué | pasó?", "And | what | happened?", "Oh, what happened?"),
       t("¿Y | eso?", "And | that?", "How come?", { flags: { 1: "¿Y eso?: “how come?”, asking for the reason." } }),
       t("¿Todo | bien?", "All | good?", "Is everything okay?"),
+    ],
+    ask_what: [
+      t("¿Pero | qué | pasó?", "But | what | happened?", "But what happened?"),
     ],
     react_bus: [
       t("Uy, | esos | camiones | nunca | pasan | a tiempo.", "Ugh, | those | buses | never | come by | on time.", "Ugh, those buses are never on time.",
@@ -656,6 +709,9 @@ export const runningLate: SituationDef = {
     help_send: [
       t("Bueno. | Mándeme | su | ubicación | y | le | mando | a | alguien.", "Okay. | Send me | your | location | and | (to) you | I-send | — | someone.",
         "Okay. Send me your location and I'll send someone over.", { flags: { 7: "Personal a: Spanish marks a person after the verb; English has no word here." } }),
+    ],
+    help_any: [
+      t("Bueno, | cualquier | cosa | me | avisa.", "Okay, | any | thing | (to) me | you-let-know.", "Okay, if you need anything, let me know."),
     ],
     help_no: [
       t("Ah, | qué | bueno.", "Ah, | how | good.", "Oh, good."),
@@ -748,7 +804,10 @@ export const runningLate: SituationDef = {
       t("Claro, | {m:lo|f:la} | esperamos | unos | minutos.", "Sure, | you | we wait for | a few | minutes.", "Sure, we can wait a few minutes for you.", { flags: { 1: F_LOLA } }),
     ],
     ok_seat: [
-      t("Claro. | Le | guardo | un | lugar.", "Sure. | (for) you | I'll save | a | seat.", "Sure, I'll save you a seat."),
+      t("Y | le | guardo | un | lugar.", "And | (for) you | I'll save | a | seat.", "And I'll save you a seat."),
+    ],
+    seat_alone: [
+      t("Claro, | le | guardo | un | lugar.", "Sure, | (for) you | I'll save | a | seat.", "Sure, I'll save you a seat."),
     ],
     ok_tell: [
       t("Claro, | yo | les | aviso.", "Sure, | I | (to) them | I'll let know.", "Sure, I'll let them know."),
@@ -762,8 +821,11 @@ export const runningLate: SituationDef = {
       t("Perfecto.", "Perfect.", "Sounds good."),
       t("Muy | bien, | quedamos | así.", "Very | good, | we agree | like that.", "Great, that's the plan."),
     ],
+    no_problem: [
+      t("No, | no hay | problema.", "No, | there's no | problem.", "No, no problem at all."),
+    ],
     ok_fine: [
-      t("Sí, | no se preocupe.", "Yes, | don't worry.", "Yes, don't worry."),
+      t("Bueno, | no se preocupe.", "Okay, | don't worry.", "Okay, don't worry."),
       t("Claro, | no pasa nada.", "Of course, | it's fine.", "Of course, it's no big deal."),
     ],
     is_harris: [
@@ -783,7 +845,10 @@ export const runningLate: SituationDef = {
       t("Un | poco, | pero | usted | habla | muy | bien | español.", "A | little, | but | you | speak | very | well | Spanish.", "A little, but your Spanish is really good."),
     ],
     cant_come_q: [
-      t("¿Cómo? | ¿Entonces | hoy | no viene?", "What? | So | today | you're not coming?", "What? So you're not coming in today?"),
+      // a yes/no question with no negation: "Sí" = absent, "No" / "Hoy no" = just late ("¿Entonces hoy no viene?"
+      // "No." would mean "not coming" to a Spanish speaker, the opposite of how the handler reads it)
+      t("¿Cómo? | ¿Entonces | hoy | va | a | faltar?", "What? | So | today | are you going | to | miss (work)?", "What? So you're missing work today?",
+        { flags: { 5: "faltar: to be absent, to miss work or school." } }),
     ],
     cant_come_ok: [
       t("Bueno, | entiendo. | Gracias | por | avisar.", "Okay, | I understand. | Thanks | for | letting know.", "Okay, I understand. Thanks for letting me know."),
@@ -804,7 +869,7 @@ export const runningLate: SituationDef = {
       t("Gracias | por | llamar. | Nos vemos | pronto.", "Thanks | for | calling. | See you | soon.", "Thanks for calling. See you soon."),
     ],
     closing_drive: [
-      t("Bueno. | ¡Maneje | con cuidado!", "Okay. | Drive | carefully!", "Okay. Drive safe!"),
+      t("¡Y | maneje | con cuidado!", "And | drive | carefully!", "And drive safe!"),
     ],
     take_care: [
       t("Cuídese.", "Take care.", "Take care."),
@@ -943,6 +1008,13 @@ export const runningLate: SituationDef = {
       ask: (c) => {
         if (!c.s.openAsked) { c.s.openAsked = true; c.say(c.s.callerId ? "hello_id" : "hello"); return; }
         c.say("hello_again");
+        // "¿Quién habla?" asks for the name: a bare "Ryan." answers it (at the first "¿Bueno?" a bare word is not
+        // read as a name: "Ingeniero", "Tarde")
+        if (!c.s.callerId) c.expect({
+          id: "who_q", optional: true, hints: ["identify"], suggest: [{ lt: "Say who's calling", hint: "identify" }],
+          expects: ["name_ctx", "identify", "greet_harris", "late", "reason", "eta", "on_way", "cant_come", "identify_ctx"],
+          on: { name_ctx: (cc, sl, sg) => { runningLate.handlers.name_ctx(cc, sl, sg); } },
+        });
       },
       expects: ["identify", "greet_harris", "late", "reason", "eta", "on_way", "cant_come", "identify_ctx"],
       suggest: [
@@ -967,7 +1039,7 @@ export const runningLate: SituationDef = {
       expects: ["reason", "late"],
       suggest: [{ lt: "Explain why you're late", hint: "reason" }],
       yes: (c) => { c.s.reasonSkipped = true; c.say("ack"); },
-      no: (c) => { c.say("ask_reason"); c.hold(); },
+      no: (c) => { c.say("ask_what"); c.hold(); },
       help: (c) => { c.s.reasonSkipped = true; c.say("react_generic"); } },
     { id: "eta", when: (c) => !!c.s.late && !c.s.cantCome, done: (c) => !!c.s.eta || !!c.s.etaSkipped,
       ask: (c) => {
@@ -1039,6 +1111,8 @@ export const runningLate: SituationDef = {
       if (!mark(c)) return;
       if (turnSegments(c).some((x) => x.intent === "cant_come")) return;
       c.s.late = true;
+      // "¿Y qué pasó?" "Nada, se me hizo tarde.": no reason to give
+      if (!slots.why && c.step === "reason" && !c.s.reason && !c.s.reasonSkipped) { c.s.reasonSkipped = true; sayOnce(c, "ack"); }
       if (slots.why) doReason(c, slots.why);
       if (typeof slots.number === "number") doEta(c, { number: slots.number, __tags: [] });
       if (slots.eta) doEta(c, slots.eta);
@@ -1072,7 +1146,9 @@ export const runningLate: SituationDef = {
       if (!mark(c)) return;
       // "No voy a llegar tarde" / "No, voy a llegar tarde": after "¿Todo bien?" the "No," reading is the likely one;
       // at "Dígame" Montes asks which
-      if (seg?.tags?.includes("amb") && !c.s.late) {
+      // "No, no voy a llegar tarde": two noes leave one reading, not late
+      const twoNoes = /^\W*no\W+no\b/.test(plain(c.heard));
+      if (seg?.tags?.includes("amb") && !c.s.late && !twoNoes) {
         if (c.step === "opening" && c.s.callerId) { c.s.notOk = true; c.s.late = true; return; }
         c.say("amb_late");
         c.expect({
@@ -1104,7 +1180,7 @@ export const runningLate: SituationDef = {
       if (why) { cantCome(c, why); return; }
       c.say("cant_come_q");
       c.expect({
-        id: "cant_q", expects: ["just_late", "just_late_ctx", "late"], hints: ["late"],
+        id: "cant_q", expects: ["just_late", "just_late_ctx", "late", "cant_ctx"], hints: ["late"],
         suggest: [{ lt: "Say if you're just running late or can't come at all", hint: "late" }],
         yes: (cc) => { cantCome(cc); },
         no: (cc) => { cc.s.late = true; cc.say("just_late"); },
@@ -1112,7 +1188,11 @@ export const runningLate: SituationDef = {
           just_late: (cc) => { cc.s.late = true; cc.say("just_late"); },
           just_late_ctx: (cc) => { cc.s.late = true; cc.say("just_late"); },
           cant_come: (cc) => { cantCome(cc); },
+          cant_ctx: (cc) => { cantCome(cc); },
           late: (cc, sl) => { runningLate.handlers.late(cc, sl, { intent: "late", slots: sl, tags: [] }); },
+          // "No, llego en media hora": coming after all
+          eta: (cc, sl, sg) => { runningLate.handlers.eta(cc, sl, sg); },
+          on_way: (cc, sl, sg) => { runningLate.handlers.on_way(cc, sl, sg); },
           reason: (cc, sl) => {
             if (ynLead(cc) === "no") { cc.s.late = true; doReason(cc, sl.why); return; }
             cantCome(cc, sl.why);
@@ -1121,10 +1201,15 @@ export const runningLate: SituationDef = {
         ask: (cc) => cc.say("cant_come_q"),
       });
     },
-    just_late(c) { if (!mark(c)) return; c.s.late = true; c.say("just_late"); },
+    // outside "¿Entonces hoy va a faltar?" ("Sí voy", "Solo voy tarde"): plain lateness
+    just_late(c, slots, seg) { runningLate.handlers.late(c, slots, seg); },
     start_without(c) { if (!mark(c)) return; c.s.late = true; planStart(c); },
+    // (the three below are expected only at "¿Empezamos sin usted?", where planQ answers them)
+    start_ctx(c) { if (!mark(c)) return; planStart(c); },
+    wait_ctx(c) { if (!mark(c)) return; planWait(c); },
+    plan_amb_ctx(c) { if (!mark(c)) return; c.say("amb_plan"); },
     wait_for_me(c) { if (!mark(c)) return; c.s.late = true; planWait(c); },
-    save_seat(c) { if (!mark(c)) return; c.say("ok_seat"); },
+    save_seat(c) { if (!mark(c)) return; c.say("seat_alone"); },
     tell_team(c) { if (!mark(c)) return; c.say("ok_tell"); },
     join_online(c) { if (!mark(c)) return; c.say("ok_link"); },
     will_call(c) { if (!mark(c)) return; c.say("ok_call"); },
@@ -1137,7 +1222,7 @@ export const runningLate: SituationDef = {
       if (!c.s.roomTwist) { c.say("room_usual"); return; }
       if (!roomNews(c)) c.say("room_num");
     },
-    ask_ok(c) { if (!mark(c)) return; c.say("ok_fine"); },
+    ask_ok(c) { if (!mark(c)) return; c.say("no_problem"); },
     confirm_room(c, slots) {
       if (!mark(c)) return;
       if (!c.s.roomTwist) { c.say("room_usual"); return; }
@@ -1159,12 +1244,14 @@ export const runningLate: SituationDef = {
     g_hello(c) {
       if (c.s.callerId && !c.s.opened) { c.s.opened = true; c.say("hi_short"); }
     },
-    taxi_ok(c) { if (!mark(c)) return; c.say("good_idea"); },
+    // "Buena idea" only answers "¿Necesita ayuda?"; elsewhere "Me voy en camión" says the learner is on the way
+    taxi_ok(c, slots, seg) { if (c.s.reason === "car") { if (mark(c)) taxiOk(c); } else runningLate.handlers.on_way(c, slots, seg); },
     thanks_info(c) { if (!mark(c)) return; /* Montes goes on to the goodbye */ },
     thanks_understanding(c) { if (!mark(c)) return; c.say("g_welcome"); },
     bye_meeting(c) { bye(c); },
     help_request(c) { if (!mark(c)) return; sendHelp(c); },
-    taxi_ok_ctx(c) { if (!mark(c)) return; c.say("good_idea"); },
+    taxi_ok_ctx(c) { if (!mark(c)) return; taxiOk(c); },
+    cant_ctx(c) { if (!mark(c)) return; cantCome(c); },
     just_late_ctx(c) { if (!mark(c)) return; c.s.late = true; c.say("just_late"); },
     english_q(c) { if (!mark(c)) return; c.say("english"); },
     amb_ctx(c) { if (!mark(c)) return; c.say("ack"); },
@@ -1290,10 +1377,29 @@ export const runningLate: SituationDef = {
     { say: "¿Habla inglés?", intent: "english_q", not: ["identify", "name_ctx"] },
     { say: "¿Y si empiezan sin mí?", intent: "start_without", not: ["wait_for_me"] },
     { say: "Mejor no me esperen.", intent: "start_without", not: ["wait_for_me"] },
-    { say: "Como usted quiera.", intent: "start_without" },
+    { say: "Como usted quiera.", intent: "none", not: ["start_without"] },
     { say: "Voy a tardar un poco.", intent: "late" },
     { say: "No voy a llegar.", intent: "none", not: ["not_late", "late"] },
     { say: "No me quedé dormido.", intent: "none", not: ["reason"] },
+    // review: hold on, two noes, bare words that are not names, corrections
+    { say: "Espere, ¿en qué sala?", intent: "g_wait", not: ["wait_for_me"] },
+    { say: "Esperen.", intent: "g_wait", not: ["wait_for_me"] },
+    { say: "No, no voy a llegar tarde.", intent: "not_late", not: ["late"] },
+    { say: "No llego tarde, voy a tiempo.", intent: "not_late", not: ["late"] },
+    { say: "No puedo llegar a tiempo.", intent: "late", not: ["cant_come", "not_late"] },
+    { say: "No voy a poder llegar a tiempo a la junta.", intent: "late", not: ["cant_come", "not_late"] },
+    { say: "Ingeniero.", intent: "greet_harris", step: "opening", not: ["identify_ctx"] },
+    { say: "Voy a llegar unos minutos tarde.", intent: "late", step: "opening", not: ["identify_ctx", "eta"] },
+    { say: "¿Y si nadie viene?", intent: "none", step: "opening", not: ["identify_ctx"] },
+    { say: "No, mejor empiecen.", intent: "start_without", not: ["wait_for_me"] },
+    { say: "No empiecen todavía.", intent: "wait_for_me", not: ["start_without"] },
+    { say: "No es por el tráfico, se me fue el camión.", intent: "reason" },
+    { say: "Llego tarde porque llovió mucho.", intent: "late", step: "opening", not: ["identify_ctx"] },
+    { say: "Tengo gripa.", intent: "reason" },
+    { say: "Se descompuso mi carro.", intent: "reason" },
+    { say: "No sé, tal vez una hora.", intent: "eta" },
+    { say: "En dos horas.", intent: "eta", slots: { eta: { number: 2 } } },
+    { say: "¿Hay algún problema?", intent: "ask_ok" },
     // must not be understood
     { say: "Quiero una pizza con piña.", intent: "none" },
     { say: "El perro azul canta en la playa.", intent: "none" },
@@ -1345,6 +1451,22 @@ export const runningLate: SituationDef = {
       turns: ["Buenos días, ingeniero, habla Ryan. Voy a llegar como diez minutos tarde.", "Así está bien.", "Mejor espérenme, por favor.", "Gracias por su comprensión."],
       expect: { complete: true, state: { planned: "wait", planAmb: true } }, auto: AUTO },
     // "Dígame" → "No voy a llegar tarde": Montes asks which; "No, llego a tiempo" (its comma lost) is on time
+    // review: "¿Entonces hoy va a faltar?" "Hoy no." = just late (a yes/no question without a negation)
+    { name: "can't come? Not today, just late", setup: (s) => { s.roomTwist = false; s.planAsk = false; s.askReason = false; },
+      turns: ["Buenos días, ingeniero, habla Ryan. No voy a poder llegar a la junta.", "Hoy no, nada más voy tarde.", "Dos horas.", "Gracias. Hasta luego."],
+      expect: { complete: true, state: { cantCome: undefined, late: true, eta: { min: 120 } } }, auto: AUTO },
+    // review: "Espere, ¿en qué sala?" is "hold on", not "wait for me"; then "Como usted quiera" leaves it to Montes
+    { name: "hold on, which room? Then as you like", setup: (s) => { s.planAsk = true; s.roomTwist = false; s.askReason = false; s.callerId = true; },
+      turns: ["Ingeniero, habla Ryan, voy tarde.", "En veinte minutos.", "Espere, ¿en qué sala es?", "Como usted quiera.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { planned: "start" } }, auto: AUTO },
+    // review: "No pueden empezar sin mí" (its comma lost) gets the question again; a "Sí, gracias" to "¿Necesita ayuda?" is a yes
+    { name: "car trouble, help please, and start or wait?", setup: (s) => { s.planAsk = true; s.roomTwist = false; s.askReason = false; s.callerId = true; },
+      turns: ["Ingeniero, habla Ryan. Se me descompuso el carro.", "Sí, gracias.", "Como en cuarenta minutos.", "No pueden empezar sin mí.", "Espérenme, por favor.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { helpSent: true, planAmb: true, planned: "wait" } }, auto: AUTO },
+    // review: no caller ID, "¿Quién habla?" after a bare "¡Hola!" takes a bare name
+    { name: "a bare name after \"¿Quién habla?\"", setup: (s) => { s.callerId = false; s.askReason = false; s.planAsk = false; s.roomTwist = false; },
+      turns: ["¡Hola!", "Ryan.", "Voy un poco tarde, llego en quince minutos.", "Gracias. Hasta luego."],
+      expect: { complete: true, state: { name: "Ryan", eta: { min: 15 } } }, auto: AUTO },
     { name: "late or on time? Montes asks", setup: (s) => { s.callerId = false; s.askReason = false; s.planAsk = false; s.roomTwist = false; },
       turns: ["Habla Ryan.", "No voy a llegar tarde.", "Tarde.", "En veinte minutos.", "Gracias. Hasta luego."],
       expect: { complete: true, state: { late: true, notLate: undefined } }, auto: (({ late: _l, ...rest }) => rest)(AUTO) },
