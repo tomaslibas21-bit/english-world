@@ -85,6 +85,11 @@ const byePaul = (c: Ctx) => { if (!once(c, "byePaul")) return; K(c, "bye_paul_ka
 const camLaugh = (c: Ctx) => { if (once(c, "camLaugh")) S(c, "sara_laugh"); c.end(); };
 /** "Adiós, Pablo" while Pablo is leaving early is his goodbye, not the learner's. */
 const toPaul = (c: Ctx) => !!c.s.paulLeft && !c.s.closingSaid && /\bpablo\b/.test(heard(c));
+/** "Nos vemos después de la llamada", "Hablamos luego": a later talk, not the end of the call. */
+const laterTalk = (c: Ctx) => !c.s.closingSaid && !leavingNow(c) &&
+  /despues de la (llamada|junta|reunion|videollamada)|hablamos (despues|luego|al rato|mas tarde|ahorita)/.test(heard(c));
+/** Sofía is frozen mid-sentence (the freeze twist, before anyone told her). */
+const frozen = (c: Ctx) => !!c.s.freeze && !!c.s.screenOk && !!c.s.freezeAsks && !c.s.freezeDone;
 
 /** The whole team says goodbye; the call ends (optionally with the camera twist). */
 function goodbye(c: Ctx) {
@@ -93,7 +98,7 @@ function goodbye(c: Ctx) {
   if (!c.s.closingSaid) c.s.leftEarly = true; // the checklist hides what was skipped
   c.s.updOpen = false;
   // Pablo isn't on the call any more when he left early
-  K(c, c.s.vacation ? "bye_kate_vac" : "bye_kate"); if (!c.s.paulLeft) P(c, "paul_bye"); S(c, "sara_bye");
+  K(c, c.s.vacation ? "bye_kate_vac" : c.s.away ? "bye_kate_away" : "bye_kate"); if (!c.s.paulLeft) P(c, "paul_bye"); S(c, "sara_bye");
   c.complete();
   if (c.s.camStillOn) {
     c.twist("camera_still_on");
@@ -117,6 +122,8 @@ function goodbye(c: Ctx) {
 type Upd = "done" | "working" | "behind" | "ok" | "nothing";
 
 function react(c: Ctx, kind: Upd, task?: string) {
+  // "Terminé el reporte y ahora estoy con la presentación": Sofía answers the first part, one question at a time
+  if (!once(c, "react")) return;
   if (task) c.s.task = task;
   c.s.update = kind;
   c.s.updOpen = false;
@@ -171,12 +178,21 @@ function afterWhen(c: Ctx) {
     c.expect({
       id: "help_offer", optional: true, expects: ["accept_help"], hints: ["g_yesno"],
       suggest: [{ lt: "Accept the help", hint: "g_yesno" }],
-      yes: (cc) => P(cc, "paul_talk_later"),
+      yes: (cc) => acceptHelp(cc),
       no: (cc) => P(cc, "paul_ok_short"),
-      on: { accept_help: (cc) => P(cc, "paul_talk_later"), g_thanks: (cc) => P(cc, "paul_talk_later") },
+      on: {
+        accept_help: (cc) => acceptHelp(cc), g_thanks: (cc) => acceptHelp(cc), next_week_yes: (cc) => acceptHelp(cc),
+        // "Sí, nos vemos después de la llamada", "Gracias, hablamos luego": a yes to Pablo, not the end of the call
+        g_bye: (cc) => acceptHelp(cc), bye_all: (cc) => acceptHelp(cc),
+      },
     });
   }
 }
+
+/** Away next week: "¡Disfruta tus vacaciones!" only when the learner said vacaciones (not "no puedo", "de viaje"). */
+function markAway(c: Ctx) { if (/vacacion/.test(heard(c))) c.s.vacation = true; else c.s.away = true; }
+
+function acceptHelp(c: Ctx) { if (once(c, "help")) P(c, "paul_talk_later"); }
 
 const AUTO: Record<string, string> = {
   hear: "Sí, te escucho bien.",
@@ -262,6 +278,8 @@ export const videoCall: SituationDef = {
       "[si] ya se (escucha | oye)",
       "[si] @clit @hearv y @clit (veo | vemos) [bien]",
       "[si] @clit (veo | vemos) y @clit @hearv [bien]",
+      // "Te escucho, pero no te veo": a yes to "¿Me escuchan?"
+      "[si] @clit @hearv [bien] pero no @clit (veo | vemos) [bien]",
       "[si] (mucho | muchisimo | bastante | un poco | algo) mejor [ahora] #h:h_better",
       "[si] (ya | ahora) (esta | se escucha | se oye) mejor",
       "si asi esta (mejor | bien)",
@@ -311,6 +329,7 @@ export const videoCall: SituationDef = {
     cam_fixed: { patterns: [
       "[ay] [perdon] (ya | ahora) me (ven | ves | veis) [bien] #h:cam_see_now",
       "ahora si me (ven | ves)",
+      "me (ven | ves | veis) (ahora | ya) [bien]",
       "[ya] la (prendi | encendi | activé | puse) [ya]",
       "ya (esta | quedó) (prendida | encendida | activada)",
       "[ya] (prendi | encendi | activé) (la | mi) camara",
@@ -324,13 +343,15 @@ export const videoCall: SituationDef = {
     // a bare "¿Ahora?" right after fixing the mic or the camera
     better_now_ctx: { patterns: ["(ahora | ya)"] },
     cam_fix_ctx: { patterns: [
-      "[ay] (perdon | perdona | perdonen | disculpa | disculpen | una disculpa | lo siento | ups) [no me di cuenta]",
+      "[ay] (perdon | perdona | perdonen | disculpa | disculpen | una disculpa | lo siento | ups) [no me (di | habia dado) cuenta]",
+      "[ay] [perdon | perdona | disculpa | disculpen] [ahorita | ya | ahora] (prendo | enciendo | activo | pongo) (la | mi) camara [ahorita | ya]",
+      "un (segundo | momento | segundito | momentito) [ya | ahorita] la (prendo | enciendo | activo | pongo)",
       "[ay] (perdon | perdona | disculpa | disculpen) [ahorita | ya] la (prendo | enciendo | activo | pongo)",
       "(ahorita | ahora | ya) la (prendo | enciendo | activo | pongo)",
       "(dejame | dejenme) (prenderla | encenderla | activarla | prender la camara | encender la camara)",
       "un (segundo | momento | segundito | momentito) [y la prendo] #h:cam_second",
       "se me olvidó (prenderla | encenderla | prender la camara | encender la camara | la camara)",
-      "no me di cuenta [perdon]",
+      "no me (di | habia dado) cuenta [perdon]",
       "(listo | ya esta | ya quedó)",
       "(voy | ahi voy) [a prenderla]",
     ] },
@@ -345,7 +366,8 @@ export const videoCall: SituationDef = {
       "se me (descompuso | rompió) la camara",
       "no (funciona | sirve | prende | enciende) mi camara",
       "mi camara (esta | anda) (descompuesta | rota | fallando)",
-      "prefiero no (prender | encender | activar | poner) (la | mi) camara [hoy]",
+      "[no] prefiero no (prender | encender | activar | poner) (la | mi) camara [hoy]",
+      "[no] prefiero no (prenderla | encenderla | activarla | ponerla) [hoy]",
       "(estoy en pijama | no estoy arreglado | no estoy arreglada | no estoy presentable)",
     ] },
     tell_mute: { patterns: [
@@ -362,6 +384,9 @@ export const videoCall: SituationDef = {
       "tu (microfono | micro) (esta | sigue) (apagado | en silencio | desactivado | en rojo)",
       "revisa tu (microfono | micro | audio)",
       "(necesitas | tienes que) (activar | prender | encender) (tu | el) (microfono | micro)",
+      // one turn in two pieces: "Pablo, no te escuchamos, activa tu micrófono"
+      "no te (escuchamos | escucho | oimos | oigo) [nada] [pablo] [creo que] (estas en silencio | (activa | prende | enciende) (tu | el) (microfono | micro | audio) | quitate el (mute | silencio) | (tienes | traes) (el microfono | el micro) (apagado | en silencio))",
+      "(estas | sigues) en silencio [pablo] (activa | prende | enciende) (tu | el) (microfono | micro | audio)",
     ] },
     tell_mute_ctx: { patterns: [
       "no te (escuchamos | escucho | oimos | oigo) [nada] [pablo] #h:m_cant_hear",
@@ -400,6 +425,7 @@ export const videoCall: SituationDef = {
       "[no] (se ve | esta | la pantalla esta | la pantalla se ve) (negra | en negro | negro | en blanco | blanca | blanco)",
       "[no] (todavia | aun) no se ve [nada]",
       "[no] no se ve [nada] [todavia]",
+      "[no] (sigo | seguimos) sin ver (nada | la pantalla | tu pantalla | la presentacion)",
     ] },
     screen_small: { patterns: [
       "se ve (un poco | muy | demasiado | algo | medio)? (chiquito | chico | pequeno | pequenito | chiquita | pequena) #h:s_small",
@@ -443,6 +469,8 @@ export const videoCall: SituationDef = {
     ] },
     // a bare "Yo" at "¿Quién empieza?"
     volunteer_ctx: { patterns: ["(yo | yo mero | yo yo)"] },
+    // a bare "Yo no" at "¿Quién empieza?" (elsewhere "yo no" is only a no)
+    defer_ctx: { patterns: ["yo no [gracias]", "yo no (empiezo | voy primero | primero)"] },
     defer: { patterns: [
       "(empieza | comienza) (tu | sara) [primero] #h:sara_first",
       "que empiece (sara | pablo | ella | el)",
@@ -452,6 +480,8 @@ export const videoCall: SituationDef = {
       "mejor (empieza | que empiece) (sara | ella | tu)",
       "no quiero (empezar | ir primero | ser el primero | ser la primera)",
       "prefiero no (empezar | ir primero)",
+      "yo no (puedo | quiero) (empezar | ir primero)",
+      "yo no (empieza | comienza | que empiece | mejor | mejor que empiece) (tu | sara | ella) [primero] [sara]",
       "prefiero (ir | hablar | empezar) despues",
       "(mejor | yo) (despues | voy despues) [de (sara | ella | ti)]",
       "mejor despues de (sara | ella | ti)",
@@ -468,7 +498,8 @@ export const videoCall: SituationDef = {
       "no te preocupes (empieza | sigue | dale) [tu]",
       "(perdon | no) (empieza | sigue | dale)",
     ] },
-    thanks_sara: { patterns: ["[ok | va | bueno] gracias sara", "[ok | va | bueno] gracias [sara] entonces (empiezo | empiezo yo | sigo | voy)"] },
+    thanks_sara: { patterns: ["[ok | va | bueno] gracias sara", "[ok | va | bueno] gracias [sara] entonces (empiezo | empiezo yo | sigo | voy)",
+      "[ok | va | bueno] [gracias] [sara] (yo sigo | sigo yo | entonces sigo | entonces yo)"] },
     upd_done: { patterns: [
       "[ya] terminé @tdet {task} @tpost @when_past #h:u_finished",
       "@upd_pre [ya] @done_v @tdet {task} @tpost @when_past",
@@ -486,6 +517,10 @@ export const videoCall: SituationDef = {
       "@upd_pre (estoy | sigo | ando) con @tdet {task} @tpost",
       "ya casi (termino | acabo) @tdet {task} @tpost #h:u_almost",
       "casi (termino | acabo | tengo listo | tengo lista) @tdet {task} @tpost",
+      "ya mero (termino | acabo) @tdet {task} @tpost",
+      "@tdet {task} @tpost ya mero (esta | estan) @listo",
+      // "Con el presupuesto." (the answer to "¿En qué estás trabajando?")
+      "[ahorita | ahora | esta semana | pues] con @tdet {task} @tpost",
       "@tdet {task} @tpost [ya] casi (esta | estan) @listo",
       "ya casi (esta | estan) @listo @tdet {task} @tpost",
       "(estoy | voy) (a la mitad | a medias) (de | con) @tdet {task} @tpost",
@@ -525,6 +560,7 @@ export const videoCall: SituationDef = {
       "[perdon] hoy no (te | se) (lo | la | los | las) puedo (mandar | enviar | pasar)",
       "[perdon] no puedo (mandarlo | mandarla | enviarlo | enviarla | mandarlos | mandarlas | mandartelo | mandartela) [hoy | todavia]",
       "(hoy | ahorita | ahora) no puedo [mandarlo | mandartelo]",
+      "no se si (te | se) (lo | la | los | las) (puedo | voy a poder) (mandar | enviar | pasar) [hoy | ahorita]",
       "[no puedo] (todavia | aun) no (esta | estan) @listo",
     ] },
     will_send: { patterns: [
@@ -536,7 +572,8 @@ export const videoCall: SituationDef = {
       "(te | se) (lo | la | los | las) (mando | paso) por (correo | mail | whatsapp | el chat)",
     ] },
     // "Sí, una pregunta: …"
-    have_question: { patterns: ["[si] (tengo | tengo una | una) pregunta [rapida]", "[si] (solo | nada mas) una pregunta", "si una"] },
+    have_question: { patterns: ["[si] (tengo | tengo una | una) pregunta [rapida]", "[si] (solo | nada mas) una pregunta", "si una",
+      "[si] [no] (solo | nada mas)? una (pregunta | duda) mas", "[si] (puedo | te puedo | les puedo) hacer una pregunta"] },
     task_ctx: { patterns: ["[es] @tdet {task} @tpost", "(mas que nada | sobre todo | principalmente | en | con) @tdet {task} @tpost"] },
     when_ans: { patterns: [
       "[creo que | espero que | probablemente | tal vez | seguramente | ojala] [va a estar (listo | lista | listos | listas) | (lo | la | los | las) (termino | acabo | tengo listo | tengo lista | entrego) | (esta | estara) (listo | lista)] {whenr} #h:w_when",
@@ -589,6 +626,7 @@ export const videoCall: SituationDef = {
       "cuando es la (proxima | siguiente) @mtg",
       "cuando nos (vemos | reunimos) (otra vez | de nuevo)",
       "(es | sera) a la misma hora la (proxima | siguiente | otra) semana",
+      "a que hora (es | sera | nos vemos) [la (proxima | siguiente) semana]",
     ] },
     q_back: { patterns: [
       "(puedes | podrias) (regresar | volver) a la (diapositiva | lamina | slide)? anterior #h:q_back",
@@ -631,7 +669,8 @@ export const videoCall: SituationDef = {
       "[si] (ahi | alli) (estaré | nos vemos)",
       "[si] nos vemos (la (proxima | siguiente) semana | el (proximo)? lunes)",
       "[si] hasta el (proximo)? lunes",
-      "[si] (me parece bien | suena bien | me late)",
+      // "me parece bien" is the global yes; these two count only as answers (handler)
+      "[si] (suena bien | me late)",
     ] },
     on_vacation: { patterns: [
       "[de hecho | la verdad] la (proxima | siguiente) semana (estoy | voy a estar | estaré) de vacaciones #h:b_vacation",
@@ -639,8 +678,10 @@ export const videoCall: SituationDef = {
       "[de hecho | la verdad] la semana que (viene | entra) (estoy | voy a estar | estaré) de vacaciones",
       "no voy a poder (la proxima semana | el proximo lunes) [estoy de vacaciones]",
       "la (proxima | siguiente) semana no (estoy | voy a estar | puedo) [(estoy | voy a estar) de (vacaciones | viaje)]",
-      "(me voy | salgo) de vacaciones [la (proxima | siguiente) semana]",
-      "[la proxima semana] (estoy | voy a estar) de viaje",
+      // no "no" in front: "No me voy de vacaciones", "No estoy de vacaciones" are the opposite
+      "(me voy | salgo) de (vacaciones | viaje) [la (proxima | siguiente) semana]",
+      "[la proxima semana] (estoy | voy a estar | estaré) de (vacaciones | viaje) [la (proxima | siguiente) semana]",
+      "[yo] no voy a estar [la (proxima | siguiente) semana] [(estoy | voy a estar) de (vacaciones | viaje)]",
     ] },
     bye_all: { patterns: [
       "(adios | bye | hasta luego | nos vemos | chao | hasta la proxima) [a todos | chicos | equipo] #h:b_bye",
@@ -689,13 +730,14 @@ export const videoCall: SituationDef = {
       "(muy | super)? (cansado | cansada) #bad",
       "(trabajé | tuve que trabajar) [todo el fin (de semana)?] #bad",
       "llovió [todo el fin (de semana)?] #bad",
+      "(no muy bien | no tan bien | mas o menos | regular) [la verdad] [(me enfermé | estuve (enfermo | enferma) | tuve que trabajar | llovió) [todo el fin (de semana)?]] #bad",
     ] },
   },
 
   lines: {
     open: [
       t("¡Hola | a todos! | ¿Me | escuchan | bien?", "Hi | everyone! | Me | do you hear | well?", "Hi, everyone! Can you all hear me okay?", { flags: { 3: F_USTEDES } }),
-      t("¡Buenos días, | equipo! | ¿Todos | me | escuchan?", "Good morning, | team! | Everyone | me | hears?", "Morning, team! Can everyone hear me?",
+      t("¡Buenos días, | equipo! | ¿Todos | me | escuchan?", "Good morning, | team! | All of you | me | hear?", "Morning, team! Can everyone hear me?",
         { flags: { 4: "escuchan: plural, agreeing with todos (all of you)." } }),
       t("¡Hola! | ¿Me | escuchan? | ¿Me | ven?", "Hi! | Me | do you hear? | Me | do you see?", "Hi! Can you hear me? Can you see me?", { flags: { 2: F_USTEDES } }),
     ],
@@ -765,8 +807,8 @@ export const videoCall: SituationDef = {
         { flags: { 3: "nada: nothing; after no it means at all (Spanish doubles the negative)." } }),
     ],
     not_muted_resp: [
-      t("Mmm, | yo | creo | que | sí. | Su | micrófono | está | en | rojo.", "Hmm, | I | think | — | so. | His | microphone | is | in | red.", "Hmm, I think he is. His mic is red.",
-        { flags: { 3: "que: that; English drops it here.", 4: "sí: yes; here it stands for he is (on mute)." } }),
+      t("Mmm, | yo | no lo escucho. | Su | micrófono | está | en | rojo.", "Hmm, | I | don't hear him. | His | microphone | is | in | red.", "Hmm, I can't hear him. His mic is red.",
+        { flags: { 3: "en rojo: red, the muted-mic icon." } }),
     ],
     mute_amb: [
       t("Perdón, | ¿Pablo | está | en silencio | o | no?", "Sorry, | Pablo | is | on mute | or | not?", "Sorry, is Pablo on mute or not?"),
@@ -795,7 +837,7 @@ export const videoCall: SituationDef = {
         { flags: { 2: "les: (with) you all (ustedes)." } }),
     ],
     screen_q: [
-      t("¿Todos | ven | mi | pantalla?", "Everyone | sees | my | screen?", "Can everyone see my screen?"),
+      t("¿Todos | ven | mi | pantalla?", "All of you | see | my | screen?", "Can everyone see my screen?", { flags: { 1: F_USTEDES } }),
       t("¿Ya | la | ven?", "Now | it | do you see?", "Can you all see it?", { flags: { 1: "la: it, la pantalla (the screen)." } }),
     ],
     screen_retry: [
@@ -803,6 +845,10 @@ export const videoCall: SituationDef = {
     ],
     screen_reask: [
       t("¿Ahora | sí | la | ven?", "Now | yes | it | do you see?", "Can you see it now?", { flags: { 1: "sí: stresses the change: now, for real.", 2: "la: it, la pantalla (the screen)." } }),
+    ],
+    screen_give_up: [
+      t("Mmm, | qué | raro. | Bueno, | les | mando | la | presentación | después.", "Hmm, | how | strange. | Okay, | (to) you | I-send | the | presentation | later.",
+        "Hmm, that's weird. Okay, I'll send you the presentation later."),
     ],
     screen_bigger: [
       t("Claro, | la | hago | más | grande. | ¿Así | está | mejor?", "Sure, | it | I-make | more | big. | Like this | is it | better?", "Sure, let me make it bigger. Is that better?", { flags: { 1: "la: it, la pantalla (the screen)." } }),
@@ -824,6 +870,10 @@ export const videoCall: SituationDef = {
       t("¡Perdón! | Hoy | el | internet | está | horrible. | ¿Ya | me | escuchan?", "Sorry! | Today | the | internet | is | terrible. | Now | me | do you hear?",
         "Sorry about that! My Wi-Fi is terrible today. Can you hear me now?", { flags: { 6: F_YA } }),
     ],
+    freeze_missed: [
+      t("¡Perdón, | me congelé! | ¿Qué | me | decías?", "Sorry, | I froze! | What | (to) me | were you saying?", "Sorry, I froze! What were you saying?",
+        { flags: { 4: "decías: the imperfect, for something in progress (you were saying)." } }),
+    ],
     freeze_where: [
       t("A ver, | ¿en qué | me quedé?", "Let's see, | where | was I?", "Okay, where was I?"),
     ],
@@ -836,6 +886,10 @@ export const videoCall: SituationDef = {
     echo_mute: [
       t("¿Te | puedes | silenciar | cuando | no estés | hablando?", "Yourself | can you | mute | when | you're not | talking?", "Could you mute yourself when you're not talking?",
         { flags: { 4: "estés: the subjunctive, used after cuando for whenever it happens." } }),
+    ],
+    echo_q_yes: [
+      t("Sí, | creo | que | sí. | ¿Te | puedes | silenciar?", "Yes, | I-think | — | so. | Yourself | can you | mute?", "Yeah, I think so. Could you mute yourself?",
+        { flags: { 3: "que: that; English drops it here." } }),
     ],
     echo_ok: [
       t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!"),
@@ -997,6 +1051,9 @@ export const videoCall: SituationDef = {
     bye_kate: [
       t("¡Adiós | a todos!", "Bye | everyone!", "Bye, everyone!"),
       t("¡Nos vemos | la | próxima | semana!", "See you | — | next | week!", "See you next week!", { flags: { 1: F_ART_WEEK } }),
+    ],
+    bye_kate_away: [
+      t("¡Adiós | a todos!", "Bye | everyone!", "Bye, everyone!"),
     ],
     bye_kate_vac: [
       t("¡Disfruta | tus | vacaciones! | ¡Adiós | a todos!", "Enjoy | your | vacation! | Bye | everyone!", "Enjoy your vacation! Bye, everyone!"),
@@ -1187,7 +1244,7 @@ export const videoCall: SituationDef = {
       items: [
         { id: "b_bye", s: t("¡Perfecto! | ¡Adiós | a todos!", "Perfect! | Bye | everyone!", "Sounds good! Bye, everyone!") },
         { id: "b_bye", s: t("¡Nos vemos | la | próxima | semana!", "See you | — | next | week!", "See you next week!", { flags: { 1: F_ART_WEEK } }) },
-        { id: "b_vacation", s: t("La | próxima | semana | estoy | de vacaciones.", "— | Next | week | I'm | on vacation.", "Actually, I'm on vacation next week.", { flags: { 0: F_ART_WEEK } }) },
+        { id: "b_vacation", s: t("La | próxima | semana | estoy | de vacaciones.", "— | Next | week | I'm | on vacation.", "I'm on vacation next week.", { flags: { 0: F_ART_WEEK } }) },
       ],
     },
     paul_leave: {
@@ -1230,6 +1287,7 @@ export const videoCall: SituationDef = {
     "fin de semana": { reason: "lexical_expression", split: "fin → end + de → of + semana → week is one English word: weekend.", minimal: "Three words." },
     "el mío": { reason: "lexical_expression", split: "el → the + mío → mine: Spanish puts an article before the possessive pronoun; English says mine.", minimal: "Two words." },
     "en silencio": { reason: "lexical_expression", split: "en → in + silencio → silence: a microphone “en silencio” is on mute.", minimal: "Two words." },
+    "me congelé": { reason: "grammatical_fusion", split: "me → myself + congelé → I froze: the reflexive verb is one English verb (I froze).", minimal: "Two words." },
     "te congelaste": { reason: "grammatical_fusion", split: "te → yourself + congelaste → you froze: the reflexive verb is one English verb (you froze).", minimal: "Two words." },
     "en qué": { reason: "lexical_expression", split: "en → in + qué → what: English says on what / where.", minimal: "Two words." },
     "me quedé": { reason: "grammatical_fusion", split: "me → myself + quedé → I stayed: ¿en qué me quedé? = where was I?", minimal: "Two words." },
@@ -1301,7 +1359,7 @@ export const videoCall: SituationDef = {
       expects: ["screen_yes", "screen_no", "screen_small"],
       suggest: [{ lt: "Say whether you can see the screen", hint: "screen" }],
       yes: (c) => { c.s.screenOk = true; afterScreen(c); },
-      no: (c) => { K(c, "screen_retry"); expectScreen2(c); } },
+      no: (c) => screenNo(c) },
     { id: "echo", when: (c) => !!c.s.echoTwist && !!c.s.screenOk, done: (c) => !!c.s.echoDone,
       ask: (c) => {
         c.s.echoAsks = (c.s.echoAsks || 0) + 1;
@@ -1322,7 +1380,7 @@ export const videoCall: SituationDef = {
       suggest: [{ lt: "Tell Sofía her connection is breaking up", hint: "freeze" }, { lt: "Ask her to repeat", hint: "g_clarify" }] },
     { id: "first", when: (c) => !!c.s.screenOk, done: (c) => !!c.s.firstDone || !!c.s.update,
       ask: (c) => K(c, "first_ask"),
-      expects: ["volunteer", "volunteer_ctx", "defer", "upd_done", "upd_working", "upd_behind", "upd_ok"],
+      expects: ["volunteer", "volunteer_ctx", "defer", "defer_ctx", "upd_done", "upd_working", "upd_behind", "upd_ok"],
       suggest: [{ lt: "Offer to go first, or let Sara start", hint: "first" }],
       yes: (c) => videoCall.handlers.volunteer(c, {}, { intent: "volunteer", slots: {}, tags: [] }),
       no: (c) => videoCall.handlers.defer(c, {}, { intent: "defer", slots: {}, tags: [] }) },
@@ -1400,6 +1458,8 @@ export const videoCall: SituationDef = {
       // "Pablo, no te escuchamos" while Pablo is silent; "Sofía, no te escucho" while she is frozen
       if (c.step === "mute" && !c.s.muteFixed) { videoCall.handlers.tell_mute(c, {}, { intent: "tell_mute", slots: {}, tags: [] }); return; }
       if (c.step === "freeze" && c.s.freeze && !c.s.freezeDone) { fixFreeze(c); return; }
+      // "No, todavía no" when asked "¿Ya la ven?" (the screen), not about the sound
+      if (c.step === "screen" && c.s.sharing && !c.s.screenOk) { screenNo(c); return; }
       if (c.s.heard && c.s.muteFixed && c.step !== "hear") { K(c, "quiet_fix"); return; }
       K(c, seg.tags.includes("quiet") ? "quiet_fix" : "mic_fix");
       c.expect({
@@ -1472,7 +1532,7 @@ export const videoCall: SituationDef = {
     screen_no(c) {
       if (!live(c)) return;
       if (!c.s.sharing || c.s.screenOk) { ack(c); return; }
-      K(c, "screen_retry"); expectScreen2(c);
+      screenNo(c);
     },
     screen_small(c) {
       if (!live(c)) return;
@@ -1495,14 +1555,14 @@ export const videoCall: SituationDef = {
         c.expect({
           id: "goahead", expects: ["go_ahead", "thanks_sara"], hints: ["goahead"],
           suggest: [{ lt: "Thank Sara, or let her go first", hint: "goahead" }],
-          yes: (cc) => { cc.s.goAhead = true; },
+          yes: (cc) => goOn(cc),
           no: (cc) => { saraGoes(cc); },
           on: {
             go_ahead: (cc) => saraGoes(cc),
             defer: (cc) => saraGoes(cc),
-            thanks_sara: (cc) => { cc.s.goAhead = true; },
-            g_thanks: (cc) => { cc.s.goAhead = true; },
-            volunteer: (cc) => { cc.s.goAhead = true; },
+            thanks_sara: (cc) => goOn(cc),
+            g_thanks: (cc) => goOn(cc),
+            volunteer: (cc) => goOn(cc),
             upd_done: (cc, sl) => react(cc, "done", sl.task),
             upd_working: (cc, sl) => react(cc, "working", sl.task),
             upd_behind: (cc, sl) => react(cc, "behind", sl.task),
@@ -1514,8 +1574,10 @@ export const videoCall: SituationDef = {
       }
       c.s.goAhead = true;
     },
-    volunteer_ctx(c) { videoCall.handlers.volunteer(c, {}, { intent: "volunteer", slots: {}, tags: [] }); },
+    // "Yo no, empieza tú": the bare "yo" is no volunteer
+    volunteer_ctx(c) { if (/\byo no\b/.test(heard(c))) return; videoCall.handlers.volunteer(c, {}, { intent: "volunteer", slots: {}, tags: [] }); },
     defer(c) { if (!live(c)) return; c.s.firstDone = true; saraGoes(c); },
+    defer_ctx(c) { videoCall.handlers.defer(c, {}, { intent: "defer", slots: {}, tags: [] }); },
     go_ahead(c) { if (!live(c)) return; c.s.firstDone = true; saraGoes(c); },
     better_q(c) {
       if (!live(c)) return;
@@ -1550,6 +1612,8 @@ export const videoCall: SituationDef = {
     leave(c) {
       // once per turn: "Perdón, me tengo que ir. ¡Adiós a todos!" is one leaving (g_bye and bye_all come here too)
       if (!live(c) || !once(c, "leave")) return;
+      // Sofía is frozen and missed it: she comes back and asks; the learner says it again
+      if (frozen(c)) { c.s.freezeDone = true; c.twist("froze"); K(c, "freeze_missed"); c.hold(); return; }
       c.s.heard = true;
       if (!c.s.update) {
         c.s.leaving = true;
@@ -1571,11 +1635,17 @@ export const videoCall: SituationDef = {
       K(c, "leave_ok");
       goodbye(c);
     },
-    next_week_yes(c) { if (!live(c)) return; if (c.s.closingSaid) goodbye(c); else K(c, "qa_next"); },
-    on_vacation(c) { if (!live(c)) return; c.s.vacation = true; K(c, "vacation_ok"); },
+    next_week_yes(c) {
+      if (!live(c)) return;
+      if (c.s.closingSaid) { goodbye(c); return; }
+      // "¿Misma hora la próxima semana?" before the end gets the answer; a bare "suena bien" is just a nod
+      if (/semana|lunes|misma hora/.test(heard(c))) K(c, "qa_next"); else ack(c);
+    },
+    on_vacation(c) { if (!live(c)) return; markAway(c); K(c, "vacation_ok"); },
     bye_all(c) {
       if (!live(c)) return;
       if (toPaul(c)) { byePaul(c); return; }
+      if (laterTalk(c)) { ack(c); return; }
       if (!c.s.update) { videoCall.handlers.leave(c, {}, { intent: "leave", slots: {}, tags: [] }); return; }
       goodbye(c);
     },
@@ -1584,7 +1654,12 @@ export const videoCall: SituationDef = {
     hi_tiger(c) { if (!live(c)) return; if (c.s.catDone) K(c, "cat_hi"); else ack(c); },
     cute(c) { if (!live(c)) return; if (c.s.catDone) K(c, "cat_hi"); else ack(c); },
     oops(c) { if (!live(c)) return; ack(c); },
-    mute_self(c) { if (!live(c)) return; c.s.echoDone = true; K(c, "echo_ok"); },
+    mute_self(c) {
+      if (!live(c)) return;
+      // "¿Es mi micrófono?" asks; it doesn't mute anything yet
+      if (/\?/.test(c.heard) && !c.s.echoDone && once(c, "echoQ")) { K(c, "echo_q_yes"); c.hold(); return; }
+      c.s.echoDone = true; K(c, "echo_ok");
+    },
     weekend_ans_ctx(c, _slots, seg) {
       if (!live(c) || !once(c, "weekend")) return;
       c.s.weekendDone = true;
@@ -1619,6 +1694,7 @@ export const videoCall: SituationDef = {
     g_bye(c, _slots, seg) {
       if (!live(c)) return;
       if (toPaul(c)) { byePaul(c); return; }
+      if (laterTalk(c)) { ack(c); return; }
       if (!c.s.update) { videoCall.handlers.leave(c, {}, { intent: "leave", slots: {}, tags: [] }); return; }
       // "Luego les hablo" before the end of the meeting: Sofía answers it like "Me tengo que ir"
       if (!c.s.closingSaid && seg?.tags?.includes("leaving")) K(c, "leave_ok");
@@ -1638,7 +1714,9 @@ export const videoCall: SituationDef = {
         bye_all: (cc) => goodbye(cc),
         g_bye: (cc) => goodbye(cc),
         g_thanks: (cc) => goodbye(cc),
-        on_vacation: (cc) => { cc.s.vacation = true; K(cc, "vacation_ok"); goodbye(cc); },
+        on_vacation: (cc) => { markAway(cc); K(cc, "vacation_ok"); goodbye(cc); },
+        // "¿A qué hora?": answer it, then the goodbye is still open
+        q_next: (cc) => { K(cc, "qa_next"); cc.expect(closing); },
         // "¿Cómo estás?" at the very end: answer it, then back to the goodbye
         g_howareyou: (cc) => { K(cc, "g_howareyou_reply"); expectHowAreYou(cc, (x) => x.expect(closing)); },
       },
@@ -1757,12 +1835,26 @@ export const videoCall: SituationDef = {
     { say: "No me gustan los gatos", intent: "none", not: ["cute"] },
     { say: "Sofía no se congeló", intent: "none", step: "freeze", not: ["tell_freeze"] },
     { say: "No hay eco", intent: "none", step: "echo", not: ["mute_self"] },
-    { say: "Yo no puedo empezar", intent: "none", step: "first", not: ["volunteer", "volunteer_ctx"] },
+    { say: "Yo no puedo empezar", intent: "defer", step: "first", not: ["volunteer", "volunteer_ctx"] },
     { say: "No, no la veo", intent: "screen_no", step: "screen", not: ["screen_yes"] },
     { say: "Pablo, apaga el micrófono", intent: "none", step: "mute", not: ["tell_mute"] },
     { say: "Yo", intent: "volunteer_ctx", step: "first" },
     { say: "Yo", intent: "none", step: "hear", not: ["volunteer", "volunteer_ctx"] },
     { say: "Sara, ¿quieres empezar tú?", intent: "defer", step: "first", not: ["volunteer"] },
+    // review (2 Nov 2026): flips and natural answers the draft missed
+    { say: "Yo no, empieza tú, Sara", intent: "defer", step: "first", not: ["volunteer", "volunteer_ctx"] },
+    { say: "No me voy de vacaciones", intent: "none", not: ["on_vacation"] },
+    { say: "No, sigo sin ver nada", intent: "screen_no", step: "screen", not: ["screen_yes"] },
+    { say: "No, prefiero no prenderla", intent: "cam_broken", step: "camera", not: ["cam_fixed", "cam_fix_ctx"] },
+    { say: "No sé si te lo puedo mandar hoy", intent: "cant_send", not: ["will_send"] },
+    { say: "Ya mero termino el reporte", intent: "upd_working", step: "update", slots: { task: "report" }, not: ["upd_done"] },
+    { say: "Te escucho pero no te veo", intent: "hear_yes", step: "hear", not: ["hear_no"] },
+    { say: "No es mi micrófono", intent: "none", step: "echo", not: ["mute_self"] },
+    { say: "No muy bien, estuve enfermo", intent: "weekend_ans_ctx", step: "weekend" },
+    { say: "Pablo, no te escuchamos, activa tu micrófono", intent: "tell_mute", step: "mute" },
+    { say: "¿Me ven ahora?", intent: "cam_fixed", step: "camera" },
+    { say: "Ay, perdón, ya prendo la cámara", intent: "cam_fix_ctx", step: "camera" },
+    { say: "Con el presupuesto", intent: "upd_working", step: "update", slots: { task: "budget" } },
     // not understood
     { say: "Me gusta la pizza con piña", intent: "none" },
     { say: "Mi perro baila salsa en la playa", intent: "none" },
@@ -1801,10 +1893,23 @@ export const videoCall: SituationDef = {
     { name: "twist: the camera is still on", setup: (s) => { s.camStillOn = true; s.collide = false; },
       turns: ["Sí, te escucho bien.", "¡Pablo, estás en silencio!", "¡Sí, ya te escuchamos!", "Sí, ya la veo.", "Yo puedo empezar.", "Nada nuevo.", "Todo claro.",
         "¡Adiós a todos!", "¡Qué pena! ¡Gracias! ¡Adiós!"], expect: { complete: true }, auto: AUTO },
-    { name: "leaving early", setup: (s) => { s.camOff = false; s.smallTalk = false; },
+    { name: "leaving early", setup: (s) => { s.camOff = false; s.smallTalk = false; s.freeze = false; },
       turns: ["¡Buenos días, Sofía! Sí, te escuchamos.", "¡Dale clic al micrófono!", "¡Sí, fuerte y claro!", "Sí, vemos tu pantalla.",
         "Perdón, me tengo que desconectar. Tengo otra junta a las once.", "Voy un poco atrasado con el presupuesto."],
       expect: { complete: true, state: { leftEarly: true, update: "behind" } }, auto: AUTO },
+    // review: "Sí, nos vemos después de la llamada" to Pablo's offer is a yes, not the end of the call; two "no"s at the screen;
+    // "No, la próxima semana no puedo" is no vacation
+    { name: "a later talk, the screen twice, can't come next week",
+      setup: (s) => { s.camOff = false; s.smallTalk = false; s.freeze = false; s.collide = false; s.echoTwist = false; s.paulLeaves = false; s.paulHelps = true; s.catTwist = false; s.camStillOn = false; },
+      turns: ["Sí, te escucho bien.", "Pablo, no te escuchamos, activa tu micrófono", "Sí, ya te escuchamos.", "No, todavía no.", "No, sigo sin ver nada.",
+        "Yo no, empieza tú, Sara.", "Voy un poco atrasado con el reporte.", "Para el viernes.", "Sí, nos vemos después de la llamada.",
+        "No, solo una pregunta más: ¿cuál es la fecha límite?", "No, nada más, gracias.", "No, la próxima semana no puedo."],
+      expect: { complete: true, state: { screenOk: true, saraDone: true, update: "behind", questionsDone: true, away: true } }, auto: AUTO },
+    // Sofía is frozen when the learner says goodbye: she missed it and asks; the learner says it again
+    { name: "leaving while Sofía is frozen", setup: (s) => { s.camOff = false; s.smallTalk = false; s.freeze = true; s.echoTwist = false; },
+      turns: ["Sí, te escucho bien.", "¡Pablo, estás en silencio!", "¡Sí, ya te escuchamos!", "Sí, ya la veo.", "Perdón, me tengo que ir.",
+        "Perdón, me tengo que desconectar. Tengo otra junta a las once.", "Terminé el reporte."],
+      expect: { complete: true, state: { leftEarly: true, freezeDone: true, update: "done" } }, auto: AUTO },
     { name: "a Spain learner and a muted mic without a comma", setup: (s) => { s.camOff = false; s.smallTalk = false; s.freeze = false; s.collide = false; },
       turns: ["Sí, os oigo bien.", "No estás en silencio.", "Sí, está en silencio.", "Sí, ya te escuchamos.", "Sí, la vemos.", "Vale, empiezo yo.", "Ya casi termino el diseño.",
         "Mañana en la mañana.", "¿Nos podéis mandar las diapositivas?", "No, gracias.", "Vale, nos vemos la próxima semana."], expect: { complete: true, state: { task: "design" } }, auto: AUTO },
@@ -1850,15 +1955,24 @@ function expectScreen2(c: Ctx) {
     id: "screen2", expects: ["screen_yes", "screen_no"], hints: ["screen"],
     suggest: [{ lt: "Say whether you can see it now", hint: "screen" }],
     yes: (cc) => { cc.s.screenOk = true; afterScreen(cc); },
-    no: (cc) => { cc.s.screenOk = true; K(cc, "screen_bigger"); afterScreen(cc); },
+    no: (cc) => screenNo(cc),
     on: {
       screen_yes: (cc) => { cc.s.screenOk = true; afterScreen(cc); },
       hear_yes: (cc) => { cc.s.screenOk = true; afterScreen(cc); },
       better_q: (cc) => { cc.s.screenOk = true; afterScreen(cc); },
-      screen_no: (cc) => { cc.s.screenOk = true; K(cc, "screen_bigger"); afterScreen(cc); },
+      screen_no: (cc) => screenNo(cc),
+      hear_no: (cc) => screenNo(cc),
     },
     ask: (cc) => K(cc, "screen_reask"),
   });
+}
+
+/** "No la veo": Sofía tries once more; a second no gets the slides after the call (not "Is that better?"). */
+function screenNo(c: Ctx) {
+  if (!once(c, "screenNo")) return;
+  c.s.screenTries = (c.s.screenTries || 0) + 1;
+  if (c.s.screenTries === 1) { K(c, "screen_retry"); expectScreen2(c); return; }
+  c.s.screenOk = true; K(c, "screen_give_up"); afterScreen(c);
 }
 
 /** Sofía presents the numbers (unless she is about to freeze in the middle of them). */
@@ -1885,6 +1999,9 @@ function fixFreeze(c: Ctx) {
   });
 }
 
+/** "Gracias, Sara": the learner keeps the turn (the update step then says "¡Perfecto, adelante!"). */
+function goOn(c: Ctx) { c.s.goAhead = true; }
+
 function saraGoes(c: Ctx) {
   c.s.firstDone = true;
   if (c.s.saraDone) { ack(c); return; }
@@ -1896,12 +2013,14 @@ function askMore(c: Ctx) {
   if (c.step !== "questions") return;
   K(c, "anything_else");
   c.expect({
-    id: "anything_else", expects: ["no_questions", "q_slides", "q_link", "q_deadline", "q_next", "q_back", "q_record"], hints: ["no_more", "questions"],
+    id: "anything_else", expects: ["no_questions", "q_slides", "q_link", "q_deadline", "q_next", "q_back", "q_record", "have_question"], hints: ["no_more", "questions"],
     suggest: [{ lt: "Say you have no more questions", hint: "no_more" }, { lt: "Ask something else", hint: "questions" }],
     no: (cc) => { cc.s.questionsDone = true; K(cc, "qa_none"); },
     yes: (cc) => { K(cc, "ok"); cc.hold(); },
     on: {
       no_questions: (cc) => { cc.s.questionsDone = true; K(cc, "qa_none"); },
+      // "No, solo una pregunta más: …" (rule 21): the question usually follows in the same breath
+      have_question: (cc) => { if (once(cc, "moreQ")) { K(cc, "ok"); cc.hold(); } },
       q_slides: (cc) => { cc.s.questionsDone = true; K(cc, "qa_slides"); },
       q_link: (cc) => { cc.s.questionsDone = true; K(cc, "qa_link"); },
       q_deadline: (cc) => { cc.s.questionsDone = true; K(cc, "qa_deadline"); },

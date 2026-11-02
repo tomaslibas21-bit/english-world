@@ -1,0 +1,54 @@
+{ "situation": "s89-video-call", "items": [
+  { "ctx": "hear", "say": "Sí, te escucho bien", "intent": "hear_yes" },
+  { "ctx": "hear", "say": "Buenos días a todos. Sí, se oye perfecto", "intent": ["hear_yes", "greet_team"] },
+  { "ctx": "hear", "say": "Perdón, no te oigo nada", "intent": "hear_no", "not": ["hear_yes"], "note": "trap: negation" },
+  { "ctx": "hear", "say": "Te escucho, pero muy bajito", "intent": "hear_no", "not": ["hear_yes"], "note": "trap: yes with a but" },
+  { "ctx": "hear2", "say": "Ahora sí te escucho", "intent": "hear_yes" },
+
+  { "ctx": "weekend", "say": "Muy bien, fui a la playa con unos amigos", "intent": "weekend_ans_ctx" },
+  { "ctx": "weekend", "say": "Tranquilo, me quedé en casa", "intent": "weekend_ans_ctx" },
+
+  { "ctx": "camera", "say": "Ay, perdón, ya prendo la cámara", "intent": ["cam_fixed", "cam_fix_ctx"] },
+  { "ctx": "camera", "say": "Un momento, la enciendo", "intent": ["cam_fixed", "cam_fix_ctx"] },
+  { "ctx": "camera", "say": "Lo siento, mi cámara no funciona", "intent": "cam_broken", "not": ["cam_fixed", "cam_fix_ctx"], "note": "trap: broken camera is not fixed" },
+  { "ctx": "camera", "say": "¿Ya me ven?", "intent": ["better_q", "better_now_ctx"] },
+
+  { "ctx": "mute", "say": "Pablo, estás en silencio", "intent": ["tell_mute", "tell_mute_ctx"] },
+  { "ctx": "mute", "say": "Pablo, no te escuchamos, activa tu micrófono", "intent": ["tell_mute", "tell_mute_ctx", "hear_no"] },
+  { "ctx": "mute", "say": "Tienes el micro apagado", "intent": ["tell_mute", "tell_mute_ctx"] },
+  { "ctx": "paul_hear", "say": "Sí, ya te oímos", "intent": "hear_yes" },
+
+  { "ctx": "screen", "say": "Sí, veo tu pantalla", "intent": "screen_yes" },
+  { "ctx": "screen", "say": "No, no veo nada", "intent": "screen_no", "not": ["screen_yes"], "note": "trap" },
+  { "ctx": "screen", "say": "Solo veo tu cara", "intent": "screen_no", "not": ["screen_yes"], "note": "trap: sees something, not the screen" },
+  { "ctx": "screen", "say": "Se ve muy pequeño, ¿puedes hacer zoom?", "intent": "screen_small" },
+
+  { "ctx": "echo", "say": "Perdón, ya me silencio", "intent": "mute_self" },
+  { "ctx": "freeze", "say": "Sofía, te congelaste", "intent": ["tell_freeze", "tell_freeze_ctx"] },
+  { "ctx": "freeze", "say": "Se te cortó la imagen", "intent": ["tell_freeze", "tell_freeze_ctx"] },
+
+  { "ctx": "first", "say": "Yo puedo empezar", "intent": ["volunteer", "volunteer_ctx"] },
+  { "ctx": "first", "say": "Mejor que empiece Sara", "intent": "defer", "not": ["volunteer", "volunteer_ctx"] },
+  { "ctx": "first", "say": "Yo no, empieza tú, Sara", "intent": "defer", "not": ["volunteer", "volunteer_ctx"], "note": "trap: 'yo' with no" },
+  { "ctx": "goahead", "say": "No, adelante, Sara", "intent": ["go_ahead", "defer"], "not": ["volunteer"] },
+
+  { "ctx": "update", "say": "Esta semana terminé el informe", "intent": "upd_done" },
+  { "ctx": "update", "say": "Estoy trabajando en la presentación", "intent": "upd_working" },
+  { "ctx": "update", "say": "Todavía no termino el informe", "intent": ["upd_working", "upd_behind"], "not": ["upd_done"], "note": "trap: not finished" },
+  { "ctx": "update", "say": "Voy un poco atrasado con el presupuesto", "intent": "upd_behind" },
+  { "ctx": "update", "say": "Todo va bien, sin problemas", "intent": "upd_ok" },
+  { "ctx": "when_q", "say": "Para el viernes", "intent": "when_ans" },
+  { "ctx": "when_q", "say": "Todavía no sé", "intent": ["unsure", "g_dontknow"] },
+  { "ctx": "send_q", "say": "Claro, te lo mando hoy", "intent": "will_send" },
+  { "ctx": "help_offer", "say": "Sí, gracias, me ayudaría mucho", "intent": "accept_help" },
+
+  { "ctx": "questions", "say": "¿Nos puedes mandar las diapositivas?", "intent": "q_slides" },
+  { "ctx": "questions", "say": "¿Cuál es la fecha límite?", "intent": "q_deadline" },
+  { "ctx": "questions", "say": "No, ninguna pregunta", "intent": "no_questions", "not": ["have_question"] },
+
+  { "ctx": "paul_leave", "say": "Claro, nos vemos, Pablo", "intent": ["bye_paul", "bye_paul_ctx", "g_bye"] },
+  { "ctx": "next_week", "say": "La próxima semana no estoy, me voy de vacaciones", "intent": "on_vacation", "not": ["next_week_yes"], "note": "trap" },
+  { "ctx": "next_week", "say": "¡Hasta el lunes, nos vemos!", "intent": ["next_week_yes", "bye_all", "g_bye"] },
+  { "ctx": "cat", "say": "¡Qué bonito tu gato!", "intent": "cute" },
+  { "ctx": "cam_still", "say": "¡Uy, perdón! Adiós", "intent": ["oops", "g_bye", "g_sorry"] }
+] }
