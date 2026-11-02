@@ -33,3 +33,24 @@ Blind misses before: "No voy a Cancún, voy a Mérida", "Todavía no sé cuándo
 ## For the lead / owner
 - The writer's open points stand: invented fares and times; "pagan la mitad" for students and seniors (in reality: limited seats, school vacations for students); INAPAM by name; no open return.
 - Kept: the discount takes half off one ticket, even for "Somos estudiantes" with two tickets. Kept: when the learner says "Con tarjeta" before the total, Don Raúl says the total and charges in the same turn.
+
+## Lead's check
+30 new edge and trap sentences (numbers, money, corrections, the sold-out answers, discounts): 15/26 understood and 1/4 traps accepted before, 26/26 and 0/4 after; added to the corpus. Handler-level flips were found in transcripts and are covered by 6 new sims.
+
+**Must-fix (meaning, money)**
+- "No con tarjeta, en efectivo" charged the card (two pieces, the card first). "No X, Y" and "X no, mejor Y" corrections for card and cash; "Tarjeta no, efectivo" (commas lost) is `#amb`: "Perdón, ¿efectivo o tarjeta?".
+- "se" is a droppable word, so "no (se | lo se)" matched a bare "no": "No" and "No, el domingo" at the return question sold a one-way ticket, "El lunes no" booked Monday. Rewritten so "se" stays; "{day} no" is `#amb`.
+- The sold-out flag was not per destination: after "Mejor a Tulum", Tulum's 10:15 was "full"; "No voy a Cancún" left the question open and the next answer crashed. `full` now holds the destination, and buy / change_dest / not_dest close the sold-out questions.
+- Sold-out answers dropped the time: "El viernes a las cinco", "Mejor mañana en la tarde" booked the morning bus, and at tomorrow's offer "Sí, mañana a las cinco" booked today's 5:15, already declined. The time said is kept; tomorrow's is said with "mañana".
+- "No, a Cancún" (commas lost) on a ticket for Mérida got "Perfecto." and kept Mérida. Now a correction, and every change of place is said back ("Claro, a Cancún."); "A Mérida no, a Cancún" is `#amb`: "Perdón, ¿a dónde va entonces?" (also after the goodbye). After "No voy a Mérida" the dest step asks again, so a bare "A Cancún" answers it. A new place after the time or gate was told: the new ticket comes with the new ones.
+- "¿Cuánto es?" after "Le cobro $2,880" gave the fares ($720, $1,440). It now gives the order's total (`total_is`, the same words as `say_total`, so the same clip); "¿Cuánto le debo / es en total / sería?" understood.
+- Teachers got the student half ("Soy maestra" was `#student`; "¿Hay descuento para maestros?" got "Sí… estudiantes y adultos mayores…"). In Mexico teachers get less, only in school vacations (rule 14): "Los maestros solo tienen descuento en vacaciones.", no discount applied.
+- Prices for 5–9 tickets (countOf reads them) were outside the price domain, so not recorded.
+
+**Breadth:** "Sí, de estudiante / del INAPAM", "No, ninguna de las dos", "Somos jubilados", "Quiero pagar con dólares", "¿Se puede con tarjeta?", "Hoy en la tarde" as one answer, "Mañana en la tarde" at the time or day question sets both.
+
+**New lines (5):** which_dest, dest_changed ({X}), which_pay, total_is, teacher_disc.
+
+**Gate:** tsc clean; check-content 139/139 NLU, 20 sims 12/12, fuzz 80, 0/0; corpus 248/248, 0/43; heldout 36/37, 0/5 traps; vitest 257/257 in both editions.
+
+**For the owner:** the open points stand; note that in Mexico the student half, like the teachers' discount, applies only in school vacations (2025–26 press on the SEP-period bus discounts: students 50%, teachers 25%, limited seats). Left as is: "Un boleto a Valladolid" gets "no hay salidas para allá", though the Mérida bus stops there.
