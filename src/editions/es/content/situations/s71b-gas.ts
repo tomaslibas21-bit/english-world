@@ -138,10 +138,10 @@ export const gas: SituationDef = {
     far_q: { patterns: ["(esta | queda) (lejos | cerca)", "(esta | queda) (lejos | cerca) (la carretera #road | el taller | la vulcanizadora | el cajero)"] },
     // "No, no está todo bien": she asks what happened
     trouble_vague: { patterns: ["(tengo | hay) un problema [con (mi | el) @car]", "algo (anda mal | pasa | esta mal) con (mi | el) @car", "(mi | el) @car no (esta | anda) bien", "algo (anda | esta) mal"] },
-    zeros_q: { patterns: ["(esta | ya esta | la bomba esta) en @zero #h:q_zeros", "(empezo | empieza | arranco) en @zero", "(la puso | ya la puso) en @zero", "(me deja | puedo) ver la bomba", "esta en @zero la bomba"] },
+    zeros_q: { patterns: ["(esta | ya esta | la bomba esta) en @zero #h:q_zeros", "(empezó | empieza | arrancó) en @zero", "(la puso | ya la puso) en @zero", "(me deja | puedo) ver la bomba", "esta en @zero la bomba"] },
     // "No está en ceros": the pump still shows the last sale (the twist)
     zeros_ctx: { patterns: [
-      "[@wait] [la bomba] no (esta | estaba) en @zero #h:zeros_no", "[@wait] no (empezo | empieza | arranco | esta puesta) en @zero", "[@wait] no la (puso | pusieron | ha puesto) en @zero",
+      "[@wait] [la bomba] no (esta | estaba) en @zero #h:zeros_no", "[@wait] no (empezó | empieza | arrancó | esta puesta) en @zero", "[@wait] no la (puso | pusieron | ha puesto) en @zero",
       "(puede | me puede | podria | me podria) (poner | dejar | regresar) (la bomba | la) en @zero #h:zeros_reset", "(pongala | ponga la bomba | regresela | pongalo) en @zero",
       "[@wait] (ya | la bomba | la bomba ya) marca {price}", "[@wait] (marca | dice | esta marcando) {price}", "falta (ponerla | poner la bomba) en @zero",
       "por que marca {price}", "[@wait] (ya tiene | tiene) {price}",
@@ -187,7 +187,7 @@ export const gas: SituationDef = {
     atm: { patterns: ["(hay | tienen) [un] cajero [automatico] [aqui | por aqui | cerca] #h:q_atm", "(donde | en donde) (hay | esta) (un | el) cajero", "(donde | en donde) (puedo | se puede) sacar dinero"] },
     trouble: { patterns: [
       "(mi | el) @car no (arranca | prende | enciende | quiere arrancar | quiere prender) #h:car_wont_start", "no (arranca | prende | quiere arrancar | enciende) [el @car | mi @car]",
-      "(tengo | traigo) una @tire (ponchada | pinchada | baja | desinflada) #flat #h:flat_tire", "se me (poncho | pincho | bajo | desinflo) una @tire #flat",
+      "(tengo | traigo) una @tire (ponchada | pinchada | baja | desinflada) #flat #h:flat_tire", "se me (ponchó | pinchó | bajó | desinfló) una @tire #flat",
       "(tengo | traigo) un (pinchazo | ponchazo) #flat", "(mi | la | una) @tire (esta)? (ponchada | pinchada | baja | desinflada) #flat",
       "(se me descargo | esta descargada | se murio | se me murio) la bateria #battery", "(creo que)? (es | fue) la bateria #battery",
       // anything else: she sends the learner to the mechanic

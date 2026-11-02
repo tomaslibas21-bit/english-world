@@ -566,10 +566,10 @@ export const checkin: SituationDef = {
       "(puede | podria) (buscarlo | revisarlo | buscarla | revisarla | checarlo | buscar mi (vuelo | reservacion) | revisar mi (vuelo | reservacion)) [con mi pasaporte]",
       "(busquelo | busquela | reviselo) con mi pasaporte",
       "no (me acuerdo | recuerdo | se) (del | el | de mi | mi) (numero de vuelo | vuelo | destino | numero)",
-      "(olvide | se me olvido) (el numero de vuelo | el numero | mi destino | el destino)",
+      "(olvidé | se me olvidó) (el numero de vuelo | el numero | mi destino | el destino)",
     ] },
     // a bare "No me acuerdo" answers "¿A dónde viaja?" only there
-    lookup_ctx: { patterns: ["[no] no (me acuerdo | recuerdo | lo recuerdo | estoy seguro | estoy segura)", "se me olvido", "(lo | la) olvide"] },
+    lookup_ctx: { patterns: ["[no] no (me acuerdo | recuerdo | lo recuerdo | estoy seguro | estoy segura)", "se me olvidó", "(lo | la) olvidé"] },
     dest_neg: { patterns: [
       "no @city_to", "no (voy | viajo | vuelo | vamos) @city_to", "no (quiero | voy a) (ir | viajar | volar) @city_to", "{city} no",
     ] },
@@ -604,7 +604,7 @@ export const checkin: SituationDef = {
       "(dejeme | dejame | permitame | permiteme) (buscarlo | buscarla | sacarlo | sacarla | encontrarlo | encontrarla)",
       "(un momento | un segundo | un momentito) (lo | la) (busco | saco | encuentro)",
       "(lo | la) (busco | saco) [de (mi | la) (mochila | bolsa)]",
-      "donde (esta | deje | puse) mi pasaporte", "(lo | la) (tengo | traigo) en (mi | la) (mochila | bolsa | bolsa de mano)",
+      "donde (esta | dejé | puse) mi pasaporte", "(lo | la) (tengo | traigo) en (mi | la) (mochila | bolsa | bolsa de mano)",
       "[un momento | un segundo | un momentito] (lo | la) estoy buscando", "[un momento | un segundo] estoy buscando (mi | el) pasaporte",
       "(tengo | traigo) (el | mi) pasaporte en (mi | la) (mochila | bolsa | bolsa de mano)",
       "(ahorita | ahora | enseguida | ya) se lo (doy | paso | entrego)",
@@ -637,17 +637,17 @@ export const checkin: SituationDef = {
     // a bare "Ninguna" / "Nada" answers "¿Documenta equipaje?" only there
     bags_none_ctx: { patterns: ["(ninguna | ninguno | nada | cero) [maletas]"] },
     packed_yes: { patterns: [
-      "[si] yo (mismo | misma) (la hice | la empaque | las hice | la prepare | hice mi maleta) #h:packed_yes",
-      "[si] (la | las) (hice | empaque | prepare | arme) (yo | yo mismo | yo misma) #h:packed_did",
-      "[si] (yo | yo mismo | yo misma) (la | las) (hice | empaque | prepare | arme)",
-      "[si] yo (mismo | misma)", "[si] (la hice | la empaque | las hice) [sola | solo]", "si es mi maleta",
+      "[si] yo (mismo | misma) (la hice | la empaqué | las hice | la prepare | hice mi maleta) #h:packed_yes",
+      "[si] (la | las) (hice | empaqué | prepare | armé) (yo | yo mismo | yo misma) #h:packed_did",
+      "[si] (yo | yo mismo | yo misma) (la | las) (hice | empaqué | prepare | armé)",
+      "[si] yo (mismo | misma)", "[si] (la hice | la empaqué | las hice) [sola | solo]", "si es mi maleta",
     ] },
     packed_no: { patterns: [
-      "(mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | mi familia | mi hermana | mi hermano) (la hizo | me ayudo | me la hizo | la empaco | las hizo)",
+      "(mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | mi familia | mi hermana | mi hermano) (la hizo | me ayudó | me la hizo | la empaco | las hizo)",
       "(la hizo | las hizo | la empaco) (mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | otra persona | alguien mas)",
-      "no (la | las) hice yo", "no (la | las) hice", "me (ayudaron | ayudo alguien)",
+      "no (la | las) hice yo", "no (la | las) hice", "me (ayudaron | ayudó alguien)",
       // "No, yo no la hice": the "yo" is not "Sí, yo"
-      "[no] yo no (la | las) (hice | empaque | prepare | arme)",
+      "[no] yo no (la | las) (hice | empaqué | prepare | armé)",
       "(me la hizo | me las hizo | me la empaco) (mi esposa | mi esposo | mi mama | mi pareja | mi novia | mi novio | un amigo | una amiga | mi hijo | mi hija | mi familia | mi hermana | mi hermano | otra persona)",
     ] },
     // bare "Sí, yo" / "No, mi esposa" answer "¿Usted mismo hizo su maleta?" only there
@@ -686,13 +686,13 @@ export const checkin: SituationDef = {
     ] },
     what_ctx: { patterns: ["que es (eso | esto)", "a que se refiere", "como que"] },
     ack_done: { patterns: [
-      "(listo | lista | ya esta | ya quedo | ya termine | termine | ya acabe) #h:moving_done",
+      "(listo | lista | ya esta | ya quedó | ya terminé | terminé | ya acabé) #h:moving_done",
       "asi #h:scale_like_this",
       "(y ahora | que tal ahora | y asi | asi esta bien) #h:moving_now",
       "ya (esta bien | pesa menos | se ve bien) [ahora] #h:moving_ok",
       "(ya | ahora) (pesa | va a pesar) menos", "ya (la | lo | las) (puse | subi) [en la bascula]",
-      "ya (saque | pase | movi | cambie | quite) (@things | lo | la | los | las)",
-      "(ahorita | ya | enseguida) (lo | la | los) (saco | cambio | paso | quito | cambie | saque | pase)",
+      "ya (saqué | pasé | movi | cambié | quité) (@things | lo | la | los | las)",
+      "(ahorita | ya | enseguida) (lo | la | los) (saco | cambio | paso | quito | cambié | saqué | pasé)",
       "(ya | ahora) (deberia | debe) (estar bien | pesar menos)",
     ] },
     scale_where: { patterns: [
@@ -752,7 +752,7 @@ export const checkin: SituationDef = {
     ] },
     ask_over: { patterns: [
       "(por cuanto | cuanto) (se pasa | me paso | esta pasada | pasa) [del limite] #h:ow_over", "cuanto pesa [mi maleta | la maleta]",
-      "(esta | pesa) (muy | demasiado) (pesada | pesado)", "(se pasa | me pase | esta pasada) [del peso | del limite]", "cuantos kilos (pesa | son | tiene)",
+      "(esta | pesa) (muy | demasiado) (pesada | pesado)", "(se pasa | me pasé | esta pasada) [del peso | del limite]", "cuantos kilos (pesa | son | tiene)",
       "cuantos kilos de mas",
     ] },
     ask_limit: { patterns: [

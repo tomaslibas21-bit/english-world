@@ -9,8 +9,8 @@
 // visits ≥ 1: "Perdón, voy fuera de servicio. Súbase al 12, viene atrás de mí."
 // Mexican-only words in Ana's lines (camión, nomás, pásele) have neutral twins; she mostly says "la ruta" and "el 12".
 
-// NEEDS: lang.ts yes/no — "no traigo" (= no tengo, "I don't have any on me") in the `no` list; covered here by
-//        no_smaller_ctx at "¿No trae algo más chico?".
+// Resolved in the engine (2 Nov 2026): "no traigo" (= no tengo, "I don't have any on me") is in lang.ts's `no` list;
+// no_smaller_ctx still covers it at "¿No trae algo más chico?".
 
 import type { Ctx, EntityDef, Pending, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
@@ -394,6 +394,8 @@ export const bus: SituationDef = {
       "(aqui tiene | tenga | tome | aqui esta | ahi va | le doy | le pago | aqui le doy | aqui van) {price} #h:here_price",
       "(aqui tiene | aqui esta | ahi va | tenga) (el pasaje | lo exacto | el cambio exacto | mi pasaje | las monedas | el dinero)",
       "(traigo | tengo) (cambio exacto | lo exacto | el cambio exacto | monedas | cambio | feria | el exacto)",
+      // "Tengo cincuenta" (a slip once read it as "Tenga cincuenta")
+      "(traigo | tengo) {price}",
       "(si)? (traigo | tengo) (unas)? monedas",
       "(pago | le pago) en efectivo", "en efectivo", "(le pago | pago | se lo pago) con {price}",
       "(aqui tiene | tenga | le doy | le pago con | aqui le doy) (un billete de | uno de | un billetito de) {price}",

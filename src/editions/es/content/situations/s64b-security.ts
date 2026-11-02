@@ -1,7 +1,6 @@
-// NEEDS: (engine, src/editions/es/convo/lang.ts) "la", "lo", "las", "los" are correctionStarters, so "No la tire, me la
-// tomo" is read as "No," + "la tire" (throw it) + "me la tomo": a clitic right before a verb should keep the "no" as the
-// verb's negation, as "me" does. Worked around here (`negated`, the bottle handlers), but every conversation with
-// "No lo/la + verb" has the same flip.
+// Resolved in the engine (2 Nov 2026, lang.ts `noNegates`): "No la tire, me la tomo" was read as "No," + "la tire" +
+// "me la tomo" ("la" is also the article of "No, la roja"); a clitic and a verb after "no" now keep the "no" on the verb.
+// The local guard (`negated`, the bottle handlers) and the whole-sentence patterns stay.
 // Song 64 "Window or Aisle?" (part 2 of 3) → Puerto Colibrí airport, the security checkpoint ("el filtro"),
 // Oficial Torres (m, usted). Keeps the English agenda: documents → (a look at the face) → laptop, liquids, belt and
 // jacket in the tray → the scanner or the walk-through arch → (twist) the bag check with a water bottle → the bag back.
@@ -39,8 +38,8 @@ const AUTO: Record<string, string> = {
 
 const fold = (x: string) => (x || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** "No la tire", "No la vacío", "No me la tomo" said in the same turn as another choice: the engine reads the "no"
- *  as an answer and the rest as the choice it refuses (NEEDS above), so the refused choice must not act. */
+/** "No la tire", "No la vacío", "No me la tomo" said in the same turn as another choice: the engine used to read the
+ *  "no" as an answer and the rest as the choice it refuses (see the top of the file); the refused choice must not act. */
 const NEG_CHOICE: Record<string, RegExp> = {
   throw: /\bno\s+(?:se\s+|me\s+)?(?:la|lo)\s+(?:tir|bot)\w*/,
   drink: /\bno\s+(?:me\s+|se\s+)?(?:la|lo)\s+(?:tom|beb)\w*/,
@@ -313,14 +312,14 @@ export const security: SituationDef = {
     ] },
     // The short replies to a command ("Pase por el arco" → "Listo")
     ack_done: { patterns: [
-      "(listo | lista) #h:div_done", "ya (esta | estoy | termine | quedo)", "(ya esta | listo) todo", "ya (estoy | quedo) (listo | lista)",
+      "(listo | lista) #h:div_done", "ya (esta | estoy | terminé | quedó)", "(ya esta | listo) todo", "ya (estoy | quedó) (listo | lista)",
       "(estoy | ya estoy) (listo | lista)", "listo ya esta [todo]",
-      "ya (puse | meti | deje) todo en (la | las) @tray", "todo (esta | va) en (la | las) @tray", "(puse | meti) todo en (la | las) @tray",
+      "ya (puse | meti | dejé) todo en (la | las) @tray", "todo (esta | va) en (la | las) @tray", "(puse | meti) todo en (la | las) @tray",
       "(mi | la) @comp (esta | ya esta) en (la | una) @tray",
       "asi #h:walk_like_this", "(asi esta bien | esta bien asi | asi esta bien)", "(aqui | aca)",
-      "(paso | puedo pasar | ya paso | ya puedo pasar | entro | ya entro) [ahora | ya]", "(paso | puedo pasar | vuelvo a pasar) otra vez",
+      "(paso | puedo pasar | ya paso | ya pasé | ya puedo pasar | entro | ya entro) [ahora | ya]", "(paso | puedo pasar | vuelvo a pasar) otra vez",
       "(los | las) (brazos | manos) arriba", "ahi voy", "(lo intento | lo hago) otra vez", "(ok | bueno | va | sale | esta bien | claro) otra vez",
-      "ya me (los | las | lo | la) quite", "(ya) me quite los @shoes", "ya (saque | puse) (la | mi | el) @comp", "ya (saque | puse) todo",
+      "ya me (los | las | lo | la) quité", "(ya) me quité los @shoes", "ya (saqué | puse) (la | mi | el) @comp", "ya (saqué | puse) todo",
       "(levanto | subo) (los brazos | las manos)", "ahora",
     ] },
     // "No estoy listo todavía": he waits
@@ -403,8 +402,8 @@ export const security: SituationDef = {
       "(solo | nomas | nada mas) (mis | las | los | mi | el | la) {pocket} #h:pk_keys", "(ah | oh | ay) (mi | mis | el | la | las | los) {pocket} #h:pk_phone",
       "(tengo | traigo) (mi | mis | unas | unos | un | una | el | la | las | los) {pocket} [en (la bolsa | el bolsillo | las bolsas | los bolsillos)]",
       "creo que (es | son) (mi | mis | el | la | las | los) {pocket} #h:pk_belt", "si (mi | mis | un | una | unas | unos | el | la) {pocket} #h:pk_yes_my",
-      "{pocket}", "(es | son) (mi | mis | el | la | las | los) {pocket}", "se me (olvido | olvidaron) (mi | mis | el | la | las | los) {pocket}",
-      "(olvide | olvide sacar) (mi | mis | el | la | las | los) {pocket}", "se me olvido sacar (mi | mis | el | la | las | los) {pocket}", "(un | una | unas | unos) {pocket}", "(tal vez | a lo mejor | quiza | quizas) (mi | mis | el | la | las | los) {pocket}",
+      "{pocket}", "(es | son) (mi | mis | el | la | las | los) {pocket}", "se me (olvidó | olvidaron) (mi | mis | el | la | las | los) {pocket}",
+      "(olvidé | olvidé sacar) (mi | mis | el | la | las | los) {pocket}", "se me olvidó sacar (mi | mis | el | la | las | los) {pocket}", "(un | una | unas | unos) {pocket}", "(tal vez | a lo mejor | quiza | quizas) (mi | mis | el | la | las | los) {pocket}",
       "(mi | mis) {pocket} (esta | estan) en (la bolsa | el bolsillo | las bolsas | los bolsillos)", "(ah | ay) si (mi | mis | el | la) {pocket}",
       "traigo (puesto | puesta) (mi | el | la) {pocket}",
     ] },
@@ -415,11 +414,11 @@ export const security: SituationDef = {
       "no (traigo | tengo) [mis | las | los | mi | el | la] {pocket} [ni {pocket}]", "(ninguno | ninguna) [de los dos]", "nada de eso",
     ] },
     forgot: { patterns: [
-      "se me olvido #h:bt_forgot", "se me olvido (que la traia | sacarla | la botella | el agua | tirarla)", "(olvide | me olvide de) (sacarla | la botella | el agua)",
-      "[si] es (solo | nomas | nada mas) agua", "si es agua", "no sabia [que no se podia]", "no me acorde", "(que pena | una disculpa) [se me olvido]", "fue mi culpa",
+      "se me olvidó #h:bt_forgot", "se me olvidó (que la traia | sacarla | la botella | el agua | tirarla)", "(olvidé | me olvidé de) (sacarla | la botella | el agua)",
+      "[si] es (solo | nomas | nada mas) agua", "si es agua", "no sabia [que no se podia]", "no me acordé", "(que pena | una disculpa) [se me olvidó]", "fue mi culpa",
     ] },
     ask_what: { patterns: [
-      "(cual | que) es el problema", "(hay | pasa) algo", "hay algun problema", "que (encontro | vio | paso | hay)", "por que", "que (tiene | pasa) (mi maleta | con mi maleta)",
+      "(cual | que) es el problema", "(hay | pasa) algo", "hay algun problema", "que (encontró | vio | pasó | hay)", "por que", "que (tiene | pasa) (mi maleta | con mi maleta)",
     ] },
     bottle_drink: { patterns: [
       "me la tomo [aqui | ahorita | ya | ahora] #h:bt_drink", "(me la voy a tomar | la voy a tomar | me la puedo tomar) [aqui | ahorita]", "(puedo | podria) tomarmela [aqui | ahorita]",

@@ -34,6 +34,9 @@ export interface LangPack {
   homophones: readonly (readonly string[])[];
   /** Two spellings of the same sounds (Spanish "baso"/"vaso"): almost as good as the word itself. Optional. */
   spellingVariant?(heard: string, target: string): boolean;
+  /** The same word written two ways (Spanish: the learner's unaccented "pague" is the pattern's past "pagué"): as good
+   *  as the word itself. Optional. */
+  sameWord?(heard: string, target: string): boolean;
   /** Words a learner uses for one another while the meaning stays clear ("pay by cash", "he have"). */
   grammarClasses: readonly (readonly string[])[];
   /** The same word with another ending ("want"/"wants", "book"/"booked"). */
@@ -106,6 +109,10 @@ export interface LangPack {
   /** The word "no" that may be a determiner ("no cash"), and what may follow it as a correction instead. */
   noWord: string;
   correctionStarters: ReadonlySet<string>;
+  /** Where "no" is also the verb's negation (Spanish): the words at `i` are a verb ("quiero"), or clitics and a verb
+   *  ("la tiro"), that a "no" right before them negates, so no piece starts there ("No | la tiro" is no "No," + "la
+   *  tiro"; "Efectivo no | quiero…" is never split). Optional. */
+  noNegates?(toks: Tokens, i: number): boolean;
   /** "I want" read as "I would like" when nothing else was understood, or null. */
   wantAsWouldLike(toks: Tokens): Tokens | null;
   /** A goodbye followed by this word is no goodbye ("I have to go | to the airport"). */

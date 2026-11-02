@@ -66,21 +66,39 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
 
 - Lowercase, **no accents, no ¿¡, no punctuation**: the engine folds "¿Cuánto cuesta?" to "cuanto cuesta" before
   matching. Write "cafe", "jamon", "esta bien".
+- **One accent stays: a past tense in é / ó.** "Pagué", "compró" said with the accent (speech always has it) is a
+  past and never matches "pague" (a command) or "pago" (I pay). So a pattern that means the past writes the accent:
+  `"ya lo pagué"`, `"se me olvidó"`, `"(reservé | reservamos)"`, `"no llegó mi maleta"`; a command or a present stays
+  unaccented (`"tome"`, `"lo pago"`). The learner's unaccented "pague" still matches "pagué". (Not marked: -ió pasts,
+  futures, the -rar verbs' "-ré" pasts like "tiré", "esperé"; `markPast` in `src/editions/es/convo/lang.ts`.)
+- **A what-if's "si" goes in the same words as its "y" / "que pasa" / "que tal"**: `"(y si | que pasa si) cancelo"`,
+  not `"(y | que pasa) si cancelo"`. That "si" is an "if" (never the "sí" of a yes: "¿Y si lo pago por adelantado?"
+  is no "[sí] lo pago por adelantado"), in what is said and in the pattern, but only when the engine sees both words
+  together.
 - `por favor` is removed from what the learner says (and recorded), so patterns never contain it.
 - **Built-in tolerance** (don't write patterns for these): a missing article or little word (el/la/un/una, de, a, en,
   con, por/para, me/te/le/lo/se, es/está); an extra subject pronoun or filler (yo, usted, tú, pues, bueno, este,
-  ya…); gender and person slips (la café, yo quiere, ¿puedes…? to staff), ser/estar, por/para, qué/cuál; spelling
+  ya…); gender and person slips (la café, yo quiere, ¿puedes…? to staff), ser/estar, por/para, qué/cuál, but never a
+  slip of a verb's last vowel, which carries its person and mood ("tengo" is no "tenga", "tomo" no "tome" or
+  "toma", "llevo" no "lleve"; write each form you mean); spelling
   by sound (baso/vaso, serbesa/cerveza, ola/hola, yevar/llevar); a leading "hola", "buenos días", "oiga",
   "disculpe", "perdón", "este", "a ver", "yo"; a trailing "gracias", "por favor", "entonces", "nada más",
   "ahorita"; the NPC's name or a "señor/joven". Write patterns for different constructions and vocabulary instead.
 - **Negation is safe by construction, if you help it:**
-  - "no" before a verb is the verb's negation: "No quiero leche" is never "No." + "quiero leche". After a bare
-    leading "no", only a correction word can start an answer ("No, el grande", "No, para llevar": see
-    `correctionStarters` in `src/editions/es/convo/lang.ts`).
+  - "no" before a verb is the verb's negation: "No quiero leche" is never "No." + "quiero leche", and neither is
+    "No la tiro" (a clitic between them) "No." + "la tiro". After a bare leading "no", only a correction word can
+    start an answer ("No, el grande", "No, la roja", "No, para llevar": see `correctionStarters` and `noNegates` in
+    `src/editions/es/convo/lang.ts`).
   - Write explicit negative intents for what can be refused: `"[mejor] no (quiero | voy a querer) {item}"`,
     `"no {item}"`, `"sin {item}"`, and corrections: `"no {item} sino {item}"`, `"{item} en vez de {item}"`.
-  - A piece after a negative piece must start something new ("No tengo efectivo, | con tarjeta"); so "no un
-    capuchino, un latte" is read by your `correction` intent, never as a refusal plus an order.
+  - A piece after a negative piece must start something new ("No tengo efectivo, | con tarjeta", "…, | quiero pagar
+    con tarjeta", "No vengo de vacaciones, | vengo a una conferencia", "No la tiro, | me la tomo"); so "no un
+    capuchino, un latte" is read by your `correction` intent, never as a refusal plus an order. A verb right after a
+    "no" never starts one ("Efectivo no quiero…" stays together).
+  - "Así está bien", "Está bien así", "Déjelo así" (as it is) are a built-in **no**: at an offer they decline it.
+    Where a question wants them as a yes ("¿Así está bien?" at the fingerprint reader), write them in that step's own
+    intent; "Sí, así está bien" stays a yes. "Claro que no" (por supuesto / desde luego que no) is a no; "Claro que
+    no hay ningún problema" a yes.
 - Mexican and neutral words both: `"(jitomate | tomate)"`, `"(sitio | parada) de taxis"`, `"(ticket | recibo)"`.
 - Learners' calques of English are accepted where clear, often with a tip: "para ir" (to go) `#tip:para_llevar`,
   "tomo un café" (I take) `#blunt`, "yo quiero" (fine).
@@ -146,15 +164,16 @@ travel chapter).
     what-if ("¿Y si cancelo?", "¿Y si quiero la cobertura?"), a price question ("¿Cuánto es?", "¿Es cara?") and a
     polite closing ("Así está bien", "Está bien, gracias", "Vale, gracias") never pay, book or add an extra. At a paid
     offer "Así está bien" is a no; a closing that could be either gets the question again; "¿Cuánto es?" at an open
-    offer gets that offer's price.
+    offer gets that offer's price. (Since 2 Nov 2026 the engine reads a past said with its accent, a what-if and "Así
+    está bien" this way by itself; an unaccented "pague todo" is still yours to read: accent your past patterns.)
 18. **The other way, the other choice.** "No quiero pagar con tarjeta" offers cash and charges nothing; "No con
     tarjeta, en efectivo" is cash; "Pasillo no, ventana" could be either once its comma is gone: `#amb` (rule 10). A
     cash amount smaller than the total asks for the rest ("Son $861.50; faltan $361.50"); one over the maximum is
     capped and said.
 19. **Words one slip apart.** The engine forgives small slips and drops accents, so a pattern word can match its
-    neighbor: "Tenga" ← "Tengo el vuelo…", "Tome" ← "Tomo el de las…", "sala" ← "salida", "sí" ← "si" ("¿Y si
-    cancelo?"). Test every hand-over and yes intent against such statements with `not:`, and keep near-identical
-    words out of each other's intents.
+    neighbor: "sala" ← "salida". (Since 2 Nov 2026 it no longer forgives a verb's last vowel, "Tenga" ← "Tengo el
+    vuelo…", "Tome" ← "Tomo el de las…", nor reads "¿Y si cancelo?" as "Sí, cancelo".) Test every hand-over and yes
+    intent against such statements with `not:`, and keep near-identical words out of each other's intents.
 20. **Numbers as people say them.** Flight, room and phone numbers whole, in pairs and digit by digit
     ("doscientos veintitrés", "dos veintitrés", "dos dos tres"); amounts with and without "pesos"; every count the
     grammar accepts has its total in the price domain; a number that isn't the one on file is noticed ("Su

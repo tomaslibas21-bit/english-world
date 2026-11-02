@@ -71,11 +71,15 @@ npx tsx tools/fingerprint.ts --diff=/tmp/before.json      # "✓ identical"
 ## What the Spanish edition does differently (engine level)
 
 - **Speech**: the recognizer and the browser voice use `es-MX` (`EDITION.target`).
-- **Understanding**: accents folded ("café" = "cafe"); "por favor" removed like "please"; "no" + verb stays negated
-  ("No quiero leche"), only a correction word after "No" makes it an answer plus a correction; learners' extra "yo",
-  tú/usted and gender slips, ser/estar and spellings by sound are understood; Spanish numbers, pesos ("ochenta y cinco
-  cincuenta", "15 mil", "veinte pesos de limón"), times ("cuarto para las ocho"), dates, Spanish letter names and
-  phone numbers in pairs.
+- **Understanding**: accents folded ("café" = "cafe"), except a past tense in é / ó ("pagué" is no "pague" or
+  "pago") and the "if" of "¿Y si…?"; "por favor" removed like "please"; "no" + verb stays negated ("No quiero leche",
+  "No la tiro"), only a correction word after "No" makes it an answer plus a correction; learners' extra "yo",
+  tú/usted and gender slips, ser/estar and spellings by sound are understood, but never a slip of a verb's last vowel
+  ("tengo" / "tenga"); Spanish numbers, pesos ("ochenta y cinco cincuenta", "15 mil", "veinte pesos de limón"), times
+  ("cuarto para las ocho"), dates, Spanish letter names ("doble ele", "eñe") and phone numbers in pairs. The engine
+  asks the language module through two optional hooks the English edition doesn't have (`noNegates`: what a "no"
+  right before it negates; `sameWord`: the unaccented "pague" is the pattern's "pagué"); the verb forms they need are
+  in `src/editions/es/convo/verbs.ts` (Spanish only, no base file).
 - **Composing**: Spanish articles and agreement ("una horchata chica", "dos lattes grandes", "el agua"), "a el" →
   "al", `{u:usted|t:tú}`, `{m:…|f:…}` in the Spanish text, pesos and Mexican clock times in what is shown and said.
 - **Mexican or neutral**: a line may carry a neutral twin (`neutral:`); `setVariety("neutral")` (compose.ts) shows and

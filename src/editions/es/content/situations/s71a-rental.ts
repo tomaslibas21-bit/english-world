@@ -1,7 +1,8 @@
-// NEEDS: global.ts / lang.ts: the shared yes list has "así está bien", a yes to a confirmation but a no to an offer
-// ("¿Le agrego la cobertura amplia?" → "Así está bien"). Handled here with offerReply(); other offers may need the same.
-// NEEDS: lang.ts grammarClasses put "pague" (folded "pagué", I paid) with "pago", and "pagado" matches it: "Pagué todo"
-// matched "Lo pago" (a yes). Guarded here with paidPast(). The {letters} slot doesn't know "doble ele" (ll).
+// Resolved in the engine (2 Nov 2026, lang.ts): "así está bien", "está bien así", "déjelo así" are a no (they were in the
+// shared yes list); "pague" is out of the "pago" class and a past said with its accent ("Pagué todo") matches only a past
+// pattern, so the past patterns here are accented ("ya lo pagué"); "¿Y si…?" is an "if", never "sí" (the what-if
+// patterns write "y si" together); "Claro que no" is a no; the {letters} slot knows "doble ele". offerReply(),
+// paidPast() and whatIf() stay as local guards (an unaccented "Pague todo" is still read here).
 // Song 71 "Fill It Up" (part 1) → Renta de Autos Colibrí, Puerto Colibrí. Andrés at the counter (usted).
 // Keeps the base situation's agenda, intent IDs and twists (free upgrade, reservation under the first name).
 // The brief adds the Mexican twist: an online booking that leaves out the mandatory liability insurance
@@ -89,8 +90,9 @@ const allTags = (v: any, seg?: Segment): string[] => {
 const words = (c: Ctx) => heard(c).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
 /** "Claro que no" is a no; "Claro que no hay problema" is a yes. */
 const NO_OF_COURSE = /\b(claro|por supuesto) que no\b(?! (hay|habra|pasa|importa)\b)/;
-/** "Pagué todo", "Ya lo pagué", "Todo está pagado": paying twice, a complaint. The engine reads pagué (folded "pague")
- *  and pagado as forms of "pago", so "Pagué todo" matched "Lo pago" and accepted the charge. */
+/** "Pagué todo", "Ya lo pagué", "Todo está pagado": paying twice, a complaint. The engine used to read pagué (folded
+ *  "pague") as a form of "pago", so "Pagué todo" matched "Lo pago" and accepted the charge; it no longer does, but an
+ *  unaccented "pague" still can't tell a past from a command, so this stays. */
 const paidPast = (c: Ctx) => /\b(pague|pagado|pagada|pagaron)\b|\bya (lo |la )?(pago|pagamos)\b|\bpagamos todo\b/.test(words(c));
 /** "¿Y si…?" / "¿Qué pasa si…?": a question about an option, not the choice (accents are folded, so this "si" also
  *  reads as "sí": "¿Y si cancelo?" was "Sí, cancelo"). */
@@ -101,7 +103,7 @@ const whatIf = (c: Ctx) => /^((oiga|disculpe|perdon|bueno|pues|este|a ver|mmm|eh
 const CLEAR_YES = /\b(si|claro|por supuesto|como no|desde luego|lo pago|acepto|adelante|cobremelo|cobrelo|por que no)\b/;
 
 /** A reply to an offer with a price: "Así está bien" / "Estoy bien así" / "Claro que no" decline it (the engine's
- *  yes list has "así está bien", right for a confirmation, not for an offer); "Está bien, gracias" (or "Ok, gracias",
+ *  yes list had "así está bien", right for a confirmation, not for an offer); "Está bien, gracias" (or "Ok, gracias",
  *  "Vale, gracias") may decline or accept, and "Pagué todo" or "¿Y si…?" isn't a yes, so Andrés asks again before
  *  adding anything paid. */
 function offerReply(c: Ctx): "yes" | "no" | "unsure" {
@@ -415,14 +417,14 @@ export const rental: SituationDef = {
   intents: {
     have_resv: { patterns: [
       "(tengo | tenemos | hice | hicimos) @res [para un @car] [a nombre de {name}] #h:have_resv",
-      "(reserve | reservamos) [un | el | una] (@car | camioneta) [por internet | en linea | en su pagina | en la pagina | en la app] #h:booked",
-      "(reserve | reservamos | hice la reservacion | hice la reserva | hicimos la reservacion) (por internet | en linea | en su pagina [web] | en la pagina | en la aplicacion | en la app | con expedia | con una agencia | con booking | por telefono | con kayak)",
-      "(vengo | venimos) a (recoger | buscar) (mi | el | un | nuestro) @car [que reserve | que reservamos] #h:pick_up",
-      "(vengo | venimos) por (mi | el | nuestro) @car [que reserve | que reservamos]", "(vengo | venimos) por (mi | la) (reservacion | reserva)",
-      "(quiero | quisiera) recoger (mi | el) @car [que reserve]",
+      "(reservé | reservamos) [un | el | una] (@car | camioneta) [por internet | en linea | en su pagina | en la pagina | en la app] #h:booked",
+      "(reservé | reservamos | hice la reservacion | hice la reserva | hicimos la reservacion) (por internet | en linea | en su pagina [web] | en la pagina | en la aplicacion | en la app | con expedia | con una agencia | con booking | por telefono | con kayak)",
+      "(vengo | venimos) a (recoger | buscar) (mi | el | un | nuestro) @car [que reservé | que reservamos] #h:pick_up",
+      "(vengo | venimos) por (mi | el | nuestro) @car [que reservé | que reservamos]", "(vengo | venimos) por (mi | la) (reservacion | reserva)",
+      "(quiero | quisiera) recoger (mi | el) @car [que reservé]",
       "(tengo | tenemos) (un | el) @car (reservado | rentado)",
       "(tengo | traigo) (el | mi) (numero | codigo) de (confirmacion | reservacion | reserva)", "aqui (tiene | esta) (mi | la) (confirmacion | reservacion)",
-      "(reserve | reservamos | hice la reservacion | hice una reservacion) hace (una semana | unos dias | un mes | dos semanas | dos dias | tiempo | mucho)",
+      "(reservé | reservamos | hice la reservacion | hice una reservacion) hace (una semana | unos dias | un mes | dos semanas | dos dias | tiempo | mucho)",
       "(quiero | vengo a) recoger mi (reservacion | reserva)",
       "[la] (reservacion | reserva) (esta | es) a nombre de {name}",
       "(mi | nuestra | nuestro) (esposa | esposo | pareja | empresa | agencia | amigo | amiga | jefe | hijo | hija) (hizo | tiene) la (reservacion | reserva)",
@@ -435,10 +437,10 @@ export const rental: SituationDef = {
       "(tiene | tienen | hay) (@cars | algun @car | un @car) (disponibles | disponible | libres | libre) [para hoy] #h:rent_have",
       "tienes @cars disponibles #tip:tu_staff",
       "(tiene | tienen | hay) @cars [para rentar | para alquilar]", "(tiene | tienen | hay) algo [disponible | para rentar | para hoy]",
-      "no (reserve | reservamos) nada",
+      "no (reservé | reservamos) nada",
       "(se puede | puedo) @rent un @car [aqui]",
       "no (tengo | tenemos) [una | ninguna] (reservacion | reserva) #h:no_resv",
-      "no (reserve | reservamos | hice [una | ninguna] (reservacion | reserva) | hicimos [una | ninguna] (reservacion | reserva))",
+      "no (reservé | reservamos | hice [una | ninguna] (reservacion | reserva) | hicimos [una | ninguna] (reservacion | reserva))",
       "sin (reservacion | reserva)",
       "pero (quiero | quisiera | necesito | me gustaria) (@rent uno | @rent un @car | un @car)",
     ] },
@@ -542,11 +544,11 @@ export const rental: SituationDef = {
     tpl_refuse_ctx: { patterns: [
       "no (quiero | voy a) pagar (eso | ese seguro | el seguro | mas | extra | nada mas)", "no quiero pagarlo", "no lo (voy a | quiero) pagar", "no lo pago", "no quiero (el | ese) seguro", "no estoy de acuerdo",
       "(en internet | en la pagina | en la reservacion) (decia | dice | estaba) que [todo] (estaba | esta) incluido",
-      "[pero] ya (pague | lo pague | estaba pagado | esta pagado | pague en linea | pague por internet)", "[pero] ya (pague | habia pagado) (el seguro | todo | eso) [en linea | por internet]",
+      "[pero] ya (pagué | lo pagué | estaba pagado | esta pagado | pagué en linea | pagué por internet)", "[pero] ya (pagué | habia pagado) (el seguro | todo | eso) [en linea | por internet]",
       "no me (dijeron | avisaron) [eso | nada]", "(es | esta) (muy | demasiado) caro", "[eso] no (es | me parece) justo",
-      "[eso] no estaba en (el precio | la reservacion)", "no (sabia | lo sabia | sabia eso)", "[yo] ya pague todo", "[pero] ya (pague | estaba pagado) todo",
+      "[eso] no estaba en (el precio | la reservacion)", "no (sabia | lo sabia | sabia eso)", "[yo] ya pagué todo", "[pero] ya (pagué | estaba pagado) todo",
       // "Pagué todo" is paying twice, not "Lo pago" (the engine reads pagué and pagado as forms of pago)
-      "[pero] [yo] [lo] pague todo [en linea | por internet]", "[pero] [yo] (lo | la) pague (en linea | por internet)", "[pero] pague (en linea | por internet)",
+      "[pero] [yo] [lo] pagué todo [en linea | por internet]", "[pero] [yo] (lo | la) pagué (en linea | por internet)", "[pero] pagué (en linea | por internet)",
       "[pero] [ya] pagamos todo [en linea | por internet]", "[pero] (todo | eso | el seguro) [ya] (esta | estaba) pagado",
       "no (lo | la)? acepto",
     ] },
@@ -557,7 +559,7 @@ export const rental: SituationDef = {
     ] },
     // "¿Puedo cancelar?" / "¿Y si cancelo?": a question about cancelling (only at the twist), never the decision
     cancel_q_ctx: { patterns: [
-      "(puedo | podemos | podria | se puede) cancelar [la reservacion | la reserva]", "(y | que pasa | y que pasa | pero y) si (cancelo | cancelamos) [la reservacion | la reserva]",
+      "(puedo | podemos | podria | se puede) cancelar [la reservacion | la reserva]", "(y si | que pasa si | y que pasa si | pero y si) (cancelo | cancelamos) [la reservacion | la reserva]",
       "si (cancelo | cancelamos) que pasa",
     ] },
     // "¿Veinte mil pesos?" (echoing the amount) and "Es mucho" (only at the deposit)
@@ -579,7 +581,7 @@ export const rental: SituationDef = {
       "(hay | donde hay | donde esta) (una | la) gasolinera [cerca | por aqui | mas cercana] #h:q_gas_station",
       "donde (puedo | hay que) (cargar | poner | echar) gasolina", "hay gasolineras cerca",
       // "¿Y si no lo lleno?": a question (the charge), not an answer
-      "(y | que pasa | y que pasa) si no lo (lleno | devuelvo lleno | regreso lleno | entrego lleno) #ifnot",
+      "(y si | que pasa si | y que pasa si) no lo (lleno | devuelvo lleno | regreso lleno | entrego lleno) #ifnot",
     ] },
     fuel_full: { patterns: [
       "[si] (lo | se lo) (devuelvo | regreso | entrego | traigo) (lleno | con el @tank lleno) #h:full_to_full",
@@ -671,7 +673,7 @@ export const rental: SituationDef = {
       "donde esta (estacionado | el estacionamiento)", "(de que | que) color es", "(es | cual es) (el | la) (rojo | roja | azul | blanco | blanca | negro | negra | gris | plateado)", "que @car es", "(en que | cual) lugar", "esta lejos",
     ] },
     scratch_q: { patterns: [
-      "[y] que (hago | pasa) si (veo | hay | encuentro) un (rayon | golpe | dano) #h:q_scratch", "y si (veo | hay | encuentro) (un rayon | un golpe | un dano | rayones | golpes | danos)", "que (hago | pasa) si (veo | hay | encuentro) (rayones | golpes | danos)",
+      "[y] que (hago si | pasa si) (veo | hay | encuentro) un (rayon | golpe | dano) #h:q_scratch", "y si (veo | hay | encuentro) (un rayon | un golpe | un dano | rayones | golpes | danos)", "que (hago si | pasa si) (veo | hay | encuentro) (rayones | golpes | danos)",
       "(hay | tiene) (un rayon | un golpe | rayones | golpes) [en la puerta | en la defensa | en el @car | atras | adelante]",
       "(tengo que | debo) revisar el @car", "[le | lo] (tomo | tengo que tomar) fotos", "(le | lo) tomo una foto", "(puedo | podemos) (ver | revisar) el @car [primero | antes]", "(el @car | la puerta | la defensa) (tiene | esta) (un rayon | un golpe | rayado | rayada | golpeado | golpeada)",
     ] },
@@ -687,7 +689,7 @@ export const rental: SituationDef = {
     keep_size: { patterns: [
       "(el | un) {size} (esta bien | me sirve | es suficiente | basta) #h:keep_size", "me quedo con el {size}", "(prefiero | quiero) [quedarme con] el {size}",
       "no (necesito | quiero) (uno mas grande | un @car mas grande | algo mas grande | el cambio | cambiarme | otro)", "no (necesito | quiero) el {nosz:size}",
-      "estoy bien con el {size}", "(me quedo con | prefiero) el que (reserve | tengo | me toca)", "el que reserve (esta bien | me sirve)",
+      "estoy bien con el {size}", "(me quedo con | prefiero) el que (reservé | tengo | me toca)", "el que reservé (esta bien | me sirve)",
       "mejor (el | un) {size}", "[no] [gracias] con el {size} (esta bien | estoy bien) [gracias]",
     ] },
     upgrade_yes: { patterns: [
@@ -699,10 +701,10 @@ export const rental: SituationDef = {
     ok_ack: { patterns: [
       "(ok | okay | vale | perfecto | de acuerdo | sale | va | entendido | claro | listo | muy bien) [no hay problema | sin problema | gracias] #h:ok_ack",
       "esta bien (no hay problema | sin problema) #h:ok_ack",
-      "(no hay | sin) problema", "(listo | ya) (ya firme | firmado | esta)", "ya firme",
+      "(no hay | sin) problema", "(listo | ya) (ya firmé | firmado | esta)", "ya firmé",
       "(esta bien | ok | de acuerdo | vale) lo pago #h:tpl_ok", "[ok] (lo pago | lo acepto | acepto)", "(ni modo | ya que | bueno pues | que le vamos a hacer)",
       "[ok | esta bien] (agreguelo | agreguemelo | pongalo | agreguela | pongamelo)",
-      "voy a (tomar | tomarle) (fotos | una foto)", "[ok] (reviso | voy a revisar | ya revise) el @car", "(por que no | claro que si)", "[ya] (esta)? firmado",
+      "voy a (tomar | tomarle) (fotos | una foto)", "[ok] (reviso | voy a revisar | ya revisé) el @car", "(por que no | claro que si)", "[ya] (esta)? firmado",
     ] },
   },
 

@@ -58,6 +58,9 @@ function negationCutOff(r: { caps: { name: string; value: unknown; from: number;
     const before = c.from > 0 ? toks[c.from - 1] : "";
     if (LANG.clauseNegators.has(before) && !startsNewPart(toks, c.from, c.to, true)) return true;
     if (i === 0) continue;
+    // a verb right after another piece's "no" is that "no"'s verb ("Efectivo no | quiero…" is never split; the first
+    // piece's "no" is the answer "No," or not: noIsDeterminer)
+    if (before === LANG.noWord && LANG.noNegates?.(toks, c.from)) return true;
     const prev = segs[i - 1];
     // after a negative piece, the next one must start something new (a clause, a question, a contrast):
     // "I don't have | my passport" is not handing over the passport. Two pieces of the same answer are
@@ -99,7 +102,8 @@ function noIsDeterminer(r: { caps: { name: string; from: number }[] }, toks: Tok
   const first = r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from)[0];
   if (!first || first.from === 0) return false;
   const before = toks[first.from - 1];
-  return before === LANG.noWord && !CORRECTION_STARTERS.has(toks[first.from]);
+  // "No la tiro": a correction word that is also the verb's clitic keeps the "no" on the verb (noNegates)
+  return before === LANG.noWord && (!CORRECTION_STARTERS.has(toks[first.from]) || !!LANG.noNegates?.(toks, first.from));
 }
 
 /** "Again", "What?", "Sorry?" asking to repeat only mean that on their own, not inside a longer

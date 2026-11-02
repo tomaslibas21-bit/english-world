@@ -129,7 +129,7 @@ const GRAMMAR_MAP = (() => {
 /** 1 exact/homophone, 0.9 one-edit spelling slip on a long word, 0.85–0.87 learner-grammar
  *  variant, 0 otherwise. Negation tokens only ever match exactly. */
 export function tokenSimilarity(heard: string, target: string): number {
-  if (heard === target) return 1;
+  if (heard === target || LANG.sameWord?.(heard, target)) return 1;
   if (NEGATION_TOKENS.has(heard) || NEGATION_TOKENS.has(target)) return LANG.negationHomophone(heard, target);
   const hc = HOMOPHONE_MAP.get(heard);
   if (hc && hc === HOMOPHONE_MAP.get(target)) return 0.97;

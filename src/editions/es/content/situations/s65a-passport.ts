@@ -1,7 +1,8 @@
-// NEEDS: (engine, src/editions/es/convo/lang.ts) "vengo", "vine", "estoy", "voy" in `newPart`, so that a clause after a
-//   negative piece is read ("No vengo de vacaciones. Vengo a una conferencia."); worked around here with correction
-//   patterns in `purpose`. Also, a piece may not begin with "está" after a filler piece ("Un momento. | Está en mi
-//   mochila"): find_it takes the filler in its own pattern.
+// Resolved in the engine (2 Nov 2026): "vengo", "vine", "estoy" start a new piece after a negative one ("No vengo de
+//   vacaciones. | Vengo a una conferencia."), never right after a "no"; not "voy" ("No voy a Cancún, voy a Mérida" is one
+//   correction in s67a). The correction patterns in `purpose` stay.
+// NEEDS: (engine) a piece may not begin with "está" after a filler piece ("Un momento. | Está en mi mochila"): find_it
+//   takes the filler in its own pattern.
 // NEEDS: (engine, lang.ts `noLead`) the lead "no no" swallows the verb's own "no": "No, no lo compré" was read as
 //   "No, no" + "lo compré" (a yes) wherever no pattern spells out the negative sentence. Worked around here with the
 //   negative pronoun forms (return_no_ctx, address_dunno_ctx, find_it); every conversation with "lo tengo / lo compré"
@@ -492,13 +493,13 @@ export const passport: SituationDef = {
     hand_over: { patterns: [
       "aqui tiene #h:pp_here", "aqui esta #h:r_here", "tenga", "tome", "aqui lo tiene", "aqui la tiene", "si aqui (tiene | esta)", "claro aqui (tiene | esta)",
       "(aqui tiene | aqui esta | tenga | tome) (mi | el | la | los) {doc} [y (mi | el | la) {doc}] #h:pp_heres", "(este | esta) es (mi | el | la) {doc}", "mi {doc}",
-      "[aqui] (lo | la) tengo en (mi | el) celular", "lo encontre [aqui esta]", "ya lo encontre", "aqui (esta | lo tiene) en (mi | el) celular",
+      "[aqui] (lo | la) tengo en (mi | el) celular", "lo encontré [aqui esta]", "ya lo encontré", "aqui (esta | lo tiene) en (mi | el) celular",
       "(le doy | le entrego | le muestro | le enseno) (mi | el | la) {doc}", "(se lo | se la) (muestro | enseno | doy)",
     ] },
     // Looking for the passport ("Está en mi mochila…")
     find_it: { patterns: [
       "(dejeme | permitame | dejame) (buscarlo | buscarla | encontrarlo | sacarlo)", "(esta | lo tengo | mi pasaporte esta) en (mi | la) (mochila | bolsa | bolso | chamarra | chaqueta | bolsillo | maleta | cartera)",
-      "donde (esta | deje | puse) mi pasaporte", "(un momento | un segundo | un momentito | perdon | espere) (esta | lo tengo | lo traigo) en (mi | la) (mochila | bolsa | bolso | chamarra | chaqueta | bolsillo | maleta | cartera)", "no encuentro (mi pasaporte | el pasaporte | mi boleto | mi visa)", "ahorita lo (busco | saco)", "[un momento] lo estoy buscando", "no (lo | la) encuentro",
+      "donde (esta | dejé | puse) mi pasaporte", "(un momento | un segundo | un momentito | perdon | espere) (esta | lo tengo | lo traigo) en (mi | la) (mochila | bolsa | bolso | chamarra | chaqueta | bolsillo | maleta | cartera)", "no encuentro (mi pasaporte | el pasaporte | mi boleto | mi visa)", "ahorita lo (busco | saco)", "[un momento] lo estoy buscando", "no (lo | la) encuentro",
       "[no] no (lo | la) (tengo | traigo) (aqui | conmigo | a la mano)",
     ] },
     // "Fue un vuelo muy largo" (to "¿Qué tal el vuelo?")
@@ -528,7 +529,7 @@ export const passport: SituationDef = {
       "(tengo | consegui) (un | una) (trabajo | chamba) (aqui | en mexico | en puerto colibri) #pv:work", "voy a trabajar (aqui | en mexico | en puerto colibri) #pv:work",
       "(vine | vengo | venimos | vinimos) a vivir (aqui | a mexico | en mexico | a puerto colibri | en puerto colibri) #pv:live #h:p_live", "[@vengo] a vivir [aqui] #pv:live",
       "[@vengo] a (jubilarme | retirarme) [aqui | a mexico | en mexico | a puerto colibri | en puerto colibri] #pv:live",
-      "me (mude | mudo | estoy mudando | voy a mudar | vengo a mudar) [a mexico | a puerto colibri | aqui] #pv:live", "nos (mudamos | estamos mudando | vamos a mudar) [a mexico | a puerto colibri | aqui] #pv:live",
+      "me (mudé | mudo | estoy mudando | voy a mudar | vengo a mudar) [a mexico | a puerto colibri | aqui] #pv:live", "nos (mudamos | estamos mudando | vamos a mudar) [a mexico | a puerto colibri | aqui] #pv:live",
       "(ahora | ya) (vivo | vivimos) aqui #pv:live", "(vivo | vivimos) (aqui | en puerto colibri | en mexico) #pv:live",
       "(un poco de | de) (los dos | ambos | las dos cosas) #pv:both", "(las dos cosas | ambos | los dos) #pv:both", "negocios y (placer | turismo | vacaciones) #pv:both",
       "[@vengo] (de | por) {purpose} con (mi | mis) (esposa | esposo | familia | hijos | amigos | pareja | novia | novio | marido)",
@@ -585,7 +586,7 @@ export const passport: SituationDef = {
     ] },
     stay: { patterns: [
       "(en | al) {hotel} #h:w_hotel", "{hotel}", "(es | se llama) [el] {hotel}",
-      "@stay_verb (en | al) {hotel} #h:w_staying", "(tengo | tenemos) (una reservacion | una reserva | un cuarto | una habitacion) en {hotel}", "(reserve | reservamos) en {hotel}",
+      "@stay_verb (en | al) {hotel} #h:w_staying", "(tengo | tenemos) (una reservacion | una reserva | un cuarto | una habitacion) en {hotel}", "(reservé | reservamos) en {hotel}",
       "[@stay_verb] (en | al) (un | el) {hotel:hotel_any}", "(tengo | tenemos) (una reservacion | una reserva) en un {hotel:hotel_any}",
       "[@stay_verb] [en] {hotel} (en el centro | cerca de la playa | en la playa)",
     ] },
@@ -597,7 +598,7 @@ export const passport: SituationDef = {
     ] },
     stay_airbnb: { patterns: [
       "[@stay_verb] en (un | una) (airbnb | air bnb | departamento | apartamento | depa | departamento rentado | casa rentada | cuarto rentado | casa | casita | cabana | villa) #h:w_airbnb",
-      "(rente | reserve | alquile | rentamos | alquilamos) (un | una) (departamento | apartamento | casa | cuarto | airbnb | casita | cabana) [por airbnb] #h:w_apartment",
+      "(renté | reservé | alquilé | rentamos | alquilamos) (un | una) (departamento | apartamento | casa | cuarto | airbnb | casita | cabana) [por airbnb] #h:w_apartment",
       "[@stay_verb] en [la] (calle | avenida) {street} [numero] {number} #addr",
     ] },
     hotel_other_ctx: { patterns: [
@@ -620,18 +621,18 @@ export const passport: SituationDef = {
     address_show_ctx: { patterns: ["ahorita la (busco | reviso | veo)", "(se la | le) (muestro | enseno)", "(dejeme | permitame) buscarla"] },
     address_dunno: { patterns: [
       "no (me acuerdo | recuerdo) [de] la direccion [exacta] #h:a_dunno", "no (se | tengo | conozco) la direccion [exacta]", "no se (la | el) (direccion | calle | numero) [exacta | exacto]",
-      "se me olvido la direccion",
+      "se me olvidó la direccion",
     ] },
     // only at "¿Me da la dirección?": "No lo tengo aquí" at the passport or the ticket is not the address
     address_dunno_ctx: { patterns: [
-      "no (me acuerdo | recuerdo | la recuerdo) [bien]", "no me la se [de memoria]", "no la (se | tengo) de memoria", "se me olvido",
+      "no (me acuerdo | recuerdo | la recuerdo) [bien]", "no me la se [de memoria]", "no la (se | tengo) de memoria", "se me olvidó",
       // each spelled out: with optional parts the engine's reading "No, no" + "la tengo en el celular" (a yes) cost less
       "no (la | lo) (tengo | traigo)", "no (la | lo) (tengo | traigo) (aqui | conmigo)", "no (la | lo) (tengo | traigo) en (mi | el) (celular | telefono | correo)",
     ] },
     return_yes: { patterns: [
       "[si] (lo | la) (tengo | traigo) en (el | mi) (celular | telefono | correo) #h:r_yes", "[si] (esta | lo tengo) en (mi | el) (celular | telefono | correo)",
       "[si] (tengo | traigo) [mi | el] @ticket [de regreso | de vuelta] [aqui]", "[si] (tengo | ya tengo) (vuelo | boleto | billete) de (regreso | vuelta)",
-      "[si] es (viaje | boleto | vuelo) redondo", "[si] (ya lo compre | lo compre)", "[si] (es | tengo) [de] (ida y vuelta | viaje redondo)", "[si] (tengo | es) [un | mi] (boleto | vuelo) (de ida y vuelta | redondo)",
+      "[si] es (viaje | boleto | vuelo) redondo", "[si] (ya lo compré | lo compré)", "[si] (es | tengo) [de] (ida y vuelta | viaje redondo)", "[si] (tengo | es) [un | mi] (boleto | vuelo) (de ida y vuelta | redondo)",
     ] },
     return_date: { patterns: [
       "[si] [el] {date} #h:r_date", "[si] el {day}",
@@ -644,7 +645,7 @@ export const passport: SituationDef = {
     return_no: { patterns: [
       "[no] todavia no (lo compro | lo he comprado | lo tengo | tengo boleto | tengo el boleto) #h:r_no", "[no] no (tengo | traigo) [el | mi] @ticket [de regreso | de vuelta] [todavia]",
       "[no] (lo voy a comprar | voy a comprarlo | lo compro) (despues | aqui | luego | mas tarde)", "[no] no se cuando (regreso | me voy)",
-      "[no] (es | tengo | compre) (solo | nomas) (de ida | ida | el vuelo de ida)", "[no] no he comprado [el @ticket de regreso]",
+      "[no] (es | tengo | compré) (solo | nomas) (de ida | ida | el vuelo de ida)", "[no] no he comprado [el @ticket de regreso]",
       "[es] [un | mi] [boleto | vuelo] de ida [nomas | nada mas | solamente]", "[pero] (lo voy a comprar | voy a comprarlo) [despues | aqui | luego | mas tarde]",
     ] },
     // Only where a ticket is asked for ("No, no lo tengo aquí", "No, no lo compré"). Spelled out because the engine
@@ -652,7 +653,7 @@ export const passport: SituationDef = {
     // and "no lo tengo en el celular" a ticket shown.
     return_no_ctx: { patterns: [
       "no (lo | la) (tengo | traigo)", "no (lo | la) (tengo | traigo) (aqui | conmigo | impreso | ahorita | todavia)",
-      "no (lo | la) (tengo | traigo) en (mi | el) (celular | telefono | correo)", "no (lo | la) (compre | he comprado)", "no (lo | la) (compre | he comprado) (todavia | aun)",
+      "no (lo | la) (tengo | traigo) en (mi | el) (celular | telefono | correo)", "no (lo | la) (compré | he comprado)", "no (lo | la) (compré | he comprado) (todavia | aun)",
     ] },
     first_yes: { patterns: [
       "[si] es mi primera vez [en mexico | aqui] #h:f_first", "[si] (la | mi) primera vez", "[si] primera vez [aqui | en mexico]",

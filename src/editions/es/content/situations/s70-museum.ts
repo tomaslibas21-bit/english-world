@@ -1,6 +1,5 @@
-// NEEDS: (engine, src/editions/es/convo/lang.ts) after a negative piece a new piece starts only with a `newPart` word, so
-//   "No soy estudiante, quiero un boleto general" and "No tengo efectivo, pago con tarjeta" are not understood; "quiero",
-//   "quisiera", "pago" and "prefiero" as `newPart` would fix it for every conversation (patterns here cover the common ones).
+// Resolved in the engine (2 Nov 2026): "quiero", "quisiera", "pago" and "prefiero" now start a new piece after a negative
+//   one ("No tengo efectivo, | quiero pagar con tarjeta"), never right after a "no"; the patterns here stay.
 // Song 70 "Please Don't Touch" → Puerto Colibrí: "No se puede tocar".
 // Museo de la Costa Maya (the big white building across from the zócalo, s62): Iván at the ticket desk, Don Arturo
 // the guard (twist lines only). Both say usted. The learner buys tickets (general $80; students with a valid
@@ -675,9 +674,9 @@ export const museum: SituationDef = {
     no_id: { patterns: [
       "no (la | lo) (traigo | tengo) [aqui | conmigo | ahorita] #h:id_none", "no (tengo | traigo | traje) (mi | la) @cred [de estudiante] [aqui | conmigo]", "no (la | lo) traje", "no (la | lo) encuentro", "no (tengo | traigo) (la | mi | una)? (tarjeta | credencial) de residente",
       "[si] (tengo | la tengo | lo tengo) [mi | la]? [@cred] pero no (la | lo)? (traigo | traje | tengo aqui | tengo conmigo)", "[si] (la | lo) tengo pero (en el hotel | en la casa | en casa | no aqui | no la traigo)",
-      "(la | lo) deje en (el hotel | la casa | casa | el carro | el cuarto)", "(deje | olvide) (mi | la) @cred [en (el hotel | la casa | casa)]", "se me olvido [mi @cred | la @cred]",
-      "(la | lo) olvide [en (el hotel | casa)]", "(perdi | se me perdio) (mi | la) @cred", "(mi | la) @cred (esta | ya esta) vencida", "(esta | ya esta) vencida",
-      "(mi | la) @cred (esta | se quedo) en (el hotel | la casa | casa | el carro)", "(esta | se quedo) en (el | mi) (hotel | casa | carro | cuarto | otra bolsa | otra mochila)", "no tengo (@cred | una @cred | mi @cred) [de estudiante]",
+      "(la | lo) dejé en (el hotel | la casa | casa | el carro | el cuarto)", "(dejé | olvidé) (mi | la) @cred [en (el hotel | la casa | casa)]", "se me olvidó [mi @cred | la @cred]",
+      "(la | lo) olvidé [en (el hotel | casa)]", "(perdi | se me perdio) (mi | la) @cred", "(mi | la) @cred (esta | ya esta) vencida", "(esta | ya esta) vencida",
+      "(mi | la) @cred (esta | se quedó) en (el hotel | la casa | casa | el carro)", "(esta | se quedó) en (el | mi) (hotel | casa | carro | cuarto | otra bolsa | otra mochila)", "no tengo (@cred | una @cred | mi @cred) [de estudiante]",
     ] },
     adult_ok: { patterns: [
       "[esta bien | bueno | ok | de acuerdo] (pago | le pago) (la entrada general | el precio completo | el precio normal | la general | el boleto general) [entonces] #h:ok_pay #h:ok_full",
@@ -798,8 +797,8 @@ export const museum: SituationDef = {
       "@sorry_w [@sorry_tail] [@sorry_w]", "[@sorry_w] @sorry_tail [@sorry_w]", "@sorry_tail y @sorry_tail",
     ] },
     deny: { patterns: [
-      "[pero] (yo)? no (lo | la | los)? toque [nada | la pintura | el cuadro | las pinturas | la obra] [se lo juro | de verdad | en serio] [@only_looking]", "[pero] no estaba tocando (nada | la pintura) [@only_looking]",
-      "@only_looking", "(solo | nomas) (lo | la)? (senale | apunte)", "[pero] (yo)? no fui (yo)?", "[pero] (yo)? no (estoy tocando | toco) nada", "[pero] no (use | estaba usando | estoy usando) (el)? flash", "mi (camara | celular) no tiene flash",
+      "[pero] (yo)? no (lo | la | los)? toqué [nada | la pintura | el cuadro | las pinturas | la obra] [se lo juro | de verdad | en serio] [@only_looking]", "[pero] no estaba tocando (nada | la pintura) [@only_looking]",
+      "@only_looking", "(solo | nomas) (lo | la)? (señalé | apunté)", "[pero] (yo)? no fui (yo)?", "[pero] (yo)? no (estoy tocando | toco) nada", "[pero] no (usé | estaba usando | estoy usando) (el)? flash", "mi (camara | celular) no tiene flash",
     ] },
     why_not: { patterns: ["por que [no]", "por que no se puede tocar", "por que no (puedo | podemos | se pueden) tocar (las | los)? (pinturas | cuadros | obras | piezas)?", "por que no se (permite | puede) [el flash | usar flash]"] },
   },

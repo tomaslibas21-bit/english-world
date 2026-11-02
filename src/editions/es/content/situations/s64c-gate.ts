@@ -337,7 +337,7 @@ export const gate: SituationDef = {
       "[voy | viajo | vuelo] @dest",
       "(el vuelo | el de) @dest",
       "{city}", "{number} [@dest]",
-      "(perdon | me equivoque | quise decir | digo | perdon quise decir | perdon me equivoque) [es] [el] (@flt | {number} | {f:fnum}) [@dest]",
+      "(perdon | me equivoqué | quise decir | digo | perdon quise decir | perdon me equivoqué) [es] [el] (@flt | {number} | {f:fnum}) [@dest]",
       // "No es el 225, es el 223": in "No X, Y" the second number is the answer (rule 10)
       "no (es | era) [el] [vuelo] {neg:number} [es | sino] [el] [vuelo] ({number} | {f:fnum}) [@dest]",
     ] },
@@ -368,7 +368,7 @@ export const gate: SituationDef = {
       "(hay | tiene | trae) (retraso | algun retraso | demora | alguna demora | atraso | algun atraso)",
       "(cuanto | cuanto tiempo) (de retraso | de atraso | se va a retrasar | se retrasa | trae de retraso | es el retraso | va a tardar)",
       "(cuanto | de cuanto) es el retraso",
-      "(se va a retrasar | se retraso | se atraso | se demoro | se va a atrasar) [el vuelo]",
+      "(se va a retrasar | se retrasó | se atrasó | se demoró | se va a atrasar) [el vuelo]",
       "(vamos a | va a) salir tarde", "(sale | salimos) tarde", "(va | viene) tarde [el vuelo | el avion]",
       // "¿No está retrasado?", "¿El vuelo no va a tiempo?": questions about the delay all the same
       "[el vuelo] no (esta | viene | va) (retrasado | atrasado | demorado) [el vuelo | verdad]", "no hay (retraso | demora | atraso) [verdad]",
@@ -376,8 +376,8 @@ export const gate: SituationDef = {
     ] },
     ask_delay_reason: { patterns: [
       "por que (esta | viene | va) (retrasado | atrasado | demorado | tarde) [el vuelo | el avion] #h:q_why",
-      "por que (el retraso | hay retraso | se retraso | se atraso | la demora)",
-      "que (paso | pasa | sucede | sucedio)", "que paso con el (vuelo | avion)",
+      "por que (el retraso | hay retraso | se retrasó | se atrasó | la demora)",
+      "que (pasó | pasa | sucede | sucedio)", "que pasó con el (vuelo | avion)",
       "cual es el (motivo | problema | razon)", "(cual | que) fue el (motivo | problema)",
       "por que (vamos a salir | salimos | sale) tarde",
     ] },
@@ -483,7 +483,7 @@ export const gate: SituationDef = {
       "(esa | esta) es mi @zone", "(esa | esta) es la mia",
       "(es | esa es) la @zone {number}",
       "(me toca | mi turno | es mi turno)",
-      "(podemos | puedo) pasar ya", "ya (llamaron | pasaron | paso | estan llamando) [a] la @zone {number}", "soy [de] [la] @zone {number}", "ya (estan abordando | empezo el abordaje | empezaron a abordar | estan pasando)",
+      "(podemos | puedo) pasar ya", "ya (llamaron | pasaron | pasó | estan llamando) [a] la @zone {number}", "soy [de] [la] @zone {number}", "ya (estan abordando | empezó el abordaje | empezaron a abordar | estan pasando)",
     ] },
     keep_bag: { patterns: [
       "[no gracias] (la | lo) (llevo | voy a llevar | prefiero llevar | quiero llevar) conmigo #h:of_keep",
@@ -524,7 +524,7 @@ export const gate: SituationDef = {
     more_no: { patterns: [
       "(eso seria | seria | eso es) todo [por ahora | por el momento] #h:more_all", "(por ahora | por el momento | de momento) (es | seria | eso es) todo",
       "[ya] no tengo [mas | otras | ninguna otra | ninguna] (preguntas | pregunta | dudas | duda) #h:more_none", "nada [por ahora | por el momento]",
-      "ninguna (otra) (pregunta | duda)", "(ya | asi) (estoy | quede) bien", "(ya | asi) esta todo",
+      "ninguna (otra) (pregunta | duda)", "(ya | asi) (estoy | quedé) bien", "(ya | asi) esta todo",
       "(voy a | me voy a) (esperar | sentar) [aqui | alla | por alla | ahi]",
       "[ok | bueno | perfecto] (espero | lo espero | me siento | me espero) (aqui | alla | ahi | por alla)",
       "(no | ya no) (gracias) (eso es todo | es todo)",

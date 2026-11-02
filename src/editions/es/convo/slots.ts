@@ -311,13 +311,20 @@ export const yearSlot: SlotFn = (tokens, pos) => {
 const LETTER_NAMES: Record<string, string> = {
   a: "a", be: "b", ce: "c", se: "c", de: "d", e: "e", efe: "f", ge: "g", je: "g", hache: "h", ache: "h", i: "i", jota: "j", hota: "j",
   ka: "k", ca: "k", ele: "l", eme: "m", ene: "n", o: "o", pe: "p", cu: "q", ere: "r", erre: "r", ese: "s", te: "t", u: "u",
-  ve: "v", uve: "v", equis: "x", ye: "y", zeta: "z", seta: "z", elle: "ll",
+  ve: "v", uve: "v", equis: "x", ye: "y", zeta: "z", seta: "z", elle: "ll", che: "ch",
+  // "eñe" (and a typed "ñ"), kept apart from "ene" before the accents are folded (lang.ts preSurface)
+  enie: "ñ",
 };
-/** Two-word letter names: "doble ve", "doble u", "uve doble" (w), "i griega" (y), "i latina" (i), "be grande" (b),
- *  "be chica" / "ve chica" / "ve corta" (v). */
+/** Two-word letter names: "doble ve", "doble u", "uve doble" (w), "doble ele" (ll), "doble erre" (rr), "doble ese"
+ *  (ss) and any other letter twice, "i griega" (y), "i latina" (i), "be grande" (b), "be chica" / "ve chica" / "ve
+ *  corta" (v). */
 function letterPair(a?: string, b?: string): string | null {
   if (a === "doble" && (b === "ve" || b === "u" || b === "uve" || b === "be")) return "w";
   if (a === "uve" && b === "doble") return "w";
+  if (a === "doble" && b !== undefined) {
+    const one = LETTER_NAMES[b] ?? (/^[a-z]$/.test(b) ? b : undefined);
+    if (one?.length === 1) return one + one;
+  }
   if (a === "i" && b === "griega") return "y";
   if (a === "i" && b === "latina") return "i";
   if ((a === "be" || a === "ve") && (b === "grande" || b === "larga" || b === "alta")) return "b";

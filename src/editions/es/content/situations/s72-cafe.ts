@@ -358,7 +358,7 @@ export const cafe: SituationDef = {
     ] },
     reject: { patterns: [
       "[mejor] no (quiero | voy a querer) {item}", "no {item}", "(cancele | quite | olvide) [el | la] {item}", "no tomo {item}",
-      "[mejor] ya no (lo | la) quiero", "cambie de opinion", "olvidelo",
+      "[mejor] ya no (lo | la) quiero", "cambié de opinion", "olvidelo",
     ] },
     // "No un capuchino, un latte": the second item replaces the first (never an order for the first)
     correction: { patterns: ["no {item} sino {item}", "no {item} [mejor] {item}", "{item} no {item}", "[mejor] {item} en (vez | lugar) de {item}", "dije {item}"] },

@@ -292,14 +292,16 @@ export const tickets: SituationDef = {
       "(aqui (tiene | esta) | tome | tenga | le doy | le presto) (mi | el) (pasaporte #passport | identificacion #doc | ine #doc | credencial de elector #doc | licencia #doc | licencia de manejo #doc) #h:id_here",
       "(aqui (tiene | esta) | tome | tenga | le doy) mi credencial (de estudiante #student | del inapam #senior) #h:here_id",
       "(aqui (tiene | esta) | tome | tenga | le doy) mi credencial #card",
+      // "Tengo mi licencia": a statement, but at the ID check it offers the ID (a slip once read it as "Tenga…")
+      "(tengo | traigo) (mi | el) (pasaporte #passport | identificacion #doc | ine #doc | credencial de elector #doc | licencia #doc | licencia de manejo #doc)",
     ] },
     here_you_go_ctx: { patterns: ["(aqui tiene | aqui esta | tome | tenga | aqui lo tiene | aqui la tiene | aqui le doy) #h:here_you_go", "aqui tienes #tip:tu_staff"] },
     id_q: { patterns: ["(le sirve | sirve | esta bien | puedo usar) [mi | el] pasaporte #h:id_ok", "(necesita | quiere | ocupa) [ver] mi (pasaporte | identificacion)",
       "(necesita | hace falta) (identificacion | una identificacion | mi pasaporte)", "solo tengo [mi] pasaporte", "para que (necesita | quiere) mi (pasaporte | identificacion)"] },
     no_id: { patterns: [
       "no (traigo | tengo) [mi | una | la] (pasaporte | identificacion | credencial | ine) [conmigo | aqui] #h:id_none",
-      "no (la | lo) (traigo | tengo) [conmigo | aqui]", "(lo | la) (deje | olvide) en (el hotel | la casa | casa)",
-      "se me olvido [mi | el | la] (pasaporte | identificacion | credencial)", "(lo | la) (tengo | traigo) en (el hotel | la casa | casa)", "(se quedo | esta) en (el hotel | la casa | casa)", "(deje | olvide) mi (pasaporte | identificacion | credencial) en (el hotel | la casa | casa)",
+      "no (la | lo) (traigo | tengo) [conmigo | aqui]", "(lo | la) (dejé | olvidé) en (el hotel | la casa | casa)",
+      "se me olvidó [mi | el | la] (pasaporte | identificacion | credencial)", "(lo | la) (tengo | traigo) en (el hotel | la casa | casa)", "(se quedó | esta) en (el hotel | la casa | casa)", "(dejé | olvidé) mi (pasaporte | identificacion | credencial) en (el hotel | la casa | casa)",
     ] },
     discount_ask: { patterns: [
       "(hay | tienen | tiene | hacen | dan | manejan) descuento [para | de] (estudiantes #student | estudiante #student) #h:q_student",

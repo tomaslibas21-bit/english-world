@@ -130,7 +130,7 @@ export const GLOBAL_MACROS: Record<string, string | string[]> = {
   det: "(un | una | el | la | los | las | unos | unas | este | esta | ese | esa | mi | otro | otra)",
   greet: "(hola | buenos dias | buenas tardes | buenas noches | buenas | buen dia | hola buenas | hola buenos dias | hola buenas tardes)",
   // a short reason after "Perdón, me tengo que ir" in the same breath (#driving: "¡Maneje con cuidado!" fits)
-  leaving_why: "[perdon] [es que | porque] (estoy manejando [ahorita] #driving | voy manejando #driving | (tengo | traigo) prisa | voy tarde | tengo otra llamada | tengo una (cita | junta) [ahorita | ahora] | ya llego mi (taxi | camion | autobus | uber) | se me acaba la (bateria | pila) | (tocan | estan tocando) la puerta)",
+  leaving_why: "[perdon] [es que | porque] (estoy manejando [ahorita] #driving | voy manejando #driving | (tengo | traigo) prisa | voy tarde | tengo otra llamada | tengo una (cita | junta) [ahorita | ahora] | ya llegó mi (taxi | camion | autobus | uber) | se me acaba la (bateria | pila) | (tocan | estan tocando) la puerta)",
 };
 
 /** Leaving early ("Perdón, me tengo que ir.", "Le llamo luego."), shared by every situation. #leaving = only a goodbye
@@ -148,7 +148,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "[perdon] [me] lo (repite | repites | puede repetir | puedes repetir | podria repetir) [otra vez] #h:c_repeat",
     "[perdon] @could_you (decir | decirlo | decirmelo) (otra vez | de nuevo | una vez mas)",
     "[perdon] (que | como) (dijo | dijiste)",
-    "[perdon] no (escuche | oi | entendi) [bien] [lo que dijo | lo que dijiste] #h:c_catch",
+    "[perdon] no [le | te] (escuché | oi | entendi) [bien] [lo que dijo | lo que dijiste] #h:c_catch",
     "(otra vez | una vez mas | de nuevo | repita | repite) [por favor]",
   ] },
   g_slower: { patterns: [
@@ -191,7 +191,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "[muchas | mil | muchisimas] gracias por (su ayuda | tu ayuda | la ayuda | todo | ayudarme | su tiempo | tu tiempo | los consejos | la informacion | las recomendaciones) #h:s_thanks_help",
     "(se lo | te lo) agradezco [mucho]", "(muy | super | que) amable",
     "(perfecto | excelente | genial | que bien | buenisimo) [muchas] gracias",
-    "me (ayudo | ayudaste) mucho", "(fue | ha sido) (muy | super) amable",
+    "me (ayudó | ayudaste) mucho", "(fue | ha sido) (muy | super) amable",
   ] },
   g_bye: { patterns: [
     "(adios | hasta luego | nos vemos | hasta pronto | hasta manana | bye | chao | hasta la proxima) #h:s_bye2",
@@ -217,7 +217,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "(dejeme | dejame | permitame | permiteme) (pensar | ver | revisar) [un momento]",
     "(espere | espera | permitame | permiteme) [un momento | un segundo]",
   ] },
-  g_sorry: { patterns: ["lo siento [mucho]", "(perdon | disculpe | disculpa) (por eso | por la molestia)", "una disculpa", "ups", "me equivoque", "fue mi error"] },
+  g_sorry: { patterns: ["lo siento [mucho]", "(perdon | disculpe | disculpa) (por eso | por la molestia)", "una disculpa", "ups", "me equivoqué", "fue mi error"] },
   g_dontknow: { patterns: ["no se", "no lo se", "no estoy (seguro | segura) [todavia]", "no tengo idea", "ni idea", "no se todavia", "todavia no se", "no me decido", "no he decidido [todavia]"] },
   g_ok: { patterns: ["(entendido | ya veo | ya entendi | entiendo | perfecto | genial | que bien | bueno | muy bien | ok entonces | va pues | sale pues)",
     // "Ya sé lo que quiere decir" is understanding, not a question about a word (g_meaning)

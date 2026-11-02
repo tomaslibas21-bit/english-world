@@ -1079,9 +1079,9 @@ export const visitorCenter: SituationDef = {
       "(quiero | quisiera | me gustaria) (nadar | ir a nadar | bucear) (en | a) {place}", "(donde | en donde) (puedo | se puede) sacar dinero #atm", "necesito (sacar dinero | un cajero) #atm",
     ] },
     just_arrived: { patterns: [
-      "(acabo de llegar | llegue (hoy | ayer | anoche | esta manana)) [al pueblo | a puerto colibri] [y] [es mi (primer dia | primera vez) [aqui | en el pueblo]]", "(soy | somos) (nuevo | nueva | nuevos) [aqui | en el pueblo]",
+      "(acabo de llegar | llegué (hoy | ayer | anoche | esta manana)) [al pueblo | a puerto colibri] [y] [es mi (primer dia | primera vez) [aqui | en el pueblo]]", "(soy | somos) (nuevo | nueva | nuevos) [aqui | en el pueblo]",
       "es mi (primer dia | primera vez) [aqui | en puerto colibri | en el pueblo]", "es la primera vez que (vengo | estoy aqui)", "(estoy | estamos) de (vacaciones | visita | paseo)", "(soy | somos) (turista | turistas)",
-      "(me acabo de mudar | me acabo de cambiar | me mude) [aqui | al pueblo | a puerto colibri] [hace poco]", "(ahora | ya) vivo aqui", "(vivo | voy a vivir) aqui [ahora]",
+      "(me acabo de mudar | me acabo de cambiar | me mudé) [aqui | al pueblo | a puerto colibri] [hace poco]", "(ahora | ya) vivo aqui", "(vivo | voy a vivir) aqui [ahora]",
     ] },
     ask_language: { patterns: ["(habla | hablas) (ingles | aleman | frances | lituano | otro idioma | otros idiomas)", "(se habla | hablan) ingles [aqui]", "habla usted ingles"] },
     is_visitor_center: { patterns: ["(esta | aqui) es (la oficina de turismo | informacion turistica | el modulo de informacion | turismo)", "(esto | aqui) es (informacion turistica | la oficina de informacion)", "aqui (dan | tienen) informacion [turistica | para turistas]"] },
@@ -1144,23 +1144,23 @@ export const visitorCenter: SituationDef = {
     ] },
     did_i: { patterns: ["(entendi | lo entendi | le entendi) bien #h:k_did_i", "(es | esta) correcto", "lo dije bien", "voy bien", "asi es correcto", "(es | esta) bien asi"] },
     understood: { patterns: [
-      "creo que (si | ya) [entendi]", "(ya | ok ya | si ya | ah ya) entendi [todo]", "ya (entiendo | le entendi | le entiendo | quedo claro | me quedo claro)", "(esta | quedo) (claro | clarisimo) [ahora]",
-      "ahora (si)? (entiendo | entendi | me quedo claro)", "todo claro", "clarisimo", "ya me ubique", "me ubique", "(si | ok | ah | ah ok | ah ya) entendi", "ya (se | me se) (el camino | como llegar)", "(lo | la) voy a encontrar",
-      "entendi todo", "ya (capte | cache)", "(perfecto | ok) entendi",
+      "creo que (si | ya) [entendi]", "(ya | ok ya | si ya | ah ya) entendi [todo]", "ya (entiendo | le entendi | le entiendo | quedó claro | me quedó claro)", "(esta | quedó) (claro | clarisimo) [ahora]",
+      "ahora (si)? (entiendo | entendi | me quedó claro)", "todo claro", "clarisimo", "ya me ubiqué", "me ubiqué", "(si | ok | ah | ah ok | ah ya) entendi", "ya (se | me se) (el camino | como llegar)", "(lo | la) voy a encontrar",
+      "entendi todo", "ya (capté | caché)", "(perfecto | ok) entendi",
     ] },
     lost: { patterns: [
       "(me perdi | estoy perdido | estoy perdida | me revolvi | me confundi)", "estoy (un poco | medio | muy | algo) (confundido | confundida | perdido | perdida | revuelto | revuelta)", "estoy (confundido | confundida)",
-      "no (entendi | capte | escuche) (todo | la ultima parte | el final | lo ultimo | la primera parte | las indicaciones | lo de la vuelta)", "no (me quedo | quedo) claro",
-      "(fue | es) (mucha informacion | demasiada informacion | mucho)", "[no] no (esta | quedo | me quedo | queda) (claro | muy claro)", "no no (entendi | entiendo) [nada | bien | todo]", "(mas o menos | no del todo | no todo | casi | un poco | la mitad | solo la mitad | solo una parte)",
+      "no (entendi | capté | escuché) (todo | la ultima parte | el final | lo ultimo | la primera parte | las indicaciones | lo de la vuelta)", "no (me quedó | quedó) claro",
+      "(fue | es) (mucha informacion | demasiada informacion | mucho)", "[no] no (esta | quedó | me quedó | queda) (claro | muy claro)", "no no (entendi | entiendo) [nada | bien | todo]", "(mas o menos | no del todo | no todo | casi | un poco | la mitad | solo la mitad | solo una parte)",
     ] },
     // "No capté": Don Chuy reacts as to "No entiendo"
-    didnt_understand: { patterns: ["[perdon] no (capte | cache) [bien | eso | lo que dijo]"] },
+    didnt_understand: { patterns: ["[perdon] no (capté | caché) [bien | eso | lo que dijo]"] },
     // "¿Me puede ayudar?" on its own (Don Chuy starts with the map)
     need_help: { patterns: ["(me puede | puede | me podria | podria) ayudar", "necesito (ayuda | su ayuda)", "me puedes ayudar #tip:tu_staff"] },
-    lost_item: { patterns: ["(perdi | se me perdio | se me perdieron) (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)", "(me robaron | alguien me robo) (mi | la | el) (cartera | pasaporte | celular | bolsa | mochila | billetera)", "no encuentro (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)"] },
+    lost_item: { patterns: ["(perdi | se me perdio | se me perdieron) (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)", "(me robaron | alguien me robó) (mi | la | el) (cartera | pasaporte | celular | bolsa | mochila | billetera)", "no encuentro (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)"] },
     // "¿Derecho?" at "¿A la derecha o a la izquierda?": derecho is straight ahead, not right (a common slip)
     straight_ans_ctx: { patterns: ["(derecho | todo derecho | derechito | recto | todo recto) [@ctail]", "(sigo | voy) (derecho | recto | derechito) [@ctail]"] },
-    dir_ans_ctx: { patterns: ["[a] [la] {dir} [primero]", "(doy vuelta | volteo | voy | giro | doblo) [a] [la] {dir} [ahi]", "[a] [la] {dir} no [a] [la] {other:dir}", "(perdon | me equivoque) [a] [la] {dir}", "creo que [a] [la] {dir}", "a mano {dir}",
+    dir_ans_ctx: { patterns: ["[a] [la] {dir} [primero]", "(doy vuelta | volteo | voy | giro | doblo) [a] [la] {dir} [ahi]", "[a] [la] {dir} no [a] [la] {other:dir}", "(perdon | me equivoqué) [a] [la] {dir}", "creo que [a] [la] {dir}", "a mano {dir}",
       // "No a la derecha, a la izquierda": the second direction is the answer
       "[no] no [a] [la] {other:dir} [sino] [a] [la] {dir}", "(hacia | para) [la] {dir}", "(doy vuelta | volteo | voy | giro | doblo) (hacia | para) [la] {dir}", "[a] [la] {dir} creo"] },
     // clarification extras (the rest are global skills). repeat_it / write_it: the lesson's common forms the

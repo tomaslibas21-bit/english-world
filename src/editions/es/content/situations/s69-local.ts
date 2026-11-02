@@ -500,7 +500,7 @@ export const local: SituationDef = {
       "(no tengo | no traigo) tanto dinero", "(es | suena) mucho dinero [para mi]", "(algo | un lugar) que sea mas barato",
     ] },
     not_hungry: { patterns: [
-      "no tengo (mucha)? hambre [todavia | ahorita | ahora | ya]", "(todavia | ahorita | ahora) no tengo hambre", "(ya | acabo de) (comi | comer | desayune | desayunar | comimos | desayunamos) [{cuisine}]",
+      "no tengo (mucha)? hambre [todavia | ahorita | ahora | ya]", "(todavia | ahorita | ahora) no tengo hambre", "(ya | acabo de) (comi | comer | desayuné | desayunar | comimos | desayunamos) [{cuisine}]",
       "(tal vez | quizas | a lo mejor) (mas tarde | despues | luego)", "(estoy | ya estoy) (lleno | llena)", "ahorita no",
     ] },
     ask_sight: { patterns: [
@@ -524,7 +524,7 @@ export const local: SituationDef = {
     spot_ctx: { patterns: ["[tal vez | y | que tal | y que tal | y si | quiza | a lo mejor | mejor | prefiero] {spot} [tal vez | quiza]"] },
     sight_neg: { patterns: [
       "no me (gusta | gustan | interesa | interesan | encanta | encantan) {spot}", "no me (gusta | interesa) (el arte #art | la historia #art | la playa #beach | nadar #beach)",
-      "no me (gustan | interesan) (los museos #art | las ruinas #ruins | las playas #beach)", "no (quiero | quisiera | pienso) (ir @a_ | ver | visitar | conocer) {spot}", "{spot} no [gracias]", "no me (gustaria | interesa | apetece) (ir @a_ | ver | visitar | conocer) {spot}", "prefiero no (ir @a_ | ver | visitar) {spot}", "(ya | ya lo | ya la | ya los | ya las) (conozco | vi | visite) {spot}", "ya (fui | estuve) (@a_ | en | en el | en la) {spot}",
+      "no me (gustan | interesan) (los museos #art | las ruinas #ruins | las playas #beach)", "no (quiero | quisiera | pienso) (ir @a_ | ver | visitar | conocer) {spot}", "{spot} no [gracias]", "no me (gustaria | interesa | apetece) (ir @a_ | ver | visitar | conocer) {spot}", "prefiero no (ir @a_ | ver | visitar) {spot}", "(ya | ya lo | ya la | ya los | ya las) (conozco | vi | visité) {spot}", "ya (fui | estuve) (@a_ | en | en el | en la) {spot}",
     ] },
     ask_about_spot: { patterns: [
       "(vale | merece) la pena {spot} #h:p_worth", "(vale | merece) la pena (ir @a_ | visitar | conocer | ver) {spot}", "{spot} vale la pena", "que tal (es | esta)? {spot}", "(conoce | ha ido a | ha estado en | fue a) {spot}", "(que | como) es {spot}",
@@ -597,7 +597,7 @@ export const local: SituationDef = {
     ] },
     thanks_tip: { patterns: [
       "[muchas | mil | muchisimas] gracias por (el consejo | los consejos | la recomendacion | las recomendaciones | el dato | los datos | la informacion | la sugerencia | las sugerencias | el tip | los tips | las ideas | todo | su ayuda | la ayuda) #h:t_tip", "[muy | super | que] amable [muchas gracias | gracias]",
-      "(me ha | me) (ayudado | ayudo) mucho #h:t_helpful", "(suena | se oye) (muy)? (bien | padre | chido | genial | delicioso | rico | increible | perfecto | interesante) #h:t_sounds",
+      "(me ha | me) (ayudado | ayudó) mucho #h:t_helpful", "(suena | se oye) (muy)? (bien | padre | chido | genial | delicioso | rico | increible | perfecto | interesante) #h:t_sounds",
       "(voy a | lo voy a | la voy a | las voy a) (ir | probar | visitar | conocer) [manana | hoy | esta noche | luego | mas tarde] #h:t_check", "(sin falta | seguro) (voy | ire)",
       "(que | muy) buena (idea | recomendacion)", "(muy | super) (util | buena idea)", "(excelente | perfecto | genial | padrisimo | que padre | que chido) [muchas] gracias",
     ] },
@@ -613,7 +613,7 @@ export const local: SituationDef = {
     ] },
     tried_yes_ctx: { patterns: [
       "[si] (estuvo | estaba | fue) (delicioso | riquisimo | buenisimo | muy rico | muy bueno | increible | padrisimo | deliciosa | riquisima) #h:tr_delicious",
-      "[si] me (encanto | encantaron | gusto | gustaron) [mucho] #h:tr_great", "[si] ya (fui | lo probe | la probe | las probe | los probe | comi ahi | cene ahi)", "[si] (estuvo | fue) (muy)? (bueno | rico | padre | sabroso | buena | rica)", "[si] (fui | fuimos) (ayer | anoche | el otro dia | hoy | esta manana | el lunes | el fin de semana)", "[si] ya (fuimos | comimos ahi | las probe)",
+      "[si] me (encantó | encantaron | gustó | gustaron) [mucho] #h:tr_great", "[si] ya (fui | lo probé | la probé | las probé | los probé | comi ahi | cené ahi)", "[si] (estuvo | fue) (muy)? (bueno | rico | padre | sabroso | buena | rica)", "[si] (fui | fuimos) (ayer | anoche | el otro dia | hoy | esta manana | el lunes | el fin de semana)", "[si] ya (fuimos | comimos ahi | las probé)",
     ] },
     tried_no_ctx: { patterns: ["[no] todavia no [pero (voy a ir | ya voy | quiero ir)] #h:tr_not_yet", "[no] (aun | todavia) no (he ido | lo he probado | la he probado | fui)", "no (he ido | fui | pude ir | tuve tiempo | he tenido tiempo | he podido) [todavia | ir]", "aun no", "[no] (todavia | aun) no (tengo | he tenido) tiempo"] },
     weather_ok: { patterns: [
