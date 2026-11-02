@@ -1,0 +1,56 @@
+{ "situation": "s76-dentist-call", "items": [
+  { "ctx": "help", "say": "Buenas tardes, quisiera hacer una cita con el dentista", "intent": "book" },
+  { "ctx": "help", "say": "Hola, necesito una cita, me duele mucho una muela", "intent": ["book", "reason_ans"] },
+  { "ctx": "help", "say": "Quiero agendar una limpieza dental", "intent": ["book", "reason_ans"], "note": "Mexican agendar" },
+  { "ctx": "help_move", "say": "Tengo una cita mañana y necesito cambiarla", "intent": "move" },
+  { "ctx": "help_move", "say": "No quiero cancelar, quiero cambiar mi cita para otro día", "intent": "move", "not": ["cancel"], "note": "trap: negation" },
+  { "ctx": "help", "say": "Quiero cancelar mi cita", "intent": "cancel" },
+  { "ctx": "help", "say": "Se me cayó una resina", "intent": ["reason_ans", "book"], "note": "Mexican resina = filling" },
+
+  { "ctx": "reason", "say": "Se me rompió un diente", "intent": "reason_ans" },
+  { "ctx": "reason", "say": "Nada más una revisión", "intent": "reason_ans" },
+
+  { "ctx": "pain_len", "say": "Desde hace tres días", "intent": "pain_len" },
+  { "ctx": "pain_len", "say": "Como una semana", "intent": "pain_len" },
+
+  { "ctx": "new_pt", "say": "Sí, es la primera vez", "intent": ["new_yes", "yn:yes"] },
+  { "ctx": "new_pt", "say": "No, ya he ido antes", "intent": ["new_no", "yn:no"], "not": ["new_yes"] },
+  { "ctx": "new_pt", "say": "Nunca he ido con ustedes", "intent": ["new_yes"], "not": ["new_no"], "note": "trap: nunca" },
+
+  { "ctx": "name", "say": "Me llamo John Miller", "intent": "name_ctx" },
+  { "ctx": "name", "say": "Sarah Johnson", "intent": "name_ctx" },
+
+  { "ctx": "spell", "say": "eme, i, ele, ele, e, erre", "intent": "spell_ctx" },
+  { "ctx": "spell", "say": "Doble u, a, te, ese, o, ene", "intent": "spell_ctx", "note": "doble u (Spain / neutral)" },
+
+  { "ctx": "dob", "say": "El cuatro de junio de mil novecientos noventa", "intent": ["dob_ans", "dob_ctx"] },
+  { "ctx": "dob", "say": "Nací el 15 de marzo de 1985", "intent": ["dob_ans", "dob_ctx"] },
+
+  { "ctx": "phone", "say": "Noventa y ocho, cuarenta y cinco, doce, treinta y cuatro, cincuenta y seis", "intent": ["phone_ans", "phone_ctx"], "note": "pairs" },
+  { "ctx": "phone", "say": "Mi celular es 984 123 4567", "intent": ["phone_ans", "phone_ctx"] },
+
+  { "ctx": "insurance", "say": "Sí, tengo seguro dental por mi trabajo", "intent": "insurance_yes" },
+  { "ctx": "insurance", "say": "No tengo seguro, voy a pagar yo", "intent": "insurance_no", "not": ["insurance_yes"], "note": "trap: negation" },
+  { "ctx": "insurance", "say": "No, no tengo seguro dental", "intent": ["insurance_no", "yn:no"], "not": ["insurance_yes"], "note": "trap: negation" },
+  { "ctx": "insurance", "say": "¿Cuánto cuesta la consulta?", "intent": "cost_q" },
+
+  { "ctx": "hold", "say": "Sí, claro, no hay problema", "intent": ["hold_ok_ctx", "yn:yes"] },
+
+  { "ctx": "slot", "say": "¿No tiene algo más temprano?", "intent": "earlier" },
+  { "ctx": "slot", "say": "¿Tiene algo en la mañana?", "intent": "morning" },
+  { "ctx": "slot", "say": "¿Puede ser el viernes?", "intent": "day_req" },
+  { "ctx": "slot", "say": "Sí, perfecto, ahí estaré", "intent": ["accept", "yn:yes"] },
+  { "ctx": "slot", "say": "No me queda bien", "intent": ["reject", "yn:no"], "not": ["accept"], "note": "trap: negation" },
+  { "ctx": "slot", "say": "A esa hora no puedo, ¿tiene otro horario?", "intent": ["reject", "time_req", "availability_q"], "not": ["accept"], "note": "trap" },
+  { "ctx": "slot", "say": "¿Qué días tiene disponibles?", "intent": "availability_q" },
+  { "ctx": "slot", "say": "¿Y cuánto me va a costar?", "intent": "cost_q", "not": ["accept"], "note": "trap: price question" },
+
+  { "ctx": "more", "say": "¿Dónde están ubicados?", "intent": "address_q" },
+  { "ctx": "more", "say": "¿Tienen estacionamiento?", "intent": "parking_q" },
+  { "ctx": "more", "say": "¿Qué tengo que llevar?", "intent": "bring_q" },
+  { "ctx": "more", "say": "¿Y si tengo que cancelar?", "intent": "cancel_policy_q", "not": ["cancel"], "note": "trap: what-if" },
+  { "ctx": "more", "say": "No, eso es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "more", "say": "Nos vemos el jueves", "intent": "see_you" },
+
+  { "ctx": "reschedule_q", "say": "No, nada más cancélela, por favor", "intent": ["yn:no", "cancel"], "not": ["move"], "note": "trap" }
+]}

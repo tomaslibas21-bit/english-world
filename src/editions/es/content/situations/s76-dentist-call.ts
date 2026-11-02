@@ -1,4 +1,5 @@
-// NEEDS: None. Every merge, entity, value and pending question is local.
+// NEEDS: global.ts g_sorry_to_hear "¡Ay, qué pena!" first means "how embarrassing" in Mexico (suggest "¡Ay, lo siento!");
+// this file uses its own sorry_pain line. Every merge, entity, value and pending question is local.
 // Song 76 "Could You Spell That?" → Puerto Colibrí: "¿Cómo se escribe?"
 // A phone call to Clínica Dental Coral; Lorena at reception (usted). Booking an appointment, Mexican style: the
 // reason ("una revisión", "una limpieza", "me duele una muela", "se me cayó una resina"), "¿Es su primera vez con
@@ -222,8 +223,12 @@ function accept(c: Ctx) {
   const o = OFFERS[key];
   c.s.appt = key;
   c.say(moving(c) ? "moved" : "booked", { slot: slotVal(o) });
-  if (!moving(c)) c.say(c.s.newPt ? "arrive_early" : "bring_id");
-  c.say("text_reminder");
+  // said once per call, even when the appointment is booked again after a change
+  if (!c.s.toldArrive) {
+    c.s.toldArrive = true;
+    if (!moving(c)) c.say(c.s.newPt ? "arrive_early" : "bring_id");
+    c.say("text_reminder");
+  }
   c.s.donePath = c.s.donePath || (moving(c) ? "move" : "book");
   c.complete();
 }
@@ -370,6 +375,7 @@ export const dentist: SituationDef = {
       "[si] primera vez", "[no] nunca (he ido | he venido | he estado) [con ustedes | ahi | alla] [antes]", "[no] nunca",
       "[no] no (he ido | he venido | he estado) [con ustedes | ahi | alla] [antes | nunca]",
       "(acabo de llegar | soy (nuevo | nueva) (aqui | en el pueblo))",
+      "[no] (todavia no | aun no) [he (ido | venido)] [con ustedes] #notyet",
     ] },
     new_no: { patterns: [
       "[no] ya (he ido | he venido | he estado) [con ustedes | ahi | alla] [antes | una vez | varias veces] #h:new_before",
@@ -421,10 +427,19 @@ export const dentist: SituationDef = {
       "[no] [es | seria | voy a pagar] particular", "[no] (solo | nada mas | solamente) tengo seguro de viaje",
       "[no] mi seguro es (de | del | en) (estados unidos | canada | mi pais | inglaterra | otro pais | australia)",
       "[no] (pago | voy a pagar | lo pago) (en efectivo | con tarjeta | en efectivo o con tarjeta)", "[no] sin seguro",
+      "[no] [pero] [solo | nada mas | solamente] tengo (seguro de viaje | seguro de viajero)", "[no] (todavia | aun) no tengo seguro [dental | aqui]",
+      "[si] (tengo seguro | tengo) [medico | de gastos medicos] pero no (dental | para el dentista)", "[si] pero no (es dental | dental)",
     ] },
     insurance_yes: { patterns: [
       "[si] tengo [un] seguro [dental | de gastos medicos | medico] #h:ins_have", "[si] tengo (una poliza | un seguro) [dental | de gastos medicos]",
       "[si] (estoy asegurado | estoy asegurada) [por (mi trabajo | la empresa)]", "[si] mi (trabajo | empresa) me da seguro [dental]",
+      // "No voy a pagar yo, tengo seguro": the insurance pays (one segment, so no self-pay line first)
+      "[no] no (voy a pagar | pago | lo pago | lo voy a pagar) yo [porque | ya que] (tengo [un] seguro [dental] | lo paga mi seguro | lo cubre mi seguro)",
+      "(lo paga | lo cubre | lo va a pagar | paga) (mi | el) seguro",
+    ] },
+    insurance_q: { patterns: [
+      "(aceptan | reciben | trabajan con | toman) (seguro | seguros | mi seguro | seguro dental | seguros (americanos | extranjeros | internacionales | de estados unidos | de canada))",
+      "(puedo | se puede) (usar | pagar con) (mi | un) seguro", "(mi seguro | el seguro) (lo cubre | cubre la consulta | me lo paga)",
     ] },
     cost_q: { patterns: [
       "cuanto (cuesta | cobran | sale | es) [la consulta | la valoracion | la revision | la limpieza | la cita | la primera consulta] #h:q_cost",
@@ -450,16 +465,19 @@ export const dentist: SituationDef = {
       "(prefiero | me queda mejor | seria mejor) (en la tarde | por la tarde | mas tarde | en la noche)",
       "(salgo del trabajo | salgo de trabajar) a {time}", "despues de {time} [seria mejor | me queda mejor | puedo]",
       "(puedo | podria) (ir | llegar) (mas tarde | en la tarde | despues de {time})",
+      "[si] pero (en la tarde | por la tarde | mas tarde)", "prefiero no (en la manana | temprano)",
     ] },
     morning: { patterns: [
       "(tiene | tienen | hay) algo (en la manana | por la manana | temprano)", "(prefiero | mejor) (en la manana | por la manana | temprano)",
       "(en la manana | por la manana | las mananas) (me queda mejor | me quedan mejor | es mejor | seria mejor)", "algo (en la manana | por la manana)",
+      "[si] pero (en la manana | por la manana)",
     ] },
     day_req: { patterns: [
       "(puedo | podria) ir {day} [@dpart] [a {time}] [mejor | en vez] #h:slot_day", "(y | que tal | y que tal) {day} [@dpart] [a {time}]",
       "(tiene | tienen | hay) (algo | lugar | espacio | citas) [para] {day} [@dpart]", "no (tiene | tienen | hay) (algo | nada | lugar) [para] {day} [@dpart]", "mejor {day} [@dpart] [a {time}]",
       "{day} [@dpart] (me queda mejor | seria mejor | es mejor | me conviene mas)", "(abren | trabajan | atienden) {day}",
-      "{no_day:day} no [mejor | pero] {day} [@dpart] [a {time}]", "no {no_day:day} (sino | mejor) {day} [@dpart]",
+      "{no_day:day} no [mejor | pero] {day} [@dpart] [a {time}]", "no {no_day:day} [sino | mejor | pero] {day} [@dpart] [a {time}]",
+      "{no_day:day} no (puedo | me queda | me sirve) [pero] [y | que tal | mejor | puede ser] {day} [@dpart] [a {time}]",
       "(se puede | puede ser) {day} [@dpart] [a {time}]", "[y | que tal | mejor | puede ser] {day} de la (proxima semana | semana que viene) [@dpart] [a {time}]", "(la puedo | puedo | me la puede | la puede | podria) (cambiar | pasar | mover) (para | a | al) {day} [@dpart]",
     ] },
     time_req: { patterns: [
@@ -481,6 +499,8 @@ export const dentist: SituationDef = {
       "(ese dia | a esa hora | ese horario | esa hora | esa fecha | {day} | a {time}) no (puedo | me queda | me sirve | me conviene)",
       "(ese dia | {day}) (trabajo | tengo trabajo | estoy (ocupado | ocupada))",
       "(hay | tiene | tienen) (otro (dia | horario) | otra (opcion | fecha | hora))",
+      "[no] (ese dia | esa hora | a esa hora | {day}) no", "no tengo tiempo [ese dia | a esa hora | {day}]",
+      "[no] mejor (otro dia | otra hora | otro horario | otra fecha)", "no me (queda | sirve) [bien] {day} [a {time}]",
     ] },
     availability_q: { patterns: [
       "que (horarios | dias | horas) (tiene | tienen | hay) [disponibles | libres]", "(cuando | que dia) (puedo ir | tiene lugar | hay lugar | tiene espacio)",
@@ -496,7 +516,7 @@ export const dentist: SituationDef = {
       "[perdon] @staff hablar mas (fuerte | alto) #h:ph_speak_up", "hable mas (fuerte | alto)",
       "no (le | la | lo) (escucho | oigo) [bien | muy bien | nada]", "[perdon] (se esta cortando | se corta | se oye (mal | muy mal | cortado | entrecortado) | se escucha (mal | muy mal | cortado | entrecortado)) [la llamada | la linea] #h:ph_breaking",
       "la (llamada | linea | senal) (se esta cortando | esta muy mal | se oye mal | se corta | esta fallando)", "no se (oye | escucha) [bien | nada]",
-      "(sigue | todavia se oye | se sigue oyendo | se sigue escuchando) (mal | cortado | entrecortado)", "[no] (todavia no | aun no | sigue igual) [se oye bien]",
+      "(sigue | todavia se oye | se sigue oyendo | se sigue escuchando) (mal | cortado | entrecortado)", "[no] (todavia no | aun no) (se oye | se escucha | la escucho | la oigo | lo escucho | lo oigo) [bien]", "[no] sigue igual",
     ] },
     hear_me: { patterns: ["[ya | ahora] me @hear [ahora | bien | ya] #h:ph_hear", "(bueno | alo) [bueno] (me escucha | me oye | sigue ahi | esta ahi)", "(sigue | esta) ahi", "(asi | ahora) (esta mejor | se oye mejor | me escucha mejor)"] },
     hear_ok: { patterns: [
@@ -505,7 +525,7 @@ export const dentist: SituationDef = {
     ] },
 
     // --- questions
-    address_q: { patterns: ["cual es (la | su) direccion #h:q_address", "donde (estan | queda el consultorio | esta el consultorio | esta la clinica | queda la clinica | se encuentran | quedan)", "como llego", "(me da | me puede dar) la direccion"] },
+    address_q: { patterns: ["cual es (la | su) direccion #h:q_address", "donde (estan | queda el consultorio | esta el consultorio | esta la clinica | queda la clinica | se encuentran | quedan)", "como llego", "(me da | me puede dar) la direccion", "donde (estan | se encuentran) (ubicados | ubicadas)", "(cual es | me da) [la | su] ubicacion"] },
     parking_q: { patterns: ["donde (me puedo estacionar | puedo estacionarme | puedo estacionar) [el carro] #h:q_park", "(hay | tienen) estacionamiento", "donde (dejo | puedo dejar) el carro"] },
     duration_q: { patterns: ["cuanto [tiempo] (dura | tarda | se tarda) [la cita | la consulta | la limpieza | la valoracion] #h:q_long", "cuanto tiempo (va a durar | voy a estar ahi)"] },
     bring_q: { patterns: ["que (tengo que | debo | necesito) llevar #h:q_bring", "(tengo que | necesito | debo) llevar (algo | identificacion | mi identificacion | mi pasaporte | radiografias | algun documento)"] },
@@ -531,16 +551,18 @@ export const dentist: SituationDef = {
       "(se me presentó | me surgió | se me atravesó) (algo | un imprevisto | un compromiso)",
       "(quisiera | quiero | necesito) (otro dia | otra fecha | otro horario) para mi cita",
       "[mejor] (cambiela | cambiemela | muevala | pasela | reprogramela) [para otro dia | para {target:day} @dpart]",
+      "no (quiero | necesito) (cancelar | cancelarla) [mi cita | la cita] [solo | nada mas] (quiero | quisiera | necesito) (cambiar | mover | cambiarla | moverla) [mi | la] [cita] [para {target:day} @dpart | para otro dia]",
     ] },
     cancel: { patterns: [
       "(quisiera | quiero | necesito | tengo que | me gustaria) cancelar (mi | la) cita [de manana | de {day}]", "@staff cancelar (mi | la) cita",
       "(puedo | podria) cancelar (mi | la) cita", "cancele mi cita",
+      "[no] [solo | nada mas | mejor] (cancelela | cancelemela) [por favor]", "[no] (solo | nada mas) (quiero | quisiera | necesito) cancelarla",
     ] },
 
     // --- general
     more_no: { patterns: [
       "[no] (eso es | es) todo #h:more_all", "[no] nada mas", "[no] (seria | eso seria) todo", "por ahora (es todo | nada mas)", "ya con eso",
-      "[no] no necesito nada mas", "[no] (estoy bien | asi estoy bien)", "[no] (eso | es) seria todo",
+      "[no] no necesito nada mas", "[no] (estoy bien | asi estoy bien)", "[no] (eso | es) seria todo", "[muchas | mil] gracias (es | eso es | eso seria | seria) todo",
     ] },
     see_you: { patterns: ["(nos vemos | hasta) {day} #h:see_you", "(ahi | alla) nos vemos [entonces | {day}]", "nos vemos (entonces | pronto)", "(entonces | perfecto | muy bien) nos vemos [{day}]"] },
   },
@@ -578,6 +600,11 @@ export const dentist: SituationDef = {
       t("Ajá, | entiendo.", "Uh-huh, | I understand.", "I see."),
       t("Muy | bien, | ya | lo | anoté.", "Very | good, | already | it | I-wrote-down.", "Okay, I've made a note of it."),
     ],
+    // In Mexico "¡Qué pena!" first means "how embarrassing", so Lorena says she's sorry
+    sorry_pain: [
+      t("¡Ay, | lo siento!", "Oh, | I'm sorry!", "Oh, I'm sorry to hear that."),
+      t("¡Uy, | qué | mal!", "Oof, | how | bad!", "Oh no, that's no good."),
+    ],
     pain_soon: [t("Bueno, | vamos | a | buscarle | algo | pronto.", "Well, | we're going | to | find you | something | soon.", "Okay, let's find you something soon.")],
     ask_new: [
       t("¿Es | su | primera | vez | con | nosotros?", "Is it | your | first | time | with | us?", "Is this your first time with us?"),
@@ -591,6 +618,8 @@ export const dentist: SituationDef = {
       t("Perfecto, | {m:bienvenido|f:bienvenida}.", "Perfect, | welcome.", "Great, welcome!"),
       t("Muy | bien. | Entonces | le | abro | su | expediente.", "Very | good. | Then | (for) you | I'll-open | your | file.", "Okay. Then I'll open a patient file for you."),
     ],
+    // "No es mi primera vez" after "¿Ya había venido antes?": without its comma it could be either answer
+    amb_first: [t("Perdón, | entonces, | ¿es | su | primera | vez | con | nosotros?", "Sorry, | so, | is it | your | first | time | with | us?", "Sorry, so is this your first time with us?")],
     old_welcome: [t("¡Qué | gusto! | {m:Bienvenido|f:Bienvenida} | de nuevo.", "How | nice! | Welcome | again.", "How nice! Welcome back.")],
     ask_name: [
       t("¿Me | da | su | nombre | completo, | por favor?", "(To) me | you-give | your | name | full, | please?", "Can I have your full name, please?"),
@@ -687,6 +716,7 @@ export const dentist: SituationDef = {
       t("Lo siento, | el | sábado | ya | está | lleno, | y | los | domingos | no abrimos.", "I'm sorry, | — | Saturday | already | is | full, | and | on | Sundays | we don't open.",
         "I'm sorry, Saturday is already full, and we're closed on Sundays.", { flags: { 1: "el before a weekday = on; English needs no word here.", 7: "los + a weekday in the plural = every week on that day." } }),
     ],
+    day_full: [t("Lo siento, | ese | día | ya | no tengo | lugar.", "I'm sorry, | that | day | already | I don't have | room.", "I'm sorry, that day is already full.")],
     not_that_time: [t("Mmm, | a | esa | hora | no tengo | nada.", "Hmm, | at | that | time | I don't have | anything.", "Hmm, I don't have anything at that time.")],
     availability: [t("Tengo | {$slot} | o | {$slot2}.", "I have | {$slot} | or | {$slot2}.", "I have {$slot} or {$slot2}.", { say: "Tengo {$slot} o {$slot2}." })],
     booked: [
@@ -745,6 +775,10 @@ export const dentist: SituationDef = {
         "In the meantime, you can take a painkiller, like ibuprofen. If the pain gets worse, call us."),
     ],
     pay: [t("Aceptamos | efectivo, | tarjeta | y | transferencia.", "We accept | cash, | card | and | bank transfer.", "We take cash, cards, and bank transfers.")],
+    insurance_info: [
+      t("Depende | del | seguro. | Traiga | sus | datos | y | lo | revisamos | aquí.", "It depends | on the | insurance. | Bring | your | details | and | it | we-check | here.",
+        "It depends on the insurance. Bring your details and we'll look into it here."),
+    ],
     english: [t("Sí, | la | doctora | habla | inglés, | por si | lo | necesita.", "Yes, | the | doctor | speaks | English, | in case | it | you need.", "Yes, the dentist speaks English, in case you need it.")],
     hours: [
       t("Abrimos | de | lunes | a | viernes, | de | 9 | a | 2 | y | de | 4 | a | 8, | y | los | sábados | de | 9 | a | 2.",
@@ -1048,12 +1082,12 @@ export const dentist: SituationDef = {
       suggest: [{ lt: "Say if you have insurance or will pay yourself", hint: "insurance" }],
       yes: (c) => { c.s.insurance = true; c.say("insurance_card"); },
       no: (c) => { c.s.insurance = false; c.say("selfpay", { price: 40000 }); } },
-    { id: "hold", when: (c) => readyForSlot(c) && !!c.s.askHold && !c.s.appt, done: (c) => !!c.s.holdDone,
+    { id: "hold", when: (c) => readyForSlot(c) && !!c.s.askHold && !c.s.appt && !c.s.canceled, done: (c) => !!c.s.holdDone,
       ask: (c) => { c.say("hold_q"); c.twist("on_hold"); }, expects: ["hold_ok_ctx"],
       suggest: [{ lt: "Agree to hold", hint: "hold" }],
       yes: (c) => { c.s.holdDone = true; c.say("hold_thanks"); },
       no: (c) => { c.s.holdDone = true; c.say("hold_quick"); } },
-    { id: "slot", when: (c) => readyForSlot(c), done: (c) => !!c.s.appt,
+    { id: "slot", when: (c) => readyForSlot(c) && !c.s.canceled, done: (c) => !!c.s.appt,
       ask: (c) => {
         if (moving(c) && !c.s.foundAppt) {
           c.s.foundAppt = true; c.say("found_appt", { slot: slotVal(EXISTING) });
@@ -1069,8 +1103,10 @@ export const dentist: SituationDef = {
           return;
         }
         if (!c.s.offer) {
-          if (c.s.pain && c.chance(0.5)) c.say("pain_soon");
-          offer(c, c.s.wantDay ?? (c.s.urgent ? "early" : c.s.wantLate ? "late" : c.s.wantMorning ? "morning" : "first"));
+          // "Vamos a buscarle algo pronto" comes with the soonest opening, not Tuesday's
+          const soon = !c.s.wantDay && !c.s.wantLate && !c.s.wantMorning && c.s.pain && c.chance(0.5);
+          if (soon) c.say("pain_soon");
+          offer(c, c.s.wantDay ?? (c.s.urgent || soon ? "early" : c.s.wantLate ? "late" : c.s.wantMorning ? "morning" : "first"));
           return;
         }
         offer(c, c.s.offer, true);
@@ -1084,7 +1120,9 @@ export const dentist: SituationDef = {
       // "Así está bien" at the time question could mean "that's fine": Lorena asks again rather than move on
       no: (c) => {
         if (/(^|[\s¿¡,])as[ií]([\s,.!?]|$)/i.test(c.heard)) {
-          if (c.s.politeAsked) { accept(c); return; }
+          // only "así está bien" said again books; "así no" is a no
+          if (c.s.politeAsked && /as[ií] est[aá] bien/i.test(c.heard) && !/as[ií] no/i.test(c.heard)) { accept(c); return; }
+          if (c.s.politeAsked) { dentist.handlers.reject(c, {}, { intent: "reject", slots: {}, tags: [] }); return; }
           c.s.politeAsked = true; offer(c, c.s.offer, true); c.hold(); return;
         }
         dentist.handlers.reject(c, {}, { intent: "reject", slots: {}, tags: [] });
@@ -1132,11 +1170,17 @@ export const dentist: SituationDef = {
       if (!c.s.pain) { c.s.pain = true; if (!c.s.reason) c.s.reason = "toothache"; }
       c.say("noted");
     },
-    new_yes(c) { setNew(c, true); },
+    new_yes(c, _slots, seg) {
+      // "Todavía no" answers "¿Ya había venido antes?" only
+      if (seg.tags.includes("notyet") && (c.step !== "new_pt" || c.s.npVariant !== 1)) return;
+      setNew(c, true);
+    },
     new_no(c, _slots, seg) {
-      // "No es mi primera vez" means "I've been before"; after "¿Ya había venido antes?" its lost comma ("No, es mi
-      // primera vez") is the likelier reading: a new patient.
-      if (seg.tags.includes("notfirst") && c.step === "new_pt" && c.s.npVariant === 1) { setNew(c, true); return; }
+      // "No es mi primera vez" means "I've been before"; after "¿Ya había venido antes?" it could also be "No, es mi
+      // primera vez" (its comma lost): the two readings record different things, so Lorena asks the other question.
+      if (seg.tags.includes("notfirst") && c.step === "new_pt" && c.s.npVariant === 1) {
+        c.s.npVariant = 0; c.say("amb_first"); c.hold(); return;
+      }
       setNew(c, false);
     },
 
@@ -1192,6 +1236,7 @@ export const dentist: SituationDef = {
       if (c.step === "insurance" || c.s.newPt) c.say("selfpay", { price: 40000 });
     },
     insurance_yes(c) { if (c.s.insurance === true) return; c.s.insurance = true; c.say("insurance_card"); },
+    insurance_q(c) { c.say("insurance_info"); },
     cost_q(c) { c.say("price_info", { price: 40000 }); },
 
     earlier(c) {
@@ -1235,6 +1280,7 @@ export const dentist: SituationDef = {
       const part = partOf(slots, seg);
       const d = slots.day as string | undefined;
       if (!d) return;
+      if (!c.s.task) startBooking(c);
       if (c.s.appt) { if (WEEKEND.includes(d)) c.say("hours"); else booked(c); return; }
       // moving: "early" (tomorrow 9:30) is the appointment being moved, so Lorena keeps her own offer instead
       const early = moving(c) ? (c.s.offer ?? "move") : "early";
@@ -1251,9 +1297,16 @@ export const dentist: SituationDef = {
       }
       let key: string | undefined = DAY_OFFER[d];
       if (moving(c) && d === "thursday") key = "move";
-      if (key === "only" && !c.s.onlyTwist) key = "early";
       if (!key) return;
-      if (!readyForSlot(c)) { c.s.wantDay = key; return; }
+      if (key === "only" && !c.s.onlyTwist) {
+        // "Pasado mañana" without the twist: that day is full (never tomorrow instead, nor the appointment being moved)
+        if (!readyForSlot(c)) return;
+        c.say("day_full"); dentist.handlers.reject(c, {}, { intent: "reject", slots: {}, tags: [] }); return;
+      }
+      if (!readyForSlot(c)) {
+        if (fitsPart(key, part)) c.s.wantDay = key; else if (part === "am") c.s.wantMorning = true; else c.s.wantLate = true;
+        return;
+      }
       if (onlyNow(c) && d !== "next_week" && key !== "only") { onlyOne(c); return; }
       if (onlyNow(c) && d === "next_week") { c.s.onlyRejected = true; }
       // "El martes en la tarde" when Tuesday's opening is in the morning: another opening in that part of the day
@@ -1262,7 +1315,8 @@ export const dentist: SituationDef = {
         const alt = (part === "pm" ? ["wednesday", "monday", "late"] : ["first", "morning", "early"]).filter((k) => !(moving(c) && k === "early"));
         key = alt.find((k) => k !== c.s.offer && OFFERS[k].d !== d) ?? alt[0];
       }
-      if (c.s.offer === key) { accept(c); return; }
+      // "El martes, no el miércoles" and "El martes no, el miércoles" lose their comma: a correction only offers, it never books
+      if (c.s.offer === key) { if (slots.no_day) { offer(c, key, true); c.hold(); } else accept(c); return; }
       offer(c, key, (c.s.offered || []).includes(key) && key !== "move"); c.hold();
     },
     time_req(c, slots) {
@@ -1286,6 +1340,9 @@ export const dentist: SituationDef = {
       const tm = slots.time as { h: number; m: number; ampm?: string } | undefined;
       const sameDay = (!d || d === o.d) && fitsPart(c.s.offer, partOf(slots, seg));
       const sameTime = !tm || (o.h % 12 === tm.h % 12 && o.m === tm.m && !(tm.ampm === "am" && o.h >= 12) && !(tm.ampm === "pm" && o.h < 12));
+      // "No el martes, el miércoles": a turn with "no" in it never books the offer it names
+      const neg = /(^|\s)no(\s|$)/.test(c.heard.toLowerCase().replace(/[¿?¡!,.]/g, " "));
+      if (sameDay && sameTime && neg) { if (!turn(c).picked) { turn(c).picked = true; offer(c, c.s.offer, true); c.hold(); } return; }
       if (sameDay && sameTime) { accept(c); return; }
       if (tm) { dentist.handlers.time_req(c, slots, seg); return; }
       dentist.handlers.day_req(c, slots, seg);
@@ -1363,7 +1420,7 @@ export const dentist: SituationDef = {
 
     address_q(c) { c.say("address"); },
     parking_q(c) { c.say("parking"); },
-    duration_q(c) { c.say(c.s.newPt === false || moving(c) || c.s.reason === "cleaning" ? "duration_short" : "duration"); },
+    duration_q(c) { c.say(c.s.newPt === true && !moving(c) && c.s.reason !== "cleaning" ? "duration" : "duration_short"); },
     bring_q(c) { c.say("bring"); },
     cancel_policy_q(c) { c.say("cancel_policy"); },
     forms_q(c) { c.say("forms"); },
@@ -1373,6 +1430,17 @@ export const dentist: SituationDef = {
     english_q(c) { c.say("english"); },
 
     move(c, slots) {
+      const tgt0 = slots?.target as string | undefined;
+      // "¿Puedo cambiar la cita?" right after booking it (or "Sí" to "¿Quiere cambiarla para otro día?"): Lorena
+      // frees that time and offers another one (the day asked for, if any)
+      if (c.s.booking && !c.s.moving && c.s.appt) {
+        const old = c.s.appt as string;
+        const asked = tgt0 && DAY_OFFER[tgt0] && DAY_OFFER[tgt0] !== "only" ? DAY_OFFER[tgt0] : undefined;
+        c.s.wantDay = asked ?? ["first", "early", "late", "morning", "monday", "wednesday"].find((k) => k !== old && !(c.s.offered || []).includes(k)) ?? (old === "first" ? "late" : "first");
+        c.s.appt = undefined; c.s.offer = undefined; c.s.moreDone = false;
+        c.say("reason_ok");
+        return;
+      }
       // "Mañana no puedo ir a la cita" while booking a new one is a no to the offer, not a second appointment
       if (c.s.booking && !c.s.moving && c.s.offer) { dentist.handlers.reject(c, slots, { intent: "reject", slots, tags: [] }); return; }
       c.s.task = c.s.task || "move";
@@ -1393,8 +1461,8 @@ export const dentist: SituationDef = {
         id: "reschedule_q", expects: ["move"], hints: ["g_yesno", "move"],
         suggest: [{ lt: "Say if you'd like to move it", hint: "g_yesno" }, { lt: "Move your appointment", hint: "move" }],
         yes: (cc) => { dentist.handlers.move(cc, {}, { intent: "move", slots: {}, tags: [] }); },
-        no: (cc) => { cc.s.canceled = true; cc.say("canceled"); },
-        on: { move: (cc, sl, sg) => { dentist.handlers.move(cc, sl, sg); } },
+        no: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.say("canceled"); },
+        on: { move: (cc, sl, sg) => { dentist.handlers.move(cc, sl, sg); }, cancel: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.say("canceled"); } },
         ask: (cc) => cc.say("offer_reschedule"),
       });
     },
@@ -1538,6 +1606,21 @@ export const dentist: SituationDef = {
     { say: "La bicicleta del vecino es verde", intent: "none" },
     { say: "Ryan Miller", intent: "none" },
     { say: "eme i ele ele e erre", intent: "none" },
+    // review: corrections, lost commas and meaning safety
+    { say: "No el martes, el miércoles", intent: "day_req", step: "slot", slots: { day: "wednesday" }, not: ["accept", "pick_ctx"] },
+    { say: "El martes no puedo, ¿y el jueves?", intent: "day_req", step: "slot", slots: { day: "thursday" }, not: ["accept", "reject"] },
+    { say: "No, todavía no", intent: "new_yes", step: "new_pt", not: ["speak_up", "new_no"] },
+    { say: "No voy a pagar yo, tengo seguro", intent: "insurance_yes", step: "insurance", not: ["insurance_no"] },
+    { say: "Tengo seguro de viaje", intent: "insurance_no", step: "insurance", not: ["insurance_yes"] },
+    { say: "Sí, pero no dental", intent: "insurance_no", step: "insurance", not: ["insurance_yes"] },
+    { say: "¿Aceptan seguro?", intent: "insurance_q", not: ["insurance_yes"] },
+    { say: "No, nada más cancélela, por favor", intent: "cancel", not: ["move"] },
+    { say: "No quiero cancelar, quiero cambiar mi cita para otro día", intent: "move", not: ["cancel"] },
+    { say: "Ese día no", intent: "reject", step: "slot", not: ["accept"] },
+    { say: "No, mejor otro día", intent: "reject", step: "slot", not: ["accept"] },
+    { say: "Sí, pero en la tarde", intent: "later", step: "slot", not: ["accept"] },
+    { say: "¿Dónde están ubicados?", intent: "address_q" },
+    { say: "Gracias, es todo", intent: "more_no", step: "more" },
   ],
 
   sims: [
@@ -1572,6 +1655,12 @@ export const dentist: SituationDef = {
     { name: "cancel, then move it after all",
       turns: ["Necesito cancelar la cita de mañana.", "Sí, mejor cámbiela.", "Ryan Miller.", "4 de junio de 1990.", "Sí, me queda bien.", "Nos vemos el jueves."],
       setup: (s) => { s.moveTwist = true; s.onlyTwist = false; s.spellOnMove = false; s.askHold = false; }, expect: { complete: true, state: { appt: "move" } }, auto: DENTIST_AUTO },
+    { name: "a correction, then a change right after booking",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "No el martes, el miércoles.", "Sí, me queda bien.", "¿Puedo cambiar la cita para el viernes?", "Perfecto.", "Gracias, es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "morning", newPt: false } }, auto: DENTIST_AUTO },
+    { name: "\"No es mi primera vez\" without its comma: Lorena asks again",
+      turns: ["Necesito una cita para una limpieza.", "No es mi primera vez.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "4 de junio de 1990", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 1; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first", newPt: false } }, auto: DENTIST_AUTO },
   ],
 };
 
@@ -1587,7 +1676,7 @@ function setReason(c: Ctx, r: string, tags: string[] = []) {
   c.s.reason = r;
   const e = REASONS.find((x) => x.id === r);
   if (!tags.includes("nopain") && (e?.attrs?.pain || tags.includes("pain") || tags.includes("broken"))) c.s.pain = true;
-  if (first) c.say(c.s.pain || e?.attrs?.problem || tags.includes("filling") ? "g_sorry_to_hear" : "reason_ok");
+  if (first) c.say(c.s.pain || e?.attrs?.problem || tags.includes("filling") ? "sorry_pain" : "reason_ok");
 }
 
 function setNew(c: Ctx, isNew: boolean) {
