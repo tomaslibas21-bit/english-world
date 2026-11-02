@@ -131,6 +131,10 @@ function cliticVerb(c: string, a: string | undefined, b: string | undefined, ope
   if (!isFiniteVerb(a) && !isPast(a)) return false;
   return !((c === "la" || c === "las") && (isArPresentA(a) || NOUN_LIKE.has(a!)));
 }
+/** "Si no hay problema" typed without its comma and accent is "Sí, no hay problema" (a yes and a reassurance) when
+ *  nothing follows it; "Si no hay problema, me lo llevo" is an "if". */
+const REASSURANCE = new Set(["hay problema", "hay ningun problema", "pasa nada", "importa", "se preocupe", "te preocupes",
+  "se moleste", "te molestes", "hay de que", "hay bronca"]);
 /** "¿Y si cancelo?", "¿Qué pasa si…?", "¿Qué tal si…?", "Si no me queda…": the "si" of a condition, never the "sí" of a
  *  yes (accents are folded, so "si" would read as "sí"). Written "s'i", in what the learner says and in the patterns
  *  alike, so a what-if pattern still matches it ("(y si | que pasa si) cancelo": the "si" in the same words as its "y",
@@ -138,8 +142,11 @@ function cliticVerb(c: string, a: string | undefined, b: string | undefined, ope
  *  adelantado". A "sí" with its accent is still a yes ("Y sí, cancelo"). */
 function markIf(s: string): string {
   s = s.replace(/(^|[^\p{L}])(y|pasa|tal)(\s*[)\]]?\s+)si(?![\p{L}'])/giu, "$1$2$3s'i");
-  // "Si no me queda", "Si no tengo efectivo": at the start, "si no" and a verb (not "Si, no…", "Sí, no…")
-  return s.replace(/^([^\p{L}]*)si(\s+no\s+)((?:\p{L}+\s+){0,2}\p{L}+)/iu, (m, pre: string, sp: string, rest: string) => {
+  // "Si no me queda", "Si no tengo efectivo": at the start, "si no" and a verb (not "Si, no…", "Sí, no…", nor a
+  // reassurance on its own: "si no hay problema" is "Sí, no hay problema")
+  return s.replace(/^([^\p{L}]*)si(\s+no\s+)((?:\p{L}+\s+){0,2}\p{L}+)/iu, (m, pre: string, sp: string, rest: string, _at: number, all: string) => {
+    const after = fold(all.slice(pre.length + 2 + sp.length)).replace(/[^\p{L}\s]/gu, " ").trim().replace(/\s+/g, " ");
+    if (REASSURANCE.has(after.replace(/ (?:muchas )?gracias$| (?:senor|senora|senorita|joven)$/, ""))) return m;
     const ws = fold(rest).split(/\s+/);
     let i = 0;
     while (i < ws.length - 1 && CLITICS.has(ws[i])) i++;

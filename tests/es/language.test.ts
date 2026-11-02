@@ -338,6 +338,15 @@ describe("6. 'y si' is an 'if', not 'and yes'", () => {
     expect(read(rental, "¿Y si cancelo?", exp)).toEqual(["cancel_q_ctx"]);
     expect(read(rental, "Sí, cancelo", exp)).toEqual(["tpl_leave_ctx", "yn:yes"]);
   });
+  it("but a reassurance on its own is the yes of 'Sí, no hay problema'", () => {
+    expect(toks("si no hay problema")).toEqual(["si", "no", "hay", "problema"]);
+    expect(toks("si no importa gracias")[0]).toBe("si");
+    expect(toks("Si no hay problema, me lo llevo")[0]).toBe("s'i");
+    const nlu = toy({ ok_ack: ["(ok | claro | perfecto) [no hay problema]", "no hay problema", "no importa", "no pasa nada"] });
+    for (const s of ["si no hay problema", "si no importa", "si no pasa nada", "si no hay problema gracias"]) {
+      expect(read(nlu, s)).toContain("yn:yes");
+    }
+  });
 });
 
 describe("7. 'Claro que no' is a no", () => {
