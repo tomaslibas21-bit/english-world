@@ -1,0 +1,53 @@
+{ "situation": "s82-neighbor", "items": [
+  { "ctx": "intro", "say": "Hola, soy Kevin, acabo de mudarme al departamento de al lado", "intent": ["im_name_ctx", "my_name", "moved_in"] },
+  { "ctx": "intro", "say": "Buenas tardes, soy su nuevo vecino", "intent": "moved_in", "not": ["im_name_ctx", "my_name"], "note": "trap: 'su nuevo vecino' is not a name" },
+  { "ctx": "intro", "say": "Me acabo de cambiar aquí al lado", "intent": "moved_in", "note": "Mexican cambiarse = move" },
+  { "ctx": "intro", "say": "Vivo en el departamento de enfrente, me mude ayer", "intent": "moved_in", "note": "no accent" },
+
+  { "ctx": "name", "say": "Me llamo Sarah", "intent": "my_name" },
+  { "ctx": "name", "say": "Sarah, mucho gusto", "intent": ["bare_name_ctx", "im_name_ctx", "my_name"] },
+
+  { "ctx": "from_q", "say": "Soy de Canadá", "intent": ["from_ans", "from_ans_ctx"] },
+  { "ctx": "from_q", "say": "De Estados Unidos, de Texas", "intent": ["from_ans", "from_ans_ctx"] },
+  { "ctx": "from_q", "say": "Soy canadiense", "intent": ["from_ans", "from_ans_ctx"], "note": "demonym" },
+
+  { "ctx": "like_q", "say": "Me encanta, es muy tranquilo", "intent": "like_ans_ctx" },
+  { "ctx": "like_q", "say": "Bien, pero todavía tengo muchas cajas", "intent": ["boxes", "like_ans_ctx"] },
+
+  { "ctx": "trash_q", "say": "¿Dónde se tira la basura?", "intent": "ask_trash" },
+  { "ctx": "trash_q", "say": "¿Qué días pasa el camión de la basura?", "intent": "ask_trash_day", "not": ["ask_gas"], "note": "trap: truck is the garbage one" },
+  { "ctx": "needs", "say": "¿A qué hora pasa la basura?", "intent": "ask_trash_day" },
+  { "ctx": "needs", "say": "¿Qué es esa música?", "intent": "ask_gas" },
+  { "ctx": "needs", "say": "¿Dónde compro el gas?", "intent": "ask_gas" },
+  { "ctx": "needs", "say": "¿Se puede tomar el agua de la llave?", "intent": "ask_water" },
+  { "ctx": "needs", "say": "¿Dónde está la lavandería?", "intent": "ask_laundry" },
+  { "ctx": "needs", "say": "¿Hay una tiendita por aquí?", "intent": "ask_store" },
+  { "ctx": "needs", "say": "¿Me puede hacer un favor?", "intent": "ask_favor" },
+  { "ctx": "needs", "say": "¿Me podría regar las plantas la próxima semana?", "intent": "water_plants" },
+  { "ctx": "needs", "say": "Voy a estar fuera unos días, ¿podría regar mis plantas?", "intent": "water_plants" },
+  { "ctx": "needs", "say": "¿Me recibe un paquete el lunes?", "intent": "take_package" },
+  { "ctx": "needs", "say": "¿Me presta su escalera?", "intent": "borrow" },
+  { "ctx": "needs", "say": "¿Tiene un taladro que me preste?", "intent": "borrow" },
+  { "ctx": "needs", "say": "No necesito nada, gracias", "intent": "no_more", "not": ["borrow", "ask_favor"], "note": "trap: negation" },
+  { "ctx": "needs", "say": "Yo no tengo plantas", "intent": "none", "not": ["water_plants"], "note": "trap: negation" },
+  { "ctx": "needs", "say": "Perdón por el ruido de anoche", "intent": "noise_sorry" },
+  { "ctx": "needs", "say": "¿Le podría bajar a la música, por favor?", "intent": "noise_ask", "note": "Mexican bajarle" },
+
+  { "ctx": "away_when", "say": "El viernes que viene", "intent": "away_when_ctx" },
+
+  { "ctx": "complaint", "say": "Ay, perdón, no va a volver a pasar", "intent": ["noise_promise", "noise_sorry"] },
+  { "ctx": "complaint", "say": "No fui yo, yo no tuve ninguna fiesta", "intent": "noise_deny", "not": ["noise_sorry", "noise_reason", "noise_promise"], "note": "trap: denial" },
+
+  { "ctx": "pkg", "say": "¡Muchísimas gracias! Lo estaba esperando", "intent": ["g_thanks", "thanks_kind"] },
+
+  { "ctx": "coffee", "say": "¡Claro, me encantaría!", "intent": ["coffee_yes", "yn:yes"] },
+  { "ctx": "coffee", "say": "Me encantaría, pero el domingo trabajo", "intent": "coffee_no", "not": ["coffee_yes", "yn:yes"], "note": "trap: yes-but" },
+  { "ctx": "coffee", "say": "El domingo no puedo, ¿qué tal el sábado?", "intent": "coffee_day", "not": ["coffee_no", "coffee_yes"], "note": "trap: other day" },
+  { "ctx": "coffee", "say": "No puedo, pero gracias", "intent": ["coffee_no", "yn:no"], "not": ["coffee_yes"], "note": "trap: refusal" },
+
+  { "ctx": "coffee_time", "say": "A las cinco no puedo", "intent": "coffee_time_no", "not": ["coffee_time_ctx", "yn:yes"], "note": "trap: negated time" },
+  { "ctx": "coffee_time", "say": "Mejor a las seis", "intent": "coffee_time_ctx" },
+
+  { "ctx": "closing", "say": "Mucho gusto, que esté bien", "intent": ["nice_meet", "g_bye", "bye_wish"] },
+  { "ctx": "closing", "say": "Nos vemos, gracias por todo", "intent": ["see_around", "g_thanks", "g_bye"] }
+] }
