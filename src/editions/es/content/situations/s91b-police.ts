@@ -1,7 +1,7 @@
 // NEEDS: None. The wallet, places, colors and contents are local (the Spanish s91a-lost-wallet doesn't exist yet; when
 //   it does, the two files could share ITEMS / PLACES / COLORS as the English edition does).
 // Song 91 "Can You Help Me, Please?" (part 2) → Puerto Colibrí: "Quiero levantar una denuncia".
-// Oficial Reyes at the Policía Municipal on the zócalo (usted). He takes a police report (un reporte) about a stolen or
+// Oficial Reyes at the Policía Municipal across from the zócalo, next to the museum (s62) (usted). He takes a police report (un reporte) about a stolen or
 // lost wallet: what happened, where and when, what it looks like, what was in it (cards → "¿Ya llamó a su banco?"; a
 // passport → the consulate), the learner's name (spelled), a phone number, a signature, and the report number (el
 // folio). The learner may ask for a copy "para el seguro".
@@ -104,6 +104,12 @@ const CONTENTS: EntityDef[] = [
   ent("student_id", "credencial de estudiante", "student ID", "f", { chip: "credencial de estudiante", forms: ["credencial de la escuela", "credencial de la universidad"], attrs: { id: true } }),
   ent("gift_card", "tarjeta de regalo", "gift card", "f", { chip: "tarjeta de regalo", forms: ["tarjetas de regalo"] }),
   ent("receipts", "recibos", "receipts", "m", { art: "", chip: "recibos", forms: ["recibo", "tickets", "ticket", "notas", "comprobantes"], attrs: { pl: true } }),
+  // what a purse or a backpack carries
+  ent("cellphone", "celular", "phone", "m", { chip: "celular", forms: ["telefono", "cel", "iphone", "telefono celular"], attrs: { phone: true } }),
+  ent("clothes", "ropa", "clothes", "f", { art: "", chip: "ropa", forms: ["mi ropa", "una playera", "un traje de bano", "una toalla"] }),
+  ent("sunglasses", "lentes de sol", "sunglasses", "m", { art: "", chip: "lentes de sol", forms: ["lentes", "mis lentes", "lentes oscuros"], attrs: { pl: true } }),
+  ent("laptop", "computadora", "laptop", "f", { chip: "computadora", forms: ["laptop", "lap", "compu", "computadora portatil", "tablet", "ipad"] }),
+  ent("camera", "cámara", "camera", "f", { chip: "cámara", forms: ["camara", "camara de fotos"] }),
 ];
 
 const ALL = [...ITEMS, ...PLACES, ...COLORS, ...MATERIALS, ...SIZES, ...CONTENTS];
@@ -114,10 +120,11 @@ const byId = (id: string) => ALL.find((e) => e.id === id)!;
 
 const fold = (x: string) => (x || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const item = (c: Ctx) => (c.s.item as string) || "wallet";
-/** The echo: color with a material, or color with a size ("una cartera negra de piel", "un celular negro chico"). */
+/** The echo: color with a material ("una cartera negra de piel"), else the color, else the material or the size.
+ *  Never color + size: English would say "a black small wallet". */
 const itemNp = (c: Ctx, color?: string | null) => {
   const col = color === undefined ? c.s.color : color;
-  return { id: item(c), mods: [col, c.s.material ?? c.s.size].filter(Boolean) as string[] };
+  return { id: item(c), mods: (col ? [col, c.s.material] : [c.s.material ?? c.s.size]).filter(Boolean) as string[] };
 };
 
 /** Per-turn scratch state: one answer may arrive as several segments, each running its handler with the same ctx. */
@@ -171,6 +178,9 @@ function addContents(c: Ctx, slots: any) {
   for (const ci of ([] as any[]).concat(slots.ci ?? [])) {
     if (!ci) continue;
     const tags: string[] = ci.__tags || [];
+    // "Tenía dos tarjetas", "una pregunta": a count before a noun reads as a price. Under 10 pesos, with no
+    // "pesos" said, it isn't cash.
+    if (typeof ci.price === "number" && ci.price < 1000 && !/\bpesos?\b/.test(fold(c.heard))) continue;
     if (ci.content && !list.includes(ci.content)) list.push(ci.content);
     if (tags.includes("cash") && !list.includes("cash")) list.push("cash");
     if (tags.includes("usd")) c.s.cashAmount = "other";
@@ -205,32 +215,45 @@ function helpHere(c: Ctx) {
   if (next) c.ask(next.id);
 }
 
-/** After the report: "¿Algo más en que le pueda ayudar?" (with the Ministerio Público questions once he has said it). */
-function anythingElse(c: Ctx): Pending {
-  const mp = !!c.s.mpSaid;
+/** After the report: "¿Algo más en que le pueda ayudar?" (with the Ministerio Público questions once he has said it).
+ *  Built again at each re-ask, so a Ministerio Público mentioned on the way (the copy for the insurance) opens them. */
+function anythingElse(c: Ctx, id: "anything_else" | "ask_away" = "anything_else"): Pending {
+  const mp = !!(c.s.mpSaid || c.s.mpInfo);
+  // "Sí, gracias" / "Está bien" close; only a thanks gets "De nada"
   const closing = (cc: Ctx) => /\b(gracias|amable|esta bien|vale)\b/.test(fold(cc.heard));
+  const thanked = (cc: Ctx) => /\b(gracias|amable)\b/.test(fold(cc.heard));
+  const again = (cc: Ctx) => { cc.say("anything_more"); cc.expect(anythingElse(cc)); };
   const p: Pending = {
-    id: "anything_else", hints: ["thanks", "questions", ...(mp ? ["mp"] : [])],
+    id, hints: ["thanks", "questions", ...(mp ? ["mp"] : [])],
     expects: ["thats_all", "thanks_officer", "one_question_ctx", ...(mp ? ["mp_where", "mp_where_ctx", "mp_bring", "mp_today", "mp_online", "mp_why", "mp_ok"] : [])],
-    suggest: [{ lt: "Say thank you and goodbye", hint: "thanks" }, { lt: "Ask something else", hint: "questions" },
-      ...(mp ? [{ lt: "Ask about the Ministerio Público", hint: "mp" }] : [])],
-    ask: (cc) => { cc.say("anything_more"); cc.expect(p); },
+    suggest: id === "ask_away"
+      ? [{ lt: "Ask what you want to know", hint: "questions" }, { lt: "Say thank you and goodbye", hint: "thanks" }]
+      : [{ lt: "Say thank you and goodbye", hint: "thanks" }, { lt: "Ask something else", hint: "questions" },
+        ...(mp ? [{ lt: "Ask about the Ministerio Público", hint: "mp" }] : [])],
+    ask: again,
     on: {
-      thats_all: (cc) => bye(cc, closing(cc)),
+      thats_all: (cc) => bye(cc, thanked(cc)),
       g_thanks: (cc) => bye(cc, true),
       thanks_officer: (cc) => bye(cc, true),
-      g_bye: (cc) => bye(cc, closing(cc)),
-      one_question_ctx: (cc) => { cc.say("ask_away"); cc.expect(askAway); },
+      g_bye: (cc) => bye(cc, thanked(cc)),
+      one_question_ctx: (cc) => { cc.say("ask_away"); cc.expect(anythingElse(cc, "ask_away")); },
+      // "Voy para allá, gracias" is a goodbye too
+      ...(mp ? { mp_ok: (cc: Ctx) => { cc.say("mp_good"); if (thanked(cc)) bye(cc, true); else again(cc); } } : {}),
       // "How are you?" at the very end: answer it, then back to "Anything else?"
-      g_howareyou: (cc) => { cc.say("g_howareyou_reply"); expectHowAreYou(cc, (x) => x.expect(p)); },
+      g_howareyou: (cc) => { cc.say("g_howareyou_reply"); expectHowAreYou(cc, (x) => x.expect(anythingElse(x))); },
     },
-    no: (cc) => bye(cc, closing(cc)),
+    no: (cc) => bye(cc, thanked(cc)),
     // "Sí, una pregunta" opens a question; "Sí, gracias" / "Está bien, gracias" closes
-    yes: (cc) => { if (closing(cc)) { bye(cc, true); return; } cc.say("ask_away"); cc.expect(askAway); },
+    yes: (cc) => { if (closing(cc)) { bye(cc, thanked(cc)); return; } cc.say("ask_away"); cc.expect(anythingElse(cc, "ask_away")); },
   };
-  const askAway: Pending = { ...p, id: "ask_away",
-    suggest: [{ lt: "Ask what you want to know", hint: "questions" }, { lt: "Say thank you and goodbye", hint: "thanks" }] };
   return p;
+}
+
+/** The copy of the report. For the insurance, after a theft, he points to the Ministerio Público (once). */
+function giveCopy(c: Ctx, seguro: boolean) {
+  if (!seguro) { c.say("copy"); return; }
+  if (c.s.kind === "stolen" && !c.s.mpSaid && !c.s.mpInfo) { c.s.mpInfo = true; c.say("copy_mp"); return; }
+  c.say("copy_seguro");
 }
 
 const F_ME = "me: from me. Spanish says “they stole me the wallet”, with the where English says my.";
@@ -275,7 +298,7 @@ export const police: SituationDef = {
   location: "police",
   npc: "reyes",
   goal: "Report your stolen or lost wallet to the police: say what happened, where and when, what it looks like and what was in it.",
-  intro: "The Policía Municipal on the zócalo. Oficial Reyes is at the front desk taking reports. Tell him what happened to your wallet, where and when, what it looks like and what was inside. Amounts are in pesos.",
+  intro: "The Policía Municipal, across from the zócalo next to the museum. Oficial Reyes is at the front desk taking reports. Tell him what happened to your wallet, where and when, what it looks like and what was inside. Amounts are in pesos.",
   entities: { item: ITEMS, place: PLACES, color: COLORS, material: MATERIALS, size: SIZES, content: CONTENTS },
 
   grammar: {
@@ -345,6 +368,9 @@ export const police: SituationDef = {
       "no (la | lo) perdí [alguien] me (la | lo) (robaron | robó) #theft #stolen",
       "no perdí @art {item} [alguien] me (la | lo) (robaron | robó) #stolen",
       "no me robaron @art {item} (la | lo) perdí #lost",
+      // "No sé si me la robaron o la perdí": he asks what it was, then whether it was stolen
+      "no se si (me (la | lo) robaron | (la | lo) perdí) o (me (la | lo) robaron | (la | lo) perdí | se me cayó) #vague",
+      "no se si me robaron @art {item} o (la | lo) (perdí | dejé) #unsure", "no se si perdí @art {item} o me (la | lo) robaron #unsure",
     ] },
     // "Tengo un problema" / "Necesito ayuda": he asks what happened
     problem: { patterns: [
@@ -368,9 +394,12 @@ export const police: SituationDef = {
     ] },
     happened: { patterns: [
       "(estaba | andaba) en [el | la] {place} [y] [@gone] #h:h_was_at",
+      // "No estaba en el mercado, estaba en la playa": the second place counts
+      "no (estaba | andaba) en [el | la] {neg:place} [sino] [que] [(estaba | andaba)] en [el | la] {place} [y] [@gone]",
       "(estaba | andaba | iba) (comprando | pagando | viendo | tomando fotos | hablando por telefono | caminando | platicando | comiendo | esperando | sacando dinero | paseando) [{w:any}] [(en | por | de | del) [el | la] {place}] [y] [@gone | @person (chocó conmigo | me empujó | se me acercó) | @person me (la | lo) (quitó | sacó | robó | arrebató | jaló)]",
       "[@person] me (la | lo) (arrebató | jaló | quitó | sacó | robó | arrebataron | jalaron | quitaron | sacaron | robaron) [@at [el | la] {place}]",
       "@person (chocó conmigo | me empujó | me dio un empujon | se me acercó | me tocó | me jaló) [en [el | la] {place}] [y] [@gone] #h:h_bumped",
+      "@person (chocó conmigo | se me acercó | me tocó) [en [el | la] {place}] y (me empujó | me jaló | me tocó | chocó conmigo | me distrajo) [y] [@gone]",
       "@person (chocó conmigo | me empujó | se me acercó) [en [el | la] {place}] [y] (se (la | lo) llevó | me (la | lo) (quitó | sacó | robó))",
       "(la | lo) (traia | tenia | llevaba) en @pocket [y] [@gone] #h:h_pocket",
       "(estaba | iba | venia) en @pocket [y] [@gone]",
@@ -404,6 +433,7 @@ export const police: SituationDef = {
       "no me acuerdo [bien | exactamente]", "no (recuerdo | lo recuerdo) [bien | exactamente]",
       "no (se | recuerdo | me acuerdo de) (donde | cuando | a que hora | la hora | el lugar | donde fue | cuando fue | a que hora fue) [exactamente]",
       "no se exactamente", "no (se | estoy seguro | estoy segura) (de la hora | del lugar)", "no tengo idea (de la hora | de donde)",
+      "(no se | no lo se | ni idea | no tengo idea | no sabria decirle)",
     ] },
     describe: { patterns: [
       "[es | era] [un | una] [{item}] {dp} [y] [{dp}] [y] [{dp}] [y] [{dp}] #h:describe",
@@ -418,6 +448,7 @@ export const police: SituationDef = {
       "nada (importante | de valor) [solo {ci} [y] [{ci}]] #nothing",
       // "Mis tarjetas no, solo dinero": the refused one is never written down
       "{neg:ci} no (solo | nada mas | nomas | sino) {ci} [y] [{ci}]", "no {neg:ci} (solo | sino) {ci} [y] [{ci}]",
+      "no (traia | tenia | llevaba | habia) {neg:ci} (solo | nada mas | nomas | sino) {ci} [y] [{ci}]",
       "(no se | no estoy seguro | no estoy segura) [exactamente] [creo que] [como] {ci}",
     ] },
     stolen_yes: { patterns: [
@@ -438,6 +469,7 @@ export const police: SituationDef = {
       "[no] no (creo | pienso) [que me (la | lo) (hayan robado | robaran | robaron)]",
       "[no] no creo que alguien me (la | lo) (haya robado | robara | robó)",
       "[no] no fue (un robo | robo)",
+      "[no] [no se] @unsure se me (cayó | perdió) [en algun lado | por ahi]", "[no] [no se] @unsure (la | lo) (perdí | dejé | tiré) [en algun lado | en algun lugar | por ahi]",
     ] },
     name_ctx: { patterns: [
       "[me llamo | mi nombre es | soy | es | mi nombre completo es] {name} #h:name_mine",
@@ -458,7 +490,7 @@ export const police: SituationDef = {
       "[no] (mi | el) (celular | telefono) (estaba | iba | venia) en (la | mi) {item}",
       "[no] (tambien | igual) me robaron el (celular | telefono)", "[no] me robaron el (celular | telefono) (tambien | igual)",
       "[no] (mi | el) (celular | telefono) no (funciona | sirve) (aqui | en mexico)",
-      "[no] no tengo (linea | chip) [mexicano | mexicana]", "[no] no me (se | acuerdo de) (mi | el) numero [de memoria]",
+      "[no] no tengo (linea | chip) [mexicano | mexicana]", "[no] no tengo (otro | ningun otro | ninguno) [numero | telefono]", "[no] no me (se | acuerdo de) (mi | el) numero [de memoria]",
     ] },
     cancel_cards: { patterns: [
       "(tengo que | debo | hay que | necesito) (cancelar | bloquear | reportar) (mis | las) tarjetas #h:q_cancel",
@@ -487,7 +519,8 @@ export const police: SituationDef = {
       "(necesito | me dan | me da) (el reporte | un comprobante | un papel) para (el | mi) seguro #seguro",
       "me (dan | llevo) una copia [del reporte]",
     ] },
-    q_cost: { patterns: ["(tengo que | hay que | debo) pagar [algo] [por el reporte]", "cuanto (cuesta | es) [el reporte | la denuncia]", "(cuesta | se paga) [algo]", "(es | el reporte es) gratis"] },
+    q_cost: { patterns: ["(tengo que | hay que | debo) pagar [algo] [por el reporte]", "cuanto (cuesta | es) [el reporte | la denuncia]", "(cuesta | se paga) [algo]", "(es | el reporte es) gratis",
+      "(es | sera) gratis (el reporte | la denuncia | esto)", "(el reporte | esto) (cuesta | tiene costo | sale gratis) [algo]", "(cobran | se cobra) [algo] [por el reporte]"] },
     q_search: { patterns: ["(me pueden | pueden | me puede | puede) ayudar a (buscarla | buscarlo)", "(la | lo) (pueden | van a) buscar", "(pueden | van a) (revisar | ver) las camaras"] },
     // "¿Esto es una denuncia?", "¿Necesito una denuncia para el seguro?"
     q_denuncia: { patterns: [
@@ -506,7 +539,9 @@ export const police: SituationDef = {
     // a bare "Listo." / "Ya está." / "Aquí tiene." only when asked to sign
     signed_ctx: { patterns: ["listo #h:signed", "ya (esta | quedó)", "(ok | listo) ya esta", "(aqui tiene | aqui esta | tenga)"] },
     // "No quiero firmar todavía" / "Primero lo leo": not a signature
-    no_sign_ctx: { patterns: ["no (quiero | voy a | puedo) firmar [todavia | ahorita | nada]", "(todavia | aun) no (firmo | lo firmo)", "(primero | antes) (lo quiero leer | quiero leerlo | lo leo | lo voy a leer)", "no lo (firmo | voy a firmar)"] },
+    no_sign_ctx: { patterns: ["no (quiero | voy a | puedo) firmar [todavia | ahorita | nada]", "(todavia | aun) no (firmo | lo firmo)", "(primero | antes) (lo quiero leer | quiero leerlo | lo leo | lo voy a leer)", "no lo (firmo | voy a firmar)",
+      "(un momento | espere | permitame) [(primero | antes)] [(lo | la) (voy a leer | leo | reviso | voy a revisar)]",
+      "(y si | que pasa si) no (firmo | lo firmo | quiero firmar)"] },
     // a bare "¿Dónde?" or "¿Aquí?" only when asked to sign
     sign_where_ctx: { patterns: ["(donde | en donde) [exactamente]", "(aqui | aqui abajo | aca)"] },
     sign_where: { patterns: ["(donde | en donde) (firmo | tengo que firmar | hay que firmar | pongo mi firma) #h:sign_where", "(firmo | tengo que firmar) aqui", "(donde | en donde) (le | lo) firmo"] },
@@ -529,7 +564,8 @@ export const police: SituationDef = {
       "[no] mi {item} es (mas grande | mas chica | mas chico | diferente | distinta | distinto | otra | otro)", "no mi {item} es {dp} [y] [{dp}]",
     ] },
     // "No sé si es mía": he asks the learner to take a good look
-    unsure_mine_ctx: { patterns: ["no se si (es | sea) (mia | mio | la mia | el mio)", "no estoy (seguro | segura) (si | de que) (es | sea) (mia | mio)", "(tal vez | a lo mejor | puede ser) [sea (mia | mio)]"] },
+    unsure_mine_ctx: { patterns: ["no se si (es | sea) (mia | mio | la mia | el mio)", "no estoy (seguro | segura) (si | de que) (es | sea) (mia | mio)", "(tal vez | a lo mejor | puede ser) [sea (mia | mio)]",
+      "[no estoy (seguro | segura)] [me deja | puedo] (verla | verlo | revisarla | revisarlo | la puedo ver | lo puedo ver | la puedo revisar)"] },
     all_there: { patterns: [
       "[si] (esta todo | todo esta) (aqui | ahi | bien | completo) [gracias]", "[si] (esta completa | esta completo | esta todo completo) [aqui | ahi | bien]",
       "[si] no falta nada", "[si] todo (esta | sigue) (aqui | ahi | completo | en su lugar | bien)",
@@ -546,6 +582,7 @@ export const police: SituationDef = {
       "[no] (esta | esta todo) menos (el | mi | la | mis | los | las) ((dinero | efectivo) | {content})",
       "[si] (estan | esta) (mis | mi) {content} pero (falta | no esta) (el | mi) (dinero | efectivo)",
       "[no] no esta todo", "(se llevaron | sacaron | le sacaron) (el | mi) (dinero | efectivo)",
+      "[mis | las | mi | la] {content} si [pero] (el | mi) (dinero | efectivo) no",
     ] },
     bank_called: { patterns: [
       "[si] ya (llamé | hablé) [al banco | a mi banco | con el banco | con mi banco] #h:bank_called",
@@ -556,7 +593,7 @@ export const police: SituationDef = {
     ] },
     bank_not_yet: { patterns: [
       "[no] todavia no #h:bank_not_yet", "[no] aun no",
-      "[no] (todavia | aun) no (llamo | he llamado | las bloqueo | las he bloqueado | las cancelo | las he cancelado | hablo con el banco)",
+      "[no] (todavia | aun) no (llamo | he llamado | las bloqueo | las he bloqueado | las cancelo | las he cancelado | hablo con el banco) [al banco | a mi banco | con el banco]",
       "[no] no he (llamado | podido | podido llamar | tenido tiempo) [al banco | a mi banco] [todavia | aun]",
       "[no] no (las | los) he (bloqueado | cancelado | reportado) [todavia | aun]",
       "[no] (ahorita | ahora | despues | luego | mas tarde | saliendo de aqui) (llamo | les llamo | las bloqueo)",
@@ -571,9 +608,11 @@ export const police: SituationDef = {
       "[no] (lo | la) (tengo | traigo | dejé) en (el | mi) (hotel | casa | departamento | cuarto)",
       "[no] (tengo | traigo | dejé) (mi | el | la) (pasaporte | identificacion | licencia) en (el | mi) (hotel | casa | departamento | cuarto)",
       "[no] (mi | el | la) (pasaporte | identificacion | licencia) (esta | se quedó) en (el | mi) (hotel | casa | departamento | cuarto)",
+      "(mi | el | la) (pasaporte | identificacion | licencia | credencial | ine) no [(lo | la) (traigo | tengo)] [(lo | la) (dejé | tengo) en (el | mi) (hotel | casa | departamento | cuarto)]",
     ] },
     // "No traigo nada" only at "¿Trae alguna identificación?"
-    no_id_ctx: { patterns: ["[no] no (traigo | tengo) nada [conmigo | aqui]", "[no] [no (tengo | traigo) nada] [porque] (me robaron | se llevaron) todo", "[no] no (tengo | traigo) [porque] (me robaron | se llevaron) todo"] },
+    no_id_ctx: { patterns: ["[no] no (traigo | tengo) nada [conmigo | aqui]", "[no] [no (tengo | traigo) nada] [porque] (me robaron | se llevaron) todo", "[no] no (tengo | traigo) [porque] (me robaron | se llevaron) todo",
+      "[si] [pero] [(lo | la) (tengo | dejé)] en (el | mi) (hotel | casa | departamento | cuarto)"] },
     have_id: { patterns: [
       "[si] (traigo | tengo) (mi | el | la) (pasaporte | licencia | identificacion | credencial | ine | licencia de manejo) [conmigo | aqui] #h:have_id",
       "[si] aqui (esta | tiene) (mi | el | la) (pasaporte | licencia | identificacion | credencial)",
@@ -585,7 +624,8 @@ export const police: SituationDef = {
       "(usted | usted fue | fue | ha sido) muy amable [oficial] #h:thanks_officer", "le agradezco [mucho] su ayuda", "gracias por todo oficial",
     ] },
     // "Sí, una pregunta" at "¿Algo más?"
-    one_question_ctx: { patterns: ["[si] (una pregunta | tengo una pregunta | otra pregunta | tengo otra pregunta | una cosa mas | otra cosa)"] },
+    one_question_ctx: { patterns: ["[si] (una pregunta | tengo una pregunta | otra pregunta | tengo otra pregunta | una cosa mas | otra cosa)",
+      "[no] (solo | nada mas | nomas) (una pregunta | una cosa | otra cosa | otra pregunta)", "[si] (quiero | quisiera) (preguntar | hacer una pregunta) [algo]"] },
     thats_all: { patterns: [
       "[no] [eso] (es | seria) todo [gracias] [por ahora] #h:thats_all", "[no] nada mas [gracias]", "[no] (estoy bien | asi estoy bien) [gracias]",
       "[no] por ahora (es | seria) todo", "[no] ya es todo", "no nada [gracias]",
@@ -602,7 +642,8 @@ export const police: SituationDef = {
       "(llevo | me llevo) (el reporte | este papel | la copia | el folio)",
     ] },
     mp_today: { patterns: [
-      "(tengo que | debo | puedo) ir hoy [mismo]", "(a que hora | hasta que hora) (abren | cierran | abre | cierra | atienden)",
+      "(tengo que | debo | puedo) ir (hoy [mismo] | manana | otro dia | despues | mas tarde)", "(a que hora | hasta que hora) (abren | cierran | abre | cierra | atienden) #hours",
+      "(que horario tienen | cual es el horario | cual es su horario) #hours",
       "(esta | estan) (abierto | abiertos | abierta) (hoy | ahorita | ahora)",
     ] },
     mp_online: { patterns: [
@@ -610,7 +651,7 @@ export const police: SituationDef = {
       "(se puede | hay) (denuncia en linea | hacer por internet | hacerlo por internet | hacerlo en linea)",
     ] },
     mp_why: { patterns: [
-      "por que (tengo que ir | debo ir) [alla | al ministerio publico]", "no (puedo | se puede) (levantarla | hacerla | ponerla) aqui",
+      "por que (tengo que ir | debo ir) [alla | al ministerio publico]", "[por que] no (puedo | se puede) (levantarla | hacerla | ponerla | levantar la denuncia | hacer la denuncia) aqui",
       "(para que | por que) (necesito | es) la denuncia",
     ] },
     mp_ok: { patterns: ["[esta bien] (voy | ire | me voy) (para alla | ahorita | mas tarde | manana | hoy | despues) [entonces] #h:mp_ok"] },
@@ -631,6 +672,7 @@ export const police: SituationDef = {
     ],
     ask_what_stolen: [t("¿Qué | le | robaron?", "What | (from) you | did they steal?", "What was stolen?", { flags: { 1: "le: from you. Spanish marks the person something was stolen from." } })],
     ask_what_vague: [t("Claro. | ¿Qué | perdió, | o | qué | le | robaron?", "Sure. | What | did you lose, | or | what | (from) you | did they steal?", "Sure. What did you lose, or what was stolen?")],
+    what_again: [t("¿Y | qué | era? | ¿Una | cartera, | una | bolsa…?", "And | what | was it? | A | wallet, | a | purse…?", "And what was it? A wallet, a purse…?")],
     which_one: [t("Perdón, | ¿cuál | de | los | dos?", "Sorry, | which | of | the | two?", "Sorry, which one was it?")],
     ask_what_in: [t("¿Lo | traía | en | una | cartera, | una | bolsa | o | una | mochila?", "It | were you carrying | in | a | wallet, | a | purse | or | a | backpack?", "Was it in a wallet, a purse or a backpack?")],
     ask_stolen_q: [
@@ -708,7 +750,7 @@ export const police: SituationDef = {
       t("¿A | qué | número | le | podemos | llamar?", "At | what | number | (to) you | can we | call?", "What's the best number to call you?"),
     ],
     ask_phone_other: [t("¿Tiene | otro | número | para | {m:localizarlo|f:localizarla}? | ¿El | de | su | hotel, | por ejemplo?", "Do you have | another | number | to | reach you? | The one | of | your | hotel, | for example?",
-      "Is there another number where we can reach you? Your hotel's, for example?", { flags: { 6: "El de: the one of; Spanish leaves out the noun (el número de su hotel)." } })],
+      "Is there another number where we can reach you? Your hotel's, for example?", { flags: { 5: "El de: the one of; Spanish leaves out the noun (el número de su hotel)." } })],
     phone_ok: [t("Gracias, | ya | lo | tengo.", "Thanks, | already | it | I-have.", "Thanks, got it.")],
     no_phone_ok: [t("No se preocupe. | Usted | nos | puede | llamar, | o | venir | a | preguntar.", "Don't worry. | You | us | can | call, | or | come | to | ask.", "That's all right. You can call us, or come by and ask.")],
     sign: [
@@ -750,14 +792,16 @@ export const police: SituationDef = {
     cost_ans: [t("El | reporte | es | gratis, | no cuesta | nada.", "The | report | is | free, | it doesn't cost | anything.", "The report is free, it doesn't cost anything.")],
     search_ans: [t("Les | voy | a | avisar | a | las | patrullas | de | la | zona.", "(To) them | I'm going | to | notify | — | the | patrols | of | the | area.",
       "I'll let the patrols in the area know.", { flags: { 4: "a: personal a before people; English has no word here (les and a las patrullas name the same people)." } })],
-    chances_not: [t("Para | eso | es | el | reporte: | con | el | folio | puede | hacer | sus | trámites.", "For | that | is | the | report: | with | the | reference number | you-can | do | your | paperwork.",
-      "That's what the report is for: with the report number you can take care of the paperwork.")],
+    chances_not: [t("Para | eso | es | el | reporte: | con | él | puede | hacer | sus | trámites.", "For | that | is | the | report: | with | it | you-can | do | your | paperwork.",
+      "That's what the report is for: you can use it for the paperwork.")],
     copy: [t("Claro. | Aquí tiene | una | copia.", "Sure. | Here you go | a | copy.", "Sure. Here's a copy.")],
+    copy_later: [t("Claro, | al | terminar | el | reporte | le | doy | una | copia.", "Sure, | on | finishing | the | report | (to) you | I-give | a | copy.",
+      "Sure, I'll give you a copy when we finish the report.", { flags: { 1: "al + infinitive: when (doing something)." } })],
     copy_seguro: [t("Claro, | aquí tiene | una | copia | para | su | seguro.", "Sure, | here you go | a | copy | for | your | insurance.", "Sure, here's a copy for your insurance.")],
     copy_mp: [
       t("Aquí tiene | una | copia. | Pero | para | el | seguro | normalmente | piden | la | denuncia | del | Ministerio Público.",
         "Here you go | a | copy. | But | for | the | insurance | usually | they-ask-for | the | complaint | from the | prosecutor's office.",
-        "Here's a copy. But for insurance they usually ask for the formal complaint from the Ministerio Público.", { flags: { 13: F_MP } }),
+        "Here's a copy. But for insurance they usually ask for the formal complaint from the Ministerio Público.", { flags: { 12: F_MP } }),
     ],
     q_denuncia_ans: [
       t("Esto | es | el | reporte | de | la | policía. | Si | su | seguro | pide | una | denuncia, | se levanta | en | el | Ministerio Público.",
@@ -768,21 +812,23 @@ export const police: SituationDef = {
       t("Ojo: | esto | es | un | reporte, | no | una | denuncia. | La | denuncia | formal | se levanta | en | el | Ministerio Público.",
         "Careful: | this | is | a | report, | not | a | complaint. | The | complaint | formal | is filed | at | the | prosecutor's office.",
         "Just so you know, this is a police report, not a formal complaint. You file that at the Ministerio Público.",
-        { flags: { 0: "Ojo (eye): watch out, note this.", 15: F_MP } }),
+        { flags: { 0: "Ojo (eye): watch out, note this.", 14: F_MP } }),
     ],
     mp_send2: [
       t("Si | su | seguro | se la | pide, | vaya | con | una | identificación | y | este | folio.", "If | your | insurance | it (of) you | asks, | go | with | an | ID | and | this | reference number.",
         "If your insurance asks for it, go there with your ID and this report number."),
     ],
     mp_where_ans: [
-      t("Está | aquí | cerca. | Le | anoto | la | dirección | en | su | copia.", "It's | here | near. | (For) you | I-write-down | the | address | on | your | copy.",
-        "It's close by. I'll write the address on your copy.", { write: "Ministerio Público · Fiscalía del Estado" }),
+      t("Está | aquí | cerca. | Le | anoto | la | dirección.", "It's | here | near. | (For) you | I-write-down | the | address.",
+        "It's close by. I'll write down the address for you.", { write: "Ministerio Público · Fiscalía del Estado" }),
     ],
     mp_where_early: [
       t("Está | aquí | cerca. | Al | terminar | el | reporte, | le | anoto | la | dirección.", "It's | here | near. | On | finishing | the | report, | (for) you | I-write-down | the | address.",
         "It's close by. When we finish the report, I'll write down the address for you.", { flags: { 3: "al + infinitive: when (doing something)." } }),
     ],
     mp_bring_ans: [t("Una | identificación | y | el | número | de | folio | del | reporte.", "An | ID | and | the | number | of | reference | of the | report.", "Some ID and the report number.")],
+    mp_hours_ans: [t("No | sé | el | horario | exacto. | Mejor | vaya | hoy | mismo.", "Not | I-know | the | hours | exact. | Better | go | today | itself.",
+      "I don't know their exact hours. Better go today.")],
     mp_today_ans: [t("Mejor | hoy | mismo, | si | puede.", "Better | today | itself, | if | you can.", "Today if you can.")],
     mp_online_ans: [
       t("Algunos | trámites | se pueden | hacer | en línea, | pero | para | un | robo | mejor | vaya | en persona.",
@@ -805,6 +851,7 @@ export const police: SituationDef = {
     look_closely: [t("Revise | bien, | por favor.", "Check | well, | please.", "Take a good look, please.")],
     lucky: [t("¡Qué | suerte | tuvo!", "What | luck | you had!", "You were lucky!")],
     not_yours: [t("Bueno, | entonces | seguimos | con | el | reporte.", "Okay, | then | we-continue | with | the | report.", "Okay, then let's go on with the report.")],
+    missing_which: [t("Perdón, | ¿falta | algo | o | está | todo?", "Sorry, | is missing | something | or | is-there | everything?", "Sorry, is something missing, or is everything there?")],
     missing_some: [t("Lo siento. | Entonces | hacemos | el | reporte | de todos modos.", "I'm sorry. | Then | we-make | the | report | anyway.", "I'm sorry. Then let's file the report anyway.")],
     anything_else: [
       t("¿Algo | más | en | que | le | pueda | ayudar?", "Something | more | with | which | (to) you | I-may | help?", "Anything else I can help you with?"),
@@ -930,7 +977,7 @@ export const police: SituationDef = {
     ] },
     all_there: { lt: "Say whether everything's there", items: [
       { id: "all_there", s: t("Sí, | está | todo.", "Yes, | is-here | everything.", "Yes, everything's here.") },
-      { id: "missing_some", s: t("No, | falta | el | dinero.", "No, | is missing | the | money.", "No, the money's missing.") },
+      { id: "missing_some", s: t("Falta | el | dinero.", "Is missing | the | money.", "The money's missing.") },
     ] },
     thanks: { lt: "Say thank you and goodbye", items: [
       { id: "thats_all", s: t("No, | es | todo, | gracias.", "No, | it's | all, | thanks.", "No, that's all, thanks.") },
@@ -973,6 +1020,7 @@ export const police: SituationDef = {
     "licencia de manejo": { reason: "lexical_expression", split: "licencia → license + de → of + manejo → driving: one noun, driver's license (Mexico).", minimal: "The three-word noun." },
     "tarjeta del seguro": { reason: "lexical_expression", split: "tarjeta → card + del → of the + seguro → insurance: one noun, insurance card.", minimal: "The three-word noun." },
     "credencial de estudiante": { reason: "lexical_expression", split: "credencial → card + de → of + estudiante → student: one noun, student ID.", minimal: "The three-word noun." },
+    "lentes de sol": { reason: "lexical_expression", split: "lentes → lenses + de → of + sol → sun: one noun, sunglasses.", minimal: "The three-word noun." },
     "tarjeta de regalo": { reason: "lexical_expression", split: "tarjeta → card + de → of + regalo → gift: one noun, gift card.", minimal: "The three-word noun." },
     "por ejemplo": { reason: "lexical_expression", split: "por → by + ejemplo → example misreads the phrase: for example.", minimal: "Two words." },
     "se la": { reason: "grammatical_fusion", split: "se (= le, to/of you) + la (it): two object pronouns before the verb, glossed together.", minimal: "Two words." },
@@ -998,12 +1046,12 @@ export const police: SituationDef = {
       suggest: [{ lt: "Report a stolen or lost wallet", hint: "report", options: "item" }] },
     { id: "what_item", when: (c) => !!c.s.theft && !c.s.item, done: (c) => !!c.s.item,
       // "Me robaron el pasaporte": what was it in?
-      ask: (c) => c.say(c.s.contents?.length ? "ask_what_in" : c.s.vague ? "ask_what_vague" : "ask_what_stolen"),
+      ask: (c) => { c.say(c.s.askedWhat ? "what_again" : c.s.contents?.length ? "ask_what_in" : c.s.vague ? "ask_what_vague" : "ask_what_stolen"); c.s.askedWhat = true; },
       expects: ["what_item_ctx", "report"],
       suggest: [{ lt: "Say what was stolen", hint: "what", options: "item" }] },
     { id: "stolen_q", when: (c) => !!c.s.item && c.s.kind === "unsure", done: (c) => c.s.kind !== "unsure",
       ask: (c) => c.say("ask_stolen_q", { X: item(c) }),
-      expects: ["stolen_yes", "stolen_no", "sure_ctx"],
+      expects: ["stolen_yes", "stolen_no", "sure_ctx", "happened", "dont_remember"],
       suggest: [{ lt: "Say whether someone took it", hint: "stolen" }],
       yes: (c) => { c.s.kind = "stolen"; c.say("ack"); },
       no: (c) => { c.s.kind = "lost"; c.say("ack"); },
@@ -1087,7 +1135,7 @@ export const police: SituationDef = {
       no: (c) => { c.s.checkedInside = true; c.s.found = "partial"; c.say("missing_some"); } },
     { id: "phone", when: (c) => !!c.s.lastName && c.s.found !== "mine", done: (c) => !!c.s.phone,
       // the phone itself was stolen: another number (the hotel's) or none
-      ask: (c) => { c.say(c.s.askedPhone ? "phone_again" : item(c) === "phone" ? "ask_phone_other" : "ask_phone"); c.s.askedPhone = true; },
+      ask: (c) => { c.say(c.s.askedPhone ? "phone_again" : item(c) === "phone" || has(c, (e) => !!e.attrs?.phone) ? "ask_phone_other" : "ask_phone"); c.s.askedPhone = true; },
       expects: ["phone_ctx", "no_phone"],
       suggest: [{ lt: "Give your phone number", hint: "phone" }] },
     { id: "sign", when: (c) => !!c.s.phone && !!c.s.askSign && c.s.found !== "mine", done: (c) => !!c.s.signed,
@@ -1153,18 +1201,24 @@ export const police: SituationDef = {
       if (slots.place) c.s.place = slots.place;
       const h = fold(c.heard);
       if (/\b(choco|empujo|empujon|acerco|abrieron|abrio|jalo|toco|robo|quito|saco)\b/.test(h)) c.s.kind = "stolen";
-      else if (/\bse me cayo\b/.test(h) && c.s.kind !== "stolen") c.s.kind = "lost";
+      // "Creo que se me cayó en el camión" after "Me robaron…": the learner now thinks it was lost
+      else if (/\bse me (cayo|perdio)\b/.test(h)) c.s.kind = "lost";
       once(c, "happened", "ack");
     },
     where_when(c, slots) {
       if (!live(c)) return;
+      // said out of turn (at the ID, the name or at the end: "Sí, en el hotel"): acknowledged, and the place and
+      // time of the theft stay as they were
+      if (c.step && !["report", "what_item", "stolen_q", "happened", "where", "when", "describe", "contents", "cash_amount", "bank"].includes(c.step)) { once(c, "ww", "ack"); return; }
       if (c.step === "happened") c.s.happened = true;
       if (slots.place) c.s.place = slots.place;
       if (slots.whenp) c.s.time = true;
-      // said out of turn (at the name or at the end): acknowledged, never silence
-      if (!["report", "what_item", "stolen_q", "happened", "where", "when", "describe", "contents", "cash_amount"].includes(c.step ?? "")) once(c, "ww", "ack");
     },
-    where_ctx(c, slots) { police.handlers.where_when(c, slots, { intent: "where_when", slots, tags: [] } as Segment); },
+    where_ctx(c, slots) {
+      // "Es de cuero café": café is the color there, not the place
+      if (slots.place === "cafe" && !/\b(el|un|al|del|en) cafe\b|cafeteria|ceiba/.test(fold(c.heard))) return;
+      police.handlers.where_when(c, slots, { intent: "where_when", slots, tags: [] } as Segment);
+    },
     dont_remember(c) { if (!live(c)) return; helpHere(c); c.hold(); },
     describe(c, slots) {
       if (!live(c)) return;
@@ -1177,7 +1231,13 @@ export const police: SituationDef = {
     },
     contents(c, slots, seg) {
       if (!live(c)) return;
+      if (c.s.reportDone) { once(c, "late", "ack"); return; }
       addContents(c, slots);
+      // "No traía efectivo, solo mis tarjetas": the cash said with "no" is the no-cash answer
+      if (([] as any[]).concat(slots.neg ?? []).some((n) => n?.content === "cash" || n?.__tags?.includes("cash"))) {
+        c.s.noCashAmount = true; c.s.needCash = false;
+        c.s.contents = ((c.s.contents || []) as string[]).filter((x) => x !== "cash");
+      }
       if (seg.tags.includes("nothing") && !(c.s.contents || []).length) c.s.contentsSkipped = true;
       const say = typeof c.s.cashAmount === "number" ? cashSay(c.s.cashAmount) : null;
       if (say !== null && c.step === "cash_amount") react(c, "contents", "cash_echo", { price: say });
@@ -1186,6 +1246,7 @@ export const police: SituationDef = {
     },
     no_cash(c, slots) {
       if (!live(c)) return;
+      if (c.s.reportDone) { once(c, "late", "ack"); return; }
       c.s.noCashAmount = true; c.s.needCash = false;
       addContents(c, slots);
       c.s.contents = ((c.s.contents || []) as string[]).filter((x) => x !== "cash");
@@ -1237,10 +1298,10 @@ export const police: SituationDef = {
     chances(c, _slots, seg) { if (!live(c)) return; c.say(seg.tags.includes("ifnot") ? "chances_not" : "chances"); },
     copy(c, _slots, seg) {
       if (!live(c)) return;
-      if (!seg.tags.includes("seguro")) { c.say("copy"); return; }
-      // for the insurance: after a theft he points to the Ministerio Público (once)
-      if (c.s.kind === "stolen" && !c.s.mpSaid && !c.s.mpInfo) { c.s.mpInfo = true; c.say("copy_mp"); return; }
-      c.say("copy_seguro");
+      const seguro = seg.tags.includes("seguro");
+      // before the report is written: he hands it over with the folio
+      if (!c.s.reportDone) { c.s.copyAsked = seguro ? "seguro" : c.s.copyAsked || "plain"; c.say("copy_later"); return; }
+      giveCopy(c, seguro);
     },
     q_cost(c) { if (!live(c)) return; c.say("cost_ans"); },
     q_search(c) { if (!live(c)) return; c.say("search_ans"); },
@@ -1287,21 +1348,36 @@ export const police: SituationDef = {
     missing_some(c) {
       if (!live(c)) return;
       if (c.s.found !== "mine" || !c.s.lastName) { c.say("ack"); return; }
+      // "No falta el dinero" said aloud is also "No, falta el dinero" (rule 10): one is "all there", the other
+      // "missing". Typed with its comma it's missing; without, he asks.
+      if (/^no falta/.test(fold(c.heard)) && !/^\W*no\s*,/i.test(c.heard)) { c.say("missing_which"); c.hold(); return; }
       c.s.checkedInside = true; c.s.found = "partial"; c.say("missing_some");
     },
     bank_called(c) { if (!live(c)) return; c.s.bankDone = true; c.say("bank_good"); },
     bank_not_yet(c) { if (!live(c)) return; c.s.bankDone = true; c.say("block_cards"); },
-    no_id(c) { if (!live(c)) return; if (c.step !== "id_q") { c.say("ack"); return; } c.s.idDone = true; c.say("id_of_course"); },
+    no_id(c) {
+      if (!live(c)) return;
+      if (c.step !== "id_q") { c.say("ack"); return; }
+      turn(c).noId = true;
+      if (turn(c).haveId) return;
+      c.s.idDone = true; c.say("id_of_course");
+    },
     no_id_ctx(c, slots, seg) { police.handlers.no_id(c, slots, seg); },
-    have_id(c) { if (!live(c)) return; if (c.step !== "id_q") { c.say("ack"); return; } c.s.idDone = true; c.say("id_thanks"); },
+    have_id(c) {
+      if (!live(c)) return;
+      if (c.step !== "id_q") { c.say("ack"); return; }
+      if (turn(c).noId) return;
+      turn(c).haveId = true; c.s.idDone = true; c.say("id_thanks");
+    },
     have_id_ctx(c, slots, seg) { police.handlers.have_id(c, slots, seg); },
     thanks_officer(c) { if (!live(c)) return; c.say("welcome"); },
     thats_all(c) { if (!live(c)) return; c.say("ack"); },
     one_question_ctx(c) { if (!live(c)) return; c.say("ask_away"); },
-    mp_where(c) { if (!live(c)) return; c.say(c.s.reportDone ? "mp_where_ans" : "mp_where_early"); },
+    // asking about the Ministerio Público opens its follow-ups ("¿Dónde queda?") at "¿Algo más?"
+    mp_where(c) { if (!live(c)) return; c.s.mpInfo = true; c.say(c.s.reportDone ? "mp_where_ans" : "mp_where_early"); },
     mp_where_ctx(c, slots, seg) { police.handlers.mp_where(c, slots, seg); },
-    mp_bring(c) { if (!live(c)) return; c.say("mp_bring_ans"); },
-    mp_today(c) { if (!live(c)) return; c.say("mp_today_ans"); },
+    mp_bring(c) { if (!live(c)) return; c.s.mpInfo = true; c.say("mp_bring_ans"); },
+    mp_today(c, _slots, seg) { if (!live(c)) return; c.say(seg.tags.includes("hours") ? "mp_hours_ans" : "mp_today_ans"); },
     mp_online(c) { if (!live(c)) return; c.say("mp_online_ans"); },
     mp_why(c) { if (!live(c)) return; c.say("mp_why_ans"); },
     mp_ok(c) { if (!live(c)) return; c.say("mp_good"); },
@@ -1315,6 +1391,7 @@ export const police: SituationDef = {
       c.complete();
     } else {
       c.say("case_number");
+      if (c.s.copyAsked) giveCopy(c, c.s.copyAsked === "seguro");
       if (c.s.mpTwist && c.s.kind === "stolen" && !c.s.mpInfo) {
         c.s.mpSaid = true;
         c.twist("ministerio");
@@ -1449,6 +1526,24 @@ export const police: SituationDef = {
     { say: "No es negra", intent: "none", step: "describe" },
     { say: "No necesito una copia", intent: "none" },
     { say: "Mi pasaporte no estaba ahí", intent: "none", step: "contents" },
+    // Review (blind set and probes): traps and gaps
+    { say: "No sé, a lo mejor se me cayó", intent: "stolen_no", step: "stolen_q", not: ["stolen_yes"] },
+    { say: "No sé si me la robaron o la perdí", intent: "report", not: ["stolen_yes", "stolen_no"] },
+    { say: "Un señor se me acercó y me empujó, y luego ya no la tenía", intent: "happened", step: "happened" },
+    { say: "No estaba en el mercado, estaba en la playa", intent: "happened", step: "happened", slots: { place: "beach" } },
+    { say: "Todavía no he llamado al banco", intent: "bank_not_yet", step: "bank", not: ["bank_called"] },
+    { say: "No tenía tarjetas, solo efectivo", intent: "contents", step: "contents", slots: { ci: { content: "cash" }, neg: { content: "cards" } } },
+    { say: "Ropa y mi celular", intent: "contents", step: "contents" },
+    { say: "No estoy seguro, ¿puedo verla?", intent: "unsure_mine_ctx", step: "found", not: ["its_mine", "not_mine"] },
+    { say: "Mi pasaporte no, lo dejé en el hotel", intent: "no_id", step: "id_q", not: ["have_id", "have_id_ctx"] },
+    { say: "Sí, en el hotel", intent: "no_id_ctx", step: "id_q", not: ["have_id", "have_id_ctx", "where_when"] },
+    { say: "Las tarjetas sí, pero el dinero no", intent: "missing_some", step: "check_all", not: ["all_there", "all_there_ctx"] },
+    { say: "No, no tengo otro", intent: "no_phone", step: "phone", not: ["phone_ctx"] },
+    { say: "¿Y si no firmo?", intent: "no_sign_ctx", step: "sign", not: ["signed", "signed_ctx"] },
+    { say: "Un momento, lo voy a leer", intent: "no_sign_ctx", step: "sign", not: ["signed", "signed_ctx"] },
+    { say: "¿Es gratis el reporte?", intent: "q_cost" },
+    { say: "¿A qué hora abren?", intent: "mp_today" },
+    { say: "¿Por qué no puedo levantarla aquí?", intent: "mp_why" },
     // Must not be understood
     { say: "Mi perro come plátanos azules", intent: "none" },
     { say: "Ayer compré una camisa verde", intent: "none" },
@@ -1503,6 +1598,17 @@ export const police: SituationDef = {
     { name: "short answers: the phone was stolen", setup: (s) => { s.foundTwist = false; s.mpTwist = false; s.askHappened = false; },
       turns: ["Me robaron el celular.", "En el camión.", "Hace un rato.", "Negro.", "Ryan Miller.", "No tengo teléfono.", "Gracias."],
       expect: { complete: true, state: { item: "phone", place: "bus", color: "black", phone: "none" } }, auto: AUTO },
+    // "No falta el dinero" said aloud is also "No, falta el dinero" (rule 10): he asks, and the answer counts
+    { name: "found wallet: the lost comma at check_all (twist)", setup: (s) => { s.foundTwist = true; s.mpTwist = false; s.foundDifferent = null; s.askSpell = false; s.askSign = false; },
+      turns: ["Me robaron la cartera.", "En el mercado, como a las once.", "Es negra.", "Mis tarjetas y como trescientos pesos.", "Sí, es mía.", "Ryan Miller.",
+        "No falta el dinero", "Falta el dinero.", "Es el 984 123 4567.", "No, gracias."],
+      expect: { complete: true, state: { found: "partial", checkedInside: true } }, auto: AUTO },
+    // Answers said out of turn keep the report as it was: the time and place in the first sentence, café as a color,
+    // "dos tarjetas" (not two pesos), "Sí, en el hotel" at the ID question, "una pregunta" at the end
+    { name: "out-of-turn answers and a copy asked early", setup: (s) => { s.foundTwist = false; s.mpTwist = false; s.askHappened = false; s.askId = true; s.askBank = false; s.askSpell = false; s.askSign = false; },
+      turns: ["Me robaron la cartera hace una hora en el mercado.", "Es de cuero café.", "Tenía dos tarjetas y mi licencia.", "Sí, en el hotel.", "¿Me da una copia para el seguro?",
+        "Ryan Miller.", "Es el 984 123 4567.", "No, solo una pregunta.", "¿Dónde queda el Ministerio Público?", "No, gracias."],
+      expect: { complete: true, state: { place: "market", time: true, color: "brown", material: "leather", idDone: true, copyAsked: "seguro", mpInfo: true } }, auto: AUTO },
     { name: "can't find it: lost or stolen? and no cash", setup: (s) => { s.foundTwist = false; s.mpTwist = false; s.askHappened = false; s.askBank = false; s.askId = false; },
       turns: ["No encuentro mi cartera.", "No, creo que se me cayó.", "No me acuerdo.", "Esta mañana.", "Es azul.", "No traía efectivo, solo mis tarjetas.", "Ryan Miller.", "Es el 984 123 4567.", "No, nada más, gracias."],
       expect: { complete: true, state: { kind: "lost", placeSkipped: true, noCashAmount: true } }, auto: AUTO },

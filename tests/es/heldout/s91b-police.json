@@ -1,0 +1,63 @@
+{ "situation": "s91b-police", "items": [
+  { "ctx": "report", "say": "Buenas tardes, quiero levantar una denuncia", "intent": "report" },
+  { "ctx": "report", "say": "Me robaron la cartera en el mercado", "intent": "report" },
+  { "ctx": "report", "say": "Vengo a reportar que perdí mi celular", "intent": "report" },
+  { "ctx": "report", "say": "Necesito hacer un reporte por robo", "intent": "report" },
+  { "ctx": "report", "say": "Creo que me han robado el monedero", "intent": "report", "note": "Spain-ish monedero, perfect tense" },
+  { "ctx": "report", "say": "Tengo un problema, necesito ayuda", "intent": ["problem", "report"] },
+
+  { "ctx": "what_item", "say": "Mi cartera", "intent": ["what_item_ctx", "report"] },
+  { "ctx": "what_item", "say": "Se llevaron mi bolsa con todo", "intent": ["what_item_ctx", "report"] },
+
+  { "ctx": "stolen_q", "say": "No sé, a lo mejor se me cayó", "intent": ["stolen_no", "yn:no"], "not": ["stolen_yes"] },
+  { "ctx": "stolen_q", "say": "Sí, estoy seguro de que alguien me la quitó", "intent": ["stolen_yes", "yn:yes"], "not": ["stolen_no"] },
+  { "ctx": "stolen_q", "say": "No creo que me la hayan robado", "intent": "any", "not": ["stolen_yes"], "note": "trap: negation with robado" },
+
+  { "ctx": "happened", "say": "Un señor se me acercó y me empujó, y luego ya no la tenía", "intent": ["happened"] },
+  { "ctx": "happened", "say": "Cuando quise pagar ya no estaba", "intent": ["happened", "where_when"] },
+
+  { "ctx": "where", "say": "En la playa", "intent": ["where_when", "where_ctx"] },
+  { "ctx": "where", "say": "Creo que fue en el camión", "intent": ["where_when", "where_ctx"] },
+  { "ctx": "where", "say": "No fue en el mercado, fue en el zócalo", "intent": ["where_when", "where_ctx"], "note": "trap-ish correction; second item counts" },
+
+  { "ctx": "when", "say": "Como a las once de la mañana", "intent": "where_when" },
+  { "ctx": "when", "say": "Hace como una hora", "intent": "where_when" },
+  { "ctx": "when", "say": "Ayer en la noche", "intent": "where_when" },
+
+  { "ctx": "describe", "say": "Es negra, de piel, pequeña", "intent": "describe" },
+  { "ctx": "describe", "say": "Una cartera café de cuero", "intent": "describe" },
+
+  { "ctx": "contents", "say": "Mis tarjetas, mi licencia y como quinientos pesos", "intent": "contents" },
+  { "ctx": "contents", "say": "Tenía dinero y mi pasaporte", "intent": "contents" },
+  { "ctx": "contents", "say": "No tenía dinero, solo las tarjetas", "intent": ["contents", "no_cash"], "note": "trap-ish: no cash" },
+
+  { "ctx": "cash_amount", "say": "Unos ochocientos pesos", "intent": "contents" },
+  { "ctx": "cash_amount", "say": "No me acuerdo cuánto", "intent": ["no_cash", "dont_remember", "contents"] },
+
+  { "ctx": "bank", "say": "Sí, ya los llamé y bloquearon las tarjetas", "intent": ["bank_called", "yn:yes"], "not": ["bank_not_yet"] },
+  { "ctx": "bank", "say": "Todavía no he llamado al banco", "intent": ["bank_not_yet", "yn:no"], "not": ["bank_called"], "note": "trap: llamado al banco with todavía no" },
+  { "ctx": "bank", "say": "No, no las he cancelado", "intent": ["bank_not_yet", "yn:no"], "not": ["bank_called", "cancel_cards"], "note": "trap: cancelado negated" },
+
+  { "ctx": "found", "say": "¡Sí, es la mía!", "intent": ["its_mine", "yn:yes"], "not": ["not_mine"] },
+  { "ctx": "found", "say": "No, esa no es mía, la mía es negra", "intent": ["not_mine", "yn:no"], "not": ["its_mine"], "note": "trap" },
+  { "ctx": "found", "say": "No estoy seguro, ¿puedo verla?", "intent": "any", "not": ["its_mine", "not_mine"], "note": "trap: unsure" },
+
+  { "ctx": "id_q", "say": "Sí, traigo mi pasaporte", "intent": ["have_id", "yn:yes", "have_id_ctx"], "not": ["no_id"] },
+  { "ctx": "id_q", "say": "No, mi identificación estaba en la cartera", "intent": ["no_id", "yn:no", "no_id_ctx"], "not": ["have_id"], "note": "trap" },
+
+  { "ctx": "name", "say": "Me llamo Sarah Miller", "intent": "name_ctx" },
+  { "ctx": "spell", "say": "M-I-L-L-E-R", "intent": "spell_ctx" },
+
+  { "ctx": "check_all", "say": "Falta el dinero, pero las tarjetas sí están", "intent": ["missing_some"], "not": ["all_there"], "note": "trap" },
+  { "ctx": "check_all", "say": "Sí, está todo, no falta nada", "intent": ["all_there", "yn:yes", "all_there_ctx"], "not": ["missing_some"] },
+
+  { "ctx": "phone", "say": "Es el nueve ocho cuatro, uno dos tres, cuarenta y cinco, sesenta y siete", "intent": "phone_ctx" },
+  { "ctx": "phone", "say": "No tengo número mexicano", "intent": "no_phone", "not": ["phone_ctx"] },
+
+  { "ctx": "sign", "say": "¿Dónde firmo?", "intent": ["sign_where", "sign_where_ctx"] },
+  { "ctx": "sign", "say": "¿Me presta una pluma?", "intent": "pen" },
+
+  { "ctx": "anything_else", "say": "¿Me pueden dar una copia para el seguro?", "intent": "copy" },
+  { "ctx": "anything_else", "say": "¿Cuánto tiempo tarda?", "intent": "how_long" },
+  { "ctx": "anything_else", "say": "No, es todo, muchas gracias", "intent": ["thats_all", "yn:no", "g_thanks"] }
+] }
