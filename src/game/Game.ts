@@ -940,6 +940,14 @@ export class Game implements GameApi {
       const room = this.zone.interior ? (["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id) ? "cafe" : "quiet") : null;
       audio.ambience(out && !talking && !st.hud.panel, sea, out ? this.ambient.carNoise(px, pz) : 0, sea > 0.4,
         { fountain, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, room, talking });
+      // the edition's own town sounds (theme.ts: Puerto Colibrí's church bell, street vendors and trucks; none in
+      // Maple Harbor): how near the church, the square and the streets of houses are
+      const sn = THEME.sounds;
+      if (sn) audio.townSounds(out && !talking && !st.hud.panel, {
+        bell: out ? THREE.MathUtils.clamp(1 - Math.hypot(px - sn.bell[0], pz - sn.bell[1]) / 150, 0, 1) : 0,
+        vendors: out ? THREE.MathUtils.clamp(1 - Math.hypot(px - sn.vendors[0], pz - sn.vendors[1]) / 50, 0, 1) : 0,
+        homes: out ? THREE.MathUtils.clamp((pz - sn.homesZ) / 12, 0, 1) : 0,
+      });
     }
     // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
     // 1.2 s standing still
