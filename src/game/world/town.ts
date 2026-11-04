@@ -3,8 +3,9 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
-import { carParts } from "./car";
+import { carParts, vochoParts, mxTaxiParts } from "./car";
 import { THEME } from "./theme";
+import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
 import { GROUND_BLOCKS, groundPalette, groundExtras, groundMaterial, seaMaterial, trunkGeometry, canopyGeometry, canopyMaterial, bushGeometry, bushMaterial, outlineInstanced, cloudMaterial, cloudPuff } from "./styled";
@@ -50,6 +51,10 @@ export function buildTown(): Town {
   details.length = 0;
   displays.length = 0;
   displayGlass.length = 0;
+  mx.length = 0;
+  mxFlat.length = 0;
+  beachPalms.length = 0;
+  atlas = new MX.SignAtlas();
 
   // --- ground -------------------------------------------------------------
   const groundCanvas = drawGround();
@@ -123,15 +128,16 @@ export function buildTown(): Town {
 
   // --- buildings --------------------------------------------------------------
   const signs: THREE.Mesh[] = [];
-  for (const b of BUILDINGS) buildBuilding(themed(b), M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r);
+  for (const b of BUILDINGS) buildBuilding(themed(b), M, colliders, doors, signs, group, b.seed !== undefined ? rand(b.seed) : r, b.roof);
 
   // --- street furniture & nature -----------------------------------------------
   addStreetProps(M, colliders, group, r);
   addTrees(group, colliders, r);
   addSquareAndMarket(M, colliders, group, r);
   // the edition's own additions (theme.ts): none in Maple Harbor
+  addTownMx(M, colliders);
   if (THEME.papelPicado.length) group.add(makePapelPicado());
-  if (THEME.palms.length) group.add(makePalms(colliders));
+  if (THEME.palms.length || beachPalms.length) group.add(makePalms(colliders, beachPalms));
   addHarbor(M, colliders, group, r);
   addTransport(M, colliders, group, r);
   addBackyard(M, colliders, group);
@@ -160,6 +166,11 @@ export function buildTown(): Town {
     goods.name = "shop-windows";
     group.add(goods, new THREE.Mesh(mergeGeometries(displayGlass, false)!, displayGlassMaterial()));
   }
+  // the edition's outdoor pieces (mexican.ts) as one mesh, and their signs as another: none in Maple Harbor
+  if (mx.length) group.add(staticColoured(mx, "town-mx"));
+  if (mxFlat.length) { const m = staticColoured(mxFlat, "town-mx-small"); m.castShadow = false; group.add(m); }
+  const signsMesh = atlas!.build();
+  if (signsMesh) group.add(signsMesh);
   M.build(group);
 
   const clouds = makeClouds(group, r);
@@ -333,6 +344,13 @@ function addMarkings(group: THREE.Group) {
   const plazaLine = new THREE.Color(P.plaza).lerp(new THREE.Color(160 / 255, 140 / 255, 110 / 255), 0.35);
   for (let gx = SQUARE.x1; gx <= SQUARE.x2; gx += 2) quad("plaza", gx, (SQUARE.z1 + SQUARE.z2) / 2, 0.06, SQUARE.z2 - SQUARE.z1);
   for (let gz = SQUARE.z1; gz <= SQUARE.z2; gz += 2) quad("plaza", (SQUARE.x1 + SQUARE.x2) / 2, gz, SQUARE.x2 - SQUARE.x1, 0.06);
+  // the malecón's paving joints (theme.ts): across the walk every 1.5 m, and a line along it
+  if (THEME.malecon) {
+    const z0 = MX.MALECON.z + 0.25, z1 = -62.7;
+    const { x0, x1 } = MX.MALECON;
+    for (let gx = x0 + 0.75; gx < x1 + 2; gx += 1.5) quad("plaza", gx, (z0 + z1) / 2, 0.05, z1 - z0);
+    quad("plaza", (x0 + x1 + 2) / 2, (z0 + z1) / 2, x1 + 2 - x0, 0.06);
+  }
   const colors: Record<string, THREE.ColorRepresentation> = { center: P.centerLine, white: "#f4f4f0", plaza: plazaLine, curb: "#cbc5b8" };
   for (const [key, geos] of Object.entries(parts)) {
     if (!geos.length) continue;
@@ -366,6 +384,8 @@ function drawGround(): HTMLCanvasElement {
   const grad = x.createLinearGradient(0, bz0, 0, bz1);
   grad.addColorStop(0, P.beach[0]); grad.addColorStop(0.75, P.beach[1]); grad.addColorStop(1, P.beach[2]);
   x.fillStyle = grad; x.fillRect(0, bz0, c.width, bz1 - bz0);
+  // the malecón's paving, from the sidewalk to the sea side of its wall (theme.ts; the tiles' joints: addMarkings)
+  if (THEME.malecon) rectW(x, MX.MALECON.x0, MX.MALECON.z - 0.25, MX.MALECON.x1 + 2, -62.7, "#e8dfca");
   // park
   rectW(x, PARK.x1, PARK.z1, PARK.x2, PARK.z2, P.park);
   x.strokeStyle = P.path; x.lineWidth = 2.2 * PPM; x.lineCap = "round";
@@ -463,7 +483,7 @@ function faceInfo(b: BuildingDef) {
   return { n, t, halfDepth, halfWidth };
 }
 
-function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number) {
+function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[], signs: THREE.Mesh[], group: THREE.Group, r: () => number, baseRoof = b.roof) {
   // the details added later (roof kit, chimneys) draw from their own sequence, so `r`'s draws stay as they were
   const dr = rand([...b.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 100000 + 911);
   const wallMat = mat(b.color);
@@ -481,7 +501,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   col.addBox(b.x, b.z, b.w, b.d, "building");
 
   // roof
-  if (b.style === "warehouse") {
+  if (b.roof === "palapa") MX.palapaRoof(mx, b.x, b.z, b.w, b.d, b.h); // (theme.ts: El Muelle's thatch)
+  else if (b.style === "warehouse") {
     // a low front gable (the ridge runs back from the door facade), corrugated, with a skylight strip on each slope
     // (two sloping slabs, so the brick gable and its logo show under the overhang)
     const span = halfWidth * 2 + 0.8, rise = span * 0.2, len = halfDepth * 2 + 0.6;
@@ -538,28 +559,48 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       M.add("chimney-cap", mat("#5b5550"), boxGeo(0.86, 0.12, 0.86, cx, b.h + ch - 0.14, cz), false);
     }
   } else {
-    M.add("roof-flat", mat("#8f8c86"), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + 0.02, b.z), false);
-    if (r() < 0.7 && b.h < 14) M.add("roof-box", mat("#a6a39c"), boxGeo(2.2, 1.2, 1.6, b.x + (r() - 0.5) * b.w * 0.5, b.h + 0.6, b.z + (r() - 0.5) * b.d * 0.4));
+    // Mexican roofs (theme.ts) are painted red (one material for all of them), and all but the airport's and the
+    // office tower's get a parapet and tinacos
+    const mxRoof = !!THEME.mexican && b.style !== "terminal" && b.style !== "office";
+    // (a Mexican roof's paint shows: above the cornice's top, which covers Maple Harbor's slab)
+    M.add("roof-flat", mat(THEME.mexican?.roof ?? "#8f8c86"), boxGeo(b.w - 0.4, 0.1, b.d - 0.4, b.x, b.h + (THEME.mexican ? 0.23 : 0.02), b.z), false);
+    // a box on most low roofs, from the town's own random numbers (only on roofs that layout.ts has flat, so the
+    // draws stay the same whatever roofs an edition gives the houses); a Mexican roof has a tinaco there instead
+    let roofBox: [number, number] | null = null;
+    if (baseRoof !== "gable" && r() < 0.7 && b.h < 14) {
+      roofBox = [b.x + (r() - 0.5) * b.w * 0.5, b.z + (r() - 0.5) * b.d * 0.4];
+      if (!mxRoof) M.add("roof-box", mat("#a6a39c"), boxGeo(2.2, 1.2, 1.6, roofBox[0], b.h + 0.6, roofBox[1]));
+    }
     // what a flat roof carries: a few vents, a hatch, an air-conditioning unit with its fan, and on a taller block a
-    // water tank on legs (kept back from the edges)
+    // water tank on legs (kept back from the edges); in Mexico a parapet round it and tinacos (theme.ts)
     const spot = (m = 1.6): [number, number] => [b.x + (dr() - 0.5) * Math.max(0, b.w - 2 * m), b.z + (dr() - 0.5) * Math.max(0, b.d - 2 * m)];
-    for (let k = 0; k < 2 + Math.floor(dr() * 3); k++) {
-      const [vx, vz] = spot();
-      M.add("roof-vent", mat("#8b9096"), cylGeo(0.16, 0.16, 0.6, vx, b.h + 0.36, vz, 8), false);
-      M.add("roof-vent", mat("#8b9096"), cylGeo(0.26, 0.26, 0.08, vx, b.h + 0.7, vz, 8), false);
-    }
-    const [hx, hz] = spot(2);
-    M.add("roof-box", mat("#a6a39c"), boxGeo(0.9, 0.3, 0.9, hx, b.h + 0.2, hz), false);
-    if (b.w > 7 && b.d > 6) {
-      const [ax, az] = spot(2.2);
-      M.add("roof-box", mat("#a6a39c"), boxGeo(1.5, 0.8, 1.1, ax, b.h + 0.45, az));
-      M.add("roof-fan", mat("#4b4f54"), cylGeo(0.42, 0.42, 0.04, ax, b.h + 0.87, az, 14), false);
-    }
-    if (b.h > 9 && dr() < 0.6) {
-      const [tx2, tz2] = spot(2.4);
-      for (const [lx, lz] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) M.add("tank-legs", mat("#55595e"), cylGeo(0.05, 0.05, 1.2, tx2 + lx, b.h + 0.6, tz2 + lz, 5), false);
-      M.add("tank", mat("#9b6b4a", { flat: true }), cylGeo(0.85, 0.85, 1.6, tx2, b.h + 2.0, tz2, 12));
-      M.add("tank-top", mat("#6b4f3a", { flat: true }), new THREE.ConeGeometry(0.95, 0.6, 12).translate(tx2, b.h + 3.1, tz2));
+    if (mxRoof) {
+      const tanks: [number, number][] = roofBox ? [roofBox] : [];
+      const want = b.w * b.d > 260 ? 3 : b.w * b.d > 150 ? 2 : 1;
+      for (let k = 0; k < 12 && tanks.length < want; k++) {
+        const p = spot(2);
+        if (tanks.every(([tx, tz]) => Math.hypot(p[0] - tx, p[1] - tz) > 2.6)) tanks.push(p);
+      }
+      MX.parapetAndTinacos(mxFlat, b, tanks); // (their shadows fall on roofs nobody sees from the street)
+    } else {
+      for (let k = 0; k < 2 + Math.floor(dr() * 3); k++) {
+        const [vx, vz] = spot();
+        M.add("roof-vent", mat("#8b9096"), cylGeo(0.16, 0.16, 0.6, vx, b.h + 0.36, vz, 8), false);
+        M.add("roof-vent", mat("#8b9096"), cylGeo(0.26, 0.26, 0.08, vx, b.h + 0.7, vz, 8), false);
+      }
+      const [hx, hz] = spot(2);
+      M.add("roof-box", mat("#a6a39c"), boxGeo(0.9, 0.3, 0.9, hx, b.h + 0.2, hz), false);
+      if (b.w > 7 && b.d > 6) {
+        const [ax, az] = spot(2.2);
+        M.add("roof-box", mat("#a6a39c"), boxGeo(1.5, 0.8, 1.1, ax, b.h + 0.45, az));
+        M.add("roof-fan", mat("#4b4f54"), cylGeo(0.42, 0.42, 0.04, ax, b.h + 0.87, az, 14), false);
+      }
+      if (b.h > 9 && dr() < 0.6) {
+        const [tx2, tz2] = spot(2.4);
+        for (const [lx, lz] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) M.add("tank-legs", mat("#55595e"), cylGeo(0.05, 0.05, 1.2, tx2 + lx, b.h + 0.6, tz2 + lz, 5), false);
+        M.add("tank", mat("#9b6b4a", { flat: true }), cylGeo(0.85, 0.85, 1.6, tx2, b.h + 2.0, tz2, 12));
+        M.add("tank-top", mat("#6b4f3a", { flat: true }), new THREE.ConeGeometry(0.95, 0.6, 12).translate(tx2, b.h + 3.1, tz2));
+      }
     }
   }
 
@@ -568,7 +609,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   const dx = b.x + n[0] * halfDepth + t[0] * doorOff, dz = b.z + n[1] * halfDepth + t[1] * doorOff;
   const doorW = b.doorWidth ?? (b.style === "terminal" || b.style === "station" || b.style === "museum" || b.style === "hotel" ? 3.4 : 1.8);
   const rotY = Math.atan2(n[0], n[1]);
-  const doorMat = b.style === "house" ? mat(b.trim === "#ffffff" ? "#8a5a44" : b.trim!) : darkGlass;
+  const doorMat = b.style === "house" ? mat(b.trim === "#ffffff" || THEME.mexican ? "#8a5a44" : b.trim!) : darkGlass;
   M.add(`door-${key}`, doorMat, boxGeo(doorW, 2.5, 0.15, 0, 1.25, 0, 0).rotateY(rotY).translate(dx + n[0] * 0.05, 0, dz + n[1] * 0.05));
   M.add(`trim-${b.trim}`, trimMat, boxGeo(doorW + 0.4, 0.25, 0.25, 0, 2.62, 0).rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08));
   const atDoor = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(dx + n[0] * 0.08, 0, dz + n[1] * 0.08);
@@ -589,6 +630,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   // windows on every facade
   const floors = Math.max(1, Math.floor((b.h - 1) / 3.2));
   let displayN = 0;
+  const shop = THEME.tiendita?.building === b.id ? THEME.tiendita : null;
   const facades: [number, number][] = [[0, -1], [0, 1], [1, 0], [-1, 0]];
   for (const [fx, fz] of facades) {
     const along = fx === 0 ? b.w : b.d;
@@ -608,6 +650,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
         if (b.style === "warehouse" && isFront && f === 0 && Math.abs(o - WAREHOUSE_LOADING_U) < 2.4) continue;
         // …and the sign the middle of the first floor
         if (b.style === "warehouse" && isFront && f === 1 && Math.abs(o - doorOff) < 3) continue;
+        // …and a corner shop's front (theme.ts) the ground floor where it is
+        if (shop && isFront && f === 0 && Math.abs(o - shop.u) < shop.w / 2 + 0.6) continue;
         const wx = b.x + fx * (hd + 0.04) + tx * o, wz = b.z + fz * (hd + 0.04) + tz * o;
         if (b.style === "warehouse") {
           // tall steel-framed factory windows: a grid of small panes
@@ -631,7 +675,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
         }
         M.add("glass", b.style === "office" ? darkGlass : glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
         // a flower box under each of a house's front windows downstairs
-        if (b.style === "house" && isFront && f === 0 && !STYLED) {
+        if (b.style === "house" && isFront && f === 0 && !STYLED && !THEME.mexican) {
           const at = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(wx, 0, wz);
           details.push([at(new THREE.BoxGeometry(ww + 0.14, 0.22, 0.26).translate(0, y - wh / 2 - 0.2, 0.15)), "#7a4b36"]);
           for (let k = 0; k < 6; k++) {
@@ -649,6 +693,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
           fr(ww + 0.14, 0.09, 0, wh / 2 + 0.02);
           for (const s of [-1, 1]) fr(0.08, wh + 0.06, s * (ww / 2 + 0.02), 0);
           if (!bigShop) { fr(0.05, wh, 0, 0); fr(ww, 0.05, 0, wh * 0.12); }
+          // iron bars on the ground floor's front windows (theme.ts), and on a house's all round
+          if (THEME.mexican && f === 0 && !bigShop && (isFront || b.style === "house") && BARRED.has(b.style)) MX.windowBars(mxFlat, (g) => g.rotateY(rot).translate(wx, cy, wz), ww, wh);
         }
       }
     }
@@ -673,7 +719,10 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
 
   // sign
   if (b.sign) {
-    const tex = textTexture(b.sign, { bg: "#fffaf0", fg: b.trim ?? "#333", border: b.trim, w: 768, h: 160 });
+    // a shop's sign painted by hand in a Mexican town (theme.ts), else a printed board
+    const tex = THEME.mexican && (b.style === "shop" || b.style === "restaurant")
+      ? MX.paintedSignTexture(b.sign, b.trim ?? "#333", "#fff6dc", new THREE.Color(b.trim ?? "#333").multiplyScalar(0.5).getStyle())
+      : textTexture(b.sign, { bg: "#fffaf0", fg: signInk(b), border: b.trim, w: 768, h: 160 });
     const sw = Math.min(halfWidth * 2 - 1.5, Math.max(5, b.sign.length * 0.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 160 / 768), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     const sy = b.style === "house" ? 0 : b.style === "hotel" || b.style === "office" || b.style === "apartments" ? Math.min(b.h - 1.5, 8.2) : Math.min(b.h - 1.1, 4.8);
@@ -693,7 +742,7 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("steps", mat("#e3ddd0"), boxGeo(16, 0.3, 3.4, 0, 0.15, 0).rotateY(rotY).translate(dx + n[0] * 1.7, 0, dz + n[1] * 1.7));
     M.add("steps", mat("#e3ddd0"), boxGeo(16, 0.3, 2.4, 0, 0.45, 0).rotateY(rotY).translate(dx + n[0] * 1.2, 0, dz + n[1] * 1.2));
     M.add("pediment", mat("#f7f3ea"), boxGeo(16, 0.8, 3.6, 0, 7.4, 0).rotateY(rotY).translate(dx + n[0] * 1.6, 0, dz + n[1] * 1.6));
-    const banner = textTexture("The Colors of the Night", { bg: "#2b2d6e", fg: "#ffd166", w: 256, h: 512 });
+    const banner = textTexture(townSign("The Colors of the Night"), { bg: "#2b2d6e", fg: "#ffd166", w: 256, h: 512 });
     for (const s of [-1, 1]) {
       const bm = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2), new THREE.MeshBasicMaterial({ map: banner }));
       bm.position.set(dx + t[0] * s * 9.5 + n[0] * 0.1, 5.2, dz + t[1] * s * 9.5 + n[1] * 0.1);
@@ -709,7 +758,9 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       // flags
       M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx + t[0] * s * 7 + n[0] * 0.8, 9.5, dz + t[1] * s * 7 + n[1] * 0.8, 6));
       col.addCircle(dx + t[0] * s * 7 + n[0] * 0.8, dz + t[1] * s * 7 + n[1] * 0.8, 0.12);
-      M.add("flag", mat(s < 0 ? "#b22234" : "#3c3b6e"), boxGeo(1.6, 1, 0.04, 0, 0, 0).rotateY(rotY + Math.PI / 2).translate(dx + t[0] * s * 7 + n[0] * 0.8 + t[0] * 0.8, 13.4, dz + t[1] * s * 7 + n[1] * 0.8 + t[1] * 0.8));
+      const fx = dx + t[0] * s * 7 + n[0] * 0.8 + t[0] * 0.8, fz = dz + t[1] * s * 7 + n[1] * 0.8 + t[1] * 0.8;
+      if (THEME.mexican) MX.mexicanFlag(mx, fx, 13.4, fz, rotY + Math.PI / 2, 1.6, 1);
+      else M.add("flag", mat(s < 0 ? "#b22234" : "#3c3b6e"), boxGeo(1.6, 1, 0.04, 0, 0, 0).rotateY(rotY + Math.PI / 2).translate(fx, 13.4, fz));
     }
   }
   if (b.style === "station") {
@@ -743,17 +794,24 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
     for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
     for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14);
-    M.add("chimney", mat("#9a5b46"), boxGeo(1, 3, 1, b.x + b.w * 0.28, b.h + 1.8, b.z + 1.5));
-    // mailbox
-    M.add("mailbox-post", mat("#6b4f3a"), boxGeo(0.12, 1.1, 0.12, dx + t[0] * 4.5 + n[0] * 5, 0.55, dz + t[1] * 4.5 + n[1] * 5));
-    M.add("mailbox", mat("#4a6fa5"), boxGeo(0.35, 0.3, 0.55, dx + t[0] * 4.5 + n[0] * 5, 1.2, dz + t[1] * 4.5 + n[1] * 5));
-    col.addCircle(dx + t[0] * 4.5 + n[0] * 5, dz + t[1] * 4.5 + n[1] * 5, 0.22);
-    // picket fence along the front
-    for (let i = -b.w / 2; i <= b.w / 2; i += 0.5) {
-      if (Math.abs(i) < 1.4) continue;
-      M.add("fence", mat("#ffffff"), boxGeo(0.1, 0.9, 0.06, dx + t[0] * i + n[0] * 5.6, 0.45, dz + t[1] * i + n[1] * 5.6));
+    if (THEME.mexican) {
+      // a low wall with an iron gate and a potted plant instead of the picket fence, the mailbox and the chimney
+      const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
+      MX.houseFront(mx, P, rotY, b.w, b.color, b.trim ?? "#ffffff", 1.4, P(4.5, 5));
+    } else {
+      M.add("chimney", mat("#9a5b46"), boxGeo(1, 3, 1, b.x + b.w * 0.28, b.h + 1.8, b.z + 1.5));
+      // mailbox
+      M.add("mailbox-post", mat("#6b4f3a"), boxGeo(0.12, 1.1, 0.12, dx + t[0] * 4.5 + n[0] * 5, 0.55, dz + t[1] * 4.5 + n[1] * 5));
+      M.add("mailbox", mat("#4a6fa5"), boxGeo(0.35, 0.3, 0.55, dx + t[0] * 4.5 + n[0] * 5, 1.2, dz + t[1] * 4.5 + n[1] * 5));
+      // picket fence along the front
+      for (let i = -b.w / 2; i <= b.w / 2; i += 0.5) {
+        if (Math.abs(i) < 1.4) continue;
+        M.add("fence", mat("#ffffff"), boxGeo(0.1, 0.9, 0.06, dx + t[0] * i + n[0] * 5.6, 0.45, dz + t[1] * i + n[1] * 5.6));
+      }
+      M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
     }
-    M.add("fence", mat("#ffffff"), boxGeo(b.w, 0.1, 0.06, 0, 0.7, 0).rotateY(rotY).translate(dx + n[0] * 5.6, 0, dz + n[1] * 5.6));
+    // the mailbox's (or the pot's) and the fence's (or the wall's) colliders
+    col.addCircle(dx + t[0] * 4.5 + n[0] * 5, dz + t[1] * 4.5 + n[1] * 5, 0.22);
     // the fence blocks on both sides of its gate
     for (const sd of [-1, 1]) {
       const len = b.w / 2 - 1.4, u = sd * (1.4 + len / 2), fx = dx + t[0] * u + n[0] * 5.6, fz = dz + t[1] * u + n[1] * 5.6;
@@ -791,11 +849,37 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     col.addBox(dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, 0.9, 0.8);
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
     col.addCircle(dx - t[0] * 6 + n[0] * 1.2, dz - t[1] * 6 + n[1] * 1.2, 0.12);
-    M.add("flag", mat("#b22234"), boxGeo(1.8, 1.1, 0.04, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2));
+    if (THEME.mexican) MX.mexicanFlag(mx, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2, 0, 1.8, 1.1);
+    else M.add("flag", mat("#b22234"), boxGeo(1.8, 1.1, 0.04, dx - t[0] * 6 + n[0] * 1.2 + 0.9, 8.3, dz - t[1] * 6 + n[1] * 1.2));
   }
   if (b.id === "market" || b.id === "clinic" || b.id === "gym") frontExtras(b.id, M, col, group, dx, dz, n, t, rotY);
   if (b.style === "warehouse") warehouseExtras(b, M, col, group, dx, dz, n, t, rotY);
+  // the edition's corner shop in the ground floor and its bougainvillea (theme.ts): none in Maple Harbor
+  const front = (u: number, v: number): [number, number] => [b.x + n[0] * halfDepth + t[0] * u + n[0] * v, b.z + n[1] * halfDepth + t[1] * u + n[1] * v];
+  if (shop) {
+    const s = Math.sign(shop.u) || 1, [sx, sz] = front(s * (halfWidth + 0.05), -3.2);
+    MX.tiendita(mx, col, atlas!, front, rotY, shop.u, shop.w, shop.sign, shop.side ? { x: sx, z: sz, rot: Math.atan2(t[0] * s, t[1] * s), text: shop.side } : null);
+  }
+  if (THEME.bougainvillea.includes(b.id)) {
+    const side = dr() < 0.5 ? -1 : 1;
+    MX.bougainvillea(mxFlat, front, side * (halfWidth - 1.3), 2.6, Math.min(b.h, 7.2) + (b.roof === "flat" && THEME.mexican ? 0.9 : 0.2), 400 + b.id.length * 37 + b.x);
+  }
 }
+
+/** The letters' colour on a building's printed sign: its trim; in the edition's town (theme.ts) a dark one when the
+ *  trim is too pale to read on the cream board (Correos, Departamentos Las Palmas). */
+function signInk(b: BuildingDef) {
+  const ink = b.trim ?? "#333";
+  if (!THEME.mexican) return ink;
+  const c = new THREE.Color(ink);
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b > 0.6 ? b.awning ?? "#3a2f2a" : ink;
+}
+
+/** An outdoor sign's text in this edition (theme.ts townSigns), or Maple Harbor's own. */
+const townSign = (text: string) => THEME.townSigns[text] ?? text;
+
+/** The kinds of building whose ground floor windows have iron bars in a Mexican town (theme.ts). */
+const BARRED = new Set<BuildingDef["style"]>(["house", "shop", "civic", "restaurant", "apartments"]);
 
 // --------------------------------------------------------------------------- shop windows
 
@@ -1110,7 +1194,7 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
   /** A flat notice on the facade (or on a window), facing the street. */
   const notice = (text: string, bg: string, fg: string, u: number, y: number, w: number, h: number, v = 0.12) => {
     const [x, z] = P(u, v);
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture(text, { bg, fg, w: 512, h: Math.round(512 * h / w) }), toneMapped: false }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture(townSign(text), { bg, fg, w: 512, h: Math.round(512 * h / w) }), toneMapped: false }));
     m.position.set(x, y, z); m.rotation.y = rotY;
     group.add(m);
   };
@@ -1149,8 +1233,10 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
     x.lineWidth = 10; x.strokeStyle = "#3a86b0"; x.stroke();
     x.fillStyle = "#3a86b0"; x.fillRect(58, 64, 36, 100); x.fillRect(26, 96, 100, 36);
     x.font = "800 50px Nunito, Arial"; x.textAlign = "left"; x.textBaseline = "middle";
-    x.fillText("Family Clinic", 150, 86);
-    x.fillStyle = "#52606d"; x.font = "700 38px Nunito, Arial"; x.fillText("Walk-ins welcome", 150, 150);
+    // (an edition's own words are squeezed to the panel's width if they must be)
+    const say = (text: string, px: number, py: number) => { const tr = townSign(text); if (tr === text) x.fillText(text, px, py); else x.fillText(tr, px, py, 345); };
+    say("Family Clinic", 150, 86);
+    x.fillStyle = "#52606d"; x.font = "700 38px Nunito, Arial"; say("Walk-ins welcome", 150, 150);
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
     const [px, pz] = P(3, 1.25 + 0.14);
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.8), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
@@ -1220,8 +1306,12 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   const lampGlass = mat("#fff4c4", { emissive: "#a08a3a" });
   const addLamp = (x: number, z: number) => {
     M.add("lamp", lampPost, cylGeo(0.08, 0.12, 4.2, x, 2.1, z, 6));
-    M.add("lamp", lampPost, boxGeo(0.25, 0.25, 0.25, x, 4.3, z));
-    M.add("lamp-glass", lampGlass, new THREE.SphereGeometry(0.28, 8, 6).translate(x, 4.55, z), false);
+    // on the malecón (theme.ts) a post with two lanterns on an arm, along the beach
+    if (THEME.malecon && z < -60) MX.lanternArm((k, g) => M.add(k === "post" ? "lamp" : "lamp-glass", k === "post" ? lampPost : lampGlass, g, k === "post"), x, z);
+    else {
+      M.add("lamp", lampPost, boxGeo(0.25, 0.25, 0.25, x, 4.3, z));
+      M.add("lamp-glass", lampGlass, new THREE.SphereGeometry(0.28, 8, 6).translate(x, 4.55, z), false);
+    }
     col.addCircle(x, z, 0.18);
   };
   for (const rd of ROADS) {
@@ -1239,7 +1329,10 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   }
   // benches, hydrants, trash cans along Main Street
   const bench = (x: number, z: number, rot: number) => streetBench(M, col, x, z, rot);
-  for (const [x, z, rot] of [[-75, -17.5, 0], [-48, -17.5, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) bench(x, z, rot);
+  for (const [x, z, rot] of [[-75, -17.5, 0], [-48, -17.5, 0], [-6, -17.5, 0], [60, -40, 0], [-64, 2, Math.PI], [40, 2, Math.PI], [-84, 44.5, 0]] as [number, number, number][]) {
+    if (THEME.church && Math.hypot(x - THEME.church.x, z - THEME.church.z) < 11) continue; // where the church stands
+    bench(x, z, rot);
+  }
   const hydrant = (x: number, z: number) => {
     M.add("hydrant", mat("#d63b2f"), cylGeo(0.18, 0.2, 0.7, x, 0.35, z, 8));
     M.add("hydrant", mat("#d63b2f"), new THREE.SphereGeometry(0.18, 8, 6).translate(x, 0.72, z));
@@ -1251,16 +1344,20 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
   // stop signs at a few corners
   const stop = (x: number, z: number) => {
     M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.04, 0.04, 2.4, x, 1.2, z, 6));
-    M.add("stop", mat("#c62828", { flat: true }), new THREE.CylinderGeometry(0.4, 0.4, 0.05, 8).rotateX(Math.PI / 2).translate(x, 2.45, z));
+    // the edition's word on it (theme.ts: ALTO), or Maple Harbor's plain octagon
+    if (THEME.stopWord) MX.stopFace(atlas!, THEME.stopWord, x, z);
+    else M.add("stop", mat("#c62828", { flat: true }), new THREE.CylinderGeometry(0.4, 0.4, 0.05, 8).rotateX(Math.PI / 2).translate(x, 2.45, z));
     col.addCircle(x, z, 0.1);
   };
   for (const [x, z] of [[-75, 32], [5, 32], [65, 32], [-5, -14], [75, -14]]) stop(x, z);
   // parked cars
   const colors = ["#e45b4f", "#4a7bb7", "#f2c14e", "#6fbf73", "#f4f4f4", "#3d3d46", "#b5838d"];
   const parked: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
-  const car = (x: number, z: number, rot: number, color: string) => {
+  const car = (x: number, z: number, rot: number, color: string, look?: { kind: "sedan" | "vocho"; color: string }) => {
     if (!STYLED) {
-      for (const [g, c] of carParts(color)) parked.push([g.rotateY(rot).translate(x, 0, z), c]);
+      // the edition's cars (theme.ts: vochitos and small sedans in its colours), or Maple Harbor's
+      const parts = look ? (look.kind === "vocho" ? vochoParts(look.color) : carParts(look.color)) : carParts(color);
+      for (const [g, c] of parts) parked.push([g.rotateY(rot).translate(x, 0, z), c]);
       col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3);
       return;
     }
@@ -1274,7 +1371,7 @@ function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => 
     col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.3, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.3);
   };
   let ci = 0;
-  for (const [x, z, rot] of PARKED_CARS) car(x, z, rot, colors[ci++ % colors.length]);
+  for (const [x, z, rot] of PARKED_CARS) { const look = THEME.parkedCars[ci]; car(x, z, rot, colors[ci++ % colors.length], look); }
   if (parked.length) group.add(staticColoured(parked, "parked-cars"));
   void r;
 }
@@ -1312,7 +1409,13 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
       // the one in Maggie's drive moves to the west of it, out of the conversation camera's view (it frames from the east)
       add(inDrive(tx, tz, 1.6) ? CEDAR_DRIVE.x1 - 3.2 : tx, tz, 0.9);
     }
-    if (!nearIntersection(x, -61.5)) add(x + 5 + r() * 2, -61.8, 0.85);
+    if (!nearIntersection(x, -61.5)) {
+      // along the beach a malecón (theme.ts) has palms instead: the tree keeps its place among the town's random
+      // numbers, unseen
+      const tx = x + 5 + r() * 2;
+      if (THEME.malecon) beachPalms.push([tx, -61.8]);
+      add(tx, -61.8, THEME.malecon ? 0 : 0.85);
+    }
   }
   // park
   for (let i = 0; i < 26; i++) {
@@ -1344,7 +1447,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
     leaves.setMatrixAt(i, m4);
     const leafCol = palette[Math.floor(r() * palette.length)];
     leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
-    col.addCircle(x, z, 0.35 * sc);
+    if (sc > 0) col.addCircle(x, z, 0.35 * sc); // (not the unseen ones: a palm stands there)
   });
   trunks.castShadow = leaves.castShadow = true;
   trunks.receiveShadow = leaves.receiveShadow = true;
@@ -1361,6 +1464,7 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
     for (const sgn of [-1, 1]) {
       const off = (b.face === "n" || b.face === "s" ? b.w : b.d) / 2 - 0.8;
       const x = b.x + nn[0] * (halfDepth + 0.6) + t[0] * sgn * off, z = b.z + nn[1] * (halfDepth + 0.6) + t[1] * sgn * off;
+      if (THEME.tiendita && col.blocked(x, z, 0.3)) continue; // a corner shop's crates are there (theme.ts)
       m4.compose(v.set(x, 0.35, z), q.identity(), s.set(1, 0.8, 1));
       bushes.setMatrixAt(k++, m4);
       col.addCircle(x, z, 0.62);
@@ -1418,6 +1522,24 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   }
   M.add("gazebo-roof", mat("#2e6b3a", { flat: true }), new THREE.ConeGeometry(3.6, 1.8, 8).translate(44, 4.1, -22));
   col.addCircle(44, -22, 3.1);
+}
+
+/** The edition's outdoor pieces beyond the square (theme.ts, docs/es/TOWN.md tasks 1–4): the malecón with its benches
+ *  and kiosk, the palapas, the lanchas on the sand, the church, the street signs, the topes and the elote cart.
+ *  Nothing in Maple Harbor. */
+function addTownMx(M: Merger, col: Colliders) {
+  const a = atlas!;
+  if (THEME.malecon) {
+    for (const [x, z, rot] of MX.malecon(mx, col, a, THEME.malecon.plaque)) streetBench(M, col, x, z, rot);
+    MX.kiosk(mx, col, a, THEME.malecon.kiosk[0], THEME.malecon.kiosk[1], THEME.malecon.kioskSign);
+  }
+  if (THEME.palapas.length) MX.palapas(mx, col, THEME.palapas);
+  if (THEME.lanchas) MX.beachedLanchas(mx, col, THEME.lanchas.beached);
+  if (THEME.church) MX.church(mx, col, THEME.church.x, THEME.church.z, THEME.church.face);
+  for (const [x, z, ew, ns] of THEME.streetSigns) MX.streetSign(mxFlat, col, a, x, z, ew, ns);
+  for (const [x1, z1, x2, z2, sx, sz, srot] of THEME.topes?.at ?? []) MX.tope(mxFlat, col, a, THEME.topes!.word, x1, z1, x2, z2, sx, sz, srot);
+  const f = THEME.foodCart;
+  if (f) MX.foodCart(mx, col, a, f.x, f.z, f.rot, f.sign);
 }
 
 /** A building as this edition shows it (theme.ts): its colours and its sign. In Maple Harbor, as layout.ts has it. */
@@ -1517,12 +1639,12 @@ function papelTexture() {
 
 /** Palm trees (theme.ts): a slightly bent ringed trunk, eight drooping fronds and a few coconuts, one instanced mesh
  *  (one draw call, and one in the shadow pass) whose crowns sway in the wind. */
-function makePalms(col: Colliders): THREE.InstancedMesh {
+function makePalms(col: Colliders, extra: [number, number][] = []): THREE.InstancedMesh {
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   let px = 0, pz = 0;
   for (let i = 0; i < 6; i++) {
     const h = 1.05, y = 0.5 + i * h;
-    parts.push([new THREE.CylinderGeometry(0.2 - i * 0.012, 0.24 - i * 0.012, h, 8).translate(px, y, pz), i % 2 ? "#8b6a4f" : "#9a7a5c"]);
+    parts.push([new THREE.CylinderGeometry(0.2 - i * 0.012, 0.24 - i * 0.012, h, 8, 1, true).translate(px, y, pz), i % 2 ? "#8b6a4f" : "#9a7a5c"]);
     px += 0.07 + i * 0.012;
   }
   const top = new THREE.Vector3(px, 6.6, pz);
@@ -1534,7 +1656,7 @@ function makePalms(col: Colliders): THREE.InstancedMesh {
     frond.translate(top.x, top.y, top.z);
     parts.push([frond, i % 2 ? "#3f8f3a" : "#4fa64a"]);
   }
-  for (let i = 0; i < 3; i++) parts.push([new THREE.SphereGeometry(0.17, 7, 5).translate(top.x + Math.cos(i * 2.1) * 0.25, top.y - 0.25, top.z + Math.sin(i * 2.1) * 0.25), "#6b4a2b"]);
+  for (let i = 0; i < 3; i++) parts.push([new THREE.OctahedronGeometry(0.18).translate(top.x + Math.cos(i * 2.1) * 0.25, top.y - 0.25, top.z + Math.sin(i * 2.1) * 0.25), "#6b4a2b"]);
   const m = new THREE.MeshLambertMaterial({ vertexColors: true });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWind = wind;
@@ -1547,7 +1669,7 @@ function makePalms(col: Colliders): THREE.InstancedMesh {
           transformed.z += cos(uWind * 0.7 + ip.x * 0.19 - ip.y * 0.23) * sway * 0.7;
         #endif`);
   };
-  const spots = THEME.palms.filter(([x, z]) => !col.blocked(x, z, 0.5));
+  const spots = [...THEME.palms, ...extra].filter(([x, z]) => !col.blocked(x, z, 0.5));
   const mesh = new THREE.InstancedMesh(colourMerge(parts), m, spots.length);
   const r = rand(77);
   const o = new THREE.Object3D();
@@ -1593,6 +1715,19 @@ function staticColoured(parts: [THREE.BufferGeometry, THREE.ColorRepresentation]
   return mesh;
 }
 
+/** Lanchas afloat (theme.ts), each one mesh that rocks on the water like the boats. */
+function makeLanchas() {
+  boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  return THEME.lanchas!.afloat.map(([bx, bz, rot, stripe], i) => {
+    const mesh = new THREE.Mesh(coloured(MX.lanchaParts(stripe).map(([g, c]) => [g.translate(0, -0.3, 0), c])), boatMat!);
+    mesh.position.set(bx, 0, bz);
+    mesh.rotation.y = rot;
+    mesh.castShadow = true;
+    mesh.userData.boat = { phase: i * 1.7, rot };
+    return mesh;
+  });
+}
+
 function makeBoats() {
   boatMat ??= new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   // the hull seen from above: square stern, pointed bow
@@ -1624,6 +1759,15 @@ const sprays: ((t: number) => void)[] = [];
 const seats: Seat[] = [];
 /** Small details in their own colours (flower boxes, bikes), merged into one mesh at the end. */
 const details: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+/** The edition's outdoor pieces (theme.ts, mexican.ts), merged into one mesh at the end, and their signs (one
+ *  texture). Nothing in Maple Harbor. */
+const mx: MX.Part[] = [];
+/** …and the ones that cast no shadow worth drawing (window bars, bougainvillea, roof parapets and tinacos, topes,
+ *  sign posts). */
+const mxFlat: MX.Part[] = [];
+let atlas: MX.SignAtlas | null = null;
+/** Palms where the street trees along the beach would be, on a malecón (theme.ts). */
+const beachPalms: [number, number][] = [];
 function makeSpray(x: number, z: number) {
   const N = 60;
   const drops = new THREE.InstancedMesh(new THREE.SphereGeometry(0.075, 6, 4).scale(1, 1.6, 1), new THREE.MeshLambertMaterial({ color: "#eefaff", emissive: "#5aa6bd" }), N);
@@ -1722,9 +1866,9 @@ function addHarbor(M: Merger, col: Colliders, group: THREE.Group, r: () => numbe
       M.add("boat-cabin", mat("#f4f6f8"), boxGeo(1.4, 0.9, 1.8, 0, 0, 0).rotateY(rot).translate(bx, 1, bz));
       M.add("boat-mast", mat("#ddd"), cylGeo(0.05, 0.05, 5, bx, 3, bz, 5));
     }
-  } else for (const b of makeBoats()) group.add(b);
-  // beach umbrellas and seagull-free calm
-  for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
+  } else for (const b of THEME.lanchas ? makeLanchas() : makeBoats()) group.add(b);
+  // beach umbrellas and seagull-free calm (palapas instead where the edition has them: addTownMx)
+  if (!THEME.palapas.length) for (const [ux, uz, c] of [[-80, -67, "#e45b4f"], [-60, -68, "#f2c14e"], [40, -67, "#4a7bb7"], [70, -68, "#e45b4f"]] as [number, number, string][]) {
     M.add("umbrella", mat(c, { flat: true }), new THREE.ConeGeometry(1.6, 0.7, 8).translate(ux, 2.4, uz));
     M.add("umbrella-pole", mat("#ddd"), cylGeo(0.04, 0.04, 2.4, ux, 1.2, uz, 5));
     col.addCircle(ux, uz, 0.1);
@@ -1737,7 +1881,7 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   // taxi
   const { x, z, rot } = TAXI;
   const yellow = mat("#f5c518", { flat: true });
-  if (!STYLED) group.add(staticColoured(carParts("#f5c518", { taxi: true }).map(([g, c]) => [g.rotateY(rot).translate(x, 0, z), c]), "taxi"));
+  if (!STYLED) group.add(staticColoured((THEME.taxi ? mxTaxiParts(THEME.taxi.body, THEME.taxi.trim) : carParts("#f5c518", { taxi: true })).map(([g, c]) => [g.rotateY(rot).translate(x, 0, z), c]), "taxi"));
   else M.add("taxi", yellow, boxGeo(1.9, 0.72, 4.4, 0, 0.66, 0).rotateY(rot).translate(x, 0, z));
   if (STYLED) {
     M.add("taxi", yellow, boxGeo(1.7, 0.6, 2.3, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z));
@@ -1749,7 +1893,10 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
     }
   }
   col.addBox(x, z, 4.4, 2.1);
-  const taxiSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
+  // the stand's sign: Maple Harbor's yellow TAXI, or the edition's (theme.ts: a "Sitio de Taxis" in the taxis' colours)
+  const taxiSign = THEME.taxi
+    ? new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.6), new THREE.MeshBasicMaterial({ map: textTexture(THEME.taxi.sign, { bg: THEME.taxi.trim, fg: "#ffffff", border: "#ffffff", w: 512, h: 134 }) }))
+    : new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("TAXI", { bg: "#f5c518", fg: "#222", w: 256, h: 96 }) }));
   taxiSign.position.set(126.5, 2.4, 1.2); taxiSign.rotation.y = Math.PI;
   M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 2.5, 126.5, 1.25, 1.25, 6));
   col.addCircle(126.5, 1.25, 0.1);
@@ -1764,7 +1911,8 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   // solid, only its back half, so Frank's talk spot under the shelter's roof stays open
   col.addBox(b.x, b.z + 0.55, 2.4, 0.18);
   col.addBox(b.x, b.z + 0.75, 3.6, 0.2);
-  const busSign = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), new THREE.MeshBasicMaterial({ map: textTexture("BUS", { bg: "#1f6f78", fg: "#fff", w: 128, h: 128 }) }));
+  const busWide = THEME.busSign.length > 4; // a longer word gets a wider sign
+  const busSign = new THREE.Mesh(new THREE.PlaneGeometry(busWide ? 1.3 : 0.8, busWide ? 0.5 : 0.8), new THREE.MeshBasicMaterial({ map: textTexture(THEME.busSign, { bg: "#1f6f78", fg: "#fff", w: busWide ? 256 : 128, h: busWide ? 98 : 128 }) }));
   busSign.position.set(b.x - 2.2, 2.6, b.z - 0.2);
   M.add("sign-pole", mat("#9aa5ad"), cylGeo(0.05, 0.05, 3, b.x - 2.2, 1.5, b.z - 0.25, 6));
   col.addCircle(b.x - 2.2, b.z - 0.25, 0.1);
@@ -1826,7 +1974,7 @@ function addMaggiesCar(M: Merger, col: Colliders, group: THREE.Group) {
   }
   col.addBox(x, z, Math.abs(Math.cos(rot)) * 2 + Math.abs(Math.sin(rot)) * 4.4, Math.abs(Math.sin(rot)) * 2 + Math.abs(Math.cos(rot)) * 4.4);
   // the sign on the windshield, read from the street
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.32), new THREE.MeshBasicMaterial({ map: textTexture("FOR SALE $9,000", { bg: "#fffaf0", fg: "#c0182f", w: 384, h: 128, script: true }) }));
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.32), new THREE.MeshBasicMaterial({ map: textTexture(townSign("FOR SALE $9,000"), { bg: "#fffaf0", fg: "#c0182f", w: 384, h: 128, script: true }) }));
   const off = new THREE.Vector3(0.25, 1.15, 0.645).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
   sign.position.set(x + off.x, off.y, z + off.z);
   sign.rotation.y = rot;
@@ -1860,7 +2008,7 @@ function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
   // a little sign in the front garden pointing to the party
   M.add("sign-pole", mat("#8a6a4a"), cylGeo(0.05, 0.05, 1.3, bx + 7.6, 0.65, bz - 18.4, 6));
   col.addCircle(bx + 7.6, bz - 18.4, 0.1);
-  const partySign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.5), new THREE.MeshBasicMaterial({ map: textTexture("Party → backyard", { bg: "#fff6e0", fg: "#b5485d", w: 384, h: 128 }) }));
+  const partySign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.5), new THREE.MeshBasicMaterial({ map: textTexture(townSign("Party → backyard"), { bg: "#fff6e0", fg: "#b5485d", w: 384, h: 128 }) }));
   partySign.position.set(bx + 7.6, 1.35, bz - 18.47);
   partySign.rotation.y = Math.PI;
   group.add(partySign);

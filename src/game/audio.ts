@@ -254,6 +254,116 @@ export class AudioSystem {
     }
   }
 
+  /** When the town's own sounds (townSounds) come next. */
+  private town: { bell: number; vendor: number; truck: number } | null = null;
+
+  /** A town's own sounds, on top of the sea, the cars and the birds (theme.ts `sounds`; Maple Harbor has none), made
+   *  on the spot like the gulls: its church bell ringing a few strokes now and then, the street vendors round the
+   *  square (the knife grinder's pan pipe, the ice-cream cart's little bells, the camote cart's steam whistle), and in
+   *  the streets of houses the gas truck's tune or the garbage truck's hand bell going by. The levels (0–1) say how
+   *  near each one is; `on` false (indoors, in a conversation) starts nothing new. */
+  townSounds(on: boolean, lv: { bell: number; vendors: number; homes: number }) {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== "running") return;
+    const now = ctx.currentTime;
+    this.town ??= { bell: now + 6, vendor: now + 4, truck: now + 10 };
+    const t = this.town;
+    if (!on || this.volume <= 0) { t.bell = Math.max(t.bell, now + 2); t.vendor = Math.max(t.vendor, now + 2); t.truck = Math.max(t.truck, now + 4); return; }
+    if (now > t.bell) {
+      t.bell = now + 80 + Math.random() * 70;
+      if (lv.bell > 0.03) { const n = 3 + Math.floor(Math.random() * 4); for (let k = 0; k < n; k++) this.bellStroke(now + k * 1.6, 520, this.volume * 0.05 * lv.bell); }
+    }
+    if (now > t.vendor) {
+      t.vendor = now + 14 + Math.random() * 20;
+      if (lv.vendors > 0.08) {
+        const v = this.volume * 0.03 * lv.vendors, pick = Math.random();
+        if (pick < 0.4) this.panPipe(now, v); else if (pick < 0.7) this.cartBells(now, v); else this.steamWhistle(now, v);
+      }
+    }
+    if (now > t.truck) {
+      t.truck = now + 40 + Math.random() * 45;
+      if (lv.homes > 0.1) { if (Math.random() < 0.55) this.gasTune(now, this.volume * 0.035 * lv.homes); else this.handBell(now, this.volume * 0.04 * lv.homes); }
+    }
+  }
+
+  /** A note through a gain envelope (attack, then an exponential fall over `dur`) into `out`. */
+  private note(f: number, at: number, dur: number, type: OscillatorType, vol: number, out: AudioNode, attack = 0.01) {
+    const ctx = this.ctx!;
+    const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, at);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g); g.connect(out);
+    o.start(at); o.stop(at + dur + 0.05);
+    return o;
+  }
+
+  /** One stroke of a church bell: the hum, the strike and the bell's other partials, each dying away at its pace. */
+  private bellStroke(at: number, f: number, vol: number) {
+    const out = this.ctx!.destination;
+    for (const [k, a, d] of [[0.5, 0.6, 4.5], [1, 1, 3.6], [1.19, 0.55, 3], [1.5, 0.35, 2.4], [2, 0.4, 2], [2.61, 0.22, 1.4], [3.04, 0.15, 1.1]] as [number, number, number][]) {
+      this.note(f * k * (0.997 + Math.random() * 0.006), at, d, "sine", vol * a, out, 0.004);
+    }
+  }
+
+  /** The knife grinder's pan pipe: a quick breathy run up the scale and back down. */
+  private panPipe(at: number, vol: number) {
+    const ctx = this.ctx!, f = ctx.createBiquadFilter();
+    f.type = "lowpass"; f.frequency.value = 4200; f.connect(ctx.destination);
+    const scale = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16];
+    const run = [...scale, ...scale.slice(0, -1).reverse()];
+    run.forEach((st, i) => this.note(1180 * 2 ** (st / 12), at + i * 0.075, 0.13, "triangle", vol * 0.8, f, 0.012));
+  }
+
+  /** The ice-cream cart's little bells: two quick shakes. */
+  private cartBells(at: number, vol: number) {
+    const out = this.ctx!.destination;
+    for (const s of [0, 0.55]) for (let i = 0; i < 4; i++) {
+      const t0 = at + s + i * 0.07 + Math.random() * 0.02;
+      for (const f of [2950, 4400]) this.note(f * (0.98 + Math.random() * 0.04), t0, 0.35, "sine", vol * 0.5, out, 0.002);
+    }
+  }
+
+  /** The camote cart's steam whistle: one long wavering whistle that fades. */
+  private steamWhistle(at: number, vol: number) {
+    const ctx = this.ctx!;
+    const o = this.note(1750, at, 2.6, "sine", vol * 0.7, ctx.destination, 0.25);
+    const wob = ctx.createOscillator(); wob.frequency.value = 6.5;
+    const wg = ctx.createGain(); wg.gain.value = 22;
+    wob.connect(wg); wg.connect(o.frequency);
+    wob.start(at); wob.stop(at + 2.7);
+  }
+
+  /** The gas truck going by with its loudspeaker tune (a little jingle of the town's own), louder as it passes. */
+  private gasTune(at: number, vol: number) {
+    const ctx = this.ctx!;
+    const pass = ctx.createGain();
+    pass.gain.setValueAtTime(0.0001, at);
+    pass.gain.exponentialRampToValueAtTime(1, at + 2.2);
+    pass.gain.exponentialRampToValueAtTime(0.0001, at + 6.5);
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1400; bp.Q.value = 0.8;
+    pass.connect(bp); bp.connect(ctx.destination);
+    // C E G E · F A G — twice, the second time ending on the C
+    const tune: [number, number][] = [[0, 0.22], [4, 0.22], [7, 0.22], [4, 0.22], [5, 0.22], [9, 0.22], [7, 0.44]];
+    let t0 = at;
+    for (const rep of [0, 1]) {
+      for (const [st, d] of tune) { this.note(523 * 2 ** (st / 12), t0, d * 0.95, "square", vol, pass, 0.01); t0 += d; }
+      if (rep === 0) t0 += 0.22; else this.note(523, t0, 0.5, "square", vol, pass, 0.01);
+    }
+  }
+
+  /** The garbage truck's hand bell, rung as the truck comes down the street: clangs at an uneven pace. */
+  private handBell(at: number, vol: number) {
+    const out = this.ctx!.destination;
+    let t0 = at;
+    for (let i = 0; i < 9; i++) {
+      const swell = Math.sin((i / 8) * Math.PI) * 0.8 + 0.2;
+      for (const [k, a] of [[1, 1], [2.32, 0.5], [3.9, 0.3]] as [number, number][]) this.note(1020 * k, t0, 0.5, "sine", vol * a * swell, out, 0.003);
+      t0 += 0.32 + Math.random() * 0.16;
+    }
+  }
+
   /** One bird's chirp: a quick rising and falling whistle. */
   private chirp(at: number, f: number, vol: number) {
     const ctx = this.ctx!;
