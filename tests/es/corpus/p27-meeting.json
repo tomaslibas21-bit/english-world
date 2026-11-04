@@ -222,5 +222,17 @@
   {"ctx": "teal", "say": "No, azules no.", "intent": "teal_ctx"},
   {"ctx": "closing", "say": "Sí, el lunes.", "intent": "monday_yes"},
   {"ctx": "twist", "say": "Sí, claro, dime.", "intent": "let_her_ctx"},
-  {"ctx": "twist", "say": "No, déjame terminar.", "intent": "finish_first", "not": ["let_her_ctx"]}
+  {"ctx": "twist", "say": "No, déjame terminar.", "intent": "finish_first", "not": ["let_her_ctx"]},
+  {"ctx": "resolve", "say": "Dos semanas no me funcionan", "intent": "counter_offer", "not": ["accept_deal", "agree_plan"], "note": "review trap: refusing her two weeks"},
+  {"ctx": "resolve", "say": "Dos semanas no me parece bien", "intent": "counter_offer", "not": ["accept_deal", "agree_plan"], "note": "review trap"},
+  {"ctx": "resolve", "say": "Un mes no me funciona", "intent": "disagree_polite", "not": ["accept_deal"], "note": "review trap"},
+  {"ctx": "resolve", "say": "No acepto el trato", "intent": "disagree_polite", "not": ["accept_deal"], "note": "review trap"},
+  {"ctx": "resolve", "say": "No me rindo", "intent": "disagree_polite", "not": ["give_in"], "note": "review trap"},
+  {"ctx": "resolve", "say": "No lancemos el viernes", "intent": "disagree_polite", "not": ["give_in"], "note": "review trap"},
+  {"ctx": "counter", "say": "No tienes razón", "intent": "disagree_polite", "not": ["ack_point"], "note": "review trap"},
+  {"ctx": "pitch", "say": "Estoy en contra", "intent": "disagree_polite", "not": ["agree_plan"]},
+  {"ctx": "pitch", "say": "No tengo ningún problema con el plan", "intent": "agree_plan", "not": ["disagree_polite"], "note": "review trap"},
+  {"ctx": "so_agree", "say": "No del todo", "intent": "disagree_polite"},
+  {"ctx": "twist", "say": "Ahorita no, déjame terminar", "intent": "finish_first", "not": ["let_her_ctx"]},
+  {"ctx": "resolve", "say": "¿Y si Gerardo decide?", "intent": "agree_to_disagree"}
 ] }

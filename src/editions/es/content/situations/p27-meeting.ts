@@ -87,6 +87,8 @@ const qOf = (sg?: Segment) => sg?.tags.find((x) => x.startsWith("q_")) ?? null;
 const politeOpener = (c: Ctx) => /^\W*(perdon|perdona|perdoname|disculpa|disculpame|disculpe|perdone|con permiso)\b/.test(heardF(c));
 const LEAVING = /\b(me tengo que ir|tengo que irme|ya me voy|me voy|tengo (otra|una) (junta|reunion|llamada|cita))\b/;
 const saysNo = (c: Ctx) => /^\W*(no|nel|nop)\b/.test(heardF(c));
+/** "No, gracias." / "Hoy no, gracias.": thanks that decline (the coffee, Monday, Vanessa's "¿puedo interrumpir?"). */
+const thanksNo = (c: Ctx) => /\b(no|nel|nop)\b/.test(heardF(c));
 /** Asked as a question: a "¿" or "?", or a question word first ("El equipo de soporte ya está listo." is no question). */
 const asked = (c: Ctx) => /[¿?]/.test(c.heard || "") || /^\W*(por que|porque|que|como|cuando|quien|cual|cuanto|donde|hemos|han)\b/.test(heardF(c));
 
@@ -189,7 +191,7 @@ function fireTwist(c: Ctx, tag: string) {
       rude_interrupt: (cc) => twistAnswer(cc, "rude"),
       g_wait: (cc) => twistAnswer(cc, "finish"),
       g_ok: (cc) => twistAnswer(cc, "let"),
-      g_thanks: (cc) => twistAnswer(cc, "let"),
+      g_thanks: (cc) => twistAnswer(cc, thanksNo(cc) ? "finish" : "let"), // "Ahorita no, gracias."
     },
   });
 }
@@ -275,7 +277,7 @@ function closingPending(): Pending {
       monday_yes: (cc) => closingTurn(cc, "yes"),
       monday_no_ctx: (cc) => closingTurn(cc, "no"),
       g_bye: (cc) => closingTurn(cc, "bye"),
-      g_thanks: (cc) => closingTurn(cc, "yes"),
+      g_thanks: (cc) => closingTurn(cc, thanksNo(cc) ? "no" : "yes"), // "No, gracias." is a no
       g_ok: (cc) => closingTurn(cc, "yes"),
     },
   };
@@ -294,7 +296,7 @@ function flair(c: Ctx) {
       yes: (cc) => closingTurn(cc, "yes"), no: (cc) => closingTurn(cc, "no"),
       on: {
         coffee_yes_ctx: (cc) => closingTurn(cc, "yes"), coffee_no_ctx: (cc) => closingTurn(cc, "no"),
-        g_thanks: (cc) => closingTurn(cc, "yes"), g_bye: (cc) => closingTurn(cc, "no"), g_ok: (cc) => closingTurn(cc, "yes"),
+        g_thanks: (cc) => closingTurn(cc, thanksNo(cc) ? "no" : "yes"), g_bye: (cc) => closingTurn(cc, "no"), g_ok: (cc) => closingTurn(cc, "yes"),
       },
     });
     return;
@@ -325,6 +327,7 @@ function closingTurn(c: Ctx, kind: string) {
     return;
   }
   if (st === "coffee") {
+    c.s.coffeeAnswer = kind;
     V(c, kind === "yes" ? "v_coffee_yes" : kind === "no" ? "v_coffee_no" : "v_bye");
     bye(c);
     return;
@@ -480,6 +483,8 @@ function onAck(c: Ctx, sg: Segment | undefined, kind: "ack" | "agree" | "accept"
       return; // otherwise the step asks again
     case "resolve":
       if (alt) { onOffer(c, sg, false); return; }
+      // "Me parece bien, pero tres semanas.": the counter-offer later in the turn answers, not the yes
+      if (turnSegments(c).some((x) => x.intent === "counter_offer")) return;
       // "Tres semanas me funciona." to her two weeks: that's bargaining
       if (kind === "accept" && (c.s.offer ?? "half") === "half" && weeksOf(sg) >= 3) { resolveTurn(c, "counter", sg); return; }
       resolveTurn(c, weak ? "unsure" : kind === "ack" ? "ack" : "accept", sg);
@@ -488,6 +493,8 @@ function onAck(c: Ctx, sg: Segment | undefined, kind: "ack" | "agree" | "accept"
 }
 
 function onOffer(c: Ctx, sg: Segment | undefined, counter: boolean) {
+  // "No hay un punto medio." (said, not asked) is no proposal: the opposite ("¿No hay un punto medio?" is one)
+  if (altOf(sg) === "a_mid" && /^\W*no (hay|existe|veo)\b/.test(heardF(c)) && !asked(c)) { onDisagree(c, undefined); return; }
   if (twistGuard(c)) return;
   const ph = phase(c);
   if (ph === "ended") return;
@@ -732,7 +739,7 @@ function expectSoAgree(c: Ctx) {
 
 const TIPS: Record<string, Tip> = {
   soften: { key: "soften", lt: "Understood! A flat “No” or “No estoy de acuerdo” sounds blunt in a Mexican meeting. Soften it: “No estoy muy de acuerdo” or “Entiendo tu punto, pero…”.", better: "Entiendo tu punto, pero no estoy muy de acuerdo." },
-  too_blunt: { key: "too_blunt", lt: "Understood! But that's too harsh for a colleague: criticize the idea, not the person. Start with “Con todo respeto…” and say what worries you.", better: "Con todo respeto, no estoy segura de que sea la mejor opción." },
+  too_blunt: { key: "too_blunt", lt: "Understood! But that's too harsh for a colleague: criticize the idea, not the person. Start with “Con todo respeto…” and say what worries you.", better: "Con todo respeto, no creo que sea la mejor opción." },
   rude_stop: { key: "rude_stop", lt: "Understood! Cutting a colleague off like that is rude. Say sorry first and ask for the floor.", better: "Perdón que te interrumpa, ¿puedo decir algo?" },
   rude_twist: { key: "rude_twist", lt: "Understood! But that's rude to a colleague. Let her in (“Claro, adelante.”) or ask politely to finish your point.", better: "¿Me dejas terminar mi idea?" },
   due_respect: { key: "due_respect", lt: "Understood! “Con el debido respeto”, like “with all due respect”, often comes before sharp criticism. Friendlier: “Con todo respeto” or “Entiendo tu punto, pero…”.", better: "Con todo respeto, yo lo veo un poco diferente." },
@@ -803,8 +810,9 @@ export const meeting: SituationDef = {
         "(hay que | tenemos que | necesitamos | debemos) (probarla | probarla mas | probarla bien | hacer mas pruebas | hacer pruebas | probar mas) [primero] #c_test",
         "las pruebas no (estan terminadas | han terminado | estan listas | se han terminado) [todavia] #c_test",
         "(necesita | necesitamos) mas pruebas #c_test",
-        "[todavia | aun] no (hemos | han) (hecho | terminado) (pruebas | las pruebas | suficientes pruebas) #c_test",
-        "[todavia | aun] no (hemos | han) probado @newsite [bien | lo suficiente] #c_test",
+        "[todavia | aun] no (hemos | han | hayamos | hayan) (hecho | terminado) (pruebas | las pruebas | suficientes pruebas | bastantes pruebas) [todavia] #c_test",
+        "[todavia | aun] no (hemos | han | hayamos | hayan) probado @newsite [bien | lo suficiente] #c_test",
+        "[todavia | aun] no la (hayamos | hayan) probado [bien | lo suficiente] [todavia] #c_test",
         "(falta | hace falta | nos falta) (probarla | probar la pagina | hacer pruebas | probarla bien) #c_test",
         "no sabemos si (funciona | va a funcionar | funciona bien) #c_test",
         // time
@@ -901,7 +909,7 @@ export const meeting: SituationDef = {
       ],
       alt_tail: "[@but | asi que | por ejemplo] ((y si | que tal si | por que no) @alt_core | (tal vez | quizas | a lo mejor) (podriamos | podemos) @alt_core | (podriamos | podemos) @alt_core | que tal @alt_np | [mejor] @alt_core)",
       // "Es un punto válido. Sin embargo, …"
-      ack_tail: "[@but [(sigo pensando | todavia creo | aun creo | sigo creyendo) que @reason_core | @rtail | @alt_tail | (lo | la) (podemos | podriamos) ver de otra (forma | manera)]]",
+      ack_tail: "[@but [(sigo pensando | todavia creo | aun creo | sigo creyendo) que @reason_core | (sigo | todavia estoy | aun estoy) [un poco | algo] (preocupado | preocupada) [por @concern_np] | (sigo con | todavia tengo | aun tengo) [mis | algunas] dudas | @rtail | @alt_tail | (lo | la) (podemos | podriamos) ver de otra (forma | manera)]]",
     },
     slots: {},
   },
@@ -922,7 +930,19 @@ export const meeting: SituationDef = {
       "@soft [yo] lo veo [un poco | algo] (diferente | distinto | de otra manera | de otra forma) [@rtail] #h:with_respect",
       "@soft tengo (otra | una) (opinion | idea | vision) [diferente | distinta] [@rtail]",
       "@soft no creo que (sea | es) (buena idea | una buena idea | lo mejor | la mejor opcion) [@rtail]",
-      "@soft no (es | me parece) (buena idea | una buena idea) [@rtail]",
+      "@soft no (es | me parece | suena | creo que sea) [tan | muy] (buena idea | una buena idea | tan buena idea) [(lanzarla | hacerlo | quitar @oldsite) [el viernes | este viernes | tan pronto | tan rapido]] [@rtail]",
+      "@soft (estoy | yo estoy) en contra [de (eso | esto | @plan | la idea | lanzarla el viernes)] [@rtail] #tip:soften",
+      "@soft [eso | esto] no (me parece | suena | es) [muy | tan] (justo | razonable | realista | un buen (trato | acuerdo))",
+      "@soft [eso | esto] no tiene (sentido | mucho sentido)",
+      "@soft no tienes razon [en eso] #tip:soften",
+      "@soft no (acepto | puedo aceptar) (el trato | tu propuesta | la propuesta | esa propuesta | eso | tu punto)",
+      "@soft no me (rindo | voy a rendir) [todavia | tan facil]",
+      "@soft no (cambie | he cambiado | voy a cambiar) de opinion",
+      "@soft no (la lancemos | lancemos | la lanzamos | lanzamos | la lancen) [@newsite] (el viernes | este viernes | tan pronto | todavia) [@rtail]",
+      "(no del todo | no exactamente | no completamente | no totalmente | solo en parte | en parte)",
+      // "No hay un punto medio." is a statement (the proposal is "¿No habrá un punto medio?")
+      "@soft no (hay | veo | existe) [un] (punto medio | termino medio | algo intermedio) [aqui]",
+      "@soft [con] ((una | tres | cuatro) (semana | semanas) | un mes | quince dias) no (me funciona | me funcionan | me sirve | me sirven | me alcanza | alcanza | alcanzan | basta | me parece bien | me convence | esta bien)",
       "@soft [creo que] (es | me parece) (una mala idea | mala idea | una muy mala idea | un mal plan) [@rtail] #tip:soften",
       "@soft (creo | pienso) que no [@rtail]",
       "@soft no estoy (del todo | muy | completamente | totalmente | tan) de acuerdo [(contigo | con eso | con esto | con el plan | con tu plan | con la idea)] [@rtail]",
@@ -996,6 +1016,7 @@ export const meeting: SituationDef = {
       "no (me parece | creo que sea | es | suena) [una | tan] (mala idea | mal plan | mala)",
       "no (esta | suena | se ve) mal",
       "no (estoy en contra | veo ningun problema | le veo problema | veo problema)",
+      "no tengo [ningun] problema [con (eso | esto | @plan)]",
     ] },
     // questions that push back gently ("¿Por qué el viernes?", "¿Ya la probamos?")
     ask_q: { patterns: [
@@ -1134,7 +1155,7 @@ export const meeting: SituationDef = {
       "@soft (yo creo que | creo que | pienso que | en mi opinion) (deberiamos | podriamos | hay que | tenemos que | es mejor) @alt_core",
       "@soft (podemos | podriamos) (buscar | encontrar | llegar a) (un punto medio | un acuerdo | un termino medio | un compromiso | algo intermedio) #a_mid #h:compromise_q",
       "@soft (busquemos | buscamos | encontremos) (un punto medio | un acuerdo | un termino medio | algo intermedio) #a_mid",
-      "@soft (hay | habra | no hay | no habra) (un punto medio | algo intermedio | un termino medio) #a_mid",
+      "@soft (hay | habra | no habra) (un punto medio | algo intermedio | un termino medio) #a_mid",
       "@soft (podemos | podriamos) (ceder | negociar) [los dos | un poco | ambos] #a_mid",
       "@soft (ni tu ni yo | mitad y mitad | cada quien cede un poco) #a_mid",
       "@alt_core",
@@ -1146,6 +1167,9 @@ export const meeting: SituationDef = {
     counter_offer: { patterns: [
       "(que tal | y si mejor | y si son | y si lo dejamos en | podemos hacer | podriamos hacer | digamos | dejemoslo en | que sean | mejor) (@weeks | un mes #w4 | quince dias #w2 | mes y medio #w6) [mejor | en vez de eso] #h:counter_weeks",
       "(dos | 2) semanas no (son | es) (suficiente | suficientes) [que tal (@weeks | un mes #w4)] #more",
+      // her two weeks refused: more time wanted (no #w2 tag here, so it is never read as a yes to two weeks)
+      "[no] [con] (dos | 2) semanas no (me funciona | me funcionan | me sirve | me sirven | me alcanza | me alcanzan | alcanza | alcanzan | basta | bastan | me parece bien | me parecen bien | me convence | me convencen | esta bien | estan bien) [que tal (@weeks | un mes #w4)] #more",
+      "(dos | 2) semanas (es | son | me parece | me parecen) (muy | demasiado) poco [tiempo] #more",
       "(un mes #w4 | @weeks) (seria | es) mejor",
       "(prefiero | preferiria | yo preferiria) (@weeks | un mes #w4 | quince dias #w2)",
       "(un mes #w4 | @weeks) (seria | es) mas (seguro | realista)",
@@ -1180,6 +1204,7 @@ export const meeting: SituationDef = {
       "(que decida | mejor que decida | dejemos que decida | que lo decida | dejemos que lo decida) gerardo",
       "(preguntemos | le preguntamos | hay que preguntarle | vamos a preguntarle) a gerardo",
       "gerardo (puede | podria | deberia) decidir",
+      "(y si | que tal si) (decide gerardo | gerardo decide | lo decide gerardo | gerardo lo decide)",
       "(que decida el jefe | que decida tu jefe | que lo decida el jefe)",
     ] },
     give_in: { patterns: [
@@ -1210,7 +1235,8 @@ export const meeting: SituationDef = {
       "estaba (diciendo | hablando) [algo]",
       "nada mas (dejame | quiero) terminar",
       "(quiero | quisiera | me gustaria) terminar [mi idea | primero]",
-      "(espera | espera un momento) [todavia | aun] no (termino | terminé | acabo)",
+      "(espera | espera un momento) [todavia | aun] no (termino | terminé | acabo | he terminado | he acabado)",
+      "(ahorita | ahora | todavia | aun) no [por favor] [dejame terminar]",
       "(espera | espera un momento) dejame terminar",
     ] },
 
@@ -1230,6 +1256,7 @@ export const meeting: SituationDef = {
     ] },
     walk_away: { patterns: [
       "tengo (otra junta | otra reunion | una llamada | otra llamada | una cita) [ahorita | ahora | en cinco minutos]",
+      "[perdon | lo siento | disculpen | disculpa] (me tengo que ir | tengo que irme | ya me voy) [porque | es que] tengo (otra junta | otra reunion | una llamada | otra llamada | una cita) [ahorita | ahora | en cinco minutos]",
       "[esto es] (una perdida de tiempo | inutil | absurdo) #tip:too_blunt",
       "no tengo tiempo para esto",
       "(me regreso | regreso | me voy) a mi (lugar | escritorio)",
@@ -1320,7 +1347,7 @@ export const meeting: SituationDef = {
         "We launch on Friday, but the old site stays up for two more weeks.", { flags: { 1: F_ON } }),
     ],
     g_decide3: [
-      t("¿Nadie | está | contento? | Perfecto. | Eso | es | un | buen | acuerdo.", "Nobody | is | happy? | Perfect. | That | is | a | good | compromise.", "Nobody's happy? Perfect. That's a compromise."),
+      t("¿Nadie | está | contento? | Perfecto. | Eso | es | un | buen | acuerdo.", "Nobody | is | happy? | Perfect. | That | is | a | good | compromise.", "Nobody's happy? Perfect. That's a good compromise."),
     ],
     g_sum1: [
       t("Excelente. | Que | alguien | lo | anote.", "Excellent. | Let | someone | it | write-down.", "Great. Somebody write that down.",
@@ -1476,7 +1503,7 @@ export const meeting: SituationDef = {
     ],
     v_counter2: [
       t("Y | el | sesenta | por ciento | de | nuestros | visitantes | entra | desde | el | celular. | Y | ahí, | la | página | vieja | es | un | desastre.",
-        "And | — | sixty | percent | of | our | visitors | come-in | from | the | phone. | And | there, | the | site | old | is | a | disaster.",
+        "And | — | sixty | percent | of | our | visitors | comes-in | from | the | phone. | And | there, | the | site | old | is | a | disaster.",
         "And sixty percent of our visitors are on their phones. And on a phone, the old site is a disaster.", { flags: { 1: F_ART } }),
     ],
     v_counter_reask: [
@@ -1888,7 +1915,8 @@ export const meeting: SituationDef = {
         ? [{ lt: "Suggest something else, or agree to disagree", hint: "resolve" }, { lt: "Suggest another way", hint: "alt" }]
         : [{ lt: "Accept the compromise, bargain, or agree to disagree", hint: "resolve" }],
       yes: (c) => resolveTurn(c, "accept"),
-      no: (c) => resolveTurn(c, "no"),
+      // "Así está bien." to "¿Trato hecho?" (no money here): it's fine as it is, a yes; "No, …" stays a no
+      no: (c) => resolveTurn(c, !saysNo(c) && /\b(asi (esta|me parece) bien|esta bien asi)\b/.test(heardF(c)) ? "accept" : "no"),
       help: (c) => resolveTurn(c, "unsure") },
   ],
 
@@ -1899,7 +1927,7 @@ export const meeting: SituationDef = {
       alt: null, altGiven: false, altHeard: false, altOther: false, heardAlts: [], softened: false,
       offer: null, halfway: 0, round: 0, outcome: null, blunt: 0, friendlySaid: false, agreedOnce: false, notConvinced: false, anyoneAsked: false,
       tries: { charts: 0, reason: 0, counter: 0, alternative: 0, resolve: 0 },
-      twistFired: false, twistOpen: false, twistDone: false, twistTag: null, closingState: null, quiet: null, ended: false,
+      twistFired: false, twistOpen: false, twistDone: false, twistTag: null, closingState: null, coffeeAnswer: null, quiet: null, ended: false,
       // variety: Vanessa cuts in (twist), refuses the first proposal, and how the goodbye ends
       twist: c.chance(c.visits >= 1 ? 0.6 : 0.4),
       stubborn: c.chance(c.visits >= 1 ? 0.5 : 0.3),
@@ -1954,7 +1982,7 @@ export const meeting: SituationDef = {
     finish_first(c, _sl, sg) {
       if (c.s.twistOpen) { twistAnswer(c, "finish"); return; }
       const ph = phase(c);
-      if (ph === "closing") { closingTurn(c, "other"); return; }
+      if (ph === "closing") { closingTurn(c, thanksNo(c) ? "no" : "other"); return; } // "Ahorita no." to the coffee
       if (ph === "charts") { interruptNow(c, true, false); return; } // "Déjame terminar…" while she talks: cutting in
       if (sg.tags.includes("wait")) { GLOBAL_HANDLERS.g_wait(c as any, {}); return; } // "Un momento."
       if (!once(c, "react") || ph === "ended") return;
@@ -2114,7 +2142,24 @@ export const meeting: SituationDef = {
     { say: "Cuatro días son suficientes.", intent: "ask_q", step: "reason", not: ["give_reason"] },
     { say: "No es mucho dinero.", intent: "none", step: "counter", not: ["ack_point"] },
     { say: "Tres semanas no.", intent: "none", step: "resolve", not: ["counter_offer", "accept_deal"] },
-    { say: "No es un buen acuerdo.", intent: "none", step: "resolve", not: ["accept_deal"] },
+    { say: "No es un buen acuerdo.", intent: "disagree_polite", step: "resolve", not: ["accept_deal"] },
+    // review traps: a refusal of her two weeks is no yes; negated proposals and give-ins
+    { say: "Dos semanas no me funcionan.", intent: "counter_offer", step: "resolve", not: ["accept_deal", "agree_plan"] },
+    { say: "Dos semanas no me parece bien.", intent: "counter_offer", step: "resolve", not: ["accept_deal", "agree_plan"] },
+    { say: "Un mes no me funciona.", intent: "disagree_polite", step: "resolve", not: ["counter_offer", "accept_deal"] },
+    { say: "No acepto el trato.", intent: "disagree_polite", step: "resolve", not: ["accept_deal"] },
+    { say: "No me rindo.", intent: "disagree_polite", step: "resolve", not: ["give_in"] },
+    { say: "No lancemos el viernes.", intent: "disagree_polite", step: "resolve", not: ["give_in"] },
+    { say: "No me parece justo.", intent: "disagree_polite", step: "resolve", not: ["accept_deal"] },
+    { say: "No tienes razón.", intent: "disagree_polite", step: "counter", not: ["ack_point"] },
+    { say: "No tiene sentido.", intent: "disagree_polite", step: "counter", not: ["ack_point"] },
+    { say: "Estoy en contra.", intent: "disagree_polite", step: "pitch", not: ["agree_plan"] },
+    { say: "No tengo ningún problema con el plan.", intent: "agree_plan", step: "pitch", not: ["disagree_polite"] },
+    { say: "No me parece tan buena idea.", intent: "disagree_polite", step: "pitch", not: ["agree_plan"] },
+    { say: "Me preocupa que no hayamos hecho suficientes pruebas.", intent: "give_reason", step: "reason" },
+    { say: "Es un buen punto. Sin embargo, sigo preocupada.", intent: "ack_point", step: "counter" },
+    { say: "¿Y si Gerardo decide?", intent: "agree_to_disagree", step: "resolve" },
+    { say: "Perdón, me tengo que ir, tengo otra junta.", intent: "walk_away", step: "resolve" },
     // --- settling it ---
     { say: "Trato hecho.", intent: "accept_deal", step: "resolve" },
     { say: "Así sí me funciona.", intent: "accept_deal", step: "resolve" },
@@ -2244,6 +2289,22 @@ export const meeting: SituationDef = {
       "Con todo respeto, yo lo veo un poco diferente.", "Disculpa, Vanessa.", "Necesitamos más tiempo.", "Tiene sentido.",
       "¿Y si les avisamos a los clientes primero?", "Tienes razón.", "No, estamos de acuerdo en no estar de acuerdo.", "¡Nos vemos entonces!", "Me encantaría.",
     ], expect: { complete: true, state: { outcome: "boss" } }, auto: AUTO, setup: SIM(false, true, "coffee") },
+    // Her two weeks refused ("no me funcionan" asks for more), then her three: Gerardo decides; "No, gracias" to the coffee.
+    { name: "the weeks refused; no coffee", turns: [
+      "No estoy muy segura de eso.", "Perdón, ¿puedo interrumpir un momento?", "Todavía no está probada.", "Es un punto válido.",
+      "¿Y si la lanzamos como beta?", "Dos semanas no me funcionan.", "Tres semanas no me sirven.", "Nos vemos el lunes.", "No, gracias.",
+    ], expect: { complete: true, state: { outcome: "boss", offer: "final", coffeeAnswer: "no" } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // "No, gracias" to Vanessa cutting in asks to finish; "Me parece bien, pero tres semanas" bargains; "Así está bien" accepts.
+    { name: "no thanks to the twist; a yes with a counter; así está bien", turns: [
+      "No estoy muy seguro de eso.", "Perdón, ¿puedo interrumpir un momento?", "Todavía no está probada.", "Es un punto válido.",
+      "¿Y si la lanzamos como beta?", "No, gracias.", "Me parece bien, pero tres semanas.", "Así está bien.", "No, gracias.", "Me encantaría.",
+    ], expect: { complete: true, state: { outcome: "deal", offer: "final", twistDone: true, blunt: 0, coffeeAnswer: "yes" } }, auto: AUTO, setup: SIM(true, false, "coffee") },
+    // "No hay un punto medio." is said, not asked: no proposal (Gerardo asks); the question afterwards is one.
+    { name: "no middle ground, then one", turns: [
+      "No estoy muy seguro de eso.", "Perdón, ¿puedo interrumpir un momento?", "Todavía no está probada.", "Es un punto válido.",
+      "No hay un punto medio.", "¿Podemos buscar un punto medio?", "Trato hecho.", "Nos vemos el lunes.", "Mejor otro día.",
+    ], expect: { complete: true, state: { outcome: "deal", softened: true, alt: "a_mid", tries: { alternative: 2 } } }, auto: { closing: "Nos vemos el lunes.", coffee: "Mejor otro día." },
+    setup: SIM(false, false, "coffee") },
     // Spain forms and a short-answer learner: vale, móvil, vosotros.
     { name: "Spain forms and short answers", turns: [
       "Tengo mis dudas.", "Perdón.", "No funciona bien en el móvil.", "Vale, es verdad.", "¿Qué os parece si la lanzamos como beta?", "Vale.",
