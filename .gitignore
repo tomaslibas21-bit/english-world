@@ -26,3 +26,8 @@ npm-debug.log*
 # (fluent-steps/game/audio-v2/); only public/audio-v2/manifest.json is kept here
 voicing/
 public/audio-v2/*.mp3
+
+# Puerto Colibrí's Gemini voices (tools/es-voices/voice-batch-es.ts): the clips stay on this computer (master copy in
+# ~/puerto-colibri-voicing/audio-es/, nothing online yet); only public/audio-es/manifest.json and repair-versions.json
+# are kept here
+public/audio-es/*.mp3
