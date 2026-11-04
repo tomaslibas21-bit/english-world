@@ -1,0 +1,55 @@
+{ "situation": "p24-flood", "items": [
+  { "ctx": "l_news", "say": "Oye, no voy a poder llegar, perdón", "intent": "cancel_brunch" },
+  { "ctx": "l_news", "say": "Se me inundó todo el departamento con la tormenta", "intent": "flood" },
+  { "ctx": "l_news", "say": "Hay agua por todos lados en la cocina", "intent": "flood" },
+  { "ctx": "l_news", "say": "El gato está arriba del refri", "intent": "cat_fridge", "note": "Mexican refri" },
+  { "ctx": "l_news", "say": "Estoy muy nerviosa, no sé qué hacer", "intent": "freaking_out" },
+
+  { "ctx": "l_okay", "say": "Sí, estoy bien, nomás tengo los pies mojados", "intent": ["nobody_hurt", "fine_ctx"] },
+  { "ctx": "l_okay", "say": "La verdad no, estoy asustado", "intent": ["freaking_out", "not_ok_ctx"] },
+
+  { "ctx": "l_need", "say": "¿Me puedes traer unas toallas?", "intent": ["ask_help", "item_ctx"] },
+  { "ctx": "l_need", "say": "Un trapeador y mucho café", "intent": ["item_ctx", "ask_help"] },
+  { "ctx": "l_need", "say": "No, gracias, no necesito nada", "intent": ["need_nothing", "yn:no"] },
+  { "ctx": "l_need", "say": "No me traigas nada, estoy bien", "intent": ["need_nothing", "come_no", "yn:no"], "not": ["ask_help", "item_ctx"], "note": "trap: negation" },
+  { "ctx": "l_need", "say": "Toallas no, solo café", "intent": ["not_item", "item_ctx"], "note": "correction" },
+
+  { "ctx": "l_come", "say": "No hace falta que vengas, de veras", "intent": ["come_no", "need_nothing"] },
+
+  { "ctx": "l_bye", "say": "Gracias, amiga, te quiero", "intent": ["warm", "g_thanks"] },
+  { "ctx": "l_bye", "say": "Nos vemos al rato", "intent": ["see_you", "g_bye"] },
+
+  { "ctx": "g_who", "say": "Buenos días, Don Gilberto, le habla su inquilina del 3B", "intent": ["intro", "intro_ctx"] },
+  { "ctx": "g_who", "say": "Soy yo, la del departamento tres be", "intent": ["intro", "intro_ctx", "its_me", "its_me_ctx"] },
+
+  { "ctx": "g_what", "say": "Le llamo para informarle que se inundó la cocina", "intent": "flood" },
+  { "ctx": "g_what", "say": "Con la tormenta entró mucha agua al departamento", "intent": "flood" },
+
+  { "ctx": "g_since", "say": "Desde como las siete de la mañana", "intent": ["when_happened", "when_ctx"] },
+  { "ctx": "g_since", "say": "No estoy seguro, hace un par de horas", "intent": ["unsure_ctx", "when_happened", "when_ctx"] },
+
+  { "ctx": "g_hurt", "say": "No, nadie se lastimó, gracias a Dios", "intent": "nobody_hurt" },
+  { "ctx": "g_hurt", "say": "Sí, me corté un poco el pie", "intent": "any", "not": ["nobody_hurt"], "note": "trap: someone is hurt" },
+
+  { "ctx": "g_down", "say": "Creo que sí, ya está goteando en el depa de abajo", "intent": ["downstairs_yes", "down_yes_ctx"] },
+  { "ctx": "g_down", "say": "No, todavía no ha llegado abajo", "intent": ["downstairs_no", "down_no_ctx"], "not": ["downstairs_yes", "down_yes_ctx"], "note": "trap: negation" },
+  { "ctx": "g_down", "say": "No sé, no he hablado con la vecina", "intent": ["unsure_ctx", "downstairs_no", "down_no_ctx"], "not": ["downstairs_yes", "down_yes_ctx"], "note": "trap: unknown is not yes" },
+
+  { "ctx": "g_water", "say": "Sí, ya bajé el switch", "intent": ["water_off", "valve_done_ctx", "yn:yes"] },
+  { "ctx": "g_water", "say": "Todavía no, no sé dónde está", "intent": ["water_not_off", "switch_unknown_ctx", "yn:no"], "not": ["water_off", "valve_done_ctx"], "note": "trap: negation" },
+
+  { "ctx": "g_request", "say": "¿Podría mandar a un plomero hoy, por favor?", "intent": ["ask_plumber", "today_ctx"] },
+  { "ctx": "g_request", "say": "Le agradecería mucho que viniera alguien hoy mismo", "intent": ["ask_plumber", "today_ctx", "insist_today"] },
+
+  { "ctx": "g_offer", "say": "Me temo que no puede esperar hasta mañana", "intent": ["insist_today", "insist_ctx", "wait_no_ctx"], "not": ["accept_tomorrow"], "note": "trap: negation" },
+  { "ctx": "g_offer", "say": "Mañana no, tiene que ser hoy", "intent": ["insist_today", "insist_ctx", "wait_no_ctx"], "not": ["accept_tomorrow"], "note": "trap: lost comma, today wins" },
+  { "ctx": "g_offer", "say": "Bueno, mañana en la mañana está bien", "intent": ["accept_tomorrow", "wait_yes_ctx", "tomorrow_ctx"] },
+
+  { "ctx": "g_time", "say": "A las once me queda perfecto", "intent": ["pick_time", "time_ctx"] },
+  { "ctx": "g_time", "say": "¿Es una hora segura o más o menos?", "intent": "ask_confirmed" },
+
+  { "ctx": "g_close", "say": "Le agradezco mucho su pronta ayuda", "intent": ["formal_thanks", "g_thanks"] },
+  { "ctx": "g_close", "say": "¿Y quién va a pagar los daños?", "intent": "ask_damage" },
+  { "ctx": "g_close", "say": "Disculpe las molestias", "intent": "apologize" },
+  { "ctx": "g_close", "say": "Mi perro baila salsa en la azotea", "intent": "none" }
+] }
