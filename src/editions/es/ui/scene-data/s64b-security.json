@@ -1,0 +1,8 @@
+{
+  "npc": "Oficial Torres, airport security",
+  "images": ["docs", "camera", "divest", "walk", "alarm", "belt", "shoes", "bag", "bottle", "collect", "bye"],
+  "start": "docs",
+  "done": "bye",
+  "phases": {"docs": "docs", "docs_more": "docs", "camera": "camera", "divest": "divest", "walk": "walk", "again": "walk", "pockets": "alarm", "check_pockets": "alarm", "belt_watch": "belt", "shoes_off": "shoes", "bag_q": "bag", "bottle_found": "bottle", "bottle": "bottle", "bottle_keep": "bottle", "collect": "collect", "closing": "bye"},
+  "focus": [34, 30]
+}

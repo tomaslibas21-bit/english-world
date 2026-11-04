@@ -1,0 +1,8 @@
+{
+  "npc": "Paty, hairdresser",
+  "images": ["welcome", "wait", "drink", "consult", "tool", "wash", "chat", "dry", "reveal", "sorry", "pay", "book"],
+  "start": "welcome",
+  "done": "book",
+  "phases": {"howareyou": "welcome", "appt": "welcome", "name": "welcome", "wait_q": "wait", "drink": "drink", "service": "consult", "service_q": "consult", "length": "consult", "cm_q": "consult", "layers": "consult", "bangs_q": "consult", "tool_q": "tool", "wash": "wash", "water": "wash", "chat": "chat", "chat_weekend": "chat", "chat_from": "chat", "chat_vacation": "chat", "chat_pets": "chat", "blowdry": "dry", "style": "dry", "reveal": "reveal", "more_q": "reveal", "amb_q": "sorry", "fix_q": "sorry", "pay": "pay", "tip_q": "pay", "book": "book", "book_when": "book"},
+  "focus": [34, 30]
+}

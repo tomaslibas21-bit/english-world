@@ -1,0 +1,20 @@
+{
+  "_about": "Planner E's new place reference (chapter 8: p30-start-over), in the format of the place entries in refs.json. place/casa-diego-dia: Diego and Natalia's front door (place/casa-diego, made at dusk for s85's dinner) on the sunny Saturday morning of p30, with the wooden lancha Diego has been restoring for years on sawhorses in the cochera at the far left (the lancha the learner called 'tonta' at his carne asada). It is an edit of place/casa-diego, so the house stays the one the learner came to for dinner (the same door, tiled step, lantern, pots, window and tree) and only the light and the far left change: as a 'place' or 'setting' reference, place/casa-diego would ask the picture to keep its dusk light. Make it before p30-start-over/door, which takes it as its place.",
+  "defaults": {},
+  "items": [
+    {
+      "id": "place/casa-diego-dia",
+      "kind": "place",
+      "label": "Diego and Natalia's front door on a Saturday morning",
+      "situation": ["p30-start-over"],
+      "moment": null,
+      "prompt": "It is now a bright, sunny Saturday morning, not dusk. Change only the light and the far left of the picture. The light: a clear, pale-blue morning sky; soft, warm morning sunshine across the turquoise front, with crisp leaf shadows from the tree at the top right; the wall lantern is switched off; the window behind its wrought-iron grille shows a shaded room with no lamp glowing; the hall inside the open front door is lit by daylight, its woven pendant lamp off. The far left: instead of the street running off into the distance, the house continues into its own cochera, an open carport under a flat concrete roof, its wide wrought-iron gate folded back against the wall; the cochera takes the place of the street and of the big clay pot left of the door, up to the bougainvillea beside the door frame. In the shade of the cochera, Diego's old wooden lancha rests on two wooden sawhorses in three-quarter view, its pointed bow toward the viewer and its hull running back into the shade, its far end cut off by the left edge of the picture: a small open fishing boat of bare, half-sanded wooden planks with patches of old white and teal paint, with no name, number or writing anywhere on it. A faded blue tarp is thrown over its far end; on the concrete floor below it, a wooden toolbox, a hand plane and curls of wood shavings. The lancha stays left of the doorway and never crosses it. Everything else stays as it is: the open wooden door, the tiled step with its talavera tiles, the bougainvillea, the clay pots and plants right of the door, the shuttered window with its grille, and the tree. Nobody in the picture.",
+      "refs": ["edit:place/casa-diego"],
+      "size": "2048x1152",
+      "quality": "high",
+      "model": "gpt-image-2.5-sunburst",
+      "out": "public/scenes-es/ref/place/casa-diego-dia.webp",
+      "note": "An edit of place/casa-diego rather than a 'setting' reference: the same house from the same spot, only in the morning (the setting role would ask to keep the dusk light). Check: morning light everywhere (no glowing lantern, window or hall lamp), the lancha reads as a boat under repair with no name or number painted on it, it stays left of the doorway, the doorway is empty and the right third is the calm wall and window."
+    }
+  ]
+}

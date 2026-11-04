@@ -1,0 +1,8 @@
+{
+  "npc": "Toño, founder of Brotecito",
+  "images": ["hello", "pile", "too_much", "priorities", "pushback", "deal", "crash", "owner", "midnight", "tomorrow", "bye"],
+  "start": "hello",
+  "done": "bye",
+  "phases": {"hello": "hello", "pile": "pile", "too_much": "too_much", "priorities": "priorities", "pushback": "pushback", "deal": "deal", "mid_deal": "deal", "crash": "crash", "crash_ok": "crash", "owner": "owner", "midnight": "midnight", "mid_when": "midnight", "tomorrow": "tomorrow", "when": "tomorrow", "offer": "tomorrow", "closing": "bye"},
+  "focus": [34, 30]
+}

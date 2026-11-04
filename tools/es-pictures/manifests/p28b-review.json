@@ -1,0 +1,131 @@
+{
+  "_about": "Chapter 8, p28b Lo que salió muy bien: the learner's first performance review with Elena, their manager of six weeks, in her small glass office at Línea Clara (place/oficina-elena, a new reference in refs-plan-c.json: make it first). One set-up, 12 pictures, every one an edit of proud (Elena at her desk with the printed agenda, the plant on the windowsill behind her): greet (the plant topples as she starts and she catches it, soil on the desk: the start picture and the first question, feeling), proud (also 'what made it work?'), her praise, her feedback (also the consent question), protect (after the learner's fair push-back: 'Es justo. Eso fue culpa mía', and her own idea, protect_offer), the wrong-tab twist (wrong_tab: Pablo's review on her laptop, his photo at the top), goals (also her suggestion, goal_offer, and 'what would help you get there?', support), the role-reversal twist (role_reversal: rev_open, rev_worked and rev_try), her 'any questions for me?' (ask_me), the summary and 'anything else?' (anything_else), the check-in in a month, and bye with the plant now on the shelf (closing; also the scene's done picture). On a returning visit the plant may not fall ('la planta ahora vive en la repisa'), but no id tells that opening apart, so greet stays the start. Make proud first, then the other eleven in one batch.",
+  "scenes": {
+    "p28b-review": {"npc": "Elena, your manager (Línea Clara)", "focus": [34, 30], "start": "greet", "done": "bye"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p28b-review/greet",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "feeling",
+      "phases": ["feeling"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only these: Elena half rises from her chair, twisting toward the window, and catches the small potted plant as it topples off the windowsill, holding the tilted terracotta pot in both hands, a little soil spilled across the desk and the agenda, with an embarrassed, laughing wince (\"¡Hola! Pasa, siéntate. ¡Ay, no! Perdón, perdón.\").",
+      "out": "public/scenes-es/p28b-review/greet.webp"
+    },
+    {
+      "id": "p28b-review/proud",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "proud",
+      "phases": ["proud", "made"],
+      "refs": ["place:place/oficina-elena", "person:cast/emily"],
+      "prompt": "Elena, the learner's manager at Línea Clara, sits behind the light-wood desk in her small glass office, about one third from the left, facing the viewer. A pen rests in one hand on a printed agenda in front of her (a single white sheet with only gray lines), and she looks up at the learner with a warm, curious, encouraging smile, starting the review by asking what the learner is most proud of this year (\"Empecemos.\"). On the desk: the closed silver laptop at her side and a teal mug. Behind her, on the windowsill, the small leafy plant in its terracotta pot.",
+      "out": "public/scenes-es/p28b-review/proud.webp",
+      "note": "The first picture (the base of every edit), though greet is the one shown at the start."
+    },
+    {
+      "id": "p28b-review/praise",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "praise",
+      "phases": ["praise"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only her pose: Elena leans forward a little and holds one open hand out toward the learner, palm up, with a warm, generous, sincere smile, giving praise (\"Lo que salió muy bien fue…\").",
+      "out": "public/scenes-es/p28b-review/praise.webp"
+    },
+    {
+      "id": "p28b-review/feedback",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "feedback",
+      "phases": ["consent", "feedback"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only her pose: Elena leans forward with her forearms on the desk and her hands loosely clasped, with a kind but serious look (\"Algo que podrías intentar es hablar antes en las juntas con clientes\").",
+      "out": "public/scenes-es/p28b-review/feedback.webp"
+    },
+    {
+      "id": "p28b-review/protect",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "protect",
+      "phases": ["protect", "protect_offer"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only her pose: Elena lays one hand flat on her chest with a sincere, apologetic look and holds the other hand open toward the learner, palm up, inviting an idea (\"Es justo. Eso fue culpa mía… Entonces, ¿cómo cuidamos tu tiempo para hablar la próxima vez?\").",
+      "out": "public/scenes-es/p28b-review/protect.webp"
+    },
+    {
+      "id": "p28b-review/tab",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "wrong_tab",
+      "phases": ["tab"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only these: Elena has opened the silver laptop and turned it around on the desk to face the learner, one hand still on its edge; its screen shows a review form: at the top a small round profile photo of a man with tan skin, black curly hair, a full black beard and round glasses, then rows of plain gray lines and rows of small stars, some filled in orange, no letters or numbers (it is a colleague's review, not the learner's). Elena smiles expectantly, not noticing anything wrong (\"Bueno, te enseño tu evaluación. Mira.\").",
+      "out": "public/scenes-es/p28b-review/tab.webp"
+    },
+    {
+      "id": "p28b-review/goals",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "goals",
+      "phases": ["goals", "goal_offer", "support"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only her pose: Elena writes on the printed agenda with her pen, glancing up at the learner and nodding with an interested smile (\"Bueno, ahora el futuro. ¿En qué te gustaría trabajar el próximo año?\").",
+      "out": "public/scenes-es/p28b-review/goals.webp"
+    },
+    {
+      "id": "p28b-review/reverse",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "role_reversal",
+      "phases": ["rev_open", "rev_worked", "rev_try"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only these: Elena has laid her pen down and turned the agenda face down on the desk; she sits back with both hands open toward the learner, palms up, and a brave, slightly nervous smile, asking for feedback on herself as a manager (\"¿Te puedo pedir retroalimentación a ti? Sobre mí, como jefa. Puedo con eso.\").",
+      "out": "public/scenes-es/p28b-review/reverse.webp"
+    },
+    {
+      "id": "p28b-review/askme",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "ask_me",
+      "phases": ["ask_me"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only her pose: Elena sits back in her chair, her hands loosely folded on the agenda and her head tilted a little, with a relaxed, inviting smile (\"Bueno, es todo de mi lista. ¿Tienes alguna pregunta para mí?\").",
+      "out": "public/scenes-es/p28b-review/askme.webp"
+    },
+    {
+      "id": "p28b-review/summary",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "anything_else",
+      "phases": ["anything_else"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only her pose: Elena holds up the printed agenda (only gray lines, now with a few small pen check marks beside them) and runs her pen down it, then glances up at the learner over the page with a satisfied smile (\"Hago un resumen… ¿Algo más?\").",
+      "out": "public/scenes-es/p28b-review/summary.webp"
+    },
+    {
+      "id": "p28b-review/checkin",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "checkin",
+      "phases": ["checkin"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only these: a small standing desk calendar (a plain grid of empty squares, no numbers or letters) now stands on the desk beside the agenda; Elena points at one square with her pen and looks up at the learner with a friendly, questioning smile (\"Entonces nos vemos otra vez en un mes. ¿A la misma hora?\").",
+      "out": "public/scenes-es/p28b-review/checkin.webp"
+    },
+    {
+      "id": "p28b-review/bye",
+      "scene": "p28b-review",
+      "situation": "p28b-review",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:p28b-review/proud", "person:cast/emily"],
+      "prompt": "Change only these: Elena now stands behind the desk, holding the printed agenda against her chest, with a warm, relieved smile (\"Perfecto. Gracias por hoy. De verdad.\"); the small potted plant no longer stands on the windowsill: it sits safely on the upper wall shelf to the right of the window.",
+      "out": "public/scenes-es/p28b-review/bye.webp",
+      "note": "Also the scene's done picture. Leaving early ('¡Ah! Bueno. Terminamos otro día, entonces.') shows it too: she stands as the learner goes."
+    }
+  ]
+}

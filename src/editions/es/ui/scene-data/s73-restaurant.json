@@ -1,0 +1,7 @@
+{
+  "npc": "Lucía, restaurant host (host stand) · Luis, waiter (table)",
+  "images": ["host", "wait", "seat", "table", "drinks", "order", "serve", "wrong", "soup", "fix", "dessert", "check", "tip", "bye"],
+  "start": "host",
+  "phases": {"resv": "host", "resv_name": "host", "party": "host", "wait": "wait", "seatpref": "seat", "seat": "seat", "howareyou": "table", "drinks": "table", "drink_kind": "table", "drinks_ack": "drinks", "order": "order", "food_kind": "order", "doneness": "order", "side": "order", "main_q": "order", "soup_offer": "order", "placed": "order", "serve": "serve", "checkback": "serve", "enjoy": "serve", "box": "serve", "serve_wrong": "wrong", "checkback_soup": "soup", "fix": "fix", "dessert": "dessert", "dessert_ack": "dessert", "dessert_serve": "dessert", "check": "check", "check_coming": "check", "split": "check", "pay": "check", "change": "check", "factura": "check", "tip": "tip", "tip_big": "tip", "closing": "bye"},
+  "focus": [33, 28]
+}

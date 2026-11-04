@@ -1,0 +1,121 @@
+{
+  "_about": "Chapter 8, p27 Con todo respeto: the Monday nine o'clock meeting in Línea Clara's glass-walled meeting room (place/sala-de-juntas, a new reference in refs-plan-c.json: make it first). Vanessa, the marketing lead, presents by the wall screen; Gerardo, the team manager, sits at the near left corner of the table with his huge coffee mug; two interns (los practicantes) share a bag of popcorn at the far end of the table. One set-up, 11 pictures, every one an edit of pitch: the plan (the new website this Friday, the old one shut down the same day), her chart monologue, her 'go ahead: what's the problem?' once the learner cuts in (reason), her strong point (the old site on phones, sixty thousand pesos a month), 'so what do you suggest?', the cut-in twist (interrupt; its pending id is twist), the compromise (resolve: also her final offer, her 'I'm giving you half' and her stubborn refusal), 'so you agree with me?' (so_agree), Gerardo's 'same time Monday?' (closing: also the walk-out, 'lo retomamos el lunes', and the plain goodbyes) and the two last words: the coffee and the button colors (teal and teal2 share one picture). coffee and buttons are sticky, so the last turn keeps them instead of going back to monday. The slides on the screen are shapes only. Make pitch first, then the other ten in one batch.",
+  "scenes": {
+    "p27-meeting": {"npc": "Vanessa, marketing lead (and Gerardo, team manager)", "focus": [32, 30], "start": "pitch", "sticky": ["coffee", "buttons"]}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p27-meeting/pitch",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "pitch",
+      "phases": ["pitch"],
+      "refs": ["place:place/sala-de-juntas", "person:cast/vanessa", "person:cast/greg"],
+      "prompt": "Monday, nine in the morning, in Línea Clara's glass-walled meeting room, seen from the learner's seat at the near end of the long table. Vanessa, the marketing lead, stands at the far end of the table beside the left edge of the big wall screen, about one third from the left, a small black presentation clicker in one hand and the other hand raised toward the screen, mid-sentence, with a bold, confident smile (\"Este es el plan: lanzamos la página nueva este viernes\"). The screen shows one simple slide: a drawing of a fresh website page made of plain shapes (a header bar, a big picture block, three round buttons) beside a small calendar grid with one square filled in orange, no letters or numbers. Gerardo, the team manager, sits at the near left corner of the table in three-quarter view, turned toward her, holding a huge white coffee mug in both hands, with a calm, dry look. At the far end of the table on the right, just below the right end of the screen, two young interns sit side by side, small in the background (a young man with deep brown skin and short twists, a young woman with light skin and a copper ponytail), sharing a red-and-white striped paper bag of popcorn. In front of the learner: a blank notepad and a pen.",
+      "out": "public/scenes-es/p27-meeting/pitch.webp"
+    },
+    {
+      "id": "p27-meeting/charts",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "charts",
+      "phases": ["charts"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only these: the wall screen now shows a busy slide of simple charts in teal and orange (a rising bar chart, a steep line chart ending in an arrow and a pie chart), no letters or numbers; Vanessa turns half toward it in full flow, one arm sweeping across the charts and the clicker raised in the other hand, talking with a big, enthusiastic smile (\"Mira esta gráfica. Las visitas subieron, los clics subieron…\"); the two interns lean forward, popcorn halfway to their mouths.",
+      "out": "public/scenes-es/p27-meeting/charts.webp"
+    },
+    {
+      "id": "p27-meeting/floor",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "reason",
+      "phases": ["reason"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only these: the wall screen shows a busy slide of simple charts in teal and orange (a rising bar chart, a steep line chart ending in an arrow and a pie chart), no letters or numbers; Vanessa has stopped mid-sentence and lowered the clicker, turned to face the learner, and holds her free hand out toward the learner, palm up, eyebrows raised, with a polite but slightly impatient smile (\"Ay, perdón. Adelante… ¿Cuál es el problema?\").",
+      "out": "public/scenes-es/p27-meeting/floor.webp"
+    },
+    {
+      "id": "p27-meeting/counter",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "counter",
+      "phases": ["counter"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa", "person:cast/greg"],
+      "prompt": "Change only these: the wall screen now shows a big drawing of a smartphone whose small screen holds the old website, squeezed and broken (tiny jumbled blocks spilling over its edges, a crooked picture block), beside a simple pie chart with one big orange slice covering more than half and a small stack of gold coins, no letters or numbers; Vanessa taps the phone drawing with the clicker and looks back at the learner, eyebrows raised, with a knowing, triumphant smile (\"El sesenta por ciento de nuestros visitantes entra desde el celular. Y ahí, la página vieja es un desastre\"); Gerardo watches over the rim of his huge mug, amused.",
+      "out": "public/scenes-es/p27-meeting/counter.webp"
+    },
+    {
+      "id": "p27-meeting/propose",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "alternative",
+      "phases": ["alternative"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa", "person:cast/greg"],
+      "prompt": "Change only these: Vanessa folds her arms, the clicker still in one hand, and tilts her head at the learner with a challenging, good-humored smile, waiting (\"Entonces, ¿qué propones?\"); Gerardo looks at the learner too, eyebrows raised over his huge mug.",
+      "out": "public/scenes-es/p27-meeting/propose.webp"
+    },
+    {
+      "id": "p27-meeting/cutin",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "interrupt",
+      "phases": ["twist"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only these: Vanessa leans forward over the far end of the table with one hand raised high, index finger up, cutting in while the learner is still talking, with an eager, slightly sheepish smile (\"Perdón, ¿puedo interrumpir un segundo?\"); the two interns freeze with popcorn in their hands, eyes wide.",
+      "out": "public/scenes-es/p27-meeting/cutin.webp"
+    },
+    {
+      "id": "p27-meeting/deal",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "resolve",
+      "phases": ["resolve"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only Vanessa's pose: she holds up two fingers of one hand (two more weeks for the old site) and holds the other hand out toward the learner, palm up, eyebrows raised, with a bargaining half-smile (\"Te propongo algo intermedio… ¿Trato hecho?\").",
+      "out": "public/scenes-es/p27-meeting/deal.webp"
+    },
+    {
+      "id": "p27-meeting/agree",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "so_agree",
+      "phases": ["so_agree"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only Vanessa's pose: she points at herself with both thumbs, chin up, with a big, theatrical, triumphant grin (\"¿O sea que estás de acuerdo conmigo?\").",
+      "out": "public/scenes-es/p27-meeting/agree.webp"
+    },
+    {
+      "id": "p27-meeting/monday",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/greg", "person:cast/vanessa"],
+      "prompt": "Change only these: the wall screen is dark; Gerardo turns in his chair toward the learner, so his face is seen in three-quarter view, and raises his huge white mug a little, with a dry, satisfied smile, wrapping up the meeting (\"Buena reunión, equipo. ¿El lunes a la misma hora?\"); Vanessa holds a closed silver laptop under one arm, smiling.",
+      "out": "public/scenes-es/p27-meeting/monday.webp"
+    },
+    {
+      "id": "p27-meeting/coffee",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "coffee",
+      "phases": ["coffee"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only these: the wall screen is dark; Vanessa holds up a small tan leather wallet in one hand and tilts her head toward the meeting room's glass door, with a warm, playful, peace-making grin, inviting the learner for a coffee on her (\"Estuvo divertido. ¿Un café? Yo invito.\").",
+      "out": "public/scenes-es/p27-meeting/coffee.webp",
+      "note": "Sticky in the scene file: it stays for the last turn (\"Perfecto. Pero todavía no estamos de acuerdo con la tipografía.\" or \"Entonces, otro día.\")."
+    },
+    {
+      "id": "p27-meeting/buttons",
+      "scene": "p27-meeting",
+      "situation": "p27-meeting",
+      "moment": "teal",
+      "phases": ["teal", "teal2"],
+      "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
+      "prompt": "Change only these: the wall screen now shows three big round button swatches in a row on a white slide, blue, teal and green, with the teal one in the middle, no letters; Vanessa stands beside it with one open hand toward the swatches and the clicker in the other, eyebrows raised, with a mischievous, challenging half-smile (\"Y para que conste, los botones nuevos van a ser azules\").",
+      "out": "public/scenes-es/p27-meeting/buttons.webp",
+      "note": "Sticky in the scene file: shown for teal (blue, she says) and teal2 (\"¿Verdes? No. …¿Turquesa?\") and kept for the last turn (\"Turquesa. De acuerdo. Míranos.\")."
+    }
+  ]
+}

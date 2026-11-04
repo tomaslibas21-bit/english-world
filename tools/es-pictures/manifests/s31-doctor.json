@@ -130,8 +130,9 @@
         "edit:s31-doctor/greet",
         "person:cast/carter"
       ],
-      "prompt": "Change only her pose: she leans toward the viewer and reaches out with the first two fingers of her right hand toward the bottom edge of the picture, gently pressing as if at the learner's neck just out of frame, eyebrows raised in a careful, questioning look (\"¿Le duele aquí?\").",
-      "out": "public/scenes-es/s31-doctor/hurt.webp"
+      "prompt": "Change only her pose: she leans slightly forward over the desk and raises her right hand with the first two fingers extended toward the viewer, as if gently pointing at the learner's neck, with a careful, questioning look (\"¿Le duele aquí?\"). Keep the camera exactly as in the original: the same distance, the desk, the blood-pressure cuff and the room unchanged. Nothing of the learner is in the picture.",
+      "out": "public/scenes-es/s31-doctor/hurt.webp",
+      "note": "Redone 5 Nov 2026: the first version moved the camera closer, with an oversized hand and something of the learner at the bottom edge."
     },
     {
       "id": "s31-doctor/allergy",

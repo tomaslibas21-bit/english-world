@@ -1,0 +1,7 @@
+{
+  "npc": "Diego (host) and Natalia (Diego's wife)",
+  "images": ["door", "sit", "diet", "drink", "cat", "ready", "dinner", "pass", "burnt", "seconds", "dessert", "late", "bye"],
+  "start": "door",
+  "phases": {"arrive": "door", "coat": "sit", "diet": "diet", "drink": "drink", "cat": "cat", "cat_lock": "cat", "ready_soon": "ready", "salad": "ready", "dinner": "dinner", "howisit": "dinner", "pass": "pass", "burnt": "burnt", "seconds": "seconds", "dessert": "dessert", "late": "late", "leave": "late", "stay": "late", "closing": "bye"},
+  "focus": [36, 32]
+}

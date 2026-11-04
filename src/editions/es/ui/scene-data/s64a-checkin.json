@@ -1,0 +1,8 @@
+{
+  "npc": "Emilio, airline check-in",
+  "images": ["greet", "passport", "bags", "safety", "battery", "scale", "overweight", "moving", "fee", "seat", "nowindow", "bp"],
+  "start": "greet",
+  "done": "bp",
+  "phases": {"hello": "greet", "howareyou": "greet", "dest": "greet", "dest_confirm": "greet", "passport": "passport", "bags": "bags", "bag_count": "bags", "safety": "safety", "battery": "safety", "packed": "safety", "packed_follow": "safety", "battery_move": "battery", "scale": "scale", "overweight": "overweight", "moving": "moving", "fee": "fee", "seat": "seat", "seat_clarify": "seat", "no_window": "nowindow", "no_window_middle": "nowindow", "bp": "bp", "closing": "bp"},
+  "focus": [34, 30]
+}

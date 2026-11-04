@@ -1,0 +1,8 @@
+{
+  "npc": "Oficial Ramírez, immigration officer",
+  "images": ["passport", "purpose", "visa", "length", "show", "questions", "fingers", "glasses", "photo", "days", "welcome"],
+  "start": "passport",
+  "done": "welcome",
+  "phases": {"passport": "passport", "howareyou": "passport", "purpose": "purpose", "biz_kind": "purpose", "who": "purpose", "visa": "visa", "length": "length", "stay": "length", "address": "length", "show_address": "show", "show_ticket": "show", "ticket_check": "show", "days_ticket": "show", "return": "questions", "first": "questions", "job": "questions", "alone": "questions", "cash": "questions", "cash_card": "questions", "bio_fingers": "fingers", "fingers": "fingers", "left": "fingers", "glasses": "glasses", "bio_photo": "photo", "photo": "photo", "days": "days", "closing": "welcome"},
+  "focus": [32, 34]
+}

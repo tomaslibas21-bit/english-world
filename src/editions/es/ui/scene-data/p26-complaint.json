@@ -1,0 +1,8 @@
+{
+  "npc": "Jorge and Brenda, Hogar Puerto customer service (phone call)",
+  "images": ["sofa", "transfer", "jorge", "script", "file", "manager", "brenda", "choice", "deadline", "folio", "bye"],
+  "start": "sofa",
+  "done": "bye",
+  "phases": {"problem": "sofa", "plug_now": "sofa", "transfer": "transfer", "name": "jorge", "plugged": "script", "history": "file", "offer_manager": "manager", "book_tuesday": "manager", "offer": "brenda", "offer_confirm": "brenda", "anything": "brenda", "refund_or": "choice", "deadline": "deadline", "which_day": "deadline", "confirm": "deadline", "reference": "folio", "readback": "folio"},
+  "focus": [34, 30]
+}

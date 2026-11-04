@@ -1,0 +1,8 @@
+{
+  "npc": "Valeria, sales assistant",
+  "images": ["greet", "size", "shoe", "soldout", "color", "tryon", "fit", "rewards", "pay", "bag", "return", "choice"],
+  "start": "greet",
+  "done": "bag",
+  "phases": {"howareyou": "greet", "item": "greet", "size": "size", "shoe": "shoe", "soldout": "soldout", "color": "color", "tryon": "tryon", "fit": "fit", "decide": "fit", "rewards": "rewards", "rewards_join": "rewards", "pay": "pay", "bag": "bag", "receipt": "bag", "return_q": "return", "r_receipt": "return", "r_reason": "return", "r_choice": "choice", "r_new": "choice"},
+  "focus": [34, 30]
+}

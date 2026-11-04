@@ -1,0 +1,7 @@
+{
+  "npc": "Ingeniero Montes, your boss (phone call)",
+  "images": ["hello", "who", "late", "reason", "help", "eta", "plan", "room", "cant", "bye"],
+  "start": "hello",
+  "phases": {"opening": "hello", "who_q": "who", "who": "who", "late": "late", "amb_q": "late", "reason": "reason", "need_help": "help", "eta": "eta", "plan": "plan", "plan_q": "plan", "room": "room", "cant_q": "cant", "closing": "bye"},
+  "focus": [34, 30]
+}

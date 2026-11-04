@@ -1,0 +1,7 @@
+{
+  "npc": "Fernanda, hotel reception",
+  "images": ["welcome", "walkin", "computer", "passport", "card", "sign", "keys", "late", "taxi", "wait", "fan", "bye"],
+  "start": "welcome",
+  "phases": {"arrive": "welcome", "p_report": "welcome", "walk_nights": "walkin", "walk_offer": "walkin", "view": "walkin", "name": "computer", "spell": "computer", "found": "computer", "nights": "computer", "id": "passport", "card": "card", "sign": "sign", "keys": "keys", "room": "keys", "anything": "keys", "quiet": "keys", "late": "late", "taxi_time": "taxi", "room_return": "wait", "fan_or_room": "fan", "closing": "bye"},
+  "focus": [32, 30]
+}

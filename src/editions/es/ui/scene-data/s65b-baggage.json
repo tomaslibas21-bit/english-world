@@ -1,0 +1,8 @@
+{
+  "npc": "Itzel, baggage services; Agente Medina, customs",
+  "images": ["greet", "flight", "tag", "describe", "form", "kit", "ref", "customs", "dog", "through"],
+  "start": "greet",
+  "done": "through",
+  "phases": {"problem": "greet", "howareyou": "greet", "flight": "flight", "connection": "flight", "from_city": "flight", "tag": "tag", "describe": "describe", "type": "describe", "color": "describe", "size": "describe", "material": "describe", "marks": "describe", "brand": "describe", "contents": "describe", "delivery": "form", "hotel": "form", "phone": "form", "kit": "kit", "ref": "ref", "itzel_bye": "ref", "declare": "customs", "declare_what": "customs", "food": "customs", "gift_value": "customs", "dog": "dog", "closing": "through"},
+  "focus": [34, 30]
+}

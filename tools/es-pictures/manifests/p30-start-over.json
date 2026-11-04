@@ -1,0 +1,107 @@
+{
+  "_about": "Chapter 8, p30 ¿Empezamos de nuevo?: on a Saturday morning the learner knocks at Diego and Natalia's front door (s85's house) to apologize to Diego for what they said at his carne asada two months ago, in front of everybody ('Tú nunca terminas nada, ¡ni siquiera esa lancha tonta!'). One set-up, in person: the front door on a sunny morning, from place/casa-diego-dia (a new reference in refs-plan-e.json, an edit of place/casa-diego: the same house in morning light, with Diego's half-restored wooden lancha on sawhorses in the cochera at the far left; make it first). door, the first picture (Diego in the doorway, one hand still on the door, cool and guarded), then 8 edits of door, one per id: the apology (listen: arms crossed, skeptical), responsibility (hurt), Diego's turn (rueful: rubbing the back of his neck with a half-smile; also the needs-time branch, the pushing replies and the ten_seconds twist, all said within the turn step with no id of their own, so the look fits both moods), Natalia's twist (nora: she leans out of the hall with the coffee pot; the only picture with her), what now? (make_up), his terms (deal: his hand held out, '¿Trato hecho?', whichever his price: a dinner the learner cooks, help with the lancha, or staying for lunch; also when '¿Empezamos de nuevo?' comes before the price), the handshake (start_over: '¡Hecho!', '¿Algo más que quieras decir?', '¿Borrón y cuenta nueva o qué?') and, as the done picture, home ('Pásale', Michi in the hall, the lancha still unfinished at the left). 9 pictures, not 10-12: the conversation has only 8 ids that show a picture (door, apology, responsibility, turn, nora, make_up, deal, start_over) plus closing, and closing has no picture of its own on purpose, as in the English scene file: the reconciled ending (the task complete) shows home as the done picture, while walking away ('Bueno. Gracias por venir. Llámame un día de estos.' / 'Bueno. Nos vemos, supongo.') keeps the current picture. 1 first picture; no edit of an edit. Make place/casa-diego-dia, then door, and check both (the house matches s85's door, morning light, the lancha reads as a boat with no name on it, the right third calm), then the eight edits in one batch.",
+  "scenes": {
+    "p30-start-over": {"npc": "Diego, your friend (and Natalia)", "focus": [34, 30], "start": "door", "done": "home"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p30-start-over/door",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "door",
+      "phases": ["door"],
+      "refs": ["place:place/casa-diego-dia", "person:cast/dan"],
+      "prompt": "A sunny Saturday morning at Diego and Natalia's front door. Diego, the learner's friend, has just opened the door to the learner after two months of silence between them: he stands in the doorway about one third from the left, seen waist up, facing the viewer and filling the doorway, one hand still on the edge of the open wooden door, the other arm at his side. His face is cool and guarded: no smile, his mouth a flat line, his eyebrows slightly raised, surprised to see the learner and not pleased, with a hint of hurt in his eyes (\"Vaya, vaya. Mira quién vino.\"). Behind him, the hall in soft daylight. At the far left, his old wooden lancha on its sawhorses in the shade of the cochera, as in the place reference, with no name or number on it. The right third: the calm turquoise wall and the shuttered window with its wrought-iron grille.",
+      "out": "public/scenes-es/p30-start-over/door.webp",
+      "note": "The first picture: check that the house and the morning light match place/casa-diego-dia and that Diego matches his portrait and s85's door picture. Every other picture is an edit of it. It keeps the door step's small talk ('¿Y qué se te ofrece?', the lancha, Natalia, Michi), and a walk-away before the apology ends on it."
+    },
+    {
+      "id": "p30-start-over/listen",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "apology",
+      "phases": ["apology"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only Diego's pose and expression: he has crossed his arms over his chest and leans one shoulder against the door frame, his chin a little up and one eyebrow raised: skeptical, waiting to hear what the learner has come to say (\"Bueno. Te escucho.\").",
+      "out": "public/scenes-es/p30-start-over/listen.webp",
+      "note": "Also '¿Perdón por qué, exactamente?' after a vague apology, and his replies to the bad moves ('Y ahí está: el «pero».', '¿Viniste a disculparte o a pelear?')."
+    },
+    {
+      "id": "p30-start-over/hurt",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "responsibility",
+      "phases": ["responsibility"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only Diego's pose and expression: he has let go of the door and rests one hand flat against his chest; his brows are drawn together and his mouth is pressed tight, and he looks at the learner with hurt, reproachful eyes (\"Dijiste que nunca termino nada. Enfrente de todos. En mi propia carne asada.\").",
+      "out": "public/scenes-es/p30-start-over/hurt.webp",
+      "note": "The same step asks '¿Por qué no me llamaste y ya?', so he looks at the learner rather than away."
+    },
+    {
+      "id": "p30-start-over/rueful",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "turn",
+      "phases": ["turn"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only Diego's pose and expression: he rubs the back of his neck with one hand and glances down to one side with a rueful, uncertain half-smile, his guard down, as if admitting something hard (\"Yo también me equivoqué. Fui demasiado orgulloso para levantar el teléfono.\").",
+      "out": "public/scenes-es/p30-start-over/rueful.webp",
+      "note": "Both moods of the turn step (40% needs time): 'Te oigo. Pero necesito tiempo para pensarlo.', 'No me presiones, ¿sí?' and the ten_seconds twist ('Oye. Espera. Ya lo pensé. Me tomó como diez segundos.') are said within it and have no id of their own, so the look is uneasy as well as rueful."
+    },
+    {
+      "id": "p30-start-over/nora",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "nora",
+      "phases": ["nora"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan", "person:cast/nora"],
+      "prompt": "Change only this: Natalia, Diego's wife, now leans into view from the hall just behind Diego, beside his shoulder on the viewer's right, inside the doorway and well before the right third. She holds up a small speckled blue enamel coffee pot by its handle, a thin wisp of steam rising from its spout, and beams at the learner as she calls out to Diego (\"¡Diego! ¡No dejes a tu amigo en la puerta! Ya está el café.\"). Diego keeps his place, his arms loose at his sides; he half turns his head toward her and rolls his eyes with a reluctant, amused smile (\"Llevaba dos meses esperando decir eso.\").",
+      "out": "public/scenes-es/p30-start-over/nora.webp",
+      "note": "The twist (50%, after Diego's turn): the only picture with Natalia, so she is added by an edit of door with her portrait as a person reference (as p29's rita). Her '¡Ay, qué gusto verte!' answers the learner's hello in the same step and keeps this picture."
+    },
+    {
+      "id": "p30-start-over/what_now",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "make_up",
+      "phases": ["make_up"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only Diego's pose and expression: he puts both hands on his hips and tilts his head, eyebrows raised, the corner of his mouth starting to curl into a smile, testing the learner (\"A ver. ¿Y ahora qué?\").",
+      "out": "public/scenes-es/p30-start-over/what_now.webp"
+    },
+    {
+      "id": "p30-start-over/deal",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "deal",
+      "phases": ["deal"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only Diego's pose and expression: he holds out his right hand toward the viewer at waist height for a handshake, fingers together and thumb up, one eyebrow raised, with a sly, challenging grin as he names his terms for making up (\"¿Trato hecho?\").",
+      "out": "public/scenes-es/p30-start-over/deal.webp",
+      "note": "The pending question 'deal', whichever his price (picked at random: 'Una cena. Con eso me conformo. Y cocinas tú.', 'Ayúdame a terminar la lancha. Ya que yo nunca termino nada.' or 'Podrías empezar por quedarte a comer.'), and also after an early '¿Empezamos de nuevo?' ('Tal vez. Pero primero me debes una cena.')."
+    },
+    {
+      "id": "p30-start-over/shake",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "start_over",
+      "phases": ["start_over"],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only Diego's pose and expression, and add the learner's hand: he shakes the learner's hand, which comes in from the bottom edge with the forearm in a plain sand-colored sleeve, and grins, warm and relieved, the last of the frost gone from his face (\"¡Hecho!\").",
+      "out": "public/scenes-es/p30-start-over/shake.webp",
+      "note": "The start_over step comes right after the deal is made ('¡Hecho!', or 'Trato hecho. Pero te voy a tomar la palabra.' when the learner offered first) and asks '¿Algo más que quieras decir?' / '¿Borrón y cuenta nueva o qué?'. The learner's '¿Empezamos de nuevo?' finishes the task in the same turn as Diego's answer, so 'Ya empezamos. Tú y yo.' already shows home."
+    },
+    {
+      "id": "p30-start-over/home",
+      "scene": "p30-start-over",
+      "situation": "p30-start-over",
+      "moment": "closing",
+      "phases": [],
+      "refs": ["edit:p30-start-over/door", "person:cast/dan"],
+      "prompt": "Change only this: Diego has stepped back and to the side inside the doorway, still about one third from the left, so the sunny hall beside him lies open; he holds the open door with one hand and sweeps his other arm toward the inside of the house, inviting the learner in with a big, warm smile (\"Pásale. Ya está el café.\"). In the hall beside him, on the tiled floor, sits Michi, their plump, fluffy gray-and-white long-haired cat with a white chest and paws, looking up at the learner. The lancha at the far left stays as it is, still unfinished.",
+      "out": "public/scenes-es/p30-start-over/home.webp",
+      "note": "The scene's done picture: shown once they have made up (the task complete): 'Pásale. Ya está el café.' or 'Pasa. Michi también te extrañó.', 'Ah, ¿y la lancha? Todavía sin terminar. Ni una palabra.' and the last '¡Ay, ya cállate! Entra.'. Not mapped to closing, which also ends the walk-aways ('Bueno. Gracias por venir.' / 'Bueno. Nos vemos, supongo.'), where Diego doesn't ask the learner in: those keep the current picture."
+    }
+  ]
+}

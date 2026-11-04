@@ -1,0 +1,8 @@
+{
+  "npc": "Daniela, gate agent",
+  "images": ["greet", "flight", "time", "help", "seatswap", "bagtag", "wait", "announce", "early", "scan", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"howareyou": "greet", "gate": "greet", "which_flight": "flight", "wrong_flight": "flight", "time": "time", "help": "help", "seat_offer": "seatswap", "offer": "bagtag", "wait": "wait", "board": "announce", "early": "early", "scan": "scan", "closing": "bye"},
+  "focus": [34, 30]
+}

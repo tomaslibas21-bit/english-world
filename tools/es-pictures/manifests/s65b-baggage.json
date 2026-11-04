@@ -165,7 +165,7 @@
    ],
    "refs": [
     "edit:s65b-baggage/customs",
-    "person:cast/priya"
+    "person:cast/aduana"
    ],
    "prompt": "Change only her pose and add the dog: a beagle in a plain dark-green vest (blank, no patch) sits on the floor in the lower middle of the picture, beside the learner's gray backpack, looking up proudly. Agente Medina points to the backpack with one hand, eyebrows raised, asking whether there is any food in it.",
    "out": "public/scenes-es/s65b-baggage/dog.webp"
@@ -180,10 +180,11 @@
    ],
    "refs": [
     "edit:s65b-baggage/customs",
-    "person:cast/priya"
+    "person:cast/aduana"
    ],
    "prompt": "Change only her pose: she gestures with an open hand toward the exit doors on the right, letting the learner through, with a small, polite smile.",
-   "out": "public/scenes-es/s65b-baggage/through.webp"
+   "out": "public/scenes-es/s65b-baggage/through.webp",
+   "note": "Redone 5 Nov 2026: the reference named Itzel (priya) instead of Agente Medina (aduana), and the first version drew Itzel."
   }
  ]
 }

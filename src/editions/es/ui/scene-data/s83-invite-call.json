@@ -1,0 +1,7 @@
+{
+  "npc": "Andrea, your friend (phone call)",
+  "images": ["hello", "invite", "bad_line", "band", "place", "meet_time", "meet_change", "time_change", "sister", "pay", "bbq", "bye"],
+  "start": "hello",
+  "phases": {"hello": "hello", "howareyou": "hello", "invite": "invite", "day": "invite", "other_day": "invite", "bad_line": "bad_line", "band": "band", "start": "band", "place": "place", "suggest_place": "place", "confirm_place": "place", "meet_time": "meet_time", "suggest_time": "meet_time", "meet_change": "meet_change", "time_change": "time_change", "sister": "sister", "pay": "pay", "bbq": "bbq", "closing": "bye"},
+  "focus": [34, 30]
+}

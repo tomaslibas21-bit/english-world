@@ -1,0 +1,7 @@
+{
+  "npc": "Camila, your date",
+  "images": ["greet", "late", "drinks", "talk", "travel", "quick", "check", "cold", "nice", "again", "bye"],
+  "start": "greet",
+  "phases": {"greet_meet": "greet", "greet_early": "greet", "greet_late": "late", "drinks": "drinks", "job": "talk", "like_job": "talk", "hobby": "travel", "travel": "travel", "music": "travel", "qf": "quick", "qf2": "quick", "check": "check", "check_offer": "check", "cold": "cold", "nice": "nice", "again": "again", "which_day": "again", "day": "again", "closing": "bye", "leaving_q": "bye"},
+  "focus": [35, 30]
+}

@@ -1,0 +1,7 @@
+{
+  "npc": "Karla, NetWave customer service (phone call)",
+  "images": ["menu", "unplugged", "hello", "account", "problem", "lights", "hear", "tech", "someone", "report", "bye"],
+  "start": "menu",
+  "phases": {"menu": "menu", "still_red": "menu", "restart_now": "unplugged", "name": "hello", "account": "account", "problem": "problem", "problem_bill": "problem", "since": "problem", "lights": "lights", "restart": "lights", "hear": "hear", "tech": "tech", "someone": "someone", "more": "report", "closing": "bye"},
+  "focus": [34, 30]
+}

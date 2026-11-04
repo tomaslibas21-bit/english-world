@@ -1,0 +1,8 @@
+{
+  "npc": "Mónica, personal trainer",
+  "images": ["welcome", "form", "pay", "lockers", "warmup", "machine", "broken", "sets", "rep", "careful", "spot", "breath", "next"],
+  "start": "welcome",
+  "done": "next",
+  "phases": {"new": "welcome", "plan": "welcome", "alt_plan": "welcome", "howareyou": "welcome", "form": "form", "pay": "pay", "pay_other": "pay", "lockers": "lockers", "lock_q": "lockers", "changing": "lockers", "warmup": "warmup", "feel_q": "warmup", "machine": "machine", "broken": "broken", "sets": "sets", "rep": "rep", "okay_q": "careful", "where_hurt": "careful", "pain_amb": "careful", "stretch": "careful", "spot": "spot", "breath": "breath", "breath_q": "breath", "next": "next", "day_amb": "next", "thursday_q": "next", "closing": "next"},
+  "focus": [34, 30]
+}

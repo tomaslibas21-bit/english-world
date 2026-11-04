@@ -1,0 +1,8 @@
+{
+  "npc": "Doctora Herrera, family doctor",
+  "images": ["greet", "listen", "temp", "sleeve", "breath", "ah", "hurt", "allergy", "chart", "rx", "pay", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"dob": "greet", "feeling": "greet", "problem": "greet", "howareyou": "greet", "sick_q": "listen", "more_sym": "listen", "howlong": "listen", "scale": "listen", "meds": "listen", "meds_what": "listen", "fever": "temp", "sleeve": "sleeve", "exam": "breath", "breath": "breath", "ah": "ah", "hurt": "hurt", "allergy": "allergy", "allergy_which": "allergy", "chart": "chart", "rx": "rx", "rx_q": "rx", "pharmacy": "rx", "note": "rx", "questions": "rx", "pay": "pay", "closing": "bye"},
+  "focus": [34, 30]
+}

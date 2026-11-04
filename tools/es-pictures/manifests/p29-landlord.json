@@ -1,0 +1,122 @@
+{
+  "_about": "Chapter 8, p29 El aire no enfría: on a hot Wednesday morning the learner catches Don Ernesto, the landlord (s81), at the door downstairs at Departamentos Las Palmas, with a suitcase and a sun hat: he's off to San Cristóbal for two weeks, and the learner's minisplit has only blown warm air for a week. One set-up, in person: the ground-floor walkway of Las Palmas, right below the open-air corridor of s82, with the street gate open at its far end (that corridor is a 'setting' reference: the same building from another spot; no new place reference). hello, the first picture (on his way out, straw hat on, a teal rolling suitcase beside him), then 10 edits of hello: the remote (step thermostat), since when (duration), Doña Lupita's twist (rita: she comes over from the courtyard with her watering can and backs the learner up, the only picture with her in it), the dodge (a shrug), the offer (a handshake held out: 'arréglelo usted y yo le pago la mitad'), the date (his phone), home, in a hurry (wrap: '¿Algo más?'), the rent and the goodbye (closing: he tips his hat, suitcase ready to roll). 11 pictures, 1 first picture; no edit of an edit. guess (a returning player: 'Déjeme adivinar: ¿el aire?') and howareyou keep hello. closing comes only at the end (the finish after a day is agreed, or the walk-aways, where he leaves all the same), so it has the goodbye picture and the scene needs no done picture. The text message, Lupita's thanks and the receipt have no id of their own and keep the current picture. Make hello first and check it (the building matches s82's corridor, the hat, the suitcase on the left of the picture with room for Doña Lupita to his right), then the edits in one batch.",
+  "scenes": {
+    "p29-landlord": {"npc": "Don Ernesto, landlord (Doña Lupita, neighbor)", "focus": [34, 32], "start": "hello"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p29-landlord/hello",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "problem",
+      "phases": ["problem", "guess", "howareyou"],
+      "refs": ["setting:place/edificio-pasillo", "person:cast/patel"],
+      "prompt": "A hot, bright Wednesday morning on the ground floor of Departamentos Las Palmas, the two-story apartment building whose open-air upper corridor is the setting reference. The camera now stands downstairs, on the shady tiled walkway of the ground floor right below that corridor, with the same cream-white walls, pale floor tiles, wooden doors painted teal, terracotta and coral, black wall lanterns and terracotta pots with plants (no numbers on the doors, no sign anywhere). On the right, the walkway opens between square white pillars onto the sunny inner courtyard with its palm; at the far end of the walkway, the building's wrought-iron street gate stands open onto the bright sidewalk and a coral-pink house across the street. No sea in view. Don Ernesto, the landlord, is on his way out of the building: he stands on the walkway about one third from the left, seen from mid-thigh up, facing the viewer. He is dressed for a trip: a light straw Panama hat with a narrow brim and a plain dark band on his head, over his usual guayabera. Beside him, on the left of the picture, stands a deep-teal hard-shell rolling suitcase with its handle pulled up (no tag, label or logo), his hand resting on the handle. His other hand is raised in a quick, apologetic wave, and he smiles a startled, slightly guilty smile, caught just as he was leaving (\"¡Ay, hola! Perdón, no puedo quedarme. ¡Me voy a San Cristóbal!\"). Hard morning shadows of palm fronds lie across the floor. The right third: the calm, sunlit courtyard, with pale paving, the palm's trunk and a few potted plants.",
+      "out": "public/scenes-es/p29-landlord/hello.webp",
+      "note": "The first picture: the door downstairs, so the corridor upstairs (place/edificio-pasillo, s82) is a 'setting' reference (the same building from another spot), not a 'place' one. It doesn't show which door is his: p29 has him living on the planta baja, while s81's tenant picture drew his doorway on the upper corridor. Keep the suitcase on the left of the picture: rita puts Doña Lupita to his right."
+    },
+    {
+      "id": "p29-landlord/remote",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "thermostat",
+      "phases": ["thermostat"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose and expression: his hand stays on the suitcase handle, and he holds up his other hand at chest height as if aiming a small remote control, pressing an imaginary button with his thumb (the hand is empty), one eyebrow raised over his glasses, skeptical (\"Mmm. ¿Ya revisó el control? ¿Está en frío?\").",
+      "out": "public/scenes-es/p29-landlord/remote.webp"
+    },
+    {
+      "id": "p29-landlord/since",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "duration",
+      "phases": ["duration"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose and expression: he has taken off his straw hat and fans himself with it beside his face, his gray hair showing and his face in full view, his other hand still on the suitcase handle, with an uneasy, slightly guilty frown and raised eyebrows (\"¿Desde cuándo no enfría?\").",
+      "out": "public/scenes-es/p29-landlord/since.webp"
+    },
+    {
+      "id": "p29-landlord/rita",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "rita",
+      "phases": ["rita"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel", "person:cast/rita"],
+      "prompt": "Change only this: Doña Lupita, the neighbor from upstairs, now stands just to the right of Don Ernesto, near the middle of the picture and well before the right third, seen from mid-thigh up and facing the viewer. She holds a green plastic watering can by its handle in one hand (she was watering the courtyard plants) and rests the other hand on her hip, and she glances sideways at Don Ernesto with one eyebrow raised and an ironic, knowing smile (\"¡Y como usted siempre arregla todo tan rápido!\"). Don Ernesto keeps his place, his hat and his suitcase; only his expression changes, to a sheepish, tight-lipped smile, and his raised hand comes down to his side. The right third stays the calm courtyard.",
+      "out": "public/scenes-es/p29-landlord/rita.webp",
+      "note": "The twist (50%): the only picture with Doña Lupita, so she is added by an edit of hello (her portrait as a person reference) rather than a set-up of her own. Her thanks and the repairman's number answer the same pending question (rita) and keep this picture."
+    },
+    {
+      "id": "p29-landlord/dodge",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "dodge",
+      "phases": ["dodge"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose and expression: he lets go of the suitcase and shrugs, shoulders up and both hands raised at his sides with the palms turned up, eyebrows raised, with an innocent, helpless half-smile (\"Mire, el aparato ya está viejito. Son cosas que pasan. ¿Y qué quiere que haga?\").",
+      "out": "public/scenes-es/p29-landlord/dodge.webp"
+    },
+    {
+      "id": "p29-landlord/offer",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "offer",
+      "phases": ["offer"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose and expression: his hand stays on the suitcase handle, and he holds out his other hand toward the viewer for a handshake, fingers together and thumb up, leaning in a little with a hopeful, cheeky grin, as if sealing a bargain (\"Arréglelo usted, y yo le pago la mitad. ¿Trato hecho?\").",
+      "out": "public/scenes-es/p29-landlord/offer.webp"
+    },
+    {
+      "id": "p29-landlord/date",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "date",
+      "phases": ["date"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: he holds his phone in one hand at chest height, its back toward the viewer (a plain dark case, no logo), and looks down at it over his glasses, scrolling with his thumb, while the index finger of his other hand is raised (one moment, let me see when the repairman can come: \"¿Qué tal el miércoles de la próxima semana?\").",
+      "out": "public/scenes-es/p29-landlord/date.webp"
+    },
+    {
+      "id": "p29-landlord/home",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "home",
+      "phases": ["home"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: his hand stays on the suitcase handle, and he points up with the index finger of his other hand, toward the learner's apartment on the floor above, eyebrows raised in a friendly question (\"¿Va a estar en casa?\").",
+      "out": "public/scenes-es/p29-landlord/home.webp"
+    },
+    {
+      "id": "p29-landlord/hurry",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "wrap",
+      "phases": ["wrap"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose and expression: he grips the suitcase handle and glances down at a plain wristwatch on his other wrist, raised in front of him (a blank face, no numbers), eyebrows raised, in a hurry (\"¿Algo más? De veras ya me tengo que ir.\").",
+      "out": "public/scenes-es/p29-landlord/hurry.webp"
+    },
+    {
+      "id": "p29-landlord/rent",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "rent",
+      "phases": ["rent"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose and expression: his hand stays on the suitcase handle, and he holds out his other hand toward the viewer at waist height, palm up and open, with a sly, cheeky grin and raised eyebrows (\"Ah, y ya que está aquí: ¿la renta de este mes?\").",
+      "out": "public/scenes-es/p29-landlord/rent.webp"
+    },
+    {
+      "id": "p29-landlord/bye",
+      "scene": "p29-landlord",
+      "situation": "p29-landlord",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: he lifts his straw hat a little off his head in a cheerful goodbye, and with his other hand he has tilted the suitcase back onto its wheels, ready to roll it out through the open street gate, with a warm, relieved smile (\"Bueno, ahora sí me tengo que ir. ¡Aguante ese calor!\").",
+      "out": "public/scenes-es/p29-landlord/bye.webp",
+      "note": "closing comes only at the end: after a day is agreed (finish) and on the walk-aways ('¡Llámeme si empeora!', 'Hablamos cuando regrese'), where he leaves too."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "npc": "Doña Lupita, neighbor",
+  "images": ["hello", "from", "like", "trash", "needs", "plants", "complaint", "package", "coffee", "coffee_time", "bye"],
+  "start": "hello",
+  "phases": {"intro": "hello", "name": "hello", "howareyou": "hello", "from_q": "from", "like_q": "like", "trash_q": "trash", "needs": "needs", "away_when": "plants", "complaint": "complaint", "pkg": "package", "coffee": "coffee", "coffee_sunday": "coffee", "coffee_time": "coffee_time", "closing": "bye"},
+  "focus": [30, 30]
+}

@@ -1,0 +1,9 @@
+{
+  "npc": "Iván, museum tickets (Don Arturo, guard)",
+  "images": ["greet", "late", "types", "id", "guide", "lang", "pay", "exhibit", "tickets", "enjoy", "harold"],
+  "start": "greet",
+  "done": "enjoy",
+  "sticky": ["harold"],
+  "phases": {"tickets": "greet", "late": "late", "types": "types", "amb": "types", "student_id": "id", "id_price": "id", "res_card": "id", "guide": "guide", "persuade": "guide", "lang": "lang", "pay": "pay", "exhibit": "exhibit", "more": "tickets", "closing": "enjoy", "harold": "harold"},
+  "focus": [36, 31]
+}

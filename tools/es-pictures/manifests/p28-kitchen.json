@@ -1,0 +1,131 @@
+{
+  "_about": "Chapter 8, p28 Pruébalo otra vez: the kitchen of El Muelle an hour before the evening service, seen across the stainless-steel pass from the learner's side (place/el-muelle-cocina). Two set-ups at the same pass. (1) Chef Villanueva with the learner's fish chowder: serve, then edits of serve: he tastes it (consent), his feedback (receive, and '¿Me explico?' / '¿Alguna duda?' at example), half a lime (again: 'Ándale, ajústalo. Aquí te espero', after his example), his crunchy idea with a bowl of fried tortilla strips (second, after '¡Así sí!'), the favor, with Fátima looking over from the stove in the background (handoff). (2) Fátima at the pass with her ceviche and the chef a step behind her (a new first picture from the same place, with both portraits): ceviche (mia_open), then edits of ceviche: waiting while the learner tastes (mia_worked), her notepad (one thing to try, and 'how much?'), 'sorry I'm so slow' (mia_encourage), her own feedback with a bottle of habanero salsa (twist mia_feedback, step mia_back) and done. 'closing' has no picture of its own on purpose, as in the English scene file: a finished afternoon ends on done, while leaving early ('¿Ya te vas?', before Fátima comes in) and the partial ending keep the current picture. 12 pictures, 2 first pictures (serve, ceviche); no edit of an edit. Make serve and ceviche first, then the other ten in one batch.",
+  "scenes": {
+    "p28-kitchen": {"npc": "Chef Villanueva, head chef (and Fátima, junior cook)", "focus": [34, 30], "start": "serve", "done": "done"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p28-kitchen/serve",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "serve",
+      "phases": ["serve"],
+      "refs": ["place:place/el-muelle-cocina", "person:cast/whitaker"],
+      "prompt": "Late afternoon in the kitchen of El Muelle, an hour before the evening service, seen across the stainless-steel pass from the learner's side. Chef Villanueva, the head chef, stands behind the pass about one third from the left, a folded white kitchen towel over one shoulder and both hands resting on the edge of the pass, looking down with calm, appraising curiosity at the bowl the learner has just set in front of him (\"Ahí estás. A ver, ¿qué traes?\"). On the pass in front of the learner: a wide white bowl of creamy fish chowder, thick and pale ivory, with chunks of flaky white fish and diced potato, bits of celery and onion, a few golden drops of melted butter and a sprinkle of chopped parsley, a soup spoon beside it and a small dish of round oyster crackers. The order tickets on the rail above are blank.",
+      "out": "public/scenes-es/p28-kitchen/serve.webp"
+    },
+    {
+      "id": "p28-kitchen/taste",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "consent",
+      "phases": ["consent"],
+      "refs": ["edit:p28-kitchen/serve", "person:cast/whitaker"],
+      "prompt": "Change only his pose: Chef Villanueva tastes the chowder from a small steel tasting spoon, eyes half closed, in thoughtful silence, his other hand resting flat on the pass (\"¿Un chowder? ¿Con este calor? ¡Qué valiente!… ¿Te puedo hacer unos comentarios?\").",
+      "out": "public/scenes-es/p28-kitchen/taste.webp"
+    },
+    {
+      "id": "p28-kitchen/feedback",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "receive",
+      "phases": ["receive", "example"],
+      "refs": ["edit:p28-kitchen/serve", "person:cast/whitaker"],
+      "prompt": "Change only his pose: Chef Villanueva holds the small steel tasting spoon in one hand and raises the index finger of the other, explaining calmly, with a kind, precise look (\"Lo que te quedó muy bien fue el pescado… Una cosa que podrías probar es un poquito más de acidez\").",
+      "out": "public/scenes-es/p28-kitchen/feedback.webp"
+    },
+    {
+      "id": "p28-kitchen/lime",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "again",
+      "phases": ["again"],
+      "refs": ["edit:p28-kitchen/serve", "person:cast/whitaker"],
+      "prompt": "Change only his pose: Chef Villanueva holds out half a small green lime toward the learner across the pass, its juicy cut side toward the viewer, with a gentle, encouraging smile (his example, a few drops of lime: \"Ándale, ajústalo. Aquí te espero.\").",
+      "out": "public/scenes-es/p28-kitchen/lime.webp"
+    },
+    {
+      "id": "p28-kitchen/crunch",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "second",
+      "phases": ["second"],
+      "refs": ["edit:p28-kitchen/serve", "person:cast/whitaker"],
+      "prompt": "Change only his pose: Chef Villanueva, pleased with the chowder now, holds up a small white bowl of thin, crisp, golden fried tortilla strips in one hand, tilting it toward the learner, eyebrows raised in a friendly question (\"¿Has pensado en algo crujiente? Yo le pondría unas tiritas de tortilla frita arriba\").",
+      "out": "public/scenes-es/p28-kitchen/crunch.webp"
+    },
+    {
+      "id": "p28-kitchen/favor",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "handoff",
+      "phases": ["handoff"],
+      "refs": ["edit:p28-kitchen/serve", "person:cast/whitaker", "person:cast/russo"],
+      "prompt": "Change only these: Chef Villanueva leans toward the learner with both forearms on the pass and speaks quietly, tilting his head back toward the stove behind him, with a kind, conspiratorial look (\"Ahora, un favor. Fátima empezó el lunes… ¿Lo pruebas y le haces unos comentarios?\"); in the background, at the stove a little to the right of him, Fátima, the junior cook, glances over at them nervously, a wooden spoon in her hand, smaller and a little soft.",
+      "out": "public/scenes-es/p28-kitchen/favor.webp"
+    },
+    {
+      "id": "p28-kitchen/ceviche",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "mia_open",
+      "phases": ["mia_open"],
+      "refs": ["place:place/el-muelle-cocina", "person:cast/russo", "person:cast/whitaker"],
+      "prompt": "Late afternoon in the kitchen of El Muelle, an hour before the evening service, seen across the stainless-steel pass from the learner's side. Fátima, the junior cook, stands behind the pass about one third from the left and holds out a wide white bowl of ceviche toward the learner in both hands, with a nervous, hopeful half-smile and raised eyebrows (\"El chef dijo que ibas a probar mi ceviche. Perdón. Seguro está horrible.\"). The ceviche: small cubes of white fish turned opaque by lime juice, mixed with diced tomato, slivers of red onion, chopped cilantro and cubes of avocado, glistening with juice, two lime wedges on the rim; on the pass beside it, a small plate of round, crisp tostadas. Chef Villanueva, the head chef, stands a step behind her, a little to the right of her in the picture but before the right third, arms folded, watching with a calm, kind smile. At the left end of the pass stands the learner's white bowl of creamy fish chowder.",
+      "out": "public/scenes-es/p28-kitchen/ceviche.webp",
+      "note": "The second set-up: the same pass and camera as serve, from the same place reference, with Fátima in front and the chef behind her. Make it after serve and check that the kitchen, the light and the chef match."
+    },
+    {
+      "id": "p28-kitchen/waiting",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "mia_worked",
+      "phases": ["mia_worked"],
+      "refs": ["edit:p28-kitchen/ceviche", "person:cast/russo"],
+      "prompt": "Change only these: the bowl of ceviche now stands on the pass in front of the learner with a small spoon in it, just tasted; Fátima clasps both hands tightly under her chin, holding her breath, eyes wide, waiting for the verdict (\"Entonces… ¿hay algo bueno?\").",
+      "out": "public/scenes-es/p28-kitchen/waiting.webp"
+    },
+    {
+      "id": "p28-kitchen/notes",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "mia_try",
+      "phases": ["mia_try", "mia_howmuch"],
+      "refs": ["edit:p28-kitchen/ceviche", "person:cast/russo"],
+      "prompt": "Change only these: the bowl of ceviche now stands on the pass in front of the learner; Fátima holds a small blank notepad in one hand and a pencil in the other, ready to write, and gives the learner a brave little nod, bracing herself, with a determined, slightly anxious smile (\"Hay algo, ¿verdad? Dímelo, aguanto.\").",
+      "out": "public/scenes-es/p28-kitchen/notes.webp"
+    },
+    {
+      "id": "p28-kitchen/slow",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "mia_encourage",
+      "phases": ["mia_encourage"],
+      "refs": ["edit:p28-kitchen/ceviche", "person:cast/russo"],
+      "prompt": "Change only these: the bowl of ceviche now stands on the pass in front of the learner; Fátima looks down with an embarrassed, apologetic little smile, one hand rubbing her other arm, shoulders slightly hunched (\"Perdón por ser tan lenta. Aquí todos son más rápidos que yo.\"); behind her, the chef watches her kindly.",
+      "out": "public/scenes-es/p28-kitchen/slow.webp"
+    },
+    {
+      "id": "p28-kitchen/habanero",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "mia_feedback",
+      "phases": ["mia_back"],
+      "refs": ["edit:p28-kitchen/ceviche", "person:cast/russo", "person:cast/whitaker"],
+      "prompt": "Change only these: the bowl of ceviche now stands on the pass in front of the learner; Fátima holds up a small glass bottle of bright orange habanero salsa with no label beside her face, with a shy, cheeky grin, eyebrows raised (her own feedback on the learner's chowder: \"Una cosa que podrías probar son unas gotitas de salsa de habanero\"); behind her, the chef raises his eyebrows, amused.",
+      "out": "public/scenes-es/p28-kitchen/habanero.webp"
+    },
+    {
+      "id": "p28-kitchen/done",
+      "scene": "p28-kitchen",
+      "situation": "p28-kitchen",
+      "moment": "closing",
+      "phases": [],
+      "refs": ["edit:p28-kitchen/ceviche", "person:cast/russo", "person:cast/whitaker"],
+      "prompt": "Change only these: the bowl of ceviche now stands on the pass in front of the learner; Fátima beams with relief, both hands resting on the pass; Chef Villanueva, behind her, laughs warmly and gives the learner an approving nod (\"Buen trabajo. En una hora empieza el servicio.\").",
+      "out": "public/scenes-es/p28-kitchen/done.webp",
+      "note": "The scene's done picture: shown at the chef's closing words and the goodbye once the afternoon went well (the task complete). No phase of its own, so leaving early (before Fátima comes) and the partial ending keep the current picture."
+    }
+  ]
+}

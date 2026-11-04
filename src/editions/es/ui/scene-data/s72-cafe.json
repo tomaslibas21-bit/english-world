@@ -1,0 +1,8 @@
+{
+  "npc": "Mariana, barista",
+  "images": ["greet", "size", "milk", "oat", "temp", "food", "warm", "dine", "name", "pay", "receipt", "done"],
+  "start": "greet",
+  "done": "done",
+  "phases": {"howareyou": "greet", "order": "greet", "kind": "greet", "usual": "greet", "size": "size", "milk": "milk", "whole_ok": "milk", "alt_milk": "oat", "temp": "temp", "more": "food", "food_offer": "food", "warm": "warm", "dine": "dine", "name": "name", "pay": "pay", "receipt": "receipt", "closing": "done"},
+  "focus": [34, 30]
+}
