@@ -1,5 +1,6 @@
 // Maple Harbor: a small American coastal town. X = east, Z = south (north is -Z), 1 unit = 1 m.
 import { LOCATIONS } from "../../content/locations";
+import { THEME } from "./theme";
 
 export type Face = "n" | "s" | "e" | "w";
 export interface Road { x1: number; z1: number; x2: number; z2: number; w: number; name?: string }
@@ -101,6 +102,8 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
   // Advanced song P25: Maggie Holt by her convertible for sale (CONVERTIBLE) in the drive on Cedar Lane, the quiet
   // stretch between the two houses east of the clinic; you stand on the sidewalk
   { npc: "maggie", x: 101.2, z: 47.7, rot: Math.PI, ax: 101.2, az: 45.5 },
+  // the edition's own (theme.ts): none in Maple Harbor
+  ...THEME.outdoorNpcs,
 ];
 
 /** Two townspeople standing and chatting (Ambient), face to face: [x, z] of one and [x, z] of the other. In the square
@@ -148,6 +151,8 @@ export const TRAFFIC_LANES: { z: number; dir: 1 | -1; from: number; to: number }
 export const PARKED_CARS: [number, number, number][] = [
   [-80, -4.2, Math.PI / 2], [-30, -4.2, Math.PI / 2], [34, -4.2, Math.PI / 2], [88, -11.8, -Math.PI / 2], [-40, -11.8, -Math.PI / 2],
   [-60, 41.45, Math.PI / 2], [30, 34.55, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [88, 41.45, Math.PI / 2],
+  // the edition's own (theme.ts): none in Maple Harbor
+  ...THEME.parkedCars,
 ];
 
 export const TAXI = { x: 121, z: -4.8, rot: -Math.PI / 2 };
