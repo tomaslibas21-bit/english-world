@@ -1,0 +1,121 @@
+{
+  "_about": "Chapter 8, p26 Quiero poner una queja: a phone call to Hogar Puerto about the sofa (a week late, a broken leg, torn fabric). Three set-ups. The learner's living room at Las Palmas (place/departamento, as in s80; nobody in it): sofa, the damaged sofa and the phone on speaker (the hold message, Jorge's greeting, the problem, and again when Jorge asks the learner to go and check it: plug_now), and transfer, an edit of it (on hold for the manager). Jorge at his desk in the customer service office (place/call-center): jorge (the order number or the name), then edits of jorge: his script (twist plugged_in), the file that says the missed visit was 'completed' (twist file_completed, with the next-Tuesday offer and 'my hands are tied' in the same step), the manager or next Tuesday. Brenda in her own glass-walled office beside it (the call center as a 'setting' reference: another spot in the same office): brenda (her offer: twist coupon or visit, the same id), then edits of brenda: refund or new sofa, the deadline, the folio, and bye. closing has no picture of its own on purpose: the endings with Jorge (next Tuesday, hanging up) and the partial ones keep the current picture, and only the success (the task complete) shows bye as the scene's done picture. long_hold is said in the opening turn (no id of its own). 11 pictures, 3 first pictures (sofa, jorge, brenda); no edit of an edit.",
+  "scenes": {
+    "p26-complaint": {"npc": "Jorge and Brenda, Hogar Puerto customer service (phone call)", "focus": [34, 30], "start": "sofa", "done": "bye"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p26-complaint/sofa",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "problem",
+      "phases": ["problem", "plug_now"],
+      "refs": ["place:place/departamento"],
+      "prompt": "The learner's own apartment at Las Palmas, now lived in, seen from the learner's armchair: the living room with the woven rug, plants, the ceiling fan and the sliding glass doors with sheer curtains. About one third from the left stands the learner's brand-new three-seat sofa in rust-orange fabric, delivered a week late and damaged: its front left leg has snapped off and lies on the tile floor in front of it, so that corner sags down onto a stack of two plain books with blank covers, and the middle seat cushion has a long tear with white stuffing poking out. A flattened, blank brown delivery box leans against the wall beside it. In the foreground, on a low wooden coffee table, a smartphone lies face up on speaker, its screen showing only a teal call screen with a simple sound-wave icon and a red round hang-up button (no letters or numbers), beside a clay mug of coffee. The right third: the calm glass doors and curtains.",
+      "out": "public/scenes-es/p26-complaint/sofa.webp"
+    },
+    {
+      "id": "p26-complaint/transfer",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "transfer",
+      "phases": ["transfer"],
+      "refs": ["edit:p26-complaint/sofa"],
+      "prompt": "Change only this: the phone is no longer on the coffee table; the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, holding the phone up, its screen toward the viewer showing only a big, simple music-note icon on teal, and a few small pale music notes float up from it (on hold, waiting to be put through to the manager). The damaged sofa stays exactly as it is.",
+      "out": "public/scenes-es/p26-complaint/transfer.webp"
+    },
+    {
+      "id": "p26-complaint/jorge",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "name",
+      "phases": ["name"],
+      "refs": ["place:place/call-center", "person:cast/kyle"],
+      "prompt": "Jorge, a young customer service agent at Hogar Puerto, the town's furniture store, sits at the desk about one third from the left, his headset on, a pen in one hand ready to take a note, leaning a little toward the microphone with an earnest, eager smile as he asks for the order number (\"¿Me proporciona su número de pedido, por favor?\"). His monitor stands on the desk turned away from the viewer; a keyboard, a pen pot, a small potted plant, a fan of fabric swatches and a little wooden sample chair (it's a furniture store).",
+      "out": "public/scenes-es/p26-complaint/jorge.webp"
+    },
+    {
+      "id": "p26-complaint/script",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "plugged_in",
+      "phases": ["plugged"],
+      "refs": ["edit:p26-complaint/jorge", "person:cast/kyle"],
+      "prompt": "Change only his pose: he holds up a laminated script card (a few rows of simple gray lines and check-box icons, no letters) and runs a finger along one line, reading from it with an earnest, slightly sheepish look (\"Solo para confirmar: ¿ya revisó que esté bien armado?\").",
+      "out": "public/scenes-es/p26-complaint/script.webp"
+    },
+    {
+      "id": "p26-complaint/file",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "file_completed",
+      "phases": ["history"],
+      "refs": ["edit:p26-complaint/jorge", "person:cast/kyle"],
+      "prompt": "Change only his pose and expression: he leans toward his monitor (still turned away from the viewer), one hand frozen on the mouse, eyebrows shooting up in puzzled surprise, mouth half open (the file says the technician's missed visit was… completed?).",
+      "out": "public/scenes-es/p26-complaint/file.webp"
+    },
+    {
+      "id": "p26-complaint/manager",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "offer_manager",
+      "phases": ["offer_manager", "book_tuesday"],
+      "refs": ["edit:p26-complaint/jorge", "person:cast/kyle"],
+      "prompt": "Change only his pose: he holds one open hand out toward the viewer, palm up, with a hopeful, apologetic smile, offering a way forward (\"¿Le gustaría hablar con mi gerente?\").",
+      "out": "public/scenes-es/p26-complaint/manager.webp"
+    },
+    {
+      "id": "p26-complaint/brenda",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "offer",
+      "phases": ["offer", "offer_confirm", "anything"],
+      "refs": ["setting:place/call-center", "person:cast/brenda"],
+      "prompt": "Brenda, the customer care manager at Hogar Puerto, in her own small office at the side of the customer service office. She sits at a tidy wooden desk about one third from the left, her slim headset and her glasses on, hands folded on the desk, with a calm, kind but businesslike smile as she takes the transferred call (\"Buenas tardes, habla Brenda, gerente de atención a clientes\"). On the desk: a laptop turned away from the viewer, a small stack of blank teal gift cards and a pen. On a shelf behind her: two plump embroidered throw pillows and a potted plant. Through the glass wall behind her, the rows of desks with low blue partitions, softly out of focus. The right third: a calm, plain wall with a tall plant.",
+      "out": "public/scenes-es/p26-complaint/brenda.webp",
+      "note": "Brenda's own set-up in the same building, at another spot (her office), so the call center is a 'setting' reference, not a 'place' one (as s65b's customs). Her offer is the coupon and a cushion or a technician on Wednesday (twists coupon / visit, both the 'offer' id): the picture fits both."
+    },
+    {
+      "id": "p26-complaint/choice",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "refund_or",
+      "phases": ["refund_or"],
+      "refs": ["edit:p26-complaint/brenda", "person:cast/brenda"],
+      "prompt": "Change only her pose: she holds both hands out at her sides, palms up, as if weighing two options, eyebrows raised with a helpful smile (\"¿Prefiere un reembolso o un cambio por uno nuevo?\").",
+      "out": "public/scenes-es/p26-complaint/choice.webp"
+    },
+    {
+      "id": "p26-complaint/deadline",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "deadline",
+      "phases": ["deadline", "which_day", "confirm"],
+      "refs": ["edit:p26-complaint/brenda", "person:cast/brenda"],
+      "prompt": "Change only this: a small desk calendar stands open on her desk, a grid of blank squares with no numbers or letters; she points at one square with her pen and looks at the viewer with a confident, reassuring smile (agreeing on the day the refund or the new sofa will come).",
+      "out": "public/scenes-es/p26-complaint/deadline.webp"
+    },
+    {
+      "id": "p26-complaint/folio",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "reference",
+      "phases": ["reference", "readback"],
+      "refs": ["edit:p26-complaint/brenda", "person:cast/brenda"],
+      "prompt": "Change only her pose: she holds up a pen in one hand, eyebrows raised with a friendly smile, as if asking whether the learner has something to write with; a small blank yellow sticky note lies on the desk in front of her (\"Le voy a dar un número de folio. ¿Tiene dónde anotar?\").",
+      "out": "public/scenes-es/p26-complaint/folio.webp"
+    },
+    {
+      "id": "p26-complaint/bye",
+      "scene": "p26-complaint",
+      "situation": "p26-complaint",
+      "moment": "closing",
+      "phases": [],
+      "refs": ["edit:p26-complaint/brenda", "person:cast/brenda"],
+      "prompt": "Change only her pose: she smiles warmly, one hand on her headset's microphone and the other raised in a small, friendly wave goodbye (the problem is solved: \"Que tenga excelente día\").",
+      "out": "public/scenes-es/p26-complaint/bye.webp",
+      "note": "The scene's done picture: shown at the goodbye only after the success (a refund or a new sofa, the folio). Not mapped to closing, which also ends the calls with Jorge."
+    }
+  ]
+}

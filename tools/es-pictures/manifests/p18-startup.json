@@ -1,0 +1,119 @@
+{
+  "_about": "Chapter 9, p18 Hasta el cuello: Toño's quick check-in at Brotecito, the plant-care startup in an old waterfront warehouse (place/brotecito; the first picture adds the wall of sticky notes, the red slide and Wifi, the office dog, asleep by the printer). One set-up, 11 pictures, every one an edit of hello: how the first week is going, the pile of three new tasks (big sticky notes with icons: a bar chart for the investor deck, a balloon for the launch party, a camera for the newsletter photo), is it too much (the bug reports and the inbox), what goes first, his push-back for the deck, his own deal (also the overtime deal of the midnight twist), the crash twist (the app has a million cactuses texting their owners; drawn as plant icons on the laptop, since the town text forbids cacti), who's in charge of what, the midnight twist (a moon note; also 'until when?'), tomorrow's check-in (a sunrise note; also 'when?' and his offer of a time) and the goodbye with Wifi. The idiom explanations are said in the current step's turn and keep its picture. Make hello first, then the rest in one batch.",
+  "scenes": {
+    "p18-startup": {"npc": "Toño, founder of Brotecito", "focus": [34, 30], "start": "hello", "done": "bye"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p18-startup/hello",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "hello",
+      "phases": ["hello"],
+      "refs": ["place:place/brotecito", "person:cast/tyler"],
+      "prompt": "Toño, the founder of Brotecito, stands on the far side of the long wooden table about one third from the left, a brown clay mug of coffee in one hand, raising the other in a cheerful wave as he comes over for a quick check-in, with a big, easy grin (\"¡Hey! ¿Hacemos un check-in rápido?\"). The whiteboard behind him is covered with rows of small colorful sticky notes, all blank. In the background, a small white printer stands on a low wooden cabinet, and on a round teal cushion on the floor beside it Wifi, the office dog (a scruffy little gray-and-white mutt with floppy ears), sleeps curled up. Farther back, between the brick wall and the windows, a bright red slide curves down from a small wooden mezzanine. The closed laptop lies on the table in front of the learner.",
+      "out": "public/scenes-es/p18-startup/hello.webp"
+    },
+    {
+      "id": "p18-startup/pile",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "pile",
+      "phases": ["pile"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only his pose: Toño holds up three big square sticky notes fanned out toward the learner, a pink one with a simple bar-chart icon, a yellow one with a party-balloon icon and a teal one with a camera icon (no letters or numbers), with an eager, hopeful grin (the investor deck by Friday, the launch party and a photo for the newsletter: \"¡Manos a la obra!\").",
+      "out": "public/scenes-es/p18-startup/pile.webp"
+    },
+    {
+      "id": "p18-startup/too_much",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "too_much",
+      "phases": ["too_much"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only this: on the table in front of the learner stands a tall, wobbly stack of blank papers (the bug reports), and the laptop is now open and turned toward the viewer, its screen showing rows of simple envelope icons (no letters or numbers). Toño glances down at them and winces sheepishly, one hand rubbing the back of his neck, eyebrows raised (the learner still has the bug reports and the customer emails: \"¿Es demasiado?\").",
+      "out": "public/scenes-es/p18-startup/too_much.webp"
+    },
+    {
+      "id": "p18-startup/priorities",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "priorities",
+      "phases": ["priorities"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only this: three big square sticky notes are stuck in a row on the whiteboard behind him, a pink one with a simple bar-chart icon, a yellow one with a party-balloon icon and a teal one with a camera icon (no letters or numbers). Toño stands beside them with a marker in his hand, turned toward the learner with an open, questioning look (\"Tú dime: ¿qué va primero?\").",
+      "out": "public/scenes-es/p18-startup/priorities.webp"
+    },
+    {
+      "id": "p18-startup/pushback",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "pushback",
+      "phases": ["pushback"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only this: three big square sticky notes are stuck in a row on the whiteboard behind him, a pink one with a simple bar-chart icon, a yellow one with a party-balloon icon and a teal one with a camera icon (no letters or numbers). Toño taps the pink bar-chart note with the capped end of a marker and looks back at the learner with a doubtful, gentle frown, one eyebrow raised (the investors come on Friday: \"¿Y si primero hacemos la presentación?\").",
+      "out": "public/scenes-es/p18-startup/pushback.webp"
+    },
+    {
+      "id": "p18-startup/deal",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "deal",
+      "phases": ["deal", "mid_deal"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only his pose: Toño reaches one open hand across the table toward the learner, offering a handshake, with a big, hopeful grin (\"¿Trato hecho?\").",
+      "out": "public/scenes-es/p18-startup/deal.webp"
+    },
+    {
+      "id": "p18-startup/crash",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "crash",
+      "phases": ["crash", "crash_ok"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only this: Toño stares in panic at his phone, which buzzes in one hand (its back toward the viewer, little vibration lines around it), his other hand clutching his hair, eyes wide (\"¡Uy, uy, uy! Mi celular se volvió loco.\"). On the table in front of the learner, the laptop is now open and turned toward the viewer, its screen filled with dozens of tiny potted-plant icons, each with a little speech bubble holding a water-drop symbol (no letters or numbers): the app's plants are all asking their owners for water at once.",
+      "out": "public/scenes-es/p18-startup/crash.webp"
+    },
+    {
+      "id": "p18-startup/owner",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "owner",
+      "phases": ["owner"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only his pose: Toño leans one hip against the far edge of the table, the clay mug in one hand and the other hand open toward the learner, relaxed and friendly, eyebrows raised (\"¿Necesitas algo más de mí?\").",
+      "out": "public/scenes-es/p18-startup/owner.webp"
+    },
+    {
+      "id": "p18-startup/midnight",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "midnight",
+      "phases": ["midnight", "mid_when"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only his pose: Toño holds up a big square yellow sticky note with a simple drawn crescent moon and two stars (no letters or numbers) beside his face, with an over-eager, pleading grin (everybody stays until midnight tonight: \"¡En Brotecito hay que ponerse las pilas!\").",
+      "out": "public/scenes-es/p18-startup/midnight.webp"
+    },
+    {
+      "id": "p18-startup/tomorrow",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "tomorrow",
+      "phases": ["tomorrow", "when", "offer"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only his pose: Toño holds up a big square pale-orange sticky note with a simple drawn rising sun (no letters or numbers) at shoulder height, eyebrows raised in a friendly question (\"¿Hacemos otro check-in mañana a las ocho?\").",
+      "out": "public/scenes-es/p18-startup/tomorrow.webp"
+    },
+    {
+      "id": "p18-startup/bye",
+      "scene": "p18-startup",
+      "situation": "p18-startup",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:p18-startup/hello", "person:cast/tyler"],
+      "prompt": "Change only this: Toño holds Wifi, the scruffy little gray-and-white office dog, in his arms and waves one of Wifi's front paws at the learner, laughing (\"¡Nos vemos mañana! ¡Wifi, despídete!\"); Wifi is wide awake, with a happy, open-mouthed face. Wifi's cushion by the printer is empty.",
+      "out": "public/scenes-es/p18-startup/bye.webp"
+    }
+  ]
+}

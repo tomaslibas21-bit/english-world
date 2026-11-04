@@ -4,6 +4,7 @@ from a scene manifest, so the pictures and the file that maps them can't drift a
 
   python3 tools/es-pictures/scene_file.py <manifest> [SCENE …]           print the scene file(s)
   python3 tools/es-pictures/scene_file.py <manifest> [SCENE …] --write   write them (only scenes whose pictures exist)
+  python3 tools/es-pictures/scene_file.py <manifest> --out <dir>          planning: write them to <dir> anyway
 
 The manifest's "scenes" gives each scene's npc label, focus, start, done and sticky pictures; each item with a
 "scene" gives its picture name (the last part of its id) and the "phases" (step and pending-question ids) that show
@@ -66,12 +67,21 @@ def main():
     ap.add_argument("manifest")
     ap.add_argument("scenes", nargs="*")
     ap.add_argument("--write", action="store_true")
+    ap.add_argument("--out", help="planning: write the scene file(s) into this folder even before the pictures exist "
+                                  "(then: scene-walk.ts --data=<folder> --pictures-optional)")
     a = ap.parse_args()
     man = E.load_manifest(a.manifest)
     keys = a.scenes or sorted({e["scene"] for e in man["items"] if e.get("scene")})
     for key in keys:
         f, problems = build(man, key)
         text = dumps(f)
+        if a.out:
+            out = Path(a.out)
+            out.mkdir(parents=True, exist_ok=True)
+            (out / f"{key}.json").write_text(text, encoding="utf-8")
+            others = [p for p in problems if not p.startswith("missing")]
+            print(f"{key}: wrote {out / (key + '.json')}" + (f"  ({'; '.join(others)})" if others else ""))
+            continue
         if a.write:
             if problems:
                 print(f"{key}: not written ({'; '.join(problems)})")

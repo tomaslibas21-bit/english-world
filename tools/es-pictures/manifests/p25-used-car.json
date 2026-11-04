@@ -1,0 +1,131 @@
+{
+  "_about": "Chapter 8, p25 ¿Y si lo dejamos en…?: Doña Margarita sells her cherry-red 2008 convertible in her drive on Calle de los Cedros. Two set-ups. The drive, seen from the sidewalk (place/casa-margarita, a new reference in refs-plan-b.json: make it first): greet, then 9 edits of greet (presenting the car, the test-drive offer, the price talk, your turn, her lowest price, the other buyer's call (twist rival_buyer), the handshake, the keys and papers, goodbye). The view from the driver's seat after the test drive (back, with the place as a 'setting' reference: another camera position): welcome back, then the AC confession as an edit of back (twist ac_flaw: its 'flaw' question comes only after the drive; said before the first number or to a question about problems, it shares the talk or look picture). keys is sticky: once the payment question shows it, it stays through the handover of the keys and the factura and the goodbye; a refusal or leaving before any price talk gets bye instead. 12 pictures, 2 first pictures (greet, back); no edit of an edit.",
+  "scenes": {
+    "p25-used-car": {"npc": "Doña Margarita, selling her car", "focus": [34, 30], "start": "greet", "sticky": ["keys"]}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p25-used-car/greet",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "arrive",
+      "phases": ["arrive", "howareyou"],
+      "refs": ["place:place/casa-margarita", "person:cast/maggie"],
+      "prompt": "Doña Margarita, a retired teacher selling her car, stands in her drive beside her cherry-red convertible, about one third from the left, one hand resting on the top edge of the driver's door (the top is down) and the other raised in a cheerful wave, with a big, warm, slightly theatrical smile as the learner walks up from the street (\"¡Buenas tardes! Viene por el carro, ¿verdad?\"). The car's license plate is blank; no sign or paper anywhere on the car.",
+      "out": "public/scenes-es/p25-used-car/greet.webp"
+    },
+    {
+      "id": "p25-used-car/look",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "look",
+      "phases": ["look"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she sweeps one arm out toward the car, palm up, presenting it like a showroom host, chin raised with a proud, theatrical smile (\"Y esta belleza es la razón de su visita\").",
+      "out": "public/scenes-es/p25-used-car/look.webp"
+    },
+    {
+      "id": "p25-used-car/drive",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "drive",
+      "phases": ["drive", "drive_q"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she holds up the car key on its ring with a small turquoise tassel, dangling it toward the learner, eyebrows raised with an inviting grin (\"¿Quiere manejarlo primero?\").",
+      "out": "public/scenes-es/p25-used-car/drive.webp"
+    },
+    {
+      "id": "p25-used-car/back",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "opinion",
+      "phases": ["opinion"],
+      "refs": ["setting:place/casa-margarita", "person:cast/maggie"],
+      "prompt": "Back from the test drive, seen from the driver's seat of Doña Margarita's cherry-red convertible as it stops in her drive with its nose toward her house, the top down. In the foreground: the top of the steering wheel at the bottom left corner, with no hands on it, and the shiny cherry-red hood across the bottom of the picture; nothing crosses her face. Doña Margarita, the car's owner, stands in the drive just in front of the car, about one third from the left, seen waist up above the hood, arms spread wide in welcome, laughing (\"¡Qué rápido regresó! ¿Y? ¿Qué le pareció?\"). Behind her: the front of her mango-yellow house with its teal shutters, the front door and the bougainvillea. The right third: a calm stretch of the house's wall and a window.",
+      "out": "public/scenes-es/p25-used-car/back.webp",
+      "note": "Its own set-up in the same drive from another camera position (the driver's seat), so the drive is a 'setting' reference, not a 'place' one (as s65b's customs). Make it after greet and check that the house and the car match."
+    },
+    {
+      "id": "p25-used-car/flaw",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "ac_flaw",
+      "phases": ["flaw"],
+      "refs": ["edit:p25-used-car/back", "person:cast/maggie"],
+      "prompt": "Change only her pose and expression: she points up at the open sky with one hand and gives a theatrical shrug with the other, with a sheepish, guilty grin (the air conditioning doesn't work, but it's a convertible: the whole sky is yours).",
+      "out": "public/scenes-es/p25-used-car/flaw.webp"
+    },
+    {
+      "id": "p25-used-car/haggle",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "price",
+      "phases": ["talk", "price", "haggle", "confirm"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she leans back against the driver's door with her arms folded and her head tilted, eyebrows raised with a sly, knowing smile, enjoying the haggle (\"Entonces… ¿hablamos de números?\").",
+      "out": "public/scenes-es/p25-used-car/haggle.webp"
+    },
+    {
+      "id": "p25-used-car/offer",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "offer",
+      "phases": ["offer"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she holds one open hand out toward the learner, palm up, inviting a number, eyebrows raised with an amused, challenging smile (\"Le toca. Hágame una oferta.\").",
+      "out": "public/scenes-es/p25-used-car/offer.webp"
+    },
+    {
+      "id": "p25-used-car/final",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "final",
+      "phases": ["final", "decide"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she lays one hand on her heart and the other flat on the top edge of the car door, chin up and eyes half closed, with a theatrical, long-suffering look and a hint of a smile (her lowest price: it breaks her heart).",
+      "out": "public/scenes-es/p25-used-car/final.webp"
+    },
+    {
+      "id": "p25-used-car/rival",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "rival_buyer",
+      "phases": ["rival"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she holds a smartphone to her ear with one hand (its back toward the viewer) and raises the index finger of her other hand (one second), eyebrows raised, glancing at the learner with a meaningful look (another buyer is calling about the car).",
+      "out": "public/scenes-es/p25-used-car/rival.webp"
+    },
+    {
+      "id": "p25-used-car/deal",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "shake",
+      "phases": ["shake"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose and add the learner's hand: she reaches out and shakes the learner's hand, which comes in from the bottom edge with the forearm in a plain sand-colored sleeve, and beams, delighted (\"¡Vendido! Démonos la mano.\").",
+      "out": "public/scenes-es/p25-used-car/deal.webp"
+    },
+    {
+      "id": "p25-used-car/keys",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "pay",
+      "phases": ["pay"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she holds up the car key on its ring with a small turquoise tassel in one hand and holds a closed blue cardboard folder with a blank cover (the car's papers) against her chest with the other arm, with a happy, expectant smile (once the learner pays, the keys and the papers are theirs).",
+      "out": "public/scenes-es/p25-used-car/keys.webp",
+      "note": "Sticky in the scene file: it stays from the payment question through the handover (\"Aquí tiene las llaves, la factura endosada a su nombre y la tarjeta de circulación\") and the goodbye."
+    },
+    {
+      "id": "p25-used-car/bye",
+      "scene": "p25-used-car",
+      "situation": "p25-used-car",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:p25-used-car/greet", "person:cast/maggie"],
+      "prompt": "Change only her pose: she waves goodbye with one hand, the other resting on the top edge of the car door, with a warm, good-natured smile (\"¡Cuídese!\").",
+      "out": "public/scenes-es/p25-used-car/bye.webp"
+    }
+  ]
+}

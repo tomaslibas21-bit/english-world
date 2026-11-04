@@ -7,6 +7,7 @@
 //   npx tsx tools/scene-walk.ts s72 s84-date    only these (prefix of the file name)
 //   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/scene-walk.ts      the Spanish edition's scenes
 //   --seeds=12   seeds per simulated conversation      --quiet   no picture sequences
+//   --data=<dir> scene files from another folder        --pictures-optional   missing pictures are notes, not errors
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { SITUATION_BY_ID } from "../src/content/situations";
@@ -19,12 +20,16 @@ import { EDITION } from "../src/edition";
 const ROOT = path.resolve(import.meta.dirname, "..");
 // the Spanish edition (EDITION=es with tools/edition-hook.mjs) keeps its scene files and pictures apart
 const ES = EDITION.id === "es";
-const DATA = path.join(ROOT, ES ? "src/editions/es/ui/scene-data" : "src/ui/scene-data");
+// --data=<dir>: scene files from another folder (planning: a scene file written before its pictures exist)
+const DATA_ARG = process.argv.find((a) => a.startsWith("--data="))?.slice(7);
+const DATA = DATA_ARG ? path.resolve(DATA_ARG) : path.join(ROOT, ES ? "src/editions/es/ui/scene-data" : "src/ui/scene-data");
 const PICS = path.join(ROOT, ES ? "public/scenes-es" : "public/scenes");
 const PICS_REL = path.relative(ROOT, PICS);
 const args = process.argv.slice(2);
 const seeds = Number(args.find((a) => a.startsWith("--seeds="))?.split("=")[1] ?? 12);
 const quiet = args.includes("--quiet");
+// --pictures-optional: a missing picture is a note, not an error (planning, before the pictures are made)
+const picturesOptional = args.includes("--pictures-optional");
 const only = args.filter((a) => !a.startsWith("--"));
 
 let errors = 0, warnings = 0;
@@ -81,7 +86,11 @@ for (const key of files.sort()) {
   if (images.size !== f.images.length) err("an image is listed twice");
   for (const n of images) {
     const file = path.join(PICS, dir, n + ".webp");
-    if (!existsSync(file)) { err(`missing picture ${PICS_REL}/${dir}/${n}.webp`); continue; }
+    if (!existsSync(file)) {
+      if (picturesOptional) console.log(`  (no picture yet) ${PICS_REL}/${dir}/${n}.webp`);
+      else err(`missing picture ${PICS_REL}/${dir}/${n}.webp`);
+      continue;
+    }
     const size = webpSize(file);
     if (!size) err(`${dir}/${n}.webp is not a complete WebP picture`);
     else if (size[0] < 1600 || size[0] > 2048 || size[0] / size[1] < 1.7 || size[0] / size[1] > 1.85) warn(`${dir}/${n}.webp is ${size[0]}×${size[1]} (expected 2048 px wide, about 16:9)`);
