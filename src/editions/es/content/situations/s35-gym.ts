@@ -1,7 +1,7 @@
 // NEEDS: global.ts g_bye[3] "¡Hasta luego! ¡Que le vaya bien!" is usted only ({u:le|t:te} would fit tú NPCs); this file
 //   says its own tú goodbye (bye_tu) at the closing. All vocabulary, merges and the kilos tip are local.
 // Song 35 "One More Rep" → Puerto Colibrí: "¡Una más!" · Gimnasio Colibrí, a small neighborhood gym. Mónica, a personal
-// trainer (tú both ways: Mexican gyms use tú), meets a first-timer at the front desk: the membership (la mensualidad
+// trainer (tú both ways: Mexican gyms use tú), meets a first-timer on the gym floor: the membership (la mensualidad
 // $600 a month, or la visita $100 for one day; this month no inscripción, the sign-up fee most Mexican gyms charge;
 // no contract, you just stop paying), the ficha (sign-up form) and an ID, cash, card, the phone or a bank transfer, the
 // vestidores (locker rooms: bring a candado, they sell them at the front desk; bring a towel for the machines; drinking
@@ -121,7 +121,7 @@ export const gym: SituationDef = {
   location: "gym",
   npc: "jordan",
   goal: "Sign up at the gym and do your first workout with the trainer.",
-  intro: "Gimnasio Colibrí, a small neighborhood gym in Puerto Colibrí. It's your first time here. Mónica, a personal trainer, greets you at the front desk. Prices are in Mexican pesos, and weights are in kilos.",
+  intro: "Gimnasio Colibrí, a small neighborhood gym in Puerto Colibrí. It's your first time here. Mónica, a personal trainer, greets you on the gym floor, by the bench press. Prices are in Mexican pesos, and weights are in kilos.",
   entities: { plan: PLANS, cardio: CARDIO, exercise: EXERCISES, weekday: WEEKDAYS, prop: PROPS },
 
   merges: {

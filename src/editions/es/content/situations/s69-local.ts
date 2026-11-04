@@ -869,8 +869,8 @@ export const local: SituationDef = {
         "Saturday morning, the stalls in the square. And Friday night, the music at the bandstand.", { flags: { 0: "El sábado: on Saturday (the article stands for “on”).", 11: "El viernes: on Friday (the article stands for “on”)." } }),
     ],
     night: [
-      t("Los | viernes | hay | música | en vivo | aquí | en | el | kiosco, | a | las | siete.", "On | Fridays | there's | music | live | here | at | the | bandstand, | at | — | seven.",
-        "There's live music right here at the bandstand on Fridays, at seven.", { flags: { 0: "Los viernes: on Fridays (the article stands for “on”).", 10: ART_TIME } }),
+      t("Los | viernes | hay | música | en vivo | aquí | en | el | kiosco, | a | las | ocho.", "On | Fridays | there's | music | live | here | at | the | bandstand, | at | — | eight.",
+        "There's live music right here at the bandstand on Fridays, at eight.", { flags: { 0: "Los viernes: on Fridays (the article stands for “on”).", 10: ART_TIME } }),
     ],
     night_marq: [
       t("Y | en | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | marquesitas | here | in | the | square. | Try them!",
@@ -916,7 +916,7 @@ export const local: SituationDef = {
         { flags: { 5: "la comida: in Mexico, the main meal of the day, around 2 p.m.", 7: ART_TIME, 10: ART_TIME } }),
     ],
     time_night: [t("En | la | noche, | después de | las | siete.", "In | the | evening, | after | — | seven.", "In the evening, after seven.", { flags: { 4: ART_TIME } })],
-    time_musica: [t("Empieza | a | las | siete, | pero | llegue | antes | para | encontrar | lugar.", "It-starts | at | — | seven, | but | arrive | before | to | find | place.", "It starts at seven, but come early to get a seat.", { flags: { 2: ART_TIME } })],
+    time_musica: [t("Empieza | a | las | ocho, | pero | llegue | antes | para | encontrar | lugar.", "It-starts | at | — | eight, | but | arrive | before | to | find | place.", "It starts at eight, but come early to get a seat.", { flags: { 2: ART_TIME } })],
     time_market: [t("Temprano, | como | a | las | ocho, | antes | del | calor.", "Early, | about | at | — | eight, | before | the | heat.", "Early, around eight, before the heat.", { flags: { 3: ART_TIME } })],
     time_cafe: [t("Cuando | quiera. | Pero | en | la | mañana | el | pan | está | recién | hecho.", "When | you-want. | But | in | the | morning | the | bread | is | freshly | made.", "Anytime. But in the morning the bread is fresh out of the oven.")],
     time_trattoria: [t("Temprano, | como | a | las | siete, | o | va | a | tener | que | esperar | mesa.", "Early, | about | at | — | seven, | or | you're-going | to | have | to | wait | table.", "Early, around seven, or you'll have to wait for a table.", { flags: { 3: ART_TIME } })],
@@ -945,7 +945,7 @@ export const local: SituationDef = {
       t("Todos | los | días, | en | la | mañana, | hasta | como | las | dos. | El | sábado | hay | más | puestos.", "All | the | days, | in | the | morning, | until | about | — | two. | On | Saturday | there-are | more | stalls.",
         "Every morning, until about two. On Saturdays there are more stalls.", { flags: { 8: ART_TIME, 10: "El sábado: on Saturday (the article stands for “on”)." } }),
     ],
-    open_musica: [t("Todos | los | viernes, | a | las | siete.", "All | the | Fridays, | at | — | seven.", "Every Friday, at seven.", { flags: { 4: ART_TIME } })],
+    open_musica: [t("Todos | los | viernes, | a | las | ocho.", "All | the | Fridays, | at | — | eight.", "Every Friday, at eight.", { flags: { 4: ART_TIME } })],
     open_cocina: [t("Nada más | a | mediodía, | de | la | una | a | las | cinco.", "Only | at | midday, | from | — | one | to | — | five.", "Only at lunchtime, from one to five.", { flags: { 4: ART_TIME, 7: ART_TIME } })],
     open_cenote: [t("Abren | temprano, | como | a | las | ocho, | y | cierran | en | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.", "They open early, around eight, and close in the afternoon.", { flags: { 4: ART_TIME } })],
     open_ruinas: [t("Todos | los | días, | desde | las | ocho | de la mañana.", "All | the | days, | from | — | eight | a.m.", "Every day, from eight in the morning.", { flags: { 4: ART_TIME } })],
