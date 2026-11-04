@@ -85,7 +85,8 @@ npx tsx tools/fingerprint.ts --diff=/tmp/before.json      # "✓ identical"
 - **Mexican or neutral**: a line may carry a neutral twin (`neutral:`); `setVariety("neutral")` (compose.ts) shows and
   voices the twins. The setting is the edition's (`puerto-colibri-variety` in localStorage).
 - **Saves**: `puerto-colibri-progress-v1`, `puerto-colibri-cards-v1` (never Maple Harbor's).
-- **Voices**: `audio-es/`, voice ids `es_<npcId>`, `es_coach_f` / `es_coach_m` (not recorded yet: the browser speaks).
+- **Voices**: `audio-es/`, voice ids `es_<npcId>`, `es_coach_f` / `es_coach_m`, `es_amb_f` / `es_amb_m`: recorded with
+  Gemini (docs/es/VOICES.md, `tools/es-voices/`); a line without a clip is spoken by the browser in Spanish.
 
 ## How the English edition is kept unchanged
 
