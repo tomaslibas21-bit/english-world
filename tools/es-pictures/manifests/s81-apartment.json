@@ -1,0 +1,93 @@
+{
+  "_about": "s81-apartment (Are the Bills Included?): Don Ernesto shows a one-bedroom apartment at Departamentos Las Palmas. Two set-ups: the empty apartment (the welcome, his questions, the learner's questions, the decision, the someone-else twist, the documents, the aval twist with two months' deposit or a póliza, the lease with the keys beside it) and, for a returning tenant who reports a problem (the problem twist), Don Ernesto at his door in the building's corridor (the problem, the repair visit, his spare key). 12 pictures. The keys are said in the closing turn, which also ends the 'think about it' and tenant conversations, so the closing keeps the current picture and the keys lie beside the lease.",
+  "scenes": {
+    "s81-apartment": { "npc": "Don Ernesto, landlord", "focus": [33, 34], "start": "hello" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s81-apartment", "scene": "s81-apartment" },
+  "items": [
+    {
+      "id": "s81-apartment/hello", "moment": "purpose",
+      "phases": ["purpose"],
+      "refs": ["place:place/departamento", "person:cast/patel"],
+      "prompt": "Don Ernesto, the landlord, stands in the middle of the empty living room about one third from the left, one arm opened in a welcoming sweep toward the bright room, with a measured, friendly smile (\"Pase, pase\"). The room is unfurnished: white walls, a tiled floor, the ceiling fan, the open kitchen with its talavera-tile backsplash, sliding glass doors onto the balcony with palms beyond.",
+      "out": "public/scenes-es/s81-apartment/hello.webp"
+    },
+    {
+      "id": "s81-apartment/his_questions", "moment": "movein_q",
+      "phases": ["movein_q", "people_q", "how_many", "pets_q", "pet_which"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: Don Ernesto holds a small notebook open in one hand and the pen from his shirt pocket in the other, looking at the learner over his glasses with raised eyebrows, asking a question.",
+      "out": "public/scenes-es/s81-apartment/his_questions.webp"
+    },
+    {
+      "id": "s81-apartment/kitchen", "moment": "questions",
+      "phases": ["questions"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: Don Ernesto turns slightly toward the open kitchen and points at it with an open hand, explaining patiently with a helpful look (answering the learner's questions about the rent and the bills).",
+      "out": "public/scenes-es/s81-apartment/kitchen.webp"
+    },
+    {
+      "id": "s81-apartment/decision", "moment": "decision",
+      "phases": ["decision", "take_or_not", "movein_take"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: Don Ernesto stands with his hands clasped in front of him, head tilted a little, smiling expectantly, waiting for the learner's answer (will you take it?).",
+      "out": "public/scenes-es/s81-apartment/decision.webp"
+    },
+    {
+      "id": "s81-apartment/hurry", "moment": "someone_else",
+      "phases": ["hurry"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only this: Don Ernesto holds up his mobile phone (its screen blank) in one hand, with a small apologetic shrug and raised eyebrows (someone else is coming to see the apartment tomorrow, could you let me know tonight?).",
+      "out": "public/scenes-es/s81-apartment/hurry.webp"
+    },
+    {
+      "id": "s81-apartment/docs", "moment": "docs",
+      "phases": ["docs"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only this: Don Ernesto holds an open passport with a plain dark-blue cover in one hand and a blank sheet of paper in the other, looking down at them through his glasses with a businesslike, approving nod (checking the ID and proof of income).",
+      "out": "public/scenes-es/s81-apartment/docs.webp"
+    },
+    {
+      "id": "s81-apartment/aval", "moment": "aval",
+      "phases": ["aval"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: Don Ernesto raises one index finger at shoulder height (one more thing), his expression serious but kind, asking whether the learner has a guarantor.",
+      "out": "public/scenes-es/s81-apartment/aval.webp"
+    },
+    {
+      "id": "s81-apartment/deposit", "moment": "extra_deposit",
+      "phases": ["extra_deposit", "poliza"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only his pose: Don Ernesto holds up two fingers (two months' deposit) with a fair, conciliatory half-smile and a slight tilt of the head, offering a way out.",
+      "out": "public/scenes-es/s81-apartment/deposit.webp"
+    },
+    {
+      "id": "s81-apartment/lease", "moment": "sign",
+      "phases": ["sign"],
+      "refs": ["edit:s81-apartment/hello", "person:cast/patel"],
+      "prompt": "Change only this: a small wooden folding table now stands in front of Don Ernesto, where a stapled lease of a few blank pages (lines only, no writing) lies open toward the learner with a pen on it, and a ring of two brass keys with a small palm-tree key chain lies beside it. He points at the empty signature line at the bottom of the page, smiling.",
+      "out": "public/scenes-es/s81-apartment/lease.webp"
+    },
+    {
+      "id": "s81-apartment/tenant", "moment": "problem",
+      "phases": ["problem"],
+      "refs": ["place:place/edificio-pasillo", "person:cast/patel"],
+      "prompt": "Don Ernesto, the landlord, stands in the open doorway of his own apartment about one third from the left, one hand on the door frame, listening to his tenant with a concerned, attentive frown. Behind him, a glimpse of a lived-in hallway with a framed blank picture and a potted plant.",
+      "out": "public/scenes-es/s81-apartment/tenant.webp"
+    },
+    {
+      "id": "s81-apartment/repair", "moment": "visit",
+      "phases": ["visit", "other_time"],
+      "refs": ["edit:s81-apartment/tenant", "person:cast/patel"],
+      "prompt": "Change only his pose: Don Ernesto taps his wristwatch (a plain face with no numbers) with one finger, eyebrows raised, asking whether a time suits the learner for the repair visit.",
+      "out": "public/scenes-es/s81-apartment/repair.webp"
+    },
+    {
+      "id": "s81-apartment/spare_key", "moment": "key_ok",
+      "phases": ["key_ok"],
+      "refs": ["edit:s81-apartment/tenant", "person:cast/patel"],
+      "prompt": "Change only this: Don Ernesto holds up a ring of keys (his spare keys, a few brass keys on a plain ring) at shoulder height, with a reassuring, questioning smile (may I let the repairman in with my key?).",
+      "out": "public/scenes-es/s81-apartment/spare_key.webp"
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "_about": "Chapter 5, s84 ¿Te puedo volver a ver?: a first date at El Muelle at sunset; one scene per partner (Santiago = sam, Camila = emma), each with its own first picture (greet). The light goes from sunset to night after the check.",
+  "scenes": {
+    "s84-date@sam": {"npc": "Santiago, your date", "focus": [35, 30], "start": "greet"},
+    "s84-date@emma": {"npc": "Camila, your date", "focus": [35, 30], "start": "greet"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "s84-date@sam/greet",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "greet_meet",
+      "phases": ["greet_meet", "greet_early"],
+      "refs": ["place:place/el-muelle", "person:cast/sam"],
+      "prompt": "Santiago, the learner's date, has just arrived at the table for two on El Muelle's deck at sunset: he stands behind the empty chair across the table, about one third from the left, one hand on its back, the other raised in a small, slightly nervous wave, with a warm smile (\"¡Qué gusto conocerte en persona!\").",
+      "out": "public/scenes-es/s84-date-sam/greet.webp"
+    },
+    {
+      "id": "s84-date@sam/late",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "greet_late",
+      "phases": ["greet_late"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "Change only his pose: a little out of breath, he presses one hand to his chest with an apologetic grin, just arrived late (\"¡Perdón por llegar tarde!\").",
+      "out": "public/scenes-es/s84-date-sam/late.webp"
+    },
+    {
+      "id": "s84-date@sam/drinks",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "drinks",
+      "phases": ["drinks"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "Change only his pose: he now sits in the chair across the table, holding up a small blank drinks menu and looking at the learner over it with raised eyebrows (\"¿Qué quieres tomar?\").",
+      "out": "public/scenes-es/s84-date-sam/drinks.webp"
+    },
+    {
+      "id": "s84-date@sam/talk",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "job",
+      "phases": ["job", "like_job"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "Change only his pose and the table: he sits in the chair across the table, chin resting on one hand, listening with real interest; a margarita with a salted rim and a slice of lime stands in front of him, and a second drink on the learner's side.",
+      "out": "public/scenes-es/s84-date-sam/talk.webp"
+    },
+    {
+      "id": "s84-date@sam/travel",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "travel",
+      "phases": ["hobby", "travel", "music"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "Change only his pose and the table: he sits in the chair across the table, both hands spread apart as he talks animatedly about a trip, eyes bright; a margarita with a salted rim in front of him.",
+      "out": "public/scenes-es/s84-date-sam/travel.webp"
+    },
+    {
+      "id": "s84-date@sam/quick",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "quick_questions",
+      "phases": ["qf", "qf2"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "Change only his pose: he sits in the chair across the table and points playfully at the learner with one finger, one eyebrow raised, a game-show grin (\"¡A ver, preguntas rápidas!\").",
+      "out": "public/scenes-es/s84-date-sam/quick.webp"
+    },
+    {
+      "id": "s84-date@sam/check",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "check",
+      "phases": ["check", "check_offer"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "Change only his pose and the table: the plates are cleared; seated in the chair across the table, he draws a small plain black check folder toward himself with one hand, a playful smile (\"Déjame invitarte\").",
+      "out": "public/scenes-es/s84-date-sam/check.webp"
+    },
+    {
+      "id": "s84-date@sam/cold",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "cold",
+      "phases": ["cold"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "The sun has set: the sky is deep blue with a last orange glow over the sea, and the string lights glow. Change only that and his pose: seated in the chair across the table, he hugs his arms and hunches his shoulders with a little shiver and a laugh, the sea breeze stirring his hair (\"Ya hace fresco\").",
+      "out": "public/scenes-es/s84-date-sam/cold.webp"
+    },
+    {
+      "id": "s84-date@sam/nice",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "nice",
+      "phases": ["nice"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "The sun has set: the sky is deep blue with a last orange glow over the sea, and the string lights glow. Change only that and his pose: seated in the chair across the table, he smiles softly at the learner, one hand resting over his heart (\"La pasé muy bien esta noche\").",
+      "out": "public/scenes-es/s84-date-sam/nice.webp"
+    },
+    {
+      "id": "s84-date@sam/again",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "again",
+      "phases": ["again", "which_day", "day"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "The sun has set: the sky is deep blue with a last orange glow over the sea, and the string lights glow. Change only that and his pose: seated in the chair across the table, he leans forward with a bright, hopeful smile, nodding happily (\"¡Me encantaría!\").",
+      "out": "public/scenes-es/s84-date-sam/again.webp"
+    },
+    {
+      "id": "s84-date@sam/bye",
+      "scene": "s84-date@sam",
+      "situation": "s84-date",
+      "moment": "closing",
+      "phases": ["closing", "leaving_q"],
+      "refs": ["edit:s84-date@sam/greet", "person:cast/sam"],
+      "prompt": "It is night: the sky is dark blue and the string lights glow warmly. Change only that and his pose: he stands behind the chair across the table, waving goodnight with a warm smile (\"¡Que llegues bien!\").",
+      "out": "public/scenes-es/s84-date-sam/bye.webp"
+    },
+    {
+      "id": "s84-date@emma/greet",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "greet_meet",
+      "phases": ["greet_meet", "greet_early"],
+      "refs": ["place:place/el-muelle", "person:cast/emma"],
+      "prompt": "Camila, the learner's date, has just arrived at the table for two on El Muelle's deck at sunset: she stands behind the empty chair across the table, about one third from the left, one hand on its back, the other raised in a small, slightly nervous wave, with a warm smile (\"¡Qué gusto conocerte en persona!\").",
+      "out": "public/scenes-es/s84-date-emma/greet.webp"
+    },
+    {
+      "id": "s84-date@emma/late",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "greet_late",
+      "phases": ["greet_late"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "Change only her pose: a little out of breath, she presses one hand to her chest with an apologetic grin, just arrived late (\"¡Perdón por llegar tarde!\").",
+      "out": "public/scenes-es/s84-date-emma/late.webp"
+    },
+    {
+      "id": "s84-date@emma/drinks",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "drinks",
+      "phases": ["drinks"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "Change only her pose: she now sits in the chair across the table, holding up a small blank drinks menu and looking at the learner over it with raised eyebrows (\"¿Qué quieres tomar?\").",
+      "out": "public/scenes-es/s84-date-emma/drinks.webp"
+    },
+    {
+      "id": "s84-date@emma/talk",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "job",
+      "phases": ["job", "like_job"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "Change only her pose and the table: she sits in the chair across the table, chin resting on one hand, listening with real interest; a margarita with a salted rim and a slice of lime stands in front of her, and a second drink on the learner's side.",
+      "out": "public/scenes-es/s84-date-emma/talk.webp"
+    },
+    {
+      "id": "s84-date@emma/travel",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "travel",
+      "phases": ["hobby", "travel", "music"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "Change only her pose and the table: she sits in the chair across the table, both hands spread apart as she talks animatedly about a trip, eyes bright; a margarita with a salted rim in front of her.",
+      "out": "public/scenes-es/s84-date-emma/travel.webp"
+    },
+    {
+      "id": "s84-date@emma/quick",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "quick_questions",
+      "phases": ["qf", "qf2"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "Change only her pose: she sits in the chair across the table and points playfully at the learner with one finger, one eyebrow raised, a game-show grin (\"¡A ver, preguntas rápidas!\").",
+      "out": "public/scenes-es/s84-date-emma/quick.webp"
+    },
+    {
+      "id": "s84-date@emma/check",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "check",
+      "phases": ["check", "check_offer"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "Change only her pose and the table: the plates are cleared; seated in the chair across the table, she draws a small plain black check folder toward herself with one hand, a playful smile (\"Déjame invitarte\").",
+      "out": "public/scenes-es/s84-date-emma/check.webp"
+    },
+    {
+      "id": "s84-date@emma/cold",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "cold",
+      "phases": ["cold"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "The sun has set: the sky is deep blue with a last orange glow over the sea, and the string lights glow. Change only that and her pose: seated in the chair across the table, she hugs her arms and hunches her shoulders with a little shiver and a laugh, the sea breeze stirring her hair (\"Ya hace fresco\").",
+      "out": "public/scenes-es/s84-date-emma/cold.webp"
+    },
+    {
+      "id": "s84-date@emma/nice",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "nice",
+      "phases": ["nice"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "The sun has set: the sky is deep blue with a last orange glow over the sea, and the string lights glow. Change only that and her pose: seated in the chair across the table, she smiles softly at the learner, one hand resting over her heart (\"La pasé muy bien esta noche\").",
+      "out": "public/scenes-es/s84-date-emma/nice.webp"
+    },
+    {
+      "id": "s84-date@emma/again",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "again",
+      "phases": ["again", "which_day", "day"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "The sun has set: the sky is deep blue with a last orange glow over the sea, and the string lights glow. Change only that and her pose: seated in the chair across the table, she leans forward with a bright, hopeful smile, nodding happily (\"¡Me encantaría!\").",
+      "out": "public/scenes-es/s84-date-emma/again.webp"
+    },
+    {
+      "id": "s84-date@emma/bye",
+      "scene": "s84-date@emma",
+      "situation": "s84-date",
+      "moment": "closing",
+      "phases": ["closing", "leaving_q"],
+      "refs": ["edit:s84-date@emma/greet", "person:cast/emma"],
+      "prompt": "It is night: the sky is dark blue and the string lights glow warmly. Change only that and her pose: she stands behind the chair across the table, waving goodnight with a warm smile (\"¡Que llegues bien!\").",
+      "out": "public/scenes-es/s84-date-emma/bye.webp"
+    }
+  ]
+}

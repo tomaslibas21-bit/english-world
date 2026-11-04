@@ -1,0 +1,93 @@
+{
+  "_about": "s87-interview (¿Por qué deberíamos contratarlo?): a job interview at Línea Clara with Licenciada Salinas, the HR manager, at a light wood desk in the open-plan office (one set-up). 12 pictures: the welcome, the drink, the résumé, why here, the phone twist, strengths, weaknesses, the salary range, the start date, the learner's questions, the job offer twist (a handshake) and the goodbye. The rotating questions share pictures: languages and teamwork with the strengths, the future and why-should-we-hire-you with why here, the work permit with the start date.",
+  "scenes": {
+    "s87-interview": { "npc": "Licenciada Salinas, HR manager (Línea Clara)", "focus": [32, 32], "start": "greet" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s87-interview", "scene": "s87-interview" },
+  "items": [
+    {
+      "id": "s87-interview/greet", "moment": "arrive",
+      "phases": ["arrive", "name", "found"],
+      "refs": ["place:place/linea-clara", "person:cast/brooks"],
+      "prompt": "Licenciada Salinas, the HR manager, stands behind a light wood desk in the open-plan office about one third from the left, 9:30 in the morning. She holds a closed blank manila folder at her side in one hand and, with the other open hand, gestures toward the empty sage-green chair on the learner's side of the desk, a composed, welcoming professional smile as the learner arrives for the interview (\"Pase, por favor. Tome asiento\"). On the desk: a closed silver laptop, a small potted plant and a cup of pens. Behind her, the open office with a few coworkers at their desks, softly out of focus.",
+      "out": "public/scenes-es/s87-interview/greet.webp"
+    },
+    {
+      "id": "s87-interview/drink", "moment": "drink",
+      "phases": ["drink"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas now sits behind the desk and holds out a plain glass of water across the desk toward the learner with one hand, a kind, hospitable smile (\"¿Le ofrezco algo de tomar?\"). The folder lies closed on the desk.",
+      "out": "public/scenes-es/s87-interview/drink.webp"
+    },
+    {
+      "id": "s87-interview/about", "moment": "about",
+      "phases": ["about", "leaving"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits behind the desk holding the learner's résumé, two blank white printed pages with only gray lines, in both hands, and looks up from it at the learner with an interested, encouraging smile (\"Cuénteme un poco de usted\").",
+      "out": "public/scenes-es/s87-interview/about.webp"
+    },
+    {
+      "id": "s87-interview/why", "moment": "why",
+      "phases": ["why", "future", "hire"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits behind the desk, leaning slightly forward with her hands loosely clasped on the desk, head a little tilted, a curious, attentive look (\"¿Y por qué quiere trabajar aquí?\").",
+      "out": "public/scenes-es/s87-interview/why.webp"
+    },
+    {
+      "id": "s87-interview/phone", "moment": "phone",
+      "phases": ["phone"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas half rises from her chair behind the desk, holding a smartphone to her ear with one hand (its screen dark), the other hand raised with the palm toward the learner in a polite \"one moment\" gesture, an apologetic smile (\"Ay, perdóneme, tengo que contestar esta llamada. Ahorita regreso\").",
+      "out": "public/scenes-es/s87-interview/phone.webp"
+    },
+    {
+      "id": "s87-interview/strengths", "moment": "strengths",
+      "phases": ["strengths", "languages", "teamwork"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits behind the desk writing on a blank notepad with a pen, glancing up at the learner and nodding, a pleased, approving smile (noting the learner's strengths: \"¡Qué bueno!\").",
+      "out": "public/scenes-es/s87-interview/strengths.webp"
+    },
+    {
+      "id": "s87-interview/weakness", "moment": "weakness",
+      "phases": ["weakness", "improve"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits behind the desk with her chin resting lightly on one hand and a pen in the other, a gentle, thoughtful, reassuring look (asking about the learner's \"áreas de oportunidad\").",
+      "out": "public/scenes-es/s87-interview/weakness.webp"
+    },
+    {
+      "id": "s87-interview/salary", "moment": "salary",
+      "phases": ["salary", "range"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits behind the desk and turns a single blank sheet of paper around on the desk toward the learner, one fingertip resting on a simple horizontal line drawn on it with a dot at each end (no numbers, no words), a businesslike, open expression (the salary range, in pesos a month).",
+      "out": "public/scenes-es/s87-interview/salary.webp"
+    },
+    {
+      "id": "s87-interview/start", "moment": "start",
+      "phases": ["start", "authorized"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits behind the desk and points with her pen at a small standing desk calendar beside the laptop, its page a plain grid of empty squares, eyebrows slightly raised (\"¿Cuándo podría empezar?\").",
+      "out": "public/scenes-es/s87-interview/start.webp"
+    },
+    {
+      "id": "s87-interview/questions", "moment": "questions",
+      "phases": ["questions"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas sits back in her chair behind the desk, her pen laid down, and opens both hands toward the learner, palms up, a warm, inviting smile (\"¿Tiene alguna pregunta para mí?\").",
+      "out": "public/scenes-es/s87-interview/questions.webp"
+    },
+    {
+      "id": "s87-interview/offer", "moment": "offer",
+      "phases": ["offer"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas stands behind the desk and reaches across it to shake the learner's hand, a big, delighted smile (\"Nos gustaría ofrecerle el puesto\"). The learner's hand and forearm come in from the bottom edge in a plain sand-colored sleeve, shaking hers; no ring, no watch.",
+      "out": "public/scenes-es/s87-interview/offer.webp"
+    },
+    {
+      "id": "s87-interview/bye", "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s87-interview/greet", "person:cast/brooks"],
+      "prompt": "Change only her pose: Licenciada Salinas stands behind the desk holding the closed blank folder against her chest, giving a small courteous nod with a warm, composed goodbye smile (\"Le avisamos a más tardar el viernes. ¡Que tenga buen día!\").",
+      "out": "public/scenes-es/s87-interview/bye.webp"
+    }
+  ]
+}

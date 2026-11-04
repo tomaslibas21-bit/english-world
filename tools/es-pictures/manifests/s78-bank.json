@@ -1,0 +1,217 @@
+{
+  "_about": "Song 78, Banco del Puerto, Ricardo. One set-up (the teller window), every picture an edit of greet. Twists: atm_card (card: help_card, pin_q, card_digits and the cash offer that follows), slow_system (slow).",
+  "scenes": {
+    "s78-bank": {
+      "npc": "Ricardo, bank teller",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "welcome"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s78-bank/greet",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "help",
+      "phases": [
+        "howareyou",
+        "help",
+        "acct_type",
+        "acct_q",
+        "open_offer",
+        "lease_q"
+      ],
+      "refs": [
+        "place:place/banco",
+        "person:cast/aaron"
+      ],
+      "prompt": "Ricardo, the bank teller, sits behind the low glass partition at his window about one third from the left, looks up and beckons the learner forward with one open hand as their turn is called, a polite, professional smile. The counter with its small document tray, the card terminal and the pen on a chain in front of him; the white and teal interior, the plant and the wall clock with no numbers behind him.",
+      "out": "public/scenes-es/s78-bank/greet.webp"
+    },
+    {
+      "id": "s78-bank/card",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "atm_card",
+      "phases": [
+        "help_card",
+        "pin_q",
+        "card_digits",
+        "cash_offer"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo leans toward the glass with a concerned, sympathetic look, one hand raised palm up, asking what happened at the ATM.",
+      "out": "public/scenes-es/s78-bank/card.webp"
+    },
+    {
+      "id": "s78-bank/id",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "id",
+      "phases": [
+        "id",
+        "card_id",
+        "cash_id",
+        "other_id"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo holds an open passport in both hands, its pages blank with only a small photo shape, checking it carefully, a focused look.",
+      "out": "public/scenes-es/s78-bank/id.webp"
+    },
+    {
+      "id": "s78-bank/proof",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "proof",
+      "phases": [
+        "proof"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo holds up a utility bill, a blank sheet with only a small lightbulb icon and a few gray bars, looking it over, then glancing at the learner with a polite nod.",
+      "out": "public/scenes-es/s78-bank/proof.webp"
+    },
+    {
+      "id": "s78-bank/curp",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "ssn",
+      "phases": [
+        "ssn"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo holds a small plastic residence card with a photo shape and no writing between two fingers, his other hand pointing at it, asking the learner for the code printed on it.",
+      "out": "public/scenes-es/s78-bank/curp.webp"
+    },
+    {
+      "id": "s78-bank/slow",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "slow_system",
+      "phases": [
+        "slow"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo frowns at his computer monitor (turned away from the viewer), tapping a key with one finger and waiting, then gives the learner an apologetic, slightly embarrassed smile.",
+      "out": "public/scenes-es/s78-bank/slow.webp"
+    },
+    {
+      "id": "s78-bank/form",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "form",
+      "phases": [
+        "form"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo slides a printed application form through the document tray toward the learner, a sheet of blank lines and boxes with no writing, and points to the signature line at the bottom; the pen on its chain lies beside it.",
+      "out": "public/scenes-es/s78-bank/form.webp"
+    },
+    {
+      "id": "s78-bank/cash",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "deposit",
+      "phases": [
+        "deposit",
+        "dep_confirm",
+        "cash_amount",
+        "bills"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo counts a small stack of colorful peso banknotes in his hands, the notes blank of numbers, faces or writing, careful and precise.",
+      "out": "public/scenes-es/s78-bank/cash.webp"
+    },
+    {
+      "id": "s78-bank/exchange",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "euros",
+      "phases": [
+        "euros",
+        "ex_confirm"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo holds up a single green US banknote, blank of numbers, faces or writing, inspecting it against the light, a professional look.",
+      "out": "public/scenes-es/s78-bank/exchange.webp"
+    },
+    {
+      "id": "s78-bank/savings",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "savings",
+      "phases": [
+        "savings"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo holds up a folded teal brochure toward the learner, its cover showing only a simple drawing of a stack of coins and no writing, a polite, encouraging smile.",
+      "out": "public/scenes-es/s78-bank/savings.webp"
+    },
+    {
+      "id": "s78-bank/app",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "app",
+      "phases": [
+        "app"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo holds up a small acrylic stand with a plain square pattern of dots toward the glass for the learner to scan with their phone, and smiles helpfully.",
+      "out": "public/scenes-es/s78-bank/app.webp"
+    },
+    {
+      "id": "s78-bank/welcome",
+      "scene": "s78-bank",
+      "situation": "s78-bank",
+      "moment": "more",
+      "phases": [
+        "more"
+      ],
+      "refs": [
+        "edit:s78-bank/greet",
+        "person:cast/aaron"
+      ],
+      "prompt": "Change only his pose: Ricardo slides a small plain teal envelope through the document tray toward the learner, a warm, polite smile, asking if there is anything else.",
+      "out": "public/scenes-es/s78-bank/welcome.webp"
+    }
+  ]
+}

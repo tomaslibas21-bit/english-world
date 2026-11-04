@@ -1,0 +1,158 @@
+{
+ "_about": "Don Rigo's taxi, two set-ups: at the sitio by the zócalo (where to, the fare, asking for less, the goodbye) and inside the cab from the back seat (where are you from, first time, the AC, where to stop, paying cash). 9 pictures: the conversation has only nine ids. The cash_only twist (a card first) is said within the pay step and has no id of its own, so it shares the pay picture.",
+ "scenes": {
+  "s66-taxi": {
+   "npc": "Don Rigo, taxi driver",
+   "focus": [
+    34,
+    30
+   ],
+   "start": "greet",
+   "done": "bye"
+  }
+ },
+ "defaults": {
+  "kind": "scene",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "2048x1152",
+  "quality": "high"
+ },
+ "items": [
+  {
+   "id": "s66-taxi/greet",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "dest",
+   "phases": [
+    "dest"
+   ],
+   "refs": [
+    "place:place/sitio-taxis",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Don Rigo, the taxi driver, stands on the sidewalk beside his white taxi with the green stripe, about one third from the left, one hand on the top of the open rear door and the other raised in a friendly wave, inviting the learner to get in and asking where they're going. A big, easy grin. The taxi's roof light, doors and plates are blank.",
+   "out": "public/scenes-es/s66-taxi/greet.webp"
+  },
+  {
+   "id": "s66-taxi/fare",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "fare",
+   "phases": [
+    "fare"
+   ],
+   "refs": [
+    "edit:s66-taxi/greet",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Change only his pose: he rests one forearm on the taxi's roof and holds his other hand out, palm up, naming the fare, eyebrows raised, asking whether it's okay. A friendly, open face.",
+   "out": "public/scenes-es/s66-taxi/fare.webp"
+  },
+  {
+   "id": "s66-taxi/haggle",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "haggle",
+   "phases": [
+    "haggle"
+   ],
+   "refs": [
+    "edit:s66-taxi/greet",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Change only his pose: he rubs his chin with one hand, head tilted, with a wry half-smile, thinking over the lower price the learner asked for.",
+   "out": "public/scenes-es/s66-taxi/haggle.webp"
+  },
+  {
+   "id": "s66-taxi/ride",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "from",
+   "phases": [
+    "from"
+   ],
+   "refs": [
+    "setting:place/sitio-taxis",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Inside Don Rigo's taxi, seen from the back seat where the learner sits. Don Rigo, the taxi driver, sits at the wheel in the front left seat, about one third from the left, turned halfway round over his right shoulder with one hand on the wheel, smiling, asking the learner where they're from. A simple dashboard with blank round dials, a small string of wooden beads hanging from the rear-view mirror, worn beige seat covers. Through the windshield and the right-side window: a sunny street of one- and two-story houses in coral and ochre, coconut palms and bougainvillea. The right third: the calm side window and the street.",
+   "out": "public/scenes-es/s66-taxi/ride.webp",
+   "note": "Its own set-up inside the same taxi, so the stand is a 'setting' reference (another camera position)."
+  },
+  {
+   "id": "s66-taxi/first",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "first",
+   "phases": [
+    "first"
+   ],
+   "refs": [
+    "edit:s66-taxi/ride",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Change only his pose: he laughs and lifts his free hand from the wheel in a welcoming gesture, glancing back at the learner, delighted that it's their first time in town.",
+   "out": "public/scenes-es/s66-taxi/first.webp"
+  },
+  {
+   "id": "s66-taxi/ac",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "ac",
+   "phases": [
+    "ac"
+   ],
+   "refs": [
+    "edit:s66-taxi/ride",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Change only his pose: he faces forward and reaches to the dashboard to turn the round air-conditioning knob, glancing at the learner in the rear-view mirror with a friendly smile; faint pale lines of cool air come from the vent.",
+   "out": "public/scenes-es/s66-taxi/ac.webp"
+  },
+  {
+   "id": "s66-taxi/stop",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "stop",
+   "phases": [
+    "stop"
+   ],
+   "refs": [
+    "edit:s66-taxi/ride",
+    "person:cast/vinnie"
+   ],
+   "prompt": "The taxi has pulled up at the curb and stopped. Change only his pose: he turns round toward the learner with one arm over the back of his seat and points with his other hand out of the side window at the curb ahead, asking where to drop them off.",
+   "out": "public/scenes-es/s66-taxi/stop.webp"
+  },
+  {
+   "id": "s66-taxi/pay",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "pay",
+   "phases": [
+    "pay"
+   ],
+   "refs": [
+    "edit:s66-taxi/ride",
+    "person:cast/vinnie"
+   ],
+   "prompt": "The taxi is stopped at the curb. Change only his pose and add the learner's hand: he turns round with one open hand held back over the seat; the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, holding out two folded colorful banknotes (pink and green, no readable print or numbers). A cheerful face.",
+   "out": "public/scenes-es/s66-taxi/pay.webp"
+  },
+  {
+   "id": "s66-taxi/bye",
+   "scene": "s66-taxi",
+   "situation": "s66-taxi",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "refs": [
+    "edit:s66-taxi/greet",
+    "person:cast/vinnie"
+   ],
+   "prompt": "Change only his pose and where he is: he now sits in the driver's seat of the taxi with the window down, all doors closed, leaning his elbow out of the window and waving goodbye with a big grin.",
+   "out": "public/scenes-es/s66-taxi/bye.webp"
+  }
+ ]
+}

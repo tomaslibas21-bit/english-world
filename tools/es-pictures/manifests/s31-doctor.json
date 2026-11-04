@@ -1,0 +1,218 @@
+{
+  "_about": "Respire hondo: Doctora Herrera's consulting room at the Clínica Familiar (one set-up). 12 pictures: the visit, the questions, the thermometer, the exam one instruction at a time (blood pressure, lungs, throat, the press), allergies, the chart twist, the paper prescription, paying at the end (a private clinic), goodbye. The penicillin twist changes only the medicine (no picture of its own).",
+  "scenes": {
+    "s31-doctor": {
+      "npc": "Doctora Herrera, family doctor",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "bye"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s31-doctor/greet",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "problem",
+      "phases": [
+        "dob",
+        "feeling",
+        "problem",
+        "howareyou"
+      ],
+      "refs": [
+        "place:place/consultorio",
+        "person:cast/carter"
+      ],
+      "prompt": "Doctora Herrera, the family doctor, stands behind her desk about one third from the left, half turned from her chair, one open hand gesturing toward the patient's chair on the near side of the desk as the learner comes in (\"Pase, siéntese\"). A warm, reassuring smile. On the desk: a closed cream folder, a pen and the blood-pressure cuff; the exam table with its paper sheet behind her.",
+      "out": "public/scenes-es/s31-doctor/greet.webp"
+    },
+    {
+      "id": "s31-doctor/listen",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "sick_q",
+      "phases": [
+        "sick_q",
+        "more_sym",
+        "howlong",
+        "scale",
+        "meds",
+        "meds_what"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she now sits in her chair behind the desk, leaning slightly forward, a pen in her right hand over a blank notepad, listening closely with her head a little tilted and a concerned, attentive look (asking about the symptoms: since when, how strong, any medicine).",
+      "out": "public/scenes-es/s31-doctor/listen.webp"
+    },
+    {
+      "id": "s31-doctor/temp",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "fever",
+      "phases": [
+        "fever"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she sits at the desk and holds up a slim white digital thermometer at shoulder height between thumb and fingers, its small display blank, eyebrows raised (asking whether the learner has a fever; temperatures here are in Celsius).",
+      "out": "public/scenes-es/s31-doctor/temp.webp"
+    },
+    {
+      "id": "s31-doctor/sleeve",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "blood_pressure",
+      "phases": [
+        "sleeve"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she stands beside the desk holding open a gray blood-pressure cuff with both hands, its round gauge blank, ready to wrap it around an arm; a kind, patient look (\"Súbase la manga, por favor\").",
+      "out": "public/scenes-es/s31-doctor/sleeve.webp",
+      "note": "The blood_pressure twist (and dizziness) start the exam with the cuff; the sleeve question is its only id."
+    },
+    {
+      "id": "s31-doctor/breath",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "breath",
+      "phases": [
+        "exam",
+        "breath"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she stands leaning slightly toward the viewer, the stethoscope's earpieces in her ears, holding its round chest piece out toward the learner at chest height, eyes lowered in concentration (\"Respire hondo… y saque el aire\").",
+      "out": "public/scenes-es/s31-doctor/breath.webp"
+    },
+    {
+      "id": "s31-doctor/ah",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "ah",
+      "phases": [
+        "ah"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she leans slightly toward the viewer holding a small penlight in one hand and a wooden tongue depressor in the other, her own mouth a little open as she shows how to say \"aaa\", eyebrows raised encouragingly.",
+      "out": "public/scenes-es/s31-doctor/ah.webp"
+    },
+    {
+      "id": "s31-doctor/hurt",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "hurt",
+      "phases": [
+        "hurt"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she leans toward the viewer and reaches out with the first two fingers of her right hand toward the bottom edge of the picture, gently pressing as if at the learner's neck just out of frame, eyebrows raised in a careful, questioning look (\"¿Le duele aquí?\").",
+      "out": "public/scenes-es/s31-doctor/hurt.webp"
+    },
+    {
+      "id": "s31-doctor/allergy",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "allergy",
+      "phases": [
+        "allergy",
+        "allergy_which"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she sits back at the desk with a pen poised over a small blank prescription pad, looking up at the learner with a serious, attentive face, eyebrows raised (asking whether the learner is allergic to any medicine).",
+      "out": "public/scenes-es/s31-doctor/allergy.webp"
+    },
+    {
+      "id": "s31-doctor/chart",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "chart",
+      "phases": [
+        "chart"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she sits at the desk holding an open cream paper chart folder toward the learner, the page showing only faint gray lines and no writing, her index finger resting on one line, eyebrows raised in a questioning look (\"Aquí en su expediente dice que es alérgico a la penicilina. ¿Es correcto?\").",
+      "out": "public/scenes-es/s31-doctor/chart.webp"
+    },
+    {
+      "id": "s31-doctor/rx",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "rx",
+      "phases": [
+        "rx",
+        "rx_q",
+        "pharmacy",
+        "note",
+        "questions"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she sits at the desk and holds out a half sheet of prescription paper toward the learner, the paper blank except for faint gray lines, while her other hand rests on a small plain white medicine box with no print; a reassuring smile (\"Una cápsula cada ocho horas, por cinco días\").",
+      "out": "public/scenes-es/s31-doctor/rx.webp",
+      "note": "Also the paper prescription's pharmacy question and the justificante (both optional)."
+    },
+    {
+      "id": "s31-doctor/pay",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "pay",
+      "phases": [
+        "pay"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she sits at the desk and holds out a small black card terminal toward the learner, its screen blank, a friendly smile (the visit is paid at the end: card, cash or a transfer); a folded blank receipt lies on the desk beside her hand.",
+      "out": "public/scenes-es/s31-doctor/pay.webp"
+    },
+    {
+      "id": "s31-doctor/bye",
+      "scene": "s31-doctor",
+      "situation": "s31-doctor",
+      "moment": "closing",
+      "phases": [
+        "closing"
+      ],
+      "refs": [
+        "edit:s31-doctor/greet",
+        "person:cast/carter"
+      ],
+      "prompt": "Change only her pose: she stands behind the desk with one hand raised in a small goodbye wave, a warm smile (\"Descanse y tome muchos líquidos. ¡Que se mejore!\").",
+      "out": "public/scenes-es/s31-doctor/bye.webp"
+    }
+  ]
+}

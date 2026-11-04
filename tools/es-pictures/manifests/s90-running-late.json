@@ -1,0 +1,79 @@
+{
+  "_about": "s90-running-late (Voy tarde): a phone call to the boss at 8:50. Ingeniero Montes at his end of the line, standing at a desk in the Línea Clara office with the glass-walled meeting room behind him (one set-up). 10 pictures: he answers, who's calling, uh-oh, the reason, car trouble (do you need help?), the arrival time, start without you?, the room 302 twist (the other building across the street), can't come today? and goodbye. The reasons (bus, rain, traffic, the alarm …) share the reason picture.",
+  "scenes": {
+    "s90-running-late": { "npc": "Ingeniero Montes, your boss (phone call)", "focus": [34, 30], "start": "hello" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s90-running-late", "scene": "s90-running-late" },
+  "items": [
+    {
+      "id": "s90-running-late/hello", "moment": "opening",
+      "phases": ["opening"],
+      "refs": ["place:place/linea-clara", "person:cast/harris"],
+      "prompt": "Ingeniero Montes, the learner's boss, stands beside a light wood desk in the open-plan office about one third from the left, ten to nine in the morning. He holds a smartphone to his ear with one hand and a closed blank folder in the other, glancing up as he answers the call with a busy but polite look (\"¿Bueno? Buenos días\"). On the desk: an open laptop turned away from the viewer and a white coffee mug. Behind him on the left, the glass-walled meeting room with its chairs around the table, still empty.",
+      "out": "public/scenes-es/s90-running-late/hello.webp"
+    },
+    {
+      "id": "s90-running-late/who", "moment": "who",
+      "phases": ["who_q", "who"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose: Ingeniero Montes has put the folder down on the desk; he presses the phone closer to his ear and covers his other ear with his free hand, squinting slightly, trying to hear who is calling (\"Perdón, ¿quién habla?\").",
+      "out": "public/scenes-es/s90-running-late/who.webp"
+    },
+    {
+      "id": "s90-running-late/late", "moment": "late",
+      "phases": ["late", "amb_q"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose and expression: Ingeniero Montes, phone at his ear, stops with his eyebrows raised and a small uh-oh frown, his free hand with the folder paused in mid-air (\"¡Uy! ¿Qué pasó?\").",
+      "out": "public/scenes-es/s90-running-late/late.webp"
+    },
+    {
+      "id": "s90-running-late/reason", "moment": "reason",
+      "phases": ["reason"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose and expression: Ingeniero Montes, phone at his ear, listens with a sympathetic, understanding look and a slow nod, his free hand resting on his hip (\"Sí, hoy hay mucho tráfico\").",
+      "out": "public/scenes-es/s90-running-late/reason.webp"
+    },
+    {
+      "id": "s90-running-late/help", "moment": "need_help",
+      "phases": ["need_help"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose and expression: Ingeniero Montes, phone at his ear, leans over the desk with his free hand flat on it, a concerned, ready-to-help look (\"¡Uy! ¿Necesita ayuda?\").",
+      "out": "public/scenes-es/s90-running-late/help.webp"
+    },
+    {
+      "id": "s90-running-late/eta", "moment": "eta",
+      "phases": ["eta"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose: Ingeniero Montes, phone at his ear, turns his free wrist and checks his wristwatch (a plain silver watch with a blank face), a busy, slightly impatient look (\"¿Como a qué hora llega?\").",
+      "out": "public/scenes-es/s90-running-late/eta.webp"
+    },
+    {
+      "id": "s90-running-late/plan", "moment": "plan",
+      "phases": ["plan", "plan_q"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only these: in the glass-walled meeting room behind him, three coworkers are sitting down at the table with laptops (a young man with a buzz cut, a woman in her sixties with gray braids, a man in his forties with a shaved head and deep brown skin). Ingeniero Montes, phone at his ear, looks back over his shoulder at them, then toward the learner, eyebrows raised (\"¿Empezamos sin usted?\").",
+      "out": "public/scenes-es/s90-running-late/plan.webp"
+    },
+    {
+      "id": "s90-running-late/room", "moment": "room_302",
+      "phases": ["room"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose: Ingeniero Montes, phone at his ear, points with his free hand out of the big window, where a two-story ochre building with arched windows stands just across the street, eyebrows raised to make sure the learner gets it (\"Por cierto, hoy la reunión es en el otro edificio. En la sala 302\").",
+      "out": "public/scenes-es/s90-running-late/room.webp"
+    },
+    {
+      "id": "s90-running-late/cant", "moment": "cant_come",
+      "phases": ["cant_q"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose and expression: Ingeniero Montes, phone at his ear, opens his free hand palm up with a questioning tilt of the head, eyebrows raised (\"¿Entonces hoy no viene?\").",
+      "out": "public/scenes-es/s90-running-late/cant.webp"
+    },
+    {
+      "id": "s90-running-late/bye", "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
+      "prompt": "Change only his pose and expression: Ingeniero Montes, phone still at his ear, gives a small, reassured nod and a polite smile, about to hang up, the folder tucked under his arm (\"Bueno, nos vemos en un rato. ¡Y maneje con cuidado!\").",
+      "out": "public/scenes-es/s90-running-late/bye.webp"
+    }
+  ]
+}

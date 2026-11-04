@@ -1,0 +1,214 @@
+{
+  "_about": "Quiero levantar una denuncia: the front desk of the Policía Municipal (one set-up). 12 pictures: hello, what happened, the description, what was inside, the bank, ID, the name, signing, the finished report (folio, copy, anything else), the wallet someone turned in (twist turned_in) and handing it back, goodbye. The ministerio twist comes in the same turn as the report's end (pending id anything_else), so it shares the report picture. The turned-in item is shown as a black wallet (the learner may have lost a phone, a purse or a backpack).",
+  "scenes": {
+    "s91b-police": {
+      "npc": "Oficial Reyes, police front desk",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "report"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s91b-police/greet",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "report",
+      "phases": [
+        "report",
+        "what_item",
+        "stolen_q",
+        "howareyou"
+      ],
+      "refs": [
+        "place:place/policia",
+        "person:cast/reyes"
+      ],
+      "prompt": "Oficial Reyes, the police officer at the front desk, stands behind the counter about one third from the left, both hands resting on the counter, looking at the learner with a calm, attentive expression and a slight polite nod (\"Buenas tardes. ¿En qué le puedo ayudar?\").",
+      "out": "public/scenes-es/s91b-police/greet.webp"
+    },
+    {
+      "id": "s91b-police/notes",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "happened",
+      "phases": [
+        "happened",
+        "where",
+        "when"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he holds a pen over a blank report form on a clipboard lying on the counter, writing, and glances up at the learner as he listens, serious and focused (what happened, where, at what time).",
+      "out": "public/scenes-es/s91b-police/notes.webp"
+    },
+    {
+      "id": "s91b-police/describe",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "describe",
+      "phases": [
+        "describe"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he looks up from the clipboard with the pen in one hand and the other hand raised, thumb and fingers a little apart as if asking about a size, eyebrows raised (\"¿Me puede describir la cartera?\").",
+      "out": "public/scenes-es/s91b-police/describe.webp"
+    },
+    {
+      "id": "s91b-police/contents",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "contents",
+      "phases": [
+        "contents",
+        "cash_amount"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he holds the pen ready over the clipboard and counts on the fingers of his other hand, two fingers raised, attentive (\"¿Qué traía adentro?\").",
+      "out": "public/scenes-es/s91b-police/contents.webp"
+    },
+    {
+      "id": "s91b-police/bank",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "bank",
+      "phases": [
+        "bank"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he holds up his own phone toward the learner, its screen dark and blank, with a concerned, advising look (\"¿Ya llamó a su banco?\": block the cards).",
+      "out": "public/scenes-es/s91b-police/bank.webp"
+    },
+    {
+      "id": "s91b-police/id",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "id_q",
+      "phases": [
+        "id_q"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he holds out one open hand, palm up, across the counter toward the learner, a polite questioning look (\"¿Trae alguna identificación?\").",
+      "out": "public/scenes-es/s91b-police/id.webp"
+    },
+    {
+      "id": "s91b-police/name",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "name",
+      "phases": [
+        "name",
+        "last_name",
+        "spell",
+        "phone"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he types on the keyboard of the computer, which stays turned away from the viewer, glancing at the learner past the side of the monitor and listening carefully (taking down the name letter by letter, then a phone number).",
+      "out": "public/scenes-es/s91b-police/name.webp"
+    },
+    {
+      "id": "s91b-police/sign",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "sign",
+      "phases": [
+        "sign"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he turns the clipboard around on the counter so the blank report form faces the learner and holds out a pen toward them, a small encouraging nod (\"Firme aquí, por favor\").",
+      "out": "public/scenes-es/s91b-police/sign.webp"
+    },
+    {
+      "id": "s91b-police/report",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "anything_else",
+      "phases": [
+        "anything_else",
+        "ask_away"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he slides a finished report form across the counter toward the learner, the sheet blank except for a round blue stamp mark with no letters, his hands resting beside it, a friendly, open look (the report number; anything else?).",
+      "out": "public/scenes-es/s91b-police/report.webp",
+      "note": "Also the ministerio twist (said in the same turn): a police report, not a denuncia."
+    },
+    {
+      "id": "s91b-police/found",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "turned_in",
+      "phases": [
+        "found"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he holds up a black leather wallet that someone has just turned in, showing it to the learner at chest height, eyebrows raised in a hopeful question (\"Alguien acaba de entregar una cartera. ¿Es suya?\").",
+      "out": "public/scenes-es/s91b-police/found.webp"
+    },
+    {
+      "id": "s91b-police/handback",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "check_all",
+      "phases": [
+        "check_all"
+      ],
+      "refs": [
+        "edit:s91b-police/found",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he hands the black wallet across the counter toward the learner with a warm smile (\"Perfecto, coincide. Revise que esté todo, por favor\").",
+      "out": "public/scenes-es/s91b-police/handback.webp",
+      "note": "An edit of found (not of greet), so the wallet stays the same."
+    },
+    {
+      "id": "s91b-police/bye",
+      "scene": "s91b-police",
+      "situation": "s91b-police",
+      "moment": "closing",
+      "phases": [
+        "closing"
+      ],
+      "refs": [
+        "edit:s91b-police/greet",
+        "person:cast/reyes"
+      ],
+      "prompt": "Change only his pose: he stands upright behind the counter, one hand raised in a small polite wave, a kind half smile (\"Que le vaya bien\").",
+      "out": "public/scenes-es/s91b-police/bye.webp"
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "_about": "Chapter 5, s83 ¿Estás libre el viernes?: a phone call; Andrea at her end of the line, walking on the malecón at the end of the afternoon. One set-up: hello first.",
+  "scenes": {
+    "s83-invite-call": {"npc": "Andrea, your friend (phone call)", "focus": [34, 30], "start": "hello"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "s83-invite-call/hello",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "hello",
+      "phases": ["hello", "howareyou"],
+      "refs": ["place:place/malecon", "person:cast/lizzie"],
+      "prompt": "Andrea, the learner's friend, stands on the malecón by the low white wall about one third from the left, at the end of the afternoon, facing the viewer, holding her phone to her ear with one hand (its back toward the viewer), a small canvas tote bag on her shoulder. She answers the call with a curious, teasing smile (\"¿Bueno?\"). The sea, the palapas and the pier behind her.",
+      "out": "public/scenes-es/s83-invite-call/hello.webp"
+    },
+    {
+      "id": "s83-invite-call/invite",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "invite",
+      "phases": ["invite", "day", "other_day"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, her eyes go wide with delight and she presses her free hand to her chest (\"¿Me estás invitando?\").",
+      "out": "public/scenes-es/s83-invite-call/invite.webp"
+    },
+    {
+      "id": "s83-invite-call/bad_line",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "bad_line",
+      "phases": ["bad_line"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: she holds the phone a little away from her ear and frowns at it, puzzled, as the line breaks up; the phone's back faces the viewer.",
+      "out": "public/scenes-es/s83-invite-call/bad_line.webp"
+    },
+    {
+      "id": "s83-invite-call/band",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "band",
+      "phases": ["band", "start"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she raises her free fist in a happy little cheer, laughing (a concert!).",
+      "out": "public/scenes-es/s83-invite-call/band.webp"
+    },
+    {
+      "id": "s83-invite-call/place",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "place",
+      "phases": ["place", "suggest_place", "confirm_place"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she taps her chin with one finger and looks up, thinking about where to meet.",
+      "out": "public/scenes-es/s83-invite-call/place.webp"
+    },
+    {
+      "id": "s83-invite-call/meet_time",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "meet_time",
+      "phases": ["meet_time", "suggest_time"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she glances at the plain wristwatch on her free wrist (a blank face, no numbers) and nods, agreeing on a time.",
+      "out": "public/scenes-es/s83-invite-call/meet_time.webp"
+    },
+    {
+      "id": "s83-invite-call/meet_change",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "meet_change",
+      "phases": ["meet_change"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she points off to the left with her free hand, toward a street corner, with an apologetic, hopeful smile (the kiosco is crowded on Fridays: the taco place on the corner instead?).",
+      "out": "public/scenes-es/s83-invite-call/meet_change.webp"
+    },
+    {
+      "id": "s83-invite-call/time_change",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "time_change",
+      "phases": ["time_change"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she winces apologetically, biting her lip, her free hand raised palm out (could they meet a bit later? she gets off work at half past seven).",
+      "out": "public/scenes-es/s83-invite-call/time_change.webp"
+    },
+    {
+      "id": "s83-invite-call/sister",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "sister",
+      "phases": ["sister"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she holds up her free hand with crossed fingers and a hopeful, pleading smile (can her sister come too?).",
+      "out": "public/scenes-es/s83-invite-call/sister.webp"
+    },
+    {
+      "id": "s83-invite-call/pay",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "pay",
+      "phases": ["pay"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she pulls a small woven fabric wallet out of her tote bag, ready to pay for her ticket (\"¿Cuánto te debo?\").",
+      "out": "public/scenes-es/s83-invite-call/pay.webp"
+    },
+    {
+      "id": "s83-invite-call/bbq",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "bbq",
+      "phases": ["bbq"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, she throws her free arm wide in a big, welcoming gesture, beaming (inviting the learner to her Sunday carne asada).",
+      "out": "public/scenes-es/s83-invite-call/bbq.webp"
+    },
+    {
+      "id": "s83-invite-call/bye",
+      "scene": "s83-invite-call",
+      "situation": "s83-invite-call",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s83-invite-call/hello", "person:cast/lizzie"],
+      "prompt": "Change only the light and her pose: the sun is lower and the light more golden; phone still at her ear, she waves goodbye with her free hand, a big happy smile (\"¡Nos vemos el viernes!\").",
+      "out": "public/scenes-es/s83-invite-call/bye.webp"
+    }
+  ]
+}

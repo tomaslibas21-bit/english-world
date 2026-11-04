@@ -1,0 +1,119 @@
+{
+  "_about": "Chapter 5, s86 ¡Cuánto tiempo!: Paola spots the learner in the zócalo. One set-up: surprise first.",
+  "scenes": {
+    "s86-old-friend": {"npc": "Paola, old school friend", "focus": [36, 28], "start": "surprise"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "s86-old-friend/surprise",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "recognize",
+      "phases": ["recognize"],
+      "refs": ["place:place/zocalo", "person:cast/lucy"],
+      "prompt": "Paola, the learner's old school friend, has just stopped in the zócalo about one third from the left, facing the learner, a tote bag on her shoulder, both hands raised to her cheeks, mouth open in a delighted, disbelieving smile (\"¡No puede ser! ¿Eres tú?\"). The kiosco and the church behind her, a few small people strolling far away.",
+      "out": "public/scenes-es/s86-old-friend/surprise.webp"
+    },
+    {
+      "id": "s86-old-friend/changed",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "changed",
+      "phases": ["changed"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: hands on her hips, she looks the learner up and down with a big, admiring smile, shaking her head (\"¡No has cambiado nada!\").",
+      "out": "public/scenes-es/s86-old-friend/changed.webp"
+    },
+    {
+      "id": "s86-old-friend/chat",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "howbeen",
+      "phases": ["howbeen"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: relaxed, hands clasped in front of her, head tilted, she listens with a warm smile (\"¿Cómo has estado?\").",
+      "out": "public/scenes-es/s86-old-friend/chat.webp"
+    },
+    {
+      "id": "s86-old-friend/upto",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "upto",
+      "phases": ["upto"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: she leans in eagerly, eyebrows raised and eyes wide, one hand at her collarbone, hanging on the learner's news (\"¿Qué es de tu vida?\").",
+      "out": "public/scenes-es/s86-old-friend/upto.webp"
+    },
+    {
+      "id": "s86-old-friend/news",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "lucy1",
+      "phases": ["lucy1", "lucy2"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: laughing with joy, she holds up her left hand, its back toward the learner, to show a simple gold wedding ring (she got married).",
+      "out": "public/scenes-es/s86-old-friend/news.webp"
+    },
+    {
+      "id": "s86-old-friend/family",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "family",
+      "phases": ["family"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: one hand over her heart, a soft, caring smile (asking about the learner's family).",
+      "out": "public/scenes-es/s86-old-friend/family.webp"
+    },
+    {
+      "id": "s86-old-friend/memo",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "mike",
+      "phases": ["mike", "mike_dinner"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: laughing, she points off to the left with one hand (toward the malecón), eyes sparkling (remembering Memo, who now has a restaurant there).",
+      "out": "public/scenes-es/s86-old-friend/memo.webp"
+    },
+    {
+      "id": "s86-old-friend/coffee",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "coffee",
+      "phases": ["coffee"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: she points with her thumb over her shoulder toward the arcades across the square, eyebrows raised in an invitation (a coffee at La Ceiba, right here on the square?).",
+      "out": "public/scenes-es/s86-old-friend/coffee.webp"
+    },
+    {
+      "id": "s86-old-friend/hurry",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "in_a_hurry",
+      "phases": ["rush"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: she looks at the plain wristwatch on her wrist (a blank face, no numbers), eyes wide in alarm, one hand gripping her bag strap, about to rush off (lunch with her husband at two).",
+      "out": "public/scenes-es/s86-old-friend/hurry.webp"
+    },
+    {
+      "id": "s86-old-friend/numbers",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "numbers",
+      "phases": ["numbers", "number_bye"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: smiling, she holds her phone in both hands with her thumbs ready to type the learner's number; the screen faces her, only the back of the phone is seen (\"¿Me pasas tu número?\").",
+      "out": "public/scenes-es/s86-old-friend/numbers.webp"
+    },
+    {
+      "id": "s86-old-friend/bye",
+      "scene": "s86-old-friend",
+      "situation": "s86-old-friend",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
+      "prompt": "Change only her pose: half turned to leave, she looks back over her shoulder and waves goodbye with a big smile (\"¡Nos vemos!\").",
+      "out": "public/scenes-es/s86-old-friend/bye.webp"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "_about": "s34-meeting (¿Algún otro asunto?): the Monday team meeting in Línea Clara's glass-walled meeting room. Sofía stands at the head of the table, Pablo sits at it, Sara joins from home on the big wall screen (her home as in s89-video-call). One set-up, 12 pictures (a long meeting with three twists): Sara on mute, Sara heard, take notes (twist), the learner's update, Pablo's jargon, Pablo's budget idea, Pablo asks why, the deadline disagreement (twist), who takes it, any other business, goodbye and the summary (twist).",
+  "scenes": {
+    "s34-meeting": { "npc": "Sofía, Pablo and Sara (team meeting)", "focus": [32, 30], "start": "mute" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s34-meeting", "scene": "s34-meeting" },
+  "items": [
+    {
+      "id": "s34-meeting/mute", "moment": "mute",
+      "phases": ["mute"],
+      "refs": ["place:place/linea-clara", "person:cast/kate", "person:cast/paul", "person:cast/sara"],
+      "prompt": "Inside the glass-walled meeting room of the Línea Clara office, Monday morning, seen from the learner's seat at the meeting table: a light wood table with laptops, coffee mugs and a small potted plant, sage-green chairs, glass walls with the open office softly behind, and a big wall screen a little left of the middle. Sofía, the team lead, stands at the head of the table about one third from the left, turned toward the screen with one hand cupped behind her ear and a puzzled smile. Pablo sits at the table on the left side, his laptop open (turned away from the viewer), pointing at the screen with an amused look. On the wall screen, Sara, at home with a window and pink bougainvillea behind her, talks with a lively smile, and a small red crossed-out microphone icon sits in the corner of her video (\"¡Sara, estás en silencio!\"). The right third: the glass wall and a tall plant, calm.",
+      "out": "public/scenes-es/s34-meeting/mute.webp"
+    },
+    {
+      "id": "s34-meeting/sara-hear", "moment": "sara_hear",
+      "phases": ["sara_hear"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/sara", "person:cast/kate"],
+      "prompt": "Change only these: on the wall screen, Sara waves with a relieved laugh and the crossed-out microphone icon is gone (\"¡Ay! ¡Perdón! ¿Ya me escuchan?\"); Sofía gives her a thumbs-up with a smile.",
+      "out": "public/scenes-es/s34-meeting/sara-hear.webp"
+    },
+    {
+      "id": "s34-meeting/notes", "moment": "take_notes",
+      "phases": ["notes"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
+      "prompt": "Change only Sofía's pose: she leans over the table and slides a blank notepad and a pen toward the learner, eyebrows raised in a friendly request (\"Ah, ¿y tú puedes tomar notas hoy?\"). Sara on the screen listens with a smile.",
+      "out": "public/scenes-es/s34-meeting/notes.webp"
+    },
+    {
+      "id": "s34-meeting/update", "moment": "update",
+      "phases": ["update", "what_task", "when_q", "send_q", "help_offer", "add", "add_what"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
+      "prompt": "Change only these: Sofía holds a tablet with a blank screen against her forearm and looks at the learner with an attentive, encouraging smile, waiting for their update (\"Gracias, Pablo. ¿Y tú? ¿Cómo vas?\"); Pablo listens with his chin on his hand; Sara on the screen listens with a smile.",
+      "out": "public/scenes-es/s34-meeting/update.webp"
+    },
+    {
+      "id": "s34-meeting/clarify", "moment": "clarify",
+      "phases": ["clarify", "makes_sense"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/paul"],
+      "prompt": "Change only these: Pablo leans forward and explains with enthusiasm, both hands shaping something in the air above his laptop (\"La beta ya está arriba, pero el go-live se puede recorrer una semana\"); Sofía watches him with a patient smile; Sara on the screen listens.",
+      "out": "public/scenes-es/s34-meeting/clarify.webp"
+    },
+    {
+      "id": "s34-meeting/opinion", "moment": "opinion",
+      "phases": ["opinion"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/paul"],
+      "prompt": "Change only these: Pablo sits back with a confident grin and spreads both hands wide over the table, as if putting everything into one big idea (\"Yo pienso que hay que meter todo en…\": all $80,000 into social media ads, or into one big launch party); Sofía looks at the learner, eyebrows raised (\"Mmm. ¿Tú qué opinas?\"); Sara on the screen listens.",
+      "out": "public/scenes-es/s34-meeting/opinion.webp"
+    },
+    {
+      "id": "s34-meeting/why", "moment": "why",
+      "phases": ["why", "talk_after"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/paul"],
+      "prompt": "Change only Pablo's pose: he folds his arms and tilts his head, looking at the learner with a curious, slightly challenged smile (\"¿Ah, sí? ¿Por qué no?\"). Sofía and Sara listen.",
+      "out": "public/scenes-es/s34-meeting/why.webp"
+    },
+    {
+      "id": "s34-meeting/deadline", "moment": "deadline_fight",
+      "phases": ["dl_view", "dl_who"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/paul", "person:cast/sara", "person:cast/kate"],
+      "prompt": "Change only these: Pablo shakes his head with one hand raised, palm out (\"Mmm, el viernes es muy pronto\"); on the wall screen, Sara frowns slightly and holds up one finger to object (\"No sé si estoy de acuerdo\"); Sofía, at the head of the table, looks from them to the learner, eyebrows raised (\"¿Tú qué opinas?\").",
+      "out": "public/scenes-es/s34-meeting/deadline.webp"
+    },
+    {
+      "id": "s34-meeting/owner", "moment": "owner",
+      "phases": ["owner"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
+      "prompt": "Change only Sofía's pose: she holds up a closed blank folder and looks around the table, eyebrows raised, waiting for a volunteer (\"¿Quién se encarga?\"). Pablo and Sara look at the learner.",
+      "out": "public/scenes-es/s34-meeting/owner.webp"
+    },
+    {
+      "id": "s34-meeting/aob", "moment": "aob",
+      "phases": ["aob", "aob_more", "aob_what"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
+      "prompt": "Change only Sofía's pose: she rests one hand on the lid of her laptop on the table, half closing it, and looks around with a relaxed, wrapping-up smile (\"Bueno, vamos cerrando. ¿Algún otro asunto?\").",
+      "out": "public/scenes-es/s34-meeting/aob.webp"
+    },
+    {
+      "id": "s34-meeting/bye", "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/kate", "person:cast/paul", "person:cast/sara"],
+      "prompt": "Change only these: the meeting is over. Sofía smiles and gives a little wave to everyone; Pablo stands up with his closed laptop under his arm; Sara waves goodbye from the wall screen (\"Es todo por hoy. ¡Gracias a todos!\").",
+      "out": "public/scenes-es/s34-meeting/bye.webp"
+    },
+    {
+      "id": "s34-meeting/summary", "moment": "send_summary",
+      "phases": ["summary"],
+      "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
+      "prompt": "Change only these: Pablo's chair is empty and pushed back; Sofía, her laptop closed under one arm, turns back to the learner and holds up her phone (its screen dark), tapping it with one finger, a friendly asking look (\"Ah, ¿y le puedes mandar a todos un resumen rápido?\"). The wall screen shows a plain dark-blue screen.",
+      "out": "public/scenes-es/s34-meeting/summary.webp"
+    }
+  ]
+}

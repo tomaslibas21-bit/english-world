@@ -1,0 +1,209 @@
+{
+  "_about": "Song 74, Boutique Hilos, Valeria. One set-up (the counter with the racks, the fitting room and the mannequin behind), every picture an edit of greet. The twist last_one has no picture of its own: it fires inside the tryon/color turns. soldout is the brief's twist (pending id soldout, after Valeria says that size is gone).",
+  "scenes": {
+    "s74-clothes": {
+      "npc": "Valeria, sales assistant",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "bag"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s74-clothes/greet",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "item",
+      "phases": [
+        "howareyou",
+        "item"
+      ],
+      "refs": [
+        "place:place/boutique-hilos",
+        "person:cast/chloe"
+      ],
+      "prompt": "Valeria, the sales assistant, stands behind the small wooden counter about one third from the left, folding a white linen shirt on the counter, and looks up at the learner with a bright, welcoming smile as they walk in (\"¡Bienvenida a Hilos!\"). Behind her, the racks of light summer clothes; near the door, a mannequin in a white linen guayabera; the fitting room with its closed curtain and the long mirror stay visible in the background. A card terminal with a blank screen on the counter.",
+      "out": "public/scenes-es/s74-clothes/greet.webp"
+    },
+    {
+      "id": "s74-clothes/size",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "size",
+      "phases": [
+        "size"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: Valeria holds up two wooden hangers at chest height, the same light linen shirt on each, one clearly smaller than the other, eyebrows raised, asking which size (\"¿Qué talla es?\"). Blank tags, no size labels.",
+      "out": "public/scenes-es/s74-clothes/size.webp"
+    },
+    {
+      "id": "s74-clothes/shoe",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "shoe",
+      "phases": [
+        "shoe"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: Valeria holds a plain closed shoe box in both hands in front of her, lid on, no print or label, head tilted with a friendly, questioning look, asking the learner's shoe size (\"¿Qué número calza?\").",
+      "out": "public/scenes-es/s74-clothes/shoe.webp"
+    },
+    {
+      "id": "s74-clothes/soldout",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "sold_out",
+      "phases": [
+        "soldout"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: Valeria stands beside the nearest clothes rack with one hand on an empty stretch of the rail where the hangers have run out, and holds up a single hanger with a linen shirt in the other hand, an apologetic, helpful smile (that size is gone; she offers the next one).",
+      "out": "public/scenes-es/s74-clothes/soldout.webp"
+    },
+    {
+      "id": "s74-clothes/color",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "color",
+      "phases": [
+        "color"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: Valeria fans out three neatly folded linen shirts on the counter in front of her, white, sky blue and beige, one hand resting beside them, eyebrows raised, asking which color the learner prefers.",
+      "out": "public/scenes-es/s74-clothes/color.webp"
+    },
+    {
+      "id": "s74-clothes/tryon",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "tryon",
+      "phases": [
+        "tryon"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: Valeria holds a linen shirt on a wooden hanger over her forearm and gestures with her other open hand toward the fitting room's curtain, inviting the learner to try it on, a warm smile.",
+      "out": "public/scenes-es/s74-clothes/tryon.webp"
+    },
+    {
+      "id": "s74-clothes/fit",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "fit",
+      "phases": [
+        "fit",
+        "decide"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: Valeria has stepped out from behind the counter toward the fitting room and stands with her hands clasped at her chest, head tilted, eyes bright and curious, waiting to hear how it fits (\"¿Qué tal le quedó?\").",
+      "out": "public/scenes-es/s74-clothes/fit.webp"
+    },
+    {
+      "id": "s74-clothes/rewards",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "rewards",
+      "phases": [
+        "rewards",
+        "rewards_join"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: behind the counter, Valeria holds up a small blank teal loyalty card between her fingers toward the learner, a friendly, inviting smile, asking if they have one.",
+      "out": "public/scenes-es/s74-clothes/rewards.webp"
+    },
+    {
+      "id": "s74-clothes/pay",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "pay",
+      "phases": [
+        "pay"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: behind the counter, Valeria holds the card terminal out toward the learner in one hand, its screen blank, a neatly folded linen shirt on the counter beside it, smiling.",
+      "out": "public/scenes-es/s74-clothes/pay.webp"
+    },
+    {
+      "id": "s74-clothes/bag",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "bag",
+      "phases": [
+        "bag",
+        "receipt"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: behind the counter, Valeria holds out a brown kraft paper shopping bag with twisted paper handles toward the learner, the folded shirt inside, a cheerful smile. A small blank paper receipt lies on the counter.",
+      "out": "public/scenes-es/s74-clothes/bag.webp"
+    },
+    {
+      "id": "s74-clothes/return",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "return_visit",
+      "phases": [
+        "return_q",
+        "r_receipt",
+        "r_reason"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: behind the counter, Valeria rests one hand on a brown kraft paper bag that the learner has brought back, a folded white linen guayabera on the counter beside it, and listens with an attentive, sympathetic look (an exchange).",
+      "out": "public/scenes-es/s74-clothes/return.webp"
+    },
+    {
+      "id": "s74-clothes/choice",
+      "scene": "s74-clothes",
+      "situation": "s74-clothes",
+      "moment": "r_choice",
+      "phases": [
+        "r_choice",
+        "r_new"
+      ],
+      "refs": [
+        "edit:s74-clothes/greet",
+        "person:cast/chloe"
+      ],
+      "prompt": "Change only her pose: behind the counter, Valeria holds up a blank teal gift card in one hand and a fresh linen shirt on a wooden hanger in the other, offering the learner the choice, an obliging smile.",
+      "out": "public/scenes-es/s74-clothes/choice.webp"
+    }
+  ]
+}

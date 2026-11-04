@@ -1,0 +1,129 @@
+{
+  "_about": "Chapter 5, s63 ¿Y tú de dónde eres?: Ximena's carne asada, then Marcos alone. Two set-ups: welcome (Ximena introduces Marcos) and chat (Marcos alone, after Ximena goes back to her guests). Make welcome and chat first.",
+  "scenes": {
+    "s63-party": {"npc": "Ximena (host) and Marcos (guest)", "focus": [34, 30], "start": "welcome"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "s63-party/welcome",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "name",
+      "phases": ["name"],
+      "refs": ["place:place/casa-ximena-patio", "person:cast/sophie", "person:cast/mark"],
+      "prompt": "Ximena, the host, stands in her backyard about one third from the left, facing the learner, one hand resting on the shoulder of her friend Marcos, who stands just to her right (a little left of center) holding a cold bottle with no label. She introduces him with a radiant smile; he grins broadly and lifts the bottle in a friendly hello (\"¡Ven, te presento a Marcos!\"). Dusk, the string lights just on, a few guests chatting at the long table in the soft background.",
+      "out": "public/scenes-es/s63-party/welcome.webp"
+    },
+    {
+      "id": "s63-party/drink",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "drink",
+      "phases": ["drink"],
+      "refs": ["edit:s63-party/welcome", "person:cast/sophie"],
+      "prompt": "Change only Ximena's pose: she holds up a glass pitcher of deep-red agua de jamaica in one hand and a cold bottle with no label in the other, offering the learner a drink, eyebrows raised with a warm smile (\"¿Te sirvo algo de tomar?\"). Marcos stays where he is, smiling.",
+      "out": "public/scenes-es/s63-party/drink.webp"
+    },
+    {
+      "id": "s63-party/chat",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "from",
+      "phases": ["know", "from", "city_q", "sea_q"],
+      "refs": ["place:place/casa-ximena-patio", "person:cast/mark"],
+      "prompt": "Marcos, a chef and a guest at the party, stands alone in the backyard about one third from the left, facing the learner, a cold bottle with no label in one hand, head tilted with friendly curiosity, asking where the learner is from (\"¿Y tú de dónde eres?\"). Dusk, the string lights just on, the grill smoking softly behind him, guests chatting in the soft background.",
+      "out": "public/scenes-es/s63-party/chat.webp"
+    },
+    {
+      "id": "s63-party/mishear",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "mishear",
+      "phases": ["mishear"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: he leans toward the learner with one hand cupped behind his ear, squinting with a puzzled grin, as if the party music is too loud to hear (he misheard the country).",
+      "out": "public/scenes-es/s63-party/mishear.webp"
+    },
+    {
+      "id": "s63-party/job",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "job",
+      "phases": ["job", "field_q"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: he holds a pair of metal grill tongs in one hand and points them at his own chest with a proud, funny grin (he is a chef).",
+      "out": "public/scenes-es/s63-party/job.webp"
+    },
+    {
+      "id": "s63-party/here",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "why",
+      "phases": ["time", "why", "like"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: he fans his face with a white paper plate, puffing out his cheeks and laughing about the heat (\"¡Qué calor!\").",
+      "out": "public/scenes-es/s63-party/here.webp"
+    },
+    {
+      "id": "s63-party/fun",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "fun",
+      "phases": ["fun", "reading"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: laughing at himself, he tries a clumsy little salsa step, arms bent and hips stiff, shaking his head (he can't dance).",
+      "out": "public/scenes-es/s63-party/fun.webp"
+    },
+    {
+      "id": "s63-party/cafe",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "new_cafe",
+      "phases": ["cafe", "cafe_go"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: he points with his thumb over his shoulder (toward the malecón) with raised eyebrows and an enthusiastic smile, recommending the new café (\"¿Ya fuiste al café nuevo del malecón?\").",
+      "out": "public/scenes-es/s63-party/cafe.webp"
+    },
+    {
+      "id": "s63-party/your_turn",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "your_turn",
+      "phases": ["your_turn"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: he spreads both palms open toward the learner with a playful, expectant grin and raised eyebrows (\"¡Te toca!\": the learner's turn to ask).",
+      "out": "public/scenes-es/s63-party/your_turn.webp"
+    },
+    {
+      "id": "s63-party/drink2",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "drink2",
+      "phases": ["drink2"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "Change only his pose: he holds out a paper plate with two small tacos de carne asada topped with onion and cilantro, the bottle in his other hand, offering them with a warm grin (\"¿O un taquito?\").",
+      "out": "public/scenes-es/s63-party/drink2.webp"
+    },
+    {
+      "id": "s63-party/numbers",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "numbers",
+      "phases": ["numbers", "ask_number"],
+      "refs": ["edit:s63-party/chat", "person:cast/mark"],
+      "prompt": "It is now night: the sky above the wall is dark blue and the string lights glow warmly. Change only that and his pose: he holds up his phone with a friendly grin, ready to swap numbers (\"¿Me pasas tu número?\"); the phone's back faces the learner, its screen not visible.",
+      "out": "public/scenes-es/s63-party/numbers.webp"
+    },
+    {
+      "id": "s63-party/bye",
+      "scene": "s63-party",
+      "situation": "s63-party",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s63-party/welcome", "person:cast/sophie", "person:cast/mark"],
+      "prompt": "It is now night: the sky above the wall is dark blue and the string lights glow warmly. Change only that and the poses: Ximena holds out a paper plate of taquitos wrapped in foil for the learner to take home, smiling warmly; Marcos waves goodbye beside her with a broad grin (\"¡Llévate unos taquitos para el camino!\").",
+      "out": "public/scenes-es/s63-party/bye.webp"
+    }
+  ]
+}

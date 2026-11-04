@@ -1,0 +1,197 @@
+{
+  "_about": "Song 75, Farmacia del Puerto, Don Héctor. One set-up (the counter, the doorway to the consultorio on one side), every picture an edit of greet. Twists: store_brand (outbrand, at switch_q), see_doctor / consultorio (doctor, at doctor_q), rx_prompt (rxask). The store_brand line itself is said in the dosage turn, so outbrand shows at the question that follows it.",
+  "scenes": {
+    "s75-pharmacy": {
+      "npc": "Don Héctor, pharmacist",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "bag"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s75-pharmacy/greet",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "need",
+      "phases": [
+        "howareyou",
+        "need",
+        "sick_q"
+      ],
+      "refs": [
+        "place:place/farmacia",
+        "person:cast/okafor"
+      ],
+      "prompt": "Don Héctor, the pharmacist, stands behind the white and teal counter about one third from the left, both hands resting on the counter, and greets the learner with a calm, reassuring smile, asking what they need. The shelves of medicine boxes behind him, the small jar of lollipops and the card terminal with a blank screen on the counter; the open doorway to the doctor's office on one side.",
+      "out": "public/scenes-es/s75-pharmacy/greet.webp"
+    },
+    {
+      "id": "s75-pharmacy/rxask",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "rx_prompt",
+      "phases": [
+        "rx_prompt"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor recognizes the learner, a warm smile of recognition, and holds one open hand out over the counter, palm up, ready to take a prescription.",
+      "out": "public/scenes-es/s75-pharmacy/rxask.webp"
+    },
+    {
+      "id": "s75-pharmacy/questions",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "who",
+      "phases": [
+        "who",
+        "who_q",
+        "howlong",
+        "meds",
+        "allergy"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor leans slightly forward over the counter, his forearms on it, his head tilted, listening closely with a kind, concerned look as he asks questions about the symptoms.",
+      "out": "public/scenes-es/s75-pharmacy/questions.webp"
+    },
+    {
+      "id": "s75-pharmacy/recommend",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "recommend",
+      "phases": [
+        "recommend",
+        "alt"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor holds up a small white medicine box with a simple teal stripe and no writing toward the learner in one hand, recommending it, a confident, reassuring smile.",
+      "out": "public/scenes-es/s75-pharmacy/recommend.webp"
+    },
+    {
+      "id": "s75-pharmacy/generic",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "generic_q",
+      "phases": [
+        "generic_q",
+        "rx_brand"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor holds up two medicine boxes side by side, one in each hand: a glossy box with a bold orange stripe (the brand-name one) and a plain white box with a thin gray stripe (the generic), both without writing, eyebrows raised, asking which one.",
+      "out": "public/scenes-es/s75-pharmacy/generic.webp"
+    },
+    {
+      "id": "s75-pharmacy/outbrand",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "store_brand",
+      "phases": [
+        "switch_q"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor stands half turned toward the shelves, pointing with one hand at an empty gap on the shelf behind him, and holds up a plain white box with a thin gray stripe and no writing in the other hand, an apologetic smile (the brand-name one is out; the generic is the same).",
+      "out": "public/scenes-es/s75-pharmacy/outbrand.webp"
+    },
+    {
+      "id": "s75-pharmacy/dosage",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "dosage",
+      "phases": [
+        "dosage",
+        "questions_q",
+        "more"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor holds up a silver blister pack of white tablets in one hand and points at one tablet with the index finger of his other hand, explaining how to take it, a patient, attentive look over his glasses.",
+      "out": "public/scenes-es/s75-pharmacy/dosage.webp"
+    },
+    {
+      "id": "s75-pharmacy/doctor",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "see_doctor",
+      "phases": [
+        "doctor_q"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor gestures with an open hand toward the open doorway to the small doctor's office next door, a caring, serious look, suggesting the learner see the doctor.",
+      "out": "public/scenes-es/s75-pharmacy/doctor.webp"
+    },
+    {
+      "id": "s75-pharmacy/rxread",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "rx_paper",
+      "phases": [
+        "rx_paper"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor holds a paper prescription in both hands at chest height, a blank sheet with only a few gray scribbled lines and no readable writing, and reads it through his glasses, focused.",
+      "out": "public/scenes-es/s75-pharmacy/rxread.webp"
+    },
+    {
+      "id": "s75-pharmacy/pay",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "pay",
+      "phases": [
+        "pay"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor holds the card terminal out toward the learner over the counter, its screen blank, a small white medicine box on the counter in front of him, a polite smile.",
+      "out": "public/scenes-es/s75-pharmacy/pay.webp"
+    },
+    {
+      "id": "s75-pharmacy/bag",
+      "scene": "s75-pharmacy",
+      "situation": "s75-pharmacy",
+      "moment": "bag",
+      "phases": [
+        "bag"
+      ],
+      "refs": [
+        "edit:s75-pharmacy/greet",
+        "person:cast/okafor"
+      ],
+      "prompt": "Change only his pose: Don Héctor holds out a small white paper bag, folded over at the top, toward the learner across the counter, a kind smile.",
+      "out": "public/scenes-es/s75-pharmacy/bag.webp"
+    }
+  ]
+}

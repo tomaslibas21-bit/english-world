@@ -1,0 +1,189 @@
+{
+ "_about": "The arrivals hall at Puerto Colibrí's airport, two set-ups: Itzel's baggage desk (7 pictures: the missing bag, the flight, the claim tag on the boarding pass, the bag-identification chart, the report form, the overnight kit, the report copy), then customs at the exit with Agente Medina (3: anything to declare, the sniffer dog twist, waved through). The found_it twist (the bag stayed in Cancún) has no id of its own (it is said in the lookup step's turn), so it shares the next picture. The customs set-up shows no red/green light: the conversation says there isn't one any more.",
+ "scenes": {
+  "s65b-baggage": {
+   "npc": "Itzel, baggage services; Agente Medina, customs",
+   "focus": [
+    34,
+    30
+   ],
+   "start": "greet",
+   "done": "through"
+  }
+ },
+ "defaults": {
+  "kind": "scene",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "2048x1152",
+  "quality": "high"
+ },
+ "items": [
+  {
+   "id": "s65b-baggage/greet",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "problem",
+   "phases": [
+    "problem",
+    "howareyou"
+   ],
+   "refs": [
+    "place:place/aeropuerto-equipaje",
+    "person:cast/priya"
+   ],
+   "prompt": "Itzel, the baggage services agent, stands behind the baggage desk about one third from the left, both hands resting on the desk, with a warm, reassuring smile as the learner comes up to report a bag that didn't arrive. Behind her, the baggage carousel has stopped and is empty; the hall is quiet. On the desk: the monitor turned away from the viewer, a keyboard, the small printer and the stack of blank forms.",
+   "out": "public/scenes-es/s65b-baggage/greet.webp"
+  },
+  {
+   "id": "s65b-baggage/flight",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "flight",
+   "phases": [
+    "flight",
+    "connection",
+    "from_city"
+   ],
+   "refs": [
+    "edit:s65b-baggage/greet",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose: she types on the keyboard, glancing up at the learner with an attentive, friendly look, taking down the flight details.",
+   "out": "public/scenes-es/s65b-baggage/flight.webp"
+  },
+  {
+   "id": "s65b-baggage/tag",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "tag",
+   "phases": [
+    "tag"
+   ],
+   "refs": [
+    "edit:s65b-baggage/greet",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose and add the learner's hand: the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, holding out a paper boarding pass with a small baggage claim sticker stuck to it, both blank with only simple bars (no letters or numbers). She points to the sticker with one finger, smiling, pleased.",
+   "out": "public/scenes-es/s65b-baggage/tag.webp"
+  },
+  {
+   "id": "s65b-baggage/describe",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "describe",
+   "phases": [
+    "describe",
+    "type",
+    "color",
+    "size",
+    "material",
+    "marks",
+    "brand",
+    "contents"
+   ],
+   "refs": [
+    "edit:s65b-baggage/greet",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose: she holds up a laminated bag-identification chart toward the learner, rows of simple drawings of suitcases, backpacks and travel bags in a few colors (no words or numbers), eyebrows raised, asking which one looks like the learner's bag.",
+   "out": "public/scenes-es/s65b-baggage/describe.webp"
+  },
+  {
+   "id": "s65b-baggage/form",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "delivery",
+   "phases": [
+    "delivery",
+    "hotel",
+    "phone"
+   ],
+   "refs": [
+    "edit:s65b-baggage/greet",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose: she writes with a pen on a one-page report form lying on the desk (blank lines, no writing visible), looking up at the learner with a friendly, questioning look, asking where the bag should be delivered.",
+   "out": "public/scenes-es/s65b-baggage/form.webp"
+  },
+  {
+   "id": "s65b-baggage/kit",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "kit",
+   "phases": [
+    "kit"
+   ],
+   "refs": [
+    "edit:s65b-baggage/greet",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose and the desk: she sets a small teal zippered travel pouch on the desk in front of the learner, a toothbrush and a neatly folded white T-shirt beside it, with a kind smile.",
+   "out": "public/scenes-es/s65b-baggage/kit.webp"
+  },
+  {
+   "id": "s65b-baggage/ref",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "ref",
+   "phases": [
+    "ref",
+    "itzel_bye"
+   ],
+   "refs": [
+    "edit:s65b-baggage/greet",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose: she hands a copy of the report across the desk toward the learner, a single sheet with blank lines and no writing, with a warm smile.",
+   "out": "public/scenes-es/s65b-baggage/ref.webp"
+  },
+  {
+   "id": "s65b-baggage/customs",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "declare",
+   "phases": [
+    "declare",
+    "declare_what",
+    "food",
+    "gift_value"
+   ],
+   "refs": [
+    "setting:place/aeropuerto-equipaje",
+    "person:cast/aduana"
+   ],
+   "prompt": "The customs exit at the far end of the arrivals hall, as the learner walks up to it with their carry-on. Agente Medina, the customs officer, stands behind a low stainless-steel inspection table about one third from the left, one hand resting on the table, and looks at the learner with a neutral, polite expression, asking whether they have anything to declare. No traffic light, button post or sign. Behind her, a pale wall with a big window onto palms; in the right third, the open exit doors and calm daylight.",
+   "out": "public/scenes-es/s65b-baggage/customs.webp",
+   "note": "Its own set-up at the customs exit of the same hall (the reference's background, seen up close), so the hall is a 'setting' reference, not a 'place' one (another camera position)."
+  },
+  {
+   "id": "s65b-baggage/dog",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "sniffer_dog",
+   "phases": [
+    "dog"
+   ],
+   "refs": [
+    "edit:s65b-baggage/customs",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose and add the dog: a beagle in a plain dark-green vest (blank, no patch) sits on the floor in the lower middle of the picture, beside the learner's gray backpack, looking up proudly. Agente Medina points to the backpack with one hand, eyebrows raised, asking whether there is any food in it.",
+   "out": "public/scenes-es/s65b-baggage/dog.webp"
+  },
+  {
+   "id": "s65b-baggage/through",
+   "scene": "s65b-baggage",
+   "situation": "s65b-baggage",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "refs": [
+    "edit:s65b-baggage/customs",
+    "person:cast/priya"
+   ],
+   "prompt": "Change only her pose: she gestures with an open hand toward the exit doors on the right, letting the learner through, with a small, polite smile.",
+   "out": "public/scenes-es/s65b-baggage/through.webp"
+  }
+ ]
+}

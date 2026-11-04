@@ -1,0 +1,100 @@
+{
+  "_about": "s89-video-call (¡Estás en silencio!): the Línea Clara team's Monday video call, seen on the learner's laptop at home (the apartment at Las Palmas, as in s80): Sofía, Pablo and Sara in a 2 × 2 grid, the learner's own tile a dark tile with a crossed-out camera icon. One set-up, 13 pictures (a long call with six twists): hello, the learner's camera, Pablo on mute, the shared screen, Sofía freezes, the echo, Sara talking at the same time, the learner's update, Pablo leaving early, questions, Sofía's cat Tigre, goodbye and the camera still on (sticky, so the goodbye picture doesn't come back). Pablo stays in his tile in the pictures after he leaves early (one picture per id; the questions, cat and goodbye pictures can't know).",
+  "scenes": {
+    "s89-video-call": { "npc": "Sofía, Pablo and Sara (video call)", "focus": [24, 32], "start": "grid", "sticky": ["cam-still"] }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s89-video-call", "scene": "s89-video-call" },
+  "items": [
+    {
+      "id": "s89-video-call/grid", "moment": "hear",
+      "phases": ["hear", "hear2", "weekend"],
+      "refs": ["place:place/departamento", "person:cast/kate", "person:cast/paul", "person:cast/sara"],
+      "prompt": "The learner's own apartment at Las Palmas, now lived in, Monday at ten in the morning, seen from the learner's chair at a small wooden table: an open laptop fills the left two thirds of the picture, its screen large and facing the viewer, showing a video call as a 2 × 2 grid of tiles with thin dark borders. Top left, Sofía, the team lead, at home in a small study with a bookshelf and a plant, waving hello with a confident smile (\"¡Hola a todos! ¿Me escuchan bien?\"). Top right, Pablo, at home in front of a wall with hanging plants, smiling. Bottom left, Sara, at home with a window and pink bougainvillea behind her, smiling. Bottom right, the learner's own tile: plain dark gray with only a small white crossed-out camera icon. Under the tiles, a slim toolbar of simple round icons (a microphone, a camera, a red hang-up button), no letters. Beside the laptop on the table, a clay mug of coffee. The right third: the apartment's sliding glass doors with palms beyond, calm.",
+      "out": "public/scenes-es/s89-video-call/grid.webp"
+    },
+    {
+      "id": "s89-video-call/camera", "moment": "camera",
+      "phases": ["camera"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate"],
+      "prompt": "Change only Sofía's tile: she leans toward her camera and points at it with one finger, eyebrows raised, a friendly teasing smile (\"Oye, tienes la cámara apagada\"). The learner's own tile stays dark gray with the crossed-out camera icon.",
+      "out": "public/scenes-es/s89-video-call/camera.webp"
+    },
+    {
+      "id": "s89-video-call/mute", "moment": "mute",
+      "phases": ["mute", "mute_amb", "paul_hear"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/paul", "person:cast/kate"],
+      "prompt": "Change only Pablo's and Sofía's tiles: Pablo talks animatedly, one hand gesturing, and a small red crossed-out microphone icon sits in the corner of his tile; Sofía, in her tile, cups a hand behind her ear with a puzzled frown (\"¿Pablo? Pablo... no te escuchamos nada\").",
+      "out": "public/scenes-es/s89-video-call/mute.webp"
+    },
+    {
+      "id": "s89-video-call/screen", "moment": "screen",
+      "phases": ["screen", "screen2"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate"],
+      "prompt": "Change only the laptop screen: Sofía shares her screen (\"Les comparto mi pantalla\"). Her slide now fills most of the screen: a simple bar chart with four teal and orange bars on blank axes (no numbers, no words). The four tiles shrink into a strip of small tiles along the top edge of the screen, in the same order: Sofía talking with a smile, Pablo, Sara, and the dark gray tile with the crossed-out camera icon.",
+      "out": "public/scenes-es/s89-video-call/screen.webp"
+    },
+    {
+      "id": "s89-video-call/freeze", "moment": "froze",
+      "phases": ["freeze", "freeze_q"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate", "person:cast/sara"],
+      "prompt": "Change only Sofía's and Sara's tiles: Sofía's picture is frozen, her face caught mid-word with eyes half closed and mouth open in an awkward pause, slightly blurred, a small white spinning loading circle in the middle of her tile; Sara, in her tile, laughs with a hand over her mouth (\"¡Sofía, te congelaste!\").",
+      "out": "public/scenes-es/s89-video-call/freeze.webp"
+    },
+    {
+      "id": "s89-video-call/echo", "moment": "echo",
+      "phases": ["echo"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/sara", "person:cast/kate"],
+      "prompt": "Change only Sara's and Sofía's tiles: Sara winces and presses one hand over her ear (an echo); Sofía touches the microphone of her own headset and looks into the camera with a helpful, slightly apologetic look (\"Creo que es tu micrófono. ¿Te puedes silenciar cuando no estés hablando?\").",
+      "out": "public/scenes-es/s89-video-call/echo.webp"
+    },
+    {
+      "id": "s89-video-call/goahead", "moment": "talk_over",
+      "phases": ["goahead"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/sara"],
+      "prompt": "Change only Sara's tile: Sara has stopped mid-word and offers the floor with an open palm toward the camera, a sheepish, laughing smile (\"¡Ay, perdón! Tú primero\").",
+      "out": "public/scenes-es/s89-video-call/goahead.webp"
+    },
+    {
+      "id": "s89-video-call/update", "moment": "update",
+      "phases": ["first", "update", "what_task", "when_q", "send_q", "help_offer"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate"],
+      "prompt": "Change only the three people's poses: they all listen to the learner. Sofía writes in a small blank notebook, glancing up into the camera with an attentive nod; Pablo and Sara listen with friendly, interested faces (\"¿Y cómo vas con tu proyecto?\").",
+      "out": "public/scenes-es/s89-video-call/update.webp"
+    },
+    {
+      "id": "s89-video-call/paul-leave", "moment": "paul_leaves",
+      "phases": ["paul_leave"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/paul"],
+      "prompt": "Change only Pablo's tile: Pablo half rises from his chair, the strap of a laptop bag over his shoulder, and waves goodbye with an apologetic grimace (\"Perdón, chicos, me tengo que ir. Tengo otra junta a las once\").",
+      "out": "public/scenes-es/s89-video-call/paul-leave.webp"
+    },
+    {
+      "id": "s89-video-call/questions", "moment": "questions",
+      "phases": ["questions", "anything_else"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate"],
+      "prompt": "Change only Sofía's tile: Sofía opens one hand toward the camera, palm up, eyebrows raised, a friendly, inviting smile (\"¿Alguien tiene alguna pregunta?\").",
+      "out": "public/scenes-es/s89-video-call/questions.webp"
+    },
+    {
+      "id": "s89-video-call/cat", "moment": "tiger",
+      "phases": ["cat"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate", "person:cast/sara"],
+      "prompt": "Change only Sofía's and Sara's tiles: in Sofía's tile, a fluffy orange tabby cat walks across her keyboard right in front of her camera, its tail curling past her chin; Sofía laughs, one hand reaching for the cat. Sara laughs in her tile (\"Sofía, ¿eso es un gato?\").",
+      "out": "public/scenes-es/s89-video-call/cat.webp"
+    },
+    {
+      "id": "s89-video-call/bye", "moment": "closing",
+      "phases": ["next_week", "closing"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/kate", "person:cast/sara"],
+      "prompt": "Change only the three people's poses: Sofía, Pablo and Sara each wave goodbye into their cameras with big smiles (\"¡Gracias a todos! ¿Nos vemos a la misma hora la próxima semana?\").",
+      "out": "public/scenes-es/s89-video-call/bye.webp"
+    },
+    {
+      "id": "s89-video-call/cam-still", "moment": "camera_still_on",
+      "phases": ["cam_still"],
+      "refs": ["edit:s89-video-call/grid", "person:cast/sara", "person:cast/kate"],
+      "prompt": "Change only these: the learner's own tile, still dark gray, now has a bright green glowing border and a small white camera icon without the cross (the camera is still on). Sara, in her tile, points at her camera and laughs; Sofía grins with a hand over her mouth (\"Este... ¡sigues con la cámara prendida!\").",
+      "out": "public/scenes-es/s89-video-call/cam-still.webp"
+    }
+  ]
+}
