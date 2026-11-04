@@ -210,7 +210,9 @@ English rooms are built exactly as before; their views were compared pixel by pi
   (`cocina()` in interiors.ts): ochre walls and a terracotta floor, the trattoria's tables (the diners sit where they
   sat) with bright cloths, salsas and tortilla baskets, Lucía's stand and Luis's spot as before, jars of aguas frescas
   where the wine was, a hammock, talavera plates, papel picado along the side walls (across the room it hid the signs
-  from the camera), a picture of Chichén Itzá, s73's dishes, desserts and drinks with their prices.
+  from the camera), a picture of Chichén Itzá, s73's dishes, desserts and drinks with their prices. Outside, its
+  awning is red, "la del toldo rojo" of s62's directions (`buildings.trattoria.awning`: the police's red, so no new
+  draw call).
 - **Doña Chela at the pump** (s71b): `gas-station` is an outdoor place in the Spanish locations.ts; the theme puts
   `dot` beside pump 2 at the learner's car (a parked car facing the street), and the learner talks to her from behind
   the car. A character the theme places outdoors is left out of her room (interiors.ts `room()`); the shop has its own
@@ -302,8 +304,6 @@ land.
 | p24-flood | phone call | Andrea, Don Gilberto: on the phone |  | ✓ the phone |
 
 Found on the way, left for others:
-- **La Cocina de Lucía's awning** is green in the theme's `buildings` (`trattoria.awning`); s62's directions say "la del
-  toldo rojo" (the outdoor facades).
 - **The Friday music**: s62 (and the visitor center's poster) say eight o'clock; s69 says seven (`night`, `time_musica`,
   `open_musica`).
 - **The gym**: s35's intro has Mónica greet the learner at the front desk; she stands by the bench press (as Jordan does

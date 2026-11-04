@@ -122,7 +122,8 @@ export const THEME: TownTheme = {
     // the market hall and the main street
     market: { color: "#f6bd60", trim: "#2a9d8f", awning: "#e76f51" },
     cafe: { color: "#ffb4a2", trim: "#6d2e46", awning: "#2a9d8f" },
-    trattoria: { color: "#f7d08a", trim: "#8a1f2a", awning: "#2e6b3a" },
+    // La Cocina de Lucía: "la del toldo rojo" (s62), red as the police's (a colour the town has: no new draw call)
+    trattoria: { color: "#f7d08a", trim: "#8a1f2a", awning: "#8a1c2b" },
     threads: { color: "#9ad1d4", trim: "#1f4e5f", awning: "#1f4e5f" },
     salon: { color: "#e993b8", trim: "#7a1f4b", awning: "#7a1f4b" },
     pharmacy: { color: "#b5d96b", trim: "#2e5e3e", awning: "#2e5e3e" },
