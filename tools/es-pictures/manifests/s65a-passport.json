@@ -1,0 +1,203 @@
+{
+ "_about": "Immigration control at Puerto Colibrí's airport: Oficial Ramírez in her booth (one set-up). 12 pictures: the passport, the purpose of the trip, the resident-visa question, typing in the stay, her extra questions, the phone held up (return ticket, address), the fingerprint pad, the glasses, the camera, the stamp with fewer days (twist fewer_days), the passport handed back. The show_ticket twist shares the phone picture.",
+ "scenes": {
+  "s65a-passport": {
+   "npc": "Oficial Ramírez, immigration officer",
+   "focus": [
+    32,
+    34
+   ],
+   "start": "passport",
+   "done": "welcome"
+  }
+ },
+ "defaults": {
+  "kind": "scene",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "2048x1152",
+  "quality": "high"
+ },
+ "items": [
+  {
+   "id": "s65a-passport/passport",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "passport",
+   "phases": [
+    "passport",
+    "howareyou"
+   ],
+   "refs": [
+    "place:place/aeropuerto-migracion",
+    "person:cast/diaz"
+   ],
+   "prompt": "Oficial Ramírez, the immigration officer, sits in the booth behind its low glass screen, about one third from the left, and reaches one open hand across the small counter toward the learner, asking for their passport. A composed, polite expression with the hint of a smile. On the counter in front of the learner: the passport scanner, the small fingerprint pad and the small camera on its stalk; inside the booth, a slim monitor turned away from the viewer.",
+   "out": "public/scenes-es/s65a-passport/passport.webp"
+  },
+  {
+   "id": "s65a-passport/purpose",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "purpose",
+   "phases": [
+    "purpose",
+    "biz_kind",
+    "who"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she holds the learner's passport open in one hand (a dark passport with a plain cover and blank pages) and looks up from it at the learner, eyebrows slightly raised, asking why they are visiting.",
+   "out": "public/scenes-es/s65a-passport/purpose.webp"
+  },
+  {
+   "id": "s65a-passport/visa",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "visa",
+   "phases": [
+    "visa"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she holds the open passport (blank pages) a little toward the learner and taps an empty page with one finger, a questioning, serious look, asking whether they have a resident visa.",
+   "out": "public/scenes-es/s65a-passport/visa.webp"
+  },
+  {
+   "id": "s65a-passport/length",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "length",
+   "phases": [
+    "length",
+    "stay",
+    "address"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: the open passport lies on the counter beside her; she types on a small keyboard with one hand and glances up at the learner with an attentive look, taking down how long they are staying and where.",
+   "out": "public/scenes-es/s65a-passport/length.webp"
+  },
+  {
+   "id": "s65a-passport/show",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "show_ticket",
+   "phases": [
+    "show_address",
+    "show_ticket",
+    "ticket_check",
+    "days_ticket"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose and add the learner's hand: the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, holding up a phone toward the glass; its screen shows a simple boarding-pass layout of blank shapes and a square of plain blocks (no letters or numbers). She leans toward the glass, reading it, with a calm, focused look.",
+   "out": "public/scenes-es/s65a-passport/show.webp"
+  },
+  {
+   "id": "s65a-passport/questions",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "first",
+   "phases": [
+    "return",
+    "first",
+    "job",
+    "alone",
+    "cash",
+    "cash_card"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she leans slightly forward with her hands folded on the counter, the closed passport under them, and looks at the learner with a calm, friendly face and the hint of a smile, asking one more routine question.",
+   "out": "public/scenes-es/s65a-passport/questions.webp"
+  },
+  {
+   "id": "s65a-passport/fingers",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "bio_fingers",
+   "phases": [
+    "bio_fingers",
+    "fingers",
+    "left"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she points with an open hand to the small fingerprint pad on the counter in front of the learner, its glass now glowing a soft green, and nods, asking the learner to put their index finger on it.",
+   "out": "public/scenes-es/s65a-passport/fingers.webp"
+  },
+  {
+   "id": "s65a-passport/glasses",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "glasses",
+   "phases": [
+    "glasses"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she touches the side of her own face beside her eye with two fingers, a small miming gesture, and smiles politely, asking the learner to take off their glasses for the photo.",
+   "out": "public/scenes-es/s65a-passport/glasses.webp"
+  },
+  {
+   "id": "s65a-passport/photo",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "bio_photo",
+   "phases": [
+    "bio_photo",
+    "photo"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she points to the small camera on its stalk, now turned toward the learner with a tiny lit dot, and looks at the learner with a little nod, asking them to look into it.",
+   "out": "public/scenes-es/s65a-passport/photo.webp"
+  },
+  {
+   "id": "s65a-passport/days",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "fewer_days",
+   "phases": [
+    "days"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she holds the open passport up toward the glass with one hand and points with a pen to a fresh round ink stamp on one page (a plain ring with a few simple lines inside, no letters or numbers). A neutral, matter-of-fact look: these are the days she is giving.",
+   "out": "public/scenes-es/s65a-passport/days.webp"
+  },
+  {
+   "id": "s65a-passport/welcome",
+   "scene": "s65a-passport",
+   "situation": "s65a-passport",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "refs": [
+    "edit:s65a-passport/passport",
+    "person:cast/diaz"
+   ],
+   "prompt": "Change only her pose: she hands the closed passport back across the counter toward the learner with a warm smile, welcoming them to Puerto Colibrí.",
+   "out": "public/scenes-es/s65a-passport/welcome.webp"
+  }
+ ]
+}

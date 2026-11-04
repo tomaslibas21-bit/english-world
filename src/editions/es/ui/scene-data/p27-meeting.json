@@ -1,0 +1,8 @@
+{
+  "npc": "Vanessa, marketing lead (and Gerardo, team manager)",
+  "images": ["pitch", "charts", "floor", "counter", "propose", "cutin", "deal", "agree", "monday", "coffee", "buttons"],
+  "start": "pitch",
+  "sticky": ["coffee", "buttons"],
+  "phases": {"pitch": "pitch", "charts": "charts", "reason": "floor", "counter": "counter", "alternative": "propose", "twist": "cutin", "resolve": "deal", "so_agree": "agree", "closing": "monday", "coffee": "coffee", "teal": "buttons", "teal2": "buttons"},
+  "focus": [32, 30]
+}

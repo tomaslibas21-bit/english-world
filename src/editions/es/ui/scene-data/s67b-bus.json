@@ -1,0 +1,9 @@
+{
+  "npc": "Ana, city bus driver",
+  "images": ["greet", "oos", "fare", "smaller", "seat", "known", "ride", "mid", "next", "arrive"],
+  "start": "greet",
+  "done": "arrive",
+  "sticky": ["oos"],
+  "phases": {"howareyou": "greet", "dest": "greet", "oos_dest": "oos", "fare": "fare", "smaller": "smaller", "stop": "seat", "known": "known", "seated": "ride", "ride": "ride", "mid": "mid", "next": "next", "closing": "arrive"},
+  "focus": [34, 30]
+}

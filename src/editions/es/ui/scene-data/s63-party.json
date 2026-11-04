@@ -1,0 +1,7 @@
+{
+  "npc": "Ximena (host) and Marcos (guest)",
+  "images": ["welcome", "drink", "chat", "mishear", "job", "here", "fun", "cafe", "your_turn", "drink2", "numbers", "bye"],
+  "start": "welcome",
+  "phases": {"name": "welcome", "drink": "drink", "know": "chat", "from": "chat", "city_q": "chat", "sea_q": "chat", "mishear": "mishear", "job": "job", "field_q": "job", "time": "here", "why": "here", "like": "here", "fun": "fun", "reading": "fun", "cafe": "cafe", "cafe_go": "cafe", "your_turn": "your_turn", "drink2": "drink2", "numbers": "numbers", "ask_number": "numbers", "closing": "bye"},
+  "focus": [34, 30]
+}

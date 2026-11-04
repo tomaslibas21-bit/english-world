@@ -1,0 +1,1785 @@
+{
+ "_about": "The references for Puerto Colibrí's pictures (docs/es/PICTURES.md \"References\"): one portrait per person in the Spanish cast (src/editions/es/content/npcs.ts) and one picture per place, in the shared style. Situation pictures pass them as references: \"person:cast/<npc id>\" and \"place:place/<id>\". Cast portraits are 1024×1536 (2:3), places 2048×1152 (the scene size), both at high quality on gpt-image-2.5-sunburst.",
+ "defaults": {
+  "model": "gpt-image-2.5-sunburst",
+  "quality": "high"
+ },
+ "items": [
+  {
+   "id": "cast/diaz",
+   "kind": "cast",
+   "npc": "diaz",
+   "name": "Oficial Ramírez",
+   "label": "Oficial Ramírez (Immigration officer)",
+   "situation": [
+    "s65a-passport"
+   ],
+   "moment": null,
+   "prompt": "Oficial Ramírez, an immigration officer at the airport: a woman of about 45 with medium-brown skin and a calm oval face, straight black hair pulled into a tight low bun with a few silver strands at the temples, thin dark eyebrows, small gold stud earrings. A light gray-blue short-sleeved uniform shirt with dark navy shoulder boards, a blank navy patch on the sleeve and a blank metal badge on the chest. Strict but fair: a composed, polite expression with the hint of a smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/diaz.webp",
+   "nametag": {
+    "text": "Ramírez",
+    "kind": "plate"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/priya",
+   "kind": "cast",
+   "npc": "priya",
+   "name": "Itzel",
+   "label": "Itzel (Baggage services)",
+   "situation": [
+    "s65b-baggage"
+   ],
+   "moment": null,
+   "prompt": "Itzel, the baggage services agent at the airport: a woman of about 28 with warm brown skin, high cheekbones and dark almond-shaped eyes (Maya features), long straight black hair in a high ponytail, small silver hoop earrings. A coral-red short-sleeved blouse and a teal lanyard with a blank card. Kind, efficient and reassuring: a warm smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/priya.webp",
+   "nametag": {
+    "text": "Itzel",
+    "kind": "lanyard"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/vinnie",
+   "kind": "cast",
+   "npc": "vinnie",
+   "name": "Don Rigo",
+   "label": "Don Rigo (Taxi driver)",
+   "situation": [
+    "s66-taxi"
+   ],
+   "moment": null,
+   "prompt": "Don Rigo, a taxi driver: a heavy-set man of about 60 with sun-tanned light-olive skin and deep smile lines, short gray hair under a faded olive-green baseball cap with no logo, a thick gray mustache, bushy eyebrows. A mustard-yellow short-sleeved shirt with a chest pocket, a little tight over his round belly. Cheerful and talkative: a big, easy grin.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/vinnie.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/olivia",
+   "kind": "cast",
+   "npc": "olivia",
+   "name": "Fernanda",
+   "label": "Fernanda (Hotel reception)",
+   "situation": [
+    "s68-hotel"
+   ],
+   "moment": null,
+   "prompt": "Fernanda, the receptionist at Hotel Mar Azul: a woman of about 32 with light-tan skin, a chin-length bob of caramel-brown hair with honey highlights, neat eyebrows, small pearl earrings. A deep teal blazer over a cream silk blouse, a small blank brass name badge. Polished and welcoming: a professional, warm smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/olivia.webp",
+   "nametag": {
+    "text": "Fernanda",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/chuck",
+   "kind": "cast",
+   "npc": "chuck",
+   "name": "Don Chuy",
+   "label": "Don Chuy (Tourist information volunteer)",
+   "situation": [
+    "s62-visitor-center"
+   ],
+   "moment": null,
+   "prompt": "Don Chuy, a volunteer at the tourist information office: a stocky man of about 70 with light-brown skin, bald on top with a short white fringe, a bushy white mustache, round wire glasses, rosy cheeks. An olive-green fishing vest with many pockets over a cream short-sleeved guayabera shirt. Enthusiastic and talks fast: an eager, open smile with raised eyebrows.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/chuck.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/mia",
+   "kind": "cast",
+   "npc": "mia",
+   "name": "Mariana",
+   "label": "Mariana (Barista)",
+   "situation": [
+    "s72-cafe"
+   ],
+   "moment": null,
+   "prompt": "Mariana, the barista at Café La Ceiba: a slim woman of about 26 with deep brown skin (Afro-Mexican, from the Costa Chica), voluminous black curly hair tied up high with a few loose curls framing her face, small gold hoop earrings. A cream linen shirt with the sleeves rolled up and a deep green apron. Bright and friendly: a wide, natural smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/mia.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/rosa",
+   "kind": "cast",
+   "npc": "rosa",
+   "name": "Doña Carmen",
+   "label": "Doña Carmen (Local, born and raised)",
+   "situation": [
+    "s69-local"
+   ],
+   "moment": null,
+   "prompt": "Doña Carmen, a grandmother born and raised in Puerto Colibrí: a small, slim woman of about 75 with brown skin and gentle wrinkles, white hair in a neat bun, round tortoiseshell glasses, small gold earrings. A white Yucatecan hipil (a loose cotton dress) with a square neckline embroidered with bright red, pink and green flowers, and a light honey-yellow rebozo shawl over her shoulders. Wise and warm: a gentle, knowing smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/rosa.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/ben",
+   "kind": "cast",
+   "npc": "ben",
+   "name": "Iván",
+   "label": "Iván (Museum tickets)",
+   "situation": [
+    "s70-museum"
+   ],
+   "moment": null,
+   "prompt": "Iván, the ticket clerk at the Museo de la Costa Maya: a slim young man of about 27 with light-brown skin, short black hair buzzed on the sides with a little more on top, a thin neat mustache, a small silver stud in one ear. A plum-purple polo shirt and a lanyard with a blank card. Polite and a little shy: a small, friendly smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/ben.webp",
+   "nametag": {
+    "text": "Iván",
+    "kind": "lanyard"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/harold",
+   "kind": "cast",
+   "npc": "harold",
+   "name": "Don Arturo",
+   "label": "Don Arturo (Museum guard)",
+   "situation": [
+    "s70-museum"
+   ],
+   "moment": null,
+   "prompt": "Don Arturo, the museum guard: a broad-shouldered man of about 65 with fair, ruddy skin, short white hair combed back, a white mustache and thick white eyebrows. A navy-blue guard's uniform shirt with a black tie and a blank metal badge. Stern-looking but kind underneath: a serious face with a twinkle in his eyes.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/harold.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/marco",
+   "kind": "cast",
+   "npc": "marco",
+   "name": "Luis",
+   "label": "Luis (Waiter)",
+   "situation": [
+    "s73-restaurant"
+   ],
+   "moment": null,
+   "prompt": "Luis, the waiter at La Cocina de Lucía: a slim man of about 30 with olive skin, short black curly hair, clean-shaven, dark expressive eyebrows. A crisp white guayabera shirt with vertical pleats and a long black waist apron. Attentive and quick: an obliging smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/marco.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/chloe",
+   "kind": "cast",
+   "npc": "chloe",
+   "name": "Valeria",
+   "label": "Valeria (Sales assistant)",
+   "situation": [
+    "s74-clothes"
+   ],
+   "moment": null,
+   "prompt": "Valeria, the sales assistant at Boutique Hilos: a young woman of about 23 with light skin and a few freckles, long straight hair dyed in a warm blonde balayage with darker roots, delicate gold earrings, light makeup. A blush-pink blouse with small embroidered flowers at the neck and a blank name badge. Stylish and helpful: a bright smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/chloe.webp",
+   "nametag": {
+    "text": "Valeria",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/okafor",
+   "kind": "cast",
+   "npc": "okafor",
+   "name": "Don Héctor",
+   "label": "Don Héctor (Pharmacist)",
+   "situation": [
+    "s75-pharmacy"
+   ],
+   "moment": null,
+   "prompt": "Don Héctor, the pharmacist at Farmacia del Puerto: a man of about 55 with medium-brown skin, a short gray buzz cut, a trimmed salt-and-pepper goatee, rectangular dark-framed glasses. A white pharmacist's coat over a light blue shirt, a blank badge on the coat. Patient and caring: a calm, reassuring smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/okafor.webp",
+   "nametag": {
+    "text": "Héctor",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/jessie",
+   "kind": "cast",
+   "npc": "jessie",
+   "name": "Paty",
+   "label": "Paty (Hairdresser)",
+   "situation": [
+    "s77-salon"
+   ],
+   "moment": null,
+   "prompt": "Paty, the hairdresser at Estética Tijeras: a woman of about 38 with light-tan skin, long wavy hair dyed a deep burgundy red, bold winged eyeliner, big gold hoop earrings. A black short-sleeved top under a magenta apron. Chatty and lively: a big, laugh-ready smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/jessie.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/aaron",
+   "kind": "cast",
+   "npc": "aaron",
+   "name": "Ricardo",
+   "label": "Ricardo (Bank teller)",
+   "situation": [
+    "s78-bank"
+   ],
+   "moment": null,
+   "prompt": "Ricardo, the teller at Banco del Puerto: a man of about 29 with light-brown skin, short black hair neatly side-parted and combed, clean-shaven, thin eyebrows. A pale blue shirt, a navy tie and a blank badge. Formal and careful: a polite, professional smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/aaron.webp",
+   "nametag": {
+    "text": "Ricardo",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/gloria",
+   "kind": "cast",
+   "npc": "gloria",
+   "name": "Gloria",
+   "label": "Gloria (Postal clerk)",
+   "situation": [
+    "s79-post"
+   ],
+   "moment": null,
+   "prompt": "Gloria, the clerk at the post office: a full-figured woman of about 50 with warm brown skin, short curly black hair with gray streaks, red-framed glasses, small earrings. A mid-blue uniform blouse with a blank badge. Brisk but friendly: a no-nonsense smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/gloria.webp",
+   "nametag": {
+    "text": "Gloria",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/marco_host",
+   "kind": "cast",
+   "npc": "marco_host",
+   "name": "Lucía",
+   "label": "Lucía (Restaurant host)",
+   "situation": [
+    "s73-restaurant"
+   ],
+   "moment": null,
+   "prompt": "Lucía, the owner and host of La Cocina de Lucía, a Yucatecan restaurant: a woman of about 42 with brown skin and strong Maya features, long straight black hair in one thick braid over her shoulder, gold filigree earrings. A deep burgundy blouse with a band of colorful embroidered flowers at the neckline. Proud of her food and very welcoming: a warm, generous smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/marco_host.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/walter",
+   "kind": "cast",
+   "npc": "walter",
+   "name": "Don Raúl",
+   "label": "Don Raúl (Bus ticket office)",
+   "situation": [
+    "s67a-tickets"
+   ],
+   "moment": null,
+   "prompt": "Don Raúl, the ticket clerk at the bus terminal: a short, slim man of about 68 with light-tan skin, neat gray hair combed back, a thin gray mustache, wire-rimmed glasses. A maroon sweater vest over a short-sleeved white shirt. Old-fashioned and precise: a polite, slightly formal smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/walter.webp",
+   "nametag": {
+    "text": "Raúl",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/denise",
+   "kind": "cast",
+   "npc": "denise",
+   "name": "Ana",
+   "label": "Ana (Bus driver)",
+   "situation": [
+    "s67b-bus"
+   ],
+   "moment": null,
+   "prompt": "Ana, a city bus driver: a woman of about 45 with deep brown skin, a short black bob with a few silver strands, small stud earrings. A blue short-sleeved uniform shirt with a blank badge. Confident and good-humored: a relaxed half smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/denise.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/jake",
+   "kind": "cast",
+   "npc": "jake",
+   "name": "Andrés",
+   "label": "Andrés (Car rental agent)",
+   "situation": [
+    "s71a-rental"
+   ],
+   "moment": null,
+   "prompt": "Andrés, the agent at Renta de Autos Colibrí: a man of about 31 with light skin, short sandy-brown hair with a slight quiff, clean-shaven, light brown eyes. A teal-green polo shirt with a blank name badge. An easygoing salesman: a confident smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/jake.webp",
+   "nametag": {
+    "text": "Andrés",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/dot",
+   "kind": "cast",
+   "npc": "dot",
+   "name": "Doña Chela",
+   "label": "Doña Chela (Gas station attendant)",
+   "situation": [
+    "s71b-gas"
+   ],
+   "moment": null,
+   "prompt": "Doña Chela, a gas station attendant: a sturdy woman of about 55 with tan skin, curly hair dyed auburn peeking out from under a red cap with no logo, small earrings. A red short-sleeved uniform polo shirt with a blank patch. Motherly and practical: a broad, friendly smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/dot.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/kevin",
+   "kind": "cast",
+   "npc": "kevin",
+   "name": "Emilio",
+   "label": "Emilio (Airline check-in)",
+   "situation": [
+    "s64a-checkin"
+   ],
+   "moment": null,
+   "prompt": "Emilio, the airline check-in agent: a man of about 26 with tan skin, short black hair side-parted, clean-shaven. A navy uniform blazer over a white shirt, a golden-yellow tie and a blank badge. Neat and efficient: a professional smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/kevin.webp",
+   "nametag": {
+    "text": "Emilio",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/grant",
+   "kind": "cast",
+   "npc": "grant",
+   "name": "Oficial Torres",
+   "label": "Oficial Torres (Airport security)",
+   "situation": [
+    "s64b-security"
+   ],
+   "moment": null,
+   "prompt": "Oficial Torres, the airport security officer: a tall, broad man of about 40 with brown skin, a shaved head and a short black beard. A white short-sleeved uniform shirt with dark navy shoulder boards and a blank badge. Serious and by-the-book: a neutral, polite expression.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/grant.webp",
+   "nametag": {
+    "text": "Torres",
+    "kind": "plate"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/nina",
+   "kind": "cast",
+   "npc": "nina",
+   "name": "Daniela",
+   "label": "Daniela (Gate agent)",
+   "situation": [
+    "s64c-gate"
+   ],
+   "moment": null,
+   "prompt": "Daniela, the gate agent at the airport: a woman of about 29 with light skin, light-brown hair in a neat low bun, small stud earrings. A navy uniform jacket with a golden-yellow scarf knotted at the neck and a blank badge. Calm and organized: a courteous smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/nina.webp",
+   "nametag": {
+    "text": "Daniela",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/linda",
+   "kind": "cast",
+   "npc": "linda",
+   "name": "Lorena",
+   "label": "Lorena (Dental office reception)",
+   "situation": [
+    "s76-dentist-call"
+   ],
+   "moment": null,
+   "prompt": "Lorena, the receptionist at a dental office: a woman of about 35 with light-olive skin, a chestnut-brown bob, cat-eye glasses, a slim phone headset with a small microphone. Aqua-blue scrubs. Friendly and organized: a cheerful smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/linda.webp",
+   "nametag": {
+    "text": "Lorena",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/claire",
+   "kind": "cast",
+   "npc": "claire",
+   "name": "Karla",
+   "label": "Karla (Customer service)",
+   "situation": [
+    "s80-support-call"
+   ],
+   "moment": null,
+   "prompt": "Karla, a customer service agent at the phone company: a woman of about 28 with brown skin, long straight black hair in a high ponytail with straight bangs, a phone headset with a microphone. A purple polo shirt. Patient and upbeat: a helpful smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/claire.webp",
+   "nametag": {
+    "text": "Karla",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/patel",
+   "kind": "cast",
+   "npc": "patel",
+   "name": "Don Ernesto",
+   "label": "Don Ernesto (Landlord)",
+   "situation": [
+    "p29-landlord",
+    "s81-apartment"
+   ],
+   "moment": null,
+   "prompt": "Don Ernesto, a landlord: a portly man of about 65 with light-brown skin, gray hair, a gray mustache, square glasses. A beige linen guayabera shirt with a pen in the pocket. Businesslike but fair: a measured smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/patel.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/rita",
+   "kind": "cast",
+   "npc": "rita",
+   "name": "Doña Lupita",
+   "label": "Doña Lupita (Neighbor)",
+   "situation": [
+    "p29-landlord",
+    "s82-neighbor"
+   ],
+   "moment": null,
+   "prompt": "Doña Lupita, a neighbor in the apartment building: a woman of about 60 with light skin, short curly hair dyed bright copper-red, big colorful earrings. An orange blouse with a small floral print. Warm, chatty and curious: an open, delighted smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/rita.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/brooks",
+   "kind": "cast",
+   "npc": "brooks",
+   "name": "Licenciada Salinas",
+   "label": "Licenciada Salinas (HR manager)",
+   "situation": [
+    "s87-interview"
+   ],
+   "moment": null,
+   "prompt": "Licenciada Salinas, the HR manager at Línea Clara: a woman of about 52 with light skin, short silver-gray hair in a sleek pixie cut, dark-framed glasses, pearl earrings. A tailored navy suit jacket over a white blouse. Formal and attentive: a composed, professional smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/brooks.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/maria",
+   "kind": "cast",
+   "npc": "maria",
+   "name": "María",
+   "label": "María (Coworker)",
+   "situation": [
+    "s88-first-day"
+   ],
+   "moment": null,
+   "prompt": "María, a coworker at Línea Clara: a woman of about 28 with olive skin, shoulder-length wavy dark-brown hair with caramel highlights, small earrings. A mustard-yellow blouse and a teal lanyard with a blank card. Friendly and relaxed: a big, welcoming smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/maria.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/kate",
+   "kind": "cast",
+   "npc": "kate",
+   "name": "Sofía",
+   "label": "Sofía (Team lead)",
+   "situation": [
+    "s34-meeting",
+    "s89-video-call"
+   ],
+   "moment": null,
+   "prompt": "Sofía, the team lead at Línea Clara: a woman of about 35 with light skin and freckles, straight light-brown hair in a low ponytail, a wireless headset around her neck. A cornflower-blue blouse. Energetic and organized: a confident smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/kate.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/paul",
+   "kind": "cast",
+   "npc": "paul",
+   "name": "Pablo",
+   "label": "Pablo (Colleague)",
+   "situation": [
+    "s34-meeting",
+    "s89-video-call"
+   ],
+   "moment": null,
+   "prompt": "Pablo, a colleague at Línea Clara: a man of about 32 with tan skin, black curly hair, a full black beard, round glasses. A brown button-up shirt. Thoughtful and witty: a slight, amused smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/paul.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/sara",
+   "kind": "cast",
+   "npc": "sara",
+   "name": "Sara",
+   "label": "Sara (Colleague)",
+   "situation": [
+    "s34-meeting",
+    "s89-video-call"
+   ],
+   "moment": null,
+   "prompt": "Sara, a colleague at Línea Clara: a woman of about 29 with deep brown skin, natural black curly hair in a high puff, gold hoop earrings. A raspberry-pink top. Bright and direct: a lively smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/sara.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/harris",
+   "kind": "cast",
+   "npc": "harris",
+   "name": "Ingeniero Montes",
+   "label": "Ingeniero Montes (Your boss)",
+   "situation": [
+    "s90-running-late"
+   ],
+   "moment": null,
+   "prompt": "Ingeniero Montes, the learner's boss: a man of about 58 with light skin, silver hair combed to the side, rimless glasses, clean-shaven. A pale gray shirt with a dark red tie. Busy and demanding but fair: a slightly impatient, polite smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/harris.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/sophie",
+   "kind": "cast",
+   "npc": "sophie",
+   "name": "Ximena",
+   "label": "Ximena (Party host)",
+   "situation": [
+    "s63-party"
+   ],
+   "moment": null,
+   "prompt": "Ximena, the host of a backyard party: a woman of about 32 with medium-brown skin, wavy shoulder-length black hair with a small red hibiscus flower clipped on one side, earrings. A sea-green sleeveless blouse. Sociable and warm: a radiant smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/sophie.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/mark",
+   "kind": "cast",
+   "npc": "mark",
+   "name": "Marcos",
+   "label": "Marcos (Party guest, chef)",
+   "situation": [
+    "s63-party"
+   ],
+   "moment": null,
+   "prompt": "Marcos, a chef and party guest: a man of about 35 with tan skin, short black hair, a short neat beard, a strong build. An orange linen shirt with rolled sleeves. Easygoing and funny: a broad grin.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/mark.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/lizzie",
+   "kind": "cast",
+   "npc": "lizzie",
+   "name": "Andrea",
+   "label": "Andrea (Your friend)",
+   "situation": [
+    "p24-flood",
+    "s83-invite-call"
+   ],
+   "moment": null,
+   "prompt": "Andrea, the learner's friend: a woman of about 28 with light skin and lots of freckles, natural wavy copper-red hair in a loose ponytail. A green T-shirt. Playful and spontaneous: a big, teasing smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/lizzie.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/sam",
+   "kind": "cast",
+   "npc": "sam",
+   "name": "Santiago",
+   "label": "Santiago (Your date)",
+   "situation": [
+    "s84-date"
+   ],
+   "moment": null,
+   "prompt": "Santiago, a date: a man of about 32 with olive skin, wavy brown hair, a short beard, warm brown eyes. A blue linen shirt open at the collar. Charming and a little nervous: a warm smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/sam.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/emma",
+   "kind": "cast",
+   "npc": "emma",
+   "name": "Camila",
+   "label": "Camila (Your date)",
+   "situation": [
+    "s84-date"
+   ],
+   "moment": null,
+   "prompt": "Camila, a date: a woman of about 29 with light-brown skin, long straight black hair, dark eyes, small earrings. A berry-red dress with thin straps. Confident and curious: a warm, slightly playful smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/emma.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/dan",
+   "kind": "cast",
+   "npc": "dan",
+   "name": "Diego",
+   "label": "Diego (Your friend, dinner host)",
+   "situation": [
+    "p30-start-over",
+    "s85-dinner"
+   ],
+   "moment": null,
+   "prompt": "Diego, the learner's friend and dinner host: a man of about 36 with dark brown skin, short black hair, rectangular glasses, clean-shaven. A light blue shirt with the sleeves rolled up. Generous and funny: a wide, welcoming smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/dan.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/nora",
+   "kind": "cast",
+   "npc": "nora",
+   "name": "Natalia",
+   "label": "Natalia (Diego's wife)",
+   "situation": [
+    "p30-start-over",
+    "s85-dinner"
+   ],
+   "moment": null,
+   "prompt": "Natalia, Diego's wife: a woman of about 34 with fair skin, natural ash-blonde hair in a loose bun with a few strands falling, small earrings. A terracotta blouse. Gentle and witty: a kind smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/nora.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/lucy",
+   "kind": "cast",
+   "npc": "lucy",
+   "name": "Paola",
+   "label": "Paola (Old school friend)",
+   "situation": [
+    "s86-old-friend"
+   ],
+   "moment": null,
+   "prompt": "Paola, an old school friend: a woman of about 31 with light-tan skin, a sleek black bob with straight bangs, sunglasses pushed up on her head, a slate-blue scarf. A bright orange top. Bubbly and in a hurry: a surprised, delighted smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/lucy.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/mrs_lee",
+   "kind": "cast",
+   "npc": "mrs_lee",
+   "name": "Doña Mari",
+   "label": "Doña Mari (Flower stall)",
+   "situation": [
+    "s91a-lost-wallet"
+   ],
+   "moment": null,
+   "prompt": "Doña Mari, who sells flowers at the tianguis on the zócalo: a small woman of about 70 with tan skin, a gray bob, round glasses. A leaf-green blouse under an orange cotton apron with pockets. Sweet and helpful: a gentle smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/mrs_lee.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/reyes",
+   "kind": "cast",
+   "npc": "reyes",
+   "name": "Oficial Reyes",
+   "label": "Oficial Reyes (Police officer)",
+   "situation": [
+    "s91b-police"
+   ],
+   "moment": null,
+   "prompt": "Oficial Reyes, a municipal police officer: a man of about 35 with brown skin, a short black buzz cut, a trim mustache. A navy-blue police uniform shirt with blank patches and a blank badge. Professional and calm: a serious, attentive expression.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/reyes.webp",
+   "nametag": {
+    "text": "Reyes",
+    "kind": "plate"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/carter",
+   "kind": "cast",
+   "npc": "carter",
+   "name": "Doctora Herrera",
+   "label": "Doctora Herrera (Family doctor)",
+   "situation": [
+    "s31-doctor"
+   ],
+   "moment": null,
+   "prompt": "Doctora Herrera, the family doctor at the Clínica Familiar: a woman of about 46 with brown skin, black hair in a neat bun, thin gold-rimmed glasses. A white doctor's coat over navy scrubs, a stethoscope around the neck, a blank badge. Calm and thorough: a reassuring smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/carter.webp",
+   "nametag": {
+    "text": "Dra. Herrera",
+    "kind": "embroidered"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/marcus",
+   "kind": "cast",
+   "npc": "marcus",
+   "name": "Doña Lupe",
+   "label": "Doña Lupe (Fruit and vegetable stall)",
+   "situation": [
+    "s32-mercado"
+   ],
+   "moment": null,
+   "prompt": "Doña Lupe, who has sold fruit and vegetables at the mercado for thirty years: a short, sturdy woman of about 60 with brown skin, dark hair with gray strands in a bun, gold earrings. A coral-red blouse under a yellow apron with big pockets. Shrewd and funny: a cheeky, knowing grin.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/marcus.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/frank",
+   "kind": "cast",
+   "npc": "frank",
+   "name": "Don Pancho",
+   "label": "Don Pancho (Neighbor)",
+   "situation": [
+    "s33-small-talk"
+   ],
+   "moment": null,
+   "prompt": "Don Pancho, a retired neighbor who waits at the bus stop: a man of about 72 with light skin, white hair, round glasses, a white jipi hat (a fine palm-straw hat from Yucatán) with a black band. A pale green guayabera shirt. Chatty and kind: a friendly, grandfatherly smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/frank.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/jordan",
+   "kind": "cast",
+   "npc": "jordan",
+   "name": "Mónica",
+   "label": "Mónica (Personal trainer)",
+   "situation": [
+    "s35-gym"
+   ],
+   "moment": null,
+   "prompt": "Mónica, a personal trainer at Gimnasio Colibrí: an athletic woman of about 28 with tan skin, long dark hair with sun-lightened ends in a high ponytail. A teal tank top. Energetic and encouraging: a bright, motivating smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/jordan.webp",
+   "nametag": {
+    "text": "Mónica",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/maggie",
+   "kind": "cast",
+   "npc": "maggie",
+   "name": "Doña Margarita",
+   "label": "Doña Margarita (Selling her car)",
+   "situation": [
+    "p25-used-car"
+   ],
+   "moment": null,
+   "prompt": "Doña Margarita, a retired drama teacher selling her car: a woman of about 62 with light skin, silver hair in a short pixie cut, big sunglasses pushed up on her head, turquoise earrings. A chambray shirt with rolled sleeves. Funny and theatrical, enjoys a good haggle: a sly smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/maggie.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/kyle",
+   "kind": "cast",
+   "npc": "kyle",
+   "name": "Jorge",
+   "label": "Jorge (Customer service)",
+   "situation": [
+    "p26-complaint"
+   ],
+   "moment": null,
+   "prompt": "Jorge, a customer service agent at Hogar Puerto, a furniture store: a young man of about 23 with tan skin, short black hair, a phone headset with a microphone. An orange polo shirt with a blank badge. Eager to help: an earnest smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/kyle.webp",
+   "nametag": {
+    "text": "Jorge",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/brenda",
+   "kind": "cast",
+   "npc": "brenda",
+   "name": "Brenda",
+   "label": "Brenda (Customer care manager)",
+   "situation": [
+    "p26-complaint"
+   ],
+   "moment": null,
+   "prompt": "Brenda, the customer care manager at Hogar Puerto: a woman of about 52 with dark brown skin, a short black bob, reading glasses on a beaded chain, a slim headset. A navy cardigan over a white blouse. Calm and experienced: a kind but businesslike smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/brenda.webp",
+   "nametag": {
+    "text": "Brenda",
+    "kind": "badge"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/vanessa",
+   "kind": "cast",
+   "npc": "vanessa",
+   "name": "Vanessa",
+   "label": "Vanessa (Marketing lead)",
+   "situation": [
+    "p27-meeting"
+   ],
+   "moment": null,
+   "prompt": "Vanessa, the marketing lead at Línea Clara: a woman of about 42 with fair skin, dark curly shoulder-length hair, statement earrings. A red blazer over a black top, a lanyard with a blank card. Quick, confident and theatrical: a bold smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/vanessa.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/greg",
+   "kind": "cast",
+   "npc": "greg",
+   "name": "Gerardo",
+   "label": "Gerardo (Team manager)",
+   "situation": [
+    "p27-meeting"
+   ],
+   "moment": null,
+   "prompt": "Gerardo, a team manager at Línea Clara: a man of about 55 with light skin, short gray hair, a gray beard, reading glasses pushed up on his head. A gray-green linen shirt. Calm and dry: a small, wry smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/greg.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/whitaker",
+   "kind": "cast",
+   "npc": "whitaker",
+   "name": "Chef Villanueva",
+   "label": "Chef Villanueva (Head chef)",
+   "situation": [
+    "p28-kitchen"
+   ],
+   "moment": null,
+   "prompt": "Chef Villanueva, the head chef at Restaurante El Muelle: a tall man of about 55 with brown skin, short gray hair, a neat gray beard. A white double-breasted chef's jacket and a white apron, no hat. Quiet and exacting: a calm, appraising look with a faint smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/whitaker.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/russo",
+   "kind": "cast",
+   "npc": "russo",
+   "name": "Fátima",
+   "label": "Fátima (Junior cook)",
+   "situation": [
+    "p28-kitchen"
+   ],
+   "moment": null,
+   "prompt": "Fátima, a junior cook at El Muelle: a young woman of about 22 with olive skin, black hair in a ponytail under a navy bandana, small stud earrings. A white chef's jacket and a navy apron. Nervous but talented: a hopeful, slightly anxious smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/russo.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/emily",
+   "kind": "cast",
+   "npc": "emily",
+   "name": "Elena",
+   "label": "Elena (Your manager)",
+   "situation": [
+    "p28b-review"
+   ],
+   "moment": null,
+   "prompt": "Elena, the learner's manager at Línea Clara: a woman of about 36 with tan skin, brown hair in a high bun, small gold earrings. A mustard-gold blouse and a lanyard with a blank card. Thoughtful and supportive: an encouraging smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/emily.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/tyler",
+   "kind": "cast",
+   "npc": "tyler",
+   "name": "Toño",
+   "label": "Toño (Founder)",
+   "situation": [
+    "p18-startup"
+   ],
+   "moment": null,
+   "prompt": "Toño, the founder of the startup Brotecito: a man of about 30 with light-tan skin, shaggy wavy black hair, a short beard, a woven bracelet. An olive-green T-shirt under an open beige linen shirt. Laid-back and full of slang: a big, easy grin.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/tyler.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/mr_grant",
+   "kind": "cast",
+   "npc": "mr_grant",
+   "name": "Don Gilberto",
+   "label": "Don Gilberto (Your landlord)",
+   "situation": [
+    "p24-flood"
+   ],
+   "moment": null,
+   "prompt": "Don Gilberto, a landlord: a man of about 62 with dark brown skin, a bald head, a neat gray beard, reading glasses pushed up on his head. A brick-red plaid short-sleeved shirt. Very formal in writing, warm on the phone: a friendly, slightly tired smile.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/mr_grant.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/aduana",
+   "kind": "cast",
+   "npc": "aduana",
+   "name": "Agente Medina",
+   "label": "Agente Medina (Customs)",
+   "situation": [
+    "s65b-baggage"
+   ],
+   "moment": null,
+   "prompt": "Agente Medina, the customs officer at the airport: a woman of about 38 with light-tan skin, chestnut-brown hair in a low bun, small stud earrings. A dark slate-blue uniform shirt with blank patches and a blank badge. Brisk and correct: a neutral, polite expression.",
+   "refs": [
+    "style:en/s31-doctor/greet"
+   ],
+   "out": "public/scenes-es/ref/cast/aduana.webp",
+   "nametag": {
+    "text": "Medina",
+    "kind": "plate"
+   },
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/netwave_bot",
+   "kind": "cast",
+   "npc": "netwave_bot",
+   "label": "NetWave (Automated phone menu)",
+   "skip": "not a person: the phone company's automated menu (s80)",
+   "situation": [
+    "s80-support-call"
+   ],
+   "moment": null,
+   "prompt": "",
+   "refs": [],
+   "out": "public/scenes-es/ref/cast/netwave_bot.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/sco",
+   "kind": "cast",
+   "npc": "sco",
+   "label": "Caja de autoservicio (Self-checkout machine)",
+   "skip": "not a person: Maple Harbor's self-checkout; Puerto Colibrí's s32 is Doña Lupe's market stall",
+   "situation": [],
+   "moment": null,
+   "prompt": "",
+   "refs": [],
+   "out": "public/scenes-es/ref/cast/sco.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "cast/harbor_bot",
+   "kind": "cast",
+   "npc": "harbor_bot",
+   "label": "Mensaje grabado (Recorded message)",
+   "skip": "not a person: Hogar Puerto's recorded hold message (p26)",
+   "situation": [],
+   "moment": null,
+   "prompt": "",
+   "refs": [],
+   "out": "public/scenes-es/ref/cast/harbor_bot.webp",
+   "size": "1024x1536"
+  },
+  {
+   "id": "place/zocalo",
+   "kind": "place",
+   "label": "The zócalo (main square)",
+   "situation": [
+    "s69-local",
+    "s86-old-friend",
+    "s91a-lost-wallet"
+   ],
+   "moment": null,
+   "prompt": "The zócalo (main square) of Puerto Colibrí on a sunny late morning. In the middle distance, a little right of center, the kiosco: an octagonal stone bandstand with a few steps, slender green wrought-iron columns and railing, and a red-tiled dome with a small lantern on top. Behind it, across the square, the parroquia: a simple lime-washed colonial church in white and ochre with an arched wooden door and a bell gable with two bells. Strings of colorful papel picado run from the kiosco's eaves to the lampposts; coconut palms and a big shady laurel tree; low painted buildings with arcades along the sides; pigeons on the pale stone paving. In the left third, in the foreground, an empty green wrought-iron bench in the shade of the tree.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/zocalo.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/zocalo-flores",
+   "kind": "place",
+   "label": "Doña Mari's flower stall at the tianguis",
+   "situation": [
+    "s91a-lost-wallet"
+   ],
+   "moment": null,
+   "prompt": "Doña Mari's flower stall at the Saturday tianguis on the edge of the zócalo, seen from the customer's side. The stall fills the left two thirds: a wooden table under a striped teal-and-cream canvas awning, zinc buckets of sunflowers, orange marigolds, roses, white lilies and birds of paradise, a few bunches wrapped in brown paper on the table; the vendor's spot behind the table, about one third from the left, is empty. Behind the stall, other stalls with striped awnings (fruit, embroidered blouses). The right third is the calm, open square: pale paving, and far away the kiosco with its green wrought-iron columns and red-tiled dome, and palms.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/zocalo"
+   ],
+   "out": "public/scenes-es/ref/place/zocalo-flores.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/mercado",
+   "kind": "place",
+   "label": "The Mercado Municipal: Doña Lupe's stall",
+   "situation": [
+    "s32-mercado"
+   ],
+   "moment": null,
+   "prompt": "Inside the Mercado Municipal, a big covered market hall: a high roof of painted steel trusses with skylights, no view of the outside. Doña Lupe's fruit and vegetable stall, seen from the customer's side of its counter: neat pyramids of mangoes, papayas, limes, avocados, tomatoes, green and red chiles and pink pitayas in wooden crates and tubs, a bunch of bananas hanging from a beam, an old-fashioned hanging scale with a round dial that has no numbers, a few brown paper bags. The vendor's spot behind the counter, one third from the left, is empty. Strings of papel picado under the roof; in the right third, the calm aisle of the hall with other stalls softly in the background (a chili and spice stall, baskets).",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/mercado.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/malecon",
+   "kind": "place",
+   "label": "The malecón and the beach",
+   "situation": [
+    "s83-invite-call",
+    "s67b-bus"
+   ],
+   "moment": null,
+   "prompt": "The malecón (the seafront promenade) at the end of the afternoon: a wide paved walk with a low white wall, wooden benches and black lamp posts with two lanterns each, coconut palms. Beyond the wall, white sand with thatched palapas (palm-leaf umbrellas on wooden poles) and wooden loungers, the turquoise Caribbean sea, and a small wooden pier with lanchas (small open fishing boats, white with a colored stripe). In the left third, an empty bench by the wall. The right third: calm sea and sky. A few tiny figures far away on the beach.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/malecon.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/aeropuerto-equipaje",
+   "kind": "place",
+   "label": "The arrivals hall: baggage desk and customs",
+   "situation": [
+    "s65b-baggage"
+   ],
+   "moment": null,
+   "prompt": "The arrivals hall of the small Puerto Colibrí airport, seen by a traveler standing at the baggage services desk: a light wood and white desk in the foreground with a computer monitor turned away from the viewer, a small printer and a stack of blank forms. The agent's spot behind the desk, one third from the left, is empty. Behind: a baggage carousel with a few suitcases, and further back the customs exit: a low stainless-steel inspection table by an open doorway, with no traffic light, button post or sign (Cancún's customs has had none since 2020), and a pale wall with a big window onto palms. Cool, bright airport light with warm accents.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/aeropuerto-equipaje.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/aeropuerto-migracion",
+   "kind": "place",
+   "label": "Immigration control",
+   "situation": [
+    "s65a-passport"
+   ],
+   "moment": null,
+   "prompt": "Immigration control at the airport: a row of white and light-wood immigration booths with low glass screens. The booth in front of the viewer has a small counter with a passport scanner, a little fingerprint pad and a small camera on a stalk (simple shapes); the officer's seat inside the booth, one third from the left, is empty. Floor lines and a queue barrier with a fabric belt; a big window with palms and the tail of a plane behind.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
+   ],
+   "out": "public/scenes-es/ref/place/aeropuerto-migracion.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/aeropuerto-documentacion",
+   "kind": "place",
+   "label": "The airline check-in counter",
+   "situation": [
+    "s64a-checkin"
+   ],
+   "moment": null,
+   "prompt": "The airline check-in counter at the airport: a long counter with a monitor turned away from the viewer and a boarding-pass printer, a baggage scale set into the floor beside it with a conveyor belt behind. The agent's spot behind the counter, one third from the left, is empty. Behind: a wall in deep teal and a big window with palms and a bright sky.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
+   ],
+   "out": "public/scenes-es/ref/place/aeropuerto-documentacion.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/aeropuerto-seguridad",
+   "kind": "place",
+   "label": "The security checkpoint",
+   "situation": [
+    "s64b-security"
+   ],
+   "moment": null,
+   "prompt": "The airport security checkpoint: an X-ray machine with a conveyor belt and gray plastic trays, a walk-through metal detector arch, a small table for bag checks. The screening officer's spot at the end of the belt, one third from the left, is empty. Pale walls, soft overhead light, a big window.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
+   ],
+   "out": "public/scenes-es/ref/place/aeropuerto-seguridad.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/aeropuerto-sala",
+   "kind": "place",
+   "label": "The departure gate (sala)",
+   "situation": [
+    "s64c-gate"
+   ],
+   "moment": null,
+   "prompt": "The waiting area at a departure gate (sala): a small gate desk with a monitor turned away from the viewer, rows of seats, and a big window onto the runway with a white plane with a teal tail (no logo) and palms beyond. The agent's spot behind the gate desk, one third from the left, is empty. The right third: the calm window and sky.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
+   ],
+   "out": "public/scenes-es/ref/place/aeropuerto-sala.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/hotel-mar-azul",
+   "kind": "place",
+   "label": "Hotel Mar Azul's lobby",
+   "situation": [
+    "s68-hotel"
+   ],
+   "moment": null,
+   "prompt": "The lobby of Hotel Mar Azul, a small boutique hotel: a reception desk of light wood with a woven palm front panel, a small brass bell, a vase of white flowers and a wall box of old-fashioned room keys on wooden tags. White walls, a talavera-tile accent, a ceiling fan, big open arches onto a garden with palms and a glimpse of the turquoise sea. The receptionist's spot behind the desk, one third from the left, is empty. The right third: a calm arch and the garden.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/hotel-mar-azul.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/cafe-la-ceiba",
+   "kind": "place",
+   "label": "Café La Ceiba",
+   "situation": [
+    "s72-cafe"
+   ],
+   "moment": null,
+   "prompt": "Café La Ceiba, a small café on the zócalo: a counter of warm wood with a teal-tiled front, an espresso machine, a glass case of pan dulce (conchas, cuernitos, orejas), clay mugs on open shelves, a blank chalkboard with only a drawn coffee cup, hanging woven lamps, and a window onto the palms of the square. The barista's spot behind the counter, one third from the left, is empty. The right third: a calm window with plants.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/cafe-la-ceiba.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/cocina-de-lucia",
+   "kind": "place",
+   "label": "La Cocina de Lucía",
+   "situation": [
+    "s73-restaurant"
+   ],
+   "moment": null,
+   "prompt": "La Cocina de Lucía, a Yucatecan family restaurant: a dining room with white walls and an open door onto the street under a red awning, wooden tables with embroidered cotton runners, clay pitchers of aguas frescas, papel picado, warm light. Near the entrance, a host stand of dark wood with a stack of menus with blank covers; the host's spot behind the stand, one third from the left, is empty. A few diners far in the soft background.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/cocina-de-lucia.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/el-muelle",
+   "kind": "place",
+   "label": "Restaurante El Muelle",
+   "situation": [
+    "s84-date",
+    "p28-kitchen"
+   ],
+   "moment": null,
+   "prompt": "Restaurante El Muelle at sunset: a seaside restaurant under a big thatched palapa roof on a wooden deck by the water. In the foreground, a table for two with a candle in a glass, two glasses of water and a small vase with one flower; the chair across the table, one third from the left, is empty (someone will sit there). String lights; beyond the deck, the turquoise sea turning gold and lanchas at the pier. The right third: calm sea and sky.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/el-muelle.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/terminal-autobuses",
+   "kind": "place",
+   "label": "The bus terminal's ticket office",
+   "situation": [
+    "s67a-tickets"
+   ],
+   "moment": null,
+   "prompt": "The long-distance bus terminal's ticket office: a ticket window of glass and light wood with a small opening and a counter, a ticket printer and a monitor turned away from the viewer. The clerk's spot behind the window, one third from the left, is empty. Behind the traveler: a waiting hall with plastic seats and a big window onto long-distance buses, white with a teal stripe and no logos.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/terminal-autobuses.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/camion",
+   "kind": "place",
+   "label": "Inside the city bus",
+   "situation": [
+    "s67b-bus",
+    "s90-running-late"
+   ],
+   "moment": null,
+   "prompt": "Inside a small city bus (route 7), seen from the front door's steps: the driver's seat and big steering wheel, one third from the left, empty; a small coin tray by the driver, a dashboard with a few colorful stickers and a rosary hanging from the mirror, worn seats down the aisle, sunny windows with palms and painted houses outside. The right third: the calm windshield and the street.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/camion.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/gasolinera",
+   "kind": "place",
+   "label": "The gas station's pump",
+   "situation": [
+    "s71b-gas"
+   ],
+   "moment": null,
+   "prompt": "A small gas station by the road, seen from the driver's open window of a car stopped at the pump: a fuel pump with hoses and a blank display, a canopy in red and white, palms beyond, a small convenience shop in the background. The attendant's spot beside the pump, one third from the left, is empty. The right third: calm road and sky.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/gasolinera.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/banco",
+   "kind": "place",
+   "label": "Banco del Puerto",
+   "situation": [
+    "s78-bank"
+   ],
+   "moment": null,
+   "prompt": "Banco del Puerto: a teller window with a low glass partition and a counter with a small tray for documents, a card terminal and a pen on a chain. The teller's spot behind the glass, one third from the left, is empty. Behind: a clean white and teal interior, a plant, a ceiling fan, a wall clock with no numbers.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/banco.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/farmacia",
+   "kind": "place",
+   "label": "Farmacia del Puerto",
+   "situation": [
+    "s75-pharmacy"
+   ],
+   "moment": null,
+   "prompt": "Farmacia del Puerto: a white and teal counter with shelves of medicine boxes and bottles behind it (blank labels with simple colored stripes), a card terminal, a small jar of lollipops; on one side, an open doorway to the small doctor's office next door. The pharmacist's spot behind the counter, one third from the left, is empty. The right third: a calm wall and a window with a palm.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/farmacia.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/consultorio",
+   "kind": "place",
+   "label": "The doctor's consulting room",
+   "situation": [
+    "s31-doctor",
+    "s75-pharmacy"
+   ],
+   "moment": null,
+   "prompt": "The doctor's consulting room at the Clínica Familiar: a desk with a computer turned away from the viewer and a blood-pressure cuff, an examination table with a paper sheet, a white cabinet, framed pictures of plants, a window with wooden shutters and the shade of a palm. The doctor's chair behind the desk, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/consultorio.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/linea-clara",
+   "kind": "place",
+   "label": "The office of Línea Clara",
+   "situation": [
+    "s34-meeting",
+    "s87-interview",
+    "s88-first-day",
+    "p27-meeting",
+    "p28b-review"
+   ],
+   "moment": null,
+   "prompt": "The office of Línea Clara, a small, modern company: an open-plan room with light wood desks, sage-green chairs, plants and laptops; on the left, a glass-walled meeting room with a big blank wall screen; big windows onto the harbor and palms. The colleague's spot by a desk, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/linea-clara.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/calle-residencial",
+   "kind": "place",
+   "label": "A residential street",
+   "situation": [
+    "p25-used-car",
+    "s82-neighbor"
+   ],
+   "moment": null,
+   "prompt": "A quiet residential street (Calle de los Cedros) in the late afternoon: one- and two-story houses painted coral, mango yellow and turquoise, flat roofs with black water tanks (tinacos), window grilles, bougainvillea over a garden wall, a small front patio with an iron gate, a small sedan parked in front of a house, a tree on the sidewalk. In the left third, an empty spot by a front gate where someone will stand. The right third: the calm street and sky.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/calle-residencial.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/gimnasio",
+   "kind": "place",
+   "label": "Gimnasio Colibrí",
+   "situation": [
+    "s35-gym"
+   ],
+   "moment": null,
+   "prompt": "Gimnasio Colibrí: a front desk of light wood with a tablet turned away from the viewer, folded towels and a water bottle; behind, the gym floor with treadmills, dumbbells and a rack, plants, big windows with palms. The trainer's spot behind the desk, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/gimnasio.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/museo",
+   "kind": "place",
+   "label": "Museo de la Costa Maya",
+   "situation": [
+    "s70-museum"
+   ],
+   "moment": null,
+   "prompt": "Museo de la Costa Maya: the ticket desk in a cool white hall with stone floors. Behind it, the first gallery: a carved Maya stela on a plinth, clay vessels in glass cases, a wall map of the coast with shapes only, soft spotlights. The ticket clerk's spot behind the desk, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/museo.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/sitio-taxis",
+   "kind": "place",
+   "label": "The taxi stand (sitio)",
+   "situation": [
+    "s66-taxi"
+   ],
+   "moment": null,
+   "prompt": "The taxi stand (sitio) on a corner of the zócalo: a white taxi with a green stripe (no text, no numbers) parked at the curb with its driver's door open, a small shelter with a bench, a palm, painted houses with arcades, and a glimpse of the square. The driver's spot beside the taxi, one third from the left, is empty. The right third: the calm street.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/zocalo"
+   ],
+   "out": "public/scenes-es/ref/place/sitio-taxis.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/informacion-turistica",
+   "kind": "place",
+   "label": "The tourist information office",
+   "situation": [
+    "s62-visitor-center"
+   ],
+   "moment": null,
+   "prompt": "The tourist information office: a wooden counter with a rack of brochures (pictures of beaches, cenotes and ruins only), a big illustrated map of the coast on the wall (shapes only: the sea, a cenote, a pyramid, palms), a cup of pens, a plant, an open door onto the sunny street. The volunteer's spot behind the counter, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/informacion-turistica.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/correos",
+   "kind": "place",
+   "label": "The post office",
+   "situation": [
+    "s79-post"
+   ],
+   "moment": null,
+   "prompt": "The post office (Correos): a counter with a parcel scale, a few stacked cardboard boxes, a tray of stamps, a wall of wooden pigeonholes behind; soft green walls and a ceiling fan. The clerk's spot behind the counter, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/correos.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/boutique-hilos",
+   "kind": "place",
+   "label": "Boutique Hilos",
+   "situation": [
+    "s74-clothes"
+   ],
+   "moment": null,
+   "prompt": "Boutique Hilos, a small clothes shop: racks of light summer clothes (linen shirts, embroidered blouses, sundresses), folded clothes on wooden tables, a fitting room with a curtain, a long mirror, a small counter with a card terminal; white walls and a wooden floor. The sales assistant's spot, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/boutique-hilos.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/estetica-tijeras",
+   "kind": "place",
+   "label": "Estética Tijeras",
+   "situation": [
+    "s77-salon"
+   ],
+   "moment": null,
+   "prompt": "Estética Tijeras, a small hair salon: two teal styling chairs in front of round mirrors, a shelf of hair products with blank labels, a wash basin chair, a hair dryer on a hook, plants, a window onto the sunny street. The hairdresser's spot beside the first chair, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/estetica-tijeras.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/policia",
+   "kind": "place",
+   "label": "The Policía Municipal",
+   "situation": [
+    "s91b-police"
+   ],
+   "moment": null,
+   "prompt": "The front desk of the Policía Municipal: a tall counter with a computer turned away from the viewer, a stack of blank forms and a pen, a bench along the wall, a Mexican flag on a pole in a corner, plain cream walls, a ceiling fan. The officer's spot behind the counter, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/policia.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/departamento",
+   "kind": "place",
+   "label": "An apartment for rent (Las Palmas)",
+   "situation": [
+    "s81-apartment",
+    "p29-landlord",
+    "p24-flood"
+   ],
+   "moment": null,
+   "prompt": "An unfurnished apartment for rent in Departamentos Las Palmas: a bright living room with white walls and a tiled floor, a ceiling fan, a split air conditioner high on the wall, a small open kitchen with a talavera-tile backsplash, sliding glass doors onto a small balcony with palms beyond. The landlord's spot in the middle of the room, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/departamento.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/edificio-pasillo",
+   "kind": "place",
+   "label": "The apartment building's corridor",
+   "situation": [
+    "s82-neighbor",
+    "p29-landlord"
+   ],
+   "moment": null,
+   "prompt": "The open-air corridor of a two-story apartment building (Departamentos Las Palmas): apartment doors painted in different colors along a walkway with a railing, potted plants, a sunny courtyard with a palm below. The neighbor's doorway, one third from the left, is open and empty (someone will stand there).",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/departamento"
+   ],
+   "out": "public/scenes-es/ref/place/edificio-pasillo.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/casa-ximena-patio",
+   "kind": "place",
+   "label": "Ximena's backyard party",
+   "situation": [
+    "s63-party"
+   ],
+   "moment": null,
+   "prompt": "Ximena's backyard at dusk, during a carne asada party: a grill with a little smoke, a long table with a colorful striped tablecloth, bowls of salsa and guacamole, tortillas in an embroidered cloth, pitchers of agua fresca and bottles without labels, string lights and papel picado, bougainvillea on the wall, a few guests chatting in the soft background. The spot one third from the left, where the host will stand, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/casa-ximena-patio.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/casa-diego",
+   "kind": "place",
+   "label": "Diego and Natalia's front door",
+   "situation": [
+    "s85-dinner",
+    "p30-start-over"
+   ],
+   "moment": null,
+   "prompt": "Diego and Natalia's small house on a quiet residential street at dusk: the front of the house painted turquoise, the wooden front door wide open onto a warmly lit entrance hall, a lit wall lantern beside it, potted plants by the door, a tiled step, the deep blue evening sky. No sea or beach in view. The doorway, one third from the left, is empty (the hosts will stand there). The right third: a calm wall and a window glowing with warm light.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/casa-diego.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/renta-autos",
+   "kind": "place",
+   "label": "Renta de Autos Colibrí",
+   "situation": [
+    "s71a-rental"
+   ],
+   "moment": null,
+   "prompt": "Renta de Autos Colibrí: a small rental counter with a monitor turned away from the viewer, car keys on a wall board, a few brochures with pictures only, a window onto a lot with small cars and palms. The agent's spot behind the counter, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/renta-autos.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/parada",
+   "kind": "place",
+   "label": "The bus stop on Calle Ceiba",
+   "situation": [
+    "s33-small-talk"
+   ],
+   "moment": null,
+   "prompt": "The bus stop (parada) on Calle Ceiba: a simple shelter with a metal roof and a bench, a pole with a sign showing only a bus icon, painted houses and a palm, a sunny street with a speed bump. In the left third, an empty spot under the shelter where someone will stand. The right third: the calm street and sky.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/parada.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/brotecito",
+   "kind": "place",
+   "label": "Brotecito, the startup",
+   "situation": [
+    "p18-startup"
+   ],
+   "moment": null,
+   "prompt": "Brotecito, a small startup in a waterfront warehouse: exposed brick and wooden beams, big windows onto the harbor, a long shared table with laptops, a beanbag, many potted plants on shelves, a whiteboard with only drawn shapes. The founder's spot, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/brotecito.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/el-muelle-cocina",
+   "kind": "place",
+   "label": "El Muelle's kitchen",
+   "situation": [
+    "p28-kitchen"
+   ],
+   "moment": null,
+   "prompt": "The kitchen of Restaurante El Muelle: a stainless-steel pass with heat lamps, a rail of blank order tickets, copper and steel pans, a grill, bowls of limes and chiles, a round window onto the sea. The chef's spot behind the pass, one third from the left, is empty.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/el-muelle"
+   ],
+   "out": "public/scenes-es/ref/place/el-muelle-cocina.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/taxi-interior",
+   "kind": "place",
+   "label": "Inside Don Rigo's taxi",
+   "situation": [
+    "s66-taxi"
+   ],
+   "moment": null,
+   "prompt": "Inside a taxi, seen from the back seat where the learner sits: the driver's seat at the front left, about one third from the left, is empty; the steering wheel, a simple dashboard with blank round dials, a small string of wooden beads hanging from the rear-view mirror, worn beige seat covers. Through the windshield and the right-side window: a sunny street of one- and two-story houses in coral and ochre, coconut palms and bougainvillea. The right third: the calm side window and the street.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/taxi-interior.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/consultorio-dental",
+   "kind": "place",
+   "label": "The dental office's reception",
+   "situation": [
+    "s76-dentist-call"
+   ],
+   "moment": null,
+   "prompt": "The reception of a small, bright dental office (Clínica Dental Coral): a white reception desk with a computer monitor turned away from the viewer, a closed paper appointment book, a pen holder and a small plant; on the wall a poster of a smiling tooth with no writing; a window with wooden shutters and a palm outside. The receptionist's chair behind the desk, one third from the left, is empty. The right third: a calm aqua wall.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/consultorio-dental.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/oficina-cocina",
+   "kind": "place",
+   "label": "Línea Clara's office kitchen",
+   "situation": [
+    "s88-first-day"
+   ],
+   "moment": null,
+   "prompt": "The small office kitchen at the back of the Línea Clara office, in the same light wood, sage green and white, with plants: a counter with a sink, a wooden wall cupboard above it, a white fridge, and beside the fridge a big black coffee machine with a glass carafe; a microwave on the counter; a big blue garrafón (a 20-liter drinking-water jug) upside down on a stand. The spot next to the coffee machine, one third from the left, is empty. The right third: a calm white wall and a small window with palm leaves outside.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/linea-clara"
+   ],
+   "out": "public/scenes-es/ref/place/oficina-cocina.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/casa-diego-interior",
+   "kind": "place",
+   "label": "Inside Diego and Natalia's house",
+   "situation": [
+    "s85-dinner",
+    "p30-start-over"
+   ],
+   "moment": null,
+   "prompt": "Inside Diego and Natalia's house in the evening: a cozy living and dining room with lime-washed walls, a wooden dining table set for three with a woven runner, clay plates and glasses, a small sofa with embroidered cushions, two small framed paintings of the sea, a doorway with talavera tiles to the kitchen at the back, warm lamplight. The spot by the table, one third from the left, is empty. The right third: a calm wall with a window.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/casa-diego"
+   ],
+   "out": "public/scenes-es/ref/place/casa-diego-interior.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/call-center",
+   "kind": "place",
+   "label": "A customer service office",
+   "situation": [
+    "s80-support-call",
+    "p26-complaint"
+   ],
+   "moment": null,
+   "prompt": "A bright customer service office: rows of desks with headsets and monitors turned away from the viewer, low blue partitions, plants, big windows. The agent's desk in the left third is empty.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/call-center.webp",
+   "size": "2048x1152"
+  }
+ ]
+}

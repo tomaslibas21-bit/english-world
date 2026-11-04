@@ -1,0 +1,8 @@
+{
+  "npc": "Andrés, car rental agent",
+  "images": ["greet", "size", "license", "upgrade", "tpl", "insurance", "deposit", "fuel", "extras", "ret", "sign", "keys"],
+  "start": "greet",
+  "done": "keys",
+  "phases": {"howareyou": "greet", "resv": "greet", "name": "greet", "spell": "greet", "size": "size", "days": "size", "estandar": "size", "license": "license", "upgrade": "upgrade", "upgrade_q": "upgrade", "free_up": "upgrade", "tpl": "tpl", "tpl_cancel": "tpl", "insurance": "insurance", "lower": "insurance", "deposit": "deposit", "fuel": "fuel", "prepay": "fuel", "extras": "extras", "extra_add": "extras", "ret": "ret", "ret_day": "ret", "ret_more": "ret", "airport": "ret", "sign": "sign", "keys": "keys", "keys_spot": "keys", "keys_thanks": "keys", "anything": "keys", "closing": "keys"},
+  "focus": [34, 30]
+}

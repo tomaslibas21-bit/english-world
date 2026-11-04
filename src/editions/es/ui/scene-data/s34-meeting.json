@@ -1,0 +1,7 @@
+{
+  "npc": "Sofía, Pablo and Sara (team meeting)",
+  "images": ["mute", "sara-hear", "notes", "update", "clarify", "opinion", "why", "deadline", "owner", "aob", "bye", "summary"],
+  "start": "mute",
+  "phases": {"mute": "mute", "sara_hear": "sara-hear", "notes": "notes", "update": "update", "what_task": "update", "when_q": "update", "send_q": "update", "help_offer": "update", "add": "update", "add_what": "update", "clarify": "clarify", "makes_sense": "clarify", "opinion": "opinion", "why": "why", "talk_after": "why", "dl_view": "deadline", "dl_who": "deadline", "owner": "owner", "aob": "aob", "aob_more": "aob", "aob_what": "aob", "closing": "bye", "summary": "summary"},
+  "focus": [32, 30]
+}

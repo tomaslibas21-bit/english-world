@@ -1,0 +1,8 @@
+{
+  "npc": "Don Chuy, tourist information volunteer",
+  "images": ["greet", "map", "here", "cafe", "route", "far", "quiz", "recheck", "more", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"need": "greet", "which_place": "greet", "greet_map": "map", "map": "map", "cafe": "here", "cafe_offer": "cafe", "confirm_sunny_cup": "route", "confirm_post_office": "route", "confirm_market": "route", "confirm_bank": "route", "confirm_pharmacy": "route", "confirm_salon": "route", "confirm_hotel": "route", "confirm_station": "route", "confirm_trattoria": "route", "confirm_threads": "route", "confirm_square": "route", "confirm_tianguis": "route", "confirm_museum": "route", "confirm_police": "route", "confirm_beach": "far", "confirm_pier": "far", "confirm_lighthouse": "far", "quiz": "quiz", "recheck": "recheck", "more": "more", "closing": "bye"},
+  "focus": [34, 31]
+}

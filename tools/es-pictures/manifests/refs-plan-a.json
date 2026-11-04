@@ -1,0 +1,19 @@
+{
+  "_about": "New place references for chapter 9 (planner A: p18-startup, p24-flood), made like the place/… entries in refs.json, before the situation pictures that use them. place/departamento-cocina: the learner's own kitchen at Las Palmas (p24's flood). place/departamento faces the living room and the balcony, with the fridge cut off at its left edge, so it can't show the cat on top of the fridge or the leaking ceiling; this is the same apartment, lived in, turned toward the kitchen.",
+  "defaults": {},
+  "items": [
+    {
+      "id": "place/departamento-cocina",
+      "kind": "place",
+      "label": "The learner's kitchen at Las Palmas",
+      "situation": ["p24-flood"],
+      "moment": null,
+      "prompt": "The learner's own small apartment at Departamentos Las Palmas, now lived in, on a calm morning: the open kitchen, seen from the living room, with the apartment's white walls, pale tiled floor, teal cabinets, talavera-tile backsplash and woven pendant lamp. About one third from the left, a tall stainless-steel fridge stands against the wall, with nothing on top of it. Beside it, the counter with the sink, open wooden shelves with clay mugs and plates, a clay fruit bowl and a striped dish towel; a small window above the sink looks onto palm leaves and a coral-pink house across the street. The plain white ceiling is in view at the top, with a simple round ceiling light. The tiled floor in front of the kitchen is open and empty. The right third: a calm white living-room wall, a woven rug on the floor and a potted palm. Nobody in the apartment.",
+      "refs": ["style:en/s69-local/greet", "setting:place/departamento"],
+      "size": "2048x1152",
+      "quality": "high",
+      "model": "gpt-image-2.5-sunburst",
+      "out": "public/scenes-es/ref/place/departamento-cocina.webp"
+    }
+  ]
+}

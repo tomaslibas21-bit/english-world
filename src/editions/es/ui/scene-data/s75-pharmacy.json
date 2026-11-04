@@ -1,0 +1,8 @@
+{
+  "npc": "Don Héctor, pharmacist",
+  "images": ["greet", "rxask", "questions", "recommend", "generic", "outbrand", "dosage", "doctor", "rxread", "pay", "bag"],
+  "start": "greet",
+  "done": "bag",
+  "phases": {"howareyou": "greet", "need": "greet", "sick_q": "greet", "rx_prompt": "rxask", "who": "questions", "who_q": "questions", "howlong": "questions", "meds": "questions", "allergy": "questions", "recommend": "recommend", "alt": "recommend", "generic_q": "generic", "rx_brand": "generic", "switch_q": "outbrand", "dosage": "dosage", "questions_q": "dosage", "more": "dosage", "doctor_q": "doctor", "rx_paper": "rxread", "pay": "pay", "bag": "bag"},
+  "focus": [34, 30]
+}

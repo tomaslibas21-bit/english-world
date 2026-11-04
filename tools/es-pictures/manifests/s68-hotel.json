@@ -1,0 +1,210 @@
+{
+ "_about": "Hotel Mar Azul's lobby: Fernanda at reception (one set-up). 12 pictures: the welcome (also the problem visit's greeting), the walk-in room card, the computer (name, spelling, the reservation), the passport, the card terminal (deposit), the registration form, the room keys (also 'anything else?'), the clock (late checkout), the phone (a taxi), the room not ready (twist room_not_ready: bags on the cart until three), the fan or another room (twist problem_visit), goodbye. The upgrade twist is said in the room step's turn and has no id of its own.",
+ "scenes": {
+  "s68-hotel": {
+   "npc": "Fernanda, hotel reception",
+   "focus": [
+    32,
+    30
+   ],
+   "start": "welcome"
+  }
+ },
+ "defaults": {
+  "kind": "scene",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "2048x1152",
+  "quality": "high"
+ },
+ "items": [
+  {
+   "id": "s68-hotel/welcome",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "arrive",
+   "phases": [
+    "arrive",
+    "p_report"
+   ],
+   "refs": [
+    "place:place/hotel-mar-azul",
+    "person:cast/olivia"
+   ],
+   "prompt": "Fernanda, the receptionist, stands behind the reception desk about one third from the left, both hands resting lightly on the desk, smiling warmly as the learner walks up to check in. On the desk: the small brass bell, a slim computer monitor and keyboard (the monitor turned away from the viewer), a small card terminal with a blank screen and a cream desk phone.",
+   "out": "public/scenes-es/s68-hotel/welcome.webp"
+  },
+  {
+   "id": "s68-hotel/walkin",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "walk_offer",
+   "phases": [
+    "walk_nights",
+    "walk_offer",
+    "view"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she holds up a small laminated card toward the learner with simple pictures of a hotel room, a double bed and a window onto the turquoise sea (no words or numbers), eyebrows raised, offering the room.",
+   "out": "public/scenes-es/s68-hotel/walkin.webp"
+  },
+  {
+   "id": "s68-hotel/computer",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "name",
+   "phases": [
+    "name",
+    "spell",
+    "found",
+    "nights"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she types on the keyboard, glancing up at the learner with an attentive, friendly look, finding their reservation.",
+   "out": "public/scenes-es/s68-hotel/computer.webp"
+  },
+  {
+   "id": "s68-hotel/passport",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "id",
+   "phases": [
+    "id"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she holds the learner's passport open in both hands (a dark passport with a plain cover and blank pages), checking it with a polite smile.",
+   "out": "public/scenes-es/s68-hotel/passport.webp"
+  },
+  {
+   "id": "s68-hotel/card",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "card",
+   "phases": [
+    "card"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she holds the small card terminal (blank screen) out across the desk toward the learner with one hand, the other open in an explaining gesture, asking for the security deposit.",
+   "out": "public/scenes-es/s68-hotel/card.webp"
+  },
+  {
+   "id": "s68-hotel/sign",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "sign",
+   "phases": [
+    "sign"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose and the desk: she slides a one-page registration form with blank lines and a pen across the desk toward the learner, pointing with one finger to the bottom of the page where they should sign.",
+   "out": "public/scenes-es/s68-hotel/sign.webp"
+  },
+  {
+   "id": "s68-hotel/keys",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "room",
+   "phases": [
+    "keys",
+    "room",
+    "anything",
+    "quiet"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she holds out two old-fashioned brass room keys on plain wooden tags (blank, no numbers) across the desk toward the learner, with a warm smile.",
+   "out": "public/scenes-es/s68-hotel/keys.webp"
+  },
+  {
+   "id": "s68-hotel/late",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "late",
+   "phases": [
+    "late"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose and add a simple round wall clock with plain tick marks and no numbers on the white wall behind her: she gestures toward it with an open hand, smiling, offering a later checkout.",
+   "out": "public/scenes-es/s68-hotel/late.webp"
+  },
+  {
+   "id": "s68-hotel/taxi",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "taxi_time",
+   "phases": [
+    "taxi_time"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she holds the receiver of the cream desk phone in one hand, ready to call a taxi, eyebrows raised, asking the learner what time they need it.",
+   "out": "public/scenes-es/s68-hotel/taxi.webp"
+  },
+  {
+   "id": "s68-hotel/wait",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "room_not_ready",
+   "phases": [
+    "room_return"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose and add a brass luggage cart beside the desk with two suitcases on it (blank tags): she smiles apologetically, one hand on her chest and the other pointing to the cart, offering to keep the learner's bags until their room is ready.",
+   "out": "public/scenes-es/s68-hotel/wait.webp"
+  },
+  {
+   "id": "s68-hotel/fan",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "problem_visit",
+   "phases": [
+    "fan_or_room"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: with an apologetic look, she holds up a small white electric desk fan in one hand and an old-fashioned brass room key on a plain wooden tag in the other, offering the learner a choice.",
+   "out": "public/scenes-es/s68-hotel/fan.webp"
+  },
+  {
+   "id": "s68-hotel/bye",
+   "scene": "s68-hotel",
+   "situation": "s68-hotel",
+   "moment": "closing",
+   "phases": [
+    "closing"
+   ],
+   "refs": [
+    "edit:s68-hotel/welcome",
+    "person:cast/olivia"
+   ],
+   "prompt": "Change only her pose: she smiles warmly and gives a small wave of one hand, wishing the learner a pleasant stay.",
+   "out": "public/scenes-es/s68-hotel/bye.webp"
+  }
+ ]
+}

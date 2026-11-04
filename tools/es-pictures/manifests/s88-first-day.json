@@ -1,0 +1,86 @@
+{
+  "_about": "s88-first-day (¿Dónde está la cafetera?): the learner's first day at Línea Clara with María, a coworker. Two set-ups: the two neighboring desks in the open-plan office (hello, the desk with the laptop and the password card, the tour, the first task, lunch, the end of the day, goodbye) and the small office kitchen at the back (the cafetera, how it works, the mug twist). 11 pictures. The twists said inside a step (the badge isn't ready, at the desk; the jammed printer, during the tour; the broken cafetera, at the coffee step) have no question of their own, so they keep the current picture.",
+  "scenes": {
+    "s88-first-day": { "npc": "María, coworker (Línea Clara)", "focus": [36, 30], "start": "hello" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s88-first-day", "scene": "s88-first-day" },
+  "items": [
+    {
+      "id": "s88-first-day/hello", "moment": "hello",
+      "phases": ["hello", "name", "meet"],
+      "refs": ["place:place/linea-clara", "person:cast/maria"],
+      "prompt": "María, a coworker, stands beside two neighboring light wood desks in the open-plan office about one third from the left, nine in the morning, one hand raised in a cheerful wave, a big, welcoming smile as the new colleague walks up (\"¡Hola! ¿Eres nuevo aquí?\"). Her own desk is lived in (an open laptop turned away from the viewer, a plant, a teal mug); the nearer desk, the learner's new one, is empty except a closed silver laptop and a small potted plant. Behind her, a few coworkers at their desks, softly out of focus; on the left, the glass-walled meeting room.",
+      "out": "public/scenes-es/s88-first-day/hello.webp"
+    },
+    {
+      "id": "s88-first-day/desk", "moment": "desk",
+      "phases": ["desk"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change only her pose: María rests one hand on the closed silver laptop on the nearer desk and holds out a small blank white card toward the learner with the other (the card with the username and password), a helpful smile (\"Mira, este es tu escritorio, y esta es tu laptop\").",
+      "out": "public/scenes-es/s88-first-day/desk.webp"
+    },
+    {
+      "id": "s88-first-day/tour", "moment": "tour",
+      "phases": ["tour"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change only her pose: María turns slightly and points with an outstretched arm toward the glass-walled meeting room on the left, looking back at the learner with a cheerful smile (\"La sala de juntas está allá, la de las paredes de vidrio\").",
+      "out": "public/scenes-es/s88-first-day/tour.webp"
+    },
+    {
+      "id": "s88-first-day/coffee", "moment": "coffee",
+      "phases": ["coffee"],
+      "refs": ["place:place/oficina-cocina", "person:cast/maria"],
+      "prompt": "The small office kitchen at the back of the Línea Clara office, in the same light wood, sage green and white, with plants: a counter with a sink, a wooden wall cupboard above it, a white fridge, and beside the fridge a big black coffee machine with a glass carafe; a microwave on the counter; a big blue garrafón (a 20-liter drinking-water jug) upside down on a stand. María, the coworker, stands about one third from the left right next to the black coffee machine and presents it with both open hands like a prize, a playful, proud grin (\"Y lo más importante: ¡la cafetera!\"). The right third: a calm white wall and a small window with palm leaves outside.",
+      "out": "public/scenes-es/s88-first-day/coffee.webp"
+    },
+    {
+      "id": "s88-first-day/coffee-show", "moment": "coffee_show",
+      "phases": ["coffee_show"],
+      "refs": ["edit:s88-first-day/coffee", "person:cast/maria"],
+      "prompt": "Change only her pose: María presses the big round button on the black coffee machine with one finger, a plain white mug standing under its spout, and looks back at the learner with a \"see? it's easy\" smile (\"Nomás aprietas este botón y esperas un minuto\").",
+      "out": "public/scenes-es/s88-first-day/coffee-show.webp"
+    },
+    {
+      "id": "s88-first-day/mug", "moment": "mug",
+      "phases": ["mug"],
+      "refs": ["edit:s88-first-day/coffee", "person:cast/maria"],
+      "prompt": "Change only her pose: María holds a plain dark-green mug back against her shoulder with one hand, a playful \"oops, not that one\" wince, and offers a plain white mug toward the learner with the other hand (\"¡Ay, espera! Esa no, es la taza de Pablo. Toma, usa esta\"). Both mugs blank.",
+      "out": "public/scenes-es/s88-first-day/mug.webp"
+    },
+    {
+      "id": "s88-first-day/task", "moment": "task",
+      "phases": ["task"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change only her pose: María sits on her chair rolled over beside the nearer desk; the silver laptop on it is open and turned so the learner sees its screen, which shows only a simple table of blank gray rows and columns (the client list, no writing); she points at the screen with one finger, an encouraging smile (\"Tu primera tarea: hay que actualizar la lista de clientes\").",
+      "out": "public/scenes-es/s88-first-day/task.webp"
+    },
+    {
+      "id": "s88-first-day/lunch", "moment": "lunch",
+      "phases": ["lunch"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change only her pose: María stands by the desks with a small woven palm bag over her shoulder, pointing with her thumb toward the office door behind her, an inviting smile (\"Vamos a ir a comer a la cocina económica de la esquina. ¿Vienes?\").",
+      "out": "public/scenes-es/s88-first-day/lunch.webp"
+    },
+    {
+      "id": "s88-first-day/lunch-insist", "moment": "lunch_insist",
+      "phases": ["lunch_insist"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change only her pose: María, a small woven palm bag over her shoulder, presses her palms together in front of her chest in a playful, pleading gesture, eyebrows raised, a coaxing smile (\"¿No te animas? Hoy hay chiles rellenos\").",
+      "out": "public/scenes-es/s88-first-day/lunch-insist.webp"
+    },
+    {
+      "id": "s88-first-day/day", "moment": "day",
+      "phases": ["day"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change the time and her pose: six in the evening, the light through the big windows warm and golden, long soft shadows, the desks behind her now empty. María leans with one hand on the back of her chair, her laptop closed, and asks with a warm, caring smile (\"¡Ya son las seis! ¿Cómo te fue en tu primer día?\").",
+      "out": "public/scenes-es/s88-first-day/day.webp"
+    },
+    {
+      "id": "s88-first-day/bye", "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s88-first-day/hello", "person:cast/maria"],
+      "prompt": "Change the time and her pose: six in the evening, the light through the big windows warm and golden, the desks behind her empty. María, a small woven palm bag over her shoulder, takes a step toward the door and turns back to wave goodbye with a big smile (\"¡Nos vemos mañana!\").",
+      "out": "public/scenes-es/s88-first-day/bye.webp"
+    }
+  ]
+}

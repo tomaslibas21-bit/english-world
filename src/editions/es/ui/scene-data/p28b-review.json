@@ -1,0 +1,8 @@
+{
+  "npc": "Elena, your manager (Línea Clara)",
+  "images": ["greet", "proud", "praise", "feedback", "protect", "tab", "goals", "reverse", "askme", "summary", "checkin", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"feeling": "greet", "proud": "proud", "made": "proud", "praise": "praise", "consent": "feedback", "feedback": "feedback", "protect": "protect", "protect_offer": "protect", "tab": "tab", "goals": "goals", "goal_offer": "goals", "support": "goals", "rev_open": "reverse", "rev_worked": "reverse", "rev_try": "reverse", "ask_me": "askme", "anything_else": "summary", "checkin": "checkin", "closing": "bye"},
+  "focus": [34, 30]
+}

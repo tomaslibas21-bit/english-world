@@ -1,0 +1,8 @@
+{
+  "npc": "Doña Margarita, selling her car",
+  "images": ["greet", "look", "drive", "back", "flaw", "haggle", "offer", "final", "rival", "deal", "keys", "bye"],
+  "start": "greet",
+  "sticky": ["keys"],
+  "phases": {"arrive": "greet", "howareyou": "greet", "look": "look", "drive": "drive", "drive_q": "drive", "opinion": "back", "flaw": "flaw", "talk": "haggle", "price": "haggle", "haggle": "haggle", "confirm": "haggle", "offer": "offer", "final": "final", "decide": "final", "rival": "rival", "shake": "deal", "pay": "keys", "closing": "bye"},
+  "focus": [34, 30]
+}

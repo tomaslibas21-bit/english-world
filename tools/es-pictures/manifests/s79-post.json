@@ -1,0 +1,93 @@
+{
+  "_about": "s79-post (¿Dónde está mi paquete?): Gloria at the post office counter on calle Ceiba. One set-up (the counter), 12 pictures: sending a box of gifts home (the hazmat question with the box on the scale, the perfume twist, the missing return address twist, standard or express, the customs form, stamps, paying, the receipt) and the pickup twists (the aviso, the parcel handed over, the parcel still at customs). The closing keeps the current picture.",
+  "scenes": {
+    "s79-post": { "npc": "Gloria, postal clerk", "focus": [35, 30], "start": "greet" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s79-post", "scene": "s79-post" },
+  "items": [
+    {
+      "id": "s79-post/greet", "moment": "help",
+      "phases": ["help", "help_pickup", "dest"],
+      "refs": ["place:place/correos", "person:cast/gloria"],
+      "prompt": "Gloria, the postal clerk, stands behind the counter about one third from the left, one hand raised in a small beckoning wave, calling the learner forward from the line (\"¡Siguiente, por favor!\"). A brisk, friendly smile. On the counter in front of the learner sits a closed, taped cardboard box with a blank white address label.",
+      "out": "public/scenes-es/s79-post/greet.webp"
+    },
+    {
+      "id": "s79-post/scale", "moment": "hazmat",
+      "phases": ["hazmat"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: the taped cardboard box now sits on the parcel scale on the counter (its display blank), and Gloria rests one hand on the box's lid and leans in, eyebrows raised, asking whether there is anything liquid, fragile or dangerous inside.",
+      "out": "public/scenes-es/s79-post/scale.webp"
+    },
+    {
+      "id": "s79-post/perfume", "moment": "perfume",
+      "phases": ["perfume"],
+      "refs": ["edit:s79-post/scale", "person:cast/gloria"],
+      "prompt": "Change only this: the box on the scale is open, and Gloria holds up a small glass perfume bottle with a blank label between her thumb and fingers, shaking her head with an apologetic grimace (perfume can't be mailed abroad).",
+      "out": "public/scenes-es/s79-post/perfume.webp"
+    },
+    {
+      "id": "s79-post/return", "moment": "return_address",
+      "phases": ["return_addr"],
+      "refs": ["edit:s79-post/scale", "person:cast/gloria"],
+      "prompt": "Change only this: Gloria taps one finger on the empty top-left corner of the box's blank address label, looking up at the learner with a small, patient frown (the return address is missing). A pen lies on the counter beside the box.",
+      "out": "public/scenes-es/s79-post/return.webp"
+    },
+    {
+      "id": "s79-post/service", "moment": "service",
+      "phases": ["service", "first_offer"],
+      "refs": ["edit:s79-post/scale", "person:cast/gloria"],
+      "prompt": "Change only this: Gloria holds up two blank shipping envelopes side by side at chest height, a plain white one in her left hand and an orange one in her right, eyebrows raised, asking which service the learner wants (standard or express).",
+      "out": "public/scenes-es/s79-post/service.webp"
+    },
+    {
+      "id": "s79-post/form", "moment": "contents_list",
+      "phases": ["contents_list", "value", "gift", "sign_customs", "insurance"],
+      "refs": ["edit:s79-post/scale", "person:cast/gloria"],
+      "prompt": "Change only this: Gloria slides a blank customs form (a pale green sheet with empty boxes and lines) and a ballpoint pen across the counter toward the learner with one hand, pointing at the form's empty lines with the other, an encouraging look.",
+      "out": "public/scenes-es/s79-post/form.webp"
+    },
+    {
+      "id": "s79-post/stamps", "moment": "stamps_offer",
+      "phases": ["stamps_offer", "stamps_qty"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: the box is gone from the counter, and Gloria holds up a small sheet of colorful postage stamps showing simple pictures of a hummingbird, a palm and a sea turtle (no numbers or letters), with a friendly, questioning smile.",
+      "out": "public/scenes-es/s79-post/stamps.webp"
+    },
+    {
+      "id": "s79-post/pay", "moment": "pay",
+      "phases": ["pay"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: the box is gone from the counter, and Gloria holds out a card terminal with a blank screen toward the learner over the counter, smiling, waiting for the learner to pay.",
+      "out": "public/scenes-es/s79-post/pay.webp"
+    },
+    {
+      "id": "s79-post/receipt", "moment": "more",
+      "phases": ["more"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: the box is gone from the counter, and Gloria slides a small blank paper receipt across the counter toward the learner with two fingers, with a warm, satisfied smile (all done).",
+      "out": "public/scenes-es/s79-post/receipt.webp"
+    },
+    {
+      "id": "s79-post/notice", "moment": "pickup",
+      "phases": ["pick_notice", "pick_name", "guia", "pick_id"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: the box is gone from the counter, and Gloria holds a small blank paper delivery notice (a pale yellow slip) in both hands, reading it through her glasses with a focused look.",
+      "out": "public/scenes-es/s79-post/notice.webp"
+    },
+    {
+      "id": "s79-post/parcel", "moment": "pick_sign",
+      "phases": ["pick_sign"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: in place of the box there is a different parcel, a brown-paper-wrapped package with a blank label and a few foreign-looking blank stamps, and Gloria points at a blank delivery slip with a pen next to it, smiling (sign here and it's yours).",
+      "out": "public/scenes-es/s79-post/parcel.webp"
+    },
+    {
+      "id": "s79-post/aduana", "moment": "customs",
+      "phases": ["customs"],
+      "refs": ["edit:s79-post/greet", "person:cast/gloria"],
+      "prompt": "Change only this: the box is gone from the counter, and Gloria turns her palms up and gives a small, sympathetic shrug, eyebrows drawn together (the package is still at customs). Behind her, one pigeonhole in the wooden wall is empty.",
+      "out": "public/scenes-es/s79-post/aduana.webp"
+    }
+  ]
+}

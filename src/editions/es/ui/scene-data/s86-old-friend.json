@@ -1,0 +1,7 @@
+{
+  "npc": "Paola, old school friend",
+  "images": ["surprise", "changed", "chat", "upto", "news", "family", "memo", "coffee", "hurry", "numbers", "bye"],
+  "start": "surprise",
+  "phases": {"recognize": "surprise", "changed": "changed", "howbeen": "chat", "upto": "upto", "lucy1": "news", "lucy2": "news", "family": "family", "mike": "memo", "mike_dinner": "memo", "coffee": "coffee", "rush": "hurry", "numbers": "numbers", "number_bye": "numbers", "closing": "bye"},
+  "focus": [36, 28]
+}

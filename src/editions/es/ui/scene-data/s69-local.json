@@ -1,0 +1,8 @@
+{
+  "npc": "Doña Carmen, local",
+  "images": ["greet", "weather", "tried", "choice", "cuisine", "hungry", "from", "point", "walk", "more", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"need": "greet", "weather": "weather", "tried": "tried", "which_kind": "choice", "food_kind": "cuisine", "food": "hungry", "from": "from", "sight": "point", "which_spot": "point", "walk": "walk", "more": "more", "closing": "bye"},
+  "focus": [33, 35]
+}

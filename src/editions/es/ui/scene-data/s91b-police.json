@@ -1,0 +1,8 @@
+{
+  "npc": "Oficial Reyes, police front desk",
+  "images": ["greet", "notes", "describe", "contents", "bank", "id", "name", "sign", "report", "found", "handback", "bye"],
+  "start": "greet",
+  "done": "report",
+  "phases": {"report": "greet", "what_item": "greet", "stolen_q": "greet", "howareyou": "greet", "happened": "notes", "where": "notes", "when": "notes", "describe": "describe", "contents": "contents", "cash_amount": "contents", "bank": "bank", "id_q": "id", "name": "name", "last_name": "name", "spell": "name", "phone": "name", "sign": "sign", "anything_else": "report", "ask_away": "report", "found": "found", "check_all": "handback", "closing": "bye"},
+  "focus": [34, 30]
+}

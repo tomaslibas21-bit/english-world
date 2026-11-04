@@ -1,0 +1,7 @@
+{
+  "npc": "Don Ernesto, landlord",
+  "images": ["hello", "his_questions", "kitchen", "decision", "hurry", "docs", "aval", "deposit", "lease", "tenant", "repair", "spare_key"],
+  "start": "hello",
+  "phases": {"purpose": "hello", "movein_q": "his_questions", "people_q": "his_questions", "how_many": "his_questions", "pets_q": "his_questions", "pet_which": "his_questions", "questions": "kitchen", "decision": "decision", "take_or_not": "decision", "movein_take": "decision", "hurry": "hurry", "docs": "docs", "aval": "aval", "extra_deposit": "deposit", "poliza": "deposit", "sign": "lease", "problem": "tenant", "visit": "repair", "other_time": "repair", "key_ok": "spare_key"},
+  "focus": [33, 34]
+}

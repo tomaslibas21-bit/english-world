@@ -1,0 +1,130 @@
+{
+  "_about": "Chapter 9, p24 Saludos cordiales, me estoy ahogando: two phone calls on a flooded Saturday morning after a tropical storm. Four set-ups, 12 pictures. (1) The learner's flooded kitchen, nobody in it (the leaking ceiling, the river on the floor, the cat glaring from the top of the fridge), from the new place/departamento-cocina (refs-plan-a.json); the voicemail twist adds the learner's hand holding the phone. (2) Andrea at her end of the line, on her way to breakfast across the wet zócalo, a hardware shop with mops and buckets under the arcade: her shock, her offer to bring things, her goodbye. (3) The door twist: Andrea at the learner's open front door with a mop and two coffees, seen from inside (setting: the building's corridor). (4) Don Gilberto at his end of the line, by his pickup on a wet residential street: who's calling and what happened, his worry (since when, anybody hurt, the neighbor downstairs), the power, his 'could it wait until tomorrow?', the plumber's time and, as the done picture, climbing into his truck. 'closing' has no picture of its own: a finished call ends on the done picture, while the tomorrow and hang-up endings keep the current one. Make place/departamento-cocina first, then flood, andrea, door and gilberto, then the edits in one batch.",
+  "scenes": {
+    "p24-flood": {"npc": "Andrea, your friend, and Don Gilberto, your landlord (phone calls)", "focus": [34, 32], "start": "flood", "done": "on_way"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "p24-flood/flood",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "l_news",
+      "phases": ["l_news"],
+      "refs": ["place:place/departamento-cocina"],
+      "prompt": "The learner's kitchen on a Saturday morning after a night of tropical storm: the rain has come in through the ceiling. A brown water stain spreads across the white ceiling above the kitchen, and water drips from it in thin streams into a big cooking pot on the floor, which is already overflowing. A shallow sheet of water, like a small river, covers the whole tiled floor, with a pair of striped socks and a flip-flop floating in it and the woven rug soaked through. On top of the fridge, about one third from the left, an orange tabby cat crouches with its fur a little puffed up, glaring down at the water with narrowed, indignant eyes. Bright, washed morning light; through the window, wet palm leaves under a clearing sky. No people.",
+      "out": "public/scenes-es/p24-flood/flood.webp"
+    },
+    {
+      "id": "p24-flood/voicemail",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "voicemail",
+      "phases": ["vm_msg"],
+      "refs": ["edit:p24-flood/flood"],
+      "prompt": "Change only this: the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, holding up a phone with its screen toward the viewer; the screen shows only a simple voicemail symbol (two small circles joined by a line) above a red recording dot and a short sound wave, on a plain teal background, no letters or numbers (Don Gilberto doesn't pick up: the learner is leaving a message). The flooded kitchen and the cat on the fridge stay exactly as they are.",
+      "out": "public/scenes-es/p24-flood/voicemail.webp"
+    },
+    {
+      "id": "p24-flood/andrea",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "l_okay",
+      "phases": ["l_okay", "l_brunch"],
+      "refs": ["place:place/zocalo", "person:cast/lizzie"],
+      "prompt": "Early on a Saturday morning after a night of tropical storm: the zócalo's stone paving is still wet, with puddles reflecting the sky, a few fallen leaves and a torn palm frond, and the papel picado hangs a little limp. Andrea, the learner's friend, has stopped on her way to breakfast and stands in the foreground by the green iron bench, about one third from the left, facing the viewer, her phone at her ear in one hand (its back toward the viewer), a small canvas tote bag on her shoulder. Her free hand is pressed to her chest, eyes wide with shock and worry (\"¡No puede ser! ¿Y tú estás bien?\"). Under the arcade on the left, a small hardware shop has its doors open, with mops, brooms, a squeegee and stacked colorful plastic buckets hanging and standing outside (no sign, no writing).",
+      "out": "public/scenes-es/p24-flood/andrea.webp"
+    },
+    {
+      "id": "p24-flood/need",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "l_need",
+      "phases": ["l_need", "l_come"],
+      "refs": ["edit:p24-flood/andrea", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, Andrea turns a little and points with her free hand at the mops and buckets outside the hardware shop under the arcade, eyebrows raised in a helpful question, with a warm smile (\"¿Necesitas algo? Te puedo llevar cosas de camino.\").",
+      "out": "public/scenes-es/p24-flood/need.webp"
+    },
+    {
+      "id": "p24-flood/andrea_bye",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "l_bye",
+      "phases": ["l_bye"],
+      "refs": ["edit:p24-flood/andrea", "person:cast/lizzie"],
+      "prompt": "Change only her pose: phone still at her ear, Andrea blows a kiss toward the viewer with her free hand, laughing (\"Ahora sí, llámale a tu casero. ¡Te quiero!\").",
+      "out": "public/scenes-es/p24-flood/andrea_bye.webp"
+    },
+    {
+      "id": "p24-flood/door",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "door",
+      "phases": ["l_door"],
+      "refs": ["setting:place/edificio-pasillo", "person:cast/lizzie"],
+      "prompt": "Seen from inside the learner's apartment at Las Palmas, through its wide-open front door: Andrea, the learner's friend, stands just outside on the building's open-air corridor, about one third from the left, facing the viewer. She holds a new mop with a bright blue head propped on her shoulder in one hand and a cardboard tray with two paper cups of coffee (plain, no logos) in the other, grinning with mischief and delight (\"¡Sorpresa!\"). Behind her, the corridor's railing, the clay pots and the sunny courtyard with its palm. At the bottom edge, the learner's tiled floor shines with a thin layer of water running out over the threshold. The right third: the calm white wall of the learner's entryway beside the door.",
+      "out": "public/scenes-es/p24-flood/door.webp"
+    },
+    {
+      "id": "p24-flood/gilberto",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "g_who",
+      "phases": ["g_who", "g_what", "g_request", "g_close"],
+      "refs": ["place:place/calle-residencial", "person:cast/mr_grant"],
+      "prompt": "Early on a Saturday morning after a night of tropical storm: the street is still wet, with puddles reflecting the sky, and bougainvillea petals and a torn palm frond lie scattered on the sidewalk. Don Gilberto, the learner's landlord, stands on the sidewalk by the iron gate about one third from the left, facing the viewer, his phone at his ear in one hand (its back toward the viewer), his reading glasses pushed up on his head. His old white pickup truck is parked at the curb just behind him, with a folded aluminum ladder and a red metal toolbox in its bed (no writing; the license plate blank). He answers the call with a polite, slightly tired smile (\"¿Bueno? Habla Gilberto. ¿Quién habla?\"). The right third: the calm wet street and the sky.",
+      "out": "public/scenes-es/p24-flood/gilberto.webp"
+    },
+    {
+      "id": "p24-flood/worried",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "g_hurt",
+      "phases": ["g_since", "g_hurt", "hurt_yes", "g_down"],
+      "refs": ["edit:p24-flood/gilberto", "person:cast/mr_grant"],
+      "prompt": "Change only his pose and expression: phone still at his ear, Don Gilberto presses his free hand to his forehead, with a pained, dismayed frown (\"¡Híjole! ¡Esa tormenta! ¿Alguien se lastimó?\").",
+      "out": "public/scenes-es/p24-flood/worried.webp"
+    },
+    {
+      "id": "p24-flood/power",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "g_water",
+      "phases": ["g_water", "valve"],
+      "refs": ["edit:p24-flood/gilberto", "person:cast/mr_grant"],
+      "prompt": "Change only his pose and expression: phone still at his ear, Don Gilberto raises the index finger of his free hand in a serious, careful warning, eyebrows raised, like a stern but kind father (with water on the floor, the power comes first: \"¿Ya bajó el switch de la luz?\").",
+      "out": "public/scenes-es/p24-flood/power.webp"
+    },
+    {
+      "id": "p24-flood/offer",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "g_offer",
+      "phases": ["g_offer", "sure_tomorrow"],
+      "refs": ["edit:p24-flood/gilberto", "person:cast/mr_grant"],
+      "prompt": "Change only his pose and expression: phone still at his ear, Don Gilberto rubs the back of his neck with his free hand and winces apologetically (his plumber is swamped after the storm: \"¿Podría esperar a mañana en la mañana?\").",
+      "out": "public/scenes-es/p24-flood/offer.webp"
+    },
+    {
+      "id": "p24-flood/time",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "g_time",
+      "phases": ["g_time"],
+      "refs": ["edit:p24-flood/gilberto", "person:cast/mr_grant"],
+      "prompt": "Change only his pose: phone still at his ear, Don Gilberto turns his free wrist and glances at a plain wristwatch (a blank face, no numbers), then looks at the viewer with eyebrows raised in a friendly question (the plumber can come at eleven or at one: \"¿Qué le queda mejor?\").",
+      "out": "public/scenes-es/p24-flood/time.webp"
+    },
+    {
+      "id": "p24-flood/on_way",
+      "scene": "p24-flood",
+      "situation": "p24-flood",
+      "moment": "closing",
+      "phases": [],
+      "refs": ["edit:p24-flood/gilberto", "person:cast/mr_grant"],
+      "prompt": "Change only his pose: Don Gilberto has opened the driver's door of his pickup and is climbing in, one hand on the door frame, his phone still at his ear, grinning with a confident nod (\"¡En diez minutos estoy allá!\").",
+      "out": "public/scenes-es/p24-flood/on_way.webp",
+      "note": "The done picture (scenes.done): shown at the end of a finished call. No phase of its own, so 'closing' after the tomorrow or hang-up endings keeps the current picture."
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "_about": "Song 76, a phone call to Clínica Dental Coral: Lorena at her end of the line. There is no place reference for the dental reception (refs.json has none), so the first picture describes it and uses the portrait only. Twists: bad_line (badline, at hear), on_hold (hold), reschedule (reschedule, at reschedule_q). only_slot has no picture of its own: it fires inside the slot turn.",
+  "scenes": {
+    "s76-dentist-call": {
+      "npc": "Lorena, dental office reception (phone call)",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "booked"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s76-dentist-call/greet",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "help",
+      "phases": [
+        "help",
+        "help_move",
+        "reason"
+      ],
+      "refs": [
+        "place:place/consultorio-dental",
+        "person:cast/linda"
+      ],
+      "prompt": "Lorena, the receptionist of Clínica Dental Coral, sits at the reception desk about one third from the left, wearing her slim phone headset, and answers the learner's call with a cheerful smile, one hand on the desk. Her end of the line: a small bright dental office reception with a white desk, a computer monitor turned away from the viewer, a closed paper appointment book, a pen holder, a small plant, a poster of a smiling tooth with no writing, and a window with wooden shutters and a palm outside; the right third is a calm aqua wall.",
+      "out": "public/scenes-es/s76-dentist-call/greet.webp"
+    },
+    {
+      "id": "s76-dentist-call/sorry",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "pain_len",
+      "phases": [
+        "pain_len"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose and expression: Lorena presses one hand to her chest, her eyebrows drawn together in sympathy, listening to the learner describe the toothache (\"¡Ay, lo siento!\").",
+      "out": "public/scenes-es/s76-dentist-call/sorry.webp"
+    },
+    {
+      "id": "s76-dentist-call/newpt",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "new_pt",
+      "phases": [
+        "new_pt"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena holds up a clipboard with a blank new-patient form (only empty lines and boxes, no writing), eyebrows raised, asking whether it is the learner's first time.",
+      "out": "public/scenes-es/s76-dentist-call/newpt.webp"
+    },
+    {
+      "id": "s76-dentist-call/spell",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "spell",
+      "phases": [
+        "name",
+        "surname",
+        "spell"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena bends over a small notepad on the desk, writing slowly letter by letter with a pen, her other hand pressing the headset's microphone closer, concentrating. The notepad shows only short gray strokes, no readable letters.",
+      "out": "public/scenes-es/s76-dentist-call/spell.webp"
+    },
+    {
+      "id": "s76-dentist-call/details",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "dob",
+      "phases": [
+        "dob",
+        "phone",
+        "insurance"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena types on the keyboard with both hands, her eyes on the monitor (still turned away from the viewer), nodding along as she takes down the learner's details.",
+      "out": "public/scenes-es/s76-dentist-call/details.webp"
+    },
+    {
+      "id": "s76-dentist-call/badline",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "bad_line",
+      "phases": [
+        "hear"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena presses the headset's earpiece to her ear with one hand and squints, leaning in, straining to hear on a bad line (\"¿Me escucha?\").",
+      "out": "public/scenes-es/s76-dentist-call/badline.webp"
+    },
+    {
+      "id": "s76-dentist-call/hold",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "on_hold",
+      "phases": [
+        "hold"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena holds up one index finger in a friendly \"one moment\" gesture while her other hand presses a button on the desk phone beside the monitor, putting the learner on hold, an apologetic smile.",
+      "out": "public/scenes-es/s76-dentist-call/hold.webp"
+    },
+    {
+      "id": "s76-dentist-call/slot",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "slot",
+      "phases": [
+        "slot"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena has opened the paper appointment book on the desk, a grid of blank time slots, and runs a pen down a column, looking for a free time, then glances up with a helpful smile.",
+      "out": "public/scenes-es/s76-dentist-call/slot.webp"
+    },
+    {
+      "id": "s76-dentist-call/reschedule",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "reschedule",
+      "phases": [
+        "reschedule_q"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena holds a pencil over the open appointment book, rubbing out an entry with the pencil's eraser to move the learner's appointment, an obliging look. The book's grid shows no readable writing.",
+      "out": "public/scenes-es/s76-dentist-call/reschedule.webp"
+    },
+    {
+      "id": "s76-dentist-call/booked",
+      "scene": "s76-dentist-call",
+      "situation": "s76-dentist-call",
+      "moment": "more",
+      "phases": [
+        "more"
+      ],
+      "refs": [
+        "edit:s76-dentist-call/greet",
+        "person:cast/linda"
+      ],
+      "prompt": "Change only her pose: Lorena closes the appointment book with one hand and smiles warmly, nodding, the call almost done.",
+      "out": "public/scenes-es/s76-dentist-call/booked.webp"
+    }
+  ]
+}

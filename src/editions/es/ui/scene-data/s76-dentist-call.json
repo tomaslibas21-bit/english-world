@@ -1,0 +1,8 @@
+{
+  "npc": "Lorena, dental office reception (phone call)",
+  "images": ["greet", "sorry", "newpt", "spell", "details", "badline", "hold", "slot", "reschedule", "booked"],
+  "start": "greet",
+  "done": "booked",
+  "phases": {"help": "greet", "help_move": "greet", "reason": "greet", "pain_len": "sorry", "new_pt": "newpt", "name": "spell", "surname": "spell", "spell": "spell", "dob": "details", "phone": "details", "insurance": "details", "hear": "badline", "hold": "hold", "slot": "slot", "reschedule_q": "reschedule", "more": "booked"},
+  "focus": [34, 30]
+}

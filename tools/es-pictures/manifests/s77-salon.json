@@ -1,0 +1,219 @@
+{
+  "_about": "Song 77, Estética Tijeras, Paty. One set-up, every picture an edit of welcome (as the English salon). Twists: walkin_wait (wait, at wait_q); too_short is said in the reveal turn, so its picture (sorry) shows at the questions that follow it (amb_q, and fix_q when the learner is unhappy).",
+  "scenes": {
+    "s77-salon": {
+      "npc": "Paty, hairdresser",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "welcome",
+      "done": "book"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s77-salon/welcome",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "appt",
+      "phases": [
+        "howareyou",
+        "appt",
+        "name"
+      ],
+      "refs": [
+        "place:place/estetica-tijeras",
+        "person:cast/jessie"
+      ],
+      "prompt": "Paty, the hairdresser, stands beside the first teal styling chair about one third from the left, waving at the learner with one hand as they come in, a big, laugh-ready smile. The round mirrors, the shelf of hair products with blank labels, the wash basin chair and the window onto the sunny street behind her.",
+      "out": "public/scenes-es/s77-salon/welcome.webp"
+    },
+    {
+      "id": "s77-salon/wait",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "walkin_wait",
+      "phases": [
+        "wait_q"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only this: in the second styling chair sits a client, an older man with deep brown skin and a short white beard under a teal cape, half finished; Paty holds a comb in one hand and points with the other toward a small wooden bench by the window, an apologetic smile, asking the learner to wait a few minutes.",
+      "out": "public/scenes-es/s77-salon/wait.webp"
+    },
+    {
+      "id": "s77-salon/drink",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "drink",
+      "phases": [
+        "drink"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds out a glass of water in one hand and a small clay mug of coffee in the other, offering the learner a drink, smiling.",
+      "out": "public/scenes-es/s77-salon/drink.webp"
+    },
+    {
+      "id": "s77-salon/consult",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "service",
+      "phases": [
+        "service",
+        "service_q",
+        "length",
+        "cm_q",
+        "layers",
+        "bangs_q"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds a fine black comb in one hand and, with the other hand raised, shows a small gap between her thumb and index finger (how much to take off), eyebrows raised in a question.",
+      "out": "public/scenes-es/s77-salon/consult.webp"
+    },
+    {
+      "id": "s77-salon/tool",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "tool_q",
+      "phases": [
+        "tool_q"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds up a pair of electric hair clippers in one hand and a pair of silver scissors in the other, eyebrows raised, asking which one.",
+      "out": "public/scenes-es/s77-salon/tool.webp"
+    },
+    {
+      "id": "s77-salon/wash",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "wash",
+      "phases": [
+        "wash",
+        "water"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty has a folded white towel over one forearm and gestures with her other open hand toward the wash basin chair, a friendly smile.",
+      "out": "public/scenes-es/s77-salon/wash.webp"
+    },
+    {
+      "id": "s77-salon/chat",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "chat",
+      "phases": [
+        "chat",
+        "chat_weekend",
+        "chat_from",
+        "chat_vacation",
+        "chat_pets"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty laughs as she chats, holding a comb in one hand and showing her phone in the other, its screen a photo of a ginger cat curled up asleep (her cat, Canela), no text on the screen.",
+      "out": "public/scenes-es/s77-salon/chat.webp"
+    },
+    {
+      "id": "s77-salon/dry",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "blowdry",
+      "phases": [
+        "blowdry",
+        "style"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds a hair dryer in one hand and a round brush in the other, raised and ready, asking how the learner would like it styled, a cheerful look.",
+      "out": "public/scenes-es/s77-salon/dry.webp"
+    },
+    {
+      "id": "s77-salon/reveal",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "reveal",
+      "phases": [
+        "reveal",
+        "more_q"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds up a round hand mirror with a wooden handle, angled toward the learner so they can see the back of their hair, a hopeful, expectant smile.",
+      "out": "public/scenes-es/s77-salon/reveal.webp"
+    },
+    {
+      "id": "s77-salon/sorry",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "too_short",
+      "phases": [
+        "amb_q",
+        "fix_q"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds her scissors loosely in one hand and presses the other hand to her cheek, an embarrassed, apologetic grimace, offering to fix it.",
+      "out": "public/scenes-es/s77-salon/sorry.webp"
+    },
+    {
+      "id": "s77-salon/pay",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "pay",
+      "phases": [
+        "pay",
+        "tip_q"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds the card terminal out toward the learner in one hand, its screen blank, a friendly smile.",
+      "out": "public/scenes-es/s77-salon/pay.webp"
+    },
+    {
+      "id": "s77-salon/book",
+      "scene": "s77-salon",
+      "situation": "s77-salon",
+      "moment": "book",
+      "phases": [
+        "book",
+        "book_when"
+      ],
+      "refs": [
+        "edit:s77-salon/welcome",
+        "person:cast/jessie"
+      ],
+      "prompt": "Change only her pose: Paty holds an open appointment book against her chest, the page a grid of blank lines, a pen in her other hand, smiling warmly, offering to book the next appointment.",
+      "out": "public/scenes-es/s77-salon/book.webp"
+    }
+  ]
+}

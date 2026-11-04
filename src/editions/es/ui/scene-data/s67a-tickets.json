@@ -1,0 +1,8 @@
+{
+  "npc": "Don Raúl, bus ticket office",
+  "images": ["greet", "trip", "ret", "time", "soldout", "seat", "name", "card", "pay", "ticket", "anden", "bye"],
+  "start": "greet",
+  "done": "anden",
+  "phases": {"howareyou": "greet", "dest": "greet", "which_dest": "greet", "playa_q": "greet", "count": "greet", "trip": "trip", "ret": "ret", "travel_day": "ret", "time": "time", "soldout": "soldout", "sold_out": "soldout", "sold_out_tomorrow": "soldout", "seat": "seat", "name": "name", "full_name": "name", "other_name": "name", "discount": "card", "student_id": "card", "pay": "pay", "ticket": "ticket", "info": "anden", "closing": "bye"},
+  "focus": [34, 30]
+}

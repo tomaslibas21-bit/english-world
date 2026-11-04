@@ -1,0 +1,141 @@
+{
+  "_about": "Chapter 5, s85 Gracias por invitarme: dinner at Diego and Natalia's. Three set-ups: door (the front door, from place/casa-diego), sit (the living-dining room inside: there is no place reference for it, so it takes the door picture as its setting) and dinner (the table, with sit as its place reference). Make door, then sit, then dinner, then the rest.",
+  "scenes": {
+    "s85-dinner": {"npc": "Diego (host) and Natalia (Diego's wife)", "focus": [36, 32], "start": "door"}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "s85-dinner/door",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "arrive",
+      "phases": ["arrive"],
+      "refs": ["place:place/casa-diego", "person:cast/dan", "person:cast/nora"],
+      "prompt": "Diego and Natalia, the learner's friends, open their front door in the evening: Diego stands in the doorway about one third from the left, one arm sweeping toward the hall in a welcoming gesture, a wide smile (\"¡Pásale!\"); Natalia stands just behind his shoulder, a little to his right, waving with a kind smile.",
+      "label": "Diego and Natalia's house (the front door and the entrance hall)",
+      "out": "public/scenes-es/s85-dinner/door.webp"
+    },
+    {
+      "id": "s85-dinner/sit",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "coat",
+      "phases": ["coat"],
+      "refs": ["place:place/casa-diego-interior", "person:cast/dan", "person:cast/nora"],
+      "prompt": "Inside Diego and Natalia's house in the evening: a cozy living and dining room with lime-washed walls, a wooden dining table set for three with a woven runner, clay plates and glasses, a small sofa with embroidered cushions, two small framed paintings of the sea, a doorway with talavera tiles to the kitchen at the back, warm lamplight. Diego stands by the table about one third from the left, gesturing with an open hand toward a chair, smiling (\"Siéntate, estás en tu casa\"); Natalia is in the kitchen doorway in the background. The right third: a calm wall with a window.",
+      "label": "Diego and Natalia's living and dining room",
+      "out": "public/scenes-es/s85-dinner/sit.webp"
+    },
+    {
+      "id": "s85-dinner/diet",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "diet",
+      "phases": ["diet"],
+      "refs": ["edit:s85-dinner/sit", "person:cast/dan"],
+      "prompt": "Change only Diego's pose: he raises one finger as he remembers something, with a slightly worried, questioning look (\"¿Hay algo que no comas?\").",
+      "out": "public/scenes-es/s85-dinner/diet.webp"
+    },
+    {
+      "id": "s85-dinner/drink",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "drink",
+      "phases": ["drink"],
+      "refs": ["edit:s85-dinner/sit", "person:cast/dan"],
+      "prompt": "Change only Diego's pose: he holds up a glass pitcher of deep-red agua de jamaica in one hand and a cold beer bottle with no label in the other, offering the learner a drink with a wide smile (\"¿Qué te ofrezco de tomar?\").",
+      "out": "public/scenes-es/s85-dinner/drink.webp"
+    },
+    {
+      "id": "s85-dinner/cat",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "cat",
+      "phases": ["cat", "cat_lock"],
+      "refs": ["edit:s85-dinner/sit", "person:cast/dan"],
+      "prompt": "Change only Diego's pose: he holds a fluffy gray-and-white cat in his arms, scratching her head, smiling (\"Ella es Michi\").",
+      "out": "public/scenes-es/s85-dinner/cat.webp"
+    },
+    {
+      "id": "s85-dinner/ready",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "ready_soon",
+      "phases": ["ready_soon", "salad"],
+      "refs": ["edit:s85-dinner/sit", "person:cast/nora", "person:cast/dan"],
+      "prompt": "Change only this: Natalia has come out of the kitchen and now stands by the table about one third from the left, wearing striped oven mitts, with a cheerful smile (dinner is almost ready); Diego steps back a little to her right.",
+      "out": "public/scenes-es/s85-dinner/ready.webp"
+    },
+    {
+      "id": "s85-dinner/dinner",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "dinner",
+      "phases": ["dinner", "howisit"],
+      "refs": ["place:s85-dinner/sit", "person:cast/dan", "person:cast/nora"],
+      "prompt": "Dinner is served in Diego and Natalia's dining room. Diego and Natalia sit across the table from the learner, Diego about one third from the left and Natalia to his right. On the table: a clay dish of cochinita pibil (shredded pork, orange-red with achiote), warm tortillas wrapped in an embroidered cloth, a bowl of pickled red onion, lime wedges, a small bowl of habanero salsa, rice, and a pitcher of agua de jamaica; a full plate in front of the learner. Diego raises his glass with a warm smile (\"¡Buen provecho!\").",
+      "out": "public/scenes-es/s85-dinner/dinner.webp"
+    },
+    {
+      "id": "s85-dinner/pass",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "pass_bread",
+      "phases": ["pass"],
+      "refs": ["edit:s85-dinner/dinner", "person:cast/dan"],
+      "prompt": "Change only Diego's pose: he reaches one open hand across the table toward the tortillas in their embroidered cloth near the learner, with a friendly, asking smile (\"¿Me pasas las tortillas?\").",
+      "out": "public/scenes-es/s85-dinner/pass.webp"
+    },
+    {
+      "id": "s85-dinner/burnt",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "burnt_bread",
+      "phases": ["burnt"],
+      "refs": ["edit:s85-dinner/dinner", "person:cast/nora"],
+      "prompt": "Change only Natalia's pose: she has stood up and holds a small pot of rice with a blackened, burnt crust and a wisp of smoke, one hand on her forehead, laughing in embarrassment (\"¡Se me quemó el arroz!\").",
+      "out": "public/scenes-es/s85-dinner/burnt.webp"
+    },
+    {
+      "id": "s85-dinner/seconds",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "seconds",
+      "phases": ["seconds"],
+      "refs": ["edit:s85-dinner/dinner", "person:cast/nora"],
+      "prompt": "Change only Natalia's pose: she holds a serving spoon of cochinita pibil over the learner's plate, eyebrows raised with a generous smile (\"¿Te sirvo otro poquito?\").",
+      "out": "public/scenes-es/s85-dinner/seconds.webp"
+    },
+    {
+      "id": "s85-dinner/dessert",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "dessert",
+      "phases": ["dessert"],
+      "refs": ["edit:s85-dinner/dinner", "person:cast/nora"],
+      "prompt": "Change only this: the dinner dishes are cleared; Natalia proudly holds out a round flan on a plate, glossy caramel running down its sides, beaming (\"¡Hice flan!\").",
+      "out": "public/scenes-es/s85-dinner/dessert.webp"
+    },
+    {
+      "id": "s85-dinner/late",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "late",
+      "phases": ["late", "leave", "stay"],
+      "refs": ["edit:s85-dinner/dinner", "person:cast/dan"],
+      "prompt": "Change only this: the dishes are cleared and small clay coffee cups stand on the table; Diego holds up a small clay coffee pot with a pleading smile, offering one more cafecito (\"¡Quédate otro ratito, estamos en la sobremesa!\").",
+      "out": "public/scenes-es/s85-dinner/late.webp"
+    },
+    {
+      "id": "s85-dinner/bye",
+      "scene": "s85-dinner",
+      "situation": "s85-dinner",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s85-dinner/door", "person:cast/nora", "person:cast/dan"],
+      "prompt": "It is later at night. Change only that and the poses: Natalia holds out a plate wrapped in foil (cochinita to take home), smiling warmly; Diego waves goodbye beside her (\"¡Avísanos cuando llegues!\").",
+      "out": "public/scenes-es/s85-dinner/bye.webp"
+    }
+  ]
+}

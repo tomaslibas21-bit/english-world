@@ -1,0 +1,86 @@
+{
+  "_about": "s82-neighbor (Perdón por el ruido): Doña Lupita at her door in the open-air corridor of Departamentos Las Palmas. One set-up, 11 pictures: the introductions, where the learner is from, how they like the place, how things work (the garbage truck's bell), a favor (watering her plants while away), the complaint twist (the party music), the package twist (she took in a parcel), the Sunday cafecito and its time, the goodbye. The other favors (a ladder, some sugar, a package) have no question of their own and keep the 'needs' picture.",
+  "scenes": {
+    "s82-neighbor": { "npc": "Doña Lupita, neighbor", "focus": [30, 30], "start": "hello" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s82-neighbor", "scene": "s82-neighbor" },
+  "items": [
+    {
+      "id": "s82-neighbor/hello", "moment": "intro",
+      "phases": ["intro", "name", "howareyou"],
+      "refs": ["place:place/edificio-pasillo", "person:cast/rita"],
+      "prompt": "Doña Lupita, the neighbor, stands in the open doorway of her apartment about one third from the left, one hand raised in a delighted little wave, meeting the new neighbor from next door with a big, open smile. Potted geraniums beside her door; the sunny courtyard and a palm below the railing.",
+      "out": "public/scenes-es/s82-neighbor/hello.webp"
+    },
+    {
+      "id": "s82-neighbor/from", "moment": "from_q",
+      "phases": ["from_q"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only her pose: Doña Lupita leans forward a little with her head tilted and one hand on her chest, eyes bright with curiosity, asking where the learner is from.",
+      "out": "public/scenes-es/s82-neighbor/from.webp"
+    },
+    {
+      "id": "s82-neighbor/like", "moment": "like_q",
+      "phases": ["like_q"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only her pose: Doña Lupita sweeps one open hand toward the sunny courtyard and the palm below the railing, beaming proudly, asking how the learner likes the building.",
+      "out": "public/scenes-es/s82-neighbor/like.webp"
+    },
+    {
+      "id": "s82-neighbor/trash", "moment": "trash_q",
+      "phases": ["trash_q"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only her pose: Doña Lupita cups one hand behind her ear and points down toward the street with the other, eyebrows raised, explaining with a knowing smile that you listen for the garbage truck's bell.",
+      "out": "public/scenes-es/s82-neighbor/trash.webp"
+    },
+    {
+      "id": "s82-neighbor/needs", "moment": "needs",
+      "phases": ["needs"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only her pose: Doña Lupita leans against the door frame with her arms loosely folded, a kind, helpful smile, asking whether the learner needs anything.",
+      "out": "public/scenes-es/s82-neighbor/needs.webp"
+    },
+    {
+      "id": "s82-neighbor/plants", "moment": "away_when",
+      "phases": ["away_when"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only this: Doña Lupita holds a green plastic watering can by its handle beside the potted geraniums at her door, looking at the learner with an obliging smile and raised eyebrows (when are you leaving?).",
+      "out": "public/scenes-es/s82-neighbor/plants.webp"
+    },
+    {
+      "id": "s82-neighbor/complaint", "moment": "complaint",
+      "phases": ["complaint"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only this: Doña Lupita wears a quilted floral housecoat over her blouse and stands with her arms crossed, tired eyes and a reproachful frown, one eyebrow raised (the loud music last night kept her awake).",
+      "out": "public/scenes-es/s82-neighbor/complaint.webp"
+    },
+    {
+      "id": "s82-neighbor/package", "moment": "package",
+      "phases": ["pkg"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only this: Doña Lupita holds out a cardboard parcel with a blank white label toward the learner in both hands, smiling warmly (the delivery man left it with her).",
+      "out": "public/scenes-es/s82-neighbor/package.webp"
+    },
+    {
+      "id": "s82-neighbor/coffee", "moment": "coffee",
+      "phases": ["coffee", "coffee_sunday"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only this: Doña Lupita holds a steaming brown clay mug of café de olla in one hand and beckons toward her open door with the other, with an inviting, delighted smile (come over for a cafecito on Sunday).",
+      "out": "public/scenes-es/s82-neighbor/coffee.webp"
+    },
+    {
+      "id": "s82-neighbor/coffee_time", "moment": "coffee_time",
+      "phases": ["coffee_time"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only her pose: Doña Lupita taps her wristwatch (a plain face with no numbers) with one finger, eyebrows raised in a cheerful question (what time suits you?).",
+      "out": "public/scenes-es/s82-neighbor/coffee_time.webp"
+    },
+    {
+      "id": "s82-neighbor/bye", "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
+      "prompt": "Change only her pose: Doña Lupita stands half inside her doorway, one hand on the door, waving goodbye with the other, with a warm, motherly smile.",
+      "out": "public/scenes-es/s82-neighbor/bye.webp"
+    }
+  ]
+}

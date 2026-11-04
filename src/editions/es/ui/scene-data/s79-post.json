@@ -1,0 +1,7 @@
+{
+  "npc": "Gloria, postal clerk",
+  "images": ["greet", "scale", "perfume", "return", "service", "form", "stamps", "pay", "receipt", "notice", "parcel", "aduana"],
+  "start": "greet",
+  "phases": {"help": "greet", "help_pickup": "greet", "dest": "greet", "hazmat": "scale", "perfume": "perfume", "return_addr": "return", "service": "service", "first_offer": "service", "contents_list": "form", "value": "form", "gift": "form", "sign_customs": "form", "insurance": "form", "stamps_offer": "stamps", "stamps_qty": "stamps", "pay": "pay", "more": "receipt", "pick_notice": "notice", "pick_name": "notice", "guia": "notice", "pick_id": "notice", "pick_sign": "parcel", "customs": "aduana"},
+  "focus": [35, 30]
+}

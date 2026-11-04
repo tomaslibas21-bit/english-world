@@ -1,0 +1,129 @@
+{
+  "_about": "Chapter 5, s33 ¡Qué calor!: Don Pancho at the bus stop on calle Ceiba, in the morning. One set-up: greet first. The rain is sticky (no dry picture after it).",
+  "scenes": {
+    "s33-small-talk": {"npc": "Don Pancho, your neighbor (at the bus stop)", "focus": [34, 30], "start": "greet", "sticky": ["rain"]}
+  },
+  "defaults": {"kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high"},
+  "items": [
+    {
+      "id": "s33-small-talk/greet",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "howareyou",
+      "phases": ["howareyou"],
+      "refs": ["place:place/parada", "person:cast/frank"],
+      "prompt": "Don Pancho, the learner's retired neighbor, waits under the bus-stop shelter about one third from the left on a sunny morning, facing the learner; he lifts his white jipi hat a little off his head in greeting, with a friendly, grandfatherly smile (\"¡Buenos días!\").",
+      "out": "public/scenes-es/s33-small-talk/greet.webp"
+    },
+    {
+      "id": "s33-small-talk/weather",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "weather",
+      "phases": ["weather", "winter"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: he looks up at the sky, shading his eyes with one hand, with a knowing smile (talking about the weather).",
+      "out": "public/scenes-es/s33-small-talk/weather.webp"
+    },
+    {
+      "id": "s33-small-talk/intro",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "intro",
+      "phases": ["new_q", "intro"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: he holds out his right hand toward the learner for a handshake, with a warm smile (\"Pancho, para servirle\").",
+      "out": "public/scenes-es/s33-small-talk/intro.webp"
+    },
+    {
+      "id": "s33-small-talk/from",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "from_q",
+      "phases": ["from_q"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: eyebrows raised with interest, he strokes his chin with one hand, curious (\"¿De dónde es?\").",
+      "out": "public/scenes-es/s33-small-talk/from.webp"
+    },
+    {
+      "id": "s33-small-talk/fishing",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "weekend_past",
+      "phases": ["weekend_past", "wkf_what"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: laughing, he mimes holding a fishing rod with both hands, as if a fish were pulling (fishing with his grandson at the pier last weekend).",
+      "out": "public/scenes-es/s33-small-talk/fishing.webp"
+    },
+    {
+      "id": "s33-small-talk/plans",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "weekend_plans",
+      "phases": ["weekend_plans", "wkp_what"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: with a proud grin he mimes painting with a brush in one hand, short strokes in the air (this weekend he is painting his old lancha).",
+      "out": "public/scenes-es/s33-small-talk/plans.webp"
+    },
+    {
+      "id": "s33-small-talk/week",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "week",
+      "phases": ["week", "busy_why"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: he laughs heartily, patting his chest with one hand (he is retired: every day is Saturday).",
+      "out": "public/scenes-es/s33-small-talk/week.webp"
+    },
+    {
+      "id": "s33-small-talk/your_turn",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "your_turn",
+      "phases": ["your_turn"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: arms crossed, he tilts his head with a mock-offended, teasing grin (\"¿Y no me va a preguntar por mi fin de semana?\").",
+      "out": "public/scenes-es/s33-small-talk/your_turn.webp"
+    },
+    {
+      "id": "s33-small-talk/react",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "react",
+      "phases": ["react"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: he leans in a little, eyebrows raised, listening with delighted interest and waiting for the learner's reaction.",
+      "out": "public/scenes-es/s33-small-talk/react.webp"
+    },
+    {
+      "id": "s33-small-talk/rain",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "rain",
+      "phases": ["rain"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only the weather and his pose: a heavy tropical downpour under a gray sky, rain streaming off the shelter's roof, puddles on the street; he opens a big black umbrella and holds it out to share with the learner, laughing (\"¡Qué aguacero!\").",
+      "out": "public/scenes-es/s33-small-talk/rain.webp"
+    },
+    {
+      "id": "s33-small-talk/late",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "bus_late",
+      "phases": ["late", "like_q"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only his pose: he checks the plain wristwatch on his wrist (a blank face, no numbers) and shakes his head with a resigned laugh (the bus is late again: \"¡Como siempre!\").",
+      "out": "public/scenes-es/s33-small-talk/late.webp"
+    },
+    {
+      "id": "s33-small-talk/bye",
+      "scene": "s33-small-talk",
+      "situation": "s33-small-talk",
+      "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
+      "prompt": "Change only this: a city bus, white with a teal stripe and a blank destination sign, pulls up in the street behind him (in the left and middle of the picture); Don Pancho waves goodbye with a smile (\"¡Que le vaya bien!\").",
+      "out": "public/scenes-es/s33-small-talk/bye.webp"
+    }
+  ]
+}

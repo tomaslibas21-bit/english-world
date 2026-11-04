@@ -1,0 +1,179 @@
+{
+  "_about": "¿Me puede ayudar?: Doña Mari's flower stall at the Saturday tianguis on the zócalo (one set-up). 10 pictures: hello, her worry, the pockets, when, where, what it looks like, the way to the Policía Municipal, the boy who found it by the kiosco (twist found_it), checking it, goodbye. The found item is shown as a black wallet (the learner may have lost a phone, a purse or a backpack instead).",
+  "scenes": {
+    "s91a-lost-wallet": {
+      "npc": "Doña Mari, flower stall",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "greet",
+      "done": "bye"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s91a-lost-wallet/greet",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "problem",
+      "phases": [
+        "problem",
+        "flowers_q",
+        "howareyou"
+      ],
+      "refs": [
+        "place:place/zocalo-flores",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Doña Mari, who sells flowers at the tianguis, stands behind her flower table about one third from the left, holding a bunch of orange marigolds wrapped in brown paper, smiling kindly at the learner who has just walked up to the stall.",
+      "out": "public/scenes-es/s91a-lost-wallet/greet.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/worried",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "worried_q",
+      "phases": [
+        "worried_q",
+        "what_happened",
+        "lost_really"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she has set the flowers down and leans a little over the table toward the learner, one hand on her chest, eyebrows drawn together in a worried, caring look (\"¿Está bien? ¿Qué le pasó?\").",
+      "out": "public/scenes-es/s91a-lost-wallet/worried.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/pockets",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "pockets",
+      "phases": [
+        "pockets"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she pats the two front pockets of her own orange apron with both hands, eyebrows raised, a gentle questioning look (\"¿Ya revisó bien sus bolsas?\").",
+      "out": "public/scenes-es/s91a-lost-wallet/pockets.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/think",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "last_seen",
+      "phases": [
+        "last_seen"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she rests one hand on the table and touches her chin with the other, head tilted, listening thoughtfully (asking when and where the learner last had it).",
+      "out": "public/scenes-es/s91a-lost-wallet/think.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/where",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "where_then",
+      "phases": [
+        "where_then"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she sweeps one open hand across the stalls of the tianguis behind her, toward the left of the picture, eyebrows raised in a gentle question (\"¿Y dónde estaba usted en ese momento?\").",
+      "out": "public/scenes-es/s91a-lost-wallet/where.webp",
+      "note": "Her advice (go back and ask) has no picture of its own: it is said in the same turn as the next question (describe, found or police), so its id never shows."
+    },
+    {
+      "id": "s91a-lost-wallet/describe",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "describe",
+      "phases": [
+        "describe"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she holds her hands a little apart at chest height, palms facing each other as if picturing the size of a small wallet, eyebrows raised in a curious, attentive look (asking what it looks like, so she can keep an eye out).",
+      "out": "public/scenes-es/s91a-lost-wallet/describe.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/police",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "police",
+      "phases": [
+        "police"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she turns slightly and points with an outstretched arm across the square toward the far left background, looking back at the learner with a helpful smile (\"Está ahí enfrente, junto al museo\": the Policía Municipal).",
+      "out": "public/scenes-es/s91a-lost-wallet/police.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/found",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "found_it",
+      "phases": [
+        "found"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only this: a boy of about ten with deep brown skin, short curly black hair and a red T-shirt now stands at the left end of the table, holding out a black leather wallet toward the learner with both hands, a shy, proud smile; Doña Mari rests a hand on his shoulder, surprised and delighted (\"¡Este niño la encontró junto al kiosco!\").",
+      "out": "public/scenes-es/s91a-lost-wallet/found.webp"
+    },
+    {
+      "id": "s91a-lost-wallet/check",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "all_there",
+      "phases": [
+        "all_there",
+        "missing_really"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/found",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only this: the learner's hand and forearm, in a plain sand-colored sleeve, come in from the bottom edge holding the black wallet open, a few blank cards visible inside; the boy and Doña Mari look on with hopeful smiles (\"¿Está todo adentro?\").",
+      "out": "public/scenes-es/s91a-lost-wallet/check.webp",
+      "note": "An edit of found (not of greet), so the boy and the wallet stay the same."
+    },
+    {
+      "id": "s91a-lost-wallet/bye",
+      "scene": "s91a-lost-wallet",
+      "situation": "s91a-lost-wallet",
+      "moment": "closing",
+      "phases": [
+        "closing"
+      ],
+      "refs": [
+        "edit:s91a-lost-wallet/greet",
+        "person:cast/mrs_lee"
+      ],
+      "prompt": "Change only her pose: she waves goodbye with one raised hand and holds a single orange marigold out toward the learner with the other, a warm, motherly smile (\"¡Que le vaya bien!\").",
+      "out": "public/scenes-es/s91a-lost-wallet/bye.webp"
+    }
+  ]
+}

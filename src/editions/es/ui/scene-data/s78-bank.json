@@ -1,0 +1,8 @@
+{
+  "npc": "Ricardo, bank teller",
+  "images": ["greet", "card", "id", "proof", "curp", "slow", "form", "cash", "exchange", "savings", "app", "welcome"],
+  "start": "greet",
+  "done": "welcome",
+  "phases": {"howareyou": "greet", "help": "greet", "acct_type": "greet", "acct_q": "greet", "open_offer": "greet", "lease_q": "greet", "help_card": "card", "pin_q": "card", "card_digits": "card", "cash_offer": "card", "id": "id", "card_id": "id", "cash_id": "id", "other_id": "id", "proof": "proof", "ssn": "curp", "slow": "slow", "form": "form", "deposit": "cash", "dep_confirm": "cash", "cash_amount": "cash", "bills": "cash", "euros": "exchange", "ex_confirm": "exchange", "savings": "savings", "app": "app", "more": "welcome"},
+  "focus": [34, 30]
+}

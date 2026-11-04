@@ -1,0 +1,41 @@
+{
+  "_about": "The shared pieces of every prompt (docs/es/PICTURES.md \"The style\"). espics.build_prompt joins: the reference roles, style, town, the entry's own prompt, the kind's frame, people, rules. Edit here, not in the manifests.",
+  "ref_roles": {
+    "style": "Image {n} is a style reference only: match its illustration style exactly (simple confident shapes, minimal soft shading, fine grain, warm light, the slightly muted palette with deep teal and warm orange accents and creamy whites, its level of detail and its way of drawing faces and hands), but copy nothing in it: not its people, place, objects, signs, text or composition.",
+    "person": "Image {n} is the character reference for {label}: draw exactly this person, with the same face, skin tone, hairstyle, hair color, build and clothes.",
+    "place": "Image {n} is the place reference: keep its architecture, colors, furniture and light, and draw it from the same eye-level camera position.",
+    "edit": "Edit image {n}. Keep everything else exactly the same: the place, the light, the colors, the camera and framing, and every person's face, hair, skin tone and clothes. Change only what is described below.",
+    "ref": "Image {n} is a reference: {label}.",
+    "setting": "Image {n} shows {label} from another spot: whatever of it is in view here (the buildings, the kiosco, the church, the colors, the furniture, the light) must look the same, drawn in the same style."
+  },
+  "style": "Style: a clean, modern semi-flat illustration for an adult language-learning app, in the style of a premium travel or wellness app: simple confident shapes, minimal soft shading, a fine grain texture, warm natural daylight, a harmonious, slightly muted palette with deep teal and warm orange accents and creamy whites. Grown-up and elegant: not childish, not cartoonish, not anime, not photorealistic, not a 3D render. The background is simplified and a little soft, so attention stays on the person.",
+  "town": "Setting: Puerto Colibrí, a small, relaxed town on Mexico's Caribbean coast in Quintana Roo (like the town center of Tulum or Bacalar, never Cancún's hotel zone). Bright tropical sun, softened into the same warm, slightly muted palette: no neon, no oversaturated colors. One- and two-story buildings with flat roofs and low parapets, arches, wooden shutters and wrought-iron window grilles, painted in sun-faded Caribbean colors (terracotta, ochre, mango yellow, coral pink, turquoise, lime-washed white). Coconut palms, sea grapes, bougainvillea and flame trees. The turquoise sea and white sand only at the waterfront (the malecón, the beach, the pier, the seaside restaurant); elsewhere, windows and doors open onto streets, patios, palms and painted houses. Mexican touches used lightly: papel picado, talavera tiles, clay pots, woven palm, embroidered cotton. Everyday modern Mexican life, not a postcard: no sombreros, ponchos, cacti or other clichés.",
+  "people": "People: grown-ups with friendly, natural expressions, drawn with real variety (skin tones from light to deep brown; hair that is not all dark brown: black, gray, white, salt-and-pepper, curly, braided, bald or dyed; different ages and builds). Anyone described in this prompt looks exactly as described.",
+  "rules": "No text anywhere in the picture: no letters, words, numbers, digits, prices, logos, brand marks, watermarks or signatures. Every sign, menu, board, screen, label, badge, patch, ticket, paper, map and license plate is blank or shows only simple shapes and icons. Hands appear only when the action needs them: relaxed and natural, with five fingers each.",
+  "rules_with_tags": "No other text anywhere in the picture: apart from the name tag described above, no letters, words, numbers, digits, prices, logos, brand marks, watermarks or signatures. Every sign, menu, board, screen, label, other badge or patch, ticket, paper, map and license plate is blank or shows only simple shapes and icons. Hands appear only when the action needs them: relaxed and natural, with five fingers each.",
+  "nametag": {
+    "_about": "The owner's one exception to the no-text rule (4 Nov 2026): a worker's name tag where a real one would wear it. Who has one and what it says: \"nametag\" on the cast entries in manifests/refs.json.",
+    "badge": "{name} wears a small rectangular name badge on the chest that reads exactly \"{text}\".",
+    "lanyard": "The card on {name}'s lanyard shows the name \"{text}\" in clear letters.",
+    "plate": "{name}'s uniform has a small metal name plate above the right chest pocket that reads exactly \"{text}\".",
+    "embroidered": "{name}'s white coat has \"{text}\" embroidered in dark blue thread above the chest pocket.",
+    "spelling": "Spell it exactly \"{text}\"{accent}, letter for letter, in plain clear letters; nothing else is written on it."
+  },
+  "kinds": {
+    "cast": {
+      "town": false,
+      "people": false,
+      "frame": "Framing: a character reference portrait on a plain, warm cream background with a soft shadow. The person alone, waist up, centered, facing the viewer straight on with square shoulders, arms relaxed down at the sides so the hands are out of the frame, a friendly, natural expression. The face, hair, skin tone, build and clothes are clear and evenly lit. Nothing else in the picture: no props, furniture, scenery or other people."
+    },
+    "place": {
+      "frame": "Framing: an establishing view of the place for a conversation picture, at eye level, seen from where the learner stands (across the counter, desk or table, or from the walkway). The spot where the person who works or sits there will be drawn later, about one third from the left edge, is left empty: nobody stands or sits there. The right third of the picture stays calm (a wall, a window or open space), because the conversation panel covers it. No main character: at most two or three small, distant people in the background."
+    },
+    "test": {
+      "frame": "Framing: an establishing view of the place for a conversation picture, at eye level, seen from where the learner stands. The spot about one third from the left edge is left empty for a person who will be drawn later. The right third of the picture stays calm (open space and sky), because the conversation panel covers it. No main character: at most two or three small, distant people in the background."
+    },
+    "scene": {
+      "frame": "Framing: eye level, seen through the learner's eyes from the learner's side of the counter, desk or table. The learner is never shown (no face, body or back of the head); only when the moment needs it, the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, with no ring, watch or nail polish. The person is about one third from the left edge, waist up, facing the viewer, with the head in the upper half of the picture. The right third stays calm (a wall, a window or open space), because the conversation panel covers it on computers.",
+      "frame_nobody": "Framing: eye level, seen through the learner's eyes. Nobody is in the picture: no person at all, and the learner is never shown (no face, body or back of the head); only when the moment needs it, the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, with no ring, watch or nail polish. The right third stays calm (a wall, a window or open space), because the conversation panel covers it on computers."
+    }
+  }
+}

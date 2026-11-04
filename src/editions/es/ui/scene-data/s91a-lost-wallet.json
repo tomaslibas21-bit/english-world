@@ -1,0 +1,8 @@
+{
+  "npc": "Doña Mari, flower stall",
+  "images": ["greet", "worried", "pockets", "think", "where", "describe", "police", "found", "check", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"problem": "greet", "flowers_q": "greet", "howareyou": "greet", "worried_q": "worried", "what_happened": "worried", "lost_really": "worried", "pockets": "pockets", "last_seen": "think", "where_then": "where", "describe": "describe", "police": "police", "found": "found", "all_there": "check", "missing_really": "check", "closing": "bye"},
+  "focus": [34, 30]
+}

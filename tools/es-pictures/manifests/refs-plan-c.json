@@ -1,0 +1,32 @@
+{
+  "_about": "Planner C's new place references (chapter 8: p27-meeting, p28b-review), in the format of the place entries in refs.json. Both are rooms of the Línea Clara office, so place/linea-clara is their setting. Make them before the situation pictures that use them (p27-meeting/pitch takes place/sala-de-juntas as its place, p28b-review/proud takes place/oficina-elena). place/sala-de-juntas: the glass-walled meeting room, empty, from the learner's seat at the near end of the table. s34-meeting/mute drew the same room straight from place/linea-clara, with people in it; this prompt describes that room (the light-wood table, sage-green chairs, the wall screen with its camera bar and the sideboard under it, the glass walls on the left, the window onto palms and the harbor on the right) so the two meetings look like one room. Its screen ends before the right third, because p27 shows slides on it. place/oficina-elena: the manager's small glass office, from the visitor's chair across the desk, with the potted plant on the windowsill (it falls at the start of p28b) and an empty wall shelf where it ends up ('la planta ahora vive en la repisa').",
+  "defaults": {},
+  "items": [
+    {
+      "id": "place/sala-de-juntas",
+      "kind": "place",
+      "label": "Línea Clara's glass-walled meeting room",
+      "situation": ["p27-meeting"],
+      "moment": null,
+      "prompt": "The glass-walled meeting room of the Línea Clara office on a weekday morning, in the same light wood, sage green and white as the rest of the office, with plants and a woven pendant lamp, seen at eye level from a chair at the near end of the long meeting table. The light-wood table runs straight ahead to the back wall, with empty sage-green chairs along both sides; on it, two closed silver laptops, a small potted plant, a glass water carafe with two glasses and, at the near end, a blank notepad with a pen. On the lime-washed white back wall hangs a big wall screen, blank and dark gray, a little right of the middle and ending well before the right third, with a slim black camera bar on top and a low light-wood sideboard under it holding a small plant. On the left, glass walls with thin dark frames, and behind them the open-plan office, softly out of focus. On the right, a big window onto palm fronds and the harbor in the morning sun, and a tall potted plant in a terracotta pot. The presenter's spot at the far end of the table, beside the left edge of the screen, about one third from the left, is empty. The right third: the calm window and the tall plant. Nobody in the room.",
+      "refs": ["style:en/s69-local/greet", "setting:place/linea-clara"],
+      "size": "2048x1152",
+      "quality": "high",
+      "model": "gpt-image-2.5-sunburst",
+      "out": "public/scenes-es/ref/place/sala-de-juntas.webp"
+    },
+    {
+      "id": "place/oficina-elena",
+      "kind": "place",
+      "label": "Elena's small glass office at Línea Clara",
+      "situation": ["p28b-review"],
+      "moment": null,
+      "prompt": "A manager's small glass-walled office in the Línea Clara office on a weekday morning, in the same light wood, sage green and white as the rest of the office, seen at eye level from the visitor's chair across the desk. A light-wood desk runs across the lower part of the picture; on it, a closed silver laptop, a printed agenda (a single white sheet with only gray lines), a pen and a teal mug. Behind the desk, the manager's sage-green office chair stands empty about one third from the left. Behind the chair, a wide window with a deep white windowsill; on the sill, just to the left of the chair, a small leafy plant in a terracotta pot; through the window, palm fronds and the harbor in the morning sun. On the left, a glass wall with a thin dark frame onto the open-plan office (light-wood desks, plants, one coworker at a desk), softly out of focus. On the back wall to the right of the window, before the right third, two light-wood wall shelves at shoulder height: the lower one with a few plain binders (blank spines) and a small woven basket, the upper one empty. The right third: a calm, lime-washed white wall. Nobody in the office.",
+      "refs": ["style:en/s69-local/greet", "setting:place/linea-clara"],
+      "size": "2048x1152",
+      "quality": "high",
+      "model": "gpt-image-2.5-sunburst",
+      "out": "public/scenes-es/ref/place/oficina-elena.webp"
+    }
+  ]
+}

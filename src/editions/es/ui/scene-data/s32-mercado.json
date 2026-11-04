@@ -1,0 +1,8 @@
+{
+  "npc": "Doña Lupe, fruit and vegetable stall",
+  "images": ["greet", "price", "weigh", "ripe", "more", "bag", "pay", "bill", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"howareyou": "greet", "order": "greet", "after_price": "price", "qty": "weigh", "ripe": "ripe", "more": "more", "bag": "bag", "pay": "pay", "bill": "bill", "closing": "bye"},
+  "focus": [34, 30]
+}

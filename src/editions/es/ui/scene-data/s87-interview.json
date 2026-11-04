@@ -1,0 +1,7 @@
+{
+  "npc": "Licenciada Salinas, HR manager (Línea Clara)",
+  "images": ["greet", "drink", "about", "why", "phone", "strengths", "weakness", "salary", "start", "questions", "offer", "bye"],
+  "start": "greet",
+  "phases": {"arrive": "greet", "name": "greet", "found": "greet", "drink": "drink", "about": "about", "leaving": "about", "why": "why", "future": "why", "hire": "why", "phone": "phone", "strengths": "strengths", "languages": "strengths", "teamwork": "strengths", "weakness": "weakness", "improve": "weakness", "salary": "salary", "range": "salary", "start": "start", "authorized": "start", "questions": "questions", "offer": "offer", "closing": "bye"},
+  "focus": [32, 32]
+}

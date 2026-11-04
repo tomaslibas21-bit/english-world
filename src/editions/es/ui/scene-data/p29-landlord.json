@@ -1,0 +1,7 @@
+{
+  "npc": "Don Ernesto, landlord (Doña Lupita, neighbor)",
+  "images": ["hello", "remote", "since", "rita", "dodge", "offer", "date", "home", "hurry", "rent", "bye"],
+  "start": "hello",
+  "phases": {"problem": "hello", "guess": "hello", "howareyou": "hello", "thermostat": "remote", "duration": "since", "rita": "rita", "dodge": "dodge", "offer": "offer", "date": "date", "home": "home", "wrap": "hurry", "rent": "rent", "closing": "bye"},
+  "focus": [34, 32]
+}

@@ -1,0 +1,8 @@
+{
+  "npc": "Andrea, your friend, and Don Gilberto, your landlord (phone calls)",
+  "images": ["flood", "voicemail", "andrea", "need", "andrea_bye", "door", "gilberto", "worried", "power", "offer", "time", "on_way"],
+  "start": "flood",
+  "done": "on_way",
+  "phases": {"l_news": "flood", "vm_msg": "voicemail", "l_okay": "andrea", "l_brunch": "andrea", "l_need": "need", "l_come": "need", "l_bye": "andrea_bye", "l_door": "door", "g_who": "gilberto", "g_what": "gilberto", "g_request": "gilberto", "g_close": "gilberto", "g_since": "worried", "g_hurt": "worried", "hurt_yes": "worried", "g_down": "worried", "g_water": "power", "valve": "power", "g_offer": "offer", "sure_tomorrow": "offer", "g_time": "time"},
+  "focus": [34, 32]
+}

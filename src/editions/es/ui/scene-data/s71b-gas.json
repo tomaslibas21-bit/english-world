@@ -1,0 +1,8 @@
+{
+  "npc": "Doña Chela, gas station attendant",
+  "images": ["greet", "grade", "amount", "zeros", "cero", "extras", "pay", "receipt", "trouble", "help", "bye"],
+  "start": "greet",
+  "done": "bye",
+  "phases": {"howareyou": "greet", "order": "greet", "fill_offer": "greet", "grade": "grade", "amount": "amount", "zeros": "zeros", "pump_on": "cero", "extras": "extras", "pay": "pay", "debit": "pay", "receipt": "receipt", "trouble": "trouble", "trouble_help": "help", "anything": "bye", "closing": "bye"},
+  "focus": [34, 30]
+}

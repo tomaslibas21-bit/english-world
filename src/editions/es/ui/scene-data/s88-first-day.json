@@ -1,0 +1,7 @@
+{
+  "npc": "María, coworker (Línea Clara)",
+  "images": ["hello", "desk", "tour", "coffee", "coffee-show", "mug", "task", "lunch", "lunch-insist", "day", "bye"],
+  "start": "hello",
+  "phases": {"hello": "hello", "name": "hello", "meet": "hello", "desk": "desk", "tour": "tour", "coffee": "coffee", "coffee_show": "coffee-show", "mug": "mug", "task": "task", "lunch": "lunch", "lunch_insist": "lunch-insist", "day": "day", "closing": "bye"},
+  "focus": [36, 30]
+}

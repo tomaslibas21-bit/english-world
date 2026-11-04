@@ -1,0 +1,19 @@
+{
+  "_about": "Planner B's new place reference (chapter 8: p25-used-car), in the format of the place entries in refs.json. Make it before p25-used-car's first pictures (greet takes it as its place, back as its setting).",
+  "defaults": {},
+  "items": [
+    {
+      "id": "place/casa-margarita",
+      "kind": "place",
+      "label": "Doña Margarita's drive and her red convertible (Calle de los Cedros)",
+      "situation": ["p25-used-car"],
+      "moment": null,
+      "prompt": "Doña Margarita's house on Calle de los Cedros, the quiet residential street, in the warm late-afternoon sun, seen at eye level from the sidewalk at her open gate. A one-story house painted mango yellow with white trim, teal wooden shutters and a wrought-iron window grille, a flat roof with a low parapet and a black water tank (tinaco), bougainvillea spilling over the wall, a clay pot of plants by the front door. In front of the house, a paved drive (cochera) behind a wide wrought-iron gate that stands open. Parked in the drive, nose toward the street: her car, a cherry-red 2008 two-door convertible with the soft, rounded lines of a late-2000s compact, its black fabric top folded down behind the seats, cream leather seats, body-colored bumpers and alloy wheels, well kept and shining in the sun. No brand marks, badges or logos anywhere on it (a plain grille), the license plate blank, nothing in the windshield and no sign or paper anywhere. The car stands in the middle of the picture in three-quarter view, its driver's side toward the viewer, and its front ends before the right third. Her spot beside the driver's door, about one third from the left, is empty (she will stand there). The right third: the calm, sunny street, the sidewalk with a shade tree, a neighbor's coral wall and the sky. No sea in view.",
+      "refs": ["style:en/s69-local/greet", "setting:place/calle-residencial"],
+      "size": "2048x1152",
+      "quality": "high",
+      "model": "gpt-image-2.5-sunburst",
+      "out": "public/scenes-es/ref/place/casa-margarita.webp"
+    }
+  ]
+}

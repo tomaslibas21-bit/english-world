@@ -1,0 +1,233 @@
+{
+  "_about": "¡Una más!: Gimnasio Colibrí, two set-ups: the front desk (welcome, form, pay, lockers) and the gym floor (warm-up to the next visit), each with its own first picture from the gym reference. 13 pictures (a long conversation with two twists: out_of_order and hurts).",
+  "scenes": {
+    "s35-gym": {
+      "npc": "Mónica, personal trainer",
+      "focus": [
+        34,
+        30
+      ],
+      "start": "welcome",
+      "done": "next"
+    }
+  },
+  "defaults": {
+    "kind": "scene",
+    "model": "gpt-image-2.5-sunburst",
+    "size": "2048x1152",
+    "quality": "high"
+  },
+  "items": [
+    {
+      "id": "s35-gym/welcome",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "new",
+      "phases": [
+        "new",
+        "plan",
+        "alt_plan",
+        "howareyou"
+      ],
+      "refs": [
+        "place:place/gimnasio",
+        "person:cast/jordan"
+      ],
+      "prompt": "Mónica, the personal trainer, stands behind the front desk about one third from the left, one hand raised in a cheerful wave, a bright welcoming smile (\"¡Hola! ¿Es tu primera vez aquí?\").",
+      "out": "public/scenes-es/s35-gym/welcome.webp"
+    },
+    {
+      "id": "s35-gym/form",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "form",
+      "phases": [
+        "form"
+      ],
+      "refs": [
+        "edit:s35-gym/welcome",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose: she slides a clipboard with a blank sign-up form and a pen across the desk toward the learner and points at the bottom of the form with one finger, smiling (\"Llena esta ficha y fírmala abajo\").",
+      "out": "public/scenes-es/s35-gym/form.webp"
+    },
+    {
+      "id": "s35-gym/pay",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "pay",
+      "phases": [
+        "pay",
+        "pay_other"
+      ],
+      "refs": [
+        "edit:s35-gym/welcome",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose: she holds out a small black card terminal across the desk toward the learner, its screen blank, a friendly smile (\"Acerca tu tarjeta a la terminal\").",
+      "out": "public/scenes-es/s35-gym/pay.webp"
+    },
+    {
+      "id": "s35-gym/lockers",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "lockers",
+      "phases": [
+        "lockers",
+        "lock_q",
+        "changing"
+      ],
+      "refs": [
+        "edit:s35-gym/welcome",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose: she points over her shoulder toward the back of the gym with one hand and holds up a small brass padlock in the other, a helpful smile (the locker rooms are at the back; padlocks are sold at the desk).",
+      "out": "public/scenes-es/s35-gym/lockers.webp"
+    },
+    {
+      "id": "s35-gym/warmup",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "warmup",
+      "phases": [
+        "warmup",
+        "feel_q"
+      ],
+      "refs": [
+        "place:place/gimnasio",
+        "person:cast/jordan"
+      ],
+      "prompt": "Now out on the gym floor of Gimnasio Colibrí (the floor seen behind the front desk in the reference), at eye level among the machines: Mónica stands about one third from the left between a treadmill and an exercise bike, gesturing toward both with open hands, a white towel over one shoulder, an energetic smile (\"Cinco minutos en la caminadora o en la bici\"). Behind her, along the wall, a leg press and a flat bench with a barbell on its rack; on the right, big windows with palms.",
+      "out": "public/scenes-es/s35-gym/warmup.webp",
+      "note": "The second set-up: the first picture of the gym floor; the floor pictures below are edits of it."
+    },
+    {
+      "id": "s35-gym/machine",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "machine",
+      "phases": [
+        "machine"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose and place: she now stands beside the leg press, a white towel lying on its seat, and points at the towel with one hand, eyebrows raised with a playful look (someone may be using it: ask if it's free).",
+      "out": "public/scenes-es/s35-gym/machine.webp"
+    },
+    {
+      "id": "s35-gym/broken",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "out_of_order",
+      "phases": [
+        "broken"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose and place: she stands beside the leg press, which has a blank sheet of paper taped across its seat, one hand on the machine and an apologetic grimace, pointing with the other hand toward a second leg press by the wall in the background with a white towel draped over it (\"¡Ay, no! Hoy no funciona\").",
+      "out": "public/scenes-es/s35-gym/broken.webp"
+    },
+    {
+      "id": "s35-gym/sets",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "sets",
+      "phases": [
+        "sets"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose and place: she stands beside the leg press holding up three fingers, coaching with a confident smile (\"Tres series de diez\").",
+      "out": "public/scenes-es/s35-gym/sets.webp"
+    },
+    {
+      "id": "s35-gym/rep",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "rep",
+      "phases": [
+        "rep"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose and place: she crouches a little beside the leg press, one fist pumped and the index finger of the other hand raised, cheering with an excited, encouraging face (\"¡Una más!\").",
+      "out": "public/scenes-es/s35-gym/rep.webp"
+    },
+    {
+      "id": "s35-gym/careful",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "hurts",
+      "phases": [
+        "okay_q",
+        "where_hurt",
+        "pain_amb",
+        "stretch"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose and place: she stands beside the leg press holding up one open hand in a calm stop gesture, leaning toward the learner with a concerned, caring face (\"¡Uy! ¿Estás bien?\").",
+      "out": "public/scenes-es/s35-gym/careful.webp",
+      "note": "Also the easy stretching that replaces the weights after the pain (pending id stretch)."
+    },
+    {
+      "id": "s35-gym/spot",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "spot",
+      "phases": [
+        "spot"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose and place: she stands behind the head end of the flat bench, both hands hovering just under the barbell resting on the bench's rack, ready to help, a focused, reassuring look (spotting the bench press).",
+      "out": "public/scenes-es/s35-gym/spot.webp"
+    },
+    {
+      "id": "s35-gym/breath",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "breath",
+      "phases": [
+        "breath",
+        "breath_q"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose: she holds out a plain water bottle with no label toward the learner, a kind, relaxed smile (\"Descansa y toma agua\").",
+      "out": "public/scenes-es/s35-gym/breath.webp"
+    },
+    {
+      "id": "s35-gym/next",
+      "scene": "s35-gym",
+      "situation": "s35-gym",
+      "moment": "next",
+      "phases": [
+        "next",
+        "day_amb",
+        "thursday_q",
+        "closing"
+      ],
+      "refs": [
+        "edit:s35-gym/warmup",
+        "person:cast/jordan"
+      ],
+      "prompt": "Change only her pose: she gives a cheerful thumbs-up with one hand, the towel over her shoulder, a big proud smile (\"¡Muy buen trabajo hoy! ¿Mañana a la misma hora?\").",
+      "out": "public/scenes-es/s35-gym/next.webp"
+    }
+  ]
+}

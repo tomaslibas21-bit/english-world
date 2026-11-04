@@ -1,0 +1,8 @@
+{
+  "npc": "Sofía, Pablo and Sara (video call)",
+  "images": ["grid", "camera", "mute", "screen", "freeze", "echo", "goahead", "update", "paul-leave", "questions", "cat", "bye", "cam-still"],
+  "start": "grid",
+  "sticky": ["cam-still"],
+  "phases": {"hear": "grid", "hear2": "grid", "weekend": "grid", "camera": "camera", "mute": "mute", "mute_amb": "mute", "paul_hear": "mute", "screen": "screen", "screen2": "screen", "freeze": "freeze", "freeze_q": "freeze", "echo": "echo", "goahead": "goahead", "first": "update", "update": "update", "what_task": "update", "when_q": "update", "send_q": "update", "help_offer": "update", "paul_leave": "paul-leave", "questions": "questions", "anything_else": "questions", "cat": "cat", "next_week": "bye", "closing": "bye", "cam_still": "cam-still"},
+  "focus": [24, 32]
+}

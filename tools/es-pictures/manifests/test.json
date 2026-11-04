@@ -1,0 +1,15 @@
+{
+  "_about": "The first paid picture: does the key work (organization verification), does the edits endpoint take a reference, what does a reference cost in image input tokens, and does the style carry over? Medium quality at the scene size: about a cent of output tokens.",
+  "defaults": { "kind": "test", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "medium" },
+  "items": [
+    {
+      "id": "test/zocalo",
+      "label": "Test: the zócalo",
+      "situation": null,
+      "moment": null,
+      "refs": ["style:en/s69-local/greet"],
+      "prompt": "The zócalo (main square) of Puerto Colibrí on a sunny late morning. In the middle distance, a little right of center, the kiosco: an octagonal stone bandstand with a few steps, slender green wrought-iron columns and railing, and a red-tiled dome with a small lantern on top. Behind it, across the square, the parroquia: a simple lime-washed colonial church in white and ochre with an arched wooden door and a bell gable with two bells. Strings of colorful papel picado run from the kiosco's eaves to the lampposts; coconut palms and a big shady laurel tree; low painted buildings with arcades along the sides; pigeons on the pale stone paving. In the left third, in the foreground, an empty green wrought-iron bench in the shade of the tree.",
+      "out": "{work}/web/test/zocalo.webp"
+    }
+  ]
+}

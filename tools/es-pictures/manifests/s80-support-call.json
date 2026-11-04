@@ -1,0 +1,86 @@
+{
+  "_about": "s80-support-call (Su llamada es muy importante): a phone call to NetWave. Two set-ups: the learner's own apartment at Las Palmas (the phone on speaker beside the modem: the recorded menu, the modem unplugged, the light still red) and Karla at her desk in the customer service office (the name and account number, the problem, the modem's lights, the bad line, the technician's visit, someone else at home, the report number, goodbye). 11 pictures. The long hold, the double charge and the supervisor have no question of their own, so they keep the current picture.",
+  "scenes": {
+    "s80-support-call": { "npc": "Karla, NetWave customer service (phone call)", "focus": [34, 30], "start": "menu" }
+  },
+  "defaults": { "kind": "scene", "model": "gpt-image-2.5-sunburst", "size": "2048x1152", "quality": "high", "situation": "s80-support-call", "scene": "s80-support-call" },
+  "items": [
+    {
+      "id": "s80-support-call/menu", "moment": "menu",
+      "phases": ["menu", "still_red"],
+      "refs": ["place:place/departamento"],
+      "prompt": "The learner's own apartment at Las Palmas, now lived in, seen from the learner's chair at a small wooden table: in the foreground on the table, a smartphone lies face up on speaker, its screen showing only a teal call screen with a simple sound-wave icon and a red round hang-up button (no letters or numbers). Beside it, a white home modem with two short antennas and a row of small status lights, one of them glowing red. A clay mug of coffee and a woven palm placemat. Behind, softly out of focus: the tiled kitchen, the ceiling fan, the sliding glass doors with palms beyond. No people.",
+      "out": "public/scenes-es/s80-support-call/menu.webp"
+    },
+    {
+      "id": "s80-support-call/unplugged", "moment": "restart_now",
+      "phases": ["restart_now"],
+      "refs": ["edit:s80-support-call/menu"],
+      "prompt": "Change only this: the modem's status lights are all dark, and its black power cable lies unplugged on the table beside it, the plug end turned toward the viewer. The phone still lies on the table on speaker.",
+      "out": "public/scenes-es/s80-support-call/unplugged.webp"
+    },
+    {
+      "id": "s80-support-call/hello", "moment": "name",
+      "phases": ["name"],
+      "refs": ["place:place/call-center", "person:cast/claire"],
+      "prompt": "Karla, the customer service agent, sits at her desk about one third from the left, her headset on, one hand lightly touching the microphone, smiling as she answers the call (\"Le atiende Karla, ¿con quién tengo el gusto?\"). Her monitor stands on the desk turned away from the viewer; a keyboard and a small potted plant in front of her.",
+      "out": "public/scenes-es/s80-support-call/hello.webp"
+    },
+    {
+      "id": "s80-support-call/account", "moment": "account",
+      "phases": ["account"],
+      "refs": ["edit:s80-support-call/hello", "person:cast/claire"],
+      "prompt": "Change only her pose: Karla types on her keyboard with both hands, eyes on her monitor (still turned away from the viewer), with an attentive, concentrating look (looking up the account).",
+      "out": "public/scenes-es/s80-support-call/account.webp"
+    },
+    {
+      "id": "s80-support-call/problem", "moment": "problem",
+      "phases": ["problem", "problem_bill", "since"],
+      "refs": ["edit:s80-support-call/hello", "person:cast/claire"],
+      "prompt": "Change only her pose and expression: Karla looks toward the viewer with a sympathetic, concerned frown, nodding as she listens, one hand resting flat on the desk.",
+      "out": "public/scenes-es/s80-support-call/problem.webp"
+    },
+    {
+      "id": "s80-support-call/lights", "moment": "lights",
+      "phases": ["lights", "restart"],
+      "refs": ["edit:s80-support-call/hello", "person:cast/claire"],
+      "prompt": "Change only this: Karla holds up a small white home modem with two short antennas in one hand, pointing with the index finger of her other hand at its row of small status lights, eyebrows raised, asking which light is on.",
+      "out": "public/scenes-es/s80-support-call/lights.webp"
+    },
+    {
+      "id": "s80-support-call/hear", "moment": "bad_line",
+      "phases": ["hear"],
+      "refs": ["edit:s80-support-call/hello", "person:cast/claire"],
+      "prompt": "Change only her pose: Karla presses the headset's earpiece closer to her ear with one hand and leans toward the microphone, eyes narrowed in concentration, speaking up (the line is cutting out).",
+      "out": "public/scenes-es/s80-support-call/hear.webp"
+    },
+    {
+      "id": "s80-support-call/tech", "moment": "tech",
+      "phases": ["tech"],
+      "refs": ["edit:s80-support-call/hello", "person:cast/claire"],
+      "prompt": "Change only this: a small desk calendar stands open on her desk, a grid of blank squares with no numbers, and Karla points at one square with her pen, looking up at the viewer with a helpful smile (offering a day for the technician's visit).",
+      "out": "public/scenes-es/s80-support-call/tech.webp"
+    },
+    {
+      "id": "s80-support-call/someone", "moment": "someone",
+      "phases": ["someone"],
+      "refs": ["edit:s80-support-call/tech", "person:cast/claire"],
+      "prompt": "Change only her pose: Karla leans forward a little with her chin resting on one hand, eyebrows raised in a hopeful question (could someone else be at home?).",
+      "out": "public/scenes-es/s80-support-call/someone.webp"
+    },
+    {
+      "id": "s80-support-call/report", "moment": "more",
+      "phases": ["more"],
+      "refs": ["edit:s80-support-call/tech", "person:cast/claire"],
+      "prompt": "Change only this: Karla writes on a small blank yellow sticky note with her pen, glancing up at the viewer with a bright smile (giving the report number, asking if there is anything else).",
+      "out": "public/scenes-es/s80-support-call/report.webp"
+    },
+    {
+      "id": "s80-support-call/bye", "moment": "closing",
+      "phases": ["closing"],
+      "refs": ["edit:s80-support-call/hello", "person:cast/claire"],
+      "prompt": "Change only her pose: Karla gives a small friendly wave toward the viewer with one hand, her other hand on the headset's microphone, a warm smile (saying goodbye at the end of the call).",
+      "out": "public/scenes-es/s80-support-call/bye.webp"
+    }
+  ]
+}
