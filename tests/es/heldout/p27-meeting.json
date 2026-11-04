@@ -1,0 +1,49 @@
+{ "situation": "p27-meeting", "items": [
+  { "ctx": "pitch", "say": "Entiendo tu punto, pero no estoy de acuerdo", "intent": "disagree_polite" },
+  { "ctx": "pitch", "say": "Con todo respeto, no estoy segura de que sea la mejor idea", "intent": "disagree_polite" },
+  { "ctx": "pitch", "say": "Mmm, no sé, creo que es muy pronto", "intent": ["disagree_polite", "give_reason"] },
+  { "ctx": "pitch", "say": "Es una idea terrible", "intent": "rude_disagree" },
+  { "ctx": "pitch", "say": "No me parece buena idea", "intent": ["disagree_polite", "rude_disagree"], "not": ["agree_plan"], "note": "trap: negation" },
+  { "ctx": "pitch", "say": "No tengo ningún problema con el plan", "intent": "any", "not": ["disagree_polite", "rude_disagree"], "note": "trap: negation" },
+  { "ctx": "pitch", "say": "¿Por qué este viernes?", "intent": "ask_q" },
+  { "ctx": "pitch", "say": "Tengo algunas dudas sobre la fecha", "intent": ["disagree_polite", "give_reason"] },
+
+  { "ctx": "charts", "say": "Perdón, ¿puedo decir algo?", "intent": "interrupt_polite" },
+  { "ctx": "charts", "say": "Disculpa que te interrumpa, pero tengo una pregunta", "intent": "interrupt_polite" },
+  { "ctx": "charts", "say": "¿Me permites un segundo?", "intent": "interrupt_polite" },
+  { "ctx": "charts", "say": "Ya cállate", "intent": "rude_interrupt" },
+
+  { "ctx": "reason", "say": "Me preocupa que no hayamos hecho suficientes pruebas", "intent": "give_reason" },
+  { "ctx": "reason", "say": "Cuatro días no son suficientes", "intent": "give_reason" },
+  { "ctx": "reason", "say": "Muchos de nuestros clientes son personas mayores", "intent": "give_reason" },
+  { "ctx": "reason", "say": "El equipo de soporte todavia no esta listo", "intent": "give_reason", "note": "no accents" },
+  { "ctx": "reason", "say": "Todavía hay muchos errores en la página nueva", "intent": "give_reason" },
+  { "ctx": "reason", "say": "Es demasiado arriesgado", "intent": "give_reason" },
+
+  { "ctx": "counter", "say": "Tienes razón, la página vieja es muy lenta", "intent": "ack_point" },
+  { "ctx": "counter", "say": "Es un buen punto. Sin embargo, sigo preocupado", "intent": "ack_point" },
+  { "ctx": "counter", "say": "Bueno, eso tiene sentido", "intent": "ack_point" },
+  { "ctx": "counter", "say": "No, no tienes razón", "intent": "any", "not": ["ack_point"], "note": "trap: negation" },
+
+  { "ctx": "alternative", "say": "¿Y si lanzamos una versión beta primero?", "intent": "offer_alt" },
+  { "ctx": "alternative", "say": "¿Qué tal si mantenemos la página vieja un mes más?", "intent": "offer_alt" },
+  { "ctx": "alternative", "say": "¿Por qué no capacitamos al equipo de soporte antes?", "intent": "offer_alt" },
+  { "ctx": "alternative", "say": "¿Lo podemos ver de otra manera?", "intent": "offer_alt" },
+  { "ctx": "alternative", "say": "No quiero hacer una beta", "intent": "any", "not": ["offer_alt"], "note": "trap: negation" },
+
+  { "ctx": "resolve", "say": "Vale, me parece bien. Trato hecho", "intent": "accept_deal", "note": "Spain: vale" },
+  { "ctx": "resolve", "say": "¿Qué tal tres semanas?", "intent": "counter_offer" },
+  { "ctx": "resolve", "say": "Estamos de acuerdo en que no estamos de acuerdo", "intent": "agree_to_disagree" },
+  { "ctx": "resolve", "say": "Gerardo, ¿tú qué opinas?", "intent": "ask_boss" },
+  { "ctx": "resolve", "say": "Está bien, lo hacemos como tú dices", "intent": "give_in" },
+  { "ctx": "resolve", "say": "Perdón, me tengo que ir, tengo otra junta", "intent": "walk_away" },
+  { "ctx": "resolve", "say": "No estoy de acuerdo con dos semanas", "intent": "any", "not": ["accept_deal"], "note": "trap: negation" },
+
+  { "ctx": "twist", "say": "Claro, adelante", "intent": "let_her_ctx" },
+  { "ctx": "twist", "say": "No, espera, déjame terminar", "intent": "finish_first", "not": ["let_her_ctx"], "note": "trap" },
+
+  { "ctx": "closing", "say": "Sí, el lunes me funciona", "intent": ["monday_yes", "yn:yes"] },
+  { "ctx": "coffee", "say": "Tal vez la próxima vez", "intent": "coffee_no_ctx" },
+  { "ctx": "teal", "say": "Yo diría que verdes", "intent": "teal_ctx" },
+  { "ctx": "pitch", "say": "Mi perro baila salsa los domingos", "intent": "none" }
+] }
