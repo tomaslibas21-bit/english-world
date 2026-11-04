@@ -1,0 +1,52 @@
+{ "situation": "p25-used-car", "items": [
+  { "ctx": "arrive", "say": "Buenas tardes, vengo por el carro que está en venta", "intent": "about_ad" },
+  { "ctx": "arrive", "say": "Hola, vi su anuncio en internet", "intent": "about_ad" },
+  { "ctx": "arrive", "say": "¿Todavía vende el coche?", "intent": "about_ad", "note": "Spain: coche" },
+  { "ctx": "arrive", "say": "Hola, me llamo Kevin", "intent": ["my_name", "im_name_ctx"] },
+
+  { "ctx": "look", "say": "¿Cuántos kilómetros tiene?", "intent": "q_mileage" },
+  { "ctx": "look", "say": "De que año es?", "intent": "q_year", "note": "no accents" },
+  { "ctx": "look", "say": "¿Ha tenido algún choque?", "intent": "q_accident" },
+  { "ctx": "look", "say": "¿Por qué lo vende?", "intent": "q_why" },
+  { "ctx": "look", "say": "¿Tiene la factura original?", "intent": "q_papers" },
+  { "ctx": "look", "say": "¿Está al corriente con el refrendo?", "intent": "q_papers" },
+  { "ctx": "look", "say": "¿Lo puedo llevar con mi mecánico?", "intent": "q_mechanic" },
+  { "ctx": "look", "say": "¿Sirve el aire acondicionado?", "intent": "q_ac", "note": "Mexican sirve" },
+  { "ctx": "look", "say": "¿Cuántos dueños ha tenido?", "intent": "q_owners" },
+  { "ctx": "look", "say": "¿Es automático o estándar?", "intent": "q_gearbox" },
+  { "ctx": "look", "say": "Creo que ya no tengo más preguntas", "intent": "no_more_q" },
+  { "ctx": "look", "say": "Tienes los papeles en regla?", "intent": "q_papers", "note": "tú to a stranger, no ¿" },
+
+  { "ctx": "drive", "say": "¿Le puedo dar una vuelta?", "intent": "test_drive" },
+  { "ctx": "drive", "say": "Sí, me gustaría manejarlo un rato", "intent": ["test_drive", "yn:yes"] },
+  { "ctx": "drive", "say": "No hace falta manejarlo, gracias", "intent": ["decline_drive", "yn:no"], "not": ["test_drive"], "note": "trap: negation" },
+  { "ctx": "drive", "say": "No, mejor hablemos del precio", "intent": ["lets_talk", "decline_drive", "yn:no"], "not": ["test_drive"], "note": "trap: refusal" },
+
+  { "ctx": "opinion", "say": "Se maneja muy bien, me gustó mucho", "intent": "drive_good" },
+  { "ctx": "opinion", "say": "Los frenos se sienten un poco suaves", "intent": "drive_bad" },
+  { "ctx": "opinion", "say": "No está mal, pero hace un ruido raro", "intent": "drive_bad", "not": ["drive_good"], "note": "trap: meaning flip" },
+
+  { "ctx": "talk", "say": "¿Cuánto pide por él?", "intent": "ask_price" },
+  { "ctx": "price", "say": "¿El precio es negociable?", "intent": "ask_flex" },
+  { "ctx": "price", "say": "Es un poco más de lo que pensaba gastar", "intent": "too_high" },
+  { "ctx": "price", "say": "Le ofrezco setenta mil", "intent": ["make_offer", "make_offer_ctx"] },
+  { "ctx": "offer", "say": "¿Me lo deja en setenta y cinco mil?", "intent": ["make_offer", "make_offer_ctx"] },
+  { "ctx": "price", "say": "¿Qué tal si lo dejamos a la mitad?", "intent": "halfway" },
+  { "ctx": "price", "say": "Si le pago en efectivo, ¿me hace un descuento?", "intent": "cash_lever" },
+  { "ctx": "price", "say": "¿No me lo puede dejar en menos?", "intent": "ask_better" },
+  { "ctx": "offer", "say": "No le voy a dar ochenta mil", "intent": "any", "not": ["make_offer", "make_offer_ctx", "accept_deal", "accept_ctx", "yn:yes"], "note": "trap: negated offer" },
+  { "ctx": "confirm", "say": "¿Ochenta y cinco mil? Es demasiado", "intent": "any", "not": ["accept_deal", "accept_ctx", "yn:yes"], "note": "trap: price echo + complaint" },
+  { "ctx": "final", "say": "¿Es lo menos que me puede dejar?", "intent": ["ask_best", "ask_better"] },
+  { "ctx": "final", "say": "Déjeme pensarlo", "intent": "sleep_on_it" },
+  { "ctx": "final", "say": "Está bien, gracias", "intent": "any", "not": ["accept_deal", "accept_ctx", "yn:yes"], "note": "trap: polite closing (rule 17)" },
+  { "ctx": "final", "say": "¡Trato hecho!", "intent": ["accept_deal", "accept_ctx", "yn:yes"] },
+  { "ctx": "final", "say": "Va, me lo llevo", "intent": ["accept_deal", "accept_ctx", "yn:yes"], "note": "Mexican va" },
+  { "ctx": "final", "say": "Gracias, pero creo que no me interesa", "intent": ["walk_away", "yn:no"], "not": ["accept_deal", "accept_ctx"], "note": "trap: refusal" },
+
+  { "ctx": "pay", "say": "Le pago en efectivo", "intent": "pay_cash" },
+  { "ctx": "pay", "say": "Por transferencia, si se puede", "intent": "pay_transfer" },
+  { "ctx": "pay", "say": "No traigo efectivo, ¿puedo pagar con tarjeta?", "intent": ["pay_card", "no_cash"], "not": ["pay_cash"], "note": "trap: negation" },
+  { "ctx": "pay", "say": "Ya le pagué", "intent": "any", "not": ["pay_cash", "pay_transfer", "pay_check"], "note": "trap: past tense" },
+
+  { "ctx": "look", "say": "Mi perro sabe nadar muy bien", "intent": "none" }
+] }
