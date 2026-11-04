@@ -118,7 +118,7 @@ Measure the first batch; if a review still costs as much as writing, change cour
 1. ~~s73 restaurant~~ **Answered (2 Nov): a Mexican restaurant.** La Cocina de Lucía, Yucatecan, at the Trattoria's
    place; s62's directions renamed; s69's tip revised with it.
 2. The church on the zócalo: on its north side (the stalls move a little) or at the east end beside the Policía
-   Municipal?
+   Municipal? (Built at the east end on 4 Nov, facing the kiosco; moving it is one theme field: docs/es/TOWN.md.)
 3. ~~s77 salon~~ **Answered (2 Nov): usted, as briefed.**
 4. The course: does Spanish Master English map the game's conversations to its own songs and stories, as English
    Master's situations journey does? The ids are Maple Harbor's (s32 became `s32-mercado`), so a map is easy either
