@@ -21,7 +21,20 @@ export type GameReport = {
     alternatives: string[];
   }[];
 };
-const account = () => token().split(".")[2] || "guest";
+const account = () => {
+  const active = token().split(".")[2];
+  if (active) return active;
+  // A downloaded game opens without ?t; keep its queue with the same account after the token expires offline.
+  try {
+    const saved = JSON.parse(localStorage.getItem("fs-files-token") || "null");
+    const owner = saved?.account || saved?.token?.split(".")[2];
+    if (typeof owner === "string" && /^[a-zA-Z0-9-]{1,64}$/.test(owner))
+      return owner;
+  } catch {
+    /* no remembered account */
+  }
+  return "guest";
+};
 const storageKey = () => REPORT_KEY + "-" + account();
 export function reports(): GameReport[] {
   try {
