@@ -62,10 +62,10 @@ function initStorage({ quality, place }) {
     settings: { v: 4, play: "town", quality, scenes: false, autoListen: false, volume: 0, cameraFollow: true },
     sits: {}, phrases: {}, objective: null, place, seenIntro: {}, started: Date.now(),
   };
-  if (sessionStorage.getItem("es-tour") === "1") return; // reloads keep the progress
+  sessionStorage.setItem("ew-play-now", "1"); // a reload (a dev server's update) goes straight back into the town
+  if (sessionStorage.getItem("es-tour") === "1") return; // and keeps the progress
   sessionStorage.setItem("es-tour", "1");
   for (const k of ["puerto-colibri-progress-v1", "english-world-progress-v1"]) localStorage.setItem(k, JSON.stringify(progress));
-  sessionStorage.setItem("ew-play-now", "1");
 }
 
 async function openGame(browser, [w, h]) {
@@ -78,10 +78,17 @@ async function openGame(browser, [w, h]) {
   // built after the signs' fonts have loaded
   await page.addInitScript(initStorage, { quality: QUALITY, place: MODE === "rooms" ? { zone: "town", x: 28, z: -14.6, rot: Math.PI } : null });
   await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.__ew?.game?.zone && window.__ew.store.getState().screen === "play", null, { timeout: 180000 });
-  await page.evaluate(() => window.__ew.store.getState().setHud({ panel: null }));
-  await sleep(500);
+  await ready(page);
   return { ctx, page, errors };
+}
+
+/** The game is up (again, after a reload) and no panel covers it. */
+async function ready(page) {
+  await page.waitForFunction(() => window.__ew?.game?.zone && window.__ew.store.getState().screen === "play", null, { timeout: 180000 });
+  if (await page.evaluate(() => !!window.__ew.store.getState().hud.panel)) {
+    await page.evaluate(() => window.__ew.store.getState().setHud({ panel: null }));
+    await sleep(500);
+  }
 }
 
 // ---------------------------------------------------------------------------------------------------------- tour
@@ -174,7 +181,7 @@ async function tour(browser) {
       n++;
       const t0 = Date.now();
       let r;
-      try { r = await page.evaluate(goTalk, s.id); } catch (e) { r = { ok: false, why: "error: " + String(e.message ?? e).split("\n")[0] }; }
+      try { await ready(page); r = await page.evaluate(goTalk, s.id); } catch (e) { r = { ok: false, why: "error: " + String(e.message ?? e).split("\n")[0] }; }
       const file = `${String(n).padStart(2, "0")}-${s.id}.png`;
       if (r.ok) {
         await sleep(1800); // the camera settles on the speakers, the first line shows
@@ -185,7 +192,8 @@ async function tour(browser) {
       }
       const res = (results[s.id] ??= { id: s.id, location: s.location, npc: s.npc, npcs: s.npcs, mode: s.mode, sizes: {} });
       res.sizes[tag] = { ...r, file, ms: Date.now() - t0 };
-      console.log(`  ${r.ok ? "✓" : "✗"} ${s.id.padEnd(20)} ${r.ok ? `${r.how} · ${r.zone} · ${r.speakers.map((x) => x.here ? `${x.id} ${x.fromPlayer} m` : `${x.id} MISSING`).join(", ")}` : r.why}`);
+      const who = (x) => x.here ? `${x.id} ${x.fromPlayer} m` : r.how === "call" ? `${x.id} on the phone` : `${x.id} NOT IN THE ROOM`;
+      console.log(`  ${r.ok ? "✓" : "✗"} ${s.id.padEnd(20)} ${r.ok ? `${r.how} · ${r.how === "call" ? "phone" : r.zone} · ${r.speakers.map(who).join(", ")}` : r.why}`);
     }
     await page.evaluate(() => window.__ew.game.closeConversation());
     if (errors.length) console.log(`  page errors (${errors.length}): ${[...new Set(errors)].slice(0, 5).join(" | ")}`);
@@ -199,7 +207,7 @@ async function tour(browser) {
     const all = Object.values(r.sizes);
     const ok = all.every((x) => x.ok);
     const first = all.find((x) => x.ok) ?? all[0];
-    const sp = first.ok ? first.speakers.map((x) => x.here ? `${x.id} ${x.fromPlayer} m` : `**${x.id} missing**`).join(", ") : "";
+    const sp = !first.ok ? "" : first.how === "call" ? "on the phone" : first.speakers.map((x) => x.here ? `${x.id} ${x.fromPlayer} m` : `**${x.id} not in the room**`).join(", ");
     md.push(`| ${r.id} | ${r.location} | ${ok ? `yes (${first.how})` : "**no**"} | ${sp} | ${ok ? "" : all.filter((x) => !x.ok).map((x) => x.why).join("; ")} |`);
   }
   writeFileSync(path.join(OUT, "tour.md"), md.join("\n") + "\n");

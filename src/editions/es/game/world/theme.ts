@@ -6,7 +6,7 @@ import type { TownTheme } from "../../../../game/world/theme";
 export type { BuildingLook, OutdoorSpot, TownTheme } from "../../../../game/world/theme";
 
 export const THEME: TownTheme = {
-  // --- the rooms and the conversations' spots (docs/es/TOWN.md tasks 6 and 7, "The conversations' spots") ---
+  // --- the rooms and the conversations' spots (docs/es/TOWN.md tasks 6 and 7, "Every conversation's spot") ---
   // Every room's English words in Spanish, as a Mexican place writes them; the facts are the conversations' (prices,
   // numbers, names). The airport's signs are Spanish over English ("\n": two lines), as Mexican airports have them.
   signs: {
@@ -24,7 +24,7 @@ export const THEME: TownTheme = {
     "Snip & Style": "Estética Tijeras",
     "Harbor Bank · Since 1912": "Banco del Puerto · Desde 1912",
     Teller: "Ventanilla",
-    "UNITED STATES POSTAL SERVICE": "CORREOS · PUERTO COLIBRÍ",
+    "UNITED STATES POSTAL SERVICE": "CORREOS · PUERTO COLIBRÍ\nPaquetería · Timbres",
     STAMPS: "TIMBRES",
     "sold here": "de venta aquí",
     USA: "MÉXICO",
