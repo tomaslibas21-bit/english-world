@@ -1,4 +1,7 @@
-// NEEDS: None. Days, time windows, the order number, merges and the folio are local.
+// NEEDS: Days, time windows, the order number, merges and the folio are local. Two shared notes (review, 4 Nov 2026):
+//   (1) {number} in src/editions/es/convo/slots.ts reads "cincuenta y ocho mil doscientos trece" as 58 (a compound
+//   before "mil" is not taken on), so the order number said whole is spelled out in @order_whole here;
+//   (2) audio for the new line brenda_only_wed (tools/build-audio.ts).
 // Song P26 "I'd Like to Make a Complaint" → Puerto Colibrí: "Quiero poner una queja". A formal complaint on the phone
 // (usted both ways). Three weeks ago the learner bought a sofa at Hogar Puerto, the town's furniture store ($12,999).
 // It was due on October 10th and came only on the 17th ("llegó hasta el 17"), with a broken leg and torn fabric; a
@@ -110,6 +113,9 @@ function deadlineOf(slots: any, tags: string[]): string | undefined {
   return undefined;
 }
 
+/** The order number said: digit by digit or in pairs ({digits}), or whole ("cincuenta y ocho mil…", @order_whole). */
+const orderOf = (slots: any, seg?: Segment) => (seg?.tags.includes("rightorder") ? ORDER : String(slots?.digits ?? ""));
+
 /** Facts the learner mentions, wherever they come (Jorge's part): nothing is asked again later. */
 function recordFacts(c: Ctx, intent: string, slots: any, seg: Segment) {
   const s = c.s;
@@ -134,7 +140,7 @@ function recordFacts(c: Ctx, intent: string, slots: any, seg: Segment) {
       if (slots?.name) s.named = true;
       break;
     case "order_num": case "order_ctx":
-      if (String(slots?.digits ?? "") === ORDER) { s.named = true; s.order = true; }
+      if (orderOf(slots, seg) === ORDER) { s.named = true; s.order = true; }
       break;
   }
 }
@@ -255,9 +261,9 @@ function plugNow(c: Ctx) {
   K(c, c.s.offOn ? "kyle_try_now" : "kyle_plug_now");
   const still = (cc: Ctx) => { if (once(cc, "k_ack")) K(cc, "kyle_still_nothing"); };
   c.expect({
-    id: "plug_now", optional: true, expects: ["plugged_yes", "fridge_broke"], hints: ["plugged"],
+    id: "plug_now", optional: true, expects: ["plugged_yes", "fridge_broke", "still_ctx"], hints: ["plugged"],
     suggest: [{ lt: "Say it's still the same", hint: "plugged" }],
-    on: { plugged_yes: still, fridge_broke: still, plugged_no_ctx: still },
+    on: { plugged_yes: still, fridge_broke: still, plugged_no_ctx: still, still_ctx: still },
     yes: still, no: still,
   });
 }
@@ -310,9 +316,9 @@ function kyleRude(c: Ctx) {
 }
 
 /** An order number on the name step: the right one is found; another one isn't ("¿Me da su nombre completo?"). */
-function kyleOrder(c: Ctx, slots: any) {
+function kyleOrder(c: Ctx, slots: any, seg?: Segment) {
   if (c.step !== "name" || !once(c, "k_name")) return;
-  if (String(slots?.digits ?? "") === ORDER) { K(c, "kyle_name_thanks"); return; }
+  if (orderOf(slots, seg) === ORDER) { K(c, "kyle_name_thanks"); return; }
   if (c.s.named) return;
   c.s.nameAsked = Math.max(1, c.s.nameAsked ?? 0);
   K(c, "kyle_order_unknown");
@@ -346,8 +352,9 @@ const KYLE: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
   intro_name: (c) => { if (c.step === "name" && once(c, "k_name")) K(c, "kyle_name_thanks"); },
   intro_ctx: (c) => { if (c.step === "name" && once(c, "k_name")) K(c, "kyle_name_thanks"); },
   intro_this_ctx: (c) => { if (c.step === "name" && once(c, "k_name")) K(c, "kyle_name_thanks"); },
-  order_num: (c, slots) => { kyleOrder(c, slots); },
-  order_ctx: (c, slots) => { kyleOrder(c, slots); },
+  order_num: (c, slots, seg) => { kyleOrder(c, slots, seg); },
+  order_ctx: (c, slots, seg) => { kyleOrder(c, slots, seg); },
+  still_ctx: () => { /* answered by the "¿bien armado?" questions */ },
   appreciate: (c) => { if (once(c, "k_ack")) K(c, "g_welcome"); },
   have_nice_day: (c) => { endCall(c); },
   walk_away: (c) => { endCall(c, true); },
@@ -553,11 +560,11 @@ function giveRef(c: Ctx, asked = false) {
 }
 function reExpectReadback(c: Ctx) {
   c.expect({
-    id: "readback", optional: true, expects: ["ref_readback", "readback_unknown", "ask_repeat"], hints: ["reference", "g_clarify"],
+    id: "readback", optional: true, expects: ["ref_readback", "readback_unknown", "readback_ctx", "ask_repeat"], hints: ["reference", "g_clarify"],
     suggest: [{ lt: "Read the number back", hint: "reference" }, { lt: "Ask her to repeat it", hint: "g_clarify" }],
     on: {
       ref_readback: (cc) => { if (once(cc, "b_ack")) B(cc, "brenda_ref_correct"); },
-      readback_unknown: (cc, sl) => { readBack(cc, sl); },
+      readback_unknown: (cc, sl) => { readBack(cc, sl); }, readback_ctx: (cc, sl) => { readBack(cc, sl); },
       ask_repeat: (cc) => { B(cc, "brenda_ref_repeat", { text: REF }); reExpectReadback(cc); },
       g_repeat: (cc) => { B(cc, "brenda_ref_repeat", { text: REF }); reExpectReadback(cc); },
     },
@@ -609,6 +616,23 @@ const BRENDA: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
     B(c, "brenda_offer_q");
     c.hold();
   },
+  // "¿Pueden venir el jueves?": only Wednesday, then her question again; asked again, it is a no to Wednesday
+  other_day_ctx: (c) => {
+    if (!atOffer(c) || c.s.offerKind !== "visit" || !c.s.offerQ || !once(c, "b_info")) return;
+    if (c.s.onlyWed) { declineWith(c, "brenda_decline_ack"); return; }
+    c.s.onlyWed = true;
+    B(c, "brenda_only_wed", { win: W_WED });
+    B(c, "brenda_offer_q");
+    c.hold();
+  },
+  // "No, no estoy de acuerdo" to the 10 to 14 days or to "¿Está usted de acuerdo?": she asks for a day
+  disagree_ctx: (c) => {
+    if (!c.s.remedy || (c.step !== "deadline" && c.step !== "confirm") || !once(c, "b_ack")) return;
+    c.s.confirmed = false;
+    B(c, "brenda_which_day");
+    expectWhichDay(c);
+  },
+  readback_ctx: (c, slots) => { if (c.s.ref) readBack(c, slots); },
   agree: (c) => { brendaYes(c); },
   ask_refund: (c, slots, seg) => { deadlineFact(c, slots, seg); grant(c, "refund"); },
   ask_replacement: (c, slots, seg) => { deadlineFact(c, slots, seg); grant(c, "replacement"); },
@@ -692,6 +716,7 @@ const INTENT_IDS = [
   "ask_refund", "ask_replacement", "refund_or", "either_ctx", "not_remedy", "set_deadline", "deadline_ctx", "ask_writing", "ask_reference",
   "pen_ready", "no_pen", "pen_wait", "ref_readback", "readback_unknown", "appreciate", "thats_all", "have_nice_day", "walk_away",
   "rude", "ask_repeat", "ask_timeline", "ask_pickup", "no_manager", "plugged_no_ctx", "offer_q", "pen_ctx",
+  "still_ctx", "disagree_ctx", "readback_ctx", "other_day_ctx",
 ];
 
 // Automatic answers the simulations give at moments that come on some seeds only (the "¿bien armado?" twist) or
@@ -737,7 +762,10 @@ export const complaint: SituationDef = {
       refnum: "(4471 | 44 71 | 4 4 7 1 | cuatro cuatro siete uno | cuarenta y cuatro setenta y uno | cuarenta y cuatro siete uno | cuatro cuatro setenta y uno | cuatro mil cuatrocientos setenta y uno)",
       ref: "(hache pe | hp | h p | hache p | ache pe) [guion] @refnum",
       problem_of: "(mi @sofa | el @sofa | su servicio | el servicio | mi pedido | un pedido | mi compra | una compra | la entrega | una entrega | su tienda)",
-      offer_thing: "(el cupon | el cojin | la visita | el miercoles | eso | un cupon | el cupon y el cojin | cupon | una visita | otra visita | el tecnico | otro tecnico)",
+      offer_thing: "(el cupon | el cojin | la visita | el miercoles | eso | un cupon | el cupon y el cojin | cupon | una visita | otra visita | el tecnico | otro tecnico | el martes | martes | el proximo martes | miercoles | la cita | otra cita)",
+      // the order number said whole ({number} stops at a compound before "mil": see NEEDS)
+      order_whole: "(cincuenta y ocho mil doscientos trece | 58 mil 213 | cincuenta y ocho mil 213)",
+      ifnot: "(si no | de lo contrario | si no lo resuelven | si no me lo resuelven | si no me ayudan | si no me resuelven | si no me dan una solucion)",
       call: "(llamo | le llamo | les llamo | hablo | le hablo | les hablo | estoy llamando | le estoy llamando | marco)",
     },
     slots: {},
@@ -772,7 +800,7 @@ export const complaint: SituationDef = {
       "(le falta | le faltan) (una pata | un tornillo | una pieza | piezas | las patas | tornillos | un cojin)",
       "(lo esperaba | lo esperabamos | debia llegar | tenia que llegar | iba a llegar | me lo iban a entregar) el ({number} | {date}) [y (llegó | me llegó | lo entregaron | me lo entregaron) [hasta] el ({number} | {date})]",
       "hace (tres semanas | {number} semanas | un mes | {number} dias) (compré | pedí) (un | el | mi) @sofa [con ustedes | aqui | en hogar puerto]",
-      "[ya | listo | ok | bueno] (sigue | esta) (igual | rota | roto | quebrada | quebrado) [la pata sigue (rota | quebrada)]",
+      "[ya | listo | ok | bueno] (sigue | esta) (rota | roto | quebrada | quebrado) [la pata sigue (rota | quebrada)]",
       "(mi | el) @sofa (tiene | trae) @parts [y @parts]",
       "(la | una) pata (esta | estaba | venia | llegó | vino) (rota | quebrada | despegada | floja | chueca)",
       "(la tela | el forro | la tapiceria) (esta | estaba | venia | llegó | vino) (rasgada | rota | manchada | sucia | descosida)",
@@ -787,11 +815,13 @@ export const complaint: SituationDef = {
       "(lo compré | lo pedí | hice el pedido | compré un @sofa | pedí un @sofa) [con ustedes | en hogar puerto | aqui] [(hace (tres semanas | {number} semanas | un mes | {number} dias)) | el {date} | en octubre] #h:bought_ago",
       "(compré | pedí) (un | el | mi) @sofa (con | en | a) (ustedes | hogar puerto | su tienda) [hace (tres semanas | {number} semanas | un mes)] [y (llegó | vino) (@dmg | @late | con @parts)]",
       // after "¿Lo puede revisar?" / "¿Lo puede intentar?"
-      "(sigue | sigue igual | esta igual | todo igual | igual) [la pata (sigue | esta) (rota | quebrada)] #h:still_not",
+      "[todo] sigue igual [la pata (sigue | esta) (rota | quebrada)] #h:still_not",
       "la pata sigue (rota | quebrada | igual)",
       "(ya lo revisé | ya lo intenté) (y | pero) (sigue | sigue igual | sigue roto | sigue rota | nada | no sirvió)",
-      "no (sirvió | funcionó | cambió nada) [la pata sigue rota]",
-      "nada [sigue igual]",
+    ] },
+    // after "¿Lo puede revisar?" / "¿Lo puede intentar?" only: a bare "Nada" or "Igual" means "no" at "¿Algo más?"
+    still_ctx: { patterns: [
+      "[ya | listo | ok | bueno | no] (sigue | esta igual | todo igual | igual | nada | no sirvió | no funcionó | no cambió nada) [sigue igual] [la pata sigue (rota | quebrada | igual)]",
     ] },
     no_show: { patterns: [
       "[y | ademas | y ademas | y encima] (el | su) @tech nunca (vino | llegó | se presentó | apareció | llamó) #h:tech_never",
@@ -809,6 +839,7 @@ export const complaint: SituationDef = {
       "(no es cierto | no es verdad | eso no es cierto | eso no es verdad | es mentira) nadie (vino | llegó | estuvo aqui)",
       "(nunca | no) (vino | vinieron | llegaron | llegó) nadie",
       "nadie ha venido [todavia]",
+      "[ya] me (agendaron | programaron | dieron | hicieron) (una | la) (visita | cita) [el lunes | para el lunes | el {day} | para el {day}] (y | pero) (nadie | no) (vino | llegó | vinieron | llegaron)",
       "no (me han | han) (reparado | arreglado | revisado | recogido | cambiado) (el @sofa | nada | mi @sofa)", "nadie me ha (llamado | ayudado | resuelto nada)",
       "(llevo | tengo) (dos semanas | una semana | {number} dias | {number} semanas) esperando [al @tech]",
       "(no vinieron | nunca vinieron | nunca llegaron | no llegaron)",
@@ -819,6 +850,7 @@ export const complaint: SituationDef = {
       "(en serio | es en serio | de verdad | neta | es broma)", "(realizada | completada | atendida)",
       "(como que | que) (realizada | completada | atendida)", "(realizada | completada) (en serio | de verdad)",
       "(un cupon | un cojin | un cupon y un cojin) (en serio | de verdad | nada mas | y ya)",
+      "(nada mas | nomas | solo | solamente) (un cupon | un cojin | un cupon y un cojin | eso)",
       "(eso | esto) no (es cierto | es verdad | puede ser)", "(eso | esto) es mentira", "(es mentira | mentira | eso es falso | es falso)", "no puede ser", "(su | el) sistema esta mal", "(es | eso es) un error",
       "(la visita | eso) no se realizó", "nadie (completó | realizó) nada", "(es | eso es) imposible", "como (que | va a estar) realizada",
     ] },
@@ -855,7 +887,7 @@ export const complaint: SituationDef = {
       "(es | eso es) todo lo que (puede | pueden) hacer",
       "que mas (me puede | me pueden) (ofrecer | dar)",
       "de ninguna manera",
-      "(y si | que pasa si) (no viene nadie | nadie viene | no vienen | tampoco vienen | tampoco viene nadie | otra vez no viene nadie) [otra vez]",
+      "(y si | que pasa si) [el martes | el miercoles | otra vez] (no viene nadie | nadie viene | no vienen | tampoco vienen | tampoco viene nadie | tampoco viene | no viene | otra vez no viene nadie | no llega nadie | tampoco llega nadie) [otra vez | el martes | el miercoles]",
     ] },
     ask_manager: { patterns: [
       "(puedo | podria) hablar con (su | un | una | el | la) @mgr #h:manager",
@@ -880,13 +912,17 @@ export const complaint: SituationDef = {
       "(paseme | comuniqueme | deme | paseme a | quiero a) (su | el | la) @mgr [ya | ahorita | ahora mismo] #tip:blunt_manager",
       "[su | el | la] @mgr (ya | ahorita | ahora mismo) #tip:blunt_manager",
       "(el | la | su) @mgr #tip:blunt_manager",
+      "@offer_thing no [gracias] [mejor] (quiero | quisiera | prefiero | necesito) hablar con (su | el | la | un | una) @mgr",
+      "@offer_thing no [gracias] [mejor] (paseme | comuniqueme | me pasa | me comunica | me puede pasar | me puede comunicar | me podria pasar | me podria comunicar) (con | a) (su | el | la) @mgr",
     ] },
     // "No quiero hablar con su gerente" (never a request for the manager)
     no_manager: { patterns: ["[no] no (quiero | necesito) hablar con (su | el | la | un | una | ella | el) [@mgr]", "[no] (su | el | la) @mgr no"] },
     further: { patterns: [
       "(si no | de lo contrario | si no lo resuelven | si no me lo resuelven) voy a (poner | presentar | levantar | meter) (una queja | mi queja) (en | ante | con) (la profeco | profeco) #h:further",
       "voy a (poner | presentar | levantar | meter) (una queja | mi queja) (en | ante | con) (la profeco | profeco)",
-      "voy a (ir | acudir) a (la profeco | profeco)",
+      "[@ifnot] voy a (ir | acudir) a (la profeco | profeco)",
+      "[@ifnot] (voy a | los voy a | lo voy a) (reportar | reportarlos | demandar | demandarlos | denunciar | denunciarlos) (a | en | ante | con) (la profeco | profeco)",
+      "[@ifnot] (voy a | me voy a) quejar (a | en | ante | con) (la profeco | profeco)",
       "(voy a | lo voy a) (llevar | escalar) (esto | este asunto | el caso) (mas arriba | mas lejos | a otras instancias | a la profeco)",
       "voy a (llamar | escribir | hablar) a (la profeco | profeco | la direccion | el corporativo | las oficinas centrales)",
       "voy a (buscar | contratar | hablar con) un abogado",
@@ -931,9 +967,10 @@ export const complaint: SituationDef = {
     order_num: { patterns: [
       "(mi | el) (numero de pedido | pedido | numero de orden | numero de compra | folio de compra | numero de ticket | numero) (es | era) [el] {digits} #h:order_is",
       "(es | era) el (pedido | numero) [numero] {digits}", "(es | era) [el] {digits}", "[el] (numero de pedido | pedido numero | pedido | orden numero) [es] [el] {digits}",
+      "(mi | el) (numero de pedido | pedido | numero de orden | numero) (es | era) [el] @order_whole #rightorder", "(es | era) [el] @order_whole #rightorder",
     ] },
     // a bare number answers only the order-number question
-    order_ctx: { patterns: ["{digits}", "el {digits}"] },
+    order_ctx: { patterns: ["{digits}", "el {digits}", "[el] @order_whole #rightorder"] },
     can_hold: { patterns: [
       "(no hay problema | esta bien | claro | no se preocupe) tengo todo el dia #h:all_day #allday",
       "[no hay problema | esta bien | claro] (tengo | me sobra) (todo el dia | tiempo | mucho tiempo | todo el tiempo del mundo) #allday",
@@ -985,7 +1022,6 @@ export const complaint: SituationDef = {
       "[si | ok | esta bien] (agendelo | agendeme | agendela | aparteme la cita | reserve la visita)",
       "[si | sale] (mandeme | deme) el cupon",
       "(un cupon | el cupon) (estaria bien | me sirve)",
-      "puedo (pedir | tomar) otro dia [en el trabajo]",
     ] },
     // a question about Brenda's offer (or a what-if): never an acceptance
     offer_q: { patterns: [
@@ -999,6 +1035,7 @@ export const complaint: SituationDef = {
       "[si] (eso | esto) (suena | esta) (bien | perfecto | excelente)",
       "[ok | esta bien] (dos semanas | de 10 a 14 dias | de diez a catorce dias | ese plazo) (esta bien | me parece bien)",
       "trato hecho",
+      "[si] [claro] (estoy | estamos) de acuerdo",
       "(perfecto | excelente) me parece bien",
       "[si] puedo esperar (dos semanas | de 10 a 14 dias | ese tiempo | eso | lo que dice)",
     ] },
@@ -1011,10 +1048,13 @@ export const complaint: SituationDef = {
       "(me pueden | me puede | me podrian | me podria | pueden | puede | podrian | me podeis) (devolver | regresar | reembolsar) (mi dinero | el dinero | lo que pagué | todo) [@deadl]",
       "(quiero | quisiera) (devolver | regresar) (el @sofa | la compra | el pedido) [y que me (devuelvan | regresen) (mi | el) dinero]",
       "(quiero | quisiera) (cancelar | anular) (la compra | el pedido | mi pedido | mi compra) [y que me (devuelvan | regresen) (mi | el) dinero]",
-      "(quiero | necesito) (mi dinero | el dinero) [de vuelta | de regreso]",
+      "(quiero | quisiera | necesito | prefiero) (mi dinero | el dinero) [de vuelta | de regreso]",
+      "no (@newone | cambio | sofa nuevo) [sino] [mejor] (@refund | mi dinero | el dinero)",
+      "(@newone | cambio | sofa nuevo) no [gracias] [mejor] [(quiero | prefiero | necesito)] (@refund | mi dinero | el dinero)",
+      "no con (un cupon | cupones | un cojin | cojines | otra visita | una visita) [sino] con (mi dinero | un reembolso | el reembolso | mi dinero de vuelta)",
       "no gracias [yo] (quiero | prefiero | necesito) (@refund | mi dinero | el dinero)",
       "no (quiero | necesito) (cojines | un cojin | un cupon | cupones | otra visita | que lo reparen | que lo arreglen | una reparacion) [yo] (quiero | necesito | prefiero) (@refund | mi dinero | el dinero)",
-      "(ya no quiero | no quiero) (un cambio | el cambio | uno nuevo | un @sofa nuevo | otro @sofa) [mejor | prefiero | quiero] (@refund | mi dinero)",
+      "(ya no quiero | no quiero) (un cambio | el cambio | uno nuevo | un @sofa nuevo | otro @sofa) [sino] [mejor | prefiero | quiero] (@refund | mi dinero | el dinero)",
       "ya no quiero (el @sofa | mi @sofa | ese @sofa)",
       "(quiero | quisiera | necesito | exijo) (el | un) reembolso (de | por) (mis | los | todo | el total de mis) ({price} | doce mil pesos | {number} pesos | mi dinero)",
       "(mi dinero | el dinero | mi dinero de vuelta)",
@@ -1039,7 +1079,9 @@ export const complaint: SituationDef = {
       "(quiero | quisiera | necesito) que me (den | manden | envien | traigan | entreguen) (otro @sofa | uno nuevo | un @sofa nuevo | otro)",
       "no gracias [yo] (quiero | prefiero | necesito) @newone",
       "no (quiero | necesito) (cojines | un cojin | un cupon | cupones | otra visita | que lo reparen | que lo arreglen | una reparacion) [yo] (quiero | necesito | prefiero) (@newone | un @sofa | un @sofa que (sirva | funcione))",
-      "(ya no quiero | no quiero) (un reembolso | el reembolso | mi dinero) [mejor | prefiero | quiero] @newone",
+      "(ya no quiero | no quiero) (un reembolso | el reembolso | mi dinero | el dinero | que me devuelvan (mi | el) dinero) [sino] [mejor | prefiero | quiero] @newone",
+      "no (@refund | reembolso | mi dinero | el dinero) [sino] [mejor] @newone",
+      "(@refund | reembolso | mi dinero | el dinero) no [gracias] [mejor] [(quiero | prefiero | necesito)] @newone",
       "(me pueden | me puede | pueden | puede | me podrian | me podria) (mandar | enviar | dar | traer) (uno nuevo | otro @sofa | un @sofa nuevo | otro)",
       "(necesito | quiero) un @sofa (que sirva | que funcione | en buen estado | sin danos | que no este roto | completo)",
       "lo que (quiero | necesito | pido) es (un @sofa nuevo | uno nuevo | un cambio | que me lo cambien)",
@@ -1086,6 +1128,10 @@ export const complaint: SituationDef = {
       "(lo | la)? (necesito | quiero) [el @sofa | el reembolso | mi dinero | el nuevo] esta (misma)? semana #asap",
       "no (puede | podria | pueden | podrian) ser (antes | mas rapido | mas pronto) #asap",
       "lo necesito hasta el {day} #tip:by_until",
+      "hasta el {day} [por favor] #tip:by_until",
+      // corrections: the second day is the answer ("No para el viernes, para el jueves", "El jueves no, mejor el lunes")
+      "no [para | antes del | antes de] [el] {wrong:day} [sino] [mejor] [para | antes del | antes de] [el] {day}",
+      "[no] [para | antes del | antes de] [el] {wrong:day} no [sino] [mejor] [para | antes del | antes de] [el] {day}",
     ] },
     // only while a day is being set (at Brenda's Wednesday visit, "¿Pueden venir el jueves?" is not a deadline)
     deadline_ctx: { patterns: [
@@ -1104,6 +1150,8 @@ export const complaint: SituationDef = {
       "(voy a recibir | me va a llegar | me llega) (un correo | una confirmacion | algo por escrito)",
       "por escrito", "(me puede | puede | me pueden) (mandar | dar) un comprobante",
       "(me lo pone | pongalo) por escrito", "(me lo manda | me lo envia) por (escrito | correo)",
+      "(me lo | me la) (da | dan | pasa | pasan | deja | dejan) por escrito",
+      "(me da | me dan | me puede dar | me pueden dar | me podria dar) (eso | esto | todo | la confirmacion | algo) por escrito",
     ] },
     ask_reference: { patterns: [
       "(me puede dar | me da | me podria dar | puedo tener | me dan) (un | el | mi) (numero de folio | folio | numero de reporte | numero de queja | numero de seguimiento | numero de referencia) #h:ask_ref",
@@ -1122,6 +1170,16 @@ export const complaint: SituationDef = {
     ] },
     // a bare "Ya" / "Listo" answers only "¿Tiene dónde anotar?"
     pen_ctx: { patterns: ["[si] ya", "(listo | lista | ya estoy)", "(ok | si) listo"] },
+    // "No, no estoy de acuerdo" to "¿Está usted de acuerdo?" / the 10 to 14 days (never a yes)
+    disagree_ctx: { patterns: ["[no] no (estoy | estamos) de acuerdo [con (eso | ese plazo | esa fecha)]"] },
+    // a read-back without the letters ("Cuatro cuatro siete dos"): only right after the folio
+    readback_ctx: { patterns: ["[entonces | ok] [es el] {digits} [correcto | verdad | anotado]"] },
+    // "¿Pueden venir el jueves?" at Brenda's Wednesday visit (never a deadline, never an acceptance)
+    other_day_ctx: { patterns: [
+      "(pueden | puede | podrian | podria) (venir | ir | mandarlo | mandar al tecnico | mandar a alguien) [mejor] (el {day} | otro dia | otro dia que no sea el miercoles)",
+      "(puede | podria) ser [mejor] (el {day} | otro dia)", "(prefiero | preferiria) que (vengan | venga) [mejor] (el {day} | otro dia)",
+      "(y | que tal | mejor) [el] {day}", "(no hay | no tiene | no tienen | hay) otro dia", "(otro dia | otra fecha) [por favor]",
+    ] },
     // "Sí, una cosa más": there is something else (only at "¿Algo más?")
     more_yes_ctx: { patterns: ["[si] (una cosa mas | otra cosa | una pregunta mas | otra pregunta | tengo otra pregunta | tengo una pregunta | una pregunta)", "[no] solo una pregunta"] },
     no_pen: { patterns: [
@@ -1167,7 +1225,7 @@ export const complaint: SituationDef = {
     ] },
     thats_all: { patterns: [
       "[no] (eso es todo | es todo | seria todo | eso seria todo) [gracias] #h:thats_all",
-      "[no] nada mas [gracias]",
+      "[no] nada [mas] [gracias]",
       "[no] (estoy bien | todo bien) [gracias]",
       "[no] (con eso | ya con eso) (es todo | esta bien | basta)",
       "[no] (es todo por ahora | por ahora es todo)",
@@ -1416,6 +1474,10 @@ export const complaint: SituationDef = {
         "I can get a technician out to you on Wednesday, between {$win}, to fix it.", { say: "Le puedo mandar un técnico el miércoles, entre {$win}, para repararlo.", flags: { 5: F_EL_DAY } }),
     ],
     brenda_offer_q: [t("¿Qué | le parece?", "What | do you think?", "How does that sound?")],
+    brenda_only_wed: [
+      t("Lo siento, | el | técnico | solo | puede | el | miércoles, | entre | {$win}.", "I'm sorry, | the | technician | only | can (come) | on | Wednesday, | between | {$win}.",
+        "I'm sorry, the technician can only make it on Wednesday, between {$win}.", { say: "Lo siento, el técnico solo puede el miércoles, entre {$win}.", flags: { 5: F_EL_DAY } }),
+    ],
     brenda_check_coupon: [t("Entonces, | ¿le | mando | el | cupón?", "So, | (to) you | shall I send | the | coupon?", "So, shall I send you the coupon?")],
     brenda_check_visit: [
       t("Entonces, | ¿le | agendo | la | visita | del | miércoles?", "So, | (for) you | shall I schedule | the | visit | of the | Wednesday?", "So, shall I book the Wednesday visit for you?"),
@@ -1619,7 +1681,7 @@ export const complaint: SituationDef = {
         { id: "not_your_fault", s: t("Sé | que | no es | su | culpa, | pero...", "I know | that | it isn't | your | fault, | but...", "I know it's not your fault, but..."),
           note: "Polite but firm: the agent isn't to blame, and you still say what you want." },
         { id: "further", s: t("Si | no, | voy a | presentar | una | queja | ante | la | Profeco.", "If | not, | I'm going to | file | a | complaint | before | the | Profeco.",
-          "Otherwise, I'll file a complaint with Profeco.", { flags: { 8: "la Profeco: Spanish uses the article with the agency's name." } }),
+          "Otherwise, I'll file a complaint with Profeco.", { flags: { 7: "la Profeco: Spanish uses the article with the agency's name." } }),
           note: "Profeco (Procuraduría Federal del Consumidor) is Mexico's federal consumer protection agency." },
       ],
     },
@@ -1646,7 +1708,7 @@ export const complaint: SituationDef = {
         { id: "day_off", s: t("Ya | falté | al | trabajo | una | vez, | y | nadie | vino.", "Already | I-missed | — | work | one | time, | and | nobody | came.",
           "I already took a day off once, and nobody came.", { flags: { 2: "al trabajo: Spanish has the article (a + el); English says missed work." } }) },
         { id: "further", s: t("Si | no, | voy a | presentar | una | queja | ante | la | Profeco.", "If | not, | I'm going to | file | a | complaint | before | the | Profeco.",
-          "Otherwise, I'll file a complaint with Profeco.", { flags: { 8: "la Profeco: Spanish uses the article with the agency's name." } }) },
+          "Otherwise, I'll file a complaint with Profeco.", { flags: { 7: "la Profeco: Spanish uses the article with the agency's name." } }) },
       ],
     },
     deadline: {
@@ -1655,7 +1717,7 @@ export const complaint: SituationDef = {
         { id: "by_friday", s: t("Necesito | que | quede | resuelto | a más tardar | el | viernes.", "I need | that | it-ends-up | resolved | at the latest | — | Friday.",
           "I need this resolved by Friday at the latest.", { flags: { 5: F_EL_DAY } }) },
         { id: "need_by", s: t("Lo | necesito | para | el | viernes.", "It | I-need | for | — | Friday.", "I need it by Friday.",
-          { flags: { 3: "para + a day: a deadline, by Friday.", 4: F_EL_DAY } }) },
+          { flags: { 2: "para + a day: a deadline, by Friday.", 3: F_EL_DAY } }) },
         { id: "asap", s: t("Lo antes posible, | por favor.", "As soon as possible, | please.", "As soon as possible, please.") },
         { id: "too_long", s: t("Dos | semanas | es | demasiado | tiempo.", "Two | weeks | is | too much | time.", "Two weeks is too long, I'm afraid.") },
       ],
@@ -1744,7 +1806,7 @@ export const complaint: SituationDef = {
     // Twist: Jorge reads from his script. Any answer will do.
     { id: "plugged", when: (c) => !!c.s.pluggedTwist && !!c.s.problem && !c.s.transferred, done: (c) => !!c.s.pluggedDone || !!c.s.over,
       ask: (c) => { c.twist("plugged_in"); KG(c, "kyle_plugged"); if (c.chance(0.5)) { c.s.offOn = true; K(c, "kyle_off_on"); } },
-      expects: ["plugged_yes", "plugged_no_ctx"],
+      expects: ["plugged_yes", "plugged_no_ctx", "still_ctx"],
       suggest: [{ lt: "Calmly say you've already checked", hint: "plugged" }],
       // a bare "No." takes the question literally: Jorge asks the learner to check
       yes: (c) => { pluggedAnswered(c); }, no: (c) => { plugNow(c); } },
@@ -1802,7 +1864,7 @@ export const complaint: SituationDef = {
         askRefundOr(c);
       },
       expects: ["decline_offer", "accept_offer", "agree", "ask_refund", "ask_replacement", "refund_or", "either_ctx", "not_remedy", "no_show", "third_time",
-        "not_good_enough", "further", "disbelief", "set_deadline", "offer_q"],
+        "not_good_enough", "further", "disbelief", "set_deadline", "offer_q", "other_day_ctx"],
       suggest: [{ lt: "Politely say no and ask for a refund or a new sofa", hint: "offer" }],
       // rule 17: "Está bien, gracias" could be a no thanks: Brenda asks before booking anything
       yes: (c) => { if (!c.s.offerQ) return; if (/gracias/.test(heard(c))) askOfferConfirm(c); else acceptOffer(c); },
@@ -1811,14 +1873,14 @@ export const complaint: SituationDef = {
     // Brenda's remedy lines end with "de 10 a 14 días hábiles": that is the question.
     { id: "deadline", when: (c) => !!c.s.remedy && !c.s.over, done: (c) => !!c.s.deadline || !!c.s.over,
       ask: (c) => { if (!turn(c).timeline) B(c, "brenda_timeline_q"); },
-      expects: ["set_deadline", "deadline_ctx", "agree", "ask_writing", "ask_reference", "ask_timeline", "not_good_enough"],
+      expects: ["set_deadline", "deadline_ctx", "agree", "ask_writing", "ask_reference", "ask_timeline", "not_good_enough", "disagree_ctx"],
       suggest: [{ lt: "Set a deadline (e.g. by Friday)", hint: "deadline" }, { lt: "Agree and ask for it in writing", hint: "confirm" }],
       yes: (c) => { c.s.deadline = "accepted"; B(c, "brenda_ok"); },
       no: (c) => { B(c, "brenda_which_day"); expectWhichDay(c); },
       help: (c) => { letsSayFriday(c); } },
     { id: "confirm", when: (c) => !!c.s.remedy && deadlineSet(c) && !c.s.over, done: (c) => !!c.s.confirmed || !!c.s.over,
       ask: (c) => B(c, "brenda_confirm_q"),
-      expects: ["ask_writing", "agree", "appreciate", "ask_reference", "set_deadline", "deadline_ctx"],
+      expects: ["ask_writing", "agree", "appreciate", "ask_reference", "set_deadline", "deadline_ctx", "disagree_ctx"],
       suggest: [{ lt: "Agree and ask for it in writing", hint: "confirm" }],
       yes: (c) => { c.s.confirmed = true; B(c, "brenda_ok"); },
       no: (c) => { B(c, "brenda_which_day"); expectWhichDay(c); } },
@@ -1974,6 +2036,24 @@ export const complaint: SituationDef = {
     { say: "No lo necesito para el viernes", intent: "none", step: "deadline" },
     { say: "Hache pe cuatro cuatro siete dos", intent: "readback_unknown", step: "reference", not: ["ref_readback"] },
     { say: "El jueves", intent: "none", step: "offer" },
+    // review (4 Nov 2026): "No X, Y" corrections take Y; bare "nada" is never the complaint; questions never accept
+    { say: "No un sofá nuevo, un reembolso.", intent: "ask_refund", step: "offer", not: ["ask_replacement"] },
+    { say: "Reembolso no, mejor un sofá nuevo.", intent: "ask_replacement", step: "offer", not: ["ask_refund"] },
+    { say: "No con un cupón, con mi dinero.", intent: "ask_refund", step: "offer", not: ["accept_offer"] },
+    { say: "No para el viernes, para el jueves.", intent: "set_deadline", step: "deadline", slots: { day: "thursday" } },
+    { say: "El jueves no, mejor el lunes.", intent: "set_deadline", step: "confirm", slots: { day: "monday" } },
+    { say: "No, no estoy de acuerdo.", intent: "disagree_ctx", step: "confirm", not: ["agree", "yn:yes"] },
+    { say: "Sí, estoy de acuerdo.", intent: "agree", step: "confirm" },
+    { say: "Hasta el viernes.", intent: "set_deadline", step: "deadline", slots: { day: "friday" } },
+    { say: "No, nada.", intent: "thats_all", not: ["fridge_broke"] },
+    { say: "¿Puedo pedir otro día?", intent: "none", step: "offer" },
+    { say: "¿Pueden venir el sábado?", intent: "other_day_ctx", step: "offer", not: ["accept_offer", "set_deadline"] },
+    { say: "¿Nada más un cupón?", intent: "disbelief", step: "offer", not: ["accept_offer"] },
+    { say: "El martes no, mejor páseme con su gerente.", intent: "ask_manager", step: "history", not: ["accept_offer", "agree"] },
+    { say: "¿Y si el martes tampoco viene nadie?", intent: "not_good_enough", step: "history", not: ["accept_offer", "agree"] },
+    { say: "Cincuenta y ocho mil doscientos trece", intent: "order_ctx", step: "name" },
+    { say: "Si no lo resuelven voy a ir a la Profeco.", intent: "further", step: "history" },
+    { say: "¿Me lo da por escrito?", intent: "ask_writing", step: "confirm" },
     // not understood
     { say: "Mi perro baila salsa en la playa", intent: "none" },
     { say: "Me gustan los sofás grandes", intent: "none" },
@@ -2046,6 +2126,11 @@ export const complaint: SituationDef = {
       turns: ["Llamo por mi sofá. Llegó una semana tarde.", "Es el 58231.", "Ryan Miller.", "Quiero hablar con su gerente.", "Claro.", "¿Cuánto vale el cupón?", "Está bien, gracias.",
         "No, gracias. Le pido de la manera más atenta que me devuelvan mi dinero.", "Sí, me parece bien.", "Sí, dígame.", "Le agradezco mucho su ayuda."],
       expect: { complete: true, state: { remedy: "refund", named: true, deadline: "accepted", ref: true } }, auto: AUTO },
+    { name: "review: the order number whole, another day for the visit, corrections, a read-back without letters", setup: (s) => { s.pluggedTwist = false; s.offerKind = "visit"; },
+      turns: ["Mi sofá llegó roto.", "Cincuenta y ocho mil doscientos trece.", "El martes no, mejor páseme con su gerente.", "Claro.", "¿Pueden venir el sábado?",
+        "No un sofá nuevo, un reembolso.", "No para el viernes, para el jueves.", "No, no estoy de acuerdo.", "El lunes.", "Sí, estoy de acuerdo.", "Sí.",
+        "Cuatro cuatro siete dos.", "Hache pe cuatro cuatro siete uno.", "No, nada. Gracias."],
+      expect: { complete: true, state: { order: true, onlyWed: true, remedy: "refund", deadline: "monday", confirmed: true, ref: true, outcome: "success" } }, auto: AUTO },
     { name: "walking away from Brenda (not done)", setup: (s) => { s.offerKind = "coupon"; },
       turns: ["Mi sofá llegó roto.", "Ryan.", "¿Podría hablar con su gerente?", "Claro.", "No tengo tiempo para esto."],
       expect: { complete: false, state: { outcome: "walked", transferred: true } }, auto: AUTO },

@@ -1,0 +1,56 @@
+{ "situation": "p26-complaint", "items": [
+  { "ctx": "problem", "say": "Buenas tardes, quiero poner una queja", "intent": "complain_open" },
+  { "ctx": "problem", "say": "Llamo porque el sofá que compré llegó roto", "intent": ["fridge_broke", "complain_open"] },
+  { "ctx": "problem", "say": "El técnico nunca vino", "intent": "no_show" },
+  { "ctx": "problem", "say": "Es la tercera vez que llamo", "intent": "third_time" },
+  { "ctx": "problem", "say": "Mi sofa llego una semana tarde y con una pata rota", "intent": ["fridge_broke", "complain_open"], "note": "no accents" },
+  { "ctx": "problem", "say": "No necesito un reembolso, solo quiero que lo arreglen", "intent": "any", "not": ["ask_refund"], "note": "trap: negation" },
+
+  { "ctx": "plugged", "say": "Sí, ya lo revisé", "intent": ["plugged_yes", "yn:yes"] },
+  { "ctx": "plugged", "say": "Sí, está bien armado, pero la pata sigue rota", "intent": ["plugged_yes", "fridge_broke"] },
+  { "ctx": "plugged", "say": "Claro que sí, ya revisé todo", "intent": ["plugged_yes", "yn:yes"] },
+  { "ctx": "plugged", "say": "No, no lo he revisado", "intent": ["plugged_no_ctx", "yn:no"], "not": ["plugged_yes"], "note": "trap: negation" },
+
+  { "ctx": "name", "say": "Me llamo Ana García", "intent": "intro_name" },
+  { "ctx": "name", "say": "Ana García", "intent": ["intro_ctx", "intro_name"] },
+  { "ctx": "name", "say": "Habla Ana García", "intent": ["intro_this_ctx", "intro_name"] },
+  { "ctx": "name", "say": "Mi número de pedido es 58213", "intent": ["order_num", "order_ctx"] },
+
+  { "ctx": "history", "say": "¿Cómo que completada? Nadie vino", "intent": ["disbelief", "no_show"] },
+  { "ctx": "history", "say": "Eso no es suficiente", "intent": "not_good_enough" },
+  { "ctx": "history", "say": "Quiero hablar con su supervisor, por favor", "intent": "ask_manager" },
+  { "ctx": "history", "say": "¿Me comunica con su gerente?", "intent": "ask_manager" },
+  { "ctx": "history", "say": "Si no lo resuelven voy a ir a la Profeco", "intent": "further" },
+
+  { "ctx": "offer_manager", "say": "Sí, por favor", "intent": ["yn:yes", "agree", "ask_manager"] },
+  { "ctx": "offer_manager", "say": "No, no hace falta", "intent": ["yn:no", "no_manager"], "not": ["ask_manager", "agree"], "note": "trap: negation" },
+
+  { "ctx": "book_tuesday", "say": "No, eso no me sirve. Ya falté al trabajo una vez", "intent": ["decline_offer", "yn:no", "no_show"], "not": ["accept_offer", "agree", "yn:yes"], "note": "trap: refusal" },
+  { "ctx": "book_tuesday", "say": "¿Y si no viene otra vez?", "intent": "any", "not": ["accept_offer", "agree", "yn:yes"], "note": "trap: what-if" },
+
+  { "ctx": "transfer", "say": "Sí, espero", "intent": ["can_hold", "yn:yes"] },
+  { "ctx": "transfer", "say": "Claro, tengo todo el día", "intent": "can_hold" },
+
+  { "ctx": "offer", "say": "Gracias, pero un cupón no es suficiente", "intent": ["decline_offer", "not_good_enough"], "not": ["accept_offer", "agree"], "note": "trap: polite refusal" },
+  { "ctx": "offer", "say": "Quiero que me devuelvan mi dinero", "intent": "ask_refund" },
+  { "ctx": "offer", "say": "Prefiero un sofá nuevo", "intent": "ask_replacement" },
+  { "ctx": "offer", "say": "El cupón no, quiero mi dinero", "intent": ["ask_refund", "decline_offer"], "not": ["accept_offer", "agree"], "note": "trap: lost comma" },
+  { "ctx": "offer", "say": "¿Cuánto vale el cupón?", "intent": "any", "not": ["accept_offer", "agree", "yn:yes"], "note": "trap: price question" },
+  { "ctx": "offer", "say": "Le pido de la manera más atenta un reembolso completo", "intent": "ask_refund" },
+  { "ctx": "offer", "say": "Exijo que me cambien el sofá", "intent": "ask_replacement" },
+
+  { "ctx": "refund_or", "say": "Me da igual, lo que sea más rápido", "intent": ["either_ctx", "refund_or"] },
+  { "ctx": "refund_or", "say": "El reembolso, por favor", "intent": "ask_refund" },
+
+  { "ctx": "deadline", "say": "A más tardar el viernes", "intent": ["set_deadline", "deadline_ctx"] },
+  { "ctx": "deadline", "say": "Lo necesito para el viernes", "intent": ["set_deadline", "deadline_ctx"] },
+  { "ctx": "deadline", "say": "Dos semanas es demasiado tiempo", "intent": ["set_deadline", "not_good_enough", "deadline_ctx"] },
+
+  { "ctx": "confirm", "say": "¿Me lo puede confirmar por correo?", "intent": "ask_writing" },
+  { "ctx": "confirm", "say": "¿Me lo da por escrito?", "intent": "ask_writing" },
+  { "ctx": "confirm", "say": "¿Me da un número de folio?", "intent": "ask_reference", "note": "Mexican: folio" },
+
+  { "ctx": "reference", "say": "Sí, ya tengo pluma", "intent": ["pen_ready", "yn:yes"] },
+  { "ctx": "anything", "say": "No, gracias, es todo", "intent": ["thats_all", "yn:no"], "not": ["ask_refund", "ask_replacement"], "note": "trap: closing" },
+  { "ctx": "reference", "say": "Muchas gracias por su ayuda, que tenga buen día", "intent": ["have_nice_day", "appreciate"] }
+] }
