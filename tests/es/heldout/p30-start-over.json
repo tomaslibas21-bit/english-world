@@ -1,0 +1,49 @@
+{ "situation": "p30-start-over", "items": [
+  { "ctx": "door", "say": "Hola Diego. ¿Tienes un minuto?", "intent": "can_talk" },
+  { "ctx": "door", "say": "¿Podemos hablar un momento?", "intent": "can_talk" },
+  { "ctx": "door", "say": "Ya sé, ya sé. Ha pasado mucho tiempo.", "intent": ["long_time", "i_know"] },
+  { "ctx": "door", "say": "Vine a pedirte perdón", "intent": "apologize" },
+  { "ctx": "door", "say": "¿Puedo pasar?", "intent": "come_in" },
+  { "ctx": "door", "say": "Soy yo", "intent": "its_me" },
+
+  { "ctx": "apology", "say": "Perdóname por lo que dije en tu fiesta", "intent": ["apologize", "apology_detail"] },
+  { "ctx": "apology", "say": "Lo siento mucho, de verdad", "intent": "apologize" },
+  { "ctx": "apology", "say": "Siento mucho lo que te dije del barco", "intent": ["apologize", "apology_detail"] },
+  { "ctx": "apology", "say": "Por lo que dije de tu lancha", "intent": "apology_detail" },
+  { "ctx": "apology", "say": "Te debo una disculpa", "intent": "apologize" },
+  { "ctx": "apology", "say": "Lo siento, pero tú también me ofendiste", "intent": ["sorry_but", "blame"], "not": ["apologize", "own_it"], "note": "trap: sorry + but" },
+  { "ctx": "apology", "say": "Siento que te hayas sentido así", "intent": ["sorry_but", "non_apology"], "not": ["apologize"], "note": "trap: non-apology" },
+  { "ctx": "apology", "say": "Estaba muy cansado ese día", "intent": "excuse", "not": ["own_it", "apologize"] },
+  { "ctx": "apology", "say": "Solo era una broma", "intent": ["rude", "sorry_but"], "not": ["apologize", "own_it"] },
+  { "ctx": "apology", "say": "Tú empezaste", "intent": "blame", "not": ["own_it"] },
+
+  { "ctx": "responsibility", "say": "Me equivoqué y fue mi culpa", "intent": "own_it" },
+  { "ctx": "responsibility", "say": "No estuvo bien lo que dije", "intent": "own_it" },
+  { "ctx": "responsibility", "say": "No tengo excusa", "intent": "own_it", "not": ["excuse"] },
+  { "ctx": "responsibility", "say": "No fue mi culpa", "intent": "any", "not": ["own_it"], "note": "trap: negated ownership" },
+  { "ctx": "responsibility", "say": "Fui demasiado orgulloso para llamarte", "intent": ["why_silent", "own_it"] },
+  { "ctx": "responsibility", "say": "No sabía qué decir", "intent": "why_silent" },
+  { "ctx": "responsibility", "say": "Me daba vergüenza", "intent": "why_silent" },
+  { "ctx": "responsibility", "say": "Tienes razón, debí llamarte", "intent": ["own_it", "why_silent"] },
+  { "ctx": "responsibility", "say": "Tú tampoco me llamaste", "intent": "blame", "not": ["own_it", "why_silent"], "note": "trap: blame" },
+
+  { "ctx": "turn", "say": "Entiendo si necesitas tiempo", "intent": "accept_time" },
+  { "ctx": "turn", "say": "Tómate tu tiempo, no hay prisa", "intent": "accept_time", "not": ["push"] },
+  { "ctx": "turn", "say": "No quiero presionarte", "intent": "accept_time", "not": ["push"], "note": "trap: negated push" },
+  { "ctx": "turn", "say": "Ándale, ya perdóname", "intent": "push" },
+  { "ctx": "turn", "say": "Gracias por escucharme", "intent": "thanks_hearing" },
+  { "ctx": "turn", "say": "Te extrañé mucho", "intent": "missed_you" },
+
+  { "ctx": "nora", "say": "¡Hola Natalia! Qué gusto verte", "intent": "hi_nora" },
+
+  { "ctx": "make_up", "say": "¿Cómo te lo puedo compensar?", "intent": "make_up_q" },
+  { "ctx": "make_up", "say": "¿Qué puedo hacer para arreglarlo?", "intent": "make_up_q" },
+  { "ctx": "make_up", "say": "Déjame invitarte a cenar", "intent": "offer" },
+  { "ctx": "make_up", "say": "Te ayudo a terminar la lancha", "intent": "offer" },
+  { "ctx": "make_up", "say": "No volverá a pasar, te lo prometo", "intent": "promise" },
+
+  { "ctx": "start_over", "say": "¿Podemos empezar de nuevo?", "intent": "start_over" },
+  { "ctx": "start_over", "say": "¿Seguimos siendo amigos?", "intent": "start_over" },
+  { "ctx": "start_over", "say": "No quiero empezar de cero, quiero que sigamos igual", "intent": "any", "not": ["start_over"], "note": "trap: negated start over" },
+  { "ctx": "start_over", "say": "Nada más, gracias", "intent": ["nothing_else_ctx", "g_thanks"] }
+] }

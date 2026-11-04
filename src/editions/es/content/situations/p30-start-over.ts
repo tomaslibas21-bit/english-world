@@ -82,7 +82,7 @@ const stepIs = (c: Ctx, id: string) => c.step === id;
 /** "Lo siento, pero…" (an apology with a "pero" after it in the same sentence). */
 const SORRY_BUT = /\b(lo siento|perdon|perdoname|disculpa|disculpame|siento|lamento)\b[^.!?;]*\bpero\b/;
 /** A non-apology about the other's feelings ("Siento que te sientas así", "Perdón si te ofendí"). */
-const NON_APOLOGY_YOU = /\b(te sientas|te sintieras|te sentiste|si te|te lo hayas tomado|te lo tomaste|lo tomaste|estes|alguien se)\b/;
+const NON_APOLOGY_YOU = /\b(te sientas|te sintieras|te sentiste|te hayas|si te|te lo hayas tomado|te lo tomaste|lo tomaste|estes|alguien se)\b/;
 /** A bare "¿Perdón?" asks to repeat; "Perdón." apologizes. */
 const PARDON_Q = /^\W*(perdon|disculpa|disculpe|perdone|como)\W*\?\W*$/;
 
@@ -169,11 +169,11 @@ export const startOver: SituationDef = {
       "como (esta | sigue) (michi | la gata | tu gata | la gatita) #cat", "(esta | anda) natalia [en casa | por aqui] #here",
     ] },
     can_talk: { patterns: [
-      "(tienes | tiene | tienen) un (minuto | momento | segundo | minutito | momentito) #h:have_minute", "(tienes | tiene | tienen) (tiempo | un rato | chance) [para (hablar | platicar)]",
+      "(tienes | tiene | tienen) un (minuto | momento | segundo | minutito | momentito) #h:have_minute", "(tienes | tiene | tienen) (tiempo | un rato | un ratito | chance) [para (hablar | platicar)]",
       "(necesito | quiero | tengo que | queria) decirte algo", "(vengo | vine) en (son de paz | paz)", "no (vengo | vine) a (pelear | discutir)",
       "(podemos | podriamos) (hablar | platicar) [un (momento | minuto | rato)] #h:can_talk",
       "(puedo | podria) (hablar | platicar) contigo [un (momento | minuto)]",
-      "(necesito | quiero | quisiera | me gustaria) (hablar | platicar) contigo [de (algo | la @bbq | lo que pasó | nosotros | lo que dije)]",
+      "(necesito | quiero | quisiera | me gustaria) (hablar | platicar) contigo [de (algo | la @bbq | lo que pasó | nosotros | lo que dije)] [es importante]",
       "(tenemos que | necesitamos | deberiamos) (hablar | platicar)",
       "(es | este es) (un mal momento | buen momento)",
       "(vine | vengo) a (hablar | platicar | verte | hablar contigo | platicar contigo)",
@@ -192,7 +192,7 @@ export const startOver: SituationDef = {
       "estoy aqui para (disculparme | pedirte perdon) #announce", "te (quiero | queria | tengo que | vengo a | vine a) pedir (perdon | disculpas | una disculpa) #announce", "(vine | vengo) a decirte que lo siento #announce",
       // naming what for (specific)
       "@siento @said [@where] #specific #h:truly_sorry",
-      "@sorry por @said [@where] #specific #h:sorry_barbecue",
+      "@sorry por @said [@where] [@where] #specific #h:sorry_barbecue", "@sorry por decir que (tu | la) lancha (era | es) (tonta | una tonteria) #specific",
       "@sorry por (la | lo de la | lo que pasó en la | tu) @bbq #specific",
       "@sorry por (esa noche | ese dia | lo que pasó | lo de la lancha | lo del barco) #specific",
       "@sorry por (decir | decirte | haber dicho | haberte dicho) que (nunca terminas nada | no terminas nada | nunca acabas nada) [@where] #specific",
@@ -214,7 +214,7 @@ export const startOver: SituationDef = {
     ] },
     // the answer to "¿Perdón por qué, exactamente?" (also on its own)
     apology_detail: { patterns: [
-      "por @said [@where] #h:for_said", "(de | sobre) @said [@where]",
+      "por @said [@where] [@where] #h:for_said", "por decir que (tu | la) lancha (era | es) (tonta | una tonteria)", "(de | sobre) @said [@where]",
       "por (decir | decirte | haber dicho | haberte dicho) que (nunca terminas nada | no terminas nada | nunca acabas nada) [@where] #h:for_boat",
       "por (burlarme de | reirme de | lo que dije de | lo que dije sobre) @lancha", "por (la | lo de la | lo que pasó en la) @bbq",
       "por (lo de la lancha | lo del barco | lo de tu lancha | esa noche)",
@@ -231,7 +231,8 @@ export const startOver: SituationDef = {
       "[ya se que | se que | reconozco que] @said (fue | estuvo) (muy)? (horrible | feo | cruel | injusto | terrible | de muy mal gusto | una tonteria | mal | fatal)", "(fue | era) un error [decir eso | decirlo | decirte eso]",
       "no te lo merecias #h:out_of_line", "no (te merecias | merecias) (eso | nada de eso | esas palabras)",
       "(no | nunca) (debí | debi) (decir | haber dicho | decirte) (eso | esas cosas | nada de eso | lo que dije | lo de la lancha | eso de la lancha) [@where]",
-      "(estuve | hice) [muy] mal [contigo | en decir eso]", "estuvo [muy] mal lo que (dije | hice)", "fui (un | una)? (pesimo | pesima | mal | mala | terrible) (amigo | amiga)",
+      "(estuve | hice) [muy] mal [contigo | en decir eso]", "estuvo [muy] mal lo que (dije | hice)",
+      "no (estuvo | fue) [nada] (bien | justo) (lo que (dije | te dije | hice) | decir eso | decirte eso)", "lo que (dije | te dije | hice) no (estuvo | fue) [nada] (bien | justo)", "fui (un | una)? (pesimo | pesima | mal | mala | terrible) (amigo | amiga)",
       "tienes [todo el] derecho (de | a) estar (enojado | molesto | dolido)", "(entiendo | comprendo) que (estes | sigas) (enojado | molesto | dolido)",
       "(debí | debi) (llamarte | haberte llamado | buscarte | haberte buscado) [antes | hace mucho]", "(debí | debi) (venir | disculparme | pedirte perdon) antes",
       "deje que (mi orgullo ganara | el orgullo me ganara)", "(ya se | se) que te (lastimé | heri | ofendi)", "te (lastimé | heri | ofendi) [@where]",
@@ -242,19 +243,21 @@ export const startOver: SituationDef = {
     ] },
     why_silent: { patterns: [
       "el orgullo pesa [y lo cargué demasiado tiempo] #h:heavy_coat #pride", "lo cargué demasiado tiempo #pride",
-      "[porque] (fui | estaba | era) @proud [para (llamarte | hablarte | buscarte | disculparme | pedirte perdon)] #h:proud_call #pride",
+      "[porque] (fui | estaba | era | soy) @proud [para (llamarte | hablarte | buscarte | disculparme | pedirte perdon)] #h:proud_call #pride",
       "[por] (orgullo | mi orgullo | puro orgullo | mi estupido orgullo | mi tonto orgullo) #pride",
       "[porque] (tenia | me daba) (verguenza | miedo | pena) [de]? [llamarte | verte | venir]", "(por | porque) (verguenza | miedo | pena | cobardia | orgullo)", "[porque] me dio (verguenza | miedo | pena)",
       "me ganó (el orgullo | mi orgullo) #pride", "me ganó (la pena | la verguenza | el miedo)", "no (tuve | tenia) (el valor | valor) [de llamarte | para llamarte | de venir]", "no me (atrevi | atrevia) [a llamarte | a venir | a buscarte]",
       "(queria | quise) llamarte [pero] no (sabia | supe) (que decir | como | como hacerlo | como empezar)",
       "(estaba | me sentia) (avergonzado | avergonzada | apenado | apenada | asustado | asustada | nervioso | nerviosa)",
-      "no (sabia | supe) (que decir | como decirlo | como empezar | como hacerlo | que hacer | como disculparme | como pedirte perdon) #h:didnt_know",
+      "no (sabia | supe) (que decir | como decirlo | como decirtelo | como decirte | como empezar | como hacerlo | que hacer | como disculparme | como pedirte perdon) #h:didnt_know",
       "(tenia miedo | me daba miedo) de que (estuvieras enojado | no me perdonaras | me odiaras | no quisieras verme | me cerraras la puerta)",
       "(estaba | estuve) esperando el (momento | dia) (perfecto | adecuado | indicado) #h:kept_waiting", "lo fui (dejando | posponiendo)", "lo deje para despues",
       "(cada dia | todos los dias) queria llamarte", "(quise | queria) llamarte (muchas veces | mil veces | todos los dias | cada dia)",
       "pensé que (estabas | seguias) (enojado | molesto | enojadisimo)", "[porque] pensé que no (querias | ibas a querer) (verme | hablarme | saber de mi | hablar conmigo)",
       "mientras mas (esperaba | tardaba) mas dificil (era | se hacia)", "agarré el (telefono | celular) (mil veces | muchas veces)", "[porque] (fui | soy | era) (un cobarde | una cobarde | muy cobarde)",
     ] },
+    // "Es verdad" / "Sí, lo dije" after "Dijiste que nunca termino nada…": admitting it (only at that step)
+    true_ctx: { patterns: ["(es verdad | es cierto) [(yo | si) lo dije]", "(si | es verdad) [yo] lo dije"] },
     // "No sé por qué" at "¿Por qué no me llamaste?": like "No sé" (Diego lets the why go)
     dunno_why_ctx: { patterns: ["no (se | sé) (por que | ni por que | bien por que)", "(ni yo se | ni idea) [por que]"] },
 
@@ -262,7 +265,7 @@ export const startOver: SituationDef = {
     sorry_but: { patterns: [
       "@sorry si (te ofendi | te lastimé | te molestó | te sentiste mal | te dolió | alguien se ofendió)",
       "@sorry si (lo que dije | mis palabras) te (ofendió | molestó | lastimó)",
-      "(siento | lamento) que te (sientas | sintieras) (asi | mal | ofendido | herido)",
+      "(siento | lamento) que te (sientas | sintieras | hayas sentido) (asi | mal | ofendido | ofendida | herido | herida)",
       "(siento | lamento) que (te lo hayas tomado | lo tomaras | te lo tomaras) (asi | tan personal | a mal | mal)", "(siento | lamento) que estes (enojado | molesto | dolido)", "(siento | lamento) que te (hayas ofendido | hayas sentido mal | ofendieras | molestara | haya molestado | haya dolido)",
       "@sorry pero (era | fue) [solo | nada mas] (una broma | broma)", "@sorry pero [yo] (tenia razon | es la verdad | es verdad | es cierto)",
       "se cometieron errores",
@@ -291,7 +294,7 @@ export const startOver: SituationDef = {
       "(era | fue) [solo | nada mas] (una broma | broma) [hombre | carnal | wey | guey]", "(solo | nada mas) (bromeaba | estaba bromeando | era broma)",
       "(eres | estas) (muy | demasiado)? (sensible | exagerado | dramatico | delicado)", "(estas | te estas) (exagerando | poniendo dramatico)",
       "no (es | fue) para tanto", "(superalo | ya superalo | relajate | calmate)", "no (es | fue) (gran cosa | tan grave | tan malo)",
-      "(fue | eso fue) hace dos meses", "pero es (verdad | cierto)", "(tu | es que tu) nunca terminas nada [y lo sabes]", "(es | eso es) (verdad | la verdad | cierto) [o no]", "sabes que es (verdad | cierto)",
+      "(fue | eso fue) hace dos meses", "pero es (verdad | cierto)", "(tu | es que tu) nunca terminas nada [y lo sabes]", "(es | eso es) (verdad | cierto) o no", "sabes que es (verdad | cierto)",
     ] },
 
     // --- Diego's turn ------------------------------------------------------------------------------------
@@ -303,7 +306,7 @@ export const startOver: SituationDef = {
       "te (doy | voy a dar) @time_obj", "tomate @time_obj #h:take_time", "tomate tu tiempo #h:take_time", "sin (presion | prisa | prisas) [tomate tu tiempo] #h:take_time",
       "(llamame | marcame | escribeme | mandame un mensaje) cuando (estes listo | quieras | estes preparado) #h:call_ready", "cuando (estes listo | quieras | estes preparado) (llamame | marcame | me llamas | me avisas | avisame)",
       "aqui (voy a estar | estare | estoy) [cuando estes listo]", "(puedo | voy a) esperar [lo que haga falta | lo que necesites | el tiempo que necesites]",
-      "no me voy a ningun lado", "ya sabes donde encontrarme", "(lo respeto | respeto (tu decision | eso | tu tiempo))", "no hay (prisa | apuro)", "(te espero | yo te espero | aqui te espero)", "lo que (necesites | haga falta)",
+      "no me voy a ningun lado", "ya sabes donde encontrarme", "(lo respeto | respeto (tu decision | eso | tu tiempo))", "no hay (prisa | apuro)", "(te espero | yo te espero | aqui te espero) [@time_obj]", "no (quiero | voy a) presionarte", "no te (quiero | voy a) presionar", "no te presiono", "lo que (necesites | haga falta)",
       "(avisame | me avisas | llamame | marcame) cuando (quieras | estes listo | puedas) [hablar | platicar]", "cuando (quieras | estes listo) (hablamos | platicamos | nos vemos)", "necesitas (tiempo | espacio) [lo entiendo | te entiendo]",
     ] },
     push: { patterns: [
@@ -350,7 +353,7 @@ export const startOver: SituationDef = {
       "cuenta conmigo", "(es | me parece) justo", "acepto", "lo que (quieras | tu digas)", "hecho", "(hago | haré) lo que (quieras | tu digas)", "(que dia | cuando) [te parece | quieres | entonces]",
     ] },
     cant_cook: { patterns: [
-      "[pero] (yo)? no se cocinar #h:cant_cook", "[pero] (cocino | soy) (fatal | muy mal | pesimo | horrible | malisimo)",
+      "[pero] (yo)? no se cocinar #h:cant_cook", "[pero] (yo)? no puedo cocinar", "[pero] (cocino | soy) (fatal | muy mal | pesimo | horrible | malisimo)",
       "soy (un | una)? (pesimo | pesima | malisimo | malisima | terrible) (cocinero | cocinera)", "(natalia | todos) (sabe | saben) que no se cocinar",
       "(se me quema | quemo) (todo | hasta el agua)", "no se ni hervir agua", "ni (se | sé) cocinar",
     ] },
@@ -513,8 +516,8 @@ export const startOver: SituationDef = {
       t("Vaya. | Lo | dices | en serio.", "Huh. | It | you-say | seriously.", "Huh. You really mean it."),
     ],
     dan_wrong_too: [
-      t("Yo | también | me equivoqué, | ¿sabes? | Fui | demasiado | orgulloso | para | levantar | el | teléfono.", "I | too | was wrong, | you-know? | I-was | too | proud | to | pick up | the | phone.",
-        "I was wrong too, you know. Too proud to pick up the phone."),
+      t("Yo | también | me equivoqué. | Fui | demasiado | orgulloso | para | levantar | el | teléfono.", "I | too | was wrong. | I-was | too | proud | to | pick up | the | phone.",
+        "I was wrong too. Too proud to pick up the phone."),
       t("Yo | tampoco | fui | perfecto. | Nunca | te | llamé.", "I | not … either | was | perfect. | Never | you | I-called.", "I wasn't perfect either. I never called you.",
         { flags: { 1: "tampoco: “not … either”; the negation is inside it." } }),
     ],
@@ -581,6 +584,8 @@ export const startOver: SituationDef = {
     not_yet_heard: [t("Todavía | no he oído | nada.", "Still | I haven't heard | anything.", "I haven't heard anything yet.")],
 
     // --- starting over ---------------------------------------------------------------------------------
+    // "¿Algo más que quieras decir?" – "Sí." (not the cold "Di lo que viniste a decir" of the door)
+    tell_me: [t("A ver, | dime.", "Let's see, | tell me.", "Okay, tell me.")],
     anything_else: [t("¿Algo | más | que | quieras | decir?", "Anything | else | that | you-want | to say?", "Anything else you want to say?", { flags: { 3: SUBJ } })],
     start_over_yes: [
       t("Ya | empezamos. | Tú | y | yo.", "Already | we-started. | You | and | me.", "We just did. You and me."),
@@ -806,7 +811,7 @@ export const startOver: SituationDef = {
         }
         dan(c, c.s.ownDone ? "why_again" : "own_nudge");
       },
-      expects: ["own_it", "why_silent", "dunno_why_ctx", "apologize", "apology_detail", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "promise"],
+      expects: ["own_it", "true_ctx", "why_silent", "dunno_why_ctx", "apologize", "apology_detail", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "promise"],
       suggest: (c) => c.s.ownDone
         ? [{ lt: "Explain why you didn't call", hint: "why" }, { lt: "Take responsibility", hint: "responsibility" }]
         : [{ lt: "Take responsibility", hint: "responsibility" }, { lt: "Explain why you didn't call", hint: "why" }],
@@ -871,7 +876,7 @@ export const startOver: SituationDef = {
       },
       expects: ["start_over", "missed_you", "thanks_hearing", "g_thanks", "promise", "nothing_else_ctx"],
       suggest: [{ lt: "Ask if you can start over", hint: "start_over" }, { lt: "Thank him for hearing you out", hint: "thanks" }],
-      yes: (c) => { if (!openYesNo(c, true)) { dan(c, "listening"); c.hold(); } },
+      yes: (c) => { if (!openYesNo(c, true)) { dan(c, "tell_me"); c.hold(); } },
       no: (c) => { if (!openYesNo(c, false)) offerStart(c); },
       help: (c) => offerStart(c) },
   ],
@@ -1008,6 +1013,21 @@ export const startOver: SituationDef = {
     { say: "Lo siento, pero tenía razón.", intent: "sorry_but", step: "apology", not: ["own_it"] },
     { say: "No tienes razón.", intent: "none", step: "responsibility", not: ["own_it"] },
     { say: "No necesito tiempo.", intent: "none", step: "turn", not: ["accept_time"] },
+    // review: a bare "Es verdad" admits it (not the "¡pero es verdad!" jab); negations that keep their meaning
+    { say: "Fui muy injusto.", intent: "own_it", step: "responsibility" },
+    { say: "Es verdad, lo dije.", intent: "none", step: "door", not: ["rude", "own_it"] },
+    { say: "Pero es verdad.", intent: "rude", step: "apology", not: ["own_it"] },
+    { say: "No estuvo bien lo que dije.", intent: "own_it", step: "responsibility" },
+    { say: "Siento que te hayas sentido así.", intent: "sorry_but", step: "apology", not: ["apologize"] },
+    { say: "No quiero presionarte.", intent: "accept_time", step: "turn", not: ["push"] },
+    { say: "No te voy a presionar.", intent: "accept_time", step: "turn", not: ["push"] },
+    { say: "Tú tampoco me llamaste.", intent: "blame", step: "responsibility", not: ["own_it", "why_silent"] },
+    { say: "No supe cómo decírtelo.", intent: "why_silent", step: "responsibility" },
+    { say: "Porque soy muy orgulloso.", intent: "why_silent", step: "responsibility" },
+    { say: "Por lo que dije en la fiesta enfrente de todos.", intent: "apology_detail", step: "apology" },
+    { say: "¿Tienes un ratito para platicar?", intent: "can_talk", step: "door" },
+    { say: "No puedo cocinar.", intent: "cant_cook", step: "make_up" },
+    { say: "Ya no quiero ser tu amigo.", intent: "none", step: "start_over", not: ["start_over"] },
     // not understood
     { say: "Mi perro come plátanos los martes.", intent: "none" },
     { say: "El cielo es verde y la mesa canta.", intent: "none" },
@@ -1081,6 +1101,16 @@ export const startOver: SituationDef = {
       "Vale, lo entiendo.", "¿Te apetece una cerveza? Yo invito.", "Os eché de menos.", "Sí.",
     ], expect: { complete: true, state: { timeOk: true, lastBad: "didnt_mean" } }, auto: AUTO,
       setup: (s) => { s.mood = "needs_time"; s.noraTwist = false; s.variant = "dinner"; } },
+    // review: "Está bien, gracias" while Diego needs time accepts it (it used to get "Solo dame un tiempo" again)
+    // review: a bare "Es verdad" admits it (it was the "¡pero es verdad!" jab, a bad move)
+    { name: "it's true, I said it", turns: [
+      "¿Podemos hablar?", "Perdón por lo que dije de tu lancha.", "Es verdad. Fui muy injusto.", "No sabía qué decir.", "Gracias por escucharme.", "¿Cómo te lo puedo compensar?", "Sale.", "¿Empezamos de nuevo?",
+    ], expect: { complete: true, state: { ownDone: true, badMoves: undefined } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
+    { name: "needs time: okay, thanks", turns: [
+      "Siento mucho lo que dije en tu fiesta.", "Fue mi culpa. No supe cómo decírtelo.", "Está bien, gracias.", "Te ayudo a terminar la lancha.", "¿Amigos otra vez?",
+    ], expect: { complete: true, state: { timeOk: true, startOverDone: true } }, auto: AUTO,
+      setup: (s) => { s.mood = "needs_time"; s.noraTwist = false; s.variant = "boat"; } },
     // the partial ending: apologized, then left
     { name: "partial ending: leaving after the apology", turns: ["Hola, Diego.", "¿Podemos hablar?", "Perdón por no llamarte.", "Adiós."],
       expect: { complete: false, state: { left: "partial", apologyDone: true } }, auto: AUTO,
@@ -1230,7 +1260,8 @@ function offerStart(c: Ctx) {
 function thanks(c: Ctx, explicit: boolean) {
   if (c.s.goalMet) return;
   if (!c.s.apologyDone) { if (explicit) { react(c, "not_yet_heard"); c.hold(); } return; }
-  if (timeOpen(c)) { if (explicit) { c.s.thanked = true; acceptTime(c); } return; }
+  // "Está bien, gracias" / "Vale, gracias" while Diego needs time: accepting it
+  if (timeOpen(c)) { if (explicit || /\b(esta bien|vale|de acuerdo|ok|okay|claro|entiendo|sale)\b/.test(heard(c))) { if (explicit) c.s.thanked = true; acceptTime(c); } return; }
   if (!c.s.turnDone) { if (explicit) { c.s.thanked = true; react(c, "ack"); } return; }
   // "Está bien, gracias" at "¿Trato hecho?": no "Cuando quieras"; the question comes again
   if (c.s.dealOffered && !explicit) return;
@@ -1343,6 +1374,7 @@ const HANDLERS: Record<string, H> = {
     answerWhy(c, seg.tags.includes("pride"));
   },
   sorry_but(c) { badMove(c, "sorry_but"); },
+  true_ctx(c, sl, sg) { if (stepIs(c, "responsibility")) HANDLERS.own_it(c, sl, sg); },
   dunno_why_ctx(c) {
     if (c.s.goalMet || !stepIs(c, "responsibility")) return;
     startOver.steps.find((x) => x.id === "responsibility")?.help?.(c);
@@ -1410,7 +1442,7 @@ const HANDLERS: Record<string, H> = {
       if (c.s.dealOffered) { dan(c, "deal_q"); askDeal(c); return; }
       c.s.variant = "dinner";
       c.s.dealOffered = true;
-      dan(c, "start_over_early");
+      dan(c, "start_over_early"); dan(c, "make_up_more");
       askDeal(c);
       return;
     }
