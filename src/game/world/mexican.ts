@@ -16,7 +16,7 @@ const cyl = (rt: number, rb: number, h: number, x: number, y: number, z: number,
 /** Geometry made round (0, 0) with its front towards +z, turned to `rot` and moved to (x, z). */
 const place = (g: THREE.BufferGeometry, x: number, z: number, rot: number) => g.rotateY(rot).translate(x, 0, z);
 /** The heading of a face's outward side (0: +z), as buildBuilding has it. */
-export const faceRot = (f: Face) => ({ n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 })[f];
+const faceRot = (f: Face) => ({ n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 })[f];
 /** A collider over a rectangle made round (0, 0) (x0…x1 across, z0…z1 out) and placed like `place`. */
 function blockRect(col: Colliders, x: number, z: number, rot: number, x0: number, x1: number, z0: number, z1: number) {
   const c = Math.cos(rot), s = Math.sin(rot);
@@ -93,7 +93,7 @@ function fit(x: CanvasRenderingContext2D, text: string, size: number, max: numbe
 }
 
 /** A street's name blade: white letters on blue with a white border, the kind of word ("Calle", "Av.") smaller. */
-export const drawBlade = (name: string): Draw => (x, w, h) => {
+const drawBlade = (name: string): Draw => (x, w, h) => {
   x.fillStyle = "#1f4f8f"; roundRect(x, 2, 2, w - 4, h - 4, h * 0.14); x.fill();
   x.lineWidth = 4; x.strokeStyle = "#f4f1ea"; roundRect(x, 7, 7, w - 14, h - 14, h * 0.1); x.stroke();
   const [kind, ...rest] = name.split(" ");
@@ -109,7 +109,7 @@ export const drawBlade = (name: string): Draw => (x, w, h) => {
 
 /** A hand-painted sign (a rótulo): a coloured board with a darker edge, the name in big outlined letters with a
  *  shadow, a smaller line under it, and little painted flowers in the corners. */
-export const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: string): Draw => (x, w, h) => {
+const drawPainted = (title: string, sub: string, bg: string, fg: string, edge: string): Draw => (x, w, h) => {
   x.fillStyle = edge; roundRect(x, 0, 0, w, h, h * 0.12); x.fill();
   x.fillStyle = bg; roundRect(x, h * 0.06, h * 0.06, w - h * 0.12, h - h * 0.12, h * 0.1); x.fill();
   const ty = sub ? h * 0.42 : h * 0.52;

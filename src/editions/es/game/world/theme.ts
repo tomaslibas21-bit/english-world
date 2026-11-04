@@ -1,7 +1,8 @@
 // Puerto Colibrí's look (replaces src/game/world/theme.ts in the Spanish edition; docs/es/TOWN.md). The first area
 // restyled: the zócalo (a kiosco instead of the fountain, papel picado, palms, the stalls' signs in Spanish), the
-// buildings around it and the Mercado Municipal, in the colours of a Mexican Caribbean town. The other areas are
-// the restyling tasks in docs/es/TOWN.md.
+// buildings around it and the Mercado Municipal, in the colours of a Mexican Caribbean town. Then the rest of the town
+// outdoors (4 Nov 2026): the malecón and the beach, the main street, the church, the street furniture, the houses, the
+// vehicles and the town's sounds. What is still to do is in docs/es/TOWN.md.
 import type { TownTheme } from "../../../../game/world/theme";
 export type { BuildingLook, TownTheme } from "../../../../game/world/theme";
 

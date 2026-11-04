@@ -1,7 +1,8 @@
 // How the town looks in this edition (docs/es/TOWN.md). This is Maple Harbor: every switch is off and every list
 // empty, so its town is built exactly as layout.ts and town.ts describe it. The Spanish edition's file
 // (src/editions/es/game/world/theme.ts) turns the square into a zócalo with a kiosco, papel picado and palms, paints
-// the buildings in Mexican colours, puts the Spanish names on the signs and the market hall's stalls inside.
+// the buildings in Mexican colours, puts the Spanish names on the signs and the market hall's stalls inside, and makes
+// the rest of the town outdoors Mexican too (the fields after `market`; their shapes are in mexican.ts).
 
 export interface BuildingLook {
   color?: string; trim?: string; awning?: string; roofColor?: string;
