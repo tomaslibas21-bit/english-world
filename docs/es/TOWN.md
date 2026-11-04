@@ -246,24 +246,25 @@ node tools/es-tour.mjs --mode=rooms --url=http://localhost:8098 --out=<after> --
 (Playwright: `--pw=<the playwright-core package>` unless it is in node_modules; it uses the full Chromium, drawing
 on the GPU; compare runs made with the same `--gl` and `--rooms`.)
 
-The 41 conversations on 4 Nov 2026, each reached and started at both sizes (`✓`). "Learner at": where the walk
-ended, in the room's coordinates (x east, z towards the open front, from the room's middle) or the town's
-(layout.ts), and how far the conversation's speakers stand from the learner. p18, p24 and p25–p30 come with their
-English places (Brotecito, the phone, Calle de los Cedros, Línea Clara, El Muelle's kitchen, Las Palmas, Diego's
-house): their rooms and people are in place and their signs in Spanish; the tour includes them once they land.
+The 45 conversations on 4 Nov 2026 (after the outdoor town's merge), each reached and started at both sizes
+(`✓`). "Learner at": where the walk ended, in the room's coordinates (x east, z towards the open front, from the
+room's middle) or the town's (layout.ts), and how far the conversation's speakers stand from the learner. p27, p28,
+p28b, p29 and p30 come with their English places (Línea Clara, El Muelle's kitchen, Elena's office, Las Palmas,
+Diego's house): their rooms and people are in place and their signs in Spanish; the tour includes them once they
+land.
 
 | Conversation | Place | Who and where | Learner at (x, z) | Tour |
 |---|---|---|---|---|
-| s65a-passport | Aeropuerto de Puerto Colibrí | Oficial Ramírez: the immigration booths | (-13.9, -7.2) room · Oficial Ramírez 1.4 m | ✓ walked in |
+| s65a-passport | Aeropuerto de Puerto Colibrí | Oficial Ramírez: the immigration booths | (-13.9, -7.2) room · Oficial Ramírez 1.5 m | ✓ walked in |
 | s65b-baggage | Aeropuerto de Puerto Colibrí | Itzel, Agente Medina: the baggage desk; customs just after it | (-3.9, -6.9) room · Itzel 2.4 m, Agente Medina 3.5 m | ✓ walked in |
-| s66-taxi | Sitio de Taxis | Don Rigo: the sitio on the main street, by his taxi | (123.5, -2.5) town · Don Rigo 1.5 m | ✓ walked in |
+| s66-taxi | Sitio de Taxis | Don Rigo: the sitio on the main street, by his taxi | (123.5, -2.5) town · Don Rigo 1.4 m | ✓ walked in |
 | s68-hotel | Hotel Mar Azul | Fernanda: the reception desk | (0.0, -3.2) room · Fernanda 2.4 m | ✓ walked in |
-| s62-visitor-center | Información Turística | Don Chuy: the information counter | (0.0, -2.1) room · Don Chuy 2.1 m | ✓ walked in |
+| s62-visitor-center | Información Turística | Don Chuy: the information counter | (0.0, -2.1) room · Don Chuy 2.0 m | ✓ walked in |
 | s72-cafe | Café La Ceiba | Mariana: the counter | (-1.2, -2.0) room · Mariana 2.2 m | ✓ walked in |
 | s69-local | Zócalo · Tianguis | Doña Carmen: her bench by the kiosco | (18.1, -21.0) town · Doña Carmen 2.2 m | ✓ walked in |
 | s70-museum | Museo de la Costa Maya | Iván, Don Arturo: the ticket desk; the guard by the paintings | (-6.9, 4.6) room · Iván 2.1 m, Don Arturo 14.6 m | ✓ walked in |
 | s32-mercado | Mercado Municipal | Doña Lupe: her fruit and vegetable stall | (-2.5, 3.0) room · Doña Lupe 2.2 m | ✓ walked in |
-| s73-restaurant | La Cocina de Lucía | Lucía, Luis: her stand by the door; Luis among the tables | (-4.7, 3.3) room · Lucía 0.8 m, Luis 7.9 m | ✓ walked in |
+| s73-restaurant | La Cocina de Lucía | Lucía, Luis: her stand by the door; Luis among the tables | (-4.5, 3.4) room · Lucía 1.0 m, Luis 7.8 m | ✓ walked in |
 | s81-apartment | Departamentos Las Palmas | Don Ernesto: in the empty apartment | (2.2, -1.4) room · Don Ernesto 1.5 m | ✓ walked in |
 | s82-neighbor | Departamentos Las Palmas | Doña Lupita: her door in the hallway | (-6.7, -3.8) room · Doña Lupita 1.4 m | ✓ walked in |
 | s78-bank | Banco del Puerto | Ricardo: the teller's window | (0.1, -2.4) room · Ricardo 2.4 m | ✓ walked in |
@@ -273,21 +274,21 @@ house): their rooms and people are in place and their signs in Spanish; the tour
 | s77-salon | Estética Tijeras | Paty: beside her chair | (-1.5, -1.0) room · Paty 1.3 m | ✓ walked in |
 | s76-dentist-call | phone call | Lorena: on the phone |  | ✓ the phone |
 | s80-support-call | phone call | Karla, NetWave: on the phone |  | ✓ the phone |
-| s35-gym | Gimnasio Colibrí | Mónica: by the bench press | (4.1, -1.4) room · Mónica 1.4 m | ✓ walked in |
-| s87-interview | Línea Clara | Licenciada Salinas: the meeting room's table | (-5.7, -6.8) room · Licenciada Salinas 1.4 m | ✓ walked in |
+| s35-gym | Gimnasio Colibrí | Mónica: by the bench press | (4.1, -1.4) room · Mónica 1.3 m | ✓ walked in |
+| s87-interview | Línea Clara | Licenciada Salinas: the meeting room's table | (-5.6, -6.8) room · Licenciada Salinas 1.4 m | ✓ walked in |
 | s88-first-day | Línea Clara | María: the open-plan office | (4.3, 3.2) room · María 1.4 m | ✓ walked in |
 | s89-video-call | phone call | Sofía, Pablo, Sara: on the phone |  | ✓ the phone |
 | s90-running-late | phone call | Ingeniero Montes: on the phone |  | ✓ the phone |
 | s34-meeting | Línea Clara | Sofía, Pablo, Sara: the team room's table (Sara on its screen) | (8.6, -4.3) room · Sofía 2.6 m, Pablo 2.6 m | ✓ walked in |
 | s63-party | Casa de Ximena | Ximena, Marcos: the backyard | (-46.0, 61.0) town · Ximena 1.3 m, Marcos 5.0 m | ✓ walked in |
 | s83-invite-call | phone call | Andrea: on the phone |  | ✓ the phone |
-| s86-old-friend | Zócalo · Tianguis | Paola: the zócalo | (35.0, -37.1) town · Paola 1.4 m | ✓ walked in |
+| s86-old-friend | Zócalo · Tianguis | Paola: the zócalo | (35.1, -37.0) town · Paola 1.5 m | ✓ walked in |
 | s85-dinner | Casa de Diego y Natalia | Diego, Natalia: the front door; Natalia in the kitchen | (-0.2, 4.1) room · Diego 1.5 m, Natalia 9.5 m | ✓ walked in |
 | s84-date | Restaurante El Muelle | Santiago or Camila (the learner's choice): the middle table | (0.0, -2.2) room · Santiago 2.2 m | ✓ walked in |
 | s33-small-talk | Parada · Calle Ceiba | Don Pancho: the bus shelter | (-7.7, 43.1) town · Don Pancho 0.8 m | ✓ walked in |
 | s67a-tickets | Terminal de Autobuses | Don Raúl: the ticket window | (-6.0, -4.8) room · Don Raúl 2.2 m | ✓ walked in |
-| s67b-bus | Terminal de Autobuses | Ana: the bus's door (route 7) | (8.3, 0.2) room · Ana 1.6 m | ✓ walked in |
-| s71a-rental | Renta de Autos Colibrí | Andrés: the counter | (0.1, -1.4) room · Andrés 2.4 m | ✓ walked in |
+| s67b-bus | Terminal de Autobuses | Ana: the bus's door (route 7) | (8.4, -0.1) room · Ana 1.3 m | ✓ walked in |
+| s71a-rental | Renta de Autos Colibrí | Andrés: the counter | (0.1, -1.5) room · Andrés 2.3 m | ✓ walked in |
 | s71b-gas | Gasolinera El Faro | Doña Chela: pump 2, by the learner's car | (111.5, 8.3) town · Doña Chela 2.2 m | ✓ walked in |
 | s64a-checkin | Aeropuerto de Puerto Colibrí | Emilio: the check-in counter | (6.0, -7.0) room · Emilio 2.3 m | ✓ walked in |
 | s64b-security | Aeropuerto de Puerto Colibrí | Oficial Torres: the filtro (the scanner) | (15.8, -0.8) room · Oficial Torres 1.2 m | ✓ walked in |
@@ -295,6 +296,10 @@ house): their rooms and people are in place and their signs in Spanish; the tour
 | s91a-lost-wallet | Zócalo · Tianguis | Doña Mari: her flower stall | (14.0, -40.2) town · Doña Mari 3.1 m | ✓ walked in |
 | s91b-police | Policía Municipal | Oficial Reyes: the front desk | (0.0, -1.3) room · Oficial Reyes 2.3 m | ✓ walked in |
 | s31-doctor | Clínica Familiar | Doctora Herrera: beside the exam table | (1.5, -2.9) room · Doctora Herrera 1.4 m | ✓ walked in |
+| p25-used-car | Calle de los Cedros | Doña Margarita: her convertible in the drive | (101.0, 45.4) town · Doña Margarita 2.3 m | ✓ walked in |
+| p26-complaint | phone call | Jorge, Brenda: on the phone |  | ✓ the phone |
+| p18-startup | Brotecito | Toño: the wall of sticky notes | (1.9, -2.3) room · Toño 1.5 m | ✓ walked in |
+| p24-flood | phone call | Andrea, Don Gilberto: on the phone |  | ✓ the phone |
 
 Found on the way, left for others:
 - **La Cocina de Lucía's awning** is green in the theme's `buildings` (`trattoria.awning`); s62's directions say "la del
