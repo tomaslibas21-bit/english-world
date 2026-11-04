@@ -23,6 +23,7 @@ import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { fuzzSituation } from "../enumerate";
 import { playSim } from "../sim-play";
+import { reachFilter } from "./reach-es";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
 const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
@@ -126,14 +127,16 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           const bindings: Record<string, unknown>[] = [];
           if (!ph.entities.length && !ph.values.length) bindings.push({});
           else if (!ph.entities.length && ph.values.every((v) => sit.domains?.[v])) {
+            // only the values the line can really be said with (reach-es.ts: fixed values from its calls, rules)
+            const reach = reachFilter(sit, lid);
             let combos: Record<string, unknown>[] = [{}];
             for (const v of ph.values) {
               const dom = sit.domains![v]();
               const next: Record<string, unknown>[] = [];
               for (const c of combos) for (const d of dom) next.push({ ...c, [v]: d });
-              combos = next.slice(0, 800);
+              combos = reach ? next : next.slice(0, 800);
             }
-            bindings.push(...combos);
+            bindings.push(...(reach ? combos.filter(reach).slice(0, 800) : combos));
           } else if (ph.entities.length === 1 && !ph.values.length) {
             for (const [ln, list] of Object.entries(sit.entities || {})) if (!lists || lists.has(ln)) for (const e of list) bindings.push({ [ph.entities[0]]: e.id });
           }

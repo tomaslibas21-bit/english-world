@@ -37,6 +37,8 @@ import { audioKey } from "../../src/audio-key";
 import { levenshtein } from "../../src/convo/normalize";
 import { EDITION } from "../../src/edition";
 import { NPCS } from "../../src/content/npcs";
+import { SITUATION_BY_ID } from "../../src/content/situations";
+import { placeholders } from "../../src/convo/compose";
 import { enumerateEs, mergeUtts, type EsUtt } from "./lines-es";
 import { accentOf, castingProblems, roleOf, styleFor, whoOf, type Accent, type StyleOpts } from "./casting-es";
 import { decodeAudio, trimAndNormalize } from "../audio-util";
@@ -164,7 +166,7 @@ const SAY_AS: Record<string, string> = {};
 function newestSource(): number {
   let t = 0;
   const walk = (p: string) => { if (!fs.existsSync(p)) return; const s = fs.statSync(p); if (s.isDirectory()) for (const f of fs.readdirSync(p)) walk(path.join(p, f)); else t = Math.max(t, s.mtimeMs); };
-  for (const p of ["src/content", "src/convo", "src/editions/es/content", "src/editions/es/convo", "src/audio-key.ts", "tools/enumerate.ts", "tools/es-voices/lines-es.ts"]) walk(path.join(ROOT, p));
+  for (const p of ["src/content", "src/convo", "src/editions/es/content", "src/editions/es/convo", "src/audio-key.ts", "tools/enumerate.ts", "tools/es-voices/lines-es.ts", "tools/es-voices/reach-es.ts"]) walk(path.join(ROOT, p));
   return t;
 }
 /** Every line the game can speak (lines-es.ts), cached in <work>/lines.json until the content changes (--fresh makes
@@ -214,11 +216,15 @@ async function allLines(styleOpts?: StyleOpts): Promise<Line[]> {
 
 /** About how long a line takes: Spanish syllables at an everyday pace. */
 const estimate = (l: { say: string }) => 0.45 + 0.16 * syllables(l.say) + 0.2 * pauses(l.say);
+/** Audio tokens a line costs, before any sample: Maple Harbor's 33,684 clips came to 20.3 + 1.477 tokens a character
+ *  (fitted on the English run's recorded.json), and the first two Spanish clips to 5–27% more than that; so the
+ *  English fit + 15%. `project` replaces it with the sample's own fit. */
+const audioTokens = (l: { say: string }) => 1.15 * (20.3 + 1.477 * l.say.length);
 const estimatePrice = (lines: Line[], rate = PRICE.batch) => {
-  const sec = lines.reduce((a, l) => a + estimate(l), 0);
+  const tokens = lines.reduce((a, l) => a + audioTokens(l), 0);
   // the request's text: the line and the style, about 4 characters a token
   const text = lines.reduce((a, l) => a + (l.text.length + l.style.length) / 4 + 12, 0);
-  return { sec, price: priceOf(rate, text, sec * PRICE.tokensPerSecond * 1.1) };
+  return { sec: tokens / PRICE.tokensPerSecond, price: priceOf(rate, text, tokens) };
 };
 
 // ---------------------------------------------------------------- plan
@@ -276,8 +282,16 @@ function pickFrom(lines: Line[], per: number, only?: Set<string>): Line[] {
   const byWho = new Map<string, Line[]>();
   for (const l of lines) { if (only && !only.has(l.who)) continue; if (!byWho.has(l.who)) byWho.set(l.who, []); byWho.get(l.who)!.push(l); }
   const qs = per === 1 ? [0.6] : per === 2 ? [0.3, 0.9] : [0.2, 0.6, 0.95, 0.4, 0.8].slice(0, per);
+  // a line the character really says: met in a sim or a random conversation, or a line of theirs with nothing to fill
+  // in (a line voiced with every item of every list can come out as one never said: "esa Mérida se queda aquí")
+  const real = (l: Line) => {
+    if (/:(sim|fuzz)$/.test(l.where) || l.who.startsWith("coach_")) return true;
+    const m = /^([^:]+):([a-z0-9_]+)\[(\d+)\]$/i.exec(l.where);
+    const src = m ? SITUATION_BY_ID[m[1]]?.lines[m[2]]?.[Number(m[3])] : undefined;
+    return !!src && !placeholders(src).entities.length && !placeholders(src).values.length;
+  };
   const spread = (ls: Line[], n: number) => {
-    const own = ls.filter((l) => !l.where.startsWith("global") && !l.where.endsWith(":fuzz") && !l.where.includes(":soundcheck:") && !l.neutral && l.say.length >= 20 && l.say.length <= 150);
+    const own = ls.filter((l) => !l.where.startsWith("global") && !l.where.includes(":soundcheck:") && !l.neutral && real(l) && l.say.length >= 20 && l.say.length <= 150);
     const pool = (own.length >= n ? own : ls).slice().sort((a, b) => a.say.length - b.say.length || a.say.localeCompare(b.say));
     return qs.slice(0, n).map((q) => pool[Math.min(pool.length - 1, Math.floor(q * pool.length))]).filter((l, i, a) => l && a.indexOf(l) === i);
   };
@@ -287,7 +301,8 @@ function pickFrom(lines: Line[], per: number, only?: Set<string>): Line[] {
   if (!f.length || !m.size) for (const c of ["coach_f", "coach_m"]) pick.push(...spread(byWho.get(c) ?? [], per));
   // and the words a voice could read its own way: numbers, a peso sign, English loanwords, Mexican words, very short lines
   if (!only) for (const re of RISKY) {
-    const hit = lines.filter((l) => re.test(l.say) && !pick.includes(l) && !l.who.startsWith("amb_")).sort((a, b) => a.say.length - b.say.length);
+    const all = lines.filter((l) => re.test(l.say) && !pick.includes(l) && !l.who.startsWith("amb_")).sort((a, b) => a.say.length - b.say.length);
+    const hit = all.some(real) ? all.filter(real) : all;
     if (hit.length) pick.push(hit[Math.floor(hit.length / 3)]);
   }
   return pick;
@@ -360,8 +375,11 @@ async function sample() {
   const dir = path.join(WORK, "samples", round);
   fs.mkdirSync(dir, { recursive: true });
   const est = estimatePrice(lines, PRICE.standard).price;
-  capCheck(est, `sample ${round}: ${lines.length} clips`);
   console.log(`sample ${round}: ${lines.length} clips (${lines.filter((l) => l.accent === "mx").length} Mexican, ${lines.filter((l) => l.accent === "neutral").length} neutral), about $${est.toFixed(2)} at the standard price${styleOpts.age ? ", age in the style" : ""}${styleOpts.accent === "none" ? ", no accent in the style" : ""}`);
+  // --dry: only the lines it would ask for (<round>/plan.json), no request
+  writeJson(path.join(dir, "plan.json"), lines.map((l) => ({ who: l.who, accent: l.accent, gv: l.gv, say: l.say, style: l.style, fx: l.fx, key: l.key })));
+  if (has("dry")) { console.log(`the lines are in ${path.join(dir, "plan.json")} (nothing asked for)`); return; }
+  capCheck(est, `sample ${round}: ${lines.length} clips`);
   const index: Record<string, unknown>[] = readJson(path.join(dir, "index.json"), []);
   const have = new Set(index.map((x) => x.key as string));
   let n = 0;
@@ -449,11 +467,15 @@ async function prepare() {
   const jobs = jobsList();
   const reqDir = path.join(WORK, "requests");
   fs.mkdirSync(reqDir, { recursive: true });
-  // request files never sent are replaced; lines in batches still running are not asked for again
+  // request files of this kind never sent are made again (another kind's stay: the neutral set's files wait while the
+  // Mexican set's are remade); lines in batches still running, or waiting in another kind's file, are not asked twice
+  const kind = flag("kind") ?? "lines";
   const sent = new Set(jobs.map((j) => j.file));
-  for (const f of fs.readdirSync(reqDir)) if (!sent.has(path.join("requests", f.replace(/\.lines\.json$/, ".jsonl")))) fs.rmSync(path.join(reqDir, f));
+  const unsent = (f: string) => !sent.has(path.join("requests", f.replace(/\.lines\.json$/, ".jsonl")));
+  for (const f of fs.readdirSync(reqDir)) if (unsent(f) && new RegExp(`^\\d+-${kind}(-[ab])*\\.(jsonl|lines\\.json)$`).test(f)) fs.rmSync(path.join(reqDir, f));
   const waiting = new Set<string>();
   for (const j of jobs) if (!j.fetched && !j.failed) for (const l of readJson<Line[]>(path.join(WORK, linesFile(j.file)), [])) waiting.add(l.key);
+  for (const f of fs.readdirSync(reqDir)) if (f.endsWith(".lines.json") && unsent(f)) for (const l of readJson<Line[]>(path.join(reqDir, f), [])) waiting.add(l.key);
   const tired: Line[] = [];
   const need = lines.filter((l) => {
     if (waiting.has(l.key)) return false;
@@ -465,7 +487,6 @@ async function prepare() {
   if (tired.length) console.log(`${tired.length} lines failed ${MAX_TRIES} times and are left for a person to look at (${RECORDED})`);
   if (!need.length) { console.log("nothing to record"); return; }
   let n = Math.max(0, ...fs.readdirSync(reqDir).map((f) => Number(f.split("-")[0]) || 0), ...jobs.map((j) => Number(path.basename(j.file).split("-")[0]) || 0));
-  const kind = flag("kind") ?? "lines";
   for (let i = 0; i < need.length; i += size) {
     const part = need.slice(i, i + size);
     const name = `${String(++n).padStart(3, "0")}-${kind}`;
@@ -480,7 +501,8 @@ async function prepare() {
 async function send() {
   const jobs = jobsList();
   const reqDir = path.join(WORK, "requests");
-  const files = fs.existsSync(reqDir) ? fs.readdirSync(reqDir).filter((f) => f.endsWith(".jsonl")).sort() : [];
+  // --kind=mx: only that kind's files (the neutral set's wait for the owner's OK when both don't fit)
+  const files = fs.existsSync(reqDir) ? fs.readdirSync(reqDir).filter((f) => f.endsWith(".jsonl") && (!flag("kind") || new RegExp(`^\\d+-${flag("kind")}(-[ab])*\\.jsonl$`).test(f))).sort() : [];
   const todo = files.map((f) => path.join("requests", f)).filter((f) => !jobs.some((j) => j.file === f));
   if (!todo.length) { console.log("nothing prepared to send (prepare)"); return; }
   KEY ||= apiKey();
@@ -983,17 +1005,26 @@ async function project() {
   console.log(`${xs.length} sample clips: audio tokens ≈ ${coef[0].toFixed(1)} + ${coef[1].toFixed(2)} × syllables + ${coef[2].toFixed(1)} × pauses (±${err.toFixed(0)}); text ${textPerChar.toFixed(3)} tokens a character`);
   const lines = await allLines();
   const manifest: Record<string, number> = readJson(MANIFEST, {});
+  // lines in batches sent and not fetched yet are already counted as running (spend().committed)
+  const running = new Set<string>();
+  for (const j of jobsList()) if (j.batch && !j.fetched && !j.failed) for (const l of readJson<Line[]>(path.join(WORK, linesFile(j.file)), [])) running.add(l.key);
   const redo = Number(flag("redo") ?? 0.05);
-  let both = 0;
+  // the conversations still to land (p18, p24–p30): about 11% more lines, as in Maple Harbor (3,636 of its 33,684)
+  const later = Number(flag("later") ?? 0.11);
+  const set: Record<string, number> = {};
   for (const acc of ["mx", "neutral"] as Accent[]) {
-    const ls = lines.filter((l) => l.accent === acc && !manifest[l.key]);
+    const ls = lines.filter((l) => l.accent === acc && !manifest[l.key] && !running.has(l.key));
     const audio = ls.reduce((a, l) => a + fit(l.say), 0), text = ls.reduce((a, l) => a + (l.text.length + l.style.length) * textPerChar, 0);
     const price = priceOf(PRICE.batch, text, audio) * (1 + redo);
-    both += price;
+    set[acc] = price;
     console.log(`${acc === "mx" ? "Mexican" : "neutral"} set: ${ls.length} clips to record, ${(audio / 1e6).toFixed(2)}M audio tokens (${Math.round(audio / PRICE.tokensPerSecond / 60)} min), ${(text / 1e6).toFixed(2)}M text tokens: about $${price.toFixed(2)} in batch with ${Math.round(redo * 100)}% for redos`);
   }
   const { spent, committed } = spend();
-  console.log(`both sets about $${both.toFixed(2)}; spent so far $${spent.toFixed(2)}${committed ? `, running $${committed.toFixed(2)}` : ""}; stop line $${CAP}: ${spent + committed + both <= CAP ? "both sets fit" : "both sets don't fit: the Mexican set first"}`);
+  const now = spent + committed, both = set.mx + set.neutral, laterBoth = both * later;
+  console.log(`spent so far $${spent.toFixed(2)}${committed ? `, running $${committed.toFixed(2)}` : ""}; both sets now about $${both.toFixed(2)}, the later conversations about $${laterBoth.toFixed(2)} more (both sets); stop line $${CAP}`);
+  console.log(now + both + laterBoth <= CAP ? `both sets fit, the later conversations too: $${(now + both + laterBoth).toFixed(2)}`
+    : now + set.mx * (1 + later) <= CAP ? `both sets don't fit with the later conversations ($${(now + both + laterBoth).toFixed(2)}): the Mexican set first ($${(now + set.mx * (1 + later)).toFixed(2)} with its later conversations), the neutral set waits for the owner's OK`
+    : `even the Mexican set doesn't fit: $${(now + set.mx * (1 + later)).toFixed(2)}`);
 }
 
 /** One clip right away: `try "¡Hola!" --voice=<Gemini voice> --style="…" [--fx=phone]` → <work>/try/ (the standard

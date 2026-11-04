@@ -7,6 +7,8 @@ import { setVariety } from "../../src/convo/compose";
 import { chooseVariety } from "../../src/state/variety";
 import { ACCENTS, CAST, SCENES, accentOf, castingProblems, roleOf, styleFor, whoOf } from "../../tools/es-voices/casting-es";
 import { geminiTextEs, likenessEs, numbersToDigitsEs, syllables, withFx } from "../../tools/es-voices/voice-batch-es";
+import { reachFilter, reachOf } from "../../tools/es-voices/reach-es";
+import { SITUATION_BY_ID } from "../../src/content/situations";
 
 afterEach(() => setVariety("default"));
 
@@ -60,6 +62,27 @@ describe("casting", () => {
     expect(styleFor("coach_f", ["s76-dentist-call"]).fx).toBeUndefined();
     expect(styleFor("harold", ["s70-museum"]).style).toContain(SCENES["s70-museum"].setting);
     expect(styleFor("ben", ["s70-museum"]).style).not.toContain(SCENES["s70-museum"].setting);
+  });
+});
+
+describe("the values a line can really be said with (reach-es.ts)", () => {
+  const sit = (id: string) => SITUATION_BY_ID[id];
+  it("gives a line said only with a fixed value that value alone", () => {
+    const f = reachFilter(sit("s31-doctor"), "consult_price")!;
+    expect(f({ price: 50000 })).toBe(true);
+    expect(f({ price: 45000 })).toBe(false);
+    expect(reachFilter(sit("s73-restaurant"), "soup_offer")!({ price: 11000 })).toBe(true);
+    expect(reachOf(sit("s71a-rental")).get("ask_upgrade")?.how).toBe("fixed");
+  });
+  it("keeps the whole list where the value comes from the learner or a sum", () => {
+    expect(reachFilter(sit("s73-restaurant"), "total_is")).toBeNull();
+    expect(reachFilter(sit("s79-post"), "say_total")).toBeNull();
+  });
+  it("keeps values that hang together together", () => {
+    const sale = reachFilter(sit("s74-clothes"), "price_sale")!;
+    expect(sale({ price: 59900, pct: 20, amount: 47900 })).toBe(true);
+    expect(sale({ price: 59900, pct: 20, amount: 59900 })).toBe(false);
+    expect(reachFilter(sit("s31-doctor"), "change_is")!({ price: 160000 })).toBe(false);
   });
 });
 

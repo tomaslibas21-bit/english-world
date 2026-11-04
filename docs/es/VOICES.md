@@ -1,15 +1,16 @@
 # Puerto Colibrí's voices (Gemini)
 
-**Status (4 Nov 2026, 22:40):** **blocked on billing, everything else ready.** The key in `~/english-world/.env.local` belongs to a
-Google project on the Gemini API's **free tier**: Google answered the first single requests, then refused with
-"generate_content_free_tier_requests, limit: 10 … per day" (429), and refused a one-line batch with
-`FAILED_PRECONDITION` (400): the free tier has no Batch API. Two clips were made (a test line and one sample,
-$0.003 at paid prices, free in fact). To record, the owner turns on billing for **the project this key belongs to**
-(Google AI Studio → the key's project → set up billing / the prepaid balance on that project), or puts a key from a
-paid project into `.env.local`; then the run-book below goes on from step 1. The owner's later decisions (4 Nov):
-**two accent sets** (Mexican and neutral Latin American, one Settings switch for text and voice, wired), **all bulk
-work through the Batch API**, about $20–25 expected, **stop line $38** (the balance), the Mexican set first if the
-samples project more.
+**Status (4 Nov 2026, 23:30):** **waiting for billing; ready to record in the morning.** The key in
+`~/english-world/.env.local` belongs to a Google project on the Gemini API's **free tier**: Google answered the first
+single requests, then refused with "generate_content_free_tier_requests, limit: 10 … per day" (429), and refused a
+one-line batch with `FAILED_PRECONDITION` (400): the free tier has no Batch API. Two clips were made (a test line and
+one sample, $0.003 at paid prices, free in fact). The owner turns on billing for **the project this key belongs to**
+in the morning (Google AI Studio → the key's project → set up billing / the prepaid balance on that project); then
+the run-book below goes step by step. Until then no request goes to Google. Ready: the casting, the line list with
+the cuts (76,792 clips for both sets, from 107,082), the Batch API request files for both sets, the two sample sets,
+the run-book. The owner's decisions (4 Nov): **two accent sets** (Mexican and neutral Latin American, one Settings
+switch for text and voice, wired), **all bulk work through the Batch API**, about $20–25 expected, **stop line $38**
+(the balance), the Mexican set first if the samples project more.
 
 The owner's brief (4 Nov 2026, evening): every character of the Spanish edition gets a voice of their own, made with
 Gemini TTS the way Maple Harbor's English voices were (docs/VOICING-PLAN.md), adjusted to each setting: a voice and a
@@ -31,6 +32,9 @@ The Spanish edition has its own copies of the voice tools in `tools/es-voices/` 
 | `tools/es-voices/casting-es.ts` | the casting below: a Gemini voice, an age, a manner and a pace per character, two accent directions, the settings per conversation; the checks (gender, no shared voice within a conversation, the coach voices for nobody else) |
 | `tools/es-voices/voice-batch-es.ts` | samples, batches, checks, redos, the ledger, the install into `public/audio-es/` |
 | `tools/es-voices/voice-casting-es.ts` | the casting as the tables below |
+| `tools/es-voices/reach-es.ts` | which values a line with a value list can really be said with: fixed values read in its calls, and rules for values that hang together; the line list uses it (the table: run it) |
+| `tools/es-voices/breakdown-es.ts` | where the clips come from, by kind and value list, per set (also on Maple Harbor's list) |
+| `tools/es-voices/values-es.ts` | the check of the cuts: every value random conversations and the sims say, and whether it is kept |
 
 Every command runs with the edition overlay:
 
@@ -230,51 +234,117 @@ The coaches and the passers-by never get a setting.
 
 ## The lines
 
-`plan` (4 Nov, the 41 conversations that passed their review, before the sims were added): **107,082 clips**, 53,548
-in Mexican Spanish and 53,534 in neutral Latin American Spanish (732 of them a neutral twin's own text); 2,202 on the
-phone, 574 on video; about 4,895 minutes of speech. Half the clips are prices and totals: lines with a value
-(`{$price}`, `{$total}`) are recorded for every value of the conversation's domain (up to 800), as in Maple Harbor
-(s31 doctor 14k clips, s73 restaurant 22k, s71b gas 6k); a few of those lines are only ever said with one fixed value
-(s31 `consult_price` and `cost_info` with the fee, s73 `soup_offer`), about 3,000 clips a set that a later pass could
-skip. The list with the sims (customs voiced by Agente Medina instead of Itzel) was being made when this was written:
-`plan` prints it.
+Every line the Spanish game can speak, in both sets, for the 41 conversations that passed their review
+(`tools/es-voices/lines-es.ts`; the full report with the JSON behind it: `~/puerto-colibri-voicing/BREAKDOWN.md`).
+Per set, against Maple Harbor's one English set:
+
+| What | Maple Harbor (English, 1 set) | Spanish first list (per set) | Spanish with the sims (per set) | **Spanish after the cuts (per set)** |
+|---|---:|---:|---:|---:|
+| conversation lines, plain | 6,156 | 5,922 | 5,728 | **5,728** |
+| conversation lines with an item | 2,969 | 3,696 | 3,170 | **3,170** |
+| conversation lines with a value (prices, totals, numbers, times) | 7,961 | 28,864 | 25,258 | **14,351** |
+| lines only random conversations or sims make | 144 | 271 | 305 | **309** |
+| sound-alike check-backs | 2,885 | 3,069 | 3,069 | **3,069** |
+| the shared lines in each person's voice | 2,867 | 2,374 | 2,424 | **2,424** |
+| example answers (two coach voices) | 10,658 | 9,302 | 9,302 | **9,302** |
+| shared example answers, passers-by | 44 | 52 | 52 | **52** |
+| **all, Mexican set** | **33,684** | **53,550** | **49,308** | **38,405** |
+| neutral set (… of which a neutral twin's own text) | — | 53,536 (732) | 49,294 (724) | 38,391 (719) |
+| **both sets** | 33,684 (one set) | 107,086 | 98,602 | **76,796** |
+
+- **Where the extra ~40,000 came from:** all of it from the lines with a value: 28,864 a set against 7,961 (+41,806
+  for both sets); every other kind together is 1,000 a set below Maple Harbor. A line with a value is voiced with every
+  value of its conversation's list (up to 800) because the value can come from the learner or a sum; the Spanish
+  conversations handle more money, and some lines were voiced with the whole list though their code only ever gives
+  them one value.
+- **With the sims:** the list also plays every conversation's scripted sims, which reach the parts random talk rarely
+  does; that put customs in Agente Medina's voice instead of Itzel's, and the restaurant's bill, tip and cash in Luis's
+  voice alone (the first list had them in Lucía's too): 4,242 clips a set fewer.
+- **The cuts** (`tools/es-voices/reach-es.ts`, applied in the list itself): 71 lines whose calls all give a fixed value
+  (the doctor's fee, the museum's discounts, the rental's insurance and upgrade…) get only that value; 17 lines get
+  only the values that hang together or the range the code allows (a sale price is the price less 20 or 30%; the
+  doctor's change is at most $1,500; a full tank costs one of three prices; a dish × 1–4…), each rule with the file and
+  line it was read at. 10,903 clips a set fewer. Lines whose value comes from the learner or from a sum keep their
+  whole list (the restaurant's totals, tips and cash, 4,900 clips; the post office's totals; the bank's exchange).
+  `tools/es-voices/values-es.ts` checked the cuts against what 120 random conversations and every sim say.
+  174 lines with a value were said 6,873 times with 462 different values there, and not one of those values is cut.
+- **Duplicates:** none exact (a clip's key is its voice, speed and text; the sets have their own voice ids); 189 near
+  ones (only the punctuation differs: "¡Claro!" / "Claro."), kept, since the game looks clips up by their exact text.
+- **Not cut, for the owner to decide:** about 2,500 item lines a set no random conversation or sim reached, voiced
+  with every item list of their conversation (some pairings never happen, "esa Mérida se queda aquí" at customs;
+  others do, "¿Otro …?" for any dish); the restaurant's totals, tips and cash above $1,500 (about 2,100 a set,
+  $0.85).
+
+### What it costs
+
+| | Clips | Batch price |
+|---|---:|---:|
+| Mexican set | 38,403 | $14.94 |
+| neutral set | 38,389 | $15.00 |
+| both, + 5% for redos | 76,792 | $31.44 |
+| + the samples and the listener | 486 | about $1.10 |
+| + the 9 conversations still to land (about 11% more, both sets) | about 8,500 | about $3.50 |
+| **all** | | **about $36**, stop line $38 |
+
+The audio tokens are Maple Harbor's measured 20.3 + 1.477 a character, plus 15% (the first two Spanish clips came out
+5% and 27% above it); the Spanish lines average 35.5 characters (English 31.3). Range: about $27–35.5 for both sets of
+the 41 conversations with redos. In the morning `project` fits the samples' real tokens and says whether both sets fit
+with the later conversations, or the Mexican set goes first and the neutral set waits for the owner's OK.
 
 ## Samples
 
-Not made yet: the free tier stopped the first round after one clip. The plan, once billing is on (about $1 in all,
-single requests at the standard price, then the listener):
+Not made yet (the free tier stopped the first round after one clip); both sets are written out with `--dry`:
+`~/puerto-colibri-voicing/samples/p1/plan.json` (Gemini's prebuilt voices) and `m1/plan.json` (the catalog's
+Mexican voices), 243 clips each (two lines per character, the two coaches on the same example answers, and the words a
+voice could read its own way: digits, a peso sign, latte, Wi-Fi, NetWave, ahorita, ¿mande?, pásele, chamba,
+jitomate, pilón, CURP…), in both accents, about $0.22 each at the single-request price. Then the checks: Whisper in
+Spanish and the length screen (`check-samples`), and the listener (`judge`), which is not told the accent asked for and
+says which it hears (Mexican, neutral Latin American, Spain, other) and whether the speaker sounds native. Keep the
+casting whose Mexican set is heard as Mexican and native and whose neutral set as neutral; adjust the accent
+directions (casting-es.ts `ACCENTS`) and voices that sound foreign, and sample again those that missed.
 
-1. `sample --round=p1 --per=2` (prebuilt casting) and `PC_CASTING=mexico sample --round=m1 --per=2` (the catalog's
-   Mexican voices): two lines per character in both accents, the two coaches on the same example answers, and the
-   words a voice could read its own way (digits, a peso sign, latte, Wi-Fi, NetWave, ahorita, ¿mande?, pásele…).
-2. `check-samples p1`, `check-samples m1` (Whisper in Spanish and the length screen), `judge p1`, `judge m1` (the
-   listener, not told the accent asked for: Mexican, neutral Latin American, Spain or other; native or not).
-3. Keep the casting where the Mexican set is heard as Mexican and native and the neutral set as neutral; adjust the
-   accent directions (and voices that sound foreign) and sample again those that missed.
-4. `project p1 m1`: what both sets cost in batch from the sample's real tokens. Over $38: the Mexican set first, the
-   neutral set waits for the owner's OK.
+## The run-book (the morning, after billing is on)
 
-## The run-book (from the samples to the dev build)
+Every step is one command, from the worktree; `v` is the tool with the edition overlay, niced:
 
 ```sh
-V="nice -n 10 env EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-batch-es.ts"
-$V sample --round=p1 --per=2; PC_CASTING=mexico $V sample --round=m1 --per=2
-$V check-samples p1; $V check-samples m1; $V judge p1; $V judge m1; $V sheet p1; $V sheet m1; $V project p1 m1
-# set DEFAULT_CASTING in casting-es.ts to the casting chosen, then
-$V prepare --accent=mx --kind=mx && $V send          # the Mexican set (and --accent=neutral --kind=nt when it fits)
-$V status; $V fetch                                   # until every batch is in (one download at a time)
-$V check; $V redo; $V prepare --kind=redo && $V send  # until nothing is flagged
-$V install                                            # clips + manifest + repair-versions into public/audio-es/
-VITE_EDITION=es npx vite --port 8102                  # the dev build plays them
+cd <the es-voices worktree>
+v() { nice -n 10 env EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-batch-es.ts "$@"; }
+v ledger                                   # 0. the spend so far ($0.0026)
+v sample --round=p1 --per=2                # 1. samples, Gemini's prebuilt voices (~$0.22); a 429 "free_tier" = billing not on yet
+PC_CASTING=mexico v sample --round=m1 --per=2   # 2. samples, the catalog's Mexican voices (~$0.22)
+v check-samples p1 && v check-samples m1   # 3. Whisper in Spanish + the length screen (no key)
+v judge p1 && v judge m1                   # 4. the listener: which accent, native or not, the words (~$0.6)
+v sheet p1 && v sheet m1                   # 5. pages to listen to: ~/puerto-colibri-voicing/samples/<round>/index.html
+v project p1 m1                            # 6. the cost of both sets from the real tokens, and whether they fit
+#   7. choose the casting: DEFAULT_CASTING in tools/es-voices/casting-es.ts ("prebuilt" or "mexico"); if it changed,
+#      v prepare --accent=mx --kind=mx && v prepare --accent=neutral --kind=nt   (a minute, no request)
+v send --kind=mx                           # 8. the Mexican set's 13 batches ($14.94)
+v send --kind=nt                           # 9. the neutral set's 13 batches ($15.00), only if step 6 says both fit
+v status; v fetch                          # 10. until every batch is in (one download at a time)
+v check                                    # 11. Whisper on every clip, plus the length rule
+v redo && v prepare --kind=redo && v send --kind=redo   # 12. the bad takes again; then 10–12 until nothing is flagged
+v install                                  # 13. clips + manifest + repair-versions into public/audio-es/
+VITE_EDITION=es npx vite --port 8102       # 14. the dev build plays them (Settings switches the set)
 ```
 
-The ledger (`ledger.jsonl`) so far: two clips, $0.0026 at paid prices (the free tier didn't bill them), and the refused
-requests at $0.
+`send` stops before any batch that would pass $38 (spent + running batches + the new one's estimate), and the ledger
+(`~/puerto-colibri-voicing/ledger.jsonl`) has every request with its tokens and price.
 
 ## The night's later conversations (p18, p24, p25–p30)
 
-When they land on `origin/spanish-edition`: merge it into this branch, then `plan` (the line list is made again
-because the content changed), `prepare` and `send`: only lines without a clip are asked for, so this is a small
-second batch; their new characters are already cast (Toño, Don Gilberto, Doña Margarita, Jorge, Brenda, the recorded
-message, Vanessa, Gerardo, Chef Villanueva, Fátima, Elena). A line whose text changed gets a new key and is simply
-recorded; a clip recorded again after `install` gets a repair version.
+When they land on `origin/spanish-edition` (about 11% more lines, about $3.50 for both sets):
+
+```sh
+git merge origin/spanish-edition            # in the es-voices worktree
+v plan                                      # the list is made again (two niced workers, ~15 min): the new lines, cut the same way
+v prepare --accent=mx --kind=mx2 && v send --kind=mx2      # only lines without a clip: a small second batch
+v prepare --accent=neutral --kind=nt2 && v send --kind=nt2 # if project still says both fit
+v fetch; v check; v redo; v install                         # as above
+```
+
+Their new characters are already cast (Toño, Don Gilberto, Doña Margarita, Jorge, Brenda, the recorded message,
+Vanessa, Gerardo, Chef Villanueva, Fátima, Elena); a value line in them is cut the same way only where `reach-es.ts`
+reads a fixed value in its calls (new rules need a person to read the code: `tools/es-voices/reach-es.ts` prints the
+table). A line whose text changed gets a new key and is simply recorded; a clip recorded again after `install` gets a
+repair version.
