@@ -1,0 +1,50 @@
+{ "situation": "p18-startup", "items": [
+  { "ctx": "hello", "say": "Bien, aunque hay muchísimo que aprender", "intent": "finding" },
+  { "ctx": "hello", "say": "Todavía estoy agarrándole la onda", "intent": "finding", "note": "Mexican idiom" },
+  { "ctx": "hello", "say": "La verdad, estoy un poco perdida", "intent": "finding", "note": "female learner" },
+  { "ctx": "hello", "say": "Me encanta trabajar aquí", "intent": "finding" },
+  { "ctx": "hello", "say": "Sí, bastante", "intent": ["finding_ctx", "yn:yes"] },
+  { "ctx": "hello", "say": "Que significa echarle ganas?", "intent": "idiom_q", "note": "no accents" },
+
+  { "ctx": "pile", "say": "Ya tengo un montón de trabajo con los reportes de errores", "intent": "overloaded" },
+  { "ctx": "pile", "say": "Estoy hasta el cuello de correos de clientes", "intent": "overloaded", "note": "the title idiom" },
+  { "ctx": "pile", "say": "Es demasiado para una semana", "intent": "overloaded" },
+  { "ctx": "pile", "say": "No puedo hacer todo eso", "intent": "overloaded", "not": ["can_do_all"], "note": "trap: negation" },
+  { "ctx": "pile", "say": "Claro, yo puedo con todo", "intent": ["can_do_all", "yn:yes"], "not": ["overloaded"] },
+  { "ctx": "pile", "say": "No es demasiado, puedo hacerlo todo", "intent": ["can_do_all", "yn:yes"], "not": ["overloaded"], "note": "trap: 'demasiado' under a negation" },
+  { "ctx": "pile", "say": "¿Qué es lo más urgente?", "intent": "ask_priority" },
+
+  { "ctx": "priorities", "say": "¿En qué me enfoco primero?", "intent": "ask_priority" },
+  { "ctx": "priorities", "say": "Puedo hacer las diapositivas primero y lo demás la próxima semana", "intent": ["propose", "propose_ctx"] },
+  { "ctx": "priorities", "say": "¿La fiesta puede esperar hasta la semana que viene?", "intent": "propose" },
+  { "ctx": "priorities", "say": "¿Alguien más podría organizar la fiesta?", "intent": "propose" },
+  { "ctx": "priorities", "say": "Empecemos con la presentación para los inversionistas", "intent": ["propose", "propose_ctx"] },
+  { "ctx": "priorities", "say": "No puedo hacer la foto del boletín", "intent": ["cant_task", "propose"], "not": ["can_do_all"] },
+  { "ctx": "priorities", "say": "¿Estamos en la misma página?", "intent": "same_page_q" },
+
+  { "ctx": "deal", "say": "Sí, me parece justo", "intent": ["agree_ctx", "yn:yes"] },
+
+  { "ctx": "crash", "say": "Primero hay que arreglar el bug y luego avisarles a los clientes", "intent": "plan" },
+  { "ctx": "crash", "say": "¿Qué quieres que haga exactamente?", "intent": "crash_what" },
+  { "ctx": "crash", "say": "¿Quién hizo las cosas al aventón?", "intent": "crash_who", "note": "Mexican al aventón" },
+  { "ctx": "crash", "say": "Hay que lanzar la próxima semana", "intent": "plan" },
+
+  { "ctx": "owner", "say": "¿Quién se encarga del presupuesto?", "intent": "ask_owner" },
+  { "ctx": "owner", "say": "¿A quién le pregunto sobre la nómina?", "intent": "ask_owner" },
+  { "ctx": "owner", "say": "¿Cuándo es la fecha límite?", "intent": "ask_owner" },
+  { "ctx": "owner", "say": "No, es todo, gracias", "intent": ["no_more", "yn:no"], "not": ["ask_owner"] },
+
+  { "ctx": "midnight", "say": "Puedo quedarme hasta las ocho, pero luego me voy", "intent": "stay_limit", "not": ["stay_yes"] },
+  { "ctx": "midnight", "say": "¿Las horas extra se pagan?", "intent": "paid_q", "not": ["stay_yes"] },
+  { "ctx": "midnight", "say": "Lo siento, hoy no me puedo quedar tarde", "intent": "cant_stay", "not": ["stay_yes"], "note": "trap: negation" },
+  { "ctx": "midnight", "say": "Tengo planes esta noche", "intent": "cant_stay" },
+  { "ctx": "midnight", "say": "No me quedo hasta la medianoche", "intent": "cant_stay", "not": ["stay_yes", "stay_limit"], "note": "trap: negation with the time" },
+  { "ctx": "midnight", "say": "¿A qué hora terminamos?", "intent": "mid_finish_q" },
+  { "ctx": "midnight", "say": "¿Y si me quedo solo hasta las siete?", "intent": "any", "not": ["stay_yes"], "note": "trap: what-if" },
+
+  { "ctx": "tomorrow", "say": "¿Podemos hacerlo al mediodía?", "intent": "meet_time" },
+  { "ctx": "tomorrow", "say": "A las ocho es muy temprano para mí", "intent": "cant_time", "not": ["meet_ok", "meet_time"], "note": "trap: the offered hour refused" },
+  { "ctx": "tomorrow", "say": "Va, nos vemos mañana", "intent": ["meet_ok", "yn:yes"], "note": "Mexican va" },
+  { "ctx": "tomorrow", "say": "Vale, hasta mañana a las ocho", "intent": ["meet_ok", "meet_time", "yn:yes"], "note": "Spain vale" },
+  { "ctx": "tomorrow", "say": "Ya estuvo por hoy, ¿no?", "intent": "call_day", "note": "Mexican closing" }
+] }

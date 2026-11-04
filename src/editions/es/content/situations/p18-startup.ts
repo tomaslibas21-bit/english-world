@@ -116,6 +116,8 @@ function hourId(tm?: { h: number; m: number; ampm?: string }): string | undefine
   if (tm.h === 12) return "noon";
   return "h" + (tm.h > 12 ? tm.h - 12 : tm.h);
 }
+/** The hour the learner stays until tonight: "hasta las doce" in the evening is midnight, never noon. */
+const midHour = (tm?: { h: number; m: number; ampm?: string }): string | undefined => { const h = hourId(tm); return h === "noon" ? "midnight" : h; };
 /** An hour id → the {$time} value. */
 const hourTime = (id: string) => ({ h: id === "noon" ? 12 : id === "midnight" ? 12 : Number(id.slice(1)), m: 0 });
 
@@ -233,8 +235,8 @@ export const startup: SituationDef = {
       // the people at Brotecito
       ppl: "(rodrigo | beto | memo | raquel | alguien mas | otra persona | otro | alguien | el practicante | un practicante | el becario | la becaria | alguien del equipo)",
       dov: "(hacer | encargarse de | organizar | ver | preparar | terminar | llevar | tomar | hacerse cargo de)",
-      later: "(la proxima semana | despues | mas tarde | el lunes | manana | el proximo lunes | despues del viernes | la otra semana)",
-      tail_b: "[y] [luego | despues] [(puedo | voy a | podria) hacer] {b:task} (la proxima semana | despues | mas tarde | el lunes | luego)",
+      later: "(la proxima semana | la semana que viene | despues | mas tarde | el lunes | manana | el proximo lunes | despues del viernes | la otra semana)",
+      tail_b: "[y] [luego | despues] [(puedo | voy a | podria) hacer] {b:task} (la proxima semana | la semana que viene | despues | mas tarde | el lunes | luego)",
       todo: "(todo | todo eso | todo esto | las tres cosas | eso | esto | tanto | las tres | todas esas cosas | todo lo demas)",
       busy: "(saturado | saturada | ocupado | ocupada | agobiado | agobiada | estresado | estresada | ahogado | ahogada | atareado | atareada | hasta el tope | a tope | a full | desbordado | desbordada | abrumado | abrumada)",
       fixv: "(arreglar | reparar | resolver | corregir | componer | arreglarlo | resolverlo | corregirlo | repararlo)",
@@ -301,8 +303,8 @@ export const startup: SituationDef = {
     // --- how is the first week going -----------------------------------------------------
     finding: { patterns: [
       "[poco a poco | ya] (le estoy agarrando | le voy agarrando | ya le estoy agarrando | le agarré | ya le agarré) (la onda | el ritmo | el hilo | la mano) [poco a poco] #learn #idiom #h:onda",
-      "[si] [todavia | casi] (todo | todo todavia | muchas cosas | casi todo) (esta | estan | me suena | me suenan) en chino [para mi] [pero me (gusta | encanta)] #learn #idiom #h:chino",
-      "[si] (un poco | bastante | totalmente | muchas cosas | todo) en chino #learn #idiom",
+      "[si] [todavia | casi] (todo | todo todavia | muchas cosas | casi todo) (esta | estan | me suena | me suenan) en chino [para mi] [pero me (gusta | encanta)] #learn #chino #idiom #h:chino",
+      "[si] (un poco | bastante | totalmente | muchas cosas | todo) en chino #learn #chino #idiom",
       "hay (mucho | muchisimo | tanto | un monton) que aprender [aqui] [pero me (gusta | encanta)] #learn #h:lot_learn",
       "(esta | es) [muy] (increible | genial | padre | padrisimo | interesante | muy bien | bien) pero (es mucho | hay mucho que aprender | es mucho trabajo | es una locura) #good #h:great",
       "[bien] [estoy | voy] aprendiendo (mucho | muchisimo | rapido | cosas nuevas | todos los dias | poco a poco) #learn",
@@ -326,7 +328,7 @@ export const startup: SituationDef = {
     overloaded: { patterns: [
       "[ya] (estoy | ando) [totalmente | completamente | literalmente | de verdad | ya] hasta el cuello [de (trabajo | chamba | pendientes | cosas) | con ({t:task} [y {t2:task}] | todo | tanto trabajo) | de {t:task} [y {t2:task}]] [ya | ahorita | esta semana] #idiom #h:cuello",
       "[ya] (no me doy abasto | no doy abasto) [con ({t:task} [y {t2:task}] | todo | tanto trabajo | tantas cosas)] [ya | esta semana] #h:abasto",
-      "[la verdad] [ya | todavia] (tengo | traigo) (mucho | muchisimo | demasiado | un monton de | bastante | tanto) (trabajo | chamba | pendientes | cosas | cosas que hacer) [ya | esta semana | ahorita] #h:mucho_trabajo",
+      "[la verdad] [ya | todavia] (tengo | traigo) (mucho | muchisimo | demasiado | un monton de | bastante | tanto) (trabajo | chamba | pendientes | cosas | cosas que hacer) [con {t:task} [y {t2:task}]] [ya | esta semana | ahorita] #h:mucho_trabajo",
       "[la verdad] [ya | todavia] (tengo | traigo) (mucha | muchisima | demasiada | tanta) chamba [ya | esta semana | ahorita] #idiom",
       "[la verdad] [ya] (tengo | traigo) (muchas | demasiadas | tantas) (cosas | tareas) [que hacer] [ya | esta semana]",
       "[la verdad] [ya | todavia] (tengo | traigo) (demasiado | muchisimo | un monton | tanto) [ya | esta semana | ahorita]",
@@ -336,10 +338,11 @@ export const startup: SituationDef = {
       "(eso | esto) es (demasiado | mucho | muchisimo | demasiado trabajo | mucho trabajo | un monton) [para (mi | una persona | una semana | esta semana)] #h:too_much",
       "[uf | uff | ay | uy | ufff] es (demasiado | mucho | muchisimo | demasiado trabajo | mucho trabajo | un monton) [para (mi | una persona | una semana | esta semana)]",
       "(son | es) (demasiadas | muchas | muchisimas) (cosas | tareas | pendientes) [para (mi | una persona | una semana)]",
-      "no puedo (hacer | terminar) @todo [esta semana | para el viernes] #h:cant_all",
+      // "No puedo hacer todo eso" / "No, puedo hacer todo eso" (the comma is lost): asked again at "¿Es demasiado?"
+      "no puedo (hacer | terminar) @todo [esta semana | para el viernes] #amb #h:cant_all",
       "no (alcanzo a | voy a poder) (hacer | terminar) @todo [esta semana | para el viernes]",
       "no voy a poder con @todo [esta semana]",
-      "no (puedo | alcanzo a) hacerlo todo [esta semana | para el viernes]",
+      "no (puedo | alcanzo a) hacerlo todo [esta semana | para el viernes] #amb",
       // "No puedo con todo": at "¿Es demasiado?" it could be "No, puedo con todo" (the comma is lost): #amb
       "no puedo con @todo [esta semana | para el viernes] #amb",
       "no puedo (tomar | agarrar | aceptar | hacer) (nada mas | mas cosas | mas trabajo | otra cosa | mas) [ahorita | esta semana | ahora]",
@@ -347,6 +350,9 @@ export const startup: SituationDef = {
       "[pero] (todavia | ya | aun) tengo {t:task} [y {t2:task}] [que hacer] [tambien]",
       "[la verdad] (estoy | sigo | ando) [ya] (trabajando en | con | ocupado con | ocupada con | metido en | metida en) {t:task} [y {t2:task}]",
       "[la verdad] (estoy | ando | me siento) [muy | super | bastante | demasiado | un poco | ya | algo | totalmente] @busy [ahorita | esta semana | ya] [con ({t:task} [y {t2:task}] | trabajo | tanto trabajo | todo)] #h:saturado",
+      // "No es fácil" / "No, es fácil" at "¿Es demasiado?": asked again
+      "no es (facil | tan facil | nada facil) [para mi] #amb",
+      "nada facil",
       "me estoy ahogando [en trabajo | con {t:task} [y {t2:task}] | con todo]",
       "no tengo tiempo [para (eso | todo eso | todo | tanto | las tres cosas | mas)] [esta semana]",
       "no quiero hacer (las cosas | nada | todo) (al aventon | a la carrera | mal) #idiom #h:aventon",
@@ -360,7 +366,9 @@ export const startup: SituationDef = {
       "[si] (puedo hacerlo | lo puedo hacer | puedo hacer eso)",
       "(para nada | que va | no que va) [yo] (puedo con todo | puedo con eso | puedo hacerlo | es facil | yo puedo)",
       "(pan comido | esta facil | facil | dalo por hecho | considéralo hecho | consideralo hecho | yo me encargo [de todo] | cuenta conmigo | me las arreglo | lo saco [adelante] | todo bajo control)",
-      "(no es | no son) (demasiado | tanto | mucho | para tanto | un problema | nada) [para mi]",
+      // "No es demasiado" / "No, es demasiado" (the comma is lost): asked again at "¿Es demasiado?"
+      "(no es | no son) (demasiado | tanto | mucho) [para mi] #amb",
+      "(no es | no son) (para tanto | un problema | nada) [para mi]",
       "yo (puedo | me encargo) [de todo | de eso | con todo]",
       "[yo] (lo hago | los hago | lo hago yo) [todo] [sin problema]",
       "(eso | esto) (es | se ve | suena) (facil | sencillo | posible)",
@@ -401,6 +409,10 @@ export const startup: SituationDef = {
       "(puedo | voy a | podria) (hacer | empezar con | empezar por | enfocarme en | terminar) {a:task} primero y (lo demas | el resto | todo lo demas) (la proxima semana | despues | mas tarde) #first #rest #h:first_rest",
       "(puedo | podria) (hacer | terminar | encargarme de) {a:task} [esta semana | para el viernes] pero no {b:task} #first",
       "(puedo | podria) (hacer | terminar | encargarme de) {a:task} [esta semana | para el viernes] #first",
+      "(puedo | podria) (hacer | terminar | encargarme de) {a:task} [esta semana | para el viernes] pero no (lo demas | el resto | todo lo demas | las otras cosas | lo otro) #first",
+      // "No la fiesta, la presentación primero" / "La presentación no, primero los errores": the second task is the answer (rule 10)
+      "no {n:task} [sino] [mejor] [primero] {a:task} [primero] [@tail_b] #first",
+      "{n:task} no [mejor] [primero] {a:task} [primero] [@tail_b] #first",
       "(puedo | podria) hacer {a:task} pero {b:task} (tiene que | tienen que | va a tener que | van a tener que) esperar #first",
       "(me voy a enfocar | me enfoco | voy a enfocarme) en {a:task} [primero | esta semana] #first #h:focus_on",
       "(voy a empezar | empiezo | voy a comenzar | comienzo) (con | por) {a:task} [@tail_b] #first",
@@ -418,7 +430,7 @@ export const startup: SituationDef = {
       "(hago | voy a hacer | puedo hacer) {a:task} [primero | esta semana] y {b:task} (la proxima semana | despues | el lunes | mas tarde) #first",
       // "No, prefiero la fiesta primero" (the comma is lost; "No prefiero…" is no likelier reading)
       "[no] prefiero {a:task} primero [@tail_b] #first",
-      "{b:task} (puede | pueden | podria | podrian) esperar [a la proxima semana | hasta la proxima semana | hasta el lunes | una semana] #later #h:wait_week",
+      "{b:task} (puede | pueden | podria | podrian) esperar [a la proxima semana | hasta la proxima semana | a la semana que viene | hasta la semana que viene | hasta el lunes | una semana] #later #h:wait_week",
       "(podemos | podriamos) (pasar | mover | dejar) {b:task} (para | a) (la proxima semana | el lunes | despues) #later",
       "(pasemos | movamos | dejemos) {b:task} para (la proxima semana | el lunes | despues) #later",
       "no (tengo | voy a tener) tiempo para {b:task} [esta semana] #later",
@@ -438,6 +450,7 @@ export const startup: SituationDef = {
     cant_task: { patterns: [
       "no (puedo | alcanzo a | voy a poder) (hacer | organizar | terminar | encargarme de | con) {b:task} [esta semana | para el viernes | ahorita | tambien]",
       "no (puedo | voy a poder) (hacer | con) {b:task} (y | ni) {b2:task} [esta semana | para el viernes]",
+      "no quiero (hacer | organizar | encargarme de) {b:task} [esta semana | ahorita | tambien]",
     ] },
     // "Sí, un poco." (to "Todo está en chino, ¿no?")
     finding_ctx: { patterns: ["[si] (un poco | un poquito | bastante | totalmente | muchisimo | mucho | algo | un monton | tantito | demasiado | todo)"] },
@@ -550,6 +563,8 @@ export const startup: SituationDef = {
       "de quien (es | fue) la culpa",
       "quien (lo hizo | rompio | subio) (eso | esto | el codigo | la actualizacion)",
       "quien fue",
+      "quien (hizo | subio) las cosas (al aventon | a la carrera)",
+      "quien (la rego | metio la pata)",
       "quien es (el | la) culpable",
     ] },
     ball_back: { patterns: ["(la pelota esta en tu cancha | esta en tu cancha | en tu cancha) #idiom", "no (la pelota esta | esta) en tu cancha #idiom"] },
@@ -564,6 +579,7 @@ export const startup: SituationDef = {
       "no (puedo quedarme | me puedo quedar | me quedo) hasta la medianoche [pero] [solo | si puedo] hasta {time} [si]",
       "(que tal | y si) hasta {time}",
       "me voy [a mi casa | a casa] (a | al) {time} #limit",
+      "(prefiero | quiero | mejor) (irme | salir) [a mi casa | a casa] (a | al) {time} #limit",
       "@me_stay (un rato | un poco | una hora | dos horas | un par de horas) [mas] [pero no hasta la medianoche] #nohour",
       "@me_stay pero no hasta la medianoche #nohour",
       "[si] [me quedo] pero no hasta la medianoche #nohour",
@@ -575,15 +591,15 @@ export const startup: SituationDef = {
       "(y si | que tal si) me voy [a mi casa | a casa] (a | al) {time}",
     ] },
     stay_yes: { patterns: [
-      "(si | claro | sin problema | va | sale | ok | por supuesto) (me quedo | puedo quedarme | me puedo quedar) [hasta la medianoche | hasta tarde | hoy]",
+      "(si | claro | sin problema | no hay problema | va | sale | ok | por supuesto) (me quedo | puedo quedarme | me puedo quedar) [hasta la medianoche | hasta tarde | hoy] [sin problema | no hay problema]",
       "(si | claro) [que] (si)? puedo",
-      "(me quedo | puedo quedarme | me puedo quedar) [hasta la medianoche | hasta tarde | hoy] [sin problema]",
+      "(me quedo | puedo quedarme | me puedo quedar) [hasta la medianoche | hasta tarde | hoy] [sin problema | no hay problema]",
       "cuenta conmigo",
       "aqui (estoy | estare)",
     ] },
     cant_stay: { patterns: [
-      "[perdon] [hoy] no (puedo quedarme | me puedo quedar | me quedo | puedo trabajar) [hasta tarde | hasta la medianoche | hoy | tan tarde | hasta tan tarde] [hoy] #h:cant_stay",
-      "no (puedo quedarme | me puedo quedar) hasta {time} [hoy]",
+      "[perdon | lo siento] [hoy] no (puedo quedarme | me puedo quedar | me quedo | puedo trabajar) [hasta tarde | tarde | hasta la medianoche | hoy | tan tarde | hasta tan tarde] [hoy] [perdon | lo siento] #h:cant_stay",
+      "no (puedo quedarme | me puedo quedar | puedo) hasta {time} [hoy]",
       "(no se si | no creo que | no estoy seguro de que | no estoy segura de que) (pueda quedarme | me pueda quedar | puedo quedarme | me puedo quedar) [hasta tarde | hasta la medianoche | tan tarde] [hoy] #hedge",
       "[hoy] tengo (planes | un compromiso | una cita | algo | otra cosa | un evento) [hoy en la noche | esta noche | hoy] #h:plans",
       "(tengo que | debo) (irme a mi casa | ir por mis hijos | recoger a mis hijos | estar en casa | irme temprano | irme) [a las seis | temprano | hoy]",
@@ -605,13 +621,14 @@ export const startup: SituationDef = {
       "hay pago (de horas extra | extra)",
       "horas extra pagadas [verdad]",
       "(es | va a ser) pagado",
+      "[bueno] [pero] solo si (me pagan | me las pagan | nos pagan | son pagadas | pagan las horas extra | me pagas)",
     ] },
     mid_finish_q: { patterns: ["a que hora (terminamos | nos vamos | acabamos | salimos) [hoy] #h:finish_time", "cuando (terminamos | trabajamos | nos quedamos) [hoy]", "hasta que hora [terminamos | trabajamos | nos quedamos] [hoy]", "cual es la hora de salida"] },
     mid_why: { patterns: ["por que [hasta la medianoche | tan tarde | hoy]", "para que", "que (tenemos | hay) que hacer [hoy | hasta la medianoche]"] },
 
     // --- tomorrow's check-in -----------------------------------------------------------------------
     meet_time: { patterns: [
-      "(podemos | podriamos) (hacerlo | vernos | dejarlo | cambiarlo | moverlo | hacer el check in) (a | al | para) {time} [mejor] [o {time2:time}] #h:make_it",
+      "(podemos | podriamos) [hacerlo | vernos | dejarlo | cambiarlo | moverlo | hacer el check in] (a | al | para) {time} [mejor] [o {time2:time}] #h:make_it",
       "(que tal | y si) (a | al | mejor a | mejor al) {time} [mejor | manana] #h:how_about",
       "mejor (a | al) {time} [o {time2:time}]",
       "(a | al) {time} (es | seria) mejor [para mi]",
@@ -629,6 +646,7 @@ export const startup: SituationDef = {
       "no (a | al) {time2:time} [sino] [mejor] (a | al) {time}",
       "(a | al) {time2:time} no [mejor] (a | al) {time}",
       "no puedo (a | al) {time2:time} [pero] [mejor] [que tal] (a | al) {time}",
+      "[manana] (a | al) {time2:time} no (puedo | me funciona | me queda) [pero] [mejor] [que tal | y] (a | al) {time}",
     ] },
     // "A las diez." / "Al mediodía." (while Toño waits for a time)
     meet_time_ctx: { patterns: ["[a | al] {time} [entonces | mejor | tal vez]"] },
@@ -659,7 +677,7 @@ export const startup: SituationDef = {
     ] },
     call_day: { patterns: [
       "(dejemoslo | lo dejamos | dejamoslo | vamos a dejarlo) por hoy [ya] #idiom #h:call_day",
-      "(ya estuvo | ya esta) por hoy",
+      "(ya estuvo | ya esta) por hoy [verdad | no]",
       "ya estuvo [verdad | no]",
       "por hoy (es todo | ya estuvo)",
       "(terminemos | terminamos) por hoy",
@@ -1358,8 +1376,8 @@ export const startup: SituationDef = {
       },
       expects: ["finding", "finding_ctx", "overloaded", "truly_ctx"],
       suggest: [{ lt: "Say how your first week is going", hint: "finding" }, { lt: "Ask what an expression means", hint: "idioms" }],
-      // "Todo está en chino, ¿no?" – "Sí." / "No."
-      yes: (c) => { helloAnswer(c, "learn"); },
+      // "Todo está en chino, ¿no?" – "Sí." (it's hard: "Es normal…") / "No." ("¡Talento natural!")
+      yes: (c) => { helloAnswer(c, "hard"); },
       no: (c) => { helloAnswer(c, "no"); },
       help: (c) => { if (!once(c, "hello")) return; c.s.helloDone = true; c.s.hello = "skip"; T(c, "hello_skip"); } },
     { id: "pile", when: (c) => !!c.s.helloDone, done: (c) => !!c.s.pileSaid && (!!c.s.overloaded || !!c.s.pileSkip),
@@ -1495,11 +1513,12 @@ export const startup: SituationDef = {
         return;
       }
       praiseIdiom(c, seg);
-      helloAnswer(c, seg.tags.includes("hard") ? "hard" : seg.tags.includes("learn") ? "learn" : "good");
+      // "Sí, todo está en chino" is a hard week: "Es normal… ¡Échale ganas!", not "Eres un crack"
+      helloAnswer(c, seg.tags.includes("hard") || seg.tags.includes("chino") ? "hard" : seg.tags.includes("learn") ? "learn" : "good");
     },
 
-    finding_ctx(c) { helloAnswer(c, "learn"); },
-    truly_ctx(c) { if (c.step === "hello") helloAnswer(c, "learn"); },
+    finding_ctx(c) { helloAnswer(c, "hard"); },
+    truly_ctx(c) { if (c.step === "hello") helloAnswer(c, "hard"); },
     more_q_ctx(c) { if (c.step === "owner" && !c.s.ownerDone && once(c, "shoot")) { T(c, "shoot"); c.hold(); } },
     agree_ctx() { /* answered by the open question (pushback, deal, crash_ok, mid_deal, offer) */ },
 
@@ -1509,7 +1528,13 @@ export const startup: SituationDef = {
       praiseIdiom(c, seg);
       overload(c, "said");
     },
-    can_do_all(c) { canDoAll(c); },
+    can_do_all(c, _slots, seg) {
+      // "No es demasiado" / "No, es demasiado" (the comma is lost): never "¡Eso!"; Toño asks which
+      if (ambNo(c, seg) && c.s.pileSaid && !c.s.overloaded && !c.s.pileSkip && !HEDGE.test(heard(c)) && once(c, "cando")) {
+        c.s.tooMuchAmb = true; once(c, "amb"); askTooMuch(c, "amb"); return;
+      }
+      canDoAll(c);
+    },
     refuse_all(c, _slots, seg) { refuse(c, seg.tags.includes("tip:rude")); },
 
     // --- priorities ---
@@ -1589,16 +1614,18 @@ export const startup: SituationDef = {
     stay_limit(c, slots, seg) {
       if (!midLive(c)) return;
       praiseIdiom(c, seg);
-      const h = hourId(slots.time);
+      const h = midHour(slots.time);
       if (h === "midnight") { midResolve(c, "yes"); return; }
       midResolve(c, "limit", h);
     },
     stay_yes(c) {
       if (!midLive(c)) return;
       const h = heard(c);
-      // "Me quedo, pero solo hasta las ocho" (the limit decides), "Ni loco me quedo", "No sé si me quedo"
+      // "Me quedo, pero solo hasta las ocho" (the limit decides), "Ni loco me quedo", "No sé si me quedo";
+      // "No hay problema, me quedo" is a yes
       if (/\b(pero|solo|nada mas)\b/.test(h) && /\bhasta\b/.test(h)) return;
-      if (HEDGE.test(h) || /\b(no|ni|nunca|jamas)\b/.test(h)) { midResolve(c, "cant"); return; }
+      const neg = h.replace(/\bno hay (ningun )?problema\b|\bno te preocupes\b/g, "");
+      if (HEDGE.test(h) || /\b(no|ni|nunca|jamas)\b/.test(neg)) { midResolve(c, "cant"); return; }
       midResolve(c, "yes");
     },
     cant_stay(c) { if (midLive(c)) midResolve(c, "cant"); },
@@ -1610,7 +1637,7 @@ export const startup: SituationDef = {
     paid_q(c) { if (!midLive(c) || !once(c, "paidq")) return; c.s.dealHour = "h9"; T(c, "mid_paid"); c.expect(midDealPending()); },
     stay_whatif(c, slots) {
       if (!midLive(c) || !once(c, "paidq")) return;
-      const h = hourId(slots.time);
+      const h = midHour(slots.time);
       if (!h || h === "midnight") { T(c, "mid_reask"); c.hold(); return; }
       c.s.dealHour = h;
       T(c, "mid_offer", { time: hourTime(h) }); c.expect(midDealPending());
@@ -1774,6 +1801,23 @@ export const startup: SituationDef = {
     { say: "Mi gato come pizza los martes", intent: "none", step: "pile" },
     { say: "El cielo es azul", intent: "none", step: "priorities" },
     { say: "¿Dónde está la playa?", intent: "none", step: "owner" },
+    // review (4 Nov 2026): lost commas, corrections, natural phrasing
+    { say: "No es demasiado, puedo hacerlo todo", intent: "can_do_all", step: "pile", not: ["overloaded"] },
+    { say: "No es fácil", intent: "overloaded", step: "pile", not: ["can_do_all"] },
+    { say: "Ya tengo un montón de trabajo con los reportes de errores", intent: "overloaded", step: "pile", slots: { t: "bugs" } },
+    { say: "Puedo hacer la presentación, pero no lo demás", intent: "propose", step: "pile", slots: { a: "slides" } },
+    { say: "No quiero hacer la fiesta", intent: "cant_task", step: "priorities", not: ["propose"] },
+    { say: "No la fiesta, la presentación primero", intent: "propose", step: "priorities", slots: { a: "slides" } },
+    { say: "La presentación no, primero los reportes de errores", intent: "propose", step: "priorities", slots: { a: "bugs" } },
+    { say: "¿La fiesta puede esperar hasta la semana que viene?", intent: "propose", step: "priorities", slots: { b: "party" } },
+    { say: "¿Quién hizo las cosas al aventón?", intent: "crash_who", step: "crash" },
+    { say: "Lo siento, hoy no me puedo quedar tarde", intent: "cant_stay", step: "midnight", not: ["stay_yes"] },
+    { say: "No hay problema, me quedo hasta tarde", intent: "stay_yes", step: "midnight", not: ["cant_stay"] },
+    { say: "Prefiero irme a las ocho", intent: "stay_limit", step: "midnight", not: ["stay_yes"] },
+    { say: "Bueno, pero solo si me pagan", intent: "paid_q", step: "midnight", not: ["stay_yes"] },
+    { say: "A las ocho no puedo, ¿a las diez?", intent: "meet_time", step: "tomorrow", slots: { time: { h: 10 } }, not: ["meet_ok", "meet_time_ctx"] },
+    { say: "¿Podemos a las seis?", intent: "meet_time", step: "tomorrow" },
+    { say: "Ya estuvo por hoy, ¿no?", intent: "call_day", step: "tomorrow" },
   ],
 
   sims: [
@@ -1839,6 +1883,19 @@ export const startup: SituationDef = {
     { name: "no puedo con todo: asked again", turns: ["¡Hola! Bien, gracias.", "¡Claro!", "No puedo con todo.", "Sí, es demasiado.", "¿Qué hago primero?",
       "No, nada más.", "Claro, nos vemos a las ocho."],
       expect: { complete: true, state: { overloaded: true, overHow: "yes", prioBy: "asked", meet: "h8" } }, auto: AUTO, setup: PLAIN },
+    // review: "Sí" to "Todo está en chino, ¿no?" is a hard week; "No, es demasiado" is asked again (never "¡Eres un crack!");
+    // "A las ocho no puedo, ¿a las diez?" moves the check-in to ten
+    { name: "lost commas: too much, eight", turns: ["Sí.", "¡Claro!", "No, es demasiado.", "Sí, es demasiado.", "¿Qué hago primero?", "No, nada más.",
+      "A las ocho no puedo, ¿a las diez?", "¡Adiós!"],
+      expect: { complete: true, state: { hello: "hard", overloaded: true, pileSkip: undefined, meet: "h10" } }, auto: AUTO, setup: PLAIN },
+    // review: "No hay problema" is a yes; "hasta las doce" tonight is midnight, never noon
+    { name: "midnight: no hay problema, until twelve", turns: ["¡Hola! Bien, gracias.", "Estoy hasta el cuello.", "¿Qué hago primero?", "No, nada más.",
+      "No hay problema, me quedo hasta las doce.", "Claro, nos vemos a las ocho."],
+      expect: { complete: true, state: { midHow: "yes", stayUntil: undefined, meet: "h8" } }, auto: AUTO, setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
+    // review: "No, no puedo hasta las nueve" to the nine o'clock deal asks for a time
+    { name: "midnight: not until nine", turns: ["¡Hola! Bien, gracias.", "Estoy hasta el cuello.", "¿Qué hago primero?", "No, nada más.",
+      "Bueno, pero solo si me pagan.", "No, no puedo hasta las nueve.", "Hasta las siete.", "Claro, nos vemos a las ocho."],
+      expect: { complete: true, state: { midHow: "limit", stayUntil: "h7", meet: "h8" } }, auto: AUTO, setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
   ],
 };
 
@@ -1940,13 +1997,22 @@ function askTooMuch(c: Ctx, kind: "q" | "honest" | "amb") {
         if (seg.tags.includes("amb") && !cc.s.tooMuchAmb) { cc.s.tooMuchAmb = true; if (once(cc, "amb")) askTooMuch(cc, "amb"); return; }
         praiseIdiom(cc, seg); overload(cc, cc.s.tooMuchAmb ? "yes" : "said");
       },
-      can_do_all: (cc) => { if (HEDGE.test(heard(cc))) overload(cc, "said"); else notTooMuch(cc); },
+      can_do_all: (cc, _s, seg) => {
+        if (HEDGE.test(heard(cc))) { overload(cc, "said"); return; }
+        // "No es demasiado" (or "No, es demasiado"?): asked again once
+        if (ambNo(cc, seg) && !cc.s.tooMuchAmb) { cc.s.tooMuchAmb = true; if (once(cc, "amb")) askTooMuch(cc, "amb"); return; }
+        notTooMuch(cc);
+      },
       refuse_all: (cc, _s, seg) => { refuse(cc, seg.tags.includes("tip:rude")); },
       finding_ctx: (cc) => { overload(cc, "yes"); },
       truly_ctx: (cc) => { overload(cc, "yes"); },
     },
     ask: (cc) => { T(cc, "too_much_reask"); },
   });
+}
+/** "No es demasiado" could be "No, es demasiado"; "No, no es demasiado" can't. */
+function ambNo(c: Ctx, seg: { tags: string[] }): boolean {
+  return seg.tags.includes("amb") && !/^\W*no\W+no (es|son)\b/.test(heard(c));
 }
 function notTooMuch(c: Ctx) {
   if (c.s.overloaded || !once(c, "notTooMuch")) return;
@@ -2111,15 +2177,16 @@ function midDealPending(): Pending {
     no: midWhen,
     on: {
       // "Sí, pero no hasta la medianoche" to the offered hour: that hour
-      stay_limit: (c, s) => { const h = hourId(s.time); if (h === "midnight" || (!h && /^\W*(si|claro|ok|va|sale)\b/.test(heard(c)))) midResolve(c, "paid"); else midResolve(c, "limit", h); },
-      cant_stay: (c) => { midResolve(c, "cant"); },
+      stay_limit: (c, s) => { const h = midHour(s.time); if (h === "midnight" || (!h && /^\W*(si|claro|ok|va|sale)\b/.test(heard(c)))) midResolve(c, "paid"); else midResolve(c, "limit", h); },
+      // "No puedo hasta las nueve" (the hour he offered): "¿A qué hora te funciona?"
+      cant_stay: (c, s) => { const h = midHour(s.time); if (h && h !== "midnight") midWhen(c); else midResolve(c, "cant"); },
       cant_ctx: (c) => { midResolve(c, "cant"); },
       cant_time: midWhen,
       stay_yes: (c) => { if (HEDGE.test(heard(c))) midWhen(c); else midResolve(c, "paid"); },
       call_day: (c) => { if (idiomAsked(c)) return false; midResolve(c, "cant"); },
       g_ok: (c) => { midResolve(c, "paid"); },
       agree_ctx: (c) => { midResolve(c, "paid"); },
-      stay_whatif: (c, s) => { const h = hourId(s.time); if (h && h !== "midnight") { c.s.dealHour = h; T(c, "mid_offer", { time: hourTime(h) }); c.expect(midDealPending()); } },
+      stay_whatif: (c, s) => { const h = midHour(s.time); if (h && h !== "midnight") { c.s.dealHour = h; T(c, "mid_offer", { time: hourTime(h) }); c.expect(midDealPending()); } },
     },
     ask: (c) => { T(c, "mid_deal_reask"); },
   };
@@ -2128,7 +2195,7 @@ function midDealPending(): Pending {
 function midWhen(c: Ctx) {
   if (!once(c, "midNo")) return;
   T(c, "mid_when");
-  const limit = (cc: Ctx, s: any) => { const h = hourId(s.time); if (h === "midnight") midResolve(cc, "paid"); else midResolve(cc, "limit", h); };
+  const limit = (cc: Ctx, s: any) => { const h = midHour(s.time); if (h === "midnight") midResolve(cc, "paid"); else midResolve(cc, "limit", h); };
   c.expect({
     id: "mid_when", expects: ["stay_limit", "meet_time", "meet_time_ctx", "cant_stay", "cant_ctx", "stay_whatif"], hints: ["midnight"],
     suggest: [{ lt: "Suggest your own time", hint: "midnight" }],
@@ -2149,7 +2216,7 @@ function meetOk(c: Ctx) {
 }
 function meetTime(c: Ctx, tm: any) {
   if (!tm) return;
-  if (midLive(c)) { const h = hourId(tm); if (h === "midnight") midResolve(c, "yes"); else midResolve(c, "limit", h); return; }
+  if (midLive(c)) { const h = midHour(tm); if (h === "midnight") midResolve(c, "yes"); else midResolve(c, "limit", h); return; }
   if (!closingLive(c) || !once(c, "meet")) return;
   const h = hourId(tm);
   if (h === "h8") { c.s.closeDone = true; c.s.closeHow = "ok"; c.s.meet = "h8"; T(c, "meet_ok"); return; }

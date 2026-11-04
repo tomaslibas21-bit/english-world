@@ -219,5 +219,12 @@
   {"ctx": "pile", "say": "Mi gato come pizza los martes", "intent": "none"},
   {"ctx": "priorities", "say": "El cielo es azul", "intent": "none"},
   {"ctx": "owner", "say": "¿Dónde está la playa?", "intent": "none"},
-  {"ctx": "tomorrow", "say": "Me gustan los tacos de pescado", "intent": "none"}
+  {"ctx": "tomorrow", "say": "Me gustan los tacos de pescado", "intent": "none"},
+  {"ctx": "pile", "say": "No es fácil", "intent": "overloaded", "not": ["can_do_all"], "note": "review"},
+  {"ctx": "too_much", "say": "No es demasiado", "intent": "can_do_all", "not": ["overloaded"], "note": "review: #amb, asked again"},
+  {"ctx": "priorities", "say": "No la fiesta, la presentación primero", "intent": "propose", "slots": {"a": "slides"}, "note": "review: No X, Y"},
+  {"ctx": "priorities", "say": "No quiero hacer la fiesta", "intent": "cant_task", "not": ["propose"], "note": "review"},
+  {"ctx": "midnight", "say": "No hay problema, me quedo hasta tarde", "intent": "stay_yes", "not": ["cant_stay"], "note": "review"},
+  {"ctx": "mid_deal", "say": "No, no puedo hasta las nueve", "intent": "cant_stay", "not": ["stay_yes", "stay_limit"], "note": "review"},
+  {"ctx": "tomorrow", "say": "A las ocho no puedo, ¿a las diez?", "intent": "meet_time", "not": ["meet_ok", "meet_time_ctx"], "note": "review: the second hour"}
 ] }
