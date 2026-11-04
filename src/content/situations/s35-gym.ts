@@ -11,7 +11,7 @@
 // ("Stop right there. Let's try something easier."). A learner may also say that something hurts at
 // any point: Jordan stops the exercise and keeps the rest of the workout easy.
 
-import type { Ctx, EntityDef, Pending, SituationDef } from "../types";
+import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "../types";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
 
@@ -2088,16 +2088,42 @@ function bookLater(c: Ctx) {
   c.say("book_later_ok");
 }
 
+/** As in the other multi-intent situations, inspect the parsed answer rather than a bare weekday mention. */
+function turnHasIntent(c: Ctx, ...intents: string[]) {
+  const segments: Segment[] = (c as any).conv?.out?.parse?.segments ?? [];
+  return segments.some(sg => intents.includes(sg.intent));
+}
+
 function askAnotherDay(c: Ctx) {
-  c.s.next = null; c.s.nextAsk = "when"; c.say("when_short");
-  c.expect({id:"another_day_q",expects:["next_day","when_ctx","next_other","next_no","day_no","next_later","later_ctx"],hints:["next"],
-    suggest:[{lt:"Pasiūlyti dieną arba pasakyti, kad nuspręsi vėliau",hint:"next",options:"weekday"}],
-    on:{next_day:(cc,sl)=>nextDay(cc,sl.day??sl.weekday),when_ctx:(cc,sl)=>nextDay(cc,sl.day??"tomorrow"),next_other:askAnotherDay,next_no:(cc)=>offerThursday(cc),day_no:askAnotherDay,next_later:bookLater,later_ctx:bookLater},
-    ask:(cc)=>cc.say("when_short")});
+  c.s.nextAsk = "when";
+  // "Another day, please. How about Friday?" already supplies the answer: do not install a question that outlives it.
+  if (turnHasIntent(c, "next_day", "next_same", "when_ctx", "see_you_ctx", "next_later", "later_ctx")) return;
+  c.s.next = null; c.say("when_short");
+  c.expect({ id: "another_day_q", expects: ["next_day", "next_same", "when_ctx", "see_you_ctx", "next_other", "next_no", "day_no", "next_later", "later_ctx"], hints: ["next"],
+    suggest: [{ lt: "Pasiūlyti dieną arba pasakyti, kad nuspręsi vėliau", hint: "next", options: "weekday" }],
+    on: {
+      next_day: (cc, sl) => nextDay(cc, sl.day ?? sl.weekday),
+      next_same: gym.handlers.next_same,
+      when_ctx: (cc, sl) => nextDay(cc, sl.day ?? "tomorrow"),
+      see_you_ctx: gym.handlers.see_you_ctx,
+      // Consume a refusal here; the next step asks again unless another piece of this answer supplies a day.
+      // Installing a fresh pending question would block that accepted day from completing the workout.
+      next_other: () => {},
+      day_no: () => {},
+      next_no: gym.handlers.next_no,
+      next_later: bookLater,
+      later_ctx: bookLater,
+    },
+    ask: (cc) => cc.say("when_short") });
 }
 
 function offerThursday(c: Ctx) {
   c.say("offer_thursday");
+  // "I can't on Thursday. How about Friday?" has both a refusal and a proposed date, in either order.
+  // Only a positive scheduling segment wins; "Thursday doesn't work" alone still declines the booking.
+  const decline = (cc: Ctx) => {
+    if (!turnHasIntent(cc, "next_day", "next_same", "when_ctx")) bookLater(cc);
+  };
   c.expect({ id: "thursday_q", expects: ["next_day", "next_other", "next_later", "later_ctx", "next_same", "when_ctx", "see_you_ctx", "cant"], hints: ["next", "g_yesno"],
     suggest: [{ lt: "Sutikti arba pasiūlyti kitą dieną", hint: "next", options: "weekday" }],
     on: {
@@ -2109,9 +2135,9 @@ function offerThursday(c: Ctx) {
       next_later: (cc) => bookLater(cc),
       later_ctx: (cc) => bookLater(cc),
       // "No, sorry, I can't." to "How about Thursday?"
-      cant: (cc) => bookLater(cc),
-      next_no: (cc) => bookLater(cc),
-      day_no: (cc) => bookLater(cc),
+      cant: decline,
+      next_no: decline,
+      day_no: decline,
     },
     yes: (cc) => nextDay(cc, "thursday"),
     no: (cc) => bookLater(cc),

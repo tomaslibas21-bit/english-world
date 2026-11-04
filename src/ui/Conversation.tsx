@@ -161,7 +161,13 @@ export function Conversation() {
             </div>
           </div>
 
-          {!!conv.speechChoices?.length && <div className="miss-box"><p>{conv.speechChoices.length > 1 ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?" : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."}</p>{conv.speechChoices.map(text=><button className="btn soft small" key={text} lang="en" onClick={()=>void game?.activeSession?.submit(text,[],"voice",true)}>{text}</button>)}<button className="btn ghost small" onClick={()=>{setTyped(conv.lastHeard);setConv({typing:true,speechChoices:undefined});}}>Pataisyti tekstą</button></div>}
+          {!!conv.speechChoices?.length && <div className="miss-box">
+            <p>{conv.speechChoices.length > 1 ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?" : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."}</p>
+            {conv.speechChoices.map(text => <button className="btn soft small" key={text} lang="en" disabled={conv.phase !== "you"}
+              onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}>{text}</button>)}
+            <button className="btn ghost small" disabled={conv.phase !== "you"}
+              onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>Pataisyti tekstą</button>
+          </div>}
           {conv.failures > 0 && conv.phase === "you" && conv.lastHeard && (
             <div className="miss-box" ref={missRef}>
               <div>Neatpažinau{conv.prefix ? " – atrodo, sakinys nebaigtas" : ""}. Girdėjau:</div>

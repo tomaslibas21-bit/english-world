@@ -137,7 +137,7 @@ export class Session {
     const st = useStore.getState();
     const sup = this.conv.support();
     st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(), openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
-    if (st.settings.autoListen && speechSupported() && !st.conv.typing && document.visibilityState === "visible") this.autoListen(250);
+    if (st.settings.autoListen && speechSupported() && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
   }
 
   /** Opens the mic by itself after `ms`, unless the learner has meanwhile started an attempt
@@ -147,7 +147,7 @@ export class Session {
     this.autoTimer = setTimeout(() => {
       this.autoTimer = null;
       const c = useStore.getState().conv;
-      if (this.alive && c.phase === "you" && !c.typing && !this.speech) this.listen();
+      if (this.alive && c.phase === "you" && !c.typing && !c.speechChoices?.length && !this.speech) this.listen();
     }, ms);
   }
 
@@ -200,14 +200,16 @@ export class Session {
   /** The learner's answer (spoken, typed, or a picked "Did you mean…?" suggestion). Tries recogniser
    *  alternatives if the first one is not understood. */
   async submit(text: string, alts: string[] = [], via: "voice" | "typed" | "picked" | "helped" = "typed", confirmed = false) {
-    if (!this.alive || this.busy) return;
+    const pending = useStore.getState().conv;
+    if (!this.alive || this.busy || pending.phase !== "you") return;
     let clean = text.trim();
     if (!clean) return;
+    // A confirmation belongs to the choice currently on screen, and cannot be replayed after it was used or cancelled.
+    if (confirmed && (via !== "voice" || !pending.speechChoices?.includes(clean))) return;
     if(via === "voice" && !confirmed){
       const choices=polarityChoices(clean,alts);
       if(choices.length || useStore.getState().settings.confirmSpeech){this.stopListening();useStore.getState().setConv({phase:"you",speechChoices:choices.length ? choices : [clean],lastHeard:clean});return;}
     }
-    const pending = useStore.getState().conv;
     const heard = confirmed && pending.speechChoices?.length ? pending.lastHeard : text;
     const alternatives = confirmed ? (pending.speechChoices || []).filter(s => s !== heard) : alts;
     useStore.getState().setConv({speechChoices:undefined});
