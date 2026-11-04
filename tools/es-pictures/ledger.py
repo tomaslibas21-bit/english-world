@@ -27,7 +27,7 @@ def main():
     if a.price:
         size, quality, refs = a.price[0], a.price[1], int(a.price[2])
         out = E.output_tokens(a.model, size, quality)
-        ref_t = E.measured_ref_tokens()
+        ref_t = E.ref_tokens_estimate((1536, 864))  # a 16:9 reference sent at 1536 px: 1,296 tokens, +10%
         text = 900  # a typical full prompt (style + town + scene + rules) is 700–1,000 tokens
         for batch in (False, True):
             usd = E.tokens_cost(a.model, batch, text, refs * ref_t, out)

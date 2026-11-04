@@ -9,6 +9,7 @@
    "id": "cast/diaz",
    "kind": "cast",
    "npc": "diaz",
+   "name": "Oficial Ramírez",
    "label": "Oficial Ramírez (Immigration officer)",
    "situation": [
     "s65a-passport"
@@ -19,12 +20,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/diaz.webp",
+   "nametag": {
+    "text": "Ramírez",
+    "kind": "plate"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/priya",
    "kind": "cast",
    "npc": "priya",
+   "name": "Itzel",
    "label": "Itzel (Baggage services)",
    "situation": [
     "s65b-baggage"
@@ -35,12 +41,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/priya.webp",
+   "nametag": {
+    "text": "Itzel",
+    "kind": "lanyard"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/vinnie",
    "kind": "cast",
    "npc": "vinnie",
+   "name": "Don Rigo",
    "label": "Don Rigo (Taxi driver)",
    "situation": [
     "s66-taxi"
@@ -57,6 +68,7 @@
    "id": "cast/olivia",
    "kind": "cast",
    "npc": "olivia",
+   "name": "Fernanda",
    "label": "Fernanda (Hotel reception)",
    "situation": [
     "s68-hotel"
@@ -67,12 +79,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/olivia.webp",
+   "nametag": {
+    "text": "Fernanda",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/chuck",
    "kind": "cast",
    "npc": "chuck",
+   "name": "Don Chuy",
    "label": "Don Chuy (Tourist information volunteer)",
    "situation": [
     "s62-visitor-center"
@@ -89,6 +106,7 @@
    "id": "cast/mia",
    "kind": "cast",
    "npc": "mia",
+   "name": "Mariana",
    "label": "Mariana (Barista)",
    "situation": [
     "s72-cafe"
@@ -105,6 +123,7 @@
    "id": "cast/rosa",
    "kind": "cast",
    "npc": "rosa",
+   "name": "Doña Carmen",
    "label": "Doña Carmen (Local, born and raised)",
    "situation": [
     "s69-local"
@@ -121,6 +140,7 @@
    "id": "cast/ben",
    "kind": "cast",
    "npc": "ben",
+   "name": "Iván",
    "label": "Iván (Museum tickets)",
    "situation": [
     "s70-museum"
@@ -131,12 +151,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/ben.webp",
+   "nametag": {
+    "text": "Iván",
+    "kind": "lanyard"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/harold",
    "kind": "cast",
    "npc": "harold",
+   "name": "Don Arturo",
    "label": "Don Arturo (Museum guard)",
    "situation": [
     "s70-museum"
@@ -153,6 +178,7 @@
    "id": "cast/marco",
    "kind": "cast",
    "npc": "marco",
+   "name": "Luis",
    "label": "Luis (Waiter)",
    "situation": [
     "s73-restaurant"
@@ -169,6 +195,7 @@
    "id": "cast/chloe",
    "kind": "cast",
    "npc": "chloe",
+   "name": "Valeria",
    "label": "Valeria (Sales assistant)",
    "situation": [
     "s74-clothes"
@@ -179,12 +206,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/chloe.webp",
+   "nametag": {
+    "text": "Valeria",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/okafor",
    "kind": "cast",
    "npc": "okafor",
+   "name": "Don Héctor",
    "label": "Don Héctor (Pharmacist)",
    "situation": [
     "s75-pharmacy"
@@ -195,12 +227,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/okafor.webp",
+   "nametag": {
+    "text": "Héctor",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/jessie",
    "kind": "cast",
    "npc": "jessie",
+   "name": "Paty",
    "label": "Paty (Hairdresser)",
    "situation": [
     "s77-salon"
@@ -217,6 +254,7 @@
    "id": "cast/aaron",
    "kind": "cast",
    "npc": "aaron",
+   "name": "Ricardo",
    "label": "Ricardo (Bank teller)",
    "situation": [
     "s78-bank"
@@ -227,12 +265,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/aaron.webp",
+   "nametag": {
+    "text": "Ricardo",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/gloria",
    "kind": "cast",
    "npc": "gloria",
+   "name": "Gloria",
    "label": "Gloria (Postal clerk)",
    "situation": [
     "s79-post"
@@ -243,12 +286,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/gloria.webp",
+   "nametag": {
+    "text": "Gloria",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/marco_host",
    "kind": "cast",
    "npc": "marco_host",
+   "name": "Lucía",
    "label": "Lucía (Restaurant host)",
    "situation": [
     "s73-restaurant"
@@ -265,6 +313,7 @@
    "id": "cast/walter",
    "kind": "cast",
    "npc": "walter",
+   "name": "Don Raúl",
    "label": "Don Raúl (Bus ticket office)",
    "situation": [
     "s67a-tickets"
@@ -275,12 +324,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/walter.webp",
+   "nametag": {
+    "text": "Raúl",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/denise",
    "kind": "cast",
    "npc": "denise",
+   "name": "Ana",
    "label": "Ana (Bus driver)",
    "situation": [
     "s67b-bus"
@@ -297,6 +351,7 @@
    "id": "cast/jake",
    "kind": "cast",
    "npc": "jake",
+   "name": "Andrés",
    "label": "Andrés (Car rental agent)",
    "situation": [
     "s71a-rental"
@@ -307,12 +362,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/jake.webp",
+   "nametag": {
+    "text": "Andrés",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/dot",
    "kind": "cast",
    "npc": "dot",
+   "name": "Doña Chela",
    "label": "Doña Chela (Gas station attendant)",
    "situation": [
     "s71b-gas"
@@ -329,6 +389,7 @@
    "id": "cast/kevin",
    "kind": "cast",
    "npc": "kevin",
+   "name": "Emilio",
    "label": "Emilio (Airline check-in)",
    "situation": [
     "s64a-checkin"
@@ -339,12 +400,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/kevin.webp",
+   "nametag": {
+    "text": "Emilio",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/grant",
    "kind": "cast",
    "npc": "grant",
+   "name": "Oficial Torres",
    "label": "Oficial Torres (Airport security)",
    "situation": [
     "s64b-security"
@@ -355,12 +421,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/grant.webp",
+   "nametag": {
+    "text": "Torres",
+    "kind": "plate"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/nina",
    "kind": "cast",
    "npc": "nina",
+   "name": "Daniela",
    "label": "Daniela (Gate agent)",
    "situation": [
     "s64c-gate"
@@ -371,12 +442,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/nina.webp",
+   "nametag": {
+    "text": "Daniela",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/linda",
    "kind": "cast",
    "npc": "linda",
+   "name": "Lorena",
    "label": "Lorena (Dental office reception)",
    "situation": [
     "s76-dentist-call"
@@ -387,12 +463,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/linda.webp",
+   "nametag": {
+    "text": "Lorena",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/claire",
    "kind": "cast",
    "npc": "claire",
+   "name": "Karla",
    "label": "Karla (Customer service)",
    "situation": [
     "s80-support-call"
@@ -403,12 +484,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/claire.webp",
+   "nametag": {
+    "text": "Karla",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/patel",
    "kind": "cast",
    "npc": "patel",
+   "name": "Don Ernesto",
    "label": "Don Ernesto (Landlord)",
    "situation": [
     "p29-landlord",
@@ -426,6 +512,7 @@
    "id": "cast/rita",
    "kind": "cast",
    "npc": "rita",
+   "name": "Doña Lupita",
    "label": "Doña Lupita (Neighbor)",
    "situation": [
     "p29-landlord",
@@ -443,6 +530,7 @@
    "id": "cast/brooks",
    "kind": "cast",
    "npc": "brooks",
+   "name": "Licenciada Salinas",
    "label": "Licenciada Salinas (HR manager)",
    "situation": [
     "s87-interview"
@@ -459,6 +547,7 @@
    "id": "cast/maria",
    "kind": "cast",
    "npc": "maria",
+   "name": "María",
    "label": "María (Coworker)",
    "situation": [
     "s88-first-day"
@@ -475,6 +564,7 @@
    "id": "cast/kate",
    "kind": "cast",
    "npc": "kate",
+   "name": "Sofía",
    "label": "Sofía (Team lead)",
    "situation": [
     "s34-meeting",
@@ -492,6 +582,7 @@
    "id": "cast/paul",
    "kind": "cast",
    "npc": "paul",
+   "name": "Pablo",
    "label": "Pablo (Colleague)",
    "situation": [
     "s34-meeting",
@@ -509,6 +600,7 @@
    "id": "cast/sara",
    "kind": "cast",
    "npc": "sara",
+   "name": "Sara",
    "label": "Sara (Colleague)",
    "situation": [
     "s34-meeting",
@@ -526,6 +618,7 @@
    "id": "cast/harris",
    "kind": "cast",
    "npc": "harris",
+   "name": "Ingeniero Montes",
    "label": "Ingeniero Montes (Your boss)",
    "situation": [
     "s90-running-late"
@@ -542,6 +635,7 @@
    "id": "cast/sophie",
    "kind": "cast",
    "npc": "sophie",
+   "name": "Ximena",
    "label": "Ximena (Party host)",
    "situation": [
     "s63-party"
@@ -558,6 +652,7 @@
    "id": "cast/mark",
    "kind": "cast",
    "npc": "mark",
+   "name": "Marcos",
    "label": "Marcos (Party guest, chef)",
    "situation": [
     "s63-party"
@@ -574,6 +669,7 @@
    "id": "cast/lizzie",
    "kind": "cast",
    "npc": "lizzie",
+   "name": "Andrea",
    "label": "Andrea (Your friend)",
    "situation": [
     "p24-flood",
@@ -591,6 +687,7 @@
    "id": "cast/sam",
    "kind": "cast",
    "npc": "sam",
+   "name": "Santiago",
    "label": "Santiago (Your date)",
    "situation": [
     "s84-date"
@@ -607,6 +704,7 @@
    "id": "cast/emma",
    "kind": "cast",
    "npc": "emma",
+   "name": "Camila",
    "label": "Camila (Your date)",
    "situation": [
     "s84-date"
@@ -623,6 +721,7 @@
    "id": "cast/dan",
    "kind": "cast",
    "npc": "dan",
+   "name": "Diego",
    "label": "Diego (Your friend, dinner host)",
    "situation": [
     "p30-start-over",
@@ -640,6 +739,7 @@
    "id": "cast/nora",
    "kind": "cast",
    "npc": "nora",
+   "name": "Natalia",
    "label": "Natalia (Diego's wife)",
    "situation": [
     "p30-start-over",
@@ -657,6 +757,7 @@
    "id": "cast/lucy",
    "kind": "cast",
    "npc": "lucy",
+   "name": "Paola",
    "label": "Paola (Old school friend)",
    "situation": [
     "s86-old-friend"
@@ -673,6 +774,7 @@
    "id": "cast/mrs_lee",
    "kind": "cast",
    "npc": "mrs_lee",
+   "name": "Doña Mari",
    "label": "Doña Mari (Flower stall)",
    "situation": [
     "s91a-lost-wallet"
@@ -689,6 +791,7 @@
    "id": "cast/reyes",
    "kind": "cast",
    "npc": "reyes",
+   "name": "Oficial Reyes",
    "label": "Oficial Reyes (Police officer)",
    "situation": [
     "s91b-police"
@@ -699,12 +802,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/reyes.webp",
+   "nametag": {
+    "text": "Reyes",
+    "kind": "plate"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/carter",
    "kind": "cast",
    "npc": "carter",
+   "name": "Doctora Herrera",
    "label": "Doctora Herrera (Family doctor)",
    "situation": [
     "s31-doctor"
@@ -715,12 +823,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/carter.webp",
+   "nametag": {
+    "text": "Dra. Herrera",
+    "kind": "embroidered"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/marcus",
    "kind": "cast",
    "npc": "marcus",
+   "name": "Doña Lupe",
    "label": "Doña Lupe (Fruit and vegetable stall)",
    "situation": [
     "s32-mercado"
@@ -737,6 +850,7 @@
    "id": "cast/frank",
    "kind": "cast",
    "npc": "frank",
+   "name": "Don Pancho",
    "label": "Don Pancho (Neighbor)",
    "situation": [
     "s33-small-talk"
@@ -753,6 +867,7 @@
    "id": "cast/jordan",
    "kind": "cast",
    "npc": "jordan",
+   "name": "Mónica",
    "label": "Mónica (Personal trainer)",
    "situation": [
     "s35-gym"
@@ -763,12 +878,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/jordan.webp",
+   "nametag": {
+    "text": "Mónica",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/maggie",
    "kind": "cast",
    "npc": "maggie",
+   "name": "Doña Margarita",
    "label": "Doña Margarita (Selling her car)",
    "situation": [
     "p25-used-car"
@@ -785,6 +905,7 @@
    "id": "cast/kyle",
    "kind": "cast",
    "npc": "kyle",
+   "name": "Jorge",
    "label": "Jorge (Customer service)",
    "situation": [
     "p26-complaint"
@@ -795,12 +916,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/kyle.webp",
+   "nametag": {
+    "text": "Jorge",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/brenda",
    "kind": "cast",
    "npc": "brenda",
+   "name": "Brenda",
    "label": "Brenda (Customer care manager)",
    "situation": [
     "p26-complaint"
@@ -811,12 +937,17 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/brenda.webp",
+   "nametag": {
+    "text": "Brenda",
+    "kind": "badge"
+   },
    "size": "1024x1536"
   },
   {
    "id": "cast/vanessa",
    "kind": "cast",
    "npc": "vanessa",
+   "name": "Vanessa",
    "label": "Vanessa (Marketing lead)",
    "situation": [
     "p27-meeting"
@@ -833,6 +964,7 @@
    "id": "cast/greg",
    "kind": "cast",
    "npc": "greg",
+   "name": "Gerardo",
    "label": "Gerardo (Team manager)",
    "situation": [
     "p27-meeting"
@@ -849,6 +981,7 @@
    "id": "cast/whitaker",
    "kind": "cast",
    "npc": "whitaker",
+   "name": "Chef Villanueva",
    "label": "Chef Villanueva (Head chef)",
    "situation": [
     "p28-kitchen"
@@ -865,6 +998,7 @@
    "id": "cast/russo",
    "kind": "cast",
    "npc": "russo",
+   "name": "Fátima",
    "label": "Fátima (Junior cook)",
    "situation": [
     "p28-kitchen"
@@ -881,6 +1015,7 @@
    "id": "cast/emily",
    "kind": "cast",
    "npc": "emily",
+   "name": "Elena",
    "label": "Elena (Your manager)",
    "situation": [
     "p28b-review"
@@ -897,6 +1032,7 @@
    "id": "cast/tyler",
    "kind": "cast",
    "npc": "tyler",
+   "name": "Toño",
    "label": "Toño (Founder)",
    "situation": [
     "p18-startup"
@@ -913,6 +1049,7 @@
    "id": "cast/mr_grant",
    "kind": "cast",
    "npc": "mr_grant",
+   "name": "Don Gilberto",
    "label": "Don Gilberto (Your landlord)",
    "situation": [
     "p24-flood"
@@ -929,6 +1066,7 @@
    "id": "cast/aduana",
    "kind": "cast",
    "npc": "aduana",
+   "name": "Agente Medina",
    "label": "Agente Medina (Customs)",
    "situation": [
     "s65b-baggage"
@@ -939,6 +1077,10 @@
     "style:en/s31-doctor/greet"
    ],
    "out": "public/scenes-es/ref/cast/aduana.webp",
+   "nametag": {
+    "text": "Medina",
+    "kind": "plate"
+   },
    "size": "1024x1536"
   },
   {
@@ -1007,9 +1149,10 @@
     "s91a-lost-wallet"
    ],
    "moment": null,
-   "prompt": "Doña Mari's flower stall at the Saturday tianguis on the edge of the zócalo, seen from the customer's side: a wooden table under a striped teal-and-cream canvas awning, zinc buckets of sunflowers, orange marigolds, roses, white lilies and birds of paradise, a few bunches wrapped in brown paper on the table. The vendor's spot behind the table, about one third from the left, is empty. Behind: other stalls with striped awnings (fruit, embroidered blouses) and, softly in the distance, the kiosco with its red-tiled dome and the palms of the square.",
+   "prompt": "Doña Mari's flower stall at the Saturday tianguis on the edge of the zócalo, seen from the customer's side. The stall fills the left two thirds: a wooden table under a striped teal-and-cream canvas awning, zinc buckets of sunflowers, orange marigolds, roses, white lilies and birds of paradise, a few bunches wrapped in brown paper on the table; the vendor's spot behind the table, about one third from the left, is empty. Behind the stall, other stalls with striped awnings (fruit, embroidered blouses). The right third is the calm, open square: pale paving, and far away the kiosco with its green wrought-iron columns and red-tiled dome, and palms.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/zocalo"
    ],
    "out": "public/scenes-es/ref/place/zocalo-flores.webp",
    "size": "2048x1152"
@@ -1022,7 +1165,7 @@
     "s32-mercado"
    ],
    "moment": null,
-   "prompt": "Inside the Mercado Municipal: Doña Lupe's fruit and vegetable stall, seen from the customer's side of its counter. Neat pyramids of mangoes, papayas, limes, avocados, tomatoes, green and red chiles and pink pitayas in wooden crates and tubs, a bunch of bananas hanging from a beam, an old-fashioned hanging scale with a round blank dial, a few brown paper bags. The vendor's spot behind the counter, one third from the left, is empty. Under the high market roof: strings of papel picado, and other stalls fading into the soft background (a juice stand with glass jars, a chili and spice stall).",
+   "prompt": "Inside the Mercado Municipal, a big covered market hall: a high roof of painted steel trusses with skylights, no view of the outside. Doña Lupe's fruit and vegetable stall, seen from the customer's side of its counter: neat pyramids of mangoes, papayas, limes, avocados, tomatoes, green and red chiles and pink pitayas in wooden crates and tubs, a bunch of bananas hanging from a beam, an old-fashioned hanging scale with a round dial that has no numbers, a few brown paper bags. The vendor's spot behind the counter, one third from the left, is empty. Strings of papel picado under the roof; in the right third, the calm aisle of the hall with other stalls softly in the background (a chili and spice stall, baskets).",
    "refs": [
     "style:en/s69-local/greet"
    ],
@@ -1053,7 +1196,7 @@
     "s65b-baggage"
    ],
    "moment": null,
-   "prompt": "The arrivals hall of the small Puerto Colibrí airport, seen by a traveler standing at the baggage services desk: a light wood and white desk in the foreground with a computer monitor turned away from the viewer, a small printer and a stack of blank forms. The agent's spot behind the desk, one third from the left, is empty. Behind: a baggage carousel with a few suitcases, and further back the customs exit with a pole-mounted traffic light (one red and one green lamp), a low stainless-steel inspection table and a pale wall with a big window onto palms. Cool, bright airport light with warm accents.",
+   "prompt": "The arrivals hall of the small Puerto Colibrí airport, seen by a traveler standing at the baggage services desk: a light wood and white desk in the foreground with a computer monitor turned away from the viewer, a small printer and a stack of blank forms. The agent's spot behind the desk, one third from the left, is empty. Behind: a baggage carousel with a few suitcases, and further back the customs exit: a low stainless-steel inspection table by an open doorway, with no traffic light, button post or sign (Cancún's customs has had none since 2020), and a pale wall with a big window onto palms. Cool, bright airport light with warm accents.",
    "refs": [
     "style:en/s69-local/greet"
    ],
@@ -1070,7 +1213,8 @@
    "moment": null,
    "prompt": "Immigration control at the airport: a row of white and light-wood immigration booths with low glass screens. The booth in front of the viewer has a small counter with a passport scanner, a little fingerprint pad and a small camera on a stalk (simple shapes); the officer's seat inside the booth, one third from the left, is empty. Floor lines and a queue barrier with a fabric belt; a big window with palms and the tail of a plane behind.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
    ],
    "out": "public/scenes-es/ref/place/aeropuerto-migracion.webp",
    "size": "2048x1152"
@@ -1085,7 +1229,8 @@
    "moment": null,
    "prompt": "The airline check-in counter at the airport: a long counter with a monitor turned away from the viewer and a boarding-pass printer, a baggage scale set into the floor beside it with a conveyor belt behind. The agent's spot behind the counter, one third from the left, is empty. Behind: a wall in deep teal and a big window with palms and a bright sky.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
    ],
    "out": "public/scenes-es/ref/place/aeropuerto-documentacion.webp",
    "size": "2048x1152"
@@ -1100,7 +1245,8 @@
    "moment": null,
    "prompt": "The airport security checkpoint: an X-ray machine with a conveyor belt and gray plastic trays, a walk-through metal detector arch, a small table for bag checks. The screening officer's spot at the end of the belt, one third from the left, is empty. Pale walls, soft overhead light, a big window.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
    ],
    "out": "public/scenes-es/ref/place/aeropuerto-seguridad.webp",
    "size": "2048x1152"
@@ -1115,7 +1261,8 @@
    "moment": null,
    "prompt": "The waiting area at a departure gate (sala): a small gate desk with a monitor turned away from the viewer, rows of seats, and a big window onto the runway with a white plane with a teal tail (no logo) and palms beyond. The agent's spot behind the gate desk, one third from the left, is empty. The right third: the calm window and sky.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/aeropuerto-equipaje"
    ],
    "out": "public/scenes-es/ref/place/aeropuerto-sala.webp",
    "size": "2048x1152"
@@ -1346,9 +1493,10 @@
     "s66-taxi"
    ],
    "moment": null,
-   "prompt": "The taxi stand (sitio) on a corner by the zócalo: a white taxi with a green stripe (no text, no numbers) parked at the curb with its driver's door open, a small shelter with a bench, a palm, painted houses. The driver's spot beside the taxi, one third from the left, is empty. The right third: the calm street.",
+   "prompt": "The taxi stand (sitio) on a corner of the zócalo: a white taxi with a green stripe (no text, no numbers) parked at the curb with its driver's door open, a small shelter with a bench, a palm, painted houses with arcades, and a glimpse of the square. The driver's spot beside the taxi, one third from the left, is empty. The right third: the calm street.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/zocalo"
    ],
    "out": "public/scenes-es/ref/place/sitio-taxis.webp",
    "size": "2048x1152"
@@ -1456,7 +1604,8 @@
    "moment": null,
    "prompt": "The open-air corridor of a two-story apartment building (Departamentos Las Palmas): apartment doors painted in different colors along a walkway with a railing, potted plants, a sunny courtyard with a palm below. The neighbor's doorway, one third from the left, is open and empty (someone will stand there).",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/departamento"
    ],
    "out": "public/scenes-es/ref/place/edificio-pasillo.webp",
    "size": "2048x1152"
@@ -1485,7 +1634,7 @@
     "p30-start-over"
    ],
    "moment": null,
-   "prompt": "Diego and Natalia's small house in the evening: the front of the house painted turquoise, the wooden front door open onto a warm entrance hall, a wall lantern, potted plants by the door, a tiled step. The doorway, one third from the left, is empty (the hosts will stand there). The right third: a calm wall and a window with warm light.",
+   "prompt": "Diego and Natalia's small house on a quiet residential street at dusk: the front of the house painted turquoise, the wooden front door wide open onto a warmly lit entrance hall, a lit wall lantern beside it, potted plants by the door, a tiled step, the deep blue evening sky. No sea or beach in view. The doorway, one third from the left, is empty (the hosts will stand there). The right third: a calm wall and a window glowing with warm light.",
    "refs": [
     "style:en/s69-local/greet"
    ],
@@ -1547,9 +1696,73 @@
    "moment": null,
    "prompt": "The kitchen of Restaurante El Muelle: a stainless-steel pass with heat lamps, a rail of blank order tickets, copper and steel pans, a grill, bowls of limes and chiles, a round window onto the sea. The chef's spot behind the pass, one third from the left, is empty.",
    "refs": [
-    "style:en/s69-local/greet"
+    "style:en/s69-local/greet",
+    "setting:place/el-muelle"
    ],
    "out": "public/scenes-es/ref/place/el-muelle-cocina.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/taxi-interior",
+   "kind": "place",
+   "label": "Inside Don Rigo's taxi",
+   "situation": [
+    "s66-taxi"
+   ],
+   "moment": null,
+   "prompt": "Inside a taxi, seen from the back seat where the learner sits: the driver's seat at the front left, about one third from the left, is empty; the steering wheel, a simple dashboard with blank round dials, a small string of wooden beads hanging from the rear-view mirror, worn beige seat covers. Through the windshield and the right-side window: a sunny street of one- and two-story houses in coral and ochre, coconut palms and bougainvillea. The right third: the calm side window and the street.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/taxi-interior.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/consultorio-dental",
+   "kind": "place",
+   "label": "The dental office's reception",
+   "situation": [
+    "s76-dentist-call"
+   ],
+   "moment": null,
+   "prompt": "The reception of a small, bright dental office (Clínica Dental Coral): a white reception desk with a computer monitor turned away from the viewer, a closed paper appointment book, a pen holder and a small plant; on the wall a poster of a smiling tooth with no writing; a window with wooden shutters and a palm outside. The receptionist's chair behind the desk, one third from the left, is empty. The right third: a calm aqua wall.",
+   "refs": [
+    "style:en/s69-local/greet"
+   ],
+   "out": "public/scenes-es/ref/place/consultorio-dental.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/oficina-cocina",
+   "kind": "place",
+   "label": "Línea Clara's office kitchen",
+   "situation": [
+    "s88-first-day"
+   ],
+   "moment": null,
+   "prompt": "The small office kitchen at the back of the Línea Clara office, in the same light wood, sage green and white, with plants: a counter with a sink, a wooden wall cupboard above it, a white fridge, and beside the fridge a big black coffee machine with a glass carafe; a microwave on the counter; a big blue garrafón (a 20-liter drinking-water jug) upside down on a stand. The spot next to the coffee machine, one third from the left, is empty. The right third: a calm white wall and a small window with palm leaves outside.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/linea-clara"
+   ],
+   "out": "public/scenes-es/ref/place/oficina-cocina.webp",
+   "size": "2048x1152"
+  },
+  {
+   "id": "place/casa-diego-interior",
+   "kind": "place",
+   "label": "Inside Diego and Natalia's house",
+   "situation": [
+    "s85-dinner",
+    "p30-start-over"
+   ],
+   "moment": null,
+   "prompt": "Inside Diego and Natalia's house in the evening: a cozy living and dining room with lime-washed walls, a wooden dining table set for three with a woven runner, clay plates and glasses, a small sofa with embroidered cushions, two small framed paintings of the sea, a doorway with talavera tiles to the kitchen at the back, warm lamplight. The spot by the table, one third from the left, is empty. The right third: a calm wall with a window.",
+   "refs": [
+    "style:en/s69-local/greet",
+    "setting:place/casa-diego"
+   ],
+   "out": "public/scenes-es/ref/place/casa-diego-interior.webp",
    "size": "2048x1152"
   },
   {

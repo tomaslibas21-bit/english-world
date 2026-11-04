@@ -29,7 +29,7 @@
     {
       "id": "s88-first-day/coffee", "moment": "coffee",
       "phases": ["coffee"],
-      "refs": ["place:place/linea-clara", "person:cast/maria"],
+      "refs": ["place:place/oficina-cocina", "person:cast/maria"],
       "prompt": "The small office kitchen at the back of the Línea Clara office, in the same light wood, sage green and white, with plants: a counter with a sink, a wooden wall cupboard above it, a white fridge, and beside the fridge a big black coffee machine with a glass carafe; a microwave on the counter; a big blue garrafón (a 20-liter drinking-water jug) upside down on a stand. María, the coworker, stands about one third from the left right next to the black coffee machine and presents it with both open hands like a prize, a playful, proud grin (\"Y lo más importante: ¡la cafetera!\"). The right third: a calm white wall and a small window with palm leaves outside.",
       "out": "public/scenes-es/s88-first-day/coffee.webp"
     },

@@ -67,10 +67,10 @@ def submit(a):
         refs = []
         for r in e.get("refs", []):
             role, path, label = E.resolve_ref(r, index)
-            data, ctype = E.ref_bytes(path, a.ref_edge)
-            refs.append((role, label, data, ctype, path.name))
-        prompt = E.build_prompt(e, [(x[0], x[1]) for x in refs], parts)
-        est = E.estimate_entry(e, prompt, len(refs), batch=True)
+            data, ctype, dims = E.ref_bytes(path, a.ref_edge)
+            refs.append((role, label, data, ctype, path.name, dims))
+        prompt = E.build_prompt(e, [(x[0], x[1]) for x in refs], parts, E.people_in(e, index))
+        est = E.estimate_entry(e, prompt, [x[5] for x in refs], batch=True)
         endpoint = "/v1/images/edits" if refs else "/v1/images/generations"
         groups.setdefault((endpoint, e["model"]), []).append((e, refs, prompt, est))
     total = sum(x[3]["usd"] for g in groups.values() for x in g)
@@ -93,7 +93,7 @@ def submit(a):
                 body = {"model": model, "prompt": prompt, "size": e["size"], "quality": e["quality"],
                         "n": int(e.get("n", 1)), "output_format": "png"}
                 if refs:
-                    body["images"] = [{"file_id": file_id_for(d, c, n)} for (_, _, d, c, n) in refs]
+                    body["images"] = [{"file_id": file_id_for(d, c, n)} for (_, _, d, c, n, _) in refs]
                 lines.append(json.dumps({"custom_id": e["id"], "method": "POST", "url": endpoint, "body": body},
                                         ensure_ascii=False))
             jsonl = ("\n".join(lines) + "\n").encode("utf-8")

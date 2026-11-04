@@ -55,11 +55,11 @@ def prepare(entry: dict, index: dict, ref_edge: int, parts: dict) -> dict:
     refs = []
     for r in entry.get("refs", []):
         role, path, label = E.resolve_ref(r, index)
-        data, ctype = E.ref_bytes(path, ref_edge)
+        data, ctype, dims = E.ref_bytes(path, ref_edge)
         refs.append({"ref": r, "role": role, "label": label, "path": str(path), "bytes": data, "ctype": ctype,
-                     "sha256": E.sha256(data)})
-    prompt = E.build_prompt(entry, [(x["role"], x["label"]) for x in refs], parts)
-    est = E.estimate_entry(entry, prompt, len(refs))
+                     "dims": dims, "sha256": E.sha256(data)})
+    prompt = E.build_prompt(entry, [(x["role"], x["label"]) for x in refs], parts, E.people_in(entry, index))
+    est = E.estimate_entry(entry, prompt, [x["dims"] for x in refs])
     return {"entry": entry, "refs": refs, "prompt": prompt, "est": est}
 
 
@@ -102,7 +102,7 @@ def run_one(job: dict, budget: E.Budget, pace: Pace, convert: bool) -> str:
         t0 = time.time()
         base = {"kind": "request", "id": e["id"], "endpoint": endpoint, "model": e["model"], "size": e["size"],
                 "quality": e["quality"], "n": int(e.get("n", 1)), "refs": len(job["refs"]), "batch": False,
-                "estimate_usd": est["usd"], "attempt": attempt + 1}
+                "mode": "fix" if e.get("fix") else "new", "estimate_usd": est["usd"], "attempt": attempt + 1}
         try:
             res, headers = E.post_json(endpoint, body)
         except E.ApiError as err:
@@ -158,7 +158,7 @@ def run_one(job: dict, budget: E.Budget, pace: Pace, convert: bool) -> str:
             p.with_suffix(".json").write_text(json.dumps({
                 "id": e["id"], "label": e.get("label"), "manifest": e.get("_manifest"), "prompt": job["prompt"],
                 "entry_prompt": e["prompt"], "model": e["model"], "size": e["size"], "quality": e["quality"],
-                "refs": [{k: x[k] for k in ("ref", "role", "label", "path", "sha256")} for x in job["refs"]],
+                "refs": [{k: x[k] for k in ("ref", "role", "label", "path", "dims", "sha256")} for x in job["refs"]],
                 "request_id": headers.get("x-request-id"), "usage": res.get("usage"), "cost_usd": round(cost, 6),
                 "cost_source": src, "created": E.now_iso()}, ensure_ascii=False, indent=1), encoding="utf-8")
         E.say(f"  ✓ {e['id']}: ${cost:.4f} ({src}; tokens {tokens}) in {row['seconds']} s → {paths[0] if paths else '—'}"
@@ -176,7 +176,7 @@ def run_one(job: dict, budget: E.Budget, pace: Pace, convert: bool) -> str:
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("manifest")
-    ap.add_argument("--only", nargs="*", help="ids (or id prefixes ending in *)")
+    ap.add_argument("--only", nargs="*", help="exact ids, or prefixes ending in * or / (cast/, s72-cafe/*)")
     ap.add_argument("--kind", nargs="*")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--show-prompt", action="store_true", help="print the final prompts (sends nothing)")
@@ -187,6 +187,9 @@ def main():
     ap.add_argument("--max", type=int, default=0, help="at most this many requests")
     ap.add_argument("--stop", type=float, default=E.STOP_USD, help="a lower stop than $75 (never higher)")
     ap.add_argument("--ref-edge", type=int, default=1536, help="longest edge of a reference picture sent")
+    ap.add_argument("--fix", metavar="INSTRUCTION",
+                    help="edit each selected picture's own original (kept as ~N): only this change, e.g. "
+                         "\"Remove the letters on the sign above the door; change nothing else.\"")
     ap.add_argument("--model", help="override the model")
     ap.add_argument("--quality", help="override the quality")
     ap.add_argument("--size", help="override the size")
@@ -205,7 +208,17 @@ def main():
         for k in ("model", "quality", "size"):
             if getattr(a, k):
                 e[k] = getattr(a, k)
-    if not a.force:
+    if a.fix:
+        # an edit of the picture's own original, keeping its people (and their name tags) by reference
+        fixed = []
+        for e in items:
+            if not E.original_path(e["id"]).exists():
+                E.say(f"  ! {e['id']}: no original to fix — skipped")
+                continue
+            persons = [r for r in e.get("refs", []) if r.startswith("person:")]
+            fixed.append({**e, "refs": [f"edit:{e['id']}"] + persons, "prompt": a.fix, "fix": True})
+        items = fixed
+    elif not a.force:
         items = [e for e in items if not E.original_path(e["id"]).exists()]
     if a.max:
         items = items[: a.max]
@@ -223,7 +236,7 @@ def main():
     total_est = sum(j["est"]["usd"] for j in jobs)
     t = E.ledger_totals()
     E.say(f"{len(jobs)} request(s), estimated ${total_est:.4f}; ledger: spent ${t['spent']:.4f}, committed "
-          f"${t['committed']:.4f}, stop ${a.stop:.2f} (ref tokens assumed {E.measured_ref_tokens()} each)")
+          f"${t['committed']:.4f}, stop ${a.stop:.2f}")
     if a.dry_run or a.show_prompt:
         for j in jobs:
             e = j["entry"]

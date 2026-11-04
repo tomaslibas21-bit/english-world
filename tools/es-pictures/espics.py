@@ -355,6 +355,15 @@ def all_items() -> dict[str, dict]:
     return out
 
 
+def matches(entry_id: str, pattern: str) -> bool:
+    """--only: an exact id ("place/zocalo"), or a prefix ending in "*" or "/" ("cast/", "s72-cafe/*")."""
+    if pattern.endswith("*"):
+        return entry_id.startswith(pattern[:-1])
+    if pattern.endswith("/"):
+        return entry_id.startswith(pattern)
+    return entry_id == pattern
+
+
 def select(items: list[dict], only: list[str] | None = None, kinds: list[str] | None = None,
            include_skipped: bool = False) -> list[dict]:
     out = []
@@ -363,7 +372,7 @@ def select(items: list[dict], only: list[str] | None = None, kinds: list[str] | 
             continue
         if kinds and e.get("kind") not in kinds:
             continue
-        if only and not any(e["id"] == o or e["id"].startswith(o.rstrip("*")) for o in only):
+        if only and not any(matches(e["id"], o) for o in only):
             continue
         out.append(e)
     return out
@@ -409,8 +418,8 @@ def resolve_ref(ref: str, index: dict[str, dict]) -> tuple[str, Path, str]:
     return role, path, label
 
 
-def ref_bytes(path: Path, max_edge: int = 1536) -> tuple[bytes, str]:
-    """The picture to send: scaled down to max_edge (with Pillow) as PNG, or the file itself."""
+def ref_bytes(path: Path, max_edge: int = 1536) -> tuple[bytes, str, tuple[int, int] | None]:
+    """The picture to send: scaled down to max_edge (with Pillow) as PNG, or the file itself; and its size."""
     try:
         from PIL import Image  # optional
         im = Image.open(path).convert("RGB")
@@ -418,11 +427,19 @@ def ref_bytes(path: Path, max_edge: int = 1536) -> tuple[bytes, str]:
             im.thumbnail((max_edge, max_edge), Image.LANCZOS)
         buf = io.BytesIO()
         im.save(buf, "PNG", optimize=True)
-        return buf.getvalue(), "image/png"
+        return buf.getvalue(), "image/png", im.size
     except ImportError:
         ext = path.suffix.lower()
         ctype = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}[ext]
-        return path.read_bytes(), ctype
+        return path.read_bytes(), ctype, None
+
+
+def ref_tokens_estimate(dims: tuple[int, int] | None) -> int:
+    """Image input tokens of one reference: one per 32-px patch, as measured on 4 Nov 2026 (a 1536×864 reference
+    cost 48 × 27 = 1,296 tokens), +10%; the largest measured count when the size is unknown."""
+    if dims:
+        return math.ceil(math.ceil(dims[0] / 32) * math.ceil(dims[1] / 32) * 1.1)
+    return measured_ref_tokens()
 
 
 def data_url(data: bytes, ctype: str) -> str:
@@ -443,11 +460,52 @@ def ref_intro(roles_labels: list[tuple[str, str]], parts: dict) -> str:
     return " ".join(lines)
 
 
-def build_prompt(entry: dict, roles_labels: list[tuple[str, str]], parts: dict | None = None) -> str:
+def people_in(entry: dict, index: dict[str, dict], depth: int = 0) -> list[dict]:
+    """The cast entries of the people in a picture: the entry itself (a portrait), its "person:" references, and,
+    through "edit:" references, the people of the picture it edits (so an edit keeps their name tags)."""
+    found: list[dict] = []
+    if entry.get("kind") == "cast":
+        found.append(entry)
+    for r in entry.get("refs", []):
+        role, _, rid = r.partition(":") if ":" in r else ("ref", "", r)
+        e = index.get(rid)
+        if not e:
+            continue
+        if role == "person" and e.get("kind") == "cast":
+            found.append(e)
+        elif role == "edit" and depth < 3 and e is not entry:
+            found += people_in(e, index, depth + 1)
+    out, seen = [], set()
+    for e in found:
+        if e["id"] not in seen:
+            seen.add(e["id"])
+            out.append(e)
+    return out
+
+
+def nametag_sentences(people: list[dict], parts: dict) -> list[str]:
+    """The owner's one exception to "no text" (4 Nov 2026): a worker's name tag where a real one would wear it,
+    with the name exactly as the game spells it. Data: "nametag" on the cast entries in manifests/refs.json."""
+    out = []
+    for p in people:
+        tag = p.get("nametag")
+        if not tag:
+            continue
+        name = p.get("name") or p.get("label", p["id"])
+        t = parts["nametag"][tag["kind"]].replace("{name}", name).replace("{text}", tag["text"])
+        accent = " (with its accent mark)" if any(ord(c) > 127 for c in tag["text"]) else ""
+        out.append(t + " " + parts["nametag"]["spelling"].replace("{text}", tag["text"]).replace("{accent}", accent))
+    return out
+
+
+def build_prompt(entry: dict, roles_labels: list[tuple[str, str]], parts: dict | None = None,
+                 people: list[dict] | None = None) -> str:
     """The final prompt: the reference roles, the shared style, the town (if wanted), the entry's own prompt,
-    the kind's framing, and the shared rules."""
+    the name tags of the people in it, the kind's framing, and the shared rules (with the name-tag exception when
+    there is a tag)."""
     parts = parts or load_parts()
     kind = parts["kinds"].get(entry.get("kind", "scene"), {})
+    tags = nametag_sentences(people or [], parts)
     pieces = []
     if roles_labels:
         pieces.append(ref_intro(roles_labels, parts))
@@ -456,19 +514,22 @@ def build_prompt(entry: dict, roles_labels: list[tuple[str, str]], parts: dict |
     if kind.get("town", True) and not entry.get("no_town"):
         pieces.append(parts["town"])
     pieces.append(entry["prompt"].strip())
+    pieces += tags
     if kind.get("frame"):
         pieces.append(kind["frame"])
     if kind.get("people", True):
         pieces.append(parts["people"])
-    pieces.append(parts["rules"])
+    pieces.append(parts["rules_with_tags"] if tags else parts["rules"])
     return "\n\n".join(p.strip() for p in pieces if p and p.strip())
 
 
-def estimate_entry(entry: dict, prompt: str, n_refs: int, batch: bool = False) -> dict:
+def estimate_entry(entry: dict, prompt: str, refs: "int | list", batch: bool = False) -> dict:
+    """refs: the sizes of the reference pictures sent (or how many, when the sizes are unknown)."""
     model, size, quality, n = entry["model"], entry["size"], entry["quality"], int(entry.get("n", 1))
     t_out = output_tokens(model, size, quality) * n
     t_text = text_tokens_estimate(prompt)
-    t_img = n_refs * measured_ref_tokens()
+    dims = [None] * refs if isinstance(refs, int) else list(refs)
+    t_img = sum(ref_tokens_estimate(d) for d in dims)
     usd = tokens_cost(model, batch, t_text, t_img, t_out)
     return {"text_in": t_text, "image_in": t_img, "image_out": t_out, "usd": round(usd, 6)}
 
@@ -480,8 +541,8 @@ def usage_tokens(usage: dict | None) -> dict | None:
     det = usage.get("input_tokens_details") or {}
     text_in = det.get("text_tokens")
     image_in = det.get("image_tokens")
-    if text_in is None and image_in is None:
-        text_in, image_in = usage.get("input_tokens", 0), 0
+    if text_in is None and image_in is None:  # no split given: count all input at the dearer image rate
+        text_in, image_in = 0, usage.get("input_tokens", 0)
     out_det = usage.get("output_tokens_details") or {}
     image_out = out_det.get("image_tokens", usage.get("output_tokens", 0))
     text_out = out_det.get("text_tokens", 0)

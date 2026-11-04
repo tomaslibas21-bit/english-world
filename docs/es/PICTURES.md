@@ -16,10 +16,14 @@ retries fit.
 
 ## Status (4 Nov 2026)
 
-- **Done:** the docs read (section 1), the style guide (3), the scripts and the ledger (7), the reference manifest
-  (96 pictures: 58 people, 38 places; section 4), the wiring plan (8).
-- **Waiting:** the API key (`OPENAI_API_KEY=` in `~/english-world/.env.local`) for the test picture; then the
-  references. Nothing has been spent.
+- **The key works; no organization verification was asked for.** The test picture (the zócalo, `medium`, one
+  reference) cost $0.0253 and showed the style carries over (section 2).
+- **The references are made** (section 4): 58 portraits and 42 places, checked one by one, with the owner's name-tag
+  exception on 21 workers. **Spent: $7.12** of the $75 stop (the ledger).
+- **Next:** the situation pictures from the planners' manifests (`tools/es-pictures/manifests/s*.json`, chapters
+  1–7: 478 pictures, 54 of them first pictures): the first pictures through the regular API, checked one by one; the
+  edits in one Batch API run; a review and redos; then the wiring (section 8). Chapters 8 and 9 (about 100 pictures)
+  follow when their conversations land.
 
 ## 1. OpenAI's image API (read on 4 Nov 2026)
 
@@ -155,8 +159,22 @@ For comparison, the guide's per-picture table for GPT Image 2 (1024² / 1024×15
   Sunburst is slow or rate-limited.
 - **Size: `2048x1152`** for scenes and places (the English pictures' size, no crop); `1024x1536` for the cast
   portraits.
-- **Quality: `high` for the references; for the situation pictures, decided after the test (section 2 is updated then).**
-- **Price per situation picture: about $0.05–0.10 at `high` with two references (the reference tokens are measured by the test); half that in a batch.**
+- **Quality: `high`.** The test at `medium` already showed the style well (no text, clean shapes, the grain); `high`
+  is crisper in faces and small things for $0.03 more a picture, and the budget allows it. `xhigh`/`max` only if a
+  picture needs it.
+- **References are sent at 1536 px on the long edge** and cost **one image-input token per 32-px patch** (measured:
+  a 1536×864 reference = 48 × 27 = 1,296 tokens = $0.0104; a 1024×1536 portrait = 1,536 tokens = $0.0123). A
+  smaller reference costs less (`--ref-edge 1024`: 576 tokens for a 16:9 picture).
+- **Measured on 4 Nov 2026** (the ledger): the test picture (`medium`, 2048×1152, one reference) **$0.0253** (791 text
+  tokens, 1,296 image-input tokens, 367 output tokens, 25 s); a portrait (`high`, 1024×1536, one reference)
+  **$0.054** (about 460 text, 1,296 image in, 1,372 out, about 27 s); a place (`high`, 2048×1152, one reference)
+  **$0.057** (about 800 text, 1,296 image in, 1,413 out, about 34 s). The output tokens match the calculator exactly.
+- **Price per situation picture: $0.07 through the regular API** (`high`, 2048×1152, two references: the scene's
+  first picture or its place, and the person's portrait; about 900 prompt tokens), **$0.035 in a batch**. Without the
+  portrait (an edit of the scene's first picture only): $0.06 / $0.03. At `medium`: $0.04 / $0.02.
+- **What that buys:** 600 situation pictures (50 conversations × 12) at `high` cost about $42 through the regular
+  API or $21 in batches, plus redos (about 20% in the English rollout). With the references (about $6) that fits
+  under the $75 stop either way; batches leave room for more redos.
 
 ## 3. The style
 
@@ -188,6 +206,9 @@ What moves the style to Mexico's Caribbean coast (`town` in prompt-parts.json):
 - **The malecón and the beach:** a wide paved walk with a low white wall, lamp posts with two lanterns, palapas
   (thatched palm umbrellas) and loungers on white sand, lanchas (small open fishing boats, white with a colored
   stripe), a turquoise sea.
+- **The sea only at the waterfront** (the malecón, the beach, the pier, El Muelle); elsewhere windows and doors open
+  onto streets, patios, palms and painted houses. (The first places put the sea in almost every window; the town text
+  now says so.)
 - **Mexican touches, used lightly:** papel picado, talavera tiles, clay pots, woven palm, embroidered cotton (a
   hipil, a guayabera, a rebozo). Everyday modern Mexico, not a postcard: **no sombreros, ponchos or clichés**.
 
@@ -216,12 +237,37 @@ As in the English pictures (checked on the dozen above):
   to the 70s; slim, sturdy, tall, short. Extras in the background are varied too (`people` in prompt-parts.json).
 - Grown-ups with friendly, natural expressions; uniforms and badges blank.
 
-### No text, anywhere
+### No text, except a worker's name tag
 
-Unlike Maple Harbor's pictures, **no text at all**: no letters, words, numbers, prices, logos, brand marks,
-watermarks or signatures. Signs, menus, boards, screens, labels, badges, patches, tickets, papers, maps and license
-plates are blank or show simple shapes and icons. (The prices, times and names come from the conversation itself;
-the model also misspells Spanish.) Check every picture for stray letters, above all on signs and screens.
+Unlike Maple Harbor's pictures, **no text**: no letters, words, numbers, prices, logos, brand marks, watermarks or
+signatures. Signs, menus, boards, screens, labels, other badges and patches, tickets, papers, maps and license plates
+are blank or show simple shapes and icons. (The prices, times and names come from the conversation itself; the model
+also misspells Spanish.)
+
+**The one exception (the owner, 4 Nov 2026): a worker's name tag, where a real worker would wear one**, with the
+name exactly as the game spells it, accents included (src/editions/es/content/npcs.ts); officials show the surname.
+Yes: hotel reception, the bank, airline and airport staff, the pharmacy counter, shop clerks, customer service,
+uniform name plates for police and officials, the name embroidered on the doctor's coat. No: the market vendor, the
+taxi driver, neighbors, friends, people at a party (and here also: the café, the restaurant, the salon, the bus
+driver, the gas station, the museum guard, office colleagues).
+
+| Kind | Who (npc id: text) |
+|---|---|
+| `plate` (a metal name plate on the uniform) | diaz: Ramírez · grant: Torres · aduana: Medina · reyes: Reyes |
+| `lanyard` (the card on the lanyard) | priya: Itzel · ben: Iván |
+| `badge` (a small badge on the chest) | olivia: Fernanda · chloe: Valeria · okafor: Héctor · aaron: Ricardo · gloria: Gloria · walter: Raúl · jake: Andrés · kevin: Emilio · nina: Daniela · linda: Lorena · claire: Karla · jordan: Mónica · kyle: Jorge · brenda: Brenda |
+| `embroidered` (on the white coat) | carter: Dra. Herrera |
+
+- **The data** is `nametag: {"text", "kind"}` on the cast entries of `tools/es-pictures/manifests/refs.json` (with
+  `name`, the game's name). The wording is `nametag` in prompt-parts.json.
+- **It is automatic:** `espics.build_prompt` adds the tag sentence (and swaps the no-text rule for one that allows
+  only that tag) whenever a tagged person is in the picture: their portrait, any picture with `"person:cast/<npc>"`
+  in its references, and any edit of such a picture (an `"edit:…"` reference inherits the people of the picture it
+  edits). A situation prompt never describes the tag itself.
+- **Check the spelling of every tag** (accents too) when reviewing. A misspelled one: redo it
+  (`--fix "Correct the name tag to read exactly …"`), or turn the person a little so the tag faces away.
+
+Check every picture for any other letters, above all on signs and screens (`textcheck.swift` helps; section 7).
 
 ### Hands
 
@@ -230,8 +276,130 @@ frame. Look at every hand in every picture before keeping it.
 
 ## 4. The references
 
-The manifest `tools/es-pictures/manifests/refs.json`: one portrait per person of the Spanish cast and one picture per
-place (waiting for the key).
+All made on 4 Nov 2026 with `gpt-image-2.5-sunburst` at `high` through the regular API, each with one English picture
+with no text as its style reference (`en/s31-doctor/greet` for the portraits, `en/s69-local/greet` for the places), and
+checked one by one (contact sheets, full-size crops, `textcheck`). The originals are in `<work>/originals/cast/` and
+`<work>/originals/place/` (a redo keeps the earlier one as `~1`); the web versions (WebP, at most 240 kB) are in
+`public/scenes-es/ref/` (10.5 MB). Situation pictures use them as `"person:cast/<npc id>"` and `"place:place/<id>"`.
+
+**58 portraits** (1024 × 1536: waist up, facing the viewer, on a warm cream background, hands out of the frame).
+Each follows the person's role and the look written for them in `refs.json` (varied skin tones, hair, ages and builds);
+the 21 with a name tag got it as an edit of their portrait, so the face and clothes stayed the same, and every tag
+was read back letter by letter (accents included). Three cast ids are not people and have no portrait: `netwave_bot`
+(the phone menu), `sco` (Maple Harbor's self-checkout), `harbor_bot` (a recorded message).
+
+| Portrait | Who | Tag |
+|---|---|---|
+| `cast/diaz` | Oficial Ramírez (Immigration officer) | plate: Ramírez |
+| `cast/priya` | Itzel (Baggage services) | lanyard: Itzel |
+| `cast/vinnie` | Don Rigo (Taxi driver) |  |
+| `cast/olivia` | Fernanda (Hotel reception) | badge: Fernanda |
+| `cast/chuck` | Don Chuy (Tourist information volunteer) |  |
+| `cast/mia` | Mariana (Barista) |  |
+| `cast/rosa` | Doña Carmen (Local, born and raised) |  |
+| `cast/ben` | Iván (Museum tickets) | lanyard: Iván |
+| `cast/harold` | Don Arturo (Museum guard) |  |
+| `cast/marco` | Luis (Waiter) |  |
+| `cast/chloe` | Valeria (Sales assistant) | badge: Valeria |
+| `cast/okafor` | Don Héctor (Pharmacist) | badge: Héctor |
+| `cast/jessie` | Paty (Hairdresser) |  |
+| `cast/aaron` | Ricardo (Bank teller) | badge: Ricardo |
+| `cast/gloria` | Gloria (Postal clerk) | badge: Gloria |
+| `cast/marco_host` | Lucía (Restaurant host) |  |
+| `cast/walter` | Don Raúl (Bus ticket office) | badge: Raúl |
+| `cast/denise` | Ana (Bus driver) |  |
+| `cast/jake` | Andrés (Car rental agent) | badge: Andrés |
+| `cast/dot` | Doña Chela (Gas station attendant) |  |
+| `cast/kevin` | Emilio (Airline check-in) | badge: Emilio |
+| `cast/grant` | Oficial Torres (Airport security) | plate: Torres |
+| `cast/nina` | Daniela (Gate agent) | badge: Daniela |
+| `cast/linda` | Lorena (Dental office reception) | badge: Lorena |
+| `cast/claire` | Karla (Customer service) | badge: Karla |
+| `cast/patel` | Don Ernesto (Landlord) |  |
+| `cast/rita` | Doña Lupita (Neighbor) |  |
+| `cast/brooks` | Licenciada Salinas (HR manager) |  |
+| `cast/maria` | María (Coworker) |  |
+| `cast/kate` | Sofía (Team lead) |  |
+| `cast/paul` | Pablo (Colleague) |  |
+| `cast/sara` | Sara (Colleague) |  |
+| `cast/harris` | Ingeniero Montes (Your boss) |  |
+| `cast/sophie` | Ximena (Party host) |  |
+| `cast/mark` | Marcos (Party guest, chef) |  |
+| `cast/lizzie` | Andrea (Your friend) |  |
+| `cast/sam` | Santiago (Your date) |  |
+| `cast/emma` | Camila (Your date) |  |
+| `cast/dan` | Diego (Your friend, dinner host) |  |
+| `cast/nora` | Natalia (Diego's wife) |  |
+| `cast/lucy` | Paola (Old school friend) |  |
+| `cast/mrs_lee` | Doña Mari (Flower stall) |  |
+| `cast/reyes` | Oficial Reyes (Police officer) | plate: Reyes |
+| `cast/carter` | Doctora Herrera (Family doctor) | embroidered: Dra. Herrera |
+| `cast/marcus` | Doña Lupe (Fruit and vegetable stall) |  |
+| `cast/frank` | Don Pancho (Neighbor) |  |
+| `cast/jordan` | Mónica (Personal trainer) | badge: Mónica |
+| `cast/maggie` | Doña Margarita (Selling her car) |  |
+| `cast/kyle` | Jorge (Customer service) | badge: Jorge |
+| `cast/brenda` | Brenda (Customer care manager) | badge: Brenda |
+| `cast/vanessa` | Vanessa (Marketing lead) |  |
+| `cast/greg` | Gerardo (Team manager) |  |
+| `cast/whitaker` | Chef Villanueva (Head chef) |  |
+| `cast/russo` | Fátima (Junior cook) |  |
+| `cast/emily` | Elena (Your manager) |  |
+| `cast/tyler` | Toño (Founder) |  |
+| `cast/mr_grant` | Don Gilberto (Your landlord) |  |
+| `cast/aduana` | Agente Medina (Customs) | plate: Medina |
+
+**42 places** (2048 × 1152, the scene size), framed like the conversation pictures with the person's spot left
+empty: the situation's first picture puts the person there. Places inside a bigger one were made with it as a
+`setting:` reference, so the town and the airport look the same from every spot.
+
+| Place | What | Used by | Note |
+|---|---|---|---|
+| `place/zocalo` | The zócalo (main square) | s69-local, s86-old-friend, s91a-lost-wallet |  |
+| `place/zocalo-flores` | Doña Mari's flower stall at the tianguis | s91a-lost-wallet | setting: `place/zocalo`; redone with the zócalo as its setting (the first one had a different kiosco) |
+| `place/mercado` | The Mercado Municipal: Doña Lupe's stall | s32-mercado | redone as a covered hall (the first was open-air, and its juice taps read as digits) |
+| `place/malecon` | The malecón and the beach | s83-invite-call, s67b-bus |  |
+| `place/aeropuerto-equipaje` | The arrivals hall: baggage desk and customs | s65b-baggage | the customs traffic light taken out (an edit; Cancún has had none since 2020) |
+| `place/aeropuerto-migracion` | Immigration control | s65a-passport | setting: `place/aeropuerto-equipaje` |
+| `place/aeropuerto-documentacion` | The airline check-in counter | s64a-checkin | setting: `place/aeropuerto-equipaje`; the baggage-claim carousel replaced by a check-in belt (an edit) |
+| `place/aeropuerto-seguridad` | The security checkpoint | s64b-security | setting: `place/aeropuerto-equipaje` |
+| `place/aeropuerto-sala` | The departure gate (sala) | s64c-gate | setting: `place/aeropuerto-equipaje` |
+| `place/hotel-mar-azul` | Hotel Mar Azul's lobby | s68-hotel |  |
+| `place/cafe-la-ceiba` | Café La Ceiba | s72-cafe |  |
+| `place/cocina-de-lucia` | La Cocina de Lucía | s73-restaurant |  |
+| `place/el-muelle` | Restaurante El Muelle | s84-date, p28-kitchen |  |
+| `place/terminal-autobuses` | The bus terminal's ticket office | s67a-tickets |  |
+| `place/camion` | Inside the city bus | s67b-bus, s90-running-late |  |
+| `place/gasolinera` | The gas station's pump | s71b-gas |  |
+| `place/banco` | Banco del Puerto | s78-bank |  |
+| `place/farmacia` | Farmacia del Puerto | s75-pharmacy |  |
+| `place/consultorio` | The doctor's consulting room | s31-doctor, s75-pharmacy |  |
+| `place/linea-clara` | The office of Línea Clara | s34-meeting, s87-interview, s88-first-day, p27-meeting, p28b-review |  |
+| `place/calle-residencial` | A residential street | p25-used-car, s82-neighbor |  |
+| `place/gimnasio` | Gimnasio Colibrí | s35-gym |  |
+| `place/museo` | Museo de la Costa Maya | s70-museum |  |
+| `place/sitio-taxis` | The taxi stand (sitio) | s66-taxi | setting: `place/zocalo` |
+| `place/informacion-turistica` | The tourist information office | s62-visitor-center |  |
+| `place/correos` | The post office | s79-post |  |
+| `place/boutique-hilos` | Boutique Hilos | s74-clothes |  |
+| `place/estetica-tijeras` | Estética Tijeras | s77-salon |  |
+| `place/policia` | The Policía Municipal | s91b-police |  |
+| `place/departamento` | An apartment for rent (Las Palmas) | s81-apartment, p29-landlord, p24-flood |  |
+| `place/edificio-pasillo` | The apartment building's corridor | s82-neighbor, p29-landlord | setting: `place/departamento` |
+| `place/casa-ximena-patio` | Ximena's backyard party | s63-party |  |
+| `place/casa-diego` | Diego and Natalia's front door | s85-dinner, p30-start-over | redone at dusk on a residential street (the first was sunny, with a beach) |
+| `place/renta-autos` | Renta de Autos Colibrí | s71a-rental |  |
+| `place/parada` | The bus stop on Calle Ceiba | s33-small-talk |  |
+| `place/brotecito` | Brotecito, the startup | p18-startup |  |
+| `place/el-muelle-cocina` | El Muelle's kitchen | p28-kitchen | setting: `place/el-muelle` |
+| `place/taxi-interior` | Inside Don Rigo's taxi | s66-taxi |  |
+| `place/consultorio-dental` | The dental office's reception | s76-dentist-call |  |
+| `place/oficina-cocina` | Línea Clara's office kitchen | s88-first-day | setting: `place/linea-clara` |
+| `place/casa-diego-interior` | Inside Diego and Natalia's house | s85-dinner, p30-start-over | setting: `place/casa-diego`; the window made dusk (an edit) |
+| `place/call-center` | A customer service office | s80-support-call, p26-complaint |  |
+
+Redone or fixed: 6 places (above) and none of the portraits apart from the name tags. Cost: portraits $3.11 + name
+tags $1.16, places $2.82 (with the redos and fixes), the test $0.03: **$7.12 in all** (128 requests).
 
 ## 5. How to write a situation prompt
 
@@ -240,8 +408,8 @@ The lead plans 10–12 pictures per conversation, one per step and twist. Each c
 
 1. **The first picture** (usually the greeting): references `"place:place/<place>"` and `"person:cast/<npc>"` (and
    any second person), and a prompt that says only what this moment adds: who stands where, the gesture, the props,
-   the expression. The shared pieces (style, town, framing, people, no text, hands) are added by the scripts; don't
-   repeat them.
+   the expression. The shared pieces (style, town, framing, people, no text, name tags, hands) are added by the
+   scripts; don't repeat them.
 2. **Every other picture: an edit of the first**, so the room, the light and the person stay the same: references
    `"edit:<situation>/<first>"` and `"person:cast/<npc>"`, and a prompt that names only the change: "She holds up
    three paper cups of different sizes, eyebrows raised (asking which size)." Make and check the first picture
@@ -305,6 +473,7 @@ situations, `scenes` (per scene: `npc` label, `focus`, `start`, `done`, `sticky`
 | `out` | The web version's path in the repository (or `{work}/…` for the work folder) |
 | `focus` | Optional [x%, y%]: where to crop when an original isn't 16:9 |
 | `skip` | A reason not to make it (the three non-people in the cast) |
+| `name`, `nametag` | Cast entries only: the game's name, and the name tag (`{"text": "Ramírez", "kind": "plate"}`) where the person wears one |
 | `note` | Free text: what was redone and why |
 
 The originals are `<work>/originals/<id>.png` with a sidecar `<id>.json` (the final prompt, the references and
@@ -322,6 +491,8 @@ python3 tools/es-pictures/generate.py refs --show-prompt --only cast/mia   # the
 python3 tools/es-pictures/generate.py refs --only cast/mia --convert # make one, write its web version
 python3 tools/es-pictures/generate.py s72-cafe --convert --workers 2 # a whole manifest (skips what exists)
 python3 tools/es-pictures/generate.py refs --only place/zocalo --force --convert   # a redo (keeps the old one)
+python3 tools/es-pictures/generate.py s72-cafe --only s72-cafe/size --fix "Remove the letters on the cup; change nothing else." --convert
+                                                                     # an edit of the picture itself (keeps the old one)
 python3 tools/es-pictures/batch.py submit s72-cafe                   # the same at half price, within 24 h
 python3 tools/es-pictures/batch.py status
 python3 tools/es-pictures/batch.py fetch <batch id> --convert
@@ -329,8 +500,13 @@ python3 tools/es-pictures/convert.py refs                            # PNG → W
 python3 tools/es-pictures/scene_file.py s72-cafe --write             # the scene file from the manifest
 python3 tools/es-pictures/ledger.py                                  # spent, reserved, left before $75
 python3 tools/es-pictures/ledger.py --price 2048x1152 high 2         # the estimate for one picture with 2 refs
+python3 tools/es-pictures/sheet.py s72-cafe                          # contact sheets of the originals, to look at
+swiftc -O tools/es-pictures/textcheck.swift -o <work>/textcheck      # once; then:
+<work>/textcheck <work>/originals/s72-cafe                           # any letters or digits macOS can read
 ```
 
+- `--only` takes exact ids, or prefixes ending in `*` or `/` (`cast/`, `s72-cafe/*`). In zsh, a list held in a
+  variable needs `${=LIST}` to split into words.
 - `generate.py`: the regular API. References are sent as data URLs (scaled to 1536 px on the long edge), to
   `/v1/images/edits`; without references, `/v1/images/generations`. Two requests at a time by default (at most 4),
   at most 10 a minute (the Build tier allows 20); 429 and 5xx are retried with `Retry-After` and backoff; a 403
@@ -342,6 +518,11 @@ python3 tools/es-pictures/ledger.py --price 2048x1152 high 2         # the estim
   warns over 250 kB.
 - `scene_file.py`: writes `src/editions/es/ui/scene-data/<scene>.json` from a manifest, once the pictures exist.
 - `ledger.py`: totals and the price check.
+- `sheet.py`: contact sheets (several originals side by side, labeled) for a first look; then look at doubtful
+  pictures at full size.
+- `textcheck.swift`: macOS's text recognizer (Vision) over the originals: prints every picture where it reads
+  letters or digits, and where. It reads Maple Harbor's menus and signs; a clean result is still no substitute for
+  looking (it misses squiggles that look like writing), and a pattern can raise a false alarm.
 
 ### The ledger
 
@@ -391,6 +572,8 @@ the lead's change; the English edition must stay byte-for-byte the same):
 
 ## 9. For the owner
 
-- Put `OPENAI_API_KEY=…` in `~/english-world/.env.local` (one line; the scripts read it, nothing prints it).
-- If the test answers 403 "must be verified": verify the organization at platform.openai.com → Settings →
-  Organization → General → Verify Organization, then wait up to 15 minutes.
+- Nothing is needed for the pictures to go on: the key works (no verification step was asked for).
+- The ledger and the full-size originals live in the work folder (`/private/tmp/…/scratchpad/pictures/`), which a
+  restart of the Mac can clear: copy it somewhere lasting (for example `~/english-world/.art-originals/es/`, which git
+  ignores) once the pictures are done.
+- To compare the spending with OpenAI's own count: the dashboard's Usage page, against `python3 tools/es-pictures/ledger.py`.

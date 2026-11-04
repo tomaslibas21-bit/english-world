@@ -22,7 +22,7 @@
       "situation": "s85-dinner",
       "moment": "coat",
       "phases": ["coat"],
-      "refs": ["setting:s85-dinner/door", "person:cast/dan", "person:cast/nora"],
+      "refs": ["place:place/casa-diego-interior", "person:cast/dan", "person:cast/nora"],
       "prompt": "Inside Diego and Natalia's house in the evening: a cozy living and dining room with lime-washed walls, a wooden dining table set for three with a woven runner, clay plates and glasses, a small sofa with embroidered cushions, two small framed paintings of the sea, a doorway with talavera tiles to the kitchen at the back, warm lamplight. Diego stands by the table about one third from the left, gesturing with an open hand toward a chair, smiling (\"Siéntate, estás en tu casa\"); Natalia is in the kitchen doorway in the background. The right third: a calm wall with a window.",
       "label": "Diego and Natalia's living and dining room",
       "out": "public/scenes-es/s85-dinner/sit.webp"

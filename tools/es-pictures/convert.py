@@ -7,7 +7,8 @@
 - Scene and place pictures: exactly 2048 × 1152 (16:9, as the English pictures). An original of another shape is
   cropped to 16:9 around the entry's "focus" ([x%, y%], default the middle) before it is scaled.
 - Cast portraits: their own shape, at most 1536 px on the long edge.
-- A web picture over 250 kB gets a warning (tools/scene-walk.ts warns at the same size).
+- WebP quality 80, stepped down (by 4, not below 60) until the file is at most 240 kB: these pictures' fine grain
+  compresses less well than Maple Harbor's (tools/scene-walk.ts warns over 250 kB).
 Needs Pillow (python3 -m pip install Pillow), as the English workflow does.
 """
 from __future__ import annotations
@@ -26,11 +27,12 @@ except ImportError:  # pragma: no cover
     Image = None
 
 WEB = {"scene": (2048, 1152), "place": (2048, 1152), "test": (2048, 1152)}
+MAX_BYTES = 240_000  # WebP quality 80, stepped down by 4 (not below 60) until the file is at most this
 LONG_EDGE = {"cast": 1536}
 
 
 def to_web(src: Path, dst: Path, size: tuple[int, int] | None = None, long_edge: int | None = None,
-           quality: int = 80, focus: tuple[float, float] = (50.0, 50.0)) -> int:
+           quality: int = 80, focus: tuple[float, float] = (50.0, 50.0), max_bytes: int | None = MAX_BYTES) -> int:
     if Image is None:
         raise SystemExit("convert.py needs Pillow: python3 -m pip install Pillow")
     im = Image.open(src).convert("RGB")
@@ -51,8 +53,12 @@ def to_web(src: Path, dst: Path, size: tuple[int, int] | None = None, long_edge:
     elif long_edge and max(im.size) > long_edge:
         im.thumbnail((long_edge, long_edge), Image.LANCZOS)
     dst.parent.mkdir(parents=True, exist_ok=True)
-    im.save(dst, "WEBP", quality=quality, method=6)
-    return dst.stat().st_size
+    q = quality
+    while True:  # the fine grain of these pictures compresses less well than Maple Harbor's: step down if needed
+        im.save(dst, "WEBP", quality=q, method=6)
+        if not max_bytes or dst.stat().st_size <= max_bytes or q <= 60:
+            return dst.stat().st_size
+        q -= 4
 
 
 def convert_entry(e: dict, quality: int | None = None) -> tuple[Path, int] | None:
@@ -96,7 +102,8 @@ def main():
         if n > 250_000:
             big += 1
             flag = "  ! over 250 kB"
-        print(f"  {dst.relative_to(E.REPO)}: {n / 1000:.0f} kB{flag}")
+        shown = dst.relative_to(E.REPO) if E.REPO in dst.parents else dst
+        print(f"  {shown}: {n / 1000:.0f} kB{flag}")
     print(f"{done} converted, {big} over 250 kB")
 
 
