@@ -1,0 +1,54 @@
+{ "situation": "p28-kitchen", "items": [
+  { "ctx": "serve", "say": "Chef, ¿puede probar mi sopa?", "intent": "offer_taste" },
+  { "ctx": "serve", "say": "Aquí está, pruébela por favor", "intent": "offer_taste" },
+  { "ctx": "serve", "say": "Puedes probarla?", "intent": "offer_taste", "note": "tú to the chef, no ¿" },
+  { "ctx": "serve", "say": "Estoy un poco nerviosa", "intent": "nervous", "note": "female learner" },
+
+  { "ctx": "consent", "say": "Sí, claro, dígame", "intent": ["want_feedback", "yn:yes"] },
+  { "ctx": "consent", "say": "Sí, quiero saber qué opina", "intent": ["want_feedback", "yn:yes"] },
+  { "ctx": "consent", "say": "No, ahora no, gracias", "intent": ["no_feedback", "yn:no"], "not": ["want_feedback", "yn:yes"], "note": "trap: refusal" },
+
+  { "ctx": "receive", "say": "Gracias, me ayuda mucho", "intent": ["thanks_helpful", "yn:yes"] },
+  { "ctx": "receive", "say": "Lo voy a mejorar", "intent": ["will_work", "thanks_helpful", "yn:yes"] },
+  { "ctx": "receive", "say": "Pero siempre la hago así", "intent": ["defensive", "yn:no"] },
+  { "ctx": "receive", "say": "No voy a cambiar nada", "intent": ["defensive", "yn:no", "reject_rude"], "not": ["will_work", "thanks_helpful"], "note": "trap: negated will_work" },
+  { "ctx": "receive", "say": "¿Me puede dar un ejemplo?", "intent": "ask_example" },
+
+  { "ctx": "example", "say": "¿Como qué?", "intent": "ask_example" },
+  { "ctx": "example", "say": "¿Más limón?", "intent": ["guess_lemon", "ask_example"] },
+  { "ctx": "example", "say": "No, no tengo preguntas", "intent": ["no_questions", "yn:no"] },
+
+  { "ctx": "again", "say": "¿La puede probar otra vez?", "intent": ["ask_again", "again_ctx"] },
+  { "ctx": "again", "say": "Ya le puse más limón. Pruébela de nuevo", "intent": ["ask_again", "again_ctx"] },
+
+  { "ctx": "second", "say": "Buena idea, lo voy a probar", "intent": ["accept_idea", "yn:yes"] },
+  { "ctx": "second", "say": "Vale, me parece bien", "intent": ["accept_idea", "yn:yes"], "note": "Spain vale" },
+  { "ctx": "second", "say": "Gracias, pero prefiero dejarla así", "intent": ["keep_own", "second_ctx"], "not": ["accept_idea"], "note": "trap: polite keep" },
+  { "ctx": "second", "say": "Es una idea muy mala", "intent": "reject_rude", "not": ["accept_idea"] },
+
+  { "ctx": "handoff", "say": "Claro, con gusto la ayudo", "intent": ["help_yes", "help_yes_ctx", "yn:yes"] },
+  { "ctx": "handoff", "say": "No sé qué decirle", "intent": ["help_unsure_ctx"], "not": ["help_yes"] },
+  { "ctx": "handoff", "say": "No, no quiero hacerlo", "intent": ["help_no", "yn:no"], "not": ["help_yes", "help_yes_ctx"], "note": "trap: refusal" },
+  { "ctx": "handoff", "say": "¿Por qué yo?", "intent": "help_why_ctx" },
+
+  { "ctx": "mia_open", "say": "Hola Fátima, ¿puedo probar tu ceviche?", "intent": "offer_feedback" },
+  { "ctx": "mia_open", "say": "Tranquila, seguro que está rico", "intent": ["reassure", "calm_down"] },
+
+  { "ctx": "mia_worked", "say": "El pescado está muy fresco", "intent": "praise_part" },
+  { "ctx": "mia_worked", "say": "Está muy rico", "intent": ["praise_general", "praise_short_ctx"] },
+  { "ctx": "mia_worked", "say": "No me gusta nada", "intent": ["blunt_bad", "yn:no"], "not": ["praise_general", "praise_part"], "note": "trap: negated like" },
+  { "ctx": "mia_worked", "say": "El pescado no está muy fresco", "intent": ["problem_state", "blunt_bad"], "not": ["praise_part"], "note": "trap: negated praise" },
+
+  { "ctx": "mia_try", "say": "Podrías ponerle un poco más de sal", "intent": "suggest_fix" },
+  { "ctx": "mia_try", "say": "Prueba con más cilantro", "intent": "suggest_fix" },
+  { "ctx": "mia_try", "say": "Yo no le cambiaría nada", "intent": "no_fix", "not": ["suggest_fix"], "note": "trap" },
+  { "ctx": "mia_try", "say": "No le pongas más sal", "intent": ["suggest_not"], "not": ["suggest_fix"], "note": "trap: negated suggestion" },
+
+  { "ctx": "mia_howmuch", "say": "Una pizca nomás", "intent": "howmuch_ans" },
+
+  { "ctx": "mia_encourage", "say": "No te preocupes, vas muy bien", "intent": ["encourage", "yn:no"] },
+  { "ctx": "mia_encourage", "say": "Con la práctica vas a mejorar", "intent": ["encourage", "encourage_ctx"] },
+
+  { "ctx": "mia_back", "say": "Gracias por el consejo", "intent": ["thanks_helpful", "yn:yes"] },
+  { "ctx": "mia_back", "say": "No necesito tus consejos", "intent": ["reject_rude", "defensive", "yn:no"], "not": ["thanks_helpful", "accept_idea"], "note": "trap" }
+] }
