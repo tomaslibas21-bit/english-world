@@ -14,16 +14,20 @@ retries fit.
 | The situation pictures (next) | `public/scenes-es/<situation>/<name>.webp`, mapped by `src/editions/es/ui/scene-data/<situation>.json` |
 | The originals (PNG), their sidecars (prompt, references, usage) and the ledger | the work folder, by default `/private/tmp/claude-501/-Users-gabrieledirmontaite/b3b443be-6044-459a-94fe-bcc6886dd88c/scratchpad/pictures/` (`ES_PICTURES_DIR` sets another) |
 
-## Status (4 Nov 2026)
+## Status (5 Nov 2026)
 
-- **The key works; no organization verification was asked for.** The test picture (the zócalo, `medium`, one
-  reference) cost $0.0253 and showed the style carries over (section 2).
-- **The references are made** (section 4): 58 portraits and 42 places, checked one by one, with the owner's name-tag
-  exception on 21 workers. **Spent: $7.12** of the $75 stop (the ledger).
-- **Next:** the situation pictures from the planners' manifests (`tools/es-pictures/manifests/s*.json`, chapters
-  1–7: 478 pictures, 54 of them first pictures): the first pictures through the regular API, checked one by one; the
-  edits in one Batch API run; a review and redos; then the wiring (section 8). Chapters 8 and 9 (about 100 pictures)
-  follow when their conversations land.
+- **Every conversation has its pictures:** 50 conversations, 51 scenes (the date has Santiago's and Camila's),
+  **579 situation pictures** (chapters 1–7: 478; chapters 8–9: 101), each checked (section 5 "Checking a picture"),
+  wired into the game (section 8). The references: 58 portraits and 47 places (section 4).
+- **Spent: $40.59** of the $75 stop (the owner approved $82), 715 requests. Regular API: 506 requests, $33.30
+  (the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373, $25.85 = 75 first
+  pictures and their redo, 298 edits). Batch API: 209 situation pictures, $7.29 (158 + 49 edits, 2 redos).
+- **Why most went through the regular API:** the first pictures by design (each checked before its edits); then the
+  edits' one big batch failed at once on the organization's queue limit (1,000,000 enqueued tokens per model), the
+  first queue-sized batch (158) showed no progress for 45 minutes (it finished after 1.5 hours), and the rest was
+  made through the regular API that night. From the owner's word on 5 Nov, everything after the first pictures went
+  in batches (the chapter 8–9 edits: 49 in 18 minutes; the redos).
+- **Next:** the owner's look at the pictures in the game; the lead's export to the course.
 
 ## 1. OpenAI's image API (read on 4 Nov 2026)
 
@@ -135,6 +139,8 @@ For comparison, the guide's per-picture table for GPT Image 2 (1024² / 1024×15
   batches. Our first batch (420 edits, about 2.1 M tokens with outputs) failed at once with `token_limit_exceeded`:
   "Enqueued token limit reached for gpt-image-2.5-sunburst in organization … Limit: 1,000,000 enqueued tokens."
   So pictures go in queue-sized batches, one after the other (`batch.py run`, about 158 edits each).
+- **Turnaround seen on 4–5 Nov 2026:** 158 edits took 1 h 36 min (the status said 0 done for the first 45 minutes,
+  then jumped); 49 edits took 18 minutes; 2 redos took 33 minutes.
 
 ### Rate limits and errors
 
@@ -403,6 +409,13 @@ empty: the situation's first picture puts the person there. Places inside a bigg
 | `place/casa-diego-interior` | Inside Diego and Natalia's house | s85-dinner, p30-start-over | setting: `place/casa-diego`; the window made dusk (an edit) |
 | `place/call-center` | A customer service office | s80-support-call, p26-complaint |  |
 
+Later, for the situation pictures, 9 more places (5 Nov 2026), each in its own small manifest
+(`tools/es-pictures/manifests/refs-plan-a.json` … `refs-plan-e.json`): the learner's kitchen at Las Palmas
+(`place/departamento-cocina`), Doña Margarita's drive with her red convertible (`place/casa-margarita`), the meeting
+room and Elena's office at Línea Clara (`place/sala-de-juntas`, `place/oficina-elena`), Diego and Natalia's door on a
+sunny morning (`place/casa-diego-dia`, an edit of the dusk one), and four for the chapter 1–7 planners
+(`place/taxi-interior`, `place/consultorio-dental`, `place/oficina-cocina`, `place/casa-diego-interior`, in refs.json).
+
 Redone or fixed: 6 places (above) and none of the portraits apart from the name tags. Cost: portraits $3.11 + name
 tags $1.16, places $2.82 (with the redos and fixes), the test $0.03: **$7.12 in all** (128 requests).
 
@@ -580,4 +593,8 @@ files, same checks):
 - The ledger and the full-size originals live in the work folder (`/private/tmp/…/scratchpad/pictures/`), which a
   restart of the Mac can clear: copy it somewhere lasting (for example `~/english-world/.art-originals/es/`, which git
   ignores) once the pictures are done.
+- **Weight:** the Spanish pictures average 178 kB (Maple Harbor's 85 kB: their fine grain compresses less well), 95 MB
+  for the 579 (plus 13 MB of references, which no build ships). A scene loads its 9–14 pictures, about 2 MB. If that
+  is too heavy for the course's repository or for phones, `convert.py --quality 65` saves about 28%; 1600 px wide
+  would save more (scene-walk accepts 1600–2048).
 - To compare the spending with OpenAI's own count: the dashboard's Usage page, against `python3 tools/es-pictures/ledger.py`.
