@@ -1,0 +1,53 @@
+{ "situation": "p29-landlord", "items": [
+  { "ctx": "problem", "say": "Buenos días, Don Ernesto. Soy su inquilino del 2B", "intent": "greet_id" },
+  { "ctx": "problem", "say": "El aire acondicionado no funciona", "intent": "heat_broken" },
+  { "ctx": "problem", "say": "El minisplit no enfria", "intent": "heat_broken", "note": "no accents" },
+  { "ctx": "problem", "say": "Hace muchísimo calor en mi departamento", "intent": "cold_detail" },
+  { "ctx": "problem", "say": "No puedo dormir por el calor", "intent": "cold_detail" },
+  { "ctx": "problem", "say": "El aire del piso no va", "intent": "heat_broken", "note": "Spain: piso, no va" },
+  { "ctx": "problem", "say": "No tengo ningún problema, solo quería saludarlo", "intent": "any", "not": ["heat_broken", "have_problem"], "note": "trap: negation" },
+
+  { "ctx": "thermostat", "say": "Sí, ya revisé el control", "intent": ["thermo_yes", "yn:yes"] },
+  { "ctx": "thermostat", "say": "Sí, lo puse en frío y nada", "intent": ["thermo_yes", "yn:yes"] },
+  { "ctx": "thermostat", "say": "No, no lo he revisado", "intent": ["thermo_no", "yn:no"] },
+  { "ctx": "thermostat", "say": "No es el control, ya lo revisé dos veces", "intent": ["thermo_yes", "heat_broken"], "not": ["thermo_no"], "note": "trap: 'no es' + checked" },
+
+  { "ctx": "duration", "say": "Desde hace una semana", "intent": "heat_duration" },
+  { "ctx": "duration", "say": "Desde el miércoles pasado", "intent": ["heat_duration", "dur_ctx"] },
+  { "ctx": "duration", "say": "Ya tiene cinco días así", "intent": "heat_duration" },
+  { "ctx": "duration", "say": "Le he llamado todos los días", "intent": "called_before" },
+
+  { "ctx": "dodge", "say": "Usted es el dueño, le toca arreglarlo", "intent": ["responsibility", "request_fix"] },
+  { "ctx": "dodge", "say": "Según el contrato, las reparaciones son su responsabilidad", "intent": "responsibility" },
+  { "ctx": "dodge", "say": "¿Puede mandar a alguien, por favor?", "intent": "request_fix" },
+  { "ctx": "dodge", "say": "Si no lo arregla, no le pago la renta", "intent": ["withhold", "threat"] },
+  { "ctx": "dodge", "say": "¿Me está tomando el pelo?", "intent": "you_kidding" },
+
+  { "ctx": "offer", "say": "No, gracias, prefiero que venga un técnico", "intent": ["refuse_offer", "request_fix"], "not": ["accept_offer"] },
+  { "ctx": "offer", "say": "Yo no soy plomero", "intent": "refuse_offer" },
+  { "ctx": "offer", "say": "No sé arreglar aires acondicionados", "intent": "refuse_offer", "not": ["accept_offer"] },
+  { "ctx": "offer", "say": "Bueno, está bien, lo intento", "intent": ["accept_offer", "yn:yes"] },
+  { "ctx": "offer", "say": "No, no lo voy a arreglar yo", "intent": "any", "not": ["accept_offer", "yn:yes"], "note": "trap: negation" },
+  { "ctx": "offer", "say": "¿Y si lo arreglo yo y luego no funciona?", "intent": "any", "not": ["accept_offer", "yn:yes"], "note": "trap: what-if" },
+
+  { "ctx": "date", "say": "¿Cuándo puede venir el técnico?", "intent": "ask_when" },
+  { "ctx": "date", "say": "La próxima semana es demasiado tarde", "intent": "too_late" },
+  { "ctx": "date", "say": "¿Puede venir antes del fin de semana?", "intent": ["too_late", "propose_day", "ask_when"] },
+  { "ctx": "date", "say": "El viernes en la mañana me queda bien", "intent": ["accept_date", "propose_day", "day_ctx"] },
+  { "ctx": "date", "say": "El viernes no puedo", "intent": "any", "not": ["accept_date", "yn:yes"], "note": "trap: day refused" },
+  { "ctx": "date", "say": "¿Me lo puede mandar por mensaje?", "intent": "in_writing" },
+
+  { "ctx": "home", "say": "Sí, voy a estar en casa", "intent": ["home_yes", "yn:yes"] },
+  { "ctx": "home", "say": "No, voy a estar trabajando", "intent": ["not_home", "yn:no"], "not": ["home_yes"], "note": "trap: negation" },
+  { "ctx": "home", "say": "Le puedo dejar la llave a Doña Lupita", "intent": "leave_key" },
+
+  { "ctx": "wrap", "say": "No, eso es todo, gracias", "intent": ["no_more", "yn:no"] },
+
+  { "ctx": "rent", "say": "Aquí tiene la renta de este mes", "intent": ["pay_rent", "pay_ctx"] },
+  { "ctx": "rent", "say": "¿Me da un recibo, por favor?", "intent": "ask_receipt" },
+  { "ctx": "rent", "say": "Ya le pagué por transferencia", "intent": "paid_already", "not": ["pay_rent", "pay_ctx"], "note": "trap: past tense" },
+  { "ctx": "rent", "say": "Se la pago la próxima semana", "intent": "pay_later", "not": ["pay_rent", "pay_ctx"], "note": "trap: later" },
+  { "ctx": "rent", "say": "¿Cuánto es?", "intent": "any", "not": ["pay_rent", "pay_ctx", "yn:yes"], "note": "trap: price question" },
+
+  { "ctx": "closing", "say": "¡Que le vaya muy bien en su viaje!", "intent": "trip_wish" }
+] }
