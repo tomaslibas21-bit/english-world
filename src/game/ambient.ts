@@ -6,7 +6,9 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { createCharacter, type GameCharacter } from "./characters";
 import { STYLED, IS_TOON, vertexColorMaterial, makeOutline, outlineColorFor } from "./style";
 import { carGeometry as styledCarGeometry } from "./world/styled";
-import { carGeometry } from "./world/car";
+import { carGeometry, mxTaxiParts, colectivoParts, busParts, VEHICLE_LENGTH } from "./world/car";
+import { colourMerge } from "./world/util";
+import { THEME, type Vehicle } from "./world/theme";
 import type { NavGrid } from "./nav";
 import type { HairStyle, Look } from "../content/npcs";
 import { rand, type Colliders } from "./world/util";
@@ -60,6 +62,15 @@ export class Chatter {
 interface Car {
   mesh: THREE.Mesh; lane: number; dir: 1 | -1; x: number; from: number; to: number;
   speed: number; max: number; hidden: number; grow: number;
+  /** How long it is (a car: CAR.length), and how far its front is ahead of a car's from the middle. */
+  len: number; front: number;
+}
+
+/** A vehicle of the edition's traffic (theme.ts) other than a car, as one vertex-coloured geometry. */
+function vehicleGeometry(kind: Exclude<Vehicle, "car">, color: string) {
+  if (kind === "taxi") return colourMerge(mxTaxiParts(THEME.taxi?.body ?? "#f4f6f8", THEME.taxi?.trim ?? "#1f8a4c"));
+  if (kind === "colectivo") return colourMerge(colectivoParts("#f4f6f8", color));
+  return colourMerge(busParts("#f4f6f8", "#1f8fa3", 7));
 }
 
 const SKINS = ["#f2d3bd", "#f6dcc8", "#d9a47e", "#c68e63", "#a0694a", "#6e4630", "#4f3223"];
@@ -130,7 +141,9 @@ export class Ambient {
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
       const color = CAR_COLORS[i % CAR_COLORS.length];
-      const mesh = new THREE.Mesh(STYLED ? styledCarGeometry(color) : carGeometry(color), carMat);
+      // the edition's own vehicles among the cars (theme.ts: route 7's bus, a colectivo, taxis), else a car
+      const kind = THEME.traffic[i] ?? "car";
+      const mesh = new THREE.Mesh(kind !== "car" ? vehicleGeometry(kind, color) : STYLED ? styledCarGeometry(color) : carGeometry(color), carMat);
       mesh.castShadow = true;
       if (IS_TOON) mesh.add(makeOutline(mesh, outlineColorFor(new THREE.Color(color)), 0.03));
       mesh.rotation.y = lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
@@ -140,7 +153,8 @@ export class Ambient {
       const x = lane.from + (lane.to - lane.from) * t;
       mesh.position.set(x, 0, lane.z);
       this.group.add(mesh);
-      this.cars.push({ mesh, lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1 });
+      const len = kind === "car" ? CAR.length : VEHICLE_LENGTH[kind];
+      this.cars.push({ mesh, lane: lane.z, dir: lane.dir, x, from: lane.from, to: lane.to, speed: 6, max: 7 + this.r() * 2.5, hidden: 0, grow: 1, len, front: (len - CAR.length) / 2 });
     }
   }
 
@@ -328,7 +342,7 @@ export class Ambient {
   }
 
   private blockedAhead(c: Car, x: number, z: number): number {
-    const ahead = (x - c.x) * c.dir;
+    const ahead = (x - c.x) * c.dir - c.front;
     if (ahead <= 0 || ahead > 11 || Math.abs(z - c.lane) > 1.9) return Infinity;
     return ahead;
   }
@@ -347,8 +361,9 @@ export class Ambient {
     let gap = this.blockedAhead(c, player.x, player.z);
     for (const w of this.walkers) if (w.kind === "walk") gap = Math.min(gap, this.blockedAhead(c, w.ch.root.position.x, w.ch.root.position.z));
     for (const o of this.cars) if (o !== c && o.lane === c.lane && o.hidden <= 0) {
-      const a = (o.x - c.x) * c.dir;
-      if (a > 0 && a < 16) gap = Math.min(gap, a - CAR.length + 0.7);
+      // (between two cars: half of each, CAR.length; a bus is longer)
+      const a = (o.x - c.x) * c.dir, both = (c.len + o.len) / 2;
+      if (a > 0 && a < 16 + (both - CAR.length)) gap = Math.min(gap, a - both + 0.7);
     }
     const want = gap === Infinity ? c.max : Math.max(0, Math.min(c.max, (gap - 3.4) * 1.4));
     c.speed += Math.max(-9 * dt, Math.min(3 * dt, want - c.speed));
@@ -414,7 +429,7 @@ export class Ambient {
   resolvePlayer(p: THREE.Vector3, r: number) {
     for (const c of this.cars) {
       if (c.hidden > 0 || c.mesh.scale.x < 0.5) continue;
-      const hx = 2.15, hz = 1.0;
+      const hx = c.len === CAR.length ? 2.15 : c.len / 2 + 0.05, hz = c.len === CAR.length ? 1.0 : 1.25;
       const cx = Math.max(c.x - hx, Math.min(p.x, c.x + hx)), cz = Math.max(c.lane - hz, Math.min(p.z, c.lane + hz));
       const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
       if (d2 < r * r) {

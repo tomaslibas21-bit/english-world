@@ -12,7 +12,7 @@ export interface BuildingDef {
   face: Face;
   color: string;
   trim?: string;
-  roof?: "flat" | "gable";
+  roof?: "flat" | "gable" | "palapa";
   roofColor?: string;
   style: "shop" | "house" | "civic" | "office" | "terminal" | "station" | "hotel" | "apartments" | "museum" | "restaurant" | "warehouse";
   awning?: string;
