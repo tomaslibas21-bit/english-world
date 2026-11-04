@@ -10,8 +10,7 @@
 // out-of-order twist became the classic scam twist, a pump that doesn't start at zero (zeros); snacks became the
 // attendant's checks (check_order); new: the tip.
 // Mexican-only words have a neutral twin (ahorita, checar, ticket, carro, vulcanizadora).
-//
-// NEEDS: locations.ts: gas-station is an "interior"; the conversation happens outside, at the pump (town work).
+// The place: Doña Chela at the pump beside the learner's car (theme.ts outdoorNpcs; gas-station is outdoor in locations.ts).
 
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";

@@ -1,7 +1,7 @@
 // Interiors: dollhouse-style rooms (back and side walls, a low front wall) seen from the entrance.
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
+import { Merger, mat, boxGeo, cylGeo, textTexture as plainTextTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { carParts } from "./car";
 import { THEME } from "./theme";
@@ -140,7 +140,48 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   build({ M, col, g, w, d, r, anim });
   M.build(g);
   const update = anim.length ? (t: number, dt: number) => { for (const f of anim) f(t, dt); } : undefined;
+  // someone the edition has standing outdoors (theme.ts `outdoorNpcs`: Doña Chela at the pump) is not in the room
+  const out = THEME.outdoorNpcs;
+  if (out.length) npcs = npcs.filter((n) => !out.some((o) => o.npc === n.npc));
   return { id, group: g, colliders: col, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
+}
+
+// ---------------------------------------------------------------------------
+// The edition's words on the rooms' signs and posters (theme.ts `signs`, `boards`; Maple Harbor has none, so its own
+// words are drawn exactly as before)
+
+/** A room's text in this edition: theme.ts `signs`, else the English text itself. */
+const tr = (text: string) => THEME.signs[text] ?? text;
+type TextOpts = NonNullable<Parameters<typeof plainTextTexture>[1]>;
+/** A sign's texture (util.ts textTexture) in this edition's words; a "\n" in them makes a sign of two lines. */
+function textTexture(text: string, opts: TextOpts = {}) {
+  const own = THEME.signs[text];
+  if (own === undefined) return plainTextTexture(text, opts);
+  return own.includes("\n") ? twoLineTexture(own, opts) : plainTextTexture(own, opts);
+}
+/** A sign of two lines on textTexture's plate: the first large, the second smaller and a little lighter (Spanish over
+ *  English at the airport). Drawn at twice textTexture's size, as two lines need it. */
+function twoLineTexture(text: string, opts: TextOpts) {
+  const [first, second = ""] = text.split("\n");
+  const w = (opts.w ?? 512) * 2, h = (opts.h ?? 128) * 2;
+  const family = opts.font ?? (opts.script ? "'Georgia', serif" : "'Nunito', 'Arial Rounded MT Bold', Arial, sans-serif");
+  return canvasTex(w, h, (x) => {
+    x.fillStyle = opts.bg ?? "#ffffff";
+    roundRect(x, 8, 8, w - 16, h - 16, h * 0.18);
+    x.fill();
+    if (opts.border) { x.lineWidth = h * 0.06; x.strokeStyle = opts.border; x.stroke(); }
+    x.fillStyle = opts.fg ?? "#222";
+    x.textAlign = "center"; x.textBaseline = "middle";
+    const line = (t: string, size: number, weight: number, y: number) => {
+      x.font = `${weight} ${size}px ${family}`;
+      while (x.measureText(t).width > w * 0.9 && size > 10) { size -= 2; x.font = `${weight} ${size}px ${family}`; }
+      x.fillText(t, w / 2, y);
+    };
+    line(first, h * 0.4, 800, h * 0.37);
+    x.globalAlpha = 0.85;
+    line(second, h * 0.26, 700, h * 0.75);
+    x.globalAlpha = 1;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -211,6 +252,8 @@ function rug(c: Ctx, x: number, z: number, w: number, d: number, color: string) 
   c.M.add("rug-" + color, mat(color), boxGeo(w, 0.02, d, x, 0.012, z), false, true);
 }
 function menuBoard(lines: string[], title: string, colors = { bg: "#2f3a33", fg: "#f7f3e8", accent: "#ffd166" }) {
+  const own = THEME.boards[title];
+  if (own) { title = own[0]; lines = own.slice(1); }
   const rows = lines.length;
   const H = Math.max(640, 150 + rows * 50);
   const cv = document.createElement("canvas"); cv.width = 1024; cv.height = H;
@@ -300,7 +343,7 @@ function eyeChart() {
 function lungsPoster() {
   return canvasTex(256, 320, (x) => {
     x.fillStyle = "#e3f2f7"; x.fillRect(0, 0, 256, 320);
-    x.fillStyle = "#3a86b0"; x.font = "800 30px Nunito, Arial"; x.textAlign = "center"; x.fillText("Take a deep", 128, 40); x.fillText("breath!", 128, 74);
+    x.fillStyle = "#3a86b0"; x.font = "800 30px Nunito, Arial"; x.textAlign = "center"; x.fillText(tr("Take a deep"), 128, 40); x.fillText(tr("breath!"), 128, 74);
     x.fillStyle = "#9fb8c2"; x.fillRect(120, 96, 16, 70);
     x.strokeStyle = "#9fb8c2"; x.lineWidth = 12; x.lineCap = "round";
     x.beginPath(); x.moveTo(128, 162); x.lineTo(96, 190); x.moveTo(128, 162); x.lineTo(160, 190); x.stroke();
@@ -409,7 +452,7 @@ function townMap() {
     for (const y of [60, 120, 190]) { x.beginPath(); x.moveTo(0, y); x.lineTo(384, y); x.stroke(); }
     for (const v of [60, 190, 320]) { x.beginPath(); x.moveTo(v, 36); x.lineTo(v, 256); x.stroke(); }
     x.fillStyle = "#e45b4f"; x.beginPath(); x.arc(290, 132, 11, 0, Math.PI * 2); x.fill();
-    x.fillStyle = "#2f3a40"; x.font = "800 24px Nunito, Arial"; x.textAlign = "left"; x.fillText("Maple Harbor", 14, 240);
+    x.fillStyle = "#2f3a40"; x.font = "800 24px Nunito, Arial"; x.textAlign = "left"; x.fillText(tr("Maple Harbor"), 14, 240);
     x.strokeStyle = "#1f8a70"; x.lineWidth = 8; x.strokeRect(4, 4, 376, 248);
   });
 }
@@ -418,7 +461,7 @@ function officeBoard() {
   return canvasTex(384, 224, (x) => {
     x.fillStyle = "#fbfcfd"; x.fillRect(0, 0, 384, 224);
     x.strokeStyle = "#9aa5ad"; x.lineWidth = 8; x.strokeRect(4, 4, 376, 216);
-    x.fillStyle = "#34495e"; x.font = "800 26px Nunito, Arial"; x.textAlign = "left"; x.fillText("Q4 Goals", 22, 40);
+    x.fillStyle = "#34495e"; x.font = "800 26px Nunito, Arial"; x.textAlign = "left"; x.fillText(tr("Q4 Goals"), 22, 40);
     [[0.55, "#4a90c2"], [0.8, "#2e8b57"], [0.4, "#e8743b"], [0.68, "#8e6bb0"]].forEach(([h, c], i) => { x.fillStyle = c as string; x.fillRect(30 + i * 52, 196 - (h as number) * 130, 34, (h as number) * 130); });
     x.strokeStyle = "#34495e"; x.lineWidth = 3; x.beginPath(); x.moveTo(24, 198); x.lineTo(240, 198); x.stroke();
     ["#ffd166", "#f7a7b8", "#9fe0c4", "#ffd166"].forEach((c, i) => { x.fillStyle = c; x.fillRect(262 + (i % 2) * 54, 54 + Math.floor(i / 2) * 64, 46, 46); });
@@ -479,7 +522,7 @@ function tellerStrip() {
     x.fillStyle = "#1f4f8a"; x.fillRect(0, 0, 1536, 40);
     x.fillStyle = "#c9a227"; x.fillRect(0, 0, 1536, 3); x.fillRect(0, 37, 1536, 3);
     x.fillStyle = "#ffffff"; x.font = "800 25px Nunito, Arial"; x.textAlign = "center"; x.textBaseline = "middle";
-    [-3.3, 0, 3.3].forEach((gx, i) => x.fillText(`Teller ${i + 1}`, ((gx + 4.95) / 9.9) * 1536, 21));
+    [-3.3, 0, 3.3].forEach((gx, i) => x.fillText(`${tr("Teller")} ${i + 1}`, ((gx + 4.95) / 9.9) * 1536, 21));
   });
 }
 /** A post office poster: a sheet of stamps ("Stamps sold here") or a postcard of the harbour ("Send a postcard!"). */
@@ -488,20 +531,20 @@ function postPoster(kind: "stamps" | "postcard") {
     x.fillStyle = kind === "stamps" ? "#2c4f8f" : "#fdf3df"; x.fillRect(0, 0, 200, 260);
     x.textAlign = "center"; x.font = "800 24px Nunito, Arial";
     if (kind === "stamps") {
-      x.fillStyle = "#ffffff"; x.fillText("STAMPS", 100, 36); x.font = "700 18px Nunito, Arial"; x.fillText("sold here", 100, 60);
+      x.fillStyle = "#ffffff"; x.fillText(tr("STAMPS"), 100, 36); x.font = "700 18px Nunito, Arial"; x.fillText(tr("sold here"), 100, 60);
       ["#e45b4f", "#f2c14e", "#6fbf73", "#4a7bb7", "#b5838d", "#f28c28"].forEach((col, i) => {
         const sx = 26 + (i % 3) * 52, sy = 84 + Math.floor(i / 3) * 74;
         x.fillStyle = "#ffffff"; x.fillRect(sx, sy, 46, 62);
         x.fillStyle = col; x.fillRect(sx + 6, sy + 6, 34, 40);
-        x.fillStyle = "#2c4f8f"; x.font = "800 11px Arial"; x.fillText("USA", sx + 23, sy + 58);
+        x.fillStyle = "#2c4f8f"; x.font = "800 11px Arial"; x.fillText(tr("USA"), sx + 23, sy + 58);
       });
-      x.fillStyle = "#ffd166"; x.font = "800 20px Nunito, Arial"; x.fillText("Forever", 100, 246);
+      x.fillStyle = "#ffd166"; x.font = "800 20px Nunito, Arial"; x.fillText(tr("Forever"), 100, 246);
     } else {
       x.fillStyle = "#8fd3f0"; x.fillRect(16, 16, 168, 130);
       x.fillStyle = "#3a86b0"; x.fillRect(16, 104, 168, 42);
       x.fillStyle = "#ffffff"; x.fillRect(120, 46, 18, 60); x.fillStyle = "#e45b4f"; x.fillRect(120, 46, 18, 12); x.fillRect(120, 76, 18, 10); // the lighthouse
       x.fillStyle = "#f2c14e"; x.beginPath(); x.arc(52, 48, 16, 0, Math.PI * 2); x.fill();
-      x.fillStyle = "#e45b4f"; x.fillText("Send a", 100, 184); x.fillText("postcard!", 100, 214);
+      x.fillStyle = "#e45b4f"; x.fillText(tr("Send a"), 100, 184); x.fillText(tr("postcard!"), 100, 214);
       x.strokeStyle = "#c8a27a"; x.lineWidth = 6; x.strokeRect(3, 3, 194, 254);
     }
   });
@@ -512,7 +555,8 @@ function policeBoard() {
     x.fillStyle = "#c19564"; x.fillRect(0, 0, 440, 260);
     for (let i = 0; i < 260; i++) { x.fillStyle = i % 2 ? "rgba(110,70,30,0.22)" : "rgba(255,240,210,0.18)"; x.fillRect((i * 97) % 440, (i * 53) % 260, 3, 3); }
     x.strokeStyle = "#6b4a2a"; x.lineWidth = 12; x.strokeRect(6, 6, 428, 248);
-    const paper = (px: number, py: number, w: number, h: number, bg: string, title: string, tc: string, rot: number, draw?: () => void) => {
+    const paper = (px: number, py: number, w: number, h: number, bg: string, english: string, tc: string, rot: number, draw?: () => void) => {
+      const title = tr(english);
       x.save(); x.translate(px + w / 2, py + h / 2); x.rotate(rot); x.translate(-w / 2, -h / 2);
       x.fillStyle = "rgba(0,0,0,0.18)"; x.fillRect(3, 4, w, h);
       x.fillStyle = bg; x.fillRect(0, 0, w, h);
@@ -523,7 +567,7 @@ function policeBoard() {
     };
     paper(22, 24, 116, 140, "#ffffff", "MISSING", "#c62828", -0.04, () => {
       x.fillStyle = "#8e9196"; x.fillRect(28, 60, 60, 34); x.fillRect(74, 44, 28, 26); x.fillRect(32, 92, 10, 18); x.fillRect(74, 92, 10, 18); // a gray dog
-      x.fillStyle = "#1d1d1d"; x.fillRect(96, 52, 5, 5); x.font = "700 12px Arial"; x.fillText("Call 555-0134", 58, 128);
+      x.fillStyle = "#1d1d1d"; x.fillRect(96, 52, 5, 5); x.font = "700 12px Arial"; x.fillText(tr("Call 555-0134"), 58, 128);
     });
     paper(158, 28, 124, 96, "#ffe9a8", "BIKE SAFETY", "#2a3f66", 0.03, () => {
       x.strokeStyle = "#2a3f66"; x.lineWidth = 4; for (const cx of [36, 88]) { x.beginPath(); x.arc(cx, 66, 16, 0, Math.PI * 2); x.stroke(); }
@@ -531,7 +575,7 @@ function policeBoard() {
     });
     paper(300, 22, 118, 146, "#f4ecd8", "WANTED", "#1d1d1d", 0.05, () => {
       x.fillStyle = "#6b5a48"; x.beginPath(); x.arc(59, 72, 24, 0, Math.PI * 2); x.fill(); x.fillRect(27, 96, 64, 30);
-      x.fillStyle = "#1d1d1d"; x.font = "800 13px Arial"; x.fillText("$500 REWARD", 59, 140);
+      x.fillStyle = "#1d1d1d"; x.font = "800 13px Arial"; x.fillText(tr("$500 REWARD"), 59, 140);
     });
     paper(160, 146, 128, 96, "#d8ecff", "NEIGHBORHOOD WATCH", "#2a3f66", -0.03, () => {
       x.fillStyle = "#2a3f66"; x.beginPath(); x.ellipse(64, 60, 30, 16, 0, 0, Math.PI * 2); x.fill();
@@ -564,7 +608,7 @@ const B: Record<string, () => Interior> = {
     rug(c, 0, 1, 6, 3.5, "#e8c07a");
   }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0, ax: -1.2, az: -2.05 }], { floorKind: "wood", accent: "#8a5a3c", warm: true }),
 
-  trattoria: () => room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
+  trattoria: () => THEME.restaurant === "yucateco" ? cocina() : room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
     c.M.add("host-stand", mat("#5a3a2a"), boxGeo(0.9, 1.1, 0.6, -5.5, 0.55, 4.2)); c.col.addBox(-5.5, 4.2, 0.9, 0.6);
     for (const [tx, tz] of [[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [0, 1.5], [6.5, -0.8]]) table(c, tx, tz, { cloth: "#c0392b", chairs: 2, w: 1.1, d: 1.1 });
     for (const [tx, tz] of [[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [0, 1.5]]) c.M.add("candle", mat("#fff3c4", { emissive: "#c99a2e" }), cylGeo(0.04, 0.04, 0.18, tx, 0.88, tz, 6), false);
@@ -603,6 +647,7 @@ const B: Record<string, () => Interior> = {
     mannequin(c, S, -6.6, -4.3, "#e76f51", "#264653");
     mannequin(c, S, -1.2, -3.9, "#2a9d8f", "#3d405b");
     mannequin(c, S, 6.9, 0.8, "#f2cc8f", "#5c4b3a");
+    if (THEME.roomExtras.guayabera) guayabera(c, S, -2.4, 4.7);
     foldedTable(c, S, -6.7, 0.8, ["#457b9d", "#f2cc8f", "#81b29a", "#e07a5f", "#f4f1ea", "#8e6bb0"]);
     foldedTable(c, S, 4.2, 1.0, ["#e76f51", "#2a9d8f", "#e9c46a", "#3d5a80", "#f4f1ea", "#b5838d"]);
     for (const y of [0.4, 0.85, 1.3, 1.75]) {
@@ -667,6 +712,7 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 4; i++) S.add(boxGeo(0.52, 0.12, 0.36, 2.6, 0.06 + i * 0.1, 5.2), "#d62828");
     c.col.addBox(2.6, 5.2, 0.55, 0.4);
     lamp(c, -4.5, 1.2, 3.4); lamp(c, 1, -1.5, 3.4); lamp(c, 3.7, 3, 3.4);
+    if (THEME.roomExtras.pharmacyDoctor) consultorioDoor(c, S);
     S.done();
   }, [{ npc: "okafor", x: 1, z: -4.8, rot: 0, ax: 1, az: -2.7 }], { floorKind: "tile", accent: "#2e8b57" }),
 
@@ -779,6 +825,7 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(7.69, -2.0, 0.62, 0.9);
     plant(c, -7.2, 5.1, 1); plant(c, -7.3, -5.2, 1.1);
     lamp(c, -3.6, 0.3, 3.4); lamp(c, 3.6, 0.3, 3.4); lamp(c, 6.3, 2.9, 3.3);
+    if (THEME.roomExtras.bankTurns) bankTurns(c, S);
     S.done();
   }, [{ npc: "aaron", x: 0, z: -4.8, rot: 0, ax: 0, az: -2.65 }], { floorKind: "stone", accent: "#1f4f8a" }),
 
@@ -977,6 +1024,7 @@ const B: Record<string, () => Interior> = {
     c.M.add("rope", mat("#8a1f2a"), boxGeo(12.6, 0.06, 0.06, -2.7, 0.9, -c.d / 2 + 1.6), false);
     c.col.addBox(-2.7, -c.d / 2 + 1.6, 12.6, 0.3);
     lamp(c, -6, -6); lamp(c, 0, -6); lamp(c, 6, 3);
+    if (THEME.roomExtras.museumStairs) museumStairs(c);
   }, [{ npc: "ben", x: -7, z: 2.5, rot: 0, ax: -7, az: 4.6 }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
 
   station: () => room("station", 26, 18, "#c8b8a0", "#efe3d0", (c) => {
@@ -986,9 +1034,19 @@ const B: Record<string, () => Interior> = {
     const board = document.createElement("canvas"); board.width = 1024; board.height = 512;
     const x = board.getContext("2d")!;
     x.fillStyle = "#101418"; x.fillRect(0, 0, 1024, 512);
-    x.fillStyle = "#ffd166"; x.font = "800 48px monospace"; x.fillText("DEPARTURES", 30, 64);
+    const own = THEME.boards.DEPARTURES;
+    x.fillStyle = "#ffd166"; x.font = "800 48px monospace"; x.fillText(own?.[0] ?? "DEPARTURES", 30, 64);
     x.font = "600 40px monospace";
-    [["7:15", "SEASIDE", "TRACK 4", "DELAYED"], ["8:05", "PORTLAND", "TRACK 2", "ON TIME"], ["9:10", "SEASIDE", "TRACK 4", "ON TIME"], ["9:40", "BOSTON", "TRACK 1", "ON TIME"], ["10:25", "SEASIDE", "TRACK 3", "ON TIME"]].forEach((row, i) => {
+    if (own) {
+      // the edition's departures (theme.ts `boards`): "time|destination|platform|status" in columns; a status that
+      // starts with "!" in red
+      x.font = "600 34px monospace";
+      own.slice(1).map((r) => r.split("|")).forEach((row, i) => {
+        const late = row[3]?.startsWith("!");
+        x.fillStyle = late ? "#ff7b72" : "#e6edf3";
+        [row[0], row[1], row[2], late ? row[3].slice(1) : row[3]].forEach((t, k) => x.fillText(t ?? "", [30, 170, 610, 800][k], 140 + i * 72));
+      });
+    } else [["7:15", "SEASIDE", "TRACK 4", "DELAYED"], ["8:05", "PORTLAND", "TRACK 2", "ON TIME"], ["9:10", "SEASIDE", "TRACK 4", "ON TIME"], ["9:40", "BOSTON", "TRACK 1", "ON TIME"], ["10:25", "SEASIDE", "TRACK 3", "ON TIME"]].forEach((row, i) => {
       x.fillStyle = row[3] === "DELAYED" ? "#ff7b72" : "#e6edf3";
       x.fillText(row.join("   "), 30, 140 + i * 72);
     });
@@ -1059,7 +1117,8 @@ const B: Record<string, () => Interior> = {
     // baggage carousel
     c.M.add("carousel", mat("#5a646e"), boxGeo(8, 0.7, 2.2, -14, 0.35, 2.5));
     c.M.add("carousel-belt", mat("#2b2f33"), boxGeo(8.2, 0.05, 2.4, -14, 0.72, 2.5), false);
-    for (let i = 0; i < 5; i++) c.M.add("suitcase-" + i, mat(["#e45b4f", "#4a7bb7", "#3d3d46", "#6fbf73", "#f2c14e"][i]), boxGeo(0.7, 0.45, 0.5, -17 + i * 1.5, 0.95, 2.1 + (i % 2) * 0.8));
+    // (with customs, the suitcases are drawn in arrivalsMx's one mesh: the officer's draw calls are paid for there)
+    if (!THEME.roomExtras.customs) for (let i = 0; i < 5; i++) c.M.add("suitcase-" + i, mat(["#e45b4f", "#4a7bb7", "#3d3d46", "#6fbf73", "#f2c14e"][i]), boxGeo(0.7, 0.45, 0.5, -17 + i * 1.5, 0.95, 2.1 + (i % 2) * 0.8));
     c.col.addBox(-14, 2.5, 8.2, 2.4);
     sign(c, "Baggage Claim · Flight 223", -14, 2.6, 4.2, 3.6, "#2b5d8a", "#ffffff");
     counter(c, -4, -8.2, 4, 1, "#e05a47", "#f2f5f8");
@@ -1089,13 +1148,18 @@ const B: Record<string, () => Interior> = {
     c.M.add("partition", mat("#c9d3dc"), boxGeo(0.3, 2.2, 6, 1, 1.1, 3)); c.col.addBox(1, 3, 0.4, 6);
     sign(c, "← Arrivals · Departures →", 1, 2.6, 6.2, 3.4, "#ffd166", "#1d3f73", 0);
     plant(c, -20.5, 11, 1.2); plant(c, 20.5, 11, 1.2); plant(c, -1, -11.5, 1);
-    for (let i = 0; i < 6; i++) lamp(c, -18 + i * 7, -2, 3.6);
+    // (with customs, the lamp over the way to the baggage desk hangs further west: Agente Medina in the conversation's
+    // picture moves its camera there)
+    for (let i = 0; i < 6; i++) lamp(c, -18 + i * 7 - (THEME.roomExtras.customs && i === 2 ? 3.2 : 0), -2, 3.6);
+    if (THEME.roomExtras.customs || THEME.roomExtras.mexicanFlag) arrivalsMx(c);
   }, [
     { npc: "diaz", x: -14, z: -8.7, rot: 0 },
     { npc: "priya", x: -4, z: -9.3, rot: 0, ax: -4, az: -7.1 },
     { npc: "kevin", x: 6, z: -9.3, rot: 0, ax: 6, az: -7.1 },
     { npc: "grant", x: 15.8, z: 0.4, rot: -Math.PI / 2 },
     { npc: "nina", x: 18.5, z: -9.4, rot: 0, ax: 18.5, az: -7.35 },
+    // customs (theme.ts roomExtras.customs): Agente Medina at her post after the baggage desk, facing it
+    ...(THEME.roomExtras.customs ? [CUSTOMS_OFFICER] : []),
   ], { floorKind: "tile", accent: "#2b5d8a" }),
 
   "car-rental": () => room("car-rental", 14, 10, "#dfe7e3", "#f1f8f5", (c) => {
@@ -1172,12 +1236,13 @@ const B: Record<string, () => Interior> = {
     wallPanel(c, textTexture("Maple Harbor Police · Front Desk", { bg: "#2a3f66", fg: "#ffffff", w: 768, h: 128 }), 0, 3.3, -c.d / 2 + 0.2, 4.6, 0.77);
     wallPanel(c, textTexture("EMERGENCY? CALL 911", { bg: "#c62828", fg: "#ffffff", w: 512, h: 128 }), -4.2, 2.3, -c.d / 2 + 0.2, 2.4, 0.6);
     c.M.add("bench", mat("#9c6b43"), boxGeo(2.6, 0.1, 0.6, -3.6, 0.5, 2.8)); c.col.addBox(-3.6, 2.8, 2.7, 0.7);
-    c.M.add("flag", mat("#b22234"), boxGeo(0.9, 0.6, 0.02, 4.8, 2.4, -c.d / 2 + 0.15), false);
+    if (!THEME.roomExtras.mexicanFlag) c.M.add("flag", mat("#b22234"), boxGeo(0.9, 0.6, 0.02, 4.8, 2.4, -c.d / 2 + 0.15), false);
     plant(c, 5, 3.6, 0.9);
     // a blue rug with the badge's star, behind the counter an officer's desk with files and a coffee mug, filing cabinets
     // with the coffee maker on top; for people waiting a notice board, a row of chairs, a water cooler and a coat rack.
     // (The way round the east end of the counter stays free.)
     const S = smalls(c);
+    if (THEME.roomExtras.mexicanFlag) flagMx(S, 4.8, 2.4, -c.d / 2 + 0.15, 0.9);
     rug(c, 0, 0.9, 4.6, 3.0, "#2a3f66");
     S.add(new THREE.TorusGeometry(0.95, 0.04, 4, 40).rotateX(Math.PI / 2).translate(0, 0.024, 0.9), "#d9dde2");
     S.add(floorStar(0.68, 0, 0.026, 0.9), "#d9dde2");
@@ -1230,7 +1295,7 @@ const B: Record<string, () => Interior> = {
   "dans-house": () => room("dans-house", 16, 12, "#a67c52", "#f7ecdc", (c) => {
     table(c, 1.5, -1.5, { cloth: "#f2efe8", chairs: 4, w: 2.6, d: 1.2 });
     for (let i = 0; i < 4; i++) c.M.add("plate", mat("#ffffff"), cylGeo(0.2, 0.2, 0.02, 0.6 + i * 0.6, 0.8, -1.5 + (i % 2 ? 0.3 : -0.3), 12), false);
-    c.M.add("lasagna", mat("#d9763a", { flat: true }), boxGeo(0.6, 0.12, 0.4, 1.5, 0.86, -1.5), false);
+    if (!THEME.roomExtras.yucatanDinner) c.M.add("lasagna", mat("#d9763a", { flat: true }), boxGeo(0.6, 0.12, 0.4, 1.5, 0.86, -1.5), false);
     c.M.add("vase", mat("#4a7bb7"), cylGeo(0.1, 0.12, 0.3, 2.6, 0.95, -1.5, 8), false);
     for (let i = 0; i < 5; i++) c.M.add("flowers", mat(["#e84a5f", "#ffd166", "#f7a072"][i % 3], { flat: true }), new THREE.SphereGeometry(0.07, 6, 4).translate(2.52 + (i % 3) * 0.08, 1.2 + (i % 2) * 0.06, -1.55 + (i % 2) * 0.08), false);
     c.M.add("kitchen", mat("#f4f4f4"), boxGeo(4, 1, 0.7, 5.2, 0.5, -5.3)); c.col.addBox(5.2, -5.3, 4, 0.7);
@@ -1242,6 +1307,7 @@ const B: Record<string, () => Interior> = {
     lamp(c, 1.5, -1.5, 3.1);
     plant(c, -7.2, -5.2, 1);
     c.M.add("coat-rack", mat("#5a3a2a"), cylGeo(0.05, 0.08, 1.8, -2.5, 0.9, 5, 6));
+    if (THEME.roomExtras.yucatanDinner) yucatanDinner(c);
   }, [{ npc: "dan", x: -1, z: 2.8, rot: Math.PI * 0.85 }, { npc: "nora", x: 4.2, z: -4.3, rot: 0.3 }], { floorKind: "wood", accent: "#6b4a3a", warm: true }),
 
   office: () => room("office", 22, 16, "#b9c2cc", "#eef3f7", (c) => {
@@ -1959,6 +2025,342 @@ function mercado(): Interior {
     }
     S.done();
   }, [{ npc: "marcus", x: -2.6, z: 0.85, rot: 0, ax: -2.6, az: 2.85 }], { floorKind: "tile", accent: "#e76f51", warm: true });
+}
+
+// ---------------------------------------------------------------------------
+// Puerto Colibrí's rooms and additions (theme.ts `restaurant`, `roomExtras`; docs/es/TOWN.md "The conversations'
+// spots"). Built only when the edition's theme asks, so Maple Harbor's rooms stay exactly as they were.
+
+/** La Cocina de Lucía (theme.ts `restaurant: "yucateco"`; s73), a Yucatecan restaurant in the trattoria's room: ochre
+ *  walls, a terracotta floor and red trim; the tables where the trattoria's stand (roomPeople.ts's diners sit at them)
+ *  with bright cloths, salsas and tortilla baskets; Lucía's stand by the door and Luis among the tables (the trattoria's
+ *  spots); jars of aguas frescas (horchata, jamaica, chaya) on a counter where the wine was; a hammock and talavera
+ *  plates on the walls, papel picado under the roof, a picture of Chichén Itzá; s73's menu in pesos. The small things
+ *  are one mesh. */
+function cocina(): Interior {
+  return room("trattoria", 18, 14, "#c0673f", "#f2cf7c", (c) => {
+    const S = smalls(c);
+    // Lucía's stand by the door, with the reservations book
+    S.add(boxGeo(0.9, 1.1, 0.6, -5.5, 0.55, 4.2), "#7a3b1d");
+    S.add(boxGeo(0.98, 0.05, 0.68, -5.5, 1.125, 4.2), "#c79a6b");
+    S.add(boxGeo(0.3, 0.02, 0.22, -5.5, 1.16, 4.15, 0.2), "#f4ecd8");
+    c.col.addBox(-5.5, 4.2, 0.9, 0.6);
+    // the tables, each with its cloth, two wooden chairs, two salsas and a basket of tortillas under a cloth
+    const CLOTHS = ["#e4007c", "#00a6a6", "#f6a800", "#7ac143", "#ff5a36", "#1f6fd1", "#6d2e9e"];
+    ([[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [0, 1.5], [6.5, -0.8]] as [number, number][]).forEach(([tx, tz], i) => {
+      tableS(c, S, tx, tz, CLOTHS[i]);
+      S.add(cylGeo(0.07, 0.05, 0.05, tx - 0.28, 0.815, tz - 0.22, 10), "#b5402a");
+      S.add(cylGeo(0.06, 0.045, 0.05, tx - 0.1, 0.815, tz - 0.3, 10), "#4f8a2f");
+      S.add(cylGeo(0.12, 0.1, 0.08, tx + 0.26, 0.83, tz - 0.16, 12), "#d9b98c");
+      S.add(cylGeo(0.125, 0.125, 0.014, tx + 0.26, 0.875, tz - 0.16, 12), CLOTHS[(i + 3) % CLOTHS.length]);
+    });
+    // aguas frescas where the wine was: a counter against the back wall with three big jars and glasses
+    S.add(boxGeo(3.0, 1.0, 0.7, 7.4, 0.5, -6.55), "#8a4a2a");
+    S.add(boxGeo(3.1, 0.06, 0.8, 7.4, 1.03, -6.55), "#e9d3a8");
+    ([["#f3ead8", 6.55], ["#8b1a3a", 7.4], ["#7fb83a", 8.25]] as [string, number][]).forEach(([col, jx]) => {
+      S.add(cylGeo(0.2, 0.17, 0.42, jx, 1.27, -6.6, 14), col);
+      S.add(cylGeo(0.205, 0.205, 0.1, jx, 1.53, -6.6, 14), "#e3f1f4");
+      S.add(cylGeo(0.215, 0.215, 0.03, jx, 1.595, -6.6, 14), "#b9c2c9");
+      S.add(cylGeo(0.012, 0.012, 0.5, jx + 0.09, 1.56, -6.56, 5), "#8a5a3c");
+      S.add(cylGeo(0.045, 0.04, 0.12, jx - 0.05, 1.12, -6.22, 8), col);
+    });
+    c.col.addBox(7.4, -6.55, 3.0, 0.7);
+    // the kitchen's swing door (where the trattoria's was), with a round window
+    S.add(boxGeo(1.6, 2.6, 0.12, -7, 1.3, -c.d / 2 + 0.1), "#7a3b1d");
+    S.add(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16).rotateX(Math.PI / 2).translate(-7, 1.75, -c.d / 2 + 0.17), "#dfeef2");
+    // the hammock on the west wall, between two hooks, and talavera plates on the back wall
+    hammock(c, S, -c.w / 2 + 0.22, -1.6, 2.0);
+    [-1.6, -0.8, 0, 0.8, 1.6].forEach((px, i) => talaveraPlate(S, px, 2.3, -c.d / 2 + 0.03, i));
+    // papel picado under the roof: two strings from the back to the front along the side walls (crossing the room
+    // they would hide the signs from the camera at the open front)
+    const PAPEL = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
+    for (const [px, k] of [[-6.7, 0], [6.7, 3]] as [number, number][]) {
+      S.add(boxGeo(0.02, 0.02, c.d - 1, px, 3.95, 0), "#f4f1ea");
+      for (let i = 0; i < 18; i++) S.add(boxGeo(0.01, 0.32, 0.26, px, 3.76 - Math.sin((i / 17) * Math.PI) * 0.2, -c.d / 2 + 0.8 + i * ((c.d - 1.6) / 17)), PAPEL[(i + k) % PAPEL.length]);
+    }
+    // agaves in clay pots in the front corners
+    agave(c, S, -8, 5.5); agave(c, S, 8, 5.5);
+    // the name, s73's menu, desserts and drinks, a picture of Chichén Itzá in a gilt frame
+    wallPanel(c, twoLineTexture("La Cocina de Lucía\n¡Buen provecho!", { bg: "#8a1f2a", fg: "#ffe8b0", script: true }), 0, 3.25, -c.d / 2 + 0.2, 4, 1);
+    wallPanel(c, menuBoard(["Sopa de lima|$110", "Panuchos o salbutes|$120", "Guacamole con totopos|$130", "Papadzules|$160", "Pollo pibil|$190", "Poc chuc|$210",
+      "Cochinita pibil · la de la casa|$220", "Tikin xic, pescado del día|$290", "Arrachera|$320"], "COCINA YUCATECA"), 4.8, 2.8, -c.d / 2 + 0.2, 3.6, 2.25);
+    wallPanel(c, menuBoard(["Flan|$75", "Caballeros pobres|$85", "Dulce de papaya|$75", "Helado de coco|$70", "Aguas frescas: horchata, jamaica, chaya|$45",
+      "Limonada natural o mineral|$50"], "POSTRES Y BEBIDAS"), c.w / 2 - 0.2, 2.7, -2.6, 2.6, 1.6, -Math.PI / 2);
+    S.add(boxGeo(1.8, 1.4, 0.05, -4, 2.6, -c.d / 2 + 0.16), "#c9a227");
+    wallPanel(c, pyramidPicture(), -4, 2.6, -c.d / 2 + 0.2, 1.6, 1.2);
+    lamp(c, -4, -3); lamp(c, 0, -3); lamp(c, 4, -3); lamp(c, 0, 1.5);
+    S.done();
+  }, [{ npc: "marco_host", x: -5.5, z: 3.2, rot: Math.PI / 2 }, { npc: "marco", x: 2, z: -1, rot: Math.PI / 2 }], { floorKind: "tile", accent: "#8a1f2a", warm: true });
+}
+
+/** A square table at one of table()'s places (its size, two chairs north and south, the same colliders), in the
+ *  smalls: a bright cloth hanging over the edges, a pedestal, wooden chairs. */
+function tableS(c: Ctx, S: Smalls, x: number, z: number, cloth: string, wood = "#8a5a3c") {
+  S.add(boxGeo(1.1, 0.06, 1.1, x, 0.76, z), cloth);
+  for (const [w, d, ox, oz] of [[1.16, 0.02, 0, 0.57], [1.16, 0.02, 0, -0.57], [0.02, 1.16, 0.57, 0], [0.02, 1.16, -0.57, 0]] as [number, number, number, number][])
+    S.add(boxGeo(w, 0.2, d, x + ox, 0.67, z + oz), cloth);
+  S.add(cylGeo(0.06, 0.08, 0.74, x, 0.37, z, 6), "#5a4636");
+  for (const a of [Math.PI / 2, (3 * Math.PI) / 2]) {
+    const cx = x + Math.cos(a) * 0.95, cz = z + Math.sin(a) * 0.95;
+    const P = (g: THREE.BufferGeometry) => g.rotateY(-a + Math.PI / 2).translate(cx, 0, cz);
+    S.add(P(boxGeo(0.45, 0.08, 0.45, 0, 0.46, 0)), wood);
+    S.add(P(boxGeo(0.45, 0.55, 0.08, 0, 0.72, 0.2)), wood);
+    for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) S.add(P(boxGeo(0.05, 0.44, 0.05, lx, 0.22, lz)), "#5a3a22");
+    c.col.addCircle(cx, cz, 0.28);
+  }
+  c.col.addBox(x, z, 1.1, 1.1);
+}
+
+/** A striped hammock hung along a west wall (at x) between two hooks at z1 and z2, sagging in the middle. */
+function hammock(c: Ctx, S: Smalls, x: number, z1: number, z2: number) {
+  const STRIPES = ["#e4007c", "#f6a800", "#00a6a6", "#ff5a36", "#7ac143"];
+  const n = 14, top = 2.15, sag = 0.9, span = z2 - z1;
+  const at = (t: number) => ({ y: top - 0.25 - Math.sin(t * Math.PI) * sag, z: z1 + 0.35 + t * (span - 0.7) });
+  for (let i = 0; i < n; i++) {
+    const a = at(i / n), b = at((i + 1) / n);
+    const len = Math.hypot(b.y - a.y, b.z - a.z), ang = Math.atan2(b.y - a.y, b.z - a.z);
+    S.add(boxGeo(0.05, 0.42, len + 0.02, 0, 0, 0).rotateX(-ang).translate(x + 0.08, (a.y + b.y) / 2 - 0.12, (a.z + b.z) / 2), STRIPES[i % STRIPES.length]);
+  }
+  for (const [hz, dir] of [[z1, 1], [z2, -1]] as [number, number][]) {
+    S.add(boxGeo(0.08, 0.08, 0.08, x, top, hz), "#3a3d42");
+    // the strings from the hook to the hammock's end
+    for (const dy of [-0.12, 0, 0.12]) {
+      const ex = at(dir > 0 ? 0 : 1), len = Math.hypot(0.35, top - ex.y + dy);
+      S.add(boxGeo(0.012, 0.012, len, 0, 0, 0).rotateX(-Math.atan2(ex.y - dy - top, 0.35 * dir)).translate(x + 0.08, (top + ex.y - dy) / 2 - 0.06, hz + 0.175 * dir), "#f4ecd8");
+    }
+  }
+  c.col.addBox(x + 0.1, (z1 + z2) / 2, 0.3, span);
+}
+
+/** A talavera plate on a wall (white, a cobalt ring and petals, a yellow middle), its face towards +z. */
+function talaveraPlate(S: Smalls, x: number, y: number, z: number, k: number) {
+  const disc = (r: number, dz: number, col: string) => S.add(new THREE.CylinderGeometry(r, r, 0.012, 20).rotateX(Math.PI / 2).translate(x, y, z + dz), col);
+  disc(0.21, 0, "#1f4e9c");
+  disc(0.18, 0.008, "#f7f3ea");
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + k * 0.3;
+    S.add(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 8).rotateX(Math.PI / 2).translate(x + Math.cos(a) * 0.11, y + Math.sin(a) * 0.11, z + 0.016), k % 2 ? "#1f4e9c" : "#2b6cb0");
+  }
+  disc(0.045, 0.02, "#f2b705");
+}
+
+/** An agave in a clay pot (the pointed leaves fanning out), with its collider. */
+function agave(c: Ctx, S: Smalls, x: number, z: number) {
+  S.add(cylGeo(0.3, 0.22, 0.48, x, 0.24, z, 12), "#b5602e");
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2, tilt = 0.45 + (i % 3) * 0.2;
+    S.add(new THREE.ConeGeometry(0.07, 0.75, 4).translate(0, 0.37, 0).rotateZ(tilt).rotateY(a).translate(x, 0.46, z), i % 2 ? "#5f8f6a" : "#6fa37a");
+  }
+  S.add(new THREE.ConeGeometry(0.06, 0.7, 4).translate(x, 0.8, z), "#6fa37a");
+  c.col.addCircle(x, z, 0.4);
+}
+
+/** Chichén Itzá's pyramid in a painted landscape (sky, jungle, the stepped pyramid and its temple). */
+function pyramidPicture() {
+  return canvasTex(320, 240, (x) => {
+    const sky = x.createLinearGradient(0, 0, 0, 150); sky.addColorStop(0, "#5fb0e8"); sky.addColorStop(1, "#f9e0a8");
+    x.fillStyle = sky; x.fillRect(0, 0, 320, 240);
+    x.fillStyle = "#ffd166"; x.beginPath(); x.arc(250, 52, 22, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#3f7d3a"; x.fillRect(0, 168, 320, 72);
+    x.fillStyle = "#2f6b33"; for (let i = 0; i < 16; i++) { x.beginPath(); x.arc(i * 21 + 6, 170, 14 + (i % 3) * 4, 0, Math.PI * 2); x.fill(); }
+    for (let k = 0; k < 9; k++) { // the steps, from the base up
+      const w = 210 - k * 20, y = 176 - k * 12;
+      x.fillStyle = k % 2 ? "#c9b48a" : "#b9a37a"; x.fillRect(160 - w / 2, y - 12, w, 12);
+    }
+    x.fillStyle = "#8f7b55"; x.fillRect(150, 68, 20, 100); // the stairway
+    x.fillStyle = "#a8936a"; x.fillRect(136, 46, 48, 22); // the temple
+    x.fillStyle = "#3a2f22"; x.fillRect(154, 54, 12, 14);
+  });
+}
+
+/** Agente Medina (`aduana`, the Spanish edition's customs officer; s65b) at her post after the baggage desk, facing it. */
+const CUSTOMS_OFFICER: NpcSpot = { npc: "aduana", x: -0.4, z: -6.5, rot: -1.74 };
+
+/** The arrivals hall in the Spanish edition (theme.ts roomExtras.customs and mexicanFlag; s65a, s65b): Mexico's flag
+ *  on two stands by immigration; customs after the baggage desk: Agente Medina's lectern, her sniffer dog sitting at
+ *  her side, and on the way out the two lanes of Mexico's airports, "Nada que declarar" and "Auto declaración" (where
+ *  duties are paid; no red-and-green light since 2024, as s65b's officer says), under one board. The lanes stand south
+ *  of the conversation's camera at the baggage desk, so they never hide Itzel or the officer. */
+function arrivalsMx(c: Ctx) {
+  const S = smalls(c);
+  if (THEME.roomExtras.mexicanFlag) { flagStand(c, S, -19.3, -11.6, 0); flagStand(c, S, -9.1, -11.6, 0); }
+  if (THEME.roomExtras.customs) {
+    // the suitcases on the carousel (as the English room's, in this mesh)
+    for (let i = 0; i < 5; i++) S.add(boxGeo(0.7, 0.45, 0.5, -17 + i * 1.5, 0.95, 2.1 + (i % 2) * 0.8), ["#e45b4f", "#4a7bb7", "#3d3d46", "#6fbf73", "#f2c14e"][i]);
+    const { x, z } = CUSTOMS_OFFICER;
+    // her lectern, between her and the baggage desk, with the customs' gold band
+    const lx = x - 0.75, lz = z + 0.05;
+    S.add(boxGeo(0.46, 1.0, 0.7, lx, 0.5, lz), "#2b3f5c");
+    S.add(boxGeo(0.5, 0.05, 0.76, 0, 0, 0).rotateZ(0.22).translate(lx, 1.04, lz), "#e6e9ee");
+    S.add(boxGeo(0.02, 0.12, 0.7, lx - 0.235, 0.82, lz), "#c9a227");
+    c.col.addBox(lx, lz, 0.56, 0.8);
+    // her sniffer dog, sitting at her side, watching the passengers come
+    sittingDog(S, x - 0.75, z + 0.95, -Math.PI / 2);
+    c.col.addCircle(x - 0.75, z + 0.95, 0.3);
+    // the lanes on the way out: belts between posts, and the board over them (both faces)
+    for (const bx of [-3.6, -2.0, -0.4]) {
+      for (const bz of [0.6, 3.2]) {
+        S.add(cylGeo(0.045, 0.045, 0.95, bx, 0.475, bz, 8), "#9aa5ad");
+        S.add(cylGeo(0.16, 0.18, 0.04, bx, 0.02, bz, 12), "#3a3d42");
+      }
+      S.add(boxGeo(0.04, 0.07, 2.6, bx, 0.88, 1.9), "#1d3f73");
+      c.col.addBox(bx, 1.9, 0.2, 2.8);
+    }
+    // (one face: the camera is always on the room's open side, to the south)
+    wallPanel(c, customsBoard(), -2.0, 3.0, 1.9, 3.4, 1.0);
+    for (const ex of [-3.5, -0.5]) S.add(cylGeo(0.01, 0.01, WALL_H - 3.5, ex, (WALL_H + 3.5) / 2, 1.9, 4), "#3a3d42");
+  }
+  S.done();
+}
+
+/** The customs board: "ADUANA · CUSTOMS" over the two lanes, Spanish over English. */
+function customsBoard() {
+  return canvasTex(1088, 320, (x) => {
+    x.fillStyle = "#1d3f73"; roundRect(x, 4, 4, 1080, 312, 26); x.fill();
+    x.fillStyle = "#ffffff"; x.textAlign = "center"; x.textBaseline = "middle";
+    x.font = "800 64px Nunito, Arial"; x.fillText("ADUANA · CUSTOMS", 544, 62);
+    const lanes: [string, string, string][] = [["#1e7b4a", "Nada que declarar", "Nothing to declare"], ["#b3261e", "Auto declaración", "Self-declaration"]];
+    lanes.forEach(([bg, es, en], i) => {
+      const x0 = 20 + i * 530;
+      x.fillStyle = bg; roundRect(x, x0, 120, 518, 182, 18); x.fill();
+      x.fillStyle = "#ffffff"; x.font = "800 50px Nunito, Arial"; x.fillText(es, x0 + 259, 182);
+      x.globalAlpha = 0.85; x.font = "700 34px Nunito, Arial"; x.fillText(en, x0 + 259, 250); x.globalAlpha = 1;
+    });
+  });
+}
+
+/** Mexico's flag, `w` wide (its sides 4:7), centred at (x, y) on a wall at z, its face towards +z (turned by rotY): green,
+ *  white and red, the eagle on its cactus as a small brown and green disc. In the smalls. */
+function flagMx(S: Smalls, x: number, y: number, z: number, w: number, rotY = 0) {
+  const h = (w * 4) / 7, sw = w / 3;
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rotY).translate(x, y, z);
+  ["#006847", "#f8f8f4", "#ce1126"].forEach((col, i) => S.add(P(boxGeo(sw, h, 0.02, (i - 1) * sw, 0, 0)), col));
+  S.add(P(new THREE.CylinderGeometry(h * 0.17, h * 0.17, 0.024, 16).rotateX(Math.PI / 2).translate(0, 0, 0.012)), "#8a5a2b");
+  S.add(P(new THREE.CylinderGeometry(h * 0.09, h * 0.09, 0.028, 12).rotateX(Math.PI / 2).translate(0, -h * 0.07, 0.016)), "#4e8a3a");
+}
+
+/** Mexico's flag on a stand (a weighted base, a gilt pole, the flag from the pole's top), its face towards rotY's +z. */
+function flagStand(c: Ctx, S: Smalls, x: number, z: number, rotY: number) {
+  S.add(cylGeo(0.24, 0.27, 0.07, x, 0.035, z, 14), "#3a3d42");
+  S.add(cylGeo(0.022, 0.022, 2.6, x, 1.33, z, 8), "#c9a227");
+  S.add(new THREE.SphereGeometry(0.055, 10, 8).translate(x, 2.67, z), "#c9a227");
+  const w = 1.1, h = (w * 4) / 7, off = w / 2 + 0.03;
+  flagMx(S, x + Math.cos(rotY) * off, 2.5 - h / 2, z - Math.sin(rotY) * off, w, rotY);
+  c.col.addCircle(x, z, 0.3);
+}
+
+/** A beagle sitting up (as dog.ts's dogs sit, in a sniffer dog's green vest), facing `heading` (0: +z). In the smalls. */
+function sittingDog(S: Smalls, x: number, z: number, heading: number) {
+  const main = "#c8873e", patch = "#6e4320", white = "#f2ede4";
+  const P = (g: THREE.BufferGeometry) => g.rotateY(heading).translate(x, 0, z);
+  S.add(P(boxGeo(0.26, 0.24, 0.5, 0, 0, 0).rotateX(-0.6).translate(0, 0.32, -0.04)), main); // the body, sitting up
+  S.add(P(boxGeo(0.28, 0.1, 0.3, 0, 0, 0).rotateX(-0.6).translate(0, 0.41, -0.08)), "#4e7a3a"); // the vest
+  S.add(P(boxGeo(0.2, 0.18, 0.06, 0, 0.36, 0.17)), white); // the chest
+  for (const s of [-1, 1]) {
+    S.add(P(boxGeo(0.07, 0.32, 0.07, s * 0.08, 0.16, 0.14)), main); // the front legs
+    S.add(P(boxGeo(0.08, 0.03, 0.1, s * 0.08, 0.015, 0.17)), white);
+    S.add(P(boxGeo(0.1, 0.13, 0.26, s * 0.12, 0.065, -0.18)), main); // the haunches, folded
+    S.add(P(boxGeo(0.06, 0.13, 0.09, s * 0.11, 0.66, 0.2).rotateZ(s * 0.25)), patch); // the ears
+  }
+  S.add(P(boxGeo(0.22, 0.2, 0.22, 0, 0.62, 0.17)), main); // the head
+  S.add(P(boxGeo(0.13, 0.1, 0.14, 0, 0.57, 0.32)), white); // the muzzle
+  S.add(P(boxGeo(0.06, 0.05, 0.04, 0, 0.6, 0.4)), "#2b2120"); // the nose
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.035, 0.035, 0.02, s * 0.06, 0.67, 0.28)), "#1a1414"); // the eyes
+  S.add(P(boxGeo(0.04, 0.04, 0.24, 0, 0.04, -0.4)), patch); // the tail, on the floor
+}
+
+/** Hilos' guayabera (s74: a white linen guayabera on the mannequin by the door): pleats down its front. */
+function guayabera(c: Ctx, S: Smalls, x: number, z: number) {
+  mannequin(c, S, x, z, "#f6f3ea", "#c8b48a");
+  for (const ox of [-0.085, 0.085]) S.add(boxGeo(0.022, 0.32, 0.02, x + ox, 1.3, z + 0.13), "#ddd6c4");
+  S.add(boxGeo(0.3, 0.02, 0.02, x, 1.16, z + 0.12), "#ddd6c4");
+}
+
+/** The pharmacy's door to the doctor's office next door (theme.ts roomExtras.pharmacyDoctor; s75: a consultorio, a
+ *  cheap visit with no appointment), in the east wall, under its sign. */
+function consultorioDoor(c: Ctx, S: Smalls) {
+  const x = c.w / 2 - 0.05, z = -3.9;
+  S.add(boxGeo(0.08, 2.3, 1.1, x, 1.15, z), "#9fd0bd");
+  for (const s of [-1, 1]) S.add(boxGeo(0.1, 2.4, 0.08, x, 1.2, z + s * 0.59), "#2e8b57");
+  S.add(boxGeo(0.1, 0.08, 1.26, x, 2.4, z), "#2e8b57");
+  S.add(boxGeo(0.06, 0.06, 0.22, x - 0.07, 1.1, z + 0.35), "#9aa5ad");
+  // its sign on the back wall by the corner (a sign beside the door would face away from the camera), pointing to it
+  wallPanel(c, twoLineTexture("Consultorio médico →\nConsulta sin cita", { bg: "#2e8b57", fg: "#ffffff" }), 5.35, 2.95, -c.d / 2 + 0.2, 2.2, 0.55);
+}
+
+/** The bank's turns (theme.ts roomExtras.bankTurns; s78): the turn-ticket machine by the door under "Turnos", the
+ *  display calling the turns to the windows ("¿Turno A-27?") and the board with the dollar's rate (bought at $17.20,
+ *  sold at $18.10). */
+function bankTurns(c: Ctx, S: Smalls) {
+  const mx = -2.7, mz = 4.9;
+  S.add(boxGeo(0.46, 1.6, 0.34, mx, 0.8, mz), "#1f4f8a");
+  S.add(boxGeo(0.36, 0.24, 0.02, 0, 0, 0).rotateX(-0.3).translate(mx, 1.12, mz + 0.18), "#8fc3e0");
+  S.add(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 12).rotateX(Math.PI / 2).translate(mx, 0.9, mz + 0.18), "#e45b4f");
+  S.add(boxGeo(0.18, 0.02, 0.03, mx, 0.76, mz + 0.18), "#1d1d1d");
+  S.add(boxGeo(0.07, 0.004, 0.12, mx + 0.03, 0.752, mz + 0.24), "#ffffff");
+  c.col.addBox(mx, mz, 0.5, 0.4);
+  S.add(boxGeo(0.06, 0.22, 0.06, mx, 1.71, mz), "#1f4f8a");
+  wallPanel(c, plainTextTexture("Turnos", { bg: "#c9a227", fg: "#1f2f4f", w: 256, h: 96 }), mx, 1.93, mz + 0.04, 0.8, 0.3);
+  wallPanel(c, canvasTex(384, 128, (x) => {
+    x.fillStyle = "#101418"; x.fillRect(0, 0, 384, 128);
+    x.fillStyle = "#ff8a3d"; x.font = "800 40px monospace"; x.textAlign = "center"; x.textBaseline = "middle";
+    x.fillText("TURNO  A-27", 192, 40); x.fillText("VENTANILLA 2", 192, 92);
+  }), -6.2, 2.75, -c.d / 2 + 0.05, 1.5, 0.5);
+  wallPanel(c, canvasTex(384, 256, (x) => {
+    x.fillStyle = "#1f4f8a"; x.fillRect(0, 0, 384, 256);
+    x.strokeStyle = "#c9a227"; x.lineWidth = 8; x.strokeRect(4, 4, 376, 248);
+    x.textAlign = "center"; x.fillStyle = "#c9a227"; x.font = "800 34px Nunito, Arial"; x.fillText("TIPO DE CAMBIO", 192, 50);
+    x.fillStyle = "#ffffff"; x.font = "800 30px Nunito, Arial"; x.fillText("Dólar (USD)", 192, 104);
+    x.font = "700 30px Nunito, Arial"; x.fillText("Compra  $17.20", 192, 160); x.fillText("Venta  $18.10", 192, 212);
+  }), 6.2, 2.6, -c.d / 2 + 0.05, 1.3, 0.87);
+}
+
+/** The museum's stairs (theme.ts roomExtras.museumStairs; s70: the new exhibition, "Colores de la noche", is upstairs on
+ *  the right): a flight up along the east wall towards the back, with a handrail, and the exhibition's sign at its foot. */
+function museumStairs(c: Ctx) {
+  const S = smalls(c);
+  const x0 = 11.0, x1 = 12.8, steps = 14, rise = 0.28, run = 0.66, foot = 1.4, cx = (x0 + x1) / 2;
+  for (let k = 0; k < steps; k++) {
+    const h = (k + 1) * rise, sz = foot - k * run - run / 2;
+    S.add(boxGeo(x1 - x0, h, run, cx, h / 2, sz), k % 2 ? "#ddd5c7" : "#d2c9b9");
+    S.add(boxGeo(x1 - x0 + 0.02, 0.03, 0.05, cx, h + 0.015, sz + run / 2 - 0.025), "#9c8f7a");
+  }
+  const top = steps * rise, back = -c.d / 2, zTop = foot - steps * run;
+  S.add(boxGeo(x1 - x0, top, zTop - back, cx, top / 2, (zTop + back) / 2), "#d2c9b9"); // the landing
+  // the handrail on the open (west) side: posts on every other step and the rail along the slope
+  for (let k = 0; k < steps; k += 2) S.add(cylGeo(0.025, 0.025, 0.9, x0 + 0.06, (k + 1) * rise + 0.45, foot - k * run - run / 2, 6), "#6b5a48");
+  const len = Math.hypot(steps * run, steps * rise), ang = Math.atan2(rise, run);
+  S.add(boxGeo(0.06, 0.05, len, 0, 0, 0).rotateX(ang).translate(x0 + 0.06, rise + 0.9 + (steps * rise) / 2 - rise / 2, foot - run / 2 - (steps * run) / 2 + run / 2), "#6b5a48");
+  c.col.addBox(cx, (foot + back) / 2, x1 - x0 + 0.2, foot - back);
+  // the exhibition's sign hangs over the stairs' foot, towards the room's open side (where the camera always is)
+  wallPanel(c, twoLineTexture("Colores de la noche ↑\nNueva exposición · planta alta", { bg: "#2b2d6e", fg: "#ffd166" }), cx, 2.75, foot + 0.1, 2.0, 0.5);
+  for (const s of [-0.85, 0.85]) S.add(cylGeo(0.008, 0.008, WALL_H - 3.0, cx + s, (WALL_H + 3.0) / 2, foot + 0.1, 4), "#3a3d42");
+  S.done();
+}
+
+/** Diego and Natalia's dinner (theme.ts roomExtras.yucatanDinner; s85: cochinita pibil with tortillas, red onion and
+ *  habanero salsa, agua de jamaica): on their table instead of the lasagna; and Michi the cat asleep on the sofa. */
+function yucatanDinner(c: Ctx) {
+  const S = smalls(c);
+  const y = 0.79; // the table top (table() at 1.5, -1.5)
+  S.add(new THREE.CylinderGeometry(0.28, 0.22, 0.07, 18).scale(1.1, 1, 0.75).translate(1.5, y + 0.035, -1.5), "#9c4a26");
+  S.add(new THREE.SphereGeometry(0.25, 12, 8).scale(1.05, 0.24, 0.66).translate(1.5, y + 0.07, -1.5), "#c2502a");
+  for (let i = 0; i < 7; i++) S.add(boxGeo(0.06, 0.012, 0.018, 1.36 + (i % 4) * 0.09, y + 0.125, -1.58 + Math.floor(i / 4) * 0.13, i * 0.7), "#d9668f");
+  S.add(cylGeo(0.13, 0.11, 0.09, 0.55, y + 0.045, -1.18, 12), "#d9b98c"); // tortillas in their basket
+  S.add(cylGeo(0.135, 0.135, 0.016, 0.55, y + 0.095, -1.18, 12), "#e4007c");
+  S.add(cylGeo(0.06, 0.045, 0.05, 1.0, y + 0.025, -1.56, 10), "#f77f00"); // habanero salsa
+  S.add(cylGeo(0.05, 0.05, 0.02, 0.86, y + 0.01, -1.7, 10), "#ffffff");
+  for (let i = 0; i < 3; i++) S.add(new THREE.SphereGeometry(0.03, 6, 4).scale(1, 0.6, 1).translate(0.82 + i * 0.04, y + 0.03, -1.7), "#7cb518"); // lime
+  S.add(cylGeo(0.085, 0.09, 0.26, 2.2, y + 0.13, -1.5, 12), "#8b1a3a"); // agua de jamaica in its jug
+  S.add(cylGeo(0.088, 0.088, 0.04, 2.2, y + 0.28, -1.5, 12), "#e3f1f4");
+  // Michi, an orange tabby, curled up asleep on the sofa
+  const mx = -4.6, mz = 2.62, my = 0.58;
+  S.add(new THREE.SphereGeometry(0.17, 12, 8).scale(1.25, 0.6, 1).translate(mx, my + 0.09, mz), "#e08a3c");
+  S.add(new THREE.SphereGeometry(0.09, 10, 8).translate(mx + 0.17, my + 0.12, mz + 0.08), "#e08a3c");
+  for (const s of [-1, 1]) S.add(new THREE.ConeGeometry(0.03, 0.06, 4).translate(mx + 0.17 + s * 0.04, my + 0.21, mz + 0.06), "#c06a2a");
+  S.add(new THREE.TorusGeometry(0.15, 0.03, 6, 14, Math.PI * 1.2).rotateX(Math.PI / 2).translate(mx, my + 0.04, mz), "#c06a2a");
+  for (let i = 0; i < 3; i++) S.add(boxGeo(0.02, 0.012, 0.16, mx - 0.08 + i * 0.08, my + 0.19, mz, 0), "#b8611f");
+  S.done();
 }
 
 export function getInterior(loc: string): Interior | null {

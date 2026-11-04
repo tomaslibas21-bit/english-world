@@ -181,6 +181,138 @@ The conversations name places and say where they are; the 3D town must agree (an
 6. Check it (docs/es/PLAN.md "Acceptance": the town checks), at desktop size and at phone size (375×812), with
    screenshots for the review.
 
+## Done: the rooms and every conversation's spot (tasks 6 and 7; 4 Nov 2026)
+
+Every Spanish word and addition in the rooms is switched on by the Spanish theme (`signs`, `boards`, `restaurant`,
+`roomExtras`, `outdoorNpcs`, `spotCars` in `src/game/world/theme.ts`: all empty or off in Maple Harbor's), so the
+English rooms are built exactly as before; their views were compared pixel by pixel (below).
+
+- **Every room's signs and posters in Spanish** (task 7): the texts of interiors.ts's `sign()` and `textTexture()` and
+  the words drawn on its posters go through `THEME.signs` (an English text → its Spanish), the menus and the bus
+  terminal's departures board through `THEME.boards` (by the English board's title). The words follow the
+  conversations: Café La Ceiba's board has s72's drinks, pan dulce and peso prices and Mariana's Wi-Fi password; the
+  terminal's board s67a's morning buses and andenes and the 5:15 bus; the bank's windows are "Ventanilla 1 · 2 · 3";
+  the post office does "Paquetería · Timbres"; the pharmacy "Surtimos recetas", "Recetas" and "Caja"; the apartments
+  are on the "primer piso" (s81: one flight up); Hilos has "¡OFERTAS! HASTA 30%" (s74: 20 or 30% off); the police
+  board's papers, the clinic's poster, the gym's walls and the office's (Elena's door, p28b) in Spanish too.
+- **The airport** (task 6): Spanish over English on two-line signs ("Migración · Mexicanos | Extranjeros /
+  Immigration…", "Reclamo de equipaje · Vuelo PC 482 / Baggage claim…", "Servicio de equipaje", "Documentación /
+  Check-in", "Filtro de seguridad / Security", "Sala 4 · Vuelo 223 a Ciudad de México / Gate 4…", "← Llegadas ·
+  Salidas →"), Mexico's flag on two stands by immigration, and **customs** after the baggage desk: Agente Medina
+  (`aduana`) at her lectern facing the desk, her beagle in a green vest sitting beside her, and on the way out the two
+  lanes under one board, "Nada que declarar / Nothing to declare" and "Auto declaración / Self-declaration". **No
+  red-and-green light**, unlike this task's first wording: s65b's officer says "Aquí ya no hay semáforo" (Cancún's
+  model since 2024; docs/es/reviews/s65b-baggage.md). s65b now lists `npcs: ["aduana"]`, so its camera frames her
+  with Itzel and the learner; the lanes stand south of that camera, and the lamp over the way to the desk hangs 3 m
+  further west (it hung in the picture). The carousel's suitcases are drawn in the customs mesh, which pays for her
+  draw calls.
+- **La Cocina de Lucía** (s73): `restaurant: "yucateco"` builds a Yucatecan restaurant in the trattoria's room
+  (`cocina()` in interiors.ts): ochre walls and a terracotta floor, the trattoria's tables (the diners sit where they
+  sat) with bright cloths, salsas and tortilla baskets, Lucía's stand and Luis's spot as before, jars of aguas frescas
+  where the wine was, a hammock, talavera plates, papel picado along the side walls (across the room it hid the signs
+  from the camera), a picture of Chichén Itzá, s73's dishes, desserts and drinks with their prices. Outside, its
+  awning is red, "la del toldo rojo" of s62's directions (`buildings.trattoria.awning`: the police's red, so no new
+  draw call).
+- **Doña Chela at the pump** (s71b): `gas-station` is an outdoor place in the Spanish locations.ts; the theme puts
+  `dot` beside pump 2 at the learner's car (a parked car facing the street), and the learner talks to her from behind
+  the car. A character the theme places outdoors is left out of her room (interiors.ts `room()`); the shop has its own
+  cashier (roomPeople.ts), "Tienda El Faro".
+- **The other places the conversations name**: the pharmacy's door to the consultorio next door, "Consultorio médico
+  → · Consulta sin cita" (s75); the bank's turn machine "Turnos", the display "TURNO A-27 · VENTANILLA 2" and the
+  dollar's rate, $17.20 / $18.10 (s78); stairs up along the museum's east wall to the new exhibition, "Colores de la
+  noche ↑ · planta alta" (s70: upstairs, on the right), the partition's sign now "Colección permanente"; cochinita
+  pibil, tortillas, habanero salsa and agua de jamaica on Diego and Natalia's table and Michi the cat on the sofa (s85);
+  the white guayabera on a mannequin by Hilos' door (s74); Mexico's flag at the police front desk (s91b).
+- **Draw calls** (1280×800, the views of `tools/es-tour.mjs --mode=rooms`, Spanish before → after): the bank's door
+  view 39 → 42 (+8%), the museum 61 → 64, the pharmacy 43 → 44, Diego's house 41 → 42, the airport 66 → 65 with Agente
+  Medina, the police 30 → 29; La Cocina de Lucía 30 (the trattoria 49); every other room unchanged. The gas pump's
+  talk spot outdoors: 154.
+- **Maple Harbor unchanged**: the 72 frozen views (23 rooms from the door and at every person's talk spot, the 8
+  outdoor talk spots) are pixel-identical before and after, with the same draw calls; `tools/fingerprint.ts` identical.
+
+### Every conversation's spot
+
+`tools/es-tour.mjs` walks to every conversation as the game does (the objective, the place's door or drop-off, the walk
+in, the start on arrival; calls from the phone) and takes a screenshot at 1280×800 and 375×812, with a table of who
+stands where (`tour.md`). Rerun it after a change to the town (it reads the conversations from the game, so new ones
+are included):
+
+```sh
+VITE_EDITION=es npx vite --port 8097 --strictPort &
+node tools/es-tour.mjs --url=http://localhost:8097 --out=<dir> --pw=<playwright-core>   # the tour, both sizes
+npx vite --port 8098 --strictPort &                                                    # Maple Harbor's rooms:
+node tools/es-tour.mjs --mode=rooms --url=http://localhost:8098 --out=<before>         #   before a change
+node tools/es-tour.mjs --mode=rooms --url=http://localhost:8098 --out=<after> --compare=<before>
+```
+
+(Playwright: `--pw=<the playwright-core package>` unless it is in node_modules; it uses the full Chromium, drawing
+on the GPU; compare runs made with the same `--gl` and `--rooms`.)
+
+The 45 conversations on 4 Nov 2026 (after the outdoor town's merge), each reached and started at both sizes
+(`✓`). "Learner at": where the walk ended, in the room's coordinates (x east, z towards the open front, from the
+room's middle) or the town's (layout.ts), and how far the conversation's speakers stand from the learner. p27, p28,
+p28b, p29 and p30 come with their English places (Línea Clara, El Muelle's kitchen, Elena's office, Las Palmas,
+Diego's house): their rooms and people are in place and their signs in Spanish; the tour includes them once they
+land.
+
+| Conversation | Place | Who and where | Learner at (x, z) | Tour |
+|---|---|---|---|---|
+| s65a-passport | Aeropuerto de Puerto Colibrí | Oficial Ramírez: the immigration booths | (-13.9, -7.2) room · Oficial Ramírez 1.5 m | ✓ walked in |
+| s65b-baggage | Aeropuerto de Puerto Colibrí | Itzel, Agente Medina: the baggage desk; customs just after it | (-3.9, -6.9) room · Itzel 2.4 m, Agente Medina 3.5 m | ✓ walked in |
+| s66-taxi | Sitio de Taxis | Don Rigo: the sitio on the main street, by his taxi | (123.5, -2.5) town · Don Rigo 1.4 m | ✓ walked in |
+| s68-hotel | Hotel Mar Azul | Fernanda: the reception desk | (0.0, -3.2) room · Fernanda 2.4 m | ✓ walked in |
+| s62-visitor-center | Información Turística | Don Chuy: the information counter | (0.0, -2.1) room · Don Chuy 2.0 m | ✓ walked in |
+| s72-cafe | Café La Ceiba | Mariana: the counter | (-1.2, -2.0) room · Mariana 2.2 m | ✓ walked in |
+| s69-local | Zócalo · Tianguis | Doña Carmen: her bench by the kiosco | (18.1, -21.0) town · Doña Carmen 2.2 m | ✓ walked in |
+| s70-museum | Museo de la Costa Maya | Iván, Don Arturo: the ticket desk; the guard by the paintings | (-6.9, 4.6) room · Iván 2.1 m, Don Arturo 14.6 m | ✓ walked in |
+| s32-mercado | Mercado Municipal | Doña Lupe: her fruit and vegetable stall | (-2.5, 3.0) room · Doña Lupe 2.2 m | ✓ walked in |
+| s73-restaurant | La Cocina de Lucía | Lucía, Luis: her stand by the door; Luis among the tables | (-4.5, 3.4) room · Lucía 1.0 m, Luis 7.8 m | ✓ walked in |
+| s81-apartment | Departamentos Las Palmas | Don Ernesto: in the empty apartment | (2.2, -1.4) room · Don Ernesto 1.5 m | ✓ walked in |
+| s82-neighbor | Departamentos Las Palmas | Doña Lupita: her door in the hallway | (-6.7, -3.8) room · Doña Lupita 1.4 m | ✓ walked in |
+| s78-bank | Banco del Puerto | Ricardo: the teller's window | (0.1, -2.4) room · Ricardo 2.4 m | ✓ walked in |
+| s79-post | Oficina de Correos | Gloria: the counter | (0.1, -2.0) room · Gloria 2.4 m | ✓ walked in |
+| s75-pharmacy | Farmacia del Puerto | Don Héctor: the counter | (1.0, -2.5) room · Don Héctor 2.3 m | ✓ walked in |
+| s74-clothes | Boutique Hilos | Valeria: the till | (4.2, -2.4) room · Valeria 2.2 m | ✓ walked in |
+| s77-salon | Estética Tijeras | Paty: beside her chair | (-1.5, -1.0) room · Paty 1.3 m | ✓ walked in |
+| s76-dentist-call | phone call | Lorena: on the phone |  | ✓ the phone |
+| s80-support-call | phone call | Karla, NetWave: on the phone |  | ✓ the phone |
+| s35-gym | Gimnasio Colibrí | Mónica: by the bench press | (4.1, -1.4) room · Mónica 1.3 m | ✓ walked in |
+| s87-interview | Línea Clara | Licenciada Salinas: the meeting room's table | (-5.6, -6.8) room · Licenciada Salinas 1.4 m | ✓ walked in |
+| s88-first-day | Línea Clara | María: the open-plan office | (4.3, 3.2) room · María 1.4 m | ✓ walked in |
+| s89-video-call | phone call | Sofía, Pablo, Sara: on the phone |  | ✓ the phone |
+| s90-running-late | phone call | Ingeniero Montes: on the phone |  | ✓ the phone |
+| s34-meeting | Línea Clara | Sofía, Pablo, Sara: the team room's table (Sara on its screen) | (8.6, -4.3) room · Sofía 2.6 m, Pablo 2.6 m | ✓ walked in |
+| s63-party | Casa de Ximena | Ximena, Marcos: the backyard | (-46.0, 61.0) town · Ximena 1.3 m, Marcos 5.0 m | ✓ walked in |
+| s83-invite-call | phone call | Andrea: on the phone |  | ✓ the phone |
+| s86-old-friend | Zócalo · Tianguis | Paola: the zócalo | (35.1, -37.0) town · Paola 1.5 m | ✓ walked in |
+| s85-dinner | Casa de Diego y Natalia | Diego, Natalia: the front door; Natalia in the kitchen | (-0.2, 4.1) room · Diego 1.5 m, Natalia 9.5 m | ✓ walked in |
+| s84-date | Restaurante El Muelle | Santiago or Camila (the learner's choice): the middle table | (0.0, -2.2) room · Santiago 2.2 m | ✓ walked in |
+| s33-small-talk | Parada · Calle Ceiba | Don Pancho: the bus shelter | (-7.7, 43.1) town · Don Pancho 0.8 m | ✓ walked in |
+| s67a-tickets | Terminal de Autobuses | Don Raúl: the ticket window | (-6.0, -4.8) room · Don Raúl 2.2 m | ✓ walked in |
+| s67b-bus | Terminal de Autobuses | Ana: the bus's door (route 7) | (8.4, -0.1) room · Ana 1.3 m | ✓ walked in |
+| s71a-rental | Renta de Autos Colibrí | Andrés: the counter | (0.1, -1.5) room · Andrés 2.3 m | ✓ walked in |
+| s71b-gas | Gasolinera El Faro | Doña Chela: pump 2, by the learner's car | (111.5, 8.3) town · Doña Chela 2.2 m | ✓ walked in |
+| s64a-checkin | Aeropuerto de Puerto Colibrí | Emilio: the check-in counter | (6.0, -7.0) room · Emilio 2.3 m | ✓ walked in |
+| s64b-security | Aeropuerto de Puerto Colibrí | Oficial Torres: the filtro (the scanner) | (15.8, -0.8) room · Oficial Torres 1.2 m | ✓ walked in |
+| s64c-gate | Aeropuerto de Puerto Colibrí | Daniela: the gate desk (sala 4) | (18.4, -7.3) room · Daniela 2.1 m | ✓ walked in |
+| s91a-lost-wallet | Zócalo · Tianguis | Doña Mari: her flower stall | (14.0, -40.2) town · Doña Mari 3.1 m | ✓ walked in |
+| s91b-police | Policía Municipal | Oficial Reyes: the front desk | (0.0, -1.3) room · Oficial Reyes 2.3 m | ✓ walked in |
+| s31-doctor | Clínica Familiar | Doctora Herrera: beside the exam table | (1.5, -2.9) room · Doctora Herrera 1.4 m | ✓ walked in |
+| p25-used-car | Calle de los Cedros | Doña Margarita: her convertible in the drive | (101.0, 45.4) town · Doña Margarita 2.3 m | ✓ walked in |
+| p26-complaint | phone call | Jorge, Brenda: on the phone |  | ✓ the phone |
+| p18-startup | Brotecito | Toño: the wall of sticky notes | (1.9, -2.3) room · Toño 1.5 m | ✓ walked in |
+| p24-flood | phone call | Andrea, Don Gilberto: on the phone |  | ✓ the phone |
+
+Found on the way, left for others:
+- **The Friday music**: s62 (and the visitor center's poster) say eight o'clock; s69 says seven (`night`, `time_musica`,
+  `open_musica`).
+- **The gym**: s35's intro has Mónica greet the learner at the front desk; she stands by the bench press (as Jordan does
+  in Maple Harbor), where the workout happens.
+- **Secondary speakers out of the picture** (as in Maple Harbor; the conversation's camera frames those within 7 m of
+  the main speaker): Don Arturo in s70 (14.6 m away), Luis in s73 (7.8 m), Natalia in s85 (9.5 m). And at phone size
+  the camera doesn't widen for the narrow picture, so those beside the main speaker can fall outside it: Agente Medina
+  in s65b (framed at desktop size), Marcos in s63.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.
@@ -204,10 +336,12 @@ Each task is one area; each ends with before/after screenshots at phone size and
 5. **Done (4 Nov).** **The residential streets**: houses painted in bright colours, flat roofs, bougainvillea on the
    walls (one mesh), a corner shop ("tiendita") with a painted Coca-Cola-free sign.
 6. **The airport inside**: the signs in Spanish and English ("Migración / Immigration", "Reclamo de equipaje /
-   Baggage claim"), "Aduana" (customs) with the red-green traffic light, Mexican flags.
+   Baggage claim"), "Aduana" (customs) with the red-green traffic light, Mexican flags. **Done (4 Nov 2026)**, without
+   the light (s65b: "ya no hay semáforo"): see "Done: the rooms and every conversation's spot".
 7. **Every room's signs and posters** (interiors.ts `sign(…)` and `textTexture(…)` calls): the English texts become
    Spanish through a theme map of `{ english text: spanish text }` (one field, `signs`), so each room keeps its code.
    The café's menu board, the bank's "Turnos", the pharmacy's "Consultorio médico", the post office's "Paquetería".
+   **Done (4 Nov 2026)**: see "Done: the rooms and every conversation's spot".
 8. **Cenote and ruins** (optional, later): a cenote entrance at the west meadow (a hole with turquoise water and a
    wooden stair) for the visitor-center and local-tips conversations' destinations.
 
