@@ -184,7 +184,7 @@ The conversations name places and say where they are; the 3D town must agree (an
 ## Done: the rooms and every conversation's spot (tasks 6 and 7; 4 Nov 2026)
 
 Every Spanish word and addition in the rooms is switched on by the Spanish theme (`signs`, `boards`, `restaurant`,
-`roomExtras`, `outdoorNpcs`, `parkedCars` in `src/game/world/theme.ts`: all empty or off in Maple Harbor's), so the
+`roomExtras`, `outdoorNpcs`, `spotCars` in `src/game/world/theme.ts`: all empty or off in Maple Harbor's), so the
 English rooms are built exactly as before; their views were compared pixel by pixel (below).
 
 - **Every room's signs and posters in Spanish** (task 7): the texts of interiors.ts's `sign()` and `textTexture()` and

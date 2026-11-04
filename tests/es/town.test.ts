@@ -39,7 +39,7 @@ describe("every Spanish conversation's place", () => {
       for (const px of [104, 110, 116]) expect(Math.abs(p.x - px) > 0.55 + 0.45 || Math.abs(p.z - 5.5) > 0.4 + 0.45, `${p.x},${p.z} on pump ${px}`).toBe(true);
     }
     // the car beside her: one of the parked cars, clear of her, of the player's spot and of the street's lanes
-    const [cx, cz, rot] = THEME.parkedCars[0];
+    const [cx, cz, rot] = THEME.spotCars[0];
     expect(PARKED_CARS).toContainEqual([cx, cz, rot]);
     const hx = (Math.abs(Math.sin(rot)) > 0.5 ? CAR.length : CAR.width) / 2 + 0.1, hz = (Math.abs(Math.sin(rot)) > 0.5 ? CAR.width : CAR.length) / 2 + 0.1;
     for (const p of [chela, { x: chela.ax!, z: chela.az! }]) expect(Math.abs(p.x - cx) > hx + 0.4 || Math.abs(p.z - cz) > hz + 0.4).toBe(true);

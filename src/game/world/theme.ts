@@ -46,8 +46,9 @@ export interface TownTheme {
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
-  /** Cars parked for a conversation (added to layout.ts PARKED_CARS): x, z and heading. */
-  parkedCars: [number, number, number][];
+  /** Cars parked for a conversation (added at the end of layout.ts PARKED_CARS, so `parkedCars` below can give them a
+   *  look): x, z and heading. */
+  spotCars: [number, number, number][];
   // --- the town outdoors (town.ts) ---
   /** The middle of the square: Maple Harbor's fountain, or a kiosco (a bandstand on a platform). */
   centrepiece: "fountain" | "kiosco";
@@ -118,7 +119,7 @@ export const THEME: TownTheme = {
   restaurant: "trattoria",
   roomExtras: {},
   outdoorNpcs: [],
-  parkedCars: [],
+  spotCars: [],
   centrepiece: "fountain",
   gazebo: true,
   buildings: {},

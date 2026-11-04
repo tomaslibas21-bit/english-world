@@ -108,7 +108,7 @@ export const THEME: TownTheme = {
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
   outdoorNpcs: [{ npc: "dot", x: 111.35, z: 6.1, rot: 0.11, ax: 111.6, az: 8.3 }],
-  parkedCars: [[113, 4.6, Math.PI]],
+  spotCars: [[113, 4.6, Math.PI]],
   // --- the town outdoors ---
   centrepiece: "kiosco",
   gazebo: false,
@@ -177,6 +177,8 @@ export const THEME: TownTheme = {
     { kind: "vocho", color: "#3d9be9" }, { kind: "sedan", color: "#f4f4f4" }, { kind: "vocho", color: "#e4572e" }, { kind: "sedan", color: "#c0392b" },
     { kind: "sedan", color: "#e9c46a" }, { kind: "vocho", color: "#7ac143" }, { kind: "sedan", color: "#5e548e" }, { kind: "vocho", color: "#f2f2f2" },
     { kind: "sedan", color: "#2a9d8f" }, { kind: "vocho", color: "#f6a800" },
+    // the learner's rented car at the pump (s71b; `spotCars`)
+    { kind: "sedan", color: "#c0c7cf" },
   ],
   taxi: { body: "#f4f6f8", trim: "#1f8a4c", sign: "SITIO DE TAXIS" },
   busSign: "PARADA",

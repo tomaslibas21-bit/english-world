@@ -152,7 +152,7 @@ export const PARKED_CARS: [number, number, number][] = [
   [-80, -4.2, Math.PI / 2], [-30, -4.2, Math.PI / 2], [34, -4.2, Math.PI / 2], [88, -11.8, -Math.PI / 2], [-40, -11.8, -Math.PI / 2],
   [-60, 41.45, Math.PI / 2], [30, 34.55, -Math.PI / 2], [-66.4, 20, 0], [3.8, 60, Math.PI], [88, 41.45, Math.PI / 2],
   // the edition's own (theme.ts): none in Maple Harbor
-  ...THEME.parkedCars,
+  ...THEME.spotCars,
 ];
 
 export const TAXI = { x: 121, z: -4.8, rot: -Math.PI / 2 };
