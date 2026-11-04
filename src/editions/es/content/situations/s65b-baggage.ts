@@ -287,6 +287,8 @@ export const baggage: SituationDef = {
   order: 2,
   location: "airport",
   npc: "priya",
+  // customs after the baggage desk: Agente Medina stands at her post there (interiors.ts arrivalsMx)
+  npcs: ["aduana"],
   goal: "Report that your bag didn't arrive, describe it, and arrange for it to be delivered to where you're staying. Then go through customs.",
   intro: "The baggage claim hall at Puerto Colibrí's little airport. The belt has stopped, everyone has left, and your suitcase isn't there. You go to the baggage services desk, where Itzel can help. (Your bag: a large blue suitcase with a red stripe on the side.) Then customs is on your way out, with your backpack.",
   entities: { bagtype: BAG_TYPES, color: COLORS, size: SIZES, material: MATERIALS, city: CITIES, good: GOODS },

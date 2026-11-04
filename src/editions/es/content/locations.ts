@@ -20,7 +20,8 @@ export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries([
   L("station", "Terminal de Autobuses", "Bus station", "transport", "interior", "🚌"),
   L("bus-stop", "Parada · Calle Ceiba", "Bus stop", "transport", "outdoor", "🚌"),
   L("car-rental", "Renta de Autos Colibrí", "Car rental", "transport", "interior", "🚗"),
-  L("gas-station", "Gasolinera El Faro", "Gas station", "transport", "interior", "⛽"),
+  // outdoor: the conversation (s71b) happens at the pump, where an attendant fills the tank; the shop stays open
+  L("gas-station", "Gasolinera El Faro", "Gas station", "transport", "outdoor", "⛽"),
   L("hotel", "Hotel Mar Azul", "The hotel", "downtown", "interior", "🏨"),
   L("visitor-center", "Información Turística", "Tourist information", "downtown", "interior", "ℹ️"),
   L("museum", "Museo de la Costa Maya", "The museum", "downtown", "interior", "🖼️"),

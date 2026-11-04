@@ -40,7 +40,9 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
   "post-office": [{ x: -1.8, z: -1.6, rot: P, carry: "bag" }, { x: -6.3, z: -1.5, rot: -P / 2 }],
   threads: [{ x: -4, z: 0.75, rot: P, carry: "bag" }, { x: 6.9, z: -3.2, rot: P / 2 }],
   pharmacy: [{ x: 6.3, z: 4.1, rot: -P / 2, sit: 0.48 }, { x: -4.5, z: 0.6, rot: P }],
-  "gas-station": [{ x: -6, z: -3.55, rot: P, carry: "coffee" }, { x: 2, z: 1.4, rot: P, phone: true }],
+  "gas-station": [{ x: -6, z: -3.55, rot: P, carry: "coffee" }, { x: 2, z: 1.4, rot: P, phone: true },
+    // where the attendant pumps the gas outside (theme.ts outdoorNpcs: Doña Chela), the shop has a cashier of its own
+    ...(THEME.outdoorNpcs.some((o) => o.npc === "dot") ? [{ x: -3, z: -3.8, rot: 0, busy: "type" as const }] : [])],
   // a client in the chair Jessie works at, one under the dryer with a magazine, one waiting on the sofa
   salon: [
     { x: -3, z: -2.6, rot: P, sit: 0.8 },
@@ -74,5 +76,9 @@ export const ROOM_PEOPLE: Record<string, RoomPerson[]> = {
   museum: [{ x: -4.8, z: -7.3, rot: P }, { x: -0.6, z: -7.3, rot: P + 0.2 }, { x: -11.3, z: -1, rot: -P / 2 }],
   // passengers queuing at check-in and one waiting at the baggage desk, a step back and to the side: clear of where the
   // player stands at each counter to talk (Kevin's and Priya's ax/az in interiors.ts) and of the way there from the door
-  airport: [{ x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -2.3, z: -6.7, rot: P }],
+  airport: THEME.roomExtras.customs
+    // with customs after the baggage desk (interiors.ts arrivalsMx) the passenger waiting at the desk stands on its west
+    // side, out of the officer's way, and one more walks out through the "Nada que declarar" lane
+    ? [{ x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -6.7, z: -6.3, rot: P - 0.5 }, { x: -2.8, z: 1.7, rot: 0, carry: "bag" }]
+    : [{ x: 7, z: -5.7, rot: P, carry: "bag" }, { x: 7.3, z: -4.5, rot: P, carry: "bag" }, { x: -2.3, z: -6.7, rot: P }],
 };
