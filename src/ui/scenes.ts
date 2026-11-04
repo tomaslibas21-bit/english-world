@@ -4,11 +4,11 @@
 // shared style, real English text only where it was specified and checked (see docs/SCENE-ART.md).
 //
 // Each scene is a file in ./scene-data/, named by situation id, or "<situation id>@<npc id>" when the
-// person depends on the player (the date: Emma or Sam). Its pictures are public/scenes/<name>/*.webp,
-// with "@" written as "-" in the folder name. tools/scene-walk.ts checks the files against the
-// simulated conversations.
+// person depends on the player (the date: Emma or Sam). Its pictures are public/scenes/<name>/*.webp
+// (the Spanish edition's: public/scenes-es/, SCENE_DIR in its scene-files.ts), with "@" written as "-"
+// in the folder name. tools/scene-walk.ts checks the files against the simulated conversations.
 
-import { SCENE_FILES } from "./scene-files";
+import { SCENE_DIR, SCENE_FILES } from "./scene-files";
 
 /** A scene file as written in ./scene-data/ (picture names without folder or extension). */
 export interface SceneFile {
@@ -34,7 +34,7 @@ export interface SceneFile {
 export type SceneArt = Omit<SceneFile, "npc" | "jobs">;
 
 export const sceneFolder = (key: string) => key.replace("@", "-");
-export const sceneUrl = (stem: string) => `${import.meta.env.BASE_URL}scenes/${stem}.webp`;
+export const sceneUrl = (stem: string) => `${import.meta.env.BASE_URL}${SCENE_DIR}/${stem}.webp`;
 
 function resolve(key: string, f: SceneFile): SceneArt {
   const dir = sceneFolder(key);

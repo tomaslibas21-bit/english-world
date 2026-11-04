@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
+import { rmSync } from "node:fs";
+import path from "node:path";
 import { editionFromEnv, editionOverlay } from "./tools/edition-overlay.mjs";
 
 // Hosting: GAME_BASE=/game/ builds the game for a sub-path of another site (e.g. https://site/game/).
@@ -17,9 +19,24 @@ const PAGES: Record<string, { lang: string; title: string; description: string }
   },
 };
 
+// Vite copies all of public/ into a build; each edition ships only its own scene pictures (docs/es/PICTURES.md
+// "The wiring plan"): the English build leaves out scenes-es/, the Spanish one scenes/, and neither ships the
+// references the pictures were made from (scenes-es/ref/).
+function editionPictures(edition: string) {
+  let out = "";
+  return {
+    name: "edition-pictures",
+    apply: "build" as const,
+    configResolved(c: { root: string; build: { outDir: string } }) { out = path.resolve(c.root, c.build.outDir); },
+    closeBundle() {
+      for (const d of edition === "es" ? ["scenes", "scenes-es/ref"] : ["scenes-es"]) rmSync(path.join(out, d), { recursive: true, force: true });
+    },
+  };
+}
+
 export default defineConfig({
   base: process.env.GAME_BASE || "/",
-  plugins: [editionOverlay(EDITION, PAGES[EDITION]), react()],
+  plugins: [editionOverlay(EDITION, PAGES[EDITION]), react(), editionPictures(EDITION)],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: { port: 5188, host: true },
   build: { target: "es2022", chunkSizeWarningLimit: 4000 },

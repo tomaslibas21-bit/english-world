@@ -191,6 +191,20 @@ def http(method: str, path: str, body: bytes | None = None, content_type: str | 
         raise ApiError(e.code, raw, headers.get("x-request-id"), ra_s) from None
 
 
+def download(path: str, dest: Path, timeout: float = 1800.0) -> int:
+    """Streams a (possibly huge) response to a file: a batch's output holds every picture in base64."""
+    import shutil
+    req = urllib.request.Request(f"{API}/{path.lstrip('/')}", method="GET")
+    req.add_header("Authorization", f"Bearer {api_key()}")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as res, open(dest, "wb") as fh:
+            shutil.copyfileobj(res, fh, 1 << 20)
+    except urllib.error.HTTPError as e:
+        raise ApiError(e.code, e.read().decode("utf-8", "replace"), None, None) from None
+    return dest.stat().st_size
+
+
 def post_json(path: str, payload: dict, timeout: float = 360.0) -> tuple[dict, dict]:
     raw, headers = http("POST", path, json.dumps(payload).encode("utf-8"), "application/json", timeout)
     return json.loads(raw), headers
@@ -418,15 +432,26 @@ def resolve_ref(ref: str, index: dict[str, dict]) -> tuple[str, Path, str]:
     return role, path, label
 
 
+_REF_CACHE: dict = {}
+
+
 def ref_bytes(path: Path, max_edge: int = 1536) -> tuple[bytes, str, tuple[int, int] | None]:
-    """The picture to send: scaled down to max_edge (with Pillow) as PNG, or the file itself; and its size."""
+    """The picture to send: scaled down to max_edge (with Pillow) as PNG, or the file itself; and its size.
+    Cached per file (and its modification time): a batch sends the same few pictures hundreds of times."""
+    key = (str(path), path.stat().st_mtime, max_edge)
+    if key not in _REF_CACHE:
+        _REF_CACHE[key] = _ref_bytes(path, max_edge)
+    return _REF_CACHE[key]
+
+
+def _ref_bytes(path: Path, max_edge: int) -> tuple[bytes, str, tuple[int, int] | None]:
     try:
         from PIL import Image  # optional
         im = Image.open(path).convert("RGB")
         if max(im.size) > max_edge:
             im.thumbnail((max_edge, max_edge), Image.LANCZOS)
         buf = io.BytesIO()
-        im.save(buf, "PNG", optimize=True)
+        im.save(buf, "PNG", compress_level=6)
         return buf.getvalue(), "image/png", im.size
     except ImportError:
         ext = path.suffix.lower()
@@ -515,9 +540,13 @@ def build_prompt(entry: dict, roles_labels: list[tuple[str, str]], parts: dict |
         pieces.append(parts["town"])
     pieces.append(entry["prompt"].strip())
     pieces += tags
-    if kind.get("frame"):
+    # a scene with no named person in it (an empty room, a phone on a table) gets a framing without a person
+    nobody = entry.get("kind", "scene") == "scene" and people is not None and not people and kind.get("frame_nobody")
+    if nobody:
+        pieces.append(kind["frame_nobody"])
+    elif kind.get("frame"):
         pieces.append(kind["frame"])
-    if kind.get("people", True):
+    if kind.get("people", True) and not nobody:
         pieces.append(parts["people"])
     pieces.append(parts["rules_with_tags"] if tags else parts["rules"])
     return "\n\n".join(p.strip() for p in pieces if p and p.strip())

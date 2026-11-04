@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """OpenAI's Batch API for pictures: half price, finished within 24 hours (docs/es/PICTURES.md "Batch").
 
-  python3 tools/es-pictures/batch.py submit <manifest> [--only ID …] [--kind …] [--dry-run] [--max N]
+  python3 tools/es-pictures/batch.py submit <manifest> [<manifest> …] [--only ID …] [--kind …] [--dry-run] [--max N]
+  python3 tools/es-pictures/batch.py run <manifest> [<manifest> …] [--convert]   submit, wait, fetch, a queue-full
+                                                                at a time, until every selected picture exists
   python3 tools/es-pictures/batch.py status [BATCH_ID]          one batch, or every batch submitted from here
   python3 tools/es-pictures/batch.py fetch BATCH_ID [--convert] the results: originals, sidecars, ledger lines
   python3 tools/es-pictures/batch.py cancel BATCH_ID
@@ -51,16 +53,24 @@ def file_id_for(data: bytes, ctype: str, name: str) -> str:
 
 
 def submit(a):
-    man = E.load_manifest(a.manifest)
+    mans = [E.load_manifest(m) for m in a.manifest]
     index = E.all_items()
-    for e in man["items"]:
-        index[e["id"]] = e
-    items = [e for e in E.select(man["items"], a.only, a.kind) if a.force or not E.original_path(e["id"]).exists()]
+    for man in mans:
+        for e in man["items"]:
+            index[e["id"]] = e
+    items = [e for e in E.select([e for m in mans for e in m["items"]], a.only, a.kind)
+             if a.force or not E.original_path(e["id"]).exists()]
+    # a picture can be in a batch only if what it edits exists already (no chains inside one batch)
+    waiting = [e for e in items for r in e.get("refs", []) if r.partition(":")[0] == "edit"
+               and not E.original_path(r.partition(":")[2]).exists()]
+    if waiting:
+        E.fail("These edit pictures that don't exist yet; make those first: "
+               + ", ".join(sorted({f"{e['id']} ← {r}" for e in waiting for r in e['refs'] if r.startswith('edit:')})[:12]))
     if a.max:
         items = items[: a.max]
     if not items:
         E.say("Nothing to submit.")
-        return
+        return []
     parts = E.load_parts()
     groups: dict[tuple[str, str], list] = {}
     for e in items:
@@ -73,6 +83,21 @@ def submit(a):
         est = E.estimate_entry(e, prompt, [x[5] for x in refs], batch=True)
         endpoint = "/v1/images/edits" if refs else "/v1/images/generations"
         groups.setdefault((endpoint, e["model"]), []).append((e, refs, prompt, est))
+    # the organization's queue: at most `queue` enqueued tokens per model in running batches (1,000,000 for
+    # gpt-image-2.5-sunburst on 4 Nov 2026: a 420-picture batch failed with token_limit_exceeded)
+    for key, g in groups.items():
+        kept, used = [], 0
+        for x in g:
+            t = x[3]["text_in"] + x[3]["image_in"] + x[3]["image_out"]
+            if kept and used + t > a.queue:
+                break
+            kept.append(x)
+            used += t
+        if len(kept) < len(g):
+            E.say(f"  {key[0]} {key[1]}: {len(kept)} of {len(g)} picture(s) fit the {a.queue:,}-token queue; "
+                  "the rest go in the next batch")
+        groups[key] = kept
+    items = [x[0] for g in groups.values() for x in g]
     total = sum(x[3]["usd"] for g in groups.values() for x in g)
     t = E.ledger_totals()
     E.say(f"{len(items)} picture(s) in {len(groups)} batch(es), estimated ${total:.4f} at batch prices; "
@@ -83,9 +108,10 @@ def submit(a):
     if a.dry_run:
         for (endpoint, model), g in groups.items():
             E.say(f"  {endpoint} {model}: {len(g)} — " + ", ".join(x[0]["id"] for x in g))
-        return
+        return []
     E.api_key()
     batches = load_batches()
+    submitted = []
     with E.SingleRun():
         for (endpoint, model), g in groups.items():
             lines = []
@@ -100,17 +126,19 @@ def submit(a):
             input_id = E.upload_file(jsonl, f"es-pictures-{int(time.time())}.jsonl", "batch", "application/jsonl")
             res, _ = E.post_json("batches", {"input_file_id": input_id, "endpoint": endpoint, "completion_window": "24h",
                                              "metadata": {"project": "puerto-colibri-pictures",
-                                                          "manifest": Path(man["_path"]).name}})
+                                                          "manifests": ",".join(Path(m["_path"]).stem for m in mans)[:500]}})
             bid = res["id"]
             amount = round(sum(x[3]["usd"] for x in g), 6)
             E.ledger_append({"kind": "reserve", "batch_id": bid, "amount_usd": amount, "items": len(g),
                              "model": model, "endpoint": endpoint})
-            batches[bid] = {"created": E.now_iso(), "endpoint": endpoint, "model": model, "manifest": man["_path"],
+            batches[bid] = {"created": E.now_iso(), "endpoint": endpoint, "model": model, "manifest": [m["_path"] for m in mans],
                             "input_file_id": input_id, "reserve_usd": amount, "fetched": False,
                             "items": {x[0]["id"]: {"est_usd": x[3]["usd"], "refs": len(x[1]), "size": x[0]["size"],
                                                    "quality": x[0]["quality"], "prompt": x[2]} for x in g}}
             save_batches(batches)
             E.say(f"  submitted {bid}: {len(g)} picture(s) to {endpoint} ({model}), reserved ${amount:.4f}")
+            submitted.append(bid)
+    return submitted
 
 
 def status(a):
@@ -126,6 +154,8 @@ def status(a):
         mine = batches.get(bid, {})
         E.say(f"{bid}: {b.get('status')}  {rc.get('completed', 0)}/{rc.get('total', 0)} done, {rc.get('failed', 0)} failed"
               f"  {when}  fetched={mine.get('fetched')}  output={b.get('output_file_id')} errors={b.get('error_file_id')}")
+        for err in ((b.get("errors") or {}).get("data") or []):
+            E.say(f"    error {err.get('code')}: {err.get('message')}")
 
 
 def fetch(a):
@@ -142,17 +172,22 @@ def fetch(a):
     got = failed = 0
     spent = 0.0
     entries = E.all_items()
-    try:
-        entries.update({e["id"]: e for e in E.load_manifest(mine["manifest"])["items"]})
-    except (OSError, ValueError):
-        pass
+    for m in mine["manifest"] if isinstance(mine["manifest"], list) else [mine["manifest"]]:
+        try:
+            entries.update({e["id"]: e for e in E.load_manifest(m)["items"]})
+        except (OSError, ValueError):
+            pass
     with E.SingleRun():
         for fid_key in ("output_file_id", "error_file_id"):
             fid = b.get(fid_key)
             if not fid:
                 continue
-            raw, _ = E.http("GET", f"files/{fid}/content", timeout=600)
-            for line in raw.decode("utf-8").splitlines():
+            dest = E.WORK / "batches" / f"{a.batch_id}-{fid_key}.jsonl"
+            if not dest.exists() or a.again:
+                n = E.download(f"files/{fid}/content", dest)
+                E.say(f"  downloaded {fid_key}: {n / 1e6:.0f} MB → {dest}")
+            fh = open(dest, encoding="utf-8")
+            for line in fh:
                 if not line.strip():
                     continue
                 r = json.loads(line)
@@ -210,6 +245,30 @@ def fetch(a):
           f"committed ${t['committed']:.4f}")
 
 
+def run(a):
+    """Submits a queue-full, waits for it, fetches it, and goes on until every selected picture exists. Resumes an
+    unfetched batch from here first. Stops on a failed batch (after releasing its reservation)."""
+    while True:
+        open_ = [bid for bid, b in load_batches().items() if not b.get("fetched")]
+        bids = open_[:1] or submit(a)
+        if not bids:
+            E.say("All selected pictures exist.")
+            return
+        for bid in bids:
+            while True:
+                b = E.get_json(f"batches/{bid}")
+                if b.get("status") in ("completed", "expired", "cancelled", "failed"):
+                    break
+                rc = b.get("request_counts") or {}
+                E.say(f"  {time.strftime('%H:%M')} {bid}: {b.get('status')} {rc.get('completed', 0)}/{rc.get('total', 0)}")
+                time.sleep(a.poll)
+            fetch(argparse.Namespace(batch_id=bid, convert=a.convert, again=False))
+            if b.get("status") == "failed":
+                for err in ((b.get("errors") or {}).get("data") or []):
+                    E.say(f"    error {err.get('code')}: {err.get('message')}")
+                E.fail(f"{bid} failed; stopped.")
+
+
 def cancel(a):
     res, _ = E.post_json(f"batches/{a.batch_id}/cancel", {})
     E.say(f"{a.batch_id}: {res.get('status')} (fetch it when it is cancelled: completed requests are charged)")
@@ -219,7 +278,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("submit")
-    s.add_argument("manifest")
+    s.add_argument("manifest", nargs="+")
     s.add_argument("--only", nargs="*")
     s.add_argument("--kind", nargs="*")
     s.add_argument("--dry-run", action="store_true")
@@ -227,6 +286,18 @@ def main():
     s.add_argument("--max", type=int, default=0)
     s.add_argument("--stop", type=float, default=E.STOP_USD)
     s.add_argument("--ref-edge", type=int, default=1536)
+    s.add_argument("--queue", type=int, default=900_000, help="enqueued tokens per batch (the org's limit is 1,000,000)")
+    r = sub.add_parser("run")
+    r.add_argument("manifest", nargs="+")
+    r.add_argument("--only", nargs="*")
+    r.add_argument("--kind", nargs="*")
+    r.add_argument("--max", type=int, default=0)
+    r.add_argument("--stop", type=float, default=E.STOP_USD)
+    r.add_argument("--ref-edge", type=int, default=1536)
+    r.add_argument("--queue", type=int, default=900_000)
+    r.add_argument("--poll", type=int, default=60, help="seconds between status checks")
+    r.add_argument("--convert", action="store_true")
+    r.set_defaults(dry_run=False, force=False)
     st = sub.add_parser("status")
     st.add_argument("batch_id", nargs="?")
     f = sub.add_parser("fetch")
@@ -238,7 +309,7 @@ def main():
     a = ap.parse_args()
     if getattr(a, "stop", E.STOP_USD) > E.STOP_USD:
         E.fail(f"The stop can be lowered, not raised above ${E.STOP_USD:.2f}.")
-    {"submit": submit, "status": status, "fetch": fetch, "cancel": cancel}[a.cmd](a)
+    {"submit": submit, "run": run, "status": status, "fetch": fetch, "cancel": cancel}[a.cmd](a)
 
 
 if __name__ == "__main__":

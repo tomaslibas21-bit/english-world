@@ -5,6 +5,7 @@
 // picture, else the "done" picture once the task is complete, else the current picture).
 //   npx tsx tools/scene-walk.ts                 every scene
 //   npx tsx tools/scene-walk.ts s72 s84-date    only these (prefix of the file name)
+//   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/scene-walk.ts      the Spanish edition's scenes
 //   --seeds=12   seeds per simulated conversation      --quiet   no picture sequences
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -13,10 +14,14 @@ import { NPCS } from "../src/content/npcs";
 import { playSim } from "./sim-play";
 import type { SituationDef } from "../src/content/types";
 import type { SceneFile } from "../src/ui/scenes";
+import { EDITION } from "../src/edition";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const DATA = path.join(ROOT, "src/ui/scene-data");
-const PICS = path.join(ROOT, "public/scenes");
+// the Spanish edition (EDITION=es with tools/edition-hook.mjs) keeps its scene files and pictures apart
+const ES = EDITION.id === "es";
+const DATA = path.join(ROOT, ES ? "src/editions/es/ui/scene-data" : "src/ui/scene-data");
+const PICS = path.join(ROOT, ES ? "public/scenes-es" : "public/scenes");
+const PICS_REL = path.relative(ROOT, PICS);
 const args = process.argv.slice(2);
 const seeds = Number(args.find((a) => a.startsWith("--seeds="))?.split("=")[1] ?? 12);
 const quiet = args.includes("--quiet");
@@ -56,9 +61,9 @@ function walk(sit: SituationDef, f: SceneFile, onTurn: (stepId: string | null, p
   }
 }
 
-const files = readdirSync(DATA).filter((n) => n.endsWith(".json")).map((n) => n.slice(0, -5))
+const files = (existsSync(DATA) ? readdirSync(DATA) : []).filter((n) => n.endsWith(".json")).map((n) => n.slice(0, -5))
   .filter((k) => !only.length || only.some((o) => k.startsWith(o)));
-if (!files.length) { console.log("No scene files match."); process.exit(1); }
+if (!files.length) { console.log(`No scene files match (${path.relative(ROOT, DATA)}).`); process.exit(1); }
 
 for (const key of files.sort()) {
   const [sitId, npc] = key.split("@");
@@ -76,7 +81,7 @@ for (const key of files.sort()) {
   if (images.size !== f.images.length) err("an image is listed twice");
   for (const n of images) {
     const file = path.join(PICS, dir, n + ".webp");
-    if (!existsSync(file)) { err(`missing picture public/scenes/${dir}/${n}.webp`); continue; }
+    if (!existsSync(file)) { err(`missing picture ${PICS_REL}/${dir}/${n}.webp`); continue; }
     const size = webpSize(file);
     if (!size) err(`${dir}/${n}.webp is not a complete WebP picture`);
     else if (size[0] < 1600 || size[0] > 2048 || size[0] / size[1] < 1.7 || size[0] / size[1] > 1.85) warn(`${dir}/${n}.webp is ${size[0]}×${size[1]} (expected 2048 px wide, about 16:9)`);
@@ -85,8 +90,8 @@ for (const key of files.sort()) {
   if (existsSync(path.join(PICS, dir))) {
     for (const n of readdirSync(path.join(PICS, dir))) {
       if (n.startsWith(".")) continue;
-      if (!n.endsWith(".webp")) warn(`public/scenes/${dir}/${n} is not used: the game loads only .webp pictures (see docs/SCENE-ART.md)`);
-      else if (!images.has(n.slice(0, -5))) warn(`public/scenes/${dir}/${n} is not listed in images`);
+      if (!n.endsWith(".webp")) warn(`${PICS_REL}/${dir}/${n} is not used: the game loads only .webp pictures (see docs/SCENE-ART.md)`);
+      else if (!images.has(n.slice(0, -5))) warn(`${PICS_REL}/${dir}/${n} is not listed in images`);
     }
   }
   if (!images.has(f.start)) err(`start "${f.start}" is not in images`);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Makes pictures through OpenAI's regular Image API, one manifest entry at a time (docs/es/PICTURES.md).
 
-  python3 tools/es-pictures/generate.py <manifest> [--only ID …] [--kind cast|place|scene|test]
+  python3 tools/es-pictures/generate.py <manifest> [<manifest> …] [--only ID …] [--kind cast|place|scene|test]
           [--dry-run] [--show-prompt] [--workers 2] [--ipm 10] [--force] [--convert] [--max N] [--stop 75]
 
 - An entry with references goes to /v1/images/edits (JSON body, the pictures as data URLs, scaled to --ref-edge);
@@ -175,7 +175,7 @@ def run_one(job: dict, budget: E.Budget, pace: Pace, convert: bool) -> str:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("manifest")
+    ap.add_argument("manifest", nargs="+", help="one or more manifests (names in manifests/ or paths)")
     ap.add_argument("--only", nargs="*", help="exact ids, or prefixes ending in * or / (cast/, s72-cafe/*)")
     ap.add_argument("--kind", nargs="*")
     ap.add_argument("--dry-run", action="store_true")
@@ -199,11 +199,12 @@ def main():
         E.fail("--workers must be 1–4 (keep the machine's load moderate)")
     if a.ipm > 20:
         E.fail("--ipm must be at most 20 (the Build tier's limit)")
-    man = E.load_manifest(a.manifest)
+    mans = [E.load_manifest(m) for m in a.manifest]
     index = E.all_items()
-    for e in man["items"]:
-        index[e["id"]] = e
-    items = E.select(man["items"], a.only, a.kind)
+    for man in mans:
+        for e in man["items"]:
+            index[e["id"]] = e
+    items = E.select([e for man in mans for e in man["items"]], a.only, a.kind)
     for e in items:
         for k in ("model", "quality", "size"):
             if getattr(a, k):

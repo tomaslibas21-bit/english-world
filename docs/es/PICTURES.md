@@ -129,7 +129,12 @@ For comparison, the guide's per-picture table for GPT Image 2 (1024² / 1024×15
   separate rate-limit pool. Pictures in a batch are passed as `file_id` (uploaded with purpose `vision`) or
   `image_url`: "Prefer referencing remote assets with image_url (instead of base64 blobs)" to stay under 200 MB.
 - Results: an output `.jsonl` (each line's `response.body` is the endpoint's response, with `b64_json` and `usage`)
-  and an error file.
+  and an error file. With pictures it is big (a 2048×1152 PNG is about 3.5 MB, 4.7 MB in base64): `batch.py`
+  streams it to disk.
+- **The queue limit (found on 4 Nov 2026):** batches are also limited by the tokens enqueued per model in running
+  batches. Our first batch (420 edits, about 2.1 M tokens with outputs) failed at once with `token_limit_exceeded`:
+  "Enqueued token limit reached for gpt-image-2.5-sunburst in organization … Limit: 1,000,000 enqueued tokens."
+  So pictures go in queue-sized batches, one after the other (`batch.py run`, about 158 edits each).
 
 ### Rate limits and errors
 
@@ -419,7 +424,10 @@ The lead plans 10–12 pictures per conversation, one per step and twist. Each c
 4. **Twists** get their own picture when they change what is seen (the oat milk is out: she shows an empty carton;
    the card machine is down: she shows the terminal with a blank screen and a sorry face). Put the twist id in
    `moment`, and the step or pending-question ids that show it in `phases`.
-5. **Phases:** the ids are the ones `session.ts` reports: the pending question's id, or the step's id when the person
+5. **A picture with no named person** (a phone on a table, an empty room) gets a framing paragraph without a person
+   (`frame_nobody` in prompt-parts.json) and no "people" paragraph, so the model doesn't add someone (the first
+   phone-menu picture showed a stranger, who reads as the learner).
+6. **Phases:** the ids are the ones `session.ts` reports: the pending question's id, or the step's id when the person
    starts talking; `howareyou` is the shared small talk and `closing` the goodbye (docs/SCENE-ART.md "Scene file").
    Find them in the situation file (`steps`, `expect({ id: … })`) and check them with scene-walk (section 7).
 
@@ -494,6 +502,7 @@ python3 tools/es-pictures/generate.py refs --only place/zocalo --force --convert
 python3 tools/es-pictures/generate.py s72-cafe --only s72-cafe/size --fix "Remove the letters on the cup; change nothing else." --convert
                                                                      # an edit of the picture itself (keeps the old one)
 python3 tools/es-pictures/batch.py submit s72-cafe                   # the same at half price, within 24 h
+python3 tools/es-pictures/batch.py run s31-doctor s32-mercado … --convert   # submit, wait, fetch, a queue at a time
 python3 tools/es-pictures/batch.py status
 python3 tools/es-pictures/batch.py fetch <batch id> --convert
 python3 tools/es-pictures/convert.py refs                            # PNG → WebP (q80; scenes 2048×1152)
@@ -512,14 +521,22 @@ swiftc -O tools/es-pictures/textcheck.swift -o <work>/textcheck      # once; the
   at most 10 a minute (the Build tier allows 20); 429 and 5xx are retried with `Retry-After` and backoff; a 403
   (verification), 401, 404 or a billing error stops the run (and is written to `<work>/last-fatal.txt`); a refused
   prompt is logged and skipped. One generator at a time (a lock file).
-- `batch.py`: the Batch API; one batch per endpoint and model; references uploaded once (purpose `vision`, cached by
-  SHA-256); a submit reserves its estimate in the ledger, a fetch books the real usage and releases the reservation.
+- `batch.py`: the Batch API; one batch per endpoint and model, at most `--queue` (900,000) estimated tokens each;
+  references uploaded once (purpose `vision`, cached by SHA-256); a submit reserves its estimate in the ledger, a
+  fetch books the real usage and releases the reservation (also for a failed batch). `run` chains submit → wait →
+  fetch until every selected picture exists, resuming an unfetched batch first.
 - `convert.py`: the web format (WebP quality 80; scenes and places exactly 2048 × 1152, portraits as they are);
   warns over 250 kB.
 - `scene_file.py`: writes `src/editions/es/ui/scene-data/<scene>.json` from a manifest, once the pictures exist.
 - `ledger.py`: totals and the price check.
 - `sheet.py`: contact sheets (several originals side by side, labeled) for a first look; then look at doubtful
   pictures at full size.
+- `review_text.py`: runs textcheck on a manifest's originals and prints every picture with text other than the
+  name tags of the people in it, or with a tag read differently from its spelling (a misread is common on small
+  plates: look before redoing).
+- `generate.py`, `batch.py submit` and `sheet.py` take several manifests at once
+  (`generate.py s31-doctor s32-mercado … --only …`). A batch refuses an edit whose source picture doesn't exist yet
+  (no chains inside one batch: make the sources first through the regular API).
 - `textcheck.swift`: macOS's text recognizer (Vision) over the originals: prints every picture where it reads
   letters or digits, and where. It reads Maple Harbor's menus and signs; a clean result is still no substitute for
   looking (it misses squiggles that look like writing), and a pattern can raise a false alarm.
@@ -535,40 +552,27 @@ request the scripts check committed + in flight + this request's estimate ≤ $7
 be lowered (`--stop`) but not raised. The estimate takes the largest image-input count measured so far per reference
 (+10%).
 
-## 8. The wiring plan
+## 8. The wiring (done 4 Nov 2026)
 
-How the Spanish scene files and pictures plug into the game (not done yet: it touches shared engine files, so it is
-the lead's change; the English edition must stay byte-for-byte the same):
+How the Spanish scene files and pictures plug into the game; the English edition is unchanged (same URLs, same
+files, same checks):
 
-1. **The folder.** `src/ui/scenes.ts` builds picture URLs as `scenes/<stem>.webp`. Give `src/ui/scene-files.ts` a
-   second export, `export const SCENE_DIR = "scenes";`, and use it in `sceneUrl`:
-   `` `${import.meta.env.BASE_URL}${SCENE_DIR}/${stem}.webp` ``. The Spanish `src/editions/es/ui/scene-files.ts` (an
-   edition file has its base file's exports) becomes:
-   ```ts
-   import type { SceneFile } from "../../../ui/scenes";
-   export const SCENE_DIR = "scenes-es";
-   export const SCENE_FILES: Record<string, SceneFile> = import.meta.glob<SceneFile>("./scene-data/*.json", { eager: true, import: "default" });
-   ```
-   (the glob is relative to the Spanish file: `src/editions/es/ui/scene-data/`).
-2. **The files.** Scene files: `src/editions/es/ui/scene-data/<situation id>.json`, Spanish situation ids
-   (`s32-mercado`, not `s32-supermarket`), `<id>@<npc>` for a per-person scene (the date: `s84-date@sam`,
-   `s84-date@emma`). Pictures: `public/scenes-es/<situation id>/<name>.webp` (`@` → `-` in the folder). The JSON
-   fields are the English ones (`npc`, `images`, `start`, `done`, `sticky`, `phases`, `focus`); leave out `jobs`
-   (OpenAI has no job ids to edit later; the sidecars hold the request ids). `scene_file.py` writes them from the
-   manifests.
-3. **The check.** `tools/scene-walk.ts` reads `src/ui/scene-data` and `public/scenes`; make both depend on the
-   edition (`editionFromEnv()` from tools/edition-overlay.mjs: `src/editions/es/ui/scene-data` and
-   `public/scenes-es` for `es`) and print the folder it read. Then
-   `EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/scene-walk.ts s72-cafe` walks the Spanish
-   conversations (the hook already gives it the Spanish situations and cast).
-4. **The builds.** Vite copies all of `public/` into every build. Leave out the other edition's pictures and the
-   references: the English build doesn't need `scenes-es/` (nor the Spanish one `scenes/`, 28 MB), and neither
-   needs `scenes-es/ref/` (inputs for making pictures, not game assets). A small plugin in vite.config.ts
-   (`closeBundle`: remove those folders from the out dir by edition) or the same step in the export scripts.
-5. **The interface** needs nothing new: Settings → illustrated scenes, the crossfade, the call screen all work from
+1. **The folder.** `src/ui/scene-files.ts` exports `SCENE_DIR = "scenes"` next to `SCENE_FILES`, and
+   `src/ui/scenes.ts` builds picture URLs as `` `${BASE_URL}${SCENE_DIR}/${stem}.webp` ``. The Spanish
+   `src/editions/es/ui/scene-files.ts` exports `SCENE_DIR = "scenes-es"` and globs its own `./scene-data/*.json`.
+2. **The files.** Scene files: `src/editions/es/ui/scene-data/<situation id>.json` (Spanish situation ids,
+   `s84-date@sam` / `s84-date@emma` for the per-person date), written by `scene_file.py --write` from the manifests.
+   Pictures: `public/scenes-es/<situation id>/<name>.webp` (`@` → `-`). The JSON fields are the English ones (`npc`,
+   `images`, `start`, `done`, `sticky`, `phases`, `focus`), without `jobs` (OpenAI has no job ids; the sidecars hold
+   the request ids).
+3. **The check.** `tools/scene-walk.ts` reads `src/editions/es/ui/scene-data` and `public/scenes-es` when the
+   edition is Spanish (`EDITION.id`, through the hook):
+   `EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/scene-walk.ts [scene …]`.
+4. **The builds.** A small plugin in vite.config.ts (`editionPictures`) removes the other edition's pictures from
+   the build output: the English build drops `scenes-es/`, the Spanish one `scenes/` and `scenes-es/ref/` (the
+   references are inputs for making pictures, not game assets).
+5. **The interface** needs nothing new: Settings → illustrated scenes, the crossfade and the call screen work from
    the scene files.
-6. **Order of work**, per conversation: its manifest → the first picture, checked → the rest → `convert.py` →
-   `scene_file.py --write` → scene-walk with 0 errors → one commit with the pictures and the scene file together.
 
 ## 9. For the owner
 
