@@ -38,3 +38,40 @@ what-ifs; "¿Cuánto es?" at final; "No, setenta mil no, sesenta" → 60,000; "N
 - A personal "¿Le doy un cheque?" records payment by cheque after her "Mejor un cheque de caja". I left it as it was.
 - The writer's open points (tenencia in Quintana Roo, the price, where the change of owner is registered) stay vague in
   the lines, which is right per rule 14.
+
+## Lead's check (4 Nov 2026)
+Looked at money and numbers, the pay step and every way a yes, a no, a question or a condition reaches her price
+questions (rules 10, 11, 17, 18, 22). 31 new edge and trap sentences (24 + 7 traps): **12/24 before, 24/24 after**, 0/7 traps.
+The worst bugs were in the handlers (the parse looked right), so each was played whole with `tools/probe.ts`.
+
+**meaning-safety (must-fix)**
+- A yes with a push after it bought the car at her current price: "Me parece bien, pero es un poco caro", "Quiero comprarlo,
+  pero es muy caro", "Lo compraría, pero no tengo tanto dinero" (the yes outranked the push). Now the push answers; "Es caro,
+  pero me lo llevo" (the yes after it) still buys.
+- A condition bought the car: "Si me hace un descuento, me lo llevo" at the asking price sold it for $85,000 ("Entre nos,
+  podía haber regateado…"); "Si me deja llevarlo con mi mecánico, lo compro" sold it too. An unaccented "si" with a clause
+  after it is now an "if": the other piece answers, or her question comes again ("Sí, me lo llevo", "si me lo llevo" stay yes).
+- Questions bought the car: "¿Es un precio justo?", "¿Lo puedo pagar en partes?", "¿Lo puedo pagar con tarjeta?", and her own
+  "¿Sin regatear?" said back at the confirm question (sold for $85,000). A question is never a yes: "¿Es un precio justo?"
+  gets a new line (`fair_price`) and her question; a way to pay named after "lo puedo pagar" is a payment question.
+- Her price said back without a question mark (voice): "ochenta y cinco mil" sold the car for $85,000, while "¿Ochenta y cinco
+  mil?" was an echo. A bare number at or above her price, alone, now gets her question again (rule 10); "Sí, ochenta mil" and
+  "Ochenta mil, trato hecho" are yes.
+- The pay step: "No en efectivo", "No con efectivo", "Mejor no en efectivo" recorded payment in cash. Now no cash: she offers a
+  transfer or a cashier's check and nothing is paid (rules 10, 18).
+- "Así está bien (, gracias)" at her last price, after her last chance, ended the talk with no car. Now her question again.
+
+**understanding**: "¿No me lo deja en setenta?" (the negative-question offer), "No quiero comprarlo" / "Ya no quiero
+comprarlo", "No tengo ochenta mil", "Sigue siendo mucho dinero", "Efectivo no", "Ya no traigo efectivo", "Le pago con un
+cheque personal". **numbers**: "setenta y dos mil y medio" was $72,000 plus a halfway; now $72,500.
+**rule 8**: the closings at "¿sin regatear?" got the same line three times in a row; her re-asks now alternate two lines
+(price, final and confirm questions), and a second "no cash" gets "¿cómo le hacemos?".
+**gloss-english**: the natural English "$2,500" (dollars, to an American) → "2,500 pesos" in `flaw_point`, `already_off`,
+`already_off_limit`.
+**checked, no change**: the price slot (counts, the year 2008 and 700,000 are no price; "70.000", "72 500", "70 mil 500"
+read right); rounding to $500 as the English edition rounds to $50 (an odd 72,300 becomes 72,500: rare, left); the spoken and
+glossed forms of all 13 prices and 14 amounts; the factura, REPUVE and refrendo/tenencia facts (vague where unsure); the
+reviewer's two open points (an offer at or above her next step closes the deal; a personal cheque recorded as "check"): kept.
+**tests**: 9 NLU tests, 1 sim ("hedged yeses, a question, no cash"). **For the owner**: one new line to voice, `fair_price`.
+Gate: `tsc` clean; `check-content` 0/0, 103/103 NLU, 24 sims 12/12, fuzz 80; corpus 322/322, 0/95; heldout 39/39, 0/5;
+vitest 288/288 in both editions.
