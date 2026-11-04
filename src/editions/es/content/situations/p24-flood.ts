@@ -320,14 +320,16 @@ function nobodyHurt(c: Ctx) {
 /** "Sí" to "¿Alguien se lastimó?": "¿Cómo? ¿Usted está bien?", and he waits for the answer. */
 function hurtYes(c: Ctx) {
   c.s.hurtDone = true;
+  c.s.hurtAsked2 = true;
   G(c, "gr_hurt_yes");
   c.expect({
-    id: "hurt_yes", optional: true, expects: ["nobody_hurt", "freaking_out", "not_ok_ctx"], hints: ["details"],
+    id: "hurt_yes", optional: true, expects: ["nobody_hurt", "freaking_out", "not_ok_ctx", "hurt_ctx"], hints: ["details"],
     suggest: [{ lt: "Say whether you're okay", hint: "details" }],
     on: {
       nobody_hurt: (cc) => { G(cc, "gr_careful"); },
       freaking_out: (cc) => { G(cc, "gr_breathe"); },
       not_ok_ctx: (cc) => { G(cc, "gr_breathe"); },
+      hurt_ctx: (cc) => { G(cc, "gr_careful"); },
     },
     yes: (cc) => { G(cc, "gr_careful"); },
     no: (cc) => { G(cc, "gr_breathe"); },
@@ -495,7 +497,7 @@ function thankGrant(c: Ctx, kind: "formal" | "plain" | "love" | "apology" | "reg
   if (kind === "love") { G(c, "gr_love_you"); return; }
   if (kind === "apology") { G(c, "gr_inconvenience"); return; }
   if (kind === "regards") { G(c, "gr_regards"); return; }
-  if (kind === "formal" && !c.s.promptJoke && /\bpronta\b/.test(heard(c))) { c.s.promptJoke = true; G(c, "gr_prompt"); return; }
+  if (kind === "formal" && !c.s.promptJoke && /\bpronta atencion\b/.test(heard(c))) { c.s.promptJoke = true; G(c, "gr_prompt"); return; }
   G(c, "gr_welcome");
 }
 
@@ -599,12 +601,22 @@ function doorThanks(c: Ctx) {
   callGrant(c);
 }
 
+/** "¿Entonces hoy o mañana?" (a lost comma); asked again, the shorter "¿le parece bien mañana?" */
+function whichDay(c: Ctx) { G(c, c.s.whichDay ? "gr_offer_again" : "gr_which_day"); c.s.whichDay = true; c.hold(); }
+
 /** After his "¿Podría esperar a mañana?", the water downstairs (or still coming in) is the reason it can't. */
 function reasonToday(c: Ctx) { if (c.s.offered && !c.s.today && !c.s.tomorrow && grantKnows(c)) insist(c); }
 
+/** "¡Bye!" / "Ok" / "Gracias" read as a bare {name} at "¿Quién habla?" */
+const NOT_A_NAME = /^(bye|bai|adios|chao|chau|hola|ok|okey|okay|gracias|bueno|si|no|perdon|oye|vale|nada|alo|diga)$/;
+const fakeName = (sl: any) => typeof sl?.name === "string" && NOT_A_NAME.test(sl.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim());
+
 const GRANT: Record<string, H> = {
   intro: (c) => { identified(c); },
-  intro_ctx: (c) => { identified(c); },
+  intro_ctx: (c, sl) => {
+    if (fakeName(sl)) { if (/^(bye|bai|adios|chao|chau)$/.test(heard(c).replace(/[^a-z]/g, ""))) { if (inVm(c)) vmEnd(c); else grantBye(c); } return; }
+    identified(c);
+  },
   // in the voicemail a name counts only when it's the player's own (or comes with the apartment)
   vm_who_ctx: (c, sl, sg) => { if (sg.tags.includes("known_name") || sl?.aptn != null || /\b(3 ?b|tres b)/.test(heard(c))) identified(c); },
   its_me_ctx: (c) => { if (c.s.who || inVm(c)) return; if (once(c, "g_me")) G(c, "gr_its_me"); },
@@ -617,7 +629,8 @@ const GRANT: Record<string, H> = {
   when_ctx: (c) => { c.s.sinceDone = true; if (!inVm(c) && once(c, "g_ack")) G(c, "gr_ok"); },
   water_off: (c) => { waterOff(c); },
   water_not_off: (c) => { waterNotOff(c); },
-  valve_done_ctx: (c) => { if (once(c, "g_ack") && !inVm(c)) G(c, "gr_ok"); },
+  // "Ya." / "Listo." to "¿Ya bajó el switch de la luz?" (the step's own short yes)
+  valve_done_ctx: (c) => { if (inVm(c)) return; if (c.step === "g_water" && !c.s.waterDone) { waterOff(c); return; } if (once(c, "g_ack")) G(c, "gr_ok"); },
   nobody_hurt: (c) => { nobodyHurt(c); },
   freaking_out: (c) => { c.s.hurtDone = true; if (!inVm(c) && once(c, "g_ack")) G(c, "gr_breathe"); },
   downstairs_yes: (c) => { downstairs(c, true); reasonToday(c); },
@@ -628,7 +641,7 @@ const GRANT: Record<string, H> = {
   // "No hace falta que venga hoy" at his tomorrow offer: tomorrow is fine
   no_rush_ctx: (c, _sl, sg) => {
     if (inVm(c)) return;
-    if (sg.tags.includes("amb")) { if (!c.s.today && !c.s.tomorrow && once(c, "g_offer_amb")) { G(c, "gr_which_day"); c.hold(); } return; }
+    if (sg.tags.includes("amb")) { if (!c.s.today && !c.s.tomorrow && once(c, "g_offer_amb")) whichDay(c); return; }
     c.s.requested = true; acceptTomorrow(c);
   },
   // a bare "Mañana." at his offer (or after "¿hoy o mañana?")
@@ -653,7 +666,10 @@ const GRANT: Record<string, H> = {
   ask_confirmed: (c) => { askConfirmed(c); },
   // "¿A qué hora llega el plomero?" / "¿…exactamente?" at the time question is about the plumber's time
   ask_eta: (c) => { if (inVm(c)) return; if (/plomero|exacta/.test(heard(c)) || (c.step === "g_time" && !c.s.timeSet)) { askConfirmed(c); return; } if (once(c, "g_info")) G(c, c.s.today ? "gr_eta" : "gr_first_today"); },
-  fine_ctx: (c) => { nobodyHurt(c); },
+  // "No estoy bien" / "No, estoy bien" (the comma is lost): he asks "¿Cómo? ¿Usted está bien?" rather than guess
+  fine_ctx: (c) => { if (inVm(c)) { nobodyHurt(c); return; } if (c.step === "g_hurt" && !c.s.hurtDone) { hurtYes(c); return; } nobodyHurt(c); },
+  // "Me corté el pie": somebody is hurt
+  hurt_ctx: (c) => { if (inVm(c)) return; if (!c.s.hurtAsked2) { c.s.hurtAsked2 = true; hurtYes(c); return; } c.s.hurtDone = true; if (once(c, "g_ack")) G(c, "gr_careful"); },
   not_ok_ctx: (c) => { c.s.hurtDone = true; if (!inVm(c) && once(c, "g_ack")) G(c, "gr_breathe"); },
   switch_unknown_ctx: (c) => { waterNotOff(c); },
   ask_damage: (c) => { if (inVm(c)) return; c.s.damageAsked = true; if (once(c, "g_info")) G(c, "gr_damage"); },
@@ -683,7 +699,7 @@ const ALL_INTENTS = [
   "warm", "see_you", "intro", "intro_ctx", "its_me", "when_happened", "when_ctx", "water_off", "water_not_off", "downstairs_yes",
   "downstairs_no", "ask_plumber", "today_ctx", "insist_today", "accept_tomorrow", "pick_time", "time_ctx", "ask_confirmed", "ask_eta",
   "ask_damage", "formal_thanks", "apologize", "kind_regards", "vm_close", "demand_rude", "thats_all", "unsure_ctx",
-  "vm_who_ctx", "its_me_ctx", "sure_ctx", "door_surprise", "insist_ctx", "down_yes_ctx", "down_no_ctx", "wait_yes_ctx", "wait_no_ctx",
+  "vm_who_ctx", "its_me_ctx", "sure_ctx", "hurt_ctx", "door_surprise", "insist_ctx", "down_yes_ctx", "down_no_ctx", "wait_yes_ctx", "wait_no_ctx",
   "plumber_ctx", "vm_unknown", "valve_done_ctx", "time_not", "fine_ctx", "not_ok_ctx", "switch_unknown_ctx", "no_rush_ctx", "sorry_ctx", "tomorrow_ctx",
 ];
 
@@ -789,9 +805,11 @@ export const flood: SituationDef = {
         "(le habla | habla | soy | es) {name} [su (inquilino | inquilina)] (del | de el) @apt #h:this_is_apt",
         "(mi nombre es | me llamo) {name} [y] [vivo] (en el | del) @apt",
         "soy su (inquilino | inquilina) [del | de el] @apt #h:tenant_in",
+        "(le habla | habla) su (inquilino | inquilina) [del | de el] @apt",
         "(le hablo | le llamo | lo llamo | le marco | llamo) (del | desde el) @apt #h:calling_from",
         "(mi nombre es | me llamo) {name} [y] soy su (inquilino | inquilina) [del @apt]",
-        "(soy | es) (el | la) del @aptno",
+        "[soy yo] (soy | es) (el | la) del @apt",
+        "soy yo (el | la) del @apt",
         "vivo en el @apt",
         "(es | habla) el @apt",
       ],
@@ -813,8 +831,8 @@ export const flood: SituationDef = {
         "(pasó | empezó | comenzó | fue) [anoche | esta manana | en la madrugada] (a | como a | a eso de | alrededor de) {time} [de la manana | de la noche | de la madrugada]",
         "desde (anoche | esta manana | la madrugada | la noche | la tormenta | {time} [de la manana | de la madrugada] | como a {time})",
         "(anoche | esta manana | en la madrugada) (a | como a | a eso de) {time} [de la manana | de la noche | de la madrugada]",
-        "hace (una hora | media hora | un rato | unas horas | {number} horas | como una hora)",
-        "me desperté y (habia agua por todos lados | la cocina estaba inundada | todo estaba mojado | ya estaba todo inundado)",
+        "hace (una hora | media hora | un rato | unas horas | {number} horas | como una hora | un par de horas | como dos horas)",
+        "[no se] me desperté y (habia agua por todos lados | la cocina estaba inundada | todo estaba mojado | ya estaba todo inundado | ya estaba todo mojado | ya habia agua)",
       ],
       water: [
         "[ya] (bajé | corté | apagué | he bajado | he cortado) (el switch | el interruptor | los breakers | el breaker | la pastilla | las pastillas | la luz | la corriente | la electricidad | los interruptores) [de la luz] [y (puse | tendí) [unas] toallas [en el piso]] #h:power_off",
@@ -827,7 +845,8 @@ export const flood: SituationDef = {
         "[me temo que] [el agua] [ya] (esta pasando | pasó | se esta filtrando | se filtró | esta goteando | le esta goteando | le gotea | ha pasado | llegó) @down #h:downstairs",
         "[ya] le (gotea | esta goteando | cae agua) (a la vecina | al vecino | a los de abajo) [de abajo]",
       "a (la vecina | el vecino | los vecinos | los de abajo) [de abajo] (le | les) (esta goteando | gotea | cae agua | esta cayendo agua | esta pasando el agua)",
-        "la vecina de abajo (ya subió | subió | vino | me tocó | me tocó la puerta | esta molesta | se esta quejando | ya se quejó | tiene agua [en su departamento] | me habló)",
+        "(la vecina | el vecino) [de abajo] (ya subió | subió | vino | me tocó | me tocó la puerta | esta molesta | se esta quejando | ya se quejó | tiene agua [en su departamento] | me habló)",
+        "[ya] (esta goteando | gotea | hay agua | cae agua | esta cayendo agua) en (el depa de abajo | el departamento de abajo | el de abajo | casa de la vecina | el departamento de la vecina)",
         "(el techo | el plafon) de (la vecina | abajo | el departamento de abajo | los de abajo) (esta mojado | gotea | esta goteando)",
       ],
       nohurt: ["(nadie | ninguno) (se lastimó | salió lastimado | se ha lastimado | esta lastimado) #h:nobody_hurt", "(todos | todos estamos | estamos todos) bien"],
@@ -916,6 +935,8 @@ export const flood: SituationDef = {
       "[si] (estoy bien | todo bien) [solo | nada mas | nomas] [(mojado | mojada | empapado | empapada | un poco mojado | un poco mojada)] [gracias] #h:just_wet",
       "[si] (estoy bien | todo bien) (solo | nomas | nada mas) mis (calcetines | zapatos | pies | calcetas)",
       "[no] (solo | nomas | nada mas) mis (calcetines | zapatos | pies | calcetas)",
+      "[si] [estoy bien] (solo | nomas | nada mas) (mojado | mojada | empapado | empapada | con los pies mojados) [gracias]",
+      "[si] estoy bien (solo | nomas | nada mas) tengo (los pies | los calcetines | los zapatos) (mojados | empapados)",
       "(solo | nomas) el gato esta (ofendido | enojado | molesto)",
       "estoy [toda | todo | bien | un poco | completamente] (mojado | mojada | empapado | empapada)",
       "(estamos | estoy) (bien | a salvo) [gracias]",
@@ -924,20 +945,27 @@ export const flood: SituationDef = {
     ] },
     // "No, estoy bien" with its comma lost, to "¿Alguien se lastimó?": the likelier reading (rule 10)
     fine_ctx: { patterns: ["no estoy bien [gracias]", "no todo bien"] },
+    // "Me corté el pie." to "¿Alguien se lastimó?": somebody is hurt (only there)
+    hurt_ctx: { patterns: [
+      "[si] [yo] (me lastimé | me corté | me caí | me resbalé | me pegué | me golpeé | me doblé el tobillo) [un poco | tantito] [(el pie | la mano | un dedo | la rodilla | la cabeza | el brazo)] [pero (estoy bien | no es nada)]",
+      "[si] (tengo | me hice) una (cortada | herida) [en (el pie | la mano | un dedo)] [pero (estoy bien | no es nada)]",
+    ] },
     // "No estoy bien" to "¿Estás bien?" / "¿Usted está bien?": not okay
     not_ok_ctx: { patterns: ["[no] no estoy (bien | nada bien | muy bien)", "[no] la verdad no"] },
     freaking_out: { patterns: [
       "estoy (en panico | entrando en panico | histerico | histerica | volviendome loco | volviendome loca) #h:freaking",
       "[auxilio] (me estoy ahogando | me voy a ahogar) [aqui]",
       "saludos cordiales me estoy ahogando #formal",
-      "estoy [muy | super | bien | un poco | algo] (estresado | estresada | nervioso | nerviosa | preocupado | preocupada | asustado | asustada | desesperado | desesperada)",
+      "estoy [muy | super | bien | un poco | algo] (estresado | estresada | nervioso | nerviosa | preocupado | preocupada | asustado | asustada | desesperado | desesperada) [y no se que hacer]",
       "ya no (puedo | aguanto) mas",
+      "[estoy (nervioso | nerviosa | preocupado | preocupada | asustado | asustada)] [y] no se que hacer",
     ] },
     // --- Andrea: what to bring -------------------------------------------------------------
     ask_help: { patterns: [
       "(puedes | podrias | me puedes | me podrias) (traer | traerme | llevar | llevarme) @things [de camino | cuando vengas] #h:bring_x",
       "(puedes | podrias) (pasar por | comprar | comprarme | conseguir | conseguirme) @things [de camino] #h:grab_x",
       "(me traes | me llevas | traeme | traes) @things [de camino]",
+      "(quiero | quisiera | me gustaria) @things [por favor | si puedes]",
       "(necesito | ocupo | me urge | me hace falta | me hacen falta) @things",
       "@things (seria | serian) (genial | perfecto | lo maximo | de gran ayuda)",
       "[y] (mucho | muchisimo) {stuff} #h:lots_coffee",
@@ -963,7 +991,8 @@ export const flood: SituationDef = {
     item_ctx: { patterns: ["[y] @things"] },
     need_nothing: { patterns: [
       "[no] (estoy bien | todo bien | ando bien) [gracias | de verdad | en serio] #h:no_im_good",
-      "[no] no necesito nada [gracias | de verdad | por ahora]",
+      "[no] [ya] no necesito nada [gracias | de verdad | por ahora]",
+      "[no] no me (traigas | lleves) nada [estoy bien] [gracias | de verdad]",
       "[no] (nada | nada de verdad | nada por ahora | de verdad nada) [gracias]",
       "[no] no (tienes que | hace falta que) (venir | traer nada | hacer nada | traerme nada)",
       "no te preocupes [disfruta (el desayuno | tu desayuno)] #h:dont_worry",
@@ -984,7 +1013,7 @@ export const flood: SituationDef = {
       "[no] no (vengas | te vengas | te molestes) [disfruta (el desayuno | tu desayuno)]",
       "[no] quedate (en el desayuno | desayunando)",
       "[no] no (tienes que | hace falta que) venir",
-      "[no] no hace falta que (vengas | te molestes)",
+      "[no] no hace falta que (vengas | te molestes) [de veras | de verdad | en serio]",
     ] },
     // warm thanks and goodbyes (Andrea: at the door they thank her, at the end they say goodbye)
     warm: { patterns: [
@@ -1028,6 +1057,7 @@ export const flood: SituationDef = {
     when_happened: { patterns: [
       "@when",
       "(desde hace | ya lleva | lleva) (una hora | media hora | {number} horas | un rato | unas horas)",
+      "(no se | no estoy seguro | no estoy segura) [pero] [creo que] @when",
     ] },
     when_ctx: { patterns: ["[no se] [creo que] [a | como a | a eso de | alrededor de] {time} [de la manana | de la noche | de la madrugada]", "[no se] [creo que] (anoche | en la noche | en la madrugada | esta manana | durante la tormenta | con la tormenta | desde anoche)"] },
     water_off: { patterns: [
@@ -1047,7 +1077,7 @@ export const flood: SituationDef = {
       "(todavia | aun) no (lo bajo | lo he bajado | la corto | la he cortado | lo encuentro | los encuentro | lo hago)",
     ] },
     downstairs_yes: { patterns: [
-      "[si] @downy",
+      "[si] [creo que si | me temo que si | parece que si] @downy",
       "[si] (gotea | esta goteando | cae agua) abajo",
     ] },
     downstairs_no: { patterns: [
@@ -1077,8 +1107,10 @@ export const flood: SituationDef = {
       "[no] manana (es | seria) (muy tarde | demasiado tarde) [me temo]",
       "manana no (me sirve | puedo | es posible | funciona | se puede)",
       "[no] manana no [me temo]",
-      "[no] (tiene que | tendria que | necesita | debe) ser (hoy | hoy mismo) #h:really_today",
-      "(es | esto es) (urgente | una emergencia | muy urgente | bastante urgente)",
+      // "Mañana no, tiene que ser hoy" in one piece (else "no tiene que ser hoy" would be read on its own)
+      "manana no [me temo] [porque] (tiene que | necesita | debe) ser (hoy | hoy mismo)",
+      "(tiene que | tendria que | necesita | debe) ser (hoy | hoy mismo) #h:really_today",
+      "[ya le dije que | le repito que | de verdad] (es | esto es) (urgente | una emergencia | muy urgente | bastante urgente)",
       "no creo que (pueda | se pueda) esperar [hasta manana | a manana]",
       "no estoy (seguro | segura) de que pueda esperar [hasta manana | a manana]",
       "(hay | habria) (manera | forma | posibilidad) de que (sea | venga | venga alguien) hoy",
@@ -1088,7 +1120,7 @@ export const flood: SituationDef = {
       "(seria | es) mejor hoy",
       "la verdad (tiene que | necesita) ser hoy",
       "[tiene razon | bueno | no] mejor (hoy | que sea hoy | que venga hoy) [no manana]",
-      "(no puede | no podria | podria | puede) ser hoy",
+      "(podria | puede) ser hoy",
       "(prefiero | preferiria) (hoy | que sea hoy | que venga hoy)",
     ] },
     // "No hace falta que venga hoy" / "No urge": at the plumber questions only, it can wait
@@ -1096,9 +1128,13 @@ export const flood: SituationDef = {
       "[no] no (hace falta | es necesario | urge | tiene que ser) que (venga | vengan | mande | manden | sea | venga alguien | venga el plomero | mande a alguien) [hoy | ahorita | ahora | hoy mismo]",
       "[no] no (urge | es tan urgente | corre prisa)",
       // "No es urgente" / "No, es urgente", "Hoy no, mañana" / "Hoy, no mañana": the comma is lost (rule 10), so he asks
+      // (a bare "Hoy no" is not today: he still checks "¿Está seguro?")
       "no es urgente #amb",
-      "(hoy no | hoy no manana | manana no hoy) #amb",
+      "(hoy no manana | manana no hoy) #amb",
+      "[no] hoy no [puede ser | se puede]",
       "no (esta bien | me parece bien | me queda bien) manana #amb",
+      // "No tiene que ser hoy" / "No, tiene que ser hoy"; "¿No puede ser hoy?" / "No puede ser hoy": he asks
+      "no (tiene que | necesita | debe | puede | podria) ser (hoy | hoy mismo) #amb",
       "[no] no tiene que ser hoy",
     ] },
     tomorrow_ctx: { patterns: ["[para] manana [en la manana | temprano] [entonces]"] },
@@ -1122,6 +1158,8 @@ export const flood: SituationDef = {
       "[si] puedo esperar (hasta | a) manana",
       "(entonces | pues) manana",
       "que sea manana",
+      "[no | bueno] (mejor | prefiero | preferiria) [que sea] manana [en la manana]",
+      "manana (mejor | si) [hoy no]",
     ] },
     pick_time: { patterns: [
       "[a] {time} (seria | es | esta) (perfecto | ideal | bien | mejor) [para mi] #h:time_perfect",
@@ -1148,13 +1186,13 @@ export const flood: SituationDef = {
     ] },
     time_ctx: { patterns: [
       "[a] {time} [en punto]",
-      "(cualquiera | las dos | cualquiera de las dos | cualquier hora) [esta bien | me sirve | me queda bien] #any",
+      "(cualquiera | cualquiera de las dos | cualquier hora | ambas | ambas opciones) [esta bien | me sirve | me queda bien] #any",
       "me da (igual | lo mismo) #any",
       "(lo que sea | la que sea) mas (facil | comodo) para el #any",
       "(no importa | da lo mismo) #any",
     ] },
     ask_confirmed: { patterns: [
-      "(es | esa es) [una] hora (fija | exacta | confirmada) o (aproximada | mas o menos) #h:confirmed",
+      "(es | esa es) [una] hora (fija | exacta | confirmada | segura) o (aproximada | mas o menos) #h:confirmed",
       "esa hora es (segura | confirmada | exacta | fija)", "(es | esta) confirmada [la hora]",
       "(me | nos)? (puede | podria) confirmar la hora #h:confirm_time",
       "(me puede | me podria) (avisar | mandar un mensaje | llamar) cuando (venga | vaya) en camino #h:let_know",
@@ -1178,7 +1216,7 @@ export const flood: SituationDef = {
     // --- Don Gilberto: thanks, apologies, the voicemail's closing ------------------------------------
     formal_thanks: { patterns: [
       "[muchas | muchisimas] gracias [de nuevo] por su pronta (atencion | ayuda | respuesta) #h:prompt #formal",
-      "le agradezco [mucho | muchisimo | de verdad] su (ayuda | atencion | pronta atencion | comprension) #h:appreciate_it",
+      "le agradezco [mucho | muchisimo | de verdad] su (ayuda | atencion | pronta atencion | pronta ayuda | pronta respuesta | comprension) #h:appreciate_it",
       "le agradezco (muchisimo | infinitamente)",
       "quedo muy (agradecido | agradecida)",
       "es usted muy amable",
@@ -1354,7 +1392,7 @@ export const flood: SituationDef = {
     gr_ok: [t("Ajá, | ajá.", "Uh-huh, | uh-huh.", "Uh-huh."), t("Entendido.", "Understood.", "Got it."), t("Ya veo.", "I see.", "I see.")],
     gr_hurt_q: [
       t("¿Alguien | se lastimó?", "Someone | got hurt?", "Is anybody hurt?"),
-      t("¿Usted | está | bien? | ¿Nadie | se lastimó?", "You | are | okay? | Nobody | got hurt?", "Are you okay? Nobody hurt?"),
+      t("¿Alguien | salió | lastimado?", "Someone | came out | hurt?", "Did anybody get hurt?"),
     ],
     gr_relief: [t("Gracias | a | Dios.", "Thanks | to | God.", "Thank goodness."), t("Uf. | Qué | bueno.", "Phew. | How | good.", "Phew. Good.")],
     gr_breathe: [
@@ -1398,6 +1436,7 @@ export const flood: SituationDef = {
         "Today... hmm. After the storm, my plumber is swamped."),
     ],
     gr_offer_b: [t("¿Podría | esperar | a | mañana | en la mañana?", "Could it | wait | until | tomorrow | in the morning?", "Could it wait till tomorrow morning?")],
+    gr_offer_again: [t("Entonces, | ¿le parece | bien | mañana | en la mañana?", "So, | does it seem to you | good | tomorrow | in the morning?", "So, is tomorrow morning okay with you?")],
     gr_sure: [
       t("¿Está | {m:seguro|f:segura}? | Suena | a | mucha | agua.", "Are you | sure? | It sounds | like | a lot of | water.", "Are you sure? That sounds like a lot of water."),
     ],
@@ -1853,7 +1892,7 @@ export const flood: SituationDef = {
       help: (c) => { c.s.sinceDone = true; G(c, "gr_ok"); } },
     { id: "g_hurt", when: (c) => inGrant(c) && grantKnows(c), done: hurtOk,
       ask: (c) => { bump(c, "g_hurt"); G(c, "gr_hurt_q"); },
-      expects: ["nobody_hurt", "freaking_out", "fine_ctx"],
+      expects: ["nobody_hurt", "freaking_out", "fine_ctx", "hurt_ctx"],
       suggest: [{ lt: "Say whether anybody got hurt", hint: "details" }],
       // "Sí" (somebody hurt?): he worries and waits for "Sí, estoy bien."
       yes: (c) => { hurtYes(c); },
@@ -1866,7 +1905,7 @@ export const flood: SituationDef = {
       help: (c) => { c.s.downDone = true; G(c, "gr_down_unknown"); } },
     { id: "g_water", when: (c) => inGrant(c) && grantKnows(c), done: waterOk,
       ask: (c) => { bump(c, "g_water"); G(c, "gr_water_q"); },
-      expects: ["water_off", "water_not_off", "switch_unknown_ctx"],
+      expects: ["water_off", "water_not_off", "switch_unknown_ctx", "valve_done_ctx"],
       suggest: [{ lt: "Say what you've already done", hint: "details" }],
       yes: (c) => { waterOff(c); }, no: (c) => { waterNotOff(c); },
       help: (c) => { waterNotOff(c); } },
@@ -1888,12 +1927,13 @@ export const flood: SituationDef = {
         const n = bump(c, "g_offer");
         if (n === 1) { c.s.offered = true; G(c, "gr_offer_a"); G(c, "gr_offer_b"); return; }
         if (n >= 3) { dontKnowToday(c); return; }
-        G(c, "gr_offer_b");
+        G(c, "gr_offer_again");
       },
       expects: ["insist_today", "insist_ctx", "wait_no_ctx", "wait_yes_ctx", "accept_tomorrow", "ask_plumber", "today_ctx", "downstairs_yes", "flood", "no_rush_ctx", "tomorrow_ctx", "unsure_ctx"],
       suggest: [{ lt: "Ask for today, politely but firmly", hint: "insist" }, { lt: "Agree to tomorrow", hint: "insist" }],
       yes: (c) => { acceptTomorrow(c); },
-      no: (c) => { todayNow(c); },
+      // "Así está bien" could be "it's fine (tomorrow)" or "no, leave it": he asks again (rule 17)
+      no: (c) => { if (/\basi esta bien\b/.test(heard(c)) && once(c, "g_offer_amb")) { whichDay(c); return; } todayNow(c); },
       help: (c) => { dontKnowToday(c); } },
     { id: "g_time", when: (c) => inGrant(c) && !!c.s.today, done: (c) => !!c.s.timeSet,
       ask: (c) => {
@@ -1963,7 +2003,8 @@ export const flood: SituationDef = {
     },
     g_hello(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_hello(c as ConvCtx, slots); },
     g_howareyou(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_howareyou(c as ConvCtx, slots); },
-    g_ok(c) { if (inVm(c)) vmSilent(c); },
+    // "Bueno." / "Va." to "¿Podría esperar a mañana?" is an okay: he checks ("¿Está seguro?") before it counts
+    g_ok(c) { if (inVm(c)) { vmSilent(c); return; } if (inGrant(c) && c.step === "g_offer" && !c.s.today && !c.s.tomorrow) acceptTomorrow(c); },
     // "¡Perdón!" to Andrea is about breakfast (her answer comes with the rest); to Don Gilberto it's an apology
     g_sorry(c) { if (inVm(c)) { vmSilent(c); return; } if (inGrant(c)) { thankGrant(c, "apology"); return; } turn(c).sorry = true; },
     g_wait(c, slots) { if (inVm(c)) { vmSilent(c); return; } GLOBAL_HANDLERS.g_wait(c as ConvCtx, slots); },
@@ -2103,6 +2144,22 @@ export const flood: SituationDef = {
     { say: "A las once no puedo", intent: "time_not", step: "g_time", not: ["pick_time", "time_ctx"] },
     { say: "No a las once, a la una", intent: "time_not", step: "g_time", not: ["pick_time", "time_ctx"] },
     { say: "No me devuelva la llamada", intent: "none", step: "vm_msg", not: ["vm_close"] },
+    // --- review traps (4 Nov 2026) ---
+    { say: "No tiene que ser hoy", intent: "no_rush_ctx", step: "g_offer", not: ["insist_today", "today_ctx"] },
+    { say: "No necesita ser hoy", intent: "no_rush_ctx", step: "g_offer", not: ["insist_today"] },
+    { say: "No puede ser hoy", intent: "no_rush_ctx", step: "g_offer", not: ["insist_today"] },
+    { say: "¿Podría ser hoy?", intent: "insist_today", step: "g_offer", not: ["accept_tomorrow", "no_rush_ctx"] },
+    { say: "Mejor mañana", intent: "accept_tomorrow", step: "g_offer", not: ["insist_today"] },
+    { say: "Las dos", intent: "time_ctx", step: "g_time", slots: { time: { h: 2 } } },
+    { say: "Cualquiera de las dos", intent: "time_ctx", step: "g_time" },
+    { say: "Sí, me corté el pie", intent: "hurt_ctx", step: "g_hurt", not: ["nobody_hurt", "fine_ctx"] },
+    { say: "Ya", intent: "valve_done_ctx", step: "g_water", not: ["water_not_off", "switch_unknown_ctx"] },
+    { say: "Sí, la vecina ya se quejó", intent: "downstairs_yes", step: "g_down", not: ["downstairs_no"] },
+    { say: "Quiero café", intent: "ask_help", step: "l_need", slots: { stuff: "coffee" }, not: ["warm"] },
+    { say: "No me traigas nada, estoy bien", intent: "need_nothing", step: "l_need", not: ["ask_help", "item_ctx"] },
+    { say: "Sí, nomás mojada", intent: "nobody_hurt", step: "l_okay" },
+    { say: "Buenos días, Don Gilberto, le habla su inquilina del 3B", intent: "intro", step: "g_who" },
+    { say: "¿Es una hora segura o más o menos?", intent: "ask_confirmed", step: "g_time" },
     // --- not understood ---
     { say: "Me gusta mucho bailar salsa", intent: "none", step: "l_news" },
     { say: "El perro de mi abuela canta rancheras", intent: "none", step: "g_close" },
@@ -2155,7 +2212,7 @@ export const flood: SituationDef = {
       expect: { complete: false, state: { tomorrow: true, outcome: "tomorrow" } }, auto: AUTO },
     { name: "lost commas: 'Sí, perdón', 'No es urgente' (he asks again), 'A las once no puedo'", setup: (s) => { s.twist = null; s.askOkay = false; s.askSince = false; },
       turns: ["Se me inundó el depa.", "Sí, perdón.", "Toallas y café.", "¡Nos vemos en un rato!",
-        "Le habla Ryan Miller, del departamento 3B.", "Me temo que la cocina está inundada.", "No, estoy bien.", "Me temo que sí.", "Sí, ya.",
+        "Le habla Ryan Miller, del departamento 3B.", "Me temo que la cocina está inundada.", "No, estoy bien.", "Sí, estoy bien.", "Me temo que sí.", "Sí, ya.",
         "¿Podría mandar un plomero hoy?", "No es urgente.", "Hoy, por favor.", "A las once no puedo.", "Muchas gracias por su pronta atención."],
       expect: { complete: true, state: { cancelled: true, downstairs: true, today: true, timeSet: "one", outcome: "done" } }, auto: AUTO },
     { name: "it can wait: 'No hace falta que venga hoy', then 'Sí, puede esperar' (not done)", setup: (s) => { s.twist = null; s.askOkay = false; s.askSince = true; },
@@ -2190,6 +2247,11 @@ export const flood: SituationDef = {
       turns: ["No llego al desayuno, se me inundó la cocina.", "¿Me puedes traer un trapeador?", "¡Bye!", "Hola, habla Ryan, del 3B.", "No sé.", "Sí.",
         "No.", "No.", "Sí.", "¿Podría mandar un plomero hoy?", "No.", "A las once.", "Muchas gracias por su pronta atención."],
       expect: { complete: false, state: { guessed: true, today: true, timeSet: "eleven", thanked: true, outcome: "partial" } }, auto: AUTO },
+    { name: "review: 'No tiene que ser hoy' (asked again), 'Mañana está bien' is checked, 'Las dos' is no choice", setup: (s) => { s.twist = null; s.askOkay = false; s.askSince = false; },
+      turns: ["Se me inundó el depa, no llego al desayuno.", "Quiero café.", "¡Bye!", "Le habla Ryan, del 3B.", "Se inundó la cocina.",
+        "Sí, me corté el pie.", "Sí, estoy bien.", "Sí, la vecina ya se quejó.", "Ya.", "¿Podría mandar un plomero?", "No tiene que ser hoy.",
+        "Mañana está bien.", "No, mejor hoy.", "Las dos.", "A la una.", "Le agradezco mucho su pronta ayuda."],
+      expect: { complete: true, state: { downstairs: true, waterOff: true, today: true, timeSet: "one", thanked: true, outcome: "done" } }, auto: AUTO },
     { name: "voicemail (twist), then hanging up: the twist is remembered (not done)", setup: (s) => { s.twist = "voicemail"; s.askOkay = false; s.askSince = false; },
       turns: ["Se me inundó el depa, así que no llego al desayuno.", "Una cubeta y unas toallas, por favor.", "¡Bye!",
         "Buenos días, Don Gilberto. Por favor, devuélvame la llamada.", "Habla Ryan, del 3B.", "Adiós.", "Hasta luego."],

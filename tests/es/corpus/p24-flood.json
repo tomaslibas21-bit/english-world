@@ -316,7 +316,7 @@
   {"ctx": "valve", "say": "Listo, ya está", "intent": "valve_done_ctx"},
   {"ctx": "g_request", "say": "No hace falta que venga hoy", "intent": "no_rush_ctx", "not": ["ask_plumber", "plumber_ctx", "today_ctx"]},
   {"ctx": "g_offer", "say": "No hace falta que venga hoy", "intent": "no_rush_ctx", "not": ["today_ctx", "insist_today"]},
-  {"ctx": "g_offer", "say": "¿No puede ser hoy?", "intent": "insist_today", "not": ["accept_tomorrow"]},
+  {"ctx": "g_offer", "say": "¿No puede ser hoy?", "intent": ["insist_today", "no_rush_ctx"], "not": ["accept_tomorrow"], "note": "lost question mark: \"No puede ser hoy\" = it can't be today; he asks hoy o mañana"},
   {"ctx": "g_offer", "say": "Prefiero hoy", "intent": "insist_today"},
   {"ctx": "g_offer", "say": "Mañana", "intent": "tomorrow_ctx", "not": ["today_ctx", "insist_today"]},
   {"ctx": "g_offer", "say": "No sé si puede esperar", "intent": "unsure_ctx", "not": ["accept_tomorrow", "wait_yes_ctx"]},
@@ -383,5 +383,15 @@
   {"ctx": "g_close", "say": "No le agradezco nada", "intent": "any", "not": ["formal_thanks"]},
   {"ctx": "g_close", "say": "No quiero pagar los daños", "intent": "any", "not": ["formal_thanks"]},
   {"ctx": "vm_msg", "say": "No me llame", "intent": "any", "not": ["vm_close"]},
-  {"ctx": "vm_msg", "say": "No es urgente", "intent": "any", "not": ["ask_plumber", "insist_today"]}
+  {"ctx": "vm_msg", "say": "No es urgente", "intent": "any", "not": ["ask_plumber", "insist_today"]},
+  {"ctx": "g_offer", "say": "No tiene que ser hoy", "intent": "no_rush_ctx", "not": ["insist_today"], "note": "review trap: lost comma, he asks again"},
+  {"ctx": "g_offer", "say": "No necesita ser hoy", "intent": "no_rush_ctx", "not": ["insist_today"], "note": "review trap"},
+  {"ctx": "g_offer", "say": "No puede ser hoy", "intent": "no_rush_ctx", "not": ["insist_today"], "note": "review trap"},
+  {"ctx": "g_offer", "say": "Mejor mañana", "intent": "accept_tomorrow", "not": ["insist_today"]},
+  {"ctx": "g_offer", "say": "No, mejor mañana en la mañana", "intent": "accept_tomorrow", "not": ["insist_today"]},
+  {"ctx": "g_hurt", "say": "Sí, me corté el pie", "intent": "hurt_ctx", "not": ["nobody_hurt"], "note": "review trap"},
+  {"ctx": "g_water", "say": "Ya", "intent": ["valve_done_ctx", "water_off"], "not": ["water_not_off"]},
+  {"ctx": "g_down", "say": "Sí, la vecina ya se quejó", "intent": "downstairs_yes"},
+  {"ctx": "l_need", "say": "Quiero café", "intent": "ask_help", "not": ["warm"]},
+  {"ctx": "l_okay", "say": "Sí, nomás mojada", "intent": "nobody_hurt"}
 ] }
