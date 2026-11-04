@@ -1,0 +1,59 @@
+{ "situation": "p28b-review", "items": [
+  { "ctx": "feeling", "say": "Un poco nerviosa, la verdad", "intent": "feel_nervous" },
+  { "ctx": "feeling", "say": "Tranquilo, me siento listo", "intent": "feel_fine" },
+  { "ctx": "feeling", "say": "Tengo curiosidad", "intent": "feel_curious" },
+  { "ctx": "feeling", "say": "¿Estás bien? ¿Te ayudo con la planta?", "intent": "plant_help" },
+  { "ctx": "feeling", "say": "No estoy nervioso para nada", "intent": "any", "not": ["feel_nervous"], "note": "trap: negation" },
+
+  { "ctx": "proud", "say": "Estoy muy orgullosa del lanzamiento de la app", "intent": ["proud_win", "win_ctx"] },
+  { "ctx": "proud", "say": "La encuesta a los clientes", "intent": ["win_ctx", "proud_win"] },
+  { "ctx": "proud", "say": "De ayudar al nuevo practicante", "intent": ["win_ctx", "proud_win"] },
+  { "ctx": "proud", "say": "No sé, nada en especial", "intent": "proud_none" },
+
+  { "ctx": "made", "say": "Planeamos todo con mucho tiempo", "intent": ["made_why", "made_ctx", "made_any_ctx"] },
+
+  { "ctx": "praise", "say": "Muchas gracias, eso significa mucho para mí", "intent": "thanks_praise" },
+  { "ctx": "praise", "say": "Gracias, pero fue un trabajo en equipo", "intent": "team_effort" },
+  { "ctx": "praise", "say": "No fue nada", "intent": "deflect" },
+
+  { "ctx": "consent", "say": "Vale, adelante", "intent": ["want_feedback", "yn:yes"], "note": "Spain: vale" },
+  { "ctx": "consent", "say": "Ahorita no, por favor", "intent": "no_feedback" },
+  { "ctx": "consent", "say": "No me molesta, dime", "intent": ["want_feedback", "yn:yes"], "not": ["no_feedback", "yn:no"], "note": "trap: no + yes meaning" },
+
+  { "ctx": "feedback", "say": "Gracias, es muy útil. Voy a trabajar en eso", "intent": ["fb_thanks", "fb_work"] },
+  { "ctx": "feedback", "say": "Me puedes dar un ejemplo?", "intent": "ask_example_fb", "note": "no ¿" },
+  { "ctx": "feedback", "say": "Lo veo un poco diferente", "intent": "pushback" },
+  { "ctx": "feedback", "say": "Eso no es cierto", "intent": "rude_push" },
+  { "ctx": "feedback", "say": "Pero yo siempre hablo en las juntas", "intent": "defensive_fb" },
+  { "ctx": "feedback", "say": "No voy a trabajar en eso", "intent": "any", "not": ["fb_work", "fb_thanks", "yn:yes"], "note": "trap: negation" },
+
+  { "ctx": "protect", "say": "¿Podemos poner mis secciones en la agenda?", "intent": "protect_idea" },
+
+  { "ctx": "tab", "say": "Perdón, creo que esa evaluación es de otra persona", "intent": "tab_point" },
+  { "ctx": "tab", "say": "¿Esa es mi evaluación?", "intent": "tab_check" },
+
+  { "ctx": "goals", "say": "Me gustaría mejorar mis presentaciones con clientes", "intent": "goal_name" },
+  { "ctx": "goals", "say": "Quiero tomar un curso de análisis de datos", "intent": ["goal_name", "goal_course"] },
+  { "ctx": "goals", "say": "Liderazgo", "intent": "goal_ctx" },
+  { "ctx": "goals", "say": "Hay presupuesto para capacitacion?", "intent": "ask_budget", "note": "no accents" },
+  { "ctx": "goals", "say": "No quiero dar más presentaciones", "intent": "any", "not": ["goal_name", "goal_ctx"], "note": "trap: negation" },
+  { "ctx": "goals", "say": "Mi perro come tacos de pescado", "intent": "none" },
+
+  { "ctx": "support", "say": "¿Podemos practicar antes de las juntas con clientes?", "intent": "ask_support" },
+
+  { "ctx": "rev_open", "say": "Claro, con gusto", "intent": ["rev_ok_ctx", "yn:yes"] },
+  { "ctx": "rev_open", "say": "Prefiero no decir nada", "intent": "rev_decline" },
+  { "ctx": "rev_worked", "say": "Lo que funciona muy bien es que siempre nos escuchas", "intent": ["rev_worked", "mg_ctx"] },
+  { "ctx": "rev_try", "say": "Podrías mandar menos correos en la noche", "intent": ["rev_try", "mt_ctx"] },
+  { "ctx": "rev_try", "say": "No eres una mala jefa", "intent": "any", "not": ["rev_rude"], "note": "trap: negation" },
+
+  { "ctx": "ask_me", "say": "¿Podemos hablar de un aumento?", "intent": "ask_raise" },
+  { "ctx": "ask_me", "say": "¿Qué necesito hacer para un ascenso?", "intent": "ask_criteria" },
+  { "ctx": "ask_me", "say": "No quiero hablar de mi sueldo", "intent": "any", "not": ["ask_raise"], "note": "trap: negation" },
+
+  { "ctx": "anything_else", "say": "No, creo que es todo", "intent": "no_more" },
+  { "ctx": "anything_else", "say": "Sí, tengo una pregunta más", "intent": "any", "not": ["no_more"], "note": "trap: not a closing" },
+
+  { "ctx": "checkin", "say": "Me parece bien, en un mes", "intent": ["checkin_yes_ctx", "agree_idea", "propose_checkin", "yn:yes"] },
+  { "ctx": "checkin", "say": "Mejor en dos semanas", "intent": "checkin_no_ctx" }
+] }

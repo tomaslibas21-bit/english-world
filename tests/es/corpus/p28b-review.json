@@ -271,5 +271,17 @@
   {"ctx": "consent", "say": "No quiero escucharlo", "intent": "no_feedback", "not": ["want_feedback"]},
   {"ctx": "consent", "say": "No estoy lista", "intent": "no_feedback", "not": ["want_feedback"]},
   {"ctx": "consent", "say": "Estoy listo", "intent": "want_feedback"},
-  {"ctx": "praise", "say": "No me lo esperaba, gracias", "intent": "thanks_praise"}
+  {"ctx": "praise", "say": "No me lo esperaba, gracias", "intent": "thanks_praise"},
+  {"ctx": "feedback", "say": "No, tienes razón", "intent": "rude_push", "not": ["fb_thanks"], "note": "review: comma lost, #amb (she asks)"},
+  {"ctx": "feedback", "say": "Gracias, pero no estoy de acuerdo", "intent": "any", "not": ["fb_thanks", "fb_work"], "note": "review trap"},
+  {"ctx": "feedback", "say": "No creo que sea justo", "intent": "pushback", "not": ["fb_thanks"]},
+  {"ctx": "feedback", "say": "Por qué dices eso?", "intent": "ask_example_fb", "note": "no ¿"},
+  {"ctx": "goals", "say": "Ya tomé un curso de liderazgo el año pasado", "intent": "any", "not": ["goal_name", "goal_ctx"], "note": "review trap: past"},
+  {"ctx": "ask_me", "say": "No quiero hablar del sueldo, gracias", "intent": "no_more", "not": ["ask_raise"]},
+  {"ctx": "ask_me", "say": "Sí, tengo una pregunta", "intent": "more_q_ctx", "not": ["no_more"]},
+  {"ctx": "anything_else", "say": "Sí, tengo una pregunta más", "intent": "more_q_ctx", "not": ["no_more"]},
+  {"ctx": "checkin", "say": "No, en un mes está bien", "intent": "checkin_yes_ctx", "not": ["checkin_no_ctx"]},
+  {"ctx": "checkin", "say": "Me parece bien, en un mes", "intent": "checkin_yes_ctx"},
+  {"ctx": "rev_worked", "say": "No eres una mala jefa", "intent": "rev_worked", "not": ["rev_rude"]},
+  {"ctx": "rev_try", "say": "No siempre nos dices las prioridades", "intent": "rev_try", "not": ["rev_nothing"]}
 ] }
