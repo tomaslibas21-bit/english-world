@@ -133,7 +133,7 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
             <span className="ts-place"><Icon name="pin" size={15} strokeWidth={2} /> Maple Harbor · JAV</span>
             <span className="ts-place-lt" lang="lt">{TOWN_LT}</span>
           </span>
-          <h1 className="ts-title">English <em>World</em></h1>
+          <h1 className="ts-title">English <em>World</em> <small className="beta-badge">Beta</small></h1>
           {head}
         </header>
         <div className="ts-show">

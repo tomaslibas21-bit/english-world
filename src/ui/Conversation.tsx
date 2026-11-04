@@ -18,6 +18,7 @@ import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
 import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
+import {ReportProblem} from "./ReportProblem";
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -133,6 +134,7 @@ export function Conversation() {
       </div>
 
       {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
+      <ReportProblem />
       <Mission />
 
       <div className="transcript" ref={scrollRef} aria-live="polite">
@@ -159,6 +161,7 @@ export function Conversation() {
             </div>
           </div>
 
+          {!!conv.speechChoices?.length && <div className="miss-box"><p>{conv.speechChoices.length > 1 ? "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?" : "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk."}</p>{conv.speechChoices.map(text=><button className="btn soft small" key={text} lang="en" onClick={()=>void game?.activeSession?.submit(text,[],"voice",true)}>{text}</button>)}<button className="btn ghost small" onClick={()=>{setTyped(conv.lastHeard);setConv({typing:true,speechChoices:undefined});}}>Pataisyti tekstą</button></div>}
           {conv.failures > 0 && conv.phase === "you" && conv.lastHeard && (
             <div className="miss-box" ref={missRef}>
               <div>Neatpažinau{conv.prefix ? " – atrodo, sakinys nebaigtas" : ""}. Girdėjau:</div>

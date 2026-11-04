@@ -335,6 +335,7 @@ function Settings({ close }: { close: () => void }) {
         <Toggle on={s.suggestions} onChange={(v) => set({ suggestions: v })} label="Pasiūlymai, ką pasakyti" sub="Lietuviški pasiūlymai tavo eilėje." />
         <Toggle on={s.hintsOpen} onChange={(v) => set({ hintsOpen: v })} label="Frazės atidarytos iš karto" sub={<>Kitaip atsidaro paspaudus <InlineIcon name="bulb" label="lemputę" /> (H).</>} />
         <Toggle on={s.autoListen} onChange={(v) => set({ autoListen: v })} label="Mikrofonas įsijungia automatiškai" sub="Kai pašnekovas baigia kalbėti." />
+        <Toggle on={s.confirmSpeech} onChange={v=>set({confirmSpeech:v})} label="Patvirtinti atpažintą tekstą" sub="Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį." />
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label="Žmonės kalba lėčiau" />
         {(local === "available" || local === "downloadable" || local === "downloading") && (
           <Toggle on={s.onDevice} onChange={(v) => { set({ onDevice: v }); refreshLocalState(); }} label="Atpažinti kalbą šiame įrenginyje" sub="Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą." />

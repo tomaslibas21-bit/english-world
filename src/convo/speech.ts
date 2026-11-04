@@ -104,7 +104,7 @@ let phrasesRefused = false;
 
 const MAX_CANDIDATES = 8;
 /** "not", "no", "never", "don't"…: a reading without the learner's negation is never preferred. */
-export const hasNegation = (text: string) => text.toLowerCase().split(/[^a-z']+/).some((w) => NEGATION_TOKENS.has(w) || w.endsWith("n't"));
+export const hasNegation = (text: string) => text.toLowerCase().replace(/[’‘]/g, "'").split(/[^a-z']+/).some((w) => NEGATION_TOKENS.has(w) || w === "cannot" || w.endsWith("n't"));
 const MAX_ALTERNATIVES = 5;
 
 export function createSpeechAttempt(opt: SpeechOptions) {
