@@ -1,0 +1,8 @@
+{
+  "npc": "Chef Villanueva, head chef (and Fátima, junior cook)",
+  "images": ["serve", "taste", "feedback", "lime", "crunch", "favor", "ceviche", "waiting", "notes", "slow", "habanero", "done"],
+  "start": "serve",
+  "done": "done",
+  "phases": {"serve": "serve", "consent": "taste", "receive": "feedback", "example": "feedback", "again": "lime", "second": "crunch", "handoff": "favor", "mia_open": "ceviche", "mia_worked": "waiting", "mia_try": "notes", "mia_howmuch": "notes", "mia_encourage": "slow", "mia_back": "habanero"},
+  "focus": [34, 30]
+}

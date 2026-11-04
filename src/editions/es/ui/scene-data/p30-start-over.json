@@ -1,0 +1,8 @@
+{
+  "npc": "Diego, your friend (and Natalia)",
+  "images": ["door", "listen", "hurt", "rueful", "nora", "what_now", "deal", "shake", "home"],
+  "start": "door",
+  "done": "home",
+  "phases": {"door": "door", "apology": "listen", "responsibility": "hurt", "turn": "rueful", "nora": "nora", "make_up": "what_now", "deal": "deal", "start_over": "shake"},
+  "focus": [34, 30]
+}
