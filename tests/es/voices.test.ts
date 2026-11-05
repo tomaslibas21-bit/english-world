@@ -7,7 +7,8 @@ import { setVariety } from "../../src/convo/compose";
 import { chooseVariety } from "../../src/state/variety";
 import { ACCENTS, CAST, SCENES, accentOf, castingProblems, roleOf, styleFor, whoOf } from "../../tools/es-voices/casting-es";
 import { geminiTextEs, likenessEs, numbersToDigitsEs, syllables, withFx } from "../../tools/es-voices/voice-batch-es";
-import { reachFilter, reachOf } from "../../tools/es-voices/reach-es";
+import { BINDINGS, codeSpeakers, reachFilter, reachOf } from "../../tools/es-voices/reach-es";
+import { betterWhy, mergeUtts } from "../../tools/es-voices/lines-es";
 import { SITUATION_BY_ID } from "../../src/content/situations";
 
 afterEach(() => setVariety("default"));
@@ -83,6 +84,57 @@ describe("the values a line can really be said with (reach-es.ts)", () => {
     expect(sale({ price: 59900, pct: 20, amount: 47900 })).toBe(true);
     expect(sale({ price: 59900, pct: 20, amount: 59900 })).toBe(false);
     expect(reachFilter(sit("s31-doctor"), "change_is")!({ price: 160000 })).toBe(false);
+  });
+  it("keeps the values and items the audits read in the code (5 Nov)", () => {
+    const seat = (en: string) => ({ en, lt: en, say: en });
+    expect(reachFilter(sit("s64a-checkin"), "seat_which")!({ sa: seat("ventana"), sb: seat("pasillo") })).toBe(true);
+    expect(reachFilter(sit("s64a-checkin"), "seat_which")!({ sa: seat("ventana"), sb: seat("ventana") })).toBe(false);
+    expect(reachFilter(sit("s68-hotel"), "walkin_twobeds")!({ price: 250000 })).toBe(true);
+    expect(reachFilter(sit("s68-hotel"), "walkin_twobeds")!({ price: 170000 })).toBe(false);
+    expect(reachFilter(sit("s68-hotel"), "eco_fee")!({ price: 3500 })).toBe(true);
+    expect(reachFilter(sit("s71a-rental"), "rate_is")!({ price: 65000 })).toBe(true);
+    expect(reachFilter(sit("s71a-rental"), "rate_is")!({ price: 15000 })).toBe(false); // the GPS's rate, not a car's
+    expect(reachFilter(sit("s72-cafe"), "price_is")!({ amount: 30000 })).toBe(false);
+    // the audio guide in a language the museum has; "no la tenemos" only in one it hasn't
+    expect(reachFilter(sit("s70-museum"), "guide_here")!({ X: "spanish" })).toBe(true);
+    expect(reachFilter(sit("s70-museum"), "guide_here")!({ X: "japanese" })).toBe(false);
+    expect(reachFilter(sit("s70-museum"), "no_lang")!({ X: "japanese" })).toBe(true);
+    const sized = sit("s72-cafe").entities!.drink.filter((e) => e.attrs?.sized && !e.attrs?.generic);
+    expect(sized.length).toBeGreaterThan(0);
+    expect(reachFilter(sit("s72-cafe"), "ask_size_of")!({ X: sized[0].id })).toBe(true);
+    // s76: the offered pair is always one of OFFERS' eleven (the existing appointment is said like "early")
+    const dom = sit("s76-dentist-call").domains!;
+    const slots = dom.slot2() as { say: string }[];
+    const ok = dom.slot().flatMap((a) => slots.map((b) => ({ slot: a, slot2: b }))).filter(reachFilter(sit("s76-dentist-call"), "availability")!);
+    expect(new Set(ok.map((b) => `${(b.slot as { say: string }).say}|${b.slot2.say}`)).size).toBe(11);
+  });
+  it("lists the lines with two placeholders the code binds together", () => {
+    const fares = BINDINGS["s66-taxi:fare_is"](sit("s66-taxi"));
+    const dest = sit("s66-taxi").entities!.dest;
+    expect(fares.length).toBe(dest.filter((e) => !e.attrs?.here).length);
+    for (const b of fares) expect(b.fare).toBe(dest.find((e) => e.id === b.X)!.attrs!.fare);
+    const list = BINDINGS["s74-clothes:color_list_pl"](sit("s74-clothes"));
+    expect(list.every((b) => (b.X as { qty: number }).qty === 2)).toBe(true);
+    expect(list.map((b) => (b.X as { id: string }).id)).toContain("pantalon");
+    expect(BINDINGS["s74-clothes:color_yes"](sit("s74-clothes")).some((b) => (b.X as { id: string }).id === "pantalon")).toBe(false);
+  });
+  it("reads who says a line where the code chooses the speaker", () => {
+    expect([...codeSpeakers(sit("s85-dinner")).get("glad_you_like") ?? []].sort()).toEqual(["dan", "nora"]);
+    const s34 = codeSpeakers(sit("s34-meeting"));
+    expect(s34.get("np_paul")).toEqual(new Set(["paul"]));
+    expect(s34.get("sure_welcome")).toEqual(new Set(["kate"]));
+  });
+});
+
+describe("the line list (lines-es.ts)", () => {
+  it("keeps a clip heard in a run over one made from a guess, and merges the workers' lists", () => {
+    expect(betterWhy("item list? qty?", "heard")).toBe("heard");
+    expect(betterWhy("item list? qty?", "item qty?")).toBe("item qty?");
+    const a = { voice: "es_marco", speed: 1, say: "Claro.", shown: "Claro.", where: "s73-restaurant:ack[0]", sits: ["s73-restaurant"], why: "line who?" };
+    const merged = mergeUtts([[a], [{ ...a, where: "s73-restaurant:sim", sits: ["s69-local"], why: "heard" }]]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].sits).toEqual(["s73-restaurant", "s69-local"]);
+    expect(merged[0].why).toBe("heard");
   });
 });
 

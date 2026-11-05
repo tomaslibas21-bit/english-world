@@ -17,14 +17,16 @@ The Spanish edition has its own copies of the voice tools in `tools/es-voices/` 
 
 | File | What it does |
 |---|---|
-| `tools/es-voices/lines-es.ts` | every line the Spanish game can speak, in both sets: Mexican (`es_…`) and neutral (`esn_…`, with the neutral twins' text), for both learner genders ("¿Está listo?" / "¿Está lista?"), the example answers in the coach voice of the learner's gender, the scripted sims as well as random conversations (so customs in s65b is reached and voiced by Agente Medina), speakers a conversation switches to |
+| `tools/es-voices/lines-es.ts` | every line the Spanish game can speak, in both sets: Mexican (`es_…`) and neutral (`esn_…`, with the neutral twins' text), for both learner genders ("¿Está listo?" / "¿Está lista?"), the example answers in the coach voice of the learner's gender; each line in the voice of everyone heard saying it or made to say it by the code, an item line with the item lists it is heard with and its items bound one or two as the line binds them ("los papadzules"), a value line with the values reach-es.ts keeps, a line with two placeholders with reach-es.ts's bindings; each clip says how it was found (`why`) |
+| `tools/es-voices/runs-es.ts` | what the conversations really say, played once for both sets: random conversations (fuzzSituation's own runs), the scripted sims for both genders (and both date partners in s84), and probes where a conversation has more than one speaker (a line said by whoever holds the floor asked again where each other person holds it) |
 | `src/editions/es/content/voices.ts` | the one switch: `npcVoice`, `coachVoice`, `ambientVoice` give `es_…` with Mexican Spanish chosen and `esn_…` with neutral Spanish (compose's variety, set by Settings through `src/state/variety.ts`); one folder and one manifest hold both sets |
 | `tools/es-voices/casting-es.ts` | the casting below: a Gemini voice, an age, a manner and a pace per character, two accent directions, the settings per conversation; the checks (gender, no shared voice within a conversation, the coach voices for nobody else) |
 | `tools/es-voices/voice-batch-es.ts` | samples, batches, checks, redos, the ledger, the install into `public/audio-es/` |
 | `tools/es-voices/voice-casting-es.ts` | the casting as the tables below |
-| `tools/es-voices/reach-es.ts` | which values a line with a value list can really be said with: fixed values read in its calls, and rules for values that hang together; the line list uses it (the table: run it) |
-| `tools/es-voices/breakdown-es.ts` | where the clips come from, by kind and value list, per set (also on Maple Harbor's list) |
-| `tools/es-voices/values-es.ts` | the check of the cuts: every value random conversations and the sims say, and whether it is kept |
+| `tools/es-voices/reach-es.ts` | which values (and items) a line can really be said with: fixed values read in its calls, rules for values that hang together, the bindings of lines with two placeholders (`BINDINGS`: a place and its fare), and who the code makes say a line (speaker helpers); the line list uses it (the table: run it) |
+| `tools/es-voices/breakdown-es.ts` | where the clips come from, by kind and value list, per set and per conversation (also on Maple Harbor's list); `--diff=<an earlier lines.json>`: before → after per conversation and kind |
+| `tools/es-voices/values-es.ts` | the check of the cuts: every value random conversations, the sims and the probes say, whether reach-es.ts keeps it and (`--lines=`) whether its clip is in the list |
+| `tools/es-voices/check-list-es.ts` | the check of the list against other runs than its own: every clip they say is in it (a speaker it lacks, a value, an item), every (line, speaker) pair, and the clips made from a guess nobody was heard saying (junk) |
 
 Every command runs with the edition overlay:
 
@@ -34,7 +36,7 @@ EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-batch
 
 | Step | Command | Key? |
 |---|---|---|
-| What would be recorded: clips per voice, minutes, price | `plan` | no |
+| What would be recorded: clips per voice, minutes, price (`--only=s73,s65b`: those conversations alone, into `lines-only.json`, to try a change) | `plan [--only=…]` | no |
 | A few lines per voice right away, both accents (the standard price) | `sample --round=<name> [--per=2] [--who=a,b] [--accent=mx\|neutral] [--age] [--no-accent]` | yes |
 | Whisper (Spanish) and the length screen on a sample | `check-samples <round>` | no |
 | A Gemini listener on a sample, not told the accent asked for: Mexican, neutral Latin American, Spain or other; native or not; the words | `judge <round>` | yes (cents) |

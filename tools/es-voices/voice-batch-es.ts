@@ -39,7 +39,7 @@ import { EDITION } from "../../src/edition";
 import { NPCS } from "../../src/content/npcs";
 import { SITUATION_BY_ID } from "../../src/content/situations";
 import { placeholders } from "../../src/convo/compose";
-import { enumerateEs, mergeUtts, type EsUtt } from "./lines-es";
+import { enumerateEs, mergeUtts, type EsUtt, type LinesResult } from "./lines-es";
 import { accentOf, castingProblems, roleOf, styleFor, whoOf, type Accent, type StyleOpts } from "./casting-es";
 import { decodeAudio, trimAndNormalize } from "../audio-util";
 
@@ -166,36 +166,45 @@ const SAY_AS: Record<string, string> = {};
 function newestSource(): number {
   let t = 0;
   const walk = (p: string) => { if (!fs.existsSync(p)) return; const s = fs.statSync(p); if (s.isDirectory()) for (const f of fs.readdirSync(p)) walk(path.join(p, f)); else t = Math.max(t, s.mtimeMs); };
-  for (const p of ["src/content", "src/convo", "src/editions/es/content", "src/editions/es/convo", "src/audio-key.ts", "tools/enumerate.ts", "tools/es-voices/lines-es.ts", "tools/es-voices/reach-es.ts"]) walk(path.join(ROOT, p));
+  for (const p of ["src/content", "src/convo", "src/editions/es/content", "src/editions/es/convo", "src/audio-key.ts", "tools/enumerate.ts", "tools/sim-play.ts", "tools/es-voices/lines-es.ts", "tools/es-voices/runs-es.ts", "tools/es-voices/reach-es.ts"]) walk(path.join(ROOT, p));
   return t;
 }
 /** Every line the game can speak (lines-es.ts), cached in <work>/lines.json until the content changes (--fresh makes
  *  it again). The random conversations take a while, so `--workers=2` (the default; the machine is shared, so no
- *  more than two heavy processes) lists the conversations in parallel processes, niced. */
+ *  more than two heavy processes) lists the conversations in parallel processes, niced. `--only=s73,s65b` lists only
+ *  those conversations (with the global lines of their people), into <work>/lines-only.json, never the whole list:
+ *  for trying a change quickly. */
 async function utterances(): Promise<EsUtt[]> {
-  const cache = path.join(WORK, "lines.json");
+  const only = flag("only");
+  const cache = path.join(WORK, only ? "lines-only.json" : "lines.json");
   // --cached: the list as it is, even if the content changed since (for a sample while the list is made again)
-  if (!has("fresh") && fs.existsSync(cache) && (has("cached") || fs.statSync(cache).mtimeMs > newestSource())) return readJson<EsUtt[]>(cache, []);
+  if (!only && !has("fresh") && fs.existsSync(cache) && (has("cached") || fs.statSync(cache).mtimeMs > newestSource())) return readJson<EsUtt[]>(cache, []);
   const t0 = Date.now();
   const n = Math.max(1, Number(flag("workers") ?? 2));
   const dir = path.join(WORK, "lines-parts");
   fs.mkdirSync(dir, { recursive: true });
   const run = promisify(execFile);
   const env = { ...process.env, EDITION: "es" };
-  console.log(`listing every line in ${n} worker(s)…`);
-  const results = await Promise.all(Array.from({ length: n }, (_, k) => run("nice", ["-n", "10", process.execPath, ...process.execArgv, process.argv[1], "lines-part", `--part=${k}/${n}`, `--out=${path.join(dir, `part${k}.json`)}`, `--fuzz=${flag("fuzz") ?? 120}`], { env, maxBuffer: 64 << 20, cwd: ROOT })
-    .then(() => readJson<{ utts: EsUtt[]; errors: string[] }>(path.join(dir, `part${k}.json`), { utts: [], errors: ["no output"] }))));
+  console.log(`listing ${only ? `the lines of ${only}` : "every line"} in ${n} worker(s)…`);
+  const results = await Promise.all(Array.from({ length: n }, (_, k) => run("nice", ["-n", "10", process.execPath, ...process.execArgv, process.argv[1], "lines-part", `--part=${k}/${n}`, `--out=${path.join(dir, `part${k}.json`)}`, `--fuzz=${flag("fuzz") ?? 120}`, ...(only ? [`--only=${only}`] : [])], { env, maxBuffer: 64 << 20, cwd: ROOT })
+    .then(() => readJson<LinesResult>(path.join(dir, `part${k}.json`), { utts: [], errors: ["no output"], warnings: [], stats: {} }))));
   const errors = results.flatMap((r) => r.errors);
+  const warnings = [...new Set(results.flatMap((r) => r.warnings ?? []))].sort();
   const utts = mergeUtts(results.map((r) => r.utts));
-  console.log(`${utts.length} lines in ${Math.round((Date.now() - t0) / 1000)} s`);
+  const stats = Object.assign({}, ...results.map((r) => r.stats ?? {})) as LinesResult["stats"];
+  const probed = Object.entries(stats).filter(([, s]) => s.probes);
+  console.log(`${utts.length} lines in ${Math.round((Date.now() - t0) / 1000)} s; ${utts.filter((u) => u.why === "heard").length} of them heard in runs, sims or probes`);
+  if (probed.length) console.log(`probes where another person holds the floor: ${probed.map(([id, s]) => `${id} ${s.probes}${s.misrouted ? ` (${s.misrouted} not counted)` : ""}`).join(", ")}`);
+  if (warnings.length) { console.log(`${warnings.length} lines the list can't make from their text (only as heard):`); for (const w of warnings) console.log("  ~ " + w); }
   if (errors.length) { console.log(`${errors.length} handler errors while listing lines (fix them first):`); for (const e of errors.slice(0, 10)) console.log("  ! " + e); process.exit(1); }
   writeJson(cache, utts, true);
+  writeJson(path.join(WORK, only ? "lines-only-notes.json" : "lines-notes.json"), { warnings, stats });
   return utts;
 }
 /** One worker's share of the lines (utterances() starts them). */
 function linesPart() {
   const [k, n] = (flag("part") ?? "0/1").split("/").map(Number);
-  const res = enumerateEs({ fuzzRuns: Number(flag("fuzz") ?? 120), part: [k, n] });
+  const res = enumerateEs({ fuzzRuns: Number(flag("fuzz") ?? 120), part: [k, n], ...(flag("only") ? { only: flag("only")!.split(",") } : {}) });
   writeJson(flag("out")!, res, true);
 }
 async function allLines(styleOpts?: StyleOpts): Promise<Line[]> {
@@ -285,7 +294,7 @@ function pickFrom(lines: Line[], per: number, only?: Set<string>): Line[] {
   // a line the character really says: met in a sim or a random conversation, or a line of theirs with nothing to fill
   // in (a line voiced with every item of every list can come out as one never said: "esa Mérida se queda aquí")
   const real = (l: Line) => {
-    if (/:(sim|fuzz)$/.test(l.where) || l.who.startsWith("coach_")) return true;
+    if (/:(sim|fuzz|probe)$/.test(l.where) || l.who.startsWith("coach_")) return true;
     const m = /^([^:]+):([a-z0-9_]+)\[(\d+)\]$/i.exec(l.where);
     const src = m ? SITUATION_BY_ID[m[1]]?.lines[m[2]]?.[Number(m[3])] : undefined;
     return !!src && !placeholders(src).entities.length && !placeholders(src).values.length;
