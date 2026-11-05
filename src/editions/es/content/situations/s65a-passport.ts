@@ -828,6 +828,7 @@ export const passport: SituationDef = {
       "@staff (dar | poner) (mas dias | mas tiempo | {number} dias | {dur}) #h:dy_more",
       "(puede | podria | me puede | me podria) (darme | ponerme) (mas dias | mas tiempo | {number} [dias] | {dur})", "(puedes | podrias) (darme | ponerme) (mas dias | {number} [dias] | {dur}) #tip:tu_staff",
       "(me da | me pone) (mas dias | {number} dias | {dur})", "no me (puede | podria) (dar | poner) {number} [dias]",
+      "@staff (dar | poner) los {number} [dias]", "(puede | podria | me puede | me podria) (darme | ponerme) los {number} [dias]",
       "por que (solo | nomas | nada mas)? {number} [dias]",
       "(necesito | quisiera | me gustaria | quiero) (mas dias | mas tiempo)", "prefiero (mas dias | {number} dias | {dur})",
       "(es que | pero) (voy a estar | me quedo | necesito | voy a quedarme) {dur} #h:dy_more2",
