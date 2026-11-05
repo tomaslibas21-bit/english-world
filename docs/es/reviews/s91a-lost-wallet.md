@@ -35,3 +35,76 @@ The two blind misses were "Bueno, voy a regresar al café a preguntar" and "Las 
 - The writer's // NEEDS stands: g_dontknow lacks "No me acuerdo" / "No recuerdo".
 - "No, está todo" at "¿Está todo adentro?" (first ask) still reads as "No está todo" (missing). That's the likelier voice reading; the contradictory comma reading is rare.
 - $150 for a bunch of flowers is my estimate of a market price.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer's pass (AUDIT-BRIEF.md): both texts; the transcripts of seeds 3 and 7 read in full; about 90 probed
+turns (`tools/probe.ts`); the cross file (with its "Town directions (5 Nov)") and the neutral digest; TOWN.md "Getting
+around" (her stall in the tianguis' north-west row, the police at the square's east end next to the church, the sitio
+at the east end of avenida Juárez, the colectivos waved down on the avenue, the tianguis on Saturdays 7 to 2); s62,
+s64b, s69 and s91b for the shared facts; the English original on main.
+
+**Found 30, fixed 30** (by point):
+
+1. **Natural Spanish (1).** Only what's inside, said after a description ("Adentro hay dos tarjetas…"), got the old
+   echo again ("Entonces, una mochila azul…"): now "Muy bien. Si la veo, le aviso."
+2. **tú/usted (0).** Doña Mari is usted everywhere, warm with mijo/mija; the hints say usted to her (tú is understood,
+   with the tip).
+3. **Names (0).** Doña Mari agrees with the cast. Her new answer to "¿Cómo se llama usted?" is "Mari, mijo, para
+   servirle." (not "María": s88's coworker is María, the cross file's mild near-clash).
+4. **Facts and the town (7).** The police was "ahí enfrente, junto al museo" (s62's old map); in the 3D town it's
+   across the square from her stall, next to the church, a minute on foot, no street to cross (the cross file's table):
+   `directions` "Está ahí, al otro lado de la plaza, junto a la iglesia.", `directions2` "¿Ve la iglesia? La policía
+   está al lado." / "Nada más cruce la plaza y ahí está.", `far` "…cruzando la plaza. Un minuto a pie." (and its twin),
+   `police_correct` "No, está junto a la iglesia, al otro lado de la plaza."; `police_known` takes the church (or the
+   kiosco, or the square) as right and corrects the museum, the bank and the rest; the header comment. `call_bus` sent
+   the learner to "la parada de los colectivos", which the town doesn't have (they pass along the avenue and are waved
+   down: s62, s69): "Entonces pregúnteles a los choferes de los colectivos. Pasan por la avenida cada rato."
+5. **Glosses and English (1).** The place hints said "At the taxi.", "I was at the colectivo.", "This morning, at the
+   taxi.": they are for places only now (a ride gets "Tomé un taxi."). Every new line's units, flags and American
+   English checked.
+6. **Spelling, ¿¡ (0).**
+7. **Questions and offers (13; the three "where" questions and the three "will you help" ones count once each).** "¿No ha visto una cartera negra?" got no answer ("¡Ay, Dios! No se preocupe."), and
+   "Ándele." when asked again: new `not_seen` "No, mijo, no he visto nada." first (and its color is the description).
+   "¿Cuánto cuestan las rosas?" after the loss got "Muy bien." / "Ándele." (now the price, $150; a compliment is
+   thanked). After the way to the police was given early, the advice still asked "¿Sabe dónde está?" (now only if the
+   way wasn't given). "¿Y las llaves también?" came with "¿Dónde la vio…?" in the same turn, so "Sí" got "¿Ah, sí?
+   ¿Dónde fue eso?" (the keys question now waits for its yes or no). "¿Seguro? Parece que busca algo." had no answer for
+   "Sí, estoy seguro" or "Solo estoy viendo las flores" (new pending: `if_need` "Bueno. Si necesita algo, aquí estoy.";
+   a no gets "¿Qué le pasó?"). "¿Compró algo hoy en la mañana?": "Sí, compré pan" and "No, nada" weren't understood
+   (`bought_ctx` → "¿Ah, sí? ¿Dónde fue eso?"; `nothing_ctx` = no). The wallet back without its money ended with
+   "¡Suerte! Ojalá la encuentre." (now "¡Mucha suerte, mijo!", `luck`). No answer for "¿Dónde está el sitio (de
+   taxis)?" (`where_sitio`: the end of avenida Juárez, by the airport), "¿Dónde paran los colectivos?"
+   (`where_colectivos`), "¿Dónde está la iglesia?" after "¿Ve la iglesia?" (`where_church`: at the far end of the
+   square, facing the kiosco, as s62), "Si la encuentra, ¿me avisa?" (`eye_yes` "¡Claro que sí! Aquí estoy hasta las
+   dos.", the tianguis' hours), "¿Me ayuda a buscarla?" (`cant_leave`), "¿Le dejo mi número?" (`number_police`: leave it
+   at the police, as s91b takes it), "¿Usted vio a alguien?" (`not_seen`), "¿Cómo se llama usted?" (`her_name`), "¿Qué
+   hago si no la encuentro?" / "¿Y si me la robaron?" (`what_do`; asked again: the short "Por algo perdido…"; stolen:
+   "Entonces de todos modos vaya a la policía."). A right guess ("¿Junto a la iglesia?", "¿La iglesia?") got "Ah, muy
+   bien." (now `police_yes` "Sí, ahí, junto a la iglesia.").
+8. **Hints (0).** Natural, usted, and accepted by the grammar (the NLU tests have every hint).
+9. **Accepted answers (6).** The intro's own moment: "Aquí, cuando fui a pagar los mangos", "En el puesto de mangos,
+   cuando iba a pagar" (now the tianguis and the fruit stand); what's inside ("Adentro hay dos tarjetas y unos
+   quinientos pesos", "Tenía mis tarjetas, mi licencia y como mil pesos", "…tiene mi celular y mi pasaporte"; a `thing`
+   macro, plurals and amounts); "Está todo menos el dinero", "Falta mi pasaporte"; "¿Está retirado?", "¿A cuántas
+   cuadras?"; "¿Me puede marcar la policía en el mapa?"; "La policía está junto a la iglesia, ¿no?".
+10. **The neutral text (2).** The wallet's neutral noun is "billetera" (as s64b; "cartera" is a handbag in much of South
+    America): `attrs.neutral` on the wallet for the coming target.ts fix, and a twin for the describe hint "Es una
+    billetera negra de piel."; the hint notes no longer say only "cartera". No new line has a Mexican-only word.
+
+**Tests.** NLU 123 → 151, sims 14 → 20 (all 12/12: the mangoes and "¿No ha visto…?", the museum corrected, "¿Seguro?"
+and the bread, contents with her eye and the number, the keys, the church and her name, everything but the money and
+the roses), corpus 206 → 252 understood (0/39 → 0/43 false accepts, +4 traps: "No compré pan", "No fui a pagar los
+mangos", "No le dejo mi número", "No estoy seguro"), held-out 41 → 51 (+10 written before testing, all understood, 0/4).
+
+**Voices.** Changed: `directions`, `directions2` (both), `far` (+ twin), `police_correct`, `call_bus`; new: `not_seen`,
+`eye_yes`, `cant_leave`, `number_police`, `where_church`, `where_sitio`, `where_colectivos`, `police_yes`, `if_need`,
+`her_name`, `luck` (good_luck's own text); the describe hint's neutral twin. One speaker; no plural items; the only
+value is the roses' $150 (a module constant).
+
+**For the lead.**
+- target.ts (FOLLOWUPS, s32): with `attrs.neutral` read, the neutral text says "billetera" in every {X} line and hint;
+  the wallet's chip ("cartera") and the topic "Cartera perdida" have no neutral form.
+- s91b (its reviewer): the intro and header still put the police "across from the zócalo next to the museum".
+- English (EN-FIXES-LEADS): "Have you seen a black wallet?" is never answered; "How much are the roses?" after the loss
+  gets "Okay."; the twist with the money gone ends "I hope you find it."

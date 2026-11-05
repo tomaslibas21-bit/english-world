@@ -15,6 +15,7 @@ export interface Settings {
   suggestions: boolean;
   hintsOpen: boolean;
   autoListen: boolean;
+  confirmSpeech: boolean;
   slowVoice: boolean;
   volume: number;
   textSize: number;
@@ -46,7 +47,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  autoListen: true, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
+  autoListen: true, confirmSpeech:false, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),
 };
 
@@ -63,6 +64,8 @@ export interface TranscriptLine {
   /** How the learner answered (a tiny mic or keyboard in the bubble); "picked": a "Did you mean…?" suggestion;
    *  "helped": chosen from the never-stuck help after two misses (it earns no phrase). */
   via?: "voice" | "typed" | "picked" | "helped";
+  heard?: string;
+  alternatives?: string[];
 }
 
 export type MicStatus = "off" | "unsupported" | "starting" | "listening" | "reconnecting" | "processing" | "denied" | "error" | "nothing";
@@ -76,6 +79,7 @@ export interface ConvUI {
   hostId: string;
   mode: "talk" | "phone" | "video";
   transcript: TranscriptLine[];
+  speechChoices?: string[];
   phase: "npc" | "you" | "thinking" | "ended";
   suggest: Suggestion[];
   hints: string[];

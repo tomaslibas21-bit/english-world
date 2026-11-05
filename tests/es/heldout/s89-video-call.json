@@ -11,7 +11,7 @@
   { "ctx": "camera", "say": "Ay, perdón, ya prendo la cámara", "intent": ["cam_fixed", "cam_fix_ctx"] },
   { "ctx": "camera", "say": "Un momento, la enciendo", "intent": ["cam_fixed", "cam_fix_ctx"] },
   { "ctx": "camera", "say": "Lo siento, mi cámara no funciona", "intent": "cam_broken", "not": ["cam_fixed", "cam_fix_ctx"], "note": "trap: broken camera is not fixed" },
-  { "ctx": "camera", "say": "¿Ya me ven?", "intent": ["better_q", "better_now_ctx"] },
+  { "ctx": "camera", "say": "¿Ya me ven?", "intent": ["better_q", "better_now_ctx", "cam_fixed"], "note": "audit: cam_fixed is right here (the camera is on: ¡Ahí estás!)" },
 
   { "ctx": "mute", "say": "Pablo, estás en silencio", "intent": ["tell_mute", "tell_mute_ctx"] },
   { "ctx": "mute", "say": "Pablo, no te escuchamos, activa tu micrófono", "intent": ["tell_mute", "tell_mute_ctx", "hear_no"] },
@@ -50,5 +50,5 @@
   { "ctx": "next_week", "say": "La próxima semana no estoy, me voy de vacaciones", "intent": "on_vacation", "not": ["next_week_yes"], "note": "trap" },
   { "ctx": "next_week", "say": "¡Hasta el lunes, nos vemos!", "intent": ["next_week_yes", "bye_all", "g_bye"] },
   { "ctx": "cat", "say": "¡Qué bonito tu gato!", "intent": "cute" },
-  { "ctx": "cam_still", "say": "¡Uy, perdón! Adiós", "intent": ["oops", "g_bye", "g_sorry"] }
+  { "ctx": "cam_still", "say": "¡Uy, perdón! Adiós", "intent": ["oops", "g_bye", "g_sorry", "bye_all"], "note": "audit: bye_all ends it the same way (Sara laughs)" }
 ] }

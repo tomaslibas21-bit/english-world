@@ -24,6 +24,8 @@ export interface GameApi {
   autoWalkToObjective(): void;
   teleportTo(loc: string): void;
   setJoystick(x: number, y: number): void;
+  /** A small hop (Space, the phone's button). */
+  jump(): void;
   setQuality(q: "high" | "low"): void;
   readonly groundCanvas: HTMLCanvasElement | undefined;
   readonly doors: Door[];

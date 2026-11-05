@@ -18,6 +18,14 @@ export interface GameCharacter {
   /** The real speed (m/s) and a sideways lean into turns (the original Character; others ignore them). */
   moveSpeed?: number;
   bank?: number;
+  /** A hop (movement.ts Hop): the body drawn this high off the ground (m), the legs tucked (0–1), the landing's
+   *  squash (the original Character; StyledCharacter only lifts). */
+  lift?: number;
+  tuck?: number;
+  squash?: number;
+  /** Where the legs are in their swing (radians; a foot comes down at every π/2 + kπ), for the footsteps (the original
+   *  Character). */
+  readonly stepPhase?: number;
   /** A nod when the learner's answer was understood, a puzzled look when not, applause when the task is done (the
    *  original Character). */
   react?(kind: "nod" | "puzzled" | "clap"): void;

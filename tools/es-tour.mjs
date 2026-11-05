@@ -344,6 +344,9 @@ async function frozenViews({ rooms, town }) {
   const render = (cx, cz) => {
     const cam = game.rig.cam;
     cam.clearViewOffset();
+    // the lens as the rooms and the conversations have it (not the walking camera's, which the loop leaves behind)
+    cam.fov = 50;
+    cam.updateProjectionMatrix();
     game.rig.snap();
     game.rig.update(0, Math.PI, false, false, false);
     game.sun.position.set(cx - 40, 70, cz + 30);

@@ -456,7 +456,8 @@ export const LANG: LangPack = {
   soundVowelish: new Set(["of", "a", "uh"]),
   soundTail: new Set(["please", "thanks", "thank", "you"]),
 
-  hasNegation: (text) => text.toLowerCase().split(/[^a-z']+/).some((w) => LANG.negation.has(w) || w.endsWith("n't")),
+  // (curly apostrophes as straight ones: "don’t"; "cannot" as one word)
+  hasNegation: (text) => text.toLowerCase().replace(/[’‘]/g, "'").split(/[^a-z']+/).some((w) => LANG.negation.has(w) || w === "cannot" || w.endsWith("n't")),
   checkYes: /^(yes|yeah|yep|yup|sure|right|correct|exactly)[,!]?\s+(that's it|that is it|that's right|that is right|exactly|correct|please|thanks|thank you)$/,
   checkNo: /^(no|nope|nah)[,.!]?\s+(.+)$/i,
   light: new Set([
