@@ -53,3 +53,75 @@ and a heater statement is never the AC's problem (`not: heat_broken` tests). Onc
 "Vamos por partes." Tests: 8 NLU tests, 1 sim ("the water heater first, then yes, the AC"), 20 corpus items (4 traps);
 probed: yes, "Sí, el aire. No enfría desde hace una semana.", no then the heater again, the heater twice, the AC then the
 heater, a returning player's "No, el calentador no funciona", "La calefacción no funciona".
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts. Read: STYLE.md, AUTHORING-ES.md ("Rules from the reviews"), BRIEFS.md p29 (and p24, s81,
+s82), this file, the cross-cutting leads and the neutral digest for p29, s81/s82/p24/TOWN.md for the building, the
+situation file, the corpus and the held-out set; both transcripts (`review.ts --seed=3` and `--seed=7`, all 15 sims) as a
+native speaker; about 70 whole conversations through `probe.ts` (the heater, the offer, the day, the rent, side
+questions), before and after.
+
+**Checked and kept.** The Spanish is natural Mexican for a 60-ish landlord in a hurry (usted both ways, Doña Lupita usted
+with "vecino/vecina" as in s82); the three neutral twins (ahorita ×2, minisplit in a hint) are right, and the digest's
+two "¿mande?" flags are the verb mandar ("Mande a un técnico", "Ya le mandé el mensaje"). Facts agree with s81, s82, p24
+and TOWN.md: Don Ernesto owns Las Palmas and lives on the planta baja; the learner lives one floor up in 1B; Doña Lupita
+is next door (1C); Don Gilberto (p24's administrador) is not named here, and the AC is inside the apartment, so it is
+Don Ernesto's (s82: "Si algo se descompone en su departamento, avísele a Don Ernesto"); the rent $14,000 (s81), in cash
+or by transfer (s81); the pictures and the intro put the talk downstairs ("¿Pasa algo arriba?"). The San Cristóbal trip
+holds up: two weeks in the Chiapas highlands, where it really is cool and homes have no AC ("no hay aparatos que
+arreglar"), so the repair is arranged by phone and Chucho, his off-screen repairman, comes with his own key. **Chucho
+stays**: Don Chuy (s62) is another nickname of Jesús but another man in another place, and the two forms differ; no one
+else is Chucho. Repairs and rent are handled as a Mexican landlord would: the lease is quoted, never a law; he tries
+"arréglelo usted y le pago la mitad", then sends his técnico; rent in cash with a hand-written receipt, or by transfer.
+The water-heater redirect of this morning ("¿El calentador? ¿Con este calor? ¿No será el aire?", then "El calentador
+funciona bien, se lo aseguro.") is natural and short; it records nothing, and a heater sentence is never the AC's
+problem. Glosses, flags and the natural English of every line checked; American English throughout.
+
+**Found and fixed (19), by point.**
+- 4 Facts (1): the hint "Se la transfiero el primero." answered "¿la renta de este mes?", but s81's rent is due in the
+  first five days, so "the first" is next month and his "No hay problema" made no sense: the hint is now **"Se la
+  transfiero mañana."** ("I'll send it by bank transfer tomorrow."); "el primero" is still understood.
+- 7 Questions and meaning safety (13):
+  - **Agreed on an echo:** "¿El miércoles?" / "¿El miércoles de la próxima semana?" (typed with its question mark) booked
+    Wednesday, "¿El viernes?" / "¿Este viernes?" booked Friday. Now he confirms and asks, nothing booked until a yes:
+    new lines "Sí, el miércoles de la próxima semana. ¿Le parece?" / "Sí, este viernes. ¿Le parece?" (an echo again gets
+    the short "¿Entonces… el miércoles?"). Spoken without "?" ("El miércoles.") it stays a yes, as before.
+  - The rent handed over at his "¿Algo más?" got "Primero el aire, luego la renta." although the AC was settled: now he
+    takes it (and a transfer or "Ya se la pagué" there closes the wrap the same way); "Se la transfiero…" in the middle
+    of the AC talk settled the rent: now "Primero el aire, luego la renta.", like cash.
+  - "Este mes no le voy a pagar la renta." at "¿Algo más?" (not understood; the withhold reply said "Nadie está
+    hablando de la renta"): now "La renta es la renta, y el aire es el aire." and the rent question.
+  - The same line twice in a row: a second "No." to Friday repeated "Antes del viernes, imposible." (now "¿Entonces… el
+    viernes en la mañana?"); a heater insisted on twice repeated "El calentador funciona bien… El aire, ¿verdad?" (now
+    only "El aire, ¿verdad?").
+  - No answer: "¿Quién paga la reparación?" / "¿Tengo que pagar algo?" / "¿Usted paga?" (p26's "¿La visita tiene
+    costo?" case): at the offer his half ("Depende de qué tenga el aparato. Pero yo le pago la mitad, ¿eh?", also for
+    "¿La mitad?" and "¿Quién paga?"); once Chucho is coming, new line **"Eso lo pago yo, no se preocupe."**; at the rent,
+    "¿Tengo que pagar algo?" gets the rent. "¿Me pasa el número de Chucho?" (he leaves for two weeks): new line **"Claro,
+    se lo mando por mensaje."** (Doña Lupita still gives her own técnico's). "¿Tengo que estar en casa?", and "No sé" to
+    "¿Va a estar en casa?" (it got "Sin prisa."): "No hay problema. Chucho tiene llave." "¿Por qué no contesta el
+    teléfono?": his "Ay, mis mensajes…". "Lo voy a pensar." at the offer or a day: the offer or the day again. "¿A qué
+    hora viene Chucho?": understood; once the day is agreed it gets the window ("Entre las 9 y las 12."), not "Perfecto…".
+- 9 Accepted answers (5): the learner's door in the greeting ("Soy su inquilina del 1B", "Soy Ryan, del 1B", "Vivo en el
+  1B"; the building's 1C/2B too: the held-out set's one miss); the heater named after the redirect ("El calentador.",
+  "No, el calentador de agua.", "Es el calentador", "Se apagó el calentador", "El agua caliente no sale", "No sale agua
+  caliente de la regadera", "El agua sale fría") and "Sí, perdón, el aire" / "Ah, perdón, el aire" to "¿No será el
+  aire?"; "Está bien, que venga Chucho." / "Que lo arregle el técnico." as a no to the offer (at a day on the table its
+  yes is for the day), "Mejor que lo arregle yo" as a yes, never "que lo arregle yo" as a no; the rent by transfer ("Sí,
+  se la transfiero", "Ahorita se la transfiero", "Mañana se la doy", "¿Puedo pagarle mañana?", "Le deposito el viernes").
+  "El calentador sí funciona / está bien" is its own intent (`heater_ok`, a plain "Bueno."), so the accept tails never
+  read it as the heater blamed.
+
+**Tests.** NLU 130 → 154; sims 15 → 18 (the echo and who pays; send Chucho, his number, the rent at "¿Algo más?" and a
+receipt; the heater insisted on, then the AC, thinking it over, home, a transfer), all 12/12; corpus 265/265 (0/67 false
+accepts) → 315/315 (0/76: +50 items, +9 traps); held-out 36/37 → 37/37 (0/5).
+
+**For the voices.** New Don Ernesto lines: `echo_wednesday`, `echo_friday`, `pay_mine`, `chucho_number`; changed hint
+`pay_online` ("Se la transfiero mañana."). No Mexican-only word, so no twin. Lines more than one speaker can say: none
+(Doña Lupita says only her seven lines; every Lupita beat hands the turn back to Don Ernesto, who says every global
+reply). No plural items; the only number a templated line says is the rent, $14,000 (`domains`).
+
+**Left.** "¿Qué tal el viernes de la próxima semana?" (later than offered) gets "El viernes está bien" and is texted as
+"viernes" (the week isn't kept; harmless). "Ahorita se la pago" (now or later, in Mexico) stays not understood on
+purpose. "¿Puede venir el técnico de Doña Lupita?" and "¿Y si Chucho no viene?" are not understood (rare).
