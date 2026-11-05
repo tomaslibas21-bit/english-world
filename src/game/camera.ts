@@ -67,6 +67,9 @@ export class CameraRig {
   private intrude = 0;
   private lastKey = "";
   private lastBest: { p: number; l: number } | null = null;
+  /** Boxed in: the yaw with room that the camera slides round to (null: none), and when to look again (s). */
+  private slideYaw: number | null = null;
+  private slideT = 0;
   /** After a change of mode (the end of a conversation) or a door: how long the camera still glides to its place (s). */
   private blendT = 0;
   private lastMode: CamMode = "follow";
@@ -278,15 +281,30 @@ export class CameraRig {
       // (straight back is either way round: the swing keeps the side the player turned)
       let gap = angleDiff(m.dir, this.yaw);
       if (m.speed > 0.05 && Math.abs(gap) < 2.9) this.gapSign = gap >= 0 ? 1 : -1;
-      if (follow && on && this.manualT <= 0 && !this.dragging) {
-        // after a moment on the move, swing in behind where they are heading, eased
-        if (Math.abs(gap) >= 2.9) gap = this.gapSign * Math.abs(gap);
-        const w = smoothstep(0.15, 0.85, this.movingT);
+      const swinging = follow && on && this.manualT <= 0 && !this.dragging;
+      // boxed in (a stall, a wall or a car right behind them and nothing clear above it): the camera slides round,
+      // the nearer way, to where there is room, as it swings (looked for five times a second)
+      this.slideT -= dt;
+      if (this.slideT <= 0 && !this.dragging && this.manualT <= 0 && this.space) {
+        this.slideT = 0.2;
+        const t = this.target, base = swinging ? m.dir : this.yaw;
+        this.chest.set(t.x, t.y + 1.35, t.z);
+        this.slideYaw = null;
+        if (this.bestArm(base).l < 2.5) {
+          for (const o of [0.5, -0.5, 1, -1, 1.5, -1.5, 2.1, -2.1]) if (this.bestArm(base + o).l >= 4) { this.slideYaw = angleDiff(base + o, 0); break; }
+        }
+        this.evalYaw = this.yaw;
+      }
+      if (swinging || this.slideYaw !== null) {
+        // after a moment on the move, swing in behind where they are heading, eased (or round to where there is room)
+        if (this.slideYaw !== null) gap = angleDiff(this.slideYaw, this.yaw);
+        else if (Math.abs(gap) >= 2.9) gap = this.gapSign * Math.abs(gap);
+        const w = this.slideYaw !== null ? 1 : smoothstep(0.15, 0.85, this.movingT);
         const [step, v] = springStep(0, this.yawVel, gap * w, 3.3, dt);
         this.yawVel = THREE.MathUtils.clamp(v, -2.3, 2.3);
         this.yaw = angleDiff(this.yaw + step, 0);
         // and back to the usual lean, if a drag changed it
-        this.pitch = ease(this.pitch, FOLLOW.pitch, 1.1, dt);
+        if (swinging) this.pitch = ease(this.pitch, FOLLOW.pitch, 1.1, dt);
       } else {
         this.yawVel *= Math.exp(-8 * dt);
         this.yaw = angleDiff(this.yaw + this.yawVel * dt, 0);

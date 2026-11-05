@@ -237,6 +237,26 @@ describe("the follow camera", () => {
     for (let i = 1; i < yaws.length; i++) expect(Math.abs(angleDiff(yaws[i], yaws[i - 1]))).toBeLessThan(0.05);
   });
 
+  it("boxed in by a wall right behind them, it slides round to where there is room", () => {
+    // a block 6 m high just behind her (she stands half a metre from its west face, facing west): nothing behind is
+    // clear, nor above her
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4).translate(4, 3, 0), new THREE.MeshBasicMaterial()));
+    const f2 = OcclusionField.fromObject(g, { minX: -20, maxX: 20, minZ: -20, maxZ: 20 });
+    const c2 = new Colliders();
+    c2.addBox(4, 0, 4, 4);
+    f2.fillFootprints(c2.boxes, c2.circles);
+    const rig = new CameraRig(1.6);
+    rig.space = { free: (a, b) => f2.free(a, b), inside: (p) => f2.solidAt(p.x, p.y, p.z, 0.15), overSolid: (x, z) => f2.overSolid(x, z) };
+    rig.target.set(1.5, 0, 0);
+    rig.yaw = -PI / 2;
+    rig.snap();
+    for (let i = 0; i < 180; i++) rig.update(1 / 60, 0, false, true, true);
+    expect(Math.abs(angleDiff(rig.yaw, -PI / 2))).toBeGreaterThan(0.4);
+    expect(rig.cam.position.distanceTo(new THREE.Vector3(1.5, 1.35, 0))).toBeGreaterThan(3);
+    expect(f2.solidAt(rig.cam.position.x, rig.cam.position.y, rig.cam.position.z)).toBe(false);
+  });
+
   it("the conversation's lens and near plane are as they were (50°, 0.1 m)", () => {
     const rig = new CameraRig(1.6);
     rig.mode = "talk";
