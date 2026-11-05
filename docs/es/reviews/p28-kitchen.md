@@ -35,6 +35,6 @@ The one blind miss left is "Vale, me parece bien" at the second idea: read as th
 **tests:** 20 NLU tests (the blind set's 10 traps among them) and 1 sim, "corrections and polite keeps" (twist pinned). It checks secondHow, good, fix and backHow.
 
 ## For the lead / the owner
-- **Usted to the chef (writer's "unsure", kept).** The brief says tú. The chef says tú to the learner, but the learner's hints to him use usted; both are understood. For tú both ways, only the serve-to-handoff hints change.
+- **Usted to the chef (writer's "unsure", kept).** The brief says tú. The chef says tú to the learner, but the learner's hints to him use usted; both are understood. For tú both ways, only the serve-to-handoff hints change. (Decided 5 Nov: kept as written; BRIEFS.md now says so.)
 - **Engine.** A piece after a negative piece isn't split off unless it starts a new clause ("No te preocupes, vas muy bien"). Other conversations will hit this.
 - **"No más sal".** This is now read as "no more salt". Mexican "nomás sal" ("just salt") would read the same way; that is rare from learners and safe (nothing is recorded).

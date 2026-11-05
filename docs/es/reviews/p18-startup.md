@@ -26,5 +26,15 @@ The one blind miss left, "Vale, hasta mañana a las ocho", is read as a goodbye 
 **tests**: 16 NLU tests (the traps above), 3 sims (the lost commas plus the moved check-in; "no hay problema" plus "las doce"; "no puedo hasta las nueve"), 7 corpus items. I read the transcripts on seeds 3 and 8.
 
 ## For the lead / the owner
-- **Memo** is also the name of another person in s86-old-friend. If each name should belong to one person, rename the developer here. That's the owner's call, along with the writer's four names.
+- **Memo** is also the name of another person in s86-old-friend. If each name should belong to one person, rename the developer here. That's the owner's call, along with the writer's four names. (Done 5 Nov: the developer is Lalo; see the end of this file.)
 - Overtime stays vague ("como dice la ley", no rate), which I think is right. "¿Quién la regó?" is still not understood: the pattern is there but doesn't match (maybe the engine reads "regó" as a slip). There is no test for it.
+
+## 5 Nov 2026: the developer is Lalo
+
+The open call above was decided on the owner's "decide on best fixes": the developer **Memo is now Lalo** everywhere in
+p18, so Memo is only s86's exchange student. Changed: Toño's five lines that name him (crash_fix, crash_ben,
+crash_skip, owner_code, who_lalo), their glosses and natural English (none has a neutral twin, and none needs one), the
+hint "Hay que llamar a Lalo." (`ask_lalo`), the patterns (`ppl`, `asklalo`, `pl_hort`, the `person` slot, `PERSON`,
+`delegLine`), one NLU test plus a new one ("¿Quién es Lalo?"), and the corpus (3 items renamed, 5 added). Before the
+rename no Lalo (or Eduardo) existed anywhere in the edition's content, briefs, tests or docs. **Rodrigo stays**: Don
+Rigo, the taxi driver (`vinnie`), is never called Rodrigo (npcs.ts, s66, VOICES.md, the picture manifests).
