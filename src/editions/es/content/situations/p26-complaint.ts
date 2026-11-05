@@ -19,8 +19,11 @@
 // Rule 17: "Está bien, gracias" to Brenda's offer gets "Entonces, ¿le mando el cupón?" before anything is booked.
 // "¿La visita tiene costo?" (5 Nov 2026): the warranty visit costs nothing ("No tiene ningún costo: la visita está
 // cubierta por la garantía."), from Jorge or from Brenda; then the offer that was open is asked again, and nothing is
-// booked. Bare forms ("¿Tiene algún costo?", "¿Es gratis?") only while Jorge's visit is on the table.
-// Mexican-only words in lines (with neutral twins): "llegó hasta el 17" (= didn't arrive until the 17th), ahorita.
+// booked. Bare forms ("¿Tiene algún costo?", "¿Es gratis?") only while something is on the table: Jorge's visit, and
+// (audit, 5 Nov) Brenda's offer, her remedy and what was taken ("No tiene ningún costo para usted."; at her Wednesday
+// visit its facts, "sin costo para usted"). Asked again, a short reminder ("Como le comentaba, no tiene ningún costo.").
+// Mexican-only words in lines (with neutral twins): "llegó hasta el 17" (= didn't arrive until the 17th), ahorita,
+// "(le ofrezco) una disculpa" (the lead's decision, 5 Nov: the neutral text says "le pido disculpas").
 // Facts kept vague (not sourced, not taught): what PROFECO would do with the complaint, legal rights and deadlines,
 // how a card refund is processed; the 10–14 business days are Hogar Puerto's own in-world estimate, as in the English.
 // The recorded hold message speaks with npcs.ts harbor_bot ("Mensaje grabado").
@@ -40,6 +43,9 @@ const F_FOLIO = "folio: the number a Mexican company or office gives your case o
 const F_EL_NUM = "el (número): Spanish puts an article before a code or number; English has no word here.";
 const F_PATA = "pata: the leg of a piece of furniture (a person's leg is pierna).";
 const F_LE_OFREZCO = "Le ofrezco una disculpa: a formal Mexican way to say I apologize.";
+const F_UNA_DISCULPA = "Mexican: una disculpa (literally, an apology) = I apologize.";
+const F_PIDO_DISCULPAS = "pedir disculpas: to apologize (literally, to ask for apologies).";
+const F_PROXIMO = "el: Spanish puts the article before próximo martes; English has none.";
 
 // ---------------------------------------------------------------------------
 // Days for the deadline (lines use {X}; "mañana" has its own lines)
@@ -279,14 +285,21 @@ function offerManager(c: Ctx) {
     suggest: [{ lt: "Agree to talk to the manager", hint: "g_yesno" }, { lt: "Ask for the manager", hint: "escalate" }],
     on: {
       ask_manager: (cc) => { escalateNow(cc); }, further: (cc) => { escalateNow(cc); }, agree: (cc) => { escalateNow(cc); },
-      accept_offer: (cc) => { tuesdayEnding(cc); },
-      no_manager: (cc) => { K(cc, "kyle_earliest"); askBookTuesday(cc); },
+      // "Acepto el martes" takes the visit; a bare "Sí, acepto." / "Acepto su oferta" answers this question: the manager
+      accept_offer: (cc) => { if (/\b(martes|visita|cita|tecnico)\b/.test(heard(cc))) tuesdayEnding(cc); else escalateNow(cc); },
+      no_manager: (cc) => { earliest(cc); askBookTuesday(cc); },
     },
     yes: (cc) => { escalateNow(cc); },
     // no manager: then it's next Tuesday ("¿Le agendo la visita para el próximo martes?")
-    no: (cc) => { K(cc, "kyle_earliest"); askBookTuesday(cc); },
+    no: (cc) => { earliest(cc); askBookTuesday(cc); },
     ask: (cc) => K(cc, "kyle_offer_manager"),
   });
+}
+
+/** "Lo más pronto que tengo es el próximo martes.": once (no and no again only asks the two questions). */
+function earliest(c: Ctx) {
+  if (!c.s.earliestSaid) K(c, "kyle_earliest");
+  c.s.earliestSaid = true;
 }
 
 /** The learner agrees to the manager: the transfer step comes next. */
@@ -365,17 +378,43 @@ const KYLE: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
   ask_repeat: (c, slots) => { repeatLast(c, slots); },
   visit_cost: (c) => { kyleVisitCost(c); },
   cost_ctx: (c) => { kyleVisitCost(c); },
+  offer_q: (c) => { kyleOfferQ(c); },
+  // "Gracias por la oferta" to Jorge: a thanks (a "pero no" is his offer turned down: he goes on)
+  thanks_offer: (c) => { if (!THANKS_BUT_NO.test(heard(c)) && once(c, "k_ack")) K(c, "g_welcome"); },
+  // "¿Cuánto tarda el reembolso?" to Jorge: only his manager can approve it
+  ask_timeline: (c) => {
+    const h = heard(c);
+    if (/\b(reembols\w*|dinero)\b/.test(h)) kyleNoRemedy(c, "kyle_cant_refund");
+    else if (/\b(nuevo|cambio)\b/.test(h)) kyleNoRemedy(c, "kyle_cant_replace");
+  },
 };
 
-/** "¿La visita tiene costo?" / "¿Es gratis?" to Jorge: the warranty visit costs nothing; then back to his offer. An
- *  open question (book the Tuesday visit, the manager) is asked again by the dialogue itself; while the Tuesday visit
- *  is only offered ("Le puedo agendar una nueva visita…"), he asks whether to book it. Nothing is booked here. */
+/** While Jorge's Tuesday visit is only offered ("Le puedo agendar una nueva visita…", "Lo más pronto que tengo…"),
+ *  an answer to a question about it comes back to his booking question. */
+const tuesdayOnTable = (c: Ctx) => c.step === "history" && !!c.s.fileRead && !c.s.escalated && !c.s.wish && (c.s.histN ?? 0) <= 2;
+
+/** "¿La visita tiene costo?" / "¿Es gratis?" to Jorge: the warranty visit costs nothing (asked again: a short
+ *  reminder); then back to his offer. An open question (book the Tuesday visit, the manager) is asked again by the
+ *  dialogue itself; while the Tuesday visit is only offered, he asks whether to book it. Nothing is booked here. */
 function kyleVisitCost(c: Ctx) {
   if (!once(c, "k_cost")) return;
+  K(c, c.s.costAsked ? "kyle_cost_again" : "kyle_visit_free");
   c.s.costAsked = true;
-  K(c, "kyle_visit_free");
   if ((c as ConvCtx).conv?.pending) return;
-  if (c.step === "history" && c.s.fileRead && !c.s.escalated && !c.s.wish && (c.s.histN ?? 0) <= 2) askBookTuesday(c);
+  if (tuesdayOnTable(c)) askBookTuesday(c);
+}
+
+/** "¿A qué hora viene el técnico?" / "¿Y si acepto la visita?" to Jorge about his Tuesday visit: its window, then his
+ *  booking question (nothing is booked). Before he has read the file: the details first. Brenda's coupon or Wednesday
+ *  named to him: no answer of his own. */
+function kyleOfferQ(c: Ctx) {
+  const h = heard(c);
+  if (/\b(cupon|cojin|miercoles)\b/.test(h)) return;
+  if (!c.s.fileRead) { if (once(c, "k_ack")) K(c, "kyle_manager_first"); return; }
+  if (!once(c, "k_info")) return;
+  if (/\b(a que hora|cuando|horario)\b/.test(h)) K(c, "kyle_tuesday_time", { win: W_MON });
+  if ((c as ConvCtx).conv?.pending) return;
+  if (tuesdayOnTable(c)) askBookTuesday(c);
 }
 
 /** The manager asked for before Jorge has the details or has read the file: those first. */
@@ -409,6 +448,9 @@ function afterDecline(c: Ctx) {
   if (c.s.remedy || c.s.accepted || c.s.over) return;
   c.s.declined = true;
   c.s.offerQ = false;
+  // "Entonces, ¿le mando el cupón?" is answered by the refusal: it must not be asked again after it
+  const conv = (c as ConvCtx).conv;
+  if (conv?.pending?.id === "offer_confirm") conv.pending = null;
   if (c.s.wish === "refund" || c.s.wish === "replacement") { grant(c, c.s.wish); return; }
   if (c.s.wish === "either") askRefundOr(c);
 }
@@ -452,8 +494,9 @@ function grant(c: Ctx, kind: "refund" | "replacement") {
   if (conv?.pending?.id === "refund_or" || conv?.pending?.id === "offer_confirm") conv.pending = null;
   B(c, kind === "refund" ? "brenda_refund_ok" : "brenda_replace_ok", kind === "refund" ? { price: PRICE } : undefined);
   if (!switching) B(c, "brenda_pickup");
-  B(c, kind === "refund" ? "brenda_refund_time" : "brenda_timeline");
-  turn(c).timeline = true;
+  // the usual time, unless she just said it ("¿Cuánto tarda el reembolso?" at her offer): then "¿Le parece bien ese plazo?"
+  const tl = kind === "refund" ? "brenda_refund_time" : "brenda_timeline";
+  if (c.s.timeTold !== tl) { B(c, tl); turn(c).timeline = true; }
   if (c.s.writingPending) c.s.writing = true;
   if (deadlineSet(c)) {
     // after a change of mind the day was already agreed: only when the new remedy comes, not "¿Para el viernes?" again
@@ -479,15 +522,22 @@ function acceptOffer(c: Ctx) {
   c.s.accepted = c.s.offerKind;
   c.s.offerQ = false;
   B(c, c.s.offerKind === "coupon" ? "brenda_partial" : "brenda_partial_visit", c.s.offerKind === "coupon" ? undefined : { win: W_WED });
+  // "El miércoles está bien. ¿Tiene algún costo?": the answer before "¿Le puedo ayudar en algo más?" (said once a turn)
+  if (COST_Q.test(heard(c))) brendaCostAnswer(c, /\b(visita|tecnico)\b/.test(heard(c)));
   B(c, "brenda_anything");
   expectAnything(c);
 }
+const COST_Q = /\b(costo|gratis|cobr\w*|pagar|cuesta)\b/;
+/** "Gracias." / "Muchas gracias." and nothing else (at Brenda's offer: asked again, rule 17). */
+const BARE_THANKS = /^\W*(ok\W+|bueno\W+|pues\W+)?(muchas\W+|mil\W+|muchisimas\W+)?gracias(\W+por\W+(la|su|el)\W+(oferta|ofrecimiento|propuesta|cupon|cojin|visita))?(\W+(senora|brenda))?\W*$/;
+/** "Gracias por la oferta, pero no." / "No, gracias por la oferta.": a refusal. */
+const THANKS_BUT_NO = /^\W*no\b|\bpero no\b/;
 
 /** Rule 17: "Está bien, gracias" to the offer could be "no, thanks": Brenda asks before booking anything. */
 function askOfferConfirm(c: Ctx) {
   B(c, c.s.offerKind === "coupon" ? "brenda_check_coupon" : "brenda_check_visit");
   c.expect({
-    id: "offer_confirm", expects: ["accept_offer", "agree", "decline_offer", "ask_refund", "ask_replacement", "refund_or", "offer_q", "visit_cost"], hints: ["g_yesno", "offer"],
+    id: "offer_confirm", expects: ["accept_offer", "agree", "decline_offer", "ask_refund", "ask_replacement", "refund_or", "offer_q", "visit_cost", "cost_ctx"], hints: ["g_yesno", "offer"],
     suggest: [{ lt: "Say no and ask for what you want", hint: "offer" }, { lt: "Accept the offer", hint: "g_yesno" }],
     on: { accept_offer: (cc) => { acceptOffer(cc); }, agree: (cc) => { acceptOffer(cc); } },
     yes: (cc) => { acceptOffer(cc); },
@@ -500,7 +550,7 @@ function askOfferConfirm(c: Ctx) {
  *  still works; "No, es todo" leaves it at the coupon (the folio, then goodbye). */
 function expectAnything(c: Ctx) {
   c.expect({
-    id: "anything", optional: true, expects: ["ask_refund", "ask_replacement", "refund_or", "thats_all", "ask_reference", "ask_writing", "more_yes_ctx"], hints: ["offer", "closing"],
+    id: "anything", optional: true, expects: ["ask_refund", "ask_replacement", "refund_or", "thats_all", "ask_reference", "ask_writing", "more_yes_ctx", "visit_cost", "cost_ctx"], hints: ["offer", "closing"],
     suggest: [{ lt: "Ask for a refund or a new sofa after all", hint: "offer" }, { lt: "Say that's all", hint: "closing" }],
     on: {
       ask_refund: (cc) => { grant(cc, "refund"); }, ask_replacement: (cc) => { grant(cc, "replacement"); }, refund_or: (cc) => { askRefundOr(cc); },
@@ -508,6 +558,9 @@ function expectAnything(c: Ctx) {
       ask_reference: (cc) => { closeOffer(cc); brendaRef(cc); },
       ask_writing: (cc) => { if (once(cc, "b_info")) B(cc, "brenda_writing_ok"); closeOffer(cc); },
       more_yes_ctx: (cc) => { B(cc, "g_yes_what"); expectAnything(cc); },
+      // "¿Tiene algún costo?" about what was just taken: the answer, then "¿Algo más?" again
+      visit_cost: (cc) => { brendaVisitCost(cc, true); B(cc, "brenda_anything"); expectAnything(cc); },
+      cost_ctx: (cc) => { brendaVisitCost(cc, false); B(cc, "brenda_anything"); expectAnything(cc); },
     },
     yes: (cc) => { B(cc, "g_yes_what"); expectAnything(cc); },
     no: (cc) => { closeOffer(cc); },
@@ -624,13 +677,15 @@ const BRENDA: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
   ask_manager: (c) => { if (atOffer(c)) declineWith(c, "brenda_is_manager"); else if (once(c, "b_ack")) B(c, "brenda_is_manager"); },
   further: (c) => { if (atOffer(c)) declineWith(c, "brenda_further"); else if (once(c, "b_ack")) B(c, "brenda_further"); },
   accept_offer: (c) => { if (atOffer(c) && c.s.offerQ) acceptOffer(c); },
-  // "¿Cuánto vale el cupón?", "¿Y si acepto la visita?": the facts of the offer, then the question again
+  // "¿Cuánto vale el cupón?", "¿Y si acepto la visita?": the facts of the offer, then the question again;
+  // "¿Cuándo vence el cupón?": how long it is good for
   offer_q: (c) => {
     if (!atOffer(c) || !once(c, "b_info")) return;
-    B(c, c.s.offerKind === "coupon" ? "brenda_coupon_info" : "brenda_visit_info", c.s.offerKind === "coupon" ? { price: COUPON } : { win: W_WED });
+    if (c.s.offerKind === "coupon" && EXPIRY.test(heard(c))) B(c, "brenda_coupon_valid");
+    else B(c, c.s.offerKind === "coupon" ? "brenda_coupon_info" : "brenda_visit_info", c.s.offerKind === "coupon" ? { price: COUPON } : { win: W_WED });
+    if (c.s.offerKind === "visit") { c.s.costToldB = "visit"; turn(c).costSaid = true; }
     c.s.offerQ = true;
-    B(c, "brenda_offer_q");
-    c.hold();
+    offerQAgain(c);
   },
   // "¿Pueden venir el jueves?": only Wednesday, then her question again; asked again, it is a no to Wednesday
   other_day_ctx: (c) => {
@@ -638,8 +693,7 @@ const BRENDA: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
     if (c.s.onlyWed) { declineWith(c, "brenda_decline_ack"); return; }
     c.s.onlyWed = true;
     B(c, "brenda_only_wed", { win: W_WED });
-    B(c, "brenda_offer_q");
-    c.hold();
+    offerQAgain(c);
   },
   // "No, no estoy de acuerdo" to the 10 to 14 days or to "¿Está usted de acuerdo?": she asks for a day
   disagree_ctx: (c) => {
@@ -669,13 +723,32 @@ const BRENDA: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
   pen_wait: (c) => { if (c.step === "reference" && !c.s.ref) { if (once(c, "b_wait")) B(c, "g_take_time"); c.hold(); } },
   ref_readback: (c) => { if (c.s.ref && once(c, "b_ack")) B(c, "brenda_ref_correct"); },
   readback_unknown: (c, slots) => { if (c.s.ref) readBack(c, slots); },
+  // "Gracias por la oferta, pero…" (audit, 5 Nov): at her open offer a refusal with "no", a yes with "sí" (asked again,
+  // rule 17), the same question again when it is only thanks; with more said ("…, pero quiero un reembolso"), that answers
+  thanks_offer: (c) => {
+    const h = heard(c);
+    if (atOffer(c) && c.s.offerQ) {
+      if (THANKS_BUT_NO.test(h)) { declineWith(c, "brenda_decline_ack"); return; }
+      if (YES_START.test(h)) { brendaYes(c); return; }
+      if (BARE_THANKS.test(h) && !c.s.thanksAsked) { c.s.thanksAsked = true; askOfferConfirm(c); }
+      return;
+    }
+    if (BARE_THANKS.test(h) && once(c, "b_ack")) B(c, "g_welcome");
+  },
   appreciate: (c) => {
     if (c.step === "confirm" && !c.s.confirmed) { c.s.confirmed = true; if (once(c, "b_ack")) B(c, "brenda_ok"); return; }
     if (once(c, "b_ack")) B(c, "brenda_appreciate_reply");
   },
   thats_all: () => { /* answered by the "¿algo más?" and closing questions */ },
   ask_timeline: (c) => {
-    if (!c.s.remedy) return;
+    if (!c.s.remedy) {
+      // "¿Cuánto tarda el reembolso?" at her offer: the usual time (nothing is granted)
+      if (!atOffer(c)) return;
+      const h = heard(c);
+      const line = /\b(reembols\w*|dinero)\b/.test(h) ? "brenda_refund_time" : /\b(nuevo|cambio|entrega)\b/.test(h) ? "brenda_timeline" : "";
+      if (line && once(c, "b_info")) { B(c, line); c.s.timeTold = line; c.hold(); }
+      return;
+    }
     if (once(c, "b_info")) B(c, c.s.remedy === "refund" ? "brenda_refund_time" : "brenda_timeline");
     if (deadlineSet(c)) dayLine(c, c.s.deadline);
   },
@@ -684,24 +757,43 @@ const BRENDA: Record<string, (c: Ctx, slots: any, seg: Segment) => void> = {
   walk_away: (c) => { endCall(c, true); },
   rude: (c) => { brendaRude(c); },
   ask_repeat: (c, slots) => { repeatLast(c, slots); },
-  visit_cost: (c) => { brendaVisitCost(c); },
-  cost_ctx: (c) => { brendaVisitCost(c); },
+  visit_cost: (c) => { brendaVisitCost(c, true); },
+  cost_ctx: (c) => { brendaVisitCost(c, false); },
 };
 
-/** "¿La visita tiene costo?" to Brenda: at her Wednesday visit, its facts ("sin costo para usted") as offer_q gives
- *  them; else the warranty covers the visit. At her offer she asks "¿Qué le parece?" again; nothing is accepted. */
-function brendaVisitCost(c: Ctx) {
-  if (atOffer(c) && c.s.offerKind === "visit") {
-    if (!once(c, "b_info")) return;
-    B(c, "brenda_visit_info", { win: W_WED });
-    c.s.offerQ = true;
-    B(c, "brenda_offer_q");
-    c.hold();
+/** "¿Cuándo vence el cupón?" (the coupon's offer_q). */
+const EXPIRY = /\b(vence|caduca|expira|vencimiento|vigencia|valido|dura)\b/;
+
+/** A cost question to Brenda ("¿La visita tiene costo?" named = true; "¿Tiene algún costo?", "¿Es gratis?",
+ *  "¿Me cobran el envío?"). At her Wednesday visit: its facts ("…sin costo para usted"), as offer_q gives them (a
+ *  declined visit asked about by name is on the table again); at her coupon, "¿Cuánto es?" gets the coupon's value;
+ *  the warranty visit when it is named or was just taken; else nothing to pay at all: "No tiene ningún costo para
+ *  usted." The same subject asked again: a short reminder. At her open offer she asks "¿Qué le parece?"
+ *  again. Nothing is accepted or granted here. */
+function brendaVisitCost(c: Ctx, named: boolean) { brendaCostAnswer(c, named); }
+function brendaCostAnswer(c: Ctx, named: boolean) {
+  if (turn(c).costSaid || !once(c, "b_cost")) return;
+  const offerOpen = atOffer(c) && !!c.s.offerQ;
+  const subject = c.s.remedy ? "remedy" : c.s.offerKind;
+  if (!named && offerOpen && c.s.offerKind === "coupon" && /\bcuanto\b/.test(heard(c))) {
+    if (once(c, "b_info")) { B(c, "brenda_coupon_info", { price: COUPON }); offerQAgain(c); }
     return;
   }
-  if (!once(c, "b_cost")) return;
-  B(c, "brenda_visit_free");
-  if (atOffer(c) && c.s.offerQ) { B(c, "brenda_offer_q"); c.hold(); }
+  const atVisit = atOffer(c) && c.s.offerKind === "visit" && (named || offerOpen);
+  if (c.s.costToldB === subject) B(c, "brenda_cost_again");
+  else if (atVisit) { if (!once(c, "b_info")) return; B(c, "brenda_visit_info", { win: W_WED }); }
+  // the Wednesday visit just taken: the warranty, not its window again
+  else B(c, named || (!c.s.remedy && c.s.accepted === "visit") ? "brenda_visit_free" : "brenda_no_cost");
+  turn(c).costSaid = true;
+  c.s.costToldB = subject;
+  if (atVisit) c.s.offerQ = true;
+  if (atOffer(c) && c.s.offerQ) offerQAgain(c);
+}
+
+/** "¿Qué le parece?" again after an answer at her offer (once a turn, however many questions it had). */
+function offerQAgain(c: Ctx) {
+  if (once(c, "b_q")) B(c, "brenda_offer_q");
+  c.hold();
 }
 
 /** "Sí" / "Me parece bien" to Brenda: what it agrees to depends on her last question. */
@@ -729,12 +821,15 @@ function handle(intent: string) {
     if (c.s.over) return;
     recordFacts(c, intent, slots, seg);
     if (!ENDING_INTENTS.has(intent)) {
+      // "¿La visita tiene costo?" asked at these two questions still gets its answer first
       if (atTransfer(c)) {
+        if (intent === "visit_cost") kyleVisitCost(c);
         transferNow(c, intent === "can_hold" && seg.tags.includes("allday") ? "allday" : intent === "cant_hold" || intent === "rude" ? "no" : "yes");
         return;
       }
       if (atPlugged(c)) {
         if (intent === "rude") c.s.rudeK = (c.s.rudeK ?? 0) + 1;
+        if (intent === "visit_cost") { kyleVisitCost(c); c.s.pluggedDone = true; return; }
         if (intent === "plugged_no_ctx") plugNow(c); else pluggedAnswered(c);
         return;
       }
@@ -750,7 +845,7 @@ const INTENT_IDS = [
   "ask_refund", "ask_replacement", "refund_or", "either_ctx", "not_remedy", "set_deadline", "deadline_ctx", "ask_writing", "ask_reference",
   "pen_ready", "no_pen", "pen_wait", "ref_readback", "readback_unknown", "appreciate", "thats_all", "have_nice_day", "walk_away",
   "rude", "ask_repeat", "ask_timeline", "ask_pickup", "no_manager", "plugged_no_ctx", "offer_q", "pen_ctx",
-  "still_ctx", "disagree_ctx", "readback_ctx", "other_day_ctx", "visit_cost", "cost_ctx",
+  "still_ctx", "disagree_ctx", "readback_ctx", "other_day_ctx", "visit_cost", "cost_ctx", "thanks_offer",
 ];
 
 // Automatic answers the simulations give at moments that come on some seeds only (the "¿bien armado?" twist) or
@@ -878,6 +973,8 @@ export const complaint: SituationDef = {
       "(llevo | tengo) (dos semanas | una semana | {number} dias | {number} semanas) esperando [al @tech]",
       "(no vinieron | nunca vinieron | nunca llegaron | no llegaron)",
       "(iban a venir | tenian que venir | quedaron en venir | quedaron de venir | estaban supuestos a venir) [el {day} | el lunes] (y | pero) (no | nunca) (vinieron | llegaron | vino | llegó)",
+      // "¿Por qué no vino nadie?" (audit, 5 Nov): the complaint as a question
+      "[pero | y] (por que | porque) (no vino nadie | nadie vino | no llegó nadie | nadie llegó | no vino el @tech | el @tech no vino | no llegó el @tech | el @tech no llegó | no vinieron | no llegaron | nadie se presentó | no se presentó (nadie | el @tech)) [el lunes | @when]",
     ] },
     // Jorge's file says the missed visit was "realizada"
     disbelief: { patterns: [
@@ -1062,6 +1159,11 @@ export const complaint: SituationDef = {
       "(cuanto | de cuanto) (vale | es) el cupon", "(para que | en que) (sirve | puedo usar | se usa) el cupon", "el cupon (vence | caduca | tiene vencimiento)",
       "(y si | que pasa si) (acepto | tomo) (el cupon | el cojin | la visita | la oferta)", "(y si | que pasa si) (viene | va) el tecnico [el miercoles]",
       "(a que hora | cuando) (viene | va | llega) el tecnico",
+      // audit, 5 Nov: the coupon's expiry; the visit's time asked other ways (to Jorge: his Tuesday window)
+      "(cuando | hasta cuando) (vence | caduca | expira) [el cupon]", "(el cupon) (tiene | cuanto tiempo tiene de) (vigencia | vencimiento)",
+      "(cuanto tiempo | hasta cuando) (dura | es valido | tengo para usar) [el cupon]",
+      "(a que hora | en que horario | cuando) (seria | es | va a ser) (la visita | la cita)",
+      "(a que hora | en que horario) (vendria | vendrian | llegaria | llegarian | pasaria | pasarian | viene | vienen | llega | llegan | pasa | pasan) [el @tech]",
     ] },
     // "¿La visita tiene costo?" (5 Nov 2026): the warranty visit costs nothing; then the offer again, nothing booked
     visit_cost: { patterns: [
@@ -1088,6 +1190,14 @@ export const complaint: SituationDef = {
       "(hay que | tengo que | tendria que | voy a tener que | debo) pagar [algo] [extra | mas]",
       "no (tiene | tendria) (costo | ningun costo)", "no (cuesta | cobran) nada",
       "si (es gratis | no tiene costo | no cuesta nada | no me cobran [nada]) [esta bien | ok | de acuerdo | me parece bien | va | sale | vale]",
+      // audit, 5 Nov: asked again; what is on the table named (Brenda's coupon, the new sofa, its delivery, the pickup)
+      "(seguro que | de verdad | entonces | o sea que) no (me cobran | me van a cobrar | cobran | cuesta | me cuesta | tiene costo | tiene ningun costo) [nada]",
+      "no me (cobran | van a cobrar | cuesta) nada",
+      "(eso | esto | el cupon | el cojin | el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo | el nuevo) (tiene | tendria | va a tener) [algun] (costo | cargo | cobro) [extra | adicional | para mi]",
+      "(el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo | el nuevo | el cupon | el cojin) (es | sera | seria) (gratis | sin costo | gratuito | gratuita)",
+      "(cuanto | que) (cuesta | me cobran | me van a cobrar | cobran | sale) (el envio | la entrega | el flete | la recoleccion | el cambio)",
+      "(me van a | me va a | me) (cobrar | cobran | cobra) (el envio | la entrega | el flete | la recoleccion | el cambio | por (el envio | la entrega | el flete | la recoleccion | el cambio | el @sofa nuevo))",
+      "(hay que | tengo que | tendria que | voy a tener que | debo) pagar (el envio | la entrega | el flete | la recoleccion | el cambio | por (el envio | la entrega | el flete | la recoleccion | el cambio))",
     ] },
     agree: { patterns: [
       "[si] me parece bien #h:works",
@@ -1183,7 +1293,9 @@ export const complaint: SituationDef = {
       "(puede | podria) ser (antes | mas rapido | mas pronto) #asap", "(mas rapido | mas pronto) #asap",
       "(lo necesito | necesito) esta semana #asap",
       "(es | eso es) muy lento #toolong",
-      "(es | son) (demasiado | mucho | muchisimo) [tiempo] #toolong",
+      // not a bare "mucho" / "muchísimo": "Muchas gracias" was read as "(es) mucho" (audit, 5 Nov); "No, es mucho" says
+      // its "no" ("No es mucho" reads the same once the comma is gone: Brenda only asks for a day)
+      "(es | son) demasiado [tiempo] #toolong", "(es | son) (mucho | muchisimo) tiempo #toolong", "no (es | son) (mucho | muchisimo) [tiempo] #toolong",
       "(dos semanas | catorce dias | 14 dias | de 10 a 14 dias | eso) (es | son) (mucho | demasiado | muchisimo) #toolong",
       "(lo | la)? (necesito | quiero) [el @sofa | el reembolso | mi dinero | el nuevo] esta (misma)? semana #asap",
       "no (puede | podria | pueden | podrian) ser (antes | mas rapido | mas pronto) #asap",
@@ -1283,6 +1395,10 @@ export const complaint: SituationDef = {
       "valoro [mucho] su ayuda",
       "gracias por (resolverlo | resolver esto | entenderme | arreglar esto | su atencion)",
     ] },
+    // "Gracias por la oferta, pero…" (the global thanks has no "por la oferta"; audit, 5 Nov)
+    thanks_offer: { patterns: [
+      "[si | no] [muchas | mil | muchisimas] gracias por (la oferta | su oferta | el ofrecimiento | la propuesta | su propuesta | el cupon | el cojin | la visita) [pero no]",
+    ] },
     thats_all: { patterns: [
       "[no] (eso es todo | es todo | seria todo | eso seria todo) [gracias] #h:thats_all",
       "[no] nada [mas] [gracias]",
@@ -1353,7 +1469,10 @@ export const complaint: SituationDef = {
     ],
     kyle_sorry: [
       t("Ay, | no, | lo siento | mucho.", "Oh, | no, | I'm sorry | a lot.", "Oh no, I'm so sorry to hear that."),
-      t("Eso | no está | bien. | Una | disculpa.", "That | isn't | good. | An | apology.", "That's not good. I apologize."),
+      t("Eso | no está | bien. | Una | disculpa.", "That | isn't | good. | An | apology.", "That's not good. I apologize.",
+        { flags: { 3: F_UNA_DISCULPA },
+          neutral: t("Eso | no está | bien. | Le | pido | disculpas.", "That | isn't | good. | (Of) you | I-ask | apologies.", "That's not good. I apologize.",
+            { flags: { 4: F_PIDO_DISCULPAS } }) }),
     ],
     kyle_plugged_m: [
       t("Solo | para | confirmar, | señor: | ¿ya | revisó | que | esté | bien | armado?",
@@ -1390,7 +1509,7 @@ export const complaint: SituationDef = {
     ],
     kyle_ask_name: [
       t("¿Me | proporciona | su | número | de | pedido, | por favor?", "(To) me | you-provide | your | number | of | order, | please?", "Could I have your order number, please?"),
-      t("¿A nombre de | quién | está | el | pedido?", "Under the name of | whom | is | the | order?", "And whose name is the order under?"),
+      t("¿A nombre de | quién | está | el | pedido?", "Under the name of | whom | is | the | order?", "What name is the order under?"),
     ],
     kyle_ask_name_again: [
       t("Perdón, | ¿me | da | su | nombre | completo?", "Sorry, | (to) me | you-give | your | name | full?", "Sorry, could I get your full name?"),
@@ -1424,7 +1543,10 @@ export const complaint: SituationDef = {
     ],
     kyle_apologize: [
       t("Lo | entiendo | perfectamente, | y | de verdad | le | ofrezco | una | disculpa.", "It | I-understand | perfectly, | and | really | (to) you | I-offer | an | apology.",
-        "I completely understand, and I do apologize.", { flags: { 6: F_LE_OFREZCO } }),
+        "I completely understand, and I do apologize.",
+        { flags: { 6: F_LE_OFREZCO },
+          neutral: t("Lo | entiendo | perfectamente, | y | de verdad | le | pido | disculpas.", "It | I-understand | perfectly, | and | really | (of) you | I-ask | apologies.",
+            "I completely understand, and I do apologize.", { flags: { 6: F_PIDO_DISCULPAS } }) }),
       t("Lo | entiendo | totalmente. | Lo siento | mucho.", "It | I-understand | totally. | I'm sorry | a lot.", "I totally get it. I'm so sorry."),
     ],
     kyle_three_calls_m: [
@@ -1442,13 +1564,22 @@ export const complaint: SituationDef = {
         { flags: { 4: "el: Spanish puts the article before próximo martes; English has none." } }),
     ],
     kyle_book_q: [
-      t("Entonces, | ¿le | agendo | la | visita | para | el | próximo | martes?", "So, | (for) you | shall I schedule | the | visit | for | — | next | Tuesday?",
-        "So, should I book you for next Tuesday?", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." } }),
+      t("Entonces, | ¿le | agendo | la | visita | para | el | próximo | martes?", "So, | (for) you | should I schedule | the | visit | for | — | next | Tuesday?",
+        "So, should I book you for next Tuesday?", { flags: { 6: F_PROXIMO } }),
     ],
     // "¿La visita tiene costo?" (no "No," first: "¿Es gratis?" must not get a no)
     kyle_visit_free: [
       t("No tiene | ningún | costo: | la | visita | está | cubierta | por | la | garantía.", "It doesn't have | any | cost: | the | visit | is | covered | by | the | warranty.",
         "There's no charge: the visit is covered under the warranty."),
+    ],
+    // the cost asked again (audit, 5 Nov): a reminder, whichever way it was asked ("¿Es gratis?", "¿Me cobran algo?")
+    kyle_cost_again: [
+      t("Como | le | comentaba, | no tiene | ningún | costo.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge."),
+    ],
+    // "¿A qué hora viene el técnico?" while his Tuesday visit is offered (audit, 5 Nov); Monday's window, as his slots go
+    kyle_tuesday_time: [
+      t("El | técnico | pasaría | el | próximo | martes, | entre | {$win}.", "The | technician | would come by | — | next | Tuesday, | between | {$win}.",
+        "The technician would come by next Tuesday, between {$win}.", { say: "El técnico pasaría el próximo martes, entre {$win}.", flags: { 3: F_PROXIMO } }),
     ],
     kyle_offer_manager: [
       t("¿Le gustaría | hablar | con | mi | gerente?", "Would you like | to speak | with | my | manager?", "Would you like to speak to my manager?"),
@@ -1520,10 +1651,13 @@ export const complaint: SituationDef = {
     brenda_hi2: [
       t("Entiendo | que | no ha | sido | una | buena | experiencia.", "I understand | that | it hasn't | been | a | good | experience.", "I understand this hasn't been a great experience."),
       t("Le | ofrezco | una | disculpa | por | todas | las | molestias.", "(To) you | I-offer | an | apology | for | all | the | inconveniences.", "I'm so sorry for all the trouble.",
-        { flags: { 0: F_LE_OFREZCO } }),
+        { flags: { 0: F_LE_OFREZCO },
+          neutral: t("Le | pido | disculpas | por | todas | las | molestias.", "(Of) you | I-ask | apologies | for | all | the | inconveniences.", "I'm so sorry for all the trouble.",
+            { flags: { 1: F_PIDO_DISCULPAS } }) }),
     ],
+    // what the learner asked Jorge for (audit, 5 Nov: was "Lo entiendo.", heard right after "Entiendo que no ha sido…")
     brenda_before: [
-      t("Lo | entiendo. | Pero | antes de | eso...", "It | I-understand. | But | before | that...", "I hear you. But before we go there..."),
+      t("Sé | lo que | pide. | Pero | antes de | eso...", "I know | what | you're asking for. | But | before | that...", "I know what you're asking for. But before we go there..."),
     ],
     brenda_offer_coupon: [
       t("Como | agradecimiento | por | su | paciencia, | quisiera | ofrecerle | un | cupón | de | {$price}...",
@@ -1543,13 +1677,18 @@ export const complaint: SituationDef = {
       t("Lo siento, | el | técnico | solo | puede | el | miércoles, | entre | {$win}.", "I'm sorry, | the | technician | only | can (come) | on | Wednesday, | between | {$win}.",
         "I'm sorry, the technician can only make it on Wednesday, between {$win}.", { say: "Lo siento, el técnico solo puede el miércoles, entre {$win}.", flags: { 5: F_EL_DAY } }),
     ],
-    brenda_check_coupon: [t("Entonces, | ¿le | mando | el | cupón?", "So, | (to) you | shall I send | the | coupon?", "So, shall I send you the coupon?")],
+    brenda_check_coupon: [t("Entonces, | ¿le | mando | el | cupón?", "So, | (to) you | should I send | the | coupon?", "So, should I send you the coupon?")],
     brenda_check_visit: [
-      t("Entonces, | ¿le | agendo | la | visita | del | miércoles?", "So, | (for) you | shall I schedule | the | visit | of the | Wednesday?", "So, shall I book the Wednesday visit for you?"),
+      t("Entonces, | ¿le | agendo | la | visita | del | miércoles?", "So, | (for) you | should I schedule | the | visit | of the | Wednesday?", "So, should I book the Wednesday visit for you?"),
     ],
     brenda_coupon_info: [
       t("Es | de | {$price} | para | su | próxima | compra | en | la | tienda.", "It's | of | {$price} | for | your | next | purchase | in | the | store.",
         "It's {$price} off your next purchase in the store.", { say: "Es de {$price} para su próxima compra en la tienda." }),
+    ],
+    // "¿Cuándo vence el cupón?" (audit, 5 Nov; Hogar Puerto's own rule, like its 10 to 14 days)
+    brenda_coupon_valid: [
+      t("Tiene | vigencia | de | seis | meses.", "It has | validity | of | six | months.", "It's good for six months.",
+        { flags: { 1: "vigencia: how long something is valid (a coupon, a card, an ID)." } }),
     ],
     brenda_visit_info: [
       t("El | técnico | va | el | miércoles, | entre | {$win}, | sin | costo | para | usted.", "The | technician | goes | on | Wednesday, | between | {$win}, | without | cost | for | you.",
@@ -1558,6 +1697,13 @@ export const complaint: SituationDef = {
     brenda_visit_free: [
       t("No tiene | ningún | costo: | la | visita | está | cubierta | por | la | garantía.", "It doesn't have | any | cost: | the | visit | is | covered | by | the | warranty.",
         "There's no charge: the visit is covered under the warranty."),
+    ],
+    // a bare "¿Tiene algún costo?" about her coupon, the new sofa, its delivery, the pickup (audit, 5 Nov)
+    brenda_no_cost: [
+      t("No tiene | ningún | costo | para | usted.", "It doesn't have | any | cost | for | you.", "It won't cost you anything."),
+    ],
+    brenda_cost_again: [
+      t("Como | le | comentaba, | no tiene | ningún | costo.", "As | (to) you | I-was-saying, | it doesn't have | any | cost.", "Like I said, there's no charge."),
     ],
     brenda_decline_ack: [t("Entiendo.", "I understand.", "Understood."), t("Comprendo.", "I understand.", "Fair enough.")],
     brenda_day_off: [
@@ -1677,7 +1823,10 @@ export const complaint: SituationDef = {
     brenda_thanks: [t("Gracias | por | su | paciencia. | De verdad.", "Thanks | for | your | patience. | Really.", "Thank you for your patience. Really.")],
     brenda_appreciate_reply: [
       t("Al contrario. | Y | otra vez, | una | disculpa | por | todas | las | molestias.", "On the contrary. | And | again, | an | apology | for | all | the | inconveniences.",
-        "Not at all. And again, I'm sorry for all the trouble.", { flags: { 0: "Al contrario: a gracious reply to thanks, as in the thanks should be mine." } }),
+        "Not at all. And again, I'm sorry for all the trouble.",
+        { flags: { 0: "Al contrario: a gracious reply to thanks, as in the thanks should be mine.", 3: F_UNA_DISCULPA },
+          neutral: t("Al contrario. | Y | otra vez, | le | pido | disculpas | por | todas | las | molestias.", "On the contrary. | And | again, | (of) you | I-ask | apologies | for | all | the | inconveniences.",
+            "Not at all. And again, I'm sorry for all the trouble.", { flags: { 0: "Al contrario: a gracious reply to thanks, as in the thanks should be mine.", 4: F_PIDO_DISCULPAS } }) }),
     ],
     brenda_bye_new: [
       t("¡Que | tenga | excelente | día, | y | que | disfrute | su | sofá | nuevo!", "(I hope) | you have | an excellent | day, | and | (I hope) | you-enjoy | your | sofa | new!",
@@ -1900,7 +2049,7 @@ export const complaint: SituationDef = {
           K(c, "kyle_new_visit");
           return;
         }
-        if (n === 2) { K(c, "kyle_hands_tied"); K(c, "kyle_earliest"); return; }
+        if (n === 2) { K(c, "kyle_hands_tied"); earliest(c); return; }
         offerManager(c);
       },
       expects: ["third_time", "not_good_enough", "no_show", "disbelief", "ask_manager", "further", "ask_refund", "ask_replacement", "refund_or",
@@ -1933,7 +2082,7 @@ export const complaint: SituationDef = {
         askRefundOr(c);
       },
       expects: ["decline_offer", "accept_offer", "agree", "ask_refund", "ask_replacement", "refund_or", "either_ctx", "not_remedy", "no_show", "third_time",
-        "not_good_enough", "further", "disbelief", "set_deadline", "offer_q", "other_day_ctx", "visit_cost"],
+        "not_good_enough", "further", "disbelief", "set_deadline", "offer_q", "other_day_ctx", "visit_cost", "cost_ctx"],
       suggest: [{ lt: "Politely say no and ask for a refund or a new sofa", hint: "offer" }],
       // rule 17: "Está bien, gracias" could be a no thanks: Brenda asks before booking anything
       yes: (c) => { if (!c.s.offerQ) return; if (/gracias/.test(heard(c))) askOfferConfirm(c); else acceptOffer(c); },
@@ -1942,14 +2091,14 @@ export const complaint: SituationDef = {
     // Brenda's remedy lines end with "de 10 a 14 días hábiles": that is the question.
     { id: "deadline", when: (c) => !!c.s.remedy && !c.s.over, done: (c) => !!c.s.deadline || !!c.s.over,
       ask: (c) => { if (!turn(c).timeline) B(c, "brenda_timeline_q"); },
-      expects: ["set_deadline", "deadline_ctx", "agree", "ask_writing", "ask_reference", "ask_timeline", "not_good_enough", "disagree_ctx"],
+      expects: ["set_deadline", "deadline_ctx", "agree", "ask_writing", "ask_reference", "ask_timeline", "not_good_enough", "disagree_ctx", "cost_ctx"],
       suggest: [{ lt: "Set a deadline (e.g. by Friday)", hint: "deadline" }, { lt: "Agree and ask for it in writing", hint: "confirm" }],
       yes: (c) => { c.s.deadline = "accepted"; B(c, "brenda_ok"); },
       no: (c) => { B(c, "brenda_which_day"); expectWhichDay(c); },
       help: (c) => { letsSayFriday(c); } },
     { id: "confirm", when: (c) => !!c.s.remedy && deadlineSet(c) && !c.s.over, done: (c) => !!c.s.confirmed || !!c.s.over,
       ask: (c) => B(c, "brenda_confirm_q"),
-      expects: ["ask_writing", "agree", "appreciate", "ask_reference", "set_deadline", "deadline_ctx", "disagree_ctx"],
+      expects: ["ask_writing", "agree", "appreciate", "ask_reference", "set_deadline", "deadline_ctx", "disagree_ctx", "cost_ctx"],
       suggest: [{ lt: "Agree and ask for it in writing", hint: "confirm" }],
       yes: (c) => { c.s.confirmed = true; B(c, "brenda_ok"); },
       no: (c) => { B(c, "brenda_which_day"); expectWhichDay(c); } },
@@ -1983,6 +2132,9 @@ export const complaint: SituationDef = {
       if (c.s.over) return;
       if (atTransfer(c)) { transferNow(c, "yes"); return; }
       if (atPlugged(c)) { pluggedAnswered(c); return; }
+      // rule 17: a bare "Gracias." to Brenda's "¿Qué le parece?" may be a yes or a no: she asks before booking anything
+      // (once: asked again, the global "De nada" and her question)
+      if (atOffer(c) && c.s.offerQ && !c.s.thanksAsked && BARE_THANKS.test(heard(c))) { c.s.thanksAsked = true; askOfferConfirm(c); return; }
       // right before Brenda's closing (she thanks the learner herself), or the coupon taken and closed
       const conv = (c as ConvCtx).conv;
       if (c.s.transferred && !c.s.__finished && !conv.nextStep(c as ConvCtx)) return;
@@ -2137,7 +2289,25 @@ export const complaint: SituationDef = {
     { say: "Vale, ¿y tiene algún costo?", intent: "cost_ctx", step: "history", not: ["accept_offer", "agree"] },
     { say: "¿Me vas a cobrar la visita?", intent: "visit_cost", step: "history" },
     { say: "¿La visita tiene costo?", intent: "visit_cost", step: "offer", not: ["offer_q", "accept_offer"] },
-    { say: "¿Es gratis?", intent: "none", step: "offer" },
+    // audit (5 Nov 2026): bare cost questions at Brenda's offer and after her remedy; thanks are no deadline; the
+    // coupon's expiry and the visit's time are questions; "¿Por qué no vino nadie?" is the complaint
+    { say: "¿Es gratis?", intent: "cost_ctx", step: "offer", not: ["accept_offer", "agree"] },
+    { say: "¿Tiene algún costo?", intent: "cost_ctx", step: "offer", not: ["accept_offer", "offer_q"] },
+    { say: "¿Me van a cobrar algo?", intent: "cost_ctx", step: "offer", not: ["accept_offer"] },
+    { say: "¿La entrega tiene algún costo?", intent: "cost_ctx", step: "deadline", not: ["agree", "set_deadline"] },
+    { say: "¿Me cobran el envío?", intent: "cost_ctx", step: "confirm", not: ["agree"] },
+    { say: "¿Seguro que no me cobran nada?", intent: "cost_ctx", step: "history", not: ["accept_offer", "agree", "yn:no"] },
+    { say: "Muchas gracias.", intent: "g_thanks", step: "deadline", not: ["set_deadline", "agree"] },
+    { say: "Muchísimas gracias", intent: "g_thanks", step: "deadline", not: ["set_deadline"] },
+    { say: "Es mucho tiempo.", intent: "set_deadline", step: "deadline" },
+    { say: "¿Por qué no vino nadie el lunes?", intent: "no_show", step: "history" },
+    { say: "¿Cuándo vence el cupón?", intent: "offer_q", step: "offer", not: ["accept_offer"] },
+    { say: "¿A qué hora vendría el técnico?", intent: "offer_q", step: "history", not: ["accept_offer", "agree"] },
+    { say: "¿A qué hora sería la visita?", intent: "offer_q", step: "history", not: ["accept_offer", "agree"] },
+    { say: "Gracias por la oferta, pero no.", intent: "thanks_offer", step: "offer", not: ["accept_offer", "agree"] },
+    { say: "Muchas gracias por la oferta, pero quiero un reembolso.", intent: "thanks_offer", step: "offer", not: ["accept_offer"] },
+    { say: "No, muchas gracias.", intent: "yn:no", step: "deadline", not: ["set_deadline"] },
+    { say: "No, es mucho.", intent: "set_deadline", step: "deadline", not: ["agree"] },
     // not understood
     { say: "Mi perro baila salsa en la playa", intent: "none" },
     { say: "Me gustan los sofás grandes", intent: "none" },
@@ -2224,6 +2394,28 @@ export const complaint: SituationDef = {
     { name: "'¿Es gratis?', then yes: next Tuesday (not done)", setup: (s) => { s.pluggedTwist = false; },
       turns: ["Mi sofá llegó roto.", "Ryan Miller.", "¿Es gratis?", "Vale, ¿y me cobran algo?", "Sí, por favor."],
       expect: { complete: false, state: { costAsked: true, accepted: "tuesday", outcome: "partial" } }, auto: AUTO },
+    // audit (5 Nov 2026): each speaker says their own side lines (the voice list hears who says what), the cost asked
+    // twice gets a reminder, "Sí, acepto." to the manager offer is a yes to the manager, "Muchas gracias" no deadline
+    { name: "Jorge's own lines: the name again, his visit's time and cost twice, a new sofa he can't approve, rude, in writing, no time to hold",
+      setup: (s) => { s.pluggedTwist = false; s.offerKind = "coupon"; },
+      turns: ["Mi sofá llegó roto.", "¿Por qué no vino nadie el lunes?", "Ryan Miller.", "¿A qué hora vendría el técnico?", "¿Tiene algún costo?",
+        "¿Seguro que no me cobran nada?", "No, gracias.", "¿Me lo pueden cambiar por uno nuevo?", "¡Esto es ridículo!", "¿Me lo pueden mandar por escrito?",
+        "Sí, por favor.", "No tengo mucho tiempo.", "Si no lo resuelven, voy a ir a la Profeco.", "¿La entrega tiene algún costo?", "Para mañana.",
+        "Muchas gracias. Adiós."],
+      expect: { complete: true, state: { costAsked: true, rudeK: 1, wish: "replacement", remedy: "replacement", deadline: "tomorrow", ref: true, outcome: "success" } }, auto: AUTO },
+    { name: "Brenda's own lines (and Jorge's details first): her visit's cost twice, she is the manager, a third call, a refund at no cost, tomorrow, rude twice, the folio asked and repeated",
+      setup: (s) => { s.pluggedTwist = false; s.offerKind = "visit"; },
+      turns: ["Quiero hablar con su gerente.", "Mi sofá llegó roto.", "Ryan Miller. ¿Me comunica con su gerente?", "Claro.", "¿Tiene algún costo?", "¿Me van a cobrar algo?",
+        "Está bien, gracias.", "No, gracias. Quiero hablar con su gerente.", "Es la tercera vez que llamo.", "Un reembolso, por favor.",
+        "¿Tengo que pagar algo?", "¿Seguro que no me cobran nada?", "Para mañana.", "¡Esto es ridículo!", "¡Ustedes son unos inútiles!", "Sí.",
+        "¿Me da un número de folio?", "¿Me repite el número?", "HP 4471.", "No, es todo. Gracias."],
+      expect: { complete: true, state: { remedy: "refund", deadline: "tomorrow", rudeB: 2, thirdSaid: true, ref: true, outcome: "success" } }, auto: AUTO },
+    { name: "'Sí, acepto.' to the manager offer; the coupon's expiry and cost, a refund's time, thanks at the deadline",
+      setup: (s) => { s.pluggedTwist = false; s.offerKind = "coupon"; },
+      turns: ["Mi sofá llegó roto.", "Ryan Miller.", "No.", "No.", "Sí, acepto.", "Claro.", "¿Cuándo vence el cupón?", "¿Tiene algún costo?",
+        "¿Cuánto tarda el reembolso?", "Le pido de la manera más atenta que me devuelvan mi dinero.", "Muchas gracias.", "Sí, me parece bien.", "Dígame.",
+        "Gracias, adiós."],
+      expect: { complete: true, state: { escalated: true, remedy: "refund", deadline: "accepted", ref: true, outcome: "success" } }, auto: AUTO },
     { name: "walking away from Brenda (not done)", setup: (s) => { s.offerKind = "coupon"; },
       turns: ["Mi sofá llegó roto.", "Ryan.", "¿Podría hablar con su gerente?", "Claro.", "No tengo tiempo para esto."],
       expect: { complete: false, state: { outcome: "walked", transferred: true } }, auto: AUTO },
@@ -2234,7 +2426,7 @@ export const complaint: SituationDef = {
 function expectClosing(c: Ctx) {
   const again = (cc: Ctx) => { B(cc, "brenda_anything"); expectClosing(cc); };
   const p: Pending = {
-    id: "closing", expects: ["appreciate", "thats_all", "have_nice_day", "ask_writing", "ask_reference", "ask_timeline", "ask_pickup", "more_yes_ctx"], hints: ["closing"],
+    id: "closing", expects: ["appreciate", "thats_all", "have_nice_day", "ask_writing", "ask_reference", "ask_timeline", "ask_pickup", "more_yes_ctx", "visit_cost", "cost_ctx"], hints: ["closing"],
     suggest: [{ lt: "Thank her and say goodbye", hint: "closing" }, { lt: "Ask for it in writing", hint: "confirm" }],
     on: {
       appreciate: (cc) => { closeBye(cc, true); },
@@ -2244,6 +2436,8 @@ function expectClosing(c: Ctx) {
       ask_reference: (cc) => { B(cc, "brenda_ref_repeat", { text: REF }); again(cc); },
       ask_timeline: (cc) => { B(cc, cc.s.remedy === "refund" ? "brenda_refund_time" : "brenda_timeline"); if (deadlineSet(cc)) dayLine(cc, cc.s.deadline); again(cc); },
       ask_pickup: (cc) => { B(cc, "brenda_pickup_yes"); again(cc); },
+      visit_cost: (cc) => { brendaVisitCost(cc, true); again(cc); },
+      cost_ctx: (cc) => { brendaVisitCost(cc, false); again(cc); },
       more_yes_ctx: (cc) => { B(cc, "g_yes_what"); expectClosing(cc); },
     },
     yes: (cc) => { B(cc, "g_yes_what"); expectClosing(cc); },
