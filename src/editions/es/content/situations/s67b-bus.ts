@@ -524,6 +524,8 @@ export const bus: SituationDef = {
     ask_stops_count: { patterns: [
       "cuantas paradas (son | faltan | hay | quedan) [hasta {dest} | para {dest} | al {dest} | a la {dest}] #h:how_many_stops",
       "(esta | queda) (lejos | cerca) [{dest}] #h:is_far", "es lejos", "(esta | queda) (muy | muy muy) lejos [{dest}]", "que tan lejos (esta | queda) [{dest}]",
+      // "¿No está lejos?" (a bare "no" negates "está": lang.ts)
+      "no (esta | queda) (lejos | muy lejos) [{dest}]",
       "(falta | faltan | queda | quedan) (mucho | muchas paradas | poco)", "cuanto falta [para {dest}]",
     ] },
     ask_time: { patterns: [

@@ -39,6 +39,9 @@ export interface LangPack {
   sameWord?(heard: string, target: string): boolean;
   /** Words a learner uses for one another while the meaning stays clear ("pay by cash", "he have"). */
   grammarClasses: readonly (readonly string[])[];
+  /** Two forms whose likeness the language rules on itself, before the grammar classes (Spanish: the persons of
+   *  "poder"): a similarity, or undefined for the usual rules. Optional. */
+  slipVariant?(heard: string, target: string): number | undefined;
   /** The same word with another ending ("want"/"wants", "book"/"booked"). */
   inflectionVariant(a: string, b: string): boolean;
   /** The same stem but different endings, which a spelling slip must not bridge ("booked"/"books"). */
@@ -95,9 +98,18 @@ export interface LangPack {
   clauseNegators: ReadonlySet<string>;
   /** Words that make a piece negative: the next piece must start something new ("I don't have | my passport"). */
   pieceNegators: ReadonlySet<string>;
+  /** A negative piece that negates nothing after it, a set phrase ending it (Spanish "No te preocupes. | ¿Tienes
+   *  perro?"): the next piece needn't start something new. Optional. */
+  settledNegative?(piece: Tokens): boolean;
   auxiliaries: ReadonlySet<string>;
   /** A verb that can't begin a piece right after another piece ("tomorrow | doesn't work"). */
   predicateAux: ReadonlySet<string>;
+  /** A piece that can't be the subject of a verb starting the next one: a clause with its own verb (Spanish "Voy en
+   *  el 223, | ¿va a tiempo?"). Optional. */
+  ownClause?(piece: Tokens): boolean;
+  /** A context-only answer right after a question that is the question's own words (Spanish "¿A qué hora sale | el
+   *  último?" never answers with "el último"). Optional. */
+  questionOwns?(question: Tokens, answer: Tokens): boolean;
   subjectPronouns: ReadonlySet<string>;
   /** Words that begin a new clause, question, command, contrast or aside. */
   newPart: ReadonlySet<string>;
