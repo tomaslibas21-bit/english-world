@@ -466,14 +466,16 @@ the stall roofs, a bug both editions had (below).
 - **Cost** (`renderer.info.render`, phone 375×812, the same views before → after): the zócalo 156 → 145 calls, the kiosco
   154 → 140, the stalls 150 → 139, the church across the square 166 → 150 (Maple Harbor 161), the square from above
   155 → 140, Doña Mari's conversation (s91a) 149 → 136, s86 147 → 136, s69 163 → 155; Diego's house 40 → 38; the
-  other views the same. Triangles: +6 to +17 thousand (the bougainvillea and the topes everywhere, the tianguis at the
-  square; at most 340 thousand, at the bus stop). The frame's cost with the CPU 4× slower (Chromium's throttling, the
+  malecón 125 → 117; every other view the same or fewer but one, Juárez's shops 176 → 177 (Maple Harbor 200).
+  Triangles: +6 to +17 thousand (the bougainvillea and the topes everywhere, the tianguis wherever its bounding sphere
+  is in view; at most 340 thousand, at the bus stop, which looks down calle Ceiba to the square). The frame's cost with the CPU 4× slower (Chromium's throttling, the
   median of three runs each, before and after alternating): the zócalo 4.9 → 4.3 ms, the church 4.5 → 4.4, the
   square from above 5.0 → 4.5, the malecón 4.2 → 4.5 (noise: ±15%), calle Hidalgo 4.2 → 4.0, Diego's house 1.8 → 1.7.
 - **Maple Harbor unchanged** by the Spanish commit: the 72 frozen views of the rooms and the talk spots
-  (`es-tour.mjs --mode=rooms --compare`) pixel-identical with the same draw calls; the 77 walking, close-up and room
+  (`es-tour.mjs --mode=rooms --compare`) pixel-identical with the same draw calls; the 76 walking, close-up and room
   views at both sizes, shot with passers-by, cars and pigeons hidden from the stall fix's commit and from this one:
-  identical but for the fountain's water drops (which move with time on their own); `tools/fingerprint.ts` identical.
+  identical but for the fountain's water drops, a soft shadow at one frame's edge and a far person's hair, which also
+  differ between two runs of the unchanged code; `tools/fingerprint.ts` identical.
 
 ## The tasks (in order)
 
