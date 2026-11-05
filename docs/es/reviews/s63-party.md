@@ -38,3 +38,80 @@ twins, tú throughout, vague town facts that agree with TOWN.md, and "¡Ah, mese
 - The writer's `// NEEDS:` is still open: global g_bye takes "igualmente" and "tú también".
 - Polish not done: a second "¿Y tú?" on an answered topic repeats Marcos's line. For the owner (the writer's
   question): "casi son las once" at an afternoon carne asada.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral), against AUDIT-BRIEF.md's ten points. Read: STYLE.md, AUTHORING-ES.md,
+the brief, the review above, the cross-cutting leads (AUDIT/cross, AUDIT/neutral), the file, corpus and held-out set,
+the review transcripts (seeds 3 and 7), and ~150 whole conversations played with `tools/probe.ts` (every step, every
+pending question, yes/no with "¿Y tú?", corrections, refusals, side questions).
+
+**Before → after:** check-content 102/102 NLU, 8 sims → 119/119 NLU, 10 sims, all 12/12 seeds, fuzz 80, 0/0; corpus
+235/235, 0/28 traps → 312/312 (100%), 0/35 traps; held-out 40/40, 0/1 → the same.
+
+### Found and fixed, by point (56 found, 56 fixed)
+
+1. **Natural Spanish (8):** "Me gusta ir a los cenotes" / "Hago snorkel" got "¿Bucear?" (now "¡Ah, qué bien! Suena
+   divertido."); a reason that isn't the sea ("Por la comida y la gente", "Me gustó el pueblo", "Me encanta México")
+   got "Con este mar, ¿quién no?" (new line `why_life`: "¡Te entiendo! Aquí se vive muy bien."); "Yo también soy chef"
+   after Marcos had said he is one got "¡Yo también soy chef!" (new `job_chef_too`: "¡No te creo! ¡Somos colegas!");
+   a dance class after Marcos had told his own got "¡Nosotros también…!" again (new `know_dance_too`: "¡No te creo!
+   ¡Igual que nosotros!"); "Sí, me encanta. ¿Y a ti?" got "A mí también me encanta" and then "¡Me encanta!", and "Un
+   año. ¿Y tú?" got "Yo llegué en mayo" twice (Marcos's own line is skipped when his reaction already said it); "No, no
+   todos" (hockey) and a second "¡Salud!" got "¿Verdad?" (now "¿Ah, no? ¡Yo pensaba que sí!" / "¡Salud!"); "¿Qué hay?"
+   at Marcos's offer was answered by Ximena (now Marcos); "Un taco y otra cerveza" got two "¡Claro!" lines.
+2. **tú/usted:** nothing (tú both ways, hints in tú, usted accepted).
+3. **Names:** nothing (Ximena, Marcos; no clash, as AUDIT/cross says).
+4. **Facts:** nothing to change. "Cerca del mercado, a dos cuadras del zócalo" agrees with TOWN.md (the mercado faces the
+   zócalo); "Ya casi son las once" matches the scene pictures (the numbers and goodbye pictures are at night, string
+   lights on), so the earlier review's owner question is answered by the pictures; the new café and Marcos's
+   restaurant stay unnamed.
+5. **Glosses and English (1):** hint `n_swap` "Shall we swap numbers?" → "Want to swap numbers?" (gloss
+   "Should-we-swap"), as CROSS.md §12. English only.
+6. **Spelling, ¿¡:** nothing.
+7. **Questions and offers (28):** "Hola, ¿cómo estás?" was never answered (Marcos asked the name; now "¡Muy bien,
+   gracias!" first). Answers that were read as another question and brought the question back: "Por el trabajo" at
+   "¿Cómo conociste a Ximena?" (was why_ans, "Como yo"), "Estoy de vacaciones" at "¿Qué te trae por aquí?" (was the
+   job), "No mucho, ¿y a ti?" at "¿Te gusta…?" (was "not long", time_ans). A yes or no with "¿Y tú?" was lost and the
+   question came back: "Sí. ¿Y a ti?" (like), "No, ¿y tú?" / "No, ¿cuál?" (the café), "Sí, por favor. ¿Y tú?" / "No,
+   gracias. ¿Y tú?" (drinks); now the yes or no answers first. "Una cerveza, ¿y tú?" got "Yo soy de la Ciudad de
+   México" (new `mark_drink`: "Yo ya tengo mi cerveza. ¡Salud!"; also "¿Y tú qué tomas?"). "¿Y tú qué cocinas / vives
+   cerca / has ido a…? / bailas?" got two answers (ask_back + the question). At "¿Cuál es tu número?" the polite
+   "Mejor no, perdón" was asked again (the "perdón" read as "¿Perdón?" and the pending had no no), "¿Y el tuyo?" wasn't
+   understood, and a bare "Sí" got the same line twice (now "Entonces, ¿me pasas tu número?"). "El sábado no puedo" at
+   the café invitation said yes and no; "¿El sábado?" / "¿Cuándo?" weren't understood. "No por el trabajo, por amor"
+   answered "for work". Questions that stayed open (not optional): "Está en Oregón" / "Es un estado de Estados Unidos" /
+   "En Nueva Escocia" at "¿Y eso dónde queda?", "Varias cosas" at "¿Y qué haces exactamente?", a title ("Harry Potter")
+   at "¿Qué estás leyendo?", "No, no llueve tanto" at the rain question. "No está en Canadá" was read as Canada (now the
+   question is asked again, shorter: new `city_where_again` "¿Entonces dónde queda?"). Side questions with no answer:
+   "¿Cuántos años tienes?", "¿Tienes hijos?", "¿Estás casado?" (new `mark_personal`: "¡Ja! Eso te lo cuento otro
+   día."), "¿Ya te vas?" (new `mark_going`: "Sí, ya me voy."), "¿De qué son los tacos?" (new `tacos_what`: "¡De
+   carne asada, claro! ¿Te traigo uno?", and its yes is the taco), "¡Los tacos están deliciosos!" (new `food_thanks`:
+   "¡Gracias! Me alegra que te guste."). "Soy de Canadá, pero vivo aquí desde hace un año" buried the cold question
+   under the time reply (now no weather question when the answer goes on to another topic). "¡Sí, está delicioso!" to
+   "Su tres leches está buenísimo, ¿verdad? ¿Y si vamos juntos…?" said the café lines again (now it is a yes to
+   going); "¡Claro!" to "¡Pregúntame algo!" got both lines again (now "¡Pregúntame algo!" alone, and a "No" gets
+   Marcos's own story).
+8. **Hints (1):** the reading hint "Nada por ahora." got "¡Suena bien!" (now "¡Ja, te entiendo!").
+9. **Accepted answers (18):** "Hola, soy Ryan, amigo / vecino / compañera de trabajo de Ximena" (also answers how they
+   know her); "Lo que tú quieras"; "No tomo alcohol, ¿tienes agua?"; "La conozco del trabajo / de la clase de yoga /
+   del barrio", "Es la novia de mi amigo", "Es mi prima", "Porque trabajamos juntos"; "Soy de Estados Unidos, pero vivo
+   aquí", "Soy de Portland, Oregón", states and provinces (Colorado, Oregón, Nueva Escocia, Alberta…); "Trabajo en una
+   empresa (de software)", "Soy diseñador freelance"; "Llevo aquí dos meses", "Vivo / Estoy aquí desde marzo"; a
+   leading "Porque…" / "Es que…" on every reason; "Sí, lo conozco", "Sí, está buenísimo" (the café's cake, not a
+   compliment to Marcos); "Claro, apunta: …"; "No, gracias, no como carne", "Soy vegetariana". Corpus +77 items,
+   traps +7 ("No está en Canadá" is covered by a sim instead: it still parses as "No." + "está en Canadá", and the
+   handler asks again).
+10. **Neutral text:** nothing. The five twins say the same thing; the nine new lines have no Mexican-only word.
+
+New spoken lines (9, one variant each, to voice): know_dance_too, job_chef_too, why_life, mark_personal, mark_drink,
+food_thanks, tacos_what, mark_going, city_where_again. Marcos also says drink_menu now (at his own offer). No existing
+line's words changed. Two sims added ("yes or no, and ask back", "neighbor, a state, no number") and 17 NLU tests.
+
+### For the lead (shared files)
+
+- lang.ts: "está" / "queda" aren't in PART_VERBS, so "No está en Canadá" parses as "No." + "está en Canadá" (here the
+  handler asks again; other conversations may take the place).
+- global.ts LEAVING_PATTERNS: "Ya vamos" at a café question reads as a goodbye and ends the conversation (here the flow
+  no longer re-asks, so it isn't reached).
+- Still open from the first review: g_bye takes "igualmente" / "tú también".
