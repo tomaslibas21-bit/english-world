@@ -14,6 +14,11 @@
 // stay for lunch) → "¿Empezamos de nuevo?" / "¿Borrón y cuenta nueva?" → "Ya empezamos. Tú y yo." → "Pásale."
 // Bad moves ("Lo siento, pero…", "Siento que te sientas así", excuses, blame, "era una broma", pushing) get an
 // in-world reply and a tip, never a failure. "No fue mi intención" (the brief) gets "Tal vez no. Pero lo dijiste."
+// A bare yes or no answers the question in a bad move's reply ("¿Quieres intentarlo otra vez?" – "Sí." – "Te escucho.").
+// No is respected: "Hoy no puedo" to his price gets "Bueno, otro día. Pero me la debes."; a "No" gets "Respuesta
+// equivocada" once (a joke between friends), and a second "No" he lets go (the price: "Con la disculpa me conformo";
+// "¿Borrón y cuenta nueva o qué?": "Poco a poco, entonces."). Side questions: "¿Sigues enojado?", "¿Me perdonas?",
+// "¿Qué quieres que cocine?", "¿Puedo volver mañana?".
 // Endings: reconciled (complete, memory danReconciled); left after apologizing (memory danApologized); left early.
 //
 // Mexico, not Maple Harbor: no porch (the front door on the street), the carne asada instead of a backyard barbecue,
@@ -85,6 +90,10 @@ const SORRY_BUT = /\b(lo siento|perdon|perdoname|disculpa|disculpame|siento|lame
 const NON_APOLOGY_YOU = /\b(te sientas|te sintieras|te sentiste|te hayas|si te|te lo hayas tomado|te lo tomaste|lo tomaste|estes|alguien se)\b/;
 /** A bare "¿Perdón?" asks to repeat; "Perdón." apologizes. */
 const PARDON_Q = /^\W*(perdon|disculpa|disculpe|perdone|como)\W*\?\W*$/;
+/** Asking to be forgiven ("¿Me perdonas?", "Espero que me perdones"), not "Perdón" / "Perdóname". */
+const FORGIVE_Q = /\bperdon(as|arias|aras|ar|arme|es)\b/;
+/** A bare "Está bien" (okay): the grammar reads it like "Estamos bien" (start_over); here it is a plain yes. */
+const BARE_OK = /^\W*((bueno|ok|okay|pues|si|ah|ya|vale)\W+)?(esta|ta) (bien|muy bien)(\W+(diego|carnal|amigo|amiga|hermano|compa|gracias))?\W*$/;
 
 /** End-card lines (sent with the "outro" event; see NEEDS). */
 const OUTRO = {
@@ -101,7 +110,7 @@ const TIPS: Record<string, Tip> = {
   non_apology: { key: "non_apology", lt: "Understood! But “Siento que te sientas así” or “Perdón si te ofendí” isn't an apology: it's sorry about his feelings, not about your words. Apologize for what you said.", better: "Siento mucho lo que dije." },
   excuse: { key: "excuse", lt: "Understood! That's an explanation, not an apology. A real apology doesn't look for excuses.", better: "No hay excusa para lo que dije." },
   blame: { key: "blame", lt: "Understood! But blaming him while you apologize turns it into an argument. Talk about yourself.", better: "Me equivoqué. Fue mi culpa." },
-  just_joke: { key: "just_joke", lt: "Understood! But “era una broma” makes his feelings small. Say that you hurt him.", better: "Me pasé. No te lo merecías." },
+  just_joke: { key: "just_joke", lt: "Understood! But “era una broma” or “no es para tanto” makes his feelings small. Say that you hurt him.", better: "Me pasé. No te lo merecías." },
   push: { key: "push", lt: "Understood! But you can't order forgiveness. If your friend needs time, show that you respect it.", better: "Entiendo si necesitas tiempo." },
   too_light: { key: "too_light", lt: "Understood! “Ups” or a bare “disculpa” is for small things, like bumping into someone. A real apology needs more: “Perdóname” or “Lo siento mucho”.", better: "Lo siento mucho, Diego." },
   calque_new: { key: "calque_new", lt: "Understood! “Empezar sobre” is the English “start over”, word for word. In Spanish: “empezar de nuevo” or “empezar de cero”.", better: "¿Empezamos de nuevo?" },
@@ -161,7 +170,12 @@ export const startOver: SituationDef = {
       "hace (mucho | mucho tiempo | dos meses | rato | un buen rato) que no (hablamos | nos vemos | nos hablamos)", "(ya se | se) que soy la ultima persona que (querias | esperabas) ver",
       "[ya se] dos meses [ya se]",
     ] },
-    i_know: { patterns: ["(ya se | lo se | ya lo se) [ya lo se]"] },
+    i_know: { patterns: ["(ya se | lo se | ya lo se) [ya lo se]", "[si] [ya] me (lo)? imagino"] },
+    // "¿Sigues enojado?": "¿Tú qué crees?" before he has had his say; "No. Ya se me pasó." after it
+    still_mad: { patterns: [
+      "[todavia | aun] (sigues | estas) [muy | tan | todavia | aun] (enojado | molesto | sentido | dolido) [conmigo] [todavia | aun]",
+      "[todavia | aun] me (odias | guardas rencor)",
+    ] },
     ask_how: { patterns: [
       "como (estas | has estado | te ha ido | te va | andas | vas) [estos dias | ultimamente]",
       "como (esta | sigue) (natalia | tu esposa | la familia) #nora", "como (estan | han estado) (ustedes | tu y natalia | ustedes dos | los dos) #nora",
@@ -171,6 +185,7 @@ export const startOver: SituationDef = {
     can_talk: { patterns: [
       "(tienes | tiene | tienen) un (minuto | momento | segundo | minutito | momentito) #h:have_minute", "(tienes | tiene | tienen) (tiempo | un rato | un ratito | chance) [para (hablar | platicar)]",
       "(necesito | quiero | tengo que | queria) decirte algo", "(vengo | vine) en (son de paz | paz)", "no (vengo | vine) a (pelear | discutir)",
+      "no quiero (pelear | discutir) [contigo]", "[nada] [solo | nada mas] (queria | quise | vine a | vengo a) (verte | saludarte | saludar)",
       "(podemos | podriamos) (hablar | platicar) [un (momento | minuto | rato)] #h:can_talk",
       "(puedo | podria) (hablar | platicar) contigo [un (momento | minuto)]",
       "(necesito | quiero | quisiera | me gustaria) (hablar | platicar) contigo [de (algo | la @bbq | lo que pasó | nosotros | lo que dije)] [es importante]",
@@ -190,6 +205,8 @@ export const startOver: SituationDef = {
       "(quiero | necesito | queria | tengo que) (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) [contigo] #announce #h:apologize",
       "(vine | vengo) a (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) [contigo] #announce #h:came_apologize",
       "estoy aqui para (disculparme | pedirte perdon) #announce", "te (quiero | queria | tengo que | vengo a | vine a) pedir (perdon | disculpas | una disculpa) #announce", "(vine | vengo) a decirte que lo siento #announce",
+      // "¿Viniste a disculparte o a pelear?" – "A disculparme."
+      "a (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) #announce",
       // naming what for (specific)
       "@siento @said [@where] #specific #h:truly_sorry",
       "@sorry por @said [@where] [@where] #specific #h:sorry_barbecue", "@sorry por decir que (tu | la) lancha (era | es) (tonta | una tonteria) #specific",
@@ -209,7 +226,7 @@ export const startOver: SituationDef = {
       "@sorry", "@sorry (por todo | por eso | por esto)", "(perdon | lo siento | perdoname | disculpame) (tio | tia | carnal | amigo | amiga | hermano | compa)",
       "(disculpa | disculpame)", "(estoy | me siento) (muy)? (arrepentido | arrepentida)", "(me siento | me senti) [muy] (mal | fatal | terrible) (por todo | por eso | de verdad)",
       "quiero que sepas que @sorry", "quiero que sepas que @siento @said [@where] #specific",
-      "(me puedes | me podras | me podrias | puedes | podras | crees que puedas) perdonar[me] [algun dia]",
+      "(me puedes | me podras | me podrias | puedes | podras | crees que puedas) perdonar[me] [algun dia]", "(me perdonas | me perdonarias | me vas a perdonar) [algun dia]",
       "espero que (me puedas perdonar | puedas perdonarme | me perdones) [algun dia] #h:hope_forgive",
     ] },
     // the answer to "¿Perdón por qué, exactamente?" (also on its own)
@@ -227,7 +244,7 @@ export const startOver: SituationDef = {
       "(fue | es) [toda] (mi culpa | culpa mia) #h:my_fault", "(toda)? la culpa (es | fue) (mia | toda mia)", "(fue | fue todo) mi error", "yo tuve la culpa", "(yo | solo yo) tengo la culpa",
       "no tengo (excusa | justificacion | pretexto) [para (lo que dije | eso)]", "no hay (excusa | justificacion | pretexto) (para | por) (@said | eso | lo que hice) #h:no_excuse", "no hay (excusa | justificacion) [que valga]",
       "(tenias | tienes) razon [y yo no] #h:you_right", "(tenias | tienes) toda la razon", "(tenias | tienes) razon y (fui | estaba | era) @proud para (llamarte | hablarte | buscarte) #h:you_right #why #pride",
-      "me pasé [de la raya | mucho | contigo] #h:out_of_line", "(fue | eso fue) (muy)? (injusto | cruel | horrible | feo | de muy mal gusto | una tonteria | terrible) [de mi parte] [lo que dije]",
+      "me pasé [de la raya | mucho | contigo] #h:out_of_line", "(fue | eso fue) (muy)? (injusto | cruel | horrible | feo | de muy mal gusto | una tonteria | una estupidez | una idiotez | una groseria | terrible) [de mi parte] [lo que dije]",
       "[ya se que | se que | reconozco que] @said (fue | estuvo) (muy)? (horrible | feo | cruel | injusto | terrible | de muy mal gusto | una tonteria | mal | fatal)", "(fue | era) un error [decir eso | decirlo | decirte eso]",
       "no te lo merecias #h:out_of_line", "no (te merecias | merecias) (eso | nada de eso | esas palabras)",
       "(no | nunca) (debí | debi) (decir | haber dicho | decirte) (eso | esas cosas | nada de eso | lo que dije | lo de la lancha | eso de la lancha) [@where]",
@@ -236,7 +253,7 @@ export const startOver: SituationDef = {
       "tienes [todo el] derecho (de | a) estar (enojado | molesto | dolido)", "(entiendo | comprendo) que (estes | sigas) (enojado | molesto | dolido)",
       "(debí | debi) (llamarte | haberte llamado | buscarte | haberte buscado) [antes | hace mucho]", "(debí | debi) (venir | disculparme | pedirte perdon) antes",
       "deje que (mi orgullo ganara | el orgullo me ganara)", "(ya se | se) que te (lastimé | heri | ofendi)", "te (lastimé | heri | ofendi) [@where]",
-      "la (regué | cagué) [feo | mucho | en grande]", "la (he liado | lié) [parda | bien]", "meti la pata [feo | hasta el fondo]", "cometi un (error | gran error | error enorme)",
+      "la (regué | cagué) [feo | mucho | en grande]", "te (fallé | he fallado) [como amigo | como amiga]", "la (he liado | lié) [parda | bien]", "meti la pata [feo | hasta el fondo]", "cometi un (error | gran error | error enorme)",
       "fui (un idiota | una idiota | un tonto | una tonta | un patan | grosero | grosera | cruel | injusto | injusta | muy injusto | muy injusta) [contigo] [@where]",
       "(me porté | me comporté) (mal | fatal | como un idiota | como una idiota | muy mal | como un tonto | como una tonta) [contigo] [@where]",
       "(no fue | eso no fue) (justo | justo contigo | lo correcto | nada justo)", "no (tenia que | tenia por que | debia) (decir | decirte) (eso | esas cosas | nada de eso)", "asumo (la responsabilidad | toda la responsabilidad)",
@@ -320,6 +337,10 @@ export const startOver: SituationDef = {
     time_q: { patterns: [
       "cuanto tiempo necesitas", "cuanto (tiempo)? (te vas a tardar | vas a tardar | te tardas)", "cuando vas a estar listo",
       "cuanto (tiempo)? (espero | tengo que esperar)", "cuando (te puedo llamar | puedo llamarte)", "cuando (puedo | debo) (volver | regresar)",
+      // "¿Puedo volver mañana?", "¿Te llamo la próxima semana?": "Yo te aviso."
+      "(puedo | podria) (volver | regresar | venir | pasar) [a verte] (manana | otro dia | la proxima semana | el fin de semana | en unos dias | despues | luego)",
+      "(te llamo | puedo llamarte | te puedo llamar) (manana | otro dia | la proxima semana | el fin de semana | en unos dias | despues | luego)",
+      "(quieres | prefieres) que (vuelva | regrese | te llame) (manana | otro dia | despues | luego | en unos dias)",
     ] },
 
     // --- making it up ----------------------------------------------------------------------------------
@@ -328,7 +349,7 @@ export const startOver: SituationDef = {
       "(hay | habra) algo que (pueda | puedo) hacer [para compensarte | para arreglarlo | para arreglar esto]",
       "que (puedo | podria) hacer para (arreglarlo | arreglar esto | arreglar las cosas | remediarlo) #h:what_do", "que (puedo | podria) hacer",
       "como (puedo | podria) (arreglarlo | arreglar esto | remediarlo | arreglar las cosas)", "como (lo arreglo | lo arreglamos | arreglo esto | lo compenso | te compenso)",
-      "dime (que hago | que puedo hacer | que tengo que hacer | como compensarte)", "que (tengo que | necesito) hacer [para arreglarlo | para compensarte]",
+      "dime (que hago | que puedo hacer | que tengo que hacer | como compensarte)", "que (tengo que | necesito) hacer [para arreglarlo | para compensarte]", "[y] que hago [ahora | entonces]",
       "(dejame | quiero) compensarte", "te lo voy a compensar [te lo prometo]", "(que | dime que) quieres que haga", "como (puedo | podria) ganarme tu perdon", "que (puedo | podria | tengo que) hacer para que me (perdones | disculpes)",
     ] },
     offer: { patterns: [
@@ -349,17 +370,34 @@ export const startOver: SituationDef = {
     deal_ctx: { patterns: [
       "trato hecho #h:deal_ok", "(es | hecho) un trato", "(sale | va | va que va | orale) #h:you_got_it",
       "(me parece | suena) (justo | bien | perfecto | muy bien | genial | buenisimo)", "(tu | tu dime | dime tu | dime) (cuando | el dia | que dia) #h:name_day",
-      "(este | el proximo) (viernes | sabado | domingo | fin de semana) [entonces] [en mi casa]", "ahi (estaré | voy a estar)",
-      "cuenta conmigo", "(es | me parece) justo", "acepto", "lo que (quieras | tu digas)", "hecho", "(hago | haré) lo que (quieras | tu digas)", "(que dia | cuando) [te parece | quieres | entonces]",
+      "(el | este | el proximo) (lunes | martes | miercoles | jueves | viernes | sabado | domingo | fin de semana) [entonces] [en mi casa]", "ahi (estaré | voy a estar)",
+      "cuenta conmigo", "(es | me parece) justo", "acepto", "hecho", "(hago | haré) lo que (quieras | tu digas)", "(que dia | cuando) [te parece | quieres | entonces]",
+      // "¿Y ahora qué?" – "Lo que tú quieras." / "Tú dime.": Diego names his price (at "¿Trato hecho?" they agree)
+      "(lo que | como) [tu] (quieras | digas | mandes | decidas | necesites)", "lo que haga falta", "(tu dime | dime tu | tu decides | tu mandas)",
+      "cuando (empezamos | comenzamos | le entramos | nos vemos)",
+    ] },
+    // "Podrías empezar por quedarte a comer." – "Hoy no puedo.": another day (only while his price is asked)
+    cant_now_ctx: { patterns: [
+      "no puedo", "(hoy | ahorita | ahora) no puedo [quedarme | ayudarte]", "no puedo (hoy | ahorita | ahora | esta semana | este fin de semana | el sabado | quedarme)",
+      "[hoy | ahorita | ahora] no puedo [quedarme | ayudarte] [hoy] tengo (que trabajar | que irme | cosas que hacer | un compromiso | otro compromiso)",
+      "[mejor] otro dia [si | si quieres | si puedo]", "(que tal | lo dejamos para | puede ser) otro dia", "hoy no puedo pero otro dia si",
+      "(el | este | el proximo) (lunes | martes | miercoles | jueves | viernes | sabado | domingo | fin de semana) no puedo",
+    ] },
+    // "Y cocinas tú." – "¿Qué quieres que cocine?": "Sorpréndeme."
+    what_cook: { patterns: [
+      "que (quieres | te gustaria | se te antoja | prefieres) que (cocine | prepare | te cocine | te prepare) [de cenar]",
+      "que (te | les) (cocino | preparo) [de cenar]", "que (cocino | preparo) [de cenar]", "que (quieres | te gustaria | se te antoja) (cenar | de cenar)",
     ] },
     cant_cook: { patterns: [
       "[pero] (yo)? no se cocinar #h:cant_cook", "[pero] (yo)? no puedo cocinar", "[pero] (cocino | soy) (fatal | muy mal | pesimo | horrible | malisimo)",
       "soy (un | una)? (pesimo | pesima | malisimo | malisima | terrible) (cocinero | cocinera)", "(natalia | todos) (sabe | saben) que no se cocinar",
       "(se me quema | quemo) (todo | hasta el agua)", "no se ni hervir agua", "ni (se | sé) cocinar",
+      // the lancha's version: "Pero no sé nada de lanchas."
+      "[pero] (yo)? no se (nada)? de (lanchas | barcos | botes | carpinteria) #boat", "[pero] (yo)? no se (arreglar | reparar) (lanchas | barcos | botes) #boat",
     ] },
     promise: { patterns: [
       "no (va a volver a pasar | se va a repetir | volvera a pasar) [te lo prometo] #h:wont_happen", "(nunca | jamas | nunca mas) (va a volver a pasar | se va a repetir | volvera a pasar | va a pasar | pasara)",
-      "te (lo)? prometo que (no (va a volver a pasar | se va a repetir | vuelve a pasar) | voy a (llamarte | estar ahi | cambiar) | va a ser diferente)",
+      "te (lo)? prometo que (no (va a volver a pasar | se va a repetir | vuelve a pasar) | voy a (llamarte | estar ahi | cambiar) | va a ser diferente)", "te prometo que te voy a (llamar | buscar | visitar) [mas | mas seguido | mas a menudo]",
       "hechos no palabras [ya veras] #h:words_cheap", "ya (veras | lo veras)",
       "(te voy a | voy a) (llamar | buscar | visitar | ver) (mas seguido | mas a menudo | mas) [te lo prometo] #h:call_more", "te (llamo | llamaré) mas (seguido | a menudo) [te lo prometo]",
       "(voy a | te prometo que voy a) estar (ahi | contigo | presente) [para (tu cumpleanos | las carnes asadas | ti)] [de ahora en adelante]",
@@ -414,7 +452,7 @@ export const startOver: SituationDef = {
     door_cold: [t("Hola.", "Hi.", "Hi."), t("Qué tal.", "Hey.", "Hey.")],
     door_what: [
       t("¿Y | qué | se te ofrece?", "And | what | do-you-need?", "So what can I do for you?"),
-      t("¿Qué | te | trae | por aquí?", "What | (to) you | brings | around here?", "What brings you here?"),
+      t("¿Qué | te | trae | por aquí?", "What | you | brings | around here?", "What brings you here?"),
     ],
     long_time_react: [
       t("Dos | meses. | En | un | pueblo | de | este | tamaño.", "Two | months. | In | a | town | of | this | size.", "Two months. In a town this size."),
@@ -502,6 +540,11 @@ export const startOver: SituationDef = {
       t("Ya | te | oí.", "Already | you | I-heard.", "I heard you."),
       t("Sí. | Ya | me lo | dijiste.", "Yeah. | Already | it to me | you-said.", "Yeah. You said that."),
     ],
+    // "¿Me perdonas?" once Diego has had his say
+    forgiven: [t("Ya | te | perdoné.", "Already | you | I-forgave.", "I already forgave you.")],
+    // "¿Sigues enojado?": before Diego has had his say, and after it
+    mad_q: [t("¿Tú | qué | crees?", "You | what | you-think?", "What do you think?", { flags: { 0: "tú before the question word: what do YOU think?" } })],
+    not_mad: [t("No. | Ya | se me pasó.", "No. | Already | it's-passed (for me).", "No. I'm over it.", { flags: { 2: "pasársele algo a alguien: get over it (anger, a cold)." } })],
     pride_coat: [t("El | orgullo | pesa, | ¿verdad?", "— | Pride | weighs, | right?", "Pride's heavy, huh?", { flags: { 0: ART_GEN } })],
     know_that: [t("Sí. | Algo | sé | de | eso.", "Yeah. | Something | I-know | about | that.", "Yeah. I know a thing or two about that.")],
 
@@ -572,6 +615,18 @@ export const startOver: SituationDef = {
     deal_q: [t("¿Y? | ¿Trato hecho?", "So? | Deal?", "So? Deal?")],
     wrong_answer: [t("Respuesta | equivocada. | Inténtalo | otra vez.", "Answer | wrong. | Try it | again.", "Wrong answer. Try again.")],
     cant_cook_react: [t("Ya | lo | sé. | Ese | es | el | castigo.", "Already | it | I-know. | That | is | the | punishment.", "I know. That's the punishment.")],
+    // "¿Qué quieres que cocine?"
+    surprise_me: [t("Sorpréndeme.", "Surprise me.", "Surprise me.")],
+    // "Hoy no puedo." at his price: another day
+    deal_later: [
+      t("Bueno, | otro | día. | Pero | me la | debes.", "Okay, | another | day. | But | (it to) me | you-owe.", "Okay, another day. But you owe me one.",
+        { flags: { 4: "me la debes: you owe me one (la: the favor, left unsaid)." } }),
+    ],
+    // a second "No" to his price: he lets it go
+    deal_let_go: [
+      t("Bueno, | ya. | Con | la | disculpa | me conformo.", "Okay, | fine. | With | the | apology | I'll-settle.", "Okay, fine. The apology's enough for me.",
+        { flags: { 1: "ya: here “enough” (I give up)." } }),
+    ],
     offer_react: [
       t("¡Así se habla!", "Now you're talking!", "Now you're talking."),
       t("Trato hecho. | Pero | te | voy | a | tomar | la | palabra.", "Deal. | But | (from) you | I'm-going | to | take | the | word.", "Deal. But I'm holding you to it.",
@@ -598,6 +653,8 @@ export const startOver: SituationDef = {
         "We never stopped. We just stopped talking.", { flags: { 2: "dejar de + a verb: stop (doing); de has no English word.", 6: "dejar de + a verb: stop (doing); de has no English word." } }),
     ],
     dan_offers_start: [t("Entonces, | ¿borrón y cuenta nueva | o | qué?", "So, | clean slate | or | what?", "So. Are we starting over or what?", { flags: { 1: BORRON } })],
+    // a second "No" to "¿Borrón y cuenta nueva o qué?"
+    slow_start: [t("Está bien. | Poco a poco, | entonces.", "Okay. | Little by little, | then.", "Okay. One step at a time, then.")],
     me_too: [
       t("Sí. | Yo | también.", "Yeah. | Me | too.", "Yeah. Me too."),
       t("Yo | también | te | extrañé, | {m:tonto|f:tonta}.", "I | too | you | I-missed, | dummy.", "I missed you too, you idiot."),
@@ -775,6 +832,8 @@ export const startOver: SituationDef = {
     "me pasé": { reason: "grammatical_fusion", split: "me → myself + pasé → I passed; pasarse = go too far.", minimal: "Two words." },
     "me voy": { reason: "grammatical_fusion", split: "me → myself + voy → I go; irse = leave.", minimal: "Two words." },
     "tómate tu tiempo": { reason: "lexical_expression", split: "tómate → take + tu → your + tiempo → time; = take your time.", minimal: "Three words." },
+    "se me pasó": { reason: "grammatical_fusion", split: "se → itself + me → to me + pasó → it passed; pasársele algo a alguien = get over it.", minimal: "Three words." },
+    "poco a poco": { reason: "lexical_expression", split: "poco → little + a → to + poco → little; = little by little, gradually.", minimal: "Three words." },
   },
 
   // -------------------------------------------------------------------------
@@ -783,7 +842,7 @@ export const startOver: SituationDef = {
     { id: "door", done: (c) => !!c.s.talkOpen,
       ask: (c) => dan(c, "door_what"),
       expects: ["g_hello", "voc_unknown", "its_me", "long_time", "i_know", "ask_how", "g_howareyou", "can_talk", "come_in", "apologize", "apology_detail",
-        "own_it", "why_silent", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "g_sorry"],
+        "own_it", "why_silent", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "g_sorry", "still_mad"],
       suggest: [{ lt: "Ask Diego to talk", hint: "talk" }, { lt: "Apologize right away", hint: "apology" }],
       yes: (c) => { openYesNo(c, true); }, no: (c) => { openYesNo(c, false); },
       help: (c) => dan(c, "nudge_apology") },
@@ -795,7 +854,7 @@ export const startOver: SituationDef = {
         if (!c.s.listenSaid) { c.s.listenSaid = true; dan(c, "listening"); return; }
         dan(c, "nudge_apology");
       },
-      expects: ["apologize", "apology_detail", "own_it", "why_silent", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "g_sorry", "ask_how", "g_howareyou"],
+      expects: ["apologize", "apology_detail", "own_it", "why_silent", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "g_sorry", "ask_how", "g_howareyou", "still_mad"],
       suggest: (c) => c.s.asked === "goon" || c.s.asked === "forwhat"
         ? [{ lt: "Say exactly what you're sorry for", hint: "detail" }, { lt: "Take responsibility", hint: "responsibility" }]
         : [{ lt: "Apologize from the heart, with no “pero”", hint: "apology" }, { lt: "Say what you're sorry for", hint: "detail" }],
@@ -811,7 +870,7 @@ export const startOver: SituationDef = {
         }
         dan(c, c.s.ownDone ? "why_again" : "own_nudge");
       },
-      expects: ["own_it", "true_ctx", "why_silent", "dunno_why_ctx", "apologize", "apology_detail", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "promise"],
+      expects: ["own_it", "true_ctx", "why_silent", "dunno_why_ctx", "apologize", "apology_detail", "sorry_but", "excuse", "didnt_mean", "blame", "rude", "promise", "still_mad"],
       suggest: (c) => c.s.ownDone
         ? [{ lt: "Explain why you didn't call", hint: "why" }, { lt: "Take responsibility", hint: "responsibility" }]
         : [{ lt: "Take responsibility", hint: "responsibility" }, { lt: "Explain why you didn't call", hint: "why" }],
@@ -834,7 +893,7 @@ export const startOver: SituationDef = {
         dan(c, "dan_wrong_too");
         c.s.turnDone = true;
       },
-      expects: ["accept_time", "push", "time_q", "missed_you", "thanks_hearing", "g_thanks", "make_up_q", "offer", "start_over", "promise", "apologize", "hi_nora"],
+      expects: ["accept_time", "push", "time_q", "missed_you", "thanks_hearing", "g_thanks", "make_up_q", "offer", "start_over", "promise", "apologize", "hi_nora", "still_mad"],
       suggest: (c) => timeOpen(c)
         ? [{ lt: "Accept that Diego needs time", hint: "time" }]
         : [{ lt: "Thank him for hearing you out", hint: "thanks" }, { lt: "Ask how you can make it up to him", hint: "make_up" }],
@@ -861,7 +920,7 @@ export const startOver: SituationDef = {
         if (n < 2) { c.s.whatNow = n + 1; dan(c, "so_what_now"); return; }
         offerPrice(c, false);
       },
-      expects: ["make_up_q", "offer", "offer_ctx", "deal_ctx", "cant_cook", "promise", "start_over", "missed_you", "thanks_hearing", "g_thanks"],
+      expects: ["make_up_q", "offer", "offer_ctx", "deal_ctx", "cant_cook", "promise", "start_over", "missed_you", "thanks_hearing", "g_thanks", "what_cook"],
       suggest: (c) => c.s.dealOffered
         ? [{ lt: "Accept Diego's terms", hint: "deal" }]
         : [{ lt: "Ask how you can make it up to him", hint: "make_up" }, { lt: "Promise it won't happen again", hint: "promise" }],
@@ -874,7 +933,7 @@ export const startOver: SituationDef = {
         if (!c.s.elseSaid) { c.s.elseSaid = true; dan(c, "anything_else"); return; }
         offerStart(c);
       },
-      expects: ["start_over", "missed_you", "thanks_hearing", "g_thanks", "promise", "nothing_else_ctx"],
+      expects: ["start_over", "missed_you", "thanks_hearing", "g_thanks", "promise", "nothing_else_ctx", "what_cook"],
       suggest: [{ lt: "Ask if you can start over", hint: "start_over" }, { lt: "Thank him for hearing you out", hint: "thanks" }],
       yes: (c) => { if (!openYesNo(c, true)) { dan(c, "tell_me"); c.hold(); } },
       no: (c) => { if (!openYesNo(c, false)) offerStart(c); },
@@ -1028,6 +1087,25 @@ export const startOver: SituationDef = {
     { say: "¿Tienes un ratito para platicar?", intent: "can_talk", step: "door" },
     { say: "No puedo cocinar.", intent: "cant_cook", step: "make_up" },
     { say: "Ya no quiero ser tu amigo.", intent: "none", step: "start_over", not: ["start_over"] },
+    // audit (5 Nov 2026): side questions and answers that had no reply, or the wrong one
+    { say: "¿Sigues enojado?", intent: "still_mad", step: "turn" },
+    { say: "¿Todavía estás enojado conmigo?", intent: "still_mad", step: "door" },
+    { say: "¿Por qué sigues enojado?", intent: "push", step: "turn", not: ["still_mad"] },
+    { say: "¿Me perdonas?", intent: "apologize", step: "apology" },
+    { say: "A disculparme.", intent: "apologize", step: "apology", not: ["blame"] },
+    { say: "No quiero pelear.", intent: "can_talk", step: "apology", not: ["blame", "rude"] },
+    { say: "Solo quería saludarte.", intent: "can_talk", step: "door" },
+    { say: "Me imagino.", intent: "i_know", step: "door" },
+    { say: "¿Puedo volver mañana?", intent: "time_q", step: "turn" },
+    { say: "¿Te llamo la próxima semana?", intent: "time_q", step: "turn" },
+    { say: "Tú dime.", intent: "deal_ctx", step: "make_up" },
+    { say: "Lo que necesites.", intent: "deal_ctx", step: "make_up", not: ["accept_time"] },
+    { say: "¿Qué quieres que cocine?", intent: "what_cook", step: "make_up" },
+    { say: "¿Qué hago?", intent: "make_up_q", step: "make_up", not: ["what_cook", "apology_detail"] },
+    { say: "Pero no sé nada de lanchas.", intent: "cant_cook", step: "make_up" },
+    { say: "No estoy enojado.", intent: "none", step: "turn", not: ["still_mad"] },
+    { say: "Te fallé como amigo.", intent: "own_it", step: "responsibility" },
+    { say: "No te fallé.", intent: "none", step: "responsibility", not: ["own_it"] },
     // not understood
     { say: "Mi perro come plátanos los martes.", intent: "none" },
     { say: "El cielo es verde y la mesa canta.", intent: "none" },
@@ -1118,6 +1196,40 @@ export const startOver: SituationDef = {
     // walked away before any apology
     { name: "walked away early", turns: ["¿Cómo estás?", "Perdón, me tengo que ir."],
       expect: { complete: false, state: { left: "early" } }, auto: AUTO },
+    // audit (5 Nov 2026): a bare "Está bien" is a yes (it read as "¿Estamos bien?": "No me presiones" while Diego needed
+    // time, and "¿Y? ¿Trato hecho?" again at his price); at "¿Algo más que quieras decir?" it means nothing more
+    { name: "a bare 'Está bien' accepts the time and the price", turns: [
+      "¿Podemos hablar?", "Siento mucho lo que dije en tu carne asada.", "Me equivoqué.", "No sabía qué decir.", "Está bien.",
+      "Gracias por escucharme.", "¿Cómo te lo puedo compensar?", "Está bien.", "Está bien.", "Sí.", "Gracias.",
+    ], expect: { complete: true, state: { timeOk: true, pushes: undefined, offerStart: true, startOverDone: true } }, auto: AUTO,
+      setup: (s) => { s.mood = "needs_time"; s.noraTwist = false; s.variant = "stay"; } },
+    // audit: "No" twice to his price, then twice to "¿Borrón y cuenta nueva o qué?": the joke once, then he lets it go
+    // (it was "Respuesta equivocada. Inténtalo otra vez." for ever)
+    { name: "no and no again: Diego lets it go", turns: [
+      "¿Podemos hablar?", "Siento mucho lo que dije en tu carne asada.", "Fue mi culpa.", "Me daba vergüenza.", "Gracias por escucharme.",
+      "¿Cómo te lo puedo compensar?", "No.", "No.", "Nada.", "No.", "No.", "Gracias.",
+    ], expect: { complete: true, state: { dealNos: 2, startNos: 2, makeUpDone: true, startOverDone: true } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "boat"; } },
+    // audit: "Hoy no puedo" to "Podrías empezar por quedarte a comer.": "Bueno, otro día. Pero me la debes."
+    { name: "can't today: another day", turns: [
+      "Hola, Diego. ¿Tienes un minuto?", "Te debo una disculpa.", "Por lo que dije de tu lancha.", "Tenías razón, y fui demasiado orgulloso para llamarte.",
+      "Gracias por escucharme.", "¿Qué puedo hacer para arreglarlo?", "Hoy no puedo, pero otro día sí.", "¿Empezamos de nuevo?", "Gracias.",
+    ], expect: { complete: true, state: { makeUpDone: true, dealNos: undefined } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "stay"; } },
+    // audit: a bare yes/no to the question in his reaction to a bad move ("¿Quieres intentarlo otra vez?" – "Sí.", "¿O
+    // sea que ahora es mi culpa?" – "No.") gets "Te escucho", not "No viniste hasta aquí a hablar del clima"
+    { name: "bad-move questions answered yes or no", turns: [
+      "¿Podemos hablar?", "No es para tanto.", "Sí.", "Siento que te sientas así.", "No.", "Tú empezaste.", "No quiero pelear.",
+      "Siento mucho lo que dije en tu carne asada.", "Me pasé. No te merecías eso.", "Por orgullo.", "Te extrañé.", "¿Cómo te lo puedo compensar?", "Trato hecho.", "¿Empezamos de nuevo?",
+    ], expect: { complete: true, state: { badMoves: 3, lastBad: "blame" } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
+    // audit: "¿Sigues enojado?" and "¿Me perdonas?" before and after Diego has had his say; "Lo que tú quieras" at
+    // "¿Y ahora qué?" (he names his price) and "¿Qué quieres que cocine?" ("Sorpréndeme.", agreed); "Lo siento otra vez"
+    { name: "still mad? forgive me? you name it", turns: [
+      "¿Sigues enojado?", "Vine a disculparme.", "Perdóname por lo que dije en tu carne asada.", "¿Me perdonas?", "Me equivoqué. No te lo merecías.",
+      "No supe cómo decírtelo.", "¿Me perdonas?", "¿Sigues enojado conmigo?", "Lo que tú quieras.", "¿Qué quieres que cocine?", "Lo siento otra vez.", "Sí.", "Gracias.",
+    ], expect: { complete: true, state: { makeUpDone: true, startOverDone: true, dealOffered: false } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
   ],
 };
 
@@ -1143,10 +1255,13 @@ function greet(c: Ctx) {
 function apologyMove(c: Ctx, tags: string[]) {
   if (c.s.goalMet) return;
   c.s.talkOpen = true;
-  if (c.s.turnDone) { react(c, "heard_you"); return; }
-  if (timeOpen(c)) { react(c, "heard_you"); c.hold(); return; }
+  // "¿Me perdonas?": "Ya te perdoné." once he has had his say, "Solo dame un tiempo." while he needs time
+  const forgive = FORGIVE_Q.test(heard(c));
+  if (c.s.turnDone) { react(c, forgive ? "forgiven" : "heard_you"); return; }
+  if (timeOpen(c)) { react(c, forgive ? "just_time" : "heard_you"); c.hold(); return; }
   if (c.s.apologyDone) {
-    if (!now(c, "ap_now")) react(c, "heard_you"); // the open question (own it / why) comes again
+    // the open question (own it / why) comes again; "¿Me perdonas?" gets only the question
+    if (!now(c, "ap_now") && !forgive) react(c, "heard_you");
     return;
   }
   if (tags.includes("silence")) c.s.silenceNamed = true;
@@ -1182,12 +1297,32 @@ function badMove(c: Ctx, kind: "sorry_but" | "excuse" | "blame" | "rude" | "didn
   c.s.badMoves = (c.s.badMoves ?? 0) + 1;
   c.s.lastBad = k;
   if (k === "sorry_but") { dan(c, "sorry_but_react"); c.tip(TIPS.sorry_but); }
-  else if (k === "non_apology") { dan(c, NON_APOLOGY_YOU.test(h) ? "non_apology_you" : "non_apology_react"); c.tip(TIPS.non_apology); }
+  else if (k === "non_apology") {
+    const you = NON_APOLOGY_YOU.test(h);
+    dan(c, you ? "non_apology_you" : "non_apology_react"); c.tip(TIPS.non_apology);
+    if (you) { badQuestion(c, "fault"); return; }
+  }
   else if (k === "excuse") { dan(c, "excuse_react"); c.tip(TIPS.excuse); }
-  else if (k === "blame") { dan(c, "blame_react"); c.tip(TIPS.blame); }
-  else if (k === "rude") { dan(c, "rude_react"); c.tip(TIPS.just_joke); }
-  else if (k === "push") { dan(c, "rude_react"); c.tip(TIPS.push); }
+  else if (k === "blame") { dan(c, "blame_react"); c.tip(TIPS.blame); badQuestion(c, "fight"); return; }
+  else if (k === "rude") { dan(c, "rude_react"); c.tip(TIPS.just_joke); badQuestion(c, "retry"); return; }
+  else if (k === "push") { dan(c, "rude_react"); c.tip(TIPS.push); badQuestion(c, "retry"); return; }
   else dan(c, "didnt_mean_react");
+  c.hold();
+}
+
+/** Diego's reaction ended in a question: "¿O sea que ahora es mi culpa?" (fault), "¿Viniste a disculparte o a
+ *  pelear?" (fight), "¿Quieres intentarlo otra vez?" (retry). A bare yes or no answers it (it used to get "No viniste
+ *  hasta aquí a hablar del clima."); anything else drops it and goes on as usual. */
+function badQuestion(c: Ctx, q: "fault" | "fight" | "retry") {
+  c.expect({ id: "bad_q", optional: true, on: {}, yes: (cc) => badReply(cc, q, true), no: (cc) => badReply(cc, q, false) });
+}
+function badReply(c: Ctx, q: "fault" | "fight" | "retry", yes: boolean) {
+  // "¿O sea que ahora es mi culpa?" – "Sí.": blaming him
+  if (q === "fault" && yes) { badMove(c, "blame"); return; }
+  // "¿Quieres intentarlo otra vez?" – "No."
+  if (q === "retry" && !yes) { react(c, "nudge_apology"); c.hold(); return; }
+  c.s.listenSaid = true;
+  react(c, "listening");
   c.hold();
 }
 
@@ -1227,9 +1362,10 @@ function offerPrice(c: Ctx, iDo: boolean) {
  *  cooking or a yes answer it, also while the step is still "turn" (a held turn keeps its step's expects). */
 function askDeal(c: Ctx) {
   const run = (id: string) => (cc: Ctx, sl: any, sg: Segment) => { HANDLERS[id](cc, sl, sg); };
-  c.expect({ id: "deal", expects: ["deal_ctx", "cant_cook", "promise", "offer", "start_over", "make_up_q"],
+  c.expect({ id: "deal", expects: ["deal_ctx", "cant_cook", "promise", "offer", "start_over", "make_up_q", "cant_now_ctx", "what_cook"],
     hints: ["deal"], suggest: [{ lt: "Accept Diego's terms", hint: "deal" }],
-    on: { deal_ctx: run("deal_ctx"), cant_cook: run("cant_cook"), promise: run("promise"), offer: run("offer"), start_over: run("start_over"), make_up_q: run("make_up_q") },
+    on: { deal_ctx: run("deal_ctx"), cant_cook: run("cant_cook"), promise: run("promise"), offer: run("offer"), start_over: run("start_over"), make_up_q: run("make_up_q"),
+      cant_now_ctx: run("cant_now_ctx"), what_cook: run("what_cook") },
     ask: (cc) => dan(cc, "deal_q"),
     yes: (cc) => { openYesNo(cc, true); }, no: (cc) => { openYesNo(cc, false); } });
 }
@@ -1289,10 +1425,27 @@ function closeOut(c: Ctx) {
 /** A bare yes/no answers Diego's open question, whichever step is current: the price ("¿Y? ¿Trato hecho?"), "¿Borrón
  *  y cuenta nueva o qué?" or "Necesito tiempo". Returns false if no such question is open. */
 function openYesNo(c: Ctx, yes: boolean): boolean {
-  if (c.s.dealOffered) { if (yes) acceptDeal(c); else { react(c, "wrong_answer"); askDeal(c); } return true; }
-  if (c.s.offerStart && !c.s.startOverDone) { if (yes) doStartOver(c, false); else { react(c, "wrong_answer"); c.hold(); } return true; }
+  if (c.s.dealOffered) { if (yes) acceptDeal(c); else dealNo(c); return true; }
+  if (c.s.offerStart && !c.s.startOverDone) { if (yes) doStartOver(c, false); else startNo(c); return true; }
   if (timeOpen(c)) { if (yes) acceptTime(c); else pushMove(c); return true; }
   return false;
+}
+/** "No" to his price: "Respuesta equivocada…" once (a joke between friends); a second "No" he lets go ("Bueno, ya. Con
+ *  la disculpa me conformo."). It used to say "Respuesta equivocada" for ever. */
+function dealNo(c: Ctx) {
+  if (!once(c, "deal_no")) return;
+  c.s.dealNos = (c.s.dealNos ?? 0) + 1;
+  if (c.s.dealNos >= 2) { if (once(c, "deal")) { dan(c, "deal_let_go"); settle(c); } return; }
+  react(c, "wrong_answer");
+  askDeal(c);
+}
+/** "No" to "¿Borrón y cuenta nueva o qué?": the joke once, then "Está bien. Poco a poco, entonces." */
+function startNo(c: Ctx) {
+  if (!once(c, "start_no")) return;
+  c.s.startNos = (c.s.startNos ?? 0) + 1;
+  if (c.s.startNos >= 2) { c.s.startOverDone = true; dan(c, "slow_start"); return; }
+  react(c, "wrong_answer");
+  c.hold();
 }
 
 function stepYes(c: Ctx) {
@@ -1321,7 +1474,20 @@ const HANDLERS: Record<string, H> = {
     if (!c.s.talkOpen) c.hold(); // Diego waits for the real reason; later, "No viniste hasta aquí a hablar del clima."
   },
   g_howareyou(c) { HANDLERS.ask_how(c, {}, NOSEG); },
-  can_talk(c) { if (!c.s.goalMet) c.s.talkOpen = true; },
+  can_talk(c) {
+    if (c.s.goalMet || now(c, "bad")) return;
+    // "No vine a pelear." / "¿Podemos hablar?" once he is already listening: he listens (not "…hablar del clima")
+    if (c.s.talkOpen && !c.s.apologyDone) { c.s.listenSaid = true; react(c, "listening"); c.hold(); return; }
+    c.s.talkOpen = true;
+  },
+  // "¿Sigues enojado?": "¿Tú qué crees?" before he has had his say; "No. Ya se me pasó." after it
+  still_mad(c) {
+    if (c.s.goalMet) return;
+    if (timeOpen(c)) { react(c, "just_time"); c.hold(); return; }
+    if (c.s.turnDone) { react(c, "not_mad"); return; }
+    react(c, "mad_q");
+    c.hold();
+  },
   come_in(c) {
     if (c.s.goalMet || c.s.turnDone) return;
     c.s.talkOpen = true;
@@ -1337,6 +1503,10 @@ const HANDLERS: Record<string, H> = {
   g_repeat(c) {
     const h = heard(c);
     if (!c.s.goalMet && !c.s.apologyDone && /^\W*(perdon|perdoname)\W*$/.test(h) && !/\?/.test(c.heard)) { apologyMove(c, []); return; }
+    // "Lo siento otra vez." / "Perdóname de nuevo.": apologizing again, not "say that again" (it got "Sin problema."
+    // and his last lines once more); "Lo siento, ¿lo puedes repetir?" still asks to repeat
+    if (!c.s.goalMet && /\b(lo siento|perdoname|disculpame)\b/.test(h) && /\b(otra vez|de nuevo|una vez mas)\b/.test(h)
+      && !/\b(repet|repit|decir|dijiste|dices|oi|escuche|entendi)/.test(h)) { apologyMove(c, []); return; }
     GLOBAL_HANDLERS.g_repeat(c as any, {});
   },
   g_sorry(c) {
@@ -1414,10 +1584,33 @@ const HANDLERS: Record<string, H> = {
     if (!c.s.makeUpDone) settle(c);
   },
   offer_ctx(c, sl, sg) { if (!c.s.dealOffered) HANDLERS.offer(c, sl, sg); },
-  deal_ctx(c) { if (!c.s.goalMet && c.s.dealOffered) acceptDeal(c); },
-  cant_cook(c) {
+  deal_ctx(c) {
     if (c.s.goalMet) return;
-    if (c.s.dealOffered && c.s.variant === "dinner") { if (once(c, "deal")) { dan(c, "cant_cook_react"); settle(c); } return; }
+    // "El sábado no puedo.": not a yes (cant_now_ctx answers it)
+    if (c.s.dealOffered) { if (!/\bno puedo\b/.test(heard(c))) acceptDeal(c); return; }
+    // "¿Y ahora qué?" – "Lo que tú quieras." / "Tú dime.": he names his price (it used to ask "¿Y ahora qué sigue?" again)
+    if (stepIs(c, "make_up") && c.s.turnDone && !c.s.makeUpDone && !timeOpen(c) && once(c, "price")) offerPrice(c, false);
+  },
+  // "Podrías empezar por quedarte a comer." – "Hoy no puedo.": "Bueno, otro día. Pero me la debes."
+  cant_now_ctx(c) {
+    if (c.s.goalMet || !c.s.dealOffered || !once(c, "deal")) return;
+    dan(c, "deal_later");
+    settle(c);
+  },
+  // "Y cocinas tú." – "¿Qué quieres que cocine?": "Sorpréndeme." (asked about the dinner he named, it agrees to it)
+  what_cook(c) {
+    if (c.s.goalMet) return;
+    if (timeOpen(c)) { react(c, "just_time"); c.hold(); return; }
+    if (!c.s.turnDone) { react(c, "too_soon"); c.hold(); return; }
+    react(c, "surprise_me");
+    if (c.s.dealOffered && c.s.variant === "dinner") { if (once(c, "deal")) settle(c); return; }
+    if (c.s.dealOffered) askDeal(c);
+  },
+  cant_cook(c, _sl, seg) {
+    if (c.s.goalMet) return;
+    // "No sé cocinar" to the dinner, "No sé nada de lanchas" to the lancha: "Ya lo sé. Ese es el castigo."
+    const fits = seg.tags.includes("boat") ? c.s.variant === "boat" : c.s.variant === "dinner";
+    if (c.s.dealOffered && fits) { if (once(c, "deal")) { dan(c, "cant_cook_react"); settle(c); } return; }
     if (c.s.dealOffered) { react(c, "wrong_answer"); askDeal(c); return; }
     react(c, "ack");
   },
@@ -1433,6 +1626,13 @@ const HANDLERS: Record<string, H> = {
   },
   start_over(c, _sl, seg) {
     if (c.s.goalMet) return;
+    // A bare "Está bien." is read like "Estamos bien": it is a plain yes (it was "No me presiones" while Diego needed
+    // time, and "¿Y? ¿Trato hecho?" again at his price); at "¿Algo más que quieras decir?" it means nothing more
+    if (BARE_OK.test(heard(c))) {
+      if (stepIs(c, "start_over") && !c.s.offerStart && !c.s.startOverDone && !c.s.dealOffered) { offerStart(c); return; }
+      HANDLERS.g_ok(c, {}, NOSEG);
+      return;
+    }
     if (timeOpen(c)) { pushMove(c); return; }
     if (!c.s.turnDone) { react(c, "too_soon"); c.hold(); return; }
     if (!once(c, "start")) return;

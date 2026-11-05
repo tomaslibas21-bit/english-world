@@ -38,3 +38,62 @@ The writer's corpus was 100% after tuning. A fresh probe of 56 sentences, writte
   Diego says it even after a full apology in the same turn. The brief lists the phrase as one to practise, so the owner
   may want it read as part of a sincere apology.
 - The writer's NEEDS (g_bye, g_repeat, g_sorry, the enter/outro events, a shared memory) stand. I added none.
+
+## Audit (5 Nov 2026)
+Fresh reviewer, both texts. Read: STYLE.md, AUTHORING-ES.md, the brief, this review, the cross and neutral files (no
+leads beyond the offer probe's expected "a pelear" and "No quiero pelear"), the situation, corpus and held-out set, the
+English original (origin/main); seeds 3 and 7 read in full, before and after; about 110 probes with `tools/probe.ts`
+(every question Diego asks, answered yes, no, with a reason and with a side question; the learner's likely questions at
+each step), the offer probe in both texts (only the expected "a pelear").
+
+**Checked, fine:** tú both ways (Diego, Natalia; "Los extrañé" to both); every line natural Mexican Spanish for a hurt,
+dry friend (no calques: "¿Qué se te ofrece?", "Ahí va, despacio", "Me tomó como diez segundos", "Llevaba dos meses
+esperando decir eso", "Nunca dejamos de serlo"); the story's tenses (the carne asada and the silence in the preterite,
+"Es la primera vez que te oigo decir…", the promises in "voy a / se va a"); names (Diego, Natalia, Michi as in s85; no
+other Diego or Natalia in the edition); facts (Saturday morning, coffee, lunch, no prices or times); the four neutral
+twins (parrillada, pasa, de acuerdo) and no Mexican-only word without one; spelling and ¿¡; ~all glosses; American
+English. Speakers: Natalia says only nora_hall, nora_coffee, nora_hi (always followed by a Diego line in the same turn);
+every other line, the 7 new ones included, is Diego's.
+
+**Found and fixed, by point**
+- 5 · glosses (1): "¿Qué te trae por aquí?" glossed te as "(to) you" (it is the object: "you").
+- 7 · answers and meaning (14 fixed): **meaning flip**: a bare "Está bien." (or "Bueno, está bien", "Está bien, Diego")
+  was read as "¿Estamos bien?" (start_over): while Diego needed time it got "No me presiones, ¿sí? Hoy no." and the push
+  tip; at his price "¿Y? ¿Trato hecho?" again; at "¿Algo más que quieras decir?" "Ya empezamos, hace un minuto." Now it
+  is a plain yes (accepts the time, the price), and "nothing more" at "¿Algo más?" (handler guard; "¿Estamos bien?"
+  keeps its meaning). "¿Qué hago?" at the door was read as the apology's detail. **No respected**: a "No" to his price
+  and to "¿Borrón y cuenta nueva o qué?" got "Respuesta equivocada. Inténtalo otra vez." for ever: the joke once, then
+  he lets it go (new `deal_let_go` "Bueno, ya. Con la disculpa me conformo.", `slow_start` "Está bien. Poco a poco,
+  entonces."); "Hoy no puedo", "No puedo", "Mejor otro día", "El sábado no puedo" at his price (not understood, or a
+  "No") get `deal_later` "Bueno, otro día. Pero me la debes." **Wrong replies**: a bare "Sí"/"No" to the question in a
+  bad move's reply ("¿Quieres intentarlo otra vez?", "¿O sea que ahora es mi culpa?", "¿Viniste a disculparte o a
+  pelear?") got "No viniste hasta aquí a hablar del clima.": now "Te escucho" (a "Sí" to "¿…es mi culpa?" is blame, a
+  "No" to "¿…intentarlo otra vez?" keeps the nudge); "No vine a pelear." the same, "No quiero pelear." was not
+  understood; "A disculparme." was read as a vague "Discúlpame" ("¿Perdón por qué?"): now "A ver. Sigue."; "Lo siento
+  otra vez." was "say that again" ("Sin problema." and his last lines replayed): now an apology ("Sí. Ya me lo
+  dijiste."); "Lo que tú quieras." / "Tú dime." / "Lo que necesites." at "¿Y ahora qué?" got the question again: he
+  names his price. **No answer**: "¿Sigues enojado?" (new `mad_q` "¿Tú qué crees?" before he has had his say, `not_mad`
+  "No. Ya se me pasó." after, "Solo dame un tiempo." while he needs time); "¿Me perdonas?" (not understood; after his
+  turn new `forgiven` "Ya te perdoné.", while he needs time "Solo dame un tiempo.", during the responsibility step the
+  open question again instead of "Sí. Ya me lo dijiste."); "¿Qué quieres que cocine?" / "¿Qué te cocino?" (new
+  `surprise_me` "Sorpréndeme.", agreeing to the dinner); "¿Puedo volver mañana?", "¿Te llamo la próxima semana?" ("Yo te
+  aviso."); "Quería verte", "Solo quería saludarte" ("Te escucho"); "Me imagino" to the market joke; "Pero no sé nada de
+  lanchas" at the lancha price ("Ya lo sé. Ese es el castigo.", as "No sé cocinar" at the dinner).
+- 8 · help text (1): the just_joke tip quoted only "era una broma" after "No es para tanto"; it names both now.
+- 9 · breadth (1): "Te fallé (como amigo)", "Fue una estupidez lo que dije", "Te prometo que te voy a llamar más",
+  "¿El sábado?", "¿Cuándo empezamos?", "Como tú quieras".
+
+**Tests:** corpus +48 (traps +3: "No estoy enojado", "No te fallé", "¡No puedo esperar!"; 15 more with `not`), 398/398,
+0/76 false accepts (was 353/353, 0/73); held-out 39/39, 0/2 (unchanged); NLU tests 110 → 128; 5 new sims ("a bare 'Está
+bien' accepts the time and the price", "no and no again: Diego lets it go", "can't today: another day", "bad-move
+questions answered yes or no", "still mad? forgive me? you name it"), 20 sims 12/12.
+
+**New spoken lines (7, all Diego's, no values, no Mexican-only words, so no twins):** forgiven, mad_q, not_mad,
+surprise_me, deal_later, deal_let_go, slow_start. One gloss changed (door_what), no spoken text changed.
+
+**Left for the lead / owner**
+- Shared (global yes in src/editions/es/convo/lang.ts): "¡Obvio!" / "Obvio que sí" / "Obviamente", a very common
+  Mexican yes, is not a yes ("¿Borrón y cuenta nueva o qué?" – "Obvio." is not understood).
+- Natalia's "Ya está el café." has no answer of its own ("¡Qué rico, un cafecito!" gets the generic "no te entendí");
+  her hello comes on "Gracias" and "Hola", which is enough.
+- The earlier owner question stands: "Lo siento, no fue mi intención" is a soft bad move ("Tal vez no. Pero lo dijiste.").
