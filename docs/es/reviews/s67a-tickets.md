@@ -54,3 +54,71 @@ Blind misses before: "No voy a Cancún, voy a Mérida", "Todavía no sé cuándo
 **Gate:** tsc clean; check-content 139/139 NLU, 20 sims 12/12, fuzz 80, 0/0; corpus 248/248, 0/43; heldout 36/37, 0/5 traps; vitest 257/257 in both editions.
 
 **For the owner:** the open points stand; note that in Mexico the student half, like the teachers' discount, applies only in school vacations (2025–26 press on the SEP-period bus discounts: students 50%, teachers 25%, limited seats). Left as is: "Un boleto a Valladolid" gets "no hay salidas para allá", though the Mérida bus stops there.
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer (N/AUDIT-BRIEF.md): both texts, the transcripts at seeds 3 and 7 read in full, six probe sets
+(`tools/probe.ts`, ~90 turns), the cross file's leads, and the real region checked for the facts (ADO-style coaches on
+the Riviera Maya, Nov 2026: ADO's Tulum–Cancún ~$300–350, Tulum–Mérida ~$500–750 and ~4 h 20, Tulum–Playa ~1 h 10; 25 kg
+of luggage free; INAPAM's half all year; the students' half and the teachers' quarter only in the SEP's school
+vacations, summer 2026 16 July–30 August). The town's fares and times ($70 / $180 / $380 / $720; 30 min / 1 h 30 /
+2 h 30 / 5 h from 30 minutes south of Tulum; the morning buses and the 5:15 on the terminal's board) hold and stay.
+
+**Found 22, fixed 22** (by point: 1:2 2:0 3:0 4:2 5:5 6:0 7:10 8:2 9:1 10:0).
+
+- **4, facts (must-fix):** "Con credencial, estudiantes y adultos mayores pagan la mitad" and the card question for a
+  student card gave students half off in November. Now `discount_info` says the INAPAM half only, `ask_discount` asks
+  "¿Tiene credencial del INAPAM?", and a student (asking, claiming, "Sí, de estudiante", or showing the card, even when the
+  NLU splits "credencial | de estudiante") gets the new `student_disc` "Los estudiantes solo tienen descuento en
+  vacaciones." (the teachers' line's twin) and the full fare; said again, the short `vac_remind` "Lo siento, solo en
+  vacaciones." The INAPAM path is unchanged (the card question's yes now defaults to "senior").
+- **7, answers and meaning (10):** "Quiero un boleto redondo" (and "Un boleto sencillo") at "¿Sencillo o redondo?" was
+  the unknown place "redondo" ("Lo siento, de aquí no hay salidas para allá"): trip_ans takes the ticket word, and
+  "Dos boletos sencillos" counts two. "¿A qué hora sale el último / el primero?" at the departure question booked that bus
+  (ask_next + time_ctx): now an `ask_other_ctx` question (both times, asked again); at the sold-out offer "¿Hay uno más
+  tarde?" was "la una" + "más tarde" and booked the 5:15: now "Hoy solo queda el de las 5:15. ¿Se lo doy?"; at
+  tomorrow's offer the same booked tomorrow's 5:15 after a stray "¿Y para qué hora…?": now tomorrow's two buses and which
+  one, where a "No" walks off as at the offer ("¿Más temprano?": "No, el primero es el de las…", the offer kept). "¿A qué hora sale?" at the sold-out offer got
+  "Sí, el de las 5:15" (rule 11): new `next_at` "El siguiente sale a las 5:15…", the offer kept open. "¿Cuántas maletas
+  puedo llevar?" got "Claro. Su maleta va abajo…": new `luggage_limit` "Puede llevar hasta 25 kilos sin costo." (also
+  "¿Cuántos kilos…?", "¿Hay límite de equipaje?"). "¿Puedo pagar con el celular?" got "Acerque o inserte su tarjeta": new
+  `phone_ok` "Claro, acerque su celular a la terminal." Understood now: "¿A dónde tienen salidas?" (cross lead), "¿A qué
+  hora sale el último autobús a Cancún?" (both departures, never "su autobús"), "¿Cuánto cuesta para niños?" / "¿Los
+  niños pagan?", "¿Dónde está el andén?"; "¿Los estudiantes tienen descuento?" / "¿Aceptan la credencial de estudiante?"
+  tagged (they got the general line).
+- **1, flow (2):** after "¿A Playa del Carmen?" a "No, a Tulum." got the whole destination list first (cross lead): the
+  list now only for a bare no. Travelling another day with the twist on, "El primero" got no "Muy bien, el de las 11:30…"
+  (the check didn't ask whether the sold-out step really follows); fixed, and a bus picked after the sold-out offers is
+  said with "mañana" (`tomorrow_ok`).
+- **5, American English (5):** "shall I give" in the glosses of sold_out (both texts), sold_remind, today_only and
+  tomorrow_offer, and "Shall I give you…?" in three natural lines: "should I give" / "Should I give you that one?" (not
+  voiced).
+- **8, hints (2):** discount_ans: "No, ninguna." ("neither" of two cards) → "No, no tengo."; "Soy estudiante." kept with a
+  note (students and teachers: school vacations only); show_card: "Aquí está mi credencial del INAPAM."; the step's label
+  "Say whether you have an INAPAM senior card".
+- **9 (1):** the held-out "¿Tiene baño el autobús?" was labeled ask_restroom only; ask_wifi answers it ("Tiene aire
+  acondicionado y baño"), as the first review noted: both accepted.
+- Checked and right: names (Don Raúl only; no clash), usted throughout (hints too), spelling and ¿¡, the three neutral
+  twins (pásele, híjole, ahorita; boleto is shared, no twin), every flag on its unit, every gloss of the new lines, the
+  in-terminal places against the 3D room (benches in front of the window, the shop by the door; no town directions), and
+  every fare and time a line can say: `price` (97: every total for 1–9 tickets, one-way or round, with or without one
+  half), `at` (13: the four morning buses, the 5:15, every arrival), `late`, `num`; `tools/es-voices/reach-es.ts` gives
+  each value line its whole list, so all are voiced.
+
+**Voiced lines changed:** ask_discount, discount_info; new: student_disc, vac_remind, next_at, luggage_limit, phone_ok;
+hints discount_ans.no_discount and show_card.here_id.
+
+**Tests:** NLU 139 → 149; sims 20 → 23 (the student sim rewritten for the full fare; new: a student at the INAPAM question
+paying by phone, full sentences with the place in the no, questions at both sold-out offers); corpus 248 → 287 understood,
+traps 43 → 46, 0 false accepts; held-out 36/37 → 37/37, 0/5.
+
+**For the lead / the owner:**
+- Owner: students now pay the full fare (the half is for school vacations only, like the teachers' quarter). If the game
+  should keep a year-round student half as a simplification, it is a small revert.
+- Kept (earlier reviews): two seniors ("Somos jubilados") get half off one ticket; "Un boleto a Valladolid" is not sold
+  (the Mérida bus stops there).
+- Shared (proposals): `{time}` reads a bare "uno" as "la una" ("¿Hay uno más tarde?" → 1:00), rule 4, edition-wide
+  wherever a step expects a bare `{time}`; the parser splits a question into a plain question + the step's expected
+  `_ctx` piece ("¿A qué hora sale | el último?" → ask_next + time_ctx: the piece books), handled here by giving the step
+  the whole question. The picture prompt for `s67a-tickets/card` says "a student card or a senior card?" (the picture is
+  a blank card and fits).
