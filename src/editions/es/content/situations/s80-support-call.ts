@@ -40,6 +40,14 @@ const WINDOWS: Record<string, Win> = {
 };
 const win = (k: string) => ({ en: WINDOWS[k].en, lt: WINDOWS[k].lt, say: WINDOWS[k].say });
 
+/** The day of a window as a value, said with it in one line ("el {$weekday}, entre {$win}"): a line with an item and a
+ *  value isn't in the voice line list, so the day is a value too and every day × window is voiced (audit, 5 Nov 2026). */
+const WEEKDAY: Record<string, { en: string; lt: string; say: string }> = {
+  thursday: { en: "jueves", lt: "Thursday", say: "jueves" },
+  friday: { en: "viernes", lt: "Friday", say: "viernes" },
+  saturday: { en: "sábado", lt: "Saturday", say: "sábado" },
+};
+
 const REFERENCE = { en: "NW-48213", lt: "NW-48213", say: "ene, doble u, cuatro, ocho, dos, uno, tres" };
 const REF_NOTE = "Reporte NetWave: NW-48213";
 const CHARGE = 49900;
@@ -82,9 +90,16 @@ function bump(c: Ctx, key: string): number {
   return n;
 }
 
-/** Karla takes over from the recorded menu (once). */
+/** Said to the recorded menu: the call isn't routed yet, or this very turn routed it ("Soporte técnico. La luz
+ *  parpadea en rojo.": the rest went to the recording too). The menu only routes. Anything else said to it (an account
+ *  number, a question, "Gracias", "No sé") gets no person's reply: its step asks again ("Lo siento, no le entendí" and
+ *  the options), or the problem is noted for Karla's "Veo que tiene problemas con su internet". So the menu never
+ *  speaks Karla's lines, and Karla never answers what she didn't hear (audit, 5 Nov 2026). */
+const atMenu = (c: Ctx) => !c.s.routed || !!turn(c).routedNow;
+
+/** Karla takes over from the recorded menu (once, and only once the call is routed). */
 function claireOn(c: Ctx) {
-  if (c.s.claire) return false;
+  if (c.s.claire || !c.s.routed) return false;
   c.s.claire = true;
   c.speaker("claire");
   // after the long hold she thanks the caller for their patience instead of the usual greeting
@@ -96,6 +111,7 @@ function claireOn(c: Ctx) {
 function route(c: Ctx, where: "support" | "billing" | "sales" | "agent") {
   if (c.s.routed) return;
   c.s.routed = where;
+  turn(c).routedNow = true;
   c.speaker("netwave_bot");
   c.say(where === "billing" ? "bot_connect_billing" : where === "agent" ? "bot_connect_agent" : "bot_connect_support");
   c.say("bot_important");
@@ -114,7 +130,7 @@ function offerWindow(c: Ctx, k: string, first = false) {
   c.s.offered = c.s.offered || [];
   if (!c.s.offered.includes(k)) c.s.offered.push(k);
   const w = WINDOWS[k];
-  c.say(first ? "tech_offer" : "tech_offer_alt", { D: w.d, win: win(k) });
+  c.say(first ? "tech_offer" : "tech_offer_alt", { weekday: WEEKDAY[w.d], win: win(k) });
 }
 
 function bookTech(c: Ctx) {
@@ -122,7 +138,7 @@ function bookTech(c: Ctx) {
   if (!k || c.s.techBooked) return;
   c.s.techBooked = k;
   const w = WINDOWS[k];
-  c.say("tech_booked", { D: w.d, win: win(k) });
+  c.say("tech_booked", { weekday: WEEKDAY[w.d], win: win(k) });
   c.say("tech_call_ahead");
   c.say("reference", { text: REFERENCE });
   c.complete();
@@ -183,7 +199,7 @@ export const support: SituationDef = {
     macros: {
       net: "(internet | el internet | mi internet | wifi | el wifi | mi wifi | wi fi | el wi fi | mi wi fi | la conexion | mi conexion | la conexion a internet | el modem | mi modem | el servicio | mi servicio | el servicio de internet | mi servicio de internet | la red | la senal | la red de internet | la linea | mi linea)",
       notw: "(no funciona | no sirve | no jala | no conecta | no se conecta | no esta funcionando | no esta sirviendo | dejó de funcionar | dejó de servir | se cayó | se fue | esta caido | esta caida | no tiene senal | no da senal | ya no funciona | ya no sirve | no funciona para nada | no sirve para nada | no esta conectando | no carga | no anda | no agarra | no prende | no enciende)",
-      since_tail: "(desde (ayer | anoche | hoy en la manana | esta manana | la manana | ayer en la tarde | ayer en la noche | el fin de semana | {day} | hace {number} dias | hace unos dias | antier) #since | (ayer | anoche | esta manana | hoy en la manana | ayer en la tarde | ayer en la noche | el {day}) #since)",
+      since_tail: "(desde (ayer | anoche | hoy en la manana | esta manana | la manana | ayer en la tarde | ayer en la noche | el fin de semana | {day} | hace {number} dias | hace unos dias | antier) #since | desde {time} [de (ayer | anoche | hoy)] #since | (ayer | anoche | esta manana | hoy en la manana | ayer en la tarde | ayer en la noche | el {day}) #since)",
       when: "(ayer | esta manana | anoche | hace rato | hace un rato | hoy | hoy en la manana | hace una hora)",
       times: "(una vez | dos veces | tres veces | muchas veces | varias veces | mil veces | {number} veces | un par de veces | como {number} veces | como mil veces)",
       off_on: "(apagué y (lo prendí | lo encendí | lo volví a prender | lo volví a encender | lo volví a conectar | lo conecté) | desconecté [y (lo volví a conectar | lo conecté | lo conecté otra vez)] | reinicié)",
@@ -208,16 +224,21 @@ export const support: SituationDef = {
       "(quiero | necesito | vengo a | llamo para) reportar una falla", "(problema | problemas) (tecnico | tecnicos | de internet | con el internet)",
       "(necesito | ocupo | quiero) (un tecnico | que venga un tecnico)",
       "no (quiero | es) (pagos | ventas | facturacion | para pagos) [es] [quiero | necesito] soporte [tecnico]",
+      // the menu's own words and the answer to "¿Llama por pagos o por soporte técnico?" (audit, 5 Nov 2026)
+      "[es | llamo] (por | para) (soporte | soporte tecnico | el soporte tecnico | asistencia tecnica | una falla | el internet | mi internet | internet | el wifi | mi wifi)",
+      "es (de | sobre) (soporte | soporte tecnico | el internet | mi internet)",
     ] },
     menu_billing: { patterns: [
       "pagos #h:menu_billing", "(facturacion | factura | pago | cobros | cobranza | mi recibo | el recibo | mi factura | pagos y facturacion)",
       "(tengo una pregunta | una pregunta | tengo una duda | una duda) (sobre | de | con) (mi recibo | mi factura | un cobro | mi pago | el pago | mi cuenta)",
       "(quiero | necesito) (pagar | hacer un pago)", "[es | llamo] (sobre | por) (mi | el | un) (recibo | factura | pago | cobro)",
+      "[es | llamo] (por | para) (pagos | facturacion | pagos y facturacion | el area de pagos)",
     ] },
     menu_sales: { patterns: [
       "ventas", "(contratar | nuevo servicio | nuevos servicios | un servicio nuevo | contratar un servicio | contratar un servicio nuevo)",
       "(una | hacer una) recarga", "recargas", "recargar saldo",
       "(quiero | necesito) (hacer una recarga | recargar [saldo] | contratar [un servicio | internet | otro servicio])",
+      "[es | llamo] (por | para) (ventas | contratar | una recarga | recargar saldo)",
     ] },
     menu_agent: { patterns: [
       "[un | una] (asesor | asesora | operador | operadora | ejecutivo | ejecutiva | agente | persona | humano) #h:menu_agent",
@@ -225,6 +246,10 @@ export const support: SituationDef = {
       "(comuniqueme | paseme | me comunica | me pasa) con (un asesor | una persona | alguien | un operador | una operadora)",
       "(atencion a clientes | servicio al cliente | atencion al cliente)", "ayuda", "necesito ayuda",
       "(un | una) (persona | humano) (real | de verdad)",
+    ] },
+    // "Gracias" / "Perdón" to the recording: no person's "¡A la orden!" (the step asks again)
+    menu_social_ctx: { patterns: [
+      "[ok | okey | bueno] [muchas] gracias [por (todo | la informacion | su ayuda | la ayuda | esperar)]", "(perdon | disculpe | lo siento) [por (eso | la confusion)]",
     ] },
     menu_num_ctx: { patterns: [
       "[marco | marcar | presiono | oprimo | marque] [el | la] [opcion] [numero] (uno #n1 | 1 #n1 | tres #n3 | 3 #n3 | cero #n0 | 0 #n0)",
@@ -247,6 +272,14 @@ export const support: SituationDef = {
       "(mi | el) numero de cuenta [es] [el] {digits} {digits2:digits}",
     ] },
     account_ctx: { patterns: ["{digits}", "el {digits}"] },
+    // "Es este mismo número" to "¿Me da el teléfono registrado en la cuenta?" (only at the account question)
+    same_number_ctx: { patterns: [
+      // "este" alone is a Mexican filler ("Este… no sé"): never the answer by itself
+      "[es] [el] (este | el) mismo [numero | telefono | celular] [de donde (llamo | le llamo | le hablo | le estoy llamando | estoy llamando | le estoy hablando | le marco)]",
+      "[es] este (numero | telefono | celular) [de donde (llamo | le llamo | le hablo | le estoy llamando | estoy llamando | le estoy hablando | le marco)]",
+      "[es] [el] (numero | telefono | celular) (de donde | del que) (llamo | le llamo | le hablo | le estoy llamando | estoy llamando | le estoy hablando | le marco)",
+      "[es] (de donde | del que) (llamo | le llamo | le hablo | le estoy llamando | estoy llamando | le estoy hablando | le marco)",
+    ] },
     acct_unknown: { patterns: [
       "[perdon] no (se | tengo | recuerdo | me se | encuentro) (mi | el) numero de (cuenta | cliente) [aqui | a la mano | conmigo] #h:acct_unknown",
       "no (lo | me lo) (se | tengo | recuerdo | encuentro) [aqui | a la mano | conmigo] [perdon | lo siento]", "[perdon] tampoco (lo | me lo) (se | tengo | recuerdo) [perdon]",
@@ -300,6 +333,7 @@ export const support: SituationDef = {
       "[no se | no estoy seguro | no estoy segura | no me acuerdo | no recuerdo] [creo que] desde (ayer | anoche | esta manana | hoy en la manana | ayer en la tarde | ayer en la noche | el fin de semana | {day} | hace {number} dias | hace unos dias | hace un rato | antier) [creo] #h:since_y",
       "(dejó de funcionar | se fue | se cayó | se cortó) (ayer | anoche | esta manana | hoy en la manana | el {day}) [(como a | a eso de | a) {time}]",
       "desde (ayer | anoche | esta manana | el {day}) (a | como a | a eso de) {time}", "(como | mas o menos) (desde ayer | desde anoche | un dia | dos dias)",
+      "[creo que] [como | mas o menos] desde {time} [de (ayer | anoche | hoy)] [creo]",
       "(un dia | dos dias | unos dias | {number} dias) [sin internet | sin servicio]", "ayer (a | como a | a eso de) {time}", "creo que desde (ayer | anoche | el {day})",
     ] },
     // a bare time ("Ayer", "El lunes") answers only "¿Desde cuándo no tiene servicio?"
@@ -322,7 +356,7 @@ export const support: SituationDef = {
     // "No está en rojo", "No parpadea": a light that is not red (never the red-light reading)
     lights_neg: { patterns: ["no (esta | estan | es) [en] @red", "no (parpadea | esta parpadeando) [en] [@red]", "no (es | esta) (roja | rojo) (es | esta) (verde | en verde)", "no hay (luz | ninguna luz) @red"] },
     // a bare color or "Ninguna" describes the light only while Karla asks about it
-    lights_ctx: { patterns: ["[en] @red [parpadeando]", "(ninguna | ninguna luz | ninguno | nada)", "[todas] (verde | en verde | verdes)", "(apagada | apagadas | todas apagadas)"] },
+    lights_ctx: { patterns: ["[en] @red [parpadeando]", "(ninguna | ninguna luz | ninguno | nada)", "[todas] (verde | en verde | verdes)", "(apagada | apagadas | todas apagadas)", "@blink", "parpadeando"] },
     restart_yes: { patterns: [
       "[si] ya lo @off_on [@times] [y nada | pero no (sirvió | funcionó | cambió nada)] #h:restart_did",
       "[si] lo @off_on [otra vez | de nuevo] [@times] [ya] [y nada | pero no (sirvió | funcionó)]",
@@ -408,6 +442,8 @@ export const support: SituationDef = {
       "[no] [el | ese] {wrong:day} [en la manana | en la tarde] no [puedo | me queda] [pero] [mejor | prefiero | que tal | y] (en la tarde | por la tarde | mas tarde | en la manana)",
       "(y si | que tal si) [mejor] (viene | vienen | va) [el] {day} [en la manana | en la tarde]", "(y si | que tal si) [mejor] [el] {day} [en la manana | en la tarde]",
       "(y si | que tal si) [mejor] (en la tarde | por la tarde | el fin de semana | otro dia)", "[si] pero (en la tarde | por la tarde | mas tarde | el fin de semana | otro dia | [el] {day})",
+      // "¿No puede venir hoy?": the words (the handler reads hoy / mañana), not {day} (audit, 5 Nov 2026)
+      "[y] no (puede | pueden | podria | podrian) (venir | ir | mandarlo | mandar al tecnico) (hoy | hoy mismo | manana)",
     ] },
     // a bare day or part of the day ("¿El sábado?", "No, en la tarde") answers only the technician's offer
     tech_other_ctx: { patterns: ["[el] {day} [en la manana | en la tarde | por la tarde]", "(en la tarde | por la tarde | mas tarde | en la noche | mas temprano | en la manana | el fin de semana)"] },
@@ -417,6 +453,18 @@ export const support: SituationDef = {
       "(tengo | hay) que pagar (algo | la visita | el tecnico)", "(es | sera) gratis [la visita]", "me van a cobrar [la visita | algo]",
     ] },
     tech_time_q: { patterns: ["cuanto (tarda | tiempo tarda | se tarda | dura | va a tardar | tiempo se tarda) [la visita | el tecnico | la reparacion | en arreglarlo]"] },
+    // the questions a caller asks about the visit (audit, 5 Nov 2026)
+    tech_when_q: { patterns: [
+      "[y] [sabe | me puede decir] a que hora (llega | viene | va a llegar | va a venir | pasa | van a llegar | van a venir | vienen | llegan) [el tecnico | exactamente]",
+      "[y] (a que hora | cuando) exactamente", "(me avisan | me van a avisar | me llaman | me van a llamar | me hablan | me van a hablar) antes [de (llegar | que llegue)]",
+    ] },
+    home_q: { patterns: [
+      "[y] (tengo | necesito) que estar [yo] (en casa | ahi | en mi casa | presente)", "[y] (necesito | tengo que) estar (en casa | ahi | presente)",
+      "[y] (alguien | yo) (tiene | tengo) que estar (en casa | ahi)", "[y] (tiene | debe | tendria) que haber alguien [en (casa | mi casa)]",
+      "[y] (es necesario | hace falta) que (este | yo este | alguien este) (en casa | ahi)",
+      // "No tengo que estar en casa, ¿verdad?": the same answer (you or another adult)
+      "no (tengo | necesito) que estar (en casa | ahi | en mi casa) [verdad | o si]", "no necesito estar (en casa | ahi | en mi casa) [verdad | o si]",
+    ] },
 
     // --- other requests
     manager: { patterns: [
@@ -579,7 +627,7 @@ export const support: SituationDef = {
     ask_since: [t("¿Desde | cuándo | no tiene | servicio?", "Since | when | you don't have | service?", "How long has it been out?")],
     // asked a second time after another answer: a short reminder
     since_unknown: [t("No se preocupe.", "Don't worry.", "That's okay.")],
-    ask_since_again: [t("¿Y | desde | cuándo | está | sin | servicio?", "And | since | when | are you | without | service?", "And since when has it been out?")],
+    ask_since_again: [t("¿Y | desde | cuándo | está | sin | servicio?", "And | since | when | are you | without | service?", "And how long has it been out?")],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Entendido.", "Understood.", "Got it."), t("De acuerdo, | gracias.", "Agreed, | thanks.", "Okay, thanks.")],
     ask_lights: [
       t("¿De | qué | color | está | la | luz | de | internet | en | su | módem?", "Of | what | color | is | the | light | of | internet | on | your | modem?",
@@ -634,20 +682,20 @@ export const support: SituationDef = {
       t("Vamos | a | tener | que | mandarle | un | técnico.", "We're going | to | have | to | send you | a | technician.", "We'll need to send a technician."),
     ],
     tech_offer: [
-      t("Le | puedo | agendar | la | visita | el | {D}, | entre | {$win}. | ¿Le queda | bien?",
-        "(For) you | I can | schedule | the | visit | on | {D}, | between | {$win}. | Does it suit you | well?",
-        "I can book the visit for {D}, between {$win}. Does that work for you?",
-        { say: "Le puedo agendar la visita el {D}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY } }),
-      t("La | primera | cita | disponible | es | el | {D}, | entre | {$win}. | ¿Le queda | bien?",
-        "The | first | appointment | available | is | on | {D}, | between | {$win}. | Does it suit you | well?",
-        "The earliest appointment is {D}, between {$win}. Does that work for you?",
-        { say: "La primera cita disponible es el {D}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY } }),
+      t("Le | puedo | agendar | la | visita | el | {$weekday}, | entre | {$win}. | ¿Le queda | bien?",
+        "(For) you | I can | schedule | the | visit | on | {$weekday}, | between | {$win}. | Does it suit you | well?",
+        "I can book the visit for {$weekday}, between {$win}. Does that work for you?",
+        { say: "Le puedo agendar la visita el {$weekday}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY } }),
+      t("La | primera | cita | disponible | es | el | {$weekday}, | entre | {$win}. | ¿Le queda | bien?",
+        "The | first | appointment | available | is | on | {$weekday}, | between | {$win}. | Does it suit you | well?",
+        "The earliest appointment is {$weekday}, between {$win}. Does that work for you?",
+        { say: "La primera cita disponible es el {$weekday}, entre {$win}. ¿Le queda bien?", flags: { 5: FLAG_EL_DAY } }),
     ],
     tech_offer_alt: [
-      t("También | tenemos | el | {D}, | entre | {$win}.", "Also | we-have | — | {D}, | between | {$win}.", "We also have {D}, between {$win}.",
-        { say: "También tenemos el {D}, entre {$win}.", flags: { 2: FLAG_EL_DAY } }),
-      t("¿Qué tal | el | {D}, | entre | {$win}?", "How about | — | {D}, | between | {$win}?", "How about {D}, between {$win}?",
-        { say: "¿Qué tal el {D}, entre {$win}?", flags: { 1: FLAG_EL_DAY } }),
+      t("También | tenemos | el | {$weekday}, | entre | {$win}.", "Also | we-have | — | {$weekday}, | between | {$win}.", "We also have {$weekday}, between {$win}.",
+        { say: "También tenemos el {$weekday}, entre {$win}.", flags: { 2: FLAG_EL_DAY } }),
+      t("¿Qué tal | el | {$weekday}, | entre | {$win}?", "How about | — | {$weekday}, | between | {$win}?", "How about {$weekday}, between {$win}?",
+        { say: "¿Qué tal el {$weekday}, entre {$win}?", flags: { 1: FLAG_EL_DAY } }),
     ],
     no_earlier: [
       t("Lo siento, | es | el | horario | más | temprano | que | tenemos.", "I'm sorry, | it's | the | time slot | most | early | that | we-have.", "Sorry, that's the earliest slot we have."),
@@ -667,8 +715,8 @@ export const support: SituationDef = {
     someone_ok: [t("Perfecto.", "Perfect.", "Perfect.")],
     no_problem_alt: [t("No hay problema.", "No problem.", "No problem.")],
     tech_booked: [
-      t("¡Listo! | El | técnico | va | el | {D}, | entre | {$win}.", "Done! | The | technician | is going | on | {D}, | between | {$win}.",
-        "All set! The technician will come on {D}, between {$win}.", { say: "¡Listo! El técnico va el {D}, entre {$win}.", flags: { 4: FLAG_EL_DAY } }),
+      t("¡Listo! | El | técnico | va | el | {$weekday}, | entre | {$win}.", "Done! | The | technician | is going | on | {$weekday}, | between | {$win}.",
+        "All set! The technician will come on {$weekday}, between {$win}.", { say: "¡Listo! El técnico va el {$weekday}, entre {$win}.", flags: { 4: FLAG_EL_DAY } }),
     ],
     tech_call_ahead: [
       t("Le | van | a | llamar | media | hora | antes de | llegar.", "(To) you | they're going | to | call | half | an hour | before | arriving.",
@@ -684,7 +732,7 @@ export const support: SituationDef = {
     ],
     spell_ref: [
       t("Claro: | N, | W, | 4, | 8, | 2, | 1, | 3.", "Sure: | N, | W, | 4, | 8, | 2, | 1, | 3.", "Sure: N, W, 4, 8, 2, 1, 3.",
-        { say: "Claro: ene, doble u, cuatro, ocho, dos, uno, tres.", write: REF_NOTE, flags: { 2: "W: in Mexico doble u; elsewhere doble ve or uve doble." } }),
+        { say: "Claro: ene, doble u, cuatro, ocho, dos, uno, tres.", write: REF_NOTE, flags: { 2: "W: doble u in Mexico and much of Latin America; doble ve in some countries, uve doble in Spain." } }),
     ],
     text_it: [
       t("Claro, | ahorita | se lo | mando | por | mensaje.", "Sure, | right now | it to you | I-send | by | message.", "Sure, I'll text it to you right now.",
@@ -696,6 +744,8 @@ export const support: SituationDef = {
         "There's no charge, since the problem is on our end."),
     ],
     tech_takes: [t("Normalmente | como | una | hora.", "Usually | about | an | hour.", "Usually about an hour.")],
+    // "¿Tengo que estar en casa?"
+    home_needed: [t("Sí, | usted | o | alguien | mayor de edad.", "Yes, | you | or | someone | adult.", "Yes, you or another adult.")],
 
     // billing
     billing_check: [t("Déjeme | revisar...", "Let me | check...", "Let me check...")],
@@ -758,6 +808,7 @@ export const support: SituationDef = {
   },
 
   domains: {
+    weekday: () => Object.values(WEEKDAY),
     win: () => Object.keys(WINDOWS).map(win),
     text: () => [REFERENCE],
     amount: () => [CHARGE],
@@ -947,14 +998,14 @@ export const support: SituationDef = {
         c.say("bot_menu");
         if (n === 0 && c.s.menuSales) c.say("bot_menu_sales");
       },
-      expects: ["menu_support", "menu_billing", "menu_sales", "menu_agent", "menu_num_ctx", "internet_down", "charged_twice"],
+      expects: ["menu_support", "menu_billing", "menu_sales", "menu_agent", "menu_num_ctx", "internet_down", "charged_twice", "menu_social_ctx"],
       suggest: [S_MENU, { lt: "Ask for a real person (an agent)", hint: "menu" }] },
     { id: "name", when: (c) => !!c.s.routed, done: (c) => !!c.s.name,
       ask: (c) => { claireOn(c); c.say("ask_name"); }, expects: ["name_ctx"], yes: goAhead,
       suggest: [{ lt: "Give your full name", hint: "name" }, S_PHONE] },
     { id: "account", when: (c) => !!c.s.name, done: (c) => !!c.s.account,
       ask: (c) => { claireOn(c); c.say(c.s.lookup ? "acct_lookup" : "ask_account"); },
-      expects: ["account_ans", "account_ctx", "acct_unknown"], yes: goAhead,
+      expects: ["account_ans", "account_ctx", "acct_unknown", "same_number_ctx"], yes: goAhead,
       no: (c) => { support.handlers.acct_unknown(c, {}, { intent: "acct_unknown", slots: {}, tags: [] }); },
       suggest: [{ lt: "Give your account number: 742-9133", hint: "account" }, S_PHONE] },
     problemStep("problem", false),
@@ -977,12 +1028,12 @@ export const support: SituationDef = {
         const w = WINDOWS[c.s.window];
         c.say("tech_offer_again", { D: w.d, win: win(c.s.window) });
       },
-      expects: ["tech_accept", "tech_busy", "tech_other", "tech_other_ctx", "tech_cost_q", "tech_cost_ctx", "tech_time_q"],
+      expects: ["tech_accept", "tech_busy", "tech_other", "tech_other_ctx", "tech_cost_q", "tech_cost_ctx", "tech_time_q", "tech_when_q", "home_q"],
       suggest: [{ lt: "Accept, or ask for another time", hint: "tech" }],
       yes: (c) => { bookTech(c); },
       no: (c) => { support.handlers.tech_busy(c, {}, { intent: "tech_busy", slots: {}, tags: [] }); } },
     { id: "more", when: (c) => !!c.s.techBooked || (!!c.s.refunded && !internet(c)), done: (c) => !!c.s.moreDone,
-      ask: (c) => c.say("anything_else"), expects: ["more_no", "more_yes_ctx", "charged_twice", "reference_q", "text_me"],
+      ask: (c) => c.say("anything_else"), expects: ["more_no", "more_yes_ctx", "charged_twice", "reference_q", "text_me", "tech_cost_ctx", "tech_when_q"],
       suggest: [{ lt: "Say that's all", hint: "more" }, { lt: "Ask for the number by text, or for a supervisor", hint: "other" }],
       yes: (c) => { c.say("anything_else_yes"); c.hold(); },
       no: (c) => { c.s.moreDone = true; } },
@@ -1005,14 +1056,15 @@ export const support: SituationDef = {
     // --- menu
     g_hello(c) {
       // "¿Bueno?" / "Hola" to the recorded menu: it simply goes on; Karla answers a greeting normally.
-      if (!c.s.routed) return;
+      if (atMenu(c)) return;
       if (!c.s.__greetedBack) { c.say("g_hello"); c.s.__greetedBack = true; }
     },
     menu_support(c) { route(c, "support"); },
     menu_billing(c) { route(c, "billing"); },
-    menu_sales(c) { if (c.s.routed) return; c.speaker("netwave_bot"); c.say("bot_sales"); c.s.routed = "sales"; },
+    menu_sales(c) { if (c.s.routed) return; c.speaker("netwave_bot"); c.say("bot_sales"); c.s.routed = "sales"; turn(c).routedNow = true; },
     menu_agent(c) {
       if (c.s.routed) {
+        if (turn(c).routedNow) return; // "Soporte técnico. Un asesor, por favor.": said to the recording, which has routed
         // talking to Karla: "Necesito ayuda" is for her; only an agent or a person asked for is the supervisor request
         if (!/asesor|operador|ejecutiv|agente|persona|humano/.test(heard(c))) { claireOn(c); goAhead(c); return; }
         support.handlers.manager(c, {}, { intent: "manager", slots: {}, tags: [] }); return;
@@ -1026,6 +1078,7 @@ export const support: SituationDef = {
       }
       route(c, "agent");
     },
+    menu_social_ctx() { /* the recording plays its options again (the step asks again) */ },
     menu_num_ctx(c, _slots, seg) {
       if (c.s.routed) return;
       const n = seg.tags.includes("n1") ? 1 : seg.tags.includes("n2") ? 2 : seg.tags.includes("n3") ? 3 : seg.tags.includes("n0") ? 0 : -1;
@@ -1048,13 +1101,25 @@ export const support: SituationDef = {
     account_ctx(c, slots) { setAccount(c, slots.digits); },
     // "No sé" / "No me lo sé" at the account question: the number is what isn't known
     g_dontknow(c) {
+      if (atMenu(c)) return;
       // "No sé" at "¿Desde cuándo…?": Karla doesn't need it (asked again, it would be a loop of "Tómese su tiempo")
       if (c.step === "since" && !c.s.since) { c.s.since = "unknown"; c.say("since_unknown"); return; }
       if (c.step === "account" && !c.s.account) { support.handlers.acct_unknown(c, {}, { intent: "acct_unknown", slots: {}, tags: [] }); return; }
+      // "No sé" at "¿De qué color está la luz…?": she goes on without it (the line test will show the fault)
+      if (c.step === "lights" && !c.s.lights) { c.s.lights = "unknown"; c.say("since_unknown"); return; }
+      // "No sé" at "¿Ya reinició el módem?": she asks for it now
+      if (c.step === "restart" && c.s.restarted === undefined && !c.s.restartPending) { askRestartNow(c); return; }
       GLOBAL_HANDLERS.g_dontknow?.(c as ConvCtx, {});
     },
+    // "Es este mismo número" when Karla asks for the phone on the account: she finds it by the number calling
+    same_number_ctx(c) {
+      if (atMenu(c) || c.s.account) return;
+      c.s.account = "caller";
+      c.say("account_found");
+      if (c.s.billingPending) support.handlers.charged_twice(c, {}, { intent: "charged_twice", slots: {}, tags: [] });
+    },
     acct_unknown(c) {
-      if (c.s.account) return;
+      if (c.s.account || atMenu(c)) return;
       if (/donde/.test(heard(c))) c.say("acct_where");
       // no number and no phone number either: she finds the account by the name
       if (c.s.lookup) { c.s.account = "by_name"; c.say("acct_by_name"); if (c.s.billingPending) support.handlers.charged_twice(c, {}, { intent: "charged_twice", slots: {}, tags: [] }); return; }
@@ -1062,13 +1127,14 @@ export const support: SituationDef = {
     },
 
     // --- problem
-    internet_down(c, _slots, seg) { if (seg.tags.includes("since")) c.s.since = true; problem(c, "down"); },
+    internet_down(c, _slots, seg) { if (seg.tags.includes("since") && !atMenu(c)) c.s.since = true; problem(c, "down"); },
     it_broken_ctx(c) { problem(c, "down"); },
     internet_slow(c) { problem(c, "slow"); },
     slow_ctx(c) { problem(c, "slow"); },
     internet_drops(c) { problem(c, "drops"); },
     charged_twice(c) {
-      if (!c.s.routed) { route(c, "billing"); c.s.billingPending = true; return; }
+      // said to the recorded menu: to payments; Karla takes it up once she has the account
+      if (atMenu(c)) { route(c, "billing"); c.s.billingPending = true; return; }
       if (c.s.refunded) { c.say("refund_when"); return; }
       claireOn(c);
       if (!c.s.account) { c.s.billingPending = true; if (c.step !== "account" && c.step !== "name") c.say("billing_first"); return; }
@@ -1084,10 +1150,12 @@ export const support: SituationDef = {
       if (internet(c) || c.s.techBooked) { c.s.creditSaid = true; c.say("credit"); }
     },
     // a time said once the technician is on the table is about the visit, not the outage
-    since_ans(c) { if (c.s.window) return; if (!c.s.since) { c.s.since = true; c.say("ack"); } },
+    since_ans(c) { if (c.s.window || atMenu(c)) return; if (!c.s.since) { c.s.since = true; c.say("ack"); } },
     since_ctx(c) { support.handlers.since_ans(c, {}, { intent: "since_ans", slots: {}, tags: [] }); },
     lights_ans(c) {
       if (c.s.lights) return;
+      // "La luz parpadea en rojo" to the recorded menu: an internet problem (to support); Karla asks about the light
+      if (atMenu(c)) { problem(c, "down"); return; }
       c.s.lights = true;
       const h = heard(c);
       c.s.orange = /naranja|anaranjad|ambar/.test(h) && !/roj/.test(h);
@@ -1096,10 +1164,11 @@ export const support: SituationDef = {
       else if (/ningun|apagad|no prende|no enciende|nada/.test(h)) c.say("lights_off");
       else c.say("ack");
     },
-    lights_neg(c) { if (c.s.lights) return; c.s.lights = true; c.s.orange = false; if (!internet(c)) problem(c, "down", true); c.say("ack"); },
+    lights_neg(c) { if (c.s.lights || atMenu(c)) return; c.s.lights = true; c.s.orange = false; if (!internet(c)) problem(c, "down", true); c.say("ack"); },
     lights_ctx(c) { support.handlers.lights_ans(c, {}, { intent: "lights_ans", slots: {}, tags: [] }); },
-    restart_yes(c) { if (c.s.restarted !== undefined || c.s.restartPending) return; c.s.restarted = true; c.say("restart_ok"); },
+    restart_yes(c) { if (atMenu(c) || c.s.restarted !== undefined || c.s.restartPending) return; c.s.restarted = true; c.say("restart_ok"); },
     restart_no(c) {
+      if (atMenu(c)) return;
       // "Todavía no" while Karla waits for the unplugging: she keeps waiting (not the same request again)
       if (c.s.restartPending) { c.say("wait_here"); c.expect(restartNowPending()); return; }
       if (c.s.restarted !== undefined) return;
@@ -1162,7 +1231,8 @@ export const support: SituationDef = {
     tech_other(c, slots) {
       if (!c.s.window || c.s.techBooked || turn(c).altDone) return;
       const h = heard(c);
-      const d = slots.day as string | undefined;
+      // "¿No puede venir hoy?" is matched by its words, not the {day} slot ("Mi esposa no puede venir el jueves" stays a no)
+      const d = (slots.day as string | undefined) ?? (/\bhoy\b/.test(h) ? "today" : /\bmanana\b/.test(h) && !/\b(en|por) la manana\b/.test(h) ? "tomorrow" : undefined);
       const notOffered = (ks: string[], other = false) => ks.find((x) => !(c.s.offered || []).includes(x) && x !== c.s.window && (!other || WINDOWS[x].d !== WINDOWS[c.s.window].d));
       let k = /sabado|fin de semana/.test(h) || d === "saturday" ? "sat" : /tarde|noche|despues/.test(h) ? "thu_pm" : d === "friday" ? "fri_am" : d === "thursday" ? "thu_am"
         : /temprano/.test(h) ? notOffered(["thu_am", "fri_am", "sat"]) : /otro dia/.test(h) ? notOffered(["fri_am", "sat", "thu_am", "thu_pm"], true) : undefined;
@@ -1177,28 +1247,40 @@ export const support: SituationDef = {
     },
     // "Trabajo en la tarde": the part of the day belongs to the busy answer, not a new request
     tech_other_ctx(c, slots) { if (turn(c).busy) return; support.handlers.tech_other(c, slots, { intent: "tech_other", slots, tags: [] }); },
-    tech_cost_q(c) { c.say("tech_free"); },
-    tech_cost_ctx(c) { c.say("tech_free"); },
-    tech_time_q(c) { c.say("tech_takes"); },
+    // the visit's cost, length and time: answered once a visit is on the table (before that the step asks again)
+    tech_cost_q(c) { if (c.s.window || c.s.techBooked) c.say("tech_free"); },
+    tech_cost_ctx(c) { if (c.s.window || c.s.techBooked) c.say("tech_free"); },
+    tech_time_q(c) { if (c.s.window || c.s.techBooked) c.say("tech_takes"); },
+    // "¿A qué hora llega el técnico?": no exact time, but a call half an hour before
+    tech_when_q(c) { if (c.s.window || c.s.techBooked) c.say("tech_call_ahead"); },
+    // "¿Tengo que estar en casa?": while "¿Puede haber alguien más…?" is open, that question (asked again) answers it
+    home_q(c) {
+      if (!c.s.window && !c.s.techBooked) return;
+      if ((c as ConvCtx).conv?.pending?.id === "someone") return;
+      c.say("home_needed");
+    },
 
     // --- other
     manager(c) {
-      if (!c.s.routed) { support.handlers.menu_agent(c, {}, { intent: "menu_agent", slots: {}, tags: [] }); return; }
+      if (atMenu(c)) { if (!c.s.routed) support.handlers.menu_agent(c, {}, { intent: "menu_agent", slots: {}, tags: [] }); return; }
       claireOn(c);
       c.twist("manager");
       c.say("manager_ok");
       if (!c.s.techBooked) c.say("manager_first");
     },
-    wait_complaint(c) { claireOn(c); c.say("wait_sorry"); },
+    wait_complaint(c) { if (atMenu(c)) return; claireOn(c); c.say("wait_sorry"); },
     // the report exists from the start of the call: Karla always gives the number
-    reference_q(c) { c.say("reference_again", { text: REFERENCE }); },
+    reference_q(c) { if (atMenu(c)) return; c.say("reference_again", { text: REFERENCE }); },
     text_me(c) { textIt(c as ConvCtx); },
     g_write(c) { textIt(c as ConvCtx); },
     g_spell(c) {
+      if (atMenu(c)) return;
       if (c.s.techBooked) { c.say("spell_ref"); c.hold(); return; }
       GLOBAL_HANDLERS.g_spell(c as ConvCtx, {});
     },
     refund_q(c) {
+      // money back, asked of the recorded menu: it goes to payments
+      if (atMenu(c)) { route(c, "billing"); return; }
       if (c.s.refunded) { c.say("refund_when"); return; }
       // the double charge is on the account (the twist): asking about the money back reports it
       if (c.s.chargeTwist && c.s.routed) { support.handlers.charged_twice(c, {}, { intent: "charged_twice", slots: {}, tags: [] }); return; }
@@ -1207,6 +1289,8 @@ export const support: SituationDef = {
 
     // --- the phone line
     speak_up(c) {
+      // a recording can't speak up: it plays its options again
+      if (atMenu(c)) return;
       c.say("speak_up_ok");
       c.expect({
         id: "hear", optional: true, expects: ["hear_ok"], hints: ["hear"],
@@ -1216,11 +1300,31 @@ export const support: SituationDef = {
         on: { hear_ok: (cc) => { cc.say("hear_great"); } },
       });
     },
-    hear_me(c) { c.say("hear_you"); },
-    hear_ok(c) { c.say("hear_great"); },
+    hear_me(c) { if (atMenu(c)) return; c.say("hear_you"); },
+    hear_ok(c) { if (atMenu(c)) return; c.say("hear_great"); },
+
+    // --- what the recorded menu does with the global skills: no person's "¡Claro!" or "Sin prisa"; a repeat,
+    //     "más despacio" or "¿Qué significa…?" replays its options; anything else gets them again (atMenu).
+    //     Not g_thanks, g_sorry, g_ok: a handler here would stop "Sí. Muchas gracias." counting as a plain yes.
+    g_repeat(c, slots) { if (atMenu(c)) { (c as ConvCtx).conv.replayLast(false); c.hold(); return; } GLOBAL_HANDLERS.g_repeat(c as ConvCtx, slots); },
+    g_slower(c, slots) {
+      if (atMenu(c)) { const cv = (c as ConvCtx).conv; cv.markSlow(); cv.replayLast(true); c.hold(); return; }
+      GLOBAL_HANDLERS.g_slower(c as ConvCtx, slots);
+    },
+    g_dont_understand(c, slots) {
+      if (atMenu(c)) { const cv = (c as ConvCtx).conv; cv.markSlow(); cv.replayLast(true); cv.showMeaning(); c.hold(); return; }
+      GLOBAL_HANDLERS.g_dont_understand(c as ConvCtx, slots);
+    },
+    g_meaning(c, slots) { if (atMenu(c)) { (c as ConvCtx).conv.showMeaning(); c.hold(); return; } GLOBAL_HANDLERS.g_meaning(c as ConvCtx, slots); },
+    g_howareyou(c, slots) { if (!atMenu(c)) GLOBAL_HANDLERS.g_howareyou(c as ConvCtx, slots); },
+    g_wait(c, slots) { if (!atMenu(c)) GLOBAL_HANDLERS.g_wait(c as ConvCtx, slots); },
+    g_learning(c, slots) { if (!atMenu(c)) GLOBAL_HANDLERS.g_learning(c as ConvCtx, slots); },
+    // "Adiós" to the recording: the caller hangs up
+    g_bye(c, slots) { if (atMenu(c)) { c.end(); c.hold(); return; } GLOBAL_HANDLERS.g_bye(c as ConvCtx, slots); },
 
     more_yes_ctx(c) { if (c.step === "more" && !c.s.moreDone) { c.say("anything_else_yes"); c.hold(); } },
     more_no(c) {
+      if (atMenu(c)) return;
       const st = support.steps.find((x) => x.id === c.step);
       // "No, es todo. Adiós." is a goodbye (the bye handler ends the call), not a "no" to the open question
       if (st && st.id !== "more" && st.no && !st.done(c) && !BYE.test(heard(c))) { st.no(c); return; }
@@ -1361,6 +1465,20 @@ export const support: SituationDef = {
     { say: "Ya no necesito nada", intent: "more_no", step: "more" },
     { say: "Sí, una cosa más", intent: "more_yes_ctx", step: "more", not: ["more_no"] },
     { say: "No me acuerdo, creo que ayer", intent: "since_ctx", step: "since" },
+    // audit (5 Nov 2026): the menu's own words, the answer to "¿Llama por pagos o por soporte técnico?", side questions
+    { say: "Por soporte técnico", intent: "menu_support", step: "menu", not: ["menu_billing"] },
+    { say: "Para soporte técnico", intent: "menu_support", step: "menu" },
+    { say: "Es por mi internet", intent: "menu_support", step: "menu", not: ["menu_billing"] },
+    { say: "Para pagos", intent: "menu_billing", step: "menu" },
+    { say: "Gracias", intent: "menu_social_ctx", step: "menu" },
+    { say: "Es este mismo número", intent: "same_number_ctx", step: "account", not: ["account_ans", "acct_unknown"] },
+    { say: "Está parpadeando", intent: "lights_ctx", step: "lights" },
+    { say: "Como desde las ocho de la noche", intent: "since_ans", step: "since" },
+    { say: "¿A qué hora llega el técnico?", intent: "tech_when_q", step: "tech", not: ["tech_accept"] },
+    { say: "¿Tengo que estar en casa?", intent: "home_q", step: "tech", not: ["tech_accept", "tech_busy"] },
+    { say: "¿No puede venir hoy?", intent: "tech_other", step: "tech", not: ["tech_accept", "tech_busy"] },
+    { say: "No voy a estar en casa ese día", intent: "tech_busy", step: "tech", not: ["home_q", "tech_accept"] },
+    { say: "¿Cuánto cuesta?", intent: "tech_cost_ctx", step: "more" },
     // not understood
     { say: "Me gusta la pizza con piña", intent: "none" },
     { say: "Mi perro baila salsa en la playa", intent: "none" },
@@ -1411,11 +1529,25 @@ export const support: SituationDef = {
         "¿No hay algo más temprano?", "Mejor otro día.", "El viernes me queda bien.", "No, es todo."],
       expect: { complete: true, state: { account: "by_name", techBooked: "fri_am" } }, auto: SUPPORT_AUTO,
       setup: (s) => { s.badLine = false; s.askSince = false; s.firstWindow = "thu_am"; } },
+    // audit (5 Nov 2026): the recording only routes (each speaker says their own lines); an agent; "Es este mismo
+    // número"; "No sé" at the light and the restart questions; the visit's questions; today is full, Saturday booked
+    { name: "audit: the menu only routes, an agent, the same number, questions about the visit",
+      turns: ["¿Me escucha?", "Operador.", "Operador.", "Ryan Miller.", "No sé mi número de cuenta.", "Es este mismo número.", "Mi internet no funciona.",
+        "No sé.", "No sé.", "Listo.", "Ya está en verde.", "¿A qué hora llega el técnico?", "¿Tengo que estar en casa?", "¿No puede venir hoy?",
+        "El sábado me queda bien.", "No, es todo."],
+      expect: { complete: true, state: { routed: "agent", account: "caller", lights: "unknown", restarted: true, techBooked: "sat" } }, auto: SUPPORT_AUTO,
+      setup: (s) => { s.badLine = false; s.askSince = false; s.longHold = false; s.chargeTwist = false; s.firstWindow = "thu_am"; } },
+    { name: "audit: sales by the menu's words, where the number is, the charge first, then the internet",
+      turns: ["Para ventas.", "Ryan Miller.", "¿Dónde lo encuentro?", "Es el 742 9133.", "Me cobraron dos veces este mes.", "¿Cuándo me regresan mi dinero?",
+        "Sí, una cosa más.", "Mi internet no funciona.", "Como desde las ocho de la noche.", "Está parpadeando.", "Sí, ya lo reinicié.", "Me queda bien.", "No, es todo."],
+      expect: { complete: true, state: { routed: "sales", refunded: true, creditSaid: true, techBooked: "thu_am" } }, auto: SUPPORT_AUTO,
+      setup: (s) => { s.badLine = false; s.askSince = true; s.longHold = false; s.chargeTwist = true; s.firstWindow = "thu_am"; } },
   ],
 };
 
 function problem(c: Ctx, p: string, silent = false) {
-  if (!c.s.routed) { route(c, "support"); c.s.problem = p; return; }
+  // said to the recorded menu: it routes to support, and Karla starts with "Veo que tiene problemas con su internet"
+  if (atMenu(c)) { route(c, "support"); if (!c.s.problem || !internet(c)) c.s.problem = p; return; }
   claireOn(c);
   if (!setProblem(c, p)) return;
   if (!silent) c.say("sorry_problem");
@@ -1426,7 +1558,8 @@ function problem(c: Ctx, p: string, silent = false) {
 
 function setAccount(c: Ctx, digits: string | undefined) {
   const td = turn(c);
-  if (td.rejected || !digits) return;
+  // the number said to the recorded menu: Karla asks for it once she's on
+  if (atMenu(c) || td.rejected || !digits) return;
   if (c.s.badLine && !c.s.badLineDone && c.step === "account") {
     c.s.badLineDone = true; td.rejected = true;
     c.twist("bad_line"); c.say("breaking_up"); c.hold(); return;
@@ -1511,6 +1644,7 @@ function otherWindow(c: Ctx) {
 
 /** On the phone "¿Me lo escribe?" = text it: Karla texts the last thing she can write. */
 function textIt(c: ConvCtx) {
+  if (atMenu(c)) return;
   const lines = c.conv.lastLines;
   let w: string | null = null;
   for (let i = lines.length - 1; i >= 0 && !w; i--) {
