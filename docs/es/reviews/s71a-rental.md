@@ -75,3 +75,90 @@ Looked at the risky parts only: the money (the offers, the twist, the hold, the 
 **For the owner:** a later return is quoted at the car's rate only ("Serían $750 más"), without full coverage or extras for those days; quoting the full daily cost would multiply the price domain and its clips.
 
 **NEEDS (global):** `lang.ts` grammarClasses put "pague" (folded "pagué", I paid) with "pago", and "pagado" matches it as an inflection: every conversation with "lo pago" as a yes reads "Pagué todo" as one. The `{letters}` slot doesn't know "doble ele" (ll): "eme, i, doble ele, e, erre" → "mi" + "doble" + "ler", and spelled before the name it becomes "Eme I Doble". The reviewer's "así está bien" note stands.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral), against AUDIT-BRIEF.md's ten points. Read: STYLE.md, AUTHORING-ES.md,
+the brief, the reviews above, the cross-cutting leads (AUDIT/cross, AUDIT/neutral), TOWN.md ("Getting around" and the
+town facts), the file, the corpus and the held-out set, the transcripts (seeds 3 and 7, and every sim's 12 seeds), and
+about 80 whole conversations played with `tools/probe.ts` (every step and pending offer: polite and unclear answers,
+corrections, side questions, price questions, a reservation with the twist before the twist is told). A value run
+(964 conversations: every car × 12 rental lengths × 13 later returns, coverage and extras, the prepaid tank, the
+airport, the reservations' twists) checked that every value a line says is in its voiced list.
+
+**Before → after:** check-content 161/161 NLU, 16 sims → 182/182 NLU, 20 sims, all 12/12 seeds, fuzz 80, 0 errors 0
+warnings; corpus 258/258, 0/30 traps → 294/294, 0/35 traps; held-out 38/38, 0/4 → the same; tsc clean; vitest (es) 109/109.
+
+### Found and fixed, by point (23 found, 22 fixed)
+
+1. **Natural Spanish (4):** "¡Buen viaje!" was followed by "¡De nada! ¡Buen viaje!" (59 times in the sims' seeds):
+   `you_welcome` is now "¡De nada! ¡Hasta luego!". After "Bien, gracias, ¿y usted?" Andrés said "Muy bien, gracias
+   por preguntar. Muy bien. ¿Tiene reservación…?": `ask_resv[1]` is now "Y dígame, ¿tiene reservación con
+   nosotros?". The upgrade offer came back whole, price and all, after every side question: a short reminder
+   (`ask_upgrade_again` "Entonces, ¿se lo cambio al intermedio?"). "¿Seguimos, entonces?" ended two turns in a row at
+   the twist (24 times in the sims): a second variant, "Entonces, ¿le agrego el seguro obligatorio?", and the same for
+   the coverage reminder ("¿Quiere la cobertura amplia, entonces?"). Both new reminders name the thing: a bare
+   "¿Se la agrego?" could follow the manual car's switch or a declined upgrade, and its yes adds money.
+2. **tú/usted:** nothing (usted throughout, hints in usted, tú accepted with the tip).
+3. **Names (1):** "¿Está incluido el seguro obligatorio?" at "¿Me da su apellido?" took "Obligatorio" as the surname
+   and found the reservation under it: the conversation's own words are never a surname now (`NOT_A_NAME`).
+   Andrés is the only Andrés (AUDIT/cross).
+4. **Facts and prices (4):** *The twist was contradicted before it was told.* With a reservation whose online price
+   left out the mandatory insurance, "¿Está incluido el seguro?" got "El seguro obligatorio ya está incluido",
+   "¿Cuánto cuesta?" got "…con el seguro obligatorio incluido", "Mi tarjeta me cubre" at the upgrade got "…el seguro
+   obligatorio ya está incluido" and "¿Es obligatorio?" got "La cobertura amplia es opcional; el seguro obligatorio
+   ya está incluido", and then the twist said it isn't. Now, until the twist is told, those get the new `check_first`
+   "Enseguida lo revisamos." (the upgrade's own price is still said at the upgrade). *A free upgrade was quoted at
+   the midsize's rate:* "¿Cuánto cuesta?" and a later return said $950 a day after "sin costo extra"; the rate stays
+   the compact's. *The prepaid tank was $1,200 for every car*, below the pump price for a minivan (about 70 liters at
+   about $24, TOWN.md): $1,400 for the SUV and $1,800 for the minivan (both already voiced values; the lines stay
+   fixed-value for the voices). *A later return more than 7 days on said a total no clip has* ("No, el viernes no
+   puedo" → "Por dos semanas" → "Serían $8,250 más"): it is now quoted by the day, "Claro. Cada día extra cuesta
+   $750. ¿Se lo cambio?" (`ret_more_q_day`), and "¿Cuánto es?" there gets "Son $750 al día.". The brute-force run
+   found no other value outside its list. Checked and kept: the rates ($650–1,800 with the mandatory insurance), the
+   insurance ($350) and coverage ($450), the holds ($5,000 / $20,000), the extras, the $800 airport drop-off, the
+   one-hour grace, the hours (7 to 9), "la verde" (Magna's pump), and the gas station "aquí cerca, sobre la avenida"
+   (TOWN.md "Getting around": Gasolinera El Faro is the building after the rental on avenida Juárez).
+5. **Glosses and English (1):** "Shall I…?" / "Shall we…?" in the natural English and the glosses of 13 lines
+   (AUDIT/cross §4) → "Should I…?", "Do you want me to…?", "Would you like me to…?" (English only).
+6. **Spelling, ¿¡:** nothing (new lines checked: dígame, agregó, Enseguida, devolverlo).
+7. **Questions and offers (12):** "¿Cuánto es en total?" got the deposit at the deposit step and the coverage's
+   price at the insurance step, and "¿Cuánto cuesta / me sale en total?", "¿Cuánto le debo?", "¿Cuál es el total?"
+   weren't understood: now the daily cost, "Son $750 al día, con el seguro obligatorio incluido", or with something
+   added the new `total_day` "Con lo que agregó, son $1,200 al día." (its own `total` list, 30 values). "¿Qué es la
+   cobertura amplia?" (the new term) wasn't understood. "¿Vale la pena?" / "¿Me conviene?" weren't, and "¿Qué me
+   recomienda?" at the upgrade was answered about the coverage (now the midsize). Side questions with no answer:
+   "¿Aceptan dólares?" (new `usd` "Le cobramos en pesos, a su tarjeta de crédito."), "¿Mi esposa también puede
+   manejar?" / "¿Puedo agregar otro conductor?" (new `driver_ok` "Sí, solo necesito su licencia; el conductor
+   adicional no tiene costo."), "¿Tiene aire acondicionado?" / "¿Tiene clima?" (new `ac_yes`), "¿Lo puedo devolver
+   antes?" (new `ret_early`), "¿Y si llego a las seis?" / "¿Lo puedo devolver en la noche?" (the grace hour), "¿Mi
+   tarjeta no lo cubre?" at the twist (the card can't cover it). *Meaning safety:* a walk-in who said "Una camioneta"
+   and then "Mejor un compacto" (at the days or the documents step, or after them) was ignored, and the SUV was
+   rented at $1,400 a day: a walk-in can change the car until signing, and the new rate is said. A walk-in's
+   "¿Cuánto cuesta?" before the days was answered and then said again at the documents (and twice in one turn for
+   "¿Cuánto es por tres días?"). "Necesito un carro por un mes" wasn't understood at all, nor "Un mes" at "¿Qué día lo
+   va a devolver?": "un mes" (30 days) and "tres semanas" are durations now.
+8. **Hints and help:** nothing (every hint accepted, usted, American English).
+9. **Accepted answers:** no false accept found; corpus +36 understood (258 → 294) and +5 traps (30 → 35): a second
+   driver refused, "El carro no tiene aire", "No quiero pagar en dólares", "No lo puedo devolver antes", "Mi esposa
+   no va a manejar". New NLU tests: 21; new sims: 4 (the twist asked about before it is told; a walk-in's change of car
+   with the total, dollars and a second driver; two weeks quoted by the day, the early and late return; the SUV's
+   prepaid tank).
+10. **The neutral text (1, not fixed):** the 5 twins are right (carro → auto, licencia de manejo → de conducir) and no
+    new line needs one. "Estándar" (a manual car) is Mexican, Central American and Caribbean (DAMER), not South
+    American (mecánico / manual): `auto_all` and `economy_manual` here and p25's three gearbox lines say it in the
+    neutral text too. Left for the lead, to keep the two conversations alike.
+
+### Voices
+
+New spoken lines: `total_day`, `check_first`, `usd`, `driver_ok`, `ac_yes`, `ret_early`, `ret_more_q_day`,
+`ask_upgrade_again`, `tpl_again[1]`, `ask_insurance_again[1]`. Changed: `ask_resv[1]`, `you_welcome`. Values:
+`ask_prepay` / `prepay_quote` now say $1,200, $1,400 or $1,800 (fixed values); `total_day` has its own `total` list;
+`ret_more_q_day` is a list line (it says only the five rates: a reach-es RULE could keep it to them).
+
+### Left for the lead or the owner
+
+- **Lead:** the neutral "estándar" (point 10), with p25.
+- **Owner:** a later return is still quoted at the car's rate only, without full coverage or extras for those days
+  (the lead's note above). An additional driver is free here (some agencies charge about $100–150 a day): say if
+  it should cost.
