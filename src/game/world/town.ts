@@ -1381,7 +1381,9 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   for (const s of STALLS) {
     M.add("stall-table", mat("#9c6b43"), boxGeo(4, 0.9, 1.6, s.x, 0.45, s.z));
     for (const [dx, dz] of [[-1.9, -0.7], [1.9, -0.7], [-1.9, 0.7], [1.9, 0.7]]) M.add("stall-pole", mat("#e8e2d6"), cylGeo(0.05, 0.05, 2.6, s.x + dx, 1.3, s.z + dz, 5));
-    const roof = boxGeo(4.4, 0.12, 2.2, s.x, 2.65, s.z); roof.rotateX(0.08);
+    // the roof tilted about its own middle, then set on the poles' tops (tilted after the move, it turned about the
+    // world's origin and hung about 3 m above the stall)
+    const roof = boxGeo(4.4, 0.12, 2.2, 0, 0, 0).rotateX(0.08).translate(s.x, 2.6, s.z);
     M.add("stall-roof-" + s.color, mat(s.color), roof);
     const goodsCol = s.goods === "flowers" ? ["#e84a5f", "#ffd166", "#b56576", "#f7a072"] : s.goods === "fruit" ? ["#e63946", "#f4a261", "#ffbe0b"] : s.goods === "veg" ? ["#2a9d8f", "#e76f51", "#8ab17d"] : ["#d4a373", "#e9c46a"];
     for (let i = 0; i < 14; i++) {
