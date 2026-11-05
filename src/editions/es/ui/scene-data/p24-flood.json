@@ -1,5 +1,5 @@
 {
-  "npc": "Andrea, your friend, and Don Gilberto, your landlord (phone calls)",
+  "npc": "Andrea, your friend, and Don Gilberto, the building manager (phone calls)",
   "images": ["flood", "voicemail", "andrea", "need", "andrea_bye", "door", "gilberto", "worried", "power", "offer", "time", "on_way"],
   "start": "flood",
   "done": "on_way",

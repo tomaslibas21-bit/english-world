@@ -43,13 +43,16 @@
       "phases": [
         "worried_q",
         "what_happened",
-        "lost_really"
+        "lost_really",
+        "really_ok",
+        "keys_q"
       ],
       "refs": [
         "edit:s91a-lost-wallet/greet",
         "person:cast/mrs_lee"
       ],
       "prompt": "Change only her pose: she has set the flowers down and leans a little over the table toward the learner, one hand on her chest, eyebrows drawn together in a worried, caring look (\"¿Está bien? ¿Qué le pasó?\").",
+      "note": "5 Nov catch-up: also really_ok («¿Seguro? Parece que busca algo.») and keys_q («¡Ay, no! Cálmese. ¿Y las llaves también?»), new pendings from the audit (keys_q showed the greeting picture).",
       "out": "public/scenes-es/s91a-lost-wallet/worried.webp"
     },
     {
