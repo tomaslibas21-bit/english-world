@@ -38,3 +38,70 @@ questions. 91 lines added, 27 changed: ~45 must-fix, ~10 polish, ~35 tests.
   al cenote", "No fui a la playa, llovió todo el fin de semana", "No vivo aquí, estoy de vacaciones").
 - Owner: invented facts about Don Pancho: retired fisherman (40 years), blue house on the corner, 70+ years in town, a
   daughter and two grandkids (grandson 10), a wooden boat La Rosita painted blue; rainy season "más o menos de mayo a octubre".
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer, both texts (Mexican and neutral). **Checked:** every line, twin and hint against STYLE.md, the brief,
+TOWN.md and the cast; the transcripts (`review.ts` seeds 3 and 7, both texts; all 12 sims × 12 seeds in check-content);
+about 60 probe turns (`tools/probe.ts`) and a 39-sentence blind set of what learners say at each step; AUDIT/cross and
+AUDIT/neutral. **Gates:** tsc clean; check-content 131 → 148/148 NLU, 10 → 12 sims 12/12, fuzz 80, 0 errors 0 warnings;
+corpus 315/315, 0/25 → 353/353, 0/36 (+49 items, 32 of them with `not:` meaning checks); held-out 42/42, 0/1; vitest es
+107/107. Checked again with es-audit-shared's `frank { informal: false }` applied: transcripts identical, gates green.
+
+**Found by point** (22): 1: 0 · 2: 1 · 3: 0 · 4: 3 · 5: 1 · 6: 0 · 7: 15 · 8: 0 · 9: 0 · 10: 2. **Fixed:** 20.
+
+1. Natural Spanish: nothing wrong. Left as taste: `week_q_mon` "¿Y viene una semana pesada?" (fine; "¿Viene pesada la
+   semana?" would be a little more idiomatic); "¡Ni me diga!" right after his own Fahrenheit conversion (reads fine).
+2. tú/usted: his lines and every hint are usted; the g_clarify hints showed tú for him because `frank` still inherited
+   Maple Harbor's `informal: true`. Fixed on es-audit-shared (64e68230); the NEEDS comment now says so.
+3. Names: Don Pancho, La Rosita (his wife Rosa), the unnamed daughter and grandson: no clash in the edition.
+4. Facts: **fixed** `frank_where` "Voy al centro, a la ferretería": the stop is on calle Hidalgo, a block from the
+   zócalo (TOWN.md), so the centro is where he stands → "Nada más voy a la ferretería. ¡Necesito pintura para mi
+   lancha!" (as the English original; "¿Va al centro?" still gets it). **Fixed** the intro "the bus stop on calle
+   Ceiba" → "the Calle Ceiba bus stop" (its sign; it stands on calle Hidalgo). **Left for the pictures track** (the
+   scene data, after the picture audit's remap ba91c40a): `react` is the pending after each of his three stories, so its
+   picture (`plans`, painting) also shows on Mondays while he tells about fishing; `wkf_what` (Friday, "¿Qué va a
+   hacer?") and `weekend_past` (Monday, his question) show him fishing. Suggested: both → `react` (his listening pose);
+   for the fishing picture with the fishing story, the Monday story's pending would need an id of its own
+   (`react_weekend`, a one-line change here plus the corpus ctx), done together with the scene line.
+5. English: **fixed** `sure_is` "It sure is!" (also said to "Parece que va a llover, ¿verdad?") → "I'll say!",
+   "Absolutely!". Glosses all right; American English throughout.
+6. Spelling, accents, ¿¡: nothing (script over every unit, twin and hint).
+7. Answers (each probed before and after):
+   - A "no" that **agrees** got a disagreeing reply: "No hace calor hoy" on a norte morning → "¿No? ¡Usted aguanta más
+     que yo!"; "Sí, no hace tanto calor" on a breezy day → "¿No? Bueno, ¡mejor que la lluvia!"; "No hace frío" on a
+     cloudy one → "¡Ojalá tenga razón!". Now `wxNeg` (CONTRA): only denying his own remark disagrees; anything else gets
+     his agreeing line ("Yo ya saqué mi suéter").
+   - "¿Qué es el sargazo?" got "Depende. Hay temporadas…". New line `frank_sargazo_what`: "Es un alga café que llega
+     del mar. Cuando llega mucha, ¡huele feo!".
+   - The learner's own work read as his: "Mucho trabajo" (how was your weekend) → "Un poquito, ¡pero me gusta!" (his
+     boat); "Tengo / Tuve mucho trabajo" → "¿Yo? ¡Estoy jubilado!" (the engine forgives a verb's person, so they matched
+     "¿Tiene mucho trabajo?"); "Voy al centro" (plans) → his own errand. Now the weekend steps take them (work, busy, al
+     centro), "¿Es mucho trabajo?" is `story_work_ctx`, expected only right after "voy a pintar mi lancha", and
+     `q_week` / `q_where` check `mine()` (a first-person verb) before answering for him.
+   - The winter had no answer: "¿Aquí hace frío en invierno?", "¿Cómo es el invierno aquí?", "¿Cuándo hace frío?" →
+     new line `frank_winter`: "No hace mucho frío. Nada más cuando entra un norte, refresca unos días." (These need
+     "aquí" or a question word: "Soy de Canadá, allá hace mucho frío en invierno" must never be a question to him; a
+     bare "¿Hace frío en invierno?" stays not understood.)
+   - Not understood before, natural answers: "Parece que sí" / "Eso parece" (to "Parece que va a llover"), "Tuve un
+     buen fin de semana" (and a bad one), "Sí, voy a hacer algo especial", "Tengo tres hijos" (work or family?), "No,
+     esta semana estoy de vacaciones", "Nada, me quedé en casa porque llovió", "¡Buen viaje!" (his bus).
+   - "No, vivo aquí desde el año pasado" was welcomed as new ("¡Ah, pues bienvenido…!"): now not new. A known neighbor
+     who says "vivo aquí" is no longer welcomed to town again (`newAnswer`).
+   - Left (not understood, safe): "¿Cuándo hace más calor?", "¿Todavía pesca?", "¿Y su esposa?", "¿Hace frío en
+     invierno?" without "aquí", "¿Qué es un aguacero?" ("¿Qué significa aguacero?" works: global g_meaning).
+8. Hints: right, usted, accepted (check-content); their neutral twins under 10.
+9. Corpus +38 understood, +11 traps (negated work, plans and good weekends, home winters vs. the winter question, "No
+   es mucho trabajo"); 2 new sims (a no that agrees + the winter + the sargassum + the boat; a weekend of work, asked
+   back); 17 NLU tests.
+10. Neutral: the 10 twins are right. **Added** twins as the edition does elsewhere: platicar → conversar (s35 twins it)
+    in `more_time`, `frank_bus_here`'s twin and the hints `by_better`, `by_nice`; carne asada → parrillada (p30 twins
+    it) in the hints `wp_did`, `wf_did`; each Mexican word flagged.
+
+**Voiced lines changed:** `frank_where` (new text), `frank_sargazo_what` and `frank_winter` (new); neutral text only:
+`more_time`, `frank_bus_here`, and the four hints above. Ids, phases and moments unchanged (the pending `react` keeps
+its id).
+
+**For the lead:** the scene phases above (pictures track); STYLE.md's Mexican-only list could add
+platicar (conversar) and carne asada as the party (parrillada), so the cross-cutting digest catches them; global
+g_meaning could take "¿Qué es (un/el) X?" (now only "¿Qué significa X?").
