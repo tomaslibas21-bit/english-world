@@ -1,14 +1,14 @@
 // Interlinear sentence: each English unit with its optional IPA right under it and its Lithuanian gloss
 // below that, centred together; wrapping between units (a unit wider than the line wraps inside itself);
 // natural Lithuanian as a separate line (LT toggle). On the other person's lines with that line off, a natural
-// sentence that says more than the glosses waits behind a small "*" after the last word (NatTip, natTip.ts).
+// sentence that tells more than the glosses waits behind a small "*" after the last word (NatTip, natTip.ts).
 // Tapping a unit opens a small popover to save it (or the whole sentence) as a card (Cards.tsx);
 // saved units get a tiny dot.
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { ipaForUnit } from "../convo/ipa";
-import { natDiffers, placeTip, type TipSpot } from "./natTip";
+import { natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
 
@@ -22,8 +22,8 @@ export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentenc
   const down = useRef<HTMLElement | null>(null);
   const close = useCallback(() => setOpen(null), []);
   useEffect(() => { setOpen(null); }, [s.en]); // another sentence in the same place
-  const differs = useMemo(() => natDiffers(s), [s]);
-  const star = !!natTip && lt && nat === false && differs;
+  const saysMore = useMemo(() => natSaysMore(s), [s]);
+  const star = !!natTip && lt && nat === false && saysMore;
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const el = unitOf(e.target), from = down.current;

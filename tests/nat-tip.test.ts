@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { compose, type Sentence } from "../src/convo/compose";
 import { t } from "../src/content/dsl";
-import { natDiffers, natNorm, glossLine, placeTip } from "../src/ui/natTip";
+import { natSaysMore, newWords, natNorm, glossLine, stem, placeTip } from "../src/ui/natTip";
 import { Interlinear } from "../src/ui/Interlinear";
 
 /** A sentence as the conversation shows it (units split on " | "). */
@@ -13,32 +13,53 @@ const sent = (en: string, lt: string, nat: string): Sentence => compose(t(en, lt
 const pleasure = () => sent("My | pleasure!", "Mano | malonumas!", "Mielai!");
 const business = () => sent("Business | or | pleasure?", "Darbo reikalais | ar | poilsiui?", "Darbo reikalais ar poilsiui?");
 
-describe("which lines get the asterisk: the natural sentence says something the word glosses don't", () => {
+describe("which lines get the asterisk: the natural sentence has a content word the glosses don't", () => {
   it("yes for “My pleasure!” (Mano malonumas! word by word, Mielai! naturally)", () => {
-    expect(natDiffers(pleasure())).toBe(true);
+    expect(natSaysMore(pleasure())).toBe(true);
+    expect(newWords(pleasure())).toEqual(["mielai"]);
   });
   it("no for “Business or pleasure?” (the same words both ways)", () => {
-    expect(natDiffers(business())).toBe(false);
+    expect(natSaysMore(business())).toBe(false);
   });
   it("no when only punctuation, quotes, dashes or capitals differ", () => {
-    expect(natDiffers(sent("Hot | or | iced?", "Karštą | ar | su ledu?", "Karštą ar su ledu!"))).toBe(false);
-    expect(natDiffers(sent("Hot | or | iced?", "Karštą | ar | su ledu?", "Karštą – ar su ledu…"))).toBe(false);
-    expect(natDiffers(sent("A | flat white, | please.", "— | „Flat white“, | prašom.", "«Flat white» prašom"))).toBe(false);
-    expect(natDiffers(sent("Hello!", "Sveiki!", "SVEIKI"))).toBe(false);
+    expect(natSaysMore(sent("Hot | or | iced?", "Karštą | ar | su ledu?", "Karštą ar su ledu!"))).toBe(false);
+    expect(natSaysMore(sent("Hot | or | iced?", "Karštą | ar | su ledu?", "Karštą – ar su ledu…"))).toBe(false);
+    expect(natSaysMore(sent("A | flat white, | please.", "— | „Flat white“, | prašom.", "«Flat white» prašom"))).toBe(false);
+    expect(natSaysMore(sent("Hello!", "Sveiki!", "SVEIKI"))).toBe(false);
+  });
+  it("yes for a new word among other forms of the glosses' words (atvykau is new, atostogų is atostogose)", () => {
+    const s = sent("I'm | here | on vacation.", "Aš esu | čia | atostogose.", "Atvykau atostogų.");
+    expect(newWords(s)).toEqual(["atvykau"]);
+    expect(natSaysMore(s)).toBe(true);
+    expect(natSaysMore(sent("Sounds | good!", "Skamba | gerai!", "Puiku!"))).toBe(true);
+  });
+  it("no when the natural sentence only leaves words out (Jūs galite / Galite)", () => {
+    expect(natSaysMore(sent("You | can.", "Jūs | galite.", "Galite."))).toBe(false);
+    // the old rule gave this one an asterisk: the natural sentence only drops jūs
+    expect(natSaysMore(sent("What | would | you | like?", "Ko | — | jūs | norėtumėte?", "Ko norėtumėte?"))).toBe(false);
+  });
+  it("no for other forms of the same words, or another word order", () => {
+    expect(natSaysMore(sent("What | would | you | like?", "Ko | — | jūs | norėtumėte?", "Ko norite?"))).toBe(false);
+    expect(natSaysMore(sent("I'll | take | the | chips | off.", "— | Išimsiu | — | traškučius | —.", "Traškučius išimsiu."))).toBe(false);
+    expect(natSaysMore(sent("We | have | cars | available.", "Mes | turime | automobilių | laisvų.", "Turime laisvų automobilių."))).toBe(false);
+  });
+  it("no for fillers and particles (Tai… / Na…)", () => {
+    expect(natSaysMore(sent("So, | how's it going?", "Tai, | kaip sekasi?", "Na, kaip sekasi?"))).toBe(false);
+    expect(natSaysMore(sent("How's it going?", "Kaip sekasi?", "Na, ir kaip gi sekasi?"))).toBe(false);
   });
   it("reads the glosses without the — units (words Lithuanian doesn't say on their own)", () => {
-    const s = sent("What | would | you | like?", "Ko | — | jūs | norėtumėte?", "Ko jūs norėtumėte?");
-    expect(glossLine(s.units)).toBe("Ko jūs norėtumėte?");
-    expect(natDiffers(s)).toBe(false);
-    expect(natDiffers(sent("What | would | you | like?", "Ko | — | jūs | norėtumėte?", "Ko norėtumėte?"))).toBe(true);
+    expect(glossLine(sent("What | would | you | like?", "Ko | — | jūs | norėtumėte?", "Ko jūs norėtumėte?").units)).toBe("Ko jūs norėtumėte?");
   });
   it("never without a natural sentence", () => {
-    expect(natDiffers({ units: [{ en: "Hi!", lt: "Labas!" }], nat: "" })).toBe(false);
-    expect(natDiffers({ units: [{ en: "Hi!", lt: "Labas!" }], nat: " – " })).toBe(false);
+    expect(natSaysMore({ units: [{ en: "Hi!", lt: "Labas!" }], nat: "" })).toBe(false);
+    expect(natSaysMore({ units: [{ en: "Hi!", lt: "Labas!" }], nat: " – " })).toBe(false);
   });
-  it("compares lower case, without punctuation, with single spaces", () => {
+  it("compares lower case, without punctuation, with single spaces, and words by a crude stem", () => {
     expect(natNorm("„Labas,  RYTAS!“ – sakė…")).toBe("labas rytas sakė");
     expect(natNorm("Ačiū — ŽINOMA.")).toBe("ačiū žinoma");
+    expect([stem("atostogose"), stem("atostogų")]).toEqual(["atost", "atost"]);
+    expect([stem("norite"), stem("norėtumėte"), stem("norėčiau")]).toEqual(["nor", "nore", "nore"]);
+    expect(stem("atvykau")).toBe("atvyk");
   });
 });
 
