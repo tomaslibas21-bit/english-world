@@ -53,8 +53,9 @@ kits, a yacht, the chimneys, the mailboxes, the beach umbrellas' towels, the sto
   kiosco across the square: an ochre nave under a white barrel vault with buttresses and small arched windows, a facade
   with pilasters, an arched wooden door at the top of three steps and a round window, and an espadaña with three bells
   in two tiers and a cross. The bench that stood there is gone. Built there because the north side has no room
-  without moving the stalls and Lucy (PLAN.md open question 2): if the owner prefers the north side, it is the
-  theme's `church` (where its door is, which way it faces) plus moving the stalls.
+  without moving the stalls and Lucy. **It stays there** (PLAN.md open question 2, answered 5 Nov): from the east
+  end it faces the kiosco across the zócalo, as Mérida's cathedral stands on the east side of the Plaza Grande and
+  faces the square. Nothing moves.
 - **Task 4, the street furniture** (`streetSigns`, `stopWord`, `taxi`, `busSign`, `topes`, `foodCart`, `townSigns`):
   blue street name blades at eight corners (see the town facts); ALTO on the stop signs; a "SITIO DE TAXIS" sign and a
   white-and-green taxi at the stand; "PARADA" at the bus stop; three topes (yellow and black) with their TOPE warning
@@ -124,8 +125,8 @@ kits, a yacht, the chimneys, the mailboxes, the beach umbrellas' towels, the sto
 
 ### What's left outdoors
 
-- **The church's place** is the owner's to confirm (PLAN.md open question 2); moving it is the theme's `church` and,
-  for the north side, the stalls.
+- ~~The church's place~~ **Answered (5 Nov): it stays at the east end**, facing the kiosco, as Mérida's cathedral
+  faces the Plaza Grande (PLAN.md open question 2). Nothing moves.
 - **The sounds** are made on the spot, like Maple Harbor's gulls and birds: recordings (a real church bell, a gas
   truck's jingle, vendors calling "¡Elotes!") would sound better, and would need the owner's files.
 - The small things still as in Maple Harbor (the mercado's carts, the blue mailbox, Ximena's picket fence, the autumn
@@ -140,8 +141,9 @@ The conversations name places and say where they are; the 3D town must agree (an
   right, **Correos** opposite it, then the **mercado** after Correos; the bus **terminal** at the end of the street
   (s62). A cocina económica on calle Ceiba serves comida corrida (s69, s88).
 - **The zócalo**: the kiosco (where a boy finds the wallet, s91a), Doña Mari's flower stall and the Saturday
-  tianguis (s91a), the church (STYLE.md). The **Policía Municipal** is across the square, next to the **museum**
-  (s62, s91a, s91b); the museum is open 10 to 5, closed on Mondays (s62, s69, s70).
+  tianguis (s91a), the church at its east end, facing the kiosco (STYLE.md; "la iglesia del zócalo", s91b). The
+  **Policía Municipal** is across the square, next to the **museum** (s62, s91a, s91b); the museum is open 10 to 5,
+  closed on Mondays (s62, s69, s70).
 - **Farmacia del Puerto** sits between the estética (s62) and the doctor's consultorio next door (s75).
 - **The gas station**: the conversation happens outside at the pump, not in the shop (s71b; `locations.ts` still says
   interior).
@@ -417,6 +419,64 @@ Harbor's values switch them off); the new shapes are in mexican.ts, merged into 
 - **The cenote and the ruins** are scenery: a conversation that takes the learner there (a colectivo ride) would need
   a place of its own.
 
+## Graphics, round 1 (5 Nov 2026)
+
+A rating of every area from 1 to 10 (the side notes' GRAPHICS.md) found three bugs in the zócalo, the town's showpiece,
+and a few wrong or broken-looking details; this round fixes them and adds the tianguis. Every change is switched on by
+the Spanish theme (new fields `sea`, `tianguis`, `roomLooks`, `homeMx`, documented in src/game/world/theme.ts) except
+the stall roofs, a bug both editions had (below).
+
+- **The stall roofs** (both editions, its own commit): each was tilted after being moved into place, so it turned about
+  the world's origin and hung about 3 m above its stall. Now tilted about its own middle and set on the poles' tops.
+- **The papel picado shows.** Its flags were merged without their texture coordinates, so every fragment sampled the
+  paper's cut-away corner and was discarded: the strings were invisible. They keep them now (town.ts `papelMerge`).
+  Flags nearer than about 3.3 m to the camera dissolve (a dither in the shader), so a camera passing among the strings
+  (the follow camera over the square, a conversation's) never has one filling the picture.
+- **The tianguis** (`tianguis`; s91a: the Saturday market on the zócalo, Doña Mari's flowers among its stalls):
+  the square's four stalls under lonas (tarps tied to four poles, tilted to the front and sagging a little, with a
+  white valance) in the market's colors, and five more along the north and west sides: piñatas, barro (ollas,
+  cazuelas, jarritos), sombreros de palma, hamacas de Yucatán, rebozos y sarapes. Doña Mari's stall has buckets of
+  roses, sunflowers, cempasúchil and gladiolas (her flowers read as fruit before); the fruit stall mangos, papayas and
+  pineapples. Each stall's painted sign stands on its front bar, where it hides no one's face; the tables and the
+  front poles are solid, clear of every person's spot, the talk spots, the chatting pair and the pigeons' ring round
+  the kiosco (tests/es/town.test.ts). The stalls are a mesh of their own and their goods another that casts no
+  shadow (mexican.ts `tianguisStall`), so they cost triangles only where the square is in view; the old per-color
+  goods, roofs and sign meshes are gone, and the zócalo's views draw 11–16 calls fewer than before (phone).
+- **The topes** are closed humps across the road, 10 cm high, in yellow and black (they were open half cylinders
+  standing on end, which read as loose dashes).
+- **Correos inside**: Correos de México's rosa mexicano and lime green where the USPS navy and red were (the counter,
+  the rugs, the sign, the stamp poster, the stamp machine; `roomLooks` for the baseboards) and a buzón (mexican.ts
+  `buzon`) where the blue US mailbox stood.
+- **The Caribbean sea** (`sea`): from the shore out, the sand showing through, a turquoise shallow to about 26 m, aqua
+  to about 62 m, then deep blue; light rippling over the shallows' floor and a whiter, wider line of foam (Maple
+  Harbor's shader is untouched).
+- **The tours kiosk** on the malecón moved to x -37, between a bench and the pier's boardwalk: a lamp post stood across
+  its window.
+- **The bougainvillea** rebuilt: a woody trunk that forks, the leaves as clumps flattened against the wall that overlap
+  into one mass fanning out towards the top, magenta bracts over its outside, a crown along the wall's top (about a
+  thousand triangles a plant; it was a column of separate floating flakes).
+- **Diego and Natalia's house** (`roomLooks`, `homeMx`; s85, p30): a warm tile floor, warm light walls, terracotta
+  baseboards, a ceiling fan over the table, the family altar under the Virgin of Guadalupe (a lace cloth, veladoras,
+  cempasúchil and roses), a hammock along the west wall, plants in clay pots and the garrafón on its stand.
+- **The camera inside the church and the kiosco**: the follow camera's boxes are Game.ts's (layout.ts BUILDINGS and the
+  terminal's canopy), so the town now hands over boxes for the edition's own solid things, `Town.occluders`: the
+  church's nave and espadaña, and the kiosco's roof with `y0` 4.3 (only what is above it counts: the kiosco is open
+  under its roof). Game.ts has to add them to its boxes and honor `y0`; with that (tried in the page), the camera
+  that filled the screen with the church's wall stops behind the player.
+- **Cost** (`renderer.info.render`, phone 375×812, the same views before → after): the zócalo 156 → 145 calls, the kiosco
+  154 → 140, the stalls 150 → 139, the church across the square 166 → 150 (Maple Harbor 161), the square from above
+  155 → 140, Doña Mari's conversation (s91a) 149 → 136, s86 147 → 136, s69 163 → 155; Diego's house 40 → 38; the
+  malecón 125 → 117; every other view the same or fewer but one, Juárez's shops 176 → 177 (Maple Harbor 200).
+  Triangles: +6 to +17 thousand (the bougainvillea and the topes everywhere, the tianguis wherever its bounding sphere
+  is in view; at most 340 thousand, at the bus stop, which looks down calle Ceiba to the square). The frame's cost with the CPU 4× slower (Chromium's throttling, the
+  median of three runs each, before and after alternating): the zócalo 4.9 → 4.3 ms, the church 4.5 → 4.4, the
+  square from above 5.0 → 4.5, the malecón 4.2 → 4.5 (noise: ±15%), calle Hidalgo 4.2 → 4.0, Diego's house 1.8 → 1.7.
+- **Maple Harbor unchanged** by the Spanish commit: the 72 frozen views of the rooms and the talk spots
+  (`es-tour.mjs --mode=rooms --compare`) pixel-identical with the same draw calls; the 76 walking, close-up and room
+  views at both sizes, shot with passers-by, cars and pigeons hidden from the stall fix's commit and from this one:
+  identical but for the fountain's water drops, a soft shadow at one frame's edge and a far person's hair, which also
+  differ between two runs of the unchanged code; `tools/fingerprint.ts` identical.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.
@@ -433,7 +493,7 @@ Each task is one area; each ends with before/after screenshots at phone size and
 3. **Done (4 Nov), at the east end.** **The church** on the zócalo: a parroquia with a bell gable (espadaña) or two
    towers, facing the kiosco from the north side of the square (between Harbor Road and the stalls: re-check the stalls
    and Lucy's spot) — or, if there is no room, at the square's east end beside the Policía Municipal. Ask the owner
-   which before building it.
+   which before building it. **Answered 5 Nov: the east end stays** (as Mérida's cathedral faces the Plaza Grande).
 4. **Done (4 Nov).** **Street furniture**: Spanish street signs ("Calle Ceiba", "Avenida del Puerto"), a "Sitio de
    Taxis" sign and a white-and-green taxi (Cancún's colours, made up), the bus stop as a "parada", topes (speed bumps)
    at the square, a tricycle food cart (a "triciclo" selling elotes or marquesitas) near the zócalo.

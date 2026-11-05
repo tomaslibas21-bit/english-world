@@ -100,7 +100,7 @@
   {"ctx": "crash", "say": "Primero hay que arreglar el error", "intent": "plan"},
   {"ctx": "crash", "say": "Arreglemos el error y luego avisemos a los clientes", "intent": "plan"},
   {"ctx": "crash", "say": "Hay que avisarles a los clientes", "intent": "plan"},
-  {"ctx": "crash", "say": "Llamemos a Memo", "intent": "plan"},
+  {"ctx": "crash", "say": "Llamemos a Lalo", "intent": "plan"},
   {"ctx": "crash", "say": "Lancemos la próxima semana", "intent": "plan"},
   {"ctx": "crash", "say": "Hay que regresar a la versión anterior", "intent": "plan"},
   {"ctx": "crash", "say": "¿Qué quieres que haga exactamente?", "intent": "crash_what"},
@@ -109,7 +109,7 @@
   {"ctx": "crash", "say": "No, la pelota está en tu cancha", "intent": "ball_back"},
   {"ctx": "crash", "say": "¿Qué significa empezar de cero?", "intent": "idiom_q"},
   {"ctx": "crash", "say": "No hay que avisarles a los clientes", "intent": "any", "not": ["plan"]},
-  {"ctx": "crash", "say": "No quiero llamar a Memo", "intent": "any", "not": ["plan"]},
+  {"ctx": "crash", "say": "No quiero llamar a Lalo", "intent": "any", "not": ["plan"]},
   {"ctx": "owner", "say": "¿A quién le pregunto sobre el presupuesto?", "intent": "ask_owner", "slots": {"a": "budget"}},
   {"ctx": "owner", "say": "¿Quién se encarga de la fiesta de lanzamiento?", "intent": "ask_owner", "slots": {"a": "party"}},
   {"ctx": "owner", "say": "¿Quién se encarga del código?", "intent": "ask_owner", "slots": {"a": "code"}},
@@ -196,7 +196,7 @@
   {"ctx": "deal", "say": "No tiene sentido", "intent": "any", "not": ["agree_ctx", "yn:yes"]},
   {"ctx": "crash", "say": "¿Qué hacemos?", "intent": "crash_what"},
   {"ctx": "crash", "say": "Hay que posponer el lanzamiento", "intent": "plan"},
-  {"ctx": "crash", "say": "No llamemos a Memo", "intent": "any", "not": ["plan"]},
+  {"ctx": "crash", "say": "No llamemos a Lalo", "intent": "any", "not": ["plan"]},
   {"ctx": "crash_ok", "say": "Sí, hagamos eso", "intent": ["agree_ctx", "yn:yes"]},
   {"ctx": "owner", "say": "Sí, una pregunta", "intent": ["more_q_ctx", "yn:yes"]},
   {"ctx": "owner", "say": "¿Cuándo es la entrega de la presentación?", "intent": "ask_owner"},
@@ -226,5 +226,10 @@
   {"ctx": "priorities", "say": "No quiero hacer la fiesta", "intent": "cant_task", "not": ["propose"], "note": "review"},
   {"ctx": "midnight", "say": "No hay problema, me quedo hasta tarde", "intent": "stay_yes", "not": ["cant_stay"], "note": "review"},
   {"ctx": "mid_deal", "say": "No, no puedo hasta las nueve", "intent": "cant_stay", "not": ["stay_yes", "stay_limit"], "note": "review"},
-  {"ctx": "tomorrow", "say": "A las ocho no puedo, ¿a las diez?", "intent": "meet_time", "not": ["meet_ok", "meet_time_ctx"], "note": "review: the second hour"}
+  {"ctx": "tomorrow", "say": "A las ocho no puedo, ¿a las diez?", "intent": "meet_time", "not": ["meet_ok", "meet_time_ctx"], "note": "review: the second hour"},
+  {"ctx": "owner", "say": "¿Quién es Lalo?", "intent": "who_person", "slots": {"p": "lalo"}, "note": "5 Nov: the developer is Lalo"},
+  {"ctx": "crash", "say": "Le marco a Lalo", "intent": "plan", "note": "5 Nov: the developer is Lalo"},
+  {"ctx": "crash", "say": "Hay que pedirle ayuda a Lalo", "intent": "plan", "note": "5 Nov: the developer is Lalo"},
+  {"ctx": "priorities", "say": "Tal vez Lalo puede hacer la foto", "intent": "propose", "slots": {"d": "photo"}, "note": "5 Nov: the developer is Lalo"},
+  {"ctx": "priorities", "say": "Lalo no puede hacer la fiesta", "intent": "any", "not": ["propose"], "note": "5 Nov: the developer is Lalo"}
 ] }
