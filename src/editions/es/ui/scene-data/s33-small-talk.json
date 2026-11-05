@@ -3,6 +3,6 @@
   "images": ["greet", "weather", "intro", "from", "fishing", "plans", "week", "your_turn", "react", "rain", "late", "bye"],
   "start": "greet",
   "sticky": ["rain"],
-  "phases": {"howareyou": "greet", "weather": "weather", "winter": "weather", "new_q": "intro", "intro": "intro", "from_q": "from", "weekend_past": "fishing", "wkf_what": "fishing", "react": "plans", "week": "week", "busy_why": "week", "your_turn": "your_turn", "weekend_plans": "react", "wkp_what": "react", "rain": "rain", "late": "late", "like_q": "late", "closing": "bye"},
+  "phases": {"howareyou": "greet", "weather": "weather", "winter": "weather", "new_q": "intro", "intro": "intro", "from_q": "from", "weekend_past": "fishing", "wkp_what": "fishing", "weekend_plans": "plans", "wkf_what": "plans", "week": "week", "busy_why": "week", "your_turn": "your_turn", "react": "react", "rain": "rain", "late": "late", "like_q": "late", "closing": "bye"},
   "focus": [34, 30]
 }
