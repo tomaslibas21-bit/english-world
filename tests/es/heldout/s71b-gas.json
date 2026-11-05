@@ -4,8 +4,8 @@
   { "ctx": "order", "say": "Me pone quinientos pesos de verde", "intent": ["prepay", "amount_ctx"], "note": "Spain: me pone; la verde = magna" },
   { "ctx": "order", "say": "Trescientos de magna", "intent": ["prepay", "amount_ctx"] },
   { "ctx": "order", "say": "Necesito gasolina", "intent": "want_gas" },
-  { "ctx": "order", "say": "Ponme 20 litros", "intent": ["prepay", "amount_ctx"], "note": "Spain: ponme; litres" },
-  { "ctx": "order", "say": "No lo llene, solo doscientos pesos", "intent": ["prepay", "amount_ctx"], "not": ["fill"], "note": "trap: negation" },
+  { "ctx": "order", "say": "Ponme 20 litros", "intent": ["prepay", "amount_ctx", "liters"], "note": "Spain: ponme; liters (the audit: she asks in pesos)" },
+  { "ctx": "order", "say": "No lo llene, solo doscientos pesos", "intent": ["prepay", "amount_ctx", "amount_change_ctx"], "not": ["fill"], "note": "trap: negation (a correction is the right reading)" },
   { "ctx": "order", "say": "Cuanto cuesta el litro?", "intent": ["gas_price_q", "cost_q"], "note": "no accents" },
   { "ctx": "order", "say": "¿Puedo pagar con tarjeta?", "intent": ["pay_card", "pay_pump_q"] },
 
