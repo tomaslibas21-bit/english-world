@@ -64,7 +64,7 @@ s64b, s69 and s91b for the shared facts; the English original on main.
    taxi.": they are for places only now (a ride gets "Tomé un taxi."). Every new line's units, flags and American
    English checked.
 6. **Spelling, ¿¡ (0).**
-7. **Questions and offers (14).** "¿No ha visto una cartera negra?" got no answer ("¡Ay, Dios! No se preocupe."), and
+7. **Questions and offers (13; the three "where" questions and the three "will you help" ones count once each).** "¿No ha visto una cartera negra?" got no answer ("¡Ay, Dios! No se preocupe."), and
    "Ándele." when asked again: new `not_seen` "No, mijo, no he visto nada." first (and its color is the description).
    "¿Cuánto cuestan las rosas?" after the loss got "Muy bien." / "Ándele." (now the price, $150; a compliment is
    thanked). After the way to the police was given early, the advice still asked "¿Sabe dónde está?" (now only if the
