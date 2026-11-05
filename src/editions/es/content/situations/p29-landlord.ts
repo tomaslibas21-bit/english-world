@@ -28,6 +28,11 @@
 // lease (Mexican leases usually leave necessary repairs to the landlord and small upkeep to the tenant); the scene only
 // quotes "the lease", never a law. Rent in cash or by bank transfer and a hand-written rent receipt are common; no
 // amounts besides s81's rent. San Cristóbal is only a place he goes. Chucho (his repairman) is mentioned, never seen.
+// The audit (5 Nov 2026): the learner's door is 1B (s81, s82, p24), understood in the greeting; an echoed "¿El
+// miércoles?" (typed with its question mark) gets "Sí, … ¿Le parece?" and books nothing until a yes; "¿Quién paga?"
+// gets his half while the offer is open and "Eso lo pago yo" once Chucho is coming; the rent handed over at "¿Algo
+// más?" is taken (the AC is settled by then); s81's rent is due in the first five days, so the transfer hint says
+// "mañana", not "el primero". Chucho stays (Don Chuy, s62, is another nickname, another man, another place).
 
 import type { Ctx, Pending, SituationDef, Suggestion, Tip } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
@@ -84,6 +89,12 @@ const politeClosing = (c: Ctx) => /^\W*(esta bien|vale|ok|okay|bueno|perfecto|de
 /** The AC, the heat: a sentence that names the problem. */
 const mentionsAc = (h: string) => /\b(aire|clima|minisplit|mini split|split|aparato|acondicionado|calor|enfria|caliente)\b/.test(h);
 
+/** Typed with a question mark (voice never has one): "¿El miércoles?" asks, "El miércoles." agrees. */
+const typedQ = (c: Ctx) => /[?¿]/.test(c.heard || "");
+
+/** The turn opens with a yes ("Está bien, que venga Chucho."). */
+const YES_START = /^\W*(si|esta bien|claro|bueno|perfecto|de acuerdo|ok|okay|vale|sale|va|me parece bien)\b/;
+
 const TIPS: Record<string, Tip> = {
   too_blunt: { key: "too_blunt", lt: "Understood! “Tiene que arreglarlo” or “¡Arréglelo ya!” sounds like an order. A calm “Me temo que…” is firm without being rude.", better: "Me temo que es su responsabilidad." },
   threat_legal: { key: "threat_legal", lt: "Understood! Threats end the conversation. This scene practices reminding him, calmly and firmly, what the lease says.", better: "Según el contrato, las reparaciones le tocan a usted." },
@@ -129,7 +140,12 @@ function ritaBye(c: Ctx) {
   c.speaker("patel");
 }
 
-function techNumber(c: Ctx) {
+function techNumber(c: Ctx, tags: string[] = []) {
+  // Chucho's number (or "the repairman's" with no Doña Lupita there) is Don Ernesto's to give
+  if (tags.includes("chucho") || (!c.s.ritaShown && tags.includes("num"))) {
+    if (!c.s.chuchoNum) { c.s.chuchoNum = true; P(c, "chucho_number"); } else P(c, "sure_sure");
+    return;
+  }
   if (!c.s.ritaShown) { P(c, "ack"); return; }
   if (!c.s.techAsked) { c.s.techAsked = true; R(c, "tech_number"); } else R(c, "tech_again");
   c.speaker("patel");
@@ -145,7 +161,7 @@ function ritaTwist(c: Ctx) {
     on: {
       thanks_rita: (cc) => { ritaBye(cc); },
       g_thanks: (cc) => { ritaBye(cc); },
-      ask_tech: (cc) => { techNumber(cc); },
+      ask_tech: (cc, _sl, sg) => { techNumber(cc, sg.tags); },
     } });
 }
 
@@ -290,8 +306,23 @@ function dateYes(c: Ctx) {
 function dateNo(c: Ctx) {
   if (c.s.level === 0) offerWednesday(c);
   else if (c.s.level === 1) offerFriday(c);
-  else P(c, "friday_best");
+  else fridayBest(c);
   c.hold();
+}
+
+/** "Antes del viernes, imposible." once; pushed again, a short reminder (never the same line twice in a row). */
+function fridayBest(c: Ctx) {
+  if (!c.s.friBestSaid) { c.s.friBestSaid = true; P(c, "friday_best"); return; }
+  P(c, c.s.date ? "i_know" : "friday_reask");
+}
+
+/** "¿El miércoles?" echoing the day on the table (typed as a question): he confirms it and asks; nothing is booked. */
+function echoDay(c: Ctx, day: string): boolean {
+  if (!c.s.offer || c.s.date || !typedQ(c) || day !== dayOnTable(c)) return false;
+  c.s.echoSaid = true;
+  if (!c.s["echo_" + day]) { c.s["echo_" + day] = true; P(c, "echo_" + day); } else askDate(c);
+  c.hold();
+  return true;
 }
 
 /** The text with the day (`promised`: asked for earlier, before there was a day). */
@@ -306,12 +337,22 @@ function sendText(c: Ctx, promised = false) {
 
 function payRent(c: Ctx) {
   if (c.s.rentDone) { P(c, "ack"); return; }
-  // money moves only at the rent: "Aquí tiene la renta." in the middle of the AC talk waits
-  if (!c.s.rentAsked) { P(c, "rent_first"); return; }
+  // money moves only at the rent: "Aquí tiene la renta." in the middle of the AC talk waits; once the day is agreed
+  // (his "¿Algo más?") the AC is settled, so he takes it and the rent is what comes next
+  if (!c.s.rentAsked) {
+    if (!c.s.date) { P(c, "rent_first"); return; }
+    rentNow(c);
+  }
   c.s.rentPaid = true;
   c.s.rentDone = true;
   c.event("pay", { method: "cash", amount: RENT });
   P(c, "rent_thanks");
+}
+
+/** The learner brings up the rent at "¿Algo más?" (the day agreed): that's all for the AC, the rent is on. */
+function rentNow(c: Ctx) {
+  c.s.rentAsked = true;
+  c.s.wrapDone = true;
 }
 
 function receiptBeat(c: Ctx) {
@@ -371,7 +412,7 @@ function closing(c: Ctx): Pending {
 
 /** "¿El aire?" (the returning player's greeting, or after the water heater): a yes or the AC's problem answers it. */
 function expectAcGuess(c: Ctx) {
-  c.expect({ id: "guess", expects: ["heat_broken", "cold_detail", "heat_duration", "space_heater", "ac_ctx", "heater_wrong"], hints: ["problem", "g_yesno"],
+  c.expect({ id: "guess", expects: ["heat_broken", "cold_detail", "heat_duration", "space_heater", "ac_ctx", "heater_wrong", "heater_ok"], hints: ["problem", "g_yesno"],
     suggest: [{ lt: "Say yes and explain what isn't working", hint: "problem" }],
     on: {
       heat_broken: (cc, sl, sg) => { landlord.handlers.heat_broken(cc, sl, sg); },
@@ -439,6 +480,10 @@ export const landlord: SituationDef = {
       // the water heater (not this scene's problem): Mexico says calentador or boiler
       wheater: "(calentador | calentador de agua | boiler | boiler del agua)",
       lead_resp: "(las reparaciones | arreglarlo | eso | arreglar el aire | el mantenimiento)",
+      // the learner's door is 1B (s81, s82, p24: "el uno be"); the building's other doors (1C Doña Lupita's, 2B upstairs,
+      // p24) and any other number are taken as said
+      aptno: "(1b | 1 b | uno b | uno be | 1a | 1c | 2a | 2b | 2c | {number} (a | b | c | d | be) | {number} {letters} | {number} | {letters})",
+      apt: "[departamento | depa | apartamento] @aptno",
     },
     slots: {},
   },
@@ -446,9 +491,10 @@ export const landlord: SituationDef = {
   intents: {
     // --- greeting --------------------------------------------------------------
     greet_id: { patterns: [
-      "@don soy yo [(el | la) de arriba | (el | la) del primer piso] #h:its_me", "soy yo (el | la) (de arriba | del primer piso | del departamento de arriba)",
+      "@don soy yo [(el | la) de arriba | (el | la) del primer piso | (el | la) del @apt] #h:its_me", "soy yo (el | la) (de arriba | del primer piso | del departamento de arriba | del @apt)",
       "soy (su | tu #tip:tu_staff) (inquilino | inquilina) [de arriba | del primer piso]",
-      "soy (su | tu #tip:tu_staff) (inquilino | inquilina) del [departamento | depa] ({number} | {letters} | {number} {letters})", "soy (el | la) del [departamento | depa] ({number} | {letters} | {number} {letters})", "(vivo | soy) (arriba | del primer piso | del departamento de arriba | del depa de arriba)",
+      "soy (su | tu #tip:tu_staff) (inquilino | inquilina) del @apt", "soy (el | la) del @apt", "(vivo | soy) (arriba | del primer piso | del departamento de arriba | del depa de arriba)",
+      "soy {name} [su (inquilino | inquilina)] (del @apt | de arriba)", "vivo en el @apt",
       "(perdon | disculpe) que lo moleste [@don] [pero es (importante | urgente)] #h:sorry_bother", "(perdon | disculpe) la molestia [@don] [pero es (importante | urgente)]",
       "[@don] (tiene | tienes #tip:tu_staff) un (minuto | momento | segundo | minutito) #h:minute",
       "(puedo | podemos) hablar con usted [un (minuto | momento | segundo)]", "(podemos | puedo) hablar [un (minuto | momento)]",
@@ -498,15 +544,21 @@ export const landlord: SituationDef = {
     heater_wrong: { patterns: [
       "(el | mi) @wheater [de @home] @broken [@dur_tail] [@where]",
       "(el | mi) @wheater (no calienta | ya no calienta | no da agua caliente | no tiene agua caliente)",
-      "(se descompuso | dejó de funcionar | ya no funciona | no funciona | no sirve | no va | no jala | no prende | no enciende | no calienta) (el | mi) @wheater [@where] [@dur_tail]",
+      "(se descompuso | se apagó | dejó de funcionar | ya no funciona | no funciona | no sirve | no va | no jala | no prende | no enciende | no calienta) (el | mi) @wheater [@where] [@dur_tail]",
       "(tengo | hay | tenemos) un problema con (el | mi) @wheater",
-      "no (hay | tengo | tenemos | sale | me sale) agua caliente [@where] [@dur_tail]",
+      "no (hay | tengo | tenemos | sale | me sale) agua caliente [@where | en la regadera | de la regadera] [@dur_tail]",
+      // naming it ("El calentador.", "No, el calentador de agua.", "Es el calentador.") after "¿No será el aire?"
+      "(el | mi) @wheater [de @home]", "(es | el problema es) (el | mi) @wheater",
+      "el agua caliente (no sale | ya no sale | no funciona | no sirve) [@where] [@dur_tail]", "el agua (sale | esta | sale muy) fria [en la regadera | de la regadera]",
       "(la | mi) calefaccion @broken [@dur_tail]", "no (funciona | sirve | prende) la calefaccion", "no (hay | tengo) calefaccion",
       // a second complaint after the AC ("Vamos por partes.")
       "[y] (el | mi) @wheater (tampoco | tampoco funciona | tampoco sirve | tampoco calienta | tampoco prende)",
       "[y] tampoco (funciona | sirve | calienta | prende) (el | mi) @wheater", "[y] (el | mi) @wheater tambien @broken",
       "[y] tampoco (hay | tengo) agua caliente", "[y] no (hay | tengo) agua caliente tampoco",
     ] },
+    // "El calentador sí funciona." / "El calentador está bien.": the heater is fine (the accept tails would otherwise
+    // read "El calentador" + "funciona" as the heater blamed)
+    heater_ok: { patterns: ["(el | mi) @wheater [si | ya | todavia] (funciona | sirve | calienta | jala | esta bien | esta perfecto) [bien | perfecto]"] },
 
     // --- how long ------------------------------------------------------------------
     heat_duration: { patterns: [
@@ -535,6 +587,9 @@ export const landlord: SituationDef = {
       "le (dejé | mandé | escribí) [un | {number} | muchos | varios] (mensaje | mensajes | whatsapp | whatsapps | correo | correos | recado | recados | audio | audios) #h:left_voicemail",
       "(usted)? (nunca | no) (contesta | me contesta | contestó | me contestó | responde | me responde) [el telefono | mis llamadas | mis mensajes | el celular]",
       "no me (regresó | devolvió) la llamada", "nadie contesta [el telefono]",
+      // "¿Por qué no contesta el teléfono?" (the intro: he never answers)
+      "por que no (me)? (contesta | contestaba | contestó | responde | respondió | regresa | devuelve) [el telefono | el celular | mis llamadas | mis mensajes | la llamada | las llamadas]",
+      "(le | te #tip:tu_staff) (llamé | marqué | hablé) y no (contestó | contesta | me contestó)",
       "(intenté | traté de) (llamarle | llamarlo | localizarlo | hablarle) [toda la semana | muchas veces | varias veces]",
       "(toqué | he tocado) (su puerta | a su puerta) [varias veces | {number} veces | todos los dias]",
     ] },
@@ -615,6 +670,7 @@ export const landlord: SituationDef = {
     withhold: { patterns: [
       "no (le voy a pagar | voy a pagar | le pago | pago) [la renta] hasta que (lo arregle | funcione | arregle el aire | el aire funcione) #tip:withhold",
       "no (le voy a pagar | voy a pagar | le pago) [la renta | nada | este mes] #tip:withhold",
+      "este mes no (le voy a pagar | voy a pagar | le pago | pago) [la renta | nada] #tip:withhold",
       "sin aire no hay renta #tip:withhold", "voy a dejar de pagar [la renta] #tip:withhold",
       "le pago cuando (lo arregle | funcione el aire | el aire funcione) #tip:withhold",
       "si no lo arregla no (le pago | le voy a pagar | pago | voy a pagar) [la renta] #tip:withhold",
@@ -627,6 +683,8 @@ export const landlord: SituationDef = {
       "(yo)? no soy (tecnico | tecnica | plomero | plomera | electricista | experto | experta | fontanero | fontanera) #h:not_plumber",
       "no se (arreglarlo | arreglar (eso | aires | aires acondicionados | minisplits | el aire | climas) | como arreglarlo)",
       "(prefiero | mejor) que (venga | lo arregle) (un tecnico | chucho | alguien | un profesional | usted)", "mejor mande a (chucho | un tecnico | alguien | un profesional)",
+      // "Está bien, que venga Chucho." / "Que lo arregle el técnico.": send him (never "que lo arregle yo")
+      "[mejor] que (venga | lo arregle | lo revise | lo repare) @someone [por favor] #send", "que lo (arregle | revise | repare) usted [por favor] #send",
       "no es justo", "no es lo que acordamos", "no (puedo | se) arreglarlo [yo | yo solo | yo sola]",
       "[no gracias] mande a un (tecnico | profesional | experto) #h:no_thanks_pro", "(puede | podria) mandar a un (tecnico | profesional) [mejor]",
       "prefiero no (tocarlo | hacerlo | meterme) #h:rather_not", "no (quiero | voy a) (tocarlo | arreglarlo | intentarlo) [yo]", "no lo (arreglo | voy a arreglar | voy a intentar) [yo]", "yo no lo (arreglo | voy a arreglar)",
@@ -639,10 +697,26 @@ export const landlord: SituationDef = {
       "[esta bien | bueno | ok] (lo arreglo yo | yo lo arreglo | lo intento | voy a intentarlo | lo hago yo | yo lo hago)", "(yo)? (puedo | lo puedo) arreglar(lo)? [yo]",
       "yo lo puedo arreglar", "[si] (puedo | voy a) intentarlo", "[no] yo (puedo arreglarlo | lo puedo arreglar | lo arreglo | lo intento)",
       "[si | bueno | esta bien] (puedo | yo puedo) (arreglarlo | intentarlo) [yo]", "(preste | mande) (la escalera | las herramientas)", "la mitad esta bien", "(dejeme | deje) intentarlo", "lo voy a intentar",
+      "(mejor | prefiero) que lo arregle yo", "prefiero (arreglarlo | intentarlo) yo",
     ] },
     // "¿Cuánto cuesta arreglarlo?" while the offer is open: his half, never a yes
     offer_price_ctx: { patterns: ["cuanto (cuesta | costaria | sale | va a costar) [arreglarlo | la reparacion | repararlo]", "cuanto (me paga | me va a pagar | me da | es la mitad)",
-      "y (cuanto | quien) paga (lo demas | la otra mitad)"] },
+      "y (cuanto | quien) paga (lo demas | la otra mitad)",
+      // "¿La mitad?" (an echo, never a yes) / "¿Quién paga?"
+      "[solo | nada mas | nomas] la mitad", "[y] quien (paga | va a pagar) [lo demas | el resto | la otra mitad | todo | la reparacion]"] },
+    // "¿Quién paga la reparación?" / "¿Tengo que pagar algo?" (#rep: the repair is named)
+    who_pays: { patterns: [
+      "[y] quien (paga | va a pagar | pagaria) (la reparacion | el arreglo | al tecnico | a chucho | las piezas | eso) #rep", "[y] quien (paga | va a pagar)",
+      "[y] usted (paga | va a pagar | me paga | cubre) (la reparacion | el arreglo | al tecnico | a chucho | todo) #rep",
+      "(la reparacion | el arreglo) (la paga | lo paga | la va a pagar | lo va a pagar) usted #rep",
+      "(tengo | voy a tener) que pagar (la reparacion | el arreglo | al tecnico | a chucho | la mitad) [yo] #rep", "(tengo | voy a tener) que pagar algo [yo] #me",
+      "(chucho | el tecnico) me (va a cobrar | cobra) [algo] #rep", "me (va a cobrar | van a cobrar) (la reparacion | el arreglo) #rep",
+      "(cuanto | que tanto) me va a (costar | salir) (la reparacion | el arreglo) #rep",
+    ] },
+    // "¿Tengo que estar en casa?" (Chucho has a key)
+    need_home: { patterns: ["(tengo que | necesito | debo | hay que) estar (en casa | ahi | aqui) [ese dia | {day} | en la manana]", "(es necesario | hace falta) que (este | yo este) (en casa | ahi)"] },
+    // "Lo voy a pensar." at the offer or a day: he's leaving, so he asks again
+    think_ctx: { patterns: ["lo (voy a pensar | pienso | tengo que pensar)", "(tengo que | necesito | quiero) pensarlo", "(dejeme | deje) pensarlo"] },
     walk_away: { patterns: ["(ya)? no importa", "olvidelo #forget", "(bueno | esta bien) olvidelo #forget", "olvidalo #forget #tip:tu_staff"] },
 
     // --- the date ---------------------------------------------------------------------------------
@@ -651,7 +725,7 @@ export const landlord: SituationDef = {
       "cuando (puede | va a | podria) (venir | pasar) (@someone | usted)", "cuando (viene | llega) (@someone | el tecnico)",
       "cuando (lo arreglan | lo va a arreglar | lo puede arreglar | va a quedar)",
       "(que | cual) dia (puede venir | viene | va a venir) [@someone]", "cuando exactamente", "que dia exactamente", "(que | cual) dia",
-      "(me puede dar | deme) una fecha [exacta]", "necesito una fecha [exacta]", "a que hora [viene | llega | puede venir | va a venir]", "(puede | podria) ser mas (especifico | exacto)", "para cuando",
+      "(me puede dar | deme) una fecha [exacta]", "necesito una fecha [exacta]", "a que hora [viene | llega | puede venir | va a venir] [@someone]", "(puede | podria) ser mas (especifico | exacto)", "para cuando",
     ] },
     too_late: { patterns: [
       "[pensandolo bien | la verdad | ahora que lo pienso] la proxima semana es (muy | demasiado) tarde #h:too_late",
@@ -668,7 +742,7 @@ export const landlord: SituationDef = {
     ] },
     propose_day: { patterns: [
       "(que tal | y si | mejor | puede ser | se puede) {day} [de la (proxima | otra) semana] [en la manana | en la tarde]",
-      "(puede | podria) venir {day} [de la (proxima | otra) semana] [en la manana | en la tarde]", "que venga {day} [en la manana | en la tarde]",
+      "(puede | podria) venir {day} [de la (proxima | otra) semana] [en la manana | en la tarde]", "que venga [@someone] {day} [en la manana | en la tarde]",
       "{day} (seria mejor | es mejor | me queda mejor) #h:saturday_better", "{day} si se puede", "{day} o {day}",
       "para {day} [a mas tardar]", "a mas tardar {day}", "antes del {day} #before",
       "lo necesito (arreglado | listo | funcionando) (para | a mas tardar) {day}", "lo necesito (arreglado | listo | funcionando) antes del {day} #before",
@@ -732,6 +806,8 @@ export const landlord: SituationDef = {
     rent_q_ctx: { patterns: ["(cuanto | de cuanto) (es | son | le debo | era) [la renta] [de este mes]", "cuanto le (debo | pago)"] },
     // "Sí, el aire." / "Otra vez el aire." to "Déjeme adivinar: ¿el aire?"
     ac_ctx: { patterns: ["(si | exacto | correcto | asi es | adivino) [otra vez] (el aire | el aire acondicionado | el clima | el minisplit | el aparato) [otra vez]",
+      // "Sí, perdón, el aire." / "Ah, el aire." after "¿No será el aire?"
+      "[si] [ah | ay] (perdon | perdone | disculpe | ah | ay) (el aire | el aire acondicionado | el clima | el minisplit | el aparato)",
       "otra vez (el aire | el aire acondicionado | el clima | el minisplit)", "(el aire | el aire acondicionado | el clima | el minisplit) otra vez"] },
     // "Aquí tiene." while he asks for the rent
     pay_ctx: { patterns: ["aqui (tiene | esta)", "tenga", "tome"] },
@@ -740,7 +816,7 @@ export const landlord: SituationDef = {
       "(me puede | me podria) (dar | hacer) un recibo", "[y] (un | el) recibo", "necesito (un | el) recibo", "(quiero | quisiera) un recibo",
     ] },
     pay_later: { patterns: [
-      "se la transfiero el primero #h:pay_online",
+      "se la transfiero (manana | el primero) #h:pay_online",
       "(le | se la) (transfiero | pago | deposito) (el primero | la proxima semana | {day} | mas tarde | hoy en la noche | luego | al rato)",
       "(le | se la) pago (con | por) transferencia", "(le hago | le mando) la transferencia [el primero | {day} | hoy | luego | mas tarde | al rato]",
       "(puedo | le puedo) pagar (despues | mas tarde | con transferencia | por transferencia | {day})",
@@ -749,6 +825,11 @@ export const landlord: SituationDef = {
       "no (le | se la)? (puedo | voy a) pagar (ahora | ahorita | hoy)", "(ahora | ahorita | hoy) no (tengo | traigo | puedo)",
       "se la (doy | paso | pago) (manana | {day} | luego | despues | el primero | mas tarde)", "[si] pero se la (transfiero | deposito)",
       "(y si | que tal si) se la (pago | transfiero | doy) (manana | despues | luego | {day} | el primero)",
+      // "Sí, se la transfiero." / "Ahorita se la transfiero." / "Mañana se la doy." / "¿Puedo pagarle mañana?" (a transfer
+      // any time; cash only later: "Ahorita se la pago" is pay_rent)
+      "[si] [claro] [ahorita | ahora | hoy | luego | al rato | manana] (se la | le) (transfiero | deposito) [ahorita | ahora | hoy | luego | al rato | mas tarde | hoy en la noche | en la noche | manana | {day} | el primero]",
+      "(manana | luego | despues | al rato | mas tarde | el primero | {day}) (se la | le) (doy | paso | pago | transfiero | deposito)",
+      "(puedo | le puedo) (pagarle | pagarsela | pagar) (despues | mas tarde | luego | al rato | {day} | el primero | con transferencia | por transferencia)",
     ] },
     paid_already: { patterns: [
       "ya (se la | le) (pagué | transferí | deposité)", "ya (pagué | la pagué) [la renta]", "(pagué | la pagué | se la pagué) (el primero | ayer | la semana pasada | por transferencia)",
@@ -758,8 +839,11 @@ export const landlord: SituationDef = {
     // --- Doña Lupita and goodbye --------------------------------------------------------------------------
     thanks_rita: { patterns: ["gracias dona lupita #h:thanks_rita", "gracias a usted dona lupita", "dona lupita gracias", "gracias (por (su ayuda | el apoyo | apoyarme | ayudarme)) dona lupita"] },
     ask_tech: { patterns: [
-      "me (pasa | da | puede pasar | puede dar) el (numero | telefono | contacto) del tecnico #h:tech_number_q", "me (pasa | da | puede pasar | puede dar) (su | el) (numero | telefono | contacto)",
-      "(tiene | me da) el numero de su tecnico", "como se llama (su | el) tecnico", "conoce a un tecnico [bueno]", "quien es su tecnico",
+      "me (pasa | da | puede pasar | puede dar) el (numero | telefono | contacto) del tecnico #h:tech_number_q #num", "me (pasa | da | puede pasar | puede dar) (su | el) (numero | telefono | contacto) #num",
+      "(tiene | me da) el numero de su tecnico #num", "como se llama (su | el) tecnico", "conoce a un tecnico [bueno]", "quien es su tecnico",
+      // Chucho's number: Don Ernesto's to give (he's away for two weeks)
+      "me (pasa | da | puede pasar | puede dar | podria pasar | podria dar) el (numero | telefono | contacto | celular | whatsapp) de chucho #chucho",
+      "(tiene | cual es | me da) el (numero | telefono | celular) de chucho #chucho", "como (contacto | localizo | le hablo) a chucho #chucho",
     ] },
     trip_wish: { patterns: [
       "buen viaje #h:good_trip", "que tenga (buen viaje | buenas vacaciones)", "que le vaya bien en (su viaje | sus vacaciones | san cristobal)",
@@ -847,6 +931,8 @@ export const landlord: SituationDef = {
         { flags: { 1: F_AHORITA }, neutral: t("¡Claro! | Ahora mismo | se lo | paso | por | mensaje.", "Sure! | Right now | it to you | I'll pass | by | message.", "Of course! I'll text it to you right now.") }),
     ],
     tech_again: [t("Sí, | sí, | se lo | paso.", "Yes, | yes, | it to you | I'll pass.", "Yes, yes, I'll send it to you.")],
+    // Don Ernesto, asked for Chucho's number (the audit, 5 Nov 2026)
+    chucho_number: [t("Claro, | se lo | mando | por | mensaje.", "Sure, | it to you | I'll send | by | message.", "Sure, I'll text it to you.")],
 
     // --- the dodge -------------------------------------------------------------------
     dodge_old: [
@@ -918,6 +1004,11 @@ export const landlord: SituationDef = {
         "Depends on what's wrong with the unit. But I'll pay half, okay?", { flags: { 3: "tenga: the subjunctive after depende de qué." } }),
     ],
     offer_reask: [t("¿Entonces? | La | mitad | del | costo. | ¿Trato hecho?", "So? | The | half | of the | cost. | Deal?", "So? Half the cost. Deal?")],
+    // "¿Quién paga la reparación?" once Chucho is coming (the audit, 5 Nov 2026)
+    pay_mine: [
+      t("Eso | lo | pago | yo, | no se preocupe.", "That | it | I'll pay | myself, | don't worry.", "I'm paying for that, don't worry.",
+        { flags: { 1: "lo repeats eso (that): Spanish doubles a fronted object.", 3: "yo after the verb stresses who: me, not you." } }),
+    ],
     offer_refused_react: [
       t("Valía la pena | intentarlo. | Bueno, | bueno. | Le | llamo | a | Chucho.", "It was worth | trying it. | Okay, | okay. | (To) him | I'll call | — | Chucho.", "Worth a try. Okay, okay. I'll call Chucho.",
         { flags: { 4: F_LE, 6: F_A } }),
@@ -943,6 +1034,12 @@ export const landlord: SituationDef = {
     date_reask: [t("¿Entonces... | el | miércoles?", "So... | — | Wednesday?", "So… Wednesday?", { flags: { 1: F_EL_DAY } })],
     friday_reask: [t("¿Entonces... | el | viernes | en la mañana?", "So... | — | Friday | in the morning?", "So… Friday morning?", { flags: { 1: F_EL_DAY } })],
     friday_best: [t("Antes | del | viernes, | imposible.", "Before | — | Friday, | impossible.", "Friday is the best I can do.", { flags: { 1: F_DEL } })],
+    // "¿El miércoles?" typed as a question (the audit, 5 Nov 2026): he confirms his day and asks; nothing is booked yet
+    echo_wednesday: [
+      t("Sí, | el | miércoles | de | la | próxima | semana. | ¿Le parece?", "Yes, | — | Wednesday | of | — | next | week. | Does that work for you?",
+        "Yes, next Wednesday. Does that work for you?", { flags: { 1: F_EL_DAY, 4: "la: the article before próxima semana has no English word." } }),
+    ],
+    echo_friday: [t("Sí, | este | viernes. | ¿Le parece?", "Yes, | this | Friday. | Does that work for you?", "Yes, this Friday. Does that work for you?")],
     sooner_react: [
       t("Bueno, | bueno. | Chucho | puede | venir | el | viernes | en la mañana.", "Okay, | okay. | Chucho | can | come | on | Friday | in the morning.", "Okay, okay. Chucho can come out Friday morning.",
         { flags: { 5: F_EL_DAY } }),
@@ -1215,8 +1312,9 @@ export const landlord: SituationDef = {
         { id: "here_check", s: t("Claro. | Aquí tiene, | en efectivo.", "Sure. | Here you go, | in cash.", "Sure. Here you go, in cash.") },
         { id: "need_receipt", s: t("Voy | a | necesitar | un | recibo.", "I'm going | to | need | a | receipt.", "I'll need a receipt.") },
         { id: "receipt_please", s: t("¿Me | da | un | recibo, | por favor?", "(To) me | you give | a | receipt, | please?", "Could I get a receipt, please?") },
-        { id: "pay_online", s: t("Se la | transfiero | el | primero.", "It to you | I'll transfer | on the | first.", "I'll send it by bank transfer on the first.",
-          { flags: { 0: "se la: la is the rent (la renta); le becomes se before la.", 2: "el before a date (el primero) = on the." } }) },
+        // "mañana", not "el primero": this month's rent is due in the first five days (s81), so the first would be late
+        { id: "pay_online", s: t("Se la | transfiero | mañana.", "It to you | I'll transfer | tomorrow.", "I'll send it by bank transfer tomorrow.",
+          { flags: { 0: "se la: la is the rent (la renta); le becomes se before la." } }) },
       ],
     },
     bye: {
@@ -1289,7 +1387,7 @@ export const landlord: SituationDef = {
   steps: [
     { id: "problem", done: (c) => !!c.s.problem,
       ask: (c) => { if (!c.s.whoSaid) { c.s.whoSaid = true; P(c, "greet_who"); } else P(c, "problem_reask"); },
-      expects: ["heat_broken", "cold_detail", "space_heater", "greet_id", "called_before", "have_problem", "heater_wrong"],
+      expects: ["heat_broken", "cold_detail", "space_heater", "greet_id", "called_before", "have_problem", "heater_wrong", "heater_ok"],
       suggest: [{ lt: "Explain what isn't working", hint: "problem" }, { lt: "Say hello and who you are", hint: "greet" }],
       yes: (c) => { P(c, "problem_what"); c.hold(); },
       no: (c) => { P(c, "no_then_what"); c.hold(); },
@@ -1314,14 +1412,14 @@ export const landlord: SituationDef = {
       suggest: [{ lt: "Remind him whose job it is (the lease)", hint: "dodge" }],
       help: (c) => { dodgeHelp(c); } },
     { id: "offer", when: (c) => !!c.s.resp, done: (c) => !!c.s.offer, ask: askOffer,
-      expects: ["refuse_offer", "responsibility", "accept_offer", "request_fix", "walk_away", "ask_when", "you_kidding", "threat", "withhold", "offer_price_ctx"],
+      expects: ["refuse_offer", "responsibility", "accept_offer", "request_fix", "walk_away", "ask_when", "you_kidding", "threat", "withhold", "offer_price_ctx", "think_ctx"],
       suggest: [{ lt: "Politely turn down the offer", hint: "offer" }],
       // (once the offer is settled, a yes/no answers the day on the table)
       yes: (c) => { if (c.s.offer) { if (!c.s.date) dateYes(c); return; } if (politeClosing(c)) { P(c, "offer_reask"); c.hold(); return; } acceptOffer(c); },
       no: (c) => { if (c.s.offer) { if (!c.s.date) dateNo(c); return; } if (/^\W*(no|nel|nop)\W*$/i.test(heard(c))) c.tip(TIPS.bare_no); refuse(c); },
       help: (c) => { P(c, "offer_reask"); } },
     { id: "date", when: (c) => !!c.s.offer, done: (c) => !!c.s.date, ask: askDate,
-      expects: ["ask_when", "too_late", "propose_day", "day_ctx", "accept_date", "day_no", "in_writing", "patient", "afternoon_ctx"],
+      expects: ["ask_when", "too_late", "propose_day", "day_ctx", "accept_date", "day_no", "in_writing", "patient", "afternoon_ctx", "think_ctx"],
       suggest: (c) => c.s.level === 0
         ? [{ lt: "Ask when someone can come", hint: "date_when" }, { lt: "Ask for someone to come sooner", hint: "date_sooner" }]
         : c.s.level === 1
@@ -1335,12 +1433,15 @@ export const landlord: SituationDef = {
       ask: (c) => {
         c.s.homeAsked = true;
         P(c, "home_q");
-        c.expect({ id: "home", optional: true, expects: ["home_yes", "leave_key", "not_home"], hints: ["home"],
+        c.expect({ id: "home", optional: true, expects: ["home_yes", "leave_key", "not_home", "need_home"], hints: ["home"],
           suggest: [{ lt: "Say whether you'll be home", hint: "home" }],
           on: {
             home_yes: (cc) => { cc.s.homeDone = true; P(cc, "home_ok"); },
             leave_key: (cc) => { cc.s.homeDone = true; P(cc, "key_rita"); },
             not_home: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); },
+            // "¿Tengo que estar en casa?" / "No sé.": Chucho has a key
+            need_home: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); },
+            g_dontknow: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); },
           },
           yes: (cc) => { cc.s.homeDone = true; P(cc, "home_ok"); },
           // "Eso es todo." answers "¿Algo más?" before he asks it: that's all too
@@ -1416,9 +1517,12 @@ export const landlord: SituationDef = {
     heater_wrong(c) {
       if (c.s.problem) { P(c, "one_thing"); return; }
       if (!c.s.calentador) { c.s.calentador = true; P(c, "heater_redirect"); expectAcGuess(c); return; }
-      P(c, "heater_again");
+      // said once; insisted on again, only the question ("El aire, ¿verdad?"), never the same pair twice in a row
+      if (!c.s.heaterAgain) { c.s.heaterAgain = true; P(c, "heater_again"); }
       if (!(c as ConvCtx).conv?.pending) { expectAcGuess(c); P(c, "guess_reask"); }
     },
+    // "El calentador sí funciona.": nothing to do with it (the open question comes again)
+    heater_ok(c) { P(c, "ack"); },
     space_heater(c) {
       c.s.problem = true;
       if (!c.s.heaterSaid) { c.s.heaterSaid = true; P(c, "heater_react"); } else P(c, "ack");
@@ -1523,6 +1627,8 @@ export const landlord: SituationDef = {
     },
     threat(c) { P(c, "not_enemy"); rude(c); },
     withhold(c) {
+      // "Este mes no le pago la renta." at "¿Algo más?": the AC is settled, so it's about the rent now
+      if (c.s.date && !c.s.rentAsked && !c.s.rentDone) rentNow(c);
       if (c.s.rentAsked && !c.s.rentDone) {
         c.s.withheld = (c.s.withheld || 0) + 1;
         if (c.s.withheld >= 2) { c.s.rentDone = true; c.s.rentFight = true; P(c, "walkaway_rent"); return; }
@@ -1537,6 +1643,11 @@ export const landlord: SituationDef = {
       if (offerOpen(c)) { refuse(c); return; }
       // "¡Ni loca!" while a day is being agreed: no to the day on the table
       if (c.s.offer && !c.s.date && seg.tags.includes("noway")) { dateNoOnce(c); return; }
+      // "Está bien, que venga Chucho." while a day is on the table: Chucho is coming anyway, so the yes is for the day
+      if (c.s.offer && !c.s.date && seg.tags.includes("send")) {
+        if (YES_START.test(heard(c))) { dateYes(c); return; }
+        if (c.s.offer !== "accepted") { P(c, "sure_sure"); askDate(c); c.hold(); return; }
+      }
       // a change of mind after "Bueno, lo intento": Chucho comes anyway
       if (c.s.offer === "accepted") { c.s.offer = "refused"; P(c, "ack"); return; }
       if (!c.s.resp && c.s.dur) { landlord.handlers.request_fix(c, {}, { intent: "request_fix", slots: {}, tags: [] }); return; }
@@ -1553,7 +1664,8 @@ export const landlord: SituationDef = {
 
     // --- the date ---
     ask_when(c, slots, seg) {
-      if (c.s.date) { P(c, "date_confirm_" + c.s.date); return; }
+      // the day is agreed: "¿A qué hora viene Chucho?" gets the window, "¿Cuándo viene?" the day and the window
+      if (c.s.date) { P(c, /\bhora\b/.test(heard(c)) ? "window" : "date_confirm_" + c.s.date); return; }
       if (offerOpen(c)) { c.s.level = Math.max(c.s.level, 1); refuse(c); return; }
       if (!c.s.offer) {
         // at the dodge: a plain request ("¿Cuándo puede venir alguien?")
@@ -1570,13 +1682,13 @@ export const landlord: SituationDef = {
       turn(c).tooLate = true;
       if (c.s.date) {
         if (c.s.date === "wednesday") { c.s.date = "friday"; c.remember({ acFixed: "friday" }); P(c, "sooner_react"); P(c, "window"); return; }
-        P(c, "friday_best");
+        fridayBest(c);
         return;
       }
       if (offerOpen(c)) { refuse(c); offerFriday(c); c.hold(); return; }
       if (!c.s.offer) { P(c, "one_thing"); return; }
       turn(c).dateNo = true;
-      if (c.s.level < 2) offerFriday(c); else P(c, "friday_best");
+      if (c.s.level < 2) offerFriday(c); else fridayBest(c);
       c.hold();
     },
     propose_day(c, slots, seg) {
@@ -1596,7 +1708,11 @@ export const landlord: SituationDef = {
       proposeDay(c, day);
       if (!c.s.date) c.hold();
     },
-    day_ctx(c, slots) { landlord.handlers.propose_day(c, slots, { intent: "propose_day", slots, tags: [] }); },
+    day_ctx(c, slots) {
+      // "¿El miércoles?" / "¿Este viernes?" echoing his own day: a question, answered, never a yes
+      if (echoDay(c, pickDay(slots.day))) return;
+      landlord.handlers.propose_day(c, slots, { intent: "propose_day", slots, tags: [] });
+    },
     accept_date(c, slots) {
       if (offerOpen(c) && !slots.day) { acceptOffer(c); return; }
       if (c.s.date) { P(c, "ack"); return; }
@@ -1644,17 +1760,43 @@ export const landlord: SituationDef = {
       if (c.s.rentPaid || c.s.paidBefore) { receiptBeat(c); return; }
       P(c, "receipt_for_what");
     },
-    pay_later(c) { if (c.s.rentDone) { P(c, "ack"); return; } c.s.rentDone = true; P(c, "rent_later_ok"); },
+    pay_later(c) {
+      if (c.s.rentDone) { P(c, "ack"); return; }
+      // the rent waits for the AC, as "Aquí tiene la renta." does
+      if (!c.s.rentAsked && !c.s.date) { P(c, "rent_first"); return; }
+      if (c.s.date && !c.s.rentAsked) rentNow(c);
+      c.s.rentDone = true; P(c, "rent_later_ok");
+    },
     paid_already(c, slots, seg) {
       // "Ya pagué todo." while he dodges: the learner's side of the lease, not the rent
       if (!c.s.rentAsked && c.s.dur && !c.s.resp) { landlord.handlers.responsibility(c, slots, seg); return; }
       if (c.s.rentDone) { P(c, "ack"); return; }
+      if (c.s.date && !c.s.rentAsked) rentNow(c);
       c.s.rentDone = true; c.s.paidBefore = true; P(c, "paid_already");
     },
 
     // --- Doña Lupita and goodbye ---
     thanks_rita(c) { if (c.s.ritaShown) ritaBye(c); else P(c, "ack"); },
-    ask_tech(c) { techNumber(c); },
+    ask_tech(c, _slots, seg) { techNumber(c, seg.tags); },
+    // "¿Quién paga la reparación?": while the offer is open, his half; once Chucho is coming, he pays; at the rent,
+    // "¿Tengo que pagar algo?" (#me: nothing named) is the rent
+    who_pays(c, _slots, seg) {
+      if (c.s.rentAsked && !c.s.rentDone && seg.tags.includes("me")) { P(c, "rent_amount_again", { rent: RENT }); c.hold(); return; }
+      if (offerOpen(c)) { P(c, "offer_price"); c.hold(); return; }
+      if (!c.s.offer) { P(c, "one_thing"); return; }
+      if (!c.s.payMineSaid) { c.s.payMineSaid = true; P(c, "pay_mine"); } else P(c, "sure_sure");
+    },
+    // "¿Tengo que estar en casa?" with no home question open: Chucho has a key
+    need_home(c) {
+      if (!c.s.offer) { P(c, "one_thing"); return; }
+      if (!c.s.homeDone) { c.s.homeDone = true; P(c, "gus_key"); } else P(c, "ack");
+    },
+    // "Lo voy a pensar.": he's leaving, so the offer or the day again
+    think_ctx(c) {
+      if (offerOpen(c)) { P(c, "offer_reask"); c.hold(); return; }
+      if (c.s.offer && !c.s.date) { askDate(c); c.hold(); return; }
+      P(c, "ack");
+    },
     trip_wish(c) {
       if (c.s.date && !c.s.wrapDone) { c.s.wrapDone = true; return; }
       P(c, "trip_thanks");
@@ -1823,6 +1965,32 @@ export const landlord: SituationDef = {
     { say: "La calefaccion no funciona.", intent: "heater_wrong" },
     { say: "El calentador tampoco funciona.", intent: "heater_wrong", step: "dodge", not: ["heat_broken"] },
     { say: "El aire echa aire caliente.", intent: "heat_broken", not: ["heater_wrong"] },
+    // the audit (5 Nov 2026): the learner's door (1B), the heater named, Chucho sent, who pays, Chucho's number, home,
+    // thinking it over, the phone, the rent by transfer
+    { say: "Soy su inquilina del 1B.", intent: "greet_id" },
+    { say: "Don Ernesto, soy yo, el del 1B.", intent: "greet_id" },
+    { say: "El calentador.", intent: "heater_wrong", not: ["heat_broken"] },
+    { say: "No, es el calentador.", intent: "heater_wrong", not: ["heat_broken", "ac_ctx"] },
+    { say: "Se apagó el calentador.", intent: "heater_wrong", not: ["heat_broken"] },
+    { say: "No sale agua caliente de la regadera.", intent: "heater_wrong", not: ["heat_broken"] },
+    { say: "El calentador sí funciona.", intent: "heater_ok", not: ["heater_wrong"] },
+    { say: "El calentador está bien.", intent: "heater_ok", not: ["heater_wrong"] },
+    { say: "Está bien, que venga Chucho.", intent: "refuse_offer", step: "offer", not: ["accept_offer"] },
+    { say: "Que lo arregle el técnico.", intent: "refuse_offer", step: "offer", not: ["accept_offer"] },
+    { say: "Mejor que lo arregle yo.", intent: "accept_offer", step: "offer", not: ["refuse_offer", "request_fix"] },
+    { say: "¿La mitad?", intent: "offer_price_ctx", step: "offer", not: ["accept_offer"] },
+    { say: "Lo voy a pensar.", intent: "think_ctx", step: "offer", not: ["accept_offer", "refuse_offer"] },
+    { say: "¿Quién paga la reparación?", intent: "who_pays", step: "date" },
+    { say: "¿Tengo que pagar algo?", intent: "who_pays", not: ["pay_rent", "pay_later"] },
+    { say: "No voy a pagar la reparación.", intent: "refuse_offer", step: "offer", not: ["who_pays", "accept_offer"] },
+    { say: "¿Me pasa el número de Chucho?", intent: "ask_tech" },
+    { say: "¿Tengo que estar en casa?", intent: "need_home", not: ["home_yes"] },
+    { say: "¿Por qué no contesta el teléfono?", intent: "called_before" },
+    { say: "¿A qué hora viene Chucho?", intent: "ask_when", step: "date" },
+    { say: "Sí, se la transfiero.", intent: "pay_later", step: "rent", not: ["pay_rent", "pay_ctx"] },
+    { say: "Ahorita se la transfiero.", intent: "pay_later", step: "rent", not: ["pay_rent", "pay_ctx"] },
+    { say: "Mañana se la doy.", intent: "pay_later", step: "rent", not: ["pay_rent", "pay_ctx"] },
+    { say: "Este mes no le voy a pagar la renta.", intent: "withhold", not: ["pay_rent", "pay_later"] },
     // not understood
     { say: "plátano teclado elefante", intent: "none" },
     { say: "Mi hermano toca la guitarra.", intent: "none" },
@@ -1907,6 +2075,23 @@ export const landlord: SituationDef = {
     { name: "short answers", turns: ["El aire no enfría.", "Sí.", "Una semana.", "¿Puede mandar a alguien?", "No.", "¿Cuándo?", "Muy tarde.", "Sí.", "Sí.", "No.", "Tenga.", "Adiós."],
       expect: { complete: true, state: { date: "friday", offer: "refused", thermoDone: true, homeDone: true, rentPaid: true } }, auto: AUTO,
       setup: (s) => { s.greetAgain = false; s.twist = null; s.thermoQ = true; s.homeQ = true; } },
+    // the audit (5 Nov 2026): "¿El miércoles?" typed as a question books nothing until the yes; who pays; what time
+    { name: "the echo «¿El miércoles?» asks; who pays; then yes", turns: ["Soy su inquilino del 1B.", "El aire no funciona.", "Una semana.", "Arreglarlo le toca a usted.",
+      "No, gracias. Mande a un técnico.", "¿Cuándo puede venir alguien?", "¿El miércoles?", "¿Quién paga la reparación?", "Sí, me parece bien.", "¿A qué hora viene Chucho?",
+      "No, es todo.", "Aquí tiene.", "¡Adiós!"],
+      expect: { complete: true, state: { date: "wednesday", echoSaid: true, payMineSaid: true, offer: "refused", rentPaid: true } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; s.thermoQ = false; } },
+    // "Está bien, que venga Chucho." is a no to the offer; Chucho's number; the rent handed over at "¿Algo más?"
+    { name: "send Chucho, his number, the rent at «¿Algo más?», a receipt", turns: ["El aire no enfría desde hace una semana.", "Le toca a usted arreglarlo.",
+      "Está bien, que venga Chucho.", "¿Me pasa el número de Chucho?", "El viernes.", "Aquí tiene la renta de este mes.", "¿Me da un recibo?", "¡Buen viaje!"],
+      expect: { complete: true, state: { date: "friday", offer: "refused", chuchoNum: true, rentPaid: true, receipt: true } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; s.thermoQ = false; } },
+    // the heater insisted on twice (never the same pair of lines twice), then the AC; thinking it over; home; a transfer
+    { name: "the heater insisted on, then the AC; a transfer", turns: ["El calentador no funciona.", "No.", "El calentador.", "No, el calentador de agua.",
+      "Ah, perdón, el aire.", "Desde hace una semana.", "Según el contrato, las reparaciones le tocan a usted.", "Lo voy a pensar.", "No, gracias. Mande a un técnico.",
+      "¿Cuándo puede venir alguien?", "¿Tengo que estar en casa?", "El viernes en la mañana me queda bien.", "No, es todo.", "Sí, se la transfiero.", "¡Adiós!"],
+      expect: { complete: true, state: { calentador: true, heaterAgain: true, problem: true, dur: 7, date: "friday", offer: "refused", homeDone: true, rentDone: true } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; s.thermoQ = false; } },
   ],
 };
 
