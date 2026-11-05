@@ -43,5 +43,15 @@
   {"ctx": "all_there", "say": "Las tarjetas sí, pero el dinero no", "intent": ["some_missing", "yn:no"], "not": ["all_there"], "note": "trap: partial"},
   {"ctx": "all_there", "say": "No falta nada", "intent": ["all_there", "yn:yes"], "not": ["some_missing"], "note": "trap: double negation"},
   {"ctx": "police", "say": "Muchas gracias, es usted muy amable", "intent": ["thanks_kind", "g_thanks"]},
-  {"ctx": "advice", "say": "Mi gato come pizza los martes", "intent": "none"}
+  {"ctx": "advice", "say": "Mi gato come pizza los martes", "intent": "none"},
+  {"ctx": "problem", "say": "Disculpe señora, ¿usted no vio una billetera por aquí?", "intent": "lost", "note": "audit 5 Nov (written before testing)"},
+  {"ctx": "last_seen", "say": "Aquí en el tianguis, cuando iba a pagar la fruta", "intent": ["place_ctx", "last_seen"]},
+  {"ctx": "last_seen", "say": "No, no compré nada", "intent": ["nothing_ctx", "yn:no"], "not": ["bought_ctx", "last_seen"]},
+  {"ctx": "describe", "say": "Tenía como ochocientos pesos y mis tarjetas", "intent": ["describe", "describe_ctx"]},
+  {"ctx": "police", "say": "¿Dónde están los taxis?", "intent": "where_stand"},
+  {"ctx": "police", "say": "¿La policía está junto a la iglesia?", "intent": ["police_known", "police_known_ctx"]},
+  {"ctx": "police", "say": "¿Me avisa si alguien la trae?", "intent": "keep_eye"},
+  {"ctx": "really_ok", "say": "Sí, todo bien, nada más estoy viendo", "intent": "sure_ctx"},
+  {"ctx": "all_there", "say": "Todo está, menos mi licencia", "intent": "some_missing", "not": ["all_there"], "note": "trap: partial"},
+  {"ctx": "found", "say": "¡Sí, esa es mi billetera!", "intent": ["its_mine", "its_mine_ctx", "yn:yes"]}
 ] }
