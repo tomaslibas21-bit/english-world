@@ -26,8 +26,11 @@
 //   midnight before the goodbye: "Necesito a todos aquí hasta la medianoche. ¡En Brotecito hay que ponerse las
 //            pilas!" The learner negotiates ("Puedo quedarme hasta las siete, pero luego lo dejo por hoy", "¿Las horas
 //            extra son pagadas?") or says no ("Hoy no puedo quedarme hasta tarde"). Toño agrees to paid overtime with
-//            a finish time ("como dice la ley": Mexican law requires overtime to be paid; the rate is not said).
-//            "No puedo quedarme" / "No sé si puedo quedarme" never agree to stay.
+//            a finish time: "Se pagan dobles, como dice la ley. Y paramos a las nueve." (Mexico's Ley Federal del
+//            Trabajo, art. 67: overtime pays double; the 2026 reform toward a 40-hour week keeps double pay. The day
+//            ends at six, so nine is three hours, inside the daily cap; staying "hasta las seis" is no overtime: "Vete
+//            a tu casa a las seis".) "No puedo quedarme" / "No sé si puedo quedarme" never agree to stay, and neither
+//            does a question ("¿Hasta la medianoche?", "¿Me quedo hasta la medianoche?": audit, 5 Nov 2026).
 // Commas are lost (rule 10): at "¿Es demasiado?" "No puedo con todo" could be "No, puedo con todo": Toño asks again
 // once ("¿Entonces sí puedes con todo, o es demasiado?"); at "Fácil, ¿no?" it is too much.
 // Mexican-only words with a neutral twin on their lines: chamba, echarle ganas, agarrarle la onda, jalar parejo, al
@@ -83,12 +86,14 @@ const PHOTO = ent("photo", "foto | para | el | boletín", "photo | for | the | n
   { pl: "fotos | para | el | boletín", ltPl: "photos | for | the | newsletter", chip: "foto", attrs: { nat: "newsletter photo", fresh: true, other: true },
     forms: ["foto", "la foto", "fotografia", "la fotografia", "foto del boletin", "la foto del boletin", "foto para el newsletter", "foto del newsletter",
       "la foto del newsletter", "el boletin", "boletin", "newsletter", "el newsletter", "la imagen", "imagen", "la foto para el boletin"] });
+// Always plural (attrs.plural: the lines bind them with qty 2, tv() below); natPl is their natural English then
+// ("the bug reports", never "the reports of bugs").
 const BUGS = ent("bugs", "reporte | de | errores", "report | of | bugs", "m",
-  { pl: "reportes | de | errores", ltPl: "reports | of | bugs", chip: "reportes de errores", attrs: { nat: "bug reports", mine: true, plural: true },
+  { pl: "reportes | de | errores", ltPl: "reports | of | bugs", chip: "reportes de errores", attrs: { nat: "bug reports", natPl: "bug reports", mine: true, plural: true },
     forms: ["reportes de errores", "reportes de error", "los reportes de errores", "los errores", "errores", "los bugs", "bugs", "reportes de bugs", "los reportes de bugs",
       "los tickets", "tickets", "los reportes", "reportes", "las fallas", "fallas", "informes de errores"] });
 const EMAILS = ent("emails", "correo | de | clientes", "email | from | customers", "m",
-  { pl: "correos | de | clientes", ltPl: "emails | from | customers", chip: "correos de clientes", attrs: { nat: "customer emails", mine: true, plural: true },
+  { pl: "correos | de | clientes", ltPl: "emails | from | customers", chip: "correos de clientes", attrs: { nat: "customer emails", natPl: "customer emails", mine: true, plural: true },
     forms: ["correos", "los correos", "correos de clientes", "los correos de clientes", "correos de los clientes", "los correos de los clientes", "los emails", "emails",
       "los mails", "mails", "los mensajes de los clientes", "mensajes de clientes", "atencion a clientes", "soporte", "el soporte", "los correos de soporte"] });
 const TASKS: EntityDef[] = [SLIDES, PARTY, PHOTO, BUGS, EMAILS];
@@ -207,6 +212,22 @@ const closingLive = (c: Ctx) => !!c.s.ownerDone && (c.s.twist !== "midnight" || 
 /** Items 2, 3 and 4: what the course report needs. */
 const coreDone = (c: Ctx) => !!c.s.overloaded && !!c.s.prioDone && !!c.s.closeDone && c.s.closeHow !== "tyler";
 const pendingOpen = (c: Ctx) => !!(c as any).conv?.pending;
+/** The pieces this turn was parsed into. */
+const parseSegs = (c: Ctx): Segment[] => (c as any).conv?.out?.parse?.segments ?? [];
+/** A question of one piece ("¿Me quedo?", "¿Sí?"): the "?" ends what was said. */
+const asked = (c: Ctx) => /\?\s*$/.test(c.heard || "") && parseSegs(c).length <= 1;
+/** Toño's hour asked back: "¿Hasta la medianoche?", "¿Me quedo hasta las doce?" (the "?" right after it). */
+const midnightAsked = (c: Ctx) => /(medianoche|doce|12(:00)?)( de la noche)?\s*\?/i.test(c.heard || "");
+/** A refusal in the same breath: "Hasta la medianoche, no puedo". */
+const refuses = (c: Ctx) => parseSegs(c).some((x) => x.intent === "cant_stay" || x.intent === "cant_ctx");
+/** Midnight asked back or said next to a refusal: never a promise to stay (rule 17; audit, 5 Nov 2026). */
+const midnightNotYes = (c: Ctx, h?: string) => h === "midnight" && (midnightAsked(c) || refuses(c));
+/** Toño's reason for the late night, once a conversation; asked again, only his open question comes back. */
+function midWhy(c: Ctx) {
+  if (c.s.whySaid || !once(c, "midWhy")) return;
+  c.s.whySaid = true;
+  T(c, "mid_why");
+}
 
 /** Sims: no twist unless the sim pins one. */
 const PLAIN = (s: Record<string, any>) => { s.twist = null; s.weightLine = false; };
@@ -282,17 +303,18 @@ export const startup: SituationDef = {
         { id: "chino", forms: ["en chino"] },
         { id: "manos", forms: ["manos a la obra"] },
         { id: "caja", forms: ["fuera de la caja", "pensar fuera de la caja"] },
-        { id: "parejo", forms: ["jalar parejo"] },
-        { id: "aventon", forms: ["al aventon"] },
+        // the neutral text's idioms too ("¿Poner de nuestra parte?", "¿A la carrera?")
+        { id: "parejo", forms: ["jalar parejo", "poner de nuestra parte", "poner de su parte", "ponga de su parte"] },
+        { id: "aventon", forms: ["al aventon", "a la carrera"] },
         { id: "cero", forms: ["de cero", "empezar de cero"] },
         { id: "cancha", forms: ["en mi cancha", "mi cancha", "en tu cancha"] },
         { id: "aparte", forms: ["aparte", "lo vemos aparte"] },
         { id: "por_hoy", forms: ["dejarlo por hoy"] },
         { id: "pilas", forms: ["ponerse las pilas", "las pilas"] },
-        { id: "ganas", forms: ["echarle ganas", "echale ganas"] },
+        { id: "ganas", forms: ["echarle ganas", "echale ganas", "dale con todo", "dar con todo"] },
         { id: "crack", forms: ["un crack", "crack"] },
         { id: "chamba", forms: ["chamba"] },
-        { id: "onda", forms: ["la onda", "agarrarle la onda"] },
+        { id: "onda", forms: ["la onda", "agarrarle la onda", "el ritmo", "agarrarle el ritmo"] },
       ] },
       person: { lexicon: [
         { id: "raquel", forms: ["raquel"] }, { id: "beto", forms: ["beto"] }, { id: "rodrigo", forms: ["rodrigo"] }, { id: "lalo", forms: ["lalo"] },
@@ -512,6 +534,7 @@ export const startup: SituationDef = {
       "quien es (el | la) (responsable | encargado | encargada | duena | dueno) [de {a:area}]",
       "(sabes | me puedes decir) quien (se encarga | esta a cargo) de {a:area}",
       "(cual es | cuando es) la (fecha limite | fecha de entrega) [de {a:area}] #deadline #h:deadline",
+      "(cuando | que dia | a que hora) (vienen | llegan) los inversionistas #deadline",
       "(cual es | cuando es) el (deadline | plazo) [de {a:area}] #deadline",
       "(cuando | para cuando) es la entrega [de {a:area}] #deadline",
       "(para cuando | cuando) (necesitas | quieres | es) {a:area} #deadline",
@@ -565,7 +588,8 @@ export const startup: SituationDef = {
       "quien (lo hizo | rompio | subio) (eso | esto | el codigo | la actualizacion)",
       "quien fue",
       "quien (hizo | subio) las cosas (al aventon | a la carrera)",
-      "quien (la rego | metio la pata)",
+      // "regó" is a past said with its accent (AUTHORING-ES: a past in -ó keeps it in the pattern)
+      "quien (la regó | metio la pata)",
       "quien es (el | la) culpable",
     ] },
     ball_back: { patterns: ["(la pelota esta en tu cancha | esta en tu cancha | en tu cancha) #idiom", "no (la pelota esta | esta) en tu cancha #idiom"] },
@@ -575,12 +599,16 @@ export const startup: SituationDef = {
       "@me_stay [hasta tarde] hasta {time} [hoy] [pero (luego | despues) (lo dejo por hoy #idiom | me voy [a mi casa] | me tengo que ir | me voy a casa)] #h:until_time",
       "solo (puedo quedarme | me puedo quedar | puedo trabajar) [hasta tarde] hasta {time} [hoy] [pero (luego | despues) (lo dejo por hoy #idiom | me voy [a mi casa] | me tengo que ir)]",
       "@me_stay hasta {time} si (son | las horas son | las horas extra son | me las pagan) [pagadas]",
-      "[solo | nada mas | mejor] hasta {time} [tal vez] [pero no (mas | mas tarde | hasta la medianoche)]",
+      "[solo | nada mas | mejor | maximo] hasta {time} [tal vez | maximo] [pero no (mas | mas tarde | hasta la medianoche)]",
       "@me_stay [pero] (solo | nada mas)? hasta {time} [pero no (mas | mas tarde | hasta la medianoche)]",
       "no (puedo quedarme | me puedo quedar | me quedo) hasta la medianoche [pero] [solo | si puedo] hasta {time} [si]",
       "(que tal | y si) hasta {time}",
       "me voy [a mi casa | a casa] (a | al) {time} #limit",
       "(prefiero | quiero | mejor) (irme | salir) [a mi casa | a casa] (a | al) {time} #limit",
+      // "Puedo hasta las siete." / "¿Puedo irme a las ocho?" / "A las siete me voy." (audit, 5 Nov)
+      "(puedo | podria) [solo | nada mas] hasta {time} [hoy] [maximo] [pero no (mas | mas tarde | hasta la medianoche)]",
+      "(puedo | podria) (irme | salir) [a mi casa | a casa] (a | al) {time} [hoy] #limit",
+      "(a | al) {time} me (voy | tengo que ir) [a mi casa | a casa] #limit",
       "@me_stay (un rato | un poco | una hora | dos horas | un par de horas) [mas] [pero no hasta la medianoche] #nohour",
       "@me_stay pero no hasta la medianoche #nohour",
       "[si] [me quedo] pero no hasta la medianoche #nohour",
@@ -623,9 +651,18 @@ export const startup: SituationDef = {
       "horas extra pagadas [verdad]",
       "(es | va a ser) pagado",
       "[bueno] [pero] solo si (me pagan | me las pagan | nos pagan | son pagadas | pagan las horas extra | me pagas)",
+      // "¿Cuánto me pagan?", "¿Se pagan dobles?", "¿Me vas a pagar las horas extra?" (Toño's answer: double, by law)
+      "(cuanto | como) (me | nos)? (pagan | pagas | vas a pagar | van a pagar | se pagan | las pagan | las pagas) [por] [las horas extra | el tiempo extra | la hora extra | cada hora extra | hora extra | las horas | cada hora | eso]",
+      "[las horas extra | el tiempo extra] (se pagan | se paga | me las pagas | me las pagan | las pagan | las pagas | me pagas | me pagan | pagan | pagas | son | van a ser) (dobles | doble | al doble | triples | triple) [verdad]",
+      "(me | nos) (vas a | van a) pagar (las horas extra | el tiempo extra | eso | las horas | horas extra | extra)",
+      "(hay | es) pago doble",
+      "(me | nos) (pagas | pagan) [extra]",
     ] },
     mid_finish_q: { patterns: ["a que hora (terminamos | nos vamos | acabamos | salimos) [hoy] #h:finish_time", "cuando (terminamos | trabajamos | nos quedamos) [hoy]", "hasta que hora [terminamos | trabajamos | nos quedamos] [hoy]", "cual es la hora de salida"] },
-    mid_why: { patterns: ["por que [hasta la medianoche | tan tarde | hoy]", "para que", "que (tenemos | hay) que hacer [hoy | hasta la medianoche]"] },
+    mid_why: { patterns: ["por que [hasta la medianoche | tan tarde | hoy]", "para que", "que (tenemos | hay) que hacer [hoy | hasta la medianoche]",
+      // "¿Es obligatorio?", "¿Tengo que quedarme?": Toño's reason, then his question again (audit, 5 Nov)
+      "(es | seria) (obligatorio | necesario) [quedarme | quedarse | quedarnos]", "(tengo que | debo) quedarme [hasta la medianoche | tan tarde | hasta tarde | hoy]",
+      "me tengo que quedar [hasta la medianoche | tan tarde | hasta tarde | hoy]", "todos se (quedan | van a quedar) [hasta la medianoche]"] },
 
     // --- tomorrow's check-in -----------------------------------------------------------------------
     meet_time: { patterns: [
@@ -710,7 +747,7 @@ export const startup: SituationDef = {
   lines: {
     // --- hello ---------------------------------------------------------------------------------
     greet: [
-      t("¡Hey! | ¿Hacemos | un | check-in | rápido?", "Hey! | Shall-we-do | a | check-in | quick?", "Hey! Quick check-in?", { flags: { 3: F_CHECK } }),
+      t("¡Hey! | ¿Hacemos | un | check-in | rápido?", "Hey! | Should-we-do | a | check-in | quick?", "Hey! Quick check-in?", { flags: { 3: F_CHECK } }),
       t("¡Hey, | tú! | ¿Tienes | un | segundo? | Hagamos | un | check-in.", "Hey, | you! | Do-you-have | a | second? | Let's-do | a | check-in.", "Hey, you! Got a sec? Let's touch base.", { flags: { 7: F_CHECK } }),
     ],
     hello_q: [
@@ -756,7 +793,7 @@ export const startup: SituationDef = {
     pile_intro: [
       t("¡Mira! | Esta | semana | hay | mucha | chamba. | ¡Manos a la obra!", "Look! | This | week | there's | a lot of | work. | Let's get to work!", "Okay! Big week. Let's get the ball rolling.",
         { flags: { 5: F_CHAMBA }, neutral: t("¡Mira! | Esta | semana | hay | mucho | trabajo. | ¡Manos a la obra!", "Look! | This | week | there's | a lot of | work. | Let's get to work!", "Okay! Big week. Let's get the ball rolling.") }),
-      t("¡Ok! | Semana | grande. | ¡Manos a la obra!", "Okay! | Week | big. | Let's get to work!", "So! Big week. Let's get the ball rolling."),
+      t("¡Ok! | Semana | intensa. | ¡Manos a la obra!", "Okay! | Week | intense. | Let's get to work!", "So! Big week. Let's get the ball rolling."),
     ],
     pile_list: [
       t("Necesito | tres | cosas | de | ti: | la | presentación | para | los | inversionistas | para | el | viernes, | la | fiesta | de | lanzamiento | y | una | foto | para | el | boletín.",
@@ -955,24 +992,33 @@ export const startup: SituationDef = {
 
     // --- midnight (twist) ----------------------------------------------------------------------
     mid_1: [
-      t("¡Ah, | y | otra | cosa! | Es | una | semana | grande, | así que | necesito | a | todos | aquí | hasta | la | medianoche.",
-        "Oh, | and | another | thing! | It's | a | week | big, | so | I-need | — | everyone | here | until | — | midnight.",
+      t("¡Ah, | y | otra | cosa! | Es | una | semana | intensa, | así que | necesito | a | todos | aquí | hasta | la | medianoche.",
+        "Oh, | and | another | thing! | It's | a | week | intense, | so | I-need | — | everyone | here | until | — | midnight.",
         "Oh, and one more thing! Big week, so I need everyone here until midnight tonight.", { flags: { 10: F_A, 14: F_ART } }),
     ],
     mid_2: [t("¡En | Brotecito | hay que | ponerse las pilas!", "At | Brotecito | we-have-to | step it up!", "At Brotecito, we step it up!",
       { flags: { 3: "ponerse las pilas = to step it up (literally: to put your batteries in)." } })],
     mid_reask: [t("¿Y? | ¿Te | puedes | quedar?", "So? | — | Can-you | stay?", "So? Can you stay?", { flags: { 1: "te goes with quedar (quedarse = to stay); English needs no word." } })],
-    mid_why: [t("Los | inversionistas, | la | presentación, | la | fiesta… | ¡es | una | semana | grande!", "The | investors, | the | deck, | the | party… | it's | a | week | big!", "The investors, the deck, the party... it's a big week!")],
+    // the reason for tonight: not the party (it waits until next week) and not mid_1's "semana intensa" again
+    mid_why: [t("Los | inversionistas, | la | presentación, | el | lanzamiento… | ¡todo | es | esta | semana!", "The | investors, | the | deck, | the | launch… | all | is | this | week!",
+      "The investors, the deck, the launch... it's all happening this week!")],
     mid_limit: [t("¿Hasta | {$time}? | Me parece | justo. | Horas extra | pagadas, | y | a | {$time} | lo dejas por hoy.", "Until | {$time}? | It-seems | fair. | Overtime | paid, | and | at | {$time} | you call it a day.",
       "Until {$time}? Fair. Paid overtime, and at {$time} you call it a day.")],
     mid_limit_generic: [t("Bueno, | un par de | horas. | Pagadas, | obvio. | Luego | lo dejas por hoy.", "Okay, | a couple of | hours. | Paid, | obviously. | Then | you call it a day.", "Okay, a couple of hours. Paid, obviously. Then you call it a day.")],
-    mid_yes: [t("¡Eres | un | crack! | Y | sí, | son | pagadas. | Si no, | Raquel | me | mata.", "You're | a | star! | And | yes, | they're | paid. | Otherwise, | Raquel | me | kills.", "Rock star! And yes, it's paid. Raquel would kill me.", { flags: { 2: F_CRACK } })],
+    mid_yes: [t("¡Eres | un | crack! | Y | sí, | las | horas extra | se pagan. | Si no, | Raquel | me | mata.", "You're | a | star! | And | yes, | the | overtime-hours | are-paid. | Otherwise, | Raquel | me | kills.",
+      "Rock star! And yes, overtime is paid. Otherwise Raquel would kill me.", { flags: { 2: F_CRACK } })],
     mid_cant: [
       t("Bueno, | bueno. | Es | justo. | Vete | a | tu | casa | a | las seis.", "Okay, | okay. | It's | fair. | Go | to | your | home | at | six.", "Okay, okay. Fair. Go home at six."),
       t("Me parece | justo. | Vete | a casa. | Mañana | empezamos | con todo.", "It-seems | fair. | Go | home. | Tomorrow | we-start | full force.", "Fair enough. Go home. We'll start fresh tomorrow."),
     ],
-    mid_paid: [t("¿Pagadas? | Eh… | sí. | Claro, | como | dice | la | ley. | Horas extra | pagadas, | y | paramos | a | las nueve. | ¿Trato hecho?",
-      "Paid? | Um… | yes. | Of course, | as | says | the | law. | Overtime | paid, | and | we-stop | at | nine. | Deal?", "Paid? Um... yes. Of course, it's the law. Paid overtime, and we stop at nine. Deal?")],
+    // Mexico's Ley Federal del Trabajo, art. 67: overtime pays double (the 2026 reform keeps it); six to nine is three hours
+    mid_paid: [t("¿Pagadas? | Eh… | sí, | claro. | Se pagan | dobles, | como | dice | la | ley. | Y | paramos | a | las nueve. | ¿Trato hecho?",
+      "Paid? | Um… | yes, | of course. | They're-paid | double, | as | says | the | law. | And | we-stop | at | nine. | Deal?",
+      "Paid? Um... yes, of course. Overtime pays double, it's the law. And we stop at nine. Deal?",
+      { flags: { 5: "Mexico's labor law: overtime is paid double." } })],
+    // "No sé." at the midnight request: Toño proposes the deal himself
+    mid_help: [t("Bueno, | te | propongo | algo: | hasta | las nueve, | con | horas extra | pagadas. | ¿Trato hecho?",
+      "Okay, | to-you | I-propose | something: | until | nine, | with | overtime | paid. | Deal?", "Okay, how about this: until nine, with paid overtime. Deal?")],
     mid_finish: [t("Buena | pregunta. | ¿A | las nueve? | Horas extra | pagadas, | obvio. | ¿Trato hecho?", "Good | question. | At | nine? | Overtime | paid, | obviously. | Deal?", "Good question. Nine? Paid overtime, obviously. Deal?")],
     mid_deal_reask: [t("¿Y? | ¿Trato hecho?", "So? | Deal?", "So? Deal?")],
     mid_offer: [t("¿Hasta | {$time}? | Me parece | justo. | Horas extra | pagadas. | ¿Trato hecho?", "Until | {$time}? | It-seems | fair. | Overtime | paid. | Deal?", "Until {$time}? Fair. Paid overtime. Deal?")],
@@ -983,8 +1029,8 @@ export const startup: SituationDef = {
 
     // --- tomorrow ------------------------------------------------------------------------------
     close_q: [
-      t("¡Listo! | ¿Hacemos | otro | check-in | mañana | a | las ocho?", "Done! | Shall-we-do | another | check-in | tomorrow | at | eight?", "All right. Touch base again at eight tomorrow?", { flags: { 3: F_CHECK } }),
-      t("Oye, | ¿nos vemos | mañana | a | las ocho | para | otro | check-in?", "Hey, | shall-we-meet | tomorrow | at | eight | for | another | check-in?", "Hey, touch base again tomorrow at eight?", { flags: { 7: F_CHECK } }),
+      t("¡Listo! | ¿Hacemos | otro | check-in | mañana | a | las ocho?", "Done! | Should-we-do | another | check-in | tomorrow | at | eight?", "All right. Touch base again at eight tomorrow?", { flags: { 3: F_CHECK } }),
+      t("Oye, | ¿nos vemos | mañana | a | las ocho | para | otro | check-in?", "Hey, | should-we-meet | tomorrow | at | eight | for | another | check-in?", "Hey, touch base again tomorrow at eight?", { flags: { 7: F_CHECK } }),
     ],
     close_reask: [t("Entonces, | ¿mañana | a | las ocho?", "So, | tomorrow | at | eight?", "So, eight tomorrow?")],
     meet_ok: [
@@ -1131,7 +1177,8 @@ export const startup: SituationDef = {
     finding: {
       lt: "Say how your first week is going",
       items: [
-        { id: "onda", s: t("Poco a poco | le estoy agarrando la onda.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it."),
+        { id: "onda", s: t("Poco a poco | le estoy agarrando la onda.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it.",
+          { neutral: t("Poco a poco | le estoy agarrando el ritmo.", "Little by little | I'm getting the hang of it.", "I'm slowly getting the hang of it.") }),
           note: "Mexican: agarrarle la onda = get the hang of it (elsewhere: agarrarle el ritmo)." },
         { id: "chino", s: t("Sí, | todo | está | en chino.", "Yes, | everything | is | in Chinese.", "Yeah, it's all Greek to me."), note: "estar en chino: too hard to understand (English says “Greek to me”)." },
         { id: "lot_learn", s: t("Hay | mucho | que aprender.", "There's | a lot | to learn.", "There's a lot to learn.") },
@@ -1149,7 +1196,8 @@ export const startup: SituationDef = {
         { id: "too_much", s: t("Es | demasiado | para | una | semana.", "It's | too much | for | one | week.", "That's too much for one week.") },
         { id: "cant_all", s: t("No puedo | hacer | todo | eso.", "I can't | do | all | that.", "I can't do all of that.") },
         { id: "saturado", s: t("Estoy | muy | {m:saturado|f:saturada} | esta | semana.", "I'm | very | swamped | this | week.", "I'm swamped this week.") },
-        { id: "aventon", s: t("No quiero | hacer | las | cosas | al aventón.", "I don't want | to-do | — | things | sloppily.", "I don't want to cut corners.", { flags: { 2: F_ART, 4: F_AVENTON } }),
+        { id: "aventon", s: t("No quiero | hacer | las | cosas | al aventón.", "I don't want | to-do | — | things | sloppily.", "I don't want to cut corners.", { flags: { 2: F_ART, 4: F_AVENTON },
+          neutral: t("No quiero | hacer | las | cosas | a la carrera.", "I don't want | to-do | — | things | in a rush.", "I don't want to cut corners.", { flags: { 2: F_ART, 4: F_AVENTON_N } }) }),
           note: "Mexican: al aventón = sloppily, in a rush (elsewhere: a la carrera)." },
       ],
     },
@@ -1179,7 +1227,10 @@ export const startup: SituationDef = {
       lt: "Ask what an expression means",
       items: [
         { id: "what_mean", s: t("Perdón, | ¿qué | significa | “ponerse las pilas”?", "Sorry, | what | does-it-mean | “step it up”?", "Sorry, what does “ponerse las pilas” mean?") },
-        { id: "mean_by", s: t("¿Cómo que | “jalar parejo”?", "What do you mean | “pull your weight”?", "What do you mean, “jalar parejo”?"), note: "¿Cómo que…? = What do you mean…? Very common in Mexico." },
+        // the neutral text never says "jalar parejo" (Toño says "poner de nuestra parte"): its twin asks about that
+        { id: "mean_by", s: t("¿Cómo que | “jalar parejo”?", "What do you mean | “pull your weight”?", "What do you mean, “jalar parejo”?",
+          { neutral: t("¿Cómo que | “poner de su parte”?", "What do you mean | “do your part”?", "What do you mean, “poner de su parte”?") }),
+          note: "¿Cómo que…? = What do you mean…? Very common in Mexico." },
         { id: "idiom", s: t("¿Es | una | expresión?", "Is-it | an | expression?", "Is that an idiom?") },
         { id: "plain", s: t("¿Puedes | decirlo | con | otras | palabras?", "Can-you | say-it | with | other | words?", "Can you say that another way?") },
         { id: "what_base", s: t("¿Cuál | caja?", "What | box?", "What box?") },
@@ -1188,7 +1239,7 @@ export const startup: SituationDef = {
     owner: {
       lt: "Ask who's in charge of what", slot: "area", examples: ["budget", "party", "code"],
       items: [
-        { id: "who_ask", s: t("¿A quién | le | pregunto | sobre | {X.the}?", "Who | — | do-I-ask | about | {X.the}?", "Who should I ask about {X.the}?", { flags: { 1: F_LE } }) },
+        { id: "who_ask", s: t("¿A quién | le | pregunto | sobre | {X.the}?", "Who | — | do-I-ask | about | {X.the}?", "Who should I ask about {X.the}?", { flags: { 1: "le doubles “a quién”; English needs no word." } }) },
         { id: "in_charge", s: t("¿Quién | se encarga | de | {X.the}?", "Who | is in charge | of | {X.the}?", "Who's in charge of {X.the}?") },
         { id: "deadline", s: t("¿Cuál | es | la | fecha límite?", "What | is | the | deadline?", "What's the deadline?") },
         { id: "insist", s: t("Perdón, | pero | necesito | saberlo | ya.", "Sorry, | but | I-need | to-know-it | now.", "Sorry, but I need to know now.") },
@@ -1202,7 +1253,8 @@ export const startup: SituationDef = {
         { id: "ask_lalo", s: t("Hay que | llamar | a | Lalo.", "We-have-to | call | — | Lalo.", "Let's ask Lalo for help.", { flags: { 2: F_A } }) },
         { id: "launch_later", s: t("Hay que | lanzar | la próxima semana.", "We-have-to | launch | next week.", "Let's launch next week.") },
         { id: "what_exactly", s: t("¿Qué | quieres | que | haga | exactamente?", "What | do-you-want | that | I-do | exactly?", "What exactly do you want me to do?") },
-        { id: "who_cut", s: t("¿Quién | lo | hizo | al aventón?", "Who | it | did | sloppily?", "Who cut corners?", { flags: { 3: F_AVENTON } }) },
+        { id: "who_cut", s: t("¿Quién | lo | hizo | al aventón?", "Who | it | did | sloppily?", "Who cut corners?", { flags: { 3: F_AVENTON },
+          neutral: t("¿Quién | lo | hizo | a la carrera?", "Who | it | did | in a rush?", "Who cut corners?", { flags: { 3: F_AVENTON_N } }) }) },
       ],
     },
     midnight: {
@@ -1248,6 +1300,7 @@ export const startup: SituationDef = {
     "le vas a agarrar la onda": { reason: "lexical_expression", split: "le → to it, vas a → you're going to, agarrar → grab, la onda → the wave is false; the Mexican idiom = you'll get the hang of it.", minimal: "The idiom with its verb." },
     "le vas a agarrar el ritmo": { reason: "lexical_expression", split: "le → to it, vas a → you're going to, agarrar → grab, el ritmo → the rhythm; the idiom = you'll get the hang of it.", minimal: "The idiom with its verb." },
     "le estoy agarrando la onda": { reason: "lexical_expression", split: "le → to it, estoy agarrando → I'm grabbing, la onda → the wave is false; the Mexican idiom = I'm getting the hang of it.", minimal: "The idiom with its verb." },
+    "le estoy agarrando el ritmo": { reason: "lexical_expression", split: "le → to it, estoy agarrando → I'm grabbing, el ritmo → the rhythm; the idiom = I'm getting the hang of it.", minimal: "The idiom with its verb." },
     "manos a la obra": { reason: "lexical_expression", split: "manos → hands, a → to, la → the, obra → work; the fixed call = let's get to work.", minimal: "The idiom." },
     "piensa fuera de la caja": { reason: "lexical_expression", split: "piensa → think, fuera de → outside, la → the, caja → box; the business idiom = think outside the box.", minimal: "The idiom." },
     "tenemos que": { reason: "lexical_expression", split: "tenemos → we have + que → that; tener que = have to.", minimal: "Two words." },
@@ -1258,6 +1311,7 @@ export const startup: SituationDef = {
     "ponga de su parte": { reason: "lexical_expression", split: "ponga → he puts, de → of, su → his, parte → part; the idiom = do his part.", minimal: "The idiom." },
     "no pone de su parte": { reason: "lexical_expression", split: "no → not, pone → puts, de → of, su → his, parte → part; = doesn't do his part.", minimal: "The idiom." },
     "poner de tu parte": { reason: "lexical_expression", split: "poner → put, de → of, tu → your, parte → part; the idiom = do your part.", minimal: "The idiom." },
+    "poner de su parte": { reason: "lexical_expression", split: "poner → put, de → of, su → one's, parte → part; the idiom = do one's part.", minimal: "The idiom." },
     "ya sé": { reason: "lexical_expression", split: "ya → already + sé → I know; = I know.", minimal: "Two words." },
     "hasta el cuello": { reason: "lexical_expression", split: "hasta → up to, el → the, cuello → neck; the idiom = up to your ears in work.", minimal: "Three words." },
     "lo demás": { reason: "lexical_expression", split: "lo → the + demás → others; = the rest.", minimal: "Two words." },
@@ -1466,12 +1520,14 @@ export const startup: SituationDef = {
       yes: (c) => {
         const h = heard(c);
         if (HEDGE.test(h)) { midResolve(c, "cant"); return; }
-        // "Está bien, gracias." / "Ok." to a demand that asked nothing: never a promise to stay (rule 17); the step asks
-        if (!/\b(si|claro|me quedo|puedo|por supuesto|cuenta conmigo|sin problema)\b/.test(h)) return;
+        // "Está bien, gracias." / "Ok." to a demand that asked nothing: never a promise to stay (rule 17); the step asks.
+        // Nor is "¿Sí?" (a question).
+        if (asked(c) || !/\b(si|claro|me quedo|puedo|por supuesto|cuenta conmigo|sin problema)\b/.test(h)) return;
         midResolve(c, "yes");
       },
       no: (c) => { midResolve(c, "cant"); },
-      help: (c) => { if (once(c, "paidq")) { c.s.dealHour = "h9"; T(c, "mid_paid"); c.expect(midDealPending()); } } },
+      // "No sé.": Toño proposes the deal himself ("Bueno, te propongo algo: hasta las nueve…"), not "¿Pagadas?"
+      help: (c) => { if (once(c, "paidq")) { c.s.dealHour = "h9"; T(c, "mid_help"); c.expect(midDealPending()); } } },
     { id: "tomorrow", when: (c) => !!c.s.ownerDone && (c.s.twist !== "midnight" || !!c.s.midDone), done: (c) => !!c.s.closeDone,
       ask: (c) => {
         if (resumed(c, "tomorrow")) { T(c, "anyway"); T(c, "close_reask"); return; }
@@ -1614,8 +1670,10 @@ export const startup: SituationDef = {
     // --- midnight ---
     stay_limit(c, slots, seg) {
       if (!midLive(c)) return;
-      praiseIdiom(c, seg);
       const h = midHour(slots.time);
+      // "¿Hasta la medianoche?" (his demand asked back) / "Hasta la medianoche, no puedo": never a yes
+      if (midnightNotYes(c, h)) { if (!refuses(c)) midWhy(c); return; }
+      praiseIdiom(c, seg);
       if (h === "midnight") { midResolve(c, "yes"); return; }
       midResolve(c, "limit", h);
     },
@@ -1625,6 +1683,8 @@ export const startup: SituationDef = {
       // "Me quedo, pero solo hasta las ocho" (the limit decides), "Ni loco me quedo", "No sé si me quedo";
       // "No hay problema, me quedo" is a yes
       if (/\b(pero|solo|nada mas)\b/.test(h) && /\bhasta\b/.test(h)) return;
+      // "¿Me quedo hasta la medianoche?": a question, not a promise (rule 17)
+      if (midnightAsked(c) || asked(c)) { midWhy(c); return; }
       const neg = h.replace(/\bno hay (ningun )?problema\b|\bno te preocupes\b/g, "");
       if (HEDGE.test(h) || /\b(no|ni|nunca|jamas)\b/.test(neg)) { midResolve(c, "cant"); return; }
       midResolve(c, "yes");
@@ -1644,7 +1704,7 @@ export const startup: SituationDef = {
       T(c, "mid_offer", { time: hourTime(h) }); c.expect(midDealPending());
     },
     mid_finish_q(c) { if (!midLive(c) || !once(c, "paidq")) return; c.s.dealHour = "h9"; T(c, "mid_finish"); c.expect(midDealPending()); },
-    mid_why(c) { if (midLive(c) && once(c, "midWhy")) T(c, "mid_why"); },
+    mid_why(c) { if (midLive(c)) midWhy(c); },
 
     // --- tomorrow ---
     meet_time(c, slots, seg) { praiseIdiom(c, seg); meetTime(c, slots.time); },
@@ -1685,6 +1745,8 @@ export const startup: SituationDef = {
     },
     g_howareyou_bad(c, slots) {
       if (c.step === "hello" && !c.s.helloDone) { helloAnswer(c, "hard"); return; }
+      // "Más o menos." to "Fácil, ¿no?": it's a lot (never the global "¡Ay, lo siento!")
+      if (c.step === "pile" && c.s.pileSaid && !c.s.overloaded && !c.s.pileSkip) { overload(c, "said"); return; }
       GLOBAL_HANDLERS.g_howareyou_bad(c as any, slots);
     },
     // "No sé" / "No estoy seguro": the step's help, where its question would come (see the end of the file)
@@ -1820,6 +1882,23 @@ export const startup: SituationDef = {
     { say: "A las ocho no puedo, ¿a las diez?", intent: "meet_time", step: "tomorrow", slots: { time: { h: 10 } }, not: ["meet_ok", "meet_time_ctx"] },
     { say: "¿Podemos a las seis?", intent: "meet_time", step: "tomorrow" },
     { say: "Ya estuvo por hoy, ¿no?", intent: "call_day", step: "tomorrow" },
+    // audit (5 Nov 2026): pay questions, limits, side questions, the neutral idioms echoed, "regó"
+    { say: "¿Cuánto me pagan?", intent: "paid_q", step: "midnight", not: ["stay_yes"] },
+    { say: "¿Se pagan dobles?", intent: "paid_q", step: "midnight", not: ["stay_yes"] },
+    { say: "¿Me pagas las horas extra dobles?", intent: "paid_q", step: "midnight" },
+    { say: "¿Cuánto pagan las horas extra?", intent: "paid_q", step: "midnight" },
+    { say: "Puedo hasta las siete", intent: "stay_limit", step: "midnight", not: ["stay_yes"] },
+    { say: "¿Puedo irme a las ocho?", intent: "stay_limit", step: "midnight", not: ["stay_yes"] },
+    { say: "A las siete me voy", intent: "stay_limit", step: "midnight", not: ["stay_yes"] },
+    { say: "No puedo hasta las nueve", intent: "cant_stay", step: "midnight", not: ["stay_limit", "stay_yes"] },
+    { say: "¿Es obligatorio?", intent: "mid_why", step: "midnight", not: ["stay_yes"] },
+    { say: "¿Tengo que quedarme hasta la medianoche?", intent: "mid_why", step: "midnight", not: ["stay_yes", "stay_limit"] },
+    { say: "¿Cuándo vienen los inversionistas?", intent: "ask_owner", step: "owner" },
+    { say: "¿Cuándo es la fiesta?", intent: "ask_owner", step: "owner", slots: { a: "party" } },
+    { say: "¿Quién la regó?", intent: "crash_who", step: "crash" },
+    { say: "¿Poner de nuestra parte?", intent: "idiom_echo", slots: { id: "parejo" } },
+    { say: "¿A la carrera?", intent: "idiom_echo", slots: { id: "aventon" } },
+    { say: "¿Qué significa dar con todo?", intent: "idiom_q", slots: { id: "ganas" } },
   ],
 
   sims: [
@@ -1898,6 +1977,25 @@ export const startup: SituationDef = {
     { name: "midnight: not until nine", turns: ["¡Hola! Bien, gracias.", "Estoy hasta el cuello.", "¿Qué hago primero?", "No, nada más.",
       "Bueno, pero solo si me pagan.", "No, no puedo hasta las nueve.", "Hasta las siete.", "Claro, nos vemos a las ocho."],
       expect: { complete: true, state: { midHow: "limit", stayUntil: "h7", meet: "h8" } }, auto: AUTO, setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
+    // audit: "¿Hasta la medianoche?" asked back is a question (his reason, the question again), also at the deal;
+    // "¿Cuánto me pagan?" gets the double pay; then eight
+    { name: "midnight: asked back, pay, then eight", turns: ["¡Hola! Bien, gracias.", "Estoy hasta el cuello.", "¿Qué hago primero?", "No, nada más.",
+      "¿Hasta la medianoche?", "¿Cuánto me pagan?", "¿Hasta las doce?", "No, solo hasta las ocho.", "Claro, nos vemos a las ocho."],
+      expect: { complete: true, state: { midHow: "limit", stayUntil: "h8", whySaid: true, meet: "h8" } }, auto: AUTO,
+      setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
+    // audit: "No sé" gets Toño's own deal; "hasta las seis" is the normal day (no overtime: "Vete a tu casa")
+    { name: "midnight: I don't know, then six", turns: ["¡Hola! Bien, gracias.", "Estoy hasta el cuello.", "¿Qué hago primero?", "No, nada más.",
+      "No sé.", "No, hasta las seis.", "Claro, nos vemos a las ocho."],
+      expect: { complete: true, state: { midHow: "cant", stayUntil: undefined, meet: "h8" } }, auto: AUTO,
+      setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
+    // audit: "¿Me quedo hasta la medianoche?" never agrees; "Hasta la medianoche, no puedo" is a no
+    { name: "midnight: a question and a refusal", turns: ["¡Hola! Bien, gracias.", "Estoy hasta el cuello.", "¿Qué hago primero?", "No, nada más.",
+      "¿Me quedo hasta la medianoche?", "Hasta la medianoche, no puedo.", "Claro, nos vemos a las ocho."],
+      expect: { complete: true, state: { midHow: "cant", meet: "h8" } }, auto: AUTO, setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
+    // audit: "Más o menos" / "estoy agotado" to "¿Es demasiado?" answer it; the party's date is the party's
+    { name: "too much, sort of; when is the party", turns: ["¡Hola! Bien, gracias.", "¡Claro!", "La verdad, estoy agotado.", "¿Qué hago primero?",
+      "¿Cuándo es la fiesta?", "Necesito saberlo ya.", "No, es todo.", "Claro, nos vemos a las ocho."],
+      expect: { complete: true, state: { overloaded: true, overHow: "yes", answered: true, lastArea: "deadline:party", meet: "h8" } }, auto: AUTO, setup: PLAIN },
   ],
 };
 
@@ -2008,6 +2106,9 @@ function askTooMuch(c: Ctx, kind: "q" | "honest" | "amb") {
       refuse_all: (cc, _s, seg) => { refuse(cc, seg.tags.includes("tip:rude")); },
       finding_ctx: (cc) => { overload(cc, "yes"); },
       truly_ctx: (cc) => { overload(cc, "yes"); },
+      // "La verdad, estoy agotado." / "Más o menos.": it's a lot, and the question is answered (it never comes back)
+      finding: (cc, _s, seg) => { if (!seg.tags.includes("hard")) return false; overload(cc, "yes"); },
+      g_howareyou_bad: (cc) => { overload(cc, "yes"); },
     },
     ask: (cc) => { T(cc, "too_much_reask"); },
   });
@@ -2152,13 +2253,16 @@ function crashOkPending(): Pending {
 function askOwner(c: Ctx, area: string | undefined, kind: string | undefined) {
   c.s.ownerAsked = true;
   if (!once(c, "owner")) return;
-  const key = kind ?? area ?? "general";
+  // "¿Cuándo es la fiesta?": that task's own date ("¿La fiesta? La próxima semana…"), never the deck's (audit, 5 Nov)
+  const key = kind === "deadline" && area && area !== "slides" ? `deadline:${area}` : kind ?? area ?? "general";
   if (!c.s.evaded) { c.s.evaded = true; c.s.lastArea = key; T(c, "owner_evasive"); return; }
   ownerAnswer(c, key);
 }
 const OWNER_LINE: Record<string, string> = {
   deadline: "owner_slides", slides: "owner_slides_you", budget: "owner_budget", payroll: "owner_payroll", party: "owner_party",
   photo: "owner_newsletter", code: "owner_code", bugs: "owner_code", emails: "owner_emails", general: "owner_general",
+  "deadline:party": "wa_party", "deadline:photo": "wa_photo", "deadline:bugs": "wa_bugs", "deadline:emails": "wa_emails",
+  "deadline:budget": "owner_budget", "deadline:payroll": "owner_payroll", "deadline:code": "owner_code",
 };
 function ownerAnswer(c: Ctx, key: string) { c.s.answered = true; T(c, OWNER_LINE[key] ?? "owner_general"); }
 function ownerEnd(c: Ctx) { if (c.s.ownerDone || !once(c, "ownerEnd")) return; c.s.ownerDone = true; }
@@ -2166,6 +2270,8 @@ function ownerEnd(c: Ctx) { if (c.s.ownerDone || !once(c, "ownerEnd")) return; c
 /** The midnight request settled. `h`: the hour the learner stays until. */
 function midResolve(c: Ctx, how: "limit" | "yes" | "cant" | "paid", h?: string) {
   if (c.s.midDone || !once(c, "mid")) return;
+  // until six is the normal day, no overtime: "Vete a tu casa a las seis" (never "Horas extra pagadas")
+  if (how === "limit" && h === "h6") { how = "cant"; h = undefined; }
   c.s.midDone = true; c.s.midHow = how;
   if (how === "limit") { if (h) { c.s.stayUntil = h; T(c, "mid_limit", { time: hourTime(h) }); } else T(c, "mid_limit_generic"); return; }
   if (how === "paid") c.s.stayUntil = c.s.dealHour ?? "h9";
@@ -2178,13 +2284,20 @@ function midDealPending(): Pending {
     yes: (c) => { midResolve(c, "paid"); },
     no: midWhen,
     on: {
-      // "Sí, pero no hasta la medianoche" to the offered hour: that hour
-      stay_limit: (c, s) => { const h = midHour(s.time); if (h === "midnight" || (!h && /^\W*(si|claro|ok|va|sale)\b/.test(heard(c)))) midResolve(c, "paid"); else midResolve(c, "limit", h); },
+      // "Sí, pero no hasta la medianoche" to the offered hour: that hour; "Me quedo hasta la medianoche": more than he
+      // asked, gladly; "¿Hasta la medianoche?" (asked back) is left to the step: his reason, then "¿Trato hecho?" again
+      stay_limit: (c, s) => {
+        const h = midHour(s.time);
+        if (midnightNotYes(c, h)) return false;
+        if (h === "midnight") midResolve(c, "yes");
+        else if (!h && /^\W*(si|claro|ok|va|sale)\b/.test(heard(c))) midResolve(c, "paid");
+        else midResolve(c, "limit", h);
+      },
       // "No puedo hasta las nueve" (the hour he offered): "¿A qué hora te funciona?"
       cant_stay: (c, s) => { const h = midHour(s.time); if (h && h !== "midnight") midWhen(c); else midResolve(c, "cant"); },
       cant_ctx: (c) => { midResolve(c, "cant"); },
       cant_time: midWhen,
-      stay_yes: (c) => { if (HEDGE.test(heard(c))) midWhen(c); else midResolve(c, "paid"); },
+      stay_yes: (c) => { if (midnightAsked(c) || asked(c)) return false; if (HEDGE.test(heard(c))) midWhen(c); else midResolve(c, "paid"); },
       call_day: (c) => { if (idiomAsked(c)) return false; midResolve(c, "cant"); },
       g_ok: (c) => { midResolve(c, "paid"); },
       agree_ctx: (c) => { midResolve(c, "paid"); },
@@ -2197,7 +2310,12 @@ function midDealPending(): Pending {
 function midWhen(c: Ctx) {
   if (!once(c, "midNo")) return;
   T(c, "mid_when");
-  const limit = (cc: Ctx, s: any) => { const h = midHour(s.time); if (h === "midnight") midResolve(cc, "paid"); else midResolve(cc, "limit", h); };
+  // "Hasta la medianoche." after all: all of it (mid_yes); "¿Hasta la medianoche?" waits for an answer
+  const limit = (cc: Ctx, s: any) => {
+    const h = midHour(s.time);
+    if (midnightNotYes(cc, h)) return false;
+    if (h === "midnight") midResolve(cc, "yes"); else midResolve(cc, "limit", h);
+  };
   c.expect({
     id: "mid_when", expects: ["stay_limit", "meet_time", "meet_time_ctx", "cant_stay", "cant_ctx", "stay_whatif"], hints: ["midnight"],
     suggest: [{ lt: "Suggest your own time", hint: "midnight" }],
@@ -2218,7 +2336,12 @@ function meetOk(c: Ctx) {
 }
 function meetTime(c: Ctx, tm: any) {
   if (!tm) return;
-  if (midLive(c)) { const h = midHour(tm); if (h === "midnight") midResolve(c, "yes"); else midResolve(c, "limit", h); return; }
+  if (midLive(c)) {
+    const h = midHour(tm);
+    if (midnightNotYes(c, h)) { if (!refuses(c)) midWhy(c); return; }
+    if (h === "midnight") midResolve(c, "yes"); else midResolve(c, "limit", h);
+    return;
+  }
   if (!closingLive(c) || !once(c, "meet")) return;
   const h = hourId(tm);
   if (h === "h8") { c.s.closeDone = true; c.s.closeHow = "ok"; c.s.meet = "h8"; T(c, "meet_ok"); return; }
