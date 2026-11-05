@@ -28,6 +28,10 @@ const allTags = (v: any, seg?: Segment): string[] => {
   return out;
 };
 const tagVal = (tags: string[], prefix: string) => tags.find((x) => x.startsWith(prefix))?.slice(prefix.length);
+/** The learner's words, lowercased, without accents or punctuation. */
+const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+/** Rule 17: "Está bien, gracias" (ok / vale / bueno + gracias) to a paid offer may be a polite "no, thanks": asked once. */
+const politeClosing = (c: Ctx) => /^(pues )?(esta bien|ok|okay|vale|bueno)( muchas)? gracias$/.test(fold(c.heard));
 
 function nightsFrom(slots: any, seg?: Segment): number | undefined {
   const n = slots?.nights;
@@ -59,26 +63,68 @@ function offerCheaper(c: Ctx) {
   c.s.offer = "cheap"; c.s.taxSaid = true; c.say("walkin_cheaper", { price: 170000 }); c.hold();
 }
 
-/** Choosing between noon (free) and 2 p.m. (700 pesos). */
-function lateChoicePending(): Pending {
+/** Choosing between noon (free) and 2 p.m. (700 pesos). The offer is a choice, not a yes/no question: a bare yes
+ *  ("Sí", "Está bien, gracias") gets "Entonces, ¿al mediodía o a las dos?", and a second one keeps the free noon. */
+function lateChoicePending(which = false): Pending {
   const noon = (cc: Ctx) => { cc.s.late = "noon"; once(cc, "late", "late_noon_ok"); };
   const two = (cc: Ctx) => { cc.s.late = "two"; once(cc, "late", "late_two_ok"); };
   return {
-    id: "late", expects: ["late_noon", "late_two", "too_expensive_ctx", "cheaper_ctx"], hints: ["late_choice"],
+    id: "late", expects: ["late_noon", "late_two", "too_expensive_ctx", "cheaper_ctx", "price_q_ctx"], hints: ["late_choice"],
     suggest: [{ lt: "Choose noon (free) or 2 p.m. (700 pesos)", hint: "late_choice" }],
-    on: { late_noon: noon, late_two: two, too_expensive_ctx: noon, cheaper_ctx: noon },
-    yes: two, no: noon,
-    ask: (cc) => { cc.s.lateQuoted = true; cc.say("late_offer", { price: 70000 }); },
+    on: { late_noon: noon, late_two: two, too_expensive_ctx: noon, cheaper_ctx: noon,
+      price_q_ctx: (cc) => { cc.say("late_price", { price: 70000 }); cc.expect(lateChoicePending(which)); } },
+    yes: (cc) => {
+      if (!which) { cc.say("late_which"); cc.expect(lateChoicePending(true)); return; }
+      cc.s.late = "noon"; once(cc, "late", "late_noon_free");
+    },
+    no: noon,
+    ask: (cc) => { cc.s.lateQuoted = true; if (which) cc.say("late_which"); else cc.say("late_offer", { price: 70000 }); },
   };
 }
 
-/** Offering an ocean-view room for 400 pesos more per night. */
-function viewPending(): Pending {
+/** "Until two for 700 pesos, is that okay?": a yes books it, a no keeps the free noon. */
+function lateTwoPending(): Pending {
+  const noonFree = (cc: Ctx) => { cc.s.late = "noon"; once(cc, "late", "late_noon_free"); };
   return {
-    id: "view", hints: ["g_yesno"], suggest: [{ lt: "Accept or decline the room with a view", hint: "g_yesno" }],
-    yes: (cc) => { cc.s.room = "518"; cc.s.view = true; cc.say("view_ok"); if (cc.s.roomSaid) cc.say("room_518"); },
+    id: "late", expects: ["late_noon", "late_two", "too_expensive_ctx", "cheaper_ctx", "price_q_ctx"], hints: ["late_two"], suggest: [{ lt: "Accept (700 pesos) or choose noon", hint: "late_two" }],
+    on: { late_noon: (cc) => { cc.s.late = "noon"; once(cc, "late", "late_noon_ok"); }, late_two: (cc) => { cc.s.late = "two"; once(cc, "late", "late_two_ok"); },
+      too_expensive_ctx: noonFree, cheaper_ctx: noonFree,
+      price_q_ctx: (cc) => { cc.say("late_price", { price: 70000 }); cc.expect(lateTwoPending()); } },
+    yes: (cc) => { cc.s.late = "two"; once(cc, "late", "late_two_ok"); },
+    no: noonFree,
+    ask: (cc) => cc.say("late_two_q", { price: 70000 }),
+  };
+}
+
+/** Offering an ocean-view room for 1,300 pesos more per night (to a walk-in who hasn't chosen yet, it is the room
+ *  they take). "Está bien, gracias" gets "Entonces, ¿sí la quiere?" first (rule 17). */
+function viewPending(confirming = false): Pending {
+  return {
+    id: "view", expects: ["too_expensive_ctx", "price_q_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Accept or decline the room with a view", hint: "g_yesno" }],
+    on: { too_expensive_ctx: (cc) => { cc.say("no_problem"); },
+      price_q_ctx: (cc) => { cc.say("view_price", { price: 130000 }); cc.expect(viewPending(confirming)); } },
+    yes: (cc) => {
+      if (!confirming && politeClosing(cc)) { cc.say("confirm_room"); cc.expect(viewPending(true)); return; }
+      cc.s.room = "518"; cc.s.view = true;
+      if (cc.s.mode === "checkin" && cc.s.kind === "walkin" && !cc.s.roomChosen) { cc.s.roomChosen = true; cc.say("walkin_great"); return; }
+      cc.say("view_ok"); if (cc.s.roomSaid) cc.say("room_518");
+    },
     no: (cc) => { cc.say("no_problem"); },
-    ask: (cc) => cc.say("view_offer", { price: 130000 }),
+    ask: (cc) => { if (confirming) cc.say("confirm_room"); else cc.say("view_offer", { price: 130000 }); },
+  };
+}
+
+/** "¿Para qué hora lo necesita?": a bare yes says no time, so she asks "¿Para qué hora?"; a second yes means now. */
+function taxiPending(): Pending {
+  return {
+    id: "taxi_time", expects: ["taxi_time_ctx"], hints: ["taxi_time"], suggest: [{ lt: "Say what time you need the taxi", hint: "taxi_time" }],
+    on: { taxi_time_ctx: (cc, sl, sg) => { hotel.handlers.taxi_time_ctx(cc, sl, sg); } },
+    yes: (cc) => {
+      if (!cc.s.taxiTimeAsked) { cc.s.taxiTimeAsked = true; cc.say("taxi_what_time"); cc.expect(taxiPending()); return; }
+      cc.s.taxi = true; once(cc, "taxi", "taxi_now");
+    },
+    no: (cc) => { cc.say("no_problem"); },
+    ask: (cc) => cc.say("taxi_when"),
   };
 }
 
@@ -121,9 +167,11 @@ function quietPending(): Pending {
 function seeYouLater(c: Ctx) { c.say(c.s.toldLater ? "return_reminder" : "see_you_later"); c.s.toldLater = true; c.expect(roomReturnPending()); }
 function roomReturnPending(): Pending {
   return {
-    id: "room_return", expects: ["return_ready_ctx", "wait_room_ctx"], hints: ["room_return", "ask"],
+    id: "room_return", expects: ["return_ready_ctx", "wait_room_ctx", "return_time_ctx"], hints: ["room_return", "ask"],
     suggest: [{ lt: "Return at three and ask if the room is ready", hint: "room_return" }, { lt: "Ask to leave your luggage", hint: "ask" }],
-    on: { return_ready_ctx: (cc) => { cc.s.returned = true; cc.say("room_ready"); }, wait_room_ctx: (cc) => { seeYouLater(cc); } },
+    on: { return_ready_ctx: (cc) => { cc.s.returned = true; cc.say("room_ready"); }, wait_room_ctx: (cc) => { seeYouLater(cc); },
+      // "¿A qué hora puedo regresar?" / "¿Cuánto tiempo?": three o'clock, and the question stays open
+      return_time_ctx: (cc) => { cc.say("return_reminder"); cc.expect(roomReturnPending()); } },
     yes: (cc) => { if (!cc.s.bagsAsked) { cc.s.bagsAsked = true; cc.s.bagsKept = true; cc.say("luggage_ok"); cc.expect(roomReturnPending()); return; } seeYouLater(cc); },
     no: (cc) => { if (!cc.s.bagsAsked) { cc.s.bagsAsked = true; cc.say("no_problem"); cc.expect(roomReturnPending()); return; } seeYouLater(cc); },
     ask: (cc) => cc.say(cc.s.bagsAsked ? "return_reminder" : "bags_offer"),
@@ -181,6 +229,8 @@ export const hotel: SituationDef = {
       "@request (una habitacion | un cuarto) [por {nights}]", "tienes habitaciones disponibles #tip:tu_staff",
       "[quisiera | necesito | busco] (una habitacion | un cuarto) para (una persona | dos personas | {number} personas)", "no reservé", "busco (una habitacion | un cuarto)",
     ] },
+    // "Una habitación, por favor." as the first words at the desk (only there: elsewhere a bare room is another wish)
+    walkin_ctx: { patterns: ["(una habitacion | un cuarto) [para {nights} | por {nights} | para (hoy | esta noche) | para (una persona | dos personas | {number} personas)]"] },
     nights_ctx: { patterns: ["[por | para | solo] {nights} #h:nt_short", "(me quedo | nos quedamos | voy a quedarme) {nights}", "{number}", "[son] {nights}"] },
     name_ctx: { patterns: ["[es | mi apellido es | el apellido es | a nombre de | esta a nombre de] {name} #h:nm_its", "(me llamo | me apellido | mi nombre es | soy) {name}", "{name} {letters}"] },
     letters_ctx: { patterns: ["[se escribe | es] {letters} #h:sp_its", "{name} {letters}", "{letters} {name}"] },
@@ -201,10 +251,12 @@ export const hotel: SituationDef = {
     sign_ok_ctx: { patterns: ["(listo | ya firmé | de acuerdo | ya esta | firmado) #h:sg_sure", "(listo | ya esta) ya firmé", "ya (lo | la) firmé", "ahi esta"] },
     // "¿Aquí?" / "¿Dónde?" while she points at the form (only at the signing step)
     sign_here_ctx: { patterns: ["(aqui | aca) [abajo]", "donde [exactamente]", "en donde"] },
-    keys_ctx: { patterns: ["[solo | solamente | nomas] (una | una tarjeta | una llave) [sola] #h:k_one", "(dos | dos tarjetas | dos llaves) #h:k_two", "{number} (tarjetas | llaves)", "una para mi y otra para mi (esposa | esposo | pareja | amigo | amiga) #h:k_two", "con una (esta bien | es suficiente | basta)", "no necesito dos [tarjetas | llaves] [con | solo] una [esta bien | es suficiente]"] },
+    keys_ctx: { patterns: ["[solo | solamente | nomas] (una | una tarjeta | una llave) [sola] #h:k_one", "(dos | dos tarjetas | dos llaves) #h:k_two", "{number} [tarjetas | llaves]",
+      "(necesito | quiero | quisiera) [solo] (una | una llave | una tarjeta) #h:k_one", "(necesito | quiero | quisiera) (dos | dos llaves | dos tarjetas) #h:k_two", "(necesito | quiero | quisiera) {number} (llaves | tarjetas)", "una para mi y otra para mi (esposa | esposo | pareja | amigo | amiga) #h:k_two", "con una (esta bien | es suficiente | basta)", "no necesito dos [tarjetas | llaves] [con | solo] una [esta bien | es suficiente]"] },
     ask_breakfast: { patterns: ["el desayuno esta incluido #h:q_breakfast", "esta incluido el desayuno", "incluye [el] desayuno", "(el precio | la tarifa | la habitacion | el cuarto) incluye [el] desayuno", "(viene | va) con desayuno", "el desayuno (viene | va) incluido", "(tienen | hay) desayuno", "el desayuno es gratis"] },
     ask_breakfast_time: { patterns: ["a que hora es el desayuno #h:q_breakfast_time", "(a que hora | donde) (sirven | dan | es) el desayuno", "hasta que hora (hay | sirven | dan | es) [el] desayuno", "(cual es el | que) horario (del | de) desayuno", "de que hora a que hora es el desayuno"] },
-    ask_wifi: { patterns: ["cual es la (contrasena | clave) del @wifi #h:q_wifi", "(tienen | hay) @wifi [gratis]", "el @wifi es gratis", "@staff dar la clave del @wifi", "(cual es | me da) la (clave | contrasena) [del @wifi]", "como me conecto al @wifi"] },
+    ask_wifi: { patterns: ["cual es la (contrasena | clave) del @wifi #h:q_wifi", "(tienen | hay) @wifi [gratis]", "el @wifi es gratis", "@staff dar la clave del @wifi", "(cual es | me da) la (clave | contrasena) [del @wifi]", "como me conecto al @wifi",
+      "(cual es | como se llama) la red [del @wifi]", "como se llama el @wifi"] },
     ask_checkout: { patterns: ["a que hora (es la @checkout | debo salir | tengo que salir | tengo que dejar la habitacion) #h:q_checkout", "cual es la hora de @checkout", "a que hora (tengo que | hay que | debo) (dejar | entregar) (la habitacion | el cuarto)", "hasta que hora (puedo quedarme | me puedo quedar)"] },
     ask_late: { patterns: [
       "puedo (dejar la habitacion | salir | hacer el check out) mas tarde #h:q_late",
@@ -228,13 +280,19 @@ export const hotel: SituationDef = {
     ask_elevator: { patterns: ["donde esta el (elevador | ascensor) #h:q_elevator", "hay (elevador | ascensor)"] },
     ask_gym: { patterns: ["(hay | tienen) gimnasio", "donde esta el gimnasio"] },
     ask_pool: { patterns: ["(hay | tienen | donde esta) [la | una] (alberca | piscina)"] },
-    ask_parking: { patterns: ["tienen estacionamiento #h:q_parking", "(hay | cuanto cuesta) el estacionamiento", "donde puedo (estacionar | aparcar) [el carro]", "el estacionamiento es gratis"] },
-    ask_view: { patterns: ["puedo tener una habitacion con vista al mar", "(tiene | tienen | hay) (una habitacion | habitacion | un cuarto) con vista al mar #h:q_view", "quisiera una habitacion con vista al mar"] },
+    // #cost: the price is asked ("¿Cuánto cuesta…?", "¿Es gratis?"), so no "Sí, tenemos estacionamiento"
+    ask_parking: { patterns: ["tienen estacionamiento #h:q_parking", "hay estacionamiento", "donde puedo (estacionar | aparcar) [el carro]", "el estacionamiento (es gratis | tiene costo | se paga) #cost", "cuanto (es | cobran | cuesta) [por] el estacionamiento #cost"] },
+    ask_view: { patterns: ["puedo tener una habitacion con vista al mar", "(tiene | tienen | hay) (una habitacion | habitacion | un cuarto) con vista al mar #h:q_view", "quisiera una habitacion con vista al mar",
+      "(tiene | tienen) vista al mar", "(la habitacion | el cuarto) tiene vista al mar"] },
     ask_quiet: { patterns: ["quisiera una habitacion tranquila", "la habitacion es tranquila", "tienen un cuarto silencioso"] },
     ask_twobeds: { patterns: ["(quisiera | necesito | necesitamos) (dos camas | una habitacion doble | un cuarto con dos camas)", "(tienen | hay) una habitacion con dos camas"] },
-    ask_nonsmoking: { patterns: ["la habitacion es para no fumadores", "puedo fumar en la habitacion", "quiero un cuarto para no fumadores"] },
-    ask_restaurant: { patterns: ["me recomienda (un | algun) restaurante [cerca]", "que restaurante me recomienda", "(hay | conoce) (un | algun) [buen] restaurante (cerca | por aqui)", "donde puedo (cenar | comer) [cerca | por aqui]", "hay restaurante [en el hotel]"] },
-    ask_roomservice: { patterns: ["tienen servicio (a la habitacion | al cuarto)", "hay servicio a cuartos"] },
+    ask_nonsmoking: { patterns: ["la habitacion es para no fumadores", "puedo fumar en la habitacion", "quiero un cuarto para no fumadores", "[se] puede fumar [aqui | en el hotel | en la habitacion | en el cuarto]", "puedo fumar [aqui | en el hotel | en el cuarto]"] },
+    ask_restaurant: { patterns: ["me recomienda (un | algun) restaurante [cerca]", "que restaurante me recomienda", "(hay | conoce) (un | algun) [buen] restaurante (cerca | por aqui)", "donde puedo (cenar | comer) [cerca | por aqui]", "hay restaurante [en el hotel]",
+      "donde (esta | hay) (el | un) restaurante"] },
+    ask_roomservice: { patterns: ["tienen servicio (a la habitacion | al cuarto)", "hay servicio a cuartos", "(hay | tienen) servicio (a la habitacion | al cuarto | a cuartos | a las habitaciones)"] },
+    ask_dollars: { patterns: ["(aceptan | acepta | toman | reciben) (dolares | dolar)", "(puedo | se puede) pagar (en | con) dolares", "(puedo | se puede) dejar (el deposito | la garantia) en dolares", "(tengo | traigo) (solo | nada mas)? dolares"] },
+    ask_beach: { patterns: ["(donde | por donde) (esta | queda) la playa", "(esta | queda) (cerca | lejos) la playa", "la playa (esta | queda) (cerca | lejos)", "(como | por donde) (llego | voy | se va) a la playa",
+      "(a cuanto | que tan lejos) (esta | queda) la playa", "hay (playa | una playa) (cerca | por aqui)"] },
     ask_wakeup: { patterns: ["@staff despertarme [a {time}]", "quisiera una llamada para despertarme [a {time}]"] },
     ask_room: { patterns: ["cual es (mi | el) numero de (habitacion | cuarto)", "cual es el numero de mi (habitacion | cuarto)", "en que piso (esta | queda) mi (habitacion | cuarto)", "en que piso (estoy | esta)", "que (habitacion | cuarto) me toca", "cual es mi (habitacion | cuarto)"] },
     ask_checkin_time: { patterns: ["a que hora (es el check in | puedo entrar | puedo registrarme)", "puedo entrar ahora", "mi habitacion [ya] esta lista"] },
@@ -256,7 +314,13 @@ export const hotel: SituationDef = {
     ch_fan: { patterns: ["un ventilador esta bien #h:ch_fan", "(el | un) ventilador [esta bien | por ahora | para esta noche]", "(prefiero | quiero | quisiera) (el | un) ventilador [por ahora]", "con (un | el) ventilador (basta | esta bien | es suficiente)", "no (quiero | necesito) (cambiar | cambiarme) de (habitacion | cuarto) (un | el) ventilador (esta bien | basta)"] },
     ch_move: { patterns: ["quisiera cambiar de habitacion #h:ch_move", "(puedo | me puede | podria) (cambiar | cambiarme) de (habitacion | cuarto)", "(prefiero | quiero | quisiera) (otra habitacion | otro cuarto | cambiar de habitacion | cambiar de cuarto)", "otra habitacion [diferente]", "otro cuarto", "cambieme de (habitacion | cuarto)", "no quiero (un | el) ventilador [prefiero (otra habitacion | otro cuarto)]"] },
     return_ready_ctx: { patterns: ["[ya volvi] esta lista mi habitacion #h:rr_ready", "ya (volvi | regresé) #h:rr_back", "ya esta lista mi (habitacion | cuarto)", "ya estoy (aqui | de vuelta | de regreso)", "son las tres ya esta lista mi habitacion"] },
-    wait_room_ctx: { patterns: ["(regreso | vuelvo | regresare | volvere) a las tres #h:rr_later", "[esta bien | de acuerdo] (regreso | vuelvo) (mas tarde | luego | al rato)"] },
+    wait_room_ctx: { patterns: ["(regreso | vuelvo | regresare | volvere) a las tres #h:rr_later", "[esta bien | de acuerdo] (regreso | vuelvo) (mas tarde | luego | al rato)",
+      "(espero | voy a esperar | puedo esperar) [aqui | en el lobby | en la recepcion]", "voy a (dar una vuelta | comer algo | ir a la playa) [y regreso]"] },
+    // while the room isn't ready: when to come back
+    return_time_ctx: { patterns: ["(a que hora | cuando) (puedo | podre) (regresar | volver | entrar | subir)", "(a que hora | cuando) (regreso | vuelvo)", "(a que hora | cuando) (va a estar | estara) lista [mi habitacion | mi cuarto | la habitacion]",
+      "cuanto tiempo [tengo que esperar | hay que esperar | falta | tarda]"] },
+    // "¿Cuánto cuesta?" at an open offer (the walk-in's room, the ocean view, the late checkout)
+    price_q_ctx: { patterns: ["cuanto (cuesta | cuestan | es | sale | seria | cobran | vale) [eso | por noche | la noche | en total | la habitacion | el cuarto | el cambio | (a | hasta) las dos | la salida tardia]", "(cual es el | que) precio [tiene]", "cuanto mas [es | cuesta | cobran]", "(de | por) cuanto [es]"] },
     ask_tax: { patterns: ["que es el impuesto de hospedaje #h:q_tax", "(cuanto | cual) es el impuesto [de hospedaje]", "el impuesto (esta | va) incluido", "hay que pagar impuestos", "que impuestos (hay | cobran)",
       "(de cuanto | que porcentaje) es el impuesto [de hospedaje]", "el impuesto es (del | de) {number} por ciento",
       "que es (el derecho de saneamiento [ambiental] | el saneamiento ambiental | la cuota ambiental | el cargo ambiental | el impuesto ambiental)",
@@ -285,6 +349,7 @@ export const hotel: SituationDef = {
     found_full: [t("Aquí | está | su | reservación: | una | habitación | con | cama | matrimonial | por | tres | noches. | ¿Es | correcto?", "Here | is | your | reservation: | a | room | with | bed | double | for | three | nights. | Is that | correct?", "Here's your reservation: a room with a double bed for three nights. Is that right?")],
     found_short: [t("Ya | encontré | su | reservación. | Tiene | una | habitación | con | cama | matrimonial.", "Already | I-found | your | reservation. | You have | a | room | with | bed | double.", "I found your reservation. You have a room with a double bed.")],
     ask_nights: [t("¿Cuántas | noches?", "How many | nights?", "How many nights?")],
+    found_again: [t("Entonces, | ¿son | tres | noches?", "So, | is it | three | nights?", "So, three nights?")],
     nights_fixed: [t("Claro, | ya | lo | corregí.", "Sure, | already | it | I-corrected.", "Sure, I've fixed that.")],
     walkin_check: [t("Déjeme | revisar. | Sí, | tenemos | habitaciones | disponibles.", "Let me | check. | Yes, | we have | rooms | available.", "Let me check. Yes, we have rooms available.")],
     walkin_nights: [t("¿Por | cuántas | noches | se queda?", "For | how many | nights | are you staying?", "How many nights are you staying?")],
@@ -294,6 +359,10 @@ export const hotel: SituationDef = {
     walkin_great: [t("Perfecto, | vamos | a | hacer | su | registro.", "Perfect, | we're going | to | do | your | registration.", "Great, let's get you checked in."), t("Muy | bien.", "Very | good.", "Great.")],
     walkin_cheaper: [t("Tengo | una | habitación | sencilla, | más | pequeña, | por | {$price} | la | noche, | más | el | impuesto | de | hospedaje.", "I have | a | room | single, | more | small, | for | {$price} | the | night, | plus | the | tax | on | lodging.", "I have a smaller single room for {$price} a night, plus lodging tax.")],
     walkin_cheapest: [t("Esa | es | nuestra | habitación | más | económica.", "That | is | our | room | most | affordable.", "That's our least expensive room.")],
+    // "¿Cuánto cuesta?" at the walk-in offer: the room on offer, a night
+    price_night: [t("Son | {$price} | por | noche, | más | el | impuesto.", "It's | {$price} | per | night, | plus | the | tax.", "It's {$price} a night, plus tax.")],
+    // rule 17: "Está bien, gracias" to a room on offer (the walk-in's, the ocean view) is asked again before it's taken
+    confirm_room: [t("Entonces, | ¿sí | la | quiere?", "So, | yes | it | you-want?", "So you'd like it?", { flags: { 1: "sí before the verb stresses it: so you do want it?", 2: "la: it, referring to la habitación." } })],
     ask_id: [t("¿Me | presta | su | pasaporte, | por favor?", "(To) me | you-lend | your | passport, | please?", "May I see your passport, please?", { flags: { 1: "¿Me presta…?: a polite request to see it briefly; the hotel returns it." } }), t("¿Me | permite | una | identificación | con | foto?", "(To) me | you-allow | an | identification | with | photo?", "Could I see a photo ID?")],
     passport_fine: [t("Sí, | su | pasaporte | está bien. | Se lo | devuelvo | enseguida.", "Yes, | your | passport | is fine. | It to you | I'll-return | right away.", "Yes, your passport is fine. I'll give it right back.")],
     ask_cash_deposit: [t("¿Me | entrega | el | depósito | de | {$price}, | por favor?", "(To) me | you-hand-over | the | deposit | of | {$price}, | please?", "Could you hand me the deposit of {$price}, please?")],
@@ -303,7 +372,8 @@ export const hotel: SituationDef = {
     hold: [t("Retenemos | {$price} | en | su | tarjeta | durante | su | estancia.", "We hold | {$price} | on | your | card | during | your | stay.", "We place a hold of {$price} on your card for your stay.")],
     hold_back: [t("Al | salir, | cancelamos | la | retención | si | no hay | cargos. | Su | banco | puede | tardar | unos | días | en | liberarla.", "Upon | leaving, | we cancel | the | hold | if | there are no | charges. | Your | bank | may | take | some | days | to | release it.", "We release the hold at checkout if there are no charges. Your bank may take a few days to make the funds available.")],
     prepaid: [t("Su | tarifa | de | habitación | ya | está | pagada; | falta | el | impuesto | de | hospedaje.", "Your | rate | for | room | already | is | paid; | remains | the | tax | on | lodging.", "Your room rate is prepaid; the lodging tax is still due.")],
-    cash_deposit: [t("Sí. | Puede | dejar | un | depósito | de | {$price} | en efectivo. | Se lo | devolvemos | al | salir | si | no hay | cargos.", "Yes. | You can | leave | a | deposit | of | {$price} | in cash. | It to you | we-return | upon | leaving | if | there are no | charges.", "Yes, you can leave a cash deposit of {$price}. We'll return it at checkout if there are no charges.")],
+    // "Claro." answers "¿Puedo pagar en efectivo?" and "No tengo tarjeta de crédito" alike (a "Sí." answered no question)
+    cash_deposit: [t("Claro. | Puede | dejar | un | depósito | de | {$price} | en efectivo. | Se lo | devolvemos | al | salir | si | no hay | cargos.", "Sure. | You can | leave | a | deposit | of | {$price} | in cash. | It to you | we-return | upon | leaving | if | there are no | charges.", "Sure, you can leave a cash deposit of {$price}. We'll return it at checkout if there are no charges.")],
     debit_ok: [t("Sí. | Con | débito, | el | depósito | se cobra | y | se lo | devolvemos | al | salir.", "Yes. | With | debit, | the | deposit | is charged | and | it to you | we-return | upon | leaving.", "Yes. With a debit card, we charge the deposit and refund it when you check out.")],
     deposit_required: [t("Entiendo. | Para | entregar | la | habitación | necesitamos | una | garantía: | tarjeta | o | depósito | en efectivo.", "I understand. | To | hand over | the | room | we need | a | security deposit: | card | or | deposit | in cash.", "I understand. We need a card or cash deposit before we can give you the room.")],
     lodging_tax: [t("El | impuesto | de | hospedaje, | del | 5%, | no está | incluido; | se suma | a | su | cuenta.", "The | tax | on | lodging, | of | 5%, | isn't | included; | it's added | to | your | bill.", "The 5% lodging tax isn't included; it's added to your bill.", { flags: { 4: "del 5%: Spanish gives the rate after the noun, with de + el." }, say: "El impuesto de hospedaje, del cinco por ciento, no está incluido; se suma a su cuenta." })],
@@ -318,7 +388,8 @@ export const hotel: SituationDef = {
     room_207: [t("Su | habitación | es | la | 207, | en | el | segundo | piso.", "Your | room | is | — | 207, | on | the | second | floor.", "You're in room 207, on the second floor.", { flags: { 3: "la stands for la habitación before its number; English says room plus the number." }, say: "Su habitación es la doscientos siete, en el segundo piso." })],
     room_305: [t("Su | habitación | es | la | 305, | en | el | tercer | piso.", "Your | room | is | — | 305, | on | the | third | floor.", "You're in room 305, on the third floor.", { flags: { 3: "la stands for la habitación before its number; English says room plus the number." }, say: "Su habitación es la trescientos cinco, en el tercer piso." })],
     keys_here: [t("Aquí | tiene | sus | llaves.", "Here | you have | your | keys.", "Here are your keys."), t("Aquí | tiene | su | llave.", "Here | you have | your | key.", "Here's your key.")],
-    elevators: [t("El | elevador | está | a la izquierda.", "The | elevator | is | on the left.", "The elevator is on your left.")],
+    // the 3D lobby: two elevator doors and the "Elevadores" sign on the east wall, the learner's right at the desk
+    elevators: [t("Los | elevadores | están | a | su | derecha.", "The | elevators | are | on | your | right.", "The elevators are on your right.")],
     breakfast_incl: [t("Sí, | el | desayuno | está | incluido.", "Yes, | the | breakfast | is | included.", "Yes, breakfast is included.")],
     breakfast_time: [t("Servimos | el | desayuno | de | 7 | a | 10:30, | en | la | terraza.", "We serve | the | breakfast | from | 7 | to | 10:30, | on | the | terrace.", "Breakfast is from 7 to 10:30 a.m. on the terrace.", { say: "Servimos el desayuno de siete a diez y media, en la terraza." })],
     breakfast_volunteer: [t("El | desayuno | está | incluido, | de | 7 | a | 10:30 | en | la | terraza.", "The | breakfast | is | included, | from | 7 | to | 10:30 | on | the | terrace.", "Breakfast is included, from 7 to 10:30 a.m. on the terrace.", { say: "El desayuno está incluido, de siete a diez y media en la terraza." })],
@@ -335,28 +406,39 @@ export const hotel: SituationDef = {
     late_noon_free: [t("Entonces, | al | mediodía, | sin | costo.", "Then, | at | noon, | without | charge.", "Then noon, at no extra charge.")],
     late_noon_ok: [t("Perfecto, | su | salida | queda | al | mediodía.", "Perfect, | your | checkout | is set | at | noon.", "Great, your checkout is set for noon.")],
     late_two_ok: [t("Listo, | su | salida | queda | a | las | dos | de la tarde.", "Done, | your | checkout | is set | at | — | two | p.m.", "All set, your checkout is at 2 p.m.", { flags: { 5: "Spanish uses an article before clock times; English has no separate word." } })],
+    // a bare "Sí" / "Está bien" to the choice (noon free or two for 700) chooses neither
+    late_which: [t("Entonces, | ¿al | mediodía | o | a | las | dos?", "So, | at | noon | or | at | — | two?", "So, noon or 2 p.m.?", { flags: { 5: "Spanish uses an article before clock times; English has no separate word." } })],
+    late_price: [t("Hasta | las | dos | son | {$price}; | al | mediodía, | sin | costo.", "Until | — | two | it's | {$price}; | at | noon, | without | charge.", "Until 2 p.m. it's {$price}; noon is free.", { flags: { 1: "Spanish uses an article before clock times; English has no separate word." } })],
     luggage_ok: [t("Con gusto. | Guardamos | sus | maletas | aquí | en | recepción.", "Gladly. | We'll keep | your | bags | here | at | reception.", "Of course. We can keep your bags here at the front desk.")],
     taxi_when: [t("Claro. | ¿Para | qué | hora | lo | necesita?", "Sure. | For | what | time | it | do you need?", "Of course. What time do you need it?")],
     taxi_now: [t("Claro, | se lo | pido | enseguida.", "Sure, | it for you | I'll-order | right away.", "Sure, I'll call one for you right away.")],
     taxi_ok: [t("Muy | bien, | se lo | pido | para | esa | hora.", "Very | good, | it for you | I'll-order | for | that | time.", "Great, I'll arrange it for that time.")],
+    taxi_what_time: [t("¿Para | qué | hora?", "For | what | time?", "For what time?")],
     towels_ok: [t("Claro, | le | llevamos | toallas | a | su | habitación.", "Sure, | (to) you | we'll-bring | towels | to | your | room.", "Of course, we'll bring towels to your room.")],
     pillow_ok: [t("Claro, | se la | llevamos | a | su | habitación.", "Sure, | it for you | we'll-bring | to | your | room.", "Of course, we'll bring it to your room.")],
-    elevator: [t("Está | ahí, | a la izquierda.", "It's | there, | on the left.", "It's over there on the left.")],
+    elevator: [t("Está | ahí, | a | su | derecha.", "It's | there, | on | your | right.", "It's over there on your right.")],
     gym: [t("Tenemos | un | gimnasio | pequeño | en | el | segundo | piso.", "We have | a | gym | small | on | the | second | floor.", "We have a small gym on the second floor.")],
     pool: [t("La | alberca | está | en | el | patio.", "The | pool | is | in | the | courtyard.", "The pool is in the courtyard.", { flags: { 1: "Mexican: alberca means swimming pool; piscina is more widely used." }, neutral: t("La | piscina | está | en | el | patio.", "The | pool | is | in | the | courtyard.", "The pool is in the courtyard.") })],
     parking: [t("Sí, | tenemos | estacionamiento. | Cuesta | {$price} | por | noche.", "Yes, | we have | parking. | It costs | {$price} | per | night.", "Yes, we have parking. It's {$price} a night.")],
+    parking_cost: [t("El | estacionamiento | cuesta | {$price} | por | noche.", "The | parking | costs | {$price} | per | night.", "Parking is {$price} a night.")],
     view_offer: [t("Tengo | una | habitación | con | vista | al | mar | por | {$price} | más | por | noche. | ¿La | quiere?", "I have | a | room | with | view | of the | sea | for | {$price} | more | per | night. | It | do you want?", "I have an ocean-view room for an extra {$price} a night. Would you like it?", { flags: { 12: "la: it, referring to la habitación." } })],
+    view_price: [t("Son | {$price} | más | por | noche.", "It's | {$price} | more | per | night.", "It's an extra {$price} a night.")],
     view_ok: [t("Listo, | ya | hice | el | cambio.", "Done, | already | I-made | the | change.", "All set, I've changed your room.")],
     quiet_ok: [t("Claro, | le | asigno | una | habitación | tranquila | en | el | quinto | piso.", "Sure, | (to) you | I'll-assign | a | room | quiet | on | the | fifth | floor.", "Of course, I'll put you in a quiet room on the fifth floor.")],
     twobeds_ok: [t("Claro, | le | doy | una | habitación | doble, | con | dos | camas.", "Sure, | (to) you | I'll-give | a | room | double, | with | two | beds.", "Of course, I'll give you a room with two beds.")],
     nonsmoking: [t("Todas | nuestras | habitaciones | son | para | no fumadores.", "All | our | rooms | are | for | nonsmokers.", "All our rooms are nonsmoking.")],
     restaurant: [t("Le | recomiendo | el | Restaurante | El Muelle. | Está | a | dos | cuadras.", "(To) you | I-recommend | the | Restaurant | The Pier. | It's | at | two | blocks.", "I recommend Restaurante El Muelle. It's two blocks away.", { write: "Restaurante El Muelle · a dos cuadras", spell: "El Muelle" })],
+    // the 3D town: out of the hotel's door left to the corner of calle Flamboyán, then left up Flamboyán to the sea (72 m)
+    beach: [t("La | playa | está | a | dos | minutos. | Saliendo, | a la izquierda, | y | en | la | esquina, | otra vez | a la izquierda, | hasta | el | mar.", "The | beach | is | at | two | minutes. | Going out, | to the left, | and | at | the | corner, | again | to the left, | as far as | the | sea.", "The beach is two minutes away. Go left out the door, then left again at the corner, all the way to the sea.")],
+    dollars: [t("Sí, | pero | al | tipo de cambio | del | hotel. | Le | conviene | más | en | pesos.", "Yes, | but | at the | exchange rate | of the | hotel. | (To) you | it-suits | more | in | pesos.", "Yes, but at the hotel's exchange rate. You're better off paying in pesos.")],
     roomservice: [t("Sí, | hasta | las | diez | de la noche. | El | menú | está | en | su | habitación.", "Yes, | until | — | ten | p.m. | The | menu | is | in | your | room.", "Yes, until 10 p.m. The menu is in your room.", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." } })],
     wakeup: [t("Claro, | dejamos | programada | su | llamada.", "Sure, | we'll-leave | scheduled | your | call.", "Of course, we'll schedule your wake-up call.")],
     room_is: [t("Al | terminar | el | registro | le | doy | su | número | de | habitación.", "Upon | finishing | the | registration | (to) you | I'll-give | your | number | of | room.", "I'll give you your room number when we've finished checking you in.")],
     checkin_now: [t("El | registro | es | a partir de | las | tres, | pero | su | habitación | ya | está | lista.", "The | check-in | is | from | — | three, | but | your | room | already | is | ready.", "Check-in starts at 3 p.m., but your room is ready now.", { flags: { 4: "Spanish uses an article before clock times; English has no separate word." } })],
-    room_not_ready: [t("Lo siento, | su | habitación | todavía | no está | lista. | Regrese | a | las | tres, | por favor. | ¿Gusta | dejar | sus | maletas | aquí | mientras tanto?", "I'm sorry, | your | room | still | isn't | ready. | Come back | at | — | three, | please. | Would you like | to leave | your | bags | here | in the meantime?", "I'm sorry, your room isn't ready yet. Please come back at 3 p.m. Would you like to leave your bags here in the meantime?", { flags: { 8: "Spanish uses an article before clock times; English has no separate word.", 11: "Mexican and very polite: “¿Gusta…?” = would you like…?" } })],
-    bags_offer: [t("¿Gusta | dejar | sus | maletas | aquí | mientras tanto?", "Would you like | to leave | your | bags | here | in the meantime?", "Would you like to leave your bags here in the meantime?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" } })],
+    room_not_ready: [t("Lo siento, | su | habitación | todavía | no está | lista. | Regrese | a | las | tres, | por favor. | ¿Gusta | dejar | sus | maletas | aquí | mientras tanto?", "I'm sorry, | your | room | still | isn't | ready. | Come back | at | — | three, | please. | Would you like | to leave | your | bags | here | in the meantime?", "I'm sorry, your room isn't ready yet. Please come back at 3 p.m. Would you like to leave your bags here in the meantime?", { flags: { 8: "Spanish uses an article before clock times; English has no separate word.", 11: "Mexican and very polite: “¿Gusta…?” = would you like…?" },
+      neutral: t("Lo siento, | su | habitación | todavía | no está | lista. | Regrese | a | las | tres, | por favor. | ¿Quiere | dejar | sus | maletas | aquí | mientras tanto?", "I'm sorry, | your | room | still | isn't | ready. | Come back | at | — | three, | please. | Do you want | to leave | your | bags | here | in the meantime?", "I'm sorry, your room isn't ready yet. Please come back at 3 p.m. Would you like to leave your bags here in the meantime?", { flags: { 8: "Spanish uses an article before clock times; English has no separate word." } }) })],
+    bags_offer: [t("¿Gusta | dejar | sus | maletas | aquí | mientras tanto?", "Would you like | to leave | your | bags | here | in the meantime?", "Would you like to leave your bags here in the meantime?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" },
+      neutral: t("¿Quiere | dejar | sus | maletas | aquí | mientras tanto?", "Do you want | to leave | your | bags | here | in the meantime?", "Would you like to leave your bags here in the meantime?") })],
     see_you_later: [t("Perfecto, | aquí | {m:lo|f:la} | esperamos | a | las | tres.", "Great, | here | you | we'll-wait-for | at | — | three.", "Great, we'll see you here at 3 p.m.", { flags: { 2: "lo / la: “you” (usted), lo for a man and la for a woman.", 5: "Spanish uses an article before clock times; English has no separate word." } })],
     return_reminder: [t("Su | habitación | va | a | estar | lista | a | las | tres.", "Your | room | is going | to | be | ready | at | — | three.", "Your room will be ready at 3 p.m.", { flags: { 7: "Spanish uses an article before clock times; English has no separate word." } })],
     room_ready: [t("(Más tarde…) | ¡Gracias | por | esperar! | Su | habitación | ya | está | lista.", "(Later…) | Thank you | for | waiting! | Your | room | now | is | ready.", "(Later…) Thanks for waiting! Your room is ready now.", { flags: { 0: "Not spoken: it shows that time has passed and it is now three o'clock." }, say: "¡Gracias por esperar! Su habitación ya está lista." })],
@@ -367,7 +449,7 @@ export const hotel: SituationDef = {
     p_greet: [t("¡Hola | de nuevo! | ¿Todo | bien | con | su | habitación?", "Hi | again! | Everything | okay | with | your | room?", "Hi again! Is everything okay with your room?"), t("¡Buenas! | ¿Cómo | va | todo | con | su | habitación?", "Hi! | How | is going | everything | with | your | room?", "Hi! How's everything with your room?")],
     p_what: [t("¿Qué | problema | tiene | con | la | habitación?", "What | problem | do you have | with | the | room?", "What's the problem with your room?")],
     room_noted: [t("Muy | bien, | gracias.", "Very | good, | thanks.", "Okay, thank you.")],
-    ac_sorry: [t("Lo siento | mucho. | Voy | a | avisar | a | mantenimiento.", "I'm sorry | very much. | I'm going | to | notify | — | maintenance.", "I'm very sorry. I'll let maintenance know.", { flags: { 6: "Personal a: Spanish marks the people being notified; English needs no preposition." } })],
+    ac_sorry: [t("Lo siento | mucho. | Voy | a | avisar | a | mantenimiento.", "I'm sorry | very much. | I'm going | to | notify | — | maintenance.", "I'm very sorry. I'll let maintenance know.", { flags: { 5: "Personal a: Spanish marks the people being notified; English needs no preposition." } })],
     fan_or_room: [t("¿Prefiere | un | ventilador | por | ahora, | o | cambiar | de | habitación?", "Do you prefer | a | fan | for | now, | or | change | of | room?", "Would you prefer a fan for now, or a different room?")],
     fan_ok: [t("Ahorita | le | mandamos | un | ventilador.", "In a moment | (to) you | we'll-send | a | fan.", "We'll send you a fan right away.", { flags: { 0: "Mexican: ahorita means in a moment here." }, neutral: t("Enseguida | le | mandamos | un | ventilador.", "Right away | (to) you | we'll-send | a | fan.", "We'll send you a fan right away.") })],
     fix_tomorrow: [t("Mantenimiento | revisa | el | aire | mañana | temprano.", "Maintenance | will-check | the | AC | tomorrow | early.", "Maintenance will check the AC first thing tomorrow.")],
@@ -514,6 +596,7 @@ export const hotel: SituationDef = {
     "mientras tanto": { reason: "lexical_expression", split: "mientras → while + tanto → so much misreads the adverb: in the meantime.", minimal: "Two words." },
     "más tarde": { reason: "lexical_expression", split: "más → more + tarde → late misreads the time phrase: later. A stage direction, not spoken.", minimal: "Two words in parentheses, the line's first unit only." },
     "por separado": { reason: "lexical_expression", split: "por → by + separado → separated misreads the adverb: separately.", minimal: "Two words." },
+    "tipo de cambio": { reason: "lexical_expression", split: "tipo → type + de → of + cambio → change misreads the term: exchange rate.", minimal: "Three words." },
     "le sirve": { reason: "grammatical_fusion", split: "le → to you + sirve → serves suggests service; the suitability question means does it work for you.", minimal: "Clitic and verb only; the passport stays separate." },
   },
 
@@ -535,18 +618,28 @@ export const hotel: SituationDef = {
   steps: [
     { id: "arrive", when: (c) => c.s.mode === "checkin", done: (c) => !!c.s.kind,
       ask: (c) => c.say(c.s.greeted ? "ask_help" : "greet"),
-      expects: ["checkin", "walkin"],
+      expects: ["checkin", "walkin", "walkin_ctx"],
       suggest: [{ lt: "Say you have a reservation", hint: "checkin" }, { lt: "Ask for a room", hint: "walkin" }],
-      yes: (c) => { c.s.kind = "res"; } },
+      yes: (c) => { c.s.kind = "res"; },
+      // "No (tengo)" to "¿Tiene reservación?" (the greeting's first variant) is a walk-in; after the other greetings,
+      // what the learner needs is asked
+      no: (c) => {
+        if (((c as ConvCtx).conv?.lastLines ?? []).some((l) => l.lineId === "greet" && l.variant === 0)) { hotel.handlers.walkin(c, {}, { intent: "walkin", slots: {}, tags: [] }); return; }
+        c.say("ask_help"); c.hold();
+      } },
     { id: "walk_nights", when: (c) => c.s.mode === "checkin" && c.s.kind === "walkin", done: (c) => !!c.s.nights,
       ask: (c) => c.say(c.s.walkChecked ? "ask_nights" : "walkin_nights"),
       expects: ["nights_ctx"],
       suggest: [{ lt: "Say how many nights", hint: "nights" }] },
     { id: "walk_offer", when: (c) => c.s.mode === "checkin" && c.s.kind === "walkin", done: (c) => !!c.s.roomChosen,
       ask: (c) => { c.s.taxSaid = true; c.say(OFFER_LINE[c.s.offer] ?? "walkin_offer", { price: c.s.offer === "two" ? 250000 : c.s.offer === "cheap" ? 170000 : 220000 }); },
-      expects: ["take_it", "ask_twobeds", "ask_breakfast", "ask_included", "too_expensive_ctx", "cheaper_ctx", "walk_leave_ctx", "price_ok_ctx"],
+      expects: ["take_it", "ask_twobeds", "ask_breakfast", "ask_included", "too_expensive_ctx", "cheaper_ctx", "walk_leave_ctx", "price_ok_ctx", "price_q_ctx"],
       suggest: [{ lt: "Accept or ask about another room", hint: "g_yesno" }, { lt: "Say it’s too expensive", hint: "walk_price" }, { lt: "Ask what’s included", hint: "ask" }],
-      yes: (c) => { takeRoom(c); c.say("walkin_great"); },
+      // rule 17: "Está bien, gracias" may be a polite no: "Entonces, ¿sí la quiere?" once before the room is taken
+      yes: (c) => {
+        if (!c.s.walkConfirmAsked && politeClosing(c)) { c.s.walkConfirmAsked = true; c.say("confirm_room"); c.hold(); return; }
+        takeRoom(c); c.say("walkin_great");
+      },
       // "No, thanks": first a cheaper room, then a polite goodbye
       no: (c) => {
         if (c.s.offer !== "cheap") { offerCheaper(c); return; }
@@ -563,7 +656,10 @@ export const hotel: SituationDef = {
     { id: "found", when: (c) => c.s.mode === "checkin" && c.s.kind === "res", done: (c) => !!c.s.confirmed,
       ask: (c) => {
         if (c.s.nights) { c.s.confirmed = true; c.say("found_short"); askNext(c); return; }
-        c.say("found_full");
+        // asked again after a side question or a change ("…pero quería dos camas"): only the nights, never the
+        // double bed again
+        if (c.s.foundAsked) { c.say("found_again"); return; }
+        c.s.foundAsked = true; c.say("found_full");
       },
       expects: ["nights_fix", "nights_ctx"],
       suggest: [{ lt: "Confirm or correct the number of nights", hint: "confirm" }, { lt: "Say how many nights", hint: "nights" }],
@@ -578,7 +674,7 @@ export const hotel: SituationDef = {
       yes: (c) => { c.s.idShown = true; ack(c, 1, "thank_you"); } },
     { id: "card", when: (c) => c.s.mode === "checkin", done: (c) => !!c.s.cardGiven,
       ask: (c) => { if (c.s.kind === "res" && !c.s.prepaidSaid && c.chance(0.3)) { c.s.prepaidSaid = true; c.s.taxSaid = true; c.say("prepaid"); } if (c.s.depositPreference === "cash") c.say("ask_cash_deposit", { price: 200000 }); else c.say(c.s.depositPreference === "debit" ? "ask_debit" : "ask_card"); },
-      expects: ["hand_over", "incidentals_q", "cash_q", "debit_q", "decline_deposit"],
+      expects: ["hand_over", "incidentals_q", "cash_q", "debit_q", "decline_deposit", "ask_dollars"],
       suggest: [{ lt: "Hand over your card or deposit", hint: "card" }, { lt: "Ask about the deposit", hint: "card_q" }],
       yes: (c) => { c.s.cardGiven = true; ack(c, 1, "thank_you"); } },
     { id: "sign", when: (c) => c.s.mode === "checkin", done: (c) => !!c.s.signed,
@@ -606,7 +702,7 @@ export const hotel: SituationDef = {
         if (c.s.volunteerBreakfast) { c.s.breakfastSaid = true; c.say("breakfast_volunteer"); }
         if (c.s.volunteerCheckout) { hotel.handlers.ask_checkout(c, {}, { intent: "ask_checkout", slots: {}, tags: [] }); }
         askNext(c);
-      }, expects: ["return_ready_ctx", "wait_room_ctx"] },
+      }, expects: ["return_ready_ctx", "wait_room_ctx", "return_time_ctx"] },
     { id: "p_report", when: (c) => c.s.mode === "problem", done: (c) => !!c.s.reported,
       ask: (c) => c.say(c.s.pGreeted ? "p_what" : "p_greet"),
       expects: ["pr_ac", "pr_hotwater", "pr_key", "pr_noisy", "pr_wifi", "pr_tv", "pr_towels", "p_fine", "room_no", "pr_vague_ctx"],
@@ -626,7 +722,7 @@ export const hotel: SituationDef = {
         if (c.s.anyAsked) { c.say("ask_any_else"); c.expect(anyElsePending()); return; }
         c.say("ask_any"); c.s.anyAsked = true;
       },
-      expects: ["done", "ask_breakfast", "ask_breakfast_time", "ask_wifi", "ask_checkout", "ask_late", "ask_included", "ask_luggage", "ask_taxi", "ask_towels", "ask_view", "ask_parking", "ask_elevator"],
+      expects: ["done", "ask_breakfast", "ask_breakfast_time", "ask_wifi", "ask_checkout", "ask_late", "ask_included", "ask_luggage", "ask_taxi", "ask_towels", "ask_view", "ask_parking", "ask_elevator", "ask_beach", "ask_dollars"],
       suggest: [
         { lt: "Ask what’s included, about breakfast, or about Wi-Fi", hint: "ask" },
         { lt: "Ask for a late checkout", hint: "late" },
@@ -662,11 +758,14 @@ export const hotel: SituationDef = {
       if (n) c.s.nights = n;
     },
     walkin(c, slots, seg) {
+      // a guest who already has a reservation (or a problem visit) is told there are rooms, never made a walk-in
+      if (c.s.mode !== "checkin" || c.s.kind === "res") { once(c, "walk", "walkin_check"); return; }
       c.s.kind = "walkin";
       const n = nightsFrom(slots, seg);
       if (n) c.s.nights = n;
+      // "Déjeme revisar…" once: asked for a room again, she only asks what is still open
+      if (!c.s.walkChecked) once(c, "walk", "walkin_check");
       c.s.walkChecked = true;
-      once(c, "walk", "walkin_check");
     },
     nights_ctx(c, slots, seg) {
       const n = nightsFrom(slots, seg) ?? (typeof slots.number === "number" ? slots.number : undefined);
@@ -706,7 +805,8 @@ export const hotel: SituationDef = {
       if (!c.s.idShown) { c.s.idShown = true; once(c, "ho", "thank_you"); return; }
       once(c, "ho", "thank_you");
     },
-    id_q(c) { c.say("passport_fine"); },
+    // "¿Le sirve mi pasaporte?" comes with the passport held out: she takes it ("Se lo devuelvo enseguida")
+    id_q(c) { c.s.idShown = true; c.say("passport_fine"); },
     incidentals_q(c) { c.say("incidentals"); c.say("hold", { price: 200000 }); c.say("hold_back"); },
     cash_q(c) { c.s.depositPreference = "cash"; c.say("cash_deposit", { price: 200000 }); },
     debit_q(c) { c.s.depositPreference = "debit"; c.say("debit_ok"); },
@@ -746,14 +846,7 @@ export const hotel: SituationDef = {
       if (h <= 12) { c.s.late = "noon"; c.say("late_free"); return; }
       if (h > 14 || (h === 14 && (tm?.m ?? 0) > 0)) c.say("late_limit");
       c.say("late_two_q", { price: 70000 });
-      c.expect({
-        id: "late", expects: ["late_noon", "late_two", "too_expensive_ctx", "cheaper_ctx"], hints: ["late_two"], suggest: [{ lt: "Accept (700 pesos) or choose noon", hint: "late_two" }],
-        on: { late_noon: (cc) => { cc.s.late = "noon"; once(cc, "late", "late_noon_ok"); }, late_two: (cc) => { cc.s.late = "two"; once(cc, "late", "late_two_ok"); },
-          too_expensive_ctx: (cc) => { cc.s.late = "noon"; once(cc, "late", "late_noon_free"); }, cheaper_ctx: (cc) => { cc.s.late = "noon"; once(cc, "late", "late_noon_free"); } },
-        yes: (cc) => { cc.s.late = "two"; once(cc, "late", "late_two_ok"); },
-        no: (cc) => { cc.s.late = "noon"; once(cc, "late", "late_noon_free"); },
-        ask: (cc) => cc.say("late_two_q", { price: 70000 }),
-      });
+      c.expect(lateTwoPending());
     },
     late_noon(c) { if (turn(c).lateHandled) return; c.s.late = "noon"; once(c, "late", "late_noon_ok"); },
     late_two(c, _slots, seg) {
@@ -767,10 +860,7 @@ export const hotel: SituationDef = {
     ask_luggage(c) { if (c.s.waitingForRoom) { c.s.bagsAsked = true; c.s.bagsKept = true; } c.say("luggage_ok"); },
     ask_taxi(c) {
       c.say("taxi_when");
-      c.expect({ id: "taxi_time", expects: ["taxi_time_ctx"], hints: ["taxi_time"], suggest: [{ lt: "Say what time you need the taxi", hint: "taxi_time" }],
-        on: { taxi_time_ctx: (cc, sl, sg) => { hotel.handlers.taxi_time_ctx(cc, sl, sg); } },
-        yes: (cc) => { cc.s.taxi = true; cc.say("taxi_ok"); }, no: (cc) => { cc.say("no_problem"); },
-        ask: (cc) => cc.say("taxi_when") });
+      c.expect(taxiPending());
     },
     taxi_time_ctx(c, _slots, seg) { c.s.taxi = true; once(c, "taxi", seg.tags.includes("now") ? "taxi_now" : "taxi_ok"); },
     ask_towels(c) { c.say("towels_ok"); },
@@ -778,7 +868,7 @@ export const hotel: SituationDef = {
     ask_elevator(c) { c.say("elevator"); },
     ask_gym(c) { c.say("gym"); },
     ask_pool(c) { c.say("pool"); },
-    ask_parking(c) { c.say("parking", { price: 15000 }); },
+    ask_parking(c, _slots, seg) { c.say(seg?.tags?.includes("cost") ? "parking_cost" : "parking", { price: 15000 }); },
     ask_view(c) { if (c.s.room === "518") { c.say("room_518"); return; } c.say("view_offer", { price: 130000 }); c.expect(viewPending()); },
     ask_quiet(c) { c.s.room = "518"; c.say("quiet_ok"); if (c.s.roomSaid) c.say("room_518"); },
     ask_twobeds(c) {
@@ -793,6 +883,7 @@ export const hotel: SituationDef = {
     ask_checkin_time(c) { c.say(c.s.roomNotReady && !c.s.returned ? "return_reminder" : "checkin_now"); },
     return_ready_ctx(c) { if (c.s.waitingForRoom) { c.s.returned = true; c.say("room_ready"); } },
     wait_room_ctx(c) { if (c.s.waitingForRoom) { seeYouLater(c); return; } c.say("ack"); },
+    return_time_ctx(c) { c.say(c.s.roomNotReady && !c.s.returned ? "return_reminder" : "checkin_now"); },
     ask_tax(c) { c.s.taxSaid = true; c.say("tax_info"); once(c, "eco", "eco_fee", { price: 3500 }); },
     decline_deposit(c) { c.say("deposit_required"); c.hold(); },
     done(c) { c.s.noMore = true; },
@@ -809,6 +900,13 @@ export const hotel: SituationDef = {
       c.s.late = "noon"; once(c, "late", "late_noon_free");
     },
     price_ok_ctx(c) { c.say("no_problem"); c.hold(); },
+    // "¿Cuánto cuesta?" at an open offer gets that offer's price (rule 17); the pendings answer their own
+    price_q_ctx(c) {
+      if (c.step === "walk_offer" && !c.s.roomChosen) { c.say("price_night", { price: c.s.offer === "two" ? 250000 : c.s.offer === "cheap" ? 170000 : 220000 }); c.hold(); }
+    },
+    walkin_ctx(c, slots, seg) { hotel.handlers.walkin(c, slots, seg); },
+    ask_dollars(c) { c.say("dollars"); },
+    ask_beach(c) { c.say("beach"); },
     cheaper_ctx(c, slots, seg) { hotel.handlers.too_expensive_ctx(c, slots, seg); },
     walk_leave_ctx(c) { c.say("walkin_sorry"); c.end(); },
     room_no(c) { c.s.roomNo = true; once(c, "rn", "room_noted"); },
@@ -980,6 +1078,33 @@ export const hotel: SituationDef = {
     { say: "No quiero cambiarme de cuarto, el ventilador está bien", intent: "ch_fan", not: ["ch_move"] },
     { say: "Vuelvo más tarde", intent: "wait_room_ctx", step: "room" },
     { say: "Ya estoy de vuelta", intent: "return_ready_ctx", step: "room" },
+    // The audit (5 Nov 2026): side questions, the walk-in's first words, prices at the offers, the wait.
+    { say: "Una habitación, por favor", intent: "walkin_ctx", step: "arrive" },
+    { say: "Un cuarto para esta noche", intent: "walkin_ctx", step: "arrive" },
+    { say: "¿Cuánto cuesta?", intent: "price_q_ctx", step: "walk_offer" },
+    { say: "¿Cuánto es por noche?", intent: "price_q_ctx", step: "walk_offer" },
+    { say: "¿Tiene vista al mar?", intent: "ask_view" },
+    { say: "¿Aceptan dólares?", intent: "ask_dollars" },
+    { say: "¿Puedo pagar con dólares?", intent: "ask_dollars" },
+    { say: "¿Puedo dejar el depósito en dólares?", intent: "ask_dollars", step: "card" },
+    { say: "¿Dónde está la playa?", intent: "ask_beach" },
+    { say: "¿La playa está lejos?", intent: "ask_beach" },
+    { say: "¿Cómo llego a la playa?", intent: "ask_beach" },
+    { say: "¿Cuál es la red del wifi?", intent: "ask_wifi" },
+    { say: "¿Hay servicio a la habitación?", intent: "ask_roomservice" },
+    { say: "¿Puedo fumar?", intent: "ask_nonsmoking" },
+    { say: "¿Dónde está el restaurante?", intent: "ask_restaurant" },
+    { say: "¿Cuánto es el estacionamiento?", intent: "ask_parking" },
+    { say: "Tres", intent: "keys_ctx", step: "keys", slots: { number: 3 } },
+    { say: "Necesito dos llaves", intent: "keys_ctx", step: "keys" },
+    { say: "Espero aquí", intent: "wait_room_ctx", step: "room" },
+    { say: "Voy a dar una vuelta", intent: "wait_room_ctx", step: "room" },
+    { say: "¿A qué hora puedo regresar?", intent: "return_time_ctx", step: "room" },
+    { say: "¿Cuánto tiempo tengo que esperar?", intent: "return_time_ctx", step: "room" },
+    { say: "No tengo dólares", intent: "none" },
+    { say: "No quiero ir a la playa", intent: "none" },
+    { say: "¿Cuánto cuesta?", intent: "none" },
+    { say: "No tiene vista al mar", intent: "none" },
     // Spain forms are correct, with no dialect correction.
     { say: "¿Tenéis habitaciones disponibles?", intent: "walkin" },
     { say: "Vale, me quedo con esa habitación", intent: "take_it", step: "walk_offer" },
@@ -1052,6 +1177,19 @@ export const hotel: SituationDef = {
       auto: omit(["name", "spell", "id", "card", "sign", "late", "anything"]), setup: (s) => { s.mode = "checkin"; s.askSpell = true; s.askKeys = false; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { late: "two", taxSaid: true } } },
     { name: "card and passport handed over out of order", turns: ["Tengo una reservación por dos noches", "Aquí tiene mi tarjeta", "Aquí tiene mi pasaporte", "Eso es todo", "Gracias"],
       auto: HT_AUTO, setup: (s) => { s.mode = "checkin"; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { idShown: true, cardGiven: true } } },
+    // The audit (5 Nov 2026): rule 17 at the offers, a bare "No" to "¿Tiene reservación?", the wait, the taxi's time.
+    { name: "walk-in: the price asked, a polite 'está bien, gracias' asked again, then yes", turns: ["¿Tienen habitaciones disponibles?", "Dos noches", "¿Cuánto cuesta?", "Está bien, gracias", "Sí", "Miller", "Aquí tiene mi pasaporte", "Aquí tiene mi tarjeta", "Listo", "Eso es todo", "Gracias"],
+      auto: {}, setup: (s) => { s.mode = "checkin"; s.askSpell = false; s.askKeys = false; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { kind: "walkin", walkConfirmAsked: true, roomChosen: true, room: "412" } } },
+    { name: "no reservation: a bare 'No' to the greeting, then a room", turns: ["No", "Necesito una habitación por dos noches", "Me quedo con esa habitación", "Miller", "Aquí tiene mi pasaporte", "Aquí tiene mi tarjeta", "Listo", "Eso es todo", "Gracias"],
+      auto: {}, setup: (s) => { s.mode = "checkin"; s.askSpell = false; s.askKeys = false; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { kind: "walkin", nights: 2, roomChosen: true } } },
+    { name: "late checkout: a bare yes is asked 'noon or two?', the price, then two", turns: ["Tengo una reservación por tres noches", "Miller", "Aquí tiene mi pasaporte", "Aquí tiene mi tarjeta", "Listo", "¿Puedo salir más tarde?", "Sí", "¿Cuánto cuesta?", "A las dos", "Eso es todo", "Gracias"],
+      auto: {}, setup: (s) => { s.mode = "checkin"; s.askSpell = false; s.askKeys = false; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { late: "two" } } },
+    { name: "the ocean view: its price, 'está bien, gracias' asked again, then no", turns: ["Tengo una reservación por tres noches", "Miller", "Aquí tiene mi pasaporte", "Aquí tiene mi tarjeta", "Listo", "¿Tiene una habitación con vista al mar?", "¿Cuánto cuesta?", "Está bien, gracias", "No, gracias", "Eso es todo", "Gracias"],
+      auto: {}, setup: (s) => { s.mode = "checkin"; s.askSpell = false; s.askKeys = false; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { room: "412" } } },
+    { name: "room not ready: no bags, when to come back, wait (twist forced)", turns: ["Tengo una reservación por tres noches", "Miller", "Aquí tiene mi pasaporte", "Aquí tiene mi tarjeta", "Listo", "No, gracias", "¿A qué hora puedo regresar?", "Espero aquí", "Ya volví", "Eso es todo", "Gracias"],
+      auto: {}, setup: (s) => { s.mode = "checkin"; s.askSpell = false; s.askKeys = false; s.roomNotReady = true; s.upgradeTwist = false; }, expect: { complete: true, state: { returned: true, roomSaid: true } } },
+    { name: "a taxi: a bare yes is asked 'for what time?'; dollars and the beach", turns: ["Tengo una reservación por tres noches", "Miller", "Aquí tiene mi pasaporte", "Aquí tiene mi tarjeta", "Listo", "¿Me puede pedir un taxi?", "Sí, por favor", "A las cinco", "¿Aceptan dólares?", "¿Dónde está la playa?", "Eso es todo", "Gracias"],
+      auto: {}, setup: (s) => { s.mode = "checkin"; s.askSpell = false; s.askKeys = false; s.roomNotReady = false; s.upgradeTwist = false; }, expect: { complete: true, state: { taxi: true, taxiTimeAsked: true } } },
   ],
 };
 
