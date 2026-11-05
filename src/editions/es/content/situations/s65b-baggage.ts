@@ -9,7 +9,7 @@
 // "PC 482" = "pe, ce, cuatrocientos ochenta y dos"), the claim tag (comprobante / etiqueta, stuck to the boarding
 // pass), a description of the bag (maleta, mochila, bolsa de viaje; color, size, rígida / de tela, "con ruedas",
 // marks, brand), what's inside, delivery to the hotel (or "paso por ella"), an address in the Yucatán style
-// ("calle Hidalgo 15, entre Juárez y Morelos"), a phone number (Mexicans read it in pairs), a courtesy kit, and the
+// ("calle Flamboyán 23, entre Hidalgo y Juárez"), a phone number (Mexicans read it in pairs), a courtesy kit, and the
 // report number, which the learner can ask to spell or write down.
 // Twist (visits ≥ 1): the bag is found in the system: it stayed in Cancún (or the connecting city) and comes tomorrow
 // on the first flight.
@@ -882,7 +882,11 @@ export const baggage: SituationDef = {
     ref_b: [t("Este | es | su | número | de | reporte: | PC-58306.", "This | is | your | number | of | report: | PC-58306.", "Here's your report number: PC-58306.",
       { say: "Este es su número de reporte: pe, ce, cinco, ocho, tres, cero, seis.", write: "Reporte de equipaje: PC-58306" })],
     ref_track: [
-      t("Con | ese | número | puede | consultar | el | estado | en línea.", "With | that | number | you can | check | the | status | online.", "You can check the status online with that number."),
+      // the brief teaches "reclamo de equipaje" (the hall's sign): her desk is in it (the lead's decision, 5 Nov 2026)
+      t("Con | ese | número | puede | consultar | el | estado | en línea, | o | preguntar | aquí, | en | reclamo de equipaje.",
+        "With | that | number | you can | check | the | status | online, | or | ask | here, | at | baggage claim.",
+        "You can check the status online with that number, or ask here at baggage claim.",
+        { flags: { 12: "reclamo de equipaje: baggage claim, the hall where the bags come out (and this desk)." } }),
       t("Viene | en | esta | copia | del | reporte.", "It comes | on | this | copy | of the | report.", "It's on this copy of the report."),
     ],
     spell_a: [t("Claro: | P-C, | 4-7-2-1-9.", "Sure: | P-C, | 4-7-2-1-9.", "Sure: P-C, 4-7-2-1-9.", { say: "Claro: pe, ce, cuatro, siete, dos, uno, nueve." })],
@@ -1260,6 +1264,7 @@ export const baggage: SituationDef = {
     "se le ofrece": { reason: "lexical_expression", split: "se → itself + le → to you + ofrece → offers misreads the service formula: what can I do for you.", minimal: "Three words; qué stays separate." },
     "pase de abordar": { reason: "lexical_expression", split: "pase → pass + de → of + abordar → to board would hide the compound noun: boarding pass.", minimal: "Three words, one noun." },
     "tarjeta de embarque": { reason: "lexical_expression", split: "tarjeta → card + de → of + embarque → boarding is the compound noun boarding pass.", minimal: "Three words, one noun." },
+    "reclamo de equipaje": { reason: "lexical_expression", split: "reclamo → claim + de → of + equipaje → luggage is the compound noun baggage claim.", minimal: "Three words, one place." },
     "así que": { reason: "lexical_expression", split: "así → like this + que → that misreads the connector: so.", minimal: "Two words." },
     "qué tan": { reason: "lexical_expression", split: "qué → what + tan → so misreads the degree question: how (big).", minimal: "Two words; the adjective stays separate." },
     "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less is the fixed adverb roughly.", minimal: "Three words." },
