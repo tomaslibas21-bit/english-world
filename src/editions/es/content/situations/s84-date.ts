@@ -15,8 +15,12 @@
 // a ver?" and a day (twist: Saturday with the parents) → "Mándame un mensaje cuando llegues". The chilly sea breeze
 // (twist: "Ya hace fresco") gets a suéter or a chamarra. A "no" to a second date is accepted kindly.
 // Mexican-only words, each with a neutral twin: padre (cool), no manches (no way). The rest is shared Spanish.
-// Unsure facts kept vague: no prices (nobody says what dinner cost); the greeting kiss on the cheek is only in the
-// intro ("common"), not a rule.
+// The check is said only when asked: $900 for two ($450 each), a main and a drink each at El Muelle (s69: "como
+// trescientos pesos por persona, con bebida"; the date had cocktails); in Mexico one leaves 10–15% on top.
+// The partner's own facts (the same for Santiago and Camila; asked or not): a wedding photographer, born here in Puerto
+// Colibrí, lives a few blocks from El Muelle ("a la vuelta" on some visits), parents in town, a younger sister, a cat
+// called Luna, 31, loves cooking, the cenotes, jazz and cumbia; went to {C} last summer.
+// Unsure facts kept vague: the greeting kiss on the cheek is only in the intro ("common"), not a rule.
 
 import type { Ctx, EntityDef, Handler, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
@@ -45,6 +49,9 @@ const DRINKS: EntityDef[] = [
   ent("jamaica", "agua | de | jamaica", "water | of | hibiscus", "f", { art: "un", def: "el", forms: ["jamaica", "agua de jamaica", "agua fresca", "un agua fresca", "agua de horchata", "horchata", "agua de tamarindo"],
     chip: "agua de jamaica", attrs: { nat: "hibiscus water" } }),
   ent("soda", "refresco", "soda", "m", { pl: "refrescos", ltPl: "sodas", forms: ["refrescos", "una coca", "coca", "coca cola", "una coca cola", "soda", "un refresco de toronja"], chip: "refresco" }),
+  ent("juice", "jugo", "juice", "m", { pl: "jugos", ltPl: "juices", forms: ["jugos", "jugo de naranja", "jugo natural", "jugo de pina", "jugo verde", "juguito", "un juguito"], chip: "jugo" }),
+  ent("coconut", "agua | de | coco", "water | of | coconut", "f", { art: "un", def: "el", forms: ["agua de coco", "coco", "un coco", "coco frio", "un coco frio"], chip: "agua de coco",
+    attrs: { nat: "coconut water" } }),
   ent("coffee", "café", "coffee", "m", { pl: "cafés", ltPl: "coffees", forms: ["cafecito", "un expreso", "expreso", "capuchino", "un capuchino", "americano", "un americano"], chip: "café" }),
   ent("tea", "té", "tea", "m", { forms: ["tecito", "te caliente", "una taza de te", "te verde", "manzanilla", "te de manzanilla"], chip: "té" }),
 ];
@@ -58,11 +65,12 @@ const HOBBIES: EntityDef[] = [
   ent("hiking", "hacer | senderismo", "doing | hiking", "m", { art: "", forms: ["senderismo", "ir de excursion", "las excursiones", "excursiones", "la montana", "caminar en la montana", "hacer caminata", "ir a la montana"], chip: "hacer senderismo" }),
   ent("reading", "leer", "reading", "m", { art: "", forms: ["leo", "la lectura", "los libros", "libros", "leer libros", "novelas", "leer novelas"], chip: "leer" }),
   ent("walking", "caminar", "walking", "m", { art: "", forms: ["camino", "pasear", "los paseos", "paseos", "salir a caminar", "caminar con mi perro", "pasear a mi perro", "pasear al perro", "caminar por la playa", "caminar en la playa", "dar paseos", "salir a pasear"], chip: "caminar" }),
-  ent("dancing", "bailar", "dancing", "m", { art: "", forms: ["bailo", "el baile", "ir a bailar", "salir a bailar"], chip: "bailar", attrs: { tryable: true } }),
+  // not "tryable": a local who loves cumbia has danced, and every adult has ridden a bike ("Siempre he querido probarlo")
+  ent("dancing", "bailar", "dancing", "m", { art: "", forms: ["bailo", "el baile", "ir a bailar", "salir a bailar"], chip: "bailar" }),
   ent("swimming", "nadar", "swimming", "m", { art: "", forms: ["nado", "la natacion", "natacion", "el mar", "la playa", "ir a la playa", "nadar en el mar"], chip: "nadar", attrs: { mine: true } }),
   ent("diving", "bucear", "diving", "m", { art: "", forms: ["buceo", "el buceo", "snorkel", "hacer snorkel", "esnorquel", "nadar en los cenotes", "los cenotes", "ir a los cenotes"], chip: "bucear", attrs: { mine: true } }),
   ent("running", "correr", "running", "m", { art: "", forms: ["corro", "salir a correr", "el running"], chip: "correr" }),
-  ent("cycling", "andar | en | bici", "riding | a | bike", "m", { art: "", forms: ["la bici", "bici", "bicicleta", "la bicicleta", "el ciclismo", "ciclismo", "andar en bicicleta", "pasear en bici"], chip: "andar en bici", attrs: { tryable: true } }),
+  ent("cycling", "andar | en | bici", "riding | a | bike", "m", { art: "", forms: ["la bici", "bici", "bicicleta", "la bicicleta", "el ciclismo", "ciclismo", "andar en bicicleta", "pasear en bici"], chip: "andar en bici" }),
   ent("yoga", "hacer | yoga", "doing | yoga", "m", { art: "", forms: ["yoga", "el yoga", "hago yoga"], chip: "hacer yoga", attrs: { tryable: true } }),
   ent("photography", "tomar | fotos", "taking | pictures", "m", { art: "", forms: ["la fotografia", "fotografia", "las fotos", "fotos", "sacar fotos", "tomar fotografias"], chip: "tomar fotos", attrs: { tryable: true, mine: true } }),
   ent("painting", "pintar", "painting", "m", { art: "", forms: ["pinto", "la pintura", "dibujar", "dibujo", "el arte"], chip: "pintar", attrs: { tryable: true } }),
@@ -96,12 +104,14 @@ const GENRES: EntityDef[] = [
 ];
 
 // Where the partner went last summer (one per visit), and the learner's own country for the learner's questions.
+const HOME_FORMS = ["mi pais", "estados unidos", "los estados unidos", "canada", "inglaterra", "el reino unido", "reino unido", "irlanda", "australia",
+  "nueva zelanda", "escocia", "gales", "nueva york", "londres", "toronto", "california", "texas"];
 const COUNTRIES: EntityDef[] = [
   ent("oaxaca", "Oaxaca", "Oaxaca", "m", { art: "", forms: ["la ciudad de oaxaca"] }),
   ent("chiapas", "Chiapas", "Chiapas", "m", { art: "", forms: ["san cristobal", "san cristobal de las casas", "palenque"] }),
   ent("guanajuato", "Guanajuato", "Guanajuato", "m", { art: "", forms: ["san miguel de allende", "san miguel"] }),
   ent("merida", "Mérida", "Mérida", "f", { art: "", forms: ["merida", "yucatan"] }),
-  ent("home", "mi | país", "my | country", "m", { art: "", forms: ["mi pais", "estados unidos", "los estados unidos", "canada", "inglaterra", "el reino unido", "reino unido", "irlanda", "australia", "nueva zelanda", "escocia", "gales", "nueva york", "londres", "toronto", "california", "texas"] }),
+  ent("home", "mi | país", "my | country", "m", { art: "", forms: HOME_FORMS }),
 ];
 const TRIP = ["oaxaca", "chiapas", "guanajuato", "merida"];
 
@@ -121,7 +131,7 @@ const WDAYS: EntityDef[] = [
   ent("thursday", "jueves", "Thursday", "m"), ent("friday", "viernes", "Friday", "m"), ent("saturday", "sábado", "Saturday", "m"),
   ent("sunday", "domingo", "Sunday", "m"),
 ];
-const DAY_IDS = new Set([...WDAYS.map((d) => d.id), "tomorrow"]);
+const DAY_IDS = new Set([...WDAYS.map((d) => d.id), "tomorrow", "day_after_tomorrow"]);
 
 // Jobs and fields: recognized only (the partner reacts without repeating them).
 const JOBS = ("enfermero/enfermera maestro/maestra profesor/profesora ingeniero/ingeniera programador/programadora desarrollador/desarrolladora " +
@@ -169,8 +179,22 @@ const backAll = (c: Ctx) => /\b(y tu|y a ti|tu que|que tal tu|y usted|y a usted|
  *  thanks or "¿de verdad?" doesn't accept the partner's offer. "La próxima pago yo" is about next time. */
 const paysToo = (c: Ctx) => /\b(yo (pago|invito)|(pago|invito) yo|dejame (pagar|invitar\w*)|insisto|divid\w*|mitad|medias|pachas|cada (quien|uno)|lo mio|mi parte)\b/
   .test(heard(c).replace(/\b(la )?(proxima|siguiente)( vez)?( (yo )?(invito|pago|me toca|invitas|pagas)( yo| tu| a mi)?)?/g, ""));
-/** Dinner for two at El Muelle (seafood on the malecón, "un poquito caro"), drinks included: only said when asked. */
-const CHECK_TOTAL = 128000;
+/** Dinner for two at El Muelle (seafood on the malecón, "un poquito caro"; s69: about $300 a person with a drink),
+ *  a main and a cocktail each: only said when asked. */
+const CHECK_TOTAL = 90000;
+const HALF_TOTAL = 45000;
+/** "No quiero volver a verte", "Pensándolo bien, mejor no": a no to the second date itself, never just to a day
+ *  (at the day step "No puedo", "Estoy ocupada" and a bare "No" only turn down the day offered). */
+const datesOff = (c: Ctx) => /\b(no (quiero|me gustaria) (volver a verte|verte otra vez|verte de nuevo|salir (otra vez|de nuevo|contigo)|vernos (otra vez|de nuevo))|no creo que (sea (una )?buena idea|seamos compatibles|funcione|esto funcione|vaya a funcionar)|prefiero que no|no me interesa|(quedamos|quedemos|seamos) (solo )?(como )?amigos|no (estoy buscando|busco|quiero) (nada serio|una relacion|pareja|algo serio)|no (hay|siento|senti) (quimica|conexion)|me caes (muy )?bien pero no)\b|\bpensandolo bien (mejor )?no( gracias)?\s*$/
+  .test(heard(c).replace(/[^a-z0-9ñ\s]/g, " ").replace(/\s+/g, " ").trim());
+
+/** The learner's personal questions (tags of ask_personal) and the partner's answer to each ("live" and "pets" are
+ *  picked in the handler: "a la vuelta" on the visits the partner lives right by El Muelle; the cat is qf_cats_yes). */
+const PERSONAL = ["from", "always", "live", "pets", "dog", "age", "siblings", "kids", "family", "like_here", "food", "hungry"];
+const PERSONAL_LINE: Record<string, string> = {
+  from: "own_from", always: "own_always", dog: "pets_dog", age: "own_age", siblings: "own_siblings", kids: "own_kids",
+  family: "own_family", like_here: "like_here", food: "own_food", hungry: "hungry",
+};
 
 const asked = (c: Ctx, id: string) => (c.s.asks?.[id] ?? 0) as number;
 const bump = (c: Ctx, id: string) => { c.s.asks ||= {}; c.s.asks[id] = asked(c, id) + 1; };
@@ -380,7 +404,8 @@ const H: Record<string, Handler> = {
   // agrees for later, and the check then comes without an offer to pay.
   pay_all(c) {
     hi(c);
-    if (c.s.checkDone) { if (once(c, "pay")) c.say("already_paid"); return; }
+    // "Too late, it's paid!" only when the partner paid or it was split; the learner who already paid gets a thank-you
+    if (c.s.checkDone) { if (once(c, "pay")) c.say(c.s.checkDone === "learner" ? "aw" : "already_paid"); return; }
     if (!c.s.checkShown && !c.s.wrapUp) {
       if (ordered(c)) { c.s.checkPlan = "learner"; if (once(c, "pay")) c.say("if_you_insist"); }
       else if (once(c, "pay")) c.say("not_ordered_yet");
@@ -413,11 +438,68 @@ const H: Record<string, Handler> = {
     if (c.s.partnerOffered && !c.s.checkDone) { c.say("amount_treat"); c.hold(); return; }
     if (!c.s.checkShown) { c.say("amount_not_yet"); return; }
     if (c.s.checkDone === "partner") { c.say("amount_paid"); return; }
-    if (c.s.checkDone === "split") { c.say("amount_half", { total: CHECK_TOTAL, amount: CHECK_TOTAL / 2 }); return; }
+    if (c.s.checkDone === "split") { c.say("amount_half", { total: CHECK_TOTAL, amount: HALF_TOTAL }); return; }
     c.say("amount_total", { total: CHECK_TOTAL });
     if (c.step === "check" && !c.s.checkDone) c.hold(); // the learner answers who pays next
   },
   ask_check(c) { hi(c); if (!c.s.checkShown) { c.s.checkShown = true; c.say("check_here"); } },
+  // "Entonces yo dejo la propina": at the partner's offer it accepts the treat; before any offer the partner offers
+  tip(c) {
+    hi(c);
+    if (!c.s.checkShown && !c.s.wrapUp) { if (once(c, "pay")) c.say(ordered(c) ? "when_it_comes" : "not_ordered_yet"); return; }
+    c.s.learnerTip = true;
+    if (c.s.partnerOffered && !c.s.checkDone) { c.s.checkDone = "partner"; if (once(c, "pay")) c.say("deal"); return; }
+    if (!c.s.checkDone && !c.s.checkPlan) { c.ask("check_offer"); return; }
+    if (once(c, "pay")) c.say(c.s.checkDone === "learner" ? "aw" : "deal");
+  },
+  tip_q(c) { hi(c); if (once(c, "tipq")) c.say("tip_usual"); keepOffer(c); },
+  card_q(c) { hi(c); if (once(c, "card")) c.say("cards_ok"); keepOffer(c); },
+  // "¿Quién paga?", "¿Cómo le hacemos?": the partner offers to treat (or says it's settled)
+  who_pays(c) {
+    hi(c);
+    if (!c.s.checkShown && !c.s.wrapUp) { if (once(c, "pay")) c.say(ordered(c) ? "amount_not_yet" : "not_ordered_yet"); return; }
+    if (c.s.checkDone === "partner") { if (once(c, "pay")) c.say("amount_paid"); return; }
+    if (c.s.checkDone) { if (once(c, "pay")) c.say("deal"); return; }
+    if (c.s.checkPlan) { settlePlan(c); return; }
+    if (!c.s.partnerOffered) { c.ask("check_offer"); return; }
+    if (once(c, "pay")) c.say("amount_treat");
+    c.hold(); // the offer stays open
+  },
+  // "Como quieras", "Tú decides": at the check the partner treats; to a day or a second date it is a yes
+  as_you_like_ctx(c, slots, seg) {
+    hi(c);
+    if (c.step === "check" || c.step === "check_offer") {
+      if (c.s.partnerOffered && !c.s.checkDone) { H.accept_offer(c, slots, seg); return; }
+      H.who_pays(c, slots, seg);
+      return;
+    }
+    H.agree_again(c, slots, seg);
+  },
+  // a bare "¿Segura?" / "¿Seguro?" to "Yo invito, ¿eh?"
+  sure_ctx(c, slots, seg) { H.accept_offer(c, slots, seg); },
+  // the learner's personal questions ("¿De dónde eres?", "¿Tienes mascotas?"): the partner's own facts, once each
+  ask_personal(c, _slots, seg) {
+    hi(c);
+    const key = PERSONAL.find((k) => seg.tags.includes(k)) ?? "from";
+    c.s.personal ||= {};
+    if (c.s.personal[key]) { if (once(c, "told")) c.say("told_you"); return; }
+    c.s.personal[key] = true;
+    if (key === "live") c.say(c.s.livesClose ? "live_corner" : "live_blocks");
+    else if (key === "pets") c.say("qf_cats_yes");
+    else c.say(PERSONAL_LINE[key]);
+    keepOffer(c);
+  },
+  // "Soy de Canadá", "Soy irlandesa. ¿Y tú?"
+  from_ans(c, _slots, seg) {
+    hi(c);
+    c.s.lastTopic = undefined;
+    if (!c.s.fromSaid) { c.s.fromSaid = true; c.say("from_react"); }
+    if (askedBack(seg) || backAll(c)) {
+      c.s.toldTurn = turnId(c);
+      c.s.personal ||= {};
+      if (!c.s.personal.from) { c.s.personal.from = true; c.say("own_from"); }
+    }
+  },
   // the end of the evening
   nice_time(c) {
     hi(c);
@@ -432,20 +514,34 @@ const H: Record<string, Handler> = {
     if (!c.s.againOk) { c.s.againOk = true; c.say("id_like_that"); }
     proposeDay(c, slots);
   },
-  agree_again(c, slots) {
+  agree_again(c, slots, seg) {
     hi(c);
+    // "¿A qué hora?" (#time): the day first, the time later ("La hora la vemos después.")
+    const time = !!seg?.tags?.includes("time");
     if (c.step === "again" || (c.s.partnerAsked && !c.s.againOk)) {
       if (!c.s.againOk) { c.s.againOk = true; if (once(c, "agree")) c.say("yay_great"); }
+      if (time) timeByText(c);
       proposeDay(c, slots);
       return;
     }
     // "El domingo me queda bien": the day said wins over the one offered
-    if (c.step === "day" || c.s.dayOffered) { if (toArr(slots?.day).length) { proposeDay(c, slots); return; } dayYes(c); return; }
+    if (c.step === "day" || c.s.dayOffered) {
+      if (toArr(slots?.day).length) { proposeDay(c, slots); if (time) timeByText(c); return; }
+      // "Cuando quieras" to "¿Cuándo tienes tiempo?": the partner names a day
+      if (!c.s.offerDay && c.step === "day") { if (time) timeByText(c); offerWeekday(c); return; }
+      dayYes(c);
+      if (time) timeByText(c);
+      return;
+    }
     if (c.s.againOk) proposeDay(c, slots);
   },
+  // "Prefiero que no", "No me interesa", "Mejor como amigos": only where a second date is being asked about
+  no_date_ctx(c) { hi(c); declineDate(c); },
   decline_again(c, slots) {
     hi(c);
     if (c.s.declined) return;
+    // "No quiero volver a verte" after an earlier yes is still a no to the date, not to the day offered
+    if (datesOff(c)) { declineDate(c); return; }
     const said = toArr(slots?.day)[0] as string | undefined;
     if (c.s.againOk) { // a day that doesn't work
       if (once(c, "dayno")) dayNo(c, said);
@@ -474,6 +570,7 @@ const H: Record<string, Handler> = {
     if (!once(c, "walk")) return;
     c.s.walk = true;
     c.say(c.s.livesClose ? "live_close" : "id_like_walk");
+    (c.s.personal ||= {}).live = true; // where the partner lives is now said ("¿Dónde vives?" → "¡Ja, ya te dije!")
   },
   offer_jacket(c) { hi(c); if (once(c, "jacket")) c.say("so_sweet"); c.s.coldDone = true; },
   cold_q_ctx(c) { hi(c); if (c.s.coldDone || !once(c, "coldq")) return; c.say("a_little_cold"); if (!c.s.coldQ) { c.s.coldQ = true; c.hold(); } },
@@ -496,6 +593,7 @@ const H: Record<string, Handler> = {
   },
   no_sorry(c) {
     hi(c);
+    if (datesOff(c)) return; // "No, perdón, no creo que sea buena idea": the decline in the same turn answers it
     const st = date.steps.find((x) => x.id === c.step);
     if (st?.no && !st.done(c)) st.no(c);
     else if (c.step === "again" || (c.s.partnerAsked && !c.s.againOk)) H.decline_again(c, {}, { intent: "decline_again", slots: {}, tags: [] });
@@ -587,9 +685,15 @@ function proposeDay(c: Ctx, slots: any) {
     if (c.s.dayAgreed) return;
     c.s.offerDay = undefined;
     c.say("which_day");
-    c.expect({ id: "which_day", expects: ["day_ctx", "propose_day", "agree_again"], hints: ["day_answer"],
+    c.expect({ id: "which_day", expects: ["day_ctx", "propose_day", "agree_again", "no_date_ctx", "as_you_like_ctx"], hints: ["day_answer"],
       suggest: [{ lt: "Name a day", hint: "again", options: "activity" }], ask: (cc) => cc.say("which_day"),
-      on: { day_ctx: (cc, sl, sg) => H.propose_day(cc, sl, sg), propose_day: (cc, sl, sg) => H.propose_day(cc, sl, sg), agree_again: (cc, sl, sg) => H.propose_day(cc, sl, sg) } });
+      on: {
+        day_ctx: (cc, sl, sg) => H.propose_day(cc, sl, sg), propose_day: (cc, sl, sg) => H.propose_day(cc, sl, sg),
+        // "Cuando quieras", "El martes no puedo", "Pensándolo bien, mejor no"
+        agree_again: (cc, sl, sg) => { if (toArr(sl?.day).length) H.propose_day(cc, sl, sg); else offerWeekday(cc); },
+        as_you_like_ctx: (cc) => offerWeekday(cc),
+        decline_again: (cc, sl, sg) => H.decline_again(cc, sl, sg), no_date_ctx: (cc) => declineDate(cc),
+      } });
     return;
   }
   // Saturday is the parents' day (twist): the day step then asks about Sunday
@@ -606,7 +710,11 @@ function agreeDay(c: Ctx, byLearner = true) {
   if (c.s.dayAgreed) return;
   c.s.dayAgreed = true;
   if (c.s.activity && !c.s.loveSaid) { c.s.loveSaid = true; c.say("love_that"); }
-  if (byLearner) { if (c.s.day === "tomorrow") c.say("day_works_tomorrow"); else c.say("day_works", { D: c.s.day }); }
+  if (byLearner) {
+    if (c.s.day === "tomorrow") c.say("day_works_tomorrow");
+    else if (c.s.day === "day_after_tomorrow") c.say("day_works_after");
+    else c.say("day_works", { D: c.s.day });
+  }
   else if (!c.s.loveSaid) c.say("perfect");
   c.say("its_a_date");
 }
@@ -632,6 +740,27 @@ const nextWeekendDay = (c: Ctx) => (c.s.noWeekend ? undefined
   : ["saturday", "sunday"].find((d) => !((c.s.noDays || []) as string[]).includes(d) && !(d === "saturday" && c.s.busySat)));
 function dayYes(c: Ctx) {
   if (c.s.offerDay) { c.s.day = c.s.offerDay; agreeDay(c, false); }
+}
+/** "Cuando quieras" with no day on the table: a weekday the learner hasn't turned down ("¿Estás libre el viernes?"). */
+function offerWeekday(c: Ctx) {
+  const refused = (c.s.noDays || []) as string[];
+  const d = nextWeekendDay(c) ?? ["friday", "thursday", "wednesday", "tuesday", "monday"].find((x) => !refused.includes(x));
+  if (!d) { c.say("when_free"); c.hold(); return; }
+  c.s.offerDay = d; c.s.dayOffered = true;
+  c.say("are_you_free_on", { D: d });
+  c.hold();
+}
+/** A side question at "Yo invito, ¿eh?" ("¿Dejamos propina?"): answered, and the offer stays open (never "¿cómo hacemos
+ *  con la cuenta?" after it, nor taken as accepted). */
+function keepOffer(c: Ctx) { if (c.step === "check_offer" && c.s.partnerOffered && !c.s.checkDone) c.hold(); }
+/** "¿A qué hora?": answered once ("La hora la vemos después."). */
+function timeByText(c: Ctx) { if (!c.s.timeSaid) { c.s.timeSaid = true; c.say("time_by_text"); } }
+/** A no to the second date itself, at any point of the plan: said once, and the evening ends kindly (finish). */
+function declineDate(c: Ctx) {
+  if (c.s.declined) return;
+  c.s.declined = true; c.s.wrapUp = true;
+  c.s.offerDay = undefined; c.s.dayOffered = false;
+  if (once(c, "decline")) c.say("no_pressure");
 }
 
 function stepYes(c: Ctx) {
@@ -661,6 +790,8 @@ export const date: SituationDef = {
   goal: "Chat on a first date, sort out the check, and agree to meet again.",
   intro: "Restaurante El Muelle, on the malecón at sunset. This is your first date: you met online. People here often greet with one kiss on the cheek, and you talk to each other with tú.",
   entities: { drink: DRINKS, hobby: HOBBIES, genre: GENRES, country: COUNTRIES, activity: ACTIVITIES, wday: WDAYS },
+  // the voiced values: the check is one fixed sum (amount_total, amount_half), so both dates say both in their own voice
+  domains: { total: () => [CHECK_TOTAL], amount: () => [HALF_TOTAL] },
 
   grammar: {
     macros: {
@@ -692,6 +823,8 @@ export const date: SituationDef = {
         { id: "both", forms: ["los dos", "las dos", "ambos", "ambas", "las dos cosas", "me gustan los dos", "me gustan las dos"] },
         { id: "neither", forms: ["ninguno", "ninguna", "ninguno de los dos", "ninguna de las dos", "ni uno ni otro"] },
       ] },
+      // where the learner is from ("Soy de Canadá"): an English-speaking country or city
+      origin: { lexicon: [{ id: "home", forms: HOME_FORMS.filter((f) => f !== "mi pais") }] },
     },
   },
 
@@ -897,7 +1030,7 @@ export const date: SituationDef = {
       "(quiero | me gustaria | me encantaria) (pagar | invitarte) [yo] [la cuenta | la cena | esta vez]", "(puedo | podria) (pagar | invitarte) [yo] [la cuenta | esta vez | hoy]",
       "[no] no (yo pago | yo invito | dejame pagar | dejame invitarte) [a mi | yo]", "es mi invitacion", "yo la pago", "(y si | que tal si) (pago | invito) yo [la cuenta | esta vez]", "(me toca | a mi me toca) [pagar | invitar]", "yo (pago | invito) todo", "la cuenta es mia",
       "[no] (no hace falta | no es necesario | no te preocupes | de verdad | en serio) [yo] (pago | invito) [yo]",
-      "[gracias] pero (yo pago | yo invito | pago yo | invito yo | dejame pagar | dejame invitarte)",
+      "[gracias] pero (yo pago | yo invito | pago yo | invito yo | dejame pagar | dejame invitarte)", "[yo] (pago | la pago | lo pago) con tarjeta",
     ] },
     split: { patterns: [
       "(dividimos | dividamos | partimos) la cuenta #h:ck_split", "(podemos | queremos | quieres) dividir la cuenta", "(y si | que tal si) dividimos [la cuenta]", "(y si | que tal si) pagamos [la cuenta] (a la mitad | mitad y mitad | a medias | por separado)",
@@ -911,6 +1044,7 @@ export const date: SituationDef = {
       "(la mitad | mitad) cada (uno | quien | una)", "(quieres | te parece) que (paguemos | pagemos | dividamos) [la cuenta] [a la mitad | a medias | por separado]",
       "[no] [gracias] [pero] (seguro | segura | de verdad | en serio) [mejor] (dividimos | dividamos | la dividimos | pagamos a la mitad)",
       "[no] gracias pero (mejor) (dividimos | dividamos | la dividimos | pagamos a la mitad) [la cuenta]", "mejor (dividimos | dividamos | la dividimos)",
+      "te (doy | paso) (la mitad | mi parte | lo mio | lo que me toca)", "[yo] pongo (la mitad | mi parte)",
     ] },
     accept_offer: { patterns: [
       "(estas | de verdad estas) (seguro | segura) [gracias] #h:ck_sure", "(de verdad | en serio) [gracias]", "(muchas | mil) gracias #h:ck_thanks",
@@ -918,10 +1052,59 @@ export const date: SituationDef = {
       "[bueno | ok | va] [gracias] la (proxima | siguiente) [vez] (invito yo | yo invito | pago yo | yo pago | me toca [a mi] | va por mi cuenta | te invito yo | te invito)", "gracias por la cena",
       "[ay] gracias eres muy (amable | lindo | linda)", "[muchas] gracias por (invitarme | la invitacion)",
     ] },
-    // "¿Cuánto es?": nobody names a price on a date
+    // "¿Cuánto es?": the sum (CHECK_TOTAL) once the check is here; never pays or splits (rule 17)
     ask_amount: { patterns: ["cuanto (es | fue | salio | sale | hay que pagar | te debo | le debo | va a ser | seria)", "cuanto (es | fue) en total", "cuanto cuesta [todo | la cena]"] },
     ask_check: { patterns: [
       "(nos | me) (trae | traes | puede traer | da | das) la cuenta", "la cuenta", "(pedimos | pidamos) la cuenta", "donde esta (la cuenta | el mesero | la mesera)",
+    ] },
+    // "Entonces yo dejo la propina" (at "Yo invito, ¿eh?" it accepts the treat)
+    tip: { patterns: [
+      "[entonces | bueno | ok | va] [yo] (dejo | pongo) [yo] la propina #h:ck_tip", "la propina (la dejo | la pongo | va por mi cuenta | corre por mi cuenta) [yo]",
+      "yo me encargo de la propina", "(dejame | deja que yo | permiteme) (dejar | poner | deje | ponga) la propina", "[y] [yo] (invito | pago) la propina",
+    ] },
+    // "¿Dejamos propina?", "¿La propina está incluida?"
+    tip_q: { patterns: [
+      "[aqui] (dejamos | hay que dejar | se deja | le dejamos | se da | damos) propina [aqui | en mexico]",
+      "[aqui] cuanto (dejamos | se deja | le dejamos | se da | damos | dejo | doy) [de] propina [aqui | en mexico]",
+      "cuanto (es | seria) la propina", "(esta | viene) incluida la propina", "la propina (esta | viene) incluida", "incluye [la] propina",
+    ] },
+    card_q: { patterns: ["(aceptan | reciben | toman) (tarjeta | tarjetas | tarjeta de credito)", "(se puede | puedo | podemos) pagar con tarjeta", "(hay | tienen) terminal"] },
+    // "¿Quién paga?", "¿Cómo le hacemos con la cuenta?"
+    who_pays: { patterns: [
+      "quien (paga | va a pagar | invita)", "(como | que) (le hacemos | hacemos) con la cuenta", "como le hacemos", "como (la pagamos | pagamos) [la cuenta]",
+    ] },
+    // "Como quieras", "Tú decides" (at the check, and to a day or a second date)
+    as_you_like_ctx: { patterns: ["[si] [claro] (como | lo que) [tu] (quieras | prefieras)", "[pues] tu (decides | dime)", "lo que tu digas"] },
+    // "¿Segura?" to "Yo invito, ¿eh?"
+    sure_ctx: { patterns: ["[de verdad | en serio] (seguro | segura) [gracias]"] },
+    // the learner's personal questions; the tag picks the answer (PERSONAL)
+    ask_personal: { patterns: [
+      "[y] [tu] de donde eres [tu] #from", "[y] [tu] eres de (aqui | aca | puerto colibri | por aqui) #from", "[y] [tu] (naciste | creciste) (aqui | aca | en puerto colibri | por aqui) #from",
+      "[y] [tu] eres (mexicano | mexicana) #from", "de (que parte | donde) (eres | vienes) #from",
+      "(cuanto tiempo | hace cuanto [tiempo]) (llevas | tienes | vives) [viviendo] (aqui | aca | en puerto colibri) #always", "desde cuando vives (aqui | aca | en puerto colibri) #always",
+      "siempre has vivido (aqui | aca | en puerto colibri) #always", "(llevas | tienes) mucho tiempo [viviendo] (aqui | aca) #always",
+      "(donde | en donde | por donde) vives #live", "vives (por aqui | cerca | aqui cerca | lejos | en el centro | cerca de aqui) #live",
+      "tienes (mascotas | mascota | animales | gato | gatos | un gato | una gata | gatito) #pets", "tienes (perro | perros | un perro | perrito | un perrito) #dog",
+      "(cuantos anos tienes | que edad tienes) #age",
+      "tienes (hermanos | hermanas | hermano | hermana) #siblings", "cuantos hermanos tienes #siblings", "tienes (hijos | hijas | ninos | un hijo | una hija) #kids",
+      "(tu familia | tus papas | tus padres) (vive | viven) (aqui | aca | por aqui | cerca | en puerto colibri) #family", "(donde | en donde) (vive | viven) (tu familia | tus papas | tus padres) #family",
+      "te gusta (vivir aqui | vivir aca | vivir en puerto colibri | puerto colibri | el pueblo | este pueblo | vivir en el caribe | vivir junto al mar) #like_here",
+      "que (vas a | quieres | piensas) (comer | cenar | pedir de comer | pedir para comer | pedir de cenar) #food",
+      "que me recomiendas (de comer | para comer | para cenar | de cenar | de la carta | del menu) #food", "(pedimos | quieres pedir | vamos a pedir) algo de (comer | cenar) #food",
+      "que es (bueno | rico) [aqui] (de comer | para comer) #food", "cual es tu comida favorita #food", "(cual es | que es) tu (platillo | plato) favorito #food",
+      "que (comida te gusta | te gusta comer) #food", "que hay de comer #food", "tienes hambre #hungry",
+    ] },
+    // "Soy de Canadá", "Soy irlandesa. ¿Y tú?"
+    from_ans: { patterns: [
+      "[yo] (soy | vengo) de {origin} [@ab]", "[yo] (naci | creci) en {origin} [@ab]",
+      "[yo] soy (canadiense | estadounidense | americano | americana | ingles | inglesa | irlandes | irlandesa | australiano | australiana | escoces | escocesa | britanico | britanica | neozelandes | neozelandesa) [@ab]",
+    ] },
+    // "Prefiero que no", "No me interesa", "Mejor quedamos como amigos": a no to the second date (datesOff)
+    no_date_ctx: { patterns: [
+      "@sorry prefiero que no [la verdad] [perdon]", "@sorry [la verdad] no me interesa [la verdad] [perdon]", "@sorry [la verdad] [creo que] [mejor] (quedamos | quedemos | seamos) [solo] [como] amigos",
+      "@sorry [la verdad] no (estoy buscando | busco | quiero) (nada serio | una relacion | pareja | algo serio) [ahorita | ahora | por ahora | en este momento]",
+      "@sorry [no] no creo que (funcione | esto funcione | vaya a funcionar)", "[ay] me caes [muy] bien pero no", "@sorry pensandolo bien [mejor] no [gracias]",
+      "@sorry [la verdad] no (hay | siento | senti) (quimica | conexion)",
     ] },
     // the end
     nice_time: { patterns: [
@@ -958,7 +1141,7 @@ export const date: SituationDef = {
     agree_again: { patterns: [
       "me encantaria [volver a verte] #h:ag_id_love", "si me (gustaria | encantaria) [mucho] [@when_d] #h:ag_yes", "claro que si", "(si | claro) por supuesto",
       "[si | claro] me queda bien #h:dy_works", "[si] estoy libre [ese dia] #h:dy_free", "(si | claro) (me encantaria | quiero) volver a verte",
-      "seria (genial | padre | increible | lindo)", "yo te iba a preguntar lo mismo", "[si | claro] a que hora", "[si | claro] cuando [estas libre | tienes tiempo]",
+      "seria (genial | padre | increible | lindo)", "yo te iba a preguntar lo mismo", "[si | claro] a que hora [nos vemos | quedamos] #time", "[si | claro] cuando [estas libre | tienes tiempo]",
       "claro que quiero", "[vale] {day} me (queda | va) bien a que hora", "[yo] te iba a preguntar [lo mismo | eso]",
       "[si] me (gustaria | encantaria) [mucho] pero no se cuando", "[si] [claro] cuando quieras",
     ] },
@@ -1012,8 +1195,9 @@ export const date: SituationDef = {
     open_late: [
       t("¡Hola! | ¡Perdón | por | llegar | tarde! | No encontraba | dónde | estacionarme.", "Hi! | Sorry | for | arriving | late! | I couldn't find | where | to park.",
         "Hi! Sorry I'm late! I couldn't find a place to park."),
-      t("¡Hola! | ¡Perdóname, | llegué | tarde! | Me perdí | en | el | centro.", "Hi! | Forgive me, | I arrived | late! | I got lost | in | the | center.",
-        "Hi! I'm so sorry I'm late! I got lost downtown."),
+      // the partner lives a few blocks away: held up on the way back from work, never lost in town
+      t("¡Hola! | ¡Perdóname, | llegué | tarde! | Había | mucho | tráfico | en | la | carretera.", "Hi! | Forgive me, | I arrived | late! | There was | a lot of | traffic | on | the | highway.",
+        "Hi! I'm so sorry I'm late! Traffic on the highway was terrible."),
     ],
     open_early: [
       t("¡Hola! | ¡Aquí | estás! | Oye, | ¡te ves | muy | bien!", "Hi! | Here | you-are! | Hey, | you look | very | good!", "Hi! There you are! Wow, you look great!"),
@@ -1225,7 +1409,8 @@ export const date: SituationDef = {
       t("¡Sí! | ¡Yo | tengo | una | gata | que | se llama | Luna!", "Yes! | I | have | a | cat | that | is called | Luna!", "Yes! I have a cat named Luna!"),
     ],
     qf_beach_yes: [
-      t("¡Obvio! | Vivimos | en | el | Caribe.", "Obviously! | We live | in | the | Caribbean.", "Of course! We live in the Caribbean."),
+      // "Estamos": the learner may be visiting, not living here
+      t("¡Obvio! | Estamos | en | el | Caribe.", "Obviously! | We are | in | the | Caribbean.", "Of course! We're in the Caribbean."),
     ],
     qf_mountain: [
       t("¿Montaña? | ¡Pero | aquí | tenemos | el | mar!", "Mountains? | But | here | we-have | the | sea!", "Mountains? But we have the sea right here!"),
@@ -1341,6 +1526,9 @@ export const date: SituationDef = {
     day_works_tomorrow: [
       t("¡Perfecto, | mañana | me queda | bien!", "Perfect, | tomorrow | suits me | well!", "Great, tomorrow works for me!"),
     ],
+    day_works_after: [
+      t("¡Perfecto, | pasado mañana | me queda | bien!", "Perfect, | the day after tomorrow | suits me | well!", "Great, the day after tomorrow works for me!"),
+    ],
     love_that: [
       t("¡Me encantaría!", "I'd love that!", "I'd love that."),
     ],
@@ -1384,6 +1572,63 @@ export const date: SituationDef = {
     ],
     if_you_insist: [
       t("Bueno, | si | insistes. | ¡Gracias!", "Okay, | if | you-insist. | Thanks!", "Okay, if you insist! Thank you!"),
+    ],
+    // the check: the tip, cards ("¿Dejamos propina?", "¿Aceptan tarjeta?")
+    tip_usual: [
+      t("Aquí | se deja | como | el | diez | o | quince | por ciento.", "Here | one leaves | about | — | ten | or | fifteen | percent.",
+        "People here leave about ten or fifteen percent.", { flags: { 1: "se deja: impersonal se, “one leaves” (people leave).", 3: "el before a percentage: no English word." } }),
+    ],
+    cards_ok: [
+      t("Sí, | aquí | aceptan | tarjeta.", "Yes, | here | they-accept | card.", "Yes, they take cards here."),
+    ],
+    // "¿A qué hora?" (the day agreed or being agreed)
+    time_by_text: [
+      t("La | hora | la | vemos | después.", "The | time | it | we'll-see | later.", "We can figure out the time later.",
+        { flags: { 2: "la: the pronoun for la hora (it), not an article.", 3: "ver here: to work something out (la vemos = we'll sort it out)." } }),
+    ],
+    // the learner's personal questions: the partner's own facts (the same for Santiago and Camila)
+    own_from: [
+      t("¡De | aquí! | Nací | en | Puerto Colibrí.", "From | here! | I was born | in | Puerto Colibrí.", "I'm from here! I was born in Puerto Colibrí."),
+    ],
+    own_always: [
+      t("¡Toda la vida! | Nací | aquí.", "My whole life! | I was born | here.", "My whole life! I was born here."),
+    ],
+    live_blocks: [
+      t("Aquí | cerca, | a | unas | cuadras | del | malecón.", "Here | near, | at | some | blocks | from the | waterfront.", "Close by, a few blocks from the waterfront."),
+    ],
+    live_corner: [
+      t("¡Aquí | a la vuelta!", "Here | around the corner!", "Right around the corner!"),
+    ],
+    pets_dog: [
+      t("No, | pero | tengo | una | gata | que | se llama | Luna.", "No, | but | I-have | a | cat | that | is called | Luna.", "No, but I have a cat named Luna."),
+    ],
+    own_age: [
+      t("Tengo | treinta y un | años.", "I have | thirty-one | years.", "I'm thirty-one."),
+    ],
+    own_siblings: [
+      t("Sí, | una | hermana | menor.", "Yes, | a | sister | younger.", "Yes, a younger sister."),
+    ],
+    own_kids: [
+      t("No, | todavía | no.", "No, | still | not.", "No, not yet."),
+    ],
+    own_family: [
+      t("Sí, | mis | papás | viven | aquí | cerca.", "Yes, | my | parents | live | here | near.", "Yes, my parents live nearby."),
+    ],
+    like_here: [
+      t("¡Me encanta! | Tenemos | el | mar | y | los | cenotes.", "I love it! | We-have | the | sea | and | the | cenotes.", "I love it! We've got the sea and the cenotes."),
+    ],
+    own_food: [
+      t("¡El | pescado | a la talla! | Aquí | es | buenísimo.", "The | fish | split and grilled! | Here | it's | really good.", "The pescado a la talla, the grilled fish! It's amazing here.",
+        { flags: { 2: "a la talla: a whole fish split open, rubbed with a red chili paste and grilled over coals." } }),
+    ],
+    hungry: [
+      t("¡Un | poquito! | Aquí | el | pescado | a la talla | es | buenísimo.", "A | little bit! | Here | the | fish | split and grilled | is | really good.",
+        "A little! The pescado a la talla here is amazing.", { flags: { 5: "a la talla: a whole fish split open, rubbed with a red chili paste and grilled over coals." } }),
+    ],
+    // "Soy de Canadá"
+    from_react: [
+      t("¡Ah, | mira! | A lo mejor | algún | día | me | enseñas | tu | país.", "Oh, | look! | Maybe | some | day | (to) me | you-show | your | country.",
+        "Oh, nice! Maybe someday you can show me around your country.", { flags: { 1: "¡Mira!: here not “look”, just interest (oh, really?)." } }),
     ],
   },
 
@@ -1532,6 +1777,8 @@ export const date: SituationDef = {
         { id: "ck_thanks", s: t("¡Muchas | gracias!", "Many | thanks!", "Thank you so much!") },
         { id: "ck_sure", s: t("¿Estás | {sm:seguro|sf:segura}? | ¡Gracias!", "Are you | sure? | Thanks!", "Are you sure? Thank you!") },
         { id: "ck_split", s: t("¿Dividimos | la | cuenta?", "Do we split | the | check?", "Should we split the check?") },
+        { id: "ck_tip", s: t("Entonces | yo | dejo | la | propina.", "Then | I | leave | the | tip.", "Then I'll get the tip."),
+          note: "When your date pays, offering the tip is a nice touch: 10–15% is usual in Mexico." },
       ],
     },
     quick_coffee: {
@@ -1623,6 +1870,12 @@ export const date: SituationDef = {
     "no nos traen": { reason: "grammatical_fusion", split: "no → not + nos → (to) us + traen → they bring; = they haven't brought us.", minimal: "Three words." },
     "cada quien": { reason: "lexical_expression", split: "cada → each + quien → who; = each person (cada uno elsewhere).", minimal: "Two words." },
     "te lo": { reason: "grammatical_fusion", split: "Two object pronouns before the verb are glossed together (it to you).", minimal: "Two words." },
+    "puerto colibrí": { reason: "lexical_expression", split: "A town's name (S-NAME); Puerto → harbor + Colibrí → hummingbird would translate a name.", minimal: "The name." },
+    "toda la vida": { reason: "lexical_expression", split: "toda → all + la → the + vida → life; = my whole life, forever.", minimal: "Three words." },
+    "treinta y un": { reason: "lexical_expression", split: "treinta → thirty + y → and + un → one: one English number (thirty-one).", minimal: "The number." },
+    "a la talla": { reason: "lexical_expression", split: "a → to + la → the + talla → size is false; = split and grilled (a dish name).", minimal: "Three words." },
+    "por ciento": { reason: "lexical_expression", split: "por → for + ciento → hundred; = percent.", minimal: "Two words." },
+    "pasado mañana": { reason: "lexical_expression", split: "pasado → past + mañana → tomorrow; = the day after tomorrow.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -1652,7 +1905,9 @@ export const date: SituationDef = {
     { id: "drinks", when: (c) => c.s.askDrinks && !c.s.wrapUp, done: (c) => !!c.s.drink || !!c.s.noAlcohol || asked(c, "drinks") >= 2,
       ask: (c) => { bump(c, "drinks"); if (c.s.drinkBack) { c.s.drinkBack = false; c.say("ask_drinks_back"); } else c.say("ask_drinks"); },
       expects: ["drink_ans", "same_drink_ans", "no_alcohol", "no_drink_ctx", "ask_drink", "me_too_ctx"],
-      suggest: [{ lt: "Choose a drink", hint: "drinks", options: "drink" }] },
+      suggest: [{ lt: "Choose a drink", hint: "drinks", options: "drink" }],
+      // "No, gracias" to "¿Pedimos algo de tomar?" is no drink (never "¿qué quieres tomar?" again); "¡Sí!" gets that question
+      no: (c) => { H.no_drink_ctx(c, {}, { intent: "no_drink_ctx", slots: {}, tags: [] }); } },
     ...(["job", "hobby", "travel", "music"] as Topic[]).map((tp) => ({
       id: tp,
       when: (c: Ctx) => !c.s.wrapUp && ((c.s.topics as Topic[]).includes(tp) || c.s.askBackShort === tp),
@@ -1691,7 +1946,7 @@ export const date: SituationDef = {
         if ((c.s.partnerPays || !first) && !c.s.partnerOffered) { c.ask("check_offer"); return; }
         if (!first) c.say("so_check");
       },
-      expects: ["pay_all", "split", "accept_offer"],
+      expects: ["pay_all", "split", "accept_offer", "as_you_like_ctx"],
       suggest: [{ lt: "Offer to pay or to split", hint: "check" }],
       yes: (c) => {
         if (c.s.partnerOffered) { c.s.checkDone = "partner"; c.say("my_pleasure"); }
@@ -1703,7 +1958,7 @@ export const date: SituationDef = {
         if (!c.s.partnerOffered) { c.s.partnerOffered = true; c.say("partner_offers"); return; }
         c.s.checkDone = "partner"; c.say("my_pleasure"); // the offer was ignored: the partner pays
       },
-      expects: ["accept_offer", "split", "pay_all"],
+      expects: ["accept_offer", "split", "pay_all", "sure_ctx", "as_you_like_ctx"],
       suggest: [{ lt: "Say thanks or offer to split", hint: "check_offer" }],
       yes: (c) => { c.s.checkDone = "partner"; c.say("my_pleasure"); },
       no: (c) => { c.s.checkDone = "split"; c.say("deal"); } },
@@ -1717,10 +1972,10 @@ export const date: SituationDef = {
       yes: (c) => { c.s.niceTime = true; } },
     { id: "again", when: (c) => !c.s.declined, done: (c) => !!c.s.againOk || !!c.s.declined,
       ask: (c) => { c.s.partnerAsked = true; c.say("can_i_see_you"); },
-      expects: ["agree_again", "decline_again", "see_again", "propose_day", "day_ctx", "me_too_ctx", "hesitate"],
+      expects: ["agree_again", "decline_again", "see_again", "propose_day", "day_ctx", "me_too_ctx", "hesitate", "no_date_ctx", "as_you_like_ctx"],
       suggest: [{ lt: "Say yes to meeting again", hint: "again_answer" }, { lt: "Suggest what to do", hint: "again", options: "activity" }],
       yes: (c) => { c.s.againOk = true; c.say("yay_great"); },
-      no: (c) => { if (c.s.declined) return; c.s.declined = true; if (once(c, "decline")) c.say("no_pressure"); },
+      no: (c) => declineDate(c),
       help: (c) => { if (!c.s.againOk) c.say("think_about_it"); } },
     { id: "day", when: (c) => !!c.s.againOk && !c.s.declined, done: (c) => !!c.s.dayAgreed,
       ask: (c) => {
@@ -1731,10 +1986,11 @@ export const date: SituationDef = {
         c.s.offerDay = d; c.s.dayOffered = true;
         c.say("are_you_free_on", { D: c.s.offerDay });
       },
-      expects: ["propose_day", "agree_again", "decline_again", "day_ctx"],
+      expects: ["propose_day", "agree_again", "decline_again", "day_ctx", "no_date_ctx", "as_you_like_ctx"],
       suggest: [{ lt: "Agree on a day", hint: "day_answer" }, { lt: "Suggest another day or a plan", hint: "again", options: "activity" }],
       yes: (c) => dayYes(c),
-      no: (c) => { if (once(c, "dayno")) dayNo(c); c.hold(); } },
+      // a bare "No" turns down the day offered; "No, la verdad no me interesa" turns down the date
+      no: (c) => { if (datesOff(c)) { declineDate(c); return; } if (once(c, "dayno")) dayNo(c); c.hold(); } },
   ],
 
   init: (c) => {
@@ -1772,13 +2028,17 @@ export const date: SituationDef = {
     win(c);
     c.say("text_me");
     const bye = (cc: Ctx) => {
+      // "¿A qué hora?" gets its answer; "Pensándolo bien, mejor no" its kind reply, before the goodbye
+      if (/\ba que hora\b/.test(heard(cc))) timeByText(cc);
+      if (datesOff(cc) && once(cc, "decline")) cc.say("no_pressure");
       if (once(cc, "bye")) cc.say(/\b(tu tambien|mandame uno|escribeme tu|tu me escribes|tu mandame|tu escribeme)\b/.test(heard(cc)) ? "will_too" : "good_night");
       cc.end();
     };
-    // The evening is over: any friendly answer ends it with a goodbye.
+    // The evening is over: any friendly answer ends it with a goodbye. A personal question ("¿Tienes hermanos?") is
+    // answered by its own handler and the goodbye waits.
     const on: Record<string, (cc: Ctx) => void> = {};
-    for (const k of Object.keys(date.intents)) if (!k.endsWith("_ctx")) on[k] = bye;
-    for (const k of ["g_bye", "g_thanks", "g_ok", "g_hello", "g_howareyou_answer", "g_sorry"]) on[k] = bye;
+    for (const k of Object.keys(date.intents)) if (!k.endsWith("_ctx") && k !== "ask_personal" && k !== "from_ans") on[k] = bye;
+    for (const k of ["g_bye", "g_thanks", "g_ok", "g_hello", "g_howareyou_answer", "g_sorry", "no_date_ctx"]) on[k] = bye;
     c.expect({
       id: "closing", expects: ["text_reply"], hints: ["goodbye"], suggest: [{ lt: "Say goodbye", hint: "goodbye" }],
       on, yes: bye, no: bye,
@@ -1917,6 +2177,33 @@ export const date: SituationDef = {
     { say: "No, tampoco", intent: "decline_again", step: "day", not: ["agree_again"] },
     { say: "¿Tienes frío?", intent: "cold_q_ctx", step: "cold", not: ["offer_jacket"] },
     { say: "No, tú mándame un mensaje", intent: "text_reply" },
+    // the audit (5 Nov 2026): a no to the second date, personal questions, the tip and cards, "¿A qué hora?"
+    { say: "Prefiero que no", intent: "no_date_ctx", step: "again", not: ["agree_again", "propose_day"] },
+    { say: "Creo que mejor quedamos como amigos", intent: "no_date_ctx", step: "again", not: ["agree_again"] },
+    { say: "Me caes muy bien, pero no", intent: "no_date_ctx", step: "again", not: ["agree_again"] },
+    { say: "Pensándolo bien, mejor no", intent: "no_date_ctx", step: "day", not: ["agree_again", "propose_day"] },
+    { say: "No quiero volver a verte", intent: "decline_again", step: "day", not: ["agree_again", "propose_day"] },
+    { say: "No me interesa el fútbol", intent: "none", step: "hobby", not: ["no_date_ctx", "decline_again"] },
+    { say: "Cuando quieras", intent: "agree_again", step: "day", not: ["decline_again"] },
+    { say: "¿A qué hora?", intent: "agree_again", step: "day" },
+    { say: "¿De dónde eres?", intent: "ask_personal", step: "job", not: ["job_ans", "job_ctx"] },
+    { say: "¿Tienes mascotas?", intent: "ask_personal", step: "hobby" },
+    { say: "¿Cuántos años tienes?", intent: "ask_personal", step: "music" },
+    { say: "¿Te gusta vivir aquí?", intent: "ask_personal", step: "music", not: ["ask_like_job"] },
+    { say: "¿Qué vas a comer?", intent: "ask_personal", step: "drinks", not: ["ask_drink"] },
+    { say: "Soy de Canadá", intent: "from_ans", step: "job", not: ["job_ans", "job_ctx"] },
+    { say: "Soy americano", intent: "from_ans", step: "job", not: ["job_ans", "drink_ans"] },
+    { say: "Un jugo de naranja", intent: "drink_ans", step: "drinks", slots: { drink: "juice" } },
+    { say: "Un agua de coco, por favor", intent: "drink_ans", step: "drinks", slots: { drink: "coconut" } },
+    { say: "Entonces yo dejo la propina", intent: "tip", step: "check_offer", not: ["pay_all", "accept_offer"] },
+    { say: "No quiero dejar propina", intent: "none", step: "check_offer", not: ["tip"] },
+    { say: "¿Dejamos propina?", intent: "tip_q", step: "check", not: ["tip", "pay_all"] },
+    { say: "¿Aceptan tarjeta?", intent: "card_q", step: "check", not: ["pay_all"] },
+    { say: "Pago con tarjeta", intent: "pay_all", step: "check", not: ["card_q"] },
+    { say: "Te doy la mitad", intent: "split", step: "check", not: ["pay_all"] },
+    { say: "¿Quién paga?", intent: "who_pays", step: "check", not: ["pay_all", "split"] },
+    { say: "¿Segura?", intent: "sure_ctx", step: "check_offer" },
+    { say: "Como quieras", intent: "as_you_like_ctx", step: "check_offer", not: ["pay_all", "split"] },
     // not understood
     { say: "la bicicleta azul canta en la luna", intent: "none" },
     { say: "Ayer compré un carro nuevo", intent: "none" },
@@ -2003,6 +2290,52 @@ export const date: SituationDef = {
       setup: (s) => {
         s.opening = "meet"; s.topics = ["job", "music"]; s.askDrinks = false; s.likeJobQ = false; s.askCheck = true; s.partnerPays = false;
         s.quick = false; s.busySat = false; s.coldTwist = false;
+      } },
+    // The audit (5 Nov 2026). Every line is said by both dates (Santiago for a female learner, Camila for a male one,
+    // unless the settings choose): these sims force the moments random talk rarely reaches, so the voice list hears
+    // each line from both (its runs play every sim for both learner genders).
+    // The learner's personal questions on the way, the tip at the partner's treat, "¿A qué hora?", "¿Mañana?"
+    { name: "personal questions, the tip and tomorrow", turns: [
+      "¡Hola! ¿Eres de aquí?", "¿Qué vas a comer?", "Un agua de coco, por favor.", "¿Tienes hambre?", "Soy enfermera. ¿Y tú?", "¿Cuánto tiempo llevas aquí?",
+      "No, nunca. ¿Tú has ido?", "¿Dejamos propina?", "¿Cuánto es?", "Entonces yo dejo la propina.", "¿Cuánto fue?", "Yo también la pasé muy bien. ¿Vives por aquí?",
+      "¿Tienes mascotas?", "Tal vez.", "Sí, me encantaría. ¿A qué hora?", "¿Mañana?", "¡Te escribo! ¡Buenas noches!",
+    ], expect: { complete: true, state: { drink: "coconut", checkDone: "partner", learnerTip: true, day: "tomorrow", timeSaid: true,
+      personal: { from: true, food: true, hungry: true, always: true, live: true, pets: true } } }, auto: AUTO,
+      setup: (s) => {
+        s.opening = "meet"; s.topics = ["job", "travel"]; s.askDrinks = true; s.likeJobQ = false; s.askCheck = true; s.partnerPays = true;
+        s.quick = false; s.busySat = false; s.coldTwist = false; s.livesClose = false;
+      } },
+    // The rest of the personal answers, a card question, the offer turned down, half the check, the chilly breeze
+    { name: "more personal answers, half the check, a chilly evening", turns: [
+      "No te preocupes.", "¿Tienes hermanos?", "Una limonada, por favor.", "¿Tienes perro?", "Estoy buscando trabajo. ¿Y tú?", "¿Cuántos años tienes?",
+      "No escucho mucha música.", "¿Aceptan tarjeta?", "¿Cuánto es?", "No, gracias, mejor dividimos.", "¿Tienes frío?", "Toma, ponte mi suéter.",
+      "¿Cuánto te debo?", "¿Dónde vives?", "¿Te gusta vivir aquí?", "¿Te acompaño a tu casa?", "Soy de Canadá.", "¡Me encantaría! ¿Estás libre el viernes?",
+      "¡Te escribo! ¡Buenas noches!",
+    ], expect: { complete: true, state: { drink: "lemonade", checkDone: "split", coldDone: true, walk: true, day: "friday", fromSaid: true,
+      personal: { siblings: true, dog: true, age: true, live: true, like_here: true } } }, auto: AUTO,
+      setup: (s) => {
+        s.opening = "late"; s.topics = ["job", "music"]; s.askDrinks = true; s.likeJobQ = false; s.askCheck = true; s.partnerPays = false;
+        s.quick = false; s.busySat = false; s.coldTwist = true; s.livesClose = true;
+      } },
+    // The same job, the partner's job asked back, no free time, the quick questions' other answers, and a no to the date
+    // after a first yes ("Pensándolo bien, mejor no"): the evening ends kindly, never with another day
+    { name: "a photographer too, quick answers, and a no after all", turns: [
+      "¡Hola! ¿Vienes seguido aquí?", "Soy fotógrafo. ¿Y te gusta tu trabajo?", "¿Tienes hijos?", "No tengo mucho tiempo libre.", "Perros.", "Montaña.",
+      "Yo invito.", "Yo también la pasé muy bien. ¿Tu familia vive aquí?", "Sí.", "Pensándolo bien, mejor no.",
+    ], expect: { complete: false, state: { declined: true, dayAgreed: undefined, qfDone: true, checkDone: "learner", personal: { kids: true, family: true } } }, auto: AUTO,
+      setup: (s) => {
+        s.opening = "meet"; s.topics = ["job", "hobby"]; s.askDrinks = false; s.likeJobQ = false; s.askCheck = true; s.partnerPays = false;
+        s.quick = true; s.qfOrder = [1, 2]; s.busySat = false; s.coldTwist = false;
+      } },
+    // The small answers random talk seldom reaches: the learner's own "sorry I'm late", a job the learner likes, "¿Conoces
+    // Canadá?", tea, a question already answered, "¿Pasado mañana?"
+    { name: "small answers: sorry, tea, already told, the day after tomorrow", turns: [
+      "¡Perdón por llegar tarde!", "Soy maestro.", "¡Sí, me encanta!", "¿Conoces Canadá?", "No, todavía no. ¿Y tú?", "Té.", "¡Los dos!",
+      "Yo también la pasé muy bien. ¿Eres de aquí?", "¿Naciste aquí?", "¡Claro! ¿Pasado mañana?", "¡Te escribo! ¡Buenas noches!",
+    ], expect: { complete: true, state: { day: "day_after_tomorrow", qfDone: true, personal: { from: true } } }, auto: AUTO,
+      setup: (s) => {
+        s.opening = "late"; s.topics = ["job", "travel"]; s.askDrinks = false; s.likeJobQ = true; s.askCheck = false; s.partnerPays = false;
+        s.quick = true; s.qfOrder = [0, 1]; s.busySat = false; s.coldTwist = false;
       } },
   ],
 };

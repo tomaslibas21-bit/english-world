@@ -44,5 +44,16 @@
   { "ctx": "again", "say": "No creo que sea buena idea", "intent": ["decline_again", "yn:no"], "not": ["agree_again"], "note": "trap: negation" },
   { "ctx": "again", "say": "¿Te gustaría ir al cine el viernes?", "intent": "propose_day", "slots": { "day": "friday" } },
   { "ctx": "day", "say": "El sábado no puedo, ¿qué tal el domingo?", "intent": "propose_day", "slots": { "day": "sunday" }, "not": ["agree_again"], "note": "trap: correction" },
-  { "ctx": "closing", "say": "Sí, te mando un mensaje cuando llegue", "intent": ["text_reply", "yn:yes"] }
+  { "ctx": "closing", "say": "Sí, te mando un mensaje cuando llegue", "intent": ["text_reply", "yn:yes"] },
+
+  { "ctx": "job", "say": "Oye, ¿y tú eres de aquí?", "intent": "ask_personal", "note": "audit 5 Nov: a personal question gets the date's own answer" },
+  { "ctx": "drinks", "say": "¿Qué me recomiendas de comer?", "intent": "ask_personal", "not": ["ask_drink"], "note": "food, not a drink" },
+  { "ctx": "hobby", "say": "¿Tienes mascotas?", "intent": "ask_personal" },
+  { "ctx": "travel", "say": "Soy de Inglaterra", "intent": "from_ans", "not": ["travel_yes_ctx", "travel_no_ctx"] },
+  { "ctx": "check_offer", "say": "Gracias, entonces yo dejo la propina", "intent": ["tip", "accept_offer"], "not": ["pay_all"], "note": "accepts the treat and leaves the tip" },
+  { "ctx": "check", "say": "¿Se deja propina aquí?", "intent": "tip_q", "not": ["pay_all", "tip"] },
+  { "ctx": "again", "say": "La verdad, prefiero que no", "intent": ["no_date_ctx", "decline_again"], "not": ["agree_again", "propose_day"], "note": "trap: a no to the second date" },
+  { "ctx": "day", "say": "Pensándolo bien, no", "intent": ["no_date_ctx", "decline_again"], "not": ["agree_again", "propose_day"], "note": "trap: backing out after a yes" },
+  { "ctx": "day", "say": "Cuando quieras", "intent": ["agree_again", "as_you_like_ctx"], "not": ["decline_again"] },
+  { "ctx": "check", "say": "No quiero dejar propina", "intent": "any", "not": ["tip"], "note": "trap: negation" }
 ] }
