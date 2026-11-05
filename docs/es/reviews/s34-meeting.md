@@ -38,3 +38,84 @@ The blind miss left is "Sara, no te escuchamos" → tell_mute_ctx, which is the 
 ## For the lead
 - Kept as the writer chose: "No, todo claro" means still unclear. New, by rule 10: "No, todo bien" at "¿Cómo vas?" means all good (the likelier reading).
 - Left as is: "Ok / Va / Está bien" at "¿Quién se encarga?" volunteers, as in the English. "Ya hice el manual" there also takes the task; no money is involved.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts. Read: STYLE.md, AUTHORING-ES.md (rules from the reviews), the brief, the review above, the
+cross-cutting leads (AUDIT/cross, AUDIT/neutral), the situation, the corpus and the held-out set; the transcripts at
+seeds 3 and 7; probe.ts on ~120 extra turns (every NPC question with 6–20 replies each, and the questions a learner
+asks in a meeting).
+
+| | Before | After |
+|---|---|---|
+| check-content | 124/124 NLU, 13 sims 12/12, fuzz 80, 0/0 | 135/135 NLU, 15 sims 12/12, fuzz 80, 0/0 |
+| corpus | 304/304, 0/55 false accepts | 350/350, 0/58 false accepts |
+| held-out | 38/39 | 39/39 (one label fixed, below) |
+
+**Found 27, fixed 26, by point:**
+
+1. *Natural Spanish (2).* With a plural task Sofía said "¿Para cuándo crees que **va** a estar **listas las facturas**?"
+   (upd_work_resp, upd_behind_resp, when_reask): now "¿Para cuándo crees que **vas a tener** {listo@X} {X.the}?", the
+   learner as subject, right for every task. summary_ask "¿y **le** puedes mandar **a todos**…?" → **les** (the flag
+   taught le for a plural); F_LE now names "a todo el equipo", F_LES is new.
+2. *tú/usted:* nothing (tú both ways, ustedes to the team, the hints say tú).
+3. *Names:* nothing here (Sofía is also s86's girl: s86's reviewer has it).
+4. *Facts:* nothing ($80,000 a quarter, the lunch on Thursday at two, Monday at the same time: office facts no other
+   conversation contradicts; the printer and "sistemas" agree with s88).
+5. *Glosses and English (4).* clarify_ads "online ads" → "social media ads"; offline_sara "Hmm." for "Bueno." →
+   "Okay."; aob_wfh_ok "put it in the calendar" → "on the calendar" (American); can_you_take "¿Te | encargas | tú?"
+   glossed "Yourself | you-take-care | you?" → "¿Te encargas | tú?" "You-take-care-of-it | you?" (merge "te encargas",
+   as "me encargo"; the spoken text is the same).
+6. *Spelling, ¿¡:* nothing.
+7. *Questions without an answer (10).*
+   - "¿Cuándo es el lanzamiento?" / "¿Cuándo sale la app?": not understood (at "¿Algún otro asunto?" "Buen punto. Lo
+     ponemos en la agenda…"). New q_launch: Pablo "Todavía no hay fecha definitiva. ¡Pronto les aviso!" (as
+     add_customers_ok says), in the soft-launch version "El soft launch es la próxima semana; para todos, todavía no
+     hay fecha."
+   - "¿Para cuándo…?" → "Ya está listo." / "Ya lo terminé." / "Ya casi.": not understood; "Ya terminé las facturas."
+     got "Claro." and the same question again. Now done_ctx / upd_done there make the update "done" (Sofía asks to
+     send it); almost_ctx is a date. "No, ya está listo." is done; "Todavía no está listo." is no date yet.
+   - The whole sentence "El reporte va a estar listo el viernes." (the update hint's own words) at "¿Para cuándo…?"
+     got "Muy bien." and the same question again (upd_working there): with a date, or "ya casi", it now answers it;
+     "Voy atrasado…, va a estar listo el lunes." too (upd_behind_ok).
+   - "¿Por correo?" / "¿A quién?" at the send and summary requests: not understood; "¿A todos?" was nothing_more
+     ("Muy bien."). New send_how_ctx: clarify_send at the send question (open again), a new summary_how "Sí, por
+     correo, a todo el equipo. ¿Lo puedes mandar?" at the summary; a spoken "Por correo." (no question mark) agrees.
+   - **Meaning flip:** "No, gracias." / "Gracias, estoy bien." to Pablo's "Si quieres, te ayudo con eso." got "Perfecto,
+     lo vemos después de la reunión" (help accepted). A thanks with a no now declines; decline_help_ctx ("Te lo
+     agradezco, pero no"); state helpAccepted.
+   - "¿Dónde es la comida?" got the time: now aob_lunch #where, "Todavía no sabemos dónde, pero es el próximo jueves a
+     las dos." (no restaurant named: no new town fact).
+   - "Mañana no voy a venir." / "Voy a faltar el viernes." got "¡Disfrútalas!" (a vacation nobody mentioned); "Mañana
+     tengo cita con el doctor." / "El viernes voy a faltar." were not understood. #away → aob_wfh_ok ("Nada más ponlo
+     en el calendario").
+   - A question at "¿Algún otro asunto?" ("¿Puedo salir temprano el viernes?", "¿Quién va a la comida?") got "Buen
+     punto. Lo ponemos en la agenda de la próxima semana." Questions now get a new aob_q_ok "Buena pregunta. Lo vemos
+     después de la reunión."; points ("Deberíamos…", "¿Y si…?") keep "Buen punto…".
+   - "¿Qué piensa Sara?" / "¿Cuánto cuesta la fiesta?" at the budget: not understood. ask_back takes the first
+     (your_first: "¡Primero quiero escuchar tu opinión!"); new q_cost answers with clarify_<proposal> ("todo el
+     dinero").
+   - "Mejor mañana." / "Sí, en la comida." to "¿Lo pueden hablar ustedes dos…?": not understood; talk_when_ctx agrees.
+8. *Hints (1, left).* The "when" group's "Va a estar listo el viernes." is masculine for any task (the group has no
+   slot to bind the learner's task); the grammar accepts either gender, so it stays.
+9. *Accepted answers (9).* A trailing apology ("No puedo, perdón.", "Yo no puedo esta semana, perdón.") was not
+   understood (cant_do, cant_send take [perdón | lo siento]); "Mejor que las tome Pablo." added Sofía's stray "Claro."
+   (hear_yes on "Mejor"): one suggest_other pattern now; "Prefiero que lo haga otra persona." (cant_do); Mexico's
+   "la semana que entra" / "la otra semana" (whenr, dl_view); "Lo voy a tener listo el viernes." (when_ans,
+   when_tail); "Claro, en cuanto termine la reunión." / "Terminando la junta se lo mando." (will_send); the neutral
+   "el almuerzo" (aob_lunch) and "el acta" (the notes); "Todavía no está listo." (when_not_ctx, with todavía / aún
+   only: a bare "No está listo." stays unread rather than split into "No." + "Está listo."). Held-out "Sara, no te
+   escuchamos" named only tell_mute; it is tell_mute_ctx, the same handling: both accepted now.
+10. *Neutral (1).* Hint m_click "¡Prende tu micrófono!" had no twin: "¡Enciende tu micrófono!" (as s80 and s91a); the
+    note says encender and activar work everywhere.
+
+**New lines (voiced):** launch_when, launch_when_soft, summary_how, aob_lunch_where, aob_q_ok, and the m_click
+twin. **Changed spoken lines:** upd_work_resp, upd_behind_resp, when_reask, summary_ask. Ids, steps, intents and twists
+are unchanged; new intents: done_ctx, almost_ctx, send_how_ctx, decline_help_ctx, talk_when_ctx, q_cost, q_launch.
+Tests: 11 NLU tests, 2 sims ("audit: the learner's own questions", "audit: help declined, the summary by email"),
+49 corpus items (3 traps).
+
+**For the lead:** a trailing "perdón" / "lo siento" isn't in the engine's built-in tolerance (lang.ts), so "No puedo,
+perdón." fails wherever a pattern lacks it; "la semana que entra" / "la otra semana" could go into the shared {day}
+slot. For the owner: "la comida" (Mexico's lunch, s88 and here) and "la minuta" (a hint) have no neutral twins
+("el almuerzo", "el acta"); both are accepted from learners now.
