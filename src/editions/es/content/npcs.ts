@@ -111,7 +111,7 @@ const CAST: Record<string, Cast> = {
   ben: ["Iván", "Taquilla del museo", "Museum tickets"],
   harold: ["Don Arturo", "Vigilante del museo", "Museum guard"],
   marco: ["Luis", "Mesero", "Waiter"],
-  chloe: ["Valeria", "Vendedora", "Sales assistant"],
+  chloe: ["Valeria", "Vendedora", "Sales associate"],
   okafor: ["Don Héctor", "Farmacéutico", "Pharmacist"],
   jessie: ["Paty", "Estilista", "Hairdresser"],
   aaron: ["Ricardo", "Cajero del banco", "Bank teller"],
@@ -150,7 +150,8 @@ const CAST: Record<string, Cast> = {
   marcus: ["Doña Lupe", "Puesto de frutas y verduras", "Fruit and vegetable stall", { gender: "f",
     bio: "Has sold fruit at the mercado for thirty years and calls every customer “güero” or “marchanta”." }],
   sco: ["Caja de autoservicio", "Caja de autoservicio", "Self-checkout machine"],
-  frank: ["Don Pancho", "Vecino", "Neighbor"],
+  // an older neighbor at the bus stop says usted, as his lines in s33 do (Maple Harbor's Frank is informal)
+  frank: ["Don Pancho", "Vecino", "Neighbor", { informal: false }],
   jordan: ["Mónica", "Entrenadora personal", "Personal trainer"],
   maggie: ["Doña Margarita", "Vende su auto", "Selling her car"],
   kyle: ["Jorge", "Atención a clientes", "Customer service"],

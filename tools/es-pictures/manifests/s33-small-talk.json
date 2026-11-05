@@ -50,9 +50,10 @@
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
       "moment": "weekend_past",
-      "phases": ["weekend_past", "wkf_what"],
+      "phases": ["weekend_past", "wkp_what"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: laughing, he mimes holding a fishing rod with both hands, as if a fish were pulling (fishing with his grandson at the pier last weekend).",
+      "note": "5 Nov audit: shown on Mondays (weekend_past, wkp_what), the day of his fishing story; it was also on wkf_what (Friday).",
       "out": "public/scenes-es/s33-small-talk/fishing.webp"
     },
     {
@@ -60,10 +61,10 @@
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
       "moment": "weekend_plans",
-      "phases": ["react"],
+      "phases": ["weekend_plans", "wkf_what"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: with a proud grin he mimes painting with a brush in one hand, short strokes in the air (this weekend he is painting his old lancha).",
-      "note": "5 Nov audit: shown with react, his own plans («Ah, voy a pintar mi lancha»); the question about the learner's plans shows react (the two were one step off).",
+      "note": "5 Nov audit: shown on Fridays (weekend_plans, wkf_what), the day of his painting plan; it was also on wkp_what (Monday) and, for a few hours after ba91c40a, on react, which is the pending after each of his three stories (Friday painting, Monday fishing, the week), so it showed him painting while he told the fishing story.",
       "out": "public/scenes-es/s33-small-talk/plans.webp"
     },
     {
@@ -91,10 +92,10 @@
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
       "moment": "react",
-      "phases": ["weekend_plans", "wkp_what"],
+      "phases": ["react"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: he leans in a little, eyebrows raised, listening with delighted interest and waiting for the learner's reaction.",
-      "note": "5 Nov audit: shown while he asks about the learner's plans (leaning in, listening); his painting mime moved to react.",
+      "note": "5 Nov audit: his listening pose for react, the pending after each of his three stories (one id for all three, so a neutral picture fits them all; one id per story in the dialogue would let each story show its own picture).",
       "out": "public/scenes-es/s33-small-talk/react.webp"
     },
     {

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Turns the originals (PNG from the API) into the game's web format (docs/SCENE-ART.md "Files"): WebP, quality 80.
+"""Turns the originals (PNG from the API) into the game's web format (docs/SCENE-ART.md "Files"): WebP, quality 65.
 
   python3 tools/es-pictures/convert.py <manifest> [--only ID …] [--kind …]     every entry that has an original
-  python3 tools/es-pictures/convert.py --file in.png out.webp [--size 2048x1152] [--quality 80]
+  python3 tools/es-pictures/convert.py --file in.png out.webp [--size 2048x1152] [--quality 65]
 
 - Scene and place pictures: exactly 2048 × 1152 (16:9, as the English pictures). An original of another shape is
   cropped to 16:9 around the entry's "focus" ([x%, y%], default the middle) before it is scaled.
 - Cast portraits: their own shape, at most 1536 px on the long edge.
-- WebP quality 80, stepped down (by 4, not below 60) until the file is at most 240 kB: these pictures' fine grain
-  compresses less well than Maple Harbor's (tools/scene-walk.ts warns over 250 kB).
+- WebP quality 65 (80 until the 5 Nov 2026 audit: quality 65 is 26% lighter, 104 → 77 MB for the 579 situation
+  pictures, with no visible loss at the game's display sizes; docs/es/PICTURES.md section 9), stepped down by 4
+  until the file is at most 240 kB: these pictures' fine grain compresses less well than Maple Harbor's
+  (tools/scene-walk.ts warns over 250 kB).
 Needs Pillow (python3 -m pip install Pillow), as the English workflow does.
 """
 from __future__ import annotations
@@ -27,12 +29,13 @@ except ImportError:  # pragma: no cover
     Image = None
 
 WEB = {"scene": (2048, 1152), "place": (2048, 1152), "test": (2048, 1152)}
-MAX_BYTES = 240_000  # WebP quality 80, stepped down by 4 (not below 60) until the file is at most this
+QUALITY = 65  # WebP quality (80 until the 5 Nov 2026 audit)
+MAX_BYTES = 240_000  # stepped down by 4 from QUALITY (to 60 or just under) until the file is at most this
 LONG_EDGE = {"cast": 1536}
 
 
 def to_web(src: Path, dst: Path, size: tuple[int, int] | None = None, long_edge: int | None = None,
-           quality: int = 80, focus: tuple[float, float] = (50.0, 50.0), max_bytes: int | None = MAX_BYTES) -> int:
+           quality: int = QUALITY, focus: tuple[float, float] = (50.0, 50.0), max_bytes: int | None = MAX_BYTES) -> int:
     if Image is None:
         raise SystemExit("convert.py needs Pillow: python3 -m pip install Pillow")
     im = Image.open(src).convert("RGB")
@@ -68,7 +71,7 @@ def convert_entry(e: dict, quality: int | None = None) -> tuple[Path, int] | Non
     kind = e.get("kind", "scene")
     dst = E.out_path(e)
     size = tuple(e["web_size"]) if e.get("web_size") else WEB.get(kind)
-    q = quality or int(e.get("web_quality", 80))
+    q = quality or int(e.get("web_quality", QUALITY))
     focus = tuple(e.get("focus", (50, 50)))
     n = to_web(src, dst, size=size, long_edge=None if size else LONG_EDGE.get(kind, 2048), quality=q, focus=focus)
     return dst, n
@@ -85,7 +88,7 @@ def main():
     a = ap.parse_args()
     if a.file:
         size = E.parse_size(a.size) if a.size else None
-        n = to_web(Path(a.file[0]), Path(a.file[1]), size=size, quality=a.quality or 80)
+        n = to_web(Path(a.file[0]), Path(a.file[1]), size=size, quality=a.quality or QUALITY)
         print(f"{a.file[1]}: {n / 1000:.0f} kB")
         return
     if not a.manifest:

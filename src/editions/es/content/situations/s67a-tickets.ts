@@ -3,7 +3,8 @@
 // Don Raúl at the ticket window of the Terminal de Autobuses (usted). Long-distance buses, as at Mexico's coach
 // terminals: where to, one-way (sencillo) or round-trip (redondo), the return day, how many, which departure ("¿Para
 // qué hora?"), a seat on the seat map ("¿Ventanilla o pasillo?"), an ID for the name on the ticket, the price, cash
-// or card; then the departure time and the gate (andén). Discounts: students and seniors (INAPAM card) pay half.
+// or card; then the departure time and the gate (andén). Discounts: seniors with an INAPAM card pay half all year;
+// students and teachers only in the SEP's school vacations, so not in this (November) town (audit 5 Nov 2026).
 // Twist (visits ≥ 1): the bus the learner picks is sold out; the next one is at 5:15 p.m. ("a las cinco y cuarto").
 //
 // Changes from the English edition (the brief): a bus, not a train; the class step (coach / business) is gone, since a
@@ -13,8 +14,10 @@
 //
 // Research (Nov 2026, Mexico's coach lines on the Riviera Maya): tickets are sold "sencillo" or "redondo", for a given
 // departure, with a numbered seat picked on a seat map and the passenger's name printed on the ticket; luggage goes
-// under the bus with a claim tag; seniors with an INAPAM card and students with a valid card get about half off on a
-// limited number of seats. Fares and times below are this town's (round, plausible 2026 figures, not a timetable):
+// under the bus with a claim tag, 25 kg free; seniors with an INAPAM card get half off all year (a few seats a bus);
+// students (half) and teachers (a quarter) only in school vacations (summer 2026: 16 July–30 August). Fares and times
+// below are this town's (round, plausible 2026 figures, not a timetable; ADO's Tulum–Cancún is ~$300–350, Tulum–Mérida
+// ~$500–750 and ~4 h 20):
 // Tulum $70 (30 min), Playa del Carmen $180 (1 h 30), Cancún $380 (2 h 30), Mérida $720 (5 h).
 
 import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef, Tip } from "@/content/types";
@@ -79,7 +82,7 @@ const isToday = (day: string) => TODAY.includes(day);
 const depTime = (c: Ctx): Clock | undefined => (c.s.dest ? (c.s.dep === "late" ? LATE : dest(c.s.dest).time) : undefined);
 const count = (c: Ctx) => (c.s.count as number | undefined) ?? 1;
 
-/** Students and seniors pay half of their own ticket. */
+/** A senior with the INAPAM card pays half of their own ticket. */
 function price(destId: string, trip: string, disc: string | undefined, n: number): number {
   const one = dest(destId).fare * (trip === "round" ? 2 : 1);
   return one * n - (disc ? Math.round(one / 2) : 0);
@@ -201,6 +204,8 @@ export const tickets: SituationDef = {
     trip_ans: { patterns: [
       "[un | uno] @trip #h:t_short",
       "(quiero | lo quiero | quisiera | que sea | va a ser | deme | me da) [un | uno] @trip",
+      // "Quiero un boleto redondo", "Dos boletos sencillos" (read as a place "redondo" before the audit)
+      "[@buy_pre] [@cnt | el] @tk @trip",
       "(solo | nomas | nada mas | solamente) (ida | de ida | para ir) #oneway #h:t_ida",
       "[@trip] (regreso | vuelvo | regresamos | volvemos | voy a regresar) {day} #round #h:ret_coming",
       "@trip [y] (regreso | vuelvo | regresamos | volvemos) {day} #round",
@@ -254,7 +259,9 @@ export const tickets: SituationDef = {
       "no (a | el de) {wrong:time} [sino] [a | el de] {time}",
     ] },
     // "¿Hay uno más tarde?" at the departure question: both departures again
-    ask_other_ctx: { patterns: ["(hay | tiene | tienen) (uno | otro | algo | alguno) (mas tarde #later | despues #later | en la tarde #later | en la noche #later | mas temprano #earlier | antes #earlier)", "(que | cuales) otros horarios (hay | tiene | tienen)"] },
+    // (and "¿A qué hora sale el último / el primero?": a question, never "el último" chosen; #sched)
+    ask_other_ctx: { patterns: ["(hay | tiene | tienen) (uno | otro | algo | alguno) (mas tarde #later | despues #later | en la tarde #later | en la noche #later | mas temprano #earlier | antes #earlier)", "(que | cuales) otros horarios (hay | tiene | tienen)",
+      "(a que hora | cuando) (sale | es | pasa) el (ultimo | primer | primero) [@bus] #sched", "(cual | cuando) es el (ultimo | primer | primero) [@bus] #sched"] },
     // the sold-out bus: take the 5:15 ("Ni modo, deme ese"), or ask for an earlier one
     accept_ctx: { patterns: [
       // (#late: at tomorrow's offer, "deme el de la tarde" is tomorrow's 5:15; at the sold-out question every one is the 5:15)
@@ -309,9 +316,10 @@ export const tickets: SituationDef = {
       "(hay | tienen | tiene | hacen | dan | manejan) descuento [para | de] (maestros | maestro | maestras | profesores | docentes) #teacher",
       "(hay | tienen | tiene | hacen | dan | manejan) descuento [para | de] (adultos mayores #senior | la tercera edad #senior | personas mayores #senior | jubilados #senior | inapam #senior) #h:q_senior",
       "(hay | tienen | tiene | hacen | dan | manejan) descuento [para | de] (ninos #child | menores #child)",
+      "cuanto (cuesta | es | sale | pagan) (para | los) (ninos | menores) #child", "(los ninos | un nino | una nina) (pagan | paga) [boleto | completo | boleto completo] #child",
       "(hay | tienen | hacen | dan) (algun | un) descuento", "(hay | tienen | manejan) descuentos",
-      "(los estudiantes | los adultos mayores | los ninos) (tienen | pagan) (descuento | menos)",
-      "(puedo | podemos) tener (un | algun) descuento", "aceptan (la credencial de estudiante | la credencial del inapam | inapam)",
+      "(los estudiantes #student | los adultos mayores #senior | los ninos #child) (tienen | pagan) (descuento | menos)",
+      "(puedo | podemos) tener (un | algun) descuento", "aceptan (la credencial de estudiante #student | la credencial del inapam #senior | inapam #senior)",
     ] },
     discount_claim: { patterns: [
       "soy estudiante #student #h:im_student", "(somos | los dos somos) estudiantes #student",
@@ -333,7 +341,8 @@ export const tickets: SituationDef = {
       "(puedo | se puede | podemos) pagar con tarjeta [de credito | de debito] #h:pay_card",
       "(aceptan | toman | reciben) (tarjeta | tarjetas | visa | mastercard | american express | tarjeta de credito | tarjeta de debito)",
       "(pago | voy a pagar | le pago | quiero pagar | prefiero pagar) con tarjeta [de credito | de debito]",
-      "no (traigo | tengo | cargo) efectivo [pago con tarjeta]", "(puedo pagar | pago) con (el celular | mi celular | apple pay | google pay)",
+      "no (traigo | tengo | cargo) efectivo [pago con tarjeta]", "(puedo pagar | pago | se puede pagar | quiero pagar) con (el celular | mi celular | apple pay | google pay) #phone",
+      "(con | desde) (el celular | mi celular | apple pay | google pay) #phone",
       "mejor (con | en) tarjeta [de credito | de debito]", "(se puede | puedo) con tarjeta",
       // "No en efectivo, con tarjeta": the second is the answer; "Efectivo no, con tarjeta" with mejor/sino
       "no (en | con) efectivo [sino] (con | en) tarjeta", "[en] efectivo no (mejor | sino) (con | en) tarjeta",
@@ -355,13 +364,14 @@ export const tickets: SituationDef = {
       "(hay | sale) [algun] @bus @to {dest} [hoy | manana]",
       "(a que hora | cuando) (hay | tienen) (@bus | autobuses | salidas | salida) @to {dest}",
       "(cuales | que) (horarios | salidas) (tiene | hay | tienen) [@to {dest}]",
+      "(a que hora | cuando) (sale | es | pasa) el (ultimo | primer | primero) [@bus] [@to {dest}] #sched", "(cual | cuando) es el (ultimo | primer | primero) [@bus] [@to {dest}] #sched",
     ] },
     ask_track: { patterns: [
       "(de | en | por) (que | cual) anden (sale | es | se sube | me subo | lo tomo) #h:q_track", "(de | en) (que | cual) anden",
       "(que | cual) anden [es]", "(cual | que) es (mi | el) anden",
       "(de | en) que (sala | puerta) sale", "(donde | por donde) (tomo | abordo | agarro) (el autobus | el camion | mi autobus)",
       "(donde | por donde) me subo [al autobus | al camion]", "(donde | por donde) (se toma | se aborda | sale) [el @bus]",
-      "(de | en) (que | cual) plataforma [sale] #tip:anden",
+      "(de | en) (que | cual) plataforma [sale] #tip:anden", "(donde | por donde) (esta | queda) [el | mi] anden",
     ] },
     ask_change: { patterns: [
       "es directo #direct #h:q_direct", "(el autobus | el camion) es directo #direct", "es (un autobus | un viaje) directo #direct",
@@ -383,6 +393,7 @@ export const tickets: SituationDef = {
     ] },
     ask_diff: { patterns: ["cual es la diferencia [de precio]", "cuanto mas (cuesta | es) el redondo"] },
     ask_dests: { patterns: ["(a donde | adonde | para donde) (van | salen | hay) [los] [autobuses | camiones | salidas]", "(que | cuales) (destinos | rutas | lugares) (tienen | hay | manejan)",
+      "(a donde | adonde | para donde) (tienen | tiene) [salidas | autobuses | camiones | viajes]",
       "a donde (puedo | se puede) ir [desde aqui]", "(a que | que) (ciudades | lugares) (van | hay)"] },
     ask_ontime: { patterns: ["(sale | va | viene | llega) (a tiempo | puntual) #h:q_ontime", "(hay | tiene) (retraso | retrasos | demora)", "(viene | va | esta) (retrasado | atrasado | tarde)"] },
     ask_wait: { patterns: ["donde (puedo | debo | tengo que) esperar #h:q_wait", "(donde esta | hay) [una | la] sala de espera", "(donde | por donde) (espero | me espero)"] },
@@ -397,7 +408,9 @@ export const tickets: SituationDef = {
     ask_luggage: { patterns: [
       "(puedo | podemos) llevar (mi maleta | maletas | mi mochila | equipaje | mi equipaje | mis maletas) #h:q_luggage",
       "(donde | como) (documento | dejo | pongo | va) (mi maleta | mis maletas | el equipaje | mi equipaje)", "que hago con (mi maleta | mis maletas | el equipaje)",
-      "cuantas maletas (puedo | se pueden) llevar", "(hay que | tengo que) documentar (la maleta | el equipaje | mi maleta)",
+      "cuantas maletas (puedo | podemos | se pueden) (llevar | documentar | subir) #limit", "(hay que | tengo que) documentar (la maleta | el equipaje | mi maleta)",
+      "cuanto equipaje (puedo | podemos | se puede) llevar #limit", "cuantos kilos (puedo | podemos | se pueden) llevar #limit",
+      "(hay | tienen | cual es el) (limite | un limite) de (equipaje | peso | kilos | maletas) #limit",
     ] },
     ask_early: { patterns: [
       "(con cuanto tiempo | cuanto tiempo) (antes | de anticipacion) (tengo que | debo | hay que) (llegar | estar aqui | estar) #h:q_early",
@@ -489,23 +502,24 @@ export const tickets: SituationDef = {
       "There's no bus at that time. There's one at {$at} and one at {$late}.")],
     time_ok: [t("Muy | bien, | el | de | {$at}.", "Very | good, | the one | at | {$at}.", "Okay, the {$at} bus.")],
     sold_out: [t("¡Híjole! | El | de | {$at} | ya | está | lleno. | El | siguiente | sale | a | {$late}. | ¿Se lo | doy?",
-      "Oh, man! | The one | at | {$at} | already | is | full. | The | next one | leaves | at | {$late}. | It to you | shall I give?",
+      "Oh, man! | The one | at | {$at} | already | is | full. | The | next one | leaves | at | {$late}. | It to you | should I give?",
       "Oh no! The {$at} bus is already full. The next one leaves at {$late}. Should I give you that one?",
       { flags: { 0: "Mexican: ¡híjole! = oh no / oh man, for surprise or bad news." },
         neutral: t("¡Ay, | lo siento! | El | de | {$at} | ya | está | lleno. | El | siguiente | sale | a | {$late}. | ¿Se lo | doy?",
-          "Oh, | I'm sorry! | The one | at | {$at} | already | is | full. | The | next one | leaves | at | {$late}. | It to you | shall I give?",
+          "Oh, | I'm sorry! | The one | at | {$at} | already | is | full. | The | next one | leaves | at | {$late}. | It to you | should I give?",
           "Oh, I'm sorry! The {$at} bus is already full. The next one leaves at {$late}. Should I give you that one?") })],
     later_one: [t("Sí, | el | de | {$late}.", "Yes, | the one | at | {$late}.", "Yes, the {$late} one.")],
+    next_at: [t("El | siguiente | sale | a | {$late}.", "The | next one | leaves | at | {$late}.", "The next one leaves at {$late}.")],
     first_one: [t("No, | el | primero | es | el | de | {$at}.", "No, | the | first one | is | the one | at | {$at}.", "No, the first one is the {$at} bus.")],
-    sold_remind: [t("¿Entonces | le | doy | el | de | {$late}?", "So | (to) you | shall I give | the one | at | {$late}?", "So shall I give you the {$late} bus?")],
+    sold_remind: [t("¿Entonces | le | doy | el | de | {$late}?", "So | (to) you | should I give | the one | at | {$late}?", "So, should I give you the {$late} bus?")],
     still_full: [t("El | de | {$at} | ya | no tiene | lugares, | lo siento.", "The one | at | {$at} | already | doesn't have | seats, | I'm sorry.", "The {$at} bus has no seats left, I'm sorry.")],
     only_late: [t("No, | antes | no hay | otro. | El | que | sigue | es | el | de | {$late}.", "No, | before | there isn't | another. | The one | that | follows | is | the one | at | {$late}.",
       "No, there's nothing earlier. The next one is the {$late} bus.")],
-    today_only: [t("Hoy | solo | queda | el | de | {$late}. | ¿Se lo | doy?", "Today | only | there's left | the one | at | {$late}. | It to you | shall I give?",
-      "Today there's only the {$late} bus left. Shall I give you that one?")],
+    today_only: [t("Hoy | solo | queda | el | de | {$late}. | ¿Se lo | doy?", "Today | only | there's left | the one | at | {$late}. | It to you | should I give?",
+      "Today there's only the {$late} bus left. Should I give you that one?")],
     tomorrow_offer: [t("Hoy | ya | no hay | otro. | Mañana | sale | uno | a | {$at}. | ¿Se lo | doy | para | mañana?",
-      "Today | anymore | there isn't | another. | Tomorrow | leaves | one | at | {$at}. | It to you | shall I give | for | tomorrow?",
-      "There's nothing else today. Tomorrow there's one at {$at}. Shall I give you that one?")],
+      "Today | anymore | there isn't | another. | Tomorrow | leaves | one | at | {$at}. | It to you | should I give | for | tomorrow?",
+      "There's nothing else today. Tomorrow there's one at {$at}. Should I give you that one?")],
     tomorrow_ok: [t("Listo, | para | mañana | a | {$at}.", "Done, | for | tomorrow | at | {$at}.", "All set, tomorrow at {$at}.")],
     walk_off: [t("Está bien. | Aquí | estamos | cuando | guste.", "That's fine. | Here | we are | whenever | you like.", "That's fine. We're here whenever you need us.")],
     ask_seat: [
@@ -532,12 +546,17 @@ export const tickets: SituationDef = {
     id_back: [t("Gracias. | Aquí | se la | devuelvo.", "Thanks. | Here | it to you | I-return.", "Thanks. Here it is back.", { flags: { 2: "se la: it (la identificación) to you." } })],
     name_ok: [t("Gracias, | ya | lo | anoté.", "Thanks, | already | it | I-wrote-down.", "Thanks, I've got it.")],
     id_fine: [t("Sí, | con | el | pasaporte | está bien.", "Yes, | with | the | passport | it's fine.", "Yes, your passport is fine.")],
-    ask_discount: [t("¿Tiene | credencial | de | estudiante | o | del | INAPAM?", "Do you have | a card | of | student | or | of the | INAPAM?",
-      "Do you have a student card or an INAPAM senior card?", { flags: { 6: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } })],
-    discount_info: [t("Sí. | Con | credencial, | estudiantes | y | adultos mayores | pagan | la mitad.", "Yes. | With | a card, | students | and | seniors | pay | half.",
-      "Yes. With a valid card, students and seniors pay half.")],
+    // Nov 2026 (rule 14): seniors with the INAPAM card pay half all year; students (half) and teachers (a quarter) only in
+    // the SEP's school vacations, so not now
+    ask_discount: [t("¿Tiene | credencial | del | INAPAM?", "Do you have | a card | of the | INAPAM?",
+      "Do you have an INAPAM senior card?", { flags: { 3: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } })],
+    discount_info: [t("Sí. | Con | credencial | del | INAPAM, | los | adultos mayores | pagan | la mitad.", "Yes. | With | a card | of the | INAPAM, | the | seniors | pay | half.",
+      "Yes. Seniors with an INAPAM card pay half.", { flags: { 4: "INAPAM: Mexico's national institute for older adults; its card gives seniors discounts." } })],
     child_disc: [t("Los | niños | también | tienen | descuento, | según | la | edad.", "The | children | also | have | a discount, | depending on | the | age.", "Kids get a discount too, depending on their age.")],
+    student_disc: [t("Los | estudiantes | solo | tienen | descuento | en | vacaciones.", "The | students | only | have | a discount | in | vacations.", "Students only get a discount during school vacations.")],
     teacher_disc: [t("Los | maestros | solo | tienen | descuento | en | vacaciones.", "The | teachers | only | have | a discount | in | vacations.", "Teachers only get a discount during school vacations.")],
+    // said again (rule 8): a short reminder, not the same line
+    vac_remind: [t("Lo siento, | solo | en | vacaciones.", "I'm sorry, | only | in | vacations.", "Sorry, only during school vacations.")],
     ask_card_id: [t("¿Me | permite | su | credencial?", "(To) me | you-allow | your | card?", "May I see your card?")],
     discount_ok: [t("Gracias. | Le | hago | el | descuento | de | la mitad.", "Thanks. | (For) you | I-do | the | discount | of | half.", "Thanks. You get the half-price discount.")],
     no_card_disc: [t("Sin | la | credencial | no le puedo | hacer | el | descuento, | lo siento.", "Without | the | card | I can't for you | do | the | discount, | I'm sorry.",
@@ -551,6 +570,8 @@ export const tickets: SituationDef = {
     ask_pay: [t("¿Efectivo | o | tarjeta?", "Cash | or | card?", "Cash or card?"), t("¿Cómo | va | a | pagar?", "How | are you going | to | pay?", "How would you like to pay?")],
     which_pay: [t("Perdón, | ¿efectivo | o | tarjeta?", "Sorry, | cash | or | card?", "Sorry, cash or card?")],
     card_ok: [t("Claro. | Acerque | o | inserte | su | tarjeta, | por favor.", "Sure. | Bring close | or | insert | your | card, | please.", "Sure. Tap or insert your card, please.")],
+    // "¿Puedo pagar con el celular?": the phone, not a card to insert
+    phone_ok: [t("Claro, | acerque | su | celular | a | la | terminal.", "Sure, | bring close | your | cell phone | to | the | card machine.", "Sure, just hold your phone to the card machine.")],
     card_later: [t("Claro, | aceptamos | tarjeta.", "Sure, | we accept | card.", "Sure, we take cards.")],
     cash_ok: [t("Gracias. | Aquí | está | su | cambio.", "Thanks. | Here | is | your | change.", "Thanks. Here's your change.")],
     cash_later: [t("Claro, | en efectivo | también.", "Sure, | in cash | also.", "Sure, cash is fine too.")],
@@ -599,6 +620,9 @@ export const tickets: SituationDef = {
     luggage: [t("Claro. | Su | maleta | va | abajo | del | autobús, | y | le | dan | un | comprobante | para | recogerla.",
       "Sure. | Your | suitcase | goes | under | the | bus, | and | (to) you | they-give | a | claim tag | to | pick it up.",
       "Sure. Your suitcase goes under the bus, and they give you a claim tag to pick it up.", { flags: { 5: "del = de + el; abajo de means under." } })],
+    // "¿Cuántas maletas puedo llevar?": the coach lines' free allowance, 25 kilos a passenger (rule 11: not "Claro…")
+    luggage_limit: [t("Puede | llevar | hasta | 25 | kilos | sin costo.", "You can | take | up to | 25 | kilos | free of charge.", "You can bring up to 25 kilos free.",
+      { say: "Puede llevar hasta veinticinco kilos sin costo." })],
     early: [t("Llegue | unos | veinte | minutos | antes, | por favor.", "Arrive | some | twenty | minutes | before, | please.", "Please get here about twenty minutes early.",
       { flags: { 1: "unos before a number means about." } })],
     early_ans: [t("Con | unos | veinte | minutos | antes | está bien.", "With | some | twenty | minutes | before | it's fine.", "About twenty minutes early is fine.",
@@ -625,7 +649,7 @@ export const tickets: SituationDef = {
     price: () => {
       const s = new Set<number>();
       // up to nine tickets: countOf reads "Somos cinco" … "nueve"
-      for (const d of DESTS) for (const trip of ["oneway", "round"]) for (const disc of [undefined, "student"]) for (let n = 1; n <= 9; n++) s.add(price(d.id, trip, disc, n));
+      for (const d of DESTS) for (const trip of ["oneway", "round"]) for (const disc of [undefined, "senior"]) for (let n = 1; n <= 9; n++) s.add(price(d.id, trip, disc, n));
       return [...s].sort((a, b) => a - b);
     },
     at: () => {
@@ -731,16 +755,16 @@ export const tickets: SituationDef = {
     discount_ans: {
       lt: "Say whether you have a discount card",
       items: [
-        { id: "im_student", s: t("Soy | estudiante.", "I'm | a student.", "I'm a student.") },
         { id: "im_senior", s: t("Tengo | credencial | del | INAPAM.", "I have | a card | of the | INAPAM.", "I have an INAPAM card."), note: "INAPAM: the Mexican senior card (60 and over)." },
-        { id: "no_discount", s: t("No, | ninguna.", "No, | none.", "No, neither.") },
+        { id: "no_discount", s: t("No, | no tengo.", "No, | I don't have one.", "No, I don't.") },
+        { id: "im_student", s: t("Soy | estudiante.", "I'm | a student.", "I'm a student."), note: "Students and teachers get bus discounts only during school vacations." },
       ],
     },
     show_card: {
       lt: "Show your card",
       items: [
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
-        { id: "here_id", s: t("Aquí | está | mi | credencial | de | estudiante.", "Here | is | my | card | of | student.", "Here's my student card.") },
+        { id: "here_id", s: t("Aquí | está | mi | credencial | del | INAPAM.", "Here | is | my | card | of the | INAPAM.", "Here's my INAPAM card.") },
         { id: "id_none", s: t("No la traigo.", "I don't have it on me.", "I don't have it with me.") },
       ],
     },
@@ -795,6 +819,7 @@ export const tickets: SituationDef = {
     "aire acondicionado": { reason: "lexical_expression", split: "aire → air + acondicionado → conditioned misreads the compound noun: air conditioning.", minimal: "Two words, one noun." },
     "a tiempo": { reason: "lexical_expression", split: "a → to + tiempo → time misreads the adverb: on time.", minimal: "Two words." },
     "en la tarde": { reason: "lexical_expression", split: "en → in + la → the + tarde → afternoon: one English phrase, in the afternoon.", minimal: "Three words." },
+    "sin costo": { reason: "lexical_expression", split: "sin → without + costo → cost reads word by word; English says free (of charge).", minimal: "Two words." },
     "me da": { reason: "grammatical_fusion", split: "me → to me + da → it gives: the fixed phrase me da igual = it makes no difference to me.", minimal: "Clitic and verb only; igual stays separate." },
   },
 
@@ -820,8 +845,8 @@ export const tickets: SituationDef = {
       no: (c) => { noCard(c); } },
     { id: "discount", when: (c) => (!!c.s.trip || !!c.s.discAsked) && c.s.askDiscount && c.s.disc === undefined && !c.s.discPending && !c.s.paid, done: (c) => c.s.disc !== undefined,
       ask: (c) => c.say("ask_discount"), expects: ["discount_claim", "disc_kind_ctx", "no_discount_ctx"],
-      suggest: [{ lt: "Say whether you have a student or senior card", hint: "discount_ans" }],
-      yes: (c) => { c.say("ask_card_id"); c.hold(); c.s.discPending = c.s.discPending ?? "student"; },
+      suggest: [{ lt: "Say whether you have an INAPAM senior card", hint: "discount_ans" }],
+      yes: (c) => { c.say("ask_card_id"); c.hold(); c.s.discPending = c.s.discPending ?? "senior"; },
       no: (c) => { c.s.disc = ""; } },
     { id: "dest", done: (c) => !!c.s.dest,
       ask: (c) => {
@@ -860,6 +885,8 @@ export const tickets: SituationDef = {
     { id: "time", when: (c) => !!c.s.trip, done: (c) => !!c.s.dep,
       ask: (c) => askTime(c),
       expects: ["time_ctx", "travel_ctx", "ask_other_ctx"],
+      // a no to tomorrow's two buses (asked after "¿Hay uno más tarde?" at tomorrow's offer): walks off, as at the offer
+      no: (c) => { if (c.s.tomorrowOffered && c.s.travel === "tomorrow") { c.say("walk_off"); c.end(); } },
       suggest: [{ lt: "Choose a departure", hint: "time" }] },
     { id: "soldout", when: (c) => c.s.dep === "first" && (!c.s.travel || c.s.travel === "today") && c.s.soldTwist && !c.s.soldTold && !c.s.paid, done: (c) => !!c.s.soldTold,
       ask: (c) => {
@@ -970,6 +997,9 @@ export const tickets: SituationDef = {
       if (trip && c.s.totalSaid && trip !== c.s.trip) { c.s.totalSaid = false; c.say("changed"); } // the pay step says the new total
       if (trip) c.s.trip = trip;
       if (trip === "oneway") c.s.ret = undefined;
+      // "Dos boletos sencillos": the number counts too ("un boleto redondo" is the kind of ticket, not a change to one)
+      const n = countOf(tags);
+      if (n && (c.s.count === undefined || (n >= 2 && n !== count(c)))) { if (c.s.totalSaid && n !== count(c)) c.s.totalSaid = false; c.s.count = n; }
       if (slots.day && c.s.trip === "round") setReturn(c, slots.day);
     },
     count_ctx(c, slots, seg) {
@@ -1024,7 +1054,10 @@ export const tickets: SituationDef = {
       if (dep === "first" && fullNow(c)) { c.say("still_full", { at: clock(dest(c.s.dest).time) }); askTime(c); return; }
       if (c.s.totalSaid && dep !== c.s.dep) c.s.totalSaid = false;
       c.s.dep = dep;
-      if (!(dep === "first" && c.s.soldTwist && !c.s.soldTold)) c.say("time_ok", { at: clock(depTime(c)!) });
+      // (no "Muy bien, el de…" when the sold-out step follows: today's first bus, the twist not told yet)
+      const soldNext = dep === "first" && c.s.soldTwist && !c.s.soldTold && (!c.s.travel || c.s.travel === "today");
+      // (after the sold-out offers, tomorrow's bus is said with "mañana")
+      if (!soldNext) c.say(c.s.tomorrowOffered && c.s.travel === "tomorrow" ? "tomorrow_ok" : "time_ok", { at: clock(depTime(c)!) });
     },
     // outside the sold-out question, these mean nothing yet
     accept_ctx(c) { c.say("ack"); },
@@ -1051,7 +1084,9 @@ export const tickets: SituationDef = {
     name_ctx(c) { if (c.s.named) return; idDone(c, "name_ok"); },
     show_id(c, slots, seg) {
       const tags = allTags(slots, seg);
-      // a student / INAPAM card is for the discount; a passport or other ID is for the name on the ticket
+      // an INAPAM card is for the discount; a passport or other ID is for the name on the ticket. A student card gives
+      // no discount now (only in school vacations), but at the ID check it is an ID like any other
+      if ((tags.includes("student") || /\bestudiante/.test(fold(c.heard))) && !(c.step === "name" && !c.s.named)) { vacationsOnly(c, "student"); return; }
       if (tags.includes("student") || tags.includes("senior") || tags.includes("card")) {
         if (c.s.discPending && c.s.disc === undefined) { applyDiscount(c); return; }
         if (!c.s.named && c.step === "name") { idDone(c, "id_back"); return; }
@@ -1081,38 +1116,55 @@ export const tickets: SituationDef = {
       c.say("ack");
     },
     discount_ask(c, slots, seg) {
-      if (allTags(slots, seg).includes("child")) { c.say("child_disc"); return; }
-      if (allTags(slots, seg).includes("teacher")) { c.say("teacher_disc"); return; }
+      const tags = allTags(slots, seg);
+      if (tags.includes("child")) { c.say("child_disc"); return; }
+      // students and teachers: only in school vacations, so no card question follows
+      if (tags.includes("teacher") || tags.includes("student")) { vacationsOnly(c, tags.includes("teacher") ? "teacher" : "student", false); return; }
       c.say("discount_info");
       if (c.s.disc === undefined && !c.s.paid && !c.s.discPending) { c.s.askDiscount = true; c.s.discAsked = true; }
     },
     discount_claim(c, slots, seg) {
       const tags = allTags(slots, seg);
-      // a teacher: no student half (in Mexico, less and only in school vacations); at the card question that is a no
-      if (tags.includes("teacher")) { c.say("teacher_disc"); if (c.step === "discount" && c.s.disc === undefined && !c.s.discPending) c.s.disc = ""; return; }
+      // a student or a teacher: a discount only in school vacations (not now); at the card question that is a no
+      if (tags.includes("teacher") || tags.includes("student")) { vacationsOnly(c, tags.includes("teacher") ? "teacher" : "student"); return; }
       if (c.s.disc !== undefined || c.s.paid) return;
       // "Tengo 67 años": seniors (60 and over, INAPAM) get it with the card; a younger adult simply doesn't
       if (typeof slots.age === "number" && !tags.includes("senior") && !tags.includes("student")) {
         if (slots.age >= 60) c.s.discPending = "senior"; else if (c.step === "discount") c.s.disc = "";
         return;
       }
-      c.s.discPending = tags.includes("senior") ? "senior" : "student";
+      c.s.discPending = "senior"; // (students and teachers returned above)
     },
     disc_kind_ctx(c, slots, seg) { tickets.handlers.discount_claim(c, slots, seg); },
     no_discount_ctx(c) { if (c.s.disc === undefined) { c.s.disc = ""; c.s.discPending = undefined; } },
     // "Con tarjeta no, en efectivo" (#amb, commas lost): cash or card? asked again, nothing charged
-    pay_card(c, slots, seg) { if (allTags(slots, seg).includes("amb")) { c.say("which_pay"); c.hold(); return; } pay(c, "card"); },
+    pay_card(c, slots, seg) {
+      const tags = allTags(slots, seg);
+      if (tags.includes("amb")) { c.say("which_pay"); c.hold(); return; }
+      c.s.byPhone = tags.includes("phone"); // "con el celular": "acerque su celular", not "inserte su tarjeta"
+      pay(c, "card");
+    },
     pay_cash(c, slots, seg) { if (allTags(slots, seg).includes("amb")) { c.say("which_pay"); c.hold(); return; } pay(c, "cash"); },
     ask_dollars(c) { c.say("dollars"); },
-    ask_next(c, slots) {
+    ask_next(c, slots, seg) {
       const said = slots.dest ?? destFromText(c.heard);
       if (said && !c.s.dest) setDest(c, said);
       const d = said ?? c.s.dest;
       if (!d) { destFirst(c); return; }
+      // "¿A qué hora sale el último / el primero?": both departures (the 5:15 is every route's last), not "your bus"
+      if (allTags(slots, seg).includes("sched")) {
+        if (d === c.s.dest && fullNow(c)) { if (!c.s.tomorrowOffered) { c.say("next_at", { late: clock(LATE) }); c.hold(); } return; } // (the 5:15 is the last too)
+        if (d === c.s.dest && !c.s.dep && c.step === "time") { askTime(c); c.hold(); return; }
+        c.say("deps_info", { at: clock(dest(d).time), late: clock(LATE) });
+        if (d === c.s.dest && !c.s.dep) c.s.timeAsked = true;
+        return;
+      }
       if (d !== c.s.dest) { c.say("other_leaves", { at: clock(dest(d).time) }); return; }
       if (!c.s.dep && c.step !== "time") {
-        // asked before "¿Para qué hora?": the two departures as information; the current step asks its own question
-        if (fullNow(c)) c.say("later_one", { late: clock(LATE) });
+        // asked before "¿Para qué hora?": the two departures as information; the current step asks its own question.
+        // At the sold-out question, the next bus's time (not "Sí, el de…"), the question kept open; at tomorrow's
+        // offer, the offer again (it says tomorrow's time)
+        if (fullNow(c)) { if (!c.s.tomorrowOffered) { c.say("next_at", { late: clock(LATE) }); c.hold(); } }
         else { c.say("deps_info", { at: clock(dest(d).time), late: clock(LATE) }); c.s.timeAsked = true; }
         return;
       }
@@ -1164,7 +1216,7 @@ export const tickets: SituationDef = {
     ask_wifi(c) { c.say("bus_extras"); },
     ask_restroom(c) { c.say("restroom"); },
     ask_schedule(c) { c.say("schedule"); },
-    ask_luggage(c) { c.say("luggage"); },
+    ask_luggage(c, slots, seg) { c.say(allTags(slots, seg).includes("limit") ? "luggage_limit" : "luggage"); },
     ask_early(c) { c.s.earlySaid = true; c.say("early_ans"); },
     ask_seat(c, slots, seg) { c.say(allTags(slots, seg).includes("anywhere") ? "seat_assigned" : "seat_numbered"); },
     seat_taken(c) { c.say("seat_joke"); },
@@ -1353,6 +1405,17 @@ export const tickets: SituationDef = {
     { say: "Somos cinco", intent: "count_ctx", step: "count", slots: { number: 5 } },
     { say: "¿Hay descuento para maestros?", intent: "discount_ask", not: ["discount_claim"] },
     { say: "Sí, soy maestra", intent: "discount_claim", step: "discount", not: ["disc_kind_ctx"] },
+    // audit 5 Nov 2026: a full-sentence trip answer, schedule questions that booked a bus, side questions
+    { say: "Quiero un boleto redondo", intent: "trip_ans", step: "trip", not: ["buy_unknown"] },
+    { say: "Dos boletos sencillos", intent: "trip_ans", step: "trip", not: ["buy_unknown"] },
+    { say: "Quiero un boleto redondo a Cancún", intent: "buy", step: "dest", slots: { dest: "cancun" } },
+    { say: "¿A qué hora sale el último?", intent: "ask_other_ctx", step: "time", not: ["time_ctx"] },
+    { say: "¿A qué hora sale el último autobús a Cancún?", intent: "ask_next", slots: { dest: "cancun" } },
+    { say: "¿A dónde tienen salidas?", intent: "ask_dests" },
+    { say: "¿Cuántas maletas puedo llevar?", intent: "ask_luggage" },
+    { say: "¿Dónde está el andén?", intent: "ask_track" },
+    { say: "¿Cuánto cuesta para niños?", intent: "discount_ask" },
+    { say: "¿Puedo pagar con el celular?", intent: "pay_card", step: "pay", not: ["pay_cash"] },
     // not understood
     { say: "Mi perro come boletos azules", intent: "none" },
     { say: "autobús plátano ventanilla", intent: "none" },
@@ -1384,11 +1447,12 @@ export const tickets: SituationDef = {
       turns: ["A Tulum.", "Sencillo.", "El próximo.", "Ventanilla.", "Aquí tiene.", "Tarjeta.", "Gracias."],
       auto: {}, setup: (s) => { Object.assign(s, FIXED, { volunteer: true }); },
       expect: { complete: true, state: { dest: "tulum", trip: "oneway", dep: "first", seat: "window", named: true, paid: true } } },
-    { name: "student discount with the card, Playa del Carmen",
-      turns: ["Hola. ¿Hay descuento para estudiantes?", "Soy estudiante.", "Aquí está mi credencial de estudiante.", "Un boleto a Playa del Carmen.", "Sencillo.",
-        "El de la tarde.", "Pasillo.", "Me llamo Ryan Miller.", "Con tarjeta.", "¿Sale a tiempo?", "¿A qué hora sale?", "¿En qué andén?", "Gracias, adiós."],
+    // audit 5 Nov: in November students pay the full fare (their half is for school vacations only)
+    { name: "a student asks: only in school vacations, the full fare to Playa del Carmen",
+      turns: ["Hola. ¿Hay descuento para estudiantes?", "Soy estudiante.", "Un boleto a Playa del Carmen.", "Sencillo.",
+        "El de la tarde.", "Pasillo.", "Me llamo Ryan Miller.", "¿Cuánto es?", "Con tarjeta.", "¿Sale a tiempo?", "¿A qué hora sale?", "¿En qué andén?", "Gracias, adiós."],
       auto: omit(AUTO, ["dest", "trip", "time", "seat", "name", "pay", "info"]), setup: (s) => { Object.assign(s, FIXED, { volunteer: false }); },
-      expect: { complete: true, state: { disc: "student", dest: "playa", dep: "late" } } },
+      expect: { complete: true, state: { disc: undefined, discPending: undefined, dest: "playa", dep: "late", paid: true } } },
     { name: "fewer tickets after paying (rung up again), no ID on hand",
       turns: ["Dos boletos sencillos a Tulum, por favor.", "El próximo.", "Ventanilla.", "No traigo mi pasaporte.", "Ryan Miller.", "Ana Miller.", "Con tarjeta.",
         "Siempre no, nada más un boleto.", "En efectivo.", "¿A qué hora sale?", "¿De qué andén sale?", "Gracias, adiós."],
@@ -1448,8 +1512,23 @@ export const tickets: SituationDef = {
         "Con tarjeta.", "Gracias."],
       auto: omit(AUTO, ["dest", "trip", "time", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { volunteer: false }); },
       expect: { complete: true, state: { dest: "cancun", trip: "oneway", dep: "first", paid: true } } },
+    { name: "a student at the INAPAM question: no discount, the full fare; pays by phone",
+      turns: ["Un boleto a Cancún.", "Sencillo.", "Soy estudiante.", "¿A qué hora sale el último?", "El primero.", "Ventanilla.", "Aquí tiene mi pasaporte.", "¿Puedo pagar con el celular?",
+        "¿Cuántas maletas puedo llevar?", "Gracias."],
+      auto: omit(AUTO, ["dest", "trip", "discount", "time", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { askDiscount: true, volunteer: true }); },
+      expect: { complete: true, state: { dest: "cancun", disc: "", dep: "first", byPhone: true, paid: true } } },
+    { name: "full sentences: a round-trip ticket said whole; the place given with the no; where the gate is",
+      turns: ["Quiero ir a la playa.", "No, a Mérida.", "Quiero dos boletos redondos.", "Regreso el domingo.", "El de la mañana.", "Juntos, por favor.", "Aquí tiene mi pasaporte.",
+        "Ana Miller.", "Con tarjeta.", "¿Dónde está el andén?", "¿A qué hora sale?", "Gracias."],
+      auto: omit(AUTO, ["dest", "trip", "ret", "time", "seat", "name", "pay", "info", "other_name"]), setup: (s) => { Object.assign(s, FIXED, { volunteer: false }); },
+      expect: { complete: true, state: { dest: "merida", count: 2, trip: "round", ret: "sunday", dep: "first", seat: "together", paid: true } } },
+    { name: "sold out (twist forced): questions at both offers book nothing; tomorrow's 5:15 chosen",
+      turns: ["Un boleto a Cancún.", "Sencillo.", "El próximo.", "¿Hay uno más tarde?", "No, gracias.", "¿Hay uno más tarde?", "El de la tarde.", "Pasillo.",
+        "Aquí tiene mi pasaporte.", "En efectivo.", "Gracias."],
+      auto: omit(AUTO, ["dest", "trip", "time", "sold_out", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { soldTwist: true, volunteer: true }); },
+      expect: { complete: true, state: { dest: "cancun", travel: "tomorrow", dep: "late", tomorrowOffered: true, paid: true } } },
     { name: "a teacher at the card question: no student half",
-      turns: ["Un boleto a Tulum.", "Sencillo.", "Sí, soy maestra.", "El primero.", "Ventanilla.", "Aquí tiene mi pasaporte.", "¿Cuánto es?", "En efectivo.", "Gracias."],
+      turns: ["Un boleto a Tulum.", "Sencillo.", "Soy maestra.", "El primero.", "Ventanilla.", "Aquí tiene mi pasaporte.", "¿Cuánto es?", "En efectivo.", "Gracias."],
       auto: omit(AUTO, ["dest", "trip", "discount", "time", "seat", "name", "pay", "ticket"]), setup: (s) => { Object.assign(s, FIXED, { askDiscount: true, volunteer: true }); },
       expect: { complete: true, state: { dest: "tulum", disc: "", paid: true } } },
   ],
@@ -1462,7 +1541,7 @@ function soldPending(): Pending {
   const again = (cc: Ctx) => cc.expect(soldPending());
   const full = (cc: Ctx) => { cc.say("still_full", { at: clock(dest(cc.s.dest).time) }); cc.say("sold_remind", { late: clock(LATE) }); again(cc); };
   return {
-    id: "sold_out", expects: ["accept_ctx", "time_ctx", "ask_earlier_ctx", "travel_ctx", "ok_thanks", "late_no_ctx"], hints: ["sold_out"],
+    id: "sold_out", expects: ["accept_ctx", "time_ctx", "ask_earlier_ctx", "ask_other_ctx", "travel_ctx", "ok_thanks", "late_no_ctx"], hints: ["sold_out"],
     suggest: [{ lt: "Take the 5:15 bus, or ask about another", hint: "sold_out" }],
     on: {
       accept_ctx: (cc, sl) => { if (sl.time && depOf(cc, sl.time) === "first") { full(cc); return; } lateToday(cc); },
@@ -1473,6 +1552,8 @@ function soldPending(): Pending {
         full(cc);
       },
       ask_earlier_ctx: (cc) => { cc.say("only_late", { late: clock(LATE) }); again(cc); },
+      // "¿Hay uno más tarde?", "¿A qué hora sale el último?": today the 5:15 is the only one left (a question, no booking)
+      ask_other_ctx: (cc, sl, sg) => { cc.say(allTags(sl, sg).includes("earlier") ? "only_late" : "today_only", { late: clock(LATE) }); again(cc); },
       travel_ctx: (cc, sl, sg) => { otherDay(cc, sl.day, wantedDep(cc, sl, sg, "first"), again); },
       ok_thanks: (cc) => { cc.say("sold_remind", { late: clock(LATE) }); again(cc); },
       late_no_ctx: (cc) => { declineLate(cc); },
@@ -1495,11 +1576,17 @@ function soldPending(): Pending {
       if (isToday(day) && dep === "late") { lateToday(cc2); return; }
       otherDay(cc2, day, dep, again);
     };
+    // "¿Hay uno más tarde?", "¿A qué hora sale el último?": a question, never a booking (it was read as "la una" +
+    // "más tarde" and booked tomorrow's 5:15): tomorrow's two buses, and which one; "¿Más temprano?": the first is that one
+    const askOther = (cc2: Ctx, sl: any, sg: Segment) => {
+      if (allTags(sl, sg).includes("earlier")) { cc2.say("first_one", { at: clock(dest(cc2.s.dest).time) }); cc2.expect(offer); return; }
+      otherDay(cc2, "tomorrow", undefined, again);
+    };
     const offer: Pending = {
-      id: "sold_out_tomorrow", expects: ["travel_ctx", "accept_ctx", "time_ctx", "tomorrow_no_ctx", "late_no_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Take tomorrow's bus or not", hint: "g_yesno" }],
+      id: "sold_out_tomorrow", expects: ["travel_ctx", "accept_ctx", "time_ctx", "tomorrow_no_ctx", "late_no_ctx", "ask_other_ctx"], hints: ["g_yesno"], suggest: [{ lt: "Take tomorrow's bus or not", hint: "g_yesno" }],
       on: { tomorrow_no_ctx: walkOff, late_no_ctx: walkOff,
         // "Hoy" here is not a yes to tomorrow: today only the 5:15 is left
-        travel_ctx: tomorrowAt, accept_ctx: tomorrowAt, time_ctx: tomorrowAt,
+        travel_ctx: tomorrowAt, accept_ctx: tomorrowAt, time_ctx: tomorrowAt, ask_other_ctx: askOther,
         ...NEW_DEST },
       yes: (cc2) => { otherDay(cc2, "tomorrow", "first", again); },
       no: walkOff,
@@ -1564,7 +1651,8 @@ function beachOnly(heard: string): boolean {
 function askPlaya(c: Ctx) {
   c.say("ask_playa");
   c.expect({ id: "playa_q", expects: ["dest_ctx", "buy"], hints: ["buy"], suggest: [{ lt: "Say yes, or say where you're going", hint: "buy", options: "dest" }],
-    yes: (cc) => { setDest(cc, "playa"); cc.say("ack"); }, no: (cc) => { cc.say("dest_list"); },
+    // a bare "No": the list of places; "No, a Tulum" already says where (its dest_ctx sets it), so no list
+    yes: (cc) => { setDest(cc, "playa"); cc.say("ack"); }, no: (cc) => { if (!destFromText(cc.heard)) cc.say("dest_list"); },
     ask: (cc) => cc.say("ask_playa") });
 }
 
@@ -1648,6 +1736,14 @@ function applyDiscount(c: Ctx) {
   c.say("discount_ok");
 }
 function noCard(c: Ctx) { c.s.disc = ""; c.s.discPending = undefined; c.say("no_card_disc"); }
+/** Students and teachers: a discount only in school vacations (not now), said once a turn; at the card questions
+ *  (`answers`) it is a no, so the full fare is charged. */
+function vacationsOnly(c: Ctx, who: "student" | "teacher", answers = true) {
+  const turn = ((c as any).conv?.history?.length ?? 0) + "|" + c.heard;
+  if (c.s.__vacSaid !== turn) { c.s.__vacSaid = turn; c.say(c.s.vacTold === who ? "vac_remind" : who === "teacher" ? "teacher_disc" : "student_disc"); c.s.vacTold = who; }
+  if (answers && c.s.disc === undefined && (c.s.discPending || c.step === "discount" || c.step === "student_id")) { c.s.disc = ""; c.s.discPending = undefined; }
+}
+const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 function pay(c: Ctx, method: "card" | "cash") {
   if (c.s.paid) return;
@@ -1660,7 +1756,7 @@ function finishPay(c: Ctx, method: "card" | "cash" | "any") {
   c.s.paid = true;
   checkDone(c);
   c.s.payWith = method;
-  c.say(method === "card" ? "card_ok" : method === "cash" ? "cash_ok" : "paid_thanks");
+  c.say(method === "card" ? (c.s.byPhone ? "phone_ok" : "card_ok") : method === "cash" ? "cash_ok" : "paid_thanks");
   c.event("pay", { method, amount: total(c) });
 }
 

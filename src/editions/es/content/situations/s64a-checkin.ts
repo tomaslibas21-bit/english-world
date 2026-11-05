@@ -58,6 +58,15 @@ const SEAT_NO: Record<string, { en: string; lt: string; say: string }> = {
   middle: { en: "23B", lt: "23B", say: "veintitrés be" },
 };
 
+/** The seats as Emilio says them back ("Perdón, ¿pasillo o en medio?"): values with a list, so the voice line list has
+ *  every pair (a line with two entities, {X} and {Y}, was voiced only with the pairs random talk happened to reach). */
+const SEAT_WORD: Record<string, { en: string; lt: string; say: string }> = {
+  window: { en: "ventana", lt: "window", say: "ventana" },
+  aisle: { en: "pasillo", lt: "aisle", say: "pasillo" },
+  middle: { en: "en medio", lt: "middle", say: "en medio" },
+};
+const seatPair = (a: string, b: string) => ({ sa: SEAT_WORD[a], sb: SEAT_WORD[b] });
+
 const NUM_WORD: Record<number, { en: string; lt: string; say: string }> = {
   2: { en: "Dos", lt: "Two", say: "Dos" },
   3: { en: "Tres", lt: "Three", say: "Tres" },
@@ -317,7 +326,8 @@ function expectFee(c: Ctx) {
     },
     yes: (cc) => { paid(cc); },
     no: (cc) => { cc.say("ow_ask"); expectOverweight(cc); },
-    ask: (cc) => cc.say("ow_fee_ask"),
+    // asked again after a side question: in cash it's the amount ("Acerque su tarjeta" asked a cash payer for a card)
+    ask: (cc) => { if (cc.s.payCash) cc.say("ow_cash_ask", { price: FEE }); else cc.say("ow_fee_ask"); },
   });
 }
 
@@ -365,13 +375,28 @@ function expectNoWindow(c: Ctx) {
   });
 }
 
-/** "Perdón, ¿ventana o pasillo?": two seats heard where the lost commas can mean either (rule 10). */
-function seatWhich(c: Ctx, a: string, b: string) {
-  c.say("seat_which", { X: a, Y: b });
+/** "Perdón, ¿ventana o pasillo?": two seats heard where the lost commas can mean either (rule 10). `lead` says another
+ *  line first ("Claro. Entonces, ¿ventana o pasillo?" after "No quiero en medio"); asked again, it's the short question
+ *  (a bare "Sí" once got "Claro. Entonces, ¿ventana o pasillo?" plus the seat step's own question). */
+function seatWhich(c: Ctx, a: string, b: string, lead?: string) {
+  if (lead) c.say(lead); else c.say("seat_which", seatPair(a, b));
   ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["seat"],
     suggest: [{ lt: "Choose a seat", hint: "seat", options: [a, b] }],
     on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
-    ask: (cc) => cc.say("seat_which", { X: a, Y: b }) });
+    ask: (cc) => cc.say("seat_which", seatPair(a, b)) });
+}
+
+/** "No quiero ventana." — "Entonces, ¿pasillo?" — "No.": the seat that's left, asked ("¿Ventana o pasillo?" again
+ *  ignored both refusals, and came twice: once from here, once from the seat step). */
+function seatNegMiddle(c: Ctx) {
+  c.say("seat_neg_middle");
+  ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["g_yesno", "seat"],
+    suggest: [{ lt: "Agree or choose another seat", hint: "seat", options: "seat" }],
+    yes: (cc) => { if (cc.s.passport) assignSeat(cc, "middle"); else { cc.s.seatPref = "middle"; cc.say("ack"); } },
+    // a "no" to the last seat too: the seat step asks its question again
+    no: () => {},
+    on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
+    ask: (cc) => cc.say("seat_neg_middle") });
 }
 
 function expectMiddle(c: Ctx) {
@@ -587,6 +612,8 @@ export const checkin: SituationDef = {
       "(aqui tiene | aqui esta | tenga | tome | ten | toma | le doy | le entrego | aqui tienes) [mi | el | la | su] {doc} [y [mi | el | la] {doc2:doc}]",
       "(este | esta) es [mi] {doc}", "mi {doc} [y mi {doc2:doc}]", "pasaporte",
       "(solo) tengo [mi | una | la] {doc}",
+      // "No tengo pasaporte, pero tengo mi tarjeta de residente" (not understood)
+      "no (tengo | traigo) [mi | el] pasaporte [pero] (tengo | traigo | aqui tiene | aqui esta) [mi | la | una] {doc}",
       "(tengo | traigo) mi (reservacion | boleto | pase de abordar) en (el | mi) celular",
     ] },
     // a bare "¿Aquí?" / "Ahí" hands over or puts the bag down only where something is being handed over
@@ -638,7 +665,7 @@ export const checkin: SituationDef = {
     bags_none_ctx: { patterns: ["(ninguna | ninguno | nada | cero) [maletas]"] },
     packed_yes: { patterns: [
       "[si] yo (mismo | misma) (la hice | la empaqué | las hice | la prepare | hice mi maleta) #h:packed_yes",
-      "[si] (la | las) (hice | empaqué | prepare | armé) (yo | yo mismo | yo misma) #h:packed_did",
+      "[si] (la | las) (hice | empaqué | prepare | armé) (yo | yo mismo | yo misma | yo solo | yo sola) #h:packed_did",
       "[si] (yo | yo mismo | yo misma) (la | las) (hice | empaqué | prepare | armé)",
       "[si] yo (mismo | misma)", "[si] (la hice | la empaqué | las hice) [sola | solo]", "si es mi maleta",
     ] },
@@ -737,6 +764,8 @@ export const checkin: SituationDef = {
       "[puedo] pagar con tarjeta #h:fee_card", "(pago | puedo pagar | quiero pagar) con (tarjeta | tarjeta de credito | tarjeta de debito | mi tarjeta)",
       "con (tarjeta | tarjeta de credito | tarjeta de debito | mi tarjeta)", "tarjeta", "(aceptan | acepta | reciben) tarjeta",
       "(puedo pagar | pago) con (el celular | apple pay | google pay)",
+      // "¿Tiene terminal?": Mexico's way to ask whether cards are taken (s31)
+      "(tiene | tienen | hay) terminal",
       // rule 10: in "No en efectivo, con tarjeta" the second is the answer
       "no (en efectivo | efectivo) [sino] [mejor] (con tarjeta | tarjeta)",
     ] },
@@ -822,7 +851,9 @@ export const checkin: SituationDef = {
     ] },
     ask_gate: { patterns: [
       "cual es (mi | la) @gate #h:q_gate", "(en | de | por) (que | cual) @gate (sale | abordo | es | sale el vuelo | sale mi vuelo | embarco)",
-      "(que | cual) @gate [es | era]", "donde esta (la | mi) @gate [{number}]", "@gate [numero] {number} [verdad | correcto | cierto]",
+      "(que | cual) @gate [es | era]", "@gate [numero] {number} [verdad | correcto | cierto]",
+      // where it is, not which ("¿Dónde está la sala 4?" got "Es la sala 4")
+      "(donde | por donde) (esta | queda) (la | mi) @gate [numero] [{number}] #where", "como (llego | voy) a (la | mi) @gate [numero] [{number}] #where",
       "(que | cual) @gate (me dijo | dijo)", "[es] (la | mi) @gate [numero] {number} [verdad | correcto | cierto]", "(me repite | me puede repetir | cual era) (la | mi | el numero de) @gate", "por donde (abordo | embarco)", "(cual | que) es (el numero de | mi) @gate",
     ] },
     ask_boarding_time: { patterns: [
@@ -843,17 +874,54 @@ export const checkin: SituationDef = {
       "puedo (llevar | subir | meter) (esta | mi | la) (mochila | bolsa | maleta | maleta de mano | maletita) (conmigo | al avion | a bordo | en la cabina) #h:q_carryon",
       "(esta | mi) (mochila | bolsa | maleta de mano) (esta bien | cuenta | pasa | sirve) como equipaje de mano", "puedo llevar (esto | esta) conmigo",
       "(la mochila | mi mochila | esta mochila) (va | puede ir) conmigo",
+      // "¿Tengo que documentar la mochila?": no (it was not understood)
+      "(tengo que | hay que | debo | necesito) (documentar | facturar) (la | mi | esta) (mochila | bolsa | maleta de mano | maletita | mochilita) #must",
+      "(la | mi | esta) (mochila | bolsa | maleta de mano) [tambien] (se documenta | se tiene que documentar | la tengo que documentar) #must",
     ] },
     ask_seatnum: { patterns: ["cual es mi asiento", "(que | cual) asiento (tengo | me toco | me dio | es)", "donde me (siento | toco)", "(que | cual) numero de asiento [tengo]",
       "cual es el numero de mi asiento", "(que | cual) es mi lugar"] },
     ask_bagfee: { patterns: [
       "(tengo que | hay que) pagar (por | la | el) (maleta | equipaje | mi maleta) #h:q_fee", "(la maleta | el equipaje | mi maleta) (tiene costo | cuesta | se paga | esta incluida | esta incluido)",
       "(cuesta | cuanto cuesta) documentar [la maleta | una maleta]", "(esta incluida | incluye) la maleta",
+      "cuantas maletas (puedo | se pueden | me dejan) (llevar | documentar | facturar)", "cuantas maletas (incluye | estan incluidas) [mi tarifa | mi boleto]",
     ] },
     ask_restroom: { patterns: [
       "donde (esta | estan | queda | quedan) (el bano | los banos | los sanitarios | el sanitario | el servicio | los servicios | el aseo | el wc)",
       "hay (un bano | banos | sanitarios) (por aqui | cerca)",
     ] },
+    // side questions a learner may ask here (audit, 5 Nov 2026): each had no answer
+    ask_dollars: { patterns: [
+      "(acepta | aceptan | toma | toman | recibe | reciben) (dolares | dolares americanos) [en efectivo]", "(puedo | se puede) pagar (en | con) dolares",
+      "(pago | le pago | le puedo pagar) (en | con) dolares", "(solo | nada mas | nomas) (tengo | traigo) dolares",
+    ] },
+    // "¿Me da un recibo?" after the fee (or the bag's claim tag)
+    ask_receipt: { patterns: [
+      "(me da | me puede dar | me podria dar | me das #tip:tu_staff | quisiera | necesito) [un | el | mi | su] (recibo | ticket | comprobante) [de pago | del pago | de mi maleta | de la maleta | de mi equipaje | del equipaje]",
+      "(me da | me puede dar | me podria dar) (los | mis) comprobantes [de mis maletas | de las maletas | del equipaje]",
+      "(y | donde esta) (el | mi) (recibo | ticket | comprobante) [de pago | del pago | de mi maleta | de la maleta | del equipaje]",
+    ] },
+    ask_flightno: { patterns: [
+      "(cual | que) es (mi | el) (numero de vuelo | vuelo)", "(cual | que) es el numero de (mi | el) vuelo", "(que | cual) numero de vuelo (es | tengo)", "(que | cual) vuelo (es | tengo)",
+    ] },
+    ask_direct: { patterns: [
+      "(es | el vuelo es | mi vuelo es) [un vuelo] directo", "(el vuelo | mi vuelo) (hace | tiene) (escala | escalas)", "(hace | tiene | hay) [alguna] (escala | escalas)",
+      "(es | va) sin escalas",
+    ] },
+    ask_pickup: { patterns: [
+      "(donde | en donde) (recojo | recogo | recupero) (mi maleta | la maleta | mi equipaje | mis maletas | las maletas | el equipaje)",
+      "(donde | en donde) (la | las | lo) (recojo | recogo | recupero)", "(la | las | lo) (recojo | recupero) en {city}",
+    ] },
+    ask_liquids: { patterns: [
+      "(puedo | se puede | se pueden) (llevar | subir | pasar | meter) (liquidos | agua | una botella de agua) [en (la | mi | el) (mochila | bolsa | equipaje de mano | maleta de mano)]",
+      "(y | que pasa con) los liquidos", "los liquidos (pueden | van) en [la | mi | el] (mochila | equipaje de mano | maleta de mano | bolsa)",
+    ] },
+    // "¿Puedo cambiar de asiento?" with no seat named
+    seat_change: { patterns: [
+      "(puedo | podria) (cambiar | cambiarme) (de | el | mi) (asiento | lugar)", "(me puede | me podria) cambiar (el | mi) (asiento | lugar)",
+      "(quiero | quisiera) cambiar (de | mi | el) (asiento | lugar)",
+    ] },
+    // "No traigo mi pasaporte" at "¿Me permite su pasaporte?": what works instead
+    passport_none_ctx: { patterns: ["no (tengo | traigo) [mi | el] pasaporte [conmigo | aqui]", "(se me olvidó | olvidé) [mi | el] pasaporte"] },
   },
 
   lines: {
@@ -1058,6 +1126,8 @@ export const checkin: SituationDef = {
     ow_fee_card: [t("Muy | bien, | son | {$price}. | Puede | pagar | con | tarjeta | aquí.", "Very | good, | it's | {$price}. | You can | pay | with | card | here.",
       "Okay, that's {$price}. You can pay by card right here.")],
     ow_fee_ask: [t("Acerque | su | tarjeta | aquí, | por favor.", "Bring close | your | card | here, | please.", "Just tap your card here, please.")],
+    // the fee in cash, asked again after a side question (it was "Acerque su tarjeta aquí")
+    ow_cash_ask: [t("Son | {$price}, | por favor.", "It's | {$price}, | please.", "That's {$price}, please.")],
     ow_cash_ok: [t("Sí, | también | aceptamos | efectivo. | Son | {$price}.", "Yes, | also | we-accept | cash. | It's | {$price}.", "Yes, we take cash too. That's {$price}.")],
     // "No tengo tarjeta" / "No quiero pagar con tarjeta" (not "Sí, también…", which answers "¿Aceptan efectivo?")
     ow_cash_offer: [t("No hay problema, | también | aceptamos | efectivo. | Son | {$price}.", "No problem, | also | we-accept | cash. | It's | {$price}.",
@@ -1075,6 +1145,15 @@ export const checkin: SituationDef = {
     ],
     no_need_bag: [t("No hace falta. | Su | maleta | pesa | menos | de | 25 | kilos.", "No need. | Your | suitcase | weighs | less | than | 25 | kilos.", "No need. Your bag is under 25 kilos.",
       { say: "No hace falta. Su maleta pesa menos de veinticinco kilos." })],
+    no_need_bags: [t("No hace falta. | Sus | maletas | pesan | menos | de | 25 | kilos.", "No need. | Your | suitcases | weigh | less | than | 25 | kilos.", "No need. Your bags are under 25 kilos.",
+      { say: "No hace falta. Sus maletas pesan menos de veinticinco kilos." })],
+    // the fee is paid: moving things, paying or "¿Cuánto es?" again (it was "Su maleta pesa menos de 25 kilos" at 27,
+    // and "Hoy no tiene que pagar nada" after $600)
+    fee_already: [t("No hace falta, | ya | pagó | el | sobrepeso.", "No need, | already | you-paid | the | excess weight.", "No need, you've already paid the overweight fee.")],
+    fee_receipt: [t("Claro, | aquí tiene | su | recibo.", "Sure, | here's | your | receipt.", "Sure, here's your receipt.")],
+    // "¿Aceptan dólares?" (as the town's other cashiers answer it)
+    pesos_only: [t("Lo siento, | solo | aceptamos | pesos. | También | puede | pagar | con | tarjeta.", "I'm sorry, | only | we-accept | pesos. | Also | you can | pay | with | card.",
+      "Sorry, we only take pesos. You can also pay by card.")],
     nothing_to_pay: [t("Hoy | no tiene | que | pagar | nada.", "Today | you don't have | to | pay | anything.", "There's nothing to pay today.")],
     // asked before the bag is weighed: the fee isn't known yet, so no "nothing to pay"
     pay_methods: [t("Sí, | aceptamos | tarjeta | y | efectivo.", "Yes, | we-accept | card | and | cash.", "Yes, we take cards and cash.")],
@@ -1104,7 +1183,8 @@ export const checkin: SituationDef = {
     seat_pref_middle: [t("Claro, | le | busco | uno | en medio.", "Sure, | (for) you | I-look-for | one | in the middle.", "Sure, I'll find you a middle seat.")],
     seat_neg_window: [t("Entonces, | ¿pasillo?", "Then, | aisle?", "So, an aisle seat?")],
     seat_neg_aisle: [t("Entonces, | ¿ventana?", "Then, | window?", "So, a window seat?")],
-    seat_which: [t("Perdón, | ¿{X} | o | {Y}?", "Sorry, | {X} | or | {Y}?", "Sorry, {X} or {Y}?")],
+    seat_neg_middle: [t("Entonces, | ¿en medio?", "Then, | in the middle?", "So, a middle seat?")],
+    seat_which: [t("Perdón, | ¿{$sa} | o | {$sb}?", "Sorry, | {$sa} | or | {$sb}?", "Sorry, {$sa} or {$sb}?")],
     seat_neg_both: [t("Claro. | Entonces, | ¿ventana | o | pasillo?", "Sure. | Then, | window | or | aisle?", "Sure. Window or aisle, then?")],
     no_window: [t("Lo siento, | ya | no hay | asientos | de | ventana.", "I'm sorry, | already | there are no | seats | of | window.", "Sorry, the window seats are all taken.")],
     no_window_q: [t("¿Le | doy | uno | de | pasillo?", "(To) you | I-give | one | of | aisle?", "Is an aisle seat okay?")],
@@ -1141,6 +1221,7 @@ export const checkin: SituationDef = {
       t("Y | este | es | el | comprobante | de | su | maleta.", "And | this | is | the | claim tag | of | your | suitcase.", "And here's your bag tag."),
       t("Aquí está | el | comprobante | de | su | equipaje.", "Here is | the | claim tag | of | your | luggage.", "Here's your baggage claim tag."),
     ],
+    bag_tag_many: [t("Y | estos | son | los | comprobantes | de | sus | maletas.", "And | these | are | the | claim tags | of | your | suitcases.", "And here are your bag tags.")],
     ask_questions: [t("¿Tiene | alguna | pregunta?", "Do you have | any | question?", "Do you have any questions?"), t("¿Alguna | duda?", "Any | question?", "Any questions?")],
     ask_more: [t("¿Algo | más?", "Something | else?", "Anything else?"), t("¿Alguna | otra | pregunta?", "Any | other | question?", "Any other questions?")],
     what_q: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead.")],
@@ -1163,13 +1244,35 @@ export const checkin: SituationDef = {
       t("El | filtro de seguridad | está | por allá, | a la izquierda.", "The | security checkpoint | is | over there, | on the left.", "Security is over there, on the left.",
         { flags: { 1: "Mexican: el filtro de seguridad = the security checkpoint; elsewhere el control de seguridad." },
           neutral: t("El | control de seguridad | está | por allá, | a la izquierda.", "The | security checkpoint | is | over there, | on the left.", "Security is over there, on the left.") }),
-      t("Seguridad | está | derecho, | pasando | la | cafetería.", "Security | is | straight ahead, | past | the | café.", "Security is straight ahead, past the café."),
+      // the same way as the first (asked twice, the rotation said both "a la izquierda" and "derecho")
+      t("Seguridad | está | a la izquierda, | pasando | la | cafetería.", "Security | is | on the left, | past | the | café.", "Security is on the left, past the café."),
+    ],
+    // "¿Dónde está la sala 4?" got "Es la sala 4": where it is (after security, as s64b's officer says)
+    gate_where: [
+      t("La | sala | 4 | está | pasando | el | filtro de seguridad.", "The | gate | 4 | is | past | the | security checkpoint.", "Gate 4 is just past security.",
+        { say: "La sala cuatro está pasando el filtro de seguridad.",
+          flags: { 1: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta.", 6: "Mexican: el filtro de seguridad = the security checkpoint; elsewhere el control de seguridad." },
+          neutral: t("La | puerta | 4 | está | pasando | el | control de seguridad.", "The | gate | 4 | is | past | the | security checkpoint.", "Gate 4 is just past security.",
+            { say: "La puerta cuatro está pasando el control de seguridad." }) }),
     ],
     duration: [t("Son | más o menos | dos | horas.", "It's | more or less | two | hours.", "It's about two hours.")],
     // "¿A qué hora llegamos?" gets a when, kept vague (the flight time and the time zones aren't stated)
     arrive: [t("Son | más o menos | dos | horas | de | vuelo, | así que | llega | a | media mañana.", "It's | more or less | two | hours | of | flight, | so | you arrive | at | mid-morning.",
       "It's about a two-hour flight, so you'll get there mid-morning.")],
     carryon_ok: [t("Sí, | esa | mochila | está bien | como | equipaje de mano.", "Yes, | that | backpack | is fine | as | carry-on.", "Sure, that backpack is fine as a carry-on.")],
+    // "¿Tengo que documentar la mochila?" (a "Sí, …" would say yes, check it)
+    carryon_no: [t("No, | la | puede | llevar | como | equipaje de mano.", "No, | it | you-can | take | as | carry-on.", "No, you can take it as a carry-on.",
+      { flags: { 1: "la: it, the bag you asked about (la mochila, la bolsa)." } })],
+    liquids: [t("En | el | equipaje de mano, | solo | en | envases | de | 100 | mililitros | o | menos.", "In | the | carry-on, | only | in | containers | of | 100 | milliliters | or | less.",
+      "In your carry-on, only in containers of 100 milliliters or less.", { say: "En el equipaje de mano, solo en envases de cien mililitros o menos." })],
+    flight_no: [t("Es | el | vuelo | 223, | a | la | Ciudad de México.", "It's | — | flight | 223, | to | — | Mexico City.", "It's flight 223, to Mexico City.",
+      { say: "Es el vuelo doscientos veintitrés, a la Ciudad de México.",
+        flags: { 1: "el: Spanish puts an article before vuelo here; English has none.", 5: "la: Spanish says la Ciudad de México; English has no article here." } })],
+    // "¿Dónde recojo mi maleta?" (s64c's gate agent says the same: at baggage claim, when you land)
+    bag_pickup: [t("En | la | Ciudad de México, | al | llegar.", "In | — | Mexico City, | upon | arriving.", "In Mexico City, when you land.",
+      { flags: { 1: "la: Spanish says la Ciudad de México; English has no article here." } })],
+    // "¿Es directo?" and "¿Hace escala?" both (no sí / no that answers only one of them)
+    direct: [t("Es | un | vuelo | directo, | sin | escalas.", "It's | a | flight | direct, | without | layovers.", "It's a nonstop flight.")],
     seatnum: [t("Su | asiento | es | el | {$seat}.", "Your | seat | is | — | {$seat}.", "Your seat is {$seat}.", { flags: { 3: "el (asiento): Spanish puts an article before the seat number." } })],
     bagfee_info: [t("Su | tarifa | incluye | una | maleta | documentada, | así que | no tiene | costo.", "Your | fare | includes | one | suitcase | checked, | so | it doesn't have | cost.",
       "Your fare includes one checked bag, so there's no charge.")],
@@ -1185,6 +1288,9 @@ export const checkin: SituationDef = {
     num: () => Object.values(NUM_WORD),
     seat: () => Object.values(SEAT_NO),
     price: () => [FEE],
+    // "Perdón, ¿{$sa} o {$sb}?": the two seats heard (seatWhich); a seat is never asked against itself
+    sa: () => Object.values(SEAT_WORD),
+    sb: () => Object.values(SEAT_WORD),
   },
 
   hints: {
@@ -1385,7 +1491,7 @@ export const checkin: SituationDef = {
       help: (c) => { c.s.lookup = true; c.say("lookup_help"); c.say("ask_passport"); } },
     { id: "passport", done: (c) => !!c.s.passport,
       ask: (c) => c.say("ask_passport"),
-      expects: ["give", "give_ctx", "passport_q", "find_it"],
+      expects: ["give", "give_ctx", "passport_q", "find_it", "passport_none_ctx"],
       suggest: [{ lt: "Hand over your passport", hint: "passport" }],
       yes: (c) => { passportGiven(c); } },
     { id: "bags", done: (c) => c.s.bags !== undefined,
@@ -1426,7 +1532,8 @@ export const checkin: SituationDef = {
           c.say("bp_give");
           c.event("give", { item: "boarding-pass" });
           c.say("bp_info");
-          if (c.s.bags > 0 && c.chance(0.45)) c.say("bag_tag");
+          // (not again if the learner already asked for it)
+          if (c.s.bags > 0 && !c.s.tagGiven && c.chance(0.45)) { c.s.tagGiven = true; c.say(c.s.bags >= 2 ? "bag_tag_many" : "bag_tag"); }
           c.say("ask_questions");
         } else c.say("ask_more");
       },
@@ -1562,18 +1669,40 @@ export const checkin: SituationDef = {
     move_items(c) {
       if (c.s.owShown && !c.s.owDone) { startMoving(c); return; }
       if (c.s.bags !== 0 && !c.s.weighed) { c.say("weigh_first"); return; }
-      c.say("no_need_bag");
+      // the fee paid, the bag still weighs 27 ("Su maleta pesa menos de 25 kilos" was wrong); carry-on only, no bag
+      if (c.s.feePaid) { c.say("fee_already"); return; }
+      if (!c.s.bags) { c.say("ack"); return; }
+      c.say(c.s.bags >= 2 ? "no_need_bags" : "no_need_bag");
     },
-    move_items_ctx(c) { if (c.s.owShown && !c.s.owDone) startMoving(c); else c.say("nothing_to_pay"); },
+    move_items_ctx(c) { if (c.s.owShown && !c.s.owDone) startMoving(c); else c.say(c.s.feePaid ? "fee_already" : "nothing_to_pay"); },
     pay_fee(c) {
       if (c.s.owShown && !c.s.owDone) { startFee(c); return; }
-      c.say("nothing_to_pay");
+      c.say(c.s.feePaid ? "fee_already" : "nothing_to_pay");
     },
-    pay_fee_ctx(c) { if (c.s.owShown && !c.s.owDone) startFee(c); else c.say("nothing_to_pay"); },
-    // "¿Puedo pagar con tarjeta?" while the overweight question is open = I'll pay the fee
-    pay_card(c) { if (c.s.owShown && !c.s.owDone) { startFee(c); return; } c.say(c.s.bags > 0 && !c.s.weighed ? "pay_methods" : "nothing_to_pay"); },
-    pay_cash(c) { if (c.s.owShown && !c.s.owDone) { cashOk(c); return; } c.say(c.s.bags > 0 && !c.s.weighed ? "pay_methods" : "nothing_to_pay"); },
-    pay_other_ctx(c, _slots, seg) { if (c.s.owShown && !c.s.owDone) payOther(c, seg); else c.say("nothing_to_pay"); },
+    pay_fee_ctx(c) { if (c.s.owShown && !c.s.owDone) startFee(c); else c.say(c.s.feePaid ? "fee_already" : "nothing_to_pay"); },
+    // "¿Puedo pagar con tarjeta?" while the overweight question is open = I'll pay the fee; after paying, not again
+    // ("Hoy no tiene que pagar nada" after $600); before the bag is weighed (or asked about) the ways to pay, not "nothing
+    // to pay" (the bag may be over)
+    pay_card(c) {
+      if (c.s.owShown && !c.s.owDone) { startFee(c); return; }
+      c.say(c.s.feePaid ? "fee_already" : c.s.bags !== 0 && !c.s.weighed ? "pay_methods" : "nothing_to_pay");
+    },
+    pay_cash(c) {
+      if (c.s.owShown && !c.s.owDone) { cashOk(c); return; }
+      c.say(c.s.feePaid ? "fee_already" : c.s.bags !== 0 && !c.s.weighed ? "pay_methods" : "nothing_to_pay");
+    },
+    pay_other_ctx(c, _slots, seg) { if (c.s.owShown && !c.s.owDone) payOther(c, seg); else c.say(c.s.feePaid ? "fee_already" : "nothing_to_pay"); },
+    // pesos only, as the town's other cashiers say; the open fee question is asked again by itself
+    ask_dollars(c) {
+      if (c.s.feePaid) { c.say("fee_already"); return; }
+      c.say((c.s.owShown && !c.s.owDone) || (c.s.bags !== 0 && !c.s.weighed) ? "pesos_only" : "nothing_to_pay");
+    },
+    // the fee's receipt once it's paid; else the bag's claim tag (once the bag is checked); else nothing was paid
+    ask_receipt(c) {
+      if (c.s.feePaid && !/maleta|equipaje/.test(words(c.heard))) { c.say("fee_receipt"); return; }
+      if (c.s.bags > 0 && (c.s.weighed || c.s.owDone)) { c.s.tagGiven = true; c.say(c.s.bags >= 2 ? "bag_tag_many" : "bag_tag"); return; }
+      c.say(c.s.bags > 0 ? "weigh_first" : "nothing_to_pay");
+    },
     lookup(c) {
       if (c.s.dest || c.s.passport) { c.say("flight_ack"); return; }
       c.s.lookup = true; c.say("lookup_help"); c.say("ask_passport"); c.hold();
@@ -1583,12 +1712,17 @@ export const checkin: SituationDef = {
       // "Es muy caro" at the fee is a complaint, not a question: the choice again (moving things costs nothing)
       if (c.s.owShown && !c.s.owDone && /\bcaro\b|mucho dinero/.test(words(c.heard))) { c.say("ow_ask"); expectOverweight(c); return; }
       if (c.s.owShown && !c.s.owDone) { c.say("ow_fee_amount", { price: FEE }); return; }
+      if (c.s.feePaid) { c.say("fee_already"); return; }
+      // "¿Cuánto cuesta el sobrepeso?" with nothing over got "Su tarifa incluye una maleta… no tiene costo": the limit
+      // before the scale, nothing to pay after it
+      if (/sobrepeso|exceso|por kilo/.test(words(c.heard))) { c.say(c.s.weighed ? "nothing_to_pay" : "limit"); return; }
       c.say(c.s.bags >= 2 ? "bagfee_many" : "bagfee_info");
     },
     ask_over(c) {
       if (c.s.owShown && !c.s.owDone) { c.say("ow_over"); return; }
       if (c.s.weighed || c.s.owShown) { c.say("weight_is", { kg: c.s.kg }); return; }
-      c.say("limit");
+      // "¿Cuánto pesa mi maleta?" before the scale got the limit: the bag is weighed first
+      c.say(c.s.bags !== 0 ? "weigh_first" : "limit");
     },
     ask_limit(c) { c.say("limit"); },
     seat_ans(c, slots) {
@@ -1605,20 +1739,15 @@ export const checkin: SituationDef = {
     },
     seat_neg(c, slots) {
       const bad = slots.seat as string;
-      if (bad === "middle") {
-        c.say("seat_neg_both");
-        ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["seat"],
-          suggest: [{ lt: "Choose a seat", hint: "seat", options: ["window", "aisle"] }],
-          on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
-          yes: (cc) => { cc.say("seat_neg_both"); }, ask: (cc) => cc.say("seat_neg_both") });
-        return;
-      }
+      // "No quiero en medio": "Claro. Entonces, ¿ventana o pasillo?", asked again as "Perdón, ¿ventana o pasillo?"
+      if (bad === "middle") { seatWhich(c, "window", "aisle", "seat_neg_both"); return; }
       const other = bad === "window" ? "aisle" : "window";
       c.say(bad === "window" ? "seat_neg_window" : "seat_neg_aisle");
       ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["g_yesno", "seat"],
         suggest: [{ lt: "Agree or choose another seat", hint: "seat", options: "seat" }],
         yes: (cc) => { if (cc.s.passport) assignSeat(cc, other); else { cc.s.seatPref = other; cc.say("ack"); } },
-        no: (cc) => { cc.say("ask_seat"); },
+        // both window and aisle refused: the middle seat is what's left
+        no: (cc) => { seatNegMiddle(cc); },
         on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); },
           // "¿Pasillo?" — "No, en medio" (rule 10: it reads "no en medio"): the third seat, asked, not "¿ventana o pasillo?"
           seat_neg: (cc, sl) => { if (sl.seat === bad || sl.seat === other || !/^no\b/.test(words(cc.heard))) return false; seatWhich(cc, other, sl.seat); } },
@@ -1633,17 +1762,33 @@ export const checkin: SituationDef = {
     more_q(c) { c.say("what_q"); c.hold(); },
     ask_ontime(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("ontime_yes"); },
     ask_delayed(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("delayed_no"); },
-    ask_gate(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("gate_is"); },
+    ask_gate(c, _slots, seg) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say(seg.tags.includes("where") ? "gate_where" : "gate_is"); },
     ask_boarding_time(c) { if (!c.s.dest && !c.s.passport) { c.say("find_first"); return; } c.say("boarding_time"); },
     ask_security(c) { c.s.securityTold = true; c.say("security_dir"); },
     ask_duration(c, _slots, seg) { c.say(seg.tags.includes("arrive") ? "arrive" : "duration"); },
-    ask_carryon(c) { c.say("carryon_ok"); },
+    ask_carryon(c, _slots, seg) { c.say(seg.tags.includes("must") ? "carryon_no" : "carryon_ok"); },
     ask_seatnum(c) {
       if (c.s.seatNo) { c.say("seatnum", { seat: c.s.seatNo }); return; }
       if (c.s.passport) c.ask("seat");
       else c.say("find_first");
     },
-    ask_bagfee(c) { c.say(c.s.bags >= 2 ? "bagfee_many" : "bagfee_info"); },
+    // at the overweight choice it isn't free ("no tiene costo" contradicted the $600 just quoted)
+    ask_bagfee(c) {
+      if (c.s.owShown && !c.s.owDone) { c.say("ow_fee_amount", { price: FEE }); return; }
+      if (c.s.feePaid) { c.say("fee_already"); return; }
+      c.say(c.s.bags >= 2 ? "bagfee_many" : "bagfee_info");
+    },
+    // "¿Cuál es mi vuelo?" before the booking is found: Emilio looks it up with the passport
+    ask_flightno(c, slots, seg) { if (!c.s.dest && !c.s.passport) { checkin.handlers.lookup(c, slots, seg); return; } c.say("flight_no"); },
+    ask_direct(c) { c.say("direct"); },
+    ask_liquids(c) { c.say("liquids"); },
+    ask_pickup(c) { c.say("bag_pickup"); },
+    seat_change(c) {
+      if (!c.s.passport) { c.say("find_first"); return; }
+      if (!c.s.seatNo) return; // the seat step asks its own question
+      c.say("seat_any_ack"); c.say("ask_seat"); c.hold();
+    },
+    passport_none_ctx(c) { c.say("pp_need"); c.hold(); },
     ask_restroom(c) { c.say("restroom"); },
     // the open question (the seat step, or a seat question) is asked again by itself: saying it here asked it twice
     seat_rec(c) { c.say("seat_help"); },
@@ -1748,7 +1893,7 @@ export const checkin: SituationDef = {
     // meaning safety: no meaning may flip
     { say: "No voy a Guadalajara", intent: "dest_neg", not: ["dest_ans"] },
     { say: "No quiero ir a Guadalajara", intent: "dest_neg", step: "dest", not: ["dest_ans"] },
-    { say: "No tengo pasaporte", intent: "none", step: "passport", not: ["give", "give_ctx"] },
+    { say: "No tengo pasaporte", intent: "passport_none_ctx", step: "passport", not: ["give", "give_ctx"] },
     { say: "No voy a documentar nada", intent: "bags_none", step: "bags", not: ["bags_ans"] },
     { say: "Nada más esta mochila", intent: "bags_none", step: "bags", not: ["bags_ans"] },
     { say: "No la hice yo", intent: "packed_no", not: ["packed_yes"] },
@@ -1800,6 +1945,27 @@ export const checkin: SituationDef = {
     { say: "El de las ocho y diez", intent: "dest_ctx", step: "dest", slots: { time: { h: 8, m: 10 } } },
     { say: "El de las siete y media", intent: "none" },
     { say: "¿Ventana o pasillo?", intent: "seat_rec", step: "seat", not: ["seat_ans"] },
+    // audit (5 Nov 2026): side questions, the fee once paid, refusals
+    { say: "¿Dónde está la sala 4?", intent: "ask_gate", step: "bp", slots: { number: 4 } },
+    { say: "¿Cómo llego a la sala?", intent: "ask_gate", step: "bp" },
+    { say: "¿Aceptan dólares?", intent: "ask_dollars", not: ["pay_cash", "pay_card", "give"] },
+    { say: "Solo traigo dólares", intent: "ask_dollars", not: ["pay_cash", "give"] },
+    { say: "¿Me da un recibo?", intent: "ask_receipt", step: "bp" },
+    { say: "¿Me da el comprobante de mis maletas?", intent: "ask_receipt", step: "bp" },
+    { say: "¿Cuál es el número de mi vuelo?", intent: "ask_flightno", step: "bp", not: ["ask_seatnum", "ask_gate"] },
+    { say: "¿Es un vuelo directo?", intent: "ask_direct", step: "bp" },
+    { say: "¿Hace escala?", intent: "ask_direct", step: "bp" },
+    { say: "¿Puedo llevar líquidos en la mochila?", intent: "ask_liquids", not: ["ask_carryon", "move_items"] },
+    { say: "¿Tengo que documentar la mochila?", intent: "ask_carryon", step: "bags", not: ["checkin", "bags_ans", "bags_none"] },
+    { say: "¿Cuántas maletas puedo llevar?", intent: "ask_bagfee", step: "bags", not: ["bags_ans", "bags_num_ctx"] },
+    { say: "¿Tiene terminal?", intent: "pay_card" },
+    { say: "¿Dónde recojo mi maleta?", intent: "ask_pickup", step: "bp", not: ["bags_ans"] },
+    { say: "¿Puedo cambiar de asiento?", intent: "seat_change", step: "bp", not: ["seat_ans", "seat_any"] },
+    { say: "No traigo mi pasaporte", intent: "passport_none_ctx", step: "passport", not: ["give", "give_ctx", "find_it"] },
+    { say: "No tengo pasaporte, pero tengo mi tarjeta de residente", intent: "give", step: "passport", slots: { doc: "resident" } },
+    { say: "Sí, la empaqué yo sola", intent: "packed_yes", not: ["packed_no"] },
+    { say: "No quiero cambiar de asiento", intent: "none", step: "bp", not: ["seat_change"] },
+    { say: "No traigo líquidos", intent: "none", step: "bp", not: ["ask_liquids"] },
     // not understood
     { say: "Mi perro come tacos en la playa", intent: "none" },
     { say: "Quiero un café con leche", intent: "none" },
@@ -1869,6 +2035,15 @@ export const checkin: SituationDef = {
       "No, en medio.", "Sí.", "Es todo."],
       expect: { complete: true, state: { seat: "middle", kg: 24, owDone: true, feePaid: undefined, windowTaken: true } }, auto: AUTO,
       setup: (s) => { s.overweight = true; s.noWindow = true; s.askSafety = false; s.greetKind = "plain"; s.bagsQ = "n"; } },
+    // audit: no passport (the resident card instead), side questions the learner may ask, the fee in cash asked again
+    // after a side question ("Son $600, por favor", not "Acerque su tarjeta"), window and aisle refused (the middle
+    // seat offered), the fee's receipt, where the gate is
+    { name: "audit: side questions, cash fee, both seats refused", turns: ["A la Ciudad de México.", "No traigo mi pasaporte.",
+      "Aquí tiene mi tarjeta de residente.", "¿Tengo que documentar la mochila?", "Una maleta.", "¿Cuánto pesa mi maleta?", "Aquí está.", "¿Aceptan dólares?",
+      "Lo pago.", "En efectivo.", "¿Dónde está el baño?", "Aquí tiene.", "No quiero ventana.", "No.", "Sí.", "¿Me da un recibo?", "¿Dónde está la sala 4?",
+      "¿Es un vuelo directo?", "Es todo."],
+      expect: { complete: true, state: { feePaid: true, payCash: true, seat: "middle", bags: 1 } }, auto: AUTO,
+      setup: (s) => { s.overweight = true; s.noWindow = false; s.askSafety = false; s.greetKind = "plain"; s.bagsQ = "yn"; } },
   ],
 };
 
