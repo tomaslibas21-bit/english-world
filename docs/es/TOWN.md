@@ -132,24 +132,219 @@ kits, a yacht, the chimneys, the mailboxes, the beach umbrellas' towels, the sto
 - The small things still as in Maple Harbor (the mercado's carts, the blue mailbox, Ximena's picket fence, the autumn
   trees, Station Road without a name) and task 8 (the cenote and the ruins): done 5 Nov, see "Done: the last details".
 
+## Getting around (from the 3D town)
+
+**The dialogue follows the 3D town, not the other way round** (the lead's decision, 5 Nov 2026, after the s62 audit
+found that the town followed none of Don Chuy's directions; Maple Harbor had the same mismatch and stays as it is).
+Measured from `src/game/world/layout.ts` (every door: the facade's middle, the gym's off-centre), the Spanish theme
+(street signs, colours, the church) and walked in the running game (5 Nov). Distances are along the sidewalks and
+crosswalks, to the door. "Left" and "right" are as you step out of a door facing the street. North is the sea.
+
+**How far is far.** The town is small: avenida Juárez is about 240 m long; a block is about 70 m along it and about
+45 m between it and the streets parallel to it. The game walks a block in about 15 seconds (4.4 m/s); the
+conversations speak the town's own time, **about two minutes a block**, in the figures people use:
+
+| On foot | Said |
+|---|---|
+| across the street, next door, the corner (up to ~50 m) | "aquí enfrente", "aquí al lado", "un minuto" |
+| about a block (50–110 m) | "a una cuadra", "a dos minutos" |
+| about two blocks (110–170 m) | "a dos cuadras", "a cinco minutos" |
+| the far ends of town (170–250 m: the clinic, the gas station, the lighthouse) | "a diez minutos" |
+
+Out of town (the cenote, the ruins, the beaches further on) is the conversations' own: by colectivo or taxi. The
+airport is both: see "Out of town" below.
+
+### The streets (on the signs)
+
+- **avenida Juárez**, the main street, runs west–east through the middle: the meadow and Cenote Ka'an past its west
+  end, the airport closing its east end. The colectivos, the city bus and the taxis go along it.
+- **avenida del Puerto** runs along the sea, one block north of Juárez: the malecón and the beach on its north side.
+- **calle Hidalgo** runs one block south of Juárez (inland): houses, the gym and the bus stop, the bus terminal, the
+  clinic. **calle Uxmal**, a block further south, has nothing facing it.
+- From the sea inland, crossing them all: **calle Flamboyán** (west), **calle Ceiba** (along the zócalo's west side)
+  and **calle Itzamná** (east). Name blades stand at the corners of Juárez with Flamboyán, Ceiba and Itzamná, of
+  del Puerto with the same three, of Hidalgo with Flamboyán and Ceiba, and of Uxmal with all three (none at Hidalgo
+  and Itzamná, the clinic's corner).
+
+### What's across the street from what
+
+Avenida Juárez, west to east (the sea side ↔ the inland side):
+
+| North side | South side |
+|---|---|
+| Hotel Mar Azul, on the corner of calle Flamboyán | Farmacia del Puerto (green), on the corner of calle Flamboyán |
+| *calle Flamboyán* | *calle Flamboyán* |
+| Información Turística (green) | Café La Ceiba: green-and-white awning, tables outside, bougainvillea |
+| a crosswalk from Información Turística's door … | … landing between the café and La Cocina de Lucía |
+| Museo de la Costa Maya: big, cream, columns at the door | La Cocina de Lucía (red awning; across from the museum's west end), Boutique Hilos (across from the museum's door), Estética Tijeras (pink; on the corner of Ceiba, across from the museum's east end) |
+| *calle Ceiba* | *calle Ceiba* |
+| the zócalo's west part | Banco del Puerto (yellow, white columns, the ATM by its door), on the corner of Ceiba |
+| the zócalo's middle: the kiosco | a crosswalk between the bank and Correos; Correos (coral), straight across from the kiosco |
+| the zócalo's east end: the church facing the kiosco; the Policía Municipal on the corner of Itzamná | Línea Clara (the office tower) |
+| *calle Itzamná* | *calle Itzamná* |
+| the park | Renta de Autos Colibrí; Gasolinera El Faro (the last building) |
+| the sitio (taxi stand) at the avenue's east end, by the airport | |
+
+- **calle Flamboyán**: from Juárez one block north to the sea, the Mercado Municipal on its corner with avenida del
+  Puerto (east side; the market's door is on del Puerto), the hotel's back wall on the west. From Juárez one block
+  south to calle Hidalgo: Departamentos Las Palmas on the south-west corner (the tiendita "Abarrotes Las Palmas" in its
+  corner) and Casa de Ximena across Flamboyán from it.
+- **avenida del Puerto / the malecón**: on the south side the mercado and the museum's back; across from them on the
+  malecón the "Tours a los cenotes" booth and Restaurante El Muelle out on its pier (behind the museum). Then the
+  zócalo's north side, its tianguis stalls facing the beach; the park; the beach's quiet east end, with the lighthouse
+  on its rocks offshore; Brotecito where the avenue ends.
+- **calle Ceiba**: along the zócalo's west side, the museum's east wall across it. South of Juárez, Estética Tijeras and
+  the bank on its corners, then one block to calle Hidalgo: the bus stop "Parada · Calle Ceiba" on Hidalgo just west
+  of the corner, in front of Gimnasio Colibrí; a pink house on the opposite corner; the bus terminal a little east, on
+  Hidalgo's south side.
+- **calle Itzamná**: the police and the park on its corners with Juárez, Línea Clara and the car rental south of it;
+  one block south, on calle Hidalgo a little east, the **Clínica Familiar** (facing Hidalgo; its back is behind the car
+  rental), and across Hidalgo from it Doña Margarita's drive (Calle de los Cedros, p25) between a green and a blue house.
+- **calle Hidalgo**, south side, west to east: Las Palmas, Casa de Ximena (its garden gate on the east side), Casa de
+  Diego y Natalia, the gym with the bus stop in front, the pink corner house, the bus terminal; past Itzamná the green
+  house, the drive, the blue house.
+
+### From the visitor center's door
+
+Información Turística, avenida Juárez, north side. Left = toward the zócalo (east), right = toward calle Flamboyán.
+
+| Place | The way | Walk |
+|---|---|---|
+| Café La Ceiba | straight across the avenue (the crosswalk is right there): the green awning, next to La Cocina de Lucía | 30 m · aquí enfrente |
+| La Cocina de Lucía | across the avenue, a few steps left: the red awning, next to the café | 32 m · aquí enfrente |
+| Museo de la Costa Maya | left: next door | 36 m · aquí al lado |
+| Hotel Mar Azul | right, across calle Flamboyán: the big building on the corner | 36 m · un minuto |
+| Farmacia del Puerto | right to the corner: across the avenue, across from the hotel | 48 m · un minuto |
+| Boutique Hilos | left: across the avenue, across from the museum's door | 48 m · un minuto |
+| Estética Tijeras | left one block: across the avenue, on the corner of calle Ceiba | 62 m · dos minutos |
+| the malecón, the beach | right; at the corner right again: calle Flamboyán down to the sea | 56 m · dos minutos |
+| Mercado Municipal (the taquería next to it) | right; at the corner right, one block to avenida del Puerto: on that corner, on the right ("aquí atrás") | 60 m · dos minutos |
+| Banco del Puerto | left one block to calle Ceiba: across the avenue, on the far corner | 86 m · dos minutos |
+| "Tours a los cenotes" | right; at the corner right, to the sea; right along the malecón: next to El Muelle's pier | 87 m · dos minutos |
+| the zócalo, the kiosco, the tianguis | left one block: across calle Ceiba, on the left | 62 m to the square, 92 m to the kiosco · dos minutos |
+| Departamentos Las Palmas, Casa de Ximena | right to the corner; left, across the avenue, down calle Flamboyán one block to calle Hidalgo | 90 m · dos minutos |
+| Correos | left one block, past calle Ceiba: across the avenue, next to the bank, across from the kiosco | 103 m · dos minutos |
+| Restaurante El Muelle | as the tours booth, a few steps on: out on its pier, on the left | 104 m · dos minutos |
+| Casa de Diego y Natalia | as Las Palmas, then left along calle Hidalgo | 106 m · dos minutos |
+| Parada · Calle Ceiba (the city bus) | left to calle Ceiba; right, across the avenue, one block to calle Hidalgo: on the right, in front of the gym | 114 m · cinco minutos |
+| the church | left one block to the zócalo: at its far (east) end, facing the kiosco | 116 m · cinco minutos |
+| Policía Municipal | left two blocks, past the zócalo: on the corner of calle Itzamná, next to the church | 120 m · cinco minutos |
+| Línea Clara | left two blocks: across the avenue, before calle Itzamná | 125 m · cinco minutos |
+| Terminal de Autobuses | as the bus stop; at calle Hidalgo it's on the left, past the pink corner house | 166 m · cinco minutos |
+| the lighthouse | to the sea by calle Flamboyán, then right along the whole malecón: on its rocks off the east end | 182 m · diez minutos |
+| Renta de Autos, Gasolinera El Faro | left along Juárez past calle Itzamná: across the avenue | 156 m, 192 m · cinco, diez minutos |
+| Clínica Familiar | left two blocks to calle Itzamná; right one block to calle Hidalgo; left: on the left | 206 m · diez minutos |
+| the sitio, the airport | left to the end of avenida Juárez | 198 m · by taxi (below) |
+
+### From the hotel's door
+
+Hotel Mar Azul, avenida Juárez, north side, on the corner of calle Flamboyán (the corner is on the left).
+
+| Place | The way | Walk |
+|---|---|---|
+| Farmacia del Puerto | straight across the avenue | 42 m · aquí enfrente |
+| Información Turística | left, across calle Flamboyán | 36 m · un minuto |
+| Café La Ceiba | left across calle Flamboyán, then across the avenue at the crosswalk (or the other way round) | 47 m · un minuto |
+| La Cocina de Lucía, the museum | the same way, a little further | 64 m, 69 m · dos minutos |
+| the malecón, the beach | left to the corner; left up calle Flamboyán to the sea | 72 m · dos minutos |
+| Mercado Municipal | left to the corner; left up calle Flamboyán one block: on the right, on avenida del Puerto | 76 m · dos minutos |
+| Departamentos Las Palmas | across the avenue; down calle Flamboyán one block to calle Hidalgo: on the right-hand corner | 86 m · dos minutos |
+| Restaurante El Muelle | left to the corner, left up calle Flamboyán to the sea, right ~50 m: out on its pier | 120 m · "a dos cuadras", cinco minutos (s68 ✓) |
+| Banco del Puerto, Correos | left along Juárez one block, past calle Ceiba: across the avenue | 119 m, 136 m · cinco minutos |
+| the zócalo | left along Juárez one block, across calle Ceiba | 125 m to the kiosco · cinco minutos |
+| the church, Policía Municipal | left two blocks, at the zócalo's east end | 149 m, 153 m · cinco minutos |
+| Terminal de Autobuses, Clínica Familiar | as from the visitor center, a block further | 199 m, 239 m · diez minutos |
+| the airport | the far end of avenida Juárez | 231 m · by taxi |
+
+### From the zócalo's kiosco
+
+The middle of the square; its steps face avenida Juárez (south), the tianguis stalls and the sea are behind it
+(north), the church in front of its east side. Doña Carmen's bench (s69) is 15 m south-west of it, facing Juárez;
+Doña Mari's flower stall (s91a) 19 m north-west, in the stalls' row.
+
+| Place | Where | Walk |
+|---|---|---|
+| the church | the square's east end, facing the kiosco | 25 m |
+| Policía Municipal | the square's south-east corner: on Juárez at calle Itzamná, next to the church | 38 m · un minuto |
+| Correos | straight across avenida Juárez (the crosswalk between the bank and Correos) | 42 m · un minuto |
+| Banco del Puerto | across Juárez, a little west, on the corner of calle Ceiba | 43 m · un minuto |
+| the malecón, the beach | behind it: past the stalls, across avenida del Puerto | ~40 m · un minuto |
+| Línea Clara | across Juárez, a little east | 64 m · dos minutos |
+| Museo de la Costa Maya | west, across calle Ceiba (its door is on Juárez) | 65 m · dos minutos |
+| Estética Tijeras, Boutique Hilos, La Cocina de Lucía, Café La Ceiba | west along Juárez, across calle Ceiba, on the far side of the avenue | 60, 74, 91, 108 m · dos minutos |
+| Información Turística | west along Juárez, past the museum, on this side | 92 m · dos minutos |
+| Mercado Municipal (the taquería) | west along avenida del Puerto, past the museum's back | 92 m · dos minutos |
+| Restaurante El Muelle, the tours booth | on the malecón, west, behind the museum | 92 m, 89 m · dos minutos |
+| the lighthouse | on the malecón, east, past the park: on its rocks offshore | ~90 m · dos minutos |
+| Renta de Autos, Gasolinera El Faro | east along Juárez past calle Itzamná, on the far side | 75 m, 110 m · dos minutos |
+| Parada · Calle Ceiba, Terminal de Autobuses | across Juárez, down calle Ceiba one block to calle Hidalgo (the stop to the right, the terminal to the left) | 103 m, 123 m · dos, cinco minutos |
+| Clínica Familiar | across Juárez, down calle Itzamná one block, left on calle Hidalgo | 124 m · cinco minutos |
+| the sitio, the airport | east to the avenue's end | 115 m · by taxi |
+| Hotel Mar Azul, Farmacia del Puerto | west along Juárez two blocks, past calle Flamboyán | 125 m, 138 m · cinco minutos |
+| Departamentos Las Palmas | west two blocks, then down calle Flamboyán one block | 181 m · cinco minutos |
+
+### Named in the conversations, not built
+
+A learner who goes looking won't find these; where they are, so that every conversation says the same:
+
+- **the taquería "junto al mercado"** (s62, s69): beside the mercado's door on avenida del Puerto (no stand yet).
+- **the cocina económica** ("de la calle Ceiba", s69; "de la esquina", s88): on calle Ceiba just south of Juárez,
+  behind the bank ("a la vuelta del banco"): two minutes from the zócalo and from Línea Clara.
+- **the dentist** (s76: calle Morelos 12, "a una cuadra del zócalo"): there is no calle Morelos.
+- **the mechanic and the tire shop** (s71b): the gas station is the avenue's last building before the airport; both are
+  off the map ("a dos cuadras" can't be "sobre esta misma calle").
+- **the other office building** (s90's room 302, "enfrente, cruzando la calle"): across Juárez from Línea Clara are
+  the police and the church.
+- **Memo's restaurant on the malecón** (s86) and **the new café on the malecón** (s63): the malecón has El Muelle and the
+  tours booth; the lavandería "de la esquina" (s82): Las Palmas' corner is the tiendita's.
+- The learner's addresses (calle Ceiba 15, s65a; calle Flamboyán 23 "entre Hidalgo y Juárez", s65b) are lots without a
+  building, which is fine.
+
+### Out of town
+
+- **The airport**: in the 3D town the terminal closes the east end of avenida Juárez, about 200 m from Información
+  Turística, with the sitio beside it. The conversations treat it as the edge of town, reached by taxi (s62: "Está al
+  final de la avenida Juárez… mejor tome un taxi"); s66's $350 fare from the sitio, which stands next to it, is s66's
+  reviewer's question.
+- **Cenote Ka'an**: past the meadow at the west end of avenida Juárez; not on foot, twenty minutes by colectivo (s69, s62).
+- **The ruins**: on the rocky point past the beach's west end; half an hour on foot along the beach (s69).
+- s62's trips (a cenote, the ruins of Tulum, Xcacel, Chemuyil) are further on, by colectivo.
+
+### Facts the conversations share (5 Nov)
+
+- **The taquería** is next to the mercado (s62, s69).
+- **The museum**: general admission $80; $40 for students and seniors (INAPAM); free on Sundays for Mexicans and
+  residents, not for visitors; open 10 to 5, closed on Mondays (s70, s62, s69).
+- **Colectivos**: white vans along the avenue, no timetable ("pasan cada rato"), waved down by hand, paid to the driver
+  in cash when you get off (s62, s69). The city bus (route 7) is paid on boarding, $12 (s67b).
+- **Cenotes and ruins** open early, around eight, and close in the afternoon (s62, s69); the beach never closes.
+- **At night** downtown is safe, with people out until late; the beach at night, better not (dark), and no swimming at
+  night (s69, s62).
+- **Taxis** have no meter: agree on the fare before getting in (s66, s62).
+
 ## Town facts from the conversations
 
-The conversations name places and say where they are; the 3D town must agree (and so must new conversations).
+The conversations name places and say where they are; they follow the 3D town ("Getting around" above), and so must
+new conversations. (Until 5 Nov 2026 this list held s62's old map, which the town never followed; the items below are
+corrected to the town.)
 
-- **Calle Ceiba** runs along the zócalo. From the visitor center: right, two blocks to the bank (corner of Juárez and
-  Ceiba), left into calle Ceiba (s62). On it, facing the zócalo: **Café La Ceiba** ("aquí en la plaza", s69) on the
-  right, **Correos** opposite it, then the **mercado** after Correos; the bus **terminal** at the end of the street
-  (s62). A cocina económica on calle Ceiba serves comida corrida (s69, s88).
+- **Calle Ceiba** runs along the zócalo's west side, the museum across it. **Café La Ceiba** is not on it: it is on
+  avenida Juárez, straight across from Información Turística (s62, s72). The bank and Estética Tijeras are on Ceiba's
+  corners with Juárez, Correos next to the bank across from the kiosco, the **mercado** on avenida del Puerto at calle
+  Flamboyán, the bus **terminal** on calle Hidalgo. A cocina económica on calle Ceiba, just south of Juárez behind the
+  bank, serves comida corrida (s69, s88; no building).
 - **The zócalo**: the kiosco (where a boy finds the wallet, s91a), Doña Mari's flower stall and the Saturday
   tianguis (s91a), the church at its east end, facing the kiosco (STYLE.md; "la iglesia del zócalo", s91b). The
-  **Policía Municipal** is across the square, next to the **museum** (s62, s91a, s91b); the museum is open 10 to 5,
-  closed on Mondays (s62, s69, s70).
-- **Farmacia del Puerto** sits between the estética (s62) and the doctor's consultorio next door (s75).
+  **Policía Municipal** is at the square's east end too, next to the church, on the corner of Juárez and Itzamná (s62,
+  s91a, s91b); the **museum** is across calle Ceiba at the square's west end, open 10 to 5, closed on Mondays (s62,
+  s69, s70).
+- **Farmacia del Puerto** is on the corner of Juárez and Flamboyán, across from Hotel Mar Azul; the doctor's
+  consultorio next door is through a door inside it (s75).
 - **The gas station**: the conversation happens outside at the pump, not in the shop (s71b; `locations.ts` still says
   interior).
-- **La Cocina de Lucía** (s73), a Yucatecan restaurant: left out of the visitor center, one block, red awning, across
-  from Boutique Hilos (s62). It is the Maple Harbor trattoria's building (location id `trattoria`); there is no
-  Italian restaurant in town.
+- **La Cocina de Lucía** (s73), a Yucatecan restaurant: across avenida Juárez from Información Turística, next to Café
+  La Ceiba, the red awning (s62, s69); Boutique Hilos is its other neighbor. It is the Maple Harbor trattoria's building
+  (location id `trattoria`); there is no Italian restaurant in town.
 - **The arrivals hall**: Itzel's baggage desk, then customs with Agente Medina (`aduana`, a Spanish-only character on
   Officer Diaz's base) and the sniffer dog (s65b).
 - **The airport**: flight 223 to Mexico City, check-in → security → sala 4 (boarding 7:30, departure 8:10) (s64a–c).
@@ -157,7 +352,7 @@ The conversations name places and say where they are; the 3D town must agree (an
 - **The streets' names** (on the signs since 4 Nov): **avenida Juárez** is Main Street (s62: the visitor center is on
   it), **calle Ceiba** Center Street (along the zócalo's west side; the bank is on its corner with Juárez; the bus stop
   on calle Hidalgo near it is "Parada · Calle Ceiba"), **avenida del Puerto** Harbor Road (the malecón runs along it),
-  **calle Itzamná** East Street (from the zócalo's east end down to the sea, s62), **calle Flamboyán** West Street (by
+  **calle Itzamná** East Street (past the zócalo's east end, from the sea inland), **calle Flamboyán** West Street (by
   Departamentos Las Palmas: "un departamento en la calle Flamboyán", s65a) and **calle Hidalgo** Oak Avenue
   ("calle Flamboyán 23, entre Hidalgo y Juárez", s65b); since 5 Nov **calle Uxmal** is Station Road (past the bus
   terminal; no conversation names it yet). Calle Morelos (s76's dentist, "a una cuadra del zócalo") is not on the map.
