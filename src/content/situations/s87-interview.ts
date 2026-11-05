@@ -362,13 +362,23 @@ const amountSlot: SlotFn = (tokens, pos) => {
   return out;
 };
 
-/** A short free-form story (teamwork example): 3–16 words without negation. Costly, contextual only. */
+/** A short free-form story (teamwork example): 3–16 words without negation, with at least one word about work or
+ *  other people ("I bought new shoes yesterday" is no teamwork story: held-out, 5 Nov 2026). Costly, contextual only. */
 const NEG = new Set(["not", "no", "never", "without", "nothing", "none", "neither", "nor", "nobody", "nope", "nah"]);
+const STORY_CUES = new Set([
+  "we", "us", "our", "team", "teams", "teammate", "teammates", "colleague", "colleagues", "coworker", "coworkers", "together",
+  "help", "helped", "helping", "project", "projects", "order", "orders", "job", "work", "worked", "working", "company",
+  "office", "people", "everybody", "everyone", "each", "leader", "led", "lead", "trained", "train", "kitchen", "hospital",
+  "shop", "store", "restaurant", "client", "clients", "customer", "customers", "shared", "share", "task", "tasks", "boss",
+  "manager", "deadline", "meeting", "event", "report", "group", "staff", "organized", "organize", "planned", "solved",
+]);
 const storySlot: SlotFn = (tokens, pos) => {
   const out: SlotResult[] = [];
+  let cue = false;
   for (let len = 3; len <= 16 && pos + len <= tokens.length; len++) {
     if (tokens.slice(pos, pos + len).some((w) => NEG.has(w))) break;
-    out.push({ end: pos + len, value: tokens.slice(pos, pos + len).join(" "), cost: 3 + 0.1 * len });
+    if (!cue) cue = tokens.slice(pos, pos + len).some((w) => STORY_CUES.has(w));
+    if (cue) out.push({ end: pos + len, value: tokens.slice(pos, pos + len).join(" "), cost: 3 + 0.1 * len });
   }
   return out;
 };
@@ -2204,6 +2214,8 @@ export const interview: SituationDef = {
   },
 
   tests: [
+    // held-out (5 Nov 2026): a sentence about anything else is no teamwork story
+    { say: "I bought new shoes yesterday.", intent: "none", step: "teamwork" },
     // logic audit (5 Nov 2026): a clear yes takes the job; joy, "Really?", a thank-you or "When do I start?" don't
     { say: "Thank you, I accept!", intent: "accept_job" },
     { say: "When do I start?", intent: "q_start", not: ["accept_job"] },

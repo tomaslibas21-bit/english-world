@@ -4138,6 +4138,27 @@
    "say": "More or less. I got a little lost.",
    "intent": "found_hard",
    "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I bought new shoes yesterday.",
+   "intent": "none",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "I went to the beach last weekend.",
+   "intent": "none",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "teamwork",
+   "say": "My colleagues and I finished the report on time.",
+   "intent": [
+    "teamwork_ans",
+    "story_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

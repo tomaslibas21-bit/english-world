@@ -128,11 +128,11 @@ function doReason(c: Ctx, why: any) {
   sayOnce(c, REACT[r]);
   if (r === "car") {
     c.expect({
-      id: "need_help", optional: true, expects: ["taxi_ok", "help_request", "no_help"], hints: ["g_yesno"],
+      id: "need_help", optional: true, expects: ["taxi_ok", "ride_ok", "help_request", "no_help"], hints: ["g_yesno"],
       suggest: [{ lt: "Atsakyti, ar reikia pagalbos", hint: "g_yesno" }],
       yes: (cc) => { cc.say("help_yes"); },
       no: (cc) => { cc.say("help_no"); },
-      on: { taxi_ok: (cc) => { cc.say("good_idea"); }, help_request: (cc) => { cc.say("help_yes"); }, no_help: (cc) => { cc.say("help_no"); } },
+      on: { taxi_ok: (cc) => { cc.say("good_idea"); }, ride_ok: (cc) => { cc.say("good_idea"); }, help_request: (cc) => { cc.say("help_yes"); }, no_help: (cc) => { cc.say("help_no"); } },
     });
   }
 }
@@ -455,6 +455,10 @@ export const runningLate: SituationDef = {
       "i am (getting | taking) a (taxi | cab | uber)", "i (called | will call | will get | will take) a (taxi | cab | uber)", "[no] it is (okay | fine) i am (getting | taking) a (taxi | cab)",
       "[no] [it is (okay | fine)] i (called | will call | will get | will take | ordered | got) (a | an) (taxi | cab | uber | lyft)",
       "[no] [thanks] i am waiting for (a tow truck | roadside assistance | the mechanic | a mechanic | help)",
+    ] },
+    // a ride that isn't a taxi ("My wife is driving me", "I'll take the bus"): the same answer, but never taxi_ok, so
+    // "I don't need a taxi, my wife is driving me" is a no to the taxi (held-out, 5 Nov 2026)
+    ride_ok: { patterns: [
       "[no] [it is (okay | fine)] my (husband | wife | friend | brother | sister | neighbor | son | daughter) is (coming | picking me up | driving me | helping me)",
       "[no] [it is (okay | fine)] i will (take | get) the (bus | train | subway)",
     ] },
@@ -963,6 +967,7 @@ export const runningLate: SituationDef = {
       if (c.s.callerId && !c.s.opened) { c.s.opened = true; c.say("hi_short"); }
     },
     taxi_ok(c) { if (!mark(c)) return; c.say("good_idea"); },
+    ride_ok(c) { if (!mark(c)) return; c.say("good_idea"); },
     thanks_info(c) { if (!mark(c)) return; /* Harris goes on to the goodbye */ },
     thanks_understanding(c) { if (!mark(c)) return; c.say("g_welcome"); },
     bye_meeting(c) { bye(c); },
@@ -1070,6 +1075,9 @@ export const runningLate: SituationDef = {
     { say: "No, don't wait for me", intent: "start_without", not: ["wait_for_me"] },
     { say: "Don't start without me", intent: "wait_for_me", not: ["start_without"] },
     { say: "I don't need a taxi", intent: "no_help", not: ["taxi_ok"] },
+    { say: "My wife is driving me.", intent: "ride_ok", not: ["taxi_ok"] },
+    { say: "I don't need a taxi, my wife is driving me.", intent: "no_help", not: ["taxi_ok"] },
+    { say: "I'll take the bus.", intent: "ride_ok", not: ["taxi_ok"] },
     // leaving the call with a reason (BUG-REVIEW, still open: s90)
     { say: "Sorry, I have to go, I'm driving.", intent: "g_bye", step: "eta" },
     { say: "I have to go, I'm driving.", intent: "g_bye", step: "plan" },

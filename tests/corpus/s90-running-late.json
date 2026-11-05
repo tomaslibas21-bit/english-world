@@ -650,12 +650,12 @@
   {
    "ctx": "need_help",
    "say": "No, it's fine, my husband is coming",
-   "intent": "taxi_ok"
+   "intent": "ride_ok"
   },
   {
    "ctx": "need_help",
    "say": "I will take the bus",
-   "intent": "taxi_ok"
+   "intent": "ride_ok"
   },
   {
    "ctx": "opening",
@@ -1318,6 +1318,40 @@
    "ctx": "opening",
    "say": "Everything's fine, I'm just running late.",
    "intent": "late",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "need_help",
+   "say": "My wife is driving me.",
+   "intent": "ride_ok",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "need_help",
+   "say": "I don't need a taxi, my wife is driving me.",
+   "intent": "any",
+   "not": [
+    "taxi_ok"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "need_help",
+   "say": "I don't need a taxi, I'll take the bus.",
+   "intent": "any",
+   "not": [
+    "taxi_ok"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "need_help",
+   "say": "No, my friend is picking me up.",
+   "intent": "ride_ok",
+   "not": [
+    "taxi_ok",
+    "help_request"
+   ],
    "note": "logic audit 5 Nov 2026"
   }
  ]
