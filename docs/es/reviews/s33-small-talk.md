@@ -58,9 +58,12 @@ corpus 315/315, 0/25 → 353/353, 0/36 (+49 items, 32 of them with `not:` meanin
 4. Facts: **fixed** `frank_where` "Voy al centro, a la ferretería": the stop is on calle Hidalgo, a block from the
    zócalo (TOWN.md), so the centro is where he stands → "Nada más voy a la ferretería. ¡Necesito pintura para mi
    lancha!" (as the English original; "¿Va al centro?" still gets it). **Fixed** the intro "the bus stop on calle
-   Ceiba" → "the Calle Ceiba bus stop" (its sign; it stands on calle Hidalgo). **Left for the lead:** the scene data
-   (`ui/scene-data/s33-small-talk.json`) has `wkp_what` → `plans` and `wkf_what` → `fishing`: swapped (Monday's "¿Y
-   qué hizo?" shows him painting, Friday's "¿Qué va a hacer?" shows him fishing).
+   Ceiba" → "the Calle Ceiba bus stop" (its sign; it stands on calle Hidalgo). **Left for the pictures track** (the
+   scene data, after the picture audit's remap ba91c40a): `react` is the pending after each of his three stories, so its
+   picture (`plans`, painting) also shows on Mondays while he tells about fishing; `wkf_what` (Friday, "¿Qué va a
+   hacer?") and `weekend_past` (Monday, his question) show him fishing. Suggested: both → `react` (his listening pose);
+   for the fishing picture with the fishing story, the Monday story's pending would need an id of its own
+   (`react_weekend`, a one-line change here plus the corpus ctx), done together with the scene line.
 5. English: **fixed** `sure_is` "It sure is!" (also said to "Parece que va a llover, ¿verdad?") → "I'll say!",
    "Absolutely!". Glosses all right; American English throughout.
 6. Spelling, accents, ¿¡: nothing (script over every unit, twin and hint).
@@ -99,6 +102,6 @@ corpus 315/315, 0/25 → 353/353, 0/36 (+49 items, 32 of them with `not:` meanin
 `more_time`, `frank_bus_here`, and the four hints above. Ids, phases and moments unchanged (the pending `react` keeps
 its id).
 
-**For the lead:** swap `wkp_what`/`wkf_what` in the scene data (above); STYLE.md's Mexican-only list could add
+**For the lead:** the scene phases above (pictures track); STYLE.md's Mexican-only list could add
 platicar (conversar) and carne asada as the party (parrillada), so the cross-cutting digest catches them; global
 g_meaning could take "¿Qué es (un/el) X?" (now only "¿Qué significa X?").
