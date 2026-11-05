@@ -12,16 +12,25 @@ retries fit.
 | The manifests (one entry per picture) | `tools/es-pictures/manifests/*.json` |
 | The references: one portrait per person, one picture per place | `public/scenes-es/ref/cast/<npc id>.webp`, `public/scenes-es/ref/place/<place>.webp` |
 | The situation pictures (next) | `public/scenes-es/<situation>/<name>.webp`, mapped by `src/editions/es/ui/scene-data/<situation>.json` |
-| The originals (PNG), their sidecars (prompt, references, usage) and the ledger | the work folder, by default `/private/tmp/claude-501/-Users-gabrieledirmontaite/b3b443be-6044-459a-94fe-bcc6886dd88c/scratchpad/pictures/` (`ES_PICTURES_DIR` sets another) |
+| The originals (PNG), their sidecars (prompt, references, usage) and the ledger | the work folder, by default `~/puerto-colibri-pictures/` since the 5 Nov audit (`ES_PICTURES_DIR` sets another; the first copy, in the session's scratch folder, is older: use one ledger only) |
 
 ## Status (5 Nov 2026)
 
 - **Every conversation has its pictures:** 50 conversations, 51 scenes (the date has Santiago's and Camila's),
   **579 situation pictures** (chapters 1–7: 478; chapters 8–9: 101), each checked (section 5 "Checking a picture"),
   wired into the game (section 8). The references: 58 portraits and 47 places (section 4).
-- **Spent: $40.59** of the $75 stop (the owner approved $82), 715 requests. Regular API: 506 requests, $33.30
-  (the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373, $25.85 = 75 first
-  pictures and their redo, 298 edits). Batch API: 209 situation pictures, $7.29 (158 + 49 edits, 2 redos).
+- **Audited on 5 Nov 2026** (the picture audit's notes, PICTURES-AUDIT.md): every situation picture checked against
+  its portrait, the lines on screen while it shows (simulated conversations), the text and name-tag rules,
+  near-duplicates, the style, anatomy and place details; 110 findings (4 high, 23 medium, 83 low). **48 pictures
+  remade** (the high and medium ones and 15 low ones: a third hand, a second passport, the mute icon back on a
+  video, a banknote that looked like a dollar, moments that showed the wrong thing, near-copies, a hat that came and
+  went, the gym's leg press), and the phases of 7 moments in s33, s82 and s89 remapped so the picture fits its line
+  (s82's medium finding was fixed that way). Each remade entry has a `note` in its manifest. Left as they are: the
+  low findings (above all the sea seen from inland places, which comes from the place references).
+- **Spent: $42.50** of the $75 stop (the owner approved $82), 765 requests. Until the audit: $40.59 (regular API: 506
+  requests, $33.30: the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373,
+  $25.85 = 75 first pictures and their redo, 298 edits. Batch API: 209 situation pictures, $7.29: 158 + 49 edits, 2
+  redos). The audit: $1.91 (45 edits in one batch, $1.62; 4 through the regular API, $0.29).
 - **Why most went through the regular API:** the first pictures by design (each checked before its edits); then the
   edits' one big batch failed at once on the organization's queue limit (1,000,000 enqueued tokens per model), the
   first queue-sized batch (158) showed no progress for 45 minutes (it finished after 1.5 hours), and the rest was
@@ -550,6 +559,12 @@ swiftc -O tools/es-pictures/textcheck.swift -o <work>/textcheck      # once; the
 - `generate.py`, `batch.py submit` and `sheet.py` take several manifests at once
   (`generate.py s31-doctor s32-mercado … --only …`). A batch refuses an edit whose source picture doesn't exist yet
   (no chains inside one batch: make the sources first through the regular API).
+- **Remakes through a manifest of their own** (the 5 Nov audit's are in the work folder's `audit/`): the scripts take
+  a path, and a manifest outside `manifests/` never shadows a scene manifest's entries for the other tools. Each entry
+  copies the picture's `id`, `scene`, `phases` and `out` and sets its own `refs` and `prompt`: `"edit:<its own id>"`
+  edits the picture itself (what `generate.py --fix` does, and it works in a batch too: `batch.py submit <path>
+  --force`), `"edit:<another picture of the scene>"` remakes it from that one. The scene manifest keeps its plan and
+  gets a `note`; the new original's sidecar holds the exact prompt and references.
 - `textcheck.swift`: macOS's text recognizer (Vision) over the originals: prints every picture where it reads
   letters or digits, and where. It reads Maple Harbor's menus and signs; a clean result is still no substitute for
   looking (it misses squiggles that look like writing), and a pattern can raise a false alarm.
@@ -590,9 +605,9 @@ files, same checks):
 ## 9. For the owner
 
 - Nothing is needed for the pictures to go on: the key works (no verification step was asked for).
-- The ledger and the full-size originals live in the work folder (`/private/tmp/…/scratchpad/pictures/`), which a
-  restart of the Mac can clear: copy it somewhere lasting (for example `~/english-world/.art-originals/es/`, which git
-  ignores) once the pictures are done.
+- The ledger and the full-size originals live in the work folder, `~/puerto-colibri-pictures/` (2 GB; the scripts'
+  default since the 5 Nov audit). The first copy in the session's scratch folder (`/private/tmp/…/scratchpad/pictures/`)
+  stopped at $40.59 and a restart of the Mac can clear it; don't run the scripts against it.
 - **Weight:** the Spanish pictures average 178 kB (Maple Harbor's 85 kB: their fine grain compresses less well), 95 MB
   for the 579 (plus 13 MB of references, which no build ships). A scene loads its 9–14 pictures, about 2 MB. If that
   is too heavy for the course's repository or for phones, `convert.py --quality 65` saves about 28%; 1600 px wide

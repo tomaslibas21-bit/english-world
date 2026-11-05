@@ -64,6 +64,7 @@
     "person:cast/diaz"
    ],
    "prompt": "Change only her pose: she holds the open passport (blank pages) a little toward the learner and taps an empty page with one finger, a questioning, serious look, asking whether they have a resident visa.",
+   "note": "5 Nov audit: remade (two passports: the learner's hand still held one while the officer had the other) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65a-passport/visa.webp"
   },
   {
@@ -119,6 +120,7 @@
     "person:cast/diaz"
    ],
    "prompt": "Change only her pose: she leans slightly forward with her hands folded on the counter, the closed passport under them, and looks at the learner with a calm, friendly face and the hint of a smile, asking one more routine question.",
+   "note": "5 Nov audit: remade (two passports: the learner's hand still held one while the officer had the other) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65a-passport/questions.webp"
   },
   {
@@ -136,6 +138,7 @@
     "person:cast/diaz"
    ],
    "prompt": "Change only her pose: she points with an open hand to the small fingerprint pad on the counter in front of the learner, its glass now glowing a soft green, and nods, asking the learner to put their index finger on it.",
+   "note": "5 Nov audit: remade (the learner's hand still held the passport the officer had) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65a-passport/fingers.webp"
   },
   {
@@ -151,6 +154,7 @@
     "person:cast/diaz"
    ],
    "prompt": "Change only her pose: she touches the side of her own face beside her eye with two fingers, a small miming gesture, and smiles politely, asking the learner to take off their glasses for the photo.",
+   "note": "5 Nov audit: remade (the learner's hand still held the passport the officer had) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65a-passport/glasses.webp"
   },
   {
@@ -167,6 +171,7 @@
     "person:cast/diaz"
    ],
    "prompt": "Change only her pose: she points to the small camera on its stalk, now turned toward the learner with a tiny lit dot, and looks at the learner with a little nod, asking them to look into it.",
+   "note": "5 Nov audit: remade (the learner's hand still held the passport the officer had) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65a-passport/photo.webp"
   },
   {
@@ -182,6 +187,7 @@
     "person:cast/diaz"
    ],
    "prompt": "Change only her pose: she holds the open passport up toward the glass with one hand and points with a pen to a fresh round ink stamp on one page (a plain ring with a few simple lines inside, no letters or numbers). A neutral, matter-of-fact look: these are the days she is giving.",
+   "note": "5 Nov audit: remade (two passports: the learner's hand still held one while the officer had the other) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65a-passport/days.webp"
   },
   {

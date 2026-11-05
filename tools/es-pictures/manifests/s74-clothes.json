@@ -77,6 +77,7 @@
         "person:cast/chloe"
       ],
       "prompt": "Change only her pose: Valeria stands beside the nearest clothes rack with one hand on an empty stretch of the rail where the hangers have run out, and holds up a single hanger with a linen shirt in the other hand, an apologetic, helpful smile (that size is gone; she offers the next one).",
+      "note": "5 Nov audit: remade (nothing showed that the size was sold out) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s74-clothes/soldout.webp"
     },
     {
