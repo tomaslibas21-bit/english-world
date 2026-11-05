@@ -66,10 +66,11 @@ function negationCutOff(r: { caps: { name: string; value: unknown; from: number;
     // "I don't have | my passport" is not handing over the passport. Two pieces of the same answer are
     // fine ("Not much, the usual").
     const sameAnswer = (prev.value as any)?.__id === (c.value as any)?.__id;
-    if (!sameAnswer && toks.slice(prev.from, prev.to).some((t) => LANG.pieceNegators.has(t)) && !startsNewPart(toks, c.from, c.to)) return true;
+    const prevToks = toks.slice(prev.from, prev.to);
+    if (!sameAnswer && prevToks.some((t) => LANG.pieceNegators.has(t)) && !LANG.settledNegative?.(prevToks) && !startsNewPart(toks, c.from, c.to)) return true;
     // a piece can't begin with the verb of the previous one: "tomorrow | doesn't work", "the steak | is not
     // good", "full coverage | would be too expensive" (a question is fine: "Not bad. | Are you free?")
-    if (c.from === prev.to && PREDICATE_AUX.has(toks[c.from]) && !SUBJ_PRONOUNS.has(toks[c.from + 1])) return true;
+    if (c.from === prev.to && PREDICATE_AUX.has(toks[c.from]) && !SUBJ_PRONOUNS.has(toks[c.from + 1]) && !LANG.ownClause?.(prevToks)) return true;
   }
   return false;
 }
@@ -279,6 +280,7 @@ export class Nlu {
         for (const r of res) {
           const p = this.toParse(r, toks, please, expected, primary);
           if (p.segments.some((sg) => this.contextual.has(sg.intent) && !expected.includes(sg.intent))) continue;
+          if (this.ctxAfterQuestion(r, toks) || this.afterLast(r)) continue;
           // "no cash", "no oat milk": "no" + a noun means absence, not "No. Cash." (unless written that way);
           // "no to go", "no just water", "no the large one" are an answer plus a correction
           if (p.yn === "no" && p.segments.length && !noPause && noIsDeterminer(r, toks)) continue;
@@ -311,6 +313,27 @@ export class Nlu {
     }
     if (all.length) tokens = all[0].tokens;
     return { ok: all.length > 0, best: all[0], alternatives: all.slice(0, 6), prefix, tokens };
+  }
+
+  /** A piece tagged #last ("¿Qué significa?") takes no piece of the conversation's after it: "¿Qué significa máquina?"
+   *  asks what the word means, never "¿Qué significa?" + the answer "máquina" (another global skill may follow: "¿Qué
+   *  significa? No entiendo"). */
+  private afterLast(r: Res): boolean {
+    const segs = r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from);
+    return segs.some((c, i) => i > 0 && !this.globalIds.has((c.value as any)?.__id)
+      && segs.slice(0, i).some((p) => !!((p.value as any)?.__tags as string[] | undefined)?.includes("last")));
+  }
+
+  /** "¿A qué hora sale | el último?": a context-only answer right after a question whose own words it is never answers
+   *  (books) the open question (LANG.questionOwns; off where the language has none). */
+  private ctxAfterQuestion(r: Res, toks: Tokens): boolean {
+    if (!LANG.questionOwns) return false;
+    const segs = r.caps.filter((c) => c.name === "__intent").sort((a, b) => a.from - b.from);
+    for (let i = 1; i < segs.length; i++) {
+      if (!this.contextual.has((segs[i].value as any)?.__id)) continue;
+      if (LANG.questionOwns(toks.slice(segs[i - 1].from, segs[i - 1].to), toks.slice(segs[i].from, segs[i].to))) return true;
+    }
+    return false;
   }
 
   private approximate(variants: Tokens[], please: boolean, expected: string[], top: GNode): Parse | null {

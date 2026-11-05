@@ -166,7 +166,9 @@ export const salon: SituationDef = {
       "[si] (quince minutos | eso) esta bien", "[si] me espero [aqui | un rato]",
     ] },
     wait_no: { patterns: [
-      "[no] no puedo esperar", "[no] no tengo tiempo [de esperar | para esperar]", "[no] [mejor] (regreso | vuelvo | paso) (mas tarde | despues | otro dia | manana | luego) #h:wait_later",
+      "[no] no puedo esperar", "[no] no tengo tiempo [de esperar | para esperar]",
+      // (it was understood only through a bare "un" read as one o'clock, fixed in slots.ts)
+      "[no] no tengo tiempo para (un corte | el corte | un corte de pelo | cortarme el pelo) [ahora | ahorita | hoy]", "[no] [mejor] (regreso | vuelvo | paso) (mas tarde | despues | otro dia | manana | luego) #h:wait_later",
       "[no] es (mucho | demasiado) tiempo", "[no] (tengo | traigo) prisa", "[no] voy a (regresar | volver) (mas tarde | despues | otro dia | manana)",
     ] },
     // "¿Usted es Paty?", "¿Cómo se llama usted?" (a bare "¿Cómo se llama?" is the cat's name once she's come up: ask_cat)

@@ -12,6 +12,8 @@
 import type { EntityDef } from "../../../content/types";
 import type { Case } from "../../../convo/lt-morph";
 import type { EntityLookup, NpBinding } from "../../../convo/compose";
+// (compose imports this file too; `variety` is only read when a line is composed, after both have loaded)
+import { variety } from "../../../convo/compose";
 
 export interface NpParts { en: string[]; lt: string[]; natLt: string[]; flags: Record<number, string> }
 
@@ -63,7 +65,7 @@ const glossArticle = (next: string) => (vowelSound(next) ? "an" : "a");
 export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head", _c: Case | undefined, look: EntityLookup, fem = false): NpParts {
   const base = look(b.id);
   if (!base) throw new Error(`Unknown entity "${b.id}"`);
-  const e = entityForPlayer(base, fem);
+  const e = neutralNoun(entityForPlayer(base, fem), fem && !!base.enF);
   const qty = b.qty ?? 1;
   const plural = kind === "pl" || qty > 1;
   const head = splitUnits(plural ? e.pl ?? splitUnits(e.en).map((w, i, a) => (i === a.length - 1 || a.length === 1 ? pluralEs(w) : w)).join(" | ") : e.en);
@@ -90,7 +92,8 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
     else if (e.art !== "") { art = e.art ?? (g === "f" ? "una" : "un"); artG = glossArticle(firstGloss); }
   } else if (kind === "the") {
     art = plural ? (g === "f" ? "las" : "los") : e.def ?? (g === "f" ? "la" : "el");
-    artG = "the";
+    // a name said without an article (`def: ""`) gets none in English either; `attrs.nat` may carry one
+    artG = art ? "the" : "";
   }
   if (art) { en.push(art); lt.push(artG); }
   for (const m of pre) { const u = modUnits(m); en.push(...u.t); lt.push(...u.gl); }
@@ -106,6 +109,21 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   if (kind === "np" && !plural && art && artG !== "some") natArt = glossArticle(core[0] ?? "");
   const natLt = [...(natArt ? [natArt] : []), ...core];
   return { en, lt, natLt, flags };
+}
+
+/** The neutral Latin American text names a thing with the entity's `attrs.neutral` noun where the Mexican one is
+ *  Mexican-only ("tomate" for "jitomate", "camiseta" for "playera", "billetera" for "cartera"): its plural
+ *  `attrs.neutralPl` (else the regular one, a compound's on its first word), its gender `attrs.neutralG` (else the
+ *  head's; it picks the article and the agreement). The English gloss stays. For a learner's feminine form (`enF`),
+ *  `attrs.neutralF` (else none). */
+export function neutralNoun(e: EntityDef, feminineForm = false): EntityDef {
+  const a = e.attrs as Record<string, unknown> | undefined;
+  const n = (feminineForm ? a?.neutralF : a?.neutral) as string | undefined;
+  if (!n || variety() !== "neutral") return e;
+  const g = (a?.neutralG as "m" | "f" | undefined) ?? e.g;
+  // a compound's plural is its first word's: "licencia de conducir" → "licencias de conducir"
+  const pl = (a?.neutralPl as string | undefined) ?? (/^\S+ de /.test(n) ? n.replace(/^\S+/, (w) => pluralEs(w)) : undefined);
+  return { ...e, en: n, pl, g };
 }
 
 /** Entities that describe the player (jobs, nationalities) may carry Spanish feminine forms (`enF`, `plF`, `gF`),
@@ -153,7 +171,7 @@ export const hintBinding = (e: EntityDef | undefined, id: string): string | NpBi
 export const agreeTarget = (s: string, bind: (name: string) => { e: EntityDef; plural: boolean } | null) =>
   s.replace(PH_AGREE_TARGET, (_m, lemma: string, name: string, pl?: string) => {
     const r = bind(name);
-    return r ? agreeEs(lemma, r.e.g === "f" ? "f" : "m", !!pl || r.plural) : lemma;
+    return r ? agreeEs(lemma, neutralNoun(r.e).g === "f" ? "f" : "m", !!pl || r.plural) : lemma;
   });
 
 // ---------------------------------------------------------------------------
@@ -214,10 +232,13 @@ export function timeSay(t: { h: number; m: number }): string {
   if (t.m === 45) return `cuarto para ${hour(t.h + 1)}`;
   return `${hour(t.h)} y ${numberWords(t.m)}`;
 }
+/** Letter names as Mexico spells a word out: B "be grande" and V "ve chica" (to tell them apart), Y "i griega" (never
+ *  Spain's "uve", "ye"). The neutral Latin American text says "be larga" and "ve corta". */
 const LETTER_SAY: Record<string, string> = {
-  A: "a", B: "be", C: "ce", D: "de", E: "e", F: "efe", G: "ge", H: "hache", I: "i", J: "jota", K: "ka", L: "ele", M: "eme", N: "ene",
-  Ñ: "eñe", O: "o", P: "pe", Q: "cu", R: "erre", S: "ese", T: "te", U: "u", V: "uve", W: "doble ve", X: "equis", Y: "ye", Z: "zeta",
+  A: "a", B: "be grande", C: "ce", D: "de", E: "e", F: "efe", G: "ge", H: "hache", I: "i", J: "jota", K: "ka", L: "ele", M: "eme", N: "ene",
+  Ñ: "eñe", O: "o", P: "pe", Q: "cu", R: "erre", S: "ese", T: "te", U: "u", V: "ve chica", W: "doble ve", X: "equis", Y: "i griega", Z: "zeta",
 };
+const LETTER_SAY_NEUTRAL: Record<string, string> = { ...LETTER_SAY, B: "be larga", V: "ve corta" };
 
 /** A value in the Spanish text, the English gloss and the spoken Spanish. `{$time}` carries its article: "las 8:30". */
 export function valueDisplay(kind: string, v: any): { en: string; lt: string; say: string } {
@@ -231,7 +252,8 @@ export function valueDisplay(kind: string, v: any): { en: string; lt: string; sa
   }
   if (kind === "letters" || kind === "spelled") {
     const up = String(v).toUpperCase().replace(/Ñ/g, "\u0001").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\u0001/g, "Ñ").replace(/[^A-Z0-9Ñ]/g, "").split("");
-    return { en: up.join("-"), lt: up.join("-"), say: up.map((c) => LETTER_SAY[c] ?? numberWords(Number(c))).join(", ") };
+    const names = variety() === "neutral" ? LETTER_SAY_NEUTRAL : LETTER_SAY;
+    return { en: up.join("-"), lt: up.join("-"), say: up.map((c) => names[c] ?? numberWords(Number(c))).join(", ") };
   }
   if (typeof v === "number") return { en: String(v), lt: String(v), say: numberWords(v) };
   if (typeof v === "object" && "en" in v) return { en: v.en, lt: v.lt ?? v.en, say: v.say ?? v.en };

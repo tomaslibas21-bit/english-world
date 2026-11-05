@@ -26,6 +26,9 @@ export interface GlobalContent {
   entities: EntityDef[];
   handlers: Record<string, (c: ConvCtx, slots: any) => void>;
   macros: Record<string, string | string[]>;
+  /** How a turn reads in the open question's context, before it is answered: the parse to use (the Spanish edition
+   *  reads a polite "Gracias" or "Está bien, gracias" at an offer as its no). Optional. */
+  reread?: (c: ConvCtx, p: Parse) => Parse;
 }
 
 export interface NpcInfo { id: string; name: string; gender: Gender; voice: string; speed?: number; /** addresses the player with "tu" */ informal?: boolean }
@@ -284,7 +287,7 @@ export class Conversation {
       return this.out;
     }
     this.failures = 0;
-    const p = res.best;
+    const p = this.opt.global.reread?.(this.ctx(text), res.best) ?? res.best;
     this.out.parse = p;
     // an answer of this conversation's own closes an open check; the global skills (say that again, slower, what
     // does it mean, spell it) keep it, so a yes after them still takes the name
@@ -543,6 +546,8 @@ export class Conversation {
 
   /** For global handlers. */
   get lastLines() { return this.lastTurn; }
+  /** The lines said so far in this turn. */
+  saidThisTurn(): readonly SpokenLine[] { return this.out.lines; }
   markSlow() { this.slow = true; }
   addNote(note: { en: string; lt?: string }) { this.out.note = note; }
   showMeaning() { this.out.showMeaning = true; }

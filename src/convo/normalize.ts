@@ -134,6 +134,8 @@ export function tokenSimilarity(heard: string, target: string): number {
   const hc = HOMOPHONE_MAP.get(heard);
   if (hc && hc === HOMOPHONE_MAP.get(target)) return 0.97;
   if (LANG.spellingVariant?.(heard, target)) return 0.95;
+  const sv = LANG.slipVariant?.(heard, target);
+  if (sv !== undefined) return sv;
   const gc = GRAMMAR_MAP.get(heard);
   if (gc !== undefined && gc === GRAMMAR_MAP.get(target)) return 0.87;
   // Near-misses must keep the first letter: "cappucino" ≈ "cappuccino", but "night" ≠ "right".

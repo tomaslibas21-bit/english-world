@@ -80,15 +80,25 @@ How to turn one of Maple Harbor's conversations into Puerto Colibrí's. Read fir
   con, por/para, me/te/le/lo/se, es/está); an extra subject pronoun or filler (yo, usted, tú, pues, bueno, este,
   ya…); gender and person slips (la café, yo quiere, ¿puedes…? to staff), ser/estar, por/para, qué/cuál, but never a
   slip of a verb's last vowel, which carries its person and mood ("tengo" is no "tenga", "tomo" no "tome" or
-  "toma", "llevo" no "lleve"; write each form you mean); spelling
-  by sound (baso/vaso, serbesa/cerveza, ola/hola, yevar/llevar); a leading "hola", "buenos días", "oiga",
-  "disculpe", "perdón", "este", "a ver", "yo"; a trailing "gracias", "por favor", "entonces", "nada más",
-  "ahorita"; the NPC's name or a "señor/joven". Write patterns for different constructions and vocabulary instead.
+  "toma", "llevo" no "lleve"; write each form you mean), and never the learner's "puedo / podemos" for "puede /
+  pueden / podría" ("Yo puedo llevarla" is no "¿Pueden llevarla?"; "¿Se puede…?" and "¿Podría…?" still fit "puedo");
+  spelling by sound (baso/vaso, serbesa/cerveza, ola/hola, yevar/llevar); a leading "hola", "buenos días", "oiga",
+  "disculpe", "perdón", "este", "a ver", "yo", "porque", "vengo / vine porque", "obvio que"; a trailing "gracias",
+  "por favor", "entonces", "nada más", "ahorita", "perdón", "lo siento"; "oiga / mire / por cierto / una pregunta"
+  between two answers ("Bien, gracias. Oiga, ¿me presta…?"); the NPC's name or a "señor/joven". Write patterns for
+  different constructions and vocabulary instead. (Since 5 Nov 2026 a bare "funciona" is no trailing acceptance: "El
+  calentador sí funciona" says it works.)
 - **Negation is safe by construction, if you help it:**
   - "no" before a verb is the verb's negation: "No quiero leche" is never "No." + "quiero leche", and neither is
     "No la tiro" (a clitic between them) "No." + "la tiro". After a bare leading "no", only a correction word can
     start an answer ("No, el grande", "No, la roja", "No, para llevar": see `correctionStarters` and `noNegates` in
-    `src/editions/es/convo/lang.ts`).
+    `src/editions/es/convo/lang.ts`). "No está…", "No queda…" are negated verbs too ("No está en Canadá" is never
+    "No." + Canada): write the negative statement as its own intent where it matters.
+  - A set phrase with "no" ("No te preocupes", "No pasa nada", "No hay problema") negates nothing after it: "No te
+    preocupes. ¿Tienes perro?" is two pieces.
+  - A question with a question word followed by a noun phrase is one question: "¿A qué hora sale el último?" never
+    answers a pending question with "el último" (a `_ctx` piece right after it is dropped); an answer that begins
+    with a preposition still counts ("¿Cuánto cuesta a Mérida?" names the destination).
   - Write explicit negative intents for what can be refused: `"[mejor] no (quiero | voy a querer) {item}"`,
     `"no {item}"`, `"sin {item}"`, and corrections: `"no {item} sino {item}"`, `"{item} en vez de {item}"`.
   - A piece after a negative piece must start something new ("No tengo efectivo, | con tarjeta", "…, | quiero pagar
@@ -161,7 +171,12 @@ travel chapter).
     Mexican-word flag must show on the Mexican word).
 16. **Clarification is global.** Repeat, slower, write it down, spell, "¿Qué significa…?" and thanks are in
     `global.ts` (repetirlo, ¿Lo puede repetir?, ¿Me lo escribe?, Hable más despacio, Muchas gracias por todo). Don't
-    copy them into a conversation; if a common form is missing, write it under `// NEEDS:`.
+    copy them into a conversation; if a common form is missing, write it under `// NEEDS:`. Since 5 Nov 2026 the
+    global skills also take "¿Qué es una charola?" and expressions ("¿Qué significa de un jalón?"; the word asked about
+    is never the learner's answer), "Ya voy / Ya vamos" (no goodbye), "Igualmente" (a goodbye only after one),
+    "¿Qué hora es?", and at an offer ("¿Le pongo…?", "¿Quiere…?", "¿Algo más?") a bare "Gracias", "Está bien,
+    gracias" or "Gracias, es todo" as the offer's no; a conversation that reads those itself keeps its reading (add
+    its id to `OWN_POLITE_CLOSING` in global.ts, or give the offer its own `on.g_thanks`).
 
 17. **Money and bookings move only on a present yes or a hand-over.** A past tense ("Pagué todo", "Ya lo pagué"), a
     what-if ("¿Y si cancelo?", "¿Y si quiero la cobertura?"), a price question ("¿Cuánto es?", "¿Es cara?") and a
