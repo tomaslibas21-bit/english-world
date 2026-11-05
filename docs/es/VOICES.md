@@ -167,7 +167,7 @@ every conversation and in both accents.
 | Doña Mari (f, `mrs_lee`) | Puesto de flores (Flower stall) | s91a | Vindemiatrix | tutor-3 | about 70 | kind, calm and gentle | slow |
 | Oficial Reyes (m, `reyes`) | Policía (Police officer) | s91b | Alnilam | tutor-2 | about 45 | calm and professional | measured |
 | Doctora Herrera (f, `carter`) | Médica familiar (Family doctor) | s31 | Achernar | assistant-6 | about 50 | calm, careful and reassuring | unhurried |
-| Doña Lupe (f, `marcus`) | Puesto de frutas y verduras (Fruit and vegetable stall) | s32 | Gacrux | assistant-6 | about 60 | warm and loud, a market vendor with thirty years at her stall | lively |
+| Doña Licha (f, `marcus`) | Puesto de frutas y verduras (Fruit and vegetable stall) | s32 | Gacrux | assistant-6 | about 60 | warm and loud, a market vendor with thirty years at her stall | lively |
 | Caja de autoservicio (f, `sco`) | Caja de autoservicio (Self-checkout machine) | — | Despina | commercial-9 | ageless | flat and polite, a self-checkout machine | measured |
 | Don Pancho (m, `frank`) | Vecino (Neighbor) | s33 | Algenib | concierge-2 | about 75 | chatty and warm | a little slow |
 | Mónica (f, `jordan`) | Entrenadora personal (Personal trainer) | s35 | Autonoe | commercial-9 | about 30 | energetic and encouraging | lively |
@@ -181,7 +181,7 @@ every conversation and in both accents.
 | Fátima (f, `russo`) | Cocinera principiante (Junior cook) | — | Leda | assistant-1 | 19 | nervous and eager | quick |
 | Elena (f, `emily`) | Tu jefa (Your manager) | — | Achernar | assistant-2 | late 30s | warm and a little nervous | easy |
 | Toño (m, `tyler`) | Fundador (Founder) | — | Fenrir | assistant-9 | early 30s | excitable, full of startup talk | fast |
-| Don Gilberto (m, `mr_grant`) | Tu casero (Your landlord) | — | Zubenelgenubi | concierge-8 | about 60 | friendly and very casual | relaxed |
+| Don Gilberto (m, `mr_grant`) | Administrador del edificio (Building manager) | — | Zubenelgenubi | concierge-8 | about 60 | friendly and very casual | relaxed |
 | Agente Medina (f, `aduana`) | Aduana (Customs) | s65b | Pulcherrima | concierge-5 | about 40 | polite, direct and businesslike | brisk |
 | Coach (female learner) | example answers | all | Erinome | podcaster-2 | about 30 | clear, friendly and natural, every word distinct | unhurried |
 | Coach (male learner) | example answers | all | Iapetus | podcaster-1 | about 30 | clear, friendly and natural, every word distinct | unhurried |
