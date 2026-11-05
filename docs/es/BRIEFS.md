@@ -15,8 +15,8 @@ immigration desk (Instituto Nacional de Migración style, made-up name). Mexico 
 the days allowed (up to 180) instead of the old paper FMM: "¿Cuántos días se va a quedar?", "¿Motivo de su viaje?",
 "¿Dónde se va a hospedar?", "¿Trae su pase de abordar / boleto de regreso?". The twist: she gives fewer days than
 asked and the learner asks politely for more; once she has seen the return ticket she gives the days up to the return
-date, never more than the trip, and says so ("Le doy hasta su fecha de regreso: treinta días"; the lead's decision,
-5 Nov 2026). Numbers: days, dates. Accept "turismo", "de vacaciones", "por
+date, never more than the trip, and says so ("Le doy treinta días, lo que necesita hasta su regreso"; the lead's
+decision, 5 Nov 2026). Numbers: days, dates. Accept "turismo", "de vacaciones", "por
 trabajo", "vine a vivir aquí" (a mover: "¿Tiene visa de residente?" — a residente temporal card).
 
 **s65b-baggage · "Mi maleta no llegó"** — Itzel (f), baggage services, usted. Lost luggage form: flight number
