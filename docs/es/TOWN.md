@@ -162,6 +162,19 @@ The conversations name places and say where they are; the 3D town must agree (an
   ("calle Flamboyán 23, entre Hidalgo y Juárez", s65b); since 5 Nov **calle Uxmal** is Station Road (past the bus
   terminal; no conversation names it yet). Calle Morelos (s76's dentist, "a una cuadra del zócalo") is not on the map.
 - **The tiendita** is in the ground floor of Departamentos Las Palmas, on its corner with calle Flamboyán.
+- **Hours the conversations share** (5 Nov 2026, the cross-cutting audit; a new line must agree): the museum 10 to 5,
+  closed on Mondays (s62, s69, s70); the visitor center 9 to 5, Monday to Saturday (s62); Café La Ceiba 7 a.m. to 9 p.m.
+  (s62); the mercado every day 6 to 3 (s62); the tianguis on Saturdays 7 to 2 (s62, s69, s91a); the Friday music at
+  the kiosco at eight (s62, s69; s83's meeting point); the bank Monday to Friday 9 to 4 and Saturdays until 2 (s78; s62
+  said Monday to Friday only: its reviewer is asked to add the Saturdays); Correos Monday to Friday 8 to 4, Saturdays 9
+  to 1 (s79); Hotel Mar Azul's breakfast 7 to 10:30 (s68); the cenote and the ruins open about eight (s69); Línea Clara
+  9 to 6, lunch 2 to 3 (s87, s88).
+- **Prices the conversations share**: a coffee about $45 (s72 $35–60, s69, s73 $40–55); the comida corrida about $100
+  (s69, s88); the museum $80, students and seniors $40 (s69, s70); city bus route 7 $12 (s67b); a taxi in town
+  $100–120, to the airport $350 (s66); the rent at Las Palmas $14,000 a month (s81, p29); Magna about $24 a liter (s71b).
+- **The landlord** of the learner's apartment at Las Palmas is Don Ernesto (s81, p29). p24's flood call goes to Don
+  Gilberto, "tu casero", about apartment 3B, as Maple Harbor's p24 calls Mr. Grant: an open question for the owner
+  (one landlord, or another home?).
 - **Las Palmas inside** (since 5 Nov): Don Ernesto shows the apartment from just inside its door (s81) and meets the
   learner there (p29); Doña Lupita's door (1C) is at the back of the hallway, and she stands in the hallway by the
   learner's door (s82, p29).
@@ -316,10 +329,10 @@ speakers stand from the learner. (Sara in s34 is on the team room's screen.)
 | p24-flood | phone call | Andrea, Don Gilberto: on the phone |  | on the phone |
 
 Found on the way, left for others:
-- **The Friday music**: s62 (and the visitor center's poster) say eight o'clock; s69 says seven (`night`, `time_musica`,
-  `open_musica`).
-- **The gym**: s35's intro has Mónica greet the learner at the front desk; she stands by the bench press (as Jordan does
-  in Maple Harbor), where the workout happens.
+- **The Friday music**: s62 (and the visitor center's poster) say eight o'clock; s69 said seven (`night`, `time_musica`,
+  `open_musica`). Fixed: s69 says eight too (checked 5 Nov, the cross-cutting audit).
+- **The gym**: s35's intro had Mónica greet the learner at the front desk; she stands by the bench press (as Jordan does
+  in Maple Harbor), where the workout happens. Fixed: the intro now has her greet you on the gym floor, by the bench press.
 - **Secondary speakers out of the picture** (Don Arturo in s70, Luis in s73, Natalia in s85; on a phone Agente Medina
   in s65b and Marcos in s63): fixed 5 Nov, with the others the tour then found (see "Done: the last details").
 
