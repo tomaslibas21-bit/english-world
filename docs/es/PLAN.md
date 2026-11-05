@@ -13,8 +13,8 @@ Master English. One engine with two editions (docs/es/EDITIONS.md); the English 
   negotiations) and anything a reviewer flags. Each conversation is about 1,300–2,000 lines of TypeScript with
   hand-written Spanish understanding; weak work fails silently, so the acceptance gate below decides. The executor
   (ChatGPT "Sol 6.1") wrote the trial; docs/es/HANDOFF-SOL.md stays as its prompt.
-- **The owner**: the decisions (docs/es/STYLE.md), the pictures (ChatGPT, later), the Gemini key for the voices
-  (later, added by the owner), every publish.
+- **The owner**: the decisions (docs/es/STYLE.md), the API keys and their budgets (OpenAI for the pictures, Gemini
+  for the voices; only the scripts read them), every publish.
 
 ## Phases
 
@@ -33,11 +33,16 @@ Master English. One engine with two editions (docs/es/EDITIONS.md); the English 
    must-fix problems in each (meaning flips above all: lost commas, "No, no …", replies that didn't answer the
    question); the passport's max check fixed 13 more that booked or granted the wrong thing. Their lessons are rules
    10–16 in AUTHORING-ES.md. The town and the pictures wait until the dialogues are done (after the weekly reset of
-   4 Nov).
-4. **Voices:** the owner adds a Gemini key; the lead adapts `tools/voice-batch.ts` for Spanish voices (`es_<npcId>`,
-   a female and a male coach), a casting sample for the owner, then the batch (~$10).
-5. **Pictures:** the owner makes them with ChatGPT from a brief per conversation (as docs/PICTURES-WANTED.md does for
-   Maple Harbor); they go to `public/scenes-es/` with their files in `src/editions/es/ui/scene-data/`.
+   4 Nov). **Done (5 Nov): all 50 conversations**, in six batches (reports in the shared notes, REPORT-batch2–6.md),
+   and the town around them: every place, room and talk spot, Spanish signs, the cast's looks (docs/es/TOWN.md).
+4. **Voices: ready, waiting for the Gemini key's billing (5 Nov).** Gemini TTS through the Batch API, a voice and a
+   direction per character and setting, every line in two accents: Mexican (`es_<npcId>`) and neutral Latin
+   American (`esn_<npcId>`), picked by the Settings switch that picks the text. 76,796 clips for both sets, about
+   $36 of the owner's $38 stop. The run-book: docs/es/VOICES.md.
+5. **Pictures: done (4–5 Nov).** Made through the OpenAI API with the owner's credits (docs/es/PICTURES.md): 579
+   situation pictures in 51 scenes (10–12 per conversation), from 58 cast portraits and 47 place references; $40.59
+   (regular requests $33.30, the Batch API $7.29). They are in `public/scenes-es/`, with their files in
+   `src/editions/es/ui/scene-data/`.
 6. **The course:** Spanish Master English's game doorway (`GAME_ENABLED`, `/zaidimas`), the export, the lock behind
    the course's files token (as docs/GAME.md in fluent-steps does for English Master), cards into the course's
    flashcards. Nothing goes live before the owner says so.
@@ -123,7 +128,8 @@ Measure the first batch; if a review still costs as much as writing, change cour
 4. The course: does Spanish Master English map the game's conversations to its own songs and stories, as English
    Master's situations journey does? The ids are Maple Harbor's (s32 became `s32-mercado`), so a map is easy either
    way.
-5. When to record the Spanish voices (Gemini, the owner's key; ~$10), and when to make the pictures.
+5. ~~When to record the Spanish voices and make the pictures~~ **Answered (4 Nov): both that night.** The pictures
+   are done; the voices wait for the Gemini key's billing (phase 4).
 6. ~~Hotel Mar Azul's made-up figures~~ **Answered: "use real numbers".** Done: typical Tulum-area prices for Nov 2026 in s68 (sources: docs/es/reviews/s68-hotel.md §8).
 7. ~~The room-not-ready twist~~ **Answered: fine with a "(Más tarde…)" line.** Done: the returning learner's greeting starts with an unspoken "(Más tarde…)".
 8. ~~Hotel keys~~ **Answered: "llave".** Done: kept as it was ("tarjeta" only for the broken key card).
