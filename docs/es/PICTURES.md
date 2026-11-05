@@ -24,13 +24,16 @@ retries fit.
   near-duplicates, the style, anatomy and place details; 110 findings (4 high, 23 medium, 83 low). **48 pictures
   remade** (the high and medium ones and 15 low ones: a third hand, a second passport, the mute icon back on a
   video, a banknote that looked like a dollar, moments that showed the wrong thing, near-copies, a hat that came and
-  went, the gym's leg press), and the phases of 7 moments in s33, s82 and s89 remapped so the picture fits its line
-  (s82's medium finding was fixed that way). Each remade entry has a `note` in its manifest. Left as they are: the
+  went, the gym's leg press), and the phases of 6 moments in s33, s82 and s89 remapped so the picture fits its line
+  (s82's medium finding was fixed that way; in s33 Don Pancho's painting shows on Fridays and his fishing on Mondays,
+  and react, the pending after each of his stories, keeps his listening pose). Each remade entry has a `note` in its manifest. Left as they are: the
   low findings (above all the sea seen from inland places, which comes from the place references).
 - **Spent: $42.50** of the $75 stop (the owner approved $82), 765 requests. Until the audit: $40.59 (regular API: 506
   requests, $33.30: the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373,
   $25.85 = 75 first pictures and their redo, 298 edits. Batch API: 209 situation pictures, $7.29: 158 + 49 edits, 2
   redos). The audit: $1.91 (45 edits in one batch, $1.62; 4 through the regular API, $0.29).
+- **Weight:** since the audit every situation picture is WebP quality 65 (section 9): 76.8 MB for the 579, 26% less
+  than at quality 80, with no visible difference at the game's display sizes.
 - **Why most went through the regular API:** the first pictures by design (each checked before its edits); then the
   edits' one big batch failed at once on the organization's queue limit (1,000,000 enqueued tokens per model), the
   first queue-sized batch (158) showed no progress for 45 minutes (it finished after 1.5 hours), and the rest was
@@ -527,7 +530,7 @@ python3 tools/es-pictures/batch.py submit s72-cafe                   # the same 
 python3 tools/es-pictures/batch.py run s31-doctor s32-mercado … --convert   # submit, wait, fetch, a queue at a time
 python3 tools/es-pictures/batch.py status
 python3 tools/es-pictures/batch.py fetch <batch id> --convert
-python3 tools/es-pictures/convert.py refs                            # PNG → WebP (q80; scenes 2048×1152)
+python3 tools/es-pictures/convert.py refs                            # PNG → WebP (q65; scenes 2048×1152)
 python3 tools/es-pictures/scene_file.py s72-cafe --write             # the scene file from the manifest
 python3 tools/es-pictures/ledger.py                                  # spent, reserved, left before $75
 python3 tools/es-pictures/ledger.py --price 2048x1152 high 2         # the estimate for one picture with 2 refs
@@ -547,8 +550,8 @@ swiftc -O tools/es-pictures/textcheck.swift -o <work>/textcheck      # once; the
   references uploaded once (purpose `vision`, cached by SHA-256); a submit reserves its estimate in the ledger, a
   fetch books the real usage and releases the reservation (also for a failed batch). `run` chains submit → wait →
   fetch until every selected picture exists, resuming an unfetched batch first.
-- `convert.py`: the web format (WebP quality 80; scenes and places exactly 2048 × 1152, portraits as they are);
-  warns over 250 kB.
+- `convert.py`: the web format (WebP quality 65, 80 until the 5 Nov audit; scenes and places exactly 2048 × 1152,
+  portraits as they are); steps down by 4 while a file is over 240 kB; warns over 250 kB.
 - `scene_file.py`: writes `src/editions/es/ui/scene-data/<scene>.json` from a manifest, once the pictures exist.
 - `ledger.py`: totals and the price check.
 - `sheet.py`: contact sheets (several originals side by side, labeled) for a first look; then look at doubtful
@@ -608,8 +611,11 @@ files, same checks):
 - The ledger and the full-size originals live in the work folder, `~/puerto-colibri-pictures/` (2 GB; the scripts'
   default since the 5 Nov audit). The first copy in the session's scratch folder (`/private/tmp/…/scratchpad/pictures/`)
   stopped at $40.59 and a restart of the Mac can clear it; don't run the scripts against it.
-- **Weight:** the Spanish pictures average 178 kB (Maple Harbor's 85 kB: their fine grain compresses less well), 95 MB
-  for the 579 (plus 13 MB of references, which no build ships). A scene loads its 9–14 pictures, about 2 MB. If that
-  is too heavy for the course's repository or for phones, `convert.py --quality 65` saves about 28%; 1600 px wide
-  would save more (scene-walk accepts 1600–2048).
+- **Weight:** since the 5 Nov audit the situation pictures are WebP quality 65: 133 kB on average (Maple Harbor's
+  85 kB: their fine grain compresses less well), 76.8 MB for the 579 (quality 80: 103.7 MB, 179 kB on average), plus
+  13 MB of references, which no build ships (still quality 80). A scene loads its 9–14 pictures, about 1.5 MB. Quality
+  65 was compared with 80 side by side on 20 varied pictures (faces, name tags, a chalkboard, skies, night and dusk)
+  at the desktop backdrop's size (1440 × 900 at 2×: the picture enlarged 1.56 times) and on a phone (375 × 812 at
+  3×): no visible difference; measured, PSNR against the original 36.5 → 34.9 dB on average, and flat areas keep
+  77% of the original's grain against 82%. 1600 px wide would save more (scene-walk accepts 1600–2048).
 - To compare the spending with OpenAI's own count: the dashboard's Usage page, against `python3 tools/es-pictures/ledger.py`.
