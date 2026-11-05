@@ -1,7 +1,9 @@
 // The pieces of a small Mexican Caribbean town that the Spanish edition's theme switches on outdoors (theme.ts,
 // docs/es/TOWN.md tasks 1–5): the malecón, the palapas and the lanchas on the beach, the flat roofs with their
 // parapets and tinacos, the window bars, the painted signs, the church, the street signs, the topes, the elote cart,
-// the houses' walls and gates, the bougainvillea and the corner shop. Maple Harbor never calls anything here.
+// the houses' walls and gates, the bougainvillea and the corner shop; and the last details: the mercado's crates, the
+// diablito and the cargo tricycle, the Correos buzón, the backyard's barda, the cenote and the ruins. Maple Harbor
+// never calls anything here.
 // Everything solid is pushed as [geometry, colour] into one list that town.ts merges into a single vertex-coloured
 // mesh, and every new sign is a cell of one texture (SignAtlas): the whole restyle costs a few draw calls.
 import * as THREE from "three";
@@ -545,4 +547,250 @@ export function paintedSignTexture(text: string, bg: string, fg: string, edge: s
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
   return t;
+}
+
+// ------------------------------------------------------------------------------------------------ the last details
+
+/** A huacal: a crate of wooden slats (two rows), open at the top, its bottom at (x, y, z) in the frame of `add`; the
+ *  top layer of `fruit` (a colour, or none) in it. */
+function huacal(add: (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => void, x: number, y: number, z: number, fruit: string | null, r: () => number) {
+  const w = 0.52, d = 0.36, h = 0.3, wood = "#cfa86e", dark = "#9c7a48";
+  add(box(w, 0.02, d, x, y + 0.01, z), dark);
+  for (const k of [0, 1]) {
+    const yy = y + 0.07 + k * (h - 0.12);
+    for (const s of [-1, 1]) {
+      add(box(w, 0.05, 0.016, x, yy, z + s * (d / 2 - 0.008)), wood);
+      add(box(0.016, 0.05, d, x + s * (w / 2 - 0.008), yy, z), wood);
+    }
+  }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(box(0.035, h, 0.035, x + sx * (w / 2 - 0.02), y + h / 2, z + sz * (d / 2 - 0.02)), dark);
+  if (!fruit) return;
+  add(box(w - 0.04, 0.02, d - 0.04, x, y + h - 0.07, z), dark); // what's under the top layer
+  for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) {
+    const g = new THREE.OctahedronGeometry(fruit === "#3f9b2f" ? 0.05 : 0.065, 0).translate(x - 0.18 + i * 0.12 + (r() - 0.5) * 0.02, y + h - 0.02 + r() * 0.03, z - 0.11 + k * 0.11);
+    add(g, fruit);
+  }
+}
+
+/** In front of the mercado, where Maple Harbor's supermarket keeps its shopping carts (task: the last details): stacks
+ *  of huacales of tomatoes, oranges, limes and chiles against the wall, a diablito (a red hand truck) leaning by them
+ *  with two crates on its nose, and a cargo tricycle with its box full of crates, parked along the front. `P(u, v)`
+ *  and `rot` as for houseFront (u along the front from the door, v out from the wall). */
+export function mercadoFront(parts: Part[], col: Colliders, P: (u: number, v: number) => [number, number], rot: number) {
+  const r = rand(91);
+  /** Parts made round (0, 0) with their front to the street, placed at P(u, v), turned `turn` more. */
+  const at = (u: number, v: number, turn = 0) => (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => { const [x, z] = P(u, v); parts.push([place(g.rotateY(turn), x, z, rot), c]); };
+  const TOMATO = "#d62828", ORANGE = "#f77f00", LIME = "#3f9b2f", CHILE = "#2d6a1f", MANGO = "#f4b400";
+  // the stacks against the wall: three, two and one crates high, and one in front
+  ([[-7.75, 0.3, 3, ORANGE, 0.05], [-7.18, 0.3, 2, TOMATO, -0.04], [-6.6, 0.3, 1, LIME, 0.06], [-7.0, 0.75, 1, CHILE, 0.3], [-6.45, 0.74, 1, MANGO, -0.2]] as [number, number, number, string, number][])
+    .forEach(([u, v, n, fruit, turn]) => { for (let i = 0; i < n; i++) huacal(at(u, v, turn + (i % 2) * 0.06), 0, i * 0.3, 0, i === n - 1 ? fruit : null, r); });
+  blockRect(col, ...P(-7.1, 0.55), rot, -1.0, 1.0, -0.45, 0.45);
+  // the diablito: two rails on two wheels, its nose plate on the ground, leaning back against the wall, two crates on it
+  {
+    const lean: Part[] = [];
+    const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => lean.push([g, c]);
+    const RED = "#c8102e", BLACK = "#26292e";
+    for (const s of [-1, 1]) add(box(0.04, 1.3, 0.04, s * 0.21, 0.69, -0.02), RED);
+    for (const y of [0.45, 0.9, 1.3]) add(box(0.46, 0.035, 0.03, 0, y, -0.02), RED);
+    add(new THREE.TorusGeometry(0.13, 0.025, 4, 10, Math.PI).rotateZ(0).translate(0, 1.34, -0.02), RED); // the handle
+    add(box(0.46, 0.02, 0.24, 0, 0.03, 0.1), "#8d939a"); // the nose plate
+    huacal(add, 0, 0.04, 0.2, TOMATO, r);
+    huacal(add, 0, 0.35, 0.2, LIME, r);
+    const tilt = new THREE.Matrix4().makeRotationX(-0.3);
+    const [x, z] = P(-5.75, 0.45);
+    for (const [g, c] of lean) parts.push([place(g.applyMatrix4(tilt).translate(0, 0.06, 0), x, z, rot), c]);
+    for (const s of [-1, 1]) parts.push([place(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 12).rotateZ(Math.PI / 2).translate(s * 0.27, 0.13, -0.12), x, z, rot), BLACK]);
+    blockRect(col, x, z, rot, -0.35, 0.35, -0.4, 0.45);
+  }
+  // the cargo tricycle: a blue box on two front wheels, the rider's seat and a wheel behind, crates in the box; it
+  // stands along the front, its box towards the corner
+  {
+    const add = at(-4.0, 1.25, Math.PI / 2);
+    const BLUE = "#2f6db5", BLACK = "#26292e";
+    add(box(0.95, 0.06, 0.85, 0, 0.62, 0.55), "#8d939a"); // the box's floor
+    for (const s of [-1, 1]) add(box(0.04, 0.3, 0.85, s * 0.46, 0.79, 0.55), BLUE);
+    for (const s of [-1, 1]) add(box(0.95, 0.3, 0.04, 0, 0.79, 0.55 + s * 0.41), BLUE);
+    for (const s of [-1, 1]) add(new THREE.TorusGeometry(0.28, 0.045, 6, 14).rotateY(Math.PI / 2).translate(s * 0.52, 0.3, 0.55), BLACK);
+    add(new THREE.TorusGeometry(0.3, 0.045, 6, 14).rotateY(Math.PI / 2).translate(0, 0.32, -0.95), BLACK);
+    add(box(0.05, 0.05, 1.15, 0, 0.55, -0.4), BLUE); // the frame
+    add(box(0.05, 0.55, 0.05, 0, 0.8, -0.62), BLUE);
+    add(box(0.24, 0.07, 0.3, 0, 1.1, -0.64), "#1d1d1d"); // the seat
+    add(box(0.05, 0.4, 0.05, 0, 0.95, 0.1), BLUE);
+    add(box(0.62, 0.04, 0.04, 0, 1.15, 0.1), BLACK); // the handlebar
+    huacal(add, -0.2, 0.65, 0.35, TOMATO, r);
+    huacal(add, 0.22, 0.65, 0.74, ORANGE, r);
+    huacal(add, 0.22, 0.65, 0.35, null, r);
+    huacal(add, 0.22, 0.95, 0.35, MANGO, r);
+    const [x, z] = P(-4.0, 1.25);
+    blockRect(col, x, z, rot + Math.PI / 2, -0.62, 0.62, -1.3, 1.02);
+  }
+}
+
+/** The service's own colours (Correos de México: rosa mexicano and lime green, since 2008). */
+const drawBuzon: Draw = (x, w, h) => {
+  x.fillStyle = "#ffffff"; roundRect(x, 2, 2, w - 4, h - 4, h * 0.12); x.fill();
+  x.lineWidth = 5; x.strokeStyle = "#e4007c"; roundRect(x, 6, 6, w - 12, h - 12, h * 0.1); x.stroke();
+  x.fillStyle = "#e4007c"; x.textAlign = "center"; x.textBaseline = "middle";
+  const s = fit(x, "BUZÓN", h * 0.42, w * 0.8);
+  x.font = `900 ${s}px ${FONT}`; x.fillText("BUZÓN", w / 2, h * 0.4);
+  const s2 = fit(x, "Correos de México", h * 0.2, w * 0.82, FONT, "800");
+  x.fillStyle = "#5f6b2d"; x.font = `800 ${s2}px ${FONT}`; x.fillText("Correos de México", w / 2, h * 0.76);
+};
+
+/** A Correos de México buzón where Maple Harbor's post office has its blue mailbox: a box in rosa mexicano on a grey
+ *  post, a lime-green rounded top and band, the slot, and its plate ("BUZÓN · Correos de México"). Its foot at (x, z),
+ *  the slot facing `rot`. (The collider is the old mailbox's.) */
+export function buzon(parts: Part[], atlas: SignAtlas, x: number, z: number, rot: number) {
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  const PINK = "#e4007c", LIME = "#9bc53d", GREY = "#5f6368";
+  add(box(0.42, 0.04, 0.36, 0, 0.02, 0), GREY);
+  add(box(0.2, 0.74, 0.2, 0, 0.4, 0), GREY);
+  add(box(0.58, 0.74, 0.46, 0, 1.13, 0), PINK);
+  add(box(0.62, 0.07, 0.5, 0, 0.79, 0), LIME);
+  add(new THREE.CylinderGeometry(0.25, 0.25, 0.6, 14, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).scale(1, 0.55, 0.96).translate(0, 1.5, 0), LIME);
+  add(box(0.36, 0.04, 0.03, 0, 1.38, 0.235), "#2a2a2a"); // the slot
+  add(box(0.42, 0.012, 0.05, 0, 1.415, 0.238), "#c2006a");
+  const o = new THREE.Vector3(0, 0, 0.237).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  atlas.add("buzon", 256, 128, drawBuzon, 0.46, 0.23, x + o.x, 1.1, z + o.z, rot);
+}
+
+/** The backyard party's walls in the Mexican way (s63), where Maple Harbor has a white picket fence: a block wall (a
+ *  barda) painted in `look.wall` over a darker base, with a cap and pillars, along the back (z bz+6.5) and the sides
+ *  (x bx±8) of the yard, open on the east side between z gate0 and gate1, where a metal gate's two leaves stand open
+ *  against the yard. Balloons on strings from the gate's pillars. The colliders are town.ts's (the fence's). */
+export function bardaYard(parts: Part[], col: Colliders, bx: number, bz: number, gate0: number, gate1: number, look: { wall: string; base: string; cap: string; gate: string }, balloons: [number, number, number][]) {
+  const H = 1.85, T = 0.2;
+  /** A stretch of wall from (xa, za) to (xb, zb) (along x or along z). */
+  const wall = (xa: number, za: number, xb: number, zb: number) => {
+    const alongX = za === zb, len = Math.abs(alongX ? xb - xa : zb - za), cx = (xa + xb) / 2, cz = (za + zb) / 2;
+    const g = (w: number, h: number, y: number) => alongX ? box(len, h, w, cx, y, cz) : box(w, h, len, cx, y, cz);
+    parts.push([g(T, H - 0.3, 0.3 + (H - 0.3) / 2), look.wall], [g(T + 0.02, 0.3, 0.15), look.base], [g(T + 0.1, 0.07, H + 0.035), look.cap]);
+    // pillars every 3 m or so
+    const n = Math.max(1, Math.round(len / 3));
+    for (let i = 0; i <= n; i++) {
+      const f = i / n, px = xa + (xb - xa) * f, pz = za + (zb - za) * f;
+      parts.push([box(0.34, H + 0.1, 0.34, px, (H + 0.1) / 2, pz), look.wall], [box(0.4, 0.08, 0.4, px, H + 0.14, pz), look.cap]);
+    }
+  };
+  wall(bx - 8, bz + 6.5, bx + 8, bz + 6.5);
+  wall(bx - 8, bz - 5.5, bx - 8, bz + 6.5);
+  wall(bx + 8, bz - 5.5, bx + 8, gate0);
+  wall(bx + 8, gate1, bx + 8, bz + 6.5);
+  // the gate: two leaves of sheet metal below and bars above, swung open into the yard against nothing
+  const lw = (gate1 - gate0) / 2 - 0.12;
+  for (const [hz, s] of [[gate0 + 0.06, 1], [gate1 - 0.06, -1]] as [number, number][]) {
+    const x0 = bx + 8 - 0.2, xm = x0 - lw / 2;
+    parts.push([box(lw, 0.8, 0.04, xm, 0.55, hz), look.gate]); // the sheet
+    for (const y of [0.13, 0.96, 1.7]) parts.push([box(lw, 0.05, 0.05, xm, y, hz), look.gate]);
+    for (const xx of [x0, x0 - lw]) parts.push([box(0.06, 1.62, 0.06, xx, 0.92, hz), look.gate]);
+    for (let i = 1; i < 8; i++) parts.push([box(0.025, 0.74, 0.025, x0 - (i / 8) * lw, 1.33, hz), look.gate]);
+    for (let i = 1; i < 8; i++) parts.push([new THREE.ConeGeometry(0.04, 0.1, 4).translate(x0 - (i / 8) * lw, 1.77, hz), look.gate]);
+    col.addBox(xm, hz + s * 0.02, lw, 0.12);
+  }
+  // the balloons' strings, from the pillars' tops
+  for (const [x, y, z] of balloons) {
+    const gz = Math.abs(z - gate0) < Math.abs(z - gate1) ? gate0 : gate1;
+    const a = new THREE.Vector3(bx + 8, H + 0.2, gz), b = new THREE.Vector3(x, y - 0.3, z), len = a.distanceTo(b);
+    const g = new THREE.CylinderGeometry(0.006, 0.006, len, 3).translate(0, len / 2, 0);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize())).translate(a.x, a.y, a.z);
+    parts.push([g, "#f4f1ea"]);
+  }
+}
+
+// ------------------------------------------------------------------------------------------- the cenote and the ruins
+
+const LIMESTONE = ["#d8cfb8", "#c9bfa6", "#b8ad93", "#e2dac6"];
+/** A limestone boulder: a lumpy low-poly stone `s` across at (x, y, z), squashed by `sy`. */
+function stone(parts: Part[], r: () => number, x: number, y: number, z: number, s: number, sy: number, colour?: string) {
+  parts.push([new THREE.IcosahedronGeometry(s / 2, 0).scale(1 + r() * 0.3, sy, 1 + r() * 0.3).rotateY(r() * Math.PI).translate(x, y, z), colour ?? LIMESTONE[Math.floor(r() * LIMESTONE.length)]]);
+}
+/** A clump of jungle: two or three green blobs. */
+function jungle(parts: Part[], r: () => number, x: number, y: number, z: number, s: number) {
+  const greens = ["#3f7d3a", "#4f9a3e", "#2f6b33", "#5aa83c"];
+  for (let i = 0; i < 3; i++) parts.push([new THREE.IcosahedronGeometry(s * (0.55 + r() * 0.35), 0).scale(1, 0.8, 1).translate(x + (r() - 0.5) * s, y + s * 0.4 + r() * s * 0.3, z + (r() - 0.5) * s), greens[Math.floor(r() * greens.length)]]);
+}
+
+/** A cenote in the meadow west of town (TOWN.md task 8): turquoise water at the foot of a curved limestone cliff with a
+ *  dark cave mouth, vines hanging and the jungle on top, a low rim of stones on the town's side (east) with a wooden
+ *  deck and steps down to the water, and a palapa where the entrance is paid, with its painted sign. One part of the
+ *  town's merged meshes (the one that casts no shadow: it is seen from afar, beyond the town's edge); nothing to walk
+ *  on. */
+export function cenote(parts: Part[], atlas: SignAtlas, x: number, z: number, sign: string) {
+  const r = rand(808);
+  const R = 5.2;
+  // the water: dark at the edge, turquoise, light over the white sand in the middle
+  parts.push([new THREE.CircleGeometry(R + 0.4, 32).rotateX(-Math.PI / 2).translate(x, 0.03, z), "#13808a"]);
+  parts.push([new THREE.CircleGeometry(R - 0.3, 32).rotateX(-Math.PI / 2).translate(x, 0.04, z), "#22aeb0"]);
+  parts.push([new THREE.CircleGeometry(R * 0.5, 24).rotateX(-Math.PI / 2).translate(x + 0.8, 0.05, z), "#5fd3c8"]);
+  // the cliff round the far side (west), higher in the middle, leaning in over the water; the cave's dark mouth in it
+  for (let i = 0; i <= 16; i++) {
+    const a = Math.PI * 0.45 + (i / 16) * Math.PI * 1.1; // from the north-west round to the south-west
+    const k = Math.sin(((i / 16)) * Math.PI); // highest in the middle
+    for (const [rr, y, s] of [[R + 0.9, 0.6, 2.2], [R + 1.4, 1.6 + k * 0.8, 2.0], [R + 0.6, 2.6 + k * 1.0, 1.7]] as [number, number, number][]) {
+      stone(parts, r, x + Math.cos(a) * rr, y * (0.6 + k * 0.5), z + Math.sin(a) * rr, s + r() * 0.6, 0.8);
+    }
+    if (i % 2 === 0) jungle(parts, r, x + Math.cos(a) * (R + 2.2), 2.6 + k * 1.8, z + Math.sin(a) * (R + 2.2), 1.6 + r());
+    if (i % 3 === 1) parts.push([box(0.06, 1.2 + r() * 1.2, 0.06, x + Math.cos(a) * (R + 0.2), 2.2 + k * 0.8, z + Math.sin(a) * (R + 0.2)), "#3f7d3a"]); // a vine
+  }
+  parts.push([new THREE.CircleGeometry(1.6, 16, 0, Math.PI).scale(1.3, 0.75, 1).rotateY(Math.PI / 2).translate(x - R - 0.25, 0.05, z), "#1d2a2c"]);
+  // the low rim on the town's side, and the deck with its steps down to the water
+  for (let i = 0; i < 12; i++) {
+    const a = -Math.PI * 0.55 + (i / 11) * Math.PI * 1.1;
+    if (Math.abs(a) < 0.22) continue; // the deck
+    stone(parts, r, x + Math.cos(a) * (R + 0.5), 0.15, z + Math.sin(a) * (R + 0.5), 0.9 + r() * 0.5, 0.5);
+  }
+  const WOOD = "#8a6a4a", DARK = "#6b4f36";
+  parts.push([box(2.2, 0.1, 1.8, x + R + 0.6, 0.55, z), WOOD]);
+  for (const [px, pz] of [[0.9, 0.8], [0.9, -0.8], [-0.9, 0.8], [-0.9, -0.8]]) parts.push([box(0.12, 0.6, 0.12, x + R + 0.6 + px, 0.25, z + pz), DARK]);
+  for (let i = 0; i < 3; i++) parts.push([box(0.4, 0.06, 1.4, x + R - 0.75 - i * 0.4, 0.42 - i * 0.14, z), WOOD]);
+  for (const s of [-1, 1]) {
+    parts.push([box(0.06, 0.9, 0.06, x + R + 1.6, 0.95, z + s * 0.85), DARK], [box(0.06, 0.9, 0.06, x + R - 0.4, 0.95, z + s * 0.85), DARK]);
+    parts.push([box(2.1, 0.06, 0.06, x + R + 0.6, 1.38, z + s * 0.85), DARK]);
+  }
+  // the palapa where the entrance is paid, and the sign on a post facing the town
+  const hx = x + R + 4.2, hz = z + 4.4;
+  for (const [px, pz] of [[1.2, 1.0], [1.2, -1.0], [-1.2, 1.0], [-1.2, -1.0]]) parts.push([cyl(0.08, 0.1, 2.3, hx + px, 1.15, hz + pz, 6), WOOD]);
+  parts.push([box(1.8, 0.95, 0.5, hx, 0.475, hz + 0.7), "#2a9d8f"], [box(1.9, 0.06, 0.6, hx, 0.98, hz + 0.7), "#c08a52"]);
+  parts.push([new THREE.ConeGeometry(2.2, 1.4, 4).rotateY(Math.PI / 4).scale(1.15, 1, 1).translate(hx, 2.95, hz), THATCH]);
+  parts.push([new THREE.ConeGeometry(0.5, 0.5, 4).rotateY(Math.PI / 4).translate(hx, 3.75, hz), THATCH_DARK]);
+  const sx = x + R + 5.6, sz = z - 1.6;
+  parts.push([cyl(0.06, 0.06, 1.7, sx, 0.85, sz, 6), WOOD]);
+  atlas.add("cenote:" + sign, 512, 192, drawPainted(sign, "Nado · Snorkel · Entrada", "#e9f7f2", "#13808a", "#1f4f8f"), 1.8, 0.68, sx + 0.05, 1.6, sz, Math.PI / 2);
+  for (const [jx, jz, s] of [[x + R + 6.5, z + 7.5, 2.4], [x + 2, z + R + 2.6, 2.2], [x + 3, z - R - 2.4, 2.0], [x + R + 7, z - 5, 1.8]] as [number, number, number][]) jungle(parts, r, jx, 0, jz, s);
+}
+
+/** Small Mayan ruins on a rocky point by the sea west of the beach (TOWN.md task 8), in Tulum's way: a stepped platform
+ *  of grey limestone on the rocks, a little temple on it with a dark doorway between two columns and a cornice, stairs
+ *  up from the land, a smaller shrine lower down, fallen stones; the temple faces the land (`rot` 0: +z). */
+export function ruins(parts: Part[], x: number, z: number) {
+  const r = rand(919);
+  const GREY = ["#c9c1aa", "#b9b09a", "#d6cfbb", "#a9a08a"], DARK = "#3a3530";
+  // the point: big rocks from the shore out into the sea, highest under the platform
+  for (let i = 0; i < 16; i++) {
+    const a = r() * Math.PI * 2, d = r() * 7;
+    const rx = x + Math.cos(a) * d * 1.1, rz = z - 3 + Math.sin(a) * d - r() * 3;
+    stone(parts, r, rx, -0.4 + Math.max(0, 2.2 - d * 0.35), rz, 3.5 + r() * 2.5, 0.75, ["#9a9483", "#8d8778", "#a8a190"][i % 3]);
+  }
+  // the platform in two tiers, the stairs up from the land (south), the temple on top
+  const add = (g: THREE.BufferGeometry, c: string) => parts.push([g.translate(x, 0, z), c]);
+  add(box(9, 1.0, 7, 0, 2.6, -2.6), GREY[0]);
+  add(box(6.6, 0.8, 5, 0, 3.5, -2.8), GREY[1]);
+  for (let i = 0; i < 9; i++) add(box(2.4, 0.42, 0.5, 0, 0.21 + i * 0.42, 2.6 - i * 0.48), GREY[i % 2 ? 2 : 0]);
+  add(box(4.2, 2.3, 3.2, 0, 5.05, -3.1), GREY[2]);
+  add(box(4.6, 0.3, 3.6, 0, 6.35, -3.1), GREY[1]); // the cornice
+  add(box(4.3, 0.35, 3.3, 0, 6.67, -3.1), GREY[0]); // the roof
+  for (const s of [-1.6, -0.55, 0.55, 1.6]) add(box(0.5, 0.35, 0.5, s, 7.0, -3.1), GREY[3]); // what is left of the crest
+  add(box(1.6, 1.7, 0.1, 0, 4.75, -1.47), DARK); // the doorway
+  for (const s of [-1, 1]) add(cyl(0.22, 0.24, 1.75, s * 0.55, 4.77, -1.38, 8), GREY[3]);
+  add(box(1.8, 0.25, 0.4, 0, 5.75, -1.4), GREY[1]); // the lintel
+  // the weathered corners: stones missing from the tiers
+  for (const [bx, by, bz] of [[-4.3, 3.0, 0.7], [4.2, 2.3, -6.0], [3.1, 3.8, -0.4]]) add(box(0.7, 0.5, 0.7, bx, by, bz), "#8d8778");
+  // a little shrine lower down on the point, and fallen stones
+  add(box(2.6, 0.6, 2.4, -6.6, 1.3, -6.4), GREY[1]);
+  add(box(1.6, 1.3, 1.4, -6.6, 2.25, -6.4), GREY[2]);
+  add(box(1.9, 0.25, 1.7, -6.6, 3.0, -6.4), GREY[0]);
+  add(box(0.6, 0.8, 0.08, -6.6, 1.95, -5.66), DARK);
+  for (let i = 0; i < 7; i++) add(box(0.5 + r() * 0.4, 0.35, 0.4 + r() * 0.3, -3 + r() * 8, 0.3 + r() * 1.2, 1.5 + r() * 2.5).rotateY(r() * 2), GREY[i % 4]);
+  // and the jungle at the land's edge
+  for (const [jx, jz, s] of [[-5.5, 3.5, 2.2], [5.8, 3.0, 2.4], [7.5, -1.5, 1.8], [-8.5, 0.5, 1.9]] as [number, number, number][]) jungle(parts, r, x + jx, 0, z + jz, s);
 }

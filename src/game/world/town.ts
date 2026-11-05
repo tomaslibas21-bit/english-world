@@ -844,8 +844,12 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("columns", mat("#f7f3ea"), cylGeo(0.35, 0.4, 5, dx + t[0] * 2.2 + n[0] * 0.6, 2.5, dz + t[1] * 2.2 + n[1] * 0.6, 10));
   }
   if (b.id === "post") {
-    M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, dx + t[0] * 4 + n[0] * 1.6, 0.8, dz + t[1] * 4 + n[1] * 1.6));
-    M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.4, 0.4, 0.8, dx + t[0] * 4 + n[0] * 1.6, 1.4, dz + t[1] * 4 + n[1] * 1.6, 12).rotateZ(Math.PI / 2).translate(0, 0, 0));
+    // the mailbox: Maple Harbor's blue one, or a Correos de México buzón (theme.ts `mailbox`)
+    if (THEME.mailbox === "correos") MX.buzon(mx, atlas!, dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, rotY);
+    else {
+      M.add("mailbox-blue", mat("#1f4e9c"), boxGeo(0.8, 1.2, 0.7, dx + t[0] * 4 + n[0] * 1.6, 0.8, dz + t[1] * 4 + n[1] * 1.6));
+      M.add("mailbox-blue", mat("#1f4e9c"), cylGeo(0.4, 0.4, 0.8, dx + t[0] * 4 + n[0] * 1.6, 1.4, dz + t[1] * 4 + n[1] * 1.6, 12).rotateZ(Math.PI / 2).translate(0, 0, 0));
+    }
     col.addBox(dx + t[0] * 4 + n[0] * 1.6, dz + t[1] * 4 + n[1] * 1.6, 0.9, 0.8);
     M.add("flagpole", mat("#dddddd"), cylGeo(0.06, 0.06, 9, dx - t[0] * 6 + n[0] * 1.2, 4.5, dz - t[1] * 6 + n[1] * 1.2, 6));
     col.addCircle(dx - t[0] * 6 + n[0] * 1.2, dz - t[1] * 6 + n[1] * 1.2, 0.12);
@@ -1199,7 +1203,10 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
     group.add(m);
   };
   const metal = mat("#b9c2c9");
-  if (id === "market") {
+  if (id === "market" && THEME.marketFront === "mercado") {
+    // the mercado's crates of produce, a diablito and a cargo tricycle where the carts are (theme.ts, mexican.ts)
+    MX.mercadoFront(mx, col, P, rotY);
+  } else if (id === "market") {
     // three nested shopping carts left of the door
     for (let i = 0; i < 3; i++) {
       const u = -6.6 + i * 0.36;
@@ -1210,6 +1217,8 @@ function frontExtras(id: string, M: Merger, col: Colliders, group: THREE.Group, 
       for (const [a, c] of [[-0.36, -0.22], [-0.36, 0.22], [0.36, -0.22], [0.36, 0.22]]) box("wheel", mat("#222"), 0.12, 0.12, 0.06, u + a, 0.07, 1.1 + c, false);
     }
     block(-6.25, 1.1, 1.8, 0.7);
+  }
+  if (id === "market") {
     // a fruit stand right of the door
     box("stall-table", mat("#9c6b43"), 2.6, 0.75, 0.8, 5.6, 0.375, 0.75);
     const fruit = ["#e63946", "#f4a261", "#ffbe0b", "#8ab17d"];
@@ -1438,7 +1447,8 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   ], false)!;
   const trunks = new THREE.InstancedMesh(trunkGeo, mat("#7a5236"), n);
   const leaves = new THREE.InstancedMesh(leafGeo, STYLED ? canopyMaterial() : swaying(new THREE.MeshLambertMaterial({ flatShading: true })), n);
-  const palette = ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"];
+  // (this edition's own, theme.ts `treeColors`: the trees in bloom of a Caribbean town)
+  const palette = THEME.treeColors.length ? THEME.treeColors : ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   spots.forEach(([x, z, sc], i) => {
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI);
@@ -1524,9 +1534,9 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   col.addCircle(44, -22, 3.1);
 }
 
-/** The edition's outdoor pieces beyond the square (theme.ts, docs/es/TOWN.md tasks 1–4): the malecón with its benches
- *  and kiosk, the palapas, the lanchas on the sand, the church, the street signs, the topes and the elote cart.
- *  Nothing in Maple Harbor. */
+/** The edition's outdoor pieces beyond the square (theme.ts, docs/es/TOWN.md tasks 1–4 and 8): the malecón with its
+ *  benches and kiosk, the palapas, the lanchas on the sand, the church, the street signs, the topes, the elote cart,
+ *  the cenote and the ruins. Nothing in Maple Harbor. */
 function addTownMx(M: Merger, col: Colliders) {
   const a = atlas!;
   if (THEME.malecon) {
@@ -1540,6 +1550,10 @@ function addTownMx(M: Merger, col: Colliders) {
   for (const [x1, z1, x2, z2, sx, sz, srot] of THEME.topes?.at ?? []) MX.tope(mxFlat, col, a, THEME.topes!.word, x1, z1, x2, z2, sx, sz, srot);
   const f = THEME.foodCart;
   if (f) MX.foodCart(mx, col, a, f.x, f.z, f.rot, f.sign);
+  // beyond the town's edge: the cenote across the west meadow, the ruins on the point past the beach (TOWN.md task 8)
+  // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
+  if (THEME.cenote) MX.cenote(mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign);
+  if (THEME.ruins) MX.ruins(mxFlat, THEME.ruins.x, THEME.ruins.z);
 }
 
 /** A building as this edition shows it (theme.ts): its colours and its sign. In Maple Harbor, as layout.ts has it. */
@@ -1984,27 +1998,35 @@ function addMaggiesCar(M: Merger, col: Colliders, group: THREE.Group) {
 function addBackyard(M: Merger, col: Colliders, group: THREE.Group) {
   // Sophie's backyard party: fence, string lights, grill, table
   const bx = -54, bz = 64;
-  for (let i = -8; i <= 8; i += 0.5) {
-    for (const zz of [bz + 6.5]) M.add("fence", mat("#ffffff"), boxGeo(0.1, 1.2, 0.06, bx + i, 0.6, zz));
-  }
   // side fences; the east one has an open garden gate (z bz-4.6 … bz-1.2) reached along the side of the house
   const gate0 = bz - 4.6, gate1 = bz - 1.2;
-  for (let j = -5.5; j <= 6.5; j += 0.5) for (const xx of [bx - 8, bx + 8]) {
-    if (xx > bx && bz + j > gate0 && bz + j < gate1) continue;
-    M.add("fence", mat("#ffffff"), boxGeo(0.06, 1.2, 0.1, xx, 0.6, bz + j));
+  const wall = THEME.backyardWall; // (this edition's barda instead of the picket fence: mexican.ts bardaYard)
+  if (!wall) {
+    for (let i = -8; i <= 8; i += 0.5) {
+      for (const zz of [bz + 6.5]) M.add("fence", mat("#ffffff"), boxGeo(0.1, 1.2, 0.06, bx + i, 0.6, zz));
+    }
+    for (let j = -5.5; j <= 6.5; j += 0.5) for (const xx of [bx - 8, bx + 8]) {
+      if (xx > bx && bz + j > gate0 && bz + j < gate1) continue;
+      M.add("fence", mat("#ffffff"), boxGeo(0.06, 1.2, 0.1, xx, 0.6, bz + j));
+    }
   }
   col.addBox(bx, bz + 6.5, 16.2, 0.2); col.addBox(bx - 8, bz + 0.5, 0.2, 12);
   col.addBox(bx + 8, (bz - 5.5 + gate0) / 2, 0.2, gate0 - (bz - 5.5));
   col.addBox(bx + 8, (gate1 + bz + 6.5) / 2, 0.2, bz + 6.5 - gate1);
-  // gate arch with balloons, so the party is easy to spot from Oak Avenue
-  for (const gz of [gate0, gate1]) M.add("gate-post", mat("#ffffff"), boxGeo(0.16, 2.5, 0.16, bx + 8, 1.25, gz));
-  M.add("gate-post", mat("#ffffff"), boxGeo(0.16, 0.16, gate1 - gate0 + 0.16, bx + 8, 2.5, (gate0 + gate1) / 2));
+  // gate arch with balloons, so the party is easy to spot from Oak Avenue (the barda's pillars hold the balloons)
+  if (!wall) {
+    for (const gz of [gate0, gate1]) M.add("gate-post", mat("#ffffff"), boxGeo(0.16, 2.5, 0.16, bx + 8, 1.25, gz));
+    M.add("gate-post", mat("#ffffff"), boxGeo(0.16, 0.16, gate1 - gate0 + 0.16, bx + 8, 2.5, (gate0 + gate1) / 2));
+  }
   const balloonCols = ["#e84a5f", "#ffd166", "#4a7bb7", "#6fbf73", "#b56576", "#f7a072"];
+  const balloons: [number, number, number][] = [];
   balloonCols.forEach((c, i) => {
     const gz = i < 3 ? gate0 : gate1, a = (i % 3) * 2.1;
     const x = bx + 8 + Math.cos(a) * 0.28, y = 2.9 + (i % 3) * 0.22, z = gz + Math.sin(a) * 0.28;
     M.add("balloon-" + c, mat(c), new THREE.SphereGeometry(0.26, 10, 8).scale(1, 1.2, 1).translate(x, y, z));
+    balloons.push([x, y, z]);
   });
+  if (wall) MX.bardaYard(mx, col, bx, bz, gate0, gate1, wall, balloons);
   // a little sign in the front garden pointing to the party
   M.add("sign-pole", mat("#8a6a4a"), cylGeo(0.05, 0.05, 1.3, bx + 7.6, 0.65, bz - 18.4, 6));
   col.addCircle(bx + 7.6, bz - 18.4, 0.1);

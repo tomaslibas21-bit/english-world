@@ -143,6 +143,10 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   // someone the edition has standing outdoors (theme.ts `outdoorNpcs`: Doña Chela at the pump) is not in the room
   const out = THEME.outdoorNpcs;
   if (out.length) npcs = npcs.filter((n) => !out.some((o) => o.npc === n.npc));
+  // and someone it has stand elsewhere in the room (theme.ts `roomSpots`: a conversation's other speaker within its
+  // picture) stands there
+  const moved = THEME.roomSpots[id];
+  if (moved) npcs = npcs.map((n) => moved[n.npc] ? { ...n, ...moved[n.npc] } : n);
   return { id, group: g, colliders: col, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
 }
 
