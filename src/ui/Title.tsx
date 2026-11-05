@@ -135,7 +135,7 @@ function Frame({ head, body, name }: { head: React.ReactNode; body: React.ReactN
             <span className="ts-place"><Icon name="pin" size={15} strokeWidth={2} /> {L("Maple Harbor · JAV")}</span>
             <span className="ts-place-lt" lang={EDITION.helper}>{TOWN_LT}</span>
           </span>
-          <h1 className="ts-title">{EDITION.brand.split(" ")[0]} <em>{EDITION.brand.split(" ").slice(1).join(" ")}</em></h1>
+          <h1 className="ts-title">{EDITION.brand.split(" ")[0]} <em>{EDITION.brand.split(" ").slice(1).join(" ")}</em> <small className="beta-badge">Beta</small></h1>
           {head}
         </header>
         <div className="ts-show">

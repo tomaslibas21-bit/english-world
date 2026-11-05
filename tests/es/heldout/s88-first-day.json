@@ -41,7 +41,7 @@
 
   { "ctx": "lunch", "say": "¡Me encantaría!", "intent": ["lunch_yes", "yn:yes"] },
   { "ctx": "lunch", "say": "Gracias, pero hoy traje mi comida", "intent": ["lunch_no", "yn:no"], "not": ["lunch_yes"], "note": "trap: polite no" },
-  { "ctx": "lunch", "say": "¿Dónde es?", "intent": "lunch_q" },
+  { "ctx": "lunch", "say": "¿Dónde es?", "intent": "lunch_q_ctx" },
   { "ctx": "lunch", "say": "No puedo, tengo una junta a las dos", "intent": ["lunch_no", "yn:no"], "not": ["lunch_yes", "yn:yes"], "note": "trap: a time inside a no" },
 
   { "ctx": "day", "say": "¡Muy bien, todos son muy amables!", "intent": ["day_good", "day_ctx"] },

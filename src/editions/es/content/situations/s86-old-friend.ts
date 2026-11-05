@@ -5,7 +5,12 @@
 // learner in the zócalo. She has moved back to Puerto Colibrí. They catch up both ways: "¡No has cambiado nada!",
 // "¿Cómo has estado?", "¿Qué es de tu vida?" (work, a move, learning Spanish, a wedding, kids), her news (she got
 // married and has twins: "cuates" in Mexico), the family, Memo (the other Mexican exchange student, who now has a
-// restaurant on the malecón: unnamed and not a seafood place, so it never clashes with El Muelle), maybe a coffee at Café La Ceiba on the square, and "¿Me pasas tu número?".
+// restaurant on the malecón: La Palapa, Mexican food, not a seafood place, so it never clashes with El Muelle; not
+// built, TOWN.md), maybe a coffee at Café La Ceiba (on avenida Juárez, a block and a half from the zócalo: the 3D town,
+// TOWN.md "Getting around"), and "¿Me pasas tu número?". She teaches English at a school in town.
+// Audit (5 Nov 2026): a refusal to swap numbers, have coffee or dinner is respected, never taken as a yes (one
+// friendly "¿Seguro?" for a bare no, then she lets it go, and the goal stays open); past-tense storytelling at
+// "¿Qué has hecho todo este tiempo?" is understood; her job, where she lives and Memo's restaurant get answers.
 // Reciprocity as in the English: Paola asks, the learner answers and may ask back ("¿Y tú?"), Paola answers.
 // Twists (later visits, as in the English): Paola is in a hurry (lunch with her husband at two: "la comida", Mexico's
 // main meal), she can't stay for the coffee the learner offers ("¡Otro día, sin falta!"), and she suggests dinner
@@ -33,8 +38,9 @@ const DE_EL = "acordarse de: to remember; de has no English word here.";
 // ---------------------------------------------------------------------------
 // Helpers
 
-type News = "hard" | "married" | "kids" | "moved" | "vacation" | "job" | "retired" | "spanish" | "usual";
-const NEWS_ORDER: News[] = ["hard", "married", "kids", "moved", "vacation", "job", "retired", "spanish", "usual"];
+// "other": past-tense news that are neither a move here nor a job ("Viví en España un año", "Viajé por Asia")
+type News = "hard" | "married" | "kids" | "moved" | "vacation" | "job" | "retired" | "spanish" | "other" | "usual";
+const NEWS_ORDER: News[] = ["hard", "married", "kids", "moved", "vacation", "job", "retired", "spanish", "other", "usual"];
 
 const fold = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const heard = (c: Ctx) => fold(c.heard);
@@ -53,6 +59,8 @@ const asked = (c: Ctx, id: string) => (c.s.asks?.[id] ?? 0) as number;
 const bump = (c: Ctx, id: string) => { c.s.asks ||= {}; c.s.asks[id] = asked(c, id) + 1; };
 const hi = (c: Ctx) => { c.s.greeted = true; };
 const askedBack = (seg: Segment) => seg.tags.includes("askback");
+/** The learner's last words congratulated her ("¡Qué bueno!", "¡Felicidades!"): her "¡Gracias!" fits. */
+const CONGRATULATED = /\b(felicidades|felicitaciones|enhorabuena|que (bueno|padre|bien|bonito|lindo|gusto|alegria|emocion|maravilla)|me alegro|me da (mucho )?gusto|wow|guau)\b/;
 
 /** Pending questions: "Sí, claro" / "¡Buena idea!" count as yes, "No, perdón" as no. */
 function yn(p: Pending): Pending {
@@ -63,25 +71,76 @@ function yn(p: Pending): Pending {
   return { ...p, on };
 }
 function stepYes(c: Ctx) { const st = oldFriend.steps.find((x) => x.id === c.step); if (st?.yes && !st.done(c)) st.yes(c); }
-function stepNo(c: Ctx) { const st = oldFriend.steps.find((x) => x.id === c.step); if (st?.no && !st.done(c)) st.no(c); }
+// (the rush step is "done" once she has said she's late, but its "¡Rápido, pásame tu número!" still takes a no)
+function stepNo(c: Ctx) { const st = oldFriend.steps.find((x) => x.id === c.step); if (st?.no && (!st.done(c) || st.id === "rush")) st.no(c); }
+
+/** "Está bien, gracias" / "Bueno, gracias" to an invitation: in Mexico often a polite no ("I'm fine, thanks"),
+ *  so she asks once more instead of taking it as a yes. */
+function politeMaybe(c: Ctx): boolean {
+  return /^((esta bien|bueno|ok|okay) )?(muchas )?gracias$/.test(heard(c).replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim());
+}
+
+const NUM_WORD = /\b(cero|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|trece|catorce|quince|dieci\w+|veinte|veinti\w+|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)\b/g;
+/** The learner hands over the number after all (a number said, "te lo doy", "toma", "apunta"). */
+function giving(h: string): boolean {
+  return /\d{3}/.test(h) || (h.match(NUM_WORD) || []).length >= 3
+    || /\b(te lo (doy|paso|escribo|apunto|anoto)|toma|ten|aqui tienes|apunta(le)?|anota(le)?|mi (numero|cel|celular|telefono) es|el mio es|te (doy|paso) (mi|el)|dame tu (celular|cel|telefono)|el tuyo)\b/.test(h);
+}
+
+// The ways to swap numbers, wherever she has asked for the learner's.
+const SWAP = ["number_ctx", "give_phone", "ask_number", "keep_in_touch", "hand_phone_ctx", "no_phone", "yours_ctx", "note_ctx", "bye_ctx"];
+/** The learner won't give a number: she lets it go (no swap, so the goal stays open; she never asks again). */
+function numberRefused(c: Ctx) {
+  c.s.numberRefused = true; c.s.numberAsked = true;
+  if (once(c, "numfine")) c.say("number_fine");
+}
+/** A bare "No, gracias" to "¿Me pasas tu número?": one friendly "¿Seguro?"; after it, a yes ("Sí, seguro") or a no
+ *  ("No, de verdad") keeps the refusal, and only a number or a hand-over swaps. */
+function numberNo(c: Ctx) {
+  if (c.s.numberNo || c.s.numberRefused) { numberRefused(c); return; }
+  c.s.numberNo = true; c.s.numberAsked = true;
+  c.say("number_sure");
+  // "Sí, claro" alone keeps the refusal; "Bueno, sí, te lo doy" / "Sí, apunta: 984…" is the number after all
+  const keep = (cc: Ctx) => { if (giving(heard(cc))) return false; numberRefused(cc); };
+  c.expect({
+    id: "number_sure", expects: [...SWAP, "sure_ctx", "refuse_number"], hints: ["touch"],
+    suggest: [{ lt: "Give her your number (or not)", hint: "touch" }],
+    yes: keep, no: keep,
+    on: {
+      sure_ctx: keep, refuse_number: keep, agree: keep, g_ok: keep, decline: keep, no_sorry: keep,
+      number_ctx: (cc, sl, sg) => H.number_ctx(cc, sl, sg), give_phone: (cc, sl, sg) => H.give_phone(cc, sl, sg),
+      hand_phone_ctx: (cc, sl, sg) => H.hand_phone_ctx(cc, sl, sg), ask_number: (cc, sl, sg) => H.ask_number(cc, sl, sg),
+      yours_ctx: (cc, sl, sg) => H.ask_number(cc, sl, sg), no_phone: (cc, sl, sg) => H.no_phone(cc, sl, sg),
+      keep_in_touch: (cc, sl, sg) => H.keep_in_touch(cc, sl, sg), note_ctx: (cc, sl, sg) => H.note_ctx(cc, sl, sg),
+    },
+  });
+}
 
 // The learner's news in the whole sentence (several pieces may carry one each). A negated piece ("No me casé, pero…",
 // "no tengo hijos") is cut out first, so it never brings a "¡Felicidades!".
 const NEWS_RE: Record<News, RegExp> = {
   married: /\b(me case|nos casamos|estoy casad[oa]|me comprometi|estoy comprometid[oa]|me voy a casar|me caso)\b/,
-  kids: /\b(tengo|tenemos|tuve|tuvimos) (un |una |dos |tres |cuatro |\d+ )?(hijos?|hijas?|bebes?|gemelos|gemelas|cuates|ninos|ninas|nino|nina)\b|\b(soy|ya soy) (papa|mama|abuel[oa])\b/,
-  moved: /\b(me mude|nos mudamos|me vine|nos vinimos|me cambie|vivo aqui|ahora vivo|estoy viviendo aqui|vivo en puerto colibri)\b/,
-  job: /\b(trabajo nuevo|nuevo trabajo|chamba nueva|trabajo (en|como|de)|estoy trabajando|soy (enfermer|maestr|profesor|ingenier|doctor|cociner|meser|contador|chofer|programador))/,
-  spanish: /\b(aprendiendo|aprendo|estudiando|estudio) espanol\b|\bclases de espanol\b/,
+  kids: /\b(tengo|tenemos|tuve|tuvimos) (un |una |dos |tres |cuatro |otro |otra |\d+ )?(hijos?|hijas?|bebes?|gemelos|gemelas|cuates|ninos|ninas|nino|nina)\b|\b(soy|ya soy) (papa|mama|abuel[oa])\b|\bnaci(o|eron) mis? (\w+ )?(hij[oa]s?|bebes?|niet[oa]s?|gemel[oa]s|cuates)\b|\b(estoy embarazada|voy a ser (papa|mama|abuel[oa]))\b/,
+  // a move here ("me vine de vacaciones" is a visit, "me cambié de trabajo" a job; a move elsewhere is cut out first)
+  moved: /\b(me mude|nos mudamos|me vine(?! de (vacaciones|visita|viaje))|nos vinimos(?! de (vacaciones|visita|viaje))|me cambie(?! de (trabajo|chamba|empleo|carrera))|nos cambiamos de casa|(ahora )?viv(o|imos) (aqui|aca|en puerto colibri|en el pueblo)|estoy viviendo aqui)\b/,
+  job: /\b(trabajo nuevo|nuevo trabajo|chamba nueva|trabajo (en|como|de)|estoy trabajando|soy (enfermer|maestr|profesor|ingenier|doctor|cociner|meser|contador|chofer|programador)|(consegui|encontre) (un |una )?(trabajo|chamba|empleo)|(me )?cambie de (trabajo|chamba|empleo|carrera)|(empece|entre) a trabajar|trabaje (en|como|de|para)|estuve trabajando (en|como|de|para)|(abri|puse) (un|una|mi)|me (ascendieron|promovieron)|(termine|acabe) (la|el|mis)|me (gradue|recibi|titule)|compr(e|amos) (una|un))/,
+  spanish: /\b(aprendiendo|aprendo|estudiando|estudio|estudie|aprendi) (un poco de |algo de )?espanol\b|\bclases de espanol\b/,
   vacation: /\bde (vacaciones|visita|viaje)\b/,
   retired: /\b(jubilad[oa]|me jubile|retirad[oa]|me retire)\b/,
-  hard: /\b(me divorcie|me separe|perdi mi trabajo|me quede sin trabajo|estuve enferm[oa])\b/,
+  hard: /\b(me divorcie|me separe|perdi mi trabajo|me quede sin trabajo|estuve enferm[oa]|estuve en el hospital)\b/,
+  other: /\b(me fui (a vivir )?a|nos fuimos (a vivir )?a|vivi en|vivimos en|estuve viviendo|he vivido|(?<!de )viaje (por|a|mucho)|viajamos|he viajado|estuve viajando|anduve viajando|conoci (muchos|varios)|(di|dimos) la vuelta al mundo|estudie(?! (un poco de |algo de )?espanol)|estuve estudiando|(regrese|volvi) a (la escuela|estudiar|la universidad))\b/,
   usual: /\b(nada nuevo|lo de siempre|lo mismo|nada especial|no mucho|puro trabajo|pura chamba)\b/,
 };
+// "Me fui a vivir a Canadá", "Me mudé a Inglaterra": a move away, not "¿Ahora vives aquí?"
+const AWAY = /\b(me mude|nos mudamos|me cambie|nos cambiamos|me fui|nos fuimos)( a vivir)? (a|para) (?!(aqui|aca|puerto colibri|mexico|este pueblo|el pueblo|vivir)\b)\w+/g;
+/** Past news that earn a "¡Felicidades!": a new job, a degree, a business, a house. */
+const CONGRATS = /\b(nuev[oa]|consegui|encontre|abri|puse|me ascendieron|me promovieron|termine|acabe|me gradue|me recibi|me titule|compre|compramos)\b/;
 const NEGATED = /\b(no|nunca|todavia no|aun no)( (me|te|se|lo|la|le|nos))? \w+( \w+)?/g;
 function newsIn(h: string): News[] {
-  const plain = h.replace(NEGATED, " ");
-  return NEWS_ORDER.filter((k) => NEWS_RE[k].test(k === "usual" ? h : plain));
+  const said = h.replace(NEGATED, " ");
+  const here = said.replace(AWAY, " ");
+  const away = new RegExp(AWAY.source).test(said); // a fresh, non-global copy: no lastIndex state
+  return NEWS_ORDER.filter((k) => k === "usual" ? NEWS_RE.usual.test(h) : k === "other" ? away || NEWS_RE.other.test(said) : NEWS_RE[k].test(here));
 }
 
 /** Paola's side of a topic, told once. */
@@ -120,6 +179,8 @@ const H: Record<string, Handler> = {
   greet(c, _slots, seg) {
     hi(c);
     if (seg.tags.includes("itsme") && once(c, "itsme")) c.say("it_is_you");
+    // "¡Paola! ¿Qué haces aquí?": she lives here now
+    if (seg.tags.includes("qhere") && !c.s.liveSaid && once(c, "live")) { c.s.liveSaid = true; c.say("ans_live"); }
   },
   who_are_you(c) {
     hi(c);
@@ -174,9 +235,11 @@ const H: Record<string, Handler> = {
     const list = (c.s.newsList || []) as News[];
     const many = list.filter((k) => k !== "usual").length > 1 && !c.s.manySaid;
     const top = NEWS_ORDER.find((k) => list.includes(k) && !c.s.reacted?.[k]);
-    if (many) { c.s.manySaid = true; c.say("so_much_news"); }
-    // "Tengo un trabajo nuevo" gets a "¡Felicidades!"; "Trabajo como maestra" doesn't
-    const line = top === "job" && !/\b(nuev[oa]|consegui|encontre)\b/.test(heard(c)) ? "react_work" : top === "usual" && c.s.told.news ? "react_usual2" : "react_" + top;
+    // (no "¡Cuántas noticias!" before an "¡Ay, lo siento mucho!")
+    if (many && !list.includes("hard")) { c.s.manySaid = true; c.say("so_much_news"); }
+    // "Tengo un trabajo nuevo", "Terminé la carrera", "Compré una casa" get a "¡Felicidades!"; "Trabajo como maestra",
+    // "Viví en España un año", "Viajé por Asia" an "¡Ah, qué interesante!"
+    const line = top === "other" || (top === "job" && !CONGRATS.test(heard(c))) ? "react_work" : top === "usual" && c.s.told.news ? "react_usual2" : "react_" + top;
     if (top) { c.s.reacted = { ...(c.s.reacted || {}), [top]: true }; c.say(line); }
     if (askedBack(seg)) tell(c, "news");
   },
@@ -187,9 +250,13 @@ const H: Record<string, Handler> = {
     if (!newsIn(heard(c)).length && once(c, "news")) c.say(seg.tags.includes("looking") ? "so_so" : "react_not");
     if (askedBack(seg)) tell(c, "news");
   },
-  ask_news(c) {
+  ask_news(c, _slots, seg) {
     hi(c);
     c.s.lastTopic = "news";
+    // "¿En qué trabajas?": her job (her big news, if still untold, comes at its own step)
+    if (seg.tags.includes("qjob")) { if (once(c, "job")) { c.s.jobSaid = true; c.say("ans_job"); } return; }
+    // "¿Dónde vives?" after "regresé a Puerto Colibrí": here
+    if (seg.tags.includes("qlive") && c.s.told.news) { if (once(c, "live")) { c.s.liveSaid = true; c.say("ans_live"); } return; }
     if (c.s.told.news) { if (c.s.lucy2 && once(c, "told")) c.say("that_is_my_news"); return; }
     tell(c, "news");
     c.hold(); // let the learner react to "¡Me casé!"
@@ -213,7 +280,9 @@ const H: Record<string, Handler> = {
   family_ans(c, _slots, seg) {
     answered(c, "family");
     if (!once(c, "fam")) return;
-    c.say(seg.tags.includes("bad") ? "sorry_to_hear" : seg.tags.includes("far") ? "family_far" : "say_hi_to_them");
+    const line = seg.tags.includes("bad") ? "sorry_to_hear" : seg.tags.includes("far") ? "family_far" : "say_hi_to_them";
+    if (line === "say_hi_to_them") c.s.sentHi = true; // no second "¡Saludos a tu familia!" at the goodbye
+    c.say(line);
     if (askedBack(seg)) tell(c, "family");
   },
   ask_family(c) { hi(c); c.s.lastTopic = "family"; tell(c, "family"); },
@@ -244,8 +313,10 @@ const H: Record<string, Handler> = {
   good_idea(c, slots, seg) {
     hi(c);
     // "No el viernes, el sábado", "Quedamos el sábado": yes, on another day
-    const other = seg.tags.includes("otherday") || (seg.tags.includes("dayset") && slots.day !== "friday");
+    const other = (seg.tags.includes("otherday") || seg.tags.includes("dayset")) && slots.day !== "friday";
     if (c.s.mikeDinnerAsked && !c.s.mikeDinner) { c.s.mikeDinner = "yes"; if (once(c, "idea")) c.say(other ? "dinner_other_day" : "ill_ask_him"); return; }
+    // "El viernes no puedo." … "¿Y el sábado?": the dinner after all, on another day
+    if (c.s.mikeDinnerAsked && c.s.mikeDinner !== "yes" && other) { c.s.mikeDinner = "yes"; if (once(c, "idea")) c.say("dinner_other_day"); return; }
     // "¿Qué tal mañana?" to her coffee: another day, nothing now
     if (seg.tags.includes("otherday") || seg.tags.includes("dayset")) {
       if (c.step === "coffee" && !c.s.coffee) { c.s.coffee = "later"; if (once(c, "coffee")) c.say("coffee_later"); }
@@ -254,12 +325,19 @@ const H: Record<string, Handler> = {
     if (c.s.mikeSaid && !c.s.ideaOk) { c.s.ideaOk = true; if (once(c, "idea")) c.say("ill_ask_him"); return; }
     stepYes(c);
   },
-  // "¿A qué hora?", "¿Dónde está?" at her dinner idea: interested, so a yes
-  dinner_ask_ctx(c, _slots, seg) {
+  // "¿A qué hora?", "¿Dónde está?" at her dinner idea: interested, so a yes. "¿Es caro?", "¿Cómo se llama?": the
+  // restaurant, and the question again.
+  dinner_ask_ctx(c, slots, seg) {
     hi(c);
+    if (!seg.tags.includes("when") && !seg.tags.includes("where")) { H.ask_restaurant(c, slots, seg); return; }
     if (!c.s.mikeDinnerAsked || (c.s.mikeDinner && c.s.mikeDinner !== "yes") || c.s.dinnerAnswered) return;
     c.s.mikeDinner = "yes"; c.s.dinnerAnswered = true;
     c.say(seg.tags.includes("where") ? "dinner_where" : "dinner_when");
+  },
+  // "¿Cómo se llama el restaurante?", "¿Qué tipo de comida tiene?": once she has told about it
+  ask_restaurant(c, _slots, seg) {
+    hi(c);
+    if (c.s.mikeSaid && once(c, "rest")) c.say(seg.tags.includes("price") ? "ans_price" : "ans_restaurant");
   },
   // "¿Dónde?", "¿En La Ceiba?" at her coffee question: a yes
   coffee_where_ctx(c) { hi(c); if (!c.s.coffee) { c.s.coffee = "yes"; if (once(c, "coffee")) c.say("lets_sit"); } },
@@ -277,6 +355,14 @@ const H: Record<string, Handler> = {
     hi(c);
     const why = seg.tags.includes("nocoffee") ? "no_coffee_ok" : seg.tags.includes("maybe") ? "you_tell_me" : "next_time";
     if (c.step === "coffee" && !c.s.coffee) { c.s.coffee = "no"; if (once(c, "decl")) c.say(why); return; }
+    // the coffee already agreed, then "Ay, perdón, tengo una cita" / "Me tengo que ir": no coffee, gladly another day
+    if (c.s.coffee === "yes" && !c.s.coffeeOff && !seg.tags.includes("maybe") && !(c.s.mikeDinnerAsked && !c.s.mikeDinner)
+      && /\b(cita|junta|compromiso|trabajar|trabajo|planes|me tengo que ir|tengo que irme|me voy|cafe|prisa|tarde|ocupad[oa])\b/.test(heard(c))) {
+      c.s.coffee = "no"; c.s.coffeeOff = true;
+      if (once(c, "decl")) c.say("next_time");
+      if (/\b(me tengo que ir|tengo que irme|ya me voy|me voy)\b/.test(heard(c))) H.g_bye(c, slots, seg);
+      return;
+    }
     // (the dinner at Memo's is a pending question, not a step)
     if (c.s.mikeDinnerAsked && !c.s.mikeDinner) {
       c.s.mikeDinner = seg.tags.includes("maybe") ? "maybe" : "no";
@@ -299,9 +385,10 @@ const H: Record<string, Handler> = {
     c.s.numberAsked = true;
     c.hold(); // she just asked for the number: no second "¿Cuál es tu número?"
   },
+  my_number(c, slots, seg) { H.number_ctx(c, slots, seg); },
   number_ctx(c) {
     hi(c);
-    c.s.contact = true; c.s.touch = true;
+    c.s.contact = true; c.s.touch = true; c.s.learnerNumber = true;
     if (once(c, "num")) c.say("got_it_text");
   },
   give_phone(c) {
@@ -318,7 +405,11 @@ const H: Record<string, Handler> = {
     if (once(c, "whats")) c.say("no_whats_ok");
     c.hold();
   },
-  hand_phone_ctx(c, slots, seg) { H.give_phone(c, slots, seg); },
+  hand_phone_ctx(c, slots, seg) {
+    // "Sí, toma", "Aquí tienes"; "Va, ahí nos vemos" is no "Ahí está" (a dropped "está" must not hand over a phone)
+    if (!/\b(toma|ten|aqui tienes|aqui esta|ahi esta|ahi te va|ahi va)\b/.test(heard(c))) return;
+    H.give_phone(c, slots, seg);
+  },
   // "No tengo celular de aquí": she gives hers instead
   no_phone(c) {
     hi(c);
@@ -329,6 +420,20 @@ const H: Record<string, Handler> = {
     hi(c);
     c.s.touch = true; c.s.contact = true;
     if (once(c, "num")) c.say("give_me_your_phone");
+  },
+  // "¿Y el tuyo?", "¿Cuál es el tuyo?": only where the numbers are being swapped (elsewhere "¿y el tuyo?" is "and yours?")
+  yours_ctx(c, slots, seg) { H.ask_number(c, slots, seg); },
+  // "¿Tienes dónde apuntar?", "Apunta": the number comes next
+  note_ctx(c) { hi(c); if (once(c, "note")) c.say("number_ok"); c.hold(); },
+  // "Va, ahí nos vemos" while she waits for the number: a goodbye
+  bye_ctx(c, slots, seg) { H.g_bye(c, slots, seg); },
+  // "Sí, seguro", "No, de verdad" after her "¿Seguro?" (the pending question takes them; here for completeness)
+  sure_ctx(c) { hi(c); if (c.s.numberNo && !c.s.contact) numberRefused(c); },
+  // "No quiero darte mi número", "Prefiero no dar mi número": respected at once, never asked again
+  refuse_number(c) {
+    hi(c);
+    if (c.s.contact) return;
+    numberRefused(c);
   },
   // the end
   nice_to_see(c) {
@@ -358,15 +463,22 @@ const H: Record<string, Handler> = {
   no_sorry(c) { hi(c); stepNo(c); },
   g_bye(c) {
     hi(c);
-    if (!c.s.contact && !c.s.byeWarned) {
+    // (after a "No, gracias" to her "¿Me pasas tu número?" she doesn't ask again)
+    if (!c.s.contact && !c.s.byeWarned && !c.s.numberNo && !c.s.numberRefused) {
       c.s.byeWarned = true; c.s.numberAsked = true;
       c.say("wait_number");
-      // Paola waits for the number (no other question after it), then lets the learner go
+      // Paola waits for the number (no other question after it), then lets the learner go; a no lets them go too
       const thenBye = (h: Handler): Handler => (cc, sl, sg) => { h(cc, sl, sg); if (cc.s.contact) closeBye(cc); };
+      const letGo = (cc: Ctx) => { if (giving(heard(cc))) return false; numberRefused(cc); cc.s.byeDone = true; cc.end(); };
       c.expect({
-        id: "number_bye", optional: true, expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch", "hand_phone_ctx", "no_phone"], hints: ["touch"],
-        suggest: [{ lt: "Give her your number", hint: "touch" }],
-        on: { number_ctx: thenBye(H.number_ctx), give_phone: thenBye(H.give_phone), ask_number: thenBye(H.ask_number), hand_phone_ctx: thenBye(H.give_phone), no_phone: thenBye(H.no_phone) },
+        id: "number_bye", optional: true, expects: [...SWAP, "refuse_number", "sure_ctx"], hints: ["touch"],
+        suggest: [{ lt: "Give her your number (or not)", hint: "touch" }],
+        no: letGo,
+        on: {
+          number_ctx: thenBye(H.number_ctx), give_phone: thenBye(H.give_phone), ask_number: thenBye(H.ask_number), hand_phone_ctx: thenBye((cc, sl, sg) => H.hand_phone_ctx(cc, sl, sg)),
+          no_phone: thenBye(H.no_phone), yours_ctx: thenBye(H.ask_number), note_ctx: (cc, sl, sg) => H.note_ctx(cc, sl, sg),
+          refuse_number: letGo, decline: letGo, no_sorry: letGo, sure_ctx: letGo,
+        },
       });
       return;
     }
@@ -381,28 +493,46 @@ function mikeNews(c: Ctx) {
   if (c.s.mikeDinnerTwist && !c.s.mikeDinnerAsked) {
     c.s.mikeDinnerAsked = true; c.twist("mike_dinner");
     c.say("mike_dinner_q");
-    c.expect(yn({
-      id: "mike_dinner", expects: ["good_idea", "decline", "dinner_ask_ctx"], hints: ["plan_answer"],
-      suggest: [{ lt: "Say yes to dinner (or not)", hint: "plan_answer" }],
-      // "Sí, ¿a qué hora?": the question piece answers (dinner_ask_ctx)
-      yes: (cc) => { cc.s.mikeDinner = "yes"; if (!/\b(que hora|donde)\b/.test(heard(cc))) cc.say("ill_ask_him"); },
-      no: (cc) => { cc.s.mikeDinner = "no"; cc.say("next_time"); },
-      on: { good_idea: (cc, sl, sg) => H.good_idea(cc, sl, sg), decline: (cc, sl, sg) => H.decline(cc, sl, sg), mike_yes: (cc) => { cc.s.mikeDinner = "yes"; cc.say("ill_ask_him"); } },
-      ask: (cc) => cc.say("mike_dinner_again"),
-    }));
+    dinnerQuestion(c);
     return;
   }
   c.say("we_should_go");
+}
+
+/** Her dinner idea at Memo's, open until answered. */
+function dinnerQuestion(c: Ctx) {
+  c.expect(yn({
+    id: "mike_dinner", expects: ["good_idea", "decline", "dinner_ask_ctx"], hints: ["plan_answer"],
+    suggest: [{ lt: "Say yes to dinner (or not)", hint: "plan_answer" }],
+    // "Sí, ¿a qué hora?": the question piece answers (dinner_ask_ctx). "Está bien, gracias": asked once more, and
+    // a second one is a no (a polite refusal is never taken as a yes)
+    yes: (cc) => {
+      if (politeMaybe(cc)) {
+        if (!cc.s.dinnerMaybe) { cc.s.dinnerMaybe = true; cc.say("mike_dinner_again"); dinnerQuestion(cc); return; }
+        cc.s.mikeDinner = "no"; cc.say("next_time"); return;
+      }
+      cc.s.mikeDinner = "yes"; if (!/\b(que hora|donde)\b/.test(heard(cc))) cc.say("ill_ask_him");
+    },
+    no: (cc) => { cc.s.mikeDinner = "no"; cc.say("next_time"); },
+    on: {
+      good_idea: (cc, sl, sg) => H.good_idea(cc, sl, sg), decline: (cc, sl, sg) => H.decline(cc, sl, sg), mike_yes: (cc) => { cc.s.mikeDinner = "yes"; cc.say("ill_ask_him"); },
+      // when and where answer it (an interested yes); the restaurant's name or price is a side question, asked again
+      dinner_ask_ctx: (cc, sl, sg) => (sg.tags.includes("when") || sg.tags.includes("where") ? void H.dinner_ask_ctx(cc, sl, sg) : false),
+    },
+    ask: (cc) => cc.say("mike_dinner_again"),
+  }));
 }
 
 function closeBye(c: Ctx) {
   if (c.s.byeDone) return;
   c.s.byeDone = true;
   if (c.s.contact && c.s.newsTold) win(c);
-  // after "¡Saludos a tu familia!" she doesn't send the same greetings back
+  // after "¡Saludos a tu familia!" (the learner's, or her own "mándales saludos") no second greetings to the family;
+  // no numbers swapped: no "¡Me escribes, eh!"
   // going for coffee together: "¡Adiós!" gets a laugh, not a goodbye
   if (c.s.coffee === "yes") c.say(/\b(adios|bye|hasta luego|hasta pronto|cuidate|chao|nos vemos)\b/.test(heard(c)) ? "bye_coffee_joke" : "bye_coffee");
-  else c.say(c.s.saidHi ? "bye_short" : "bye_lucy");
+  else if (!c.s.contact) c.say("bye_take_care");
+  else c.say(c.s.saidHi || c.s.sentHi ? "bye_short" : "bye_lucy");
   c.end();
 }
 
@@ -436,7 +566,9 @@ export const oldFriend: SituationDef = {
       look: "(muy bien | super bien | bien | increible | genial | guapisima | guapa | guapo | bonita | bellisima | hermosa | preciosa | fantastica | divina | igual | igualita | igualito | joven | mas joven | regia)",
       bad_word: "(mas o menos | regular | no muy bien | no tan bien | mal | nada bien | no tan bien la verdad | con altibajos | de altibajos)",
       since: "(enero | febrero | marzo | abril | mayo | junio | julio | agosto | septiembre | octubre | noviembre | diciembre | el ano pasado | hace (un | una | dos | tres | unos | {number}) (anos | ano | meses | mes))",
-      kids: "(un hijo | una hija | un bebe | una bebe | un nino | una nina | gemelos | gemelas | cuates | hijos | hijas | ninos | {number} (hijos | hijas | ninos | ninas))",
+      // how long: "cinco años", "unos meses"
+      dur: "[(un | una | dos | tres | cuatro | cinco | seis | siete | ocho | nueve | diez | unos | unas | varios | muchos | {number}) (anos | ano | meses | mes | semanas)]",
+      kids: "(un hijo | una hija | un bebe | una bebe | un bebito | una bebita | otro bebe | otra bebe | otro hijo | otra hija | un nino | una nina | gemelos | gemelas | cuates | hijos | hijas | ninos | {number} (hijos | hijas | ninos | ninas))",
     },
     slots: {},
   },
@@ -451,7 +583,7 @@ export const oldFriend: SituationDef = {
       "(cuantos | tantos | diez | cinco | quince | veinte | {number}) anos [que no nos vemos] [@omg]", "tanto tiempo [sin verte]",
       "no lo puedo creer [@v]", "[@omg] [@v] (eres tu | de veras eres tu | de verdad eres tu | en serio eres tu) [@v]", "eres tu [@v] [verdad]",
       "(si | claro | claro que si) me acuerdo de ti #itsme", "claro que me acuerdo [de ti] #itsme", "como no me voy a acordar [de ti] #itsme", "(te acuerdas | si te acuerdas) de mi #itsme",
-      "[@omg] que (haces | estas haciendo) (aqui | por aqui | por aca) [@v]", "(cuanto tiempo | cuantos anos) (ha pasado | han pasado)",
+      "[@omg] que (haces | estas haciendo) (aqui | por aqui | por aca) [@v] #qhere", "(cuanto tiempo | cuantos anos) (ha pasado | han pasado)",
       "[@v] (de | la de) la (escuela | prepa | secundaria | preparatoria) [verdad]", "[@v] la (del intercambio | de intercambio | mexicana del intercambio) [verdad]",
       "no te reconoci [al principio] [estas (muy)? (cambiada | diferente)]", "casi no te reconozco", "[oye] yo te conozco [@v]",
       "que (pequeno | chiquito | chico) es el mundo", "(el mundo es un panuelo | mundo chico)",
@@ -514,6 +646,32 @@ export const oldFriend: SituationDef = {
       "(me mudé | me vine | nos mudamos | nos vinimos) [@here] [@ago] (por | para) (trabajo | el trabajo | un trabajo nuevo | mi trabajo | trabajar) [@ab] #moved #job",
       "(me mudé | me vine | nos mudamos | nos vinimos) [@here] [@ago] por (mi esposo | mi esposa | amor | mi familia | mis hijos | mi pareja | el clima | el mar) [@ab] #moved",
       "(me mudé | me vine | nos mudamos | nos vinimos) [@here] (por | para) (trabajo | el trabajo | trabajar) @ago [@ab] #moved #job",
+      // Past-tense storytelling (5 Nov audit): "¿Qué has hecho todo este tiempo?" is answered in the past
+      "@ago (me mudé | me vine | me cambié | nos mudamos | nos vinimos) [a vivir] [@here] [@ab] #moved",
+      "(me cambié | nos cambiamos) de casa [@here] [@ago] [@ab] #moved",
+      "(regresé | volví | regresamos | volvimos) [a vivir] (aqui | a puerto colibri | a mexico | para aca) [@ago] [@ab] #moved",
+      "@ago (me fui | nos fuimos | me mudé | nos mudamos | me cambié) [a vivir] (a | para) {any} [@ab] #other",
+      "[y] (luego | despues) (regresé | volví | regresamos | volvimos) [a {any}] [@ab] #other",
+      "(viví | vivimos | estuve viviendo | estuvimos viviendo | estuve | estuvimos) (en | por) {any} [@dur] [@ago] [@ab] #other",
+      "(he vivido | viví) en (varios | muchos | muchisimos | distintos | diferentes) (paises | lugares | lados | ciudades) [@ab] #other",
+      "(viajé | viajamos | he viajado | hemos viajado | estuve viajando | anduve viajando) [(por | a) {any}] [mucho | bastante | muchisimo] [@ago] [@ab] #other",
+      "(conocí | he conocido) (muchos | varios | muchisimos) (paises | lugares) [@ab] #other", "(di | dimos) la vuelta al mundo [@ab] #other",
+      "(estudié | estuve estudiando | estudiamos) {any} [@ago] [@ab] #other", "(estudié | aprendí) [un poco de | algo de] espanol [@ago] [@ab] #spanish",
+      "(regresé | volví) a (la escuela | la universidad | estudiar) [@ago] [@ab] #other",
+      "(terminé | acabé) (la universidad | la carrera | la escuela | la prepa | la preparatoria | mis estudios | la maestria | el doctorado | la licenciatura) [@ago] [@ab] #job",
+      "(me gradué | me recibí | me titulé) [de {any}] [@ago] [@ab] #job", "(hice | saqué | terminé) (una maestria | un doctorado | un posgrado | una especialidad) [en {any}] [@ago] [@ab] #job",
+      "(conseguí | encontré) (trabajo | chamba | empleo | un trabajo | un empleo | una chamba) [nuevo | nueva] [(en | como | de) {any}] [@ago] [@ab] #job",
+      "(me cambié de | cambié de) (trabajo | chamba | empleo | carrera) [@ago] [@ab] #job",
+      "(empecé a trabajar | entré a trabajar) (en | como | de | para) {any} [@ago] [@ab] #job",
+      "(trabajé | estuve trabajando) (en | como | de | para) {any} [@dur | mucho tiempo] [@ago] [@ab] #job",
+      "(abrí | puse | empecé) (un negocio | mi negocio | mi propio negocio | una empresa | mi propia empresa | un restaurante | una tienda | un cafe) [aqui | en {any}] [@ago] [@ab] #job",
+      "me (ascendieron | promovieron) [@ago] [@ab] #job",
+      "(compré | compramos) (una casa | un departamento | un depa | una casita | un terreno) [aqui | en {any}] [@ago] [@ab] #job",
+      "(nacio | nacieron) (mi hijo | mi hija | mi bebe | mi nieto | mi nieta | mi segundo hijo | mi segunda hija | mi primer hijo | mi primera hija | mis hijos | mis gemelos | mis gemelas | mis cuates | mis nietos) [@ago] [@ab] #kids",
+      "(estoy embarazada | estamos esperando un bebe | vamos a tener un bebe | voy a ser (papa | mama | abuelo | abuela)) [@ab] #kids",
+      "estuve en el hospital [@ago] [@ab] #hard",
+      "(he estado | estuve) (trabajando | estudiando) (mucho | muchisimo) [@ab] #usual",
+      "ahora (trabajo | estoy trabajando) (aqui | en el pueblo | en @place) [@ab] #job",
     ] },
     // "No me casé, pero…", "Todavía no tengo hijos": news that isn't news (never a "¡Felicidades!")
     news_not: { patterns: [
@@ -524,9 +682,9 @@ export const oldFriend: SituationDef = {
     ] },
     ask_news: { patterns: [
       "[y] [tu] que (cuentas | me cuentas) #h:nw_ask", "[y] [tu] que es de tu vida", "[y] [tu] que (has hecho | haces) [ahora | estos dias | todo este tiempo | en todos estos anos]",
-      "[y] [tu] que hay de nuevo [contigo]", "(que novedades | que hay de tu vida) [tienes]", "(sigues | todavia vives | aun vives | sigues viviendo) en (merida | cancun | la ciudad de mexico | mexico | la ciudad | el df | guadalajara | monterrey | playa del carmen | tulum)",
-      "cuentame (de ti | tu | todo)", "(y)? (tu)? en que andas [ahora]", "(a que te dedicas | en que trabajas) [ahora]", "y tu vida", "y tu que onda", "(que tal | como va) tu vida",
-      "(donde | en donde) vives [ahora]", "(y)? (tu)? (te casaste | ya te casaste | estas casada | tienes hijos | tienes ninos | tienes novio | ya tienes hijos)", "(vives | estas viviendo) aqui [ahora]",
+      "[y] [tu] que hay de nuevo [contigo]", "(que novedades | que hay de tu vida) [tienes]", "(sigues | todavia vives | aun vives | sigues viviendo) en (merida | cancun | la ciudad de mexico | mexico | la ciudad | el df | guadalajara | monterrey | playa del carmen | tulum) #qlive",
+      "cuentame (de ti | tu | todo)", "(y)? (tu)? en que andas [ahora]", "[y] [tu] (a que te dedicas | en que trabajas | de que trabajas | donde trabajas | en donde trabajas) [ahora] #qjob", "(y)? (tu)? (trabajas | estas trabajando) [ahora] #qjob", "y tu vida", "y tu que onda", "(que tal | como va) tu vida",
+      "(donde | en donde) vives [ahora] #qlive", "(y)? (tu)? (te casaste | ya te casaste | estas casada | tienes hijos | tienes ninos | tienes novio | ya tienes hijos)", "(vives | estas viviendo) aqui [ahora] #qlive",
     ] },
     react_news: { patterns: [
       "(felicidades | muchas felicidades | felicitaciones | enhorabuena) [a los dos | a ambos] [otra vez | de nuevo] [@v] #h:rc_congrats", "(no inventes | no manches | no me digas | no puede ser | en serio | de veras | de verdad | neta | no te creo | no lo puedo creer) [@v] [felicidades | muchas felicidades]",
@@ -576,11 +734,20 @@ export const oldFriend: SituationDef = {
       "(buena | excelente | gran | muy buena) idea #h:mk_idea", "me encantaria #h:pa_love", "(seria | suena | me suena) (genial | padre | divertido | increible | buenisimo | perfecto | bien | muy bien)",
       "(va que va | hagamoslo | jalo | yo jalo | me apunto | cuenta conmigo | ahi estare | ahi nos vemos | va ahi nos vemos)", "[el] {day} (esta bien | me queda bien | perfecto | puedo)", "[el] {day} si (puedo | me queda)",
       "(que | super) buen plan", "me (encanta | gusta) (la idea | el plan)",
-      "[el] {no_day:day} no (puedo | me queda) [pero] [que tal | y | mejor] [el] {day} #otherday", "(que tal | mejor | y si | y si mejor) [el] {day} #otherday",
+      "[el] {no_day:day} no (puedo | me queda) [pero] [que tal | y | mejor] [el] {day} #otherday", "(que tal | mejor | y si | y si mejor) [el] {day} #otherday", "y [el] {day} [entonces] #otherday",
       "no [el] {no_day:day} [sino] [el] {day} #otherday", "(prefiero | mejor) [el] {day} #otherday", "(quedamos | nos vemos) [el] {day} [entonces] #dayset",
     ] },
     // "¿A qué hora?", "¿Dónde está?": only at her dinner idea
-    dinner_ask_ctx: { patterns: ["[si | claro] [a] (que hora | como a que hora) [seria] #when", "[si | claro] (donde | en donde | por donde) (esta | queda) [el restaurante] #where"] },
+    dinner_ask_ctx: { patterns: ["[si | claro] [a] (que hora | como a que hora) [seria] #when", "[si | claro] (donde | en donde | por donde) (esta | queda) [el restaurante] #where",
+      "[y] (es | sera | esta) (caro | barato | carito | muy caro) [el restaurante] #price", "[y] cuanto (cuesta | sale | cuestan) [mas o menos] #price",
+      "[y] como se llama [el restaurante | el lugar] #name", "[y] (que | que tipo de | que clase de) (comida | restaurante) [es | tiene | hace | sirven | venden] #food"] },
+    // "¿Cómo se llama el restaurante?", "¿Qué tipo de comida tiene?": Memo's restaurant, once she has told about it
+    ask_restaurant: { patterns: [
+      "[y] como se llama (el restaurante | su restaurante | el restaurante de memo | el lugar)", "[y] (cual es | como es) el nombre del restaurante",
+      "[y] (que | que tipo de | que clase de) (comida | restaurante) (es | tiene | hace | sirven | venden | sirve | vende)", "[y] (que tipo de | que clase de) (comida | restaurante)",
+      "[y] (el restaurante | la comida) (es | esta) (buena | bueno | rica | rico)",
+      "[y] (el restaurante | la comida) (es | esta) (cara | caro | barata | barato) #price", "[y] (es | esta) (caro | barato) el restaurante #price", "[y] cuanto (cuesta | sale) (cenar | comer) (ahi | alli | en el restaurante) #price",
+    ] },
     coffee_invite: { patterns: [
       "(tienes | traes) tiempo para (un cafe | un cafecito | tomar un cafe | tomar algo) #h:cf_time", "vamos (por | a tomar) un (cafe | cafecito) [juntas | juntos] #h:cf_want",
       "(quieres | te gustaria | te late | se te antoja) (tomar | ir por | ir a tomar) (un cafe | un cafecito | algo)", "(y si | que tal si) (vamos por | tomamos | nos tomamos) un (cafe | cafecito)",
@@ -598,6 +765,12 @@ export const oldFriend: SituationDef = {
       "[el] {day} (trabajo | tengo que trabajar | tengo planes | tengo un compromiso)", "no se si (pueda | puedo) [el {day}] #maybe",
       "[no se] (tal vez | quiza | a lo mejor) [si] #maybe", "(tengo que | dejame) (ver | checar | revisar) [mi agenda] #maybe", "no se [tal vez] #maybe",
       "no me (gusta | encanta) (el cafe | la idea | el plan) #nocoffee", "no es (buena | una buena) idea", "[hoy | ahorita] no tengo tiempo [hoy] (perdon | lo siento)",
+      // (5 Nov audit) "No tengo ganas", "No me late", "No creo que pueda", "No, no puedo, perdón", "Ya tengo planes"
+      "[no] [la verdad] no (tengo ganas | me late | se me antoja | se me antoja mucho | me late mucho) [la verdad] [@sorry]", "[no] no creo (que pueda | poder | que se pueda) [@sorry]",
+      "[no] creo que no (voy a poder | puedo | se va a poder) [@sorry]", "[no] (no creo | creo que no) [@sorry]", "[no] no puedo [hoy | ahorita | ahora | esta semana | ese dia] @sorry",
+      "[no] (ya tengo | tengo) (planes | otros planes | otro plan | un compromiso | otro compromiso) [para (ese dia | el {day} | hoy)] [@sorry]",
+      "(lo veo | esta) (dificil | complicado) [@sorry]", "(paso | yo paso) [gracias]",
+      "[ay] [no] @sorry [mejor no] (se me olvidó | olvidé) que (tengo | tenia) (una cita | una junta | un compromiso | que trabajar | trabajo | planes) [@sorry]",
     ] },
     keep_in_touch: { patterns: [
       "(hay que | tenemos que | vamos a) (seguir | estar | mantenernos) en contacto #h:kt_keep", "(nos pasamos | intercambiamos | hay que intercambiar | pasemonos) (los)? (numeros | telefonos | celulares | whats) #h:kt_swap",
@@ -607,11 +780,14 @@ export const oldFriend: SituationDef = {
     number_ctx: { patterns: [
       "[claro | rapido | va | ok | sale] [es | es el | mi numero es | mi telefono es | mi cel es | mi celular es | aqui esta mi numero | apunta | anota | apuntalo | anotalo] {digits} #h:kt_number",
       "[claro] (aqui tienes | este es) mi numero {digits}", "[toma | ten] mi numero [es] {digits}", "(apunta | anota | apuntate | toma) mi (numero | celular | cel | telefono) [es] {digits}",
+      "[claro] (te paso | te doy | aqui esta | este es | ahi va) (el mio | mi numero | mi cel | mi celular | mi telefono) [es] {digits}", "[y] el mio es {digits}",
+      "[mi (numero | celular | cel | telefono) es] mas uno {digits}",
     ] },
     give_phone: { patterns: [
       "(aqui | toma | ten) mi (numero | celular | telefono | cel)", "(te doy | te paso) mi numero", "(dejame | deja) (darte | pasarte) mi numero", "(yo)? te (mando | envio) un (mensaje | whatsapp | whats)",
       "(yo)? te (mando mensaje | mando whats | escribo por whats)", "(te lo | yo te lo) (escribo | anoto | apunto)",
       "dame tu (celular | cel | telefono) [y (te lo | lo) (pongo | anoto | guardo)] [y te pongo mi numero]", "(rapido | va | claro) (toma | ten) mi (celular | cel | telefono)", "agregame (en | a) (whatsapp | whats | facebook | instagram)",
+      "[bueno | esta bien | va | ok | sale] [si] te lo (doy | paso)",
     ] },
     // handing her the phone: "Sí, toma", "Aquí tienes", only when she asked for the number
     hand_phone_ctx: { patterns: ["[si | claro] (toma | ten | aqui tienes | aqui esta | ahi esta)"] },
@@ -622,7 +798,26 @@ export const oldFriend: SituationDef = {
     ask_number: { patterns: [
       "(me pasas | me das | me puedes dar | me puedes pasar | puedo tener) tu (numero | telefono | celular | cel | whats) #h:kt_ask", "cual es tu (numero | telefono | celular | cel)", "(pasame | dame) tu (numero | telefono | whats)",
       "[mejor] (me pasas | me das | pasame | dame) el tuyo", "(tienes | usas) (whatsapp | whats | facebook | instagram | telegram)", "(me da | me pasa) su numero #tip:usted_friend",
+      "[y] cual es el tuyo", "[mejor] (dame | pasame) (el tuyo | tu numero) y (te marco | te llamo | te hago una llamada perdida | te doy un toque | te mando un mensaje | te escribo)",
+      "[mejor] (yo)? te (marco | hago una llamada perdida | doy un toque) [y asi tienes el mio]",
     ] },
+    // "Va, ahí nos vemos" where a phone may be handed over: a goodbye, never "Ahí está" with its "está" dropped
+    bye_ctx: { patterns: ["[va | sale | ok | bueno] (ahi | aqui) nos vemos [entonces | pronto | luego | el {day}]"] },
+    // "Mi número es 984…" before she asks (at her news, her dinner idea): said in full, so understood anywhere
+    my_number: { patterns: ["[claro | va | ok | sale | oye | y] mi (numero | celular | cel | telefono) es [el] {digits}", "[claro | oye | y] (te paso | te doy) (mi numero | el mio | mi celular | mi cel) [es] {digits}", "[y] el mio es {digits}"] },
+    // "¿Y el tuyo?": only where the numbers are swapped (elsewhere it is "and yours?")
+    yours_ctx: { patterns: ["[y] el tuyo [cual es]", "y tu numero [cual es]"] },
+    // "¿Tienes dónde apuntar?", "Apunta": the number comes next
+    note_ctx: { patterns: ["[claro | si] (tienes | traes) (donde | en donde) (apuntar | anotar | apuntarlo | anotarlo)", "[claro | si | va | ok] (apunta | anota | apuntale | anotale)"] },
+    // "No quiero darte mi número": respected (never a swap, and she doesn't ask again)
+    refuse_number: { patterns: [
+      "[no] @sorry no (quiero | puedo) (darte | dar | pasarte | pasar | compartir) mi (numero | telefono | celular | cel) @sorry", "[no] @sorry no te (quiero | puedo | voy a) (dar | pasar) mi (numero | telefono | celular | cel) @sorry",
+      "[no] @sorry prefiero no (darte | dar | pasarte | pasar | compartir) mi (numero | telefono | celular | cel) @sorry", "[no] @sorry prefiero no (darlo | darselo | darte nada) @sorry",
+      "[no] @sorry no me gusta (dar | compartir | pasar) mi (numero | telefono | celular | cel) @sorry", "[no] @sorry no (doy | comparto) mi (numero | telefono | celular | cel) @sorry",
+      "[no] @sorry no (quiero | me interesa) (seguir | estar | mantenernos) en contacto @sorry", "[no] @sorry mejor no te (doy | paso) mi (numero | telefono | celular | cel) @sorry",
+    ] },
+    // after her "¿Seguro?": "Sí, seguro", "No, de verdad" (the refusal stands)
+    sure_ctx: { patterns: ["[si | no] [claro] (seguro | segura | segurisimo | segurisima | de verdad | en serio) [gracias]", "[si | no] (de verdad | en serio) (no | gracias)", "no [gracias] (de verdad | en serio) [gracias]"] },
     nice_to_see: { patterns: [
       "(que gusto | que bueno | que padre) me dio (verte | encontrarte) [@v] #h:by_nice", "me dio (mucho)? gusto [verte | encontrarte]", "(fue | ha sido) un (gusto | placer) [verte]", "que bueno que nos (encontramos | vimos)",
     ] },
@@ -635,13 +830,13 @@ export const oldFriend: SituationDef = {
       "(si | claro | va | sale | ok | vale) (claro | por supuesto | me encantaria | perfecto | vamos | va | sale | por que no | con gusto)", "(claro | si) me encantaria #h:cf_sure", "me encantaria",
       "(suena | me suena) (bien | perfecto | padre | genial)", "tengo (veinte | diez | treinta | quince | unos | cinco | {number}) minutos", "[si | claro] (vamos | vamonos)",
       "[si | claro] (tengo tiempo | si tengo tiempo | tengo un rato | tengo un ratito)", "(que | muy) buena idea", "[si] pero yo invito",
-      "[si | claro | vale] (un cafe | un cafecito | uno) (rapido | rapidito) [si]", "no tengo mucho tiempo pero (un cafe | uno | un cafecito) (rapido | rapidito) [si]", "[si] la ceiba esta (aqui | enfrente | aqui enfrente | en la plaza)",
+      "[si | claro | vale] (un cafe | un cafecito | uno) (rapido | rapidito) [si]", "no tengo mucho tiempo pero (un cafe | uno | un cafecito) (rapido | rapidito) [si]", "[si] la ceiba esta (aqui | enfrente | aqui enfrente | en la plaza | cerquita | aqui cerquita | en la avenida | en (la avenida)? juarez | aqui en (la avenida)? juarez)",
       "[si] no tengo prisa", "[si] tengo tiempo no tengo prisa", "no (es | seria) (mala | una mala) idea",
       "[si] [claro] pero no tengo mucho tiempo", "[si] [claro] pero (rapido | rapidito | uno rapido)",
       "[si] (mejor | prefiero) (un jugo | un te | una cerveza | un agua | un licuado | una limonada | algo frio | un helado | un refresco) #alt",
     ] },
     // "¿Dónde?", "¿En La Ceiba?": only at her coffee question (a yes)
-    coffee_where_ctx: { patterns: ["[si] [claro] (donde | a donde | en donde | en la ceiba | a la ceiba) [vamos]"] },
+    coffee_where_ctx: { patterns: ["[si] [claro] (donde | a donde | en donde | en la ceiba | a la ceiba) [vamos]", "[si] (donde | en donde) (esta | queda) [la ceiba | el cafe | ese cafe]", "[si] (ahorita | ahora) [mismo]"] },
     no_sorry: { patterns: ["(no | nel) (perdon | lo siento | disculpa)", "(perdon | lo siento | disculpa) no", "(perdon | lo siento) (ahorita | ahora) no"] },
     g_bye: { patterns: [
       "(adios | bye | nos vemos | hasta luego | hasta pronto | cuidate | chao | hasta la proxima | nos estamos viendo) [@v] #h:by_bye",
@@ -739,10 +934,17 @@ export const oldFriend: SituationDef = {
     ans_when: [t("Hace | dos | años.", "Ago | two | years.", "Two years ago.", { flags: { 0: "hace + a time: “ago” (it comes first in Spanish)." } })],
     ans_age: [t("¡Apenas | tienen | un | año!", "Barely | they-have | one | year!", "They're only one!")],
     ans_sex: [t("Un | niño | y | una | niña.", "A | boy | and | a | girl.", "A boy and a girl.")],
-    ans_names: [t("Mateo | y | Sofía.", "Mateo | and | Sofía.", "Mateo and Sofía.")],
+    ans_names: [t("Mateo | y | Regina.", "Mateo | and | Regina.", "Mateo and Regina.")],
     ans_work: [t("¡Ay, | ni me digas! | No dormimos | nada.", "Oh, | don't even tell me! | We don't sleep | at all.", "Oh, tell me about it! We don't sleep at all.",
       { flags: { 3: "nada after a negative verb: “at all”." } })],
     ans_photo2: [t("¡Mira, | aquí | están!", "Look, | here | they-are!", "Look, here they are!")],
+    // (5 Nov audit) her job, where she lives, Memo's restaurant
+    ans_job: [t("Soy | maestra | de | inglés | en | una | escuela | de | aquí. | ¡Gracias | al | intercambio!", "I'm | a teacher | of | English | at | a | school | from | here. | Thanks | to the | exchange!",
+      "I'm an English teacher at a school here. All thanks to the exchange!", { flags: { 7: "de aquí: local (literally “from here”)." } })],
+    ans_live: [t("¡Vivo | aquí, | en | Puerto Colibrí!", "I-live | here, | in | Puerto Colibrí!", "I live here, in Puerto Colibrí!")],
+    ans_restaurant: [t("Se llama | La Palapa: | comida | mexicana, | ¡riquísima!", "It's called | La Palapa: | food | Mexican, | delicious!", "It's called La Palapa: Mexican food, and it's delicious!",
+      { flags: { 1: "palapa: a thatched palm-leaf roof, typical on the coast.", 4: "riquísima: rica + -ísima, “really delicious”." } })],
+    ans_price: [t("Como | doscientos | pesos | por | persona. | ¡Nada | caro!", "About | two hundred | pesos | per | person. | Not at all | expensive!", "About two hundred pesos a person. Not expensive at all!")],
     so_happy: [t("¡Gracias! | Estoy | feliz, | feliz.", "Thanks! | I-am | happy, | happy.", "Thank you! I'm so, so happy.")],
     that_is_my_news: [t("¡Ja, | esas | son | mis | grandes | noticias!", "Ha, | those | are | my | big | news!", "Ha, that's my big news!")],
     same_old: [t("Ay, | pues | ya sabes, | lo de siempre.", "Oh, | well | you know, | the usual.", "Oh, you know, same old!")],
@@ -771,7 +973,7 @@ export const oldFriend: SituationDef = {
       t("Oye, | ¿y si | vamos | todos | a | cenar | ahí | el | viernes?", "Hey, | what if | we-go | all | to | have dinner | there | on | Friday?",
         "Hey, why don't we all have dinner there on Friday?", { flags: { 7: "el + a day: “on” (the article stands for “on”)." } }),
     ],
-    mike_dinner_again: [t("Entonces, | ¿el | viernes | con | Memo?", "So, | — | Friday | with | Memo?", "So, Friday at Memo's?", { flags: { 1: "el viernes: on Friday; the article has no English word." } })],
+    mike_dinner_again: [t("Entonces, | ¿el | viernes | con | Memo?", "So, | — | Friday | with | Memo?", "So, Friday with Memo?", { flags: { 1: "el viernes: on Friday; the article has no English word." } })],
     dinner_when: [t("Como | a | las | ocho. | Yo | le | pregunto | a | Memo.", "Around | at | — | eight. | I | him | I'll-ask | — | Memo.", "Around eight. I'll ask Memo.",
       { flags: { 2: ART_TIME, 7: "a marks the person you ask; English needs no word for it." } })],
     dinner_where: [t("En | el | malecón. | Yo | le | pregunto | a | Memo | y | te | escribo.", "On | the | seafront. | I | him | I'll-ask | — | Memo | and | (to) you | I'll-write.", "On the malecón. I'll ask Memo and text you.",
@@ -788,11 +990,11 @@ export const oldFriend: SituationDef = {
     ill_ask_him: [t("¡Perfecto! | Yo | le | pregunto.", "Perfect! | I | him | I'll-ask.", "Great! I'll ask him.")],
     ask_coffee: [
       t("Oye, | ¿tienes | tiempo | para | un | café?", "Hey, | do you have | time | for | a | coffee?", "Hey, do you have time for a coffee?"),
-      t("¿Tienes | tiempo | para | un | cafecito? | La Ceiba | está | aquí | en | la | plaza.", "Do you have | time | for | a | little coffee? | La Ceiba | is | here | on | the | square.",
-        "Do you have time for a coffee? La Ceiba is right here on the square.", { flags: { 4: "cafecito: café + -ito, a friendly “cup of coffee”." } }),
+      t("¿Tienes | tiempo | para | un | cafecito? | La Ceiba | está | aquí | cerquita, | en | la | avenida | Juárez.", "Do you have | time | for | a | little coffee? | La Ceiba | is | here | very close, | on | the | avenue | Juárez.",
+        "Do you have time for a coffee? La Ceiba is right nearby, on Juárez Avenue.", { flags: { 4: "cafecito: café + -ito, a friendly “cup of coffee”.", 8: "cerquita: cerca + -ita, “really close”." } }),
     ],
-    lets_sit: [t("¡Qué | bien! | Vamos | a | La Ceiba, | aquí | en | la | plaza.", "How | nice! | Let's go | to | La Ceiba, | here | on | the | square.", "Great! Let's go to La Ceiba, right here on the square.")],
-    alt_ok: [t("¡Claro, | lo que | quieras! | Vamos | a | La Ceiba, | aquí | en | la | plaza.", "Sure, | whatever | you-want! | Let's go | to | La Ceiba, | here | on | the | square.", "Sure, whatever you like! Let's go to La Ceiba, right here on the square.")],
+    lets_sit: [t("¡Qué | bien! | Vamos | a | La Ceiba, | aquí | en | la | avenida | Juárez.", "How | nice! | Let's go | to | La Ceiba, | here | on | the | avenue | Juárez.", "Great! Let's go to La Ceiba, right here on Juárez Avenue.")],
+    alt_ok: [t("¡Claro, | lo que | quieras! | Vamos | a | La Ceiba, | aquí | en | la | avenida | Juárez.", "Sure, | whatever | you-want! | Let's go | to | La Ceiba, | here | on | the | avenue | Juárez.", "Sure, whatever you like! Let's go to La Ceiba, right here on Juárez Avenue.")],
     no_coffee_ok: [t("¡Ah, | bueno! | Otro | día | vamos | por | un | jugo.", "Oh, | okay! | Another | day | we-go | for | a | juice.", "Oh, okay! Another day we'll go for a juice, then.")],
     changed_mind: [t("¡Ah, | bueno! | ¡Vamos!", "Oh, | good! | Let's go!", "Oh, great! Let's go!")],
     rain_check: [
@@ -815,10 +1017,13 @@ export const oldFriend: SituationDef = {
     number_again: [t("Entonces, | ¿cuál | es | tu | número?", "So, | what | is | your | number?", "So, what's your number?")],
     number_ok: [t("¡Perfecto! | ¿Cuál | es?", "Perfect! | What | is-it?", "Great! What is it?")],
     number_sure: [t("¿Seguro? | ¡Así | no nos perdemos | otra vez!", "Sure? | That way | we don't lose each other | again!", "Are you sure? That way we won't lose touch again!")],
+    // a refusal is respected: no swap, no "¿Cuál es tu número?" again
+    number_fine: [t("¡Está bien, | no pasa nada! | Seguro | nos volvemos a ver | por | aquí.", "That's okay, | no problem! | Surely | we'll see each other again | around | here.",
+      "That's okay, no problem! I'm sure we'll run into each other again.")],
     coffee_go: [t("¡Qué | gusto | me dio | verte! | Vamos | por | ese | café.", "What | joy | it gave me | to see you! | Let's go | for | that | coffee.", "So good to see you! Let's go get that coffee.")],
     bye_coffee: [t("¡Vamos!", "Let's go!", "Come on, let's go!")],
-    bye_coffee_joke: [t("¡Ja, | pero | si | vamos | juntos | por | el | café! | ¡Vamos!", "Ha, | but | — | we're-going | together | for | the | coffee! | Let's go!", "Ha, but we're going for coffee together! Come on!",
-      { flags: { 2: "si here: “but…!”, a surprised objection (not “if”)." } })],
+    bye_coffee_joke: [t("¡Ja, | pero | si | vamos | {m:juntos|f:juntas} | por | el | café! | ¡Vamos!", "Ha, | but | — | we're-going | together | for | the | coffee! | Let's go!", "Ha, but we're going for coffee together! Come on!",
+      { flags: { 2: "si here: “but…!”, a surprised objection (not “if”).", 4: "juntos / juntas: together; with two women, juntas." } })],
     definitely_number: [t("¡Claro! | ¿Cuál | es | tu | número?", "Sure! | What | is | your | number?", "Sure! What's your number?")],
     got_it_text: [
       t("¡Listo! | Te | mando | un | mensaje | para que | tengas | el | mío.", "Done! | (To) you | I'll-send | a | message | so that | you-have | — | mine.",
@@ -848,6 +1053,8 @@ export const oldFriend: SituationDef = {
       t("¡Nos vemos! | ¡Me | escribes, | eh!", "See you! | (To) me | you-write, | okay!", "See you! Text me, okay?"),
       t("¡Cuídate | mucho! | ¡Nos vemos | pronto!", "Take care | a lot! | See you | soon!", "Take care! See you soon!"),
     ],
+    // no numbers swapped: no "¡Me escribes, eh!" (the same words as bye_lucy's third goodbye)
+    bye_take_care: [t("¡Cuídate | mucho! | ¡Nos vemos | pronto!", "Take care | a lot! | See you | soon!", "Take care! See you soon!")],
     bye_short: [
       t("¡Nos vemos! | ¡Me | escribes, | eh!", "See you! | (To) me | you-write, | okay!", "See you! Text me, okay?"),
       t("¡Cuídate | mucho! | ¡Nos vemos | pronto!", "Take care | a lot! | See you | soon!", "Take care! See you soon!"),
@@ -960,7 +1167,7 @@ export const oldFriend: SituationDef = {
         { id: "by_you_too", s: t("¡Igualmente! | ¡Adiós!", "Likewise! | Bye!", "You too! Bye!") },
         { id: "by_bye", s: t("¡Nos vemos | pronto!", "See you | soon!", "See you soon!") },
         { id: "by_nice", s: t("¡Qué | gusto | me dio | verte!", "What | joy | it gave me | to see you!", "It was so good to see you!") },
-        { id: "by_say_hi", s: t("¡Saludos | a | Memo!", "Greetings | to | Memo!", "Say hi to Memo for me!") },
+        { id: "by_say_hi", s: t("¡Saludos | a | tu | familia!", "Greetings | to | your | family!", "Say hi to your family for me!") },
       ],
     },
     ask_back: {
@@ -1012,6 +1219,8 @@ export const oldFriend: SituationDef = {
     "ni me digas": { reason: "lexical_expression", split: "ni → nor + me → to me + digas → you tell; the sigh = tell me about it.", minimal: "Three words." },
     "sin falta": { reason: "lexical_expression", split: "sin → without + falta → lack; = for sure.", minimal: "Two words." },
     "estoy aprendiendo": { reason: "grammatical_fusion", split: "estoy → I am + aprendiendo → learning: the progressive = I'm learning.", minimal: "Two words." },
+    "la palapa": { reason: "lexical_expression", split: "A restaurant's name (S-NAME): La Palapa, after the thatched palm-leaf roof.", minimal: "The name." },
+    "nos volvemos a ver": { reason: "lexical_expression", split: "nos → each other + volvemos → we return + a → to + ver → see; volver a + verb = do again: we'll see each other again.", minimal: "Four words." },
   },
 
   // -------------------------------------------------------------------------
@@ -1052,7 +1261,7 @@ export const oldFriend: SituationDef = {
       expects: ["react_news"],
       suggest: [{ lt: "React to her news", hint: "react" }] },
     { id: "lucy2", when: (c) => !c.s.rushing && !!c.s.lucy1, done: (c) => !!c.s.lucy2,
-      ask: (c) => { c.s.lucy2 = true; c.say("lucy_news2"); },
+      ask: (c) => { c.s.lucy2 = true; c.say(CONGRATULATED.test(heard(c)) ? "lucy_news2" : "lucy_news2_plain"); },
       expects: ["react_news"],
       suggest: [{ lt: "Congratulate her", hint: "react" }] },
     { id: "family", when: (c) => !c.s.rushing && c.s.askFamily, done: (c) => !!c.s.ans.family || asked(c, "family") >= 2,
@@ -1068,19 +1277,29 @@ export const oldFriend: SituationDef = {
       no: (c) => H.mike_no(c, {}, { intent: "mike_no", slots: {}, tags: [] }) },
     { id: "rush", when: (c) => !!c.s.rushTwist, done: (c) => !!c.s.rushing,
       ask: (c) => { c.s.rushing = true; c.twist("in_a_hurry"); c.say("rush"); c.say("quick_numbers"); c.s.numberAsked = true; },
-      expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch", "hand_phone_ctx", "no_phone"],
-      suggest: [{ lt: "Swap numbers", hint: "touch" }] },
+      expects: [...SWAP, "refuse_number"],
+      suggest: [{ lt: "Swap numbers", hint: "touch" }],
+      no: (c) => { if (!c.s.contact) numberNo(c); } },
     { id: "coffee", when: (c) => !c.s.rushing && c.s.askCoffee, done: (c) => !!c.s.coffee || asked(c, "coffee") >= 2,
       ask: (c) => { bump(c, "coffee"); c.s.coffeeAsked = true; c.say(asked(c, "coffee") > 1 ? "coffee_again" : "ask_coffee"); },
       expects: ["decline", "coffee_invite", "agree", "coffee_where_ctx"],
       suggest: [{ lt: "Say yes to a coffee (or not)", hint: "coffee_answer" }],
-      yes: (c) => { c.s.coffee = "yes"; c.say("lets_sit"); }, no: (c) => { c.s.coffee = "no"; c.say("next_time"); } },
-    { id: "numbers", done: (c) => !!c.s.contact,
+      // "Está bien, gracias": often a polite no; asked once more, and a second one is a no
+      yes: (c) => {
+        if (politeMaybe(c)) {
+          if (!c.s.coffeeMaybe) { c.s.coffeeMaybe = true; c.say("coffee_again"); c.hold(); return; }
+          c.s.coffee = "no"; c.say("next_time"); return;
+        }
+        c.s.coffee = "yes"; c.say("lets_sit");
+      },
+      no: (c) => { c.s.coffee = "no"; c.say("next_time"); } },
+    { id: "numbers", done: (c) => !!c.s.contact || !!c.s.numberRefused,
       ask: (c) => { bump(c, "numbers"); if (c.s.numberAsked) c.say("number_again"); else { c.s.numberAsked = true; c.say("ask_number"); } },
-      expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch", "hand_phone_ctx", "no_phone", "no_whats"],
+      expects: [...SWAP, "no_whats", "refuse_number"],
       suggest: [{ lt: "Give her your number, or suggest swapping", hint: "touch" }],
       yes: (c) => { c.say("number_ok"); c.hold(); },
-      no: (c) => { if (c.s.numberNo) return; c.s.numberNo = true; c.say("number_sure"); c.hold(); } },
+      // "No, gracias": one "¿Seguro?", then she lets it go (numberNo)
+      no: (c) => numberNo(c) },
   ],
 
   init: (c) => {
@@ -1108,7 +1327,12 @@ export const oldFriend: SituationDef = {
     for (const k of Object.keys(oldFriend.intents)) if (!k.endsWith("_ctx")) on[k] = bye;
     for (const k of ["g_bye", "g_thanks", "g_ok", "g_hello"]) on[k] = bye;
     on.say_hi_to = (cc) => { cc.s.saidHi = true; if (once(cc, "sayhi")) cc.say("i_will"); closeBye(cc); };
-    c.expect({ id: "closing", expects: ["nice_to_see", "you_too", "say_hi_to"], hints: ["goodbye"], suggest: [{ lt: "Say goodbye", hint: "goodbye" }], on, yes: bye, no: bye });
+    // "¡Qué gusto me dio verte! Vamos por ese café." … "Ay, perdón, me tengo que ir": no coffee after all, no joke
+    on.decline = (cc) => { if (cc.s.coffee === "yes") { cc.s.coffee = "no"; cc.say("next_time"); } closeBye(cc); };
+    // "¿Cuál es el tuyo?" … "Y te paso el mío: 984…": the learner's number too, then goodbye
+    on.number_ctx = (cc) => { if (!cc.s.learnerNumber && once(cc, "num")) { cc.s.learnerNumber = true; cc.say("got_it_text"); } closeBye(cc); };
+    on.my_number = on.number_ctx;
+    c.expect({ id: "closing", expects: ["nice_to_see", "you_too", "say_hi_to", "number_ctx"], hints: ["goodbye"], suggest: [{ lt: "Say goodbye", hint: "goodbye" }], on, yes: bye, no: bye });
   },
 
   tests: [
@@ -1172,8 +1396,8 @@ export const oldFriend: SituationDef = {
     { say: "El viernes no puedo", intent: "decline", not: ["good_idea", "agree"] },
     { say: "No me casé", intent: "news_not", step: "upto", not: ["news"] },
     { say: "No soy maestra", intent: "yn:no", step: "upto", not: ["news"] },
-    { say: "No quiero seguir en contacto", intent: "none", not: ["keep_in_touch"] },
-    { say: "No te voy a dar mi número", intent: "none", not: ["give_phone", "number_ctx"] },
+    { say: "No quiero seguir en contacto", intent: "refuse_number", not: ["keep_in_touch"] },
+    { say: "No te voy a dar mi número", intent: "refuse_number", not: ["give_phone", "number_ctx"] },
     { say: "Tú sí has cambiado", intent: "none", step: "changed", not: ["compliment_back"] },
     // wider phrasing and the answers that need their own reply
     { say: "¿Tienes hijos?", intent: "ask_news", step: "upto", not: ["news"] },
@@ -1202,7 +1426,43 @@ export const oldFriend: SituationDef = {
     { say: "Sigamos en contacto", intent: "keep_in_touch" },
     { say: "No sé", intent: "decline", step: "mike", not: ["mike_yes"] },
     { say: "No tengo celular mexicano todavía", intent: "no_phone", step: "numbers", not: ["number_ctx", "give_phone"] },
-    { say: "No quiero darte mi número", intent: "none", step: "numbers", not: ["number_ctx", "give_phone", "keep_in_touch"] },
+    { say: "No quiero darte mi número", intent: "refuse_number", step: "numbers", not: ["number_ctx", "give_phone", "keep_in_touch"] },
+    // the audit (5 Nov 2026): refusals respected, past-tense storytelling, her job, Memo's restaurant, the swap
+    { say: "Prefiero no dar mi número, perdón", intent: "refuse_number", step: "numbers", not: ["number_ctx", "give_phone", "keep_in_touch"] },
+    { say: "No me gusta dar mi número", intent: "refuse_number", step: "numbers", not: ["number_ctx", "give_phone"] },
+    { say: "Mejor no te doy mi número", intent: "refuse_number", step: "numbers", not: ["number_ctx", "give_phone"] },
+    { say: "No, la verdad no tengo ganas", intent: "decline", step: "coffee", not: ["agree", "coffee_invite"] },
+    { say: "No me late", intent: "decline", step: "coffee", not: ["agree", "coffee_invite", "good_idea"] },
+    { say: "No creo que pueda", intent: "decline", step: "coffee", not: ["agree", "good_idea"] },
+    { say: "No, no puedo, perdón", intent: "decline", step: "coffee", not: ["agree"] },
+    { say: "Ya tengo planes", intent: "decline", step: "coffee", not: ["agree", "good_idea"] },
+    { say: "Ay, se me olvidó que tengo una cita", intent: "decline", not: ["agree", "good_idea"] },
+    { say: "¿Dónde está La Ceiba?", intent: "coffee_where_ctx", step: "coffee" },
+    { say: "Terminé la universidad y viajé por Asia", intent: "news", step: "upto" },
+    { say: "Me fui a vivir a Canadá y luego regresé", intent: "news", step: "upto" },
+    { say: "Hace tres años me mudé a México", intent: "news", step: "upto" },
+    { say: "Me cambié de casa", intent: "news", step: "upto" },
+    { say: "Me cambié de trabajo", intent: "news", step: "upto" },
+    { say: "Conseguí trabajo en un banco", intent: "news", step: "upto" },
+    { say: "Viví en España un año", intent: "news", step: "upto" },
+    { say: "Estuve viviendo en Londres cinco años", intent: "news", step: "upto", not: ["greet"] },
+    { say: "Nació mi hija en marzo", intent: "news", step: "upto" },
+    { say: "Compré una casa y abrí un negocio", intent: "news", step: "upto" },
+    { say: "He viajado muchísimo", intent: "news", step: "upto" },
+    { say: "No terminé la universidad", intent: "none", step: "upto", not: ["news"] },
+    { say: "Nunca viví en España", intent: "none", step: "upto", not: ["news"] },
+    { say: "¿Y tú, en qué trabajas?", intent: "ask_news", step: "upto" },
+    { say: "¿Dónde trabajas?", intent: "ask_news" },
+    { say: "¿Cómo se llama el restaurante?", intent: "ask_restaurant" },
+    { say: "¿Qué tipo de comida tiene?", intent: "ask_restaurant" },
+    { say: "¿Cuál es el tuyo?", intent: "ask_number", step: "numbers", not: ["mike_yes", "and_you"] },
+    { say: "¿Y el tuyo?", intent: "yours_ctx", step: "numbers", not: ["and_you"] },
+    { say: "Te paso el mío: 984 123 4567", intent: "number_ctx", step: "numbers" },
+    { say: "Mejor dame el tuyo y te hago una llamada perdida", intent: "ask_number", step: "numbers" },
+    { say: "¿Tienes dónde apuntar?", intent: "note_ctx", step: "numbers" },
+    { say: "Mi celular es más uno, cuatro uno cinco, cinco cinco cinco, cero uno cuatro dos", intent: "number_ctx", step: "numbers" },
+    { say: "Mi número es 984 123 4567", intent: "my_number", step: "upto" },
+    { say: "Va, ahí nos vemos", intent: "bye_ctx", step: "numbers", not: ["give_phone", "hand_phone_ctx"] },
     // not understood
     { say: "984 123 4567", intent: "none" },
     { say: "El perro está en la playa", intent: "none" },
@@ -1260,6 +1520,46 @@ export const oldFriend: SituationDef = {
       "No el viernes, el sábado.", "No tengo celular de aquí.", "¡Adiós!",
     ], expect: { complete: true, state: { mikeDinner: "yes", contact: true } }, auto: AUTO,
       setup: (s) => { PLAIN(s); s.askMike = true; s.mikeDinnerTwist = true; s.askFamily = false; s.askCoffee = false; } },
+    // The audit (5 Nov 2026). A refusal is respected: a bare "No, gracias" gets one "¿Seguro?", "Sí, seguro" keeps
+    // it, she never asks again and no number is recorded (the goal stays open)
+    { name: "number refused, respected", turns: [
+      "¡Paola! ¡Cuánto tiempo!", "¡Gracias!", "Bien, gracias.", "Nada nuevo.", "¡Felicidades!", "¡Qué bonito!", "No, gracias.", "Sí, seguro.", "¡Adiós!",
+    ], expect: { complete: false, state: { numberRefused: true, contact: undefined } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.askMike = false; s.askFamily = false; s.askCoffee = false; } },
+    // leaving before the swap: "¡Espérate…! ¿Cuál es tu número?" … "No, gracias": she lets the learner go
+    { name: "leaving without swapping", turns: [
+      "¡Hola, Paola!", "¡Gracias!", "Bien, gracias.", "Pues nada, estoy aprendiendo español.", "Perdón, me tengo que ir.", "No, gracias.",
+    ], expect: { complete: false, state: { numberRefused: true, contact: undefined } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.askMike = false; s.askFamily = false; s.askCoffee = false; } },
+    // in a hurry, and still no number: "No, gracias" … "No, de verdad"
+    { name: "in a hurry, number refused (twist)", turns: [
+      "¡Paola! ¡Qué milagro!", "¡Gracias, tú también!", "Muy bien, gracias.", "Tengo dos hijos.", "¡Felicidades!", "¡Qué bonito!", "No, gracias.", "No, de verdad.", "¡Cuídate!",
+    ], expect: { complete: false, state: { rushing: true, numberRefused: true, contact: undefined } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.rushTwist = true; s.askMike = false; s.askFamily = false; } },
+    // past-tense storytelling, her job ("¿Y tú, en qué trabajas?") and "¿Qué haces aquí?"
+    { name: "past-tense news, her job and home", turns: [
+      "¡Paola! ¿Qué haces aquí?", "¡Gracias!", "Bien, gracias. ¿Y tú?", "Terminé la universidad y viajé por Asia. ¿Y tú, en qué trabajas?", "¡Felicidades!", "¡Qué bonito!",
+      "Te paso mi número: 984 123 4567", "¡Adiós!",
+    ], expect: { complete: true, state: { jobSaid: true, liveSaid: true, contact: true } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.askMike = false; s.askFamily = false; s.askCoffee = false; } },
+    // Memo's restaurant (its name, the price), Friday no, then "¿Y el sábado?" (twist forced)
+    { name: "Memo's restaurant, Friday no, Saturday yes (twist)", turns: [
+      "¡Paola! ¡Cuánto tiempo!", "¡Gracias!", "Bien, gracias.", "Nada nuevo.", "¡Felicidades!", "¡Qué bonito!", "¡Claro! ¿Cómo está?",
+      "¿Cómo se llama el restaurante?", "¿Es caro?", "El viernes no puedo.", "¿Y el sábado?", "Mi número es 984 123 4567.", "¡Adiós!",
+    ], expect: { complete: true, state: { mikeDinner: "yes", contact: true } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.askMike = true; s.mikeDinnerTwist = true; s.askFamily = false; s.askCoffee = false; } },
+    // "Está bien, gracias" to an invitation is asked again, and a second one is a no (twist forced)
+    { name: "'Está bien, gracias' to the dinner and the coffee (twist)", turns: [
+      "¡Paola! ¡Cuánto tiempo!", "¡Gracias!", "Bien, gracias.", "Nada nuevo.", "¡Felicidades!", "¡Qué bonito!", "¡Claro! ¿Cómo está?", "Está bien, gracias.", "No, gracias, otro día.",
+      "Está bien, gracias.", "Está bien, gracias.", "Mi número es 984 123 4567.", "¡Adiós!",
+    ], expect: { complete: true, state: { mikeDinner: "no", coffee: "no", dinnerMaybe: true, coffeeMaybe: true } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.askMike = true; s.mikeDinnerTwist = true; s.askFamily = false; s.askCoffee = true; } },
+    // the coffee agreed, then an appointment remembered: no coffee, no joke at the goodbye
+    { name: "coffee yes, then an appointment remembered", turns: [
+      "¡Paola! ¡Cuánto tiempo!", "¡Gracias!", "Bien, gracias.", "Nada nuevo.", "¡Felicidades!", "¡Qué bonito!", "¡Sí, vamos!", "Ay, perdón, se me olvidó que tengo una cita.",
+      "Mi número es 984 123 4567.", "¡Adiós!",
+    ], expect: { complete: true, state: { coffee: "no", coffeeOff: true } }, auto: AUTO,
+      setup: (s) => { PLAIN(s); s.askMike = false; s.askFamily = false; s.askCoffee = true; } },
   ],
 };
 

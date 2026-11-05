@@ -1028,8 +1028,8 @@ export const startup: SituationDef = {
     ],
     mean_ropes: [
       t("It | means | learning | how | things | work | here. | Sailors | had | to learn | all | the | ropes | on a ship.",
-        "Tai | reiškia | mokytis, | kaip | viskas | veikia | čia. | Jūreiviai | turėjo | išmokti | visas | — | virves | laive.",
-        "Tai reiškia išmokti, kaip čia viskas veikia. Jūreiviai laive turėjo išmokti visas virves."),
+        "Tai | reiškia | mokytis, | kaip | viskas | veikia | čia. | Jūreiviai | turėjo | išmokti naudotis | visomis | — | virvėmis | laive.",
+        "Tai reiškia išmokti, kaip čia viskas veikia. Jūreiviai turėjo išmokti naudotis visomis laivo virvėmis."),
       t("Just | means | you're | figuring out | how | everything | works. | Totally | normal | in | week | one.",
         "Tiesiog | reiškia, | kad tu | aiškiniesi, | kaip | viskas | veikia. | Visiškai | normalu | per | savaitę | pirmą.",
         "Tiesiog reiškia, kad aiškiniesi, kaip viskas veikia. Pirmą savaitę tai visiškai normalu.",

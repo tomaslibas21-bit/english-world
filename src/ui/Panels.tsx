@@ -343,13 +343,14 @@ function Settings({ close }: { close: () => void }) {
       <SheetHead icon="settings" title={L("Nustatymai")} close={close} />
       <div className="sheet-body settings-grid">
         <Toggle on={s.lt} onChange={(v) => set({ lt: v })} label={L("Lietuviški vertimai (L)")} sub={L("Žodis po žodžio po pašnekovo sakiniais.")} />
-        <Toggle on={s.ltNatural} onChange={(v) => set({ ltNatural: v })} label={L("Visas sakinys lietuviškai")} sub={L("Rodoma, kai įjungti vertimai.")} />
+        <Toggle on={s.ltNatural} onChange={(v) => set({ ltNatural: v })} label={L("Visas sakinys lietuviškai (N)")} sub={L("Rodoma, kai įjungti vertimai.")} />
         <Toggle on={s.ipa} onChange={(v) => set({ ipa: v })} label={L("Tarimas IPA (I)")} sub={L("Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).")} />
         <Toggle on={s.sayLt} onChange={(v) => set({ sayLt: v })} label={L("Tavo atsakymų vertimas")} sub={L("Po pavyzdžiais „Tavo eilė“ ir „Daugiau frazių“.")} />
         <Toggle on={s.sayIpa} onChange={(v) => set({ sayIpa: v })} label={L("Tavo atsakymų tarimas IPA")} sub={L("Po kiekvienu pavyzdžių žodžiu.")} />
         <Toggle on={s.suggestions} onChange={(v) => set({ suggestions: v })} label={L("Pasiūlymai, ką pasakyti")} sub={L("Lietuviški pasiūlymai tavo eilėje.")} />
         <Toggle on={s.hintsOpen} onChange={(v) => set({ hintsOpen: v })} label={L("Frazės atidarytos iš karto")} sub={Lx("Kitaip atsidaro paspaudus {bulb} (H).", { bulb: <InlineIcon name="bulb" label={L("lemputę")} /> })} />
         <Toggle on={s.autoListen} onChange={(v) => set({ autoListen: v })} label={L("Mikrofonas įsijungia automatiškai")} sub={L("Kai pašnekovas baigia kalbėti.")} />
+        <Toggle on={s.confirmSpeech} onChange={v=>set({confirmSpeech:v})} label={L("Patvirtinti atpažintą tekstą")} sub={L("Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį.")} />
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label={L("Žmonės kalba lėčiau")} />
         {EDITION.id === "es" && <VarietyToggle />}
         {(local === "available" || local === "downloadable" || local === "downloading") && (
@@ -393,6 +394,7 @@ function Settings({ close }: { close: () => void }) {
           {s.onDevice && (local === "downloadable" || local === "downloading") && <> {L("Kad atpažinimas vyktų šiame įrenginyje, Chrome turi atsisiųsti anglų kalbą.")} <button className="btn small" onClick={async () => { const ok = await installLocal(); await refreshLocalState(); setLocal(await localAvailability()); useStore.getState().toast({ kind: ok ? "success" : "info", title: ok ? L("Įdiegta!") : L("Nepavyko įdiegti"), body: ok ? L("Atpažinimas vyks šiame įrenginyje.") : L("Bus naudojamas naršyklės internetinis atpažinimas.") }); }}>{L("Įdiegti anglų kalbą")}</button></>}
           <br />{Lx("Žaidimas nenaudoja jokio mokamo dirbtinio intelekto: visi pokalbiai ir balsų įrašai paruošti iš anksto. Jei nenori kalbėti į mikrofoną, visada gali rašyti {keyboard}.", { keyboard: <InlineIcon name="keyboard" label={L("klaviatūra")} /> })}
         </div>
+        {import.meta.env.BASE_URL === "/zaidimas/" && <div className="set-row"><a className="btn ghost small" href="/atsisiuntimai" target="_top">{L("Atsisiuntimai ir failų pašalinimas")}</a></div>}
         <div className="set-row">
           <div className="txt"><b>{L("Pradėti iš naujo")}</b><span>{L("Ištrina šios naršyklės išsaugotą progresą.")}</span></div>
           <button className="btn ghost small" onClick={() => { if (confirm(L("Tikrai ištrinti progresą?"))) { useStore.getState().updateProgress((p) => { Object.assign(p, emptyProgress()); }); location.reload(); } }}>{L("Ištrinti")}</button>

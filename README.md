@@ -26,6 +26,7 @@ npx tsx tools/coverage.ts --fails                      # practice sentences (tes
 npx tsx tools/coverage.ts --dir=tests/heldout --half=even   # blind learner sentences (never tune on these)
 npx tsx tools/contexts.ts s72 --out=tests/contexts     # every point where the learner answers (for writing test sentences)
 npx tsx tools/offer-probe.ts s72                       # options someone offers ("Blueberry or chocolate?") that the learner can't pick
+node tools/en-tour.mjs --url=http://localhost:5188 --out=/tmp/tour   # with `npm run dev` and Playwright: walk to every conversation, every speaker in the picture
 ```
 
 Rebuilding generated assets (development only, never at runtime):
@@ -67,7 +68,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 
 - Arrow keys or WASD to walk (camera-relative), Shift to run. Mouse: click the ground to walk there, click a person or door to go to it, drag to look around, wheel to zoom.
 - **E** / Enter: talk or enter. **G**: walk to the current goal. **M** map, **J** journal, **P** phone, **Esc** settings.
-- In a conversation: **Space** microphone on/off, **T** type, **H** hints, **L** Lithuanian, **I** IPA, **R** repeat, **Esc** leave.
+- In a conversation: **Space** microphone on/off, **T** type, **H** hints, **L** Lithuanian, **N** the whole sentence in Lithuanian, **I** IPA, **R** repeat, **Esc** leave.
 - Touch: an on-screen joystick appears on touch devices; tapping works like clicking.
 
 ## How it works

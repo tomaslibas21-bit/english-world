@@ -27,7 +27,8 @@ The one blind miss left, "Vale, hasta mañana a las ocho", is read as a goodbye 
 
 ## For the lead / the owner
 - **Memo** is also the name of another person in s86-old-friend. If each name should belong to one person, rename the developer here. That's the owner's call, along with the writer's four names. (Done 5 Nov: the developer is Lalo; see the end of this file.)
-- Overtime stays vague ("como dice la ley", no rate), which I think is right. "¿Quién la regó?" is still not understood: the pattern is there but doesn't match (maybe the engine reads "regó" as a slip). There is no test for it.
+- Overtime stays vague ("como dice la ley", no rate), which I think is right. "¿Quién la regó?" is still not understood: the pattern is there but doesn't match (maybe the engine reads "regó" as a slip). There is no test for it. (Audit 5 Nov: both done. The
+  pay is now stated, double as the law says, and the pattern needed the accent on "regó"; see the end of this file.)
 
 ## 5 Nov 2026: the developer is Lalo
 
@@ -38,3 +39,68 @@ hint "Hay que llamar a Lalo." (`ask_lalo`), the patterns (`ppl`, `asklalo`, `pl_
 `delegLine`), one NLU test plus a new one ("¿Quién es Lalo?"), and the corpus (3 items renamed, 5 added). Before the
 rename no Lalo (or Eduardo) existed anywhere in the edition's content, briefs, tests or docs. **Rodrigo stays**: Don
 Rigo, the taxi driver (`vinnie`), is never called Rodrigo (npcs.ts, s66, VOICES.md, the picture manifests).
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer (AUDIT-BRIEF.md). Read: STYLE.md, AUTHORING-ES.md, the brief, this file, the cross and neutral audit
+files for p18, the situation file, the corpus and the held-out set; the transcripts on seeds 3 and 7; 25 probed
+scenarios (tools/probe.ts); every changed line and hint rendered in both texts.
+
+**Found, by point** (23; 22 fixed here, 1 for a shared file):
+
+1. **Natural Spanish (4).** "Semana grande" for "big week" is an English calque Mexicans don't use that way →
+   "semana intensa" (pile_intro[1], mid_1). mid_why repeated mid_1's phrase and listed "la fiesta", which Toño had
+   just moved to next week → "Los inversionistas, la presentación, el lanzamiento… ¡todo es esta semana!". mid_yes
+   "Y sí, son pagadas" had no subject → "Y sí, las horas extra se pagan" (and "Otherwise" in the English). "No sé" at
+   the midnight request got "¿Pagadas? Eh… sí." (an answer to a question nobody asked) → a new line, mid_help:
+   "Bueno, te propongo algo: hasta las nueve, con horas extra pagadas. ¿Trato hecho?".
+2. **tú/usted (0).** Toño is informal; the hints say tú to him; usted to him is understood.
+3. **Names (0).** The Lalo rename is complete and natural (five lines, the hint, the patterns, `PERSON`, `delegLine`,
+   the corpus; Memo is left only in the header's note). Raquel, Beto, Rodrigo, Lalo and Wifi are unique ("Wifi"
+   elsewhere is the network); Rodrigo vs. Don Rigo stays as the lead decided.
+4. **Facts (3).** Overtime: "como dice la ley" gave no rate → "Se pagan dobles, como dice la ley" (Ley Federal del
+   Trabajo, art. 67; the 40-hour reform, DOF 1 May 2026, keeps double pay while its caps change in stages, so no cap
+   is said). "Paramos a las nueve" is three hours after the six o'clock end, inside the daily cap before and after the
+   reform. "Puedo quedarme hasta las seis" got "Horas extra pagadas" although six is the normal end ("Vete a tu casa a
+   las seis") → it is now that answer (mid_cant). A deadline question about the party, the photo, the bug reports
+   or the emails got the deck's deadline ("El viernes a las doce…") → each gets its own line (wa_party "¿La fiesta?
+   La próxima semana…", wa_photo, wa_bugs, wa_emails; the budget, payroll and code send you to Raquel or Lalo).
+   Brotecito at the malecón's end (TOWN.md) fits "a warehouse on the waterfront"; no directions are given.
+5. **Glosses and English (3).** prio_ok_then / prio_wait said "the reports of bugs" (a plural binding with no
+   `natPl`) → `natPl` on both always-plural items ("the bug reports", "the customer emails"). "Shall-we-do" /
+   "shall-we-meet" glosses → "Should-we-…" (American). who_ask's flag said le doubles a person "after the verb" →
+   "le doubles “a quién”".
+6. **Spelling (1).** The pattern "quien (la rego | …)" had the past without its accent, so "¿Quién la regó?" never
+   matched (the open note above) → "la regó".
+7. **Questions (7).** Must-fix: "¿Hasta la medianoche?", "¿Hasta las doce?" and "¿Me quedo hasta la medianoche?"
+   (Toño's demand asked back) recorded a promise to stay ("¡Eres un crack!…"), and at the nine o'clock deal booked it
+   ("Trato hecho"). Now midnight asked back, or said next to a refusal ("Hasta la medianoche, no puedo"), is never a
+   yes: Toño gives his reason once and asks again. "La verdad, estoy agotado" at "¿Es demasiado?" left the question
+   open (asked again after the answer), and "Más o menos" got the global "¡Ay, lo siento!" → both say it's too much
+   and close it. Not understood before: "¿Cuánto me pagan?", "¿Se pagan dobles?", "¿Me vas a pagar las horas
+   extra?"; "Puedo hasta las siete", "¿Puedo irme a las ocho?", "A las siete me voy"; "¿Es obligatorio?", "¿Tengo
+   que quedarme?" (his reason, then his question); "¿Cuándo vienen los inversionistas?"; the neutral idioms asked
+   back ("¿Poner de nuestra parte?", "¿A la carrera?", "¿Dale con todo?", "¿El ritmo?").
+8. **Hints (1, left).** The two always-plural items come out singular in the hints: see "Left".
+9. **Accepted answers (0 found).** 0 false accepts before and after. Corpus +32 (14 with `not` lists, 2 of them pure
+   traps), NLU +16, sims +4.
+10. **Neutral (4).** Four hints had a Mexican-only idiom and no twin: "le estoy agarrando la onda", "al aventón"
+    (twice) and "¿Cómo que “jalar parejo”?", which the neutral Toño never says → twins "le estoy agarrando el ritmo",
+    "a la carrera", "¿Cómo que “poner de su parte”?". The 17 line twins are right. mean_chamba explains "chamba" only
+    when the learner asks about the word, which is right in both texts (no twin). mean_parejo[1]'s rope picture still
+    explains "poner de su parte" (left as it is).
+
+**Left for the lead (shared files).** `src/convo/suggest.ts` `composeFull` binds the hint's X as a bare id (qty 1),
+so "los reportes de errores" / "los correos de clientes" (attrs.plural) show and will be voiced singular in the
+hints: "Estoy hasta el cuello con el reporte de errores" (the overload group's first example), "¿Alguien más puede
+hacer el reporte de errores?", "¿Quién se encarga del correo de clientes?". Bind `{ id, qty: 2 }` for attrs.plural
+there, as proposed for tools/es-voices/lines-es.ts. The entity types allow `def` "el"/"la" only, so this file can't
+make the items plural by themselves. Not understood, left to the engine's fallback: "¿Qué pasó?" after the crash
+and "¿En serio?" at the midnight request.
+
+**For the voices.** One speaker (Toño). Changed: pile_intro[1], mid_1, mid_why, mid_paid, mid_yes; new: mid_help;
+neutral only: the four hint twins. None of the changed lines has a Mexican-only word, so none needs a line twin.
+
+**Gates (worktree, niced).** tsc clean; check-content ✓ 0 errors 0 warnings, NLU 116/116 (was 100), 21 sims 12/12
+(was 17), fuzz 80; corpus 233/233, 0/32 false accepts (was 203/203, 0/30); held-out 39/40, 0/1 (unchanged); vitest
+es 113/113.

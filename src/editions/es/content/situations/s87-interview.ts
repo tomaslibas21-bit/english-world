@@ -22,7 +22,9 @@
 // - "Home office" is what Mexican offices say for working from home (neutral twin: "trabajar desde casa").
 // - The learner is a newcomer from an English-speaking country: "¿De dónde es?" answers are Canada, the US, the UK…;
 //   the "English is my weakness" answer became "Mi español todavía no es perfecto".
-// - Working hours nine to six with an hour for lunch (a common Mexican office day); no Saturday is promised.
+// - Working hours nine to six with an hour for lunch, two to three (as s88 says); no Saturday is promised.
+// - What Línea Clara does is said nowhere in the edition (clients, projects, a website): asked, she says "una empresa de
+//   servicios" with clients all over the area. A salary said in dollars gets "Aquí pagamos en pesos" (pesos a month).
 // - She never says her first name (npcs.ts gives only "Licenciada Salinas"): asked, she says "Soy la licenciada
 //   Salinas, para servirle".
 // NEEDS: (npcs.ts) a first name for Licenciada Salinas would let her introduce herself as Mexicans do ("Soy Mariana
@@ -294,7 +296,7 @@ const S_SIDE: Suggestion = { lt: "Say you're nervous, or ask her to repeat", hin
 const S_ASK: Suggestion = { lt: "Ask about the job: hours, training, start date", hint: "ask_them" };
 const S_NO_Q: Suggestion = { lt: "Say you have no more questions", hint: "no_q" };
 const Q_INTENTS = ["q_hours", "q_training", "q_start", "q_team", "q_remote", "q_benefits", "q_day", "q_next", "q_dress", "q_parking", "q_like",
-  "salary_range_q", "no_questions", "no_questions_ctx", "can_ask", "q_other_ctx"];
+  "q_mood", "q_company", "salary_range_q", "no_questions", "no_questions_ctx", "can_ask", "can_ask_ctx", "q_other_ctx"];
 /** Model questions in sets of three (hint group, the answer keys it covers, the suggestion). */
 const Q_SETS: [string, string[], string][] = [
   ["ask_them", ["hours", "training", "start"], "Ask about the job: hours, training, start date"],
@@ -363,7 +365,8 @@ export const interview: SituationDef = {
       hobby: "(leer | nadar | bucear | cocinar | correr | viajar | la musica | el deporte | el futbol | caminar | pintar | la fotografia | el yoga | bailar | la playa | el surf | hacer ejercicio)",
       lang_spoken: "(hablo | se | domino | tambien hablo | ademas hablo | hablo un poco de | se un poco de)",
       soon: "(de inmediato | inmediatamente | ya | ya mismo | ahora mismo | manana mismo | hoy mismo | desde hoy | desde manana | cuando ustedes quieran | cuando usted quiera | lo antes posible | cuanto antes | manana | hoy | desde ya | luego luego)",
-      later: "(la proxima semana | la semana que entra | la semana que viene | el proximo mes | el mes que entra | el mes que viene | en (una | dos | tres) semanas | en quince dias | en un mes | en {number} (dias | semanas) | el primero [del proximo mes | del mes que entra | de mes] | a principios del (proximo mes | mes que entra) | el {date} | a partir del {day} | a partir del {date})",
+      month: "(enero | febrero | marzo | abril | mayo | junio | julio | agosto | septiembre | setiembre | octubre | noviembre | diciembre)",
+      later: "(la proxima semana | la semana que entra | la semana que viene | el proximo mes | el mes que entra | el mes que viene | en (una | dos | tres) semanas | en quince dias | en un mes | en {number} (dias | semanas) | el primero [del proximo mes | del mes que entra | de mes] | a principios del (proximo mes | mes que entra) | el {date} | a partir del {day} | a partir del {date} | (en | para | a partir de | desde | a principios de | a mediados de | a finales de | a fines de) @month)",
     },
     slots: {
       dur: { fn: durSlot },
@@ -419,7 +422,8 @@ export const interview: SituationDef = {
     found_ctx: { patterns: ["[si] (todo bien | muy bien gracias | bien gracias | muy bien) #ok", "[no] (no muy | mas o menos)", "[no] [un poco | algo | muy] (dificil | complicado)"] },
     want_drink: { patterns: [
       "[si] (un vaso de | un vasito de | una botella de) agua [esta bien | estaria bien] #h:water", "[si] agua [esta bien | estaria bien | nada mas | nomas]",
-      "[si] (solo | nomas) agua", "[si] (un cafe | cafe | un cafecito) #coffee [estaria bien | seria genial | esta bien] [con leche | negro | americano | con azucar | sin azucar] #h:coffee",
+      "[si] (solo | nomas) agua", "[si] [un vaso de | un vasito de] agua (natural | simple | sola | fria | al tiempo) [esta bien | estaria bien]",
+      "[si] (un cafe | cafe | un cafecito) #coffee [estaria bien | seria genial | esta bien] [con leche | negro | americano | con azucar | sin azucar] #h:coffee",
       "[si] (me da | me puede dar | me regala | me podria dar | ponme | me pone) (un vaso de agua | un vasito de agua | agua | un cafe #coffee | cafe #coffee | un cafecito #coffee)",
       "(quiero | quisiera | me gustaria | me encantaria | me tomo) (agua | un vaso de agua | un cafe #coffee | cafe #coffee | un cafecito #coffee)",
     ] },
@@ -479,7 +483,8 @@ export const interview: SituationDef = {
       "(terminé | acabé) (la universidad | la carrera | mis estudios | la escuela | la prepa) [el ano pasado | este ano | hace {dur} | en {year}] #grad",
       "(soy | estoy) (recien egresado | recien egresada | recien graduado | recien graduada) #grad", "(soy | estoy) (nuevo | nueva) en (esto | este campo | el area)",
     ] },
-    age: { patterns: ["tengo {number} anos [de edad]"] },
+    // "Tengo treinta años" (an age), or "Tengo diez años" answering "¿Cuánto tiempo tiene trabajando…?": the handler decides
+    age: { patterns: ["tengo {dur} [de edad]"] },
     not_job: { patterns: [
       "no soy {job} [ya]", "ya no soy {job}", "no (trabajo | trabajé | he trabajado) (en {field} | como {job} | de {job})", "nunca (he trabajado | trabajé) (en {field} | como {job} | de {job})",
       "no tengo {dur} [de experiencia]", "nunca (he sido | fui) {job}", "[antes] (fui | era) {job} pero ya no",
@@ -619,19 +624,25 @@ export const interview: SituationDef = {
 
     // --- five years -------------------------------------------------------------------------------
     future_ans: { patterns: [
-      "(aqui | aqui mismo) [con ustedes] #h:fu_here", "(aqui | en linea clara | en esta empresa | con ustedes) con (mas responsabilidades | un mejor puesto | un puesto mas alto)",
-      "(me gustaria | quiero | espero) (dirigir | coordinar | liderar) un equipo #h:fu_lead", "(liderando | dirigiendo | coordinando) un equipo",
-      "(me gustaria | quiero | espero) (crecer | desarrollarme) (con | en) la empresa #h:fu_grow", "(creciendo | aprendiendo) [con la empresa | aqui]",
-      "en un puesto (de gerente | gerencial | de liderazgo | de mas responsabilidad) #h:fu_management",
+      "(me gustaria | quiero | espero) (dirigir | coordinar | liderar) un equipo #h:fu_lead",
+      "(me gustaria | quiero | espero) (crecer | desarrollarme) (con | en) la empresa #h:fu_grow",
       "(me gustaria | quiero | espero) (ser | llegar a ser) (lider de equipo | gerente | jefe | jefa | supervisor | supervisora | coordinador | coordinadora) #h:fu_become",
       "[en cinco anos] (me veo | me imagino) (aqui | en la empresa | con ustedes | como gerente | dirigiendo un equipo | con mas responsabilidades)",
       "[en cinco anos] (me veo | me imagino | espero estar | quiero estar | me gustaria estar) [aqui] [como | de] (gerente | lider | jefe | jefa | supervisor | supervisora | coordinador | coordinadora | {job}) [de [un | mi] equipo | del (area | departamento)] [aqui | en la empresa | con ustedes]",
       "en cinco anos (quiero | me gustaria | espero) (dirigir | coordinar | liderar | tener) [un | mi propio] equipo",
-      "(como | de) (gerente | lider de equipo | supervisor | supervisora | jefe | jefa | coordinador | coordinadora)",
       "(me gustaria | quiero | espero) (un ascenso | tener mas responsabilidades | ser (experto | experta) en {field})",
-      "(aqui | en la empresa | en linea clara | con ustedes) [en la empresa | con ustedes] [con (mas responsabilidades | un mejor puesto)]", "con (mas responsabilidades | un mejor puesto | un puesto mas alto)",
-      "(quiero | me gustaria | espero) seguir (aprendiendo | creciendo) [aqui | con ustedes]", "(liderando | dirigiendo | coordinando) (mi propio | mi) equipo",
+      "(quiero | me gustaria | espero) seguir (aprendiendo | creciendo) [aqui | con ustedes]",
       "(me gustaria | quiero | espero) (crecer | desarrollarme) (aqui | con ustedes | en la empresa | dentro de la empresa)",
+    ] },
+    // bare places and roles ("Aquí mismo", "Como gerente", "En la empresa") answer "¿Dónde se ve en cinco años?" only
+    // (as a plain intent, "¿Qué hace la empresa?" was a question plus "Suena muy bien")
+    future_ctx: { patterns: [
+      "(aqui | aqui mismo) [con ustedes] #h:fu_here", "(aqui | en linea clara | en esta empresa | con ustedes) con (mas responsabilidades | un mejor puesto | un puesto mas alto)",
+      "(liderando | dirigiendo | coordinando) un equipo", "(creciendo | aprendiendo) [con la empresa | aqui]",
+      "en un puesto (de gerente | gerencial | de liderazgo | de mas responsabilidad) #h:fu_management",
+      "(como | de) (gerente | lider de equipo | supervisor | supervisora | jefe | jefa | coordinador | coordinadora)",
+      "(aqui | en la empresa | en linea clara | con ustedes) [en la empresa | con ustedes] [con (mas responsabilidades | un mejor puesto)]", "con (mas responsabilidades | un mejor puesto | un puesto mas alto)",
+      "(liderando | dirigiendo | coordinando) (mi propio | mi) equipo",
     ] },
     future_away: { patterns: [
       "[no se] (quiza | tal vez | a lo mejor) (en otro pais | de regreso en mi pais | en otro lugar)", "(me gustaria | quiero) (tener | abrir | poner) mi propio negocio",
@@ -668,13 +679,18 @@ export const interview: SituationDef = {
       "[si] (soy | ya soy) residente (permanente | temporal) [con permiso para trabajar] #h:a_res",
       "[si] (tengo | traigo) (permiso de trabajo | permiso para trabajar | mi tarjeta de residente | tarjeta de residente | visa de trabajo | mis papeles en orden | mis papeles) #h:a_permit",
       "[si] (todo esta | mis papeles estan) en orden", "[si] tengo (visa de residente | visa de trabajo) [temporal | permanente]", "[si] tengo (doble nacionalidad | la nacionalidad mexicana)",
+      "[si] [ya] (tengo | traigo) mi tarjeta [de residente | de residencia]", "[si] ya (tengo | traigo) (permiso de trabajo | permiso para trabajar | visa de trabajo | mis papeles [en orden])",
+      "[si] (soy | tambien soy) (ciudadano mexicano | ciudadana mexicana)",
     ] },
     auth_pending: { patterns: [
       "[todavia no | aun no | no] (mi residencia | mi permiso | mis papeles | el permiso | mi tarjeta) (esta | estan | sigue | siguen) en (tramite | proceso) #h:a_waiting",
       "[todavia no | aun no | no] (estoy | ando) tramitando (mi residencia | el permiso | mi permiso | mis papeles | la residencia)",
       "[no] no tengo (permiso | permiso de trabajo | permiso para trabajar | residencia | visa de trabajo | papeles) [todavia | aun]",
       "[todavia no | aun no] (estoy esperando | espero) (mi residencia | mi tarjeta | el permiso | mi permiso)",
-      "[no] [solo | nomas] tengo (visa de turista | visa de visitante | pasaporte) [nada mas | todavia]",
+      "[no] [solo | nomas] tengo (visa de turista | visa de visitante | visa de estudiante | pasaporte) [nada mas | todavia]",
+      // "No, todavía no tengo permiso" in one piece (it was "no sé" + the answer: "Sin prisa. Muy bien…" and no next question)
+      "[no] (todavia | aun) no tengo (permiso | permiso de trabajo | permiso para trabajar | residencia | la residencia | visa de trabajo | papeles | mis papeles) [todavia | aun]",
+      "(soy | tengo) [la] (residente | residencia) (temporal | permanente) pero (sin | no tengo) permiso [de trabajo | para trabajar]",
       "[si | no] [pero] (mi residencia | mi permiso | mis papeles | el permiso | mi tarjeta) (todavia | aun) (esta | estan | sigue | siguen) en (tramite | proceso)", "[todavia no | aun no] (estoy | sigo) en (tramite | proceso)", "[todavia | aun] no (soy residente | tengo [la] residencia) [permanente | temporal]", "[no] (soy | estoy como) turista [por ahora | todavia]",
     ] },
 
@@ -686,15 +702,22 @@ export const interview: SituationDef = {
     salary_flexible: { patterns: [
       "(soy | estoy) (flexible | abierto | abierta) [a negociar | a escuchar su oferta] #h:s_flexible", "es negociable #h:s_negotiable",
       "lo (podemos | pudieramos) (negociar | platicar | hablar)", "lo que (ustedes | usted) (consideren | considere) justo", "depende de las prestaciones",
-      "lo que (ofrezcan | ofrezca) [esta bien]",
+      "lo que (ofrezcan | ofrezca) [esta bien]", "lo que sea justo", "(me parece | es | se me hace) [muy] (justo | razonable)",
     ] },
     salary_more: { patterns: ["(esperaba | pensaba en | buscaba) [un poco | algo] mas #h:range_more", "[es] (un poco | algo) bajo [para mi]", "(un poco | algo) mas"] },
-    // only at the salary question and "¿Le parece bien?": "Más o menos", "Me parece poco"
-    range_ctx: { patterns: ["[no] mas o menos", "[no] [me] (parece | es) [un poco | algo | muy] (poco | bajo)", "[no] (no mucho | no tanto)"] },
+    // only at the salary question and "¿Le parece bien?": "Más o menos", "Me parece poco", "No me parece justo"
+    range_ctx: { patterns: ["[no] mas o menos", "[no] [me] (parece | es) [un poco | algo | muy] (poco | bajo)", "[no] (no mucho | no tanto)",
+      "no (me parece | se me hace | es) [muy] (justo | suficiente | bien)"] },
+    // a salary in dollars ("Mil dólares al mes"): she asks for it in pesos a month (salary step and "¿Le parece bien?" only)
+    salary_usd_ctx: { patterns: [
+      "[@sal_pre] [unos | unas | alrededor de | como | mas o menos | aproximadamente] {number} [mil] (dolares | dolar | dlls | dls | usd) [americanos | estadounidenses | canadienses] [al mes | mensuales | por mes | al ano | anuales | por ano | a la semana | por semana | por hora]",
+      "(en | son) dolares",
+    ] },
     salary_range_q: { patterns: [
       "cual es el (rango | sueldo | salario) (para | de) (este puesto | el puesto) #h:s_range_q", "cuanto (paga | pagan | se paga) [el puesto | este puesto]",
       "cuanto es el (sueldo | salario)", "(que | cuanto) (sueldo | salario) (ofrecen | manejan | tienen)", "cual es el (sueldo | salario | rango)",
       "cuanto (pagas | ofreces) #tip:tu_staff", "y el (sueldo | salario) [cuanto es]", "cuanto (voy a ganar | ganaria | se gana) [aqui | en este puesto | al mes]",
+      "(cual | cuanto) (seria | es) mi (sueldo | salario)", "(cual | cuanto) seria el (sueldo | salario)",
     ] },
 
     // --- start date -------------------------------------------------------------------------------
@@ -715,6 +738,7 @@ export const interview: SituationDef = {
     start_ctx: { patterns: [
       "@soon #h:st_asap", "[el] {day}", "@later #h:st_weeks", "desde el {day}", "{day} (esta bien | me queda bien) [para mi]",
       "(cuando | lo que) (ustedes | usted) (quieran | quiera | necesiten | necesite | digan | diga)", "mejor (@later | [el] {day} | @soon)",
+      "cuando (quieran | quiera | necesiten | necesite | digan | diga)", "@month",
     ] },
 
     // --- why hire you -----------------------------------------------------------------------------
@@ -728,12 +752,18 @@ export const interview: SituationDef = {
 
     // --- the learner's questions ------------------------------------------------------------------
     can_ask: { patterns: ["(puedo | le puedo | podria) (hacerle | hacer) (una pregunta | unas preguntas | algunas preguntas)", "[si] tengo (una | unas | algunas | un par de | dos) (pregunta | preguntas | dudas | duda)", "(si | la verdad) de hecho si", "[si] (una pregunta | una duda | tengo una duda | otra pregunta)", "te puedo hacer una pregunta #tip:tu_staff"] },
+    // "Sí, una." / "Sí, varias." answer "¿Tiene alguna pregunta para mí?" only (a bare "una" means other things elsewhere)
+    can_ask_ctx: { patterns: ["[si] (una | dos | tres | varias | algunas | un par | unas cuantas | otra | otra mas | una mas | una cosa | una cosita | un par de cosas)"] },
     q_hours: { patterns: [
       "cual es el horario [de trabajo] #h:q_hours", "(cual | que) horario (tienen | manejan | es | seria)", "a que hora (se entra | se sale | entraria | saldria | entro | salgo | empieza | termina) [el trabajo | la jornada]",
       "de que hora a que hora (es | se trabaja | seria)", "cuantas horas (al dia | a la semana | por dia | por semana | se trabaja | trabajaria)",
       "(es | el trabajo es | el puesto es) [de] tiempo completo #full", "(es | el trabajo es | el puesto es) [de] medio tiempo #part",
       "(se trabaja | hay que trabajar | trabajaria | tendria que trabajar) (los sabados | los fines de semana | de noche) #weekend",
       "(se trabajan | hay que trabajar | trabajaria | tendria que trabajar) horas extra #extra", "(hay | tienen) horas extra #extra", "(hay | tienen) hora de comida",
+      "(es | se trabaja | trabajaria | seria) de lunes a viernes #days", "[y] (el horario | los horarios)",
+      // lunch is two to three (s88)
+      "a que hora (es la comida | es la hora de la comida | es la hora de comida | se come | comen | salen a comer | saldria a comer | es el almuerzo | almuerzan) [aqui] #lunch",
+      "(cuanto | cuanto tiempo) (dura | es | tenemos | tengo | tendria | hay) (la comida | la hora de comida | la hora de la comida | para comer | el almuerzo) #lunch",
     ] },
     q_training: { patterns: [
       "(hay | dan | tienen | me darian | habra | hay alguna) (capacitacion | entrenamiento | induccion) [para la gente nueva | para los nuevos] #h:q_training",
@@ -747,13 +777,16 @@ export const interview: SituationDef = {
     q_remote: { patterns: [
       "(puedo | se puede | podria) (hacer home office | trabajar desde casa | trabajar en casa | trabajar a distancia) [algunos dias | a veces] #h:q_remote",
       "(hay | tienen | manejan | dan) (home office | trabajo remoto | trabajo hibrido | esquema hibrido)", "es (presencial | remoto | hibrido) [el trabajo | el puesto]",
-      "(el trabajo | el puesto) es (presencial | remoto | hibrido)", "cuantos dias (de home office | de trabajo remoto | desde casa) (hay | dan | tienen | puedo)",
+      "(el trabajo | el puesto) es (presencial | remoto | hibrido)", "cuantos dias (de home office | de trabajo remoto | desde casa | de trabajo en casa) [hay | dan | tienen | puedo | son | serian]",
     ] },
     q_benefits: { patterns: [
       "(que | cuales) prestaciones (tiene el puesto | tienen | ofrecen | hay | dan) #h:q_benefits", "cuales son las prestaciones", "(hay | tienen | dan) prestaciones [de ley]",
       "(hay | tienen | dan) (seguro medico | seguro de gastos medicos | seguro social | vales de despensa | aguinaldo)",
       "cuantos dias de vacaciones (tengo | tendria | dan | son | hay | tienen) #vac", "(cuantas | cuanto) vacaciones (tengo | dan | tendria | hay) #vac",
-      "y (las prestaciones | con prestaciones)",
+      "y (las prestaciones | con prestaciones)", "y las vacaciones #vac",
+      // the IMSS (seguro social) and the other benefits the law requires: "¿Tienen IMSS?" had "Lo reviso y le aviso"
+      "(hay | tienen | dan | tendria) (imss | el imss | seguro | infonavit | imss e infonavit | prima vacacional | reparto de utilidades | utilidades | fondo de ahorro | seguro de gastos medicos mayores)",
+      "(me dan | me darian | me van a dar) de alta en el (imss | seguro | seguro social)", "(estaria | voy a estar) (dado | dada) de alta en el (imss | seguro | seguro social)",
     ] },
     q_day: { patterns: [
       "como es un dia (normal | tipico) [de trabajo] [aqui] #h:q_day", "que (haria | voy a hacer | tendria que hacer) (todos los dias | en el puesto | aqui)",
@@ -763,14 +796,22 @@ export const interview: SituationDef = {
       "cuales son los siguientes pasos #h:q_next", "cual es el siguiente paso", "cuando (me avisan | me llaman | sabre | me dan una respuesta | tendre una respuesta | deciden)",
       "que sigue [ahora | despues]", "cuando (sabria | voy a saber) (algo | la respuesta | el resultado)",
     ] },
-    q_dress: { patterns: ["(hay | tienen) (codigo de vestimenta | dress code | uniforme) #h:q_dress", "como (hay que | tengo que | debo) vestirme", "(que | como) ropa (uso | hay que usar | se usa)", "como me tengo que vestir", "como (hay que | tengo que | debo) venir (vestido | vestida)"] },
+    q_dress: { patterns: ["(hay | tienen) (codigo de vestimenta | dress code | uniforme) #h:q_dress", "como (hay que | tengo que | debo) vestirme", "(que | como) ropa (uso | hay que usar | se usa)", "como me tengo que vestir", "como (hay que | tengo que | debo) venir (vestido | vestida)",
+      "(hay que | tengo que | debo | se tiene que) (usar | llevar | ponerse | ponerme | venir de | venir con) (traje | corbata | uniforme | ropa formal | saco)",
+      "(puedo | se puede) (usar | llevar | venir con | venir de | venir en) (jeans | pantalon de mezclilla | pantalones de mezclilla | mezclilla | tenis | ropa casual | shorts)"] },
     q_parking: { patterns: ["(hay | tienen) (estacionamiento | donde estacionarse | lugar para estacionar)", "donde (me estaciono | puedo estacionarme | estaciono)", "[y] el estacionamiento (es gratis | tiene costo | se paga | cuesta) #cost"] },
-    q_like: { patterns: ["que es lo que mas le gusta de trabajar aqui", "[a usted] le gusta trabajar aqui", "que le gusta [mas] de (la empresa | linea clara | trabajar aqui)", "que te gusta de trabajar aqui #tip:tu_staff"] },
+    q_like: { patterns: ["que es lo que mas le gusta de trabajar aqui", "[a usted] le gusta trabajar aqui", "que le gusta [mas] de (la empresa | linea clara | trabajar aqui)", "que te gusta de trabajar aqui #tip:tu_staff",
+      "que es lo que mas le gusta de (la empresa | linea clara | su trabajo | trabajar en linea clara)"] },
+    q_mood: { patterns: ["(como | que tal) es el ambiente [de trabajo | laboral | en la oficina | aqui]", "que tal el ambiente [de trabajo | laboral | aqui]", "hay (buen | un buen) ambiente [de trabajo | aqui]",
+      "como es la cultura de la empresa", "como se lleva la gente [aqui]"] },
+    // what Línea Clara does (no conversation says more than clients, projects and a website: kept to "services")
+    q_company: { patterns: ["a que se dedica (la empresa | linea clara | su empresa | la compania)", "a que se dedican [ustedes]", "que hace (la empresa | linea clara | su empresa | la compania)",
+      "que tipo de empresa es [linea clara]", "cual es el giro de la empresa"] },
     q_restroom: { patterns: ["donde (esta | estan | queda) el (bano | sanitario | aseo | servicio)", "puedo (usar | pasar a) el bano"] },
     her_name: { patterns: ["como se llama [usted]", "cual es su nombre", "(quien es usted | y usted es)", "usted es la (gerente | jefa | de recursos humanos)", "como te llamas #tip:tu_staff"] },
     q_other_ctx: { patterns: ["(hay | tengo | tendria) (posibilidades | oportunidades | oportunidad) de (crecer | crecimiento | ascender) [en la empresa | aqui] #grow", "(que | como | cuando | donde | quien | por que | hay | tienen | puedo | voy a | se puede) {w:any}"] },
     no_questions: { patterns: [
-      "[no] [creo que] ya (me resolvió | me contestó | me respondió | resolvió | contestó) (todo | todas mis dudas | mis preguntas) #h:q_none",
+      "[no] [creo que] ya (me resolvió | me contestó | me respondió | me explicó | resolvió | contestó | explicó) (todo | todas mis dudas | mis preguntas) #h:q_none",
       "[no] [creo que] (es todo | eso es todo | seria todo | eso seria todo | era todo | eso era todo | solo eso) [por ahora | por el momento] #h:q_none_all", "[no] no tengo [mas | otras | ninguna] (preguntas | pregunta | dudas | duda) [por ahora | por el momento]",
       "[no] (todo | todo esta) [muy] claro", "[no] ya no tengo (nada | mas preguntas)",
     ] },
@@ -799,13 +840,22 @@ export const interview: SituationDef = {
       "(me encantaria | con mucho gusto) (acepto | me uno al equipo)", "[si] [claro] acepto el (trabajo | puesto) [con (mucho | todo) gusto]",
       "(estoy | me siento) [muy | super] (feliz | contento | contenta | emocionado | emocionada) de (aceptar | unirme al equipo)",
       "[si] [claro] quiero el (trabajo | puesto)", "[muchisimas | muchas | mil] gracias acepto",
+      "[si] [claro que | con gusto | con mucho gusto] lo acepto [con (mucho | todo) gusto]", "[si] acepto (la oferta | su oferta | la propuesta | su propuesta) [con (mucho | todo) gusto]",
     ] },
-    // at the offer only: "¡Qué buena noticia!", "Me encantaría", "¡Con mucho gusto!" (elsewhere they accept nothing)
+    // at the offer only: "Me encantaría", "¡Con mucho gusto!" (elsewhere they accept nothing)
     accept_ctx: { patterns: [
-      "(que | es una) (buena noticia | excelente noticia | gran noticia | maravilla) #h:o_wonderful", "[si] me encantaria [aceptar | trabajar con ustedes | trabajar aqui]",
-      "[si] con (mucho | todo) gusto",
+      "[si] me encantaria [aceptar | trabajar con ustedes | trabajar aqui]", "[si] con (mucho | todo) gusto",
     ] },
-    surprise_ctx: { patterns: ["(en serio | de verdad | no lo puedo creer | no puedo creerlo | no me lo puedo creer | que emocion | increible | no lo creo | wow | guau)"] },
+    // at the offer only: joy is no answer yet ("¡Qué buena noticia!"): she asks "Entonces, ¿acepta el puesto?"; with a
+    // "sí" in the same breath ("¡Sí, qué buena noticia!") it takes the job
+    joy_ctx: { patterns: [
+      "(que | es una) (buena noticia | excelente noticia | gran noticia | maravilla) #h:o_wonderful", "que (emocion | alegria | padre | padrisimo)",
+      "(me encanta | me alegra) (la idea | la noticia | mucho | muchisimo)", "(estoy | me siento) [muy | super] (feliz | contento | contenta | emocionado | emocionada)",
+      "[si] me interesa [mucho | muchisimo] [el puesto | el trabajo]",
+    ] },
+    surprise_ctx: { patterns: ["(en serio | de verdad | no lo puedo creer | no puedo creerlo | no me lo puedo creer | increible | no lo creo | wow | guau)"] },
+    // at the offer only: "Tal vez", "Quizás": the answer waits for Friday
+    think_ctx: { patterns: ["(tal vez | quiza | quizas | a lo mejor | puede ser) [si]"] },
     think_offer: { patterns: [
       "(puedo | podria) pensarlo [unos dias | un par de dias | un poco | bien]", "(tengo que | necesito | quisiera | quiero | me gustaria) pensarlo [bien] [un poco | unos dias | un par de dias]",
       "lo (voy a | quiero | tengo que | necesito) pensar [bien]", "(dejeme | permitame) pensarlo [unos dias | un poco]", "(deme | me da) (unos dias | un dia | tiempo) [para pensarlo]",
@@ -946,11 +996,12 @@ export const interview: SituationDef = {
       t("¿Cuáles | son | sus | principales | fortalezas?", "What | are | your | main | strengths?", "What are your greatest strengths?"),
       t("Bueno, | ¿y | cuáles | son | sus | fortalezas?", "Well, | and | what | are | your | strengths?", "So, what are your strengths?"),
     ],
+    // one quality named ("Soy trabajador") never gets the plural "Son muy buenas cualidades"
     strength_ack: [
       t("Eso | es | muy | importante | aquí.", "That | is | very | important | here.", "That's really important here."),
-      t("Son | muy | buenas | cualidades.", "They are | very | good | qualities.", "Those are great qualities."),
       t("Excelente.", "Excellent.", "Great."),
     ],
+    strength_ack_many: [t("Son | muy | buenas | cualidades.", "They are | very | good | qualities.", "Those are great qualities.")],
     s_team: [t("Qué | bueno, | porque | aquí | trabajamos | mucho | en equipo.", "How | good, | because | here | we-work | a lot | as a team.", "Good, because we work in teams a lot here.")],
     s_fast: [t("¡Qué | bueno! | Aquí | hay | mucho | que | aprender.", "How | good! | Here | there is | a lot | — | to learn.", "Good! There's a lot to learn here.", { flags: { 5: "que: links mucho to the verb (a lot to learn)." } })],
     s_people: [t("Eso | es | importante. | Va | a | trabajar | con | muchos | clientes.", "That | is | important. | You're going | to | work | with | many | clients.", "That's important. You'll work with a lot of clients.")],
@@ -1022,6 +1073,8 @@ export const interview: SituationDef = {
       "The range for this position is 14,000 to 17,000 pesos a month, depending on experience.",
       { say: "Para este puesto, el rango es de catorce mil a diecisiete mil pesos al mes, según la experiencia." })],
     range_ok_q: [t("¿Le parece | bien?", "Does it seem to you | good?", "Does that work for you?")],
+    salary_pesos: [t("Aquí | pagamos | en | pesos. | ¿Cuánto | sería | en | pesos, | al mes?", "Here | we-pay | in | pesos. | How much | would it be | in | pesos, | a month?",
+      "We pay in pesos here. How much would that be in pesos, per month?")],
     range_later: [t("Está bien, | lo | podemos | hablar | más adelante.", "That's fine, | it | we-can | discuss | later.", "Okay, we can talk about it later.")],
     good_to_know: [t("Muy | bien, | es | bueno | saberlo.", "Very | good, | it's | good | to know it.", "Okay, good to know.")],
     // Start date
@@ -1052,6 +1105,7 @@ export const interview: SituationDef = {
     go_ahead: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead."), t("¡Por supuesto!", "Of course!", "Of course!")],
     a_hours: [t("Trabajamos | de | nueve | a | seis, | de | lunes | a | viernes.", "We-work | from | nine | to | six, | from | Monday | to | Friday.", "We work nine to six, Monday to Friday.")],
     a_lunch: [t("Y | tiene | una | hora | para | comer.", "And | you have | an | hour | to | eat.", "And you get an hour for lunch.")],
+    a_lunch_time: [t("Tiene | una | hora | para | comer, | de | dos | a | tres.", "You have | an | hour | to | eat, | from | two | to | three.", "You get an hour for lunch, from two to three.")],
     a_training: [t("¡Sí! | Tiene | dos | semanas | de | capacitación | con | un | compañero.", "Yes! | You have | two | weeks | of | training | with | a | colleague.", "Yes! You'll have two weeks of training with a colleague.")],
     a_start: [t("Probablemente | el | primero | del | próximo | mes.", "Probably | the | first | of the | next | month.", "Probably on the first of next month.")],
     a_team: [t("En | el | equipo | somos | ocho | personas.", "In | the | team | we-are | eight | people.", "There are eight people on the team.")],
@@ -1070,6 +1124,9 @@ export const interview: SituationDef = {
     a_dress: [t("Casual de negocios. | Y | los | viernes, | más | casual.", "Business casual. | And | on | Fridays, | more | casual.", "Business casual. And on Fridays, more casual.", { flags: { 2: "los before a day: every (Friday); English says on." } })],
     a_parking: [t("Sí, | hay | estacionamiento | atrás | del | edificio, | sin | costo.", "Yes, | there is | parking | behind | the | building, | without | cost.", "Yes, there's free parking behind the building.")],
     a_like: [t("¡La | gente! | Aquí | todos | son | muy | amables.", "The | people! | Here | everyone | is | very | nice.", "The people! Everyone here is really friendly.")],
+    a_mood: [t("Muy | bueno, | la verdad. | Es | un | equipo | muy | unido.", "Very | good, | honestly. | It's | a | team | very | close-knit.", "Really good, honestly. It's a very close-knit team.")],
+    a_company: [t("Somos | una | empresa | de | servicios: | atendemos | a | clientes | de | toda | la | zona.", "We-are | a | company | of | services: | we-serve | — | clients | from | all | the | area.",
+      "We're a services company: we work with clients all over the area.", { flags: { 6: "Personal a: Spanish marks people as the object; English needs no word." } })],
     a_unknown: [t("¡Buena | pregunta! | Lo | reviso | y | le | aviso.", "Good | question! | It | I'll-check | and | you | I'll-let-know.", "Good question! I'll check and let you know.")],
     a_grow: [t("¡Claro! | Aquí | buscamos | que | la | gente | crezca | con | nosotros.", "Of course! | Here | we-try | that | the | people | grow | with | us.",
       "Of course! We want our people to grow with us.", { flags: { 3: "buscar que + a verb: to try to make something happen.", 4: "la gente: Spanish uses the article for people in general." } })],
@@ -1443,7 +1500,7 @@ export const interview: SituationDef = {
       help: (c) => { c.say("example_help"); } },
     { id: "future", when: qOn("future"), done: done("future"),
       ask: (c) => { bump(c, "future"); c.say("ask_future"); },
-      expects: ["future_ans", "future_away"], suggest: [{ lt: "Say where you see yourself in five years", hint: "future" }],
+      expects: ["future_ans", "future_ctx", "future_away"], suggest: [{ lt: "Say where you see yourself in five years", hint: "future" }],
       help: (c) => { c.say("future_help"); } },
     { id: "languages", when: qOn("languages"), done: done("languages"), ask: (c) => { bump(c, "languages"); c.say("ask_languages"); },
       expects: ["languages_ans", "languages_ctx"], suggest: [{ lt: "Say what languages you speak", hint: "languages", options: "language" }] },
@@ -1452,7 +1509,7 @@ export const interview: SituationDef = {
       yes: (c) => { c.s.done.authorized = true; c.say("auth_yes_ack"); },
       no: (c) => { c.s.done.authorized = true; c.say("auth_pending_ack"); } },
     { id: "salary", when: qOn("salary"), done: done("salary"), ask: (c) => { bump(c, "salary"); c.say("ask_salary"); },
-      expects: ["salary_ans", "salary_flexible", "salary_range_q", "salary_more", "range_ctx"], suggest: [{ lt: "Say what salary you're hoping for (or ask the range)", hint: "salary" }],
+      expects: ["salary_ans", "salary_flexible", "salary_range_q", "salary_more", "range_ctx", "salary_usd_ctx"], suggest: [{ lt: "Say what salary you're hoping for (or ask the range)", hint: "salary" }],
       help: (c) => { interview.handlers.salary_range_q(c, {}, { intent: "salary_range_q", slots: {}, tags: [] }); } },
     { id: "start", when: qOn("start"), done: done("start"), ask: (c) => { bump(c, "start"); c.say("ask_start"); },
       expects: ["start_ans", "start_ctx"], suggest: [{ lt: "Say when you could start", hint: "start" }] },
@@ -1524,8 +1581,9 @@ export const interview: SituationDef = {
     },
 
     // --- small talk ---
-    found_ok(c) { if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; c.say("found_good"); } else c.say("ack"); },
-    found_hard(c) { if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; c.say("found_bad"); } else c.say("ack"); },
+    // one reaction per answer: "Más o menos, me perdí un poco" got "¡Ay, no!…" and then "Muy bien."
+    found_ok(c) { if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; turn(c).found = true; c.say("found_good"); } else if (!turn(c).found) c.say("ack"); },
+    found_hard(c) { if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; turn(c).found = true; c.say("found_bad"); } else if (!turn(c).found) c.say("ack"); },
     found_ctx(c, s, seg) { if (seg.tags.includes("ok")) interview.handlers.found_ok(c, s, seg); else interview.handlers.found_hard(c, s, seg); },
     want_drink(c, _s, seg) { c.s.smallDone = true; giveDrink(c, seg.tags.includes("coffee")); },
     no_drink(c) { c.s.smallDone = true; c.say("no_drink_ok"); },
@@ -1568,7 +1626,12 @@ export const interview: SituationDef = {
     no_exp_ctx(c) { me(c).noExp = true; ackOnce(c, "no_exp_ok"); },
     between_jobs(c) { me(c).between = true; if (c.step === "leaving") { c.s.done.leaving = true; } ackOnce(c, "leaving_ack"); },
     own_business(c) { me(c).own = true; ackOnce(c, "about_ack"); },
-    from(c, slots) { me(c).from = slots.country; ackOnce(c, slots.country === "mexico" ? "nice" : "from_lt"); },
+    from(c, slots) {
+      me(c).from = slots.country;
+      // "Soy mexicano" answering "¿Tiene permiso para trabajar en México?" is a yes (it got "¡Qué padre!" and the question again)
+      if (c.step === "authorized" && slots.country === "mexico") { c.s.done.authorized = true; ackOnce(c, "auth_yes_ack"); return; }
+      ackOnce(c, slots.country === "mexico" ? "nice" : "from_lt");
+    },
     moved(c) {
       if (c.step === "leaving") { c.s.done.leaving = true; ackOnce(c, "leaving_ack"); return; }
       if (turn(c).acked) return;
@@ -1576,7 +1639,17 @@ export const interview: SituationDef = {
       if (!c.s.englishSaid && c.chance(0.5)) { c.s.englishSaid = true; c.say("english_good"); }
     },
     family(c) { ackOnce(c, "nice"); },
-    age(c) { ackOnce(c, "about_ack"); },
+    age(c, slots) {
+      // "Tengo diez años" answering "¿Cuánto tiempo tiene trabajando como…?" is experience (it was read as an age and the
+      // question came again); so is a figure no applicant's age can be ("Soy contador, tengo diez años")
+      const n = toArr(slots.dur)[0];
+      if (c.step === "about" && typeof n === "number" && !/\bde edad\b/.test(heard(c)) && (c.s.aboutKind === "years" || n < 16)) {
+        me(c).years = n;
+        aboutAck(c, { dur: n });
+        return;
+      }
+      ackOnce(c, "about_ack");
+    },
     studied_unknown(c) { c.s.aboutInfo = (c.s.aboutInfo || 0) + 1; ackOnce(c, "about_ack"); },
     about_name_ctx(c) { /* "Soy Ryan": the name is already known */ },
     not_job(c) { c.s.aboutInfo = (c.s.aboutInfo || 0) + 1; ackOnce(c, "not_job_ack"); },
@@ -1617,6 +1690,7 @@ export const interview: SituationDef = {
 
     // --- five years ---
     future_ans(c) { c.s.done.future = true; ackOnce(c, "future_ack"); },
+    future_ctx(c) { c.s.done.future = true; ackOnce(c, "future_ack"); },
     future_away(c) { c.s.done.future = true; ackOnce(c, "future_away_ack"); },
 
     // --- teamwork ---
@@ -1638,6 +1712,12 @@ export const interview: SituationDef = {
     salary_flexible(c) { c.s.done.salary = true; ackOnce(c, "good_to_know"); },
     salary_more(c) { c.s.done.salary = true; ackOnce(c, "range_later"); },
     range_ctx(c) { c.s.done.salary = true; ackOnce(c, "range_later"); },
+    // "Mil dólares al mes": she asks for pesos a month once; a second answer in dollars is noted
+    salary_usd_ctx(c) {
+      if (!c.s.usdAsked) { c.s.usdAsked = true; c.say("salary_pesos"); c.hold(); return; }
+      c.s.done.salary = true;
+      ackOnce(c, "salary_noted");
+    },
     salary_range_q(c) {
       if (turn(c).rangeSaid) return;
       turn(c).rangeSaid = true;
@@ -1645,7 +1725,7 @@ export const interview: SituationDef = {
       c.say("salary_range");
       if (c.step === "salary" && !c.s.done.salary) {
         c.say("range_ok_q");
-        c.expect({ id: "range", expects: ["salary_ans", "salary_flexible", "salary_more", "range_ctx"], hints: ["range", "salary"],
+        c.expect({ id: "range", expects: ["salary_ans", "salary_flexible", "salary_more", "range_ctx", "salary_usd_ctx"], hints: ["range", "salary"],
           suggest: [{ lt: "Say whether it works for you", hint: "range" }, { lt: "Say your own figure", hint: "salary" }],
           yes: (cc) => { cc.s.done.salary = true; cc.say("good_to_know"); },
           no: (cc) => { cc.s.done.salary = true; cc.say("range_later"); },
@@ -1680,11 +1760,14 @@ export const interview: SituationDef = {
 
     // --- the learner's questions ---
     can_ask(c) { c.say("go_ahead"); c.hold(); },
+    can_ask_ctx(c) { c.say("go_ahead"); c.hold(); },
     q_hours(c, _s, seg) {
       const tg = seg.tags;
       answerQ(c, "hours", () => {
         if (tg.includes("weekend")) { c.say("a_weekend"); return; }
         if (tg.includes("extra")) { c.say("a_overtime"); return; }
+        if (tg.includes("lunch")) { c.say("a_lunch_time"); return; }
+        if (tg.includes("days")) { c.say("a_hours"); return; }
         if (tg.includes("full")) c.say("a_fulltime"); else if (tg.includes("part")) c.say("a_not_part");
         c.say("a_hours");
         if (!tg.includes("full") && !tg.includes("part")) c.say("a_lunch");
@@ -1697,14 +1780,17 @@ export const interview: SituationDef = {
     q_benefits(c, _s, seg) { answerQ(c, "benefits", () => c.say(seg.tags.includes("vac") ? "a_vacation" : "a_benefits")); },
     q_day(c) { answerQ(c, "day", () => c.say("a_day")); },
     q_next(c) {
-      // after the offer the next steps are the contract's, not other candidates'
-      if (c.s.offerState === "hired") { c.say("a_next_hired"); return; }
+      // after the offer the next steps are the contract's, not other candidates' (while it's open too: "Esta semana vamos a
+      // entrevistar a otros candidatos" right after "Nos gustaría ofrecerle el puesto")
+      if (c.s.offerState === "hired" || (c.s.offerTwist && c.s.__finished && !c.s.offerState)) { c.say("a_next_hired"); return; }
       if (c.s.offerState === "think") { c.say("a_next_offered"); return; }
       answerQ(c, "next", () => { c.say("a_next"); c.say("a_touch"); });
     },
     q_dress(c) { answerQ(c, "dress", () => c.say("a_dress")); },
     q_parking(c, _s, seg) { answerQ(c, "parking", () => c.say(seg.tags.includes("cost") ? "a_parking_free" : "a_parking")); },
     q_like(c) { answerQ(c, "like", () => c.say("a_like")); },
+    q_mood(c) { answerQ(c, "mood", () => c.say("a_mood")); },
+    q_company(c) { answerQ(c, "company", () => c.say("a_company")); },
     q_other_ctx(c, _s, seg) {
       if (seg.tags.includes("grow")) { answerQ(c, "grow", () => c.say("a_grow")); return; }
       answerQ(c, "unknown", () => c.say("a_unknown"));
@@ -1723,8 +1809,10 @@ export const interview: SituationDef = {
     // --- job offer (outside the offer moment) ---
     accept_job(c) { c.say("ack"); },
     accept_ctx(c) { c.say("ack"); },
-    surprise_ctx(c) { c.say("ack"); },
+    joy_ctx(c) { c.say("ack"); },
+    surprise_ctx() { /* at the offer only: with another piece, that piece answers ("¿En serio? ¿Cuánto pagan?") */ },
     think_offer(c) { c.say("ack"); },
+    think_ctx(c) { c.say("ack"); },
     decline_offer(c) { c.say("ack"); },
 
     // --- side moves ---
@@ -1801,7 +1889,7 @@ export const interview: SituationDef = {
     { say: "Mi área de oportunidad es la paciencia", intent: "weakness", step: "weakness" },
     { say: "Pero estoy mejorando", intent: "working_on_it", step: "weakness" },
     { say: "Me gustaría dirigir un equipo", intent: "future_ans", step: "future" },
-    { say: "Aquí mismo, con ustedes", intent: "future_ans", step: "future" },
+    { say: "Aquí mismo, con ustedes", intent: "future_ctx", step: "future" },
     { say: "Me gustaría ser líder de equipo", intent: "future_ans", step: "future" },
     { say: "En mi último trabajo terminamos un proyecto grande a tiempo", intent: "teamwork_ans", step: "teamwork" },
     { say: "Trabajé en un equipo de cinco personas", intent: "teamwork_ans", step: "teamwork" },
@@ -1926,6 +2014,34 @@ export const interview: SituationDef = {
     { say: "¿Puedo pensarlo un par de días?", intent: "think_offer", not: ["accept_job"] },
     { say: "¿Cuándo empiezo?", intent: "q_start", not: ["accept_job"] },
     { say: "Me encantaría trabajar aquí", intent: "why_ans", step: "why", not: ["accept_job"] },
+    // Audit (5 Nov 2026): benefits by law, lunch, the company, pesos a month, short answers, "lo acepto"
+    { say: "Tengo diez años", intent: "age", step: "about", slots: { dur: 10 } },
+    { say: "Agua natural, por favor", intent: "want_drink", step: "drink" },
+    { say: "Sí, ya tengo mi tarjeta", intent: "auth_yes", step: "authorized" },
+    { say: "No, todavía no tengo permiso", intent: "auth_pending", step: "authorized", not: ["auth_yes", "g_dontknow"] },
+    { say: "Tengo visa de estudiante", intent: "auth_pending", step: "authorized", not: ["auth_yes"] },
+    { say: "Mil dólares al mes", intent: "salary_usd_ctx", step: "salary", not: ["salary_ans"] },
+    { say: "Lo que sea justo", intent: "salary_flexible", step: "salary" },
+    { say: "No me parece justo", intent: "range_ctx", step: "salary", not: ["salary_flexible"] },
+    { say: "Cuando quieran", intent: "start_ctx", step: "start" },
+    { say: "A partir de enero", intent: "start_ctx", step: "start" },
+    { say: "Puedo empezar a principios de diciembre", intent: "start_ans", step: "start" },
+    { say: "¿Tienen IMSS?", intent: "q_benefits" },
+    { say: "¿Me dan de alta en el seguro social?", intent: "q_benefits" },
+    { say: "¿Hay prima vacacional?", intent: "q_benefits" },
+    { say: "¿Y las vacaciones?", intent: "q_benefits" },
+    { say: "¿A qué hora es la comida?", intent: "q_hours" },
+    { say: "¿Es de lunes a viernes?", intent: "q_hours" },
+    { say: "¿Cómo es el ambiente de trabajo?", intent: "q_mood" },
+    { say: "¿A qué se dedica la empresa?", intent: "q_company" },
+    { say: "¿Qué hace la empresa?", intent: "q_company", not: ["future_ans", "future_ctx"] },
+    { say: "¿Cuál sería mi sueldo?", intent: "salary_range_q", not: ["q_other_ctx"] },
+    { say: "¿Puedo usar jeans?", intent: "q_dress" },
+    { say: "¿Cuántos días de home office?", intent: "q_remote" },
+    { say: "Sí, una", intent: "can_ask_ctx", step: "questions" },
+    { say: "No, ya me explicó todo", intent: "no_questions", step: "questions" },
+    { say: "Sí, lo acepto", intent: "accept_job" },
+    { say: "Acepto su oferta con mucho gusto", intent: "accept_job" },
     // Must not be understood
     { say: "Mi perro come pizza los martes", intent: "none" },
     { say: "Ayer compré una camisa verde", intent: "none" },
@@ -1997,6 +2113,22 @@ export const interview: SituationDef = {
       turns: ["Vengo por la vacante.", "Ryan Miller.", "Ya no soy maestro.", "Ahora trabajo como guía de turistas.", "Desde hace dos años.", "Me gusta trabajar con la gente.",
         "No soy muy organizado.", "Pero soy muy amable y aprendo rápido.", "No, gracias.", "¡Adiós!"],
       expect: { complete: true, state: { me: { job: "guia", years: 2 } } }, auto: AUTO },
+    // Audit (5 Nov 2026): joy is no acceptance yet; "¿acepta?" comes once, and "¡Sí, acepto!" takes the job
+    { name: "the offer: good news first, then yes (twist forced)", setup: (s) => { s.offerTwist = true; s.phoneTwist = false; s.qs = []; s.small = null; },
+      turns: ["Vengo a una entrevista.", "Ryan Miller.", "Soy contador.", "Tengo diez años.", "Me gusta mucho su empresa.", "Soy creativo y trabajador.",
+        "No, es todo.", "¡Qué buena noticia!", "¡Sí, acepto!", "Muchas gracias."],
+      expect: { complete: true, state: { offerThanked: true, offerState: "hired", me: { job: "contador", years: 10 } } }, auto: AUTO },
+    // a thank-you with the answer in one breath: no "¿acepta el puesto?" first
+    { name: "the offer: thanks and think it over in one breath (twist forced)", setup: (s) => { s.offerTwist = true; s.phoneTwist = false; s.qs = []; s.small = null; },
+      turns: ["Vengo a una entrevista.", "Ryan Miller.", "Soy enfermera desde hace seis años.", "Quiero crecer y aprender cosas nuevas.", "Soy responsable.",
+        "No, gracias.", "Gracias, ¿lo puedo pensar?", "Bueno, sí acepto.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { offerThanked: undefined, offerState: "hired" } }, auto: AUTO },
+    // salary in dollars, then pesos; benefits by law, lunch, the company, the atmosphere
+    { name: "pesos a month, and the questions about the job", setup: (s) => { s.qs = ["salary"]; s.small = null; s.offerTwist = false; s.phoneTwist = false; },
+      turns: ["Tengo una entrevista a las nueve y media.", "Ryan Miller.", "Trabajo en ventas.", "Tengo tres años.", "Me gusta mucho su empresa.", "Soy puntual.",
+        "Mil dólares al mes.", "Dieciocho mil pesos.", "Sí, una.", "¿Tienen IMSS?", "¿A qué hora es la comida?", "¿Cómo es el ambiente de trabajo?",
+        "¿A qué se dedica la empresa?", "Gracias por la oportunidad."],
+      expect: { complete: true, state: { usdAsked: true, done: { salary: true }, me: { field: "ventas", years: 3 }, asked: { benefits: true, hours: true, mood: true, company: true } } }, auto: AUTO },
   ],
 };
 
@@ -2112,7 +2244,7 @@ function strengthAnswer(c: Ctx, ids: string[], tags: string[]) {
   else if (tags.includes("fast_learner")) ackOnce(c, "s_fast");
   else if (tags.includes("good_with") || first === "friendly") ackOnce(c, "s_people");
   else if (first === "organized") ackOnce(c, "s_organized");
-  else ackOnce(c, "strength_ack");
+  else ackOnce(c, ids.length >= 2 ? "strength_ack_many" : "strength_ack");
 }
 
 function markWeakness(c: Ctx) {
@@ -2165,25 +2297,29 @@ function answerQ(c: Ctx, key: string, say: () => void) {
   countQuestion(c);
 }
 
-/** The job offer (twist). Taking the job is binding: only a yes or an acceptance takes it; a thank-you alone
- *  ("¡Muchas gracias!", "Gracias por la oportunidad") gets "Entonces, ¿acepta el puesto?", and a second one leaves the
- *  answer for Friday (rule 17). */
+/** The job offer (twist). Taking the job is binding: only a yes or an acceptance takes it; a thank-you or joy alone
+ *  ("¡Muchas gracias!", "Gracias por la oportunidad", "¡Qué buena noticia!") gets "Entonces, ¿acepta el puesto?", and
+ *  a second one leaves the answer for Friday (rule 17). */
 function offerPending(): Pending {
   return {
-    id: "offer", expects: ["accept_job", "accept_ctx", "surprise_ctx", "think_offer", "decline_offer"], hints: ["offer"],
+    id: "offer", expects: ["accept_job", "accept_ctx", "joy_ctx", "surprise_ctx", "think_offer", "think_ctx", "decline_offer"], hints: ["offer"],
     suggest: [{ lt: "Answer the job offer", hint: "offer" }],
     on: {
       accept_job: (cc) => { offerAccept(cc); },
       accept_ctx: (cc) => { offerAccept(cc); },
-      // "¿En serio?", "¡No lo puedo creer!": she asks again (an "¡acepto!" in the same breath answers it)
+      joy_ctx: (cc) => { offerThanks(cc); },
+      // "¿En serio?", "¡No lo puedo creer!": she asks again; with anything else in the same breath ("¿En serio?
+      // ¿Cuándo empiezo?", "¡Wow, acepto!") the rest answers (the offer stays open: "¡Wow, qué bien!" lost it)
       surprise_ctx: (cc) => {
-        // said alone; with anything else ("¿En serio? ¿Cuándo empiezo?") the rest answers
-        const rest = heard(cc).replace(/\b(en serio|de verdad|no (me )?lo puedo creer|no puedo creerlo|que emocion|increible|no lo creo|wow|guau)\b/g, "").replace(/[^a-z]/g, "");
-        if (rest || turn(cc).offerDone) return;
-        if (!turn(cc).askedAgain) { turn(cc).askedAgain = true; cc.say("offer_really"); cc.expect(offerPending()); }
+        if (turnIntents(cc).some((i) => i !== "surprise_ctx")) return false;
+        if (turn(cc).offerDone) return;
+        // a second "¿En serio?" gets "Entonces, ¿acepta el puesto?" (never the same line twice in a row)
+        if (cc.s.reallySaid) { offerAgain(cc); return; }
+        if (!turn(cc).askedAgain) { turn(cc).askedAgain = true; cc.s.reallySaid = true; cc.say("offer_really"); cc.expect(offerPending()); }
       },
-      // "¿Cuándo empiezo?" / "¿Cuánto pagan?" are questions about the terms: answered, then asked again
-      q_start: (cc) => { cc.say("a_start"); offerAgain(cc); },
+      // "¿Cuándo empiezo?", "¿Cuánto pagan?", "¿Y las prestaciones?": questions about the terms are answered, then she
+      // asks again once (a thank-you or joy in the same breath waits for the answer)
+      ...Object.fromEntries(OFFER_QS.map((i) => [i, (cc: Ctx, s: any, seg: any) => { interview.handlers[i](cc, s, seg); offerAgain(cc); }])),
       g_thanks: (cc) => { offerThanks(cc); },
       thanks_time: (cc) => { offerThanks(cc); },
       nice_meet: (cc) => { offerThanks(cc); },
@@ -2193,6 +2329,7 @@ function offerPending(): Pending {
       // leaving without an answer leaves it for Friday
       g_bye: (cc) => { if (!turn(cc).offerThanks && !turn(cc).offerDone) offerThink(cc); closingReply(cc, "g_bye"); },
       think_offer: (cc) => { offerThink(cc); },
+      think_ctx: (cc) => { offerThink(cc); },
       decline_offer: (cc) => { offerNo(cc); },
     },
     yes: (cc) => { offerAccept(cc); },
@@ -2209,13 +2346,27 @@ function offerAccept(c: Ctx) {
 }
 function offerThink(c: Ctx) { if (turn(c).offerDone) return; turn(c).offerDone = true; c.s.offerState = "think"; c.say("offer_think"); closeUp(c, false); }
 function offerNo(c: Ctx) { if (turn(c).offerDone) return; turn(c).offerDone = true; c.s.offerState = "no"; c.say("offer_no"); closeUp(c, false); }
+/** The pieces of this turn as the engine parsed them (a thank-you is read with what follows it in the same breath). */
+const turnIntents = (c: Ctx): string[] => (((c as any).conv?.out?.parse?.segments ?? []) as { intent: string }[]).map((s) => s.intent);
+const OFFER_ANSWERS = new Set(["accept_job", "accept_ctx", "think_offer", "think_ctx", "decline_offer"]);
+const OFFER_QS = ["q_start", "salary_range_q", "q_hours", "q_benefits", "q_remote", "q_training", "q_team", "q_day", "q_dress", "q_parking", "q_like", "q_mood", "q_company", "q_next"];
+
+/** A thank-you or joy at the offer. */
 function offerThanks(c: Ctx) {
   const T = turn(c);
   if (T.offerThanks || T.offerDone) return;
   T.offerThanks = true;
-  const h = heard(c);
+  const h = heard(c).replace(/[^a-z0-9ñ]+/g, " ").trim();
   // "No, gracias" turns the job down ("No sé…", "No lo puedo creer" don't)
   if (/^no\b/.test(h) && !/^no (se|lo se|lo puedo|puedo creer|me lo)\b/.test(h)) { offerNo(c); return; }
+  // the rest of the breath answers ("Gracias, ¿lo puedo pensar?", "Gracias, sí acepto"): no "¿acepta?" before it; a
+  // question about the job ("Me interesa, ¿cuánto pagan?") is answered first, and its answer asks
+  const rest = turnIntents(c);
+  if (rest.some((i) => OFFER_ANSWERS.has(i))) return;
+  if (rest.some((i) => OFFER_QS.includes(i))) { c.s.offerThanked = true; return; }
+  // a plain yes with it takes the job ("Sí, muchas gracias", "Claro, gracias", "¡Sí, qué buena noticia!"); "Está bien,
+  // gracias" or "Vale, gracias" (a polite closing) gets the question again (rule 17)
+  if (/^((muchas|mil|muchisimas) )?(gracias )?(si|claro|por supuesto|desde luego|como no)\b/.test(h) && !/\b(pero|que no)\b/.test(h)) { offerAccept(c); return; }
   const leaving = /\b(adios|hasta luego|hasta pronto|hasta manana|nos vemos|bye|chao)\b/.test(h);
   if (!c.s.offerThanked && !leaving) { c.s.offerThanked = true; offerAgain(c); return; }
   offerThink(c);
@@ -2242,7 +2393,10 @@ function closeUp(c: Ctx, hired: boolean) {
   c.expect({ id: "closing", hints: ["closing"], suggest: [{ lt: "Say thank you and goodbye", hint: "closing" }],
     on: {
       thanks_time: (cc, _s, seg) => reply(cc, seg?.tags?.includes("nice") ? "closing_nice" : "closing_reply"), look_forward: (cc) => reply(cc, "closing_bye"), nice_meet: (cc) => reply(cc, "closing_nice"),
-      g_thanks: (cc) => reply(cc), accept_job: (cc) => reply(cc), g_bye: (cc) => reply(cc, "g_bye"),
+      g_thanks: (cc) => reply(cc), g_bye: (cc) => reply(cc, "g_bye"),
+      // "¡Acepto!" after "lo pienso" (or a no) takes the job after all; said again once hired, it's the goodbye (it got
+      // "Al contrario…", the answer to a thank-you)
+      accept_job: (cc) => { if (cc.s.offerState === "think" || cc.s.offerState === "no") { offerAccept(cc); return; } reply(cc, "closing_bye"); },
     },
     yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
 }

@@ -38,3 +38,62 @@ ground), 12 corpus items, the writer's "No es un buen acuerdo" test now expects 
 - NEEDS (lang.ts/global): "No sé, <reason>" ("Mmm, no sé, creo que es muy pronto") is not understood. Adding "no se" to the
   file's opener macro made "No es muy pronto" / "No tiene errores" concerns (droppable "se" leaves "no"), so it was reverted.
   A global "no sé," lead (kept only when "sé" is said) would fix it. Writer's two NEEDS (newPart "tal", g_dontknow) stand.
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer, both texts. Read: STYLE.md, AUTHORING-ES.md (rules from the reviews), BRIEFS.md p27, this review, the
+cross and neutral files (no leads: names, facts, spelling, American English and the four neutral twins all fine), the
+situation file, corpus and held-out, the transcripts (seeds 3 and 7), the scene data and the pictures-audit note. Probed
+~150 deal, closing and side-question turns with tools/probe.ts.
+
+**Found 19 by point** (1:1 2:0 3:0 4:1 5:0 6:0 7:16 8:0 9:1 10:0), **fixed 17**, 2 global proposals.
+
+- **4 (numbers):** after Vanessa's final offer ("Tres semanas. Es mi última oferta.") Gerardo decided "la página vieja se
+  queda dos semanas más": less than she had already given, under "¿Nadie está contento?". New Gerardo line
+  `g_decide2_final` ("…se queda tres semanas más."), said only after her final offer. The resolve picture ("deal") has
+  no number since the pictures audit (hand on hip, palm up); the counter picture's pie slice is "more than half" (60%).
+  All numbers agree: Monday→Friday "cuatro días", $60,000 a month, 60% on phones, two weeks (her compromise), three
+  (her final offer), Monday 9 (Línea Clara 9 to 6, TOWN.md).
+- **7 (meaning safety at the deal: a deadline only on a clear yes):** each of these closed the deal before:
+  "Está bien, gracias" / "Ok, gracias" / "Vale, gracias"; "Puede ser", "Entiendo tu punto", "Es un punto válido", "Buen
+  punto", "Tienes razón", "Tiene sentido"; the echoes "¿Dos semanas?" / "Dos semanas."; "¿Solo dos semanas?" (wants
+  more); at her final offer anything but a no ("No sé", "Ya veo"; "No sé" also set the outcome under a hold, so the
+  goodbye waited a turn); "Cuatro semanas me funciona" at her final offer (a counter); "Es un punto válido. Sin embargo,
+  sigo preocupado." The other way, "Sí, tres semanas" / "Ok, tres semanas" (a clear yes) and the echo "¿Tres semanas?"
+  made Gerardo decide. Now: a clear yes ("Sí", "Trato hecho", "Va", "Está bien", "Me parece bien/justo", "Es justo",
+  "Sí, dos semanas", "Ok, tres semanas") is the deal; an unclear one gets "¿Trato hecho?" once more (`dealAgain`), then
+  Gerardo decides; a hesitation ("Déjame pensarlo", "Tal vez", "No sé", "Ni modo") gets "¡Ay, ya te estoy dando la
+  mitad!" at her two weeks and "¿Trato hecho?" at her three; more weeks ("¿Solo dos semanas?", "una semana más", "¿Y si
+  dejamos la página vieja un mes?", "Tres/Cuatro semanas me funciona") is bargaining; fewer weeks than she offers she
+  takes; a "but" after granting her point is no yes. `askedWeeks`, `yesLead`, `politeClose`, `dealAgain` in the file.
+- **7 (giving in, the coffee, the pitch):** at "¿O sea que estás de acuerdo conmigo?" "Está bien, gracias" and "Puede
+  ser" gave in: now "¿Entonces? ¿Estás conmigo en esto?" (v_reask) once, then a no; "Tienes razón", "Es cierto", "Sí"
+  still give in. "Está bien, gracias" / "Ok, gracias" / "Gracias" accepted the coffee: now Vanessa asks "¿Eso es un sí
+  o un no?" (new `v_yes_or_no`), and the same again is the polite no. "Más o menos" got "¡Ay, lo siento!" (the global
+  how-are-you): now a polite doubt (disagree_polite). "Así está bien." to "¿Qué opinas?" was a bare "No" that ticked
+  "disagree": now "¿Entonces? ¿Estás conmigo en esto?".
+- **7 (questions without an answer):** "¿Sesenta mil pesos (al mes)?", "¿Al mes?", "¿Tanto?", "¿Sesenta por ciento?" at
+  her strong point (new `echo_ctx`: "¿Entonces? ¿La página vieja es un problema o no?", a line no run reached before);
+  "¿A qué hora?" / "¿A las nueve?" / "¿A la misma hora?" at "¿El lunes a la misma hora?" (new `nine_q_ctx`, Gerardo's
+  new `g_nine` "A las nueve, como siempre."; the question stays; "A las nueve, perfecto." is a yes). Left for the lead:
+  "¿Qué significa de un jalón?" (global g_meaning takes one word only; "¿Qué significa jalón?" works).
+- **1 (global, proposal):** after "Gracias" Vanessa may answer "¡A la orden!" (g_welcome, flagged "what staff say"),
+  odd between colleagues; g_welcome could skip it for `informal` speakers.
+- **9 (who says it):** six Vanessa lines (v_problem_first, v_c_risk, v_q_old, v_counter_reask, v_a_train, v_a_fix) were
+  reached by no sim, so the voice list relied on fuzz or the neighbors' guess. Five new sims reach them and the three
+  new lines; every conversation line is now heard in its one speaker's voice on seeds 1–12 (g_anyone through the fuzz).
+
+**Speakers.** Gerardo (19): g_open, g_floor, g_anyone, g_doubts, g_friendly, g_popcorn, g_alt_help, g_boss_q,
+g_decide1, g_decide2, g_decide2_final, g_decide3, g_sum1, g_sum2, g_gave_in, g_walk, g_monday, g_calendar, g_nine.
+Vanessa (74): every v_* line. No conversation line is said by both; the global replies (g_not_understood, g_take_time,
+g_welcome, g_no_worries, g_repeat_intro, g_ack) come from whoever spoke last (Gerardo after g_anyone, g_alt_help,
+g_boss_q, g_monday), and lines-es.ts voices every global for both. No entities, no `attrs.plural`.
+
+**Voices:** 3 new spoken lines (g_decide2_final, g_nine: Gerardo; v_yes_or_no: Vanessa), all neutral (no twin needed);
+no existing line's words changed.
+
+**Tests:** NLU 124 → 134; sims 24 → 29 (all 12/12): "no yes in a polite thanks; her final three weeks; Gerardo
+decides", "maybe is no yes: Gerardo decides", "stubborn: maybe is no giving in; thanks to the coffee", "the old site
+first; a proposal before the problem; vague problems", "her final offer echoed, then a clear yes". Corpus 194 → 224
+understood (+30), traps 42 → 43 (+21 `not` checks on the new items), 0 false accepts; held-out 34/35 (unchanged; the
+miss is the "No sé, <reason>" lead the first review left for the lead).
