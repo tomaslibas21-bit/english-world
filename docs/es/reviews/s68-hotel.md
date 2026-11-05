@@ -224,3 +224,86 @@ ambiental?", "¿Hay otros cargos?"); the tests, a new sim (late checkout at two,
   tarde…)" / "(Later…)", flagged as not spoken; its `say:` leaves it out, so the voice says only "¡Gracias por
   esperar! Su habitación ya está lista."
 - **Keys:** "la llave" throughout, as before; "tarjeta" stays only for the broken key card in the problem visit.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer's pass over both texts (the Mexican default and the neutral one), by the audit brief: STYLE.md,
+AUTHORING-ES.md's rules, the brief, this review, the cross-cutting leads (with their "Town directions (5 Nov)") and
+the neutral digest; the file, the corpus and the held-out set; the seed-3 and seed-7 transcripts read in full; then
+68 short conversations (some 300 turns) played with `tools/probe.ts` at every step and offer (a bare yes and no, polite closings, price
+questions, refusals with a reason, side questions), and the offer probe in both texts.
+
+### Found, by point (18)
+
+1. **Natural Spanish (2).** "Sí." opened the cash-deposit reply even after "No tengo tarjeta de crédito" (the cash
+   sim's own path): now "Claro.", which answers the question and the statement alike. "Sí, tenemos estacionamiento."
+   answered "¿Cuánto cuesta el estacionamiento?" and "¿El estacionamiento es gratis?" ("Sí… cuesta $150"): a price
+   question now gets "El estacionamiento cuesta $150 por noche."
+2. **tú/usted (0).** Usted in every line, hint and example; tú accepted with the tip.
+3. **Names (0).** Fernanda only, no clash in the edition.
+4. **Facts and the town (1).** The 3D lobby has its elevators (two doors and the "Elevadores" sign) on the east wall:
+   the learner's right at the desk (interiors.ts `hotel`; the learner stands at (0, -3.2) facing the counter). Both
+   lines said left: now "Los elevadores están a su derecha." / "Está ahí, a su derecha." El Muelle "a dos cuadras"
+   stays (TOWN.md ✓). The prices, the 5% state tax and Tulum's fee are as set with the owner (§8); every amount the
+   lines can say is in `domains.price` (checked with `tools/es-voices/reach-es.ts`).
+5. **Glosses and English (1).** `ac_sorry`'s personal-a flag pointed at "mantenimiento" (unit 6), not at "a" (unit 5).
+6. **Spelling, accents, ¿¡ (0).**
+7. **Questions and offers (11).**
+   - A bare yes to the late-checkout **choice** ("Puede salir al mediodía sin costo, o a las dos por $700.") booked the
+     paid 2 p.m.: "Sí", "Sí, gracias", "Está bien, gracias", "Vale". Now "Entonces, ¿al mediodía o a las dos?"; a
+     second bare yes keeps the free noon. (A yes to "Hoy podemos darle hasta las dos por $700. ¿Le parece bien?" still
+     books two: that one is a yes/no question.)
+   - Rule 17: "Está bien, gracias" (ok / vale / bueno + gracias) booked the ocean view (+$1,300 a night) and took the
+     walk-in's room. Now "Entonces, ¿sí la quiere?" once; a yes takes it, a no declines it.
+   - "¿Cuánto cuesta?" at the three priced offers wasn't understood. A new `price_q_ctx`, expected only there: "Son
+     $2,200 por noche, más el impuesto." (the room on offer) / "Son $1,300 más por noche." / "Hasta las dos son $700; al
+     mediodía, sin costo." "¿Cuánto es hasta las dos?" asks; it never books (trap).
+   - "No, gracias, es muy caro" and "Es muy caro" at the ocean-view offer weren't understood: now a no.
+   - "No" / "No, no tengo" to "¿Tiene reservación?" got "¿En qué le puedo ayudar?": now the walk-in ("Déjeme revisar…");
+     after the other two greetings a bare "No" still gets "¿En qué le puedo ayudar?".
+   - "Sí, por favor" to "¿Para qué hora lo necesita?" got "se lo pido para esa hora" with no hour: now "¿Para qué
+     hora?"; a second yes means now.
+   - "¿Le sirve mi pasaporte?" got "… Se lo devuelvo enseguida." and then "¿Me permite una identificación con foto?":
+     the passport now counts as shown.
+   - "Sí, pero quería dos camas" at the confirmation gave two beds, then asked again "…una habitación con cama
+     matrimonial por tres noches. ¿Es correcto?" (and any side question there repeated the long line): the step's
+     re-ask is now "Entonces, ¿son tres noches?".
+   - A walk-in who took the ocean view heard "Listo, ya hice el cambio." and then the double room offered again: the
+     view room is now their room ("Perfecto, vamos a hacer su registro.").
+   - A guest with a reservation asking "¿Tienen habitaciones disponibles?" became a walk-in (offered a $2,200 room);
+     a walk-in asking for a room twice heard "Déjeme revisar…" twice. Now she only says there are rooms, once.
+   - Not understood, now answered: "Una habitación, por favor" (a walk-in's first words; `walkin_ctx`, at the
+     greeting only), "Tres" / "Necesito dos llaves" (keys), "¿A qué hora puedo regresar?" / "¿Cuánto tiempo tengo que
+     esperar?" / "Espero aquí" / "Voy a dar una vuelta" while the room isn't ready, "¿Aceptan dólares?" (as s71b's
+     gas station: "Sí, pero al tipo de cambio del hotel. Le conviene más en pesos."), "¿Dónde está la playa?" (the 3D
+     town's way, TOWN.md "From the hotel's door": left out of the door, left again at the corner up calle Flamboyán
+     to the sea, 72 m: "La playa está a dos minutos. Saliendo, a la izquierda, y en la esquina, otra vez a la
+     izquierda, hasta el mar."), "¿Cuál es la red del wifi?", "¿Hay servicio a la habitación?", "¿Puedo fumar?",
+     "¿Dónde está el restaurante?", "¿Cuánto es el estacionamiento?".
+8. **Hints and help (0).**
+9. **Accepted answers (2).** Two corpus items wanted out-of-date intents ("¿Aquí?" at the signing is `sign_here_ctx`;
+   "Una habitación, por favor").
+10. **Neutral text (1).** "¿Gusta…?" is flagged Mexican in `room_not_ready` and `bags_offer` but had no twin; as in
+    s74 and s87, the neutral text now says "¿Quiere…?" (two neutral clips).
+
+### Changed
+
+- **Spoken lines** (the voice freeze): 3 changed (`elevators`, `elevator`, `cash_deposit`), 2 neutral twins added
+  (`room_not_ready`, `bags_offer`), 10 new (`late_which`, `late_price`, `view_price`, `price_night`, `confirm_room`,
+  `taxi_what_time`, `found_again`, `parking_cost`, `beach`, `dollars`); no Mexican-only word in them. Their values
+  are $700, $1,300, $1,700 / $2,200 / $2,500 and $150, all in `domains.price`.
+- **Code:** `lateChoicePending(which)`, `lateTwoPending`, `viewPending(confirming)`, `taxiPending`, the greeting's `no`,
+  `walk_offer`'s yes and price question, `found`'s re-ask, `id_q`, `walkin`'s guard, `ask_parking`'s `#cost`. Ids,
+  steps and moments unchanged.
+- **Grammar:** `walkin_ctx`, `price_q_ctx`, `return_time_ctx`, `ask_dollars`, `ask_beach`; more patterns for the keys,
+  the Wi-Fi's network, parking, the view, smoking, the restaurant, room service and the wait.
+- **Tests:** NLU 179 → 205; sims 13 → 19 (each 12/12 seeds); corpus +40 items (21 with a meaning-flip `not`), 2
+  corrected: 140/144 → 178/180 understood, false accepts 0/30 → 0/34; held-out 35/36, 0/4 (unchanged).
+
+### Left for the lead or the owner
+
+- A bare "Gracias" at an open offer (the view, the late checkout) is the global thanks: "¡No hay de qué!" and the
+  offer again. In Mexico a bare "Gracias" to an offer is often a polite no; that would be a global.ts change.
+- "No, gracias" to "¿Prefiere un ventilador por ahora, o cambiar de habitación?" moves the guest (the either/or's no
+  is the second option). Kept: nothing is paid, and it is the English edition's shape.
+- Rooms 412 ("cuarto piso") and 518 ("quinto piso") stay; the 3D building is 17 m high.
