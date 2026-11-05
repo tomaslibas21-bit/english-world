@@ -530,6 +530,22 @@ describe("19. a piece may begin with va / sale / está after a clause of its own
   });
 });
 
+describe("23. days and clock times", () => {
+  it("'la semana que entra', 'la otra semana', 'el lunes que entra'", () => {
+    expect(whole(daySlot, "la semana que entra")).toContain("next_week");
+    expect(whole(daySlot, "la otra semana")).toContain("next_week");
+    expect(whole(daySlot, "el lunes que entra")).toContain("monday");
+  });
+  it("a bare 'uno' / 'una' is no one o'clock; 'la una', 'una y media', 'una de la tarde' are", () => {
+    expect(whole(timeSlot, "uno")).toEqual([]);
+    expect(whole(timeSlot, "una")).toEqual([]);
+    expect(whole(timeSlot, "la una")).toContainEqual({ h: 1, m: 0 });
+    expect(whole(timeSlot, "una y media")).toContainEqual({ h: 1, m: 30 });
+    expect(whole(timeSlot, "una de la tarde")).toContainEqual({ h: 1, m: 0, ampm: "pm" });
+    expect(whole(timeSlot, "dos")).toContainEqual({ h: 2, m: 0 });
+  });
+});
+
 describe("24. a question is never split into a question and the open question's answer", () => {
   const nlu = toy({ ask_next: ["a que hora sale"], ask_price: ["cuanto cuesta"], time_ctx: ["el (ultimo | primero)", "{time}"], size_ctx: ["el grande"], dest_ctx: ["a merida"] });
   it("'¿A qué hora sale el último?' doesn't answer with 'el último'", () => {
