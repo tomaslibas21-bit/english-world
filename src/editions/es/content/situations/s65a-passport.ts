@@ -354,10 +354,18 @@ function glassesPending(): Pending {
   };
 }
 
-/** The twist: more days once she has seen the return ticket. */
+/** The twist: more days once she has seen the return ticket, up to the return date: a request above the trip ("¿Me
+ *  puede dar 180 días?" after "Un mes") gets the trip's days, and she says so (the lead's decision, 5 Nov 2026). */
 function grantMore(c: Ctx) {
   c.s.daysDone = true; c.s.daysResult = "more";
-  if (c.s.length === "until") c.say("stamp_more_until"); else c.say("stamp_more", { num: grantOf(c.s.days) });
+  if (c.s.length === "until") { c.say("stamp_more_until"); return; }
+  const trip = typeof c.s.length === "number" ? grantOf(c.s.length) : undefined;
+  if (trip !== undefined && typeof c.s.days === "number" && grantOf(c.s.days) > trip) {
+    c.s.days = c.s.length;
+    c.say("stamp_more_return", { num: trip });
+    return;
+  }
+  c.say("stamp_more", { num: grantOf(c.s.days) });
 }
 function keepShort(c: Ctx, line = "stamp_keep") { c.s.daysDone = true; c.s.daysResult = "short"; c.say(line, { num: c.s.short }); }
 function acceptShort(c: Ctx) { c.s.daysDone = true; c.s.daysResult = "short"; ack(c, 1); }
@@ -383,6 +391,9 @@ function daysTicketPending(): Pending {
 }
 /** "Quince días más", "una semana más": the figure is added to the days she gave ("más o menos" is not). */
 const addsToHers = (c: Ctx) => /\b(dias?|semanas?|mes|meses)\s+mas\b(?!\s+o\s+menos)/.test(fold(c.heard));
+/** "Es que voy a estar dos meses": a stay said at the stamp is the trip (her limit is the return date); a figure asked
+ *  for ("¿Me puede dar ciento ochenta días?") is only a request. */
+const staySaid = (c: Ctx) => /\b(voy a estar|vamos a estar|voy a quedarme|vamos a quedarnos|me voy a quedar|nos vamos a quedar|me quedo|nos quedamos|estare|estaremos)\b/.test(fold(c.heard));
 /** "¿Me puede dar treinta días?": a new figure counts if it's more than she gave; then the ticket, unless already seen. */
 function moreDays(c: Ctx, want?: number | "until" | "vague") {
   const T = turn(c);
@@ -392,6 +403,7 @@ function moreDays(c: Ctx, want?: number | "until" | "vague") {
   // "Diez días" when she gives fifteen asks for nothing more
   if (typeof want === "number" && want < (c.s.short ?? 0) && !/\bno\b/.test(fold(c.heard))) { acceptShort(c); return; }
   if (typeof want === "number" && want > (c.s.short ?? 0)) c.s.days = Math.min(want, 180);
+  if (typeof want === "number" && want > (c.s.short ?? 0) && staySaid(c)) c.s.length = Math.min(want, 180);
   if (want === "until") c.s.length = "until";
   if (c.s.ret === true) { grantMore(c); return; }
   c.s.ticketQ = true;
@@ -982,6 +994,10 @@ export const passport: SituationDef = {
     days_ticket_q: [t("¿Tiene | su | boleto | de | regreso? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?")],
     stamp_more: [t("Muy | bien, | entonces | le | doy | {$num} | días.", "Very | good, | then | (to) you | I-give | {$num} | days.", "All right, then I'll give you {$num} days.")],
     stamp_more_until: [t("Muy | bien, | le | pongo | los | días | hasta | su | regreso.", "Very | good, | (for) you | I-put | the | days | until | your | return.", "All right, I'll give you the days until your return.")],
+    // a request above the trip: the days up to the return date on the ticket, rounded up to a usual figure as the
+    // stamp always is (the lead's decision, 5 Nov 2026)
+    stamp_more_return: [t("Muy | bien. | Le | doy | {$num} | días, | lo que | necesita | hasta | su | regreso.", "Very | good. | (To) you | I-give | {$num} | days, | what | you-need | until | your | return.",
+      "All right. I'll give you {$num} days, which covers you until your return.")],
     stamp_keep: [t("Sin | boleto | de | regreso, | le | dejo | {$num} | días.", "Without | a ticket | of | return, | (to) you | I-leave | {$num} | days.", "Without a return ticket, I'll leave it at {$num} days.")],
     // Closing
     welcome: [
@@ -1866,6 +1882,16 @@ export const passport: SituationDef = {
       setup: (s) => { quiet(s); s.shortTwist = true; } },
     { name: "fewer days: '¿Por qué?' asks for more; the ticket shown (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "¿Por qué?", "Sí, aquí está.", "Gracias."],
       expect: { complete: true, state: { days: 30, daysResult: "more" } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
+    // The follow-up pass (5 Nov 2026): more than the trip gets the days to the return date; a longer stay said is the trip
+    { name: "fewer days: 180 asked after a month gets the days to the return date (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "¿Me puede dar ciento ochenta días?", "Sí, aquí está.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 30, short: 15 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
+    { name: "fewer days: the ticket first, then six months asked: the return date (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Tres semanas.", "En el Hotel Mar Azul.", "¿Me puede dar seis meses, por favor?", "Claro, aquí está mi boleto.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 21 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
+    { name: "fewer days: a longer stay said at the stamp is the trip (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "Es que voy a estar dos meses.", "Sí, aquí está.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 60, length: 60 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
       setup: (s) => { quiet(s); s.shortTwist = true; } },
     { name: "a return ticket not bought yet: a reminder, nothing to look up", turns: ["Aquí tiene.", "De vacaciones.", "Dos semanas.", "En el Hotel Mar Azul.", "Todavía no lo compro.", "¿Cuántos días me dio?", "Gracias."],
       expect: { complete: true, state: { ret: false, days: 14 } }, auto: PP_AUTO,
