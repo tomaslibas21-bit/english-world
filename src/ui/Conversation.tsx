@@ -80,6 +80,7 @@ export function Conversation() {
       if (k === "escape") { game?.closeConversation(); return; }
       if (k === "h") { e.preventDefault(); st.setConv({ openHint: st.conv.openHint ? null : (st.conv.hints[0] ?? "g_clarify") }); return; }
       if (k === "l") { e.preventDefault(); st.setSettings({ lt: !st.settings.lt }); return; }
+      if (k === "n") { e.preventDefault(); st.setSettings({ ltNatural: !st.settings.ltNatural }); return; }
       if (k === "i") { e.preventDefault(); st.setSettings({ ipa: !st.settings.ipa }); return; }
       if (k === "t") { e.preventDefault(); st.setConv({ typing: !st.conv.typing }); return; }
       if (k === "r") { e.preventDefault(); game?.activeSession?.repeatLast(false); return; }
@@ -121,7 +122,7 @@ export function Conversation() {
           <span className="place" lang={EDITION.helper}>{sit.mode === "video" ? L("Vaizdo skambutis") : placeLtNamed(sit.location)}</span>
         </div>
         <div className="toggles">
-          <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title={L("Lietuviškas vertimas (L)")} aria-pressed={settings.lt}>{L("LT")}</button>
+          <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title={L("Lietuviškas vertimas (L) · visas sakinys lietuviškai (N)")} aria-pressed={settings.lt}>{L("LT")}</button>
           <button className={"toggle" + (settings.ipa ? " on" : "")} onClick={() => setSettings({ ipa: !settings.ipa })} title={L("Tarimas IPA (I)")} aria-pressed={settings.ipa}>IPA</button>
           <button className={"toggle slow-toggle" + (conv.slowMode || settings.slowVoice ? " on" : "")} onClick={() => game?.activeSession?.setSlowMode(!conv.slowMode)} disabled={settings.slowVoice}
             title={settings.slowVoice ? L("Visi kalba lėčiau (Nustatymai)") : conv.slowMode ? L("Šis pašnekovas kalba lėčiau – paspausk, kad kalbėtų įprastai") : L("Kad šis pašnekovas kalbėtų lėčiau")} aria-pressed={conv.slowMode || settings.slowVoice} aria-label={L("Lėčiau")}>
@@ -277,7 +278,7 @@ function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: Transcript
         <ReplayButtons replay={replay} />
       </div>
       <div className="bubble">
-        {lines.map((l) => <div className="bubble-part" key={l.id}><Interlinear s={l.sentence!} lt={lt || !!reveal[l.id]} ipa={ipa} nat={nat || !!reveal[l.id]} /></div>)}
+        {lines.map((l) => <div className="bubble-part" key={l.id}><Interlinear s={l.sentence!} lt={lt || !!reveal[l.id]} ipa={ipa} nat={nat || !!reveal[l.id]} natTip /></div>)}
       </div>
     </div>
   );
@@ -445,7 +446,7 @@ function Line({ l, speaking, lt, ipa, nat }: { l: TranscriptLine; speaking: bool
           <span>{npc?.name}</span>
           <ReplayButtons replay={replay} />
         </div>
-        <div className="bubble"><Interlinear s={l.sentence} lt={lt} ipa={ipa} nat={nat} /></div>
+        <div className="bubble"><Interlinear s={l.sentence} lt={lt} ipa={ipa} nat={nat} natTip /></div>
       </div>
     );
   }

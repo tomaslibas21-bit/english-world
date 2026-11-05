@@ -112,7 +112,7 @@ export const STRINGS: Record<string, string> = {
 
   // The conversation panel (src/ui/Conversation.tsx)
   "Pokalbis: {name}": "Conversation: {name}",
-  "Lietuviškas vertimas (L)": "English translation (L)",
+  "Lietuviškas vertimas (L) · visas sakinys lietuviškai (N)": "English translation (L) · the whole sentence in English (N)",
   "LT": "EN",
   "Tarimas IPA (I)": "IPA pronunciation (I)",
   "Visi kalba lėčiau (Nustatymai)": "Everyone speaks slower (Settings)",
@@ -160,6 +160,7 @@ export const STRINGS: Record<string, string> = {
   "Arba:": "Or:",
   "Skambutis baigtas": "Call ended",
   "Tu": "You",
+  "Natūralus vertimas": "Natural translation",
   "Suprasta": "Understood",
   "Daugiau frazių": "More phrases",
   "Visada naudinga: paprašyti pakartoti, lėčiau, paraidžiui…": "Always useful: asking someone to repeat, slow down, or spell it…",
@@ -321,7 +322,7 @@ export const STRINGS: Record<string, string> = {
   "{n} iš 3": "{n} of 3",
   "Lietuviški vertimai (L)": "English translations (L)",
   "Žodis po žodžio po pašnekovo sakiniais.": "Word by word under what the other person says.",
-  "Visas sakinys lietuviškai": "Whole sentence in English",
+  "Visas sakinys lietuviškai (N)": "Whole sentence in English (N)",
   "Rodoma, kai įjungti vertimai.": "Shown when translations are on.",
   "Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).": "Mexican Spanish pronunciation under each word the other person says (generated, not yet checked against the recordings).",
   "Tavo atsakymų vertimas": "Translation of your answers",

@@ -343,7 +343,7 @@ function Settings({ close }: { close: () => void }) {
       <SheetHead icon="settings" title={L("Nustatymai")} close={close} />
       <div className="sheet-body settings-grid">
         <Toggle on={s.lt} onChange={(v) => set({ lt: v })} label={L("Lietuviški vertimai (L)")} sub={L("Žodis po žodžio po pašnekovo sakiniais.")} />
-        <Toggle on={s.ltNatural} onChange={(v) => set({ ltNatural: v })} label={L("Visas sakinys lietuviškai")} sub={L("Rodoma, kai įjungti vertimai.")} />
+        <Toggle on={s.ltNatural} onChange={(v) => set({ ltNatural: v })} label={L("Visas sakinys lietuviškai (N)")} sub={L("Rodoma, kai įjungti vertimai.")} />
         <Toggle on={s.ipa} onChange={(v) => set({ ipa: v })} label={L("Tarimas IPA (I)")} sub={L("Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).")} />
         <Toggle on={s.sayLt} onChange={(v) => set({ sayLt: v })} label={L("Tavo atsakymų vertimas")} sub={L("Po pavyzdžiais „Tavo eilė“ ir „Daugiau frazių“.")} />
         <Toggle on={s.sayIpa} onChange={(v) => set({ sayIpa: v })} label={L("Tavo atsakymų tarimas IPA")} sub={L("Po kiekvienu pavyzdžių žodžiu.")} />
