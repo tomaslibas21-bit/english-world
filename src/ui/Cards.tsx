@@ -64,8 +64,9 @@ function place(r: DOMRect, w: number, h: number): Spot {
   return { left, top, below, arrow: Math.round(Math.max(16, Math.min(w - 16, cx - left))) };
 }
 
-/** Is the word still visible (not scrolled out of the transcript or the hints)? */
-function inView(el: HTMLElement): boolean {
+/** Is the word still visible (not scrolled out of the transcript or the hints)? Also the asterisk's tooltip
+ *  (Interlinear.tsx NatTip). */
+export function inView(el: HTMLElement): boolean {
   if (!el.isConnected) return false;
   const r = el.getBoundingClientRect();
   if (!r.width && !r.height) return false;

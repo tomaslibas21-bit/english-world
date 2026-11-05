@@ -350,6 +350,36 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .u .lt.flag { border-bottom: 1px dotted var(--dash); cursor: help; }
 .u .ipa { font-family: var(--ipa-font); font-size: 0.56em; color: var(--ipa); margin-top: 0.1em; }
 .nat { font-family: var(--ui); font-size: 0.92em; color: #4e5963; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; margin-top: 8px; line-height: 1.4; }
+/* The natural sentence behind a small "*" after the other person's last word, when "Visas sakinys lietuviškai" is off
+   and the natural sentence says more than the word glosses (Interlinear.tsx NatTip, natTip.ts). The last unit and
+   its asterisk stay on one line; the tooltip floats (placed by script) above the asterisk, so opening it moves
+   nothing. It looks like the word popover (cards.css .wpop). */
+.nat-last { display: inline-flex; align-items: baseline; max-width: 100%; }
+.nat-last > .u { min-width: 0; }
+.nat-star {
+  position: relative; top: -0.14em; flex: none; margin: 0 0 0 0.04em; padding: 0 0.08em; border: 0; border-radius: 0.3em; background: none;
+  font-family: var(--ui); font-size: 0.8em; font-weight: 800; line-height: 1; color: var(--accent); opacity: 0.7; cursor: pointer;
+  transition: opacity 0.15s;
+}
+/* a 28 × 28 px target round the small glyph, reaching out past the sentence's end rather than over the word */
+.nat-star::before { content: ""; position: absolute; left: -6px; top: 50%; width: 28px; height: 28px; margin-top: -14px; }
+.nat-star:hover, .nat-star[aria-expanded="true"] { opacity: 1; }
+.nat-tipbox {
+  position: fixed; z-index: 35; width: max-content; max-width: min(260px, calc(100vw - 32px));
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px; padding: 7px 12px 8px;
+  box-shadow: 0 2px 4px rgba(20, 30, 40, 0.06), 0 14px 32px -12px rgba(20, 30, 40, 0.38);
+  font-family: var(--ui); font-size: 0.9em; font-weight: 600; line-height: 1.35; color: var(--ink); text-align: left; overflow-wrap: break-word;
+  animation: nat-tip-in 0.14s ease-out;
+}
+.nat-tipbox[hidden] { display: none; }
+/* the arrow: under the tooltip, pointing down at the asterisk (on top when the tooltip opened below it) */
+.nat-tipbox::before {
+  content: ""; position: absolute; left: var(--arrow, 50%); bottom: -6px; width: 11px; height: 11px;
+  background: var(--panel-solid); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+  border-top-left-radius: 3px; transform: translateX(-50%) rotate(225deg);
+}
+.nat-tipbox.below::before { bottom: auto; top: -6px; transform: translateX(-50%) rotate(45deg); }
+@keyframes nat-tip-in { from { opacity: 0; transform: translateY(3px); } }
 .hl .u .en { color: var(--accent); }
 
 .yourturn { border-top: 1px solid var(--line); background: #fbf6ee; max-height: 64%; display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
@@ -636,7 +666,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .sheet-body { padding: 14px 14px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .yt-title.phase-you b::before, .ended-badge, .sheet, .loading::after, .objective-card.fresh { animation: none; }
+  .yt-title.phase-you b::before, .ended-badge, .sheet, .loading::after, .objective-card.fresh, .nat-tipbox { animation: none; }
+  .nat-star { transition: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }
   .map-pin:hover { transform: translate(-50%, -50%); }
