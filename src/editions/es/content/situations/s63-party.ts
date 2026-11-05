@@ -643,6 +643,9 @@ export const party: SituationDef = {
       "[es] (un estado | una provincia | una region | un condado | una isla) [grande | pequeno | pequena] (de | en | del) {country}", "[es] (un estado | una provincia) (que esta | en el) (norte | sur | este | oeste | centro) de {country}",
       "[esta | queda] en [el estado de | la provincia de] {city} [en {country} | {country}]",
     ] },
+    // "No está en Canadá", "No queda cerca de Toronto": where the city is not (a bare "no" negates "está" since the
+    // follow-up pass: lang.ts); the question stays open and is asked again
+    city_not: { patterns: ["no (esta | queda) (en | cerca de) {country}", "no (esta | queda) cerca de {city}", "no (esta | queda) en [el estado de | la provincia de] {city}"] },
     correct_country: { patterns: [
       "[no] no de {bad:country} [sino] de {country} #h:mh_not", "[no] [de] {bad:country} no [perdon]", "no [no] [soy] de {country} #h:mh_no", "no {country} [no {bad:country}]", "{country} no {bad:country}",
       "no [no] [de] {bad:country} no [sino] [de] {country}", "[no] dije {country}", "(ja | jaja | jeje) no [no] [soy] [de] {country} [no [de] {bad:country}]", "[no] [de] {country} no [de] {bad:country}", "[perdon] (dije | soy de) {country} no {bad:country}",
@@ -1599,7 +1602,8 @@ export const party: SituationDef = {
     },
     from_ans(c, slots) { if (!live(c)) return; fromAnswer(c, slots); },
     from_ctx(c, slots) { if (!live(c)) return; fromAnswer(c, slots); },
-    // "No está en Canadá" reads as "No." + "está en Canadá" ("está" isn't one of lang.ts's negated verbs): never Canada
+    // "No está en Canadá" is city_not (below); the guard stays for "No, está en Canadá" said without its comma
+    city_not(c) { if (!live(c)) return; /* the open question is asked again */ },
     city_country(c, slots) {
       if (!live(c) || cityNot(c)) return;
       const r = slots.country ?? (slots.city ? countryOf(slots.city) : undefined); if (r) reactCountry(c, r);
@@ -1819,6 +1823,8 @@ export const party: SituationDef = {
     { say: "Inglaterra", intent: "from_ctx", step: "from", slots: { country: "uk" } },
     { say: "No soy de Estados Unidos, soy de Canadá", intent: "from_ans", slots: { country: "canada" } },
     { say: "Está en Canadá", intent: "city_country", slots: { country: "canada" } },
+    { say: "No está en Canadá", intent: "city_not", not: ["city_country", "from_ans"] },
+    { say: "No queda cerca de Toronto", intent: "city_not", not: ["city_country"] },
     { say: "No, Islandia no, Irlanda", intent: "correct_country" },
     { say: "Irlanda, no Islandia", intent: "correct_country", slots: { country: "ireland" } },
     // work

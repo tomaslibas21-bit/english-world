@@ -3,14 +3,17 @@
 // Runs in the vitest project "es" (vite.config.ts), where src/editions/es/ replaces the base files.
 import { describe, expect, it } from "vitest";
 import { EDITION } from "../../src/edition";
-import { dateSlot, daySlot, digitsSlot, lettersSlot, priceSlot, readInt, timeSlot } from "../../src/convo/slots";
+import { BUILTIN_SLOTS, dateSlot, daySlot, digitsSlot, lettersSlot, priceSlot, readInt, timeSlot } from "../../src/convo/slots";
 import { isConfirmation, surfaceTokens, tokenizeInput, tokenSimilarity } from "../../src/convo/normalize";
 import { compose } from "../../src/convo/compose";
 import { ent, t } from "../../src/content/dsl";
 import type { EntityDef } from "../../src/content/types";
 import { Nlu } from "../../src/convo/nlu";
 import { LANG } from "../../src/convo/lang";
-import { buildNlu } from "../../src/convo/dialogue";
+import { buildNlu, Conversation, type NpcInfo } from "../../src/convo/dialogue";
+import { setVariety } from "../../src/convo/compose";
+import { expectHowAreYou } from "../../src/content/global";
+import type { Ctx, Pending, SituationDef, StepDef } from "../../src/content/types";
 import { SITUATION_BY_ID } from "../../src/content/situations";
 import { GLOBAL } from "../../src/content/global";
 import { NPCS } from "../../src/content/npcs";
@@ -387,5 +390,399 @@ describe("9. spelling: 'doble ele', 'doble erre', 'eñe', 'che'", () => {
     const [rental, exp] = atStep("s71a-rental", "spell");
     expect(read(rental, "Eme, i, doble ele, e, erre", exp)).toEqual(["letters_ctx"]);
     expect(rental.parse("Eme, i, doble ele, e, erre", exp).best!.segments[0].slots.letters).toBe("miller");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The dialogue audit's shared fixes (5 Nov 2026, AUDIT/FOLLOWUPS.md): the language layer, the global skills and the
+// engine, edition-wide. Each conversation's own guards stay (their tests are in their files).
+
+/** A toy conversation with Spanish slots and the global skills: the intents, lines and steps given. */
+function toySit(o: { intents?: Record<string, string[]>; lines?: Record<string, ReturnType<typeof t>[]>; steps?: StepDef[];
+  start?: (c: Ctx) => void; handlers?: SituationDef["handlers"]; npc?: string }): SituationDef {
+  return {
+    id: "toy-test", song: 0, songTitle: "", title: { en: "", lt: "" }, topic: { en: "", lt: "" }, chapter: 1, order: 1, location: "x",
+    npc: o.npc ?? "staff", goal: "", hints: {},
+    intents: Object.fromEntries(Object.entries(o.intents ?? {}).map(([k, v]) => [k, { patterns: v }])),
+    lines: { hi: [t("¡Hola!", "Hi!", "Hi!")], ...(o.lines ?? {}) }, steps: o.steps ?? [], handlers: o.handlers ?? {},
+    start: o.start ?? ((c) => c.say("hi")),
+  } as unknown as SituationDef;
+}
+const TOY_NPCS: Record<string, NpcInfo> = {
+  staff: { id: "staff", name: "Lupe", gender: "f", voice: "x" },
+  friend: { id: "friend", name: "Paola", gender: "f", voice: "x", informal: true },
+};
+function talk(sit: SituationDef, seed = 1) {
+  const conv = new Conversation(sit, { global: GLOBAL, npcs: TOY_NPCS, player: { name: "Ryan", surname: "Miller", gender: "m" }, visits: 0, seed, memory: {} });
+  conv.start();
+  /** What the learner says: the ids of the lines said back. */
+  const say = (text: string) => conv.input(text).lines.map((l) => l.lineId);
+  return { conv, say };
+}
+const L = (es: string) => [t(es, es, es)];
+const toyRead = (sit: SituationDef, say: string, expected: string[] = []) => read(buildNlu(sit, GLOBAL, TOY_NPCS), say, expected);
+
+describe("10. a reason or a request after 'vengo porque', 'vine porque', 'porque'", () => {
+  const nlu = toy({ sore: ["me duele la garganta"], fever: ["tengo fiebre"], tickets: ["tengo dos boletos [para el concierto]"] });
+  it("is the request itself", () => {
+    expect(read(nlu, "Vengo porque me duele la garganta")).toEqual(["sore"]);
+    expect(read(nlu, "Vine porque tengo fiebre")).toEqual(["fever"]);
+    expect(read(nlu, "Porque tengo dos boletos para el concierto")).toEqual(["tickets"]);
+  });
+  it("but a closing 'porque no' is the question '¿por qué no?', never a no", () => {
+    expect(read(nlu, "Porque no")).toEqual([]);
+    expect(read(nlu, "Claro, porque no")).toEqual(["yn:yes"]);
+    expect(read(nlu, "No vengo porque tengo fiebre")).not.toContain("fever");
+  });
+});
+
+describe("11. a trailing 'perdón' / 'lo siento' softens the answer", () => {
+  const nlu = toy({ cant: ["no puedo [esta semana]"], order: ["un latte"] });
+  it("is understood after any answer, and is no apology of its own", () => {
+    expect(read(nlu, "No puedo esta semana, perdón.")).toEqual(["cant"]);
+    expect(read(nlu, "No puedo esta semana, lo siento")).toEqual(["cant"]);
+    expect(read(nlu, "No puedo, perdón.")).toEqual(["yn:no"]);
+    expect(read(nlu, "Un latte, perdón")).toEqual(["order"]);
+    expect(nlu.parse("Un latte, lo siento").best!.flags.has("sorry")).toBe(true);
+    expect(read(nlu, "Perdón")).toEqual([]);
+  });
+});
+
+describe("12. 'No está…' / 'No queda…' is a negated verb, never 'No.' + a place", () => {
+  const nlu = toy({ place: ["[esta | queda] en {country}"], far: ["[esta | queda] lejos"] });
+  nlu.g.defineSlots({ country: { lexicon: [{ id: "canada", forms: ["canada"] }, { id: "mexico", forms: ["mexico"] }] } });
+  it("without a comma the 'no' is the verb's", () => {
+    for (const s of ["No está en Canadá", "No queda lejos", "No están en México"]) expect(readings(nlu, s).filter((r) => r.includes("yn:no")), s).toEqual([]);
+    expect(read(nlu, "No, está en Canadá")).toEqual(["place", "yn:no"]);
+    expect(["esta", "queda", "estan", "quedan"].map((w) => LANG.noNegates!([w], 0))).toEqual([true, true, true, true]);
+  });
+  it("in the party, 'No está en Canadá' says where the city is not, never 'No.' + Canada", () => {
+    const party = buildNlu(SITUATION_BY_ID["s63-party"], GLOBAL, NPCS);
+    expect(read(party, "No está en Canadá")).toEqual(["city_not"]);
+    expect(readings(party, "No está en Canadá").filter((r) => r.includes("city_country"))).toEqual([]);
+  });
+});
+
+describe("13. the persons of poder", () => {
+  it("the learner's 'puedo' (I) is never 'puede' / 'pueden' (you); tú/usted slips, '¿Se puede…?' and '¿Podría…?' stay", () => {
+    for (const [a, b] of [["puedo", "puede"], ["puedo", "pueden"], ["podemos", "pueden"], ["puedo", "podria"], ["pude", "pudo"]]) {
+      expect(tokenSimilarity(a, b), `${a} / ${b}`).toBe(0);
+    }
+    for (const [a, b] of [["puedes", "puede"], ["pueden", "puede"], ["podria", "puedo"], ["podria", "puede"], ["pudiera", "pueden"], ["podemos", "puedo"],
+      ["podrias", "podria"], ["puede", "puedo"]]) {
+      expect(tokenSimilarity(a, b), `${a} / ${b}`).toBeGreaterThan(0.8);
+    }
+    expect(toks("Yo puede llevarla")).toEqual(["yo", "puedo", "llevarla"]);
+  });
+  it("at the baggage desk, 'Yo puedo llevarla' is no yes to the delivery", () => {
+    const nlu = buildNlu(SITUATION_BY_ID["s65b-baggage"], GLOBAL, NPCS);
+    for (const s of ["Yo puedo llevarla", "Yo puede llevarla", "Puedo llevarla yo"]) expect(read(nlu, s), s).not.toContain("delivery");
+    for (const s of ["¿Pueden llevarla?", "¿Podría llevarla?", "¿Puedes llevarla?"]) expect(read(nlu, s), s).toEqual(["delivery"]);
+  });
+});
+
+describe("14. 'obvio' is a Mexican yes", () => {
+  const nlu = toy({ thanks: ["gracias"] });
+  it("'obvio', 'obvio que sí', 'obviamente'; 'obvio que no' is a no", () => {
+    for (const s of ["Obvio", "¡Obvio que sí!", "Obviamente", "Sí, obvio"]) expect(read(nlu, s), s).toEqual(["yn:yes"]);
+    expect(read(nlu, "Obvio que no")).toEqual(["yn:no"]);
+    expect(isConfirmation("Obvio")).toBe(true);
+  });
+});
+
+describe("15. a conjunction is never heard as a name", () => {
+  it("'porque', 'pero', 'cuando' never start or end a sound-alike ('porque' was 'parroquia')", () => {
+    for (const w of ["porque", "pero", "aunque", "cuando", "donde", "como", "pues", "entonces"]) expect(LANG.soundEdge.has(w), w).toBe(true);
+  });
+});
+
+describe("16. a set phrase with 'no' before a question", () => {
+  const nlu = toy({ reassure: ["(no te preocupes | no pasa nada | no hay problema | tranquila)"], dog: ["tienes perro"], local: ["eres de aqui"],
+    price_ok: ["no importa"], ask_price: ["el precio"] });
+  it("doesn't block it", () => {
+    expect(read(nlu, "No te preocupes. ¿Tienes perro?")).toEqual(["reassure", "dog"]);
+    expect(read(nlu, "No pasa nada. ¿Eres de aquí?")).toEqual(["reassure", "local"]);
+    expect(read(nlu, "No hay problema. ¿Tienes perro?")).toContain("dog");
+  });
+  it("but a real negative still does ('No importa el precio' is no price question)", () => {
+    expect(read(nlu, "No importa el precio")).toEqual([]);
+    expect(LANG.settledNegative!(["no", "te", "preocupes"])).toBe(true);
+    expect(LANG.settledNegative!(["no", "quiero", "no", "te", "preocupes"])).toBe(false);
+  });
+});
+
+describe("17. 'El calentador sí funciona' is no acceptance of the heater", () => {
+  const nlu = toy({ heater: ["el calentador"], card: ["con tarjeta"] });
+  it("a bare 'funciona' (and 'sí funciona') is a predicate; 'me funciona', 'está bien' still accept", () => {
+    expect(read(nlu, "El calentador sí funciona")).toEqual([]);
+    expect(read(nlu, "El calentador funciona")).toEqual([]);
+    expect(read(nlu, "Con tarjeta me funciona")).toEqual(["card"]);
+    expect(read(nlu, "Con tarjeta está bien")).toEqual(["card"]);
+  });
+});
+
+describe("18. a greeting reply, then a request, in one turn", () => {
+  it("'Muy bien, gracias. Oiga, ¿me presta…?' and '¡Ah, ya sé! ¡Muchas gracias!'", () => {
+    const nlu = buildNlu(SITUATION_BY_ID["s82-neighbor"], GLOBAL, NPCS);
+    for (const s of ["Muy bien, gracias. Oiga, ¿me presta una escalera?", "Bien, gracias. Oiga, ¿me presta una escalera?", "Bien. Mire, ¿me presta una escalera?"]) {
+      expect(read(nlu, s), s).toContain("borrow");
+    }
+    expect(read(nlu, "¡Ah, ya sé! ¡Muchas gracias!")).toEqual(["g_ok"]);
+    // "Ya sé dónde está…" says what the learner knows: no "Ya sé" + a question
+    const tour = buildNlu(SITUATION_BY_ID["s88-first-day"], GLOBAL, NPCS);
+    expect(read(tour, "Ya sé dónde está el baño", SITUATION_BY_ID["s88-first-day"].steps.find((s) => s.id === "tour")!.expects)).not.toContain("q_restroom");
+  });
+});
+
+describe("19. a piece may begin with va / sale / está after a clause of its own", () => {
+  const nlu = toy({ flight: ["(voy en | tengo) el [vuelo] {number}"], subj: ["el vuelo {number}"], ontime: ["(va | sale | esta) a tiempo"] });
+  it("'Voy en el 223, ¿va a tiempo?' is two pieces; 'El vuelo 223 va a tiempo' (subject and verb) isn't", () => {
+    expect(read(nlu, "Voy en el 223, ¿va a tiempo?")).toEqual(["flight", "ontime"]);
+    expect(read(nlu, "Tengo el 223, ¿sale a tiempo?")).toEqual(["flight", "ontime"]);
+    expect(readings(nlu, "El vuelo 223 va a tiempo").filter((r) => r.join() === "subj,ontime")).toEqual([]);
+  });
+});
+
+describe("20. 'Ya voy' / 'Ya vamos' (coming) are no goodbye", () => {
+  const sit = toySit({ lines: { ask: L("¿Ya viene?") } });
+  it("only 'ya me voy' leaves", () => {
+    for (const s of ["Ya voy", "¡Ya voy!", "Ya vamos", "Ahí voy"]) expect(toyRead(sit, s), s).toEqual(["g_ok"]);
+    expect(toyRead(sit, "Ya me voy")).toEqual(["g_bye"]);
+    const { conv, say } = talk(sit);
+    say("¡Ya voy!");
+    expect(conv.ended).toBe(false);
+  });
+});
+
+describe("21. '¿Qué significa…?' / '¿Qué es…?' asks about a word", () => {
+  const sit = toySit({ intents: { tool_ctx: ["(maquina | tijera)"], what_dish: ["que es la cochinita [pibil]"] },
+    steps: [{ id: "tool", done: (c) => !!c.s.tool, ask: (c) => c.say("hi"), expects: ["tool_ctx"] }],
+    handlers: { tool_ctx: (c) => { c.s.tool = c.heard; } } });
+  const nlu = buildNlu(sit, GLOBAL, TOY_NPCS);
+  it("'¿Qué significa máquina?' is the word asked about, never the answer 'máquina'", () => {
+    expect(read(nlu, "¿Qué significa máquina?", ["tool_ctx"])).toEqual(["g_meaning"]);
+    expect(nlu.parse("¿Qué significa máquina?", ["tool_ctx"]).best!.segments[0].slots.w).toBe("maquina");
+    const { conv, say } = talk(sit);
+    say("¿Qué significa máquina?");
+    expect(conv.s.tool).toBeUndefined();
+  });
+  it("an expression, '¿Qué es (una) X?', '¿Qué es eso?'", () => {
+    expect(read(nlu, "¿Qué significa de un jalón?")).toEqual(["g_meaning"]);
+    for (const s of ["¿Qué es una charola?", "¿Qué es el CURP?", "¿Qué es charola?"]) expect(read(nlu, s), s).toEqual(["g_meaning"]);
+    expect(read(nlu, "¿Qué es la cochinita pibil?")).toEqual(["what_dish"]);
+    // another global skill may follow it
+    expect(read(nlu, "¿Qué significa? No entiendo.")).toEqual(["g_meaning", "g_dont_understand"]);
+  });
+  it("but '¿Qué es mejor?' / '¿Qué es más barato?' / '¿Qué es lo que…?' aren't, and '¿Qué es eso?' is each conversation's", () => {
+    for (const s of ["¿Qué es mejor?", "¿Qué es más barato?", "¿Qué es lo que tiene?", "¿Qué es eso?"]) expect(read(nlu, s), s).not.toContain("g_meaning");
+    const term = (BUILTIN_SLOTS as unknown as Record<string, { fn: (tk: string[], pos: number, prefix: boolean) => { value: unknown }[] }>).term;
+    expect(term.fn(["una", "charola"], 0, false).map((r) => r.value)).toContain("charola");
+    expect(term.fn(["mejor"], 0, false)).toEqual([]);
+  });
+});
+
+describe("22. '¿Qué hora es?'", () => {
+  const sit = toySit({});
+  it("is understood (nobody gives the time); '¿A qué hora es?' isn't that", () => {
+    expect(toyRead(sit, "¿Qué hora es?")).toEqual(["g_time"]);
+    expect(toyRead(sit, "¿Qué horas son?")).toEqual(["g_time"]);
+    const { say } = talk(sit);
+    expect(say("¿Qué hora es?")).toEqual(["g_no_watch"]);
+    expect(say("¿A qué hora es?")).not.toContain("g_no_watch");
+  });
+});
+
+describe("23. days and clock times", () => {
+  it("'la semana que entra', 'la otra semana', 'el lunes que entra'", () => {
+    expect(whole(daySlot, "la semana que entra")).toContain("next_week");
+    expect(whole(daySlot, "la otra semana")).toContain("next_week");
+    expect(whole(daySlot, "el lunes que entra")).toContain("monday");
+  });
+  it("a bare 'uno' / 'una' is no one o'clock; 'la una', 'una y media', 'una de la tarde' are", () => {
+    expect(whole(timeSlot, "uno")).toEqual([]);
+    expect(whole(timeSlot, "una")).toEqual([]);
+    expect(whole(timeSlot, "la una")).toContainEqual({ h: 1, m: 0 });
+    expect(whole(timeSlot, "una y media")).toContainEqual({ h: 1, m: 30 });
+    expect(whole(timeSlot, "una de la tarde")).toContainEqual({ h: 1, m: 0, ampm: "pm" });
+    expect(whole(timeSlot, "dos")).toContainEqual({ h: 2, m: 0 });
+  });
+});
+
+describe("24. a question is never split into a question and the open question's answer", () => {
+  const nlu = toy({ ask_next: ["a que hora sale"], ask_price: ["cuanto cuesta"], time_ctx: ["el (ultimo | primero)", "{time}"], size_ctx: ["el grande"], dest_ctx: ["a merida"] });
+  it("'¿A qué hora sale el último?' doesn't answer with 'el último'", () => {
+    expect(readings(nlu, "¿A qué hora sale el último?", ["time_ctx"]).filter((r) => r.includes("time_ctx"))).toEqual([]);
+    expect(readings(nlu, "¿Cuánto cuesta el grande?", ["size_ctx"]).filter((r) => r.includes("size_ctx"))).toEqual([]);
+    expect(read(nlu, "El último", ["time_ctx"])).toEqual(["time_ctx"]);
+  });
+  it("but an answer that begins with a preposition is one ('¿Cuánto cuesta a Mérida?' names the destination)", () => {
+    expect(read(nlu, "¿Cuánto cuesta a Mérida?", ["dest_ctx"])).toEqual(["ask_price", "dest_ctx"]);
+  });
+});
+
+describe("25. '¿Cómo está?': one reply a turn, bad news first, a bare 'No'", () => {
+  const sit = toySit({
+    intents: { tired_ctx: ["un poco (cansado | cansada)", "pero un poco (cansado | cansada)"] },
+    lines: { how: L("¿Cómo está?"), next: L("¿Qué le sirvo?"), appt_no: L("¿Sin cita?") },
+    steps: [{ id: "appt", done: (c) => !!c.s.appt, ask: (c) => c.say("next"), no: (c) => { c.s.appt = "none"; c.say("appt_no"); } } as StepDef],
+    start: (c) => { c.say("how"); expectHowAreYou(c); },
+  });
+  it("'Bien, pero un poco cansada' gets '¡Ay, lo siento!' only", () => {
+    const { say } = talk(sit);
+    const out = say("Bien, pero un poco cansada");
+    expect(out.filter((l) => l === "g_glad" || l === "g_sorry_to_hear")).toEqual(["g_sorry_to_hear"]);
+  });
+  it("'Muy bien, gracias' is good news; 'No' is how they are, not the next question's no", () => {
+    expect(talk(sit).say("Muy bien, gracias")).toContain("g_glad");
+    const { conv, say } = talk(sit);
+    expect(say("No")).toContain("g_sorry_to_hear");
+    expect(conv.s.appt).toBeUndefined();
+  });
+  it("a bare '¿Cómo?' asks to hear it again ('¿De verdad? ¿Cómo?')", () => {
+    const sit2 = toySit({ intents: { really: ["de verdad"] }, lines: { news: L("Me caí de la escalera.") }, start: (c) => c.say("news"), handlers: { really: () => {} } });
+    const { say } = talk(sit2);
+    expect(say("¿De verdad? ¿Cómo?")).not.toContain("g_howareyou_reply");
+    expect(say("¿Cómo está?")).toContain("g_howareyou_reply");
+  });
+});
+
+describe("26. goodbyes", () => {
+  const wishes = toySit({ lines: { nice: L("¡Mucho gusto!"), wish: L("¡Que le vaya bien!") }, start: (c) => c.say("nice"),
+    intents: { leave_ctx: ["ya me tengo que ir"] }, handlers: { leave_ctx: (c) => c.say("wish") },
+    steps: [{ id: "chat", done: () => false, ask: (c) => c.say("nice"), expects: ["leave_ctx"] }] });
+  it("'Igualmente' answers 'Mucho gusto' without leaving, and a goodbye wish by leaving", () => {
+    const { conv, say } = talk(wishes);
+    say("Igualmente");
+    expect(conv.ended).toBe(false);
+    say("Ya me tengo que ir");
+    say("¡Igualmente!");
+    expect(conv.ended).toBe(true);
+  });
+  it("fits the part of the day a greeting named", () => {
+    const sit = toySit({});
+    const bye = (hello: string | null) => { const { say } = talk(sit); if (hello) say(hello); return say("Adiós").filter((l) => l.startsWith("g_bye")); };
+    expect(bye("Buenos días")).toEqual(["g_bye_day"]);
+    expect(bye("Buenas tardes")).toEqual(["g_bye_afternoon"]);
+    expect(bye("Buenas noches")).toEqual(["g_bye_night"]);
+    expect(bye(null)).toEqual(["g_bye"]);
+  });
+  it("'Buenas noches' at the end of the evening is good night", () => {
+    const sit = toySit({ steps: [{ id: "x", done: (c) => !!c.s.x, ask: (c) => c.say("hi"), expects: ["done_ctx"] }], intents: { done_ctx: ["listo"] },
+      handlers: { done_ctx: (c) => { c.s.x = true; c.complete(); } } });
+    const { conv, say } = talk(sit);
+    expect(say("Buenas noches")).toContain("g_hello");
+    expect(conv.ended).toBe(false);
+    // the person's own "¡Buenas noches!" greeting answered with one
+    const night = talk(toySit({ lines: { evening: L("¡Buenas noches! Pase, pase.") }, start: (c) => c.say("evening"),
+      steps: [{ id: "x", done: () => false, ask: (c) => c.say("hi") }] }));
+    night.say("¡Buenas noches!");
+    expect(night.conv.ended).toBe(false);
+    night.say("Igualmente");
+    expect(night.conv.ended).toBe(false);
+    say("Listo");
+    say("Buenas noches");
+    expect(conv.ended).toBe(true);
+    const b = talk(sit);
+    b.say("Hola");
+    b.say("Listo");
+    b.say("Gracias, buenas noches");
+    expect(b.conv.ended).toBe(true);
+  });
+});
+
+describe("27. thanks", () => {
+  it("'¡A la orden!' only from someone who serves the learner (usted)", () => {
+    expect(talk(toySit({})).say("Gracias")).toEqual(["g_welcome_staff"]);
+    expect(talk(toySit({ npc: "friend" })).say("Gracias")).toEqual(["g_welcome"]);
+    expect(GLOBAL.lines.g_welcome.some((l) => l.en.includes("A la orden"))).toBe(false);
+  });
+  it("'Gracias por la oferta'", () => {
+    expect(toyRead(toySit({}), "Gracias por la oferta")).toEqual(["g_thanks"]);
+    expect(toyRead(toySit({}), "Muchas gracias por la invitación")).toEqual(["g_thanks"]);
+  });
+});
+
+describe("28. 'Gracias', 'Está bien, gracias', 'Gracias, es todo' at an offer are its no, never a yes", () => {
+  const offer = (q: string, on?: Pending["on"]) => toySit({
+    lines: { q: L(q), took: L("Ahí va."), left: L("Sale.") },
+    start: (c) => { c.say("q"); c.expect({ id: "offer", yes: (cc) => { cc.s.took = true; cc.say("took"); }, no: (cc) => { cc.s.took = false; cc.say("left"); }, on }); },
+  });
+  it("at '¿Le pongo hielo?' / '¿Quiere bolsa?' / '¿Algo más?'", () => {
+    for (const q of ["¿Le pongo hielo?", "¿Quiere bolsa?", "¿Algo más?"]) for (const s of ["Gracias", "Muchas gracias", "Está bien, gracias", "Gracias, es todo"]) {
+      const { conv, say } = talk(offer(q));
+      const out = say(s);
+      expect(conv.s.took, `${q} ${s}`).toBe(false);
+      expect(out, `${q} ${s}`).toContain("left");
+    }
+    const { conv, say } = talk(offer("¿Le pongo hielo?"));
+    say("Sí, gracias");
+    expect(conv.s.took).toBe(true);
+  });
+  it("elsewhere they keep their meaning: '¿Le parece bien el martes?' – 'Está bien, gracias' is a yes", () => {
+    const a = talk(offer("¿Le parece bien el martes?"));
+    a.say("Está bien, gracias");
+    expect(a.conv.s.took).toBe(true);
+    const b = talk(offer("¿Le parece bien el martes?"));
+    expect(b.say("Gracias")).toContain("g_welcome_staff");
+    expect(b.conv.s.took).toBeUndefined();
+  });
+  it("a conversation that reads thanks at its offer itself keeps it", () => {
+    const { conv, say } = talk(offer("¿Le pongo hielo?", { g_thanks: (cc) => { cc.s.took = "thanks"; } }));
+    say("Gracias");
+    expect(conv.s.took).toBe("thanks");
+  });
+  it("and '¿Algo más?' as a step closes on 'Gracias, es todo'", () => {
+    const sit = toySit({ lines: { more: L("¿Algo más?"), bye: L("¡Hasta luego!") },
+      steps: [{ id: "more", done: (c) => c.s.more !== undefined, ask: (c) => c.say("more"), no: (c) => { c.s.more = false; c.say("bye"); } } as StepDef] });
+    const { conv, say } = talk(sit);
+    say("Hola");
+    say("Gracias, es todo");
+    expect(conv.s.more).toBe(false);
+  });
+});
+
+describe("29. 'No sé'", () => {
+  it("to a question about a fact gets '¡No se preocupe!', not 'Sin prisa'; at an offer one takes one's time", () => {
+    const ask = (q: string) => toySit({ lines: { q: L(q) }, start: (c) => { c.say("q"); c.expect({ id: "q", yes: () => {}, no: () => {} }); } });
+    expect(talk(ask("¿Va a estar en casa?")).say("No sé")).toEqual(["g_no_worries"]);
+    expect(talk(ask("¿Quiere postre?")).say("No sé")).toEqual(["g_take_time"]);
+  });
+  it("a step's help that only reassures asks the step again", () => {
+    const sit = toySit({ lines: { q: L("¿Qué día le queda?"), calm: L("Bueno, no se preocupe.") },
+      steps: [{ id: "day", done: (c) => !!c.s.day, ask: (c) => c.say("q"), help: (c) => c.say("calm") } as StepDef] });
+    const { say } = talk(sit);
+    say("Hola");
+    expect(say("No sé")).toEqual(["calm", "q"]);
+  });
+});
+
+describe("30. what the voices say: the neutral noun, letter names, capitals", () => {
+  const E: EntityDef[] = [
+    ent("jitomate", "jitomate", "tomato", "m", { pl: "jitomates", ltPl: "tomatoes", attrs: { neutral: "tomate" } }),
+    ent("lucia", "Cocina | de | Lucía", "Kitchen | of | Lucía", "f", { def: "" as any, attrs: { nat: "Cocina de Lucía" } }),
+    ent("latte", "latte", "latte", "m"),
+    ent("licencia", "licencia de manejo", "driver's license", "f", { attrs: { neutral: "licencia de conducir" } }),
+  ];
+  const look = (id: string) => E.find((e) => e.id === id);
+  const c = (src: ReturnType<typeof t>, vars: Record<string, unknown>) => compose(src, vars, { look, addressee: "m", speaker: "f", formal: true });
+  it("the neutral text says the entity's neutral noun", () => {
+    const s = t("Un kilo de {X.pl}, | ¿{lo@X:pl} | quiere | {maduro@X:pl}?", "A kilo of {X.pl}, | them | you-want | ripe?", "A kilo of {X.pl}, ripe?");
+    expect(c(s, { X: "jitomate" }).en).toBe("Un kilo de jitomates, ¿los quiere maduros?");
+    setVariety("neutral");
+    try {
+      expect(c(s, { X: "jitomate" }).en).toBe("Un kilo de tomates, ¿los quiere maduros?");
+      expect(c(t("{X.np}", "{X.np}", "{X.np}"), { X: "jitomate" }).en).toBe("Un tomate");
+      expect(c(t("{X.np}", "{X.np}", "{X.np}"), { X: { id: "licencia", qty: 2 } }).en).toBe("Dos licencias de conducir");
+    } finally { setVariety("default"); }
+  });
+  it("letters as Mexico spells them (B, V, Y), and the neutral names", () => {
+    const s = t("Se escribe | {$letters}.", "It's spelled | {$letters}.", "It's spelled {$letters}.", { say: "Se escribe: {$letters}." });
+    expect(c(s, { letters: "Bevy" }).say).toBe("Se escribe: be grande, e, ve chica, i griega.");
+    setVariety("neutral");
+    try { expect(c(s, { letters: "Bevy" }).say).toBe("Se escribe: be larga, e, ve corta, i griega."); } finally { setVariety("default"); }
+  });
+  it("no 'the' in English for a name said without an article, and a capital after a lone ¿", () => {
+    expect(c(t("Voy | a | {X.the}.", "I'm going | to | {X.the}.", "I'm going to {X.the}."), { X: "lucia" }).nat).toBe("I'm going to Cocina de Lucía.");
+    expect(c(t("¿Lo de siempre? | ¿{X.np}?", "The usual? | {X.np}?", "The usual? {X.np}?"), { X: "latte" }).en).toBe("¿Lo de siempre? ¿Un latte?");
   });
 });

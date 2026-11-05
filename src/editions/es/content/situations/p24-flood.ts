@@ -1226,6 +1226,8 @@ export const flood: SituationDef = {
     plumber_ctx: { patterns: ["@plumber [@today]", "(un plomero | alguien) (que lo arregle | que lo revise | para arreglarlo | que destape la coladera) [@today]"] },
     insist_today: { patterns: [
       "[me temo que] [no] (no puede | esto no puede | eso no puede) esperar [hasta manana | a manana] #h:cant_wait",
+      // (the learner's "no puedo" was read as "no puede" until the persons of poder were told apart: lang.ts)
+      "[me temo que] [no] (no puedo | ya no puedo | no podemos) esperar [hasta manana | a manana]",
       "[no] manana (es | seria) (muy tarde | demasiado tarde) [me temo]",
       "manana no (me sirve | puedo | es posible | funciona | se puede)",
       "[no] manana no [me temo]",

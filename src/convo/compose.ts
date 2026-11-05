@@ -83,8 +83,9 @@ export function compose(src0: SentSrc, vars: Vars, opts: ComposeOpts): Sentence 
         continue;
       }
       const np = npUnits(b, kind, c, opts.look, g === "f");
-      // a placeholder that begins a new sentence mid-line starts with a capital ("The usual? A medium latte?")
-      const newSentence = i > 0 && !pre && /[.?!]["”')]*$/.test(units[units.length - 1]?.en ?? "");
+      // a placeholder that begins a new sentence mid-line starts with a capital ("The usual? A medium latte?"), also
+      // after a Spanish opening ¿ or ¡ ("¿Lo de siempre? ¿Un latte?")
+      const newSentence = i > 0 && (!pre || /^[¿¡]+$/.test(pre)) && /[.?!]["”')]*$/.test(units[units.length - 1]?.en ?? "");
       np.en.forEach((w, k) => {
         const first = k === 0, last = k === np.en.length - 1;
         units.push({

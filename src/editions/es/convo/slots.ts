@@ -193,9 +193,12 @@ export const timeSlot: SlotFn = (tokens, pos) => {
   for (const h of HOUR_WORD(tokens, i)) {
     const hour = h.value;
     if (hour > 23) continue;
-    // "las 19 horas" and a bare hour; a bare number without "la/las" costs a little (it may be a count)
+    // "las 19 horas" and a bare hour; a bare number without "la/las" costs a little (it may be a count). One o'clock is
+    // "la una": a bare "uno", "un" or "una" is a count ("¿Hay uno más tarde?"), unless minutes or the part of the day
+    // follow ("una y media", "una de la tarde")
     const e = h.end;
-    push(e, { h: hour, m: 0 }, art ? 0 : 0.05);
+    const one = !art && (tokens[i] === "uno" || tokens[i] === "un" || (tokens[i] === "una" && !readAmPm(tokens, e)));
+    if (!one) push(e, { h: hour, m: 0 }, art ? 0 : 0.05);
     // "y media", "y cuarto", "y diez", "y cinco minutos"
     if (tokens[e] === "y") {
       if (tokens[e + 1] === "media") push(e + 2, { h: hour, m: 30 });
@@ -243,19 +246,20 @@ function readAmPm(tokens: Tokens, i: number): { end: number; v: "am" | "pm" } | 
 const DAYS: Record<string, string> = { lunes: "monday", martes: "tuesday", miercoles: "wednesday", jueves: "thursday", viernes: "friday", sabado: "saturday", domingo: "sunday" };
 const dayOf = (w?: string) => (w ? DAYS[w] ?? DAYS[w.replace(/s$/, "")] ?? null : null);
 
-/** Days: "el lunes", "este viernes", "el próximo martes", "el martes que viene", "hoy", "mañana" (and "mañana en la
- *  tarde"), "pasado mañana", "esta noche", "este fin de semana", "la próxima semana", "la semana que viene". The
- *  values are the English edition's ("monday", "tomorrow", "next_week"…). */
+/** Days: "el lunes", "este viernes", "el próximo martes", "el martes que viene" (or "que entra"), "hoy", "mañana"
+ *  (and "mañana en la tarde"), "pasado mañana", "esta noche", "este fin de semana", "la próxima semana", "la semana que
+ *  viene" (or "que entra"), "la otra semana". The values are the English edition's ("monday", "tomorrow",
+ *  "next_week"…). */
 export const daySlot: SlotFn = (tokens, pos) => {
   const out: SlotResult[] = [];
   const t = tokens[pos], n1 = tokens[pos + 1], n2 = tokens[pos + 2], n3 = tokens[pos + 3];
   if (dayOf(t)) {
     out.push({ end: pos + 1, value: dayOf(t) });
-    if (n1 === "que" && n2 === "viene") out.push({ end: pos + 3, value: dayOf(t), tags: ["next"] });
+    if (n1 === "que" && (n2 === "viene" || n2 === "entra")) out.push({ end: pos + 3, value: dayOf(t), tags: ["next"] });
   }
   if ((t === "el" || t === "este" || t === "los") && dayOf(n1)) {
     out.push({ end: pos + 2, value: dayOf(n1) });
-    if (n2 === "que" && n3 === "viene") out.push({ end: pos + 4, value: dayOf(n1), tags: ["next"] });
+    if (n2 === "que" && (n3 === "viene" || n3 === "entra")) out.push({ end: pos + 4, value: dayOf(n1), tags: ["next"] });
   }
   if (t === "el" && (n1 === "proximo" || n1 === "otro") && dayOf(n2)) out.push({ end: pos + 3, value: dayOf(n2), tags: ["next"] });
   if (t === "proximo" && dayOf(n1)) out.push({ end: pos + 2, value: dayOf(n1), tags: ["next"] });
@@ -273,7 +277,9 @@ export const daySlot: SlotFn = (tokens, pos) => {
   if (t === "este" && n1 === "fin" && n2 === "de" && n3 === "semana") out.push({ end: pos + 4, value: "this_weekend" });
   if (t === "esta" && (n1 === "tarde" || n1 === "manana")) out.push({ end: pos + 2, value: n1 === "tarde" ? "this_afternoon" : "this_morning" });
   if ((t === "la" && n1 === "proxima" && n2 === "semana")) out.push({ end: pos + 3, value: "next_week" });
-  if (t === "la" && n1 === "semana" && n2 === "que" && n3 === "viene") out.push({ end: pos + 4, value: "next_week" });
+  if (t === "la" && n1 === "semana" && n2 === "que" && (n3 === "viene" || n3 === "entra")) out.push({ end: pos + 4, value: "next_week" });
+  // Mexico's "la otra semana" is next week
+  if (t === "la" && n1 === "otra" && n2 === "semana") out.push({ end: pos + 3, value: "next_week" });
   if (t === "el" && n1 === "proximo" && n2 === "fin" && n3 === "de" && tokens[pos + 4] === "semana") out.push({ end: pos + 5, value: "next_weekend" });
   return out;
 };
@@ -420,6 +426,29 @@ export const digitsSlot: SlotFn = (tokens, pos) => {
   return out;
 };
 
+const TERM_ARTICLES = new Set(["un", "una", "el", "la", "los", "las", "unos", "unas"]);
+/** Words that make "¿Qué es…?" no question about a word: a comparison, a judgement or a clause ("¿Qué es mejor?", "¿Qué
+ *  es más barato?", "¿Qué es lo que…?", "¿Qué es eso?" has its own pattern). */
+const NOT_A_TERM = new Set(["mejor", "peor", "mas", "menos", "lo", "eso", "esto", "aquello", "que", "mio", "mia", "tuyo", "suyo", "bueno",
+  "buena", "malo", "mala", "igual", "mismo", "misma", "posible", "imposible", "necesario", "normal", "cierto", "verdad", "caro", "cara",
+  "barato", "barata", "facil", "dificil", "importante", "obligatorio", "gratis", "incluido", "seguro", "mejor", "primero", "ultimo",
+  "tarde", "temprano", "hoy", "manana", "ahora", "ahorita", "aqui", "ahi", "alla", "eso", "todo", "nada", "algo", "no", "si", "de",
+  "a", "en", "con", "para", "por", "y", "o", "yo", "tu", "usted", "el", "ella", "nosotros", "ustedes", "ellos", "ellas", "me", "te",
+  "se", "le", "les", "nos", "es", "son", "esta", "estan", "hay", "tiene", "puede", "quiere"]);
+/** The word or name a "¿Qué es…?" asks about (global g_meaning): an article and one to three words ("una charola", "el
+ *  CURP", "la tenencia"), or one word alone ("¿Qué es charola?"); never "mejor", "más barato", "lo que…". It costs as
+ *  much as {any}, so a conversation's own "¿Qué es…?" (a dish, a fee) wins. */
+const termSlot: SlotFn = (tokens, pos) => {
+  const out: SlotResult[] = [];
+  const art = TERM_ARTICLES.has(tokens[pos]) ? 1 : 0;
+  for (let len = 1; len <= (art ? 3 : 1) && pos + art + len <= tokens.length; len++) {
+    const w = tokens.slice(pos + art, pos + art + len);
+    if (NOT_A_TERM.has(w[0]) || w.some((x) => x === "no" || x === "nunca" || /\d/.test(x))) break;
+    out.push({ end: pos + art + len, value: w.join(" "), cost: 2.5 + 0.4 * len + (art ? 0 : 0.2) });
+  }
+  return out;
+};
+
 export const BUILTIN_SLOTS = {
   number: { fn: numberSlot },
   ordinal: { fn: ordinalSlot },
@@ -432,4 +461,5 @@ export const BUILTIN_SLOTS = {
   name: { fn: nameSlot },
   digits: { fn: digitsSlot },
   any: { fn: anyWords(5) },
+  term: { fn: termSlot },
 };
