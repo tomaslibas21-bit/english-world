@@ -20,6 +20,7 @@ import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
+import {ReportProblem} from "./ReportProblem";
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -135,6 +136,7 @@ export function Conversation() {
       </div>
 
       {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
+      {EDITION.reports && <ReportProblem />}
       <Mission />
 
       <div className="transcript" ref={scrollRef} aria-live="polite">
@@ -161,6 +163,13 @@ export function Conversation() {
             </div>
           </div>
 
+          {!!conv.speechChoices?.length && <div className="miss-box">
+            <p>{conv.speechChoices.length > 1 ? L("Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?") : L("Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.")}</p>
+            {conv.speechChoices.map(text => <button className="btn soft small" key={text} lang={TL} disabled={conv.phase !== "you"}
+              onClick={() => void game?.activeSession?.submit(text, [], "voice", true)}>{text}</button>)}
+            <button className="btn ghost small" disabled={conv.phase !== "you"}
+              onClick={() => { setTyped(conv.lastHeard); setConv({ typing: true, speechChoices: undefined }); }}>{L("Pataisyti tekstą")}</button>
+          </div>}
           {conv.failures > 0 && conv.phase === "you" && conv.lastHeard && (
             <div className="miss-box" ref={missRef}>
               <div>{conv.prefix ? L("Neatpažinau – atrodo, sakinys nebaigtas. Girdėjau:") : L("Neatpažinau. Girdėjau:")}</div>

@@ -4,7 +4,7 @@ import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
 import { EDITION } from "../edition";
 
-/** The browser voices that can stand in for a missing clip: the practised language as this edition speaks it (en-US, es-MX). */
+/** The browser voices that can stand in for a missing clip in the Spanish edition: Spanish as it speaks it (es-MX). */
 const VOICE_LANG = new RegExp(`^${EDITION.target.replace("-", "[-_]")}`, "i");
 
 /** The clips' loudness is worked out this many times a second. */
@@ -63,9 +63,11 @@ export class AudioSystem {
     if (typeof speechSynthesis !== "undefined") {
       const load = () => {
         const voices = speechSynthesis.getVoices();
+        // Maple Harbor: any English voice (en-US, en-GB…: offline only the device's own voices speak, whichever they are)
+        if (EDITION.id === "en") { this.fallbackVoices = voices.filter((v) => /^en(?:[-_]|$)/i.test(v.lang)); return; }
         this.fallbackVoices = voices.filter((v) => VOICE_LANG.test(v.lang));
         // the Spanish edition: any Spanish voice when the device has no Mexican one
-        if (!this.fallbackVoices.length && EDITION.id !== "en") this.fallbackVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(EDITION.target.slice(0, 2)));
+        if (!this.fallbackVoices.length) this.fallbackVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(EDITION.target.slice(0, 2)));
       };
       load();
       speechSynthesis.onvoiceschanged = load;
@@ -88,6 +90,7 @@ export class AudioSystem {
       const alt = withoutAddressedNames(text, this.names);
       if (alt && this.manifest[audioKey(voice, speed, alt)]) key = audioKey(voice, speed, alt);
     }
+    if (!navigator.onLine) return this.speakFallback(text, opts);
     if (this.manifest[key]) {
       return new Promise((resolve) => {
         const a = new Audio(clipUrl(this.base, key, this.repairVersions[key], filesToken()));
@@ -167,10 +170,15 @@ export class AudioSystem {
       u.lang = EDITION.target;
       u.rate = opts.slow ? 0.78 : 0.95;
       u.volume = this.volume;
-      const vs = this.fallbackVoices;
+      const vs = navigator.onLine ? this.fallbackVoices : this.fallbackVoices.filter(v => v.localService);
+      if (!navigator.onLine && !vs.length) {
+        const timer = setTimeout(resolve, Math.min(6000, 600 + text.length * 55));
+        this.cancelCurrent = () => { clearTimeout(timer); resolve(); };
+        return;
+      }
       const pick = vs.find((v) => (opts.male ? /(male|daniel|fred|alex|aaron|arthur|guy|david|mark)/i : /(female|samantha|victoria|allison|ava|susan|zira|aria|jenny)/i).test(v.name) && v.localService)
         ?? vs.find((v) => v.localService) ?? vs[0];
-      if (pick) u.voice = pick;
+      if (pick) { u.voice = pick; u.lang = pick.lang; }
       let done = false;
       const finish = () => { if (!done) { done = true; resolve(); } };
       u.onend = finish; u.onerror = finish;
@@ -459,6 +467,29 @@ export class AudioSystem {
     g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
     src.connect(f); f.connect(g); g.connect(ctx.destination);
     src.start(now); src.stop(now + 0.12);
+  }
+
+  /** A hop's landing: both feet at once, a soft low thud (`strength` 0–1). */
+  land(indoor: boolean, strength = 1) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime;
+    for (const [at, lift] of [[0, 1], [0.035, 0.7]] as const) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBurst(ctx);
+      src.playbackRate.value = 0.7 + Math.random() * 0.15;
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.value = (indoor ? 420 : 700) * (0.9 + Math.random() * 0.2);
+      f.Q.value = 0.9;
+      const g = ctx.createGain();
+      const v = this.volume * (indoor ? 0.12 : 0.1) * (0.6 + 0.4 * strength) * lift;
+      g.gain.setValueAtTime(0, now + at);
+      g.gain.linearRampToValueAtTime(v, now + at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.13);
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(now + at); src.stop(now + at + 0.16);
+    }
   }
 
   sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {

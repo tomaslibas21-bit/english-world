@@ -26,6 +26,9 @@ export interface Edition {
   heldoutDir: string;
   /** Where this edition's content files are (tools that read the source). */
   contentDir: string;
+  /** Where a learner's problem report goes (the conversation's "Beta" strip, src/ui/ReportProblem.tsx: POSTed with the
+   *  course's files token), or null: no strip. */
+  reports: string | null;
 }
 
 export const EDITION: Edition = {
@@ -41,4 +44,5 @@ export const EDITION: Edition = {
   corpusDir: "tests/corpus",
   heldoutDir: "tests/heldout",
   contentDir: "src/content",
+  reports: "https://audio.dvikalbesdainos.lt/fluent-steps/_game_reports",
 };

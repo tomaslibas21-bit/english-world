@@ -678,7 +678,9 @@ the stall roofs, a bug both editions had (below).
   terminal's canopy), so the town now hands over boxes for the edition's own solid things, `Town.occluders`: the
   church's nave and espadaña, and the kiosco's roof with `y0` 4.3 (only what is above it counts: the kiosco is open
   under its roof). Game.ts has to add them to its boxes and honor `y0`; with that (tried in the page), the camera
-  that filled the screen with the church's wall stops behind the player.
+  that filled the screen with the church's wall stops behind the player. (Gone again with the merge of main's premium
+  movement, 5 Nov: the walking camera's field, occlusion.ts, is built from the town's own meshes, the church and the
+  kiosco among them, so nothing read `Town.occluders` and it was taken out.)
 - **Cost** (`renderer.info.render`, phone 375×812, the same views before → after): the zócalo 156 → 145 calls, the kiosco
   154 → 140, the stalls 150 → 139, the church across the square 166 → 150 (Maple Harbor 161), the square from above
   155 → 140, Doña Mari's conversation (s91a) 149 → 136, s86 147 → 136, s69 163 → 155; Diego's house 40 → 38; the

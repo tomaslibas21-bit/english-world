@@ -87,7 +87,8 @@ export const STRINGS: Record<string, string> = {
   "Telefonas (P)": "Phone (P)",
   "Nustatymai (Esc)": "Settings (Esc)",
   "Be 3D miesto: tik pokalbiai su piešiniais. Greičiau atsidaro ir taupo bateriją.": "No 3D town: just conversations with pictures. Opens faster and saves battery.",
-  "Vaikščiok {arrows} arba {wasd} · bėgti {shift}": "Walk with {arrows} or {wasd} · run with {shift}",
+  "Vaikščiok {arrows} arba {wasd} · bėgti {shift} · pašokti {space}": "Walk with {arrows} or {wasd} · run with {shift} · jump with {space}",
+  "Tarpas": "Space",
   "aukštyn": "up",
   "žemyn": "down",
   "kairėn": "left",
@@ -107,6 +108,7 @@ export const STRINGS: Record<string, string> = {
   "Kalbėti": "Talk",
   "Išeiti": "Exit",
   "Įeiti": "Enter",
+  "Pašokti": "Jump",
 
   // The conversation panel (src/ui/Conversation.tsx)
   "Pokalbis: {name}": "Conversation: {name}",
@@ -209,6 +211,33 @@ export const STRINGS: Record<string, string> = {
   "Spausk {mic} ir kalbėk": "Press {mic} and speak",
   "arba tarpo klavišą · rašyti {keys} (T)": "or the space bar · type {keys} (T)",
 
+  // When what was heard is checked first (main's speech confirmation, the Settings switch below)
+  "Atpažinimo variantai skiriasi žodžiu „ne“. Ką norėjai pasakyti?": "What was heard differs by the word “no”. What did you mean?",
+  "Ar teisingai išgirdo? Paspausk tekstą, kad išsiųstum, arba pataisyk.": "Did it hear you right? Tap the text to send it, or fix it.",
+
+  // Reporting a problem (src/ui/ReportProblem.tsx; shown when the edition has somewhere to send it, edition.ts `reports`)
+  "Beta · dar tobulinamas": "Beta · still being improved",
+  "Pranešti apie klaidą": "Report a problem",
+  "Kas nepavyko?": "What went wrong?",
+  "Pranešimą gaus kurso kūrėjas. Pridėsime paskutines 12 šio pokalbio žinučių ir atpažintą tekstą. Garso įrašas nesiunčiamas.": "The course's creator gets your report, with the last 12 messages of this conversation and what was heard. No audio is sent.",
+  "Klaidos pobūdis": "What kind of problem",
+  "Pokalbis užstrigo arba atsakė netinkamai": "The conversation got stuck or answered wrongly",
+  "Neteisingai išgirdo": "It heard me wrong",
+  "Vertimo netikslumas": "A translation is off",
+  "Kita": "Something else",
+  "Kas įvyko?": "What happened?",
+  "Ką norėjai pasakyti arba kokio atsakymo tikėjaisi?": "What did you want to say, or what answer did you expect?",
+  "Pridedama pokalbio ištrauka": "The part of the conversation sent with it",
+  "Pašnekovas": "Them",
+  "(išgirdo: {heard})": "(heard: {heard})",
+  "Siunčiama…": "Sending…",
+  "Siųsti pranešimą": "Send the report",
+  "Grįžti į pokalbį": "Back to the conversation",
+  "Ačiū! Pranešimas išsiųstas.": "Thank you! Your report was sent.",
+  "Pranešimas išsaugotas šiame įrenginyje. Išsiųsime, kai ryšys ir prisijungimas leis.": "Your report is saved on this device. It will be sent once you're online and signed in.",
+  "Nepavyko išsaugoti. Nukopijuok pranešimą ir atsiųsk mokytojui.": "It couldn't be saved. Copy the report and send it to your teacher.",
+  "Pranešimas nukopijuotas. Įklijuok jį žinutėje mokytojui.": "The report was copied. Paste it into a message to your teacher.",
+
   // Cards (src/ui/Cards.tsx)
   "Žodis „{word}“": "Word “{word}”",
   "Atskirai neverčiama – išsaugok visą sakinį.": "Not translated on its own – save the whole sentence.",
@@ -306,6 +335,8 @@ export const STRINGS: Record<string, string> = {
   "lemputę": "lightbulb",
   "Mikrofonas įsijungia automatiškai": "Microphone turns on automatically",
   "Kai pašnekovas baigia kalbėti.": "When the other person finishes speaking.",
+  "Patvirtinti atpažintą tekstą": "Confirm what was heard",
+  "Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį.": "Before your answer is sent, show what was heard, so you can fix a missed “no” or another word.",
   "Žmonės kalba lėčiau": "People speak slower",
   "Atpažinti kalbą šiame įrenginyje": "Recognize speech on this device",
   "Privačiau ir veikia be interneto, bet akcentą supranta prasčiau. Įprastai geriau palikti išjungtą.": "More private and works offline, but understands accents less well. Usually best left off.",
@@ -342,6 +373,7 @@ export const STRINGS: Record<string, string> = {
   "Įdiegti anglų kalbą": "Install Spanish",
   "Žaidimas nenaudoja jokio mokamo dirbtinio intelekto: visi pokalbiai ir balsų įrašai paruošti iš anksto. Jei nenori kalbėti į mikrofoną, visada gali rašyti {keyboard}.": "The game uses no paid AI: all conversations and voice recordings are prepared in advance. If you don't want to speak into the microphone, you can always type {keyboard}.",
   "Ištrina šios naršyklės išsaugotą progresą.": "Deletes the progress saved in this browser.",
+  "Atsisiuntimai ir failų pašalinimas": "Downloads and removing files",
   "Tikrai ištrinti progresą?": "Really delete your progress?",
   "Ištrinti": "Delete",
   "Į korteles pridėta: {n}": "Added to cards: {n}",

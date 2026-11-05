@@ -24,7 +24,7 @@ const REASONS: EntityDef[] = [
     { chip: "dantų valymas", forms: ["cleaning", "a cleaning", "teeth cleaning", "a teeth cleaning", "dental cleaning", "hygiene appointment"] }),
   ent("broken", "broken | tooth", "nuskilęs/nuskilusio/nuskilusiam/nuskilusį/nuskilusiu/nuskilusiame | dantis/danties/dančiui/dantį/dantimi/dantyje", "m",
     { chip: "nuskilęs dantis", forms: ["broken tooth", "a broken tooth", "chipped tooth", "a chipped tooth", "cracked tooth"], attrs: { pain: true } }),
-  ent("filling", "lost | filling", "iškritęs/iškritusio/iškritusiam/iškritusį/iškritusiu/iškritusiame | plomba/plombos/plombai/plombą/plomba/plomboje", "f",
+  ent("filling", "lost | filling", "iškritusi/iškritusios/iškritusiai/iškritusią/iškritusia/iškritusioje | plomba/plombos/plombai/plombą/plomba/plomboje", "f",
     { chip: "iškrito plomba", forms: ["lost filling", "a lost filling", "filling", "my filling"] }),
 ];
 

@@ -1,9 +1,11 @@
 // How the town looks in this edition (docs/es/TOWN.md). This is Maple Harbor: every switch is off and every list
-// empty, so its town is built exactly as layout.ts and town.ts describe it. The Spanish edition's file
-// (src/editions/es/game/world/theme.ts) turns the square into a zócalo with a kiosco, papel picado and palms, paints
-// the buildings in Mexican colours, puts the Spanish names on the signs and the market hall's stalls inside, and makes
-// the rest of the town outdoors Mexican too (the fields after `market`; their shapes are in mexican.ts), down to the
-// last details (the fields after `sounds`: the conversation's camera, people's spots in the rooms, props, the cenote).
+// empty, so its town is built exactly as layout.ts and town.ts describe it, but for the two it took on 5 Nov 2026
+// (main 3e6ac17c, 996a8672): the conversation's camera and the room spots that bring far speakers into its picture.
+// The Spanish edition's file (src/editions/es/game/world/theme.ts) turns the square into a zócalo with a kiosco,
+// papel picado and palms, paints the buildings in Mexican colours, puts the Spanish names on the signs and the market
+// hall's stalls inside, and makes the rest of the town outdoors Mexican too (the fields after `market`; their shapes
+// are in mexican.ts), down to the last details (the fields after `sounds`: the conversation's camera, people's spots
+// in the rooms, props, the cenote).
 
 export interface BuildingLook {
   color?: string; trim?: string; awning?: string; roofColor?: string;
@@ -135,8 +137,9 @@ export interface TownTheme {
    *  bell). */
   sounds: { bell: [number, number]; vendors: [number, number]; homesZ: number } | null;
 
-  // The last details (docs/es/TOWN.md "Done: the last details"). Off in Maple Harbor.
-  /** The conversation's camera (Game.startSession). Maple Harbor's (null) frames the player, the main speaker and the
+  // The last details (docs/es/TOWN.md "Done: the last details"). Off in Maple Harbor, but the conversation's camera
+  // and the room spots (on since 5 Nov 2026).
+  /** The conversation's camera (Game.startSession). Off (null), it frames the player, the main speaker and the
    *  conversation's other speakers within 7 m of them from a set distance (2.6 times how far apart they stand, at
    *  least 6 m), which a phone's narrow picture can cut. With this, the speakers within `reach` m of the main one are
    *  framed, and the camera backs off (to at most `max` m) until every one of them, head and chest, is in the part of
@@ -271,8 +274,19 @@ export const THEME: TownTheme = {
   foodCart: null,
   traffic: [],
   sounds: null,
-  talkCamera: null,
-  roomSpots: {},
+  // Every speaker in the picture, a phone's too (Mark at Sophie's party, Mrs. Lee at her flower stall, Greg and
+  // Vanessa at the meeting…): the speakers within 12 m of the main one framed, the camera backing off to at most 30 m,
+  // as in Puerto Colibrí
+  talkCamera: { reach: 12, max: 30 },
+  // and the two who stood too far away come nearer, where Puerto Colibrí's Don Arturo and Doña Lupita stand: Harold
+  // watches over the statue by the gallery's entrance, near Ben's desk (s70: his "Please don't touch the paintings!"),
+  // and Rita is in the hallway by the vacant apartment's door (s82: the new neighbor's door), with Mr. Patel just
+  // inside it (s81), so that she can back the learner up from there on p29 (with him by the window, the door's leaf
+  // hid her from a camera on his side)
+  roomSpots: {
+    museum: { harold: { x: -4.5, z: 0.3, rot: -0.53 } },
+    apartments: { patel: { x: -1.2, z: 2.4, rot: 0.25 }, rita: { x: -4.4, z: 0.9, rot: 0.1, ax: -4.2, az: 3.1 } },
+  },
   marketFront: "carts",
   mailbox: "usps",
   backyardWall: null,

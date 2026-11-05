@@ -102,7 +102,7 @@ function LightHome() {
     <div className="lh" inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
-          <div className="lh-brand"><span className="lh-logo">{EDITION.brand}</span><span className="lh-town">{EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
+          <div className="lh-brand"><span className="lh-logo">{EDITION.brand} <small className="beta-badge">Beta</small></span><span className="lh-town">{EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
           <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
           <nav className="lh-tools" aria-label={L("Įrankiai")}>
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title={L("Grįžti į kursą")}><Icon name="home" size={24} /><span>{L("Kursas")}</span></a>}
