@@ -6,21 +6,25 @@
 // water, the printer, the dress code with its casual Friday, lunch — "la comida", around two, Mexico's main meal —,
 // when people go home, mugs, who is who: la licenciada Salinas from Recursos Humanos; IT is "sistemas"), a first task
 // ("¿Me enseñas cómo funciona?", "¿Me mandas el archivo?"), an invitation to lunch at the cocina económica on the
-// corner (comida corrida, about a hundred pesos, as in s69), and at six "¿Cómo te fue en tu primer día?" and
-// "¡Nos vemos mañana!". If the learner never asks about coffee, María shows the cafetera anyway.
+// corner of calle Ceiba (comida corrida, about a hundred pesos, as in s69), and at six "¿Cómo te fue en tu primer
+// día?" and "¡Nos vemos mañana!". If the learner never asks about coffee, María shows the cafetera anyway.
+// Where things are follows the 3D town and room (docs/es/TOWN.md): Línea Clara is on avenida Juárez between Correos
+// and calle Itzamná; the cocina económica is at the other end of the block, on calle Ceiba behind the bank, two
+// minutes away; in the office the kitchen (cafetera, fridge, water cooler) is the front east corner, the printer by
+// the back window.
 // Twists (returning visits, as in the English): the cafetera is broken (instant coffee and tea in the cupboard);
 // "¡Esa no, es la taza de Pablo!"; the paper is jammed in the printer; the badge (gafete) isn't ready yet.
-// New here: if the learner declines lunch, María may urge once ("¿No te animas?"), as Mexicans do; the learner can
-// change their mind or say no again. She never insists after a meeting, work or a diet.
+// New here: if the learner declines lunch with a plain no, María may urge once ("¿No te animas?"), as Mexicans do;
+// the learner can change their mind or say no again. She never urges after a reason (a meeting, work, a diet, lunch
+// brought from home, not hungry).
 // Facts kept vague where unsure: the office hours (nine to six, lunch two to three) are this company's; the cocina
 // económica "creo que" takes cash only. Mexican-only words have a neutral twin (gafete, sala de juntas, nomás,
 // garrafón, se atoró, chamba, padrísimo, ándale).
 //
-// The learner's gender: {m:…|f:…}. María speaks tú (`informal` in the shared cast).
+// The learner's gender: {m:…|f:…}. María speaks tú (`informal` in the shared cast); g_bye and g_thanks are her own
+// (her tú goodbyes, and "¡De nada!" instead of the shop's "¡A la orden!").
 //
-// NEEDS: global.ts g_bye could take "que descanses" (handled here in see_you); Game.ts GIVEN could show "laptop",
-// "password card" and "badge" (the "give" toasts are generic now); global.ts g_bye's "¡Hasta luego! ¡Que le vaya
-// bien!" is usted for every NPC, informal ones included: it wants {u:le|t:te} (handled here: g_bye says María's tú line).
+// NEEDS: Game.ts GIVEN could show "laptop", "password card" and "badge" (the "give" toasts are generic now).
 
 import type { Ctx, Suggestion, SituationDef } from "@/content/types";
 import { t } from "@/content/dsl";
@@ -76,8 +80,8 @@ const WHERE_SETS: [string, string[], string][] = [
 const QUESTION_INTENTS = ["already_know", "q_coffee", "q_how", "q_kitchen", "q_fridge", "q_printer", "q_restroom", "q_meeting", "q_dress", "q_lunch_time",
   "q_home_time", "q_mug", "q_who", "q_parking", "q_help", "q_password", "q_login", "q_badge", "q_wifi", "q_desk", "q_it", "show_me", "q_other_ctx"];
 
-/** "No puedo, tengo una junta": she never urges after a real reason. */
-const REAL_REASON = /\b(junta|reunion|llamada|cita|trabajo|que hacer|dieta|picante|pica|doctor|dentista|dinero|efectivo|cash|manana|otro dia|proxima|planes|ya comi|ya almorce)\b/;
+/** "No puedo, tengo una junta", "Gracias, pero traje mi comida", "No tengo hambre": she never urges after a reason. */
+const REAL_REASON = /\b(junta|reunion|llamada|cita|trabajo|que hacer|dieta|picante|pica|doctor|dentista|dinero|efectivo|cash|manana|otro dia|proxima|planes|ya comi|ya almorce|traje|traigo|hambre|desayune)\b/;
 /** A "yes" piece with a "no" in the same turn ("Gracias por invitarme, pero traje mi comida", "Me gustaría ir otro
  *  día", "No, pero gracias por invitarme"): the turn is a no, never a booked lunch. */
 const LUNCH_NOT = /^\s*no\b|\bpero\b.*\bno\b|\bhoy no\b|\bno puedo\b|\b(otro dia|la proxima|proxima vez|manana|traje|me traje|a dieta|ya comi|ya almorce|tengo planes)\b/;
@@ -160,9 +164,10 @@ export const firstDay: SituationDef = {
       "(me llamo | mi nombre es) {name} [y] (soy @nuevo | es mi primer dia | hoy es mi primer dia | soy (el | la | tu) @nuevo [@newbie]) [aqui | hoy] #first",
     ] },
     intro_ctx: { patterns: ["[yo] soy {name} #h:im_name", "(mucho gusto | encantado | encantada | hola) [yo] soy {name}", "(dime | me dicen | puedes decirme) {name}", "(gracias | muchas gracias) soy {name}", "soy {name} (mucho gusto | encantado | encantada)",
-      "soy {name} [y] (es | hoy es) mi (primer | primerito) dia [aqui | hoy] #first", "soy {name} [y] soy (@nuevo | (el | la | tu) @nuevo [@newbie]) [aqui] #first"] },
-    // a bare name, only where María asks for it ("¿Y tú eres…?")
-    bare_name_ctx: { patterns: ["{name}"] },
+      "soy {name} [y] (es | hoy es) mi (primer | primerito) dia [aqui | hoy] #first", "soy {name} [y] soy (@nuevo | (el | la | tu) @nuevo [@newbie]) [aqui] #first",
+      "[yo] soy {name} y (tu | usted) [como te llamas] #back"] },
+    // a bare name, only where María asks for it ("¿Y tú eres…?"); "Ryan, ¿y tú?" asks hers back
+    bare_name_ctx: { patterns: ["{name}", "{name} y (tu | usted) [como te llamas] #back"] },
     nice_meet: { patterns: [
       "(mucho gusto | encantado | encantada | un placer | igualmente | el gusto es mio | igualmente mucho gusto) #h:nice_meet",
       "(mucho gusto | encantado | encantada | un gusto | un placer) (de | en)? conocerte", "(me da | que) gusto conocerte", "(gracias | muchas gracias) (igualmente | mucho gusto)",
@@ -267,10 +272,13 @@ export const firstDay: SituationDef = {
     q_who: { patterns: [
       "quien es (ella | el | esa senora | ese senor | esa persona | la senora (del escritorio | de alla) | esa chica | ese chavo | esa mujer | ese hombre | la de alla | el de alla) #h:q_who",
       "(y | oye) quien es (ella | el)", "quien es la licenciada salinas",
+      // after "¡Esa no, es la taza de Pablo!"
+      "[y] quien es pablo #pablo", "[y] pablo quien es #pablo", "[y] quien es ese pablo #pablo",
     ] },
     q_parking: { patterns: [
       "donde (me estaciono | estaciono | me puedo estacionar | puedo estacionarme | puedo estacionar | puedo dejar (el | mi) carro | se estaciona | aparco | puedo aparcar) [el | mi] [carro]", "(hay | tienen) estacionamiento [aqui]",
-      "(es | esta) gratis el estacionamiento #free", "el estacionamiento es gratis #free", "(cuanto cuesta | se paga) el estacionamiento #free",
+      // "¿Es gratis?" gets "Sí, es gratis…"; "¿Cuánto cuesta?" / "¿Se paga?" get "Atrás del edificio. ¡Y es gratis!", never a "Sí"
+      "(es | esta) gratis el estacionamiento #free", "el estacionamiento es gratis #free", "(cuanto cuesta | se paga | hay que pagar | tengo que pagar) el estacionamiento",
     ] },
     q_help: { patterns: [
       "a quien (le)? (pregunto | puedo preguntar) si tengo (dudas | una duda | preguntas | una pregunta | un problema)", "(te | le) puedo preguntar si tengo (dudas | una duda | preguntas)",
@@ -292,7 +300,7 @@ export const firstDay: SituationDef = {
     already_know: { patterns: ["ya (se | sé | vi) donde (esta | estan | queda | hay) [el | la | los | las] {w:any}", "ya (lo | la) (vi | conozco | encontré)"] },
     more_q: { patterns: ["[si] (tengo | tengo otra | una | otra) (pregunta | duda) [mas]", "[si] (una cosa mas | otra cosa | una pregunta mas | una ultima pregunta)"] },
     no_more: { patterns: [
-      "[no] (es | eso es | seria | eso seria) todo [por ahora | por el momento] #h:q_none", "[no] [creo que] (estoy bien | todo bien | todo claro | todo esta claro) [por ahora] #h:q_good",
+      "[no] (es | eso es | seria | eso seria) todo [por ahora | por el momento] #h:q_none", "[no] (por ahora | por el momento | de momento) (es | seria | eso es) todo", "[no] [creo que] (estoy bien | todo bien | todo claro | todo esta claro) [por ahora] #h:q_good",
       "[no] (nada | nada mas) [por ahora | por el momento]", "[no] no tengo (mas | otras | ninguna)? (preguntas | dudas | pregunta | duda) [por ahora]",
       "[no] (ninguna | ni una) [pregunta | duda]", "[no] ya no tengo [mas | otras] (preguntas | dudas)", "[no] (por ahora | de momento) no", "[no] (ya | con eso) (estoy | esta bien)", "[no] (ya | todo) (quedó | quedo) claro",
     ] },
@@ -322,6 +330,12 @@ export const firstDay: SituationDef = {
     task_later: { patterns: [
       "(lo hago | lo empiezo | lo veo) (despues | mas tarde | al rato | luego | en la tarde | manana)", "(ahorita | ahora | hoy) no (puedo | tengo tiempo)", "(despues | mas tarde | al rato) lo hago",
     ] },
+    // "¿Para cuándo?", "¿Es urgente?": no rush, she emails the file (as for "Lo hago después")
+    task_when: { patterns: [
+      "para cuando (es | lo necesitas | la necesitas | lo necesitan | lo quieres | la quieres | lo ocupas | tiene que estar | debe estar) [listo | lista]",
+      "para cuando", "(cuando | para cuando) (lo | la) (entrego | tengo que entregar | debo entregar)", "(es | esta) urgente", "(hay | corre) prisa",
+      "cuanto tiempo tengo [para hacerlo]",
+    ] },
     know_system: { patterns: [
       "[ya] (conozco | he usado | usé | manejo | se usar | se manejar) (este | ese | el | su | tu) (sistema | programa) [antes | muy bien]",
       "[ya] (lo | la) (he usado | usé | conozco) [antes]", "[no] ya (se | sé) (como funciona | hacerlo | como se hace | usarla | usarlo | como se usa)", "[ya] (he hecho | hice) (esto | eso) antes",
@@ -347,15 +361,20 @@ export const firstDay: SituationDef = {
       "[no] no (como | me gusta) [la] comida (picante | mexicana) #spicy", "[no] no (voy a ir | voy | puedo ir | quiero ir | tengo ganas) [hoy | esta vez]",
       "no (de verdad | en serio) [gracias] [hoy no]", "(de verdad | en serio) (gracias | no gracias | hoy no | no puedo)", "[no] no (tengo | traigo) (dinero | efectivo | cash) [hoy]", "hoy no (puedo | voy) [pero] manana (si)? [puedo]", "no me apetece [mucho] [hoy | ir]", "[no] (de verdad | en serio) no (puedo | gracias)",
     ] },
-    // each question's piece carries its tag ("¿Está lejos? ¿Cuánto cuesta?" gets both answers)
-    lunch_q: { patterns: [
+    // Questions about the lunch, only at the invitation: a bare "¿Dónde está?", "¿Cuánto cuesta?" or "¿Qué es eso?"
+    // elsewhere is about something else, never the cocina económica. Each question's piece carries its tag ("¿Está
+    // lejos? ¿Cuánto cuesta?" gets both answers).
+    lunch_q_ctx: { patterns: [
       "(donde | por donde) (esta | queda | es) [la cocina economica | el lugar | el restaurante | la fonda] #h:l_where #where", "(esta | queda) lejos #far", "(esta | queda) cerca #near",
       "a que hora [vamos | salen | salimos | van | nos vamos] #h:l_time #time", "cuando (vamos | salen | salimos | nos vamos) #time",
+      "a que hora (regresamos | volvemos | regresan | vuelven | hay que regresar | tenemos que regresar | hay que volver | estamos de regreso) [a la oficina | al trabajo] #back",
       "(cuanto | cuanto cuesta | cuanto sale | cuanto es | que precio tiene) [la comida | la comida corrida | comer ahi] #price", "(es | esta) [muy] (caro | cara) #dear", "(es | esta) (barato | barata) #cheap",
       "(que | que tipo de) comida (hay | tienen | venden | es | dan) #food", "que (hay | dan | sirven | venden) [de comer | hoy] #food", "(aceptan | se puede pagar con | puedo pagar con) tarjeta #card",
       "(hay | tienen) (comida | algo | opciones) (vegetariana | vegetariano | sin carne | vegana | vegano) #veg",
       "(es | esta) [muy] (picante | picosa | picoso) #spicy", "pica [mucho] #spicy",
-      "que (son | es) (los chiles rellenos | un chile relleno | eso) #chiles", "(como | que) son los chiles rellenos #chiles",
+      "(quien | quienes) [mas] (va | van | viene | vienen) [a ir] #who", "(vamos | van) todos [juntos] #who", "con (quien | quienes) (vamos | van | vas) #who",
+      "que es (una | la) cocina economica #cocina", "que es (una | la) comida corrida #food", "que es eso #what",
+      "que (son | es) (los chiles rellenos | un chile relleno) #chiles", "(como | que) son los chiles rellenos #chiles",
     ] },
     // Spain's "¿Te apetece…?" / "Me apetece": a right answer too (no tip)
     // "¿No te animas?" — "De verdad, gracias": still no (only there; elsewhere "de verdad" is no answer)
@@ -371,11 +390,17 @@ export const firstDay: SituationDef = {
       "mejor de lo que (esperaba | pensaba)", "(estoy | me siento) (muy)? (contento | contenta | feliz) [aqui | con mi nuevo trabajo]", "(un | fue un) (buen | gran | excelente) (dia | primer dia)",
       "(me encanta | me gusta) mi (nuevo trabajo | nueva chamba | chamba nueva | trabajo nuevo | equipo | oficina)", "mi (chamba nueva | nueva chamba | trabajo nuevo | nuevo trabajo) me (encanta | gusta)",
       "(no estoy | no ando) (cansado | cansada) [para nada]", "no (fue | estuvo) (tan | muy)? (pesado | dificil | complicado | cansado | largo)",
+      // whole sentences: "Mi primer día fue muy bueno", "Fue un día muy bueno", "Hoy fue un buen día"
+      "(mi | el) (primer dia | dia) (fue | estuvo | ha sido) (muy | super | bastante)? (bueno | bien | genial | padre | padrisimo | excelente | increible | interesante | divertido)",
+      "[hoy] (fue | ha sido | estuvo) un (dia | primer dia) (muy | super | bastante)? (bueno | padre | padrisimo | genial | increible | excelente | interesante | divertido | bonito)",
+      "hoy (fue | ha sido) un (buen | gran | excelente) (dia | primer dia)",
     ] },
     day_ctx: { patterns: ["[muy | super | bastante] (bien | bueno | genial | padre | padrisimo | increible | interesante | excelente | pesado | largo | cansado | cansada | intenso) [gracias]", "no (estuvo | fue) (tan | nada)? mal", "(muy | super)? bien [gracias] y (tu | a ti) #back", "(muy | super)? bien [gracias] (y tu | y a ti) (como te fue | que tal)? #back"] },
     day_tired: { patterns: [
       "[fue | estuvo] [un poco | muy | super | bastante] @tired pero @upbeat #h:d_tiring", "[fue | estuvo] (un poco | muy | super | bastante) @tired",
-      "(fue | ha sido) un dia (largo | pesado | intenso | cansado | dificil)", "(estoy | ando) [un poco | muy | super | bastante] (cansado | cansada | agotado | agotada | muerto | muerta) [pero (contento | contenta | feliz | bien)]",
+      "[hoy] (fue | ha sido | estuvo) un dia (muy | bastante | super)? (largo | pesado | intenso | cansado | dificil | complicado | estresante)",
+      "(mi | el) (primer dia | dia) (fue | estuvo | ha sido) [un poco | muy | super | bastante] @tired",
+      "(mi | el) (primer dia | dia) no (fue | estuvo) (muy | tan)? (bueno | bien | facil | genial | padre)", "(estoy | ando) [un poco | muy | super | bastante] (cansado | cansada | agotado | agotada | muerto | muerta) [pero (contento | contenta | feliz | bien)]",
       "(cansado | cansada) pero (contento | contenta | feliz | bien)", "(demasiada | mucha) informacion [para un dia]", "demasiados nombres [nuevos]", "(tengo | traigo) la cabeza (llena | a mil)",
       "no (fue | estuvo) (facil | tan facil | muy facil | muy bien | tan bien | bien | bueno | muy bueno | tan bueno)", "(nada | no muy | no tan) bien", "fue mucho [para un dia]", "no (fue | estuvo) (genial | increible | excelente | divertido | padre)",
       "@upbeat (pero | aunque) (estoy | ando) [un poco | muy | super] (cansado | cansada | agotado | agotada)", "no me (gustó | encantó) [mucho | tanto]", "(mas o menos | regular | ni bien ni mal)",
@@ -523,7 +548,8 @@ export const firstDay: SituationDef = {
       t("Normalmente | aprietas | este | botón. | Pero | hoy | no funciona, | ¡perdón!", "Usually | you-press | this | button. | But | today | it doesn't work, | sorry!",
         "Usually you just press this button. But today it's not working, sorry!"),
     ],
-    fine_then: [t("¡Bueno! | Ahí | está | cuando | la | necesites.", "Okay! | There | it-is | whenever | it | you-need.", "Okay! It's there whenever you need it.",
+    // (not "¡Bueno!": the first task's "¡Bueno! Tu primera tarea…" / "Bueno, ¡a la chamba!" comes right after it)
+    fine_then: [t("¡Sin problema! | Ahí | está | cuando | la | necesites.", "No problem! | There | it-is | whenever | it | you-need.", "No problem! It's there whenever you need it.",
       { flags: { 4: "la here is a pronoun: it (the coffee machine)." } })],
     a_tea: [t("¡Sí! | Hay | té | y | café | soluble | en | la | alacena.", "Yes! | There-is | tea | and | coffee | instant | in | the | cupboard.", "Yes! There's tea and instant coffee in the cupboard.")],
     shrug_reply: [t("Sí, | ¿verdad?", "Yes, | right?", "I know, right?")],
@@ -531,7 +557,8 @@ export const firstDay: SituationDef = {
     tea_reply: [t("¡Buena | idea!", "Good | idea!", "Good idea!")],
     wash_cup: [t("¡Y | no olvides | lavar | tu | taza!", "And | don't forget | to wash | your | mug!", "And don't forget to wash your mug!")],
     which_one: [t("¿La | cafetera? | ¡Claro!", "The | coffee machine? | Sure!", "The coffee machine? Sure!")],
-    a_kitchen: [t("Está | allá, | al fondo.", "It-is | over there, | at the back.", "It's right over there, at the back.")],
+    // the office's kitchen is its front east corner (interiors.ts `office`), not the back
+    a_kitchen: [t("Está | allá, | en | la | esquina.", "It-is | over there, | in | the | corner.", "It's right over there, in the corner.")],
     a_water: [
       t("En | la | cocina | hay | un | garrafón | de | agua.", "In | the | kitchen | there-is | a | big jug | of | water.", "There's a big jug of drinking water in the kitchen.",
         { flags: { 5: "Mexican: garrafón = a big jug of drinking water (people don't drink the tap water)." },
@@ -564,6 +591,9 @@ export const firstDay: SituationDef = {
         "That's Ms. Salinas from HR. She's really nice.",
         { flags: { 1: "The article before a title has no English word.", 2: "licenciada: a title for someone with a college degree; English says Ms." } }),
     ],
+    // "¿Quién es Pablo?" after "¡Esa no, es la taza de Pablo!" (Línea Clara's Pablo, s34)
+    a_pablo: [t("Es | un | compañero | del | equipo. | ¡Luego | te lo | presento!", "He's | a | coworker | from the | team. | Later | him to you | I'll-introduce!",
+      "He's on our team. I'll introduce you later!")],
     a_parking: [t("Atrás | del | edificio. | ¡Y | es | gratis!", "Behind | the | building. | And | it's | free!", "Behind the building. And it's free!")],
     a_parking_free: [t("Sí, | es | gratis. | Está | atrás | del | edificio.", "Yes, | it's | free. | It-is | behind | the | building.", "Yes, it's free. It's behind the building.")],
     a_help: [t("¡Pregúntame! | Me siento | aquí | a | tu | lado.", "Ask me! | I sit | here | at | your | side.", "Just ask me! I sit right next to you.")],
@@ -629,9 +659,14 @@ export const firstDay: SituationDef = {
         "Do-you-want | to come | to | eat | with | us? | Almost | always | we-go | to | the | diner | on | the | corner.",
         "Do you want to come to lunch with us? We usually go to the little diner on the corner.", { flags: { 11: COCINA_EC } }),
     ],
-    lunch_reask: [t("Entonces, | ¿vienes?", "So, | are-you-coming?", "So, are you coming?")],
+    // two, so that two questions about the lunch never get the same reminder twice in a row
+    lunch_reask: [t("Entonces, | ¿vienes?", "So, | are-you-coming?", "So, are you coming?"),
+      t("¿Qué | dices? | ¿Vienes?", "What | do-you-say? | Are-you-coming?", "What do you say? Are you coming?")],
+    // the urging, in two lines so that a later "¿Qué es eso?" knows whether the chiles were named
     lunch_insist: [
       t("¿No te animas? | Hoy | hay | chiles rellenos.", "Won't you join us? | Today | there-are | stuffed peppers.", "Come on, won't you come? It's stuffed peppers today."),
+    ],
+    lunch_urge: [
       t("¡Ándale, | vente! | Es | un | ratito | nada más.", "Come on, | come along! | It's | a | little while | only.", "Oh, come on! It's just for a little while.",
         { flags: { 0: "Mexican: ándale = come on." },
           neutral: t("¡Anda, | vente! | Es | un | ratito | nada más.", "Come on, | come along! | It's | a | little while | only.", "Oh, come on! It's just for a little while.") }),
@@ -647,7 +682,9 @@ export const firstDay: SituationDef = {
       t("¡No pasa nada! | Será | mañana.", "No worries! | It'll-be | tomorrow.", "No problem! Maybe tomorrow."),
       t("Bueno, | ¡otro | día | será!", "Okay, | another | day | it'll-be!", "Okay, next time!"),
     ],
-    a_place_where: [t("Aquí | en | la | esquina, | a | dos | minutos.", "Here | on | the | corner, | at | two | minutes.", "Right here on the corner, two minutes away.")],
+    // TOWN.md: on calle Ceiba just south of Juárez, behind the bank, at the other end of Línea Clara's block (s69)
+    a_place_where: [t("Aquí | en | la | esquina | de | Ceiba, | a | dos | minutos.", "Here | on | the | corner | of | Ceiba, | at | two | minutes.",
+      "Right on the corner of Ceiba Street, two minutes away.")],
     a_place_near: [t("¡Sí! | Aquí | en | la | esquina.", "Yes! | Here | on | the | corner.", "Yes! Right here on the corner.")],
     a_place_far: [t("No, | para nada. | Está | aquí | en | la | esquina.", "No, | not at all. | It-is | here | on | the | corner.", "No, not at all. It's right here on the corner.")],
     a_lunch_at: [t("A | las | dos.", "At | — | two.", "At two.", { flags: { 1: ART_TIME } })],
@@ -663,6 +700,12 @@ export const firstDay: SituationDef = {
     a_chiles: [t("Son | chiles poblanos | rellenos | de | queso. | ¡Están | riquísimos!", "They're | poblano peppers | stuffed | with | cheese. | They're | delicious!",
       "They're poblano peppers stuffed with cheese. They're delicious!")],
     a_card: [t("Creo | que | solo | aceptan | efectivo.", "I-think | that | only | they-accept | cash.", "I think it's cash only.")],
+    // "¿Quiénes van?", "¿Vamos todos juntos?"
+    a_lunch_who: [t("Varios | del | equipo. | ¡Así | los | conoces!", "Several | from the | team. | That way | them | you-meet!",
+      "A few people from the team. That way you'll get to meet them!", { flags: { 4: "los here is a pronoun: them (your new coworkers)." } })],
+    // "¿Qué es una cocina económica?", or "¿Qué es eso?" right after the invitation
+    a_cocina: [t("Es | un | lugarcito | de | comida | casera, | ¡y | barato!", "It's | a | little place | of | food | homemade, | and | cheap!",
+      "It's a little place with home cooking, and it's cheap!", { flags: { 2: "lugarcito: lugar (place) + -cito, a small, friendly place." } })],
 
     // --- end of the day -----------------------------------------------------------------------------------
     day_ask: [
@@ -671,6 +714,8 @@ export const firstDay: SituationDef = {
       t("¡Ya | es | hora | de | irnos! | Oye, | ¿qué tal | tu | primer | día?", "Already | it's | time | to | go! | Hey, | how was | your | first | day?",
         "Time to go home! Hey, how was your first day?"),
     ],
+    // the question again, without the clock again
+    day_reask: [t("Entonces, | ¿qué tal | tu | primer | día?", "So, | how was | your | first | day?", "So, how was your first day?")],
     day_good_reply: [
       t("¡Qué | bueno! | Vas | a | ver | que | te acostumbras | rapidísimo.", "How | good! | You're-going | to | see | that | you-get-used (to it) | super fast.",
         "Glad to hear it! You'll see, you'll get used to everything really fast."),
@@ -891,8 +936,13 @@ export const firstDay: SituationDef = {
     { id: "tour", when: (c) => !!c.s.deskDone, done: (c) => !!c.s.tourDone || (c.s.tourAsks || 0) >= 6,
       ask: (c) => {
         c.s.tourAsks = (c.s.tourAsks || 0) + 1;
-        if (!c.s.toured) { c.s.toured = true; c.say("tour_rooms"); c.say("tour_restrooms"); c.say("ask_anything"); }
-        else c.say("what_else");
+        if (!c.s.toured) {
+          c.s.toured = true;
+          // what the learner already asked at the desk isn't told again ("¿Dónde está el baño?")
+          if (!c.s.asked.meeting) c.say("tour_rooms");
+          if (!c.s.asked.restroom) c.say("tour_restrooms");
+          c.say("ask_anything");
+        } else c.say("what_else");
         // the model questions move on to ones the learner hasn't asked yet
         const [set, , label] = WHERE_SETS.find(([, keys]) => keys.every((k) => !c.s.asked[k])) ?? WHERE_SETS.find(([, keys]) => keys.some((k) => !c.s.asked[k])) ?? WHERE_SETS[2];
         const sg: Suggestion[] = [{ lt: label, hint: set }, S_HOW, S_NO_MORE];
@@ -919,19 +969,20 @@ export const firstDay: SituationDef = {
         if (c.s.taskAsks === 1) { c.say("task_intro"); c.say("task_file"); }
         else c.say("task_again");
       },
-      expects: ["show_me", "send_file", "task_ok", "know_system", "know_ctx", "q_how", "task_cant", "task_later"],
+      expects: ["show_me", "send_file", "task_ok", "know_system", "know_ctx", "q_how", "task_cant", "task_later", "task_when"],
       suggest: [S_TASK],
       yes: (c) => { taskOk(c); }, no: (c) => { c.say("show_system"); c.s.shown = true; c.hold(); } },
     { id: "lunch", when: (c) => !!c.s.taskDone || (c.s.taskAsks || 0) >= 3, done: (c) => c.s.lunch !== undefined || (c.s.lunchAsks || 0) >= 3,
       ask: (c) => {
         c.s.lunchAsks = (c.s.lunchAsks || 0) + 1;
+        if (c.s.lunchAsks === 1) c.s.lastDish = "cocina"; // "¿Qué es eso?" now asks about the cocina económica
         c.say(c.s.lunchAsks === 1 ? "lunch_invite" : "lunch_reask");
       },
-      expects: ["lunch_yes", "lunch_no", "lunch_q", "fancy_q"],
+      expects: ["lunch_yes", "lunch_no", "lunch_q_ctx", "fancy_q"],
       suggest: [S_LUNCH],
       yes: (c) => { lunchYes(c); }, no: (c) => { lunchNo(c); } },
     { id: "day", when: (c) => c.s.lunch !== undefined || (c.s.lunchAsks || 0) >= 3, done: (c) => !!c.s.dayDone || (c.s.dayAsks || 0) >= 2,
-      ask: (c) => { c.s.dayAsks = (c.s.dayAsks || 0) + 1; c.say("day_ask"); },
+      ask: (c) => { c.s.dayAsks = (c.s.dayAsks || 0) + 1; c.say(c.s.dayAsks === 1 ? "day_ask" : "day_reask"); },
       expects: ["day_good", "day_tired", "day_ctx", "thanks_all"],
       suggest: [S_DAY],
       yes: (c) => { dayGood(c); }, no: (c) => { dayTired(c); } },
@@ -943,6 +994,7 @@ export const firstDay: SituationDef = {
     c.s.qCount = 0;
     // she urges once after a plain "no" to lunch (sometimes)
     c.s.insist = c.chance(0.5);
+    c.s.insisted = false;
     // Twists (returning visits only)
     c.s.badgeLate = c.visits >= 1 && c.chance(0.25);
     c.s.coffeeBroken = c.visits >= 1 && c.chance(0.35);
@@ -959,23 +1011,22 @@ export const firstDay: SituationDef = {
     not_new(c) { if (c.s.introduced) { c.say("ack"); return; } c.s.lastQ = "help"; c.say("how_help"); c.hold(); },
     intro_name(c, slots, seg) {
       named(c, slots.name);
-      if (seg.tags.includes("back") && once(c, "her_name")) c.say("my_name_is"); // "Me llamo Ryan, ¿y tú?"
-      if (NOT_NEW.test(heard(c))) return; // "Soy Ryan, no es mi primer día": not_new answers
-      if (!c.s.introduced && (c.s.lastQ === "new" || seg.tags.includes("first"))) introduced(c);
+      // "Soy Ryan, no es mi primer día": not_new answers
+      if (!NOT_NEW.test(heard(c)) && !c.s.introduced && (c.s.lastQ === "new" || seg.tags.includes("first"))) introduced(c);
+      herName(c, seg); // "Me llamo Ryan, ¿y tú?"
     },
     intro_ctx(c, slots, seg) {
       named(c, slots.name);
-      if (NOT_NEW.test(heard(c))) return;
-      if (!c.s.introduced && seg.tags.includes("first")) { introduced(c); return; }
       // an answer to "¿Eres nuevo aquí?" with a name counts as yes; otherwise the step asks it
-      if (!c.s.introduced && c.s.lastQ === "new") introduced(c);
+      if (!NOT_NEW.test(heard(c)) && !c.s.introduced && (seg.tags.includes("first") || c.s.lastQ === "new")) introduced(c);
+      herName(c, seg); // "Soy Ryan, ¿y tú?"
     },
-    bare_name_ctx(c, slots) { named(c, slots.name); },
+    bare_name_ctx(c, slots, seg) { named(c, slots.name); herName(c, seg); }, // "Ryan, ¿y tú?"
     nice_meet(c) {
       if (!c.s.introduced) { introduced(c); return; }
       if (once(c, "nice") && !c.s.niceSaid) { c.s.niceSaid = true; c.say("nice_too"); }
     },
-    her_name(c) { if (once(c, "her_name")) c.say("my_name_is"); },
+    her_name(c) { herName(c, { tags: ["back"] }); },
 
     // --- desk ---
     desk_ok(c) { c.s.deskDone = true; c.say("glad_like"); },
@@ -1019,7 +1070,7 @@ export const firstDay: SituationDef = {
       if (c.s.mugTwist && !c.s.mugSaid) { mugTwist(c); return; }
       c.say("a_mug");
     },
-    q_who(c) { question(c, "who"); c.say("a_who"); },
+    q_who(c, _slots, seg) { question(c, "who"); c.say(seg.tags.includes("pablo") ? "a_pablo" : "a_who"); },
     q_parking(c, _slots, seg) { question(c, "parking"); c.say(seg.tags.includes("free") ? "a_parking_free" : "a_parking"); },
     q_help(c) { question(c, "help"); c.say("a_help"); },
     q_how(c) { howItWorks(c); },
@@ -1029,8 +1080,8 @@ export const firstDay: SituationDef = {
       const h = heard(c);
       c.say(/^\s*donde\b/.test(h) ? "a_unknown_where" : /^\s*(hay|tienen|tenemos)\b/.test(h) ? "a_unknown_have" : "a_unknown");
     },
-    no_more(c) { if (c.step === "tour") c.s.tourDone = true; else if (once(c, "ack")) c.say("ack"); },
-    already_know(c) { if (once(c, "ack")) c.say("ack"); },
+    no_more(c) { if (c.step === "tour") c.s.tourDone = true; else ack(c); },
+    already_know(c) { ack(c); },
     more_q(c) { c.say("sure_what"); c.hold(); },
 
     // --- first task ---
@@ -1044,11 +1095,18 @@ export const firstDay: SituationDef = {
     },
     task_ok(c) {
       if (TASK_NOT.test(heard(c)) && c.s.taskAsks) { taskCant(c); return; } // "No sé si puedo": never "lo hago"
-      if (c.step === "task" || c.s.taskAsks) taskOk(c); else if (once(c, "ack")) c.say("ack");
+      if (c.step === "task" || c.s.taskAsks) taskOk(c); else ack(c);
     },
     // "Lo hago después", "Ahorita no puedo": no rush, she emails the file
     task_later(c) {
-      if (!c.s.taskAsks) { if (once(c, "ack")) c.say("ack"); return; }
+      if (!c.s.taskAsks) { ack(c); return; }
+      if (!once(c, "task")) return;
+      c.say("task_later_reply"); c.s.sent = true; c.s.taskDone = true;
+    },
+    // "¿Para cuándo?", "¿Es urgente?": the same answer ("¡No hay prisa! Te lo mando por correo para cuando puedas"),
+    // unless the file has gone already
+    task_when(c) {
+      if (!c.s.taskAsks || c.s.sent) { ack(c); return; }
       if (!once(c, "task")) return;
       c.say("task_later_reply"); c.s.sent = true; c.s.taskDone = true;
     },
@@ -1057,20 +1115,24 @@ export const firstDay: SituationDef = {
     know_ctx(c) { knowSystem(c); },
     // "No puedo hacerlo" / "No sé cómo": María shows the system (never taken as "lo hago")
     task_cant(c) {
-      if (!c.s.taskAsks) { if (once(c, "ack")) c.say("ack"); return; }
+      if (!c.s.taskAsks) { ack(c); return; }
       taskCant(c);
     },
 
     // --- lunch ---
-    lunch_yes(c) { if (c.s.lunchAsks) lunchYes(c); else if (once(c, "ack")) c.say("ack"); },
-    lunch_no(c) { if (c.s.lunchAsks) lunchNo(c); else if (once(c, "ack")) c.say("ack"); },
-    lunch_q(c, _slots, seg) {
+    lunch_yes(c) { if (c.s.lunchAsks) lunchYes(c); else ack(c); },
+    lunch_no(c) { if (c.s.lunchAsks) lunchNo(c); else ack(c); },
+    lunch_q_ctx(c, _slots, seg) {
       const tg = seg.tags;
+      // "¿Qué es eso?": the last thing she named (the chiles, the comida corrida, or the cocina económica itself)
+      const what = c.s.lastDish === "chiles" ? "a_chiles" : c.s.lastDish === "corrida" ? "a_food" : "a_cocina";
       const line = tg.includes("far") ? "a_place_far" : tg.includes("near") ? "a_place_near" : tg.includes("where") ? "a_place_where"
         : tg.includes("dear") ? "a_price_dear" : tg.includes("cheap") ? "a_price_cheap" : tg.includes("price") ? "a_price"
-        : tg.includes("card") ? "a_card" : tg.includes("veg") ? "a_veg" : tg.includes("spicy") ? "a_spicy" : tg.includes("time") ? "a_lunch_at"
-        : tg.includes("chiles") ? "a_chiles" : "a_food";
+        : tg.includes("card") ? "a_card" : tg.includes("veg") ? "a_veg" : tg.includes("spicy") ? "a_spicy" : tg.includes("back") ? "a_lunch_long"
+        : tg.includes("time") ? "a_lunch_at" : tg.includes("who") ? "a_lunch_who" : tg.includes("cocina") ? "a_cocina"
+        : tg.includes("what") ? what : tg.includes("chiles") ? "a_chiles" : "a_food";
       if (once(c, "q_" + line)) c.say(line);
+      c.s.lastDish = /^a_price/.test(line) ? "corrida" : line === "a_chiles" ? "chiles" : line === "a_food" ? "food" : c.s.lastDish;
       if (line === "a_lunch_at") turn(c).timeSaid = true;
       if (c.step !== "lunch" || c.s.lunch !== undefined) return;
       // "Sí, ¿a qué hora?": the yes is the answer
@@ -1081,13 +1143,13 @@ export const firstDay: SituationDef = {
     },
     // only inside the "¿No te animas?" question, which handles it; nowhere else
     insist_no_ctx(c) { if (c.s.insisted && c.s.lunch === undefined) finalLunch(c, false); },
-    fancy_q(c) { if (c.step === "lunch" || c.s.lunchAsks) lunchYes(c); else if (once(c, "ack")) c.say("ack"); },
+    fancy_q(c) { if (c.step === "lunch" || c.s.lunchAsks) lunchYes(c); else ack(c); },
 
     // --- end of the day ---
     day_good(c) { if (c.step === "day") dayGood(c); else if (once(c, "good")) c.say("ack"); },
     day_tired(c) { if (c.step === "day") dayTired(c); else if (once(c, "tired")) c.say("ack"); },
     day_ctx(c, _slots, seg) {
-      if (c.step !== "day") { if (once(c, "ack")) c.say("ack"); return; }
+      if (c.step !== "day") { ack(c); return; }
       if (seg.tags.includes("back") && !c.s.dayDone && once(c, "back")) c.say("me_too"); // "Bien, ¿y a ti?"
       if (/pesad|larg|cansad|intens/.test(heard(c))) dayTired(c); else dayGood(c);
     },
@@ -1097,8 +1159,8 @@ export const firstDay: SituationDef = {
       c.say("welcome_reply");
     },
 
-    // "¡Adiós!" before the end: María's own tú goodbye (the shared g_bye has "¡Que le vaya bien!", usted)
-    g_bye(c) { c.say(c.s.dayAsks ? "bye_reply" : "bye_early"); c.end(); c.hold(); },
+    // "¡Adiós!" before the end: María's own goodbye, one a turn ("Adiós, que descanses" is two pieces)
+    g_bye(c) { byeBack(c); c.hold(); },
 
     // thanks between coworkers: "¡De nada!" / "¡Para eso estamos!" (the shared line has "¡A la orden!", a shop's)
     g_thanks(c) { if (once(c, "thanks")) c.say("welcome_reply"); },
@@ -1109,11 +1171,15 @@ export const firstDay: SituationDef = {
     tea_ok(c, _slots, seg) {
       if (!c.s.coffeeKnown) { coffeeWhere(c); return; }
       if (seg.tags.includes("q")) { if (once(c, "tea")) c.say(c.s.brokenSaid ? "a_tea_short" : "a_tea"); return; } // "¿Hay té?"
-      if (once(c, "ack")) c.say(c.s.brokenSaid ? "tea_reply" : "ack");
+      if (!turn(c).answered && once(c, "ack")) c.say(c.s.brokenSaid ? "tea_reply" : "ack");
     },
-    // "No tomo café": never "here's the coffee machine" outside the coffee moment
+    // "No tomo café": never "here's the coffee machine" outside the coffee moment; "No, gracias, no tomo café" to her
+    // offer to show the cafetera gets one reply (her "¡Sin problema!…"), not an "¡Claro!" after it
     coffee_later(c, _slots, seg) {
       if (!c.s.coffeeKnown && c.step === "coffee") { coffeeWhere(c); return; }
+      if (turn(c).answered) return;
+      // "Ahorita no", "Luego lo intento" to her offer to show the cafetera: the same reply as to a "No, gracias"
+      if (c.s.showOffered && c.step === "coffee" && !seg.tags.includes("shrug")) { c.s.showOffered = false; turn(c).answered = true; c.say("fine_then"); return; }
       if (once(c, "ack")) c.say(seg.tags.includes("shrug") ? "shrug_reply" : "ack"); // "Qué lástima" (the broken cafetera)
     },
   },
@@ -1122,11 +1188,12 @@ export const firstDay: SituationDef = {
     c.complete();
     c.say("see_tomorrow");
     c.expect({ id: "closing", hints: ["bye"], suggest: [{ lt: "Say goodbye", hint: "bye" }],
+      // one goodbye however many pieces ("¡Gracias por todo! ¡Nos vemos mañana!", "Adiós, que descanses")
       on: {
         see_you: (cc) => { byeBack(cc); },
-        g_bye: (cc) => { cc.say("bye_reply"); cc.end(); },
-        g_thanks: (cc) => { cc.say("welcome_reply"); cc.say("bye_reply"); cc.end(); },
-        thanks_all: (cc) => { cc.say("welcome_reply"); cc.say("bye_reply"); cc.end(); },
+        g_bye: (cc) => { byeBack(cc); },
+        g_thanks: (cc) => { if (once(cc, "thanks")) cc.say("welcome_reply"); byeBack(cc); },
+        thanks_all: (cc) => { if (once(cc, "thanks")) cc.say("welcome_reply"); byeBack(cc); },
       },
       yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
   },
@@ -1185,8 +1252,8 @@ export const firstDay: SituationDef = {
     { say: "Me encantaría, pero tengo mucho trabajo", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
     { say: "No tengo hambre", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
     { say: "¡Tal vez mañana!", intent: "lunch_no", step: "lunch" },
-    { say: "¿Está lejos?", intent: "lunch_q", step: "lunch" },
-    { say: "¿Cuánto cuesta?", intent: "lunch_q", step: "lunch" },
+    { say: "¿Está lejos?", intent: "lunch_q_ctx", step: "lunch" },
+    { say: "¿Cuánto cuesta?", intent: "lunch_q_ctx", step: "lunch" },
     // end of the day
     { say: "¡Me fue muy bien!", intent: "day_good", step: "day" },
     { say: "Pesado, ¡pero me encanta!", intent: "day_tired", step: "day" },
@@ -1232,7 +1299,7 @@ export const firstDay: SituationDef = {
     { say: "¿A qué hora es el almuerzo?", intent: "q_lunch_time" },
     { say: "¿Me das mi gafete?", intent: "q_badge" },
     { say: "Bueno, sí me animo", intent: "lunch_yes", step: "lunch" },
-    { say: "¿Qué hay de comer?", intent: "lunch_q", step: "lunch" },
+    { say: "¿Qué hay de comer?", intent: "lunch_q_ctx", step: "lunch" },
     { say: "Todos fueron muy amables", intent: "day_good", step: "day" },
     { say: "Que descanses", intent: "see_you" },
     { say: "¿Dónde aparco el coche?", intent: "q_parking" },
@@ -1255,11 +1322,25 @@ export const firstDay: SituationDef = {
     { say: "Sí, pero no hoy", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
     { say: "No gracias, ya tengo planes", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
     { say: "Ya comí", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
-    { say: "¿Qué son los chiles rellenos?", intent: "lunch_q", step: "lunch" },
+    { say: "¿Qué son los chiles rellenos?", intent: "lunch_q_ctx", step: "lunch" },
     { say: "¡En serio! ¡Me encantan!", intent: "none", step: "lunch", not: ["lunch_no"] },
     { say: "No estuvo nada mal", intent: "day_ctx", step: "day", not: ["day_tired"] },
     { say: "Bastante bien, aunque estoy cansado", intent: "day_tired", step: "day", not: ["day_good"] },
     { say: "Bien, gracias, ¿y a ti?", intent: "day_ctx", step: "day", not: ["g_howareyou_answer"] },
+    // audit (5 Nov 2026): questions that had no answer, whole sentences, names asked back
+    { say: "¿Quiénes van?", intent: "lunch_q_ctx", step: "lunch" },
+    { say: "¿Vamos todos juntos?", intent: "lunch_q_ctx", step: "lunch" },
+    { say: "¿Qué es una cocina económica?", intent: "lunch_q_ctx", step: "lunch" },
+    { say: "¿A qué hora regresamos?", intent: "lunch_q_ctx", step: "lunch" },
+    { say: "¿Para cuándo lo necesitas?", intent: "task_when", step: "task", not: ["task_ok"] },
+    { say: "¿Es urgente?", intent: "task_when", step: "task" },
+    { say: "¿Quién es Pablo?", intent: "q_who", step: "tour" },
+    { say: "Mi primer día fue muy bueno", intent: "day_good", step: "day" },
+    { say: "Fue un día muy bueno", intent: "day_good", step: "day" },
+    { say: "Fue un día muy largo", intent: "day_tired", step: "day", not: ["day_good"] },
+    { say: "Mi primer día no fue muy bueno", intent: "day_tired", step: "day", not: ["day_good"] },
+    { say: "Soy Ryan, ¿y tú?", intent: "intro_ctx", step: "hello" },
+    { say: "Ryan, ¿y tú?", intent: "bare_name_ctx", step: "name" },
     // not understood
     { say: "El elefante morado come teclados", intent: "none" },
     { say: "Mi tía vive en Guadalajara", intent: "none" },
@@ -1310,16 +1391,43 @@ export const firstDay: SituationDef = {
     { name: "twist: the badge isn't ready", setup: (s) => { s.coffeeBroken = false; s.mugTwist = false; s.printerJam = false; s.badgeLate = true; s.showCoffee = false; },
       turns: ["Hola, soy Ryan, es mi primer día.", "Mucho gusto.", "¿Y cuándo me dan mi gafete?", "¿Dónde está la cocina?", "No, nada más.", "¡Genial, gracias!", "Claro, yo lo hago.",
         "¡Me encantaría!", "Muy bien.", "¡Nos vemos mañana!"], expect: { complete: true, state: { badgeLateSaid: true } }, auto: AUTO },
+    // audit (5 Nov 2026): the hint's polite no ("Gracias, pero traje mi comida") is taken at once, never urged
+    { name: "audit: a reason is never urged", setup: (s) => { NO_TWISTS(s); s.insist = true; s.greetKind = "new"; s.showCoffee = false; },
+      turns: ["Sí, soy nuevo.", "¡Mucho gusto!", "Ryan.", "Gracias.", "No, es todo.", "¡Genial, gracias!", "Claro, yo lo hago.", "Gracias, pero traje mi comida.",
+        "Muy bien.", "¡Nos vemos mañana!"], expect: { complete: true, state: { lunch: false, insisted: false, byes: 1 } }, auto: AUTO },
+    // the lunch questions that had no answer ("¿Qué es eso?" right after the invitation is the cocina económica), the
+    // day in a whole sentence, and one goodbye for "¡Gracias por todo! ¡Nos vemos mañana!"
+    { name: "audit: who, what and until when", setup: (s) => { NO_TWISTS(s); s.insist = false; s.greetKind = "new"; s.showCoffee = false; },
+      turns: ["Sí, soy nuevo.", "¡Mucho gusto!", "Ryan, ¿y tú?", "Gracias.", "No, es todo.", "¡Genial, gracias!", "Claro, yo lo hago.", "¿Qué es eso?", "¿Quiénes van?",
+        "¿A qué hora regresamos?", "Sí, voy.", "Mi primer día fue muy bueno.", "¡Gracias por todo! ¡Nos vemos mañana!"],
+      expect: { complete: true, state: { lunch: true, lastDish: "cocina", dayDone: true, byes: 1 } }, auto: AUTO },
+    // Pablo's mug and "¿Quién es Pablo?", "¿Para cuándo?", the day asked again without the clock, "Adiós, que descanses"
+    { name: "audit: Pablo, the deadline, the day asked again", setup: (s) => { NO_TWISTS(s); s.mugTwist = true; s.insist = false; s.showCoffee = false; },
+      turns: ["Hola, soy Ryan, es mi primer día.", "Mucho gusto.", "¿Dónde está el baño?", "¿Puedo usar esta taza?", "¿Quién es Pablo?", "Perdón, no sabía.", "No, es todo.",
+        "¡Genial, gracias!", "¿Para cuándo lo necesitas?", "Hoy no, gracias.", "¿A qué hora entramos mañana?", "Fue un día muy bueno.", "Adiós, que descanses."],
+      expect: { complete: true, state: { mugSaid: true, taskDone: true, lunch: false, dayDone: true, dayAsks: 2, byes: 1 } }, auto: AUTO },
   ],
 };
 
 // ---------------------------------------------------------------------------
 // Handler helpers (hoisted function declarations)
 
+/** "¡Bueno!" / "¡Claro!" for a remark with nothing to answer: once a turn, and never after her reply to the turn's
+ *  yes or no ("No, gracias, no tomo café" to her offer to show the cafetera). */
+function ack(c: Ctx) {
+  if (!turn(c).answered && once(c, "ack")) c.say("ack");
+}
+
+/** "¿Y tú?" / "¿Cómo te llamas?": her name, unless her welcome has just said it this turn. */
+function herName(c: Ctx, seg: { tags: string[] }) {
+  if (seg.tags.includes("back") && !turn(c).welcomed && once(c, "her_name")) c.say("my_name_is");
+}
+
 function introduced(c: Ctx) {
   c.s.introduced = true;
   if (c.s.welcomed) return;
   c.s.welcomed = true;
+  turn(c).welcomed = true; // the welcome says "Soy María"
   if (c.s.named) { c.s.niceSaid = true; c.say("welcome_nice"); } else c.say("welcome_team");
   // the learner answers the welcome ("¡Mucho gusto!") before the tour starts
   c.expect({ id: "meet", optional: true, expects: ["nice_meet", "intro_name", "intro_ctx", "bare_name_ctx"], hints: ["meet"], suggest: [S_MEET],
@@ -1366,10 +1474,12 @@ function coffeeWhere(c: Ctx) {
   // s.showCoffee lets a sim pin the question; unset, it is decided here
   if (c.step === "coffee" && (c.s.showCoffee ?? c.chance(0.5))) {
     c.say("a_coffee_more");
+    c.s.showOffered = true;
     // "¿Quieres que te enseñe cómo funciona?" — a bare "Sí, gracias" gets the demo
     c.expect({ id: "coffee_show", optional: true, expects: ["q_how", "show_me", "coffee_want", "tea_ok", "coffee_later", "q_mug", "know_system", "know_ctx"], hints: ["coffee"],
       suggest: [{ lt: "Say thanks, or ask how it works", hint: "coffee" }],
-      yes: (cc) => { howItWorks(cc); }, no: (cc) => { cc.say("fine_then"); } });
+      yes: (cc) => { cc.s.showOffered = false; turn(cc).answered = true; howItWorks(cc); },
+      no: (cc) => { cc.s.showOffered = false; turn(cc).answered = true; cc.say("fine_then"); } });
   }
 }
 
@@ -1422,7 +1532,7 @@ function lunchYes(c: Ctx) {
   if (turn(c).lunchSaid) return; // one answer per turn ("¿A qué hora? Sí, voy", "Hoy no, mejor mañana")
   if (LUNCH_NOT.test(heard(c))) { lunchNo(c); return; }
   turn(c).lunchSaid = true;
-  if (c.s.lunch !== undefined) { if (once(c, "ack")) c.say("ack"); return; }
+  if (c.s.lunch !== undefined) { ack(c); return; }
   c.s.lunch = true;
   c.say(turn(c).timeSaid ? "lunch_yes_short" : "lunch_yes_reply"); // "Sí, ¿a qué hora?": the two o'clock just said
 }
@@ -1430,12 +1540,12 @@ function lunchYes(c: Ctx) {
 function lunchNo(c: Ctx) {
   if (turn(c).lunchSaid) return;
   turn(c).lunchSaid = true;
-  if (c.s.lunch !== undefined) { if (once(c, "ack")) c.say("ack"); return; }
-  // she urges once, as Mexicans do, unless the learner gave a real reason (a meeting, work, a diet)
+  if (c.s.lunch !== undefined) { ack(c); return; }
+  // she urges once, as Mexicans do, unless the learner gave a reason (a meeting, work, a diet, lunch from home)
   if (c.s.insist && !c.s.insisted && !REAL_REASON.test(heard(c))) {
     c.s.insisted = true;
-    c.say("lunch_insist");
-    c.expect({ id: "lunch_insist", optional: true, expects: ["lunch_yes", "lunch_no", "lunch_q", "insist_no_ctx"], hints: ["lunch"], suggest: [S_LUNCH],
+    if (c.chance(0.5)) { c.s.lastDish = "chiles"; c.say("lunch_insist"); } else c.say("lunch_urge");
+    c.expect({ id: "lunch_insist", optional: true, expects: ["lunch_yes", "lunch_no", "lunch_q_ctx", "insist_no_ctx"], hints: ["lunch"], suggest: [S_LUNCH],
       on: {
         insist_no_ctx: (cc) => { finalLunch(cc, false); },
         lunch_yes: (cc) => { finalLunch(cc, true); },
@@ -1456,9 +1566,12 @@ function finalLunch(c: Ctx, yes: boolean) {
   c.say(yes ? "lunch_yes_reply" : "lunch_no_reply");
 }
 
-/** "¡Que descanses!" from the learner gets "¡Igualmente!", not the same wish back. */
+/** One goodbye a turn ("¡Gracias por todo! ¡Nos vemos mañana!", "Adiós, que descanses"). "¡Que descanses!" from the
+ *  learner gets "¡Igualmente!", not the same wish back; before the end of the day she says just "¡Nos vemos!". */
 function byeBack(c: Ctx) {
-  c.say(/descans|que tengas|buena|buenas/.test(heard(c)) ? "bye_same" : "bye_reply");
+  if (!once(c, "bye")) return;
+  c.s.byes = (c.s.byes || 0) + 1;
+  c.say(/descans|que tengas|buena|buenas/.test(heard(c)) ? "bye_same" : c.s.dayAsks ? "bye_reply" : "bye_early");
   c.end();
 }
 
