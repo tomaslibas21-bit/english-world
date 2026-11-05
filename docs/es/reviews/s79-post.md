@@ -38,3 +38,81 @@ Ceiba as in s62, English steps/intents/twists kept). **tests:** 17 NLU traps, 1 
 ## For the lead
 - Engine: one intent twice in a turn is rejected (strayRepeat); "X, Y" answers need whole patterns. Comma gaps kept:
   "No, es para mi mamá" at "¿Es regalo?" = gift; "Perfume no, lo saco" = "no lo saco" (nothing recorded).
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer, both texts (Mexican and neutral), against N/AUDIT-BRIEF.md: the brief, STYLE/AUTHORING, the cross and
+neutral files (leads: no name clash, Correos' facts as TOWN.md had them, the offer probe's "Peligroso."), the
+transcripts (seeds 3 and 7), 7 probe sets (~60 scripted conversations: offers, price questions, what-ifs, polite
+closings, pasts, pickups, stamps), the voiced value lists (`reach-es.ts`) and Correos de México's 2026 tariffs.
+
+**Found 25, fixed 24** (by point: 1:2 2:0 3:0 4:4 5:0 6:0 7:13 8:0 9:6 10:0).
+
+**4. Facts (realism, Nov 2026)**, from Correos de México's "Tarifa Postal 2026" (correosdemexico.gob.mx,
+DATOSABIERTOS/Tarifas/Individuales 8, 9 and 10; the site refuses foreign connections, so read through search-engine
+extracts) and the news of 25 Mar 2026 (Mexico News Daily, Riviera Maya News, UnoTV, La Razón, Eje Central):
+- A postcard or letter abroad (up to 20 g) costs $11.50 to North America, $13.50 to Europe and South America, $15 to
+  the rest of the world (the same since 2016–2018). **The stamp was $22**: now **$15**, the rest-of-world rate, enough
+  for any country (stamps_price, stamp_cost and their neutral twins).
+- International parcels (encomiendas), first zone: $320 up to 0.5 kg, $384 up to 1 kg, $512 up to 2 kg, $640 up to
+  3 kg. The 800 g box's $380 matched; **the 2.4 kg box's $520 was below even the cheapest zone: now $640**. EMS
+  (express, "Mexpost") is priced in dollars by zone, at ~$18.50 a dollar (A North America, B Europe/South America, C the rest): about $510 /
+  $630 / $930 up to 1 kg and $630 / $910 / $1,260 up to 3 kg; the flat $690 / $890 stays (zone B's level). Times
+  (standard two to three weeks, express about a week, economy over a month) are plausible; US deliveries "may take
+  longer" since March 2026.
+- **Correos is on avenida Juárez, next to the bank, across from the zócalo's kiosco** (TOWN.md, the 3D town): the intro
+  said "on Calle Ceiba, across from Café La Ceiba". No spoken line places it.
+- Not fixed, for the owner (rule 14, a rule that changes fast): since 25 Mar 2026 a parcel to the **US** needs the
+  sender's official ID, email and phone of both parties, each item's country of manufacture, a declared value of
+  $150–$14,500 (US$800), no herbal products or medicines, and Correos collects a **10% US charge on the declared
+  value**. Gloria's US totals leave it out; modeling it would make the total depend on any declared value (not
+  voiceable) unless values snap to a grid. Letters and postcards to the US are exempt (resumed Sept 2025).
+
+**9. Money moved without a clear yes (rule 17), all fixed and trapped:** "Mejor sí", "Sí, por si acaso" and "con
+seguro" were a plain intent, so at "¿Es regalo?" or "¿Va a querer timbres también?" they added $50 of insurance (now
+`insurance_ctx`, at the offer only); "¿Cuánto sería con seguro?" added it (split into a price question + "con seguro";
+the handler now ignores a "cuánto" turn); "Está bien, gracias" at the insurance offer added it (now "Entonces, ¿sí lo
+asegura o no?", new line); "¿Cuánto cuestan cinco timbres?" bought five stamps (one whole price question now, and
+stamps_qty ignores a "cuánto" turn); the full insurance was added to an economy packet ("El económico no lleva seguro"
+now, and choosing economy drops it); and an insurance asked for with only stamps bought was charged (total counts it
+only with a package).
+
+**7. Questions and answers:** "Peligroso." / "Sí, algo peligroso." (her own option) → "¿Qué trae?"; a price before
+the box is weighed ("¿Cuánto cuesta?" at the country or contents question quoted both services; "¿Hay algo más
+barato?" quoted economy, or "solo hasta 2 kilos" for a box she hadn't seen) → "Depende del peso y del destino." (new)
+and the question again ("¿A qué país va?", new, short); "¿Va a pagar en efectivo o con tarjeta?" after the learner
+had said cash; "Gracias, es todo." was a bare thanks and "¿Algo más?" came again (as s76); stamps bought after the
+package was paid were never charged nor handed over ("Ya está pagado"): now a second small payment; not understood
+before, answered now: "¿Cuánto cuesta cada uno?", "¿Puedo asegurarlo?", "¿Qué cubre el seguro básico?" (new line),
+"¿Cuánto cobran por el seguro?", "¿Y si lo mando express / en el económico?", "¿Cuánto sería con el express?" (quotes,
+never chooses), "¿Y si pago con tarjeta?" (a question: "Sí, aceptamos tarjeta", paid on the hand-over), "No tengo el
+número de guía", "¿Dónde dejo las postales?" / "¿Dónde está el buzón?" (new line; the room and the street both have
+a buzón), and at a pickup without ID "¿Sirve una foto del pasaporte?" (new line) and "Bueno, regreso mañana" ("Claro,
+aquí se lo guardamos.", new; the visit ends politely, not completed).
+
+**1. Spanish:** "y peligroso es, por ejemplo, baterías" (es + a plural) → "y peligroso, por ejemplo, las baterías";
+the stamp lines came twice in a row ("Cuestan $22 cada uno. ¿Cuántos quiere?" again after "¿Cuánto cuestan?" or "Para
+unas postales a Inglaterra"): now the price once, then "¿Cuántos quiere?" (new, neutral twin "¿Cuántas quiere?").
+
+**Checked, fine:** usted throughout (hints too); Gloria only, no clash; glosses and American English; ¿¡ and accents;
+the neutral twins (timbres → estampillas with "cada una / ¿Cuántas?", nomás, ahorita); flags on their units; the
+customs twist and the pickup lines; hours (Mon–Fri 8–4, Sat 9–1) and the 3D buzón. Left as is: "¿A dónde lo va a
+mandar?" after "una caja" (lo = el paquete); a bare "Bueno." at the insurance question is an acknowledgement (no yes:
+it moves money); the held-out's 3 "misses" are right readings under other names.
+
+**Voices:** 8 new spoken lines (price_depends, dest_again, ask_insurance_confirm, insurance_cover, stamps_how_many +
+its neutral twin, mailbox, id_original, keep_here); 3 changed (hazard_explain; stamps_price and stamp_cost with their
+twins: $15). Value lists: the prices' $520 → $640; **say_total 534 → 296 values** (with $15 stamps most sums
+coincide); every total the math can produce is in the list (checked: package + insurance + 0–50 stamps, and later
+stamps alone).
+
+**Tests:** NLU 128 → 144 (16 new, 10 of them with a `not:`); sims 12 → 16, all 12/12 (the insurance's price question and
+polite closing, prices before the weight + a stamps price question, stamps after paying, a pickup without ID);
+corpus 226 → 263 understood, traps 24 → 27, 0 false accepts; held-out 36/39, 0/1 (unchanged); offer probe: only the
+expected "Perecedero." (the rule's "perdón") left, both texts.
+
+**For the lead:** (1) global: "Gracias, es todo." is read as a bare thanks wherever a conversation has no "gracias es
+todo" pattern (s76 and s79 add it locally); (2) a shared `politeClosing` helper (p25, p29, s79 each have one);
+(3) TOWN.md "Prices the conversations share": a stamp for a postcard abroad $15 (s79); CROSS.md's "stamps $22" is
+stale. **For the owner:** model the 2026 US parcel rules (ID, contacts, 10% charge) or keep the US simple; one flat
+price for every country (EMS to Australia and New Zealand is 35–40% above the flat express price) or prices by zone (more clips).
