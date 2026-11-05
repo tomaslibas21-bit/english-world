@@ -91,6 +91,9 @@ export const joinText = (s: string) => s;
 /** Agreement written into the practised language's text (the Spanish edition's {frío@X}): none in English. */
 export const agreeTarget = (s: string, _bind: (name: string) => { e: EntityDef; plural: boolean } | null) => s;
 
+/** How a hint example binds the item it is about (suggest.ts composeFull): English binds the bare id. */
+export const hintBinding = (_e: EntityDef | undefined, id: string): string | NpBinding => id;
+
 // ---------------------------------------------------------------------------
 // Values
 

@@ -17,14 +17,16 @@ The Spanish edition has its own copies of the voice tools in `tools/es-voices/` 
 
 | File | What it does |
 |---|---|
-| `tools/es-voices/lines-es.ts` | every line the Spanish game can speak, in both sets: Mexican (`es_…`) and neutral (`esn_…`, with the neutral twins' text), for both learner genders ("¿Está listo?" / "¿Está lista?"), the example answers in the coach voice of the learner's gender, the scripted sims as well as random conversations (so customs in s65b is reached and voiced by Agente Medina), speakers a conversation switches to |
+| `tools/es-voices/lines-es.ts` | every line the Spanish game can speak, in both sets: Mexican (`es_…`) and neutral (`esn_…`, with the neutral twins' text), for both learner genders ("¿Está listo?" / "¿Está lista?"), the example answers in the coach voice of the learner's gender; each line in the voice of everyone heard saying it or made to say it by the code, an item line with the item lists it is heard with and its items bound one or two as the line binds them ("los papadzules"), a value line with the values reach-es.ts keeps, a line with two placeholders with reach-es.ts's bindings; each clip says how it was found (`why`) |
+| `tools/es-voices/runs-es.ts` | what the conversations really say, played once for both sets: random conversations (fuzzSituation's own runs), the scripted sims for both genders (and both date partners in s84), and probes where a conversation has more than one speaker (a line said by whoever holds the floor asked again where each other person holds it) |
 | `src/editions/es/content/voices.ts` | the one switch: `npcVoice`, `coachVoice`, `ambientVoice` give `es_…` with Mexican Spanish chosen and `esn_…` with neutral Spanish (compose's variety, set by Settings through `src/state/variety.ts`); one folder and one manifest hold both sets |
 | `tools/es-voices/casting-es.ts` | the casting below: a Gemini voice, an age, a manner and a pace per character, two accent directions, the settings per conversation; the checks (gender, no shared voice within a conversation, the coach voices for nobody else) |
 | `tools/es-voices/voice-batch-es.ts` | samples, batches, checks, redos, the ledger, the install into `public/audio-es/` |
 | `tools/es-voices/voice-casting-es.ts` | the casting as the tables below |
-| `tools/es-voices/reach-es.ts` | which values a line with a value list can really be said with: fixed values read in its calls, and rules for values that hang together; the line list uses it (the table: run it) |
-| `tools/es-voices/breakdown-es.ts` | where the clips come from, by kind and value list, per set (also on Maple Harbor's list) |
-| `tools/es-voices/values-es.ts` | the check of the cuts: every value random conversations and the sims say, and whether it is kept |
+| `tools/es-voices/reach-es.ts` | which values (and items) a line can really be said with: fixed values read in its calls, rules for values that hang together, the bindings of lines with two placeholders (`BINDINGS`: a place and its fare), and who the code makes say a line (speaker helpers); the line list uses it (the table: run it) |
+| `tools/es-voices/breakdown-es.ts` | where the clips come from, by kind and value list, per set and per conversation (also on Maple Harbor's list); `--diff=<an earlier lines.json>`: before → after per conversation and kind |
+| `tools/es-voices/values-es.ts` | the check of the cuts: every value random conversations, the sims and the probes say, whether reach-es.ts keeps it and (`--lines=`) whether its clip is in the list |
+| `tools/es-voices/check-list-es.ts` | the check of the list against other runs than its own: every clip they say is in it (a speaker it lacks, a value, an item), every (line, speaker) pair, and the clips made from a guess nobody was heard saying (junk) |
 
 Every command runs with the edition overlay:
 
@@ -34,7 +36,7 @@ EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/voice-batch
 
 | Step | Command | Key? |
 |---|---|---|
-| What would be recorded: clips per voice, minutes, price | `plan` | no |
+| What would be recorded: clips per voice, minutes, price (`--only=s73,s65b`: those conversations alone, into `lines-only.json`, to try a change) | `plan [--only=…]` | no |
 | A few lines per voice right away, both accents (the standard price) | `sample --round=<name> [--per=2] [--who=a,b] [--accent=mx\|neutral] [--age] [--no-accent]` | yes |
 | Whisper (Spanish) and the length screen on a sample | `check-samples <round>` | no |
 | A Gemini listener on a sample, not told the accent asked for: Mexican, neutral Latin American, Spain or other; native or not; the words | `judge <round>` | yes (cents) |
@@ -265,6 +267,62 @@ Per set, against Maple Harbor's one English set:
   others do, "¿Otro …?" for any dish); the restaurant's totals, tips and cash above $1,500 (about 2,100 a set,
   $0.85).
 
+### The list since 5 Nov: every speaker, plural and item list
+
+The dialogue audit (s73, s74, s64a, s66 and others) found the list missing clips the game can say and holding some it
+can't. Since 5 Nov (`tools/es-voices/runs-es.ts`, `lines-es.ts`, `reach-es.ts`; the report: the shared notes'
+VOICE-LIST.md):
+
+- **One pass, both sets.** Each conversation is played once (random runs, the sims, the probes); every line heard is made
+  in both Spanishes from the same line, variant and values (only the text and the voice ids differ between them), so
+  the two sets cover the same moments. The tools share one language model per conversation as the game does
+  (`sharedNlu`) and read each sentence once per moment.
+- **Who says it.** A line said by whoever holds the floor (no `c.speaker()` before it in that turn: "held") is asked
+  again, with the words that made it, at the moments where each other person holds the floor (forks of the runs' and
+  sims' own moments; up to 24 per person: one for each step, open question and the goodbye first; up to 4 sentences a
+  line): Luis answers at the
+  table what Lucía answered at her stand, Don Arturo what Iván answered at the ticket desk; a step only Lucía asks
+  stays hers. A line the code gives a speaker (a speaker helper such as
+  `K(c, "line")`, or `c.speaker("x")` before `c.say("line")` in the same block: `codeSpeakers`) is in that voice too,
+  heard or not. A line nobody was heard saying and the code doesn't place goes to whoever says the lines around it,
+  else to everyone in the conversation (`why: "who?"`). In s84 the date is the learner's choice (Santiago or Camila):
+  every line in both voices (the sims play both dates). The global lines (g_ack, g_repeat…) go to whoever can hold the
+  floor when the learner speaks: p26's recorded message, which only plays between Jorge's and Brenda's lines, has none.
+- **Plural items.** An item line binds each item as the runs show the line binding items of its kind: the quantity
+  heard with them; else as most of the conversation's item lines bind that kind (s32 says its produce in the plural);
+  else two for an item always said in the plural (`attrs.plural`, `attrs.many`: "los papadzules", "sus pantalones
+  nuevos"), as the conversations' own B(), taskVar(), tv() and bind() do, and one for the rest. A line and its `_pl`
+  twin heard with the two kinds apart (s74's sayN, s73's veg_no) keep them apart. The hint examples bind such an item
+  with two as well, in the game (`hintBinding` in the Spanish target.ts, used by suggest.ts: "Estoy hasta el cuello con
+  los reportes de errores", "Quisiera los papadzules") and in the list; Maple Harbor's binds the bare id as before.
+- **Item lists.** Only the item lists a line is heard with, in random runs, sims and probes, and those reach-es.ts
+  `LISTS` reads in its code (s73's serve: a starter when no main); a line never heard with an item keeps every list
+  (`why: "list?"`, counted by the junk check).
+- **Two placeholders.** A line with two items, or an item and a value, is made from `BINDINGS` in reach-es.ts, read in
+  its code (s66's place and its own fare; s74's garment and its own colors; s32's product and its price, kilos or
+  pieces; s71a's car, extras and return days; p26's delivery days; s75's two prices), and an item described with
+  modifiers the same way (s65b's bag and its color; s91a's and s91b's lost item with its color, material or size); a
+  value with
+  no list of its own takes the fixed values its calls give. Any other such line is voiced only as heard, and `plan`
+  lists it ("lines the list can't make from their text").
+- **Rules from the audits** (`RULES`): s64a's seat question never names one seat twice; s68's walk-in offers and fee
+  their own prices; s70's audio guide only in a language the museum has, "no la tenemos" only in one it hasn't; s71a's
+  daily rate one of the five car rates; s72's single-item price at most the dearest item, the size question only for
+  a drink that comes in sizes; s76's two openings one of the eleven pairs the code offers (110 before); s80's
+  technician windows with their own days. A rule or binding that no longer fits its line (renamed placeholders) is
+  not used and `plan` says so; tests/es/voices.test.ts fails on one.
+- **The checks.** `check-list-es.ts` plays other runs than the list's (from run #1000, the sims on three seeds, the
+  probes) and checks every clip they say is in the list, every (line, speaker) pair, and counts the clips made from a
+  guess nobody was heard saying (junk); `values-es.ts --lines=` does the same for values with the cuts.
+- **What it changed** (spanish-edition a7c55688, all 50 audits in; the old tools against the new on the same lines):
+  83,330 → 87,325 clips for both sets (+5,709 −1,714 texts); `plan` $32.05 → $34.04, fitted to the samples' tokens
+  (`project m1 m1b`, 5% redos) $28.62 → $30.50. Added: lost items and bags described (s91a, s91b, s65b) 3,434, the
+  other code-read pairs 652 (s71a, s32, s74, p26…), new speakers for a line 1,301 (1,186 of them s73's totals in
+  Lucía's voice, said when she holds the floor at the goodbye; 86 Don Arturo's answers in s70), plural hints and items
+  294. Removed: never-said item lists and kinds (s74, s35, s91b, s65b, p28, s73…), s76's 110 pairs, the audits' value
+  rules, p26's recorded message's global lines. The list is made in about 7 min instead of 25 (one pass, the shared
+  language model). The shared notes' VOICE-LIST.md has the table per conversation.
+
 ### What it costs
 
 | | Clips | Batch price |
@@ -323,6 +381,9 @@ v check-samples p1 && v check-samples m1   # 3. Whisper in Spanish + the length 
 v judge p1 && v judge m1                   # 4. the listener: which accent, native or not, the words (~$0.6)
 v sheet p1 && v sheet m1                   # 5. pages to listen to: ~/puerto-colibri-voicing/samples/<round>/index.html
 v project p1 m1                            # 6. the cost of both sets from the real tokens, and whether they fit
+v plan --fresh                             # 6b. the line list again from the frozen lines (two niced workers): clips, price, lines only heard
+c() { nice -n 10 env EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-voices/"$@"; }
+c check-list-es.ts                         # 6c. the list against other runs: every clip they say in it, every (line, speaker); junk counted
 #   7. choose the casting: DEFAULT_CASTING in tools/es-voices/casting-es.ts ("prebuilt" or "mexico"); if it changed,
 #      v prepare --accent=mx --kind=mx && v prepare --accent=neutral --kind=nt   (a minute, no request)
 v send --kind=mx                           # 8. the Mexican set's 13 batches ($14.94)
