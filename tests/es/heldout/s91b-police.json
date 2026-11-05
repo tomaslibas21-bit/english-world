@@ -59,5 +59,18 @@
 
   { "ctx": "anything_else", "say": "¿Me pueden dar una copia para el seguro?", "intent": "copy" },
   { "ctx": "anything_else", "say": "¿Cuánto tiempo tarda?", "intent": "how_long" },
-  { "ctx": "anything_else", "say": "No, es todo, muchas gracias", "intent": ["thats_all", "yn:no", "g_thanks"] }
+  { "ctx": "anything_else", "say": "No, es todo, muchas gracias", "intent": ["thats_all", "yn:no", "g_thanks"] },
+  { "ctx": "check_all", "say": "Sí, me falta algo", "intent": ["missing_what", "missing_some"], "not": ["all_there", "all_there_ctx"], "note": "audit 5 Nov, blind: asks what is missing" },
+  { "ctx": "check_all", "say": "Nada, está completa", "intent": ["all_there", "all_there_ctx"], "not": ["missing_some", "missing_what_ctx"], "note": "audit 5 Nov, blind" },
+  { "ctx": "check_all", "say": "El efectivo", "intent": "missing_what_ctx", "not": ["all_there", "all_there_ctx"], "note": "audit 5 Nov, blind: a bare thing at the check is what is missing" },
+  { "ctx": "found", "say": "¿Y dónde la encontraron?", "intent": "found_who_ctx", "not": ["its_mine", "not_mine"], "note": "audit 5 Nov, blind" },
+  { "ctx": "found", "say": "¿Quién la trajo?", "intent": "found_who_ctx", "not": ["its_mine", "not_mine"], "note": "audit 5 Nov, blind" },
+  { "ctx": "anything_else", "say": "¿Me puede repetir el número de folio?", "intent": "folio_q", "note": "audit 5 Nov, blind" },
+  { "ctx": "anything_else", "say": "¿Cuál era el número del reporte?", "intent": "folio_q", "note": "audit 5 Nov, blind" },
+  { "ctx": "report", "say": "¿Usted habla inglés?", "intent": "english_q", "note": "audit 5 Nov, blind" },
+  { "ctx": "anything_else", "say": "¿Es obligatorio ir al Ministerio Público?", "intent": "mp_optional", "not": ["mp_ok", "mp_where"], "note": "audit 5 Nov, blind" },
+  { "ctx": "anything_else", "say": "Necesito una constancia de extravío", "intent": "constancia", "not": ["copy"], "note": "audit 5 Nov, blind" },
+  { "ctx": "anything_else", "say": "¿Me van a llamar?", "intent": "chances", "note": "audit 5 Nov, blind" },
+  { "ctx": "anything_else", "say": "¿Hay cámaras en la calle?", "intent": "q_search", "not": ["contents"], "note": "audit 5 Nov, blind" },
+  { "ctx": "what_item", "say": "Las traía en mi mochila", "intent": "what_item_ctx", "slots": { "item": "backpack" }, "note": "audit 5 Nov, blind" }
 ] }
