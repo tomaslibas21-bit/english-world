@@ -452,5 +452,11 @@
   { "ctx": "tip", "say": "Twenty percent for the tip", "intent": "tip_ctx" },
   { "ctx": "tip", "say": "Add twenty percent", "intent": "tip_ctx" },
   { "ctx": "tip", "say": "Twenty percent is too much", "intent": "any", "not": ["tip_ctx", "tip_give"] },
-  { "ctx": "tip", "say": "Let's not do twenty percent", "intent": "any", "not": ["tip_ctx", "tip_give"] }
+  { "ctx": "tip", "say": "Let's not do twenty percent", "intent": "any", "not": ["tip_ctx", "tip_give"] },
+  {"ctx": "dessert", "say": "A dessert, please.", "intent": "dessert_some_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dessert", "say": "Yes, a dessert.", "intent": "dessert_some_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dessert", "say": "Dessert.", "intent": "dessert_some_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "check", "say": "Something sweet, please.", "intent": "dessert_some_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dessert", "say": "No dessert for me, thanks.", "intent": "any", "not": ["dessert_some_ctx"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dessert", "say": "A dessert, please.", "intent": "any", "not": ["order", "check_ask"], "note": "logic audit 5 Nov 2026"}
 ]}

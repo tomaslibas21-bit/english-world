@@ -238,5 +238,10 @@
   {"ctx": "help", "say": "My cat likes fish", "intent": "none"},
   {"ctx": "deposit", "say": "It's raining outside", "intent": "none"},
   {"ctx": "more", "say": "I play basketball on Sundays", "intent": "none"},
-  {"ctx": "more", "say": "I don't want to send money", "intent": "any", "not": ["transfer_q"]}
+  {"ctx": "more", "say": "I don't want to send money", "intent": "any", "not": ["transfer_q"]},
+  {"ctx": "acct_type", "say": "The first one.", "intent": "acct_type_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "acct_type", "say": "The second one, please.", "intent": "acct_type_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "cash_offer", "say": "I don't know.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "cash_offer", "say": "I don't know.", "intent": "any", "not": ["ask_difference"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "savings", "say": "Is it free?", "intent": "fee_q", "note": "logic audit 5 Nov 2026"}
 ]}

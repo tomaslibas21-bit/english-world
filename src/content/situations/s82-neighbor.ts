@@ -11,7 +11,7 @@
 
 import type { Ctx, EntityDef, SituationDef } from "../types";
 import { ent, t } from "../dsl";
-import { expectHowAreYou } from "../global";
+import { expectHowAreYou, GLOBAL_HANDLERS } from "../global";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -293,6 +293,9 @@ export const neighbor: SituationDef = {
     ] },
 
     // --- coffee ---------------------------------------------------------------------------
+    // at Rita's complaint: "Sure, no worries" (not understood); "My music?" / "What time?" (read as yes to coffee)
+    complaint_ok_ctx: { patterns: ["[sure | okay | ok | of course | yes] no worries", "[sure | okay | ok | yes] (will do | i will | i will be quieter | i will keep it down)", "of course [i will | no problem]"] },
+    which_music_ctx: { patterns: ["[was it] my music", "(what | which) music", "(what time | when) [was it | was that]", "last night", "really"] },
     coffee_yes: { patterns: [
       "i would love to #h:love_to", "[yes] (that sounds | that would be | sounds) (great | lovely | nice | good | wonderful) #h:sounds_great",
       "[sure | yes] what time #h:what_time", "i would like that", "i am not busy [on sunday]", "i am free [on sunday]",
@@ -786,7 +789,10 @@ export const neighbor: SituationDef = {
         { lt: "Paklausti apie šiukšles, skalbyklą, paštą", hint: "building" },
         { lt: "Atsiprašyti dėl triukšmo arba paprašyti tylos", hint: "noise" },
       ],
-      yes: (c) => { c.say("favor_what"); c.hold(); },
+      yes: (c) => {
+        if (/\b(fine|good|great|well|okay|ok)\b/i.test(c.heard) && /\bthanks?\b|\bthank you\b/i.test(c.heard)) { c.say("g_glad"); c.hold(); return; }
+        c.say("favor_what"); c.hold();
+      },
       no: (c) => { c.s.needsNo = (c.s.needsNo ?? 0) + 1; } },
     { id: "coffee", when: (c) => !!c.s.coffeeInvite && (!!c.s.goal || (c.s.needsNo ?? 0) >= 2), done: (c) => !!c.s.coffeeDone,
       ask: (c) => {
@@ -898,9 +904,12 @@ export const neighbor: SituationDef = {
         return;
       }
       c.say("plants_when");
-      c.expect({ id: "away_when", optional: true, expects: ["away_when_ctx"], hints: ["away"],
+      c.expect({ id: "away_when", optional: true, expects: ["away_when_ctx", "g_dontknow"], hints: ["away"],
         suggest: [{ lt: "Pasakyti, kada išvyksti", hint: "away" }],
-        on: { away_when_ctx: (cc) => { cc.say("plants_key"); if (cc.chance(0.5)) cc.say("trip"); } } });
+        on: {
+          away_when_ctx: (cc) => { cc.say("plants_key"); if (cc.chance(0.5)) cc.say("trip"); },
+          g_dontknow: (cc) => { if (!cc.s.keySaid) { cc.s.keySaid = true; cc.say("plants_key"); } },
+        } });
     },
     take_package(c) { goal(c, "package"); c.say("package_ok"); },
     borrow(c, slots) {
@@ -929,9 +938,23 @@ export const neighbor: SituationDef = {
     noise_deny(c) { react(c, "ack"); },
 
     // --- coffee ---
-    coffee_yes(c) { if (c.s.coffeePending) askCoffeeTime(c); else c.say("like_react"); },
+    coffee_yes(c) {
+      if (c.s.coffeePending) { askCoffeeTime(c); return; }
+      if (!c.s.coffeeDone) return; // no invitation yet: nothing to accept ("That's great!")
+      c.say("like_react");
+    },
     coffee_no(c) { if (c.s.coffeeDone && PROPOSES_DAY.test(c.heard)) { react(c, "coffee_other_day"); return; } react(c, c.s.coffeeDone ? "coffee_decline_ok" : "ack"); },
     coffee_day(c) { react(c, "coffee_other_day"); },
+    // at her complaint only (the pending answers them): "Sure, no worries" / "My music?"
+    complaint_ok_ctx(c) { if (complaintOpen(c)) acceptApology(c); },
+    which_music_ctx(c) { if (complaintOpen(c)) { react(c, "complain2"); react(c, "complain3"); expectComplaint(c, true); } },
+    g_bye(c, slots) {
+      if (c.s.goal && !complaintOpen(c)) {
+        if (!known(c) && !c.s.trashTold) { c.say("fyi_trash"); c.s.trashTold = true; }
+        maybeComplete(c);
+      }
+      GLOBAL_HANDLERS.g_bye(c as any, slots);
+    },
     coffee_time_ctx(c, slots) { if (!isTwo(slots.time)) c.say("coffee_other_day"); else c.say("coffee_confirm"); },
     coffee_time_no(c) { c.say(c.s.coffeeTimeAsked ? "coffee_whenever" : "ack"); },
     going_away(c) { react(c, "trip"); },
@@ -974,6 +997,8 @@ export const neighbor: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Yes, should I bring anything?", intent: "coffee_yes" },
     { say: "Hi! I'm Tomas. I just moved in next door.", intent: "im_name_ctx", step: "intro" },
     { say: "I just moved in next door.", intent: "moved_in" },
     { say: "I'm your new neighbor.", intent: "moved_in" },
@@ -1122,12 +1147,15 @@ function building(c: Ctx) {
 
 /** Rita's complaint about the music: asked again once if the learner talks about something else, then dropped. */
 function expectComplaint(c: Ctx, optional: boolean) {
-  c.expect({ id: "complaint", optional, expects: ["noise_sorry", "noise_promise", "didnt_know", "noise_deny", "noise_reason", "g_sorry"], hints: ["noise"],
+  c.expect({ id: "complaint", optional, expects: ["noise_sorry", "noise_promise", "didnt_know", "noise_deny", "noise_reason", "g_sorry", "complaint_ok_ctx", "which_music_ctx"], hints: ["noise"],
     suggest: [{ lt: "Atsiprašyti ir pažadėti būti tyliau", hint: "noise" }],
     on: {
       noise_sorry: (cc) => { acceptApology(cc); }, noise_promise: (cc) => { acceptApology(cc); }, didnt_know: (cc) => { acceptApology(cc); },
       g_sorry: (cc) => { acceptApology(cc); }, noise_reason: (cc) => { acceptApology(cc); },
       noise_deny: (cc) => { cc.s.complaintDone = true; react(cc, "deny_react"); maybeComplete(cc); },
+      complaint_ok_ctx: (cc) => { acceptApology(cc); },
+      // "My music?" / "What time?": what she means, and the question stays ("That's great!" took it as yes to coffee)
+      which_music_ctx: (cc) => { react(cc, "complain2"); react(cc, "complain3"); expectComplaint(cc, true); },
     },
     yes: (cc) => { acceptApology(cc); }, no: (cc) => { cc.say("oh_okay"); },
     ask: optional ? undefined : (cc) => { cc.say("complain3"); expectComplaint(cc, true); } });

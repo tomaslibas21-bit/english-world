@@ -321,5 +321,15 @@
   {"ctx": "dosage", "say": "Tell me how to take it, please", "intent": "ask_dosage"},
   {"ctx": "dosage", "say": "I don't know the dosage", "intent": "ask_dosage"},
   {"ctx": "dosage", "say": "I know how to use it", "intent": "any", "not": ["ask_dosage"]},
-  {"ctx": "pay", "say": "Do you know how to take it?", "intent": "ask_dosage"}
+  {"ctx": "pay", "say": "Do you know how to take it?", "intent": "ask_dosage"},
+  {"ctx": "meds", "say": "I take antidepressants.", "intent": "meds_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "meds", "say": "I take heart medicine.", "intent": "meds_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "meds", "say": "I take another medicine.", "intent": "meds_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "allergy", "say": "I'm allergic to acetaminophen.", "intent": "allergy_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dosage", "say": "Oh, but I'm allergic to ibuprofen.", "intent": "allergy_ans", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dosage", "say": "So-so.", "intent": "dose_unsure_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "dosage", "say": "So-so.", "intent": "any", "not": ["g_howareyou_bad"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "Can I have the receipt?", "intent": "receipt_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "Can I have the receipt?", "intent": "any", "not": ["product_unknown"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "recommend", "say": "Can I have ibuprofen instead?", "intent": "change_product", "note": "logic audit 5 Nov 2026"}
 ]}

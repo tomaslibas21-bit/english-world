@@ -16,6 +16,8 @@ import { expectHowAreYou } from "../global";
 // Prices (cents)
 
 const CUT = 3500, WASH = 500, DRY = 500, BANGS = 1500, SORRY_OFF = 1000;
+/** Jessie's offers: a polite "I'm good, thanks" there is a no. */
+const OFFER_STEPS = ["drink", "bangs_q", "wash", "blowdry", "book"];
 
 function total(c: Ctx): number {
   let p = c.s.service === "bangs" ? BANGS : CUT;
@@ -177,6 +179,12 @@ export const salon: SituationDef = {
       "(short | shorter) (at | on) the (back and sides | sides and back) #sides", "(not more than | no more than | maximum | max) (@cm | @howmuch)", "[just | only] (a | one) (centimeter | centimetre) #cm #c1 #tip:uk_cm",
     ] },
 
+    // at an offer (a drink, the bangs, a wash, a blow-dry, the next appointment): "I'm good, thanks" / "That's fine,
+    // thanks" is the polite no ("Sounds good." and the question again; a wash or a blow-dry could be bought on it)
+    decline_ctx: { patterns: ["[no] i am (good | fine | okay | ok | all right) [thanks | thank you]", "[no] that is (okay | fine | all right) [thanks | thank you]",
+      "[no] i will pass [thanks | thank you]", "[no] (not today | not this time) [thanks | thank you]"] },
+    // "Is it extra?" / "Is it included?" at the wash or the blow-dry (not understood)
+    extra_q: { patterns: ["(is | does) (it | that) (extra | cost extra | cost more)", "is (it | that) included [in the price]", "is (it | that) free", "do i (have to | need to) pay (extra | more) [for (it | that)]", "how much extra [is it]"] },
     confirm_yes: { patterns: ["[yes] that is (right | correct | perfect | great | good | fine | okay) [thanks]", "[yes] about an inch is (fine | good | perfect)", "[yes] exactly"] },
     wash_request: { patterns: [
       "(can | could) i (get | have) a wash [too | first | as well]", "i would like a wash [too | first | as well]", "[a] wash and (a trim | a cut | cut | a haircut) [please] #trim",
@@ -230,6 +238,7 @@ export const salon: SituationDef = {
     ] },
     polite_ok: { patterns: [
       "(it is | that is) (okay | fine | all right) [it will grow back] #h:grow_back", "it will grow back #h:grow_back", "(do not | don't) worry [about it]", "no (problem | worries)",
+      "it does not matter", "never mind", "no big deal", "(it is | that is) not a big deal",
       "i (still | actually) like it #h:still_like", "it (still | actually) looks (good | nice | great)", "(it is | that is) (okay | fine) i like it",
     ] },
     dont_like: { patterns: ["i do not like it #blunt", "i hate it #blunt", "(it is | that is) (terrible | awful | horrible) #blunt",
@@ -744,7 +753,7 @@ export const salon: SituationDef = {
       suggest: [{ lt: "Pasakyti savo vardą", hint: "name" }] },
     { id: "drink", when: (c) => !!c.s.checkedIn && c.s.askDrink, done: (c) => c.s.drink !== undefined,
       // asked again after a side question: "Have a seat right here." only the first time
-      ask: (c) => { if (!c.s.seated) { c.s.seated = true; c.say("have_seat"); } c.say("offer_drink"); }, expects: ["drink_ans"],
+      ask: (c) => { if (!c.s.seated) { c.s.seated = true; c.say("have_seat"); } c.say("offer_drink"); }, expects: ["drink_ans", "decline_ctx"],
       suggest: [{ lt: "Atsakyti, ar nori vandens ar kavos", hint: "drink" }],
       yes: (c) => { c.s.drink = "water"; c.say("drink_ok"); },
       no: (c) => { c.s.drink = "none"; c.say("no_problem"); } },
@@ -762,12 +771,12 @@ export const salon: SituationDef = {
       yes: (c) => { c.s.layers = true; c.say("ack"); },
       no: (c) => { c.s.layers = false; c.say("ack"); } },
     { id: "bangs_q", when: (c) => !!c.s.lengthSet && c.s.askBangs && c.s.service !== "bangs", done: (c) => c.s.bangs !== undefined,
-      ask: (c) => c.say("ask_bangs"), expects: ["bangs_only", "no_bangs"],
+      ask: (c) => c.say("ask_bangs"), expects: ["bangs_only", "no_bangs", "decline_ctx"],
       suggest: [{ lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
       yes: (c) => { c.s.bangs = true; c.say("ack"); },
       no: (c) => { c.s.bangs = false; c.say("ack"); } },
     { id: "wash", when: (c) => !!c.s.service && (!!c.s.lengthSet || c.s.service === "bangs") && c.s.askWash, done: (c) => c.s.wash !== undefined,
-      ask: (c) => { if (c.s.wantWash) { startWash(c); return; } c.say("ask_wash"); }, expects: ["wash_request", "no_wash"],
+      ask: (c) => { if (c.s.wantWash) { startWash(c); return; } c.say("ask_wash"); }, expects: ["wash_request", "no_wash", "decline_ctx", "extra_q"],
       suggest: [{ lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
       yes: (c) => { startWash(c); },
       no: (c) => { c.s.wash = false; c.say("no_wash_ok"); } },
@@ -780,7 +789,7 @@ export const salon: SituationDef = {
       },
       expects: ["react_funny", "ask_cat", "weekend_ctx", "vacation_ctx", "from_ans", "pets_ans"] },
     { id: "blowdry", when: (c) => !!c.s.chatDone && c.s.askDry, done: (c) => c.s.blowdry !== undefined,
-      ask: (c) => c.say("ask_blowdry"), expects: ["style", "ask_cat"],
+      ask: (c) => c.say("ask_blowdry"), expects: ["style", "ask_cat", "decline_ctx", "extra_q"],
       suggest: [{ lt: "Atsakyti: taip arba ne", hint: "g_yesno" }, { lt: "Pasakyti, kaip išdžiovinti", hint: "style" }],
       yes: (c) => { c.s.blowdry = true; c.say("ask_style"); c.expect(stylePending(c)); },
       no: (c) => { c.s.blowdry = false; c.say("no_dry_ok"); } },
@@ -799,7 +808,10 @@ export const salon: SituationDef = {
       },
       expects: ["love_it", "more_off", "shorter_than", "polite_ok", "dont_like", "ask_cat"],
       suggest: [{ lt: "Pasakyti, kaip patinka", hint: "result" }],
-      yes: (c) => { c.s.revealed = true; c.say("love_reply"); },
+      yes: (c) => {
+        if (c.s.shortSaid && !c.s.discount) { salon.handlers.shorter_than(c, {}, { intent: "shorter_than", slots: {}, tags: [] }); return; }
+        c.s.revealed = true; c.say("love_reply");
+      },
       no: (c) => { salon.handlers.dont_like(c, {}, { intent: "dont_like", slots: {}, tags: [] }); } },
     { id: "pay", when: (c) => !!c.s.revealed, done: (c) => !!c.s.paid,
       ask: (c) => {
@@ -810,7 +822,7 @@ export const salon: SituationDef = {
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "keep_change", "add_tip", "ask_owe"],
       suggest: [{ lt: "Susimokėti (ir palikti arbatpinigių)", hint: "pay" }] },
     { id: "book", when: (c) => !!c.s.paid && (c.s.askBook || c.s.wantBook), done: (c) => c.s.booked !== undefined,
-      ask: (c) => c.say("ask_book"), expects: ["book_when", "book_later"],
+      ask: (c) => c.say("ask_book"), expects: ["book_when", "book_later", "decline_ctx"],
       suggest: [{ lt: "Užsirašyti kitam kartui (ar ne)", hint: "book" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
       yes: (c) => {
         c.say("book_offer");
@@ -921,9 +933,13 @@ export const salon: SituationDef = {
       if (!c.s.lengthSet && c.step === "length" && !saysLength) { c.s.lengthSet = true; c.s.inches = 1; c.say("len_inch"); }
     },
     length(c, slots, seg) {
+      // at the twist ("I took off a bit more than we said"): "Yes, a little" is the answer, not a new length
+      if (c.s.cutDone) { if (c.s.shortSaid && !c.s.discount) salon.handlers.shorter_than(c, slots, seg); return; }
       if (!c.s.checkedIn) autoCheckIn(c);
       if (!c.s.service || c.s.service === "vague" || c.s.service === "bangs") c.s.service = c.s.service === "bangs" ? "bangs" : "trim";
       const tags = seg.tags;
+      const big = (tags.includes("cm") && Number(slots.c) > 20) || (!tags.includes("cm") && typeof slots.n === "number" && slots.n > 8 && !inchesFromTags(tags));
+      if (big) { c.s.lengthSet = true; c.s.inches = 8; c.say("short_ok"); return; }
       if (tags.includes("cm")) {
         const cm = tags.includes("c1") ? 1 : Math.min(20, Math.max(1, Number(slots.c) || 2));
         const inches = Math.min(8, Math.max(1, Math.round(cm / 2.54)));
@@ -950,7 +966,16 @@ export const salon: SituationDef = {
       else if (c.s.inches === 1.5) c.say("len_1half");
       else c.say("len_n", { num: Math.min(8, Math.round(c.s.inches)) });
     },
-    confirm_yes(c) { c.say("ack"); },
+    confirm_yes(c, slots, seg) {
+      if (OFFER_STEPS.includes(c.step ?? "") && /\bthanks?\b|\bthank you\b/i.test(c.heard)) { salon.handlers.decline_ctx(c, slots, seg); return; }
+      c.say("ack");
+    },
+    decline_ctx(c) {
+      const st = salon.steps.find((x) => x.id === c.step);
+      if (st && OFFER_STEPS.includes(st.id) && st.no) { st.no(c); return; }
+      c.say("ack");
+    },
+    extra_q(c) { c.say("price_extras"); },
     wash_request(c, _slots, seg) {
       if (!c.s.checkedIn) autoCheckIn(c);
       c.s.wantWash = true; c.s.askWash = true;
@@ -1028,7 +1053,11 @@ export const salon: SituationDef = {
         no: (cc) => { cc.s.revealed = true; cc.say("polite_reply"); },
         ask: (cc) => cc.say("dont_like_reply") });
     },
-    react_funny(c) { if (firstThisTurn(c, "react")) c.say("cat_laugh"); },
+    react_funny(c, slots, seg) {
+      // "Oh no!" / "Seriously?" at "I took off a bit more than we said": the apology and the discount ("I know, right?")
+      if (c.s.shortSaid && !c.s.discount && c.s.cutDone && !c.s.revealed) { if (firstThisTurn(c, "react")) salon.handlers.shorter_than(c, slots, seg); return; }
+      if (firstThisTurn(c, "react")) c.say("cat_laugh");
+    },
     ask_cat(c) { c.say("cat_name"); },
     pets_ans(c, _slots, seg) {
       if (!firstThisTurn(c, "react")) return;
@@ -1048,6 +1077,8 @@ export const salon: SituationDef = {
     vacation_ctx(c, _slots, seg) { if (!firstThisTurn(c, "react")) return; if (seg.tags.includes("relax")) c.say("react_relax"); else c.say("react_fun"); },
     ask_jessie(c) { c.say("jessie_weekend"); },
     ask_owe(c) {
+      // at the wash or the blow-dry: that extra's price, not the haircut's first
+      if (!c.s.cutDone && (c.step === "wash" || c.step === "blowdry")) { c.say("price_extras"); return; }
       if (!c.s.cutDone) {
         c.say(c.s.service === "bangs" ? "price_bangs" : "price_cut", { price: c.s.service === "bangs" ? BANGS : CUT });
         c.say("price_extras");
@@ -1115,6 +1146,11 @@ export const salon: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "That's fine, thanks.", intent: "decline_ctx", step: "wash", not: ["wash_request"] },
+    { say: "I'm good, thanks.", intent: "decline_ctx", step: "blowdry" },
+    { say: "Is it extra?", intent: "extra_q", step: "wash" },
+    { say: "It doesn't matter.", intent: "polite_ok", step: "reveal" },
     // hint patterns
     { say: "I have an appointment at three.", intent: "appt_have" },
     { say: "No, I don't have an appointment.", intent: "appt_none", not: ["appt_have"] },

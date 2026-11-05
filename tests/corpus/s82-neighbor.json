@@ -291,5 +291,10 @@
   { "ctx": "coffee", "say": "Sunday doesn't work for me, how about Saturday?", "intent": "coffee_day" },
   { "ctx": "coffee", "say": "Sorry, I can't. Maybe next week?", "intent": "coffee_day" },
   { "ctx": "coffee", "say": "I can't, maybe another time", "intent": "coffee_no", "not": ["coffee_yes", "coffee_day"] },
-  { "ctx": "coffee", "say": "I'm busy on Sunday, maybe next time", "intent": "coffee_no", "not": ["coffee_yes", "coffee_day"] }
+  { "ctx": "coffee", "say": "I'm busy on Sunday, maybe next time", "intent": "coffee_no", "not": ["coffee_yes", "coffee_day"] },
+  {"ctx": "complaint", "say": "Sure, no worries.", "intent": "complaint_ok_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "complaint", "say": "My music?", "intent": "which_music_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "complaint", "say": "What time?", "intent": "which_music_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "complaint", "say": "What time?", "intent": "any", "not": ["coffee_yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "away_when", "say": "I don't know yet.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"}
 ]}

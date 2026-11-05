@@ -489,5 +489,8 @@
   { "ctx": "decision", "say": "I'm not gonna take it", "intent": "any", "not": ["take"] },
   { "ctx": "questions", "say": "I don't have a dog", "intent": "any", "not": ["ask_pets", "have_pet"] },
   { "ctx": "problem", "say": "Pretty good, thanks", "intent": "g_howareyou_answer" },
-  { "ctx": "problem", "say": "Good, but the heating doesn't work", "intent": "report_problem", "not": ["all_good"] }
+  { "ctx": "problem", "say": "Good, but the heating doesn't work", "intent": "report_problem", "not": ["all_good"] },
+  {"ctx": "questions", "say": "Is there internet?", "intent": "ask_utilities", "slots": {"utility": "internet"}, "note": "logic audit 5 Nov 2026"},
+  {"ctx": "questions", "say": "Is there internet?", "intent": "any", "not": ["ask_unknown"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "decision", "say": "I really like it.", "intent": "like_it", "note": "logic audit 5 Nov 2026"}
 ]}

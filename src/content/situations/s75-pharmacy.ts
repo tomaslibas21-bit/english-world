@@ -98,10 +98,22 @@ function sayP(c: Ctx, line: string, id = product(c), vars: Record<string, any> =
   c.say(pl ? line + "_pl" : line, { ...(id && id !== "rx" ? { X: bind(id) } : {}), ...vars });
 }
 
+/** Ibuprofen after an aspirin / ibuprofen allergy, with blood-pressure or heart pills, antidepressants or a
+ *  medicine the customer can't name; acetaminophen after an acetaminophen allergy. (It offered ibuprofen as "the
+ *  other one" right after "Ibuprofen can cause a reaction too", and sold it when asked for.) */
+function unsafe(c: Ctx, id: string): boolean {
+  if (id === "ibuprofen") return c.s.allergy === "nsaid" || c.s.meds === "bp" || c.s.meds === "risk";
+  if (id === "acetaminophen") return c.s.allergy === "aceta";
+  return false;
+}
+/** Why ibuprofen isn't for this customer (the allergy or the other medication). */
+function unsafeWhy(c: Ctx) { c.say(c.s.allergy === "nsaid" ? "nsaid_reason" : "bp_reason"); }
+
 /** The recommended product for the symptom, adjusted for allergies and other medication. */
 function recommendation(c: Ctx): string {
   let p = REC[c.s.symptom] ?? "ibuprofen";
-  if (p === "ibuprofen" && (c.s.allergy === "nsaid" || c.s.meds === "bp")) p = "acetaminophen";
+  if (p === "ibuprofen" && unsafe(c, "ibuprofen")) p = "acetaminophen";
+  else if (p === "acetaminophen" && unsafe(c, "acetaminophen") && !unsafe(c, "ibuprofen")) p = "ibuprofen";
   return p;
 }
 
@@ -271,7 +283,7 @@ export const pharmacy: SituationDef = {
       rel_child: "(son | daughter | kid | child | little boy | little girl | baby | little one | kids | children | boy | girl)",
       rel_adult: "(husband | wife | mom | mother | dad | father | friend | partner | boyfriend | girlfriend | grandma | grandpa | grandmother | grandfather | brother | sister | colleague | neighbor | roommate)",
       vit_item: "(vitamins | a multivitamin | multivitamins | vitamin (c | d | b12 | b) | fish oil | omega three | magnesium | iron | supplements | probiotics | calcium)",
-      allergen: "(aspirin #nsaid | ibuprofen #nsaid | advil #nsaid | nsaids #nsaid | penicillin #pen | amoxicillin #pen | [some] antibiotics #other | nuts #other | peanuts #other | latex #other | codeine #other | cats #other | dogs #other | pollen #other | dust #other | hay fever #other | grass #other | sulfa #other | shellfish #other | eggs #other | milk #other | lactose #other | gluten #other)",
+      allergen: "(aspirin #nsaid | ibuprofen #nsaid | advil #nsaid | nsaids #nsaid | anti inflammatories #nsaid | acetaminophen #aceta | tylenol #aceta | paracetamol #aceta | penicillin #pen | amoxicillin #pen | [some] antibiotics #other | nuts #other | peanuts #other | latex #other | codeine #other | cats #other | dogs #other | pollen #other | dust #other | hay fever #other | grass #other | sulfa #other | shellfish #other | eggs #other | milk #other | lactose #other | gluten #other)",
       badly: "(bad | terrible | awful | little | slight | mild | really bad | horrible | nasty | slight)",
       for_sym: "for [a | an | my | the | this] [@badly] {symptom}",
       it_ref: "(it | this | that | them | they | these | those | this one | that one | the medicine | this medicine)",
@@ -343,6 +355,10 @@ export const pharmacy: SituationDef = {
       "(can | could) i (have | get | try) @prod instead", "[actually] @prod instead", "i would (rather | prefer) [have | take] @prod", "what about @prod", "(is | would) @prod (better | okay | fine)",
       "@prod (is | would be) (fine | okay | good | great | better) [for me]", "i (prefer | like) @prod [better | more]", "(maybe | how about) @prod", "i (usually | always) (take | use) @prod",
     ] },
+    // "So-so" to "Do you know how to take it?" was the how-are-you answer ("Oh no, I'm sorry to hear that")
+    dose_unsure_ctx: { patterns: ["so so", "more or less", "kind of", "sort of", "not (really | exactly | quite)"] },
+    // "Can I have the receipt?" ("I'm sorry, we don't have that. For anything stronger, you'd need a prescription.")
+    receipt_q: { patterns: ["(can | could | may) i (have | get) (the | a | my) receipt [please]", "[the] receipt [please]", "(do i get | is there) a receipt"] },
     other_option: { patterns: [
       "(do you have | is there) (anything | something) else #h:rec_else", "(is there | do you have) (another | a different) (one | option | medicine | brand)",
       "i do not (want | like) (that one | that | this one)", "(something | anything) else [please]", "i would prefer something else",
@@ -391,7 +407,11 @@ export const pharmacy: SituationDef = {
       "[no] (nothing | nothing else) #none", "[no] not at the moment #none", "(no | nope) none #none",
       "(just | only) [some] (vitamins | a multivitamin | multivitamins | vitamin c | vitamin d) #vit #h:meds_vit", "i (take | am taking) [some] vitamins #vit",
       "[yes] i (take | am taking | am on) (blood pressure (pills | medicine | medication) | something for my (blood pressure | heart) | blood thinners | pills for my blood pressure | heart medication) #bp #h:meds_bp",
-      "[yes] i (take | am taking | am on) (birth control | allergy pills | antidepressants | insulin | thyroid medication | sleeping pills) #other",
+      "[yes] i (take | am taking | am on) (birth control | allergy pills | insulin | thyroid medication | sleeping pills) #other",
+      // ibuprofen isn't for them either (antidepressants), or "I take another medicine" (which one?)
+      "[yes] i (take | am taking | am on) (antidepressants | something for depression | pills for depression) #risk", "[yes] (just | only) antidepressants #risk", "[yes] for depression #risk",
+      "[yes] i (take | am taking | am on) (heart (medicine | pills | medication) | medicine for my heart | pills for my heart) #bp",
+      "[yes] i (take | am taking | use) (another | other | some other | a different) (medicine | medication | medicines | medications | pills) #unknown",
       // "None.", "Only blood pressure pills", "I take aspirin every day", "No, no other medicine"
       "none [at all] #none", "[no] i (did not | have not) (take | taken) anything [today] #none", "[no] no (other)? (medicine | medicines | medications | medication | pills | meds) [right now | at the moment] #none",
       "[no] i do not (take | use) (any | other | any other)? (medicine | medicines | medications | medication | pills | meds | anything) [else] [right now | at the moment | regularly] #none",
@@ -400,15 +420,17 @@ export const pharmacy: SituationDef = {
       "(just | only) [my] [high] blood pressure (pills | medicine | medication | tablets) #bp",
       "[yes] i (take | am taking | am on | use) (pills | medicine | medication | tablets | something) for [my] [high] (blood pressure | heart) #bp",
       "[yes] i (take | am taking) [an | some | baby] aspirin [every day | daily | a day] #bp", "[yes] (blood thinners | heart medication | aspirin every day) #bp",
-      "(just | only) (birth control | the pill | allergy pills | antidepressants | insulin | thyroid medication | sleeping pills | antibiotics) #other",
+      "(just | only) (birth control | the pill | allergy pills | insulin | thyroid medication | sleeping pills | antibiotics) #other",
       "[yes] i (take | am taking | am on | use) (antibiotics | something for (my thyroid | diabetes | sleep | my stomach | cholesterol) | (pills | medicine) for (my thyroid | diabetes | sleep | cholesterol)) #other",
       "(just | only) [my] (pills | medicine | medication | tablets) for [my | the] [high] (heart | blood pressure) #bp", "[yes] for (my | the) [high] (heart | blood pressure) #bp",
-      "[yes] for (diabetes | my thyroid | the thyroid | thyroid | cholesterol | sleep | sleeping | depression | my stomach) #other",
+      "[yes] for (diabetes | my thyroid | the thyroid | thyroid | cholesterol | sleep | sleeping | my stomach) #other",
     ] },
     // bare answers to "Are you taking any other medications?" ("Yes, antibiotics.")
-    meds_ctx: { patterns: ["[yes] (antibiotics | insulin | birth control | antidepressants | sleeping pills | thyroid pills | statins) #other", "[yes] @vit_item [and @vit_item] #vit"] },
+    meds_ctx: { patterns: ["[yes] (antibiotics | insulin | birth control | sleeping pills | thyroid pills | statins) #other", "[yes] antidepressants #risk", "[yes] @vit_item [and @vit_item] #vit"] },
     allergy_ans: { patterns: [
       "[no] i am not allergic to anything #none #h:allergy_none", "[no] not that i know of #none", "[no] no allergies #none", "[no] i do not have any allergies #none #h:allergy_no_any",
+      // "Oh, but I'm allergic to ibuprofen" with it on the counter (not understood)
+      "[oh | wait] but i am [very] allergic (to | on | for) @allergen [and @allergen]", "[oh | wait] but i have [an] allergy (to | for | on) @allergen",
       "[yes] i am allergic to (aspirin #nsaid | ibuprofen #nsaid | advil #nsaid | penicillin #pen | nuts #other | peanuts #other | latex #other | codeine #other | cats #other | pollen #other | dust #other) #h:allergy_yes",
       "[yes] (aspirin #nsaid | penicillin #pen | ibuprofen #nsaid)", "[yes] i have a (nut | peanut | penicillin #pen | aspirin #nsaid) allergy",
       // "None.", "I have allergy for penicillin", "allergic on aspirin" (LT: alergiškas aspirinui), "I can't take ibuprofen"
@@ -1169,7 +1191,9 @@ export const pharmacy: SituationDef = {
       ask: (c) => c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_meds_other" : "ask_meds"), expects: ["meds_ans", "meds_ctx"],
       suggest: [{ lt: "Pasakyti, ar vartoji kitų vaistų", hint: "meds" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
       yes: (c) => { c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_meds_which_other" : "ask_meds_which"); c.hold(); },
-      no: (c) => { c.s.meds = "none"; c.say("ack"); } },
+      no: (c) => { c.s.meds = "none"; c.say("ack"); },
+      // "I don't know" ("Take your time" held the turn): unknown medication, so no ibuprofen (the reason comes with it)
+      help: (c) => { c.s.meds = "risk"; c.say("ack"); askNext(c); } },
     { id: "allergy", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && c.s.askAllergy, done: (c) => !!c.s.allergy,
       ask: (c) => c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_allergy_other" : "ask_allergy"), expects: ["allergy_ans", "allergy_ctx"],
       suggest: [{ lt: "Pasakyti, ar turi alergijų", hint: "allergy" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
@@ -1182,7 +1206,7 @@ export const pharmacy: SituationDef = {
         if (!c.s.recSaid) {
           c.s.recSaid = true;
           if (p === "acetaminophen" && REC[c.s.symptom] === "ibuprofen") {
-            if (c.s.allergy === "nsaid") c.say("nsaid_reason"); else if (c.s.meds === "bp") c.say("bp_reason");
+            if (c.s.allergy === "nsaid") c.say("nsaid_reason"); else if (c.s.meds === "bp" || c.s.meds === "risk") c.say("bp_reason");
             c.say("switch_aceta");
           } else sayP(c, c.s.long ? "rec_fornow" : "rec", p);
           if (c.s.forWho === "child" && at(p).med) c.say("kids_formula");
@@ -1215,7 +1239,7 @@ export const pharmacy: SituationDef = {
         sayP(c, "ask_questions");
         guideFor(c, "dosage", { hint: itemHint("dose", product(c)) }, [{ lt: "Paklausti apie vaistą", hint: itemHint("ask", product(c)) }]);
       },
-      expects: ["ask_dosage", "first_time", "not_first", "know_ctx", "ask_drowsy", "ask_food", "ask_alcohol", "ask_kids", "ask_how_long_take", "ask_rx_needed", "ask_side_effects"],
+      expects: ["ask_dosage", "first_time", "not_first", "know_ctx", "ask_drowsy", "ask_food", "ask_alcohol", "ask_kids", "ask_how_long_take", "ask_rx_needed", "ask_side_effects", "dose_unsure_ctx"],
       suggest: [{ lt: "Paklausti, kaip vartoti", hint: "dose", options: "product" }, { lt: "Paklausti apie vaistą", hint: "ask", options: "product" }],
       // "I don't know." to "Do you know how to take it?": the directions (not "Sure, take your time.")
       help: (c) => { if (c.s.mode === "rx") c.say("rx_how"); giveDosage(c); },
@@ -1354,6 +1378,7 @@ export const pharmacy: SituationDef = {
     need_product(c, slots) {
       const id = last(slots.product);
       if (!id) return;
+      if (steerAway(c, id)) return;
       if (c.s.mode !== "rx") c.s.rxOffer = false;
       if (c.s.mode === "rx" && !rx(c).ready) { c.say("product_ok"); basket(c).push(id); return; }
       const first = !product(c) || product(c) === "rx";
@@ -1365,9 +1390,12 @@ export const pharmacy: SituationDef = {
       sayP(c, "here_it_is", id);
     },
     product_unknown(c) { c.say("unknown_product"); c.say("rx_stronger"); },
+    dose_unsure_ctx(c) { if (c.step === "dosage" || product(c)) giveDosage(c); },
+    receipt_q(c) { c.say("product_ok"); if (c.s.paid && !c.s.receiptGiven) { c.s.receiptGiven = true; c.event("give", { item: "receipt" }); } },
     change_product(c, slots) {
       const id = last(slots.product);
       if (!id) return;
+      if (steerAway(c, id)) return;
       if (product(c) && product(c) !== id && at(product(c)!).med && at(id).med) {
         const i = basket(c).indexOf(product(c)!);
         if (i >= 0) basket(c).splice(i, 1);
@@ -1379,9 +1407,11 @@ export const pharmacy: SituationDef = {
     },
     other_option(c) {
       if (c.step === "recommend" || (c.s.offer && !product(c))) { declineOffer(c); return; }
+      // "Do you have something natural?" before anything: what for ("Okay. If you change your mind…" answered nothing)
+      if (!product(c) && !c.s.symptom && !c.s.offer) { c.say("ask_symptoms"); c.hold(); return; }
       const cur = product(c);
       const alt = cur ? ALT[cur] : undefined;
-      if (alt) { c.say("rec_alt", { X: bind(alt) }); c.say("rec_alt_q"); c.s.offer = alt; c.expect(altPending(c, alt)); }
+      if (alt && !unsafe(c, alt)) { c.say("rec_alt", { X: bind(alt) }); c.say("rec_alt_q"); c.s.offer = alt; c.expect(altPending(c, alt)); }
       else c.say("rec_none");
     },
     accept_rec(c) { if (!product(c)) acceptOffer(c); else c.say("product_ok"); },
@@ -1406,13 +1436,30 @@ export const pharmacy: SituationDef = {
     meds_ctx(c, slots, seg) { pharmacy.handlers.meds_ans(c, slots, seg); },
     allergy_ctx(c, slots, seg) { pharmacy.handlers.allergy_ans(c, slots, seg); },
     meds_ans(c, _slots, seg) {
+      // "I take another medicine": which one (it was taken as "nothing")
+      if (seg.tags.includes("unknown")) { c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_meds_which_other" : "ask_meds_which"); c.hold(); return; }
       if (seg.tags.includes("bp")) c.s.meds = "bp";
+      else if (seg.tags.includes("risk")) c.s.meds = "risk";
       else if (seg.tags.includes("vit")) c.s.meds = "vit";
       else if (seg.tags.includes("other")) c.s.meds = "other";
       else c.s.meds = "none";
+      // said after ibuprofen was offered or taken ("Okay." and ibuprofen anyway): acetaminophen, with the reason
+      if (unsafe(c, "ibuprofen") && product(c) === "ibuprofen") {
+        const i = basket(c).indexOf("ibuprofen"); if (i >= 0) basket(c).splice(i, 1);
+        c.s.product = undefined; c.s.dosageGiven = false; c.say("ack"); c.say("bp_reason"); c.say("switch_aceta"); addProduct(c, "acetaminophen"); return;
+      }
+      if (unsafe(c, "ibuprofen") && !product(c) && c.s.offer === "ibuprofen") { c.s.offer = undefined; c.s.recSaid = false; c.say("ack"); return; }
       if (c.s.meds === "other") c.say("meds_ok"); else c.say("ack");
     },
     allergy_ans(c, _slots, seg) {
+      // "I'm allergic to acetaminophen" (not understood): no acetaminophen; ibuprofen when it's safe
+      if (seg.tags.includes("aceta")) {
+        c.s.allergy = "aceta";
+        if (product(c) === "acetaminophen") { const i = basket(c).indexOf("acetaminophen"); if (i >= 0) basket(c).splice(i, 1); c.s.product = undefined; c.s.dosageGiven = false; c.s.offer = undefined; c.s.recSaid = false; }
+        else if (!product(c) && c.s.offer === "acetaminophen") { c.s.offer = undefined; c.s.recSaid = false; }
+        c.say("ack");
+        return;
+      }
       if (seg.tags.includes("nsaid")) c.s.allergy = "nsaid";
       else if (seg.tags.includes("pen")) c.s.allergy = "pen";
       else if (seg.tags.includes("other")) c.s.allergy = "other";
@@ -1466,7 +1513,10 @@ export const pharmacy: SituationDef = {
       if (!id) return;
       sayP(c, "alcohol_no", id);
     },
-    ask_kids(c) {
+    ask_kids(c, slots) {
+      // sunscreen, Band-Aids, aloe: "Of course" (the dose by weight is for medicines)
+      const id = slots?.product ? last(slots.product) : (product(c) ?? c.s.offer);
+      if (id && id !== "rx" && !at(id).med) { c.say("product_ok"); return; }
       c.say("kids_yes");
       c.say("kids_dose");
     },
@@ -1627,6 +1677,14 @@ export const pharmacy: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "I take antidepressants.", intent: "meds_ans", step: "meds" },
+    { say: "I take heart medicine.", intent: "meds_ans", step: "meds" },
+    { say: "I take another medicine.", intent: "meds_ans", step: "meds" },
+    { say: "I'm allergic to acetaminophen.", intent: "allergy_ans", step: "allergy" },
+    { say: "Oh, but I'm allergic to ibuprofen.", intent: "allergy_ans" },
+    { say: "So-so.", intent: "dose_unsure_ctx", step: "dosage", not: ["g_howareyou_bad"] },
+    { say: "Can I have the receipt?", intent: "receipt_q", not: ["product_unknown"] },
     // hint patterns
     { say: "Do you have something for a headache?", intent: "need_symptom", slots: { symptom: "headache" } },
     { say: "I have a sore throat.", intent: "symptom_state", slots: { symptom: "sore_throat" } },
@@ -1782,6 +1840,15 @@ function askWhoFor(c: Ctx) {
     ask: (cc) => cc.say("ask_who_q") });
 }
 
+/** The learner asks for ibuprofen when it isn't for them ("Of course." sold it): the reason, and acetaminophen. */
+function steerAway(c: Ctx, id: string): boolean {
+  if (c.s.mode === "rx" || id !== "ibuprofen" || !unsafe(c, id)) return false;
+  unsafeWhy(c);
+  c.say("switch_aceta");
+  if (product(c) !== "acetaminophen") { if (!product(c)) c.s.offer = "acetaminophen"; else addProduct(c, "acetaminophen"); }
+  return true;
+}
+
 function acceptOffer(c: Ctx) {
   const p = c.s.offer ?? recommendation(c);
   c.s.offer = p;
@@ -1792,7 +1859,7 @@ function acceptOffer(c: Ctx) {
 function declineOffer(c: Ctx) {
   const cur = c.s.offer ?? recommendation(c);
   const alt = ALT[cur];
-  if (alt && !c.s.altOffered) {
+  if (alt && !c.s.altOffered && !unsafe(c, alt)) {
     c.s.altOffered = true;
     c.s.offer = alt;
     c.say("rec_alt", { X: bind(alt) });
