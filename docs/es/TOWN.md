@@ -17,7 +17,7 @@ every switch off, so Maple Harbor is built exactly as before).
 - **The stalls' signs** in Spanish (Flores, Frutas, Verduras, Pan dulce); the small white gazebo is gone.
 - **Colours**: the buildings round the square and along the main street painted as in a Mexican Caribbean town
   (theme `buildings`); every sign carries the Spanish place name (theme `locationSigns`).
-- **The Mercado Municipal inside** (`mercado()` in interiors.ts): Doña Lupe's fruit and vegetable stall where the
+- **The Mercado Municipal inside** (`mercado()` in interiors.ts): Doña Licha's fruit and vegetable stall where the
   supermarket's checkout is (her spot and the learner's are the same), produce, a scale, bananas on a beam, a chili
   and spice stall, a juice stand, groceries at the back, papel picado under the roof; the shoppers stand at the
   stalls (roomPeople.ts).
@@ -287,17 +287,22 @@ Doña Mari's flower stall (s91a) 19 m north-west, in the stalls' row.
 
 A learner who goes looking won't find these; where they are, so that every conversation says the same:
 
-- **the taquería "junto al mercado"** (s62, s69): beside the mercado's door on avenida del Puerto (no stand yet).
+- **the taquería "junto al mercado"** (s62, s69, s83): beside the mercado's door on avenida del Puerto (no stand yet).
+  Cochinita tacos in the morning until they run out, before noon (s69); fish tacos at midday (s69); tacos for dinner in
+  the evening (s83: Andrea's place to eat before the Friday music).
 - **the cocina económica** ("de la calle Ceiba", s69; "de la esquina", s88): on calle Ceiba just south of Juárez,
   behind the bank ("a la vuelta del banco"): two minutes from the zócalo and from Línea Clara.
-- **the dentist** (s76: calle Morelos 12, "a una cuadra del zócalo"): there is no calle Morelos.
+- **the dentist**, Clínica Dental Coral (s76: calle Hidalgo 12, "a una cuadra del zócalo"): on calle Hidalgo, a block
+  south of the zócalo across avenida Juárez (since the s76 audit; it was calle Morelos, which isn't in the town).
+- **the casa de cambio** (s62: "la casa de cambio de la avenida Juárez… saliendo, a la izquierda, hacia el zócalo"): on
+  avenida Juárez between Información Turística and the zócalo. Tourists change dollars and euros there; the bank changes
+  only US dollars, and only for its customers (s78; the lead's decision, 5 Nov 2026).
 - **the mechanic and the vulcanizadora (tire shop)** (s71b): on calle Itzamná where it leaves town, inland past calle
   Uxmal. The way to the highway from the gas station: out to the left, then left again on calle Itzamná, which runs
   out of town (there are no traffic lights in town).
-- **the other office building** (s90's room 302, "enfrente, cruzando la calle"): across Juárez from Línea Clara are
-  the police and the church.
-- **Memo's restaurant on the malecón** (s86) and **the new café on the malecón** (s63): the malecón has El Muelle and the
-  tours booth; the lavandería "de la esquina" (s82): Las Palmas' corner is the tiendita's.
+- **La Palapa**, Memo's restaurant on the malecón (s86: Mexican food, not seafood, so it never competes with El Muelle;
+  about $200 a person), and **the new café on the malecón** (s63): the malecón has El Muelle and the tours booth; the
+  lavandería "de la esquina" (s82): Las Palmas' corner is the tiendita's.
 - The learner's addresses (calle Ceiba 15, s65a; calle Flamboyán 23 "entre Hidalgo y Juárez", s65b) are lots without a
   building, which is fine.
 
@@ -305,15 +310,16 @@ A learner who goes looking won't find these; where they are, so that every conve
 
 - **The airport**: in the 3D town the terminal closes the east end of avenida Juárez, about 200 m from Información
   Turística, with the sitio beside it. The conversations treat it as the edge of town, reached by taxi (s62: "Está al
-  final de la avenida Juárez… mejor tome un taxi"); s66's $350 fare from the sitio, which stands next to it, is s66's
-  reviewer's question.
+  final de la avenida Juárez… mejor tome un taxi"); at the sitio, which stands next to the terminal, Don Rigo says "El
+  aeropuerto está aquí al lado" and quotes no fare to it (s66, since its audit: the old $350 is gone).
 - **Cenote Ka'an**: past the meadow at the west end of avenida Juárez; not on foot, twenty minutes by colectivo (s69, s62).
 - **The ruins**: on the rocky point past the beach's west end; half an hour on foot along the beach (s69).
 - s62's trips (a cenote, the ruins of Tulum, Xcacel, Chemuyil) are further on, by colectivo.
 
 ### Facts the conversations share (5 Nov)
 
-- **The taquería** is next to the mercado (s62, s69).
+- **The taquería** is next to the mercado (s62, s69): cochinita in the morning (it runs out before noon, s69), tacos for
+  dinner in the evening (s83).
 - **The museum**: general admission $80; $40 for students and seniors (INAPAM); free on Sundays for Mexicans and
   residents, not for visitors; open 10 to 5, closed on Mondays (s70, s62, s69).
 - **Colectivos**: white vans along the avenue, no timetable ("pasan cada rato"), waved down by hand, paid to the driver
@@ -321,7 +327,24 @@ A learner who goes looking won't find these; where they are, so that every conve
 - **Cenotes and ruins** open early, around eight, and close in the afternoon (s62, s69); the beach never closes.
 - **At night** downtown is safe, with people out until late; the beach at night, better not (dark), and no swimming at
   night (s69, s62).
-- **Taxis** have no meter: agree on the fare before getting in (s66, s62).
+- **Taxis** have no meter: agree on the fare before getting in (s66, s62). They are hailed on avenida Juárez ("pasan
+  muchos por la avenida: nada más levante la mano", s69), or taken at the sitio, which stands by the airport at the
+  avenue's east end (s66).
+- **Café La Ceiba** (s72, s62): open every day, 7 a.m. to 9 p.m.; pesos only ("aquí solo aceptamos pesos").
+- **Farmacia del Puerto** (s75): open every day, 8 a.m. to 10 p.m.; pesos only, cards accepted ("Solo aceptamos pesos,
+  pero puede pagar con tarjeta").
+- **Correos** (s79): a postcard stamp abroad is $15, one price for every country (the top of Correos de México's 2026
+  rates: the town's simplification); a parcel to the US needs a declaration and an ID (said once, with no figures).
+- **La Cocina de Lucía** (s73, s69): takes reservations ("¿Tiene reservación?"); walk-ins wait about ten minutes in the
+  evening.
+- **Banco del Puerto** (s78): opening an account needs the passport and the residence card (both), a proof of address
+  from the last three months and the CURP (usually on the residence card); the bank changes only US dollars and only for
+  its customers, so tourists go to the casa de cambio on Juárez (s62).
+- **Departamentos Las Palmas** (s81, s82, p24, p29): the learner rents 1B on the first floor (the 3D sign "DEPTO. 1B");
+  2B is above it (p24: a pipe burst there); Doña Lupita's door, 1C, is on the same floor; Don Ernesto, the owner and the
+  learner's landlord, lives on the ground floor, below the learner; Don Gilberto is the building's administrador (the
+  lead's decision, 5 Nov 2026): what breaks inside the apartment goes to Don Ernesto, the building's own things (its
+  pipes) to Don Gilberto (s82, p24).
 - **Fuel** at Gasolinera El Faro (s71b): Magna about $24 a liter, premium about $26, diésel about $27. Doña Chela takes
   dollars at $17 (under the bank, which buys them at $17.20 and sells at $18.10, s78).
 
@@ -363,21 +386,25 @@ corrected to the town.)
   **calle Itzamná** East Street (past the zócalo's east end, from the sea inland), **calle Flamboyán** West Street (by
   Departamentos Las Palmas: "un departamento en la calle Flamboyán", s65a) and **calle Hidalgo** Oak Avenue
   ("calle Flamboyán 23, entre Hidalgo y Juárez", s65b); since 5 Nov **calle Uxmal** is Station Road (past the bus
-  terminal; no conversation names it yet). Calle Morelos (s76's dentist, "a una cuadra del zócalo") is not on the map.
+  terminal; no conversation names it yet). s76's dentist is at calle Hidalgo 12, "a una cuadra del zócalo" (named, not
+  built; it was calle Morelos, which isn't on the map).
 - **The tiendita** is in the ground floor of Departamentos Las Palmas, on its corner with calle Flamboyán.
 - **Hours the conversations share** (5 Nov 2026, the cross-cutting audit; a new line must agree): the museum 10 to 5,
-  closed on Mondays (s62, s69, s70); the visitor center 9 to 5, Monday to Saturday (s62); Café La Ceiba 7 a.m. to 9 p.m.
-  (s62); the mercado every day 6 to 3 (s62); the tianguis on Saturdays 7 to 2 (s62, s69, s91a); the Friday music at
-  the kiosco at eight (s62, s69; s83's meeting point); the bank Monday to Friday 9 to 4 and Saturdays until 2 (s78; s62
-  said Monday to Friday only: its reviewer is asked to add the Saturdays); Correos Monday to Friday 8 to 4, Saturdays 9
-  to 1 (s79); Hotel Mar Azul's breakfast 7 to 10:30 (s68); the cenote and the ruins open about eight (s69); Línea Clara
-  9 to 6, lunch 2 to 3 (s87, s88).
-- **Prices the conversations share**: a coffee about $45 (s72 $35–60, s69, s73 $40–55); the comida corrida about $100
+  closed on Mondays (s62, s69, s70); the visitor center 9 to 5, Monday to Saturday (s62); Café La Ceiba every day 7
+  a.m. to 9 p.m. (s62, s72); Farmacia del Puerto every day 8 a.m. to 10 p.m. (s75); the mercado every day 6 to 3 (s62);
+  the tianguis on Saturdays 7 to 2 (s62, s69, s91a); the Friday music at the kiosco at eight (s62, s69; s83's meeting
+  point); the bank Monday to Friday 9 to 4 and Saturdays until 2 (s78, s62); Correos Monday to Friday 8 to 4, Saturdays
+  9 to 1 (s79); Hotel Mar Azul's breakfast 7 to 10:30 (s68); the cenote and the ruins open about eight (s69); Línea
+  Clara 9 to 6, lunch 2 to 3 (s87, s88).
+- **Prices the conversations share**: a coffee about $45 (s72 $35–60, s69, s73 $40–60); the comida corrida about $100
   (s69, s88); the museum $80, students and seniors $40 (s69, s70); city bus route 7 $12 (s67b); a taxi in town
-  $100–120, to the airport $350 (s66); the rent at Las Palmas $14,000 a month (s81, p29); Magna about $24 a liter (s71b).
-- **The landlord** of the learner's apartment at Las Palmas is Don Ernesto (s81, p29). p24's flood call goes to Don
-  Gilberto, "tu casero", about apartment 3B, as Maple Harbor's p24 calls Mr. Grant: an open question for the owner
-  (one landlord, or another home?).
+  $100–120 (s66; the sitio stands next to the airport, so no conversation prices that ride); a postcard stamp abroad $15
+  (s79); a meal at La Palapa about $200 a person (s86); the rent at Las Palmas $14,000 a month (s81, p29); Magna about
+  $24 a liter (s71b).
+- **The landlord** of the learner's apartment at Las Palmas, 1B, is Don Ernesto, who owns the building and lives on its
+  ground floor (s81, s82, p29). Don Gilberto is the building's administrador (the lead's decision, 5 Nov 2026): p24's
+  flood (a pipe burst in 2B, upstairs) is his, and Don Ernesto is the neighbor downstairs it may reach; s82 tells the
+  learner who handles what.
 - **Las Palmas inside** (since 5 Nov): Don Ernesto shows the apartment from just inside its door (s81) and meets the
   learner there (p29); Doña Lupita's door (1C) is at the back of the hallway, and she stands in the hallway by the
   learner's door (s82, p29).
@@ -488,7 +515,7 @@ speakers stand from the learner. (Sara in s34 is on the team room's screen.)
 | s72-cafe | Café La Ceiba | Mariana: the counter | (-1.2, -2.0) room · Mariana 2.2 m | yes · yes |
 | s69-local | Zócalo · Tianguis | Doña Carmen: her bench by the kiosco | (18.1, -21.0) town · Doña Carmen 2.2 m | yes · yes |
 | s70-museum | Museo de la Costa Maya | Iván, Don Arturo: the ticket desk; the guard by the statue in the entrance hall | (-6.9, 4.6) room · Iván 2.1 m, Don Arturo 5.0 m | yes · yes |
-| s32-mercado | Mercado Municipal | Doña Lupe: her fruit and vegetable stall | (-2.5, 3.0) room · Doña Lupe 2.1 m | yes · yes |
+| s32-mercado | Mercado Municipal | Doña Licha: her fruit and vegetable stall | (-2.5, 3.0) room · Doña Licha 2.1 m | yes · yes |
 | s73-restaurant | La Cocina de Lucía | Lucía, Luis: her stand by the door; Luis between the first tables | (-4.7, 3.3) room · Lucía 0.8 m, Luis 3.4 m | yes · yes |
 | s81-apartment | Departamentos Las Palmas | Don Ernesto: just inside the empty apartment's door | (-0.7, 3.6) room · Don Ernesto 1.3 m | yes · yes |
 | s82-neighbor | Departamentos Las Palmas | Doña Lupita: the hallway, by the new neighbour's door | (-4.1, 3.1) room · Doña Lupita 2.3 m | yes · yes |
@@ -531,7 +558,7 @@ speakers stand from the learner. (Sara in s34 is on the team room's screen.)
 | p18-startup | Brotecito | Toño: the wall of sticky notes | (1.9, -2.3) room · Toño 1.5 m | yes · yes |
 | p24-flood | phone call | Andrea, Don Gilberto: on the phone |  | on the phone |
 
-Found on the way, left for others:
+Found on the way (all fixed since):
 - **The Friday music**: s62 (and the visitor center's poster) say eight o'clock; s69 said seven (`night`, `time_musica`,
   `open_musica`). Fixed: s69 says eight too (checked 5 Nov, the cross-cutting audit).
 - **The gym**: s35's intro had Mónica greet the learner at the front desk; she stands by the bench press (as Jordan does
