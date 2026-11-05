@@ -3,7 +3,7 @@
 // learner asks a local for tips: where to eat (the cocina económica, the taquería, the marisquería El Muelle, Café La
 // Ceiba, La Cocina de Lucía, the marquesitas cart), what to try (cochinita pibil, panuchos, salbutes, pescado a la talla,
 // marquesitas with queso de bola), what to see (the cenote by colectivo, the ruins by the sea, the beach, the
-// malecón at sunset, a boat trip to the reef, the museum across the square, the stalls behind her bench), then
+// malecón at sunset, a boat trip to the reef, the museum across calle Ceiba, the stalls behind her bench), then
 // follows up like a real visitor: is it far, how do I get there, touristy?, best time, price, booking, hours, is the
 // beach safe at night. Goal = one food tip + one sightseeing tip; she gives a tip only after the learner asks
 // something specific, and volunteers the missing one if the learner doesn't ask.
@@ -15,6 +15,12 @@
 // pricier than the cocina económica. There is no Italian restaurant in town: an Italian wish gets a kind "no hay" and
 // a local tip. Vegetarians get the papadzules (egg in pumpkin-seed sauce) at Lucía's, vegans and the cheap the cocina
 // económica. Sources: Wikipedia "Papadzules", "Poc chuc", "Sopa de lima" (read 2 Nov 2026).
+// Audit (5 Nov 2026): every direction follows the 3D town (docs/es/TOWN.md "Getting around"). Her bench is in the
+// zócalo's south-west quarter, facing avenida Juárez: the bank and Correos across the avenue in front of her, the
+// museum to her right across calle Ceiba, the church and the police at the square's east end, the stalls behind her,
+// then avenida del Puerto and the malecón. Café La Ceiba and La Cocina de Lucía are a block west on Juárez, the
+// taquería by the mercado on avenida del Puerto, the cocina económica on calle Ceiba behind the bank. La Cocina de
+// Lucía takes reservations (s73). She also answers where the bank, the mercado, the church and a few other places are.
 
 import type { Ctx, EntityDef, Handler, HintItem, SentSrc, SituationDef } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
@@ -67,6 +73,26 @@ const COUNTRIES: EntityDef[] = [
   ent("nz", "Nueva Zelanda", "New Zealand", "f", { forms: ["nueva zelanda", "nueva zelandia"] }),
 ];
 
+// Places that aren't tips: "¿Dónde hay un cajero?" gets the way from her bench (TOWN.md "From the zócalo's kiosco");
+// the farther ones, Información Turística and its map.
+const PLACES: EntityDef[] = [
+  ent("banco", "banco", "bank", "m", { forms: ["el banco", "banco", "un banco", "banco del puerto", "el banco del puerto", "cajero", "un cajero", "el cajero", "cajero automatico", "un cajero automatico", "algun cajero", "cajeros", "atm", "un atm"] }),
+  ent("correos", "correos", "post office", "m", { forms: ["correos", "el correo", "la oficina de correos", "oficina de correos", "la oficina postal"] }),
+  ent("iglesia", "iglesia", "church", "f", { forms: ["la iglesia", "iglesia", "la parroquia", "parroquia", "el templo", "la catedral"] }),
+  ent("policia", "policía", "police", "f", { forms: ["la policia", "policia", "la policia municipal", "la comandancia", "la estacion de policia", "estacion de policia"] }),
+  ent("mercado", "mercado", "market", "m", { forms: ["el mercado", "mercado", "mercado municipal", "el mercado municipal"] }),
+  ent("turismo", "Información Turística", "tourist information", "f", { forms: ["informacion turistica", "la informacion turistica", "oficina de turismo", "la oficina de turismo", "turismo", "el modulo de informacion", "modulo de informacion", "el centro de visitantes", "la oficina de informacion"] }),
+  ent("farmacia", "farmacia", "pharmacy", "f", { forms: ["la farmacia", "farmacia", "una farmacia", "farmacia del puerto", "la farmacia del puerto"] }),
+  ent("hotel", "Hotel Mar Azul", "Hotel Mar Azul", "m", { forms: ["el hotel", "hotel", "hotel mar azul", "el hotel mar azul", "mar azul", "mi hotel"] }),
+  ent("terminal", "terminal", "bus station", "f", { forms: ["la terminal", "terminal de autobuses", "la terminal de autobuses", "la central", "la central de autobuses", "la parada del camion", "la parada del autobus", "parada de camion"] }),
+  ent("aeropuerto", "aeropuerto", "airport", "m", { forms: ["el aeropuerto", "aeropuerto"] }),
+  ent("clinica", "clínica", "clinic", "f", { forms: ["la clinica", "clinica", "el hospital", "hospital", "el centro de salud"] }),
+  ent("otro", "gasolinera", "gas station", "f", { forms: ["la gasolinera", "gasolinera", "la renta de autos", "renta de autos", "el gimnasio", "gimnasio", "linea clara", "la oficina de linea clara"] }),
+];
+/** Where each place is, from her bench; any other place: ask at Información Turística. */
+const WHERE: Record<string, string> = { banco: "where_banco", correos: "where_correos", iglesia: "where_iglesia", policia: "where_policia",
+  mercado: "where_mercado", turismo: "where_turismo", farmacia: "where_west", hotel: "where_west" };
+
 // Which place Doña Carmen recommends for which food
 const FOR_CUISINE: Record<string, string> = {
   mariscos: "muelle", yucateca: "cocina", tacos: "taqueria", italiana: "trattoria", vegetariana: "trattoria",
@@ -80,8 +106,8 @@ const KIND: Record<string, Kind> = Object.fromEntries(SPOTS.map((e) => [e.id, e.
 
 // Facts per place → line ids
 const WALK: Record<string, string> = { cenote: "walk_cenote", ruinas: "walk_ruinas", museo: "walk_museo", muelle: "walk_malecon", malecon: "walk_malecon", playa: "walk_malecon", lancha: "walk_malecon",
-  taqueria: "walk_close", cocina: "walk_close", cafe: "walk_here", trattoria: "walk_close", puestos: "walk_here", musica: "walk_here", marquesitas: "walk_here" };
-const HOW: Record<string, string> = { cenote: "dir_cenote", ruinas: "dir_ruinas", museo: "walk_museo", muelle: "dir_malecon", malecon: "dir_malecon", playa: "dir_malecon", lancha: "dir_malecon",
+  taqueria: "walk_close", cocina: "walk_close", cafe: "walk_close", trattoria: "walk_close", puestos: "walk_here", musica: "walk_here", marquesitas: "walk_here" };
+const HOW: Record<string, string> = { cenote: "dir_cenote", ruinas: "dir_ruinas", museo: "walk_museo", muelle: "dir_muelle", malecon: "dir_malecon", playa: "dir_malecon", lancha: "dir_muelle",
   trattoria: "dir_trattoria", cafe: "dir_cafe", cocina: "dir_cocina", taqueria: "dir_mercado", puestos: "walk_here", musica: "walk_here", marquesitas: "walk_here" };
 const TOURISTY: Record<string, string> = { cenote: "tour_bit", ruinas: "tour_bit", lancha: "tour_bit", playa: "tour_bit", muelle: "tour_muelle", puestos: "tour_market",
   taqueria: "tour_locals", cocina: "tour_locals", cafe: "tour_locals", musica: "tour_locals", marquesitas: "tour_locals", trattoria: "tour_mixed", museo: "tour_quiet", malecon: "tour_quiet" };
@@ -313,7 +339,8 @@ const H: Record<string, Handler> = {
     if (cheaper === cur) { c.say("price_cocina"); return; }
     if (!recFree(c)) return;
     c.say("cheaper");
-    recommend(c, cheaper);
+    // El Muelle (seafood) too pricey: the fish tacos at the taquería
+    recommend(c, cheaper, false, cheaper === "taqueria" && cur === "muelle" ? "rec_taqueria_fish" : undefined);
   },
   not_hungry(c, slots) {
     // "Ya comí tacos": not tacos again
@@ -329,11 +356,18 @@ const H: Record<string, Handler> = {
     if (id === "museo" || c.s.recs.includes("museo") || !okSight(c, "museo")) return;
     if (c.chance(0.4)) { c.say("also_museo"); c.s.recs.push("museo"); }
   },
-  ask_about_spot(c, slots) {
+  ask_about_spot(c, slots, seg) {
     if (slots.bad) { c.s.avoidSight = [...(c.s.avoidSight || []), slots.bad]; c.s.recs = c.s.recs.filter((x: string) => x !== slots.bad); }
     const id = slots.spot as string;
     if (!id) return;
-    if (c.s.recs.includes(id) && c.s.topic === id) { c.say("worth"); return; }
+    // one of her tips already: no second tip, an answer to what was asked ("¿Dónde queda?", "¿Qué tal es?", "¿Qué es?")
+    if (c.s.recs.includes(id)) {
+      c.s.topic = id;
+      if (seg.tags.includes("where")) { c.say(HOW[id] ?? "walk_close"); return; }
+      if (seg.tags.includes("what")) { GLOBAL_HANDLERS.g_meaning(c as ConvCtx, slots); return; }
+      c.say(seg.tags.includes("like") ? "like_it" : "worth");
+      return;
+    }
     recommend(c, id);
   },
   buy_produce(c, _slots, seg) {
@@ -376,9 +410,18 @@ const H: Record<string, Handler> = {
   ask_safe(c) { c.say("safe"); },
   no_crowds(c) { c.say("no_crowds"); c.s.topic = "malecon"; if (!c.s.recs.includes("malecon")) c.s.recs.push("malecon"); c.s.sightRec = true; },
   no_walk(c, _slots, seg) {
+    // "¿Dónde tomo un taxi?", "¿Puedo ir en taxi?" · "¿Dónde tomo el colectivo?" · "¿Pasa un colectivo?"
+    if (seg.tags.includes("taxi")) { c.say("taxi_where"); return; }
+    if (seg.tags.includes("buswhere")) { c.say("bus_where"); return; }
     if (seg.tags.includes("bus")) { c.say("bus_yes"); return; }
     c.say(["cenote", "ruinas"].includes(c.s.topic) ? "no_walk_bus" : "no_walk_taxi");
   },
+  // "¿Dónde hay un cajero?", "¿Dónde está el mercado?": the way from her bench, or Información Turística
+  ask_place(c, slots, seg) {
+    const p = (slots.place as string | undefined) ?? (seg.tags.includes("cash") ? "banco" : undefined);
+    c.say((p && WHERE[p]) || "where_other");
+  },
+  her_name(c) { c.say("her_name"); },
   thanks_tip(c) {
     c.say("thanks_reply");
     if (c.step === "more") c.s.moreDone = true;
@@ -468,7 +511,7 @@ export const local: SituationDef = {
   npc: "rosa",
   goal: "Ask a local for tips: where to eat and what to see. Then ask a follow-up question or two.",
   intro: "The zócalo. Doña Carmen sits on her bench by the bandstand, fanning herself. She was born and raised in Puerto Colibrí and knows every corner of it, from the best cochinita to the quietest cenote.",
-  entities: { spot: SPOTS, cuisine: CUISINES, country: COUNTRIES },
+  entities: { spot: SPOTS, cuisine: CUISINES, country: COUNTRIES, place: PLACES },
 
   grammar: {
     macros: {
@@ -573,6 +616,7 @@ export const local: SituationDef = {
       "(me gusta | me encanta) (ir de compras #shop | comprar artesanias #shop | comprar recuerdos #shop)", "(me gustan | me encantan) los mercados #shop",
       "que mas (puedo | podemos | hay que | se puede) (ver | hacer | visitar) #else", "(hay | tiene) otra (cosa | idea | opcion) #else", "otro lugar [que me recomiende] #else", "(otra | alguna otra) (idea | sugerencia | recomendacion) #else",
       "algo (con | de) (buena | bonita)? vista #view", "donde (puedo | se puede | podemos) ver el (atardecer | amanecer) #view", "algo (historico #art | cultural #art | maya #ruins)",
+      "[donde] (hay | esta | queda) (un | algun | el)? (lugar | sitio) [bonito | bueno | mejor] para ver el (atardecer | amanecer) #view", "(cual | donde) es el mejor (lugar | sitio) para ver el (atardecer | amanecer) #view",
       "que es lo mas (famoso | conocido | bonito | popular) [@aqui_]", "(quiero | quisiera | me gustaria) (nadar #cenote | ver ruinas #ruins | ir a la playa #beach | ver el mar #beach)",
       "(algo | un lugar) (tranquilo #quiet | bonito) para (pasear | caminar) #nature", "que se puede hacer (hoy | manana | en la tarde | esta tarde)",
       "que (lugares | sitios | cosas) (bonitos | bonitas | interesantes | turisticos | turisticas) (hay | puedo ver | se pueden ver) [@aqui_]", "(quiero | quisiera | me gustaria) (conocer | ver | recorrer) (el pueblo | la zona | los alrededores | todo)",
@@ -585,10 +629,10 @@ export const local: SituationDef = {
       "no me (gustan | interesan) (los museos #art | las ruinas #ruins | las playas #beach)", "no (quiero | quisiera | pienso) (ir @a_ | ver | visitar | conocer) {spot}", "{spot} no [gracias]", "no me (gustaria | interesa | apetece) (ir @a_ | ver | visitar | conocer) {spot}", "prefiero no (ir @a_ | ver | visitar) {spot}", "(ya | ya lo | ya la | ya los | ya las) (conozco | vi | visité) {spot}", "ya (fui | estuve) (@a_ | en | en el | en la) {spot}",
     ] },
     ask_about_spot: { patterns: [
-      "(vale | merece) la pena {spot} #h:p_worth", "(vale | merece) la pena (ir @a_ | visitar | conocer | ver) {spot}", "{spot} vale la pena", "que tal (es | esta)? {spot}", "(conoce | ha ido a | ha estado en | fue a) {spot}", "(que | como) es {spot}",
-      "@could_you (contar | hablar | decir) (algo)? @de_ {spot}", "que me (dice | cuenta) @de_ {spot}", "y {spot}", "hay (algun | alguna | algunos | algunas)? {spot} [@aqui_]", "(prefiero | mejor) {spot}", "(donde | por donde) (hay | queda) {spot}",
+      "(vale | merece) la pena {spot} #h:p_worth", "(vale | merece) la pena (ir @a_ | visitar | conocer | ver) {spot}", "{spot} vale la pena", "que tal (es | esta)? {spot} #like", "(conoce | ha ido a | ha estado en | fue a) {spot}", "que es {spot} #what", "como es {spot} #like",
+      "@could_you (contar | hablar | decir) (algo)? @de_ {spot} #like", "que me (dice | cuenta) @de_ {spot} #like", "y {spot} #like", "hay (algun | alguna | algunos | algunas)? {spot} [@aqui_]", "(prefiero | mejor) {spot}", "(donde | por donde) (hay | queda) {spot} #where",
       "(quiero | quisiera | me gustaria | queremos) (ir a | ir al | conocer | ver | visitar | probar) {spot}", "{spot} es (bueno | bonito | buena | bonita | interesante)",
-      "(que | como) son {spot}", "y que tal {spot}", "y (de | sobre) {spot}",
+      "que son {spot} #what", "como son {spot} #like", "y que tal {spot} #like", "y (de | sobre) {spot} #like",
       // corrections: "No quiero ir al museo, prefiero la playa", "El cenote no, las ruinas"
       "no (quiero ir @a_ | quiero | me interesa | me gusta | me gustan | me interesan) {bad:spot} (prefiero | mejor | sino)? {spot}", "no {bad:spot} (sino | mejor | prefiero)? {spot}",
       "{bad:spot} no (sino | mejor | prefiero)? {spot}",
@@ -650,9 +694,19 @@ export const local: SituationDef = {
     ] },
     no_walk: { patterns: [
       "(esta | es) (muy)? lejos para (caminar | ir caminando | ir a pie)", "no quiero caminar (tanto | tan lejos)", "no puedo caminar (tanto | tan lejos)",
-      "(hay | pasa) (un)? (camion | autobus | colectivo | combi) [para alla | que vaya | @a_ {spot}] #bus", "(puedo | se puede) ir en (taxi | colectivo | camion | autobus) #bus",
-      "donde (tomo | puedo tomar | se toma) el (colectivo | camion | autobus) #bus", "como me voy en (colectivo | taxi | camion) #bus",
+      "(hay | pasa) (un)? (camion | autobus | colectivo | combi) [para alla | que vaya | @a_ {spot}] #bus", "(puedo | se puede) ir en (colectivo | camion | autobus | combi) #bus",
+      "donde (tomo | puedo tomar | se toma | agarro) (el | un)? (colectivo | camion | autobus | combi) #buswhere", "como me voy en (colectivo | camion | combi) #buswhere",
+      // taxis: no sitio near the square (it's by the airport); they pass along the avenue
+      "(puedo | se puede) ir en taxi #taxi", "como me voy en taxi #taxi", "donde (tomo | puedo tomar | se toma | agarro | consigo | hay) (un | el)? taxi #taxi",
+      "(hay | pasan) taxis [por aqui | aqui | cerca] #taxi", "donde (hay | esta) (un | el)? sitio de taxis #taxi", "hay (un)? sitio de taxis [por aqui | aqui | cerca] #taxi",
+      "donde (hay | esta) (una | la)? parada de taxis #taxi", "hay (una)? parada de taxis [por aqui | aqui | cerca] #taxi",
     ] },
+    ask_place: { patterns: [
+      "(donde | en donde | por donde) (esta | queda | hay | encuentro | puedo encontrar) {place} [@aqui_]", "(como | por donde) (llego | voy | se llega | se va) @a_ {place}",
+      "{place} (esta | queda) (lejos | cerca) [de aqui]", "(esta | queda) (lejos | cerca) {place} [de aqui]", "(hay | conoce | sabe de) (un | una | algun | alguna)? {place} (por aqui | cerca | aqui cerca | cerca de aqui)",
+      "(busco | estoy buscando | ando buscando | necesito) {place}", "(necesito | tengo que | quiero | quisiera) (sacar | retirar) (dinero | efectivo) #cash", "donde (puedo | se puede) (sacar | retirar) (dinero | efectivo) #cash",
+    ] },
+    her_name: { patterns: ["[y] [usted] como se llama [usted]", "cual es su nombre", "como te llamas #tip:tu_staff", "[y] cual es tu nombre #tip:tu_staff"] },
     thanks_tip: { patterns: [
       "[muchas | mil | muchisimas] gracias por (el consejo | los consejos | la recomendacion | las recomendaciones | el dato | los datos | la informacion | la sugerencia | las sugerencias | el tip | los tips | las ideas | todo | su ayuda | la ayuda) #h:t_tip", "[muy | super | que] amable [muchas gracias | gracias]",
       "(me ha | me) (ayudado | ayudó) mucho #h:t_helpful", "(suena | se oye) (muy)? (bien | padre | chido | genial | delicioso | rico | increible | perfecto | interesante) #h:t_sounds",
@@ -738,9 +792,9 @@ export const local: SituationDef = {
     ],
     rec_muelle: [
       t("Para | mariscos, | El Muelle, | en | el | malecón. | Pida | el | pescado | a la talla. | Eso sí, | es | un | poquito | caro.",
-        "For | seafood, | El Muelle, | on | the | waterfront. | Order | the | fish | grilled Maya-style. | Mind you, | it's | a | little bit | pricey.",
+        "For | seafood, | El Muelle, | on | the | waterfront. | Order | the | fish | split and grilled. | Mind you, | it's | a | little bit | pricey.",
         "For seafood, El Muelle, on the waterfront. Get the pescado a la talla, the grilled fish. Mind you, it's a bit pricey.",
-        { flags: { 9: "a la talla: fish split open, brushed with achiote chili paste and grilled." } }),
+        { flags: { 9: "a la talla: a whole fish split open, rubbed with a red chili paste and grilled over coals." } }),
     ],
     rec_taqueria: [
       t("Vaya | a | la | taquería | junto | al | mercado. | En | la | mañana | hay | tacos | de | cochinita, | ¡y | es | barato!",
@@ -764,10 +818,10 @@ export const local: SituationDef = {
         { flags: { 1: "cocina económica: a small family place with cheap home cooking.", 8: "panuchos, salbutes: small fried tortillas with toppings, from Yucatán." } }),
     ],
     rec_cafe: [
-      t("El | Café | La Ceiba, | aquí | en | la | plaza. | Muy | buen | café, | y | el | pan dulce | está | riquísimo. | ¡Dígale | a | Mariana | que | {m:lo|f:la} | mando | yo!",
-        "The | Café | La Ceiba, | here | on | the | square. | Very | good | coffee, | and | the | pan dulce | is | delicious. | Tell | — | Mariana | that | you | I-send | I!",
-        "Café La Ceiba, right here on the square. Great coffee, and the pan dulce is delicious. Tell Mariana I sent you!",
-        { flags: { 16: A_TELL, 19: LOLA } }),
+      t("El | Café | La Ceiba, | aquí | en | la | avenida | Juárez. | Muy | buen | café, | y | el | pan dulce | está | riquísimo. | ¡Dígale | a | Mariana | que | {m:lo|f:la} | mando | yo!",
+        "The | Café | La Ceiba, | here | on | the | avenue | Juárez. | Very | good | coffee, | and | the | pan dulce | is | delicious. | Tell | — | Mariana | that | you | I-send | I!",
+        "Café La Ceiba, right here on Juárez Avenue. Great coffee, and the pan dulce is delicious. Tell Mariana I sent you!",
+        { flags: { 17: A_TELL, 20: LOLA } }),
     ],
     rec_trattoria: [
       t("La Cocina de Lucía, | en | la | avenida | Juárez. | Es | comida | yucateca: | pruebe | el | poc chuc. | Es | un | poco | más | cara | que | la | cocina económica, | pero | vale la pena.",
@@ -812,8 +866,9 @@ export const local: SituationDef = {
     then_try: [t("Entonces, | mire:", "Then, | look:", "Then how about this:")],
     cheaper: [t("¿Algo | más | barato? | Claro.", "Something | more | cheap? | Sure.", "Something cheaper? Sure.")],
     cheaper_sight: [t("Mmm, | entonces | algo | gratis.", "Hmm, | then | something | free.", "Hmm, then something free.")],
-    cheaper_beach: [t("Vaya | a | la | playa | pública, | al | final | del | malecón. | ¡No | cuesta | nada!", "Go | to | the | beach | public, | at the | end | of the | waterfront. | Not | it-costs | anything!", "Go to the public beach at the end of the waterfront. It doesn't cost a thing!",
-      { flags: { 10: "No … nada: Spanish uses a double negative; English says “doesn't cost anything”." } })],
+    cheaper_beach: [t("Vaya | a | la | playa | pública, | al | final | del | malecón, | por | el | faro. | ¡No cuesta | nada!", "Go | to | the | beach | public, | at the | end | of the | waterfront, | by | the | lighthouse. | It doesn't cost | anything!",
+      "Go to the public beach at the end of the waterfront, by the lighthouse. It doesn't cost a thing!",
+      { flags: { 13: "No … nada: Spanish uses a double negative; English says “doesn't cost anything”." } })],
     later_food: [t("Bueno, | cuando | le | dé | hambre, | acuérdese | de | esto:", "Well, | when | (to) you | it-gives | hunger, | remember | of | this:", "Well, when you get hungry, remember this one:")],
     locals_eat: [
       t("¿La | verdad? | La | taquería | junto | al | mercado. | Los | turistas | comen | en | El Muelle, | pero | la | gente | de | aquí | come | tacos.",
@@ -835,16 +890,16 @@ export const local: SituationDef = {
         "Don't miss the cenote. It's like swimming in a freshwater cave.", { flags: { 2: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán." } }),
     ],
     rec_playa: [
-      t("La | playa, | claro. | La | playa | pública | está | al | final | del | malecón, | y | es | gratis.", "The | beach, | of course. | The | beach | public | is | at the | end | of the | waterfront, | and | it's | free.",
-        "The beach, of course. The public beach is at the end of the waterfront, and it's free."),
+      t("La | playa, | claro. | La | playa | pública | está | al | final | del | malecón, | por | el | faro, | y | es | gratis.", "The | beach, | of course. | The | beach | public | is | at the | end | of the | waterfront, | by | the | lighthouse, | and | it's | free.",
+        "The beach, of course. The public beach is at the end of the waterfront, by the lighthouse, and it's free."),
     ],
     rec_ruinas: [
       t("Vaya | a | las | ruinas, | junto | al | mar. | Son | pequeñas, | pero | muy | bonitas.", "Go | to | the | ruins, | next | to the | sea. | They're | small, | but | very | beautiful.",
         "Go see the Maya ruins by the sea. They're small, but really beautiful."),
     ],
     rec_museo: [
-      t("El | Museo | de | la | Costa | Maya | está | aquí | enfrente, | cruzando | la | plaza.", "The | Museum | of | the | Coast | Maya | is | here | opposite, | crossing | the | square.",
-        "The Museo de la Costa Maya is right across the square."),
+      t("El | Museo | de | la | Costa | Maya | está | aquí | enfrente, | cruzando | la | calle | Ceiba.", "The | Museum | of | the | Coast | Maya | is | here | opposite, | crossing | the | street | Ceiba.",
+        "The Museo de la Costa Maya is right across Ceiba Street."),
     ],
     rec_malecon: [
       t("Camine | por | el | malecón | al | atardecer. | Es | precioso.", "Walk | along | the | waterfront | at the | sunset. | It's | lovely.", "Take a walk along the waterfront at sunset. It's lovely."),
@@ -860,7 +915,7 @@ export const local: SituationDef = {
         { flags: { 0: "Los viernes: on Fridays (the article stands for “on”)." } }),
     ],
     also_museo: [
-      t("Y | si | le gusta | el | arte, | el | museo | está | aquí | enfrente.", "And | if | you like | the | art, | the | museum | is | here | opposite.", "And if you like art, the museum is right across the square."),
+      t("Y | si | le gusta | el | arte, | el | museo | está | aquí | enfrente.", "And | if | you like | the | art, | the | museum | is | here | opposite.", "And if you like art, the museum is right across the street."),
     ],
     favorite: [t("Ay, | el | malecón | al | atardecer. | Siempre.", "Oh, | the | waterfront | at the | sunset. | Always.", "Oh, the waterfront at sunset. Every time.")],
     locals_do: [
@@ -881,21 +936,31 @@ export const local: SituationDef = {
     // --- follow-ups ----------------------------------------------------------------
     walk_cenote: [t("Caminando, | no. | Está | como | a | veinte | minutos | en | colectivo.", "Walking, | no. | It's | about | at | twenty | minutes | by | shared van.", "Not on foot. It's about twenty minutes by colectivo.")],
     walk_ruinas: [t("Está | como | a | media | hora | caminando. | O | tome | un | taxi: | no es | caro.", "It's | about | at | half | hour | walking. | Or | take | a | taxi: | it's not | expensive.", "It's about half an hour on foot. Or take a taxi, it's not expensive.")],
-    walk_museo: [t("¡Está | aquí | enfrente, | cruzando | la | plaza!", "It's | here | opposite, | crossing | the | square!", "It's right there, across the square!")],
-    walk_malecon: [t("Está | como | a | diez | minutos | caminando, | bajando | hacia | el | mar.", "It's | about | at | ten | minutes | walking, | going down | toward | the | sea.", "It's about ten minutes on foot, down by the water.")],
-    walk_close: [t("Está | aquí | cerquita, | a | cinco | minutos | caminando.", "It's | here | very close, | at | five | minutes | walking.", "It's really close, five minutes on foot.", { flags: { 2: "cerquita: cerca + -ita, “really close”." } })],
+    walk_museo: [t("¡Está | aquí | enfrente, | cruzando | la | calle!", "It's | here | opposite, | crossing | the | street!", "It's right there, across the street!")],
+    walk_malecon: [t("Está | aquí | atrás, | a | dos | minutos: | nada más | cruce | la | avenida | del | Puerto.", "It's | here | behind, | at | two | minutes: | just | cross | the | avenue | of the | Harbor.",
+      "It's right behind me, two minutes away: just cross Avenida del Puerto.")],
+    walk_close: [t("Está | aquí | cerquita, | a | dos | minutos | caminando.", "It's | here | very close, | at | two | minutes | walking.", "It's really close, two minutes on foot.", { flags: { 2: "cerquita: cerca + -ita, “really close”." } })],
     walk_here: [t("¡Es | aquí | mismo, | en | la | plaza!", "It's | here | right, | in | the | square!", "It's right here, in the square!")],
     dir_cenote: [
       t("Tome | un | colectivo | en | la | avenida: | son | camionetas | blancas. | Dígale | al | chofer | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.",
         "Take | a | shared van | on | the | avenue: | they're | vans | white. | Tell | to the | driver | that | you | he-leaves | at | the | cenote, | and | (to) him | you-pay | when you get off.",
         "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", { flags: { 13: LOLA } }),
     ],
-    dir_ruinas: [t("Siga | la | calle | principal | hasta | el | final. | Ahí | está | la | entrada.", "Follow | the | street | main | until | the | end. | There | is | the | entrance.", "Follow the main street all the way to the end. The entrance is right there.")],
-    dir_malecon: [t("Baje | por | la | calle | principal | hasta | el | mar. | Ahí | empieza | el | malecón.", "Go down | along | the | street | main | until | the | sea. | There | begins | the | waterfront.", "Head down the main street to the sea. That's where the waterfront starts.")],
+    // the ruins: on the rocky point past the beach's west end (TOWN.md "Out of town")
+    dir_ruinas: [t("Baje | a | la | playa | y | camine | a la izquierda, | hasta | el | final: | las | ruinas | están | en | las | rocas.", "Go down | to | the | beach | and | walk | to the left, | until | the | end: | the | ruins | are | on | the | rocks.",
+      "Go down to the beach and walk left, all the way to the end: the ruins are up on the rocks.")],
+    dir_malecon: [t("Pase | entre | los | puestos, | aquí | atrás, | y | cruce | la | avenida | del | Puerto. | Ahí | están | el | malecón | y | la | playa.", "Go | between | the | stalls, | here | behind, | and | cross | the | avenue | of the | Harbor. | There | are | the | waterfront | and | the | beach.",
+      "Go between the stalls behind me and cross Avenida del Puerto. The waterfront and the beach are right there.")],
+    // El Muelle and the boats: on the malecón to the west, behind the museum
+    dir_muelle: [t("Cruce | la | avenida | del | Puerto, | aquí | atrás, | y | camine | a la izquierda | hasta | el | muelle.", "Cross | the | avenue | of the | Harbor, | here | behind, | and | walk | to the left | until | the | pier.",
+      "Cross Avenida del Puerto behind me and walk left to the pier.")],
     dir_trattoria: [t("Está | en | la | avenida | Juárez, | a | una | cuadra, | por | allá: | la | del | toldo | rojo.", "It's | on | the | avenue | Juárez, | at | one | block, | over | there: | the one | with the | awning | red.", "It's on Juárez Avenue, one block that way: the one with the red awning.")],
-    dir_cafe: [t("¡Está | aquí | en | la | plaza, | bajo | la | ceiba | grande!", "It's | here | on | the | square, | under | the | ceiba tree | big!", "It's right here on the square, under the big ceiba tree!")],
-    dir_cocina: [t("En | la | calle | Ceiba, | a | dos | cuadras | de | aquí.", "On | the | street | Ceiba, | at | two | blocks | from | here.", "On Ceiba Street, two blocks from here.")],
-    dir_mercado: [t("Junto | al | mercado, | a | dos | cuadras | por | esa | calle.", "Next | to the | market, | at | two | blocks | along | that | street.", "Next to the market, two blocks down that street.")],
+    dir_cafe: [t("Está | en | la | avenida | Juárez, | a | una | cuadra, | por | allá: | enfrente de | Información Turística.", "It's | on | the | avenue | Juárez, | at | one | block, | over | there: | across from | Tourist Information.",
+      "It's on Juárez Avenue, one block that way: across from the tourist information office.")],
+    dir_cocina: [t("En | la | calle | Ceiba, | cruzando | la | avenida, | a la vuelta | del | banco.", "On | the | street | Ceiba, | crossing | the | avenue, | around the corner | from the | bank.", "On Ceiba Street, across the avenue, just around the corner from the bank.")],
+    // the taquería
+    dir_mercado: [t("Junto | al | mercado: | por | la | avenida | del | Puerto, | para | allá, | pasando | el | museo.", "Next | to the | market: | along | the | avenue | of the | Harbor, | toward | there, | passing | the | museum.",
+      "Next to the market: along Avenida del Puerto, that way, past the museum.")],
     tour_bit: [t("Un | poco, | al | mediodía. | Vaya | temprano: | ese | es | mi | consejo.", "A | little, | at | noon. | Go | early: | that | is | my | advice.", "A bit, around midday. Go early, that's my advice.")],
     tour_muelle: [t("Sí, | un | poco, | pero | la | comida | es | muy | buena.", "Yes, | a | little, | but | the | food | is | very | good.", "Yes, a little, but the food is really good.")],
     tour_market: [t("Un | poco, | los | sábados, | pero | eso | es | parte | de | lo | bonito.", "A | little, | on | Saturdays, | but | that | is | part | of | the | nice-thing.", "A bit on Saturdays, but that's part of the fun!",
@@ -937,7 +1002,8 @@ export const local: SituationDef = {
     price_cenote: [t("Se cobra | la | entrada; | depende | del | cenote. | Lleve | efectivo.", "They charge | the | entrance; | it-depends | on the | cenote. | Bring | cash.", "There's an entrance fee; it depends on the cenote. Bring cash.")],
     price_lancha: [t("No es | barato, | pero | vale la pena. | En | el | muelle | le | dan | precio.", "It's not | cheap, | but | it's worth it. | At | the | pier | (to) you | they-give | price.", "It's not cheap, but it's worth it. They'll give you a price at the pier.")],
     book_muelle: [t("Para | cenar, | sí. | Sobre todo | el | fin de semana.", "For | dinner, | yes. | Especially | on the | weekend.", "For dinner, yes. Especially on weekends.", { flags: { 4: "el fin de semana: on the weekend (the article stands for “on the”)." } })],
-    book_trattoria: [t("No aceptan | reservaciones. | Vaya | temprano, | y ya.", "They don't take | reservations. | Go | early, | and that's it.", "They don't take reservations. Just go early.")],
+    // La Cocina de Lucía takes reservations, and walk-ins may wait in the evening (s73)
+    book_trattoria: [t("Mejor | sí, | sobre todo | en | la | noche: | se llena.", "Better | yes, | especially | in | the | evening: | it-fills-up.", "I'd book, yes, especially in the evening: it fills up.")],
     book_lancha: [t("Sí, | mejor | un | día | antes, | en | el | muelle.", "Yes, | better | one | day | before, | at | the | pier.", "Yes, best to book the day before, at the pier.")],
     book_no: [t("No, | no hace falta. | Llegue | y ya.", "No, | there's no need. | Arrive | and that's it.", "No, no need. Just go.")],
     open_museo: [t("De | diez | a | cinco, | pero | los | lunes | está | cerrado.", "From | ten | to | five, | but | on | Mondays | it's | closed.", "Ten to five, but it's closed on Mondays.", { flags: { 5: "los lunes: on Mondays (the article stands for “on”)." } })],
@@ -946,25 +1012,40 @@ export const local: SituationDef = {
         "Every morning, until about two. On Saturdays there are more stalls.", { flags: { 8: ART_TIME, 10: "El sábado: on Saturday (the article stands for “on”)." } }),
     ],
     open_musica: [t("Todos | los | viernes, | a | las | ocho.", "All | the | Fridays, | at | — | eight.", "Every Friday, at eight.", { flags: { 4: ART_TIME } })],
-    open_cocina: [t("Nada más | a | mediodía, | de | la | una | a | las | cinco.", "Only | at | midday, | from | — | one | to | — | five.", "Only at lunchtime, from one to five.", { flags: { 4: ART_TIME, 7: ART_TIME } })],
+    open_cocina: [t("Nada más | al | mediodía, | de | la | una | a | las | cinco.", "Only | at the | midday, | from | — | one | to | — | five.", "Only at lunchtime, from one to five.", { flags: { 4: ART_TIME, 7: ART_TIME } })],
     open_cenote: [t("Abren | temprano, | como | a | las | ocho, | y | cierran | en | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.", "They open early, around eight, and close in the afternoon.", { flags: { 4: ART_TIME } })],
     open_ruinas: [t("Todos | los | días, | desde | las | ocho | de la mañana.", "All | the | days, | from | — | eight | a.m.", "Every day, from eight in the morning.", { flags: { 4: ART_TIME } })],
     open_always: [t("¡Siempre | se puede | ir!", "Always | you can | go!", "You can go anytime!")],
     open_generic: [t("Abre | todos | los | días, | desde | temprano, | creo.", "It-opens | all | the | days, | from | early, | I-think.", "It's open every day from early on, I think.")],
     worth: [t("¡Claro que sí! | Le | va | a | encantar.", "Of course! | (To) you | it's going | to | delight.", "Absolutely! You'll love it.")],
+    // "¿Qué tal es?", "¿Cómo es?", "¿Y el cenote?" about one of her tips
+    like_it: [t("¡Le | va | a | encantar, | ya verá!", "(To) you | it's going | to | delight, | you'll see!", "You'll love it, you'll see!")],
     safe: [
       t("El | centro, | sí: | hay | gente | hasta | tarde. | Pero | la | playa | de | noche, | mejor | no: | está | oscura. | Y | no se meta | al | mar | de | noche.",
         "The | center, | yes: | there-are | people | until | late. | But | the | beach | at | night, | better | not: | it's | dark. | And | don't go | into the | sea | at | night.",
         "Downtown, yes: there are people around until late. But the beach at night, better not: it's dark. And don't go in the sea at night."),
     ],
     no_walk_bus: [t("Entonces | tome | un | colectivo. | Pasan | por | la | avenida | cada rato.", "Then | take | a | shared van. | They-pass | along | the | avenue | every few minutes.", "Then take a colectivo. They come along the main road every few minutes.")],
-    no_walk_taxi: [
-      t("Entonces | tome | un | taxi. | El | sitio | está | ahí | en | la | esquina.", "Then | take | a | taxi. | The | taxi stand | is | there | on | the | corner.", "Then take a taxi. The taxi stand is right there on the corner.",
-        { flags: { 5: "Mexican: sitio = taxi stand." }, neutral: t("Entonces | tome | un | taxi. | La | parada | de | taxis | está | ahí | en | la | esquina.", "Then | take | a | taxi. | The | stand | of | taxis | is | there | on | the | corner.", "Then take a taxi. The taxi stand is right there on the corner.") }),
-    ],
+    // the sitio is by the airport, at the far end of avenida Juárez: taxis are hailed on the avenue
+    no_walk_taxi: [t("Entonces | tome | un | taxi: | pasan | muchos | por | la | avenida.", "Then | take | a | taxi: | pass | many | along | the | avenue.", "Then take a taxi: lots of them come along the avenue.")],
+    taxi_where: [t("Pasan | muchos | por | la | avenida: | nada más | levante | la | mano.", "Pass | many | along | the | avenue: | just | raise | the | hand.", "Lots of them come along the avenue: just wave one down.")],
     fare_colectivo: [t("No es | caro. | Le | paga | al | chofer | al bajarse, | en | efectivo.", "It's not | expensive. | (To) him | you-pay | to the | driver | when you get off, | in | cash.", "It's not expensive. You pay the driver when you get off, in cash.")],
     fare_taxi: [t("El | taxi | cuesta | más. | Pregunte | el | precio | antes de | subirse.", "The | taxi | costs | more. | Ask | the | price | before | getting in.", "A taxi costs more. Ask the price before you get in.")],
     bus_yes: [t("Sí, | pasan | colectivos | por | la | avenida | cada rato.", "Yes, | pass | shared vans | along | the | avenue | every few minutes.", "Yes, colectivos come along the main road every few minutes.")],
+    bus_where: [t("Aquí | enfrente, | en | la | avenida | Juárez: | nada más | levante | la | mano.", "Here | opposite, | on | the | avenue | Juárez: | just | raise | the | hand.", "Right out front, on Juárez Avenue: just wave one down.")],
+    // places that aren't tips, from her bench (TOWN.md "From the zócalo's kiosco")
+    where_banco: [t("Ahí | enfrente, | cruzando | la | avenida: | el | banco | amarillo | tiene | cajero.", "There | opposite, | crossing | the | avenue: | the | bank | yellow | has | an ATM.", "Right across the avenue: the yellow bank has an ATM.")],
+    where_correos: [t("Ahí | enfrente, | cruzando | la | avenida, | junto | al | banco.", "There | opposite, | crossing | the | avenue, | next | to the | bank.", "Right across the avenue, next to the bank.")],
+    where_iglesia: [t("Ahí, | al | final | de | la | plaza, | enfrente | del | kiosco.", "There, | at the | end | of | the | square, | opposite | of the | bandstand.", "Right there, at the end of the square, facing the bandstand.")],
+    where_policia: [t("Al | final | de | la | plaza, | junto | a | la | iglesia, | en | la | esquina.", "At the | end | of | the | square, | next | to | the | church, | on | the | corner.", "At the end of the square, next to the church, on the corner.")],
+    where_mercado: [t("Por | la | avenida | del | Puerto, | para | allá, | pasando | el | museo: | a | dos | minutos.", "Along | the | avenue | of the | Harbor, | toward | there, | passing | the | museum: | at | two | minutes.",
+      "Along Avenida del Puerto, that way, past the museum: two minutes from here.")],
+    where_turismo: [t("En | la | avenida | Juárez, | para | allá, | pasando | el | museo.", "On | the | avenue | Juárez, | toward | there, | passing | the | museum.", "On Juárez Avenue, that way, past the museum.")],
+    where_west: [t("En | la | avenida | Juárez, | a | dos | cuadras, | por | allá, | pasando | la | calle | Flamboyán.", "On | the | avenue | Juárez, | at | two | blocks, | over | there, | passing | the | street | Flamboyán.",
+      "On Juárez Avenue, two blocks that way, past Flamboyán Street.")],
+    where_other: [t("Mejor | pregunte | en | Información Turística, | aquí | en | la | avenida | Juárez: | ahí | le | dan | un | mapa.", "Better | ask | at | Tourist Information, | here | on | the | avenue | Juárez: | there | (to) you | they-give | a | map.",
+      "Better ask at the tourist information office, right here on Juárez Avenue: they'll give you a map.")],
+    her_name: [t("¡Carmen, | para servirle!", "Carmen, | at your service!", "Carmen, at your service!")],
     which_spot: [t("¿De | cuál | me | habla, | {m:mijo|f:mija}?", "About | which | (to) me | you-speak, | dear?", "Which place do you mean, dear?", { flags: { 4: MIJA } })],
     no_problem: [t("Ah, | ¡está bien!", "Oh, | okay!", "Oh, okay!")],
     help_sure: [t("¡Claro, | {m:mijo|f:mija}! | ¿Qué | necesita?", "Sure, | dear! | What | you-need?", "Of course, dear! What do you need?", { flags: { 1: MIJA } })],
@@ -1155,7 +1236,11 @@ export const local: SituationDef = {
     "la ceiba": { reason: "lexical_expression", split: "la → the + ceiba → ceiba tree would translate the café's proper name.", minimal: "Two-word name." },
     "cocina económica": { reason: "lexical_expression", split: "cocina → kitchen + económica → cheap misreads the kind of place: a home-style diner.", minimal: "Two words." },
     "comida corrida": { reason: "lexical_expression", split: "comida → food + corrida → run is false; = the set lunch.", minimal: "Two words." },
-    "a la talla": { reason: "lexical_expression", split: "a → to + la → the + talla → size is false; = grilled Maya-style (a dish name).", minimal: "Three words." },
+    "a la talla": { reason: "lexical_expression", split: "a → to + la → the + talla → size is false; = split and grilled (a dish name).", minimal: "Three words." },
+    "enfrente de": { reason: "lexical_expression", split: "enfrente → in front + de → of misreads the preposition: across from.", minimal: "Two words." },
+    "información turística": { reason: "lexical_expression", split: "información → information + turística → tourist would translate the office's name (the visitor center).", minimal: "Two-word name." },
+    "ya verá": { reason: "lexical_expression", split: "ya → already + verá → you will see is false; = you'll see.", minimal: "Two words." },
+    "para servirle": { reason: "lexical_expression", split: "para → for + servirle → serving you; the courtesy formula = at your service.", minimal: "Two words." },
     "eso sí": { reason: "lexical_expression", split: "eso → that + sí → yes is false; the concession = mind you.", minimal: "Two words." },
     "queso de bola": { reason: "lexical_expression", split: "queso → cheese + de → of + bola → ball is a calque; = Edam cheese.", minimal: "Three words." },
     "se le ofrece": { reason: "grammatical_fusion", split: "se → itself + le → to you + ofrece → offers; the service question = what can I do for you.", minimal: "Three words." },
@@ -1205,6 +1290,9 @@ export const local: SituationDef = {
       ask: (c) => c.say("ask_cuisine"),
       expects: ["food_ans", "food_neg", "budget"],
       suggest: [{ lt: "Say what you feel like", hint: "cuisine", options: "cuisine" }, { lt: "Ask for somewhere cheap", hint: "food" }],
+      // a bare "No, gracias" / "Sí" to "¿Qué se le antoja?": she picks for them (never the same question again)
+      yes: (c) => { c.say("then_try"); recFood(c, undefined, !!c.s.cheap, false, true); },
+      no: (c) => { c.say("then_try"); recFood(c, undefined, !!c.s.cheap, false, true); },
       help: (c) => { recFood(c, undefined, !!c.s.cheap, false, true); } },
     // She asks once; if the learner talks about something else, she lets it go (an optional question).
     { id: "from", when: (c) => c.s.askFrom && !!(c.s.foodRec || c.s.sightRec) && !(c.s.foodRec && c.s.sightRec), done: (c) => !!c.s.fromDone,
@@ -1422,6 +1510,22 @@ export const local: SituationDef = {
     { say: "¿Y otro lugar para comer?", intent: "ask_food", not: ["ask_sight"] },
     { say: "¿Dónde puedo probar el poc chuc?", intent: "ask_food", slots: { cuisine: "yucateca" } },
     { say: "No quiero gastar mucho, ¿dónde como?", intent: "budget", not: ["too_expensive"] },
+    // audit 5 Nov 2026: places that aren't tips, taxis and colectivos, her name, "¿Qué es…?" / "¿Dónde queda…?"
+    { say: "¿Dónde hay un cajero?", intent: "ask_place", slots: { place: "banco" } },
+    { say: "¿Dónde está el banco?", intent: "ask_place", slots: { place: "banco" } },
+    { say: "Necesito sacar dinero", intent: "ask_place" },
+    { say: "¿Dónde está el mercado?", intent: "ask_place", slots: { place: "mercado" } },
+    { say: "¿Dónde está la iglesia?", intent: "ask_place", slots: { place: "iglesia" } },
+    { say: "¿Está lejos la farmacia?", intent: "ask_place", slots: { place: "farmacia" }, not: ["ask_walk"] },
+    { say: "¿Cómo llego al hotel Mar Azul?", intent: "ask_place", slots: { place: "hotel" }, not: ["ask_walk"] },
+    { say: "¿Cómo se llama usted?", intent: "her_name" },
+    { say: "¿Dónde tomo un taxi?", intent: "no_walk" },
+    { say: "¿Puedo ir en taxi?", intent: "no_walk" },
+    { say: "¿Dónde tomo el colectivo?", intent: "no_walk" },
+    { say: "¿Qué es un cenote?", intent: "ask_about_spot", slots: { spot: "cenote" } },
+    { say: "Trabajo en un banco", intent: "none" },
+    { say: "No necesito un cajero", intent: "none" },
+    { say: "Mi hotel es muy bonito", intent: "none" },
     // not understood
     { say: "Mi perro se comió mis tacos", intent: "none" },
     { say: "lancha banana museo", intent: "none" },
@@ -1472,6 +1576,14 @@ export const local: SituationDef = {
     // a follow-up before any tip: "¿De cuál me habla?"; then the second "¿Busca dónde comer, o algo que ver?"
     { name: "which place? then food", turns: ["¡Hola!", "¿Está muy lejos?", "El cenote", "¿Vale la pena?", "Sí, tengo hambre", "Comida yucateca", "Eso es todo"],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; s.walkTwist = false; } },
+    // audit 5 Nov 2026: side questions get answers (her name, the ATM, the market, a taxi), "No, gracias" to "¿Qué se le
+    // antoja?" gets a tip instead of the same question, and the ways follow the 3D town
+    { name: "side questions: her name, the ATM, the market, a taxi", turns: ["¿Cómo se llama usted?", "¿Dónde hay un cajero?", "¿Me puede recomendar un buen lugar para comer?", "No, gracias",
+      "¿Dónde está el mercado?", "¿Qué vale la pena ver aquí?", "¿Dónde tomo un taxi?", "Eso es todo, gracias"],
+      expect: { complete: true, state: { foodRec: true, sightRec: true } }, auto: AUTO, setup: (s) => { s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; s.walkTwist = false; } },
+    { name: "seafood too pricey: the fish tacos; the ways to the pier and the market", turns: ["¿Dónde puedo comer mariscos?", "¿Cómo llego?", "Es muy caro para mí", "¿Dónde está la taquería?",
+      "¿Qué es un cenote?", "¿Qué vale la pena ver aquí?", "¿Qué tal el cenote?", "Mil gracias por todo"],
+      expect: { complete: true, state: { cheap: true } }, auto: AUTO, setup: (s) => { s.weatherOpen = false; s.triedTip = undefined; s.askFrom = false; s.walkTwist = false; } },
   ],
 };
 
