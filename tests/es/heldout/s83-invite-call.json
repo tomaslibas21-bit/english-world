@@ -52,5 +52,20 @@
   { "ctx": "bbq", "say": "Me encantaría, pero el domingo trabajo", "intent": "decline_ctx", "not": ["accept_inv"], "note": "trap: but-refusal" },
 
   { "ctx": "closing", "say": "Te mando un mensaje mañana", "intent": "will_text" },
-  { "ctx": "closing", "say": "Sale, nos vemos el viernes", "intent": ["bye_ext", "g_bye"] }
+  { "ctx": "closing", "say": "Sale, nos vemos el viernes", "intent": ["bye_ext", "g_bye"] },
+
+  {"ctx": "meet_change", "say": "Ok, en la del mercado", "intent": ["meet", "agree", "yn:yes"], "note": "audit (5 Nov), written before testing"},
+  {"ctx": "meet_change", "say": "¿Y dónde está esa taquería?", "intent": "where_is_ctx"},
+  {"ctx": "suggest_place", "say": "Mejor en algún otro lugar", "intent": ["place_no_ctx", "meet_not"], "not": ["agree", "yn:yes"]},
+  {"ctx": "suggest_place", "say": "¿Y si nos vemos en otro lado?", "intent": "place_no_ctx", "not": ["meet_unknown", "yn:yes"], "note": "trap: never 'where's that?'"},
+  {"ctx": "suggest_time", "say": "A esa hora todavía no llego", "intent": "time_shift_ctx", "not": ["agree", "g_ok", "yn:yes"]},
+  {"ctx": "time_change", "say": "No pasa nada, a las ocho", "intent": ["reassure", "time_ans"]},
+  {"ctx": "time_change", "say": "No, a las siete y media", "intent": "time_ans", "not": ["yn:yes", "agree"]},
+  {"ctx": "bbq", "say": "Esta vez no puedo, mejor otro día", "intent": "decline_ctx", "not": ["accept_inv", "yn:yes"], "note": "trap: a refusal"},
+  {"ctx": "bbq", "say": "Ay, qué pena, el domingo no puedo", "intent": "decline_ctx", "not": ["accept_inv"]},
+  {"ctx": "sister", "say": "Mejor otro día, perdón", "intent": "sister_no_ctx", "not": ["sister_yes_ctx", "yn:yes"]},
+  {"ctx": "pay", "say": "Nada, no me debes nada", "intent": ["on_me", "pay_free_ctx"]},
+  {"ctx": "pay", "say": "Luego vemos", "intent": "pay_later_ctx", "not": ["on_me"]},
+  {"ctx": "invite", "say": "Porque me sobra un boleto para el concierto del viernes", "intent": ["tickets", "invite"]},
+  {"ctx": "confirm_place", "say": "No, mejor en la iglesia", "intent": ["meet", "meet_not"], "not": ["yn:yes"]}
 ] }

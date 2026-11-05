@@ -62,3 +62,81 @@ added, 41 changed in the conversation.
 **tests:** 16 NLU tests, 5 sims (tomorrow at ten refused; "No, me lo quedo" with its comma; "No me lo quedo" said aloud; a polite closing and a haggle at the decision; nothing signed on a polite closing).
 
 **still open:** the engine's `c.clearPending()` (the review's NEEDS). "Sí, dos meses" at the extra deposit gets the amount again rather than agreeing: safe, one more turn.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral). Read: STYLE.md, AUTHORING-ES.md "Rules from the reviews", BRIEFS.md
+(s81, p24, p29), the review above, AUDIT/cross and AUDIT/neutral for s81 (with "Town directions (5 Nov)"), TOWN.md
+"Getting around", p24/p29 for the shared facts, the situation file, corpus and held-out set, the transcripts (seeds 3
+and 7), the 3D room (graphics round 2: overhead and talk view) and the 12 scene pictures; about 70 turns played with
+tools/probe.ts (the binding outcomes, rule 22).
+
+**Found 33 (1:1 2:0 3:0 4:7 5:0 6:0 7:20 8:0 9:5 10:0), fixed 33.**
+
+**Meaning safety (the most important, point 7)**
+- "Si me lo quedo, ¿cuándo me puedo mudar?" (an if) was read as "Sí, me lo quedo" and **rented the apartment** at the
+  decision. Now an unaccented si with no comma, followed by a clause, never takes; the question after it is answered.
+  "Sí, me lo quedo", "Si, me lo quedo" and "si me lo quedo gracias" still take it (local `ifTake`).
+- Typed "¡Está bien, gracias!" (with ¡) slipped past the polite-closing check: it **took the apartment, signed the
+  lease, agreed to the $28,000 deposit and to the póliza**. `heard()` now drops ¡¿, so it gets the question again
+  (rule 17), and "¡Hola, Don Ernesto!" gets its greeting back.
+- "Me gusta mucho." / "Me encanta." to "¿Qué le parece?" took it. Now: "¡Qué bueno que le gusta! Entonces, ¿se lo
+  queda?", and only a yes takes it.
+
+**The town (point 4; the lead's "Town directions (5 Nov)"; Las Palmas at Hidalgo × Flamboyán)**
+- The centro "a unos diez minutos" → cinco; the beach "a unos quince minutos" → "a dos cuadras, derecho por la calle
+  Flamboyán: unos cinco minutos".
+- "La parada del colectivo está en la esquina" / "A dos minutos … hay una parada del colectivo": colectivos have no
+  stop; they're waved down on avenida Juárez, a block up Flamboyán ("…aquí a una cuadra: nomás levante la mano";
+  neutral "solo"). "¿Hay una parada de camión?" now gets the city bus stop, a block east in front of the gym (neutral
+  "autobús"). "¿Cómo llego al centro?" gets the way (Flamboyán to Juárez, then right).
+- "el mercado está en el centro" → "a dos cuadras" (and no "Sí," so it also answers "¿Dónde hago la despensa?").
+- The kitchen: the 3D room has it ahead on the learner's right (counter, stove and fridge on the back wall's east half,
+  checked in the round-2 overhead and talk views); the scene pictures, shown instead of the room, have it on the left.
+  The line names no side now: "Mire, esta es la sala, y ahí está la cocina."
+- All nine viewing pictures show the sea from the balcony, but the line said "Desde el balcón no se ve el mar". The 3D
+  room has no balcony; from the town the sea is at the end of calle Flamboyán. Now: "Sí, desde el balcón se alcanza a
+  ver el mar, y la playa está cerca."
+- Kept, consistent with p29 and p24: rent $14,000 (p29 `RENT`), one month's deposit (two without an aval: $28,000),
+  water and maintenance included, the tenant pays electricity, gas and internet; both amounts are in the voiced
+  `domains`. Don Ernesto owns the building and lives on the planta baja; no line names an administrador or an
+  apartment number (the 3D sign says "SE RENTA · DEPTO. 1B").
+
+**Questions without an answer (point 7) and sentences not understood (point 9)**
+- New answers: "¿Hay una farmacia cerca?" (it got the corner store; now Farmacia del Puerto, a block up on Juárez);
+  "¿Hay gas?" ("Déjeme revisar…"; now the roof tank and the pipa); "¿Hay internet?" ("…Luz, gas e internet, no", as if
+  there were none; now not included + NetWave); "¿Hay ventiladores?" ("Sí, hay un ventilador"; now the AC line);
+  "¿Qué pasa si no tengo aval?" and "No tengo aval." before the lease ("Sí, normalmente pido un aval"; now the options:
+  two months' deposit or a póliza; nothing recorded or quoted); "¿Hay otra opción?" with no póliza in sight (it got the
+  póliza's payment line; now the aval options or "es lo único que le puedo ofrecer"); "¿Qué es una póliza jurídica?" /
+  "¿Cómo funciona?" / "¿Qué es eso?" at the póliza (it got who pays; now "Es como un aval, pero de una empresa…");
+  "¿Cuánto cuesta la póliza?" (repeated "una sola vez"; now the price line); "¿Qué es eso?" to "¿tiene aval?" (the
+  explanation, then the question again); "¿Puedo cancelar el contrato antes?" ("Si se va antes del año, pierde el
+  depósito"); "No traigo identificación" ("No se preocupe, eso lo vemos después."); "¿Le sirve mi tarjeta de
+  residente?" ("El pasaporte sirve" → "Sí, esa sirve."); "Me interesa, ¿cuánto es la renta?" said the rent twice.
+- Now understood: "¿Cuánto es?" (anywhere: the rent; at the deposit and the póliza their own amount), "¿Cuánto es en
+  total?" (deposit + first month), "¿A cuántas cuadras está la playa?", "¿Dónde está el súper?", "¿Se ve el mar?",
+  "No firmo".
+
+**Neutral text (point 10):** the cross audit's "camión del gas" in util_gas's twin is a false positive (camión =
+truck is pan-Latin-American; only camión = bus is Mexican-only). New Mexican words are twinned (nomás, camión, tiendita).
+
+**Tests and gates:** 21 NLU tests (153 → 174/174), 5 sims (19 → 24, each 12/12 seeds: the neighborhood; a compliment,
+then yes; an if and a typed polite closing take nothing; the aval options early and the póliza explained; no ID today),
+fuzz 80 without a crash, check-content 0 errors 0 warnings. Corpus +37 (18 with `not`): 336/336 → 370/370, false
+accepts 0/59 → 0/62; held-out 41/41, 0/2 (unchanged).
+
+**Voices:** 7 spoken lines changed (tour[0], bus[0–1], bus_downtown, beach, sea_view, shops + its twin), 10 new
+(bus_city, bus_downtown_way, shops_pharmacy, poliza_what, aval_options, only_option, lease_break, take_q, id_ok,
+id_later), all Don Ernesto's; no values added.
+
+**For the lead / owner**
+- Edition-wide (lang.ts): a bare "Si …, ¿…?" is read as "Sí, …" in every conversation; s81 guards it locally.
+- Other conversations: check handlers that anchor a regex on `c.heard` (`^\s*…`): a typed ¡ or ¿ defeats them (s81's
+  polite closing did).
+- p24 (its reviewer): the 3D sign says "DEPTO. 1B", so "3B" → "1B". npcs.ts `patel`: "Dueño del departamento" →
+  "Dueño del edificio", to match the lead's decision (follow-up pass).
+- TOWN.md facts: from Las Palmas, colectivos on Juárez a block up Flamboyán, the city bus stop a block east in front of
+  the gym, Farmacia del Puerto a block up, mercado and beach two blocks up Flamboyán, the zócalo five minutes; leaving
+  before the year loses the deposit (s81).
+- Kept: "Sí, dos meses" at the extra deposit gets the amount again (safe, one turn); the póliza's price stays vague.
