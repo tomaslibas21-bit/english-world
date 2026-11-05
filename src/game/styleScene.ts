@@ -1,8 +1,10 @@
 // Renderer, sky, light and atmosphere for the trial world styles (see style.ts). The original
-// "blocks" look never calls into this file (createStyleFx returns null for it).
+// "blocks" look never calls into this file (createStyleFx returns null for it), unless the edition grades its light
+// outdoors (theme.ts `light`: blocksGrade below; null in Maple Harbor).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { STYLE, STYLED, IS_TOON, IS_STORY, IS_REAL, OUTLINE_LAYER } from "./style";
+import { THEME } from "./world/theme";
 
 interface Look3D {
   toneMapping: THREE.ToneMapping; exposure: number;
@@ -120,7 +122,7 @@ function makeEnvironments(renderer: THREE.WebGLRenderer, L: Look3D, sunDir: THRE
 /** Sets up the style's sky, lights and environment. Returns null for "blocks". */
 export function createStyleFx(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight; sky: THREE.Mesh; cam: THREE.Camera }): StyleFx | null {
   const L = styleLook();
-  if (!L) return null;
+  if (!L) return THEME.light ? blocksGrade(o, THEME.light) : null;
   const { scene, hemi, sun, sky, cam, renderer } = o;
   const off = new THREE.Vector3(...L.sun[3]);
   const sunDir = off.clone().normalize();
@@ -159,5 +161,53 @@ export function createStyleFx(o: { renderer: THREE.WebGLRenderer; scene: THREE.S
     quality(q) {
       if (IS_TOON && q === "high") cam.layers.enable(OUTLINE_LAYER); else cam.layers.disable(OUTLINE_LAYER);
     },
+  };
+}
+
+/** The sun's shadow pass draws every caster with one shared depth material, and three.js looks that material's program
+ *  up again (its parameters and key built anew) each time the kind of mesh changes from one caster to the next: plain,
+ *  instanced, instanced with colors, skinned, 8 to 11 times a frame outdoors. Each kind gets a depth material of its own
+ *  here (the same shadows), once per zone, when everything in it is in the scene: 0.2–0.3 ms less a frame (theme.ts
+ *  `lean`). Materials that cut their shadow with a texture keep three.js's own handling. (Made on the first call, never
+ *  in Maple Harbor: a new material draws random numbers for its uuid.) */
+let DEPTH: { inst: THREE.MeshDepthMaterial; instColor: THREE.MeshDepthMaterial; skin: THREE.MeshDepthMaterial } | null = null;
+function depthByKind(scene: THREE.Object3D) {
+  DEPTH ??= { inst: new THREE.MeshDepthMaterial(), instColor: new THREE.MeshDepthMaterial(), skin: new THREE.MeshDepthMaterial() };
+  const D = DEPTH;
+  scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.castShadow || m.customDepthMaterial) return;
+    const mat = m.material as THREE.Material & { displacementMap?: THREE.Texture | null };
+    if (Array.isArray(m.material) || mat.alphaTest > 0 || mat.alphaToCoverage || mat.clippingPlanes?.length || mat.displacementMap) return;
+    const inst = o as THREE.InstancedMesh;
+    if (inst.isInstancedMesh) m.customDepthMaterial = inst.instanceColor ? D.instColor : D.inst;
+    else if ((o as THREE.SkinnedMesh).isSkinnedMesh) m.customDepthMaterial = D.skin;
+  });
+}
+
+/** The "blocks" look's light graded outdoors for the edition's town (theme.ts `light`): a warmer sun, a little more
+ *  exposure (the tone curve greys bright walls less), a bluer zenith over a warmer horizon, the fog and the hemisphere in
+ *  the same key. Indoors, the game's own values come back (Game.ts sets the intensities; this keeps its colors). The sun
+ *  keeps following the player as Game.ts places it. */
+function blocksGrade(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight; sky: THREE.Mesh }, g: NonNullable<typeof THEME.light>): StyleFx {
+  const { renderer, scene, hemi, sun, sky } = o;
+  const u = (sky.material as THREE.ShaderMaterial).uniforms;
+  const keep = { sun: sun.color.clone(), hemi: hemi.color.clone(), ground: hemi.groundColor.clone(), exposure: renderer.toneMappingExposure };
+  const fog = new THREE.Fog(g.fog, 110, 420);
+  return {
+    zone(indoor) {
+      if (THEME.lean) depthByKind(scene);
+      if (indoor) {
+        renderer.toneMappingExposure = keep.exposure;
+        sun.color.copy(keep.sun); hemi.color.copy(keep.hemi); hemi.groundColor.copy(keep.ground);
+        return;
+      }
+      renderer.toneMappingExposure = g.exposure;
+      sun.color.set(g.sun); hemi.color.set(g.hemi[0]); hemi.groundColor.set(g.hemi[1]);
+      u.top.value.set(g.sky[0]); u.mid.value.set(g.sky[1]); u.bottom.value.set(g.sky[2]);
+      scene.fog = fog;
+    },
+    frame() {},
+    quality() {},
   };
 }

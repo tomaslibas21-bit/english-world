@@ -105,6 +105,79 @@ describe("the tianguis on the zócalo (s91a; graphics round 1)", () => {
   });
 });
 
+describe("graphics round 2: the zócalo dressed, its people, the letters, the coaches", () => {
+  const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0 })), ...(THEME.tianguis?.stalls ?? [])];
+  const rect = (s: { x: number; z: number; rot: number }, r: { x: number; z0: number; z1: number }) => {
+    const c = Math.cos(s.rot), n = Math.sin(s.rot);
+    const pts = [[-r.x, r.z0], [r.x, r.z0], [-r.x, r.z1], [r.x, r.z1]].map(([lx, lz]) => [s.x + lx * c + lz * n, s.z - lx * n + lz * c]);
+    return { x0: Math.min(...pts.map((p) => p[0])), x1: Math.max(...pts.map((p) => p[0])), z0: Math.min(...pts.map((p) => p[1])), z1: Math.max(...pts.map((p) => p[1])) };
+  };
+  const gap = (b: { x0: number; x1: number; z0: number; z1: number }, x: number, z: number) => Math.hypot(Math.max(b.x0 - x, 0, x - b.x1), Math.max(b.z0 - z, 0, z - b.z1));
+  const tables = stalls.map((s) => rect(s, STALL_SIZE.table)), lonas = stalls.map((s) => rect(s, STALL_SIZE.lona));
+  const people: [string, number, number][] = [
+    ...OUTDOOR_NPCS.map((n) => [n.npc, n.x, n.z] as [string, number, number]),
+    ...OUTDOOR_NPCS.filter((n) => n.ax !== undefined).map((n) => [n.npc + "'s talk spot", n.ax!, n.az!] as [string, number, number]),
+    ...CHAT_SPOTS.flatMap(([ax, az, bx, bz]) => [["a chatting pair", ax, az], ["a chatting pair", bx, bz]] as [string, number, number][]),
+  ];
+  const z = THEME.zocalo!;
+
+  it("the laureles, bancas and lamps stand on the square, clear of everyone, the stalls and the pigeons' ring", () => {
+    expect(z).toBeTruthy();
+    // (a banca's footprint: town.ts's collider for it; a laurel's trunk and a lamp post: their colliders' radius)
+    const bancas = z.bancas.map(([x, bz, rot]) => ({ x0: x - (Math.abs(Math.cos(rot)) * 1.9 + 0.3) / 2, x1: x + (Math.abs(Math.cos(rot)) * 1.9 + 0.3) / 2, z0: bz - (Math.abs(Math.sin(rot)) * 1.9 + 0.3) / 2, z1: bz + (Math.abs(Math.sin(rot)) * 1.9 + 0.3) / 2 }));
+    const posts: [string, number, number, number][] = [...z.laureles.map(([x, y]) => ["a laurel", x, y, 0.65] as [string, number, number, number]), ...z.lamps.map(([x, y]) => ["a lamp", x, y, 0.24] as [string, number, number, number])];
+    for (const b of bancas) {
+      expect(b.x0 > SQUARE.x1 && b.x1 < SQUARE.x2 && b.z0 > SQUARE.z1 && b.z1 < SQUARE.z2).toBe(true);
+      for (const [who, x, y] of people) expect(gap(b, x, y), `a banca and ${who}`).toBeGreaterThan(0.8);
+      for (const l of lonas) expect(b.x1 < l.x0 || l.x1 < b.x0 || b.z1 < l.z0 || l.z1 < b.z0).toBe(true);
+    }
+    for (const [what, x, y, r] of posts) {
+      expect(x > SQUARE.x1 && x < SQUARE.x2 && y > SQUARE.z1 && y < SQUARE.z2, what).toBe(true);
+      expect(Math.hypot(x - FOUNTAIN.x, y - FOUNTAIN.z), `${what} and the pigeons' ring`).toBeGreaterThan(9.5 + r);
+      for (const [who, px, pz] of people) expect(Math.hypot(x - px, y - pz), `${what} at ${x},${y} and ${who}`).toBeGreaterThan(r + 1.2);
+      for (const l of lonas) expect(gap(l, x, y), `${what} and a stall`).toBeGreaterThan(r + 0.4);
+      for (const b of bancas) expect(gap(b, x, y), `${what} and a banca`).toBeGreaterThan(r + 0.3);
+      if (THEME.foodCart) expect(Math.hypot(x - THEME.foodCart.x, y - THEME.foodCart.z)).toBeGreaterThan(r + 1.5);
+    }
+  });
+
+  it("each vendor stands behind a stall's table, facing the customers, clear of the other tables and everyone", () => {
+    for (const [x, y, rot] of THEME.vendors) {
+      const i = stalls.findIndex((s) => Math.hypot(s.x - x, s.z - y) < 1.6 && Math.abs(s.rot - rot) < 1e-6);
+      expect(i, `a stall for the vendor at ${x},${y}`).toBeGreaterThanOrEqual(0);
+      const s = stalls[i], back = -(Math.sin(s.rot) * (x - s.x) + Math.cos(s.rot) * (y - s.z));
+      expect(back, "behind the table").toBeGreaterThan(-STALL_SIZE.table.z0);
+      expect(back, "under the lona").toBeLessThan(-STALL_SIZE.lona.z0);
+      for (const [k, t] of tables.entries()) if (k !== i) expect(gap(t, x, y)).toBeGreaterThan(0.6);
+      for (const [who, px, pz] of people) expect(Math.hypot(x - px, y - pz), `a vendor and ${who}`).toBeGreaterThan(1.2);
+    }
+  });
+
+  it("the new chatting pairs, the sitters' seats and the letters keep clear of each other and of everyone", () => {
+    const L = THEME.letras!;
+    expect(L).toBeTruthy();
+    // the letters' plinth: about 0.86 m a letter and its gap, along x from L.x, 0.9 deep
+    const len = [...L.text].reduce((a, ch) => a + (ch === " " ? 0.43 : ch === "I" || ch === "Í" ? 0.6 : 0.89), 0) * (L.h / 1.45);
+    const plinth = { x0: L.x - 0.3, x1: L.x + len + 0.3, z0: L.z - 0.45, z1: L.z + 0.45 };
+    for (const [who, x, y] of people) expect(gap(plinth, x, y), `the letters and ${who}`).toBeGreaterThan(0.8);
+    for (const [x, y] of THEME.sitters) expect(gap(plinth, x, y), "the letters and a sitter's seat").toBeGreaterThan(0.8);
+    for (const [ax, az, bx, bz] of THEME.chatSpots) {
+      expect(Math.hypot(ax - bx, az - bz), "face to face").toBeLessThan(1.6);
+      for (const [who, x, y] of people) if (Math.hypot(ax - x, az - y) > 0.01 && Math.hypot(bx - x, bz - y) > 0.01) expect(Math.min(Math.hypot(ax - x, az - y), Math.hypot(bx - x, bz - y)), `a new pair and ${who}`).toBeGreaterThan(2);
+    }
+  });
+
+  it("the coaches at the bus terminal keep clear of the passing cars' lane", () => {
+    const bt = THEME.busTerminal!;
+    expect(bt.buses.length).toBeGreaterThan(0);
+    const oak = TRAFFIC_LANES.filter((l) => Math.abs(l.z - 38) < 3);
+    for (const bus of bt.buses) for (const l of oak) {
+      // a coach 2.5 m wide at the curb (z 42.5 - 1.08), the cars 1.9 m wide in their lane
+      expect(Math.abs(42.5 - 1.08 - l.z), `the coach at x ${bus.x} and the lane at z ${l.z}`).toBeGreaterThanOrEqual(1.25 + CAR.width / 2 - 0.001);
+    }
+  });
+});
+
 describe("the conversation header's place line", () => {
   it("shows the whole Spanish name when its meaning covers both halves", () => {
     expect(placeLtNamed("town-square")).toBe("The main square and its market stalls “Zócalo · Tianguis” – literally “main square · street market”");

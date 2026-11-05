@@ -44,6 +44,28 @@ export interface TownTheme {
     yucatanDinner?: boolean;
     /** The clothes shop: a white linen guayabera on a mannequin by the door. */
     guayabera?: boolean;
+    // graphics round 2 (docs/es/TOWN.md "Graphics, round 2")
+    /** Departamentos Las Palmas (s81, s82, p29): talavera number tiles, the minisplit on the wall instead of the
+     *  radiator (p29: "el aire no enfría"), bars on the windows, a ceiling fan, the garrafón, plants in clay pots. */
+    lasPalmas?: boolean;
+    /** The hotel's lobby as a beach hotel's: talavera on the desk's front, rattan furniture, a zarape runner, potted
+     *  palms, ceiling fans, windows on the sea, a hammock. */
+    hotelMx?: boolean;
+    /** The police: a shield with a hummingbird on the rug instead of the star, the "Denuncias" window. */
+    policeMx?: boolean;
+    /** The museum's permanent collection: Maya stelae, a chac mool, painted vases and a model of the ruins. */
+    museumMaya?: boolean;
+    /** The airport: a mural, a step-fret frieze, potted palms, the ground transport desk, a souvenir stand, bigger signs. */
+    airportMx?: boolean;
+    /** The clinic: the garrafón instead of the water cooler, ceiling fans, waiting chairs, plants in clay pots. */
+    clinicMx?: boolean;
+    /** The shops' Mexican touches: rebozos, embroidered blouses and straw hats (Hilos), a little altar and a fan
+     *  (Estética Tijeras), garrafones (Tienda El Faro), a palm and a fan (Renta de Autos). */
+    shopsMx?: boolean;
+    /** Café La Ceiba: conchas and pan dulce in the case, talavera on the counter, jarritos on the wall, fans. */
+    cafeMx?: boolean;
+    /** El Muelle: thatch under the ceiling, a fishing net, chairs in bright colors, string lights, the catch of the day. */
+    muelleMx?: boolean;
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
@@ -152,8 +174,66 @@ export interface TownTheme {
   /** The rooms' looks in this edition, by room id: floor and wall colors, the floor's kind, the accent (baseboards). */
   roomLooks: Record<string, { floor?: string; wall?: string; floorKind?: "wood" | "tile" | "carpet" | "stone"; accent?: string }>;
   /** Diego and Natalia's house (s85, p30) as a Yucatecan home: a ceiling fan, a family altar, plants in clay pots, a
-   *  hammock, a water jug on its stand. */
+   *  hammock, a water jug on its stand (and since round 2 a petate and the television on its stand). */
   homeMx: boolean;
+
+  // Graphics round 2 (5 Nov 2026; docs/es/TOWN.md "Graphics, round 2"). Off in Maple Harbor.
+  /** The rooms' plain colored shapes (an opaque color without a texture or a glow) merged into two vertex-colored
+   *  meshes a room, one that casts shadows and one that doesn't, instead of a mesh per color: the same look in far
+   *  fewer draw calls, so the rooms can hold more (Maple Harbor: false, a mesh per color). */
+  roomMerge: boolean;
+  /** The selva (the Yucatán's low jungle) round the town instead of Maple Harbor's temperate hills: the hills flattened
+   *  into low rises in `hills`' green, and a band of canopy clumps in the `canopy` greens beyond the town's edges and
+   *  round the cenote (one instanced mesh). */
+  selva: { hills: string; canopy: string[] } | null;
+  /** Things beside the follow camera dissolve (a short dither within ~4.5 m of it, as the papel picado's flags do): the lamp
+   *  posts and their lanterns, so one never fills the picture (the palms always do: Maple Harbor has none). */
+  nearFade: boolean;
+  /** The town's triangles trimmed where they don't show (room for the edition's own things under the phones' budget):
+   *  the windows' panes as single faces instead of thin boxes (the same look from the street, a sixth of the
+   *  triangles), the shop windows' goods in a mesh for each part of town (each drawn only where it is in view, not all
+   *  of them wherever one is), the lamps' globes a little rounder than they need be no more; and the frame trimmed: each
+   *  kind of shadow caster its own depth material (styleScene.ts `depthByKind`), so three.js stops looking the shadow
+   *  program up again at every change of kind. */
+  lean: boolean;
+  /** The bus terminal outside: canopies over its two andenes either side of the door, their painted signs and benches,
+   *  planters by the door, and intercity buses at the curb in front of them (x and the destination on each). */
+  busTerminal: { andenes: string[]; buses: { x: number; dest: string }[] } | null;
+  /** The airport outside: its drop-off canopy thatched like a palapa (no higher than the camera's box over it, Game.ts),
+   *  agave planters along the forecourt, and a painted welcome sign (two lines) at the forecourt's north end. */
+  airportOut: { welcome: [string, string] } | null;
+  /** The square dressed as a zócalo: laureles de la India (big dark crowns, their trunks whitewashed) at these spots, iron
+   *  bancas where the square's benches are and these more (x, z and which way the seat faces: 0 is +z), and colonial
+   *  lamp posts with four-sided lanterns at these spots. In the tianguis' mesh: drawn only where the square is in view. */
+  zocalo: { laureles: [number, number][]; bancas: [number, number, number][]; lamps: [number, number][] } | null;
+  /** The passers-by's looks in this town (ambient.ts walkerLook): their skins, hair colors, tops and bottoms, and how
+   *  often one wears a straw hat (besides the caps, which become straw hats), shorts or sandals (null: Maple Harbor's). */
+  walkers: { skins: string[]; hairs: string[]; tops: string[]; bottoms: string[]; straw: number; shorts: number; sandals: number } | null;
+  /** More pairs of townspeople chatting (added to layout.ts CHAT_SPOTS): [x, z] of one and [x, z] of the other. */
+  chatSpots: [number, number, number, number][];
+  /** Seats (town.ts Town.seats: the benches') where someone sits, besides Maple Harbor's reader and the one by the
+   *  fountain: x and z of the seat. */
+  sitters: [number, number][];
+  /** Townspeople standing at these spots facing `rot` (0: +z): the tianguis' vendors behind their stalls. */
+  vendors: [number, number, number][];
+  /** Letras monumentales: the town's name in big colored block letters on the malecón (from x along x at z, `h` m
+   *  high, each letter in the next of `colors`), read from the street and the square. */
+  letras: { text: string; x: number; z: number; h: number; colors: string[] } | null;
+  /** The streets painted as a Mexican town's are: no white lines along the roads' edges, and the curbs painted in
+   *  `color` for `corner` m from each crossing (no parking there). */
+  streetPaint: { corner: number; color: string } | null;
+  /** The houses' fronts (by building id, with the number on its door's talavera tile): a painted band along the bottom
+   *  of the wall, an iron grille over the door, potted plants either side of it. */
+  houseFronts: Record<string, string>;
+  /** The light outdoors graded for this town (styleScene.ts; the rooms keep the game's): the sun's color, the tone
+   *  curve's exposure, the sky's zenith, middle and horizon, the fog's color (the sea fades into it too), the
+   *  hemisphere's sky and ground colors, and how much bigger the clouds are (null: Maple Harbor's light). */
+  light: { sun: string; exposure: number; sky: [string, string, string]; fog: string; hemi: [string, string]; clouds: number } | null;
+  /** Townspeople sitting or standing (not walking) farther than this from the player keep their pose (ambient.ts
+   *  `holdPose`: their matrices and skeleton left as they are): the edition's added vendors, sitters and pairs cost a
+   *  frame next to nothing where they are too far to see breathe (null: all of them are animated every frame, as in
+   *  Maple Harbor). */
+  stillBeyond: number | null;
 }
 
 /** What a tianguis stall sells (theme.ts `tianguis`; mexican.ts `tianguisStall` builds each). */
@@ -203,4 +283,20 @@ export const THEME: TownTheme = {
   tianguis: null,
   roomLooks: {},
   homeMx: false,
+  roomMerge: false,
+  selva: null,
+  nearFade: false,
+  lean: false,
+  busTerminal: null,
+  airportOut: null,
+  zocalo: null,
+  walkers: null,
+  chatSpots: [],
+  sitters: [],
+  vendors: [],
+  letras: null,
+  streetPaint: null,
+  houseFronts: {},
+  light: null,
+  stillBeyond: null,
 };

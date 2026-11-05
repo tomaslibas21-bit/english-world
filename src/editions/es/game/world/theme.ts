@@ -105,7 +105,11 @@ export const THEME: TownTheme = {
       "11:30|MÉRIDA|ANDÉN 4|A TIEMPO", "17:15|CANCÚN|ANDÉN 1|A TIEMPO"],
   },
   restaurant: "yucateco",
-  roomExtras: { customs: true, mexicanFlag: true, bankTurns: true, pharmacyDoctor: true, museumStairs: true, yucatanDinner: true, guayabera: true },
+  roomExtras: {
+    customs: true, mexicanFlag: true, bankTurns: true, pharmacyDoctor: true, museumStairs: true, yucatanDinner: true, guayabera: true,
+    // graphics round 2: Las Palmas, the hotel, the police, the museum, the airport, the clinic, the shops, the café, El Muelle
+    lasPalmas: true, hotelMx: true, policeMx: true, museumMaya: true, airportMx: true, clinicMx: true, shopsMx: true, cafeMx: true, muelleMx: true,
+  },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
   outdoorNpcs: [{ npc: "dot", x: 111.35, z: 6.1, rot: 0.11, ax: 111.6, az: 8.3 }],
@@ -149,7 +153,9 @@ export const THEME: TownTheme = {
   stallSigns: { flowers: "Flores", fruit: "Frutas", veg: "Verduras", bread: "Pan dulce" },
   // from the kiosco's roof to the square's edges: the lamp posts and the corners
   papelPicado: [[12, -18, 4.6], [48, -18, 4.6], [10, -44, 4.6], [50, -44, 4.6], [30, -16, 4.8], [52, -30, 4.6], [8, -30, 4.6], [30, -47, 4.6]],
-  palms: [[8.6, -17.4], [47.6, -17.6], [8.4, -47.2], [49, -47.4], [20.5, -16.6], [39.5, -16.6], [6.8, -32], [51.4, -26]],
+  palms: [[8.6, -17.4], [47.6, -17.6], [8.4, -47.2], [49, -47.4], [20.5, -16.6], [39.5, -16.6], [6.8, -32], [51.4, -26],
+    // (graphics round 2) along avenida Juárez up to the airport, and in the terminal's forecourt either side of its canopy
+    [104, -15], [110, -15], [116, -15], [104, -1.3], [110, -1.3], [116, -1.3], [130.5, -22.5], [130.5, -27], [130.5, 6.5], [130.5, 11]],
   market: "mercado",
 
   // Beyond the square (docs/es/TOWN.md tasks 1–5): the malecón and the beach, the buildings' Mexican details, the
@@ -260,6 +266,58 @@ export const THEME: TownTheme = {
     "post-office": { accent: "#c2006a" },
     // Diego and Natalia's house: a warm ceramic tile floor, warm light walls, terracotta baseboards (and `homeMx`)
     "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b" },
+    // (graphics round 2) Departamentos Las Palmas: ceramic tiles and pale mint walls, a teal baseboard; the hotel's lobby:
+    // pale stone tiles, cream walls, the sea's blue
+    apartments: { floor: "#dccbb0", floorKind: "tile", wall: "#eef3e6", accent: "#2f7f78" },
+    hotel: { floor: "#e8d6b6", floorKind: "tile", wall: "#fbf3e4", accent: "#1f6f8b" },
   },
   homeMx: true,
+
+  // Graphics, round 2 (docs/es/TOWN.md "Graphics, round 2"): the rooms' plain colors in two meshes each (far fewer draw
+  // calls: room for the rooms' new things); the selva round the town instead of temperate hills; lamps that dissolve
+  // beside the camera; the windows' panes as single faces (triangles for the new things)
+  roomMerge: true,
+  selva: { hills: "#3f7d3a", canopy: ["#2f6b34", "#3b7d3a", "#2a5f30", "#467f3c", "#356f37", "#2c6a3f"] },
+  nearFade: true,
+  lean: true,
+  // the bus terminal (s67a): its andenes under canopies either side of the door, the coaches at the curb in front of them
+  // (the departures board: Cancún from andén 1, Tulum from andén 2)
+  busTerminal: { andenes: ["Andén 1", "Andén 2"], buses: [{ x: 31, dest: "CANCÚN" }, { x: 57.5, dest: "TULUM" }] },
+  // the airport outside: the drop-off canopy thatched, agaves, and the town's welcome
+  airportOut: { welcome: ["¡Bienvenidos a Puerto Colibrí!", "Welcome · Caribe Mexicano"] },
+  // the zócalo dressed: four laureles in its quarters, iron bancas (the kiosco's three and four more: two on the south
+  // side facing the kiosco, one each side), colonial lamp posts on its diagonals; all clear of everyone's spot, the
+  // talk spots, the chatting pair, the stalls and the pigeons' ring round the kiosco (tests/es/town.test.ts)
+  zocalo: {
+    laureles: [[13.5, -25.5], [44.5, -21.5], [15.5, -31.5], [45.5, -28.5]],
+    bancas: [[24.5, -17.4, Math.PI], [37, -17.4, Math.PI], [17, -27.5, Math.PI / 2], [43.5, -25, -Math.PI / 2]],
+    lamps: [[22.2, -22.2], [37.8, -22.2], [22.2, -37.8], [37.8, -37.8]],
+  },
+  // the townspeople of a Caribbean town (none dressed as the player can be: ui/Title.tsx LOOKS): mostly dark hair and
+  // warm skins, light summer clothes, a straw hat now and then, shorts and sandals on some (the tourists among them)
+  walkers: {
+    skins: ["#e8c09a", "#d9a47e", "#c68e63", "#b07a52", "#a0694a", "#8a5a3c", "#6e4630", "#f2d3bd", "#c68e63"],
+    hairs: ["#1f1a17", "#1f1a17", "#2b1d16", "#3b2618", "#1f1a17", "#5a3a25", "#2b1d16", "#b8b3ac"],
+    tops: ["#f4f1ea", "#fbe9c8", "#f7c6c7", "#b8e0d2", "#ffd166", "#9ad1d4", "#ece3cf", "#c9e4f2", "#e4007c", "#f6a800", "#7ac143", "#ff8fab"],
+    bottoms: ["#d8c3a0", "#4a6fa5", "#2b2d42", "#f4f1ea", "#5c4b3a", "#8fa7c4", "#3d405b"],
+    straw: 0.14, shorts: 0.3, sandals: 0.28,
+  },
+  // more people on the malecón and the beach (a pair chatting by the bench at x 46, another on the sand by the
+  // palapas), sitting on the zócalo's south bancas and the malecón's benches, and four of the tianguis' vendors behind
+  // their stalls (pottery, fruit, hats, vegetables), facing the square
+  chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9]],
+  sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05]],
+  vendors: [[32, -44.25, 0], [26, -44.25, 0], [44, -44.75, 0], [38, -43.25, 0]],
+  // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
+  // nothing, and the town's people cost the frame no more than before the round)
+  stillBeyond: 22,
+  // the town's name on the malecón where calle Ceiba meets it, the sea behind it (clear of the bench at x 0, the
+  // sidewalk's palms and lamps, and the chatting pair)
+  // the light outdoors: a warmer sun, a touch more exposure, a bluer zenith over a warm horizon, bigger cumulus
+  light: { sun: "#ffe9c4", exposure: 1.06, sky: ["#3f9be6", "#a3d6f5", "#fde9cc"], fog: "#d6ecf2", hemi: ["#e6f4ff", "#9cc27a"], clouds: 1.5 },
+  // the houses' fronts: a rodapié, a grille over the door with its number on a talavera tile, plants by it
+  houseFronts: { sophie: "12", dan: "24", house3: "31", house4: "47", house5: "53" },
+  // the streets as a Mexican town paints them: no white edge lines, the curbs yellow by the corners
+  streetPaint: { corner: 5, color: "#f2c230" },
+  letras: { text: "PUERTO COLIBRÍ", x: 2.8, z: -63.55, h: 1.45, colors: ["#e4007c", "#f77f00", "#00a6a6", "#f6c000", "#7ac143", "#6d2e9e", "#1f6fd1", "#ff5a36"] },
 };

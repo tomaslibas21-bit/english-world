@@ -494,7 +494,7 @@ export class Character {
   private buildHair(P: Parts, look: Look, acc: string[]) {
     const s = look.hair.style, c = look.hair.color, R = HR;
     const H = (g: THREE.BufferGeometry) => P.add(g, c);
-    const hatted = ["cap", "hat", "police", "pilot", "chef"].some((a) => acc.includes(a));
+    const hatted = ["cap", "hat", "police", "pilot", "chef", "strawhat"].some((a) => acc.includes(a));
     if (s === "bald") {
       // a band round the back and the sides, at the ears
       H(new THREE.SphereGeometry(R * 1.035, 22, 3, Math.PI - 0.12, Math.PI + 0.24, Math.PI * 0.44, Math.PI * 0.17).scale(1, 1.02, 0.97));
@@ -604,6 +604,12 @@ export class Character {
       P.add(new THREE.CylinderGeometry(R * 1.12, R * 0.96, 0.08, 20).translate(0, 0.31, 0), c);
       P.add(new THREE.CylinderGeometry(0.15, 0.15, 0.014, 16, 1, false, -Math.PI / 2, Math.PI).rotateX(0.22).translate(0, 0.14, 0.2), "#111111");
       if (acc.includes("police") || acc.includes("pilot")) P.add(new THREE.CircleGeometry(0.035, 6).translate(0, 0.225, R * 1.0 + 0.002), "#e2c044");
+    }
+    if (acc.includes("strawhat")) {
+      // a straw hat: the crown and its band, a wide brim
+      P.add(new THREE.CylinderGeometry(R * 0.9, R * 1.02, 0.15, 18).translate(0, 0.225, -0.005), "#e2c483");
+      P.add(new THREE.CylinderGeometry(R * 1.035, R * 1.035, 0.045, 18).translate(0, 0.17, -0.005), "#7a3b1d");
+      P.add(new THREE.CylinderGeometry(R * 1.8, R * 1.8, 0.022, 22).translate(0, 0.148, -0.005), "#e8cc8f");
     }
     if (acc.includes("chef")) {
       P.add(new THREE.CylinderGeometry(R * 0.92, R * 0.96, 0.2, 20).translate(0, 0.26, -0.01), "#ffffff");

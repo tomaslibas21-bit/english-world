@@ -24,6 +24,9 @@ interface Walker {
   heading: number; greetT: number; lastTarget: number;
   chat?: Chatter;
   dog?: Dog;
+  /** Holding their pose far from the player (theme.ts `stillBeyond`): their parts' matrices frozen; `posed` once they
+   *  have taken it (sitting down, facing the other one). */
+  still?: boolean; posed?: boolean;
 }
 
 /** Two people talking in turns: one talks for a couple of seconds while the other listens (eyes on them, a nod
@@ -85,19 +88,53 @@ const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c
 const LANES = TRAFFIC_LANES;
 const _hand = new THREE.Vector3(), _steer = new THREE.Vector3();
 
-/** A passer-by's look, drawn from `r` (the town's random stream; the dev lineup passes its own). */
+const NOOP = () => {};
+
+/** Someone far from the player keeping their pose (theme.ts `stillBeyond`), or moving again: their matrices and their
+ *  skeleton worked out once more, then left alone (three.js would otherwise redo every bone's matrix, the skin's inverse
+ *  and its bone texture each frame for a pose that does not change). */
+function holdPose(root: THREE.Object3D, hold: boolean) {
+  if (hold) {
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      o.matrixAutoUpdate = false;
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) { const s = (o as THREE.SkinnedMesh).skeleton; s.update(); s.update = NOOP; }
+    });
+    root.updateMatrixWorld = NOOP;
+  } else {
+    Reflect.deleteProperty(root, "updateMatrixWorld");
+    root.traverse((o) => {
+      o.matrixAutoUpdate = true;
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) Reflect.deleteProperty((o as THREE.SkinnedMesh).skeleton, "update");
+    });
+  }
+}
+
+/** This edition's own draws for its passers-by's straw hats, shorts and sandals (theme.ts `walkers`), so that `r`'s stay
+ *  as they are; started again with each town's townspeople (Ambient). */
+let rWear = rand(9090);
+
+/** A passer-by's look, drawn from `r` (the town's random stream; the dev lineup passes its own); in this edition's
+ *  colors (theme.ts `walkers`; Maple Harbor's below). */
 export function walkerLook(female: boolean, r: () => number): Look {
+  const W = THEME.walkers;
   const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
   const acc: Look["acc"] = [];
   if (r() < 0.2) acc.push("glasses");
   if (r() < 0.12) acc.push(female ? "earrings" : "cap");
   if (!female && r() < 0.15) acc.push("beard");
   if (r() < 0.08) acc.push("sunglasses");
-  return {
-    skin: pick(SKINS), hair: { style: pick(female ? F_HAIR : M_HAIR), color: pick(HAIRS) },
-    top: pick(TOPS), bottom: pick(BOTTOMS), skirt: female && r() < 0.3, acc,
+  const look: Look = {
+    skin: pick(W?.skins ?? SKINS), hair: { style: pick(female ? F_HAIR : M_HAIR), color: pick(W?.hairs ?? HAIRS) },
+    top: pick(W?.tops ?? TOPS), bottom: pick(W?.bottoms ?? BOTTOMS), skirt: female && r() < 0.3, acc,
     height: 0.92 + r() * 0.14, build: 0.92 + r() * 0.2,
   };
+  if (!W) return look;
+  // a straw hat now and then (a cap becomes one), shorts and sandals in the heat
+  const hat = rWear(), shorts = rWear(), sandals = rWear();
+  const cap = acc.indexOf("cap");
+  if (cap >= 0) acc[cap] = "strawhat"; else if (hat < W.straw) acc.push("strawhat");
+  return { ...look, shorts: !look.skirt && shorts < W.shorts, flipflops: sandals < W.sandals };
 }
 
 /** What a passer-by has with them (their own random stream, so the looks above stay as they were): a shopping bag or
@@ -124,6 +161,7 @@ export class Ambient {
 
   constructor(private nav: NavGrid, private places: [number, number][], quality: "high" | "low", seats: Seat[] = [], colliders?: Colliders) {
     this.colliders = colliders;
+    rWear = rand(9090);
     const high = quality === "high";
     // each person is a single draw call (characters/Character.ts), so the town can hold a crowd
     const nw = high ? 12 : 6, nc = high ? 8 : 4;
@@ -137,6 +175,7 @@ export class Ambient {
     });
     this.seatPeople(seats, high);
     this.standPairs(high ? CHAT_SPOTS.length : 1, colliders);
+    if (high) this.standAlone(THEME.vendors, colliders);
     const carMat = STYLED ? vertexColorMaterial("prop") : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     for (let i = 0; i < nc; i++) {
       const lane = LANES[i % LANES.length];
@@ -208,6 +247,25 @@ export class Ambient {
     if (reader) sit(reader, "paper");
     const resting = benches.find((s) => Math.abs(s.x - 30) < 0.2 && Math.abs(s.z + 22.6) < 0.2);
     if (high && resting) sit(resting);
+    // the edition's own (theme.ts `sitters`): none in Maple Harbor
+    for (const [x, z] of high ? THEME.sitters : []) {
+      const s = benches.find((b) => Math.abs(b.x - x) < 0.2 && Math.abs(b.z - z) < 0.2);
+      if (s) sit(s);
+    }
+  }
+
+  /** People standing on their own, facing a way (theme.ts `vendors`: the tianguis' vendors behind their stalls):
+   *  walkers' paths and the player go round them. */
+  private standAlone(spots: [number, number, number][], colliders?: Colliders) {
+    const r = this.rPeople;
+    for (const [x, z, rot] of spots) {
+      const female = r() < 0.5;
+      const w = this.person(walkerLook(female, r), female, "stand");
+      w.ch.root.position.set(x, 0, z);
+      w.ch.root.rotation.y = w.heading = rot;
+      colliders?.addCircle(x, z, 0.35);
+      if (this.nav.blocked) { const c = this.nav.idx(x, z); if (c >= 0) this.nav.blocked[c] = 1; }
+    }
   }
 
   /** Pairs standing and chatting (layout CHAT_SPOTS): walkers' paths and the player go round them. */
@@ -266,9 +324,18 @@ export class Ambient {
     this.pathCooldown -= dt;
     this.pathBudget = this.pathCooldown <= 0 ? 1 : 0;
     for (const c of this.chats) c.update(dt);
+    // (in the edition's town, theme.ts `stillBeyond`, someone sitting or standing farther than that from the player keeps
+    // their pose, their parts' matrices frozen: a breath or a blink that far away costs a frame's time and shows nothing)
+    const R2 = THEME.stillBeyond === null ? Infinity : THEME.stillBeyond ** 2;
     for (const w of this.walkers) {
       if (w.kind === "walk") this.updateWalker(w, dt, player);
-      else w.ch.update(dt);
+      else if (R2 === Infinity) w.ch.update(dt);
+      else {
+        const far = (w.ch.root.position.x - player.x) ** 2 + (w.ch.root.position.z - player.z) ** 2 >= R2 && !!w.posed;
+        w.posed = true;
+        if (far !== !!w.still) { w.still = far; holdPose(w.ch.root, far); }
+        if (!far) w.ch.update(dt);
+      }
       if (w.dog) {
         const p = w.ch.root.position;
         w.dog.update(dt, w.ch.root.localToWorld(_hand.set(-0.38, 0.74, 0.08)), p.x, p.z, w.heading, w.ch.anim === "walk");
