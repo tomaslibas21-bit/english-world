@@ -1,5 +1,5 @@
 {
- "_about": "Don Rigo's taxi, two set-ups: at the sitio by the zócalo (where to, the fare, asking for less, the goodbye) and inside the cab from the back seat (where are you from, first time, the AC, where to stop, paying cash). 9 pictures: the conversation has only nine ids. The cash_only twist (a card first) is said within the pay step and has no id of its own, so it shares the pay picture.",
+ "_about": "Don Rigo's taxi, two set-ups: at the sitio by the airport terminal, at the east end of avenida Juárez (where to, the fare, asking for less, the goodbye; until the 5 Nov audit the pictures had the zócalo behind the stand, from place/sitio-taxis) and inside the cab from the back seat (where are you from, first time, the AC, where to stop, paying cash). 9 pictures: the conversation has only nine ids. The cash_only twist (a card first) is said within the pay step and has no id of its own, so it shares the pay picture.",
  "scenes": {
   "s66-taxi": {
    "npc": "Don Rigo, taxi driver",
@@ -31,6 +31,7 @@
     "person:cast/vinnie"
    ],
    "prompt": "Don Rigo, the taxi driver, stands on the sidewalk beside his white taxi with the green stripe, about one third from the left, one hand on the top of the open rear door and the other raised in a friendly wave, inviting the learner to get in and asking where they're going. A big, easy grin. The taxi's roof light, doors and plates are blank.",
+   "note": "5 Nov audit: the s66 dialogue audit (b59829ee) put the sitio next to the airport terminal and offers the zócalo as a destination, so the zócalo behind the stand became the terminal (an edit of its own picture; the audit manifest audit-4 in the work folder holds the prompt). Make a new greet from this picture, not from place/sitio-taxis, which still shows the zócalo.",
    "out": "public/scenes-es/s66-taxi/greet.webp"
   },
   {
@@ -46,6 +47,7 @@
     "person:cast/vinnie"
    ],
    "prompt": "Change only his pose: he rests one forearm on the taxi's roof and holds his other hand out, palm up, naming the fare, eyebrows raised, asking whether it's okay. A friendly, open face.",
+   "note": "5 Nov audit: made again from the new greet (the stand by the airport), with this prompt.",
    "out": "public/scenes-es/s66-taxi/fare.webp"
   },
   {
@@ -61,6 +63,7 @@
     "person:cast/vinnie"
    ],
    "prompt": "Change only his pose: he rubs his chin with one hand, head tilted, with a wry half-smile, thinking over the lower price the learner asked for.",
+   "note": "5 Nov audit: made again from the new greet (the stand by the airport), with this prompt.",
    "out": "public/scenes-es/s66-taxi/haggle.webp"
   },
   {
@@ -152,6 +155,7 @@
     "person:cast/vinnie"
    ],
    "prompt": "Change only his pose and where he is: he now sits in the driver's seat of the taxi with the window down, all doors closed, leaning his elbow out of the window and waving goodbye with a big grin.",
+   "note": "5 Nov audit: made again from the new greet (the stand by the airport), with this prompt.",
    "out": "public/scenes-es/s66-taxi/bye.webp"
   }
  ]

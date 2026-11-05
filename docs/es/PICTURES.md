@@ -21,17 +21,18 @@ retries fit.
   wired into the game (section 8). The references: 58 portraits and 47 places (section 4).
 - **Audited on 5 Nov 2026** (the picture audit's notes, PICTURES-AUDIT.md): every situation picture checked against
   its portrait, the lines on screen while it shows (simulated conversations), the text and name-tag rules,
-  near-duplicates, the style, anatomy and place details; 110 findings (4 high, 23 medium, 83 low). **48 pictures
+  near-duplicates, the style, anatomy and place details; 110 findings (4 high, 23 medium, 83 low). **52 pictures
   remade** (the high and medium ones and 15 low ones: a third hand, a second passport, the mute icon back on a
   video, a banknote that looked like a dollar, moments that showed the wrong thing, near-copies, a hat that came and
-  went, the gym's leg press), and the phases of 6 moments in s33, s82 and s89 remapped so the picture fits its line
+  went, the gym's leg press; and s66's four pictures at the taxi stand, which the s66 dialogue audit moved from the
+  zócalo to the airport terminal), and the phases of 6 moments in s33, s82 and s89 remapped so the picture fits its line
   (s82's medium finding was fixed that way; in s33 Don Pancho's painting shows on Fridays and his fishing on Mondays,
   and react, the pending after each of his stories, keeps his listening pose). Each remade entry has a `note` in its manifest. Left as they are: the
   low findings (above all the sea seen from inland places, which comes from the place references).
-- **Spent: $42.50** of the $75 stop (the owner approved $82), 765 requests. Until the audit: $40.59 (regular API: 506
+- **Spent: $42.78** of the $75 stop (the owner approved $82), 769 requests. Until the audit: $40.59 (regular API: 506
   requests, $33.30: the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373,
   $25.85 = 75 first pictures and their redo, 298 edits. Batch API: 209 situation pictures, $7.29: 158 + 49 edits, 2
-  redos). The audit: $1.91 (45 edits in one batch, $1.62; 4 through the regular API, $0.29).
+  redos). The audit: $2.18 (45 edits in one batch, $1.62; 8 through the regular API, $0.56).
 - **Weight:** since the audit every situation picture is WebP quality 65 (section 9): 76.8 MB for the 579, 26% less
   than at quality 80, with no visible difference at the game's display sizes.
 - **Why most went through the regular API:** the first pictures by design (each checked before its edits); then the
@@ -401,7 +402,7 @@ empty: the situation's first picture puts the person there. Places inside a bigg
 | `place/calle-residencial` | A residential street | p25-used-car, s82-neighbor |  |
 | `place/gimnasio` | Gimnasio Colibrí | s35-gym |  |
 | `place/museo` | Museo de la Costa Maya | s70-museum |  |
-| `place/sitio-taxis` | The taxi stand (sitio) | s66-taxi | setting: `place/zocalo` |
+| `place/sitio-taxis` | The taxi stand (sitio) | s66-taxi | setting: `place/zocalo`; since the s66 dialogue audit the sitio stands by the airport terminal: s66's pictures were edited (start from `s66-taxi/greet`) |
 | `place/informacion-turistica` | The tourist information office | s62-visitor-center |  |
 | `place/correos` | The post office | s79-post |  |
 | `place/boutique-hilos` | Boutique Hilos | s74-clothes |  |
