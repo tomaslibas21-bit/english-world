@@ -15,7 +15,8 @@
 // you allergic?), a dietary question at the door, and "¿Ya te vas? ¡Quédate otro ratito, estamos en la sobremesa!".
 // The learner speaks to both hosts: the hints use ustedes ("Les traje…", "¿Les ayudo?"); tú to one host and
 // vosotros (Spain) are understood too.
-// Mexican-only words (each with a neutral twin): pásale, órale, ahorita, ándale, recámara.
+// Mexican-only words (each with a neutral twin): pásale, órale, ahorita, ándale, recámara; puerco (twin: cerdo).
+// Who cooked what: Diego the cochinita (Natalia's mom's recipe), Natalia the flan (her grandma's) and the rice.
 // Facts kept vague: no prices, no clock times except "casi las once"; the allergy reply promises only to say what is
 // in each dish.
 //
@@ -24,6 +25,7 @@
 // handled here in good_night (a goodbye once dinner has been served).
 
 import type { Ctx, EntityDef, Handler, Pending, SituationDef } from "@/content/types";
+import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
 
@@ -34,7 +36,9 @@ const ART_GEN = "The article before a noun in general has no English word here."
 const ART_TIME = "The article before a clock time has no English word.";
 const AHORITA = "Mexican: ahorita = right now, in a moment.";
 const JAMAICA = "agua de jamaica: a cold drink of hibiscus flowers, water and sugar.";
-const PIBIL = "cochinita pibil: pork slow-cooked in achiote and orange juice, from the Yucatán peninsula.";
+const PIBIL = "cochinita pibil: pork marinated in achiote and sour-orange juice, slow-cooked in banana leaves; from the Yucatán peninsula.";
+const HABANERO = "habanero: the very hot chili of the Yucatán peninsula.";
+const AGRIA = "naranja agria: sour (Seville) orange, the Yucatán's everyday souring juice.";
 const SOBREMESA = "sobremesa: the long chat at the table after a meal; Mexican hosts love it.";
 const AL_CONTRARIO = "al contrario: the usual reply to “thanks for inviting me”.";
 
@@ -121,13 +125,19 @@ function yn(p: Pending): Pending {
   return { ...p, on };
 }
 
+/** A step's question has its answer on record. A step asked twice counts as done (asked >= 2) so the visit moves on,
+ *  but "¡Claro!" or "Con gusto" to that second ask still answers it, as a plain "Sí" does. */
+const SETTLED: Record<string, (c: Ctx) => boolean> = {
+  diet: (c) => !!c.s.diet, drink: (c) => !!c.s.drink, cat: (c) => !!c.s.cat, salad: (c) => !!c.s.saladDone, pass: (c) => !!c.s.passDone,
+  seconds: (c) => c.s.seconds !== undefined, dessert: (c) => c.s.dessert !== undefined,
+};
 function stepYes(c: Ctx) {
   const st = dinner.steps.find((x) => x.id === c.step);
-  if (st?.yes && !st.done(c)) st.yes(c);
+  if (st?.yes && !(SETTLED[st.id] ? SETTLED[st.id](c) : st.done(c))) st.yes(c);
 }
 function stepNo(c: Ctx) {
   const st = dinner.steps.find((x) => x.id === c.step);
-  if (st?.no && !st.done(c)) st.no(c);
+  if (st?.no && !(SETTLED[st.id] ? SETTLED[st.id](c) : st.done(c))) st.no(c);
 }
 
 /** Goal: food praised, hosts thanked, left politely. */
@@ -209,14 +219,16 @@ const H: Record<string, Handler> = {
     if (!once(c, "help")) return;
     if (c.s.helpDone) { nora(c, "relax"); return; }
     c.s.helpDone = true;
-    if (c.s.saladTask) { c.s.saladAsked = true; c.ask("salad"); return; }
+    // the agua de jamaica goes to the table before dinner; offered after it, the guest is told to relax
+    if (c.s.saladTask && !c.s.dinnerSaid) { c.s.saladAsked = true; c.ask("salad"); return; }
     nora(c, "relax");
   },
   praise_smell(c, _slots, seg) {
     hi(c);
     if (!once(c, "smell")) return;
     const what = seg.tags.includes("what"); // "¿Qué estás cocinando?" gets the dish, no "gracias"
-    if (c.s.smellSaid) { dan(c, what ? "dish_again" : "glad_you_like"); return; }
+    // "Ahorita la pruebas" only before dinner, and not to a guest who eats no meat (they have the rajas tacos)
+    if (c.s.smellSaid) { dan(c, what ? (c.s.dinnerSaid || c.s.diet === "veg" ? "dish_is" : "dish_again") : "glad_you_like"); return; }
     c.s.smellSaid = true;
     dan(c, what ? "dish_is" : "smell_dish");
   },
@@ -224,7 +236,9 @@ const H: Record<string, Handler> = {
     hi(c);
     if (!once(c, "home")) return;
     if (seg.tags.includes("pictures")) nora(c, "pictures");
-    else nora(c, "home_thanks");
+    // "La acabamos de pintar" is the house's answer; the view, the garden or the hammock get a plain thank-you
+    else if (/\b(casa|cocina|sala)\b/.test(heard(c))) nora(c, "home_thanks");
+    else nora(c, "glad_you_like");
   },
   praise_food(c, _slots, seg) {
     hi(c);
@@ -242,10 +256,28 @@ const H: Record<string, Handler> = {
     if (!once(c, "meh")) return;
     // "¿Esto pica?" is a question: an answer, not an apology
     if (/\?\s*$/.test(c.heard || "") && /pica|picant|picos/.test(heard(c))) { nora(c, "spicy_answer"); return; }
-    nora(c, seg.tags.includes("nospicy") ? "no_spicy_ok" : seg.tags.includes("bad") ? "sorry_bad" : /salad/.test(heard(c)) ? "sorry_salty" : "sorry_water");
+    if (seg.tags.includes("nospicy")) { nora(c, "no_spicy_ok"); return; }
+    if (seg.tags.includes("bad")) { badFood(c); return; }
+    // Diego cooked the cochinita: "Se me pasó la sal" is his to say
+    if (/salad/.test(heard(c))) { dan(c, "sorry_salty"); return; }
+    nora(c, "sorry_water");
   },
-  made_yourself(c, _slots, seg) { hi(c); if (once(c, "made")) { if (seg.tags.includes("flan")) nora(c, "flan_mine"); else dan(c, "i_did"); } },
-  recipe(c) { hi(c); if (once(c, "recipe")) nora(c, "recipe_ok"); },
+  made_yourself(c, _slots, seg) {
+    hi(c);
+    if (!once(c, "made")) return;
+    const who = seg.tags.includes("who"); // "¿Quién cocinó?": "¡Yo!", not "¡Sí, yo!"
+    if (seg.tags.includes("flan")) nora(c, who ? "flan_who" : "flan_mine");
+    else dan(c, who ? "i_did_who" : "i_did");
+    flanSaid(c);
+  },
+  // "¿Me das la receta?": Natalia texts it (her mom's); "¿Qué lleva?", "¿Qué es la cochinita?": Diego, who cooked it,
+  // says what is in it (the salsa has its own answer; the flan's stays the recipe by text)
+  recipe(c, _slots, seg) {
+    hi(c);
+    if (!once(c, "recipe")) return;
+    if (!seg.tags.includes("what") || c.step === "dessert" || /flan|postre/.test(heard(c))) { nora(c, "recipe_ok"); return; }
+    dan(c, /salsa/.test(heard(c)) ? "salsa_what" : "recipe_what");
+  },
   pass(c, slots) {
     hi(c);
     const it = toArr(slots.pass)[0] as string | undefined;
@@ -266,13 +298,16 @@ const H: Record<string, Handler> = {
   // seconds and dessert
   more_yes(c, _slots, seg) {
     hi(c);
+    // "¿Me sirves más?" asked by the guest at the table, before or after Natalia's offer: more of the dinner (once the
+    // flan is in play, a bare "más" is the flan; "más cochinita" is always the dinner)
+    const askMore = seg.tags.includes("ask") && !!c.s.dinnerSaid && (/cochinita/.test(heard(c)) || (c.step !== "dessert" && !c.s.dessertAsked));
     // a change of mind counts: "No, gracias" to the flan, then "Bueno, un pedacito"
-    if (c.step === "dessert" || (c.s.dessertAsked && c.s.dessert !== "yes")) {
+    if (!askMore && (c.step === "dessert" || (c.s.dessertAsked && c.s.dessert !== "yes"))) {
       if (c.s.dessert === "no") { c.s.dessert = "yes"; if (once(c, "more")) nora(c, "changed_mind"); return; }
       c.s.dessert = "yes"; if (once(c, "more")) nora(c, seg.tags.includes("little") ? "small_piece" : "here_cake");
       return;
     }
-    if (c.step !== "seconds" && !(c.s.secondsAsked && c.s.seconds !== "yes")) return;
+    if (!askMore && c.step !== "seconds" && !(c.s.secondsAsked && c.s.seconds !== "yes")) return;
     if (c.s.seconds === "no") { c.s.seconds = "yes"; if (once(c, "more")) nora(c, "changed_mind"); return; }
     c.s.seconds = "yes";
     if (once(c, "more")) nora(c, seg.tags.includes("little") ? "just_a_little" : "here_more");
@@ -286,7 +321,7 @@ const H: Record<string, Handler> = {
     // "No, ya estoy bien" at "¿Te sirvo algo más?": a plain no to that question
     if (c.step !== "seconds" && !(c.s.secondsAsked && c.s.seconds === undefined)) { stepNo(c); return; }
     c.s.seconds = "no";
-    if (once(c, "more")) nora(c, "save_room");
+    if (once(c, "more")) saveRoom(c);
   },
   // twists
   reassure(c) {
@@ -294,7 +329,14 @@ const H: Record<string, Handler> = {
     if (c.step === "burnt" || (c.s.burntSaid && !c.s.burntOk)) { c.s.burntOk = true; if (once(c, "burnt")) nora(c, "youre_sweet"); }
   },
   diet_ok_ctx(c) { hi(c); c.s.diet = "all"; if (once(c, "diet")) dan(c, "diet_great"); },
-  diet_veg_ctx(c) { hi(c); c.s.diet = "veg"; if (once(c, "diet")) dan(c, "diet_veg_ok"); },
+  // No meat or no pork: the cochinita is pork, so the rajas tacos. No fish, seafood, chicken or beef: there is none
+  // tonight, so Diego says what is in each dish (rajas would suggest the cochinita had it)
+  diet_veg_ctx(c) {
+    hi(c);
+    const noPork = !/\b(pescado|mariscos|pollo|res)\b/.test(heard(c)) || /\b(carne|puerco|cerdo|vegetarian[oa]|vegan[oa])\b/.test(heard(c));
+    c.s.diet = noPork ? "veg" : "other";
+    if (once(c, "diet")) dan(c, noPork ? "diet_veg_ok" : "diet_allergy_ok");
+  },
   diet_allergy_ctx(c) { hi(c); c.s.diet = "allergy"; if (once(c, "diet")) dan(c, "diet_allergy_ok"); },
   cat_ok_ctx(c) { hi(c); c.s.cat = "ok"; if (once(c, "cat")) dan(c, "cat_good"); },
   // "No me gustan los gatos" and "No, me encantan los gatos" sound the same (rule 10): a typed comma decides; by voice
@@ -320,8 +362,11 @@ const H: Record<string, Handler> = {
     // "Se me hizo tarde, perdón" at the door: I'm late, not I must go
     if (!c.s.dinnerSaid && /se me hizo tarde|llegue tarde/.test(heard(c)) && (c.step === "arrive" || c.step === "coat" || !c.s.drink)) { H.late_sorry(c, {}, seg0("late_sorry")); return; }
     if (c.s.leaving) { goodbyeThanks(c); return; }
-    if (!c.s.dinnerSaid && !c.s.earlyLeave) { c.s.earlyLeave = true; nora(c, "but_dinner"); return; }
-    if (c.s.stayTwist && !c.s.stayAsked) {
+    // before dinner, or with the main course on the table: Natalia protests once
+    const eating = !!c.s.dinnerSaid && !c.s.dessertAsked && !c.s.lateSaid;
+    if ((!c.s.dinnerSaid || eating) && !c.s.earlyLeave) { c.s.earlyLeave = true; nora(c, eating ? "but_eating" : "but_dinner"); return; }
+    // "¡Quédate otro ratito, estamos en la sobremesa!" only once dinner is over
+    if (c.s.stayTwist && !c.s.stayAsked && c.s.lateSaid) {
       c.s.stayAsked = true; c.twist("stay_longer");
       nora(c, "stay_longer");
       const go = (cc: Ctx) => {
@@ -398,8 +443,8 @@ const H: Record<string, Handler> = {
 function letGo(c: Ctx) {
   c.s.leaving = true;
   dan(c, "thanks_for_coming");
-  // Mexican hosts often pack food for the road
-  if (c.s.roadFood) nora(c, "for_the_road");
+  // Mexican hosts often pack food for the road (cochinita: not for a guest who eats no meat)
+  if (c.s.roadFood && c.s.diet !== "veg") nora(c, "for_the_road");
   checkGoal(c);
   c.expect({
     id: "closing", expects: ["thanks_end", "thanks_invite", "will_text", "good_night", "thanks_back_ctx"], hints: ["goodbye"],
@@ -412,6 +457,33 @@ function letGo(c: Ctx) {
     yes: (cc) => goodbyeThanks(cc), no: (cc) => goodbyeThanks(cc),
   });
 }
+
+/** "No me gusta mucho", "Más o menos", a "No" to "¿Te gusta?": sorry and the rice and beans, once; that answers
+ *  "¿Te gusta?" (it isn't asked again) and no seconds are pressed on the guest; at "¿Quieres más?" it is a no, at the
+ *  flan a no to the flan; said again: Diego's "Si se te antoja algo, me dices". */
+function badFood(c: Ctx) {
+  if (c.step === "dessert" && c.s.dessert === undefined) { c.s.dessert = "no"; nora(c, "more_for_dan"); return; }
+  if (c.step === "seconds" && c.s.seconds === undefined) c.s.seconds = "no";
+  if (!c.s.secondsAsked) c.s.askSeconds = false;
+  if (c.s.badSaid) { dan(c, "just_say"); return; }
+  c.s.badSaid = true;
+  nora(c, "sorry_bad");
+}
+
+/** "¿Qué tal la cochinita?" or "¿Y? ¿Te gusta?"; a guest who eats no meat has the rajas tacos: only the second. */
+function howIsIt(c: Ctx) {
+  if (c.s.diet === "veg") (c as ConvCtx).conv.pushLine("how_is_it", 1, {});
+  else c.say("how_is_it");
+}
+
+/** "Deja lugar para el postre": the flan, once promised, is offered. */
+function saveRoom(c: Ctx) {
+  nora(c, "save_room");
+  flanSaid(c);
+}
+
+/** The flan was mentioned (by Diego, Natalia or "deja lugar para el postre"): it comes before the evening ends. */
+function flanSaid(c: Ctx) { if (!c.s.lateSaid) c.s.askDessert = true; }
 
 /** Last lines at the door. */
 function goodbyeThanks(c: Ctx) {
@@ -443,7 +515,7 @@ export const dinner: SituationDef = {
   grammar: {
     macros: {
       gift_np: "[(un | una | unos | unas | unas cuantas | una botella de | una botellita de | un poquito de | una caja de | un ramo de | una cajita de | un poco de | este | esta | estos | estas)] {gift}",
-      drink_np: "[(un | una | un vaso de | una copa de | un poco de | una botella de | un vasito de | una copita de | una lata de)] {drink} [(bien fria | bien frio | fria | frio | helada | con hielo | sin hielo)]",
+      drink_np: "[(un | una | otro | otra | un vaso de | una copa de | otra copa de | otro vaso de | un poco de | una botella de | un vasito de | una copita de | una lata de | mas)] {drink} [(bien fria | bien frio | fria | frio | helada | con hielo | sin hielo)]",
       pass_np: "[(el | la | los | las | un poco de | mas | otra | otro | otras | unas | un poquito de)] {pass}",
       great: "(rico | rica | riquisimo | riquisima | delicioso | deliciosa | deliciosisimo | buenisimo | buenisima | sabroso | sabrosa | sabrosisimo | exquisito | exquisita | increible | espectacular | perfecto | perfecta | de lujo | muy rico | muy rica | muy bueno | muy buena | super rico | super rica | bien rico | bien rica | muy sabroso | muy sabrosa)",
       food: "(la cochinita | la cochinita pibil | la comida | todo | esto | la cena | el flan | el arroz | la salsa | los frijoles | las tortillas | el postre | los tacos | la carne)",
@@ -491,7 +563,7 @@ export const dinner: SituationDef = {
     ] },
     drink_ans: { patterns: [
       "@drink_np #h:dr_please", "(solo | nada mas | nomas | solamente) @drink_np [por ahora] #h:dr_just",
-      "(quiero | quisiera | voy a querer | me das | me da | me puedes dar | me pones | ponme | dame | tomo | voy a tomar | me tomo | prefiero | me gustaria | se me antoja) @drink_np #h:dr_want",
+      "(quiero | quisiera | voy a querer | me das | me da | me puedes dar | me pones | ponme | dame | tomo | voy a tomar | me tomo | prefiero | me gustaria | se me antoja | me sirves | me puedes servir | sirveme) @drink_np #h:dr_want",
       "@drink_np (esta bien | estaria bien | estaria muy bien | suena bien | perfecto | esta perfecto | estaria perfecto) #h:dr_would_be",
       "(tienes | tienen | hay | teneis) @drink_np", "(un | una)? @drink_np si (hay | tienen | tienes)",
       "(voy manejando | estoy manejando | tengo que manejar | vengo manejando | no tomo alcohol | no tomo | no bebo alcohol) [asi que | entonces | mejor | pero] [solo | nomas] @drink_np",
@@ -523,6 +595,9 @@ export const dinner: SituationDef = {
       "(pongo | quieres que ponga | quieren que ponga | pongo yo | te ayudo a poner | les ayudo a poner) la mesa #h:hp_table",
       "(dejame | dejenme | dejadme) (ayudar | ayudarte | ayudarles)", "(lavo | quieres que lave | yo lavo | te ayudo a lavar | les ayudo a lavar) (los platos | los trastes)",
       "(llevo | quieres que lleve) (algo | los platos | las tortillas) a la mesa", "(te | les)? (echo | puedo echar | podria echar) (la | una) mano", "(puedo | podria) hacer algo [para ayudar]",
+      // after dinner: "¿Les ayudo a recoger la mesa?"
+      "(te | les | os)? ayudo a (recoger | levantar | limpiar | lavar) [(la mesa | los platos | los trastes)]", "(recojo | levanto | quito) (la mesa | los platos | los trastes)",
+      "(quieres | quieren) que (recoja | levante | quite | lave) (la mesa | los platos | los trastes)",
     ] },
     praise_smell: { patterns: [
       "(que)? (rico | bien | delicioso | sabroso | riquisimo) huele [aqui] #h:cm_smells", "huele (muy | super | bien)? (rico | delicioso | bien | riquisimo | increible | sabroso) [aqui]",
@@ -536,6 +611,10 @@ export const dinner: SituationDef = {
       "me (encanta | gusta | encantan | gustan) (su | tu | la)? (@casa | decoracion | vista)",
       "me (encantan | gustan) (los | sus | tus)? (cuadros | pinturas) #pictures", "que (bonitos | lindos | padres) (cuadros | pinturas) #pictures", "(los | sus | tus) (cuadros | pinturas) (son | estan) (muy | super)? (bonitos | lindos | preciosos | padres | increibles) #pictures",
       "que (bonita | linda | padre | hermosa) vista", "(tienen | tienes) (una)? vista (muy)? (bonita | linda | padre | hermosa | increible | preciosa | espectacular)", "que @casa (tan | mas) @pretty (tienen | tienes)", "que @pretty @casa (tienen | tienes)",
+      // what the room shows (the hammock, the plants in clay pots, the family altar)
+      "que (bonita | linda | padre | hermosa | comoda) (hamaca | ventana)", "me (encanta | gusta) (la | su | tu) (hamaca | ventana)",
+      "que (bonitas | lindas | padres | hermosas) (plantas | macetas)", "me (encantan | gustan) (las | sus | tus)? (plantas | macetas)",
+      "que (bonito | lindo | padre | hermoso) altar", "me (encanta | gusta) (el | su | tu) altar",
     ] },
     praise_food: { patterns: [
       "[pero | eso si] [@food] (esta | estan | es) [muy | super | bien]? @great [@food] #h:cm_delicious",
@@ -562,11 +641,14 @@ export const dinner: SituationDef = {
       "(tu | ustedes) (lo | la)? (hiciste | hicieron | cocinaste | cocinaron | preparaste | prepararon) [todo | la cochinita | la comida | esto] #h:cm_made",
       "(tu | ustedes) (hiciste | hicieron | preparaste | prepararon) (el flan | el postre) #flan", "(el flan | el postre) (lo hiciste | lo hicieron) (tu | ustedes)? #flan", "(es | este flan es) casero #flan",
       "(lo | la) (hiciste | cocinaste | preparaste | hicieron | cocinaron) (tu | ustedes)", "(tu | ustedes) (cocinaste | cocinaron)", "(es | esta es) (casera | hecha en casa)", "(es | esto es) (casero | hecho en casa)",
-      "quien (cocinó | hizo | preparó) (la cochinita | la comida | esto | todo | la cena)",
+      // "¿Quién cocinó?" is answered "¡Yo!", never "¡Sí, yo!"
+      "quien (cocinó | cocino | hizo | preparó | preparo) [(la cochinita | la comida | esto | todo | la cena)] #who", "quien (hizo | preparó | preparo) (el flan | el postre) #flan #who",
     ] },
     recipe: { patterns: [
       "(me das | me pasas | me compartes | me puedes dar | me podrias dar | me mandas | me regalas | me escribes) la receta #h:cm_recipe", "(puedo tener | quiero | me encantaria tener) la receta",
-      "que (lleva | tiene | le pusiste | le pusieron | le echaste) [la cochinita | la salsa | esto]", "como (la | lo)? (preparas | haces | preparan | hacen | hiciste | preparaste)", "cual es (el secreto | la receta)",
+      // what is in it: Diego says (the salsa: its own answer)
+      "que (lleva | tiene | le pusiste | le pusieron | le echaste) [la cochinita | la salsa | esto] #what", "como (la | lo)? (preparas | haces | preparan | hacen | hiciste | preparaste) #what", "cual es (el secreto | la receta) #what",
+      "que es (la)? cochinita [pibil] #what", "(de que es | de que esta hecha | con que se hace) (la cochinita | la salsa | esto) #what",
       "tienes que (darme | pasarme | mandarme) la receta",
     ] },
     pass: { patterns: [
@@ -591,7 +673,10 @@ export const dinner: SituationDef = {
       "(todavia | aun) no estoy @full", "no estoy @full (todavia | aun)", "no estoy tan @full",
       "yo [quiero] [uno | postre]", "yo si [quiero]", "(me encanta | me encantan) (el flan | el postre | lo dulce | los postres)",
       "(para el postre siempre hay | siempre hay) (lugar | espacio) [para el postre]", "si (flan | el flan) [por favor]", "(flan | el flan) si", "como (decir | les digo | te digo) que no",
-      "[si] (sirveme | dame | ponme) (mas | un poco mas | otro poquito)", "(quiero | quisiera) (mas | otro poco | un poco mas)", "[si] (un pedacito | un pedazo) (chiquito | pequeno)? [por favor] #little #h:mo_small",
+      "[si] (un pedacito | un pedazo) (chiquito | pequeno)? [por favor] #little #h:mo_small",
+      // the guest asks for more at the table, offered or not ("¿Me sirves más cochinita?"; rice and beans are `pass`)
+      "[si] (me sirves | me das | me puedes servir | me podrias servir | me pones | sirveme | dame | ponme) (mas | un poco mas | otro poquito | otro poco | un poquito mas) [de] [(cochinita | esto | eso)] [por favor] #ask",
+      "(quiero | quisiera | me gustaria) (mas | otro poco | un poco mas | otro poquito) [de] [(cochinita | esto | eso)] #ask", "(hay | queda) (mas | otro poquito de) cochinita #ask",
     ] },
     more_no: { patterns: [
       "[no] [gracias] (estoy | ya estoy | quedé | quede) @full [gracias] #h:mo_full", "[no] [gracias] (estoy | ya estoy) bien [gracias]",
@@ -851,7 +936,7 @@ export const dinner: SituationDef = {
       t("¡Salud!", "Cheers!", "Cheers!"),
     ],
     restroom_where: [
-      t("Al fondo, | a la derecha.", "At the back, | on the right.", "Down the hall, on the right."),
+      t("Al fondo, | a la derecha.", "At the back, | on the right.", "In the back, on the right."),
     ],
     provecho_back: [
       t("¡Igualmente!", "Likewise!", "You too!"),
@@ -866,11 +951,11 @@ export const dinner: SituationDef = {
     ],
     sorry_water: [
       t("¡Ay, | perdón! | Es | el | habanero. | Toma | un | poco | de | agua.", "Oh, | sorry! | It's | the | habanero. | Have | a | little | of | water.",
-        "Oh, sorry! That's the habanero. Have some water.", { flags: { 4: "habanero: the very hot chili of the Yucatán peninsula." } }),
+        "Oh, sorry! That's the habanero. Have some water.", { flags: { 4: HABANERO } }),
     ],
     spicy_answer: [
       t("La | cochinita | no, | pero | la | salsa | de | habanero | sí | pica | mucho.", "The | cochinita | no, | but | the | salsa | of | habanero | yes | it-burns | a lot.",
-        "The cochinita isn't, but the habanero salsa is really hot.", { flags: { 7: "habanero: the very hot chili of the Yucatán peninsula.", 8: "sí here stresses the contrast: “it does”." } }),
+        "The cochinita isn't, but the habanero salsa is really hot.", { flags: { 7: HABANERO, 8: "sí here stresses the contrast: “it does”." } }),
     ],
     no_spicy_ok: [
       t("¡Entonces | sin | salsa! | La | cochinita | sola | no pica.", "Then | without | salsa! | The | cochinita | alone | doesn't burn.", "Then skip the salsa! The cochinita on its own isn't spicy."),
@@ -886,11 +971,36 @@ export const dinner: SituationDef = {
       t("¡Sí, | yo! | Bueno, | el | flan | lo | hizo | Natalia.", "Yes, | me! | Well, | the | flan | it | made | Natalia.", "Yep, me! Well, Natalia made the flan.",
         { flags: { 5: "lo repeats the flan: the object comes first for emphasis." } }),
     ],
+    // "¿Quién cocinó?"
+    i_did_who: [
+      t("¡Yo! | Bueno, | el | flan | lo | hizo | Natalia.", "Me! | Well, | the | flan | it | made | Natalia.", "I did! Well, Natalia made the flan.",
+        { flags: { 4: "lo repeats the flan: the object comes first for emphasis." } }),
+    ],
     flan_mine: [
       t("¡Sí, | yo! | Es | la | receta | de | mi | abuela.", "Yes, | me! | It's | the | recipe | of | my | grandma.", "Yep, I did! It's my grandma's recipe."),
     ],
+    // "¿Quién hizo el flan?"
+    flan_who: [
+      t("¡Yo! | Es | la | receta | de | mi | abuela.", "Me! | It's | the | recipe | of | my | grandma.", "I did! It's my grandma's recipe."),
+    ],
     recipe_ok: [
       t("¡Claro! | Te la | mando | por | mensaje.", "Sure! | It to you | I'll-send | by | message.", "Sure! I'll text it to you."),
+    ],
+    // "¿Qué lleva?", "¿Qué es la cochinita?", "¿Cómo la preparas?"
+    recipe_what: [
+      t("Es | puerco | adobado | con | achiote | y | naranja agria, | cocido | en | hoja de plátano.",
+        "It's | pork | marinated | with | achiote | and | sour orange, | cooked | in | banana leaf.",
+        "It's pork marinated in achiote and sour orange, cooked in banana leaves.",
+        { flags: { 4: "achiote: a red paste of annatto seeds, the base of Yucatecan cooking.", 6: AGRIA },
+          neutral: t("Es | cerdo | adobado | con | achiote | y | naranja agria, | cocido | en | hoja de plátano.",
+            "It's | pork | marinated | with | achiote | and | sour orange, | cooked | in | banana leaf.",
+            "It's pork marinated in achiote and sour orange, cooked in banana leaves.",
+            { flags: { 4: "achiote: a red paste of annatto seeds, the base of Yucatecan cooking.", 6: AGRIA } }) }),
+    ],
+    // "¿Qué lleva la salsa?"
+    salsa_what: [
+      t("Chile | habanero, | naranja agria | y | sal. | ¡Cuidado, | que | pica!", "Chili | habanero, | sour orange | and | salt. | Careful, | since | it-burns!",
+        "Habanero chili, sour orange and salt. Careful, it's hot!", { flags: { 1: HABANERO, 2: AGRIA, 6: "que here: “since”, “because”." } }),
     ],
     here_you_go: [
       t("¡Claro! | Aquí tienes.", "Sure! | Here you go.", "Sure, here you go."),
@@ -901,6 +1011,11 @@ export const dinner: SituationDef = {
     ],
     ask_pass: [
       t("Oye, | ¿me | pasas | las | tortillas?", "Hey, | (to) me | you-pass | the | tortillas?", "Hey, could you pass the tortillas?"),
+    ],
+    // asked again after a side remark (as every other question here has its second wording)
+    pass_reask: [
+      t("¿Me | pasas | las | tortillas, | porfa?", "(To) me | you-pass | the | tortillas, | please?", "Could you pass the tortillas, please?",
+        { flags: { 4: "porfa: short for por favor." } }),
     ],
     thanks_pass: [
       t("¡Gracias!", "Thanks!", "Thanks!"),
@@ -985,6 +1100,11 @@ export const dinner: SituationDef = {
     but_dinner: [
       t("¿Ya | te vas? | ¡Pero | la | cena | ya | casi | está | lista!", "Already | you're-leaving? | But | — | dinner | now | almost | is | ready!", "Leaving already? But dinner's almost ready!",
         { flags: { 3: ART_GEN } }),
+    ],
+    // "Ya me voy" with dinner on the table
+    but_eating: [
+      t("¿Ya | te vas? | ¡Pero | si | apenas | estamos | cenando!", "Already | you're-leaving? | But | — | just | we-are | having-dinner!",
+        "Leaving already? But we've only just sat down to eat!", { flags: { 3: "pero si…: an emphatic protest; si here has no English word." } }),
     ],
     thanks_for_coming: [
       t("¡Claro! | ¡Gracias | por | venir!", "Sure! | Thanks | for | coming!", "Of course! Thanks so much for coming!"),
@@ -1188,6 +1308,8 @@ export const dinner: SituationDef = {
     "le encantan": { reason: "grammatical_fusion", split: "le → to her + encantan → delight; = she loves.", minimal: "Two words." },
     "nada de eso": { reason: "lexical_expression", split: "nada → nothing + de → of + eso → that; the refusal = none of that.", minimal: "Three words." },
     "cochinita pibil": { reason: "lexical_expression", split: "cochinita → little pig + pibil → (Maya) cooked in a pit; the dish's name.", minimal: "Two words." },
+    "naranja agria": { reason: "lexical_expression", split: "naranja → orange + agria → sour; the fruit = sour (Seville) orange.", minimal: "Two words." },
+    "hoja de plátano": { reason: "lexical_expression", split: "hoja → leaf + de → of + plátano → banana; = banana leaf (the wrapping).", minimal: "Three words." },
     "acabamos de": { reason: "grammatical_fusion", split: "acabamos → we finish + de → of is false; acabar de + verb = to have just done.", minimal: "Two words." },
     "a cenar": { reason: "lexical_expression", split: "a → to + cenar → have dinner; the call to the table = dinner time.", minimal: "Two words." },
     "te guste": { reason: "grammatical_fusion", split: "te → to you + guste → it pleases; = you like it.", minimal: "Two words." },
@@ -1254,7 +1376,7 @@ export const dinner: SituationDef = {
       expects: ["praise_food", "praise_smell", "pass", "provecho"],
       suggest: [{ lt: "Praise the food", hint: "food" }, { lt: "Ask them to pass something", hint: "table", options: "pass" }] },
     { id: "pass", when: (c) => !!c.s.passTwist, done: (c) => !!c.s.passDone || asked(c, "pass") >= 2,
-      ask: (c) => { bump(c, "pass"); c.twist("pass_bread"); dan(c, "ask_pass"); },
+      ask: (c) => { bump(c, "pass"); if (asked(c, "pass") > 1) { dan(c, "pass_reask"); return; } c.twist("pass_bread"); dan(c, "ask_pass"); },
       expects: ["here_you_go"],
       suggest: [{ lt: "Pass the tortillas", hint: "pass_bread" }],
       yes: (c) => { c.s.passDone = true; dan(c, "thanks_pass"); } },
@@ -1262,16 +1384,19 @@ export const dinner: SituationDef = {
       ask: (c) => { c.s.burntSaid = true; c.twist("burnt_bread"); nora(c, "burnt"); },
       expects: ["reassure"],
       suggest: [{ lt: "Reassure your host", hint: "burnt" }] },
-    { id: "howisit", when: (c) => !c.s.foodPraised, done: (c) => !!c.s.foodPraised,
-      ask: (c) => { bump(c, "howisit"); if (c.chance(0.5)) nora(c, "how_is_it"); else dan(c, "how_is_it"); },
+    // asked again after a side question, at most three times in all (once to a guest who eats no meat: their one
+    // question has no second wording); a "no" or "más o menos" answers it (badFood)
+    { id: "howisit", when: (c) => !c.s.foodPraised,
+      done: (c) => !!c.s.foodPraised || !!c.s.badSaid || asked(c, "howisit") >= (c.s.diet === "veg" ? 1 : 3),
+      ask: (c) => { bump(c, "howisit"); c.speaker(c.chance(0.5) ? "nora" : "dan"); howIsIt(c); },
       expects: ["praise_food", "food_meh", "made_yourself", "recipe"],
       suggest: [{ lt: "Praise the food", hint: "food" }],
-      yes: (c) => { c.s.foodPraised = true; nora(c, "glad_you_like"); checkGoal(c); } },
+      yes: (c) => { c.s.foodPraised = true; nora(c, "glad_you_like"); checkGoal(c); }, no: (c) => badFood(c) },
     { id: "seconds", when: (c) => !!c.s.askSeconds, done: (c) => c.s.seconds !== undefined || asked(c, "seconds") >= 2,
       ask: (c) => { bump(c, "seconds"); nora(c, c.s.secondsAsked ? "seconds_reask" : "ask_seconds"); c.s.secondsAsked = true; },
       expects: ["more_yes", "more_no"],
       suggest: [{ lt: "Say if you'd like more", hint: "more" }],
-      yes: (c) => { c.s.seconds = "yes"; nora(c, "here_more"); }, no: (c) => { c.s.seconds = "no"; nora(c, "save_room"); } },
+      yes: (c) => { c.s.seconds = "yes"; nora(c, "here_more"); }, no: (c) => { c.s.seconds = "no"; saveRoom(c); } },
     { id: "dessert", when: (c) => !!c.s.askDessert, done: (c) => c.s.dessert !== undefined || asked(c, "dessert") >= 2,
       ask: (c) => { bump(c, "dessert"); nora(c, c.s.dessertAsked ? "dessert_reask" : "ask_dessert"); c.s.dessertAsked = true; },
       expects: ["more_yes", "more_no"],
@@ -1437,6 +1562,21 @@ export const dinner: SituationDef = {
     { say: "No me quiero ir, pero ya es tarde", intent: "leave", step: "late", not: ["stay"] },
     { say: "No, no soy alérgica", intent: "cat_ok_ctx", step: "cat", not: ["cat_allergic_ctx"] },
     { say: "No traje nada, perdón", intent: "no_gift", step: "arrive", not: ["gift"] },
+    // audit (5 Nov 2026): who cooked, what's in it, more at the table, the room
+    { say: "¿Quién cocinó?", intent: "made_yourself", step: "howisit" },
+    { say: "¿Quién hizo el flan?", intent: "made_yourself", step: "dessert", not: ["more_yes"] },
+    { say: "¿Qué lleva?", intent: "recipe", step: "howisit" },
+    { say: "¿Qué es la cochinita pibil?", intent: "recipe", step: "howisit" },
+    { say: "¿Qué lleva la salsa?", intent: "recipe", step: "howisit", not: ["food_meh"] },
+    { say: "¿Me das otra cerveza?", intent: "drink_ans", step: "dinner", slots: { drink: "beer" } },
+    { say: "No quiero otra cerveza", intent: "none", step: "dinner", not: ["drink_ans"] },
+    { say: "¿Me sirves más cochinita?", intent: "more_yes", step: "howisit", not: ["pass"] },
+    { say: "¿Me sirves más arroz?", intent: "pass", step: "howisit", slots: { pass: "rice" }, not: ["more_yes"] },
+    { say: "No me sirvas más", intent: "none", step: "dinner", not: ["more_yes"] },
+    { say: "¿Les ayudo a recoger la mesa?", intent: "offer_help", step: "late" },
+    { say: "¡Qué bonita hamaca!", intent: "praise_home" },
+    { say: "No me gusta la hamaca", intent: "none", not: ["praise_home"] },
+    { say: "No como pescado", intent: "diet_veg_ctx", step: "diet", not: ["diet_ok_ctx"] },
     // not understood
     { say: "El elefante morado baila en la cocina", intent: "none" },
     { say: "Mi tía vive en Guadalajara", intent: "none" },
@@ -1458,9 +1598,10 @@ export const dinner: SituationDef = {
         "¡Está riquísima!", "Ya me voy, que es tarde.", "¡Gracias por todo! ¡Buenas noches!"],
       expect: { complete: true }, auto: AUTO },
     // "No, gracias, estoy llena" answers "¿Te sirvo otro poquito?", asked on every seed here
+    // "Deja lugar para el postre" brings the flan even on a visit without dessert planned
     { name: "quiet guest, short answers", setup: (s) => { PLAIN(s); s.askSeconds = true; s.askDessert = false; },
-      turns: ["¡Hola!", "¡Gracias!", "Una cerveza.", "¡Qué rico!", "No, gracias, estoy llena.", "Ya es tarde.", "Gracias por la cena. ¡Adiós!"],
-      expect: { complete: true, state: { seconds: "no" } }, auto: { ...AUTO, ready_soon: "¡Gracias!" } },
+      turns: ["¡Hola!", "¡Gracias!", "Una cerveza.", "¡Qué rico!", "No, gracias, estoy llena.", "No, gracias.", "Ya es tarde.", "Gracias por la cena. ¡Adiós!"],
+      expect: { complete: true, state: { seconds: "no", dessert: "no" } }, auto: { ...AUTO, ready_soon: "¡Gracias!" } },
     { name: "chatty guest", setup: (s) => { PLAIN(s); },
       turns: ["Hola Diego, hola Natalia. Les traje unos chocolates.", "¿Qué tienen?", "Una limonada, por favor.", "¡Qué bonita casa!", "¿Me pasas la sal?",
         "¡Cocinas muy bien! ¿Tú cocinaste?", "¿Me das la receta?", "Bueno, ya me voy yendo. Mañana trabajo temprano.", "¡Gracias por todo!"],
@@ -1506,6 +1647,34 @@ export const dinner: SituationDef = {
       turns: ["¡Hola! Gracias por invitarme.", "Esto es para ustedes.", "Una cerveza.", "¡Qué rico huele!", "¡Qué rico!", "Ya me tengo que ir.",
         "Me encantaría, pero mañana trabajo.", "¡Buenas noches!"],
       expect: { complete: true, state: { leaving: true } }, auto: AUTO },
+    // Each host says their own side answers here (the voice line list records each line in the voice it hears):
+    // Diego cooked (who cooked, what's in it, the salsa, too much salt), Natalia the flan and the house's answers.
+    { name: "Diego's own answers: late, mezcal, no fish, who cooked, what's in it", setup: (s) => { PLAIN(s); s.dietTwist = true; s.askSeconds = false; s.askDessert = false; },
+      turns: ["Perdón por llegar tarde.", "Les traje una botella de mezcal. ¿Qué estás cocinando?", "No como pescado.", "Agua de jamaica, por favor.",
+        "¿Qué es lo que huele tan rico? ¿Quién cocinó?", "¡Salud!", "¿Qué lleva?", "¿Qué lleva la salsa?", "Está rica, pero está un poco salada.", "¿Tú hiciste el flan?",
+        "Sí, un pedacito.", "¡Qué rápido se pasa el tiempo!", "Gracias por la cena, ¡estuvo deliciosa!", "No, gracias, ya me voy.", "¡Gracias por todo!"],
+      expect: { complete: true, state: { lateSorry: true, gift: "mezcal", diet: "other", dessert: "yes" } }, auto: AUTO },
+    { name: "Natalia's own answers: two gifts, the restroom, the pictures, spicy, who made the flan", setup: (s) => { PLAIN(s); s.saladTask = true; s.roadFood = true; s.askSeconds = true; s.askDessert = true; },
+      turns: ["¡Hola! Gracias por invitarme. Les traje galletas.", "Y les traje un pastel.", "Nada por ahora, gracias.", "¿Les ayudo en algo?", "¿Dónde está el baño?",
+        "¡Claro! ¿Dónde la pongo?", "Me encantan los cuadros.", "¿Esto pica?", "No me gusta el picante.", "¡Pero está riquísima!", "Sí, por favor.", "¿Quién hizo el flan?",
+        "Sí, por favor.", "Ya me voy, que es tarde.", "Les aviso cuando llegue."],
+      expect: { complete: true, state: { gift: "cookies", saladDone: true, seconds: "yes", dessert: "yes", willText: true } }, auto: AUTO },
+    // A guest who eats no meat has the rajas tacos: "¿Y? ¿Te gusta?" (never "¿Qué tal la cochinita?"), more on asking
+    // ("¿Me sirves un poco más?" before Natalia offers), and no cochinita to take home
+    { name: "no meat: the tacos, more on asking, nothing to go", setup: (s) => { PLAIN(s); s.dietTwist = true; s.roadFood = true; s.askSeconds = false; s.askDessert = false; },
+      turns: ["Hola, gracias por invitarme.", "Gracias.", "Soy vegetariano.", "Una limonada.", "¿Qué es esto?", "¡Salud!", "¿Me sirves un poco más?", "¡Qué rico!",
+        "Ya me voy, que es tarde.", "¡Gracias por todo!"],
+      expect: { complete: true, state: { diet: "veg", seconds: "yes", foodPraised: true } }, auto: AUTO },
+    // "Ya me voy" as dinner is served: Natalia protests once ("¡Pero si apenas estamos cenando!"), no "sobremesa" yet
+    { name: "leaving as dinner is served", setup: (s) => { PLAIN(s); s.stayTwist = true; s.askSeconds = false; s.askDessert = false; },
+      turns: ["¡Hola! Gracias por invitarme.", "Una cerveza.", "¡Qué rico huele!", "Ya me voy, que es tarde.", "¡Está riquísima!", "Ya me voy, que es tarde.",
+        "Bueno, un ratito más.", "Ahora sí, me tengo que ir.", "¡Gracias por todo!"],
+      expect: { complete: true, state: { earlyLeave: true, stayed: true } }, auto: AUTO },
+    // "Más o menos" answers "¿Te gusta?": sorry and the rice and beans once, not asked again, no seconds pressed
+    { name: "so-so: answered once, no seconds pressed", setup: (s) => { PLAIN(s); s.askSeconds = true; s.askDessert = false; },
+      turns: ["¡Hola! Gracias por invitarme.", "Una cerveza.", "¡Qué rico huele!", "¿Me pasas la sal?", "Más o menos.", "Gracias por la cena, ¡estuvo deliciosa!", "No, gracias.",
+        "Bueno, ya me voy.", "¡Gracias por todo!"],
+      expect: { complete: true, state: { badSaid: true, seconds: undefined, coffeeSettled: true } }, auto: AUTO },
   ],
 };
 
