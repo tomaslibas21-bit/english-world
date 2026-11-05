@@ -24,8 +24,9 @@ retries fit.
   near-duplicates, the style, anatomy and place details; 110 findings (4 high, 23 medium, 83 low). **48 pictures
   remade** (the high and medium ones and 15 low ones: a third hand, a second passport, the mute icon back on a
   video, a banknote that looked like a dollar, moments that showed the wrong thing, near-copies, a hat that came and
-  went, the gym's leg press), and the phases of 7 moments in s33, s82 and s89 remapped so the picture fits its line
-  (s82's medium finding was fixed that way). Each remade entry has a `note` in its manifest. Left as they are: the
+  went, the gym's leg press), and the phases of 6 moments in s33, s82 and s89 remapped so the picture fits its line
+  (s82's medium finding was fixed that way; in s33 Don Pancho's painting shows on Fridays and his fishing on Mondays,
+  and react, the pending after each of his stories, keeps his listening pose). Each remade entry has a `note` in its manifest. Left as they are: the
   low findings (above all the sea seen from inland places, which comes from the place references).
 - **Spent: $42.50** of the $75 stop (the owner approved $82), 765 requests. Until the audit: $40.59 (regular API: 506
   requests, $33.30: the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373,
