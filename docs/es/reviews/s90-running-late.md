@@ -32,3 +32,67 @@ The writer's claims all held. 37 of the 1,354 lines changed, 159 added (about 60
 - "faltar" (to miss work) is new in Montes's question. It is pan-Hispanic, so it has no twin.
 - After "¿Todo bien?", "No voy a llegar tarde" and "No, llego a tiempo" are still read as late (the likelier reading, rule 10). After "Dígame", Montes asks.
 - The writer's open questions (Uber, atorado/atrapado, "Sí, él habla", the made-up rooms) look fine to me. Nothing is unresolved.
+
+## Audit (5 Nov 2026)
+
+A fresh read of both texts (Mexican and neutral) against docs/es/STYLE.md, AUTHORING-ES.md, the s90 brief, TOWN.md
+"Getting around (from the 3D town)" and the cross/neutral leads; seeds 3 and 7 read in full; about 80 probe turns
+(tools/probe.ts) on the opening, the reason and time questions, the help offer, the plan question, the room twist
+and side questions; the English original on main probed with the same turns.
+
+**The lead's decision (the other building).** Across avenida Juárez from Línea Clara are the Policía Municipal and the
+church, and no real building fits a team meeting (Correos, the car rental, the hotel's rooms). So no building is named:
+today the meeting isn't in the usual room 204 but in **room 302, on the third floor of Línea Clara's own tower** (22 m
+in layout.ts). room_twist "Ah, y por cierto, hoy la reunión no es en la sala de siempre.", room_num "Es en la sala
+302."; "¿Dónde queda?/¿En qué piso?/¿Cómo llego?" get building "Aquí en nuestro edificio, en el tercer piso." (or "En
+el tercer piso de este edificio."); a learner who still says "el otro edificio" / "el de enfrente" gets building_no
+"No, es aquí, en nuestro edificio, en el tercer piso." and never "Así es". The hint q_building is now "¿Dónde queda la
+sala 302?"; the written note "Sala 302 · tercer piso". "Aquí lo esperamos" before the news no longer contradicts it.
+
+Found 24, fixed 24, by point:
+
+1. **Natural Spanish (3).** "¡Y maneje con cuidado!" closed the call when the car had broken down (a taxi or a
+   colleague coming), on the bus or on foot: now only for traffic or rain when nothing says the learner isn't driving
+   (noCar), or when the learner says "voy manejando". "Claro, lo esperamos unos minutos" answered a 40-minute delay: over
+   20 minutes "¿Me pueden esperar?" gets plan_wait ("No se preocupe, lo esperamos."). "Estoy en el camión y hay mucho
+   tráfico" got "Bueno. ¿Como en cuánto tiempo?" before "Sí, hoy hay mucho tráfico": the time question now comes last.
+2. tú/usted: none (Montes is usted throughout; tú to him is accepted with the tip).
+3. Names: none (Ingeniero Montes is the boss in s87 too).
+4. **Facts (1):** the other building across the street (above).
+5. **English (1):** "Shall we start" in the glosses of plan_ask[0] and amb_plan[0] → "Should we start".
+6. Spelling: none.
+7. **Questions and answers (18).** With caller ID, "¿Todo bien?" answered "Sí, todo bien, gracias", "Bien, ¿y usted?"
+   or "Más o menos" got "¿Bueno? ¿Quién habla?" again: they now open the call ("Dígame" / "¡Uy! ¿Qué pasó?"). The
+   reason question came back after the learner gave the time, three times in a row and the call never completed: a
+   time at the reason question now skips it, and "Sí, todo bien" at "¿Todo bien?" too. "¿Ya llegaron todos?" was read as
+   "ya llego" ("Ah, perfecto"): now "Ya casi todos." "No llego en veinte minutos" was taken as twenty minutes: Montes asks
+   again ("…, más bien en media hora" is taken). "¿En qué piso?" got the room number; "¿Dónde queda?" wasn't understood.
+   A time said with "Ya voy caminando" in one breath still got "¿Como en cuánto tiempo?". A long time while
+   "¿Empezamos sin usted?" was open got "Entonces empezamos sin usted" and the same question again, and after
+   "Espérenme" the line said start while the state said wait: eta_long now decides it and closes the question.
+   "Ok, en el otro edificio, sala 302" got "Así es". "¿Me lo escribe?" after "Así es" had nothing to write. "No sé"
+   held the call at the time question ("Bueno, no se preocupe" and silence), and got "Claro, tómese su tiempo" at
+   "¿Empezamos sin usted?" and "¿Necesita ayuda?": now "Bueno, me avisa cuando sepa." and on, Montes decides to start,
+   "Bueno, cualquier cosa me avisa". Not understood before, answered now: "¿Está el ingeniero Montes?", "¿Con el
+   ingeniero Montes, por favor?" ("Sí, él habla."), "Con Ryan." (to "¿Con quién hablo?"), "Habla Ryan, de Línea Clara",
+   "¿A qué hora es la junta?" / "¿La junta es a las nueve?" ("A las nueve." / "Sí, a las nueve."), "¿Ya empezó la junta?"
+   ("Todavía no. Empieza a las nueve."), "¿Está enojado?" / "¿Se enojó?" ("No, para nada."), "No sé, depende del
+   tráfico", "Menos de media hora", "Más de una hora", "Llego en la tarde", "Llego hasta las diez", "No creo que llegue
+   antes de las diez", "¿Me puede mandar un taxi?", "Ahorita se la mando" (the location, not an "ahorita" time),
+   "Gracias, no se preocupe" at the help offer, "No sé, tal vez más tarde" at "¿Entonces hoy va a faltar?".
+8. **Hints (1):** q_building asked for a building that isn't there (now "¿Dónde queda la sala 302?").
+9. Accepted answers: no false accept found; corpus +46 understood (247 → 293, 100%), traps 0/21 → 0/23 plus 18 new
+   not-checks; held-out 42/42 unchanged. NLU tests 107 → 135, sims 17 → 25 (each 12/12).
+10. Neutral text: none. The new lines have no Mexican-only word (no "elevador"); the nine twins are right.
+
+**For the voice list (one speaker, Montes; no values, no plural items).** Changed spoken text: room_twist, room_num,
+building (both variants new); new: building_no, not_angry, mtg_time, mtg_time_yes, not_started, team_almost,
+eta_unknown; hint changed: room.q_building (coach voice, "¿Dónde queda la sala trescientos dos?"). Glosses only:
+plan_ask[0], amb_plan[0]; write fields only: room_right, room_wrong.
+
+**For the lead.** The room picture (public/scenes-es/s90-running-late/room.webp; manifest prompt "points … out of the
+big window, where a two-story ochre building … across the street") should now show Montes pointing up, toward the
+third floor (or remap "room" to the plan picture). TOWN.md "Named in the conversations, not built": s90's other office
+building is gone (room 302 is on Línea Clara's third floor). Global g_dontknow holds a step that has `help`, so the
+call stops after "Bueno, no se preocupe" (handled here). The English original shares the drive-safe, reason-loop,
+time-question order, "wait a few minutes" and plan-question bugs (EN-FIXES-LEADS.md).
