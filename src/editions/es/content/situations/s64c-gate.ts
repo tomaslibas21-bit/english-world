@@ -1,8 +1,9 @@
 // NEEDS: None. The city lexicon, the merges and the gate words (sala / puerta) are local.
 // Song 64 "Window or Aisle?" (part 3 of 3) → Puerto Colibrí: "¿Es esta la sala?".
 // Daniela, the gate agent at Puerto Colibrí's little airport (usted). The learner is on flight 223 to Mexico City,
-// boarding zone 3, at gate ("sala") 4. In Mexico the gate is "la sala" (also "la puerta"; both are accepted), the
-// boarding pass "el pase de abordar" (neutral twin: "la tarjeta de embarque"), carry-ons are "equipaje de mano" and a
+// boarding zone 3, at gate ("sala") 4. In Mexico the gate is "la sala" (also "la puerta"; both are accepted; the
+// neutral twins say "la puerta", as s64a and s64b do), the boarding pass "el pase de abordar" (neutral twin: "la
+// tarjeta de embarque"), carry-ons are "equipaje de mano" and a
 // bag is "documentada" (checked). A Mexican gate: confirm the gate ("¿De aquí sale el vuelo a…?"), on time or
 // delayed ("el vuelo viene retrasado"), the boarding time, boarding by zones, the carry-on, Wi-Fi, a coffee, the
 // restrooms, outlets ("contactos", neutral "enchufes"), a seat change at the gate, then the boarding call
@@ -56,7 +57,8 @@ const boardingInfo = (c: Ctx) => {
 };
 
 const QUESTIONS = ["more_no", "more_q", "ask_ontime", "ask_delayed", "ask_delay_reason", "ask_boarding_time", "ask_departure", "ask_group",
-  "ask_carryon", "ask_wifi", "ask_coffee", "ask_food", "ask_restroom", "ask_charge", "ask_duration", "ask_full", "ask_seat_change", "ask_gate12", "can_board"];
+  "ask_carryon", "ask_wifi", "ask_coffee", "ask_food", "ask_restroom", "ask_charge", "ask_duration", "ask_full", "ask_seat_change", "ask_gate12", "can_board",
+  "ask_my_seat", "ask_id"];
 /** "Ok" / "Perfecto, gracias" to "¿Algo más?" means no more questions (but not "Ok, una pregunta"). */
 const plainAck = (heard: string) => /^\s*(ok|okay|vale|sale|va|bueno|perfecto|muy bien|esta bien|claro|gracias|muchas gracias)\b/.test(fold(heard)) && !/pregunta|duda/.test(fold(heard));
 /** "Gracias" / "Ok, muchas gracias" and nothing else. */
@@ -96,10 +98,12 @@ const QUESTION_LINES: Record<string, (c: Ctx) => void> = {
 };
 
 /** Flight-specific questions need the flight first ("¿En qué vuelo viaja?"), then get answered. */
-function withFlight(c: Ctx, key: string) {
+function withFlight(c: Ctx, key: string, slots: any = {}) {
   c.s.qHeard = c.heard; // the question itself, for the answer's form after "¿En qué vuelo viaja?"
   if (c.s.gateOk) { QUESTION_LINES[key](c); if (key !== "boarding" && key !== "departure") c.s.delayTold = true; return; }
   c.s.afterFlight = key;
+  // "¿El vuelo 223 va a tiempo?": the flight is in the question itself, so it isn't asked for
+  if (flightNumber(slots) !== undefined || slots.city) { flightGiven(c, slots); return; }
   c.say("which_flight");
   expectFlight(c);
 }
@@ -109,12 +113,16 @@ function expectFlight(c: Ctx) {
     id: "which_flight", expects: ["flight_info_ctx", "ask_gate", "give_bp", "give_bp_ctx", "flight_dunno_ctx"], hints: ["flight"],
     suggest: [{ lt: "Say your flight (223 to Mexico City)", hint: "flight" }],
     on: {
-      flight_info_ctx: (cc, sl) => { flightGiven(cc, sl); },
+      // "Un momento", "Una pregunta": the article, not flight 1 (the wait or the question is answered on its own)
+      flight_info_ctx: (cc, sl) => { if (articleOne(cc, sl)) { expectFlight(cc); return; } flightGiven(cc, sl); },
       ask_gate: (cc, sl) => { flightGiven(cc, sl); },
       give_bp: (cc) => { cc.say("bp_thanks"); confirmGate(cc); },
       give_bp_ctx: (cc) => { cc.say("bp_thanks"); confirmGate(cc); },
       g_dontknow: (cc) => { cc.say("flight_help"); expectFlight(cc); },
       flight_dunno_ctx: (cc) => { cc.say("flight_help"); expectFlight(cc); },
+      // the learner looks for the pass, or has a question first: the flight question stays open
+      g_wait: (cc) => { cc.say("g_take_time"); expectFlight(cc); },
+      more_q: (cc) => { cc.say("what_q"); expectFlight(cc); },
     },
     ask: (cc) => cc.say("which_flight"),
   });
@@ -126,24 +134,32 @@ function flightNumber(slots: any): number | undefined {
   return undefined;
 }
 
+/** "Un momento", "Un segundo", "Una pregunta": "un" / "una" read as the number 1 is the article, never a flight (rule 4). */
+const articleOne = (c: Ctx, slots: any) => slots.number === 1 && !slots.f && !slots.city && !/\b(1|uno)\b/.test(fold(c.heard));
+
+function expectWrongFlight(c: Ctx) {
+  ask(c, {
+    id: "wrong_flight", expects: ["give_bp", "give_bp_ctx", "flight_info_ctx", "ask_gate"], hints: ["show_bp"],
+    suggest: [{ lt: "Show your boarding pass", hint: "show_bp" }],
+    on: {
+      give_bp: (cc) => { cc.say("bp_you_are_223"); confirmGate(cc, true); },
+      give_bp_ctx: (cc) => { cc.say("bp_you_are_223"); confirmGate(cc, true); },
+      flight_info_ctx: (cc, sl) => { if (articleOne(cc, sl)) { expectWrongFlight(cc); return; } flightGiven(cc, sl); },
+      ask_gate: (cc, sl) => { flightGiven(cc, sl); },
+      g_wait: (cc) => { cc.say("g_take_time"); expectWrongFlight(cc); },
+    },
+    yes: (cc) => { cc.say("bp_you_are_223"); confirmGate(cc, true); },
+    ask: (cc) => cc.say("see_bp"),
+  });
+}
+
 function flightGiven(c: Ctx, slots: any) {
   const n = flightNumber(slots);
   const city = slots.city as string | undefined;
   if ((n !== undefined && n !== 223 && n !== 4) || (city && city !== "cdmx")) {
     c.say("not_this_flight");
     c.say("see_bp");
-    ask(c, {
-      id: "wrong_flight", expects: ["give_bp", "give_bp_ctx", "flight_info_ctx", "ask_gate"], hints: ["show_bp"],
-      suggest: [{ lt: "Show your boarding pass", hint: "show_bp" }],
-      on: {
-        give_bp: (cc) => { cc.say("bp_you_are_223"); confirmGate(cc, true); },
-        give_bp_ctx: (cc) => { cc.say("bp_you_are_223"); confirmGate(cc, true); },
-        flight_info_ctx: (cc, sl) => { flightGiven(cc, sl); },
-        ask_gate: (cc, sl) => { flightGiven(cc, sl); },
-      },
-      yes: (cc) => { cc.say("bp_you_are_223"); confirmGate(cc, true); },
-      ask: (cc) => cc.say("see_bp"),
-    });
+    expectWrongFlight(c);
     return;
   }
   confirmGate(c);
@@ -180,12 +196,16 @@ function boardingOk(c: Ctx) {
   c.say("scanned");
 }
 
-function expectScan(c: Ctx) {
-  c.say("scan_ask");
+function expectScan(c: Ctx, quiet = false) {
+  if (!quiet) c.say("scan_ask");
   ask(c, {
-    id: "scan", expects: ["give_bp", "give_bp_ctx"], hints: ["board"],
+    id: "scan", expects: ["give_bp", "give_bp_ctx", "ask_id"], hints: ["board"],
     suggest: [{ lt: "Hand over your boarding pass and ID", hint: "board" }],
-    on: { give_bp: (cc) => { boardingOk(cc); }, give_bp_ctx: (cc) => { boardingOk(cc); }, g_ok: (cc) => { boardingOk(cc); } },
+    on: {
+      give_bp: (cc) => { boardingOk(cc); }, give_bp_ctx: (cc) => { boardingOk(cc); }, g_ok: (cc) => { boardingOk(cc); },
+      // "¿Sirve mi pasaporte?": answered, then the pass and the ID are still asked for (without the same line again)
+      ask_id: (cc) => { cc.say("id_passport"); expectScan(cc, true); },
+    },
     yes: (cc) => { boardingOk(cc); },
     ask: (cc) => cc.say("scan_ask"),
   });
@@ -201,6 +221,8 @@ const freeAnswer = (c: Ctx) => {
 const bagWhere = (c: Ctx) => c.say(/\bdonde\b/.test(fold(c.heard)) ? "bag_back_cdmx_short" : "bag_back_yes");
 const checkBag = (cc: Ctx) => { cc.s.bagChecked = true; cc.say("bag_tagged"); cc.say("bag_back_cdmx"); };
 const keepBag = (cc: Ctx) => { cc.s.bagChecked = false; cc.say("no_problem"); };
+/** "No traigo maleta", "Solo traigo una mochila": nothing to check (the backpack goes with the learner). */
+const noBag = (cc: Ctx) => { cc.s.bagChecked = false; cc.say("no_bag"); };
 
 function offerGateCheck(c: Ctx, fromQuestion = false) {
   c.s.offerDone = true;
@@ -208,7 +230,7 @@ function offerGateCheck(c: Ctx, fromQuestion = false) {
   c.say(fromQuestion ? "full_offer_short" : "full_offer");
   c.say("full_offer_q");
   ask(c, {
-    id: "offer", expects: ["bag_check_q", "keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_amb_ctx"], hints: ["g_yesno", "offer"],
+    id: "offer", expects: ["bag_check_q", "keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_amb_ctx", "no_bag_ctx", "must_q_ctx"], hints: ["g_yesno", "offer"],
     suggest: [{ lt: "Say yes or no", hint: "offer" }],
     yes: checkBag,
     no: keepBag,
@@ -216,15 +238,17 @@ function offerGateCheck(c: Ctx, fromQuestion = false) {
       keep_bag: keepBag,
       keep_bag_ctx: keepBag,
       offer_yes: checkBag,
+      no_bag_ctx: noBag,
       bag_check_q: (cc) => { cc.say("bag_back_cdmx"); ask(cc, offerPending()); },
       ask_free: (cc) => { freeAnswer(cc); ask(cc, offerPending()); },
+      must_q_ctx: (cc) => { cc.say("offer_optional"); ask(cc, offerPending()); },
       bag_amb_ctx: (cc) => { cc.say("bag_which"); ask(cc, offerPending()); },
     },
     ask: (cc) => cc.say("full_offer_q"),
   });
 }
 const offerPending = (): Pending => ({
-  id: "offer", expects: ["keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_check_q", "bag_amb_ctx"], hints: ["g_yesno", "offer"],
+  id: "offer", expects: ["keep_bag", "keep_bag_ctx", "offer_yes", "ask_free", "bag_check_q", "bag_amb_ctx", "no_bag_ctx", "must_q_ctx"], hints: ["g_yesno", "offer"],
   suggest: [{ lt: "Say yes or no", hint: "offer" }],
   yes: checkBag,
   no: keepBag,
@@ -232,9 +256,11 @@ const offerPending = (): Pending => ({
     keep_bag: keepBag,
     keep_bag_ctx: keepBag,
     offer_yes: checkBag,
+    no_bag_ctx: noBag,
     // a second question: answered, and the offer stays open without repeating the whole question
     bag_check_q: (cc) => { bagWhere(cc); ask(cc, offerPending()); },
     ask_free: (cc) => { freeAnswer(cc); ask(cc, offerPending()); },
+    must_q_ctx: (cc) => { cc.say("offer_optional"); ask(cc, offerPending()); },
     bag_amb_ctx: (cc) => { cc.say("bag_which"); ask(cc, offerPending()); },
   },
   ask: (cc) => cc.say("full_offer_q"),
@@ -270,6 +296,9 @@ export const gate: SituationDef = {
       phone_thing: "(celular | telefono | cel | laptop | computadora | tableta | ipad | compu)",
       eat: "(algo de comer | algo de tomar | comida | botanas | una botana | snacks | un snack | bebidas | refrescos | agua | algo)",
       zone: "(zona | grupo)",
+      // the flight (or gate 4) said first, then "¿va a tiempo?" with its subject left out: one question, since a piece
+      // can't start with "va" / "sale" / "está" (the engine reads them as the previous piece's verb)
+      fl_given: "((voy | viajo | estoy) en (el | mi) vuelo ({number} | {f:fnum}) [@dest] | (tengo | traigo) (el | mi) vuelo ({number} | {f:fnum}) [@dest] | mi vuelo es [el] ({number} | {f:fnum}) [@dest] | es [esta] la @sala (del | de | para el) @flt [@dest] | (es | esta es) [esta] la @sala (4 | cuatro) | (voy | viajo) @dest | es aqui [el vuelo @dest | @flt])",
     },
     slots: {
       fnum: { lexicon: [{ id: "223", forms: ["doscientos veintitres", "dos veintitres", "dos dos tres", "pc223", "dos veinte tres"] }] },
@@ -323,6 +352,8 @@ export const gate: SituationDef = {
       "(puede | podria | me puede | me podria) (decir | decirme) si (esta es | es) la @sala (del | de | para el) (@flt | vuelo @dest)",
       "(puedes | me puedes | podrias | me podrias) (decir | decirme) si (esta es | es) la @sala (del | de | para el) (@flt | vuelo @dest) #tip:tu_staff",
       "es (el vuelo | este el vuelo) @dest", "este es el vuelo @dest",
+      // "¿Cuál es mi sala?" (s64a's hint): the flight is asked for, or the gate is named once it's known
+      "cual es (mi | la) @sala [correcta]",
       "aqui es la @sala {number}", "(es | sera) aqui donde (sale | aborda | se aborda) (@flt | el vuelo @dest | mi vuelo) [@dest]",
       "mi vuelo es [el] ({number} | {f:fnum}) [@dest]", "mi vuelo (va | es) @dest",
       "(busco | estoy buscando | ando buscando) (@flt | el vuelo @dest | la @sala (del | de | para el) (@flt | vuelo @dest))",
@@ -354,7 +385,9 @@ export const gate: SituationDef = {
       "aqui (lo | la) tiene",
     ] },
     // a bare "Aquí tiene" / "Tome" only where a pass is asked for (rule 12)
-    give_bp_ctx: { patterns: ["aqui tiene #h:bd_here", "aqui esta", "aqui", "tome", "tenga", "claro aqui tiene", "si aqui (tiene | esta)", "aqui (lo | la) tiene", "toma #tip:tu_staff"] },
+    give_bp_ctx: { patterns: ["aqui tiene #h:bd_here", "aqui esta", "aqui", "tome", "tenga", "claro aqui tiene", "si aqui (tiene | esta)", "aqui (lo | la) tiene", "toma #tip:tu_staff",
+      // "Tenga mi pasaporte", "Mi pasaporte": the ID handed over with the pass
+      "(tenga | tome) (mi | el) (pasaporte | identificacion | ine | pase | pase de abordar)", "(mi | el) (pasaporte | identificacion) [y (mi | el) (pase | pase de abordar)]"] },
     ask_ontime: { patterns: [
       "[el vuelo | mi vuelo | el avion] (va | sale | esta | viene) a tiempo [el vuelo | mi vuelo | el avion] #h:q_ontime",
       "(va | sale | esta | viene) (en tiempo | en horario | puntual | a la hora) [el vuelo | mi vuelo]",
@@ -362,17 +395,24 @@ export const gate: SituationDef = {
       "(todo | todo esta) bien con el vuelo", "(todo | todo va) en orden con el vuelo",
       "(va a | vamos a) salir a tiempo", "(el vuelo | mi vuelo) (sale | va a salir) a (tiempo | la hora)",
       "sigue a tiempo [el vuelo]", "el vuelo esta (a tiempo | en tiempo | puntual) [verdad]",
+      // "¿El vuelo 223 va a tiempo?": one question with the flight in it (never the gate question with "a tiempo" dropped)
+      "(@flt | el vuelo @dest | el de {city}) (va | sale | esta | viene) (a tiempo | en tiempo | en horario | puntual | a la hora) [verdad]",
+      "(va | sale | esta | viene) (a tiempo | en tiempo | en horario | puntual | a la hora) (@flt | el vuelo @dest)",
+      "@fl_given (va | sale | esta | viene | vamos | salimos) (a tiempo | en tiempo | en horario | puntual | puntuales | a la hora) [verdad]",
     ] },
     ask_delayed: { patterns: [
       "[el vuelo | mi vuelo | el avion] (esta | viene | va) (retrasado | atrasado | demorado | con retraso | con demora | con atraso) [el vuelo | el avion] #h:q_delayed",
       "(hay | tiene | trae) (retraso | algun retraso | demora | alguna demora | atraso | algun atraso)",
       "(cuanto | cuanto tiempo) (de retraso | de atraso | se va a retrasar | se retrasa | trae de retraso | es el retraso | va a tardar)",
-      "(cuanto | de cuanto) es el retraso",
+      "(cuanto | de cuanto) es el retraso", "(cuanto | cuanto tiempo) de (retraso | atraso | demora) (hay | trae | tiene | lleva | traen | tienen)",
       "(se va a retrasar | se retrasó | se atrasó | se demoró | se va a atrasar) [el vuelo]",
       "(vamos a | va a) salir tarde", "(sale | salimos) tarde", "(va | viene) tarde [el vuelo | el avion]",
       // "¿No está retrasado?", "¿El vuelo no va a tiempo?": questions about the delay all the same
       "[el vuelo] no (esta | viene | va) (retrasado | atrasado | demorado) [el vuelo | verdad]", "no hay (retraso | demora | atraso) [verdad]",
       "[el vuelo] no (va | sale | esta) a tiempo [el vuelo | verdad]",
+      "(@flt | el vuelo @dest) (esta | viene | va) (retrasado | atrasado | demorado | con retraso | con demora | con atraso)",
+      "(@flt | el vuelo @dest) (sale | va | viene) tarde", "(@flt | el vuelo @dest) (tiene | trae) (retraso | algun retraso | demora | atraso)",
+      "@fl_given (esta | viene | va) (retrasado | atrasado | demorado | con retraso | con demora | con atraso)", "@fl_given (sale | va | viene) tarde",
     ] },
     ask_delay_reason: { patterns: [
       "por que (esta | viene | va) (retrasado | atrasado | demorado | tarde) [el vuelo | el avion] #h:q_why",
@@ -390,11 +430,14 @@ export const gate: SituationDef = {
       "cuanto (tiempo) (tengo que | hay que | tenemos que) esperar", "cuanto (hay que | tengo que) esperar",
       "a que hora puedo abordar", "cuando puedo abordar", "cuanto tiempo (tengo | tenemos) [antes de abordar | para abordar]",
       "cual es la hora de (abordaje | abordar | embarque)", "cuanto falta [todavia]",
+      "a que hora (aborda | se aborda | empieza a abordar | empiezan a abordar) (@flt | el vuelo @dest)",
+      "a que hora (empieza | comienza | inicia | es) el (abordaje | embarque) (del | de | para el) (@flt | vuelo @dest)",
     ] },
     ask_departure: { patterns: [
       "a que hora (sale el vuelo | sale el avion | salimos | despegamos | sale | despega el avion | despega) #h:q_departure",
       "cuando (sale el vuelo | salimos | despegamos | sale el avion)",
       "a que hora es la salida", "a que hora (sale | es) (mi vuelo | el vuelo | nuestro vuelo | el avion)", "cual es la hora de salida", "no se a que hora (salimos | sale el vuelo | sale)",
+      "a que hora (sale | despega) (@flt | el vuelo @dest)", "cuando sale (@flt | el vuelo @dest)",
     ] },
     ask_group: { patterns: [
       "en que @zone (voy | estoy | me toca | ando) #h:q_group",
@@ -466,6 +509,23 @@ export const gate: SituationDef = {
       "(me puede | puede | me podria | podria) (cambiar | cambiarme) a (un asiento (de | en) (ventanilla | pasillo) | la ventanilla | el pasillo | otro asiento | ventanilla | pasillo)",
       "(me puedes | puedes | me podrias | podrias) (cambiar | cambiarme) (a | de) (un asiento (de | en) (ventanilla | pasillo) | la ventanilla | el pasillo | otro asiento | asiento | lugar) #tip:tu_staff",
       "(puedo | podemos | quiero | quisiera | me gustaria) (sentarme | sentarnos) (junto a | con | al lado de) mi (esposa | esposo | familia | amigo | amiga | hijo | hija | pareja | novio | novia)",
+      // the other side, when a seat is offered: "¿No tiene uno de pasillo?", "¿Y uno de ventanilla?", "Mejor de pasillo"
+      "[no] (tiene | hay | queda) (uno | alguno | otro) (de | en | junto a la) (ventanilla | pasillo | ventana) [libre | disponible]",
+      "(y | mejor) (uno | otro) (de | en) (ventanilla | pasillo | la ventanilla | el pasillo)",
+      "mejor (de | en) (ventanilla | pasillo | la ventanilla | el pasillo)",
+    ] },
+    // "¿Cuál es mi asiento?": the new seat after a change, or "it's on your boarding pass"
+    ask_my_seat: { patterns: [
+      "(cual | que) es mi (asiento | lugar | numero de asiento) [ahora]", "cual es mi nuevo (asiento | lugar)",
+      "(que | cual) (asiento | lugar) (tengo | me toca | me dio | me dieron | me queda) [ahora]",
+      "en que (asiento | lugar) (voy | estoy | me toca)", "(cual | que) asiento es el mio",
+    ] },
+    // "¿Sirve mi pasaporte?": the foreign learner's ID for boarding (asked for with the pass at the scan)
+    ask_id: { patterns: [
+      "(sirve | le sirve | esta bien | puede ser | vale) (mi | el) pasaporte [como identificacion]",
+      "(mi | el) pasaporte (sirve | le sirve | esta bien | vale) [como identificacion]",
+      "(necesita | quiere | ocupa) (mi | el) pasaporte", "(necesito | ocupo) (mi | el) pasaporte [para abordar | para subir]",
+      "con (mi | el) pasaporte (esta bien | sirve | le sirve)",
     ] },
     ask_gate12: { patterns: [
       "(donde esta | donde queda | como llego a | por donde (es | queda) | hacia donde (es | queda) | para donde es) la @sala (7 | siete) #h:q_gate12",
@@ -497,9 +557,27 @@ export const gate: SituationDef = {
     ] },
     // "Es que traigo cosas frágiles": a reason to keep the bag, only as an answer to the offer
     // "La necesito en el avión" only at the offer: with a "no" in front it's ambiguous (bag_amb_ctx), never a plain keep
-    keep_bag_ctx: { patterns: ["(la | lo) necesito (en el avion | conmigo | a bordo | durante el vuelo)", "[es que] (traigo | llevo | tengo) (mi laptop | mi computadora | medicinas | mis medicinas | cosas de valor | mi camara | cosas fragiles | mis documentos | algo fragil | algo de valor)"] },
+    keep_bag_ctx: { patterns: ["(la | lo) necesito (en el avion | conmigo | a bordo | durante el vuelo)", "[es que] (traigo | llevo | tengo) (mi laptop | mi computadora | medicinas | mis medicinas | cosas de valor | mi camara | cosas fragiles | mis documentos | algo fragil | algo de valor)",
+      "(puedo | podria) (llevarla | llevarlo | quedarmela | quedarmelo | tenerla | tenerlo) conmigo"] },
+    // at the offer: no bag to check ("No traigo maleta", "Solo traigo una mochila")
+    no_bag_ctx: { patterns: [
+      "no (traigo | tengo | llevo) [ninguna] (maleta | maletas | equipaje | maleta de mano | equipaje de mano | valija)",
+      "no (traigo | tengo | llevo) nada [de equipaje]",
+      "(solo | nada mas | nomas | solamente) (traigo | tengo | llevo) (una | mi | esta) (mochila | bolsa | mochilita | bolsita)",
+      "(solo | nada mas | nomas | solamente) (es | traigo) (una | mi | esta) (mochila | bolsa | mochilita)",
+      "(solo | nada mas | nomas | solamente) (una | mi | esta) (mochila | bolsa | mochilita)",
+      "(es | nada mas es) (una | mi) (mochila | bolsa) [nada mas]",
+      "no es (una | mi) maleta [es (una | mi) (mochila | bolsa | mochilita)]",
+    ] },
+    // at the offer: "¿Es obligatorio?", "¿Tengo que documentarla?" (no, it's optional)
+    must_q_ctx: { patterns: [
+      "(es | seria) (obligatorio | necesario | forzoso)",
+      "(tengo | hay) que (documentarla | documentarlo | documentar [la | mi] (maleta | mochila))", "(la | lo) tengo que documentar",
+    ] },
     // "¿La tres?" right after a zone is called: only at the boarding call (a bare "la cuatro" elsewhere is the gate or a time)
     zone_ctx: { patterns: ["[y] la {number}", "[y] (la | mi) @zone {number}"] },
+    // "¡Ya voy!" (I'm coming) at a boarding call: never the goodbye "ya me voy"
+    coming_ctx: { patterns: ["(ya | ahi | ahorita) voy [para alla]", "voy para alla", "(ya | ahi) vamos"] },
     // "No la necesito en el avión" (check it) and "No, la necesito en el avión" (keep it) read the same (rule 10)
     bag_amb_ctx: { patterns: ["no (la | lo) necesito (en el avion | conmigo | a bordo | arriba | durante el vuelo) #amb"] },
     flight_dunno_ctx: { patterns: ["no (me acuerdo | recuerdo) [del numero | el numero | de que vuelo | cual es]", "no se (el numero | cual es | de que vuelo)", "no se (el | mi) numero (de | del) vuelo", "no se (que | cual) (vuelo | numero) [es]", "[no se] (no lo tengo | no lo traigo) a la mano"] },
@@ -552,13 +630,21 @@ export const gate: SituationDef = {
     ],
     gate7_yes: [
       t("Sí, | ahora | el | vuelo | 223 | sale | de | aquí, | de | la | sala | 7.", "Yes, | now | the | flight | 223 | leaves | from | here, | from | the | gate | 7.",
-        "Yes, flight 223 boards here now, at gate 7.", { say: "Sí, ahora el vuelo doscientos veintitrés sale de aquí, de la sala siete." }),
+        "Yes, flight 223 boards here now, at gate 7.", { say: "Sí, ahora el vuelo doscientos veintitrés sale de aquí, de la sala siete.",
+          flags: { 10: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("Sí, | ahora | el | vuelo | 223 | sale | de | aquí, | de | la | puerta | 7.", "Yes, | now | the | flight | 223 | leaves | from | here, | from | the | gate | 7.",
+            "Yes, flight 223 boards here now, at gate 7.", { say: "Sí, ahora el vuelo doscientos veintitrés sale de aquí, de la puerta siete." }) }),
     ],
     gate_changed: [
       t("Fíjese que | hubo | un | cambio | de | sala: | el | vuelo | 223 | ahora | sale | de | la | sala | 7.",
         "Actually, | there was | a | change | of | gate: | the | flight | 223 | now | leaves | from | the | gate | 7.",
         "Actually, there's been a gate change: flight 223 now leaves from gate 7.",
-        { say: "Fíjese que hubo un cambio de sala: el vuelo doscientos veintitrés ahora sale de la sala siete.", flags: { 0: "Fíjese que…: a polite way to bring up news, literally notice that." } }),
+        { say: "Fíjese que hubo un cambio de sala: el vuelo doscientos veintitrés ahora sale de la sala siete.",
+          flags: { 0: "Fíjese que…: a polite way to bring up news, literally notice that.", 5: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("Fíjese que | hubo | un | cambio | de | puerta: | el | vuelo | 223 | ahora | sale | de | la | puerta | 7.",
+            "Actually, | there was | a | change | of | gate: | the | flight | 223 | now | leaves | from | the | gate | 7.",
+            "Actually, there's been a gate change: flight 223 now leaves from gate 7.",
+            { say: "Fíjese que hubo un cambio de puerta: el vuelo doscientos veintitrés ahora sale de la puerta siete.", flags: { 0: "Fíjese que…: a polite way to bring up news, literally notice that." } }) }),
     ],
     gate7_where: [
       t("Está | a | unos | pasos | de | aquí, | a la izquierda.", "It's | at | a few | steps | from | here, | on the left.", "It's a few steps from here, on the left."),
@@ -575,7 +661,11 @@ export const gate: SituationDef = {
     not_this_flight: [
       t("Mmm, | de | esta | sala | sale | el | vuelo | 223 | a | la | Ciudad de México.", "Hmm, | from | this | gate | leaves | the | flight | 223 | to | — | Mexico City.",
         "Hmm, this gate is for flight 223 to Mexico City.",
-        { say: "Mmm, de esta sala sale el vuelo doscientos veintitrés a la Ciudad de México.", flags: { 9: "Spanish says la Ciudad de México; English has no article." } }),
+        { say: "Mmm, de esta sala sale el vuelo doscientos veintitrés a la Ciudad de México.",
+          flags: { 3: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta.", 9: "Spanish says la Ciudad de México; English has no article." },
+          neutral: t("Mmm, | de | esta | puerta | sale | el | vuelo | 223 | a | la | Ciudad de México.", "Hmm, | from | this | gate | leaves | the | flight | 223 | to | — | Mexico City.",
+            "Hmm, this gate is for flight 223 to Mexico City.",
+            { say: "Mmm, de esta puerta sale el vuelo doscientos veintitrés a la Ciudad de México.", flags: { 9: "Spanish says la Ciudad de México; English has no article." } }) }),
     ],
     see_bp: [
       t("¿Me | permite | su | pase de abordar?", "(To) me | you-allow | your | boarding pass?", "Can I see your boarding pass?",
@@ -657,12 +747,12 @@ export const gate: SituationDef = {
     ],
     carryon_ok: [
       t("Sí, | puede | llevar | una | maleta de mano | y | un | artículo | personal, | como | una | bolsa | o | una | mochila.",
-        "Yes, | you can | take | a | carry-on | and | a | item | personal, | like | a | purse | or | a | backpack.",
+        "Yes, | you can | take | one | carry-on | and | one | item | personal, | like | a | purse | or | a | backpack.",
         "Yes, you can bring one carry-on and one personal item, like a purse or a backpack."),
     ],
     carryon_how: [
       t("Puede | llevar | una | maleta de mano | y | un | artículo | personal, | como | una | bolsa | o | una | mochila.",
-        "You can | take | a | carry-on | and | a | item | personal, | like | a | purse | or | a | backpack.",
+        "You can | take | one | carry-on | and | one | item | personal, | like | a | purse | or | a | backpack.",
         "You can bring one carry-on and one personal item, like a purse or a backpack."),
     ],
     carryon_full: [
@@ -683,7 +773,9 @@ export const gate: SituationDef = {
     ],
     coffee: [
       t("Hay | una | cafetería | enfrente de | la | sala | 2.", "There's | a | coffee shop | across from | the | gate | 2.", "There's a coffee shop across from gate 2.",
-        { say: "Hay una cafetería enfrente de la sala dos." }),
+        { say: "Hay una cafetería enfrente de la sala dos.", flags: { 5: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("Hay | una | cafetería | enfrente de | la | puerta | 2.", "There's | a | coffee shop | across from | the | gate | 2.", "There's a coffee shop across from gate 2.",
+            { say: "Hay una cafetería enfrente de la puerta dos." }) }),
     ],
     coffee_time: [
       t("Tiene | tiempo: | el | abordaje | todavía | no empieza.", "You have | time: | the | boarding | still | doesn't start.", "You have time: boarding hasn't started yet.",
@@ -701,7 +793,10 @@ export const gate: SituationDef = {
     ],
     restroom: [
       t("Los | baños | están | aquí | a la derecha, | junto | a | la | sala | 3.", "The | restrooms | are | here | on the right, | next | to | the | gate | 3.",
-        "The restrooms are right here on the right, next to gate 3.", { say: "Los baños están aquí a la derecha, junto a la sala tres." }),
+        "The restrooms are right here on the right, next to gate 3.", { say: "Los baños están aquí a la derecha, junto a la sala tres.",
+          flags: { 8: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("Los | baños | están | aquí | a la derecha, | junto | a | la | puerta | 3.", "The | restrooms | are | here | on the right, | next | to | the | gate | 3.",
+            "The restrooms are right here on the right, next to gate 3.", { say: "Los baños están aquí a la derecha, junto a la puerta tres." }) }),
     ],
     charge: [
       t("Hay | contactos | junto | a | las | ventanas.", "There are | outlets | next | to | the | windows.", "There are outlets by the windows.",
@@ -712,7 +807,7 @@ export const gate: SituationDef = {
       t("Son | unas | dos | horas | y cuarto, | más o menos.", "It's | some | two | hours | and a quarter, | more or less.", "About two and a quarter hours."),
     ],
     arrival: [
-      t("Llegamos | en | unas | dos | horas | y cuarto, | más o menos.", "We arrive | in | some | two | hours | and a quarter, | more or less.", "We get in about two and a quarter hours from now."),
+      t("Llegamos | en | unas | dos | horas | y cuarto, | más o menos.", "We arrive | in | some | two | hours | and a quarter, | more or less.", "It takes about two and a quarter hours to get there."),
     ],
     full_seats_no: [
       t("No, | hoy | va | lleno.", "No, | today | it's going | full.", "No, the flight's full today."),
@@ -747,24 +842,36 @@ export const gate: SituationDef = {
     ],
     gate7_is: [
       t("Sí, | ahora | es | la | sala | 7.", "Yes, | now | it's | — | gate | 7.", "Yes, it's gate 7 now.",
-        { say: "Sí, ahora es la sala siete.", flags: { 3: "Spanish says la sala 7; English has no article." } }),
+        { say: "Sí, ahora es la sala siete.", flags: { 3: "Spanish says la sala 7; English has no article.", 4: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("Sí, | ahora | es | la | puerta | 7.", "Yes, | now | it's | — | gate | 7.", "Yes, it's gate 7 now.",
+            { say: "Sí, ahora es la puerta siete.", flags: { 3: "Spanish says la puerta 7; English has no article." } }) }),
     ],
     gate7_dir: [
       t("La | sala | 7 | está | aquí | adelante, | a la izquierda.", "The | gate | 7 | is | here | ahead, | on the left.", "Gate 7 is just up ahead, on the left.",
-        { say: "La sala siete está aquí adelante, a la izquierda." }),
+        { say: "La sala siete está aquí adelante, a la izquierda.", flags: { 1: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("La | puerta | 7 | está | aquí | adelante, | a la izquierda.", "The | gate | 7 | is | here | ahead, | on the left.", "Gate 7 is just up ahead, on the left.",
+            { say: "La puerta siete está aquí adelante, a la izquierda." }) }),
     ],
     gate4_for_223: [
       t("Sí, | es | la | sala | 4. | Aquí | sale | el | vuelo | 223 | a | la | Ciudad de México.", "Yes, | it's | — | gate | 4. | Here | leaves | the | flight | 223 | to | — | Mexico City.",
         "Yes, this is gate 4. Flight 223 to Mexico City leaves from here.",
         { say: "Sí, es la sala cuatro. Aquí sale el vuelo doscientos veintitrés a la Ciudad de México.",
-          flags: { 2: "Spanish says la sala 4; English has no article.", 11: "Spanish says la Ciudad de México; English has no article." } }),
+          flags: { 2: "Spanish says la sala 4; English has no article.", 3: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta.", 11: "Spanish says la Ciudad de México; English has no article." },
+          neutral: t("Sí, | es | la | puerta | 4. | Aquí | sale | el | vuelo | 223 | a | la | Ciudad de México.", "Yes, | it's | — | gate | 4. | Here | leaves | the | flight | 223 | to | — | Mexico City.",
+            "Yes, this is gate 4. Flight 223 to Mexico City leaves from here.",
+            { say: "Sí, es la puerta cuatro. Aquí sale el vuelo doscientos veintitrés a la Ciudad de México.",
+              flags: { 2: "Spanish says la puerta 4; English has no article.", 11: "Spanish says la Ciudad de México; English has no article." } }) }),
     ],
     gate7_not4: [
       t("No, | ahora | estamos | en | la | sala | 7.", "No, | now | we are | at | — | gate | 7.", "No, we're at gate 7 now.",
-        { say: "No, ahora estamos en la sala siete.", flags: { 4: "Spanish says la sala 7; English has no article." } }),
+        { say: "No, ahora estamos en la sala siete.", flags: { 4: "Spanish says la sala 7; English has no article.", 5: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("No, | ahora | estamos | en | la | puerta | 7.", "No, | now | we are | at | — | gate | 7.", "No, we're at gate 7 now.",
+            { say: "No, ahora estamos en la puerta siete.", flags: { 4: "Spanish says la puerta 7; English has no article." } }) }),
     ],
     gate4_here: [
-      t("Esta | es | la | sala | 4.", "This | is | — | gate | 4.", "This is gate 4.", { say: "Esta es la sala cuatro.", flags: { 2: "Spanish says la sala 4; English has no article." } }),
+      t("Esta | es | la | sala | 4.", "This | is | — | gate | 4.", "This is gate 4.", { say: "Esta es la sala cuatro.",
+        flags: { 2: "Spanish says la sala 4; English has no article.", 3: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+        neutral: t("Esta | es | la | puerta | 4.", "This | is | — | gate | 4.", "This is gate 4.", { say: "Esta es la puerta cuatro.", flags: { 2: "Spanish says la puerta 4; English has no article." } }) }),
     ],
     clarify_what: [
       t("Perdón, | ¿a | qué | se refiere?", "Sorry, | to | what | are you referring?", "Sorry, what do you mean?"),
@@ -811,6 +918,12 @@ export const gate: SituationDef = {
     free_how: [
       t("No cuesta | nada.", "It doesn't cost | anything.", "It doesn't cost anything."),
     ],
+    offer_optional: [
+      t("No, | es | opcional.", "No, | it's | optional.", "No, it's optional."),
+    ],
+    no_bag: [
+      t("Ah, | entonces | no se preocupe.", "Oh, | then | don't worry.", "Oh, then don't worry about it."),
+    ],
     bag_tagged: [
       t("¡Perfecto! | Aquí está | su | comprobante.", "Perfect! | Here is | your | claim tag.", "Great! Here's your claim tag."),
     ],
@@ -847,7 +960,7 @@ export const gate: SituationDef = {
           flags: { 3: "Spanish says la Ciudad de México; English has no article.", 9: "Spanish says la zona; English has no article." } }),
     ],
     zone_now: [
-      t("Ahora | está | pasando | la | zona | {$num}.", "Now | is | going through | the | zone | {$num}.", "Zone {$num} is boarding now.",
+      t("Ahora | está | pasando | la | zona | {$num}.", "Now | is | going through | — | zone | {$num}.", "Zone {$num} is boarding now.",
         { flags: { 3: "Spanish says la zona; English has no article." } }),
     ],
     boarding_not_started: [
@@ -873,6 +986,9 @@ export const gate: SituationDef = {
         { flags: { 3: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
           neutral: t("¿Me | permite | su | tarjeta de embarque | y | su | identificación?", "(To) me | you-allow | your | boarding pass | and | your | ID?", "May I see your boarding pass and ID?") }),
     ],
+    id_passport: [
+      t("Sí, | su | pasaporte | sirve | como | identificación.", "Yes, | your | passport | works | as | ID.", "Yes, your passport works as ID."),
+    ],
     scanned: [
       t("Gracias. | ¡Buen | viaje!", "Thank you. | Good | trip!", "Thank you. Have a good flight!"),
       t("¡Gracias! | Que tenga | un | buen | vuelo.", "Thanks! | May you have | a | good | flight.", "Thanks! Have a great flight."),
@@ -889,11 +1005,17 @@ export const gate: SituationDef = {
       lt: "Ask if this is the right gate",
       items: [
         { id: "q_gate", s: t("¿Es | esta | la | sala | del | vuelo | 223?", "Is it | this | the | gate | of the | flight | 223?", "Is this the gate for flight 223?",
-          { say: "¿Es esta la sala del vuelo doscientos veintitrés?" }), note: "At Mexican airports the gate is usually la sala; la puerta works too." },
+          { say: "¿Es esta la sala del vuelo doscientos veintitrés?", flags: { 3: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+            neutral: t("¿Es | esta | la | puerta | del | vuelo | 223?", "Is it | this | the | gate | of the | flight | 223?", "Is this the gate for flight 223?",
+              { say: "¿Es esta la puerta del vuelo doscientos veintitrés?" }) }), note: "At Mexican airports the gate is usually la sala; la puerta works too." },
         { id: "q_gate_city", s: t("¿De | aquí | sale | el | vuelo | a | la | Ciudad de México?", "From | here | leaves | the | flight | to | — | Mexico City?",
           "Does the flight to Mexico City leave from here?", { flags: { 6: "Spanish says la Ciudad de México; English has no article." } }) },
-        { id: "q_gate4", s: t("¿Es | la | sala | 4?", "Is it | — | gate | 4?", "Is this gate 4?", { say: "¿Es la sala cuatro?", flags: { 1: "Spanish says la sala 4; English has no article." } }) },
-        { id: "q_right", s: t("¿Estoy | en | la | sala | correcta?", "Am I | in | the | gate | right?", "Am I at the right gate?") },
+        { id: "q_gate4", s: t("¿Es | la | sala | 4?", "Is it | — | gate | 4?", "Is this gate 4?", { say: "¿Es la sala cuatro?",
+          flags: { 1: "Spanish says la sala 4; English has no article.", 2: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("¿Es | la | puerta | 4?", "Is it | — | gate | 4?", "Is this gate 4?", { say: "¿Es la puerta cuatro?", flags: { 1: "Spanish says la puerta 4; English has no article." } }) }) },
+        { id: "q_right", s: t("¿Estoy | en | la | sala | correcta?", "Am I | in | the | gate | right?", "Am I at the right gate?",
+          { flags: { 3: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+            neutral: t("¿Estoy | en | la | puerta | correcta?", "Am I | in | the | gate | right?", "Am I at the right gate?") }) },
       ],
     },
     flight: {
@@ -927,7 +1049,9 @@ export const gate: SituationDef = {
         { id: "q_restroom", s: t("¿Dónde | están | los | baños?", "Where | are | the | restrooms?", "Where's the restroom?") },
         { id: "q_charge", s: t("¿Dónde | puedo | cargar | mi | celular?", "Where | can I | charge | my | cell phone?", "Where can I charge my phone?") },
         { id: "q_seat", s: t("¿Puedo | cambiar | de | asiento?", "Can I | change | — | seat?", "Can I change my seat?", { flags: { 2: "cambiar de asiento: Spanish uses de here; English says my seat." } }) },
-        { id: "q_gate12", s: t("¿Dónde | está | la | sala | 7?", "Where | is | — | gate | 7?", "Where's gate 7?", { say: "¿Dónde está la sala siete?", flags: { 2: "Spanish says la sala 7; English has no article." } }) },
+        { id: "q_gate12", s: t("¿Dónde | está | la | sala | 7?", "Where | is | — | gate | 7?", "Where's gate 7?", { say: "¿Dónde está la sala siete?",
+          flags: { 2: "Spanish says la sala 7; English has no article.", 3: "Mexican: la sala = the gate (literally the lounge); elsewhere la puerta." },
+          neutral: t("¿Dónde | está | la | puerta | 7?", "Where | is | — | gate | 7?", "Where's gate 7?", { say: "¿Dónde está la puerta siete?", flags: { 2: "Spanish says la puerta 7; English has no article." } }) }) },
       ],
     },
     thanks: {
@@ -1020,7 +1144,8 @@ export const gate: SituationDef = {
   steps: [
     { id: "gate", done: (c) => !!c.s.gateOk,
       ask: (c) => c.say(c.s.greeted ? "ask_help" : "greet"),
-      expects: ["ask_gate", "give_bp"],
+      // the time questions are suggested here too: expected, so "¿A qué hora sale el vuelo 223?" is one question with its flight
+      expects: ["ask_gate", "give_bp", "ask_ontime", "ask_delayed", "ask_delay_reason", "ask_boarding_time", "ask_departure"],
       suggest: [{ lt: "Ask if this is the right gate", hint: "gate" }, { lt: "Ask if the flight is on time", hint: "time" }],
       help: (c) => { c.say("gate4_here"); c.say("which_flight"); expectFlight(c); } },
     { id: "time", when: (c) => !!c.s.gateOk, done: (c) => !!c.s.timeKnown || !!c.s.helpDone,
@@ -1054,7 +1179,7 @@ export const gate: SituationDef = {
         if (c.s.called !== 3) { announce(c, 3); return; }
         c.say("scan_ask");
       },
-      expects: ["give_bp", "give_bp_ctx", "can_board", "zone_ctx"],
+      expects: ["give_bp", "give_bp_ctx", "can_board", "zone_ctx", "ask_id", "coming_ctx"],
       suggest: [{ lt: "Hand over your boarding pass", hint: "board" }],
       yes: (c) => { expectScan(c); } },
   ],
@@ -1076,7 +1201,12 @@ export const gate: SituationDef = {
   handlers: {
     affirm(c) { const st = gate.steps.find((x) => x.id === c.step); if (st?.yes) st.yes(c); },
     deny(c) { const st = gate.steps.find((x) => x.id === c.step); if (st?.no) st.no(c); },
-    g_bye(c) { c.say("g_bye"); c.end(); c.hold(); },
+    g_bye(c) {
+      // "¡Ya voy!" / "Ahí voy" (I'm coming) at the boarding call is read as "ya me voy" by the tolerance: no goodbye there
+      const h = fold(c.heard);
+      if (c.step === "board" && !c.s.boarded && /^\s*((ya|ahi|ahorita)\s+)?voy\b/.test(h) && !/\bme voy\b/.test(h)) { gate.handlers.g_ok(c, {}, undefined as any); return; }
+      c.say("g_bye"); c.end(); c.hold();
+    },
     ask_gate(c, slots) {
       const h = fold(c.heard);
       const asksGate4 = /\b(sala|puerta) (4|cuatro)\b/.test(h) && !slots.city && (slots.number === 4 || slots.number === undefined);
@@ -1099,12 +1229,14 @@ export const gate: SituationDef = {
       if (slots.number === undefined && !slots.f && !slots.city) {
         // "¿Es aquí? Voy en el vuelo 223.": the flight comes in another part of the same turn, which answers it
         if (/\d|doscientos|ciudad de mexico|cdmx|\bmexico\b|\bdf\b/.test(h)) { if (/223|doscientos veintitres|ciudad de mexico|cdmx|\bmexico\b|\bdf\b/.test(h)) confirmGate(c); return; }
+        // "¿Cuál es mi sala?" once the flight is known: the gate, without a "Sí" (rule 11)
+        if (c.s.gateOk && /\bcual\b/.test(h)) { c.say(c.s.moved ? "gate7_dir" : "gate4_here"); return; }
         if (c.s.gateOk) { c.say(c.s.moved ? "gate7_yes" : "gate_yes"); return; }
         c.say("which_flight"); expectFlight(c); return;
       }
       flightGiven(c, slots);
     },
-    flight_info_ctx(c, slots) { flightGiven(c, slots); },
+    flight_info_ctx(c, slots) { if (articleOne(c, slots)) return; flightGiven(c, slots); },
     need_help(c) { c.say("what_q"); c.hold(); },
     give_bp(c) {
       if (c.step === "board" || c.s.called === 3) { boardingOk(c); return; }
@@ -1113,21 +1245,29 @@ export const gate: SituationDef = {
       c.say("bp_thanks");
     },
     give_bp_ctx(c) { gate.handlers.give_bp(c, {}, undefined as any); },
-    ask_ontime(c) { withFlight(c, "ontime"); },
-    ask_delayed(c) { withFlight(c, "delayed"); },
+    ask_ontime(c, slots) { withFlight(c, "ontime", slots); },
+    ask_delayed(c, slots) { withFlight(c, "delayed", slots); },
     ask_delay_reason(c) { withFlight(c, "delay_reason"); },
     why_short(c) { if (c.s.gateOk && c.s.timeKnown) QUESTION_LINES.delay_reason(c); else c.say("clarify_what"); },
     // (once boarding has started, "¿Cuándo puedo abordar?" is about the learner's zone)
     ask_boarding_time(c, slots, seg) {
       if (c.s.called && /\b(puedo|podemos) (abordar|pasar|subir)\b/.test(fold(c.heard))) { gate.handlers.can_board(c, slots, seg); return; }
-      withFlight(c, "boarding");
+      withFlight(c, "boarding", slots);
     },
-    ask_departure(c) { withFlight(c, "departure"); },
+    ask_departure(c, slots) { withFlight(c, "departure", slots); },
     ask_group(c, _slots, seg) {
       // "¿Qué zona está pasando?" asks about the call, not the learner's own zone
       if ((seg?.tags || []).includes("now")) {
         if (c.s.called) { c.say("zone_now", { num: c.s.called }); if (c.s.called === 2) c.say("group_after"); }
         else { c.say("boarding_not_started"); boardingInfo(c); }
+        return;
+      }
+      // "¿Cuándo me toca?" asks when, not which zone (rule 11): zone 3 goes right after zone 2
+      if (/\bcuando\b/.test(fold(c.heard))) {
+        if (c.s.called === 3) { c.say("zone_now", { num: 3 }); expectScan(c); return; }
+        c.say("group_after");
+        // before the call, the boarding time too (with the delay, if it hasn't been said)
+        if (!c.s.called && c.s.gateOk && !c.s.boardingTold) QUESTION_LINES.boarding(c);
         return;
       }
       c.say("group_info");
@@ -1176,7 +1316,13 @@ export const gate: SituationDef = {
         },
         ask: (cc) => cc.say("seat_offer_q") });
     },
-    ask_gate12(c) { c.say(c.s.moved ? "gate7_dir" : "gate4_here"); },
+    // "¿Dónde está la sala 7?" (a hint even without the gate change) gets the way there, never "Esta es la sala 4"
+    ask_gate12(c) { c.say("gate7_dir"); },
+    ask_my_seat(c) { c.say(!c.s.seatChanged ? "flight_help" : c.s.newSeat === "aisle" ? "seat_now_aisle" : "seat_now"); },
+    ask_id(c) { c.say("id_passport"); },
+    no_bag_ctx(c) { noBag(c); },
+    must_q_ctx(c) { c.say("offer_optional"); },
+    coming_ctx(c) { gate.handlers.g_ok(c, {}, undefined as any); },
     can_board(c) {
       if (c.s.called === 3) { c.say("yes_board"); expectScan(c); return; }
       if (c.s.called === 2) { c.say("not_yet"); return; }
@@ -1307,6 +1453,23 @@ export const gate: SituationDef = {
     { say: "No encuentro mi pase de abordar.", intent: "none", not: ["give_bp", "give_bp_ctx"] },
     { say: "Todavía no encuentro mi pase.", intent: "none", not: ["give_bp", "give_bp_ctx"] },
     { say: "No quiero cambiar de asiento, solo quería saber si hay retraso.", intent: "none", not: ["ask_seat_change"] },
+    // audit (5 Nov 2026): side questions, the counter-request at the seat offer, "¡Ya voy!" at the boarding call
+    { say: "¿Cuál es mi asiento?", intent: "ask_my_seat" },
+    { say: "¿Qué asiento tengo?", intent: "ask_my_seat" },
+    { say: "¿Sirve mi pasaporte?", intent: "ask_id" },
+    { say: "¿Necesito mi pasaporte?", intent: "ask_id" },
+    { say: "Aquí tiene mi pasaporte.", intent: "give_bp", not: ["ask_id"] },
+    { say: "No necesito mi pasaporte.", intent: "none", not: ["ask_id"] },
+    { say: "¿No tiene uno de pasillo?", intent: "ask_seat_change" },
+    { say: "¿Cuándo me toca?", intent: "ask_group" },
+    { say: "¿Cuál es mi sala?", intent: "ask_gate", step: "gate" },
+    { say: "¿Cuánto tiempo de retraso hay?", intent: "ask_delayed" },
+    { say: "¡Ya voy!", intent: "coming_ctx", step: "board", not: ["g_bye"] },
+    { say: "Ya me voy, adiós.", intent: "g_bye" },
+    // the flight and the time question in one turn: never the gate question alone ("Sí, aquí sale…" to "¿va a tiempo?")
+    { say: "¿El vuelo 223 va a tiempo?", intent: "ask_ontime", step: "gate", slots: { number: 223 }, not: ["ask_gate"] },
+    { say: "Voy en el vuelo 223, ¿va a tiempo?", intent: "ask_ontime", step: "gate", slots: { number: 223 }, not: ["ask_gate"] },
+    { say: "¿A qué hora sale el vuelo 223?", intent: "ask_departure", step: "gate", slots: { number: 223 } },
     // not understood
     { say: "Me gustan los aviones azules.", intent: "none" },
     { say: "El perro come pizza en la luna.", intent: "none" },
@@ -1334,21 +1497,30 @@ export const gate: SituationDef = {
       expect: { complete: true, state: { seatChanged: true, newSeat: "aisle" } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = false; s.earlyGroup = true; } },
     { name: "short answers", turns: ["¿Es aquí?", "El 223.", "¿A tiempo?", "Nada más.", "Ok.", "Tenga."],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = false; } },
+    // audit (5 Nov 2026): "Un momento" is no flight 1; no bag to check; "¡Ya voy!" is no goodbye; the passport as ID
+    { name: "twist: full flight, only a backpack, the passport", turns: ["¿El vuelo va a tiempo?", "Un momento.", "El 223.", "¿Cuál es mi asiento?", "Eso es todo, gracias.", "Gracias.", "Solo traigo una mochila.", "¡Ya voy!", "¿Sirve mi pasaporte?", "Aquí tiene."],
+      expect: { complete: true, state: { offerDone: true, bagChecked: false } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = true; s.earlyGroup = false; } },
+    { name: "twist: gate change, the flight and the time in one turn", turns: ["Hola, ¿es la sala del vuelo 223? ¿Va a tiempo?", "¿Cuál es mi sala?", "¿A qué hora salimos?", "No, gracias.", "Gracias.", "Aquí tiene."],
+      expect: { complete: true, state: { moved: true, timeKnown: true } }, auto: AUTO, setup: (s) => { s.gateChange = true; s.fullFlight = false; s.earlyGroup = false; } },
+    { name: "twist: full flight, an aisle seat asked back, optional gate check, no bag", turns: ["¿Cuál es mi sala?", "Vuelo 223.", "¿Puedo cambiar de asiento?", "¿No tiene uno de pasillo?", "Sí, por favor.", "¿Cuál es mi nuevo asiento?", "¿Cuándo me toca?", "No, gracias.", "Gracias.", "¿Tengo que documentarla?", "No traigo maleta.", "Aquí tiene."],
+      expect: { complete: true, state: { seatChanged: true, newSeat: "aisle", offerDone: true, bagChecked: false } }, auto: AUTO, setup: (s) => { s.gateChange = false; s.fullFlight = true; s.earlyGroup = false; } },
   ],
 };
 
 function expectEarly(c: Ctx) {
   const notYet = (cc: Ctx) => { if (!cc.s.notYetTold) { cc.s.notYetTold = true; cc.say("not_yet"); expectEarly(cc); } };
   ask(c, {
-    id: "early", hints: ["board_early"], expects: ["can_board", "zone_ctx", "give_bp", "give_bp_ctx", "ask_group"],
+    id: "early", hints: ["board_early"], expects: ["can_board", "zone_ctx", "give_bp", "give_bp_ctx", "ask_group", "coming_ctx"],
     suggest: [{ lt: "Ask if you can board yet", hint: "board_early" }],
     on: {
       can_board: (cc) => { notYet(cc); },
       zone_ctx: (cc) => { notYet(cc); },
+      coming_ctx: (cc) => { notYet(cc); },
       give_bp: (cc) => { notYet(cc); },
       give_bp_ctx: (cc) => { notYet(cc); },
       ask_group: (cc, _sl, seg) => {
-        if ((seg?.tags || []).includes("now")) cc.say("zone_now", { num: 2 }); else cc.say("group_info");
+        // "¿Cuándo me toca?" gets only "La zona 3 pasa justo después de la 2"
+        if ((seg?.tags || []).includes("now")) cc.say("zone_now", { num: 2 }); else if (!/\bcuando\b/.test(fold(cc.heard))) cc.say("group_info");
         cc.say("group_after"); expectEarly(cc);
       },
       g_ok: () => {}, g_thanks: () => {}, more_no: () => {}, g_howareyou_answer: () => {},
