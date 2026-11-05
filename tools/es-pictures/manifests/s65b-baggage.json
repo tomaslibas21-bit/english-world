@@ -96,13 +96,15 @@
    "phases": [
     "delivery",
     "hotel",
-    "phone"
+    "phone",
+    "pickup_or_address"
    ],
    "refs": [
     "edit:s65b-baggage/greet",
     "person:cast/priya"
    ],
    "prompt": "Change only her pose: she writes with a pen on a one-page report form lying on the desk (blank lines, no writing visible), looking up at the learner with a friendly, questioning look, asking where the bag should be delivered.",
+   "note": "5 Nov catch-up: also pickup_or_address (the audit's «¿Prefiere recogerla aquí, o se la llevamos a otra dirección?»), which kept this picture anyway.",
    "out": "public/scenes-es/s65b-baggage/form.webp"
   },
   {

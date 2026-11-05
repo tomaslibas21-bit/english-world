@@ -833,16 +833,17 @@
    "id": "cast/marcus",
    "kind": "cast",
    "npc": "marcus",
-   "name": "Doña Lupe",
-   "label": "Doña Lupe (Fruit and vegetable stall)",
+   "name": "Doña Licha",
+   "label": "Doña Licha (Fruit and vegetable stall)",
    "situation": [
     "s32-mercado"
    ],
    "moment": null,
-   "prompt": "Doña Lupe, who has sold fruit and vegetables at the mercado for thirty years: a short, sturdy woman of about 60 with brown skin, dark hair with gray strands in a bun, gold earrings. A coral-red blouse under a yellow apron with big pockets. Shrewd and funny: a cheeky, knowing grin.",
+   "prompt": "Doña Licha, who has sold fruit and vegetables at the mercado for thirty years: a short, sturdy woman of about 60 with brown skin, dark hair with gray strands in a bun, gold earrings. A coral-red blouse under a yellow apron with big pockets. Shrewd and funny: a cheeky, knowing grin.",
    "refs": [
     "style:en/s31-doctor/greet"
    ],
+   "note": "Doña Lupe until 5 Nov 2026 (the cross-cutting audit renamed her Doña Licha, as Doña Lupita of s82 and p29 is a Guadalupe too); renamed in this manifest by the pictures catch-up. No name shows on any picture.",
    "out": "public/scenes-es/ref/cast/marcus.webp",
    "size": "1024x1536"
   },
@@ -1050,15 +1051,16 @@
    "kind": "cast",
    "npc": "mr_grant",
    "name": "Don Gilberto",
-   "label": "Don Gilberto (Your landlord)",
+   "label": "Don Gilberto (Building manager)",
    "situation": [
     "p24-flood"
    ],
    "moment": null,
-   "prompt": "Don Gilberto, a landlord: a man of about 62 with dark brown skin, a bald head, a neat gray beard, reading glasses pushed up on his head. A brick-red plaid short-sleeved shirt. Very formal in writing, warm on the phone: a friendly, slightly tired smile.",
+   "prompt": "Don Gilberto, the building's administrador (manager): a man of about 62 with dark brown skin, a bald head, a neat gray beard, reading glasses pushed up on his head. A brick-red plaid short-sleeved shirt. Very formal in writing, warm on the phone: a friendly, slightly tired smile.",
    "refs": [
     "style:en/s31-doctor/greet"
    ],
+   "note": "\"Your landlord\" until 5 Nov 2026; since the audit Don Gilberto is the building's administrador (manager) at Departamentos Las Palmas, and Don Ernesto (cast/patel) owns it.",
    "out": "public/scenes-es/ref/cast/mr_grant.webp",
    "size": "1024x1536"
   },
@@ -1103,7 +1105,7 @@
    "kind": "cast",
    "npc": "sco",
    "label": "Caja de autoservicio (Self-checkout machine)",
-   "skip": "not a person: Maple Harbor's self-checkout; Puerto Colibrí's s32 is Doña Lupe's market stall",
+   "skip": "not a person: Maple Harbor's self-checkout; Puerto Colibrí's s32 is Doña Licha's market stall",
    "situation": [],
    "moment": null,
    "prompt": "",
@@ -1160,12 +1162,12 @@
   {
    "id": "place/mercado",
    "kind": "place",
-   "label": "The Mercado Municipal: Doña Lupe's stall",
+   "label": "The Mercado Municipal: Doña Licha's stall",
    "situation": [
     "s32-mercado"
    ],
    "moment": null,
-   "prompt": "Inside the Mercado Municipal, a big covered market hall: a high roof of painted steel trusses with skylights, no view of the outside. Doña Lupe's fruit and vegetable stall, seen from the customer's side of its counter: neat pyramids of mangoes, papayas, limes, avocados, tomatoes, green and red chiles and pink pitayas in wooden crates and tubs, a bunch of bananas hanging from a beam, an old-fashioned hanging scale with a round dial that has no numbers, a few brown paper bags. The vendor's spot behind the counter, one third from the left, is empty. Strings of papel picado under the roof; in the right third, the calm aisle of the hall with other stalls softly in the background (a chili and spice stall, baskets).",
+   "prompt": "Inside the Mercado Municipal, a big covered market hall: a high roof of painted steel trusses with skylights, no view of the outside. Doña Licha's fruit and vegetable stall, seen from the customer's side of its counter: neat pyramids of mangoes, papayas, limes, avocados, tomatoes, green and red chiles and pink pitayas in wooden crates and tubs, a bunch of bananas hanging from a beam, an old-fashioned hanging scale with a round dial that has no numbers, a few brown paper bags. The vendor's spot behind the counter, one third from the left, is empty. Strings of papel picado under the roof; in the right third, the calm aisle of the hall with other stalls softly in the background (a chili and spice stall, baskets).",
    "refs": [
     "style:en/s69-local/greet"
    ],
@@ -1493,12 +1495,11 @@
     "s66-taxi"
    ],
    "moment": null,
-   "prompt": "The taxi stand (sitio) on a corner of the zócalo: a white taxi with a green stripe (no text, no numbers) parked at the curb with its driver's door open, a small shelter with a bench, a palm, painted houses with arcades, and a glimpse of the square. The driver's spot beside the taxi, one third from the left, is empty. The right third: the calm street.",
+   "prompt": "Change only this: Don Rigo, the taxi driver, is gone, and the sidewalk where he stood beside the taxi's open rear door, about one third from the left, is empty. Keep the taxi stand's shelter and bench, the white taxi with the green stripe and its open rear door, the airport terminal behind with its canopy and the small travelers with suitcases, the palms, the planters and the painted buildings at the right edge exactly the same.",
    "refs": [
-    "style:en/s69-local/greet",
-    "setting:place/zocalo"
+    "edit:s66-taxi/greet"
    ],
-   "note": "Shows the zócalo behind the stand. Since the s66 dialogue audit (5 Nov 2026) the sitio stands by the airport terminal at the east end of avenida Juárez; s66's pictures were edited to match (start from s66-taxi/greet).",
+   "note": "The sitio by the airport terminal at the east end of avenida Juárez (the s66 dialogue audit, 5 Nov 2026). Remade on 5 Nov (the pictures catch-up) as s66-taxi/greet without Don Rigo; the first reference (originals ~1: prompt \"The taxi stand (sitio) on a corner of the zócalo…\", refs style:en/s69-local/greet + setting:place/zocalo) showed the zócalo behind the stand.",
    "out": "public/scenes-es/ref/place/sitio-taxis.webp",
    "size": "2048x1152"
   },

@@ -29,10 +29,22 @@ retries fit.
   (s82's medium finding was fixed that way; in s33 Don Pancho's painting shows on Fridays and his fishing on Mondays,
   and react, the pending after each of his stories, keeps his listening pose). Each remade entry has a `note` in its manifest. Left as they are: the
   low findings (above all the sea seen from inland places, which comes from the place references).
-- **Spent: $42.78** of the $75 stop (the owner approved $82), 769 requests. Until the audit: $40.59 (regular API: 506
+- **Caught up with the dialogue audit** (5 Nov 2026, evening; PICTURES-CATCHUP.md): the lines on screen with every
+  picture compared before and after the 50 conversation audits (simulated conversations, 12 seeds). **Mapped:** s62's
+  five new ways (the church, the clinic, the bus stop and the taquería show the way picture, the tours booth the way down
+  to the sea) and seven new pendings that kept a fitting picture anyway (p30 `bad_q`, s65b `pickup_or_address`, s66
+  `far_terminal`, s86 `number_sure`, s91a `really_ok` and `keys_q`, the last of which showed the greeting); in s33 each
+  of Don Pancho's stories now has its own pending (`react_weekend`, `react_plans`, `react_week`), so his fishing, his
+  boat and his "every day is Saturday" show while he tells them, his questions show his curious pose and his
+  follow-ups his listening one. **Remade (4):** s90's room (Montes points up: the meeting is on the third floor of
+  Línea Clara's own tower, no longer across the street), s91b's found and handback (the turned-in item in a closed
+  envelope, since the line names any item and color), and the reference `place/sitio-taxis` (by the airport terminal,
+  from `s66-taxi/greet`). The npc labels follow the cast: Don Gilberto the building manager (p24), Doña Licha (s32).
+- **Spent: $43.04** of the $75 stop (the owner approved $82), 773 requests. Until the audit: $40.59 (regular API: 506
   requests, $33.30: the test $0.03; the references, their redos and name tags: 132, $7.43; situation pictures: 373,
   $25.85 = 75 first pictures and their redo, 298 edits. Batch API: 209 situation pictures, $7.29: 158 + 49 edits, 2
-  redos). The audit: $2.18 (45 edits in one batch, $1.62; 8 through the regular API, $0.56).
+  redos). The audit: $2.18 (45 edits in one batch, $1.62; 8 through the regular API, $0.56). The catch-up after the
+  dialogue audit: $0.26 (4 edits through the regular API).
 - **Weight:** since the audit every situation picture is WebP quality 65 (section 9): 76.8 MB for the 579, 26% less
   than at quality 80, with no visible difference at the game's display sizes.
 - **Why most went through the regular API:** the first pictures by design (each checked before its edits); then the
@@ -402,7 +414,7 @@ empty: the situation's first picture puts the person there. Places inside a bigg
 | `place/calle-residencial` | A residential street | p25-used-car, s82-neighbor |  |
 | `place/gimnasio` | Gimnasio Colibrí | s35-gym |  |
 | `place/museo` | Museo de la Costa Maya | s70-museum |  |
-| `place/sitio-taxis` | The taxi stand (sitio) | s66-taxi | setting: `place/zocalo`; since the s66 dialogue audit the sitio stands by the airport terminal: s66's pictures were edited (start from `s66-taxi/greet`) |
+| `place/sitio-taxis` | The taxi stand (sitio) | s66-taxi | first made with `place/zocalo` as its setting; since the s66 dialogue audit the sitio stands by the airport terminal: s66's pictures were edited, and on 5 Nov this reference was made again from `s66-taxi/greet` without Don Rigo |
 | `place/informacion-turistica` | The tourist information office | s62-visitor-center |  |
 | `place/correos` | The post office | s79-post |  |
 | `place/boutique-hilos` | Boutique Hilos | s74-clothes |  |

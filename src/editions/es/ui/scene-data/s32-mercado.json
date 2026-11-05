@@ -1,5 +1,5 @@
 {
-  "npc": "Doña Lupe, fruit and vegetable stall",
+  "npc": "Doña Licha, fruit and vegetable stall",
   "images": ["greet", "price", "weigh", "ripe", "more", "bag", "pay", "bill", "bye"],
   "start": "greet",
   "done": "bye",

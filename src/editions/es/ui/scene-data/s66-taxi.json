@@ -3,6 +3,6 @@
   "images": ["greet", "fare", "haggle", "ride", "first", "ac", "stop", "pay", "bye"],
   "start": "greet",
   "done": "bye",
-  "phases": {"dest": "greet", "fare": "fare", "haggle": "haggle", "from": "ride", "first": "first", "ac": "ac", "stop": "stop", "pay": "pay", "closing": "bye"},
+  "phases": {"dest": "greet", "far_terminal": "greet", "fare": "fare", "haggle": "haggle", "from": "ride", "first": "first", "ac": "ac", "stop": "stop", "pay": "pay", "closing": "bye"},
   "focus": [34, 30]
 }

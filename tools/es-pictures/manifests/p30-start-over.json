@@ -21,11 +21,11 @@
       "scene": "p30-start-over",
       "situation": "p30-start-over",
       "moment": "apology",
-      "phases": ["apology"],
+      "phases": ["apology", "bad_q"],
       "refs": ["edit:p30-start-over/door", "person:cast/dan"],
       "prompt": "Change only Diego's pose and expression: he has crossed his arms over his chest and leans one shoulder against the door frame, his chin a little up and one eyebrow raised: skeptical, waiting to hear what the learner has come to say (\"Bueno. Te escucho.\").",
       "out": "public/scenes-es/p30-start-over/listen.webp",
-      "note": "Also '¿Perdón por qué, exactamente?' after a vague apology, and his replies to the bad moves ('Y ahí está: el «pero».', '¿Viniste a disculparte o a pelear?')."
+      "note": "Also '¿Perdón por qué, exactamente?' after a vague apology, and his replies to the bad moves ('Y ahí está: el «pero».', '¿Viniste a disculparte o a pelear?'). 5 Nov catch-up: also bad_q (the audit's pending after a bad apology: «¿Viniste a disculparte o a pelear?», «¿Entonces el problema son mis sentimientos?»), which kept this picture anyway."
     },
     {
       "id": "p30-start-over/hurt",
