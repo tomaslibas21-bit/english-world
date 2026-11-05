@@ -1583,7 +1583,7 @@ export const date: SituationDef = {
     // "¿A qué hora?" (the day agreed or being agreed)
     time_by_text: [
       t("La | hora | la | vemos | después.", "The | time | it | we'll-see | later.", "We can figure out the time later.",
-        { flags: { 3: "ver here: to work something out (la vemos = we'll sort it out)." } }),
+        { flags: { 2: "la: the pronoun for la hora (it), not an article.", 3: "ver here: to work something out (la vemos = we'll sort it out)." } }),
     ],
     // the learner's personal questions: the partner's own facts (the same for Santiago and Camila)
     own_from: [
