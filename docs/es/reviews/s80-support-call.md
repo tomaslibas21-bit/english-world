@@ -35,3 +35,90 @@ The writer's claims all held. The one blind miss left, "Hace dos días", is read
 - $499 (a double-charged plan) is a typical plan price, not rounded to 5 as STYLE.md asks. Real plans end in 99, so I kept it.
 - A bare "No" to "¿Sigue en rojo la luz?" still gets the neutral "Mmm, entiendo." (as in the English original). Nothing is recorded differently.
 - "¿Puede venir el viernes en la tarde?" is offered Thursday afternoon, since there's no Friday-afternoon window. The English original does the same.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral), against AUDIT-BRIEF.md's ten points and the lead's three extra checks
+(the menu's options by digit and by word; account numbers, times and amounts in the voiced value lists, said as on a
+Mexican phone; each line in the voice of whoever says it). Read: STYLE.md, AUTHORING-ES.md, the brief, the review above,
+AUDIT/cross and AUDIT/neutral, the file, corpus and held-out set, the review transcripts (seeds 3 and 7); played ~120
+whole calls with `tools/probe.ts` (every menu answer, side questions to the recording and to Karla, every question of
+hers with yes, no, "No sé" and a question back); listed the voice lines of this conversation (who says each line in 800
+random calls and the sims, and which values each line with a value list is voiced with).
+
+**Before → after:** check-content 119/119 NLU, 10 sims → 132/132 NLU, 12 sims, all 12/12 seeds, fuzz 80, 0/0; corpus
+224/224, 0/21 traps → 251/251 (100%), 0/25 traps; held-out 40/41, 0/3 → the same (the earlier review's "Hace dos
+días" label). In 800 random calls the menu's voice said 39 of Karla's lines before (e.g. "¿Con quién tengo el gusto?"
+142 times), none after.
+
+### Found and fixed, by point (13 found, 13 fixed)
+
+1. **Natural Spanish:** nothing. Every line read as a Mexican call-center agent and a Mexican IVR would say it (Le
+   atiende, ¿Con quién tengo el gusto?, ¿Me proporciona…?, una disculpa, desconectar de la luz, agendar, hasta arriba).
+2. **tú/usted:** nothing (usted both ways, hints in usted, tú accepted with the tip).
+3. **Names:** nothing (Karla, NetWave; no clash, as AUDIT/cross says; NetWave is the same company in s81 and s82).
+4. **Facts and the voiced values (1):** the technician's lines (`tech_offer`, `tech_offer_alt`, `tech_booked`) had an
+   item ({D}, the day) and a value ({$win}) in one line, which the line list doesn't expand: only the day/window pairs
+   random calls happened to reach were voiced ("La primera cita disponible es el viernes…", "¿Qué tal el viernes…?",
+   "También tenemos el jueves, entre las nueve y las dos", "¡Listo! El técnico va el sábado…" were missing). The day is
+   a value now (`{$weekday}`, `domains.weekday`), so every day × window is in the list; the text, glosses and flags are
+   unchanged. $499 (a common plan price), the windows ("entre las nueve y las dos"), "media hora", the account number
+   (said "siete cuatro dos, noventa y uno, treinta y tres") and the report number ("ene, doble u, cuatro, ocho, dos,
+   uno, tres") are all in the lists and said as on a Mexican phone.
+5. **Glosses and English (2):** `ask_since_again` "And since when has it been out?" → "And how long has it been out?";
+   the W flag claimed "doble u" is Mexican only, while the neutral voice says it too: now "doble u in Mexico and much of
+   Latin America; doble ve in some countries, uve doble in Spain".
+6. **Spelling, ¿¡:** nothing.
+7. **Questions and replies (6):**
+   - The recorded menu spoke Karla's lines: an account number said to it got "Perfecto, ya me aparece su cuenta" (then
+     "Lo siento, no le entendí"), "Ya reinicié el módem" got "Gracias por intentarlo", "¿Me escucha?" got "Sí, lo
+     escucho bien", "No le escucho bien" got "¡Ay, perdón! ¿Así está mejor?", "¿Me da un número de reporte?" the
+     number, "¿Cuánto cuesta la visita?" the visit's price; and "Llevo veinte minutos esperando" or "¿Cuándo me
+     regresan mi dinero?" brought Karla on before the call was routed, after which the menu's voice said all of
+     Karla's lines. Now the menu only routes (`atMenu`): anything else said to it gets "Lo siento, no le entendí" and
+     the options again; a problem or the light routes to support (Karla opens with "Veo que tiene problemas con su
+     internet"), a charge or money back to payments; Karla comes on only once the call is routed.
+   - Karla answered what was said to the recording in the turn that routed it ("Soporte técnico. La luz parpadea en
+     rojo." → "Okey, eso normalmente quiere decir que no hay señal" before she asked the name): that turn now counts as
+     said to the recording too (she asks about the light herself).
+   - The menu answered like a person: "Gracias" → "¡A la orden!" and "Lo siento, no le entendí"; "No sé" → "Sin prisa";
+     "Un momento" → "Tómese su tiempo"; "Más despacio" → "Por supuesto. Lo digo despacio."; "¿Cómo está?" → "Muy bien,
+     gracias. ¿Y usted?". Now "Gracias" / "Perdón" (`menu_social_ctx`) and the rest get the options again; repeat,
+     slower, "No entiendo" and "¿Qué significa…?" replay them without a person's lead-in; "Adiós" hangs up. (g_thanks
+     and g_sorry are not overridden: a handler would stop "Sí. Muchas gracias." counting as a yes.)
+   - "No sé" looped "Tómese su tiempo" / "Sin prisa" at "¿De qué color está la luz…?" and at "¿Ya reinició el módem?":
+     now "No se preocupe." and the next question, and the unplug request.
+   - The visit's questions had no answer: "¿A qué hora llega el técnico?" / "¿Me avisan antes?" (`tech_when_q` → "Le
+     van a llamar media hora antes de llegar"), "¿Tengo que estar en casa?" (`home_q` → new line `home_needed`: "Sí,
+     usted o alguien mayor de edad."; while "¿Puede haber alguien más…?" is open, that question answers it), "¿No
+     puede venir hoy?" (→ "Lo siento, ese día ya no tenemos lugar" and another day), "¿Cuánto cuesta?" after booking.
+   - The visit's cost and length were answered before any visit was mentioned ("No tiene ningún costo, porque la
+     falla es de nuestro lado" at "¿En qué le puedo ayudar?"): now only once a visit is on the table.
+8. **Hints and help text:** nothing (the hints are right, usted, and accepted).
+9. **Accepted answers (4):** "Por soporte técnico" (the answer to the menu's own "¿Llama por pagos o por soporte
+   técnico?"), "Para soporte técnico", "Es por mi internet", "Por el internet" (and "Para ventas" with them); "Es este
+   mismo número" / "Es el mismo de donde le estoy llamando" to "¿Me da el teléfono registrado en la cuenta?"
+   (`same_number_ctx`; never a bare "Este", the Mexican filler); "Está parpadeando"; "Como desde las ocho de la noche"
+   / "Desde las ocho". Every menu option works by its digit and its word (1/uno/pagos, 2/dos/soporte, 3/tres/ventas,
+   0/cero → an agent). At Karla's "¿En qué le puedo ayudar?", "Es por mi internet" gets her question again (an
+   internet_down pattern for it made "El internet sí funciona" a false accept: "es" and "por" may be left out).
+10. **The neutral text:** nothing. The six twins say the same thing (recarga → recargar saldo, módem → router,
+    ahorita → ahora mismo, prende → enciende); no Mexican-only word without a twin.
+
+Tests: 13 NLU tests, 2 sims (the menu only routes, an agent, "Es este mismo número", "No sé" at the light and the
+restart, the visit's questions, Saturday booked; sales by the menu's words, "¿Dónde lo encuentro?", the charge first, a
+time for "since"), 31 corpus items (4 traps: two negated menu answers, "No es este número", "Mi esposa no puede venir el
+jueves"; and `not` lists on "No está parpadeando", "No voy a estar en casa ese día", "¿Tengo que estar en casa?" and
+the rest).
+
+### For the lead
+
+- Who says it: none of this conversation's own lines can now be said by both speakers (the `bot_*` lines only by the
+  menu, the rest only by Karla), and the menu says no global line: its global lines can be left out of the list.
+- The windowed lines are value lines now (weekday × window): a reach-es.ts rule keeping the four real pairs (jueves
+  9–2 and 2–6, viernes 9–2, sábado 9–1) would cut the five never-said pairs per variant (~50 clips).
+- Lines with an item and a value elsewhere, voiced only as heard: p26 `brenda_delivery_day`; s32 `got_kilos`,
+  `got_kilos_half`, `got_bunches`, `got_money`, `price_kg_pl`, `price_piece`, `price_piece_m`; s66 `fare_is`; s71a
+  `rate_size`, `extra_quote`, `ret_confirm_long`, `ret_answer_long`, `ret_long`, `ret_more_q`; s83 `summary`,
+  `summary_notime`.
+- Plural items: none here.
