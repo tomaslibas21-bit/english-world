@@ -86,7 +86,8 @@ const MEXICO: Record<string, string> = {
 };
 /** Which casting: Gemini's 30 prebuilt voices ("prebuilt") or the catalog's Mexican voices ("mexico"). */
 export type Casting = "prebuilt" | "mexico";
-const DEFAULT_CASTING: Casting = "prebuilt";
+/** Chosen 5 Nov 2026 from the samples (docs/es/VOICES.md "Samples"): the catalog's native Mexican voices. */
+const DEFAULT_CASTING: Casting = "mexico";
 export const CASTING: Casting = process.env.PC_CASTING === "mexico" || process.env.PC_CASTING === "prebuilt" ? process.env.PC_CASTING : DEFAULT_CASTING;
 const voiceIn = (c: Casting, who: string, r: Role) => (c === "mexico" ? MEXICO[who] ?? r.voice : r.voice);
 
