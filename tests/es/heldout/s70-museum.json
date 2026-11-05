@@ -49,5 +49,20 @@
   { "ctx": "harold", "say": "Yo no toqué nada", "intent": "deny", "not": ["apology", "g_sorry"], "note": "trap: negation" },
 
   { "ctx": "late", "say": "Está bien, me alcanza el tiempo", "intent": ["enough_time", "yn:yes"] },
-  { "ctx": "late", "say": "Mejor regreso mañana", "intent": "come_back" }
+  { "ctx": "late", "say": "Mejor regreso mañana", "intent": "come_back" },
+  { "ctx": "persuade", "say": "Bueno, va, me la llevo", "intent": ["guide_n_ctx", "want_guide", "yn:yes"], "not": ["guide_no_ctx", "no_guide"], "note": "audit 5 Nov: ¿Se anima?" },
+  { "ctx": "persuade", "say": "No, gracias, de verdad", "intent": ["guide_no_ctx", "no_guide", "yn:no"], "not": ["want_guide", "guide_n_ctx"], "note": "trap: negation" },
+  { "ctx": "persuade", "say": "Sale, una", "intent": ["guide_n_ctx", "want_guide"] },
+  { "ctx": "tickets", "say": "¿Se puede rentar una audioguía?", "intent": "want_guide" },
+  { "ctx": "tickets", "say": "¿Usted habla inglés?", "intent": "ask_english", "not": ["lang_q"], "note": "trap: asks Iván, not the guide" },
+  { "ctx": "tickets", "say": "Somos once", "intent": "buy_qty" },
+  { "ctx": "pay", "say": "Le doy cien", "intent": "here_you_go" },
+  { "ctx": "pay", "say": "¿Aceptan tarjeta de crédito?", "intent": "pay_card" },
+  { "ctx": "pay", "say": "Todos somos residentes", "intent": "im_resident", "not": ["im_visitor"] },
+  { "ctx": "more", "say": "¿Me vende otro boleto?", "intent": "buy_tickets" },
+  { "ctx": "more", "say": "Oiga, ¿y dónde regreso la audioguía?", "intent": "ask_return_guide", "not": ["ask_coat"] },
+  { "ctx": "more", "say": "Ah, ¿y me da otra audioguía?", "intent": "want_guide" },
+  { "ctx": "harold", "say": "¿Cómo dice?", "intent": "g_repeat", "not": ["apology", "deny"], "note": "trap: asks him to repeat" },
+  { "ctx": "harold", "say": "No toqué la estatua, se lo juro", "intent": "deny", "not": ["apology", "g_sorry"], "note": "trap: negation" },
+  { "ctx": "lang", "say": "Entonces mejor no", "intent": ["guide_no_ctx", "no_guide", "yn:no"], "not": ["lang_ctx"] }
 ] }

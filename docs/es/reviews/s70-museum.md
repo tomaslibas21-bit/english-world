@@ -32,3 +32,73 @@ A strong draft: the writer's own rule-10 handling ("¿Entrada general o de estud
 - `// NEEDS:` engine: after a negative piece, "quiero / quisiera / pago / prefiero" don't start a new piece, so "No tengo efectivo, quiero pagar con tarjeta" fails everywhere; the common forms are patterns here.
 - Facts: s70 follows s62 (ten to five, closed Mondays); the writer says s69's open_museo says nine to five (s69 is not on this branch): one must change. Prices ($80 / $40 / $50 guide, kids under 12 free, 60+), free Sundays for Mexicans and residents (INAH-style) and the Saturday-noon tour are plausible, not researched.
 - Kept from the English design: "No" at "sin credencial… ¿Está bien?" gets "Así son las reglas" and the ticket stays general.
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer (N/AUDIT-BRIEF.md). Read: STYLE.md, AUTHORING-ES.md "Rules from the reviews", the brief, this review,
+the cross file (names, facts, spelling, English, neutral, offer probe: all clean; the lead's call: neutral "entrada"),
+the neutral side-by-side, the situation file, corpus and held-out; both transcripts (seeds 3 and 7) as a native
+speaker; ~120 extra turns with tools/probe.ts (every offer's yes/no, money after paying, cash amounts, groups, the
+guard, side questions); the voiced line list for this conversation (lines-es.ts) in both accents; the offer probe in
+both texts (0 flags).
+
+**Found 26 (1:0 2:0 3:0 4:3 5:1 6:0 7:21 8:0 9:0 10:1), fixed 23.**
+
+- **4 Facts.** (a) Don Arturo stands by the carved Maya stela and the clay vessels (the 3D room's statue, the
+  picture): "no toque las pinturas" / "El flash daña las pinturas" → **las piezas** (as his "Las piezas son muy antiguas
+  y delicadas"); deny patterns take la estela, la estatua, la pieza, la vasija. (b) **Voiced totals:** the price domain
+  covered four tickets and four guides, but the desk sells up to nine of each: "Somos cinco" + a guide each = $650 was
+  not in the list (device voice). The domain now covers nine and nine (40 → 105 values; say_total 120 → 315 clips per
+  accent), and ten or more people get a new line instead of a loop (below). (c) Not fixed (graphics): the lines point
+  to an elevator ("ahí, a la izquierda"), the café, the restrooms and the paquetería, none of which the 3D room shows.
+  Prices and hours match s62, s69 and TOWN.md ($80; $40 students and seniors; free on Sundays for Mexicans and
+  residents; Tue–Sun 10–5).
+- **5 English.** guide_again2 "So, can I give you an audio guide?" → "So, can I get you an audio guide?".
+- **7 Questions and offers** (each played with probe.ts):
+  1. **"¿Seguro? Es muy buena…"**: a bare "Sí", "Sí, gracias" ("yes, I'm sure") took the $50 guide. The line now ends
+     on a question a yes answers: "Es muy buena para la exposición nueva. **¿Se anima?**" (one line instead of two
+     gendered ones); "Sí, seguro" and "Sí, me animo" take it, "No me animo" / "Sí, estoy seguro" don't.
+  2. "¿Tienen audioguía?" before the offer added a guide (rule 3): now the price ("Cuesta $50, y la tenemos en cinco
+     idiomas") and the offer later ("¿Y la audioguía? ¿La va a querer?"); after the offer it is still a yes.
+  3. Cash: "Aquí tiene ochenta pesos" for $80 got "Aquí tiene su cambio" (now "Listo, gracias"); "Aquí tiene
+     cincuenta" for $80 paid (now the total again, rule 18).
+  4. **After paying**, an extra (a guide, one more ticket) charged the whole order again ($130 for a $50 guide) and
+     handed the ticket over again: the extra is now charged alone (due = total − paid) and only it is handed over; a
+     cut after paying ("Soy estudiante", "Ya no quiero la audioguía", "Mi hijo tiene ocho años") gets "Ya está
+     pagado" and changes nothing (before, it changed the order and asked for the whole total again).
+  5. "No, gracias" / "Mejor no" at "¿En qué idioma la quiere?" asked the language again (a loop): the guide is called off.
+  6. Sunday: "Somos residentes" freed one ticket and charged the other: the plural frees the order.
+  7. "¿Habla inglés?" got "Sí, la tenemos" (the guide): new line "Muy poquito, pero le hablo despacio." (and slower
+     speech, as s62); at the language question it is still about the guide.
+  8. The guard: "¿Mande?", "¿Qué?", "¿Cómo dice?" ended the twist with "Gracias por su comprensión": he says it again;
+     a bare "¡Perdón!" stays the apology.
+  9. "¿Cuánto cuesta?" at "¿Se anima?" gave the price and dropped the offer: now the offer is asked again.
+  10. "Somos diez" / "Diez adultos" asked "¿Cuántos boletos?" again and again: new line "Lo siento, los grupos de diez
+      o más tienen que reservar antes."
+  11. "Quiero dos audioguías" at the first question booked two tickets and one guide: want_guide (and lang_q) are now
+      expected there.
+  12. "Quiero otro de estudiante" (a type with no ticket list) asked "¿Cuántos boletos?": it adds the ticket.
+  13–19. Side questions with no answer: "¿Tiene terminal?", "¿Me puede cobrar con tarjeta?", "¿Tiene cambio de
+      quinientos?" (yes, then the money), "¿Dónde devuelvo la audioguía?" (new line: "Aquí mismo, en la taquilla, cuando
+      termine", the 3D sign says Taquilla · Audioguías), "¿Dónde está la colección permanente?" (the galleries),
+      "¿Hasta qué hora se puede entrar?" / "¿A qué hora es la última entrada?", "¿Cuánto es en dólares?", "¿Es accesible
+      para silla de ruedas?" / "con carriola" (the elevator), "¿Hay descuento para maestros?", "¿Rentan audioguías?",
+      "Tenga, son ochenta", "Otro boleto para mi amigo", "Uno más para mi esposa", "Otra audioguía", "Dos boletos más",
+      "Pensándolo bien / Siempre sí quiero la audioguía", "Ay, perdón, no vi que no se podía tocar".
+  Left (2): "Soy mexicano" on a Sunday is not understood (a newcomer from an English-speaking country; the global
+  "¿Perdón?" answers); "¿Puedo pagar con transferencia?" likewise. Also left: "Ya no la quiero" at the pay step right
+  after asking for an extra guide is not understood ("No quiero la audioguía" is).
+- **10 Neutral.** The lead's call: the ticket is **entrada** in the neutral text: twins for greet[0–1], come_back,
+  ask_qty[0–1], ticket_here, tickets_here, exhibit_included(_full) and six hints (tk_one, tk_two, tk_quisiera,
+  tk_me_da, g_no, e_included; the grammar takes them all). The voiced neutral set has no "boleto" and no "paquetería"
+  left. The new lines need no twin.
+- Also: the unused line exhibit_upstairs is gone (it was voiced, never said).
+
+Tests: NLU 146 → 172; sims 13 → 19 (each 12/12): ¿Tienen audioguía? first + "Sí" at ¿Se anima? + exact cash + where to
+return the guide; a guide after paying ($50); too little cash; ten book ahead, five with five guides ($650); Sunday
+"Somos residentes"; the guard's "¿Mande?". Corpus 548 → 623 items (+75, 43 with traps; "Sí, seguro" at persuade now a
+yes), 539/539, 0/84 false accepts; held-out 42 → 57 (+15, 8 traps), 54/54, 0/3. Voiced clips for s70: 636 → 815 per
+accent (the totals up to nine tickets and guides, 3 new lines, the neutral twins).
+
+For the lead: graphics could add an elevator door ("Elevador") on the museum's west side, a "Paquetería" sign by the
+entrance and a "Baños" sign at the back (the lines point there).
