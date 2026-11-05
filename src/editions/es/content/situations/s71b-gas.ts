@@ -9,7 +9,7 @@
 // fill_pay, leave and after steps and the ZIP-code problem are gone; the pump question became the fuel (grade); the
 // out-of-order twist became the classic scam twist, a pump that doesn't start at zero (zeros); snacks became the
 // attendant's checks (check_order); new: the tip.
-// Mexican-only words have a neutral twin (ahorita, checar, ticket, carro, vulcanizadora).
+// Mexican-only words have a neutral twin (ahorita, checar, ticket, carro, vulcanizadora, NIP).
 // The place: Doña Chela at the pump beside the learner's car (theme.ts outdoorNpcs; gas-station is outdoor in locations.ts).
 
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
@@ -26,10 +26,24 @@ const GRADES: EntityDef[] = [
   ent("diesel", "diésel", "diesel", "m", { art: "", forms: ["diesel", "el diesel", "disel", "el disel", "gasoil", "gasoleo", "el gasoleo"], attrs: { nat: "diesel" } }),
 ];
 
-const FILL_COSTS = [78640, 86150, 93780]; // a full tank, in cents of a peso
+// Prices (Nov 2026, the Riviera Maya): magna about $24 a liter, premium about $26, diésel about $27; a full tank of a
+// small car about $800, of a bigger one about $1,000 (33–42 liters).
+const FILL_COSTS = [78640, 86150, 93780]; // a full tank, in cents of a peso (33–39 liters of magna)
 const LAST_SALE = 15000; // what the pump shows in the zeros twist
 const MAX_AMOUNT = 150000; // more than a tank takes
+const MAX_CHANGE = 100000; // change she counts out aloud (more than that, she just hands it over)
+const DOLLAR_RATE = 1700; // what she gives for a dollar, in cents of a peso ("a diecisiete", under the bank's $17.20 in s78)
 const RESULT: Record<string, string> = { oil: "res_oil", water: "res_water", tires: "res_tires", glass: "res_glass" };
+
+/** The change she says aloud (the voices are made from this list): from an amount in whole $5, any $5 up to $1,000;
+ *  from a full tank, what bills in $50s leave. Any other change is "Gracias, aquí tiene su cambio." */
+function changeList(): number[] {
+  const s = new Set<number>();
+  for (let p = 500; p <= MAX_CHANGE; p += 500) s.add(p);
+  for (const f of FILL_COSTS) for (let g = Math.ceil(f / 5000) * 5000; g - f <= MAX_CHANGE; g += 5000) if (g > f) s.add(g - f);
+  return [...s].sort((a, b) => a - b);
+}
+const CHANGE_SAID = new Set(changeList());
 
 // ---------------------------------------------------------------------------
 // State helpers
@@ -91,6 +105,13 @@ export const gas: SituationDef = {
       "{grade} [y] lleno", "lleno [el] (tanque | deposito) [de {grade}]", "mejor (lleno | llenelo | llenemelo | lleno el tanque) [de {grade}]",
       "hasta (arriba | que se llene) [de {grade}]", "lleno lleno",
     ] },
+    // "¿Se lo lleno?" — "Sí, de magna": a full tank of it (at "¿Cuánto le pongo?" just the fuel)
+    fill_yes_ctx: { patterns: ["si [lleno] (de | con) {grade} [por favor]", "si por favor [lleno] (de | con) {grade}", "si [lleno] {grade} [por favor]", "si [por favor] lleno (de | con) {grade}"] },
+    // "Veinte litros de magna": she works in pesos and asks how much
+    liters: { patterns: [
+      "{number} litros [de ({grade} | @gas)]", "@pon {number} litros [de ({grade} | @gas)]", "(quiero | quisiera | necesito) {number} litros [de ({grade} | @gas)]",
+      "{grade} {number} litros", "(como | unos | mas o menos) {number} litros [de {grade}]", "(me | le) (pone | puede poner | echa) {number} litros [de ({grade} | @gas)]",
+    ] },
     // "No lo llene": not a full tank (she asks how much)
     fill_no: { patterns: ["no (lo | me lo) llene", "no (quiero | necesito) [el] (tanque)? lleno", "lleno no [gracias]", "no (quiero | necesito) llenarlo"] },
     prepay: { patterns: [
@@ -126,13 +147,18 @@ export const gas: SituationDef = {
     ] },
     gas_price_q: { patterns: [
       "a como (esta | anda | se vende) (la {grade} | la gasolina | el litro [de {grade}]) #h:q_price", "cuanto (cuesta | vale | esta | sale | es) (el litro [de {grade}] | la gasolina | la {grade} | el litro de gasolina)",
-      "cuanto (cuesta | vale | esta | sale) el galon #galon", "a como (esta | anda) el galon #galon",
+      "cuanto (cuesta | vale | esta | sale) el galon #galon", "a como (esta | anda) el galon #galon", "[@pon] {number} galones [de ({grade} | @gas)] #galon",
+      "(cuanto (cuesta | vale | esta | sale) | a como (esta | anda | se vende)) [el litro de] {grade}",
       "cuanto (cuesta | sale | es | seria) (llenarlo | llenar el tanque | el tanque lleno | un tanque lleno | llenar) #fillq", "(que | cual es el) precio (tiene)? (la gasolina | el litro | la {grade})",
     ] },
     pay_pump_q: { patterns: ["(donde | a quien) (pago | le pago | se paga) #h:q_where_pay", "(pago | se paga | tengo que pagar | le pago) (adentro | en la caja | en la tienda | aqui | a usted | ahora | antes | despues | al final)", "le pago a usted", "(le pago a usted | pago aqui) o (adentro | en la caja)", "(donde | en donde) (esta | queda) la caja"] },
     tip_q: { patterns: ["(hay que | se) (deja | dejar | da | dar) propina", "cuanto (se deja | se da | le dejo | le doy) (de)? propina", "(se acostumbra | es normal) (la | dar)? propina"] },
     // "¿Cuánto es?": the total, or (at her offer) whether the checks cost anything
-    cost_q: { patterns: ["cuanto (es | cuesta | le debo | seria | va a ser | me cobra) [eso | el servicio]", "(es | eso es) gratis #free", "(se paga | se cobra | cobra) aparte #free", "cuesta algo #free", "(tiene | hay que pagar) (costo | algo) #free"] },
+    cost_q: { patterns: [
+      "cuanto (es | cuesta | le debo | seria | va a ser | me cobra) [eso | el servicio]", "cuanto (me van a cobrar | me va a cobrar | me cobran | cobran)", "(es | eso es) gratis #free", "(se paga | se cobra | cobra) aparte #free", "cuesta algo #free", "(tiene | hay que pagar) (costo | algo) #free",
+      // the tow truck's price: it depends
+      "cuanto (cuesta | cobra | cobran | sale | me cobra) (la grua | una grua) #tow", "(la grua | una grua) cuanto (cuesta | cobra) #tow", "(es | sale) (cara | muy cara) la grua #tow",
+    ] },
     no_change: { patterns: ["no (tengo | traigo) (cambio | feria | billetes chicos | sencillo)", "(solo | nada mas | nomas) (tengo | traigo) (billetes de)? {price}", "(tiene | trae) cambio de {price}", "(tiene | trae) cambio"] },
     far_q: { patterns: ["(esta | queda) (lejos | cerca)", "(esta | queda) (lejos | cerca) (la carretera #road | el taller | la vulcanizadora | el cajero)"] },
     // "No, no está todo bien": she asks what happened
@@ -153,6 +179,8 @@ export const gas: SituationDef = {
       "(quiero | necesito) que (me | le) (revise | cheque) @svc", "[si] (revise | cheque) todo #all", "si (por favor)? @svc [y @svc]",
       "[si] (limpielo | limpiemelo | limpie el vidrio) #glass", "[si] (reviselo | reviselos | reviselas | revisemelo | chequelo | chequelas | reviseme | chequeme) #offer",
       "@svc si [pero] @svcx no [gracias]", "@svcx no [pero] @svc si",
+      // "Sí, y el parabrisas también": her offer and one more
+      "si [por favor] y (tambien)? @svc [tambien] [por favor] #plus", "si [por favor] y (tambien)? (me limpia | limpie | limpieme) (el parabrisas | los vidrios | el vidrio) [tambien] #plus #glass",
     ] },
     // a bare "Las llantas" answers the offer only
     check_ctx: { patterns: ["@svc [y @svc]", "todo #all", "(las dos cosas | ambas cosas) #all"] },
@@ -162,6 +190,7 @@ export const gas: SituationDef = {
       "no (hace falta | es necesario) (revisar | checar | limpiar) nada",
       // "Sí, pero el aceite no": the rest of her offer
       "si [pero] no @svc #but", "si [pero] @svc no #but",
+      "[no] [y] @svc tampoco [gracias]", "[no] [y] tampoco @svc",
     ] },
     more_no: { patterns: [
       "(es | eso es | eso seria | seria) todo [por ahora] #h:more_no", "nada mas", "(asi | asi esta) bien #h:more_fine", "no gracias asi esta bien",
@@ -169,7 +198,10 @@ export const gas: SituationDef = {
       "por ahora es todo", "ya (es todo | con eso)", "con eso (es suficiente | esta bien)", "nada [gracias]", "no pasa nada", "no (tengo | hay) [ningun] problema", "no (quiero | la quiero) molestar[la]",
     ] },
     more_no_ctx: { patterns: ["no hace falta", "no es necesario", "(asi | asi esta) bien no hace falta", "ya esta", "no (necesito | quiero) (ayuda | una grua | grua)"] },
-    coffee_where: { patterns: ["(donde | en donde) (hay | venden | puedo comprar | compro) (cafe | algo de comer | agua | refrescos | botanas)", "(venden | tienen | hay) (cafe | algo de comer | agua | refrescos | botanas)"] },
+    coffee_where: { patterns: [
+      "(donde | en donde) (hay | venden | puedo comprar | compro) (cafe | algo de comer | agua | refrescos | botanas)", "(venden | tienen | hay) (cafe | algo de comer | agua | refrescos | botanas)",
+      "(donde | en donde) (esta | queda | hay) (la | una) tienda #store", "(hay | tienen) [una] tienda [aqui] #store",
+    ] },
     restroom: { patterns: [
       "(donde | en donde) (esta | queda | hay) [el | un] (bano | sanitario | servicio | servicios | aseo | lavabo) #h:q_restroom", "(tienen | hay) (bano | banos | sanitarios | servicio) [aqui]",
       "(puedo | me deja) (usar | pasar a) el (bano | sanitario)", "(necesito | quiero) (ir al bano | usar el bano)", "(el | un) bano",
@@ -205,10 +237,11 @@ export const gas: SituationDef = {
       "(me | nos) (da | puede dar | podria dar | das #tip:tu_staff) (el | mi | su | un)? (ticket | recibo | comprobante) #h:receipt", "(me | nos) (da | puede dar | podria dar | hace) [una] factura #factura #h:factura",
       "(necesito | quiero | quisiera) (el | mi | un)? (ticket | recibo | comprobante)", "(necesito | quiero | quisiera) [una] factura #factura",
       "(el | mi)? (ticket | recibo | comprobante)", "(puedo | se puede) (pedir | sacar) factura #factura", "(dan | hacen) factura #factura", "[y] [una] factura #factura",
+      "[si] [por favor] (con | y) [una] factura [por favor] #factura",
     ] },
     // "No, no lo necesito" (to "¿Le doy su ticket?")
     receipt_no_ctx: { patterns: ["no (lo | la) (necesito | quiero)", "no (hace falta | es necesario)"] },
-    no_receipt: { patterns: ["no (necesito | quiero) [el | un | mi] (ticket | recibo | comprobante)", "sin (ticket | recibo | comprobante)", "no (necesito | quiero) factura", "no me (de | da) (el | un | mi)? (ticket | recibo)", "(ticket | recibo) no [gracias]"] },
+    no_receipt: { patterns: ["no (necesito | quiero) [el | un | mi] (ticket | recibo | comprobante)", "sin (ticket | recibo | comprobante | factura) [gracias]", "no (necesito | quiero) [una] factura", "no me (de | da) (el | un | mi)? (ticket | recibo)", "(ticket | recibo) no [gracias]"] },
     pay_card: { patterns: [
       "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toman) tarjeta #h:take_cards",
       "(pago | voy a pagar | le pago) con tarjeta", "(pago | voy a pagar | le pago | con) [una] tarjeta de (credito #credit | debito #debit)", "con (tarjeta)? de (credito #credit | debito #debit)", "con (la | mi) tarjeta", "aqui (tiene | esta) mi tarjeta",
@@ -220,10 +253,19 @@ export const gas: SituationDef = {
     // "No tengo tarjeta": so it's cash (never read as "tarjeta")
     no_card: { patterns: ["no (tengo | traigo) tarjeta", "no (pago | puedo pagar | quiero pagar) con tarjeta", "sin tarjeta"] },
     pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo", "con efectivo", "(tarjeta | con tarjeta) no [mejor] en efectivo"] },
-    pay_dollars: { patterns: ["(acepta | aceptan | toman | reciben) (dolares | dolar) #h:q_dollars", "(puedo | se puede) pagar (en | con) dolares", "(tengo | traigo) (solo | nada mas)? dolares"] },
+    pay_dollars: { patterns: [
+      "(acepta | aceptan | toman | reciben) (dolares | dolar) #h:q_dollars", "(puedo | se puede) pagar (en | con) dolares",
+      // said as the way to pay, or the bills handed over: the first time she answers as to the question, then takes them
+      "(tengo | traigo) (solo | nada mas | nomas)? dolares #pay", "[si] (en | con) dolares [por favor] #pay", "dolares #pay",
+      "(pago | le pago | voy a pagar | quiero pagar | prefiero pagar) (en | con) dolares #pay",
+      "(aqui tiene | tenga | tome | le doy | aqui le doy | le pago con) {number} dolares #pay #given", "(aqui tiene | tenga | tome) (unos | estos | los) dolares #pay #given",
+      // the rate
+      "(a como | a cuanto) (toma | toman | recibe | reciben | esta | anda) el dolar #rate", "(a como | a cuanto) (lo | los) (toma | toman | recibe | reciben) #rate",
+      "(cual es | que) (el | su)? tipo de cambio #rate", "a que tipo de cambio #rate",
+    ] },
     here_you_go: { patterns: [
       "aqui tiene #h:here_you_go", "aqui esta", "tenga", "tome", "(aqui tiene | tenga | le doy | aqui le doy) [son] {price}", "aqui (tiene | estan) (los | sus) {price}",
-      "(le pago | pago) con (un billete de)? {price}",
+      "(le pago | pago) con (un billete de)? {price}", "(aqui tiene | tenga | le doy | aqui le doy | y) {price} mas",
     ] },
     tip: { patterns: [
       "(esto | esta) es para usted #h:tip_for_you", "(y | aqui) (esto | esta) es para usted", "es para usted", "para su refresco #h:tip_refresco", "(es | esto es) para su (refresco | chesco | cafe)",
@@ -276,21 +318,26 @@ export const gas: SituationDef = {
     grade_late: [t("Ya | le | estoy | poniendo | {X}, | ¿eh?", "Already | (for) you | I'm | putting | {X}, | eh?", "I've already started with {X}, you know.")],
     ask_amount: [
       t("¿Y | cuánto | le | pongo?", "And | how much | (for) you | I-put?", "And how much should I put in?"),
-      t("¿Se lo | lleno, | o | cuánto | le | pongo?", "It for you | I-fill, | or | how much | (for) you | I-put?", "Shall I fill it up, or how much?"),
+      t("¿Se lo | lleno, | o | cuánto | le | pongo?", "It for you | I-fill, | or | how much | (for) you | I-put?", "Should I fill it up, or how much?"),
     ],
     too_much: [
       t("Uy, | eso | es | mucho: | un | tanque | lleno | sale | en | unos | mil | pesos. | ¿Se lo | lleno?",
         "Whoa, | that | is | a lot: | a | tank | full | comes out | at | about | a thousand | pesos. | It for you | I-fill?",
-        "Oh, that's a lot: a full tank is about a thousand pesos. Shall I just fill it up?", { flags: { 9: "unos + a number = about." } }),
+        "Oh, that's a lot: a full tank is about a thousand pesos. Should I just fill it up?", { flags: { 9: "unos + a number = about." } }),
     ],
+    // "Veinte litros": she works in pesos
+    liters: [t("¿En | litros? | Mejor | dígame | en | pesos: | ¿cuánto | le | pongo?", "In | liters? | Better | tell me | in | pesos: | how much | (for) you | I-put?",
+      "In liters? Better tell me in pesos: how much should I put in?")],
     how_much_then: [t("Bueno, | ¿cuánto | le | pongo?", "Okay, | how much | (for) you | I-put?", "Okay, how much should I put in?")],
     say_total: [t("Son | {$price}.", "That's | {$price}.", "That's {$price}.")],
     free_service: [t("No cuesta | nada; | es | parte | del | servicio.", "It doesn't cost | anything; | it's | part | of the | service.", "It's free, it's part of the service.")],
     tip_q: [t("Lo que | usted | guste.", "Whatever | you | like.", "Whatever you like.")],
     no_change_ok: [t("No se preocupe, | sí | tengo | cambio.", "Don't worry, | yes | I-have | change.", "Don't worry, I've got change.")],
     // "¿Está lejos?" and "¿Está cerca?" both: no sí or no in the answer (rule 11)
-    far_shop: [t("Aquí | a la vuelta, | nada más.", "Here | around the corner, | just.", "Just around the corner.")],
-    far_mech: [t("A | dos | cuadras | nada más.", "At | two | blocks | just.", "Just two blocks away.")],
+    // the tire shop and the mechanic are off the map, on calle Itzamná where it leaves town (TOWN.md "Named in the
+    // conversations, not built"): the gas station is avenida Juárez's last building, so nothing is "sobre esta misma calle"
+    far_shop: [t("Está | cerquita; | en | un | minuto | llega.", "It's | very close; | in | a | minute | you-get-there.", "It's really close; you'll be there in a minute.")],
+    far_mech: [t("A | unos | cinco | minutos, | nada más.", "At | about | five | minutes, | just.", "Just about five minutes away.", { flags: { 1: "unos + a number = about." } })],
     far_road: [t("Está | cerquita.", "It's | very close.", "It's really close.", { flags: { 1: "cerquita: cerca (close) with the diminutive, “really close”." } })],
     amount_changed: [t("Muy | bien, | entonces | {$price}.", "Very | good, | then | {$price}.", "Okay, {$price} then.")],
     fill_changed: [t("Muy | bien, | entonces | se lo | lleno.", "Very | good, | then | it for you | I-fill.", "Okay, I'll fill it up then.")],
@@ -330,15 +377,15 @@ export const gas: SituationDef = {
     ],
     // --- the checks
     ask_check: [
-      t("¿Le | reviso | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Shall I check the oil and the tires?"),
+      t("¿Le | reviso | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Should I check the oil and the tires?"),
       t("¿Le | checo | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?",
         { flags: { 1: "Mexican: checar = to check. Elsewhere: revisar." }, neutral: t("¿Le | reviso | el | aceite | y | las | llantas?", "(For) you | I-check | the | oil | and | the | tires?", "Want me to check the oil and the tires?") }),
     ],
-    ask_glass: [t("¿Le | limpio | el | parabrisas?", "(For) you | I-clean | the | windshield?", "Shall I clean your windshield?")],
+    ask_glass: [t("¿Le | limpio | el | parabrisas?", "(For) you | I-clean | the | windshield?", "Want me to clean your windshield?")],
     extras_again: [
-      t("¿Entonces, | se los | reviso?", "So, | them for you | I-check?", "So, shall I check them?"),
+      t("¿Entonces, | se los | reviso?", "So, | them for you | I-check?", "So, should I check them?"),
     ],
-    glass_again: [t("¿Entonces, | se lo | limpio?", "So, | it for you | I-clean?", "So, shall I clean it?")],
+    glass_again: [t("¿Entonces, | se lo | limpio?", "So, | it for you | I-clean?", "So, should I clean it?")],
     check_yes: [t("Con gusto.", "Gladly.", "Sure thing."), t("Claro que sí.", "Of course.", "Of course.")],
     ok_no: [t("Está bien.", "Okay.", "Okay."), t("Muy | bien.", "Very | good.", "All right.")],
     res_oil: [t("El | aceite | está | bien.", "The | oil | is | fine.", "Your oil's fine.")],
@@ -370,10 +417,14 @@ export const gas: SituationDef = {
     // debit: the card first, then the PIN
     pin: [t("Acerque | su | tarjeta | y | marque | su | NIP… | Listo, | ya | pasó.", "Bring close | your | card | and | dial | your | PIN… | Done, | already | it-went-through.",
       "Tap your card and enter your PIN… Done, it went through.",
-      { flags: { 6: "In Mexico a card's PIN is the NIP (número de identificación personal)." } })],
+      { flags: { 6: "Mexican: NIP = PIN (número de identificación personal); PIN is understood everywhere." },
+        neutral: t("Acerque | su | tarjeta | y | marque | su | PIN… | Listo, | ya | pasó.", "Bring close | your | card | and | dial | your | PIN… | Done, | already | it-went-through.",
+          "Tap your card and enter your PIN… Done, it went through.") })],
     cash_thanks: [t("Gracias.", "Thanks.", "Thank you."), t("Muchas | gracias.", "Many | thanks.", "Thank you very much.")],
-    short: [t("Perdón, | son | {$total}; | faltan | {$price}.", "Sorry, | it's | {$total}; | they're-missing | {$price}.", "Sorry, it's {$total}; you're {$price} short.")],
-    change_is: [t("Aquí tiene | su | cambio: | {$price}.", "Here's | your | change: | {$price}.", "Here's your change: {$price}.")],
+    // a bill that doesn't cover it: then she says the total again (say_total)
+    short: [t("Perdón, | no alcanza.", "Sorry, | it's not enough.", "Sorry, that's not enough.", { flags: { 1: "alcanzar = to be enough (literally “to reach”)." } })],
+    short_again: [t("Todavía | no alcanza.", "Still | it's not enough.", "That's still not enough.")],
+    change_is: [t("Aquí tiene | su | cambio: | {$amount}.", "Here's | your | change: | {$amount}.", "Here's your change: {$amount}.")],
     change_back: [t("Gracias, | aquí tiene | su | cambio.", "Thanks, | here's | your | change.", "Thanks, here's your change.")],
     tip_thanks: [
       t("¡Ay, | gracias, | muy | amable!", "Oh, | thanks, | very | kind!", "Oh, thank you, that's very kind!"),
@@ -384,6 +435,9 @@ export const gas: SituationDef = {
         "Yes | we-accept, | but | at the | exchange rate | of | here. | (To) you | it-suits | more | in | pesos.",
         "We do, but at our exchange rate. You're better off paying in pesos."),
     ],
+    // asked again: she takes them (a little under the bank's $17.20, s78)
+    dollars_ok: [t("Está bien. | El | cambio | se lo | doy | en | pesos.", "It's fine. | The | change | it to you | I-give | in | pesos.", "All right. I'll give you your change in pesos.")],
+    dollar_rate: [t("Lo | tomamos | a | diecisiete | pesos | por | dólar.", "It | we-take | at | seventeen | pesos | per | dollar.", "We take it at seventeen pesos to the dollar.")],
     // --- the receipt
     ask_receipt: [
       t("¿Le | doy | su | ticket?", "(To) you | I-give | your | receipt?", "Do you want your receipt?",
@@ -413,19 +467,28 @@ export const gas: SituationDef = {
     anything_short: [t("¿Algo | más?", "Something | more?", "Anything else?")],
     what_need: [t("Dígame.", "Tell me.", "Sure, go ahead.")],
     restroom: [t("Allá | atrás, | junto | a | la | tienda.", "Over there | at the back, | next | to | the | store.", "Around the back, next to the store.")],
+    // the 3D town (TOWN.md "Getting around"): the station is avenida Juárez's last building, the airport past it to the
+    // right; calle Itzamná, past the car rental to the left, runs inland out of town (no traffic lights in town)
     directions: [
-      t("Saliendo, | a la derecha, | y | en | el | semáforo, | a la izquierda. | Ahí | ya | ve | los | letreros | de | la | carretera.",
-        "Leaving, | to the right, | and | at | the | traffic light, | to the left. | There | already | you-see | the | signs | of | the | highway.",
-        "Turn right as you leave, then left at the light. From there you'll see the signs for the highway."),
+      t("Saliendo, | a la izquierda, | y | en | la | calle | Itzamná, | otra vez | a la izquierda: | esa | calle | sale | a | la | carretera.",
+        "Leaving, | to the left, | and | at | the | street | Itzamná, | again | to the left: | that | street | goes out | to | the | highway.",
+        "Turn left as you leave, then left again at Itzamná Street: it takes you out to the highway."),
     ],
     air_line: [t("Claro, | yo | le | pongo | aire | a | las | llantas.", "Sure, | I | (for) you | put | air | in | the | tires.", "Sure, I'll put some air in your tires for you.")],
     atm: [t("Hay | uno | adentro | de | la | tienda.", "There's | one | inside | of | the | store.", "There's one inside the store.")],
     coffee: [t("En | la | tienda | hay | café | y | algo | de | comer.", "In | the | store | there's | coffee | and | something | to | eat.", "The store has coffee and snacks.")],
+    // the shop is behind the pumps (the restroom line's "allá atrás, junto a la tienda")
+    store: [t("Allá | atrás, | mire. | Ahí | hay | café | y | algo | de | comer.", "Over there | at the back, | look. | There | there's | coffee | and | something | to | eat.",
+      "Around the back, see? They have coffee and snacks.")],
     gas_price: [
       t("La | magna | anda | en | unos | veinticuatro | pesos | el | litro, | y | la | premium | un poco | más.",
         "The | regular | goes | at | about | twenty-four | pesos | the | liter, | and | the | premium | a little | more.",
         "Regular's around twenty-four pesos a liter, and premium a bit more.", { flags: { 2: "andar en = to be around (a price).", 4: "unos + a number = about." } }),
     ],
+    gas_price_premium: [t("La | premium | anda | en | unos | veintiséis | pesos | el | litro.", "The | premium | goes | at | about | twenty-six | pesos | the | liter.",
+      "Premium's around twenty-six pesos a liter.", { flags: { 2: "andar en = to be around (a price).", 4: "unos + a number = about." } })],
+    gas_price_diesel: [t("El | diésel | anda | en | unos | veintisiete | pesos | el | litro.", "The | diesel | goes | at | about | twenty-seven | pesos | the | liter.",
+      "Diesel's around twenty-seven pesos a liter.", { flags: { 4: "unos + a number = about." } })],
     per_liter: [t("Aquí | vendemos | por | litro.", "Here | we-sell | by | liter.", "We sell it by the liter here.")],
     fill_price: [
       t("Depende | del | tanque. | Uno | chico | se llena | con | unos | ochocientos | pesos.", "It-depends | on the | tank. | One | small | gets-filled | with | about | eight hundred | pesos.",
@@ -457,27 +520,35 @@ export const gas: SituationDef = {
         "Won't start? Must be the battery. If you like, we can give you a jump; I've got cables."),
     ],
     flat_reply: [
-      t("¡Ay, | no! | A la vuelta | hay | una | vulcanizadora. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.",
-        "Oh, | no! | Around the corner | there's | a | tire shop. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.",
-        "Oh no! There's a tire repair shop around the corner. If you like, I'll put some air in first so you can make it there.",
-        { flags: { 5: "Mexican: vulcanizadora = tire repair shop." },
-          neutral: t("¡Ay, | no! | A la vuelta | hay | un | taller | de | llantas. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.",
-            "Oh, | no! | Around the corner | there's | a | shop | of | tires. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.",
-            "Oh no! There's a tire repair shop around the corner. If you like, I'll put some air in first so you can make it there.") }),
+      t("¡Ay, | no! | Sobre | la | calle | Itzamná | hay | una | vulcanizadora. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.",
+        "Oh, | no! | On | the | street | Itzamná | there's | a | tire shop. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.",
+        "Oh no! There's a tire repair shop on Itzamná Street. If you like, I'll put some air in first so you can make it there.",
+        { flags: { 8: "Mexican: vulcanizadora = tire repair shop." },
+          neutral: t("¡Ay, | no! | Sobre | la | calle | Itzamná | hay | un | taller | de | llantas. | Si | quiere, | primero | le | pongo | aire | para | que | llegue.",
+            "Oh, | no! | On | the | street | Itzamná | there's | a | shop | of | tires. | If | you-want, | first | (for) you | I-put | air | so | that | you-get-there.",
+            "Oh no! There's a tire repair shop on Itzamná Street. If you like, I'll put some air in first so you can make it there.") }),
     ],
     battery_reply: [
       t("¡Ay! | Si | quiere, | le | pasamos corriente; | tengo | cables.", "Oh! | If | you-want, | (for) you | we-jump-start; | I-have | cables.", "Oh no! If you like, we can give you a jump; I've got cables."),
     ],
     other_reply: [
-      t("Uy, | mejor | que | se lo | revisen. | Hay | un | taller | mecánico | a | dos | cuadras, | sobre | esta | misma | calle.",
-        "Oh, | better | that | it for you | they-check. | There's | a | shop | mechanic | at | two | blocks, | on | this | same | street.",
-        "Oh, you'd better get it checked. There's a mechanic two blocks down, on this same street."),
+      t("Uy, | mejor | que | se lo | revisen. | Hay | un | taller | mecánico | sobre | la | calle | Itzamná, | ya | saliendo | del | pueblo.",
+        "Oh, | better | that | it for you | they-check. | There's | a | shop | mechanic | on | the | street | Itzamná, | just | leaving | from the | town.",
+        "Oh, you'd better get it checked. There's a mechanic on Itzamná Street, right where you leave town."),
     ],
+    // her offer again after a side question (once; then "¿Algo más…?")
+    jump_again: [t("¿Entonces, | le | pasamos corriente?", "So, | (for) you | we-jump-start?", "So, should we give you a jump?")],
+    air_again: [t("¿Entonces, | le | pongo | aire?", "So, | (for) you | I-put | air?", "So, should I put some air in?")],
+    // "¿Cuánto cuesta?" about her help (the cables, air), or the tow truck and the mechanic
+    free_help: [t("No cuesta | nada, | no se preocupe.", "It doesn't cost | anything, | don't worry.", "It's free, don't worry.")],
+    cost_depends: [t("Eso | depende; | ellos | le | dicen | cuánto.", "That | depends; | they | (to) you | tell | how much.", "That depends; they'll tell you how much.")],
     jump: [t("Claro. | Voy | por | los | cables.", "Sure. | I-go | for | the | cables.", "Sure. I'll go get the cables.")],
     tow: [t("Claro, | le | llamo | a | la | grúa. | A veces | tarda | un | rato.", "Sure, | (for) you | I-call | to | the | tow truck. | Sometimes | it-takes | a | while.", "Sure, I'll call the tow truck. It can take a while.")],
     inflate: [t("Claro, | se la | inflo | para | que | llegue | al | taller.", "Sure, | it for you | I-inflate | so | that | you-get | to the | shop.", "Sure, I'll pump it up so you can get to the shop.")],
-    mechanic: [t("Hay | un | taller | mecánico | a | dos | cuadras, | sobre | esta | misma | calle.", "There's | a | shop | mechanic | at | two | blocks, | on | this | same | street.", "There's a mechanic two blocks down, on this same street.")],
-    tire_shop: [t("Aquí | a la vuelta, | a la derecha. | Se la | arreglan | rápido.", "Here | around the corner, | to the right. | It for you | they-fix | fast.", "Just around the corner, on the right. They'll fix it fast.")],
+    mechanic: [t("Hay | un | taller | mecánico | sobre | la | calle | Itzamná, | ya | saliendo | del | pueblo.", "There's | a | shop | mechanic | on | the | street | Itzamná, | just | leaving | from the | town.",
+      "There's a mechanic on Itzamná Street, right where you leave town.")],
+    tire_shop: [t("Sobre | la | calle | Itzamná, | ya | saliendo | del | pueblo. | Se la | arreglan | rápido.", "On | the | street | Itzamná, | just | leaving | from the | town. | It for you | they-fix | fast.",
+      "On Itzamná Street, right where you leave town. They'll fix it fast.")],
     all_good: [t("¡Qué | bueno!", "How | good!", "Good to hear!")],
     bye: [
       t("¡Buen | viaje!", "Good | trip!", "Have a good trip!"),
@@ -487,13 +558,14 @@ export const gas: SituationDef = {
   },
 
   domains: {
+    // the amounts asked for (whole $5 from $20 to $1,500), the totals (those, or a full tank) and the last sale
     price: () => {
-      const s = new Set<number>([LAST_SALE]);
+      const s = new Set<number>([LAST_SALE, ...FILL_COSTS]);
       for (let p = 2000; p <= MAX_AMOUNT; p += 500) s.add(p);
-      for (const f of FILL_COSTS) { s.add(f); for (const bill of [100000, 200000]) s.add(bill - f); }
-      for (let p = 500; p <= 100000; p += 500) s.add(p); // change from a bill
       return [...s].sort((a, b) => a - b);
     },
+    // the change (change_is)
+    amount: changeList,
   },
 
   hints: {
@@ -528,7 +600,7 @@ export const gas: SituationDef = {
     extras: {
       lt: "Answer the offer (oil, tires, windshield)",
       items: [
-        { id: "check_yes", s: t("Sí, | revíseme | las | llantas, | por favor.", "Yes, | check me | the | tires, | please.", "Yes, please check the tires."), note: "These checks are free; people give the attendant a small tip." },
+        { id: "check_yes", s: t("Sí, | revíseme | las | llantas, | por favor.", "Yes, | check (for) me | the | tires, | please.", "Yes, please check the tires."), note: "These checks are free; people give the attendant a small tip." },
         { id: "check_only", s: t("Nada más | el | aceite, | por favor.", "Just | the | oil, | please.", "Just the oil, please.") },
         { id: "check_glass", s: t("¿Me | limpia | el | parabrisas?", "(For) me | you-clean | the | windshield?", "Could you clean the windshield?") },
         { id: "more_fine", s: t("No, | gracias, | así | está | bien.", "No, | thanks, | like this | it's | fine.", "No, thanks, I'm fine.") },
@@ -549,14 +621,14 @@ export const gas: SituationDef = {
       lt: "Say credit or debit",
       items: [
         { id: "credit", s: t("De | crédito.", "Of | credit.", "Credit.") },
-        { id: "debit", s: t("De | débito.", "Of | debit.", "Debit."), note: "The card machine may ask for your NIP (PIN)." },
+        { id: "debit", s: t("De | débito.", "Of | debit.", "Debit."), note: "The card machine may ask for your PIN (in Mexico, the NIP)." },
       ],
     },
     tip: {
       lt: "Give a tip",
       items: [
         { id: "tip_for_you", s: t("Esto | es | para | usted.", "This | is | for | you.", "This is for you.") },
-        { id: "keep_change", s: t("Quédese | con | el | cambio.", "Keep | with | the | change.", "Keep the change.") },
+        { id: "keep_change", s: t("Quédese | con | el | cambio.", "Keep | with | the | change.", "Keep the change."), note: "When the change is a few pesos: it's the tip." },
         { id: "tip_amount", s: t("Le | dejo | veinte | de | propina.", "(To) you | I-leave | twenty | of | tip.", "Here's twenty for you."), note: "A tip of ten or twenty pesos is usual, more if she cleaned or checked something." },
         { id: "tip_refresco", s: t("Para | su | refresco.", "For | your | soda.", "Get yourself a soda."), note: "A friendly Mexican way to give a small tip." },
       ],
@@ -635,7 +707,7 @@ export const gas: SituationDef = {
         c.s.greetFill = false;
         c.say("ask_what");
       },
-      expects: ["prepay", "fill", "half_tank", "want_gas", "amount_ctx", "grade_ans", "amount_change_ctx", "gas_price_q"],
+      expects: ["prepay", "fill", "half_tank", "want_gas", "amount_ctx", "grade_ans", "amount_change_ctx", "gas_price_q", "fill_yes_ctx", "liters"],
       suggest: [{ lt: "Say how much (or a full tank)", hint: "order" }, { lt: "Ask something", hint: "ask" }],
       // "¿Se lo lleno?": yes fills it; no, she asks how much
       yes: (c) => { if (c.s.greetFill) gas.handlers.fill(c, {}, { intent: "fill", slots: {}, tags: [] }); else { c.say("ask_what"); c.hold(); } },
@@ -643,9 +715,15 @@ export const gas: SituationDef = {
     { id: "grade", when: (c) => (!!c.s.amount || !!c.s.fill) && !c.s.grade, done: (c) => !!c.s.grade,
       ask: (c) => c.say(c.s.gradeAsked ? "which_one" : "ask_grade"), expects: ["grade_ans", "grade_no", "grade_q", "amount_change_ctx", "gas_price_q"],
       suggest: [{ lt: "Choose the fuel", hint: "grade", options: "grade" }],
-      yes: (c) => { c.s.gradeAsked = true; c.say("which_one"); c.hold(); } },
+      // "No sé": she recommends regular
+      help: (c) => { c.s.recommended = true; c.s.recHeard = c.heard; c.say("grade_info"); },
+      // after her recommendation a yes takes it ("¿Cuál me recomienda?" … "Ok")
+      yes: (c) => {
+        if (c.s.recommended && !c.s.grade) { setGrade(c, "magna"); c.say("grade_then_magna"); return; }
+        c.s.gradeAsked = true; c.say("which_one"); c.hold();
+      } },
     { id: "amount", when: (c) => !!c.s.grade && !c.s.amount && !c.s.fill, done: (c) => !!c.s.amount || !!c.s.fill,
-      ask: (c) => c.say("ask_amount"), expects: ["amount_ctx", "fill", "fill_no", "half_tank", "prepay", "amount_change_ctx", "gas_price_q"],
+      ask: (c) => c.say("ask_amount"), expects: ["amount_ctx", "fill", "fill_no", "half_tank", "prepay", "amount_change_ctx", "gas_price_q", "liters"],
       suggest: [{ lt: "Say how much (or a full tank)", hint: "order" }] },
     // the twist: she starts without showing zero, and the pump still shows the last sale
     { id: "zeros", when: (c) => !!c.s.zerosTwist && (!!c.s.amount || !!c.s.fill) && !!c.s.grade && !c.s.zerosDone, done: (c) => !!c.s.zerosDone,
@@ -657,7 +735,7 @@ export const gas: SituationDef = {
       },
       expects: ["zeros_ctx", "zeros_wait_ctx", "zeros_q", "ok_ack"],
       suggest: [{ lt: "The pump already shows $150, not $0: tell her", hint: "zeros" }],
-      yes: (c) => zerosSelf(c), no: (c) => zerosFix(c, "zeros_fixed") },
+      yes: (c) => zerosSelf(c), no: (c) => zerosFix(c, false) },
     { id: "pump_on", when: (c) => (!!c.s.amount || !!c.s.fill) && !!c.s.grade && !c.s.pumpOn, done: (c) => !!c.s.pumpOn,
       ask: (c) => {
         c.say("zero_show");
@@ -687,7 +765,7 @@ export const gas: SituationDef = {
           if (!c.s.method && c.chance(0.5)) c.say("ask_pay");
           return;
         }
-        if (c.s.method !== "cash") c.say("ask_pay"); // cash: she waits for the money
+        if (c.s.method !== "cash" && c.s.method !== "dollars") c.say("ask_pay"); // cash or dollars: she waits for the money
       },
       expects: ["pay_card", "pay_cash", "here_you_go", "no_cash", "no_card", "amount_ctx", "tip", "pay_dollars", "cost_q", "no_change"],
       suggest: [{ lt: "Pay (cash or card)", hint: "pay" }, { lt: "Give a tip", hint: "tip" }] },
@@ -717,6 +795,8 @@ export const gas: SituationDef = {
           c.s.helpOffered = true;
           c.say(c.s.trouble === "flat" ? "flat_reply" : c.s.battery ? "battery_reply" : "trouble_reply"); return;
         }
+        // a side question came first ("¿Está lejos el taller?"): her offer once more
+        if (c.s.helpOffered && !c.s.helpAgain) { c.s.helpAgain = true; c.say(c.s.trouble === "flat" ? "air_again" : "jump_again"); return; }
         c.s.helpOffered = false; // now the question is "¿Se le ofrece algo más?"
         c.say("anything_else");
       },
@@ -757,6 +837,16 @@ export const gas: SituationDef = {
       c.s.fill = true; c.s.amount = undefined;
       if (slots.grade) setGrade(c, slots.grade as string);
       if (c.s.pumpOn || (wasAmount && c.step !== "order" && c.step !== "amount")) c.say("fill_changed");
+    },
+    fill_yes_ctx(c, slots, seg) {
+      // "¿Se lo lleno?" — "Sí, de magna": a full tank of it; at "¿Cuánto le pongo?" only the fuel
+      if (c.s.greetFill && !c.s.fill && !c.s.amount) { gas.handlers.fill(c, slots, seg); return; }
+      gas.handlers.grade_ans(c, slots, seg);
+    },
+    liters(c, slots) {
+      if (c.s.totalSaid) { c.say("already_done"); return; }
+      if (slots.grade) setGrade(c, slots.grade as string);
+      c.say("liters"); c.hold();
     },
     fill_no(c) {
       if (c.s.totalSaid) { c.say("already_done"); return; }
@@ -812,19 +902,24 @@ export const gas: SituationDef = {
       if (!c.s.grade) { c.s.gradeAsked = true; c.say("which_one"); c.hold(); }
     },
     grade_q(c, _slots, seg) {
-      if (seg.tags.includes("diesel")) c.say("diesel_yes");
-      else if (seg.tags.includes("diff")) c.say("grade_diff");
-      else if (seg.tags.includes("which")) c.say("grade_colors");
-      else c.say("grade_info");
+      if (seg.tags.includes("diesel")) { c.say("diesel_yes"); return; }
+      if (seg.tags.includes("which")) { c.say("grade_colors"); return; }
+      // her advice is regular: a yes to the next question takes it
+      c.s.recommended = true;
+      if (seg.tags.includes("diff")) c.say("grade_diff");
+      else if (c.s.recHeard !== c.heard) c.say("grade_info"); // "No sé, ¿cuál me recomienda?": already said (the step's help)
     },
-    gas_price_q(c, _slots, seg) {
+    gas_price_q(c, slots, seg) {
       if (seg.tags.includes("fillq")) { c.say("fill_price"); return; }
       if (seg.tags.includes("galon")) c.say("per_liter");
-      c.say("gas_price");
+      c.say(slots.grade === "premium" ? "gas_price_premium" : slots.grade === "diesel" ? "gas_price_diesel" : "gas_price");
     },
     pay_pump_q(c) { c.say("pay_here"); },
     tip_q(c) { c.say("tip_q"); },
     cost_q(c, _slots, seg) {
+      // the tow truck or the mechanic: their price; her own help (the cables, air): free
+      if (seg.tags.includes("tow") || (c.s.paid && (c.s.towCalled || c.s.trouble === "other"))) { c.say("cost_depends"); c.hold(); return; }
+      if (c.s.paid && c.s.trouble) { c.say("free_help"); c.hold(); return; }
       if (seg.tags.includes("free") || (c.step === "extras" && c.s.extrasDone === undefined)) { c.say("free_service"); c.hold(); return; }
       if (c.s.totalSaid || c.s.amount) { c.say("say_total", { price: due(c) }); c.hold(); return; }
       c.say(c.s.fill ? "fill_price" : "gas_price");
@@ -840,15 +935,15 @@ export const gas: SituationDef = {
       c.say("what_happened"); c.hold();
     },
     zeros_wait_ctx(c) {
-      if (c.s.zerosTwist && !c.s.zerosDone) { zerosFix(c, "zeros_fixed"); return; }
+      if (c.s.zerosTwist && !c.s.zerosDone) { zerosFix(c, false); return; }
       c.say("g_take_time"); c.hold();
     },
     zeros_q(c) {
-      if (c.s.zerosTwist && !c.s.zerosDone && (c.s.amount || c.s.fill) && c.s.grade) { zerosFix(c, "zeros_q_fix"); return; }
+      if (c.s.zerosTwist && !c.s.zerosDone && (c.s.amount || c.s.fill) && c.s.grade) { zerosFix(c, true); return; }
       c.say("zeros_look");
     },
     zeros_ctx(c) {
-      if (c.s.zerosTwist && !c.s.zerosDone) { zerosFix(c, "zeros_fixed"); return; }
+      if (c.s.zerosTwist && !c.s.zerosDone) { zerosFix(c, false); return; }
       c.say("zeros_look");
     },
     ok_ack(c) {
@@ -857,8 +952,11 @@ export const gas: SituationDef = {
     },
     check_order(c, _slots, seg) {
       const tags = seg.tags;
-      const ks: string[] = tags.includes("all") ? ["oil", "tires", "glass"] : tags.includes("offer") ? (c.s.offer === "glass" ? ["glass"] : ["oil", "tires"])
-        : ["oil", "water", "tires", "glass"].filter((k) => tags.includes(k));
+      const offered = c.s.offer === "glass" ? ["glass"] : ["oil", "tires"];
+      const named = ["oil", "water", "tires", "glass"].filter((k) => tags.includes(k));
+      // "Sí, y el parabrisas también" to her offer: what she offered and that
+      const plus = tags.includes("plus") && !!c.s.extrasAsks && c.s.extrasDone === undefined;
+      const ks: string[] = tags.includes("all") ? ["oil", "tires", "glass"] : tags.includes("offer") ? offered : plus ? [...new Set([...offered, ...named])] : named;
       if (!ks.length) return;
       if (!c.s.paid) c.s.checks = [...new Set([...((c.s.checks ?? []) as string[]), ...ks])];
       if (c.s.extrasDone === undefined) c.s.extrasDone = "yes";
@@ -888,7 +986,7 @@ export const gas: SituationDef = {
       if (c.step === "anything") c.s.anythingDone = true;
     },
     more_no_ctx(c, slots, seg) { gas.handlers.more_no(c, slots, seg); },
-    coffee_where(c) { c.say("coffee"); },
+    coffee_where(c, _slots, seg) { c.say(seg.tags.includes("store") ? "store" : "coffee"); },
     restroom(c) { c.say("restroom"); },
     directions(c) { c.say("directions"); if (c.step === "anything") c.s.anythingDone = true; },
     air(c, slots, seg) {
@@ -911,13 +1009,15 @@ export const gas: SituationDef = {
       if (c.s.trouble) c.s.troubleDone = true;
     },
     call_help(c, _slots, seg) {
-      if (seg.tags.includes("grua")) c.say("tow");
+      if (seg.tags.includes("grua")) { c.s.towCalled = true; c.say("tow"); }
       else if (c.s.trouble === "flat") c.say("inflate");
       else if (c.s.trouble === "other") c.say("mechanic");
       else c.say("jump");
       if (c.s.trouble) c.s.troubleDone = true;
     },
     receipt_ask(c, _slots, seg) {
+      // asked before paying: the ticket comes with the payment
+      if (!c.s.paid) { c.s.receiptWanted = true; c.say(seg.tags.includes("factura") ? "factura" : "ack"); return; }
       if (seg.tags.includes("factura")) {
         if (c.s.receipt === true) { c.say("factura"); return; }
         giveReceipt(c); c.say("factura_now"); return;
@@ -935,11 +1035,22 @@ export const gas: SituationDef = {
     no_cash(c) { choosePay(c, "card"); },
     no_card(c) { choosePay(c, "cash"); },
     pay_cash(c) { choosePay(c, "cash"); },
-    pay_dollars(c) { c.say("dollars"); },
-    here_you_go(c, slots) {
-      if (c.s.paid) { c.say("cash_thanks"); return; }
+    pay_dollars(c, slots, seg) {
+      if (seg.tags.includes("rate")) { c.say("dollar_rate"); return; }
+      // asked, or said the first time: they take dollars, at the station's rate (pesos are better)
+      if (c.s.paid || !c.s.dollarsSaid || !seg.tags.includes("pay")) { c.s.dollarsSaid = true; c.say("dollars"); return; }
+      // said again: she takes them, and the change comes in pesos
+      if (c.s.method !== "dollars") { c.s.method = "dollars"; c.say("dollars_ok"); }
+      if (c.s.totalSaid && seg.tags.includes("given")) finishPay(c, "dollars", slots.number ? (slots.number as number) * DOLLAR_RATE : undefined);
+    },
+    here_you_go(c, slots, seg) {
+      // money handed over after paying: a tip
+      if (c.s.paid) { if (c.s.tipped) c.say("cash_thanks"); else gas.handlers.tip(c, slots, { ...seg, tags: [...seg.tags, "h:tip_amount"] }); return; }
       if (!c.s.totalSaid) { c.say("not_yet"); return; }
-      finishPay(c, c.s.method ?? "cash", slots.price as number | undefined, keepsChange(c));
+      const given = slots.price as number | undefined;
+      // paying in dollars: "Aquí tiene cincuenta" is fifty dollars
+      if (c.s.method === "dollars") { finishPay(c, "dollars", given ? (given / 100) * DOLLAR_RATE : undefined); return; }
+      finishPay(c, "cash", given, keepsChange(c));
     },
     tip(c, slots, seg) {
       if (c.s.tipHeard === c.heard) return; // "Aquí tiene, quédese con el cambio": already thanked
@@ -1083,6 +1194,20 @@ export const gas: SituationDef = {
     { say: "¿Está cerca la carretera?", intent: "far_q", step: "anything" },
     { say: "¿Cuál es la más barata?", intent: "grade_q", step: "grade" },
     { say: "Sí, todo bien", intent: "more_no", step: "trouble", not: ["trouble", "trouble_vague"] },
+    // audit (5 Nov): liters, "Sí, de magna", prices by fuel, dollars, the tow truck's price, one more check, the shop
+    { say: "Veinte litros de magna, por favor", intent: "liters", step: "order", slots: { number: 20, grade: "magna" }, not: ["prepay", "amount_ctx"] },
+    { say: "Ponme 20 litros", intent: "liters", step: "order" },
+    { say: "Sí, de magna", intent: "fill_yes_ctx", step: "order", slots: { grade: "magna" } },
+    { say: "¿A cómo está la premium?", intent: "gas_price_q", step: "order", slots: { grade: "premium" } },
+    { say: "En dólares", intent: "pay_dollars", step: "pay", not: ["pay_cash"] },
+    { say: "Aquí tiene cincuenta dólares", intent: "pay_dollars", step: "pay", slots: { number: 50 }, not: ["here_you_go"] },
+    { say: "¿A cómo toma el dólar?", intent: "pay_dollars", step: "pay" },
+    { say: "No tengo dólares", intent: "none", step: "pay" },
+    { say: "Aquí tiene cien más", intent: "here_you_go", step: "pay", slots: { price: 10000 } },
+    { say: "¿Cuánto cobra la grúa?", intent: "cost_q", step: "trouble_help", not: ["call_help"] },
+    { say: "Sí, y el parabrisas también", intent: "check_order", step: "extras" },
+    { say: "Sí, con factura", intent: "receipt_ask", step: "receipt" },
+    { say: "¿Dónde está la tienda?", intent: "coffee_where", step: "anything" },
     // not understood
     { say: "banana parabrisas ventana", intent: "none" },
     { say: "Mi perro come llantas azules", intent: "none" },
@@ -1132,10 +1257,19 @@ export const gas: SituationDef = {
       turns: ["Mil doscientos de magna", "Ok", "Sí, pero no el aceite", "Pago con tarjeta de débito", "¡Adiós!"],
       auto: omit(AUTO, ["order", "pump_on", "extras", "pay"]), expect: { complete: true, state: { amount: 120000, extrasDone: "yes", cardType: "debit", paid: true } },
       setup: (s) => { s.greetFill = false; s.zerosTwist = false; s.troubleTwist = false; s.askExtras = true; s.offer = "oil_tires"; s.askDebit = true; s.askReceipt = false; s.askAnything = false; } },
+    // audit (5 Nov): after a side question she offers the cables once more; the tow truck's price depends
     { name: "car trouble (twist): not okay, a question, then the tow truck",
-      turns: ["Quinientos de premium", "Ok", "Con tarjeta", "No", "Mi carro no arranca", "¿Está lejos el taller?", "Sí", "¿Puede llamar a una grúa?", "¡Gracias!"],
-      auto: omit(AUTO, ["order", "pump_on", "pay", "trouble", "trouble_help"]), expect: { complete: true, state: { trouble: "start", troubleDone: true } },
+      turns: ["Quinientos de premium", "Ok", "Con tarjeta", "No", "Mi carro no arranca", "¿Está lejos el taller?", "No, gracias. ¿Puede llamar a una grúa?", "¿Cuánto cobra la grúa?", "¡Gracias!"],
+      auto: omit(AUTO, ["order", "pump_on", "pay", "trouble", "trouble_help"]), expect: { complete: true, state: { trouble: "start", troubleDone: true, towCalled: true } },
       setup: (s) => { s.greetFill = false; s.zerosTwist = false; s.troubleTwist = true; s.askExtras = false; s.askDebit = false; s.askReceipt = false; } },
+    { name: "liters, her advice, the windshield too, cash in two goes",
+      turns: ["Póngale veinte litros", "Quinientos", "¿Cuál me recomienda?", "Ok", "Ok", "Sí, y el parabrisas también", "En efectivo", "Aquí tiene doscientos", "Aquí tiene trescientos más", "¡Gracias, adiós!"],
+      auto: omit(AUTO, ["order", "amount", "grade", "pump_on", "extras", "pay"]), expect: { complete: true, state: { amount: 50000, grade: "magna", extrasDone: "yes", paid: true, method: "cash" } },
+      setup: (s) => { s.greetFill = false; s.zerosTwist = false; s.troubleTwist = false; s.askExtras = true; s.offer = "oil_tires"; s.askReceipt = false; s.askAnything = false; } },
+    { name: "yes with the fuel, the ticket asked early, dollars",
+      turns: ["Sí, de magna", "Ok", "¿Me da el ticket, por favor?", "En dólares", "¿A cómo lo toma?", "Sí, en dólares", "Aquí tiene sesenta dólares", "¡Gracias!"],
+      auto: omit(AUTO, ["order", "pump_on", "pay"]), expect: { complete: true, state: { fill: true, grade: "magna", paid: true, method: "dollars", receipt: true } },
+      setup: (s) => { s.greetFill = true; s.zerosTwist = false; s.troubleTwist = false; s.askExtras = false; s.askReceipt = true; s.askAnything = false; } },
   ],
 };
 
@@ -1167,10 +1301,11 @@ function startFueling(c: Ctx) {
   c.event("fuel", { amount: c.s.amount, fill: !!c.s.fill, grade: c.s.grade });
 }
 
-/** The twist: the learner pointed it out (or asked). */
-function zerosFix(c: Ctx, line: string) {
+/** The twist: the learner pointed it out (or asked whether it's at zero). The line ids are literal so the voice list
+ *  sees the one value they're said with (reach-es.ts). */
+function zerosFix(c: Ctx, asked: boolean) {
   c.s.zerosDone = true; c.s.zerosNoticed = true;
-  c.say(line, { price: LAST_SALE });
+  c.say(asked ? "zeros_q_fix" : "zeros_fixed", { price: LAST_SALE });
   c.s.pumpOn = true;
   c.event("fuel", { amount: c.s.amount, fill: !!c.s.fill, grade: c.s.grade });
   if (!c.s.askExtras) c.hold();
@@ -1195,6 +1330,7 @@ function keepsChange(c: Ctx) {
 function cardThrough(c: Ctx) {
   c.s.cardDone = true;
   c.say(c.s.cardType === "debit" ? "pin" : "card_through");
+  if (c.s.receiptWanted) giveReceipt(c);
 }
 
 function receiptOpen(c: Ctx) {
@@ -1215,24 +1351,33 @@ function choosePay(c: Ctx, method: "card" | "cash") {
   else c.say(method === "card" ? "card_yes" : "cash_yes"); // asked before she's done: the total comes later
 }
 
-function finishPay(c: Ctx, method: "card" | "cash", given?: number, keepChange = false) {
+function finishPay(c: Ctx, method: "card" | "cash" | "dollars", given?: number, keepChange = false) {
   if (c.s.paid) return;
   const total = due(c);
-  // a bill that doesn't cover it: she says what's missing and waits (never paid)
-  if (method === "cash" && given && given < total) { c.s.method = "cash"; c.say("short", { total, price: total - given }); c.hold(); return; }
+  const handed = method === "cash" || method === "dollars";
+  // money handed over after "no alcanza" adds to what she already holds
+  if (handed && given && c.s.given) given += c.s.given as number;
+  // a bill that doesn't cover it: she says so (and the total) and waits (never paid)
+  if (handed && given && given < total) {
+    c.s.method = method;
+    if (c.s.given) c.say("short_again"); else { c.say("short"); c.say("say_total", { price: total }); }
+    c.s.given = given; c.hold(); return;
+  }
   c.s.paid = true;
   c.s.method = method;
-  c.event("pay", { method, amount: total });
+  c.event("pay", { method: method === "card" ? "card" : "cash", amount: total });
   c.complete();
   if (method === "card") {
     c.say("terminal");
     if (!c.s.askDebit || c.s.cardType) cardThrough(c);
     return;
   }
-  if (keepChange) { c.s.tipped = true; c.s.tipHeard = c.heard; c.say("tip_thanks"); return; }
-  if (given && given > total) c.say("change_is", { price: given - total });
-  else if (total % 10000 !== 0 && !given) c.say("change_back");
+  if (keepChange) { c.s.tipped = true; c.s.tipHeard = c.heard; c.say("tip_thanks"); }
+  // the change aloud only when it's one of the voiced amounts (changeList); dollars: the change in pesos
+  else if (given && given > total) c.say(method === "cash" && CHANGE_SAID.has(given - total) ? "change_is" : "change_back", { amount: given - total });
+  else if (!given && (method === "dollars" || !!c.s.given || total % 10000 !== 0)) c.say("change_back");
   else c.say("cash_thanks");
+  if (c.s.receiptWanted) giveReceipt(c);
 }
 
 export default gas;
