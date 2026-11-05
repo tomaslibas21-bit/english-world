@@ -761,6 +761,7 @@ describe("30. what the voices say: the neutral noun, letter names, capitals", ()
     ent("jitomate", "jitomate", "tomato", "m", { pl: "jitomates", ltPl: "tomatoes", attrs: { neutral: "tomate" } }),
     ent("lucia", "Cocina | de | Lucía", "Kitchen | of | Lucía", "f", { def: "" as any, attrs: { nat: "Cocina de Lucía" } }),
     ent("latte", "latte", "latte", "m"),
+    ent("licencia", "licencia de manejo", "driver's license", "f", { attrs: { neutral: "licencia de conducir" } }),
   ];
   const look = (id: string) => E.find((e) => e.id === id);
   const c = (src: ReturnType<typeof t>, vars: Record<string, unknown>) => compose(src, vars, { look, addressee: "m", speaker: "f", formal: true });
@@ -771,6 +772,7 @@ describe("30. what the voices say: the neutral noun, letter names, capitals", ()
     try {
       expect(c(s, { X: "jitomate" }).en).toBe("Un kilo de tomates, ¿los quiere maduros?");
       expect(c(t("{X.np}", "{X.np}", "{X.np}"), { X: "jitomate" }).en).toBe("Un tomate");
+      expect(c(t("{X.np}", "{X.np}", "{X.np}"), { X: { id: "licencia", qty: 2 } }).en).toBe("Dos licencias de conducir");
     } finally { setVariety("default"); }
   });
   it("letters as Mexico spells them (B, V, Y), and the neutral names", () => {

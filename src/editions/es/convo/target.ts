@@ -113,14 +113,17 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
 
 /** The neutral Latin American text names a thing with the entity's `attrs.neutral` noun where the Mexican one is
  *  Mexican-only ("tomate" for "jitomate", "camiseta" for "playera", "billetera" for "cartera"): its plural
- *  `attrs.neutralPl` (else the regular one), its gender `attrs.neutralG` (else the head's; it picks the article and the
- *  agreement). The English gloss stays. For a learner's feminine form (`enF`), `attrs.neutralF` (else none). */
+ *  `attrs.neutralPl` (else the regular one, a compound's on its first word), its gender `attrs.neutralG` (else the
+ *  head's; it picks the article and the agreement). The English gloss stays. For a learner's feminine form (`enF`),
+ *  `attrs.neutralF` (else none). */
 export function neutralNoun(e: EntityDef, feminineForm = false): EntityDef {
   const a = e.attrs as Record<string, unknown> | undefined;
   const n = (feminineForm ? a?.neutralF : a?.neutral) as string | undefined;
   if (!n || variety() !== "neutral") return e;
   const g = (a?.neutralG as "m" | "f" | undefined) ?? e.g;
-  return { ...e, en: n, pl: a?.neutralPl as string | undefined, g };
+  // a compound's plural is its first word's: "licencia de conducir" → "licencias de conducir"
+  const pl = (a?.neutralPl as string | undefined) ?? (/^\S+ de /.test(n) ? n.replace(/^\S+/, (w) => pluralEs(w)) : undefined);
+  return { ...e, en: n, pl, g };
 }
 
 /** Entities that describe the player (jobs, nationalities) may carry Spanish feminine forms (`enF`, `plF`, `gF`),
