@@ -47,5 +47,17 @@
   { "ctx": "numbers", "say": "¿Tienes WhatsApp?", "intent": "ask_number" },
   { "ctx": "numbers", "say": "Sigamos en contacto", "intent": "keep_in_touch" },
   { "ctx": "numbers", "say": "Toma mi móvil, apúntalo", "intent": "give_phone", "note": "Spain: móvil" },
-  { "ctx": "numbers", "say": "No quiero darte mi número", "intent": "any", "not": ["number_ctx", "give_phone", "ask_number", "keep_in_touch"], "note": "trap: refusal" }
+  { "ctx": "numbers", "say": "No quiero darte mi número", "intent": "any", "not": ["number_ctx", "give_phone", "ask_number", "keep_in_touch"], "note": "trap: refusal" },
+  { "ctx": "upto", "say": "Pues me fui a vivir a Inglaterra un tiempo y luego volví.", "intent": "news", "note": "audit 5 Nov, blind: past-tense storytelling" },
+  { "ctx": "upto", "say": "Acabé la carrera y encontré trabajo en un hotel.", "intent": "news", "note": "audit 5 Nov, blind" },
+  { "ctx": "upto", "say": "Hace dos años nos vinimos a vivir para acá.", "intent": "news", "note": "audit 5 Nov, blind" },
+  { "ctx": "upto", "say": "Nació mi segundo hijo en enero.", "intent": "news", "note": "audit 5 Nov, blind" },
+  { "ctx": "upto", "say": "He viajado muchísimo.", "intent": "news", "note": "audit 5 Nov, blind" },
+  { "ctx": "upto", "say": "¿Y tú a qué te dedicas ahora?", "intent": "ask_news", "note": "audit 5 Nov, blind" },
+  { "ctx": "coffee", "say": "No se me antoja, gracias.", "intent": ["decline", "yn:no"], "not": ["agree", "coffee_invite", "yn:yes"], "note": "audit 5 Nov, blind: refusal" },
+  { "ctx": "mike_dinner", "say": "Creo que no voy a poder.", "intent": ["decline", "yn:no"], "not": ["good_idea", "agree", "yn:yes"], "note": "audit 5 Nov, blind: refusal" },
+  { "ctx": "mike_dinner", "say": "¿Qué tipo de comida tiene?", "intent": ["dinner_ask_ctx", "ask_restaurant"], "not": ["good_idea", "agree"], "note": "audit 5 Nov, blind" },
+  { "ctx": "numbers", "say": "¿Y cuál es el tuyo?", "intent": ["ask_number", "yours_ctx"], "not": ["mike_yes", "and_you"], "note": "audit 5 Nov, blind" },
+  { "ctx": "numbers", "say": "No, prefiero no dar mi número, perdón.", "intent": ["refuse_number", "decline", "yn:no"], "not": ["number_ctx", "give_phone", "keep_in_touch", "yn:yes"], "note": "audit 5 Nov, blind: refusal" },
+  { "ctx": "numbers", "say": "Ahorita no, gracias.", "intent": ["decline", "no_sorry", "yn:no", "refuse_number"], "not": ["number_ctx", "give_phone", "yn:yes"], "note": "audit 5 Nov, blind: refusal" }
 ] }
