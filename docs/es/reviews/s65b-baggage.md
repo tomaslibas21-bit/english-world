@@ -150,3 +150,89 @@ Kept: the structure, the dog twist, the lane and allowance facts (match ANAM), S
 **For the lead:** the rough rates in `declare_cash` (18 pesos, 0.9 euros to the dollar) only decide "clearly under /
 clearly over"; between 8,500 and 11,500 dollars' worth Medina states the rule. The writer's NEEDS stand (slots.ts
 "diez mil"; PART_VERBS traigo/llevo/traje; TOWN.md task 6 lanes instead of the semáforo).
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts, the ten points of the audit brief. Read: STYLE.md, AUTHORING-ES.md ("Rules from the
+reviews"), the brief, this file, the cross-cutting leads (AUDIT/cross, AUDIT/neutral), the situation file, the corpus and
+the blind set; the transcripts at seeds 3 and 7 (all 18 sims) before and after; about 90 probe turns (tools/probe.ts) at
+every question, offer and the twists. ANAM's "Equipaje y franquicia" re-read on 5 Nov 2026 for the personal-luggage
+answers (below).
+
+**Found 23, fixed 23** (by point: 1:2 2:0 3:0 4:2 5:2 6:0 7:9 8:1 9:7 10:0).
+
+1. **Spanish.** "Depende de cuánto valen" → "valgan" (an unknown value takes the subjunctive; flagged). "Traigo unas
+   manzanas" got "Así que esa manzana se queda aquí": a plural said by the learner now gets "Así que eso se queda aquí"
+   (the existing `stays_here_all`); the snack the officer finds stays singular.
+2. **tú/usted**: usted throughout, the new lines and hints too. Nothing found.
+3. **Names**: Itzel and Agente Medina, no one else of either name in the edition. Nothing found.
+4. **Facts.** "La carne no puede entrar al país" → "La carne fresca no puede entrar al país": SENASICA (as cited above) bars
+   fresh meat, and cured meat already goes to its inspectors here, so the old line contradicted `check_senasica`.
+   "Perfecto. Se la llevamos en menos de 24 horas" was a promise for a bag not found yet → "Perfecto. Normalmente se la
+   llevamos en menos de 24 horas" (as `ans_when` and the other variant say). Checked and kept: the taxis by the exit
+   (s65a says the same), flight PC 482 (the hall's sign), Calle Flamboyán 23 entre Hidalgo y Juárez (TOWN.md), 984 (the
+   Riviera Maya's area code), the 500-dollar allowance, the 10,000-dollar cash line, the lanes, no semáforo.
+5. **Glosses.** `gift_whatif_less` had "no | paga" (S-NEG: one unit, "you don't pay"). The greeting's flag called "se le
+   ofrece" the shopkeeper's formula; Itzel isn't one ("the polite formula of shop and service staff").
+6. **Spelling, ¿¡**: nothing found (the cross-check's candidates are correct: "en que" in "¿Algo más en que le pueda
+   ayudar?" is a relative).
+7. **Questions and offers left open.**
+   - Rule 17: "¿Cuánto cuesta?", "¿Tiene costo?", "¿Cuánto me cobran?" at the delivery offer weren't understood; now the
+     delivery's price (free) and the offer again. At the kit offer they now get the new "No tiene costo, es de cortesía."
+     and, as for any side question there, the short "¿Entonces se lo doy?" (new) instead of the whole offer again.
+   - Rule 10: "No, al hotel no" / "No estoy en un hotel" weren't understood (the last review kept them from booking
+     anything); now Itzel asks "¿Prefiere recogerla aquí, o se la llevamos a otra dirección?" (new, two variants; a bare
+     yes or no gets the other variant; "Llévenla" there means the other address). Its hints: new group `pick_or_addr`.
+   - A delivery to "casa de una amiga" or "un Airbnb" never asked for the street: the bag was to be delivered nowhere.
+     A vague place (no hotel name, no street) now leaves the hotel step open for a delivery, and Itzel asks "¿A qué
+     dirección se la llevamos?"; if the learner said so before the delivery question, it says "a donde se está quedando"
+     (new) instead of "a su hotel". "No sé la dirección" / "Todavía no tengo hotel" looped on "Tómese su tiempo": now
+     "No se preocupe: le llamamos para pedirle la dirección" (new) for a delivery, "No hay problema" for a pickup.
+   - "¿Cuál es su teléfono?" (the desk's number): before the report "En un momento se lo doy", after it "El teléfono viene
+     en esta copia del reporte" (new). At customs it goes back to the desk, like her other topics.
+   - Customs: "¿Qué tengo que declarar?" wasn't understood: "Comida, mercancía de más de 500 dólares y efectivo de más de
+     10,000 dólares" (new; the three rules the conversation teaches). "No sé cuánto valen" at the gifts' question now gets
+     her estimate question (`gift_estimate`, the line the offer probe never reached; read: right).
+   - The dog twist: declaring something allowed at the dog's question ("Sí, unos chocolates", or "comida" → "Unas
+     galletas") ended the twist and the apple or ham sandwich walked through. Now she checks the backpack and finds it
+     ("Permítame revisar su mochila…"), as for a "No"; "Gracias por decirme" is said once.
+8. **Hints.** `dc_can` rendered "¿Puedo traer manzana?" / "…galleta?" / "…sándwich?" for count nouns (the chips offer
+   them): count nouns now in the plural ("¿Puedo traer manzanas?"), mass nouns bare ("¿Puedo traer queso?").
+9. **Accepted answers.**
+   - "¿Puedo traer mi laptop?" was read as "delivery + contents": at the desk a yes to the delivery ("Perfecto. Se la
+     llevamos…"), at customs "Eso lo ve en el mostrador de equipaje" and then waved through as "nothing to declare". The
+     engine reads every person of poder alike (lang.ts), so "puedo traer" matched "pueden traer". New `q_personal` (a
+     question about a laptop, phone, camera, medicines, clothes, liquor or cigarettes): at customs "Eso es parte de su
+     equipaje personal: no hace falta declararlo" (new), at the desk "Eso lo ve en la aduana".
+   - Alcohol and tobacco declarations weren't understood ("Traigo una botella de tequila", "Traigo cigarros", and after
+     "¿Qué trae?" "Una botella de tequila"): new `personal_ctx` at customs only, the same answer, nothing declared, the dog's
+     question still open. Only one to three bottles are read (ANAM: an adult's luggage takes up to 3 liters of liquor and
+     6 of wine, 20 packs of cigarettes, 25 cigars); "diez botellas" stays not understood. Vapes are left out on purpose
+     (Mexico bans bringing them in): "¿Puedo traer un vapeador?" is a trap. "No traigo alcohol ni tabaco" is now a no.
+   - Whole sentences: "Llegué hace una hora en el vuelo de Houston", "Mi vuelo fue el 482 de Houston", "Le doy mi número:
+     984…", "¿A qué hora me la traen?", "Mejor a la casa de mi amiga" / "A otra dirección" (at the delivery question and
+     the new one only), "Traigo unos regalos, pero valen menos de quinientos dólares" (the value is taken; "Traigo unos
+     regalos y más de diez mil dólares" stays gifts + cash, the sim holds it).
+   - Rule 9 (say it once): when the learner asked "¿Cuándo…?" first, the yes to the delivery gets "Muy bien" instead of
+     the time again.
+10. **Neutral text**: the seven twins (pase de abordar → tarjeta de embarque, listón → cinta, playera → camiseta) say the
+    same; no new line has a Mexican-only word; nothing untwinned.
+
+**Spoken lines for the voices:** changed `delivery_ok`[0], `not_allowed_meat`, `ans_pay_depends` (`gift_whatif_less`'s
+text is unchanged); new `ask_delivery_stay`, `ask_pickup_or_address` (2), `addr_later`, `ans_kit_free`, `kit_again`,
+`ans_contact`, `ans_personal`, `ans_what_declare`; hints `dc_can` (count nouns now plural) and the group `pick_or_addr`.
+No templated value is new (no price, time or number list grows). Ids, steps and phases are unchanged; the new pending
+`pickup_or_address` has no picture of its own, so the scene keeps the current one.
+
+**Tests:** 20 NLU tests (2 old traps now have their intended reading: "No, al hotel no", "No sé el nombre del hotel"),
+4 sims (prices at the offers and "not to the hotel"; a friend's house without the address; customs questions and gifts
+with their value; tequila, then the dog and the chocolates). Corpus 242/242 → 289/289, false accepts 0/37 → 0/43; blind
+set 53/56 → 53/56 (the same three `_ctx` readings, meaning right).
+
+**Kept as written:** "Lamento escuchar eso" (common in Mexican service talk), "Gracias por decirme", "¿Tiene alguna seña
+particular?", the twist's "Llega mañana en el primer vuelo", "¿Me la puedo comer aquí?" unanswered (what happens to the
+food stays untaught, as the review above decided).
+
+**For the lead:** (shared, lang.ts) every person of poder is one class, so "Yo puedo llevarla" at the delivery offer is
+still read as "pueden llevarla" (a delivery yes); only a whole-sentence intent can beat it, as `q_personal` does. The
+brief says the conversation teaches "reclamo de equipaje": only the hall's sign says it, no line does.
