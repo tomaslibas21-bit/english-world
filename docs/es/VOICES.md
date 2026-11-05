@@ -314,13 +314,14 @@ VOICE-LIST.md):
 - **The checks.** `check-list-es.ts` plays other runs than the list's (from run #1000, the sims on three seeds, the
   probes) and checks every clip they say is in the list, every (line, speaker) pair, and counts the clips made from a
   guess nobody was heard saying (junk); `values-es.ts --lines=` does the same for values with the cuts.
-- **What it changed** (spanish-edition 8b8571ab, 48 of 50 audits in; the old tools against the new on the same lines):
-  83,324 → 83,729 clips for both sets (+2,233 −1,828 texts); `plan` $32.05 → $32.19, fitted to the samples' tokens
-  (`project m1 m1b`, 5% redos) $28.63 → $28.70. Added: new speakers for a line 1,295 (1,186 of them s73's totals in
-  Lucía's voice, said when she holds the floor at the goodbye; 86 Don Arturo's answers in s70), lines with two
-  placeholders 582, plural hints and items 338. Removed: never-said item lists and kinds (s91b, s65b, s74, s35, p28, s73…), s76's 110 pairs, the audits'
-  value rules, p26's recorded message's global lines. The list is made in about 6 min instead of 19 (one pass, the
-  shared language model). The shared notes' VOICE-LIST.md has the table per conversation.
+- **What it changed** (spanish-edition a7c55688, all 50 audits in; the old tools against the new on the same lines):
+  83,330 → 87,325 clips for both sets (+5,709 −1,714 texts); `plan` $32.05 → $34.04, fitted to the samples' tokens
+  (`project m1 m1b`, 5% redos) $28.62 → $30.50. Added: lost items and bags described (s91a, s91b, s65b) 3,434, the
+  other code-read pairs 652 (s71a, s32, s74, p26…), new speakers for a line 1,301 (1,186 of them s73's totals in
+  Lucía's voice, said when she holds the floor at the goodbye; 86 Don Arturo's answers in s70), plural hints and items
+  294. Removed: never-said item lists and kinds (s74, s35, s91b, s65b, p28, s73…), s76's 110 pairs, the audits' value
+  rules, p26's recorded message's global lines. The list is made in about 7 min instead of 25 (one pass, the shared
+  language model). The shared notes' VOICE-LIST.md has the table per conversation.
 
 ### What it costs
 
