@@ -1,6 +1,6 @@
 { "situation": "s34-meeting", "items": [
   { "ctx": "mute", "say": "Sara, estás en silencio", "intent": "tell_mute" },
-  { "ctx": "mute", "say": "Sara, no te escuchamos", "intent": "tell_mute" },
+  { "ctx": "mute", "say": "Sara, no te escuchamos", "intent": ["tell_mute", "tell_mute_ctx"], "note": "tell_mute_ctx is the same handling (audit 5 Nov: the item named only tell_mute)" },
   { "ctx": "mute", "say": "Sara, tienes el micrófono apagado", "intent": "tell_mute" },
   { "ctx": "mute", "say": "Hola a todos, buenos días", "intent": "greet_team" },
 

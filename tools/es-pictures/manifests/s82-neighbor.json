@@ -28,16 +28,18 @@
     },
     {
       "id": "s82-neighbor/trash", "moment": "trash_q",
-      "phases": ["trash_q"],
+      "phases": ["needs"],
       "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
       "prompt": "Change only her pose: Doña Lupita cups one hand behind her ear and points down toward the street with the other, eyebrows raised, explaining with a knowing smile that you listen for the garbage truck's bell.",
+      "note": "5 Nov audit: shown with needs, where she explains the garbage truck's bell; her «¿Necesita algo?» (trash_q) shows needs (the two were one step off).",
       "out": "public/scenes-es/s82-neighbor/trash.webp"
     },
     {
       "id": "s82-neighbor/needs", "moment": "needs",
-      "phases": ["needs"],
+      "phases": ["trash_q"],
       "refs": ["edit:s82-neighbor/hello", "person:cast/rita"],
       "prompt": "Change only her pose: Doña Lupita leans against the door frame with her arms loosely folded, a kind, helpful smile, asking whether the learner needs anything.",
+      "note": "5 Nov audit: shown with trash_q, her «¿Necesita algo? Pregúnteme con confianza».",
       "out": "public/scenes-es/s82-neighbor/needs.webp"
     },
     {

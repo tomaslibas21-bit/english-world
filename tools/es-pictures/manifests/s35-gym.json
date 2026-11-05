@@ -114,6 +114,7 @@
         "person:cast/jordan"
       ],
       "prompt": "Change only her pose and place: she now stands beside the leg press, a white towel lying on its seat, and points at the towel with one hand, eyebrows raised with a playful look (someone may be using it: ask if it's free).",
+      "note": "5 Nov audit: remade (the leg press with the towel stood in the right third (under the panel on computers) and her own towel was gone) as an edit of warmup (regular API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s35-gym/machine.webp"
     },
     {
@@ -144,6 +145,7 @@
         "person:cast/jordan"
       ],
       "prompt": "Change only her pose and place: she stands beside the leg press holding up three fingers, coaching with a confident smile (\"Tres series de diez\").",
+      "note": "5 Nov audit: remade (she stood at the warm-up spot, not at the leg press, for «Siéntate aquí, pon los pies en la plataforma») as an edit of machine (Batch API); the audit manifest in the work folder's audit/ holds the prompt. Round 2: her towel put back on her shoulder (an edit of its own picture with machine as a reference).",
       "out": "public/scenes-es/s35-gym/sets.webp"
     },
     {
@@ -159,6 +161,7 @@
         "person:cast/jordan"
       ],
       "prompt": "Change only her pose and place: she crouches a little beside the leg press, one fist pumped and the index finger of the other hand raised, cheering with an excited, encouraging face (\"¡Una más!\").",
+      "note": "5 Nov audit: remade (it showed the warm-up spot, not the leg press the learner is on) as an edit of machine (regular API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s35-gym/rep.webp"
     },
     {
@@ -178,7 +181,7 @@
       ],
       "prompt": "Change only her pose and place: she stands beside the leg press holding up one open hand in a calm stop gesture, leaning toward the learner with a concerned, caring face (\"¡Uy! ¿Estás bien?\").",
       "out": "public/scenes-es/s35-gym/careful.webp",
-      "note": "Also the easy stretching that replaces the weights after the pain (pending id stretch)."
+      "note": "Also the easy stretching that replaces the weights after the pain (pending id stretch). 5 Nov audit: remade (it showed the warm-up spot, not the leg press the learner is on) as an edit of machine (regular API); the audit manifest in the work folder's audit/ holds the prompt."
     },
     {
       "id": "s35-gym/spot",

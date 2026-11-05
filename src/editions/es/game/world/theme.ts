@@ -5,7 +5,7 @@
 // vehicles and the town's sounds; and the last details (5 Nov 2026): every speaker in the conversation's picture, the
 // last props from Maple Harbor, calle Uxmal, the cenote and the ruins. What is still to do is in docs/es/TOWN.md.
 import type { TownTheme } from "../../../../game/world/theme";
-export type { BuildingLook, OutdoorSpot, TownTheme } from "../../../../game/world/theme";
+export type { BuildingLook, OutdoorSpot, TianguisGoods, TownTheme } from "../../../../game/world/theme";
 
 export const THEME: TownTheme = {
   // --- the rooms and the conversations' spots (docs/es/TOWN.md tasks 6 and 7, "Every conversation's spot") ---
@@ -165,7 +165,9 @@ export const THEME: TownTheme = {
     "FOR SALE $9,000": "SE VENDE",
     "Party → backyard": "Fiesta → al patio",
   },
-  malecon: { kiosk: [-44, -64.6], kioskSign: "Tours a los cenotes", plaque: "Malecón" },
+  // (the tours kiosk between the bench at x -40 and the pier's boardwalk, clear of the lamp post at x -44 that stood
+  // across its window)
+  malecon: { kiosk: [-37, -64.6], kioskSign: "Tours a los cenotes", plaque: "Malecón" },
   palapas: [[-90, -69], [-80, -69.2], [-64, -68.9], [-55, -69.1], [-6, -69], [3, -69.2], [31, -69], [42, -69.2], [52, -68.9], [76, -69], [90, -69.2], [100, -69]],
   lanchas: {
     afloat: [[-46, -77, 0.3, "#e4007c"], [-14, -80, -0.4, "#f6a800"], [14, -87, 0.8, "#1f6fd1"], [40, -82, 2.6, "#7ac143"]],
@@ -233,4 +235,31 @@ export const THEME: TownTheme = {
   // rocky point past the beach's west end (s69: half an hour on foot)
   cenote: { x: -136, z: -6, sign: "Cenote Ka'an" },
   ruins: { x: -124, z: -74 },
+
+  // Graphics, round 1 (docs/es/TOWN.md "Graphics, round 1"): the Caribbean's colors, the Saturday tianguis, rooms
+  // that look Mexican. The sea from the shore out: the sand showing through, turquoise, aqua, then deep blue
+  sea: { shore: "#9be6d8", shallow: "#3fd0c6", mid: "#1aa8c2", deep: "#1663a3", shallowTo: 26, midTo: 62 },
+  // s91a: the tianguis on the zócalo on Saturday mornings, Doña Mari's flowers among its stalls. The square's four
+  // stalls (layout.ts STALLS: flowers, fruit, veg, bread) and five more along the north and west sides, under lonas in
+  // the market's colors (one per stall, in that order), clear of everyone's spot, the talk spots, the pigeons' ring
+  // round the kiosco, the chatting pair, the benches and the elote cart
+  tianguis: {
+    lonas: ["#e4007c", "#f77f00", "#1f6fd1", "#2a9d5c", "#1f6fd1", "#f6c000", "#e4007c", "#f6c000", "#f77f00"],
+    signs: {
+      flowers: ["Flores", "Doña Mari"], fruit: ["Frutas", "mango · papaya · piña"], veg: ["Verduras", "frescas del día"],
+      bread: ["Pan dulce", "conchas · cuernos"], pinatas: ["Piñatas", "para toda fiesta"], pottery: ["Barro", "ollas · cazuelas · jarritos"],
+      hats: ["Sombreros", "de palma"], hammocks: ["Hamacas", "de Yucatán"], textiles: ["Rebozos", "y sarapes"],
+    },
+    stalls: [
+      { x: 20, z: -43, rot: 0, goods: "pinatas" }, { x: 32, z: -43, rot: 0, goods: "pottery" }, { x: 44, z: -43.5, rot: 0, goods: "hats" },
+      { x: 10, z: -38, rot: Math.PI / 2, goods: "hammocks" }, { x: 10, z: -28, rot: Math.PI / 2, goods: "textiles" },
+    ],
+  },
+  roomLooks: {
+    // Correos de México's rosa mexicano (the counter, the rugs and the sign are interiors.ts's, `mailbox`)
+    "post-office": { accent: "#c2006a" },
+    // Diego and Natalia's house: a warm ceramic tile floor, warm light walls, terracotta baseboards (and `homeMx`)
+    "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b" },
+  },
+  homeMx: true,
 };

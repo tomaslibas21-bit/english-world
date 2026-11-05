@@ -9,6 +9,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rand, roundRect, type Colliders } from "./util";
+import type { TianguisGoods } from "./theme";
 
 export type Part = [THREE.BufferGeometry, THREE.ColorRepresentation];
 type Face = "n" | "s" | "e" | "w";
@@ -354,28 +355,55 @@ export function houseFront(parts: Part[], P: (u: number, v: number) => [number, 
   for (let i = 0; i < 5; i++) parts.push([new THREE.OctahedronGeometry(0.1).translate(mx + Math.cos(i * 1.3) * 0.32, 1.05 + (i % 2) * 0.2, mz + Math.sin(i * 1.3) * 0.32), "#e63946"]);
 }
 
-/** Bougainvillea climbing a front wall beside the door and spilling along its top: a thick cascade of leaves and
- *  magenta and pink bracts down one side, and a crown along the top that hangs over the wall. `P(u, v)` as for
- *  houseFront; `u0` where it grows, `span` how far the crown reaches each way, `top` the wall's height. */
+/** Bougainvillea climbing a front wall beside the door and spilling along its top: a woody trunk from the ground that
+ *  branches out, the leaves as clumps flattened against the wall, close enough to overlap into one mass that fans out
+ *  towards the top, the magenta bracts in clusters over its outside, and a crown along the top of the wall, thickest
+ *  over the trunk and thinner towards its ends, that spills over the top. `P(u, v)` as for houseFront; `u0` where it
+ *  grows, `span` how far the crown reaches each way, `top` the wall's height. */
 export function bougainvillea(parts: Part[], P: (u: number, v: number) => [number, number], u0: number, span: number, top: number, seed: number) {
   const r = rand(seed);
-  const pinks = ["#d6247a", "#e0479e", "#b5179e", "#f15bb5", "#c9184a"];
-  // (octahedra turned every which way: eight triangles a clump)
-  const blob = (u: number, y: number, s: number) => {
-    const [x, z] = P(u, 0.12 + s * 0.7 + r() * 0.12);
-    const g = new THREE.OctahedronGeometry(s, 0).rotateX(r() * 3).rotateY(r() * 3).scale(1, 0.85, 0.75).translate(x, y, z);
-    parts.push([g, r() < 0.32 ? (r() < 0.5 ? "#3f7d3a" : "#2f6b34") : pinks[Math.floor(r() * pinks.length)]]);
+  const LEAVES = ["#3f7d3a", "#2f6b34", "#4a8a3c"], PINKS = ["#f2369a", "#e62e8a", "#ff4fa8", "#d81b7a", "#c2187f"];
+  // the wall's frame: x along it, y up, z out of it (P's v), for shapes flattened against it
+  const [ox, oz] = P(0, 0), [nx, nz] = P(0, 1);
+  const out = new THREE.Vector3(nx - ox, 0, nz - oz).normalize(), up = new THREE.Vector3(0, 1, 0);
+  const frame = new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(up, out), up, out);
+  const at = (g: THREE.BufferGeometry, u: number, y: number, v: number, c: string) => { const [x, z] = P(u, v); parts.push([g.applyMatrix4(frame).translate(x, y, z), c]); };
+  const clump = (u: number, y: number, v: number, s: number, c: string, wide: number, flat: number) => at(new THREE.IcosahedronGeometry(s, 0).rotateZ(r() * Math.PI).scale(wide, 0.78 + r() * 0.18, flat), u, y, v, c);
+  const leaves = (u: number, y: number, s: number, v = 0.2) => clump(u, y, v, s, LEAVES[Math.floor(r() * LEAVES.length)], 1.35, 0.42);
+  const bracts = (u: number, y: number, s: number, v = 0.36) => clump(u, y, v, s, PINKS[Math.floor(r() * PINKS.length)], 1.2, 0.55);
+  // the trunk, leaning a little, and two branches from it towards the sides of the mass
+  const lean = (r() - 0.5) * 0.4, fork = 1.5;
+  const stem = (pts: [number, number][], r0: number) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ua, ya] = pts[i], [ub, yb] = pts[i + 1];
+      const [xa, za] = P(ua, 0.1), [xb, zb] = P(ub, 0.1);
+      const a = new THREE.Vector3(xa, ya, za), b = new THREE.Vector3(xb, yb, zb);
+      const g = new THREE.CylinderGeometry(r0 * 0.8, r0, a.distanceTo(b) + 0.04, 5, 1, true);
+      g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, b.clone().sub(a).normalize())).translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+      parts.push([g, "#6b4a2f"]);
+    }
   };
-  // the cascade: from the ground up, widening towards the top
-  for (let y = 0.35; y < top - 0.6; y += 0.32) {
-    const w = 0.35 + (y / top) * 0.6;
-    for (let k = 0; k < 2; k++) blob(u0 + (r() - 0.5) * w * 2, y + r() * 0.2, 0.22 + r() * 0.12);
+  stem([[u0, 0], [u0 + lean * 0.5, 0.8], [u0 + lean, fork]], 0.07);
+  for (const s of [-1, 1]) stem([[u0 + lean, fork], [u0 + lean + s * 0.45, fork + 0.9], [u0 + lean + s * 0.7, fork + 2.0]], 0.045);
+  // the mass: rows of clumps fanning out from just under the fork to the top, leaves and bracts over them (about a
+  // thousand triangles a plant: the town draws them all in one mesh, at every view)
+  const rows = Math.max(3, Math.round((top - fork + 0.3) / 0.75));
+  for (let k = 0; k < rows; k++) {
+    const f = k / (rows - 1), y = fork - 0.3 + f * (top - fork - 0.1);
+    const half = 0.3 + f * 1.25, n = 1 + Math.round(half / 0.68);
+    for (let i = 0; i < n; i++) {
+      const u = u0 + lean + (n === 1 ? 0 : -half + (2 * half * i) / (n - 1)) + (r() - 0.5) * 0.25, yy = y + (r() - 0.5) * 0.25;
+      leaves(u, yy, 0.5 + r() * 0.14);
+      if (r() < 0.75) bracts(u + (r() - 0.5) * 0.45, yy + (r() - 0.3) * 0.35, 0.3 + r() * 0.1);
+    }
   }
-  // the crown along the top of the wall, thickest over the stem, hanging down as it goes
-  const n = Math.round(span * 13);
-  for (let i = 0; i < n; i++) {
-    const t = (r() - 0.5) * 2, u = u0 + t * span;
-    blob(u, top - 0.15 - r() * (0.5 + (1 - Math.abs(t)) * 0.9), 0.22 + r() * 0.16);
+  // the crown along the top: thickest over the trunk, thinner towards its ends, spilling over the wall's top
+  const n = Math.max(3, Math.round(span * 1.9));
+  for (let i = 0; i <= n; i++) {
+    const t = (i / n) * 2 - 1, mid = 1 - Math.abs(t), u = u0 + lean + t * span + (r() - 0.5) * 0.2;
+    leaves(u, top - 0.05 - mid * 0.3, 0.44 + mid * 0.2, 0.12);
+    bracts(u + (r() - 0.5) * 0.35, top + 0.02 - mid * 0.2, 0.28 + mid * 0.08, 0.3);
+    if (r() < 0.5) bracts(u + (r() - 0.5) * 0.3, top + 0.22, 0.17 + r() * 0.06, 0.05);
   }
 }
 
@@ -446,6 +474,18 @@ export function church(parts: Part[], col: Colliders, x: number, z: number, face
   blockRect(col, x, z, rot, -W / 2 - 0.3, W / 2 + 0.3, -D, 0);
 }
 
+/** The church's boxes for the follow camera (town.ts `Town.occluders`): the nave and its facade up to the vault, and the
+ *  espadaña up to its crest, in the town's coordinates, with a margin as Game.ts gives the buildings'. */
+export function churchBoxes(x: number, z: number, face: Face) {
+  const rot = faceRot(face), c = Math.cos(rot), s = Math.sin(rot), m = 0.4;
+  const box = (x0: number, x1: number, z0: number, z1: number, h: number) => {
+    const pts = [[x0, z0], [x1, z0], [x0, z1], [x1, z1]].map(([lx, lz]) => [x + lx * c + lz * s, z - lx * s + lz * c]);
+    const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
+    return { x0: Math.min(...xs) - m, x1: Math.max(...xs) + m, z0: Math.min(...zs) - m, z1: Math.max(...zs) + m, h };
+  };
+  return [box(-4.7, 4.7, -10, 0.25, 9.8), box(-3.4, 3.4, -0.65, 0.05, 14.2)];
+}
+
 // ------------------------------------------------------------------------------------------------ street furniture
 
 /** A street sign post at a corner: a pole and two name blades, one along each street (both read from both sides). */
@@ -468,9 +508,9 @@ export function tope(parts: Part[], col: Colliders, atlas: SignAtlas, word: stri
   const len = Math.hypot(x2 - x1, z2 - z1), n = Math.max(2, Math.round(len / 0.6)), rot = Math.atan2(x2 - x1, z2 - z1);
   for (let i = 0; i < n; i++) {
     const f = (i + 0.5) / n, piece = len / n;
-    // a half cylinder lying across the road, its hump up, flattened
-    const g = new THREE.CylinderGeometry(0.4, 0.4, piece, 6, 1, true, -Math.PI / 2, Math.PI).rotateX(-Math.PI / 2).rotateZ(Math.PI / 2).rotateX(Math.PI / 2);
-    g.scale(1, 0.25, 1);
+    // a closed cylinder lying along the bump's line (across the road), squashed into a hump 0.1 m high and 0.8 m
+    // wide, its middle at the road's surface (the lower half is under it)
+    const g = new THREE.CylinderGeometry(0.4, 0.4, piece, 12).rotateX(Math.PI / 2).scale(1, 0.25, 1);
     parts.push([place(g, x1 + (x2 - x1) * f, z1 + (z2 - z1) * f, rot), i % 2 ? "#2a2a2a" : "#f2c230"]);
   }
   parts.push([cyl(0.04, 0.04, 2.3, sx, 1.15, sz, 6), "#7d868c"]);
@@ -640,7 +680,7 @@ const drawBuzon: Draw = (x, w, h) => {
 /** A Correos de México buzón where Maple Harbor's post office has its blue mailbox: a box in rosa mexicano on a grey
  *  post, a lime-green rounded top and band, the slot, and its plate ("BUZÓN · Correos de México"). Its foot at (x, z),
  *  the slot facing `rot`. (The collider is the old mailbox's.) */
-export function buzon(parts: Part[], atlas: SignAtlas, x: number, z: number, rot: number) {
+export function buzon(parts: Part[], atlas: SignAtlas | null, x: number, z: number, rot: number) {
   const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
   const PINK = "#e4007c", LIME = "#9bc53d", GREY = "#5f6368";
   add(box(0.42, 0.04, 0.36, 0, 0.02, 0), GREY);
@@ -650,6 +690,12 @@ export function buzon(parts: Part[], atlas: SignAtlas, x: number, z: number, rot
   add(new THREE.CylinderGeometry(0.25, 0.25, 0.6, 14, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).scale(1, 0.55, 0.96).translate(0, 1.5, 0), LIME);
   add(box(0.36, 0.04, 0.03, 0, 1.38, 0.235), "#2a2a2a"); // the slot
   add(box(0.42, 0.012, 0.05, 0, 1.415, 0.238), "#c2006a");
+  if (!atlas) {
+    // (in a room, which has no sign atlas: the plate without its words)
+    add(box(0.46, 0.23, 0.012, 0, 1.1, 0.236), "#ffffff");
+    add(box(0.38, 0.08, 0.014, 0, 1.14, 0.237), PINK);
+    return;
+  }
   const o = new THREE.Vector3(0, 0, 0.237).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
   atlas.add("buzon", 256, 128, drawBuzon, 0.46, 0.23, x + o.x, 1.1, z + o.z, rot);
 }
@@ -794,3 +840,232 @@ export function ruins(parts: Part[], x: number, z: number) {
   // and the jungle at the land's edge
   for (const [jx, jz, s] of [[-5.5, 3.5, 2.2], [5.8, 3.0, 2.4], [7.5, -1.5, 1.8], [-8.5, 0.5, 1.9]] as [number, number, number][]) jungle(parts, r, x + jx, 0, z + jz, s);
 }
+
+// ------------------------------------------------------------------------------------------------ the tianguis
+
+const POLE = "#7d868c", TIN = "#a3abb2", CLAY = ["#b5562f", "#c4683a", "#a24a2a", "#cf7a45"];
+/** A tianguis stall's extents in its own frame (x across, z towards the customers): the solid table and the lona. */
+export const STALL_SIZE = { table: { x: 2.1, z0: -0.9, z1: 0.9 }, lona: { x: 2.25, z0: -1.5, z1: 1.7 } };
+const CLOTHS = ["#f4f1ea", "#e9f2f7", "#fdf3d7", "#f7e1ea"];
+/** A color made darker (for a sign's letters in its lona's color). */
+const darker = (hex: string, k = 0.72) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * k).toString(16).padStart(2, "0")).join("");
+
+/** A tianguis stall (theme.ts `tianguis`; s91a) made round (x, z), its front (where the customers stand) towards `rot`
+ *  (0: +z): a table under an oilcloth, four poles (the front two out over the customers' side) with the bars a lona is
+ *  tied to, the lona itself tilted down to the front and sagging a little between the bars, with a white valance;
+ *  the goods on the table (and in front of it, or hanging from the frame), and the stall's painted sign standing on
+ *  the front bar, where it hides nobody's face. The table and the front poles are solid. */
+export function tianguisStall(parts: Part[], goodsParts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, rot: number, goods: TianguisGoods, lona: string, sign: [string, string], seed: number) {
+  const r = rand(seed);
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  const addGoods = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => goodsParts.push([place(g, x, z, rot), c]);
+  // the table
+  const W = 4.0, D = 1.5, H = 0.85, cloth = CLOTHS[Math.floor(r() * CLOTHS.length)];
+  add(box(W, 0.05, D, 0, H - 0.025, 0), "#a87b4f");
+  add(box(W + 0.04, 0.012, D + 0.04, 0, H + 0.006, 0), cloth);
+  add(box(W + 0.04, 0.42, 0.012, 0, H - 0.2, D / 2 + 0.025), cloth);
+  for (const s of [-1, 1]) for (const t of [-1, 1]) add(box(0.06, H - 0.05, 0.06, s * (W / 2 - 0.25), (H - 0.05) / 2, t * (D / 2 - 0.12)), "#6f5236");
+  // the frame
+  const zb = -1.0, zf = 1.45, yb = 2.8, yf = 2.57, xp = 1.95;
+  for (const s of [-1, 1]) {
+    add(new THREE.CylinderGeometry(0.035, 0.035, yb, 6, 1, true).translate(s * xp, yb / 2, zb), POLE);
+    add(new THREE.CylinderGeometry(0.035, 0.035, yf, 6, 1, true).translate(s * xp, yf / 2, zf), POLE);
+  }
+  add(box(2 * xp + 0.1, 0.05, 0.05, 0, yb, zb), POLE);
+  add(box(2 * xp + 0.1, 0.05, 0.05, 0, yf, zf), POLE);
+  // the lona, seen from above and from below, and its valance
+  const L0 = STALL_SIZE.lona.z0, L1 = STALL_SIZE.lona.z1, LW = 2 * STALL_SIZE.lona.x;
+  const yAt = (lz: number) => yb + 0.03 + (yf - yb) * ((lz - zb) / (zf - zb));
+  for (const down of [false, true]) {
+    const g = new THREE.PlaneGeometry(LW, L1 - L0, 8, 4).rotateX(down ? Math.PI / 2 : -Math.PI / 2);
+    const p = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < p.count; i++) {
+      const lx = p.getX(i), lz = p.getZ(i) + (L0 + L1) / 2;
+      const along = Math.min(1, Math.max(0, (lz - zb) / (zf - zb)));
+      p.setXYZ(i, lx, yAt(lz) - 0.11 * Math.sin(Math.PI * (lx / LW + 0.5)) * Math.sin(Math.PI * along) - (down ? 0.015 : 0), lz);
+    }
+    g.computeVertexNormals();
+    add(g, lona);
+  }
+  for (const s of [1, -1]) add(new THREE.PlaneGeometry(LW, 0.2).rotateY(s > 0 ? 0 : Math.PI).translate(0, yAt(L1) - 0.1, L1 + s * 0.004), "#f4f1ea");
+  // the painted sign standing on the front bar, on a board (its back seen from behind)
+  const ink = darker(lona.toLowerCase() === "#f6c000" ? "#c98a00" : lona);
+  add(box(1.78, 0.56, 0.03, 0, yf + 0.33, zf), "#3b2a20");
+  const o = new THREE.Vector3(0, 0, zf + 0.02).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  atlas.add("tianguis:" + sign.join("|") + ink, 512, 160, drawPainted(sign[0], sign[1], "#fff6dc", ink, "#3b2a20"), 1.72, 0.52, x + o.x, yf + 0.33, z + o.z, rot);
+  // solid: the table, the front poles
+  blockRect(col, x, z, rot, -STALL_SIZE.table.x, STALL_SIZE.table.x, STALL_SIZE.table.z0, STALL_SIZE.table.z1);
+  for (const s of [-1, 1]) { const q = new THREE.Vector3(s * xp, 0, zf).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot); col.addCircle(x + q.x, z + q.z, 0.08); }
+  STALL_GOODS[goods](addGoods, r, H);
+}
+
+/** A crate of produce for the stalls (lighter than the mercado's huacal: the stalls show dozens): the box, its
+ *  shadowed inside and the top layer of `fruit`. */
+function crate(add: Add, x: number, y: number, z: number, fruit: string) {
+  add(box(0.5, 0.26, 0.34, x, y + 0.13, z), "#cfa86e");
+  add(box(0.52, 0.05, 0.36, x, y + 0.2, z), "#b38b55");
+  add(box(0.44, 0.02, 0.28, x, y + 0.25, z), "#7a5a32");
+  for (let i = 0; i < 6; i++) add(new THREE.OctahedronGeometry(0.075, 0).translate(x - 0.15 + (i % 3) * 0.15, y + 0.29, z - 0.07 + Math.floor(i / 3) * 0.14), fruit);
+}
+
+type Add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => void;
+
+/** What each kind of stall shows, in its frame (the table top at height h, from x -2 to 2 and z -0.75 to 0.75, the
+ *  customers at +z). */
+const STALL_GOODS: Record<TianguisGoods, (add: Add, r: () => number, h: number) => void> = {
+  // Doña Mari's flowers: buckets of roses, sunflowers (girasoles), cempasúchil, gerberas and white callas on the table,
+  // tall gladiolas in buckets on the ground in front
+  flowers: (add, r, h) => {
+    const bunch = (bx: number, by: number, bz: number, c: string, tall: number) => {
+      add(new THREE.CylinderGeometry(0.15, 0.12, 0.3, 8).translate(bx, by + 0.15, bz), TIN);
+      add(new THREE.ConeGeometry(0.2, tall, 6).rotateX(Math.PI).translate(bx, by + 0.3 + tall / 2, bz), "#3f7d3a");
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + r(), d = i ? 0.1 : 0;
+        add(new THREE.OctahedronGeometry(0.075, 0).translate(bx + Math.cos(a) * d, by + 0.3 + tall + (i ? -0.03 : 0.04), bz + Math.sin(a) * d), c);
+      }
+    };
+    const sunflower = (bx: number, by: number, bz: number) => {
+      add(new THREE.CylinderGeometry(0.15, 0.12, 0.3, 8).translate(bx, by + 0.15, bz), TIN);
+      for (let i = 0; i < 3; i++) {
+        const fx = bx + (i - 1) * 0.11, fy = by + 0.75 + (i % 2) * 0.12, fz = bz + 0.04;
+        add(new THREE.CylinderGeometry(0.012, 0.012, fy - by - 0.3, 4, 1, true).translate(fx, (fy + by + 0.3) / 2, fz - 0.03), "#3f7d3a");
+        add(new THREE.CylinderGeometry(0.12, 0.12, 0.025, 10).rotateX(Math.PI / 2 - 0.35).translate(fx, fy, fz), "#ffc300");
+        add(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 8).rotateX(Math.PI / 2 - 0.35).translate(fx, fy + 0.005, fz + 0.012), "#5a3a1a");
+      }
+    };
+    const cols = ["#d62839", "#f77f00", "#ff8fab", "#f8f4ec", "#e4007c", "#ffd166"];
+    [-1.6, -1.05, -0.5, 0.6, 1.15, 1.65].forEach((bx, i) => bunch(bx, h, -0.32 + (i % 2) * 0.12, cols[i], 0.32 + r() * 0.12));
+    for (const bx of [-0.95, 1.4]) bunch(bx, h, 0.35, cols[(Math.floor(r() * 6))], 0.25);
+    sunflower(0.05, h, -0.2);
+    // gladiolas: tall spikes of color in buckets on the ground, in front of the table's ends
+    for (const [bx, c] of [[-1.55, "#e4007c"], [-1.15, "#f8f4ec"], [1.2, "#d62839"], [1.6, "#ff8fab"]] as [number, string][]) {
+      add(new THREE.CylinderGeometry(0.17, 0.14, 0.38, 8).translate(bx, 0.19, 1.05), TIN);
+      for (let i = 0; i < 4; i++) add(new THREE.ConeGeometry(0.05, 0.7, 5).translate(bx + (i % 2 ? 0.06 : -0.06), 0.75 + (i % 2) * 0.08, 1.05 + (i < 2 ? 0.05 : -0.05)), c);
+      add(new THREE.ConeGeometry(0.14, 0.5, 5).rotateX(Math.PI).translate(bx, 0.6, 1.05), "#3f7d3a");
+    }
+  },
+  // fruit: huacales of mangos, oranges and limes, papayas, pineapples, half a watermelon
+  fruit: (add, r, h) => {
+    const MANGO = "#f4b400", ORANGE = "#f77f00", LIME = "#3f9b2f";
+    crate(add, -1.45, h, -0.15, MANGO); crate(add, -0.85, h, -0.15, ORANGE); crate(add, -1.15, h, 0.3, MANGO);
+    crate(add, 0.35, h, 0.25, LIME);
+    for (let i = 0; i < 3; i++) add(new THREE.SphereGeometry(0.1, 6, 4).scale(1, 1, 1.8).rotateY(0.3 + i * 0.4).translate(-0.15 + i * 0.22, h + 0.09, -0.3 + (i % 2) * 0.08), i % 2 ? "#f28c28" : "#9bbf3b");
+    for (let i = 0; i < 3; i++) {
+      const px = 0.85 + i * 0.32, pz = -0.25 + (i % 2) * 0.2;
+      add(new THREE.SphereGeometry(0.12, 6, 4).scale(1, 1.35, 1).translate(px, h + 0.16, pz), "#c98b2b");
+      add(new THREE.ConeGeometry(0.09, 0.22, 5).translate(px, h + 0.42, pz), "#3f7d3a");
+    }
+    add(new THREE.SphereGeometry(0.26, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.9, 1.2).translate(1.55, h, 0.3), "#2f7d32");
+    add(new THREE.CylinderGeometry(0.26, 0.26, 0.01, 8).scale(1, 1, 1.2).translate(1.55, h + 0.005, 0.3), "#e63946");
+    // crates stacked on the ground in front
+    crate(add, -1.5, 0, 1.0, ORANGE); crate(add, -1.5, 0.26, 1.0, MANGO); crate(add, 1.5, 0, 1.0, LIME);
+  },
+  // vegetables: huacales of tomatoes, chiles, onions and avocados, a stack of nopales, limes
+  veg: (add, r, h) => {
+    crate(add, -1.45, h, -0.15, "#d62828"); crate(add, -0.85, h, -0.15, "#2d6a1f"); crate(add, -0.25, h, -0.15, "#f1ead8");
+    crate(add, 0.4, h, -0.15, "#33502a"); crate(add, -1.15, h, 0.3, "#c1121f");
+    for (let i = 0; i < 6; i++) add(new THREE.CylinderGeometry(0.12, 0.12, 0.025, 7).scale(1, 1, 1.5).rotateY(0.4 * i).translate(0.9 + (i % 2) * 0.05, h + 0.015 + i * 0.026, 0.25), i % 2 ? "#5a9a3a" : "#4b8a33");
+    for (let i = 0; i < 9; i++) add(new THREE.OctahedronGeometry(0.05, 0).translate(1.35 + (i % 3) * 0.1, h + 0.05 + Math.floor(i / 3) * 0.03, 0.15 + Math.floor(i / 3) * 0.08), "#4caf50");
+    crate(add, 1.5, 0, 1.0, "#d62828"); crate(add, -1.5, 0, 1.0, "#2d6a1f");
+  },
+  // pan dulce: trays of conchas (white, pink and chocolate sugar tops) and a basket of bolillos
+  bread: (add, r, h) => {
+    const TOPS = ["#f6efe2", "#f2b8c6", "#6b3d24", "#f3d9a4"];
+    for (let k = 0; k < 3; k++) {
+      const tx = -1.25 + k * 1.05;
+      add(box(0.9, 0.03, 0.62, tx, h + 0.015, -0.05), "#c9ced3");
+      for (let i = 0; i < 8; i++) add(new THREE.SphereGeometry(0.085, 6, 3, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.75, 1).translate(tx - 0.3 + (i % 4) * 0.2, h + 0.03, -0.22 + Math.floor(i / 4) * 0.28), TOPS[(i + k) % TOPS.length]);
+    }
+    add(new THREE.CylinderGeometry(0.3, 0.24, 0.16, 9, 1, true).translate(1.55, h + 0.08, 0.2), "#b8844a");
+    for (let i = 0; i < 6; i++) add(new THREE.SphereGeometry(0.08, 6, 4).scale(1.6, 0.8, 1).rotateY(i).translate(1.45 + (i % 3) * 0.1, h + 0.16, 0.12 + Math.floor(i / 3) * 0.14), "#d9a35b");
+  },
+  // piñatas: three stars hanging from the front bar, a burro and two small stars on the table
+  pinatas: (add, r, h) => {
+    const PAPER = ["#e4007c", "#f6c000", "#1f6fd1", "#f77f00", "#2a9d5c", "#8e3fd1"];
+    const star = (sx: number, sy: number, sz: number, s: number, k: number) => {
+      add(new THREE.IcosahedronGeometry(0.26 * s, 0).translate(sx, sy, sz), PAPER[k % PAPER.length]);
+      const dirs: [number, number, number][] = [[0, 1, 0], [0, -1, 0], [1, 0.2, 0], [-1, 0.2, 0], [0.5, -0.4, 0.75], [-0.5, -0.4, 0.75], [0, 0.3, -1]];
+      dirs.forEach(([dx, dy, dz], i) => {
+        const d = new THREE.Vector3(dx, dy, dz).normalize();
+        const g = new THREE.ConeGeometry(0.085 * s, 0.38 * s, 5).translate(0, 0.19 * s + 0.2 * s, 0);
+        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d)).translate(sx, sy, sz);
+        add(g, PAPER[(k + i + 1) % PAPER.length]);
+      });
+    };
+    [[-1.2, 0], [0, 2], [1.2, 4]].forEach(([sx, k]) => {
+      add(box(0.01, 0.42, 0.01, sx, 2.32, 1.45), "#f4f1ea");
+      star(sx, 1.82, 1.45, 1, k);
+    });
+    star(-1.3, h + 0.28, -0.1, 0.7, 1); star(1.35, h + 0.28, 0.0, 0.7, 3);
+    // the burro: fringed bands of paper, a long neck, big ears
+    const B = (w: number, hh: number, d: number, bx: number, by: number, bz: number, c: string) => add(box(w, hh, d, bx, by, bz), c);
+    const y0 = h + 0.4;
+    for (let i = 0; i < 4; i++) B(0.14, 0.3, 0.28, -0.24 + i * 0.14, y0, 0.05, PAPER[(i + 1) % PAPER.length]);
+    B(0.14, 0.32, 0.16, 0.3, y0 + 0.22, 0.05, PAPER[5]); B(0.26, 0.14, 0.14, 0.38, y0 + 0.36, 0.05, PAPER[0]);
+    for (const s of [-1, 1]) B(0.05, 0.16, 0.04, 0.32, y0 + 0.5, 0.05 + s * 0.05, PAPER[1]);
+    for (const [lx, lz] of [[-0.24, -0.07], [-0.24, 0.17], [0.16, -0.07], [0.16, 0.17]]) B(0.06, 0.26, 0.06, lx, h + 0.13, lz, PAPER[2]);
+  },
+  // barro: ollas, cazuelas and jarritos on the table, big ollas on the ground in front
+  pottery: (add, r, h) => {
+    const olla = (ox: number, oy: number, oz: number, s: number, c: string) => {
+      const pts = [[0.0, 0], [0.12, 0.005], [0.2, 0.1], [0.19, 0.22], [0.11, 0.31], [0.1, 0.34], [0.12, 0.37]].map(([a, b]) => new THREE.Vector2(a * s, b * s));
+      add(new THREE.LatheGeometry(pts, 7).translate(ox, oy, oz), c);
+    };
+    const cazuela = (cx: number, cy: number, cz: number, s: number) => {
+      const pts = [[0.0, 0], [0.16, 0.01], [0.26, 0.08], [0.3, 0.13]].map(([a, b]) => new THREE.Vector2(a * s, b * s));
+      add(new THREE.LatheGeometry(pts, 8).translate(cx, cy, cz), CLAY[2]);
+      add(new THREE.CylinderGeometry(0.27 * s, 0.27 * s, 0.01, 8, 1, true).translate(cx, cy + 0.11 * s, cz), "#5a2a18");
+    };
+    olla(-1.6, h, -0.3, 1.2, CLAY[0]); olla(-1.1, h, -0.25, 1.0, CLAY[1]); olla(-1.35, h, 0.2, 0.8, CLAY[3]);
+    cazuela(-0.4, h, -0.2, 1.0); cazuela(-0.4, h + 0.12, -0.2, 0.85); cazuela(0.25, h, 0.15, 1.1);
+    for (let i = 0; i < 6; i++) {
+      const jx = 0.75 + (i % 3) * 0.2, jz = -0.25 + Math.floor(i / 3) * 0.24;
+      add(new THREE.CylinderGeometry(0.06, 0.05, 0.12, 8).translate(jx, h + 0.06, jz), CLAY[i % 4]);
+      add(new THREE.TorusGeometry(0.035, 0.012, 4, 6, Math.PI).rotateZ(-Math.PI / 2).translate(jx + 0.06, h + 0.07, jz), CLAY[i % 4]);
+    }
+    olla(1.55, h, -0.15, 1.3, CLAY[1]); olla(1.6, h, 0.35, 0.9, CLAY[0]);
+    for (const [ox, oz, s] of [[-1.55, 1.05, 2.0], [-0.95, 1.1, 1.6], [1.25, 1.05, 1.8], [1.75, 1.1, 1.4]] as [number, number, number][]) olla(ox, 0, oz, s, CLAY[Math.floor(r() * 4)]);
+  },
+  // sombreros de palma: stacks of straw hats on the table, three hung from the back bar
+  hats: (add, r, h) => {
+    const STRAW = ["#e6c27a", "#dcb466", "#ecd08f"];
+    const hat = (hx: number, hy: number, hz: number, crown: boolean, k: number, tilt = 0) => {
+      const brim = new THREE.CylinderGeometry(0.3, 0.31, 0.02, 9).rotateX(tilt).translate(hx, hy, hz);
+      add(brim, STRAW[k % 3]);
+      if (crown) {
+        add(new THREE.CylinderGeometry(0.11, 0.135, 0.13, 7).rotateX(tilt).translate(hx, hy + 0.07, hz), STRAW[(k + 1) % 3]);
+        add(new THREE.CylinderGeometry(0.137, 0.137, 0.03, 7, 1, true).rotateX(tilt).translate(hx, hy + 0.025, hz), "#3b2a20");
+      }
+    };
+    [-1.45, -0.7, 0.05, 0.8, 1.5].forEach((sx, i) => {
+      const n = 3 + (i % 3);
+      for (let k = 0; k < n; k++) hat(sx, h + 0.012 + k * 0.035, (i % 2 ? 0.18 : -0.15), k === n - 1, k + i);
+    });
+    for (const [hx, k] of [[-1.2, 0], [0, 1], [1.2, 2]] as [number, number][]) hat(hx, 1.95, -0.96, true, k, Math.PI / 2 - 0.15);
+  },
+  // rebozos y sarapes: folded stacks in stripes, two sarapes hanging from the back bar
+  textiles: (add, r, h) => {
+    const BANDS = ["#c8102e", "#f77f00", "#f6c000", "#2a9d5c", "#1f6fd1", "#8e3fd1", "#e4007c", "#f4f1ea", "#3b2a20"];
+    [-1.5, -0.9, -0.3, 0.3, 0.9, 1.5].forEach((sx, i) => {
+      const n = 4 + (i % 3);
+      for (let k = 0; k < n; k++) add(box(0.48, 0.045, 0.34, sx, h + 0.023 + k * 0.046, (i % 2 ? 0.12 : -0.12)), BANDS[(i * 3 + k * 2) % BANDS.length]);
+    });
+    for (const [sx, k] of [[-0.95, 0], [0.95, 4]] as [number, number][]) {
+      for (let i = 0; i < 9; i++) add(box(0.12, 1.25, 0.012, sx - 0.48 + i * 0.12, 2.12, -0.98), BANDS[(k + i) % BANDS.length]);
+      add(box(1.1, 0.04, 0.03, sx, 2.76, -0.98), "#3b2a20");
+    }
+  },
+  // hamacas de Yucatán: three hanging from the back bar in rainbow stripes, rolled ones on the table
+  hammocks: (add, r, h) => {
+    const RAINBOW = ["#e4007c", "#f77f00", "#f6c000", "#2a9d5c", "#1f6fd1", "#8e3fd1"];
+    for (const [hx, k] of [[-1.25, 0], [0, 2], [1.25, 4]] as [number, number][]) {
+      // gathered at the top, wide below: bands from the bar down, each a little wider
+      for (let i = 0; i < 7; i++) {
+        const w = 0.25 + i * 0.12;
+        add(box(w, 0.2, 0.015, hx, 2.6 - i * 0.2, -0.95 + i * 0.012), RAINBOW[(k + i) % RAINBOW.length]);
+      }
+      add(new THREE.ConeGeometry(0.13, 0.25, 4).translate(hx, 2.68, -0.95), "#f4f1ea");
+    }
+    for (let i = 0; i < 6; i++) add(new THREE.CylinderGeometry(0.1, 0.1, 0.62, 8).rotateZ(Math.PI / 2).translate(-1.2 + (i % 3) * 0.7, h + 0.1 + Math.floor(i / 3) * 0.19, 0.2 - Math.floor(i / 3) * 0.05), RAINBOW[(i * 2) % RAINBOW.length]);
+  },
+};

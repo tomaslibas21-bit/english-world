@@ -4,6 +4,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { Merger, mat, boxGeo, cylGeo, textTexture as plainTextTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { carParts } from "./car";
+import * as MX from "./mexican";
 import { THEME } from "./theme";
 import { floorMaterial, floorColor } from "./styled";
 
@@ -76,6 +77,12 @@ function wallShade(w: number, d: number) {
 }
 
 function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: "wood" | "tile" | "carpet" | "stone"; accent?: string; warm?: boolean } = {}): Interior {
+  // this edition's look for the room (theme.ts `roomLooks`; Maple Harbor has none)
+  const look = THEME.roomLooks[id];
+  if (look) {
+    floor = look.floor ?? floor; wall = look.wall ?? wall;
+    opts = { ...opts, floorKind: look.floorKind ?? opts.floorKind, accent: look.accent ?? opts.accent };
+  }
   const g = new THREE.Group();
   g.name = "interior-" + id;
   const M = new Merger();
@@ -530,9 +537,9 @@ function tellerStrip() {
   });
 }
 /** A post office poster: a sheet of stamps ("Stamps sold here") or a postcard of the harbour ("Send a postcard!"). */
-function postPoster(kind: "stamps" | "postcard") {
+function postPoster(kind: "stamps" | "postcard", ink = "#2c4f8f") {
   return canvasTex(200, 260, (x) => {
-    x.fillStyle = kind === "stamps" ? "#2c4f8f" : "#fdf3df"; x.fillRect(0, 0, 200, 260);
+    x.fillStyle = kind === "stamps" ? ink : "#fdf3df"; x.fillRect(0, 0, 200, 260);
     x.textAlign = "center"; x.font = "800 24px Nunito, Arial";
     if (kind === "stamps") {
       x.fillStyle = "#ffffff"; x.fillText(tr("STAMPS"), 100, 36); x.font = "700 18px Nunito, Arial"; x.fillText(tr("sold here"), 100, 60);
@@ -540,7 +547,7 @@ function postPoster(kind: "stamps" | "postcard") {
         const sx = 26 + (i % 3) * 52, sy = 84 + Math.floor(i / 3) * 74;
         x.fillStyle = "#ffffff"; x.fillRect(sx, sy, 46, 62);
         x.fillStyle = col; x.fillRect(sx + 6, sy + 6, 34, 40);
-        x.fillStyle = "#2c4f8f"; x.font = "800 11px Arial"; x.fillText(tr("USA"), sx + 23, sy + 58);
+        x.fillStyle = ink; x.font = "800 11px Arial"; x.fillText(tr("USA"), sx + 23, sy + 58);
       });
       x.fillStyle = "#ffd166"; x.font = "800 20px Nunito, Arial"; x.fillText(tr("Forever"), 100, 246);
     } else {
@@ -834,28 +841,38 @@ const B: Record<string, () => Interior> = {
   }, [{ npc: "aaron", x: 0, z: -4.8, rot: 0, ax: 0, az: -2.65 }], { floorKind: "stone", accent: "#1f4f8a" }),
 
   "post-office": () => room("post-office", 14, 11, "#d8dde6", "#eef2f8", (c) => {
-    counter(c, 0, -3.4, 7, 1.1, "#2c4f8f", "#eef2f8");
+    // Maple Harbor's USPS navy and red, or Correos de México's rosa mexicano and lime green (theme.ts `mailbox`)
+    const correos = THEME.mailbox === "correos";
+    const ink = correos ? "#e4007c" : "#2c4f8f";
+    counter(c, 0, -3.4, 7, 1.1, ink, correos ? "#f4f1ea" : "#eef2f8");
     c.M.add("scale", mat("#9aa5ad"), boxGeo(0.6, 0.12, 0.5, 2.2, 1.15, -3.3));
     for (let i = 0; i < 6; i++) c.M.add("parcel", mat(["#c8a27a", "#b38b5d"][i % 2]), boxGeo(0.5 + (i % 3) * 0.15, 0.4, 0.5, -3 + (i % 3) * 0.7, 0.2 + Math.floor(i / 3) * 0.4, -5.1), true);
     c.col.addBox(-2.3, -5.1, 2.1, 0.55);
     // P.O. boxes on the west wall
     c.M.add("po-wall", mat("#8a7340"), boxGeo(0.06, 2.3, 3.6, -c.w / 2 + 0.05, 1.7, -1.63), false);
     for (let i = 0; i < 6; i++) for (let k = 0; k < 4; k++) c.M.add("po-box", mat("#c9a227"), boxGeo(0.05, 0.4, 0.45, -c.w / 2 + 0.1, 1 + k * 0.5, -3 + i * 0.55), false);
-    sign(c, "UNITED STATES POSTAL SERVICE", 0, 3.3, -c.d / 2 + 0.2, 5.4, "#2c4f8f", "#ffffff");
+    sign(c, "UNITED STATES POSTAL SERVICE", 0, 3.3, -c.d / 2 + 0.2, 5.4, ink, "#ffffff");
     for (let i = -2; i <= 2; i++) c.M.add("queue-post", mat("#9aa5ad"), cylGeo(0.05, 0.08, 1, i * 1.2, 0.5, 0.6, 8));
     c.col.addBox(0, 0.6, 5, 0.3);
     // a red carpet at the counter, a blue mailbox by the door, a cart of parcels, a stamp machine, the letter sorting
     // rack behind the counter, a bench, a table for writing addresses, posters, lamps; the counter's till, envelopes and
     // a parcel on the scale. (The way round the east end of the counter stays free.)
     const S = smalls(c);
-    rug(c, 0, -1.25, 6.8, 2.2, "#b8323a");
-    rugS(S, 0, 3.0, 3.2, 1.6, "#2c4f8f", "#eef2f8", 0.12);
+    rug(c, 0, -1.25, 6.8, 2.2, correos ? "#9bc53d" : "#b8323a");
+    rugS(S, 0, 3.0, 3.2, 1.6, ink, correos ? "#9bc53d" : "#eef2f8", 0.12);
     const mx = 3.3, mz = 4.4;
-    S.add(boxGeo(0.62, 0.9, 0.52, mx, 0.75, mz), "#2c4f8f");
-    S.add(new THREE.CylinderGeometry(0.31, 0.31, 0.52, 14, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateZ(Math.PI / 2).translate(mx, 1.2, mz), "#2c4f8f");
-    for (const [lx, lz] of [[-0.26, -0.2], [0.26, -0.2], [-0.26, 0.2], [0.26, 0.2]]) S.add(boxGeo(0.06, 0.3, 0.06, mx + lx, 0.15, mz + lz), "#1d2f55");
-    S.add(boxGeo(0.4, 0.04, 0.03, mx, 1.12, mz + 0.27), "#1d1d1d");
-    S.add(boxGeo(0.3, 0.2, 0.02, mx, 0.7, mz + 0.27), "#ffffff");
+    if (correos) {
+      // a Correos de México buzón (mexican.ts, as outside its door), its plate without words
+      const parts: MX.Part[] = [];
+      MX.buzon(parts, null, mx, mz, 0);
+      for (const [g, col] of parts) S.add(g, col);
+    } else {
+      S.add(boxGeo(0.62, 0.9, 0.52, mx, 0.75, mz), "#2c4f8f");
+      S.add(new THREE.CylinderGeometry(0.31, 0.31, 0.52, 14, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateZ(Math.PI / 2).translate(mx, 1.2, mz), "#2c4f8f");
+      for (const [lx, lz] of [[-0.26, -0.2], [0.26, -0.2], [-0.26, 0.2], [0.26, 0.2]]) S.add(boxGeo(0.06, 0.3, 0.06, mx + lx, 0.15, mz + lz), "#1d2f55");
+      S.add(boxGeo(0.4, 0.04, 0.03, mx, 1.12, mz + 0.27), "#1d1d1d");
+      S.add(boxGeo(0.3, 0.2, 0.02, mx, 0.7, mz + 0.27), "#ffffff");
+    }
     c.col.addBox(mx, mz, 0.7, 0.6);
     const tx = -4.3, tz = 3.0;
     S.add(boxGeo(1.3, 0.06, 0.75, tx, 0.2, tz), "#3a3d42");
@@ -867,7 +884,7 @@ const B: Record<string, () => Interior> = {
       S.add(boxGeo(pw + 0.01, ph + 0.01, 0.06, tx + px, py, tz + pz), "#e8dcc0");
     }
     c.col.addBox(tx, tz, 1.4, 0.8);
-    S.add(boxGeo(0.7, 1.8, 0.95, 6.62, 0.9, -1.2), "#c8323c");
+    S.add(boxGeo(0.7, 1.8, 0.95, 6.62, 0.9, -1.2), correos ? "#e4007c" : "#c8323c");
     S.add(boxGeo(0.03, 0.42, 0.62, 6.26, 1.36, -1.2), "#dff3fb");
     for (let i = 0; i < 6; i++) S.add(boxGeo(0.02, 0.12, 0.1, 6.245, 1.27 + Math.floor(i / 3) * 0.17, -1.38 + (i % 3) * 0.18), ["#2c4f8f", "#f2c14e", "#6fbf73"][i % 3]);
     S.add(boxGeo(0.06, 0.24, 0.3, 6.25, 0.95, -1.2), "#3a3d42");
@@ -887,7 +904,7 @@ const B: Record<string, () => Interior> = {
     S.add(cylGeo(0.05, 0.05, 1.0, -4.0, 0.5, -0.6, 8), "#3a3d42");
     S.add(cylGeo(0.35, 0.38, 0.05, -4.0, 0.025, -0.6, 14), "#3a3d42");
     for (let i = 0; i < 3; i++) S.add(boxGeo(0.24, 0.012, 0.16, -4.4 + i * 0.3, 1.052, -0.62, 0.15 * (i - 1)), ["#ffffff", "#f4ecd8", "#dfe8f4"][i]);
-    S.add(cylGeo(0.04, 0.04, 0.1, -3.55, 1.1, -0.75, 8), "#2c4f8f");
+    S.add(cylGeo(0.04, 0.04, 0.1, -3.55, 1.1, -0.75, 8), ink);
     c.col.addBox(-4.0, -0.6, 1.3, 0.75);
     benchS(c, S, -6.45, 3.4, Math.PI / 2, 1.8, "#9c7a52");
     till(S, -1.3, 1.08, -3.5);
@@ -895,7 +912,7 @@ const B: Record<string, () => Interior> = {
     S.add(boxGeo(0.4, 0.26, 0.3, 2.2, 1.34, -3.3), "#c8a27a");
     S.add(boxGeo(0.41, 0.27, 0.06, 2.2, 1.34, -3.3), "#e8dcc0");
     S.add(boxGeo(0.16, 0.1, 0.08, 0.9, 1.13, -3.1), "#e45b4f");
-    wallPanel(c, postPoster("stamps"), 4.9, 2.2, -c.d / 2 + 0.05, 1.0, 1.3);
+    wallPanel(c, postPoster("stamps", ink), 4.9, 2.2, -c.d / 2 + 0.05, 1.0, 1.3);
     wallPanel(c, postPoster("postcard"), c.w / 2 - 0.03, 2.1, 1.6, 1.0, 1.3, -Math.PI / 2);
     lamp(c, -3.5, 0.6, 3.4); lamp(c, 3.5, 0.6, 3.4);
     S.done();
@@ -1307,11 +1324,19 @@ const B: Record<string, () => Interior> = {
     sofa(c, -5, 2.5, "#b5452f", 0, 2.4);
     rug(c, -5, 1.2, 3.4, 2.4, "#e8c07a");
     framedArt(c, 7, -5, 2.4, -c.d / 2 + 0.2, 1.8, 1.3);
-    framedArt(c, 11, -1.5, 2.6, -c.d / 2 + 0.2, 1.2, 1);
-    lamp(c, 1.5, -1.5, 3.1);
+    // a Yucatecan home (theme.ts `homeMx`): over the family altar the Virgin of Guadalupe instead of a painting, and a
+    // ceiling fan over the table instead of the lamp
+    if (THEME.homeMx) framedTex(c, guadalupe(), -1.5, 2.55, -c.d / 2 + 0.2, 0.8, 1.05);
+    else framedArt(c, 11, -1.5, 2.6, -c.d / 2 + 0.2, 1.2, 1);
+    if (!THEME.homeMx) lamp(c, 1.5, -1.5, 3.1);
     plant(c, -7.2, -5.2, 1);
     c.M.add("coat-rack", mat("#5a3a2a"), cylGeo(0.05, 0.08, 1.8, -2.5, 0.9, 5, 6));
-    if (THEME.roomExtras.yucatanDinner) yucatanDinner(c);
+    if (THEME.roomExtras.yucatanDinner || THEME.homeMx) {
+      const S = smalls(c);
+      if (THEME.roomExtras.yucatanDinner) yucatanDinner(c, S);
+      if (THEME.homeMx) homeMx(c, S);
+      S.done();
+    }
   }, [{ npc: "dan", x: -1, z: 2.8, rot: Math.PI * 0.85 }, { npc: "nora", x: 4.2, z: -4.3, rot: 0.3 }], { floorKind: "wood", accent: "#6b4a3a", warm: true }),
 
   office: () => room("office", 22, 16, "#b9c2cc", "#eef3f7", (c) => {
@@ -2344,8 +2369,7 @@ function museumStairs(c: Ctx) {
 
 /** Diego and Natalia's dinner (theme.ts roomExtras.yucatanDinner; s85: cochinita pibil with tortillas, red onion and
  *  habanero salsa, agua de jamaica): on their table instead of the lasagna; and Michi the cat asleep on the sofa. */
-function yucatanDinner(c: Ctx) {
-  const S = smalls(c);
+function yucatanDinner(c: Ctx, S: Smalls) {
   const y = 0.79; // the table top (table() at 1.5, -1.5)
   S.add(new THREE.CylinderGeometry(0.28, 0.22, 0.07, 18).scale(1.1, 1, 0.75).translate(1.5, y + 0.035, -1.5), "#9c4a26");
   S.add(new THREE.SphereGeometry(0.25, 12, 8).scale(1.05, 0.24, 0.66).translate(1.5, y + 0.07, -1.5), "#c2502a");
@@ -2364,7 +2388,89 @@ function yucatanDinner(c: Ctx) {
   for (const s of [-1, 1]) S.add(new THREE.ConeGeometry(0.03, 0.06, 4).translate(mx + 0.17 + s * 0.04, my + 0.21, mz + 0.06), "#c06a2a");
   S.add(new THREE.TorusGeometry(0.15, 0.03, 6, 14, Math.PI * 1.2).rotateX(Math.PI / 2).translate(mx, my + 0.04, mz), "#c06a2a");
   for (let i = 0; i < 3; i++) S.add(boxGeo(0.02, 0.012, 0.16, mx - 0.08 + i * 0.08, my + 0.19, mz, 0), "#b8611f");
-  S.done();
+}
+
+/** Diego and Natalia's house as a Yucatecan home (theme.ts `homeMx`; s85, p30), in the room's smalls: a ceiling fan
+ *  over the table, the family altar under the Virgin of Guadalupe (a lace cloth, veladoras, cempasúchil and roses), a
+ *  hammock along the west wall, plants in clay pots, and the garrafón of drinking water on its stand by the kitchen. */
+function homeMx(c: Ctx, S: Smalls) {
+  // the ceiling fan: its rod, the motor, four wooden blades and a light under it
+  const fx = 1.5, fz = -1.5;
+  S.add(cylGeo(0.02, 0.02, WALL_H - 3.62, fx, (WALL_H + 3.62) / 2, fz, 6), "#3a3d42");
+  S.add(cylGeo(0.13, 0.15, 0.16, fx, 3.6, fz, 12), "#f1ece2");
+  for (let i = 0; i < 4; i++) S.add(boxGeo(0.72, 0.02, 0.17, 0.5, 0, 0).rotateY(i * Math.PI / 2 + 0.4).translate(fx, 3.56, fz), "#8a5a3c");
+  S.add(new THREE.SphereGeometry(0.14, 12, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2).translate(fx, 3.52, fz), "#fbf3d5");
+  // the altar against the back wall, under the picture
+  const ax = -1.5, az = -c.d / 2 + 0.4, ay = 0.9;
+  S.add(boxGeo(1.3, ay, 0.5, ax, ay / 2, az), "#8a5a3c");
+  S.add(boxGeo(1.36, 0.02, 0.56, ax, ay + 0.01, az), "#fbf8f1");
+  S.add(boxGeo(1.36, 0.3, 0.01, ax, ay - 0.14, az + 0.285), "#fbf8f1");
+  for (let i = 0; i < 9; i++) S.add(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 6).rotateX(Math.PI / 2).translate(ax - 0.6 + i * 0.15, ay - 0.3, az + 0.29), "#fbf8f1"); // the lace's scallops
+  [[-0.5, 0.0, "#c8102e"], [-0.32, 0.12, "#f4f1ea"], [0.32, 0.12, "#f6c000"], [0.5, 0.0, "#c8102e"], [0.12, 0.16, "#f4f1ea"]].forEach(([dx, dz, col]) => {
+    const vx = ax + (dx as number), vz = az + (dz as number);
+    S.add(cylGeo(0.045, 0.045, 0.2, vx, ay + 0.12, vz, 8), col as string);
+    S.add(new THREE.ConeGeometry(0.018, 0.06, 5).translate(vx, ay + 0.25, vz), "#ffcf4a");
+  });
+  for (const [dx, cols] of [[-0.12, ["#f77f00", "#ff9f1c", "#f77f00"]], [0.2, ["#d62839", "#e4007c", "#d62839"]]] as [number, string[]][]) {
+    S.add(cylGeo(0.06, 0.05, 0.18, ax + dx, ay + 0.09, az - 0.08, 8), "#3d6fa8");
+    for (let i = 0; i < 5; i++) S.add(new THREE.OctahedronGeometry(0.05, 0).translate(ax + dx + Math.cos(i * 1.3) * 0.06, ay + 0.24 + (i % 2) * 0.05, az - 0.08 + Math.sin(i * 1.3) * 0.05), cols[i % 3]);
+  }
+  c.col.addBox(ax, az, 1.4, 0.6);
+  // a hammock along the west wall, its hooks in the wall
+  hammock(c, S, -c.w / 2 + 0.25, -3.6, 0.6);
+  // plants in clay pots: by the door and on the east side
+  for (const [px, pz, s] of [[2.4, 5.0, 0.9], [7.25, 1.6, 1.1], [6.4, 4.9, 0.8]] as [number, number, number][]) {
+    S.add(cylGeo(0.24 * s, 0.17 * s, 0.4 * s, px, 0.2 * s, pz, 10), "#b5562f");
+    S.add(cylGeo(0.26 * s, 0.26 * s, 0.05 * s, px, 0.4 * s, pz, 10), "#a24a2a");
+    S.add(new THREE.IcosahedronGeometry(0.42 * s, 0).scale(1, 1.15, 1).translate(px, 0.8 * s, pz), "#3f7d3a");
+    S.add(new THREE.IcosahedronGeometry(0.28 * s, 0).translate(px + 0.12 * s, 1.15 * s, pz - 0.08 * s), "#5a9a3a");
+    c.col.addCircle(px, pz, 0.3 * s);
+  }
+  // the garrafón: a big bottle of drinking water upside down on its wooden stand, by the kitchen counter
+  const gx = 2.75, gz = -5.35;
+  S.add(boxGeo(0.4, 0.62, 0.4, gx, 0.31, gz), "#8a5a3c");
+  S.add(boxGeo(0.44, 0.04, 0.44, gx, 0.64, gz), "#6f4a2c");
+  S.add(cylGeo(0.17, 0.17, 0.4, gx, 0.92, gz, 12), "#9fd3ec");
+  S.add(new THREE.SphereGeometry(0.17, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(gx, 1.12, gz), "#9fd3ec");
+  S.add(cylGeo(0.05, 0.06, 0.07, gx, 0.69, gz, 8), "#2a7fc0");
+  c.col.addBox(gx, gz, 0.45, 0.45);
+}
+
+/** A picture in a gilded frame (as framedArt) of a texture of its own. */
+function framedTex(c: Ctx, tex: THREE.Texture, x: number, y: number, z: number, w: number, h: number) {
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.16, h + 0.16, 0.06), mat("#c9a227"));
+  frame.position.set(x, y, z);
+  c.g.add(frame);
+  const art = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: tex }));
+  art.position.set(x, y, z + 0.035);
+  c.g.add(art);
+}
+
+/** The Virgin of Guadalupe as a home's altar has her: in her blue-green mantle with gold stars over a rose gown, her
+ *  hands together, in a mandorla of golden rays, standing on the moon. */
+function guadalupe() {
+  return canvasTex(200, 264, (x) => {
+    x.fillStyle = "#1d3b4f"; x.fillRect(0, 0, 200, 264);
+    const cx = 100, cy = 136;
+    // the rays round her
+    x.strokeStyle = "#f2c14e"; x.lineWidth = 3;
+    for (let i = 0; i < 44; i++) {
+      const a = (i / 44) * Math.PI * 2;
+      x.beginPath(); x.moveTo(cx + Math.cos(a) * 52, cy + Math.sin(a) * 92); x.lineTo(cx + Math.cos(a) * 92, cy + Math.sin(a) * 124); x.stroke();
+    }
+    x.fillStyle = "#f6d06b"; x.beginPath(); x.ellipse(cx, cy, 58, 100, 0, 0, Math.PI * 2); x.fill();
+    // the rose gown, the mantle over her head and down both sides, her face and hands
+    x.fillStyle = "#d9828f"; x.beginPath(); x.moveTo(cx - 22, 92); x.quadraticCurveTo(cx - 36, 170, cx - 24, 214); x.lineTo(cx + 24, 214); x.quadraticCurveTo(cx + 36, 170, cx + 22, 92); x.closePath(); x.fill();
+    x.fillStyle = "#1f7a72"; x.beginPath(); x.moveTo(cx, 50); x.quadraticCurveTo(cx - 30, 54, cx - 34, 100); x.quadraticCurveTo(cx - 46, 170, cx - 34, 218); x.lineTo(cx - 22, 214);
+    x.quadraticCurveTo(cx - 30, 150, cx - 14, 84); x.lineTo(cx + 14, 84); x.quadraticCurveTo(cx + 30, 150, cx + 22, 214); x.lineTo(cx + 34, 218); x.quadraticCurveTo(cx + 46, 170, cx + 34, 100); x.quadraticCurveTo(cx + 30, 54, cx, 50); x.fill();
+    x.fillStyle = "#f2c14e";
+    for (const [sx, sy] of [[-30, 104], [-34, 134], [-36, 164], [-32, 194], [30, 104], [34, 134], [36, 164], [32, 194], [-14, 66], [14, 66]]) { x.beginPath(); x.arc(cx + sx, sy, 2.6, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = "#c99a74"; x.beginPath(); x.ellipse(cx + 3, 76, 9, 12, 0.25, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(cx - 6, 128); x.lineTo(cx + 2, 106); x.lineTo(cx + 9, 128); x.closePath(); x.fill();
+    // the moon under her feet, and the frame's inner edge
+    x.fillStyle = "#2b2b2e"; x.beginPath(); x.ellipse(cx, 226, 40, 10, 0, 0, Math.PI); x.fill();
+    x.strokeStyle = "#f2c14e"; x.lineWidth = 6; x.strokeRect(3, 3, 194, 258);
+  });
 }
 
 export function getInterior(loc: string): Interior | null {

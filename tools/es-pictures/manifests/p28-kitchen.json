@@ -84,6 +84,7 @@
       "phases": ["mia_worked"],
       "refs": ["edit:p28-kitchen/ceviche", "person:cast/russo"],
       "prompt": "Change only these: the bowl of ceviche now stands on the pass in front of the learner with a small spoon in it, just tasted; Fátima clasps both hands tightly under her chin, holding her breath, eyes wide, waiting for the verdict (\"Entonces… ¿hay algo bueno?\").",
+      "note": "5 Nov audit: remade (a learner's thumbs-up gave the verdict away) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p28-kitchen/waiting.webp"
     },
     {

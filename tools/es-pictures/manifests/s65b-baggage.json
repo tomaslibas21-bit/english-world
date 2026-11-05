@@ -168,6 +168,7 @@
     "person:cast/aduana"
    ],
    "prompt": "Change only her pose and add the dog: a beagle in a plain dark-green vest (blank, no patch) sits on the floor in the lower middle of the picture, beside the learner's gray backpack, looking up proudly. Agente Medina points to the backpack with one hand, eyebrows raised, asking whether there is any food in it.",
+   "note": "5 Nov audit: remade (the dog sat by the officer, not by the learner's backpack) as an edit of customs (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
    "out": "public/scenes-es/s65b-baggage/dog.webp"
   },
   {

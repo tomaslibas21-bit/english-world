@@ -7,7 +7,7 @@
   "items": [
     {
       "id": "s89-video-call/grid", "moment": "hear",
-      "phases": ["hear", "hear2", "weekend"],
+      "phases": ["hear", "hear2", "weekend", "freeze_q", "paul_hear"],
       "refs": ["place:place/departamento", "person:cast/kate", "person:cast/paul", "person:cast/sara"],
       "prompt": "The learner's own apartment at Las Palmas, now lived in, Monday at ten in the morning, seen from the learner's chair at a small wooden table: an open laptop fills the left two thirds of the picture, its screen large and facing the viewer, showing a video call as a 2 × 2 grid of tiles with thin dark borders. Top left, Sofía, the team lead, at home in a small study with a bookshelf and a plant, waving hello with a confident smile (\"¡Hola a todos! ¿Me escuchan bien?\"). Top right, Pablo, at home in front of a wall with hanging plants, smiling. Bottom left, Sara, at home with a window and pink bougainvillea behind her, smiling. Bottom right, the learner's own tile: plain dark gray with only a small white crossed-out camera icon. Under the tiles, a slim toolbar of simple round icons (a microphone, a camera, a red hang-up button), no letters. Beside the laptop on the table, a clay mug of coffee. The right third: the apartment's sliding glass doors with palms beyond, calm.",
       "out": "public/scenes-es/s89-video-call/grid.webp"
@@ -21,9 +21,10 @@
     },
     {
       "id": "s89-video-call/mute", "moment": "mute",
-      "phases": ["mute", "mute_amb", "paul_hear"],
+      "phases": ["mute", "mute_amb"],
       "refs": ["edit:s89-video-call/grid", "person:cast/paul", "person:cast/kate"],
       "prompt": "Change only Pablo's and Sofía's tiles: Pablo talks animatedly, one hand gesturing, and a small red crossed-out microphone icon sits in the corner of his tile; Sofía, in her tile, cups a hand behind her ear with a puzzled frown (\"¿Pablo? Pablo... no te escuchamos nada\").",
+      "note": "5 Nov audit: paul_hear («¡Ay, perdón! ¿Ya me escuchan?») shows grid: he is heard again.",
       "out": "public/scenes-es/s89-video-call/mute.webp"
     },
     {
@@ -35,9 +36,10 @@
     },
     {
       "id": "s89-video-call/freeze", "moment": "froze",
-      "phases": ["freeze", "freeze_q"],
+      "phases": ["freeze"],
       "refs": ["edit:s89-video-call/grid", "person:cast/kate", "person:cast/sara"],
       "prompt": "Change only Sofía's and Sara's tiles: Sofía's picture is frozen, her face caught mid-word with eyes half closed and mouth open in an awkward pause, slightly blurred, a small white spinning loading circle in the middle of her tile; Sara, in her tile, laughs with a hand over her mouth (\"¡Sofía, te congelaste!\").",
+      "note": "5 Nov audit: freeze_q («¡Perdón, me congelé! ¿Qué me decías?») shows grid: she is back.",
       "out": "public/scenes-es/s89-video-call/freeze.webp"
     },
     {
@@ -45,6 +47,7 @@
       "phases": ["echo"],
       "refs": ["edit:s89-video-call/grid", "person:cast/sara", "person:cast/kate"],
       "prompt": "Change only Sara's and Sofía's tiles: Sara winces and presses one hand over her ear (an echo); Sofía touches the microphone of her own headset and looks into the camera with a helpful, slightly apologetic look (\"Creo que es tu micrófono. ¿Te puedes silenciar cuando no estés hablando?\").",
+      "note": "5 Nov audit: remade (Sara wore a headset that isn't hers, and the two women's actions were swapped) as an edit of grid (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s89-video-call/echo.webp"
     },
     {
@@ -52,6 +55,7 @@
       "phases": ["goahead"],
       "refs": ["edit:s89-video-call/grid", "person:cast/sara"],
       "prompt": "Change only Sara's tile: Sara has stopped mid-word and offers the floor with an open palm toward the camera, a sheepish, laughing smile (\"¡Ay, perdón! Tú primero\").",
+      "note": "5 Nov audit: remade (it read as a hello (both waving), nearly the same as grid and bye) as an edit of grid (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s89-video-call/goahead.webp"
     },
     {
@@ -94,6 +98,7 @@
       "phases": ["cam_still"],
       "refs": ["edit:s89-video-call/grid", "person:cast/sara", "person:cast/kate"],
       "prompt": "Change only these: the learner's own tile, still dark gray, now has a bright green glowing border and a small white camera icon without the cross (the camera is still on). Sara, in her tile, points at her camera and laughs; Sofía grins with a hand over her mouth (\"Este... ¡sigues con la cámara prendida!\").",
+      "note": "5 Nov audit: remade (Sofía and Sara had swapped tiles) as an edit of grid (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s89-video-call/cam-still.webp"
     }
   ]
