@@ -103,3 +103,92 @@ dejo cien pesos?" and "Ya pagué con tarjeta" aren't understood (nothing paid).
 
 **Gate:** tsc clean; check-content 134/134 NLU tests, 15 sims all 12/12, fuzz 80, 0/0; corpus 236/236, 0/21; heldout
 40/40, 0/5; lead's set 29/29, 0/1; vitest 288/288.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral). Read: STYLE.md, AUTHORING-ES.md, the brief, this review, the cross
+and neutral files (AUDIT/cross, AUDIT/neutral), the situation file, the corpus and the held-out set, the transcripts of
+every sim at seeds 3 and 7, probe.ts on every offer and side question, and the line list itself (tools/es-voices
+lines-es.ts run on s73 alone: which values and which voices each line is recorded in). No "Town directions" section in
+the cross file: s73 gives no directions in the town (only "al fondo, a la derecha" inside).
+
+**Found 23 (1:2 2:0 3:0 4:5 5:3 6:0 7:8 8:0 9:2 10:3), fixed 22; one is the shared line list's (proposal).**
+
+1. **Spanish.** (a) "¿Qué es la chaya / la horchata / el agua mineral / el café de olla / un agua fresca / el pibil?" got
+   "Es uno de nuestros platillos más populares": a drink is no platillo, and it didn't answer. Seven real descriptions
+   now (desc_horchata, desc_jamaica, desc_chaya, desc_fresca, desc_olla, desc_mineral "La natural es sin gas, y la mineral
+   es con gas.", desc_pibil), all Yucatecan as served; the generic one (a soda, a side) says "Es de lo más pedido aquí." and
+   needs no twin. (b) "¿Estos son los papadzules?" with them on the table got "Sí, es los papadzules": its_yours_pl
+   "¡Sí, esos son! ¡Provecho!" for the plural dish.
+2. **tú/usted:** consistent (usted to one guest, ustedes to a table, the hints usted).
+3. **Names:** Lucía, Luis, Miller only; no clash (cross file). The NEEDS note about s69's "Trattoria Lucía" was stale.
+4. **Facts, prices, values, voices.** (a) The room's menu board (interiors.ts) says "Limonada natural o mineral $50";
+   the code charged $55 for the mineral: $50. (b) Every price is now a multiple of $10 (the brief's "round prices"):
+   water $40 (natural and mineral the same), aguas frescas $40, beer and non-alcoholic beer $60, café de olla $50,
+   capuchino $60, tea $40, a side on its own $40, flan $70, caballeros pobres $80, dulce de papaya $70; the dishes were
+   round already. So every bill is a multiple of $10 and the bill lines (total_is, cash_short: `{$total}` now) and the
+   cash still missing (cash_missing, cash_still) are voiced every $10 to $3,000 (was every $5): s73's line list is
+   **8,597 clips for both sets, was 12,932**. (c) tip_amount said whole pesos above $200 ("como $217") where its list
+   had only $5 steps: tipAmount rounds to $5 above $200, and the amount list (whole pesos to $200, every $5 to $1,000,
+   every $100 to $3,000) now also carries tip_big ("¿$1,000 de propina?", was the $5 price list × 2 genders); a
+   play-through of 300 random conversations and every sim × 12 seeds × both genders said no value outside its list. An
+   odd sum the learner names ("Póngale mil doscientos cincuenta", $235 handed over) is echoed in the device voice, as the
+   lead decided for s71b.
+   (d) Voices: the line list voices a line in the voices it heard it in; 19 of Luis's answers had only been heard at
+   Lucía's stand (take_time_pl, doneness_ok, desc_poc_chuc, comes_tortillas, comes_alone, spicy_which, allergy_check,
+   nuts_ok, nuts_general, gluten_info, amb_again, request_ok, have_yes, have_no, unknown_order, restroom, box_free,
+   ask_pay_method, pay_options) and tip_amount was voiced in Lucía's voice too (280 clips a set). Three new sims make
+   Luis say them all; a total asked at Lucía's stand gets "¡Claro! Se la traigo después de la cena" so the totals stay
+   in Luis's voice alone. (e) Not fixed here (shared tool, proposal): the plural dishes' item lines (below).
+5. **English.** "starter(s)" (British) → appetizer: the hint group "Order an appetizer", the order step's suggestion,
+   start_with's gloss "As | an appetizer", starters_list "As | appetizer" / "For appetizers, we have…". "sweet(s) of
+   papaya" → "candy / candies | of | papaya". The lima flag said "a mild Yucatán citrus": lima agria is fragrant and
+   sour ("a fragrant Yucatán citrus (lima agria)").
+6. **Spelling, ¿¡:** nothing (cross file and a read of every new line).
+7. **Questions and offers.** (a) The offer probe's two REAL flags: "Un postre, por favor" / "Sí, un postre" / "Postre"
+   at "¿Le(s) traigo un postre o un cafecito?" weren't understood: dessert_some_ctx (the dessert and the check steps)
+   gives the list and "¿Cuál le traigo?". (b) "¿Aceptan tarjeta?" or "No traigo efectivo" while ordering asked for the
+   check: "Claro, le traigo la terminal", no dessert offered, the check brought unasked after the meal. Now an answer
+   only ("¡Sí, claro!" to a question, "No hay problema" to a statement, which is kept as the way to pay). (c) "No,
+   gracias" at "¿Se le ofrece algo más?" brought the check unasked with "¡Claro! Ahorita se la traigo" (the brief: never
+   unasked): first "Muy bien. Cuando quiera la cuenta, nada más me dice."; a second no brings it. (d) "¿Cuánto cuesta
+   el agua / la limonada / el café?" got "¿Cuál?" and the next "La mineral." ordered one: the kinds cost the same now, and
+   "el café" is the plain one's $40 ("¿Cuál?" stays only for the pibil). (e) the drinks' "¿Qué es…?" (point 1).
+   (f) "¿Hay chile habanero?" got "Perdón, eso no lo tenemos": the habanero salsa is brought. (g) "La propina se la dejo
+   en efectivo" / "¿Puedo dejar la propina en efectivo?" (card for the bill, the tip in cash: everyday in Mexico)
+   weren't understood: tip_cash at the terminal pays the bill alone ("¡Claro! Entonces le cobro solo la cuenta."), a
+   hint teaches it. (h) "¿Qué guarniciones tienen?" at the side question: the list twice in one turn; now once.
+   Checked and fine: every refusal of an offer (soup, box, dessert, factura, the wait), the kind questions the probe
+   never reached ("¿Tinto o blanco?", the sodas, the aguas frescas, "¿Americano o de olla?"), dollars, the restroom.
+   The offer probe after the fixes: 19 offers, 0 flagged, in both texts (was 2).
+8. **Hints:** all accepted (check-content); the new tip_cash hint has its pattern and test.
+9. **Accepted answers:** "Mejor pago todo en efectivo" and "Postre no, gracias" / "Mejor un postre" weren't understood
+   (patterns). Corpus +46, 34 of them traps (33 with `not`, 1 `any`): 281/281, 0/22 false accepts;
+   held-out 40/40, 0/5; NLU tests 134 → 143; sims 15 → 18, all 12/12.
+10. **Neutral text.** (a) "¿Natural o mineral?" (water and lemonade, 4 lines) is Mexican: elsewhere natural water is
+    water at room temperature and mineral water may be still: neutral twins "¿Sin gas o con gas?". (b) "¿Gusta(n)…?"
+    (soup_offer, ask_dessert, ask_dessert_pl), flagged Mexican by the writer: twins "¿Quiere(n)…?" as s74 and s87.
+    (c) The hint "Solo agua natural, por favor": twin "Solo agua sin gas, por favor."
+
+**Spoken lines for the voices** (all before the freeze): new desc_pibil, desc_horchata, desc_jamaica, desc_chaya,
+desc_fresca, desc_olla, desc_mineral, its_yours_pl, tip_cash_ok; changed desc_generic; new neutral twins for
+ask_water_kind ×2, ask_lemonade_kind ×2, soup_offer, ask_dessert[0], ask_dessert_pl[0] and the tap_water hint; the
+hint tip_cash (coach voices); the money lines keep their words with new value lists (total_is, cash_short, cash_missing,
+cash_still, tip_big, tip_amount, price_is).
+
+**For the lead (shared files):**
+- interiors.ts cocina(), the menu board: "Flan|$70", "Caballeros pobres|$80", "Dulce de papaya|$70", "Aguas frescas:
+  horchata, jamaica, chaya|$40" (the rest unchanged); TOWN.md "Prices the conversations share": s73's coffee $40–60.
+- tools/es-voices/lines-es.ts: (1) step 1 binds an item line to `{ X: id }`, so a dish that is always plural
+  (attrs.plural → qty 2 in s34, s73, s89, p18) is voiced "Aquí tiene: el papadzules", "Para empezar, el panuchos", and
+  its real form only when a run reaches it: bind `{ id, qty: 2 }` for attrs.plural; (2) usedLists come from the random
+  runs only, so a line the sims reach gets every item list ("Sí, es el agua. ¡Provecho!"): take them from the sims too;
+  (3) a line heard from one speaker only is voiced in that voice only: 19 of Luis's answers here (fixed by sims), likely
+  the same in s65b, s70, s85, p30, s63, p27.
+- global.ts: the goodbye's "¡Que tenga buen día!" at this dinner (the writer's NEEDS, still open).
+- Graphics: the room has no restroom door ("Está al fondo, a la derecha"), as s72 noted for the café.
+- target.ts attrs.neutral (when it lands): s73's agua mineral / limonada mineral could take "agua con gas" / "limonada
+  con gas" in the neutral item lines (a multiword noun needs its unit-aligned gloss).
+
+**Gates:** tsc clean; check-content 143/143 NLU tests, 18 sims all 12/12, fuzz 80, 0 errors 0 warnings; corpus 281/281,
+0/22 false accepts; held-out 40/40, 0/5; vitest (es) 109/109.
