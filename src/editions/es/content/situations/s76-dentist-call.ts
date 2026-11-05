@@ -26,6 +26,7 @@ import type { SlotFn } from "@/convo/grammar";
 import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
+import { readInt } from "@/convo/slots";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -115,6 +116,20 @@ const numDate: SlotFn = (tokens, pos) => {
   return read(+a, +b, +y, pos + 3);
 };
 
+const MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+/** A date said month first, as in English ("junio cuatro", "junio 4", "junio el cuatro"): understood, with the tip
+ *  that Spanish says the day first. Value {day, month}. */
+const monthFirst: SlotFn = (tokens, pos) => {
+  const w = tokens[pos] ?? "";
+  const m = (w === "setiembre" ? 9 : MONTHS_ES.indexOf(w) + 1);
+  if (!m) return [];
+  const i = tokens[pos + 1] === "el" ? pos + 2 : pos + 1;
+  const out: { end: number; value: unknown; tags?: string[] }[] = [];
+  if (tokens[i] === "primero") out.push({ end: i + 1, value: { day: 1, month: m }, tags: ["tip:month_first"] });
+  for (const r of readInt(tokens, i)) if (r.value >= 1 && r.value <= 31) out.push({ end: r.end, value: { day: r.value, month: m }, tags: ["tip:month_first"] });
+  return out;
+};
+
 // ---------------------------------------------------------------------------
 // State helpers
 
@@ -167,6 +182,44 @@ function onDay(k: string, d: string, next: boolean): boolean {
 }
 /** Pieces that answer the time question themselves: a named offer refused next to one of them is left to it. */
 const PICK_ACTS = new Set(["reject", "day_req", "time_req", "pick_ctx", "earlier", "later", "morning", "accept", "availability_q"]);
+/** Pieces that leave a "Me queda bien" in the same turn unbooked: a change ("…, pero mejor el miércoles"), a pick, a
+ *  hesitation or a question about the price or the time ("Perfecto, ¿cuánto cuesta?"): they answer; the yes waits. */
+const DEFER_ACCEPT = new Set(["reject", "day_req", "time_req", "pick_ctx", "earlier", "later", "morning", "availability_q",
+  "choose_ctx", "maybe_ctx", "when_q", "date_ctx", "cost_q"]);
+/** A typed question ("¿El martes?", "El martes a las diez, ¿verdad?") checks the time on offer and never books it
+ *  (rule 17); a yes in the same turn ("Sí, el martes. ¿Dónde están?") still does. Voice has no question marks: a
+ *  bare "El martes" echoing the offer is taken as a yes. */
+const asked = (c: Ctx) => /[¿?]/.test(c.heard) && (c as any).conv?.out?.parse?.yn !== "yes";
+/** After "Tengo X o Y" (availability): the ones of the two that the turn points at ("el primero", "el del jueves",
+ *  "el de la noche", "a las siete", "mañana"). */
+function choiceHits(c: Ctx, slots: any, seg?: { tags: string[] }): string[] {
+  const ch = c.s.choice as string[] | undefined;
+  if (!ch) return [];
+  const tags = allTags(slots, seg);
+  if (tags.includes("first")) return [ch[0]];
+  if (tags.includes("second")) return [ch[1]];
+  const d = slots?.day as string | undefined;
+  const tm = slots?.time as { h: number; m: number; ampm?: string } | undefined;
+  const part = partOf(slots, seg);
+  const tarde = tags.includes("tarde"), noche = tags.includes("noche");
+  if (!d && !tm && !part && !tarde && !noche) return [];
+  const nx = nextWeek(c, slots, seg);
+  return ch.filter((k) => {
+    const o = OFFERS[k];
+    if (d && !onDay(k, d, nx)) return false;
+    if (tm && !(o.h % 12 === tm.h % 12 && o.m === tm.m && !(tm.ampm === "am" && o.h >= 12) && !(tm.ampm === "pm" && o.h < 12))) return false;
+    if (tarde && !(o.h >= 12 && o.h < 19)) return false;
+    if (noche && o.h < 19) return false;
+    return fitsPart(k, part);
+  });
+}
+/** The one of the two the turn names; undefined when it names neither or both. */
+function pickChoice(c: Ctx, slots: any, seg?: { tags: string[] }): string | undefined {
+  const hits = choiceHits(c, slots, seg);
+  return hits.length === 1 ? hits[0] : undefined;
+}
+/** Both openings fit what the turn names ("El jueves" when both are on Thursday): Lorena asks about the first. */
+const choiceBoth = (c: Ctx, slots: any, seg?: { tags: string[] }) => choiceHits(c, slots, seg).length === 2;
 /** Days, months and day words are never a spelled surname typed as one word. */
 const NOT_SPELLED = /^(lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|ayer|tarde|noche|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)$/i;
 
@@ -237,7 +290,7 @@ function onlyOne(c: Ctx) { c.say("only_one"); offer(c, "only", true); c.hold(); 
 function keepOld(c: Ctx): boolean {
   const old = c.s.prevAppt as string | undefined;
   if (!old || c.s.appt) return false;
-  c.s.offer = old; c.s.appt = old; c.s.prevAppt = undefined; c.s.moreDone = false;
+  c.s.offer = old; c.s.appt = old; c.s.prevAppt = undefined; c.s.moreDone = false; c.s.choice = undefined;
   c.say("appt_set", { slot: slotVal(OFFERS[old]) });
   return true;
 }
@@ -248,16 +301,21 @@ const earliest = (c: Ctx) => (moving(c) ? "first" : "early");
 function offer(c: Ctx, key: string, again = false) {
   const o = OFFERS[key];
   c.s.offer = key;
+  c.s.choice = undefined; // one opening on the table again (availability's two are over)
   c.s.offered = c.s.offered || [];
   if (!c.s.offered.includes(key)) c.s.offered.push(key);
+  // "Entonces, ¿le aparto…?" just asked about this same opening: the next time she words it as a plain offer
+  const repeat = again && c.s.lastAgain === key;
+  c.s.lastAgain = again && !repeat ? key : undefined;
   if (key === "move" && !again) { c.say("move_offer"); return; }
-  c.say(again ? "offer_again" : "offer", { slot: slotVal(o) });
+  c.say(again && !repeat ? "offer_again" : "offer", { slot: slotVal(o) });
 }
 
 function accept(c: Ctx) {
   const key = c.s.offer;
   if (!key) return;
   const o = OFFERS[key];
+  c.s.choice = undefined;
   c.s.appt = key;
   c.s.prevAppt = undefined;
   c.say(moving(c) ? "moved" : "booked", { slot: slotVal(o) });
@@ -269,6 +327,17 @@ function accept(c: Ctx) {
   }
   c.s.donePath = c.s.donePath || (moving(c) ? "move" : "book");
   c.complete();
+}
+
+/** An opening the learner named: a statement takes it ("El jueves", "El segundo"), a question ("¿El del jueves?") or
+ *  a correction gets it offered again ("Entonces, ¿le aparto…?"), once a turn. */
+function takeOrAsk(c: Ctx, k: string, ask = false) {
+  if (ask || asked(c)) {
+    if (!turn(c).picked) { turn(c).picked = true; offer(c, k, true); c.hold(); }
+    return;
+  }
+  c.s.offer = k;
+  accept(c);
 }
 
 /** The offered or still-free opening at a said clock time (never the one being moved, never this week's only opening
@@ -341,9 +410,12 @@ export const dentist: SituationDef = {
       dur: "[como | casi | mas de | unos | ya | mas o menos] ({number} (dias | dia | semanas | semana) | unos dias | un par de dias | dos o tres dias | una semana | dos semanas | mucho tiempo | un rato | {number} o {number} dias)",
       staff: "(puede | podria | me puede | me podria | puedes #tip:tu_staff | me puedes #tip:tu_staff)",
       hear: "(escucha | oye | escuchas #tip:tu_staff | oyes #tip:tu_staff)",
+      pick: "(me quedo con | prefiero | mejor | quiero | deme | me da | apunteme | aparteme | agendeme | si)",
+      month: "(enero | febrero | marzo | abril | mayo | junio | julio | agosto | septiembre | setiembre | octubre | noviembre | diciembre)",
     },
     slots: {
       numdate: { fn: numDate },
+      mdate: { fn: monthFirst },
     },
   },
 
@@ -373,6 +445,8 @@ export const dentist: SituationDef = {
       "(quiero | quisiera | necesito) que me (revisen | vean | chequen) (un diente | una muela | los dientes | la boca)",
       "(una cita | una consulta) [@todent] [para (una | un) {reason}]",
       "es posible (hacer | sacar | agendar) @cita [para {day} | esta semana | pronto]",
+      // a calendar date ("…para el 12 de noviembre"): when Lorena first offers a time, that date is full (date_full)
+      "[@want] [@make] @cita [@todent] [para (una | un) {reason}] para el {date}", "(tiene | tienen | hay) (algo | lugar | espacio | citas | alguna cita) [disponible] para el {date}",
     ] },
     reason_ans: { patterns: [
       "(tengo | traigo) [un | mucho | un fuerte | un poco de] {reason} [desde hace {number} (dias | semanas)] #h:reason_have",
@@ -395,7 +469,9 @@ export const dentist: SituationDef = {
       "(ya | es) (hora | tiempo) de (una | mi) {reason}", "me toca (mi | una) {reason}",
       "(llamo | le llamo) porque (tengo [un] {reason} | @hurt (una muela | un diente | mucho) #pain | se me cayó (una | un) {reason} #filling)",
     ] },
-    help_me: { patterns: ["@staff ayudar", "necesito (ayuda | su ayuda)", "[si] tengo una pregunta", "(puedo | le puedo) hacer una pregunta", "[no] solo (una pregunta | quiero preguntar algo)"] },
+    help_me: { patterns: ["@staff ayudar", "necesito (ayuda | su ayuda)", "[si] tengo una pregunta", "(puedo | le puedo) hacer una pregunta", "[no] solo (una pregunta | quiero preguntar algo)",
+      // "¿Se le ofrece algo más?" → "Sí, una pregunta." / "Sí, otra cosa."
+      "[si] [tengo] (una | otra) (pregunta | duda) [mas]", "[si] (una | otra) cosa [mas]", "[si] (quisiera | quiero | queria) preguntar (algo | otra cosa)"] },
     pain_len: { patterns: [
       "(desde hace | hace) {number} (dias | dia | semanas | semana) #h:len_days", "desde {day} [@dpart] #h:len_since",
       "desde (ayer | anoche | antier | antes de ayer | la semana pasada | el fin de semana | esta manana | hoy en la manana) [en la noche | en la tarde]",
@@ -435,17 +511,27 @@ export const dentist: SituationDef = {
     spell_ctx: { patterns: [
       "[es | se escribe | se deletrea | asi] {letters} #h:spell_it", "{letters} (asi es | eso es)", "[mi apellido es] {name} {letters}",
       "(le | se lo) deletreo {letters}", "{name} se escribe {letters}", "[se escribe] {letters} {name}",
+      // "Miller, con doble ele": the name with its tricky letters, as people clarify a spelling on the phone
+      "[{name}] con {letters}", "[es] {name} con {letters}",
     ] },
     dob_ans: { patterns: [
       "(es | mi fecha de nacimiento es | naci) [el] {date} [de | del] [{year}] #h:dob_is", "naci el {date} (de | del) {year} #h:dob_born",
       "(naci | es) en {year}", "(mi fecha de nacimiento es | naci el | es el) {numdate}", "mi cumpleanos es [el] {date} [de | del] [{year}]", "(naci | es) el {date} del {number} #yy",
+      // month first, as in English ("Nací junio cuatro de 1990"): understood, with a tip
+      "(es | mi fecha de nacimiento es | naci) [el] {mdate} [de | del] [{year}]", "(es | mi fecha de nacimiento es | naci) [el] {mdate} del {number} #yy",
     ] },
-    dob_ctx: { patterns: ["{date} [de | del] [{year}] #h:dob_is", "[el] {numdate}", "{date} del {number} #yy"] },
+    dob_ctx: { patterns: ["{date} [de | del] [{year}] #h:dob_is", "[el] {numdate}", "{date} del {number} #yy",
+      // "El cuatro de junio, noventa"; "Junio cuatro, mil novecientos noventa" (month first, with a tip)
+      "{date} {number} #yy", "{mdate} [de | del] [{year}]", "{mdate} del {number} #yy", "{mdate} {number} #yy"] },
     year_ctx: { patterns: ["[en | de | del] {year} #h:year_is", "(del | en el) {number} #yy"] },
     hold_ok_ctx: { patterns: [
       "[si | claro | si claro] (la | lo) espero #h:hold_sure", "[claro] no hay (problema | prisa) #h:hold_course",
       "(si claro | claro que si | por supuesto | con gusto | como no) [la espero]", "[si] (tomese | tomate) su tiempo", "[si] aqui (espero | estoy)",
       "[si] (puedo | le puedo) esperar", "[si] no tengo prisa", "[si] sin prisa",
+    ] },
+    // "¿Me espera un momentito?" → "No puedo esperar": the hold's no ("Bueno, es rapidito")
+    hold_no_ctx: { patterns: [
+      "no (puedo | tengo tiempo de | tengo tiempo para) esperar [mucho]", "[es que] tengo (prisa | mucha prisa)", "[es que] (estoy | ando | voy) (apurado | apurada | con prisa | de prisa)",
     ] },
     phone_ans: { patterns: [
       "mi (numero | celular | telefono | cel | whatsapp | numero de celular | numero de telefono) es [el] [mas] {digits} #h:phone_is",
@@ -457,6 +543,15 @@ export const dentist: SituationDef = {
       "(use | puede usar) (este | el mismo) numero #this",
     ] },
     phone_ctx: { patterns: ["[el] [mas] {digits}"] },
+    // A visitor without a Mexican number ("No tengo celular mexicano", "Mi número es de Estados Unidos"): their own
+    // country's number is fine; with the number in the same breath it is the answer
+    phone_foreign_ctx: { patterns: [
+      "no tengo (celular | numero | telefono | cel | numero de celular) (mexicano | de aqui | de mexico | local) [pero (tengo | uso) whatsapp]",
+      "(mi | el) (numero | celular | telefono | cel) es (de | del) (estados unidos | canada | inglaterra | irlanda | australia | nueva zelanda | mi pais | otro pais | afuera) [{digits}]",
+      "(es | tengo) (un | uno) (numero | celular | telefono) (de estados unidos | de canada | de inglaterra | de mi pais | de otro pais | extranjero | americano) [{digits}]",
+      "(solo | nada mas | solamente) tengo (numero | celular | telefono) (de mi pais | extranjero | de estados unidos | de canada)",
+      "(sirve | esta bien | puede ser) (un | uno) (numero | celular) (extranjero | de estados unidos | de canada | de otro pais)",
+    ] },
 
     // --- insurance or paying privately
     insurance_no: { patterns: [
@@ -506,7 +601,8 @@ export const dentist: SituationDef = {
     ] },
     later: { patterns: [
       "(tiene | tienen | hay) (algo | algun espacio | otro horario) (mas tarde | en la tarde | por la tarde | en la noche | despues del trabajo) #h:slot_later",
-      "(algo | mejor) (mas tarde | en la tarde | por la tarde | despues del trabajo)", "trabajo hasta {time}",
+      "(algo | mejor) (mas tarde | en la tarde | por la tarde | en la noche | por la noche | despues del trabajo)", "trabajo hasta {time}",
+      "(y | que tal) (mas tarde | en la tarde | por la tarde | en la noche | por la noche | despues del trabajo)",
       "no (tiene | tienen | hay) (nada | algo) (mas tarde | en la tarde | por la tarde | en la noche)",
       "(en la manana | por la manana | en las mananas | por las mananas) (trabajo | no puedo | estoy trabajando)",
       "(a esa hora | en ese horario) (trabajo | estoy trabajando) #h:slot_work", "es (muy | demasiado) temprano [para mi]",
@@ -519,7 +615,7 @@ export const dentist: SituationDef = {
     morning: { patterns: [
       "(tiene | tienen | hay) algo (en la manana | por la manana | temprano)", "(prefiero | mejor) (en la manana | por la manana | temprano)",
       "(en la manana | por la manana | las mananas) (me queda mejor | me quedan mejor | es mejor | seria mejor)", "algo (en la manana | por la manana)",
-      "[si] pero (en la manana | por la manana)",
+      "[si] pero (en la manana | por la manana)", "(y | que tal) (en la manana | por la manana | temprano | mas temprano en la manana)",
       "no puedo (en la tarde | por la tarde | en las tardes | por las tardes)", "(en la tarde | por la tarde | en las tardes | por las tardes) (no puedo | trabajo | estoy trabajando)",
     ] },
     // #ask: a question ("¿Tiene algo el martes?") naming the opening on offer asks again; it never books it (rule 17)
@@ -535,10 +631,43 @@ export const dentist: SituationDef = {
     ] },
     time_req: { patterns: [
       "(puedo | podria) ir a {time}", "(y | que tal) a {time}", "(tiene | hay) algo a {time}", "a {time} (seria mejor | me queda mejor | es mejor)",
-      "(se puede | puede ser) a {time}",
+      "(se puede | puede ser) a {time}", "(me queda mejor | seria mejor | es mejor | prefiero | mejor) a {time}",
     ] },
-    // A bare day or time at the time question: Lorena's offer repeated is a yes; another one is a request.
-    pick_ctx: { patterns: ["[para] {day} [@dpart] [a {time}]", "a {time}", "[para] {day} @dpart"] },
+    // A bare day or time at the time question: Lorena's offer repeated is a yes (a typed question asks again); another
+    // one is a request. "El martes 11": the weekday counts (the game has no calendar).
+    pick_ctx: { patterns: ["[para] {day} [@dpart] [a {time}]", "a {time}", "[para] {day} @dpart", "[para] {day} {number} [de @month] [@dpart] [a {time}]"] },
+    // After "Tengo X o Y": "El primero", "La segunda", "El del jueves", "El de la noche", "El de las siete", "Cualquiera",
+    // "Ninguno de los dos"
+    choose_ctx: { patterns: [
+      "[@pick] (el | la) (primero | primera | primer horario | primera opcion) #first", "[@pick] (el | la) (segundo | segunda | segundo horario | segunda opcion | ultimo | ultima) #second",
+      "[@pick] (primero | primera) #first", "[@pick] (segundo | segunda) #second",
+      // "El segundo no": the other one, asked (the handler reads the "no")
+      "[no] (el | la) (primero | primera | primer horario | primera opcion) no [me queda | me sirve | puedo] #first", "[no] (el | la) (segundo | segunda | segundo horario | segunda opcion | ultimo | ultima) no [me queda | me sirve | puedo] #second",
+      "[@pick] (el | la) [cita | opcion | horario] (de | del) {day} [@dpart] [a {time}]", "[@pick] (el | la) [cita | opcion | horario] (de | del) {day} de {time}",
+      "[@pick] (el | la) [cita | opcion | horario] (de | a) {time}",
+      "[@pick] (el | la) [cita | opcion | horario] de la (manana #am | tarde #tarde | noche #noche)", "[@pick] (el | la) [cita | opcion | horario] (en la | por la) (manana #am | tarde #tarde | noche #noche)",
+      "(cualquiera | cualquiera de los dos | cualquiera de las dos | el que sea | la que sea | cualquier dia | cuando sea | lo que tenga | el que usted diga | la que usted diga | como usted diga) [esta bien | me queda | me sirve] #any",
+      "[(cualquiera | cualquier hora | cualquier dia)] me (da igual | da lo mismo) #any", "(da igual | da lo mismo) #any",
+      "[no] (ninguno | ninguna) [de los dos | de las dos | de esos | de esas] [me queda | me sirve | me conviene] #none",
+    ] },
+    // Not a yes yet: "Puede ser", "Tal vez", "A lo mejor" (Lorena asks again); "Déjeme ver mi agenda" (she waits)
+    maybe_ctx: { patterns: [
+      "(puede ser | tal vez | a lo mejor | quizas | quiza | posiblemente | probablemente)", "creo que (puede ser | tal vez)",
+      "(dejeme | permitame | deje) (ver | pensarlo | pensar | checar | revisar | consultar) [mi agenda | mi calendario] #think", "(lo | la) (pienso | voy a pensar | tengo que pensar) #think",
+      "(un momento | un segundo | un momentito) (dejeme ver | reviso mi agenda | checo mi agenda) #think", "[a ver] (dejeme | deje) ver #think",
+    ] },
+    // "¿A qué hora?", "¿Qué día dijo?", "¿Me repite el día y la hora?", "¿Para cuándo quedó mi cita?"
+    when_q: { patterns: [
+      "[perdon] [y] a que hora [seria | es | era | dijo | me dijo]", "[perdon] [y] (que dia | cuando) [seria | es | era | dijo | me dijo]",
+      "[y] {day} a que hora", "[y] a que hora {day}",
+      "(a que hora | que dia | cuando) (es | era | seria | quedó | queda) [mi | la] cita", "para (que dia | cuando) (quedó | queda | es | seria | era) [mi | la] [cita]",
+      "(me repite | me puede repetir | me podria repetir | me confirma | me puede confirmar | me podria confirmar | me dice) (el dia y la hora | la fecha y la hora | el dia | la hora | la fecha | la cita) [de mi cita | de la cita]",
+    ] },
+    // A calendar date at the time question ("¿Tiene algo el 12 de noviembre?"): that day is full; the offer again
+    date_ctx: { patterns: [
+      "[no] (tiene | tienen | hay) (algo | lugar | espacio | citas | alguna cita | nada) [disponible] [para] el {date}", "[y] [para] el {date}", "(puedo | podria) ir el {date}",
+      "[mejor] [para] el {date} [@dpart] [a {time}]", "(se puede | puede ser) el {date}",
+    ] },
     accept: { patterns: [
       "[si] (me queda bien | me sirve | me parece bien | esta perfecto | me viene bien | me conviene | me late) #h:slot_ok",
       "{day} [@dpart] [a {time}] (esta bien | esta perfecto | me queda bien | me sirve | me parece bien | perfecto | me viene bien) #h:slot_perfect",
@@ -556,6 +685,8 @@ export const dentist: SituationDef = {
       "[no] mejor (otro dia | otra hora | otro horario | otra fecha)", "no me (queda | sirve) [bien] {day} [a {time}]",
       "[no] tampoco (me queda | me sirve | puedo | me conviene) [ese dia | a esa hora | {day} | a {time}]",
       "(ese | esa | ese dia | esa hora | ese horario | {day}) tampoco [me queda | me sirve | puedo]", "[no] (ninguno | ninguna) (me queda | me sirve)", "[no] tampoco",
+      // "Me queda bien el martes, pero no a las diez": that opening is a no
+      "[si] (me queda bien | me sirve | puedo) [ese dia | el dia | {day}] pero no a (esa hora | {time})", "[si] (el dia | ese dia) si pero (la hora | a esa hora) no",
     ] },
     availability_q: { patterns: [
       "que (horarios | dias | horas) (tiene | tienen | hay) [disponibles | libres]", "(cuando | que dia) (puedo ir | tiene lugar | hay lugar | tiene espacio)",
@@ -580,7 +711,11 @@ export const dentist: SituationDef = {
     ] },
 
     // --- questions
-    address_q: { patterns: ["cual es (la | su) direccion #h:q_address", "donde (estan | queda el consultorio | esta el consultorio | esta la clinica | queda la clinica | se encuentran | quedan)", "como llego", "(me da | me puede dar) la direccion", "donde (estan | se encuentran) (ubicados | ubicadas)", "(cual es | me da) [la | su] ubicacion"] },
+    address_q: { patterns: ["cual es (la | su) direccion #h:q_address", "donde (estan | queda el consultorio | esta el consultorio | esta la clinica | queda la clinica | se encuentran | quedan)", "como llego", "(me da | me puede dar) la direccion", "donde (estan | se encuentran) (ubicados | ubicadas)", "(cual es | me da) [la | su] ubicacion",
+      "en que calle (estan | esta | queda | quedan | se encuentran)", "(me repite | me puede repetir | me manda | me puede mandar | me podria mandar) la (direccion | ubicacion) [por (whatsapp | mensaje)]",
+      "(cerca de que | por donde) (estan | esta | queda | quedan)", "[en] [la] calle hidalgo [numero] [{number}]", "donde (queda | esta) la calle hidalgo"] },
+    // "¿Con quién hablo?": Lorena's name (one of her greetings doesn't say it)
+    name_q: { patterns: ["con quien (hablo | tengo el gusto)", "quien habla", "(como se llama usted | usted como se llama)", "cual es su nombre", "[perdon] como dijo que se llama"] },
     parking_q: { patterns: ["donde (me puedo estacionar | puedo estacionarme | puedo estacionar) [el carro] #h:q_park", "(hay | tienen) estacionamiento", "donde (dejo | puedo dejar) el carro"] },
     duration_q: { patterns: ["cuanto [tiempo] (dura | tarda | se tarda) [la cita | la consulta | la limpieza | la valoracion] #h:q_long", "cuanto tiempo (va a durar | voy a estar ahi)"] },
     bring_q: { patterns: ["que (tengo que | debo | necesito) llevar #h:q_bring", "(tengo que | necesito | debo) llevar (algo | identificacion | mi identificacion | mi pasaporte | radiografias | algun documento)"] },
@@ -626,6 +761,7 @@ export const dentist: SituationDef = {
     more_no: { patterns: [
       "[no] (eso es | es) todo #h:more_all", "[no] nada mas", "[no] (seria | eso seria) todo", "por ahora (es todo | nada mas)", "ya con eso",
       "[no] no necesito nada mas", "[no] (estoy bien | asi estoy bien)", "[no] (eso | es) seria todo", "[muchas | mil] gracias (es | eso es | eso seria | seria) todo",
+      "[no] (ninguna otra cosa | ninguna otra pregunta | otra cosa no | nada mas por ahora)",
     ] },
     see_you: { patterns: ["(nos vemos | hasta) {day} #h:see_you", "(ahi | alla) nos vemos [entonces | {day}]", "nos vemos (entonces | pronto)", "(entonces | perfecto | muy bien) nos vemos [{day}]"] },
   },
@@ -719,6 +855,8 @@ export const dentist: SituationDef = {
       t("¿Y | un | teléfono, | por favor?", "And | a | phone number, | please?", "And a phone number, please?"),
     ],
     phone_thanks: [t("Muy | bien, | gracias.", "Very | good, | thanks.", "Great, thank you.")],
+    // "No tengo celular mexicano": a number from the learner's own country does
+    phone_any: [t("No se preocupe, | puede | ser | el | de | su | país.", "Don't worry, | it can | be | the one | from | your | country.", "Don't worry, your number from home is fine.")],
     // a number read in pieces ("nueve ochenta y cuatro…"): Lorena waits for the rest
     phone_more: [t("Ajá...", "Uh-huh...", "Uh-huh, go on.")],
     breaking_up: [
@@ -767,7 +905,7 @@ export const dentist: SituationDef = {
       t("Le | puedo | dar | {$slot}. | ¿Le | sirve?", "(To) you | I can | give | {$slot}. | (To) you | does it work?", "I can give you {$slot}. Does that work?",
         { flags: { 5: "¿Le sirve?: “does it work for you?”, very common in Mexico." } }),
     ],
-    offer_again: [t("Entonces, | ¿le | aparto | {$slot}?", "So, | (for) you | shall I hold | {$slot}?", "So, shall I put you down for {$slot}?")],
+    offer_again: [t("Entonces, | ¿le | aparto | {$slot}?", "So, | (for) you | should I hold | {$slot}?", "So, should I put you down for {$slot}?")],
     move_offer: [
       t("A ver... | ¿Qué tal | el | jueves | en la tarde, | a | las | cuatro | y media?", "Let's see... | How about | — | Thursday | in the afternoon, | at | — | four | thirty?",
         "Let's see... How about Thursday afternoon, at four thirty?",
@@ -782,11 +920,15 @@ export const dentist: SituationDef = {
         "I'm sorry, Saturday is already full, and we're closed on Sundays.", { flags: { 1: "el before a weekday = on; English needs no word here.", 7: "los + a weekday in the plural = every week on that day." } }),
     ],
     day_full: [t("Lo siento, | ese | día | ya | no tengo | lugar.", "I'm sorry, | that | day | already | I don't have | room.", "I'm sorry, that day is already full.")],
+    // a calendar date asked for at the start of the call ("…para el 12 de noviembre"), when Lorena first offers a time
+    date_full: [t("Lo siento, | para | la | fecha | que | me | pidió | ya | no tengo | lugar.", "I'm sorry, | for | the | date | that | (of) me | you-asked-for | already | I don't have | room.",
+      "I'm sorry, I'm already full on the date you asked for.")],
     not_that_time: [t("Mmm, | a | esa | hora | no tengo | nada.", "Hmm, | at | that | time | I don't have | anything.", "Hmm, I don't have anything at that time.")],
     availability: [t("Tengo | {$slot} | o | {$slot2}.", "I have | {$slot} | or | {$slot2}.", "I have {$slot} or {$slot2}.", { say: "Tengo {$slot} o {$slot2}." })],
     booked: [
       t("¡Listo! | Queda | su | cita | {$slot}.", "Done! | Is set | your | appointment | {$slot}.", "All set! Your appointment is {$slot}."),
-      t("Perfecto, | le | agendo | la | cita | {$slot}.", "Perfect, | (for) you | I-book | the | appointment | {$slot}.", "Perfect, I'll book you in for {$slot}."),
+      // "para": without it, "le agendo la cita mañana…" could be heard as booking it tomorrow
+      t("Perfecto, | le | agendo | la | cita | para | {$slot}.", "Perfect, | (for) you | I-book | the | appointment | for | {$slot}.", "Perfect, I'll book you in for {$slot}."),
     ],
     appt_set: [t("Su | cita | ya | quedó | {$slot}.", "Your | appointment | already | is set for | {$slot}.", "Your appointment is already set for {$slot}.")],
     moved: [t("Listo, | su | cita | queda | cambiada | para | {$slot}.", "Done, | your | appointment | is | changed | to | {$slot}.", "Done! Your appointment is now {$slot}.")],
@@ -812,10 +954,12 @@ export const dentist: SituationDef = {
     bye_plain: [t("Gracias | por | llamar. | ¡Que | le | vaya | bien!", "Thank you | for | calling. | May | (to) you | it-go | well!", "Thanks for calling. Take care!")],
 
     // info
+    // calle Hidalgo runs a block from the zócalo, across avenida Juárez (docs/es/TOWN.md "Getting around"; the office
+    // itself is not built: a phone call)
     address: [
-      t("Estamos | en | la | calle | Morelos | número | 12, | a | una | cuadra | del | zócalo.", "We are | on | — | street | Morelos | number | 12, | at | one | block | from the | main square.",
-        "We're at 12 Morelos Street, a block from the main square.",
-        { say: "Estamos en la calle Morelos número doce, a una cuadra del zócalo.", write: "Clínica Dental Coral · calle Morelos 12", spell: "Morelos",
+      t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | cuadra | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | block | from the | main square.",
+        "We're at 12 Hidalgo Street, a block from the main square.",
+        { say: "Estamos en la calle Hidalgo número doce, a una cuadra del zócalo.", write: "Clínica Dental Coral · calle Hidalgo 12", spell: "Hidalgo",
           flags: { 2: "Spanish puts la before calle; English has no word here." } }),
     ],
     parking: [t("Puede | estacionarse | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.")],
@@ -850,6 +994,8 @@ export const dentist: SituationDef = {
         "It depends on the insurance. Bring your details and we'll look into it here."),
     ],
     english: [t("Sí, | la | doctora | habla | inglés, | por si | lo | necesita.", "Yes, | the | doctor | speaks | English, | in case | it | you need.", "Yes, the dentist speaks English, in case you need it.")],
+    her_name: [t("Con | Lorena, | para servirle.", "With | Lorena, | at your service.", "This is Lorena, at your service.",
+      { flags: { 2: "para servirle: “at your service”, a courteous set phrase on the phone." } })],
     hours: [
       t("Abrimos | de | lunes | a | viernes, | de | 9 | a | 2 | y | de | 4 | a | 8, | y | los | sábados | de | 9 | a | 2.",
         "We're open | from | Monday | to | Friday, | from | 9 | to | 2 | and | from | 4 | to | 8, | and | on | Saturdays | from | 9 | to | 2.",
@@ -980,7 +1126,7 @@ export const dentist: SituationDef = {
       lt: "Spell your last name",
       items: [
         { id: "spell_it", s: t("Se escribe | {$letters}.", "It's spelled | {$letters}.", "It's spelled {$letters}."),
-          note: "Spanish letter names: a, be, ce, de, e, efe, ge, hache, i, jota, ka, ele, eme, ene, o, pe, cu, erre, ese, te, u, ve, doble ve, equis, i griega, zeta. Mexicans say “be grande” for B, “ve chica” for V, and “doble ele” for LL." },
+          note: "Spanish letter names: a, be, ce, de, e, efe, ge, hache, i, jota, ka, ele, eme, ene, eñe, o, pe, cu, erre, ese, te, u, ve, doble ve, equis, i griega, zeta. Mexicans say “be grande” for B, “ve chica” for V, and “doble ele” for LL." },
       ],
     },
     dob: {
@@ -1066,6 +1212,7 @@ export const dentist: SituationDef = {
   tips: {
     tu_staff: { key: "tu_staff", lt: "Understood! With a receptionist, usted is more polite: puede, me escucha (puedes and me escuchas are for friends).", better: "¿Me puede dar una cita?" },
     us_date: { key: "us_date", lt: "Understood! In Mexico the day comes first: 4/6/1990 is June 4, 1990.", better: "El cuatro de junio de mil novecientos noventa." },
+    month_first: { key: "month_first", lt: "Understood! Spanish says the day first, then the month: el cuatro de junio (June 4).", better: "El cuatro de junio de mil novecientos noventa." },
   },
 
   merges: {
@@ -1091,6 +1238,8 @@ export const dentist: SituationDef = {
     "me gustaría": { reason: "grammatical_fusion", split: "me → to me + gustaría → would please is a word-for-word reading of I'd like.", minimal: "Two words." },
     "tengo que": { reason: "grammatical_fusion", split: "tengo → I have + que → that is false; tener que = have to.", minimal: "Two words." },
     "no hay problema": { reason: "lexical_expression", split: "no → not + hay → there is + problema → problem is a literal reading of no problem.", minimal: "Three words." },
+    "no se preocupe": { reason: "grammatical_fusion", split: "no → not + se → yourself + preocupe → worry: = don't worry (usted).", minimal: "The negative command." },
+    "para servirle": { reason: "lexical_expression", split: "para → for + servirle → to serve you is a literal reading; = at your service.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -1145,7 +1294,7 @@ export const dentist: SituationDef = {
       expects: ["dob_ans", "dob_ctx"], yes: goAhead,
       suggest: [{ lt: "Give your date of birth (day, month, year)", hint: "dob" }] },
     { id: "phone", when: (c) => booking(c) && !!c.s.newPt && !!c.s.dob, done: (c) => !!c.s.phone,
-      ask: (c) => c.say("ask_phone"), expects: ["phone_ans", "phone_ctx"], yes: goAhead,
+      ask: (c) => c.say("ask_phone"), expects: ["phone_ans", "phone_ctx", "phone_foreign_ctx"], yes: goAhead,
       suggest: [{ lt: "Give your phone number", hint: "phone_no" }] },
     { id: "insurance", when: (c) => booking(c) && !!c.s.newPt && !!c.s.phone, done: (c) => c.s.insurance !== undefined,
       ask: (c) => c.say("ask_insurance"), expects: ["insurance_no", "insurance_yes", "cost_q"],
@@ -1153,7 +1302,7 @@ export const dentist: SituationDef = {
       yes: (c) => { c.s.insurance = true; c.say("insurance_card"); },
       no: (c) => { c.s.insurance = false; c.say("selfpay", { price: 40000 }); } },
     { id: "hold", when: (c) => readyForSlot(c) && !!c.s.askHold && !c.s.appt && !c.s.canceled, done: (c) => !!c.s.holdDone,
-      ask: (c) => { c.say("hold_q"); c.twist("on_hold"); }, expects: ["hold_ok_ctx"],
+      ask: (c) => { c.say("hold_q"); c.twist("on_hold"); }, expects: ["hold_ok_ctx", "hold_no_ctx"],
       suggest: [{ lt: "Agree to hold", hint: "hold" }],
       yes: (c) => { c.s.holdDone = true; c.say("hold_thanks"); },
       no: (c) => { c.s.holdDone = true; c.say("hold_quick"); } },
@@ -1166,6 +1315,8 @@ export const dentist: SituationDef = {
           offer(c, want ?? "move", !!c.s.offer);
           return;
         }
+        // "…para el 12 de noviembre": the date asked for at the start is full (Lorena works by the week's days)
+        if (!c.s.offer && c.s.dateAsked && !c.s.dateTold) { c.s.dateTold = true; c.say("date_full"); }
         if (!c.s.offer && c.s.onlyTwist) {
           c.twist("only_slot");
           c.s.offer = "only"; c.s.offered = ["only"];
@@ -1181,9 +1332,11 @@ export const dentist: SituationDef = {
         }
         offer(c, c.s.offer, true);
       },
-      expects: ["accept", "earlier", "later", "morning", "day_req", "time_req", "reject", "availability_q", "pick_ctx"],
+      expects: ["accept", "earlier", "later", "morning", "day_req", "time_req", "reject", "availability_q", "pick_ctx", "choose_ctx", "maybe_ctx", "date_ctx"],
       suggest: [{ lt: "Accept or ask for another time", hint: "slot" }],
       yes: (c) => {
+        // "Sí" to "Tengo X o Y" chooses neither: Lorena offers the first one alone
+        if (c.s.choice) { offer(c, c.s.choice[0], true); c.hold(); return; }
         if (POLITE.test(c.heard.trim()) && !c.s.politeAsked) { c.s.politeAsked = true; offer(c, c.s.offer, true); c.hold(); return; }
         accept(c);
       },
@@ -1224,6 +1377,7 @@ export const dentist: SituationDef = {
     book(c, slots, seg) {
       startBooking(c);
       if (seg.tags.includes("urgent")) c.s.urgent = true;
+      if (slots.date) c.s.dateAsked = true;
       const d = slots.day as string | undefined;
       // "…para el próximo martes": next week's Tuesday, never this week's
       const k = d ? keyForDay(c, d, slots, seg) : undefined;
@@ -1301,10 +1455,25 @@ export const dentist: SituationDef = {
     year_ctx(c, slots, seg) { setDob(c, yearFrom(slots, seg)); },
     phone_ans(c, slots, seg) { setPhone(c, slots.digits ?? (seg.tags.includes("this") ? "this number" : undefined)); },
     help_me(c) {
-      // "¿Me puede ayudar?" alone: at the start Lorena asks again how she can help; later she says "Sí, dígame."
+      // "¿Me puede ayudar?" alone: at the start Lorena asks again how she can help; later she says "Sí, dígame." ("Otra
+      // cosa: ¿dónde están?": the question itself is answered)
+      if (turnSegments(c).some((x) => x.intent !== "help_me")) return;
       if (c.step !== "help" && c.step !== "help_move") goAhead(c);
     },
     phone_ctx(c, slots) { setPhone(c, slots.digits); },
+    phone_foreign_ctx(c, slots) {
+      // "Es un número de Estados Unidos: más uno…": the number is the answer; without it, any country's number will do
+      if (slots.digits) { setPhone(c, slots.digits); return; }
+      if (c.s.phone || turn(c).foreign) return;
+      if (turnSegments(c).some((x) => (x.intent === "phone_ans" || x.intent === "phone_ctx") && x.slots?.digits)) return;
+      turn(c).foreign = true;
+      c.say("phone_any"); c.hold();
+    },
+    hold_no_ctx(c) {
+      if (c.step !== "hold" || c.s.holdDone) return;
+      c.s.holdDone = true;
+      c.say("hold_quick");
+    },
 
     insurance_no(c) {
       if (c.step !== "insurance" && c.s.insurance !== undefined) return;
@@ -1366,6 +1535,10 @@ export const dentist: SituationDef = {
       // a question ("¿Tiene algo el martes?", "¿Y el martes?", "¿Abren el martes?") or a correction naming the opening
       // on offer gets it offered again; only a statement ("Mejor el martes") takes it (rule 17)
       const ask = seg.tags.includes("ask") || !!slots.no_day;
+      // after "Tengo X o Y": "Mejor el jueves" takes that one, "¿Y el jueves?" gets it offered again
+      const ch = readyForSlot(c) ? pickChoice(c, slots, seg) : undefined;
+      if (ch) { takeOrAsk(c, ch, ask); return; }
+      if (readyForSlot(c) && choiceBoth(c, slots, seg)) { takeOrAsk(c, (c.s.choice as string[])[0], true); return; }
       // moving: "early" (tomorrow 9:30) is the appointment being moved, so Lorena keeps her own offer instead
       const early = moving(c) ? (c.s.offer ?? "move") : "early";
       if (WEEKEND.includes(d)) { c.say("closed_weekend"); if (readyForSlot(c)) { offer(c, c.s.offer ?? "morning", !!c.s.offer); c.hold(); } return; }
@@ -1415,9 +1588,12 @@ export const dentist: SituationDef = {
       if (c.s.offer === key) { if (ask) { offer(c, key, true); c.hold(); } else accept(c); return; }
       offer(c, key, (c.s.offered || []).includes(key) && key !== "move"); c.hold();
     },
-    time_req(c, slots) {
+    time_req(c, slots, seg) {
       if (!readyForSlot(c) || !c.s.offer) return;
       if (booked(c)) return;
+      // after "Tengo X o Y": "¿Y a las siete?" / "Mejor a las siete" gets that one offered again
+      const ch = pickChoice(c, slots, seg);
+      if (ch) { takeOrAsk(c, ch, true); return; }
       if (onlyNow(c)) { onlyOne(c); return; }
       const tm = slots.time as { h: number; m: number; ampm?: string } | undefined;
       const k = tm ? slotAt(c, tm) : undefined;
@@ -1431,6 +1607,17 @@ export const dentist: SituationDef = {
       // A bare "El martes" / "A las diez" / "Mañana en la tarde" at the time question.
       if (!readyForSlot(c) || !c.s.offer) { if (slots.day) dentist.handlers.day_req(c, slots, seg); return; }
       if (booked(c)) return;
+      // after "Tengo X o Y": "El jueves" / "Mañana" / "A las siete" takes the one it names; "¿El jueves?" asks again;
+      // "El martes no" leaves the other one, offered alone
+      const ch = pickChoice(c, slots, seg);
+      if (ch) {
+        if (/(^|\s)no(\s|$)/.test(c.heard.toLowerCase().replace(/[¿?¡!,.]/g, " "))) {
+          if (turnSegments(c).some((x) => x !== seg && PICK_ACTS.has(x.intent))) return;
+          takeOrAsk(c, (c.s.choice as string[]).find((k) => k !== ch)!, true); return;
+        }
+        takeOrAsk(c, ch); return;
+      }
+      if (choiceBoth(c, slots, seg)) { takeOrAsk(c, (c.s.choice as string[])[0], true); return; }
       const o = OFFERS[c.s.offer];
       const d = slots.day as string | undefined;
       const tm = slots.time as { h: number; m: number; ampm?: string } | undefined;
@@ -1446,7 +1633,8 @@ export const dentist: SituationDef = {
         if (!turn(c).picked) { turn(c).picked = true; offer(c, c.s.offer, true); c.hold(); }
         return;
       }
-      if (sameDay && sameTime) { accept(c); return; }
+      // "¿El martes?", "El martes a las diez, ¿verdad?" (typed questions) check the offer: Lorena asks again
+      if (sameDay && sameTime) { takeOrAsk(c, c.s.offer); return; }
       if (tm) { dentist.handlers.time_req(c, slots, seg); return; }
       dentist.handlers.day_req(c, slots, seg);
     },
@@ -1461,26 +1649,36 @@ export const dentist: SituationDef = {
       }
       if (c.s.appt) { if (slots.day || slots.time) booked(c); return; }
       if (!readyForSlot(c) || !c.s.offer) return;
+      // "Sí, me queda bien, pero ¿tiene algo más temprano?", "Me queda bien, pero mejor el miércoles", "Perfecto,
+      // ¿cuánto cuesta?": the other piece answers; nothing is booked yet
+      if (turnSegments(c).some((x) => x !== seg && DEFER_ACCEPT.has(x.intent))) return;
       const tm = slots.time as { h: number; m: number; ampm?: string } | undefined;
       const d0 = slots.day as string | undefined;
       const nx = nextWeek(c, slots, seg);
+      // after "Tengo X o Y": "El jueves está bien" takes that one; "Me queda bien" alone names neither (below)
+      const ch = pickChoice(c, slots, seg);
+      if (ch) { takeOrAsk(c, ch); return; }
+      if (choiceBoth(c, slots, seg)) { takeOrAsk(c, (c.s.choice as string[])[0], true); return; }
       if (tm) {
         // "A las cuatro y media está perfecto": the offered slot with that time, if any
         const hit = (c.s.offered || []).find((k: string) => {
           const o = OFFERS[k];
           return o.h % 12 === tm.h % 12 && o.m === tm.m && (!d0 || onDay(k, d0, nx));
         });
-        if (hit) { if (hit !== c.s.offer) c.s.offer = hit; accept(c); return; }
+        if (hit) { takeOrAsk(c, hit); return; }
         if (onlyNow(c)) { onlyOne(c); return; }
         // "El viernes a las once está perfecto": an opening Lorena has but hasn't offered yet
         const has = slotAt(c, tm, d0, nx);
-        if (has && d0) { c.s.offer = has; accept(c); return; }
+        if (has && d0) { takeOrAsk(c, has); return; }
         if (has) { offer(c, has); c.hold(); return; }
         dentist.handlers.time_req(c, slots, { intent: "time_req", slots, tags: [] }); return;
       }
       // "El miércoles está bien" when Lorena offered Thursday: that day, please (never the offered one); "El próximo
       // martes está bien" when this Tuesday is on offer: next week's
       if (d0 && !onDay(c.s.offer, d0, nx)) { dentist.handlers.day_req(c, slots, { intent: "day_req", slots, tags: seg?.tags ?? [] }); return; }
+      // "¿El martes está bien?" typed as a question asks again; "Me queda bien" after "Tengo X o Y": the first, asked
+      if (d0 && asked(c)) { takeOrAsk(c, c.s.offer, true); return; }
+      if (c.s.choice) { offer(c, (c.s.choice as string[])[0], true); c.hold(); return; }
       accept(c);
     },
     reject(c, slots) {
@@ -1489,6 +1687,9 @@ export const dentist: SituationDef = {
       // "¿El martes, no?" typed with its question mark checks the offer ("Tuesday, right?"): Lorena asks again
       const d = slots?.day as string | undefined;
       if (d && /\bno\s*\?\s*$/i.test(c.heard.trim()) && onDay(c.s.offer, d, false)) { offer(c, c.s.offer, true); c.hold(); return; }
+      // after "Tengo X o Y": "El jueves no puedo" leaves the other one, offered alone
+      const ch = pickChoice(c, slots ?? {});
+      if (ch) { takeOrAsk(c, (c.s.choice as string[]).find((k) => k !== ch)!, true); return; }
       if (c.s.onlyTwist && !moving(c) && !c.s.onlyRejected) {
         c.s.onlyRejected = true;
         c.s.offer = "monday"; c.s.offered = [...(c.s.offered || []), "monday"];
@@ -1508,9 +1709,63 @@ export const dentist: SituationDef = {
       if (onlyNow(c)) { onlyOne(c); return; }
       const a = weekFull(c) ? "monday_am" : c.s.offer ?? "first";
       const b = weekFull(c) ? "monday" : a === "late" ? "morning" : "late";
+      // both are on the table now: "El primero", "El del jueves", "A las siete" pick one (pickChoice)
+      c.s.offer = a;
+      c.s.offered = [...new Set([...(c.s.offered || []), a, b])];
+      c.s.choice = [a, b];
       c.say("availability", { slot: slotVal(OFFERS[a]), slot2: slotVal(OFFERS[b]) });
       c.hold();
     },
+    choose_ctx(c, slots, seg) {
+      holdOk(c);
+      if (booked(c)) return;
+      if (!readyForSlot(c) || !c.s.offer) return;
+      if (seg.tags.includes("none")) { dentist.handlers.reject(c, {}, { intent: "reject", slots: {}, tags: [] }); return; }
+      const ch = c.s.choice as string[] | undefined;
+      // "Cualquiera", "Me da igual": Lorena proposes one (the first) and asks
+      if (seg.tags.includes("any")) { takeOrAsk(c, ch ? ch[0] : c.s.offer, true); return; }
+      const k = pickChoice(c, slots, seg);
+      if (!k && choiceBoth(c, slots, seg)) { takeOrAsk(c, ch![0], true); return; }
+      if (k) {
+        // "El primero no" leaves the other one
+        if (/(^|\s)no(\s|$)/.test(c.heard.toLowerCase().replace(/[¿?¡!,.]/g, " "))) { takeOrAsk(c, ch!.find((x) => x !== k)!, true); return; }
+        takeOrAsk(c, k); return;
+      }
+      // naming neither of the two (or with one opening on the table): a day or a time is a request; a part of the day
+      // asks for one then
+      if (slots.day || slots.time) { dentist.handlers.pick_ctx(c, slots, seg); return; }
+      const tags = allTags(slots, seg);
+      if (!ch && (tags.includes("tarde") || tags.includes("noche"))) { dentist.handlers.later(c, slots, seg); return; }
+      if (!ch && tags.includes("am")) { dentist.handlers.morning(c, slots, seg); return; }
+      takeOrAsk(c, ch ? ch[0] : c.s.offer, true);
+    },
+    maybe_ctx(c, _slots, seg) {
+      holdOk(c);
+      if (c.s.appt || !readyForSlot(c) || !c.s.offer) return;
+      // "Déjeme ver mi agenda": Lorena waits; "Puede ser" / "Tal vez": she asks again (no booking on a maybe)
+      if (seg.tags.includes("think")) { GLOBAL_HANDLERS.g_dontknow?.(c as ConvCtx, {}); return; }
+      const ch = c.s.choice as string[] | undefined;
+      takeOrAsk(c, ch ? ch[0] : c.s.offer, true);
+    },
+    when_q(c) {
+      // "¿A qué hora?", "¿Me repite el día y la hora?": the time on offer, or the appointment once it is set
+      if (c.s.appt) { c.say("appt_set", { slot: slotVal(OFFERS[c.s.appt]) }); return; }
+      if (c.s.canceled) { c.say("canceled"); return; }
+      if (!readyForSlot(c) || !c.s.offer) return;
+      const ch = c.s.choice as string[] | undefined;
+      if (ch) { c.say("availability", { slot: slotVal(OFFERS[ch[0]]), slot2: slotVal(OFFERS[ch[1]]) }); c.hold(); return; }
+      takeOrAsk(c, c.s.offer, true);
+    },
+    date_ctx(c) {
+      holdOk(c);
+      if (booked(c)) return;
+      if (!readyForSlot(c) || !c.s.offer || turn(c).picked) return;
+      // "¿Tiene algo el 12 de noviembre?": Lorena works by the week's days; that day is full, the opening again
+      c.say("day_full");
+      const ch = c.s.choice as string[] | undefined;
+      takeOrAsk(c, ch ? ch[0] : c.s.offer, true);
+    },
+    name_q(c) { c.say("her_name"); },
     hours_q(c) { c.say("hours"); },
 
     hold_ok_ctx(c) { holdOk(c, true); },
@@ -1570,12 +1825,18 @@ export const dentist: SituationDef = {
     cancel(c) {
       c.s.task = c.s.task || "cancel";
       c.say("offer_reschedule");
+      // "Sí, para el viernes" / "El viernes": move it to that day
+      const toDay = (cc: Ctx, sl: any, sg: Segment) => {
+        if (!sl.day) return false;
+        dentist.handlers.move(cc, { target: sl.day }, sg);
+      };
       c.expect({
-        id: "reschedule_q", expects: ["move"], hints: ["g_yesno", "move"],
+        id: "reschedule_q", expects: ["move", "pick_ctx", "day_req"], hints: ["g_yesno", "move"],
         suggest: [{ lt: "Say if you'd like to move it", hint: "g_yesno" }, { lt: "Move your appointment", hint: "move" }],
         yes: (cc) => { dentist.handlers.move(cc, {}, { intent: "move", slots: {}, tags: [] }); },
         no: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.s.prevAppt = undefined; cc.say("canceled"); },
-        on: { move: (cc, sl, sg) => { dentist.handlers.move(cc, sl, sg); }, cancel: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.s.prevAppt = undefined; cc.say("canceled"); } },
+        on: { move: (cc, sl, sg) => { dentist.handlers.move(cc, sl, sg); }, cancel: (cc) => { cc.s.canceled = true; cc.s.appt = undefined; cc.s.prevAppt = undefined; cc.say("canceled"); },
+          pick_ctx: toDay, day_req: toDay },
         ask: (cc) => cc.say("offer_reschedule"),
       });
     },
@@ -1587,6 +1848,14 @@ export const dentist: SituationDef = {
       const tm = slots.time as { h: number; m: number } | undefined;
       const same = !!old && (!d || onDay(old, d, false)) && (!tm || (OFFERS[old].h % 12 === tm.h % 12 && OFFERS[old].m === tm.m));
       if (same && keepOld(c)) return;
+      // moving tomorrow's appointment, "Mejor la dejo como está" keeps it after all (once Lorena has found it)
+      if (moving(c) && !c.s.appt && c.s.foundAppt && !d && !tm) {
+        c.s.offer = "early"; c.s.appt = "early"; c.s.choice = undefined; c.s.keptOld = true;
+        c.say("appt_set", { slot: slotVal(EXISTING) });
+        c.s.donePath = c.s.donePath || "move";
+        c.complete();
+        return;
+      }
       if ((d || tm) && readyForSlot(c) && c.s.offer && !c.s.appt) dentist.handlers.pick_ctx(c, slots, seg);
     },
     more_no(c) {
@@ -1714,7 +1983,7 @@ export const dentist: SituationDef = {
     { say: "No quiero cambiar mi cita", intent: "none", step: "help_move", not: ["move"] },
     { say: "No quiero cancelar mi cita", intent: "none", step: "help_move", not: ["cancel"] },
     { say: "No me duele nada, es solo una revisión", intent: "reason_ans", step: "reason", slots: { reason: "checkup" } },
-    { say: "No tengo número mexicano", intent: "none", step: "phone", not: ["phone_ans", "phone_ctx"] },
+    { say: "No tengo número mexicano", intent: "phone_foreign_ctx", step: "phone", not: ["phone_ans", "phone_ctx"] },
     { say: "¿El martes de la próxima semana?", intent: "day_req", step: "slot", slots: { day: "tuesday" } },
     { say: "El lunes en la mañana", intent: "pick_ctx", step: "slot", slots: { day: "monday" } },
     { say: "Ryan Miller, para servirle", intent: "name_ctx", step: "name" },
@@ -1768,6 +2037,30 @@ export const dentist: SituationDef = {
     { say: "No quiero cancelarla", intent: "none", not: ["cancel"] },
     { say: "No, mejor déjela como estaba", intent: "keep_appt", step: "slot", not: ["accept", "move"] },
     { say: "Nueve ochenta y cuatro", intent: "phone_ctx", step: "phone", slots: { digits: "984" } },
+    // audit (5 Nov 2026): picking one of two openings, maybes, the time asked again, side questions, dates
+    { say: "El primero", intent: "choose_ctx", step: "slot", not: ["accept"] },
+    { say: "La segunda", intent: "choose_ctx", step: "slot", not: ["accept"] },
+    { say: "El del jueves", intent: "choose_ctx", step: "slot", slots: { day: "thursday" } },
+    { say: "La de la noche", intent: "choose_ctx", step: "slot", not: ["accept"] },
+    { say: "Cualquiera", intent: "choose_ctx", step: "slot", not: ["accept"] },
+    { say: "Ninguno de los dos", intent: "choose_ctx", step: "slot", not: ["accept"] },
+    { say: "Puede ser", intent: "maybe_ctx", step: "slot", not: ["accept"] },
+    { say: "Tal vez", intent: "maybe_ctx", step: "slot", not: ["accept"] },
+    { say: "Déjeme pensarlo", intent: "maybe_ctx", step: "slot", not: ["accept"] },
+    { say: "Mejor en la noche", intent: "later", step: "slot", not: ["accept"] },
+    { say: "Me queda bien el martes, pero no a las diez", intent: "reject", step: "slot", not: ["accept"] },
+    { say: "¿Tiene algo para el 12 de noviembre?", intent: "date_ctx", step: "slot", not: ["accept"] },
+    { say: "¿A qué hora es mi cita?", intent: "when_q", step: "more" },
+    { say: "¿Me repite el día y la hora?", intent: "when_q", step: "more" },
+    { say: "¿Para qué día quedó?", intent: "when_q", step: "more" },
+    { say: "¿Con quién hablo?", intent: "name_q" },
+    { say: "¿En qué calle están?", intent: "address_q" },
+    { say: "Sí, una pregunta", intent: "help_me", step: "more", not: ["more_no"] },
+    { say: "Mi número es de Estados Unidos", intent: "phone_foreign_ctx", step: "phone", not: ["phone_ans"] },
+    { say: "No puedo esperar", intent: "hold_no_ctx", step: "hold", not: ["hold_ok_ctx"] },
+    { say: "Junio cuatro, mil novecientos noventa", intent: "dob_ctx", step: "dob", slots: { mdate: { day: 4, month: 6 } } },
+    { say: "El cuatro de junio, noventa", intent: "dob_ctx", step: "dob", slots: { date: { day: 4, month: 6 } } },
+    { say: "Miller, con doble ele", intent: "spell_ctx", step: "spell" },
   ],
 
   sims: [
@@ -1828,6 +2121,25 @@ export const dentist: SituationDef = {
     { name: "\"Hace mucho tiempo\" at \"¿Ya había venido antes?\" is a yes, never pain",
       turns: ["Quisiera hacer una cita para una revisión.", "Hace mucho tiempo.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "Sí, me queda bien.", "Es todo."],
       setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 1; s.badLineAt = undefined; s.painLen = true; }, expect: { complete: true, state: { appt: "first", newPt: false, pain: undefined } }, auto: DENTIST_AUTO },
+    // audit (5 Nov 2026): a booking only on a clear yes; two openings picked by pointing at one
+    { name: "a typed question about the time on offer asks again; two openings, the second by its day",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "¿El martes?", "¿Qué horarios tiene?", "El del jueves.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "late" } }, auto: DENTIST_AUTO },
+    { name: "two openings: a bare yes picks neither, the first one is offered alone",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "¿Qué horarios tiene?", "Sí.", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first" } }, auto: DENTIST_AUTO },
+    { name: "a yes with a change or a price question books nothing yet",
+      turns: ["Quisiera hacer una cita para una revisión.", "No, ya he venido antes.", "Ryan Miller.", "eme i ele ele e erre", "El 4 de junio de 1990.", "Me queda bien, pero mejor el miércoles.", "Perfecto, ¿cuánto cuesta?", "Puede ser.", "Sí, me queda bien.", "¿A qué hora es mi cita?", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "wednesday" } }, auto: DENTIST_AUTO },
+    { name: "cancel, then move it to Friday in the same answer",
+      turns: ["Necesito cancelar la cita de mañana.", "Sí, para el viernes.", "Ryan Miller.", "4 de junio de 1990.", "Sí, me queda bien.", "Es todo."],
+      setup: (s) => { s.moveTwist = true; s.onlyTwist = false; s.spellOnMove = false; s.askHold = false; }, expect: { complete: true, state: { appt: "morning", moving: true } }, auto: DENTIST_AUTO },
+    { name: "moving tomorrow's appointment, then keeping it after all",
+      turns: ["Hola, tengo una cita mañana y quisiera cambiarla.", "Ryan Miller.", "El cuatro de junio de mil novecientos noventa.", "No, mejor la dejo como está.", "Es todo."],
+      setup: (s) => { s.moveTwist = true; s.onlyTwist = false; s.spellOnMove = false; s.askHold = false; }, expect: { complete: true, state: { appt: "early", keptOld: true } }, auto: DENTIST_AUTO },
+    { name: "no Mexican number: a number from home; a date asked first is full",
+      turns: ["Quisiera una cita para una limpieza para el 12 de noviembre.", "Sí, es mi primera vez.", "Ryan Miller.", "eme i ele ele e erre", "Junio cuatro, mil novecientos noventa.", "No tengo celular mexicano.", "Más uno, cinco cinco cinco, uno dos tres, cuatro cinco seis siete.", "Voy a pagar yo.", "Sí, me queda bien.", "¿Con quién hablo?", "Es todo."],
+      setup: (s) => { s.moveTwist = false; s.onlyTwist = false; s.askHold = false; s.npVariant = 0; s.badLineAt = undefined; }, expect: { complete: true, state: { appt: "first", phone: "15551234567", dateTold: true } }, auto: DENTIST_AUTO },
   ],
 };
 
@@ -1857,6 +2169,8 @@ function yearFrom(slots: any, seg: { tags: string[] }) {
   if (slots.year) return slots;
   const n = typeof slots.number === "number" ? slots.number : undefined;
   if (seg.tags.includes("yy") && n !== undefined && n >= 0 && n <= 99) return { year: twoDigitYear(n) };
+  // "El cuatro de junio 1990" read through the two-digit pattern: a whole year is a year
+  if (seg.tags.includes("yy") && n !== undefined && birthYear(n)) return { year: n };
   return {};
 }
 
@@ -1868,7 +2182,7 @@ function setDob(c: Ctx, slots: any) {
     c.twist("bad_line"); c.say("breaking_up"); c.hold(); return;
   }
   const nd = slots.numdate;
-  const date = nd ? { day: nd.day, month: nd.month } : slots.date;
+  const date = nd ? { day: nd.day, month: nd.month } : slots.date ?? slots.mdate;
   // "dos mil treinta" can't be a birth year: Lorena asks for the year again
   const y0 = nd ? nd.year : slots.year;
   const year = typeof y0 === "number" && birthYear(y0) ? y0 : undefined;
