@@ -755,3 +755,32 @@ describe("29. 'No sé'", () => {
     expect(say("No sé")).toEqual(["calm", "q"]);
   });
 });
+
+describe("30. what the voices say: the neutral noun, letter names, capitals", () => {
+  const E: EntityDef[] = [
+    ent("jitomate", "jitomate", "tomato", "m", { pl: "jitomates", ltPl: "tomatoes", attrs: { neutral: "tomate" } }),
+    ent("lucia", "Cocina | de | Lucía", "Kitchen | of | Lucía", "f", { def: "" as any, attrs: { nat: "Cocina de Lucía" } }),
+    ent("latte", "latte", "latte", "m"),
+  ];
+  const look = (id: string) => E.find((e) => e.id === id);
+  const c = (src: ReturnType<typeof t>, vars: Record<string, unknown>) => compose(src, vars, { look, addressee: "m", speaker: "f", formal: true });
+  it("the neutral text says the entity's neutral noun", () => {
+    const s = t("Un kilo de {X.pl}, | ¿{lo@X:pl} | quiere | {maduro@X:pl}?", "A kilo of {X.pl}, | them | you-want | ripe?", "A kilo of {X.pl}, ripe?");
+    expect(c(s, { X: "jitomate" }).en).toBe("Un kilo de jitomates, ¿los quiere maduros?");
+    setVariety("neutral");
+    try {
+      expect(c(s, { X: "jitomate" }).en).toBe("Un kilo de tomates, ¿los quiere maduros?");
+      expect(c(t("{X.np}", "{X.np}", "{X.np}"), { X: "jitomate" }).en).toBe("Un tomate");
+    } finally { setVariety("default"); }
+  });
+  it("letters as Mexico spells them (B, V, Y), and the neutral names", () => {
+    const s = t("Se escribe | {$letters}.", "It's spelled | {$letters}.", "It's spelled {$letters}.", { say: "Se escribe: {$letters}." });
+    expect(c(s, { letters: "Bevy" }).say).toBe("Se escribe: be grande, e, ve chica, i griega.");
+    setVariety("neutral");
+    try { expect(c(s, { letters: "Bevy" }).say).toBe("Se escribe: be larga, e, ve corta, i griega."); } finally { setVariety("default"); }
+  });
+  it("no 'the' in English for a name said without an article, and a capital after a lone ¿", () => {
+    expect(c(t("Voy | a | {X.the}.", "I'm going | to | {X.the}.", "I'm going to {X.the}."), { X: "lucia" }).nat).toBe("I'm going to Cocina de Lucía.");
+    expect(c(t("¿Lo de siempre? | ¿{X.np}?", "The usual? | {X.np}?", "The usual? {X.np}?"), { X: "latte" }).en).toBe("¿Lo de siempre? ¿Un latte?");
+  });
+});
