@@ -2070,23 +2070,25 @@ class TownMerger extends Merger {
   private box = new THREE.Box3();
   private c = new THREE.Vector3();
   constructor(private cell: number) { super(); }
-  /** Each key as Merger has it: its first material, shadow and colour stand for every shape added under it (a key's
-   *  later shapes in another colour take the first one's, as they always have). */
-  private keys = new Map<string, { plain: boolean; color: THREE.Color; flat: boolean; cast: boolean }>();
+  /** Each key as Merger has it: its first shape's shadow stands for every shape added under it, and each shape keeps
+   *  its own material's colour (a plain one baked into the squares' meshes, another in Merger's own mesh). */
+  private keys = new Map<string, { cast: boolean; receive: boolean; mats: Map<THREE.Material, { plain: boolean; color: THREE.Color; flat: boolean }> }>();
   add(key: string, m: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
     let k = this.keys.get(key);
-    if (!k) {
+    if (!k) { k = { cast, receive, mats: new Map() }; this.keys.set(key, k); }
+    let e = k.mats.get(m);
+    if (!e) {
       const l = m as THREE.MeshLambertMaterial;
-      const plain = !!l.isMeshLambertMaterial && !l.map && !l.transparent && !l.vertexColors && l.side === THREE.FrontSide && l.emissive.getHex() === 0 && receive
+      const plain = !!l.isMeshLambertMaterial && !l.map && !l.transparent && !l.vertexColors && l.side === THREE.FrontSide && l.emissive.getHex() === 0 && k.receive
         && !l.polygonOffset && l.depthWrite && !Object.prototype.hasOwnProperty.call(l, "onBeforeCompile");
-      k = { plain, color: plain ? l.color.clone() : new THREE.Color(), flat: plain && l.flatShading, cast };
-      this.keys.set(key, k);
+      e = { plain, color: plain ? l.color.clone() : new THREE.Color(), flat: plain && l.flatShading };
+      k.mats.set(m, e);
     }
-    if (!k.plain) return super.add(key, m, geo, cast, receive);
+    if (!e.plain) return super.add(key, m, geo, k.cast, k.receive);
     const g = geo.index ? geo.toNonIndexed() : geo;
-    if (k.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
+    if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
     else if (!g.attributes.normal) g.computeVertexNormals();
-    this.put(g, k.color, k.cast ? "cast" : "still");
+    this.put(g, e.color, k.cast ? "cast" : "still");
   }
   /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
    *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */

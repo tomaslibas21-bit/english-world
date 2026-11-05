@@ -5,22 +5,34 @@ import { STYLED, IS_REAL, styledMat, refineForKey, wantsOutline, makeOutline, ou
 import { chamferBox, boxProjectUV } from "./shapes";
 
 export class Merger {
-  private groups = new Map<string, { mat: THREE.Material; geos: THREE.BufferGeometry[]; cast: boolean; receive: boolean }>();
+  private groups = new Map<string, { mat: THREE.Material; geos: THREE.BufferGeometry[]; cast: boolean; receive: boolean; key: string }>();
   add(key: string, mat: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
     if (STYLED) mat = refineForKey(key, mat); // trial styles: glass, wood, metal… (see style.ts)
     let g = this.groups.get(key);
-    if (!g) { g = { mat, geos: [], cast, receive }; this.groups.set(key, g); }
+    if (!g) { g = { mat, geos: [], cast, receive, key }; this.groups.set(key, g); }
+    else if (g.mat !== mat && lookOf(g.mat) !== lookOf(mat)) {
+      // a shape in another material than the key's first: a mesh of its own (`key~2`, `key~3`…) with the key's
+      // shadows, so it keeps its own colour (one mesh per key drew every shape in the first one's material: the brass
+      // and the steel door handles all one metal, a party table's base as white as its top)
+      const first = g, look = lookOf(mat);
+      for (let n = 2; ; n++) {
+        const o = this.groups.get(key + "~" + n);
+        if (!o) { g = { mat, geos: [], cast: first.cast, receive: first.receive, key }; this.groups.set(key + "~" + n, g); break; }
+        if (o.mat === mat || lookOf(o.mat) === look) { g = o; break; }
+      }
+    }
     const ng = geo.index ? geo.toNonIndexed() : geo;
     if (STYLED && g.mat.userData.uvScale) boxProjectUV(ng, g.mat.userData.uvScale);
     g.geos.push(ng);
   }
   build(parent: THREE.Object3D) {
-    for (const [key, g] of this.groups) {
+    for (const [name, g] of this.groups) {
       if (!g.geos.length) continue;
       const merged = mergeGeometries(g.geos.map(normalizeAttrs), false);
       if (!merged) continue;
+      const key = g.key;
       const mesh = new THREE.Mesh(merged, g.mat);
-      mesh.name = key;
+      mesh.name = name;
       mesh.castShadow = g.cast;
       mesh.receiveShadow = g.receive;
       if (STYLED && !IS_REAL && /-walls$/.test(key)) mesh.receiveShadow = false; // clean cartoon / illustrated facades
@@ -34,6 +46,13 @@ export class Merger {
     }
     this.groups.clear();
   }
+}
+
+/** How a material looks (its kind, colours, shading, transparency, side, texture): two materials that look alike can
+ *  share a key's mesh. */
+function lookOf(m: THREE.Material) {
+  const l = m as THREE.MeshLambertMaterial;
+  return [m.type, l.color?.getHexString(), l.emissive?.getHexString(), l.flatShading, m.transparent, m.opacity, m.side, m.depthWrite, l.map?.uuid].join("|");
 }
 
 function normalizeAttrs(g: THREE.BufferGeometry) {

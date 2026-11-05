@@ -829,7 +829,7 @@ every one of them off and its cast uses none of the options.
   Ka'an. **The sitio** (`taxis`): a second taxi waiting behind the first.
 - **Draw calls and triangles** (`townMerge`, `regions`, `farHide`): the town's plain colored shapes and the edition's
   pieces in a vertex-colored mesh for each 50 m square of the town (town.ts `TownMerger`; two a square, with and without
-  shadows; a key keeps its first colour, as Merger always had it), instead of a mesh per color across the whole town;
+  shadows; each shape in its own color, as Merger has it since its fix), instead of a mesh per color across the town;
   the cenote, the ruins and the mirador in a mesh of their own; the tianguis' goods left out beyond 45 m of the camera.
   The same pictures (paired shots with the merger off and on: only the characters' sub-pixel poses differ) in about half
   the draw calls and 40–70 thousand fewer triangles at every outdoor view on a phone; the town's signs drawn after the
