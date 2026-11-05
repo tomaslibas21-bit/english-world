@@ -363,5 +363,11 @@
   {"ctx": "problem", "say": "Vengo porque me lo recomendaron", "intent": "any", "not": ["symptom", "feel_sick"], "note": "audit trap"},
   {"ctx": "rx_q", "say": "No me da sueño", "intent": "any", "not": ["ask_side"], "note": "audit trap"},
   {"ctx": "pharmacy", "say": "Ya sé dónde comprarla", "intent": "any", "not": ["ask_where_pharmacy"], "note": "audit trap: an answer"},
-  {"ctx": "rx_q", "say": "Ya tengo la receta", "intent": "any", "not": ["ask_rx_paper"], "note": "audit trap"}
+  {"ctx": "rx_q", "say": "Ya tengo la receta", "intent": "any", "not": ["ask_rx_paper"], "note": "audit trap"},
+  {"ctx": "pharmacy", "say": "No, ¿dónde puedo comprar el medicamento?", "intent": ["pharmacy_ans", "pharmacy_dunno_ctx", "ask_where_pharmacy"], "note": "follow-up 5 Nov: the neutral twin's words"},
+  {"ctx": "pharmacy", "say": "No sé dónde comprar el medicamento", "intent": ["pharmacy_ans", "pharmacy_dunno_ctx"], "note": "follow-up 5 Nov"},
+  {"ctx": "pharmacy", "say": "Sí, en la farmacia que está enfrente del hotel", "intent": "pharmacy_ans", "note": "follow-up 5 Nov"},
+  {"ctx": "pharmacy", "say": "Sí, lo compro en la Farmacia del Puerto", "intent": "pharmacy_ans", "note": "follow-up 5 Nov"},
+  {"ctx": "pharmacy", "say": "Ya sé dónde comprar el medicamento", "intent": "any", "not": ["ask_where_pharmacy"], "note": "follow-up 5 Nov trap: an answer, not a question"},
+  {"ctx": "questions", "say": "¿Dónde compro el medicamento?", "intent": "ask_where_pharmacy", "note": "follow-up 5 Nov"}
 ] }
