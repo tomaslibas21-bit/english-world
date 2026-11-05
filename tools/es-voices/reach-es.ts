@@ -121,6 +121,13 @@ function maxOneItem(sit: SituationDef): number {
   return price + milk + 1000 + 1500;
 }
 
+/** Item lists an item line is said with, read in its code, for a line the runs hear with fewer (the line list adds the
+ *  lists heard). */
+export const LISTS: Record<string, string[]> = {
+  // s73-restaurant.ts:1858–1865 serve: the main dish, else the starter, else the first food ordered (a side, a dessert)
+  "s73-restaurant:serve": ["main", "starter", "side", "dessert"],
+};
+
 /** Lines the list can't expand on its own (two items, or an item and a value, in one line): every binding they can
  *  really have, read in the conversation's code. A line like that with no entry here is voiced only as the runs, sims
  *  and probes say it, and lines-es.ts warns about it. */
@@ -161,6 +168,21 @@ export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
     const rates = [...listValues(sit, "size", "rate")];
     return Array.from({ length: 6 }, (_, i) => i + 2).flatMap((n) => rates.flatMap((r) => Array.from({ length: n - 1 }, (_, d) => ({ X: order[n - 1], price: r * (d + 1) }))));
   },
+  // :127–132 amountSay: pieces said back with their number ("Cuatro mangos..."): what is sold by the piece, or anything
+  // bought by the piece ("tres aguacates": b.pcs); one, or the list's numbers
+  "s32-mercado:got_pieces": (sit) => products(sit, () => true).flatMap((e) => [1, ...nums(sit, "num")].map((qty) => ({ X: qty === 1 ? e.id : { id: e.id, qty } }))),
+  // s65b-baggage.ts:251–254 sayEcho: the bag type (not the plain "bag") with its color ("azul marino" has echo_navy)
+  "s65b-baggage:echo": (sit) => (sit.entities?.bagtype ?? []).filter((e) => e.id !== "bag").flatMap((t) => (sit.entities?.color ?? []).filter((c) => c.id !== "navy").map((c) => ({ X: { id: t.id, mods: [c.id] } }))),
+  // s91a-lost-wallet.ts:125 itemNp: the lost item with its color and/or material, else its size, else nothing: :922 found,
+  // :1091 describe_echo, :1099 fix_echo
+  "s91a-lost-wallet:describe_echo": (sit) => described(sit),
+  "s91a-lost-wallet:fix_echo": (sit) => described(sit),
+  "s91a-lost-wallet:found": (sit) => described(sit),
+  // s91b-police.ts:133–136 itemNp: with a color, the color and the material; else the material or the size: :1364 found
+  // (the finder's color, or none), :1514 describe_echo, :1659 found_sure
+  "s91b-police:describe_echo": (sit) => described(sit),
+  "s91b-police:found": (sit) => described(sit),
+  "s91b-police:found_sure": (sit) => described(sit),
   // s75-pharmacy.ts:2198 genPrices: a product's brand-name price and its generic's, together (products with a generic)
   "s75-pharmacy:generic_prices": (sit) => (sit.entities?.product ?? []).filter((e) => typeof e.attrs?.generic === "number").map((e) => ({ price: e.attrs!.price, amount: e.attrs!.generic })),
   // p26-complaint.ts:469–473 dayLine: a delivery day (not tomorrow: its own line) with Monday's window (W_MON, :66)
@@ -170,6 +192,13 @@ export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
   },
 };
 const products = (sit: SituationDef, test: (e: EntityDef) => boolean) => (sit.entities?.product ?? []).filter(test);
+/** s91a / s91b: a lost item described: nothing, a color, a material, a color and a material, or a size. */
+function described(sit: SituationDef): Binding[] {
+  const ids = (l: string) => (sit.entities?.[l] ?? []).map((e) => e.id);
+  const C = ids("color"), M = ids("material"), Z = ids("size");
+  const mods: string[][] = [[], ...C.map((c) => [c]), ...M.map((m) => [m]), ...C.flatMap((c) => M.map((m) => [c, m])), ...Z.map((z) => [z])];
+  return ids("item").flatMap((id) => mods.map((m) => ({ X: { id, mods: m } })));
+}
 const nums = (sit: SituationDef, v: string) => (sit.domains?.[v]?.() ?? []) as number[];
 function longReturns(sit: SituationDef): Binding[] {
   const order = literal(fileOf(sit.id)?.consts.get("ORDER")) as string[] | undefined;

@@ -279,8 +279,10 @@ VOICE-LIST.md):
   (`sharedNlu`) and read each sentence once per moment.
 - **Who says it.** A line said by whoever holds the floor (no `c.speaker()` before it in that turn: "held") is asked
   again, with the words that made it, at the moments where each other person holds the floor (forks of the runs' and
-  sims' own moments): Luis answers at the table what Lucía answered at her stand, Don Arturo what Iván answered at the
-  ticket desk; a step only Lucía asks stays hers. A line the code gives a speaker (a speaker helper such as
+  sims' own moments; up to 24 per person: one for each step, open question and the goodbye first; up to 4 sentences a
+  line): Luis answers at the
+  table what Lucía answered at her stand, Don Arturo what Iván answered at the ticket desk; a step only Lucía asks
+  stays hers. A line the code gives a speaker (a speaker helper such as
   `K(c, "line")`, or `c.speaker("x")` before `c.say("line")` in the same block: `codeSpeakers`) is in that voice too,
   heard or not. A line nobody was heard saying and the code doesn't place goes to whoever says the lines around it,
   else to everyone in the conversation (`why: "who?"`). In s84 the date is the learner's choice (Santiago or Camila):
@@ -293,11 +295,14 @@ VOICE-LIST.md):
   twin heard with the two kinds apart (s74's sayN, s73's veg_no) keep them apart. The hint examples bind such an item
   with two as well, in the game (`hintBinding` in the Spanish target.ts, used by suggest.ts: "Estoy hasta el cuello con
   los reportes de errores", "Quisiera los papadzules") and in the list; Maple Harbor's binds the bare id as before.
-- **Item lists.** Only the item lists a line is heard with, in random runs, sims and probes; a line never heard with an
-  item keeps every list (`why: "list?"`, counted by the junk check).
+- **Item lists.** Only the item lists a line is heard with, in random runs, sims and probes, and those reach-es.ts
+  `LISTS` reads in its code (s73's serve: a starter when no main); a line never heard with an item keeps every list
+  (`why: "list?"`, counted by the junk check).
 - **Two placeholders.** A line with two items, or an item and a value, is made from `BINDINGS` in reach-es.ts, read in
-  its code (s66's place and its own fare; s74's garment and its own colors; s32's product and its price or kilos;
-  s71a's car, extras and return days; p26's delivery days; s75's two prices); a value with
+  its code (s66's place and its own fare; s74's garment and its own colors; s32's product and its price, kilos or
+  pieces; s71a's car, extras and return days; p26's delivery days; s75's two prices), and an item described with
+  modifiers the same way (s65b's bag and its color; s91a's and s91b's lost item with its color, material or size); a
+  value with
   no list of its own takes the fixed values its calls give. Any other such line is voiced only as heard, and `plan`
   lists it ("lines the list can't make from their text").
 - **Rules from the audits** (`RULES`): s64a's seat question never names one seat twice; s68's walk-in offers and fee
