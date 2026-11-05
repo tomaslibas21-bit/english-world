@@ -13,7 +13,7 @@
 
   { "ctx": "acct_type", "say": "Una cuenta de débito, por favor", "intent": "acct_type_ans" },
   { "ctx": "acct_type", "say": "¿Cuál es la diferencia?", "intent": "ask_difference" },
-  { "ctx": "acct_type", "say": "Las dos, por favor", "intent": "acct_type_ans" },
+  { "ctx": "acct_type", "say": "Las dos, por favor", "intent": ["acct_type_ans", "both_ctx"], "note": "both_ctx is the step's own intent for it (it calls acct_type_ans with both); audit 5 Nov" },
   { "ctx": "acct_type", "say": "¿Hay comisión mensual?", "intent": "fee_q" },
 
   { "ctx": "id", "say": "Aquí está mi pasaporte", "intent": ["show_doc", "here_you_go"] },

@@ -3,8 +3,10 @@
 // The brief: for movers and visitors: the ATM outside kept the card ("el cajero se tragó mi tarjeta"), ID, opening an
 // account (a mover: passport or residence card, the CURP, a "comprobante de domicilio"), exchanging US dollars
 // ("¿A cuánto está el dólar?" → "a diecisiete con veinte"), the turn ticket ("¿Turno A-27?").
-// Mexico, how it goes: a numbered turn from the machine at the door; an official ID (passport or the residence card;
-// a foreign driver's license isn't one); a proof of address no older than three months (a light, water or phone bill);
+// Mexico, how it goes: a numbered turn from the machine at the door; to open an account a foreigner shows the passport
+// AND the residence card (as Mexican banks ask in Nov 2026: "pasaporte y forma migratoria"; audit 5 Nov), for the ATM
+// card or cash at the counter one official ID is enough (passport or residence card; a foreign driver's license isn't
+// one); a proof of address no older than three months (a light, water or phone bill, a lease, a bank statement);
 // the CURP (an 18-character population code, usually on the residence card); a cuenta de débito for everyday use
 // and a cuenta de ahorro with interest; the PIN is the NIP; the CLABE (18 digits) for an employer's payroll deposits;
 // many banks change dollars only for their customers, and only US dollars; a card kept by an ATM is not given back.
@@ -82,7 +84,17 @@ const BILLS_FROM = 100000;
 
 const opening = (c: Ctx) => !!c.s.opening && !c.s.opened;
 const inCard = (c: Ctx) => !!c.s.card;
-const needsId = (c: Ctx) => (opening(c) || inCard(c) || c.s.cash === "id") && !c.s.id;
+/** Opening an account takes the passport and the residence card; the card and the cash take one ID. */
+const docsOk = (c: Ctx) => !!c.s.docs?.passport && !!c.s.docs?.id_card;
+const needsId = (c: Ctx) => (opening(c) ? !docsOk(c) : (inCard(c) || c.s.cash === "id") && !c.s.id);
+/** An ID shown: the first one is c.s.id (the checklist's "Show your ID"); each is kept for the opening. */
+function gotDoc(c: Ctx, doc: string) {
+  c.s.docs = c.s.docs || {};
+  if (doc === "passport" || doc === "id_card") c.s.docs[doc] = true;
+  if (!c.s.id) c.s.id = doc;
+}
+/** "No traigo mi tarjeta de residente" (or no passport, or "Soy turista") while opening: both are needed. */
+function docsRefused(c: Ctx) { c.say("need_docs_open"); c.say("come_back_docs"); c.end(); }
 const customer = (c: Ctx) => !!c.s.customer || !!c.s.opened;
 /** The checklist follows the ATM-card story (twist visits, or whenever the learner reports it) unless they came to
  *  open an account. Frozen once one of the two errands is finished, so a second errand afterwards is a bonus. */
@@ -193,7 +205,7 @@ function afterId(c: Ctx) {
 
 /** A foreign driver's license is no official ID here: the passport or the residence card. */
 function otherIdPending(): Pending {
-  const take = (cc: Ctx, doc?: string) => { if (cc.s.id) return; cc.s.id = doc && doc !== "license" ? doc : "passport"; afterId(cc); };
+  const take = (cc: Ctx, doc?: string) => { if (cc.s.id) return; gotDoc(cc, doc && doc !== "license" ? doc : "passport"); afterId(cc); };
   return {
     id: "other_id", expects: ["show_doc", "doc_ctx", "here_you_go"], hints: ["g_yesno", "id"],
     suggest: [{ lt: "Say whether you have your passport or residence card", hint: "g_yesno" }, { lt: "Show another ID", hint: "id", options: "doc" }],
@@ -211,7 +223,7 @@ function otherIdPending(): Pending {
 function openAccount(c: Ctx) {
   c.s.opened = true;
   c.s.customer = true;
-  c.say("opened");
+  c.say(c.s.type === "both" ? "opened_both" : "opened");
   c.say("card_info");
   if (c.s.extraInfo === "pin") c.say("pin_info");
   else if (c.s.extraInfo === "routing") c.say("routing");
@@ -253,6 +265,7 @@ function depositConfirm(cents: number): Pending {
     suggest: [{ lt: "Say yes, or give another amount", hint: "deposit" }],
     on: {
       sure_ctx: (cc) => { depositAmount(cc, cents); }, not_that: () => { /* the deposit step asks again */ },
+      more_no: () => { /* "Es todo": a no; the deposit step asks again */ },
       // "No, mejor mil": the new amount is the answer
       deposit_ans: (cc, sl, sg) => { bank.handlers.deposit_ans(cc, sl, sg); }, amount_ctx: (cc, sl, sg) => { bank.handlers.deposit_ans(cc, sl, sg); },
       minimum: (cc, sl, sg) => { bank.handlers.minimum(cc, sl, sg); },
@@ -283,6 +296,10 @@ function cashConfirm(cents: number): Pending {
     on: {
       sure_ctx: (cc) => { payCash(cc, cents); },
       not_that: (cc) => { cc.s.cash = false; cc.say("no_problem"); },
+      // "Es todo, gracias" to "¿Se lo doy?": no cash, and nothing else (it asked the question again)
+      more_no: (cc) => { cc.s.cash = false; cc.say("no_problem"); allDone(cc); },
+      // "¿Cuál es el máximo?", then the question again
+      max_ctx: (cc) => { cc.say("cash_limit"); const p = cashConfirm(cents); cc.expect(p); p.ask!(cc); },
       // "No, mejor dos mil"
       amount_ctx: (cc, sl, sg) => { bank.handlers.amount_ctx(cc, sl, sg); }, deposit_ans: (cc, sl, sg) => { bank.handlers.amount_ctx(cc, sl, sg); },
     },
@@ -314,6 +331,9 @@ function exchangeConfirm(usd: number): Pending {
     on: {
       sure_ctx: (cc) => { exchangeDollars(cc, usd); }, not_that: (cc) => { cc.s.exchange = "cancelled"; cc.say("no_problem"); },
       euro_amount: (cc, sl, sg) => { bank.handlers.euro_amount(cc, sl, sg); }, euro_ctx: (cc, sl, sg) => { bank.handlers.euro_ctx(cc, sl, sg); }, // "No, mejor doscientos"
+      // "Es todo, gracias" to "¿Se los cambio?": nothing changed, and nothing else (it asked the quote again)
+      more_no: (cc) => { cc.s.exchange = "cancelled"; cc.say("no_problem"); allDone(cc); },
+      max_ctx: (cc) => { cc.say("ex_max"); quoteExchange(cc, usd); }, // "¿Cuál es el máximo?", then the quote again
     },
     yes: moneyYes(() => exchangeConfirm(usd), (cc) => { exchangeDollars(cc, usd); }),
     no: () => { /* the dollars step asks again */ },
@@ -332,7 +352,7 @@ function offerOpen(c: Ctx) {
 
 function openOffer(): Pending {
   return {
-    id: "open_offer", expects: ["open_account", "acct_type_ans", "no_open", "sure_ctx"], hints: ["g_yesno", "open"],
+    id: "open_offer", expects: ["open_account", "acct_type_ans", "no_open", "sure_ctx", "tourist_ctx"], hints: ["g_yesno", "open"],
     suggest: [{ lt: "Agree to open an account", hint: "g_yesno" }, { lt: "Say which account you want", hint: "acct_type", options: "acct" }],
     yes: (cc: Ctx) => { startOpening(cc); },
     no: (cc: Ctx) => { cc.s.declinedOpen = true; cc.say("no_problem"); },
@@ -340,6 +360,8 @@ function openOffer(): Pending {
       open_account: (cc: Ctx, sl: any, sg: any) => { bank.handlers.open_account(cc, sl, sg); },
       acct_type_ans: (cc: Ctx, sl: any, sg: any) => { bank.handlers.acct_type_ans(cc, sl, sg); },
       no_open: (cc: Ctx) => { cc.s.declinedOpen = true; cc.say("no_problem"); },
+      // "Soy turista": a no (an account takes a residence card)
+      tourist_ctx: (cc: Ctx) => { cc.s.declinedOpen = true; cc.s.tourist = true; cc.s.exchangeLater = false; cc.say("no_problem"); },
       sure_ctx: (cc: Ctx) => { startOpening(cc); },
       // "No, gracias, solo quería cambiar dólares": a no, then the request ("Sí, y también cambiar dólares": a yes)
       exchange_req: (cc: Ctx, sl: any, sg: any) => {
@@ -355,7 +377,14 @@ function openOffer(): Pending {
  *  (c.s.wantUsd) is quoted on a yes and forgotten otherwise: after the opening the dollars step asks again. */
 function customerPending(kind: "exchange" | "transfer"): Pending {
   const newcomer = (cc: Ctx) => { cc.s.newcomer = true; cc.s.wantUsd = undefined; if (kind === "exchange") cc.s.exchangeLater = true; };
-  const no = (cc: Ctx) => { newcomer(cc); cc.say(kind === "exchange" ? "customers_only" : "need_account_wire"); offerOpen(cc); };
+  // the rule is said once: after "¿Por qué?" it isn't said again
+  const rule = (cc: Ctx) => { if (!cc.s.whyTold) cc.say(kind === "exchange" ? "customers_only" : "need_account_wire"); };
+  const no = (cc: Ctx) => { newcomer(cc); rule(cc); offerOpen(cc); };
+  // "No, soy turista": no account, and none to offer (opening one takes a residence card)
+  const tourist = (cc: Ctx) => {
+    newcomer(cc); cc.s.exchangeLater = false; cc.s.tourist = true;
+    if (!cc.s.whyTold) rule(cc); else if (kind === "exchange") cc.say("cant_change");
+  };
   const yes = (cc: Ctx) => {
     cc.s.customer = true;
     if (kind === "exchange") {
@@ -364,12 +393,15 @@ function customerPending(kind: "exchange" | "transfer"): Pending {
     } else cc.say("customer_yes");
   };
   return {
-    id: "acct_q", expects: ["not_yet", "customer_ctx"], hints: ["g_yesno"],
+    id: "acct_q", expects: ["not_yet", "customer_ctx", "tourist_ctx", "why_ctx"], hints: ["g_yesno"],
     suggest: [{ lt: "Say whether you have an account here", hint: "g_yesno" }],
     yes, no,
     on: {
       not_yet: no,
       customer_ctx: yes,
+      tourist_ctx: tourist,
+      // "¿Por qué?": why it matters, then the question again (an answered piece closes the question: it is opened again)
+      why_ctx: (cc) => { cc.say(kind === "exchange" ? "why_customer" : "need_account_wire"); cc.s.whyTold = true; cc.expect(customerPending(kind)); cc.say("ask_customer_again"); },
       // "No, pero quiero abrir una": the opening, and the dollars after it
       open_account: (cc, sl, sg) => { newcomer(cc); bank.handlers.open_account(cc, sl, sg); },
     },
@@ -394,7 +426,8 @@ const S_EXCHANGE: Suggestion = { lt: "Change dollars into pesos", hint: "exchang
 const S_CARD: Suggestion = { lt: "Say the ATM outside kept your card", hint: "card" };
 const S_ASK: Suggestion = { lt: "Ask about fees, the card or the app", hint: "ask_acct" };
 
-const MAIN_EXPECTS = ["open_account", "card_kept", "exchange_req", "transfer_q", "withdraw", "new_in_town", "turn_ticket", "help_me", "exchange_other", "rate_q"];
+const MAIN_EXPECTS = ["open_account", "card_kept", "exchange_req", "transfer_q", "withdraw", "new_in_town", "turn_ticket", "help_me", "exchange_other", "rate_q",
+  "cash_max_q", "ex_max_q"];
 
 function helpStep(id: string, withCard: boolean): StepDef {
   return {
@@ -416,10 +449,15 @@ function helpStep(id: string, withCard: boolean): StepDef {
       }
       c.say("ask_help");
     },
-    expects: MAIN_EXPECTS,
+    expects: [...MAIN_EXPECTS, "more_no", "nothing_ctx"],
     suggest: withCard ? [S_CARD, S_OPEN, S_TRANSFER, S_EXCHANGE] : [S_OPEN, S_TRANSFER, S_EXCHANGE],
     yes: (c) => { if (c.s.hay === "asked") { c.s.hay = "done"; c.say("g_glad"); } },
-    no: (c) => { if (c.s.hay === "asked") { c.s.hay = "done"; c.say("g_sorry_to_hear"); } },
+    // "No, gracias" / "Eso es todo" / "Nada más" to "¿En qué le puedo ayudar?" (after a question or a declined offer):
+    // nothing else, so goodbye (it used to ask the same question again and again)
+    no: (c) => {
+      if (c.s.hay === "asked") { c.s.hay = "done"; c.say("g_sorry_to_hear"); return; }
+      c.s.task = c.s.task || "none"; c.s.moreDone = true;
+    },
     help: (c) => { c.say("services"); },
   };
 }
@@ -557,6 +595,8 @@ export const bank: SituationDef = {
       "[es] para recibir mi (sueldo | nomina | salario | pago) #chk", "la que (tiene | trae | viene con) tarjeta #chk", "la que (da | paga | genera) (intereses | interes | rendimiento) #sav", "[es] para ahorrar [dinero] #sav", "(quiero | necesito) ahorrar [dinero] #sav", "para guardar (dinero | mi dinero) #sav",
       "(quiero | quisiera) (las dos | ambas) #both",
     ] },
+    // "La primera" / "La segunda" to "¿de débito o de ahorro?" (every list says débito first)
+    which_ctx: { patterns: ["(la | el) (primera | primero) [opcion]", "(la | el) (segunda | segundo) [opcion] #sav"] },
     // "Las dos" / "Ambas": only where an account is being chosen
     both_ctx: { patterns: ["(las dos | ambas | los dos | una de cada una | una de cada) #h:type_both", "(de debito y de ahorro | debito y ahorro)"] },
     acct_type_not: { patterns: [
@@ -572,7 +612,7 @@ export const bank: SituationDef = {
       "aqui (esta | tiene) [mi] {doc} #h:id_here", "(tome | tenga | le doy | le paso) [mi] {doc}", "(este | esta) es mi {doc}", "(tengo | traigo) [mi | un | una] {doc} [aqui | conmigo]",
       "solo (tengo | traigo) [mi | un | una] {doc} #h:id_only", "(sirve | le sirve | esta bien | vale) [mi | un | una] {doc} #h:id_ok",
       "(puedo usar | puedo darle | acepta | aceptan) [mi | un | una] {doc}", "tambien (tengo | traigo) [mi | un | una] {doc} #h:id_license",
-      "(tengo | traigo) [mi] {doc} y [mi] {doc}", "aqui (esta | tiene | estan) [mi] {doc} y [mi] {doc}", "[el | mi | un | una] {doc} (sirve | esta bien | le sirve | vale)", "(necesita | quiere) [ver] mi {doc}",
+      "(tengo | traigo) [mi] {doc} y [mi] {doc}", "aqui (esta | tiene | estan) [mi] {doc} y [mi] {doc} #h:docs_both", "[el | mi | un | una] {doc} (sirve | esta bien | le sirve | vale)", "(necesita | quiere) [ver] mi {doc}",
       "no (tengo | traigo) [mi | un] {nod:doc} pero (tengo | traigo) [mi | un | una] {doc}", "[mi] {nod:doc} no pero (tengo | traigo) [mi] {doc}",
     ] },
     // "Pasaporte." as the answer to "¿Me permite una identificación?"
@@ -581,6 +621,9 @@ export const bank: SituationDef = {
       "no (tengo | traigo) [mi | un | una | ninguna] ({doc} | identificacion | identificacion oficial) [conmigo | aqui | hoy]",
       "(se me olvidó | olvidé | dejé) [mi | el | la] {doc} [en (casa | el hotel | mi casa)]", "no traigo identificacion", "no tengo identificacion",
       "(lo | la) (dejé | olvidé) en (casa | el hotel | mi casa)",
+      // "¿Y si no tengo tarjeta de residente?": the rule, and the question stays (no_doc reads the what-if)
+      "(y si | que pasa si) no (tengo | traigo) [mi | la | el | un | una] ({doc} | identificacion | residencia)",
+      "(todavia | aun) no (tengo | me dan | me han dado) [mi | la | el] ({doc} | residencia)", "(estoy esperando | sigo esperando | todavia espero) [mi | la] ({doc} | residencia)",
     ] },
     give_proof: { patterns: [
       "aqui (esta | tiene) [mi | el] {proof} #h:proof_bill", "(tengo | traigo) [un | una | mi | el] {proof} #h:proof_lease", "(sirve | le sirve | esta bien | vale) [mi | un | una | el] {proof} #h:proof_ok",
@@ -601,14 +644,21 @@ export const bank: SituationDef = {
     // The CURP (step "ssn")
     ssn_none: { patterns: [
       "[no] (todavia | aun) no (la | lo) tengo #h:ssn_notyet", "no tengo [una | la] curp [todavia | aun]", "no tengo (eso | esa clave) [todavia]",
-      "[no] (estoy esperando | sigo esperando | todavia espero) (mi curp | la curp | mi tarjeta [de residente] | mi residencia) #h:ssn_waiting",
+      "[no] (estoy esperando | sigo esperando | todavia espero) (mi curp | la curp | mi tarjeta [de residente] | mi residencia)",
       "[no] (soy | estoy de) (turista | visitante)", "[no] (soy | todavia soy) (extranjero | extranjera)", "[no] no soy mexicano", "[no] no soy mexicana",
-      "[no] solo tengo [mi] pasaporte", "[no] soy de (estados unidos | canada | inglaterra | australia | irlanda | otro pais | fuera)", "(la | lo) (estoy tramitando | estoy sacando)", "no se cual es [mi curp]",
+      "[no] solo tengo [mi] pasaporte", "[no] soy de (estados unidos | canada | inglaterra | australia | irlanda | otro pais | fuera)", "(la | lo) (estoy tramitando | estoy sacando)", "no se cual es [mi curp] #h:ssn_dunno",
     ] },
     ssn_yes: { patterns: [
       "[si] (la | lo) tengo [aqui]", "[si] (tengo | ya tengo) [mi | la] curp", "[si] (viene | esta) en mi (tarjeta [de residente] | residencia)", "[si] aqui (esta | la tiene)",
     ] },
-    ask_ssn_what: { patterns: ["que es (la | el | una) curp #h:ssn_what", "que es eso", "para que (es | sirve) [la curp | eso]", "no se (que es | lo que es) [eso | la curp]", "que significa curp"] },
+    ask_ssn_what: { patterns: ["que es (la | el | una) curp #h:ssn_what", "para que (es | sirve) la curp", "no se (que es | lo que es) la curp", "que significa curp", "que es eso de la curp"] },
+    // "¿Qué es eso?" right after a word Ricardo used (the CURP, the comprobante, the lease, the account types, the NIP):
+    // what_ctx, answered by step
+    what_ctx: { patterns: ["[y] (que es | que es eso | eso que es)", "que (significa | quiere decir) eso", "para que (es | sirve) eso", "para que sirve", "no se (que es | lo que es) [eso]"] },
+    // "¿Por qué?" to "¿Tiene cuenta con nosotros?"
+    why_ctx: { patterns: ["(por que | para que) [lo | me] [pregunta | necesita saber]", "por que importa"] },
+    // "No, soy turista": no account (and none to open: that takes a residence card)
+    tourist_ctx: { patterns: ["[no] (soy | estoy de) (turista | visitante)", "[no] (solo)? estoy de (vacaciones | visita | paseo)", "[no] (vengo | ando) de (vacaciones | visita | paseo)", "[no] no vivo aqui", "[no] solo estoy de paso"] },
     ssn_problem: { patterns: [
       "(es | hay) [un] problema #h:ssn_problem", "(puedo | se puede) abrir (la cuenta | una cuenta | la) sin (curp | ella | eso)", "(necesito | es necesaria | es obligatoria) [la] curp",
       "(esta bien | no importa) si no la tengo",
@@ -718,6 +768,8 @@ export const bank: SituationDef = {
     need_q: { patterns: [
       "que (necesito | se necesita | ocupo | me piden | hace falta) [para (eso | la transferencia | mandar dinero | enviar dinero)] #h:tr_need",
       "que (datos | documentos | informacion) (necesito | necesita | ocupo | piden)",
+      "que (necesito | se necesita | ocupo | me piden | hace falta) para @send @money [@money_to]",
+      "que (necesito | se necesita | ocupo | me piden | hace falta) para (hacer | mandar | enviar) una transferencia [internacional] [@money_to]",
     ] },
     swift_q: { patterns: [
       "que es (el | un) (swift | codigo swift | bic | codigo bic | aba | numero aba) #h:tr_swift", "donde (consigo | encuentro) el (swift | codigo swift)",
@@ -733,8 +785,21 @@ export const bank: SituationDef = {
       "a cuanto (esta | tienen | compran | pagan) el dolar [hoy] #h:ex_rate", "(cual es | como esta) el tipo de cambio [hoy | del dolar]", "como esta el dolar [hoy]",
       "a como (esta | compran) el dolar", "cuantos pesos (me dan | son | serian | da) por (un | cada) dolar", "cuanto (me dan | dan | pagan) por (un | el) dolar",
       "a cuanto (vende | venden) el dolar #sell", "(venden | vende) dolares [aqui] #sell", "a cuanto (lo | la) (vende | venden) #sell",
-      "cuantos pesos (son | serian | me dan por | me da por) {number} [dolares] #amt", "cuanto (es | son | seria | serian) {number} dolares [en pesos] #amt", "cuanto me (dan | da | darian) por {number} dolares #amt",
+      "cuantos pesos (son | serian | me dan por | me da por) {number} [dolares] #amt", "cuanto (es | son | seria | serian) {number} dolares [en pesos] #amt", "cuanto me (dan | da | darian) por {number} [dolares] #amt",
+      // "Quiero comprar dólares": the selling rate (selling dollars is not part of this visit)
+      "(quiero | quisiera | necesito | puedo | se puede | podria) comprar [unos | algunos | {number}] dolares [aqui] #sell", "(me vende | me puede vender | me venden | me pueden vender | me podria vender) [unos | {number}] dolares #sell",
+      "a (cuanto | como) (vende | venden) (los dolares | el dolar | dolares) #sell",
     ] },
+    // "¿Cuánto puedo sacar?" (was "No tiene ningún costo"), "¿Cuánto puedo cambiar?", "¿Cuál es el máximo?" at the amount questions
+    cash_max_q: { patterns: ["cuanto (puedo | se puede) (sacar | retirar) [como maximo | maximo | al dia | hoy]", "(hay | tiene) (un)? (limite | maximo) para (sacar | retirar)", "cual es el (limite | maximo) para (sacar | retirar)"] },
+    ex_max_q: { patterns: ["cuanto (puedo | se puede) cambiar [como maximo | maximo | al mes | al dia]", "cuantos dolares (puedo | se pueden) cambiar [como maximo | al mes | al dia]",
+      "(hay | tienen) (un)? (limite | maximo) (para cambiar | de dolares | para dolares)", "cual es el (limite | maximo) (para cambiar | de dolares)"] },
+    max_ctx: { patterns: ["cual es el (maximo | limite)", "(hay | tienen) (un)? (limite | maximo)", "cuanto es (lo maximo | el maximo)", "hasta cuanto [puedo]"] },
+    // "¿Puedo abrir una cuenta en dólares?": the accounts are in pesos
+    usd_account_q: { patterns: ["(quiero | quisiera | puedo | se puede | podria) @open (una cuenta | cuenta | la cuenta) en dolares", "(tienen | hay | manejan | abren) cuentas en dolares",
+      "(la cuenta | mi cuenta) (puede ser | es) en dolares", "(puedo | se puede) tener (una cuenta | la cuenta | cuenta) en dolares", "una cuenta en dolares"] },
+    // "¿Qué es el NIP?"
+    nip_q: { patterns: ["que es (el | un) (nip | pin)", "que (significa | quiere decir) (nip | pin)", "que es eso del (nip | pin)"] },
     euro_amount: { patterns: [
       "{number} dolares #h:ex_amount", "(quiero | quisiera | necesito | voy a) cambiar [otros] {number} [dolares]", "(tengo | traigo) {number} dolares",
       "(cambieme | me cambia) {number} [dolares]", "son {number} dolares", "(todos | todo) (los que traigo | lo que traigo) #h:ex_all #all", "todos mis dolares #all",
@@ -784,7 +849,10 @@ export const bank: SituationDef = {
       "(eso | esto) (es | seria) todo [por hoy | por ahora] #h:more_everything", "[no] (es | seria) todo [por hoy | por ahora] #h:more_all", "nada mas [por hoy]",
       "[no] no (necesito | ocupo) nada mas", "ya (es | seria) todo", "(no tengo | ya no tengo) (mas | otras) preguntas", "(por hoy | por ahora) es todo",
       "(ya)? (con eso | eso) es todo", "con eso estoy bien",
+      "[muchas] gracias [no] [eso | esto] (es | seria) todo [por hoy | por ahora]", "[no] gracias (eso | esto | ya) (es | seria) todo", "[no] (es | seria) todo muchas gracias",
     ] },
+    // "Nada" / "Nada, gracias" to "¿En qué le puedo ayudar?" or "¿Algo más?"
+    nothing_ctx: { patterns: ["[no] nada [mas] [gracias | por ahora | por hoy | por el momento]", "no gracias nada"] },
     have_question: { patterns: [
       "[si] tengo (una | otra) pregunta #h:more_question", "(le puedo | puedo) (hacer una pregunta | preguntar algo)", "(una | otra) (pregunta | cosa) [mas]", "[si] una cosa mas",
     ] },
@@ -879,16 +947,26 @@ export const bank: SituationDef = {
       { flags: { 3: "la de ahorro: the savings one (la cuenta is understood)." } })],
 
     // ID and proof of address
+    // opening an account: the passport and the residence card (both, as Mexican banks ask)
     ask_id: [
-      t("¿Me | permite | una | identificación? | Su | pasaporte | está bien.", "(To) me | you-allow | an | ID? | Your | passport | is fine.",
-        "May I see some ID? Your passport is fine."),
-      t("¿Me | permite | su | pasaporte, | por favor?", "(To) me | you-allow | your | passport, | please?", "May I see your passport, please?"),
+      t("¿Me | permite | su | pasaporte | y | su | tarjeta | de | residente?", "(To) me | you-allow | your | passport | and | your | card | of | resident?",
+        "May I see your passport and your residence card?"),
+      t("Voy a | necesitar | su | pasaporte | y | su | tarjeta | de | residente, | por favor.", "I'm going to | need | your | passport | and | your | card | of | resident, | please.",
+        "I'll need your passport and your residence card, please."),
     ],
     ask_id_proof: [
-      t("Voy a | necesitar | su | pasaporte | o | su | tarjeta | de | residente, | y | un | comprobante | de | domicilio, | como | un | recibo | de | luz.",
-        "I'm going to | need | your | passport | or | your | card | of | resident, | and | a | proof | of | address, | like | a | bill | of | electricity.",
-        "I'll need your passport or your residence card, and proof of address, like an electric bill."),
+      t("Voy a | necesitar | su | pasaporte, | su | tarjeta | de | residente | y | un | comprobante | de | domicilio, | como | un | recibo | de | luz.",
+        "I'm going to | need | your | passport, | your | card | of | resident | and | a | proof | of | address, | like | a | bill | of | electricity.",
+        "I'll need your passport, your residence card and proof of address, like an electric bill."),
     ],
+    ask_res_card: [t("¿Y | su | tarjeta | de | residente?", "And | your | card | of | resident?", "And your residence card?")],
+    ask_passport_too: [t("¿Y | su | pasaporte?", "And | your | passport?", "And your passport?")],
+    need_docs_open: [t("Lo siento, | para | abrir | la | cuenta | necesito | su | pasaporte | y | su | tarjeta | de | residente.",
+      "I'm sorry, | to | open | the | account | I-need | your | passport | and | your | card | of | resident.",
+      "I'm sorry, to open the account I need your passport and your residence card.")],
+    come_back_docs: [t("Regrese | con | los | dos | cuando | guste.", "Come back | with | the | two | when | you like.", "Come back with both whenever you like.")],
+    license_no_open: [t("Lo siento, | la | licencia | no nos sirve | como | identificación.", "I'm sorry, | the | license | doesn't work for us | as | ID.",
+      "I'm sorry, we can't take a driver's license as ID.")],
     id_thanks: [
       t("Gracias.", "Thanks.", "Thank you."),
       t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thanks."),
@@ -924,6 +1002,8 @@ export const bank: SituationDef = {
     ],
     ask_lease: [t("No se preocupe. | ¿Tiene | contrato | de | renta?", "Don't worry. | Do you have | a contract | of | rent?", "Don't worry. Do you have a lease?")],
     ask_lease_again: [t("¿Y | tiene | contrato | de | renta?", "And | do you have | a contract | of | rent?", "And do you have a lease?")],
+    lease_explain: [t("Es | el | contrato | que | firmó | con | el | dueño | de | su | casa.", "It's | the | contract | that | you-signed | with | the | owner | of | your | home.",
+      "It's the contract you signed with your landlord.")],
     proof_later: [t("Está bien. | Lo | puede | traer | después.", "That's fine. | It | you-can | bring | later.", "That's okay. You can bring it in later.")],
 
     // the CURP (step "ssn")
@@ -938,7 +1018,6 @@ export const bank: SituationDef = {
     ssn_none_ok: [
       t("No se preocupe: | la | buscamos | en | el | sistema | con | sus | datos.", "Don't worry: | it | we'll-look up | in | the | system | with | your | details.",
         "Don't worry: we'll look it up in the system with your details.", { flags: { 1: "la: it, the object pronoun for la CURP (not an article)." } }),
-      t("No pasa nada; | la | puede | agregar | después.", "It's no problem; | it | you-can | add | later.", "That's fine; you can add it later.", { flags: { 1: "la: it, the object pronoun for la CURP (not an article)." } }),
     ],
     ssn_yes_type: [t("Perfecto. | Escríbala | aquí, | por favor.", "Perfect. | Write it | here, | please.", "Great. Write it here, please.")],
     ssn_explain: [
@@ -970,13 +1049,18 @@ export const bank: SituationDef = {
 
     // deposit
     min_deposit: [t("Para | abrirla | necesita | depositar | por lo menos | {$price}.", "To | open it | you-need | to deposit | at least | {$price}.", "You need to deposit at least {$price} to open it.")],
+    min_deposit_both: [t("Para | abrirlas | necesita | depositar | por lo menos | {$price}.", "To | open them | you-need | to deposit | at least | {$price}.", "You need to deposit at least {$price} to open them.")],
     ask_deposit: [
       t("¿Con | cuánto | la | quiere | abrir?", "With | how much | it | do you want | to open?", "How much would you like to open it with?", { flags: { 2: "la: it, the object pronoun for la cuenta (not an article)." } }),
       t("¿Cuánto | va | a | depositar | hoy?", "How much | are you going | to | deposit | today?", "How much are you depositing today?"),
     ],
+    ask_deposit_both: [
+      t("¿Con | cuánto | las | quiere | abrir?", "With | how much | them | do you want | to open?", "How much would you like to open them with?", { flags: { 2: "las: them, the object pronoun for las cuentas (not an article)." } }),
+      t("¿Cuánto | va | a | depositar | hoy?", "How much | are you going | to | deposit | today?", "How much are you depositing today?"),
+    ],
     deposit_min: [t("Lo siento, | el | mínimo | es | {$price}.", "I'm sorry, | the | minimum | is | {$price}.", "Sorry, the minimum is {$price}.")],
     min_is: [t("El | mínimo | es | {$price}.", "The | minimum | is | {$price}.", "The minimum is {$price}.")],
-    deposit_enough: [t("Sí, | con | eso | alcanza. | ¿Lo | deposito, | entonces?", "Yes, | with | that | it's enough. | It | shall I deposit, | then?", "Yes, that's enough. Shall I deposit it, then?")],
+    deposit_enough: [t("Sí, | con | eso | alcanza. | ¿Lo | deposito, | entonces?", "Yes, | with | that | it's enough. | It | should I deposit, | then?", "Yes, that's enough. Should I deposit it, then?")],
     deposit_later: [t("El | depósito | lo | hacemos | al | final.", "The | deposit | it | we-do | at the | end.", "We'll do the deposit at the end.",
       { flags: { 2: "lo: it, repeating el depósito; Spanish repeats an object that comes first." } })],
 
@@ -986,6 +1070,7 @@ export const bank: SituationDef = {
       t("¡Ya | quedó! | Su | cuenta | nueva | está | abierta.", "Already | it's settled! | Your | account | new | is | open.", "All done! Your new account is open.",
         { flags: { 1: "quedó: it's done (literally, it remained); ¡Ya quedó! is a common way to say all set." } }),
     ],
+    opened_both: [t("¡Listo! | Sus | dos | cuentas | ya | están | abiertas.", "Done! | Your | two | accounts | already | are | open.", "All set! Both your accounts are open.")],
     card_info: [
       t("Su | tarjeta | de | débito | va a | estar | lista | en | unos | días; | se la | entregamos | aquí.", "Your | card | of | debit | is going to | be | ready | in | a few | days; | it to you | we-hand | here.",
         "Your debit card will be ready in a few days; we'll give it to you here."),
@@ -1022,7 +1107,7 @@ export const bank: SituationDef = {
     offer_savings_again: [t("Entonces, | ¿también | una | de | ahorro?", "So, | also | one | — | savings?", "So, a savings account too?", { flags: { 3: "una de ahorro: a savings one (cuenta is understood)." } })],
     savings_yes: [t("Perfecto, | se la | abro | también.", "Perfect, | it for you | I'll-open | too.", "Great, I'll open that one too.")],
     offer_app: [t("¿Quiere | que | le | ayude | a | descargar | nuestra | app?", "Do you want | that | (to) you | I-help | to | download | our | app?", "Would you like me to help you download our app?")],
-    offer_app_again: [t("Entonces, | ¿le | ayudo | con | la | app?", "So, | (to) you | shall I help | with | the | app?", "So, shall I help you with the app?")],
+    offer_app_again: [t("Entonces, | ¿le | ayudo | con | la | app?", "So, | (to) you | should I help | with | the | app?", "So, do you want help with the app?")],
     app_features: [t("Ahí | puede | consultar | su | saldo, | hacer | transferencias | y | pagar | servicios.", "There | you-can | check | your | balance, | make | transfers | and | pay | bills.",
       "There you can check your balance, make transfers and pay your bills.", { flags: { 9: "servicios: here, utility bills (light, water, phone)." } })],
     app_yes: [t("¡Perfecto! | Escanee | este | código | con | su | celular.", "Perfect! | Scan | this | code | with | your | cell phone.", "Great! Just scan this code with your phone.")],
@@ -1060,9 +1145,10 @@ export const bank: SituationDef = {
     atm_where: [t("Tenemos | un | cajero | aquí | afuera, | junto a | la | puerta.", "We have | an | ATM | here | outside, | next to | the | door.", "We have an ATM right outside, next to the door.")],
     atm_free: [t("En | nuestros | cajeros | no paga | comisión; | en | los | de | otros | bancos, | sí.", "At | our | ATMs | you don't pay | a fee; | at | the ones | of | other | banks, | yes.",
       "Our ATMs are free for you; other banks' ATMs charge a fee.")],
-    open_need: [t("Su | pasaporte | o | su | tarjeta | de | residente, | un | comprobante | de | domicilio | y | por lo menos | {$price}.",
-      "Your | passport | or | your | card | of | resident, | a | proof | of | address | and | at least | {$price}.",
-      "Your passport or your residence card, proof of address and at least {$price}.")],
+    open_need: [t("Su | pasaporte | y | su | tarjeta | de | residente, | un | comprobante | de | domicilio, | su | CURP | y | un | depósito | de | por lo menos | {$price}.",
+      "Your | passport | and | your | card | of | resident, | a | proof | of | address, | your | CURP | and | a | deposit | of | at least | {$price}.",
+      "Your passport and your residence card, proof of address, your CURP and a deposit of at least {$price}.",
+      { flags: { 12: "CURP: Mexico's population registry code, which residents have too." } })],
     open_time: [t("Son | unos | veinte | minutos.", "It's | about | twenty | minutes.", "It takes about twenty minutes.", { flags: { 1: "unos before a number: about." } })],
 
     // transfer
@@ -1113,11 +1199,21 @@ export const bank: SituationDef = {
     exchange_done_generic: [t("Aquí | tiene. | El | tipo de cambio | viene | en | su | comprobante.", "Here | you have. | The | exchange rate | comes | on | your | receipt.",
       "Here you go. The exchange rate is on your receipt.")],
     exchange_would: [t("Serían | {$amount}.", "It would be | {$amount}.", "That would be {$amount}.")],
-    exchange_quote: [t("Serían | {$amount}. | ¿Se los | cambio?", "It would be | {$amount}. | Them for you | shall I change?", "That would be {$amount}. Shall I change them for you?")],
-    exchange_quote_rate: [t("Se los | compramos | a | $17.20 | cada uno. | ¿Se los | cambio?", "Them from you | we-buy | at | 17.20 pesos | each. | Them for you | shall I change?",
-      "We buy them at 17.20 pesos each. Shall I change them for you?", { say: "Se los compramos a diecisiete con veinte cada uno. ¿Se los cambio?" })],
+    exchange_quote: [t("Serían | {$amount}. | ¿Se los | cambio?", "It would be | {$amount}. | Them for you | should I change?", "That would be {$amount}. Should I change them for you?")],
+    exchange_quote_rate: [t("Se los | compramos | a | $17.20 | cada uno. | ¿Se los | cambio?", "Them from you | we-buy | at | 17.20 pesos | each. | Them for you | should I change?",
+      "We buy them at 17.20 pesos each. Should I change them for you?", { say: "Se los compramos a diecisiete con veinte cada uno. ¿Se los cambio?" })],
+    why_customer: [t("Porque | solo | cambiamos | dólares | a | nuestros | clientes.", "Because | only | we-change | dollars | for | our | customers.", "Because we only change dollars for our customers.")],
+    cant_change: [t("Entonces | no puedo | cambiárselos, | lo siento.", "Then | I can't | change them for you, | I'm sorry.", "Then I can't change them for you, I'm sorry.")],
+    ex_max: [t("A | nuestros | clientes | les | cambiamos | hasta | 4,000 | dólares | al | mes | en | efectivo.",
+      "To | our | customers | (to) them | we-change | up to | 4,000 | dollars | per | month | in | cash.",
+      "We change up to 4,000 dollars in cash a month for our customers.", { say: "A nuestros clientes les cambiamos hasta cuatro mil dólares al mes en efectivo." })],
+    usd_account_no: [t("Lo siento, | nuestras | cuentas | son | solo | en | pesos.", "I'm sorry, | our | accounts | are | only | in | pesos.", "I'm sorry, our accounts are only in pesos.")],
 
     // the card (twist)
+    card_other_bank: [t("Si | es | de | otro | banco, | por | seguridad | no podemos | devolvérsela. | Llame | a | su | banco | para | cancelarla.",
+      "If | it is | from | another | bank, | for | security | we can't | give it back to you. | Call | — | your | bank | to | cancel it.",
+      "If it's from another bank, for security reasons we can't give it back. Call your bank to cancel it.",
+      { flags: { 10: "llamar a + a person or a business: English needs no word." } })],
     card_sorry: [
       t("¡Ay, | no! | Lo siento | mucho.", "Oh, | no! | I'm sorry | a lot.", "Oh no! I'm so sorry."),
       t("Uy, | qué | mala | suerte. | Lo siento.", "Oh, | what | bad | luck. | I'm sorry.", "Oh, that's bad luck. I'm sorry."),
@@ -1130,6 +1226,7 @@ export const bank: SituationDef = {
         { flags: { 2: "Mexican: NIP = PIN (número de identificación personal); PIN is understood everywhere." },
           neutral: t("¿Se equivocó | de | PIN | varias | veces?", "Did you make a mistake | with | PIN | several | times?", "Did you enter the wrong PIN a few times?") }),
     ],
+    nip_explain: [t("Es | el | número | secreto | de | su | tarjeta.", "It's | the | number | secret | of | your | card.", "It's your card's secret number.")],
     pin_explain: [t("Seguramente | fue | eso. | Después de | tres | intentos, | el | cajero | retiene | la | tarjeta.", "Surely | it was | that. | After | three | tries, | the | ATM | keeps | the | card.",
       "That's probably why. After three wrong tries, the machine keeps the card.")],
     machine_problem: [t("Entonces | puede | ser | una | falla | del | cajero.", "Then | it may | be | a | fault | of the | ATM.", "Then it might be a problem with the machine.")],
@@ -1157,11 +1254,12 @@ export const bank: SituationDef = {
       t("Claro. | ¿Cuánto | quiere | retirar?", "Sure. | How much | do you want | to withdraw?", "Sure. How much would you like to take out?"),
       t("¿Cuánto | va | a | retirar | hoy?", "How much | are you going | to | withdraw | today?", "How much are you taking out today?"),
     ],
-    cash_confirm: [t("Claro, | sin problema. | ¿Se lo | doy?", "Sure, | no problem. | It to you | shall I give?", "Sure, no problem. Shall I give it to you?")],
+    cash_confirm: [t("Claro, | sin problema. | ¿Se lo | doy?", "Sure, | no problem. | It to you | should I give?", "Sure, no problem. Should I give it to you?")],
+    cash_limit: [t("Lo que | tenga | en | su | cuenta.", "Whatever | you-have | in | your | account.", "Whatever you have in your account.")],
     need_account_cash: [t("Para | retirar | efectivo | aquí | necesita | una | cuenta | con | nosotros.", "To | withdraw | cash | here | you-need | an | account | with | us.",
       "You need an account with us to take out cash here.")],
     ask_bills: [
-      t("¿Se lo | doy | en | billetes | de | quinientos?", "It to you | shall I give | in | bills | of | five hundred?", "Is it okay in five-hundred-peso bills?"),
+      t("¿Se lo | doy | en | billetes | de | quinientos?", "It to you | should I give | in | bills | of | five hundred?", "Is it okay in five-hundred-peso bills?"),
       t("¿Cómo | lo | quiere? | ¿En | billetes | de | quinientos?", "How | it | do you want? | In | bills | of | five hundred?", "How would you like it? In five-hundreds?"),
     ],
     here_cash: [
@@ -1209,6 +1307,12 @@ export const bank: SituationDef = {
       { id: "id_only", s: t("Solo | traigo | mi | pasaporte.", "Only | I-have-with-me | my | passport.", "I only have my passport with me."), note: "traer: to bring; Mexicans say traigo for what they have on them." },
       { id: "id_license", s: t("También | traigo | mi | tarjeta | de | residente.", "Also | I-have-with-me | my | card | of | resident.", "I also have my residence card.") },
     ] },
+    // opening an account: both documents
+    docs: { lt: "Show your passport and residence card", items: [
+      { id: "docs_both", s: t("Aquí | están | mi | pasaporte | y | mi | tarjeta | de | residente.", "Here | are | my | passport | and | my | card | of | resident.", "Here are my passport and my residence card.") },
+      { id: "form_here", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
+      { id: "id_here", s: t("Aquí | está | mi | pasaporte.", "Here | is | my | passport.", "Here's my passport.") },
+    ] },
     proof: { lt: "Show proof of address", items: [
       { id: "proof_bill", s: t("Aquí | está | mi | recibo | de | luz.", "Here | is | my | bill | of | electricity.", "Here's my electric bill.") },
       { id: "proof_lease", s: t("Tengo | mi | contrato | de | renta.", "I have | my | contract | of | rent.", "I have my lease.") },
@@ -1218,7 +1322,7 @@ export const bank: SituationDef = {
     ] },
     ssn: { lt: "Answer about your CURP", items: [
       { id: "ssn_notyet", s: t("Todavía | no la tengo.", "Still | I don't have it.", "I don't have it yet.") },
-      { id: "ssn_waiting", s: t("Estoy | esperando | mi | tarjeta | de | residente.", "I am | waiting for | my | card | of | resident.", "I'm still waiting for my residence card.") },
+      { id: "ssn_dunno", s: t("No sé | cuál | es.", "I don't know | which | it is.", "I don't know my CURP."), note: "No sé cuál es: I don't know it (literally, which one it is)." },
       { id: "ssn_problem", s: t("¿Es | un | problema?", "Is it | a | problem?", "Is that a problem?") },
       { id: "ssn_what", s: t("¿Qué | es | la | CURP?", "What | is | the | CURP?", "What's a CURP?") },
     ] },
@@ -1226,7 +1330,8 @@ export const bank: SituationDef = {
       { id: "form_done", s: t("Listo, | ya | firmé.", "Done, | already | I-signed.", "Okay, I've signed it.") },
       { id: "form_here", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
       { id: "form_where", s: t("¿Dónde | firmo?", "Where | do I sign?", "Where do I sign?") },
-      { id: "form_pen", s: t("¿Me | presta | una | pluma?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?"), note: "Mexico says pluma for a pen; bolígrafo is understood everywhere." },
+      { id: "form_pen", s: t("¿Me | presta | una | pluma?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?",
+        { flags: { 3: "Mexican: pluma = pen; bolígrafo is the neutral word." }, neutral: t("¿Me | presta | un | bolígrafo?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?") }) },
       { id: "form_what", s: t("¿Qué | escribo | aquí?", "What | do I write | here?", "What should I write here?") },
     ] },
     deposit: { lt: "Say how much you'll deposit", items: [
@@ -1259,10 +1364,11 @@ export const bank: SituationDef = {
       { id: "ex_fee", s: t("¿Cobran | comisión?", "Do you charge | a fee?", "Is there a fee?") },
     ] },
     card: { lt: "Say the ATM kept your card", items: [
-      { id: "card_kept", s: t("El | cajero | se tragó | mi | tarjeta.", "The | ATM | swallowed | my | card.", "The ATM kept my card."), note: "cajero: here, the cash machine (cajero automático)." },
+      { id: "card_kept", s: t("El | cajero | se tragó | mi | tarjeta.", "The | ATM | swallowed | my | card.", "The ATM kept my card."), note: "cajero: here, the ATM (cajero automático)." },
       { id: "card_stuck", s: t("Mi | tarjeta | se quedó | en | el | cajero.", "My | card | stayed | in | the | ATM.", "My card got stuck in the ATM.") },
       { id: "card_ate", s: t("La | máquina | se comió | mi | tarjeta.", "The | machine | ate | my | card.", "The machine ate my card."), register: "casual" },
-      { id: "card_pin", s: t("Sí, | puse | mal | el | NIP.", "Yes, | I-put | wrong | the | PIN.", "Yes, I entered the wrong PIN."), note: "Mexico says NIP for a PIN; PIN is understood too." },
+      { id: "card_pin", s: t("Sí, | puse | mal | el | NIP.", "Yes, | I-put | wrong | the | PIN.", "Yes, I entered the wrong PIN.",
+        { flags: { 4: "Mexican: NIP = PIN (número de identificación personal); PIN is understood everywhere." }, neutral: t("Sí, | puse | mal | el | PIN.", "Yes, | I-put | wrong | the | PIN.", "Yes, I entered the wrong PIN.") }), note: "Mexico says NIP for a PIN; PIN is understood too." },
       { id: "card_block", s: t("¿Me | puede | bloquear | la | tarjeta?", "(For) me | can you | block | the | card?", "Could you block the card?") },
       { id: "card_new", s: t("¿Me | pueden | dar | una | tarjeta | nueva?", "(To) me | can you | give | a | card | new?", "Can I get a new card?") },
     ] },
@@ -1284,7 +1390,8 @@ export const bank: SituationDef = {
       { id: "ex_all", s: t("Todos | los | que | traigo.", "All | the ones | that | I-have-with-me.", "All the ones I have.") },
     ] },
     pin: { lt: "Say whether you entered the wrong PIN", items: [
-      { id: "card_pin", s: t("Sí, | puse | mal | el | NIP.", "Yes, | I-put | wrong | the | PIN.", "Yes, I entered the wrong PIN."), note: "Mexico says NIP for a PIN; PIN is understood too." },
+      { id: "card_pin", s: t("Sí, | puse | mal | el | NIP.", "Yes, | I-put | wrong | the | PIN.", "Yes, I entered the wrong PIN.",
+        { flags: { 4: "Mexican: NIP = PIN (número de identificación personal); PIN is understood everywhere." }, neutral: t("Sí, | puse | mal | el | PIN.", "Yes, | I-put | wrong | the | PIN.", "Yes, I entered the wrong PIN.") }), note: "Mexico says NIP for a PIN; PIN is understood too." },
       { id: "pin_no", s: t("No, | creo que no.", "No, | I don't think so.", "No, I don't think so.") },
     ] },
     patience: { lt: "Say you can wait", items: [
@@ -1330,7 +1437,8 @@ export const bank: SituationDef = {
   mission: [
     { lt: "Report the ATM keeping your card", done: (c) => cardPath(c) && !!c.s.card, when: cardPath, optional: true },
     { lt: "Say which account you want", done: (c) => openPath(c) && !!c.s.type, when: openPath, optional: true },
-    { lt: "Show your ID", done: (c) => !!c.s.id },
+    // opening an account: the passport and the residence card
+    { lt: "Show your ID", done: (c) => (c.s.opening ? docsOk(c) : !!c.s.id) },
     { lt: "Show proof of address", done: (c) => openPath(c) && c.s.proof !== undefined, when: openPath, optional: true },
     { lt: "Answer about your CURP", done: (c) => openPath(c) && c.s.ssn !== undefined, when: openPath, optional: true },
     { lt: "Fill out and sign the form", done: (c) => openPath(c) && !!c.s.signed, when: openPath, optional: true },
@@ -1345,27 +1453,32 @@ export const bank: SituationDef = {
     // account opening
     { id: "acct_type", when: opening, done: (c) => !!c.s.type,
       ask: (c) => { c.say(bump(c, "acct_type") === 0 ? "ask_type" : "ask_type_again"); },
-      expects: ["acct_type_ans", "open_account", "ask_difference", "acct_type_not", "both_ctx"],
+      expects: ["acct_type_ans", "open_account", "ask_difference", "acct_type_not", "both_ctx", "which_ctx", "what_ctx"],
       suggest: [{ lt: "Choose the kind of account", hint: "acct_type", options: "acct" }, { lt: "Ask about fees", hint: "ask_acct" }],
       help: (c) => { c.say("explain_types"); c.say("explain_savings"); } },
-    { id: "id", when: (c) => needsId(c) && opening(c), done: (c) => !!c.s.id,
+    // the passport and the residence card; one shown, the other is asked for ("¿Y su tarjeta de residente?")
+    { id: "id", when: (c) => needsId(c) && opening(c), done: docsOk,
       ask: (c) => {
         const n = bump(c, "id");
+        const d = c.s.docs || {};
+        if (d.passport && !d.id_card) { c.say("ask_res_card"); return; }
+        if (d.id_card && !d.passport) { c.say("ask_passport_too"); return; }
         if (n === 0 && c.s.idProofTogether && c.s.proof === undefined) { c.s.askedProof = true; c.say("ask_id_proof"); }
         else c.say("ask_id");
       },
-      expects: ["show_doc", "here_you_go", "no_doc", "give_proof", "doc_ctx"],
-      suggest: [{ lt: "Show your ID", hint: "id", options: "doc" }, { lt: "Show proof of address", hint: "proof", options: "proof" }],
-      yes: (c) => { c.s.id = "passport"; afterId(c); },
-      no: (c) => { bank.handlers.no_doc(c, {}, { intent: "no_doc", slots: {}, tags: [] }); } },
+      expects: ["show_doc", "here_you_go", "no_doc", "give_proof", "doc_ctx", "tourist_ctx"],
+      suggest: [{ lt: "Show your passport and residence card", hint: "docs" }, { lt: "Show proof of address", hint: "proof", options: "proof" }],
+      // "Sí, aquí están": what was asked for is handed over
+      yes: (c) => { gotDoc(c, "passport"); gotDoc(c, "id_card"); afterId(c); },
+      no: (c) => { docsRefused(c); } },
     { id: "proof", when: opening, done: (c) => c.s.proof !== undefined,
       ask: (c) => { c.say(c.s.askedProof ? "ask_proof_again" : "ask_proof"); c.s.askedProof = true; },
-      expects: ["give_proof", "no_proof", "here_you_go", "proof_ctx", "not_yet", "proof_what"],
+      expects: ["give_proof", "no_proof", "here_you_go", "proof_ctx", "not_yet", "proof_what", "what_ctx"],
       suggest: [{ lt: "Show proof of address (or say you don't have it yet)", hint: "proof", options: "proof" }],
       yes: (c) => { c.s.proof = "utility_bill"; c.say("proof_ok"); },
       no: (c) => { bank.handlers.no_proof(c, {}, { intent: "no_proof", slots: {}, tags: [] }); } },
     { id: "ssn", when: opening, done: (c) => c.s.ssn !== undefined, ask: (c) => c.say("ask_ssn"),
-      expects: ["ssn_none", "ssn_yes", "ask_ssn_what", "ssn_problem", "not_yet", "here_you_go", "rfc_q"],
+      expects: ["ssn_none", "ssn_yes", "ask_ssn_what", "ssn_problem", "not_yet", "here_you_go", "rfc_q", "what_ctx"],
       suggest: [{ lt: "Say whether you have your CURP", hint: "ssn" }],
       yes: (c) => { c.s.ssn = "yes"; c.say("ssn_yes_type"); },
       no: (c) => { c.s.ssn = "none"; c.say("ssn_none_ok"); },
@@ -1381,7 +1494,8 @@ export const bank: SituationDef = {
       suggest: [{ lt: "Fill out and sign the form (or ask)", hint: "form" }],
       yes: (c) => { c.s.formOk = true; c.say("form_wait"); c.hold(); } },
     { id: "deposit", when: opening, done: (c) => c.s.deposit !== undefined,
-      ask: (c) => { if (bump(c, "deposit") === 0) c.say("min_deposit", { price: MIN_DEPOSIT }); c.say("ask_deposit"); },
+      // two accounts: "Para abrirlas…", "¿Con cuánto las quiere abrir?"
+      ask: (c) => { const both = c.s.type === "both"; if (bump(c, "deposit") === 0) c.say(both ? "min_deposit_both" : "min_deposit", { price: MIN_DEPOSIT }); c.say(both ? "ask_deposit_both" : "ask_deposit"); },
       expects: ["deposit_ans", "amount_ctx", "minimum", "ask_minimum", "no_deposit_ctx"],
       suggest: [{ lt: "Say how much you'll deposit", hint: "deposit" }],
       help: (c) => { c.say("min_is", { price: MIN_DEPOSIT }); } },
@@ -1397,7 +1511,7 @@ export const bank: SituationDef = {
       no: (c) => { c.s.app = false; c.say("app_no"); allDone(c); } },
     // the card
     { id: "pin_q", when: (c) => inCard(c) && !!c.s.askPin && !c.s.id, done: (c) => c.s.pinCause !== undefined,
-      ask: (c) => c.say("ask_pin"), expects: ["wrong_pin", "machine_error", "pin_yes_ctx", "pin_unknown_ctx"],
+      ask: (c) => c.say("ask_pin"), expects: ["wrong_pin", "machine_error", "pin_yes_ctx", "pin_unknown_ctx", "what_ctx"],
       suggest: [{ lt: "Say whether you entered the wrong PIN", hint: "pin" }],
       yes: (c) => { c.s.pinCause = "wrong"; c.say("pin_explain"); },
       no: (c) => { c.s.pinCause = "machine"; c.say("machine_problem"); } },
@@ -1405,21 +1519,21 @@ export const bank: SituationDef = {
       ask: (c) => { if (bump(c, "card_id") === 0) c.say("block_new"); c.say("ask_id_card"); },
       expects: ["show_doc", "here_you_go", "no_doc", "doc_ctx"],
       suggest: [{ lt: "Show your ID", hint: "id", options: "doc" }, { lt: "Ask about a new card", hint: "card" }],
-      yes: (c) => { c.s.id = "passport"; afterId(c); } },
+      yes: (c) => { gotDoc(c, "passport"); afterId(c); } },
     { id: "cash_id", when: (c) => c.s.cash === "id" && !c.s.id, done: (c) => !!c.s.id,
       ask: (c) => c.say("ask_id_card"), expects: ["show_doc", "here_you_go", "no_doc", "doc_ctx"],
       suggest: [{ lt: "Show your ID", hint: "id", options: "doc" }],
-      yes: (c) => { c.s.id = "passport"; afterId(c); } },
-    { id: "cash_offer", when: (c) => !!c.s.blocked && !!c.s.offerCash, done: (c) => c.s.cash !== undefined,
+      yes: (c) => { gotDoc(c, "passport"); afterId(c); } },
+    { id: "cash_offer", when: (c) => !!c.s.blocked && !!c.s.offerCash && customer(c), done: (c) => c.s.cash !== undefined,
       ask: (c) => { c.say("offer_cash"); if (bump(c, "cash_offer") === 0) c.say("offer_cash_counter"); },
-      expects: ["withdraw", "amount_ctx", "no_cash_needed", "cash_amb_ctx", "sure_ctx"],
+      expects: ["withdraw", "amount_ctx", "no_cash_needed", "cash_amb_ctx", "sure_ctx", "max_ctx", "cash_max_q"],
       suggest: [{ lt: "Say whether you need cash", hint: "g_yesno" }, { lt: "Say an amount", hint: "cash" }],
       yes: (c) => { if (unsureYes(c)) { c.say("yes_or_no"); c.hold(); return; } c.s.cash = "amount"; },
       no: (c) => { c.s.cash = false; c.say("no_problem"); allDone(c); } },
     { id: "cash_amount", when: (c) => (c.s.cash === "amount" || c.s.cash === "id") && !!c.s.id, done: (c) => c.s.cashAmount !== undefined,
-      ask: (c) => c.say("ask_cash_amount"), expects: ["amount_ctx", "withdraw", "deposit_ans"],
+      ask: (c) => c.say("ask_cash_amount"), expects: ["amount_ctx", "withdraw", "deposit_ans", "max_ctx", "cash_max_q"],
       suggest: [{ lt: "Say how much cash you want", hint: "cash" }],
-      no: (c) => { c.s.cash = false; c.say("no_problem"); } },
+      no: (c) => { c.s.cash = false; c.say("no_problem"); allDone(c); } },
     { id: "bills", when: (c) => c.s.cashAmount !== undefined && billsAsked(c), done: (c) => !!c.s.billsDone,
       ask: (c) => c.say("ask_bills"), expects: ["bills_ans"],
       suggest: [{ lt: "Say which bills you want", hint: "bills" }],
@@ -1427,13 +1541,14 @@ export const bank: SituationDef = {
       no: (c) => { giveCash(c); } },
     // exchange (step id kept from the English edition: here it's US dollars into pesos)
     { id: "euros", when: (c) => c.s.exchange === "amount", done: (c) => c.s.exchange === "done",
-      ask: (c) => { if (!c.s.rateSaid) sayRate(c); c.say(bump(c, "euros") === 0 ? "ask_euros" : "ask_euros_again"); }, expects: ["euro_amount", "euro_ctx", "rate_q"],
+      ask: (c) => { if (!c.s.rateSaid) sayRate(c); c.say(bump(c, "euros") === 0 ? "ask_euros" : "ask_euros_again"); }, expects: ["euro_amount", "euro_ctx", "rate_q", "max_ctx", "ex_max_q"],
       suggest: [{ lt: "Say how many dollars you'll change", hint: "euros" }],
-      no: (c) => { c.s.exchange = "cancelled"; c.say("no_problem"); } },
+      // "Es todo": no dollars, and nothing else either
+      no: (c) => { c.s.exchange = "cancelled"; c.say("no_problem"); allDone(c); } },
     // anything else
     { id: "more", when: (c) => !!c.s.task, done: (c) => !!c.s.moreDone,
       ask: (c) => c.say("anything_else"),
-      expects: ["more_no", "have_question"],
+      expects: ["more_no", "have_question", "nothing_ctx"],
       suggest: [{ lt: "Say that's all", hint: "more" }, S_TRANSFER, S_ASK, S_EXCHANGE],
       yes: (c) => { c.say("anything_else_yes"); c.hold(); },
       no: (c) => { c.s.moreDone = true; } },
@@ -1463,11 +1578,11 @@ export const bank: SituationDef = {
     // --- main requests
     open_account(c, slots, seg) {
       const type = seg.tags.includes("both") ? "both" : slots.acct;
-      const wasOpening = c.s.opening;
       if (seg.tags.includes("needq")) c.say("open_need", { price: MIN_DEPOSIT }); // "¿Qué necesito para abrir una cuenta?"
       startOpening(c);
+      // asked again while the type is open: the step asks it (it was asked twice in a row: "Entonces, ¿de débito o de
+      // ahorro?" + "¿Cuál le gustaría?")
       if (type) setType(c, type);
-      else if (wasOpening && !c.s.type) c.say("ask_type_again");
       c.s.hay = c.s.hay === "asked" ? "done" : c.s.hay;
     },
     new_in_town(c) {
@@ -1484,8 +1599,12 @@ export const bank: SituationDef = {
       c.s.task = c.s.task || "card";
       c.s.moreDone = false;
       if (c.s.card) { if (c.s.blocked) c.say("already_blocked"); return; }
+      // a newcomer with no account here (said so): the card is another bank's, which Ricardo can't cancel or replace
+      if (c.s.newcomer && !customer(c)) { c.s.topic = "card"; once(c, "otherbank", "card_other_bank"); return; }
       c.s.card = true;
       c.s.topic = "card";
+      // the bank's own card (Ricardo finds it by the ID and the digits), so an account here: the cash offer is from it
+      c.s.customer = true;
       c.say("card_sorry");
     },
     turn_ticket(c) { if (!c.s.task) once(c, "turn", "turn_ok"); },
@@ -1581,20 +1700,43 @@ export const bank: SituationDef = {
     ask_difference(c) { c.say("explain_types"); c.say("explain_savings"); if (/recomiend|mejor|conviene|haria|sugier|aconsej/.test(words(c))) c.say("recommend_both"); },
     show_doc(c, slots) {
       const docs = toArr(slots.doc).filter((x: any) => typeof x === "string");
+      const ids = docs.filter((x: string) => x === "passport" || x === "id_card");
+      // opening an account: the passport and the residence card. One shown, the id step asks for the other; "No tengo
+      // pasaporte, pero…" or "Solo traigo mi pasaporte" leaves one missing, so no account today
+      if (opening(c)) {
+        if (!ids.length) { if (docs.length && !docsOk(c)) c.say("license_no_open"); return; }
+        const had = docsOk(c);
+        const missing = slots.nod === "passport" || slots.nod === "id_card" || (ids.length === 1 && /^(solo|nomas|solamente|unicamente) (tengo|traigo)\b/.test(words(c)));
+        for (const d of ids) gotDoc(c, d);
+        if (had) { c.say("id_thanks"); return; }
+        if (docsOk(c)) { if (c.step === "proof") c.s.askedProof = true; afterId(c); return; }
+        if (missing) { docsRefused(c); return; }
+        c.say("id_thanks");
+        return;
+      }
       if (c.s.id) { c.say("id_thanks"); return; }
       // the step before the ID: "Aquí está mi pasaporte" said early is kept for later
-      if (!needsId(c)) { c.s.id = docs.find((x: string) => x !== "license") ?? undefined; if (c.s.id) c.say("id_thanks"); return; }
+      if (!needsId(c)) { const d = docs.find((x: string) => x !== "license"); if (d) { gotDoc(c, d); c.say("id_thanks"); } return; }
       const good = docs.find((x: string) => x !== "license");
       if (!good && docs.length) { c.say("license_no"); c.expect(otherIdPending()); return; }
-      c.s.id = good || "passport";
+      gotDoc(c, good || "passport");
       if (c.step === "proof") c.s.askedProof = true;
       afterId(c);
     },
-    no_doc(c) {
+    no_doc(c, slots) {
+      // opening: no account without both ("No tengo licencia" answers nothing: the step asks again); "¿Y si no tengo
+      // tarjeta de residente?" gets the rule, and the step stays
+      if (opening(c) && !docsOk(c)) {
+        const d = toArr(slots?.doc);
+        if (d.length && d.every((x: string) => x === "license")) return;
+        if (whatIf(c) || isQuestion(c)) { c.say("need_docs_open"); return; }
+        docsRefused(c); return;
+      }
       if (c.s.id) { if (c.step === "proof") bank.handlers.no_proof(c, {}, { intent: "no_proof", slots: {}, tags: [] }); return; }
       c.say("need_photo_id");
       c.expect(otherIdPending());
     },
+    tourist_ctx(c) { if (opening(c) && !docsOk(c)) docsRefused(c); },
     doc_ctx(c, slots, seg) { bank.handlers.show_doc(c, slots, seg); },
     proof_ctx(c, slots, seg) { bank.handlers.give_proof(c, slots, seg); },
     // "Tengo efectivo" answers only the cash offer (at the deposit it is no answer: the step asks again)
@@ -1616,7 +1758,7 @@ export const bank: SituationDef = {
       if (c.s.proof !== undefined) return;
       // "No tengo contrato" / "Vivo con unos amigos": no point asking about a lease
       if (slots?.proof === "lease" || seg?.tags?.includes("nolease")) { c.s.proof = "later"; c.say("proof_later"); return; }
-      c.say("ask_lease");
+      c.say("ask_lease"); c.s.leaseAsked = true;
       c.expect({
         id: "lease_q", expects: ["give_proof", "proof_ctx", "not_yet"], hints: ["g_yesno", "proof"],
         suggest: [{ lt: "Say whether you have a lease", hint: "proof", options: "proof" }],
@@ -1681,7 +1823,9 @@ export const bank: SituationDef = {
     },
     here_you_go(c) {
       switch (c.step) {
-        case "id": case "card_id": case "cash_id": c.s.id = c.s.id || "passport"; afterId(c); return;
+        // opening: what was asked for is handed over (both, or the one still missing)
+        case "id": if (opening(c)) { gotDoc(c, "passport"); gotDoc(c, "id_card"); afterId(c); return; } gotDoc(c, "passport"); afterId(c); return;
+        case "card_id": case "cash_id": gotDoc(c, "passport"); afterId(c); return;
         case "proof": if (c.s.proof === undefined) { c.s.proof = "utility_bill"; c.say("proof_ok"); } return;
         case "form": c.s.signed = true; c.event("sign"); c.say("form_thanks"); return;
         case "ssn": bank.handlers.ssn_yes(c, {}, { intent: "ssn_yes", slots: {}, tags: [] }); return;
@@ -1705,16 +1849,24 @@ export const bank: SituationDef = {
       if (c.step === "deposit") { bank.handlers.deposit_ans(c, slots, seg); return; }
       if (c.step === "cash_amount" || c.step === "cash_offer") {
         if (cents == null) return;
-        if (whatIf(c)) { const p = cashConfirm(cents); c.expect(p); p.ask!(c); return; }
+        // "¿Y si saco mil?", "¿Mil?" (typed with its "?"): asked back, then a yes pays it out
+        if (whatIf(c) || isQuestion(c)) { const p = cashConfirm(cents); c.expect(p); p.ask!(c); return; }
         payCash(c, cents); return;
       }
     },
 
     // --- questions
-    fee_q(c) {
+    fee_q(c, slots, seg) {
       c.s.topic = c.s.topic || "account";
+      // "¿Es gratis?" / "¿Tengo que pagar algo?" is about what is on the table (it got the account's fees at the app's
+      // offer); "¿Hay comisión mensual?" names the account
+      const bare = !/\b(cuenta|cuentas|comision|comisiones|mes|mensual|mensuales|manejo|debito|ahorro)\b/.test(words(c));
+      if (c.step === "savings") { c.say("savings_fee"); return; }
+      if (bare && c.step === "app") { c.say("app_info"); return; }
+      if (bare && c.step !== "deposit" && !opening(c) && ["transfer", "exchange", "card", "cash"].includes(c.s.topic)) { bank.handlers.cost_q(c, slots, seg); return; }
+      if (bare && (c.step === "cash_offer" || c.step === "cash_amount")) { c.say("no_cost"); return; }
       if (c.s.type === "savings") { c.say("savings_fee"); return; }
-      c.say("fee_info", { price: AVG_BALANCE }); c.say("fee_monthly", { price: MONTHLY_FEE });
+      c.say("fee_info", { price: AVG_BALANCE }); c.say("fee_monthly", { price: MONTHLY_FEE }); c.say("fee_waive");
     },
     minbal_q(c) { c.say("fee_info", { price: AVG_BALANCE }); c.say("fee_monthly", { price: MONTHLY_FEE }); },
     interest_q(c) { c.say("interest_info"); },
@@ -1729,7 +1881,7 @@ export const bank: SituationDef = {
       if (c.step === "app" || c.step === "cash_offer" || c.step === "cash_amount") { c.say("no_cost"); return; }
       switch (c.s.topic) {
         case "transfer": c.say("transfer_fee", { price: TRANSFER_FEE }); return;
-        case "exchange": if (/comision|cobran/.test(words(c))) c.say("ex_no_fee"); else { c.s.rateSaid = true; c.say("exchange_rate"); } return;
+        case "exchange": if (/comision|cobran|gratis|pagar/.test(words(c))) c.say("ex_no_fee"); else { c.s.rateSaid = true; c.say("exchange_rate"); } return;
         case "card": case "cash": c.say("no_cost"); return;
         default: c.say("fee_info", { price: AVG_BALANCE }); c.say("fee_monthly", { price: MONTHLY_FEE });
       }
@@ -1740,7 +1892,13 @@ export const bank: SituationDef = {
       c.say("open_time");
     },
     need_q(c) {
-      if (c.s.topic === "transfer") { c.say("transfer_need"); return; }
+      // "¿Qué necesito para mandar dinero a Estados Unidos?" names the transfer itself
+      if (c.s.topic === "transfer" || /\b(mandar|enviar|transferir|mandarle|enviarle|transferencia)\b/.test(words(c))) {
+        c.s.topic = "transfer"; c.s.toldTransfer = true; c.s.task = c.s.task || "info"; c.s.served = true;
+        c.say("transfer_need");
+        if (!customer(c) && !c.s.opening && !c.s.askedCustomer) { c.s.askedCustomer = true; c.say("ask_customer"); c.expect(customerPending("transfer")); }
+        return;
+      }
       c.say("open_need", { price: MIN_DEPOSIT });
     },
     swift_q(c) { c.say("swift_explain"); },
@@ -1766,13 +1924,15 @@ export const bank: SituationDef = {
       if (c.s.exchange === "amount" && overLimit(c, usd)) return;
       // "Tengo doscientos dólares" before any exchange: the request, with its amount
       if (c.s.exchange !== "amount") { bank.handlers.exchange_req(c, slots, { ...seg, tags: [...seg.tags, "amt"] }); return; }
-      if (usd && (whatIf(c) || seg.tags.includes("q"))) { quoteExchange(c, usd); return; }
+      if (usd && (whatIf(c) || isQuestion(c) || seg.tags.includes("q"))) { quoteExchange(c, usd); return; }
       exchangeDollars(c, seg.tags.includes("all") ? "all" : usd);
     },
     euro_ctx(c, slots, seg) {
       const usd = typeof slots.number === "number" ? slots.number : undefined;
       if (usd && saysPesos(c)) return; // "No, mejor dos mil pesos": the dollars step asks again
       if (overLimit(c, usd)) return;
+      // "¿Cien?" typed with its "?": quoted and asked, never changed at once
+      if (usd && isQuestion(c)) { quoteExchange(c, usd); return; }
       exchangeDollars(c, seg.tags.includes("all") ? "all" : usd);
     },
 
@@ -1796,6 +1956,35 @@ export const bank: SituationDef = {
     more_no(c) { if (answerNo(c)) { if (/\b(todo|nada mas)\b/.test(words(c))) c.s.moreDone = true; return; } c.s.moreDone = true; },
     have_question(c) { c.say("go_ahead"); c.hold(); },
     no_problem(c) { if (c.step === "slow") { c.s.slowDone = true; c.say("slow_thanks"); } },
+    // "¿Qué es eso?" right after a word Ricardo used (it explained the CURP wherever it was asked)
+    what_ctx(c) {
+      if (c.step === "ssn") c.say("ssn_explain");
+      else if (c.step === "proof" && c.s.leaseAsked) c.say("lease_explain"); // after "¿Tiene contrato de renta?"
+      else if (c.step === "proof") c.say("proof_explain");
+      else if (c.step === "acct_type") { c.say("explain_types"); c.say("explain_savings"); }
+      else if (c.step === "pin_q") c.say("nip_explain");
+    },
+    nip_q(c) { c.say("nip_explain"); },
+    // A bare "No sé" to "¿Puso mal el NIP?" answers it (the global reply was "Tómese su tiempo" and held the turn, so
+    // the ID question never came); elsewhere as the global one: the step's help, or "take your time"
+    g_dontknow(c) {
+      if (c.step === "pin_q" && c.s.pinCause === undefined) { bank.handlers.pin_unknown_ctx(c, {}, { intent: "pin_unknown_ctx", slots: {}, tags: [] }); return; }
+      const st = bank.steps.find((x) => x.id === c.step);
+      if (st?.help) st.help(c); else c.say("g_take_time");
+      c.hold();
+    },
+    // "Nada, gracias": nothing (else) wanted
+    nothing_ctx(c) {
+      if (c.step === "help" || c.step === "help_card") { bank.steps.find((x) => x.id === c.step)?.no?.(c); return; }
+      c.s.moreDone = true;
+    },
+    // "La primera" = de débito, "La segunda" = de ahorro (the order every question says them in)
+    which_ctx(c, _slots, seg) { bank.handlers.acct_type_ans(c, { acct: seg.tags.includes("sav") ? "savings" : "checking" }, { ...seg, tags: seg.tags.filter((x) => x !== "sav") }); },
+    usd_account_q(c) { c.say("usd_account_no"); },
+    cash_max_q(c) { c.say("cash_limit"); },
+    ex_max_q(c) { c.say("ex_max"); },
+    max_ctx(c) { c.say(c.step === "euros" ? "ex_max" : "cash_limit"); },
+    why_ctx() { /* only at "¿Tiene cuenta con nosotros?" (its own handler there) */ },
   },
 
   finish: (c) => {
@@ -1951,6 +2140,27 @@ export const bank: SituationDef = {
     { say: "No quiero sacar nada", intent: "not_that", step: "cash_amount", not: ["amount_ctx", "withdraw", "deposit_ans"] },
     { say: "No traigo efectivo", intent: "no_deposit_ctx", step: "deposit", not: ["deposit_ans", "amount_ctx", "minimum"] },
     { say: "Ya los cambié", intent: "none", step: "euros" },
+    // Audit (5 Nov 2026): both documents, the new questions, the closings that looped, meaning traps.
+    { say: "Aquí están mi pasaporte y mi tarjeta de residente", intent: "show_doc", step: "id" },
+    { say: "No traigo mi tarjeta de residente", intent: "no_doc", step: "id", not: ["show_doc", "here_you_go"] },
+    { say: "Todavía no tengo mi tarjeta de residente", intent: "no_doc", step: "id", not: ["show_doc"] },
+    { say: "Soy turista", intent: "tourist_ctx", step: "id" },
+    { say: "La primera", intent: "which_ctx", step: "acct_type" },
+    { say: "¿Qué es eso?", intent: "what_ctx", step: "proof", not: ["ask_ssn_what"] },
+    { say: "¿Qué es eso?", intent: "none", step: "help" },
+    { say: "¿Por qué?", intent: "none", step: "help" },
+    { say: "No sé cuál es", intent: "ssn_none", step: "ssn", not: ["ssn_yes"] },
+    { say: "¿Me presta un bolígrafo?", intent: "ask_pen", step: "form" },
+    { say: "Sí, puse mal el PIN", intent: "wrong_pin", step: "pin_q" },
+    { say: "¿Qué es el NIP?", intent: "nip_q", step: "pin_q" },
+    { say: "¿Cuánto puedo sacar?", intent: "cash_max_q", step: "cash_amount", not: ["cost_q"] },
+    { say: "¿Cuál es el máximo?", intent: "max_ctx", step: "euros" },
+    { say: "¿Cuánto me dan por cien?", intent: "rate_q", step: "euros", slots: { number: 100 } },
+    { say: "Quiero comprar dólares", intent: "rate_q", step: "help", not: ["exchange_req", "euro_amount"] },
+    { say: "¿Puedo abrir una cuenta en dólares?", intent: "usd_account_q", step: "help", not: ["open_account"] },
+    { say: "¿Qué necesito para mandar dinero a Estados Unidos?", intent: "need_q", step: "help" },
+    { say: "Gracias, es todo", intent: "more_no", step: "more" },
+    { say: "Nada, gracias", intent: "nothing_ctx", step: "help" },
     // Not understood: no free-text catch-all.
     { say: "Mi perro come plátanos azules", intent: "none" },
     { say: "bicicleta ventana guitarra", intent: "none" },
@@ -1960,8 +2170,8 @@ export const bank: SituationDef = {
 
   sims: [
     { name: "open a checking account, happy path",
-      turns: ["Hola, quiero abrir una cuenta de débito", "Aquí está mi pasaporte", "Aquí está mi recibo de luz", "No, todavía no la tengo", "Listo, ya firmé",
-        "Quiero depositar mil pesos", "No, es todo, gracias"],
+      turns: ["Hola, quiero abrir una cuenta de débito", "Aquí está mi pasaporte", "Aquí está mi tarjeta de residente", "Aquí está mi recibo de luz", "No, todavía no la tengo",
+        "Listo, ya firmé", "Quiero depositar mil pesos", "No, es todo, gracias"],
       expect: { complete: true, state: { type: "checking", id: "passport", proof: "utility_bill", ssn: "none", deposit: 100000 } }, auto: BANK_AUTO,
       setup: (s) => { s.cardTwist = false; s.slowTwist = false; } },
     { name: "no to the optional offers, short answers",
@@ -1970,12 +2180,13 @@ export const bank: SituationDef = {
       auto: { ...BANK_AUTO, savings: "No, gracias", app: "No, gracias" }, setup: (s) => { s.cardTwist = false; s.slowTwist = false; } },
     { name: "questions first, then a savings account: transfer, fee, no proof, the CURP explained",
       turns: ["Buenos días. ¿Cómo puedo mandar dinero a Estados Unidos?", "¿Cuánto tarda?", "¿Qué necesito?", "Mejor quiero abrir una cuenta de ahorro", "¿Hay comisión mensual?",
-        "Aquí tiene mi tarjeta de residente", "No tengo comprobante de domicilio", "¿Qué es la CURP?", "Viene en mi tarjeta de residente", "¿Me presta una pluma?",
+        "Aquí tiene mi tarjeta de residente", "Aquí está mi pasaporte", "No tengo comprobante de domicilio", "¿Qué es la CURP?", "Viene en mi tarjeta de residente", "¿Me presta una pluma?",
         "¿Dónde firmo?", "Aquí tiene", "Solo el mínimo", "¿Cuándo me dan la tarjeta?", "Eso es todo, gracias"],
       expect: { complete: true, state: { type: "savings", id: "id_card", proof: "lease", ssn: "yes", deposit: 50000, toldTransfer: true } }, auto: BANK_AUTO,
       setup: (s) => { s.cardTwist = false; s.slowTwist = false; s.customer = false; } },
     { name: "change of mind: savings, then checking; a license refused, the passport instead",
-      turns: ["Quisiera abrir una cuenta", "Una de ahorro", "No, mejor una de débito", "Aquí está mi licencia de manejo", "Sí, traigo mi pasaporte", "Aquí está mi recibo de agua",
+      turns: ["Quisiera abrir una cuenta", "Una de ahorro", "No, mejor una de débito", "Aquí está mi licencia de manejo", "Sí, traigo mi pasaporte",
+        "También traigo mi tarjeta de residente", "Aquí está mi recibo de agua",
         "No tengo CURP", "Ya lo llené", "Con dos mil", "No, es todo"],
       expect: { complete: true, state: { type: "checking", id: "passport", ssn: "none", deposit: 200000 } }, auto: BANK_AUTO,
       setup: (s) => { s.cardTwist = false; s.slowTwist = false; s.offerSavings = false; s.offerApp = false; } },
@@ -1996,7 +2207,8 @@ export const bank: SituationDef = {
       expect: { complete: false, state: { exchange: "done", cashAmount: 200000, billsDone: true } }, auto: BANK_AUTO,
       setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.offerCash = false; s.askBills = true; } },
     { name: "change dollars as a newcomer: customers only, so open an account",
-      turns: ["¿Cambian dólares?", "No, todavía no", "Sí, por favor", "De débito, por favor", "Aquí está mi pasaporte", "Aquí está mi contrato de renta", "No, todavía no",
+      turns: ["¿Cambian dólares?", "No, todavía no", "Sí, por favor", "De débito, por favor", "Aquí está mi pasaporte", "Aquí está mi tarjeta de residente",
+        "Aquí está mi contrato de renta", "No, todavía no",
         "Listo", "Quinientos pesos", "No, es todo"],
       expect: { complete: true, state: { type: "checking", proof: "lease", deposit: 50000 } }, auto: BANK_AUTO,
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; } },
@@ -2019,17 +2231,20 @@ export const bank: SituationDef = {
       expect: { complete: false, state: { exchange: "done" } }, auto: {},
       setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; } },
     { name: "review: the account type with its comma lost is asked again; a deposit corrected",
-      turns: ["Quiero abrir una cuenta", "Ahorro no débito", "De débito", "Aquí está mi pasaporte", "Tengo un recibo de luz", "No", "Todavía no he terminado", "Listo",
+      turns: ["Quiero abrir una cuenta", "Ahorro no débito", "De débito", "Aquí está mi pasaporte", "Aquí está mi tarjeta de residente", "Tengo un recibo de luz", "No",
+        "Todavía no he terminado", "Listo",
         "Tengo efectivo", "No mil, quinientos", "No, es todo"],
       expect: { complete: true, state: { type: "checking", deposit: 50000 } }, auto: BANK_AUTO,
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
     { name: "review: dollars asked for during the opening are changed once the account is open",
-      turns: ["Quiero abrir una cuenta de débito", "También quiero cambiar dólares", "Aquí está mi pasaporte", "Tengo un recibo de luz", "No", "Listo", "Mil pesos",
+      turns: ["Quiero abrir una cuenta de débito", "También quiero cambiar dólares", "Aquí está mi pasaporte", "Aquí está mi tarjeta de residente", "Tengo un recibo de luz", "No",
+        "Listo", "Mil pesos",
         "Doscientos dólares", "Es todo"],
       expect: { complete: true, state: { exchange: "done", deposit: 100000 } }, auto: BANK_AUTO,
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
     { name: "lead: a deposit said with the request waits for its step; the form's 'Está bien' is no signature",
-      turns: ["Quiero abrir una cuenta de débito con mil pesos", "Aquí está mi pasaporte", "Tengo un recibo de luz", "No, todavía no la tengo", "Está bien",
+      turns: ["Quiero abrir una cuenta de débito con mil pesos", "Aquí está mi pasaporte", "Aquí está mi tarjeta de residente", "Tengo un recibo de luz", "No, todavía no la tengo",
+        "Está bien",
         "Listo, ya firmé", "Mil pesos", "No, es todo"],
       expect: { complete: true, state: { type: "checking", id: "passport", proof: "utility_bill", ssn: "none", signed: true, deposit: 100000 } }, auto: BANK_AUTO,
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
@@ -2043,9 +2258,40 @@ export const bank: SituationDef = {
       expect: { complete: false, state: { cash: "amount", cashAmount: 200000, billsDone: true } }, auto: {},
       setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.askBills = true; } },
     { name: "no ID at all: come back later",
-      turns: ["Quiero abrir una cuenta de ahorro", "No traigo mi pasaporte", "No"],
+      turns: ["Quiero abrir una cuenta de ahorro", "No traigo mi pasaporte"],
       expect: { complete: false, state: { type: "savings", id: undefined } }, auto: {},
       setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; } },
+    // Audit (5 Nov 2026): the passport AND the residence card; questions that got a wrong answer; closings that looped.
+    { name: "audit: only the passport, so no account today (the residence card is needed)",
+      turns: ["Quiero abrir una cuenta de débito", "Aquí está mi pasaporte", "No, no la traigo"],
+      expect: { complete: false, state: { type: "checking", id: "passport", opened: undefined } }, auto: {},
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; } },
+    { name: "audit: both accounts, both documents at once, the CURP unknown; a license first",
+      turns: ["Quiero abrir una cuenta", "La primera", "Quiero las dos", "Aquí está mi licencia", "Aquí están mi pasaporte y mi tarjeta de residente", "¿Qué es eso?", "Tengo un recibo de luz",
+        "No sé cuál es", "Listo", "¿Con mil alcanza?", "Sí", "Gracias, es todo"],
+      expect: { complete: true, state: { type: "both", id: "passport", proof: "utility_bill", ssn: "none", deposit: 100000, moreDone: true } }, auto: BANK_AUTO,
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
+    { name: "audit: a tourist at the exchange: why the question, no account offered; nothing else ends the visit",
+      turns: ["Quiero cambiar dólares", "¿Por qué?", "No, soy turista", "Nada, gracias"],
+      expect: { complete: false, state: { tourist: true, customer: false, exchange: undefined, moreDone: true } }, auto: {},
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; } },
+    { name: "audit: '¿Cien?' typed is quoted, 'Es todo' at the quote changes nothing; the limit asked",
+      turns: ["Quiero cambiar dólares", "¿Cuál es el máximo?", "¿Cien?", "Es todo, gracias"],
+      expect: { complete: false, state: { exchange: "cancelled", usdChanged: undefined, moreDone: true } }, auto: {},
+      setup: (s) => { s.customer = true; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; } },
+    { name: "audit: a first-visit card (the PIN unknown), '¿Cuánto puedo sacar?' at the counter",
+      turns: ["El cajero se tragó mi tarjeta", "No sé", "Aquí está mi pasaporte", "Sí", "¿Cuánto puedo sacar?", "Mil pesos", "Gracias, es todo"],
+      expect: { complete: true, state: { customer: true, pinCause: "unknown", blocked: true, cashAmount: 100000, moreDone: true } }, auto: {},
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.askPin = true; s.askDigits = false; s.offerCash = true; s.askBills = false; } },
+    { name: "audit: a newcomer's card kept by the ATM is another bank's: call that bank; then an account",
+      turns: ["Me acabo de mudar a Puerto Colibrí", "No, gracias", "El cajero se tragó mi tarjeta", "Sí, quiero abrir una cuenta de débito", "Aquí tiene", "Tengo un recibo de luz",
+        "Sí, la tengo", "Listo", "Mil pesos", "No, es todo"],
+      expect: { complete: true, state: { card: undefined, blocked: undefined, type: "checking", deposit: 100000 } }, auto: BANK_AUTO,
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; s.idProofTogether = false; s.offerSavings = false; s.offerApp = false; } },
+    { name: "audit: after declining the welcome offer, 'Eso es todo' says goodbye (it asked again and again)",
+      turns: ["Me acabo de mudar a Puerto Colibrí", "No, gracias", "Eso es todo"],
+      expect: { complete: false, state: { declinedOpen: true, moreDone: true } }, auto: {},
+      setup: (s) => { s.customer = false; s.cardTwist = false; s.slowTwist = false; s.hay = undefined; s.turnGreet = false; } },
   ],
 };
 
