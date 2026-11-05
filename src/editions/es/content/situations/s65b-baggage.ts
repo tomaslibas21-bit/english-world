@@ -317,8 +317,17 @@ export const baggage: SituationDef = {
       // customs
       bring: "(traigo | tengo | llevo | traje | cargo | vengo con | tengo aqui | traigo aqui)",
       good_tail: "([pero] (es | son) del avion | del avion | que me dieron en el avion | de mi casa | para mi familia | para regalar | de regalo | para el camino | para mis amigos | en mi mochila | en la mochila)",
-      no_food: "(comida | alimentos | fruta | frutas | carne | verdura | verduras | nada de comida | ningun alimento | ninguna fruta | nada de eso | plantas | animales | queso)",
+      // what "No traigo…" denies (food, and the classic alcohol and tobacco: "No traigo alcohol ni tabaco")
+      no_food: "(comida | alimentos | fruta | frutas | carne | verdura | verduras | nada de comida | ningun alimento | ninguna fruta | nada de eso | plantas | animales | queso | alcohol | tabaco | cigarros | tequila | vino | licor)",
       personal: "(ropa | mi ropa | cosas personales | mis cosas personales | mi equipaje personal | equipaje personal | mi ropa y mis cosas | ropa y cosas personales | cosas de uso personal | mis cosas | mis cosas personales y mi ropa | mi laptop | mi computadora | mi celular | mi camara | mi tableta | mis medicinas | mi ropa y mi laptop)",
+      // "Llegué hace una hora…"
+      ago: "hace (una hora | un rato | media hora | dos horas | unos minutos | poco)",
+      // personal luggage by ANAM's list (Equipaje y franquicia): laptops, phones, cameras, medicines for personal use, and
+      // for adults up to 3 liters of liquor, 6 of wine and 20 packs of cigarettes (one to three bottles stay inside it).
+      // Vapes are left out on purpose: Mexico bans bringing them in.
+      liquor: "((botella | botellas | botellita) de (tequila | vino | whisky | ron | mezcal | licor | vodka) | tequila | vino | whisky | ron | mezcal | licor | vodka | alcohol)",
+      tobacco: "(cigarros | cigarrillos | (cajetilla | cajetillas) [de cigarros] | puros | tabaco)",
+      pers_item: "(laptop | computadora | compu | celular | telefono | tableta | ipad | camara | medicinas | medicina | medicamentos | pastillas | ropa | zapatos | perfume | @liquor | @tobacco)",
     },
     slots: {
       bignum: { fn: bigNumber },
@@ -392,7 +401,10 @@ export const baggage: SituationDef = {
       "[el] vuelo {code} {fnum} #h:f_code", "{code} {fnum} [(de | desde) {city}]",
       "[el] numero [de vuelo] (es | era) {fnum}", "mi numero de vuelo (es | era) {fnum}", "es el vuelo {fnum} [(de | desde) {city}]",
       "(era | fue) el vuelo (de | desde) {city} #h:f_from_short",
-      "(vengo | vine | llegué | volé | volamos | venimos | llegamos | viajo | viaje) (de | desde) {city} [@country] [(con escala en | via | por) {via:city}] #h:f_from",
+      "(vengo | vine | llegué | volé | volamos | venimos | llegamos | viajo | viaje) [@ago] (de | desde) {city} [@country] [(con escala en | via | por) {via:city}] #h:f_from",
+      // whole sentences: "Llegué hace una hora en el vuelo de Houston", "Mi vuelo fue el 482 de Houston"
+      "(vine | llegué | vengo | volé | volamos | venimos | llegamos) [@ago] en el vuelo (de | desde) {city} [@country] [con escala en {via:city}]",
+      "mi vuelo (es | era | fue) [el] [vuelo] {fnum} [(de | desde) {city}] [con escala en {via:city}]",
       "(de | desde) {city} [@country] [(con escala en | via) {via:city}] #h:f_from_city",
       "(hice | tuve | hicimos) (escala | una escala | conexion | una conexion) en {via:city} #h:f_conn",
       "(con escala en | via) {via:city}",
@@ -496,6 +508,15 @@ export const baggage: SituationDef = {
       "[si] (me la pueden | pueden | puede | podrian) (llevar | mandar | entregar) a (la casa de (mi amiga | mi amigo | unos amigos | mi hermana | mi hermano | mi familia) | mi casa | mi departamento | mi airbnb | esta direccion) #to_home",
       "[si] (llevenla | mandenla) a (la casa de (mi amiga | mi amigo | unos amigos | mi hermana) | mi departamento | mi airbnb | esta direccion) #to_home",
     ] },
+    // "Mejor a la casa de mi amiga", "A otra dirección": the destination without a verb, only where Itzel asks where to
+    delivery_ctx: { patterns: [
+      "[no] [mejor] a (la casa de | casa de) (mi amiga | mi amigo | una amiga | un amigo | unos amigos | mi hermana | mi hermano | mi familia) [por favor] #to_home #h:dl_friend",
+      "[no] [mejor] a (mi casa | mi departamento | mi airbnb | otra direccion | otro lugar | esta direccion | donde me estoy quedando | donde me quedo) [por favor] #to_home",
+    ] },
+    // "No, al hotel no", "No estoy en un hotel": not the hotel, but a pickup or another address? Itzel asks (rule 10)
+    not_hotel_ctx: { patterns: ["[no] (no al hotel | al hotel no | no a mi hotel | a mi hotel no | no a el hotel) [gracias]", "[no] no (estoy | me quedo | me hospedo | me estoy quedando) en (un | ningun) hotel"] },
+    // "Aquí", "Recogerla aquí": the pickup side of "¿Prefiere recogerla aquí, o…?" (that question only)
+    pick_ctx: { patterns: ["[mejor] (aqui | recogerla | recogerla aqui | aqui en el aeropuerto | yo paso | yo vengo | yo la recojo | paso yo)"] },
     pickup: { patterns: [
       "[yo] (paso por ella | vengo por ella | la recojo | regreso por ella | vuelvo por ella | vengo a recogerla) [aqui | manana | despues | mas tarde | yo] #h:dl_pickup",
       "(prefiero | quiero | quisiera) (recogerla | pasar por ella | venir por ella) [yo] [aqui | manana | en el aeropuerto]",
@@ -517,8 +538,15 @@ export const baggage: SituationDef = {
       "mi direccion es [la] [calle | avenida] {street} [numero] {number} [@between]",
       "[en] [la] calle {number} [numero {number2:number}] [@between]",
     ] },
+    // "No sé la dirección", "Todavía no tengo hotel": at the address question only
+    addr_dunno_ctx: { patterns: [
+      "no (se | recuerdo | me se | tengo | me acuerdo de) [bien] (la direccion | la calle | el numero | el nombre del hotel | el nombre | su direccion | la direccion de mi amiga | la direccion del hotel) [exacta] [de memoria]",
+      "no me (la | lo) se [de memoria]", "(todavia | aun) no (tengo | se) (hotel | donde me voy a quedar | la direccion)", "no tengo hotel [todavia | aun]",
+      "no se donde me voy a quedar",
+    ] },
     phone: { patterns: [
       "mi (numero | celular | telefono | cel | whatsapp | numero de celular | numero de telefono) es [el] [mas] {digits} #h:ph_mine",
+      "(le doy | apunte | anote) [mi | el] (numero | celular | telefono | whatsapp) [es] [el] [mas] {digits}",
       "es el [mas] {digits} #h:ph_its", "(puede | pueden) (llamarme | marcarme | escribirme) al [mas] {digits}",
       "(llameme | marqueme | me pueden llamar | me puede llamar | me pueden marcar | me puede marcar) al [mas] {digits}", "[el] numero es [el] [mas] {digits}",
     ] },
@@ -530,7 +558,8 @@ export const baggage: SituationDef = {
       "[mejor] (llamen | llame | pueden llamar | puede llamar) al hotel", "no tengo (chip | sim | linea) [mexicano | mexicana | de aqui]",
     ] },
     q_when: { patterns: ["cuando (me la entregan | me la traen | me la llevan | llega | va a llegar | la tengo | la voy a tener | la recibo) #h:q_when",
-      "cuanto (tarda | tardan | se tarda | va a tardar | tiempo tarda | tiempo tardan)", "en cuanto tiempo (llega | me la entregan | la tengo)", "para cuando (llega | la tienen)", "cuando (llega | va a llegar | me (entregan | traen | llevan)) (mi maleta | mi equipaje | mi mochila | mi bolsa)"] },
+      "cuanto (tarda | tardan | se tarda | va a tardar | tiempo tarda | tiempo tardan)", "en cuanto tiempo (llega | me la entregan | la tengo)", "para cuando (llega | la tienen)", "cuando (llega | va a llegar | me (entregan | traen | llevan)) (mi maleta | mi equipaje | mi mochila | mi bolsa)",
+      "a que hora (me la traen | me la llevan | me la entregan | la traen | la llevan | llega | va a llegar)", "(me la traen | me la entregan | llega) (hoy | manana | esta noche)"] },
     q_meantime: { patterns: [
       "que hago (mientras | mientras tanto | esta noche | hoy | ahora | por mientras) [sin (mi ropa | mis cosas | mi maleta)] #h:q_meantime",
       "que (puedo | debo) hacer (mientras tanto | esta noche | hoy | por mientras)", "y (esta noche | hoy | mientras tanto) que hago", "y ahora que [hago]",
@@ -556,7 +585,15 @@ export const baggage: SituationDef = {
     q_call: { patterns: ["(me van a | me va a | me pueden) (llamar | avisar | mandar un mensaje) #h:q_call", "como (voy a saber | me entero)", "(me avisan | me llaman | me escriben) [cuando llegue] [por (whatsapp | mensaje | telefono | correo)]"] },
     q_track: { patterns: ["(puedo | se puede) (rastrearla | rastrear | seguirla | consultarla | consultar | ver donde esta) [en linea | por internet] #h:q_track",
       "hay (una pagina | un sitio web | una pagina web)", "como (la rastreo | puedo saber donde esta | consulto)"] },
-    q_free: { patterns: ["(la entrega | el envio) (es gratis | tiene costo | cuesta) #h:q_free", "(tengo que | hay que | debo) pagar [la entrega | el envio | algo]", "cuanto (tengo que | hay que) pagar", "cuanto cuesta (la entrega | el envio)", "es gratis [la entrega]"] },
+    q_free: { patterns: ["(la entrega | el envio) (es gratis | tiene costo | cuesta) #h:q_free", "(tengo que | hay que | debo) pagar [la entrega | el envio | algo]", "cuanto (tengo que | hay que) pagar", "cuanto cuesta (la entrega | el envio)", "es gratis [la entrega]",
+      // "¿Tiene costo?", "¿Me cobran algo?": whatever is on offer (the delivery, or the kit while it is offered)
+      "(tiene | tendra) [algun] (costo | cargo) [la entrega | el envio | el kit]", "cuesta algo [la entrega | el envio | el kit]", "el kit (es gratis | tiene costo | cuesta)",
+      "(me | nos) (cobran | cobra | van a cobrar) [algo] [por (la entrega | el envio | llevarla | el kit)]", "cuanto (me | nos) (cobran | cobra | van a cobrar) [por (la entrega | el envio | llevarla | el kit)]"] },
+    // a bare "¿Cuánto cuesta?" / "¿Cuánto es?" at an offer: that offer's price (rule 17)
+    price_ctx: { patterns: ["[y] cuanto (cuesta | es | sale | seria | va a costar | me va a costar)"] },
+    // "¿Cuál es su teléfono?": the desk's number comes on the report
+    q_contact: { patterns: ["cual es (su | el) (telefono | numero de telefono | numero de contacto) [de (ustedes | aqui | la oficina)] [para (llamarles | llamarlos)]",
+      "(a que | a cual) numero (les | le) (llamo | hablo | marco)", "como (los | las) (contacto | localizo)", "(tienen | hay) (un | algun) (telefono | numero de telefono | numero de contacto) [para llamarles | para llamarlos]"] },
     q_what_if: { patterns: ["y si no la (encuentran | encuentra | encontramos) #h:q_what_if", "que pasa si no (la encuentran | aparece | llega)", "(se perdio | esta perdida) para siempre"] },
     q_copy: { patterns: ["(me da | me puede dar | me dan | puedo tener | me pueden dar) una copia [del reporte] #h:q_copy", "me dan copia"] },
     q_taxi: { patterns: ["donde (hay | estan | tomo | encuentro | puedo tomar) [un | los] (taxi | taxis)", "donde esta (el sitio | el sitio de taxis | la parada de taxis)"] },
@@ -599,6 +636,12 @@ export const baggage: SituationDef = {
       // "No es una manzana, es un plátano"
       "no (es | era) [un | una] {wrong:good} (es | sino | era) {goods}",
       "@bring [un | una | unos | unas] {wrong:good} [no] (perdon | mejor dicho | digo) {goods}",
+      // the gifts and their value in one answer: "Traigo unos regalos, pero valen menos de quinientos dólares"
+      "[si] @bring {goods} [pero | y] (valen | cuestan | costaron | son) (menos de | no mas de) {gnum:amount} [dolares] [en total] #lt",
+      "[si] @bring {goods} [pero | y] (valen | cuestan | costaron | son) mas de {gnum:amount} [dolares] [en total] #gt",
+      "[si] @bring {goods} [pero | y] (valen | cuestan | costaron | son) [como | unos | mas o menos | aproximadamente | casi] {gnum:amount} [dolares] [en total]",
+      "[si] @bring {goods} de menos de {gnum:amount} [dolares] #lt", "[si] @bring {goods} de mas de {gnum:amount} [dolares] #gt",
+      "[si] @bring {goods} de [como | unos] {gnum:amount} dolares",
     ] },
     // "Una manzana", "Sí, unos chocolates": the bare answer, at Medina's questions only
     declare_items_ctx: { patterns: ["[si] {goods}"] },
@@ -631,6 +674,19 @@ export const baggage: SituationDef = {
     q_cash: { patterns: [
       "(tengo que | hay que | debo) declarar (el | mi) (dinero | efectivo) [en efectivo] #h:q_cash", "(tengo que | hay que | debo) declarar (el efectivo | dolares | dinero | el dinero que traigo)",
     ] },
+    // "¿Qué tengo que declarar?"
+    q_what_declare: { patterns: ["que (tengo que | hay que | debo | se tiene que | se debe | necesito) declarar", "que (cosas | productos) (tengo que | hay que | se tienen que | se deben) declarar", "que se declara"] },
+    // "¿Puedo traer mi laptop?", "¿Tengo que declarar el tequila?": personal luggage, nothing to declare
+    q_personal: { patterns: [
+      "(puedo | se puede | se pueden) (traer | pasar | pasar con | entrar con | meter | ingresar | ingresar con) [mi | mis | una | un | unos | unas | dos | tres | el | la | los | las] @pers_item [a mexico | al pais]",
+      "(tengo que | hay que | debo | necesito) declarar [mi | mis | una | un | unos | unas | dos | tres | el | la | los | las] @pers_item",
+      "[mi | mis | el | la | los | las] @pers_item (se declara | se declaran | hay que declararlo | hay que declararla | hay que declararlos | hay que declararlas)",
+    ] },
+    // "Traigo una botella de tequila", "Traigo cigarros": inside the personal luggage (at customs only)
+    personal_ctx: { patterns: ["[si] [@bring] [mi | mis | una | un | unos | unas | dos | tres] (@liquor | @tobacco) [del duty free | del free shop | para mi]",
+      "[no] (solo | nada mas | nomas | solamente) [@bring] [mi | mis | una | un | unos | unas | dos | tres] (@liquor | @tobacco) [del duty free | del free shop | para mi]"] },
+    // "No sé cuánto valen": she helps with a rough estimate (the gifts' question only)
+    gift_dunno_ctx: { patterns: ["no (se | estoy seguro | estoy segura) (cuanto | cuanto dinero) (valen | cuestan | costaron | me costaron)", "ni idea [de cuanto (valen | cuestan | costaron)]", "no me acuerdo (cuanto | de cuanto) (costaron | me costaron)"] },
     // "No, solo una pregunta" answers Itzel's "¿Algo más?" without ending her part
     one_more_q_ctx: { patterns: ["[no] [solo | nada mas | nomas] (una pregunta | otra pregunta | una duda | otra duda | una cosa | otra cosa) [mas | nada mas]", "[si] (tengo | tenia) (una pregunta | otra pregunta | una duda | otra duda)"] },
     q_cash_amount: { patterns: ["cuanto (dinero | efectivo) (puedo | se puede) (traer | pasar | entrar con | ingresar)", "hay (un | algun) limite (de | para el) (dinero | efectivo)"] },
@@ -659,7 +715,7 @@ export const baggage: SituationDef = {
   lines: {
     greet: [
       t("¡Buenas tardes! | ¿En | qué | le | puedo | ayudar?", "Good afternoon! | In | what | (to) you | can I | help?", "Good afternoon! How can I help you?"),
-      t("¡Hola! | ¿Qué | se le ofrece?", "Hi! | What | do you need?", "Hi! What can I do for you?", { flags: { 2: "se le ofrece: the shopkeeper's polite formula, literally is offered to you." } }),
+      t("¡Hola! | ¿Qué | se le ofrece?", "Hi! | What | do you need?", "Hi! What can I do for you?", { flags: { 2: "se le ofrece: the polite formula of shop and service staff, literally is offered to you." } }),
       t("¡Siguiente, | por favor! | ¿En | qué | le | ayudo?", "Next, | please! | In | what | (to) you | I-help?", "Next, please! How can I help?"),
     ],
     ask_help: [t("¿En | qué | le | puedo | ayudar?", "In | what | (to) you | can I | help?", "How can I help you?")],
@@ -769,9 +825,20 @@ export const baggage: SituationDef = {
       t("Se la | podemos | llevar | a | su | hotel. | ¿Le parece | bien?", "It to you | we can | take | to | your | hotel. | Does it seem to you | good?", "We can deliver it to your hotel. Would you like that?"),
       t("¿Quiere | que | se la | llevemos | a | su | hotel?", "Do you want | that | it to you | we-take | to | your | hotel?", "Would you like us to deliver it to your hotel?"),
     ],
+    // the learner has already said they aren't at a hotel ("Estoy en casa de una amiga")
+    ask_delivery_stay: [t("Se la | podemos | llevar | a | donde | se está | quedando. | ¿Le parece | bien?", "It to you | we can | take | to | where | you're | staying. | Does it seem to you | good?",
+      "We can deliver it to where you're staying. Would you like that?")],
+    // "No, al hotel no": a pickup or another address? (rule 10: ask, don't guess)
+    ask_pickup_or_address: [
+      t("¿Prefiere | recogerla | aquí, | o | se la | llevamos | a | otra | dirección?", "Do you prefer | to pick it up | here, | or | it to you | we-take | to | another | address?",
+        "Would you rather pick it up here, or should we deliver it to another address?"),
+      t("Entonces, | ¿la | recoge | aquí | o | se la | llevamos | a | otra | dirección?", "Then, | it | you-pick-up | here | or | it to you | we-take | to | another | address?",
+        "So, will you pick it up here, or should we deliver it somewhere else?", { flags: { 1: "la: it, the bag (an object pronoun, not an article)." } }),
+    ],
     delivery_ok: [
-      t("Perfecto. | Se la | llevamos | en | menos | de | 24 | horas.", "Perfect. | It to you | we-take | in | less | than | 24 | hours.", "Great. We'll deliver it within 24 hours.",
-        { say: "Perfecto. Se la llevamos en menos de veinticuatro horas." }),
+      // the bag isn't found yet: the time stays "usually" (as in ans_when), never a promise
+      t("Perfecto. | Normalmente | se la | llevamos | en | menos | de | 24 | horas.", "Perfect. | Usually | it to you | we-take | in | less | than | 24 | hours.", "Great. We usually deliver within 24 hours.",
+        { say: "Perfecto. Normalmente se la llevamos en menos de veinticuatro horas." }),
       t("Muy | bien. | Normalmente | tarda | menos | de | un | día.", "Very | good. | Usually | it takes | less | than | a | day.", "Great. It usually takes less than a day."),
     ],
     delivery_ok_found: [t("Perfecto. | Se la | llevamos | en cuanto | llegue.", "Perfect. | It to you | we-take | as soon as | it arrives.", "Great. We'll bring it to you as soon as it gets here.")],
@@ -781,6 +848,9 @@ export const baggage: SituationDef = {
       t("¿Y | dónde | se hospeda?", "And | where | are you staying?", "And where are you staying?"),
     ],
     ask_deliver_where: [t("¿A | qué | dirección | se la | llevamos?", "To | what | address | it to you | do we take?", "What address should we deliver it to?")],
+    // "No sé la dirección" when the bag is to be delivered
+    addr_later: [t("No se preocupe: | le | llamamos | para | pedirle | la | dirección.", "Don't worry: | (to) you | we-call | to | ask you for | the | address.",
+      "Don't worry, we'll call you to get the address.")],
     ask_phone: [
       t("¿Me | da | un | número | de | teléfono | para | {m:localizarlo|f:localizarla}?", "(To) me | you-give | a | number | of | telephone | to | reach you?", "What's the best phone number to reach you?",
         { flags: { 7: "localizarlo / localizarla: reach you; lo for a man, la for a woman." } }),
@@ -801,6 +871,9 @@ export const baggage: SituationDef = {
             "Would you like a free overnight kit? It has a toothbrush, toothpaste, and a T-shirt.") }),
     ],
     kit_here: [t("Aquí tiene.", "Here you go.", "Here you go."), t("Tenga.", "Take it.", "Here you are.")],
+    // "¿Cuánto cuesta?" while the kit is offered; then the offer again, in short
+    ans_kit_free: [t("No tiene | costo, | es | de | cortesía.", "It doesn't have | cost, | it's | of | courtesy.", "It's free; it's complimentary.")],
+    kit_again: [t("¿Entonces | se lo | doy?", "So | it to you | I-give?", "So, shall I give you one?")],
     buy_basics: [t("Puede | comprar | lo | indispensable | para | hoy.", "You can | buy | the | essentials | for | today.", "You can buy the basics for tonight.")],
     receipts: [t("Guarde | sus | recibos: | le | reembolsamos | los | gastos | básicos.", "Keep | your | receipts: | (to) you | we-refund | the | expenses | basic.", "Keep your receipts, and we'll reimburse basic expenses.")],
     // Report number
@@ -816,6 +889,8 @@ export const baggage: SituationDef = {
     spell_b: [t("Claro: | P-C, | 5-8-3-0-6.", "Sure: | P-C, | 5-8-3-0-6.", "Sure: P-C, 5-8-3-0-6.", { say: "Claro: pe, ce, cinco, ocho, tres, cero, seis." })],
     write_ref: [t("Claro, | aquí | se lo | anoto | en | esta | tarjeta.", "Sure, | here | it for you | I-write-down | on | this | card.", "Sure, I'll write it on this card for you.")],
     ref_soon: [t("En | un | momento | se lo | doy.", "In | a | moment | it to you | I-give.", "I'll give it to you in a minute.")],
+    // "¿Cuál es su teléfono?" once the report is given
+    ans_contact: [t("El | teléfono | viene | en | esta | copia | del | reporte.", "The | phone number | comes | on | this | copy | of the | report.", "Our phone number is on this copy of the report.")],
     // Closing
     anything_else: [
       t("¿Le | puedo | ayudar | en | algo | más?", "(To) you | can I | help | in | something | else?", "Can I help you with anything else?"),
@@ -864,7 +939,8 @@ export const baggage: SituationDef = {
       "Fresh fruit and vegetables can't come into the country.", { flags: { 0: "la fruta: Spanish uses the article for a kind of thing in general; English doesn't." } })],
     not_allowed_sandwich: [t("Los | sándwiches | con | jamón | o | queso | no pueden | entrar | al | país.", "The | sandwiches | with | ham | or | cheese | can't | enter | the | country.",
       "Sandwiches with ham or cheese can't come into the country.", { flags: { 0: "los sándwiches: the article for a kind of thing in general." } })],
-    not_allowed_meat: [t("La | carne | no puede | entrar | al | país.", "The | meat | can't | enter | the | country.", "Meat can't come into the country.",
+    // SENASICA bars fresh meat; cured meat (ham, salami) goes to its inspectors (check_senasica)
+    not_allowed_meat: [t("La | carne | fresca | no puede | entrar | al | país.", "The | meat | fresh | can't | enter | the | country.", "Fresh meat can't come into the country.",
       { flags: { 0: "la carne: the article for a kind of thing in general." } })],
     stays_here: [t("Así que | {ese@X} | {X} | se queda | aquí.", "So | that | {X} | stays | here.", "So that {X} has to stay here.")],
     dog_sat: [
@@ -907,6 +983,13 @@ export const baggage: SituationDef = {
       "If that comes to more than 10,000 dollars, you have to fill out the cash declaration form.", { say: "Si equivale a más de diez mil dólares, tiene que llenar la declaración de dinero." })],
     ans_form_cash: [t("Solo | la | declaración | de | dinero, | por | el | efectivo.", "Only | the | declaration | of | money, | for | the | cash.", "Just the cash declaration form, for the cash.")],
     ans_tell_me: [t("Dígame | qué | trae | y | le | digo.", "Tell me | what | you bring | and | (to) you | I-tell.", "Tell me what you have and I'll let you know.")],
+    // ANAM, Equipaje y franquicia: laptops, phones, cameras, medicines, and (adults) liquor and cigarettes within limits
+    ans_personal: [t("Eso | es | parte | de | su | equipaje | personal: | no hace falta | declararlo.", "That | is | part | of | your | luggage | personal: | isn't needed | to declare it.",
+      "That's part of your personal luggage; you don't need to declare it.")],
+    // "¿Qué tengo que declarar?": the three things this conversation teaches (SENASICA's food, ANAM's allowance and cash line)
+    ans_what_declare: [t("Comida, | mercancía | de | más | de | 500 | dólares | y | efectivo | de | más | de | 10,000 | dólares.",
+      "Food, | goods | of | more | than | 500 | dollars | and | cash | of | more | than | 10,000 | dollars.", "Food, goods worth more than 500 dollars, and more than 10,000 dollars in cash.",
+      { say: "Comida, mercancía de más de quinientos dólares y efectivo de más de diez mil dólares." })],
     check_senasica: [t("Eso | lo | revisa | SENASICA. | Pase | por | aquí, | por favor.", "That | it | checks | SENASICA. | Go | through | here, | please.",
       "The agriculture inspectors will check that. This way, please.", { flags: { 3: "SENASICA: Mexico's agricultural health service; its inspectors check food at the airport." } })],
     stays_here_all: [t("Así que | eso | se queda | aquí.", "So | that | stays | here.", "So all of that has to stay here.")],
@@ -925,10 +1008,11 @@ export const baggage: SituationDef = {
       "You don't need to declare that amount; only more than 10,000 dollars.", { say: "Esa cantidad no hace falta declararla: solo más de diez mil dólares." })],
     cash_over: [t("Entonces | tiene | que | llenar | la | declaración | de | dinero.", "Then | you have | to | fill out | the | declaration | of | money.",
       "Then you have to fill out the cash declaration form.")],
-    ans_pay_depends: [t("Depende | de | cuánto | valen.", "It depends | on | how much | they're worth.", "That depends on what they're worth.")],
+    ans_pay_depends: [t("Depende | de | cuánto | valgan.", "It depends | on | how much | they're worth.", "That depends on what they're worth.",
+      { flags: { 3: "valgan: subjunctive of valer, for a value not known yet." } })],
     gift_whatif: [t("Si | valen | más, | paga | los | impuestos | en | el | carril | de | Auto declaración.", "If | they're worth | more, | you-pay | the | duties | in | the | lane | of | Self-declaration.",
       "If they're worth more, you pay the duties in the self-declaration lane.")],
-    gift_whatif_less: [t("Si | valen | menos, | entran | en | su | franquicia | y | no | paga | nada.", "If | they're worth | less, | they fall | within | your | allowance | and | not | you-pay | anything.",
+    gift_whatif_less: [t("Si | valen | menos, | entran | en | su | franquicia | y | no paga | nada.", "If | they're worth | less, | they fall | within | your | allowance | and | you don't pay | anything.",
       "If they're worth less, they're within your allowance and you don't pay anything.")],
     go_ahead: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead.")],
     no_worries: [t("No se preocupe.", "Don't worry.", "Don't worry about it.")],
@@ -1065,6 +1149,14 @@ export const baggage: SituationDef = {
         { id: "q_free", s: t("¿La | entrega | es | gratis?", "The | delivery | is | free?", "Is delivery free?") },
       ],
     },
+    // "¿Prefiere recogerla aquí, o se la llevamos a otra dirección?"
+    pick_or_addr: {
+      lt: "Pick it up here, or give another address",
+      items: [
+        { id: "dl_pickup", s: t("Paso | por | ella | aquí.", "I'll stop by | for | it | here.", "I'll pick it up here.", { flags: { 0: "pasar por: to come by and pick something up." } }) },
+        { id: "dl_friend", s: t("A | la | casa | de | mi | amiga, | por favor.", "To | the | house | of | my | friend, | please.", "To my friend's place, please.") },
+      ],
+    },
     hotel: {
       lt: "Say where you're staying",
       items: [
@@ -1125,7 +1217,9 @@ export const baggage: SituationDef = {
         { id: "dc_only", s: t("Solo | unos | regalos.", "Only | some | gifts.", "Just some gifts.") },
         { id: "dc_cash", s: t("Traigo | 2,000 | dólares | en efectivo.", "I bring | 2,000 | dollars | in cash.", "I have 2,000 dollars in cash.", { say: "Traigo dos mil dólares en efectivo." }),
           note: "Cash is declared only over 10,000 US dollars (or the same in other money)." },
-        { id: "dc_can", s: t("¿Puedo | traer | {X}?", "Can I | bring | {X}?", "Can I bring {X} in?"), only: (e) => !e.attrs?.generic && !e.attrs?.gift },
+        // a mass noun bare ("¿Puedo traer queso?"), a count noun in the plural ("¿Puedo traer manzanas?", never "traer manzana")
+        { id: "dc_can", s: t("¿Puedo | traer | {X}?", "Can I | bring | {X}?", "Can I bring {X} in?"), only: (e) => !e.attrs?.generic && !e.attrs?.gift && e.art === "" },
+        { id: "dc_can", s: t("¿Puedo | traer | {X.pl}?", "Can I | bring | {X.pl}?", "Can I bring {X.pl} in?"), only: (e) => !e.attrs?.generic && !e.attrs?.gift && e.art !== "" },
       ],
     },
     // "El perro se sentó junto a su mochila. ¿Trae alguna fruta…?"
@@ -1201,7 +1295,7 @@ export const baggage: SituationDef = {
     { step: "tag", lt: "Show your claim tag", optional: true },
     { lt: "Describe your bag", optional: true, when: (c) => !c.s.found, done: (c) => !c.s.found && !DESCRIBE.some((id) => stepOpen(c, id)) },
     { step: "delivery", lt: "Arrange the delivery" },
-    { lt: "Give your address and phone number", done: (c) => !!c.s.hotel && !!c.s.phone },
+    { lt: "Give your address and phone number", done: (c) => stepDef("hotel").done(c) && !!c.s.phone },
     { lt: "Get your report number", done: (c) => !!c.s.refGiven },
     { lt: "Go through customs", done: (c) => !!c.s.customsDone },
   ],
@@ -1287,30 +1381,33 @@ export const baggage: SituationDef = {
       yes: (c) => { if (c.s.contentsQ === "what") { c.say("contents_what"); c.hold(); return; } c.s.contents = "valuable"; c.say("contents_valuables"); },
       no: (c) => { c.s.contents = "nothing"; c.say("contents_ok"); } },
     { id: "delivery", done: (c) => !!c.s.delivery,
-      ask: (c) => c.say("ask_delivery"),
-      expects: ["delivery", "pickup"],
+      // "…a su hotel?", unless the learner has already said they aren't at a hotel
+      ask: (c) => c.say(c.s.hotel && !inHotel(c) ? "ask_delivery_stay" : "ask_delivery"),
+      expects: ["delivery", "pickup", "delivery_ctx", "not_hotel_ctx", "price_ctx"],
       suggest: [{ lt: "Accept delivery to your hotel", hint: "g_yesno" }, { lt: "Pick it up yourself, or ask", hint: "delivery" }],
-      yes: (c) => { c.s.delivery = "deliver"; c.s.dlTo = "hotel"; once(c, "dl", c.s.found ? "delivery_ok_found" : "delivery_ok"); turn(c).said_when = true; },
+      yes: (c) => { c.s.delivery = "deliver"; c.s.dlTo = c.s.hotel && !inHotel(c) ? "home" : "hotel"; once(c, "dl", deliveryOk(c)); turn(c).said_when = true; },
       no: (c) => { c.s.delivery = "pickup"; c.say("pickup_ok"); } },
-    { id: "hotel", done: (c) => !!c.s.hotel,
+    // done once Itzel knows where to bring the bag: "En casa de una amiga" or "En un Airbnb" is enough for a pickup, but a
+    // delivery still needs the street (or the learner's "No sé la dirección": she calls for it)
+    { id: "hotel", done: (c) => !!c.s.hotel && !(c.s.delivery === "deliver" && c.s.needAddr),
       // Only what's missing: to the hotel → which one ("¿Dónde se está hospedando?"); to a friend's place → the address
       ask: (c) => {
-        c.s.hotelQ = c.s.dlTo === "hotel" ? "ask_hotel" : c.s.dlTo === "home" ? "ask_deliver_where"
+        c.s.hotelQ = c.s.hotel && c.s.needAddr ? "ask_deliver_where" : c.s.dlTo === "hotel" ? "ask_hotel" : c.s.dlTo === "home" ? "ask_deliver_where"
           : c.s.delivery === "deliver" && c.chance(0.5) ? "ask_deliver_where" : "ask_hotel";
         c.say(c.s.hotelQ);
       },
-      expects: ["stay"],
+      expects: ["stay", "addr_dunno_ctx"],
       suggest: [{ lt: "Say where you're staying", hint: "hotel" }] },
     { id: "phone", done: (c) => !!c.s.phone,
       ask: (c) => c.say("ask_phone"),
       expects: ["phone", "phone_ctx", "phone_none"],
       suggest: [{ lt: "Give your phone number", hint: "phone" }] },
     { id: "kit", when: (c) => c.s.offerKit && !c.s.kitDone, done: (c) => !!c.s.kitDone,
-      ask: (c) => c.say("offer_kit"),
-      expects: ["q_reimburse", "q_meantime", "kit_yes_ctx", "kit_no_ctx"],
+      ask: (c) => askKit(c),
+      expects: ["q_reimburse", "q_meantime", "kit_yes_ctx", "kit_no_ctx", "price_ctx"],
       suggest: [{ lt: "Accept the kit (yes / no)", hint: "g_yesno" }, { lt: "Ask about the costs", hint: "kit" }],
-      yes: (c) => { c.s.kitDone = true; c.s.kitGiven = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
-      no: (c) => { c.s.kitDone = true; c.s.kitGiven = true; c.say("no_problem"); } },
+      yes: (c) => { c.s.kitDone = true; c.s.kitGiven = true; c.s.kitOpen = false; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
+      no: (c) => { c.s.kitDone = true; c.s.kitGiven = true; c.s.kitOpen = false; c.say("no_problem"); } },
     { id: "ref", done: (c) => !!c.s.refAck,
       ask: (c) => {
         // the number and the tracking line once; after a side question she just waits for the learner
@@ -1333,27 +1430,28 @@ export const baggage: SituationDef = {
         c.s.customsGreeted = true;
         c.say(c.s.foodQ ? "customs_greet_food" : "customs_greet");
       },
-      expects: ["declare_none", "declare_none_ctx", "declare_items", "declare_items_ctx", "declare_q", "declare_cash", "declare_cash_ctx", "q_form", "q_button", "q_allowance", "q_cash", "q_cash_amount"],
+      expects: ["declare_none", "declare_none_ctx", "declare_items", "declare_items_ctx", "declare_q", "declare_cash", "declare_cash_ctx", "q_form", "q_button", "q_allowance", "q_cash", "q_cash_amount",
+        "personal_ctx"],
       suggest: [{ lt: "Say what you're bringing (or that it's nothing)", hint: "declare", options: "good" }, { lt: "Ask the customs officer", hint: "customs_q" }],
       // "Está bien, gracias" is no answer to "¿Trae algo que declarar?": the question comes again
       yes: (c) => { if (politeOnly(c)) return; c.say("customs_what"); c.expect(declareWhatPending()); },
       no: (c) => { declareNothing(c); } },
     { id: "food", when: (c) => !!c.s.itzelDone && c.s.askFood && c.s.declared === "nothing", done: (c) => !!c.s.foodAsked,
       ask: (c) => { c.speaker("aduana"); c.say("ask_food"); },
-      expects: ["declare_none", "declare_none_ctx", "declare_items", "declare_items_ctx", "declare_q"],
+      expects: ["declare_none", "declare_none_ctx", "declare_items", "declare_items_ctx", "declare_q", "personal_ctx"],
       suggest: [{ lt: "Say whether you have any food", hint: "declare", options: "good" }],
       yes: (c) => { if (politeOnly(c)) return; c.s.foodAsked = true; c.say("customs_what"); c.expect(declareWhatPending()); },
       no: (c) => { declareNothing(c); } },
     // the twist: the sniffer dog sits by the backpack (the snack from the plane)
     { id: "dog", when: (c) => !!c.s.itzelDone && c.s.dogTwist && c.s.declared === "nothing" && (!c.s.askFood || !!c.s.foodAsked), done: (c) => !!c.s.dogDone,
       ask: (c) => { c.speaker("aduana"); if (!c.s.dogAsked) { c.s.dogAsked = true; c.twist("sniffer_dog"); c.say("dog_sat"); } c.say("dog_q"); },
-      expects: ["declare_items", "declare_items_ctx", "declare_none", "declare_none_ctx", "hand_over", "q_why_ctx", "declare_q", "sorry_ctx"],
+      expects: ["declare_items", "declare_items_ctx", "declare_none", "declare_none_ctx", "hand_over", "q_why_ctx", "declare_q", "sorry_ctx", "personal_ctx"],
       suggest: [{ lt: "Say what food you have (or that you have none)", hint: "dog", options: ["apple", "sandwich", "banana"] }],
       yes: (c) => { if (politeOnly(c)) return; c.say("customs_what"); c.expect(declareWhatPending()); },
       no: (c) => { dogSearch(c); } },
     { id: "gift_value", when: (c) => !!c.s.itzelDone && (c.s.goods || []).includes("gifts"), done: (c) => c.s.giftValue !== undefined,
       ask: (c) => { c.speaker("aduana"); c.s.giftAsk = (c.s.giftAsk ?? 0) + 1; c.say(c.s.giftAsk === 1 ? "gift_value_q" : c.s.giftAsk % 2 ? "gift_value_again2" : "gift_value_again"); },
-      expects: ["gift_value_ctx", "gift_whatif_ctx"],
+      expects: ["gift_value_ctx", "gift_whatif_ctx", "gift_dunno_ctx"],
       suggest: [{ lt: "Say what the gifts are worth", hint: "gift_value" }],
       // "Está bien" is no answer to "¿Más de 500 dólares?": never the duties lane on politeness
       yes: (c) => { if (politeOnly(c)) return; giftValue(c, "over"); },
@@ -1470,23 +1568,35 @@ export const baggage: SituationDef = {
       // where to: the hotel ("a mi hotel", or a yes to Itzel's "…a su hotel?"), or somewhere else ("a la casa de mi amiga")
       if (seg.tags.includes("to_home")) c.s.dlTo = "home";
       else if (seg.tags.includes("to_hotel") || c.step === "delivery") c.s.dlTo = "hotel";
-      if (turn(c).said_when) once(c, "dl", "ack"); else { once(c, "dl", c.s.found ? "delivery_ok_found" : "delivery_ok"); turn(c).said_when = true; }
+      if (turn(c).said_when) once(c, "dl", "ack"); else { once(c, "dl", deliveryOk(c)); turn(c).said_when = true; }
     },
+    delivery_ctx(c, slots, seg) { baggage.handlers.delivery(c, slots, seg); },
+    // "No, al hotel no": pick it up, or deliver it somewhere else?
+    not_hotel_ctx(c) { c.say("ask_pickup_or_address"); c.expect(pickupOrAddressPending()); },
     pickup(c) { c.s.delivery = "pickup"; once(c, "dl", "pickup_ok"); },
-    stay(c, slots, seg) { c.s.hotel = slots.hotel ?? (seg.tags.includes("fam") ? "friend" : "address"); ack(c, 0.6); },
+    pick_ctx(c, slots, seg) { baggage.handlers.pickup(c, slots, seg); },
+    stay(c, slots, seg) {
+      c.s.hotel = slots.hotel ?? (seg.tags.includes("fam") ? "friend" : "address");
+      // "En casa de una amiga", "En un Airbnb": no street yet, so a delivery still needs the address (the hotel step asks it)
+      c.s.needAddr = !slots.hotel && !slots.street && !/\b(calle|avenida|numero|entre)\b/.test(plain(c.heard));
+      ack(c, 0.6);
+    },
+    // "No sé la dirección", "Todavía no tengo hotel": for a delivery she calls for it; for a pickup it isn't needed
+    addr_dunno_ctx(c) { c.s.hotel = c.s.hotel ?? "unknown"; c.s.needAddr = false; c.s.addrLater = true; c.say(c.s.delivery === "deliver" ? "addr_later" : "no_problem"); },
     phone(c) { c.s.phone = true; once(c, "ph", "phone_ok"); },
     phone_ctx(c) { c.s.phone = true; once(c, "ph", "phone_ok"); },
     // no local number: Itzel calls the hotel, or (staying with friends, at an address) the learner calls the desk
     phone_none(c) { c.s.phone = "none"; once(c, "ph", ["mar_azul", "other_hotel"].includes(c.s.hotel) ? "phone_none_ok" : "phone_none_call_us"); },
-    q_when(c) { once(c, "when", c.s.found ? "ans_when_found" : "ans_when"); },
+    q_when(c) { if (turn(c).said_when) return; c.s.whenSaid = true; once(c, "when", c.s.found ? "ans_when_found" : "ans_when"); },
     q_meantime(c) {
       c.s.kitDone = true;
-      if (!c.s.kitGiven) { c.s.kitGiven = true; c.say("offer_kit"); c.expect(kitPending()); return; }
+      // the kit offered in full here (it answers "what do I do?"); a later re-ask is the short one
+      if (!c.s.kitGiven) { c.s.kitGiven = true; c.s.kitOpen = true; c.s.kitAsked = true; c.say("offer_kit"); c.expect(kitPending()); return; }
       c.say("buy_basics"); c.say("receipts");
     },
-    q_reimburse(c) { if (c.step === "kit") c.s.kitDone = true; c.say("buy_basics"); c.say("receipts"); },
-    kit_yes_ctx(c) { c.s.kitDone = c.s.kitGiven = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
-    kit_no_ctx(c) { c.s.kitDone = c.s.kitGiven = true; c.say("no_problem"); },
+    q_reimburse(c) { if (c.step === "kit") { c.s.kitDone = true; c.s.kitOpen = false; } c.say("buy_basics"); c.say("receipts"); },
+    kit_yes_ctx(c) { c.s.kitDone = c.s.kitGiven = true; c.s.kitOpen = false; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
+    kit_no_ctx(c) { c.s.kitDone = c.s.kitGiven = true; c.s.kitOpen = false; c.say("no_problem"); },
     q_call(c) { c.say("ans_call"); },
     q_track(c) { c.say("ans_track"); },
     q_free(c) {
@@ -1495,8 +1605,11 @@ export const baggage: SituationDef = {
         c.say(c.s.giftValue === "over" ? "ans_pay_lane" : open ? "ans_pay_depends" : "ans_pay_no");
         return;
       }
-      c.say("ans_free");
+      // while the kit is on offer, its price; otherwise the delivery's
+      c.say(c.s.kitOpen ? "ans_kit_free" : "ans_free");
     },
+    price_ctx(c, slots, seg) { baggage.handlers.q_free(c, slots, seg); },
+    q_contact(c) { c.say(c.s.refGiven ? "ans_contact" : "ref_soon"); },
     q_what_if(c) { c.say("ans_what_if"); },
     q_copy(c) { c.say("ans_copy"); },
     q_taxi(c) { c.say("ans_taxi"); },
@@ -1511,11 +1624,16 @@ export const baggage: SituationDef = {
       declareNothing(c);
     },
     declare_none_ctx(c, slots, seg) { baggage.handlers.declare_none(c, slots, seg); },
-    declare_items(c, slots) {
+    declare_items(c, slots, seg) {
       if (!c.s.itzelDone) { once(c, "later", "customs_later"); return; }
       const goods = goodsFrom(slots);
-      if (c.step === "dog" && !c.s.dogDone) once(c, "tt", "thanks_telling");
+      if (c.step === "dog" && !c.s.dogDone) thanksTelling(c);
       declareGoods(c, goods);
+      // "Traigo unos regalos, pero valen menos de quinientos dólares": the value comes with them
+      const tags = allTags(slots, seg);
+      const n = typeof slots.gnum === "number" ? slots.gnum : undefined;
+      if (goods.includes("gifts") && c.s.giftValue === undefined && (tags.includes("lt") || tags.includes("gt") || n !== undefined))
+        giftValue(c, tags.includes("gt") ? "over" : tags.includes("lt") ? "under" : n! > 500 ? "over" : "under");
     },
     declare_items_ctx(c, slots, seg) { baggage.handlers.declare_items(c, slots, seg); },
     declare_q(c, slots) {
@@ -1547,6 +1665,17 @@ export const baggage: SituationDef = {
     },
     declare_cash_ctx(c, slots, seg) { baggage.handlers.declare_cash(c, slots, seg); },
     q_cash(c) { if (!c.s.itzelDone) { once(c, "later", "customs_later"); return; } c.say("ans_cash"); },
+    q_what_declare(c) { if (!c.s.itzelDone) { once(c, "later", "customs_later"); return; } c.say("ans_what_declare"); },
+    // a question about a laptop, medicines or a bottle: personal luggage (the open question comes again)
+    q_personal(c) { if (!c.s.itzelDone) { once(c, "later", "customs_later"); return; } once(c, "pers", "ans_personal"); },
+    // a bottle or cigarettes declared: inside the personal luggage, so nothing to declare (the dog's question stays open)
+    personal_ctx(c) {
+      once(c, "pers", "ans_personal");
+      if (c.step === "dog" && !c.s.dogDone) return;
+      turn(c).acked = true;
+      declareNothing(c);
+    },
+    gift_dunno_ctx(c) { c.say("gift_estimate"); c.hold(); },
     one_more_q_ctx(c) { c.say("go_ahead"); },
     q_cash_amount(c) { if (!c.s.itzelDone) { once(c, "later", "customs_later"); return; } c.say("ans_cash_amount"); },
     q_why(c) { if (!c.s.itzelDone) { once(c, "later", "customs_later"); return; } c.say("why_rule"); },
@@ -1688,12 +1817,12 @@ export const baggage: SituationDef = {
     { say: "No traigo nada de valor", intent: "contents", step: "contents" },
     { say: "Mi maleta sí llegó", intent: "none" },
     { say: "No perdí mi maleta", intent: "none" },
-    { say: "No sé el nombre del hotel", intent: "none", step: "hotel" },
+    { say: "No sé el nombre del hotel", intent: "addr_dunno_ctx", step: "hotel", not: ["stay"] },
     { say: "No tengo WhatsApp", intent: "none", step: "phone" },
     // Review traps (s65b review): a bare "no hace falta" is not a pickup, "No, al hotel no" is not a delivery
     { say: "No, no hace falta", intent: "kit_no_ctx", step: "kit", not: ["pickup"] },
     { say: "No hace falta", intent: "yn:no", step: "phone", not: ["pickup"] },
-    { say: "No, al hotel no", intent: "none", step: "delivery", not: ["delivery"] },
+    { say: "No, al hotel no", intent: "not_hotel_ctx", step: "delivery", not: ["delivery", "pickup"] },
     { say: "No al hotel, prefiero recogerla", intent: "pickup", step: "delivery", not: ["delivery"] },
     { say: "¿Tengo que pagar algo?", intent: "q_free", step: "delivery", not: ["delivery"] },
     { say: "No tengo mis cosas", intent: "q_meantime", step: "kit", not: ["kit_no_ctx"] },
@@ -1763,6 +1892,27 @@ export const baggage: SituationDef = {
     { say: "Traigo jamón", intent: "declare_items", step: "declare", slots: { goods: { good_item: { good: "cured" } } } },
     { say: "¿Cuánto dinero puedo traer?", intent: "q_cash_amount", step: "declare", not: ["declare_cash"] },
     { say: "¿Cuándo llega mi maleta?", intent: "q_when", step: "declare" },
+    // Audit (5 Nov 2026): prices at the offers, "not to the hotel", the address, whole sentences, customs questions
+    { say: "¿Cuánto cuesta?", intent: "price_ctx", step: "delivery", not: ["delivery", "pickup"] },
+    { say: "¿Tiene algún costo?", intent: "q_free", step: "delivery", not: ["delivery"] },
+    { say: "¿Tiene costo?", intent: "q_free", step: "kit", not: ["kit_yes_ctx", "kit_no_ctx"] },
+    { say: "No estoy en un hotel", intent: "not_hotel_ctx", step: "delivery", not: ["delivery", "pickup"] },
+    { say: "Mejor a la casa de mi amiga", intent: "delivery_ctx", step: "delivery", not: ["pickup"] },
+    { say: "¿A qué hora me la traen?", intent: "q_when", step: "delivery", not: ["delivery"] },
+    { say: "No sé la dirección", intent: "addr_dunno_ctx", step: "hotel", not: ["stay"] },
+    { say: "Le doy mi número: 984 123 4567", intent: "phone", step: "phone" },
+    { say: "Llegué hace una hora en el vuelo de Houston", intent: "flight", step: "flight", slots: { city: "houston" } },
+    { say: "Mi vuelo fue el 482 de Houston", intent: "flight", step: "flight", slots: { city: "houston" } },
+    { say: "¿Cuál es su teléfono?", intent: "q_contact" },
+    { say: "¿Qué tengo que declarar?", intent: "q_what_declare", step: "declare", not: ["declare_none", "declare_none_ctx", "declare_items"] },
+    { say: "¿Puedo traer mi laptop?", intent: "q_personal", step: "declare", not: ["declare_none", "declare_none_ctx", "contents", "delivery"] },
+    { say: "¿Puedo traer mi laptop?", intent: "q_personal", step: "delivery", not: ["delivery"] },
+    { say: "¿Tengo que declarar mis medicinas?", intent: "q_personal", step: "declare", not: ["declare_none", "declare_none_ctx", "contents"] },
+    { say: "Traigo una botella de tequila", intent: "personal_ctx", step: "declare", not: ["declare_items", "declare_none"] },
+    { say: "No, solo traigo una botella de vino", intent: "personal_ctx", step: "food" },
+    { say: "Traigo unos regalos, pero valen menos de quinientos dólares", intent: "declare_items", step: "declare", slots: { gnum: 500 } },
+    { say: "No sé cuánto valen", intent: "gift_dunno_ctx", step: "gift_value", not: ["gift_value_ctx"] },
+    { say: "¿Puedo traer manzanas?", intent: "declare_q", step: "declare", not: ["declare_items", "declare_items_ctx"] },
     // Not understood
     { say: "Mi perro baila salsa en la playa", intent: "none" },
     { say: "Quiero un café con leche", intent: "none" },
@@ -1842,6 +1992,23 @@ export const baggage: SituationDef = {
     { name: "customs: gifts over the allowance", turns: [...DESK, "No, gracias.", "Traigo unos regalos para mi familia.", "¿Cuánto tengo que pagar?", "¿Y si valen más de quinientos?", "Sí, como ochocientos dólares.", "¿Cuánto tengo que pagar?", "Muy bien, gracias."],
       expect: { complete: true, state: { giftValue: "over", customsDone: true } }, auto: omit(DESK_AUTO, CUSTOMS_KEYS),
       setup: (s) => { deskSetup(s); s.foodQ = false; s.askFood = false; s.dogTwist = false; } },
+    // audit (5 Nov 2026): a price question at each offer, "No, al hotel no" (pickup or another address?), the desk's phone
+    { name: "audit: prices at the offers, not to the hotel", turns: ["Mi maleta no llegó.", "Vuelo 482 de Houston.", "Es una maleta negra.", "¿Cuánto cuesta?", "No, al hotel no.",
+      "A la casa de mi amiga, por favor.", "Calle Flamboyán número 23, entre Hidalgo y Juárez.", "984 123 4567", "¿Tiene costo?", "Sí, por favor.", "¿Cuál es su teléfono?", "Gracias."],
+      expect: { complete: true, state: { delivery: "deliver", dlTo: "home", hotel: "address", kitGiven: true } }, auto: omit(BG_AUTO, ["describe", "delivery", "hotel", "phone", "kit", "ref"]),
+      setup: (s) => { deskSetup(s); s.offerKit = true; } },
+    // a delivery to a friend's house needs the street; "No sé la dirección" gets a call for it
+    { name: "audit: staying with a friend, no address yet", turns: ["Mi maleta no llegó.", "Vuelo 482 de Houston.", "Es una maleta negra.", "Sí, por favor.", "En casa de una amiga.", "No sé la dirección.", "984 123 4567", "Gracias."],
+      expect: { complete: true, state: { delivery: "deliver", hotel: "friend", addrLater: true } }, auto: omit(BG_AUTO, ["describe", "delivery", "hotel", "phone", "ref"]),
+      setup: (s) => { deskSetup(s); } },
+    // customs questions (what to declare, a laptop) and the gifts with their value in one answer
+    { name: "audit: customs questions, gifts with their value", turns: [...DESK, "No, gracias.", "¿Qué tengo que declarar?", "¿Puedo traer mi laptop?", "Traigo unos regalos, pero valen menos de quinientos dólares.", "Gracias."],
+      expect: { complete: true, state: { declared: "items", giftValue: "under", customsDone: true } }, auto: omit(DESK_AUTO, CUSTOMS_KEYS),
+      setup: (s) => { deskSetup(s); s.foodQ = false; s.askFood = false; s.dogTwist = false; } },
+    // a bottle of tequila is personal luggage; at the dog "Sí, unos chocolates" still gets the backpack checked
+    { name: "audit: tequila, then the dog and the chocolates", turns: [...DESK, "No, gracias.", "Traigo una botella de tequila.", "Sí, traigo unos chocolates.", "Perdón, no me acordaba.", "Gracias."],
+      expect: { complete: true, state: { declared: "items", dogDone: true, searched: true, confiscated: "apple" } }, auto: omit(DESK_AUTO, CUSTOMS_KEYS),
+      setup: (s) => { deskSetup(s); s.foodQ = false; s.askFood = false; s.dogTwist = true; s.snack = "apple"; } },
   ],
 };
 
@@ -1863,16 +2030,52 @@ function refPending(): Pending {
 }
 
 function kitPending(): Pending {
+  // "¿Cuánto cuesta?" isn't handled here: q_free answers it (the kit is free) and the offer comes again, in short
+  const shut = (cc: Ctx) => { cc.s.kitOpen = false; };
   return {
-    id: "kit", expects: ["q_reimburse", "kit_yes_ctx", "kit_no_ctx"], hints: ["g_yesno", "kit"], suggest: [{ lt: "Accept the kit (yes / no)", hint: "g_yesno" }, { lt: "Ask about the costs", hint: "kit" }],
+    id: "kit", expects: ["q_reimburse", "kit_yes_ctx", "kit_no_ctx", "price_ctx"], hints: ["g_yesno", "kit"], suggest: [{ lt: "Accept the kit (yes / no)", hint: "g_yesno" }, { lt: "Ask about the costs", hint: "kit" }],
     on: {
-      q_reimburse: (cc) => { cc.say("kit_here"); cc.event("give", { item: "overnight kit" }); cc.say("buy_basics"); cc.say("receipts"); },
-      kit_yes_ctx: (cc) => { cc.say("kit_here"); cc.event("give", { item: "overnight kit" }); cc.say("receipts"); },
-      kit_no_ctx: (cc) => { cc.say("buy_basics"); cc.say("receipts"); },
+      q_reimburse: (cc) => { shut(cc); cc.say("kit_here"); cc.event("give", { item: "overnight kit" }); cc.say("buy_basics"); cc.say("receipts"); },
+      kit_yes_ctx: (cc) => { shut(cc); cc.say("kit_here"); cc.event("give", { item: "overnight kit" }); cc.say("receipts"); },
+      kit_no_ctx: (cc) => { shut(cc); cc.say("buy_basics"); cc.say("receipts"); },
     },
-    yes: (cc) => { cc.say("kit_here"); cc.event("give", { item: "overnight kit" }); cc.say("receipts"); },
-    no: (cc) => { cc.say("buy_basics"); cc.say("receipts"); },
-    ask: (cc) => cc.say("offer_kit"),
+    yes: (cc) => { shut(cc); cc.say("kit_here"); cc.event("give", { item: "overnight kit" }); cc.say("receipts"); },
+    no: (cc) => { shut(cc); cc.say("buy_basics"); cc.say("receipts"); },
+    ask: (cc) => askKit(cc),
+  };
+}
+
+/** The courtesy kit: offered in full once; after a side question, asked again in short ("¿Entonces se lo doy?"). */
+function askKit(c: Ctx) {
+  c.s.kitOpen = true;
+  if (c.s.kitAsked) { c.say("kit_again"); return; }
+  c.s.kitAsked = true;
+  c.say("offer_kit");
+}
+
+/** The yes to the delivery: when it comes ("usually within 24 hours"), unless the learner has just been told. */
+const deliveryOk = (c: Ctx) => (c.s.whenSaid ? "ack" : c.s.found ? "delivery_ok_found" : "delivery_ok");
+
+/** At a hotel by name: the delivery question can say "a su hotel". */
+const inHotel = (c: Ctx) => ["mar_azul", "other_hotel"].includes(c.s.hotel);
+
+/** "¿Prefiere recogerla aquí, o se la llevamos a otra dirección?" (after "No, al hotel no"). A bare yes or no answers
+ *  neither half, so she asks again in her other words; "Llévenla, por favor" here means the other address. */
+function pickupOrAddressPending(): Pending {
+  const elsewhere = (cc: Ctx, sl: any, sg: Segment) => { baggage.handlers.delivery(cc, sl, sg); if (!sg.tags.includes("to_hotel")) cc.s.dlTo = "home"; };
+  const again = (cc: Ctx) => { cc.say("ask_pickup_or_address"); cc.expect(pickupOrAddressPending()); };
+  return {
+    id: "pickup_or_address", expects: ["pickup", "pick_ctx", "delivery", "delivery_ctx", "price_ctx"], hints: ["pick_or_addr"],
+    suggest: [{ lt: "Pick it up here, or give another address", hint: "pick_or_addr" }],
+    on: {
+      pickup: (cc, sl, sg) => { baggage.handlers.pickup(cc, sl, sg); },
+      pick_ctx: (cc, sl, sg) => { baggage.handlers.pickup(cc, sl, sg); },
+      delivery: elsewhere,
+      delivery_ctx: elsewhere,
+    },
+    yes: again,
+    no: again,
+    ask: (cc) => cc.say("ask_pickup_or_address"),
   };
 }
 
@@ -1926,11 +2129,23 @@ function goodsFrom(slots: any): string[] {
   return out;
 }
 
-/** What Medina says about one thing the traveler may not bring in. */
-function sayNotAllowed(c: Ctx, id: string) {
+/** Lowercase, without accents (for reading c.heard). */
+const plain = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** "Unas manzanas", "dos plátanos", "uvas": the learner named more than one, so "eso se queda aquí", not "esa manzana". */
+function pluralSaid(c: Ctx, id: string): boolean {
+  const e = goodById(id);
+  if (!e) return false;
+  const h = plain(c.heard);
+  return [e.pl, ...(e.forms || [])].filter((f): f is string => !!f).map((f) => plain(f.replace(/ \| /g, " ")))
+    .filter((f) => /s$/.test(f)).some((f) => new RegExp(`\\b${f}\\b`).test(h));
+}
+
+/** What Medina says about one thing the traveler may not bring in (`found`: the one she found herself). */
+function sayNotAllowed(c: Ctx, id: string, found = false) {
   const bad = goodById(id)?.attrs?.bad;
   c.say(bad === "fruit" ? "not_allowed_fruit" : bad === "sandwich" ? "not_allowed_sandwich" : "not_allowed_meat");
-  c.say("stays_here", { X: id });
+  c.say(!found && pluralSaid(c, id) ? "stays_here_all" : "stays_here", { X: id });
 }
 
 /** A bare "está bien / vale / ok": politeness, not a yes to "¿Trae algo que declarar?". */
@@ -1952,6 +2167,8 @@ function declareGoods(c: Ctx, goods: string[]) {
   const T = turn(c);
   const before: string[] = c.s.goods ?? [];
   const all = [...new Set([...before, ...goods])];
+  // the dog sat by the backpack: it smelled the snack from the plane
+  const atDog = !!c.s.dogTwist && !c.s.dogDone && c.step === "dog";
   T.goods = true;
   c.s.declared = "items";
   c.s.goods = all;
@@ -1972,8 +2189,12 @@ function declareGoods(c: Ctx, goods: string[]) {
   // ham, salami, cheese: SENASICA's rules depend on the kind and the country, so its inspectors look (no verdict here)
   if (fresh.some((id) => goodById(id)?.attrs?.inspect) && !c.s.inspect) { c.s.inspect = true; c.say("check_senasica"); return; }
   if (fresh.length && fresh.every((id) => goodById(id)?.attrs?.generic) && !T.whatKind && !c.s.askedKind) {
+    // at the dog: the answer to "¿Qué es?" is still about what the dog smelled
+    if (atDog) c.s.dogDone = false;
     c.s.askedKind = true; T.whatKind = true; c.say("customs_what_kind"); c.expect(declareWhatPending()); return;
   }
+  // at the dog, only things that may come in ("Sí, unos chocolates"): the dog smelled something else, so she checks the backpack
+  if (atDog) { dogSearch(c); return; }
   // gifts: the value question comes next (the gift_value step)
   if (fresh.some((id) => !goodById(id)?.attrs?.gift) && !T.checked) { T.checked = true; c.say("check_ok"); }
 }
@@ -1987,7 +2208,7 @@ function dogSearch(c: Ctx) {
   c.say(snack === "sandwich" ? "found_sandwich" : "found_apple");
   c.s.goods = [...new Set([...(c.s.goods ?? []), snack])];
   c.s.confiscated = snack;
-  sayNotAllowed(c, snack);
+  sayNotAllowed(c, snack, true);
   c.say("next_time");
 }
 
@@ -2016,7 +2237,7 @@ function byePending(): Pending {
 /** "¿Qué trae?" after a bare yes. */
 function declareWhatPending(): Pending {
   return {
-    id: "declare_what", expects: ["declare_items", "declare_items_ctx", "declare_none", "declare_none_ctx", "declare_cash", "declare_cash_ctx"], hints: ["declare"],
+    id: "declare_what", expects: ["declare_items", "declare_items_ctx", "declare_none", "declare_none_ctx", "declare_cash", "declare_cash_ctx", "personal_ctx"], hints: ["declare"],
     suggest: [{ lt: "Say what you're bringing", hint: "declare", options: "good" }],
     on: {
       declare_items: (cc, sl, sg) => { baggage.handlers.declare_items(cc, sl, sg); },
@@ -2026,6 +2247,8 @@ function declareWhatPending(): Pending {
       hand_over: (cc) => { admitSnack(cc); },
       declare_cash: (cc, sl, sg) => { baggage.handlers.declare_cash(cc, sl, sg); },
       declare_cash_ctx: (cc, sl, sg) => { baggage.handlers.declare_cash(cc, sl, sg); },
+      // "Una botella de tequila" after "¿Qué trae?": personal luggage
+      personal_ctx: (cc, sl, sg) => { baggage.handlers.personal_ctx(cc, sl, sg); },
     },
     no: (cc) => { if (cc.step === "dog" && !cc.s.dogDone) dogSearch(cc); else declareNothing(cc); },
     ask: (cc) => cc.say("customs_what"),
@@ -2034,8 +2257,15 @@ function declareWhatPending(): Pending {
 
 /** "Aquí está" at the dog's question: the snack is handed over. */
 function admitSnack(c: Ctx) {
-  once(c, "tt", "thanks_telling");
+  thanksTelling(c);
   declareGoods(c, [c.s.snack === "sandwich" ? "sandwich" : "apple"]);
+}
+
+/** "Gracias por decirme" once, when the learner owns up at the dog (not again after "¿Qué es?"). */
+function thanksTelling(c: Ctx) {
+  if (c.s.thanked) return;
+  c.s.thanked = true;
+  c.say("thanks_telling");
 }
 
 /** Medina's "Puede pasar": thanks or goodbye ends it; "¿Por qué?" about the fruit is answered and the closing stays. */
@@ -2069,7 +2299,7 @@ function allContent(slots: any): string[] {
 const DESK_ONLY = ["problem", "need_help", "flight", "flight_num_ctx", "city_ctx", "no_connection", "via_ctx", "dunno_ctx", "tag_lost", "tag_lost_ctx",
   "describe", "describe_ctx", "color_ctx", "type_ctx", "size_ctx", "material_ctx", "describe_fix", "marks_ctx", "marks_none", "marks_bare_ctx", "brand",
   "delivery", "pickup", "stay", "phone", "phone_ctx", "phone_none", "q_when", "q_meantime", "q_reimburse", "kit_yes_ctx", "kit_no_ctx", "q_call",
-  "q_track", "q_what_if", "q_copy", "q_ref"];
+  "q_track", "q_what_if", "q_copy", "q_ref", "q_contact"];
 for (const k of DESK_ONLY) {
   const h = baggage.handlers[k];
   baggage.handlers[k] = (c, sl, sg) => { if (c.s.itzelDone) { once(c, "desk", "ask_baggage_desk"); return; } return h(c, sl, sg); };

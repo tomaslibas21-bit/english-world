@@ -36,3 +36,78 @@ About 50 of the 996 lines changed and 85 were added: ~45 must-fix, ~40 polish, ~
 ## For the lead / owner
 - The engine gap in meaning-safety 1 (lang.ts `correctionStarters` with a clitic + verb) should be fixed globally.
 - The writer's open questions on facts still stand (whether shoes come off, free bags, laptops out where CT scanners are in use). The lines stay general.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral). Read: STYLE.md, AUTHORING-ES.md, the brief, the review above, the
+cross-cutting leads (AUDIT/cross, AUDIT/neutral), s64a/s64c for the shared airport facts, the situation, corpus and
+held-out files, the transcripts (seeds 3 and 7, every sim), and ~120 probe turns (tools/probe.ts) through every step and
+pending question, the bottle choices played end to end with the recorded state (rule 22).
+
+| Check | Before | After |
+|---|---|---|
+| check-content | 0/0; 95 NLU, 13 sims 12/12, fuzz 80 | 0/0; 108 NLU, 17 sims 12/12, fuzz 80 |
+| corpus | 233/233, 0/52 false accepts | 319/319, 0/57 (+91 items, 45 with `not` or `any`) |
+| held-out | 38/38, 0/3 | 38/38, 0/3 |
+
+Found 21, fixed 21 (by point: 1:3 4:3 7:14 10:1; nothing on 2, 3, 5, 6, 8, 9).
+
+**1. Natural Spanish (3).** "Sus cosas salen del otro lado" was said once the learner was through (the finish, "¿Me da
+mi maleta?"), when they already stand on that side: now "Sus cosas salen por allá" ("del otro lado" stays for the bag
+asked about before walking through). The shoes question repeated its whole line after every answer ("Pueden ser los
+zapatos. Quíteselos…"): a refusal or a side question now gets the reason and a short reminder, "Quíteselos, por
+favor" (new line `shoes_remind`). The collect step said "Todo lo demás está bien" again after every side question:
+the second time he hands the bag over.
+
+**4. Facts (3).** The greeting variant "Buenas tardes" for the 8:10 a.m. flight (s64a and s64c say "Buenos días"): now
+"Buenos días", both texts. The hint "¿Dónde está la sala 8?": the learner's gate is sala 4 (s64a, s64c, TOWN.md): now
+4 (said "cuatro"; neutral "puerta 4"), the test and the sim too. A driver's license handed over counted as the ID
+while "¿Mi licencia sirve?" gets "Su pasaporte, por favor": a license (or "credencial") without the passport now
+counts as the boarding pass only, and he asks for the passport (`licShown`).
+
+**7. Questions and offers left without an answer (14).**
+- **"Listo" / "Ya me lo quité" at an alarm question** ran the walk step's yes: the alarm was passed (walked) and
+  "¿Trae cinturón o reloj?" stayed open for good, a loop. At the pockets, check-pockets and belt questions it now
+  means "I took it out": "Muy bien, pase otra vez" (`emptied`); ack_done and g_ok never run the walk step during the
+  alarm.
+- **"¿Por qué?" / "¿Para qué?" / "¿Qué pasó?"** got "No, ningún problema" everywhere but the bag. Now by moment
+  (ask_what, `#why`): the camera "Solo para comparar con su foto"; the alarm "Nada grave. Solo vamos a revisar"; the
+  shoes "A veces los zapatos tienen metal"; the bottle "Los líquidos de más de 100 mililitros no pueden pasar"; why
+  elsewhere "Es por seguridad". Also understood: "¿Qué pasa?", "¿Qué sonó?", "¿Por qué no puede pasar?".
+- **"¿Qué hago?" / "¿Es aquí?"** gave "Párese en las huellas y levante los brazos" at the documents, the bottle and
+  the goodbye. The scanner's instructions now come only at the walk step; "¿Es aquí?" before the documents gets
+  "Es aquí"; at the tray "La laptop, los líquidos y…"; elsewhere the open question is asked again.
+- **"¿Es aquí la fila para seguridad?"** was split into where_stand + is_this_line (the scanner line again): one
+  pattern.
+- **His offer echoed**, "Puede tomársela, vaciarla o dejármela": "Tomármela.", "Vaciarla.", "Dejársela.", "Se la
+  dejo.", "Quiero/Prefiero vaciarla", "Tírenla" weren't understood (the offer probe only reads noun lists). Added, with
+  the refusals guarded ("No quiero dejársela", "No se la dejo" → bottle_neg; `NEG_CHOICE` reads "no quiero
+  tirarla/dejársela/vaciarla/tomármela"; bottle_neg expected at the first reaction too).
+- "No traigo ni cinturón ni reloj", "Ni uno ni otro", "Los dos", "Ambos" at "¿Trae cinturón o reloj?" (`both_ctx`).
+- "¿Es necesario?", "¿De verdad?", "¿En serio?" at the shoes → "Lo siento, es necesario para pasar" (`must_ctx`).
+- "No lo encuentro" (the boarding pass) → "Sin prisa".
+- "¿Dónde la puedo llenar?", "¿Dónde compro agua?" after the bottle → "Más adelante venden agua" (new, vague on
+  purpose: no claim about fountains).
+- At the tray: "¿Tengo que sacar el celular / las llaves?", "¿Tengo que sacar todo de la mochila?", "¿Puedo usar dos
+  charolas?", "¿Mi perfume?", "billetera", "cargador".
+- After: "¿Ya puedo salir?", "¿Me puedo poner los zapatos?", "¿Dónde me siento?" (not while the shoes are off and the
+  arch is still to pass).
+- "¿Y si me la tomo / la vacío / la tiro?" (a suggestion here, nothing paid), "¿Dónde la vacío?".
+- "Ay, perdón." at the bottle was read as "¿Perdón?" (say that again): now an apology (forgot).
+- Whole sentences: "Sí, esa maleta es mía", "Esa mochila no es mía" at the bag question; "No llevo", "No llevo
+  nada" at the pockets and the belt.
+
+**10. Neutral (1).** phone_where's twin kept "cartera", a handbag in much of South America: "billetera".
+
+Checked and left: tú/usted (usted throughout, hints too), the name (Oficial Torres, no clash), glosses and flags
+(every flag on its unit), spelling and ¿¡, the twins (15, all the Mexican-only words twinned; the new lines need
+none), no templated values (only {m:listo|f:lista}). "Vacíela ahí y la botella es suya" is a little odd (it was
+always hers/his) but not wrong: kept. "¿Va todo en la charola?" reads as "Va, todo en la charola" (done) once the "¿"
+is gone: kept (rule 10, nothing binding).
+
+New lines (voiced in both sets, none needs a twin): rules_why, camera_why, alarm_what, shoes_why, water_ahead,
+shoes_remind. Changed: greet_docs[2] (both texts), bags_end_belt, phone_where's twin, hint gate_dir (both texts).
+
+For the lead: the Spanish offer probe misses verb-list offers ("Puede tomársela, vaciarla o dejármela"); global
+g_meaning doesn't take "¿Qué es (una) charola?" (only "¿Qué significa…?"); "billetera" for the neutral wallet in
+s91a/s91b too.
