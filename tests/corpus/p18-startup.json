@@ -324,6 +324,15 @@
     {"ctx": "tomorrow", "say": "Maybe a bit later?", "intent": "cant_time", "not": ["meet_ok"]},
     {"ctx": "tomorrow", "say": "Nine works better for me.", "intent": "meet_time", "slots": {"time": {"h": 9}}},
     {"ctx": "tomorrow", "say": "I can't.", "intent": "cant_ctx", "not": ["meet_ok"]},
-    {"ctx": "when", "say": "Ten works better.", "intent": "meet_time", "slots": {"time": {"h": 10}}}
+    {"ctx": "when", "say": "Ten works better.", "intent": "meet_time", "slots": {"time": {"h": 10}}},
+    {"ctx": "midnight", "say": "Until midnight?", "intent": "stay_limit", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "How much do I get paid?", "intent": "paid_q", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "Is it mandatory?", "intent": "mid_why", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "Do I have to stay?", "intent": "mid_why", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "I can stay until six.", "intent": "stay_limit", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "Until midnight?", "intent": "any", "not": ["stay_yes"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "Until midnight, I can't.", "intent": "any", "not": ["stay_yes"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "Do I have to stay?", "intent": "any", "not": ["stay_yes"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "midnight", "say": "Can I leave at nine?", "intent": "stay_limit", "note": "logic audit 5 Nov 2026"}
   ]
 }

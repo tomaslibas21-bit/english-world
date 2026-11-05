@@ -249,6 +249,7 @@ function pendPrice(c: Ctx, id = "price") {
     suggest: [S_OFFER, S_PUSH, ...flawSuggest(c), S_DECIDE], hints: ["offer", "push", ...flawSuggest(c).map((s) => s.hint!), "decide"],
     yes: (cc) => {
       if (cc.s.cur === ASK && !cc.s.conc && !cc.s.offered) { cc.say("confirm_full", P(cc)); pendConfirm(cc); return; }
+      if (notADeal(cc)) { askAgain(cc); return; }
       dealAt(cc, cc.s.cur);
     },
     no: (cc) => { cc.say("need_offer"); pendOffer(cc); },
@@ -262,14 +263,14 @@ function pendOffer(c: Ctx) {
 /** Her best (or last) price: the learner decides. "No" is a polite refusal (her last chance comes once). */
 function pendFinal(c: Ctx, id = "final") {
   c.expect({ id, expects: NEG, on: negOn(), suggest: [S_DECIDE, S_PUSH, ...flawSuggest(c)], hints: ["decide", "push"],
-    yes: (cc) => dealAt(cc, cc.s.cur),
+    yes: (cc) => { if (notADeal(cc)) { askAgain(cc); return; } dealAt(cc, cc.s.cur); },
     no: (cc) => walkAway(cc, false),
     ask: (cc) => (cc.chance(0.5) ? cc.say("final_reask") : cc.say("final_reask_p", P(cc))) });
 }
 /** "So… $9,000, no haggling?" */
 function pendConfirm(c: Ctx) {
   c.expect({ id: "confirm", expects: NEG, on: negOn(), suggest: [S_DECIDE, S_OFFER], hints: ["decide", "offer"],
-    yes: (cc) => dealAt(cc, cc.s.cur),
+    yes: (cc) => { if (notADeal(cc)) { askAgain(cc); return; } dealAt(cc, cc.s.cur); },
     no: (cc) => { cc.say("need_offer"); pendOffer(cc); },
     ask: (cc) => cc.say("confirm_full", P(cc)) });
 }
@@ -280,7 +281,8 @@ function pendConfirm(c: Ctx) {
 function arrive(c: Ctx): boolean {
   if (c.s.arrived) return false;
   c.s.arrived = true;
-  return true;
+  // a replay ("Oh, it's you again!"): she doesn't introduce herself again ("I'm Maggie…")
+  return !c.s.known;
 }
 /** The learner skipped saying why they came (a question or a price first): Maggie introduces herself. */
 function ensureArrived(c: Ctx) { if (arrive(c)) c.say("maggie_name"); }
@@ -453,6 +455,18 @@ function offer(c: Ctx, q: number, cash: boolean, blunt = false) {
 }
 
 /** A deal at `price`. `line`: Maggie's agreement line ("Sold!", or the full-price wink). */
+/** "I'd buy it" / "I would take it" (a would) and "Okay, thanks" / "Perfect, thanks" (a closing) at her price sell
+ *  nothing: her question again ("So… $9,000, no haggling?" at the asking price). */
+const WOULD = /\b(i|we)(\s+would|'d)\s+(take|buy|get)\b/i;
+const CLOSING = /^\W*((ok|okay|perfect|sure|great|all right|alright|fine|good|cool|got it)|(that'?s|that is|it'?s|it is) (ok|okay|fine|all right|alright)|i'?m (fine|good|ok|okay))\W+(thanks|thank you)\b/i;
+/** "That's okay, thanks" / "I'm fine, thanks": a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bno need\b/i;
+function askAgain(c: Ctx) {
+  if (c.s.finalMade) { if (c.chance(0.5)) c.say("final_reask"); else c.say("final_reask_p", P(c)); pendFinal(c); return; }
+  if (c.s.cur === ASK && !c.s.conc && !c.s.offered) { c.say("confirm_full", P(c)); pendConfirm(c); return; }
+  c.say("price_reask", P(c)); pendPrice(c);
+}
+const notADeal = (c: Ctx) => !c.s.outcome && !!c.s.talked && (WOULD.test(c.heard) || CLOSING.test(c.heard));
 function dealAt(c: Ctx, price: number, line = true) {
   if (c.s.outcome) return;
   c.s.outcome = "deal";
@@ -769,6 +783,7 @@ const H: Record<string, Handler> = {
   accept_deal(c, _slots, seg) {
     if (c.s.outcome === "deal") { shakeHands(c); return; }
     if (!mainMove(c, seg.intent) || c.s.outcome) return;
+    if (notADeal(c)) { askAgain(c); return; }
     // "I want to buy it!" as the first words: the price first; later, "I'll take it!" before any haggling is
     // a full-price deal (the ad said $9,000)
     if (!c.s.arrived) { tellPrice(c); return; }
@@ -813,8 +828,17 @@ const H: Record<string, Handler> = {
   },
   pay_check(c) {
     if (c.s.outcome !== "deal") { c.say("pay_later"); return; }
-    // a personal check ("Can I write you a check?"): she'd rather have a cashier's check
-    paid(c, /cashier|certified|bank/i.test(c.heard) ? "pay_check_r" : "pay_check_personal", "check");
+    if (/cashier|certified|bank/i.test(c.heard)) { paid(c, "pay_check_r", "check"); return; }
+    if (c.s.paid) { c.say("ack"); return; }
+    // a personal check ("Can I write you a check?"): she'd rather have a cashier's check, and waits for the answer
+    // (it handed over the keys and the title at once); a second personal check gets the ways to pay
+    if (c.s.personalCheck) { c.say("pay_options"); c.s.payAsked = "how"; c.hold(); return; }
+    c.s.personalCheck = true;
+    c.say("pay_check_personal");
+    c.hold();
+    c.expect({ id: "check_q", optional: true, expects: ["pay_cash", "pay_transfer", "pay_check", "no_cash"], suggest: [{ lt: "Pasakyti, kaip sumokėsi", hint: "pay" }],
+      yes: (cc) => { if (POLITE_NO.test(cc.heard)) { cc.say("pay_options"); cc.s.payAsked = "how"; cc.hold(); return; } paid(cc, "ack", "check"); },
+      no: (cc) => { cc.say("pay_options"); cc.s.payAsked = "how"; cc.hold(); } });
   },
   no_cash(c) {
     c.s.cash = false;
@@ -2003,6 +2027,10 @@ export const usedCar: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): a would and a polite closing at her price, a personal check
+    { say: "I'd buy it.", intent: "accept_deal", step: "haggle" },
+    { say: "That's okay, thanks.", intent: "accept_ctx", step: "haggle", not: ["walk_away"] },
+    { say: "Can I write you a check?", intent: "pay_check", step: "pay" },
     // arriving (hint patterns first)
     { say: "I saw your ad on Saturday.", intent: "about_ad", step: "arrive" },
     { say: "Hi! I'm here about the car.", intent: "about_ad", step: "arrive" },
@@ -2176,6 +2204,10 @@ export const usedCar: SituationDef = {
   // Maggie's twist is pinned where the script depends on it (setup); the throw-in and the line variants
   // vary by seed, and on replays (visits ≥ 1) she greets the learner as someone she has met.
   sims: [
+    // logic audit (5 Nov 2026): a would asks again; "Okay, thanks" sells nothing; a personal check waits for a yes
+    { name: "audit: a would, a polite closing, a personal check", turns: ["Hi! I'm here about the car.", "No questions.", "No, thanks.", "Okay… let's talk.",
+      "Would you consider seven thousand?", "Okay, thanks.", "I'd take it.", "That works for me.", "Let's shake on it.", "Can I write you a check?", "Okay."],
+      auto: AUTO, expect: { complete: true, state: { outcome: "deal", paid: true } }, setup: (s) => { s.twist = null; } },
     { name: "the song: halfway, cash", turns: ["Hi! I'm here about the car.", "How many miles does it have?", "No, that's all, thanks.", "Can I take it around the block?",
       "It drives really nicely.", "Okay… let's talk.", "That's a bit more than I was hoping to spend. Is there any flexibility on the price?",
       "I was thinking more along the lines of seven.", "What if we met halfway?", "Let's shake on it.", "I'll pay cash.", "It was a pleasure doing business with you."],
@@ -2231,7 +2263,7 @@ export const usedCar: SituationDef = {
       expect: { complete: true, state: { outcome: "deal", dealPrice: 7500, lastChance: true } }, auto: AUTO, setup: (s) => { s.twist = null; } },
     { name: "echoes with a push, then a ceiling", turns: ["Hi! I'm here about the car.", "No questions.", "No, thanks.", "Okay… let's talk.",
       "Nine thousand? Can you do any better?", "Eight and a half? That's still too much.", "I don't want to pay more than seven.", "Eight thousand? Hmm, that's a lot.",
-      "That works for me.", "Let's shake on it.", "Can I write you a check?", "Thanks, bye!"],
+      "That works for me.", "Let's shake on it.", "Can I write you a check?", "Okay.", "Thanks, bye!"],
       expect: { complete: true, state: { outcome: "deal", dealPrice: 7750, payMethod: "check" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
     // the brakes' $250, then the AC: it works (no AC fault this visit); with the AC fault, the discount is spent
     { name: "the brakes, then the AC that works", turns: ["Hi! I'm here about the car.", "No, that's all.", "Can I take it around the block?", "The brakes feel a bit soft.",

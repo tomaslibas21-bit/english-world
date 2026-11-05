@@ -166,7 +166,9 @@ const explainedToGrant = (c: Ctx) => grantKnows(c) && !c.s.guessed;
 /** A one-off question was asked (the learner's reply settles it, whatever it is). */
 const asked = (c: Ctx, id: string) => (c.s.asks?.[id] ?? 0) >= 1;
 const hurtOk = (c: Ctx) => !!c.s.hurtDone || asked(c, "g_hurt");
-const downOk = (c: Ctx) => !!c.s.downDone || asked(c, "g_down");
+// "Is it leaking into Mr. Okoye's place?": done when answered, or asked twice ("I put towels down." answered it,
+// and the question was dropped)
+const downOk = (c: Ctx) => !!c.s.downDone || (c.s.asks?.g_down ?? 0) >= 2;
 const waterOk = (c: Ctx) => !!c.s.waterDone || asked(c, "g_water");
 const sinceOk = (c: Ctx) => !c.s.askSince || !!c.s.sinceDone || asked(c, "g_since");
 const detailsDone = (c: Ctx) => hurtOk(c) && downOk(c) && waterOk(c) && sinceOk(c);
@@ -251,6 +253,18 @@ function sureNotComing(c: Ctx) {
   c.s.comeDone = true;
   c.s.coming = false;
   if (once(c, "l_come")) L(c, "l_not_coming");
+}
+/** "Yes, please." / "That would be great." to "You sure? I can come over after brunch.": she comes (it was read as
+ *  "yes, I'm sure" and she stayed at brunch). A bare "Yes." / "Yes, I'm sure." still means she stays. */
+const TAKE_OFFER = /\bplease\b|\b(that would|that'd|it would|it'd) be (great|nice|amazing|awesome|lovely|helpful)\b|\b(yes|sure|okay|ok|yeah),? come\b/i;
+function sureAnswer(c: Ctx) {
+  if (TAKE_OFFER.test(c.heard) && !/\bi'?m sure\b|\bi am sure\b/i.test(c.heard)) {
+    if (!once(c, "l_come")) return;
+    c.s.comeDone = true; c.s.coming = true;
+    L(c, "l_coming_yes");
+    return;
+  }
+  sureNotComing(c);
 }
 
 function notItem(c: Ctx, slots: any) {
@@ -1738,8 +1752,9 @@ export const flood: SituationDef = {
       ask: (c) => { bump(c, "l_come"); L(c, "l_sure"); },
       expects: ["need_nothing", "come_no", "ask_help", "item_ctx", "sure_ctx"],
       suggest: [{ lt: "Sutikti arba vėl laisvai atsisakyti", hint: "need" }],
-      // "Yes, I'm sure." / "Sure." answers her "You sure?": she stays at brunch (so does a "No, no, it's fine")
-      yes: (c) => { sureNotComing(c); },
+      // "Yes, I'm sure." / "Sure." answers her "You sure?": she stays at brunch (so does a "No, no, it's fine");
+      // "Yes, please." takes up her offer
+      yes: (c) => { sureAnswer(c); },
       no: (c) => { sureNotComing(c); } },
     { id: "l_bye", when: (c) => inLizzie(c) && !!c.s.helpAnswered && (c.s.twist === "door" ? !!c.s.doorDone : (!c.s.declined || !!c.s.comeDone || asked(c, "l_come"))),
       done: (c) => !!c.s.byeL,
@@ -1931,6 +1946,9 @@ export const flood: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): "Yes, please." to "You sure? I can come over after brunch." takes up her offer
+    { say: "Yes, please.", intent: "yn:yes", step: "l_come", not: ["need_nothing", "come_no"] },
+    { say: "Yes, I'm sure.", intent: "sure_ctx", step: "l_come", not: ["ask_help"] },
     // --- Lizzie: brunch and the flood (the song's casual lines first) ---
     { say: "Hey girl, can't make brunch, so sorry!", intent: "cancel_brunch", step: "l_news" },
     { say: "My washer kinda exploded.", intent: "flood", step: "l_news" },

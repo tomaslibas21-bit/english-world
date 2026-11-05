@@ -196,6 +196,9 @@ function once(c: Ctx, key: string): boolean {
 const RUDE = new WeakSet<Ctx>();
 const HOWSO = new WeakSet<Ctx>();
 const DONT_KNOW = new WeakMap<Ctx, string>();
+/** "No, thanks" / "That's okay, thanks" / "I'm fine, thanks": a decline, though "thanks" (and "that's okay") read as a yes. */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bno need\b/i;
+const declined = (c: Ctx) => (c as any).conv?.out?.parse?.yn === "no" || /^\W*(no|nope|nah)\b/i.test(c.heard || "") || POLITE_NO.test(c.heard || "");
 
 const asks = (c: Ctx, id: string): number => c.s.asks?.[id] ?? 0;
 function bump(c: Ctx, id: string): number { c.s.asks ||= {}; c.s.asks[id] = asks(c, id) + 1; return c.s.asks[id]; }
@@ -455,8 +458,12 @@ export const review: SituationDef = {
       "what do you mean [exactly | by that | by speaking up | by earlier]",
       "i (do not | did not) (see | understand | get) what you mean",
       "do you have (an | one | some) (example | examples)",
-      "what (exactly)? (did i | should i) (do | say) [differently]",
-      "how (do | can | could | should) i (do that | speak up | do it)",
+      "what (exactly)? did i (do | say) [differently | wrong]",
+    ] },
+    // "What should I do differently?" / "How do I do that?": how, not which meetings (they got the Pinewood call dates)
+    ask_how_fb: { patterns: [
+      "what (exactly)? should i (do | say) [differently | instead]", "how (do | can | could | should) i (do that | speak up | do it) [better]",
+      "what can i do [about it | differently]",
     ] },
     pushback: { patterns: [
       "i see it (a bit | a little | slightly | somewhat)? differently [actually] #h:see_differently",
@@ -975,6 +982,9 @@ export const review: SituationDef = {
       t("Sure. | The | Pinewood | call | last | Tuesday, | and | the | one | before | that.", "Žinoma. | — | „Pinewood“ | skambutis | praėjusį | antradienį, | ir | — | tas | prieš | jį.",
         "Žinoma. Skambutis su „Pinewood“ praėjusį antradienį ir ankstesnis."),
     ],
+    // "What should I do differently?" / "How do I do that?" (new line, 5 Nov 2026: needs a voice)
+    fb_how: [t("Try | to say | one | thing | in | the | first | ten | minutes.", "Pabandyk | pasakyti | vieną | dalyką | per | — | pirmąsias | dešimt | minučių.",
+      "Pabandyk ką nors pasakyti per pirmąsias dešimt minučių.")],
     fb_example_more: [t("That's | all | I | have, | honestly.", "Tai yra | viskas, ką | aš | turiu, | atvirai.", "Atvirai, daugiau nieko neturiu.", { flags: { 1: "Zero relative: Lithuanian needs ką." } })],
     fb_accept_react: [
       t("Thanks | for | taking | it | so | well.", "Ačiū, | kad | priėmei | tai | taip | gerai.", "Ačiū, kad taip gerai priėmei.", { flags: { 1: F_FOR_KAD } }),
@@ -1658,7 +1668,7 @@ export const review: SituationDef = {
         if (n >= 3) { c.s.fbDone = true; c.say("fb_move_on"); askNext(c); return; }
         c.say("fb_again");
       },
-      expects: ["fb_thanks", "fb_work", "ask_example_fb", "pushback", "rude_push", "defensive_fb", "protect_idea"],
+      expects: ["fb_thanks", "fb_work", "ask_example_fb", "ask_how_fb", "pushback", "rude_push", "defensive_fb", "protect_idea"],
       suggest: [{ lt: "Padėkoti ir pasakyti, kad prie to padirbėsi", hint: "receive" }, { lt: "Paprašyti pavyzdžio", hint: "example" }, { lt: "Mandagiai paaiškinti savo pusę", hint: "pushback" }],
       yes: (c) => { fbAccept(c); }, no: (c) => { rude(c); },
       help: (c) => { c.say("fb_help"); } },
@@ -1818,6 +1828,11 @@ export const review: SituationDef = {
     },
     fb_work(c) { if (fbOpen(c)) fbAccept(c); },
     ask_example_fb(c) { if (fbOpen(c)) example(c); },
+    ask_how_fb(c) {
+      if (!fbOpen(c) || !once(c, "example")) return;
+      if (c.s.howSaid) { c.say("fb_example_more"); c.hold(); return; }
+      c.s.howSaid = true; c.say("fb_how"); c.hold();
+    },
     pushback(c, _slots, seg) { pushback(c, seg.tags); },
     rude_push(c) {
       if (praiseOpen(c)) { deflect(c); return; }
@@ -1970,6 +1985,10 @@ export const review: SituationDef = {
     { say: "I see what you mean.", intent: "fb_thanks", step: "feedback" },
     { say: "I'll speak up earlier next time.", intent: "fb_work", step: "feedback" },
     { say: "Could you give me an example?", intent: "ask_example_fb", step: "feedback" },
+    // logic audit (5 Nov 2026): how to do it is not which meetings
+    { say: "What should I do differently?", intent: "ask_how_fb", step: "feedback", not: ["ask_example_fb"] },
+    { say: "How do I do that?", intent: "ask_how_fb", step: "feedback", not: ["ask_example_fb"] },
+    { say: "What exactly did I do?", intent: "ask_example_fb", step: "feedback" },
     { say: "Which meetings do you mean?", intent: "ask_example_fb", step: "feedback" },
     { say: "I see it a bit differently.", intent: "pushback", step: "feedback", not: ["fb_thanks"] },
     { say: "In those meetings, you presented my sections.", intent: "pushback", step: "feedback" },
@@ -2093,6 +2112,12 @@ export const review: SituationDef = {
       setup: (s) => { s.twist = "reverse"; s.follow = false; s.supportQ = false; s.back = true; } },
     // the salary question first (she comes back to it at the end), "How so?" before the reason, her own idea for the
     // agenda, and a goodbye instead of an answer to the check-in
+    // logic audit (5 Nov 2026): how to do it (not the meetings' dates); "No, thanks" to her goal idea and to the
+    // same time next month is a no
+    { name: "audit: how, a declined goal idea, another time", turns: ["Honestly? A little nervous.", "I'm most proud of the scheduling tool guide.",
+      "Thank you, that means a lot.", "Sure, go ahead.", "How do I do that?", "Thanks, that's really helpful. I'll work on that.", "I don't know.", "I don't know.",
+      "No, thanks.", "No, that's all. Thanks, that's really helpful.", "No.", "No, thanks."],
+      expect: { complete: false, state: { howSaid: true, goal: undefined, checkin: true } }, auto: AUTO, setup: PLAIN },
     { name: "salary first, Emily's idea", turns: ["Good, thanks.", "The app launch.", "Thank you!", "Can we talk about my salary first?", "Okay, go ahead.",
       "I see it differently.", "You presented my sections, the client was late.", "I don't know.", "Yes, good idea.", "I'd like to lead a small project.",
       "Thanks for today. Bye!"],
@@ -2285,11 +2310,13 @@ function protectIdea(c: Ctx, tags: string[]) {
 function protectOffer(c: Ctx) {
   if (c.s.protectDone || !once(c, "protectOffer")) return;
   c.say("protect_help");
-  const yes = (cc: Ctx) => { if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "emily"; cc.say("protect_yes"); };
+  const no = (cc: Ctx) => { if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "later"; cc.say("protect_no"); };
+  // "No, thanks" / "That's okay, thanks" took the agenda ("Great. Done."): a decline
+  const yes = (cc: Ctx) => { if (declined(cc)) { no(cc); return; } if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "emily"; cc.say("protect_yes"); };
   c.expect({ id: "protect_offer", optional: true, expects: ["protect_idea", "agree_idea"], hints: ["protect", "checkin"],
     suggest: [{ lt: "Atsakyti į Emilės pasiūlymą", hint: "checkin" }],
     on: { protect_idea: (cc, _s, seg) => { protectIdea(cc, seg.tags); }, agree_idea: (cc) => { yes(cc); }, g_ok: (cc) => { yes(cc); }, g_thanks: (cc) => { yes(cc); }, fb_thanks: (cc) => { yes(cc); } },
-    yes, no: (cc) => { if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "later"; cc.say("protect_no"); },
+    yes, no,
     ask: (cc) => { cc.say("protect_help"); } });
 }
 
@@ -2359,17 +2386,22 @@ function goalCourse(c: Ctx) {
 /** After two tries she suggests a goal herself: yes counts (agreeing on a goal). */
 function goalOffer(c: Ctx) {
   c.say("goals_suggest");
-  const set = (cc: Ctx) => { goalFromOffer(cc, "presenting"); };
+  const no = (cc: Ctx) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("goal_later"); };
+  const set = (cc: Ctx) => { if (declined(cc)) { no(cc); return; } goalFromOffer(cc, "presenting"); };
   c.expect({ id: "goal_offer", optional: true, expects: ["goal_name", "goal_ctx", "agree_idea"], hints: ["goals", "checkin"],
     suggest: [{ lt: "Atsakyti į Emilės pasiūlymą", hint: "checkin" }, { lt: "Pasakyti, ką norėtum tobulinti kitais metais", hint: "goals", options: "goal" }],
     on: {
       goal_name: (cc, slots, seg) => { goalFromOffer(cc, slots.goal ?? seg.tags.find((x) => x.startsWith("g:"))?.slice(2)); },
-      goal_ctx: (cc, slots) => { goalFromOffer(cc, slots.goal); },
+      goal_ctx: (cc, slots) => {
+        // "Client presentations?" (her idea asked back): her suggestion once more, still open
+        if (slots.goal === "presenting" && /\?\s*$/.test(cc.heard || "") && !cc.s.goalEcho) { cc.s.goalEcho = true; goalOffer(cc); return; }
+        goalFromOffer(cc, slots.goal);
+      },
       agree_idea: (cc) => { set(cc); }, g_ok: (cc) => { set(cc); }, g_thanks: (cc) => { set(cc); },
-      goal_not: (cc) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("support_none"); },
+      goal_not: (cc) => { no(cc); },
     },
     yes: set,
-    no: (cc) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("support_none"); } });
+    no });
 }
 function goalFromOffer(c: Ctx, id?: string) {
   if (c.s.goalDone) return;
@@ -2549,7 +2581,7 @@ function checkinAsk(c: Ctx, thanks: boolean) {
   c.s.checkinAsked = true;
   if (c.s.checkinProposed) { c.say("checkin_like_said" + (c.s.checkinWhen === "month" ? "" : c.s.checkinWhen === "weeks" ? "_weeks" : "_other")); agree(c, false); return; }
   c.say("checkin_ask");
-  const yes = (cc: Ctx) => { agree(cc, false); };
+  const yes = (cc: Ctx) => { agree(cc, declined(cc)); };
   c.expect({
     id: "checkin",
     expects: ["checkin_yes_ctx", "checkin_no_ctx", "propose_checkin", "agree_idea"],

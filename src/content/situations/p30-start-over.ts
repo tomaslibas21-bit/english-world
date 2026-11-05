@@ -77,7 +77,7 @@ function once(c: Ctx, key: string): boolean {
 const mark = (c: Ctx, key: string) => { once(c, key); };
 const now = (c: Ctx, key: string) => !!TURN.get(c)?.has(key);
 
-const dan = (c: Ctx, line: string) => { c.speaker("dan"); c.say(line); };
+const dan = (c: Ctx, line: string) => { c.s.badQ = undefined; c.speaker("dan"); c.say(line); };
 const nora = (c: Ctx, line: string) => { c.speaker("nora"); c.say(line); };
 /** Say a reaction at most once per learner turn. */
 const react = (c: Ctx, line: string) => { if (once(c, "say:" + line)) dan(c, line); };
@@ -1005,6 +1005,9 @@ export const startOver: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): "Whatever you want." names his price; "Sorry again." is an apology
+    { say: "Whatever you want.", intent: "deal_ctx", step: "make_up" },
+    { say: "Sorry again.", intent: "g_repeat", step: "make_up" },
     // at the door
     { say: "Hi Dan. Do you have a minute?", intent: "can_talk", step: "door" },
     { say: "Can we talk?", intent: "can_talk", step: "door" },
@@ -1155,6 +1158,13 @@ export const startOver: SituationDef = {
     ], expect: { complete: true, state: { startOverDone: true, anytimeSaid: true, closed: true } }, auto: AUTO,
       setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
     // the open branch, no Nora: the classic way through
+    // logic audit (5 Nov 2026): a no to his price twice (not "Wrong answer. Try again." for ever); "Want to try that
+    // again?" – "Yes." gets "I'm listening"
+    { name: "audit: try again, then no twice", turns: [
+      "Hi Dan. Do you have a minute?", "It was just a joke.", "Yes.", "I owe you an apology.", "For what I said at your barbecue. There's no excuse for it.",
+      "I was too proud to call.", "Thank you for hearing me out.", "How can I make it up to you?", "No.", "No.", "Can we start over?", "Thank you!",
+    ], expect: { complete: true, state: { makeUpDone: true } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
     { name: "open: the classic apology", turns: [
       "Hi Dan. Do you have a minute?", "I owe you an apology.", "For what I said at your barbecue. There's no excuse for it.", "I was too proud to call.",
       "Thank you for hearing me out.", "How can I make it up to you?", "Deal.", "Can we start over?", "Thank you!",
@@ -1266,6 +1276,8 @@ function badMove(c: Ctx, kind: "sorry_but" | "excuse" | "blame" | "rude" | "didn
   else if (k === "rude") { dan(c, "rude_react"); c.tip(TIPS.just_joke); }
   else if (k === "push") { dan(c, "rude_react"); c.tip(TIPS.push); }
   else dan(c, "didnt_mean_react");
+  // the reply's own question ("Want to try that again?", "So now it's my fault?"): its yes or no answers it
+  c.s.badQ = k === "rude" || k === "push" ? "again" : k === "non_apology" && NON_APOLOGY_YOU.test(c.heard) ? "fault" : undefined;
   c.hold();
 }
 
@@ -1352,10 +1364,28 @@ function closeOut(c: Ctx) {
 /** A bare yes/no answers Dan's open question, whichever step is current: the price ("So? Deal?"), "Are we starting
  *  over or what?" or "I need some time". Returns false if no such question is open. */
 function openYesNo(c: Ctx, yes: boolean): boolean {
-  if (c.s.dealOffered) { if (yes) acceptDeal(c); else { react(c, "wrong_answer"); c.hold(); } return true; }
-  if (c.s.offerStart && !c.s.startOverDone) { if (yes) doStartOver(c, false); else { react(c, "wrong_answer"); c.hold(); } return true; }
+  // "Want to try that again?" – "Yes." / "So now it's my fault?" – "No.": he listens (it was "You didn't come here to
+  // talk about the weather."); "So now it's my fault?" – "Yes." is blame
+  const bq = c.s.badQ;
+  if (bq && !c.s.turnDone) {
+    c.s.badQ = undefined;
+    if ((bq === "again" && yes) || (bq === "fault" && !yes)) { dan(c, "listening"); c.hold(); return true; }
+    if (bq === "fault" && yes) { badMove(c, "blame"); return true; }
+  }
+  // "No." to his price or to "Are we starting over or what?": "Wrong answer. Try again." once (it came for ever),
+  // then he lets it go
+  if (c.s.dealOffered) { if (yes) acceptDeal(c); else noTwice(c, "deal"); return true; }
+  if (c.s.offerStart && !c.s.startOverDone) { if (yes) doStartOver(c, false); else noTwice(c, "start"); return true; }
   if (timeOpen(c)) { if (yes) acceptTime(c); else pushMove(c); return true; }
   return false;
+}
+
+/** "Wrong answer. Try again." once; a second no: he lets the price go ("Words are cheap. But okay, I'll watch.") /
+ *  starts over all the same ("We just did."). */
+function noTwice(c: Ctx, what: "deal" | "start") {
+  if (!c.s.wrongSaid?.[what]) { c.s.wrongSaid = { ...(c.s.wrongSaid ?? {}), [what]: true }; react(c, "wrong_answer"); c.hold(); return; }
+  if (what === "deal") { if (!once(c, "deal")) return; dan(c, "promise_react"); settle(c); return; }
+  doStartOver(c, false);
 }
 
 function stepYes(c: Ctx) {
@@ -1367,6 +1397,10 @@ function stepYes(c: Ctx) {
 // Handlers
 
 const HANDLERS: Record<string, H> = {
+  g_repeat(c) {
+    if (/^\W*(i'?m\s+)?sorry again\W*$/i.test(c.heard) && !/\?/.test(c.heard)) { apologyMove(c, []); return; }
+    GLOBAL_HANDLERS.g_repeat(c as any, {});
+  },
   voc_unknown(c) { greet(c); },
   its_me(c) { greet(c); },
   g_hello(c) { greet(c); },
@@ -1460,7 +1494,12 @@ const HANDLERS: Record<string, H> = {
     dan(c, "offer_react");
     if (!c.s.makeUpDone) settle(c);
   },
-  deal_ctx(c) { if (!c.s.goalMet && c.s.dealOffered) acceptDeal(c); },
+  deal_ctx(c) {
+    if (c.s.goalMet) return;
+    if (c.s.dealOffered) { acceptDeal(c); return; }
+    // "Whatever you want." to "So what happens now?": he names his price (it asked "So. What now?" again)
+    if (stepIs(c, "make_up") && !c.s.makeUpDone && /\b(whatever|anything) you (want|like|say)\b/i.test(c.heard)) offerPrice(c, false);
+  },
   cant_cook(c) {
     if (c.s.goalMet) return;
     if (c.s.dealOffered && c.s.variant === "dinner") { if (once(c, "deal")) { dan(c, "cant_cook_react"); settle(c); } return; }

@@ -292,5 +292,13 @@
   {"ctx": "price", "say": "I don't want to pay more.", "intent": "any", "not": ["make_offer", "make_offer_ctx", "accept_deal"]},
   {"ctx": "pay", "say": "I'll pay by transfer.", "intent": "pay_transfer"},
   {"ctx": "pay", "say": "Can I write you a check?", "intent": "pay_check"},
-  {"ctx": "pay", "say": "I don't want to write a check.", "intent": "any", "not": ["pay_check"]}
+  {"ctx": "pay", "say": "I don't want to write a check.", "intent": "any", "not": ["pay_check"]},
+  {"ctx": "price", "say": "I'd buy it.", "intent": "accept_deal", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "price", "say": "I would take it.", "intent": "accept_deal", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "price", "say": "That's okay, thanks.", "intent": "accept_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "check_q", "say": "Okay.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "check_q", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "check_q", "say": "I'll pay cash.", "intent": "pay_cash", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "price", "say": "That's okay, thanks.", "intent": "any", "not": ["shake", "walk_rude"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "check_q", "say": "No, thanks.", "intent": "any", "not": ["pay_check", "pay_cash"], "note": "logic audit 5 Nov 2026"}
 ] }
