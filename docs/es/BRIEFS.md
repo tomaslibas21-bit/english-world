@@ -54,8 +54,8 @@ backpack), no flash photos, "no se puede tocar". Numbers: ticket prices ($80, $4
 
 **s73-restaurant · "Esto no es lo que pedí"** — Lucía (f) the host and Luis (m) the waiter at **La Cocina de Lucía**, a
 Yucatecan restaurant (the owner's choice, 2 Nov: a Mexican restaurant instead of the Trattoria; it keeps the place:
-left out of the visitor center, one block, the red awning, across from Boutique Hilos, as s62 says). The menu, for
-the writer to research and trim: sopa de lima, cochinita pibil, poc chuc, pescado tikin xic, panuchos, salbutes,
+across avenida Juárez from the visitor center, next to Café La Ceiba, the red awning: TOWN.md "Getting around"). The
+menu, for the writer to research and trim: sopa de lima, cochinita pibil, poc chuc, pescado tikin xic, panuchos, salbutes,
 papadzules; aguas frescas (horchata, jamaica, chaya con piña); flan or caballeros pobres. Prices plausible for a
 sit-down place in the town (El Muelle's dishes are about $300, s69). Mexico: "¿Mesa para cuántos?", "¿Qué les traigo de tomar?", "la cuenta, por favor" (the waiter never brings it
 unasked), "¿Va a pagar con tarjeta? Le traigo la terminal", the tip (propina, 10–15%) added by the learner, the
