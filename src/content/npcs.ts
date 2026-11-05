@@ -7,7 +7,9 @@ export type HairStyle = "short" | "long" | "bun" | "ponytail" | "curly" | "bald"
 export type Accessory = "apron" | "cap" | "glasses" | "sunglasses" | "hat" | "tie" | "beard" | "mustache" | "headset" | "scarf"
   | "badge" | "police" | "vest" | "bowtie" | "earrings" | "pilot" | "chef" | "cardigan" | "lanyard" | "flower"
   // sunglasses / reading glasses pushed up on the head
-  | "shades" | "readers";
+  | "shades" | "readers"
+  // a straw hat with a wide brim (the Spanish edition's passers-by: theme.ts `walkers`)
+  | "strawhat";
 
 export interface Look {
   skin: string;

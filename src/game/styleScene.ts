@@ -1,8 +1,10 @@
 // Renderer, sky, light and atmosphere for the trial world styles (see style.ts). The original
-// "blocks" look never calls into this file (createStyleFx returns null for it).
+// "blocks" look never calls into this file (createStyleFx returns null for it), unless the edition grades its light
+// outdoors (theme.ts `light`: blocksGrade below; null in Maple Harbor).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { STYLE, STYLED, IS_TOON, IS_STORY, IS_REAL, OUTLINE_LAYER } from "./style";
+import { THEME } from "./world/theme";
 
 interface Look3D {
   toneMapping: THREE.ToneMapping; exposure: number;
@@ -120,7 +122,7 @@ function makeEnvironments(renderer: THREE.WebGLRenderer, L: Look3D, sunDir: THRE
 /** Sets up the style's sky, lights and environment. Returns null for "blocks". */
 export function createStyleFx(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight; sky: THREE.Mesh; cam: THREE.Camera }): StyleFx | null {
   const L = styleLook();
-  if (!L) return null;
+  if (!L) return THEME.light ? blocksGrade(o, THEME.light) : null;
   const { scene, hemi, sun, sky, cam, renderer } = o;
   const off = new THREE.Vector3(...L.sun[3]);
   const sunDir = off.clone().normalize();
@@ -159,5 +161,31 @@ export function createStyleFx(o: { renderer: THREE.WebGLRenderer; scene: THREE.S
     quality(q) {
       if (IS_TOON && q === "high") cam.layers.enable(OUTLINE_LAYER); else cam.layers.disable(OUTLINE_LAYER);
     },
+  };
+}
+
+/** The "blocks" look's light graded outdoors for the edition's town (theme.ts `light`): a warmer sun, a little more
+ *  exposure (the tone curve greys bright walls less), a bluer zenith over a warmer horizon, the fog and the hemisphere in
+ *  the same key. Indoors, the game's own values come back (Game.ts sets the intensities; this keeps its colors). The sun
+ *  keeps following the player as Game.ts places it. */
+function blocksGrade(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight; sky: THREE.Mesh }, g: NonNullable<typeof THEME.light>): StyleFx {
+  const { renderer, scene, hemi, sun, sky } = o;
+  const u = (sky.material as THREE.ShaderMaterial).uniforms;
+  const keep = { sun: sun.color.clone(), hemi: hemi.color.clone(), ground: hemi.groundColor.clone(), exposure: renderer.toneMappingExposure };
+  const fog = new THREE.Fog(g.fog, 110, 420);
+  return {
+    zone(indoor) {
+      if (indoor) {
+        renderer.toneMappingExposure = keep.exposure;
+        sun.color.copy(keep.sun); hemi.color.copy(keep.hemi); hemi.groundColor.copy(keep.ground);
+        return;
+      }
+      renderer.toneMappingExposure = g.exposure;
+      sun.color.set(g.sun); hemi.color.set(g.hemi[0]); hemi.groundColor.set(g.hemi[1]);
+      u.top.value.set(g.sky[0]); u.mid.value.set(g.sky[1]); u.bottom.value.set(g.sky[2]);
+      scene.fog = fog;
+    },
+    frame() {},
+    quality() {},
   };
 }

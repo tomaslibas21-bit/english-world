@@ -111,6 +111,8 @@ export const OUTDOOR_NPCS: { npc: string; x: number; z: number; rot: number; sit
 export const CHAT_SPOTS: [number, number, number, number][] = [
   [21.9, -35.4, 23.1, -35.1],
   [6.2, -61.3, 7.4, -61.1],
+  // the edition's own (theme.ts): none in Maple Harbor
+  ...THEME.chatSpots,
 ];
 
 /** Maggie's cherry-red convertible, for sale in her drive (advanced song P25), facing the street. */

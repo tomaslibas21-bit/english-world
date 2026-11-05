@@ -55,6 +55,7 @@ export function buildTown(): Town {
   details.length = 0;
   displays.length = 0;
   displayGlass.length = 0;
+  displayParts = {};
   mx.length = 0;
   mxFlat.length = 0;
   beachPalms.length = 0;
@@ -79,7 +80,9 @@ export function buildTown(): Town {
   outer.position.set(35, -0.05, SEA_Z + 1 + 320);
   outer.receiveShadow = true;
   group.add(outer);
-  const hillMat = mat("#79ad5a", { flat: true });
+  // (round the edition's town, theme.ts `selva`, low rises in the jungle's green instead: the same random draws)
+  const hillMat = mat(THEME.selva?.hills ?? "#79ad5a", { flat: true });
+  const hillK = THEME.selva ? 0.36 : 1;
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 1.2 - 0.1;
     let hx = 35 + Math.cos(a) * (230 + r() * 60), hz = 30 + Math.sin(a) * (170 + r() * 50);
@@ -95,10 +98,11 @@ export function buildTown(): Town {
       while (hillGap(hx, hz, 1.6 * s, 1.2 * s) < gap && k < 2) { k += 0.02; hx = 35 + ox * k; hz = 30 + oz * k; }
     }
     const g = new THREE.IcosahedronGeometry(s, 1);
-    g.scale(1.6, 0.45 + r() * 0.3, 1.2);
+    g.scale(1.6, (0.45 + r() * 0.3) * hillK, 1.2);
     g.translate(hx, -s * 0.15, hz);
     M.add("hills", hillMat, g, false, true);
   }
+  if (THEME.selva) group.add(makeSelva());
 
   // --- sea ------------------------------------------------------------------
   const seaMat = STYLED ? seaMaterial() : new THREE.ShaderMaterial({
@@ -127,6 +131,8 @@ export function buildTown(): Town {
   });
   // this edition's own sea colors (theme.ts `sea`): Maple Harbor's shader above is left exactly as it is
   if (THEME.sea && seaMat instanceof THREE.ShaderMaterial && !STYLED) seaMat.fragmentShader = seaColors(THEME.sea);
+  // (and its far water fading into this edition's fog, theme.ts `light`)
+  if (THEME.light && seaMat instanceof THREE.ShaderMaterial && !STYLED) seaMat.uniforms.uFog.value.set(THEME.light.fog);
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
   sea.rotation.x = -Math.PI / 2;
   sea.position.set(35, -0.25, SEA_Z - 158);
@@ -172,6 +178,13 @@ export function buildTown(): Town {
     goods.name = "shop-windows";
     group.add(goods, new THREE.Mesh(mergeGeometries(displayGlass, false)!, displayGlassMaterial()));
   }
+  for (const [part, list] of Object.entries(displayParts)) {
+    const goods = new THREE.Mesh(colourMerge(list), displayMaterial());
+    goods.receiveShadow = true;
+    goods.name = "shop-windows-" + part;
+    group.add(goods);
+  }
+  if (!displays.length && displayGlass.length) group.add(new THREE.Mesh(mergeGeometries(displayGlass, false)!, displayGlassMaterial()));
   // the edition's outdoor pieces (mexican.ts) as one mesh, and their signs as another: none in Maple Harbor
   if (mx.length) group.add(staticColoured(mx, "town-mx"));
   if (mxFlat.length) { const m = staticColoured(mxFlat, "town-mx-small"); m.castShadow = false; group.add(m); }
@@ -356,8 +369,11 @@ function addMarkings(group: THREE.Group) {
       let start: number | null = null;
       const flush = (end: number) => {
         if (start === null || end - start < 0.5) return;
-        const [cx, cz] = at((start + end) / 2, side);
-        parts.curb.push(new THREE.BoxGeometry(horiz ? end - start : 0.14, 0.07, horiz ? 0.14 : end - start).translate(cx, 0.035, cz));
+        const kerb = (a: number, b: number) => { const [cx, cz] = at((a + b) / 2, side); return new THREE.BoxGeometry(horiz ? b - a : 0.14, 0.07, horiz ? 0.14 : b - a).translate(cx, 0.035, cz); };
+        // (the edition's streets, theme.ts `streetPaint`: the curb painted yellow near the crossings, in its own mesh)
+        const paint = THEME.streetPaint, c = paint ? Math.min(paint.corner, (end - start) / 2) : 0;
+        if (paint) for (const [a, b] of [[start, start + c], [end - c, end]]) mxFlat.push([kerb(a, b).scale(1, 1.02, 1.04), paint.color]);
+        if (end - start - 2 * c > 0.01) parts.curb.push(kerb(start + c, end - c));
       };
       for (let u = a; u <= b; u += 1) {
         const [px, pz] = at(Math.min(u + 0.5, b), side);
@@ -365,8 +381,9 @@ function addMarkings(group: THREE.Group) {
       }
       flush(b);
     }
-    // white edge lines half a metre in from each side, in 1 m pieces that leave out the crossings
-    for (const side of [-(rd.w / 2 - 0.5), rd.w / 2 - 0.5]) {
+    // white edge lines half a metre in from each side, in 1 m pieces that leave out the crossings (none on the edition's
+    // streets, theme.ts `streetPaint`)
+    for (const side of THEME.streetPaint ? [] : [-(rd.w / 2 - 0.5), rd.w / 2 - 0.5]) {
       let start: number | null = null;
       const flush = (end: number) => {
         if (start === null || end - start < 0.5) return;
@@ -713,7 +730,9 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
           shopWindow(b, M, col, fx, fz, hd, o, ww, wh, y - 0.35 - wh / 2, trimMat, frameMat, displayN++);
           continue;
         }
-        M.add("glass", b.style === "office" ? darkGlass : glassMat, boxGeo(ww, wh, 0.08, 0, 0, 0).rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
+        // (theme.ts `lean`: the pane's front face alone, where the box's front was)
+        const pane = THEME.lean ? new THREE.PlaneGeometry(ww, wh).translate(0, 0, 0.04) : boxGeo(ww, wh, 0.08, 0, 0, 0);
+        M.add("glass", b.style === "office" ? darkGlass : glassMat, pane.rotateY(rot).translate(wx, y - (bigShop ? 0.35 : 0), wz));
         // a flower box under each of a house's front windows downstairs
         if (b.style === "house" && isFront && f === 0 && !STYLED && !THEME.mexican) {
           const at = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(wx, 0, wz);
@@ -812,7 +831,8 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
     M.add("canopy", mat("#7a2e2e"), boxGeo(12, 0.3, 3.2, 0, 3.5, 0).rotateY(rotY).translate(dx + n[0] * 1.6, 0, dz + n[1] * 1.6));
   }
   if (b.style === "terminal") {
-    M.add("terminal-canopy", mat("#f4f6f8"), boxGeo(8, 0.4, 20, dx - 4, 5.4, dz));
+    // (thatched like a palapa in the edition's town, theme.ts `airportOut`: addTownMx)
+    if (!THEME.airportOut) M.add("terminal-canopy", mat("#f4f6f8"), boxGeo(8, 0.4, 20, dx - 4, 5.4, dz));
     for (const oz of [-9, -3, 3, 9]) { M.add("canopy-post", mat("#b8c2cc"), cylGeo(0.15, 0.15, 5.4, dx - 7.5, 2.7, dz + oz, 8)); col.addCircle(dx - 7.5, dz + oz, 0.2); }
     // control tower
     M.add("tower", mat("#dde6ee"), cylGeo(1.6, 2, 24, b.x + 12, 12, b.z + 16, 12));
@@ -838,6 +858,9 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
       // a low wall with an iron gate and a potted plant instead of the picket fence, the mailbox and the chimney
       const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
       MX.houseFront(mx, P, rotY, b.w, b.color, b.trim ?? "#ffffff", 1.4, P(4.5, 5));
+      // (graphics round 2, theme.ts `houseFronts`: the band along the wall, the door's grille and its number, plants)
+      const num = THEME.houseFronts[b.id];
+      if (num) MX.houseDetails(mxFlat, atlas!, P, rotY, halfWidth * 2, doorW, b.color, num);
     } else {
       M.add("chimney", mat("#9a5b46"), boxGeo(1, 3, 1, b.x + b.w * 0.28, b.h + 1.8, b.z + 1.5));
       // mailbox
@@ -931,6 +954,8 @@ const BARRED = new Set<BuildingDef["style"]>(["house", "shop", "civic", "restaur
  *  town is built. */
 const displays: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
 const displayGlass: THREE.BufferGeometry[] = [];
+/** …in the edition's town (theme.ts `lean`) by part of town. */
+let displayParts: Record<string, [THREE.BufferGeometry, THREE.ColorRepresentation][]> = {};
 
 /** The goods lit from inside the shop: some of each one's own colour glows. */
 function displayMaterial() {
@@ -969,7 +994,9 @@ function shopWindow(b: BuildingDef, M: Merger, col: Colliders, fx: number, fz: n
   fr(ww + 0.06, 0.07, 0, y1 - 0.02); fr(ww + 0.06, 0.07, 0, y0 + 0.02);
   for (const s of [-1, 1]) fr(0.07, wh, s * (ww / 2 - 0.02), y0 + wh / 2);
   // inside: goods stand on the display floor (y 0 there), between the back wall (z 0) and the glass (z 0.47)
-  const add: Add = (g, c) => { displays.push([at(g.translate(0, y0 + 0.06, 0)), c]); };
+  // (theme.ts `lean`: each part of town's shop windows in a mesh of their own)
+  const list = THEME.lean ? (displayParts[b.z > 40 ? "south" : b.z < -40 ? "north" : b.x < 0 ? "west" : "east"] ??= []) : displays;
+  const add: Add = (g, c) => { list.push([at(g.translate(0, y0 + 0.06, 0)), c]); };
   add(new THREE.BoxGeometry(ww, wh - 0.06, 0.02).translate(0, (wh - 0.06) / 2 - 0.06, 0.01), new THREE.Color(b.color).lerp(new THREE.Color("#fff8ec"), 0.6));
   add(new THREE.BoxGeometry(ww, 0.06, D - 0.04).translate(0, -0.03, D / 2 - 0.02), "#c9a57a");
   GOODS[b.id](add, k);
@@ -1351,18 +1378,30 @@ function buildPlane(M: Merger, x: number, z: number) {
 // ---------------------------------------------------------------------------
 
 function addStreetProps(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
-  const lampPost = mat("#2f3a40");
-  const lampGlass = mat("#fff4c4", { emissive: "#a08a3a" });
+  // (in the edition's town, theme.ts `nearFade`, a lamp beside the follow camera dissolves instead of filling the picture)
+  const lampPost = THEME.nearFade ? nearFaded(mat("#2f3a40").clone()) : mat("#2f3a40");
+  const lampGlass = THEME.nearFade ? nearFaded(mat("#fff4c4", { emissive: "#a08a3a" }).clone()) : mat("#fff4c4", { emissive: "#a08a3a" });
   const addLamp = (x: number, z: number) => {
     M.add("lamp", lampPost, cylGeo(0.08, 0.12, 4.2, x, 2.1, z, 6));
     // on the malecón (theme.ts) a post with two lanterns on an arm, along the beach
     if (THEME.malecon && z < -60) MX.lanternArm((k, g) => M.add(k === "post" ? "lamp" : "lamp-glass", k === "post" ? lampPost : lampGlass, g, k === "post"), x, z);
     else {
       M.add("lamp", lampPost, boxGeo(0.25, 0.25, 0.25, x, 4.3, z));
-      M.add("lamp-glass", lampGlass, new THREE.SphereGeometry(0.28, 8, 6).translate(x, 4.55, z), false);
+      M.add("lamp-glass", lampGlass, (THEME.lean ? new THREE.SphereGeometry(0.28, 7, 5) : new THREE.SphereGeometry(0.28, 8, 6)).translate(x, 4.55, z), false);
     }
     col.addCircle(x, z, 0.18);
   };
+  // the zócalo's colonial lamp posts (theme.ts `zocalo`): a fluted black post on a base, a four-sided lantern with a cap
+  for (const [x, z] of THEME.zocalo?.lamps ?? []) {
+    M.add("lamp", lampPost, cylGeo(0.2, 0.26, 0.6, x, 0.3, z, 8));
+    M.add("lamp", lampPost, cylGeo(0.07, 0.1, 3.3, x, 1.9, z, 8));
+    M.add("lamp", lampPost, cylGeo(0.16, 0.12, 0.14, x, 3.6, z, 8));
+    M.add("lamp-glass", lampGlass, boxGeo(0.34, 0.5, 0.34, x, 3.92, z), false);
+    for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) M.add("lamp", lampPost, boxGeo(0.04, 0.54, 0.04, x + dx * 0.17, 3.92, z + dz * 0.17), false);
+    M.add("lamp", lampPost, new THREE.ConeGeometry(0.3, 0.26, 4).rotateY(Math.PI / 4).translate(x, 4.3, z));
+    M.add("lamp", lampPost, new THREE.SphereGeometry(0.05, 6, 4).translate(x, 4.47, z), false);
+    col.addCircle(x, z, 0.24);
+  }
   for (const rd of ROADS) {
     const horiz = rd.z1 === rd.z2;
     const len = horiz ? rd.x2 - rd.x1 : rd.z2 - rd.z1;
@@ -1477,6 +1516,9 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   for (const [x, z] of [[-96, -48], [-72, -46], [-4, -46], [68, -46], [-100, 70], [-62, 70], [-16, 70], [8, 68], [70, 68], [100, 68], [120, 30], [128, 24], [-100, 28], [118, -60], [126, -40]]) add(x, z, 1 + r() * 0.3);
   // square
   for (const [x, z] of [[9, -18], [47, -18], [9, -46], [47, -46.5]]) add(x, z, 0.8);
+  // the zócalo's laureles (theme.ts `zocalo`), after the town's trees, from their own random numbers: none in Maple Harbor
+  const town = spots.length, rl = rand(2611);
+  for (const [x, z] of THEME.zocalo?.laureles ?? []) add(x, z, 1.6);
 
   const n = spots.length;
   const trunkGeo = STYLED ? trunkGeometry() : new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0);
@@ -1491,11 +1533,12 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   const palette = THEME.treeColors.length ? THEME.treeColors : ["#d9542b", "#e8833a", "#f2b440", "#c8402f", "#7fae4a", "#5f9e46", "#e0692c", "#b8d05a"];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   spots.forEach(([x, z, sc], i) => {
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI);
-    m4.compose(v.set(x, 0, z), q, s.set(sc, sc * (0.9 + r() * 0.3), sc));
+    const rr = i < town ? r : rl; // (a laurel: dark, dense and a little broader)
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rr() * Math.PI);
+    m4.compose(v.set(x, 0, z), q, s.set(sc * (i < town ? 1 : 1.12), sc * (0.9 + rr() * 0.3), sc * (i < town ? 1 : 1.12)));
     trunks.setMatrixAt(i, m4);
     leaves.setMatrixAt(i, m4);
-    const leafCol = palette[Math.floor(r() * palette.length)];
+    const leafCol = i < town ? palette[Math.floor(r() * palette.length)] : ["#2f6b34", "#2a6330", "#356f37"][Math.floor(rl() * 3)];
     leaves.setColorAt(i, STYLED ? grade(leafCol) : new THREE.Color(leafCol));
     if (sc > 0) col.addCircle(x, z, 0.35 * sc); // (not the unseen ones: a palm stands there)
   });
@@ -1539,8 +1582,10 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   col.addCircle(x, z, 3.7);
   if (!STYLED) group.add(makeSpray(x, z));
   }
+  // the square's own mesh (the tianguis, the zócalo's bancas: drawn only where the square is in view; none in Maple Harbor)
+  const sq: MX.Part[] = [];
   // stalls (in this edition's tianguis, theme.ts, its own: the town's random numbers drawn as before)
-  if (THEME.tianguis) { for (let i = 0; i < STALLS.length * 14; i++) r(); addTianguis(col, group); }
+  if (THEME.tianguis) { for (let i = 0; i < STALLS.length * 14; i++) r(); addTianguis(col, group, sq); }
   else for (const s of STALLS) {
     M.add("stall-table", mat("#9c6b43"), boxGeo(4, 0.9, 1.6, s.x, 0.45, s.z));
     for (const [dx, dz] of [[-1.9, -0.7], [1.9, -0.7], [-1.9, 0.7], [1.9, 0.7]]) M.add("stall-pole", mat("#e8e2d6"), cylGeo(0.05, 0.05, 2.6, s.x + dx, 1.3, s.z + dz, 5));
@@ -1560,12 +1605,24 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   }
   // benches around the fountain, their backs to it (Rosa sits on the south-west one, facing south)
   for (const [bx, bz, rot] of [[18, -23.2, Math.PI], [30, -22.6, Math.PI], [40, -30, -Math.PI / 2]] as [number, number, number][]) {
-    M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(bx, 0, bz));
-    M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.5, 0.08, 0, 0.8, 0.22).rotateY(rot).translate(bx, 0, bz));
+    // (iron bancas on a zócalo, theme.ts `zocalo`: the same seat)
+    if (THEME.zocalo) MX.banca(sq, bx, bz, rot + Math.PI);
+    else {
+      M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.1, 0.5, 0, 0.5, 0).rotateY(rot).translate(bx, 0, bz));
+      M.add("bench", mat("#9c6b43"), boxGeo(1.8, 0.5, 0.08, 0, 0.8, 0.22).rotateY(rot).translate(bx, 0, bz));
+    }
     col.addBox(bx, bz, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
     // a place on each one facing away from the fountain (Rosa's bench is hers)
     if (bx !== 18) seats.push({ x: bx, z: bz, rot: rot + Math.PI, y: 0.55 });
   }
+  // the zócalo's other bancas and its laureles' whitewashed trunks (theme.ts `zocalo`)
+  for (const [bx, bz, rot] of THEME.zocalo?.bancas ?? []) {
+    MX.banca(sq, bx, bz, rot);
+    col.addBox(bx, bz, Math.abs(Math.cos(rot)) * 1.9 + 0.3, Math.abs(Math.sin(rot)) * 1.9 + 0.3);
+    for (const u of [-0.45, 0.45]) seats.push({ x: bx + Math.cos(rot) * u, z: bz - Math.sin(rot) * u, rot, y: 0.53 });
+  }
+  for (const [lx, lz] of THEME.zocalo?.laureles ?? []) MX.whitewash(sq, lx, lz, 0.28 * 1.6 * 1.12);
+  if (sq.length) group.add(staticColoured(sq, "tianguis"));
   // bandstand-ish gazebo
   if (!THEME.gazebo) return;
   M.add("gazebo", mat("#ffffff"), cylGeo(3, 3, 0.4, 44, 0.2, -22, 8));
@@ -1578,14 +1635,15 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
 }
 
 /** The square's market as a tianguis (theme.ts `tianguis`; mexican.ts `tianguisStall`): layout.ts's four stalls and the
- *  theme's own, in one mesh of their own (drawn, with its shadow, only where the square is in view: its many little
+ *  theme's own, into `parts` (the square's own mesh, with the zócalo's bancas: addSquareAndMarket; drawn, with its
+ *  shadow, only where the square is in view), their goods in a mesh of their own that casts no shadow (its many little
  *  goods cost no triangles elsewhere), their painted signs in the town's sign atlas. */
-function addTianguis(col: Colliders, group: THREE.Group) {
+function addTianguis(col: Colliders, group: THREE.Group, parts: MX.Part[]) {
   const t = THEME.tianguis!;
-  const parts: MX.Part[] = [], goods: MX.Part[] = [];
+  const goods: MX.Part[] = [];
   const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0, goods: s.goods as TianguisGoods })), ...t.stalls];
   stalls.forEach((s, i) => MX.tianguisStall(parts, goods, col, atlas!, s.x, s.z, s.rot, s.goods, t.lonas[i % t.lonas.length], t.signs[s.goods] ?? [s.goods, ""], 700 + i));
-  group.add(staticColoured(parts, "tianguis"));
+  // (the stalls' mesh: addSquareAndMarket, with the zócalo's bancas)
   // the goods in a mesh that casts no shadow (under the lonas' shade they would add triangles and nothing to see)
   const g = staticColoured(goods, "tianguis-goods");
   g.castShadow = false;
@@ -1601,6 +1659,8 @@ function addTownMx(M: Merger, col: Colliders) {
     for (const [x, z, rot] of MX.malecon(mx, col, a, THEME.malecon.plaque)) streetBench(M, col, x, z, rot);
     MX.kiosk(mx, col, a, THEME.malecon.kiosk[0], THEME.malecon.kiosk[1], THEME.malecon.kioskSign);
   }
+  const L = THEME.letras;
+  if (L) MX.letras(mx, col, L.text, L.x, L.z, L.h, L.colors);
   if (THEME.palapas.length) MX.palapas(mx, col, THEME.palapas);
   if (THEME.lanchas) MX.beachedLanchas(mx, col, THEME.lanchas.beached);
   if (THEME.church) MX.church(mx, col, THEME.church.x, THEME.church.z, THEME.church.face);
@@ -1612,6 +1672,19 @@ function addTownMx(M: Merger, col: Colliders) {
   // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
   if (THEME.cenote) MX.cenote(mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign);
   if (THEME.ruins) MX.ruins(mxFlat, THEME.ruins.x, THEME.ruins.z);
+  // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
+  const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
+  if (bt && station) {
+    const oak = ROADS.find((r) => r.z1 === r.z2 && r.z1 > station.z - station.d / 2 - 20 && r.z1 < station.z)!;
+    for (const [x, z, rot] of MX.busTerminalFront(mx, col, a, station, bt.andenes, bt.buses, oak.z1 + oak.w / 2)) streetBench(M, col, x, z, rot);
+  }
+  const terminal = BUILDINGS.find((b) => b.style === "terminal");
+  if (THEME.airportOut && terminal) {
+    // the canopy over the drop-off (buildBuilding: 8 m out from the door, 20 m along the front, on posts 5.4 m high);
+    // the thatch stays under the follow camera's box over it (Game.ts: 6.2 m)
+    const dx = terminal.x - terminal.w / 2, dz = terminal.z;
+    MX.airportFront(mx, col, a, { x0: dx - 8, x1: dx, z0: dz - 10, z1: dz + 10, y: 5.5, top: 6.15 }, THEME.airportOut.welcome);
+  }
 }
 
 /** A building as this edition shows it (theme.ts): its colours and its sign. In Maple Harbor, as layout.ts has it. */
@@ -1745,20 +1818,21 @@ function makePalms(col: Colliders, extra: [number, number][] = []): THREE.Instan
   let px = 0, pz = 0;
   for (let i = 0; i < 6; i++) {
     const h = 1.05, y = 0.5 + i * h;
-    parts.push([new THREE.CylinderGeometry(0.2 - i * 0.012, 0.24 - i * 0.012, h, 8, 1, true).translate(px, y, pz), i % 2 ? "#8b6a4f" : "#9a7a5c"]);
+    parts.push([new THREE.CylinderGeometry(0.2 - i * 0.012, 0.24 - i * 0.012, h, 7, 1, true).translate(px, y, pz), i % 2 ? "#8b6a4f" : "#9a7a5c"]);
     px += 0.07 + i * 0.012;
   }
   const top = new THREE.Vector3(px, 6.6, pz);
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * Math.PI * 2;
-    const frond = new THREE.BoxGeometry(0.6, 0.05, 3.1).translate(0, 0, 1.55);
-    frond.rotateX(0.55 + (i % 3) * 0.12);
-    frond.rotateY(a);
-    frond.translate(top.x, top.y, top.z);
-    parts.push([frond, i % 2 ? "#3f8f3a" : "#4fa64a"]);
+  // the crown: ten fronds, each folded down its midrib, arching out and drooping to a point, the young ones higher
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + (i % 2) * 0.22, k = i % 3;
+    parts.push([palmFrond(3.0 + k * 0.4, 0.9 + k * 0.08, 0.75 - k * 0.32).rotateY(a).translate(top.x, top.y - 0.05, top.z), ["#3f8f3a", "#4fa64a", "#57b04f"][k]]);
   }
-  for (let i = 0; i < 3; i++) parts.push([new THREE.OctahedronGeometry(0.18).translate(top.x + Math.cos(i * 2.1) * 0.25, top.y - 0.25, top.z + Math.sin(i * 2.1) * 0.25), "#6b4a2b"]);
-  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  parts.push([new THREE.CylinderGeometry(0.2, 0.26, 0.5, 6, 1, true).translate(top.x, top.y - 0.15, top.z), "#6f8a3a"]); // the crown's green base
+  // a cluster of coconuts under it
+  for (let i = 0; i < 5; i++) parts.push([new THREE.OctahedronGeometry(0.18, 0).translate(top.x + Math.cos(i * 1.26) * 0.27, top.y - 0.38 - (i % 2) * 0.14, top.z + Math.sin(i * 1.26) * 0.27), i % 3 ? "#6b4a2b" : "#6f8a2f"]);
+  // (two-sided: the fronds are thin leaves seen from below; within ~3 m of the camera they dissolve, so a palm beside
+  // the follow camera never fills the picture)
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWind = wind;
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWind;")
@@ -1769,7 +1843,9 @@ function makePalms(col: Colliders, extra: [number, number][] = []): THREE.Instan
           transformed.x += sin(uWind * 0.9 + ip.x * 0.31 + ip.y * 0.17) * sway;
           transformed.z += cos(uWind * 0.7 + ip.x * 0.19 - ip.y * 0.23) * sway * 0.7;
         #endif`);
+    nearFadeShader(sh);
   };
+  m.customProgramCacheKey = () => "palms-sway-nearfade";
   const spots = [...THEME.palms, ...extra].filter(([x, z]) => !col.blocked(x, z, 0.5));
   const mesh = new THREE.InstancedMesh(colourMerge(parts), m, spots.length);
   const r = rand(77);
@@ -1784,6 +1860,91 @@ function makePalms(col: Colliders, extra: [number, number][] = []): THREE.Instan
   });
   mesh.castShadow = true;
   mesh.name = "palms";
+  return mesh;
+}
+
+/** A palm frond along +z from the crown: `len` long, `w` across at its widest, leaving the crown `rise` radians above
+ *  the horizontal and arching down under its weight; its two halves fold down from the midrib, it narrows to the stalk
+ *  at the crown and to a point at its tip. */
+function palmFrond(len: number, w: number, rise: number) {
+  const N = 4, pos: number[] = [];
+  const at = (t: number) => {
+    const d = len * t, y = Math.sin(rise) * d - 0.55 * d * d / len, z = Math.cos(rise) * d * (1 - 0.08 * t);
+    const half = (w / 2) * Math.min(1, Math.sin(Math.PI * Math.min(1, t * 1.05)) * 1.25) * (t < 0.12 ? t / 0.12 : 1);
+    return { y, z, half, fold: half * 0.55 };
+  };
+  for (let i = 0; i < N; i++) {
+    const a = at(i / N), b = at((i + 1) / N);
+    for (const s of [-1, 1]) {
+      const A = [0, a.y, a.z], B = [0, b.y, b.z], C = [s * b.half, b.y - b.fold, b.z], D = [s * a.half, a.y - a.fold, a.z];
+      // (wound so each half faces up)
+      if (s > 0) pos.push(...A, ...B, ...C, ...A, ...C, ...D); else pos.push(...A, ...C, ...B, ...A, ...D, ...C);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+/** The near-camera dissolve (theme.ts `nearFade`; the palms): fragments nearer than about 4.5 m to the camera are
+ *  dropped in a short dither, as the papel picado's are, so a crown or a lantern beside the follow camera never fills
+ *  the picture. Added to a material's shaders in onBeforeCompile. */
+function nearFadeShader(sh: { vertexShader: string; fragmentShader: string }) {
+  sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vNearCam;")
+    .replace("#include <project_vertex>", "#include <project_vertex>\nvNearCam = length(mvPosition.xyz);");
+  sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vNearCam;")
+    .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>
+      if (smoothstep(4.4, 5.0, vNearCam) < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;`);
+}
+/** A material (a copy of one of the town's: the lamps') with the near-camera dissolve. */
+function nearFaded<T extends THREE.Material>(m: T): T {
+  m.onBeforeCompile = (sh) => nearFadeShader(sh);
+  m.customProgramCacheKey = () => "nearfade";
+  return m;
+}
+
+/** The selva round the town (theme.ts `selva`): the low jungle's canopy as soft round crowns in its greens, lighter on
+ *  top, packed close in bands beyond the west meadow (behind the cenote), south of the railway and east behind the
+ *  airport, and a ring round the cenote's far side; one instanced mesh with no shadow (it stands beyond the shadow's
+ *  reach), drawn from its own random numbers. */
+function makeSelva(): THREE.InstancedMesh {
+  const greens = THEME.selva!.canopy, r = rand(4711);
+  const spots: [number, number, number, number][] = []; // x, z, size, height
+  const band = (x0: number, x1: number, z0: number, z1: number, step: number) => {
+    for (let x = x0; x <= x1; x += step) for (let z = z0; z <= z1; z += step) spots.push([x + (r() - 0.5) * step * 0.9, z + (r() - 0.5) * step * 0.9, 3.4 + r() * 2.2, 0.65 + r() * 0.35]);
+  };
+  band(-180, -158, -66, 150, 6);
+  band(-152, 228, 104, 122, 6);
+  band(196, 214, -66, 98, 6);
+  if (THEME.cenote) {
+    const { x, z } = THEME.cenote;
+    for (let i = 0; i < 18; i++) {
+      const a = Math.PI * 0.35 + (i / 17) * Math.PI * 1.3, d = 12.5 + r() * 4; // round its far side (west), not the town's
+      spots.push([x + Math.cos(a) * d, z + Math.sin(a) * d, 2.6 + r() * 1.6, 0.75 + r() * 0.3]);
+    }
+  }
+  // a round crown: an icosahedron with a sphere's normals (soft), its top lighter than its underside
+  const geo = new THREE.IcosahedronGeometry(1, 0);
+  const p = geo.attributes.position, nrm = geo.attributes.normal, col = new Float32Array(p.count * 3), v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).normalize();
+    nrm.setXYZ(i, v.x, v.y, v.z);
+    const k = 0.72 + 0.42 * (v.y + 1) / 2;
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = k;
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }), spots.length);
+  const o = new THREE.Object3D(), c = new THREE.Color();
+  spots.forEach(([x, z, s, h], i) => {
+    o.position.set(x, s * h * 0.7 + 1.2, z);
+    o.rotation.set(0, r() * Math.PI, 0);
+    o.scale.set(s * (0.9 + r() * 0.3), s * h, s * (0.9 + r() * 0.3));
+    o.updateMatrix();
+    mesh.setMatrixAt(i, o.matrix);
+    mesh.setColorAt(i, c.set(greens[Math.floor(r() * greens.length)]));
+  });
+  mesh.name = "selva";
   return mesh;
 }
 
@@ -2153,6 +2314,7 @@ function makeClouds(group: THREE.Group, r: () => number) {
     }
     if (IS_REAL) g.visible = false; // the realistic sky paints its own clouds
     g.position.set(-200 + r() * 460, 55 + r() * 25, -160 + r() * 300);
+    if (THEME.light) g.scale.setScalar(THEME.light.clouds); // (bigger cumulus over the edition's town)
     g.userData.v = 0.6 + r() * 0.8;
     group.add(g);
     clouds.push(g);

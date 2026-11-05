@@ -206,7 +206,7 @@ export function lanternArm(add: (key: "post" | "glass", g: THREE.BufferGeometry)
   for (const s of [-1, 1]) {
     add("post", cyl(0.03, 0.03, 0.3, x + s * 0.7, 4.07, z, 5));
     add("post", cyl(0.17, 0.12, 0.12, x + s * 0.7, 3.88, z, 6));
-    add("glass", new THREE.SphereGeometry(0.2, 8, 6).scale(1, 1.25, 1).translate(x + s * 0.7, 3.62, z));
+    add("glass", new THREE.SphereGeometry(0.2, 7, 5).scale(1, 1.25, 1).translate(x + s * 0.7, 3.62, z));
     add("post", box(0.08, 0.08, 0.08, x + s * 0.74, 4.33, z));
   }
 }
@@ -1069,3 +1069,213 @@ const STALL_GOODS: Record<TianguisGoods, (add: Add, r: () => number, h: number) 
     for (let i = 0; i < 6; i++) add(new THREE.CylinderGeometry(0.1, 0.1, 0.62, 8).rotateZ(Math.PI / 2).translate(-1.2 + (i % 3) * 0.7, h + 0.1 + Math.floor(i / 3) * 0.19, 0.2 - Math.floor(i / 3) * 0.05), RAINBOW[(i * 2) % RAINBOW.length]);
   },
 };
+
+// ------------------------------------------------------------------------------------------------ graphics round 2
+
+/** An agave in the ground or a planter at (x, y, z): pointed blue-green leaves fanning out of its heart. */
+function agave(parts: Part[], x: number, y: number, z: number, s = 1, k = 0) {
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + k * 0.7, tilt = 0.45 + (i % 3) * 0.22;
+    parts.push([new THREE.ConeGeometry(0.08 * s, 0.85 * s, 4).translate(0, 0.42 * s, 0).rotateZ(tilt).rotateY(a).translate(x, y, z), i % 2 ? "#5f8f6a" : "#6fa37a"]);
+  }
+  parts.push([new THREE.ConeGeometry(0.07 * s, 0.75 * s, 4).translate(x, y + 0.37 * s, z), "#7bb088"]);
+}
+
+/** A long low planter (`len` m along `rot`'s x, 0.9 wide) of limestone, with agaves in it. */
+function planter(parts: Part[], col: Colliders, x: number, z: number, rot: number, len: number) {
+  parts.push([place(box(len, 0.5, 0.9, 0, 0.25, 0), x, z, rot), STONE]);
+  parts.push([place(box(len + 0.08, 0.07, 0.98, 0, 0.53, 0), x, z, rot), WHITE]);
+  parts.push([place(box(len - 0.2, 0.04, 0.7, 0, 0.5, 0), x, z, rot), "#6b4a2f"]);
+  const n = Math.max(1, Math.round(len / 1.6));
+  for (let i = 0; i < n; i++) {
+    const u = -len / 2 + (i + 0.5) * (len / n), c = Math.cos(rot), s = Math.sin(rot);
+    agave(parts, x + u * c, 0.5, z - u * s, 0.95, i);
+  }
+  blockRect(col, x, z, rot, -len / 2, len / 2, -0.45, 0.45);
+}
+
+/** An intercity coach (an autobús de primera, no brand) made round (0, 0), its front towards +z: tall, white over a
+ *  band in `stripe` with a line and a swoosh in `accent`, a long band of tinted windows, the windshield under the
+ *  destination's dark band (town.ts paints the destination on it), mirrors on stalks, the luggage bays' doors and
+ *  three axles. */
+export function coachParts(stripe: string, accent: string): Part[] {
+  const parts: Part[] = [], L = 11.6, W = 2.5;
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([g, c]);
+  add(box(W, 0.85, L, 0, 0.88, 0), stripe);
+  add(box(W, 2.0, L - 0.1, 0, 2.3, -0.05), "#f4f6f8");
+  add(box(W - 0.12, 0.14, L - 0.5, 0, 3.36, -0.1), "#e3e6ea");
+  for (const s of [-1, 1]) {
+    add(box(0.03, 1.0, L - 2.4, s * (W / 2 + 0.01), 2.42, -0.7), "#2f4a5c");
+    for (let z = -L / 2 + 0.6; z < L / 2 - 1.9; z += 1.55) add(box(0.04, 1.02, 0.08, s * (W / 2 + 0.02), 2.42, z), "#f4f6f8");
+    add(box(0.03, 0.14, L - 0.6, s * (W / 2 + 0.02), 1.5, 0), accent);
+    for (const k of [0, 1]) add(box(0.035, 0.2, 2.6, 0, 0, 0).rotateX(0.32).translate(s * (W / 2 + 0.025), 1.82 + k * 0.3, -L / 2 + 2.2 + k * 0.45), accent);
+    for (const z of [-2.4, 0.2]) add(box(0.03, 0.55, 2.0, s * (W / 2 + 0.02), 0.85, z), darker(stripe, 0.82));
+    add(box(0.06, 0.06, 0.55, s * 1.35, 2.95, L / 2 - 0.15), "#2b2d31");
+    add(box(0.1, 0.34, 0.08, s * 1.58, 2.66, L / 2 + 0.12), "#2b2d31");
+  }
+  add(box(W - 0.2, 1.45, 0.05, 0, 2.3, L / 2 - 0.02), "#3d6178");
+  add(box(W - 0.06, 0.42, 0.06, 0, 3.14, L / 2 - 0.02), "#1d1f22");
+  add(box(W, 0.32, 0.16, 0, 0.5, L / 2 + 0.03), "#2b2d31");
+  add(box(W, 0.32, 0.16, 0, 0.5, -L / 2 - 0.03), "#2b2d31");
+  for (const x of [-0.9, 0.9]) { add(box(0.38, 0.16, 0.05, x, 0.85, L / 2 + 0.02), "#fff4c2"); add(box(0.22, 0.44, 0.05, x, 1.1, -L / 2 - 0.02), "#d8343a"); }
+  for (const z of [L / 2 - 2.3, -L / 2 + 2.3, -L / 2 + 3.5]) for (const s of [-1, 1]) {
+    add(new THREE.CylinderGeometry(0.52, 0.52, 0.34, 12).rotateZ(Math.PI / 2).translate(s * (W / 2 - 0.1), 0.52, z), "#1d1f22");
+    add(new THREE.CylinderGeometry(0.27, 0.27, 0.36, 8).rotateZ(Math.PI / 2).translate(s * (W / 2 - 0.1), 0.52, z), "#9aa3ab");
+  }
+  return parts;
+}
+
+/** A coach's destination in amber capitals on its dark band. */
+const drawDestination = (dest: string): Draw => (x, w, h) => {
+  x.fillStyle = "#1d1f22"; x.fillRect(0, 0, w, h);
+  x.fillStyle = "#ffb627"; x.textAlign = "center"; x.textBaseline = "middle";
+  fit(x, dest, h * 0.72, w * 0.9, "'Courier New', monospace", "900"); x.fillText(dest, w / 2, h / 2 + 2);
+};
+
+/** The bus terminal outside (theme.ts `busTerminal`; s67a: the andenes, the coaches to Cancún and Tulum) on the station
+ *  `b` (layout.ts; it faces north, -z): canopies over its andenes either side of the door (the station's own canopy is
+ *  over the door), their painted signs under the front edge, agave planters by the door, and intercity coaches at the
+ *  curb of Oak Avenue in front, facing east with the traffic, each with its destination over the windshield. Returns
+ *  where benches go under the canopies, facing the street (town.ts puts the town's benches there, with their seats). */
+export function busTerminalFront(parts: Part[], col: Colliders, atlas: SignAtlas, b: { x: number; z: number; d: number }, andenes: string[], buses: { x: number; dest: string }[], curbZ: number): [number, number, number][] {
+  const front = b.z - b.d / 2, benches: [number, number, number][] = [];
+  andenes.forEach((name, i) => {
+    const cx = b.x + (i === 0 ? -8.5 : 8.5), half = 2.6, z0 = front - 3.1;
+    parts.push([box(half * 2 + 0.4, 0.16, 3.3, cx, 3.55, front - 1.55), "#7a2e2e"]);
+    parts.push([box(half * 2 + 0.44, 0.24, 0.08, cx, 3.42, z0 - 0.08), "#f1c27d"]);
+    for (const s of [-1, 1]) { parts.push([cyl(0.07, 0.08, 3.5, cx + s * half, 1.75, z0 + 0.15, 8), "#5a5f66"]); col.addCircle(cx + s * half, z0 + 0.15, 0.12); }
+    atlas.add("anden:" + name, 384, 112, drawPainted(name, "", "#fff3d0", "#7a2e2e", "#4a1c1c"), 1.7, 0.5, cx, 3.0, z0 - 0.13, Math.PI);
+    for (const s of [-1, 1]) benches.push([cx + s * 1.3, front - 1.35, Math.PI]);
+  });
+  for (const s of [-1, 1]) planter(parts, col, b.x + s * 4.1, front - 0.75, 0, 1.4);
+  for (const bus of buses) {
+    const z = curbZ - 1.08, rot = Math.PI / 2; // (tight to the curb: clear of the eastbound lane's cars)
+    for (const [g, c] of coachParts("#1f6f8b", "#e4007c")) parts.push([place(g, bus.x, z, rot), c]);
+    blockRect(col, bus.x, z, rot, -1.3, 1.3, -5.9, 5.9);
+    atlas.add("coach:" + bus.dest, 320, 64, drawDestination(bus.dest), 1.9, 0.38, bus.x + 5.79 + 0.02, 3.14, z, rot);
+  }
+  return benches;
+}
+
+/** The airport outside (theme.ts `airportOut`): its drop-off canopy over x0…x1, z0…z1 (the slab's top at y) thatched like
+ *  a palapa, a low hip of thatch no higher than `top` (the follow camera's box over it, Game.ts) with a fringe round its
+ *  edge; agave planters along the forecourt either side of it; and the painted welcome sign on two posts at the
+ *  forecourt's north end, facing the road. */
+export function airportFront(parts: Part[], col: Colliders, atlas: SignAtlas, c: { x0: number; x1: number; z0: number; z1: number; y: number; top: number }, welcome: [string, string]) {
+  const cx = (c.x0 + c.x1) / 2, cz = (c.z0 + c.z1) / 2, hw = (c.x1 - c.x0) / 2 + 0.5, hd = (c.z1 - c.z0) / 2 + 0.5, k = Math.SQRT2;
+  parts.push([box(c.x1 - c.x0, 0.2, c.z1 - c.z0, cx, c.y - 0.1, cz), "#8a6a4a"]); // the frame under the thatch
+  parts.push([new THREE.CylinderGeometry(1, 1, 0.36, 4, 1, true).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y - 0.02, cz), THATCH_DARK]);
+  parts.push([new THREE.ConeGeometry(1, c.top - c.y, 4).rotateY(Math.PI / 4).scale(hw * k, 1, hd * k).translate(cx, c.y + (c.top - c.y) / 2, cz), THATCH]);
+  // the fringe's ragged lower edge all round
+  const edge = (len: number, at: (u: number) => [number, number]) => {
+    for (let u = -len / 2 + 0.15; u < len / 2; u += 0.3) { const [x, z] = at(u); parts.push([new THREE.ConeGeometry(0.13, 0.42, 4).rotateX(Math.PI).translate(x, c.y - 0.32, z), Math.round(u / 0.3) % 2 ? THATCH : THATCH_DARK]); }
+  };
+  for (const s of [-1, 1]) { edge(hw * 2, (u) => [cx + u, cz + s * hd]); edge(hd * 2, (u) => [cx + s * hw, cz + u]); }
+  planter(parts, col, c.x0 + 2.3, c.z0 - 8, Math.PI / 2, 6);
+  planter(parts, col, c.x0 + 2.3, c.z1 + 7, Math.PI / 2, 8);
+  // (the sign turned a little towards the avenue coming up to the terminal)
+  const sx = c.x0 + 1.2, sz = c.z0 - 3.6, rot = -1.15;
+  const ax = Math.cos(rot), az = -Math.sin(rot); // (along the sign)
+  for (const s of [-1, 1]) { parts.push([cyl(0.09, 0.1, 3.9, sx + s * 2.45 * ax, 1.95, sz + s * 2.45 * az, 8), WOOD]); col.addCircle(sx + s * 2.45 * ax, sz + s * 2.45 * az, 0.14); }
+  atlas.add("welcome:" + welcome[0], 640, 192, drawPainted(welcome[0], welcome[1], "#fff6dc", "#1f6f8b", "#e4007c"), 5.0, 1.5, sx + 0.1 * Math.sin(rot), 3.0, sz + 0.1 * Math.cos(rot), rot, true);
+}
+
+/** An iron banca for the zócalo (theme.ts `zocalo`), made round (x, z) as town.ts's street bench is (the seat facing
+ *  `rot`: 0 is +z): honey wooden slats on dark green wrought-iron ends with curled armrests. */
+export function banca(parts: Part[], x: number, z: number, rot: number) {
+  const add = (g: THREE.BufferGeometry, c: string) => parts.push([place(g, x, z, rot), c]);
+  const iron = "#245a43", wood = "#b07a46";
+  for (let i = 0; i < 3; i++) add(box(1.86, 0.05, 0.14, 0, 0.48, -0.15 + i * 0.16), wood);
+  for (let i = 0; i < 2; i++) add(box(1.86, 0.12, 0.04, 0, 0.66 + i * 0.18, -0.26), wood);
+  for (const s of [-1, 1]) {
+    add(box(0.06, 0.06, 0.5, s * 0.86, 0.43, 0), iron);
+    for (const dz of [-0.2, 0.2]) add(box(0.05, 0.44, 0.05, s * 0.86, 0.22, dz), iron);
+    add(box(0.05, 0.6, 0.05, s * 0.86, 0.75, -0.27), iron);
+    add(new THREE.TorusGeometry(0.12, 0.022, 4, 10, Math.PI * 1.3).rotateY(Math.PI / 2).translate(s * 0.9, 0.62, 0.08), iron);
+  }
+}
+
+/** A laurel's whitewashed trunk (theme.ts `zocalo`): the lower metre and a bit painted white, round a trunk of radius r. */
+export function whitewash(parts: Part[], x: number, z: number, r: number) {
+  parts.push([cyl(r * 0.92, r * 1.04, 1.25, x, 0.62, z, 10), "#f4f1ea"]);
+}
+
+/** The blocks of each letter the town's big letters use, on a grid 4 wide (2 for I) and 6 high: [x0, y0, x1, y1]; a
+ *  diagonal as [x0, y0, x1, y1, tilt] (a block turned about its middle). Í is I with its accent. */
+const LETTER: Record<string, { w: number; b: number[][] }> = {
+  P: { w: 4, b: [[0, 0, 1, 6], [1, 5, 3.4, 6], [3, 2.8, 4, 5.4], [1, 2.6, 3.4, 3.6]] },
+  U: { w: 4, b: [[0, 0.6, 1, 6], [3, 0.6, 4, 6], [0.4, 0, 3.6, 1]] },
+  E: { w: 4, b: [[0, 0, 1, 6], [1, 5, 4, 6], [1, 2.5, 3.2, 3.5], [1, 0, 4, 1]] },
+  R: { w: 4, b: [[0, 0, 1, 6], [1, 5, 3.4, 6], [3, 3.2, 4, 5.4], [1, 2.6, 3.4, 3.6], [1.9, 0, 3.1, 3, -0.38]] },
+  T: { w: 4, b: [[0, 5, 4, 6], [1.5, 0, 2.5, 5]] },
+  O: { w: 4, b: [[0, 0.6, 1, 5.4], [3, 0.6, 4, 5.4], [0.4, 0, 3.6, 1], [0.4, 5, 3.6, 6]] },
+  C: { w: 4, b: [[0, 0.6, 1, 5.4], [0.4, 0, 4, 1], [0.4, 5, 4, 6]] },
+  L: { w: 4, b: [[0, 0, 1, 6], [1, 0, 4, 1]] },
+  I: { w: 1.6, b: [[0.3, 0, 1.3, 6]] },
+  B: { w: 4, b: [[0, 0, 1, 6], [1, 5, 3.2, 6], [1, 2.5, 3.2, 3.5], [1, 0, 3.4, 1], [3, 3.4, 4, 5.4], [3, 0.6, 4, 2.6]] },
+  "Í": { w: 1.6, b: [[0.3, 0, 1.3, 6], [0.5, 6.5, 1.5, 7.1, -0.5]] },
+};
+
+/** Letras monumentales (theme.ts `letras`): the town's name in big block letters `h` m high standing on a low white
+ *  plinth, each letter in its own bright color with a white band across it, their fronts towards +z, from x0 along x
+ *  at z. With their collider. */
+export function letras(parts: Part[], col: Colliders, text: string, x0: number, z: number, h: number, colors: string[]) {
+  const u = h / 6, depth = 0.38, gap = 0.9 * u, space = 2.6 * u;
+  let x = x0, k = 0;
+  for (const ch of text) {
+    if (ch === " ") { x += space; continue; }
+    const L = LETTER[ch];
+    if (!L) continue;
+    const c = colors[k++ % colors.length];
+    for (const [a, b, cx, cy, tilt = 0] of L.b) {
+      const w = (cx - a) * u, hh = (cy - b) * u, g = box(w, hh, depth, 0, 0, 0);
+      if (tilt) g.rotateZ(tilt);
+      parts.push([g.translate(x + ((a + cx) / 2) * u, 0.28 + ((b + cy) / 2) * u, z), c]);
+    }
+    // a white band across the letter's front, a third of the way up (its strokes only: drawn over each block there)
+    for (const [a, b, cx, cy, tilt = 0] of L.b) {
+      const y0 = 2.0, y1 = 2.35;
+      if (tilt || cy <= y0 || b >= y1) continue;
+      parts.push([box((cx - a) * u + 0.01, (y1 - y0) * u, 0.02, x + ((a + cx) / 2) * u, 0.28 + ((y0 + y1) / 2) * u, z + depth / 2 + 0.005), "#ffffff"]);
+    }
+    x += L.w * u + gap;
+  }
+  const len = x - gap - x0;
+  parts.push([box(len + 0.6, 0.28, depth + 0.5, x0 + len / 2, 0.14, z), WHITE]);
+  parts.push([box(len + 0.7, 0.05, depth + 0.6, x0 + len / 2, 0.3, z), STONE]);
+  col.addBox(x0 + len / 2, z, len + 0.6, depth + 0.5);
+}
+
+/** A house number on a talavera tile: a cobalt number on white inside a blue border with little corner flowers. */
+const drawTile = (n: string): Draw => (x, w, h) => {
+  x.fillStyle = "#f7f3ea"; roundRect(x, 2, 2, w - 4, h - 4, 10); x.fill();
+  x.lineWidth = 7; x.strokeStyle = "#1f4e9c"; roundRect(x, 8, 8, w - 16, h - 16, 8); x.stroke();
+  x.fillStyle = "#f2b705";
+  for (const [cx, cy] of [[18, 18], [w - 18, 18], [18, h - 18], [w - 18, h - 18]]) { x.beginPath(); x.arc(cx, cy, 5, 0, Math.PI * 2); x.fill(); }
+  x.fillStyle = "#1f4e9c"; x.textAlign = "center"; x.textBaseline = "middle";
+  fit(x, n, h * 0.6, w * 0.7, "Georgia, serif", "900"); x.fillText(n, w / 2, h / 2 + 3);
+};
+
+/** A house front's Mexican details (theme.ts `houseFronts`): a painted band (a rodapié) along the bottom of the front
+ *  wall, an iron grille (a protección) over the front door, its number on a talavera tile beside it, and potted plants
+ *  either side of the door. `P(u, v)` as for houseFront, from the door (u along the front, v out of it), `rot` the
+ *  front's heading, `w` the front's width, the door `doorW` wide. */
+export function houseDetails(parts: Part[], atlas: SignAtlas, P: (u: number, v: number) => [number, number], rot: number, w: number, doorW: number, wall: string, num: string) {
+  const at = (g: THREE.BufferGeometry, u: number, v: number, c: string) => { const [x, z] = P(u, v); parts.push([place(g, x, z, rot), c]); };
+  const band = darker(wall, 0.78);
+  at(box(w + 0.02, 0.62, 0.04, 0, 0.31, 0), 0, 0.02, band);
+  at(box(w + 0.03, 0.05, 0.06, 0, 0.64, 0), 0, 0.02, "#f4f1ea");
+  // the grille: upright bars, three cross bars and a scroll, standing out from the door's frame
+  const gw = doorW + 0.1, v = 0.27;
+  for (let i = 0; i <= 8; i++) at(box(0.035, 2.45, 0.035, -gw / 2 + (i * gw) / 8, 1.25, 0), 0, v, IRON);
+  for (const y of [0.05, 1.05, 2.45]) at(box(gw + 0.04, 0.045, 0.045, 0, y, 0), 0, v, IRON);
+  at(new THREE.TorusGeometry(0.16, 0.02, 4, 12), 0, v, IRON);
+  parts[parts.length - 1][0].translate(0, 1.75, 0);
+  const [tx, tz] = P(-(doorW / 2 + 0.62), 0.05);
+  atlas.add("tile:" + num, 128, 96, drawTile(num), 0.36, 0.27, tx, 1.95, tz, rot);
+  for (const s of [-1, 1]) {
+    at(cyl(0.2, 0.15, 0.36, 0, 0.18, 0), s * (doorW / 2 + 0.55), 0.55, "#c56f4c");
+    at(new THREE.IcosahedronGeometry(0.28, 0).scale(1, 1.2, 1).translate(0, 0.62, 0), s * (doorW / 2 + 0.55), 0.55, s > 0 ? "#3f7d3a" : "#4a8a3c");
+    at(new THREE.OctahedronGeometry(0.08).translate(0.12, 0.82, 0.1), s * (doorW / 2 + 0.55), 0.55, s > 0 ? "#e63946" : "#f6c000");
+  }
+}

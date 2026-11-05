@@ -477,6 +477,81 @@ the stall roofs, a bug both editions had (below).
   identical but for the fountain's water drops, a soft shadow at one frame's edge and a far person's hair, which also
   differ between two runs of the unchanged code; `tools/fingerprint.ts` identical.
 
+## Graphics, round 2 (5 Nov 2026)
+
+Round 2 of the rating (the side notes' GRAPHICS.md): the areas still lowest after round 1 (the homes, the airport, the
+bus terminal, the cenote and the ruins, the rooms, the passers-by, the plants) and the rest of the round's plan. All
+switched on by the Spanish theme (new fields documented in src/game/world/theme.ts: `roomMerge`, `selva`, `nearFade`,
+`lean`, `busTerminal`, `airportOut`, `zocalo`, `walkers`, `chatSpots`, `sitters`, `vendors`, `stillBeyond`, `letras`,
+`streetPaint`, `houseFronts`, `light`, and nine more `roomExtras`); Maple Harbor's values switch every one of them off.
+
+- **Rooms in two meshes** (`roomMerge`): a room's plain colored shapes (an opaque color with no texture and no glow)
+  go into two vertex-colored meshes, one casting shadows, instead of a mesh per color (interiors.ts `RoomMerger`;
+  flat-shaded colors keep their facets). The same look in about half the draw calls (the hotel 46 → 21 on a phone,
+  the clinic 53 → 16, the airport 53 → 32), which pays for the rooms' new things below.
+- **Departamentos Las Palmas** (`lasPalmas`; s81, s82, p29): ceramic tile floors and pale mint walls (`roomLooks`), the
+  numbers on talavera tiles, the **minisplit** high on the flat's back wall where Maple Harbor has a radiator (p29: "el
+  aire no enfría"), iron bars over its windows, a ceiling fan, the garrafón, a two-burner stove, plants in clay pots
+  and a palm in the hallway.
+- **Diego and Natalia's house** (`homeMx`): a petate on the middle of the floor and the television on its low stand
+  showing the fútbol.
+- **Hotel Mar Azul** (`hotelMx`; s68): talavera on the reception desk's front, rattan furniture, a zarape runner from
+  the door to the desk, palms in clay pots, ceiling fans, two windows on the sea (s68: "vista al mar"), a hammock;
+  pale stone tiles and cream walls (`roomLooks`).
+- **The police** (`policeMx`; s91b): the town's shield with a hummingbird on the rug where the US-style star was, and the
+  "Denuncias · Informes" window over the counter.
+- **The museum** (`museumMaya`; s70): the permanent collection of the Museo de la Costa Maya: two stelae and plinths of
+  painted vases behind the rope under a step-fret frieze (where the back wall's paintings were), a chac mool on the
+  statue's plinth, a third stela greeting visitors in the hall, a model of the ruins on its table. The west wall's
+  paintings and the new exhibition upstairs stay.
+- **The airport** (`airportMx`): a step-fret frieze along the back wall, a mural in arrivals ("¡Bienvenidos!", a temple
+  on its cliff over the turquoise sea, palms, a hummingbird), palms in clay pots (two by the exit), the ground transport
+  desk ("Transporte terrestre · Tours", Spanish over English), a souvenir stand (straw hats, rebozos, maracas, little
+  clay pots), the signs a quarter bigger.
+- **The clinic** (`clinicMx`; s31): the garrafón on its stand where the water cooler was, ceiling fans, a row of waiting
+  chairs, plants in clay pots. **The shops** (`shopsMx`): rebozos, embroidered blouses and a stand of straw hats at
+  Hilos (s74); a little altar with the Virgin and a fan at Estética Tijeras (s77); garrafones on their rack at Tienda El
+  Faro; a palm and a fan at Renta de Autos. **Café La Ceiba** (`cafeMx`; s72): conchas in the glass case, talavera on
+  the counter, jarritos on the wall, fans. **El Muelle** (`muelleMx`; s84, p28): a band of thatch under the ceiling, a
+  fishing net with its floats, strings of lights, the catch of the day on a chalkboard (ceviche, fish, shrimp), the
+  chairs in bright colors.
+- **The selva** (`selva`): the temperate hills flattened into low rises in the jungle's green, and the low jungle's
+  canopy (soft round crowns, lighter on top, one instanced mesh without shadow) beyond the west meadow behind the
+  cenote, south of the railway and east behind the airport, with a ring round the cenote's far side.
+- **Palms**: fronds folded down the midrib, arching and narrowing to a point, a green crown base and a cluster of
+  coconuts (the same instanced mesh, two-sided); ten more along avenida Juárez up to the airport and in its forecourt.
+- **Near the camera** (`nearFade`): the palms and the lamp posts dissolve in a short dither within about 4.5–5 m of
+  the camera (as the papel picado does), so a lantern or a crown beside the follow camera no longer fills the picture
+  (the ruins' and the malecón's views).
+- **The bus terminal** (`busTerminal`; s67a): canopies over andén 1 and andén 2 either side of the door with their
+  painted signs and benches, agave planters by the door, and two intercity coaches at the curb (to Cancún and Tulum,
+  as the departures board has them), tight to the curb, clear of the passing cars.
+- **The airport outside** (`airportOut`): the drop-off canopy thatched like a palapa (a low hip and a ragged fringe,
+  under the follow camera's box over it), agave planters along the forecourt, and the painted "¡Bienvenidos a Puerto
+  Colibrí!" on two posts, turned towards the avenue.
+- **The zócalo dressed** (`zocalo`): four laureles (dense dark crowns, their trunks whitewashed) in its quarters, iron
+  bancas (the kiosco's three and four more), colonial lamp posts with four-sided lanterns on its diagonals; in the
+  tianguis' mesh, so only views of the square pay for them; clear of everyone's spot, the stalls and the pigeons' ring
+  (tests/es/town.test.ts).
+- **Townspeople** (`walkers`, `chatSpots`, `sitters`, `vendors`): the passers-by in the town's colors (mostly dark hair,
+  warm skins, light summer clothes, a straw hat now and then: a new look option, `strawhat`, that Maple Harbor never
+  uses; shorts and sandals on some), from their own random numbers; two more chatting pairs (the malecón, the beach),
+  five people sitting (the zócalo's south bancas, the malecón's benches), and four of the tianguis' vendors behind
+  their stalls. Someone sitting or standing more than 22 m from the player keeps their pose, their parts' matrices
+  frozen (`stillBeyond`): a breath that far away shows nothing, and the town's people cost a frame no more than before
+  the round.
+- **Letras monumentales** (`letras`): "PUERTO COLIBRÍ" in big colored block letters on the malecón where calle Ceiba
+  meets it, the sea behind (mexican.ts `letras`: blocks on a grid, no font file).
+- **The streets** (`streetPaint`): no white lines along the roads' edges; the curbs painted yellow for 5 m by each
+  crossing. **The houses** (`houseFronts`): a painted band along the bottom of the wall, an iron grille over the door,
+  the number on a talavera tile, potted plants by the door.
+- **The light outdoors** (`light`; styleScene.ts `blocksGrade`, through the style hook Game.ts already calls): a warmer
+  sun, a touch more exposure, a bluer zenith over a warm horizon, the fog and the far sea in the same key, cumulus half
+  again as big. The rooms keep the game's light.
+- **Triangles kept under the phones' budget** (`lean`): the windows' panes as single faces instead of thin boxes, the
+  shop windows' goods in a mesh for each part of town, the lamps' globes with fewer segments: the heaviest views (the
+  bus stop, Juárez by the bank) about 40 thousand triangles lighter before the new things.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.
