@@ -291,8 +291,9 @@ A learner who goes looking won't find these; where they are, so that every conve
 - **the cocina económica** ("de la calle Ceiba", s69; "de la esquina", s88): on calle Ceiba just south of Juárez,
   behind the bank ("a la vuelta del banco"): two minutes from the zócalo and from Línea Clara.
 - **the dentist** (s76: calle Morelos 12, "a una cuadra del zócalo"): there is no calle Morelos.
-- **the mechanic and the tire shop** (s71b): the gas station is the avenue's last building before the airport; both are
-  off the map ("a dos cuadras" can't be "sobre esta misma calle").
+- **the mechanic and the vulcanizadora (tire shop)** (s71b): on calle Itzamná where it leaves town, inland past calle
+  Uxmal. The way to the highway from the gas station: out to the left, then left again on calle Itzamná, which runs
+  out of town (there are no traffic lights in town).
 - **the other office building** (s90's room 302, "enfrente, cruzando la calle"): across Juárez from Línea Clara are
   the police and the church.
 - **Memo's restaurant on the malecón** (s86) and **the new café on the malecón** (s63): the malecón has El Muelle and the
@@ -321,6 +322,8 @@ A learner who goes looking won't find these; where they are, so that every conve
 - **At night** downtown is safe, with people out until late; the beach at night, better not (dark), and no swimming at
   night (s69, s62).
 - **Taxis** have no meter: agree on the fare before getting in (s66, s62).
+- **Fuel** at Gasolinera El Faro (s71b): Magna about $24 a liter, premium about $26, diésel about $27. Doña Chela takes
+  dollars at $17 (under the bank, which buys them at $17.20 and sells at $18.10, s78).
 
 ## Town facts from the conversations
 
@@ -348,7 +351,12 @@ corrected to the town.)
 - **The arrivals hall**: Itzel's baggage desk, then customs with Agente Medina (`aduana`, a Spanish-only character on
   Officer Diaz's base) and the sniffer dog (s65b).
 - **The airport**: flight 223 to Mexico City, check-in → security → sala 4 (boarding 7:30, departure 8:10) (s64a–c).
-- **City bus route 7**: centro (zócalo), mercado, clínica, malecón / muelle, Hotel Mar Azul, the beach; $12 (s67b).
+- **City bus route 7** (s67b; since 5 Nov it follows the town): from its bay inside the bus terminal east along calle
+  Hidalgo to the clínica's door (stop 2), up calle Itzamná and west along avenida Juárez: the iglesia at the zócalo's
+  east end (3), the zócalo at calle Ceiba, with the museum across the street (4), Hotel Mar Azul at calle Flamboyán (5);
+  up Flamboyán to the mercado on avenida del Puerto (6), east along the malecón to El Muelle (7) and the beach's quiet
+  east end by the lighthouse (8, the last). $12, about every fifteen minutes, the last bus around 10 p.m.; for the
+  airport, "mejor tome un taxi".
 - **The streets' names** (on the signs since 4 Nov): **avenida Juárez** is Main Street (s62: the visitor center is on
   it), **calle Ceiba** Center Street (along the zócalo's west side; the bank is on its corner with Juárez; the bus stop
   on calle Hidalgo near it is "Parada · Calle Ceiba"), **avenida del Puerto** Harbor Road (the malecón runs along it),
