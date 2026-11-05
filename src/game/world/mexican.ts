@@ -474,18 +474,6 @@ export function church(parts: Part[], col: Colliders, x: number, z: number, face
   blockRect(col, x, z, rot, -W / 2 - 0.3, W / 2 + 0.3, -D, 0);
 }
 
-/** The church's boxes for the follow camera (town.ts `Town.occluders`): the nave and its facade up to the vault, and the
- *  espadaña up to its crest, in the town's coordinates, with a margin as Game.ts gives the buildings'. */
-export function churchBoxes(x: number, z: number, face: Face) {
-  const rot = faceRot(face), c = Math.cos(rot), s = Math.sin(rot), m = 0.4;
-  const box = (x0: number, x1: number, z0: number, z1: number, h: number) => {
-    const pts = [[x0, z0], [x1, z0], [x0, z1], [x1, z1]].map(([lx, lz]) => [x + lx * c + lz * s, z - lx * s + lz * c]);
-    const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
-    return { x0: Math.min(...xs) - m, x1: Math.max(...xs) + m, z0: Math.min(...zs) - m, z1: Math.max(...zs) + m, h };
-  };
-  return [box(-4.7, 4.7, -10, 0.25, 9.8), box(-3.4, 3.4, -0.65, 0.05, 14.2)];
-}
-
 // ------------------------------------------------------------------------------------------------ street furniture
 
 /** A street sign post at a corner: a pole and two name blades, one along each street (both read from both sides). */

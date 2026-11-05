@@ -11,7 +11,7 @@
 // ("Stop right there. Let's try something easier."). A learner may also say that something hurts at
 // any point: Jordan stops the exercise and keeps the rest of the workout easy.
 
-import type { Ctx, EntityDef, Pending, SituationDef } from "../types";
+import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "../types";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
 
@@ -41,8 +41,8 @@ const CARDIO: EntityDef[] = [
 
 // The machine for the first strength exercise (the chest press when the learner's knee or back hurts)
 const EXERCISES: EntityDef[] = [
-  ent("leg_press", "leg | press", "kojų | presas/preso/presui/presą/presu/prese", "m"),
-  ent("chest_press", "chest | press", "krūtinės | presas/preso/presui/presą/presu/prese", "m"),
+  ent("leg_press", "leg | press", "kojų | spaudimo treniruoklis/spaudimo treniruoklio/spaudimo treniruokliui/spaudimo treniruoklį/spaudimo treniruokliu/spaudimo treniruoklyje", "m"),
+  ent("chest_press", "chest | press", "krūtinės | spaudimo treniruoklis/spaudimo treniruoklio/spaudimo treniruokliui/spaudimo treniruoklį/spaudimo treniruokliu/spaudimo treniruoklyje", "m"),
 ];
 
 // Things Jordan hands over (the world's "Gavai: …" toast names them from these forms)
@@ -525,6 +525,7 @@ export const gym: SituationDef = {
     ] },
     // "Not Thursday", "Friday doesn't work for me"
     day_no: { patterns: ["[no] not [on] {weekday}", "{weekday} (does not work | is not good | is bad | is difficult) [for me]", "[no] i (can not | can't) [come | make it] [on] {weekday}"] },
+    next_other: { patterns: ["[maybe] (another | a different | some other) day [please | instead]", "(can | could) we (do | choose | pick | make it) (another | a different) day [please | instead]", "what about another day"] },
     next_later: { patterns: [
       "i will (call | let you know | check my schedule | book online | text you | call you | call the front desk) [later | tomorrow]",
       "i need to check my (schedule | calendar)", "(can | could) i book online", "maybe (later | another time | next time)",
@@ -838,9 +839,9 @@ export const gym: SituationDef = {
     spot_ready: [t("Ready?", "{m:Pasiruošęs|f:Pasiruošusi}?", "{m:Pasiruošęs|f:Pasiruošusi}?")],
     spot_yes: [
       t("Of course! | I'll stay | right here.", "Žinoma! | Būsiu | čia pat.", "Žinoma! Būsiu čia pat."),
-      t("Sure thing! | I'll spot | you.", "Žinoma! | Padrausiu | tave.", "Žinoma! Padrausiu tave."),
+      t("Sure thing! | I'll spot | you.", "Žinoma! | Pasaugosiu | tave.", "Žinoma! Pasaugosiu tave."),
     ],
-    spot_offer: [t("Don't worry, | I'll spot | you. | I'll stay | right here.", "Nesijaudink, | padrausiu | tave. | Būsiu | čia pat.", "Nesijaudink, padrausiu tave. Būsiu čia pat.")],
+    spot_offer: [t("Don't worry, | I'll spot | you. | I'll stay | right here.", "Nesijaudink, | pasaugosiu | tave. | Būsiu | čia pat.", "Nesijaudink, pasaugosiu tave. Būsiu čia pat.")],
     bench_go: [
       t("Lower | the | bar | slowly… | and | push! | Good | job!", "Nuleisk | — | grifą | lėtai… | ir | stumk! | Geras | darbas!", "Lėtai nuleisk grifą… ir stumk! {m:Šaunuolis|f:Šaunuolė}!"),
       t("Push! | Push! | One more | rep! | Yes! | Great | job!", "Stumk! | Stumk! | Dar vienas | pakartojimas! | Taip! | Puikus | darbas!", "Stumk! Stumk! Dar vienas pakartojimas! Taip! Puikiai!"),
@@ -884,7 +885,7 @@ export const gym: SituationDef = {
     book_later_ok: [t("No | problem! | Just | call | the | front desk.", "Jokių | problemų! | Tiesiog | paskambink | — | į registratūrą.", "Jokių problemų! Tiesiog paskambink į registratūrą.")],
     same_as_today: [t("Same | time | as | today!", "Tuo pačiu | laiku | kaip | šiandien!", "Tuo pačiu laiku kaip šiandien!")],
     closing: [
-      t("Great | first | workout! | Don't forget | to stretch!", "Puiki | pirma | treniruotė! | Nepamiršk | pasitempti!", "Puiki pirma treniruotė! Nepamiršk pasitempti!"),
+      t("Great | first | workout! | Don't forget | to stretch!", "Puiki | pirma | treniruotė! | Nepamiršk | atlikti tempimo pratimų!", "Puiki pirma treniruotė! Nepamiršk atlikti tempimo pratimų!"),
       t("You | did | great | today. | Drink | lots of | water!", "Tau | sekėsi | puikiai | šiandien. | Gerk | daug | vandens!", "Tau šiandien puikiai sekėsi. Gerk daug vandens!"),
     ],
 
@@ -1031,9 +1032,9 @@ export const gym: SituationDef = {
       ],
     },
     spot: {
-      lt: "Paprašyti trenerės padrausti",
+      lt: "Paprašyti trenerės pasaugoti",
       items: [
-        { id: "spot_me", s: t("Can | you | spot | me?", "Ar gali | tu | padrausti | mane?", "Ar gali mane padrausti?"), note: "„Spot“ – padrausti: stovėti šalia ir padėti, jei štanga per sunki." },
+        { id: "spot_me", s: t("Can | you | spot | me?", "Ar gali | tu | pasaugoti | mane?", "Ar gali mane pasaugoti?"), note: "„Spot“ – pasaugoti: stovėti šalia ir padėti, jei štanga per sunki." },
         { id: "stay_close", s: t("Can | you | stay | close?", "Ar gali | tu | būti | arti?", "Ar gali pabūti šalia?") },
         { id: "q_bar", s: t("How much | does | the | bar | weigh?", "Kiek | — | — | grifas | sveria?", "Kiek sveria grifas?", { flags: { 1: FLAG_WH_DO } }) },
       ],
@@ -1209,7 +1210,7 @@ export const gym: SituationDef = {
         if (c.s.spotAgreed) spotGo(c, false);
       },
       expects: ["spot_q", "no_spot", "ask_weight", "ready"],
-      suggest: [{ lt: "Paprašyti trenerės padrausti", hint: "spot" }],
+      suggest: [{ lt: "Paprašyti trenerės pasaugoti", hint: "spot" }],
       yes: (c) => spotGo(c, false),
       no: (c) => spotGo(c, false),
       help: (c) => spotGo(c, false) },
@@ -1231,7 +1232,7 @@ export const gym: SituationDef = {
         if (c.s.nextAsk === "same") c.say(again ? "same_time_short" : "same_time_q");
         else { if (!again) c.say("great_workout"); c.say("when_short"); }
       },
-      expects: ["next_same", "next_day", "next_no", "day_no", "next_later", "later_ctx", "next_time_q", "when_ctx", "see_you_ctx"],
+      expects: ["next_same", "next_day", "next_other", "next_no", "day_no", "next_later", "later_ctx", "next_time_q", "when_ctx", "see_you_ctx"],
       suggest: [{ lt: "Susitarti dėl kitos treniruotės", hint: "next", options: "weekday" }],
       yes: (c) => {
         if (c.s.nextAsk === "same") { setNext(c, "tomorrow"); return; }
@@ -1480,6 +1481,7 @@ export const gym: SituationDef = {
     // --- next time
     next_same(c) { if (!c.s.breathDone) { c.s.nextPref = "tomorrow"; c.say("ack"); return; } setNext(c, "tomorrow"); },
     next_day(c, slots) { nextDay(c, slots.day ?? slots.weekday); },
+    next_other(c) { askAnotherDay(c); },
     next_no(c) {
       if (!c.s.breathDone) { c.say("ack"); return; }
       if (DAY_RE.test(c.heard)) return; // "I can't tomorrow. How about Friday?": the day answers it
@@ -1582,6 +1584,8 @@ export const gym: SituationDef = {
     { say: "Same time tomorrow?", intent: "next_same", step: "next" },
     { say: "Sure! See you tomorrow!", intent: "next_same", step: "next" },
     { say: "I can't tomorrow.", intent: "next_no", step: "next" },
+    { say: "Another day, please.", intent: "next_other", step: "next", not:["next_same"] },
+    { say: "Could we do a different day?", intent:"next_other", step:"next", not:["next_same"] },
     { say: "How about Thursday?", intent: "next_day", step: "next", slots: { day: "thursday" } },
     { say: "See you Friday!", intent: "next_day", step: "next", slots: { weekday: "friday" } },
     // natural alternatives and short answers
@@ -2084,21 +2088,56 @@ function bookLater(c: Ctx) {
   c.say("book_later_ok");
 }
 
+/** As in the other multi-intent situations, inspect the parsed answer rather than a bare weekday mention. */
+function turnHasIntent(c: Ctx, ...intents: string[]) {
+  const segments: Segment[] = (c as any).conv?.out?.parse?.segments ?? [];
+  return segments.some(sg => intents.includes(sg.intent));
+}
+
+function askAnotherDay(c: Ctx) {
+  c.s.nextAsk = "when";
+  // "Another day, please. How about Friday?" already supplies the answer: do not install a question that outlives it.
+  if (turnHasIntent(c, "next_day", "next_same", "when_ctx", "see_you_ctx", "next_later", "later_ctx")) return;
+  c.s.next = null; c.say("when_short");
+  c.expect({ id: "another_day_q", expects: ["next_day", "next_same", "when_ctx", "see_you_ctx", "next_other", "next_no", "day_no", "next_later", "later_ctx"], hints: ["next"],
+    suggest: [{ lt: "Pasiūlyti dieną arba pasakyti, kad nuspręsi vėliau", hint: "next", options: "weekday" }],
+    on: {
+      next_day: (cc, sl) => nextDay(cc, sl.day ?? sl.weekday),
+      next_same: gym.handlers.next_same,
+      when_ctx: (cc, sl) => nextDay(cc, sl.day ?? "tomorrow"),
+      see_you_ctx: gym.handlers.see_you_ctx,
+      // Consume a refusal here; the next step asks again unless another piece of this answer supplies a day.
+      // Installing a fresh pending question would block that accepted day from completing the workout.
+      next_other: () => {},
+      day_no: () => {},
+      next_no: gym.handlers.next_no,
+      next_later: bookLater,
+      later_ctx: bookLater,
+    },
+    ask: (cc) => cc.say("when_short") });
+}
+
 function offerThursday(c: Ctx) {
   c.say("offer_thursday");
-  c.expect({ id: "thursday_q", expects: ["next_day", "next_later", "later_ctx", "next_same", "when_ctx", "see_you_ctx", "cant"], hints: ["next", "g_yesno"],
+  // "I can't on Thursday. How about Friday?" has both a refusal and a proposed date, in either order.
+  // Only a positive scheduling segment wins; "Thursday doesn't work" alone still declines the booking.
+  const decline = (cc: Ctx) => {
+    if (!turnHasIntent(cc, "next_day", "next_same", "when_ctx")) bookLater(cc);
+  };
+  c.expect({ id: "thursday_q", expects: ["next_day", "next_other", "next_later", "later_ctx", "next_same", "when_ctx", "see_you_ctx", "cant"], hints: ["next", "g_yesno"],
     suggest: [{ lt: "Sutikti arba pasiūlyti kitą dieną", hint: "next", options: "weekday" }],
     on: {
       next_day: (cc, sl) => { nextDay(cc, sl.day ?? sl.weekday); },
+      next_other: (cc) => askAnotherDay(cc),
       when_ctx: (cc, sl) => { nextDay(cc, sl.day ?? "thursday"); },
       next_same: (cc) => { setNext(cc, "tomorrow"); },
       see_you_ctx: (cc) => { nextDay(cc, "thursday"); },
       next_later: (cc) => bookLater(cc),
       later_ctx: (cc) => bookLater(cc),
       // "No, sorry, I can't." to "How about Thursday?"
-      cant: (cc) => bookLater(cc),
-      next_no: (cc) => bookLater(cc),
-      day_no: (cc) => bookLater(cc),
+      cant: decline,
+      next_no: decline,
+      day_no: decline,
     },
     yes: (cc) => nextDay(cc, "thursday"),
     no: (cc) => bookLater(cc),

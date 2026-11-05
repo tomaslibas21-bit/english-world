@@ -11,6 +11,8 @@ export class StyledCharacter {
   root = new THREE.Group();
   anim: Anim = "idle";
   talking = 0;
+  /** A hop: how high the body is drawn off the ground (m), as the original Character. */
+  lift = 0;
   private spec: CharSpec;
   private bones: THREE.Bone[] = [];
   private t = Math.random() * 10;
@@ -156,7 +158,7 @@ export class StyledCharacter {
     } else {
       tL.rotation.set(legA, 0, 0); tR.rotation.set(-legA, 0, 0);
       sL.rotation.set(kneeL, 0, 0); sR.rotation.set(kneeR, 0, 0);
-      body.position.y = bob;
+      body.position.y = bob + this.lift;
       body.rotation.set(lean, 0, sway);
       const sy = 1 + squash, sxz = 1 / Math.sqrt(sy);
       body.scale.set(sxz, sy, sxz);
