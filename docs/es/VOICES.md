@@ -283,12 +283,16 @@ VOICE-LIST.md):
   ticket desk; a step only Lucía asks stays hers. A line the code gives a speaker (a speaker helper such as
   `K(c, "line")`, or `c.speaker("x")` before `c.say("line")` in the same block: `codeSpeakers`) is in that voice too,
   heard or not. A line nobody was heard saying and the code doesn't place goes to whoever says the lines around it,
-  else to everyone in the conversation (`why: "who?"`).
+  else to everyone in the conversation (`why: "who?"`). In s84 the date is the learner's choice (Santiago or Camila):
+  every line in both voices (the sims play both dates). The global lines (g_ack, g_repeat…) go to whoever can hold the
+  floor when the learner speaks: p26's recorded message, which only plays between Jorge's and Brenda's lines, has none.
 - **Plural items.** An item line binds each item as the runs show the line binding items of its kind: the quantity
   heard with them; else as most of the conversation's item lines bind that kind (s32 says its produce in the plural);
   else two for an item always said in the plural (`attrs.plural`, `attrs.many`: "los papadzules", "sus pantalones
   nuevos"), as the conversations' own B(), taskVar(), tv() and bind() do, and one for the rest. A line and its `_pl`
-  twin heard with the two kinds apart (s74's sayN, s73's veg_no) keep them apart.
+  twin heard with the two kinds apart (s74's sayN, s73's veg_no) keep them apart. The hint examples bind such an item
+  with two as well, in the game (`hintBinding` in the Spanish target.ts, used by suggest.ts: "Estoy hasta el cuello con
+  los reportes de errores", "Quisiera los papadzules") and in the list; Maple Harbor's binds the bare id as before.
 - **Item lists.** Only the item lists a line is heard with, in random runs, sims and probes; a line never heard with an
   item keeps every list (`why: "list?"`, counted by the junk check).
 - **Two placeholders.** A line with two items, or an item and a value, is made from `BINDINGS` in reach-es.ts, read in

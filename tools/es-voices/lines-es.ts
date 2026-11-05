@@ -35,7 +35,8 @@ import { compose, placeholders, setVariety, type Sentence } from "../../src/conv
 import { soundKey } from "../../src/convo/soundalike";
 import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
-import { lookFor, observe, type Heard, type ObserveStats } from "./runs-es";
+import { hintBinding } from "../../src/convo/target";
+import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
 import { BINDINGS, codeSpeakers, idOf, reachFilter, reachOf } from "./reach-es";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
@@ -91,6 +92,10 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
   const sits = SITUATIONS.filter((s, i) => (!opts.only?.length || opts.only.some((o) => s.id.startsWith(o))) && (!opts.part || i % opts.part[1] === opts.part[0]));
   const speakersSeen = new Set<string>();
   const sitsOf = new Map<string, Set<string>>(); // npc id → the conversations they speak in
+  // npc id → the conversations where they can say the global lines (g_ack, g_repeat…: said by whoever holds the floor
+  // when the learner speaks): they held it at a learner's turn, or were heard saying one, or were never heard at all.
+  // p26's recorded message (harbor_bot) speaks only between Jorge's and Brenda's lines, never holds it: none for it.
+  const globalIn = new Map<string, Set<string>>();
   const addTo = <T,>(m: Map<string, Set<T>>, k: string, v: T) => { let s = m.get(k); if (!s) m.set(k, (s = new Set())); s.add(v); };
 
   for (const sit of sits) {
@@ -101,17 +106,33 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     // 0. what the game says (runs-es.ts), made at once in both Spanishes: the same line, vars and learner
     const said = new Map<string, Said>();
     const saidOf = (lid: string) => { let s = said.get(lid); if (!s) said.set(lid, (s = { by: new Set(), how: new Map(), lists: new Map(), qty: new Map() })); return s; };
+    // s84: the date is the learner's choice (Santiago or Camila), and the one chosen says every line
+    const anyone = usesPartner(sit) ? cast.map((id) => NPCS[id]) : null;
+    const heardBy = new Set<string>();
     const heard = (h: Heard) => {
-      const n = NPCS[h.line.npc];
+      if (h.input !== null) addTo(globalIn, h.floor, sit.id);
+      if (GLOBAL.lines[h.line.lineId] && !sit.lines[h.line.lineId]) addTo(globalIn, h.line.npc, sit.id);
+      heardBy.add(h.line.npc);
+      if (anyone?.some((n) => n.id === h.line.npc)) {
+        for (const other of anyone) if (other.id !== h.line.npc) say(h, other);
+      }
+      say(h, NPCS[h.line.npc]);
+    };
+    const say = (h: Heard, n: NpcDef) => {
       const src = (sit.lines[h.line.lineId] ?? GLOBAL.lines[h.line.lineId])?.[h.line.variant];
       const where = `${sit.id}:${h.how === "run" ? "fuzz" : h.how}`;
-      add(npcVoice(n), n.speed ?? 1, h.line.sentence, where, sit.id, "heard");
+      const own = n.id === h.line.npc;
+      // the sentence the conversation made, and (for the other date) the same line, vars and learner in their voice
+      const opts = { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !n.informal };
+      if (own) add(npcVoice(n), n.speed ?? 1, h.line.sentence, where, sit.id, "heard");
+      else if (src) { try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, sit.id, "heard"); } catch { /* skip */ } }
       if (src) {
         setVariety("neutral");
-        try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, { look, addressee: h.gender, speaker: n.gender ?? "f", formal: !n.informal }), where, sit.id, "heard"); }
+        try { add(npcVoice(n), n.speed ?? 1, compose(src, h.line.vars, opts), where, sit.id, "heard"); }
         catch { /* the neutral twin doesn't take these vars */ }
         finally { setVariety("default"); }
       }
+      if (!own) return;
       const s = saidOf(h.line.lineId);
       s.by.add(h.line.npc);
       addTo(s.how, h.line.npc, h.how);
@@ -129,7 +150,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     const res = observe(sit, { fuzzRuns: opts.fuzzRuns ?? 120, probes: opts.probes, onLine: heard });
     errors.push(...res.errors);
     stats[sit.id] = res.stats;
-    for (const id of cast) { speakersSeen.add(id); addTo(sitsOf, id, sit.id); }
+    for (const id of cast) { speakersSeen.add(id); addTo(sitsOf, id, sit.id); if (!heardBy.has(id)) addTo(globalIn, id, sit.id); }
     const people = cast.map((id) => NPCS[id]);
     // a line nobody was heard saying belongs to whoever says the lines around it (the lines come grouped by speaker:
     // Agente Medina's customs lines after Itzel's), when both neighbours agree on one person; else to everyone here
@@ -155,8 +176,8 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       const s = said.get(lid);
       // everyone heard saying it, and everyone the code makes say it (reach-es.ts codeSpeakers); else a guess
       const known = new Set([...(s?.by ?? []), ...(code.get(lid) ?? [])]);
-      const speakers = known.size ? [...known].map((id) => NPCS[id]).filter(Boolean) : guessed.has(lid) ? [NPCS[guessed.get(lid)!]] : people;
-      const who = known.size || people.length === 1 ? "" : "who?";
+      const speakers = anyone ?? (known.size ? [...known].map((id) => NPCS[id]).filter(Boolean) : guessed.has(lid) ? [NPCS[guessed.get(lid)!]] : people);
+      const who = known.size || anyone || people.length === 1 ? "" : "who?";
       // how each speaker came in, for the comparison with the old list: heard only in a probe, or only from the code
       const tag = new Map(speakers.map((n) => {
         const how = s?.how.get(n.id);
@@ -228,7 +249,8 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         const ents = g.slot ? sit.entities?.[g.slot] ?? [] : [];
         for (const it of g.items) {
           const pool = ents.filter((e) => !it.only || it.only(e));
-          const binds = pool.length ? pool.map((e) => ({ X: e.id })) : [{}];
+          // as the game binds the item in a hint (target.ts hintBinding: an always-plural item with two)
+          const binds = pool.length ? pool.map((e) => ({ X: hintBinding(e, e.id) })) : [{}];
           for (const b of binds) for (const formal of registers) for (const learner of GENDERS) for (const sp of npcGenders) {
             try { add(coachVoice(learner), 1, compose(it.s, { ...b, name: NAMES[0] }, { look, addressee: learner, speaker: sp, formal }), `${sit.id}:hint:${gid}.${it.id}`, sit.id, "hint"); } catch { /* skip */ }
           }
@@ -250,10 +272,10 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
   }
   for (const variety of VARIETIES) {
     setVariety(variety);
-    // 4. the global lines in the voice of everyone who speaks in a conversation
+    // 4. the global lines in the voice of everyone who can hold the floor in a conversation (globalIn)
     for (const id of speakersSeen) {
       const n = NPCS[id];
-      if (!n) continue;
+      if (!n || !globalIn.get(id)?.size) continue;
       for (const [lid, variants] of Object.entries(GLOBAL.lines)) variants.forEach((src, i) => {
         const ph = placeholders(src);
         if (ph.entities.length || ph.values.length) return;
@@ -261,7 +283,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           try {
             // said wherever this person speaks
             const u = add(npcVoice(n), n.speed ?? 1, compose(src, {}, { look: () => undefined, addressee: g, speaker: n.gender, formal: !n.informal }), `global:${lid}[${i}]`, undefined, "global");
-            if (u) for (const sid of sitsOf.get(id) ?? []) if (!u.sits.includes(sid)) u.sits.push(sid);
+            if (u) for (const sid of globalIn.get(id) ?? []) if (!u.sits.includes(sid)) u.sits.push(sid);
           } catch { /* skip */ }
         }
       });

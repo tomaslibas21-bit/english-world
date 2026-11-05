@@ -159,7 +159,7 @@ export function fork(conv: Conversation, keep: Set<object>, seed: number): Conve
 
 /** Does the conversation pick its speaker from the learner's date partner (s84)? Then the sims play both. */
 const partnerCache = new Map<string, boolean>();
-function usesPartner(sit: SituationDef): boolean {
+export function usesPartner(sit: SituationDef): boolean {
   if (!partnerCache.has(sit.id)) {
     const f = path.join(ROOT, EDITION.contentDir, "situations", `${sit.id}.ts`);
     partnerCache.set(sit.id, fs.existsSync(f) && fs.readFileSync(f, "utf8").includes("datePartner"));

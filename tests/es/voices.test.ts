@@ -9,6 +9,8 @@ import { ACCENTS, CAST, SCENES, accentOf, castingProblems, roleOf, styleFor, who
 import { geminiTextEs, likenessEs, numbersToDigitsEs, syllables, withFx } from "../../tools/es-voices/voice-batch-es";
 import { BINDINGS, codeSpeakers, reachFilter, reachOf } from "../../tools/es-voices/reach-es";
 import { betterWhy, mergeUtts } from "../../tools/es-voices/lines-es";
+import { hintBinding } from "../../src/convo/target";
+import { modelAnswers } from "../../src/convo/suggest";
 import { SITUATION_BY_ID } from "../../src/content/situations";
 
 afterEach(() => setVariety("default"));
@@ -123,6 +125,18 @@ describe("the values a line can really be said with (reach-es.ts)", () => {
     const s34 = codeSpeakers(sit("s34-meeting"));
     expect(s34.get("np_paul")).toEqual(new Set(["paul"]));
     expect(s34.get("sure_welcome")).toEqual(new Set(["kate"]));
+  });
+});
+
+describe("hint examples with an always-plural item (p18, s34, s73, s89)", () => {
+  it("bind it with two, as the conversations' lines do, so the example agrees", () => {
+    const p18 = SITUATION_BY_ID["p18-startup"];
+    const bugs = Object.values(p18.entities!).flat().find((e) => e.id === "bugs")!;
+    expect(hintBinding(bugs, "bugs")).toEqual({ id: "bugs", qty: 2 });
+    expect(hintBinding(Object.values(p18.entities!).flat().find((e) => e.id === "budget"), "budget")).toBe("budget");
+    const says = modelAnswers(p18, p18.hints.overload, "bugs", { formal: false, gender: "f", npcGender: "m", vars: {} }, 3).map((s) => s.say);
+    expect(says.some((s) => s.includes("los reportes de errores"))).toBe(true);
+    expect(says.some((s) => s.includes("el reporte de errores"))).toBe(false);
   });
 });
 

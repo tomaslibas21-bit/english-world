@@ -11,6 +11,7 @@
 // said, and each word is marked as said or missed.
 
 import { compose, type EntityLookup, type Sentence } from "./compose";
+import { hintBinding } from "./target";
 import { LANG } from "./lang";
 import { entityForms } from "./dialogue";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
@@ -48,7 +49,8 @@ function exampleFor(i: number, pool: EntityDef[], exIds: string[]): string | und
 
 function composeFull(g: HintGroup, i: number, X: string | undefined, o: AnswerOpts, look: EntityLookup): Sentence | null {
   try {
-    const s = compose(g.items[i].s, { ...o.vars, X }, { look, addressee: o.gender, speaker: o.npcGender, formal: o.formal });
+    // the item bound as the edition binds it in a hint (target.ts hintBinding: the Spanish plural items with two)
+    const s = compose(g.items[i].s, { ...o.vars, X: X === undefined ? X : hintBinding(look(X), X) }, { look, addressee: o.gender, speaker: o.npcGender, formal: o.formal });
     return s.en.includes("…") ? null : s;
   } catch { return null; } // this pattern doesn't fit
 }
