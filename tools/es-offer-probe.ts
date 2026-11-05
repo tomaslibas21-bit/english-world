@@ -8,7 +8,9 @@
 // sims and their auto answers, as check-content's fuzz), so lines the sims never reach are probed too. Some flags are
 // expected (an option a twist takes away, a list of facts that isn't a choice); read them.
 // Questions whose two halves are clauses ("¿Ya decidió, o necesita unos minutos más?", "¿… o no?") aren't offers and
-// are left out; so are prices offered as options.
+// are left out; so are prices offered as options. Offers of things to do are read too: a list of verbs ("¿Se la toma, la
+// vacía o me la deja?", "Puede tomársela, vaciarla o dejármela.", "¿Quiere vaciarla o tirarla?"), answered as the
+// learner says them ("Me la tomo.", "Quiero vaciarla.", "Dejársela.": the person's "se" is the learner's "me").
 //   EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-offer-probe.ts [situation prefixes…] [--runs=40]
 //     [--neutral]       the neutral Latin American text (the lines' neutral twins) instead of the Mexican one
 //     [--json=<file>]   every offer found, with the options that passed and those that didn't
@@ -20,6 +22,7 @@ import { Conversation } from "../src/convo/dialogue";
 import { setVariety } from "../src/convo/compose";
 import { playSim } from "./sim-play";
 import { EDITION } from "../src/edition";
+import { isFiniteVerb } from "../src/editions/es/convo/verbs";
 
 if (EDITION.id !== "es") throw new Error("the Spanish offer probe needs the Spanish edition: EDITION=es npx tsx --import ./tools/edition-hook.mjs tools/es-offer-probe.ts");
 
@@ -54,7 +57,90 @@ const WHICH = /^(?:cuál|cual|qué|que)(?:\s+(?:prefiere|prefieres|quiere|quiere
 const NOT_AN_OPTION = /^(?:sí|si|no|qué|que|cómo|como|algo así|algo asi|usted|ustedes|tú|tu|ti|él|ella|eso|esto|algo|nada|todo|aquí|aqui|allí|ahí|lo|la|le|me|te|se)$/;
 const ART = /^(?:el|la|los|las|un|una|unos|unas|algún|algun|alguna|su|sus|tu|tus)\s+/i;
 
-interface Opt { raw: string; core: string; de: boolean }
+interface Opt { raw: string; core: string; de: boolean; /** a thing to do: the learner's own words for it */ says?: string[] }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Offers of things to do: a list of verbs, in the person's words, answered in the learner's.
+
+const CLITICS = ["les", "los", "las", "nos", "me", "te", "se", "le", "lo", "la"];
+/** "sela" → ["se", "la"]; null if it isn't a run of clitics. */
+function clitics(s: string): string[] | null {
+  const out: string[] = [];
+  for (let rest = s; rest; ) {
+    const c = CLITICS.find((x) => rest.startsWith(x));
+    if (!c) return null;
+    out.push(c); rest = rest.slice(c.length);
+  }
+  return out;
+}
+/** The person's clitics as the learner says them: "se" / "te" (you yourself) → "me" (myself); "me" (to me) → "se" or
+ *  "le" (to you); "nos" (to us) → "les". */
+const swapClitics = (cs: string[]) => cs.map((c, i) => (c === "se" || c === "te" ? "me" : c === "me" ? (/^l[oa]s?$/.test(cs[i + 1] ?? "") ? "se" : "le") : c === "nos" ? "les" : c));
+const unaccent = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC");
+/** "tomársela" → { inf: "tomar", cl: ["se", "la"] }. */
+function infinitive(w: string): { inf: string; cl: string[] } | null {
+  const m = /^([a-zñáéíóú]+?[aeiáéí]r)((?:les|los|las|nos|me|te|se|le|lo|la)*)$/.exec(w.toLowerCase());
+  if (!m) return null;
+  const cl = m[2] ? clitics(m[2]) : [];
+  if (!cl || m[1].length < 3) return null;
+  return { inf: unaccent(m[1]), cl };
+}
+/** "tomar" + ["me", "la"] → "tomármela" (two clitics put the stress mark on the infinitive). */
+const withClitics = (inf: string, cl: string[]) => (cl.length >= 2 ? inf.replace(/([aei])r$/, (_m, v: string) => "áéí"["aei".indexOf(v)] + "r") : inf) + cl.join("");
+const FIRST_IRREGULAR: Record<string, string> = { poner: "pongo", traer: "traigo", hacer: "hago", tener: "tengo", venir: "vengo", salir: "salgo",
+  decir: "digo", dar: "doy", ir: "voy", ser: "soy", estar: "estoy", saber: "sé", ver: "veo", vaciar: "vacío", enviar: "envío" };
+/** The learner's "I" of an infinitive ("tomar" → "tomo"), regular verbs only. */
+const iForm = (inf: string) => FIRST_IRREGULAR[inf] ?? (/(ar|er|ir)$/.test(inf) ? inf.slice(0, -2) + "o" : null);
+const FIRST_FINITE: Record<string, string> = { pone: "pongo", pones: "pongo", trae: "traigo", traes: "traigo", hace: "hago", haces: "hago",
+  tiene: "tengo", tienes: "tengo", viene: "vengo", vienes: "vengo", sale: "salgo", sales: "salgo", dice: "digo", dices: "digo", va: "voy",
+  vas: "voy", da: "doy", das: "doy" };
+/** The learner's "I" of the person's "you" ("toma" / "tomas" → "tomo", "vacía" → "vacío"); null for anything else (the
+ *  person's own "I", "tiro", is no choice of the learner's). */
+function iFromYou(v: string): string | null {
+  if (FIRST_FINITE[v]) return FIRST_FINITE[v];
+  if (/^[a-zñáéíóú]{2,}[ae]s$/.test(v)) return v.slice(0, -2) + "o";
+  if (/^[a-zñáéíóú]{2,}[ae]$/.test(v)) return v.slice(0, -1) + "o";
+  return null;
+}
+/** A verb the town's conversations use: its future is one of verbs.ts's forms ("tomaré", "vaciaré"), or it is one of the
+ *  irregular ones above ("mar", "lugar" are no verbs). */
+const isInfinitive = (inf: string) => FIRST_IRREGULAR[inf] !== undefined || isFiniteVerb(unaccent(inf) + "e") || isFiniteVerb(unaccent(inf) + "a");
+/** One thing to do, in the learner's words: "tomársela" → "Tomármela.", "Quiero tomármela.", "Me la tomo."; "la vacía" →
+ *  "La vacío.", "Mejor la vacío."; anything after the verb stays ("tomársela aquí" → "Tomármela aquí."). `bare`: an
+ *  infinitive without clitics counts too (after "Puede…", "¿Quiere…?"). */
+function verbOption(chunk: string, bare: boolean): Opt | null {
+  const raw = chunk.trim().replace(/^(?:y|e|o|u)\s+/i, "").replace(/[.!?,;:]+$/, "").trim();
+  const ws = raw.split(/\s+/);
+  if (!ws.length || ws.length > 5) return null;
+  const inf = infinitive(ws[0]);
+  const rest = ws.slice(1).join(" ");
+  const tail = rest ? " " + rest : "";
+  if (inf && isInfinitive(inf.inf) && (bare || inf.cl.length)) {
+    const cl = swapClitics(inf.cl), said = withClitics(inf.inf, cl), i = iForm(inf.inf);
+    const says = [`${cap(said)}${tail}.`, `Quiero ${said}${tail}.`, `Prefiero ${said}${tail}.`];
+    if (i) says.push(`${cap([...cl, i].join(" "))}${tail}.`);
+    return { raw, core: raw, de: false, says };
+  }
+  // clitics and the person's "you" ("se la toma", "la vacía", "me la deja")
+  let k = 0;
+  while (k < ws.length && CLITICS.includes(ws[k].toLowerCase())) k++;
+  if (k >= ws.length) return null;
+  const v = ws[k].toLowerCase(), i = iFromYou(v);
+  if (!k || !i || !isFiniteVerb(unaccent(v))) return null;
+  const cl = swapClitics(ws.slice(0, k).map((w) => w.toLowerCase()));
+  const after = ws.slice(k + 1).join(" "), aft = after ? " " + after : "";
+  const said = [...cl, i].join(" ");
+  return { raw, core: raw, de: false, says: [`${cap(said)}${aft}.`, `Mejor ${said}${aft}.`] };
+}
+/** A list of things to do ("tomársela, vaciarla o dejármela"; "se la toma, la vacía o me la deja"): every item a verb, or
+ *  null. */
+function verbList(list: string, bare = false): Opt[] | null {
+  if (!/\s(?:o|u)\s/i.test(list)) return null;
+  const chunks = list.split(/\s*,\s*(?:o\s+|u\s+)?|\s+(?:o|u)\s+/i).filter((c) => c.trim());
+  if (chunks.length < 2) return null;
+  const opts = chunks.map((c) => verbOption(c, bare));
+  return opts.every((o) => o) ? (opts as Opt[]) : null;
+}
 interface Offer { sent: string; lineId: string; opts: Opt[] }
 
 function option(chunk: string): Opt | null {
@@ -78,6 +164,9 @@ function offersIn(text: string, lineId: string): Offer[] {
     if (!/\s(?:o|u)\s/i.test(body) || /más o menos/i.test(body)) continue;
     if (body.includes(": ")) body = body.slice(body.lastIndexOf(": ") + 2).trim(); // "¿De cuál le pongo: magna o premium?"
     body = body.replace(LEAD, "");
+    // things to do: "¿Se la toma, la vacía o me la deja?", "¿Quiere vaciarla o tirarla?"
+    const verbs = verbList(body) ?? (body.match(ASK) ? verbList(body.match(ASK)![1], true) : null);
+    if (verbs) { out.push({ sent: m[0], lineId, opts: verbs }); continue; }
     const ask = body.match(ASK);
     const list = ask ? ask[1] : body;
     const chunks = list.split(/\s*,\s*(?:o\s+|u\s+)?|\s+(?:o|u)\s+/i).filter((c) => c.trim());
@@ -98,6 +187,10 @@ function offersIn(text: string, lineId: string): Offer[] {
   }
   for (const s0 of text.replace(/¿[^¿?]*\?/g, ". ").split(/(?<=[.!])\s+/)) {
     const s = s0.trim().replace(LEAD_STATEMENT, "");
+    // "Puede tomársela, vaciarla o dejármela."
+    const can = s.match(/^(?:(?:usted|tú|ustedes)\s+)?(?:puede|puedes|pueden)\s+(.+?)[.!]*$/i);
+    const verbs = can ? verbList(can[1], true) : null;
+    if (verbs) { out.push({ sent: s0.trim(), lineId, opts: verbs }); continue; }
     const d = s.match(DECL);
     if (!d || /^que\s/i.test(d[1])) continue;
     let list = d[1].replace(/(\d),(\d{3})/g, "$1$2"); // "$1,700" is one number
@@ -116,6 +209,7 @@ function offersIn(text: string, lineId: string): Offer[] {
 
 /** Short natural answers that pick an option. */
 function forms(o: Opt): string[] {
+  if (o.says) return o.says;
   const x = o.core, X = cap(x);
   const f = [`${X}.`, `${X}, por favor.`];
   if (o.de) f.push(`De ${x}, por favor.`, `De ${x}.`, `El de ${x}.`, `La de ${x}.`);
