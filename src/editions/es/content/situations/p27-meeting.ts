@@ -30,6 +30,10 @@
 // Outcomes (c.s.outcome): "deal" (compromise) and "boss" (agree to disagree, Gerardo decides) end with the stamp when
 // every checklist item is ticked; "gave_in" and "walked" never get it. The end notes travel in a harmless
 // c.event("meeting-outcome"), as in the English edition.
+// A deal (and giving in) takes a clear yes (audit, 5 Nov): "Está bien, gracias", "Tienes razón", "Puede ser", "Déjame
+// pensarlo" or an echo of her weeks ("¿Dos semanas?") get "¿Trato hecho?" once more, then Gerardo decides; a counter-offer
+// is never a yes ("¿Solo dos semanas?", "Cuatro semanas me funciona"); after her final offer (three weeks) Gerardo keeps
+// her three. "Está bien, gracias" / "Gracias" to the coffee gets "¿Eso es un sí o un no?".
 //
 // NEEDS: (optional, as in the English edition) Game.ts could show c.event("meeting-outcome", { outcome, done, note })
 // as an end card or toast; the game ignores the event today.
@@ -91,6 +95,12 @@ const saysNo = (c: Ctx) => /^\W*(no|nel|nop)\b/.test(heardF(c));
 const thanksNo = (c: Ctx) => /\b(no|nel|nop)\b/.test(heardF(c));
 /** Asked as a question: a "¿" or "?", or a question word first ("El equipo de soporte ya está listo." is no question). */
 const asked = (c: Ctx) => /[¿?]/.test(c.heard || "") || /^\W*(por que|porque|que|como|cuando|quien|cual|cuanto|donde|hemos|han)\b/.test(heardF(c));
+/** "Está bien, gracias." / "Ok, gracias." / "Vale, gracias." / "Gracias.": polite, but no clear yes to a deal or an
+ *  invitation (in Mexico often a polite no; AUTHORING rule 17). */
+const politeClose = (c: Ctx) => /^\W*((esta bien|ok|okay|bueno|vale|muy bien)\W+)?(muchas )?gracias\W*$/
+  .test(heardF(c).replace(/\b(vanessa|gerardo)\b/g, " ").replace(/\s+/g, " ").trim());
+/** A turn that opens with a clear yes ("Sí, tres semanas.", "Ok, dos semanas.", "Bueno, tienes razón."). */
+const yesLead = (c: Ctx) => /^\W*(si|claro|ok|okay|va|sale|vale|bueno|esta bien|de acuerdo|perfecto|listo|trato hecho|hecho|acepto|me parece bien|me funciona)\b/.test(heardF(c));
 
 type Phase = "pitch" | "charts" | "reason" | "counter" | "alternative" | "resolve" | "closing" | "ended";
 const STEP_IDS = new Set(["pitch", "charts", "reason", "counter", "alternative", "resolve"]);
@@ -219,10 +229,19 @@ function twistAnswer(c: Ctx, kind: "let" | "finish" | "rude") {
 // The endings
 
 function deal(c: Ctx) { if (c.s.outcome) return; V(c, "v_deal"); c.s.outcome = "deal"; }
+/** Gerardo splits it: two more weeks for the old site, or her three after her final offer (never less than she gave). */
 function gregDecides(c: Ctx) {
   if (c.s.outcome) return;
-  G(c, "g_decide1"); G(c, "g_decide2"); G(c, "g_decide3");
+  G(c, "g_decide1"); G(c, c.s.offer === "final" ? "g_decide2_final" : "g_decide2"); G(c, "g_decide3");
   c.s.outcome = "boss";
+}
+/** No clear yes to her offer ("Está bien, gracias.", "Tienes razón.", "Puede ser.", "¿Dos semanas?"): "¿Trato hecho?"
+ *  once more; the next time Gerardo decides. A deal is made only on a clear yes. */
+function dealAgain(c: Ctx) {
+  if (c.s.dealAgain) { gregDecides(c); return; }
+  c.s.dealAgain = true;
+  V(c, "v_deal_q");
+  waitHere(c);
 }
 function gaveIn(c: Ctx) {
   if (c.s.outcome) return;
@@ -269,16 +288,42 @@ function missedNote(c: Ctx): string {
 
 function closingPending(): Pending {
   return {
-    id: "closing", expects: ["monday_yes", "monday_no_ctx"], hints: ["bye"],
+    id: "closing", expects: ["monday_yes", "monday_no_ctx", "nine_q_ctx"], hints: ["bye"],
     suggest: [{ lt: "Answer Gerardo and say goodbye", hint: "bye" }],
     yes: (cc) => closingTurn(cc, "yes"),
     no: (cc) => closingTurn(cc, "no"),
     on: {
       monday_yes: (cc) => closingTurn(cc, "yes"),
       monday_no_ctx: (cc) => closingTurn(cc, "no"),
+      nine_q_ctx: (cc) => nineQ(cc),
       g_bye: (cc) => closingTurn(cc, "bye"),
       g_thanks: (cc) => closingTurn(cc, thanksNo(cc) ? "no" : "yes"), // "No, gracias." is a no
       g_ok: (cc) => closingTurn(cc, "yes"),
+    },
+  };
+}
+
+/** "¿A qué hora?" / "¿A las nueve?" to "¿El lunes a la misma hora?": Gerardo says the time and the question stays;
+ *  "A las nueve, perfecto." (said, not asked) is a yes. */
+function nineQ(c: Ctx) {
+  if (c.s.closingState !== "monday") return;
+  if (!/[¿?]/.test(c.heard || "") && !/\bque hora\b/.test(heardF(c))) { closingTurn(c, "yes"); return; }
+  if (!once(c, "nine")) return;
+  G(c, "g_nine");
+  c.expect(closingPending());
+}
+
+/** "¿Un café? Yo invito.": "Está bien, gracias" / "Gracias" may be a yes or a polite no, so she asks once
+ *  ("¿Eso es un sí o un no?"); asked again, it is the polite no it most likely was. */
+function coffeePending(): Pending {
+  const unsureOr = (cc: Ctx, kind: string) => closingTurn(cc, politeClose(cc) ? "unsure" : kind);
+  return {
+    id: "coffee", expects: ["coffee_yes_ctx", "coffee_no_ctx"], hints: ["coffee"],
+    suggest: [{ lt: "Accept or turn down the coffee", hint: "coffee" }],
+    yes: (cc) => unsureOr(cc, "yes"), no: (cc) => closingTurn(cc, "no"),
+    on: {
+      coffee_yes_ctx: (cc) => closingTurn(cc, "yes"), coffee_no_ctx: (cc) => closingTurn(cc, "no"),
+      g_thanks: (cc) => (thanksNo(cc) ? closingTurn(cc, "no") : unsureOr(cc, "yes")), g_bye: (cc) => closingTurn(cc, "no"), g_ok: (cc) => unsureOr(cc, "yes"),
     },
   };
 }
@@ -290,15 +335,7 @@ function flair(c: Ctx) {
   if (c.s.flair === "coffee") {
     c.s.closingState = "coffee";
     V(c, "v_coffee");
-    c.expect({
-      id: "coffee", expects: ["coffee_yes_ctx", "coffee_no_ctx"], hints: ["coffee"],
-      suggest: [{ lt: "Accept or turn down the coffee", hint: "coffee" }],
-      yes: (cc) => closingTurn(cc, "yes"), no: (cc) => closingTurn(cc, "no"),
-      on: {
-        coffee_yes_ctx: (cc) => closingTurn(cc, "yes"), coffee_no_ctx: (cc) => closingTurn(cc, "no"),
-        g_thanks: (cc) => closingTurn(cc, thanksNo(cc) ? "no" : "yes"), g_bye: (cc) => closingTurn(cc, "no"), g_ok: (cc) => closingTurn(cc, "yes"),
-      },
-    });
+    c.expect(coffeePending());
     return;
   }
   c.s.closingState = "teal";
@@ -327,6 +364,8 @@ function closingTurn(c: Ctx, kind: string) {
     return;
   }
   if (st === "coffee") {
+    if (kind === "unsure" && !c.s.coffeeAsked) { c.s.coffeeAsked = true; V(c, "v_yes_or_no"); c.expect(coffeePending()); return; }
+    if (kind === "unsure") kind = "no"; // "Está bien, gracias." twice: the polite no
     c.s.coffeeAnswer = kind;
     V(c, kind === "yes" ? "v_coffee_yes" : kind === "no" ? "v_coffee_no" : "v_bye");
     bye(c);
@@ -463,7 +502,8 @@ function onAck(c: Ctx, sg: Segment | undefined, kind: "ack" | "agree" | "accept"
   const alt = altOf(sg), conc = concernOf(sg);
   switch (ph) {
     case "pitch":
-      if (weak) { if (once(c, "react")) { V(c, "v_reask"); waitHere(c); } return; }
+      // "Ya veo." / "Está bien, gracias." to "¿Qué opinas?": no opinion yet, Vanessa asks plainly
+      if (weak || politeClose(c)) { if (once(c, "react")) { V(c, "v_reask"); waitHere(c); } return; }
       if (conc || alt) { onDisagree(c, sg); return; } // "Buen punto, pero necesitamos más tiempo."
       agreePlan(c);
       return;
@@ -485,8 +525,15 @@ function onAck(c: Ctx, sg: Segment | undefined, kind: "ack" | "agree" | "accept"
       if (alt) { onOffer(c, sg, false); return; }
       // "Me parece bien, pero tres semanas.": the counter-offer later in the turn answers, not the yes
       if (turnSegments(c).some((x) => x.intent === "counter_offer")) return;
-      // "Tres semanas me funciona." to her two weeks: that's bargaining
-      if (kind === "accept" && (c.s.offer ?? "half") === "half" && weeksOf(sg) >= 3) { resolveTurn(c, "counter", sg); return; }
+      // "Tres semanas me funciona." to her two weeks, "Cuatro semanas me funciona." to her three: that's bargaining
+      if (kind === "accept" && namedWeeks(sg) && (c.s.offer === "none" || askedWeeks(c, sg, offeredWeeks(c)) > offeredWeeks(c))) {
+        resolveTurn(c, "counter", sg);
+        return;
+      }
+      // "Tienes razón, trato hecho.": the yes later in the turn answers
+      if (kind !== "accept" && turnSegments(c).some((x) => x.intent === "accept_deal")) return;
+      // "Es un punto válido. Sin embargo, sigo preocupado.": a "but" after granting her point is no yes
+      if (kind === "ack" && /\b(pero|sin embargo|aunque|aun asi)\b/.test(heardF(c))) { resolveTurn(c, "disagree", sg); return; }
       resolveTurn(c, weak ? "unsure" : kind === "ack" ? "ack" : "accept", sg);
       return;
   }
@@ -539,6 +586,8 @@ function onOffer(c: Ctx, sg: Segment | undefined, counter: boolean) {
     case "resolve":
       storeAlt(c, alt === "a_other" ? null : alt, sg);
       if (alt === "a_other") c.s.altGiven = true;
+      // "¿Y si dejamos la página vieja un mes?" to her two weeks: bargaining about the same weeks
+      if (alt === "a_backup" && namedWeeks(sg) && c.s.offer !== "none") { resolveTurn(c, "counter", sg); return; }
       resolveTurn(c, counter ? "counter" : "offer", sg);
       return;
   }
@@ -655,6 +704,19 @@ function weeksOf(sg?: Segment): number {
   if (n > 0) return n;
   return tags.includes("more") ? 3 : 0;
 }
+/** A number of weeks said ("tres semanas", "un mes"), not only "more time". */
+const namedWeeks = (sg?: Segment) => !!sg?.tags.some((x) => /^w\d+$/.test(x)) || Number(sg?.slots?.wk) > 0;
+/** The weeks Vanessa offers: two (her compromise) or three (her final offer). */
+const offeredWeeks = (c: Ctx) => (c.s.offer === "final" ? 3 : 2);
+/** The weeks the learner asks for at the deal, against the weeks she offers: "más tiempo" / "no me alcanzan" and
+ *  "¿Solo dos semanas?" want more, "una semana más" adds to hers, an echo ("¿Dos semanas?") is her number. */
+function askedWeeks(c: Ctx, sg: Segment | undefined, offered: number): number {
+  if (!namedWeeks(sg)) return offered + 1;
+  const w = weeksOf(sg), h = heardF(c);
+  if (/\b(semanas?|mes) mas\b|\botr[ao] (semana|mes)\b/.test(h)) return offered + w;
+  if (/\b(solo|nada mas|nomas|unicamente|apenas)\b/.test(h) && w <= offered) return offered + 1;
+  return w;
+}
 
 /** The last round: Vanessa's compromise ("half"), her final offer ("final") or her refusal ("none"). */
 function resolveTurn(c: Ctx, kind: "accept" | "ack" | "offer" | "counter" | "disagree" | "atd" | "no" | "unsure" | "boss" | "give_in", sg?: Segment) {
@@ -680,15 +742,20 @@ function resolveTurn(c: Ctx, kind: "accept" | "ack" | "offer" | "counter" | "dis
     waitHere(c);
     return;
   }
-  // "half" (algo intermedio… ¿Trato hecho?) or "final" (Tres semanas. Es mi última oferta.)
-  if (kind === "accept" || kind === "ack") { deal(c); return; }
+  // "half" (algo intermedio… ¿Trato hecho?) or "final" (Tres semanas. Es mi última oferta.): a deal only on a clear
+  // yes. "Está bien, gracias.", "Tienes razón.", "Puede ser." and an echo of her weeks get "¿Trato hecho?" again.
+  if (kind === "accept") { if (politeClose(c)) dealAgain(c); else deal(c); return; }
+  if (kind === "ack") { if (yesLead(c) && !/\b(puede|quizas?|tal vez|a lo mejor)\b/.test(heardF(c))) deal(c); else dealAgain(c); return; }
   if (kind === "atd") { V(c, "v_atd"); gregDecides(c); return; }
-  if (off === "final" && kind === "unsure") { deal(c); return; } // anything that isn't a "no"
+  if (off === "final" && kind === "unsure") { dealAgain(c); return; } // "No sé.", "Déjame pensarlo."
   if (kind === "counter") {
+    const offered = offeredWeeks(c);
+    const w = askedWeeks(c, lastCounter(c, sg), offered);
+    if (w === offered) { if (yesLead(c)) deal(c); else dealAgain(c); return; } // "Sí, dos semanas." / "¿Dos semanas?"
+    if (w < offered) { deal(c); return; } // fewer weeks than she offers: she takes them
     if (off === "final") { gregDecides(c); return; }
-    const w = weeksOf(lastCounter(c, sg));
-    if (w > 0 && w <= 2) { deal(c); return; }
     c.s.offer = "final";
+    c.s.dealAgain = false;
     V(c, "v_final_offer");
     waitHere(c);
     return;
@@ -709,22 +776,30 @@ function resolveTurn(c: Ctx, kind: "accept" | "ack" | "offer" | "counter" | "dis
   waitHere(c);
 }
 
-/** "¿O sea que estás de acuerdo conmigo?" (Vanessa refused the proposal and the learner said she was right). */
+/** "¿O sea que estás de acuerdo conmigo?" (Vanessa refused the proposal and the learner said she was right). Giving in
+ *  takes a clear yes: "Está bien, gracias.", "Puede ser.", "Entiendo tu punto." get "¿Entonces? ¿Estás conmigo en
+ *  esto?" once, and then count as a no. */
 function expectSoAgree(c: Ctx) {
+  const yes = (cc: Ctx) => { if (politeClose(cc)) soAgreeAgain(cc); else gaveIn(cc); };
   c.expect({
-    id: "so_agree", optional: true, expects: ["agree_to_disagree", "disagree_polite", "offer_alt", "counter_offer", "give_in"], hints: ["resolve"],
+    id: "so_agree", optional: true, expects: ["agree_to_disagree", "disagree_polite", "offer_alt", "counter_offer", "give_in", "think_ctx"], hints: ["resolve"],
     suggest: [{ lt: "Say you still disagree, or agree to disagree", hint: "resolve" }, { lt: "Suggest another way", hint: "alt" }],
-    yes: (cc) => gaveIn(cc),
+    yes,
     no: (cc) => resolveTurn(cc, "no"),
     on: {
       give_in: (cc) => gaveIn(cc),
-      accept_deal: (cc) => { if (saysNo(cc)) resolveTurn(cc, "no"); else gaveIn(cc); },
-      agree_plan: (cc) => { if (saysNo(cc)) resolveTurn(cc, "no"); else gaveIn(cc); },
+      accept_deal: (cc) => { if (saysNo(cc)) resolveTurn(cc, "no"); else yes(cc); },
+      agree_plan: (cc) => { if (saysNo(cc)) resolveTurn(cc, "no"); else yes(cc); },
       ack_point: (cc, _sl, sg) => {
         if (altOf(sg)) { onOffer(cc, sg, false); return; }
         if (saysNo(cc) || concernOf(sg)) { resolveTurn(cc, "disagree", sg); return; }
-        gaveIn(cc);
+        // "Tienes razón." / "Es cierto." agree with her; "Puede ser." / "Entiendo tu punto." / "Ya veo." don't
+        const h = heardF(cc);
+        if (/\b(tienes razon|es cierto|es verdad|estoy de acuerdo)\b/.test(h) && !/\b(puede|quizas?|tal vez|a lo mejor)\b/.test(h)) gaveIn(cc);
+        else soAgreeAgain(cc);
       },
+      think_ctx: (cc) => soAgreeAgain(cc),
+      g_thanks: (cc) => { if (thanksNo(cc)) resolveTurn(cc, "no"); else yes(cc); },
       agree_to_disagree: (cc) => resolveTurn(cc, "atd"),
       disagree_polite: (cc, _sl, sg) => resolveTurn(cc, "disagree", sg),
       give_reason: (cc, _sl, sg) => resolveTurn(cc, "disagree", sg),
@@ -732,6 +807,13 @@ function expectSoAgree(c: Ctx) {
       counter_offer: (cc, _sl, sg) => onOffer(cc, sg, true),
     },
   });
+}
+/** No clear answer to "¿O sea que estás de acuerdo conmigo?": asked once more, then taken as a no. */
+function soAgreeAgain(c: Ctx) {
+  if (c.s.soAgain) { resolveTurn(c, "no"); return; }
+  c.s.soAgain = true;
+  V(c, "v_reask");
+  expectSoAgree(c);
 }
 
 // ---------------------------------------------------------------------------
@@ -759,9 +841,9 @@ const AUTO: Record<string, string> = {
 const PITCH_EX = ["disagree_polite", "rude_disagree", "give_reason", "offer_alt", "ask_q", "agree_plan", "ask_boss", "ack_point", "accept_deal", "give_in", "agree_to_disagree", "walk_away"];
 const CHARTS_EX = ["interrupt_polite", "interrupt_ctx", "rude_interrupt", "give_reason", "disagree_polite", "offer_alt", "walk_away"];
 const REASON_EX = ["give_reason", "concern_ctx", "disagree_polite", "offer_alt", "ask_q", "interrupt_polite", "walk_away"];
-const COUNTER_EX = ["site_problem_ctx", "ack_point", "give_reason", "disagree_polite", "rude_disagree", "offer_alt", "agree_to_disagree", "give_in", "agree_plan", "accept_deal", "walk_away"];
+const COUNTER_EX = ["site_problem_ctx", "echo_ctx", "ack_point", "give_reason", "disagree_polite", "rude_disagree", "offer_alt", "agree_to_disagree", "give_in", "agree_plan", "accept_deal", "walk_away"];
 const ALT_EX = ["offer_alt", "counter_offer", "agree_to_disagree", "give_in", "give_reason", "ack_point", "ask_boss", "walk_away"];
-const RESOLVE_EX = ["accept_deal", "counter_offer", "agree_to_disagree", "offer_alt", "disagree_polite", "ack_point", "agree_plan", "give_in", "ask_boss", "walk_away"];
+const RESOLVE_EX = ["accept_deal", "think_ctx", "counter_offer", "agree_to_disagree", "offer_alt", "disagree_polite", "ack_point", "agree_plan", "give_in", "ask_boss", "walk_away"];
 
 const SIM = (twist: boolean, stubborn: boolean, flair: "coffee" | "teal", thoughtsAny = false) => (s: Record<string, any>) => {
   s.twist = twist; s.stubborn = stubborn; s.flair = flair; s.thoughtsAny = thoughtsAny;
@@ -939,7 +1021,7 @@ export const meeting: SituationDef = {
       "@soft no me (rindo | voy a rendir) [todavia | tan facil]",
       "@soft no (cambie | he cambiado | voy a cambiar) de opinion",
       "@soft no (la lancemos | lancemos | la lanzamos | lanzamos | la lancen) [@newsite] (el viernes | este viernes | tan pronto | todavia) [@rtail]",
-      "(no del todo | no exactamente | no completamente | no totalmente | solo en parte | en parte)",
+      "(no del todo | no exactamente | no completamente | no totalmente | solo en parte | en parte | mas o menos)",
       // "No hay un punto medio." is a statement (the proposal is "¿No habrá un punto medio?")
       "@soft no (hay | veo | existe) [un] (punto medio | termino medio | algo intermedio) [aqui]",
       "@soft [con] ((una | tres | cuatro) (semana | semanas) | un mes | quince dias) no (me funciona | me funcionan | me sirve | me sirven | me alcanza | alcanza | alcanzan | basta | me parece bien | me convence | esta bien)",
@@ -1124,6 +1206,7 @@ export const meeting: SituationDef = {
       "@soft {price} (al | por | cada) mes (es | son) (mucho | mucho dinero | carisimo | demasiado) [@ack_tail]",
       "@soft (tu | la) (grafica | los numeros | los datos) (es | son | esta | estan) (buena | buenos | convincente | convincentes | impresionante | impresionantes) [@ack_tail]",
       "(ya veo | entiendo | ya entiendo | te entiendo | ok entiendo | ya entendi) #weak",
+      "ni modo #weak",
       "[ya] (se | entiendo | veo) lo que (quieres decir | dices | me dices) #weak",
     ] },
 
@@ -1134,6 +1217,14 @@ export const meeting: SituationDef = {
       "no es [un | tan grande el | tan gran | gran] problema #no",
       "@oldsite no es [un | tan gran | gran] problema #no",
       "no lo creo #no",
+    ] },
+    // "¿Sesenta mil pesos?" / "¿Al mes?" / "¿Tanto?": surprise at her figures (only at her strong point)
+    echo_ctx: { patterns: [
+      "(sesenta | 60) mil [pesos] [al mes | por mes | cada mes | mensuales]",
+      "(sesenta | 60) (por ciento | %)",
+      "(al mes | cada mes | por mes)",
+      "(tanto | tanto dinero | tan cara | tan caro | asi de cara | asi de caro)",
+      "[en serio | de verdad] (cuesta | nos cuesta) (tanto | eso | sesenta mil [pesos] [al mes])",
     ] },
 
     // --- another way ---------------------------------------------------------------------------------------
@@ -1170,6 +1261,8 @@ export const meeting: SituationDef = {
       // her two weeks refused: more time wanted (no #w2 tag here, so it is never read as a yes to two weeks)
       "[no] [con] (dos | 2) semanas no (me funciona | me funcionan | me sirve | me sirven | me alcanza | me alcanzan | alcanza | alcanzan | basta | bastan | me parece bien | me parecen bien | me convence | me convencen | esta bien | estan bien) [que tal (@weeks | un mes #w4)] #more",
       "(dos | 2) semanas (es | son | me parece | me parecen) (muy | demasiado) poco [tiempo] #more",
+      // "¿Solo dos semanas?": her two weeks are too few (an echo with "solo", never a yes)
+      "(solo | nada mas | nomas | unicamente | apenas) (dos | 2) semanas [mas] #more",
       "(un mes #w4 | @weeks) (seria | es) mejor",
       "(prefiero | preferiria | yo preferiria) (@weeks | un mes #w4 | quince dias #w2)",
       "(un mes #w4 | @weeks) (seria | es) mas (seguro | realista)",
@@ -1183,6 +1276,7 @@ export const meeting: SituationDef = {
       "(ahora si | asi si | eso si) (me funciona | me sirve | me parece bien | me late | me convence) #h:works_for_me",
       "(eso | esto) (me funciona | me sirve | me parece bien | me parece justo | me convence)",
       "(me parece | suena) (justo | razonable | bien | perfecto)",
+      "[eso | esto] es (justo | razonable | lo justo)",
       "puedo vivir con eso",
       "(es un trato | tenemos un trato | trato)",
       "(acepto | aceptado) [el trato | la propuesta]",
@@ -1191,6 +1285,13 @@ export const meeting: SituationDef = {
       "(dos #w2 | tres #w3 | {wk:number}) semanas (esta bien | me parece bien | me funciona | va | sale | perfecto) [para mi]",
       "es un buen (acuerdo | compromiso | trato)",
       "(perfecto | excelente | genial | buenisimo | de lujo)",
+    ] },
+    // "Déjame pensarlo." / "Tal vez." at "¿Trato hecho?": no yes yet (only at the deal and "¿O sea que estás de acuerdo…?")
+    think_ctx: { patterns: [
+      "(dejame | permiteme | dejeme) (pensarlo | pensar) [un poco | un momento | un segundo | tantito | bien]",
+      "(lo voy a pensar | voy a pensarlo | lo tengo que pensar | tengo que pensarlo | necesito pensarlo | quiero pensarlo | lo pienso | lo pensare | tengo que pensar) [un poco | bien]",
+      "(tal vez | quizas | quiza | a lo mejor)",
+      "(no se | no lo se) [todavia] ((dejame | permiteme) (pensarlo | pensar) | lo voy a pensar | tengo que pensarlo | necesito pensarlo) [un poco | tantito]",
     ] },
     agree_to_disagree: { patterns: [
       "@soft [bueno | ok | creo que | parece que] (tendremos que | vamos a tener que | hay que | podemos | tenemos que) estar de acuerdo en (no estar de acuerdo | que no estamos de acuerdo)",
@@ -1272,6 +1373,14 @@ export const meeting: SituationDef = {
       "(si | claro) a la misma hora",
       "el lunes (esta bien | perfecto | me queda) [para mi]",
       "(ahi | alli) (estaré | nos vemos)",
+      "[si | claro] [el lunes] a las (nueve | 9) (me funciona | esta bien | me parece bien | perfecto | me queda bien)",
+    ] },
+    // "¿A qué hora?" / "¿A las nueve?" (asked: Gerardo says the time; said: a yes)
+    nine_q_ctx: { patterns: [
+      "a que hora [es | sera | seria]",
+      "[el lunes] a las (nueve | 9) [de la manana] [verdad | no | entonces]",
+      "[el lunes] a la misma hora [verdad | entonces]",
+      "(es | seria | sera) a las (nueve | 9)",
     ] },
     monday_no_ctx: { patterns: [
       "el lunes no (puedo | me funciona | me queda)",
@@ -1346,6 +1455,11 @@ export const meeting: SituationDef = {
       t("Lanzamos | el | viernes, | pero | la | página | vieja | se queda | dos | semanas | más.", "We-launch | on | Friday, | but | the | site | old | stays | two | weeks | more.",
         "We launch on Friday, but the old site stays up for two more weeks.", { flags: { 1: F_ON } }),
     ],
+    // after Vanessa's final offer (three weeks) Gerardo never gives less than she did
+    g_decide2_final: [
+      t("Lanzamos | el | viernes, | pero | la | página | vieja | se queda | tres | semanas | más.", "We-launch | on | Friday, | but | the | site | old | stays | three | weeks | more.",
+        "We launch on Friday, but the old site stays up for three more weeks.", { flags: { 1: F_ON } }),
+    ],
     g_decide3: [
       t("¿Nadie | está | contento? | Perfecto. | Eso | es | un | buen | acuerdo.", "Nobody | is | happy? | Perfect. | That | is | a | good | compromise.", "Nobody's happy? Perfect. That's a good compromise."),
     ],
@@ -1368,6 +1482,10 @@ export const meeting: SituationDef = {
     ],
     g_calendar: [
       t("¿No? | Entonces | busco | otro | horario.", "No? | Then | I-look-for | another | time.", "No? Then I'll find another time."),
+    ],
+    // "¿A qué hora?" / "¿A las nueve?" to "¿El lunes a la misma hora?"
+    g_nine: [
+      t("A las nueve, | como siempre.", "At nine, | as always.", "Nine, as usual."),
     ],
 
     // --- Vanessa: the pitch and the charts -------------------------------------------------------------------
@@ -1643,6 +1761,10 @@ export const meeting: SituationDef = {
     v_coffee_no: [
       t("Entonces, | otro | día.", "Then, | another | day.", "Next time, then."),
     ],
+    // "Está bien, gracias." / "Gracias." to the coffee: a yes or a polite no?
+    v_yes_or_no: [
+      t("¿Eso | es | un | sí | o | un | no?", "That | is | a | yes | or | a | no?", "Is that a yes or a no?"),
+    ],
     v_bye: [
       t("Nos vemos | el | lunes. | Misma | hora, | misma | pelea.", "See you | on | Monday. | Same | time, | same | fight.", "See you Monday. Same time, same fight.",
         { flags: { 1: F_ON } }),
@@ -1801,6 +1923,8 @@ export const meeting: SituationDef = {
     "…en fin": { reason: "lexical_expression", split: "en → in + fin → end; the filler = anyway (the dots mark speech trailing in).", minimal: "Two words." },
     "…está bien": { reason: "lexical_expression", split: "está → is + bien → well; giving in = fine (the dots mark a pause).", minimal: "Two words." },
     "nada más": { reason: "lexical_expression", split: "nada → nothing + más → more; = just, only.", minimal: "Two words." },
+    "a las nueve": { reason: "grammatical_fusion", split: "a → at + las → the + nueve → nine: the clock time (S-TIME) = at nine.", minimal: "Three words." },
+    "como siempre": { reason: "lexical_expression", split: "como → like + siempre → always; = as always, as usual.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -1827,7 +1951,12 @@ export const meeting: SituationDef = {
       suggest: [{ lt: "Say politely that you disagree", hint: "disagree" }, { lt: "Ask about the plan", hint: "questions" }],
       // "¿Algún comentario? ¿No? Perfecto." – "Bueno, sí.": the learner has something to say; "No." = no objections
       yes: (c) => { if (pitchYesNo(c, true)) return; agreePlan(c); },
-      no: (c) => { if (pitchYesNo(c, false)) return; bareNo(c); },
+      no: (c) => {
+        if (pitchYesNo(c, false)) return;
+        // "Así está bien." to "¿Qué opinas?" (fine as it is) is no "no" to the plan: Vanessa asks plainly
+        if (!saysNo(c) && /\b(asi (esta|me parece) bien|esta bien asi)\b/.test(heardF(c))) { V(c, "v_reask"); c.hold(); return; }
+        bareNo(c);
+      },
       help: (c) => { G(c, "g_anyone"); c.s.anyoneAsked = true; } },
     { id: "charts", when: (c) => !c.s.outcome && !!c.s.disagreed, done: (c) => !!c.s.interrupted || c.s.tries.charts >= 3,
       ask: (c) => {
@@ -1928,6 +2057,7 @@ export const meeting: SituationDef = {
       offer: null, halfway: 0, round: 0, outcome: null, blunt: 0, friendlySaid: false, agreedOnce: false, notConvinced: false, anyoneAsked: false,
       tries: { charts: 0, reason: 0, counter: 0, alternative: 0, resolve: 0 },
       twistFired: false, twistOpen: false, twistDone: false, twistTag: null, closingState: null, coffeeAnswer: null, quiet: null, ended: false,
+      dealAgain: false, soAgain: false, coffeeAsked: false,
       // variety: Vanessa cuts in (twist), refuses the first proposal, and how the goodbye ends
       twist: c.chance(c.visits >= 1 ? 0.6 : 0.4),
       stubborn: c.chance(c.visits >= 1 ? 0.5 : 0.3),
@@ -1965,6 +2095,18 @@ export const meeting: SituationDef = {
       if (phase(c) !== "counter") return;
       if (sg.tags.includes("no")) { if (once(c, "react")) notAck(c); return; }
       onAck(c, sg, "ack");
+    },
+    // "¿Sesenta mil pesos?" / "¿Al mes?": she presses her point ("¿Entonces? ¿La página vieja es un problema o no?")
+    echo_ctx(c) {
+      if (twistGuard(c)) return;
+      if (phase(c) !== "counter" || !c.s.counterSaid || !once(c, "react")) return;
+      V(c, "v_counter_reask");
+      waitHere(c);
+    },
+    // "Déjame pensarlo." / "Tal vez." at "¿Trato hecho?": no yes ("¡Ay, ya te estoy dando la mitad!" / "¿Trato hecho?")
+    think_ctx(c) {
+      if (twistGuard(c)) return;
+      if (phase(c) === "resolve") resolveTurn(c, "unsure");
     },
     offer_alt(c, _sl, sg) { onOffer(c, sg, false); },
     counter_offer(c, _sl, sg) { onOffer(c, sg, true); },
@@ -2015,7 +2157,10 @@ export const meeting: SituationDef = {
       const rest = h
         .replace(/\b(no se( todavia)?|no lo se|todavia no se|no tengo idea|ni idea|no estoy (segur[oa]|convencid[oa])( todavia)?|no me decido|no he decidido( todavia)?)\b/g, " ")
         .replace(/\b(m+|eh+|este|pues|bueno|perdon|la verdad|la neta|vanessa|gerardo|ok|okay|ay)\b|[^a-z\s]/g, " ").trim();
-      if (!rest) GLOBAL_HANDLERS.g_dontknow(c as any, {});
+      if (rest) return;
+      // at "¿Trato hecho?" the help's answer may settle the meeting (Gerardo decides): no hold, so the goodbye follows
+      if (phase(c) === "resolve" && !c.s.twistOpen) { resolveTurn(c, "unsure"); return; }
+      GLOBAL_HANDLERS.g_dontknow(c as any, {});
     },
     // "¡Adiós!" / "Perdón, me tengo que ir." before the end: the learner walks out of the meeting
     g_bye(c) {
@@ -2030,6 +2175,7 @@ export const meeting: SituationDef = {
       if (!c.s.outcome) walk(c); // "¡Nos vemos el lunes!" in the middle of the meeting: leaving
     },
     monday_no_ctx(c) { if (c.s.closingState) closingTurn(c, "no"); },
+    nine_q_ctx(c) { nineQ(c); },
     coffee_yes_ctx(c) { if (c.s.closingState) closingTurn(c, "yes"); },
     coffee_no_ctx(c) { if (c.s.closingState) closingTurn(c, "no"); },
     teal_ctx(c, _sl, sg) { if (c.s.closingState) closingTurn(c, sg.tags.includes("teal") ? "teal" : sg.tags.includes("blue") ? "yes" : "green"); },
@@ -2172,6 +2318,17 @@ export const meeting: SituationDef = {
     { say: "No hay trato.", intent: "disagree_polite", step: "resolve", not: ["accept_deal"] },
     { say: "Bueno, tú ganas. Hagámoslo a tu manera.", intent: "give_in", step: "resolve" },
     { say: "No me has convencido.", intent: "disagree_polite", step: "resolve", not: ["give_in"] },
+    // audit 5 Nov: hesitations, echoes and "more" at the deal; surprise at her figures; "más o menos" is no "how are you"
+    { say: "Déjame pensarlo.", intent: "think_ctx", step: "resolve", not: ["accept_deal"] },
+    { say: "Lo voy a pensar.", intent: "think_ctx", step: "resolve", not: ["accept_deal"] },
+    { say: "Tal vez.", intent: "think_ctx", step: "resolve", not: ["accept_deal"] },
+    { say: "¿Nada más dos semanas?", intent: "counter_offer", step: "resolve", not: ["accept_deal"] },
+    { say: "Es justo.", intent: "accept_deal", step: "resolve" },
+    { say: "No es justo.", intent: "disagree_polite", step: "resolve", not: ["accept_deal"] },
+    { say: "¿Sesenta mil pesos al mes?", intent: "echo_ctx", step: "counter", not: ["ack_point"] },
+    { say: "¿Tanto?", intent: "echo_ctx", step: "counter", not: ["ack_point"] },
+    { say: "Sesenta mil pesos al mes es mucho.", intent: "ack_point", step: "counter", not: ["echo_ctx"] },
+    { say: "Más o menos.", intent: "disagree_polite", step: "pitch", not: ["agree_plan", "g_howareyou_bad"] },
     // --- the twist (let_her_ctx is tested in the sims: it exists only while she cuts in) ---
     { say: "¿Me dejas terminar mi idea?", intent: "finish_first" },
     { say: "Todavía no termino.", intent: "finish_first" },
@@ -2310,6 +2467,39 @@ export const meeting: SituationDef = {
       "Tengo mis dudas.", "Perdón.", "No funciona bien en el móvil.", "Vale, es verdad.", "¿Qué os parece si la lanzamos como beta?", "Vale.",
       "Vale, nos vemos el lunes.", "Vale.",
     ], expect: { complete: true, state: { outcome: "deal", reason: "c_bugs" } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // Audit 5 Nov: a deal only on a clear yes. "Está bien, gracias" gets "¿Trato hecho?" again, "¿Solo dos semanas?" wants
+    // more (her final three), "Cuatro semanas me funciona" is a counter: Gerardo decides, never below her three weeks.
+    // The goodbye: "¿A qué hora?" (Gerardo: "A las nueve, como siempre."), "Está bien, gracias" to the coffee is asked.
+    { name: "no yes in a polite thanks; her final three weeks; Gerardo decides", turns: [
+      "No estoy muy seguro de eso.", "Perdón, ¿puedo interrumpir un momento?", "¿Y si se cae?", "¿Sesenta mil pesos al mes?", "Sí, es un problema.",
+      "¿Y si arreglamos los errores primero?", "Está bien, gracias.", "¿Solo dos semanas?", "Cuatro semanas me funciona.",
+      "¿A qué hora?", "Perfecto, nos vemos el lunes.", "Está bien, gracias.", "Sí, vamos.",
+    ], expect: { complete: true, state: { outcome: "boss", offer: "final", reason: "c_risk", dealAgain: false, coffeeAsked: true, coffeeAnswer: "yes" } },
+    auto: AUTO, setup: SIM(false, false, "coffee") },
+    // "Así está bien." to "¿Qué opinas?" is no "no" ("¿Entonces? ¿Estás conmigo en esto?"). "Puede ser." twice to "¿Trato
+    // hecho?": no deal; Gerardo decides (two weeks, her compromise). Training as the proposal.
+    { name: "maybe is no yes: Gerardo decides", turns: [
+      "Así está bien.", "Con todo respeto, yo lo veo un poco diferente.", "Perdón, ¿puedo interrumpir un momento?", "Muchos de nuestros clientes tienen más de sesenta años.",
+      "Es un punto válido.", "¿Y si capacitamos primero al equipo de soporte?", "Puede ser.", "Puede ser.", "Nos vemos el lunes.", "Yo diría verdes.", "Turquesa.",
+    ], expect: { complete: true, state: { outcome: "boss", offer: "half", dealAgain: true, alt: "a_train" } }, auto: AUTO, setup: SIM(false, false, "teal") },
+    // Vanessa refuses: "Tienes razón." – "¿O sea que estás de acuerdo conmigo?" – "Puede ser." is no giving in ("¿Entonces?
+    // ¿Estás conmigo en esto?"); then agree to disagree. "Gracias." to the coffee is asked, and "Mejor otro día." declines.
+    { name: "stubborn: maybe is no giving in; thanks to the coffee", turns: [
+      "No estoy muy segura de eso.", "Perdón que te interrumpa, pero cuatro días no son suficientes.", "Buen punto.", "¿Y si dejamos la página vieja un mes más?",
+      "Tienes razón.", "Puede ser.", "No, cada quien con su opinión.", "Nos vemos el lunes.", "Gracias.", "Mejor otro día.",
+    ], expect: { complete: true, state: { outcome: "boss", soAgain: true, coffeeAsked: true, coffeeAnswer: "no" } }, auto: AUTO, setup: SIM(false, true, "coffee") },
+    // Asking about the old site first, a proposal before the problem ("Espera. Primero, ¿cuál es el problema?"), vague
+    // problems ("Hay un problema." / "Es complicado."), then the customers; the proposal made early is answered later.
+    { name: "the old site first; a proposal before the problem; vague problems", turns: [
+      "¿Y qué pasa con la página vieja?", "Tengo algunas dudas sobre el viernes.", "Perdón, ¿me permites un segundo?", "¿Y si la lanzamos como beta?",
+      "Hay un problema.", "Es complicado.", "Los clientes se van a confundir.", "Tienes razón en lo del costo.", "Sí, dos semanas.", "Nos vemos el lunes.", "Me encantaría.",
+    ], expect: { complete: true, state: { outcome: "deal", offer: "half", reason: "c_cust" } }, auto: AUTO, setup: SIM(false, false, "coffee") },
+    // Her three weeks echoed ("¿Tres semanas?") get "¿Trato hecho?"; "Sí, tres semanas." is the deal. "¿A las nueve?" at the end.
+    { name: "her final offer echoed, then a clear yes", turns: [
+      "Yo no estaría tan seguro.", "Disculpa, ¿puedo agregar algo?", "Todavía hay errores en la página nueva.", "Tiene sentido.",
+      "Hagamos una prueba piloto con algunos clientes.", "¿Y si dejamos la página vieja un mes?", "¿Tres semanas?", "Sí, tres semanas.",
+      "¿A las nueve?", "Sí, a las nueve.", "Yo diría verdes.", "Turquesa.",
+    ], expect: { complete: true, state: { outcome: "deal", offer: "final", dealAgain: true } }, auto: AUTO, setup: SIM(false, false, "teal") },
   ],
 };
 
