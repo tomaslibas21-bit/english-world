@@ -1,0 +1,2084 @@
+{
+"situation": "s66-taxi",
+"items": [
+{
+"ctx": "dest",
+"say": "Al centro, por favor",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "Buenas, al centro",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Me lleva al zócalo?",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "Voy al centro del pueblo",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "A la plaza principal",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "Al Hotel Mar Azul",
+"intent": "dest",
+"slots": {
+"dest": "hotel"
+}
+},
+{
+"ctx": "dest",
+"say": "Al hotel, por favor",
+"intent": "dest",
+"slots": {
+"dest": "hotel"
+}
+},
+{
+"ctx": "dest",
+"say": "Lléveme a mi hotel",
+"intent": "dest",
+"slots": {
+"dest": "hotel"
+}
+},
+{
+"ctx": "dest",
+"say": "Al Mar Azul",
+"intent": "dest",
+"slots": {
+"dest": "hotel"
+}
+},
+{
+"ctx": "dest",
+"say": "Necesito ir a la terminal de autobuses",
+"intent": "dest",
+"slots": {
+"dest": "terminal"
+}
+},
+{
+"ctx": "dest",
+"say": "A la central de autobuses",
+"intent": "dest",
+"slots": {
+"dest": "terminal"
+}
+},
+{
+"ctx": "dest",
+"say": "A la terminal de camiones",
+"intent": "dest",
+"slots": {
+"dest": "terminal"
+}
+},
+{
+"ctx": "dest",
+"say": "A la playa, por favor",
+"intent": "dest",
+"slots": {
+"dest": "playa"
+}
+},
+{
+"ctx": "dest",
+"say": "Al malecón",
+"intent": "dest",
+"slots": {
+"dest": "playa"
+}
+},
+{
+"ctx": "dest",
+"say": "Quiero ir al mercado",
+"intent": "dest",
+"slots": {
+"dest": "mercado"
+}
+},
+{
+"ctx": "dest",
+"say": "Al mercado municipal",
+"intent": "dest",
+"slots": {
+"dest": "mercado"
+}
+},
+{
+"ctx": "dest",
+"say": "Al museo, por favor",
+"intent": "dest",
+"slots": {
+"dest": "museo"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Me puede llevar al Museo de la Costa Maya?",
+"intent": "dest",
+"slots": {
+"dest": "museo"
+}
+},
+{
+"ctx": "dest",
+"say": "Al Café La Ceiba",
+"intent": "dest",
+"slots": {
+"dest": "cafe"
+}
+},
+{
+"ctx": "dest",
+"say": "A la cafetería",
+"intent": "dest",
+"slots": {
+"dest": "cafe"
+}
+},
+{
+"ctx": "dest",
+"say": "Al banco",
+"intent": "dest",
+"slots": {
+"dest": "banco"
+}
+},
+{
+"ctx": "dest",
+"say": "A la farmacia",
+"intent": "dest",
+"slots": {
+"dest": "farmacia"
+}
+},
+{
+"ctx": "dest",
+"say": "A la clínica, por favor",
+"intent": "dest",
+"slots": {
+"dest": "clinica"
+}
+},
+{
+"ctx": "dest",
+"say": "Al hospital",
+"intent": "dest",
+"slots": {
+"dest": "clinica"
+}
+},
+{
+"ctx": "dest",
+"say": "Necesito ir al doctor",
+"intent": "dest",
+"slots": {
+"dest": "clinica"
+}
+},
+{
+"ctx": "dest",
+"say": "A la renta de autos",
+"intent": "dest",
+"slots": {
+"dest": "renta"
+}
+},
+{
+"ctx": "dest",
+"say": "A la renta de carros",
+"intent": "dest",
+"slots": {
+"dest": "renta"
+}
+},
+{
+"ctx": "dest",
+"say": "Al correo",
+"intent": "dest",
+"slots": {
+"dest": "correos"
+}
+},
+{
+"ctx": "dest",
+"say": "A la oficina de correos",
+"intent": "dest",
+"slots": {
+"dest": "correos"
+}
+},
+{
+"ctx": "dest",
+"say": "A la policía",
+"intent": "dest",
+"slots": {
+"dest": "policia"
+}
+},
+{
+"ctx": "dest",
+"say": "Lléveme a la estación de policía",
+"intent": "dest",
+"slots": {
+"dest": "policia"
+}
+},
+{
+"ctx": "dest",
+"say": "A la oficina de turismo",
+"intent": "dest",
+"slots": {
+"dest": "turismo"
+}
+},
+{
+"ctx": "dest",
+"say": "A información turística",
+"intent": "dest",
+"slots": {
+"dest": "turismo"
+}
+},
+{
+"ctx": "dest",
+"say": "A la Cocina de Lucía",
+"intent": "dest",
+"slots": {
+"dest": "lucia"
+}
+},
+{
+"ctx": "dest",
+"say": "Al restaurante de Lucía",
+"intent": "dest",
+"slots": {
+"dest": "lucia"
+}
+},
+{
+"ctx": "dest",
+"say": "Al restaurante El Muelle",
+"intent": "dest",
+"slots": {
+"dest": "muelle"
+}
+},
+{
+"ctx": "dest",
+"say": "Al Muelle",
+"intent": "dest",
+"slots": {
+"dest": "muelle"
+}
+},
+{
+"ctx": "dest",
+"say": "A los Departamentos Las Palmas",
+"intent": "dest",
+"slots": {
+"dest": "palmas"
+}
+},
+{
+"ctx": "dest",
+"say": "A mi departamento",
+"intent": "dest",
+"slots": {
+"dest": "palmas"
+}
+},
+{
+"ctx": "dest",
+"say": "A Línea Clara",
+"intent": "dest",
+"slots": {
+"dest": "linea"
+}
+},
+{
+"ctx": "dest",
+"say": "A mi trabajo",
+"intent": "dest",
+"slots": {
+"dest": "linea"
+}
+},
+{
+"ctx": "dest",
+"say": "Al gimnasio",
+"intent": "dest",
+"slots": {
+"dest": "gimnasio"
+}
+},
+{
+"ctx": "dest",
+"say": "A la iglesia",
+"intent": "dest",
+"slots": {
+"dest": "iglesia"
+}
+},
+{
+"ctx": "dest",
+"say": "A la Boutique Hilos",
+"intent": "dest",
+"slots": {
+"dest": "hilos"
+}
+},
+{
+"ctx": "dest",
+"say": "A la estética",
+"intent": "dest",
+"slots": {
+"dest": "estetica"
+}
+},
+{
+"ctx": "dest",
+"say": "A la gasolinera",
+"intent": "dest",
+"slots": {
+"dest": "gasolinera"
+}
+},
+{
+"ctx": "dest",
+"say": "Al aeropuerto",
+"intent": "dest",
+"slots": {
+"dest": "aeropuerto"
+}
+},
+{
+"ctx": "dest",
+"say": "Quiero coger un taxi al centro",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Me llevas a la playa?",
+"intent": "dest",
+"slots": {
+"dest": "playa"
+}
+},
+{
+"ctx": "dest",
+"say": "Hola, ¿me puede llevar al mercado, por favor?",
+"intent": "dest",
+"slots": {
+"dest": "mercado"
+}
+},
+{
+"ctx": "dest",
+"say": "Necesito ir al banco del puerto",
+"intent": "dest",
+"slots": {
+"dest": "banco"
+}
+},
+{
+"ctx": "dest",
+"say": "Voy para el centro",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "A Tulum",
+"intent": "dest_far",
+"slots": {
+"far": "tulum"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Me lleva a Cancún?",
+"intent": "dest_far",
+"slots": {
+"far": "cancun"
+}
+},
+{
+"ctx": "dest",
+"say": "A Playa del Carmen, por favor",
+"intent": "dest_far",
+"slots": {
+"far": "playadc"
+}
+},
+{
+"ctx": "dest",
+"say": "Al cenote",
+"intent": "dest_far",
+"slots": {
+"far": "cenote"
+}
+},
+{
+"ctx": "dest",
+"say": "A las ruinas",
+"intent": "dest_far",
+"slots": {
+"far": "ruinas"
+}
+},
+{
+"ctx": "dest",
+"say": "Quiero ir a Mérida",
+"intent": "dest_far",
+"slots": {
+"far": "merida"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Me lleva hasta Bacalar?",
+"intent": "dest_far",
+"slots": {
+"far": "bacalar"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto me cobra al centro?",
+"intent": "ask_fare",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto cuesta ir a la playa?",
+"intent": "ask_fare",
+"slots": {
+"dest": "playa"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto es hasta el mercado?",
+"intent": "ask_fare",
+"slots": {
+"dest": "mercado"
+}
+},
+{
+"ctx": "dest",
+"say": "¿En cuánto me lleva al banco?",
+"intent": "ask_fare",
+"slots": {
+"dest": "banco"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto me cobra a la clínica?",
+"intent": "ask_fare",
+"slots": {
+"dest": "clinica"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto me cobra?",
+"intent": "ask_fare"
+},
+{
+"ctx": "dest",
+"say": "¿Está libre?",
+"intent": "ask_free",
+"not": [
+"dest",
+"dest_unknown"
+]
+},
+{
+"ctx": "dest",
+"say": "Buenas tardes, ¿me lleva?",
+"intent": "ask_free"
+},
+{
+"ctx": "dest",
+"say": "Necesito un taxi",
+"intent": "ask_free"
+},
+{
+"ctx": "dest",
+"say": "¿Me ayuda con mis maletas?",
+"intent": "bag"
+},
+{
+"ctx": "dest",
+"say": "¿Puedo poner mi maleta en la cajuela?",
+"intent": "bag"
+},
+{
+"ctx": "dest",
+"say": "Tengo prisa",
+"intent": "hurry"
+},
+{
+"ctx": "dest",
+"say": "Al aeropuerto, tengo prisa",
+"intent": "dest",
+"slots": {
+"dest": "aeropuerto"
+}
+},
+{
+"ctx": "dest",
+"say": "A la clínica, rápido",
+"intent": "dest",
+"slots": {
+"dest": "clinica"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Qué me recomienda?",
+"intent": "recommend"
+},
+{
+"ctx": "dest",
+"say": "No sé a dónde ir",
+"intent": "recommend"
+},
+{
+"ctx": "dest",
+"say": "¿Acepta tarjeta?",
+"intent": "pay_card"
+},
+{
+"ctx": "dest",
+"say": "¿Tiene aire acondicionado?",
+"intent": "ac_on"
+},
+{
+"ctx": "dest",
+"say": "¿Usted es de aquí?",
+"intent": "ask_rigo"
+},
+{
+"ctx": "fare",
+"say": "Está bien",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Va, vamos",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Ok, vámonos",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Me parece bien",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "De acuerdo",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Perfecto, vamos",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Sale",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Órale",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Vale",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Vale, vamos",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Está bien, vamos",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Trato hecho",
+"intent": "accept"
+},
+{
+"ctx": "fare",
+"say": "Sí, está bien",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "fare",
+"say": "Sí, por favor",
+"intent": "yn:yes"
+},
+{
+"ctx": "fare",
+"say": "Sí",
+"intent": "yn:yes"
+},
+{
+"ctx": "fare",
+"say": "Así está bien",
+"intent": "accept_ctx"
+},
+{
+"ctx": "fare",
+"say": "Está bien así",
+"intent": "accept_ctx"
+},
+{
+"ctx": "fare",
+"say": "Cien está bien",
+"intent": "accept_ctx",
+"slots": {
+"price": 10000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Me lo deja en ochenta?",
+"intent": "haggle",
+"slots": {
+"price": 8000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Me lo deja más barato?",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "¿No me hace un descuento?",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "¿Hay descuento?",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "Es muy caro",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "¡Qué caro!",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "Es mucho",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "Es mucho, ¿me lo deja en ochenta?",
+"intent": "haggle",
+"slots": {
+"price": 8000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Por qué tan caro?",
+"intent": "haggle"
+},
+{
+"ctx": "fare",
+"say": "Le ofrezco ochenta",
+"intent": "haggle",
+"slots": {
+"price": 8000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Y si le doy noventa?",
+"intent": "haggle",
+"slots": {
+"price": 9000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Y en noventa?",
+"intent": [
+"price_ctx",
+"haggle"
+],
+"slots": {
+"price": 9000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Ochenta?",
+"intent": "price_ctx",
+"slots": {
+"price": 8000
+}
+},
+{
+"ctx": "fare",
+"say": "Mejor no, gracias",
+"intent": [
+"refuse",
+"yn:no"
+]
+},
+{
+"ctx": "fare",
+"say": "No gracias, busco otro taxi",
+"intent": "refuse"
+},
+{
+"ctx": "fare",
+"say": "Mejor me voy caminando",
+"intent": "refuse"
+},
+{
+"ctx": "fare",
+"say": "¿Es tarifa fija?",
+"intent": "ask_fixed"
+},
+{
+"ctx": "fare",
+"say": "¿Usa taxímetro?",
+"intent": "ask_fixed"
+},
+{
+"ctx": "fare",
+"say": "¿Hay taxímetro?",
+"intent": "ask_fixed"
+},
+{
+"ctx": "fare",
+"say": "¿El precio es fijo?",
+"intent": "ask_fixed"
+},
+{
+"ctx": "fare",
+"say": "¿Cuánto me dijo?",
+"intent": "ask_fare"
+},
+{
+"ctx": "fare",
+"say": "¿Son cien, verdad?",
+"intent": "ask_fare"
+},
+{
+"ctx": "fare",
+"say": "¿Cuánto sería?",
+"intent": "ask_fare"
+},
+{
+"ctx": "fare",
+"say": "Mejor a la terminal",
+"intent": "dest",
+"slots": {
+"dest": "terminal"
+}
+},
+{
+"ctx": "fare",
+"say": "No, mejor al museo",
+"intent": "dest",
+"slots": {
+"dest": "museo"
+}
+},
+{
+"ctx": "fare",
+"say": "Sí, al centro",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "fare",
+"say": "¿Le pago ahora o al llegar?",
+"intent": "pay_when"
+},
+{
+"ctx": "fare",
+"say": "¿Cuándo le pago?",
+"intent": "pay_when"
+},
+{
+"ctx": "fare",
+"say": "¿Está lejos?",
+"intent": "ask_far"
+},
+{
+"ctx": "fare",
+"say": "¿Cuánto tiempo se hace?",
+"intent": "ask_far"
+},
+{
+"ctx": "fare",
+"say": "¿Cuánto se tarda?",
+"intent": "ask_far"
+},
+{
+"ctx": "fare",
+"say": "¿Queda lejos?",
+"intent": "ask_far"
+},
+{
+"ctx": "fare",
+"say": "Sí, rápido, por favor",
+"intent": "hurry"
+},
+{
+"ctx": "fare",
+"say": "¿Acepta dólares?",
+"intent": "pay_dollars"
+},
+{
+"ctx": "fare",
+"say": "No tengo efectivo",
+"intent": "no_cash"
+},
+{
+"ctx": "fare",
+"say": "¿Tiene cambio de quinientos?",
+"intent": "ask_change",
+"slots": {
+"price": 50000
+}
+},
+{
+"ctx": "fare",
+"say": "¿Me ayuda con la maleta?",
+"intent": "bag"
+},
+{
+"ctx": "haggle",
+"say": "Bueno, va",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "haggle",
+"say": "Sí, vamos",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "haggle",
+"say": "Perfecto",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "haggle",
+"say": "Sale pues",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "haggle",
+"say": "Ándale, vamos",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "haggle",
+"say": "Está bien, vamos",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "haggle",
+"say": "Ok, ochenta está bien",
+"intent": "accept_ctx",
+"slots": {
+"price": 8000
+}
+},
+{
+"ctx": "haggle",
+"say": "Sí",
+"intent": "yn:yes"
+},
+{
+"ctx": "haggle",
+"say": "No, gracias",
+"intent": [
+"refuse",
+"yn:no"
+]
+},
+{
+"ctx": "haggle",
+"say": "Entonces no, gracias",
+"intent": "refuse"
+},
+{
+"ctx": "haggle",
+"say": "No, gracias, busco otro taxi",
+"intent": [
+"refuse",
+"yn:no"
+]
+},
+{
+"ctx": "haggle",
+"say": "¿Y en setenta?",
+"intent": [
+"price_ctx",
+"haggle"
+],
+"slots": {
+"price": 7000
+}
+},
+{
+"ctx": "haggle",
+"say": "¿Cuánto me dijo?",
+"intent": "ask_fare"
+},
+{
+"ctx": "from",
+"say": "Soy de Estados Unidos",
+"intent": "from_ans",
+"slots": {
+"country": "usa"
+}
+},
+{
+"ctx": "from",
+"say": "De los Estados Unidos",
+"intent": "from_ans",
+"slots": {
+"country": "usa"
+}
+},
+{
+"ctx": "from",
+"say": "Somos de Inglaterra",
+"intent": "from_ans",
+"slots": {
+"country": "uk"
+}
+},
+{
+"ctx": "from",
+"say": "Soy de Londres",
+"intent": "from_ans",
+"slots": {
+"country": "uk"
+}
+},
+{
+"ctx": "from",
+"say": "Vengo de Irlanda",
+"intent": "from_ans",
+"slots": {
+"country": "ireland"
+}
+},
+{
+"ctx": "from",
+"say": "De Nueva Zelanda",
+"intent": "from_ans",
+"slots": {
+"country": "nz"
+}
+},
+{
+"ctx": "from",
+"say": "Soy de Canadá, pero vivo aquí",
+"intent": "from_ans",
+"slots": {
+"country": "canada"
+}
+},
+{
+"ctx": "from",
+"say": "De Australia, ¿y usted?",
+"intent": "from_ans",
+"slots": {
+"country": "australia"
+}
+},
+{
+"ctx": "from",
+"say": "Canadá",
+"intent": "from_ans",
+"slots": {
+"country": "canada"
+}
+},
+{
+"ctx": "from",
+"say": "Soy canadiense",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Soy británica",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Soy australiano",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Soy estadounidense, ¿y usted?",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Soy gringa",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Somos ingleses",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Soy irlandés",
+"intent": "from_ans"
+},
+{
+"ctx": "from",
+"say": "Soy de Texas",
+"intent": "from_other_ctx"
+},
+{
+"ctx": "from",
+"say": "Soy de Toronto",
+"intent": "from_other_ctx"
+},
+{
+"ctx": "from",
+"say": "De Chicago, ¿y usted?",
+"intent": "from_other_ctx"
+},
+{
+"ctx": "from",
+"say": "Vengo de Seattle",
+"intent": "from_other_ctx"
+},
+{
+"ctx": "from",
+"say": "¿Y usted de dónde es?",
+"intent": "ask_rigo"
+},
+{
+"ctx": "first",
+"say": "Sí, es mi primera vez",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Sí, la primera",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Es la primera vez",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Sí, acabo de llegar",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Me acabo de mudar",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Soy nueva aquí",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Nunca había venido",
+"intent": [
+"first_yes",
+"yn:yes"
+]
+},
+{
+"ctx": "first",
+"say": "Sí",
+"intent": "yn:yes"
+},
+{
+"ctx": "first",
+"say": "No",
+"intent": "yn:no"
+},
+{
+"ctx": "first",
+"say": "No, ya vine antes",
+"intent": [
+"first_no",
+"yn:no"
+]
+},
+{
+"ctx": "first",
+"say": "No, es la segunda vez",
+"intent": [
+"first_no",
+"yn:no"
+]
+},
+{
+"ctx": "first",
+"say": "Ya he venido varias veces",
+"intent": [
+"first_no",
+"yn:no"
+]
+},
+{
+"ctx": "first",
+"say": "No, vivo aquí",
+"intent": [
+"first_no",
+"yn:no"
+]
+},
+{
+"ctx": "first",
+"say": "Ya conozco el pueblo",
+"intent": [
+"first_no",
+"yn:no"
+]
+},
+{
+"ctx": "first",
+"say": "Vengo cada año",
+"intent": [
+"first_no",
+"yn:no"
+]
+},
+{
+"ctx": "ac",
+"say": "Sí, por favor",
+"intent": "yn:yes"
+},
+{
+"ctx": "ac",
+"say": "Sí, gracias",
+"intent": "yn:yes"
+},
+{
+"ctx": "ac",
+"say": "No, gracias",
+"intent": "yn:no"
+},
+{
+"ctx": "ac",
+"say": "No, así estoy bien",
+"intent": "yn:no"
+},
+{
+"ctx": "ac",
+"say": "Sí, hace mucho calor",
+"intent": [
+"ac_on",
+"yn:yes"
+]
+},
+{
+"ctx": "ac",
+"say": "Mejor abro la ventana",
+"intent": "window"
+},
+{
+"ctx": "ac",
+"say": "¿Puedo abrir la ventana?",
+"intent": "window"
+},
+{
+"ctx": "ac",
+"say": "No, tengo frío",
+"intent": [
+"ac_off",
+"yn:no"
+]
+},
+{
+"ctx": "ac",
+"say": "Sí, prenda el aire, por favor",
+"intent": [
+"ac_on",
+"yn:yes"
+]
+},
+{
+"ctx": "ac",
+"say": "Ponga el clima, por favor",
+"intent": "ac_on"
+},
+{
+"ctx": "ac",
+"say": "¿Está lejos?",
+"intent": "ask_far"
+},
+{
+"ctx": "stop",
+"say": "Aquí está bien",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Aquí, por favor",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Aquí está perfecto",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Déjeme aquí",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Me bajo aquí",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "En la esquina, por favor",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "En la siguiente esquina",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Un poco más adelante",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Más adelante, por favor",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Aquí a la derecha",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "A la izquierda está bien",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Frente al banco",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Enfrente del mercado",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Aquí mero",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Aquí nomás",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Donde pueda",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Pare aquí, por favor",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Ahí está bien",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Déjeme en la esquina",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Aquí a la derecha está bien",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Sí",
+"intent": "yn:yes"
+},
+{
+"ctx": "stop",
+"say": "Sí, aquí",
+"intent": [
+"stop",
+"yn:yes"
+]
+},
+{
+"ctx": "stop",
+"say": "No, en la esquina",
+"intent": "stop"
+},
+{
+"ctx": "stop",
+"say": "Está bien",
+"intent": [
+"accept",
+"yn:yes"
+]
+},
+{
+"ctx": "stop",
+"say": "¿Cuánto le debo?",
+"intent": "ask_fare"
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene",
+"intent": "pay_cash"
+},
+{
+"ctx": "pay",
+"say": "Tenga",
+"intent": "pay_cash"
+},
+{
+"ctx": "pay",
+"say": "Tome",
+"intent": "pay_cash"
+},
+{
+"ctx": "pay",
+"say": "Aquí está",
+"intent": "pay_cash"
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene cien pesos",
+"intent": "pay_cash",
+"slots": {
+"price": 10000
+}
+},
+{
+"ctx": "pay",
+"say": "Tenga, doscientos",
+"intent": "pay_cash",
+"slots": {
+"price": 20000
+}
+},
+{
+"ctx": "pay",
+"say": "Le doy quinientos",
+"intent": "pay_cash",
+"slots": {
+"price": 50000
+}
+},
+{
+"ctx": "pay",
+"say": "Le pago con un billete de doscientos",
+"intent": "pay_cash",
+"slots": {
+"price": 20000
+}
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene, cien pesos exactos",
+"intent": "pay_cash",
+"slots": {
+"price": 10000
+}
+},
+{
+"ctx": "pay",
+"say": "Quédese con el cambio",
+"intent": "keep_change"
+},
+{
+"ctx": "pay",
+"say": "Así está bien",
+"intent": "keep_change"
+},
+{
+"ctx": "pay",
+"say": "El cambio es para usted",
+"intent": "keep_change"
+},
+{
+"ctx": "pay",
+"say": "Aquí tiene, quédese con el cambio",
+"intent": "keep_change"
+},
+{
+"ctx": "pay",
+"say": "Le dejo propina",
+"intent": "keep_change"
+},
+{
+"ctx": "pay",
+"say": "No me dé cambio",
+"intent": "keep_change"
+},
+{
+"ctx": "pay",
+"say": "¿Acepta tarjeta?",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "¿Puedo pagar con tarjeta?",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "¿Le puedo transferir?",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "Pago con el móvil",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "¿Aceptan transferencia?",
+"intent": "pay_card"
+},
+{
+"ctx": "pay",
+"say": "¿Acepta dólares?",
+"intent": "pay_dollars"
+},
+{
+"ctx": "pay",
+"say": "Solo tengo dólares",
+"intent": "pay_dollars"
+},
+{
+"ctx": "pay",
+"say": "No traigo efectivo",
+"intent": "no_cash"
+},
+{
+"ctx": "pay",
+"say": "Solo tengo tarjeta",
+"intent": "no_cash"
+},
+{
+"ctx": "pay",
+"say": "¿Hay un cajero por aquí?",
+"intent": "no_cash"
+},
+{
+"ctx": "pay",
+"say": "¿Tiene cambio?",
+"intent": "ask_change"
+},
+{
+"ctx": "pay",
+"say": "¿Tiene cambio de quinientos?",
+"intent": "ask_change",
+"slots": {
+"price": 50000
+}
+},
+{
+"ctx": "pay",
+"say": "No tengo cambio",
+"intent": "ask_change"
+},
+{
+"ctx": "pay",
+"say": "¿Cuánto le debo?",
+"intent": "ask_fare"
+},
+{
+"ctx": "pay",
+"say": "¿Cuánto es?",
+"intent": "ask_fare"
+},
+{
+"ctx": "pay",
+"say": "¿Me da un recibo?",
+"intent": "ask_receipt"
+},
+{
+"ctx": "pay",
+"say": "¿Me puede dar un comprobante?",
+"intent": "ask_receipt"
+},
+{
+"ctx": "closing",
+"say": "Gracias",
+"intent": "g_thanks"
+},
+{
+"ctx": "closing",
+"say": "Muchas gracias, que le vaya bien",
+"intent": [
+"g_thanks",
+"g_bye"
+]
+},
+{
+"ctx": "closing",
+"say": "Adiós",
+"intent": "g_bye"
+},
+{
+"ctx": "closing",
+"say": "Igualmente",
+"intent": "g_bye"
+},
+{
+"ctx": "closing",
+"say": "Hasta luego",
+"intent": "g_bye"
+},
+{
+"ctx": "closing",
+"say": "¿Me da un recibo?",
+"intent": "ask_receipt"
+},
+{
+"ctx": "far_terminal",
+"say": "Sí, por favor",
+"intent": "yn:yes"
+},
+{
+"ctx": "far_terminal",
+"say": "Sí",
+"intent": "yn:yes"
+},
+{
+"ctx": "far_terminal",
+"say": "No, gracias",
+"intent": "yn:no"
+},
+{
+"ctx": "far_terminal",
+"say": "Mejor al centro",
+"intent": "dest",
+"slots": {
+"dest": "centro"
+}
+},
+{
+"ctx": "far_terminal",
+"say": "Sí, a la terminal",
+"intent": [
+"dest",
+"yn:yes"
+]
+},
+{
+"ctx": "dest",
+"say": "No voy al centro",
+"intent": "any",
+"not": [
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "No quiero ir al aeropuerto",
+"intent": "any",
+"not": [
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "A Playa del Carmen",
+"intent": "any",
+"not": [
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "¿Por qué tan caro?",
+"intent": "any",
+"not": [
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "A ver",
+"intent": "any",
+"not": [
+"dest_unknown",
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "Ayer fui al centro",
+"intent": "any",
+"not": [
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "Hace frío",
+"intent": "any",
+"not": [
+"dest_unknown",
+"dest"
+]
+},
+{
+"ctx": "fare",
+"say": "No, muy caro",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "fare",
+"say": "No, cien no",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "fare",
+"say": "¿Cuánto es al centro?",
+"intent": "any",
+"not": [
+"accept"
+]
+},
+{
+"ctx": "fare",
+"say": "¿Cuánto me cobra?",
+"intent": "any",
+"not": [
+"accept"
+]
+},
+{
+"ctx": "fare",
+"say": "No me parece bien",
+"intent": "any",
+"not": [
+"accept"
+]
+},
+{
+"ctx": "fare",
+"say": "No está bien",
+"intent": "any",
+"not": [
+"accept"
+]
+},
+{
+"ctx": "fare",
+"say": "No quiero ir",
+"intent": "any",
+"not": [
+"accept"
+]
+},
+{
+"ctx": "fare",
+"say": "Está bien caro",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "fare",
+"say": "¿Y si le doy cien?",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "fare",
+"say": "Aquí tiene",
+"intent": "any",
+"not": [
+"keep_change"
+]
+},
+{
+"ctx": "fare",
+"say": "Ya le pagué",
+"intent": "any",
+"not": [
+"pay_cash",
+"keep_change",
+"accept"
+]
+},
+{
+"ctx": "haggle",
+"say": "No, ochenta no",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "haggle",
+"say": "¿Cien? No, gracias",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "haggle",
+"say": "Es mucho",
+"intent": "any",
+"not": [
+"accept",
+"accept_ctx"
+]
+},
+{
+"ctx": "pay",
+"say": "Aquí está bien",
+"intent": "any",
+"not": [
+"pay_cash",
+"keep_change"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Cuánto es?",
+"intent": "any",
+"not": [
+"pay_cash",
+"keep_change"
+]
+},
+{
+"ctx": "pay",
+"say": "No tengo cambio",
+"intent": "any",
+"not": [
+"keep_change",
+"pay_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "No le voy a pagar",
+"intent": "any",
+"not": [
+"pay_cash",
+"keep_change"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Le pago con tarjeta?",
+"intent": "any",
+"not": [
+"pay_cash"
+]
+},
+{
+"ctx": "pay",
+"say": "Ya le pagué",
+"intent": "any",
+"not": [
+"pay_cash",
+"keep_change"
+]
+},
+{
+"ctx": "pay",
+"say": "¿Acepta dólares?",
+"intent": "any",
+"not": [
+"pay_cash"
+]
+},
+{
+"ctx": "stop",
+"say": "No, aquí no",
+"intent": "any",
+"not": [
+"stop"
+]
+},
+{
+"ctx": "stop",
+"say": "Hace frío",
+"intent": "any",
+"not": [
+"dest_unknown",
+"dest",
+"stop"
+]
+},
+{
+"ctx": "stop",
+"say": "Aquí a la derecha",
+"intent": "any",
+"not": [
+"dest_unknown",
+"dest"
+]
+},
+{
+"ctx": "ac",
+"say": "No, gracias, hace frío",
+"intent": "any",
+"not": [
+"ac_on"
+]
+},
+{
+"ctx": "ac",
+"say": "No quiero aire",
+"intent": "any",
+"not": [
+"ac_on"
+]
+},
+{
+"ctx": "first",
+"say": "No es mi primera vez",
+"intent": "any",
+"not": [
+"first_yes"
+]
+},
+{
+"ctx": "first",
+"say": "No, no es la primera vez",
+"intent": "any",
+"not": [
+"first_yes"
+]
+},
+{
+"ctx": "from",
+"say": "No soy de aquí",
+"intent": "any",
+"not": [
+"first_no"
+]
+},
+{
+"ctx": "closing",
+"say": "No, gracias",
+"intent": "any",
+"not": [
+"pay_cash",
+"keep_change"
+]
+},
+{
+"ctx": "dest",
+"say": "¿Cuándo le pago?",
+"intent": "pay_when"
+},
+{
+"ctx": "dest",
+"say": "¿Me da un recibo al final?",
+"intent": "ask_receipt"
+},
+{
+"ctx": "dest",
+"say": "A ver",
+"intent": "a_ver"
+},
+{
+"ctx": "fare",
+"say": "No está bien",
+"intent": "haggle"
+},
+{
+"ctx": "pay",
+"say": "¿Cuándo le pago?",
+"intent": "pay_when"
+},
+{
+"ctx": "haggle",
+"say": "Mejor a la farmacia",
+"intent": "dest",
+"slots": {
+"dest": "farmacia"
+}
+},
+{
+"ctx": "dest",
+"say": "¿Me da un recibo al final?",
+"intent": "any",
+"not": [
+"dest_unknown",
+"dest"
+]
+},
+{
+"ctx": "dest",
+"say": "¿Cuándo le pago?",
+"intent": "any",
+"not": [
+"ask_fare"
+]
+},
+{
+"ctx": "fare",
+"say": "¿Cuándo le pago?",
+"intent": "any",
+"not": [
+"ask_fare"
+]
+},
+{
+"ctx": "dest",
+"say": "Mi perro se llama Max",
+"intent": "none"
+},
+{
+"ctx": "dest",
+"say": "aeropuerto banana ventana",
+"intent": "none"
+},
+{
+"ctx": "fare",
+"say": "El gato está en la mesa",
+"intent": "none"
+}
+]
+}
