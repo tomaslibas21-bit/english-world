@@ -1064,7 +1064,8 @@ export const date: SituationDef = {
     ] },
     // "¿Dejamos propina?", "¿La propina está incluida?"
     tip_q: { patterns: [
-      "(dejamos | hay que dejar | se deja | le dejamos | se da | damos) propina", "cuanto (dejamos | se deja | le dejamos | se da | damos | dejo | doy) [de] propina",
+      "[aqui] (dejamos | hay que dejar | se deja | le dejamos | se da | damos) propina [aqui | en mexico]",
+      "[aqui] cuanto (dejamos | se deja | le dejamos | se da | damos | dejo | doy) [de] propina [aqui | en mexico]",
       "cuanto (es | seria) la propina", "(esta | viene) incluida la propina", "la propina (esta | viene) incluida", "incluye [la] propina",
     ] },
     card_q: { patterns: ["(aceptan | reciben | toman) (tarjeta | tarjetas | tarjeta de credito)", "(se puede | puedo | podemos) pagar con tarjeta", "(hay | tienen) terminal"] },

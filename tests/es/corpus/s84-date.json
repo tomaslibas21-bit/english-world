@@ -302,6 +302,7 @@
   {"ctx": "check", "say": "¿Dejamos propina?", "intent": "tip_q", "not": ["tip", "pay_all"]},
   {"ctx": "check", "say": "¿Cuánto se deja de propina?", "intent": "tip_q", "not": ["ask_amount", "pay_all"]},
   {"ctx": "check", "say": "¿La propina está incluida?", "intent": "tip_q"},
+  {"ctx": "check", "say": "¿Aquí se deja propina?", "intent": "tip_q", "not": ["tip", "pay_all"]},
   {"ctx": "check", "say": "¿Aceptan tarjeta?", "intent": "card_q", "not": ["pay_all"]},
   {"ctx": "check", "say": "Pago con tarjeta", "intent": "pay_all", "not": ["split"]},
   {"ctx": "check", "say": "No pago con tarjeta", "intent": "any", "not": ["pay_all"]},

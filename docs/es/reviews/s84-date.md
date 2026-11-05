@@ -96,9 +96,10 @@ sims for both genders). No "Town directions" conflict (the cross file): the date
    gracias!".
 8. **Hints:** right and in register; a check_offer example added, "Entonces yo dejo la propina." (the note: 10–15% is
    usual in Mexico).
-9. **Accepted answers:** corpus +57 (282/282 understood, 0/33 false accepts; traps for every new intent: "No dejo
-   propina", "No pago con tarjeta", "No me interesa el fútbol", "No soy de aquí"); held-out +10 written before testing;
-   NLU tests +26; four sims.
+9. **Accepted answers:** corpus +58 (283/283 understood, 0/33 false accepts; traps for every new intent: "No dejo
+   propina", "No pago con tarjeta", "No me interesa el fútbol", "No soy de aquí"); held-out +10 written before testing,
+   blind 45/46 (the miss, "¿Se deja propina aquí?", now takes "aquí" around the tip question: 46/46, 0/4); NLU tests
+   +26 (148); four sims (17, all 12/12).
 10. **Neutral text:** the three twins (padre, no manches ×2) right; the new lines use no Mexican-only word.
 
 **Voices (for the line list):** changed spoken lines: open_late[1], qf_beach_yes; values: amount_total ($900),
