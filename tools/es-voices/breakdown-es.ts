@@ -65,7 +65,8 @@ for (const variety of ES ? (["default", "neutral"] as const) : (["default"] as c
       const fixed = reachOf(sit).get(lid);
       const domOf = (v: string): unknown[] | undefined => (sit.domains?.[v] ? sit.domains[v]() : fixed?.how === "fixed" ? fixed.values?.[v] : undefined);
       let cat: Cat, binds: Record<string, unknown>[] = [];
-      if (!ph.entities.length && !ph.values.length) { cat = "plain"; binds = [{}]; }
+      if (BINDINGS[`${sit.id}:${lid}`]) { cat = "entity"; binds = BINDINGS[`${sit.id}:${lid}`](sit); }
+      else if (!ph.entities.length && !ph.values.length) { cat = "plain"; binds = [{}]; }
       else if (!ph.entities.length && ph.values.every((v) => domOf(v))) {
         cat = "value";
         let combos: Record<string, unknown>[] = [{}];
@@ -78,7 +79,6 @@ for (const variety of ES ? (["default", "neutral"] as const) : (["default"] as c
         }
         binds = combos;
       } else if (ph.entities.length === 1 && !ph.values.length) { cat = "entity"; for (const list of Object.values(sit.entities || {})) for (const e of list) binds.push({ [ph.entities[0]]: e.id }, { [ph.entities[0]]: { id: e.id, qty: 2 } }); }
-      else if (BINDINGS[`${sit.id}:${lid}`]) { cat = "entity"; binds = BINDINGS[`${sit.id}:${lid}`](sit); }
       else return;
       for (const b of binds) for (const n of people) for (const g of ["m", "f"] as const) {
         try { label(v2(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !n.informal }), { cat, sit: sit.id, lid, ...(cat === "value" ? { domains: ph.values } : {}) }); } catch { /* doesn't fit */ }
