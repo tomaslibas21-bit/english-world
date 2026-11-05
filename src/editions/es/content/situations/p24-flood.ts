@@ -865,9 +865,11 @@ export const flood: SituationDef = {
         // the pipe that burst upstairs
         "(se reventó | reventó | se rompió | se tronó | tronó) @pipe [@up] [y (entró | se metió | se filtró | esta entrando | esta cayendo | cae) [el | mucha] agua [@by]] #h:pipe",
         "@up se (reventó | rompió | tronó) @pipe [y (entró | se metió | se filtró | esta entrando | esta cayendo | cae) [el | mucha] agua [@by]]",
-        "(hay | tienen) una fuga [de agua] @up", "(los de arriba | los del 2b | los del dos be | el 2b | el dos be) (tienen | tuvieron) una fuga [de agua]",
+        "(hay | tienen) una fuga [de agua] @up", "(los de arriba | los del 2b | los del dos be | el 2b | el dos be) (tienen | tuvieron) una fuga [de agua] [y [me] (esta cayendo | cae | esta entrando | entra) [el | mucha] agua [del techo | por el techo]]",
+        // his or her guess confirmed: "Sí, otra vez la tubería del 2B" / "Sí, otra vez los de arriba"
+        "[si] [es] otra vez (la tuberia | el tubo | la fuga | los de arriba | el 2b | el dos be) [@up]",
         "(el agua | la fuga) (viene | sale | esta saliendo | esta cayendo) @up",
-        "(cae | esta cayendo | sale | esta saliendo) agua del techo",
+        "[me] (cae | esta cayendo | sale | esta saliendo) agua del techo",
         "la (tormenta | lluvia) (me inundó | inundó) @home",
         "(estoy | ando) nadando en (mi depa | la cocina | mi cocina | mi casa | mi departamento | la sala | mi sala)",
         "mis (calcetines | zapatos | pies | calcetas) (estan | andan) (mojados | mojadas | flotando | empapados | empapadas | nadando)",
