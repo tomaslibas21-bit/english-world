@@ -537,9 +537,9 @@ switched on by the Spanish theme (new fields documented in src/game/world/theme.
   warm skins, light summer clothes, a straw hat now and then: a new look option, `strawhat`, that Maple Harbor never
   uses; shorts and sandals on some), from their own random numbers; two more chatting pairs (the malecón, the beach),
   five people sitting (the zócalo's south bancas, the malecón's benches), and four of the tianguis' vendors behind
-  their stalls. Someone sitting or standing more than 22 m from the player keeps their pose, their parts' matrices
-  frozen (`stillBeyond`): a breath that far away shows nothing, and the town's people cost a frame no more than before
-  the round.
+  their stalls. Someone sitting or standing more than 22 m from the player keeps their pose (`stillBeyond`; ambient.ts
+  `holdPose`): a breath that far away shows nothing, so their matrices, their skin's inverse and their bone texture are
+  worked out once and left alone, and three.js skips the whole of them each frame.
 - **Letras monumentales** (`letras`): "PUERTO COLIBRÍ" in big colored block letters on the malecón where calle Ceiba
   meets it, the sea behind (mexican.ts `letras`: blocks on a grid, no font file).
 - **The streets** (`streetPaint`): no white lines along the roads' edges; the curbs painted yellow for 5 m by each
@@ -551,6 +551,11 @@ switched on by the Spanish theme (new fields documented in src/game/world/theme.
 - **Triangles kept under the phones' budget** (`lean`): the windows' panes as single faces instead of thin boxes, the
   shop windows' goods in a mesh for each part of town, the lamps' globes with fewer segments: the heaviest views (the
   bus stop, Juárez by the bank) about 40 thousand triangles lighter before the new things.
+- **The shadow pass's depth materials** (`lean`; styleScene.ts `depthByKind`): three.js draws every shadow caster with
+  one shared depth material and looks its program up again whenever the kind of mesh changes from one caster to the next
+  (plain, instanced, instanced with colors, skinned: 8 to 11 times a frame outdoors); each kind gets its own, once per
+  zone. The same shadows, 0.2–0.3 ms less a frame on a desktop CPU. With the held poses, a frame costs the same or less
+  than before the round at the measured views, the new people and things included (paired runs, base against round 2).
 
 ## The tasks (in order)
 

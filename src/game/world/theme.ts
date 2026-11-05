@@ -192,7 +192,9 @@ export interface TownTheme {
   /** The town's triangles trimmed where they don't show (room for the edition's own things under the phones' budget):
    *  the windows' panes as single faces instead of thin boxes (the same look from the street, a sixth of the
    *  triangles), the shop windows' goods in a mesh for each part of town (each drawn only where it is in view, not all
-   *  of them wherever one is), the lamps' globes a little rounder than they need be no more. */
+   *  of them wherever one is), the lamps' globes a little rounder than they need be no more; and the frame trimmed: each
+   *  kind of shadow caster its own depth material (styleScene.ts `depthByKind`), so three.js stops looking the shadow
+   *  program up again at every change of kind. */
   lean: boolean;
   /** The bus terminal outside: canopies over its two andenes either side of the door, their painted signs and benches,
    *  planters by the door, and intercity buses at the curb in front of them (x and the destination on each). */
@@ -227,9 +229,10 @@ export interface TownTheme {
    *  curve's exposure, the sky's zenith, middle and horizon, the fog's color (the sea fades into it too), the
    *  hemisphere's sky and ground colors, and how much bigger the clouds are (null: Maple Harbor's light). */
   light: { sun: string; exposure: number; sky: [string, string, string]; fog: string; hemi: [string, string]; clouds: number } | null;
-  /** Townspeople sitting or standing (not walking) farther than this from the player keep their pose (ambient.ts): the
-   *  edition's added vendors, sitters and pairs cost a frame nothing where they are too far to see breathe (null: all of
-   *  them are animated every frame, as in Maple Harbor). */
+  /** Townspeople sitting or standing (not walking) farther than this from the player keep their pose (ambient.ts
+   *  `holdPose`: their matrices and skeleton left as they are): the edition's added vendors, sitters and pairs cost a
+   *  frame next to nothing where they are too far to see breathe (null: all of them are animated every frame, as in
+   *  Maple Harbor). */
   stillBeyond: number | null;
 }
 

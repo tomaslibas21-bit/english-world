@@ -88,6 +88,28 @@ const CAR_COLORS = ["#e45b4f", "#4a7bb7", "#f2f2f2", "#3d3d46", "#6fbf73", "#f2c
 const LANES = TRAFFIC_LANES;
 const _hand = new THREE.Vector3(), _steer = new THREE.Vector3();
 
+const NOOP = () => {};
+
+/** Someone far from the player keeping their pose (theme.ts `stillBeyond`), or moving again: their matrices and their
+ *  skeleton worked out once more, then left alone (three.js would otherwise redo every bone's matrix, the skin's inverse
+ *  and its bone texture each frame for a pose that does not change). */
+function holdPose(root: THREE.Object3D, hold: boolean) {
+  if (hold) {
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      o.matrixAutoUpdate = false;
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) { const s = (o as THREE.SkinnedMesh).skeleton; s.update(); s.update = NOOP; }
+    });
+    root.updateMatrixWorld = NOOP;
+  } else {
+    Reflect.deleteProperty(root, "updateMatrixWorld");
+    root.traverse((o) => {
+      o.matrixAutoUpdate = true;
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) Reflect.deleteProperty((o as THREE.SkinnedMesh).skeleton, "update");
+    });
+  }
+}
+
 /** This edition's own draws for its passers-by's straw hats, shorts and sandals (theme.ts `walkers`), so that `r`'s stay
  *  as they are; started again with each town's townspeople (Ambient). */
 let rWear = rand(9090);
@@ -311,11 +333,7 @@ export class Ambient {
       else {
         const far = (w.ch.root.position.x - player.x) ** 2 + (w.ch.root.position.z - player.z) ** 2 >= R2 && !!w.posed;
         w.posed = true;
-        if (far !== !!w.still) {
-          w.still = far;
-          if (far) w.ch.root.updateMatrixWorld(true); // (their last pose, once)
-          w.ch.root.traverse((o) => { o.matrixAutoUpdate = !far; });
-        }
+        if (far !== !!w.still) { w.still = far; holdPose(w.ch.root, far); }
         if (!far) w.ch.update(dt);
       }
       if (w.dog) {

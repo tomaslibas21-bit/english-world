@@ -164,6 +164,27 @@ export function createStyleFx(o: { renderer: THREE.WebGLRenderer; scene: THREE.S
   };
 }
 
+/** The sun's shadow pass draws every caster with one shared depth material, and three.js looks that material's program
+ *  up again (its parameters and key built anew) each time the kind of mesh changes from one caster to the next: plain,
+ *  instanced, instanced with colors, skinned, 8 to 11 times a frame outdoors. Each kind gets a depth material of its own
+ *  here (the same shadows), once per zone, when everything in it is in the scene: 0.2–0.3 ms less a frame (theme.ts
+ *  `lean`). Materials that cut their shadow with a texture keep three.js's own handling. (Made on the first call, never
+ *  in Maple Harbor: a new material draws random numbers for its uuid.) */
+let DEPTH: { inst: THREE.MeshDepthMaterial; instColor: THREE.MeshDepthMaterial; skin: THREE.MeshDepthMaterial } | null = null;
+function depthByKind(scene: THREE.Object3D) {
+  DEPTH ??= { inst: new THREE.MeshDepthMaterial(), instColor: new THREE.MeshDepthMaterial(), skin: new THREE.MeshDepthMaterial() };
+  const D = DEPTH;
+  scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.castShadow || m.customDepthMaterial) return;
+    const mat = m.material as THREE.Material & { displacementMap?: THREE.Texture | null };
+    if (Array.isArray(m.material) || mat.alphaTest > 0 || mat.alphaToCoverage || mat.clippingPlanes?.length || mat.displacementMap) return;
+    const inst = o as THREE.InstancedMesh;
+    if (inst.isInstancedMesh) m.customDepthMaterial = inst.instanceColor ? D.instColor : D.inst;
+    else if ((o as THREE.SkinnedMesh).isSkinnedMesh) m.customDepthMaterial = D.skin;
+  });
+}
+
 /** The "blocks" look's light graded outdoors for the edition's town (theme.ts `light`): a warmer sun, a little more
  *  exposure (the tone curve greys bright walls less), a bluer zenith over a warmer horizon, the fog and the hemisphere in
  *  the same key. Indoors, the game's own values come back (Game.ts sets the intensities; this keeps its colors). The sun
@@ -175,6 +196,7 @@ function blocksGrade(o: { renderer: THREE.WebGLRenderer; scene: THREE.Scene; hem
   const fog = new THREE.Fog(g.fog, 110, 420);
   return {
     zone(indoor) {
+      if (THEME.lean) depthByKind(scene);
       if (indoor) {
         renderer.toneMappingExposure = keep.exposure;
         sun.color.copy(keep.sun); hemi.color.copy(keep.hemi); hemi.groundColor.copy(keep.ground);
