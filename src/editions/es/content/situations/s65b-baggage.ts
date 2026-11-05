@@ -584,6 +584,7 @@ export const baggage: SituationDef = {
     ] },
     q_call: { patterns: ["(me van a | me va a | me pueden) (llamar | avisar | mandar un mensaje) #h:q_call", "como (voy a saber | me entero)", "(me avisan | me llaman | me escriben) [cuando llegue] [por (whatsapp | mensaje | telefono | correo)]"] },
     q_track: { patterns: ["(puedo | se puede) (rastrearla | rastrear | seguirla | consultarla | consultar | ver donde esta) [en linea | por internet] #h:q_track",
+      "(puedo | se puede) (consultar | ver | revisar) (el estado | su estado | el reporte) [de mi maleta | del reporte] [en linea | por internet]",
       "hay (una pagina | un sitio web | una pagina web)", "como (la rastreo | puedo saber donde esta | consulto)"] },
     q_free: { patterns: ["(la entrega | el envio) (es gratis | tiene costo | cuesta) #h:q_free", "(tengo que | hay que | debo) pagar [la entrega | el envio | algo]", "cuanto (tengo que | hay que) pagar", "cuanto cuesta (la entrega | el envio)", "es gratis [la entrega]",
       // "¿Tiene costo?", "¿Me cobran algo?": whatever is on offer (the delivery, or the kit while it is offered)
