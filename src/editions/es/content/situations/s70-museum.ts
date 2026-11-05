@@ -13,9 +13,14 @@
 // and twists: Don Arturo's "No se puede tocar" / "Sin flash" (visits ≥ 1) and "cerramos en 45 minutos" (visits ≥ 2).
 // The brief adds a Sunday twist (visits ≥ 1): admission is free on Sundays for Mexicans and residents, not for
 // visitors; a resident who shows the residence card gets in free, a tourist pays.
-// Facts: hours as in s62 (ten to five, closed on Mondays; s69's open_museo says nine to five: see the report);
-// $80 general and "students pay less" as in s69. INAH museums are free on Sundays for nationals and foreign residents;
-// this museum follows that practice (a plausible town rule, kept short). Guided tour: Saturdays at noon, in Spanish.
+// Facts: hours as in s62 and s69 (ten to five, closed on Mondays); $80 general, $40 students and seniors, free on
+// Sundays for Mexicans and residents, as in s62, s69 and docs/es/TOWN.md. INAH museums are free on Sundays for
+// nationals and foreign residents; this museum follows that practice (a plausible town rule, kept short). Guided tour:
+// Saturdays at noon, in Spanish. The audio guides go back to the ticket desk ("Taquilla · Audioguías" in the 3D room).
+// The neutral text says "entrada" for the ticket (the lead, 5 Nov 2026); the Mexican one keeps "boleto".
+// Money (audit, 5 Nov 2026): an extra after paying (a guide, one more ticket) is charged alone (due), a price cut after
+// paying is not made ("Ya está pagado"), at most nine tickets at once, and every total up to nine tickets and nine
+// guides is in the price domain (the voiced value list).
 
 import type { Ctx, EntityDef, Handler, Pending, SituationDef } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
@@ -55,14 +60,20 @@ const LANGS: EntityDef[] = [
 
 const PRICE: Record<string, number> = { adult: 8000, student: 4000, senior: 4000, child: 0 };
 const GUIDE = 5000;
+/** At most nine tickets (and nine guides) at once: the totals Iván can say are voiced up to that (domains.price). */
+const MAX_TIX = 9;
 
 type Tix = Record<string, number>;
 const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const conv = (c: Ctx) => (c as ConvCtx).conv;
 const count = (tix: Tix | undefined) => Object.values(tix || {}).reduce((a, b) => a + b, 0);
-/** A resident on a Sunday gets in free: the dearest of the tickets (it is the learner's own). */
-const resFree = (c: Ctx) => (c.s.resident ? Math.max(0, ...Object.keys((c.s.tix as Tix) || {}).map((k) => PRICE[k] ?? 0)) : 0);
-const total = (c: Ctx) => Object.entries((c.s.tix as Tix) || {}).reduce((a, [k, n]) => a + PRICE[k] * n, 0) + GUIDE * (c.s.guides || 0) - resFree(c);
+const ticketsCost = (tix: Tix | undefined) => Object.entries(tix || {}).reduce((a, [k, n]) => a + (PRICE[k] ?? 0) * n, 0);
+/** A resident on a Sunday gets in free: the dearest of the tickets (it is the learner's own); "Somos residentes"
+ *  (resAll) frees them all. */
+const resFree = (c: Ctx) => (!c.s.resident ? 0 : c.s.resAll ? ticketsCost(c.s.tix) : Math.max(0, ...Object.keys((c.s.tix as Tix) || {}).map((k) => PRICE[k] ?? 0)));
+const total = (c: Ctx) => ticketsCost(c.s.tix) + GUIDE * (c.s.guides || 0) - resFree(c);
+/** What is still to pay: an extra asked for after paying (a guide, one more ticket) is charged alone. */
+const due = (c: Ctx) => total(c) - (c.s.paidAmt || 0);
 /** The question on the table: a pending question's id, or the current step. */
 const at = (c: Ctx) => conv(c).pending?.id ?? c.step;
 
@@ -75,7 +86,7 @@ function readTix(slots: any): Tix {
     let tt = tk.tt ?? (tags.includes("kid") ? "child" : tags.includes("self") ? "adult" : undefined);
     // "una niña de cinco años", "un adulto de setenta": the age decides the ticket
     if (typeof tk.age === "number") tt = tk.age < 12 ? "child" : tk.age >= 60 ? "senior" : tt === "child" ? "adult" : tt;
-    if (!tt || n < 1 || n > 9) continue;
+    if (!tt || n < 1 || n > 99) continue; // ten or more: setTix says groups book ahead
     out[tt] = (out[tt] || 0) + n;
   }
   return out;
@@ -102,29 +113,50 @@ const AUTO: Record<string, string> = {
 /** Anything that changes the total makes Iván say the new one. */
 function changed(c: Ctx) { c.s.totalSaid = false; if (c.s.paid) c.s.paid = false; }
 
-function setTix(c: Ctx, tix: Tix, add = false) {
+/** After paying, nothing is taken off the order (no refunds at the desk): Iván says it's paid. */
+function lockedAfterPay(c: Ctx): boolean {
+  if (!c.s.paid) return false;
+  c.say("already_paid");
+  return true;
+}
+
+/** Sets (or adds to) the order; false (and Iván asks again) for more than nine tickets, or for a cut after paying. */
+function setTix(c: Ctx, tix: Tix, add = false): boolean {
   const cur: Tix = add ? { ...(c.s.tix || {}) } : {};
   for (const [k, n] of Object.entries(tix)) cur[k] = (cur[k] || 0) + n;
+  if (count(cur) > MAX_TIX) { tooMany(c); return false; }
+  if (c.s.paid && ticketsCost(cur) < ticketsCost(c.s.tix)) { c.say("already_paid"); return false; }
   c.s.tix = cur;
   c.s.qty = count(cur);
   changed(c);
+  return true;
 }
 
+/** The tickets and guides not handed over yet (an extra after paying hands over only the extra). */
 function handover(c: Ctx) {
-  c.say(count(c.s.tix) > 1 ? "tickets_here" : "ticket_here");
-  c.event("give", { item: "museum-ticket", count: count(c.s.tix) });
-  if (c.s.guides) {
-    c.say(c.s.guides > 1 ? "guides_here" : "guide_here", { X: c.s.lang || "spanish" });
+  const n = count(c.s.tix) - (c.s.handTix || 0);
+  if (n > 0) {
+    c.say(n > 1 ? "tickets_here" : "ticket_here");
+    c.event("give", { item: "museum-ticket", count: n });
+  }
+  c.s.handTix = Math.max(c.s.handTix || 0, count(c.s.tix));
+  const g = (c.s.guides || 0) - (c.s.handGuides || 0);
+  if (g > 0) {
+    c.say(g > 1 ? "guides_here" : "guide_here", { X: c.s.lang || "spanish" });
     c.event("give", { item: "audio-guide", lang: c.s.lang || "spanish" });
   }
+  c.s.handGuides = Math.max(c.s.handGuides || 0, c.s.guides || 0);
   if (c.s.mentionBag && !c.s.bagSaid) { c.s.bagSaid = true; c.say("bag_rule"); }
   if (c.s.mentionExhibit && !c.s.exhibitKnown) { c.s.exhibitKnown = true; c.say("exhibit_mention"); }
 }
 
-function markPaid(c: Ctx, method: string) {
+/** Paid: in cash, change only when more than the total was handed over ("Aquí tiene ochenta pesos" for $80 is exact). */
+function markPaid(c: Ctx, method: string, given?: number) {
+  const amount = due(c);
   c.s.paid = true;
-  c.event("pay", { method, amount: total(c) });
-  if (method === "cash") c.say("change_back");
+  c.s.paidAmt = total(c);
+  c.event("pay", { method, amount });
+  if (method === "cash" && given !== amount) c.say("change_back");
   else c.say("paid");
   handover(c);
 }
@@ -156,6 +188,17 @@ function askWhich(c: Ctx, tt: string) {
     on: { all_adults_ctx: general, reject_type: general } });
 }
 
+/** "¿Cuánto cuesta?" in answer to "¿Se anima?": the price, and the offer stays open (the guide step asks again). */
+function reopenPersuade(c: Ctx) {
+  if (c.s.persuaded && !c.s.guideNo && !c.s.guides && !c.s.paid) c.s.guideAsked = false;
+}
+
+/** Ten or more people: a group books ahead (and the totals stay within the voiced ones). */
+function tooMany(c: Ctx) {
+  c.say("group_max");
+  c.hold();
+}
+
 /** A guide taken before Iván offered it: he says what it costs (rule 3), once. */
 function guideCost(c: Ctx) {
   if (c.s.guidePriceSaid) return;
@@ -180,7 +223,7 @@ function askNext(c: Ctx) {
 }
 
 function resYes(c: Ctx) {
-  c.s.resident = true; c.s.resChecked = true;
+  c.s.resident = true; c.s.resChecked = true; c.s.resAll = !!c.s.resPl;
   c.say("res_ok");
   changed(c);
 }
@@ -196,12 +239,14 @@ const H: Record<string, Handler> = {
   // --- tickets ---------------------------------------------------------------
   buy_tickets(c, slots, seg) {
     const tix = readTix(slots);
+    // "Quiero otro de estudiante" (a type, no ticket list), "Otro boleto para mi amigo" (one more, general)
+    if (!count(tix) && seg.tags.includes("add")) tix[typeof slots.tt === "string" ? slots.tt : "adult"] = 1;
     if (!count(tix)) { c.say("ask_qty"); c.hold(); return; }
     // "Dos boletos, uno de estudiante": the rest are adults
-    if (typeof slots.n === "number" && slots.n > count(tix) && slots.n <= 9) tix.adult = (tix.adult || 0) + slots.n - count(tix);
+    if (typeof slots.n === "number" && slots.n > count(tix) && slots.n <= 99) tix.adult = (tix.adult || 0) + slots.n - count(tix);
     // answering "¿Hay algún estudiante…?" ("Sí, un estudiante"): the rest are adults
     if (c.step === "types" && !c.s.typesKnown && !seg.tags.includes("add")) { H.types_ans(c, slots, seg); return; }
-    setTix(c, tix, seg.tags.includes("add") || c.step === "more");
+    if (!setTix(c, tix, seg.tags.includes("add") || c.step === "more")) return;
     c.s.typesKnown = true;
     if (tix.student) c.s.idChecked = false;
     // "Un boleto general con audioguía"
@@ -211,7 +256,10 @@ const H: Record<string, Handler> = {
   buy_qty(c, slots, seg) {
     if (seg.tags.includes("family") && typeof slots.n !== "number") { c.say("ask_qty"); c.hold(); return; }
     const n = typeof slots.n === "number" ? slots.n : seg.tags.includes("n2") ? 2 : seg.tags.includes("n1") ? 1 : 0;
-    if (n < 1 || n > 9) { c.say("ask_qty"); c.hold(); return; }
+    if (n > MAX_TIX) { tooMany(c); return; }
+    if (n < 1) { c.say("ask_qty"); c.hold(); return; }
+    // "Dos boletos más" (or any number after paying): more general tickets, an extra after paying charged alone
+    if (c.s.paid || (seg.tags.includes("more") && c.s.tix && count(c.s.tix) && c.s.typesKnown)) { if (setTix(c, { adult: n }, true)) c.say("ack"); return; }
     c.s.qty = n;
     c.s.tix = { adult: n };
     c.s.typesKnown = false;
@@ -227,10 +275,10 @@ const H: Record<string, Handler> = {
     if (c.s.typesKnown) for (const [k, n] of Object.entries((c.s.tix as Tix) || {})) if (k !== "adult") known[k] = n;
     const tix: Tix = { ...known };
     for (const [k, n] of Object.entries(said)) tix[k] = (tix[k] || 0) + n;
-    if (count(tix) >= (c.s.qty || 0)) { setTix(c, tix); c.s.typesKnown = true; if (tix.student) c.s.idChecked = false; c.say("ack"); return; }
+    if (count(tix) >= (c.s.qty || 0)) { if (!setTix(c, tix)) return; c.s.typesKnown = true; if (tix.student) c.s.idChecked = false; c.say("ack"); return; }
     // fill the rest with adults
     const rest = Math.max(0, (c.s.qty || count(tix)) - count(tix));
-    setTix(c, { ...tix, adult: (tix.adult || 0) + rest });
+    if (!setTix(c, { ...tix, adult: (tix.adult || 0) + rest })) return;
     c.s.typesKnown = true;
     if (tix.student) c.s.idChecked = false;
     c.say("ack");
@@ -243,7 +291,7 @@ const H: Record<string, Handler> = {
   change_tickets(c, slots, seg) {
     const tix = readTix(slots);
     if (!count(tix)) return;
-    setTix(c, tix, seg.tags.includes("add"));
+    if (!setTix(c, tix, seg.tags.includes("add"))) return;
     c.s.typesKnown = true;
     if (tix.student) c.s.idChecked = false;
     c.say("changed");
@@ -269,6 +317,7 @@ const H: Record<string, Handler> = {
   im_senior(c, slots) {
     // "Tengo setenta años" (a younger age is just information: tell the prices)
     if (typeof slots.n === "number" && slots.n < 60) { c.say("prices", { price: 8000, amount: 4000 }); return; }
+    if (lockedAfterPay(c)) return;
     c.say("discount_senior", { price: 4000 });
     if (!c.s.tix || !count(c.s.tix)) { c.s.tix = { senior: 1 }; c.s.qty = 1; c.s.typesKnown = true; changed(c); }
     else if (!c.s.tix.senior) { const tix = { ...c.s.tix }; if (tix.adult) { tix.adult--; if (!tix.adult) delete tix.adult; } tix.senior = 1; c.s.tix = tix; c.s.typesKnown = true; changed(c); }
@@ -276,6 +325,7 @@ const H: Record<string, Handler> = {
   child_age(c, slots, seg) {
     const n = seg.tags.includes("sixty") ? 60 : slots.n as number;
     if (typeof n !== "number") return;
+    if (lockedAfterPay(c)) return;
     const tix: Tix = { ...(c.s.tix || {}) };
     // "Mi esposo tiene setenta años": a senior ticket for the companion
     if (n >= 60) {
@@ -291,19 +341,22 @@ const H: Record<string, Handler> = {
     c.s.tix = tix; c.s.typesKnown = true; changed(c);
   },
   im_student(c) {
+    if (lockedAfterPay(c)) return;
     c.say("discount_student", { price: 4000 });
     if (!c.s.tix || !count(c.s.tix)) { c.s.tix = { student: 1 }; c.s.qty = 1; c.s.typesKnown = true; c.s.idChecked = false; changed(c); }
     else if (!c.s.tix.student) { const tix = { ...c.s.tix }; if (tix.adult) { tix.adult--; if (!tix.adult) delete tix.adult; } tix.student = 1; c.s.tix = tix; c.s.typesKnown = true; c.s.idChecked = false; changed(c); }
   },
   // --- prices ---------------------------------------------------------------
-  ask_prices(c, slots) {
+  ask_prices(c, slots, seg) {
     // "¿Cuánto cuesta?" right after the audio-guide offer is about the guide
-    if (["guide", "persuade"].includes(at(c) as string) && !slots.tt && !slots.tks) { c.s.guidePriceSaid = true; c.say("guide_price", { price: GUIDE }); return; }
+    if (["guide", "persuade"].includes(at(c) as string) && !slots.tt && !slots.tks) { c.s.guidePriceSaid = true; c.say("guide_price", { price: GUIDE }); reopenPersuade(c); return; }
     if (slots.tt === "child") { c.say("kids_free"); return; }
     if (slots.tt === "student") { c.say("discount_student", { price: 4000 }); return; }
     if (slots.tt === "senior") { c.say("discount_senior", { price: 4000 }); return; }
+    // after paying: "¿Cuánto le debo?" is answered; "¿Cuánto cuesta la entrada?" gets the prices
+    if (c.s.paid) { if (seg.tags.includes("owe")) c.say("already_paid"); else c.say("prices", { price: 8000, amount: 4000 }); return; }
     if (c.s.tix && count(c.s.tix) && c.s.typesKnown && c.step !== "tickets") {
-      c.say("say_total", { price: total(c) });
+      c.say("say_total", { price: due(c) });
       if (c.step === "pay") { c.s.totalSaid = true; c.hold(); } // the pay step doesn't say it again
       return;
     }
@@ -319,9 +372,11 @@ const H: Record<string, Handler> = {
     if (c.s.sunday) { if (c.s.sundaySaid) { c.say("sunday_short"); return; } c.s.sundaySaid = true; c.twist("sunday"); c.say("sunday_note"); return; }
     c.say(seg.tags.includes("today") ? "free_days_today" : "free_days");
   },
-  im_resident(c) {
+  im_resident(c, _slots, seg) {
     if (c.s.paid) { c.say("already_paid"); return; }
     if (!c.s.sunday) { c.say("res_weekday"); return; }
+    // "Somos residentes": every ticket on the order goes free once the card is shown
+    if (seg.tags.includes("pl")) c.s.resPl = true;
     if (c.s.resChecked) { c.say(c.s.resident ? "ack" : "res_no"); return; }
     c.s.sundaySaid = true;
     c.say("res_ask");
@@ -352,18 +407,28 @@ const H: Record<string, Handler> = {
       yes: (cc) => { cc.say("ack"); }, no: (cc) => { cc.say("id_sorry"); } });
   },
   // --- audio guide ------------------------------------------------------------
-  want_guide(c, slots) {
+  want_guide(c, slots, seg) {
+    // "¿Tienen audioguía?" before Iván offers one is a question: what it costs; his offer comes later (rule 3).
+    // Once he has offered (or after "¿Se anima?") it is a yes.
+    if (seg.tags.includes("q") && !c.s.guides && !["guide", "persuade"].includes(at(c) as string)) {
+      c.s.guideOffered = true; c.s.guidePriceSaid = true;
+      c.say("guide_price", { price: GUIDE });
+      return;
+    }
     c.s.guideAsked = true;
     guideCost(c);
     const n = typeof slots.n === "number" && slots.n > 0 && slots.n < 10 ? slots.n : 1;
-    c.s.guides = n;
+    // "Otra audioguía", or any after paying: one more (the guides handed over stay; at most nine)
+    c.s.guides = c.s.paid || seg.tags.includes("more") ? Math.min(MAX_TIX, (c.s.guides || 0) + n) : n;
     if (slots.lang) langChosen(c, slots.lang);
     else if (!c.s.lang && c.s.langWanted) c.s.lang = c.s.langWanted;
     changed(c);
   },
   no_guide(c) {
     c.s.guideAsked = true;
-    if (c.s.persuaded || c.s.guides) { c.s.guides = 0; c.s.guideNo = true; changed(c); c.say("no_problem"); return; }
+    if (c.s.guides && lockedAfterPay(c)) return;
+    // (an extra guide called off after paying: the ones already handed over stay)
+    if (c.s.persuaded || c.s.guides) { c.s.guides = c.s.handGuides || 0; c.s.guideNo = true; changed(c); c.say("no_problem"); return; }
     c.s.persuaded = true;
     c.say("guide_persuade");
     c.expect({ id: "persuade", optional: true, expects: ["want_guide", "no_guide", "guide_n_ctx", "guide_no_ctx"],
@@ -376,18 +441,14 @@ const H: Record<string, Handler> = {
         want_guide: (cc, sl, sg) => { H.want_guide(cc, sl, sg); cc.say("ack"); },
       } });
   },
-  guide_price(c, _slots, seg) { c.s.guidePriceSaid = true; c.say(seg.tags.includes("incl") ? "guide_not_included" : "guide_price", { price: GUIDE }); },
+  guide_price(c, _slots, seg) { c.s.guidePriceSaid = true; c.say(seg.tags.includes("incl") ? "guide_not_included" : "guide_price", { price: GUIDE }); reopenPersuade(c); },
   guide_n_ctx(c, slots, seg) {
     // "Para los dos" = 2, "Una para cada uno" = one per ticket
     const n = seg.tags.includes("one") ? 1 : seg.tags.includes("both") ? 2 : seg.tags.includes("each") ? Math.max(1, Math.min(9, c.s.qty || count(c.s.tix) || 1)) : slots.n;
     H.want_guide(c, { ...slots, n }, { intent: "want_guide", slots, tags: [] });
     if (at(c) === "persuade") c.say("ack");
   },
-  guide_no_ctx(c, slots, seg) {
-    // "Sí, seguro" is a yes to the offer, but "I'm sure" after "¿Seguro?"
-    if (seg.tags.includes("sure") && at(c) !== "persuade") { H.want_guide(c, {}, seg); return; }
-    H.no_guide(c, slots, seg);
-  },
+  guide_no_ctx(c, slots, seg) { H.no_guide(c, slots, seg); },
   have_question(c) { c.say("g_yes_what"); c.hold(); },
   lang_ctx(c, slots) { langChosen(c, slots.lang); },
   lang_q(c, slots) {
@@ -399,6 +460,13 @@ const H: Record<string, Handler> = {
     if (c.s.guides) langChosen(c, slots.lang, true);
   },
   langs_q(c) { c.s.langListed = true; c.say("langs_list"); },
+  ask_english(c, slots, seg) {
+    // at "¿En qué idioma la quiere?" it is about the audio guide
+    if (at(c) === "lang" || (c.s.guides && !c.s.lang)) { H.lang_q(c, slots, seg); return; }
+    if (slots.lang === "english") { c.say("speak_english"); conv(c).markSlow(); return; }
+    // another language: the audio guide's
+    c.s.langListed = true; c.say("langs_list");
+  },
   lang_not_ctx(c) { c.s.langListed = true; c.say("langs_list"); },
   mixed_types_ctx(c, slots) {
     // "Sí, una" at "¿Entrada general?" is a yes
@@ -415,9 +483,10 @@ const H: Record<string, Handler> = {
   pay_cash(c, _slots, seg) {
     if (c.s.paid) { c.say("already_paid"); return; }
     c.s.method = "cash";
+    // "¿Puedo pagar en efectivo?" / "¿Tiene cambio de quinientos?" are questions: yes, and the money comes with
+    // "Aquí tiene"
+    if (seg.tags.includes("q")) { c.say("cash_yes"); if (c.s.totalSaid) c.hold(); return; }
     if (!c.s.totalSaid) { c.say("cash_ok"); return; }
-    // "¿Puedo pagar en efectivo?" is a question: the money comes with "Aquí tiene"
-    if (seg.tags.includes("q")) { c.say("cash_yes"); c.hold(); return; }
     markPaid(c, "cash");
   },
   // "No tengo tarjeta": at the residence-card question, no card; at paying, cash then
@@ -435,11 +504,14 @@ const H: Record<string, Handler> = {
     c.say("phone_ok"); markPaid(c, "phone");
   },
   ask_dollars(c) { c.say("dollars"); },
-  here_you_go(c) {
+  here_you_go(c, slots) {
     if (c.step === "student_id" || (c.s.tix?.student && !c.s.idChecked && !c.s.totalSaid)) { H.have_id(c, {}, { intent: "have_id", slots: {}, tags: [] }); return; }
     if (c.s.paid) { c.say("already_paid"); return; }
     if (!c.s.totalSaid) { c.say("no_problem"); return; }
-    markPaid(c, c.s.method || "cash");
+    // "Aquí tiene cincuenta pesos" for $80: not enough, the total again (rule 18); an amount is cash
+    const given = typeof slots.price === "number" ? slots.price : undefined;
+    if (given !== undefined && given < due(c)) { c.say("say_total", { price: due(c) }); c.hold(); return; }
+    markPaid(c, given !== undefined ? "cash" : c.s.method || "cash", given);
   },
   // --- the new exhibition ------------------------------------------------------
   ask_exhibit(c) { c.s.exhibitKnown = true; c.say("exhibit_where"); },
@@ -449,7 +521,7 @@ const H: Record<string, Handler> = {
     // a bare "¿Es gratis?" / "¿Se paga aparte?" before paying is about admission (on a Sunday, the Sunday rule)
     if (!c.s.paid && seg.tags.includes("bare")) {
       if (c.s.sunday) { H.ask_free_day(c, slots, seg); return; }
-      if (c.s.tix && count(c.s.tix) && c.s.typesKnown && c.s.totalSaid) { c.say("say_total", { price: total(c) }); return; }
+      if (c.s.tix && count(c.s.tix) && c.s.typesKnown && c.s.totalSaid) { c.say("say_total", { price: due(c) }); return; }
       c.say("prices", { price: 8000, amount: 4000 }); return;
     }
     if (c.s.exhibitKnown) { c.say("exhibit_included"); return; }
@@ -472,6 +544,8 @@ const H: Record<string, Handler> = {
   ask_duration(c) { c.say(c.s.late ? "duration_late" : "duration"); },
   ask_tour(c) { c.say("tour"); },
   ask_start(c) { c.say("start"); },
+  // "¿Dónde devuelvo la audioguía?": back at the ticket desk ("Taquilla · Audioguías")
+  ask_return_guide(c) { c.say("guide_return"); },
   // "¿Me alcanza el tiempo?" on an ordinary day: the usual visit length
   enough_time(c) { c.say(c.s.late ? "enough_time" : "duration"); },
   come_back(c) {
@@ -576,8 +650,12 @@ export const museum: SituationDef = {
       cred: "(credencial | carnet | carne | id | identificacion | tarjeta de estudiante)",
       kid_w: "(hijo | hija | nino | nina | nieto | nieta | hijito | hijita)",
       sorry_w: "(perdon | perdone | perdoneme | disculpe | disculpeme | disculpa | lo siento [mucho] | una disculpa | mil disculpas | ups | uy perdon | ay perdon)",
-      sorry_tail: "(no (lo)? sabia | no sabia que no se (podia | puede) tocar | no (vi | lei) (el letrero | el aviso | la senal) | no me di cuenta | ya no (lo | la | los)? (toco | hago) | ya no toco nada | no (lo | la)? vuelvo a (hacer | tocar) | no vuelve a pasar | no va a volver a pasar | no volvera a pasar | fue sin querer | fue un accidente | no fue (a proposito | mi intencion) | tiene razon | no se puede tocar | ya entendi | (ya | ahorita) (lo | la) (apago | quito) | (ya)? apago el flash | no (vuelvo | voy) a usar (el)? flash | fue mi (hijo | hija | nino | nina) | voy a tener (mas)? cuidado | (solo | nomas) (queria | quise) (ver | verlo | verla) de cerca)",
+      sorry_tail: "(no (lo)? sabia | no (sabia | vi) que no se (podia | puede) tocar | no (vi | lei) (el letrero | el aviso | la senal) | no me di cuenta | ya no (lo | la | los)? (toco | hago) | ya no toco nada | no (lo | la)? vuelvo a (hacer | tocar) | no vuelve a pasar | no va a volver a pasar | no volvera a pasar | fue sin querer | fue un accidente | no fue (a proposito | mi intencion) | tiene razon | no se puede tocar | ya entendi | (ya | ahorita) (lo | la) (apago | quito) | (ya)? apago el flash | no (vuelvo | voy) a usar (el)? flash | fue mi (hijo | hija | nino | nina) | voy a tener (mas)? cuidado | (solo | nomas) (queria | quise) (ver | verlo | verla) de cerca)",
       only_looking: "(solo | nomas) (estaba | estoy) (senalando | viendo | mirando | apuntando) | (solo | nomas) (miraba | veia | apuntaba | senalaba)",
+      // a change of mind: "Pensándolo bien, …", "Siempre sí …" (Mexican: after all, yes)
+      mind: "(pensandolo bien | siempre si | mejor si | bueno siempre si | al final | sabe que)",
+      // what the guard watches over: the stela and the clay vessels in the first gallery, the paintings upstairs
+      piece: "(la pintura | el cuadro | las pinturas | la obra | la pieza | las piezas | la estatua | la escultura | la estela | la vasija | las vasijas)",
     },
     slots: {
       tk: { pattern: [
@@ -598,6 +676,9 @@ export const museum: SituationDef = {
       "@order_prefix (otro | otra | uno mas | una mas) [de | para] {tt:ttype} #add", "(puedo | podemos) agregar {tks} #add", "{tks} esta bien",
       // "No soy estudiante, (quiero) un boleto general": the second piece is the order
       "no (soy | somos) {bad:ttype} [@order_prefix] {tks}",
+      // one more ticket, e.g. after paying: "Me da otro boleto general", "Otro boleto para mi amigo", "Uno más para mi esposa"
+      "[@order_prefix] (otro | otra) @tkw [mas] [de | para] [{tt:ttype}] [para (mi @rel | el | ella | alguien mas)] [por favor] #add",
+      "[@order_prefix] (uno | una) mas para (mi @rel | el | ella | alguien mas) #add",
     ] },
     buy_qty: { patterns: [
       "@order_prefix [@cnt] @tkw [para hoy] [con @guide_w #guide]", "[@cnt] @tkw [para hoy] [con @guide_w #guide] #h:tk_two",
@@ -606,6 +687,7 @@ export const museum: SituationDef = {
       "[@order_prefix] [{n:number}] [@tkw] para (mi familia | la familia) #family",
       "(quisiera | quiero | queremos | me gustaria | nos gustaria) (visitar | ver | entrar a | conocer | pasar a) el museo", "(vengo | venimos) a (ver | visitar | conocer) el museo",
       "(quisiera | quiero | queremos) (entrar | pasar)",
+      "[@order_prefix] @cnt @tkw mas [por favor] #more",
     ] },
     // a bare number or "Nada más yo": only while Iván asks how many (rule 2)
     qty_ctx: { patterns: ["{bad:number} no [sino] {n:number} [personas]", "no {bad:number} [sino] {n:number} [personas]", "[solo | nomas | solamente] ({n:number} | uno #n1 | una #n1) [personas]", "(solo | nomas | nada mas | solamente) (yo | para mi) #n1", "(yo | para mi) (solo | nada mas | nomas) #n1"] },
@@ -637,8 +719,8 @@ export const museum: SituationDef = {
       "cuanto (cuesta | cuestan | es | sale | vale) (la entrada | el boleto | los boletos | un boleto | una entrada | las entradas | entrar | la entrada general) #h:tk_price",
       "cuanto (cuesta | es | sale)", "cuanto (cuesta | es | sale) (el | un) boleto (de | para) {tt:ttype}", "cuanto (cuesta | es | pagan | paga) (para | los | un) {tt:ttype}",
       "(cual es | que) (el)? precio [de la entrada | del boleto | de los boletos]", "(que | cuales) son los precios", "cuanto (cuesta | es | seria) (para | por) {tks}",
-      "cuanto (es | seria) (en total | todo)", "(es | esta) caro [la entrada | el boleto]", "(cuanto | que precio) tiene (la entrada | el boleto)", "cuanto cobran [por la entrada | por entrar]",
-      "cuanto hay que pagar", "(cuanto es | cual es | cuanto cuesta) el (costo | precio) [de la entrada | del boleto | de los boletos]", "cuanto (pago | le debo)",
+      "cuanto (es | seria) (en total | todo) #owe", "(es | esta) caro [la entrada | el boleto]", "(cuanto | que precio) tiene (la entrada | el boleto)", "cuanto cobran [por la entrada | por entrar]",
+      "cuanto hay que pagar", "(cuanto es | cual es | cuanto cuesta) el (costo | precio) [de la entrada | del boleto | de los boletos]", "cuanto (pago | le debo | le pago) #owe",
     ] },
     ask_discount: { patterns: [
       "hay descuento (para | de) (estudiantes #student | adultos mayores #senior | personas mayores #senior | la tercera edad #senior | jubilados #senior) #h:tk_discount",
@@ -646,6 +728,8 @@ export const museum: SituationDef = {
       "(los estudiantes #student | los adultos mayores #senior | las personas mayores #senior | los jubilados #senior) (pagan menos | tienen descuento)",
       "es mas barato para (estudiantes #student | adultos mayores #senior | personas mayores #senior)",
       "(hay | tienen) (precio | tarifa | boleto) (especial | reducido | reducida) [para (estudiantes #student | adultos mayores #senior | personas mayores #senior)]",
+      // no other discount: the student and senior prices answer it
+      "(hay | tienen | dan) (descuento | descuentos) (para | a) (maestros | profesores | docentes | familias | grupos | militares)",
     ] },
     kids_free: { patterns: [
       "(los ninos | los menores | las ninas) (pagan | entran gratis | no pagan | son gratis) #h:tk_kids", "(es | entran) gratis para (los)? ninos",
@@ -657,7 +741,11 @@ export const museum: SituationDef = {
       "(los domingos | el domingo) (es | son | entran)? gratis", "(no es | no era) gratis los domingos", "los domingos (la entrada)? es (gratis | libre)",
     ] },
     im_resident: { patterns: [
-      "[pero] (soy | somos) (residente | residentes) [aqui | en mexico | temporal | permanente | temporales | permanentes] #h:r_resident", "no (soy | somos) (turista | turistas | visitante | visitantes) [(vivo | vivimos) aqui | (soy | somos) (residente | residentes)]", "[pero] (vivo | vivimos) (aqui | en mexico | en puerto colibri | aqui en puerto colibri) [desde hace (un ano | {n:number} (anos | meses) | unos meses | poco)]",
+      // "Somos residentes" / "Vivimos aquí" (#pl): the whole group
+      "[pero] soy (residente | residentes) [aqui | en mexico | temporal | permanente | temporales | permanentes] #h:r_resident", "[pero] somos (residente | residentes) [aqui | en mexico | temporal | permanente | temporales | permanentes] #pl",
+      "no soy (turista | turistas | visitante | visitantes) [vivo aqui | soy (residente | residentes)]", "no somos (turista | turistas | visitante | visitantes) [vivimos aqui | somos (residente | residentes)] #pl",
+      "[pero] vivo (aqui | en mexico | en puerto colibri | aqui en puerto colibri) [desde hace (un ano | {n:number} (anos | meses) | unos meses | poco)]", "[pero] vivimos (aqui | en mexico | en puerto colibri | aqui en puerto colibri) [desde hace (un ano | {n:number} (anos | meses) | unos meses | poco)] #pl",
+      "(los dos | todos | todas) (somos | vivimos) (residentes | aqui) #pl",
       "(tengo | traigo) (mi)? (tarjeta | credencial) de residente", "(aqui | aca) (esta | tiene) mi (tarjeta | credencial) de residente #h:r_card",
     ] },
     im_visitor: { patterns: [
@@ -685,19 +773,25 @@ export const museum: SituationDef = {
     // audio guide
     want_guide: { patterns: [
       "(puedo | podemos | me puede | me podria) (tener | rentar | llevar | dar) (una | {n:number}) @guide_w [en {lang}] #h:g_can", "(quisiera | quiero | me gustaria) (una | {n:number}) @guide_w [en {lang}] #h:g_id_like",
-      "(hay | tienen | tiene) @guide_w #h:g_is_there", "[y] (una | {n:number}) @guide_w [tambien] [en {lang}]", "con (una | {n:number}) @guide_w [en {lang}]",
+      // a question before the offer ("¿Tienen audioguía?"): the price, not a guide (want_guide)
+      "(hay | tienen | tiene) @guide_w #h:g_is_there #q", "(rentan | prestan | manejan) @guide_w #q", "[y] (una | {n:number}) @guide_w [tambien] [en {lang}]", "con (una | {n:number}) @guide_w [en {lang}]",
       "(si | claro) (una | la) @guide_w #h:gy_one", "(si | claro | ok | bueno | esta bien) [una] en {lang}", "(una | la) @guide_w esta bien",
       "(me llevo | llevo | tomo) (una | la) @guide_w", "(me da | deme) (una | {n:number}) @guide_w [en {lang}]", "@guide_w [en {lang}] tambien",
+      // "Pensándolo bien, quiero una audioguía", "Siempre sí quiero la audioguía", "Quiero la audioguía en inglés"
+      "[@mind] (quiero | quisiera | me llevo | voy a querer) (la | una) @guide_w [en {lang}] [por favor]", "@mind (me da | deme | me puede dar) (la | una) @guide_w [en {lang}]",
+      "[@order_prefix] (otra | una mas) @guide_w [en {lang}] [por favor] #more",
     ] },
     no_guide: { patterns: [
-      "[no] (sin | no quiero | no necesito) (la | una)? @guide_w", "no (quiero | necesito) (ninguna | {n:number} | dos | tres) @guide_w", "[no] solo (el boleto | los boletos | la entrada | las entradas) #h:g_no",
+      "[no] (sin | no quiero | no necesito) (la | una)? @guide_w", "ya no (quiero | necesito) (la | una)? @guide_w", "no (quiero | necesito) (ninguna | {n:number} | dos | tres) @guide_w", "[no] solo (el boleto | los boletos | la entrada | las entradas) #h:g_no",
       "[no] (estoy bien | asi estoy bien) sin (ella | audioguia)", "[no] (uso | voy a usar | prefiero usar) (mi | el) (celular | telefono)", "[no] (tal vez | quizas | a lo mejor) (despues | luego | otro dia | la proxima)",
       "[no] (prefiero | voy a) (ver | recorrer | caminar) [el museo] (solo | sola | por mi cuenta)", "no @guide_w", "nada de @guide_w",
     ] },
     // "No, estoy bien" / "No la necesito": only right after the offer (elsewhere it means something else)
     guide_no_ctx: { patterns: [
       "[no] estoy bien [asi]", "[no] no (la | lo) (necesito | quiero)", "[no] (hoy no | esta vez no | ahorita no)", "[no] paso", "[si] estoy (seguro | segura)",
-      "[no] (es | esta) (muy | un poco | demasiado)? (cara | caro)", "[no] no creo [que la necesite]", "prefiero que no", "mejor no", "[no] asi estoy bien", "no hace falta", "[no] no me interesa", "[no] (de verdad | en serio) [no]", "[si] (seguro | segura) #sure",
+      "[no] (es | esta) (muy | un poco | demasiado)? (cara | caro)", "[no] no creo [que la necesite]", "prefiero que no", "mejor no", "[no] asi estoy bien", "no hace falta", "[no] no me interesa", "[no] (de verdad | en serio) [no]",
+      // at "¿Se anima?" and at the language question ("Ya no la quiero": no guide after all)
+      "[no] no me animo", "[no] [gracias] ya no (la | lo) (quiero | necesito)", "[ah] [no] entonces no",
     ] },
     guide_price: { patterns: [
       "cuanto (cuesta | es | sale) la @guide_w #h:g_price", "(la @guide_w) (es gratis | esta incluida | cuesta extra | tiene costo | se paga aparte) #incl", "(esta incluida | viene incluida) la @guide_w #incl", "(es | esta) cara la @guide_w",
@@ -708,6 +802,8 @@ export const museum: SituationDef = {
       "[esta bien | ok | si | bueno | vale] (la | una) (tomo | llevo | quiero)", "(me da | deme | quisiera | quiero | me llevo) una", "[una] para (los dos | ambos | las dos) #both",
       "[una] para (todos | cada uno) #each", "[solo] una (es suficiente | esta bien | basta)", "(vamos a | podemos) compartir (una | la)",
       "{price} (esta bien | ok | de acuerdo) [una | la tomo]", "(si | bueno | ok | vale) (una | {n:number})", "[si] me interesa",
+      // "Sí, seguro" at the offer or at "¿Se anima?": a yes ("Sí, estoy seguro" stays a no: guide_no_ctx)
+      "[si] (seguro | segura) [que si]", "[si] (me animo | me la llevo | por que no)",
       "no (quiero | necesito)? ({bad:number} | dos) [@guide_w] (solo | nomas | nada mas | solamente) una #one", "no {bad:number} (solo | nomas | nada mas | solamente) una #one",
     ] },
     lang_ctx: { patterns: [
@@ -717,8 +813,10 @@ export const museum: SituationDef = {
     ] },
     lang_q: { patterns: [
       "(la | lo) (tiene | tienen | hay) en {lang} #h:l_have", "(tiene | tienen | hay) [la | una] @guide_w en {lang}", "(esta | viene) en {lang}", "(hay | esta disponible) en {lang}",
-      "(habla | hablan) {lang}", "(tiene | tienen) {lang}", "hay {lang}",
+      "(tiene | tienen) {lang}", "hay {lang}",
     ] },
+    // "¿Habla inglés?" asks Iván (at the language question: the audio guide, lang_q)
+    ask_english: { patterns: ["[usted] (habla | hablas | hablan) {lang} [usted | aqui]", "habla usted {lang}", "se habla {lang} [aqui]", "(hay | tienen) alguien que hable {lang}", "(puedo | se puede | podemos) hablar en {lang}"] },
     // "No hablo francés" / "No en inglés": never choose that language
     lang_not_ctx: { patterns: ["no (hablo | entiendo | leo) {lang} [muy bien | bien]", "no [en] {lang}", "no (quiero | me gustaria) [la de | la audioguia en | en] {lang}", "{lang} no"] },
     langs_q: { patterns: ["(que | cuales) idiomas (tiene | tienen | hay) #h:l_which", "en que idiomas (esta | viene | la tienen | la tiene | hay)", "que idiomas", "cuales son las opciones", "que opciones (hay | tiene | tienen)"] },
@@ -727,17 +825,20 @@ export const museum: SituationDef = {
       "(en)? efectivo no [sino] (con)? tarjeta", "no (en)? efectivo [sino] (con)? tarjeta",
       "(puedo | se puede) pagar con tarjeta [de credito | de debito] #h:pay_card", "con tarjeta [de credito | de debito]", "tarjeta", "(aceptan | acepta | toman | reciben) tarjeta [de credito | de debito]",
       "(aceptan | acepta) (visa | mastercard | american express | amex)", "(puedo | se puede) pagar con (visa | mastercard | amex | american express | credito | debito)", "(voy a | quiero | prefiero) pagar con tarjeta", "[no] prefiero [pagar] con tarjeta", "(le pago | pago) con tarjeta", "no (tengo | traigo) [suficiente] efectivo [(pago | le pago | mejor)] con tarjeta", "con (visa | mastercard | debito | credito)",
+      // Mexican: "¿Tiene terminal?" = do you take cards?
+      "(tiene | tienen | hay) terminal", "(aceptan | acepta | tienen) pago con tarjeta", "(me puede | me podria | puede) cobrar con tarjeta",
     ] },
     // "No tengo efectivo": so it's the card (never read as "cash")
     // "No tengo tarjeta": only at paying and at the residence-card question (elsewhere it could be either card)
     no_card_ctx: { patterns: ["no (tengo | traigo) (tarjeta | la tarjeta) [aqui | conmigo]", "no (tengo | traigo) (tarjeta | la tarjeta) [aqui | conmigo] [pago | le pago] en efectivo"] },
     no_cash: { patterns: ["no (tengo | traigo) [suficiente] (efectivo | cash | dinero en efectivo)", "no traigo (efectivo | cash)", "no (puedo | quiero) pagar en efectivo"] },
-    pay_cash: { patterns: ["(con)? tarjeta no [sino] (en | con)? efectivo", "no (con)? tarjeta [sino] (en | con)? efectivo", "(puedo | se puede) pagar en efectivo #q", "(pago | le pago | voy a pagar | prefiero pagar) en efectivo #h:pay_cash", "[no] prefiero [pagar] (en | con)? efectivo", "(en | con) efectivo", "efectivo", "(con | en) (dinero | billetes) [en efectivo]", "(aceptan | acepta) efectivo #q", "en efectivo esta bien"] },
-    ask_dollars: { patterns: ["(solo | nomas)? (tengo | traigo) dolares", "(aceptan | acepta | toman) (dolares | dolares americanos)", "(puedo | se puede) pagar (en | con) dolares", "(tienen | hay) cambio de dolares"] },
+    pay_cash: { patterns: ["(con)? tarjeta no [sino] (en | con)? efectivo", "no (con)? tarjeta [sino] (en | con)? efectivo", "(puedo | se puede) pagar en efectivo #q", "(pago | le pago | voy a pagar | prefiero pagar) en efectivo #h:pay_cash", "[no] prefiero [pagar] (en | con)? efectivo", "(en | con) efectivo", "efectivo", "(con | en) (dinero | billetes) [en efectivo]", "(aceptan | acepta) efectivo #q", "en efectivo esta bien",
+      "(tiene | tienen) cambio (de | para) [un billete de] {price} #q", "(tiene | tienen) cambio #q"] },
+    ask_dollars: { patterns: ["(solo | nomas)? (tengo | traigo) dolares", "(aceptan | acepta | toman) (dolares | dolares americanos)", "(puedo | se puede) pagar (en | con) dolares", "(tienen | hay) cambio de dolares", "cuanto (es | seria | sale | cuesta) en dolares"] },
     pay_phone: { patterns: ["(puedo | se puede) pagar con (el celular | mi celular | el telefono | apple pay | google pay)", "(aceptan | acepta) (apple pay | google pay | pago con celular)", "(con | por) (apple pay | google pay | el celular | mi celular)", "apple pay", "google pay"] },
     here_you_go: { patterns: [
       "aqui (tiene | esta) #h:here_you_go", "tenga", "tome", "aqui (tiene | esta) (el dinero | el efectivo | mi tarjeta)", "aqui (tiene | esta) {price}", "(le doy | ahi le va | ahi va) {price}",
-      "aqui tienes #tip:tu_staff", "toma #tip:tu_staff", "ahi (va | le va)", "(con | le pago con) un billete de {price}",
+      "aqui tienes #tip:tu_staff", "toma #tip:tu_staff", "ahi (va | le va)", "(con | le pago con) un billete de {price}", "(tenga | tome | aqui tiene) son {price}", "(tenga | tome) {price}",
     ] },
     // the new exhibition
     ask_exhibit: { patterns: [
@@ -769,14 +870,22 @@ export const museum: SituationDef = {
     ask_hours: { patterns: [
       "a que hora (cierran | cierra [el museo]) [hoy #today] #h:q_close", "hasta que hora (abren | esta abierto | estan abiertos) [hoy #today]", "cual es el horario", "que horario (tienen | tiene)",
       "(abren | esta abierto) (manana | el {day} | los {day} | todos los dias)", "a que hora (abren | abre) [manana | el {day} | los {day}]",
+      "hasta que hora (se puede | puedo | podemos) (entrar | pasar) [hoy #today]", "(a que hora | cuando) es la ultima entrada",
     ] },
     ask_map: { patterns: ["(tiene | tienen | me da | hay) (un | algun)? (mapa | plano | folleto) [del museo] #h:q_map", "me puede dar un (mapa | plano)"] },
     ask_exit: { patterns: ["(donde esta | donde queda | por donde es) la salida", "por donde (salgo | salimos | se sale)"] },
     ask_touch: { patterns: ["(se puede | puedo | podemos | se pueden) tocar [algo | las piezas | las pinturas | las obras | los cuadros | las esculturas]"] },
-    ask_elevator: { patterns: ["(hay | donde esta) (un | el)? (elevador | ascensor)"] },
+    // the elevator, and "¿Es accesible?" (a wheelchair, a stroller): the elevator's answer
+    ask_elevator: { patterns: ["(hay | donde esta) (un | el)? (elevador | ascensor)", "(es | esta) accesible [para (silla | sillas) de ruedas]", "(hay | tienen) (acceso | rampa) para (silla | sillas) de ruedas",
+      "(puedo | se puede | podemos) (entrar | subir | pasar) con (una | la | mi)? (silla de ruedas | carriola | carreola)"] },
+    // "¿Dónde devuelvo la audioguía?"
+    ask_return_guide: { patterns: ["(donde | a donde) (devuelvo | dejo | entrego | regreso) (la | las) @guide_w [al final | cuando termine | despues]", "(donde | a donde) (la | las) (devuelvo | entrego | regreso) [al final | cuando termine | despues]",
+      "(donde | a donde) se (devuelve | devuelven | entrega | entregan | regresa | regresan) (la | las) @guide_w", "(donde | a quien) (le)? (devuelvo | entrego) (la | las) @guide_w"] },
     ask_duration: { patterns: ["cuanto tiempo (se necesita | se tarda | hace falta | toma | lleva) [para (ver | verlo) (todo | el museo)]", "cuanto (dura | tarda) (el recorrido | la visita)", "cuanto tiempo (dura | tarda | toma | lleva) (la visita | el recorrido | ver el museo | ver todo)", "(cuanto | que tanto) se tarda (en)? (ver | recorrer) (todo | el museo)", "cuanto tiempo (necesito | necesitamos)"] },
     ask_tour: { patterns: ["(hay | tienen) (visita guiada | visitas guiadas | recorrido guiado | recorridos guiados | tour | visita con guia) [hoy]", "a que hora es la visita guiada", "hay (algun)? guia", "(hay | tienen) (recorridos | recorrido | visitas | visita) (con guia | guiados | guiadas | guiado | guiada) [en {lang}]"] },
-    ask_start: { patterns: ["por donde (empiezo | empezamos | se empieza | comienzo)", "donde (empiezo | empieza el recorrido | esta la entrada)", "(por donde | a donde) (voy | vamos) ahora", "donde estan las (salas | piezas | pinturas | colecciones)", "donde (esta | queda) la sala [principal | de exposiciones]", "por donde se (entra | empieza)", "donde se entra"] },
+    ask_start: { patterns: ["por donde (empiezo | empezamos | se empieza | comienzo)", "donde (empiezo | empieza el recorrido | esta la entrada)", "(por donde | a donde) (voy | vamos) ahora", "donde estan las (salas | piezas | pinturas | colecciones)", "donde (esta | queda) la sala [principal | de exposiciones]", "por donde se (entra | empieza)", "donde se entra",
+      // the ground floor's permanent collection (the 3D partition's sign "Colección permanente")
+      "(donde | por donde) (esta | queda | empieza | se ve) la (coleccion | exposicion) permanente", "(donde | por donde) (esta | queda | empieza) la coleccion [del museo]"] },
     enough_time: { patterns: [
       "(alcanza | me alcanza | nos alcanza) (el tiempo)? [para ver (todo | la exposicion)]", "(me | nos) da tiempo [de ver (todo | la exposicion)]", "(vale | todavia vale) la pena",
       "(es | son) suficiente [tiempo]", "[solo | nomas] {n:number} minutos", "{n:number} minutos (es | son) (suficiente | suficientes)", "(es | son) suficientes {n:number} minutos", "(alcanzo | alcanzamos) a ver (todo | la exposicion)",
@@ -797,7 +906,7 @@ export const museum: SituationDef = {
       "@sorry_w [@sorry_tail] [@sorry_w]", "[@sorry_w] @sorry_tail [@sorry_w]", "@sorry_tail y @sorry_tail",
     ] },
     deny: { patterns: [
-      "[pero] (yo)? no (lo | la | los)? toqué [nada | la pintura | el cuadro | las pinturas | la obra] [se lo juro | de verdad | en serio] [@only_looking]", "[pero] no estaba tocando (nada | la pintura) [@only_looking]",
+      "[pero] (yo)? no (lo | la | los)? toqué [nada | @piece] [se lo juro | de verdad | en serio] [@only_looking]", "[pero] no estaba tocando (nada | @piece) [@only_looking]",
       "@only_looking", "(solo | nomas) (lo | la)? (señalé | apunté)", "[pero] (yo)? no fui (yo)?", "[pero] (yo)? no (estoy tocando | toco) nada", "[pero] no (usé | estaba usando | estoy usando) (el)? flash", "mi (camara | celular) no tiene flash",
     ] },
     why_not: { patterns: ["por que [no]", "por que no se puede tocar", "por que no (puedo | podemos | se pueden) tocar (las | los)? (pinturas | cuadros | obras | piezas)?", "por que no se (permite | puede) [el flash | usar flash]"] },
@@ -807,8 +916,11 @@ export const museum: SituationDef = {
     // --- openers ----------------------------------------------------------------
     greet: [
       t("¡Hola! | ¡{m:Bienvenido|f:Bienvenida} | al | Museo | de | la | Costa Maya! | ¿Cuántos | boletos | va | a | querer?", "Hi! | Welcome | to the | Museum | of | the | Maya Coast! | How many | tickets | are you going | to | want?", "Hi! Welcome to the Costa Maya Museum! How many tickets would you like?",
-        { flags: { 1: "Bienvenido / bienvenida: the form agrees with you." } }),
-      t("¡Buenas! | ¿Boletos | para | hoy?", "Hi! | Tickets | for | today?", "Hi there! Tickets for today?", { flags: { 0: "¡Buenas!: short for buenos días / buenas tardes, a friendly hello." } }),
+        { flags: { 1: "Bienvenido / bienvenida: the form agrees with you." },
+          neutral: t("¡Hola! | ¡{m:Bienvenido|f:Bienvenida} | al | Museo | de | la | Costa Maya! | ¿Cuántas | entradas | va | a | querer?", "Hi! | Welcome | to the | Museum | of | the | Maya Coast! | How many | tickets | are you going | to | want?", "Hi! Welcome to the Costa Maya Museum! How many tickets would you like?",
+            { flags: { 1: "Bienvenido / bienvenida: the form agrees with you." } }) }),
+      t("¡Buenas! | ¿Boletos | para | hoy?", "Hi! | Tickets | for | today?", "Hi there! Tickets for today?", { flags: { 0: "¡Buenas!: short for buenos días / buenas tardes, a friendly hello." },
+        neutral: t("¡Buenas! | ¿Entradas | para | hoy?", "Hi! | Tickets | for | today?", "Hi there! Tickets for today?", { flags: { 0: "¡Buenas!: short for buenos días / buenas tardes, a friendly hello." } }) }),
       t("¡Hola! | ¿En | qué | le | puedo | ayudar?", "Hi! | In | what | (to) you | can I | help?", "Hi! How can I help you?"),
     ],
     greet_pm: [t("¡Buenas tardes! | {m:Bienvenido|f:Bienvenida} | al | museo.", "Good afternoon! | Welcome | to the | museum.", "Good afternoon! Welcome to the museum.")],
@@ -817,16 +929,19 @@ export const museum: SituationDef = {
     still_time: [t("Pero | en | 45 | minutos | le | alcanza | para | ver | la | exposición | nueva.", "But | in | 45 | minutes | (for) you | it's enough | to | see | the | exhibition | new.", "But 45 minutes is enough to see the new exhibition.", { say: "Pero en cuarenta y cinco minutos le alcanza para ver la exposición nueva." })],
     open_tomorrow_short: [t("Como | guste. | Mañana | abrimos | a | las | diez.", "As | you-like. | Tomorrow | we-open | at | — | ten.", "Whatever you prefer. Tomorrow we open at ten.", { flags: { 5: ART } })],
     closed_tomorrow_short: [t("Como | guste, | pero | mañana | es | lunes | y | cerramos.", "As | you-like, | but | tomorrow | is | Monday | and | we're closed.", "Whatever you prefer, but tomorrow's Monday and we're closed.")],
-    come_back: [t("Lo siento, | el | boleto | es | solo | para | hoy.", "I'm sorry, | the | ticket | is | only | for | today.", "Sorry, the ticket is only good for today.")],
+    come_back: [t("Lo siento, | el | boleto | es | solo | para | hoy.", "I'm sorry, | the | ticket | is | only | for | today.", "Sorry, the ticket is only good for today.",
+      { neutral: t("Lo siento, | la | entrada | es | solo | para | hoy.", "I'm sorry, | the | ticket | is | only | for | today.", "Sorry, the ticket is only good for today.") })],
     open_tomorrow: [t("Mañana | abrimos | a | las | diez.", "Tomorrow | we-open | at | — | ten.", "Tomorrow we open at ten.", { flags: { 3: ART } })],
     closed_tomorrow: [t("Y | mañana | es | lunes: | cerramos.", "And | tomorrow | is | Monday: | we're closed.", "And tomorrow's Monday: we're closed.")],
     close_late: [t("Hoy | cerramos | en | 45 | minutos.", "Today | we-close | in | 45 | minutes.", "We close in 45 minutes today.", { say: "Hoy cerramos en cuarenta y cinco minutos." })],
 
     // --- tickets ------------------------------------------------------------------
     ask_qty: [
-      t("¿Cuántos | boletos?", "How many | tickets?", "How many tickets?"),
-      t("¿Cuántos | boletos | le | doy?", "How many | tickets | (to) you | I-give?", "How many tickets would you like?"),
+      t("¿Cuántos | boletos?", "How many | tickets?", "How many tickets?", { neutral: t("¿Cuántas | entradas?", "How many | tickets?", "How many tickets?") }),
+      t("¿Cuántos | boletos | le | doy?", "How many | tickets | (to) you | I-give?", "How many tickets would you like?",
+        { neutral: t("¿Cuántas | entradas | le | doy?", "How many | tickets | (to) you | I-give?", "How many tickets would you like?") }),
     ],
+    group_max: [t("Lo siento, | los | grupos | de | diez | o | más | tienen | que | reservar | antes.", "I'm sorry, | the | groups | of | ten | or | more | have | to | book | ahead.", "Sorry, groups of ten or more need to book ahead.")],
     ask_type_one: [t("¡Claro! | ¿Entrada | general?", "Sure! | Admission | general?", "Sure! General admission?")],
     ask_type_all: [t("¡Claro! | ¿Todos | son | adultos?", "Sure! | All | are | adults?", "Sure! Are they all adults?")],
     ask_type_any: [t("¡Claro! | ¿Hay | algún | estudiante, | adulto mayor | o | niño?", "Sure! | Is there | any | student, | senior | or | child?", "Sure! Any students, seniors, or kids?")],
@@ -857,11 +972,13 @@ export const museum: SituationDef = {
       t("¿Le gustaría | una | audioguía? | Cuesta | {$price}.", "Would you like | an | audio guide? | It costs | {$price}.", "Would you like an audio guide? It's {$price}."),
       t("¿Va | a | querer | audioguía? | Son | {$price}.", "Are you going | to | want | audio guide? | It's | {$price}.", "Would you like an audio guide? It's {$price}."),
     ],
-    guide_again2: [t("Entonces, | ¿le | doy | una | audioguía?", "So, | (to) you | I-give | an | audio guide?", "So, can I give you an audio guide?")],
+    guide_again2: [t("Entonces, | ¿le | doy | una | audioguía?", "So, | (to) you | I-give | an | audio guide?", "So, can I get you an audio guide?")],
     guide_cost: [t("La | audioguía | cuesta | {$price}.", "The | audio guide | costs | {$price}.", "The audio guide is {$price}.")],
     guide_not_included: [t("No, | la | audioguía | cuesta | {$price} | aparte.", "No, | the | audio guide | costs | {$price} | extra.", "No, the audio guide is {$price} extra.")],
     guide_again: [t("¿Y | la | audioguía? | ¿La | va | a | querer?", "And | the | audio guide? | It | are you going | to | want?", "And the audio guide, would you like one?", { flags: { 3: "la: it, the audio guide (la audioguía)." } })],
-    guide_persuade: [t("¿{m:Seguro|f:Segura}? | Es | muy | buena | para | la | exposición | nueva.", "Sure? | It's | very | good | for | the | exhibition | new.", "Are you sure? It's great for the new exhibition.", { flags: { 0: "Seguro / segura: the form agrees with you." } })],
+    // ends on a question a yes answers ("¿Se anima?"): after "¿Seguro?" a "Sí" meant "I'm sure" and took the guide
+    guide_persuade: [t("Es | muy | buena | para | la | exposición | nueva. | ¿Se anima?", "It's | very | good | for | the | exhibition | new. | Will you go for it?", "It's really good for the new exhibition. Want to give it a try?",
+      { flags: { 7: "¿Se anima? (animarse): will you go for it? A friendly push." } })],
     guide_price: [t("Cuesta | {$price}, | y | la | tenemos | en | cinco | idiomas.", "It costs | {$price}, | and | it | we-have | in | five | languages.", "It's {$price}, and we have it in five languages.", { flags: { 3: "la: it, the audio guide (la audioguía)." } })],
     ask_lang: [
       t("¿En | qué | idioma | la | quiere?", "In | what | language | it | do you want?", "Which language would you like?", { flags: { 3: "la: it, the audio guide (la audioguía)." } }),
@@ -872,7 +989,11 @@ export const museum: SituationDef = {
     langs_list: [t("Tenemos | español, | inglés, | francés, | alemán | e | italiano.", "We-have | Spanish, | English, | French, | German | and | Italian.", "We have Spanish, English, French, German, and Italian.", { flags: { 5: "e: y (and) becomes e before an i sound." } })],
     langs_list_short: [t("Pero | tenemos | inglés, | francés, | alemán | e | italiano, | y | claro, | español.", "But | we-have | English, | French, | German | and | Italian, | and | of course, | Spanish.", "But we have English, French, German, and Italian, and Spanish, of course.", { flags: { 5: "e: y (and) becomes e before an i sound." } })],
     no_lang: [t("Lo siento, | en | {X} | no la tenemos.", "I'm sorry, | in | {X} | we don't have it.", "Sorry, we don't have it in {X}.")],
+    speak_english: [t("Muy | poquito, | pero | le | hablo | despacio.", "Very | little, | but | (to) you | I'll-speak | slowly.", "Just a little, but I'll speak slowly for you.",
+      { flags: { 1: "poquito: a little bit (poco + the diminutive -ito)." } })],
     have_lang: [t("Sí, | la | tenemos.", "Yes, | it | we-have.", "Yes, we do.", { flags: { 1: "la: it, the audio guide (la audioguía)." } })],
+    guide_return: [t("Aquí mismo, | en | la | taquilla, | cuando | termine.", "Right here, | at | the | ticket desk, | when | you-finish.", "Right here at the ticket desk, when you're done.",
+      { flags: { 3: "la taquilla: the ticket desk (the box office)." } })],
 
     // --- paying ----------------------------------------------------------------------
     say_total: [
@@ -891,8 +1012,10 @@ export const museum: SituationDef = {
     dollars: [t("Lo siento, | solo | aceptamos | pesos. | También | puede | pagar | con | tarjeta.", "I'm sorry, | only | we-accept | pesos. | Also | you-can | pay | with | card.", "Sorry, we only take pesos. You can also pay by card.")],
     paid: [t("¡Gracias!", "Thank you!", "Thank you!"), t("Listo, | gracias.", "Done, | thanks.", "All set, thanks.")],
     change_back: [t("Gracias. | Aquí | tiene | su | cambio.", "Thanks. | Here | you have | your | change.", "Thank you. Here's your change.")],
-    ticket_here: [t("Aquí | tiene | su | boleto.", "Here | you have | your | ticket.", "Here's your ticket.")],
-    tickets_here: [t("Aquí | tiene | sus | boletos.", "Here | you have | your | tickets.", "Here are your tickets.")],
+    ticket_here: [t("Aquí | tiene | su | boleto.", "Here | you have | your | ticket.", "Here's your ticket.",
+      { neutral: t("Aquí | tiene | su | entrada.", "Here | you have | your | ticket.", "Here's your ticket.") })],
+    tickets_here: [t("Aquí | tiene | sus | boletos.", "Here | you have | your | tickets.", "Here are your tickets.",
+      { neutral: t("Aquí | tiene | sus | entradas.", "Here | you have | your | tickets.", "Here are your tickets.") })],
     guide_here: [t("Y | aquí | está | su | audioguía, | en | {X}. | Marque | el | número | de | cada | pieza.", "And | here | is | your | audio guide, | in | {X}. | Key in | the | number | of | each | piece.", "And here's your audio guide, in {X}. Just key in the number of each piece.")],
     guides_here: [t("Y | aquí | están | sus | audioguías, | en | {X}. | Marquen | el | número | de | cada | pieza.", "And | here | are | your | audio guides, | in | {X}. | Key in (pl.) | the | number | of | each | piece.", "And here are your audio guides, in {X}. Just key in the number of each piece.", { flags: { 7: "Marquen: ustedes, speaking to the whole group." } })],
     bag_rule: [t("Si | trae | mochila, | por favor | déjela | en | paquetería, | aquí | a | la | entrada.", "If | you-bring | backpack, | please | leave it | at | bag check, | here | at | the | entrance.", "If you have a backpack, please leave it at the bag check, here by the entrance.", { flags: { 6: PAQ },
@@ -905,9 +1028,10 @@ export const museum: SituationDef = {
       t("Está | en | la | planta | alta, | a la derecha. | Puede | subir | por | las | escaleras | o | en | el | elevador.", "It's | on | the | floor | upper, | on the right. | You-can | go up | by | the | stairs | or | in | the | elevator.", "It's upstairs on the right. You can take the stairs or the elevator.",
         { flags: { 3: "planta alta: the upper floor (planta baja = the ground floor)." } }),
     ],
-    exhibit_included_full: [t("Sí, | la | exposición | nueva | viene | incluida | en | su | boleto. | Está | arriba, | a la derecha.", "Yes, | the | exhibition | new | comes | included | in | your | ticket. | It's | upstairs, | on the right.", "Yes, the new exhibition is included in your ticket. It's upstairs on the right.")],
-    exhibit_upstairs: [t("Está | arriba, | a la derecha.", "It's | upstairs, | on the right.", "It's upstairs on the right.")],
-    exhibit_included: [t("Sí, | viene | incluida | en | su | boleto.", "Yes, | it comes | included | in | your | ticket.", "Yes, it's included in your ticket.")],
+    exhibit_included_full: [t("Sí, | la | exposición | nueva | viene | incluida | en | su | boleto. | Está | arriba, | a la derecha.", "Yes, | the | exhibition | new | comes | included | in | your | ticket. | It's | upstairs, | on the right.", "Yes, the new exhibition is included in your ticket. It's upstairs on the right.",
+      { neutral: t("Sí, | la | exposición | nueva | viene | incluida | en | su | entrada. | Está | arriba, | a la derecha.", "Yes, | the | exhibition | new | comes | included | in | your | ticket. | It's | upstairs, | on the right.", "Yes, the new exhibition is included in your ticket. It's upstairs on the right.") })],
+    exhibit_included: [t("Sí, | viene | incluida | en | su | boleto.", "Yes, | it comes | included | in | your | ticket.", "Yes, it's included in your ticket.",
+      { neutral: t("Sí, | viene | incluida | en | su | entrada.", "Yes, | it comes | included | in | your | ticket.", "Yes, it's included in your ticket.") })],
     exhibit_about: [t("Son | pinturas | del | mar | Caribe | de noche. | ¡Unos | azules | preciosos!", "They're | paintings | of the | sea | Caribbean | at night. | Some | blues | gorgeous!", "They're paintings of the Caribbean Sea at night. Gorgeous blues!")],
     exhibit_mention: [t("Ah, | y | no se pierda | nuestra | exposición | nueva, | “Colores de la noche”. | Está | arriba, | a la derecha.", "Oh, | and | don't miss | our | exhibition | new, | “Colors of the Night”. | It's | upstairs, | on the right.", "Oh, and don't miss our new exhibition, “Colors of the Night”. It's upstairs on the right.")],
 
@@ -963,7 +1087,8 @@ export const museum: SituationDef = {
     ],
     // --- Don Arturo (guard) -----------------------------------------------------------------------
     dont_touch: [
-      t("¡Disculpe! | Por favor, | no toque | las | pinturas.", "Excuse me! | Please, | don't touch | the | paintings.", "Excuse me! Please don't touch the paintings."),
+      // he stands by the Maya stela and the clay vessels (the 3D room and the picture): las piezas, not las pinturas
+      t("¡Disculpe! | Por favor, | no toque | las | piezas.", "Excuse me! | Please, | don't touch | the | pieces.", "Excuse me! Please don't touch the exhibits."),
       t("¡Disculpe! | No se puede | tocar, | por favor.", "Excuse me! | You can't | touch, | please.", "Excuse me! No touching, please."),
     ],
     no_flash: [t("¡Disculpe! | Sin | flash, | por favor.", "Excuse me! | Without | flash, | please.", "Excuse me! No flash, please.")],
@@ -972,20 +1097,22 @@ export const museum: SituationDef = {
       t("Gracias | por | su | comprensión.", "Thanks | for | your | understanding.", "Thank you for understanding."),
     ],
     harold_why: [t("Las | piezas | son | muy | antiguas | y | delicadas.", "The | pieces | are | very | old | and | delicate.", "The pieces are very old and delicate.")],
-    harold_why_flash: [t("El | flash | daña | las | pinturas.", "The | flash | damages | the | paintings.", "Flash damages the paintings.")],
+    harold_why_flash: [t("El | flash | daña | las | piezas.", "The | flash | damages | the | pieces.", "Flash damages the exhibits.")],
     harold_deny: [t("Ah, | perdone, | me equivoqué. | Siga | disfrutando | su | visita.", "Oh, | forgive me, | I was wrong. | Keep | enjoying | your | visit.", "Oh, sorry, my mistake. Enjoy the rest of your visit.")],
     harold_ask: [t("¿De acuerdo?", "Okay?", "Okay?")],
   },
 
   domains: {
+    // every total (and every extra after paying, itself such a total) for up to nine tickets (MAX_TIX) and nine guides,
+    // with a Sunday resident's free ticket (or the whole group's: only the guides left)
     price: () => {
       const s = new Set<number>([4000, 5000, 8000]);
       const P = [8000, 4000, 4000, 0];
-      for (let a = 0; a <= 4; a++) for (let b = 0; a + b <= 4; b++) for (let cc = 0; a + b + cc <= 4; cc++) for (let d = 0; a + b + cc + d <= 4; d++) {
+      for (let a = 0; a <= MAX_TIX; a++) for (let b = 0; a + b <= MAX_TIX; b++) for (let cc = 0; a + b + cc <= MAX_TIX; cc++) for (let d = 0; a + b + cc + d <= MAX_TIX; d++) {
         if (a + b + cc + d === 0) continue;
         const base = a * P[0] + b * P[1] + cc * P[2] + d * P[3];
         const free = a ? 8000 : b || cc ? 4000 : 0;
-        for (let g = 0; g <= 4; g++) { s.add(base + g * GUIDE); s.add(base - free + g * GUIDE); }
+        for (let g = 0; g <= MAX_TIX; g++) { s.add(base + g * GUIDE); s.add(base - free + g * GUIDE); s.add(g * GUIDE); }
       }
       return [...s].filter((x) => x > 0).sort((x, y) => x - y);
     },
@@ -996,11 +1123,14 @@ export const museum: SituationDef = {
     tickets: {
       lt: "Buy a ticket", slot: "ttype", examples: ["adult", "student", "senior"],
       items: [
-        { id: "tk_one", s: t("Un | boleto | de | {X}, | por favor.", "One | ticket | for | {X}, | please.", "One {X} ticket, please."), only: (e) => e.id !== "child" },
-        { id: "tk_two", s: t("Dos | boletos, | por favor.", "Two | tickets, | please.", "Two tickets, please.") },
+        { id: "tk_one", s: t("Un | boleto | de | {X}, | por favor.", "One | ticket | for | {X}, | please.", "One {X} ticket, please.",
+          { neutral: t("Una | entrada | de | {X}, | por favor.", "One | ticket | for | {X}, | please.", "One {X} ticket, please.") }), only: (e) => e.id !== "child" },
+        { id: "tk_two", s: t("Dos | boletos, | por favor.", "Two | tickets, | please.", "Two tickets, please.", { neutral: t("Dos | entradas, | por favor.", "Two | tickets, | please.", "Two tickets, please.") }) },
         { id: "tk_mix", s: t("Dos | adultos | y | un | estudiante, | por favor.", "Two | adults | and | one | student, | please.", "Two adults and one student, please.") },
-        { id: "tk_quisiera", s: t("Quisiera | un | boleto | general.", "I'd like | a | ticket | general.", "I'd like one general admission ticket."), register: "polite" },
-        { id: "tk_me_da", s: t("¿Me | da | un | boleto | de | {X}?", "(To) me | you-give | a | ticket | for | {X}?", "Can I have one {X} ticket?"), only: (e) => e.id !== "child", note: "Very common in Mexico: “¿Me da…?”" },
+        { id: "tk_quisiera", s: t("Quisiera | un | boleto | general.", "I'd like | a | ticket | general.", "I'd like one general admission ticket.",
+          { neutral: t("Quisiera | una | entrada | general.", "I'd like | a | ticket | general.", "I'd like one general admission ticket.") }), register: "polite" },
+        { id: "tk_me_da", s: t("¿Me | da | un | boleto | de | {X}?", "(To) me | you-give | a | ticket | for | {X}?", "Can I have one {X} ticket?",
+          { neutral: t("¿Me | da | una | entrada | de | {X}?", "(To) me | you-give | a | ticket | for | {X}?", "Can I have one {X} ticket?") }), only: (e) => e.id !== "child", note: "Very common in Mexico: “¿Me da…?”" },
         { id: "tk_student", s: t("Soy | estudiante.", "I'm | a student.", "I'm a student.") },
       ],
     },
@@ -1075,7 +1205,8 @@ export const museum: SituationDef = {
         { id: "g_can", s: t("¿Me | puede | dar | una | audioguía?", "(To) me | can you | give | an | audio guide?", "Could I get an audio guide?") },
         { id: "g_is_there", s: t("¿Tienen | audioguía?", "Do you have | audio guide?", "Do you have audio guides?") },
         { id: "g_price", s: t("¿Cuánto | cuesta | la | audioguía?", "How much | costs | the | audio guide?", "How much is the audio guide?") },
-        { id: "g_no", s: t("No, | gracias. | Solo | el | boleto.", "No, | thanks. | Just | the | ticket.", "No, thanks. Just the ticket.") },
+        { id: "g_no", s: t("No, | gracias. | Solo | el | boleto.", "No, | thanks. | Just | the | ticket.", "No, thanks. Just the ticket.",
+          { neutral: t("No, | gracias. | Solo | la | entrada.", "No, | thanks. | Just | the | ticket.", "No, thanks. Just the ticket.") }) },
       ],
     },
     lang: {
@@ -1090,7 +1221,8 @@ export const museum: SituationDef = {
       lt: "Ask about the new exhibition",
       items: [
         { id: "e_where", s: t("¿Dónde | está | la | exposición | nueva?", "Where | is | the | exhibition | new?", "Where's the new exhibition?") },
-        { id: "e_included", s: t("¿Está | incluida | en | el | boleto?", "Is it | included | in | the | ticket?", "Is it included in the ticket?") },
+        { id: "e_included", s: t("¿Está | incluida | en | el | boleto?", "Is it | included | in | the | ticket?", "Is it included in the ticket?",
+          { neutral: t("¿Está | incluida | en | la | entrada?", "Is it | included | in | the | ticket?", "Is it included in the ticket?") }) },
       ],
     },
     questions: {
@@ -1151,6 +1283,8 @@ export const museum: SituationDef = {
     "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less is a word-for-word reading of “about”.", minimal: "Three words." },
     "puerto colibrí": { reason: "lexical_expression", split: "puerto → port + colibrí → hummingbird would translate the town's proper name.", minimal: "The two-word name." },
     "le gustaría": { reason: "grammatical_fusion", split: "le → to you + gustaría → would please is a word-for-word reading of one English verb: would you like.", minimal: "Clitic and verb only." },
+    "se anima": { reason: "grammatical_fusion", split: "se → yourself + anima → encourages reads the reflexive verb word by word: animarse = to go for it.", minimal: "Pronoun and verb only." },
+    "aquí mismo": { reason: "lexical_expression", split: "aquí → here + mismo → same misreads the emphatic adverb: right here.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -1171,7 +1305,8 @@ export const museum: SituationDef = {
       ask: (c) => c.say("ask_qty"),
       // The bare number (qty_ctx) and everything that can hold a ticket type: the expected bonus counts once per parse,
       // so "Un boleto de estudiante" stays one buy_tickets and "¿Hay descuento para personas mayores?" one question.
-      expects: TICKET_TALK,
+      // want_guide too: "Quiero dos audioguías" is two guides, not "Quiero dos" (tickets) + "audioguías".
+      expects: [...TICKET_TALK, "want_guide", "lang_q"],
       suggest: [
         { lt: "Ask for a ticket", hint: "tickets", options: "ttype" },
         { lt: "Ask about prices and discounts", hint: "prices" },
@@ -1196,18 +1331,24 @@ export const museum: SituationDef = {
       no: (c) => { H.no_guide(c, {}, { intent: "no_guide", slots: {}, tags: [] }); } },
     { id: "lang", when: (c) => !!c.s.guides && !c.s.lang, done: (c) => !!c.s.lang,
       ask: (c) => { if (c.s.langAsked) { c.s.langAsked = false; return; } c.say(c.s.langListed ? "ask_lang_short" : c.s.guides > 1 ? "ask_lang_pl" : "ask_lang"); },
-      expects: ["lang_ctx", "lang_q", "langs_q", "lang_not_ctx"],
+      expects: ["lang_ctx", "lang_q", "langs_q", "lang_not_ctx", "guide_no_ctx"],
       suggest: [{ lt: "Choose the audio guide's language", hint: "lang", options: ["english", "spanish", "french", "german", "italian", "portuguese"] }],
-      help: (c) => { c.s.langListed = true; c.say("langs_list"); } },
+      help: (c) => { c.s.langListed = true; c.say("langs_list"); },
+      // "No, gracias" at "¿En qué idioma la quiere?": no audio guide after all (never the same question again)
+      no: (c) => { H.no_guide(c, {}, { intent: "no_guide", slots: {}, tags: [] }); } },
     { id: "pay", when: (c) => !!c.s.tix && !!c.s.typesKnown, done: (c) => !!c.s.paid,
       ask: (c) => {
         if (c.s.sunday && !c.s.sundaySaid) { c.s.sundaySaid = true; c.twist("sunday"); c.say("sunday_note"); }
-        // nothing to pay (a resident on a Sunday, or only kids): the tickets, then the next question
-        if (total(c) <= 0) { c.s.paid = true; if (!c.s.resident) c.say("kids_free"); handover(c); askNext(c); return; }
+        // nothing to pay (a resident on a Sunday, only kids, or an extra called off): the tickets, then the next question
+        if (due(c) <= 0) {
+          if (!c.s.paidAmt && !c.s.resident && total(c) <= 0) c.say("kids_free");
+          c.s.paid = true; c.s.paidAmt = Math.max(c.s.paidAmt || 0, total(c));
+          handover(c); askNext(c); return;
+        }
         // a re-ask: how to pay, then the total again (never the same line twice in a row)
-        if (c.s.totalSaid) { c.s.payHow = !c.s.payHow; c.say(c.s.payHow ? "pay_how" : "say_total", { price: total(c) }); return; }
+        if (c.s.totalSaid) { c.s.payHow = !c.s.payHow; c.say(c.s.payHow ? "pay_how" : "say_total", { price: due(c) }); return; }
         c.s.totalSaid = true;
-        c.say("say_total", { price: total(c) });
+        c.say("say_total", { price: due(c) });
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card_ctx", "ask_dollars", "im_resident", "im_visitor"],
       suggest: [{ lt: "Pay", hint: "pay" }, { lt: "Say if you live here", hint: "resident" }] },
@@ -1248,7 +1389,7 @@ export const museum: SituationDef = {
       c.say("greet_pm");
       c.say("late");
       c.twist("closing_soon");
-      c.expect({ id: "late", optional: true, hints: ["tickets"], expects: ["enough_time", "come_back", "never_mind_ctx", ...TICKET_TALK],
+      c.expect({ id: "late", optional: true, hints: ["tickets"], expects: ["enough_time", "come_back", "never_mind_ctx", ...TICKET_TALK, "want_guide"],
         suggest: [{ lt: "Buy a ticket", hint: "tickets", options: "ttype" }],
         yes: (cc) => { cc.say("ack"); cc.say("ask_qty"); cc.hold(); },
         no: (cc) => { cc.say("no_problem"); cc.say("ask_qty"); cc.hold(); },
@@ -1276,7 +1417,12 @@ export const museum: SituationDef = {
         on: {
           apology: (cc) => { haroldThanks(cc); },
           g_sorry: (cc) => { haroldThanks(cc); },
-          g_repeat: (cc) => { haroldThanks(cc); }, // "¡Perdón!" alone
+          // "¡Perdón!" alone is an apology here; "¿Qué?", "¿Mande?", "¿Cómo?" ask him to say it again
+          g_repeat: (cc) => {
+            if (/^[\s¡!¿?.,]*((ay|uy|oh|ah|ups)[\s,]+)?(perd[oó]n|perd[oó]ne(me)?|disc[uú]lpe(me)?|disculpa)[\s,]*(se[nñ]or|don arturo)?[\s¡!¿?.,]*$/i.test(cc.heard || "")) { haroldThanks(cc); return; }
+            cc.say(cc.s.flash ? "no_flash" : "dont_touch");
+            cc.expect(pend);
+          },
           g_ok: (cc) => { haroldThanks(cc); },
           deny: (cc) => { haroldDeny(cc); },
           why_not: (cc) => { cc.say(cc.s.flash ? "harold_why_flash" : "harold_why"); cc.say("harold_ask"); cc.expect(pend); },
@@ -1443,6 +1589,33 @@ export const museum: SituationDef = {
     { say: "¿Es gratis hoy?", intent: "ask_free_day" },
     { say: "Uno para mí y uno para mi hijo de diez años", intent: "buy_tickets" },
     { say: "¿Está incluida la audioguía?", intent: "guide_price", not: ["ask_included"] },
+    // the dialogue audit (5 Nov 2026)
+    { say: "Quiero dos audioguías", intent: "want_guide", step: "tickets", slots: { n: 2 }, not: ["buy_qty", "qty_ctx"] },
+    { say: "Dos audioguías en inglés, por favor", intent: "want_guide", step: "tickets", slots: { n: 2, lang: "english" }, not: ["qty_ctx"] },
+    { say: "Sí, seguro", intent: "guide_n_ctx", step: "guide", not: ["guide_no_ctx", "no_guide"] },
+    { say: "Sí, me animo", intent: "guide_n_ctx", step: "guide", not: ["no_guide"] },
+    { say: "Pensándolo bien, quiero una audioguía", intent: "want_guide", step: "more" },
+    { say: "Siempre sí quiero la audioguía", intent: "want_guide", step: "more" },
+    { say: "Otra audioguía, por favor", intent: "want_guide", step: "more" },
+    { say: "Me da otro boleto general", intent: "buy_tickets", step: "more", slots: { tt: "adult" } },
+    { say: "Quiero otro de estudiante", intent: "buy_tickets", step: "more", slots: { tt: "student" } },
+    { say: "Dos boletos más", intent: "buy_qty", step: "more", slots: { n: 2 } },
+    { say: "No quiero otro boleto", intent: "none" },
+    { say: "¿Tiene terminal?", intent: "pay_card", step: "pay" },
+    { say: "¿Tiene cambio de quinientos?", intent: "pay_cash", step: "pay", not: ["pay_card", "here_you_go"] },
+    { say: "Aquí tiene ochenta pesos", intent: "here_you_go", step: "pay", slots: { price: 8000 } },
+    { say: "Somos residentes", intent: "im_resident", step: "pay", not: ["im_visitor"] },
+    { say: "¿Dónde devuelvo la audioguía?", intent: "ask_return_guide", not: ["ask_coat"] },
+    { say: "¿Dónde está la colección permanente?", intent: "ask_start", not: ["ask_exhibit"] },
+    { say: "¿Hasta qué hora se puede entrar?", intent: "ask_hours" },
+    { say: "¿Cuánto es en dólares?", intent: "ask_dollars" },
+    { say: "¿Es accesible para silla de ruedas?", intent: "ask_elevator" },
+    { say: "¿Cuánto le debo?", intent: "ask_prices", step: "pay" },
+    { say: "No toqué la estela", intent: "deny", not: ["apology"] },
+    { say: "¿Habla inglés?", intent: "ask_english", step: "tickets", not: ["lang_q"] },
+    { say: "¿Tienen audioguías en español?", intent: "lang_q", step: "tickets", not: ["want_guide"] },
+    { say: "Tenga, son ochenta", intent: "here_you_go", step: "pay", slots: { price: 8000 } },
+    { say: "No me animo", intent: "guide_no_ctx", step: "guide", not: ["guide_n_ctx", "want_guide"] },
     // not understood
     { say: "Mi perro come boletos azules", intent: "none" },
     { say: "La pirámide baila salsa en la playa", intent: "none" },
@@ -1495,6 +1668,31 @@ export const museum: SituationDef = {
     { name: "a change of mind: one ticket becomes a student one, a guide each", turns: ["Dos adultos, por favor", "Perdón, mejor un adulto y un estudiante", "Aquí está mi credencial", "Sí, una para cada uno", "En español, para practicar", "Con tarjeta", "¿De qué es la exposición nueva?", "¿Dónde está la exposición nueva?", "Es todo"],
       expect: { complete: true, state: { tix: { adult: 1, student: 1 }, guides: 2, lang: "spanish", paid: true } }, auto: AUTO,
       setup: (s) => { s.haroldTwist = false; s.late = false; s.sunday = false; s.mentionExhibit = false; } },
+    // the dialogue audit (5 Nov 2026): the binding outcomes
+    // "¿Tienen audioguía?" before the offer is a question (price only); at "¿Se anima?" a bare "Sí" takes it; exact cash
+    { name: "'¿Tienen audioguía?' first, 'Sí' at '¿Se anima?', exact cash, where to return it", turns: ["¿Tienen audioguía?", "Un boleto general, por favor", "No, gracias", "Sí", "En inglés", "Aquí tiene ciento treinta pesos", "¿Dónde devuelvo la audioguía?", "¿Dónde está la exposición nueva?", "Es todo"],
+      expect: { complete: true, state: { tix: { adult: 1 }, guides: 1, lang: "english", paid: true, paidAmt: 13000 } }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = false; s.late = false; s.sunday = false; } },
+    // an audio guide after paying is charged alone ($50), never the ticket again
+    { name: "an audio guide after paying is charged alone", turns: ["Un boleto general, por favor", "No, gracias", "No, gracias", "Con tarjeta", "Pensándolo bien, quiero una audioguía", "En inglés", "Con tarjeta", "¿Dónde está la exposición nueva?", "Es todo"],
+      expect: { complete: true, state: { tix: { adult: 1 }, guides: 1, paid: true, paidAmt: 13000 } }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = false; s.late = false; s.sunday = false; } },
+    // too little cash: the total again, then the rest
+    { name: "too little cash, then enough", turns: ["Dos adultos, por favor", "No, gracias", "No, gracias", "Aquí tiene cien pesos", "Aquí tiene doscientos", "¿Dónde está la exposición nueva?", "Es todo"],
+      expect: { complete: true, state: { tix: { adult: 2 }, paid: true, paidAmt: 16000 } }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = false; s.late = false; s.sunday = false; } },
+    // five people with a guide each: $650, in the voiced totals (ten or more book ahead)
+    { name: "a group of ten books ahead; five with a guide each pay $650", turns: ["Somos diez", "Somos cinco", "Sí", "Sí, una para cada uno", "En inglés", "Con tarjeta", "Es todo"],
+      expect: { complete: true, state: { tix: { adult: 5 }, guides: 5, paid: true, paidAmt: 65000 } }, auto: AUTO,
+      setup: (s) => { s.typesPref = "all"; s.haroldTwist = false; s.late = false; s.sunday = false; s.mentionExhibit = false; } },
+    // Sunday: "Somos residentes" frees the whole order
+    { name: "Sunday (twist forced): 'Somos residentes' frees both tickets", turns: ["Dos adultos, por favor", "No, gracias", "No, gracias", "Somos residentes", "Aquí tiene", "Es todo"],
+      expect: { complete: true, state: { tix: { adult: 2 }, resident: true, resAll: true, paid: true } }, auto: AUTO,
+      setup: (s) => { s.sunday = true; s.haroldTwist = false; s.late = false; } },
+    // the guard: "¿Mande?" gets his warning again, then the apology
+    { name: "the guard: '¿Mande?', then sorry", turns: ["Un boleto general, por favor", "No, gracias", "No, gracias", "Con tarjeta", "¿Dónde está la exposición nueva?", "Es todo", "¿Mande?", "Ay, perdón"],
+      expect: { complete: true, state: { apologized: true } }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = true; s.late = false; s.sunday = false; } },
   ],
 };
 
