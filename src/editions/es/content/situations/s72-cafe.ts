@@ -1,10 +1,14 @@
 // Song 72 "Eat In or Take Away?" → Puerto Colibrí: "¿Para aquí o para llevar?"
-// Café La Ceiba on the zócalo, barista Mariana (usted). The Spanish edition's reference situation: it shows every
-// feature an executor needs (docs/es/STYLE.md, docs/es/AUTHORING-ES.md). Built on the English edition's café
-// (src/content/situations/s72-cafe.ts): the same steps, intents and handlers, with a Mexican menu (café de olla,
-// horchata, agua de jamaica, conchas), pesos, usted, and two lines with a neutral twin ("ahorita", "ticket").
+// Café La Ceiba on avenida Juárez, across from the visitor center (docs/es/TOWN.md "Getting around"), barista Mariana
+// (usted). The Spanish edition's reference situation: it shows every feature an executor needs (docs/es/STYLE.md,
+// docs/es/AUTHORING-ES.md). Built on the English edition's café (src/content/situations/s72-cafe.ts): the same steps,
+// intents and handlers, with a Mexican menu (café de olla, horchata, agua de jamaica, conchas), pesos, usted, and the
+// lines with a Mexican-only word twinned for neutral Spanish (ahorita, ticket, pizarrón, ¿Gusta…?).
+// The audit of 5 Nov 2026 (docs/es/reviews/s72-cafe.md): price and "¿Hay…?" questions never order; "¿Qué es una
+// concha?" gets an answer; dollars, the hours, "¿Tiene terminal?", napkins; value-only price lines the voices can say.
 
 import type { Ctx, EntityDef, SituationDef, Suggestion } from "@/content/types";
+import type { ConvCtx } from "@/convo/dialogue";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 
@@ -12,7 +16,7 @@ import { expectHowAreYou } from "@/content/global";
 // Menu (prices in cents of a peso)
 
 export const DRINKS: EntityDef[] = [
-  ent("americano", "americano", "americano", "m", { pl: "americanos", forms: ["cafe americano", "americanos"],
+  ent("americano", "americano", "americano", "m", { pl: "americanos", forms: ["cafe americano", "americanos", "cafe de la casa", "cafe de grano", "cafe normal"],
     attrs: { sized: true, iced: true, price: [3500, 4000, 4500], cup: true } }),
   ent("cappuccino", "capuchino", "cappuccino", "m", { pl: "capuchinos", ltPl: "cappuccinos",
     forms: ["cappuccino", "capuccino", "capuchinos", "capucchino", "capucino", "cappuccinos"], attrs: { sized: true, milky: true, price: [4500, 5000, 5500] } }),
@@ -53,8 +57,8 @@ export const FOODS: EntityDef[] = [
 ];
 
 const SIZES: EntityDef[] = [
-  ent("small", "chico", "small", "m", { forms: ["chica", "chiquito", "chiquita", "pequeno", "pequena", "corto", "tall", "el mas chico", "la mas chica"], chip: "chico" }),
-  ent("medium", "mediano", "medium", "m", { forms: ["mediana", "regular", "normal", "medio"], chip: "mediano" }),
+  ent("small", "chico", "small", "m", { forms: ["chica", "chiquito", "chiquita", "pequeno", "pequena", "corto", "tall", "el mas chico", "la mas chica", "el mas pequeno", "la mas pequena"], chip: "chico" }),
+  ent("medium", "mediano", "medium", "m", { forms: ["mediana", "regular", "normal", "medio", "el de en medio", "el de enmedio", "la de en medio"], chip: "mediano" }),
   ent("large", "grande", "large", "m", { forms: ["grandes", "grandote", "grandota", "el mas grande", "la mas grande", "extra grande", "venti"], chip: "grande" }),
 ];
 
@@ -101,6 +105,9 @@ function itemPrice(it: Item): number {
   return base * it.qty;
 }
 const total = (c: Ctx) => (c.s.items as Item[]).reduce((a, it) => a + itemPrice(it), 0);
+/** What is still to pay: all of it, or what was added after paying ("¡Ah! Y una concha" → "Son $25."). */
+const due = (c: Ctx) => total(c) - (c.s.paidSoFar ?? 0);
+function markPaid(c: Ctx) { c.s.paid = true; c.s.paidSoFar = total(c); }
 
 function fromSlot(v: any): Item | null {
   if (!v) return null;
@@ -108,7 +115,8 @@ function fromSlot(v: any): Item | null {
   const qty = tags.includes("q3") ? 3 : tags.includes("q2") ? 2 : 1;
   if (v.drink) {
     let id = v.drink as string;
-    if (id === "coffee" && (tags.includes("cupof") || v.kind === "plain")) id = "americano";
+    // "una taza de café", "un café negro / sin leche": a plain americano (never "¿Qué café le gustaría?")
+    if (id === "coffee" && (tags.includes("cupof") || tags.includes("nomilk") || v.kind === "plain")) id = "americano";
     const it: Item = { cat: "drink", id, qty, size: v.size, milk: v.milk, temp: v.temp, cupOf: tags.includes("cupof") };
     if (tags.includes("nomilk")) it.noMilk = true;
     if (tags.includes("extra_shot")) it.extraShot = true;
@@ -124,8 +132,6 @@ const items = (c: Ctx) => c.s.items as Item[];
 const drinks = (c: Ctx) => items(c).filter((i) => i.cat === "drink");
 const foods = (c: Ctx) => items(c).filter((i) => i.cat === "food");
 const generic = (it: Item) => byId(it.id).attrs?.generic as string | undefined;
-// size after the noun, "frío" only for a drink that is also served hot ("un latte grande frío"; a horchata is always cold)
-const np = (it: Item) => ({ id: it.id, mods: [it.size && byId(it.id).attrs?.sized ? it.size : null, it.temp === "iced" && !byId(it.id).attrs?.cold ? "iced" : null].filter(Boolean) as string[], qty: it.qty });
 
 /** Adds the ordered items; returns how many already-ordered items only changed their number. */
 function addItems(c: Ctx, list: Item[], tags: string[]): number {
@@ -173,12 +179,19 @@ function applyDetail(c: Ctx, key: "size" | "milk" | "temp", value: string | null
   return true;
 }
 
+/** "¿Tienen leche de avena?" on the day it's out: she says so, and from then on asks "¿Qué leche prefiere?" (no list with oat). */
+function oatGone(c: Ctx) {
+  c.twist("out_of_oat");
+  c.s.oatOut = true;
+  c.say("out_of_oat");
+}
+
 /** Out of oat milk (twist): Mariana offers almond or soy. A yes/no question that also takes another milk. */
 function offerAltMilk(c: Ctx) {
   c.twist("out_of_oat");
   c.s.oatOut = true;
   c.say("out_of_oat"); c.say("offer_alt_milk");
-  c.expect({ id: "alt_milk", expects: ["milk_ans"], hints: ["milk"], suggest: [{ lt: "Choose another milk", hint: "milk", options: ["almond", "soy", "whole"] }],
+  c.expect({ id: "alt_milk", expects: ["milk_ans", "ask_price"], hints: ["milk"], suggest: [{ lt: "Choose another milk", hint: "milk", options: ["almond", "soy", "whole"] }],
     yes: (cc) => { applyDetail(cc, "milk", "almond"); cc.say("ack"); },
     no: (cc) => { cc.ask("milk"); },
     on: { milk_ans: (cc, sl, sg) => { cafe.handlers.milk_ans(cc, sl, sg); } },
@@ -190,20 +203,47 @@ function offerFood(c: Ctx, id: string) {
   const X = { id, mods: [], qty: 1 };
   c.s.offered = id;
   c.say("offer_food", { X });
-  c.expect({ id: "food_offer", optional: true, expects: ["order", "offer_ctx", "change"], hints: ["g_yesno", "order_food"],
+  // "¿Cuánto cuesta?" here is this one's price (ask_price), never an order
+  c.expect({ id: "food_offer", optional: true, expects: ["order", "offer_ctx", "change", "ask_price"], hints: ["g_yesno", "order_food"],
     suggest: [{ lt: "Say yes or no", hint: "g_yesno" }, { lt: "Order something else", hint: "order_food", options: "food" }],
     yes: (cc) => { if (cc.s.offered) cafe.handlers.offer_ctx(cc, {}, { intent: "offer_ctx", slots: {}, tags: [] }); },
-    on: { change: (cc, sl, sg) => { if (!sl.item) return false; cc.s.offered = undefined; cafe.handlers.order(cc, { items: { item: sl.item } }, sg); return true; } },
+    on: {
+      change: (cc, sl, sg) => { if (!sl.item) return false; cc.s.offered = undefined; cafe.handlers.order(cc, { items: { item: sl.item } }, sg); return true; },
+      // "¿Cuánto cuesta?" / "¿Qué es una concha?": the answer, then the offer again ("Cuesta $25. ¿Le doy una concha?")
+      ask_price: (cc, sl, sg) => {
+        const own = !sl.item && !sl.size && !sl.milk && !/\b(todo|debo|total)\b/.test(plain(cc));
+        cafe.handlers.ask_price(cc, own ? { ...sl, item: { food: id, __tags: [] } } : sl, sg);
+        offerFood(cc, id);
+        return true;
+      },
+      what_is: (cc, sl, sg) => { if (!WHAT[(sl.thing?.food || sl.thing?.drink) as string]) return false; cafe.handlers.what_is(cc, sl, sg); offerFood(cc, id); return true; },
+    },
     no: (cc) => { cc.s.offered = undefined; cc.s.foodDeclined = true; cc.say("no_problem"); },
     ask: (cc) => cc.say("offer_food", { X }) });
 }
 
+/** "¿Tienen té?" – "¡Sí, claro! ¿Qué té? Tenemos de manzanilla…": the learner's pick ("De manzanilla.") is the order. */
+function kindOffer(c: Ctx, g: string) {
+  const list = (cc: Ctx) => cc.say(g === "tea" ? "ask_kind_tea" : g === "pan" ? "ask_kind_pan" : "coffee_list");
+  list(c);
+  const sug = KIND_SUGGEST[g] ?? KIND_SUGGEST.coffee;
+  c.expect({ id: "kind_have", optional: true, expects: ["order", "kind_ctx"], hints: [sug[0].hint!], suggest: sug,
+    on: { kind_ctx: (cc, sl, sg) => {
+      const pick = KIND_CHOICE[g]?.[sl.choice as string];
+      if (!pick) return false;
+      cafe.handlers.order(cc, { items: { item: { [g === "pan" ? "food" : "drink"]: pick } } }, { ...sg, tags: [] });
+      return true;
+    } },
+    ask: list });
+}
+
 const kindAsked = (c: Ctx) => generic(items(c).find((i) => generic(i)) ?? items(c)[0] ?? { cat: "drink", id: "coffee", qty: 1 });
-// "¿Qué té?" – "De manzanilla." / "Hierbabuena."; "¿Qué pan?" – "Una concha." / "Concha."; "¿Qué café?" – "Negro."
+// "¿Qué té?" – "De manzanilla." / "Hierbabuena."; "¿Qué pan?" – "Una concha." / "Concha."; "¿Qué café?" – "Negro." /
+// "El normal." (an americano; a plain tea is black)
 const KIND_CHOICE: Record<string, Record<string, string>> = {
-  tea: { manzanilla: "chamomile_tea", hierbabuena: "mint_tea", verde: "green_tea", negro: "black_tea" },
+  tea: { manzanilla: "chamomile_tea", hierbabuena: "mint_tea", verde: "green_tea", negro: "black_tea", plain: "black_tea" },
   pan: { concha: "concha", cuernito: "croissant", dona: "donut" },
-  coffee: { negro: "americano", americano: "americano", olla: "cafe_de_olla" },
+  coffee: { negro: "americano", americano: "americano", olla: "cafe_de_olla", plain: "americano" },
 };
 const KIND_SUGGEST: Record<string, Suggestion[]> = {
   tea: [{ lt: "Choose a tea", hint: "kind_tea", options: ["chamomile_tea", "mint_tea", "green_tea", "black_tea"] }],
@@ -214,6 +254,11 @@ function kindList(c: Ctx) {
   const g = kindAsked(c);
   c.say(g === "tea" ? "ask_kind_tea" : g === "pan" ? "ask_kind_pan" : "coffee_list");
 }
+
+const conv = (c: Ctx) => (c as ConvCtx).conv;
+const plain = (c: Ctx) => c.heard.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+/** "¿Qué es una concha?": what Mariana says about the Mexican things on her menu (the rest: the meaning shown). */
+const WHAT: Record<string, string> = { concha: "what_concha", cafe_de_olla: "what_olla", horchata: "what_horchata", jamaica: "what_jamaica", torta: "what_torta" };
 
 /** The order is complete: Mariana serves it. */
 function serve(c: Ctx) {
@@ -245,7 +290,7 @@ export const cafe: SituationDef = {
   location: "sunny-cup",
   npc: "mia",
   goal: "Order a drink (and something to eat, if you like), say whether it's for here or to go, and pay.",
-  intro: "Café La Ceiba is on the zócalo, under a big ceiba tree. Mariana is behind the counter; the menu is on the board behind her. Prices are in pesos: $45 means 45 pesos.",
+  intro: "Café La Ceiba is on avenida Juárez, across from the visitor center, under a green-and-white awning. Mariana is behind the counter; the menu is on the board behind her. Prices are in pesos: $45 means 45 pesos.",
   entities: { drink: DRINKS, food: FOODS, size: SIZES, milk: MILKS, temp: TEMPS },
 
   grammar: {
@@ -255,6 +300,7 @@ export const cafe: SituationDef = {
         "me da #h:me_da", "me das #h:me_da #tip:tu_staff", "deme #h:deme", "dame #tip:tu_staff",
         "me puede dar #h:me_puede_dar", "me podria dar #h:me_puede_dar", "me puedes dar #tip:tu_staff", "me podrias dar #tip:tu_staff",
         "me regala", "me trae", "me sirve", "sirvame", "me pone", "pongame", "ponme #tip:tu_staff", "me pones #tip:tu_staff",
+        "me (prepara | hace)", "me (puede | podria) (preparar | hacer)", "me (preparas | haces) #tip:tu_staff", "(puede | podria) (darme | prepararme | hacerme)",
         "quiero #h:quiero", "quiero pedir", "quiero ordenar", "queremos", "quisieramos",
         "voy a querer #h:voy_a_querer", "vamos a querer", "voy a pedir", "voy a tomar", "le pido",
         "para mi #h:para_mi", "a mi me da", "tambien (quisiera | quiero | me da) #h:food_also", "y tambien (quisiera | me da)",
@@ -265,7 +311,7 @@ export const cafe: SituationDef = {
       dine: "(para llevar #togo | para aqui #here | para tomar aqui #here | para comer aqui #here | aqui #here | para aca #here | para llevarmelo #togo | para ir #togo #tip:para_llevar | para irme #togo #tip:para_llevar)",
       // English word order ("un grande latte") is understood too
       drink_pre: "({size} | {temp} | descafeinado #decaf | doble #extra_shot)",
-      drink_post: "({size} | de tamano {size} | tamano {size} | {temp} | con {milk} | con leche | sin leche #nomilk | negro #nomilk | sin azucar | con azucar | descafeinado #decaf | doble #extra_shot | con carga extra #extra_shot | con shot extra #extra_shot | extra caliente | bien caliente | con hielo #iced | sin hielo | @dine | con (canela | vainilla | crema batida | crema) | para (mi | mi esposa | mi esposo | mi hijo | mi hija | mi amigo | mi amiga | mi novio | mi novia))",
+      drink_post: "({size} | de tamano {size} | tamano {size} | {temp} | con {milk} | con leche | sin leche #nomilk | negro #nomilk | [pero] sin azucar | con azucar | descafeinado #decaf | doble #extra_shot | con carga extra #extra_shot | con shot extra #extra_shot | extra caliente | bien caliente | con hielo #iced | sin hielo | @dine | con (canela | vainilla | crema batida | crema) | para (mi | mi esposa | mi esposo | mi hijo | mi hija | mi amigo | mi amiga | mi novio | mi novia))",
     },
     slots: {
       kind: { lexicon: [{ id: "plain", forms: ["normal", "regular", "de la casa", "del dia", "de grano"] }] },
@@ -274,6 +320,7 @@ export const cafe: SituationDef = {
         { id: "manzanilla", forms: ["manzanilla", "de manzanilla"] }, { id: "hierbabuena", forms: ["hierbabuena", "yerbabuena", "de hierbabuena", "menta", "de menta"] },
         { id: "verde", forms: ["verde"] }, { id: "negro", forms: ["negro"] }, { id: "olla", forms: ["de olla"] }, { id: "americano", forms: ["americano"] },
         { id: "concha", forms: ["concha", "conchita"] }, { id: "cuernito", forms: ["cuernito", "cuerno"] }, { id: "dona", forms: ["dona"] },
+        { id: "plain", forms: ["normal", "el normal", "uno normal", "de la casa", "el de la casa"] },
       ] },
       item: { pattern: [
         "[@qty] [@drink_pre] {drink} [@drink_post] [@drink_post] [@drink_post]",
@@ -293,9 +340,11 @@ export const cafe: SituationDef = {
       "no tan grande [[el | la | uno | una] {size}] #small",
     ] },
     milk_ans: { patterns: [
-      "[solo] {milk} #h:milk_please", "con {milk} #h:milk_with", "@order_prefix {milk} #h:milk_can",
+      "[solo] {milk} #h:milk_please", "con {milk} #h:milk_with", "@order_prefix {milk} #h:milk_can", "(la | el) {milk}",
       "(sin | no) leche #nomilk #h:milk_none", "negro #nomilk", "nada de leche #nomilk", "sin leche y sin azucar #nomilk", "sin azucar y sin leche #nomilk",
       "[solo] leche (normal | regular) #regular #h:milk_regular", "(con)? un poco de leche #regular", "(cualquiera | la que sea | la que tenga) #regular",
+      // "Normal." to "¿Con qué leche?" is the milk (at the size step it stays a size: that step expects size_ans)
+      "[la] (normal | regular) [esta bien] #regular",
       "{milk} (esta bien | me parece bien | estaria bien)", "(entonces | mejor) [con] {milk}",
       // a change of milk later on: "Mejor con leche de avena", "¿Me la puede cambiar a leche de soya?"
       "[mejor] (puede | podria | me puede | me podria) (cambiar | cambiarla | cambiarlo) (a | por) {milk}", "{milk} en (vez | lugar) [de eso]",
@@ -307,28 +356,44 @@ export const cafe: SituationDef = {
       "(me lo | me la | lo | la) llevo #togo #h:dine_take", "(me lo | me la) (da | puede dar) @dine #h:dine_can",
       "me quedo aqui #here", "voy a (tomarlo | tomarla | comerlo | comerla) aqui #here", "(me lo | me la | lo | la) voy a llevar #togo",
       "para (tomar | comer) aqui #here", "(voy | ando) con prisa #togo", "aqui esta bien #here",
+      "aqui mismo #here", "me quedo [aqui] #here", "(lo | la) quiero @dine", "(lo | la) (voy a | quiero) (tomar | comer) aqui #here", "(lo | la) (tomo | como) aqui #here",
     ] },
     more_no: { patterns: [
       "(es | seria | eso es | eso seria) todo #h:more_all", "nada mas #h:more_nothing", "(asi | asi esta) bien #h:more_good",
       "(solo | nomas) (eso | el cafe | la bebida)", "no quiero nada mas", "no necesito nada mas", "(con eso | asi) es suficiente",
       "nada de comer", "no tengo hambre", "no quiero nada de comer", "es suficiente", "no gracias asi esta bien",
+      "[ya] con eso [es todo | esta bien]", "ya (es | seria) todo", "(por | de) (ahora | el momento) (es | seria) todo", "(es | seria) todo por (ahora | el momento)",
     ] },
     more_yes: { patterns: ["(si | ah si) (algo mas | otra cosa)", "otra cosa", "algo mas", "una cosa mas", "si quisiera algo mas"] },
     pay_card: { patterns: [
       "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(aceptan | acepta | toman) tarjeta #h:take_cards",
       "(pago | voy a pagar | le pago) con tarjeta", "(con)? (tarjeta)? de (credito | debito)", "(con)? (la | mi) tarjeta", "con tarjeta esta bien",
+      // "¿Tiene terminal?" = may I pay by card (they have one: "Acerque la tarjeta a la terminal")
+      "(tiene | tienen | hay) terminal", "(aceptan | acepta) (pago con)? tarjeta de (credito | debito)",
     ] },
     // "No traigo efectivo": so it's the card (never read as "efectivo")
     no_cash: { patterns: ["no (tengo | traigo) [suficiente] efectivo", "sin efectivo", "no puedo pagar en efectivo"] },
     pay_cash: { patterns: ["[puedo] pagar en efectivo", "en efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago) en efectivo #h:pay_cash", "con efectivo"] },
     pay_phone: { patterns: ["(puedo | se puede) pagar con (el | mi)? (celular | telefono)", "con (el | mi)? (celular | telefono)",
-      "(aceptan | acepta) (apple pay | google pay) #h:apple_pay", "apple pay", "google pay"] },
-    here_you_go: { patterns: ["aqui tiene #h:here_you_go", "aqui esta", "tenga", "aqui le dejo", "aqui tiene mi tarjeta", "aqui tiene {price}", "aqui (tiene | estan) los {price}"] },
+      "(aceptan | acepta) (apple pay | google pay) #h:apple_pay", "apple pay", "google pay", "(puedo | se puede) pagar con (apple pay | google pay)", "(aceptan | acepta) (pago con)? [el] (celular | telefono)"] },
+    // a visitor's dollars: pesos only (nothing is paid)
+    ask_dollars: { patterns: [
+      "(acepta | aceptan | toma | toman | recibe | reciben) (dolares | dolar | dolares americanos)", "(puedo | se puede) pagar (en | con) dolares",
+      "(pago | le pago | le puedo pagar) (en | con) dolares", "(solo | nada mas | nomas) (tengo | traigo) dolares", "[y] en dolares",
+    ] },
+    here_you_go: { patterns: ["aqui tiene #h:here_you_go", "aqui esta", "tenga", "tome", "aqui le dejo", "aqui tiene mi tarjeta", "aqui tiene {price}", "aqui (tiene | estan) los {price}"] },
     keep_change: { patterns: ["quedese con el cambio #h:keep_change", "el cambio es para usted", "asi esta bien quedese con el cambio"] },
+    // expected at every ordering step, so "¿Cuánto cuesta un latte?" stays one question (never "cuánto cuesta" + an order)
     ask_price: { patterns: [
-      "cuanto (cuesta | es | vale | sale) [el | la | un | una] {item} #h:q_price", "cuanto (cuesta | es | sale) [eso]", "a como (esta | sale) [el | la] {item}",
-      "cuanto le debo", "cuanto (es | seria) [todo]", "cual es el precio de [el | la | un | una] {item}", "que precio tiene [el | la] {item}",
-      "cuanto cuesta el {size}", "[el | la] {item} cuanto (cuesta | es)",
+      "cuanto (cuesta | cuestan | es | son | vale | valen | sale | salen) [el | la | los | las | un | una] {item} #h:q_price", "cuanto (cuesta | es | sale) [eso]",
+      "a como (esta | estan | sale | salen) [el | la | los | las] {item}",
+      "cuanto le debo", "cuanto (es | seria) [todo]", "cuanto (es | seria | sale) (en total | todo junto | el total)", "cual es el total",
+      // "¿Y cuánto cuesta una?" at the pastry offer: its price (never "cuánto cuesta" + "una" = yes, one)
+      "[y] cuanto (cuesta | es | sale | vale) (uno | una | cada uno | cada una | la pieza)", "cual es el precio de [el | la | los | las | un | una] {item}", "que precio (tiene | tienen) [el | la | los | las] {item}",
+      "cuanto (cuesta | sale | es) el {size}", "[el | la] {item} cuanto (cuesta | es)",
+      // "¿La leche de avena cuesta extra?": the milk's price, never the milk chosen
+      "cuanto (cuesta | es | sale | cobran) [por] [la | el] {milk} [extra | aparte]", "(cuesta | cobran | es) (extra | mas | aparte) [por] [la] {milk}",
+      "[la] {milk} (cuesta | es) (extra | mas | aparte)", "[la] {milk} (tiene | lleva) costo [extra]", "(tiene | lleva) costo [extra] [la] {milk}",
     ] },
     ask_menu: { patterns: [
       "que (tiene | tienen | hay) #h:q_menu", "que (tipos | clases) de (cafe | bebidas | te | pan | leche) (tiene | tienen | hay) #h:q_kinds",
@@ -342,16 +407,36 @@ export const cafe: SituationDef = {
     want_food: { patterns: [
       "(quisiera | quiero | me gustaria) algo (de comer | para comer) #h:want_food", "algo (de comer | para comer)", "tengo hambre",
       "que (tiene | tienen | hay) (de comer | para comer)", "que (pan | comida) (tiene | tienen | hay)", "(tiene | tienen) algo (de comer | dulce | para comer)",
-      "algo dulce", "y de comer", "(tiene | tienen | hay) pan dulce",
+      "algo dulce", "y de comer", "(tiene | tienen | hay | vende | venden) pan dulce",
       "@order_prefix (pan | pan dulce | un pan | algo dulce | un postre) #pick", "[y | tambien] [un] (pan | pan dulce | postre) #pick",
     ] },
-    ask_have: { patterns: ["(tiene | tienen | hay) {thing} #h:q_have", "(puedo | podria) (pedir | tener) {thing} (en vez | en lugar) [de eso] #get"] },
+    ask_have: { patterns: ["(tiene | tienen | hay) {thing} #h:q_have", "(vende | venden) {thing}", "(puedo | podria) (pedir | tener) {thing} (en vez | en lugar) [de eso] #get"] },
     ask_have_unknown: { patterns: ["(tiene | tienen | hay) {w:any}"] },
     ask_wifi: { patterns: ["(tiene | tienen | hay) (wifi | internet) #h:q_wifi", "cual es la (contrasena | clave) del (wifi | internet) #h:q_password",
-      "(la)? (contrasena | clave) del wifi", "me (da | puede dar) la (contrasena | clave) del wifi", "el wifi es gratis"] },
-    ask_restroom: { patterns: ["donde (esta | queda) el bano #h:q_restroom", "(tiene | tienen | hay) bano", "puedo (usar | pasar a) el bano", "me presta el bano", "donde estan los banos"] },
-    ask_water: { patterns: ["(me da | me puede dar | me regala | quisiera) [un vaso de] agua #h:q_water", "un vaso de agua", "agua natural"] },
-    ask_sugar: { patterns: ["(me da | me puede dar) [un poco de] azucar", "donde esta el azucar", "(tiene | tienen) azucar", "(servilletas | popotes | pajitas | tapas)"] },
+      "(la)? (contrasena | clave) del wifi", "me (da | puede dar) la (contrasena | clave) del wifi", "el wifi es gratis",
+      "cual es la (contrasena | clave)", "me (pasa | puede pasar | podria pasar | dice | puede decir | podria dar) la (contrasena | clave) [del (wifi | internet)]",
+      "(puede | podria) (darme | pasarme | decirme) la (contrasena | clave) [del (wifi | internet)]",
+      "(tiene | tienen | hay) (wifi | internet) gratis", "el (wifi | internet) tiene (contrasena | clave)"] },
+    ask_restroom: { patterns: ["donde (esta | queda) el bano #h:q_restroom", "(tiene | tienen | hay) bano", "puedo (usar | pasar a) el bano", "me presta el bano", "donde estan los banos",
+      "[y] (el bano | los banos)"] },
+    ask_water: { patterns: ["(me da | me puede dar | me regala | quisiera) [un vaso de] agua #h:q_water", "un vaso de agua", "agua natural",
+      "(me podria dar | puede darme | podria darme | me trae | me sirve) [un vaso de] agua"] },
+    ask_sugar: { patterns: ["(me da | me puede dar | me podria dar | puede darme | podria darme) [un poco de] azucar", "donde esta el azucar", "(tiene | tienen) azucar"] },
+    // the hours (s62: La Ceiba opens at seven and closes at nine p.m.)
+    ask_hours: { patterns: [
+      "a que hora (cierran | abren | cierra | abre) [hoy | manana]", "(hasta | desde) que hora (abren | estan abiertos | cierran | atienden)",
+      "cual es (el | su) horario", "que horario (tienen | tiene | manejan)", "(abren | estan abiertos) (manana | el domingo | los domingos | todos los dias)",
+    ] },
+    // "¡Qué rico café!", "Se ve delicioso": a compliment (at the goodbye it's never a new order)
+    compliment: { patterns: [
+      "(que | muy) (rico | rica | sabroso | sabrosa | bueno | buena | delicioso | deliciosa) [esta | se ve | huele] [el | la] [{item}]",
+      "[el | la] {item} (esta | se ve | huele) [muy] (rico | rica | sabroso | sabrosa | bueno | buena | delicioso | deliciosa)",
+      "(se ve | huele | esta) [muy] (rico | rica | delicioso | deliciosa | sabroso | sabrosa)",
+    ] },
+    // "¿Qué es una concha?" is a question about the word: never an order
+    what_is: { patterns: [
+      "que (es | son) [el | la | los | las | un | una | unas | unos] {thing}", "que (lleva | trae | tiene) [el | la | un | una] {thing}", "como es [el | la] {thing}",
+    ] },
     change: { patterns: [
       "[mejor] (puede | podria) cambiar(lo | la)? (por | a) {item} #h:change", "mejor {item}", "{item} en (vez | lugar) [de eso]", "mejor que sea [un | una] {size}",
       "[mejor] @order_prefix {item} en (vez | lugar) [de eso]",
@@ -366,7 +451,7 @@ export const cafe: SituationDef = {
     offer_ctx: { patterns: ["@order_prefix (uno | una | eso | esa | ese | unos | unas)", "@order_prefix (dos #q2 | tres #q3)",
       "(uno | una | dos #q2 | tres #q3)", "me encantaria"] },
     // "¿Qué té?" – "De manzanilla." (only while the kind is asked)
-    kind_ctx: { patterns: ["[el | la] {choice}", "@order_prefix [el | la | un | una] {choice}", "{choice} (esta bien | por favor)"] },
+    kind_ctx: { patterns: ["[el | la | uno | una] {choice}", "@order_prefix [el | la | un | una] {choice}", "{choice} (esta bien | por favor)"] },
     qty_one: { patterns: ["(solo | nomas | nada mas) (uno | una)", "mejor (solo)? (uno | una)", "con (uno | una) (es suficiente | basta)", "(solo | nomas) (necesito | quiero) (uno | una)"] },
     order_unknown: { patterns: ["@order_prefix {w:any}"] },
     order_partial: { patterns: ["@order_prefix {items} (y | con | mas) {w:any}", "{items} (y | con) {w:any}"] },
@@ -376,8 +461,12 @@ export const cafe: SituationDef = {
     // "No, no lo necesito" (to "¿Quiere su ticket?")
     no_receipt_ctx: { patterns: ["[no] no (lo | la) necesito", "[no] no es necesario", "[no] (asi | asi esta) bien"] },
     receipt_yes_ctx: { patterns: ["[si] (lo | la) (necesito | quiero)", "[si] (deme | me lo da)"] },
-    want_receipt: { patterns: ["(me | nos) (da | puede dar) [el | un | mi] (ticket | recibo)", "(quisiera | quiero | necesito) [el | un | mi] (ticket | recibo)", "[el | mi] (ticket | recibo)"] },
-    togo_bag: { patterns: ["(me da | me puede dar | tiene) [una | un] (bolsa | tapa | popote | servilleta | portavasos)"] },
+    want_receipt: { patterns: ["(me | nos) (da | puede dar | podria dar) [el | un | mi] (ticket | recibo)", "(puede | podria) darme [el | un | mi] (ticket | recibo)", "(quisiera | quiero | necesito) [el | un | mi] (ticket | recibo)", "[el | mi] (ticket | recibo)"] },
+    // napkins, straws, a lid, a bag: she hands them over
+    togo_bag: { patterns: [
+      "(me da | me puede dar | me podria dar | puede darme | podria darme | me regala | me pasa | tiene | tienen | hay) [una | un | unas | unos] (bolsa | bolsita | tapa | tapas | popote | popotes | pajita | pajitas | servilleta | servilletas | portavasos)",
+      "(servilletas | popotes | pajitas | una servilleta | un popote | una tapa | una bolsa)", "donde (estan | esta) [las | los | la | el] (servilletas | popotes | servilleta | popote)",
+    ] },
   },
 
   lines: {
@@ -393,7 +482,8 @@ export const cafe: SituationDef = {
       t("¿Qué | le | gustaría?", "What | (to) you | would please?", "What would you like?", { flags: { 2: "gustaría: “would please” – le gustaría = would you like (usted)." } }),
     ],
     ask_food_more: [
-      t("¿Gusta | algo | de | comer?", "Would you like | something | of | eat?", "Would you like something to eat?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" } }),
+      t("¿Gusta | algo | de | comer?", "Would you like | something | to | eat?", "Would you like something to eat?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" },
+        neutral: t("¿Quiere | algo | de | comer?", "Do you want | something | to | eat?", "Would you like something to eat?") }),
     ],
     greet_howareyou: [
       t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
@@ -412,8 +502,9 @@ export const cafe: SituationDef = {
         { flags: { 2: "verlo / verla: “to see you”, with lo for a man and la for a woman (usted)." } }),
       t("¡{m:Bienvenido|f:Bienvenida} | de nuevo! | ¿Qué | va | a | querer | hoy?", "Welcome | back! | What | are you going | to | want | today?", "Welcome back! What would you like today?"),
     ],
+    // said with the drink alone ("¿Lo de siempre, un latte?"): its size and milk come with the yes
     usual: [
-      t("¡Hola | otra vez! | ¿Lo de siempre? | ¿{X.np}?", "Hi | again! | The usual? | {X.np}?", "Hi again! The usual? {X.np}?"),
+      t("¡Hola | otra vez! | ¿Lo de siempre, | {X.np}?", "Hi | again! | The usual, | {X.np}?", "Hi again! The usual, {X.np}?"),
     ],
     ask_order: [
       t("¿Qué | le | sirvo?", "What | (to) you | I-serve?", "What can I get you?"),
@@ -442,7 +533,15 @@ export const cafe: SituationDef = {
     ask_size: [
       t("¿De | qué | tamaño?", "Of | what | size?", "What size?"),
       t("¿Chico, | mediano | o | grande?", "Small, | medium | or | large?", "Small, medium or large?"),
-      t("¿Y | de | qué | tamaño | lo | quiere?", "And | of | what | size | it | you-want?", "And what size would you like?"),
+    ],
+    // one drink of its kind: lo / la agree with it (el latte → lo, la horchata → la)
+    ask_size_it: [
+      t("¿Y | de | qué | tamaño | {lo@X} | quiere?", "And | of | what | size | it | you-want?", "And what size would you like?",
+        { flags: { 4: "lo / la: “it”, agreeing with the drink (el latte → lo, la horchata → la)." } }),
+    ],
+    // two drinks or more: which one she means
+    ask_size_of: [
+      t("¿{X.the}, | de | qué | tamaño?", "{X.the}, | of | what | size?", "What size for {X.the}?"),
     ],
     ask_milk: [
       t("¿Con | qué | leche?", "With | what | milk?", "What kind of milk?"),
@@ -457,13 +556,16 @@ export const cafe: SituationDef = {
     ],
     ask_temp: [
       t("¿Caliente | o | frío?", "Hot | or | iced?", "Hot or iced?"),
-      t("¿{lo@X} | quiere | caliente | o | {frío@X}?", "It | you-want | hot | or | cold?", "Would you like it hot or iced?",
-        { flags: { 0: "lo / la: “it”, agreeing with the drink (el latte → lo, la moka → la)." } }),
+    ],
+    // one drink of its kind (two lattes would be "los… fríos")
+    ask_temp_it: [
+      t("¿{lo@X} | quiere | caliente | o | {frío@X}?", "It | you-want | hot | or | iced?", "Would you like it hot or iced?",
+        { flags: { 0: "lo: “it”, agreeing with the drink (el latte, el moka → lo; a feminine drink would take la)." } }),
     ],
     ask_more: [
       t("¿Algo | más?", "Anything | else?", "Anything else?"),
       t("¿Le | sirvo | algo | más?", "(To) you | I-serve | something | more?", "Can I get you anything else?"),
-      t("¿Sería todo?", "Would that be all?", "Will that be all?", { flags: { 0: "Mexican: what staff ask to close an order." } }),
+      t("¿Sería todo?", "Would that be all?", "Will that be all?", { flags: { 0: "What staff ask to close an order, all over Latin America." } }),
     ],
     ask_dine: [
       t("¿Para aquí | o | para llevar?", "For here | or | to go?", "For here or to go?"),
@@ -576,8 +678,24 @@ export const cafe: SituationDef = {
       t("¡Pruebe | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite."),
       t("Las | conchas | están | recién | hechas.", "The | conchas | are | just | made.", "The conchas are fresh out of the oven."),
     ],
+    // prices without the item's name, so the voices can say every one ({$amount}: domains)
     price_is: [
-      t("{X.np} | cuesta | {$price}.", "{X.np} | costs | {$price}.", "{X.np} is {$price}."),
+      t("Cuesta | {$amount}.", "It-costs | {$amount}.", "It's {$amount}."),
+    ],
+    // a drink that comes in sizes, asked without one: the small one's price
+    price_from: [
+      t("Depende | del | tamaño: | desde | {$amount}.", "It-depends | on the | size: | from | {$amount}.", "It depends on the size: it starts at {$amount}."),
+    ],
+    // "¿Cuánto cuestan dos conchas?": that many
+    price_qty: [
+      t("Serían | {$amount}.", "That would be | {$amount}.", "That would be {$amount}."),
+    ],
+    // "¿La leche de avena cuesta extra?": the plant milks are $10 more (MILKS' extra, the board's "+$10"), the rest nothing
+    milk_extra: [
+      t("Esa | cuesta | diez | pesos | más.", "That one | costs | ten | pesos | more.", "That one is ten pesos extra."),
+    ],
+    milk_free: [
+      t("Esa | no cuesta | extra.", "That one | doesn't cost | extra.", "That one doesn't cost extra."),
     ],
     which_item: [
       t("¿Cuál?", "Which one?", "Which one?"),
@@ -596,8 +714,9 @@ export const cafe: SituationDef = {
       t("Mmm, | perdón, | eso | no lo tenemos | aquí.", "Hmm, | sorry, | that | we don't have it | here.", "Hmm, sorry, we don't have that here."),
     ],
     wifi: [
-      t("¡Sí! | La | contraseña | es | ceiba2026.", "Yes! | The | password | is | ceiba2026.", "Yes! The password is ceiba2026.",
-        { say: "¡Sí! La contraseña es ceiba dos mil veintiséis.", spell: "ceiba2026", write: "Wi-Fi: CafeLaCeiba · contraseña: ceiba2026" }),
+      // "¡Claro!" answers "¿Tienen wifi?" and "¿Cuál es la contraseña?" alike
+      t("¡Claro! | La | contraseña | es | ceiba2026.", "Sure! | The | password | is | ceiba2026.", "Sure! The password is ceiba2026.",
+        { say: "¡Claro! La contraseña es ceiba dos mil veintiséis.", spell: "ceiba2026", write: "Wi-Fi: CafeLaCeiba · contraseña: ceiba2026" }),
       t("Claro, | es | gratis. | La | contraseña | está | en | el | pizarrón: | ceiba2026.", "Sure, | it's | free. | The | password | is | on | the | board: | ceiba2026.",
         "Sure, it's free. The password is on the board: ceiba2026.",
         { say: "Claro, es gratis. La contraseña está en el pizarrón: ceiba dos mil veintiséis.", spell: "ceiba2026", write: "Wi-Fi: CafeLaCeiba · contraseña: ceiba2026",
@@ -605,9 +724,10 @@ export const cafe: SituationDef = {
             "Sure, it's free. The password is on the board: ceiba2026.",
             { say: "Claro, es gratis. La contraseña está en la pizarra: ceiba dos mil veintiséis.", spell: "ceiba2026", write: "Wi-Fi: CafeLaCeiba · contraseña: ceiba2026" }) }),
     ],
+    // both say the same place (asked twice, the second variant comes)
     restroom: [
       t("Está | al fondo, | a la izquierda.", "It's | at the back, | on the left.", "It's at the back, on the left."),
-      t("Ahí, | junto | a | la | ventana.", "There, | next | to | the | window.", "Right there, by the window."),
+      t("Es | la | puerta | del | fondo, | a la izquierda.", "It's | the | door | at the | back, | on the left.", "It's the door at the back, on the left."),
     ],
     water: [
       t("¡Claro! | Aquí tiene | un | vaso | de | agua.", "Sure! | Here's | a | glass | of | water.", "Sure! Here's a glass of water."),
@@ -645,12 +765,50 @@ export const cafe: SituationDef = {
     bag: [
       t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go."),
     ],
+    // "¡Qué rico!" at the goodbye
+    glad: [
+      t("¡Gracias! | Lo | hacemos | con | mucho | cariño.", "Thanks! | It | we-make | with | much | love.", "Thanks! We make it with love."),
+    ],
+    // a visitor's dollars (as the museum, the bus and the restaurant: pesos only)
+    dollars: [
+      t("Perdón, | aquí | solo | aceptamos | pesos.", "Sorry, | here | only | we-accept | pesos.", "Sorry, we only take pesos here."),
+    ],
+    // the hours (s62: La Ceiba opens at seven and closes at nine p.m.)
+    hours: [
+      t("Abrimos | todos | los | días, | de | siete | de la mañana | a | nueve | de la noche.", "We-open | all | the | days, | from | seven | a.m. | to | nine | p.m.",
+        "We're open every day, from 7 a.m. to 9 p.m."),
+    ],
+    // "¿Qué es una concha?": the Mexican things on the menu
+    what_concha: [
+      t("Es | un | pan dulce | con | azúcar | encima, | como | una | concha | de | mar.", "It's | a | sweet bun | with | sugar | on top, | like | a | shell | of | sea.",
+        "It's a sweet bun with a sugar topping, like a seashell."),
+    ],
+    what_olla: [
+      t("Es | café | con | canela, | hecho | en | olla | de | barro.", "It's | coffee | with | cinnamon, | made | in | pot | of | clay.", "It's coffee with cinnamon, made in a clay pot."),
+    ],
+    what_horchata: [
+      t("Es | una | bebida | fría | de | arroz | con | canela.", "It's | a | drink | cold | of | rice | with | cinnamon.", "It's a cold rice drink with cinnamon."),
+    ],
+    what_jamaica: [
+      t("Es | agua | de | flor | de | jamaica, | fría | y | un | poco | ácida.", "It's | water | of | flower | of | hibiscus, | cold | and | a | little | tart.",
+        "It's a cold drink made from hibiscus flowers, a little tart."),
+    ],
+    what_torta: [
+      t("Es | un | sándwich | mexicano: | pan | blanco | con | jamón.", "It's | a | sandwich | Mexican: | bread | white | with | ham.", "It's a Mexican sandwich: a white roll with ham."),
+    ],
   },
 
+  // Every price is a multiple of $5, so every total is too. {$price}: the order's total ($20 to $1,000: three items of
+  // three drinks with every extra are $855). {$amount}: one item's price, or that many of it (at most 3 × $95 = $285).
   domains: {
     price: () => {
       const s = new Set<number>();
-      for (let c = 2000; c <= 50000; c += 500) s.add(c);
+      for (let c = 2000; c <= 100000; c += 500) s.add(c);
+      return [...s];
+    },
+    amount: () => {
+      const s = new Set<number>();
+      for (let c = 2000; c <= 30000; c += 500) s.add(c);
       return [...s];
     },
   },
@@ -805,8 +963,10 @@ export const cafe: SituationDef = {
   ],
   steps: [
     { id: "order", done: (c) => items(c).length > 0, ask: (c) => c.say("ask_order"),
-      // "reject" too, so "No quiero café" is read as a whole (never "no" + an order)
-      expects: ["order", "reject"],
+      // "reject" too, so "No quiero café" is read as a whole (never "no" + an order); the price, "¿Hay…?" and "¿Qué
+      // es…?" questions too, so "¿Cuánto cuesta un latte?", "¿Hay donas?" and "¿Qué es el café de olla?" stay questions
+      // (never "cuánto cuesta" + an order), as in s32
+      expects: ["order", "reject", "ask_price", "ask_have", "what_is"],
       suggest: [
         { lt: "Order a coffee or another drink", hint: "order_drink", options: "drink" },
         { lt: "Order something to eat", hint: "order_food", options: "food" },
@@ -821,31 +981,39 @@ export const cafe: SituationDef = {
         else if (g === "tea") c.say("ask_kind_tea");
         else c.say("ask_kind_pan");
       },
-      expects: ["order", "kind_ctx"],
+      expects: ["order", "kind_ctx", "ask_price", "ask_have", "what_is"],
       suggest: (c) => KIND_SUGGEST[kindAsked(c) ?? "coffee"] ?? KIND_SUGGEST.coffee,
       help: (c) => { kindList(c); } },
     { id: "size", when: (c) => drinks(c).some((d) => byId(d.id).attrs?.sized && !d.size && !generic(d)), done: () => false,
-      ask: (c) => c.say("ask_size"), expects: ["size_ans", "order"],
+      ask: (c) => {
+        const d = drinks(c).find((x) => byId(x.id).attrs?.sized && !x.size && !generic(x));
+        // "Un latte y una horchata": "¿El latte, de qué tamaño?", then "¿La horchata, de qué tamaño?"
+        if (d && drinks(c).length > 1) c.say("ask_size_of", { X: d.id });
+        else if (d && d.qty === 1 && c.chance(1 / 3)) c.say("ask_size_it", { X: d.id });
+        else c.say("ask_size");
+      },
+      expects: ["size_ans", "order", "ask_price", "ask_have"],
       suggest: [{ lt: "Choose the size", hint: "size", options: "size" }, { lt: "Ask the price", hint: "ask_price", options: "drink" }],
       help: (c) => { c.say("size_list"); } },
     { id: "milk", when: (c) => c.s.askMilk && drinks(c).some((d) => byId(d.id).attrs?.milky && !d.milk && !d.noMilk && !generic(d)), done: () => false,
       ask: (c) => {
         if (c.chance(0.3)) {
           c.say("ask_whole_ok");
-          c.expect({ id: "whole_ok", expects: ["milk_ans"], hints: ["milk"], suggest: [{ lt: "Say yes or choose another milk", hint: "milk", options: "milk" }],
+          c.expect({ id: "whole_ok", expects: ["milk_ans", "ask_price"], hints: ["milk"], suggest: [{ lt: "Say yes or choose another milk", hint: "milk", options: "milk" }],
             yes: (cc) => { applyDetail(cc, "milk", "whole"); },
             no: (cc) => { cc.say(cc.s.oatOut ? "milk_which" : "ask_milk"); cc.hold(); },
             on: { milk_ans: (cc, sl, seg) => { cafe.handlers.milk_ans(cc, sl, seg); } },
             ask: (cc) => cc.say("ask_whole_ok") });
         } else c.say(c.s.oatOut ? "milk_which" : "ask_milk");
       },
-      expects: ["milk_ans"],
+      // "¿Cuánto cuesta la leche de avena?" is a question (ask_price), never the milk chosen
+      expects: ["milk_ans", "ask_price"],
       suggest: [{ lt: "Choose the milk (or no milk)", hint: "milk", options: "milk" }],
       help: (c) => { c.say("milk_list"); } },
     { id: "temp", when: (c) => c.s.askTemp && drinks(c).some((d) => byId(d.id).attrs?.iced && !d.temp && !generic(d)), done: () => false,
       ask: (c) => {
         const d = drinks(c).find((x) => byId(x.id).attrs?.iced && !x.temp);
-        c.say("ask_temp", d ? { X: d.id } : {});
+        if (d && d.qty === 1 && c.chance(0.5)) c.say("ask_temp_it", { X: d.id }); else c.say("ask_temp");
       },
       expects: ["temp_ans"],
       suggest: [{ lt: "Hot or iced", hint: "temp", options: "temp" }] },
@@ -855,7 +1023,8 @@ export const cafe: SituationDef = {
         c.expect({ id: "warm", hints: ["g_yesno"], yes: (cc) => { cc.s.warm = true; cc.say("ack"); }, no: (cc) => { cc.s.warm = false; cc.say("ack"); }, ask: (cc) => cc.say("ask_warm") });
       } },
     { id: "more", when: (c) => items(c).length > 0, done: (c) => !!c.s.moreDone,
-      ask: (c) => c.say(!foods(c).length && !c.s.foodDeclined && c.chance(0.5) ? "ask_food_more" : "ask_more"), expects: ["more_no", "order", "more_yes", "want_food"],
+      ask: (c) => c.say(!foods(c).length && !c.s.foodDeclined && c.chance(0.5) ? "ask_food_more" : "ask_more"),
+      expects: ["more_no", "order", "more_yes", "want_food", "ask_price", "ask_have", "what_is"],
       suggest: (c) => foods(c).length
         ? [{ lt: "Say that's all", hint: "more" }, { lt: "Order something else", hint: "order_food", options: "food" }]
         : [{ lt: "Order something to eat", hint: "more_food", options: "food" }, { lt: "Say that's all", hint: "more" }],
@@ -871,10 +1040,10 @@ export const cafe: SituationDef = {
         if (!c.s.totalSaid) {
           c.s.totalSaid = true;
           if (c.chance(0.5)) c.say("pre_total");
-          c.say("say_total", { price: total(c) });
+          c.say("say_total", { price: due(c) });
           if (c.s.cardDown) { c.say("card_down"); c.twist("card_down"); }
           else if (c.chance(0.35)) c.say("ask_pay_method");
-        } else c.say("say_total", { price: total(c) });
+        } else c.say("say_total", { price: due(c) });
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash"],
       suggest: [{ lt: "Pay by card, in cash or with your phone", hint: "pay" }] },
@@ -898,14 +1067,14 @@ export const cafe: SituationDef = {
   start: (c) => {
     const last = c.memory.lastDrink as Item | undefined;
     if (c.visits >= 3 && last && c.chance(0.6)) {
-      c.say("usual", { X: np(last) });
+      c.say("usual", { X: last.id });
       c.twist("usual");
       c.expect({
         id: "usual", optional: true, hints: ["g_yesno", "order_drink"], expects: ["order"],
         suggest: [{ lt: "Say yes or order something else", hint: "order_drink", options: "drink" }],
         yes: (cc) => { items(cc).push({ ...last, qty: 1 }); cc.say("ack_order"); },
         no: (cc) => { cc.say("ask_order"); cc.hold(); },
-        ask: (cc) => cc.say("usual", { X: np(last) }),
+        ask: (cc) => cc.say("usual", { X: last.id }),
       });
       return;
     }
@@ -923,6 +1092,8 @@ export const cafe: SituationDef = {
     order(c, slots, seg) {
       const list = toArr(slots.items?.item).map(fromSlot).filter(Boolean) as Item[];
       const before = items(c).length;
+      // "¡Ah! Y una concha" after paying: the pay step comes back for what was added ("Son $25."), then the goodbye
+      if (c.s.paid && list.length) { c.s.paid = false; c.s.totalSaid = false; c.s.served = false; c.s.__finished = false; c.s.moreDone = true; }
       const oat = list.find((i) => i.milk === "oat");
       const fixed = addItems(c, list, [...seg.tags, ...toArr(slots.items?.item).flatMap((x: any) => x.__tags || [])]);
       if (fixed) c.say("changed");
@@ -961,40 +1132,52 @@ export const cafe: SituationDef = {
     pay_card(c) {
       if (!c.s.totalSaid) { c.say("card_later"); c.s.payMethod = "card"; return; }
       if (c.s.cardDown) { c.say("card_back"); c.s.cardDown = false; }
-      c.say("card_tap"); c.s.paid = true; c.s.payMethod = "card"; c.event("pay", { method: "card" }); c.say("paid");
+      c.say("card_tap"); markPaid(c); c.s.payMethod = "card"; c.event("pay", { method: "card" }); c.say("paid");
     },
     no_cash(c, slots, seg) { cafe.handlers.pay_card(c, slots, seg); },
     pay_phone(c) {
       if (c.s.cardDown) { c.say("card_back"); c.s.cardDown = false; }
-      c.say("phone_ok"); c.s.paid = !!c.s.totalSaid; c.s.payMethod = "phone"; if (c.s.paid) { c.event("pay", { method: "phone" }); c.say("paid"); }
+      c.say("phone_ok"); c.s.payMethod = "phone"; if (c.s.totalSaid) { markPaid(c); c.event("pay", { method: "phone" }); c.say("paid"); }
     },
     pay_cash(c) {
       if (c.s.paid) { c.say("paid"); return; }
       c.say("cash_ok"); c.s.payMethod = "cash";
-      if (c.s.totalSaid) { c.s.paid = true; c.event("pay", { method: "cash" }); c.say("change_back"); }
+      if (c.s.totalSaid) { markPaid(c); c.event("pay", { method: "cash" }); c.say("change_back"); }
     },
     here_you_go(c) {
       if (!c.s.totalSaid) { c.say("no_problem"); return; }
       if (c.s.paid) { c.say("paid"); return; }
-      c.s.paid = true; c.event("pay", { method: c.s.payMethod || "cash" });
+      markPaid(c); c.event("pay", { method: c.s.payMethod || "cash" });
       if (c.s.payMethod === "card") c.say("paid"); else c.say("change_back");
     },
-    keep_change(c) { c.s.paid = true; c.s.tip = true; c.say("thanks_tip"); },
+    // "Quédese con el cambio" pays (with a tip) only once there is something to pay
+    keep_change(c) {
+      if (!c.s.totalSaid) { c.say("no_problem"); return; }
+      markPaid(c); c.s.tip = true; c.say("thanks_tip");
+    },
+    // a price, never an order: one item ("Cuesta $50."), that many ("Serían $50."), or a size not chosen yet
+    // ("Depende del tamaño: desde $45."); "¿Cuánto cuesta?" while a pastry is offered: that pastry (offerFood)
     ask_price(c, slots) {
+      if (slots.milk) {
+        if (slots.milk === "oat" && c.s.outOfOat) { oatGone(c); return; }
+        c.say(byId(slots.milk).attrs?.extra ? "milk_extra" : "milk_free");
+        return;
+      }
       const it = fromSlot(slots.item);
       if (it) {
         const e = byId(it.id);
         if (e.attrs?.generic) { c.say("which_item"); c.hold(); return; }
-        c.say("price_is", { X: np({ ...it, size: it.size ?? (e.attrs?.sized ? "medium" : undefined) }), price: itemPrice({ ...it, qty: 1, size: it.size ?? "medium" }) });
+        if (e.attrs?.sized && !it.size) { c.say("price_from", { amount: itemPrice({ ...it, size: "small" }) }); return; }
+        c.say(it.qty > 1 ? "price_qty" : "price_is", { amount: itemPrice(it) });
         return;
       }
       if (slots.size && drinks(c).length) {
         const d = drinks(c).at(-1)!;
-        c.say("price_is", { X: np({ ...d, size: slots.size }), price: itemPrice({ ...d, size: slots.size, qty: 1 }) });
+        c.say("price_is", { amount: itemPrice({ ...d, size: slots.size, qty: 1 }) });
         return;
       }
       if (items(c).length) {
-        c.say("say_total", { price: total(c) });
+        c.say("say_total", { price: due(c) > 0 ? due(c) : total(c) });
         if (c.step === "pay") { c.s.totalSaid = true; c.hold(); }
         return;
       }
@@ -1011,8 +1194,10 @@ export const cafe: SituationDef = {
       else c.say("menu_line");
     },
     ask_recommend(c) { c.say(/comer|hambre|\bpan\b|dulce/i.test(c.heard.normalize("NFD").replace(/[̀-ͯ]/g, "")) ? "rec_food" : "recommend"); },
+    // "Y un pan dulce", "¿Tienen algo dulce?": the pan dulce ("¿Qué pan le doy? Hay conchas, cuernitos y donas."),
+    // not the whole list with the ham tortas
     want_food(c, _slots, seg) {
-      if (seg.tags.includes("pick")) { c.say("food_list"); c.say("which_item"); c.hold(); return; }
+      if (seg.tags.includes("pick") || /dulce|\bpan\b|postre/.test(plain(c))) { kindOffer(c, "pan"); return; }
       c.say("food_menu"); c.say(items(c).length ? "food_pick" : "ask_order"); c.hold();
     },
     offer_ctx(c, _slots, seg) {
@@ -1043,17 +1228,31 @@ export const cafe: SituationDef = {
       const thing = slots.thing || {};
       if (thing.milk && seg.tags.includes("get") && drinks(c).length) { cafe.handlers.milk_ans(c, { milk: thing.milk }, { ...seg, tags: [] }); return; }
       if (thing.drink || thing.food || thing.milk || (thing.__tags || []).some((x: string) => ["decaf", "sugar", "wifi"].includes(x))) {
-        if (thing.milk === "oat" && c.s.outOfOat) { c.say("out_of_oat"); return; }
+        if (thing.milk === "oat" && c.s.outOfOat) { oatGone(c); return; }
         if ((thing.__tags || []).includes("wifi")) { c.say("wifi"); return; }
         c.say("have_yes");
+        // "¿Tienen pan dulce / té / café?": yes, and which ones
+        const g = (thing.drink || thing.food) && byId(thing.drink || thing.food).attrs?.generic;
+        if (g) { kindOffer(c, g); return; }
         if (thing.food && !c.s.paid && !items(c).some((i) => i.id === thing.food) && !byId(thing.food).attrs?.generic) offerFood(c, thing.food);
       } else c.say("have_no");
     },
-    ask_have_unknown(c) { c.say("have_no"); c.say("menu_line"); },
+    // "¿Tienen leche de coco?": no, and the milks they have
+    ask_have_unknown(c) { c.say("have_no"); c.say(c.step === "milk" || /leche/.test(plain(c)) ? "milk_list" : "menu_line"); },
     ask_wifi(c) { c.say("wifi"); },
     ask_restroom(c) { c.say("restroom"); },
     ask_water(c) { c.say("water"); c.event("give", { item: "water" }); },
     ask_sugar(c) { c.say("sugar"); },
+    ask_dollars(c) { c.say("dollars"); },
+    compliment(c) { c.say("glad"); },
+    ask_hours(c) { c.say("hours"); },
+    what_is(c, slots) {
+      const th = slots.thing || {};
+      const line = WHAT[(th.drink || th.food || th.milk) as string];
+      if (line) { c.say(line); return; }
+      // a latte, a doughnut…: the meaning of what she said is shown (the global "¿Qué significa…?")
+      c.say("g_meaning"); conv(c).showMeaning(); c.hold();
+    },
     change(c, slots, seg) {
       const it = fromSlot(slots.item);
       if (it && !items(c).length) { cafe.handlers.order(c, { items: { item: slots.item } }, seg); return; }
@@ -1070,7 +1269,8 @@ export const cafe: SituationDef = {
       const it = fromSlot(slots.item);
       if (it) {
         const idx = items(c).findIndex((i) => i.id === it.id || (generic(i) && kindOf(it.id) === generic(i)));
-        if (idx >= 0) { items(c).splice(idx, 1); c.say("removed", { X: it.id }); if (!items(c).length) { c.say("reject_ok"); c.hold(); } return; }
+        // the last item gone: only "¡No hay problema! ¿Qué le sirvo entonces?" (not "Muy bien, sin latte." before it)
+        if (idx >= 0) { items(c).splice(idx, 1); if (!items(c).length) { c.say("reject_ok"); c.hold(); } else c.say("removed", { X: it.id }); return; }
       }
       c.say("reject_ok"); c.hold();
     },
@@ -1107,10 +1307,12 @@ export const cafe: SituationDef = {
   finish: (c) => {
     serve(c);
     c.say("bye_after");
-    c.expect({ id: "closing", optional: true, hints: ["g_social"], suggest: [{ lt: "Say thank you and goodbye", hint: "g_social" }],
+    c.expect({ id: "closing", optional: true, expects: ["compliment"], hints: ["g_social"], suggest: [{ lt: "Say thank you and goodbye", hint: "g_social" }],
       on: {
         g_thanks: (cc) => { cc.say("g_welcome"); cc.end(); },
         g_bye: (cc) => { cc.say("g_bye"); cc.end(); },
+        // "¡Ah! Y una dona": back to paying for it (the order handler reopens the pay step)
+        order: (cc, sl, sg) => { cafe.handlers.order(cc, sl, sg); return true; },
       },
       yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
   },
@@ -1221,6 +1423,25 @@ export const cafe: SituationDef = {
     { say: "Ryan", intent: "none" },
     { say: "la máquina banana bicicleta", intent: "none" },
     { say: "Ayer fui a la playa con mi perro", intent: "none" },
+    // the audit (5 Nov 2026): questions stay questions (never an order or a choice), and the side questions get answers
+    { say: "¿Cuánto cuesta un latte?", intent: "ask_price", step: "order", not: ["order"] },
+    { say: "¿Cuánto cuestan dos conchas?", intent: "ask_price", step: "more", not: ["order"] },
+    { say: "¿Cuánto cuesta un latte grande?", intent: "ask_price", step: "size", not: ["size_ans", "order"] },
+    { say: "¿Hay donas?", intent: "ask_have", step: "more", not: ["order"] },
+    { say: "¿Qué es una concha?", intent: "what_is", step: "order", not: ["order", "milk_ans"] },
+    { say: "¿Qué es el café de olla?", intent: "what_is", step: "more", not: ["order"] },
+    { say: "¿Cuánto cuesta la leche de avena?", intent: "ask_price", step: "milk", not: ["milk_ans"] },
+    { say: "Normal", intent: "milk_ans", step: "milk", not: ["size_ans"] },
+    { say: "Normal", intent: "size_ans", step: "size", slots: { size: "medium" } },
+    { say: "El de la casa", intent: "kind_ctx", step: "kind", slots: { choice: "plain" } },
+    { say: "¿Tiene terminal?", intent: "pay_card", step: "pay", not: ["ask_have_unknown"] },
+    { say: "¿Aceptan dólares?", intent: "ask_dollars", step: "pay", not: ["pay_cash", "pay_card"] },
+    { say: "¿A qué hora cierran?", intent: "ask_hours" },
+    { say: "Servilletas, por favor", intent: "togo_bag", not: ["ask_sugar"] },
+    { say: "¿Cuál es la contraseña?", intent: "ask_wifi" },
+    { say: "¿Me prepara un latte?", intent: "order", slots: { items: { item: { drink: "latte" } } } },
+    { say: "Tome", intent: "here_you_go", step: "pay" },
+    { say: "Ya pagué", intent: "none", step: "pay" },
   ],
 
   sims: [
@@ -1241,6 +1462,27 @@ export const cafe: SituationDef = {
       expect: { complete: true, state: { items: { 0: { id: "latte" }, 1: { id: "concha", qty: 2 } } } }, auto: CAFE_AUTO, setup: (s) => { s.askMilk = false; s.askTemp = false; } },
     { name: "horchata and a torta, warmed up", turns: ["Una horchata grande, por favor.", "Y una torta de jamón.", "Sí, por favor.", "Es todo.", "Para llevar.", "Ryan", "En efectivo.", "¡Gracias!"],
       expect: { complete: true, state: { items: { 0: { id: "horchata", size: "large" }, 1: { id: "torta" } }, warm: true } }, auto: CAFE_AUTO, setup: (s) => { s.askName = true; } },
+    // the audit (5 Nov 2026): a price, "¿Qué es…?", the hours, a pastry's price at its offer, napkins, dollars and the
+    // terminal are answered, and none of them orders or pays anything
+    { name: "questions at the counter (audit)", turns: ["¿Cuánto cuesta un latte?", "¿Qué es el café de olla?", "¿A qué hora cierran?", "Un café de olla grande",
+      "¿Hay conchas?", "¿Cuánto cuesta?", "Sí, una, por favor", "Es todo", "Servilletas, por favor", "Para llevar", "¿Aceptan dólares?", "¿Tiene terminal?", "¡Gracias!"],
+      expect: { complete: true, state: { items: { length: 2, 0: { id: "cafe_de_olla", size: "large" }, 1: { id: "concha", qty: 1 } }, payMethod: "card" } }, auto: CAFE_AUTO },
+    // "¿Cuánto cuesta la leche de avena?" chooses nothing; "Normal" to the milk question is whole milk (not a medium)
+    { name: "the milk's price, then normal milk (audit)", turns: ["Un latte grande", "¿Cuánto cuesta la leche de avena?", "Normal", "Es todo", "Para aquí", "En efectivo", "¡Gracias!"],
+      expect: { complete: true, state: { items: { length: 1, 0: { id: "latte", size: "large", milk: "whole" } } } }, auto: CAFE_AUTO,
+      setup: (s) => { s.askMilk = true; s.askTemp = false; s.outOfOat = false; } },
+    // "¿Tienen té?" → "¿Qué té?…" and "¿Tienen algo dulce?" → "¿Qué pan le doy?…": the pick is the order
+    { name: "asking what they have: a tea, something sweet (audit)", turns: ["¿Tienen té?", "De hierbabuena", "¿Tienen algo dulce?", "Una dona", "Es todo", "Para aquí", "Con tarjeta", "¡Gracias!"],
+      expect: { complete: true, state: { items: { length: 2, 0: { id: "mint_tea" }, 1: { id: "donut" } } } }, auto: CAFE_AUTO },
+    // "¡Ah! Y una concha" after paying: "Son $25.", paid like the rest; "¡Qué rico!" at the goodbye orders nothing
+    { name: "a pastry after paying (audit)", turns: ["Un americano grande", "Es todo", "Para llevar", "Con tarjeta", "¡Ah! Y una concha, por favor", "Con tarjeta",
+      "¡Qué rico, gracias!", "¡Adiós!"],
+      expect: { complete: true, state: { items: { length: 2, 1: { id: "concha" } }, paid: true, paidSoFar: 7000 } }, auto: CAFE_AUTO,
+      setup: (s) => { s.askTemp = false; } },
+    // two drinks: she names the one whose size she asks ("¿El latte, de qué tamaño?")
+    { name: "two drinks, each its size (audit)", turns: ["Un latte y una horchata", "Grande", "Chica", "Es todo", "Para llevar", "En efectivo", "¡Gracias!"],
+      expect: { complete: true, state: { items: { 0: { id: "latte", size: "large" }, 1: { id: "horchata", size: "small" } } } }, auto: CAFE_AUTO,
+      setup: (s) => { s.askMilk = false; s.askTemp = false; } },
   ],
 };
 
