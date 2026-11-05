@@ -27,6 +27,7 @@ import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
 import type { GameApi } from "./gameRef";
+import { THEME } from "./world/theme";
 export type { GameApi } from "./gameRef";
 
 /** A box on the screen, in pixels (a name tag, or part of the HUD the tags keep clear of). */
@@ -642,23 +643,29 @@ export class Game implements GameApi {
       dir.normalize();
       this.heading = Math.atan2(dir.x, dir.z);
       // frame the player, the main NPC and anyone else taking part who stands nearby (Mark at the party, Nora at dinner…)
-      const others = (sit.npcs ?? []).map((id) => this.npcs.find((n) => n.id === id)).filter((n): n is NpcActor => !!n && n !== actor && n.ch.root.position.distanceTo(a) < 7);
+      const tc = THEME.talkCamera;
+      const reach = tc ? tc.reach : 7;
+      const others = (sit.npcs ?? []).map((id) => this.npcs.find((n) => n.id === id)).filter((n): n is NpcActor => !!n && n !== actor && n.ch.root.position.distanceTo(a) < reach);
       const pts = [p, a, ...others.map((n) => n.ch.root.position)];
       const mid = new THREE.Vector3(pts.reduce((t, q) => t + q.x, 0) / pts.length, 0, pts.reduce((t, q) => t + q.z, 0) / pts.length);
       const spread = Math.max(...pts.map((q) => Math.hypot(q.x - mid.x, q.z - mid.z)));
       const dist = Math.max(6, spread * 2.6);
-      if (this.zone.interior) {
-        // from the open front, a little to the person's side, so the player's head doesn't hide their face
-        const side = Math.sign(a.x - p.x) || 1, half = this.zone.interior.w / 2 - 1;
-        const cx = THREE.MathUtils.clamp(mid.x + side * 1.8, -half, half);
-        this.rig.talk = { pos: new THREE.Vector3(cx, 4.2 + dist * 0.07, mid.z + dist + 0.2), look: new THREE.Vector3(mid.x, 1.3, mid.z) };
-      } else {
+      /** The camera `d` metres from the people; outdoors on their `side` (1 or -1; by default 1, or -1 if 1 is blocked). */
+      const frame = (d: number, sideOf?: 1 | -1) => {
+        if (this.zone.interior) {
+          // from the open front, a little to the person's side, so the player's head doesn't hide their face
+          const side = Math.sign(a.x - p.x) || 1, half = this.zone.interior.w / 2 - 1;
+          const cx = THREE.MathUtils.clamp(mid.x + side * 1.8, -half, half);
+          return { pos: new THREE.Vector3(cx, 4.2 + d * 0.07, mid.z + d + 0.2), look: new THREE.Vector3(mid.x, 1.3, mid.z) };
+        }
         const side = new THREE.Vector3(dir.z, 0, -dir.x);
-        let pos = mid.clone().addScaledVector(side, dist).setY(3.2);
-        if (this.town.colliders.blocked(pos.x, pos.z, 0.5)) pos = mid.clone().addScaledVector(side, -dist).setY(3.2);
+        let pos = mid.clone().addScaledVector(side, (sideOf ?? 1) * d).setY(3.2);
+        if (!sideOf && this.town.colliders.blocked(pos.x, pos.z, 0.5)) pos = mid.clone().addScaledVector(side, -d).setY(3.2);
         pos.addScaledVector(dir, -1.2);
-        this.rig.talk = { pos, look: new THREE.Vector3(mid.x, 1.35, mid.z) };
-      }
+        return { pos, look: new THREE.Vector3(mid.x, 1.35, mid.z) };
+      };
+      // (this edition's camera, theme.ts talkCamera: backed off until everyone taking part is in the picture)
+      this.rig.talk = tc ? this.fitTalk(frame, dist, tc.max, [{ ch: this.player }, actor, ...others]) : frame(dist);
       this.rig.mode = "talk";
       this.player.setAnim("idle");
     }
@@ -676,6 +683,89 @@ export class Game implements GameApi {
     });
     this.session = session;
     this.session.begin();
+  }
+
+  /** The conversation's camera that keeps everyone taking part in the picture (theme.ts talkCamera). The framing at
+   *  `d0` metres stays if the head and the chest of each of `who` (and a hand's breadth to each side) fall in the part
+   *  of the screen the conversation panel leaves free (the picture shifted as the loop shifts it, applyViewShift) and,
+   *  outdoors, nothing stands in front of them (see `seen`). Otherwise the camera backs off, a step at a time up to
+   *  `max`, on either side of them outdoors, rising as it goes: indoors at the same angle, outdoors looking down at
+   *  least 26° (more of the ground and less of the town behind them in the picture). The widest framing tried if none
+   *  fits. */
+  private fitTalk(frame: (d: number, side?: 1 | -1) => { pos: THREE.Vector3; look: THREE.Vector3 }, d0: number, max: number, who: { ch: GameCharacter; sit?: boolean }[]) {
+    type Shot = { pos: THREE.Vector3; look: THREE.Vector3 };
+    const w = this.container.clientWidth, h = this.container.clientHeight, wide = w > 900;
+    // styles.css .convo: on a wide screen a panel min(500px, 42vw) wide on the right, 14 px in; on a phone 58vh tall
+    // at the bottom, 8 px up. The free part of the screen, 10 px in from its edges, and the loop's shift of the picture.
+    const m = 10;
+    const x0 = m, x1 = (wide ? w - 14 - Math.min(500, 0.42 * w) : w) - m, y0 = m, y1 = (wide ? h : h - 8 - 0.58 * h) - m;
+    const sx = wide ? Math.min(w * 0.22, 380) : 0, sy = wide ? 0 : h * 0.25;
+    const cam = new THREE.PerspectiveCamera(50, w / h, 0.1, 900);
+    const v = new THREE.Vector3(), right = new THREE.Vector3();
+    /** Each of the points checked on the people (their head and chest, and a hand's breadth to each side of them),
+     *  seen from `f`, until `each` says no (`i`: whose). */
+    const points = (f: Shot, each: (q: THREE.Vector3, i: number) => boolean) => {
+      cam.position.copy(f.pos);
+      cam.lookAt(f.look);
+      cam.updateMatrixWorld();
+      right.set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize();
+      for (let i = 0; i < who.length; i++) {
+        const { ch, sit } = who[i], q = ch.root.position;
+        for (const y of sit ? [0.72, 0.45] : [0.9, 0.62]) for (const s of [-0.25, 0, 0.25]) {
+          if (!each(v.copy(q).addScaledVector(right, s).setY(q.y + y * ch.height), i)) return false;
+        }
+      }
+      return true;
+    };
+    const fits = (f: Shot) => points(f, (q) => {
+      q.project(cam);
+      const px = (q.x + 1) / 2 * w - sx, py = (1 - q.y) / 2 * h - sy;
+      return q.z <= 1 && px >= x0 && px <= x1 && py >= y0 && py <= y1;
+    });
+    // Outdoors: the camera clear of anything solid, and nothing in front of anyone: of the six lines from the camera to
+    // a person's points, at most three may pass through a building (to its roof), a post or a trunk (the colliders'
+    // circles, to 4 m; not the people's own) or something low (the colliders' boxes: cars, counters, walls, to 1.2 m).
+    const col = this.town.colliders;
+    const boxes = this.zone.interior ? [] : BUILDINGS.map((b) => ({ minX: b.x - b.w / 2, maxX: b.x + b.w / 2, minZ: b.z - b.d / 2, maxZ: b.z + b.d / 2, h: b.h + (b.roof === "gable" ? Math.min(b.w, b.d) * 0.32 : 0) }));
+    const seen = (f: Shot) => {
+      if (this.zone.interior) return true;
+      if (col.blocked(f.pos.x, f.pos.z, 0.5)) return false;
+      const o = f.pos;
+      // (only what stands within the lines' reach)
+      let x0 = o.x, x1 = o.x, z0 = o.z, z1 = o.z;
+      for (const { ch } of who) { const q = ch.root.position; x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); z0 = Math.min(z0, q.z); z1 = Math.max(z1, q.z); }
+      const near = <T extends { minX: number; maxX: number; minZ: number; maxZ: number }>(b: T) => b.maxX > x0 - 1 && b.minX < x1 + 1 && b.maxZ > z0 - 1 && b.minZ < z1 + 1;
+      const tall = boxes.filter(near), low = col.boxes.filter(near);
+      const posts = col.circles.filter((c) => !(c as { npc?: string }).npc && c.x > x0 - 1 - c.r && c.x < x1 + 1 + c.r && c.z > z0 - 1 - c.r && c.z < z1 + 1 + c.r);
+      const hidden = who.map(() => 0);
+      return points(f, (q, k) => {
+        for (let i = 1; i < 30; i++) {
+          const t = i / 30, x = o.x + (q.x - o.x) * t, y = o.y + (q.y - o.y) * t, z = o.z + (q.z - o.z) * t;
+          const inside = (b: { minX: number; maxX: number; minZ: number; maxZ: number }) => x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ;
+          if (tall.some((b) => y < b.h && inside(b)) || (y < 1.2 && low.some(inside)) || (y < 4 && posts.some((c) => (x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r))) return ++hidden[k] < 4;
+        }
+        return true;
+      });
+    };
+    const first = frame(d0);
+    if (seen(first) && fits(first)) return first;
+    const lift = first.pos.y - first.look.y;
+    const at = (d: number, side?: 1 | -1) => {
+      const f = frame(d, side);
+      const run = Math.hypot(f.pos.x - f.look.x, f.pos.z - f.look.z);
+      f.pos.y = f.look.y + (this.zone.interior ? lift * d / d0 : Math.max(lift * d / d0, run * 0.5));
+      return f;
+    };
+    let best: Shot | null = null;
+    for (let d = d0; d <= max * 1.001; d = Math.min(d * 1.08, d < max ? max : d * 2)) {
+      for (const side of this.zone.interior ? [undefined] : [1, -1] as const) {
+        const f = at(d, side);
+        if (!seen(f)) continue;
+        best ??= f;
+        if (fits(f)) return f;
+      }
+    }
+    return best ?? first;
   }
 
   private onSessionEvent(name: string, data: any) {

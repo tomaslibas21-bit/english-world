@@ -26,6 +26,7 @@ npx tsx tools/coverage.ts --fails                      # practice sentences (tes
 npx tsx tools/coverage.ts --dir=tests/heldout --half=even   # blind learner sentences (never tune on these)
 npx tsx tools/contexts.ts s72 --out=tests/contexts     # every point where the learner answers (for writing test sentences)
 npx tsx tools/offer-probe.ts s72                       # options someone offers ("Blueberry or chocolate?") that the learner can't pick
+node tools/en-tour.mjs --url=http://localhost:5188 --out=/tmp/tour   # with `npm run dev` and Playwright: walk to every conversation, every speaker in the picture
 ```
 
 Rebuilding generated assets (development only, never at runtime):
