@@ -51,3 +51,80 @@ get the answer and the question again (probed). New: `visit_cost` (the visit or 
 visit is on the table: the history step and his booking question; never at Brenda's offer, where a coupon may be on the
 table). offer_q lost its one cost pattern to `visit_cost`. Lines: kyle_visit_free, brenda_visit_free (the same words).
 Tests: 14 NLU tests, 2 sims, 33 corpus items (10 traps: a refusal is never a yes).
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer (AUDIT-BRIEF.md), both texts. Read: STYLE.md, AUTHORING-ES.md, BRIEFS.md p26, this review, the cross and
+neutral leads (AUDIT/cross, AUDIT/neutral: only the "shall I" lead was real), the whole situation file, the corpus and
+the held-out set, transcripts at seeds 3 and 7 (every sim), and ~60 probed turns (probe.ts) at every question.
+Checked and kept: the Spanish (natural Mexican call-center and manager register, usted both ways, hints in usted), the
+names (Jorge and Brenda, no clash in the edition), the facts (Profeco is the real federal consumer agency and "presentar
+una queja ante la Profeco" is how it's said; a warranty visit at no cost, a refund or a new sofa for a defective one
+and a pickup at no cost are what Mexican consumer law and stores do; the $12,999 sofa, the $500 coupon, the 10 to 14
+business days as Hogar Puerto's own), spelling and ¿¡, the glosses and the flags' units.
+
+**Found 28, fixed 27** (by point: 1:1 2:0 3:0 4:0 5:5 6:0 7:16 8:0 9:1 10:5).
+
+1. Natural Spanish: with a remedy asked of Jorge, Brenda said "Entiendo que no ha sido una buena experiencia. Lo
+   entiendo. Pero antes de eso…". brenda_before is now "Sé lo que pide. Pero antes de eso…" (I know what you're asking
+   for. But before we go there…).
+5. English: "shall I" in kyle_book_q's gloss and in brenda_check_coupon and brenda_check_visit (gloss and natural
+   English) → "should I"; kyle_ask_name[1] "And whose name is the order under?" (no "y" in the Spanish) → "What name is
+   the order under?"; the two "Una disculpa" lines got the Mexican-word flag.
+7. Questions and offers (the visit's cost from this morning is now complete):
+   - **"Sí, acepto." / "Acepto." to "¿Le gustaría hablar con mi gerente?" booked next Tuesday and ended the call.** Now
+     a yes to the manager; only "Acepto el martes / la visita / la cita" takes the visit there.
+   - **"Muchas gracias" / "Muchísimas gracias" at the deadline (and confirm) step meant "too long"** ("(es) mucho" with
+     "es" dropped and "muchas" a slip of "mucho"): Brenda asked "¿Qué día tenía en mente?". "Mucho" / "muchísimo" now
+     need "tiempo" or a "no" ("No, es mucho"); "No, muchas gracias" stays a no.
+   - The visit's cost: bare "¿Tiene algún costo?", "¿Me van a cobrar?", "¿Es gratis?" at Brenda's Wednesday visit were
+     not understood (and "El miércoles está bien. ¿Tiene algún costo?" failed whole). `cost_ctx` is now expected at her
+     offer, her confirm question, after the remedy (deadline, confirm), after an offer was taken and at the closing:
+     at the Wednesday visit, its facts ("…sin costo para usted"); at the coupon, "¿Cuánto es?" its value; the warranty
+     visit when named or just taken; else the new "No tiene ningún costo para usted." (the coupon, the new sofa, its
+     delivery, the pickup: "¿Me cobran el envío?", "¿La entrega tiene algún costo?", "¿Tengo que pagar algo?").
+   - Asked again, the cost got the same line again (rule 8): now "Como le comentaba, no tiene ningún costo." (Jorge,
+     Brenda); "¿Seguro que no me cobran nada?" is understood.
+   - The cost asked at "¿Puede esperar en la línea?" or "¿Ya revisó que esté bien armado?" was swallowed: Jorge answers
+     it, then transfers / goes on.
+   - "¿A qué hora viene el técnico?" to Jorge was taken as a no ("Sinceramente, yo tengo las manos atadas…"): he now
+     says "El técnico pasaría el próximo martes, entre las 8 y las 12." and asks whether to book it; before he has the
+     file, "Claro. Pero primero necesito algunos datos."; "¿A qué hora sería la visita?" and the like understood.
+   - "¿Cuándo vence el cupón?" was not understood (and "el cupón vence" got the coupon's value): "Tiene vigencia de
+     seis meses." (Hogar Puerto's own rule, like its 10 to 14 days).
+   - "¿Cuánto tarda el reembolso?" at Brenda's offer got "¿Qué solución está buscando?": she now says the usual time
+     (nothing granted) and, if the refund follows, doesn't say it again ("¿Le parece bien ese plazo?"); to Jorge, only
+     his manager can approve it.
+   - "¿Por qué no vino nadie (el lunes)?" was not understood: it is the no-show complaint.
+   - "Gracias por la oferta, pero…" was not understood (the global thanks has no "por la oferta"): local
+     `thanks_offer` (with "pero no" a refusal, with "sí" asked again, alone asked again).
+   - A bare "Gracias." to "¿Qué le parece?" dropped the offer: now "Entonces, ¿le mando el cupón?" once (rule 17).
+   - "Entonces, ¿le agendo la visita del miércoles?" came back after "No, gracias. Quiero hablar con su gerente." had
+     turned it down: a refusal by another intent closes it.
+   - "Lo más pronto que tengo es el próximo martes." came again in every round of no-manager / no-Tuesday: said once.
+   - "El miércoles está bien. ¿Tiene algún costo?": "¿Le puedo ayudar en algo más?" came before the answer and the
+     window was said twice: now the booking, "No tiene ningún costo: la visita está cubierta por la garantía.", then
+     the question.
+9. Sims: brenda_deadline_tomorrow, brenda_delivery_tomorrow, brenda_refund_tomorrow and brenda_rude2 were said in no
+   sim and no random run (brenda_rude2, the last line, can't be placed by its neighbours, so the line list would voice
+   it for Jorge too); kyle_manager_first/_file and others only in random runs. Three new sims make each speaker say
+   their own side lines (and the new ones). No situation line is said by both speakers (K()/B() set the speaker);
+   the global lines (g_welcome, g_yes_what, g_hello, g_take_time, the not-understood lines) are said by both.
+10. Neutral text: "Una disculpa" is Mexican usage (the lead's decision): kyle_sorry[1], brenda_appreciate_reply and the
+   two "le ofrezco una disculpa" lines (kyle_apologize[0], brenda_hi2[1], whose flag already called it Mexican) get
+   neutral twins with "le pido disculpas" (flag: pedir disculpas). Left: "folio" (below).
+
+Tests: NLU 124 → 140, sims 19 → 22 (all 12/12), corpus 341 → 390 understood (+53 items, 4 new traps: 0/61 false
+accepts), held-out 38/40 (0/3) unchanged (its two misses get another intent with the same outcome, as before).
+
+**For the voices:** new lines kyle_cost_again, kyle_tuesday_time (Jorge, W_MON only), brenda_cost_again,
+brenda_no_cost, brenda_coupon_valid (Brenda); changed brenda_before; neutral text changed in kyle_sorry[1],
+kyle_apologize[0], brenda_hi2[1], brenda_appreciate_reply. brenda_delivery_day ({X} + {$win}) needs es-voices-list's
+BINDINGS rule (all days but tomorrow, W_MON): the current list only has the days heard in runs. The current list also
+voices every value line with the whole domain (both windows, both prices: "un cupón de doce mil novecientos noventa y
+nueve pesos"); every value said is in it.
+
+**For the lead (shared files):** global.ts g_thanks could take "gracias por (la oferta | su oferta | el
+ofrecimiento)" (p26 has it locally); "folio" for a case number is Mexican (and Chilean) usage, untwinned here and in
+s91b: STYLE.md's list with "número de referencia / de reporte" as the twin, if the owner wants it; lines-es.ts voices
+every global line for harbor_bot (the recorded message), which never says one.
