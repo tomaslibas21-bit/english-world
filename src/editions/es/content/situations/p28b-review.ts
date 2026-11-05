@@ -39,6 +39,10 @@
 // Course report: done (c.complete) when items 2, 3, 4 and 5 of the mission are ticked; items 1 and 6 are optional
 // and leave the list once their moment has passed (or when the task is complete).
 //
+// Only a clear yes agrees on her suggested goal, her agenda idea or the check-in date (audit, 5 Nov 2026): "Gracias.",
+// "Está bien, gracias.", "Puede ser." or her idea asked back ("¿Presentaciones a clientes?", "¿A la misma hora?") get her
+// question once more; the next time the goal waits for next time, she decides the agenda herself, or she sends an invite.
+//
 // NEEDS: (1) the game ignores the events "plant" ({ fall: true }: the pot falls at the start; a thud would help) and
 //   "screen" ({ tab: "ben" | "mine" }: what the laptop shows in the wrong-tab twist; "ben" is the id the English uses,
 //   Pablo's review here). (2) global.ts g_welcome says "¡A la orden!" (staff's word) to anyone: a boss thanked by her
@@ -50,6 +54,7 @@
 
 import type { Ctx, EntityDef, Segment, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
+import { GLOBAL_HANDLERS } from "@/content/global";
 
 // ---------------------------------------------------------------------------
 // Flags used more than once
@@ -212,6 +217,20 @@ const askedBack = (c: Ctx) => /\b(y tu|y usted|y a ti|tu como estas|como estas t
 const isQuestion = (c: Ctx) => /[?¿]/.test(c.heard || "");
 /** "No, gracias" / "No, está bien": a thanks or an okay after a "no" is a polite refusal, never a yes. */
 const saidNo = (c: Ctx) => /^\W*(no|nop|nel|mejor no)\b/.test(fold(c.heard));
+/** "Gracias." / "Está bien, gracias." / "Ok, gracias." / "Entiendo." / "Puede ser." / "Probablemente.": polite or vague,
+ *  never a yes to her suggested goal, her agenda idea or the check-in (in Mexico a bare thanks is often a polite no;
+ *  AUTHORING rule 17). */
+const unclearYes = (c: Ctx) => /^\W*((esta bien|ok|okay|bueno|vale|muy bien)\W+)?(muchas )?gracias( elena)?\W*$/.test(fold(c.heard))
+  || /^\W*(entendido|ya veo|ya entendi|entiendo|probablemente|puede ser|tal vez|quizas?|a lo mejor)\W*$/.test(fold(c.heard));
+/** A clear yes word somewhere in the turn ("Sí, …", "Claro", "Va", "Me parece bien", "Buena idea", "Suena bien"…). */
+const yesWord = (c: Ctx) => /\b(si|claro|ok|okay|va|sale|vale|bueno|esta bien|de acuerdo|perfecto|listo|me parece|me late|me gusta|me encanta|suena|buena idea|excelente|genial|hagamoslo|trato hecho|acepto|me funciona|por supuesto)\b/.test(fold(c.heard));
+/** Her own idea said back as a question ("¿Presentaciones a clientes?", "¿En la agenda?", "¿A la misma hora?"): no yes. */
+const echoQ = (c: Ctx) => isQuestion(c) && !yesWord(c)
+  && !/\b(podemos|podriamos|puedes|podrias|puedo|podria|y si|que tal|pongamos|ponemos|pon|agrega|anota|me gustaria|quiero|quisiera|prefiero|mejor)\b/.test(fold(c.heard));
+/** "UX writing, ¿no?": a tag question picks it (never "UX writing, no"). */
+const tagQ = (c: Ctx) => isQuestion(c) && /\bno\W*$/.test(fold(c.heard));
+/** "¿Qué es UX writing?" / "¿Qué significa liderazgo?": a question about the word, never the choice. */
+const whatQ = (c: Ctx) => /\b(que es|que significa|que quiere decir|en que consiste|de que se trata)\b/.test(fold(c.heard));
 
 const praiseOpen = (c: Ctx) => asks(c, "praise") >= 1 && !c.s.praiseDone;
 const fbOpen = (c: Ctx) => !!c.s.fbGiven && !c.s.fbDone;
@@ -227,7 +246,7 @@ const PLAIN = (s: Record<string, any>) => { s.twist = null; s.follow = false; s.
 const AUTO: Record<string, string> = {
   made: "Planeamos todo con tiempo.", support: "Me ayudaría tener retroalimentación más seguido.", protect: "¿Podemos poner mis partes en la agenda?",
   anything_else: "No, es todo. Gracias, eso me sirve mucho.", checkin: "Suena bien.",
-  rev_open: "Claro, con gusto.", rev_worked: "Lo que funciona muy bien es tu puerta abierta.", rev_try: "Algo que podrías intentar es prioridades más claras.",
+  rev_open: "Claro, con gusto.", rev_worked: "Lo que funciona muy bien es tu puerta abierta.", rev_try: "Algo que podrías probar: prioridades más claras.",
   tab: "Creo que esa es la evaluación de otra persona.", criteria: "¿Qué tendría que hacer para lograr un ascenso?",
 };
 
@@ -420,7 +439,9 @@ export const review: SituationDef = {
       "(quiero | me gustaria) (saberlo | escucharlo | oirlo)",
       "(que es | de que se trata)",
       "no me molesta [claro] [dime | adelante | te escucho]", "no (hay problema | pasa nada) [claro] (dime | adelante | te escucho)", "soy todo oidos", "(estoy | ya estoy) (listo | lista) [para escucharlo | para escucharte]",
-      "[si] (que pasa | que hice | es algo malo | es algo grave)",
+      "[si] (que pasa | que pasó | que hice | es algo malo | es algo grave)",
+      // "¿Sobre qué?" / "¿Hice algo mal?": she says it
+      "(sobre que | de que) [es | seria]", "[ay] (hice algo mal | hice algo malo | que hice mal)",
     ] },
     no_feedback: { patterns: [
       "(mejor | tal vez | quizas) (otro dia | luego | despues | en otra ocasion | la proxima)",
@@ -476,9 +497,14 @@ export const review: SituationDef = {
       "a que te refieres [exactamente | con eso | con hablar antes]",
       "que quieres decir [con eso | exactamente]",
       "no (entiendo | entendi) (a que te refieres | que quieres decir | lo que dices)",
-      "que (deberia | debí) (hacer | decir) [diferente | distinto]",
-      "como (lo hago | puedo hacerlo | le hago)",
       "por que (dices | lo dices | piensas) (eso | asi)", "por que lo (dices | piensas)",
+      // "¿Las juntas con clientes?" / "¿Hablar antes?": her words asked back
+      "(en)? las @junta con (clientes | el cliente | los clientes)", "(hablar | participar) antes",
+    ] },
+    // "¿Qué debería hacer?" / "¿Cómo lo hago?": how, not an example
+    ask_how_fb: { patterns: [
+      "que (deberia | debí | puedo | podria) (hacer | decir) [diferente | distinto | entonces]",
+      "como (lo hago | puedo hacerlo | le hago | hablo antes | puedo hablar antes | lo puedo hacer)",
     ] },
     pushback: { patterns: [
       "yo lo veo [un poco | algo] (diferente | distinto) [la verdad] #h:see_differently",
@@ -559,6 +585,7 @@ export const review: SituationDef = {
       "(tal vez | quizas) (practicar | ensayar) [antes]",
       "(practicar | ensayar) (antes | juntos | juntas | con tiempo)",
       "[poner] mis @secc en @agenda [con mi nombre] #agenda", "(ponerlas | ponerlos | ponerla) en @agenda [con mi nombre] #agenda", "con mi nombre en @agenda #agenda",
+      "en (la agenda | el orden del dia) [con mi nombre] #agenda",
       "que me (avises | digas | preguntes) antes [de (cambiar el plan | cambiar la agenda | presentar mis @secc)]",
       "(hablar | presentar | ir) primero",
       "(puedo | podria) (presentar | hablar) yo", "que yo (presente | hable) (mis @secc | primero)",
@@ -581,7 +608,10 @@ export const review: SituationDef = {
       "[creo que] te equivocaste de (pestana | archivo | evaluacion | persona | ventana)",
     ] },
     // "¿Esa es mi evaluación?" (a tactful question) / "Esa es la mía." (the learner takes it as theirs)
-    tab_check: { patterns: ["(esa | esta) es (mi @rev | la mia | mia)", "es (mi @rev | la mia)", "mis (calificaciones | notas) (son | estan | se ven) [muy] (buenas | bien | malas | bajas)"] },
+    tab_check: { patterns: ["(esa | esta) es (mi @rev | la mia | mia)", "es (mi @rev | la mia)", "mis (calificaciones | notas) (son | estan | se ven) [muy] (buenas | bien | malas | bajas)",
+      "(ese | esa | este | esta) soy yo"] },
+    // "Se ve bien." (takes it as theirs) / "¿Quién es?" (only while her laptop shows the review)
+    tab_look_ctx: { patterns: ["[todo] (se ve | esta | me parece que esta | se ven) [muy | super | bastante] (bien | perfecto | padre | genial | bien todo)", "quien es [ese | este | el | esa | esta]"] },
     tab_read: { patterns: [
       "[wow | ay | uy | oh] pablo (tiene | sacó | saco | le pusieron) [una | unas] (calificacion | calificaciones | nota | notas | evaluacion) [muy] (baja | bajas | mala | malas)",
       "[wow | ay | uy] la (calificacion | nota | evaluacion) de pablo (es | esta) [muy] (baja | mala | peor que la mia)",
@@ -602,7 +632,8 @@ export const review: SituationDef = {
       "(tal vez | quizas | a lo mejor | probablemente) {goal} [el proximo ano]",
       "me (gustaria | encantaria) (dirigir | liderar | llevar | coordinar | encabezar) un proyecto (pequeno | chico) [el proximo ano] #h:lead_project #g:leading",
       "(quiero | quisiera) (dirigir | liderar | llevar | coordinar) un proyecto (pequeno | chico) [el proximo ano] #g:leading",
-      "me (gustaria | encantaria) (hacer | dar) mas {goal}",
+      "me (gustaria | encantaria) (hacer | dar) [mas] {goal}", "(quiero | quisiera) (hacer | dar) [mas] {goal} [el proximo ano]",
+      "me (interesa | interesan | interesaria | llama la atencion) [mucho | mas] [un curso de] {goal} [el proximo ano]",
       "me (gustaria | encantaria) (ayudar | ensenar | capacitar | acompanar) a los (practicantes | nuevos | becarios | juniors) #g:mentoring",
       "me (gustaria | encantaria) (presentar | hablar) mas [(a | con | ante) [los] clientes | en las @junta] [el proximo ano] #g:presenting #h:present_more",
       "(quiero | quisiera) (ser | sentirme) (mejor presentador | mejor presentadora | mas seguro | mas segura) (con los clientes | en las @junta) #g:presenting",
@@ -628,6 +659,7 @@ export const review: SituationDef = {
       "no (quiero | me gustaria) (tomar | hacer) (ningun | un) (curso | taller)", "no (quiero | me gustaria) (tomar | hacer) (un | ningun) (curso | taller) de {goal}",
       "no (quiero | me gustaria) (dirigir | liderar | llevar) (un proyecto | proyectos)",
       "no (quiero | me gustaria) (presentar | ser mentor | ser mentora)",
+      "no me (interesa | interesan | llama la atencion) [mucho] [un curso de] {goal}",
     ] },
     // "Un curso." (from her own list of ideas): she asks which one
     goal_course: { patterns: [
@@ -638,6 +670,8 @@ export const review: SituationDef = {
     goal_course_ctx: { patterns: ["[tal vez | quizas] (un curso | algun curso | un taller | una capacitacion) [tal vez | el proximo ano]"] },
     // "Análisis de datos." (only while she asks about goals)
     goal_ctx: { patterns: ["[tal vez | un | una] {goal} [creo | tal vez | el proximo ano]", "un curso de {goal}", "(curso | taller) de {goal}"] },
+    // "¿Qué es UX writing?" (only while she asks about goals): the word, never the goal ("¿Qué significa…?" is global)
+    goal_what_ctx: { patterns: ["(que es | en que consiste | de que se trata) [el | la | eso de] [un curso de | el curso de] {goal}"] },
     goal_vague: { patterns: [
       "(quiero | me gustaria | quisiera) (crecer | aprender | desarrollarme | mejorar) [mas] [como (disenador | disenadora) | profesionalmente]",
       "algo (nuevo | diferente | mas grande | con mas reto)", "algo nuevo mas retos",
@@ -699,7 +733,7 @@ export const review: SituationDef = {
     ] },
     mg_ctx: { patterns: ["[tu | la] {mg:mgood}"] },
     rev_try: { patterns: [
-      "algo que podrias (intentar | probar) (es | seria) {mt:mtip} #h:rev_one_thing",
+      "algo que podrias (intentar | probar) [es | seria | son | serian] {mt:mtip} #h:rev_one_thing",
       "[bueno | pues] ya que (preguntas | me preguntas) [algo que podrias intentar es] {mt:mtip} #h:since_ask",
       "(tal vez | quizas | a lo mejor) {mt:mtip} #h:maybe_x",
       "(has pensado en | pensaste en) {mt:mtip} #h:thought_about",
@@ -764,6 +798,19 @@ export const review: SituationDef = {
       "(esto | eso) (afecta | va a afectar | cuenta para) (@pay | el aumento | mi ascenso)",
       "quiero ganar mas #tip:money_blunt", "me pagan [muy] poco #tip:money_blunt",
       "(puedo | podria) pedir (@raise | @promo)",
+      // "¿De cuánto es el aumento?" / "¿Me van a ascender?" / "¿Hay bono?": not decided yet (the same answer)
+      "(de cuanto | cuanto) (es | seria | va a ser | sera) (el aumento | mi aumento | el bono | el ajuste)",
+      "cuanto (me van a | me vas a | van a | nos van a) (subir | aumentar | dar)",
+      "(me van a | me vas a | van a) (ascender | promover | subir de puesto) [este ano | el proximo ano]",
+      "(hay | habra) [un] (bono | bonos) [este ano | de fin de ano]",
+    ] },
+    // "¿Cuál es mi calificación?" / "¿Cómo me fue?" / "¿Puedo ver mi evaluación?": her overall view, briefly
+    ask_rating: { patterns: [
+      "(cual es | cual fue | como es | como fue | que tal) mi (calificacion | evaluacion | nota | resultado) [general | final | de este ano]",
+      "que (calificacion | nota) (tengo | me diste | me pusiste | saqué | saque | me tocó)",
+      "como me (fue | va) [en la evaluacion | en general | este ano]", "como (salí | sali | quedé | quede) [en la evaluacion]",
+      "(puedo | podria) ver mi (evaluacion | calificacion)",
+      "(me puedes | podrias | me podrias) (mandar | enviar | pasar | ensenar | mostrar) mi (evaluacion | calificacion)",
     ] },
     ask_criteria: { patterns: [
       "que (tendria | tengo | necesitaria | necesito | debo | deberia) [que] hacer para (lograr | conseguir | tener | obtener)? (@promo | @raise) #h:promotion_need",
@@ -804,8 +851,11 @@ export const review: SituationDef = {
     thanks_today: { patterns: [
       "[muchas] gracias por (hoy | la reunion [de hoy] | la junta [de hoy] | esta reunion | la evaluacion | esto | la platica | la conversacion | la retroalimentacion | lo de hoy | todo lo de hoy) #h:thanks_today",
     ] },
-    // "Suena bien." / "A la misma hora está bien." (only while she proposes the check-in)
+    // "Puede ser." / "Tal vez." (only at her suggested goal, her agenda idea and the check-in): no yes yet, she asks once more
+    maybe_ctx: { patterns: ["[mmm | este | pues] (puede ser | tal vez | quizas | quiza | a lo mejor | depende | supongo) [creo]"] },
+    // "Suena bien." / "A la misma hora está bien." (only while she proposes the check-in); asked back ("¿En un mes?"), no yes
     checkin_yes_ctx: { patterns: [
+      "(en un mes | dentro de un mes | el proximo mes | el mes que entra) [a la misma hora]",
       "(en un mes | el proximo mes | el mes que entra | dentro de un mes) (esta bien | me parece bien | perfecto | me funciona)",
       "[perfecto] (a la misma hora | misma hora) [esta bien | perfecto | me funciona] #h:works_for_me",
       "(trato hecho | me late | nos vemos entonces | ahi nos vemos)",
@@ -973,6 +1023,9 @@ export const review: SituationDef = {
     fb_example: [t("Claro. | La | llamada | con | el | cliente | el | martes | pasado, | y | la | anterior.", "Sure. | The | call | with | the | client | — | Tuesday | last, | and | the | previous one.",
       "Sure. The call with the client last Tuesday, and the one before that.", { flags: { 6: F_EL_DAY } })],
     fb_example_more: [t("Es | todo | lo que | tengo, | la verdad.", "It's | all | what | I-have, | honestly.", "That's all I have, honestly.")],
+    fb_how: [t("Habla | al | principio | de | la | llamada. | Aunque | sea | una | idea | pequeña, | dila.",
+      "Speak up | at the | start | of | the | call. | Even if | it's | an | idea | small, | say it.",
+      "Speak up early in the call. Even if it's a small idea, say it.", { flags: { 7: "sea: the subjunctive after aunque." } })],
     fb_accept_react: [
       t("Gracias | por | tomarlo | tan | bien.", "Thanks | for | taking it | so | well.", "Thanks for taking it so well."),
       t("Gracias. | No era | fácil | decirlo.", "Thanks. | It wasn't | easy | to say it.", "Thank you. That wasn't easy to say."),
@@ -1010,6 +1063,8 @@ export const review: SituationDef = {
     protect_again: [t("¿Alguna | idea? | Aunque | sea | pequeña.", "Any | idea? | Even if | it's | small.", "Any ideas? Even a small one.")],
     protect_help: [t("¿Y | si | ponemos | tus | partes | en | la | agenda, | con | tu | nombre?", "And | if | we-put | your | sections | on | the | agenda, | with | your | name?",
       "What if we put your sections on the agenda, with your name?")],
+    protect_offer_q: [t("Tus | partes | en | la | agenda, | con | tu | nombre. | ¿Te parece?", "Your | sections | on | the | agenda, | with | your | name. | Does that work for you?",
+      "Your sections on the agenda, with your name. Does that work for you?")],
     protect_decide: [t("Pongamos | tus | partes | en | la | agenda, | con | tu | nombre.", "Let's put | your | sections | on | the | agenda, | with | your | name.",
       "Let's put your sections on the agenda, with your name.")],
     protect_yes: [t("Perfecto. | Listo.", "Perfect. | Done.", "Great. Done.")],
@@ -1064,6 +1119,8 @@ export const review: SituationDef = {
       t("Yo | te | sugeriría | las | presentaciones | a | clientes. | Va | con | lo que | hablamos.", "I | (to) you | would suggest | — | presentations | to | clients. | It goes | with | what | we-talked about.",
         "I'd suggest client presentations. It fits with what we talked about.", { flags: { 3: "las presentaciones: Spanish uses the article for a kind of thing." } }),
     ],
+    goal_offer_q: [t("Las | presentaciones | a | clientes, | sí. | ¿Te parece | bien | como | meta?", "— | Presentations | to | clients, | yes. | Does it seem to you | good | as a | goal?",
+      "Client presentations, yes. Does that work for you as a goal?", { flags: { 0: "las presentaciones: Spanish uses the article for a kind of thing." } })],
     goal_present: [
       t("Perfecto. | Además, | va | con | la | retroalimentación.", "Perfect. | Also, | it goes | with | the | feedback.", "Perfect. That fits with the feedback, too."),
       t("¡Sí! | Podrías | presentar | una | parte | completa | en | la | próxima | junta | con | el | cliente.", "Yes! | You could | present | a | section | full | at | the | next | meeting | with | the | client.",
@@ -1166,6 +1223,8 @@ export const review: SituationDef = {
     money_sure: [t("Claro, | hablemos.", "Sure, | let's talk.", "Sure, let's talk about it.")],
     money_back: [t("Ahora, | tu | pregunta | del | sueldo.", "Now, | your | question | about the | salary.", "Now, your salary question.")],
     money_noted: [t("Bueno. | Anotado.", "Okay. | Noted.", "Okay. Noted.")],
+    my_review: [t("¿Tu | evaluación? | Muy | buena, | en serio. | Te la | mando | por | correo | hoy.", "Your | review? | Very | good, | really. | It to you | I'll-send | by | email | today.",
+      "Your review? It's very good, honestly. I'll email it to you today.", { flags: { 5: "te la: it (la evaluación) to you." } })],
     money_when: [
       t("Los | aumentos | se deciden | el | próximo | mes, | después | de | las | evaluaciones.", "The | raises | are decided | — | next | month, | after | — | the | reviews.",
         "Salary decisions happen next month, after the reviews.", { flags: { 3: F_EL_DAY, 7: F_DE_ANTES } }),
@@ -1205,6 +1264,8 @@ export const review: SituationDef = {
       t("Le | damos | seguimiento | en | un | mes, | ¿te parece?", "(To) it | we'll-give | follow-up | in | a | month, | does that work for you?",
         "Let's check in again in a month, okay?", { flags: { 0: F_SEG } }),
     ],
+    checkin_again: [t("En | un | mes, | a | la | misma | hora. | ¿Te parece | bien?", "In | a | month, | at | the | same | time. | Does it seem to you | good?",
+      "In a month, same time. Does that work for you?")],
     checkin_early: [t("Claro. | Hagámoslo.", "Sure. | Let's do it.", "Definitely. Let's do that.")],
     checkin_like_said: [t("Y | nos | vemos | otra vez | en | un | mes, | como | dijiste.", "And | each other | we'll-see | again | in | a | month, | as | you-said.",
       "And we check in again in a month, like you said.")],
@@ -1386,7 +1447,7 @@ export const review: SituationDef = {
     rev_try: {
       lt: "Suggest one thing she could try", slot: "mtip", examples: ["priorities", "one_on_ones", "late_email", "shorter_meetings"],
       items: [
-        { id: "rev_one_thing", s: t("Algo | que | podrías | intentar | es | {X}.", "Something | that | you could | try | is | {X}.", "One thing you could try is {X}."),
+        { id: "rev_one_thing", s: t("Algo | que | podrías | probar: | {X}.", "Something | that | you could | try: | {X}.", "One thing you could try: {X}."),
           note: "The song's phrase: after what works, one thing to try." },
         { id: "since_ask", s: t("Bueno, | ya que | preguntas: | {X}.", "Well, | since | you-ask: | {X}.", "Well, since you ask: {X}."), note: "From the song: “Well, since you ask…”" },
         { id: "maybe_x", s: t("¿Tal vez | {X}?", "Maybe | {X}?", "Maybe {X}?") },
@@ -1438,7 +1499,7 @@ export const review: SituationDef = {
     soften: { key: "soften", lt: "Understood! To your manager, “Eso no es verdad” sounds like an accusation. Softer: “Yo lo veo un poco diferente…”, then say what happened.", better: "Yo lo veo un poco diferente. En esas reuniones, tú presentaste mis partes." },
     defensive_fb: { key: "defensive_fb", lt: "Understood! It's better not to defend yourself right away. You can thank her, ask for an example, or calmly explain what happened.", better: "¿Me puedes dar un ejemplo?" },
     discreet: { key: "discreet", lt: "Understood! But don't read a colleague's ratings aloud: they're confidential. Just say the review on the screen isn't yours.", better: "Creo que esa es la evaluación de otra persona." },
-    kind: { key: "kind", lt: "Understood! Elena asked for feedback, but that kind of criticism won't help her. Say what works first, then one concrete thing she could try.", better: "Lo que funciona muy bien es tu puerta abierta. Algo que podrías intentar es prioridades más claras." },
+    kind: { key: "kind", lt: "Understood! Elena asked for feedback, but that kind of criticism won't help her. Say what works first, then one concrete thing she could try.", better: "Lo que funciona muy bien es tu puerta abierta. Algo que podrías probar: prioridades más claras." },
     money_blunt: { key: "money_blunt", lt: "Understood! Asking about pay is fine, but a demand sounds harsh. A question is more polite.", better: "¿Podemos hablar de mi sueldo?" },
   },
 
@@ -1575,7 +1636,7 @@ export const review: SituationDef = {
         if (n === 1) { c.twist("wrong_tab"); c.event("screen", { tab: "ben" }); c.say("tab_show"); c.say("tab_look"); return; }
         tabSelf(c); askNext(c);
       },
-      expects: ["tab_point", "tab_check", "tab_read"],
+      expects: ["tab_point", "tab_check", "tab_read", "tab_look_ctx"],
       suggest: [{ lt: "The screen shows Pablo's review: tactfully tell Elena", hint: "tab" }],
       yes: (c) => { tabSelf(c); }, no: (c) => { tabSelf(c); },
       help: (c) => { tabSelf(c); } },
@@ -1586,7 +1647,7 @@ export const review: SituationDef = {
         if (n === 2) { c.say("goals_options"); return; }
         goalsLast(c);
       },
-      expects: ["goal_name", "goal_ctx", "goal_vague", "goal_not", "goal_course", "goal_course_ctx", "ask_budget", "ask_support"],
+      expects: ["goal_name", "goal_ctx", "goal_what_ctx", "goal_vague", "goal_not", "goal_course", "goal_course_ctx", "ask_budget", "ask_support"],
       suggest: [{ lt: "Say what you'd like to work on next year", hint: "goals", options: "goal" }, { lt: "Ask about the training budget", hint: "support" }],
       // her list of ideas; once she has given it, her own suggestion
       help: (c) => { if (!once(c, "goalsHelp")) return; if (asks(c, "goals") >= 2) { goalsLast(c); return; } bump(c, "goals"); c.say("goals_options"); } },
@@ -1721,6 +1782,7 @@ export const review: SituationDef = {
     },
     fb_work(c) { if (fbOpen(c)) fbAccept(c); },
     ask_example_fb(c) { if (fbOpen(c)) example(c); },
+    ask_how_fb(c) { if (fbOpen(c)) howTo(c); },
     pushback(c, _slots, seg) { pushback(c, seg.tags); },
     rude_push(c, _slots, seg) {
       if (seg.tags.includes("amb") && fbOpen(c)) { if (once(c, "fbWhich")) { c.say("fb_which"); c.hold(); } return; }
@@ -1737,13 +1799,21 @@ export const review: SituationDef = {
       else if (c.step === "tab") tabSelf(c);
     },
     tab_read(c) { tabPoint(c, true); },
+    // "Se ve bien." takes it as theirs and "¿Quién es?" makes her look again: she notices herself
+    tab_look_ctx(c) { if (c.step === "tab") tabSelf(c); },
 
     goal_name(c, slots, seg) {
+      if (whatQ(c)) { goalWhat(c); return; }
       const tagged = seg.tags.find((x) => x.startsWith("g:"))?.slice(2);
       goalFrom(c, slots.goal ?? tagged);
     },
-    goal_ctx(c, slots) { goalFrom(c, slots.goal); },
-    goal_not(c) { if (/\b(mejor|sino|prefiero|mas bien)\b/.test(fold(c.heard))) return; goalVague(c, "goal_not"); },
+    goal_ctx(c, slots) { if (whatQ(c)) { goalWhat(c); return; } goalFrom(c, slots.goal); },
+    goal_what_ctx(c) { goalWhat(c); },
+    goal_not(c, slots) {
+      if (tagQ(c) && slots.goal) { goalFrom(c, slots.goal); return; } // "UX writing, ¿no?" picks it
+      if (/\b(mejor|sino|prefiero|mas bien)\b/.test(fold(c.heard))) return;
+      goalVague(c, "goal_not");
+    },
     goal_course(c) { goalCourse(c); },
     goal_course_ctx(c) { goalCourse(c); },
     goal_vague(c) { goalVague(c); },
@@ -1766,6 +1836,8 @@ export const review: SituationDef = {
 
     ask_raise(c) { money(c, false); },
     ask_criteria(c) { money(c, true); },
+    ask_rating(c) { rating(c); },
+    maybe_ctx() { /* only at her offers (the pending question handles it) */ },
     no_more(c) { if (c.step === "ask_me" && !c.s.askDone && !c.s.moneyAsked) c.s.askDone = true; },
     more_q_ctx(c) { if (c.step === "ask_me" && !c.s.askDone && !c.s.moneyAsked && once(c, "moreQ")) { c.say("askme_go"); c.hold(); } },
     propose_checkin(c, _slots, seg) {
@@ -1950,6 +2022,25 @@ export const review: SituationDef = {
     { say: "No siempre nos dices las prioridades", intent: "rev_try", step: "rev_try", not: ["rev_nothing"] },
     { say: "No quiero hablar del sueldo, gracias", intent: "no_more", step: "ask_me", not: ["ask_raise"] },
     { say: "Sí, tengo una pregunta más", intent: "more_q_ctx", step: "ask_me", not: ["no_more"] },
+    // audit (5 Nov 2026): side questions, a word's meaning is no choice, more ways to name a goal or ask about money
+    { say: "¿Cuál es mi calificación?", intent: "ask_rating", step: "ask_me", not: ["tab_check", "want_feedback"] },
+    { say: "¿Cómo me fue en general?", intent: "ask_rating", step: "ask_me" },
+    { say: "¿Puedo ver mi evaluación?", intent: "ask_rating", step: "feedback" },
+    { say: "¿Qué debería hacer?", intent: "ask_how_fb", step: "feedback", not: ["ask_example_fb"] },
+    { say: "¿Cómo lo hago?", intent: "ask_how_fb", step: "feedback", not: ["ask_example_fb"] },
+    { say: "¿Las juntas con clientes?", intent: "ask_example_fb", step: "feedback" },
+    { say: "¿Sobre qué?", intent: "want_feedback", step: "consent" },
+    { say: "Ay, ¿hice algo mal?", intent: "want_feedback", step: "consent" },
+    { say: "¿Qué es UX writing?", intent: "goal_what_ctx", step: "goals", not: ["goal_ctx", "goal_name"] },
+    { say: "Me gustaría dar mentoría", intent: "goal_name", step: "goals", slots: { goal: "mentoring" } },
+    { say: "Me interesa el liderazgo", intent: "goal_name", step: "goals", slots: { goal: "leadership" } },
+    { say: "No me interesa la mentoría", intent: "goal_not", step: "goals", not: ["goal_name", "goal_ctx"] },
+    { say: "¿De cuánto es el aumento?", intent: "ask_raise", step: "ask_me" },
+    { say: "¿Me van a ascender?", intent: "ask_raise", step: "ask_me" },
+    { say: "¿Hay bono este año?", intent: "ask_raise", step: "ask_me" },
+    { say: "Se ve bien", intent: "tab_look_ctx", step: "tab" },
+    { say: "¿Esa soy yo?", intent: "tab_check", step: "tab", not: ["tab_point"] },
+    { say: "Algo que podrías probar: reuniones uno a uno", intent: "rev_try", step: "rev_try", slots: { mt: "one_on_ones" } },
   ],
 
   sims: [
@@ -2033,6 +2124,24 @@ export const review: SituationDef = {
     { name: "polite no to her suggestion", turns: ["Bien.", "La app.", "Gracias.", "Sí.", "Tienes razón.", "No sé.", "No sé.", "No, gracias.", "No.", "No, es todo.", "No, gracias."],
       expect: { complete: false, state: { goal: undefined, goalDone: true, checkinWhen: undefined, checkin: true } }, auto: AUTO, setup: PLAIN },
     { name: "walking away", turns: ["Bien, gracias.", "La guía.", "Perdón, me tengo que ir."], expect: { complete: false }, auto: AUTO, setup: PLAIN },
+    // audit (5 Nov 2026): a thanks or her idea asked back is no yes: she asks once more at her agenda idea, her goal and
+    // the check-in, and a clear yes then agrees
+    { name: "audit: no yes in a thanks or an echo", turns: ["Bien.", "La app.", "Gracias.", "Claro.", "Yo lo veo diferente. Tú presentaste mis partes, el cliente llegó tarde.",
+      "No sé.", "Gracias.", "Sí.", "No sé.", "No sé.", "¿Presentaciones a clientes?", "Sí, me parece bien.", "No.", "No, es todo.", "¿A la misma hora?", "Sí."],
+      expect: { complete: true, state: { protectQ: true, protectHow: "emily", goalOfferQ: true, goal: "presenting", checkinQ: true, checkin: true } }, auto: AUTO, setup: PLAIN },
+    // the same again and again: she decides the agenda herself, the goal waits for next time, and she sends an invite
+    { name: "audit: polite thanks twice", turns: ["Bien.", "La app.", "Gracias.", "Claro.", "Yo lo veo diferente. Tú presentaste mis partes, el cliente llegó tarde.",
+      "No sé.", "Gracias.", "Gracias.", "No sé.", "No sé.", "Está bien, gracias.", "Puede ser.", "No.", "No, es todo.", "Ok, gracias.", "Está bien, gracias."],
+      expect: { complete: false, state: { protectHow: "emily", goal: undefined, goalDone: true, checkinQ: true, checkin: true } }, auto: AUTO, setup: PLAIN },
+    // how to speak up, what a word means (never the choice), a tag question that picks, the overall rating, and money
+    { name: "audit: side questions", turns: ["Bien.", "La app.", "Gracias.", "Claro.", "¿Qué debería hacer?", "Ok, voy a trabajar en eso.", "Un curso.",
+      "¿Qué es UX writing?", "UX writing, ¿no?", "¿Cuál es mi calificación?", "¿De cuánto es el aumento?", "No, es todo.", "No, es todo.", "Suena bien."],
+      expect: { complete: true, state: { howAsked: true, goal: "ux_writing", ratingSaid: true, moneyAsked: true, checkin: true } }, auto: AUTO, setup: PLAIN },
+    // the wrong tab taken as the learner's own ("Se ve bien."), a goal said the other way, a thanks at the check-in
+    { name: "audit: the wrong tab looks fine", turns: ["Bien.", "La app.", "Gracias.", "Claro.", "Tienes razón.", "Se ve bien.", "Me interesa el liderazgo.", "No.",
+      "No, es todo.", "Gracias.", "Sí."],
+      expect: { complete: true, state: { tabHow: "self", goal: "leadership", checkinQ: true, checkin: true } }, auto: AUTO,
+      setup: (s) => { s.twist = "tab"; s.follow = false; s.supportQ = false; s.back = false; } },
   ],
 };
 
@@ -2139,6 +2248,14 @@ function example(c: Ctx) {
   c.say("fb_example"); c.hold();
 }
 
+/** "¿Qué debería hacer?" / "¿Cómo lo hago?": how to speak up (never the example's dates). */
+function howTo(c: Ctx) {
+  if (!once(c, "how")) return;
+  if (c.s.howAsked) { c.say("fb_example_more"); c.hold(); return; }
+  c.s.howAsked = true;
+  c.say("fb_how"); c.hold();
+}
+
 /** Polite push-back: without the reason she asks "¿Por qué?"; with it, "Es justo. Eso fue culpa mía." (item 3). A
  *  change of mind after accepting it ("Bueno, en realidad tú presentaste mis partes") still opens the agenda question. */
 function pushback(c: Ctx, tags: string[]) {
@@ -2193,15 +2310,32 @@ function protectIdea(c: Ctx, tags: string[]) {
   c.say("protect_ok"); c.say("protect_agenda_too");
 }
 
-/** "No sé": she proposes the agenda herself. */
+/** "No sé": she proposes the agenda herself. A clear yes takes it; "Gracias.", "Puede ser." or "¿En la agenda?" get
+ *  "Tus partes en la agenda, con tu nombre. ¿Te parece?" once, and the next time she decides it herself. */
 function protectOffer(c: Ctx) {
   if (c.s.protectDone || !once(c, "protectOffer")) return;
   c.say("protect_help");
+  protectExpect(c);
+}
+function protectExpect(c: Ctx) {
   const no = (cc: Ctx) => { if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "later"; cc.say("protect_no"); };
-  const yes = (cc: Ctx) => { if (saidNo(cc)) { no(cc); return; } if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "emily"; cc.say("protect_yes"); };
-  c.expect({ id: "protect_offer", optional: true, expects: ["protect_idea", "agree_idea"], hints: ["protect", "checkin"],
+  const unclear = (cc: Ctx) => {
+    if (cc.s.protectDone || !once(cc, "protectQ")) return;
+    if (cc.s.protectQ) { cc.s.protectDone = true; cc.s.protectHow = "emily"; cc.say("protect_decide"); return; }
+    cc.s.protectQ = true; cc.say("protect_offer_q"); protectExpect(cc);
+  };
+  const yes = (cc: Ctx) => {
+    if (saidNo(cc)) { no(cc); return; }
+    if (unclearYes(cc)) { unclear(cc); return; }
+    if (cc.s.protectDone) return; cc.s.protectDone = true; cc.s.protectHow = "emily"; cc.say("protect_yes");
+  };
+  c.expect({ id: "protect_offer", optional: true, expects: ["protect_idea", "agree_idea", "maybe_ctx"], hints: ["protect", "checkin"],
     suggest: [{ lt: "Answer Elena's suggestion", hint: "checkin" }],
-    on: { protect_idea: (cc, _s, seg) => { protectIdea(cc, seg.tags); }, agree_idea: (cc) => { yes(cc); }, g_ok: (cc) => { yes(cc); }, g_thanks: (cc) => { yes(cc); }, fb_thanks: (cc) => { yes(cc); } },
+    on: {
+      // "¿En la agenda?" asks her idea back; "¿Podemos poner mis partes en la agenda?" takes it
+      protect_idea: (cc, _s, seg) => { if (seg.tags.includes("agenda") && echoQ(cc)) unclear(cc); else protectIdea(cc, seg.tags); },
+      agree_idea: (cc) => { yes(cc); }, g_ok: (cc) => { yes(cc); }, g_thanks: (cc) => { yes(cc); }, fb_thanks: (cc) => { yes(cc); }, maybe_ctx: unclear,
+    },
     yes, no,
     ask: (cc) => { cc.say("protect_help"); } });
 }
@@ -2267,21 +2401,43 @@ function goalCourse(c: Ctx) {
   c.say("goal_which_course"); c.hold();
 }
 
-/** After two tries she suggests a goal herself: yes counts (agreeing on a goal). */
+/** After two tries she suggests a goal herself: only a clear yes agrees on it. "Gracias.", "Está bien, gracias.",
+ *  "Puede ser." or her idea asked back ("¿Presentaciones a clientes?") get "Las presentaciones a clientes, sí. ¿Te parece
+ *  bien como meta?" once; the next time, or at a no, the goal waits for next time (item 4 not ticked). */
 function goalOffer(c: Ctx) {
   c.say("goals_suggest");
-  const decline = (cc: Ctx) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("support_none"); };
-  const set = (cc: Ctx) => { if (saidNo(cc)) { decline(cc); return; } goalFromOffer(cc, "presenting"); };
-  c.expect({ id: "goal_offer", optional: true, expects: ["goal_name", "goal_ctx", "agree_idea"], hints: ["goals", "checkin"],
+  goalOfferExpect(c);
+}
+function goalOfferExpect(c: Ctx) {
+  const decline = (cc: Ctx) => { if (cc.s.goalDone) return; cc.s.goalDone = true; cc.say("goal_later"); };
+  const unclear = (cc: Ctx) => {
+    if (cc.s.goalDone || !once(cc, "goalOfferQ")) return;
+    if (cc.s.goalOfferQ) { decline(cc); return; }
+    cc.s.goalOfferQ = true; cc.say("goal_offer_q"); goalOfferExpect(cc);
+  };
+  const set = (cc: Ctx) => { if (saidNo(cc)) { decline(cc); return; } if (unclearYes(cc)) { unclear(cc); return; } goalFromOffer(cc, "presenting"); };
+  // a goal named back: hers as a question is no yes; another one is the learner's own choice
+  const named = (cc: Ctx, id?: string) => {
+    if (whatQ(cc)) { goalWhat(cc); goalOfferExpect(cc); return; }
+    if ((id ?? "presenting") === "presenting" && (echoQ(cc) || tagQ(cc))) { unclear(cc); return; }
+    goalFromOffer(cc, id);
+  };
+  c.expect({ id: "goal_offer", optional: true, expects: ["goal_name", "goal_ctx", "goal_what_ctx", "agree_idea", "maybe_ctx"], hints: ["goals", "checkin"],
     suggest: [{ lt: "Answer Elena's suggestion", hint: "checkin" }, { lt: "Say what you'd like to work on next year", hint: "goals", options: "goal" }],
     on: {
-      goal_name: (cc, slots, seg) => { goalFromOffer(cc, slots.goal ?? seg.tags.find((x) => x.startsWith("g:"))?.slice(2)); },
-      goal_ctx: (cc, slots) => { goalFromOffer(cc, slots.goal); },
-      agree_idea: (cc) => { set(cc); }, g_ok: (cc) => { set(cc); }, g_thanks: (cc) => { set(cc); },
-      goal_not: decline,
+      goal_name: (cc, slots, seg) => { named(cc, slots.goal ?? seg.tags.find((x) => x.startsWith("g:"))?.slice(2)); },
+      goal_ctx: (cc, slots) => { named(cc, slots.goal); },
+      goal_what_ctx: (cc) => { goalWhat(cc); goalOfferExpect(cc); },
+      agree_idea: (cc) => { set(cc); }, g_ok: (cc) => { set(cc); }, g_thanks: (cc) => { set(cc); }, maybe_ctx: unclear,
+      goal_not: (cc, slots) => { if (tagQ(cc) && slots.goal) named(cc, slots.goal); else decline(cc); },
     },
     yes: set,
     no: decline });
+}
+/** "¿Qué es UX writing?": what the word means (the global "¿Qué significa…?" answers that one itself). */
+function goalWhat(c: Ctx) {
+  if (/\b(que significa|que quiere decir)\b/.test(fold(c.heard)) || !once(c, "goalWhat")) return;
+  GLOBAL_HANDLERS.g_meaning(c as any, {});
 }
 function goalFromOffer(c: Ctx, id?: string) {
   if (c.s.goalDone) return;
@@ -2365,9 +2521,18 @@ function money(c: Ctx, criteria: boolean) {
 }
 /** "Buena pregunta." to a question; "Bueno. Anotado." to "Creo que me merezco un aumento". */
 function moneyIntro(c: Ctx, early = false) {
-  const q = isQuestion(c) || /^\W*(?:(?:y|bueno|oye|entonces|ok|elena|tambien|pues)\W+)*(puedo|podemos|podria|podriamos|hay|habra|cuando|como|que|voy|me van|esta|afecta|cual|se puede|va a)\b/.test(fold(c.heard));
+  const q = isQuestion(c) || /^\W*(?:(?:y|bueno|oye|entonces|ok|elena|tambien|pues)\W+)*(puedo|podemos|podria|podriamos|hay|habra|cuando|como|que|voy|me van|me vas|esta|afecta|cual|se puede|va a|cuanto|de cuanto)\b/.test(fold(c.heard));
   const talk = /\b(podemos|podriamos|puedo|podria|quisiera|me gustaria) (hablar|preguntar|platicar)\b/.test(fold(c.heard));
   c.say(talk && !early ? "money_sure" : q || talk ? "money_q" : "money_noted");
+}
+/** "¿Cuál es mi calificación?" / "¿Puedo ver mi evaluación?": very good, and she emails it today. At the wrong tab it
+ *  makes her look again (she notices Pablo's review herself). */
+function rating(c: Ctx) {
+  if (c.step === "tab" && c.s.twist === "tab" && asks(c, "tab") >= 1 && !c.s.tabDone) { tabSelf(c); return; }
+  if (!once(c, "rating")) return;
+  if (c.s.ratingSaid) { c.say("fb_example_more"); return; }
+  c.s.ratingSaid = true;
+  c.say("my_review");
 }
 function criteriaAnswer(c: Ctx, asked: boolean) {
   if (c.s.criteriaDone) return;
@@ -2463,14 +2628,35 @@ function checkinAsk(c: Ctx, thanks: boolean) {
   c.s.checkinAsked = true;
   if (c.s.checkinProposed) { c.say("checkin_like_said" + (c.s.checkinWhen === "month" ? "" : c.s.checkinWhen === "weeks" ? "_weeks" : "_other")); agree(c, false); return; }
   c.say("checkin_ask");
-  const yes = (cc: Ctx) => { agree(cc, saidNo(cc)); };
+  expectCheckin(c);
+}
+/** The check-in in a month: a clear yes agrees on it ("Suena bien.", "Sí.", "A la misma hora está bien."); "Gracias.",
+ *  "Está bien, gracias.", "Puede ser." or the time asked back ("¿En un mes?", "¿A la misma hora?") get "En un mes, a la
+ *  misma hora. ¿Te parece bien?" once, and the next time she sends an invite and the learner picks the time. */
+function expectCheckin(c: Ctx) {
+  const unclear = (cc: Ctx) => {
+    if (!once(cc, "checkinQ")) return;
+    if (cc.s.checkinQ) { agree(cc, true); return; }
+    cc.s.checkinQ = true; cc.say("checkin_again"); expectCheckin(cc);
+  };
+  const yes = (cc: Ctx) => { if (saidNo(cc)) { agree(cc, true); return; } if (unclearYes(cc)) { unclear(cc); return; } agree(cc, false); };
+  // a thanks alone ("Gracias por todo.") is no yes to the date; with a goodbye it ends like the goodbye
+  const thanks = (cc: Ctx) => {
+    if (saidNo(cc)) { agree(cc, true); return; }
+    if (unclearYes(cc)) { unclear(cc); return; }
+    if (yesWord(cc) || /\b(adios|bye|hasta luego|hasta pronto|me voy|chao)\b/.test(fold(cc.heard))) agree(cc, false); else unclear(cc);
+  };
   c.expect({
     id: "checkin",
-    expects: ["checkin_yes_ctx", "checkin_no_ctx", "propose_checkin", "agree_idea"],
+    expects: ["checkin_yes_ctx", "checkin_no_ctx", "propose_checkin", "agree_idea", "maybe_ctx"],
     hints: ["checkin"],
     suggest: [{ lt: "Agree on the next check-in", hint: "checkin" }],
     on: {
-      checkin_yes_ctx: (cc) => { agree(cc, false); }, rev_nothing: yes, propose_checkin: yes, agree_idea: yes, g_ok: yes, g_thanks: yes, g_bye: yes, fb_thanks: yes, thanks_praise: yes, thanks_today: yes,
+      checkin_yes_ctx: (cc) => { if (echoQ(cc)) unclear(cc); else agree(cc, false); },
+      // "¿Cuándo nos vemos?" asks the date back
+      propose_checkin: (cc, _s, seg) => { if (seg.tags.includes("when")) unclear(cc); else yes(cc); },
+      rev_nothing: yes, agree_idea: yes, g_ok: yes, g_bye: yes,
+      g_thanks: thanks, fb_thanks: thanks, thanks_praise: thanks, thanks_today: thanks, maybe_ctx: unclear,
       checkin_no_ctx: (cc) => { agree(cc, true); }, g_dontknow: (cc) => { agree(cc, true); },
     },
     yes, no: (cc) => { agree(cc, true); },
