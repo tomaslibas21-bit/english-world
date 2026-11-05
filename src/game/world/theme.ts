@@ -2,7 +2,8 @@
 // empty, so its town is built exactly as layout.ts and town.ts describe it. The Spanish edition's file
 // (src/editions/es/game/world/theme.ts) turns the square into a zócalo with a kiosco, papel picado and palms, paints
 // the buildings in Mexican colours, puts the Spanish names on the signs and the market hall's stalls inside, and makes
-// the rest of the town outdoors Mexican too (the fields after `market`; their shapes are in mexican.ts).
+// the rest of the town outdoors Mexican too (the fields after `market`; their shapes are in mexican.ts), down to the
+// last details (the fields after `sounds`: the conversation's camera, people's spots in the rooms, props, the cenote).
 
 export interface BuildingLook {
   color?: string; trim?: string; awning?: string; roofColor?: string;
@@ -111,6 +112,33 @@ export interface TownTheme {
    *  this spot) and the trucks of the residential streets (south of this z: the gas truck's tune, the garbage truck's
    *  bell). */
   sounds: { bell: [number, number]; vendors: [number, number]; homesZ: number } | null;
+
+  // The last details (docs/es/TOWN.md "Done: the last details"). Off in Maple Harbor.
+  /** The conversation's camera (Game.startSession). Maple Harbor's (null) frames the player, the main speaker and the
+   *  conversation's other speakers within 7 m of them from a set distance (2.6 times how far apart they stand, at
+   *  least 6 m), which a phone's narrow picture can cut. With this, the speakers within `reach` m of the main one are
+   *  framed, and the camera backs off (to at most `max` m) until every one of them, head and chest, is in the part of
+   *  the picture the conversation panel leaves free, at any screen shape, with nothing in front of them outdoors
+   *  (Game.ts `fitTalk`). */
+  talkCamera: { reach: number; max: number } | null;
+  /** Where this edition has people stand in the rooms (interiors.ts), by room id and character, instead of where
+   *  Maple Harbor has them: a conversation's other speaker near enough to share its picture. */
+  roomSpots: Record<string, Record<string, { x: number; z: number; rot: number; ax?: number; az?: number }>>;
+  /** In front of the market hall: Maple Harbor's shopping carts, or a mercado's huacales (crates of produce), a
+   *  diablito (a hand truck) and a cargo tricycle. */
+  marketFront: "carts" | "mercado";
+  /** The post office's mailbox: Maple Harbor's blue one, or a Correos de México buzón. */
+  mailbox: "usps" | "correos";
+  /** The backyard party's walls (s63): Maple Harbor's white picket fence (null), or a painted block wall (a barda)
+   *  with pillars and an open metal gate, in these colours (the same colliders). */
+  backyardWall: { wall: string; base: string; cap: string; gate: string } | null;
+  /** The colours of the town's leafy trees (each tree draws one; none: Maple Harbor's autumn ones). */
+  treeColors: string[];
+  /** A cenote in the meadow beyond the town's west edge (its water's middle and its painted sign): seen from the ends
+   *  of the streets, not reached on foot. */
+  cenote: { x: number; z: number; sign: string } | null;
+  /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). */
+  ruins: { x: number; z: number } | null;
 }
 
 export const THEME: TownTheme = {
@@ -145,4 +173,12 @@ export const THEME: TownTheme = {
   foodCart: null,
   traffic: [],
   sounds: null,
+  talkCamera: null,
+  roomSpots: {},
+  marketFront: "carts",
+  mailbox: "usps",
+  backyardWall: null,
+  treeColors: [],
+  cenote: null,
+  ruins: null,
 };

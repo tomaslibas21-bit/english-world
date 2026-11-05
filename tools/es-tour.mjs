@@ -12,6 +12,13 @@
 //   VITE_EDITION=es npx vite --port 8097 --strictPort &
 //   node tools/es-tour.mjs --url=http://localhost:8097 --out=<dir>                   every conversation, 1280×800 and 375×812
 //   node tools/es-tour.mjs --url=… --out=… --only=s71b,s65b --sizes=1280x800        some conversations (id prefixes), one size
+//   node tools/es-tour.mjs --url=… --out=… --start=jump                              no walk: the situation picker's start
+//
+// Once the camera has settled on a conversation, every speaker who stands there is checked against the picture: their
+// head and chest (and a hand's breadth to each side), projected through the camera with its shift, must fall in the
+// part of the canvas the conversation panel leaves free (left of it on a wide screen, above it on a phone). tour.md
+// says "in the picture" or which speaker is out and by how much; tour.json has each point, the camera and the draw
+// calls of that view (renderer.info.render.calls).
 //
 // Rooms (--mode=rooms): every room and every outdoor talk spot, frozen: the animation loop stopped, Math.random seeded
 // while a room is built and its people take a pose, the player, the guide trail, the clouds, gulls, pigeons and
@@ -42,6 +49,9 @@ const SIZES = (args.sizes ?? (MODE === "rooms" ? "1280x800" : "1280x800,375x812"
 const ONLY = args.only ? args.only.split(",") : null;
 const DPR = Number(args.dpr ?? 1);
 const QUALITY = args.quality ?? "high";
+/** How a conversation is reached: "walk" (the default: the objective, the door, the walk in) or "jump" (the situation
+ *  picker's startScenario: the player put on the talk spot; quicker, for checking the framing). */
+const START = args.start ?? "walk";
 /** The rooms (interiors.ts B), in a fixed order. */
 const ROOMS = (args.rooms ?? "airport,sunny-cup,trattoria,threads,pharmacy,salon,bank,post-office,hotel,visitor-center,museum,station,car-rental,gas-station,police,apartments,dans-house,office,the-pier,clinic,market,gym,sproutly").split(",");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -94,7 +104,7 @@ async function ready(page) {
 // ---------------------------------------------------------------------------------------------------------- tour
 
 /** In the page: go to conversation `id`'s place the game's way and start it there. */
-async function goTalk(id) {
+async function goTalk({ id, start }) {
   const { game, store } = window.__ew;
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const st = () => store.getState();
@@ -110,6 +120,10 @@ async function goTalk(id) {
   if (call) {
     game.call(id);
     how = "call";
+  } else if (start === "jump") {
+    game.startScenario(id);
+    for (let i = 0; i < 60 && !started(); i++) await wait(100);
+    how = "jump";
   } else {
     game.setObjective(id);
     if (!game.objectiveTarget()) return { ok: false, why: "the game has no place to guide to (objectiveTarget is null)", log };
@@ -157,13 +171,77 @@ async function goTalk(id) {
   const main = st().conv.npcId;
   const actor = game.npcs.find((n) => n.id === main);
   const date = (x) => x === "sam" || x === "emma"; // the date is one of the two, by the learner's choice
-  const speakers = [main, ...(sit.npcs ?? []).filter((x) => x !== main && !(date(x) && date(main)))].map((sid) => {
+  // (the one walked up to, the one speaking first and the conversation's others)
+  const ids = [...new Set([main, sit.npc, ...(sit.npcs ?? [])])].filter((x, i) => i === 0 || !(date(x) && date(main)));
+  const speakers = ids.map((sid) => {
     const n = game.npcs.find((a) => a.id === sid);
     if (!n) return { id: sid, here: false };
     const p = n.ch.root.position;
     return { id: sid, here: true, x: +p.x.toFixed(2), z: +p.z.toFixed(2), fromPlayer: +p.distanceTo(P()).toFixed(2), fromMain: actor ? +p.distanceTo(actor.ch.root.position).toFixed(2) : null };
   });
   return { ok: true, how, zone: game.zoneId, player: [+P().x.toFixed(2), +P().z.toFixed(2)], speakers, log };
+}
+
+/** In the page, once the camera has settled on a conversation: is each of these speakers in the picture? Their head
+ *  and chest, and 0.25 m to each side of them across the view, are projected through the camera (its view shift
+ *  included) onto the canvas, and must fall in the part of it the conversation panel leaves free: left of the panel on
+ *  a wide screen, above it on a phone, 8 px in from the edges. And something must not hide them: of the rays from the
+ *  camera to those six points, cast against the place (the town or the room; not the people), at most three may hit
+ *  something solid more than 0.4 m before them (see-through glass and the thin papel picado don't count). */
+function inPicture(ids) {
+  const { game } = window.__ew;
+  const cam = game.rig.cam;
+  cam.updateMatrixWorld();
+  const cv = game.renderer.domElement.getBoundingClientRect();
+  const panel = document.querySelector(".convo")?.getBoundingClientRect();
+  const free = { x0: cv.left + 8, x1: cv.right - 8, y0: cv.top + 8, y1: cv.bottom - 8 };
+  if (panel && panel.width > 0) {
+    if (panel.top > cv.top + cv.height * 0.2) free.y1 = Math.min(free.y1, panel.top - 8); // a phone: the panel below
+    else free.x1 = Math.min(free.x1, panel.left - 8); // a wide screen: the panel on the right
+  }
+  const right = new game.rig.target.constructor(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize();
+  const who = [...ids.map((id) => ({ id, a: game.npcs.find((n) => n.id === id) })), { id: "player", a: { ch: game.player, sit: false } }];
+  const res = { calls: game.renderer.info.render.calls, free: Object.fromEntries(Object.entries(free).map(([k, v]) => [k, Math.round(v)])),
+    cam: [cam.position.x, cam.position.y, cam.position.z].map((v) => +v.toFixed(2)), out: [], people: [],
+    // where the conversation put the camera (Game.startSession's framing; the camera eases there)
+    talk: game.rig.talk ? [...game.rig.talk.pos.toArray(), ...game.rig.talk.look.toArray()].map((v) => +v.toFixed(4)) : null };
+  const ray = new game.raycaster.constructor();
+  const solid = (o) => {
+    for (let x = o; x; x = x.parent) if (!x.visible) return false;
+    const ms = Array.isArray(o.material) ? o.material : [o.material];
+    return !/papel|bulb|sign-pole/i.test(o.name ?? "") && ms.some((m) => m && !(m.transparent && m.opacity < 0.6) && m.visible !== false);
+  };
+  /** What hides point `q` from the camera, if anything. */
+  const hider = (q) => {
+    const dir = q.clone().sub(cam.position), d = dir.length();
+    ray.set(cam.position, dir.normalize());
+    ray.far = d;
+    ray.camera = cam; // (sprites need it)
+    let hits = [];
+    try { hits = ray.intersectObject(game.zone.group, true); } catch { return null; }
+    const hit = hits.find((x) => solid(x.object) && !x.object.isSprite);
+    return hit && hit.distance < d - 0.4 ? hit.object.name || hit.object.type : null;
+  };
+  for (const { id, a } of who) {
+    if (!a) continue;
+    const p = a.ch.root.position, h = a.ch.height ?? 1.75, sit = a.ch.anim === "sit";
+    const ys = sit ? [h * 0.62, h * 0.4] : [h * 0.9, h * 0.62];
+    let worst = Infinity;
+    for (const y of ys) for (const s of [-0.25, 0, 0.25]) {
+      const v = p.clone().addScaledVector(right, s).setY(p.y + y).project(cam);
+      const sx = cv.left + (v.x + 1) / 2 * cv.width, sy = cv.top + (1 - v.y) / 2 * cv.height;
+      const m = v.z > 1 ? -999 : Math.min(sx - free.x0, free.x1 - sx, sy - free.y0, free.y1 - sy);
+      worst = Math.min(worst, m);
+    }
+    // (hidden: at least four of the six rays to the head and the chest, and 0.25 m to each side, blocked)
+    const hidden = ys.flatMap((y) => [-0.25, 0, 0.25].map((s) => hider(p.clone().addScaledVector(right, s).setY(p.y + y))));
+    const behind = hidden.filter(Boolean).length >= 4 ? hidden.find(Boolean) : null;
+    res.people.push({ id, margin: Math.round(worst), hidden });
+    if (id === "player") continue;
+    if (worst < 0) res.out.push(`${id} ${Math.round(-worst)} px`);
+    else if (behind) res.out.push(`${id} hidden by ${behind}`);
+  }
+  return res;
 }
 
 async function tour(browser) {
@@ -181,11 +259,12 @@ async function tour(browser) {
       n++;
       const t0 = Date.now();
       let r;
-      try { await ready(page); r = await page.evaluate(goTalk, s.id); } catch (e) { r = { ok: false, why: "error: " + String(e.message ?? e).split("\n")[0] }; }
+      try { await ready(page); r = await page.evaluate(goTalk, { id: s.id, start: START }); } catch (e) { r = { ok: false, why: "error: " + String(e.message ?? e).split("\n")[0] }; }
       const file = `${String(n).padStart(2, "0")}-${s.id}.png`;
       if (r.ok) {
         await sleep(1800); // the camera settles on the speakers, the first line shows
         await page.evaluate(() => window.__ew.store.getState().setHud({ panel: null }));
+        if (r.how !== "call") r.frame = await page.evaluate(inPicture, r.speakers.filter((x) => x.here).map((x) => x.id)).catch((e) => ({ out: [`not measured: ${String(e.message ?? e).split("\n")[0]}`], people: [], calls: null }));
         await page.screenshot({ path: path.join(dir, file) });
       } else {
         await page.screenshot({ path: path.join(dir, file.replace(".png", "-FAILED.png")) });
@@ -193,7 +272,8 @@ async function tour(browser) {
       const res = (results[s.id] ??= { id: s.id, location: s.location, npc: s.npc, npcs: s.npcs, mode: s.mode, sizes: {} });
       res.sizes[tag] = { ...r, file, ms: Date.now() - t0 };
       const who = (x) => x.here ? `${x.id} ${x.fromPlayer} m` : r.how === "call" ? `${x.id} on the phone` : `${x.id} NOT IN THE ROOM`;
-      console.log(`  ${r.ok ? "✓" : "✗"} ${s.id.padEnd(20)} ${r.ok ? `${r.how} · ${r.how === "call" ? "phone" : r.zone} · ${r.speakers.map(who).join(", ")}` : r.why}`);
+      const fr = r.frame ? ` · ${r.frame.out.length ? `OUT OF THE PICTURE: ${r.frame.out.join(", ")}` : "all in the picture"} · ${r.frame.calls} calls` : "";
+      console.log(`  ${r.ok ? "✓" : "✗"} ${s.id.padEnd(20)} ${r.ok ? `${r.how} · ${r.how === "call" ? "phone" : r.zone} · ${r.speakers.map(who).join(", ")}${fr}` : r.why}`);
     }
     await page.evaluate(() => window.__ew.game.closeConversation());
     if (errors.length) console.log(`  page errors (${errors.length}): ${[...new Set(errors)].slice(0, 5).join(" | ")}`);
@@ -202,17 +282,21 @@ async function tour(browser) {
   }
   const rows = Object.values(results).filter((r) => r.id);
   writeFileSync(path.join(OUT, "tour.json"), JSON.stringify({ base: BASE, sizes: SIZES.map((s) => s.join("x")), results: rows, pageErrors: [...new Set(results.__errors ?? [])] }, null, 1));
-  const md = ["| Conversation | Place | Started | Speakers (distance from the player) | Notes |", "|---|---|---|---|---|"];
+  const tags = SIZES.map((s) => s.join("x"));
+  const md = [`| Conversation | Place | Started | Speakers (distance from the player) | In the picture (${tags.join(" · ")}) | Notes |`, "|---|---|---|---|---|---|"];
   for (const r of rows) {
     const all = Object.values(r.sizes);
     const ok = all.every((x) => x.ok);
     const first = all.find((x) => x.ok) ?? all[0];
     const sp = !first.ok ? "" : first.how === "call" ? "on the phone" : first.speakers.map((x) => x.here ? `${x.id} ${x.fromPlayer} m` : `**${x.id} not in the room**`).join(", ");
-    md.push(`| ${r.id} | ${r.location} | ${ok ? `yes (${first.how})` : "**no**"} | ${sp} | ${ok ? "" : all.filter((x) => !x.ok).map((x) => x.why).join("; ")} |`);
+    const pic = tags.map((t) => { const f = r.sizes[t]?.frame; return !r.sizes[t]?.ok ? "–" : !f ? "(call)" : f.out.length ? `**out: ${f.out.join(", ")}**` : `yes, ${f.calls} calls`; }).join(" · ");
+    md.push(`| ${r.id} | ${r.location} | ${ok ? `yes (${first.how})` : "**no**"} | ${sp} | ${pic} | ${ok ? "" : all.filter((x) => !x.ok).map((x) => x.why).join("; ")} |`);
   }
   writeFileSync(path.join(OUT, "tour.md"), md.join("\n") + "\n");
   const bad = rows.filter((r) => Object.values(r.sizes).some((x) => !x.ok));
+  const outs = rows.flatMap((r) => Object.entries(r.sizes).filter(([, x]) => x.frame?.out.length).map(([t, x]) => `${r.id} at ${t} (${x.frame.out.join(", ")})`));
   console.log(`\n${rows.length - bad.length}/${rows.length} conversations reached and started${bad.length ? `; not: ${bad.map((r) => r.id).join(", ")}` : ""}. ${OUT}/tour.md`);
+  console.log(outs.length ? `Speakers out of the picture: ${outs.join("; ")}` : "Every speaker in the picture at every size.");
   return bad.length ? 1 : 0;
 }
 

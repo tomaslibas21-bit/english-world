@@ -2,7 +2,8 @@
 // restyled: the zócalo (a kiosco instead of the fountain, papel picado, palms, the stalls' signs in Spanish), the
 // buildings around it and the Mercado Municipal, in the colours of a Mexican Caribbean town. Then the rest of the town
 // outdoors (4 Nov 2026): the malecón and the beach, the main street, the church, the street furniture, the houses, the
-// vehicles and the town's sounds. What is still to do is in docs/es/TOWN.md.
+// vehicles and the town's sounds; and the last details (5 Nov 2026): every speaker in the conversation's picture, the
+// last props from Maple Harbor, calle Uxmal, the cenote and the ruins. What is still to do is in docs/es/TOWN.md.
 import type { TownTheme } from "../../../../game/world/theme";
 export type { BuildingLook, OutdoorSpot, TownTheme } from "../../../../game/world/theme";
 
@@ -188,13 +189,15 @@ export const THEME: TownTheme = {
   church: { x: 52, z: -41, face: "w" },
   // the streets' names in the conversations: avenida Juárez (Main Street, s62), calle Ceiba (Center Street, along the
   // zócalo, s62), avenida del Puerto (Harbor Road, by the malecón), calle Itzamná (East Street, down to the sea, s62),
-  // calle Flamboyán (West Street, by Departamentos Las Palmas, s65a, s65b) and calle Hidalgo (Oak Avenue: "Flamboyán,
-  // entre Hidalgo y Juárez", s65b)
+  // calle Flamboyán (West Street, by Departamentos Las Palmas, s65a, s65b), calle Hidalgo (Oak Avenue: "Flamboyán,
+  // entre Hidalgo y Juárez", s65b) and calle Uxmal (Station Road)
   streetSigns: [
     [6.2, -14.4, "Av. Juárez", "Calle Ceiba"], [6.2, -48.6, "Av. del Puerto", "Calle Ceiba"],
     [64, -14.6, "Av. Juárez", "Calle Itzamná"], [64, -48.6, "Av. del Puerto", "Calle Itzamná"],
     [-64, -14.6, "Av. Juárez", "Calle Flamboyán"], [-64, -48.6, "Av. del Puerto", "Calle Flamboyán"],
     [-64, 44.2, "Calle Hidalgo", "Calle Flamboyán"], [-6.2, 31.9, "Calle Hidalgo", "Calle Ceiba"],
+    // calle Uxmal (Station Road, past the bus terminal): a Mayan city's name, as Itzamná is a Mayan god's
+    [-64, 70.4, "Calle Uxmal", "Calle Flamboyán"], [6.2, 70.4, "Calle Uxmal", "Calle Ceiba"], [64, 70.4, "Calle Uxmal", "Calle Itzamná"],
   ],
   stopWord: "ALTO",
   topes: { at: [[12, -12.6, 12, -3.4, 16.5, -14.4, Math.PI / 2], [46, -12.6, 46, -3.4, 41.5, -14.4, -Math.PI / 2], [28, -59.1, 28, -50.9, 24, -48.4, -Math.PI / 2]], word: "TOPE" },
@@ -202,4 +205,32 @@ export const THEME: TownTheme = {
   // route 7's bus (s67b), a colectivo and two white-and-green taxis among the cars
   traffic: ["bus", "taxi", "colectivo", "car", "car", "taxi", "car", "car"],
   sounds: { bell: [52, -41], vendors: [30, -24], homesZ: 30 },
+
+  // The last details (docs/es/TOWN.md "Done: the last details"): every speaker in the conversation's picture, the
+  // mercado's crates, the buzón, Ximena's barda, the trees in bloom, calle Uxmal (above), the cenote and the ruins.
+  // Everyone taking part within 12 m of the main speaker is framed, the camera backing off until all of them are in the
+  // picture, a phone's narrow one too (Agente Medina in s65b, Marcos in s63, Gerardo in p27)
+  talkCamera: { reach: 12, max: 30 },
+  // and the ones who stood too far away come nearer: Don Arturo watches over the statue by the entrance hall (s70: his
+  // "No se puede tocar"), Luis waits between the first tables to seat the guests (s73), Natalia comes to the door with
+  // Diego to welcome the guest (s85, p30); at Las Palmas, Don Ernesto meets the learner just inside the apartment's door
+  // (s81) and Doña Lupita is in the hallway by it (s82: the new neighbour's door), so that she can butt in on p29
+  roomSpots: {
+    museum: { harold: { x: -4.5, z: 0.3, rot: -0.53 } },
+    trattoria: { marco: { x: -2.0, z: 1.2, rot: -0.54 } },
+    "dans-house": { nora: { x: 1.3, z: 2.3, rot: -0.69 } },
+    apartments: { patel: { x: -1.2, z: 2.4, rot: 0.25 }, rita: { x: -4.4, z: 0.9, rot: 0.1, ax: -4.2, az: 3.1 } },
+  },
+  marketFront: "mercado",
+  mailbox: "correos",
+  // Ximena's backyard (s63): a barda painted like her house, a cream cap, and a green metal gate standing open
+  backyardWall: { wall: "#5fbfb0", base: "#3f8f84", cap: "#fff3e0", gate: "#2e5e3e" },
+  // the leafy trees green, and in bloom here and there: a flamboyán red-orange, a guayacán yellow (one in eight each;
+  // in Maple Harbor's order, so the reds and yellows that were autumn's stay where the blooms are)
+  treeColors: ["#4f9a3e", "#3f8a3a", "#f2c230", "#e8432b", "#5aa83c", "#2f7d3c", "#6db544", "#7cbf4a"],
+  // beyond the town's edge (TOWN.md task 8): a cenote across the meadow at the west end of avenida Juárez (s69: not on
+  // foot, twenty minutes by colectivo: the town's edge is as far as the learner walks), and small Mayan ruins on the
+  // rocky point past the beach's west end (s69: half an hour on foot)
+  cenote: { x: -136, z: -6, sign: "Cenote Ka'an" },
+  ruins: { x: -124, z: -74 },
 };
