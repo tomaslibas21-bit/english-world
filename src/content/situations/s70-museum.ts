@@ -447,7 +447,7 @@ const H: Record<string, Handler> = {
   // --- Harold (twist) -----------------------------------------------------------
   apology(c) { if (c.s.harold) { haroldThanks(c); } else c.say("no_problem"); },
   deny(c) { if (c.s.harold) haroldDeny(c); },
-  why_not(c) { if (c.s.harold) { c.say(c.s.flash ? "harold_why_flash" : "harold_why"); } else c.say("no_problem"); },
+  why_not(c) { if (c.s.harold) { c.speaker("harold"); c.say(c.s.flash ? "harold_why_flash" : "harold_why"); } else c.say("no_problem"); },
   // "Great, thank you!" is thanks, not an answer to "How are you?"
   g_howareyou_answer(c, slots) {
     const h = (c.heard || "").toLowerCase();
@@ -472,20 +472,25 @@ function langChosen(c: Ctx, lang: string, quiet = false) {
 function haroldThanks(c: Ctx) {
   c.s.apologized = true;
   c.complete();
+  c.speaker("harold");
   c.say("harold_thanks");
   c.end();
 }
 function haroldDeny(c: Ctx) {
   c.s.denied = true;
   c.complete();
+  c.speaker("harold");
   c.say("harold_deny");
   c.end();
 }
 
-/** Every situation handler reacts once per utterance (an utterance may be parsed as several segments). */
+/** Every situation handler reacts once per utterance (an utterance may be parsed as several segments), and in Ben's
+ *  voice: after Harold's "Please don't touch!" the speaker stayed Harold, so Ben's answers to anything else ("Oh, you
+ *  already paid!", the coat check, the languages …) came in Harold's voice (5 Nov 2026). Harold's own lines (his
+ *  thanks, "My mistake!", why not) name him again. */
 function wrap(hs: Record<string, Handler>): Record<string, Handler> {
   const out: Record<string, Handler> = {};
-  for (const [id, h] of Object.entries(hs)) out[id] = (c, slots, seg) => { if (onceThisTurn(c, "h:" + id)) h(c, slots, seg); };
+  for (const [id, h] of Object.entries(hs)) out[id] = (c, slots, seg) => { if (onceThisTurn(c, "h:" + id)) { c.speaker("ben"); h(c, slots, seg); } };
   return out;
 }
 
@@ -1159,7 +1164,7 @@ export const museum: SituationDef = {
           },
           g_ok: (cc) => { haroldThanks(cc); },
           deny: (cc) => { haroldDeny(cc); },
-          why_not: (cc) => { cc.say(cc.s.flash ? "harold_why_flash" : "harold_why"); cc.say("harold_ask"); cc.expect(pend); },
+          why_not: (cc) => { cc.speaker("harold"); cc.say(cc.s.flash ? "harold_why_flash" : "harold_why"); cc.say("harold_ask"); cc.expect(pend); },
         },
         yes: (cc) => { haroldThanks(cc); }, no: (cc) => { haroldThanks(cc); },
         ask: (cc) => { cc.speaker("harold"); cc.say("harold_ask"); } };
