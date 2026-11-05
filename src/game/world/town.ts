@@ -2247,9 +2247,9 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   const yellow = mat("#f5c518", { flat: true });
   if (!STYLED) group.add(staticColoured([[x, z, rot] as [number, number, number], ...(THEME.taxi ? THEME.taxis : [])].flatMap(([tx, tz, tr]) =>
     (THEME.taxi ? mxTaxiParts(THEME.taxi.body, THEME.taxi.trim) : carParts("#f5c518", { taxi: true })).map(([g, c]) => [g.rotateY(tr).translate(tx, 0, tz), c] as [THREE.BufferGeometry, THREE.ColorRepresentation])), "taxi"));
-  // (theme.ts `taxis`: more waiting at the stand)
-  if (THEME.taxi) for (const [tx, tz] of THEME.taxis) col.addBox(tx, tz, 4.4, 2.1);
   else M.add("taxi", yellow, boxGeo(1.9, 0.72, 4.4, 0, 0.66, 0).rotateY(rot).translate(x, 0, z));
+  // (theme.ts `taxis`: more waiting at the stand)
+  if (THEME.taxi && !STYLED) for (const [tx, tz] of THEME.taxis) col.addBox(tx, tz, 4.4, 2.1);
   if (STYLED) {
     M.add("taxi", yellow, boxGeo(1.7, 0.6, 2.3, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z));
     M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(1.72, 0.45, 2.1, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z), false);
