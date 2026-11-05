@@ -65,3 +65,93 @@ on the wrong unit (ask_type 10 → 9, type_which 4 → 5); 6 NLU tests, 3 sims.
 US$300 a day, 1,500 a month): kept. The writer's NEEDS (global yes list) and the counter cash with no balance check stand.
 Still not understood, nothing moves: "No quiero cambiar mil, solo quinientos", "1.000" (Spain's thousands point).
 **Gate after:** tsc clean; 139/139 NLU, 19 sims 12/12, fuzz OK, 0/0; corpus 395/395, 0/28; blind 41/42, 0 traps; vitest 287/287.
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer (N/AUDIT-BRIEF.md): both texts read in full (review.ts seeds 3 and 7, before and after), the cross and
+neutral leads checked, ~60 probe.ts scenarios (offers and their refusals, closings, side questions, every money step with
+a question, a past, a what-if, a polite closing), es-offer-probe in both texts (0 flags), the voiced value lists
+(reach-es.ts). Bank facts checked against the other audits: Saturdays until two (s62 ✓), the dollar at $17.20 here and
+$17 at Doña Chela's (s71b ✓), money only on a clear yes, the documents as Mexican banks ask in Nov 2026 (BBVA and
+Banamex: "pasaporte y forma migratoria", proof of address ≤ 3 months, the CURP, which residents have; checked online).
+
+**Found 38 (1:3 2:0 3:0 4:5 5:7 6:0 7:16 8:2 9:2 10:3), fixed 38.**
+
+**4 · facts (must-fix)**
+- Opening an account took the passport *or* the residence card ("Voy a necesitar su pasaporte o su tarjeta de
+  residente…", "¿Me permite una identificación? Su pasaporte está bien.", open_need). Mexican banks ask a foreigner for
+  both. Now `ask_id`, `ask_id_proof` and `open_need` ask for both (open_need also names the CURP); one shown, the id step
+  asks for the other ("¿Y su tarjeta de residente?" / "¿Y su pasaporte?"); "Aquí tiene", "Sí, aquí están" hand both
+  over; without one ("No, no la traigo", "Solo traigo mi pasaporte", "No tengo pasaporte, pero…", "Todavía no tengo mi
+  tarjeta de residente", "Soy turista") no account today: need_docs_open + come_back_docs, the visit ends (as the
+  no-ID path did); "¿Y si no tengo tarjeta de residente?" gets the rule and the question stays. A license at the
+  opening: license_no_open, then the question again. The card and the cash still take one ID. The checklist's "Show
+  your ID" ticks on both documents when opening. The id scene picture (a passport) and the CURP one (Ricardo holding
+  the residence card, pointing at the code) fit the new order.
+- ssn_none_ok[1] "No pasa nada; la puede agregar después" said the CURP could wait; removed ("la buscamos en el
+  sistema con sus datos" stays).
+- A first-visit learner whose card the ATM kept was offered cash "aquí en ventanilla" with no account here: the card
+  is the bank's own (found by the ID and the digits), so its owner is a customer now; a newcomer who said they have no
+  account hears card_other_bank (another bank's card: it isn't given back, call that bank), and no cash is offered
+  without an account (cash_offer needs a customer).
+- A tourist at the exchange ("No, soy turista", "Estoy de vacaciones") was read as the CURP's ssn_none ("Muy bien.")
+  and the question stayed; now a no with no account offered (an account takes a residence card): tourist_ctx.
+
+**7 · questions and offers (must-fix, wrong meanings and loops)**
+- "¿Por qué?", "¿Para qué?" and "¿Qué es eso?" anywhere got the CURP explained (ask_ssn_what's "que es eso",
+  "para que [es] [eso]" with por/para and es tolerated). ask_ssn_what keeps only the CURP; what_ctx answers by step
+  (the CURP, the comprobante, the lease after "¿Tiene contrato de renta?" (new lease_explain), the account types,
+  the NIP); "¿Por qué?" at "¿Tiene cuenta con nosotros?" gets why_customer (or the transfer's reason) and the
+  question again; the rule is said once.
+- "¿Es gratis?" at the app, the savings offer, the cash and the exchange got the account's monthly fees: now the app is
+  free (app_info), the savings account has no fee, the cash has no charge, the exchange has no fee, a transfer $750.
+- "¿Cuánto puedo sacar?" got "No tiene ningún costo" (cost_q + withdraw): cash_max_q → cash_limit "Lo que tenga en su
+  cuenta."; "¿Cuánto puedo cambiar?" / "¿Cuál es el máximo?" (not understood) → ex_max ("A nuestros clientes les
+  cambiamos hasta 4,000 dólares al mes en efectivo.", the same limit as ex_limit), at the quote the quote again.
+- Loops: "Eso es todo", "Nada, gracias", "No, gracias" at "¿En qué le puedo ayudar?" (after a question or a declined
+  offer) asked the same question forever: the help step's no now says goodbye. "Gracias, es todo" / "Muchas gracias,
+  eso es todo" were read as thanks and "¿Algo más?" came again: more_no patterns. "Es todo" at "¿Se los cambio?",
+  "¿Se lo doy?" and "¿Cuántos dólares?" now close (nothing changed or paid). "Quiero abrir una cuenta" said again at the
+  type question asked it twice in a row ("Entonces, ¿de débito o de ahorro?" + "¿Cuál le gustaría?").
+- Not understood before, answered now: "¿Cuánto me dan por cien?" (no "dólares") at the dollars step (a quote),
+  "¿Qué necesito para mandar dinero a Estados Unidos?" (the transfer's needs, then the account question), "¿Puedo abrir
+  una cuenta en dólares?" (usd_account_no: individuals' accounts are in pesos outside the northern border zone),
+  "La primera / La segunda" at "¿de débito o de ahorro?", "¿Qué es el NIP?" (nip_explain), a bare "No sé" at "¿Puso mal
+  el NIP?" (it got "Tómese su tiempo" and the turn was held; a local g_dontknow answers it and moves on), "Quiero
+  comprar dólares" (the selling rate; selling isn't modeled, see below).
+
+**9 · meaning safety:** a typed "¿Cien?" at "¿Cuántos dólares…?" changed the money and "¿Mil?" at "¿Cuánto quiere
+retirar?" paid it out; a "?" now quotes or asks back, as the deposit already did (said, without "?", it stays an answer).
+Held-out: "Las dos, por favor" now accepts both_ctx (the step's own intent for it).
+
+**1 · Spanish:** with "Las dos" the deposit and the opening spoke of one account ("Para abrirla…", "Su cuenta nueva está
+abierta"): min_deposit_both, ask_deposit_both, opened_both. fee_waive ("Y si recibe aquí su sueldo, tampoco paga
+comisión") was voiced but never said: now the end of the fee answer.
+
+**5 · English (not voiced):** "Shall I…?" → "Should I…?" / "Do you want help with the app?" in deposit_enough,
+exchange_quote, exchange_quote_rate, cash_confirm, ask_bills, offer_app_again; the hint note "the cash machine" → "the ATM".
+**8 · hints:** "Estoy esperando mi tarjeta de residente" at the CURP contradicted the card just shown → ssn_dunno "No sé
+cuál es."; the opening's id step suggests a new "docs" group ("Aquí están mi pasaporte y mi tarjeta de residente.",
+"Aquí tiene.", "Aquí está mi pasaporte."). **10 · neutral:** twins for the hints form_pen (bolígrafo) and card_pin ×2 (PIN).
+
+**Voices (for the lead):** 16 new spoken lines (ask_res_card, ask_passport_too, need_docs_open, come_back_docs,
+license_no_open, min_deposit_both, ask_deposit_both[0] ([1] is ask_deposit[1]'s text), opened_both, why_customer,
+cant_change, ex_max, usd_account_no, cash_limit, nip_explain, lease_explain, card_other_bank), 4 changed (ask_id ×2,
+ask_id_proof, open_need), 1 removed (ssn_none_ok[1]); hints: docs_both new, ssn_dunno replaces ssn_waiting, 3 neutral
+hint twins. No Mexican-only word in the new lines. Values: every {$price} line has its one fixed value; the exchange
+lines keep the whole 200-value list ($10–$2,000 × 17.20), which covers every amount they can say (inAmountDomain).
+
+**Tests:** NLU 139 → 159; sims 19 → 26 (7 opening sims re-scripted with the residence card; 7 new: only the passport,
+both accounts + both documents + "¿Qué es eso?", a tourist at the exchange, "¿Cien?" quoted + "Es todo", a first-visit
+card + "¿Cuánto puedo sacar?", a newcomer's foreign card, goodbye after a declined offer); corpus 395/395 (0/28) →
+451/451 (0/30), +58 items (+22 with not-lists); held-out 41/42 → 42/42.
+
+**Proposals (shared files) and owner questions**
+- s62 sends anyone who wants to change money (euros too) to the bank, which changes only US dollars and only for its
+  customers (a tourist can't open an account): s62's answer could say so, or TOWN.md could get a casa de cambio.
+- TOWN.md "Facts": the bank's opening documents (passport + residence card, proof of address ≤ 3 months, the CURP).
+- Global (as s68 proposed): a bare "Gracias" at an open offer gets "¡De nada!" and the offer stays (the welcome,
+  savings, app and cash offers here).
+- Owner: selling dollars (the board's $18.10) isn't part of this visit; "Quiero comprar dólares" gets the rates only.
+  A small sale flow with generic lines (no amount list) is possible. And: no account without the residence card (as
+  the big banks do); or should the fictional bank open a basic account with the passport alone?
