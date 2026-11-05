@@ -11,7 +11,7 @@
   { "ctx": "purpose", "say": "Estoy aquí para la boda de mi prima", "intent": ["purpose", "purpose_visit"] },
   { "ctx": "purpose", "say": "No es por negocios", "intent": "purpose_neg", "not": ["purpose"], "note": "trap: negation" },
   { "ctx": "purpose", "say": "Me voy a mudar aquí, vine a vivir", "intent": "purpose", "note": "mover" },
-  { "ctx": "purpose", "say": "Un poco de los dos", "intent": "purpose" },
+  { "ctx": "purpose", "say": "Un poco de los dos", "intent": ["purpose", "both_ctx"] },
   { "ctx": "purpose", "say": "Quiero un café con leche", "intent": "none", "note": "trap: off-topic" },
 
   { "ctx": "biz_kind", "say": "Una conferencia de medicina", "intent": "purpose" },
