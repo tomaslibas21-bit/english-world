@@ -37,3 +37,81 @@ recorded only after his "¿Está seguro?".
 - TOWN conflict, as the writer flagged: s81/s82 make Don Ernesto the landlord at Departamentos Las Palmas; here Don Gilberto
   (npcs.ts, the brief) owns an unnamed building with "doce inquilinos". Someone should pick one.
 - Tools: a bare "Bueno." can't be scripted in a sim (sim-play swaps in the auto answer); it was checked with probe.ts.
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer (AUDIT-BRIEF.md). Read: the situation file, both transcripts (seeds 3 and 7) before and after, the
+corpus and the held-out set, STYLE.md, AUTHORING-ES.md's rules, the brief, the cross and neutral files, and the
+building as s81, s82 and p29 have it. Played ~60 probe turns (tools/probe.ts) on the power question, Andrea's offer,
+the side questions, the voicemail and gr_which ("No a las once" → "La de la una." / "Once." / "A la una, por favor.").
+The offer probe: 0 flags in both texts.
+
+**The lead's decision applied (Don Gilberto is the building's administrador; Don Ernesto owns Las Palmas; 1B).**
+"casero"/landlord is gone from the lines, hints, tips, mission, goal, intro and topic ("Dos llamadas: a una amiga y al
+administrador"); Andrea says "llámale al administrador" (3 lines); "Tengo doce inquilinos" → "Administro doce
+departamentos" (+ twin); "Es mi edificio" → "Es mi trabajo"; the hint "Soy su inquilino del 3B" → "Soy el/la
+inquilino/a del 1B" ("su inquilino" is still understood). 3B → 1B everywhere (2 lines with `say` "uno be", 4 hints,
+AUTO, tests, sims); **"Habla Ryan, del 1B" and "Soy la inquilina del 1B" were not understood at all** (only 3B was in
+`aptno`): fixed, 3B still taken. The intro now names Departamentos Las Palmas and says the roof is his job; s82's rule
+(the apartment → Don Ernesto, the building → Don Gilberto) fits the clogged roof drain. New: "¿Le aviso a Don
+Ernesto?" (ask_owner) → "Yo le aviso a Don Ernesto. Usted no se preocupe."
+
+**Found by point** (30 found, 30 fixed):
+1. Spanish/coherence (6): Andrea's "¿Qué tan grave está?" was left unanswered by her own next lines ("No pasa nada…"
+   read as its answer) → "¡Ay, no! ¡Qué horror!"; "¡Nos vemos en diez minutos!" twice in a row (gr_see_you, then
+   gr_bye) → gr_see_you "¡Bueno! Voy para allá."; "¡Ay, no, tiene razón! ¡Qué pena con usted!" when he had offered
+   nothing (the learner insisted first) → only after his "¿Podría esperar a mañana?" / "¿Está seguro?"; "No sé" at
+   "¿Está seguro?" decided today and then he asked "¿Está seguro?" again → g_dontknow in that question;
+   "¿Quiere que le mande a mi plomero?" twice in a row after "No, gracias" → "Entonces, ¿cómo le ayudo?" in between;
+   "Listo, ya los bajé" got "Perfecto. Perfecto." → once.
+2. tú/usted: nothing found.
+3. Names/roles (5): the administrador decision (lines, English labels and tips, gr_its_me, gr_inconvenience, tenant_in).
+4. Facts (2): 3B → 1B; 1B not understood.
+5. Glosses/English (2): l_coming_yes "Yay!" for "¡Claro!" → "Sure!"; gr_bye's neutral twin "¡Ahora nos vemos!" glossed
+   Ahora as "Soon" → "¡Nos vemos en un rato!" (accurate gloss, LatAm-neutral).
+6. Spelling: nothing found.
+7. Questions, offers, meaning safety (10):
+   - **Towels or bailing answered the power question**: "Ya puse toallas en el piso." / "Ya saqué el agua con una
+     cubeta." were water_off, so he said "Muy bien. Con agua en el piso, es lo primero." and never checked the power
+     (also when said in the report). Now towels_done: at his question "Bien. Pero primero, la luz." + where the
+     breakers are; in a report "Ajá, ajá." and the question still comes.
+   - **The power question was "done" once asked**: any other answer (a request, a late answer) moved on with the power
+     unknown. Now only an answer closes it; on his second turn he says "Bien. Pero primero, la luz." + the breakers.
+   - "No hay luz." / "Se fue la luz con la tormenta." not understood → no_power: "Igual, por si regresa la luz." + the
+     breakers (switch off even in an outage, in case it comes back).
+   - "¿Cuál switch?" / "¿Qué es el switch?" / "¿Dónde está?" at his question not understood → his instructions.
+   - "¿Qué hago (mientras tanto)?" not understood → the breakers if the power isn't known to be off, else
+     "Mientras tanto, saque el agua que pueda y levante sus cosas del piso." (Andrea: "Respira. Es solo agua.")
+   - "¿Le aviso a Don Ernesto?" / "¿Don Ernesto ya sabe?" not understood → gr_owner.
+   - **"Sí, por favor." / "Sí, porfa." / "Bueno, sí." to "¿Segura? Puedo pasar después de desayunar." kept Andrea at
+     breakfast** (read as "yes, I'm sure"); now they take up her offer; a bare "Sí" / "Sí, gracias" / "Sí, estoy
+     segura" still mean she stays. "Sí, pásate después" was not understood (now she comes).
+   - "¿A qué hora llegas?" to Andrea got "¡Ay, no!" → "Llego en veinte minutos." (and it takes up her offer).
+   - "¡Te debo una!" / "¡Eres la mejor!" got "¡Yo también te quiero!" → "¡Para eso estamos!" + a bye (only "te
+     quiero / te amo" gets "¡Yo también te quiero!").
+8. Hints (1): the new neutral hints "…se inundó el apartamento" / "…al apartamento de abajo" were not accepted:
+   `apartamento` added wherever the grammar had departamento (what_formal, down, downy, downstairs_no, unsure_ctx, fl).
+9. Accepted answers (1): the corpus had "Ya puse toallas en el piso" as water_off (the bug) → towels_done, not
+   water_off. Corpus 314 → 356 understood (+42), traps 81 → 86 (+5), 0 false accepts; held-out 35/37 unchanged
+   (the two blind misses the first review left), 0/2. NLU tests 129 → 146; sims 17 → 19 (both 12/12): one plays the
+   offer, towels, "No hay luz", "¿Qué hago mientras tanto?" and Don Ernesto; one leaves the power question unanswered.
+10. Neutral (3): "departamento" twins added to gr_down_q[0..1] and 7 hints (with F_DEPA flags, as s81/s82); "Le hablo"
+   (hablar = to phone, Mexico) twinned "Lo llamo…" in who.calling_from and report.report_leak (as s34); the tips'
+   examples have no twin mechanism, so they now say "la cocina" (not "el depa" / "el departamento").
+
+**Voices.** New spoken lines (all Don Gilberto): gr_power_first, gr_no_power, gr_meanwhile, gr_owner. Changed: Andrea's
+l_react_water[1], l_bye_q[0], l_door_go, l_door_friends; Don Gilberto's gr_its_me (+ new twin), gr_guess_who,
+gr_hi_tenant[1] (say "uno be"), gr_down_q[0..1] (new twins), gr_inconvenience, gr_see_you, gr_bye[1]'s neutral twin.
+Hints changed: who.this_is_apt, who.tenant_in, who.calling_from, report.regret, report.report_leak, details.downstairs,
+insist.downstairs, voicemail.this_is_apt, voicemail.regret (all but tenant_in with new neutral twins). No line of this
+file is said by both speakers (L = Andrea, G = Don Gilberto); the global replies (not understood, ack, hello, thanks,
+repeat, slower, wait, "no sé") can come from either, in their own register. No `attrs.plural` items ("toallas" is a
+bare plural, art "", and reads right); no values.
+
+**Left (for the lead):** npcs.ts mr_grant "Tu casero / Your landlord" → "Administrador del edificio / Building
+manager" (FOLLOWUPS); BRIEFS.md p24 "(landlord, usted, formal)" → administrador; TOWN.md "The landlord…" (p24's Don
+Gilberto "tu casero", 3B, an open question) → decided; scene-data/p24-flood.json "npc" says "your landlord".
+Story details, unchanged: s82 has neighbors upstairs ("los de arriba"), so the roof drain's water reaches 1B's ceiling
+through the floor above (plausible; no line names it); "la vecina de abajo" lives on the planta baja with Don Ernesto
+and the tiendita (no clash, no name). Not twinned (not on STYLE's list): "trapeador", "cubeta" (neutral "balde" is
+masculine, so an `attrs.neutral` would need the article too), "jalador", "llámale".
