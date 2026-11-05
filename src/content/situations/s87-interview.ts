@@ -15,7 +15,8 @@
 // NEEDS: Game.ts GIVEN could add "coffee": ["☕", "kavos"] for the coffee Ms. Brooks offers (the "give"
 // toast is generic now).
 
-import type { Ctx, EntityDef, SituationDef, Suggestion } from "../types";
+import type { Ctx, EntityDef, Pending, SituationDef, Suggestion } from "../types";
+import type { ConvCtx } from "../../convo/dialogue";
 import type { SlotFn, SlotResult } from "../../convo/grammar";
 import { ent, t } from "../dsl";
 import { readInt } from "../../convo/slots";
@@ -425,7 +426,7 @@ const S_SIDE: Suggestion = { lt: "Pasakyti, kad jaudiniesi, arba paprašyti paka
 const S_ASK: Suggestion = { lt: "Paklausti apie darbą: darbo laiką, mokymus, pradžią", hint: "ask_them" };
 const S_NO_Q: Suggestion = { lt: "Pasakyti, kad klausimų nebeturi", hint: "no_q" };
 const Q_INTENTS = ["q_hours", "q_training", "q_start", "q_team", "q_remote", "q_benefits", "q_day", "q_next", "q_dress", "q_parking", "q_like",
-  "salary_range_q", "no_questions", "can_ask", "q_other_ctx"];
+  "salary_range_q", "no_questions", "can_ask", "can_ask_ctx", "q_other_ctx"];
 /** Model questions in sets of three (hint group, the answer keys it covers). */
 const Q_SETS: [string, string[], string][] = [
   ["ask_them", ["hours", "training", "start"], "Paklausti apie darbą: darbo laiką, mokymus, pradžią"],
@@ -552,7 +553,7 @@ export const interview: SituationDef = {
       "[yes] [it was] (very | really | pretty | quite) (easy | simple)", "[but] i found (it | you | the office | the building) [easily | quickly | in the end | at last]", "[yes] it was (fine | okay | all right | no problem)",
     ] },
     found_hard: { patterns: [
-      "[no | not really | not exactly] i got [a little | a bit] lost [a little | a bit] #h:found_lost", "[no] it was (hard | difficult | not easy) [to find]",
+      "[more or less] [no | not really | not exactly] i got [a little | a bit] lost [a little | a bit] #h:found_lost", "more or less", "[no] it was (hard | difficult | not easy) [to find]",
       "[no] it was [a little | a bit | a little bit | quite | very | really] (hard | difficult | tricky | complicated) [to find]",
       "[no] i could not find (it | the building | the entrance | the office) [at first]", "[no] it took (a while | some time | me a while)",
       "[no] the traffic was (bad | terrible | awful | crazy)", "not exactly",
@@ -941,6 +942,7 @@ export const interview: SituationDef = {
       "[yes] i have [the] (permission | a permit | the right) to work [here | in the (us | u s | states | united states)]",
       "[yes] i am (allowed | legally allowed | able) to work (here | in the (us | u s | states | united states) | in america | legally)",
       "[yes] i am (a legal resident | a legal permanent resident | legal | here legally | a resident)", "[yes] i am (a (us | u s | american) citizen | an american citizen) [now]",
+      "[yes] i am (american | an american)",
       "[yes] i (got | have got | already have) [a | my] (green card | work permit | work visa | social security number)", "[yes] everything is (legal | in order | okay) [with my documents]",
     ] },
     auth_pending: { patterns: [
@@ -948,7 +950,7 @@ export const interview: SituationDef = {
       "i am waiting for my (work permit | green card | visa | papers | documents)",
       "my (work permit | green card | visa) is (on the way | in process | coming | being processed)",
       "i (will | should) (have | get) (it | my (work permit | green card | visa)) (soon | next month | in {dur})",
-      "[no] i (do not | don't) have (a green card | a work permit | a work visa | a visa | my papers) [yet]",
+      "[no] i (do not | don't) have (a green card | a work permit | a work visa | a visa | my papers | a permit) [yet]",
       "[not yet] my (papers | documents | application | work permit | green card | visa) (are | is) (in process | being processed | on the way | in progress | coming soon)",
       "i (applied | have applied | already applied) for [a | my] (work permit | green card | visa | work visa)",
       "i (will | should | am going to) (have | get | receive) [it | them | my @auth_papers] (soon | next month | next week | in {dur} | in a few (weeks | months))",
@@ -976,7 +978,8 @@ export const interview: SituationDef = {
       "what is the [salary | pay] range [for (this | the) (position | job | role)] #h:s_range_q", "what (does | would) (the | this) (job | position | role) pay",
       "how much (does | would) (the | this) (job | position | role) pay", "what is the (salary | pay) [for (this | the) (position | job)]",
       "what (salary | pay) (do you offer | are you offering)", "how much is the (salary | pay)",
-      "what (do you | can you | would you) offer", "how much (do | would | can) you pay", "what is (normal | usual | standard | typical) for (this | the) (job | position)",
+      "what (do you | can you | would you) offer", "how much (do | would | can) you pay", "how much does it pay",
+      "what (would | will) (my | the) (salary | pay) be", "what (would | will) i (earn | make)", "what is (normal | usual | standard | typical) for (this | the) (job | position)",
       "(how much | what) (can | could | would) i (earn | make | get) [here | in this (job | position)]", "what is the salary",
       "i would like to (know | hear) the [salary] (range | salary | pay) [first] [for (this | the) (position | job)]", "(can | could) you tell me the [salary] (range | salary) [first]",
     ] },
@@ -1041,6 +1044,7 @@ export const interview: SituationDef = {
       "(do | will) i (need to | have to) work (on weekends | at weekends | on saturdays | overtime | at night | nights | in shifts | late)", "is there (any)? overtime",
       "how long is the (lunch break | lunch | break)", "how many hours (do | will | would) (i | we) work [a (day | week) | per (day | week)]", "is there a (lunch break | break)", "what time (i | we) (start | begin | finish) [work]", "is (it | the job | this) (a)? (full time | part time) (job | position)", "how many hours will i work [a (day | week)]",
       "what (are | is) the (working | work)? (hours | schedule) (like)?", "(when | what time) (do | does) (the)? (work | day) (start | begin | finish | end)",
+      "(is it | is the job | is work) monday (to | through) friday", "(when | what time) is (lunch | the lunch break)",
     ] },
     q_training: { patterns: [
       "(is there | will there be | do you (offer | provide) | will i (get | have)) (any)? training #h:q_training",
@@ -1059,6 +1063,7 @@ export const interview: SituationDef = {
       "(can | could) i (work | sometimes work) (from home | remotely) #h:q_remote", "(can | could) i work (from home | remotely) (sometimes | some days | on fridays | part of the week)", "(can | could) i work (at home | from my home) [sometimes]", "is (remote work | working from home | hybrid work) possible",
       "is (the job | it | the position) (remote | hybrid)", "do you (allow | offer) (remote work | working from home | hybrid work)",
       "is it possible to work (from home | remotely) [sometimes]", "(can | could) i sometimes work (from home | remotely)", "(do | can) people work from home [here]",
+      "how many days [a week] (can | could | do) (i | we | people) work (from home | remotely)",
     ] },
     q_benefits: { patterns: [
       "what are the benefits #h:q_benefits", "what (benefits | kind of benefits) do you (offer | have)",
@@ -1066,6 +1071,8 @@ export const interview: SituationDef = {
       "how many (vacation | paid vacation) days (do i get | are there | would i get)", "how much (vacation | paid time off | pto) (do i get | is there | would i get)",
       "how many (holiday days | days of holiday | holidays) (do i get | are there | would i get) #tip:us_vacation",
       "how much holiday (do i get | is there | would i get) #tip:us_vacation", "how (much | many) (vacation | vacation days | days off | paid days off)",
+      "(and | what about) [the] (vacation | vacation days | vacations | days off | benefits | health insurance)", "do you (have | give | provide) (health | medical | dental) insurance",
+      "is there (any)? (paid)? vacation",
     ] },
     q_day: { patterns: [
       "what does a typical day look like #h:q_day", "what (would | will) i be doing", "what (are | would be | will be) my (main)? (duties | responsibilities | tasks)",
@@ -1080,7 +1087,10 @@ export const interview: SituationDef = {
     ] },
     q_dress: { patterns: ["(is there | do you have) a dress code #h:q_dress", "what (should | do) i wear [to work]", "what is the dress code"] },
     q_parking: { patterns: ["(is there | do you have) parking", "where can i park", "is parking (free | included)", "(is there | do you have | can i get) [a] [free] (parking | parking lot | parking space | place to park | parking garage | parking spot | parking place)", "can i park (here | near the office | at the office)"] },
-    q_like: { patterns: ["what do you like [most] about working here", "what do you like about (the company | brightline | this company)", "do you like working here"] },
+    q_like: { patterns: ["what do you like [most] about working here", "what do you like about (the company | brightline | this company)", "do you like working here",
+      "what is the (work)? (environment | atmosphere | culture) like [here]", "how is the (work)? (environment | atmosphere) [here]", "what is the (company)? culture like"] },
+    // "So, what questions do you have for me?" → "Yes, a few.": go ahead
+    can_ask_ctx: { patterns: ["[yes] (a few | a couple | one | some | just one | just a few) [questions | things]", "[yes] (a few | a couple of) questions"] },
     q_restroom: { patterns: ["where is the (restroom | bathroom | ladies room | mens room)", "where is the toilet #tip:us_restroom", "(can | could | may) i use the (restroom | bathroom)"] },
     her_name: { patterns: ["[sorry | and] what is your name [again | sorry]", "who are you", "and you are", "are you the (hr manager | manager | boss)"] },
     q_other_ctx: { patterns: ["(what | how | when | where | who | why | is there | do you | can i | will i | are there) {w:any}"] },
@@ -1111,14 +1121,20 @@ export const interview: SituationDef = {
     ] },
 
     // --- the job offer (twist) ------------------------------------------------------------------
+    // a clear yes only (5 Nov 2026): joy, "Really?", a thank-you or "When do I start?" took the job before
     accept_job: { patterns: [
-      "[thank you [so much | very much]] [yes] i accept #h:o_accept", "[yes] i (would | will) (love to | be happy to | gladly) (accept | take it | join)",
-      "(that is | this is | what) (wonderful | great | amazing | fantastic) [news] #h:o_wonderful", "really", "[yes] of course i accept",
-      "i will take it", "when do i start",
-      "i am (very | so | really)? (happy | glad | excited | thrilled) [to (accept | join | hear that | hear this | join the team)]",
+      "[thank you [so much | very much]] [yes] i accept [it | the offer | your offer | the job] #h:o_accept", "[yes] i (would | will) (love to | be happy to | gladly) (accept | take it | join)",
+      "[yes] of course i accept", "[yes] i (will | would) take (it | the job)",
+      "i am (very | so | really)? (happy | glad | excited | thrilled) to (accept | join | join the team | join your team)",
       "[yes] i (would | will) be (happy | glad) to (join | accept | work here | join your team | join the team)", "[yes] i (want | would like) (the job | to work here)",
-      "(wow)? (thank you | thanks) [so much | very much] [yes]", "i (can not | cannot) believe it",
     ] },
+    // at the offer: joy alone is not an answer ("So, what do you say?"); with a yes it is
+    joy_ctx: { patterns: [
+      "(that is | this is | what) (wonderful | great | amazing | fantastic) [news] #h:o_wonderful", "(that is | this is) (great | good | wonderful) news", "really",
+      "(wow | oh wow) [thank you | thanks] [so much | very much]", "i (can not | cannot) believe it", "oh my (god | gosh)",
+      "i am (very | so | really)? (happy | glad | excited | thrilled) [to hear (that | this | it)]",
+    ] },
+    offer_unsure_ctx: { patterns: ["maybe", "perhaps", "i am not sure [yet]", "i (do not | don't) know [yet]"] },
     think_offer: { patterns: [
       "(can | could | may) i think about it #h:o_think", "i (need | would like) (some time | a day | a few days) to think [about it]",
       "(can | could) i let you know (tomorrow | later | on {day})",
@@ -1988,8 +2004,8 @@ export const interview: SituationDef = {
     },
 
     // --- small talk ---
-    found_ok(c) { if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; c.say("found_good"); } else c.say("ack"); },
-    found_hard(c) { if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; c.say("found_bad"); } else c.say("ack"); },
+    found_ok(c) { if (turn(c).found) return; turn(c).found = true; if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; c.say("found_good"); } else c.say("ack"); },
+    found_hard(c) { if (turn(c).found) return; turn(c).found = true; if (c.s.small === "found" && !c.s.smallDone) { c.s.smallDone = true; c.say("found_bad"); } else c.say("ack"); },
     want_drink(c, _s, seg) { c.s.smallDone = true; giveDrink(c, seg.tags.includes("coffee")); },
     no_drink(c) { c.s.smallDone = true; c.say("no_drink_ok"); },
 
@@ -2132,6 +2148,7 @@ export const interview: SituationDef = {
 
     // --- the learner's questions ---
     can_ask(c) { c.say("go_ahead"); c.hold(); },
+    can_ask_ctx(c) { c.say("go_ahead"); c.hold(); },
     q_hours(c) { answerQ(c, "hours", () => { c.say("a_hours"); c.say("a_lunch"); }); },
     q_training(c) { answerQ(c, "training", () => c.say("a_training")); },
     q_start(c) { answerQ(c, "start", () => c.say("a_start")); },
@@ -2139,7 +2156,12 @@ export const interview: SituationDef = {
     q_remote(c) { answerQ(c, "remote", () => c.say("a_remote")); },
     q_benefits(c) { answerQ(c, "benefits", () => c.say("a_benefits")); },
     q_day(c) { answerQ(c, "day", () => c.say("a_day")); },
-    q_next(c) { answerQ(c, "next", () => { c.say("a_next"); c.say("a_touch"); }); },
+    q_next(c) {
+      // with the job offered (or taken) the next step is the contract, not "We're talking to a few other candidates"
+      if (c.s.offerOpen || c.s.offerState === "hired") { c.say("offer_contract"); return; }
+      if (c.s.offerState === "think") { c.say("offer_think"); return; }
+      answerQ(c, "next", () => { c.say("a_next"); c.say("a_touch"); });
+    },
     q_dress(c) { answerQ(c, "dress", () => c.say("a_dress")); },
     q_parking(c) { answerQ(c, "parking", () => c.say("a_parking")); },
     q_like(c) { answerQ(c, "like", () => c.say("a_like")); },
@@ -2152,10 +2174,12 @@ export const interview: SituationDef = {
     // After the offer was accepted in the same turn ("Thank you for the opportunity. It was nice to meet you!"),
     // the rest of the sentence is the goodbye.
     look_forward(c) { if (c.s.closeOpen) { closingReply(c, "closing_bye"); return; } if (c.step === "questions" && !c.s.qDone) { c.s.qDone = true; return; } c.say("ack"); },
-    nice_meet(c) { if (c.s.closeOpen) { closingReply(c, "closing_nice"); return; } if (!c.s.named) return; c.say("ack"); },
+    nice_meet(c) { if (c.s.closeOpen) { closingReply(c, "closing_nice"); return; } if (!c.s.named || c.s.offerOpen) return; c.say("ack"); }, // not "I see." under the open offer
 
     // --- job offer (outside the offer moment) ---
     accept_job(c) { c.say("ack"); },
+    joy_ctx(c) { if (c.s.offerOpen) offerReply(c); },
+    offer_unsure_ctx() { /* only at the offer (its pending answers it) */ },
     think_offer(c) { c.say("ack"); },
     decline_offer(c) { c.say("ack"); },
 
@@ -2170,18 +2194,8 @@ export const interview: SituationDef = {
     if (c.s.offerTwist) {
       c.twist("offer");
       c.say("offer");
-      c.expect({ id: "offer", expects: ["accept_job", "think_offer", "decline_offer"], hints: ["offer"],
-        suggest: [{ lt: "Atsakyti į darbo pasiūlymą", hint: "offer" }],
-        on: {
-          accept_job: (cc) => { offerYes(cc); },
-          g_thanks: (cc) => { offerYes(cc); },
-          thanks_time: (cc) => { offerYes(cc); },
-          think_offer: (cc) => { cc.say("offer_think"); closeUp(cc, false); },
-          decline_offer: (cc) => { cc.say("offer_no"); closeUp(cc, false); },
-        },
-        yes: (cc) => { offerYes(cc); },
-        no: (cc) => { cc.say("offer_no"); closeUp(cc, false); },
-        ask: (cc) => cc.say("offer_again") });
+      c.s.offerOpen = true;
+      c.expect(offerPending());
       return;
     }
     c.say("closing");
@@ -2190,6 +2204,21 @@ export const interview: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): a clear yes takes the job; joy, "Really?", a thank-you or "When do I start?" don't
+    { say: "Thank you, I accept!", intent: "accept_job" },
+    { say: "When do I start?", intent: "q_start", not: ["accept_job"] },
+    { say: "How much does it pay?", intent: "salary_range_q" },
+    { say: "What would my salary be?", intent: "salary_range_q" },
+    { say: "Is it Monday to Friday?", intent: "q_hours", step: "questions" },
+    { say: "When is lunch?", intent: "q_hours", step: "questions" },
+    { say: "What about vacation?", intent: "q_benefits", step: "questions", not: ["q_other_ctx"] },
+    { say: "Do you have health insurance?", intent: "q_benefits", step: "questions" },
+    { say: "How many days can I work from home?", intent: "q_remote", step: "questions", not: ["q_other_ctx"] },
+    { say: "What's the work environment like?", intent: "q_like", step: "questions" },
+    { say: "Yes, a few.", intent: "can_ask_ctx", step: "questions" },
+    { say: "I'm American.", intent: "auth_yes", step: "authorized" },
+    { say: "No, I don't have a permit yet.", intent: "auth_pending", step: "authorized" },
+    { say: "More or less. I got a little lost.", intent: "found_hard", step: "found" },
     { say: "Hi, I have an interview at 9:30.", intent: "arrive", slots: { time: { h: 9, m: 30 } } },
     { say: "Good morning! I'm here to see Ms. Brooks.", intent: "arrive" },
     { say: "I'm here for a job interview.", intent: "arrive" },
@@ -2275,7 +2304,7 @@ export const interview: SituationDef = {
     { say: "It's negotiable", intent: "salary_flexible", step: "salary" },
     { say: "When will you call me?", intent: "q_next", step: "questions" },
     { say: "No, everything is clear", intent: "no_questions", step: "questions" },
-    { say: "I'm very happy, thank you!", intent: "accept_job" },
+    { say: "I'm very happy to accept!", intent: "accept_job" },
     { say: "No coffee for me, thanks", intent: "no_drink", step: "drink", not: ["want_drink"] },
     { say: "I don't work well under pressure", intent: "not_strength", step: "strengths", not: ["strength"] },
     { say: "I'm not nurse", intent: "not_job", not: ["job_is"] },
@@ -2290,6 +2319,10 @@ export const interview: SituationDef = {
   // The generic "No, that's all." / "Nothing else, thanks." / "No, thank you." answer the last "Any other
   // questions?" in these sims: the optional "Are you authorized to work in the U.S.?" (a yes/no question) is off.
   sims: [
+    // logic audit (5 Nov 2026): joy at the offer asks again; a clear yes takes the job
+    { name: "audit: joy at the offer, then a clear yes", setup: (s) => { s.offerTwist = true; s.phoneTwist = false; }, turns: ["Good morning! I have an interview at 9:30.", "Tomas Mikalauskas.",
+      "I'm an accountant with ten years of experience.", "I love your company, and I'm ready for a new challenge.", "I'm very organized, and I learn fast.",
+      "No, I think you've answered everything.", "That's wonderful news!", "Yes, I accept!", "Thank you for your time."], expect: { complete: true }, auto: AUTO },
     { name: "classic interview", turns: ["Good morning! I have an interview at 9:30.", "Tomas Mikalauskas.", "I'm an accountant with ten years of experience.",
       "I love your company, and I'm ready for a new challenge.", "I'm very organized, and I learn fast.", "What are the working hours?",
       "No, I think you've answered everything.", "Thank you for your time!"], expect: { complete: true }, auto: AUTO },
@@ -2454,7 +2487,12 @@ function strengthAnswer(c: Ctx, ids: string[], tags: string[]) {
   else if (first === "fast_learner" || tags.includes("fast_learner")) ackOnce(c, "s_fast");
   else if (tags.includes("good_with") || first === "friendly" || first === "communicator") ackOnce(c, "s_people");
   else if (first === "organized") ackOnce(c, "s_organized");
-  else ackOnce(c, "strength_ack");
+  else if ((c.s.strengths || []).length > 1) ackOnce(c, "strength_ack");
+  else if (!turn(c).acked) {
+    // one quality ("I'm hardworking"): not "Those are great qualities." (strength_ack's second line)
+    turn(c).acked = true; turn(c).aboutAck = null;
+    (c as ConvCtx).conv.pushLine("strength_ack", c.chance(0.5) ? 0 : 2, {});
+  }
 }
 
 function markWeakness(c: Ctx) {
@@ -2507,7 +2545,55 @@ function answerQ(c: Ctx, key: string, say: () => void) {
   countQuestion(c);
 }
 
+/** "Okay." / "Okay, thanks." to a job offer: the engine hears a yes, but it isn't a clear one. */
+const UNSURE_OK = /^\W*(ok|okay|alright|all right|fine)\W*(thanks|thank you)?\W*$/i;
+
+/** The job offer: only a clear yes takes it. Joy or a thank-you alone get "So, what do you say?" once, then Friday;
+ *  a question about the job is answered and the offer stays open. */
+function offerPending(): Pending {
+  const think = (cc: Ctx) => { cc.s.offerOpen = false; cc.s.offerState = "think"; cc.say("offer_think"); closeUp(cc, false); };
+  return {
+    id: "offer", expects: ["accept_job", "think_offer", "decline_offer", "joy_ctx", "offer_unsure_ctx"], hints: ["offer"],
+    suggest: [{ lt: "Atsakyti į darbo pasiūlymą", hint: "offer" }],
+    on: {
+      accept_job: (cc) => { offerYes(cc); },
+      joy_ctx: (cc) => { offerReply(cc); },
+      g_thanks: (cc) => { offerReply(cc); },
+      thanks_time: (cc) => { offerReply(cc); },
+      think_offer: think,
+      offer_unsure_ctx: think,
+      decline_offer: (cc) => { offerNo(cc); },
+      // "Thank you, bye!" without an answer: it's left for Friday, and the goodbye
+      g_bye: (cc) => { think(cc); closingReply(cc, "closing_bye"); },
+    },
+    yes: (cc) => { if (UNSURE_OK.test(heard(cc))) { offerAsk(cc); return; } offerYes(cc); },
+    no: (cc) => { offerNo(cc); },
+    ask: (cc) => cc.say("offer_again"),
+  };
+}
+/** Joy or a thank-you: a yes or a no in the same breath answers; alone, the question once more. */
+function offerReply(c: Ctx) {
+  const yn = (c as any).conv?.out?.parse?.yn;
+  if (((c as any).conv?.out?.parse?.segments ?? []).some((sg: any) => sg.intent === "g_bye") && yn !== "yes" && yn !== "no") return; // the goodbye answers
+  if (yn === "no") { offerNo(c); return; }
+  if (yn === "yes" && !UNSURE_OK.test(heard(c))) { offerYes(c); return; }
+  offerAsk(c);
+}
+/** "So, what do you say?" once; a second answer that isn't one leaves it for Friday. */
+function offerAsk(c: Ctx) {
+  if (c.s.offerAsked) { c.s.offerOpen = false; c.s.offerState = "think"; c.say("offer_think"); closeUp(c, false); return; }
+  c.s.offerAsked = true;
+  c.say("offer_again");
+  c.expect(offerPending());
+}
+function offerNo(c: Ctx) {
+  c.s.offerOpen = false; c.s.offerState = "no";
+  c.say("offer_no");
+  closeUp(c, false);
+}
+
 function offerYes(c: Ctx) {
+  c.s.offerOpen = false; c.s.offerState = "hired";
   c.say("offer_yes");
   c.say("offer_contract");
   c.remember({ hired: true });
@@ -2522,10 +2608,14 @@ function closeUp(c: Ctx, hired: boolean) {
   c.complete();
   c.s.closeOpen = true;
   const reply = closingReply;
-  c.expect({ id: "closing", hints: ["closing"], suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "closing" }],
+  c.expect({ id: "closing", hints: ["closing"], expects: ["joy_ctx"], suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "closing" }],
     on: {
       thanks_time: (cc) => reply(cc), look_forward: (cc) => reply(cc, "closing_bye"), nice_meet: (cc) => reply(cc, "closing_nice"),
-      g_thanks: (cc) => reply(cc), accept_job: (cc) => reply(cc), g_bye: (cc) => reply(cc, "g_bye"),
+      g_thanks: (cc) => reply(cc), g_bye: (cc) => reply(cc, "g_bye"),
+      // "I accept!" after "Can I think about it?" or a no takes the job after all; once hired, the goodbye
+      // (not "You're welcome", the reply to a thank-you)
+      accept_job: (cc) => { if (cc.s.offerState === "think" || cc.s.offerState === "no") { offerYes(cc); return; } reply(cc, "closing_bye"); },
+      joy_ctx: (cc) => reply(cc, "closing_bye"),
     },
     yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
 }

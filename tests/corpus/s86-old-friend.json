@@ -201,5 +201,10 @@
   { "ctx": "howbeen", "say": "Sorry, I have to leave early", "intent": "g_bye" },
   { "ctx": "upto", "say": "I'll call you later", "intent": "g_bye" },
   { "ctx": "coffee", "say": "Sorry, I have to go to work", "intent": "decline" },
-  { "ctx": "howbeen", "say": "I don't have to go yet", "intent": "any", "not": ["g_bye"] }
+  { "ctx": "howbeen", "say": "I don't have to go yet", "intent": "any", "not": ["g_bye"] },
+  { "ctx": "numbers", "say": "I'd rather not give my number.", "intent": "refuse_number_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "numbers", "say": "I prefer not to.", "intent": "refuse_number_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "numbers", "say": "Sure, my number is 555 0142.", "intent": "any", "not": ["refuse_number_ctx"], "note": "logic audit 5 Nov 2026" },
+  { "ctx": "coffee", "say": "I already have plans.", "intent": "decline", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "coffee", "say": "I don't have plans today.", "intent": "any", "not": ["decline"], "note": "logic audit 5 Nov 2026" }
 ]}

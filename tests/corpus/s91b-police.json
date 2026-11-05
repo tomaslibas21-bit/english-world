@@ -1540,6 +1540,33 @@
    "ctx": "where",
    "say": "What happens next?",
    "intent": "what_now"
+  },
+  {
+   "ctx": "check_all",
+   "say": "Something's missing.",
+   "intent": "missing_some",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "check_all",
+   "say": "Yes, something's missing.",
+   "intent": "missing_some",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "anything_else",
+   "say": "What was the case number again?",
+   "intent": "case_q",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "check_all",
+   "say": "Nothing is missing.",
+   "intent": "any",
+   "not": [
+    "missing_some"
+   ],
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

@@ -1862,9 +1862,13 @@
    "ctx": "offer",
    "say": "Really? Thank you so much!",
    "intent": [
-    "accept_job",
+    "joy_ctx",
     "g_thanks"
-   ]
+   ],
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026: joy alone is not an acceptance"
   },
   {
    "ctx": "offer",
@@ -1877,7 +1881,11 @@
   {
    "ctx": "offer",
    "say": "That's great news!",
-   "intent": "accept_job"
+   "intent": "joy_ctx",
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026: joy alone is not an acceptance"
   },
   {
    "ctx": "offer",
@@ -1887,7 +1895,11 @@
   {
    "ctx": "offer",
    "say": "I'm very happy, thank you!",
-   "intent": "accept_job"
+   "intent": "joy_ctx",
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026: joy alone is not an acceptance"
   },
   {
    "ctx": "offer",
@@ -2687,7 +2699,11 @@
   {
    "ctx": "offer",
    "say": "That's amazing!",
-   "intent": "accept_job"
+   "intent": "joy_ctx",
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026: joy alone is not an acceptance"
   },
   {
    "ctx": "closing",
@@ -4020,6 +4036,108 @@
    "ctx": "why",
    "say": "Because your company is growing and I want to be part of it",
    "intent": "why_ans"
+  },
+  {
+   "ctx": "offer",
+   "say": "That's wonderful news!",
+   "intent": "joy_ctx",
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "offer",
+   "say": "Really?",
+   "intent": "joy_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "offer",
+   "say": "Thank you, I accept!",
+   "intent": "accept_job",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "offer",
+   "say": "Maybe.",
+   "intent": "offer_unsure_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "offer",
+   "say": "When do I start?",
+   "intent": "q_start",
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "offer",
+   "say": "How much does it pay?",
+   "intent": "salary_range_q",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "offer",
+   "say": "No, thank you.",
+   "intent": "any",
+   "not": [
+    "accept_job"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "What's the work environment like?",
+   "intent": "q_like",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "Is it Monday to Friday?",
+   "intent": "q_hours",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "What about vacation?",
+   "intent": "q_benefits",
+   "not": [
+    "q_other_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "How many days can I work from home?",
+   "intent": "q_remote",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "questions",
+   "say": "Yes, a few.",
+   "intent": "can_ask_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "authorized",
+   "say": "I'm American.",
+   "intent": "auth_yes",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "authorized",
+   "say": "No, I don't have a permit yet.",
+   "intent": "auth_pending",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "found",
+   "say": "More or less. I got a little lost.",
+   "intent": "found_hard",
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

@@ -8,6 +8,7 @@
 // Mrs. Lee is formal (jūs) and warm ("dear" → {m:mielasis|f:mieloji}, the player's gender).
 
 import type { Ctx, EntityDef, HintItem, Pending, SituationDef } from "../types";
+import type { ConvCtx } from "../../convo/dialogue";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
 
@@ -225,8 +226,9 @@ export const lostWallet: SituationDef = {
       "i am looking for my {item}", "(did | have) you (see | seen | find | found) (a | my) [{color}] [{material}] {item} [here | around here | anywhere]",
       "my {item} i (can not | can't) find it", "it is my {item} [it is (gone | missing | lost)]", "[i think] i (left | forgot) my {item} somewhere",
     ] },
+    seen_anyone: { patterns: ["did you see (anyone | anybody | someone | somebody | anything)", "have you seen (anyone | anybody | someone | anything) [suspicious]"] },
     not_lost: { patterns: [
-      "i did not lose (my {item} | anything)",
+      "i did not lose (my {item} | anything)", "i am just looking [at the flowers]",
       "i have not lost (my {item} | anything)",
       "my {item} is not (lost | missing | gone)",
       "i (have | ) found my {item} [again]",
@@ -282,7 +284,8 @@ export const lostWallet: SituationDef = {
       "should i call my bank",
       "what about my (cards | credit cards | bank cards)",
     ] },
-    what_do: { patterns: ["what should i do [now]", "what do i do [now]", "what can i do", "what if it is not there", "and if (it is not there | nobody has it | they do not have it)"] },
+    what_do: { patterns: ["what should i do [now]", "what do i do [now]", "what can i do", "what if it is not there", "and if (it is not there | nobody has it | they do not have it)",
+      "what (do | should) i do if i (do not | can not) find it", "what if i (do not | can not) find it"] },
     will_go_back: { patterns: ["[okay] i will go back [there | to the {place}] [and (ask | check | look)]", "(good | great) idea [thank you | thanks]", "[okay] i will go and (check | ask | look)", "[okay] i will (ask | check) there"] },
     hope_so: { patterns: ["i hope so [too]", "me too"] },
     checked: { patterns: [
@@ -497,6 +500,11 @@ export const lostWallet: SituationDef = {
       t("Of course! | But | you | look | worried, | dear. | Is | everything | all right?", "Žinoma! | Bet | jūs | atrodote | {m:susirūpinęs|f:susirūpinusi}, | {m:mielasis|f:mieloji}. | Ar | viskas | gerai?", "Žinoma! Bet atrodote {m:susirūpinęs|f:susirūpinusi}, {m:mielasis|f:mieloji}. Ar viskas gerai?",
         { flags: { 6: F_IS_Q } }),
     ],
+    // new lines (5 Nov 2026, the logic audit; they need a voice)
+    not_seen: [t("No, | I | haven't seen | anything, | sorry.", "Ne, | aš | nemačiau | nieko, | atsiprašau.", "Ne, nieko nemačiau, atsiprašau.",
+      { flags: { 3: "Negative concord: nieko stands under “anything”, the ne- of nemačiau under “haven't seen”." } })],
+    flower_price: [t("Ten | dollars | a | bunch, | dear.", "Dešimt | dolerių | už | puokštę, | {m:mielasis|f:mieloji}.", "Dešimt dolerių už puokštę, {m:mielasis|f:mieloji}.",
+      { say: "Ten dollars a bunch, dear.", flags: { 2: "“a” (a bunch = per bunch): už carries it." } })],
     good_luck: [
       t("Good luck! | I | hope | you | find | it.", "Sėkmės! | Aš | tikiuosi, kad | jūs | rasite | {jis@X:acc}.", "Sėkmės! Tikiuosi, kad {jis@X:acc} rasite."),
       t("Good luck, | dear!", "Sėkmės, | {m:mielasis|f:mieloji}!", "Sėkmės, {m:mielasis|f:mieloji}!"),
@@ -652,6 +660,8 @@ export const lostWallet: SituationDef = {
     { id: "problem", done: (c) => !!c.s.lost,
       ask: (c) => c.say("ask_problem"),
       expects: ["help_req", "lost", "not_lost"],
+      // "Are you okay? You look worried." → "Yes, I'm fine." (it got "What's wrong, dear?")
+      yes: (c) => { if (c.s.worried && !c.s.fineSaid) { c.s.fineSaid = true; c.say("not_lost_resp"); c.hold(); return; } c.say("ask_problem"); c.hold(); },
       suggest: [{ lt: "Paprašyti pagalbos ir pasakyti, ką pametei", hint: "problem", options: "item" }] },
     { id: "last_seen", when: (c) => !!c.s.lost && !c.s.found, done: (c) => !!c.s.lastSeen,
       ask: (c) => c.say("ask_last", { X: item(c) }),
@@ -748,10 +758,19 @@ export const lostWallet: SituationDef = {
       c.s.lost = true;
       if (slots.item) c.s.item = slots.item;
       if (/\bpurse\b/i.test(c.heard)) c.tip(lostWallet.tips!.us_wallet);
+      // "Sorry, have you seen a black wallet?": her answer first (it went straight to "Oh no!")
+      if (/\b(have|did) you (see|seen|find|found)\b/i.test(c.heard) && !c.s.notSeenSaid) { c.s.notSeenSaid = true; c.say("not_seen"); }
       if (!first) return;
       if (seg.tags.includes("stolen")) { c.s.stolen = true; c.say("stolen_react", { X: item(c) }); }
       else c.say("lost_react");
-      if (seg.tags.includes("keys")) { c.s.keys = true; c.say("keys_too"); }
+      if (seg.tags.includes("keys")) {
+        // "Your keys too?" waits for its yes or no (the "Yes." went to "When did you last have it?": "Oh? Where was that?")
+        c.s.keys = true; c.say("keys_too");
+        c.expect({ id: "keys_q", optional: true, hints: ["g_yesno"], suggest: [{ lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
+          yes: (cc) => { cc.say("ok"); }, no: (cc) => { cc.s.keys = false; cc.say("ok"); } });
+        c.hold();
+        return;
+      }
       if (c.s.askPockets) {
         c.say("ask_pockets");
         c.expect({
@@ -811,6 +830,7 @@ export const lostWallet: SituationDef = {
     emergency_number(c) { if (!mark(c)) return; c.say("number911"); },
     cancel_cards(c) { if (!mark(c)) return; c.say("cards"); },
     what_do(c) { if (!mark(c)) return; c.say("what_do"); c.s.policeSuggested = true; },
+    seen_anyone(c) { if (!mark(c)) return; c.say("not_seen"); },
     checked(c) { if (!mark(c)) return; c.s.pocketsDone = true; c.say("ok"); },
     will_go_back(c) { if (!mark(c)) return; c.say("ok"); },
     hope_so(c) { if (!mark(c)) return; c.say("ok"); },
@@ -842,7 +862,7 @@ export const lostWallet: SituationDef = {
     },
     flowers(c) {
       if (!mark(c)) return;
-      if (c.s.lost) { c.say("ok"); return; }
+      if (c.s.lost) { if (/\b(how much|price|cost)\b/i.test(c.heard)) c.say("flower_price"); return; }
       c.say("flowers_first");
       c.expect({
         id: "flowers_q", expects: ["lost", "help_req"], hints: ["problem"],
@@ -861,6 +881,7 @@ export const lostWallet: SituationDef = {
   finish: (c) => {
     if (c.s.found === "mine" && c.s.checkedInside) { c.complete(); c.say("enjoy_day"); }
     else if (c.s.found === "self") { if (c.s.place || c.s.placeSkipped) c.complete(); c.say("enjoy_day"); }
+    else if (c.s.found === "partial") { c.complete(); (c as ConvCtx).conv.pushLine("good_luck", 1, { X: item(c) }); } // the wallet is back: not "I hope you find it"
     else { if (c.s.lost) c.complete(); c.say("good_luck", { X: item(c) }); }
     const closing: Pending = {
       id: "closing", hints: ["thanks"], suggest: [{ lt: "Padėkoti ir atsisveikinti", hint: "thanks" }],
@@ -880,6 +901,10 @@ export const lostWallet: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Did you see anyone?", intent: "seen_anyone" },
+    { say: "I'm just looking at the flowers.", intent: "not_lost", step: "problem" },
+    { say: "What do I do if I don't find it?", intent: "what_do" },
     { say: "Excuse me, can you help me, please?", intent: "help_req" },
     { say: "Excuse me! Can you help me? I've lost my wallet.", intent: "lost" },
     { say: "I've lost my wallet.", intent: "lost", slots: { item: "wallet" } },

@@ -248,5 +248,8 @@
   { "ctx": "coat", "say": "Here, this is for you. It is a bottle of wine", "intent": "gift" },
   { "ctx": "dessert", "say": "Oh no, look at the time! I have to go, I have to work early tomorrow", "intent": ["time_flies", "leave"] },
   { "ctx": "closing", "say": "Thanks again for a wonderful evening! Bye!", "intent": "thanks_end" },
-  { "ctx": "dessert", "say": "It is a chocolate cake", "intent": "any", "not": ["gift"] }
+  { "ctx": "dessert", "say": "It is a chocolate cake", "intent": "any", "not": ["gift"] },
+  { "ctx": "drink", "say": "Nothing, thanks.", "intent": "no_drink", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "late", "say": "Can I help you clean up?", "intent": "offer_help", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "drink", "say": "Yes, a glass of red wine, thanks.", "intent": "any", "not": ["no_drink"], "note": "logic audit 5 Nov 2026" }
 ]}

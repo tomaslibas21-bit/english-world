@@ -1301,6 +1301,24 @@
    "not": [
     "g_bye"
    ]
+  },
+  {
+   "ctx": "opening",
+   "say": "Yes, everything's fine, thanks.",
+   "intent": "fine_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "eta",
+   "say": "I'll be there in two hours.",
+   "intent": "eta",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "opening",
+   "say": "Everything's fine, I'm just running late.",
+   "intent": "late",
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }
