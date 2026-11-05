@@ -139,7 +139,25 @@ export interface TownTheme {
   cenote: { x: number; z: number; sign: string } | null;
   /** Small ruins on a rocky point by the sea beyond the beach's west end (the temple's x and z). */
   ruins: { x: number; z: number } | null;
+
+  // Graphics round 1 (5 Nov 2026; docs/es/TOWN.md "Graphics, round 1"). Off in Maple Harbor.
+  /** The sea's colors (town.ts's sea shader), from the shore out: `shore` over the sand, `shallow` until
+   *  `shallowTo` m out, `mid` until `midTo` m, then `deep`; the foam line whiter and wider (null: Maple Harbor's sea,
+   *  a 14 m pale band and then deep blue). */
+  sea: { shore: string; shallow: string; mid: string; deep: string; shallowTo: number; midTo: number } | null;
+  /** The square's market as a tianguis (s91a: the Saturday market on the zócalo): lonas (tarps, in `lonas`' colors,
+   *  one per stall) on poles over the stalls instead of their roofs, the goods and painted signs (`signs`, by goods)
+   *  in the town's own meshes, and these stalls more (x, z, heading: 0 faces +z). */
+  tianguis: { lonas: string[]; signs: Record<string, [string, string]>; stalls: { x: number; z: number; rot: number; goods: TianguisGoods }[] } | null;
+  /** The rooms' looks in this edition, by room id: floor and wall colors, the floor's kind, the accent (baseboards). */
+  roomLooks: Record<string, { floor?: string; wall?: string; floorKind?: "wood" | "tile" | "carpet" | "stone"; accent?: string }>;
+  /** Diego and Natalia's house (s85, p30) as a Yucatecan home: a ceiling fan, a family altar, plants in clay pots, a
+   *  hammock, a water jug on its stand. */
+  homeMx: boolean;
 }
+
+/** What a tianguis stall sells (theme.ts `tianguis`; mexican.ts `tianguisStall` builds each). */
+export type TianguisGoods = "flowers" | "fruit" | "veg" | "bread" | "pinatas" | "pottery" | "hats" | "textiles" | "hammocks";
 
 export const THEME: TownTheme = {
   signs: {},
@@ -181,4 +199,8 @@ export const THEME: TownTheme = {
   treeColors: [],
   cenote: null,
   ruins: null,
+  sea: null,
+  tianguis: null,
+  roomLooks: {},
+  homeMx: false,
 };

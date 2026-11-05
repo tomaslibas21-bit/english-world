@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
 import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
 import { NPCS } from "../../src/content/npcs";
-import { CAR, OUTDOOR_NPCS, PARKED_CARS, TRAFFIC_LANES } from "../../src/game/world/layout";
+import { CAR, CHAT_SPOTS, FOUNTAIN, OUTDOOR_NPCS, PARKED_CARS, SQUARE, STALLS, TRAFFIC_LANES } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
+import { STALL_SIZE } from "../../src/game/world/mexican";
 
 const isCall = (id: string) => {
   const s = SITUATION_BY_ID[id];
@@ -65,6 +66,41 @@ describe("every Spanish conversation's place", () => {
     for (const [en, rows] of Object.entries(THEME.boards)) {
       expect(rows.length, en).toBeGreaterThan(1);
       for (const r of rows.slice(1)) expect(r.includes("|"), `${en}: ${r}`).toBe(true);
+    }
+  });
+});
+
+describe("the tianguis on the zócalo (s91a; graphics round 1)", () => {
+  // each stall's table and lona in the town's coordinates (mexican.ts tianguisStall: its front towards `rot`)
+  const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0, goods: s.goods })), ...(THEME.tianguis?.stalls ?? [])];
+  const rect = (s: { x: number; z: number; rot: number }, r: { x: number; z0: number; z1: number }) => {
+    const c = Math.cos(s.rot), n = Math.sin(s.rot);
+    const pts = [[-r.x, r.z0], [r.x, r.z0], [-r.x, r.z1], [r.x, r.z1]].map(([lx, lz]) => [s.x + lx * c + lz * n, s.z - lx * n + lz * c]);
+    return { x0: Math.min(...pts.map((p) => p[0])), x1: Math.max(...pts.map((p) => p[0])), z0: Math.min(...pts.map((p) => p[1])), z1: Math.max(...pts.map((p) => p[1])) };
+  };
+  const gap = (b: { x0: number; x1: number; z0: number; z1: number }, x: number, z: number) => Math.hypot(Math.max(b.x0 - x, 0, x - b.x1), Math.max(b.z0 - z, 0, z - b.z1));
+
+  it("has a lona, a sign and goods for every stall", () => {
+    expect(THEME.tianguis).toBeTruthy();
+    expect(THEME.tianguis!.lonas.length).toBeGreaterThanOrEqual(stalls.length);
+    for (const s of stalls) expect(THEME.tianguis!.signs[s.goods]?.[0], s.goods).toBeTruthy();
+  });
+
+  it("stands on the square, clear of everyone's spot, the talk spots, the chatting pair, the pigeons and each other", () => {
+    const tables = stalls.map((s) => rect(s, STALL_SIZE.table)), lonas = stalls.map((s) => rect(s, STALL_SIZE.lona));
+    for (const [i, l] of lonas.entries()) {
+      expect(l.x0 > SQUARE.x1 && l.x1 < SQUARE.x2 && l.z0 > SQUARE.z1 && l.z1 < SQUARE.z2, `stall ${i} on the square`).toBe(true);
+      // the pigeons peck round the kiosco out to 9.5 m
+      expect(gap(l, FOUNTAIN.x, FOUNTAIN.z), `stall ${i} and the kiosco's pigeons`).toBeGreaterThan(9.5);
+      for (const [k, o] of lonas.entries()) if (k > i) expect(l.x1 < o.x0 || o.x1 < l.x0 || l.z1 < o.z0 || o.z1 < l.z0, `stalls ${i} and ${k}`).toBe(true);
+    }
+    for (const t of tables) {
+      for (const n of OUTDOOR_NPCS) {
+        expect(gap(t, n.x, n.z), `${n.npc} and a table`).toBeGreaterThan(0.4);
+        if (n.ax !== undefined) expect(gap(t, n.ax, n.az!), `${n.npc}'s talk spot and a table`).toBeGreaterThan(0.6);
+      }
+      for (const [ax, az, bx, bz] of CHAT_SPOTS) for (const [x, z] of [[ax, az], [bx, bz]]) expect(gap(t, x, z)).toBeGreaterThan(1);
+      if (THEME.foodCart) expect(gap(t, THEME.foodCart.x, THEME.foodCart.z)).toBeGreaterThan(2);
     }
   });
 });

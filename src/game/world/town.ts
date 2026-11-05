@@ -4,7 +4,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { BUILDINGS, ROADS, SIDEWALK, WORLD, STALLS, TAXI, BUS_STOP, FOUNTAIN, LIGHTHOUSE, PARK, SQUARE, BEACH_Z, SEA_Z, PARKED_CARS, CONVERTIBLE, CEDAR_DRIVE, SPROUTLY_LOT, type BuildingDef } from "./layout";
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { carParts, vochoParts, mxTaxiParts } from "./car";
-import { THEME } from "./theme";
+import { THEME, type TianguisGoods } from "./theme";
 import * as MX from "./mexican";
 import { LOCATIONS } from "../../content/locations";
 import { STYLED, IS_REAL, grade } from "../style";
@@ -22,6 +22,10 @@ export interface Town {
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
+  /** Boxes the follow camera must not enter, for this edition's solid things that layout.ts's BUILDINGS doesn't have
+   *  (the church, the kiosco's roof; theme.ts): x and z extents, the top, and `y0` when only what is above it counts
+   *  (the kiosco is open under its roof). None in Maple Harbor. */
+  occluders: { x0: number; x1: number; z0: number; z1: number; y0?: number; h: number }[];
   update(t: number, dt: number): void;
   walkableAt(x: number, z: number): boolean;
 }
@@ -121,6 +125,8 @@ export function buildTown(): Town {
         c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
         gl_FragColor = vec4(c, 1.0); }`,
   });
+  // this edition's own sea colors (theme.ts `sea`): Maple Harbor's shader above is left exactly as it is
+  if (THEME.sea && seaMat instanceof THREE.ShaderMaterial && !STYLED) seaMat.fragmentShader = seaColors(THEME.sea);
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 320, 90, 32), seaMat);
   sea.rotation.x = -Math.PI / 2;
   sea.position.set(35, -0.25, SEA_Z - 158);
@@ -177,8 +183,13 @@ export function buildTown(): Town {
   const boats = group.children.filter((o) => o.userData.boat);
   const gulls = STYLED ? [] : makeGulls(group);
 
+  // the camera's boxes for the edition's church and kiosco (Town.occluders)
+  const occluders: Town["occluders"] = [];
+  if (THEME.church) occluders.push(...MX.churchBoxes(THEME.church.x, THEME.church.z, THEME.church.face));
+  if (THEME.centrepiece === "kiosco") occluders.push({ x0: FOUNTAIN.x - 5.1, x1: FOUNTAIN.x + 5.1, z0: FOUNTAIN.z - 5.1, z1: FOUNTAIN.z + 5.1, y0: 4.3, h: 8.3 });
+
   return {
-    group, colliders, doors, seats: [...seats], groundCanvas,
+    group, colliders, doors, seats: [...seats], groundCanvas, occluders,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;
@@ -211,6 +222,35 @@ export function buildTown(): Town {
 // ---------------------------------------------------------------------------
 
 function toC(x: number, z: number): [number, number] { return [(x - WORLD.minX) * PPM, (z - G0Z) * PPM]; }
+
+/** The sea's fragment shader in this edition's colors (theme.ts `sea`): the same waves, chop, glints and fog as Maple
+ *  Harbor's, over bands of color from the shore out (the sand showing through at the edge, a turquoise shallow, aqua,
+ *  then deep blue), light rippling over the shallows' floor, and a whiter, wider line of foam. */
+function seaColors(s: NonNullable<typeof THEME.sea>) {
+  const v = (hex: string) => `vec3(${[1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(",")})`;
+  const f = (n: number) => n.toFixed(1);
+  return `varying vec2 vUv; varying vec3 vW; uniform float uTime; uniform vec3 uFog;
+      void main(){
+        float d = ${f(SEA_Z + 1)} - vW.z;
+        vec3 c = mix(${v(s.shore)}, ${v(s.shallow)}, smoothstep(0.0, 6.0, d));
+        c = mix(c, ${v(s.mid)}, smoothstep(${f(s.shallowTo * 0.55)}, ${f(s.shallowTo)}, d));
+        c = mix(c, ${v(s.deep)}, smoothstep(${f(s.midTo * 0.6)}, ${f(s.midTo)}, d));
+        float shallows = 1.0 - smoothstep(${f(s.shallowTo * 0.5)}, ${f(s.midTo)}, d);
+        float w = sin(vW.x*0.35 + uTime*1.3 + sin(vW.z*0.2)) * sin(vW.z*0.42 - uTime*1.1);
+        c += vec3(0.08) * smoothstep(0.5, 1.0, w);
+        c -= vec3(0.04, 0.05, 0.04) * smoothstep(0.45, 1.0, -w) * (1.0 - 0.5 * shallows);
+        float chop = sin(vW.x*1.1 - uTime*1.7 + sin(vW.z*0.9)) * sin(vW.z*1.3 + uTime*1.4);
+        c += vec3(0.035) * chop;
+        float caustic = sin(vW.x*1.6 + sin(vW.z*1.2 + uTime*0.9)*1.5) * sin(vW.z*1.8 + sin(vW.x*1.1 - uTime*0.7)*1.5);
+        c += vec3(0.07, 0.09, 0.08) * smoothstep(0.55, 1.0, caustic) * shallows;
+        float glint = pow(max(0.0, sin(vW.x*2.1 + uTime*2.4) * sin(vW.z*1.7 - uTime*2.0) * sin(vW.x*0.5 - vW.z*0.6 + uTime)), 18.0);
+        c += vec3(0.55) * glint * (0.4 + 0.6 * smoothstep(0.0, 15.0, d));
+        float foam = smoothstep(${f(SEA_Z - 1.9)}, ${f(SEA_Z + 0.5)}, vW.z + sin(vW.x*0.25 + uTime*1.5)*0.55);
+        c = mix(c, vec3(0.99,0.99,0.98), foam*0.93);
+        float dist = length(vW.xz - cameraPosition.xz);
+        c = mix(c, uFog, smoothstep(160.0, 420.0, dist));
+        gl_FragColor = vec4(c, 1.0); }`;
+}
 
 /** The town's clock for the shaders that move (the trees' wind, the clouds' shadows). */
 const wind = { value: 0 };
@@ -1499,8 +1539,9 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   col.addCircle(x, z, 3.7);
   if (!STYLED) group.add(makeSpray(x, z));
   }
-  // stalls
-  for (const s of STALLS) {
+  // stalls (in this edition's tianguis, theme.ts, its own: the town's random numbers drawn as before)
+  if (THEME.tianguis) { for (let i = 0; i < STALLS.length * 14; i++) r(); addTianguis(col, group); }
+  else for (const s of STALLS) {
     M.add("stall-table", mat("#9c6b43"), boxGeo(4, 0.9, 1.6, s.x, 0.45, s.z));
     for (const [dx, dz] of [[-1.9, -0.7], [1.9, -0.7], [-1.9, 0.7], [1.9, 0.7]]) M.add("stall-pole", mat("#e8e2d6"), cylGeo(0.05, 0.05, 2.6, s.x + dx, 1.3, s.z + dz, 5));
     // the roof tilted about its own middle, then set on the poles' tops (tilted after the move, it turned about the
@@ -1534,6 +1575,21 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
   }
   M.add("gazebo-roof", mat("#2e6b3a", { flat: true }), new THREE.ConeGeometry(3.6, 1.8, 8).translate(44, 4.1, -22));
   col.addCircle(44, -22, 3.1);
+}
+
+/** The square's market as a tianguis (theme.ts `tianguis`; mexican.ts `tianguisStall`): layout.ts's four stalls and the
+ *  theme's own, in one mesh of their own (drawn, with its shadow, only where the square is in view: its many little
+ *  goods cost no triangles elsewhere), their painted signs in the town's sign atlas. */
+function addTianguis(col: Colliders, group: THREE.Group) {
+  const t = THEME.tianguis!;
+  const parts: MX.Part[] = [], goods: MX.Part[] = [];
+  const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0, goods: s.goods as TianguisGoods })), ...t.stalls];
+  stalls.forEach((s, i) => MX.tianguisStall(parts, goods, col, atlas!, s.x, s.z, s.rot, s.goods, t.lonas[i % t.lonas.length], t.signs[s.goods] ?? [s.goods, ""], 700 + i));
+  group.add(staticColoured(parts, "tianguis"));
+  // the goods in a mesh that casts no shadow (under the lonas' shade they would add triangles and nothing to see)
+  const g = staticColoured(goods, "tianguis-goods");
+  g.castShadow = false;
+  group.add(g);
 }
 
 /** The edition's outdoor pieces beyond the square (theme.ts, docs/es/TOWN.md tasks 1–4 and 8): the malecón with its
@@ -1600,6 +1656,7 @@ function makePapelPicado(): THREE.Mesh {
   const { x: cx, z: cz } = FOUNTAIN;
   const COLORS = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
   const parts: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
+  const strings: [THREE.BufferGeometry, THREE.ColorRepresentation][] = [];
   THEME.papelPicado.forEach(([tx, tz, ty], k) => {
     const a = Math.atan2(tz - cz, tx - cx);
     const sx = cx + Math.cos(a) * 4.2, sz = cz + Math.sin(a) * 4.2, sy = 4.75;
@@ -1618,20 +1675,48 @@ function makePapelPicado(): THREE.Mesh {
       const seg = new THREE.BoxGeometry(0.02, 0.02, len / n + 0.02);
       seg.lookAt(new THREE.Vector3((tx - sx) / n, y1 - y0, (tz - sz) / n));
       seg.translate(sx + (tx - sx) * (f0 + f1) / 2, (y0 + y1) / 2, sz + (tz - sz) * (f0 + f1) / 2);
-      parts.push([seg, "#f4f1ea"]);
+      strings.push([seg, "#f4f1ea"]);
     }
   });
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, map: papelTexture(), alphaTest: 0.5, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWind = wind;
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWind;")
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWind;\nvarying float vNear;")
       .replace("#include <begin_vertex>", `#include <begin_vertex>
         transformed.x += sin(uWind * 2.1 + position.x * 0.9 + position.z * 0.7) * 0.04;
-        transformed.z += cos(uWind * 1.7 + position.x * 0.6) * 0.04;`);
+        transformed.z += cos(uWind * 1.7 + position.x * 0.6) * 0.04;`)
+      .replace("#include <project_vertex>", "#include <project_vertex>\nvNear = length(mvPosition.xyz);");
+    // flags and string nearer than about 3.3 m to the camera dissolve (a short dither), so a camera passing among the
+    // strings (the follow camera over the square, a conversation's) never has a flag filling the picture
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vNear;")
+      .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>
+        float nearFade = smoothstep(3.0, 3.6, vNear);
+        if (nearFade < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;`);
   };
-  const mesh = new THREE.Mesh(colourMerge(parts), m);
+  const mesh = new THREE.Mesh(papelMerge(parts, strings), m);
   mesh.name = "papel-picado";
   return mesh;
+}
+
+/** The flags and strings merged with their colours in the vertices, keeping the flags' texture coordinates (colourMerge
+ *  drops them, and then every flag samples the paper's cut-away corner and is discarded whole); the strings sample the
+ *  paper's plain middle, canvas (32, 32). */
+function papelMerge(flags: [THREE.BufferGeometry, THREE.ColorRepresentation][], strings: [THREE.BufferGeometry, THREE.ColorRepresentation][]) {
+  const c = new THREE.Color();
+  const geos = [...flags.map((p) => [...p, false] as const), ...strings.map((p) => [...p, true] as const)].map(([g0, col, plain]) => {
+    const g = g0.index ? g0.toNonIndexed() : g0;
+    for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal" && k !== "uv") g.deleteAttribute(k);
+    const n = g.attributes.position.count;
+    if (plain || !g.attributes.uv) g.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(n * 2).map((_, i) => (i % 2 ? 0.6 : 0.5)), 2));
+    c.set(col);
+    const a = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+    g.setAttribute("color", new THREE.BufferAttribute(a, 3));
+    return g;
+  });
+  const merged = mergeGeometries(geos, false)!;
+  for (const g of geos) g.dispose();
+  return merged;
 }
 
 /** One flag of papel picado: white paper with cut-out holes (the vertex colour tints it); the strings use its
