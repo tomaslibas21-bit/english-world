@@ -35,6 +35,21 @@ The writer's claims held, but the corpus only tested what the grammar already co
 Kept: the structure and both twists match the English. The usted, the glosses I checked (about a third) and the Mexican-only words (ahorita ×2 and minisplit, each with a twin) are fine. The prices ($14,000 is s81's rent) are fine.
 
 ## For the lead / owner
-- The writer's open questions still stand: the title (the brief says "El calentador no sirve"; the scene is about the AC), the San Cristóbal trip, and Chucho as a new name.
-- A learner who says the problem is the water heater ("el calentador", the brief's own title) isn't understood. The scene is only about the AC.
+- The writer's open questions still stand: the title (the brief says "El calentador no sirve"; the scene is about the AC), the San Cristóbal trip, and Chucho as a new name. (The title: answered 5 Nov, "El aire no enfría" stays.)
+- A learner who says the problem is the water heater ("el calentador", the brief's own title) isn't understood. The scene is only about the AC. (Done 5 Nov: steered to the AC; see the end of this file.)
 - "Está bien, gracias" while a day is on the table still agrees to that day. That books nothing paid, so I left it.
+
+## 5 Nov 2026: the title and the water heater
+
+Decided on the owner's "decide on best fixes": the title **"El aire no enfría"** stays, and BRIEFS.md now says so (it
+had "El calentador no sirve"). A learner who blames the water heater is now understood and steered to the AC, once:
+a new intent `heater_wrong` ("El calentador no funciona/sirve/calienta", "el boiler", "No hay agua caliente", "La
+calefacción no funciona", and "…tampoco" as a second complaint) and two lines:
+"¿El calentador? ¿Con este calor? ¿No será el aire?" (The heater? In this heat? Don't you mean the AC?) and, if the
+learner names the heater again before the AC, "El calentador funciona bien, se lo aseguro." (The heater works fine, I
+promise.). The question is the returning player's guess question (`expectAcGuess`, factored out of `start`): a yes or
+the AC's problem answers it; "No" gets "¿No? ¿Entonces en qué le puedo ayudar?". Nothing about the heater is recorded,
+and a heater statement is never the AC's problem (`not: heat_broken` tests). Once the AC is known, the heater gets
+"Vamos por partes." Tests: 8 NLU tests, 1 sim ("the water heater first, then yes, the AC"), 20 corpus items (4 traps);
+probed: yes, "Sí, el aire. No enfría desde hace una semana.", no then the heater again, the heater twice, the AC then the
+heater, a returning player's "No, el calentador no funciona", "La calefacción no funciona".

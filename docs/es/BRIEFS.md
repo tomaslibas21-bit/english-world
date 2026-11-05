@@ -210,15 +210,18 @@ name).
 **p27-meeting · "Con todo respeto"** — Vanessa (f) and Gerardo (m), Línea Clara, tú. Disagreeing politely: "entiendo
 tu punto, pero…", "con todo respeto", "¿y si probamos…?".
 
-**p28-kitchen · "Pruébalo otra vez"** — Chef Villanueva (m) and Fátima (f) at El Muelle's kitchen, tú. Giving and
-taking feedback on a dish: le falta sal, está muy picante, the plating ("el emplatado"), "¡Así sí!".
+**p28-kitchen · "Pruébalo otra vez"** — Chef Villanueva (m) and Fátima (f) at El Muelle's kitchen. Both say tú to
+the learner. The hints have the learner say usted to the chef (tú to him is understood, with no tip); with Fátima it
+is tú both ways (decided 5 Nov). Giving and taking feedback on a dish: le falta sal, está muy picante, the plating
+("el emplatado"), "¡Así sí!".
 
 **p28b-review · "Lo que salió muy bien"** — Elena (f), the learner's manager, tú. A performance review: achievements,
 goals, feedback, a raise ("un aumento"), training.
 
-**p29-landlord · "El calentador no sirve"** — Don Ernesto (m) and Doña Lupita (f). The water heater ("el boiler",
-M: boiler → calentador) or the air conditioning broke — in the Caribbean, the AC: "el minisplit no enfría". The
-landlord delays; the neighbor knows a technician.
+**p29-landlord · "El aire no enfría"** — Don Ernesto (m) and Doña Lupita (f). The air conditioning broke (in the
+Caribbean it's the AC, not the water heater): "el minisplit no enfría". The landlord delays; the neighbor knows a
+technician. A learner who blames the water heater ("el calentador", "el boiler") gets one short redirect to the AC
+("¿El calentador? ¿Con este calor? ¿No será el aire?"). Title corrected 5 Nov (it was "El calentador no sirve").
 
 **p30-start-over · "¿Empezamos de nuevo?"** — Diego (m) and Natalia (f), tú. Making up with a friend after an
 argument: apologizing, explaining, "no fue mi intención", "¿borrón y cuenta nueva?".
@@ -227,7 +230,9 @@ argument: apologizing, explaining, "no fue mi intención", "¿borrón y cuenta n
 
 **p18-startup · "Hasta el cuello"** — Toño (m), founder of Brotecito (a plant-care app startup in a waterfront
 warehouse), tú. Startup slang in Mexican Spanish ("estar hasta el cuello", "echarle ganas", "ponerse las pilas",
-"chamba"), a week's tasks, deadlines.
+"chamba"), a week's tasks, deadlines. The colleagues he names (not in the cast): Raquel (sales, the budget, payroll),
+Beto (marketing), Lalo (the developer) and Rodrigo (sales). The developer is Lalo, not Memo, since 5 Nov: Memo is
+s86's exchange student.
 
 **p24-flood · "Saludos cordiales, me estoy ahogando"** — two calls: Andrea (friend, tú, casual) and Don Gilberto
 (landlord, usted, formal) about a flooded apartment after a tropical storm. The register switch is the point:

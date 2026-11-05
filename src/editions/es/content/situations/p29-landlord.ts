@@ -1,6 +1,7 @@
 // NEEDS: None. All vocabulary, merges and grammar are local.
-// P29 "Landlord Blues" → Puerto Colibrí: "El aire no enfría". The brief's title, "El calentador no sirve", named the
-// water heater; the brief itself picks the AC for the Caribbean ("el minisplit no enfría"), so the title follows it.
+// P29 "Landlord Blues" → Puerto Colibrí: "El aire no enfría". The brief's first title, "El calentador no sirve", named
+// the water heater; the brief itself picks the AC for the Caribbean ("el minisplit no enfría"), so the title follows it
+// (BRIEFS.md corrected 5 Nov 2026).
 // Don Ernesto is the landlord from s81 (he rented the learner the one-bedroom one floor up at Departamentos Las Palmas;
 // usted both ways; he lives on the planta baja) and the one Doña Lupita describes in s82 ("es buena persona, pero hay
 // que insistirle un poquito"). Today he never answers his phone. The learner catches him at the door downstairs with a
@@ -18,6 +19,10 @@
 // The English thermostat question is the minisplit's remote here ("¿Ya revisó el control? ¿Está en frío?"); the space
 // heater is a fan; "colder than outside" is "más calor adentro que afuera". Mexican "ocho días" = a week and "quince
 // días" = two weeks are read that way.
+// The water heater (5 Nov 2026): a learner who blames it ("El calentador no sirve", the brief's first title; "el boiler",
+// "no hay agua caliente", "la calefacción") gets one redirect: "¿El calentador? ¿Con este calor? ¿No será el aire?",
+// the returning player's guess question (a yes or the AC's problem answers it; nothing else is recorded). Said again
+// before the AC: "El calentador funciona bien, se lo aseguro."; once the AC is on the table: "Vamos por partes."
 // Research and what stays vague: minisplits are the usual AC in Quintana Roo; when one only blows warm air the usual
 // causes are dirty filters or low refrigerant ("le falta gas"), a job for a técnico. Who pays for repairs depends on the
 // lease (Mexican leases usually leave necessary repairs to the landlord and small upkeep to the tenant); the scene only
@@ -25,6 +30,7 @@
 // amounts besides s81's rent. San Cristóbal is only a place he goes. Chucho (his repairman) is mentioned, never seen.
 
 import type { Ctx, Pending, SituationDef, Suggestion, Tip } from "@/content/types";
+import type { ConvCtx } from "@/convo/dialogue";
 import { t } from "@/content/dsl";
 import { GLOBAL_HANDLERS } from "@/content/global";
 
@@ -363,6 +369,22 @@ function closing(c: Ctx): Pending {
     yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } };
 }
 
+/** "¿El aire?" (the returning player's greeting, or after the water heater): a yes or the AC's problem answers it. */
+function expectAcGuess(c: Ctx) {
+  c.expect({ id: "guess", expects: ["heat_broken", "cold_detail", "heat_duration", "space_heater", "ac_ctx", "heater_wrong"], hints: ["problem", "g_yesno"],
+    suggest: [{ lt: "Say yes and explain what isn't working", hint: "problem" }],
+    on: {
+      heat_broken: (cc, sl, sg) => { landlord.handlers.heat_broken(cc, sl, sg); },
+      ac_ctx: (cc) => { cc.s.problem = true; P(cc, "knew_it"); },
+      cold_detail: (cc, sl, sg) => { landlord.handlers.cold_detail(cc, sl, sg); },
+      space_heater: (cc, sl, sg) => { landlord.handlers.space_heater(cc, sl, sg); },
+      heat_duration: (cc, sl, sg) => { cc.s.problem = true; landlord.handlers.heat_duration(cc, sl, sg); },
+    },
+    yes: (cc) => { cc.s.problem = true; P(cc, "knew_it"); },
+    no: (cc) => { cc.s.whoSaid = true; P(cc, "no_then_what"); cc.hold(); },
+    ask: (cc) => { P(cc, "guess_reask"); } });
+}
+
 // Automatic answers the simulation uses when Don Ernesto asks one of his optional questions.
 const AUTO: Record<string, string> = {
   guess: "Sí, el aire no enfría.", thermostat: "Sí, ya lo revisé dos veces.", rita: "¡Gracias, Doña Lupita!", home: "Sí, voy a estar en casa.",
@@ -414,6 +436,8 @@ export const landlord: SituationDef = {
       fixit: "(arreglarlo | arreglar el aire | arreglar el minisplit | repararlo | revisarlo | componerlo)",
       fix_tail: "(pronto | rapido | esta semana | hoy | lo antes posible | cuanto antes | antes del fin de semana)",
       contract: "(contrato | contrato de arrendamiento | contrato de renta)",
+      // the water heater (not this scene's problem): Mexico says calentador or boiler
+      wheater: "(calentador | calentador de agua | boiler | boiler del agua)",
       lead_resp: "(las reparaciones | arreglarlo | eso | arreglar el aire | el mantenimiento)",
     },
     slots: {},
@@ -469,6 +493,19 @@ export const landlord: SituationDef = {
     space_heater: { patterns: [
       "(compré | me compré | tuve que comprar) (un ventilador | dos ventiladores | un ventilador nuevo | un abanico) [con mi (dinero | propio dinero)]",
       "(estoy usando | uso | tengo) (un ventilador | dos ventiladores | un abanico) [todo el dia | toda la noche]",
+    ] },
+    // the water heater (or heating) blamed instead of the AC: Don Ernesto steers it to the AC
+    heater_wrong: { patterns: [
+      "(el | mi) @wheater [de @home] @broken [@dur_tail] [@where]",
+      "(el | mi) @wheater (no calienta | ya no calienta | no da agua caliente | no tiene agua caliente)",
+      "(se descompuso | dejó de funcionar | ya no funciona | no funciona | no sirve | no va | no jala | no prende | no enciende | no calienta) (el | mi) @wheater [@where] [@dur_tail]",
+      "(tengo | hay | tenemos) un problema con (el | mi) @wheater",
+      "no (hay | tengo | tenemos | sale | me sale) agua caliente [@where] [@dur_tail]",
+      "(la | mi) calefaccion @broken [@dur_tail]", "no (funciona | sirve | prende) la calefaccion", "no (hay | tengo) calefaccion",
+      // a second complaint after the AC ("Vamos por partes.")
+      "[y] (el | mi) @wheater (tampoco | tampoco funciona | tampoco sirve | tampoco calienta | tampoco prende)",
+      "[y] tampoco (funciona | sirve | calienta | prende) (el | mi) @wheater", "[y] (el | mi) @wheater tambien @broken",
+      "[y] tampoco (hay | tengo) agua caliente", "[y] no (hay | tengo) agua caliente tampoco",
     ] },
 
     // --- how long ------------------------------------------------------------------
@@ -754,6 +791,12 @@ export const landlord: SituationDef = {
     problem_what: [t("A ver. | ¿Qué | pasa?", "Let's see. | What | is going on?", "Okay. What's wrong?")],
     i_know_problem: [t("Sí, | sí, | el | aire. | Ya | me | dijo.", "Yes, | yes, | the | AC. | Already | (to) me | you said.", "Yes, yes, the AC. You told me.")],
     oh_no: [t("¡Ay, | no!", "Oh, | no!", "Oh, no."), t("Uy.", "Uh-oh.", "Uh-oh.")],
+    // the water heater blamed (5 Nov 2026): steered to the AC
+    heater_redirect: [
+      t("¿El | calentador? | ¿Con | este | calor? | ¿No será | el | aire?", "The | heater? | With | this | heat? | Couldn't it be | the | AC?",
+        "The heater? In this heat? Don't you mean the AC?", { flags: { 5: "No será…: the future tense makes a guess (“could it be…?”)." } }),
+    ],
+    heater_again: [t("El | calentador | funciona | bien, | se lo | aseguro.", "The | heater | works | fine, | it to you | I-assure.", "The heater works fine, I promise.")],
 
     // --- the remote control --------------------------------------------------------
     thermostat_q: [
@@ -1246,7 +1289,7 @@ export const landlord: SituationDef = {
   steps: [
     { id: "problem", done: (c) => !!c.s.problem,
       ask: (c) => { if (!c.s.whoSaid) { c.s.whoSaid = true; P(c, "greet_who"); } else P(c, "problem_reask"); },
-      expects: ["heat_broken", "cold_detail", "space_heater", "greet_id", "called_before", "have_problem"],
+      expects: ["heat_broken", "cold_detail", "space_heater", "greet_id", "called_before", "have_problem", "heater_wrong"],
       suggest: [{ lt: "Explain what isn't working", hint: "problem" }, { lt: "Say hello and who you are", hint: "greet" }],
       yes: (c) => { P(c, "problem_what"); c.hold(); },
       no: (c) => { P(c, "no_then_what"); c.hold(); },
@@ -1333,18 +1376,7 @@ export const landlord: SituationDef = {
   start: (c) => {
     if (c.s.greetAgain) {
       P(c, "greet_again");
-      c.expect({ id: "guess", expects: ["heat_broken", "cold_detail", "heat_duration", "space_heater", "ac_ctx"], hints: ["problem", "g_yesno"],
-        suggest: [{ lt: "Say yes and explain what isn't working", hint: "problem" }],
-        on: {
-          heat_broken: (cc, sl, sg) => { landlord.handlers.heat_broken(cc, sl, sg); },
-          ac_ctx: (cc) => { cc.s.problem = true; P(cc, "knew_it"); },
-          cold_detail: (cc, sl, sg) => { landlord.handlers.cold_detail(cc, sl, sg); },
-          space_heater: (cc, sl, sg) => { landlord.handlers.space_heater(cc, sl, sg); },
-          heat_duration: (cc, sl, sg) => { cc.s.problem = true; landlord.handlers.heat_duration(cc, sl, sg); },
-        },
-        yes: (cc) => { cc.s.problem = true; P(cc, "knew_it"); },
-        no: (cc) => { cc.s.whoSaid = true; P(cc, "no_then_what"); cc.hold(); },
-        ask: (cc) => { P(cc, "guess_reask"); } });
+      expectAcGuess(c);
       return;
     }
     P(c, "greet_open");
@@ -1378,6 +1410,14 @@ export const landlord: SituationDef = {
       else if (/mas calor .*que afuera|mas caliente.* que afuera/.test(heard(c)) && !c.s.colderSaid) { c.s.colderSaid = true; P(c, "cold_react_outside"); }
       else P(c, "cold_react");
       c.s.problem = true;
+    },
+    // "El calentador no sirve": the AC is this scene's problem. First time, "¿No será el aire?" (the guess question);
+    // again, "El calentador funciona bien, se lo aseguro." (and the question again); once the AC is known, one thing at a time
+    heater_wrong(c) {
+      if (c.s.problem) { P(c, "one_thing"); return; }
+      if (!c.s.calentador) { c.s.calentador = true; P(c, "heater_redirect"); expectAcGuess(c); return; }
+      P(c, "heater_again");
+      if (!(c as ConvCtx).conv?.pending) { expectAcGuess(c); P(c, "guess_reask"); }
     },
     space_heater(c) {
       c.s.problem = true;
@@ -1774,6 +1814,15 @@ export const landlord: SituationDef = {
     { say: "No quiero pagar en efectivo.", intent: "pay_later", step: "rent", not: ["pay_rent", "pay_ctx"] },
     { say: "No puedo pagar ahorita.", intent: "pay_later", step: "rent", not: ["pay_rent", "pay_ctx"] },
     { say: "Le pagué ayer.", intent: "paid_already", step: "rent", not: ["pay_rent", "pay_ctx"] },
+    // the water heater blamed (5 Nov 2026): steered to the AC, never taken as the AC's problem
+    { say: "El calentador no funciona.", intent: "heater_wrong", step: "problem", not: ["heat_broken"] },
+    { say: "El boiler no sirve.", intent: "heater_wrong", step: "problem", not: ["heat_broken"] },
+    { say: "No hay agua caliente.", intent: "heater_wrong", step: "problem", not: ["heat_broken"] },
+    { say: "Se descompuso el calentador.", intent: "heater_wrong", not: ["heat_broken"] },
+    { say: "Mi calentador no calienta.", intent: "heater_wrong" },
+    { say: "La calefaccion no funciona.", intent: "heater_wrong" },
+    { say: "El calentador tampoco funciona.", intent: "heater_wrong", step: "dodge", not: ["heat_broken"] },
+    { say: "El aire echa aire caliente.", intent: "heat_broken", not: ["heater_wrong"] },
     // not understood
     { say: "plátano teclado elefante", intent: "none" },
     { say: "Mi hermano toca la guitarra.", intent: "none" },
@@ -1811,6 +1860,12 @@ export const landlord: SituationDef = {
     // walking away before a day is agreed: not done
     { name: "walk away (not completed)", turns: ["El aire acondicionado no funciona.", "Una semana.", "Ya no importa."], expect: { complete: false }, auto: AUTO,
       setup: (s) => { s.greetAgain = false; s.twist = null; } },
+    // the water heater first (5 Nov 2026): "¿No será el aire?" "Sí, el aire."; nothing about the heater is recorded
+    { name: "the water heater first, then yes, the AC", turns: ["Buenos días, Don Ernesto.", "El calentador no funciona.", "Sí, el aire. No enfría desde hace una semana.",
+      "Arreglarlo le toca a usted.", "Eso no es lo que acordamos.", "¿Cuándo puede venir alguien?", "La próxima semana es muy tarde.", "El viernes en la mañana me queda bien.",
+      "No, es todo, gracias.", "Claro. Aquí tiene, en efectivo.", "Gracias, Don Ernesto. ¡Buen viaje!"],
+      expect: { complete: true, state: { calentador: true, problem: true, dur: 7, date: "friday", offer: "refused", resp: true } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = false; } },
     // a returning player: "Déjeme adivinar: ¿el aire?"
     { name: "again: let me guess, the AC", turns: ["Sí. Hace un calor horrible en mi casa.", "Desde el lunes.", "El contrato dice que usted paga las reparaciones.", "Prefiero no tocarlo.",
       "¿Puede venir mañana?", "El viernes está bien.", "No, estoy bien.", "¿Puedo pagar después?", "¡Que tenga buen día!"],

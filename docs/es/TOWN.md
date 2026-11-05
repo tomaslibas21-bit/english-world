@@ -53,8 +53,9 @@ kits, a yacht, the chimneys, the mailboxes, the beach umbrellas' towels, the sto
   kiosco across the square: an ochre nave under a white barrel vault with buttresses and small arched windows, a facade
   with pilasters, an arched wooden door at the top of three steps and a round window, and an espadaña with three bells
   in two tiers and a cross. The bench that stood there is gone. Built there because the north side has no room
-  without moving the stalls and Lucy (PLAN.md open question 2): if the owner prefers the north side, it is the
-  theme's `church` (where its door is, which way it faces) plus moving the stalls.
+  without moving the stalls and Lucy. **It stays there** (PLAN.md open question 2, answered 5 Nov): from the east
+  end it faces the kiosco across the zócalo, as Mérida's cathedral stands on the east side of the Plaza Grande and
+  faces the square. Nothing moves.
 - **Task 4, the street furniture** (`streetSigns`, `stopWord`, `taxi`, `busSign`, `topes`, `foodCart`, `townSigns`):
   blue street name blades at eight corners (see the town facts); ALTO on the stop signs; a "SITIO DE TAXIS" sign and a
   white-and-green taxi at the stand; "PARADA" at the bus stop; three topes (yellow and black) with their TOPE warning
@@ -124,8 +125,8 @@ kits, a yacht, the chimneys, the mailboxes, the beach umbrellas' towels, the sto
 
 ### What's left outdoors
 
-- **The church's place** is the owner's to confirm (PLAN.md open question 2); moving it is the theme's `church` and,
-  for the north side, the stalls.
+- ~~The church's place~~ **Answered (5 Nov): it stays at the east end**, facing the kiosco, as Mérida's cathedral
+  faces the Plaza Grande (PLAN.md open question 2). Nothing moves.
 - **The sounds** are made on the spot, like Maple Harbor's gulls and birds: recordings (a real church bell, a gas
   truck's jingle, vendors calling "¡Elotes!") would sound better, and would need the owner's files.
 - The small things still as in Maple Harbor (the mercado's carts, the blue mailbox, Ximena's picket fence, the autumn
@@ -140,8 +141,9 @@ The conversations name places and say where they are; the 3D town must agree (an
   right, **Correos** opposite it, then the **mercado** after Correos; the bus **terminal** at the end of the street
   (s62). A cocina económica on calle Ceiba serves comida corrida (s69, s88).
 - **The zócalo**: the kiosco (where a boy finds the wallet, s91a), Doña Mari's flower stall and the Saturday
-  tianguis (s91a), the church (STYLE.md). The **Policía Municipal** is across the square, next to the **museum**
-  (s62, s91a, s91b); the museum is open 10 to 5, closed on Mondays (s62, s69, s70).
+  tianguis (s91a), the church at its east end, facing the kiosco (STYLE.md; "la iglesia del zócalo", s91b). The
+  **Policía Municipal** is across the square, next to the **museum** (s62, s91a, s91b); the museum is open 10 to 5,
+  closed on Mondays (s62, s69, s70).
 - **Farmacia del Puerto** sits between the estética (s62) and the doctor's consultorio next door (s75).
 - **The gas station**: the conversation happens outside at the pump, not in the shop (s71b; `locations.ts` still says
   interior).
@@ -433,7 +435,7 @@ Each task is one area; each ends with before/after screenshots at phone size and
 3. **Done (4 Nov), at the east end.** **The church** on the zócalo: a parroquia with a bell gable (espadaña) or two
    towers, facing the kiosco from the north side of the square (between Harbor Road and the stalls: re-check the stalls
    and Lucy's spot) — or, if there is no room, at the square's east end beside the Policía Municipal. Ask the owner
-   which before building it.
+   which before building it. **Answered 5 Nov: the east end stays** (as Mérida's cathedral faces the Plaza Grande).
 4. **Done (4 Nov).** **Street furniture**: Spanish street signs ("Calle Ceiba", "Avenida del Puerto"), a "Sitio de
    Taxis" sign and a white-and-green taxi (Cancún's colours, made up), the bus stop as a "parada", topes (speed bumps)
    at the square, a tricycle food cart (a "triciclo" selling elotes or marquesitas) near the zócalo.

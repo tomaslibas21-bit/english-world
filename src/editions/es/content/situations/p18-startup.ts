@@ -9,7 +9,7 @@
 // de errores", "Ya no me doy abasto", "Ya tengo mucho trabajo") and settles the priorities: asks ("¿Qué hago
 // primero?") or proposes ("Puedo hacer la presentación primero, y lo demás la próxima semana", "¿Alguien más puede
 // hacer la fiesta?"). A party-first plan gets one gentle push back. Then "¿Necesitas algo más de mí?": who owns what
-// (the budget and payroll are Raquel's, the party and the newsletter Beto's, the code Memo's, the deck is due Friday
+// (the budget and payroll are Raquel's, the party and the newsletter Beto's, the code Lalo's, the deck is due Friday
 // at twelve). The first such question gets "Eso lo vemos aparte"; asking again gets the real answer. At the end:
 // "¿Hacemos otro check-in mañana a las ocho?" The learner agrees, moves it ("¿Podemos hacerlo al mediodía?") or
 // calls it a day ("¡Dejémoslo por hoy!").
@@ -21,7 +21,7 @@
 // Twists (one per visit: 35 % on the first visit, 85 % later, an unseen one first):
 //   crash    (the song): after the priorities, the launch crashes: someone did the code "al aventón", a million
 //            cactuses texted "¡Riégame!", "Hay que empezar de cero. ¡La pelota está en tu cancha!" The learner proposes
-//            a plan (fix the bug first, tell the customers, call Memo, launch next week, go back to the old version)
+//            a plan (fix the bug first, tell the customers, call Lalo, launch next week, go back to the old version)
 //            or asks what he wants; "¿Quién lo hizo al aventón?" gets an honest "Yo."
 //   midnight before the goodbye: "Necesito a todos aquí hasta la medianoche. ¡En Brotecito hay que ponerse las
 //            pilas!" The learner negotiates ("Puedo quedarme hasta las siete, pero luego lo dejo por hoy", "¿Las horas
@@ -36,7 +36,8 @@
 // (más trabajo), "estoy a tope", vosotros ("¿Pagáis las horas extra?").
 //
 // The people Toño names (not characters of the cast; the English names Rachel, Kevin, Ben, Brad): Raquel (sales,
-// budget, payroll), Beto (marketing), Memo (the developer), Rodrigo (sales, plays ping-pong).
+// budget, payroll), Beto (marketing), Lalo (the developer), Rodrigo (sales, plays ping-pong). The developer was Memo
+// until 5 Nov 2026; he is Lalo so that Memo is only s86's exchange student (no other Lalo in the edition).
 //
 // Course report: done (c.complete) when items 2, 3 and 4 of the mission are ticked. Items 1 and 5 are optional.
 //
@@ -233,7 +234,7 @@ export const startup: SituationDef = {
   grammar: {
     macros: {
       // the people at Brotecito
-      ppl: "(rodrigo | beto | memo | raquel | alguien mas | otra persona | otro | alguien | el practicante | un practicante | el becario | la becaria | alguien del equipo)",
+      ppl: "(rodrigo | beto | lalo | raquel | alguien mas | otra persona | otro | alguien | el practicante | un practicante | el becario | la becaria | alguien del equipo)",
       dov: "(hacer | encargarse de | organizar | ver | preparar | terminar | llevar | tomar | hacerse cargo de)",
       later: "(la proxima semana | la semana que viene | despues | mas tarde | el lunes | manana | el proximo lunes | despues del viernes | la otra semana)",
       tail_b: "[y] [luego | despues] [(puedo | voy a | podria) hacer] {b:task} (la proxima semana | la semana que viene | despues | mas tarde | el lunes | luego)",
@@ -244,11 +245,11 @@ export const startup: SituationDef = {
       tellv: "(avisarles | avisar | decirles | escribirles | mandarles un mensaje | mandarles un correo | informarles | explicarles | contarles | informar)",
       custn: "(a los | a nuestros | a todos los) (clientes | usuarios)",
       sorryv: "((pedirles perdon | pedir perdon | pedirles una disculpa | pedir una disculpa | disculparnos) (a | con) (los | nuestros | todos los) (clientes | usuarios) | hablar con (los | nuestros | todos los) (clientes | usuarios))",
-      askmemo: "(llamarle a memo | llamar a memo | hablarle a memo | marcarle a memo | pedirle ayuda a memo | despertar a memo | preguntarle a memo | hablar con memo)",
+      asklalo: "(llamarle a lalo | llamar a lalo | hablarle a lalo | marcarle a lalo | pedirle ayuda a lalo | despertar a lalo | preguntarle a lalo | hablar con lalo)",
       launchlater: "((lanzar | relanzar | volver a lanzar | lanzarla | lanzarlo | intentarlo otra vez) (la proxima semana | despues | el lunes | manana | otro dia) | (posponer | aplazar | mover | retrasar | cambiar) el lanzamiento [a la proxima semana | para la proxima semana])",
       rollback: "((regresar | volver) a la version anterior | (quitar | apagar | desactivar | pausar) (la actualizacion | los mensajes | la funcion | la app) | (parar | detener) los mensajes | (deshacer | revertir) la actualizacion)",
-      pl_body: "(@fixv [@bugn] #fix #h:fix_first | @tellv @custn #tell #h:tell_cust | @sorryv #tell | @askmemo #ben #h:ask_memo | @launchlater #later #h:launch_later | @rollback #rollback)",
-      pl_hort: "((arreglemos | arreglamos | arreglo | reparemos | resolvamos | corrijamos) [@bugn] #fix | (avisemos | avisamos | les avisamos | escribamos | les escribimos | les mandamos un mensaje | informemos | les decimos) @custn #tell | (llamemos | le llamamos | le llamo | le marco | le hablo | le pedimos ayuda | le pido ayuda) a memo #ben | hablemos con memo #ben | (lancemos | lanzamos) (la proxima semana | despues | el lunes | otro dia) #later | (pospongamos | movamos) el lanzamiento [a la proxima semana] #later | (regresemos | volvamos | regresamos) a la version anterior #rollback)",
+      pl_body: "(@fixv [@bugn] #fix #h:fix_first | @tellv @custn #tell #h:tell_cust | @sorryv #tell | @asklalo #ben #h:ask_lalo | @launchlater #later #h:launch_later | @rollback #rollback)",
+      pl_hort: "((arreglemos | arreglamos | arreglo | reparemos | resolvamos | corrijamos) [@bugn] #fix | (avisemos | avisamos | les avisamos | escribamos | les escribimos | les mandamos un mensaje | informemos | les decimos) @custn #tell | (llamemos | le llamamos | le llamo | le marco | le hablo | le pedimos ayuda | le pido ayuda) a lalo #ben | hablemos con lalo #ben | (lancemos | lanzamos) (la proxima semana | despues | el lunes | otro dia) #later | (pospongamos | movamos) el lanzamiento [a la proxima semana] #later | (regresemos | volvamos | regresamos) a la version anterior #rollback)",
       pl_lead: "[primero] [hay que | tenemos que | deberiamos | vamos a | necesitamos | creo que hay que | creo que debemos | debemos | podemos | yo puedo | yo voy a | propongo | mejor | lo primero es]",
       stay_v: "(quedarme | quedarme aqui | trabajar | estar aqui | quedarme hasta tarde | trabajar hasta tarde)",
       me_stay: "(puedo quedarme | podria quedarme | me puedo quedar | me podria quedar | puedo trabajar | podria trabajar | puedo estar aqui | me quedo)",
@@ -294,7 +295,7 @@ export const startup: SituationDef = {
         { id: "onda", forms: ["la onda", "agarrarle la onda"] },
       ] },
       person: { lexicon: [
-        { id: "raquel", forms: ["raquel"] }, { id: "beto", forms: ["beto"] }, { id: "rodrigo", forms: ["rodrigo"] }, { id: "memo", forms: ["memo"] },
+        { id: "raquel", forms: ["raquel"] }, { id: "beto", forms: ["beto"] }, { id: "rodrigo", forms: ["rodrigo"] }, { id: "lalo", forms: ["lalo"] },
       ] },
     },
   },
@@ -904,9 +905,9 @@ export const startup: SituationDef = {
         "Okay, deep breath. Fix the bug first, then tell the customers?", { flags: { 8: "les doubles “a los clientes”; English needs no word.", 10: F_A } }),
     ],
     crash_ok_reask: [t("¿Y? | ¿Lo | arreglamos | y | luego | les | avisamos?", "So? | It | we-fix | and | then | them | we-tell?", "So? Fix it, then tell them?")],
-    crash_fix: [t("Primero | arreglarlo. | ¡Sí! | Le | llamo | a | Memo | ahora mismo.", "First | fix-it. | Yes! | — | I'll-call | — | Memo | right now.", "Fix it first. Yes! I'm calling Memo right now.", { flags: { 3: F_LE, 5: F_A } })],
+    crash_fix: [t("Primero | arreglarlo. | ¡Sí! | Le | llamo | a | Lalo | ahora mismo.", "First | fix-it. | Yes! | — | I'll-call | — | Lalo | right now.", "Fix it first. Yes! I'm calling Lalo right now.", { flags: { 3: F_LE, 5: F_A } })],
     crash_tell: [t("Avisarles | a | los | clientes. | Con | honestidad | y | rápido. | Me encanta.", "Tell-them | — | the | customers. | With | honesty | and | fast. | I love it.", "Tell the customers. Honest and fast. Love it.", { flags: { 1: F_A } })],
-    crash_ben: [t("¡Memo! | Claro. | Memo | arregla | lo que sea | con | suficiente | café.", "Memo! | Of course. | Memo | fixes | anything | with | enough | coffee.", "Memo! Of course. Memo can fix anything with enough coffee.")],
+    crash_ben: [t("¡Lalo! | Claro. | Lalo | arregla | lo que sea | con | suficiente | café.", "Lalo! | Of course. | Lalo | fixes | anything | with | enough | coffee.", "Lalo! Of course. Lalo can fix anything with enough coffee.")],
     crash_later: [t("Lanzar | la próxima semana. | Duele, | pero | es | lo | más | inteligente.", "Launch | next week. | It-hurts, | but | it's | the | most | smart.", "Launch next week. Painful, but smart.")],
     crash_rollback: [t("Regresar | a | la | versión | anterior. | Sí. | Primero, | la | seguridad.", "Go back | to | the | version | previous. | Yes. | First, | — | safety.", "Roll it back. Yes. Safety first.", { flags: { 7: F_ART } })],
     crash_end: [
@@ -919,7 +920,7 @@ export const startup: SituationDef = {
     ],
     crash_who: [t("¿La verdad? | Yo. | Subí | la | actualización | a | las dos | de la mañana.", "Honestly? | Me. | I-pushed | the | update | at | two | in the morning.", "Honestly? Me. I pushed the update at two a.m.")],
     ball_back_react: [t("¡Ja! | No, | no. | La pelota está en tu cancha.", "Ha! | No, | no. | The ball is in your court.", "Ha! Nope. The ball is in your court.")],
-    crash_skip: [t("Bueno. | Le | llamo | a | Memo. | Primero | arreglamos, | luego | hablamos.", "Okay. | — | I'll-call | — | Memo. | First | we-fix, | then | we-talk.", "Okay. I'll call Memo. Fix first, talk later.", { flags: { 1: F_LE, 3: F_A } })],
+    crash_skip: [t("Bueno. | Le | llamo | a | Lalo. | Primero | arreglamos, | luego | hablamos.", "Okay. | — | I'll-call | — | Lalo. | First | we-fix, | then | we-talk.", "Okay. I'll call Lalo. Fix first, talk later.", { flags: { 1: F_LE, 3: F_A } })],
 
     // --- who owns what -------------------------------------------------------------------------
     owner_ask: [
@@ -940,7 +941,7 @@ export const startup: SituationDef = {
     owner_newsletter: [t("Beto. | Nada más | mándale | la | foto.", "Beto. | Just | send-him | the | photo.", "Beto. Just send him the photo.")],
     owner_slides: [t("El | viernes | a | las doce. | Los | inversionistas | llegan | a | las dos.", "— | Friday | at | twelve. | The | investors | arrive | at | two.", "Friday at noon. The investors come at two.", { flags: { 0: F_ART } })],
     owner_slides_you: [t("¡Tú! | Y | yo. | Sobre todo | tú.", "You! | And | me. | Mostly | you.", "You! And me. Mostly you.")],
-    owner_code: [t("Memo, | nuestro | desarrollador. | Es | el | de | los | tres | monitores.", "Memo, | our | developer. | He's | the-one | with | the | three | monitors.", "Memo, our developer. He's the guy with three monitors.")],
+    owner_code: [t("Lalo, | nuestro | desarrollador. | Es | el | de | los | tres | monitores.", "Lalo, | our | developer. | He's | the-one | with | the | three | monitors.", "Lalo, our developer. He's the guy with three monitors.")],
     owner_emails: [t("Esos | son | tuyos, | la verdad. | ¡{m:Bienvenido|f:Bienvenida} | al | equipo!", "Those | are | yours, | actually. | Welcome | to-the | team!", "That's you, actually. Welcome to the team!")],
     owner_general: [t("¿La verdad? | Pregúntale | a | Raquel. | Raquel | sabe | todo.", "Honestly? | Ask-her | — | Raquel. | Raquel | knows | everything.", "Honestly? Ask Raquel. Raquel knows everything.", { flags: { 2: F_A } })],
     who_raquel: [t("Raquel | lleva | las | ventas. | Y | básicamente | todo | lo demás.", "Raquel | runs | — | sales. | And | basically | all | the rest.", "Raquel runs sales. And basically everything else.", { flags: { 2: F_ART } })],
@@ -950,7 +951,7 @@ export const startup: SituationDef = {
         { flags: { 4: F_PAREJO }, neutral: t("Rodrigo | está | en | ventas. | No pone de su parte. | Juega | ping-pong.", "Rodrigo | is | in | sales. | He doesn't do his part. | He-plays | ping-pong.",
           "Rodrigo is in sales. He doesn't pull his weight. He plays ping-pong.", { flags: { 4: F_PAREJO_N } }) }),
     ],
-    who_memo: [t("Memo | es | nuestro | desarrollador. | Nunca | duerme.", "Memo | is | our | developer. | Never | he-sleeps.", "Memo is our developer. He never sleeps.")],
+    who_lalo: [t("Lalo | es | nuestro | desarrollador. | Nunca | duerme.", "Lalo | is | our | developer. | Never | he-sleeps.", "Lalo is our developer. He never sleeps.")],
 
     // --- midnight (twist) ----------------------------------------------------------------------
     mid_1: [
@@ -1198,7 +1199,7 @@ export const startup: SituationDef = {
       items: [
         { id: "fix_first", s: t("Primero | hay que | arreglar | el | error.", "First | we-have-to | fix | the | bug.", "Let's fix the bug first.") },
         { id: "tell_cust", s: t("Hay que | avisarles | a | los | clientes.", "We-have-to | tell-them | — | the | customers.", "We should tell the customers.", { flags: { 2: F_A } }) },
-        { id: "ask_memo", s: t("Hay que | llamar | a | Memo.", "We-have-to | call | — | Memo.", "Let's ask Memo for help.", { flags: { 2: F_A } }) },
+        { id: "ask_lalo", s: t("Hay que | llamar | a | Lalo.", "We-have-to | call | — | Lalo.", "Let's ask Lalo for help.", { flags: { 2: F_A } }) },
         { id: "launch_later", s: t("Hay que | lanzar | la próxima semana.", "We-have-to | launch | next week.", "Let's launch next week.") },
         { id: "what_exactly", s: t("¿Qué | quieres | que | haga | exactamente?", "What | do-you-want | that | I-do | exactly?", "What exactly do you want me to do?") },
         { id: "who_cut", s: t("¿Quién | lo | hizo | al aventón?", "Who | it | did | sloppily?", "Who cut corners?", { flags: { 3: F_AVENTON } }) },
@@ -1764,10 +1765,11 @@ export const startup: SituationDef = {
     { say: "Perdón, pero necesito saberlo ya", intent: "insist", step: "owner" },
     { say: "No tengo más preguntas", intent: "no_more", step: "owner" },
     { say: "¿Quién es Rodrigo?", intent: "who_person", slots: { p: "rodrigo" } },
+    { say: "¿Quién es Lalo?", intent: "who_person", slots: { p: "lalo" } },
     // the crash
     { say: "Primero hay que arreglar el error", intent: "plan", step: "crash" },
     { say: "Hay que avisarles a los clientes", intent: "plan", step: "crash" },
-    { say: "Hay que llamar a Memo", intent: "plan", step: "crash" },
+    { say: "Hay que llamar a Lalo", intent: "plan", step: "crash" },
     { say: "Hay que lanzar la próxima semana", intent: "plan", step: "crash" },
     { say: "¿Qué quieres que haga exactamente?", intent: "crash_what", step: "crash" },
     { say: "¿Quién lo hizo al aventón?", intent: "crash_who", step: "crash" },
@@ -1903,7 +1905,7 @@ export const startup: SituationDef = {
 // Handler helpers (hoisted function declarations)
 
 const TIPS = startup.tips as Record<string, Tip>;
-const PERSON = /\b(rodrigo|beto|memo|raquel|alguien|otra persona|otro|el practicante|un practicante|el becario|la becaria)\b/;
+const PERSON = /\b(rodrigo|beto|lalo|raquel|alguien|otra persona|otro|el practicante|un practicante|el becario|la becaria)\b/;
 const SELF = /\b(yo|puedo|voy|me voy|empiezo|empecemos|hago|hagamos|vamos|podemos|prefiero|me enfoco|empezamos)\b/;
 const PLAN_TAGS = ["fix", "tell", "ben", "later", "rollback"];
 
@@ -2081,7 +2083,7 @@ function proposal(c: Ctx, slots: Record<string, any>, tags: string[]) {
 }
 
 /** Who gets the task: Rodrigo (a joke), someone named, or "alguien más". */
-const delegLine = (h: string) => (/\brodrigo\b/.test(h) ? "deleg_brad" : /\b(beto|memo|raquel)\b/.test(h) ? "deleg_named" : "deleg_other");
+const delegLine = (h: string) => (/\brodrigo\b/.test(h) ? "deleg_brad" : /\b(beto|lalo|raquel)\b/.test(h) ? "deleg_named" : "deleg_other");
 
 /** "No puedo hacer la fiesta (ni la foto)": those tasks wait (the deck: Toño pushes back). */
 function cantTask(c: Ctx, slots: Record<string, any>, tags: string[]) {
