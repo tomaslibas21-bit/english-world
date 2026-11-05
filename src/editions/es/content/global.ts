@@ -423,13 +423,10 @@ export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> =
     const st = c.conv.currentStep();
     const pend = c.conv.pending;
     // "No sé" to a yes/no question about a fact ("¿Va a estar en casa?") is no "Sin prisa": "¡No se preocupe!", and the
-    // question stays open; deciding on an offer or a choice takes its time
+    // question stays open; deciding on an offer or a choice takes its time. (An optional question is already dropped
+    // here: the step's question decides.)
     const yesNo = pend ? !!(pend.yes || pend.no) : !!(st && (st.yes || st.no) && !st.help);
-    if (yesNo && !offerAsked(c)) {
-      c.say("g_no_worries");
-      if (c.conv.pending || !pend) c.hold(); // (an optional question already dropped: the conversation goes on)
-      return;
-    }
+    if (yesNo && !offerAsked(c)) { c.say("g_no_worries"); c.hold(); return; }
     if (st?.help) {
       const before = c.conv.saidThisTurn().length;
       st.help(c);
