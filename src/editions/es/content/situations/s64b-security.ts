@@ -41,9 +41,9 @@ const fold = (x: string) => (x || "").normalize("NFD").replace(/[̀-ͯ]/g, "").t
 /** "No la tire", "No la vacío", "No me la tomo" said in the same turn as another choice: the engine used to read the
  *  "no" as an answer and the rest as the choice it refuses (see the top of the file); the refused choice must not act. */
 const NEG_CHOICE: Record<string, RegExp> = {
-  throw: /\bno\s+(?:se\s+|me\s+)?(?:la|lo)\s+(?:tir|bot)\w*/,
-  drink: /\bno\s+(?:me\s+|se\s+)?(?:la|lo)\s+(?:tom|beb)\w*/,
-  empty: /\bno\s+(?:la|lo)\s+vac\w*/,
+  throw: /\bno\s+(?:se\s+|me\s+)?(?:la|lo)\s+(?:tir|bot|dej)\w*|\bno\s+(?:quiero|voy a)\s+(?:tirarla|botarla|dejarsela|dejarla)\b/,
+  drink: /\bno\s+(?:me\s+|se\s+)?(?:la|lo)\s+(?:tom|beb)\w*|\bno\s+(?:quiero|voy a)\s+(?:tomarmela|tomarla|bebermela|beberla)\b/,
+  empty: /\bno\s+(?:la|lo)\s+vac\w*|\bno\s+(?:quiero|voy a)\s+vaciarla\b/,
 };
 const negated = (c: Ctx, k: string) => NEG_CHOICE[k].test(fold(c.heard));
 /** "No traigo cinturón, pero sí reloj": a "nothing" piece next to a "but yes" piece is not a no. */
@@ -59,19 +59,26 @@ function ask(c: Ctx, p: Pending) {
   c.expect({ ...p, on });
 }
 
+/** A foreign driver's license (or a card) isn't the ID for a flight, as docs_q says: handed over, it doesn't count as
+ *  the ID; he asks for the passport (kept vague, rule 14). */
+const licenseOnly = (c: Ctx) => { const h = fold(c.heard); return /\b(licencia|credencial)\b/.test(h) && !/\bpasaporte\b/.test(h); };
+const docsMissing = (c: Ctx) => (c.s.id ? "docs_need_bp" : c.s.licShown ? "docs_which" : "docs_need_id");
+
 function docsGiven(c: Ctx, tags: string[]) {
   const both = tags.includes("both") || (!tags.includes("id") && !tags.includes("bp"));
-  if (both || tags.includes("id")) c.s.id = true;
+  const lic = (both || tags.includes("id")) && licenseOnly(c);
+  if (lic) c.s.licShown = true;
+  if ((both || tags.includes("id")) && !lic) c.s.id = true;
   if (both || tags.includes("bp")) c.s.bp = true;
   if (tags.includes("phone")) { c.s.bp = true; c.say("phone_scan"); }
   if (c.s.id && c.s.bp) { c.s.docsDone = true; if (!c.s.camera) c.say("docs_ok"); return; }
-  c.say(c.s.id ? "docs_need_bp" : "docs_need_id");
+  c.say(docsMissing(c));
   ask(c, {
     id: "docs_more", expects: ["give_docs"], hints: ["docs"],
     suggest: [{ lt: "Hand over the missing document", hint: "docs" }],
     on: { give_docs: (cc, _sl, sg) => { docsGiven(cc, sg.tags.includes("both") || sg.tags.includes("id") || sg.tags.includes("bp") ? sg.tags : [cc.s.id ? "bp" : "id"]); } },
     yes: (cc) => { docsGiven(cc, [cc.s.id ? "bp" : "id"]); },
-    ask: (cc) => cc.say(cc.s.id ? "docs_need_bp" : "docs_need_id"),
+    ask: (cc) => cc.say(docsMissing(cc)),
   });
 }
 
@@ -88,6 +95,10 @@ function walkThrough(c: Ctx) {
   c.say(c.s.scanner ? "scan_done" : "walk_clear");
 }
 
+/** "Listo", "Ya me lo quité" at an alarm question: the learner took it out, so he sends them through again (it used
+ *  to run the walk step's yes and pass the alarm, leaving the question open for good). */
+const emptied = (c: Ctx) => { c.say("again_ask"); expectAgain(c); };
+
 function expectPockets(c: Ctx) {
   ask(c, {
     id: "pockets", expects: ["pockets_item", "pockets_nothing"], hints: ["pockets"],
@@ -96,6 +107,7 @@ function expectPockets(c: Ctx) {
       pockets_item: (cc) => { removeItem(cc); },
       pockets_nothing: (cc) => { if (butYes(cc)) return false; askBeltWatch(cc); },
       g_dontknow: (cc) => { cc.say("check_pockets"); expectCheckPockets(cc); },
+      ack_done: emptied,
     },
     yes: (cc) => { cc.say("what_is_it"); expectPockets(cc); },
     no: (cc) => { askBeltWatch(cc); },
@@ -110,6 +122,7 @@ function expectCheckPockets(c: Ctx) {
     on: {
       pockets_item: (cc) => { removeItem(cc); },
       pockets_nothing: (cc) => { if (butYes(cc)) return false; askBeltWatch(cc); },
+      ack_done: emptied,
     },
     yes: (cc) => { cc.say("what_is_it"); expectPockets(cc); },
     no: (cc) => { askBeltWatch(cc); },
@@ -124,31 +137,38 @@ function removeItem(c: Ctx) {
 
 function askBeltWatch(c: Ctx) {
   c.say("ask_belt_watch");
+  const both = (cc: Ctx) => { cc.say("put_it_bin_too"); expectAgain(cc); };
   ask(c, {
-    id: "belt_watch", expects: ["pockets_item", "pockets_nothing"], hints: ["beltwatch"],
+    id: "belt_watch", expects: ["pockets_item", "pockets_nothing", "both_ctx"], hints: ["beltwatch"],
     suggest: [{ lt: "Answer about a belt or a watch", hint: "beltwatch" }],
     on: {
-      pockets_item: (cc) => { cc.say("put_it_bin_too"); expectAgain(cc); },
+      pockets_item: both,
       pockets_nothing: (cc) => { if (butYes(cc)) return false; shoesOff(cc); },
+      both_ctx: both,
+      ack_done: emptied,
     },
-    yes: (cc) => { cc.say("put_it_bin_too"); expectAgain(cc); },
+    yes: both,
     no: (cc) => { shoesOff(cc); },
     ask: (cc) => cc.say("ask_belt_watch"),
   });
 }
 
-function shoesOff(c: Ctx) {
-  c.twist("shoes_off");
-  c.s.shoesAsked = true;
-  c.say("shoes_alarm");
+/** The shoes come off; a refusal or "¿Es necesario?" gets the reason and a short reminder, not the whole request again. */
+function shoesOff(c: Ctx, again = false) {
+  if (!again) {
+    c.twist("shoes_off");
+    c.s.shoesAsked = true;
+    c.say("shoes_alarm");
+  }
   const off = (cc: Ctx) => { cc.s.shoesOff = true; cc.say("again_ask"); expectAgain(cc); };
+  const must = (cc: Ctx) => { cc.say("shoes_must"); cc.say("shoes_remind"); shoesOff(cc, true); };
   ask(c, {
-    id: "shoes_off", expects: ["ack_done"], hints: ["ok_short"],
+    id: "shoes_off", expects: ["ack_done", "must_ctx"], hints: ["ok_short"],
     suggest: [{ lt: "Take off your shoes", hint: "ok_short" }],
-    on: { ack_done: off, g_ok: off },
+    on: { ack_done: off, g_ok: off, must_ctx: must },
     yes: off,
-    no: (cc) => { cc.say("shoes_must"); shoesOff(cc); },
-    ask: (cc) => cc.say("shoes_alarm"),
+    no: must,
+    ask: (cc) => cc.say("shoes_remind"),
   });
 }
 
@@ -171,7 +191,7 @@ function startBottle(c: Ctx) {
   c.say("found_bottle");
   // An optional reaction ("Ay, perdón, se me olvidó"); the "bottle" step then explains the rule and the options.
   ask(c, {
-    id: "bottle_found", optional: true, expects: ["forgot", "bottle_drink", "bottle_throw", "bottle_empty", "bottle_keep"], hints: ["bottle_sorry", "bottle"],
+    id: "bottle_found", optional: true, expects: ["forgot", "bottle_drink", "bottle_throw", "bottle_empty", "bottle_keep", "bottle_neg"], hints: ["bottle_sorry", "bottle"],
     suggest: [{ lt: "Say sorry: you forgot", hint: "bottle_sorry" }, { lt: "Say what to do with the bottle", hint: "bottle" }],
     on: {
       forgot: (cc) => { cc.say("no_worries"); },
@@ -268,11 +288,12 @@ export const security: SituationDef = {
       "si (hay algun problema | pasa algo | algun problema) #h:bq_yes", "si por que",
       "[si] (la | el) (negra | negro | azul | roja | rojo | gris | verde | cafe | chica | chico | grande | pequena | morada | rosa) es (mia | mio)",
       "[si] (mia | mio | es mia si)", "si si es mia", "[si] es la mia", "cual [ah] [si] es (mia | mio)",
+      "[si] (esa | esta) (maleta | mochila | bolsa) es (mia | mio)",
     ] },
     // "No es mía" (spelled out: the engine reads "No, no …" as "No, no" plus the rest)
     deny: { patterns: [
       "no es mia #h:bq_not", "no no es mia", "no es mio", "no no es mio", "(esa | esta) no es mia", "(esa | esta) no es mi @bag", "no es mi @bag", "no no es mi @bag",
-      "no esa no es mia", "mia no", "no la conozco", "no se de quien es",
+      "no esa no es mia", "mia no", "no la conozco", "no se de quien es", "[no] (esa | esta) (maleta | mochila | bolsa) no es (mia | mio)",
       "[no] [esa no] la mia es (la | una) (negra | azul | roja | gris | verde | cafe | chica | grande | pequena | morada | rosa | otra)",
       "[no] la (negra | azul | roja | gris | verde | cafe | chica | grande | pequena | morada | rosa) no es mia",
     ] },
@@ -307,6 +328,7 @@ export const security: SituationDef = {
     is_this_line: { patterns: [
       "(es | esta es) la (fila | cola) (para | de) (seguridad | el filtro | el filtro de seguridad | la revision | revision) #h:line_q",
       "(es aqui | aqui es) (la fila | la cola | el filtro | seguridad | la revision)", "(es | esta es) la (fila | cola)",
+      "(es aqui | aqui es) la (fila | cola) (para | de | del) (seguridad | el filtro | filtro | el filtro de seguridad | la revision | revision)",
       "donde (esta | es) la (fila | cola) [para seguridad | del filtro | de seguridad]", "(es aqui | aqui es) el filtro de seguridad",
       "(este | esto) es (el filtro | seguridad)",
     ] },
@@ -318,6 +340,7 @@ export const security: SituationDef = {
       "(mi | la) @comp (esta | ya esta) en (la | una) @tray",
       "asi #h:walk_like_this", "(asi esta bien | esta bien asi | asi esta bien)", "(aqui | aca)",
       "(paso | puedo pasar | ya paso | ya pasé | ya puedo pasar | entro | ya entro) [ahora | ya]", "(paso | puedo pasar | vuelvo a pasar) otra vez",
+      "[ya] (puedo | me puedo) (salir | seguir | continuar)", "ya (salgo | sigo)",
       "(los | las) (brazos | manos) arriba", "ahi voy", "(lo intento | lo hago) otra vez", "(ok | bueno | va | sale | esta bien | claro) otra vez",
       "ya me (los | las | lo | la) quité", "(ya) me quité los @shoes", "ya (saqué | puse) (la | mi | el) @comp", "ya (saqué | puse) todo",
       "(levanto | subo) (los brazos | las manos)", "ahora",
@@ -327,11 +350,12 @@ export const security: SituationDef = {
       "no estoy (listo | lista) [todavia | aun]", "(todavia | aun) no estoy (listo | lista)", "(todavia | aun) no (termino | acabo)",
       "(espere | un momento | un segundo) (todavia | aun) no", "no he terminado [todavia]", "no (termino | acabo) todavia",
       "[un momento | un segundo | espere] (lo | la | los) estoy buscando", "(un momento | un segundo | espere) (dejeme | deje) (buscarlo | buscarla | buscar)",
-      "ya (casi | merito) [termino | acabo | estoy]",
+      "ya (casi | merito) [termino | acabo | estoy]", "no (lo | la | los | las) encuentro [todavia]", "(todavia | aun) no (lo | la | los | las) encuentro",
     ] },
     // "¿Qué tengo que sacar?": he lists it again
     ask_what_out: { patterns: [
       "que (tengo que | hay que | debo | necesito) (sacar | poner en la @tray)", "que (saco | pongo en la @tray)", "que (va | tiene que ir | cosas van) en (la | las) @tray",
+      "@tq sacar (todo | mis cosas | las cosas) [de (la | mi) @bag]", "saco (todo | mis cosas | las cosas) [de (la | mi) @bag]",
     ] },
     where_stand: { patterns: [
       "donde (me paro | me pongo | pongo los pies | me coloco | piso)", "que (hago | tengo que hacer) [ahora]", "(y | ahora) que [hago]",
@@ -359,7 +383,7 @@ export const security: SituationDef = {
       "(los | mis) liquidos (van | tienen que ir | deben ir | tienen que estar | deben estar) en una bolsa [transparente] #h:div_liquids",
       "@tq sacar (mis | los) liquidos", "saco (mis | los) liquidos", "(@tq sacar | saco) (mi | el | la | los | las | mis) @liq", "cuanto liquido (puedo | se puede) (llevar | pasar)",
       "(el | la | mi | este | esta) @liq (es | cuenta como) liquido #count", "(los | las | mis) (cremas | geles) (son | cuentan como) liquidos #count",
-      "(y | que hay de) (mi | el | la) @liq #item", "(puedo | se puede) (llevar | pasar) (mi | el | la | un | una) @liq #item",
+      "(y | que hay de) (mi | el | la) @liq #item", "(puedo | se puede) (llevar | pasar) (mi | el | la | un | una) @liq #item", "(mi | mis) @liq #item",
       "no @tq sacar (mis | los) liquidos [verdad]", "(puedo | se puede) dejar (mis | los) liquidos en (la | mi) @bag #leave", "(mis | los) liquidos (se quedan | los dejo) en (la | mi) @bag #leave",
     ] },
     no_liquids: { patterns: [
@@ -372,9 +396,10 @@ export const security: SituationDef = {
       "(tiene | me da | me regala | me puede dar) una (bolsa | bolsita) [transparente]", "(tienes | me das) una (bolsa | bolsita) #tip:tu_staff",
     ] },
     ask_phone: { patterns: [
-      "donde (pongo | dejo) (mi | el | la | mis | las) (celular | telefono | cartera | llaves | monedas) #h:div_phone",
-      "(y | que hay de) (mi | el | la | mis | las) (celular | telefono | cartera | llaves | monedas)",
-      "saco (mi | el | la | mis | las | los) (celular | telefono | cartera | llaves | monedas)", "(mi | el | la | mis | las | los) (celular | telefono | cartera | llaves | monedas) (va | van) en (la | una) @tray",
+      "donde (pongo | dejo) (mi | el | la | mis | las) (celular | telefono | cartera | billetera | llaves | monedas | cargador) #h:div_phone",
+      "(y | que hay de) (mi | el | la | mis | las) (celular | telefono | cartera | billetera | llaves | monedas | cargador)",
+      "saco (mi | el | la | mis | las | los) (celular | telefono | cartera | billetera | llaves | monedas | cargador)", "(mi | el | la | mis | las | los) (celular | telefono | cartera | billetera | llaves | monedas | cargador) (va | van) en (la | una) @tray",
+      "@tq sacar (mi | el | la | mis | las | los) (celular | telefono | cartera | billetera | llaves | monedas | cargador)",
       "@tq (sacar todo de | vaciar) (mis | los | las) @pockets #empty", "(vacio | saco todo de) (mis | los | las) @pockets #empty",
     ] },
     ask_jacket: { patterns: [
@@ -386,6 +411,7 @@ export const security: SituationDef = {
     ask_glasses: { patterns: ["me quito (los | mis) (lentes | anteojos) #h:cam_glasses", "@tq quitarme (los | mis) (lentes | anteojos)", "(y | que hay de) (mis | los) (lentes | anteojos)", "sin (lentes | anteojos)"] },
     ask_bins: { patterns: [
       "donde (estan | hay) (las | unas) @tray #h:div_bins", "(me da | me pasa | puedo tomar | tomo | agarro) una @tray", "(me das | me pasas) una @tray #tip:tu_staff",
+      "(puedo | se puede) (usar | tomar | agarrar) (dos | otra | mas) @tray",
       "donde (pongo | dejo) (mis cosas | mi maleta | mi mochila | todo | las cosas)", "donde (pongo | dejo) (mi | la | el) @comp",
       "(la | mi) @bag [tambien] va en (la | una) @tray #bag", "(pongo | meto) (la | mi) @bag en (la | una) @tray #bag", "(la | mi) @bag tambien #bag",
     ] },
@@ -411,31 +437,49 @@ export const security: SituationDef = {
       "no nada #h:pk_nothing", "nada", "no (traigo | tengo | hay) nada [en (los | las | mis) @pockets]", "no no (traigo | tengo) [nada | ninguno]", "no no traigo #h:pk_no",
       "(mis | los | las) @pockets (estan | ya estan) (vacios | vacias)", "nada en (los | las | mis) @pockets", "no hay nada", "[nada] (estan | ya estan) (vacios | vacias)",
       "no (traigo | tengo | llevo) (cinturon | reloj) [ni (reloj | cinturon)]", "ni (cinturon | reloj) ni (reloj | cinturon)", "no {pocket} ni {pocket}",
+      "[no] no (traigo | tengo | llevo) ni (cinturon | reloj) ni (reloj | cinturon)", "[no] (ni uno ni otro | ninguna de las dos cosas | no traigo ninguno [de los dos])",
+      "[no] no (llevo | uso) [nada | ninguno]",
       "no (traigo | tengo) [mis | las | los | mi | el | la] {pocket} [ni {pocket}]", "(ninguno | ninguna) [de los dos]", "nada de eso",
     ] },
     forgot: { patterns: [
       "se me olvidó #h:bt_forgot", "se me olvidó (que la traia | sacarla | la botella | el agua | tirarla)", "(olvidé | me olvidé de) (sacarla | la botella | el agua)",
       "[si] es (solo | nomas | nada mas) agua", "si es agua", "no sabia [que no se podia]", "no me acordé", "(que pena | una disculpa) [se me olvidó]", "fue mi culpa",
+      "(ay | uy | ah | oh) (perdon | perdone | disculpe | lo siento)",
     ] },
+    // "¿Qué pasó?" / "¿Por qué?" (#why): the answer depends on the moment (the camera, the alarm, the shoes, the bag)
     ask_what: { patterns: [
-      "(cual | que) es el problema", "(hay | pasa) algo", "hay algun problema", "que (encontró | vio | pasó | hay)", "por que", "que (tiene | pasa) (mi maleta | con mi maleta)",
+      "(cual | que) es el problema", "(hay | pasa) algo", "hay algun problema", "que (encontró | vio | pasó | hay | pasa)", "que (tiene | pasa) (mi maleta | con mi maleta)",
+      "que (sonó | marcó | detectó)", "por que #why", "(y | pero) por que #why", "para que [es] #why", "por que no (puede | se puede | puedo) pasar #why",
+      "por que (es necesario | tengo que hacerlo | hay que hacerlo) #why",
+    ] },
+    // "¿Dónde la puedo llenar?" after emptying the bottle, "¿Dónde compro agua?"
+    ask_refill: { patterns: [
+      "donde (la | lo) (puedo llenar | puedo rellenar | lleno | relleno)", "donde (puedo | se puede) (llenarla | rellenarla | llenar la botella | rellenar la botella | llenar mi botella)",
+      "(puedo | se puede) (llenarla | rellenarla | llenar la botella | rellenar la botella) [despues | adentro | mas adelante | del otro lado]",
+      "donde (puedo comprar | compro | venden | hay) agua", "(hay | venden) agua (adentro | mas adelante | despues | del otro lado)",
     ] },
     bottle_drink: { patterns: [
       "me la tomo [aqui | ahorita | ya | ahora] #h:bt_drink", "(me la voy a tomar | la voy a tomar | me la puedo tomar) [aqui | ahorita]", "(puedo | podria) tomarmela [aqui | ahorita]",
       "me la (tomo | voy a tomar) (rapido | rapidito)", "(dejeme | dejame) tomarmela", "(me la bebo | la bebo | me la voy a beber | puedo bebermela) [aqui | ahora]",
       "(voy a | quiero | prefiero) tomarmela", "(me la tomo | la tomo) de una vez", "[no] mejor me la (tomo | voy a tomar)",
       "no la (tire | tiren | tires | tiro | tiramos) [mejor] me la (tomo | voy a tomar | bebo)", "no la (vacio | voy a vaciar) [mejor] me la (tomo | voy a tomar | bebo)",
+      "(y si | que tal si) me la (tomo | bebo) [aqui | ahorita | ya]",
+      // his offer echoed: "Puede tomársela, vaciarla o dejármela." → "Tomármela."
+      "(tomarmela | bebermela) [aqui | ahorita | mejor]", "(quiero | prefiero) (bebermela | tomarla | beberla)",
     ] },
     bottle_throw: { patterns: [
       "(la puede | la pueden | puede | pueden) (tirar | tirarla) [no hay problema] #h:bt_throw", "tirela", "(quedesela | quedese con ella)", "no la (necesito | quiero)",
       "(esta bien | bueno) tirela", "tirela (no hay problema | esta bien)", "(a la basura | tirela a la basura)", "(tirala | quedatela) #tip:tu_staff", "mejor tirela", "(no hay problema | esta bien) (tirela | quedesela)",
       "no me la quiero quedar", "no quiero quedarme con (ella | la botella)", "no me la (tomo | quiero tomar | voy a tomar) [mejor] (tirela | la puede tirar | la tiro)", "no la (vacio | voy a vaciar) [mejor] (tirela | la puede tirar | la tiro)",
-      "[mejor] la tiro [yo]", "prefiero tirarla", "no tirela", "mejor (tirela | tirarla)",
+      "[mejor] la tiro [yo]", "prefiero tirarla", "no tirela", "mejor (tirela | tirarla)", "(y si | que tal si) la (tiro | tira | tiran | tiramos)",
+      "(dejarsela | tirarla) [mejor]", "(quiero | prefiero) (dejarsela | dejarla aqui)", "[mejor] se la dejo [a usted]", "[mejor] (la tiramos | tirenla)",
     ] },
     bottle_empty: { patterns: [
       "(puedo | podria) vaciarla #h:bt_empty", "la vacio [aqui | ahi]", "(dejeme | dejame) vaciarla", "(voy a | mejor) vaciarla", "[no] mejor la vacio",
       "no la (tire | tiren | tires | tiro | tiramos) [mejor] la (vacio | voy a vaciar)", "no me la (tomo | voy a tomar) [mejor] la (vacio | voy a vaciar)",
       "(puedo | podria) tirar el agua [y quedarme con la botella]", "tiro el agua [y me quedo con la botella]", "la vacio y me quedo con (ella | la botella)",
+      "(y si | que tal si) la vacio", "donde (la | lo) (vacio | puedo vaciar)", "donde (puedo | se puede) vaciarla",
+      "vaciarla [aqui | mejor]", "(quiero | prefiero) vaciarla",
     ] },
     bottle_keep: { patterns: [
       "(me puedo | puedo) quedar con (la | mi) botella #h:bt_keep", "puedo quedarme con (la | mi) botella", "(quiero | me gustaria) quedarme con (la | mi) botella",
@@ -445,6 +489,7 @@ export const security: SituationDef = {
     bottle_neg: { patterns: [
       "no (la tire | la tiren | la tires | quiero tirarla | la quiero tirar)", "no (quiero tomarmela | me la quiero tomar | me la tomo | quiero beberla)",
       "no (quiero vaciarla | la quiero vaciar | la vacio)", "no (puedo | quiero) (tomarla | tomarmela)",
+      "no (quiero dejarsela | se la quiero dejar | se la dejo | quiero dejarla)",
     ] },
     bag_back: { patterns: [
       "(me da | me puede dar | me regresa | me devuelve | me pasa) mi (maleta | mochila | bolsa | cosas) #h:bag_back", "(me das | me regresas) mi (maleta | mochila) #tip:tu_staff",
@@ -454,8 +499,13 @@ export const security: SituationDef = {
     ] },
     shoes_on: { patterns: [
       "donde (me pongo | puedo ponerme | me puedo poner) los @shoes #h:shoes_bench",
-      "(hay | donde hay) (un lugar | una banca | un banco | una silla) para sentarme", "donde me puedo sentar",
+      "(hay | donde hay) (un lugar | una banca | un banco | una silla) para sentarme", "donde me puedo sentar", "donde me siento",
+      "[ya] (me puedo poner | puedo ponerme | me pongo) (los | mis) @shoes",
     ] },
+    // "Los dos" at "¿Trae cinturón o reloj?"
+    both_ctx: { patterns: ["(los | las) dos [cosas]", "(ambos | ambas) [cosas]", "(traigo | tengo) (los dos | ambos | las dos cosas)"] },
+    // "¿Es necesario?" when he asks for the shoes
+    must_ctx: { patterns: ["[pero] es (necesario | obligatorio)", "de verdad", "en serio", "[pero] (tengo que | debo) hacerlo"] },
     ask_gate: { patterns: [
       "donde (esta | queda) la (sala | puerta) [numero] {number} #h:gate_dir", "como llego a (la sala | la puerta) [numero] {number}",
       "como llego a (mi sala | las salas | mi puerta | las puertas)", "(por donde | hacia donde) (esta | estan | queda | quedan) (la sala | las salas | las puertas)", "(por donde | hacia donde) (esta | queda) la (sala | puerta) [numero] {number}",
@@ -473,9 +523,10 @@ export const security: SituationDef = {
         { flags: { 1: "Mexican: pase de abordar = boarding pass (tarjeta de embarque elsewhere).", 2: "e: y (and) becomes e before an i sound." },
           neutral: t("¡Siguiente! | Tarjeta de embarque | e | identificación, | por favor.", "Next! | Boarding pass | and | ID, | please.", "Next! Boarding pass and ID, please.", { flags: { 2: "e: y (and) becomes e before an i sound." } }) }),
       t("Buenos días. | Sus | documentos, | por favor.", "Good morning. | Your | documents, | please.", "Good morning. Your documents, please."),
-      t("Buenas tardes. | ¿Me | permite | su | identificación | y | su | pase de abordar?", "Good afternoon. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good afternoon. May I see your ID and your boarding pass?",
+      // the 8:10 a.m. flight (s64a): check-in and the gate say "Buenos días" too
+      t("Buenos días. | ¿Me | permite | su | identificación | y | su | pase de abordar?", "Good morning. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good morning. May I see your ID and your boarding pass?",
         { flags: { 7: "Mexican: pase de abordar = boarding pass (tarjeta de embarque elsewhere)." },
-          neutral: t("Buenas tardes. | ¿Me | permite | su | identificación | y | su | tarjeta de embarque?", "Good afternoon. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good afternoon. May I see your ID and your boarding pass?") }),
+          neutral: t("Buenos días. | ¿Me | permite | su | identificación | y | su | tarjeta de embarque?", "Good morning. | (To) me | you-allow | your | ID | and | your | boarding pass?", "Good morning. May I see your ID and your boarding pass?") }),
     ],
     ask_docs: [
       t("Sus | documentos, | por favor.", "Your | documents, | please.", "Your documents, please."),
@@ -536,6 +587,12 @@ export const security: SituationDef = {
       t("Está bien.", "That's fine.", "That's fine."),
     ],
     no_problem_q: [t("No, | ningún | problema.", "No, | no | problem.", "No, no problem at all.")],
+    // "¿Por qué?" / "¿Qué pasó?" at their moment (ask_what)
+    rules_why: [t("Es | por | seguridad.", "It's | for | security.", "It's for security.")],
+    camera_why: [t("Solo | para | comparar | con | su | foto.", "Just | to | compare | with | your | photo.", "Just to compare you with your photo.")],
+    alarm_what: [t("Nada | grave. | Solo | vamos | a | revisar.", "Nothing | serious. | Just | we're going | to | check.", "Nothing serious. We just need to check.")],
+    shoes_why: [t("A veces | los | zapatos | tienen | metal.", "Sometimes | the | shoes | have | metal.", "Sometimes shoes have metal in them.")],
+    water_ahead: [t("Más adelante | venden | agua.", "Further on | they-sell | water.", "You can buy water further on.")],
     liquids_info: [t("Los | líquidos | van | en | una | bolsa | transparente.", "The | liquids | go | in | a | bag | clear.", "Liquids go in a clear bag.")],
     liquids_no_stay: [t("No, | los | líquidos | tienen | que | salir, | en | una | bolsa | transparente.", "No, | the | liquids | have | to | come out, | in | a | bag | clear.", "No, liquids have to come out, in a clear bag.")],
     liquids_info2: [t("En | envases | de | 100 | mililitros | o | menos.", "In | containers | of | 100 | milliliters | or | less.", "In containers of 100 milliliters or less.", { say: "En envases de cien mililitros o menos." })],
@@ -545,7 +602,7 @@ export const security: SituationDef = {
     plastic_bags: [t("Aquí | hay | bolsitas. | Tome | una.", "Here | there are | little bags. | Take | one.", "There are bags right here. Take one.")],
     phone_where: [
       t("En | la | charola, | con | sus | llaves | y | su | cartera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet.",
-        { flags: { 2: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("En | la | bandeja, | con | sus | llaves | y | su | cartera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet.") }),
+        { flags: { 2: "Mexican: charola = tray (bandeja elsewhere)." }, neutral: t("En | la | bandeja, | con | sus | llaves | y | su | billetera.", "In | the | tray, | with | your | keys | and | your | wallet.", "In the tray, with your keys and wallet.") }),
     ],
     pockets_yes: [t("Sí, | por favor, | todo | afuera.", "Yes, | please, | everything | out.", "Yes, please. Everything out.")],
     jacket_yes: [t("Quítesela | y | póngala | con | lo | demás, | por favor.", "Take it off | and | put it | with | the | rest, | please.", "Please take it off and put it with the rest.")],
@@ -604,6 +661,7 @@ export const security: SituationDef = {
     put_it_bin_too: [t("Eso | también, | por favor. | Y | pase | otra vez.", "That | too, | please. | And | go through | again.", "That too, please. Then walk through again.")],
     shoes_yes: [t("Sí, | los | zapatos | también, | por favor.", "Yes, | the | shoes | too, | please.", "Yes, your shoes too, please.")],
     shoes_alarm: [t("Pueden | ser | los | zapatos. | Quíteselos, | por favor.", "They could | be | the | shoes. | Take them off, | please.", "It might be your shoes. Please take them off.")],
+    shoes_remind: [t("Quíteselos, | por favor.", "Take them off, | please.", "Please take them off.")],
     shoes_must: [t("Lo siento, | es | necesario | para | pasar.", "I'm sorry, | it's | necessary | to | go through.", "Sorry, I need you to do it to go through.")],
     again_ask: [t("Muy | bien, | pase | otra vez, | por favor.", "Very | good, | go through | again, | please.", "Okay, walk through again, please.")],
     ask_your_bag: [
@@ -650,7 +708,8 @@ export const security: SituationDef = {
       t("Es | todo. | Puede | continuar.", "That's | all. | You-can | go on.", "That's it. You're good to go."),
     ],
     bag_later: [t("Su | maleta | sale | del | otro | lado.", "Your | bag | comes out | on the | other | side.", "Your bag comes out on the other side.")],
-    bags_end_belt: [t("Sus | cosas | salen | del | otro | lado.", "Your | things | come out | on the | other | side.", "Your things come out on the other side.")],
+    // said once the learner is through (the finish, "¿Me da mi maleta?"): they're already on the other side
+    bags_end_belt: [t("Sus | cosas | salen | por | allá.", "Your | things | come out | over | there.", "Your things come out over there.")],
     shoes_bench: [t("Ahí | hay | una | banca | para | ponerse | los | zapatos.", "There | there's | a | bench | to | put on | the | shoes.", "There's a bench over there to put your shoes back on.")],
     shoes_bench_again: [t("Ahí, | en | la | banca.", "There, | on | the | bench.", "Over there, on the bench.")],
     bye: [
@@ -725,9 +784,10 @@ export const security: SituationDef = {
     after: { lt: "Get your things and ask where to go", items: [
       { id: "bag_back", s: t("¿Me | da | mi | maleta?", "(To) me | you-give | my | bag?", "Can I have my bag back?") },
       { id: "all_set", s: t("¿Ya | me | puedo | ir?", "Already | (myself) | can I | go?", "Am I all set?") },
-      { id: "gate_dir", s: t("¿Dónde | está | la | sala | 8?", "Where | is | the | gate | 8?", "Where's gate 8?", { say: "¿Dónde está la sala ocho?",
+      // the learner's gate is sala 4 (s64a, s64c)
+      { id: "gate_dir", s: t("¿Dónde | está | la | sala | 4?", "Where | is | the | gate | 4?", "Where's gate 4?", { say: "¿Dónde está la sala cuatro?",
         flags: { 3: "Mexican: la sala (de abordar) = the gate (la puerta elsewhere)." },
-        neutral: t("¿Dónde | está | la | puerta | 8?", "Where | is | the | gate | 8?", "Where's gate 8?", { say: "¿Dónde está la puerta ocho?" }) }) },
+        neutral: t("¿Dónde | está | la | puerta | 4?", "Where | is | the | gate | 4?", "Where's gate 4?", { say: "¿Dónde está la puerta cuatro?" }) }) },
       { id: "shoes_bench", s: t("¿Dónde | me | pongo | los | zapatos?", "Where | (myself) | I-put on | the | shoes?", "Where can I put my shoes back on?") },
     ] },
   },
@@ -744,6 +804,7 @@ export const security: SituationDef = {
     "no se mueva": { reason: "grammatical_fusion", split: "no → no + se → yourself + mueva → move gives a false reflexive object; = don't move.", minimal: "The negated pronominal command only." },
     "no se preocupe": { reason: "grammatical_fusion", split: "no → no + se → yourself + preocupe → worry gives a false reflexive object; = don't worry.", minimal: "The negated pronominal command only." },
     "se me olvidó": { reason: "grammatical_fusion", split: "se → itself + me → me + olvidó → forgot gives a false subject; = I forgot.", minimal: "The pronouns and the verb." },
+    "más adelante": { reason: "lexical_expression", split: "más → more + adelante → ahead misreads the phrase: further on.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -806,7 +867,11 @@ export const security: SituationDef = {
       expects: ["bottle_drink", "bottle_throw", "bottle_empty", "bottle_keep", "bottle_neg"],
       suggest: [{ lt: "Say what to do with the bottle", hint: "bottle" }] },
     { id: "collect", when: (c) => !!c.s.bagHeld && !!c.s.bagChecked, done: (c) => !!c.s.collected,
-      ask: (c) => c.say("rest_fine"),
+      // once: after a side question he hands the bag over instead of saying "Todo lo demás está bien" again
+      ask: (c) => {
+        if (!c.s.restSaid) { c.s.restSaid = true; c.say("rest_fine"); return; }
+        c.s.collected = true; c.say("bag_back");
+      },
       expects: ["bag_back"],
       suggest: [{ lt: "Ask for your bag back", hint: "after" }],
       yes: (c) => { c.s.collected = true; c.say("bag_back"); },
@@ -849,12 +914,16 @@ export const security: SituationDef = {
     is_this_line(c) { c.say("line_yes"); },
     ack_done(c) {
       if (c.s.__finished) { c.say("all_set"); return; }
+      // during the alarm the open question answers it (or is asked again): never the walk step's yes, which passed the
+      // alarm and left the question open for good
+      if (c.s.alarmDone && !c.s.walked) return;
       const st = stepOf(c);
       // "Listo", "¿Puedo pasar?" never hand over the documents or answer "¿Esta maleta es suya?" (the step asks again)
       if (st?.yes && !st.done(c) && c.step !== "bag_q" && c.step !== "docs") st.yes(c);
     },
     not_ready(c) { c.say("g_take_time"); c.hold(); },
     g_ok(c) {
+      if (c.s.alarmDone && !c.s.walked) return;
       const st = stepOf(c);
       if (st?.yes && !st.done(c) && c.step !== "bag_q") st.yes(c);
     },
@@ -902,11 +971,24 @@ export const security: SituationDef = {
       if (c.step === "collect" && !c.s.collected) { c.s.collected = true; c.say("bag_back"); return; }
       c.say("g_welcome");
     },
-    ask_what(c) {
+    ask_what(c, _slots, seg) {
+      // "¿Por qué?" / "¿Qué pasó?" get the answer of their moment ("No, ningún problema" only where nothing is wrong)
+      const why = seg.tags.includes("why");
+      if (c.step === "camera" && !c.s.cameraDone) { c.say(why ? "camera_why" : "no_problem_q"); return; }
+      if (c.s.alarmDone && !c.s.walked) { c.say(why && c.s.shoesAsked && !c.s.shoesOff ? "shoes_why" : "alarm_what"); return; }
       if (c.step === "bag_q" && !c.s.bagHeld) { c.say("bag_just_check"); return; }
-      c.say(c.s.bagHeld && !c.s.bagChecked ? "found_bottle" : "no_problem_q");
+      if (c.s.bagHeld && !c.s.bagChecked) { c.say(why ? "bottle_rule" : "found_bottle"); return; }
+      c.say(why && !c.s.__finished ? "rules_why" : "no_problem_q");
     },
-    where_stand(c) { c.say(c.s.scanner ? "scanner2" : "walkthrough"); c.hold(); },
+    // "¿Dónde me paro?", "¿Qué hago?": the scanner's instructions only at the walk step; elsewhere the open question (or
+    // the step) is asked again (it used to say "Párese en las huellas…" at the documents, the bottle and the goodbye)
+    where_stand(c) {
+      if (c.s.__finished) { c.say("all_set"); return; }
+      if (c.step === "walk" && !c.s.alarmDone) { c.say(c.s.scanner ? "scanner2" : "walkthrough"); c.hold(); return; }
+      if (!c.s.docsDone && /\b(aqui|aca)\b/.test(fold(c.heard))) { c.say("line_yes"); return; }
+      if (c.step === "divest") { c.say("what_out"); c.hold(); return; }
+      if (c.step === "collect" && !c.s.collected) { c.s.collected = true; c.say("bag_back"); }
+    },
     bottle_drink(c) { if (negated(c, "drink")) return; if (c.s.bagHeld && !c.s.bagChecked) bottleDone(c, "drink_ok"); else c.say(c.s.__finished ? "all_set" : "ack"); },
     bottle_throw(c) { if (negated(c, "throw")) return; if (c.s.bagHeld && !c.s.bagChecked) bottleDone(c, "toss_ok"); else c.say(c.s.__finished ? "all_set" : "ack"); },
     bottle_empty(c) { if (negated(c, "empty")) return; if (c.s.bagHeld && !c.s.bagChecked) bottleDone(c, "empty_ok"); else c.say("water_rule"); },
@@ -918,11 +1000,21 @@ export const security: SituationDef = {
     },
     bag_back(c) {
       if (c.s.bagHeld && !c.s.bagChecked) { c.say("found_bottle"); return; }
-      if (c.s.bagHeld && !c.s.collected) { c.s.collected = true; c.say("bag_back"); return; }
+      // the bag he checked is handed over by him (asked again: he hands it again), never "salen por allá"
+      if (c.s.bagHeld && c.s.bagChecked) { c.s.collected = true; c.say("bag_back"); return; }
       if (c.s.walked) { c.say("bags_end_belt"); return; }
       c.say("bag_later");
     },
-    shoes_on(c) { if (c.s.benchSaid) { c.say("shoes_bench_again"); return; } c.s.benchSaid = true; c.say("shoes_bench"); },
+    shoes_on(c) {
+      // shoes off but not through yet: the open "pase otra vez" is asked again
+      if (c.s.shoesOff && !c.s.walked) return;
+      if (c.s.benchSaid) { c.say("shoes_bench_again"); return; }
+      c.s.benchSaid = true; c.say("shoes_bench");
+    },
+    ask_refill(c) { c.say("water_ahead"); },
+    // the _ctx answers live in their pending questions (belt_watch, shoes_off); these only catch a stray one
+    both_ctx() {},
+    must_ctx(c) { if (c.s.shoesAsked && !c.s.shoesOff) c.say("shoes_must"); },
     ask_gate(c) { c.say("gate_dir"); },
     ask_restroom(c) { c.say("restroom"); },
   },
@@ -973,7 +1065,7 @@ export const security: SituationDef = {
     { say: "¿Me puedo quedar con la botella?", intent: "bottle_keep", step: "bottle" },
     { say: "¿Me da mi maleta?", intent: "bag_back" },
     { say: "¿Ya me puedo ir?", intent: "bag_back" },
-    { say: "¿Dónde está la sala 8?", intent: "ask_gate", slots: { number: 8 } },
+    { say: "¿Dónde está la sala 4?", intent: "ask_gate", slots: { number: 4 } },
     { say: "¿Dónde me pongo los zapatos?", intent: "shoes_on" },
     // Natural alternatives, tú to staff, no accents, Mexican and neutral words
     { say: "Tenga", intent: "give_docs", step: "docs" },
@@ -1039,6 +1131,20 @@ export const security: SituationDef = {
     { say: "¿Tengo que quitármelos?", intent: "ask_shoes" },
     { say: "¿Mi licencia sirve?", intent: "docs_q", step: "docs" },
     { say: "¿Por dónde está la sala 12?", intent: "ask_gate", slots: { number: 12 } },
+    // audit (5 Nov 2026): whole questions, "ni … ni", the why and what questions, the refill
+    { say: "¿Es aquí la fila para seguridad?", intent: "is_this_line", step: "docs", not: ["where_stand"] },
+    { say: "No lo encuentro", intent: "not_ready", not: ["give_docs"] },
+    { say: "No traigo ni cinturón ni reloj", intent: "pockets_nothing", not: ["pockets_item"] },
+    { say: "¿Qué pasó?", intent: "ask_what" },
+    { say: "¿Por qué?", intent: "ask_what" },
+    { say: "¿Qué sonó?", intent: "ask_what" },
+    { say: "¿Tengo que sacar el celular?", intent: "ask_phone", step: "divest" },
+    { say: "¿Dónde pongo mi billetera?", intent: "ask_phone", step: "divest" },
+    { say: "¿Tengo que sacar todo de la mochila?", intent: "ask_what_out", step: "divest" },
+    { say: "¿Y si me la tomo?", intent: "bottle_drink", step: "bottle" },
+    { say: "¿Dónde la puedo llenar?", intent: "ask_refill" },
+    { say: "¿Me puedo poner los zapatos?", intent: "shoes_on" },
+    { say: "¿Ya puedo salir?", intent: "ack_done", step: "walk" },
     // Must not be understood
     { say: "Mi perro come plátanos azules", intent: "none" },
     { say: "Ayer compré una camisa verde", intent: "none" },
@@ -1048,7 +1154,7 @@ export const security: SituationDef = {
   sims: [
     { name: "happy path", turns: ["Buenos días, aquí tiene mi pasaporte y mi pase de abordar.", "Está bien.", "Listo.", "Gracias."],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.alarm = false; s.camera = false; s.bagCheck = false; } },
-    { name: "one document at a time, questions and a change of mind", turns: ["Aquí está mi pasaporte.", "Está en mi celular.", "¿Tengo que quitarme los zapatos?", "¿Tengo que sacar la laptop?", "¿Puedo dejar la laptop en la mochila?", "¿El bloqueador cuenta como líquido?", "¿Dónde pongo mi celular?", "No estoy lista todavía.", "Listo, ya está todo.", "¿Así?", "¿Dónde está la sala ocho?", "Gracias."],
+    { name: "one document at a time, questions and a change of mind", turns: ["Aquí está mi pasaporte.", "Está en mi celular.", "¿Tengo que quitarme los zapatos?", "¿Tengo que sacar la laptop?", "¿Puedo dejar la laptop en la mochila?", "¿El bloqueador cuenta como líquido?", "¿Dónde pongo mi celular?", "No estoy lista todavía.", "Listo, ya está todo.", "¿Así?", "¿Dónde está la sala cuatro?", "Gracias."],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.alarm = false; s.camera = false; s.bagCheck = false; } },
     { name: "the alarm: nothing in the pockets, no belt, shoes off (twist forced)", turns: ["Aquí tiene.", "Listo.", "Listo.", "No, nada.", "No, no traigo.", "Claro.", "Listo.", "¿Dónde me pongo los zapatos?", "Gracias."],
       expect: { complete: true, state: { shoesOff: true, walked: true } }, auto: AUTO, setup: (s) => { s.alarm = true; s.camera = false; s.bagCheck = false; } },
@@ -1073,6 +1179,15 @@ export const security: SituationDef = {
       expect: { complete: true, state: { bottleChoice: "empty_ok", collected: true } }, auto: AUTO, setup: (s) => { s.alarm = false; s.camera = false; s.bagCheck = true; } },
     { name: "short answers, the look at the camera", turns: ["Tenga.", "¿Me quito los lentes?", "Listo.", "Va.", "Listo.", "Gracias."],
       expect: { complete: true, state: { cameraDone: true } }, auto: AUTO, setup: (s) => { s.alarm = false; s.camera = true; s.bagCheck = false; } },
+    // audit (5 Nov 2026): "Listo" at an alarm question used to pass the alarm and leave the question open for good
+    { name: "the alarm: \"Listo\" at the pockets question (twist forced)", turns: ["Aquí tiene.", "Listo.", "Listo.", "Listo.", "Listo.", "Gracias."],
+      expect: { complete: true, state: { walked: true, shoesOff: undefined } }, auto: AUTO, setup: (s) => { s.alarm = true; s.camera = false; s.bagCheck = false; } },
+    { name: "why? at the camera, the alarm and the shoes (twist forced)", turns: ["Aquí tiene.", "¿Para qué?", "Claro.", "Listo.", "Listo.", "¿Qué pasó?", "No, nada.", "No traigo ni cinturón ni reloj.", "¿Por qué?", "¿Es necesario?", "Bueno, está bien.", "Listo.", "Gracias."],
+      expect: { complete: true, state: { cameraDone: true, shoesOff: true, walked: true } }, auto: AUTO, setup: (s) => { s.alarm = true; s.camera = true; s.bagCheck = false; } },
+    { name: "a driver's license isn't the ID", turns: ["Aquí tiene mi licencia y mi pase de abordar.", "Aquí está mi pasaporte.", "Listo.", "Listo.", "Gracias."],
+      expect: { complete: true, state: { docsDone: true, licShown: true } }, auto: AUTO, setup: (s) => { s.alarm = false; s.camera = false; s.bagCheck = false; } },
+    { name: "bag check: what if I drink it, and where to fill it (twist forced)", turns: ["Aquí tiene.", "Listo.", "Listo.", "Sí, es mía.", "¿Y si me la tomo?", "¿Dónde la puedo llenar?", "Gracias."],
+      expect: { complete: true, state: { bottleChoice: "drink_ok", collected: true } }, auto: AUTO, setup: (s) => { s.alarm = false; s.camera = false; s.bagCheck = true; } },
   ],
 };
 
