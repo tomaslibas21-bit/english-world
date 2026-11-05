@@ -37,7 +37,7 @@ import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { hintBinding } from "../../src/convo/target";
 import { lookFor, observe, usesPartner, type Heard, type ObserveStats } from "./runs-es";
-import { BINDINGS, codeSpeakers, idOf, reachFilter, reachOf } from "./reach-es";
+import { BINDINGS, LISTS, codeSpeakers, idOf, reachFilter, reachOf } from "./reach-es";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
 const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
@@ -216,7 +216,8 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         } else if (ph.entities.length === 1 && !ph.values.length) {
           // the item lists it was heard with (else every list), each item bound as the line binds items of its kind
           const P = ph.entities[0];
-          const lists = s?.lists.get(P);
+          const read = LISTS[`${sit.id}:${lid}`];
+          const lists = read ? new Set([...read, ...(s?.lists.get(P) ?? [])]) : s?.lists.get(P);
           // a line and its "_pl" twin heard with the two kinds apart (one for the always-plural items, the other for
           // the rest: s74's sayN, s73's veg_no) keep them apart
           const kinds = (l: string) => new Set(["sg", "pl"].filter((k) => said.get(l)?.qty.has(`${P}|${k}`)));

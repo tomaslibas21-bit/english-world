@@ -7,7 +7,7 @@ import { placeholders, setVariety } from "../../src/convo/compose";
 import { chooseVariety } from "../../src/state/variety";
 import { ACCENTS, CAST, SCENES, accentOf, castingProblems, roleOf, styleFor, whoOf } from "../../tools/es-voices/casting-es";
 import { geminiTextEs, likenessEs, numbersToDigitsEs, syllables, withFx } from "../../tools/es-voices/voice-batch-es";
-import { BINDINGS, codeSpeakers, reachFilter, reachOf } from "../../tools/es-voices/reach-es";
+import { BINDINGS, LISTS, codeSpeakers, reachFilter, reachOf } from "../../tools/es-voices/reach-es";
 import { betterWhy, mergeUtts } from "../../tools/es-voices/lines-es";
 import { hintBinding } from "../../src/convo/target";
 import { modelAnswers } from "../../src/convo/suggest";
@@ -124,6 +124,11 @@ describe("the values a line can really be said with (reach-es.ts)", () => {
       expect(need.length, k).toBeGreaterThan(0);
       expect(bs.length, k).toBeGreaterThan(0);
       for (const b of bs) for (const n of need) expect(n in b, `${k} binds ${n}`).toBe(true);
+    }
+    for (const [k, lists] of Object.entries(LISTS)) {
+      const [sid, lid] = k.split(":");
+      expect(sit(sid).lines[lid], k).toBeTruthy();
+      for (const l of lists) expect(sit(sid).entities?.[l]?.length, `${k}: ${l}`).toBeGreaterThan(0);
     }
   });
   it("lists the lines with two placeholders the code binds together", () => {

@@ -167,8 +167,8 @@ export function usesPartner(sit: SituationDef): boolean {
   return partnerCache.get(sit.id)!;
 }
 
-interface Moment { conv: Conversation; origin: Conversation; step: string; key: string }
-const MOMENTS_KEPT = 64, MOMENTS_PROBED = 16, TRIGGERS = 2;
+interface Moment { conv: Conversation; origin: Conversation; step: string; pending: string; done: boolean; key: string }
+const MOMENTS_KEPT = 64, MOMENTS_PROBED = 24, TRIGGERS = 4;
 
 /** Plays a conversation every way the list knows: random runs, the sims, and (with more than one speaker) the probes.
  *  Returns the handler errors (as fuzzSituation does). */
@@ -192,7 +192,7 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
     let m = moments.get(floor);
     if (!m) moments.set(floor, (m = new Map()));
     if (m.has(key) || (!fromSim && m.size >= MOMENTS_KEPT)) return;
-    m.set(key, { conv: fork(conv, keep, m.size + 1), origin: conv, step: conv.step ?? "", key });
+    m.set(key, { conv: fork(conv, keep, m.size + 1), origin: conv, step: conv.step ?? "", pending: conv.pending?.id ?? "", done: conv.completed, key });
   };
   // `floor`: who held the floor when the turn began, for lines said again from an earlier turn ("¿Puede repetir?"
   // replays them untagged): p26's recorded message, replayed, still never holds the floor
@@ -252,13 +252,15 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
   stats.floors = floors;
   stats.moments = floors.reduce((a, f) => a + moments.get(f)!.size, 0);
   if (opts.probes !== false && floors.length > 1) {
-    // a spread of moments per person: one per step first, then the other open questions
+    // a spread of moments per person: one for each step, then for each open question, then the goodbye (the task done:
+    // Lucía answers the bill question when she said goodbye last), then the rest
     const chosen = new Map<string, Moment[]>();
     for (const f of floors) {
       const all = [...moments.get(f)!.values()];
-      const bySteps: Moment[] = [], seenSteps = new Set<string>();
-      for (const m of all) if (!seenSteps.has(m.step)) { seenSteps.add(m.step); bySteps.push(m); }
-      chosen.set(f, [...bySteps, ...all.filter((m) => !bySteps.includes(m))].slice(0, MOMENTS_PROBED));
+      const picked: Moment[] = [];
+      const round = (by: (m: Moment) => string) => { const seen = new Set(picked.map(by)); for (const m of all) if (!picked.includes(m) && !seen.has(by(m))) { seen.add(by(m)); picked.push(m); } };
+      round((m) => m.step); round((m) => m.pending); round((m) => String(m.done));
+      chosen.set(f, [...picked, ...all.filter((m) => !picked.includes(m))].slice(0, MOMENTS_PROBED));
     }
     const done = new Set<string>();
     let n = 0;
