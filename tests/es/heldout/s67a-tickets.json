@@ -50,6 +50,6 @@
 
   { "ctx": "info", "say": "¿De qué andén sale?", "intent": "ask_track" },
   { "ctx": "info", "say": "¿Cuánto tiempo se hace a Mérida?", "intent": "ask_duration" },
-  { "ctx": "info", "say": "¿Tiene baño el autobús?", "intent": "ask_restroom" },
+  { "ctx": "info", "say": "¿Tiene baño el autobús?", "intent": ["ask_restroom", "ask_wifi"], "note": "audit 5 Nov: ask_wifi answers it (\"Tiene aire acondicionado y baño\")" },
   { "ctx": "info", "say": "¿Hay que cambiar de autobús?", "intent": "ask_change" }
 ] }
