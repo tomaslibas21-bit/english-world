@@ -780,10 +780,10 @@ switched on by the Spanish theme (new fields documented in src/game/world/theme.
 Round 3 of the rating (the side notes' GRAPHICS.md), judged through the new walking camera (the premium movement): the
 places the conversations send the learner to that the rooms lacked, the areas still under 8, the garments the portraits
 show, and the zócalo's laureles. All switched on by the Spanish theme (new fields in src/game/world/theme.ts: `fade`,
-`regions`, `farHide`, `townMerge`, `cables`, `sidewalks`, `terrace`, `beach`, `atrialCross`, `mirador`, `taxis`, and
-`roomExtras` `services`, `terminalMx`, `roomsMx`; new look options in src/content/npcs.ts: `braid`, `jipi`,
-`bandana`, `embroidered`, `hipil`, `guayabera`, `rebozo`, `waistapron`, `face`); Maple Harbor's values switch every one
-of them off and its cast uses none of the options.
+`regions`, `farHide`, `townMerge`, `panelAtlas`, `cables`, `sidewalks`, `terrace`, `beach`, `atrialCross`, `mirador`,
+`taxis`, and `roomExtras` `services`, `terminalMx`, `roomsMx`; new look options in src/content/npcs.ts: `braid`,
+`jipi`, `bandana`, `embroidered`, `hipil`, `guayabera`, `rebozo`, `waistapron`, `face`); Maple Harbor's values switch
+every one of them off and its cast uses none of the options.
 
 - **Every place a line mentions** (`services`): the airport's **Cafetería** between check-in and security, a counter
   faced with talavera, the espresso machine, conchas, two tables, and the **Sanitarios** doors next to it (s64a:
@@ -834,6 +834,12 @@ of them off and its cast uses none of the options.
   The same pictures (paired shots with the merger off and on: only the characters' sub-pixel poses differ) in about half
   the draw calls and 40–70 thousand fewer triangles at every outdoor view on a phone; the town's signs drawn after the
   squares (a coach's destination over its windshield). Every view at or under Maple Harbor's draw calls.
+- **The rooms' signs and posters** (`panelAtlas`; interiors.ts `panelAtlas`): each room's flat signs and posters
+  (wallPanel) drawn on one canvas, each at its own size with its edges stretched into the gaps between them, and shown
+  as one mesh, one quad where each panel stood (a stand-in object while the room is built, so a panel the room's code
+  still turns, as El Muelle's chalkboard, keeps its tilt); this round's small room pieces join the room's merged meshes.
+  The same pictures; every room at or under its draw calls before the round (up to 6 fewer). Maple Harbor keeps a
+  mesh each.
 
 ## The tasks (in order)
 
