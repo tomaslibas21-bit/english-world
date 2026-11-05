@@ -281,17 +281,24 @@ function expectSend(c: Ctx) {
   });
 }
 
-/** Paul sometimes offers to help when the learner is behind. */
+/** A thanks that turns the help down: "No, thanks", "Thanks, I'm fine", "That's okay, thanks", "Thanks, but I can do it". */
+const DECLINE = /\b(i'?m|i am)\s+(fine|good|ok|okay|all right|alright)\b|\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bno need\b|\bi can (do|manage|handle)\b|\bbut\b/i;
+const turnYn = (c: Ctx): string | undefined => (c as any).conv?.out?.parse?.yn;
+
+/** Paul sometimes offers to help when the learner is behind. A thanks accepts it; a thanks with a no turns it down. */
 function afterWhen(c: Ctx) {
   if (c.s.update !== "behind" || !c.s.paulHelps || c.s.helpOffered) return;
   c.s.helpOffered = true;
   P(c, "paul_help");
+  const accept = one("help", (cc) => { cc.s.helpAccepted = true; P(cc, "paul_talk_later"); });
+  const decline = one("help", (cc) => { cc.s.helpAccepted = false; P(cc, "paul_ok_short"); });
+  const thanks = (cc: Ctx) => (turnYn(cc) === "no" || DECLINE.test(cc.heard) ? decline(cc) : accept(cc));
   c.expect({
     id: "help_offer", optional: true, expects: ["accept_help"], hints: ["g_yesno"],
     suggest: [{ lt: "Priimti Paulo pagalbą arba padėkoti", hint: "g_yesno" }],
-    yes: one("help", (cc) => P(cc, "paul_talk_later")),
-    no: one("help", (cc) => P(cc, "paul_ok_short")),
-    on: { accept_help: one("help", (cc) => P(cc, "paul_talk_later")), g_thanks: one("help", (cc) => P(cc, "paul_talk_later")) },
+    yes: (cc) => thanks(cc),
+    no: decline,
+    on: { accept_help: accept, g_thanks: thanks },
   });
 }
 
@@ -1107,6 +1114,12 @@ export const meeting: SituationDef = {
       "i would like to work from home (on friday | tomorrow | next week)",
       "is it okay if i work from home [on friday | tomorrow]",
       "i (need | want) to work from home [on friday | tomorrow]",
+      // time off (it got "Good point. Let's put it on the agenda for next week.")
+      "(can | could | may) i (leave | go home) (early | a bit early | a little early) [on {day} | tomorrow | today | this {day}]",
+      "(can | could | may) i (come in | start) (late | a bit late | a little late | later) [on {day} | tomorrow | this {day}]",
+      "(can | could | may) i (take | have) [the | a] (day | afternoon | morning | {day}) off [on {day} | tomorrow | next week]",
+      "(can | could | may) i (take | have) (tomorrow | {day}) off",
+      "is it (okay | ok | all right) if i (leave early | take [the] (day | afternoon) off | come in late) [on {day} | tomorrow]",
     ] },
     aob_lunch: { patterns: [
       "when is the team (lunch | dinner | party) #h:b_lunch",
@@ -2111,6 +2124,7 @@ export const meeting: SituationDef = {
     task_ctx(c, sl) { if (!live(c)) return; react(c, "working", sl.task); },
     when_ans(c) {
       if (!live(c)) return;
+      if (c.step === "aob" || c.s.aobAsked) return;
       if (!c.s.update) { react(c, "ok"); return; }
       K(c, "when_ok");
     },
@@ -2285,6 +2299,11 @@ export const meeting: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): a time-off request at "Any other business?" is answered as one
+    { say: "Can I leave early on Friday?", intent: "aob_wfh", step: "aob", not: ["aob_other_ctx", "when_ans"] },
+    { say: "Could I take Friday off?", intent: "aob_wfh", step: "aob" },
+    { say: "Can I come in late tomorrow?", intent: "aob_wfh", step: "aob" },
+    { say: "Should we order pizza?", intent: "aob_other_ctx", step: "aob", not: ["aob_wfh"] },
     // Sara on mute
     { say: "Sara, you're on mute!", intent: "tell_mute", step: "mute" },
     { say: "I think you're muted.", intent: "tell_mute", step: "mute" },
@@ -2414,6 +2433,11 @@ export const meeting: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): Paul's help turned down with a thanks; a time-off request at "Any other business?"
+    { name: "audit: help declined with thanks, leaving early on Friday", turns: [
+      "Sara, you're on mute!", "I'm a little behind on the report. It'll be ready on Monday.", "That's okay, thanks.", "Could you clarify that?", "Yes, thanks!",
+      "No, nothing to add.", "I'm not sure I agree.", "It's too risky.", "Sure, let's talk later.", "I can do that.", "Can I leave early on Friday?", "No, that's all.", "Thanks, everyone!",
+    ], expect: { complete: true, state: { helpAccepted: false } }, auto: AUTO, setup: (s) => { s.paulHelps = true; s.notesTwist = false; s.dlTwist = false; s.paulAdds = false; } },
     { name: "happy path", turns: [
       "Sara, you're on mute!", "Yes, we can hear you now!", "I finished the report.", "Sure, I'll send it after the meeting.", "Could you clarify that?", "Yes, thanks!",
       "I'd like to add something.", "We should test it on older phones.", "I'm not sure I agree.", "It's too expensive.", "Sure, let's talk later.",

@@ -323,6 +323,11 @@ function runDeferred(c: Ctx) {
 const jobVar = (c: Ctx, id: string) => ({ id: `${c.player.gender === "f" ? "f" : "m"}_${id}` });
 
 type Topic = "name" | "know" | "from" | "job" | "time" | "like" | "fun" | "reading" | "cafe" | "live";
+/** Mark's (and Sophie's) yes/no questions: a yes or no said with "And you?" still answers them. */
+const YN_STEPS = ["like", "cafe", "drink", "drink2"];
+
+/** Mark's reaction in this very turn already told his side ("Wow! I only moved here in May.", "Me too! …"). */
+const toldNow = (c: Ctx, topic: Topic) => { c.s.__toldTurn = { ...(c.s.__toldTurn || {}), [topic]: turn(c) }; };
 
 /** Mark tells the learner about himself (the learner asked, or asked back with "And you?"). */
 function markAbout(c: Ctx, topic: Topic) {
@@ -330,7 +335,9 @@ function markAbout(c: Ctx, topic: Topic) {
   if (!once(c, "mark_" + topic)) return;
   c.s.told = c.s.told || {};
   c.s.told[topic] = true;
-  switch (topic) {
+  // "About a year. And you?": "Wow! I only moved here in May." already answered it (not "I only moved here in May." again)
+  const said = c.s.__toldTurn?.[topic] === turn(c);
+  if (!said) switch (topic) {
     case "know": M(c, "mark_know"); c.s.danceTold = true; break;
     case "from": M(c, "mark_from"); break;
     case "job": M(c, "mark_job"); break;
@@ -668,7 +675,7 @@ export const party: SituationDef = {
     like_no: { patterns: [
       "[no] i do not (really | ) like it [very much] [yet]", "[no] i do not (really | ) like it (here | in maple harbor | very much here) [yet]", "i do not (really | ) like (this town | this place | maple harbor | it here)",
       "it is (hard | difficult | too quiet | too cold | too expensive | boring)",
-      "[no] not (so | very) much",
+      "[no] not (so | very) much", "[no] not (much | really | that much | too much) [really] [yet]",
       "it is (hard | difficult | too quiet | too cold | too expensive | boring | too small | too far) (here | for me)", "(it is | life is) (very | too | really) expensive here",
       "i (do not | can not) get used to it", "i want to go (home | back)",
     ] },
@@ -1334,8 +1341,8 @@ export const party: SituationDef = {
       ask: (c) => askTopic(c, "like", "like_q"),
       expects: ["like_yes", "like_mixed", "like_no", "ask_back", "q_like"],
       suggest: [{ lt: "Pasakyti, ar čia patinka", hint: "like" }, { lt: "Paklausti Marko to paties", hint: "back" }],
-      yes: (c) => { done(c, "like"); M(c, "like_yes"); },
-      no: (c) => { done(c, "like"); M(c, "like_no"); } },
+      yes: (c) => party.handlers.like_yes(c, {}, { intent: "like_yes", slots: {}, tags: [] }),
+      no: (c) => party.handlers.like_no(c, {}, { intent: "like_no", slots: {}, tags: [] }) },
     { id: "fun", when: (c) => !!c.s.plan.includes("fun") && isDone(c, "job"), done: (c) => isDone(c, "fun"),
       ask: (c) => askTopic(c, "fun", "fun_q"),
       expects: ["fun_ans", "fun_ctx", "fun_none", "ask_back", "q_fun"],
@@ -1353,7 +1360,8 @@ export const party: SituationDef = {
       yes: (c) => party.handlers.cafe_ans_yes(c, {}, { intent: "cafe_ans_yes", slots: {}, tags: [] }),
       no: (c) => party.handlers.cafe_ans_no(c, {}, { intent: "cafe_ans_no", slots: {}, tags: [] }) },
     { id: "your_turn", when: (c) => !c.s.askedBack && isDone(c, "job"), done: (c) => !!c.s.askedBack || !!c.s.turnSkipped,
-      ask: (c) => { c.s.lastTopic = null; M(c, "your_turn"); M(c, "ask_me"); },
+      // asked again ("Sure!", "Yes."): only "Ask me something!" (not both lines once more)
+      ask: (c) => { c.s.lastTopic = null; if (!c.s.yourTurnSaid) { c.s.yourTurnSaid = true; M(c, "your_turn"); } M(c, "ask_me"); },
       expects: ["q_from", "q_job", "q_know", "q_time", "q_like", "q_fun", "q_live", "q_chef", "q_dance", "q_reading"],
       suggest: [{ lt: "Paklausti Marko apie jį patį", hint: "ask_mark" }],
       help: (c) => { c.s.turnSkipped = true; M(c, "just_tell"); } },
@@ -1462,9 +1470,10 @@ export const party: SituationDef = {
       const m = monthsFrom(slots.dur);
       M(c, m === Infinity ? "time_life" : m >= 7 ? "time_long" : m >= 3 ? "time_same" : "time_short");
       c.s.told = { ...(c.s.told || {}), time: true };
+      if (m !== Infinity) toldNow(c, "time"); // the reaction says "I moved here in May" itself
     },
-    like_yes(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_yes"); },
-    like_mixed(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_mixed"); },
+    like_yes(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_yes"); toldNow(c, "like"); },
+    like_mixed(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_mixed"); toldNow(c, "like"); },
     like_no(c) { if (!live(c)) return; if (!once(c, "like")) return; done(c, "like"); M(c, "like_no"); },
     fun_ans(c, slots, seg) { if (!live(c)) return; funAnswer(c, slots, seg.tags); },
     fun_ctx(c, slots) { if (!live(c)) return; funAnswer(c, slots); },
@@ -1472,6 +1481,17 @@ export const party: SituationDef = {
     book_ctx(c) { if (!live(c)) return; if (!once(c, "book")) return; done(c, "reading"); M(c, "reading_react"); },
     ask_back(c) {
       if (!live(c)) return;
+      // "Yes. And you?" / "No, and you?": the yes or no answers the open question first (it was lost, and the question came back)
+      const yn = (c as any).conv?.out?.parse?.yn as "yes" | "no" | undefined;
+      const st = YN_STEPS.includes(c.step ?? "") ? party.steps.find((x) => x.id === c.step) : undefined;
+      const answer = yn && st && !st.done(c) ? (yn === "yes" ? st.yes : st.no) : undefined;
+      // the drink is Sophie's offer: "Yes, please. And you?" is not a question for Mark (it got "I'm from Chicago")
+      if (c.step === "drink" || c.step === "drink2") {
+        if (answer) answer(c);
+        return;
+      }
+      if (answer && c.step === "cafe") { markAbout(c, "cafe"); answer(c); return; } // "No, and you?": his answer, then the invitation
+      if (answer) answer(c);
       // "I work with Sophie. And you?": about what the learner has just told, else about Mark's last question
       const now = c.s.__toldNow?.t === turn(c) ? (c.s.__toldNow.topic as Topic) : null;
       const tp = now ?? (c.s.lastTopic as Topic | null) ?? (isDone(c, "from") ? "job" : "from");
@@ -1546,6 +1566,10 @@ export const party: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): "Not much, and you?" to "Do you like it here?" is a no (it was read as "nothing much" for fun)
+    { say: "Not much, and you?", intent: "like_no", step: "like", not: ["fun_none"] },
+    { say: "Not really.", intent: "like_no", step: "like" },
+    { say: "Not much, really.", intent: "fun_none", step: "fun", not: ["like_no"] },
     { say: "Hi, I'm Tomas. Nice to meet you!", intent: "intro_name", slots: { name: "Tomas" } },
     { say: "Nice to meet you too!", intent: "nice_meet" },
     { say: "Tomas", intent: "name_ctx", step: "name" },
@@ -1632,6 +1656,9 @@ export const party: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): a yes with "And you?" still answers the question
+    { name: "audit: yes, and you?", turns: ["Hi, I'm Tomas. Nice to meet you!", "I'm from Lithuania.", "Yes, that's right!", "I'm a nurse.", "Yes. And you?", "Sure! Here's mine: 555-0142."],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.plan = ["from", "job", "numbers", "like"]; s.mishearTwist = false; s.cafeTwist = false; } },
     // Mark's optional topics are pinned to the ones the script answers; no drink before "how do you know Sophie?",
     // no mishearing ("Yes, that's right!" answers "That's by the Baltic Sea, right?")
     { name: "reciprocal small talk", turns: ["Hi, I'm Tomas. Nice to meet you!", "We work together. And you?", "I'm from Lithuania. How about you?", "Yes, that's right!", "I'm a nurse. And what do you do?", "About a year.", "Yes, I love it! People are so friendly.", "I like running and reading.", "A funny travel book.", "Sure! Here's mine: 555-0142.", "It was great to meet you too!"], expect: { complete: true }, auto: AUTO,

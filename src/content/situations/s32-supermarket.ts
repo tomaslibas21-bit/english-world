@@ -214,7 +214,10 @@ function paidCash(c: Ctx, tendered?: number) {
 function handMoney(c: Ctx, amount: number | undefined) {
   if (c.s.paid) { c.say("paid_thanks"); return; }
   if (!c.s.totalSaid) { c.say("ack"); return; }
-  if (typeof amount === "number" && amount < total(c)) { c.say("short_cash", { total: total(c) }); c.hold(); return; }
+  // "Here's ten" (short) and then "And here's five more": the two together
+  if (typeof amount === "number" && c.s.cashIn && /\b(more|another|too|also|plus)\b/i.test(c.heard)) amount += c.s.cashIn;
+  if (typeof amount === "number" && amount < total(c)) { c.s.cashIn = amount; c.say("short_cash", { total: total(c) }); c.hold(); return; }
+  c.s.cashIn = 0;
   if (c.s.method === "card" || c.s.method === "phone") { charged(c); return; }
   paidCash(c, typeof amount === "number" ? amount : c.s.tender);
 }
@@ -582,7 +585,10 @@ export const supermarket: SituationDef = {
       "i will put (it | them | everything) in my (bag | backpack | purse) #own", "(it is | that is) (fine | okay) i have (a bag | one | my own) #own",
       "i do not want (a bag | bags)",
     ] },
-    bag_no_ctx: { patterns: ["[no] i do not (need | want) (it | one | any)", "[no] i am (fine | good | okay) without (one | it)", "[no] i (have | brought) one #own"] },
+    // at "Do you need a bag?" only: "That's fine, thanks" / "I'm good" is a polite no (elsewhere it is a yes), "Yes, I have one here" is my own bag
+    bag_no_ctx: { patterns: ["[no] i do not (need | want) (it | one | any)", "[no] i am (fine | good | okay) without (one | it)", "[no] i (have | brought) one #own",
+      "[no] (that is | it is) (fine | okay | ok | all right) [thanks | thank you]", "[no] i am (fine | good | okay | ok | all right) [thanks | thank you]", "[no] no need [thanks | thank you]",
+      "[yes] i (have | brought | got) (one | my own | my own bag | a bag) (here | with me | today) #own", "[yes] i (brought | have got) (one | my own) #own"] },
     bag_price_ctx: { patterns: ["(is | are) (it | they) free", "(does | do) (it | they) cost [money | extra | anything]"] },
     bag_price_q: { patterns: [
       "how much (is | are) (a bag | the bags | bags | a paper bag | a plastic bag | one bag) #h:q_bag_price", "(do | does) (the bags | bags | a bag) cost [money | extra | anything]",
@@ -1283,7 +1289,7 @@ export const supermarket: SituationDef = {
         if (!c.s.bagQ) c.s.bagQ = c.pick(["would", "kind", "need"]);
         c.say(c.s.bagQ === "kind" ? "bag_q_kind" : c.s.bagQ === "need" ? "bag_q_need" : "bag_q_would");
       },
-      expects: ["bag_want", "bag_kind_ctx", "bag_kind_neg_ctx", "bag_no", "bag_no_ctx", "bag_price_q", "bag_price_ctx", "ask_bags", "qty_one_ctx"],
+      expects: ["bag_want", "bag_kind_ctx", "bag_kind_neg_ctx", "bag_no", "bag_no_ctx", "bag_price_q", "bag_price_ctx", "ask_bags", "qty_one_ctx", "change_q_ctx"],
       suggest: [{ lt: "Atsakyti, ar reikia maišelio (popierinis ar plastikinis)", hint: "bags" }],
       // "Yes" (even to "Paper or plastic?"): a bag; the kind question follows once (a second "yes" = paper)
       yes: (c) => { c.s.bags = 1; c.s.askKind = true; changed(c); },
@@ -1303,7 +1309,7 @@ export const supermarket: SituationDef = {
         if (c.s.method) { chain(c); return; }
         if (!first || c.chance(0.75)) c.say("ask_pay");
       },
-      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card", "total_q", "price_wrong_ctx", "qty_one_ctx", "chips_one", "chips_two"],
+      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card", "total_q", "price_wrong_ctx", "qty_one_ctx", "chips_one", "chips_two", "change_q_ctx"],
       suggest: [{ lt: "Susimokėti kortele, grynaisiais ar telefonu", hint: "pay" }] },
     // cash: Marcus waits until the money is handed over, then counts the change
     { id: "cash", when: (c) => c.s.method === "cash" && !c.s.paid && !!c.s.totalSaid, done: (c) => !!c.s.paid,
@@ -1572,7 +1578,9 @@ export const supermarket: SituationDef = {
       const p = slots.price as number | undefined;
       if (c.s.paid || typeof p !== "number") { c.say("ack"); return; }
       if (c.s.totalSaid && p < total(c)) { c.say("short_cash", { total: total(c) }); c.hold(); return; }
-      c.s.tender = p; c.say("sure"); c.hold(); // the learner then hands it over
+      c.s.tender = p; c.say("sure");
+      if (c.step === "pay" || c.step === "cash") c.hold(); // the learner then hands it over (at the bags, the bag question comes again)
+      if (!c.s.method) c.s.method = "cash"; // "Do you have change for a fifty?": cash
     },
     keep_change(c) {
       c.say("no_tips");
@@ -1643,6 +1651,12 @@ export const supermarket: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): "That's fine, thanks" to "Do you need a bag?" is no bag; "Yes, I have one here" is my own bag
+    { say: "That's fine, thanks.", intent: "bag_no_ctx", step: "bags" },
+    { say: "I'm good, thanks.", intent: "bag_no_ctx", step: "bags" },
+    { say: "Yes, I have one here.", intent: "bag_no_ctx", step: "bags", not: ["rewards_have"] },
+    { say: "Do you have change for a fifty?", intent: "change_q_ctx", step: "pay", not: ["ask_have_unknown"] },
+    { say: "Do you have change for a fifty?", intent: "change_q_ctx", step: "bags", not: ["ask_have_unknown"] },
     // self-checkout
     { say: "Excuse me!", intent: "call_help_ctx", step: "sco" },
     { say: "Excuse me, can you help me?", intent: "call_help_ctx", step: "sco" },
@@ -1807,6 +1821,9 @@ export const supermarket: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): "That's fine, thanks" to the bag is no bag; change for a fifty when paying
+    { name: "audit: no bag, change for a fifty", turns: ["Yes, thanks.", "No, I don't have one.", "That's fine, thanks.", "Do you have change for a fifty?", "Here you go."],
+      expect: { complete: true, state: { bags: 0 } }, auto: AUTO, setup: (s) => { s.sco = false; s.priceCheck = false; s.wine = false; s.wineTwist = false; s.joinOffer = false; } },
     // Twists and optional questions are pinned per sim (`setup` runs right after init): the self-checkout replaces
     // the greeting, and the cash back question would take the "Okay." meant for "Tap it here and enter your PIN".
     { name: "happy path: card and PIN", auto: AUTO, expect: { complete: true },

@@ -257,5 +257,12 @@
   {"ctx": "p_report", "say": "The AC in my room is working fine now.", "intent": "any", "not": ["pr_ac"]},
   {"ctx": "fan_or_room", "say": "Can I have another room, please?", "intent": "ch_move"},
   {"ctx": "fan_or_room", "say": "I don't need a different room.", "intent": "any", "not": ["ch_move"]},
-  {"ctx": "anything", "say": "That's all I need, thank you.", "intent": "done"}
+  {"ctx": "anything", "say": "That's all I need, thank you.", "intent": "done"},
+  {"ctx": "late", "say": "Until two, please.", "intent": "late_two", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "late", "say": "Yes.", "intent": "any", "not": ["late_two"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "late", "say": "Okay, thanks.", "intent": "any", "not": ["late_two"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "late", "say": "Yes, thanks.", "intent": "any", "not": ["late_two"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "card", "say": "Here's a hundred dollars.", "intent": "deposit_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "card", "say": "I'll leave a cash deposit.", "intent": "deposit_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "anything", "say": "Here's a hundred dollars.", "intent": "any", "not": ["deposit_ctx"], "note": "logic audit 5 Nov 2026"}
 ]}

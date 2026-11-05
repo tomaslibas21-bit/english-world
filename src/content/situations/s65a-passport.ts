@@ -8,7 +8,6 @@
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "../types";
 import { ent, t } from "../dsl";
-import { expectHowAreYou } from "../global";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -250,6 +249,26 @@ function setPurpose(c: Ctx, p: string, ev?: string) {
   else ack(c, 0.4);
 }
 
+/** "How are you doing today?" (the global one) whose answer may say the flight was long: one reply, the sympathy
+ *  ("Oh no, I'm sorry to hear that."), then the passport (it was "Nice!", the passport, then the sympathy). */
+function expectHowAreYouPP(c: Ctx) {
+  const bad = (cc: Ctx) => ((cc as any).conv?.out?.parse?.segments ?? []).some((sg: any) => sg.intent === "long_flight" || sg.intent === "g_howareyou_bad");
+  const reply = (cc: Ctx) => {
+    if (cc.s.hayDone) return;
+    cc.s.hayDone = true;
+    if (bad(cc)) cc.say("g_sorry_to_hear");
+    else if (/\b(and you|how about you|you\?)/i.test(cc.heard)) cc.say("g_asked_back");
+    else cc.say("g_glad");
+    cc.ask("passport");
+  };
+  c.expect({
+    id: "howareyou", optional: true, expects: ["g_howareyou_answer", "g_howareyou_bad", "long_flight"], hints: ["g_howareyou"],
+    suggest: [{ lt: "Atsakyti, kaip sekasi (ir paklausti atgal)", hint: "g_howareyou" }],
+    on: { g_howareyou_answer: reply, g_howareyou_bad: reply, g_ok: reply, long_flight: reply },
+    yes: reply,
+  });
+}
+
 function retYes(c: Ctx) {
   c.s.ret = true;
   if (c.s.showTicket && !c.s.ticketShown) {
@@ -273,6 +292,8 @@ function retYes(c: Ctx) {
 function retNo(c: Ctx) {
   c.s.ret = false;
   c.say("return_needed");
+  // "I haven't bought it yet" / "It's one-way": nothing to look up in the email
+  if (/\b(not bought|haven'?t bought|have not bought|not yet|will buy|one[- ]way|don'?t know when|do not know when)\b/i.test(c.heard)) { c.say("leave_90"); return; }
   c.say("check_email");
   const found = (cc: Ctx) => { cc.s.ret = true; cc.say("ticket_ok"); };
   const none = (cc: Ctx) => { cc.say("leave_90"); };
@@ -574,7 +595,8 @@ export const passport: SituationDef = {
       "(in | after) {dur} #h:r_in", "[yes] (i fly | i am flying | i go | i am going) [back | home] in {dur}",
       "[yes] next (week | month)", "[yes] at the end of (the month | june | july | august | september)", "[yes] in (june | july | august | september | october)",
     ] },
-    return_no: { patterns: ["[no] not yet", "[no] i do not have (one | it | a return ticket | a ticket | a return flight) yet", "[no] i do not have (a return ticket | a ticket back | a return flight)", "[no] i have not bought (one | it) yet", "i will buy it (later | here)"] },
+    return_no: { patterns: ["[no] not yet", "[no] i do not have (one | it | a return ticket | a ticket | a return flight) yet", "[no] i do not have (a return ticket | a ticket back | a return flight)", "[no] i have not bought (one | it) yet", "i will buy it (later | here)",
+      "[no] (it is | i have) (a | only a | just a) one way [ticket]", "[no] i (only | just) have a one way [ticket]", "[no] i do not know when i am (going back | leaving | flying back | flying home | going home) [yet]"] },
     first_yes: { patterns: [
       "[yes] (it is | this is) my first (time | visit | trip) [@in_us | to the us | to america] #h:f_first", "[yes] (my | the) first time", "[yes] first time [here]",
       "[yes] i have never been (here | to the us | to the united states | to america) [before]", "[yes] never [before]", "[yes] it is the first time",
@@ -1383,7 +1405,7 @@ export const passport: SituationDef = {
     if (c.chance(0.3)) {
       c.say("greet_howareyou");
       c.s.askedPassport = true;
-      expectHowAreYou(c, (cc) => cc.ask("passport"));
+      expectHowAreYouPP(c);
       return;
     }
   },
@@ -1402,6 +1424,9 @@ export const passport: SituationDef = {
     purpose(c, slots, seg) {
       const tags = allTags(slots, seg);
       const p = (slots.purpose as string | undefined) ?? tagVal(tags, "pv:");
+      // a bare "Business." / "Work." / "Both." at a later question ("What's your occupation?", the food) is no change of
+      // purpose: it rewrote a vacation into business; the open question comes again
+      if (c.s.purpose && c.step !== "purpose" && c.step !== "biz_kind" && c.heard.trim().split(/\s+/).length <= 3 && !/\b(here|came|trip|visit|purpose)\b/i.test(c.heard)) return;
       if (!p) { c.say("purpose_help"); c.hold(); return; }
       setPurpose(c, p, tagVal(tags, "ev:"));
     },
@@ -1551,6 +1576,11 @@ export const passport: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): no return ticket yet (no email to check)
+    { say: "It's one-way.", intent: "return_no" },
+    { say: "I only have a one-way ticket.", intent: "return_no" },
+    { say: "I don't know when I'm going back.", intent: "return_no" },
+    { say: "Yes, I have a return ticket.", intent: "return_yes", not: ["return_no"] },
     { say: "No plants or animals.", intent: "declare_nothing" },
     { say: "No food and no animals", intent: "declare_nothing" },
     { say: "I'm not bringing any food or plants", intent: "declare_nothing" },
@@ -1664,6 +1694,10 @@ export const passport: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): no return ticket yet (no email to check); the purpose stays (tests/logic-audit-batch1.test.ts: a bare "Business." at the job)
+    { name: "audit: no return ticket yet", turns: ["Here you go.", "I'm here on vacation.", "Two weeks.", "At the Harborview Hotel.", "I haven't bought it yet.", "I'm a teacher."],
+      expect: { complete: true, state: { purpose: "vacation" } }, auto: PP_AUTO,
+      setup: (s) => { s.askReturn = true; s.askJob = true; s.showTicket = false; s.askFirst = false; s.askAlone = false; s.askCash = false; s.askBizKind = false; s.askWho = false; s.dogTwist = false; } },
     { name: "happy path: vacation at the hotel", turns: ["Hi! Here's my passport.", "I'm here on vacation.", "Two weeks.", "At the Harborview Hotel.", "No, nothing to declare."],
       expect: { complete: true }, auto: PP_AUTO },
     // the officer asks for the address on every seed (the script gives it)

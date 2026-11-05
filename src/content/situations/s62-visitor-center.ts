@@ -320,6 +320,9 @@ function askWhere(c: Ctx) {
 /** Chuck recommends Sunny Cup and offers the way there (the lesson's goal). */
 function offerCafe(c: Ctx, afterRoute: boolean) {
   if (c.s.asked.includes("sunny_cup")) { c.say("ask_where"); c.hold(); return; }
+  // offered at most twice (as the map is): after a second side question the whole tip came a third time, and more
+  c.s.cafeOffers = (c.s.cafeOffers || 0) + 1;
+  if (c.s.cafeOffers > 2) { c.s.cafeNo = true; conv(c).advance(c as ConvCtx); return; } // on to what comes next
   c.say(afterRoute ? "offer_cafe" : "suggest_cafe");
   c.say("offer_directions");
   c.expect({ id: "cafe_offer", optional: true, expects: ["ask_where", "accept_ctx", "decline_ctx", "no_coffee"],

@@ -229,6 +229,15 @@ function kindList(c: Ctx) {
 }
 
 /** The order is complete: Mia serves it (the end of the conversation, or "Thanks, bye!" right after paying). */
+/** Something ordered after paying: the pay step comes back for the difference, and the goodbye comes again. */
+function reopenPay(c: Ctx, paidBefore: number) {
+  c.s.paidAmt = paidBefore;
+  c.s.paid = false; c.s.totalSaid = false; c.s.served = false;
+  if (c.s.__finished) { c.s.__finished = false; (c as any).conv.pending = null; } // the closing question gives way to the pay step
+}
+/** What is left to pay (after an extra, the extra alone). */
+const due = (c: Ctx) => total(c) - (c.s.paidAmt || 0);
+
 function serve(c: Ctx) {
   if (c.s.served) return;
   c.s.served = true;
@@ -646,9 +655,9 @@ export const cafe: SituationDef = {
       t("Sure, | it's | free. | The | password | is | on | the | board: | sunnycup22.", "Žinoma, | jis yra | nemokamas. | — | Slaptažodis | yra | ant | — | lentos: | sunnycup22.", "Žinoma, jis nemokamas. Slaptažodis ant lentos: sunnycup22.",
         { say: "Sure, it's free. The password is on the board: sunny cup two two.", spell: "sunnycup22", write: "Wi-Fi: SunnyCup · password: sunnycup22" }),
     ],
+    // one place only: with two variants, asking twice gave "in the back, on the left" and then "by the window" (5 Nov 2026)
     restroom: [
       t("It's | in the back, | on the left.", "Jis yra | gale, | kairėje.", "Gale, kairėje."),
-      t("Right | over | there, | by | the | window.", "Tiesiai | — | ten, | prie | — | lango.", "Štai ten, prie lango.", { flags: { 1: "“over” (over there): no separate Lithuanian word; ten carries the direction." } }),
     ],
     water: [
       t("Sure! | Here's | a | glass | of water.", "Žinoma! | Štai | — | stiklinė | vandens.", "Žinoma! Štai stiklinė vandens."),
@@ -879,6 +888,12 @@ export const cafe: SituationDef = {
         else c.say("ask_kind_muffin");
       },
       expects: ["order", "kind_ctx"],
+      no: (c) => {
+        const i = items(c).findIndex((x) => generic(x));
+        if (i >= 0) items(c).splice(i, 1);
+        if (c.s.paidAmt !== undefined && due(c) <= 0) { c.s.paid = true; c.s.totalSaid = true; } // only the extra came off: paid as before
+        if (!items(c).length) { c.say("reject_ok"); c.hold(); } else c.say("no_problem");
+      },
       // the kinds of what is being chosen (teas for "What kind of tea?")
       suggest: (c) => KIND_SUGGEST[kindAsked(c) ?? "coffee"] ?? KIND_SUGGEST.coffee,
       help: (c) => { kindList(c); } },
@@ -922,15 +937,15 @@ export const cafe: SituationDef = {
     { id: "name", when: (c) => c.s.dine === "togo" && c.s.askName, done: (c) => !!c.s.name,
       ask: (c) => c.say("ask_name"), expects: ["name_ctx"],
       suggest: [{ lt: "Pasakyti savo vardą", hint: "name" }] },
-    { id: "pay", done: (c) => !!c.s.paid,
+    { id: "pay", done: (c) => !!c.s.paid || (c.s.paidAmt !== undefined && due(c) <= 0),
       ask: (c) => {
         if (!c.s.totalSaid) {
           c.s.totalSaid = true;
-          if (c.chance(0.5)) c.say("pre_total");
-          c.say("say_total", { price: total(c) });
+          if (c.chance(0.5) && !c.s.paidAmt) c.say("pre_total");
+          c.say("say_total", { price: due(c) });
           if (c.s.cardDown) { c.say("card_down"); c.twist("card_down"); }
           else if (c.chance(0.35)) c.say("ask_pay_method");
-        } else c.say("say_total", { price: total(c) });
+        } else c.say("say_total", { price: due(c) });
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash"],
       suggest: [{ lt: "Susimokėti kortele, grynaisiais ar telefonu", hint: "pay" }] },
@@ -979,6 +994,7 @@ export const cafe: SituationDef = {
     order(c, slots, seg) {
       const list = toArr(slots.items?.item).map(fromSlot).filter(Boolean) as Item[];
       const before = items(c).length;
+      const paidBefore = c.s.paid ? (c.s.paidAmt ?? total(c)) : undefined;
       // Out of oat milk (twist)
       const oat = list.find((i) => i.milk === "oat");
       const fixed = addItems(c, list, [...seg.tags, ...toArr(slots.items?.item).flatMap((x: any) => x.__tags || [])]);
@@ -992,6 +1008,8 @@ export const cafe: SituationDef = {
       const added = items(c).slice(before);
       if (added.length && added.every((i) => !generic(i)) && c.chance(0.7)) c.say("ack_order");
       if (c.step === "more" && items(c).length > before) c.s.moreDone = false;
+      // "Oh, and a croissant" after paying: paid like the rest (the difference), then served (it was added for free)
+      if (paidBefore !== undefined && items(c).length > before) reopenPay(c, paidBefore);
     },
     size_ans(c, slots, seg) {
       if (!drinks(c).length) { c.say("ask_order"); c.hold(); return; }
@@ -1020,25 +1038,28 @@ export const cafe: SituationDef = {
     pay_card(c) {
       if (!c.s.totalSaid) { c.say("card_later"); c.s.payMethod = "card"; return; }
       if (c.s.cardDown) { c.say("card_back"); c.s.cardDown = false; }
-      c.say("card_tap"); c.s.paid = true; c.s.payMethod = "card"; c.event("pay", { method: "card" }); c.say("paid");
+      c.say("card_tap"); c.s.paid = true; c.s.paidAmt = total(c); c.s.payMethod = "card"; c.event("pay", { method: "card" }); c.say("paid");
     },
     no_cash(c, slots, seg) { cafe.handlers.pay_card(c, slots, seg); },
     pay_phone(c) {
       if (c.s.cardDown) { c.say("card_back"); c.s.cardDown = false; }
-      c.say("phone_ok"); c.s.paid = !!c.s.totalSaid; c.s.payMethod = "phone"; if (c.s.paid) { c.event("pay", { method: "phone" }); c.say("paid"); }
+      c.say("phone_ok"); c.s.paid = !!c.s.totalSaid; c.s.payMethod = "phone"; if (c.s.paid) { c.s.paidAmt = total(c); c.event("pay", { method: "phone" }); c.say("paid"); }
     },
     pay_cash(c) {
       if (c.s.paid) { c.say("paid"); return; } // already paid: no second change
       c.say("cash_ok"); c.s.payMethod = "cash";
-      if (c.s.totalSaid) { c.s.paid = true; c.event("pay", { method: "cash" }); c.say("change_back"); }
+      if (c.s.totalSaid) { c.s.paid = true; c.s.paidAmt = total(c); c.event("pay", { method: "cash" }); c.say("change_back"); }
     },
     here_you_go(c) {
       if (!c.s.totalSaid) { c.say("no_problem"); return; }
       if (c.s.paid) { c.say("paid"); return; } // "Cash" already paid: just thanks, no second change
-      c.s.paid = true; c.event("pay", { method: c.s.payMethod || "cash" });
+      c.s.paid = true; c.s.paidAmt = total(c); c.event("pay", { method: c.s.payMethod || "cash" });
       if (c.s.payMethod === "card") c.say("paid"); else c.say("change_back");
     },
-    keep_change(c) { c.s.paid = true; c.s.tip = true; c.say("thanks_tip"); },
+    keep_change(c) {
+      if (!c.s.totalSaid) return; // nothing to pay yet: it marked the order paid before the total
+      c.s.paid = true; c.s.paidAmt = total(c); c.s.tip = true; c.say("thanks_tip");
+    },
     ask_price(c, slots) {
       const it = fromSlot(slots.item);
       if (it) {
@@ -1115,7 +1136,7 @@ export const cafe: SituationDef = {
       } else c.say("have_no");
     },
     ask_have_unknown(c) { c.say("have_no"); c.say("menu_line"); },
-    ask_wifi(c) { c.say("wifi"); },
+    ask_wifi(c) { if (/^\W*(what|where|how)\b/i.test(c.heard)) (c as any).conv.pushLine("wifi", 1, {}); else c.say("wifi"); },
     ask_restroom(c) { c.say("restroom"); },
     ask_water(c) { c.say("water"); c.event("give", { item: "water" }); },
     ask_sugar(c) { c.say("sugar"); },
@@ -1136,7 +1157,7 @@ export const cafe: SituationDef = {
       const it = fromSlot(slots.item);
       if (it) {
         const idx = items(c).findIndex((i) => i.id === it.id || (generic(i) && kindOf(it.id) === generic(i)));
-        if (idx >= 0) { items(c).splice(idx, 1); c.say("removed", { X: it.id }); if (!items(c).length) { c.say("reject_ok"); c.hold(); } return; }
+        if (idx >= 0) { items(c).splice(idx, 1); if (!items(c).length) { c.say("reject_ok"); c.hold(); } else c.say("removed", { X: it.id }); return; }
       }
       c.say("reject_ok"); c.hold();
     },

@@ -165,5 +165,12 @@
   {"ctx": "bottle_found", "say": "Oh, sorry, I forgot about the water.", "intent": "forgot"},
   {"ctx": "bottle_found", "say": "It's just water.", "intent": "forgot"},
   {"ctx": "collect", "say": "Where is my bag?", "intent": "bag_back"},
-  {"ctx": "divest", "say": "I don't need to take out my liquids.", "intent": "any", "not": ["ask_liquids"]}
+  {"ctx": "divest", "say": "I don't need to take out my liquids.", "intent": "any", "not": ["ask_liquids"]},
+  {"ctx": "pockets", "say": "I took it out.", "intent": "emptied_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pockets", "say": "Done.", "intent": "ack_done", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "belt_watch", "say": "I put it in the bin.", "intent": "emptied_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pockets", "say": "What happened?", "intent": "ask_what", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pockets", "say": "Why?", "intent": "ask_what", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pockets", "say": "I didn't take anything out.", "intent": "any", "not": ["emptied_ctx"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pockets", "say": "Nothing in my pockets.", "intent": "any", "not": ["emptied_ctx", "pockets_item"], "note": "logic audit 5 Nov 2026"}
 ]}

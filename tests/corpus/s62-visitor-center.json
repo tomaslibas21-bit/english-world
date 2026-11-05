@@ -207,5 +207,10 @@
   {"ctx": "confirm_museum", "say": "Not completely.", "intent": "lost", "not": ["understood"]},
   {"ctx": "confirm_museum", "say": "Almost.", "intent": "lost"},
   {"ctx": "confirm_museum", "say": "Excuse me, I didn't understand.", "intent": "didnt_understand", "not": ["understood"]},
-  {"ctx": "greet_map", "say": "I don't need help.", "intent": "any", "not": ["need_help"]}
+  {"ctx": "greet_map", "say": "I don't need help.", "intent": "any", "not": ["need_help"]},
+  {"ctx": "more", "say": "What time do you close?", "intent": "ask_hours", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "more", "say": "Where's the restroom?", "intent": "ask_restroom", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "cafe_offer", "say": "Where's the restroom?", "intent": "ask_restroom", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "cafe_offer", "say": "Where's the restroom?", "intent": "any", "not": ["accept_ctx", "yn:yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "cafe_offer", "say": "What time do you close?", "intent": "any", "not": ["accept_ctx", "yn:yes"], "note": "logic audit 5 Nov 2026"}
 ]}

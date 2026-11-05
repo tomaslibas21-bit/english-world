@@ -286,5 +286,8 @@
   {"ctx": "more", "say": "I'll take a flat white instead.", "intent": "change", "not": ["order_partial", "order_unknown"]},
   {"ctx": "size", "say": "Can I get an americano instead?", "intent": "change", "not": ["ask_have"]},
   {"ctx": "size", "say": "Can I have a latte instead of the cappuccino?", "intent": "correction", "not": ["order", "order_partial"]},
-  {"ctx": "more", "say": "I'd like a tea instead of the coffee.", "intent": "any", "not": ["order", "order_partial"]}
+  {"ctx": "more", "say": "I'd like a tea instead of the coffee.", "intent": "any", "not": ["order", "order_partial"]},
+  {"ctx": "receipt", "say": "Oh, and a croissant, please.", "intent": "order", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "kind", "say": "No, thanks.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "kind", "say": "No, thanks.", "intent": "any", "not": ["order", "kind_ctx"], "note": "logic audit 5 Nov 2026"}
 ]}

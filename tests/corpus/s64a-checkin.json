@@ -209,5 +209,8 @@
   {"ctx": "seat", "say": "I'd like to sit by aisle", "intent": "seat_ans", "slots": {"seat": "aisle"}},
   {"ctx": "seat", "say": "I want to sit by the aisle", "intent": "seat_ans", "slots": {"seat": "aisle"}},
   {"ctx": "seat", "say": "Can I sit next to window?", "intent": "seat_ans", "slots": {"seat": "window"}},
-  {"ctx": "seat", "say": "Not by window", "intent": "seat_neg", "slots": {"seat": "window"}}
+  {"ctx": "seat", "say": "Not by window", "intent": "seat_neg", "slots": {"seat": "window"}},
+  {"ctx": "overweight", "say": "Do I have to pay for the bag?", "intent": "ask_bagfee", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "seat", "say": "How much is the overweight fee?", "intent": "ask_fee", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "seat_clarify", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"}
 ]}

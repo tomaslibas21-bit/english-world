@@ -136,6 +136,14 @@ function passportGiven(c: Ctx) {
   c.say(lookup ? "found_lookup" : "found_booking");
 }
 
+/** "Can I pay by card?" with no fee open: before a bag that will be over is weighed the limit (a fee comes), after the fee "You're all set". */
+function nothingToPay(c: Ctx) {
+  if (c.s.feePaid) { c.say("ow_fee_paid"); return; }
+  // a bag that will be over: "nothing to pay today" would be taken back at the scale
+  if (c.s.bags !== 0 && !c.s.weighed && c.s.overweight && !c.s.owDone) { c.say("limit"); return; }
+  c.say("nothing_to_pay");
+}
+
 function weigh(c: Ctx) {
   if (c.s.overweight && !c.s.owDone) {
     c.twist("overweight");
@@ -261,6 +269,22 @@ function expectMiddle(c: Ctx) {
     on: {
       seat_ans: (cc, sl) => { assignSeat(cc, sl.seat === "window" ? "aisle" : sl.seat); },
       seat_neg: (cc) => { cc.s.seat = "aisle"; cc.s.seatNo = SEAT_NO.aisle; cc.say("no_window_last"); },
+    },
+    ask: (cc) => cc.say("no_window_middle"),
+  });
+}
+
+/** Window and aisle both refused: "The only other seat is a middle seat, 23B. Is that okay?"; a no keeps `fallback`. */
+function expectMiddleOnly(c: Ctx, fallback: string) {
+  c.say("no_window_middle");
+  ask(c, {
+    id: "no_window_middle", expects: ["seat_ans", "seat_neg"], hints: ["yesno"],
+    suggest: [{ lt: "Sutikti arba atsisakyti", hint: "yesno" }],
+    yes: (cc) => { assignSeat(cc, "middle"); },
+    no: (cc) => { assignSeat(cc, fallback); },
+    on: {
+      seat_ans: (cc, sl) => { assignSeat(cc, sl.seat); },
+      seat_neg: (cc) => { assignSeat(cc, fallback); },
     },
     ask: (cc) => cc.say("no_window_middle"),
   });
@@ -1056,7 +1080,6 @@ export const checkin: SituationDef = {
     security_dir: [
       t("Security | is | over | there, | on the left.", "Saugumo patikra | yra | — | ten, | kairėje.", "Saugumo patikra – ten, kairėje.",
         { flags: { 2: "“over” (over there): no separate Lithuanian word; ten carries the direction." } }),
-      t("Security | is | straight | ahead, | past | the | café.", "Saugumo patikra | yra | tiesiai | priekyje, | už | — | kavinės.", "Saugumo patikra – tiesiai, už kavinės."),
     ],
     duration: [
       t("It's | about | an | hour | and | a | half.", "Tai yra | maždaug | — | valanda | ir | — | pusė.", "Maždaug pusantros valandos."),
@@ -1454,21 +1477,23 @@ export const checkin: SituationDef = {
     scale_where(c) { c.say("scale_where"); },
     move_items(c) {
       if (c.s.owShown && !c.s.owDone) { startMoving(c); return; }
+      if (c.s.feePaid) { c.say("g_no_worries"); return; } // paid already: nothing to move
       if (c.s.bags !== 0 && !c.s.weighed) { c.say("weigh_first"); return; }
       c.say("no_need_bag");
     },
     pay_fee(c) {
       if (c.s.owShown && !c.s.owDone) { startFee(c); return; }
-      c.say("nothing_to_pay");
+      nothingToPay(c);
     },
     // "Can I pay by card?" while the overweight options are open = I'll pay the fee
-    pay_card(c) { if (c.s.owShown && !c.s.owDone) { startFee(c); return; } c.say("nothing_to_pay"); },
-    pay_cash(c) { if (c.s.owShown && !c.s.owDone) { c.say("ow_card_only"); expectFee(c); return; } c.say("nothing_to_pay"); },
+    pay_card(c) { if (c.s.owShown && !c.s.owDone) { startFee(c); return; } nothingToPay(c); },
+    pay_cash(c) { if (c.s.owShown && !c.s.owDone) { c.say("ow_card_only"); expectFee(c); return; } nothingToPay(c); },
     lookup(c) {
       if (c.s.dest || c.s.passport) { c.say("flight_ack"); return; }
       c.s.lookup = true; c.say("lookup_help"); c.say("ask_passport"); c.hold();
     },
-    ask_fee(c) { c.say(c.s.owShown ? "ow_fee_amount" : "bagfee_info"); },
+    // "How much is the overweight fee?" with nothing over: the fee, not "No, one checked bag is included"
+    ask_fee(c) { c.say(c.s.owShown || /\b(over|overweight|heavy|extra)\b/i.test(c.heard) ? "ow_fee_amount" : "bagfee_info"); },
     ask_over(c) {
       if (c.s.owShown && !c.s.owDone) { c.say("ow_over"); return; }
       c.say("limit");
@@ -1491,7 +1516,8 @@ export const checkin: SituationDef = {
         ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["seat"],
           suggest: [{ lt: "Pasirinkti vietą", hint: "seat", options: ["window", "aisle"] }],
           on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
-          yes: (cc) => { cc.say("seat_neg_both"); }, ask: (cc) => cc.say("seat_neg_both") });
+          // no yes/no here: a bare "Yes" gets the question once (as `ask`), not it and the seat step's "Window or aisle?"
+          ask: (cc) => cc.say("seat_neg_both") });
         return;
       }
       const other = bad === "window" ? "aisle" : "window";
@@ -1499,7 +1525,8 @@ export const checkin: SituationDef = {
       ask(c, { id: "seat_clarify", expects: ["seat_ans", "seat_any"], hints: ["yesno", "seat"],
         suggest: [{ lt: "Sutikti arba pasirinkti kitą vietą", hint: "seat", options: "seat" }],
         yes: (cc) => { if (cc.s.passport) assignSeat(cc, other); else { cc.s.seatPref = other; cc.say("ack"); } },
-        no: (cc) => { cc.say("ask_seat"); },
+        // "No" to "So, an aisle seat?" after "not the window": both refused, so the middle seat (and if not that, the one offered)
+        no: (cc) => { if (cc.s.passport) expectMiddleOnly(cc, other); else { cc.s.seatPref = "middle"; cc.say("ack"); } },
         on: { seat_ans: (cc, sl, sg) => { checkin.handlers.seat_ans(cc, sl, sg); }, seat_any: (cc, sl, sg) => { checkin.handlers.seat_any(cc, sl, sg); } },
         ask: (cc) => cc.say("seat_neg_q", { X: other }) });
     },
@@ -1517,7 +1544,8 @@ export const checkin: SituationDef = {
       if (c.s.passport) c.ask("seat");
       else c.say("find_first");
     },
-    ask_bagfee(c) { c.say("bagfee_info"); },
+    // "Do I have to pay for the bag?" right after "…or pay a $100 fee": the fee (not "No, one checked bag is included")
+    ask_bagfee(c) { c.say(c.s.feePaid ? "ow_fee_paid" : c.s.owShown && !c.s.owDone ? "ow_fee_amount" : "bagfee_info"); },
     ask_restroom(c) { c.say("restroom"); },
   },
 
@@ -1648,6 +1676,9 @@ export const checkin: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): not the window, not the aisle: the middle seat (not "Window or aisle?" twice)
+    { name: "audit: not the window, not the aisle", turns: ["To Boston, please.", "Here you go.", "Just one bag.", "Sure.", "I don't want a window seat.", "No.", "Yes, that's fine.", "Where's security?", "No, that's all. Thanks!"],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.askSafety = false; s.overweight = false; s.noWindow = false; } },
     { name: "happy path", turns: ["I'd like to check in, please.", "To Boston.", "Here's my passport.", "Just one bag.", "Window, please.", "No, that's all, thanks."],
       expect: { complete: true }, auto: AUTO },
     { name: "all at once, then questions", turns: ["Hi, I'm flying to Boston and I have one bag. Here's my passport.", "I'd like an aisle seat, please.", "Is the flight on time?", "Where's security?", "That's all, thanks."],
