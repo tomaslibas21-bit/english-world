@@ -336,6 +336,8 @@ export const THEME: TownTheme = {
   // the town's plain coloured shapes in a mesh for each 50 m square of it (two: with and without shadows): a view draws
   // the squares it sees, in a few calls (room for this round's things in calls and triangles)
   townMerge: 50,
+  // and a room's signs and posters in one mesh on one texture (one draw call for all of them: room for this round's)
+  panelAtlas: true,
   // the overhead lines along calle Hidalgo (poles on its north sidewalk, clear of the lamps, the signs and the corners),
   // and the service drops across the street to Ximena's, Diego's and the houses east of the terminal
   cables: {

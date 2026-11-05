@@ -175,8 +175,12 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   g.add(outside(w, d));
   g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
+  // (theme.ts panelAtlas: the room's signs and posters gathered while it is built, then drawn as one mesh)
+  roomPanels = THEME.panelAtlas && !STYLED ? [] : null;
   build({ M, col, g, w, d, r, anim });
   M.build(g);
+  if (roomPanels) panelAtlas(g, roomPanels);
+  roomPanels = null;
   const update = anim.length ? (t: number, dt: number) => { for (const f of anim) f(t, dt); } : undefined;
   // someone the edition has standing outdoors (theme.ts `outdoorNpcs`: Doña Chela at the pump) is not in the room
   const out = THEME.outdoorNpcs;
@@ -275,11 +279,94 @@ function plant(c: Ctx, x: number, z: number, s = 1) {
   c.M.add("leaves", mat("#5fa24b", { flat: true }), new THREE.IcosahedronGeometry(0.35 * s, 0).translate(x + 0.15, 1.2 * s, z - 0.1));
   c.col.addCircle(x, z, 0.35 * s);
 }
-function wallPanel(c: Ctx, tex: THREE.Texture, x: number, y: number, z: number, w: number, h: number, rotY = 0) {
+function wallPanel(c: Ctx, tex: THREE.Texture, x: number, y: number, z: number, w: number, h: number, rotY = 0): THREE.Object3D {
+  if (roomPanels && atlasable(tex)) {
+    // (theme.ts panelAtlas) a stand-in where the panel goes, which the caller may still turn; panelAtlas puts the
+    // panel's quad where it ends up and takes it away
+    const o = new THREE.Object3D();
+    o.position.set(x, y, z); o.rotation.y = rotY;
+    c.g.add(o);
+    roomPanels.push({ tex, w, h, o });
+    return o;
+  }
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
   m.position.set(x, y, z); m.rotation.y = rotY;
   c.g.add(m);
   return m;
+}
+
+/** The signs and posters of the room being built (theme.ts panelAtlas; null: a mesh each, wallPanel). */
+let roomPanels: { tex: THREE.Texture; w: number; h: number; o: THREE.Object3D }[] | null = null;
+/** A panel whose picture can go on the atlas: drawn on a canvas, shown whole, filtered as the atlas is. */
+function atlasable(t: THREE.Texture) {
+  const im = t.image as { width?: number; height?: number } | undefined;
+  return (im instanceof HTMLCanvasElement || (typeof OffscreenCanvas !== "undefined" && im instanceof OffscreenCanvas)) &&
+    !!im.width && !!im.height && im.width <= ATLAS_W - 2 * ATLAS_PAD &&
+    t.repeat.x === 1 && t.repeat.y === 1 && t.offset.x === 0 && t.offset.y === 0 && t.rotation === 0 && t.flipY &&
+    t.wrapS === THREE.ClampToEdgeWrapping && t.wrapT === THREE.ClampToEdgeWrapping &&
+    t.magFilter === THREE.LinearFilter && t.minFilter === THREE.LinearMipmapLinearFilter && t.generateMipmaps;
+}
+const ATLAS_W = 2048, ATLAS_MAX_H = 4096, ATLAS_PAD = 8;
+/** The room's panels as one mesh: their pictures side by side on a canvas (each at its own size, the tallest first, a
+ *  few pixels apart and the gaps filled with their edges, so the smaller mipmaps don't bleed one into another), one
+ *  quad each where its own mesh would have stood, with the material wallPanel gives one (unlit, as drawn). Pictures in
+ *  another colour space or filtered otherwise go on an atlas of their own; more than one canvas holds, on another. */
+function panelAtlas(g: THREE.Group, panels: NonNullable<typeof roomPanels>) {
+  g.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(g.matrixWorld).invert();
+  const kinds = new Map<string, typeof panels>();
+  for (const p of panels) {
+    const k = `${p.tex.colorSpace}|${p.tex.anisotropy}`;
+    if (!kinds.has(k)) kinds.set(k, []);
+    kinds.get(k)!.push(p);
+  }
+  for (const list of kinds.values()) {
+    // a cell for each picture (one shown twice is drawn once), tallest first, in rows on pages of the canvas's size
+    type Cell = { im: CanvasImageSource; w: number; h: number; x0: number; y0: number; page: number };
+    const cells = new Map<THREE.Texture, Cell>();
+    for (const p of list) if (!cells.has(p.tex)) {
+      const im = p.tex.image as HTMLCanvasElement;
+      cells.set(p.tex, { im, w: im.width, h: im.height, x0: 0, y0: 0, page: 0 });
+    }
+    const sorted = [...cells.values()].sort((a, b) => b.h - a.h);
+    const heights: number[] = [];
+    let page = 0, x = ATLAS_PAD, y = ATLAS_PAD, rowH = 0;
+    for (const c of sorted) {
+      if (x + c.w + ATLAS_PAD > ATLAS_W) { x = ATLAS_PAD; y += rowH + ATLAS_PAD; rowH = 0; }
+      if (y + c.h + ATLAS_PAD > ATLAS_MAX_H) { heights[page] = y; page++; x = ATLAS_PAD; y = ATLAS_PAD; rowH = 0; }
+      c.x0 = x; c.y0 = y; c.page = page; x += c.w + ATLAS_PAD; rowH = Math.max(rowH, c.h);
+      heights[page] = y + rowH + ATLAS_PAD;
+    }
+    for (let pg = 0; pg <= page; pg++) {
+      const H = heights[pg];
+      const cv = document.createElement("canvas");
+      cv.width = ATLAS_W; cv.height = H;
+      const ctx = cv.getContext("2d")!;
+      for (const c of sorted) if (c.page === pg) {
+        // the edges stretched into the gap first, then the picture itself over them
+        const e = ATLAS_PAD / 2;
+        ctx.drawImage(c.im, c.x0 - e, c.y0 - e, c.w + 2 * e, c.h + 2 * e);
+        ctx.clearRect(c.x0, c.y0, c.w, c.h);
+        ctx.drawImage(c.im, c.x0, c.y0);
+      }
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = list[0].tex.colorSpace;
+      tex.anisotropy = list[0].tex.anisotropy;
+      const m4 = new THREE.Matrix4();
+      const geos = list.filter((p) => cells.get(p.tex)!.page === pg).map((p) => {
+        const c = cells.get(p.tex)!;
+        const q = new THREE.PlaneGeometry(p.w, p.h);
+        const uv = q.attributes.uv as THREE.BufferAttribute;
+        for (let i = 0; i < uv.count; i++) uv.setXY(i, (c.x0 + uv.getX(i) * c.w) / ATLAS_W, 1 - (c.y0 + (1 - uv.getY(i)) * c.h) / H);
+        return q.applyMatrix4(m4.multiplyMatrices(inv, p.o.matrixWorld));
+      });
+      const mesh = new THREE.Mesh(mergeGeometries(geos, false)!, new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+      for (const q of geos) q.dispose();
+      mesh.name = "room-panels";
+      g.add(mesh);
+    }
+  }
+  for (const p of panels) p.o.parent?.remove(p.o);
 }
 function windowBack(c: Ctx, x: number, w: number, h = 2, y = 2.2, sky = "#bfe3f7") {
   c.M.add("win-" + sky, mat(sky, { emissive: "#4d7a90" }), boxGeo(w, h, 0.05, x, y, -c.d / 2 + 0.02), false);
@@ -653,7 +740,7 @@ const B: Record<string, () => Interior> = {
     lamp(c, -3, -1.5); lamp(c, 0, -1.5); lamp(c, 3.6, 0.8);
     rug(c, 0, 1, 6, 3.5, "#e8c07a");
     if (THEME.roomExtras.cafeMx) cafeMx(c);
-    if (THEME.roomExtras.services) { const S = smalls(c); restroomDoor(c, S, -6.9, -c.d / 2, 0, "#6d2e46", "#f4e4cc"); clayPlant(c, S, -7.25, -0.9, 0.9); S.done(); }
+    if (THEME.roomExtras.services) { const S = msmalls(c); restroomDoor(c, S, -6.9, -c.d / 2, 0, "#6d2e46", "#f4e4cc"); clayPlant(c, S, -7.25, -0.9, 0.9); }
   }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0, ax: -1.2, az: -2.05 }], { floorKind: "wood", accent: "#8a5a3c", warm: true }),
 
   trattoria: () => THEME.restaurant === "yucateco" ? cocina() : room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
@@ -1623,10 +1710,9 @@ const B: Record<string, () => Interior> = {
     if (mx) clinicMx(c);
     // (theme.ts roomExtras.roomsMx) the children's corner in the waiting room, the vaccination poster, a minisplit
     if (THEME.roomExtras.roomsMx) {
-      const S = smalls(c);
+      const S = msmalls(c);
       kidsCorner(c, S, -2.9, 0.6);
       minisplitAt(S, c.w / 2 - 0.02, 3.3, -4.4, -Math.PI / 2);
-      S.done();
       wallPanel(c, vacunaPoster(), 6.4, 2.35, -c.d / 2 + 0.06, 0.9, 1.24);
     }
   }, [{ npc: "carter", x: 1.75, z: -4.3, rot: -0.12 }], { floorKind: "tile", accent: "#3a86b0" }),
@@ -1782,11 +1868,10 @@ const B: Record<string, () => Interior> = {
     // (theme.ts roomExtras.roomsMx) a luchador on the wall, pennants in the flag's colours, the garrafón by the water
     // (s35: water by the vestidores), a minisplit
     if (THEME.roomExtras.roomsMx) {
-      const S = smalls(c);
+      const S = msmalls(c);
       banderines(S, -c.w / 2 + 0.4, c.w / 2 - 0.4, 4.0, -c.d / 2 + 0.12);
       garrafon(c, S, 4.55, -6.6);
       minisplitAt(S, -c.w / 2 + 0.02, 3.3, -3.5, Math.PI / 2);
-      S.done();
       wallPanel(c, luchadorPoster(), -6.0, 2.3, -c.d / 2 + 0.06, 1.1, 1.51);
     }
   }, [{ npc: "jordan", x: 4.8, z: -2.6, rot: -0.3 }], { floorKind: "carpet", accent: "#1f7f8c" }),
@@ -1898,7 +1983,7 @@ const B: Record<string, () => Interior> = {
     for (const [hx, hz] of [[-2.6, -2.4], [-9, -2.2], [6.8, -2.2], [-0.4, -6.6], [7.4, 5.2], [-7.6, 5.4]] as [number, number][]) hangingPlant(c, hx, hz);
     for (const [lx, lz] of [[-6.5, -2], [-1.4, -1], [4.6, 2.2], [-5.2, 2.4]] as [number, number][]) lamp(c, lx, lz, 3.5);
     // (theme.ts roomExtras.roomsMx) a hammock on the west wall, a minisplit on the bricks
-    if (THEME.roomExtras.roomsMx) { const S = smalls(c); hammock(c, S, -c.w / 2 + 0.24, 1.2, 4.8); minisplitAt(S, -c.w / 2 + 0.06, 3.3, -0.6, Math.PI / 2); S.done(); }
+    if (THEME.roomExtras.roomsMx) { const S = msmalls(c); hammock(c, S, -c.w / 2 + 0.24, 1.2, 4.8); minisplitAt(S, -c.w / 2 + 0.06, 3.3, -0.6, Math.PI / 2); }
   }, [{ npc: "tyler", x: 2.2, z: -3.75, rot: 0 }], { floorKind: "stone", accent: "#2f7a4a", warm: true }),
 };
 
@@ -3163,6 +3248,15 @@ function pastaTiles(x: CanvasRenderingContext2D) {
   }
 }
 
+/** The round's own shapes in a room through the room's merger (theme.ts roomMerge: into the room's two vertex-coloured
+ *  meshes), a Smalls for the helpers: no mesh, and no draw call, of their own. */
+function msmalls(c: Ctx): Smalls {
+  return {
+    add: (g, color) => { const col = typeof color === "string" ? color : "#" + new THREE.Color(color).getHexString(); c.M.add("mx3-" + col, mat(col), g); },
+    done: () => {},
+  };
+}
+
 /** A restroom's pictogram (a woman in a dress, or a man) in white on the sign, its middle at (x, y), `h` tall. */
 function pictogram(x: CanvasRenderingContext2D, cx: number, cy: number, h: number, woman: boolean) {
   const u = h / 10;
@@ -3246,7 +3340,7 @@ function espresso(S: Smalls, x: number, y: number, z: number, rot: number) {
  *  against the back wall under its window (a counter tiled in talavera, the espresso machine, conchas, two tables) and
  *  the two restroom doors beside it, under the gate's sign. */
 function airportServices(c: Ctx) {
-  const S = smalls(c), back = -c.d / 2;
+  const S = msmalls(c), back = -c.d / 2;
   const cx = 11.4, cz = -11.3;
   // the back counter against the wall, the espresso machine and a grinder on it
   S.add(boxGeo(2.6, 0.95, 0.5, cx, 0.475, back + 0.25), "#6f4a2c");
@@ -3323,7 +3417,7 @@ function terminalMx(c: Ctx, S: Smalls) {
  *  (cubbyholes with the visitors' bags and its counter), the restrooms past it along the same wall, the elevator at
  *  the back on the left, and the café beside the shop by the exit. */
 function museumServices(c: Ctx) {
-  const S = smalls(c), west = -c.w / 2;
+  const S = msmalls(c), west = -c.w / 2;
   // the paquetería: cubbyholes along the west wall, the bags in them, the counter in front with its numbered tokens
   const pz = 7.0, len = 2.6, rows = 3, cols = 4, ch = 0.56;
   S.add(boxGeo(0.04, 1.8, len, west + 0.04, 0.9, pz), "#5a3e26");

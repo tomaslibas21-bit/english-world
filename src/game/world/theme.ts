@@ -268,6 +268,10 @@ export interface TownTheme {
    *  side (two: casting shadows and not), instead of a mesh per colour across the whole town (town.ts TownMerger): far
    *  fewer draw calls, and no triangles for the squares out of view (null: a mesh per colour, as in Maple Harbor). */
   townMerge: number | null;
+  /** A room's flat signs and posters (interiors.ts wallPanel) drawn as one mesh on one texture, an atlas of their
+   *  pictures (interiors.ts panelAtlas), instead of a mesh and a texture each: the same pictures in one draw call
+   *  (false: a mesh each, as in Maple Harbor). */
+  panelAtlas: boolean;
   /** Overhead lines on the streets south of Juárez (mexican.ts `cables`): the poles (x, z) in order, and service drops
    *  from a pole (its index) to a point on a house's front (x, y, z) (null: none). */
   cables: { poles: [number, number][]; drops: [number, number, number, number][] } | null;
@@ -364,6 +368,7 @@ export const THEME: TownTheme = {
   regions: false,
   farHide: null,
   townMerge: null,
+  panelAtlas: false,
   cables: null,
   sidewalks: null,
   terrace: [],
