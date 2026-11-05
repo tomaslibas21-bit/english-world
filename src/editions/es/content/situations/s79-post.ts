@@ -20,9 +20,10 @@
 // of the world, so one $15 stamp a postcard (it was $22); an international parcel (first zone) $384 up to 1 kg and $640
 // up to 3 kg, so the 2.4 kg box goes standard for $640 (it was $520); EMS (express) is priced in dollars by zone, from
 // about $510 (1 kg, North America) to $1,260 (3 kg, Oceania): one flat express price per box stays. One price for every
-// country is this town's simplification. Left out on purpose (owner/lead question): since 25 Mar 2026 a parcel to the
-// US needs the sender's ID, both parties' email and phone, each item's country of manufacture, a declared value of
-// $150–$14,500, and pays a 10% US charge on that value (sources in docs/es/reviews/s79-post.md).
+// country is this town's simplification. Since 25 Mar 2026 a parcel to the US needs the sender's ID, both parties'
+// email and phone, each item's country of manufacture, a declared value of $150–$14,500, and pays a 10% US charge on
+// that value (sources in docs/es/reviews/s79-post.md): the lead's decision (5 Nov 2026) is one value-free line for the
+// US, the declaration and an ID (customs_usa), with no new sub-flow and no figures.
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef, StepDef, Suggestion } from "@/content/types";
 import type { ConvCtx } from "@/convo/dialogue";
@@ -199,6 +200,14 @@ const omit = (o: Record<string, string>, keys: string[]) => Object.fromEntries(O
 
 // ---------------------------------------------------------------------------
 // Suggestions
+
+/** The customs form, once: to the US the declaration and an ID, said without figures (the lead's decision, 5 Nov 2026:
+ *  one line, no new sub-flow; the 2026 US rules are left vague, see the header). */
+function customsIntro(c: Ctx) {
+  if (c.s.customsIntro) return;
+  c.s.customsIntro = true;
+  c.say(c.s.dest === "usa" ? "customs_usa" : "customs_intro");
+}
 
 const S_SEND: Suggestion = { lt: "Say you'd like to send a package home", hint: "send", options: "dest" };
 const S_PICKUP: Suggestion = { lt: "Pick up a package, or ask where yours is", hint: "pickup" };
@@ -597,6 +606,9 @@ export const post: SituationDef = {
       t("Va | fuera | del | país, | así que | necesito | llenar | la | declaración | de | aduana.", "It's going | outside | of the | country, | so | I need | to fill out | the | declaration | of | customs.",
         "It's going out of the country, so I need to fill out a customs form."),
     ],
+    customs_usa: [t("Para | Estados Unidos | hay que | llenar | una | declaración | con | el | contenido | y | el | valor, | y | necesito | su | identificación.",
+      "For | the United States | we need to | fill out | a | declaration | with | the | contents | and | the | value, | and | I need | your | ID.",
+      "For the United States, we need to fill out a declaration with the contents and the value, and I'll need your ID.")],
     customs_explain: [t("Es | para | la | aduana: | dice | qué | trae | y | cuánto | vale.", "It's | for | the | customs: | it says | what | it carries | and | how much | it's worth.",
       "It's for customs: it says what's inside and what it's worth.")],
     ask_what_inside: [
@@ -1029,11 +1041,11 @@ export const post: SituationDef = {
       suggest: [{ lt: "Choose how to send it", hint: "service", options: "service" }, { lt: "Ask if there's anything cheaper", hint: "service" }],
       help: (c) => { c.say("opt_priority", { price: priceOf(c, "priority") }); c.say("opt_express", { price: priceOf(c, "express") }); } },
     { id: "contents_list", when: (c) => sending(c) && !!c.s.service && !c.s.items, done: (c) => !!c.s.items,
-      ask: (c) => { if (!c.s.customsIntro) { c.s.customsIntro = true; c.say("customs_intro"); } c.say("ask_what_inside"); },
+      ask: (c) => { customsIntro(c); c.say("ask_what_inside"); },
       expects: ["contents_ok"],
       suggest: [{ lt: "List what's in the box", hint: "items" }] },
     { id: "value", when: (c) => sending(c) && !!c.s.service && !!c.s.items, done: (c) => c.s.value !== undefined,
-      ask: (c) => { if (!c.s.customsIntro) { c.s.customsIntro = true; c.say("customs_intro"); } c.say("ask_value"); },
+      ask: (c) => { customsIntro(c); c.say("ask_value"); },
       expects: ["value_ans", "value_ctx"],
       suggest: [{ lt: "Give a rough value in pesos", hint: "customs" }],
       help: (c) => { c.say("value_help"); } },
@@ -1689,6 +1701,11 @@ export const post: SituationDef = {
       turns: ["Hola, tengo este aviso.", "No traigo mi pasaporte.", "¿Sirve una foto del pasaporte?", "Bueno, regreso mañana con mi pasaporte."],
       expect: { complete: false, state: { pickLater: true, pickId: undefined, pickedUp: undefined } }, auto: POST_AUTO,
       setup: (s) => { s.pickupTwist = true; s.customsTwist = false; } },
+    // the follow-up pass (5 Nov 2026): to the US, the declaration and an ID in one line; the passport handed over is thanked
+    { name: "a parcel to the US: the declaration and an ID",
+      turns: ["Quisiera mandar este paquete a Estados Unidos.", "No, nada de eso.", "El normal, por favor.", "Aquí está mi pasaporte.", "Un rebozo y café.", "Como ochocientos pesos.", "Claro.", "Con tarjeta.", "Es todo, gracias."],
+      expect: { complete: true, state: { dest: "usa", service: "priority", customsIntro: true, sent: true } }, auto: POST_AUTO,
+      setup: (s) => { s.pickupTwist = false; s.returnTwist = false; s.askGift = false; s.askInsurance = false; s.offerStamps = false; } },
     // stamps offered on every seed, and taken; a correction of the country
     { name: "stamps offered, country corrected",
       turns: ["Quiero mandar una caja.", "No a Canadá, a Estados Unidos.", "Unas tazas de Talavera.", "El normal, por favor.", "Como mil pesos.", "Sí, es un regalo.", "Claro.", "Sí, para unas postales.", "Tres.", "Con tarjeta.", "Es todo, gracias."],
