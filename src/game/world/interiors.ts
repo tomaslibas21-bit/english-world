@@ -4,6 +4,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { Merger, mat, boxGeo, cylGeo, textTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
 import { carParts } from "./car";
+import { THEME } from "./theme";
 import { floorMaterial, floorColor } from "./styled";
 
 /** `ax/az`: where the player stands to talk (the walk to them, the guidance trail and the situation picker all end
@@ -139,6 +140,10 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   build({ M, col, g, w, d, r, anim });
   M.build(g);
   const update = anim.length ? (t: number, dt: number) => { for (const f of anim) f(t, dt); } : undefined;
+  // someone the edition has stand elsewhere in the room (theme.ts `roomSpots`: a conversation's other speaker within
+  // its picture) stands there
+  const moved = THEME.roomSpots[id];
+  if (moved) npcs = npcs.map((n) => moved[n.npc] ? { ...n, ...moved[n.npc] } : n);
   return { id, group: g, colliders: col, w, d, exit: { x: 0, z: d / 2 - 0.2 }, spawn: { x: 0, z: d / 2 - 1.6, rot: Math.PI }, npcs, warm: opts.warm, update };
 }
 
