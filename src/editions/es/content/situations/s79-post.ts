@@ -402,7 +402,7 @@ export const post: SituationDef = {
       "(puedo | se puede | podria) asegurar(lo | la)? #can", "que cubre el seguro [basico | completo] #cover", "(cuanto | hasta cuanto | que tanto) cubre [el seguro] [basico] #cover"] },
     ask_kilos: { patterns: ["cuanto es en libras #h:q_kilos", "(y | eso) en libras", "cuantas libras (son | es | pesa)", "cuanto pesa", "cuanto pesa en libras"] },
     ask_customs: { patterns: ["(necesito | tengo que | hay que) llenar (algo | una forma | un formulario | la declaracion | un formato)", "que es (la | una) declaracion [de aduana]", "para que es (eso | esto | la declaracion)", "por que (necesita | necesito) (eso | la declaracion)"] },
-    what_write: { patterns: ["que (pongo | escribo) [aqui | ahi]", "que (le | tengo que | debo) (poner | escribir)", "que necesita saber"] },
+    what_write: { patterns: ["que (pongo | escribo) [aqui | ahi] [en (la declaracion | el formulario | la forma | el papel)]", "que (le | tengo que | debo) (poner | escribir) [en (la declaracion | el formulario | la forma)]", "que necesita saber"] },
     value_ans: { patterns: [
       "[son | es | vale | valen | todo vale] (como | unos | mas o menos | aproximadamente | menos de | alrededor de | casi) {price} [pesos | en total] #h:value_about",
       "(vale | valen | cuesta | todo vale | el valor es | en total son | en total) {price} [pesos | en total] #h:value_is",
