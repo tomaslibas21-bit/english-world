@@ -27,7 +27,13 @@
 //
 // NEEDS: (1) the events "taste" and "enter" (as in the English file) have no effect in the game yet. (2) An NPC flag for
 // "says tú to the learner" apart from "the learner says usted to them" would let the copied global lines go. (3) global.ts
-// g_thanks lacks "gracias por lo de hoy" (thanks_today here).
+// g_thanks lacks "gracias por lo de hoy" (thanks_today here). (4) global.ts g_meaning takes one word after "¿Qué
+// significa…?": "¿Qué significa «en su punto»?" / "«con tacto»?" isn't understood (the chef's acidez / le falta vida are
+// answered here by his example).
+//
+// Audit (5 Nov 2026): side questions answered ("¿Le gustó?", the board, "¿Cuánto le pongo?", "¿Quién es Fátima?",
+// "¿Qué lleva?", "¿En serio?"), no line twice in a row, and two sims that make each cook say the shared replies in
+// their own voice (docs/es/reviews/p28-kitchen.md).
 
 import type { Ctx, EntityDef, Segment, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
@@ -116,6 +122,7 @@ function once(c: Ctx, key: string): boolean {
 // Answers that wait for the end of the turn (the step's question settles them), so a later piece wins: a "no, pero…"
 // to the favor ("Estoy ocupado, pero va, lo hago") and a "No sé" before an answer ("No sé. ¿Tal vez cilantro?").
 const NO_LATER = new WeakSet<Ctx>();
+const SURPRISE = new WeakSet<Ctx>();
 const DONT_KNOW = new WeakMap<Ctx, string>();
 const asks = (c: Ctx, id: string): number => c.s.asks?.[id] ?? 0;
 function bump(c: Ctx, id: string): number { c.s.asks ||= {}; c.s.asks[id] = asks(c, id) + 1; return c.s.asks[id]; }
@@ -170,7 +177,7 @@ export const kitchen: SituationDef = {
         "(un poco de | un poquito de | un poquitito de | poquito de | tantito | un tantito de | tantito de | mas | un poco mas de | un poquito mas de | algo de | unas gotas de | unas gotitas de | un chorrito de | un toque de | otro poco de | mas de)",
         "(una pizca de | un pellizco de | una cucharadita de | una cucharada de | media cucharadita de) #amt",
       ],
-      acido: "(limon | jugo de limon | limones | vinagre | vino blanco | un vino blanco | lima | naranja agria | algo acido | acidez | acido | mas acidez | algo agrio)",
+      acido: "(limon | jugo de limon | limones | vinagre | vino blanco | un vino blanco | vino | lima | naranja agria | algo acido | acidez | acido | mas acidez | algo agrio)",
       sal: "(sal | mas sal | sal de grano | sal de mar)",
       cruj: "(tiritas de tortilla | tiras de tortilla | tortilla | tortillas | tortilla frita | tiritas | totopos | algo crujiente | crujiente | lo crujiente | las tiritas | la tortilla | las tortillas)",
       galletas: "(galletas | galletas saladas | galletitas | pan | pan negro | pan tostado | crackers)",
@@ -244,6 +251,19 @@ export const kitchen: SituationDef = {
       "(sea | se) (duro | brutal) [conmigo]",
       "[si] (me encantaria | con gusto | con mucho gusto | orale | claro que si) [chef]", "(claro | si) (digame | dime) (que piensa | que piensas | sin miedo)",
       "[si | claro] (digame | dime) (lo que | que) (piensa | piensas | opina | opinas)",
+      "(si | claro | ok | bueno | va | sale) pero (rapido | rapidito | breve | cortito)",
+    ] },
+    // "¿Le gustó?" / "¿Qué le pareció?": before the feedback it asks for it; after it, the chef answers
+    ask_liked: { patterns: [
+      "[entonces | o sea que | pero] (le | te) (gustó | gusta) [mi @sopa | el @sopa | la @sopa] [o no] [@chef]",
+      "[entonces | o sea que | pero] no (le | te) (gustó | gusta) [mi @sopa | el @sopa | la @sopa]",
+      "(que | como) (le | te) (parecio | supo) [mi @sopa | el @sopa | la @sopa] [@chef]",
+    ] },
+    // "¿Lo puedo poner en el pizarrón?": the learner's goal (the specials board)
+    ask_board: { patterns: [
+      "(lo | la) (puedo | podemos | vamos a | va a | vas a) (poner | apuntar | escribir | anotar) en (el pizarron | la pizarra | los especiales | el menu | la carta) [hoy | esta noche] [@chef]",
+      "(va | entra | queda) (en el pizarron | en la pizarra | en los especiales | al pizarron | a la pizarra | a los especiales | en el menu) [hoy | esta noche] [@chef]",
+      "(lo | la) apunto en (el pizarron | la pizarra) [@chef]",
     ] },
     no_feedback: { patterns: [
       "no (necesito | quiero) [ningun | ningunos | ninguna]? (@fb | opinion) [ahorita | ahora | hoy] #tip:defensive",
@@ -317,6 +337,8 @@ export const kitchen: SituationDef = {
       "no (necesita | le hace falta) (nada | cambios | limon | acidez | mas acidez) #tip:defensive",
       "no (necesito | quiero) (sus | tus) (@fb | consejos | opiniones) #tip:defensive",
       "[eso] no tiene sentido #tip:defensive", "no me (sirve | ayuda) [de nada | para nada] #tip:defensive",
+      // "No me gustó (su comentario)": the learner's own dislike (never "¿No le gustó?", one little word away)
+      "no me (gustó | gusta) [nada | para nada | mucho | tanto] [su | tu | el | la]? [comentario | opinion | idea | consejo]? #tip:defensive",
       "no (lo | la) voy a cambiar #tip:defensive", "no (voy a | pienso) cambiar (nada | la receta) #tip:defensive",
       "no le voy a poner (limon | vinagre | nada | acidez) #tip:defensive", "nunca le (pondria | voy a poner) (limon | vinagre) #tip:defensive",
     ] },
@@ -334,11 +356,14 @@ export const kitchen: SituationDef = {
       "que (me recomienda | me recomiendas | sugiere | sugieres | haria | harias | haria usted)",
       "(tiene | tienes) (algun ejemplo | alguna idea | alguna sugerencia | algun consejo)",
       "(puede | podria | puedes) ser mas (especifico | concreto | claro)",
+      "[le pongo | le echo | le agrego | uso | pongo] @acido o @acido", "(cual | que) es mejor [@acido o @acido]",
       "como (le doy | le pongo | consigo) (mas)? (acidez | vida)",
       "como (lo | la) (arreglo | mejoro | compongo)",
       "que (puedo | podria | deberia) (ponerle | agregarle | echarle | hacer) [para (mejorarlo | arreglarlo)]",
       "no (entiendo | entendí | entendi) lo que (quiere | quieres) decir",
       "a que se refiere [con (eso | acidez | vida)]", "a que te refieres [con (eso | acidez | vida)]", "que tipo de (acidez | acido)",
+      // "¿Qué significa acidez?": his word, so his example answers it (never "Exacto" for a guess of lime)
+      "que (significa | es) [la | lo]? (acidez | acido | le falta vida | falta vida)",
       "no (se | sé) (que | cuanto) (ponerle | echarle | agregarle | le pongo)", "(cuanto | cuanta) le (pongo | echo)",
     ] },
     // "No tengo dudas." / "Todo claro." (to "¿Me explico?" / "¿Alguna duda?")
@@ -418,7 +443,7 @@ export const kitchen: SituationDef = {
       "no me gusta (esa | la | tu | su) idea #tip:polite_disagree", "no (suena | se oye) bien #tip:polite_disagree",
       "(eso es | que) (ridiculo | absurdo | una tonteria) #tip:polite_disagree",
       "(olvidelo | olvidalo) #tip:polite_disagree", "no (es | me parece) (buena | una buena) idea #tip:polite_disagree",
-      "no me (gusta | gustan) [la | las]? @cruj #tip:polite_disagree",
+      "no me (gusta | gustan) [la | las]? @cruj #tip:polite_disagree", "no me gusta [nada | para nada] #tip:polite_disagree",
       "no (voy a | quiero) (probarlo | ponerle @cruj | probar @cruj) #tip:polite_disagree",
     ] },
 
@@ -448,6 +473,8 @@ export const kitchen: SituationDef = {
     ] },
     // "¿Por qué yo?" / "¿No puede usted?": the chef explains, then asks again
     help_why_ctx: { patterns: ["por que yo", "por que no (lo hace | lo haces | le dice | le dices) [usted | tu] [mismo]", "[por que] no (puede | puedes) (hacerlo | decirle) (usted | tu) [mismo]", "(tengo que | por que tengo que) hacerlo yo"] },
+    // "¿Quién es Fátima?" (only while the chef asks for the favor)
+    help_who_ctx: { patterns: ["quien es [@fa | ella]", "(quien | cual) es la nueva", "no conozco a @fa", "(cual | quien) es @fa"] },
     help_no: { patterns: [
       "(me gustaria | me encantaria) [ayudarla] pero (estoy [muy] @ocupado | no puedo | no tengo tiempo)",
       "(estoy | ando) [muy | super | un poco] @ocupado [ahorita | ahora | hoy] [@chef]",
@@ -486,6 +513,13 @@ export const kitchen: SituationDef = {
       "no digas eso [seguro (que)? (esta | quedó | quedo) (rico | bueno | bien | delicioso)]",
     ] },
     calm_down: { patterns: ["(calmate | tranquilizate | calmese) [@fa] #tip:calm_down"] },
+    // "¿Qué lleva?" / "¿Qué le pusiste?": what is in her ceviche
+    ask_recipe: { patterns: [
+      "que (lleva | le pusiste | le echaste | tiene adentro) [tu | el | este]? [@ceviche] [@fa]",
+      "(con | de) que (lo | la)? (hiciste | preparaste)",
+      "que ingredientes (lleva | tiene | le pusiste | usaste)",
+      "(de que es | es de pescado o de camaron | es de pescado | es de camaron) [el | tu]? [@ceviche]",
+    ] },
     // "Me gustan las tostadas." (while Fátima asks what worked): not hers, or not in a ceviche
     other_food_ctx: { patterns: ["(me gusta | me gustan | me encanta | me encantan) [mucho] [el | la | los | las | tu | tus] {o:other_food}", "[el | la | los | las | tu | tus] {o:other_food} (esta | estan) @bueno"] },
     // "Perdón por ser tan lenta." – "¡No lo eres!" (only then)
@@ -508,8 +542,9 @@ export const kitchen: SituationDef = {
       "@art {good:good_part} (esta | se ve) (muy | super)? (bonito | bonita | bien hecho | bien hecha)",
       "(esta | estan) [muy | super | bien]? @bueno @art {good:good_part}", "tiene (muy | un)? (buen | rico | gran) sabor #pt:sabor", "tiene (muy | un)? (buen | bonito) color #pt:color",
     ] },
-    // "El aguacate." (while Fátima asks what worked)
-    good_ctx: { patterns: ["[el | la | los | las | tu | tus] {good:good_part}", "[el | la | los | las | tu | tus] {good:good_part} [sin duda | definitivamente | creo]"] },
+    // "El aguacate." / "Todo." (while Fátima asks what worked)
+    good_ctx: { patterns: ["[el | la | los | las | tu | tus] {good:good_part}", "[el | la | los | las | tu | tus] {good:good_part} [sin duda | definitivamente | creo]",
+      "[si] (todo | todo todo | todito) [me gustó | me encantó | me gusto | me encanto] #all"] },
     praise_general: { patterns: [
       "(esta | quedó | quedo) [muy | super | bien | realmente | de verdad] (rico | buenisimo | delicioso | sabroso | bueno | riquisimo | increible | excelente | perfecto) [@fa] #h:really_good",
       "(buen | muy buen | excelente | gran) trabajo [@fa] #h:great_job", "(bien hecho | felicidades | muy bien hecho) [@fa]",
@@ -538,6 +573,7 @@ export const kitchen: SituationDef = {
       "nadie (se lo va a comer | lo va a pedir | lo va a comer) #tip:blunt_bad", "(es | esto es) un desastre #tip:blunt_bad",
       "nada (esta | quedó | quedo) bien #tip:blunt_bad", "nada me (gusta | gustó | gusto | encanta | encantó | encanto | convence | convencio) #tip:blunt_bad",
       "(sabe | esta) (raro | extrano) #tip:blunt_bad", "no me (convence | encanta) #tip:blunt_bad", "no hay nada (bueno | rico) #tip:blunt_bad",
+      "todo (esta | quedó | quedo | sabe)? (mal | feo | horrible | malo | fatal) #tip:blunt_bad",
     ] },
     problem_state: { patterns: [
       "(esta | quedó | quedo) [un poco | un poquito | algo | medio | muy | demasiado | bien | super] (picante | salado | soso | simple | insipido | acido | aguado | seco | dulce | tibio | crudo | duro | simplon)",
@@ -603,6 +639,9 @@ export const kitchen: SituationDef = {
       "(nada | la verdad nada | de verdad nada) [esta perfecto | esta perfecta] [asi] [@fa]",
       "[yo] no le (cambiaria | cambiaría | pondria | agregaria) nada", "no (cambies | le cambies) nada", "(esta | es) perfecto (asi | como esta)",
       "no le (encuentro | veo) nada [malo]", "todo (esta | quedó | quedo) (perfecto | muy bien | bien)",
+      // "¿Y cuál es la mala noticia?" – "No hay mala noticia."
+      "no hay [ninguna]? (mala noticia | malas noticias) [@fa]", "(ninguna | cero) mala noticia", "no hay nada (malo | que cambiar)",
+      "no tiene nada [de]? malo",
     ] },
     howmuch_ans: { patterns: [
       "[nada mas | solo | nomas] (un poquito | un poco | tantito | poquito | un poquitito) [nada mas] #h:just_little",
@@ -615,7 +654,10 @@ export const kitchen: SituationDef = {
     ] },
     encourage: { patterns: [
       "(ya lo vas a lograr | ya te va a salir | lo vas a lograr | lo vas a hacer muy bien) [@fa] #h:get_there",
-      "[no te preocupes | no pasa nada | tranquila] (es | apenas es) tu primera semana #h:first_week",
+      "[no te preocupes | no se preocupe | no pasa nada | tranquila] (es | apenas es) (tu | su) primera semana #h:first_week",
+      // "Es que… no quiero quedar mal con el chef." – "No vas a quedar mal."
+      "no vas a quedar mal [con (el chef | nadie)]", "(al chef | el chef | a el) le va a (gustar | encantar)", "le va a (gustar | encantar) al chef",
+      "el chef (esta | va a estar) (contento | contento contigo | orgulloso | orgulloso de ti)", "no te preocupes por el chef",
       "yo tambien (era | fui) (lento | lenta) [@first] #h:slow_too", "yo (era | fui) (lento | lenta) @first [tambien]",
       "(todos | todas | todo el mundo) (somos | fuimos | eramos | es) (lentos | lentas | lento) @first",
       "lo estas haciendo (muy bien | super bien | bien | increible) [@fa] #h:doing_great", "vas (muy | super) bien",
@@ -649,6 +691,11 @@ export const kitchen: SituationDef = {
     thanks_today: { patterns: [
       "[muchas] gracias por (lo de hoy | hoy | la clase | los consejos de hoy | la ayuda de hoy) [@chef] #h:thanks_today",
       "gracias a (los dos | ustedes)",
+    ] },
+    // "¿En serio?" / "¿Habanero en un chowder?" (only while Fátima waits for her idea's answer)
+    twist_surprise_ctx: { patterns: [
+      "(en serio | de veras | de verdad | neta)", "[salsa de | unas gotitas de | unas gotas de]? (habanero | chile habanero) [en (un | el | mi) chowder]",
+      "en (un | el | mi) chowder", "(chile | picante) en (un | el | mi) chowder",
     ] },
   },
 
@@ -731,6 +778,13 @@ export const kitchen: SituationDef = {
     def_move_on: [t("Bueno. | Nada más | piénsalo.", "Okay. | Just | think about it.", "Okay. Just think about it.")],
     receive_again: [t("¿Y? | ¿Qué | opinas?", "So? | What | do-you-think?", "So? What do you think?")],
     receive_skip: [t("Bueno. | Sigamos.", "Okay. | Let's-move-on.", "Okay. Moving on.")],
+    // "¿Le gustó?" before the second taste; "¿Lo puedo poner en el pizarrón?" before and after it
+    liked_yes: [
+      t("Sí, | me | gustó. | Nada más | le falta | vida.", "Yes, | (to) me | it-pleased. | Just | it's missing | life.", "Yes, I liked it. It just tastes a bit flat.",
+        { flags: { 5: "le falta vida: it lacks life = it tastes flat." } }),
+    ],
+    board_not_yet: [t("Primero | ajústalo. | Luego | vemos.", "First | adjust it. | Then | we-see.", "Adjust it first. Then we'll see.")],
+    board_yes: [t("Sí. | Esta | noche | lo | ponemos | en | los | especiales.", "Yes. | This | night | it | we-put | on | the | specials.", "Yes. Tonight it goes on the specials.")],
 
     // --- the example and the second taste --------------------------------------------------
     // "¿Me explico?" – "Sí." = no questions; "¿Alguna duda?" – "Sí." = one is coming
@@ -761,6 +815,11 @@ export const kitchen: SituationDef = {
           neutral: t("Anda, | ajústalo. | Aquí | te | espero.", "Go on, | adjust it. | Here | you | I'll-wait-for.", "Go ahead, adjust it. I'll wait.") }),
     ],
     again_auto: [t("A ver, | déjame | probarlo | otra vez.", "Let's see, | let me | taste it | again.", "Here, let me taste it again.")],
+    // "¿Cuánto le pongo?" / "¿Limón o vino blanco?" after the example: a short reminder, then he waits
+    again_hint: [
+      t("Unas | gotas | de | limón, | nada más. | Y | lo | vuelvo | a | probar.", "Some | drops | of | lime, | just. | And | it | I-go-back | to | taste.",
+        "Just a squeeze of lime. Then I'll taste it again.", { flags: { 3: F_LIME, 7: "volver a + verb: do it again." } }),
+    ],
     again_react: [
       t("¡Así sí! | Ahora | sí | sabe | a | mar.", "That's it! | Now | indeed | it-tastes | of | sea.", "Now we're talking! Now it really tastes like the sea.",
         { flags: { 2: "sí stresses the verb: now it really does." } }),
@@ -826,6 +885,8 @@ export const kitchen: SituationDef = {
         "You don't need | to be | chef. | Just | tell her | what | (for) her | came-out | well | and | one | thing | that | she-can | try.",
         "You don't need to be a chef. Just tell her what worked, and one thing to try."),
     ],
+    // "¿Quién es Fátima?"
+    handoff_who: [t("La | cocinera | nueva. | La | del | ceviche.", "The | cook | new. | The (one) | of the | ceviche.", "The new cook. The one who made the ceviche.")],
     // "¿Por qué yo?" / "¿No puede usted?"
     handoff_why: [
       t("Porque | me | tiene | miedo. | Contigo | sí | va | a | hablar.", "Because | (of) me | she-has | fear. | With you | indeed | she's-going | to | talk.",
@@ -881,6 +942,13 @@ export const kitchen: SituationDef = {
       t("Gracias. | Llevo | una | hora | con | este | pescado. | Creo | que | ya | me | odia.", "Thanks. | I've-spent | an | hour | with | this | fish. | I-think | that | already | me | it-hates.",
         "Thanks. I've been working on this fish for an hour. I think it hates me by now.", { flags: { 1: "llevar + time: how long you've been at something." } }),
     ],
+    // "¿Qué lleva?": a ceviche as made on the Yucatán coast
+    mia_recipe: [
+      t("Pescado | y | camarón, | limón, | cebolla | morada, | tomate, | pepino, | cilantro | y | un | poquito | de | habanero. | Y | aguacate | arriba.",
+        "Fish | and | shrimp, | lime, | onion | red, | tomato, | cucumber, | cilantro | and | a | little | of | habanero. | And | avocado | on top.",
+        "Fish and shrimp, lime, red onion, tomato, cucumber, cilantro, and a little habanero. And avocado on top.",
+        { flags: { 3: F_LIME, 5: "cebolla morada: red onion (morada = purple)." } }),
+    ],
     mia_calm_react: [t("¡Estoy | tranquila! | Totalmente | tranquila.", "I-am | calm! | Totally | calm.", "I am calm! Totally calm.")],
     mia_nice: [t("Mucho gusto.", "Nice to meet you.", "Nice to meet you.")],
     mia_nice_too: [t("Igualmente.", "Likewise.", "Nice to meet you too.")],
@@ -913,11 +981,11 @@ export const kitchen: SituationDef = {
     mia_fix_it: [t("Bueno. | Lo | arreglo.", "Okay. | It | I'll-fix.", "Okay. I'll fix that.")],
     mia_try_odd: [t("¿En | un | ceviche? | Mmm. | Bueno, | lo | pruebo.", "In | a | ceviche? | Hmm. | Okay, | it | I'll-try.", "In ceviche? Huh. Okay, I'll try that.")],
     mia_try_ok: [t("Bueno. | Eso | sí | lo | puedo | hacer.", "Okay. | That | indeed | it | I-can | do.", "Okay. I can do that.")],
-    mia_other: [t("¿{X}? | Mi | ceviche | no lleva | {X}.", "{X}? | My | ceviche | doesn't have | {X}.", "{X}? There's no {X} in my ceviche.")],
+    mia_other: [t("¿{X}? | Mi | ceviche | no lleva | {X}.", "{X}? | My | ceviche | doesn't have | {X}.", "{X}? My ceviche doesn't have any {X}.")],
     mia_bought: [t("¿{X}? | ¡Esas | son | de | la | tienda!", "{X}? | Those | are | from | the | store!", "{X}? Those are from the store!")],
     mia_try_x: [t("Un | poquito | de | {X}. | Entendido.", "A | little | of | {X}. | Got it.", "A little {X}. Got it.")],
     mia_must_react: [t("Bueno... | lo | intento.", "Okay... | it | I'll-try.", "Okay… I'll try.")],
-    mia_no_x: [t("¿Sin | {X}? | Bueno.", "Without | {X}? | Okay.", "No {X}? Okay.")],
+    mia_no_x: [t("Ah, | {X} | no.", "Oh, | {X} | not.", "Oh, okay. No {X}.")],
     mia_try_giveup: [t("Bueno. | Más tarde | lo | vuelvo | a | probar.", "Okay. | Later | it | I-go-back | to | taste.", "Okay. I'll taste it again later.")],
     mia_howmuch: [t("¿Me | das | un | ejemplo? | O sea, | ¿cuánto?", "(To) me | you-give | an | example? | Like, | how much?", "Could you give me an example? Like, how much?")],
     mia_howmuch_react: [t("Poco a poco. | Entendido.", "Little by little. | Got it.", "A little at a time. Got it.")],
@@ -942,6 +1010,8 @@ export const kitchen: SituationDef = {
         "I-tasted | your | chowder. | One | thing | that | you-could | try | is | some | little drops | of | sauce | of | habanero.",
         "I tasted your chowder. One thing you could try is a few drops of habanero sauce.", { flags: { 8: "son: the verb agrees with the plural that follows." } }),
     ],
+    // "¿En serio?" / "¿Habanero en un chowder?"
+    mia_twist_really: [t("Sí, | en serio. | Nada más | unas | gotitas.", "Yes, | seriously. | Just | some | little drops.", "Yes, seriously. Just a few drops.")],
     mia_twist_thanks: [t("¿De veras? | ¿No te enojas?", "Really? | You're not mad?", "Really? You're not mad?")],
     mia_twist_fair: [t("Está bien. | Tu | plato. | Eso | dice | el | chef.", "Okay. | Your | plate. | That | says | the | chef.", "Fair enough. Your plate. That's what Chef says.")],
     mia_twist_defensive: [t("Ay. | Perdón. | Olvida | lo que | dije.", "Oh. | Sorry. | Forget | what | I-said.", "Oh. Sorry. Forget I said anything.")],
@@ -1191,6 +1261,7 @@ export const kitchen: SituationDef = {
     "así sí": { reason: "lexical_expression", split: "así → like that + sí → yes; the approval = that's it, now we're talking.", minimal: "Two words." },
     "de verdad": { reason: "lexical_expression", split: "de → of + verdad → truth; = real, really.", minimal: "Two words." },
     "de veras": { reason: "lexical_expression", split: "de → of + veras → truths; = really.", minimal: "Two words." },
+    "en serio": { reason: "lexical_expression", split: "en → in + serio → serious; = seriously, really.", minimal: "Two words." },
     "te lo": { reason: "grammatical_fusion", split: "te → to you + lo → it; two object pronouns before the verb = it to you.", minimal: "Two words." },
     "se lo": { reason: "grammatical_fusion", split: "se → (oneself) + lo → it; comerse lo = eat it up.", minimal: "Two words." },
     "se hace": { reason: "grammatical_fusion", split: "Impersonal se: se hace = it's done.", minimal: "Two words." },
@@ -1250,13 +1321,14 @@ export const kitchen: SituationDef = {
         const n = bump(c, "receive");
         if (!c.s.fbGiven) { c.s.fbGiven = true; C(c, "feedback1a"); C(c, "feedback1b"); return; }
         if (n >= 4) { c.s.recvSkip = true; C(c, "receive_skip"); askNext(c); return; }
-        C(c, "receive_again");
+        // "¿Y? ¿Qué opinas?", then "No tienes que estar de acuerdo…" (the same question twice in a row read as a loop)
+        recvAsk(c, n === 2 ? "receive_again" : "receive_help");
       },
       expects: ["thanks_helpful", "will_work", "defensive", "ask_example"],
       suggest: [{ lt: "Thank him and say you'll work on it", hint: "receive" }, { lt: "Ask for an example", hint: "example" }],
       yes: (c) => { receiveWell(c, "ok"); },
       no: (c) => { defend(c, []); },
-      help: (c) => { C(c, "receive_help"); } },
+      help: (c) => { recvAsk(c, "receive_help"); } },
     { id: "example", when: receiveDone, done: (c) => !!c.s.exampleDone,
       ask: (c) => {
         const n = bump(c, "example");
@@ -1283,7 +1355,8 @@ export const kitchen: SituationDef = {
       ask: (c) => {
         const n = bump(c, "second");
         if (n === 1) { C(c, "second_ask"); return; }
-        if (n <= 3) { C(c, "second_reask"); return; }
+        // "¿con tortilla o sin tortilla?" once (twice in a row read as a loop); then "Piénsalo."
+        if (n === 2) { C(c, "second_reask"); return; }
         C(c, "second_skip"); c.s.secondDone = true; askNext(c);
       },
       expects: ["accept_idea", "keep_own", "reject_rude", "second_ctx", "thanks_helpful", "will_work"],
@@ -1301,7 +1374,7 @@ export const kitchen: SituationDef = {
         if (n <= 2) { C(c, "handoff_again"); return; }
         callMia(c, "anyway"); askNext(c);
       },
-      expects: ["help_yes", "help_yes_ctx", "help_no", "help_unsure_ctx", "help_why_ctx"],
+      expects: ["help_yes", "help_yes_ctx", "help_no", "help_unsure_ctx", "help_why_ctx", "help_who_ctx"],
       suggest: [{ lt: "Agree to help Fátima", hint: "handoff" }],
       yes: (c) => { callMia(c, "yes"); }, no: (c) => { helpNo(c, true); },
       // "No sé" (or a "no, pero…" still waiting): one no this turn
@@ -1313,15 +1386,20 @@ export const kitchen: SituationDef = {
       ask: (c) => {
         const n = bump(c, "mia_open");
         if (n === 1) { c.s.miaHiKind = c.pick(["terrible", "nice"]); M(c, c.s.miaHiKind === "terrible" ? "mia_hi" : "mia_hi_nice"); return; }
-        if (n <= 3) { M(c, "mia_wait"); return; }
-        M(c, "mia_here"); c.s.miaOpen = true; askNext(c);
+        // asked once; then she holds the plate out ("¿Lo... quieres probar?" twice in a row read as a loop)
+        if (!c.s.waitAsked) { c.s.waitAsked = true; M(c, "mia_wait"); return; }
+        miaHere(c); askNext(c);
       },
-      expects: ["offer_feedback", "reassure", "calm_down", "intro_mia_ctx", "nice_meet"],
+      expects: ["offer_feedback", "reassure", "calm_down", "intro_mia_ctx", "nice_meet", "ask_recipe"],
       suggest: [{ lt: "Ask if you can taste it and give feedback", hint: "mia_open" }, { lt: "Calm Fátima down", hint: "mia_calm" }],
       yes: (c) => { if (c.s.miaHiKind === "terrible" && asks(c, "mia_open") === 1 && /^\W*(si|claro)\W*$/.test(heard(c))) M(c, "mia_oye"); miaReady(c); },
-      // "No" to "Seguro está horrible": it isn't
-      no: (c) => { reassure(c); },
-      help: (c) => { M(c, "mia_wait"); } },
+      // "No" to "Seguro está horrible": it isn't; to "¿Lo... quieres probar?" (asked from the second time): she holds
+      // the plate out anyway ("Ten. Nada más pruébalo."), never a thank-you or "Sí, sé honesto"
+      no: (c) => {
+        if (c.s.waitAsked && !c.s.miaOpen) { if (once(c, "here")) miaHere(c); return; }
+        reassure(c);
+      },
+      help: (c) => { if (c.s.waitAsked) { miaHere(c); askNext(c); } else { c.s.waitAsked = true; M(c, "mia_wait"); } } },
     { id: "mia_worked", when: (c) => !!c.s.miaOpen, done: praiseDone,
       ask: (c) => {
         const n = bump(c, "mia_worked");
@@ -1331,27 +1409,32 @@ export const kitchen: SituationDef = {
         if (n >= 5) { c.s.praiseSkip = true; askNext(c); return; }
         c.s.miaQ = "ask_good"; M(c, "mia_ask_good");
       },
-      expects: ["praise_part", "praise_general", "praise_short_ctx", "good_ctx", "other_food_ctx", "blunt_bad", "problem_state"],
+      expects: ["praise_part", "praise_general", "praise_short_ctx", "good_ctx", "other_food_ctx", "blunt_bad", "problem_state", "ask_recipe"],
       suggest: [{ lt: "Tell Fátima what worked", hint: "mia_worked", options: "good_part" }],
       // "¿Hay algo bueno?" – "Sí." → "¿De veras? ¿Qué?"; "¿Te gustó o no?" – "Sí." is praise
-      yes: (c) => { if (c.s.miaQ === "which") { c.s.miaQ = undefined; praise(c, undefined); return; } if (c.s.miaQ === "ask_good") { M(c, "mia_what"); c.hold(); } },
-      no: (c) => { if (c.s.miaQ === "ask_good" || c.s.miaQ === "which") blunt(c); },
+      // ("¿De veras? ¿Qué?" – "Sí." again: that's all she gets, praise in general)
+      yes: (c) => {
+        if (c.s.miaQ === "which" || c.s.miaQ === "what") { c.s.miaQ = undefined; praise(c, undefined); return; }
+        if (c.s.miaQ === "ask_good") { c.s.miaQ = "what"; M(c, "mia_what"); c.hold(); }
+      },
+      no: (c) => { if (c.s.miaQ === "ask_good" || c.s.miaQ === "which" || c.s.miaQ === "what") blunt(c); },
       help: (c) => { c.s.miaQ = "ask_good"; M(c, "mia_ask_good"); } },
     { id: "mia_try", when: praiseDone, done: tryDone,
       ask: (c) => {
         const n = bump(c, "mia_try");
         // what the learner just said decides how she asks (a fix in the same breath skips this question)
-        if (c.s.probNow) { c.s.probNow = false; M(c, "mia_problem_react"); return; }
-        if (c.s.flinch) { c.s.flinch = false; M(c, "mia_what_do"); return; }
-        if (c.s.noFixNow) { c.s.noFixNow = false; M(c, "mia_something"); return; }
-        if (n === 1 && c.s.problemOpen) { M(c, "mia_problem_back"); return; }
+        if (c.s.probNow) { c.s.probNow = false; tryAsk(c, "mia_problem_react"); return; }
+        if (c.s.flinch) { c.s.flinch = false; tryAsk(c, "mia_what_do"); return; }
+        // "Nada, está perfecto": "Hay algo, ¿verdad?" (asked just now already: she gives up for now)
+        if (c.s.noFixNow) { c.s.noFixNow = false; if (c.s.tryLast === "mia_something") { tryGiveUp(c); askNext(c); } else tryAsk(c, "mia_something"); return; }
+        if (n === 1 && c.s.problemOpen) { tryAsk(c, "mia_problem_back"); return; }
         if (n >= 4) { tryGiveUp(c); askNext(c); return; }
-        M(c, n === 2 ? "mia_something" : "mia_bad_news");
+        tryAsk(c, n === 2 ? "mia_something" : "mia_bad_news");
       },
-      expects: ["suggest_fix", "suggest_other", "suggest_unknown", "suggest_not", "problem_state", "blunt_bad", "no_fix"],
+      expects: ["suggest_fix", "suggest_other", "suggest_unknown", "suggest_not", "problem_state", "blunt_bad", "no_fix", "ask_recipe"],
       suggest: [{ lt: "Suggest one thing to try", hint: "mia_try", options: "ingredient" }],
       no: (c) => { noFix(c); },
-      help: (c) => { M(c, "mia_something"); } },
+      help: (c) => { tryAsk(c, "mia_something"); } },
     { id: "mia_howmuch", when: (c) => !!c.s.tried && !!c.s.howMuch && !!c.s.fix && !c.s.amountGiven, done: (c) => !!c.s.howMuchDone,
       ask: (c) => {
         const n = bump(c, "mia_howmuch");
@@ -1365,24 +1448,27 @@ export const kitchen: SituationDef = {
     { id: "mia_encourage", when: tryDone, done: encDone,
       ask: (c) => {
         const n = bump(c, "mia_encourage");
-        if (n === 1) { M(c, "mia_slow"); return; }
-        if (n <= 3) { M(c, "mia_slow_again"); return; }
+        if (n === 1) { encAsk(c, "mia_slow"); return; }
+        // "Es que... no quiero quedar mal con el chef." once; then she gives up (it came twice in a row after a rush)
+        if (n === 2 && c.s.encLast !== "mia_slow_again") { encAsk(c, "mia_slow_again"); return; }
         c.s.encSkip = true; M(c, "mia_try_harder"); askNext(c);
       },
       expects: ["encourage", "encourage_ctx", "reassure", "calm_down", "rush"],
       suggest: [{ lt: "Encourage Fátima", hint: "mia_encourage" }],
       // "Perdón por ser tan lenta." – "Sí." agrees she is slow; "No." means she isn't
       yes: (c) => { rush(c, true); }, no: (c) => { encourage(c); },
-      help: (c) => { M(c, "mia_slow_again"); } },
+      help: (c) => { encAsk(c, c.s.encLast === "mia_slow_again" ? "mia_slow" : "mia_slow_again"); } },
     // Twist: Fátima gives the learner feedback (no mission item).
     { id: "mia_back", when: (c) => encDone(c) && !!c.s.backTwist, done: (c) => !!c.s.backDone,
       ask: (c) => {
         const n = bump(c, "mia_back");
         if (n === 1) { c.twist("mia_feedback"); M(c, "mia_twist"); M(c, "mia_twist2"); return; }
+        // "¿En serio?": once, and she waits
+        if (SURPRISE.has(c)) { SURPRISE.delete(c); if (!c.s.surpriseSaid) { c.s.surpriseSaid = true; M(c, "mia_twist_really"); return; } }
         // anything else: Fátima takes it as a yes
         twistThanks(c, true); askNext(c);
       },
-      expects: ["thanks_helpful", "will_work", "accept_idea", "keep_own", "defensive", "reject_rude"],
+      expects: ["thanks_helpful", "will_work", "accept_idea", "keep_own", "defensive", "reject_rude", "twist_surprise_ctx"],
       suggest: [{ lt: "Take Fátima's feedback", hint: "mia_back" }],
       yes: (c) => { twistThanks(c, true); }, no: (c) => { if (POLITE_NO.test(heard(c))) twistFair(c); else twistDefensive(c); },
       help: (c) => { twistFair(c); } },
@@ -1407,7 +1493,10 @@ export const kitchen: SituationDef = {
       if (c.step === "again" || (c.s.exampleDone && !c.s.againDone && receiveDone(c))) { tasteAgain(c, false); return; }
     },
     // "No está mejor" at the second taste: the chef just tastes it (the step does)
-    nervous(c, _slots, seg) { if (seg.tags.includes("notyet") && c.s.served) return; if (once(c, "nervous")) C(c, "nervous_react"); },
+    nervous(c, _slots, seg) {
+      if (seg.tags.includes("notyet") && c.s.served) return;
+      if (once(c, "nervous") && !c.s.nervousSaid) { c.s.nervousSaid = true; C(c, "nervous_react"); }
+    },
     want_feedback(c, _slots, seg) {
       if (!c.s.served) { if (once(c, "offer")) serveDish(c, true, [...seg.tags, "fb"]); return; }
       if (!c.s.consented && !c.s.fbAsked) { c.s.consented = true; return; }
@@ -1458,8 +1547,33 @@ export const kitchen: SituationDef = {
       // "¿Como qué?" is about the chowder only until the chef has tasted it again
       if (!c.s.fbGiven || c.s.againDone) return;
       if (!once(c, "example")) return;
+      // asked again once the example is given ("¿Cuánto le pongo?", "¿Limón o vino blanco?"): a short reminder, and
+      // he waits (the example word for word again, then tasting before anything was added, read wrong)
+      if (c.s.exampleDone) { if (!c.s.hintSaid) { c.s.hintSaid = true; C(c, "again_hint"); c.hold(); } return; }
       c.s.exampleDone = true; c.s.exAsked = true;
       C(c, "example_give");
+    },
+    // "¿Le gustó?": before the feedback it asks for it; after it, a short answer; after the second taste, the board
+    ask_liked(c) {
+      if (c.s.handoffDone) return;
+      if (!c.s.served) { if (once(c, "offer")) serveDish(c, true, ["fb"]); return; }
+      if (!c.s.fbGiven) { c.s.consented = true; return; }
+      if (!once(c, "liked")) return;
+      if (c.s.againDone) { boardYes(c); return; }
+      if (c.s.likedSaid) return;
+      c.s.likedSaid = true; C(c, "liked_yes");
+      if (c.step === "again") c.hold(); // he still waits for the lime
+    },
+    // "¿Lo puedo poner en el pizarrón?": not before the second taste
+    ask_board(c) {
+      if (c.s.handoffDone) return;
+      if (!c.s.served) { if (once(c, "offer")) serveDish(c, true, []); return; }
+      if (!c.s.fbGiven) { c.s.consented = true; return; }
+      if (!once(c, "board")) return;
+      if (c.s.againDone) { boardYes(c); return; }
+      if (c.s.boardSaid) return;
+      c.s.boardSaid = true; C(c, "board_not_yet");
+      if (c.step === "again") c.hold();
     },
     no_questions(c) {
       // "No tengo dudas" / "Todo claro": he gives the example now (asking again would repeat the question)
@@ -1467,7 +1581,7 @@ export const kitchen: SituationDef = {
       if (c.step === "receive" || (c.s.fbGiven && !receiveDone(c))) { receiveWell(c, "ok"); return; }
       if (c.step === "mia_try") { noFix(c); return; }
       // "Nada." to "¿Hay algo bueno?": nothing is good
-      if (c.step === "mia_worked" && c.s.miaQ === "ask_good" && !praiseDone(c)) { blunt(c); return; }
+      if (c.step === "mia_worked" && (c.s.miaQ === "ask_good" || c.s.miaQ === "what") && !praiseDone(c)) { blunt(c); return; }
     },
     guess_lemon(c, _slots, seg) {
       if (c.step === "again" || (c.s.exampleDone && receiveDone(c) && !c.s.againDone)) { tasteAgain(c, true); return; }
@@ -1523,7 +1637,8 @@ export const kitchen: SituationDef = {
       if (once(c, "unsure")) C(c, "handoff_unsure");
       callMia(c, "yes");
     },
-    help_why_ctx(c) { if (c.step === "handoff" && !c.s.handoffDone && once(c, "why")) C(c, "handoff_why"); },
+    help_why_ctx(c) { if (c.step === "handoff" && !c.s.handoffDone && !c.s.whySaid && once(c, "why")) { c.s.whySaid = true; C(c, "handoff_why"); } },
+    help_who_ctx(c) { if (c.step === "handoff" && !c.s.handoffDone && !c.s.whoSaid && once(c, "who")) { c.s.whoSaid = true; C(c, "handoff_who"); } },
     help_no(c) {
       if (c.step === "handoff") { helpNo(c); return; }
       if (c.step === "consent") { refuse(c); return; }
@@ -1542,19 +1657,38 @@ export const kitchen: SituationDef = {
       if (c.step === "mia_encourage") return; // "¡Estoy tranquila!": she still waits for a kind word
       reassure(c, true);
     },
-    intro_mia_ctx(c) { if (once(c, "nice")) M(c, "mia_nice"); },
-    nice_meet(c) { if (inMia(c) && once(c, "nice")) M(c, "mia_nice_too"); },
+    // "¿Qué lleva?": she lists it once; while she waits for the verdict or the idea, she keeps waiting
+    ask_recipe(c) {
+      if (!inMia(c) || !once(c, "recipe") || c.s.recipeSaid) return;
+      c.s.recipeSaid = true; M(c, "mia_recipe");
+      if (c.step !== "mia_open") c.hold();
+    },
+    // "¿En serio?" to her idea: "Sí, de veras…" where her question would come, so another piece of the same turn
+    // ("En serio, no me gusta el picante") answers instead; "No, en serio" is a no
+    twist_surprise_ctx(c) {
+      if (c.step !== "mia_back" || c.s.backDone) return;
+      if (/^no\b/.test(heard(c))) { if (POLITE_NO.test(heard(c))) twistFair(c); else twistDefensive(c); return; }
+      SURPRISE.add(c);
+    },
+    intro_mia_ctx(c) { if (once(c, "nice") && !c.s.niceSaid) { c.s.niceSaid = true; M(c, "mia_nice"); } },
+    nice_meet(c) { if (inMia(c) && once(c, "nice") && !c.s.niceSaid) { c.s.niceSaid = true; M(c, "mia_nice_too"); } },
     praise_part(c, slots, seg) {
       const part = slots.good ?? (seg.tags.find((x) => x.startsWith("pt:"))?.slice(3));
       praise(c, part);
     },
     good_ctx(c, slots, seg) {
+      // "Todo." to "¿Qué?" / "¿Hay algo bueno?": everything
+      if (seg.tags.includes("all")) { praise(c, undefined); return; }
       // "…pero no el cilantro": the part named after "no" is no praise
       if (negatedPart(c, slots.good)) { kitchen.handlers.problem_state(c, slots, seg); return; }
       praise(c, slots.good);
     },
     // "Me gusta mucho el aguacate" may come as "Me gusta mucho" + "el aguacate": the part named is the praise
-    praise_general(c, _slots, seg) { praise(c, partNamed(c), seg.tags.includes("notbad")); },
+    praise_general(c, _slots, seg) {
+      // "Sí, me gusta." to the chef's tortilla strips: the idea is taken
+      if (c.step === "second") { secondAnswer(c, "accept"); return; }
+      praise(c, partNamed(c), seg.tags.includes("notbad"));
+    },
     other_food_ctx(c, slots) {
       if (c.step !== "mia_worked" || !once(c, "praise")) return;
       M(c, other(slots.o)?.attrs?.bought ? "mia_bought" : "mia_other", { X: slots.o });
@@ -1594,15 +1728,16 @@ export const kitchen: SituationDef = {
     suggest_other(c, _slots, seg) { suggestion(c, undefined, seg.tags); },
     suggest_unknown(c, _slots, seg) { suggestion(c, undefined, seg.tags); },
     suggest_not(c, slots) {
-      if (!inMia(c)) return;
-      if (once(c, "suggest")) M(c, "mia_no_x", { X: slots.fix });
+      if (!inMia(c) || !once(c, "suggest") || c.s.noX === slots.fix) return;
+      c.s.noX = slots.fix;
+      M(c, "mia_no_x", { X: slots.fix });
     },
     no_fix(c) {
       if (c.step === "example") { exampleNo(c); return; }
       if (c.step === "mia_try" || (praiseDone(c) && !tryDone(c))) { noFix(c); return; }
       if (c.step === "mia_worked") {
         if (/\b(perfect[oa]|bien|ric[oa]|bueno)\b/.test(heard(c))) praise(c, undefined);
-        else if (c.s.miaQ === "ask_good" && !praiseDone(c)) blunt(c);
+        else if ((c.s.miaQ === "ask_good" || c.s.miaQ === "what") && !praiseDone(c)) blunt(c);
         return;
       }
     },
@@ -1809,6 +1944,31 @@ export const kitchen: SituationDef = {
     { say: "No, no quiero hacerlo", intent: "help_no", step: "handoff", not: ["help_yes", "help_yes_ctx"] },
     { say: "No, ahora no, gracias", intent: "no_feedback", step: "consent", not: ["want_feedback"] },
     { say: "Sí, quiero saber qué opina", intent: "want_feedback", step: "consent" },
+    // audit (5 Nov): side questions, the missing answers and their traps
+    { say: "¿Le gustó?", intent: "ask_liked", step: "consent" },
+    { say: "¿Qué le pareció?", intent: "ask_liked", step: "receive" },
+    { say: "¿Entonces no le gustó?", intent: "ask_liked", step: "receive" },
+    { say: "No me gustó", intent: "defensive", step: "receive", not: ["ask_liked"] },
+    { say: "No me gustó", intent: "blunt_bad", step: "mia_worked", not: ["ask_liked", "defensive"] },
+    { say: "No me gustó", intent: "defensive", step: "mia_back", not: ["ask_liked", "thanks_helpful"] },
+    { say: "¿Lo puedo poner en el pizarrón?", intent: "ask_board", step: "second" },
+    { say: "¿Va en los especiales?", intent: "ask_board", step: "receive" },
+    { say: "No lo voy a poner en el pizarrón", intent: "none", step: "second", not: ["ask_board"] },
+    { say: "¿Cuánto le pongo?", intent: "ask_example", step: "again", not: ["ask_again"] },
+    { say: "¿Limón o vino blanco?", intent: "ask_example", step: "again", not: ["guess_lemon"] },
+    { say: "¿Quién es Fátima?", intent: "help_who_ctx", step: "handoff", not: ["help_yes"] },
+    { say: "¿Qué lleva tu ceviche?", intent: "ask_recipe", step: "mia_worked" },
+    { say: "¿Qué le pusiste?", intent: "ask_recipe", step: "mia_open" },
+    { say: "Todo.", intent: "good_ctx", step: "mia_worked" },
+    { say: "Todo mal", intent: "blunt_bad", step: "mia_worked", not: ["good_ctx", "praise_general"] },
+    { say: "No hay mala noticia", intent: "no_fix", step: "mia_try", not: ["suggest_fix"] },
+    { say: "No vas a quedar mal con el chef", intent: "encourage", step: "mia_encourage", not: ["rush"] },
+    { say: "Al chef le va a gustar", intent: "encourage", step: "mia_encourage" },
+    { say: "El chef no va a estar contento", intent: "none", step: "mia_encourage", not: ["encourage"] },
+    { say: "No se preocupe, es su primera semana", intent: "encourage", step: "mia_encourage" },
+    { say: "¿En serio?", intent: "twist_surprise_ctx", step: "mia_back" },
+    { say: "¿Habanero en un chowder?", intent: "twist_surprise_ctx", step: "mia_back", not: ["accept_idea"] },
+    { say: "Sí, pero rápido", intent: "want_feedback", step: "consent", not: ["no_feedback"] },
     // not understood
     { say: "El elefante morado come teclados", intent: "none" },
     { say: "Mi tía vive en Guadalajara", intent: "none" },
@@ -1888,6 +2048,36 @@ export const kitchen: SituationDef = {
       "Me encanta el aguacate, pero no la cebolla.", "Más sal no, más limón.", "No te preocupes, vas muy bien.", "Así está bien.", "¡Sí, chef!"],
       expect: { complete: true, state: { defCount: 1, received: true, exAsked: undefined, secondHow: "keep", good: "aguacate", fix: "limon", backHow: "keep" } },
       auto: AUTO, setup: (s) => { s.howMuch = false; s.backTwist = true; } },
+    // audit (5 Nov): the shared replies in each cook's own voice (the voice line list records a line in the voices it
+    // hears it in). The chef: hello and "¿Cómo estás?", slower, learning, "¿Qué significa…?", a moment, sorry, "de nada"
+    // ("Perdón, no te entendí" can't be scripted: random runs reach it in both voices); and "Me gusta." takes his idea
+    { name: "the chef's own replies", turns: ["¡Hola, chef! ¿Cómo estás?", "Muy bien, gracias.", "Perdón, ¿puede hablar más despacio?",
+      "Aquí está mi chowder de pescado.", "Estoy aprendiendo español.", "Claro, dígame.", "Un momento, por favor.", "Lo siento.",
+      "Gracias, me sirve mucho.", "¿Me puede dar un ejemplo?", "¿Qué significa ajústalo?", "Gracias.", "Me gusta.",
+      "Claro, con mucho gusto.", "¿Te puedo hacer unos comentarios?", "Me gusta mucho el pescado.", "Podrías ponerle un poquito de sal.", "Ya lo vas a lograr.", "¡Sí, chef!"],
+      expect: { complete: true, state: { received: true, secondHow: "accept", good: "pescado", fix: "sal" } }, auto: AUTO, setup: PLAIN },
+    // … and the same replies in Fátima's voice, while she waits; "Gracias." to her recipe gets her "de nada"
+    { name: "Fátima's own replies", turns: ["Aquí está mi chowder de pescado.", "Claro, dígame.", "Gracias, me sirve mucho.", "¿Me puede dar un ejemplo?",
+      "¿Lo puede probar otra vez?", "Buena idea.", "Claro, con mucho gusto.", "¡Hola, Fátima! ¿Cómo estás?", "Bien, gracias.", "¿Qué lleva tu ceviche?", "Gracias.",
+      "Perdón, ¿puedes hablar más despacio?", "Estoy aprendiendo español.", "Un momento.", "¿Qué significa porfa?", "Lo siento.", "Sí, el pescado.", "Podrías ponerle un poquito de sal.", "Ya lo vas a lograr.", "¡Sí, chef!"],
+      expect: { complete: true, state: { waitAsked: true, recipeSaid: true, good: "pescado", fix: "sal" } }, auto: AUTO, setup: PLAIN },
+    // side questions: "¿Le gustó?", the board before and after the second taste, "¿Cuánto le pongo?", "¿Quién es Fátima?",
+    // "¿Qué lleva?", a "No." to "¿Lo... quieres probar?", "Todo.", "No le falta sal" (no "¿Sin sal?"), "No hay mala noticia",
+    // her worry about the chef, "¿Habanero en un chowder?" (twist pinned on)
+    { name: "side questions", turns: ["Aquí está mi chowder de pescado.", "¿Le gustó?", "¿Entonces no le gustó?", "¿Lo puedo poner en el pizarrón?",
+      "Gracias, me sirve mucho.", "¿Me puede dar un ejemplo?", "¿Cuánto le pongo?", "Listo.", "¿Entonces va en el pizarrón?", "Con tortilla, entonces.",
+      "¿Quién es Fátima?", "Claro.", "¿Qué lleva tu ceviche?", "No.", "Todo.", "No hay mala noticia.", "No le falta sal.", "Le falta una pizca de sal.",
+      "No vas a quedar mal con el chef.", "¿Habanero en un chowder?", "Bueno, lo voy a probar.", "¡Sí, chef!"],
+      expect: { complete: true, state: { likedSaid: true, boardSaid: true, boardYes: true, hintSaid: true, whoSaid: true, recipeSaid: true, surpriseSaid: true,
+        noX: "sal", fix: "sal", backHow: "thanks" } }, auto: AUTO, setup: (s) => { s.howMuch = false; s.backTwist = true; } },
+    // no line twice in a row: "¿Y? ¿Qué opinas?" then "No tienes que estar de acuerdo…"; "¿Por qué yo?" answered once; "No sé"
+    // twice to Fátima (asked once, then the plate held out); "nothing to change" twice (she gives up); rushed twice (her
+    // reaction once, then "Me voy a esforzar más"): not done
+    { name: "no line twice in a row", turns: ["Aquí está mi chowder de pescado.", "Claro, dígame.", "Pero siempre lo hago así.", "Lo siento.",
+      "Gracias, me sirve mucho.", "¿Como qué?", "¿Ya está mejor?", "Sí, me gusta.", "¿Por qué yo?", "¿Por qué yo?", "No sé.", "No sé.",
+      "Me gusta mucho el aguacate.", "No hay mala noticia.", "No, de verdad, nada.", "¡Apúrate!", "Tienes que ser más rápida.", "¡Sí, chef!"],
+      expect: { complete: false, state: { defCount: 1, received: true, secondHow: "accept", whySaid: true, trySkip: true, encSkip: true, rushSaid: true } },
+      auto: AUTO, setup: PLAIN },
   ],
 };
 
@@ -1901,6 +2091,20 @@ function askNext(c: Ctx) {
   const st = kitchen.steps.find((x) => (!x.when || x.when(c)) && !x.done(c));
   if (st) { c.ask(st.id); return; }
   if (!c.s.__finished) { c.s.__finished = true; closing(c); }
+}
+
+/** The chef's "¿Y? ¿Qué opinas?" / "No tienes que estar de acuerdo…" (remembered: never the same one twice in a row). */
+function recvAsk(c: Ctx, id: string) {
+  const say = c.s.recvLast === id ? (id === "receive_again" ? "receive_help" : "receive_again") : id;
+  c.s.recvLast = say;
+  C(c, say);
+}
+
+/** "¿Lo pongo en el pizarrón?" / "¿Le gustó?" after the second taste: yes, tonight (said once). */
+function boardYes(c: Ctx) {
+  if (c.s.boardYes) return;
+  c.s.boardYes = true;
+  C(c, "board_yes");
 }
 
 /** "Buen punto, pero…": an acknowledgement before a contrast is no answer of its own. */
@@ -2012,6 +2216,24 @@ function helpNoSay(c: Ctx) {
   if (c.s.helpNo === 1) { C(c, "handoff_no"); return; }
   callMia(c, "anyway");
 }
+
+/** "Ten. Nada más pruébalo.": she holds the plate out and the tasting starts. */
+function miaHere(c: Ctx) {
+  if (c.s.miaOpen) return;
+  M(c, "mia_here");
+  c.s.miaOpen = true;
+}
+
+/** Fátima asks for the idea; the same question never twice in a row ("¿Y cuál es la mala noticia?" / "Hay algo, ¿verdad?"). */
+function tryAsk(c: Ctx, id: string) {
+  const swap: Record<string, string> = { mia_something: "mia_bad_news", mia_bad_news: "mia_something" };
+  const say = c.s.tryLast === id && swap[id] ? swap[id] : id;
+  c.s.tryLast = say;
+  M(c, say);
+}
+
+/** Fátima's "Perdón por ser tan lenta" / "Es que..." (remembered, so neither comes twice in a row). */
+function encAsk(c: Ctx, id: string) { c.s.encLast = id; M(c, id); }
 
 /** Fátima is ready to hear it. */
 function miaReady(c: Ctx) {
@@ -2130,7 +2352,8 @@ function encourage(c: Ctx) {
 function rush(c: Ctx, bare: boolean) {
   if (bare) c.tip(TIPS.rush);
   if (!bare && contrast(c)) return;
-  if (!once(c, "rush") || encDone(c)) return;
+  if (!once(c, "rush") || encDone(c) || c.s.rushSaid) return;
+  c.s.rushSaid = true;
   M(c, "mia_rush_react");
 }
 
