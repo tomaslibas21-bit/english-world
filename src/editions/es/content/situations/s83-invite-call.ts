@@ -15,10 +15,15 @@
 // "¿Te animas?", "¿Te late?" (M slang), "va / sale" (M: okay), "¿Paso por ti?" (shall I pick you up?), "quedamos de
 // vernos en…"; a "boleto" is a ticket (shared with most of Latin America; "entrada" is accepted); people meet at the
 // kiosco on the zócalo, at the church, at a taquería for tacos before going out; a Sunday "carne asada" at home is
-// the Mexican barbecue. Town facts kept: Café La Ceiba is on the zócalo, the kiosco has free live music on Friday
-// evenings (s69), which is why it's crowded (meet_change). The taquería next to the mercado (s69) sells cochinita until
-// noon, so Andrea's evening taquería is "la taquería de la esquina", left vague.
-// Mexican-only words in Andrea's lines (¿bueno?, ¿qué onda?, qué padre, va, sale) have neutral twins.
+// the Mexican barbecue. Town facts kept: the kiosco has free live music on Friday evenings (s62, s69), which is why
+// it's crowded (meet_change). Andrea's taquería is the town's, "la taquería del mercado", beside the mercado's door on
+// avenida del Puerto (the lead, 5 Nov 2026: the dialogue follows the 3D town, docs/es/TOWN.md; s62, s69); its morning
+// cochinita (s69) runs out by noon, and in the evening it has tacos for dinner.
+// Mexican-only words in Andrea's lines (¿bueno?, ¿qué onda?, qué padre, va, sale) have neutral twins; the neutral text
+// also says "entrada" for the ticket (the lead, 5 Nov 2026) and "parrillada" for the carne asada (as p30 and s33), and
+// the hints "¡De acuerdo!" for "¡Va!" and "mientras más, mejor" for Mexico's "entre más, mejor".
+// Audit (5 Nov 2026): Andrea's summary is two lines, the day and time ({$day} × {$time}: every one voiced) and the
+// place ({P.the}), since the voice list never expands a line with a value and an entity.
 
 import type { Ctx, EntityDef, Handler, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
@@ -42,7 +47,9 @@ const GENRES: EntityDef[] = [
 const PLACES: EntityDef[] = [
   ent("kiosco", "kiosco", "bandstand", "m", { forms: ["quiosco", "kiosko", "el kiosco", "el quiosco", "kiosco del zocalo", "el zocalo", "zocalo", "la plaza", "plaza"] }),
   ent("malecon", "malecón", "boardwalk", "m", { forms: ["malecon", "el malecon"] }),
-  ent("taqueria", "taquería", "taco place", "f", { forms: ["taqueria", "la taqueria", "taqueria de la esquina", "la taqueria de la esquina", "los tacos", "puesto de tacos", "los tacos de la esquina", "los tacos al pastor"] }),
+  ent("taqueria", "taquería", "taco place", "f", { forms: ["taqueria", "la taqueria", "taqueria del mercado", "la taqueria del mercado", "taqueria junto al mercado",
+    "la taqueria junto al mercado", "taqueria de junto al mercado", "los tacos del mercado", "taqueria de la esquina", "la taqueria de la esquina", "los tacos",
+    "puesto de tacos", "los tacos de la esquina", "los tacos al pastor"] }),
   ent("mercado", "mercado", "market", "m", { forms: ["mercado", "el mercado", "mercado municipal", "el mercado municipal"] }),
   ent("cafe", "café", "café", "m", { forms: ["cafe", "el cafe", "cafe la ceiba", "la ceiba", "cafeteria", "la cafeteria"] }),
   ent("entrada", "entrada", "entrance", "f", { forms: ["la entrada", "puerta", "la puerta", "taquilla", "la taquilla", "la entrada del concierto"] }),
@@ -111,6 +118,8 @@ function readEvent(c: Ctx, slots: any, seg: Segment) {
   if (seg.tags.includes("weekend")) c.s.weekend = true;
   const tm = norm(toArr(slots.time)[0]);
   if (tm) c.s.startTime = tm;
+  // "Me regalaron dos boletos", "Tengo dos boletos gratis": Andrea never asks what she owes
+  if (/\b(gratis|regalaron|regalo|me dieron|me gane|cortesia)\b/.test(plain(c.heard)) && !c.s.payDone) c.s.askPay = false;
 }
 function setDay(c: Ctx, day: string) {
   if (day === "saturday") { c.s.sat = true; return; }
@@ -166,12 +175,16 @@ function yn(p: Pending): Pending {
 function suggestPlace(c: Ctx) {
   c.say("suggest_place");
   c.expect(yn({
-    id: "suggest_place", expects: ["meet", "meet_not", "where_is_ctx"], hints: ["agree", "place"],
+    id: "suggest_place", expects: ["meet", "meet_not", "place_no_ctx", "where_is_ctx"], hints: ["agree", "place"],
     suggest: [{ lt: "Agree", hint: "agree" }, { lt: "Suggest another place", hint: "place", options: ["kiosco", "taqueria", "malecon", "cafe", "entrada", "iglesia"] }],
     yes: (cc) => { cc.s.place = "kiosco"; cc.say("ack_place"); },
     no: (cc) => { cc.say("where_then"); cc.hold(); },
     ask: (cc) => cc.say("suggest_place"),
-    on: { meet: (cc, sl, sg) => { H.meet(cc, sl, sg); }, meet_not: (cc, sl, sg) => { H.meet_not(cc, sl, { ...sg, tags: [...sg.tags, "@suggest_place"] }); } },
+    on: {
+      meet: (cc, sl, sg) => { H.meet(cc, sl, sg); },
+      meet_not: (cc, sl, sg) => { H.meet_not(cc, sl, { ...sg, tags: [...sg.tags, "@suggest_place"] }); },
+      place_no_ctx: (cc, _sl, sg) => { H.meet_not(cc, {}, { ...sg, tags: [...sg.tags, "@suggest_place"] }); },
+    },
   }));
 }
 function suggestTime(c: Ctx) {
@@ -200,14 +213,21 @@ function confirmPlace(c: Ctx, p: string) {
   const take = (cc: Ctx) => { H.meet(cc, { place: p }, { intent: "meet", slots: { place: p }, tags: [] }); };
   c.say("confirm_place", { P: p });
   c.expect(yn({
-    id: "confirm_place", expects: ["meet", "meet_not"], hints: ["agree", "place"],
+    id: "confirm_place", expects: ["meet", "meet_not", "place_no_ctx"], hints: ["agree", "place"],
     suggest: [{ lt: "Say yes", hint: "agree" }, { lt: "Suggest another place", hint: "place", options: ["kiosco", "taqueria", "malecon", "cafe", "entrada", "iglesia"] }],
     yes: take,
     no: (cc) => { cc.say("where_then"); cc.hold(); },
     ask: (cc) => cc.say("confirm_place", { P: p }),
     on: {
       meet: (cc, sl, sg) => { H.meet(cc, sl, sg); },
-      meet_not: (cc, sl) => { const ps = toArr(sl.place); const q = ps[ps.length - 1]; if (q && q !== p) take(cc); else { cc.say("where_then"); cc.hold(); } },
+      // "No, en el malecón": the other place is the answer (rule 10: in "No X, Y" the second is it); "No en el café",
+      // "Mejor en otro lugar": where, then?
+      meet_not: (cc, sl, sg) => {
+        const ps = toArr(sl.place); const q = ps[ps.length - 1] as string | undefined;
+        if (q && q !== p && !sg.tags.includes("elsewhere") && !sg.tags.includes("dislike")) H.meet(cc, { place: q }, { intent: "meet", slots: { place: q }, tags: [] });
+        else { cc.say("where_then"); cc.hold(); }
+      },
+      place_no_ctx: (cc) => { cc.say("where_then"); cc.hold(); },
     },
   }));
 }
@@ -220,26 +240,52 @@ function meetAt(c: Ctx, tm: Time, ack = true) {
   if (c.s.accepted && c.s.timeChange && !c.s.timeChangeDone && mins(tm) < 8 * 60 && mins(startOf(c)) >= 9 * 60) {
     c.s.timeChangeDone = true; c.s.timeAsked = true; c.twist("time_change");
     c.say("time_change");
-    c.expect(yn({
-      id: "time_change", expects: ["time_ans", "time_shift_ctx"], hints: ["agree", "meettime"],
-      suggest: [{ lt: "Agree to meet at eight", hint: "agree" }, { lt: "Keep your time or suggest another", hint: "meettime" }],
-      yes: (cc) => { cc.s.meetTime = { h: 8, m: 0 }; cc.say("ack_eight"); },
-      no: (cc) => { cc.say("keep_time", { time: cc.s.meetTime }); },
-      ask: (cc) => cc.say("time_change_q"),
-      on: {
-        time_ans: (cc, sl, sg) => {
-          const t2 = pickTime(sl, sg);
-          if (!t2) return;
-          cc.s.meetTime = t2;
-          if (mins(t2) < 8 * 60) cc.say("keep_time", { time: t2 }); else cc.say("ack_eight_time");
-        },
-        // "No puedo a las ocho": the learner keeps the earlier time
-        time_shift_ctx: (cc, _sl, sg) => { if (sg.tags.includes("refuse")) cc.say("keep_time"); else cc.say("time_change_q"); },
-      },
-    }));
+    timeChangeExpect(c);
     return;
   }
   if (ack && c.s.accepted && once(c, "ack")) c.say("ack");
+}
+
+/** The learner keeps a time before eight: from 7:30 she rushes out of work; before it, she asks to leave early. */
+const keepTime = (c: Ctx) => c.say(mins(c.s.meetTime as Time) >= 7 * 60 + 30 ? "keep_time" : "keep_time_early");
+/** Another time in the same turn ("A las ocho no puedo, mejor a las siete", "…, más tarde") answers by itself. */
+const otherTime = (c: Ctx) => {
+  const h = plain(c.heard);
+  return /\b(mejor|prefiero|que tal) a las?\b/.test(h) || (h.match(/\ba las? \w+/g) || []).length > 1 || /\bmas (tarde|temprano)\b/.test(h);
+};
+function timeChangeExpect(c: Ctx) {
+  const takeTime = (cc: Ctx, sl: any, sg: Segment) => {
+    const t2 = pickTime(sl, sg);
+    if (!t2) return;
+    cc.s.meetTime = t2;
+    if (mins(t2) < 8 * 60) keepTime(cc); else cc.say("ack_eight_time");
+  };
+  c.expect(yn({
+    id: "time_change", expects: ["time_ans", "time_shift_ctx", "reassure"], hints: ["agree", "meettime"],
+    suggest: [{ lt: "Agree to meet at eight", hint: "agree" }, { lt: "Keep your time or suggest another", hint: "meettime" }],
+    yes: (cc) => { cc.s.meetTime = { h: 8, m: 0 }; cc.say("ack_eight"); },
+    no: (cc) => keepTime(cc),
+    ask: (cc) => cc.say("time_change_q"),
+    on: {
+      time_ans: (cc, sl, sg) => { takeTime(cc, sl, sg); },
+      // "No puedo a las ocho", "Es muy tarde": the learner keeps the earlier time; "Más tarde": half past eight?
+      time_shift_ctx: (cc, _sl, sg) => {
+        if (sg.tags.includes("refuse")) { if (!otherTime(cc)) keepTime(cc); return; }
+        if (sg.tags.includes("earlier")) { keepTime(cc); return; }
+        const t2 = fromMins(8 * 60 + 30);
+        if (mins(t2) < mins(startOf(cc))) { cc.s.suggested = t2; cc.say("suggest_time_again", { time: t2 }); suggestTimeExpect(cc); return; }
+        cc.say("time_change_q"); timeChangeExpect(cc);
+      },
+      // "No hay problema", "No te preocupes": eight is fine; "No te preocupes, a las ocho": the time answers
+      reassure: (cc, sl, sg) => {
+        if (toArr(sl.time).length) { takeTime(cc, sl, sg); return; }
+        const h = plain(cc.heard);
+        if (/\ba las?\b/.test(h)) return; // the time is its own piece
+        if (/\bno (pasa nada|hay problema|te preocupes|importa)\b/.test(h)) { cc.s.meetTime = { h: 8, m: 0 }; cc.say("ack_eight"); }
+        else { cc.say("time_change_q"); timeChangeExpect(cc); }
+      },
+    },
+  }));
 }
 
 /** The time a turn names; in a correction ("No a las ocho, a las siete y media") the last one. */
@@ -258,12 +304,16 @@ const extraQsDone = (c: Ctx) => (!bandAsked(c) || !!c.s.bandDone) && (!c.s.askSi
  *  boletos…"): Andrea doesn't ask "¿Por qué?". */
 const eventKnown = (c: Ctx) => !!c.s.eventSaid || /\b(boletos?|boletas?|entradas?|tickets?|concierto|tocada|toquin|festival|grupo|banda|show)\b/.test(plain(c.heard));
 
-/** "¿Estás libre el sábado?": she's busy. With the concert already mentioned she asks for another day. */
+/** "¿Estás libre el sábado?": she's busy. With the concert already mentioned she asks for another day. Saturday
+ *  again ("Es el sábado") gets a shorter answer, never the same line twice. */
 function satBusy(c: Ctx) {
+  c.s.satN = ((c.s.satN as number | undefined) ?? 0) + 1;
+  const again = c.s.satN % 2 === 0;
   c.s.satAsked = true;
-  if (!eventKnown(c)) { c.say("sat_busy"); c.s.skipAsk = true; return; }
+  if (!eventKnown(c)) { c.say(again ? "sat_busy_after" : "sat_busy"); c.s.skipAsk = true; return; }
   c.s.eventSaid = true; setDay(c, "saturday");
-  c.say("sat_busy_invite"); otherDay(c);
+  if (again) { c.say("sat_busy_after"); c.say("another_time"); } else c.say("sat_busy_invite");
+  otherDay(c);
 }
 
 /** "Me encantaría, pero no puedo": a positive opener followed by a refusal is a refusal. */
@@ -346,7 +396,7 @@ const H: Record<string, Handler> = {
     readEvent(c, slots, seg);
     c.s.eventSaid = true;
     if (c.s.accepted) { if (once(c, "already")) c.say("already_yes"); return; }
-    if (c.s.sat) { c.say("sat_busy_invite"); otherDay(c); return; }
+    if (c.s.sat) { satBusy(c); return; }
     if (c.s.badLine && !c.s.badLineDone && c.s.day === "friday") {
       c.s.badLineDone = true; c.twist("bad_line");
       c.say("bad_line");
@@ -422,7 +472,7 @@ const H: Record<string, Handler> = {
         c.s.meetChangeDone = true; c.twist("meet_change");
         c.say("meet_change");
         c.expect(yn({
-          id: "meet_change", expects: ["meet", "meet_not", "where_is_ctx"], hints: ["agree", "place"],
+          id: "meet_change", expects: ["meet", "meet_not", "place_no_ctx", "where_is_ctx"], hints: ["agree", "place"],
           suggest: [{ lt: "Agree to meet at the taco place", hint: "agree" }, { lt: "Keep the bandstand", hint: "place", options: ["kiosco"] }],
           yes: (cc) => { cc.s.place = "taqueria"; cc.say("ack_taqueria"); },
           no: (cc) => { cc.s.place = "kiosco"; cc.say("keep_kiosco"); },
@@ -434,6 +484,7 @@ const H: Record<string, Handler> = {
               cc.say(cc.s.place === "kiosco" ? "keep_kiosco" : cc.s.place === "taqueria" ? "ack_taqueria" : "ack_place");
             },
             meet_not: (cc, sl, sg) => { H.meet_not(cc, sl, { ...sg, tags: [...sg.tags, "@meet_change"] }); },
+            place_no_ctx: (cc, _sl, sg) => { H.meet_not(cc, {}, { ...sg, tags: [...sg.tags, "@meet_change"] }); },
           },
           ask: (cc) => cc.say("meet_change_q"),
         }));
@@ -453,6 +504,10 @@ const H: Record<string, Handler> = {
     const ps = toArr(slots.place); const p = ps[ps.length - 1] as string | undefined;
     const pend = seg.tags.includes("@suggest_place") ? "suggest_place" : seg.tags.includes("@meet_change") ? "meet_change" : undefined;
     const proposed = pend === "suggest_place" ? "kiosco" : pend === "meet_change" ? "taqueria" : undefined;
+    // "¿Y en otro lado?", "Mejor en otro lugar": she asks where, then (never "the kiosco", never "where's that?")
+    if (seg.tags.includes("elsewhere")) { c.say("where_then"); c.hold(); return; }
+    // "No me gusta el malecón": not there, wherever it is
+    if (seg.tags.includes("dislike") && p && p !== proposed && pend !== "meet_change") { c.say("where_then"); c.hold(); return; }
     if (pend === "meet_change") {
       // "No, (mejor) en el kiosco" keeps it; "No en la taquería" refuses the change: the kiosco either way
       c.s.place = p && p !== "taqueria" ? p : "kiosco";
@@ -467,8 +522,8 @@ const H: Record<string, Handler> = {
   // "Más temprano" / "Un poco más tarde" at her suggestion: half an hour earlier or later, asked again.
   time_shift_ctx(c, _slots, seg) {
     if (seg.tags.includes("refuse")) {
-      // "A las ocho no puedo" (", mejor a las siete" is answered by its time)
-      if (/\bmejor\b/.test(plain(c.heard)) || (plain(c.heard).match(/\ba las? \w+/g) || []).length > 1) return;
+      // "A las ocho no puedo", "A esa hora no puedo" (", mejor a las siete" is answered by its time)
+      if (otherTime(c)) return;
       c.say("when_then"); c.hold(); return;
     }
     const base = (c.s.suggested as Time | undefined) ?? (c.s.meetTime as Time | undefined) ?? suggestedMeet(c);
@@ -478,13 +533,15 @@ const H: Record<string, Handler> = {
     c.say("suggest_time_again", { time: t2 });
     suggestTimeExpect(c);
   },
+  // "Mejor en otro lugar", "No me gusta", "Ahí no" (no place named): as "No en el kiosco" for the place she suggested
+  place_no_ctx(c, _slots, seg) { H.meet_not(c, {}, seg); },
   meet_unknown(c) { c.say("where_is_that"); suggestPlace(c); },
   // "¿Dónde queda la taquería?" at her suggestion: where it is, and the suggestion stays open
   where_is_ctx(c, slots) {
     const ps = toArr(slots.place);
     const pend = (c as any).conv?.pending?.id;
     const p = (ps[ps.length - 1] as string | undefined) ?? (pend === "meet_change" ? "taqueria" : "kiosco");
-    c.say(p === "kiosco" ? "where_kiosco" : "where_send");
+    c.say(p === "kiosco" ? "where_kiosco" : p === "taqueria" ? "where_taqueria" : "where_send");
   },
   ask_where(c) { if (!c.s.invited) { c.say("for_what"); c.s.skipAsk = true; return; } suggestPlace(c); },
   ask_when(c) { if (!c.s.invited) { c.say("for_what"); c.s.skipAsk = true; return; } suggestTime(c); },
@@ -500,6 +557,8 @@ const H: Record<string, Handler> = {
     if (once(c, "on_me")) c.say("on_me");
   },
   price_ctx(c) { c.s.payDone = true; if (once(c, "price")) c.say("pay_back"); },
+  pay_later_ctx(c) { if (c.s.payDone) return; c.s.payDone = true; c.say("pay_later"); },
+  pay_free_ctx(c, slots, seg) { H.on_me(c, slots, seg); },
   will_text(c) {
     // "Te aviso" at her carne asada: a maybe
     if (c.step === "bbq" && !c.s.bbqDone) { c.s.bbqDone = "maybe"; c.say("bbq_maybe"); return; }
@@ -509,7 +568,8 @@ const H: Record<string, Handler> = {
     if (c.step === "bbq" && !c.s.bbqDone) { c.s.bbqDone = "yes"; c.say("bbq_yes"); return; }
     if (once(c, "me_too")) c.say("me_too");
   },
-  reassure() { /* "¡No pasa nada!" after Andrea says she can't: nothing to add */ },
+  // "¡No pasa nada!" after Andrea says she can't: nothing to add; with a time in it, the time is the answer
+  reassure(c, slots, seg) { if (toArr(slots.time).length && c.s.accepted) H.time_ans(c, slots, seg); },
   // "¡Perfecto!", "¡Sí, claro!" answer the open yes/no question.
   g_ok(c) { stepYes(c); },
   no_sorry(c) { const st = inviteCall.steps.find((x) => x.id === c.step); if (st?.no && !st.done(c)) st.no(c); },
@@ -542,7 +602,7 @@ const H: Record<string, Handler> = {
   g_bye(c) {
     // "¡Va, nos vemos!" while Andrea still waits for another day: she asks once before saying goodbye
     if (!c.s.accepted && (c as any).conv?.pending?.id === "other_day" && !c.s.byeDayAsked) {
-      c.s.byeDayAsked = true; c.say("which_day"); c.hold();
+      c.s.byeDayAsked = true; c.say(c.s.sat ? "another_time" : "which_day"); c.hold();
       return;
     }
     if (c.s.accepted && !detailsDone(c) && !c.s.waitSaid) {
@@ -571,7 +631,10 @@ function stepYes(c: Ctx) {
   if (st?.yes && !st.done(c)) st.yes(c);
 }
 
+/** "¿Y otro día?" (after Saturday) or "¿Qué día es?" (after a misheard day): the day she waits for. A bare yes asks
+ *  which day, never accepts an invitation without one; a no is taken as it is ("¡Ah! Bueno, no pasa nada."). */
 function otherDay(c: Ctx) {
+  const ask = (cc: Ctx) => cc.say(cc.s.sat ? "another_time" : "which_day");
   c.expect({
     id: "other_day", expects: ["day_ans", "invite"], hints: ["other_day", "invite"],
     suggest: [{ lt: "Suggest another day (the concert is on Friday)", hint: "other_day" }],
@@ -579,7 +642,9 @@ function otherDay(c: Ctx) {
       day_ans: (cc, sl, sg) => { H.day_ans(cc, sl, sg); },
       invite: (cc, sl, sg) => { H.invite(cc, sl, sg); },
     },
-    ask: (cc) => cc.say("which_day"),
+    yes: (cc) => { cc.say("which_day"); otherDay(cc); },
+    no: (cc) => { cc.s.otherDayNo = true; cc.s.askedAsking = true; cc.s.skipAsk = true; cc.say("oh_okay"); },
+    ask,
   });
 }
 
@@ -621,7 +686,9 @@ export const inviteCall: SituationDef = {
       come: "(venir | ir | acompanarme | ir conmigo | venir conmigo | ir juntos | ir juntas | salir conmigo)",
       sorry: "[(perdon | lo siento | disculpa | perdona | ay | ay no | no perdon | uy | fijate que | lo siento mucho)]",
       okq: "[(te parece | esta bien | te queda bien | te late | sale | va | ok | te sirve)]",
-      tix: "[(dos | 2 | un par de | unos | otro | un | una | unas | otros)] (boletos | boleto | entradas | entrada | boletas | boleta | tickets | ticket)",
+      tix: "[(dos | 2 | un par de | unos | otro | un | una | unas | otros)] (boletos | boleto | entradas | entrada | boletas | boleta | tickets | ticket) [gratis]",
+      // the answer to "¿Por qué?": "Porque tengo dos boletos…"
+      pq: "(porque | pues porque | es porque)",
       // "…, ¿quieres venir?" / "…, ¿te animas?" after the tickets
       want_q: "(quieres [ir | venir | uno | venir conmigo | ir conmigo] | te gustaria (ir | venir) [conmigo] | te animas | te interesa | vienes | te late | te apetece [ir | venir] | me acompanas | quieres acompanarme)",
       loc: [
@@ -674,6 +741,9 @@ export const inviteCall: SituationDef = {
       "[@lz] hay @event [@when]",
       "[@lz] voy a ir (a | al) @event [@when]",
       "[@lz] te (llamo | hablo) porque tengo @tix [(para | de) @event] [@when]",
+      // the answer to her "¿Por qué?"
+      "@pq (tengo | consegui | compré | me gané | me regalaron | me dieron | me sobra | me sobran) @tix [(para | de) @event] [para] [@when]",
+      "@pq hay @event [@when]",
     ] },
     invite: { patterns: [
       "[@lz] [oye] (quieres | quiere) @come [@to_event] [conmigo] [@when] #h:inv_want",
@@ -699,6 +769,10 @@ export const inviteCall: SituationDef = {
       "[@lz] (puedes | podrias | quieres) (ir | venir) conmigo [@to_event] [@when]",
       "[@lz] (quieres | te gustaria) salir [conmigo] [@when]",
       "[@lz] (estas | te) (dentro | apuntas)",
+      // the answer to her "¿Por qué?"
+      "[@pq] para invitarte [@to_event] [@when]", "@pq te (quiero | queria | quisiera) invitar [@to_event] [@when]",
+      "@pq (quiero | queria | quisiera) invitarte [@to_event] [@when]",
+      "@pq (tengo | consegui | compré | me regalaron | me sobra | me sobran) @tix [(para | de) @event] [para] [@when] @want_q",
     ] },
     day_ans: { patterns: [
       "{day} [(en la noche | en la tarde | por la noche)] [a {time}] #h:day_this",
@@ -736,6 +810,8 @@ export const inviteCall: SituationDef = {
       "(es | esta) (muy | demasiado) (tarde #earlier | temprano #later)", "(algo | un poco) (antes #earlier | mas tarde #later)",
       // "A las ocho no puedo": a refusal of her time (never a yes)
       "[no] a {time} no (puedo | me queda [bien] | me sirve | llego) #refuse", "no (puedo | llego) a {time} #refuse", "no a {time} no #refuse",
+      "[no] a esa hora no (puedo | me queda [bien] | me sirve | llego) #refuse", "no (puedo | llego) a esa hora #refuse", "[no] a esa hora no #refuse",
+      "no me (queda [bien] | sirve | da tiempo) [a esa hora] #refuse", "no llego [a tiempo] #refuse", "(mejor | prefiero) [a] otra hora #refuse",
     ] },
     time_ans: { patterns: [
       "a {time} #h:start_short", "{time}", "(como | mas o menos) a {time} [creo] #h:start_around",
@@ -758,9 +834,15 @@ export const inviteCall: SituationDef = {
       "no @loc [sino] @loc", "@loc no [mejor] @loc",
     ] },
     // "No en el kiosco": not there (never a meeting place; "No, en el kiosco" loses its comma too: Andrea asks)
-    meet_not: { patterns: ["no @loc", "no (nos vemos | quiero vernos | quiero ir) @loc", "@loc no", "no me (gusta | late | convence) @loc", "@loc no me (gusta | late | convence)"] },
+    meet_not: { patterns: ["no @loc", "no (nos vemos | quiero vernos | quiero ir) @loc", "@loc no", "no me (gusta | late | convence) [mucho] @loc #dislike", "@loc no me (gusta | late | convence) [mucho] #dislike"] },
+    // "Mejor en otro lugar", "No me gusta", "Ahí no": not the place she suggested, and none named (expected only where a
+    // place is being chosen: "No me gusta" means nothing else elsewhere)
+    place_no_ctx: { patterns: [
+      "[no] [mejor | prefiero] [en] (otro lugar | otro lado | otra parte | otro sitio) #elsewhere", "[y] (que tal | y si) [nos vemos] [en] (otro lugar | otro lado | otra parte) #elsewhere",
+      "(podemos | podriamos) vernos en (otro lugar | otro lado | otra parte) #elsewhere", "no me (gusta | late | convence) [mucho] [ese lugar | ahi | alli | la idea]", "[no] (ahi | alli) no",
+    ] },
     // "¿Dónde queda la taquería?" (at her suggestion)
-    where_is_ctx: { patterns: ["(donde | en donde | por donde) (queda | esta) [el | la] {place}", "(donde | en donde) (queda | esta) (eso | esa | ese)", "(cual | que) {place}"] },
+    where_is_ctx: { patterns: ["(donde | en donde | por donde) (queda | esta) [el | la] {place}", "(donde | en donde) (queda | esta) [eso | esa | ese]", "(cual | que) {place}", "cual"] },
     meet_unknown: { patterns: ["[@meetv] (en | afuera de | enfrente de | junto a | cerca de) [el | la] {w:any}"] },
     pickup: { patterns: [
       "[si quieres] (paso | puedo pasar | quieres que pase) por ti [a tu casa | en tu casa] [a {time}] #h:pick_up",
@@ -779,15 +861,17 @@ export const inviteCall: SituationDef = {
     sister_yes_ctx: { patterns: [
       "[claro | si | por supuesto] (entre | mientras | cuantos) mas mejor #h:sis_merrier", "(claro | si | por supuesto) no hay (problema | bronca) #h:sis_sure",
       "[claro | si] (que venga | puede venir | traela | invitala | que se venga | dile que venga | que se apunte)",
-      "[claro | si] (compro | consigo | busco) otro boleto #h:sis_ticket", "[si] por que no", "claro que si [que venga]",
-      "[claro | si] (es | esta) (bienvenida | invitada)", "[claro | si] pero (tiene que comprar | necesita) (su | un) boleto",
-      "[claro | si] (ella) puede comprar (su | un) boleto [en la entrada | en la taquilla]", "[claro | si] me encantaria conocerla",
+      "[claro | si] (compro | consigo | busco) (otro boleto | otra entrada) #h:sis_ticket", "[si] por que no", "claro que si [que venga]",
+      "[claro | si] (es | esta) (bienvenida | invitada)", "[claro | si] pero (tiene que comprar | necesita | tendria que comprar) (su | un | una) (boleto | entrada)",
+      "[claro | si] pero (ella) (paga | compra | tiene que pagar | tendria que pagar) (su | el | la) (boleto | entrada)",
+      "[claro | si] (ella) puede comprar (su | un | una) (boleto | entrada) [en la entrada | en la taquilla]", "[claro | si] me encantaria conocerla",
     ] },
     sister_no_ctx: { patterns: [
-      "@sorry (solo | nada mas | nomas) tengo dos boletos #h:sis_sorry", "@sorry (esta vez no | mejor otro dia | la proxima)",
-      "@sorry ya no hay [mas] boletos", "@sorry (esta | ya esta) agotado", "@sorry (nada mas | solo) (tu y yo | nosotros dos | nosotras dos)",
-      "@sorry no tengo (otro | mas | un) boleto [para ella]", "@sorry (ella | tu hermana) no puede (venir | ir)", "@sorry no hay (lugar | boletos | mas boletos)", "[@sorry] (ella | tu hermana) no (puede | va a poder) (venir | ir) [esta vez] [@sorry]", "[no] no (puede | va a poder) (venir | ir) [esta vez] [perdon | lo siento]",
-      "(no | nel) (perdon | lo siento)", "(esta vez no | ahora no) (perdon | lo siento)",
+      "@sorry (solo | nada mas | nomas) tengo dos [boletos | entradas] #h:sis_sorry", "@sorry (esta vez no | mejor otro dia | la proxima)",
+      "@sorry ya no hay [mas] (boletos | entradas)", "@sorry (esta | ya esta) agotado", "[no] [mejor] @sorry (nada mas | solo | nomas) (tu y yo | nosotros dos | nosotras dos)",
+      "@sorry no tengo (otro | mas | un) boleto [para ella]", "@sorry no tengo (otra | mas | una) entrada [para ella]",
+      "@sorry (ella | tu hermana) no puede (venir | ir)", "@sorry no hay (lugar | boletos | mas boletos | entradas | mas entradas)", "[@sorry] (ella | tu hermana) no (puede | va a poder) (venir | ir) [esta vez] [@sorry]", "[no] no (puede | va a poder) (venir | ir) [esta vez] [perdon | lo siento]",
+      "(no | nel) (perdon | lo siento)", "(esta vez no | ahora no) (perdon | lo siento)", "prefiero que no", "[@sorry] [mejor] (otro dia | la proxima | en otra ocasion) [@sorry]",
     ] },
     on_me: { patterns: [
       "[no te preocupes] yo invito #h:pay_on_me", "invito yo", "no te preocupes [por eso | por el boleto] #h:pay_dont_worry",
@@ -795,7 +879,12 @@ export const inviteCall: SituationDef = {
       "no me debes nada [es un regalo]", "(fue | fueron | es | son) gratis", "(olvidalo | ni te preocupes | no es nada)",
       "no (tienes que | hay que) pagar [nada | me nada]", "me (los | lo) regalaron", "(invitame | me invitas) (un | una | unos) (cafe | cerveza | chela | taco | tacos | elote | helado)",
     ] },
-    price_ctx: { patterns: ["[(fue | fueron | es | son | cuesta | costo | costó | cuestan)] {price} [cada uno | cada boleto | por boleto] #h:pay_price", "{price}"] },
+    price_ctx: { patterns: ["[(fue | fueron | es | son | cuesta | costo | costó | cuestan)] {price} [cada uno | cada boleto | por boleto | cada entrada | por entrada] #h:pay_price", "{price}",
+      "[(fue | fueron | son | costaron)] {price} (por los dos | los dos | por las dos | las dos | por ambos | en total)"] },
+    // "Luego te digo" to "¿Cuánto te debo?": she'll ask later
+    pay_later_ctx: { patterns: ["(luego | despues | al rato | mas tarde) (te digo | te aviso | vemos | lo vemos | hablamos de eso)", "(luego | despues) (vemos | lo vemos | nos arreglamos)"] },
+    // "Nada" to "¿Cuánto te debo?" (expected only there: "Nada" is no treat anywhere else)
+    pay_free_ctx: { patterns: ["nada [nada]", "nada (es un regalo | yo invito | te invito | invito yo)"] },
     will_text: { patterns: [
       "(te escribo | te mando un mensaje | te marco | te mando los detalles | te aviso | te paso los detalles) [los detalles | la direccion | la hora] [luego | mas tarde | manana | al rato | por whatsapp | por mensaje] #h:close_text",
       "(luego | al rato | mas tarde) te (escribo | aviso | mando los detalles | mando un mensaje) [los detalles]",
@@ -809,23 +898,27 @@ export const inviteCall: SituationDef = {
     agree: { patterns: [
       "(si | claro | va | sale | ok | okey | perfecto | dale | vale) (claro | perfecto | me parece bien | genial | por supuesto | sin problema | de acuerdo | buena idea)",
       "(me parece | suena) (bien | perfecto | genial | buenisimo) #h:ag_sounds_good", "perfecto #h:ag_perfect", "claro #h:ag_sure",
-      "(va | sale | orale | andale | dale | vale) #h:ag_va", "(buena | muy buena) idea", "me late", "de acuerdo", "asi esta bien [gracias]",
+      "(va | sale | orale | andale | dale | vale) #h:ag_va", "(buena | muy buena) idea", "me late", "de acuerdo #h:ag_va", "asi esta bien [gracias]",
     ] },
     no_sorry: { patterns: ["(no | nel) (perdon | lo siento)", "(perdon | lo siento) no", "no la verdad no", "mejor no"] },
     reassure: { patterns: [
       "no (pasa nada | hay problema | te preocupes | importa)", "(ni modo | que lastima | lastima | que mal | ay que mal | que pena)",
+      // "No te preocupes, a las ocho está bien" (at her "¿y si mejor a las ocho?"): one piece, the time read by the handler
+      "[claro | si] no (pasa nada | hay problema | te preocupes | importa) a {time} [(esta bien | me parece bien | perfecto | me queda bien)]",
       "(otro dia | la proxima) (sera | entonces)", "[bueno] (sera | para) la proxima",
     ] },
     accept_inv: { patterns: [
       "me encantaria [ir] #h:rep_love", "cuenta conmigo #h:rep_count_in", "(me parece | suena) (genial | padre | super | padrisimo) [cuenta conmigo]",
       "(ahi estare | claro que voy | si voy | yo voy | alli estare)", "(si | claro) me encantaria",
       "[si] (estoy libre | no tengo planes | no tengo nada) [{day}]", "{day} (estoy libre | no tengo nada | no tengo planes)",
-      "[si | claro] (llevo | puedo llevar | quieres que lleve) algo #bring", "[si | claro] que (llevo | quieres que lleve) #bring", "[si | claro] a que hora (llego | voy | es) #bbqtime",
+      "[si | claro] (llevo | puedo llevar | quieres que lleve) algo #bring", "[si | claro] que (llevo | quieres que lleve) #bring", "[si | claro] a que hora (llego | voy | es) [la carne asada | la parrillada] #bbqtime",
       "[si] no estoy (ocupado | ocupada) [{day}]",
       "(que padre | que bien | genial | super | si | claro) [si | claro] (voy | ahi estare | me apunto | ahi nos vemos)",
     ] },
     decline_ctx: { patterns: [
-      "@sorry no puedo [ir] [{day}] #h:rep_cant", "@sorry {day} no puedo", "@sorry (estoy | voy a estar) (ocupado | ocupada) [{day}] #h:rep_cant",
+      "@sorry no puedo [ir] [{day}] @sorry #h:rep_cant", "@sorry {day} no puedo @sorry", "@sorry (estoy | voy a estar) (ocupado | ocupada) [{day}] #h:rep_cant",
+      // "Mejor otro día", "Otro día": a refusal, never a yes
+      "[gracias pero] @sorry [mejor] (otro dia | en otra ocasion | la proxima) [@sorry]", "(hoy | ahora | esta vez) no [mejor] otro dia",
       "@sorry {day} (estoy | voy a estar) (ocupado | ocupada)", "[no] no estoy libre [{day}]", "@sorry {day} no estoy libre",
       "[gracias pero] [ya] (tengo | tengo otros) (planes | un compromiso | otro compromiso) [{day}] #h:rep_plans",
       "gracias pero (no puedo | ya tengo planes)", "me encantaria pero no puedo [{day}]", "ojala pudiera",
@@ -833,7 +926,7 @@ export const inviteCall: SituationDef = {
       "@sorry (trabajo | tengo que trabajar | voy a trabajar) [{day}]", "@sorry {day} (trabajo | tengo que trabajar)",
       "@sorry (voy a salir | me voy | voy a estar fuera) [de viaje] [este fin de semana | {day}]",
       "@sorry (voy a | tengo que) visitar a (mis papas | mi familia | mis padres | mi mama | unos amigos) [{day}]",
-      "@sorry no tengo tiempo [{day}]", "@sorry no voy a poder [ir]", "(no quiero | no voy a) ir [a la carne asada | {day}]",
+      "@sorry no tengo tiempo [{day}]", "@sorry no voy a poder [ir]", "(no quiero | no voy a) ir [a la carne asada | a la parrillada | al asado | {day}]",
       "no (se | sé) si (puedo | voy a poder) [ir] #maybe", "(a lo mejor | tal vez | quiza | quizas) [puedo | voy] #maybe", "(lo veo | te confirmo) [luego | despues | manana] #maybe",
     ] },
     bye_ext: { patterns: [
@@ -965,7 +1058,7 @@ export const inviteCall: SituationDef = {
     mystery: [t("¡Ja, | un | grupo | misterioso! | Igual | voy.", "Ha, | a | band | mysterious! | Anyway | I'm-going.", "Ha, a mystery band! I'm in anyway.")],
     ask_start: [
       t("¿A | qué | hora | empieza?", "At | what | time | does it start?", "What time does it start?"),
-      t("¿Y | a | qué | hora | es?", "And | at | what | time | is it?", "So what time is it?"),
+      t("¿Y | a | qué | hora | es?", "And | at | what | time | is it?", "And what time is it at?"),
     ],
     start_help: [t("No pasa nada. | Luego | me | escribes.", "No problem. | Later | (to) me | you-write.", "No problem. Just text me later.")],
     ack_time: [
@@ -1008,12 +1101,15 @@ export const inviteCall: SituationDef = {
         "Aw, that's sweet, thanks! But let's just meet there."),
     ],
     meet_change: [
-      t("Mmm, | los | viernes | en | el | kiosco | hay | mucha | gente. | ¿Mejor | en | la | taquería | de | la | esquina? | Así | cenamos | unos | tacos | antes.",
-        "Hmm, | on | Fridays | at | the | bandstand | there is | a lot of | people. | Better | at | the | taco place | on | the | corner? | That way | we-eat-dinner | some | tacos | before.",
-        "Hmm, the bandstand is packed on Fridays. How about the taco place on the corner instead? We can grab some tacos first.",
+      t("Mmm, | los | viernes | en | el | kiosco | hay | mucha | gente. | ¿Mejor | en | la | taquería | del | mercado? | Así | cenamos | unos | tacos | antes.",
+        "Hmm, | on | Fridays | at | the | bandstand | there is | a lot of | people. | Better | at | the | taco place | by the | market? | That way | we-eat-dinner | some | tacos | before.",
+        "Hmm, the bandstand is packed on Fridays. How about the taco place by the market instead? We can grab some tacos first.",
         { flags: { 1: "los viernes: on Fridays (every Friday); there's free music at the kiosco." } }),
     ],
     where_kiosco: [t("En | medio | del | zócalo.", "In | the middle | of the | main square.", "Right in the middle of the zócalo.")],
+    // the town's taquería (docs/es/TOWN.md; s62, s69): beside the mercado's door on avenida del Puerto
+    where_taqueria: [t("Junto | al | mercado, | en | la | avenida | del | Puerto.", "Next | to the | market, | on | the | avenue | of the | Harbor.",
+      "Next to the market, on Avenida del Puerto.")],
     where_send: [t("Luego | te | mando | la | ubicación.", "Later | (to) you | I-send | the | location.", "I'll send you the location.")],
     confirm_place: [t("¿Entonces | en | {P.the}?", "Then | at | {P.the}?", "So, at {P.the}?")],
     pay_later: [t("Bueno, | luego | me | dices | cuánto | fue.", "Okay, | later | (to) me | you-tell | how much | it-was.", "Okay, just tell me later what it was.")],
@@ -1032,10 +1128,15 @@ export const inviteCall: SituationDef = {
     keep_time: [
       t("Bueno, | entonces | salgo | corriendo | del | trabajo.", "Okay, | then | I'll-leave | running | from the | work.", "Okay, then I'll rush out of work."),
     ],
+    // a time before she gets off work (7:30): she'll ask to leave early
+    keep_time_early: [
+      t("Bueno, | entonces | pido | permiso | para | salir | temprano.", "Okay, | then | I'll-ask | permission | to | leave | early.", "Okay, then I'll ask to leave work early."),
+    ],
     band_again: [t("Pero, | ¿quién | toca?", "But, | who | plays?", "But who's playing?")],
     sister_again: [t("¿Y | mi | hermana? | ¿Puede | venir?", "And | my | sister? | Can she | come?", "So what about my sister? Can she come?")],
     pay_again: [t("¿Y | cuánto | te | debo?", "And | how much | (to) you | do I owe?", "So how much do I owe you?")],
-    bbq_again: [t("Entonces, | ¿vienes | a | la | carne asada?", "So, | are you coming | to | the | cookout?", "So, are you coming to the cookout?")],
+    bbq_again: [t("Entonces, | ¿vienes | a | la | carne asada?", "So, | are you coming | to | the | cookout?", "So, are you coming to the cookout?",
+      { neutral: t("Entonces, | ¿vienes | a | la | parrillada?", "So, | are you coming | to | the | cookout?", "So, are you coming to the cookout?") })],
     bring_nothing: [t("¡Nada, | nada más | ven!", "Nothing, | just | come!", "Nothing, just come!")],
     bbq_time: [t("Como | a | las | dos | de la tarde.", "Like | at | — | two | p.m.", "Around two in the afternoon.", { flags: { 2: "Spanish uses an article before clock times; English has no separate word." } })],
     ask_sister: [
@@ -1054,7 +1155,8 @@ export const inviteCall: SituationDef = {
       t("¡No pasa nada! | Otro | día.", "No problem! | Another | day.", "No worries! Next time."),
     ],
     ask_pay: [
-      t("Oye, | ¿y | cuánto | te | debo | del | boleto?", "Hey, | and | how much | (to) you | do I owe | for the | ticket?", "Oh, and what do I owe you for the ticket?"),
+      t("Oye, | ¿y | cuánto | te | debo | del | boleto?", "Hey, | and | how much | (to) you | do I owe | for the | ticket?", "Oh, and what do I owe you for the ticket?",
+        { neutral: t("Oye, | ¿y | cuánto | te | debo | de | la | entrada?", "Hey, | and | how much | (to) you | do I owe | for | the | ticket?", "Oh, and what do I owe you for the ticket?") }),
     ],
     on_me: [
       t("¡Ay, | eres | lo máximo! | ¡Gracias!", "Aw, | you're | the best! | Thanks!", "Aw, you're the best! Thank you!"),
@@ -1063,14 +1165,17 @@ export const inviteCall: SituationDef = {
     pay_back: [
       t("Bueno, | te lo | pago | cuando | nos veamos.", "Okay, | it to you | I'll-pay | when | we see each other.", "Okay, I'll pay you back when I see you."),
     ],
+    // The plan in two lines: the day and the time (every {$day} × {$time} is voiced), then the place: a line with a value
+    // and an entity would be voiced only with what random runs happen to say (tools/es-voices/lines-es.ts).
     summary: [
-      t("Entonces | quedamos: | {$day}, | a | {$time}, | en | {P.the}.", "So | we're agreed: | {$day}, | at | {$time}, | at | {P.the}.", "So it's a plan: {$day} at {$time}, at {P.the}.",
+      t("Entonces | quedamos: | {$day}, | a | {$time}.", "So | we're agreed: | {$day}, | at | {$time}.", "So it's a plan: {$day} at {$time}.",
         { flags: { 1: "quedar (en algo): to agree on a plan; quedamos = we've agreed." } }),
     ],
     summary_notime: [
-      t("Entonces | quedamos: | {$day}, | en | {P.the}.", "So | we're agreed: | {$day}, | at | {P.the}.", "So it's a plan: {$day}, at {P.the}.",
+      t("Entonces | quedamos: | {$day}.", "So | we're agreed: | {$day}.", "So it's a plan: {$day}.",
         { flags: { 1: "quedar (en algo): to agree on a plan; quedamos = we've agreed." } }),
     ],
+    summary_place: [t("¡Te | veo | en | {P.the}!", "You | I'll-see | at | {P.the}!", "See you at {P.the}!")],
     cant_wait_line: [
       t("¡Qué | emoción!", "How | exciting!", "So exciting!"),
       t("¡Ay, | ya | quiero | que | llegue | el | día!", "Oh, | already | I-want | that | it-comes | the | day!", "Oh, I can't wait!"),
@@ -1088,7 +1193,10 @@ export const inviteCall: SituationDef = {
       t("Oye, | ¿y | estás | libre | el | domingo? | Vamos | a | hacer | una | carne asada | en | mi | casa.",
         "Hey, | and | are you | free | on | Sunday? | We're going | to | do | a | cookout | at | my | house.",
         "Oh, hey, are you free on Sunday? We're having a cookout at my place.",
-        { flags: { 4: ON, 10: "carne asada: a Mexican barbecue (grilled beef, tortillas, friends), often on a Sunday." } }),
+        { flags: { 4: ON, 10: "carne asada: a Mexican barbecue (grilled beef, tortillas, friends), often on a Sunday." },
+          neutral: t("Oye, | ¿y | estás | libre | el | domingo? | Vamos | a | hacer | una | parrillada | en | mi | casa.",
+            "Hey, | and | are you | free | on | Sunday? | We're going | to | do | a | cookout | at | my | house.",
+            "Oh, hey, are you free on Sunday? We're having a cookout at my place.", { flags: { 4: ON, 10: "parrillada: a cookout (meat on the grill, with friends)." } }) }),
     ],
     bbq_yes: [
       t("¡Qué padre! | Luego | te | paso | la | dirección.", "How cool! | Later | (to) you | I-pass | the | address.", "Awesome! I'll send you the address later.",
@@ -1129,7 +1237,8 @@ export const inviteCall: SituationDef = {
       lt: "Invite her to the concert", slot: "genre", examples: ["jazz", "salsa", "rock"],
       items: [
         { id: "inv_want", s: t("¿Quieres | ir | a | un | concierto | el | viernes?", "Do you want | to go | to | a | concert | on | Friday?", "Do you want to go to a concert on Friday?", { flags: { 5: ON } }) },
-        { id: "inv_tickets", s: t("Tengo | dos | boletos | para | un | concierto.", "I-have | two | tickets | for | a | concert.", "I've got two tickets for a concert.") },
+        { id: "inv_tickets", s: t("Tengo | dos | boletos | para | un | concierto.", "I-have | two | tickets | for | a | concert.", "I've got two tickets for a concert.",
+          { neutral: t("Tengo | dos | entradas | para | un | concierto.", "I-have | two | tickets | for | a | concert.", "I've got two tickets for a concert.") }) },
         { id: "inv_would", s: t("¿Te | gustaría | venir | conmigo?", "(To) you | would it please | to come | with me?", "Would you like to come with me?",
           { flags: { 0: "te gustaría: “would it please you”, the polite way to ask “would you like”." } }) },
         { id: "inv_want", s: t("¿Quieres | ir | a | un | concierto | de | {X} | el | viernes?", "Do you want | to go | to | a | concert | of | {X} | on | Friday?",
@@ -1137,7 +1246,10 @@ export const inviteCall: SituationDef = {
         { id: "inv_would", s: t("¿Te | gustaría | ir | conmigo | a | un | concierto | de | {X}?", "(To) you | would it please | to go | with me | to | a | concert | of | {X}?",
           "Would you like to go to a {X} concert with me?") },
         { id: "inv_tickets", s: t("Tengo | dos | boletos | para | un | concierto | de | {X} | el | viernes.", "I-have | two | tickets | for | a | concert | of | {X} | on | Friday.",
-          "I've got two tickets for a {X} concert on Friday.", { flags: { 8: ON } }), note: "boleto: a ticket (Mexico); entrada is understood too." },
+          "I've got two tickets for a {X} concert on Friday.", { flags: { 8: ON },
+            neutral: t("Tengo | dos | entradas | para | un | concierto | de | {X} | el | viernes.", "I-have | two | tickets | for | a | concert | of | {X} | on | Friday.",
+              "I've got two tickets for a {X} concert on Friday.", { flags: { 8: ON } }) }),
+          note: "A ticket: boleto in Mexico, entrada for a show in much of Latin America; both are understood." },
         { id: "inv_how_about", s: t("¿Qué tal si | vamos | a | un | concierto | de | {X}?", "How about if | we-go | to | a | concert | of | {X}?", "How about going to a {X} concert?"), register: "casual" },
         { id: "inv_lets", s: t("¿Vamos | a | un | concierto | de | {X} | el | viernes?", "Shall we go | to | a | concert | of | {X} | on | Friday?", "Want to go to a {X} concert on Friday?", { flags: { 6: ON } }), register: "casual" },
         { id: "inv_feel_like", s: t("¿Tienes | ganas | de | ir | a | un | concierto?", "Do you have | desire | of | to go | to | a | concert?", "Do you feel like going to a concert?") },
@@ -1206,9 +1318,13 @@ export const inviteCall: SituationDef = {
       lt: "Say if her sister can come",
       items: [
         { id: "sis_sure", s: t("¡Claro, | no hay problema!", "Sure, | no problem!", "Sure, no problem!") },
-        { id: "sis_sorry", s: t("Perdón, | solo | tengo | dos | boletos.", "Sorry, | only | I-have | two | tickets.", "Sorry, I only have two tickets.") },
-        { id: "sis_merrier", s: t("¡Claro! | ¡Entre más, mejor!", "Sure! | The more the merrier!", "Sure! The more the merrier!"), note: "Mexico: “entre más, mejor”; elsewhere “mientras más, mejor”." },
-        { id: "sis_ticket", s: t("¡Claro! | Compro | otro | boleto.", "Sure! | I'll-buy | another | ticket.", "Of course! I'll get another ticket.") },
+        { id: "sis_sorry", s: t("Perdón, | solo | tengo | dos | boletos.", "Sorry, | only | I-have | two | tickets.", "Sorry, I only have two tickets.",
+          { neutral: t("Perdón, | solo | tengo | dos | entradas.", "Sorry, | only | I-have | two | tickets.", "Sorry, I only have two tickets.") }) },
+        { id: "sis_merrier", s: t("¡Claro! | ¡Entre más, mejor!", "Sure! | The more the merrier!", "Sure! The more the merrier!",
+          { neutral: t("¡Claro! | ¡Mientras más, mejor!", "Sure! | The more the merrier!", "Sure! The more the merrier!") }),
+          note: "Mexico: “entre más, mejor”; elsewhere “mientras más, mejor”." },
+        { id: "sis_ticket", s: t("¡Claro! | Compro | otro | boleto.", "Sure! | I'll-buy | another | ticket.", "Of course! I'll get another ticket.",
+          { neutral: t("¡Claro! | Compro | otra | entrada.", "Sure! | I'll-buy | another | ticket.", "Of course! I'll get another ticket.") }) },
       ],
     },
     pay: {
@@ -1216,7 +1332,7 @@ export const inviteCall: SituationDef = {
       items: [
         { id: "pay_on_me", s: t("¡Yo | invito!", "I | treat (you)!", "It's on me!", { flags: { 1: "invitar: to invite, and also to pay for someone (yo invito = my treat)." } }) },
         { id: "pay_dont_worry", s: t("¡No te preocupes!", "Don't worry!", "Don't worry about it!") },
-        { id: "pay_price", s: t("Son | {$price}.", "It's | {$price}.", "It's {$price}.") },
+        { id: "pay_price", s: t("Son | $350.", "It's | 350 pesos.", "It's 350 pesos.", { say: "Son trescientos cincuenta pesos." }) },
         { id: "pay_treat", s: t("Es | mi | regalo.", "It's | my | gift.", "It's my treat.") },
       ],
     },
@@ -1236,7 +1352,8 @@ export const inviteCall: SituationDef = {
         { id: "ag_sounds_good", s: t("¡Me parece | bien!", "It seems to me | good!", "Sounds good!") },
         { id: "ag_perfect", s: t("¡Perfecto!", "Perfect!", "Perfect!") },
         { id: "ag_sure", s: t("¡Claro!", "Sure!", "Sure!") },
-        { id: "ag_va", s: t("¡Va!", "Okay!", "Okay!"), note: "Mexico, among friends: “¡Va!” or “¡Sale!” = okay, deal." },
+        { id: "ag_va", s: t("¡Va!", "Okay!", "Okay!", { neutral: t("¡De acuerdo!", "Okay!", "Okay!") }),
+          note: "“¡De acuerdo!” anywhere; in Mexico, among friends, also “¡Va!” or “¡Sale!” (okay, deal)." },
       ],
     },
     confirm: {
@@ -1287,6 +1404,7 @@ export const inviteCall: SituationDef = {
     "te animas": { reason: "lexical_expression", split: "te → yourself + animas → you encourage is false; ¿te animas? = are you up for it?", minimal: "Two words." },
     "te queda": { reason: "grammatical_fusion", split: "te → to you + queda → remains is false; for times = it suits you.", minimal: "Two words." },
     "entre más, mejor": { reason: "lexical_expression", split: "entre → between + más → more + mejor → better loses the saying; = the more the merrier.", minimal: "The whole saying." },
+    "mientras más, mejor": { reason: "lexical_expression", split: "mientras → while + más → more + mejor → better loses the saying; = the more the merrier.", minimal: "The whole saying." },
     "no te preocupes": { reason: "grammatical_fusion", split: "no → not + te → yourself + preocupes → you worry: the negative command is one English phrase (don't worry).", minimal: "Three words." },
     "nos falta": { reason: "grammatical_fusion", split: "nos → to us + falta → lacks is a word-for-word reading of we need.", minimal: "Two words." },
   },
@@ -1311,15 +1429,16 @@ export const inviteCall: SituationDef = {
       ask: (c) => {
         if (c.s.eventSaid && !c.s.askedAsking) { c.s.skipAsk = false; c.s.askedAsking = true; c.say("are_you_asking"); return; }
         if (c.s.skipAsk) { c.s.skipAsk = false; return; }
-        c.say(c.s.eventSaid ? "is_that_invitation" : "so_whats_up");
+        c.say(c.s.eventSaid && !c.s.notInvite ? "is_that_invitation" : "so_whats_up");
       },
       expects: ["invite", "tickets", "ask_free", "its_me_ctx", "good_time"],
       suggest: [
         { lt: "Invite Andrea to the concert", hint: "invite", options: "genre" },
         { lt: "Ask if she's free on Friday", hint: "free" },
       ],
-      yes: (c) => { if (c.s.eventSaid) accept(c); else c.say("so_whats_up"); },
-      no: (c) => { if (c.s.eventSaid) c.say("oh_okay"); } },
+      yes: (c) => { if (c.s.eventSaid) accept(c); else { c.say("so_whats_up"); c.s.skipAsk = true; } },
+      // "No" to "¿Me estás invitando?": taken as it is, and not asked again at once
+      no: (c) => { if (c.s.eventSaid) { c.say("oh_okay"); c.s.notInvite = true; c.s.askedAsking = true; c.s.skipAsk = true; } } },
     { id: "day", when: (c) => !!c.s.accepted && !c.s.day, done: (c) => !!c.s.day,
       ask: (c) => { c.s.dayAsked = true; c.say(c.s.weekend ? "which_day" : "ask_day"); }, expects: ["day_ans"],
       suggest: [{ lt: "Say which day the concert is", hint: "when" }] },
@@ -1332,7 +1451,7 @@ export const inviteCall: SituationDef = {
       suggest: [{ lt: "Say what time the concert starts", hint: "start" }],
       help: (c) => { c.s.startDone = true; c.say("start_help"); } },
     { id: "place", when: (c) => !!c.s.accepted, done: (c) => !!c.s.place,
-      ask: (c) => c.say("ask_place"), expects: ["meet", "meet_not", "ask_where", "meet_unknown", "pickup"],
+      ask: (c) => c.say("ask_place"), expects: ["meet", "meet_not", "place_no_ctx", "ask_where", "meet_unknown", "pickup"],
       suggest: [{ lt: "Suggest where to meet", hint: "place", options: ["kiosco", "taqueria", "malecon", "cafe", "entrada", "iglesia"] }],
       help: (c) => { suggestPlace(c); } },
     { id: "meet_time", when: (c) => !!c.s.accepted && !!c.s.place, done: (c) => !!c.s.meetTime,
@@ -1345,7 +1464,7 @@ export const inviteCall: SituationDef = {
       yes: (c) => { c.s.sister = true; c.say("sister_yes"); },
       no: (c) => { c.s.sister = false; c.say("sister_no"); } },
     { id: "pay", when: (c) => !!c.s.accepted && c.s.askPay, done: (c) => !!c.s.payDone,
-      ask: (c) => c.say(again(c, "pay") ? "pay_again" : "ask_pay"), expects: ["on_me", "price_ctx"],
+      ask: (c) => c.say(again(c, "pay") ? "pay_again" : "ask_pay"), expects: ["on_me", "price_ctx", "pay_later_ctx", "pay_free_ctx"],
       suggest: [{ lt: "Say it's your treat, or what the ticket cost", hint: "pay" }],
       help: (c) => { c.s.payDone = true; c.say("on_me"); } },
     { id: "bbq", when: (c) => !!c.s.accepted && c.s.bbq && c.s.day !== "sunday", done: (c) => !!c.s.bbqDone,
@@ -1386,8 +1505,9 @@ export const inviteCall: SituationDef = {
     win(c);
     const tm = c.s.meetTime as Time | undefined;
     const day = c.s.day || "friday";
-    if (tm && inDomain(tm)) c.say("summary", { day: dayVal(day), P: c.s.place, time: tm });
-    else c.say("summary_notime", { day: dayVal(day), P: c.s.place });
+    if (tm && inDomain(tm)) c.say("summary", { day: dayVal(day), time: tm });
+    else c.say("summary_notime", { day: dayVal(day) });
+    c.say("summary_place", { P: c.s.place });
     c.say("cant_wait_line");
     const bye = (cc: Ctx) => sayBye(cc);
     // The plan is made: any friendly answer ends the call.
@@ -1537,6 +1657,30 @@ export const inviteCall: SituationDef = {
     { say: "No quiero ir contigo", intent: "none", not: ["invite"] },
     { say: "No quiero venir contigo al concierto", intent: "none", not: ["invite"] },
     { say: "No nos vemos en el malecón", intent: "meet_not", step: "place", not: ["meet"] },
+    // audit (5 Nov 2026): the town's taquería, the neutral words, refusals and side answers
+    { say: "Nos vemos en la taquería del mercado", intent: "meet", step: "place", slots: { place: "taqueria" } },
+    { say: "Mejor en la taquería junto al mercado", intent: "meet", step: "place", slots: { place: "taqueria" } },
+    { say: "Nos vemos en el mercado", intent: "meet", step: "place", slots: { place: "mercado" } },
+    { say: "Porque tengo dos boletos para un concierto", intent: "tickets" },
+    { say: "Para invitarte a un concierto", intent: "invite" },
+    { say: "Tengo dos entradas para un concierto de jazz el viernes", intent: "tickets", slots: { genre: "jazz", day: "friday" } },
+    { say: "Tengo dos boletos gratis para un concierto", intent: "tickets" },
+    { say: "Perdón, solo tengo dos entradas", intent: "sister_no_ctx", step: "sister", not: ["sister_yes_ctx"] },
+    { say: "¡Claro! Compro otra entrada", intent: "sister_yes_ctx", step: "sister" },
+    { say: "¡Claro! ¡Mientras más, mejor!", intent: "sister_yes_ctx", step: "sister" },
+    { say: "No, mejor solo tú y yo", intent: "sister_no_ctx", step: "sister", not: ["sister_yes_ctx"] },
+    { say: "¡De acuerdo!", intent: "yn:yes", step: "bbq" },
+    { say: "Son $350.", intent: "price_ctx", step: "pay", slots: { price: 35000 } },
+    { say: "Fueron setecientos por los dos", intent: "price_ctx", step: "pay", slots: { price: 70000 } },
+    { say: "Luego te digo", intent: "pay_later_ctx", step: "pay", not: ["on_me"] },
+    { say: "Nada", intent: "pay_free_ctx", step: "pay" },
+    { say: "Mejor otro día", intent: "decline_ctx", step: "bbq", not: ["accept_inv"] },
+    { say: "No puedo, perdón", intent: "decline_ctx", step: "bbq", not: ["accept_inv"] },
+    { say: "No quiero ir a la parrillada", intent: "decline_ctx", step: "bbq", not: ["accept_inv"] },
+    { say: "Mejor en otro lugar", intent: "place_no_ctx", step: "place", not: ["meet", "meet_unknown"] },
+    { say: "No me gusta el malecón", intent: "meet_not", step: "place", not: ["meet"] },
+    { say: "A esa hora no puedo", intent: "time_shift_ctx", step: "meet_time", not: ["time_ans", "agree"] },
+    { say: "No me da tiempo", intent: "time_shift_ctx", step: "meet_time", not: ["time_ans", "agree"] },
     // must not be understood
     { say: "Mi perro come plátanos azules", intent: "none" },
     { say: "La bicicleta del vecino es verde", intent: "none" },
@@ -1621,6 +1765,35 @@ export const inviteCall: SituationDef = {
     { name: "her Sunday carne asada, declined (twist forced)", turns: [
       "¡Hola, Andrea!", "¿Quieres ir a un concierto el viernes?", "A las nueve.", "Nos vemos en el kiosco.", "A las ocho.", "Me encantaría, pero no puedo.", "¡Bye!",
     ], setup: (s) => { s.askSister = false; s.askPay = false; s.bbq = true; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { bbqDone: "no" } }, auto: AUTO },
+    // audit (5 Nov 2026)
+    { name: "audit: which taquería, then her words echoed: the taquería del mercado (twist forced)", turns: [
+      "¡Hola, Andrea!", "¿Te gustaría ir a un concierto el viernes?", "A las nueve.", "Nos vemos en el kiosco.", "¿Cuál taquería?", "Va, en la taquería del mercado.", "A las ocho.", "¡Bye!",
+    ], setup: (s) => { s.meetChange = true; s.bbq = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { place: "taqueria", meetChangeDone: true } }, auto: AUTO },
+    { name: "audit: 'No, en el malecón' to '¿Entonces en el café?'", turns: [
+      "¡Hola, Andrea!", "¿Quieres ir a un concierto el viernes?", "A las nueve.", "No, en el café.", "No, en el malecón.", "A las ocho.", "¡Bye!",
+    ], setup: (s) => { s.bbq = false; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { place: "malecon" } }, auto: AUTO },
+    { name: "audit: somewhere else at her suggestion, her time refused", turns: [
+      "¡Hola, Andrea!", "¿Quieres ir a un concierto el viernes?", "A las nueve.", "¿Dónde nos vemos?", "¿Y en otro lado?", "En el malecón.", "¿A qué hora nos vemos?",
+      "A esa hora no puedo.", "A las siete y media.", "¡Bye!",
+    ], setup: (s) => { s.bbq = false; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { place: "malecon", meetTime: { h: 7, m: 30 } } }, auto: AUTO },
+    { name: "audit: she gets off work late, the learner keeps seven: she'll leave early (twist forced)", turns: [
+      "¡Hola, Andrea!", "¿Quieres ir a un concierto el viernes?", "Empieza a las nueve.", "Nos vemos en el malecón a las siete.", "No, mejor a las siete.", "¡Bye!",
+    ], setup: (s) => { s.timeChange = true; s.meetChange = false; s.bbq = false; s.badLine = false; }, expect: { complete: true, state: { meetTime: { h: 7, m: 0 }, timeChangeDone: true } }, auto: AUTO },
+    { name: "audit: 'Más tarde' to her eight: half past (twist forced)", turns: [
+      "¡Hola, Andrea!", "¿Quieres ir a un concierto el viernes?", "Empieza a las nueve.", "Nos vemos en el malecón.", "A las siete.", "Más tarde.", "Sí.", "¡Bye!",
+    ], setup: (s) => { s.timeChange = true; s.meetChange = false; s.bbq = false; s.badLine = false; }, expect: { complete: true, state: { meetTime: { h: 8, m: 30 }, timeChangeDone: true } }, auto: AUTO },
+    { name: "audit: her carne asada, 'Mejor otro día' (twist forced)", turns: [
+      "¡Hola, Andrea!", "¿Quieres ir a un concierto el viernes?", "A las nueve.", "Nos vemos en el kiosco.", "A las ocho.", "Mejor otro día.", "¡Bye!",
+    ], setup: (s) => { s.askSister = false; s.askPay = false; s.bbq = true; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { bbqDone: "no" } }, auto: AUTO },
+    { name: "audit: Saturday twice, a yes without a day, then Friday", turns: [
+      "¡Hola, Andrea!", "¿Te gustaría ir a un concierto conmigo el sábado?", "Es el sábado.", "Bueno, ok.", "¡Ah, perdón! El viernes.", "A las nueve.", "Nos vemos en el kiosco.", "A las ocho.", "¡Bye!",
+    ], setup: (s) => { s.bbq = false; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { day: "friday", place: "kiosco" } }, auto: AUTO },
+    { name: "audit: 'Porque tengo dos boletos' to her '¿Por qué?'", turns: [
+      "¡Hola, Andrea!", "¿Estás libre el viernes?", "Porque tengo dos boletos para un concierto.", "¡Sí!", "A las nueve.", "Nos vemos en el kiosco.", "A las ocho.", "¡Bye!",
+    ], setup: (s) => { s.bbq = false; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { day: "friday", accepted: true } }, auto: AUTO },
+    { name: "audit: free tickets, so no money question (forced)", turns: [
+      "¡Hola, Andrea!", "Me regalaron dos boletos para un concierto el viernes, ¿quieres venir?", "A las nueve.", "Nos vemos en el kiosco.", "A las ocho.", "¡Bye!",
+    ], setup: (s) => { s.askPay = true; s.bbq = false; s.meetChange = false; s.badLine = false; s.timeChange = false; }, expect: { complete: true, state: { askPay: false } }, auto: AUTO },
   ],
 };
 
