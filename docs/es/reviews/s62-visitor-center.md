@@ -127,3 +127,77 @@ el banco", "No sé, ¿es gratis?".
   then down calle Itzamná to the sea (about ten minutes).
 - Left as the engine's graceful "no le entendí" / "ese lugar no lo conozco": safety at night, a doctor or hospital,
   the airport, the church, tours, museum tickets sold here.
+
+## Directions from the 3D town (5 Nov 2026)
+
+The audit above found that the 3D town followed none of Don Chuy's ways. The lead decided that **the dialogue follows
+the 3D town**, not the other way round. The ground truth is now docs/es/TOWN.md "Getting around (from the 3D town)":
+every door from layout.ts and the Spanish theme, walked in the running game, with the minutes the conversations use
+(about two minutes a block). Don Chuy's door opens onto avenida Juárez (north side); a crosswalk lands right in front of
+it, between Café La Ceiba and La Cocina de Lucía.
+
+**The ways, as he gives them now** (fast and slow line, the written note, the checks):
+
+| Place | The way | Blocks · minutes |
+|---|---|---|
+| Café La Ceiba (the goal) | straight across the avenue: the green awning, next to La Cocina de Lucía (right of the crosswalk) | 0 · 1 |
+| La Cocina de Lucía | across the avenue, a little left: the red awning, next to the café | 0 · 1 |
+| the museum | left: next door, the big building with columns | 0 · 1 |
+| Boutique Hilos | left: across the avenue, across from the museum | 0 · 1 |
+| Estética Tijeras, the bank (yellow), Correos | left one block to calle Ceiba, across the avenue (the bank on the far corner, Correos next to it, across from the zócalo) | 1 · 2 |
+| the zócalo, the tianguis | left one block, across calle Ceiba | 1 · 2 |
+| the church (new) | left one block, at the zócalo's far end, facing the kiosco, next to the police | 1 · 5 |
+| the police | left two blocks, past the zócalo, on the corner of calle Itzamná, next to the church | 2 · 5 |
+| Hotel Mar Azul | right, across calle Flamboyán: the big building on the corner | 0 · 1 |
+| Farmacia del Puerto | right to the corner: across the avenue, across from the hotel | 0 · 1 |
+| the mercado, the taquería | right; right at the corner, up calle Flamboyán one block to avenida del Puerto ("¡Aquí atrás!") | 1 · 2 |
+| the beach | right; right at the corner, down calle Flamboyán to the sea | 1 · 2 |
+| the tours booth (new), El Muelle | as the beach, then right along the malecón: next to the pier / out on it | 1 · 2 |
+| the lighthouse | as the beach, then the whole malecón to the right | far · 10 |
+| the bus stop (new as a way), the terminal | left to calle Ceiba; right across the avenue one block to calle Hidalgo (the stop on the right, in front of the gym; the terminal on the left) | 2 · 5 |
+| the Clínica Familiar (new) | left two blocks to calle Itzamná; right one block; left on calle Hidalgo: on the left | 3 · 10 |
+| the airport (new) | the end of avenida Juárez, to the left; "con maletas, mejor tome un taxi" | taxi |
+
+**What changed in the conversation.**
+- The route model follows the town: a way starts left, right or **straight across** the avenue; it can turn at the
+  first corner (calle Flamboyán), calle Ceiba, the malecón, calle Itzamná and calle Hidalgo (several turns per way),
+  checks blocks per stretch, knows what each place is next to or across from, which ways cross the avenue, and the
+  café's and Lucía's awnings. Checks a learner can now make and have verified: "Entonces cruzo la avenida y está
+  enfrente", "¿El del toldo verde?", "Cruzo y a la derecha" (from the crosswalk), "¿En la esquina, a la derecha?",
+  "¿En la calle Ceiba, a la derecha?", "…y en el malecón otra vez a la derecha", "…en Itzamná a la derecha y en Hidalgo
+  a la izquierda", "¿Está del otro lado de la avenida?", "¿Junto a la policía?", "¿Enfrente del kiosco?"; and the
+  corrections: "No, no hay que dar vuelta: nada más cruce la avenida", "No, no hay que cruzar la avenida: está de este
+  lado", "No, el del toldo verde…", "¡Casi! En la calle Ceiba, a la derecha…". "En la esquina, a la izquierda" is a
+  corner's turn, never the door's.
+- The quiz asks the café's way as "al salir, ¿da vuelta o cruza la avenida?" ("Cruzo", "Derecho", "Enfrente" are
+  right); the other ways keep left or right, out of the door or at their first corner. After a correction, echoing the
+  corrected direction counts as understood.
+- New answers: the church (a destination), a doctor ("Para eso está la Clínica Familiar. Y si es algo leve, la farmacia
+  de la esquina tiene consultorio." + the clinic's way; "¿Dónde está el hospital?" is the clinic), the airport (a taxi),
+  tours ("Aquí no vendemos tours, pero en el malecón hay una caseta de tours." + its way; its price: "pregunte en la
+  caseta"), night safety (s69's answer: downtown yes, the beach at night better not), a taxi's fare ("no tienen
+  taxímetro: pregunte el precio antes de subirse"), and the bus stop's way (it isn't "aquí enfrente": it's on calle
+  Hidalgo). "El zócalo está a una cuadra" (`downtown`), "Sí, el chiquito, el del toldo verde" (the café has no yellow
+  door), the café's twist "espere en la banqueta: ¡aquí los coches no frenan!" (with its neutral twin).
+- Unchanged: the café as the lesson's goal, the map, the clarification reactions, the out-of-town trips, prices and
+  hours, the step and pending ids the pictures hang on (the new destinations' `confirm_church`, `confirm_clinic`,
+  `confirm_tours`, `confirm_busstop`, `confirm_taqueria` have no phase in scene-data yet: for the pictures track).
+
+**Spoken lines:** 70 new (the new ways: the church, the clinic, the tours booth, the bus stop, each fast and slow; the
+airport; the corners' partial answers, quizzes and corrections; the landmarks' confirmations; blocks, streets, sides;
+the doctor, tours, a tour's price, a taxi's fare, night safety; the café's twist) and 40 changed (every way's fast and
+slow line, the café's size answers, `fix_blocks_0`, `downtown`); 24 removed (the bank and square turns, the old
+landmark confirmations, `far_15`, `far_30`, `busstop`, `street_ceiba`, `street_itzamna`, `blocks_0`). All before the
+voice freeze.
+
+**Tests.** NLU tests 123 → 156 (every check model answer, the new places and questions, 3 traps); sims 13 → 17 (the
+church and night safety, a doctor + the airport + tours, the café crossed and turned, wrong checks of the new ways), all
+12/12 seeds, the earlier sims' checks rewritten to the new ways. Corpus +48 (40 + 8 traps: "No necesito un doctor", "No
+me siento mal", "No quiero un tour", "No voy al aeropuerto", "No es peligroso", "No cruzo la avenida", "No cruzo", "No
+busco la iglesia"): 265/268 → 313/316, false accepts 0/40 → 0/48 (the two "parada del camión" items take either
+intent: both give the stop's way). Held-out 43/43, unchanged.
+
+**For the lead / the owner.** The scene pictures have no phase for `confirm_church`, `confirm_clinic`, `confirm_tours`,
+`confirm_busstop` and `confirm_taqueria` (scene-data, the pictures track); the "far" picture of `confirm_beach` and
+`confirm_pier` now goes with ways of two minutes. The airport: in the 3D town it closes avenida Juárez's east end (about
+200 m away); the conversations keep it out of town (a taxi), as the lead asked.

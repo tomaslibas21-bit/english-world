@@ -6,7 +6,7 @@
 // The learner gets a town map and the way to Café La Ceiba (or anywhere else in town) and practises
 // clarification: ¿Mande?, más despacio, más fuerte, ¿cómo se escribe?, ¿me lo escribe?, ¿qué significa…?,
 // partial questions ("¿Doy vuelta dónde?", "¿Cuántas cuadras?") and checking ("Entonces salgo a la derecha y en
-// el banco doy vuelta a la izquierda, ¿verdad?"). Don Chuy checks every check against the real route.
+// la esquina doy vuelta a la derecha, ¿verdad?"). Don Chuy checks every check against the real route.
 // He also recommends what's outside town (brief): a cenote, the ruins of Tulum, the beaches of Xcacel and
 // Chemuyil (Maya names: x and ch to spell, "¿Cómo se escribe?"), and the Saturday tianguis in the zócalo.
 //
@@ -19,21 +19,30 @@
 // the highway (https://www.lonelyplanet.com/points-of-interest/xcacel/1561634,
 // https://www.playadelcarmen.com/blog/xcacel-beach). No fares or opening hours of real places are taught.
 //
-// Town geography Don Chuy uses (the same layout as Maple Harbor's, for the world builder):
-//   Out of the door onto avenida Juárez.
-//   RIGHT: Hotel Mar Azul next door · 1 block: Farmacia del Puerto and Estética Tijeras (right side)
-//     · 2 blocks: Banco del Puerto on the corner of Juárez and Ceiba (right). LEFT at the bank = calle Ceiba:
-//     Café La Ceiba (right, small, yellow door) across from Correos (left); the Mercado Municipal (left, past
-//     Correos, ~10 min) with the taquería next to it (s69's "la taquería junto al mercado"); the Terminal de
-//     Autobuses at the end (~15 min).
-//   LEFT: 1 block: La Cocina de Lucía (left, red awning; the Yucatecan restaurant of s73) across from Boutique Hilos (right)
-//     · 2 blocks: the zócalo (right; kiosco, tianguis on Saturdays), Museo de la Costa Maya (left, across from the
-//     zócalo), Policía Municipal (left, next to the museum).
-//     RIGHT at the zócalo = calle Itzamná down to the sea: the beach (at the end), Restaurante El Muelle, and along
-//     the malecón the lighthouse (~30 min).
+// Town geography: the 3D town's, as built (the lead's decision, 5 Nov 2026: the dialogue follows the 3D town;
+// docs/es/TOWN.md "Getting around (from the 3D town)", from layout.ts and the Spanish theme, walked in the game).
+//   The door opens onto avenida Juárez, north side; a crosswalk right in front. LEFT is east (the zócalo), RIGHT west.
+//   ACROSS the avenue: Café La Ceiba straight across (green awning, tables outside) with La Cocina de Lucía (red awning)
+//     next to it, a few steps left.
+//   LEFT, this side: the museum next door (big, cream, columns) · calle Ceiba at the end of the block · the zócalo past
+//     it (kiosco; the tianguis on Saturdays; the church at its far end, facing the kiosco) · the Policía Municipal on
+//     the corner of calle Itzamná, next to the church (two blocks).
+//   LEFT, across the avenue: Boutique Hilos (across from the museum's door), Estética Tijeras (on the corner of Ceiba),
+//     Banco del Puerto (yellow, on the far corner of Ceiba), Correos next to it (across from the kiosco).
+//   RIGHT: calle Flamboyán at the corner; Hotel Mar Azul across it (the big building on the corner) and Farmacia del
+//     Puerto across the avenue from the hotel. RIGHT at that corner = calle Flamboyán down to the sea, one block: the
+//     Mercado Municipal on the corner of avenida del Puerto, on the right (the taquería next to it); the malecón and
+//     the beach; RIGHT along the malecón: the "Tours a los cenotes" booth and El Muelle out on its pier (on the left);
+//     the whole malecón to its end: the lighthouse on its rocks.
+//   LEFT to calle Ceiba, RIGHT across the avenue down Ceiba one block to calle Hidalgo: the bus stop on the right (in
+//     front of the gym), the Terminal de Autobuses on the left. LEFT two blocks to calle Itzamná, RIGHT one block, LEFT
+//     on calle Hidalgo: the Clínica Familiar on the left. The airport closes avenida Juárez's east end (a taxi).
+//   Minutes are the town's (about two minutes a block): 1 next door or across, 2 about a block, 5 two blocks, 10 the
+//   far ends (the clinic, the lighthouse).
 // Facts shared with other conversations (audit, 5 Nov 2026): the bank is open Saturdays until two (s78); the cenote is
 // twenty minutes by colectivo (s69, TOWN.md); the colectivo is paid to the driver (s69: when you get off; the city bus
-// when you get on, s67b); the museum's general admission is $80, free on Sundays for Mexicans and residents (s70).
+// when you get on, s67b); the museum's general admission is $80, free on Sundays for Mexicans and residents (s70);
+// downtown is safe at night, the beach at night better not (s69); taxis have no meter (s66).
 //
 // World events: "give" { item: "map" | "bus-schedule" }, "mark-map" { to: locationId }.
 
@@ -88,6 +97,19 @@ const PLACES: EntityDef[] = [
     ["el muelle", "muelle", "restaurante el muelle", "el restaurante el muelle", "una marisqueria", "la marisqueria", "un restaurante de mariscos"], { nat: "El Muelle restaurant" }),
   PL("lighthouse", "faro", "lighthouse", "m", "el faro",
     ["el faro", "un faro", "el faro viejo"]),
+  // the parroquia at the zócalo's east end, facing the kiosco (TOWN.md)
+  PL("church", "iglesia", "church", "f", "la iglesia",
+    ["la iglesia", "iglesia", "una iglesia", "la parroquia", "parroquia", "la catedral", "el templo", "la iglesia del zocalo", "la misa", "misa"]),
+  // the Clínica Familiar on calle Hidalgo (s31's); "¿Hay un doctor?" has an intent of its own (ask_doctor)
+  PL("clinic", "clínica", "clinic", "f", "la clínica",
+    ["la clinica", "clinica familiar", "la clinica familiar", "una clinica", "clinica", "el hospital", "un hospital", "hospital", "el centro de salud", "un centro de salud", "la clinica del pueblo"], { nat: "the family clinic" }),
+  // the "Tours a los cenotes" booth on the malecón, next to El Muelle's pier
+  PL("tours", "caseta | de | tours", "booth | of | tours", "f", "la caseta de tours",
+    // (asking for tours themselves, "¿Hay tours?", "¿Hay excursiones a Tulum?", is ask_tours: it says none are sold here first)
+    ["la caseta de tours", "la caseta", "el kiosco de tours", "el kiosko de tours", "los tours", "la agencia de tours", "una agencia de tours", "una agencia de viajes", "los tours a los cenotes"], { nat: "the tour booth" }),
+  // the city bus stop on calle Hidalgo by calle Ceiba (s33's), in front of the gym
+  PL("busstop", "parada", "bus stop", "f", "la parada",
+    ["la parada", "la parada del camion", "la parada del autobus", "la parada de camiones", "la parada de autobuses", "una parada", "una parada de camion", "una parada de autobus", "la parada de la ruta siete"], { nat: "the bus stop" }),
   // trips: no walking route; Don Chuy tells how to get there (colectivo) instead
   PL("cenote", "cenote", "cenote", "m", "un cenote",
     ["el cenote", "un cenote", "los cenotes", "cenotes", "senote", "el senote"], { trip: true }),
@@ -97,6 +119,9 @@ const PLACES: EntityDef[] = [
     ["xcacel", "playa xcacel", "la playa de xcacel", "playa de xcacel", "xcacelito", "shcacel", "shkakel", "skakel", "ixcacel"], { trip: true, nat: "Xcacel beach" }),
   PL("chemuyil", "playa | de | Chemuyil", "beach | of | Chemuyil", "f", "Chemuyil",
     ["chemuyil", "playa chemuyil", "la playa de chemuyil", "playa de chemuyil", "chemullil", "chemuil", "chemuyl"], { trip: true, nat: "Chemuyil beach" }),
+  // at the far end of avenida Juárez: Don Chuy sends people by taxi (TOWN.md "Out of town")
+  PL("airport", "aeropuerto", "airport", "m", "el aeropuerto",
+    ["el aeropuerto", "aeropuerto", "un aeropuerto"], { trip: true }),
 ];
 
 const DIRS: EntityDef[] = [
@@ -108,6 +133,9 @@ const STREETS: EntityDef[] = [
   ent("juarez", "Juárez", "Juárez", "f", { forms: ["juarez", "benito juarez", "juares"] }),
   ent("ceiba", "Ceiba", "Ceiba", "f", { forms: ["ceiba", "seiba"] }),
   ent("itzamna", "Itzamná", "Itzamná", "f", { forms: ["itzamna", "itsamna", "isamna"] }),
+  ent("flamboyan", "Flamboyán", "Flamboyán", "f", { forms: ["flamboyan", "flamboyant", "flamboian", "flanboyan"] }),
+  ent("hidalgo", "Hidalgo", "Hidalgo", "f", { forms: ["hidalgo", "idalgo"] }),
+  ent("del_puerto", "del Puerto", "del Puerto", "f", { forms: ["del puerto", "puerto"] }),
 ];
 
 /** Names a learner may ask him to spell ("¿Cómo se escribe Xcacel?"). attrs.w = the written form. */
@@ -117,6 +145,8 @@ const SPOTS: EntityDef[] = [
   ent("sp_juarez", "Juárez", "Juárez", "f", { forms: ["juarez", "la avenida juarez", "avenida juarez"], attrs: { w: "Juárez" } }),
   ent("sp_itzamna", "Itzamná", "Itzamná", "f", { forms: ["itzamna", "la calle itzamna", "calle itzamna", "itsamna"], attrs: { w: "Itzamná" } }),
   ent("sp_ceiba", "Ceiba", "Ceiba", "f", { forms: ["ceiba", "la calle ceiba", "calle ceiba", "la ceiba"], attrs: { w: "Ceiba" } }),
+  ent("sp_flamboyan", "Flamboyán", "Flamboyán", "f", { forms: ["flamboyan", "la calle flamboyan", "calle flamboyan", "flamboian"], attrs: { w: "Flamboyán" } }),
+  ent("sp_hidalgo", "Hidalgo", "Hidalgo", "f", { forms: ["hidalgo", "la calle hidalgo", "calle hidalgo"], attrs: { w: "Hidalgo" } }),
   ent("sp_tulum", "Tulum", "Tulum", "m", { forms: ["tulum"], attrs: { w: "Tulum" } }),
 ];
 
@@ -137,57 +167,100 @@ const WORDS: EntityDef[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Routes: every fact Don Chuy states, so that the learner's checks can be verified.
+// Routes: every fact Don Chuy states, so that the learner's checks can be verified. They are the 3D town's ways
+// (docs/es/TOWN.md "Getting around (from the 3D town)"): the door opens onto avenida Juárez; left is the zócalo's way.
 
 type Dir = "left" | "right";
+/** At the door: left or right along avenida Juárez, or straight across it (the crosswalk in front of the door). */
+type Out = Dir | "across";
+/** Where a route turns: the first corner to the right (calle Flamboyán), calle Ceiba at the end of the block to the
+ *  left, the sea at the end of calle Flamboyán (the malecón), calle Itzamná past the zócalo, calle Hidalgo a block in. */
+type Corner = "flamboyan" | "ceiba" | "sea" | "itzamna" | "hidalgo";
 interface Route {
-  out: Dir;
-  blocks: 0 | 1 | 2;
-  turn?: { dir: Dir; at: "bank" | "square" };
+  out: Out;
+  /** Blocks walked straight on each leg: legs[0] from the door, legs[i] after the i-th turn (null: not checked). */
+  legs: (number | null)[];
+  turns?: { dir: Dir; at: Corner }[];
+  /** The side of the street it's on as you walk there. */
   side?: Dir;
-  ref?: { rel: "across" | "next"; to: string };
-  mins: 1 | 2 | 5 | 10 | 15 | 30;
-  street: "juarez" | "ceiba" | "itzamna";
+  /** What it's next to or across from ("¿Junto a la iglesia?"); `say`: the line that confirms it, if not yes_<rel>_<to>. */
+  refs?: { rel: "across" | "next"; to: string; say?: string }[];
+  /** The way crosses avenida Juárez. */
+  cross?: boolean;
+  /** Across the avenue: which way it is from the crosswalk in front of the door ("cruzo y a la derecha"). */
+  after?: Dir;
+  /** No blocks to walk: it's across the avenue, next door, on the corner, or on this same block. */
+  zero?: "across" | "next" | "corner" | "block";
+  /** "¿Cuántas cuadras?": too many to count (the whole malecón). */
+  far?: boolean;
+  /** Its awning, for "¿El del toldo verde?" */
+  look?: "green" | "red";
+  mins: 1 | 2 | 5 | 10;
+  street: "juarez" | "del_puerto" | "malecon" | "hidalgo" | "zocalo";
+  /** The street name a learner asks him to spell ("¿Cómo se escribe la calle?"). */
+  spell: string;
   size?: "big" | "little";
   /** Location id for the world (mark-map). */
   loc?: string;
 }
 
+const FLAMBOYAN = { dir: "right", at: "flamboyan" } as const, SEA = { dir: "right", at: "sea" } as const;
+const CEIBA = { dir: "right", at: "ceiba" } as const, ITZAMNA = { dir: "right", at: "itzamna" } as const, HIDALGO = { dir: "left", at: "hidalgo" } as const;
+
 const ROUTES: Record<string, Route> = {
-  sunny_cup: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "right", ref: { rel: "across", to: "post_office" }, mins: 5, street: "ceiba", size: "little", loc: "sunny-cup" },
-  post_office: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "left", ref: { rel: "across", to: "sunny_cup" }, mins: 5, street: "ceiba", loc: "post-office" },
-  market: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "left", mins: 10, street: "ceiba", size: "big", loc: "market" },
-  taqueria: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "left", ref: { rel: "next", to: "market" }, mins: 10, street: "ceiba", loc: "market" },
-  bank: { out: "right", blocks: 2, side: "right", mins: 5, street: "juarez", size: "big", loc: "bank" },
-  pharmacy: { out: "right", blocks: 1, side: "right", ref: { rel: "next", to: "salon" }, mins: 2, street: "juarez", loc: "pharmacy" },
-  salon: { out: "right", blocks: 1, side: "right", ref: { rel: "next", to: "pharmacy" }, mins: 2, street: "juarez", loc: "salon" },
-  hotel: { out: "right", blocks: 0, side: "right", mins: 1, street: "juarez", size: "big", loc: "hotel" },
-  station: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, mins: 15, street: "ceiba", loc: "station" },
-  trattoria: { out: "left", blocks: 1, side: "left", ref: { rel: "across", to: "threads" }, mins: 2, street: "juarez", loc: "trattoria" },
-  threads: { out: "left", blocks: 1, side: "right", ref: { rel: "across", to: "trattoria" }, mins: 2, street: "juarez", loc: "threads" },
-  square: { out: "left", blocks: 2, side: "right", mins: 5, street: "juarez", size: "big", loc: "town-square" },
-  tianguis: { out: "left", blocks: 2, side: "right", mins: 5, street: "juarez", loc: "town-square" },
-  museum: { out: "left", blocks: 2, side: "left", ref: { rel: "across", to: "square" }, mins: 5, street: "juarez", size: "big", loc: "museum" },
-  police: { out: "left", blocks: 2, side: "left", ref: { rel: "next", to: "museum" }, mins: 5, street: "juarez", loc: "police" },
-  beach: { out: "left", blocks: 2, turn: { dir: "right", at: "square" }, mins: 10, street: "itzamna" },
-  pier: { out: "left", blocks: 2, turn: { dir: "right", at: "square" }, mins: 10, street: "itzamna", loc: "the-pier" },
-  lighthouse: { out: "left", blocks: 2, turn: { dir: "right", at: "square" }, mins: 30, street: "itzamna" },
+  // across the avenue, at the crosswalk in front of the door: the café straight across, La Cocina de Lucía next to it
+  sunny_cup: { out: "across", legs: [0], zero: "across", cross: true, after: "right", refs: [{ rel: "next", to: "trattoria" }], look: "green", mins: 1, street: "juarez", spell: "Juárez", size: "little", loc: "sunny-cup" },
+  trattoria: { out: "across", legs: [0], zero: "across", cross: true, after: "left", refs: [{ rel: "next", to: "sunny_cup" }], look: "red", mins: 1, street: "juarez", spell: "Juárez", loc: "trattoria" },
+  // left, this side of the avenue: the museum next door, the zócalo past calle Ceiba, the police on Itzamná's corner
+  museum: { out: "left", legs: [0], zero: "next", side: "left", refs: [{ rel: "across", to: "threads" }], mins: 1, street: "juarez", spell: "Juárez", size: "big", loc: "museum" },
+  square: { out: "left", legs: [1], side: "left", mins: 2, street: "juarez", spell: "Ceiba", size: "big", loc: "town-square" },
+  tianguis: { out: "left", legs: [1], side: "left", mins: 2, street: "juarez", spell: "Ceiba", loc: "town-square" },
+  church: { out: "left", legs: [1], side: "left", refs: [{ rel: "next", to: "police" }, { rel: "across", to: "square", say: "yes_across_kiosco" }], mins: 5, street: "zocalo", spell: "Ceiba", loc: "town-square" },
+  police: { out: "left", legs: [2], side: "left", refs: [{ rel: "next", to: "church" }], mins: 5, street: "juarez", spell: "Itzamná", loc: "police" },
+  // left, across the avenue: Hilos (across from the museum), Tijeras (Ceiba's corner), the bank (the far corner), Correos
+  threads: { out: "left", legs: [0], zero: "block", side: "right", cross: true, refs: [{ rel: "across", to: "museum" }], mins: 1, street: "juarez", spell: "Juárez", loc: "threads" },
+  salon: { out: "left", legs: [1], side: "right", cross: true, refs: [{ rel: "next", to: "threads" }], mins: 2, street: "juarez", spell: "Ceiba", loc: "salon" },
+  bank: { out: "left", legs: [1], side: "right", cross: true, refs: [{ rel: "across", to: "square" }, { rel: "next", to: "post_office" }], mins: 2, street: "juarez", spell: "Ceiba", size: "big", loc: "bank" },
+  post_office: { out: "left", legs: [1], side: "right", cross: true, refs: [{ rel: "next", to: "bank" }, { rel: "across", to: "square" }], mins: 2, street: "juarez", spell: "Ceiba", loc: "post-office" },
+  // right to the corner of calle Flamboyán: the hotel across it, the pharmacy across the avenue from the hotel
+  hotel: { out: "right", legs: [0], zero: "corner", side: "right", refs: [{ rel: "across", to: "pharmacy" }], mins: 1, street: "juarez", spell: "Flamboyán", size: "big", loc: "hotel" },
+  pharmacy: { out: "right", legs: [0], zero: "corner", side: "left", cross: true, refs: [{ rel: "across", to: "hotel" }], mins: 1, street: "juarez", spell: "Flamboyán", loc: "pharmacy" },
+  // right, then right at the corner: calle Flamboyán one block down to the sea (the mercado on that corner)
+  market: { out: "right", legs: [null, 1], turns: [FLAMBOYAN], side: "right", mins: 2, street: "del_puerto", spell: "Flamboyán", size: "big", loc: "market" },
+  taqueria: { out: "right", legs: [null, 1], turns: [FLAMBOYAN], side: "right", refs: [{ rel: "next", to: "market" }], mins: 2, street: "del_puerto", spell: "Flamboyán", loc: "market" },
+  beach: { out: "right", legs: [null, 1], turns: [FLAMBOYAN], mins: 2, street: "malecon", spell: "Flamboyán" },
+  // … and right along the malecón: the tours booth, El Muelle out on its pier, the lighthouse at the end
+  tours: { out: "right", legs: [null, 1, null], turns: [FLAMBOYAN, SEA], side: "left", refs: [{ rel: "next", to: "pier" }], mins: 2, street: "malecon", spell: "Flamboyán" },
+  pier: { out: "right", legs: [null, 1, null], turns: [FLAMBOYAN, SEA], side: "left", refs: [{ rel: "next", to: "tours" }], mins: 2, street: "malecon", spell: "Flamboyán", loc: "the-pier" },
+  lighthouse: { out: "right", legs: [null, 1, null], turns: [FLAMBOYAN, SEA], far: true, mins: 10, street: "malecon", spell: "Flamboyán" },
+  // left to calle Ceiba, right across the avenue, one block to calle Hidalgo: the stop on the right, the terminal left
+  busstop: { out: "left", legs: [1, 1], turns: [CEIBA], side: "right", cross: true, mins: 5, street: "hidalgo", spell: "Hidalgo", loc: "bus-stop" },
+  station: { out: "left", legs: [1, 1], turns: [CEIBA], side: "left", cross: true, mins: 5, street: "hidalgo", spell: "Hidalgo", size: "big", loc: "station" },
+  // left two blocks to calle Itzamná, right across the avenue one block, left on calle Hidalgo
+  clinic: { out: "left", legs: [2, 1, null], turns: [ITZAMNA, HIDALGO], side: "left", cross: true, mins: 10, street: "hidalgo", spell: "Itzamná", loc: "clinic" },
 };
-const TRIPS = new Set(["cenote", "ruins", "xcacel", "chemuyil"]);
+const TRIPS = new Set(["cenote", "ruins", "xcacel", "chemuyil", "airport"]);
 /** Places with their own Wi-Fi ("¿El café tiene wifi?"): yes, but the password is theirs. */
 const WIFI_THERE = new Set(["sunny_cup", "hotel", "trattoria", "pier"]);
 /** Places that cost nothing ("¿Es gratis la playa?"). The museum and the trips charge admission. */
-const FREE = new Set(["beach", "square", "tianguis"]);
+const FREE = new Set(["beach", "square", "tianguis", "church"]);
 
-/** Which turn a landmark or a street stands for. */
-const LANDMARK_AT: Record<string, "bank" | "square"> = { bank: "bank", square: "square", tianguis: "square" };
-const STREET_AT: Record<string, "door" | "bank" | "square"> = { juarez: "door", ceiba: "bank", itzamna: "square" };
+/** The corner a landmark or a street stands for ("en el banco, a la derecha" = at calle Ceiba). */
+const LANDMARK_AT: Record<string, Corner> = {
+  hotel: "flamboyan", pharmacy: "flamboyan", bank: "ceiba", square: "ceiba", tianguis: "ceiba", salon: "ceiba",
+  market: "sea", beach: "sea", police: "itzamna", church: "itzamna",
+};
+const STREET_AT: Record<string, "door" | Corner> = { juarez: "door", flamboyan: "flamboyan", ceiba: "ceiba", del_puerto: "sea", itzamna: "itzamna", hidalgo: "hidalgo" };
 /** The most likely unknown word in each line (for "¿Qué significa eso?"). */
 const LINE_WORD: Record<string, string> = {
-  r_sunny_cup: "derechito", r_bank: "derechito", r_square: "kiosco", r_museum: "derechito", r_trattoria: "toldo", r_lighthouse: "malecon",
-  r_tianguis: "tianguis", tw_banqueta: "banqueta", tw_kiosco: "kiosco", slow_intro: "perico", recommend: "cenote", trip_cenote: "colectivo",
-  trip_ruins: "colectivo", trip_xcacel: "colectivo", events_market: "tianguis", side_end: "cant_miss", size_big_yes: "cant_miss", at_square: "kiosco",
-  r_bank_slow: "esquina", at_bank: "esquina", colectivo: "colectivo",
+  r_sunny_cup: "toldo", r_sunny_cup_slow: "toldo", r_trattoria: "toldo", r_trattoria_slow: "toldo", r_square: "kiosco", r_church: "kiosco", r_church_slow: "kiosco",
+  r_bank: "esquina", r_bank_slow: "esquina", r_salon: "esquina", r_salon_slow: "esquina", r_police: "esquina", r_police_slow: "esquina",
+  r_hotel: "esquina", r_hotel_slow: "esquina", r_pharmacy: "esquina", r_pharmacy_slow: "esquina", r_market: "esquina", r_market_slow: "esquina",
+  r_taqueria: "esquina", r_beach: "derechito", r_pier: "malecon", r_pier_slow: "malecon", r_tours: "malecon", r_tours_slow: "malecon",
+  r_lighthouse: "malecon", r_lighthouse_slow: "malecon", r_tianguis: "tianguis", r_busstop: "cuadra", r_station: "cuadra", r_clinic: "cuadra",
+  tw_banqueta: "banqueta", tw_banqueta_cross: "banqueta", tw_kiosco: "kiosco", slow_intro: "perico", recommend: "cenote", trip_cenote: "colectivo",
+  trip_ruins: "colectivo", trip_xcacel: "colectivo", events_market: "tianguis", side_end: "cant_miss", size_big_yes: "cant_miss",
+  at_flamboyan: "esquina", at_ceiba: "cuadra", at_itzamna: "esquina", colectivo: "colectivo", blocks_far: "malecon", street_malecon: "malecon",
 };
 /** Lines that are reactions, not content: never replayed as "the last thing Don Chuy said". */
 const META = new Set(["slow_intro", "repeat_fast_again", "learning", "dont_understand", "louder", "say_again_slow", "ack_great", "praise"]);
@@ -198,8 +271,8 @@ const opp = (d: Dir): Dir => (d === "left" ? "right" : "left");
 const fold = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 interface Piece { kind: string; dir?: Dir; lm?: string; street?: string; blocks?: number; ref?: string; subj?: string; neg?: boolean }
-const KINDS = ["out", "bare", "at", "onto", "straight", "side", "across", "next", "near", "nextdoor", "little", "big"];
-const DIRECTIONAL = new Set(["out", "bare", "at", "onto", "straight", "side", "across", "next", "near", "nextdoor"]);
+const KINDS = ["out", "bare", "corner", "at", "onto", "straight", "side", "across", "next", "near", "nextdoor", "cross", "opposite", "tocorner", "green", "red", "little", "big"];
+const DIRECTIONAL = new Set(["out", "bare", "corner", "at", "onto", "straight", "side", "across", "next", "near", "nextdoor", "cross", "opposite", "tocorner", "green", "red"]);
 
 function readPieces(slots: any): Piece[] {
   const fdir = slots.route?.fdir ?? slots.fdir;
@@ -218,36 +291,66 @@ function readPieces(slots: any): Piece[] {
 
 /** null = everything the learner said matches the route; otherwise the id of Don Chuy's correction line. */
 function checkRoute(r: Route, ps: Piece[]): string | null {
-  const turns: { dir: Dir; at: "door" | "bank" | "square" }[] = [{ dir: r.out, at: "door" }];
-  if (r.turn) turns.push({ dir: r.turn.dir, at: r.turn.at });
-  const wrongTurn = (x: { at: string }) => (x.at === "door" ? `fix_out_${r.out}` : `fix_turn_${x.at}`);
-  let next = 0;
+  const turns: { dir: Out; at: "door" | Corner }[] = [{ dir: r.out, at: "door" }, ...(r.turns ?? [])];
+  const outFix = `fix_out_${r.out}`;
+  const wrongTurn = (x: { at: string }) => (x.at === "door" ? outFix : `fix_turn_${x.at}`);
+  // a turn where the route has none: across the avenue there is no turn at all; otherwise name the right corner
+  const noSuchTurn = () => (r.out === "across" ? "fix_out_across" : r.turns ? `fix_at_${r.turns[0].at}` : "fix_noturn");
+  let next = 0; // the next turn expected (0 = the door)
+  let crossed = false; // "cruzo la avenida" said: a direction after it is the way along the far side
+  const along = r.out === "across" ? r.after : r.out;
   for (const p of ps) {
     switch (p.kind) {
       case "out":
-        if (p.dir !== r.out) return `fix_out_${r.out}`;
+        if (p.dir !== r.out) return outFix;
         next = 1;
         break;
       case "at":
       case "onto": {
         const at = p.kind === "onto" ? STREET_AT[p.street!] : LANDMARK_AT[p.lm!];
-        const tn = turns.find((x) => x.at === at);
-        if (!tn) return r.turn ? `fix_at_${r.turn.at}` : "fix_noturn";
-        if (tn.dir !== p.dir) return wrongTurn(tn);
-        next = turns.indexOf(tn) + 1;
+        if (at === "door") { if (p.dir !== r.out) return outFix; next = 1; break; }
+        const i = turns.findIndex((x) => x.at === at);
+        if (i < 0) return noSuchTurn();
+        if (turns[i].dir !== p.dir) return wrongTurn(turns[i]);
+        next = i + 1;
         break;
       }
       case "bare": {
+        // "cruzo la avenida y a la derecha": from the crosswalk, the café is to the right (La Cocina de Lucía left)
+        if (crossed && p.dir && along) {
+          if (p.dir === along) break;
+          if (r.out === "across") return `fix_side_${along}`;
+        }
         const tn = turns[next];
-        if (!tn) return "fix_noturn";
+        if (!tn) return r.out === "across" ? "fix_out_across" : "fix_noturn";
         if (tn.dir !== p.dir) return wrongTurn(tn);
         next++;
         break;
       }
-      case "straight":
-        if (p.blocks != null && p.blocks !== r.blocks) return `fix_blocks_${r.blocks}`;
+      case "corner": { // "en la esquina, a la derecha": a corner's turn, never the door's
+        const i = Math.max(next, 1);
+        const tn = turns[i];
+        if (!tn) return noSuchTurn();
+        if (tn.dir !== p.dir) return wrongTurn(tn);
+        next = i + 1;
+        break;
+      }
+      case "straight": {
+        const n = r.legs[Math.max(0, next - 1)];
+        if (p.blocks != null && n != null && p.blocks !== n) return `fix_blocks_${n}`;
+        break;
+      }
+      case "cross":
+      case "opposite":
+        if (!r.cross) return "fix_nocross";
+        crossed = true;
+        break;
+      case "tocorner":
+        if (r.out === "across") return "fix_out_across";
         break;
       case "side": {
+        // across the avenue, a side is as seen from the crosswalk (the café to the right, La Cocina de Lucía to the left)
+        if (r.out === "across" && r.after && p.dir) { if ((p.neg ? opp(p.dir) : p.dir) !== r.after) return `fix_side_${r.after}`; break; }
         if (!r.side || !p.dir) break;
         const d = p.neg ? opp(p.dir) : p.dir;
         if (d !== r.side) return `fix_side_${r.side}`;
@@ -255,13 +358,19 @@ function checkRoute(r: Route, ps: Piece[]): string | null {
       }
       case "across":
       case "next":
-        if (!r.ref || r.ref.rel !== p.kind || r.ref.to !== p.ref) return "fix_generic";
+        if (!r.refs?.some((x) => x.rel === p.kind && x.to === p.ref)) return "fix_generic";
         break;
       case "near":
-        if (!r.ref || r.ref.to !== p.ref) return "fix_generic";
+        if (!r.refs?.some((x) => x.to === p.ref)) return "fix_generic";
         break;
       case "nextdoor":
-        if (r.blocks !== 0) return `fix_blocks_${r.blocks}`;
+        if (r.zero === "across") return "fix_out_across";
+        if (r.zero !== "next" && r.zero !== "corner") return `fix_blocks_${r.legs[0] ?? 1}`;
+        break;
+      case "green":
+      case "red":
+        if (!r.look) return "fix_generic";
+        if (r.look !== p.kind) return `look_${r.look}`;
         break;
       case "little":
       case "big":
@@ -313,9 +422,10 @@ function giveRoute(c: Ctx, id: string) {
   c.say(conv(c).slow ? `r_${id}_slow` : `r_${id}`);
   const r = ROUTES[id];
   if (c.s.wantTwist && !c.s.twistWord) {
-    const w = r.out === "right" ? "banqueta" : "kiosco";
+    // left toward the zócalo: "busque el kiosco"; right, or across the avenue: the banqueta (in the shade; to wait on)
+    const w = r.out === "left" ? "kiosco" : "banqueta";
     c.s.twistWord = w;
-    c.say(`tw_${w}`);
+    c.say(r.out === "across" ? "tw_banqueta_cross" : `tw_${w}`);
     c.twist("tricky_word");
   }
   if (id === "police") {
@@ -435,7 +545,7 @@ function firstVerdict(c: Ctx): boolean {
   c.s.verdictTurn = turn;
   return true;
 }
-const mentionsRoute = (c: Ctx) => /\b(izquierda|derecha|derecho|derechito|recto|cuadras?|enfrente|junto|esquina|al lado|doy vuelta|volteo)\b/.test(fold(c.heard));
+const mentionsRoute = (c: Ctx) => /\b(izquierda|derecha|derecho|derechito|recto|cuadras?|enfrente|junto|esquina|al lado|doy vuelta|volteo|cruzo|cruzar|cruzando|toldo)\b/.test(fold(c.heard));
 
 function confirmOk(c: Ctx) {
   if (!firstVerdict(c)) return;
@@ -452,18 +562,24 @@ function checkedByQuestion(c: Ctx) {
 function sayFix(c: Ctx, fix: string) {
   if (!firstVerdict(c)) return;
   c.s.fixes = (c.s.fixes || 0) + 1;
+  // the direction the correction gives, so that echoing it ("¡A la izquierda!") is taken as understood
+  const m = /^fix_(?:side|out)_(left|right|across)$/.exec(fix) ?? /^fix_turn_([a-z]+)$/.exec(fix);
+  const tn = m && fix.startsWith("fix_turn_") ? currentRoute(c)?.turns?.find((x) => x.at === m[1]) : undefined;
+  c.s.fixDir = tn ? tn.dir : m && !fix.startsWith("fix_turn_") ? m[1] : undefined;
   c.say(fix);
   if (fix === "fix_generic") { conv(c).markSlow(); c.say(`r_${c.s.dest}_slow`); }
   c.say("recheck");
   const pend: Pending = {
-    id: "recheck", expects: ["understood", "g_ok", "dir_ans_ctx"],
+    id: "recheck", expects: ["understood", "g_ok", "dir_ans_ctx", "cross_ans_ctx"],
     suggest: [{ lt: "Say you've got it now", hint: "gotit" }, { lt: "Check the way again", hint: `chk_${c.s.dest}` }],
     yes: (cc) => { confirmAck(cc); },
     no: (cc) => { cc.say("say_again_slow"); conv(cc).markSlow(); cc.say(`r_${cc.s.dest}_slow`); cc.say("recheck"); cc.expect(pend); },
     on: {
       understood: (cc) => { confirmAck(cc); },
       g_ok: (cc) => { confirmAck(cc); },
-      dir_ans_ctx: (cc, sl) => { quizAnswer(cc, sl.dir); }, // "¡A la izquierda!" — echoing the corrected direction
+      // "¡A la izquierda!" / "Cruzo la avenida": echoing the corrected direction
+      dir_ans_ctx: (cc, sl) => { if (sl.dir && sl.dir === cc.s.fixDir) confirmAck(cc); else quizAnswer(cc, sl.dir); },
+      cross_ans_ctx: (cc) => { if (cc.s.fixDir === "across") confirmAck(cc); else quizAnswer(cc, "across"); },
     },
     ask: (cc) => cc.say("recheck"),
   };
@@ -476,30 +592,35 @@ function quiz(c: Ctx) {
   if (!r || mentionsRoute(c)) return; // "Sí: en el banco a la izquierda": the check itself answers
   if (!firstVerdict(c)) return;
   if (c.s.confirmed) { c.s.conf[c.s.dest] = true; c.say("ack_great"); return; }
-  const onTurn = !!r.turn && c.chance(0.5);
+  const onTurn = !!r.turns && c.chance(0.5);
   c.s.quiz = onTurn ? "turn" : "out";
-  const q = onTurn ? (r.turn!.at === "bank" ? "quiz_bank" : "quiz_square") : "quiz_out";
+  // the turn's corner; out of the door: left or right, or (the café's way) turn or cross the avenue
+  const q = onTurn ? `quiz_${r.turns![0].at}` : r.out === "across" ? "quiz_across" : "quiz_out";
+  const again = q === "quiz_across" ? "quiz_again_across" : "quiz_again";
   c.say(q);
   const pend: Pending = {
-    id: "quiz", expects: ["dir_ans_ctx", "straight_ans_ctx"],
-    suggest: [{ lt: "Answer: left or right", hint: q }],
+    id: "quiz", expects: ["dir_ans_ctx", "straight_ans_ctx", "cross_ans_ctx"],
+    suggest: [{ lt: q === "quiz_across" ? "Answer: turn or cross" : "Answer: left or right", hint: q }],
     on: {
       dir_ans_ctx: (cc, sl) => { quizAnswer(cc, sl.dir); },
-      straight_ans_ctx: (cc) => { cc.say("straight_not"); cc.expect(pend); },
+      // "Derecho": straight ahead is the café's way (across), never "derecha"
+      straight_ans_ctx: (cc) => { if (q === "quiz_across") quizAnswer(cc, "across"); else { cc.say("straight_not"); cc.expect(pend); } },
+      cross_ans_ctx: (cc) => { quizAnswer(cc, "across"); },
     },
-    yes: (cc) => { cc.say("quiz_again"); cc.expect(pend); },
-    no: (cc) => { cc.say("quiz_again"); cc.expect(pend); },
-    ask: (cc) => cc.say("quiz_again"),
+    yes: (cc) => { cc.say(again); cc.expect(pend); },
+    no: (cc) => { cc.say(again); cc.expect(pend); },
+    ask: (cc) => cc.say(again),
   };
   c.expect(pend);
 }
 
-function quizAnswer(c: Ctx, dir: Dir) {
+function quizAnswer(c: Ctx, dir: Out) {
   const r = currentRoute(c);
   if (!r || !dir) return;
-  const right = c.s.quiz === "turn" && r.turn ? r.turn.dir : r.out;
+  const turn = c.s.quiz === "turn" && r.turns ? r.turns[0] : null;
+  const right = turn ? turn.dir : r.out;
   if (dir === right) { confirmOk(c); return; }
-  sayFix(c, c.s.quiz === "turn" && r.turn ? `fix_turn_${r.turn.at}` : `fix_out_${r.out}`);
+  sayFix(c, turn ? `fix_turn_${turn.at}` : `fix_out_${r.out}`);
 }
 
 /** Don Chuy repeats his last content line(s), optionally in the clear, slow version. */
@@ -551,12 +672,14 @@ const placeOf = (slots: any): string | undefined => {
 };
 
 /** What a bare "¿Es gratis?" / "¿Cuánto cuesta?" is about: what Don Chuy has just talked about. */
-function priceTopic(c: Ctx): "museum" | "trip" | "free" | "events" | "map" | "other" | null {
+function priceTopic(c: Ctx): "museum" | "trip" | "taxi" | "tours" | "free" | "events" | "map" | "other" | null {
   for (const l of [...conv(c).lastLines].reverse()) {
     const id = l.lineId;
     if (/^(r_museum|museum_)/.test(id)) return "museum";
+    if (/^(trip_airport|taxi)/.test(id)) return "taxi"; // the airport: by taxi, and taxis have no meter
     if (/^(trip_|recommend$)/.test(id)) return "trip";
-    if (/^(r_beach|r_square|r_tianguis|market_hours|free_place)/.test(id)) return "free";
+    if (/^(r_tours|tours_info|tour_price)/.test(id)) return "tours";
+    if (/^(r_beach|r_square|r_tianguis|r_church|market_hours|free_place)/.test(id)) return "free";
     if (/^(events_|event_|tw_trova)/.test(id)) return "events";
     if (/^(offer_map|greet_map|map_)/.test(id)) return "map";
     if (/^r_/.test(id)) return "other";
@@ -567,10 +690,12 @@ function priceTopic(c: Ctx): "museum" | "trip" | "free" | "events" | "map" | "ot
 function sayPrice(c: Ctx, topic: string | null | undefined) {
   if (topic === "museum") c.say("museum_price", { price: 8000 });
   else if (topic === "trip") c.say("trip_price");
+  else if (topic === "taxi") c.say("taxi_fare");
+  else if (topic === "tours") c.say("tour_price");
   else if (topic === "free") c.say("free_place");
   else c.say("hours_unknown");
 }
-const priceKind = (p: string) => (p === "museum" ? "museum" : TRIPS.has(p) ? "trip" : FREE.has(p) ? "free" : "other");
+const priceKind = (p: string) => (p === "museum" ? "museum" : p === "airport" ? "taxi" : p === "tours" ? "tours" : TRIPS.has(p) ? "trip" : FREE.has(p) ? "free" : "other");
 /** The place named in a price question, however it was cut up ("¿Es gratis | el museo?" can parse as the map's
  *  "¿Es gratis?" + "¿El museo?" where the map's question is expected). Not when the map is named. */
 function pricedPlace(c: Ctx): string | undefined {
@@ -644,11 +769,13 @@ const H: Record<string, Handler> = {
     const p = placeOf(slots);
     if (!p) { c.say("unknown_place"); return; }
     const r = currentRoute(c);
-    // "¿El banco?" while talking about the café route = checking a landmark, not a new destination
-    if (r && p !== c.s.dest && ((LANDMARK_AT[p] !== undefined && LANDMARK_AT[p] === r.turn?.at) || r.ref?.to === p)) {
+    // "¿El banco?" while talking about the bus stop's way = checking a landmark (its corner, or what it's next to or
+    // across from), not a new destination
+    const tn = r && LANDMARK_AT[p] ? r.turns?.find((x) => x.at === LANDMARK_AT[p]) : undefined;
+    const ref = r?.refs?.find((x) => x.to === p);
+    if (r && p !== c.s.dest && (tn || ref)) {
       clar(c);
-      if (LANDMARK_AT[p] !== undefined && LANDMARK_AT[p] === r.turn?.at) c.say(`turn_${r.turn!.at}`);
-      else c.say(`yes_${r.ref!.rel}_${p}`);
+      c.say(tn ? `turn_${tn.at}` : ref!.say ?? `yes_${ref!.rel}_${p}`);
       return;
     }
     giveRoute(c, p);
@@ -699,7 +826,7 @@ const H: Record<string, Handler> = {
     const r = p ? ROUTES[p] : currentRoute(c);
     if (!r) { needPlace(c); return; }
     clar(c);
-    c.say(r.side ? `side_${r.side}` : "side_end");
+    c.say(r.side ? `side_${r.side}` : r.out === "across" ? "side_across" : "side_end");
     if (!p || p === c.s.dest) checkedByQuestion(c);
   },
   ask_which_way(c, slots, seg) {
@@ -709,11 +836,12 @@ const H: Record<string, Handler> = {
     const at = slots.lm ? LANDMARK_AT[slots.lm] : undefined;
     if (seg.tags.includes("door")) c.say(`out_${r.out}`);
     else if (slots.lm) {
-      if (r.turn && at === r.turn.at) c.say(`turn_${r.turn.at}`);
-      else c.say(r.turn ? `fix_at_${r.turn.at}` : "straight_only");
+      const tn = r.turns?.find((x) => x.at === at);
+      if (tn) c.say(`turn_${tn.at}`);
+      else c.say(r.turns ? `fix_at_${r.turns[0].at}` : "straight_only");
     } else {
       c.say(`out_${r.out}`);
-      if (r.turn) c.say(`then_${r.turn.at}`);
+      for (const tn of r.turns ?? []) c.say(`then_${tn.at}`);
     }
     checkedByQuestion(c);
   },
@@ -721,7 +849,7 @@ const H: Record<string, Handler> = {
     const r = currentRoute(c);
     if (!r) { needPlace(c); return; }
     clar(c);
-    if (r.turn) c.say(`at_${r.turn.at}`);
+    if (r.turns) { c.say(`at_${r.turns[0].at}`); for (const tn of r.turns.slice(1)) c.say(`then_${tn.at}`); }
     else { c.say(`out_${r.out}`); c.say("straight_only"); }
     checkedByQuestion(c);
   },
@@ -729,7 +857,8 @@ const H: Record<string, Handler> = {
     const r = currentRoute(c);
     if (!r) { needPlace(c); return; }
     clar(c);
-    c.say(`blocks_${r.blocks}`);
+    const n = r.legs.reduce((a: number, b) => a + (b ?? 0), 0);
+    c.say(r.far ? "blocks_far" : n === 0 ? `blocks_0_${r.zero ?? "next"}` : `blocks_${Math.min(n, 3)}`);
     checkedByQuestion(c);
   },
   ask_street(c, slots) {
@@ -784,7 +913,8 @@ const H: Record<string, Handler> = {
     sayAgainSlow(c);
   },
   dir_ans_ctx(c, slots) { quizAnswer(c, slots.dir); },
-  straight_ans_ctx(c) { c.say("straight_not"); },
+  straight_ans_ctx(c) { if (currentRoute(c)?.out === "across") quizAnswer(c, "across"); else c.say("straight_not"); },
+  cross_ans_ctx(c) { quizAnswer(c, "across"); },
   need_help(c) {
     // (a question in the same breath gets its own answer; with nothing more, Don Chuy starts with the map)
     if (!c.s.map && !c.s.mapNo && !c.s.dest) c.say("need_help");
@@ -862,7 +992,7 @@ const H: Record<string, Handler> = {
     else if (seg.tags.includes("password")) w = "colibri";
     else if (seg.tags.includes("street")) {
       const r = currentRoute(c);
-      w = r ? { juarez: "Juárez", ceiba: "Ceiba", itzamna: "Itzamná" }[r.street] : null;
+      w = r ? r.spell : null;
     }
     if (w) c.say("g_spell", { letters: w });
     else c.say("g_which_word");
@@ -940,7 +1070,7 @@ const H: Record<string, Handler> = {
   ask_place_hours(c, slots, seg) {
     const p = (slots.place as string | undefined) ?? (seg.tags.includes("it") ? placeInTalk(c) : undefined);
     if (!p) { c.say("hours"); return; }
-    c.say(TRIPS.has(p) ? "trip_hours" : HOURS_LINE[p] ?? "hours_unknown");
+    c.say(TRIPS.has(p) && p !== "airport" ? "trip_hours" : HOURS_LINE[p] ?? "hours_unknown");
   },
   // "¿Cuánto cuesta la entrada al museo?" / "¿Es gratis la playa?" / "¿Se paga en el cenote?"
   place_price(c, slots) { answerPrice(c, priceKind(slots.place as string)); },
@@ -968,11 +1098,20 @@ const H: Record<string, Handler> = {
   ask_buspass(c, _slots, seg) {
     c.say(seg.tags.includes("when") ? "colectivo_when" : seg.tags.includes("ticket") ? "ticket_none" : seg.tags.includes("price") ? "colectivo_price" : "colectivo");
   },
-  // "¿Dónde tomo un taxi?" (far_15 suggests one): hail one on the avenue
+  // "¿Dónde tomo un taxi?" (the airport's line suggests one): hail one on the avenue
   ask_taxi(c) { c.say("taxi"); },
+  // "¿Cuánto cuesta el taxi (al aeropuerto)?": no meter, agree on it first (s66)
+  ask_taxi_fare(c) { c.say("taxi_fare"); },
+  // "¿Hay un doctor?" / "Me siento mal": the Clínica Familiar (s31's), and the pharmacy's consultorio (s75)
+  ask_doctor(c) { c.say("doctor"); giveRoute(c, "clinic"); },
+  // "¿Venden tours?": not here; the booth on the malecón
+  ask_tours(c) { c.say("tours_info"); giveRoute(c, "tours"); },
+  // "¿Es seguro caminar de noche?": as s69's Doña Carmen says it
+  ask_safe(c) { c.say("safe_night"); },
   // "¿Dónde es la música?": in the zócalo (events_music said so): the way there
   where_music(c) { giveRoute(c, "square"); },
-  ask_busstop(c, _slots, seg) { c.say(seg.tags.includes("which") ? "bus_which" : "busstop"); },
+  // the city bus stop is on calle Hidalgo by calle Ceiba (s33's), not out front: its way
+  ask_busstop(c, _slots, seg) { if (seg.tags.includes("which")) c.say("bus_which"); else giveRoute(c, "busstop"); },
   ask_schedule(c) { c.say("bus_schedule"); c.event("give", { item: "bus-schedule" }); },
   // "¿El café tiene wifi?": yes, but its password is theirs (s72: ceiba2026), not the office's colibri
   ask_wifi(c) {
@@ -1009,29 +1148,40 @@ function wrap(hs: Record<string, Handler>): Record<string, Handler> {
 // Model answers for checking the route: each destination gets its own (a full check, a short check, a
 // question), so the examples shown are always true for the route Don Chuy just gave.
 const CHK: Record<string, HintItem> = {
-  full_bank: { id: "k_so_i", s: t("Entonces | salgo | a la derecha, | camino | dos | cuadras | y | en | el | banco | doy vuelta | a la izquierda, | ¿verdad?", "So | I go out | to the right, | I walk | two | blocks | and | at | the | bank | I turn | to the left, | right?", "So I go right out the door, walk two blocks, and turn left at the bank, right?"),
+  full_across: { id: "k_so_i", s: t("Entonces | cruzo | la | avenida | y | está | enfrente, | ¿verdad?", "So | I cross | the | avenue | and | it's | across the street, | right?", "So I cross the avenue and it's right there, right?"),
     note: "Repeat the way in your own words to check it. Don Chuy will correct you if something's off." },
-  full_left2: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | y | sigo | derecho | dos | cuadras, | ¿verdad?", "So | I go out | to the left | and | I keep going | straight | two | blocks, | right?", "So I go left out the door and straight for two blocks, right?") },
-  full_right2: { id: "k_so_i", s: t("Entonces | salgo | a la derecha | y | sigo | derecho | dos | cuadras, | ¿verdad?", "So | I go out | to the right | and | I keep going | straight | two | blocks, | right?", "So I go right out the door and straight for two blocks, right?") },
-  full_right1: { id: "k_so_i", s: t("Entonces | salgo | a la derecha | y | camino | una | cuadra, | ¿verdad?", "So | I go out | to the right | and | I walk | one | block, | right?", "So I go right out the door and walk one block, right?") },
+  full_left0: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | y | está | aquí | al lado, | ¿verdad?", "So | I go out | to the left | and | it's | right | next door, | right?", "So I go left out the door and it's right next door, right?") },
+  full_left_cross: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | y | está | del | otro | lado | de | la | avenida, | ¿verdad?", "So | I go out | to the left | and | it's | on the | other | side | of | the | avenue, | right?", "So I go left out the door and it's on the other side of the avenue, right?") },
   full_left1: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | y | camino | una | cuadra, | ¿verdad?", "So | I go out | to the left | and | I walk | one | block, | right?", "So I go left out the door and walk one block, right?") },
-  full_square: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | hasta | el | zócalo | y | ahí | doy vuelta | a la derecha, | ¿verdad?", "So | I go out | to the left | to | the | main square | and | there | I turn | to the right, | right?", "So I go left to the main square and turn right there, right?") },
-  full_next: { id: "k_so_i", s: t("Entonces | está | aquí | al lado, | ¿verdad?", "So | it's | here | next door, | right?", "So it's right next door?") },
-  left_bank: { id: "k_turn_at", s: t("¿En | el | banco, | a la izquierda?", "At | the | bank, | to the left?", "Left at the bank?") },
-  right_square: { id: "k_turn_at", s: t("¿En | el | zócalo, | a la derecha?", "At | the | main square, | to the right?", "Right at the main square?") },
+  full_left2: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | y | sigo | derecho | dos | cuadras, | ¿verdad?", "So | I go out | to the left | and | I keep going | straight | two | blocks, | right?", "So I go left out the door and straight for two blocks, right?") },
+  full_right0: { id: "k_so_i", s: t("Entonces | salgo | a la derecha, | hasta | la | esquina, | ¿verdad?", "So | I go out | to the right, | to | the | corner, | right?", "So I go right out the door, to the corner, right?") },
+  full_flamboyan: { id: "k_so_i", s: t("Entonces | salgo | a la derecha | y | en | la | esquina | doy vuelta | a la derecha, | ¿verdad?", "So | I go out | to the right | and | at | the | corner | I turn | to the right, | right?", "So I go right out the door and turn right at the corner, right?") },
+  full_sea: { id: "k_so_i", s: t("Entonces | a la derecha, | en | la | esquina | a la derecha, | y | en | el | malecón | otra vez | a la derecha, | ¿verdad?", "So | to the right, | at | the | corner | to the right, | and | on | the | waterfront | again | to the right, | right?", "So right, right at the corner, and right again on the waterfront, right?") },
+  full_ceiba: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda | y | en | la | calle | Ceiba | doy vuelta | a la derecha, | ¿verdad?", "So | I go out | to the left | and | at | the | street | Ceiba | I turn | to the right, | right?", "So I go left out the door and turn right at Calle Ceiba, right?") },
+  full_itzamna: { id: "k_so_i", s: t("Entonces | salgo | a la izquierda, | camino | dos | cuadras | y | en | la | calle | Itzamná | doy vuelta | a la derecha, | ¿verdad?", "So | I go out | to the left, | I walk | two | blocks | and | at | the | street | Itzamná | I turn | to the right, | right?", "So I go left, walk two blocks, and turn right at Calle Itzamná, right?") },
+  across_door: { id: "k_door", s: t("¿Cruzo | la | avenida?", "Do I cross | the | avenue?", "Do I cross the avenue?") },
   right_door: { id: "k_door", s: t("¿Al | salir, | a la derecha?", "Upon | leaving, | to the right?", "Right out the door?") },
   left_door: { id: "k_door", s: t("¿Al | salir, | a la izquierda?", "Upon | leaving, | to the left?", "Left out the door?") },
+  right_corner: { id: "k_turn_at", s: t("¿En | la | esquina, | a la derecha?", "At | the | corner, | to the right?", "Right at the corner?") },
+  right_ceiba: { id: "k_turn_at", s: t("¿En | la | calle | Ceiba, | a la derecha?", "At | the | street | Ceiba, | to the right?", "Right at Calle Ceiba?") },
+  right_itzamna: { id: "k_turn_at", s: t("¿En | la | calle | Itzamná, | a la derecha?", "At | the | street | Itzamná, | to the right?", "Right at Calle Itzamná?") },
+  opposite: { id: "k_opposite", s: t("¿Está | aquí | enfrente?", "Is it | right | across the street?", "Is it right across the street?") },
+  green_one: { id: "k_green", s: t("¿El | del | toldo | verde?", "The one | with the | awning | green?", "The one with the green awning?"), note: "A toldo is an awning: the little roof over a shop's door." },
+  one_block: { id: "k_one_block", s: t("¿Una | cuadra?", "One | block?", "One block?") },
   two_blocks: { id: "k_two_blocks", s: t("¿Dos | cuadras?", "Two | blocks?", "Two blocks?") },
   side: { id: "k_side", s: t("¿Está | a la derecha | o | a la izquierda?", "Is it | on the right | or | on the left?", "Is it on the right or on the left?") },
   far: { id: "k_far", s: t("¿Está | lejos?", "Is it | far?", "Is it far?") },
 };
+// Each destination's model answers: true for its way, so the examples shown are never wrong.
 const CHECK_FOR: Record<string, string[]> = {
-  sunny_cup: ["full_bank", "left_bank", "side"], post_office: ["full_bank", "left_bank", "side"], station: ["full_bank", "left_bank", "far"],
-  market: ["full_bank", "left_bank", "side"], taqueria: ["full_bank", "left_bank", "side"], bank: ["full_right2", "two_blocks", "side"], pharmacy: ["full_right1", "right_door", "side"],
-  salon: ["full_right1", "right_door", "side"], hotel: ["full_next", "right_door", "side"], trattoria: ["full_left1", "left_door", "side"],
-  threads: ["full_left1", "left_door", "side"], museum: ["full_left2", "left_door", "side"], police: ["full_left2", "left_door", "side"],
-  square: ["full_left2", "two_blocks", "side"], tianguis: ["full_left2", "two_blocks", "side"], beach: ["full_square", "right_square", "far"],
-  pier: ["full_square", "right_square", "far"], lighthouse: ["full_square", "right_square", "far"],
+  sunny_cup: ["full_across", "across_door", "green_one"], trattoria: ["full_across", "across_door", "opposite"],
+  museum: ["full_left0", "left_door", "side"], threads: ["full_left_cross", "left_door", "side"],
+  salon: ["full_left1", "one_block", "side"], bank: ["full_left1", "one_block", "side"], post_office: ["full_left1", "one_block", "side"],
+  square: ["full_left1", "one_block", "side"], tianguis: ["full_left1", "one_block", "side"], church: ["full_left1", "left_door", "far"],
+  police: ["full_left2", "two_blocks", "side"], hotel: ["full_right0", "right_door", "side"], pharmacy: ["full_right0", "right_door", "side"],
+  market: ["full_flamboyan", "right_corner", "side"], taqueria: ["full_flamboyan", "right_corner", "side"], beach: ["full_flamboyan", "right_corner", "far"],
+  tours: ["full_sea", "right_corner", "far"], pier: ["full_sea", "right_corner", "far"], lighthouse: ["full_sea", "right_corner", "far"],
+  busstop: ["full_ceiba", "right_ceiba", "far"], station: ["full_ceiba", "right_ceiba", "far"], clinic: ["full_itzamna", "right_itzamna", "far"],
 };
 const QUIZ_ITEMS = (id: string, where: string, whereEn: string, natWhere: string): HintItem[] => [
   { id, s: t(`${where} | a la izquierda.`, `${whereEn} | to the left.`, `Left ${natWhere}.`) },
@@ -1059,25 +1209,29 @@ const WHERE_BASE: HintItem[] = [
 // ---------------------------------------------------------------------------
 // Route lines: the fast one (Don Chuy's style) and the clear one (after "más despacio, por favor")
 
-const W_CAFE = "Café La Ceiba: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano derecha, enfrente de Correos";
+const W_CAFE = "Café La Ceiba: saliendo, cruce la avenida → justo enfrente: el del toldo verde, junto a La Cocina de Lucía (toldo rojo)";
 const W = {
-  post_office: "Correos: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano izquierda, enfrente del café La Ceiba",
-  market: "Mercado: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano izquierda, después de Correos",
-  taqueria: "Taquería: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano izquierda, junto al mercado",
-  bank: "Banco: saliendo, a la derecha → 2 cuadras → en la esquina de Juárez y Ceiba",
-  pharmacy: "Farmacia: saliendo, a la derecha → 1 cuadra → a mano derecha, junto a la estética",
-  salon: "Estética Tijeras: saliendo, a la derecha → 1 cuadra → a mano derecha, junto a la farmacia",
-  hotel: "Hotel Mar Azul: aquí al lado, a la derecha",
-  station: "Terminal: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → al final de la calle",
-  trattoria: "La Cocina de Lucía: saliendo, a la izquierda → 1 cuadra → a mano izquierda (toldo rojo), enfrente de la boutique Hilos",
-  threads: "Boutique Hilos: saliendo, a la izquierda → 1 cuadra → a mano derecha, enfrente de La Cocina de Lucía",
-  square: "Zócalo: saliendo, a la izquierda → 2 cuadras → a mano derecha (el kiosco)",
-  tianguis: "Tianguis (sábados): saliendo, a la izquierda → 2 cuadras → en el zócalo, a mano derecha",
-  museum: "Museo: saliendo, a la izquierda → 2 cuadras → a mano izquierda, enfrente del zócalo",
-  police: "Policía: saliendo, a la izquierda → 2 cuadras → a mano izquierda, junto al museo",
-  beach: "Playa: saliendo, a la izquierda → 2 cuadras hasta el zócalo → en el zócalo, a la derecha (calle Itzamná) → al final, el mar",
-  pier: "El Muelle: saliendo, a la izquierda → 2 cuadras hasta el zócalo → en el zócalo, a la derecha (calle Itzamná) → junto al mar",
-  lighthouse: "Faro: saliendo, a la izquierda → hasta el zócalo → a la derecha hasta el mar → todo el malecón (30 minutos)",
+  trattoria: "La Cocina de Lucía: saliendo, cruce la avenida → enfrente, un poco a la izquierda (toldo rojo), junto al café La Ceiba",
+  museum: "Museo: saliendo, a la izquierda → aquí al lado (el edificio grande de las columnas)",
+  square: "Zócalo: saliendo, a la izquierda → 1 cuadra, hasta la calle Ceiba → cruzando la calle, a mano izquierda (el kiosco)",
+  tianguis: "Tianguis (sábados): saliendo, a la izquierda → 1 cuadra → en el zócalo, cruzando la calle Ceiba",
+  church: "Iglesia: saliendo, a la izquierda → 1 cuadra, hasta el zócalo → al fondo de la plaza, enfrente del kiosco (junto a la policía)",
+  police: "Policía: saliendo, a la izquierda → 2 cuadras, pasando el zócalo → a mano izquierda, en la esquina de la calle Itzamná (junto a la iglesia)",
+  threads: "Boutique Hilos: saliendo, a la izquierda → del otro lado de la avenida (a mano derecha), enfrente del museo",
+  salon: "Estética Tijeras: saliendo, a la izquierda → 1 cuadra, hasta la calle Ceiba → del otro lado de la avenida, en la esquina (junto a Hilos)",
+  bank: "Banco: saliendo, a la izquierda → 1 cuadra, hasta la calle Ceiba → del otro lado de la avenida, en la esquina de enfrente (el edificio amarillo)",
+  post_office: "Correos: saliendo, a la izquierda → 1 cuadra, pasando la calle Ceiba → del otro lado de la avenida, junto al banco, enfrente del zócalo",
+  hotel: "Hotel Mar Azul: saliendo, a la derecha → cruzando la calle Flamboyán, el edificio grande de la esquina (enfrente de la farmacia)",
+  pharmacy: "Farmacia: saliendo, a la derecha → hasta la esquina (calle Flamboyán) → del otro lado de la avenida, enfrente del hotel Mar Azul",
+  market: "Mercado: saliendo, a la derecha → en la esquina, a la derecha (calle Flamboyán) → 1 cuadra, hasta la avenida del Puerto → a mano derecha, en la esquina",
+  taqueria: "Taquería: saliendo, a la derecha → en la esquina, a la derecha (calle Flamboyán) → 1 cuadra, hasta la avenida del Puerto → junto al mercado",
+  beach: "Playa: saliendo, a la derecha → en la esquina, a la derecha (calle Flamboyán) → 1 cuadra: al final, el mar",
+  tours: "Tours: saliendo, a la derecha → en la esquina, a la derecha (calle Flamboyán) → hasta el mar → en el malecón, a la derecha → la caseta, junto al muelle",
+  pier: "El Muelle: saliendo, a la derecha → en la esquina, a la derecha (calle Flamboyán) → hasta el mar → en el malecón, a la derecha → a mano izquierda, sobre el agua",
+  lighthouse: "Faro: saliendo, a la derecha → en la esquina, a la derecha (calle Flamboyán) → hasta el mar → todo el malecón a la derecha, hasta el final (10 minutos)",
+  busstop: "Parada: saliendo, a la izquierda → 1 cuadra, hasta la calle Ceiba → a la derecha, cruzando la avenida → 1 cuadra, hasta la calle Hidalgo → a mano derecha, enfrente del gimnasio",
+  station: "Terminal: saliendo, a la izquierda → 1 cuadra, hasta la calle Ceiba → a la derecha, cruzando la avenida → 1 cuadra, hasta la calle Hidalgo → a mano izquierda (el edificio grande)",
+  clinic: "Clínica Familiar (calle Hidalgo): saliendo, a la izquierda → 2 cuadras, hasta la calle Itzamná → a la derecha, cruzando la avenida → 1 cuadra, hasta la calle Hidalgo → a la izquierda → a mano izquierda",
 };
 
 export const visitorCenter: SituationDef = {
@@ -1114,12 +1268,21 @@ export const visitorCenter: SituationDef = {
         "@turnv [a] [la] {dir} (al salir | saliendo | cuando salgo | saliendo de aqui) #out",
         "salgo [y] [@turnv] [a] [la] {dir} #out",
         "(voy | camino | sigo) [a] [la] {dir} hasta {lm:place} #out",
-        "(primero | luego | despues | y luego) [@turnv] [a] [la] {dir} #bare",
+        "(primero | luego | despues | y luego | otra vez | y otra vez) [@turnv] [a] [la] {dir} #bare",
         "@turnv [a] [la] {dir} #bare",
-        "[@pre] @at_ {lm:place} [@turnv] [a] [la] {dir} #at",
+        "[@pre] @at_ {lm:place} [@turnv] [otra vez] [a] [la] {dir} #at",
         "[@pre] [@turnv] [a] [la] {dir} @at_ {lm:place} #at",
-        "[@pre] [@turnv] [a] [la] {dir} en la esquina #bare",
+        "[@pre] [@turnv] [a] [la] {dir} en la [primera] esquina #corner",
+        "[@pre] (en | al llegar a) la [primera] esquina [@turnv] [otra vez] [a] [la] {dir} #corner",
         "[@pre] [@turnv] [a] [la] {dir} (en | por | hacia) [la] (calle | avenida) {street} #onto",
+        "[@pre] (en | al llegar a) [la] [calle | avenida] {street} [@turnv] [otra vez] [a] [la] {dir} #onto",
+        // crossing avenida Juárez (the café's way: "Entonces cruzo la avenida y está enfrente")
+        "[salgo y | al salir | saliendo | y] (cruzo | cruzar | cruza | cruce | atravieso | se cruza | hay que cruzar | tengo que cruzar) [[la | el] (avenida | calle | paso de cebra | cebra)] [juarez | aqui enfrente | enfrente] #cross",
+        "[y] paso (la | el) (avenida | calle | paso de cebra) #cross",
+        "cruzando [la | el] (avenida | calle | paso de cebra) #cross",
+        "[@subj] (del otro lado | al otro lado) de la (avenida | calle) #cross",
+        "[@subj] [aqui | justo | ahi | aqui mismo] enfrente [de aqui | de nosotros | de la oficina] #opposite",
+        "[y] hasta la [primera] esquina #tocorner",
         "@straightv (derecho | derechito | recto | todo derecho | todo recto) [@blocks] [hasta {lm:place}] #straight",
         "@straightv @blocks [derecho | derechito | recto] [hasta {lm:place}] #straight",
         "(derecho | derechito | todo derecho | recto) [@blocks] [hasta {lm:place}] #straight",
@@ -1133,10 +1296,12 @@ export const visitorCenter: SituationDef = {
         "[@subj] (junto | al lado | a un lado | pegado | pegadito) (a | al | de | del) {ref:place} #next",
         "[@subj] cerca (de | del) {ref:place} #near",
         "[@subj] [aqui] (al lado | junto | a un lado | pegadito) #nextdoor",
-        "[@subj | es] (el | la) [lugar | local | edificio | casita] (chiquito | chiquita | pequeno | pequena | chico | chica) [amarillo | de la puerta amarilla] #little",
-        "[@subj | es] el de la puerta amarilla #little", "[@subj | es] (el | la) (chiquito | chiquita | pequeno | pequena | chico | chica) con la puerta amarilla #little",
-        "[@subj | es] (el | la) [edificio] grande [blanco] #big",
-        "[es] el edificio (grande | blanco) #big",
+        "[@subj | es] (el | la) [lugar | local | localito | edificio | casita] (chiquito | chiquita | pequeno | pequena | chico | chica) #little",
+        "[@subj | es] (el | la) [edificio] grande [blanco | amarillo] #big",
+        "[es] el edificio (grande | blanco | amarillo) #big",
+        // the awnings: the café's green, La Cocina de Lucía's red
+        "[@subj | es] (el | la) (del | de | con | que tiene) [el] toldo (verde #green | rojo #red)",
+        "el toldo [es] (verde #green | rojo #red)",
       ] },
       route: { pattern: [
         "{piece} [[@join] {piece}] [[@join] {piece}] [[@join] {piece}] [[@join] {piece}]",
@@ -1262,6 +1427,12 @@ export const visitorCenter: SituationDef = {
     lost_item: { patterns: ["(perdi | se me perdio | se me perdieron) (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)", "(me robaron | alguien me robó) (mi | la | el) (cartera | pasaporte | celular | bolsa | mochila | billetera)", "no encuentro (mi | mis) (cartera | pasaporte | celular | bolsa | mochila | llaves | billetera)"] },
     // "¿Derecho?" at "¿A la derecha o a la izquierda?": derecho is straight ahead, not right (a common slip)
     straight_ans_ctx: { patterns: ["(derecho | todo derecho | derechito | recto | todo recto) [@ctail]", "(sigo | voy) (derecho | recto | derechito) [@ctail]"] },
+    // "¿Da vuelta o cruza la avenida?": crossing (the café's way, and La Cocina de Lucía's)
+    cross_ans_ctx: { patterns: [
+      "(cruzo | cruza | cruzar | se cruza | hay que cruzar | cruzamos | cruce) [la avenida | la calle | aqui enfrente | enfrente] [@ctail]",
+      "(cruzando | cruzo) (la avenida | la calle) [y ya | nada mas] [@ctail]", "(aqui | justo)? enfrente [@ctail]", "no doy vuelta [y] (cruzo | cruzo la avenida)",
+      "(no | sin) dar vuelta [cruzo | cruzo la avenida]",
+    ] },
     dir_ans_ctx: { patterns: ["[a] [la] {dir} [primero]", "(doy vuelta | volteo | voy | giro | doblo) [a] [la] {dir} [ahi]", "[a] [la] {dir} no [a] [la] {other:dir}", "(perdon | me equivoqué) [a] [la] {dir}", "creo que [a] [la] {dir}", "a mano {dir}",
       // "No a la derecha, a la izquierda": the second direction is the answer
       "[no] no [a] [la] {other:dir} [sino] [a] [la] {dir}", "(hacia | para) [la] {dir}", "(doy vuelta | volteo | voy | giro | doblo) (hacia | para) [la] {dir}", "[a] [la] {dir} creo"] },
@@ -1335,6 +1506,34 @@ export const visitorCenter: SituationDef = {
     ask_taxi: { patterns: [
       "(donde | en donde) (tomo | agarro | consigo | encuentro | hay | puedo tomar | puedo agarrar | se toma) (un | el)? taxi", "(donde | en donde) (esta | queda | hay) (el | un)? (sitio | sitio de taxis | parada de taxis)",
       "(hay | pasan) taxis [por aqui | aqui | en la avenida]", "necesito un taxi", "(me puede | puede | me podria | podria) (llamar | pedir) un taxi", "(quiero | quisiera) (tomar | agarrar) un taxi", "como (consigo | pido | tomo) un taxi",
+    ] },
+    // a taxi's price (to the airport, say): no meter (s66)
+    ask_taxi_fare: { patterns: [
+      "cuanto (cuesta | sale | cobra | cobran | es) (el | un) taxi [(a | al | a la | hasta el | hasta la | para el | para la) {place}]",
+      "cuanto (cuesta | sale | cobran) (ir | llegar) en taxi [(a | al | a la | hasta el | hasta la) {place}]", "(es | sale) caro el taxi [(a | al | hasta el | hasta la) {place}]",
+      "(tienen | usan) taximetro [los taxis]", "(los taxis | el taxi) (tienen | tiene | usan | usa) taximetro",
+    ] },
+    // a doctor (not "¿Dónde está la clínica?", which is a destination): the Clínica Familiar (s31) and the pharmacy's
+    // consultorio (s75)
+    ask_doctor: { patterns: [
+      "(hay | conoce | sabe de) (un | algun) (doctor | medico) [@here_] #h:i_doctor", "(donde | en donde) (hay | encuentro | puedo encontrar | puedo ver) (un | algun) (doctor | medico)",
+      "(busco | estoy buscando | ando buscando | necesito | ocupo) (un | algun) (doctor | medico)", "(necesito | tengo que | quiero) ir al (doctor | medico)",
+      "(me siento | me estoy sintiendo) (mal | muy mal | enfermo | enferma)", "(estoy | ando) (enfermo | enferma | malo | mala)", "me enferme",
+      "(donde | a donde) (puedo | debo) ir si me (enfermo | siento mal)",
+    ] },
+    // tours: none sold here; the booth on the malecón
+    ask_tours: { patterns: [
+      "(venden | tienen | hay | ofrecen | organizan | hacen) (tours | excursiones | un tour | paseos en lancha) [aqui] [(a | al | a los | a las | para) {place}] #h:i_tours",
+      "(donde | en donde) (compro | contrato | reservo | puedo contratar | puedo reservar | puedo comprar | venden | hay) (un tour | tours | una excursion | excursiones) [(a | al | a los | a las | para) {place}]",
+      "(quiero | quisiera | me gustaria | busco) (hacer | tomar | contratar | reservar) (un tour | una excursion | tours) [(a | al | a los | a las | para) {place}]",
+      "(busco | estoy buscando) (un tour | tours | una excursion | excursiones) [(a | al | a los | a las | para) {place}]",
+    ] },
+    // night safety, as s69's Doña Carmen answers it
+    ask_safe: { patterns: [
+      "(es | sera) (seguro | peligroso) (caminar | salir | andar | pasear) [solo | sola] [(de | en la | por la) noche | tarde] #h:i_safe",
+      "(es | sera | esta) (seguro | peligroso | tranquilo) (el pueblo | el centro | aqui | por aqui | la playa) [(de | en la | por la) noche]",
+      "(se puede | puedo) (caminar | salir | andar) [solo | sola] (de noche | en la noche | por la noche) [por el centro | por aqui | en el pueblo | por el pueblo]", "(hay | habra) (peligro | inseguridad | robos | asaltos) [@here_] [(de | en la | por la) noche]",
+      "(es | sera) seguro (de noche | en la noche | por la noche)", "es seguro el pueblo",
     ] },
     where_music: { patterns: ["(donde | en donde) (es | va a ser | sera | hay | tocan | ponen) (la musica | el concierto | la musica en vivo | los conciertos)"] },
     ask_wifi: { patterns: ["(tienen | hay | tiene) (wifi | internet) [aqui | gratis] #h:i_wifi", "cual es la (contrasena | clave) del (wifi | internet)", "me (da | pasa) la (contrasena | clave) [del wifi]", "(puedo | me puedo) conectar al (wifi | internet)", "el wifi es gratis", "la (contrasena | clave) del wifi"] },
@@ -1425,130 +1624,166 @@ export const visitorCenter: SituationDef = {
     which_place: [t("Perdón, | ¿a | dónde | quiere | ir?", "Sorry, | to | where | do you want | to go?", "Sorry, where do you want to go?")],
     unknown_place: [t("Mmm, | perdón, | ese | lugar | no lo conozco.", "Hmm, | sorry, | that | place | I don't know it.", "Hmm, sorry, I don't know that place.")],
 
-    // --- routes: fast (Don Chuy's style) and clear (after "más despacio") --------
+    // --- routes: fast (Don Chuy's style) and clear (after "más despacio"): the 3D town's ways (TOWN.md) --------
+    // across the avenue: a crosswalk right in front of the door lands between the café and La Cocina de Lucía
     r_sunny_cup: [
-      t("¿La Ceiba? | ¡Fácil! | Saliendo, | a la derecha, | se va | derechito | dos | cuadras | hasta | el | banco, | ahí | da vuelta | a la izquierda | y | lo | ve | a mano derecha.",
-        "La Ceiba? | Easy! | Going out, | to the right, | you go | straight ahead | two | blocks | to | the | bank, | there | you turn | to the left | and | it | you-see | on the right-hand side.",
-        "La Ceiba? Easy! Go right out the door, straight two blocks to the bank, hang a left there, and it's on your right.",
-        { flags: { 5: "derechito: “straight ahead”, a friendly diminutive of derecho.", 15: "lo: it (el café)." }, spell: "Ceiba", write: W_CAFE }),
-      t("¡Buena | elección! | A la derecha | al | salir, | dos | cuadras | hasta | el | banco, | luego | a la izquierda. | Está | a la derecha, | enfrente de | Correos.",
-        "Good | choice! | To the right | upon | leaving, | two | blocks | to | the | bank, | then | to the left. | It's | on the right, | across from | the post office.",
-        "Great choice! Right out the door, two blocks to the bank, then left. It's on the right, across from the post office.",
+      t("¿La Ceiba? | ¡Ja, | si | está | aquí | enfrente! | Nada más | cruce | la | avenida | y | ahí | está: | el | del | toldo | verde, | junto a | La Cocina de Lucía.",
+        "La Ceiba? | Ha, | — | it's | here | across the street! | Just | cross | the | avenue | and | there | it is: | the one | with the | awning | green, | next to | La Cocina de Lucía.",
+        "La Ceiba? Ha, it's right across the street! Just cross the avenue and there it is: the one with the green awning, next to La Cocina de Lucía.",
+        { flags: { 2: "si (no accent) before a verb adds surprise, like English “why, it's…”; it isn't “if” here." }, spell: "Ceiba", write: W_CAFE }),
+      t("¡Buena | elección! | Está | aquí | enfrente, | cruzando | la | avenida: | el | localito | del | toldo | verde, | con | mesitas | afuera.",
+        "Good | choice! | It's | here | across the street, | crossing | the | avenue: | the | little place | with the | awning | green, | with | little tables | outside.",
+        "Great choice! It's right across the avenue: the little place with the green awning and tables outside.",
         { spell: "Ceiba", write: W_CAFE }),
     ],
     r_sunny_cup_slow: [
-      t("Bueno. | Al | salir, | dé vuelta | a la derecha. | Siga | derecho | dos | cuadras, | hasta | el | banco. | En | el | banco, | dé vuelta | a la izquierda, | en | la | calle | Ceiba. | El | café | está | a la derecha, | enfrente de | Correos.",
-        "Okay. | Upon | leaving, | turn | to the right. | Keep going | straight | two | blocks, | to | the | bank. | At | the | bank, | turn | to the left, | onto | the | street | Ceiba. | The | café | is | on the right, | across from | the post office.",
-        "Okay. Turn right out the door. Go straight two blocks, to the bank. At the bank, turn left, onto Calle Ceiba. The café is on the right, across from the post office.",
+      t("Bueno. | Al | salir, | cruce | la | avenida. | El | café | está | justo | enfrente de | nosotros: | es | el | del | toldo | verde, | junto a | La Cocina de Lucía.",
+        "Okay. | Upon | leaving, | cross | the | avenue. | The | café | is | right | across from | us: | it's | the one | with the | awning | green, | next to | La Cocina de Lucía.",
+        "Okay. When you go out, cross the avenue. The café is right across from us: it's the one with the green awning, next to La Cocina de Lucía.",
         { spell: "Ceiba", write: W_CAFE }),
     ],
-    r_post_office: [t("¿Correos? | Saliendo, | a la derecha, | dos | cuadras | hasta | el | banco, | da vuelta | a la izquierda | y | está | a mano izquierda.",
-      "The post office? | Going out, | to the right, | two | blocks | to | the | bank, | you turn | to the left | and | it's | on the left-hand side.",
-      "The post office? Right out the door, two blocks to the bank, turn left, and it's on your left.", { write: W.post_office })],
-    r_post_office_slow: [t("Bueno. | Al | salir, | a la derecha. | Siga | derecho | dos | cuadras, | hasta | el | banco. | Ahí, | a la izquierda. | Correos | está | a la izquierda, | enfrente del | café | La Ceiba.",
-      "Okay. | Upon | leaving, | to the right. | Keep going | straight | two | blocks, | to | the | bank. | There, | to the left. | The post office | is | on the left, | across from the | café | La Ceiba.",
-      "Okay. Right out the door. Go straight two blocks, to the bank. Turn left there. The post office is on the left, across from Café La Ceiba.", { spell: "Ceiba", write: W.post_office })],
-    r_market: [t("¿El | mercado? | A la derecha, | hasta | el | banco, | ahí | a la izquierda | y | lo | ve | a mano izquierda, | pasando | Correos.",
-      "The | market? | To the right, | to | the | bank, | there | to the left | and | it | you-see | on the left-hand side, | past | the post office.",
-      "The market? Right to the bank, left there, and you'll see it on your left, past the post office.", { write: W.market })],
-    r_market_slow: [t("Bueno. | Al | salir, | a la derecha, | dos | cuadras, | hasta | el | banco. | En | el | banco, | a la izquierda. | El | mercado | está | a la izquierda, | después de | Correos.",
-      "Okay. | Upon | leaving, | to the right, | two | blocks, | to | the | bank. | At | the | bank, | to the left. | The | market | is | on the left, | after | the post office.",
-      "Okay. Right out the door, two blocks, to the bank. At the bank, turn left. The market is on the left, past the post office.", { spell: "Ceiba", write: W.market })],
-    r_taqueria: [t("¿La | taquería? | Está | junto al | mercado. | Saliendo, | a la derecha, | hasta | el | banco, | ahí | a la izquierda, | pasando | Correos.",
-      "The | taco place? | It's | next to the | market. | Going out, | to the right, | to | the | bank, | there | to the left, | past | the post office.",
-      "The taco place? It's next to the market. Right out the door to the bank, left there, past the post office.", { write: W.taqueria })],
-    r_taqueria_slow: [t("Bueno. | Al | salir, | a la derecha, | dos | cuadras, | hasta | el | banco. | En | el | banco, | a la izquierda. | La | taquería | está | a la izquierda, | junto al | mercado.",
-      "Okay. | Upon | leaving, | to the right, | two | blocks, | to | the | bank. | At | the | bank, | to the left. | The | taco place | is | on the left, | next to the | market.",
-      "Okay. Right out the door, two blocks, to the bank. At the bank, turn left. The taco place is on the left, next to the market.", { spell: "Ceiba", write: W.taqueria })],
-    r_bank: [t("¿El | banco? | ¡Fácil! | Saliendo, | a la derecha | y | derechito | dos | cuadras. | Es | el | edificio | grande | de | la | esquina.",
-      "The | bank? | Easy! | Going out, | to the right | and | straight ahead | two | blocks. | It's | the | building | big | on | the | corner.",
-      "The bank? Easy! Right out the door and straight two blocks. It's the big building on the corner.", { write: W.bank })],
-    r_bank_slow: [t("Bueno. | Al | salir, | a la derecha. | Siga | derecho | dos | cuadras. | El | banco | está | a la derecha, | en | la | esquina.",
-      "Okay. | Upon | leaving, | to the right. | Keep going | straight | two | blocks. | The | bank | is | on the right, | on | the | corner.",
-      "Okay. Right out the door. Go straight two blocks. The bank is on the right, on the corner.", { write: W.bank })],
-    r_pharmacy: [t("¿La | farmacia? | Saliendo, | a la derecha, | a | una | cuadra, | junto a | la | estética.",
-      "The | pharmacy? | Going out, | to the right, | at | one | block, | next to | the | hair salon.",
-      "The pharmacy? Right out the door, one block down, next to the hair salon.", { write: W.pharmacy })],
-    r_pharmacy_slow: [t("Bueno. | Al | salir, | a la derecha. | Camine | una | cuadra. | La | farmacia | está | a la derecha, | junto a | la | estética.",
-      "Okay. | Upon | leaving, | to the right. | Walk | one | block. | The | pharmacy | is | on the right, | next to | the | hair salon.",
-      "Okay. Right out the door. Walk one block. The pharmacy is on the right, next to the hair salon.", { write: W.pharmacy })],
-    r_salon: [t("¿La | estética? | Saliendo, | a la derecha, | a | una | cuadra, | junto a | la | farmacia.",
-      "The | hair salon? | Going out, | to the right, | at | one | block, | next to | the | pharmacy.",
-      "The hair salon? Right out the door, one block down, next to the pharmacy.", { flags: { 1: "estética: in Mexico, a hair salon." }, write: W.salon })],
-    r_salon_slow: [t("Bueno. | Al | salir, | a la derecha. | Camine | una | cuadra. | La | estética | Tijeras | está | a la derecha, | junto a | la | farmacia.",
-      "Okay. | Upon | leaving, | to the right. | Walk | one | block. | The | salon | Tijeras | is | on the right, | next to | the | pharmacy.",
-      "Okay. Right out the door. Walk one block. Tijeras salon is on the right, next to the pharmacy.", { spell: "Tijeras", write: W.salon })],
-    r_hotel: [t("¿El | Mar Azul? | ¡Está | aquí | al lado! | Saliendo, | a la derecha, | el | edificio | grande.",
-      "The | Mar Azul? | It's | here | next door! | Going out, | to the right, | the | building | big.",
-      "The Mar Azul? It's right next door! Right out the door, the big building.", { write: W.hotel })],
-    r_hotel_slow: [t("Bueno. | El | hotel | está | aquí | al lado, | a la derecha | al | salir.",
-      "Okay. | The | hotel | is | here | next door, | to the right | upon | leaving.",
-      "Okay. The hotel is right next door, on the right as you go out.", { write: W.hotel })],
-    r_station: [t("¿La | terminal? | Saliendo, | a la derecha, | dos | cuadras | hasta | el | banco, | da vuelta | a la izquierda | y | sigue | derecho | por | la | calle | Ceiba.",
-      "The | bus station? | Going out, | to the right, | two | blocks | to | the | bank, | you turn | to the left | and | you keep going | straight | along | the | street | Ceiba.",
-      "The bus station? Right out the door, two blocks to the bank, turn left, and keep going straight down Calle Ceiba.", { spell: "Ceiba", write: W.station })],
-    r_station_slow: [t("Bueno. | Al | salir, | a la derecha. | Siga | derecho | dos | cuadras, | hasta | el | banco. | Ahí, | a la izquierda, | en | la | calle | Ceiba. | La | terminal | está | al | final | de | la | calle.",
-      "Okay. | Upon | leaving, | to the right. | Keep going | straight | two | blocks, | to | the | bank. | There, | to the left, | onto | the | street | Ceiba. | The | bus station | is | at the | end | of | the | street.",
-      "Okay. Right out the door. Go straight two blocks, to the bank. Turn left there, onto Calle Ceiba. The bus station is at the end of the street.", { spell: "Ceiba", write: W.station })],
-    r_trattoria: [t("¿La Cocina de Lucía? | Saliendo, | a la izquierda, | una | cuadra, | la | del | toldo | rojo, | a mano izquierda.",
-      "La Cocina de Lucía? | Going out, | to the left, | one | block, | the one | with the | awning | red, | on the left-hand side.",
-      "La Cocina de Lucía? Left out the door, one block, the one with the red awning, on your left.", { write: W.trattoria })],
-    r_trattoria_slow: [t("Bueno. | Al | salir, | a la izquierda. | Camine | una | cuadra. | La Cocina de Lucía | está | a la izquierda, | enfrente de | la | boutique | Hilos.",
-      "Okay. | Upon | leaving, | to the left. | Walk | one | block. | La Cocina de Lucía | is | on the left, | across from | the | boutique | Hilos.",
-      "Okay. Left out the door. Walk one block. La Cocina de Lucía is on the left, across from the Hilos boutique.", { write: W.trattoria })],
-    r_threads: [t("¿La | boutique | Hilos? | Saliendo, | a la izquierda, | una | cuadra, | a mano derecha, | enfrente de | La Cocina de Lucía.",
-      "The | boutique | Hilos? | Going out, | to the left, | one | block, | on the right-hand side, | across from | La Cocina de Lucía.",
-      "The Hilos boutique? Left out the door, one block, on your right, across from La Cocina de Lucía.", { write: W.threads })],
-    r_threads_slow: [t("Bueno. | Al | salir, | a la izquierda. | Camine | una | cuadra. | La | boutique | está | a la derecha, | enfrente de | La Cocina de Lucía.",
-      "Okay. | Upon | leaving, | to the left. | Walk | one | block. | The | boutique | is | on the right, | across from | La Cocina de Lucía.",
-      "Okay. Left out the door. Walk one block. The boutique is on the right, across from La Cocina de Lucía.", { write: W.threads })],
-    r_square: [t("¿El | zócalo? | ¡Fácil! | Saliendo, | a la izquierda, | derechito | dos | cuadras. | Es | la | plaza | grande | con | el | kiosco.",
-      "The | main square? | Easy! | Going out, | to the left, | straight ahead | two | blocks. | It's | the | square | big | with | the | bandstand.",
-      "The main square? Easy! Left out the door, straight two blocks. It's the big square with the bandstand.",
-      { flags: { 1: "zócalo: in Mexico, a town's main square." }, write: W.square })],
-    r_square_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras. | El | zócalo | está | a la derecha.",
-      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks. | The | main square | is | on the right.",
-      "Okay. Left out the door. Go straight two blocks. The main square is on the right.", { write: W.square })],
-    r_tianguis: [t("¿El | tianguis? | Es | en | el | zócalo, | los | sábados. | Saliendo, | a la izquierda, | dos | cuadras.",
-      "The | street market? | It's | in | the | main square, | on | Saturdays. | Going out, | to the left, | two | blocks.",
-      "The street market? It's in the main square, on Saturdays. Left out the door, two blocks.",
+    r_trattoria: [t("¿La Cocina de Lucía? | ¡Aquí | enfrente! | Cruzando | la | avenida, | la | del | toldo | rojo, | junto al | café.",
+      "La Cocina de Lucía? | Right | across the street! | Crossing | the | avenue, | the one | with the | awning | red, | next to the | café.",
+      "La Cocina de Lucía? Right across the street! Across the avenue, the one with the red awning, next to the café.", { write: W.trattoria })],
+    r_trattoria_slow: [t("Bueno. | Al | salir, | cruce | la | avenida. | La Cocina de Lucía | está | enfrente, | un | poquito | a la izquierda: | es | la | del | toldo | rojo, | junto al | café | La Ceiba.",
+      "Okay. | Upon | leaving, | cross | the | avenue. | La Cocina de Lucía | is | across the street, | a | little | to the left: | it's | the one | with the | awning | red, | next to the | café | La Ceiba.",
+      "Okay. When you go out, cross the avenue. La Cocina de Lucía is across the street, a little to the left: it's the one with the red awning, next to Café La Ceiba.", { spell: "Ceiba", write: W.trattoria })],
+    // left, this side of the avenue
+    r_museum: [t("¿El | museo? | ¡Aquí | al lado! | Saliendo, | a la izquierda: | el | edificio | grande | de | las | columnas.",
+      "The | museum? | Right | next door! | Going out, | to the left: | the | building | big | with | the | columns.",
+      "The museum? Right next door! Left out the door: the big building with the columns.", { write: W.museum })],
+    r_museum_slow: [t("Bueno. | Al | salir, | a la izquierda. | El | museo | está | aquí | al lado, | a la izquierda: | es | el | edificio | grande, | con | columnas.",
+      "Okay. | Upon | leaving, | to the left. | The | museum | is | right | next door, | on the left: | it's | the | building | big, | with | columns.",
+      "Okay. Turn left out the door. The museum is right next door, on the left: it's the big building with columns.", { write: W.museum })],
+    r_square: [t("¿El | zócalo? | ¡Fácil! | Saliendo, | a la izquierda, | derechito | una | cuadra. | Cruzando | la | calle | Ceiba, | ahí | está, | con | su | kiosco.",
+      "The | main square? | Easy! | Going out, | to the left, | straight ahead | one | block. | Crossing | the | street | Ceiba, | there | it is, | with | its | bandstand.",
+      "The main square? Easy! Left out the door, straight one block. Across Calle Ceiba, there it is, with its bandstand.",
+      { flags: { 1: "zócalo: in Mexico, a town's main square." }, spell: "Ceiba", write: W.square })],
+    r_square_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra, | hasta | la | calle | Ceiba. | El | zócalo | está | ahí, | a la izquierda, | cruzando | la | calle.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block, | to | the | street | Ceiba. | The | main square | is | there, | on the left, | crossing | the | street.",
+      "Okay. Turn left out the door. Go straight one block, to Calle Ceiba. The main square is right there, on the left, across the street.", { spell: "Ceiba", write: W.square })],
+    r_tianguis: [t("¿El | tianguis? | Es | en | el | zócalo, | los | sábados. | Saliendo, | a la izquierda, | una | cuadra.",
+      "The | street market? | It's | in | the | main square, | on | Saturdays. | Going out, | to the left, | one | block.",
+      "The street market? It's in the main square, on Saturdays. Left out the door, one block.",
       { flags: { 1: "Mexican: tianguis = an open-air street market held on a set day.", 6: "los before a weekday = on (every) …" }, write: W.tianguis,
-        neutral: t("¿El | mercado | de | los | sábados? | Es | en | el | zócalo. | Saliendo, | a la izquierda, | dos | cuadras.", "The | market | of | the | Saturdays? | It's | in | the | main square. | Going out, | to the left, | two | blocks.", "The Saturday market? It's in the main square. Left out the door, two blocks.") })],
-    r_tianguis_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras. | El | tianguis | se pone | en | el | zócalo, | a la derecha.",
-      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks. | The | street market | is set up | in | the | main square, | on the right.",
-      "Okay. Left out the door. Go straight two blocks. The street market is set up in the main square, on the right.",
-      { flags: { 9: "Mexican: tianguis = an open-air street market held on a set day." }, write: W.tianguis,
-        neutral: t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras. | El | mercado | se pone | en | el | zócalo, | a la derecha.", "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks. | The | market | is set up | in | the | main square, | on the right.", "Okay. Left out the door. Go straight two blocks. The market is set up in the main square, on the right.") })],
-    r_museum: [t("¿El | museo? | ¡Claro! | Saliendo, | a la izquierda | y | derechito | dos | cuadras. | Es | el | edificio | grande | y | blanco, | a mano izquierda.",
-      "The | museum? | Sure! | Going out, | to the left | and | straight ahead | two | blocks. | It's | the | building | big | and | white, | on the left-hand side.",
-      "The museum? Sure! Left out the door and straight two blocks. It's the big white building on your left.", { write: W.museum })],
-    r_museum_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras, | hasta | el | zócalo. | El | museo | está | a la izquierda, | enfrente del | zócalo.",
-      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks, | to | the | main square. | The | museum | is | on the left, | across from the | main square.",
-      "Okay. Left out the door. Go straight two blocks, to the main square. The museum is on the left, across from the square.", { write: W.museum })],
-    r_police: [t("¿La | policía? | Saliendo, | a la izquierda, | dos | cuadras, | junto al | museo.",
-      "The | police? | Going out, | to the left, | two | blocks, | next to the | museum.",
-      "The police station? Left out the door, two blocks, next to the museum.", { write: W.police })],
-    r_police_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras. | La | policía | está | a la izquierda, | junto al | museo.",
-      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks. | The | police station | is | on the left, | next to the | museum.",
-      "Okay. Left out the door. Go straight two blocks. The police station is on the left, next to the museum.", { write: W.police })],
-    r_beach: [t("¿La | playa? | ¡Fácil! | Saliendo, | a la izquierda, | hasta | el | zócalo, | ahí | da vuelta | a la derecha | y | bajando | la | calle | llega | al | mar.",
-      "The | beach? | Easy! | Going out, | to the left, | to | the | main square, | there | you turn | to the right | and | going down | the | street | you-reach | the | sea.",
-      "The beach? Easy! Left out the door to the main square, turn right there, and just follow the street down to the sea.", { write: W.beach })],
-    r_beach_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras, | hasta | el | zócalo. | En | el | zócalo, | dé vuelta | a la derecha, | en | la | calle | Itzamná. | La | playa | está | al | final.",
-      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks, | to | the | main square. | At | the | main square, | turn | to the right, | onto | the | street | Itzamná. | The | beach | is | at the | end.",
-      "Okay. Left out the door. Go straight two blocks, to the main square. At the square, turn right, onto Calle Itzamná. The beach is at the end.", { spell: "Itzamná", write: W.beach })],
-    r_pier: [t("¿El Muelle? | Saliendo, | a la izquierda | hasta | el | zócalo, | ahí | a la derecha | y | lo | ve | junto al | mar.",
-      "El Muelle? | Going out, | to the left | to | the | main square, | there | to the right | and | it | you-see | next to the | sea.",
-      "El Muelle? Left out the door to the main square, right there, and you'll see it by the sea.", { write: W.pier })],
-    r_pier_slow: [t("Bueno. | Al | salir, | a la izquierda, | dos | cuadras, | hasta | el | zócalo. | Ahí, | a la derecha, | en | la | calle | Itzamná. | El | restaurante | está | junto al | mar.",
-      "Okay. | Upon | leaving, | to the left, | two | blocks, | to | the | main square. | There, | to the right, | onto | the | street | Itzamná. | The | restaurant | is | next to the | sea.",
-      "Okay. Left out the door, two blocks, to the main square. Turn right there, onto Calle Itzamná. The restaurant is by the sea.", { spell: "Itzamná", write: W.pier })],
-    r_lighthouse: [t("¿El | faro? | Uy, | está | lejos. | A la izquierda | hasta | el | zócalo, | a la derecha | hasta | el | mar | y | luego | todo | el | malecón.",
-      "The | lighthouse? | Oh, | it's | far. | To the left | to | the | main square, | to the right | to | the | sea | and | then | all | the | seafront.",
-      "The lighthouse? Oh, that's far. Left to the main square, right down to the sea, and then all the way along the seafront.", { write: W.lighthouse })],
-    r_lighthouse_slow: [t("Bueno. | Al | salir, | a la izquierda, | hasta | el | zócalo. | Ahí, | a la derecha, | hasta | el | mar. | Luego | camine | por | el | malecón | hasta | el | final.",
-      "Okay. | Upon | leaving, | to the left, | to | the | main square. | There, | to the right, | to | the | sea. | Then | walk | along | the | seafront | to | the | end.",
-      "Okay. Left out the door, to the main square. Turn right there, down to the sea. Then walk along the seafront to the very end.", { write: W.lighthouse })],
+        neutral: t("¿El | mercado | de | los | sábados? | Es | en | el | zócalo. | Saliendo, | a la izquierda, | una | cuadra.", "The | market | of | the | Saturdays? | It's | in | the | main square. | Going out, | to the left, | one | block.", "The Saturday market? It's in the main square. Left out the door, one block.") })],
+    r_tianguis_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra. | El | tianguis | se pone | en | el | zócalo, | cruzando | la | calle | Ceiba.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block. | The | street market | is set up | in | the | main square, | crossing | the | street | Ceiba.",
+      "Okay. Turn left out the door. Go straight one block. The street market is set up in the main square, across Calle Ceiba.",
+      { flags: { 9: "Mexican: tianguis = an open-air street market held on a set day." }, spell: "Ceiba", write: W.tianguis,
+        neutral: t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra. | El | mercado | se pone | en | el | zócalo, | cruzando | la | calle | Ceiba.", "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block. | The | market | is set up | in | the | main square, | crossing | the | street | Ceiba.", "Okay. Turn left out the door. Go straight one block. The market is set up in the main square, across Calle Ceiba.") })],
+    // the parroquia at the zócalo's east end, facing the kiosco
+    r_church: [t("¿La | iglesia? | En | el | zócalo: | saliendo, | a la izquierda, | una | cuadra, | y | la | ve | al fondo | de | la | plaza, | enfrente del | kiosco.",
+      "The | church? | On | the | main square: | going out, | to the left, | one | block, | and | it | you-see | at the far end | of | the | square, | across from the | bandstand.",
+      "The church? On the main square: left out the door, one block, and you'll see it at the far end of the square, facing the bandstand.",
+      { flags: { 10: "la: “it” (la iglesia), an object pronoun before the verb." }, write: W.church })],
+    r_church_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra, | hasta | el | zócalo. | La | iglesia | está | al fondo | del | zócalo, | enfrente del | kiosco, | junto a | la | policía.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block, | to | the | main square. | The | church | is | at the far end | of the | main square, | across from the | bandstand, | next to | the | police station.",
+      "Okay. Turn left out the door. Go straight one block, to the main square. The church is at the far end of the square, facing the bandstand, next to the police station.", { write: W.church })],
+    r_police: [t("¿La | policía? | Saliendo, | a la izquierda, | derecho | dos | cuadras: | pasando | el | zócalo, | en | la | esquina | de | Itzamná.",
+      "The | police? | Going out, | to the left, | straight | two | blocks: | past | the | main square, | on | the | corner | of | Itzamná.",
+      "The police station? Left out the door, straight two blocks: past the main square, on the corner of Itzamná.", { spell: "Itzamná", write: W.police })],
+    r_police_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras, | pasando | el | zócalo. | La | policía | está | a la izquierda, | junto a | la | iglesia, | en | la | esquina | de | la | calle | Itzamná.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks, | past | the | main square. | The | police station | is | on the left, | next to | the | church, | on | the | corner | of | the | street | Itzamná.",
+      "Okay. Turn left out the door. Go straight two blocks, past the main square. The police station is on the left, next to the church, on the corner of Calle Itzamná.", { spell: "Itzamná", write: W.police })],
+    // left, across the avenue
+    r_threads: [t("¿Hilos? | Saliendo, | a la izquierda: | está | del | otro | lado | de | la | avenida, | enfrente del | museo.",
+      "Hilos? | Going out, | to the left: | it's | on the | other | side | of | the | avenue, | across from the | museum.",
+      "Hilos? Left out the door: it's on the other side of the avenue, across from the museum.", { write: W.threads })],
+    r_threads_slow: [t("Bueno. | Al | salir, | a la izquierda. | La | boutique | Hilos | está | a la derecha, | del | otro | lado | de | la | avenida, | enfrente del | museo.",
+      "Okay. | Upon | leaving, | to the left. | The | boutique | Hilos | is | on the right, | on the | other | side | of | the | avenue, | across from the | museum.",
+      "Okay. Turn left out the door. The Hilos boutique is on the right, on the other side of the avenue, across from the museum.", { write: W.threads })],
+    r_salon: [t("¿La | estética? | Saliendo, | a la izquierda, | una | cuadra: | está | del | otro | lado | de | la | avenida, | en | la | esquina | de | Ceiba.",
+      "The | hair salon? | Going out, | to the left, | one | block: | it's | on the | other | side | of | the | avenue, | on | the | corner | of | Ceiba.",
+      "The hair salon? Left out the door, one block: it's on the other side of the avenue, on the corner of Ceiba.", { flags: { 1: "estética: in Mexico, a hair salon." }, spell: "Ceiba", write: W.salon })],
+    r_salon_slow: [t("Bueno. | Al | salir, | a la izquierda. | Camine | una | cuadra, | hasta | la | calle | Ceiba. | La | estética | Tijeras | está | a la derecha, | del | otro | lado | de | la | avenida, | en | la | esquina.",
+      "Okay. | Upon | leaving, | to the left. | Walk | one | block, | to | the | street | Ceiba. | The | salon | Tijeras | is | on the right, | on the | other | side | of | the | avenue, | on | the | corner.",
+      "Okay. Turn left out the door. Walk one block, to Calle Ceiba. Tijeras salon is on the right, on the other side of the avenue, on the corner.", { spell: "Tijeras", write: W.salon })],
+    r_bank: [t("¿El | banco? | ¡Fácil! | Saliendo, | a la izquierda, | una | cuadra: | en | la | esquina | de | Ceiba, | del | otro | lado | de | la | avenida. | Es | el | edificio | amarillo.",
+      "The | bank? | Easy! | Going out, | to the left, | one | block: | on | the | corner | of | Ceiba, | on the | other | side | of | the | avenue. | It's | the | building | yellow.",
+      "The bank? Easy! Left out the door, one block: on the corner of Ceiba, on the other side of the avenue. It's the yellow building.", { spell: "Ceiba", write: W.bank })],
+    r_bank_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra, | hasta | la | calle | Ceiba. | El | banco | está | a la derecha, | en | la | esquina | de | enfrente, | del | otro | lado | de | la | avenida.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block, | to | the | street | Ceiba. | The | bank | is | on the right, | on | the | corner | — | opposite, | on the | other | side | of | the | avenue.",
+      "Okay. Turn left out the door. Go straight one block, to Calle Ceiba. The bank is on the right, on the far corner, on the other side of the avenue.", { spell: "Ceiba", write: W.bank })],
+    r_post_office: [t("¿Correos? | Saliendo, | a la izquierda, | una | cuadra: | pasando | la | calle | Ceiba, | del | otro | lado | de | la | avenida, | junto al | banco.",
+      "The post office? | Going out, | to the left, | one | block: | past | the | street | Ceiba, | on the | other | side | of | the | avenue, | next to the | bank.",
+      "The post office? Left out the door, one block: past Calle Ceiba, on the other side of the avenue, next to the bank.", { spell: "Ceiba", write: W.post_office })],
+    r_post_office_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra, | hasta | la | calle | Ceiba. | Correos | está | a la derecha, | del | otro | lado | de | la | avenida, | junto al | banco, | enfrente del | zócalo.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block, | to | the | street | Ceiba. | The post office | is | on the right, | on the | other | side | of | the | avenue, | next to the | bank, | across from the | main square.",
+      "Okay. Turn left out the door. Go straight one block, to Calle Ceiba. The post office is on the right, on the other side of the avenue, next to the bank, across from the main square.", { spell: "Ceiba", write: W.post_office })],
+    // right: the corner of calle Flamboyán
+    r_hotel: [t("¿El | Mar Azul? | ¡Aquí | cerquita! | Saliendo, | a la derecha, | cruzando | la | calle: | el | edificio | grande | de | la | esquina.",
+      "The | Mar Azul? | Right | close by! | Going out, | to the right, | crossing | the | street: | the | building | big | on | the | corner.",
+      "The Mar Azul? It's really close! Right out the door, across the street: the big building on the corner.", { write: W.hotel })],
+    r_hotel_slow: [t("Bueno. | Al | salir, | a la derecha. | Cruce | la | calle | Flamboyán: | el | hotel | es | el | edificio | grande | de | la | esquina.",
+      "Okay. | Upon | leaving, | to the right. | Cross | the | street | Flamboyán: | the | hotel | is | the | building | big | on | the | corner.",
+      "Okay. Turn right out the door. Cross Calle Flamboyán: the hotel is the big building on the corner.",
+      { flags: { 7: "Flamboyán: the flame tree, red with flowers in summer; a street name here." }, spell: "Flamboyán", write: W.hotel })],
+    r_pharmacy: [t("¿La | farmacia? | Saliendo, | a la derecha, | hasta | la | esquina: | está | del | otro | lado | de | la | avenida, | enfrente del | hotel.",
+      "The | pharmacy? | Going out, | to the right, | to | the | corner: | it's | on the | other | side | of | the | avenue, | across from the | hotel.",
+      "The pharmacy? Right out the door, to the corner: it's on the other side of the avenue, across from the hotel.", { write: W.pharmacy })],
+    r_pharmacy_slow: [t("Bueno. | Al | salir, | a la derecha, | hasta | la | esquina. | La | farmacia | está | a la izquierda, | del | otro | lado | de | la | avenida, | enfrente del | hotel | Mar Azul.",
+      "Okay. | Upon | leaving, | to the right, | to | the | corner. | The | pharmacy | is | on the left, | on the | other | side | of | the | avenue, | across from the | hotel | Mar Azul.",
+      "Okay. Turn right out the door, to the corner. The pharmacy is on the left, on the other side of the avenue, across from Hotel Mar Azul.", { write: W.pharmacy })],
+    // right, then right at the corner: calle Flamboyán down to the sea
+    r_market: [t("¿El | mercado? | ¡Aquí | atrás! | Saliendo, | a la derecha, | y | en | la | esquina, | otra vez | a la derecha, | hasta | la | avenida | del | Puerto. | Ahí | está, | en | la | esquina.",
+      "The | market? | Right | behind us! | Going out, | to the right, | and | at | the | corner, | again | to the right, | to | the | avenue | of the | Harbor. | There | it is, | on | the | corner.",
+      "The market? Right behind us! Right out the door, and at the corner, right again, up to Avenida del Puerto. There it is, on the corner.", { write: W.market })],
+    r_market_slow: [t("Bueno. | Al | salir, | a la derecha. | En | la | esquina, | dé vuelta | a la derecha, | en | la | calle | Flamboyán. | Siga | derecho | una | cuadra, | hasta | la | avenida | del | Puerto. | El | mercado | está | ahí, | a la derecha, | en | la | esquina.",
+      "Okay. | Upon | leaving, | to the right. | At | the | corner, | turn | to the right, | onto | the | street | Flamboyán. | Keep going | straight | one | block, | to | the | avenue | of the | Harbor. | The | market | is | there, | on the right, | on | the | corner.",
+      "Okay. Turn right out the door. At the corner, turn right, onto Calle Flamboyán. Go straight one block, to Avenida del Puerto. The market is right there, on the right, on the corner.", { spell: "Flamboyán", write: W.market })],
+    r_taqueria: [t("¿La | taquería? | Está | junto al | mercado, | aquí | atrás: | saliendo, | a la derecha, | y | en | la | esquina, | a la derecha, | hasta | la | avenida | del | Puerto.",
+      "The | taco place? | It's | next to the | market, | right | behind us: | going out, | to the right, | and | at | the | corner, | to the right, | to | the | avenue | of the | Harbor.",
+      "The taco place? It's next to the market, right behind us: right out the door, and at the corner, right, up to Avenida del Puerto.", { write: W.taqueria })],
+    r_taqueria_slow: [t("Bueno. | Al | salir, | a la derecha. | En | la | esquina, | dé vuelta | a la derecha, | en | la | calle | Flamboyán. | Siga | derecho | una | cuadra, | hasta | la | avenida | del | Puerto. | La | taquería | está | ahí, | junto al | mercado.",
+      "Okay. | Upon | leaving, | to the right. | At | the | corner, | turn | to the right, | onto | the | street | Flamboyán. | Keep going | straight | one | block, | to | the | avenue | of the | Harbor. | The | taco place | is | there, | next to the | market.",
+      "Okay. Turn right out the door. At the corner, turn right, onto Calle Flamboyán. Go straight one block, to Avenida del Puerto. The taco place is right there, next to the market.", { spell: "Flamboyán", write: W.taqueria })],
+    r_beach: [t("¿La | playa? | ¡Fácil! | Saliendo, | a la derecha, | y | en | la | esquina, | a la derecha: | derechito | por | la | calle | Flamboyán | hasta | el | mar.",
+      "The | beach? | Easy! | Going out, | to the right, | and | at | the | corner, | to the right: | straight ahead | along | the | street | Flamboyán | to | the | sea.",
+      "The beach? Easy! Right out the door, and at the corner, right: straight down Calle Flamboyán to the sea.", { spell: "Flamboyán", write: W.beach })],
+    r_beach_slow: [t("Bueno. | Al | salir, | a la derecha. | En | la | esquina, | dé vuelta | a la derecha, | en | la | calle | Flamboyán. | Siga | derecho | una | cuadra: | la | playa | está | al | final.",
+      "Okay. | Upon | leaving, | to the right. | At | the | corner, | turn | to the right, | onto | the | street | Flamboyán. | Keep going | straight | one | block: | the | beach | is | at the | end.",
+      "Okay. Turn right out the door. At the corner, turn right, onto Calle Flamboyán. Go straight one block: the beach is at the end.", { spell: "Flamboyán", write: W.beach })],
+    // … and right along the malecón
+    r_tours: [t("Saliendo, | a la derecha; | en | la | esquina, | a la derecha, | hasta | el | mar, | y | en | el | malecón, | otra vez | a la derecha: | la | caseta | está | junto al | muelle.",
+      "Going out, | to the right; | at | the | corner, | to the right, | to | the | sea, | and | on | the | waterfront, | again | to the right: | the | booth | is | next to the | pier.",
+      "Right out the door; at the corner, right, down to the sea, and on the waterfront, right again: the booth is next to the pier.", { write: W.tours })],
+    r_tours_slow: [t("Bueno. | Al | salir, | a la derecha. | En | la | esquina, | a la derecha, | en | la | calle | Flamboyán, | hasta | el | mar. | En | el | malecón, | otra vez | a la derecha. | La | caseta | de | tours | está | ahí, | junto al | muelle.",
+      "Okay. | Upon | leaving, | to the right. | At | the | corner, | to the right, | onto | the | street | Flamboyán, | to | the | sea. | On | the | waterfront, | again | to the right. | The | booth | of | tours | is | there, | next to the | pier.",
+      "Okay. Turn right out the door. At the corner, right, onto Calle Flamboyán, down to the sea. On the waterfront, right again. The tour booth is right there, next to the pier.", { spell: "Flamboyán", write: W.tours })],
+    r_pier: [t("¿El Muelle? | Saliendo, | a la derecha; | en | la | esquina, | a la derecha, | hasta | el | mar, | y | en | el | malecón, | otra vez | a la derecha. | Lo | ve | sobre | el | agua.",
+      "El Muelle? | Going out, | to the right; | at | the | corner, | to the right, | to | the | sea, | and | on | the | waterfront, | again | to the right. | It | you-see | over | the | water.",
+      "El Muelle? Right out the door; at the corner, right, down to the sea, and on the waterfront, right again. You'll see it over the water.", { write: W.pier })],
+    r_pier_slow: [t("Bueno. | Al | salir, | a la derecha. | En | la | esquina, | a la derecha, | en | la | calle | Flamboyán, | hasta | el | mar. | En | el | malecón, | otra vez | a la derecha. | El | restaurante | está | a la izquierda, | sobre | el | agua.",
+      "Okay. | Upon | leaving, | to the right. | At | the | corner, | to the right, | onto | the | street | Flamboyán, | to | the | sea. | On | the | waterfront, | again | to the right. | The | restaurant | is | on the left, | over | the | water.",
+      "Okay. Turn right out the door. At the corner, right, onto Calle Flamboyán, down to the sea. On the waterfront, right again. The restaurant is on the left, over the water.", { spell: "Flamboyán", write: W.pier })],
+    r_lighthouse: [t("¿El | faro? | Al | final | del | malecón. | Saliendo, | a la derecha; | en | la | esquina, | a la derecha | hasta | el | mar, | y | luego | todo | el | malecón | a la derecha.",
+      "The | lighthouse? | At the | end | of the | waterfront. | Going out, | to the right; | at | the | corner, | to the right | to | the | sea, | and | then | all | the | waterfront | to the right.",
+      "The lighthouse? At the end of the waterfront. Right out the door; at the corner, right down to the sea, and then all along the waterfront to the right.", { write: W.lighthouse })],
+    r_lighthouse_slow: [t("Bueno. | Al | salir, | a la derecha. | En | la | esquina, | a la derecha, | en | la | calle | Flamboyán, | hasta | el | mar. | En | el | malecón, | a la derecha, | y | camine | hasta | el | final. | El | faro | está | en | las | rocas.",
+      "Okay. | Upon | leaving, | to the right. | At | the | corner, | to the right, | onto | the | street | Flamboyán, | to | the | sea. | On | the | waterfront, | to the right, | and | walk | to | the | end. | The | lighthouse | is | on | the | rocks.",
+      "Okay. Turn right out the door. At the corner, right, onto Calle Flamboyán, down to the sea. On the waterfront, turn right and walk to the very end. The lighthouse is on the rocks.", { spell: "Flamboyán", write: W.lighthouse })],
+    // left to calle Ceiba, right across the avenue down to calle Hidalgo
+    r_busstop: [t("¿La | parada? | Saliendo, | a la izquierda, | hasta | la | calle | Ceiba; | ahí, | a la derecha, | cruzando | la | avenida, | y | derecho | una | cuadra, | hasta | Hidalgo: | está | enfrente del | gimnasio.",
+      "The | stop? | Going out, | to the left, | to | the | street | Ceiba; | there, | to the right, | crossing | the | avenue, | and | straight | one | block, | to | Hidalgo: | it's | in front of the | gym.",
+      "The bus stop? Left out the door, to Calle Ceiba; turn right there, across the avenue, and straight one block, to Hidalgo: it's in front of the gym.", { spell: "Hidalgo", write: W.busstop })],
+    r_busstop_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra, | hasta | la | calle | Ceiba. | Ahí, | dé vuelta | a la derecha | y | cruce | la | avenida. | Siga | una | cuadra | más, | hasta | la | calle | Hidalgo. | La | parada | está | a la derecha, | enfrente del | gimnasio.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block, | to | the | street | Ceiba. | There, | turn | to the right | and | cross | the | avenue. | Go | one | block | more, | to | the | street | Hidalgo. | The | stop | is | on the right, | in front of the | gym.",
+      "Okay. Turn left out the door. Go straight one block, to Calle Ceiba. Turn right there and cross the avenue. Go one more block, to Calle Hidalgo. The bus stop is on the right, in front of the gym.", { spell: "Hidalgo", write: W.busstop })],
+    r_station: [t("¿La | terminal? | Saliendo, | a la izquierda, | hasta | la | calle | Ceiba; | ahí, | a la derecha, | cruzando | la | avenida, | y | derecho | una | cuadra, | hasta | Hidalgo. | La | ve | a mano izquierda.",
+      "The | bus station? | Going out, | to the left, | to | the | street | Ceiba; | there, | to the right, | crossing | the | avenue, | and | straight | one | block, | to | Hidalgo. | It | you-see | on the left-hand side.",
+      "The bus station? Left out the door, to Calle Ceiba; turn right there, across the avenue, and straight one block, to Hidalgo. You'll see it on your left.",
+      { flags: { 19: "La: “it” (la terminal), an object pronoun before the verb." }, spell: "Ceiba", write: W.station })],
+    r_station_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | una | cuadra, | hasta | la | calle | Ceiba. | Ahí, | dé vuelta | a la derecha | y | cruce | la | avenida. | Siga | una | cuadra | más, | hasta | la | calle | Hidalgo. | La | terminal | está | a la izquierda: | es | el | edificio | grande.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | one | block, | to | the | street | Ceiba. | There, | turn | to the right | and | cross | the | avenue. | Go | one | block | more, | to | the | street | Hidalgo. | The | bus station | is | on the left: | it's | the | building | big.",
+      "Okay. Turn left out the door. Go straight one block, to Calle Ceiba. Turn right there and cross the avenue. Go one more block, to Calle Hidalgo. The bus station is on the left: it's the big building.", { spell: "Hidalgo", write: W.station })],
+    // the Clínica Familiar (s31's): left two blocks to calle Itzamná, right one block, left on calle Hidalgo
+    r_clinic: [t("Está | en | la | calle | Hidalgo: | saliendo, | a la izquierda, | dos | cuadras, | hasta | Itzamná; | ahí, | a la derecha, | y | en | Hidalgo, | a la izquierda. | Está | a mano izquierda.",
+      "It's | on | the | street | Hidalgo: | going out, | to the left, | two | blocks, | to | Itzamná; | there, | to the right, | and | at | Hidalgo, | to the left. | It's | on the left-hand side.",
+      "It's on Calle Hidalgo: left out the door, two blocks, to Itzamná; turn right there, and at Hidalgo, left. It's on your left.", { spell: "Itzamná", write: W.clinic })],
+    r_clinic_slow: [t("Bueno. | Al | salir, | a la izquierda. | Siga | derecho | dos | cuadras, | hasta | la | calle | Itzamná. | Ahí, | a la derecha, | y | cruce | la | avenida. | En | la | calle | Hidalgo, | a la izquierda. | La | clínica | está | a la izquierda.",
+      "Okay. | Upon | leaving, | to the left. | Keep going | straight | two | blocks, | to | the | street | Itzamná. | There, | to the right, | and | cross | the | avenue. | At | the | street | Hidalgo, | to the left. | The | clinic | is | on the left.",
+      "Okay. Turn left out the door. Go straight two blocks, to Calle Itzamná. Turn right there and cross the avenue. At Calle Hidalgo, turn left. The clinic is on the left.", { spell: "Itzamná", write: W.clinic })],
 
     // --- places outside town: by colectivo -----------------------------------
     // twenty minutes, as in s69 and TOWN.md (Cenote Ka'an)
@@ -1567,43 +1802,69 @@ export const visitorCenter: SituationDef = {
       "Chemuyil? | It's | a | little town | with | a | beach | quiet. | Ask | the | driver | of the | shared van | that | you | he-lets-off | there.",
       "Chemuyil? It's a little town with a quiet beach. Ask the colectivo driver to drop you off there.",
       { flags: { 14: "lo / la: “you” (usted), lo for a man and la for a woman." }, spell: "Chemuyil", write: "Chemuyil: en colectivo · pídale al chofer que lo baje ahí" })],
+    // the airport closes avenida Juárez's east end (TOWN.md "Out of town"): Don Chuy sends people by taxi
+    trip_airport: [t("¿El | aeropuerto? | Está | al | final | de | la | avenida | Juárez, | a la izquierda. | Pero | caminando | es | lejos, | y | con | maletas… | ¡mejor | tome | un | taxi!",
+      "The | airport? | It's | at the | end | of | the | avenue | Juárez, | to the left. | But | walking | it's | far, | and | with | suitcases… | better | take | a | taxi!",
+      "The airport? It's at the end of Avenida Juárez, to the left. But it's a long walk, and with suitcases… better take a taxi!",
+      { spell: "Juárez", write: "Aeropuerto: al final de la avenida Juárez (a la izquierda) · mejor en taxi" })],
 
     // --- partial answers --------------------------------------------------------
     out_right: [t("A la derecha | al | salir.", "To the right | upon | leaving.", "Right out the door.")],
     out_left: [t("A la izquierda | al | salir.", "To the left | upon | leaving.", "Left out the door.")],
-    then_bank: [t("Luego, | en | el | banco, | a la izquierda.", "Then, | at | the | bank, | to the left.", "Then left at the bank.")],
-    then_square: [t("Luego, | en | el | zócalo, | a la derecha.", "Then, | at | the | main square, | to the right.", "Then right at the main square.")],
-    turn_bank: [t("En | el | banco, | a la izquierda.", "At | the | bank, | to the left.", "Left at the bank.")],
-    turn_square: [t("En | el | zócalo, | a la derecha.", "At | the | main square, | to the right.", "Right at the main square.")],
-    at_bank: [t("En | el | banco. | Es | el | edificio | grande | de | la | esquina.", "At | the | bank. | It's | the | building | big | on | the | corner.", "At the bank. The big building on the corner.")],
-    at_square: [t("En | el | zócalo, | la | plaza | grande | con | el | kiosco.", "At | the | main square, | the | square | big | with | the | bandstand.", "At the main square, the big square with the bandstand.")],
-    yes_across_post_office: [t("Sí, | justo | enfrente de | Correos.", "Yes, | right | across from | the post office.", "Yes, right across from the post office.")],
-    yes_across_sunny_cup: [t("Sí, | justo | enfrente del | café.", "Yes, | right | across from the | café.", "Yes, right across from the café.")],
+    out_across: [t("Al | salir, | cruce | la | avenida.", "Upon | leaving, | cross | the | avenue.", "Cross the avenue as you go out.")],
+    then_flamboyan: [t("Luego, | en | la | esquina, | a la derecha.", "Then, | at | the | corner, | to the right.", "Then right at the corner.")],
+    then_ceiba: [t("Luego, | en | la | calle | Ceiba, | a la derecha.", "Then, | at | the | street | Ceiba, | to the right.", "Then right at Calle Ceiba.", { spell: "Ceiba" })],
+    then_sea: [t("Y | en | el | malecón, | otra vez | a la derecha.", "And | on | the | waterfront, | again | to the right.", "And right again on the waterfront.")],
+    then_itzamna: [t("Luego, | en | la | calle | Itzamná, | a la derecha.", "Then, | at | the | street | Itzamná, | to the right.", "Then right at Calle Itzamná.", { spell: "Itzamná" })],
+    then_hidalgo: [t("Y | en | la | calle | Hidalgo, | a la izquierda.", "And | at | the | street | Hidalgo, | to the left.", "And left at Calle Hidalgo.", { spell: "Hidalgo" })],
+    turn_flamboyan: [t("En | la | esquina, | a la derecha.", "At | the | corner, | to the right.", "Right at the corner.")],
+    turn_ceiba: [t("En | la | calle | Ceiba, | a la derecha.", "At | the | street | Ceiba, | to the right.", "Right at Calle Ceiba.", { spell: "Ceiba" })],
+    turn_sea: [t("En | el | malecón, | a la derecha.", "On | the | waterfront, | to the right.", "Right on the waterfront.")],
+    turn_itzamna: [t("En | la | calle | Itzamná, | a la derecha.", "At | the | street | Itzamná, | to the right.", "Right at Calle Itzamná.", { spell: "Itzamná" })],
+    turn_hidalgo: [t("En | la | calle | Hidalgo, | a la izquierda.", "At | the | street | Hidalgo, | to the left.", "Left at Calle Hidalgo.", { spell: "Hidalgo" })],
+    at_flamboyan: [t("En | la | primera | esquina, | a la derecha: | la | calle | Flamboyán.", "At | the | first | corner, | to the right: | the | street | Flamboyán.", "At the first corner, turn right: Calle Flamboyán.", { spell: "Flamboyán" })],
+    at_ceiba: [t("En | la | calle | Ceiba, | al | final | de | la | cuadra: | ahí, | a la derecha.", "At | the | street | Ceiba, | at the | end | of | the | block: | there, | to the right.", "At Calle Ceiba, at the end of the block: turn right there.", { spell: "Ceiba" })],
+    at_itzamna: [t("En | la | calle | Itzamná, | pasando | el | zócalo: | ahí, | a la derecha.", "At | the | street | Itzamná, | past | the | main square: | there, | to the right.", "At Calle Itzamná, past the main square: turn right there.", { spell: "Itzamná" })],
     yes_across_threads: [t("Sí, | justo | enfrente de | la | boutique.", "Yes, | right | across from | the | boutique.", "Yes, right across from the boutique.")],
-    yes_across_trattoria: [t("Sí, | justo | enfrente de | La Cocina de Lucía.", "Yes, | right | across from | La Cocina de Lucía.", "Yes, right across from La Cocina de Lucía.")],
     yes_across_square: [t("Sí, | justo | enfrente del | zócalo.", "Yes, | right | across from the | main square.", "Yes, right across from the main square.")],
-    yes_next_salon: [t("Sí, | justo | junto a | la | estética.", "Yes, | right | next to | the | hair salon.", "Yes, right next to the hair salon.")],
-    yes_next_pharmacy: [t("Sí, | justo | junto a | la | farmacia.", "Yes, | right | next to | the | pharmacy.", "Yes, right next to the pharmacy.")],
-    yes_next_museum: [t("Sí, | justo | junto al | museo.", "Yes, | right | next to the | museum.", "Yes, right next to the museum.")],
     yes_next_market: [t("Sí, | justo | junto al | mercado.", "Yes, | right | next to the | market.", "Yes, right next to the market.")],
+    yes_next_trattoria: [t("Sí, | justo | junto a | La Cocina de Lucía.", "Yes, | right | next to | La Cocina de Lucía.", "Yes, right next to La Cocina de Lucía.")],
+    yes_next_sunny_cup: [t("Sí, | justo | junto al | café.", "Yes, | right | next to the | café.", "Yes, right next to the café.")],
+    yes_across_museum: [t("Sí, | justo | enfrente del | museo.", "Yes, | right | across from the | museum.", "Yes, right across from the museum.")],
+    yes_next_threads: [t("Sí, | justo | junto a | la | boutique.", "Yes, | right | next to | the | boutique.", "Yes, right next to the boutique.")],
+    yes_next_post_office: [t("Sí, | justo | junto a | Correos.", "Yes, | right | next to | the post office.", "Yes, right next to the post office.")],
+    yes_next_bank: [t("Sí, | justo | junto al | banco.", "Yes, | right | next to the | bank.", "Yes, right next to the bank.")],
+    yes_across_pharmacy: [t("Sí, | justo | enfrente de | la | farmacia.", "Yes, | right | across from | the | pharmacy.", "Yes, right across from the pharmacy.")],
+    yes_across_hotel: [t("Sí, | justo | enfrente del | hotel.", "Yes, | right | across from the | hotel.", "Yes, right across from the hotel.")],
+    yes_next_police: [t("Sí, | justo | junto a | la | policía.", "Yes, | right | next to | the | police station.", "Yes, right next to the police station.")],
+    yes_next_church: [t("Sí, | justo | junto a | la | iglesia.", "Yes, | right | next to | the | church.", "Yes, right next to the church.")],
+    yes_across_kiosco: [t("Sí, | enfrente del | kiosco, | al fondo | de | la | plaza.", "Yes, | across from the | bandstand, | at the far end | of | the | square.", "Yes, facing the bandstand, at the far end of the square.")],
+    yes_next_pier: [t("Sí, | justo | junto al | muelle.", "Yes, | right | next to the | pier.", "Yes, right next to the pier.")],
+    yes_next_tours: [t("Sí, | justo | junto a | la | caseta | de | tours.", "Yes, | right | next to | the | booth | of | tours.", "Yes, right next to the tour booth.")],
     straight_only: [t("No hay que | dar vuelta. | ¡Solo | siga | derecho!", "You don't need to | turn. | Just | keep going | straight!", "No more turns. Just go straight!")],
     side_right: [t("A la derecha.", "On the right.", "On the right.")],
     side_left: [t("A la izquierda.", "On the left.", "On the left.")],
     side_end: [t("Está | al | final | de | la | calle. | ¡No tiene pierde!", "It's | at the | end | of | the | street. | You can't miss it!", "It's right at the end of the street. You can't miss it!")],
-    blocks_0: [t("¡Está | aquí | al lado!", "It's | here | next door!", "It's right next door!")],
+    side_across: [t("Ni | a la derecha | ni | a la izquierda: | ¡justo | enfrente!", "Neither | on the right | nor | on the left: | right | across the street!", "Neither left nor right: right across the street!")],
     blocks_1: [t("Nada más | una | cuadra.", "Just | one | block.", "Just one block.")],
     blocks_2: [t("Dos | cuadras.", "Two | blocks.", "Two blocks.")],
+    blocks_3: [t("Como | tres | cuadras.", "About | three | blocks.", "About three blocks.")],
+    blocks_0_across: [t("¡Ninguna! | Está | aquí | enfrente.", "None! | It's | right | across the street.", "None! It's right across the street.")],
+    blocks_0_next: [t("¡Ninguna! | Está | aquí | al lado.", "None! | It's | right | next door.", "None! It's right next door.")],
+    blocks_0_corner: [t("¡Ninguna! | Está | ahí | en | la | esquina.", "None! | It's | there | on | the | corner.", "None! It's right there on the corner.")],
+    blocks_0_block: [t("¡Ninguna! | Está | en | esta | misma | cuadra.", "None! | It's | on | this | same | block.", "None! It's on this same block.")],
+    blocks_far: [t("Uy, | varias: | es | todo | el | malecón.", "Oh, | several: | it's | all | the | waterfront.", "Oh, several: it's the whole waterfront.")],
     street_juarez: [t("Está | en | la | avenida | Juárez.", "It's | on | the | avenue | Juárez.", "It's on Avenida Juárez.", { spell: "Juárez" })],
-    street_ceiba: [t("Está | en | la | calle | Ceiba.", "It's | on | the | street | Ceiba.", "It's on Calle Ceiba.", { spell: "Ceiba" })],
-    street_itzamna: [t("Está | en | la | calle | Itzamná.", "It's | on | the | street | Itzamná.", "It's on Calle Itzamná.", { flags: { 4: "A Maya name (the Maya sky god): i-te-zeta-a-eme-ene-a." }, spell: "Itzamná" })],
+    street_del_puerto: [t("Está | en | la | avenida | del | Puerto, | junto al | mar.", "It's | on | the | avenue | of the | Harbor, | next to the | sea.", "It's on Avenida del Puerto, by the sea.")],
+    street_malecon: [t("Está | en | el | malecón.", "It's | on | the | waterfront.", "It's on the waterfront.")],
+    street_hidalgo: [t("Está | en | la | calle | Hidalgo.", "It's | on | the | street | Hidalgo.", "It's on Calle Hidalgo.", { spell: "Hidalgo" })],
+    street_zocalo: [t("Está | en | el | zócalo, | enfrente del | kiosco.", "It's | on | the | main square, | across from the | bandstand.", "It's on the main square, facing the bandstand.")],
     far_1: [t("¡Está | cerquita! | A | un | minuto.", "It's | really close! | At | one | minute.", "It's super close. Just a minute away.")],
     far_2: [t("¡Para nada! | Son | como | dos | minutos | caminando.", "Not at all! | It's | about | two | minutes | walking.", "Not at all! It's about two minutes on foot.")],
     far_5: [t("No, | son | unos | cinco | minutos | a pie.", "No, | it's | some | five | minutes | on foot.", "No, it's about five minutes on foot.")],
     far_10: [t("No | mucho. | Unos | diez | minutos | caminando.", "Not | much. | Some | ten | minutes | walking.", "Not really. About ten minutes on foot.")],
-    far_15: [t("Un | poco. | Unos | quince | minutos | a pie. | También | puede | tomar | un | taxi.", "A | little. | Some | fifteen | minutes | on foot. | Also | you can | take | a | taxi.", "A little. About fifteen minutes on foot. You can take a taxi, too.")],
-    far_30: [t("Sí, | está | lejos: | como | media hora | caminando. | ¡Pero | es | un | paseo | precioso!", "Yes, | it's | far: | about | half an hour | walking. | But | it's | a | walk | beautiful!", "Yes, it's pretty far, about half an hour on foot. But it's a beautiful walk!")],
-    size_little_yes: [t("Sí, | el | chiquito, | el | de | la | puerta | amarilla.", "Yes, | the | little one, | the one | with | the | door | yellow.", "Yes, the little one with the yellow door.")],
-    size_little_no: [t("No, | el | chiquito, | ¡a la derecha!", "No, | the | little one, | on the right!", "No, the little one, on the right!")],
+    size_little_yes: [t("Sí, | el | chiquito, | el | del | toldo | verde.", "Yes, | the | little one, | the one | with the | awning | green.", "Yes, the little one with the green awning.")],
+    size_little_no: [t("No, | el | chiquito: | ¡el | del | toldo | verde!", "No, | the | little one: | the one | with the | awning | green!", "No, the little one: the one with the green awning!")],
     size_big_yes: [t("Sí, | el | grande. | ¡No tiene pierde!", "Yes, | the | big one. | You can't miss it!", "Yes, the big one. You can't miss it!")],
     size_big_no: [t("No, | ¡el | grande! | Es | enorme.", "No, | the | big one! | It's | huge.", "No, the big one! It's huge.")],
     size_only: [t("No se preocupe, | ¡nada más | hay | uno!", "Don't worry, | only | there is | one!", "Don't worry, there's only one!")],
@@ -1631,23 +1892,34 @@ export const visitorCenter: SituationDef = {
     ],
     ack_great: [t("¡Muy | bien!", "Very | good!", "Great!"), t("¡Perfecto!", "Perfect!", "Perfect!"), t("¡Excelente!", "Excellent!", "Awesome!")],
     quiz_out: [t("¡Muy | bien! | A ver, | una | pregunta: | al | salir, | ¿a la derecha | o | a la izquierda?", "Very | good! | Let's see, | a | question: | upon | leaving, | to the right | or | to the left?", "Great! Quick quiz: left or right out the door?")],
-    quiz_bank: [t("¡Muy | bien! | A ver, | una | pregunta: | en | el | banco, | ¿para | dónde | da vuelta?", "Very | good! | Let's see, | a | question: | at | the | bank, | toward | where | do you turn?", "Great! Quick quiz: which way do you turn at the bank?")],
-    quiz_square: [t("¡Muy | bien! | A ver, | una | pregunta: | en | el | zócalo, | ¿para | dónde | da vuelta?", "Very | good! | Let's see, | a | question: | at | the | main square, | toward | where | do you turn?", "Great! Quick quiz: which way do you turn at the main square?")],
+    quiz_across: [t("¡Muy | bien! | A ver, | una | pregunta: | al | salir, | ¿da vuelta | o | cruza | la | avenida?", "Very | good! | Let's see, | a | question: | upon | leaving, | do you turn | or | do you cross | the | avenue?", "Great! Quick quiz: out the door, do you turn or cross the avenue?")],
+    quiz_flamboyan: [t("¡Muy | bien! | A ver, | una | pregunta: | en | la | esquina, | ¿para | dónde | da vuelta?", "Very | good! | Let's see, | a | question: | at | the | corner, | toward | where | do you turn?", "Great! Quick quiz: which way do you turn at the corner?")],
+    quiz_ceiba: [t("¡Muy | bien! | A ver, | una | pregunta: | en | la | calle | Ceiba, | ¿para | dónde | da vuelta?", "Very | good! | Let's see, | a | question: | at | the | street | Ceiba, | toward | where | do you turn?", "Great! Quick quiz: which way do you turn at Calle Ceiba?")],
+    quiz_itzamna: [t("¡Muy | bien! | A ver, | una | pregunta: | en | la | calle | Itzamná, | ¿para | dónde | da vuelta?", "Very | good! | Let's see, | a | question: | at | the | street | Itzamná, | toward | where | do you turn?", "Great! Quick quiz: which way do you turn at Calle Itzamná?")],
     straight_not: [t("Derecho | es | sin | dar vuelta. | ¿A la derecha | o | a la izquierda?", "Straight | is | without | turning. | To the right | or | to the left?", "Derecho means straight ahead. Left or right?",
       { flags: { 0: "derecho = straight ahead; derecha = right. Easy to mix up!" } })],
     quiz_again: [t("¿A la derecha | o | a la izquierda?", "To the right | or | to the left?", "Left or right?")],
+    quiz_again_across: [t("¿Da vuelta | o | cruza?", "Do you turn | or | do you cross?", "Turn, or cross?")],
     fix_out_right: [t("¡Casi! | A la derecha | al | salir, | no | a la izquierda.", "Almost! | To the right | upon | leaving, | not | to the left.", "Almost! Right out the door, not left.")],
     fix_out_left: [t("¡Casi! | A la izquierda | al | salir, | no | a la derecha.", "Almost! | To the left | upon | leaving, | not | to the right.", "Almost! Left out the door, not right.")],
-    fix_turn_bank: [t("¡Casi! | En | el | banco | a la izquierda, | no | a la derecha.", "Almost! | At | the | bank | to the left, | not | to the right.", "Close! Left at the bank, not right.")],
-    fix_turn_square: [t("¡Casi! | En | el | zócalo | a la derecha, | no | a la izquierda.", "Almost! | At | the | main square | to the right, | not | to the left.", "Close! Right at the main square, not left.")],
-    fix_at_bank: [t("No | exactamente. | Da vuelta | en | el | banco.", "Not | exactly. | You turn | at | the | bank.", "Not quite. You turn at the bank.")],
-    fix_at_square: [t("No | exactamente. | Da vuelta | en | el | zócalo.", "Not | exactly. | You turn | at | the | main square.", "Not quite. You turn at the main square.")],
+    fix_out_across: [t("No, | no hay que | dar vuelta: | nada más | cruce | la | avenida.", "No, | you don't need to | turn: | just | cross | the | avenue.", "No, no turns: just cross the avenue.")],
+    fix_turn_flamboyan: [t("¡Casi! | En | la | esquina, | a la derecha, | no | a la izquierda.", "Almost! | At | the | corner, | to the right, | not | to the left.", "Close! Right at the corner, not left.")],
+    fix_turn_ceiba: [t("¡Casi! | En | la | calle | Ceiba, | a la derecha, | no | a la izquierda.", "Almost! | At | the | street | Ceiba, | to the right, | not | to the left.", "Close! Right at Calle Ceiba, not left.")],
+    fix_turn_sea: [t("¡Casi! | En | el | malecón, | a la derecha, | no | a la izquierda.", "Almost! | On | the | waterfront, | to the right, | not | to the left.", "Close! Right on the waterfront, not left.")],
+    fix_turn_itzamna: [t("¡Casi! | En | la | calle | Itzamná, | a la derecha, | no | a la izquierda.", "Almost! | At | the | street | Itzamná, | to the right, | not | to the left.", "Close! Right at Calle Itzamná, not left.")],
+    fix_turn_hidalgo: [t("¡Casi! | En | la | calle | Hidalgo, | a la izquierda, | no | a la derecha.", "Almost! | At | the | street | Hidalgo, | to the left, | not | to the right.", "Close! Left at Calle Hidalgo, not right.")],
+    fix_at_flamboyan: [t("No | exactamente. | Da vuelta | en | la | primera | esquina.", "Not | exactly. | You turn | at | the | first | corner.", "Not quite. You turn at the first corner.")],
+    fix_at_ceiba: [t("No | exactamente. | Da vuelta | en | la | calle | Ceiba.", "Not | exactly. | You turn | at | the | street | Ceiba.", "Not quite. You turn at Calle Ceiba.")],
+    fix_at_itzamna: [t("No | exactamente. | Da vuelta | en | la | calle | Itzamná.", "Not | exactly. | You turn | at | the | street | Itzamná.", "Not quite. You turn at Calle Itzamná.")],
+    fix_nocross: [t("No, | no hay que | cruzar | la | avenida: | está | de | este | lado.", "No, | you don't need to | cross | the | avenue: | it's | on | this | side.", "No, you don't cross the avenue: it's on this side.")],
     fix_noturn: [t("En realidad | ahí | no hay que | dar vuelta. | ¡Siga | derecho!", "Actually | there | you don't need to | turn. | Keep going | straight!", "Actually, there are no turns there. Just go straight!")],
-    fix_blocks_0: [t("En realidad | está | aquí | al lado.", "Actually | it's | here | next door.", "Actually, it's right next door!")],
+    fix_blocks_0: [t("No, | ni | una | cuadra: | ¡está | aquí | cerquita!", "No, | not even | one | block: | it's | right | close by!", "No, not even a block: it's right here!")],
     fix_blocks_1: [t("No | exactamente. | Nada más | una | cuadra.", "Not | exactly. | Just | one | block.", "Not quite. Just one block.")],
     fix_blocks_2: [t("No | exactamente. | Son | dos | cuadras.", "Not | exactly. | It's | two | blocks.", "Not quite. Two blocks.")],
     fix_side_right: [t("¡Casi! | Está | a la derecha, | no | a la izquierda.", "Almost! | It's | on the right, | not | on the left.", "Almost! It's on the right, not the left.")],
     fix_side_left: [t("¡Casi! | Está | a la izquierda, | no | a la derecha.", "Almost! | It's | on the left, | not | on the right.", "Almost! It's on the left, not the right.")],
+    look_green: [t("No, | el | del | toldo | verde. | La | del | toldo | rojo | es | La Cocina de Lucía.", "No, | the one | with the | awning | green. | The one | with the | awning | red | is | La Cocina de Lucía.", "No, the one with the green awning. The one with the red awning is La Cocina de Lucía.")],
+    look_red: [t("No, | la | del | toldo | rojo. | El | del | toldo | verde | es | el | café.", "No, | the one | with the | awning | red. | The one | with the | awning | green | is | the | café.", "No, the one with the red awning. The one with the green awning is the café.")],
     fix_generic: [t("Mmm, | no | exactamente. | Se lo | repito | despacio.", "Hmm, | not | exactly. | It to you | I'll repeat | slowly.", "Hmm, not exactly. Let me say it again, slowly.")],
     recheck: [
       t("¿Ahora | sí | quedó claro?", "Now | for sure | is it clear?", "Okay? Got it now?"),
@@ -1687,6 +1959,9 @@ export const visitorCenter: SituationDef = {
     // --- twists ---------------------------------------------------------------
     tw_banqueta: [t("Ah, | y | váyase | por | la | banqueta | de | la | sombra, | ¡que | el | sol | pega | duro!", "Oh, | and | go | along | the | sidewalk | of | the | shade, | because | the | sun | hits | hard!", "Oh, and walk on the shady side of the street. The sun's brutal!",
       { flags: { 5: "Mexican: banqueta = sidewalk (acera elsewhere)." }, neutral: t("Ah, | y | váyase | por | la | acera | de | la | sombra, | ¡que | el | sol | pega | duro!", "Oh, | and | go | along | the | sidewalk | of | the | shade, | because | the | sun | hits | hard!", "Oh, and walk on the shady side of the street. The sun's brutal!") })],
+    // the café's way (across the avenue): wait on the sidewalk
+    tw_banqueta_cross: [t("Ah, | y | espere | en | la | banqueta: | ¡aquí | los | coches | no | frenan!", "Oh, | and | wait | on | the | sidewalk: | here | the | cars | don't | brake!", "Oh, and wait on the sidewalk first: the cars don't stop around here!",
+      { flags: { 5: "Mexican: banqueta = sidewalk (acera elsewhere)." }, neutral: t("Ah, | y | espere | en | la | acera: | ¡aquí | los | coches | no | frenan!", "Oh, | and | wait | on | the | sidewalk: | here | the | cars | don't | brake!", "Oh, and wait on the sidewalk first: the cars don't stop around here!") })],
     tw_kiosco: [t("Ah, | y | si | se pierde, | busque | el | kiosco | del | zócalo.", "Oh, | and | if | you get lost, | look for | the | bandstand | of the | main square.", "Oh, and if you get lost, look for the bandstand in the main square.")],
     tw_trova: [t("Ah, | y | no se pierda | la | música | en | el | zócalo | el | viernes | en la noche. | ¡Es | gratis!", "Oh, | and | don't miss | the | music | in | the | main square | on | Friday | at night. | It's | free!", "Oh, and don't miss the free music in the main square on Friday night!", { flags: { 8: "el before a weekday = on." } })],
     police_ok: [t("¿Está | todo | bien?", "Is | everything | okay?", "Is everything okay?")],
@@ -1719,7 +1994,7 @@ export const visitorCenter: SituationDef = {
       "There's an entrance fee; it depends on the place. Bring cash.")],
     free_place: [t("¡No se paga | nada! | Es | gratis.", "You don't pay | anything! | It's | free.", "You don't pay a thing! It's free.")],
     hours_unknown: [t("Mmm, | no sé. | Fíjese | en | el | letrero | de | la | puerta.", "Hmm, | I don't know. | Look | at | the | sign | on | the | door.", "Hmm, I don't know. Check the sign on the door!")],
-    downtown: [t("¡Ya | está | en | el | centro! | El | zócalo | está | a | dos | cuadras.", "Already | you're | in | the | center! | The | main square | is | at | two | blocks.", "You're already downtown! The main square is two blocks away.")],
+    downtown: [t("¡Ya | está | en | el | centro! | El | zócalo | está | a | una | cuadra.", "Already | you're | in | the | center! | The | main square | is | at | one | block.", "You're already downtown! The main square is a block away.")],
     events_music: [t("¿Esta | semana? | El | viernes | hay | música | en vivo | en | el | zócalo, | a | las | ocho | de la noche. | ¡Gratis!", "This | week? | On | Friday | there is | music | live | in | the | main square, | at | — | eight | p.m. | Free!", "This week? There's free live music in the main square on Friday, at eight p.m.!",
       { flags: { 2: "el before a weekday = on.", 11: "Spanish uses an article before clock times; English has no separate word." } })],
     events_market: [t("Y | el | sábado | en | la | mañana | se pone | el | tianguis.", "And | on | Saturday | in | the | morning | is set up | the | street market.", "And the street market is on Saturday morning.",
@@ -1740,9 +2015,23 @@ export const visitorCenter: SituationDef = {
       "They come by all the time on the avenue. There's no schedule.")],
     taxi: [t("En | la | avenida | pasan | muchos | taxis. | Nada más | levante | la | mano.", "On | the | avenue | pass | many | taxis. | Just | raise | your | hand.",
       "Lots of taxis go by on the avenue. Just wave one down.", { flags: { 8: "Spanish says la mano (the hand) for a body part; English says your hand." } })],
+    // taxis have no meter (s66): agree on the fare first
+    taxi_fare: [t("Los | taxis | aquí | no tienen | taxímetro: | pregunte | el | precio | antes | de | subirse.", "The | taxis | here | don't have | a meter: | ask | the | price | before | — | getting in.",
+      "Taxis here don't have meters: ask the price before you get in.", { flags: { 8: "antes de + an infinitive: before + -ing." } })],
+    // a doctor: the Clínica Familiar (s31's), and the pharmacy's consultorio (s75) for small things; then the clinic's way
+    doctor: [t("Para | eso | está | la | Clínica | Familiar. | Y | si | es | algo | leve, | la | farmacia | de | la | esquina | tiene | consultorio.",
+      "For | that | is | the | Clinic | Family. | And | if | it's | something | minor, | the | pharmacy | on | the | corner | has | a doctor's office.",
+      "That's what the Clínica Familiar is for. And if it's something minor, the pharmacy on the corner has a doctor.",
+      { flags: { 17: "consultorio: a doctor's office; many Mexican pharmacies have one next door." } })],
+    // tours: none sold here; the booth on the malecón (then its way)
+    tours_info: [t("Aquí | no vendemos | tours, | pero | en | el | malecón | hay | una | caseta | de | tours.", "Here | we don't sell | tours, | but | on | the | waterfront | there's | a | booth | of | tours.",
+      "We don't sell tours here, but there's a tour booth on the waterfront.")],
+    tour_price: [t("Depende | del | tour: | pregunte | en | la | caseta.", "It-depends | on the | tour: | ask | at | the | booth.", "It depends on the tour: ask at the booth.")],
+    // night safety, as s69's Doña Carmen says it (it answers "¿Es seguro?" and "¿Es peligroso?" alike)
+    safe_night: [t("El | centro | es | muy | tranquilo, | y | hay | gente | hasta | tarde. | Pero | la | playa | de | noche, | mejor | no: | está | muy | oscura.",
+      "The | downtown | is | very | quiet, | and | there are | people | until | late. | But | the | beach | at | night, | better | not: | it's | very | dark.",
+      "Downtown is very quiet, and there are people around until late. But the beach at night, better not: it's really dark.")],
     colectivo_price: [t("Es | barato. | Se paga | al | chofer, | en efectivo.", "It's | cheap. | You pay | the | driver, | in cash.", "It's cheap. You pay the driver, in cash.")],
-    busstop: [t("La | parada | del | camión | está | aquí | enfrente.", "The | stop | of the | bus | is | here | in front.", "The bus stop is right out front.",
-      { flags: { 3: "Mexican: camión = city bus (autobús elsewhere)." }, neutral: t("La | parada | del | autobús | está | aquí | enfrente.", "The | stop | of the | bus | is | here | in front.", "The bus stop is right out front.") })],
     bus_which: [t("Tome | cualquier | camión | de | la | avenida | y | pregúntele | al | chofer.", "Take | any | bus | from | the | avenue | and | ask | the | driver.", "Take any bus on the avenue and ask the driver.",
       { flags: { 2: "Mexican: camión = city bus (autobús elsewhere)." }, neutral: t("Tome | cualquier | autobús | de | la | avenida | y | pregúntele | al | chofer.", "Take | any | bus | from | the | avenue | and | ask | the | driver.", "Take any bus on the avenue and ask the driver.") })],
     bus_schedule: [t("¡Claro! | Aquí | tiene | los | horarios | de | los | camiones.", "Sure! | Here | you have | the | schedules | of | the | buses.", "Sure! Here's a bus schedule.",
@@ -1838,8 +2127,13 @@ export const visitorCenter: SituationDef = {
       lt: "Check that you understood the way", items: [...keys.map((k) => CHK[k]), CHK.far, CHK.side].filter((x, i, a) => a.indexOf(x) === i),
     }])),
     quiz_out: { lt: "Answer: left or right", items: QUIZ_ITEMS("a_door", "Al | salir,", "Upon | leaving,", "out the door") },
-    quiz_bank: { lt: "Answer: left or right", items: QUIZ_ITEMS("a_turn", "En | el | banco,", "At | the | bank,", "at the bank") },
-    quiz_square: { lt: "Answer: left or right", items: QUIZ_ITEMS("a_turn", "En | el | zócalo,", "At | the | main square,", "at the main square") },
+    quiz_across: { lt: "Answer: turn or cross", items: [
+      { id: "a_door", s: t("Cruzo | la | avenida.", "I cross | the | avenue.", "I cross the avenue.") },
+      { id: "a_door", s: t("Doy vuelta | a la derecha.", "I turn | to the right.", "I turn right.") },
+    ] },
+    quiz_flamboyan: { lt: "Answer: left or right", items: QUIZ_ITEMS("a_turn", "En | la | esquina,", "At | the | corner,", "at the corner") },
+    quiz_ceiba: { lt: "Answer: left or right", items: QUIZ_ITEMS("a_turn", "En | la | calle | Ceiba,", "At | the | street | Ceiba,", "at Calle Ceiba") },
+    quiz_itzamna: { lt: "Answer: left or right", items: QUIZ_ITEMS("a_turn", "En | la | calle | Itzamná,", "At | the | street | Itzamná,", "at Calle Itzamná") },
     gotit: { lt: "Say you've got it now", items: GOTIT },
     clarify_more: {
       lt: "More ways to check",
@@ -1868,6 +2162,9 @@ export const visitorCenter: SituationDef = {
         { id: "i_restroom", s: t("¿Dónde | está | el | baño?", "Where | is | the | restroom?", "Where's the restroom?") },
         { id: "i_food", s: t("¿Dónde | puedo | comer | algo?", "Where | can I | eat | something?", "Where can I get something to eat?") },
         { id: "q_downtown", s: t("¿Dónde | está | el | centro?", "Where | is | the | center?", "Where's downtown?") },
+        { id: "i_doctor", s: t("¿Hay | un | doctor | por | aquí?", "Is there | a | doctor | around | here?", "Is there a doctor around here?") },
+        { id: "i_tours", s: t("¿Dónde | contrato | un | tour?", "Where | do I book | a | tour?", "Where can I book a tour?") },
+        { id: "i_safe", s: t("¿Es | seguro | caminar | de | noche?", "Is it | safe | to walk | at | night?", "Is it safe to walk around at night?") },
       ],
     },
     done: {
@@ -1983,7 +2280,7 @@ export const visitorCenter: SituationDef = {
       expects: ["ask_where", "just_looking"],
       suggest: [
         { lt: "Ask the way to the café", hint: "cafe" },
-        { lt: "Ask the way to another place", hint: "where", options: ["museum", "beach", "pharmacy", "bank", "trattoria", "square", "lighthouse", "station", "pier"] },
+        { lt: "Ask the way to another place", hint: "where", options: ["museum", "beach", "pharmacy", "bank", "trattoria", "square", "church", "lighthouse", "station", "pier"] },
         { lt: "Ask him to say it again more slowly", hint: "slower" },
       ],
       no: (c) => { offerCafe(c, false); },
@@ -2184,18 +2481,52 @@ export const visitorCenter: SituationDef = {
     { say: "¿A qué hora abren?", intent: "ask_hours", not: ["ask_place_hours"] },
     { say: "¿El banco abre los sábados?", intent: "ask_place_hours", slots: { place: "bank" } },
     { say: "¿Dónde está el kiosco?", intent: "ask_where", slots: { place: "square" } },
+    // The 3D town's ways (5 Nov 2026): every model answer of the checks, the new places and questions, and traps
+    { say: "Entonces cruzo la avenida y está enfrente, ¿verdad?", intent: "confirm" },
+    { say: "¿Cruzo la avenida?", intent: "confirm" },
+    { say: "¿El del toldo verde?", intent: "confirm" },
+    { say: "¿Está aquí enfrente?", intent: "confirm" },
+    { say: "Entonces salgo a la izquierda y está aquí al lado, ¿verdad?", intent: "confirm" },
+    { say: "Entonces salgo a la izquierda y está del otro lado de la avenida, ¿verdad?", intent: "confirm" },
+    { say: "Entonces salgo a la izquierda y camino una cuadra, ¿verdad?", intent: "confirm" },
+    { say: "Entonces salgo a la derecha, hasta la esquina, ¿verdad?", intent: "confirm" },
+    { say: "Entonces salgo a la derecha y en la esquina doy vuelta a la derecha, ¿verdad?", intent: "confirm" },
+    { say: "Entonces a la derecha, en la esquina a la derecha, y en el malecón otra vez a la derecha, ¿verdad?", intent: "confirm" },
+    { say: "Entonces salgo a la izquierda y en la calle Ceiba doy vuelta a la derecha, ¿verdad?", intent: "confirm" },
+    { say: "Entonces salgo a la izquierda, camino dos cuadras y en la calle Itzamná doy vuelta a la derecha, ¿verdad?", intent: "confirm" },
+    { say: "¿En la esquina, a la derecha?", intent: "confirm" },
+    { say: "¿En la calle Ceiba, a la derecha?", intent: "confirm" },
+    { say: "¿En la calle Itzamná, a la derecha?", intent: "confirm" },
+    { say: "¿Una cuadra?", intent: "confirm" },
+    { say: "¿Dónde está la iglesia?", intent: "ask_where", slots: { place: "church" } },
+    { say: "¿Cómo llego a la clínica?", intent: "ask_where", slots: { place: "clinic" } },
+    { say: "¿Dónde está el hospital?", intent: "ask_where", slots: { place: "clinic" } },
+    { say: "¿Cómo llego al aeropuerto?", intent: "ask_where", slots: { place: "airport" } },
+    { say: "¿Dónde está la parada del camión?", intent: "ask_where", slots: { place: "busstop" }, not: ["ask_schedule"] },
+    { say: "¿Hay un doctor por aquí?", intent: "ask_doctor" },
+    { say: "Me siento mal", intent: "ask_doctor" },
+    { say: "Necesito un médico", intent: "ask_doctor" },
+    { say: "¿Venden tours?", intent: "ask_tours" },
+    { say: "¿Dónde contrato un tour?", intent: "ask_tours" },
+    { say: "¿Dónde puedo contratar un tour a los cenotes?", intent: "ask_tours" },
+    { say: "¿Es seguro caminar de noche?", intent: "ask_safe" },
+    { say: "¿Es peligroso el centro en la noche?", intent: "ask_safe" },
+    { say: "¿Cuánto cuesta el taxi al aeropuerto?", intent: "ask_taxi_fare" },
+    { say: "No necesito un doctor", intent: "none", not: ["ask_doctor"] },
+    { say: "No me siento mal", intent: "none", not: ["ask_doctor"] },
+    { say: "No quiero un tour", intent: "none", not: ["ask_tours"] },
   ],
   sims: [
-    { name: "map first, café, repeat twice, then check", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al Café La Ceiba?", "Perdón, ¿puede repetir?", "Perdón, ¿puede repetir?", "Entonces salgo a la derecha, camino dos cuadras y en el banco doy vuelta a la izquierda, ¿verdad?", "No, eso es todo. ¡Gracias!"], expect: { complete: true }, auto: AUTO },
-    { name: "museum first with questions and a quiz, then the café", turns: ["Disculpe, ¿dónde está el museo?", "¿Está lejos?", "¿Se refiere al grande?", "Sí, creo que sí", "A la izquierda", "Sí, por favor", "¡Claro, gracias!", "¿Puede hablar más despacio, por favor?", "¿En el banco, a la izquierda?", "¡Gracias por su paciencia!"], expect: { complete: true }, auto: AUTO },
+    { name: "map first, café, repeat twice, then check", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al Café La Ceiba?", "Perdón, ¿puede repetir?", "Perdón, ¿puede repetir?", "Entonces cruzo la avenida y está enfrente, ¿verdad?", "No, eso es todo. ¡Gracias!"], expect: { complete: true, state: { conf: { sunny_cup: true } } }, auto: AUTO },
+    { name: "museum first with questions and a quiz, then the café", turns: ["Disculpe, ¿dónde está el museo?", "¿Está lejos?", "¿Se refiere al grande?", "Sí, creo que sí", "A la izquierda", "Sí, por favor", "¡Claro, gracias!", "¿Puede hablar más despacio, por favor?", "¿El del toldo verde?", "¡Gracias por su paciencia!"], expect: { complete: true }, auto: AUTO },
     { name: "wrong check gets corrected, a word, write it down, no café", turns: ["¡Hola!", "Busco la oficina de correos", "¿Qué significa banqueta?", "¿Me lo puede escribir?", "Entonces, ¿en el banco doy vuelta a la derecha?", "Ya entendí", "Sí, por favor", "No, gracias", "Eso es todo, gracias"], expect: { complete: true }, auto: AUTO },
-    { name: "side questions and still learning", turns: ["¿Cuál es la contraseña del wifi?", "¿Cómo se escribe?", "Estoy aprendiendo español", "¿Dónde tomo el colectivo?", "A la playa, por favor", "¿Cuántas cuadras?", "¡Claro, gracias!", "Sí, por favor", "Entonces salgo a la derecha, camino dos cuadras y en el banco doy vuelta a la izquierda, ¿verdad?", "¡Adiós!"], expect: { complete: true }, auto: AUTO,
+    { name: "side questions and still learning", turns: ["¿Cuál es la contraseña del wifi?", "¿Cómo se escribe?", "Estoy aprendiendo español", "¿Dónde tomo el colectivo?", "A la playa, por favor", "¿Cuántas cuadras?", "¡Claro, gracias!", "Sí, por favor", "Entonces cruzo la avenida y está enfrente, ¿verdad?", "¡Adiós!"], expect: { complete: true }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
-    { name: "just looking: the café offer, say it again slowly", turns: ["¡Hola! Solo estoy paseando.", "¡Claro, gracias!", "Perdón, ¿me lo repite más despacio?", "¿En el banco, a la izquierda?", "Sí, por favor", "Eso es todo, gracias"], expect: { complete: true }, auto: AUTO_OWN_OPENING },
-    { name: "a second route, then bye before checking it", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al Café La Ceiba?", "Entonces a la derecha y luego a la izquierda en el banco, ¿verdad?", "¿Cómo llego al museo?", "¡Adiós!"], expect: { complete: true, state: { byeNow: true } }, auto: AUTO,
+    { name: "just looking: the café offer, say it again slowly", turns: ["¡Hola! Solo estoy paseando.", "¡Claro, gracias!", "Perdón, ¿me lo repite más despacio?", "¿Cruzo la avenida?", "Sí, por favor", "Eso es todo, gracias"], expect: { complete: true }, auto: AUTO_OWN_OPENING },
+    { name: "a second route, then bye before checking it", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al Café La Ceiba?", "Entonces cruzo la avenida y ahí está, junto a La Cocina de Lucía, ¿verdad?", "¿Cómo llego al museo?", "¡Adiós!"], expect: { complete: true, state: { byeNow: true } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
     { name: "museum checked, bye at the café offer", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al museo?", "Entonces salgo a la izquierda y está a la izquierda, ¿verdad?", "¡Adiós!"], expect: { complete: true, state: { cafeNo: true, byeNow: true } }, auto: AUTO },
-    { name: "tricky word on the way to the bank (twist forced)", turns: ["¿Me da un mapa?", "¿Dónde está el banco?", "¿Qué significa banqueta?", "¿Al salir, a la derecha?", "No, gracias", "Eso es todo"], expect: { complete: true, state: { twistWord: "banqueta", cafeNo: true } }, auto: AUTO,
+    { name: "tricky word on the way to the market (twist forced)", turns: ["¿Me da un mapa?", "¿Dónde está el mercado?", "¿Qué significa banqueta?", "¿Al salir, a la derecha?", "No, gracias", "Eso es todo"], expect: { complete: true, state: { twistWord: "banqueta", cafeNo: true } }, auto: AUTO,
       setup: (s) => { s.wantTwist = true; } },
     { name: "recommendations outside town, spelling, then the café", turns: ["¿Qué me recomienda visitar?", "¿Cómo se escribe Xcacel?", "¿Qué es un cenote?", "¿Cómo llego a Chemuyil?", "¿Mande?", "Más despacio, por favor", "¿Cómo llego al Café La Ceiba?", "¿Dónde doy vuelta?", "Ya entendí, gracias", "Eso es todo"], expect: { complete: true, state: { trips: 1 } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
@@ -2204,11 +2535,27 @@ export const visitorCenter: SituationDef = {
     // Review: "derecho" (straight) is never "derecha", and in "No a la derecha, a la izquierda" the second one counts
     { name: "quiz: derecho, then a correction", turns: ["¿Me da un mapa?", "Al museo", "Sí", "Derecho, ¿no?", "No a la derecha, a la izquierda", "No, gracias", "No, es todo"], expect: { complete: true, state: { cafeNo: true, fixes: undefined, conf: { museum: true } } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
-    { name: "café offer: I already know it", turns: ["¿Me da un mapa?", "¿Dónde está el banco?", "¿Al salir, a la derecha?", "Sí, ya lo conozco", "Eso es todo"], expect: { complete: true, state: { cafeNo: true } }, auto: AUTO,
+    { name: "café offer: I already know it", turns: ["¿Me da un mapa?", "¿Dónde está el banco?", "¿Al salir, a la izquierda?", "Sí, ya lo conozco", "Eso es todo"], expect: { complete: true, state: { cafeNo: true } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
     // Audit: a price and the hours of the place just talked about, the taquería of the food tip, the colectivo
     { name: "museum price and hours, the taquería, the colectivo", turns: ["¿Me da un mapa?", "¿Es gratis el museo?", "¿A qué hora abre?", "¿Dónde puedo comer algo?", "¿Dónde está la taquería?", "¿Está junto al mercado?", "¿A qué hora pasa el colectivo?", "No, gracias", "Eso es todo, gracias"],
       expect: { complete: true, state: { cafeNo: true, conf: { taqueria: true } } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // The 3D town's ways (5 Nov 2026): the church on the zócalo, night safety, the café across the avenue
+    { name: "the church, night safety, then the café", turns: ["¿Me da un mapa?", "¿Dónde está la iglesia?", "¿Junto a la policía?", "¿Es seguro caminar de noche?", "¿Cómo llego al Café La Ceiba?", "¿Cruzo la avenida?", "Eso es todo, gracias"],
+      expect: { complete: true, state: { conf: { church: true, sunny_cup: true } } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // a doctor (the clinic's three turns, checked), the airport (a taxi), the tours booth (checked at its corner)
+    { name: "a doctor, the airport, the tours booth", turns: ["¡Hola! ¿Hay un doctor por aquí?", "Más despacio, por favor", "Entonces salgo a la izquierda, camino dos cuadras y en la calle Itzamná doy vuelta a la derecha, ¿verdad?", "¿Y el aeropuerto?", "¿Venden tours?", "¿En la esquina, a la derecha?", "No, gracias", "Eso es todo"],
+      expect: { complete: true, state: { trips: 1, conf: { clinic: true, tours: true } } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // from the crosswalk in front of the door the café is to the right (La Cocina de Lucía to the left)
+    { name: "café: cross, then right; La Cocina de Lucía: cross, then left", turns: ["¿Cómo llego al Café La Ceiba?", "Entonces cruzo la avenida y a la derecha, ¿verdad?", "¿Cómo llego a La Cocina de Lucía?", "Cruzo y a la derecha, ¿no?", "Ah, a la izquierda", "Eso es todo"],
+      expect: { complete: true, state: { conf: { sunny_cup: true, trattoria: true } } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // wrong checks of the new ways get the right correction (the café isn't to the right; the market's corner is)
+    { name: "the café's way checked wrong, then right; the market's turn", turns: ["¿Cómo llego al Café La Ceiba?", "Entonces salgo a la derecha, ¿verdad?", "Ah, entonces cruzo la avenida", "¿Dónde está el mercado?", "¿En la esquina, a la izquierda?", "A la derecha", "Eso es todo"],
+      expect: { complete: true, state: { conf: { sunny_cup: true, market: true } } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
   ],
 };
