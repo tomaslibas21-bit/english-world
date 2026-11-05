@@ -78,3 +78,86 @@ Looked at the risky parts only: the figures (days, dates, the stamp), the visa, 
 **Left as is:** "No traigo tarjeta" at the money question is recorded as a card (only state, nothing said wrong); "No, está bien" at the stamp is read as a no and she asks for the ticket (folds with "No está bien"; the safe side); "¿No me puede dar más días?" is not understood (the corpus keeps it from more_days).
 
 **NEEDS (engine):** besides the comma before "no": `noLead` "no no" swallows the verb's own "no" ("No, no lo compré" → "lo compré"). Every conversation with pronoun-only positive patterns ("lo tengo…", "lo compré") has this hole until the engine keeps the second "no" with its verb.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral), as AUDIT-BRIEF.md asks: the brief, STYLE.md and AUTHORING-ES.md, the
+reviews above, AUDIT/cross and AUDIT/neutral, seeds 3 and 7 read in full, and about 250 probe turns (`tools/probe.ts`)
+at every question: the opener, the visa, the stamp twist, the money, the return ticket, the closing and side questions.
+
+| Check | Before | After |
+|---|---|---|
+| check-content --verbose | 152/152 NLU, 28 sims 12/12, fuzz 80, 0/0 | 191/191 NLU, 36 sims 12/12, fuzz 80, 0 errors 0 warnings |
+| corpus (coverage) | 158/158, 0/16 false accepts | 218/218, 0/18 (62 items added, 26 of them traps) |
+| held-out | 38/39, 0/3 | 38/39, 0/3 (the same "Todavía no sé") |
+| voiced values | `{$num}` only from DAY_STEPS (7…180), all 11 on the line list | the same: the new paths say only `grantOf()` or her shorter figure; `values-es.ts`: every value said is kept |
+
+### Found and fixed, by point
+
+1. **Natural Spanish:** every line of Oficial Ramírez reads as a Mexican migration officer (usted, brisk, polite). Nothing changed.
+2. **tú/usted:** usted both ways, tú accepted with the tip. Nothing changed.
+3. **Names:** only Oficial Ramírez; no clash in the edition.
+4. **Facts (1):** the address hint "Calle Ceiba, número quince" became **"Calle Flamboyán, número veintitrés"**: s65b, minutes later
+   on the same arrival day, gives "Calle Flamboyán número 23, entre Hidalgo y Juárez" as where the bag goes (TOWN.md), and
+   calle Ceiba is the zócalo's shop street. "Calle Ceiba número quince" is still understood. Checked and kept: 180 days at
+   most, the stamp with days instead of the paper FMM, 30 days to exchange the resident visa for the card at an INM office
+   (the real rule: 30 días naturales), no visa for the learner's countries, customs after the baggage (s65b, TOWN.md).
+5. **English (1):** days_remind "So, shall I put down {$num} days?" → "So, should I put down {$num} days?" (English only).
+6. **Spelling, accents, ¿¡:** nothing found.
+7. **Questions and offers (10):**
+   - **Meaning flip:** "Así está bien", "Está bien así", "Déjelo así", "No, gracias, está bien así" to "Le voy a dar 15 días"
+     were the engine's built-in no: she asked for the return ticket, and a following "Sí, aquí está" granted days nobody
+     had asked for. They now accept her days (also at "¿Me lo muestra?").
+   - **Meaning flip:** "Las dos" at the money question (and "Ambas" at "¿crédito o débito?") matched the purpose pattern
+     "los dos" and rewrote the trip's purpose to business, with the money question left open. A bare "los dos / ambos" is
+     now `both_ctx`, only where an either-or is asked: the purpose (business), the money (cash and cards), the card (a card).
+   - **Meaning flip:** a lone "Trabajo." or "Turismo." at a later question ("¿A qué se dedica?") rewrote the purpose
+     (vacation ↔ business). A bare purpose word (`#bare`) now changes a purpose already given only at the purpose questions;
+     elsewhere she asks the open question again ("¿Cuál es su trabajo?"). Job fields ("En ventas", "Turismo", "En un
+     banco") are the job now.
+   - "¿Cuántos días me dio?" after the stamp got the 180-day rule; now her figure ("Le doy 15 días.", the twist's result,
+     "…hasta su regreso"; a resident hears the 30 days for the card; at the stamp "Le voy a dar 15 días.").
+   - "Todavía no lo compro", "Es de ida", "No sé cuándo regreso" got "¿Lo puede buscar en su correo?" (nothing to look up):
+     now only "Bueno. Recuerde que tiene que salir a tiempo." "No tengo boleto" and "No lo tengo" still get the email question.
+   - "No" to "Entonces, ¿viene como turista?" got the same line again; now "Entonces, ¿cuál es el motivo de su viaje?".
+   - "¿Necesito visa?" at "¿Tiene visa de residente?" got the same question again; now the rule "Sin visa de residente, no
+     puede trabajar ni vivir aquí." (once: the no that follows doesn't repeat it).
+   - "¿Por qué?" to her questions was not understood: at the stamp it asks for the ticket (like "¿Por qué solo quince?"), at
+     a ticket question "Necesitamos ver que va a salir del país.", at the visa the rule, elsewhere the new line **"Es solo
+     una pregunta de rutina."** (the question stays open).
+   - "¿Y si me quedo más tiempo?" at the stamp: a what-if, never a request: "Bueno. Recuerde que tiene que salir a tiempo."
+   - "¿Dónde está la aduana?", "¿Tengo que declarar algo?" (customs moved to s65b): the new line **"La aduana está después
+     del equipaje."**
+   - The opener: "Bien, gracias. Fue un vuelo muy largo." was not understood, and after "Bien, gracias, pero fue un vuelo
+     muy largo" "¡Ay, lo siento!" came after "Su pasaporte, por favor". The passport is now asked after the whole answer
+     (once, also after "Bien, pero un poco cansada", which asked it twice); "Muy largo." is understood.
+8. **Hints:** all accepted by the grammar (the address hint: point 4; the boarding-pass hint: point 10).
+9. **Accepted answers (9 gaps):** a bare figure at "¿Cuántos días?" ("Quince." → 15 days; "dos", "tres" get "¿Una semana?
+   ¿Dos semanas? ¿Un mes?"; over 180 the maximum; at the stamp her own figure is asked back, a smaller one accepts, a bigger
+   one asks for more); "Hasta diciembre"; "En Tulum", "Aquí en Puerto Colibrí" (→ "¿En un hotel? ¿Con familiares?"); the
+   address with "entre Hidalgo y Juárez" (s65b's own wording), "Es en el centro" and "…no sé el número" (→ look it up);
+   money: "Tarjeta de crédito", "Débito", "Sí, de débito", "Efectivo", "Tarjetas", "No traigo efectivo" (→ the card
+   question); the visa: "Tengo visa de turista", "…solo de turista", "Sí, pero está en trámite", "Sí tengo, pero no la
+   traigo", "La dejé en casa", "Mi visa está vencida" (all no resident visa), "Sí, residente temporal" (yes); "No, es la
+   segunda", "Sí, el año pasado"; "Vengo a casarme", "un retiro de yoga", "Vacaciones y un poco de trabajo"; "Tengo boleto
+   de ida nada más" was a yes piece plus a no (now one no). Safe before and after: a US visa, "residente de Estados
+   Unidos", a green card, "Tengo visa americana" are never a resident visa.
+10. **Neutral (1):** the hint "¿Necesita mi pase de abordar?" now has its twin "¿Necesita mi tarjeta de embarque?" and the
+    Mexican-word flag, as the 18 others in s64a–c and s65b. "Boleto de regreso" stays untwinned (as in the whole edition);
+    "Renté" in the apartment twin stays (rentar is untwinned in s71a and s81).
+
+**Spoken lines changed (for the voice list):** new ans_customs and routine_q; the hint a_its changed; the hint pp_boarding
+got a neutral twin. English only: days_remind. No other spoken text changed.
+
+**Tests:** 39 NLU tests (152 → 191), 8 sims (28 → 36; "a month or two weeks…" now says "No, no lo tengo" before "No, no lo
+compré", since "No lo compré" no longer leads to the email question), 62 corpus items (26 traps); the held-out item "Un
+poco de los dos" accepts the renamed intent (purpose or both_ctx).
+
+### For the lead / the owner
+
+- global.ts `expectHowAreYou`: "Bien, pero un poco cansada" gets both "¡Qué bueno!" and "¡Ay, lo siento!" (one reply per
+  piece). One reply per turn, the bad one winning, would fix it in every conversation (here the passport is asked once now).
+- Owner (design): at the stamp a figure above the trip ("¿Me puede dar ciento ochenta días?" after "Un mes") is granted
+  once the ticket is shown; a real officer gives the days up to the return date. Unchanged: it is the learner's own
+  request, nothing misread.
+- Engine NEEDS as above (the comma before "no"; "No, no …").
