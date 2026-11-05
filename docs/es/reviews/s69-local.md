@@ -107,3 +107,71 @@ Papadzules hold. Lucía's place (Juárez, one block from the zócalo, red awning
 **For the lead / owner:** unchanged from the writer: Lucía's ~$200 and "no aceptan reservaciones" wait for s73.
 Not fixed (old part): at the food_kind step "No, eso es todo, gracias" is read as a no and she asks again what
 food they'd like; the step has no way out but an answer.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer (N/AUDIT-BRIEF.md), both texts. Read: STYLE.md, AUTHORING-ES.md's rules, the brief, the reviews
+above, the cross-cutting file (with its "Town directions (5 Nov)") and the neutral side-by-side, TOWN.md "Getting
+around (from the 3D town)" (checked against layout.ts: her bench at x 18, z −23.2, facing avenida Juárez), and the
+facts other audits settled (s62, s66, s67b, s72, s73, s88). Transcripts of seeds 3 and 7 read in full; five probe
+scenarios (side questions, refusals, full-sentence answers, the ways, traps).
+
+| | Before | After |
+|---|---|---|
+| tsc / check-content | clean / 0 errors 0 warnings, 128/128 NLU, 18 sims 12/12, fuzz 80 | clean / 0 errors 0 warnings, 143/143 NLU, 20 sims 12/12, fuzz 80 |
+| corpus | 364/364, 0/64 false accepts | 399/399, 0/71 false accepts (+42 items) |
+| held-out | 58/59, 0/1 (the known "¿No es muy caro?") | 58/59, 0/1 (unchanged) |
+
+**Found and fixed, by point** (31):
+- **1. Natural Spanish (1).** open_cocina "Nada más a mediodía" (Spain's form) → "al mediodía", as her other lines say.
+- **4. Facts (15).** The ways now follow the 3D town (the cross file's eleven lines and two more):
+  Café La Ceiba "aquí en la plaza, bajo la ceiba grande" → a block west on avenida Juárez, across from Información
+  Turística (rec_cafe, dir_cafe; "¿Está lejos?" now walk_close, not walk_here); walk_close "a cinco minutos" → "a dos
+  minutos" (the café, Lucía's, the taquería and the cocina are 1–1½ blocks away); the museum "cruzando la plaza" →
+  across calle Ceiba (rec_museo, walk_museo, also_museo's English); the malecón "a diez minutos, bajando hacia el mar" /
+  "Baje por la calle principal hasta el mar" → right behind her bench, across avenida del Puerto (walk_malecon,
+  dir_malecon, which now names the beach too); El Muelle and the boat trips get their own way (new dir_muelle: across
+  del Puerto, left to the pier); the ruins "Siga la calle principal hasta el final" → down to the beach and left to its
+  end, on the rocks (dir_ruinas); the cocina económica "a dos cuadras" → across the avenue, around the corner from the
+  bank (dir_cocina: where TOWN.md puts it, so s88's "de la esquina" agrees); the taquería "a dos cuadras por esa calle"
+  → by the mercado, along del Puerto past the museum (dir_mercado); "El sitio está ahí en la esquina" → taxis pass along
+  the avenue (the sitio is by the airport; the line's neutral twin went with the sitio); the public beach "al final del
+  malecón" + "por el faro" (rec_playa, cheaper_beach), since the ruins' "hasta el final" now points the other way. And
+  La Cocina de Lucía "No aceptan reservaciones" contradicted s73 (the host asks "¿Tiene reservación?", walk-ins wait):
+  book_trattoria → "Mejor sí, sobre todo en la noche: se llena." No "calle principal" is left. Checked and kept: the
+  taquería by the mercado; colectivos with no timetable, paid to the driver on getting off; the cenote twenty minutes
+  by colectivo; the ruins half an hour on foot; the museum $80, students less, 10 to 5, closed Mondays; coffee $45;
+  comida corrida $100; El Muelle ~$300; Lucía's ~$200 (s73's mains $160–290); the Friday music at eight; night safety.
+- **5. Glosses (2).** rec_muelle glossed "a la talla" as "grilled Maya-style" with an achiote flag (that's tikin xic):
+  now "split and grilled", the flag "a whole fish split open, rubbed with a red chili paste and grilled over coals".
+  cheaper_beach split "¡No | cuesta" against S-NEG and flagged "cuesta": now "¡No cuesta | nada!", the flag on "nada!".
+- **7. Questions without an answer (13).** "¿Dónde tomo el colectivo?" / "¿Cómo me voy en colectivo?" got "Sí, pasan…"
+  (new bus_where: "Aquí enfrente, en la avenida Juárez: nada más levante la mano."); "¿Puedo ir en taxi?" / "¿Cómo me
+  voy en taxi?" got the colectivo line and "¿Dónde tomo un taxi?" / "¿Hay un sitio de taxis?" weren't understood (new
+  taxi_where); "¿Dónde está el mercado?", "¿Dónde hay un cajero?" (after "Lleve efectivo"), "Necesito sacar dinero",
+  the church, the police, Correos, Información Turística, the pharmacy and the hotel weren't understood, and "¿Está
+  lejos la farmacia?" got the last tip's distance (new intent ask_place: the way from her bench, TOWN.md "From the
+  zócalo's kiosco"; farther places: "Mejor pregunte en Información Turística…: ahí le dan un mapa"); "¿Cómo se llama
+  usted?" (new her_name: "¡Carmen, para servirle!"); after a tip, "¿Qué es un cenote?" and "¿Dónde queda El Muelle?" got
+  "¡Claro que sí! Le va a encantar." (now the meaning, through g_meaning, and the way), "¿Qué tal / Cómo es…?" got "¡Claro
+  que sí!" (new like_it: "¡Le va a encantar, ya verá!"), and asking about an earlier tip by name repeated the whole tip;
+  "No, gracias" / "No, eso es todo, gracias" at "¿Qué se le antoja?" brought the same question back (s31's lesson): now
+  "Entonces, mire:" and her pick; El Muelle "muy caro" got the cochinita tacos, now the taquería's fish tacos (her own
+  line); "¿Dónde hay un lugar bonito para ver el atardecer?" wasn't understood (now the malecón).
+- Nothing found under 2 (usted throughout, the hints too; tú accepted with the tip), 3 (no name clashes), 6 (spelling,
+  ¿¡), 8 (hints; their templated values read right with every entity), 10 (the twins qué padre / ándele are right; no
+  new line has a Mexican-only word).
+
+**For the voices** (both accents; no value placeholders): 15 spoken lines changed (rec_cafe, dir_cafe, walk_close,
+rec_museo, walk_museo, walk_malecon, dir_malecon, dir_ruinas, dir_cocina, dir_mercado, no_walk_taxi, book_trattoria,
+rec_playa, cheaper_beach, open_cocina) and 13 new (dir_muelle, taxi_where, bus_where, where_banco, where_correos,
+where_iglesia, where_policia, where_mercado, where_turismo, where_west, where_other, her_name, like_it); no_walk_taxi's
+neutral twin is gone (no "sitio" left).
+
+**Tests:** +15 NLU (5 meaning-safety), +2 sims (side questions; seafood too pricey and the ways), corpus +42 (7 traps,
+4 "not" guards).
+
+**Left for the lead / owner:** "¿Hay un baño por aquí?" is still not understood (off the topic; no restroom fact in
+TOWN.md). For TOWN.md "Facts the conversations share": La Cocina de Lucía takes reservations and walk-ins may wait in
+the evening (s73, s69); taxis are hailed on avenida Juárez, the sitio is by the airport (s66, s69). "¿Qué es un
+cenote?" after the tip uses the global g_meaning, as the pending global change ("¿Qué es X?" in g_meaning) would.
