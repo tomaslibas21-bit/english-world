@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Merger, mat, boxGeo, cylGeo, textTexture as plainTextTexture, rand, Colliders, roundRect, colourMerge } from "./util";
 import { STYLED } from "../style";
-import { carParts } from "./car";
+import { busParts, carParts } from "./car";
 import * as MX from "./mexican";
 import { THEME } from "./theme";
 import { floorMaterial, floorColor } from "./styled";
@@ -105,7 +105,7 @@ class RoomMerger extends Merger {
   }
 }
 
-function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: "wood" | "tile" | "carpet" | "stone"; accent?: string; warm?: boolean } = {}): Interior {
+function room(id: string, w: number, d: number, floor: string, wall: string, build: Builder, npcs: NpcSpot[], opts: { floorKind?: "wood" | "tile" | "carpet" | "stone" | "pasta"; accent?: string; warm?: boolean } = {}): Interior {
   // this edition's look for the room (theme.ts `roomLooks`; Maple Harbor has none)
   const look = THEME.roomLooks[id];
   if (look) {
@@ -138,6 +138,8 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
     }
   } else if (kind === "carpet") {
     for (let i = 0; i < 400; i++) { x.fillStyle = "rgba(255,255,255,0.03)"; x.fillRect(Math.random() * 512, Math.random() * 512, 3, 3); }
+  } else if (kind === "pasta") {
+    pastaTiles(x);
   } else {
     for (let i = 0; i < 6; i++) for (let k = 0; k < 6; k++) { x.strokeStyle = "rgba(0,0,0,0.1)"; x.strokeRect(i * 86, k * 86, 86, 86); }
   }
@@ -173,8 +175,12 @@ function room(id: string, w: number, d: number, floor: string, wall: string, bui
   g.add(outside(w, d));
   g.add(wallShade(w, d));
   const anim: Ctx["anim"] = [];
+  // (theme.ts panelAtlas: the room's signs and posters gathered while it is built, then drawn as one mesh)
+  roomPanels = THEME.panelAtlas && !STYLED ? [] : null;
   build({ M, col, g, w, d, r, anim });
   M.build(g);
+  if (roomPanels) panelAtlas(g, roomPanels);
+  roomPanels = null;
   const update = anim.length ? (t: number, dt: number) => { for (const f of anim) f(t, dt); } : undefined;
   // someone the edition has standing outdoors (theme.ts `outdoorNpcs`: Doña Chela at the pump) is not in the room
   const out = THEME.outdoorNpcs;
@@ -273,11 +279,94 @@ function plant(c: Ctx, x: number, z: number, s = 1) {
   c.M.add("leaves", mat("#5fa24b", { flat: true }), new THREE.IcosahedronGeometry(0.35 * s, 0).translate(x + 0.15, 1.2 * s, z - 0.1));
   c.col.addCircle(x, z, 0.35 * s);
 }
-function wallPanel(c: Ctx, tex: THREE.Texture, x: number, y: number, z: number, w: number, h: number, rotY = 0) {
+function wallPanel(c: Ctx, tex: THREE.Texture, x: number, y: number, z: number, w: number, h: number, rotY = 0): THREE.Object3D {
+  if (roomPanels && atlasable(tex)) {
+    // (theme.ts panelAtlas) a stand-in where the panel goes, which the caller may still turn; panelAtlas puts the
+    // panel's quad where it ends up and takes it away
+    const o = new THREE.Object3D();
+    o.position.set(x, y, z); o.rotation.y = rotY;
+    c.g.add(o);
+    roomPanels.push({ tex, w, h, o });
+    return o;
+  }
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
   m.position.set(x, y, z); m.rotation.y = rotY;
   c.g.add(m);
   return m;
+}
+
+/** The signs and posters of the room being built (theme.ts panelAtlas; null: a mesh each, wallPanel). */
+let roomPanels: { tex: THREE.Texture; w: number; h: number; o: THREE.Object3D }[] | null = null;
+/** A panel whose picture can go on the atlas: drawn on a canvas, shown whole, filtered as the atlas is. */
+function atlasable(t: THREE.Texture) {
+  const im = t.image as { width?: number; height?: number } | undefined;
+  return (im instanceof HTMLCanvasElement || (typeof OffscreenCanvas !== "undefined" && im instanceof OffscreenCanvas)) &&
+    !!im.width && !!im.height && im.width <= ATLAS_W - 2 * ATLAS_PAD &&
+    t.repeat.x === 1 && t.repeat.y === 1 && t.offset.x === 0 && t.offset.y === 0 && t.rotation === 0 && t.flipY &&
+    t.wrapS === THREE.ClampToEdgeWrapping && t.wrapT === THREE.ClampToEdgeWrapping &&
+    t.magFilter === THREE.LinearFilter && t.minFilter === THREE.LinearMipmapLinearFilter && t.generateMipmaps;
+}
+const ATLAS_W = 2048, ATLAS_MAX_H = 4096, ATLAS_PAD = 8;
+/** The room's panels as one mesh: their pictures side by side on a canvas (each at its own size, the tallest first, a
+ *  few pixels apart and the gaps filled with their edges, so the smaller mipmaps don't bleed one into another), one
+ *  quad each where its own mesh would have stood, with the material wallPanel gives one (unlit, as drawn). Pictures in
+ *  another colour space or filtered otherwise go on an atlas of their own; more than one canvas holds, on another. */
+function panelAtlas(g: THREE.Group, panels: NonNullable<typeof roomPanels>) {
+  g.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(g.matrixWorld).invert();
+  const kinds = new Map<string, typeof panels>();
+  for (const p of panels) {
+    const k = `${p.tex.colorSpace}|${p.tex.anisotropy}`;
+    if (!kinds.has(k)) kinds.set(k, []);
+    kinds.get(k)!.push(p);
+  }
+  for (const list of kinds.values()) {
+    // a cell for each picture (one shown twice is drawn once), tallest first, in rows on pages of the canvas's size
+    type Cell = { im: CanvasImageSource; w: number; h: number; x0: number; y0: number; page: number };
+    const cells = new Map<THREE.Texture, Cell>();
+    for (const p of list) if (!cells.has(p.tex)) {
+      const im = p.tex.image as HTMLCanvasElement;
+      cells.set(p.tex, { im, w: im.width, h: im.height, x0: 0, y0: 0, page: 0 });
+    }
+    const sorted = [...cells.values()].sort((a, b) => b.h - a.h);
+    const heights: number[] = [];
+    let page = 0, x = ATLAS_PAD, y = ATLAS_PAD, rowH = 0;
+    for (const c of sorted) {
+      if (x + c.w + ATLAS_PAD > ATLAS_W) { x = ATLAS_PAD; y += rowH + ATLAS_PAD; rowH = 0; }
+      if (y + c.h + ATLAS_PAD > ATLAS_MAX_H) { heights[page] = y; page++; x = ATLAS_PAD; y = ATLAS_PAD; rowH = 0; }
+      c.x0 = x; c.y0 = y; c.page = page; x += c.w + ATLAS_PAD; rowH = Math.max(rowH, c.h);
+      heights[page] = y + rowH + ATLAS_PAD;
+    }
+    for (let pg = 0; pg <= page; pg++) {
+      const H = heights[pg];
+      const cv = document.createElement("canvas");
+      cv.width = ATLAS_W; cv.height = H;
+      const ctx = cv.getContext("2d")!;
+      for (const c of sorted) if (c.page === pg) {
+        // the edges stretched into the gap first, then the picture itself over them
+        const e = ATLAS_PAD / 2;
+        ctx.drawImage(c.im, c.x0 - e, c.y0 - e, c.w + 2 * e, c.h + 2 * e);
+        ctx.clearRect(c.x0, c.y0, c.w, c.h);
+        ctx.drawImage(c.im, c.x0, c.y0);
+      }
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = list[0].tex.colorSpace;
+      tex.anisotropy = list[0].tex.anisotropy;
+      const m4 = new THREE.Matrix4();
+      const geos = list.filter((p) => cells.get(p.tex)!.page === pg).map((p) => {
+        const c = cells.get(p.tex)!;
+        const q = new THREE.PlaneGeometry(p.w, p.h);
+        const uv = q.attributes.uv as THREE.BufferAttribute;
+        for (let i = 0; i < uv.count; i++) uv.setXY(i, (c.x0 + uv.getX(i) * c.w) / ATLAS_W, 1 - (c.y0 + (1 - uv.getY(i)) * c.h) / H);
+        return q.applyMatrix4(m4.multiplyMatrices(inv, p.o.matrixWorld));
+      });
+      const mesh = new THREE.Mesh(mergeGeometries(geos, false)!, new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+      for (const q of geos) q.dispose();
+      mesh.name = "room-panels";
+      g.add(mesh);
+    }
+  }
+  for (const p of panels) p.o.parent?.remove(p.o);
 }
 function windowBack(c: Ctx, x: number, w: number, h = 2, y = 2.2, sky = "#bfe3f7") {
   c.M.add("win-" + sky, mat(sky, { emissive: "#4d7a90" }), boxGeo(w, h, 0.05, x, y, -c.d / 2 + 0.02), false);
@@ -644,10 +733,14 @@ const B: Record<string, () => Interior> = {
     sign(c, "Wi-Fi: SunnyCup · password: sunnycup22", 4.8, 2.9, -c.d / 2 + 0.2, 3.4, "#fff8e8", "#8a5a3c");
     for (const [tx, tz] of [[3, 0.5], [5.8, -1.8], [5.8, 2.6], [-5.6, 1.5], [0.4, 3]]) table(c, tx, tz, { round: true, cloth: "#f7f1e6", chairs: 2, chairColor: "#e8743b" });
     windowBack(c, 5.2, 3.8);
-    plant(c, -7.2, -5.2); plant(c, 7.2, 5, 0.8);
+    // (in this edition, theme.ts roomExtras.services, the restroom door at the back on the left where the plant stands:
+    // the plant by the west wall instead)
+    if (!THEME.roomExtras.services) plant(c, -7.2, -5.2);
+    plant(c, 7.2, 5, 0.8);
     lamp(c, -3, -1.5); lamp(c, 0, -1.5); lamp(c, 3.6, 0.8);
     rug(c, 0, 1, 6, 3.5, "#e8c07a");
     if (THEME.roomExtras.cafeMx) cafeMx(c);
+    if (THEME.roomExtras.services) { const S = msmalls(c); restroomDoor(c, S, -6.9, -c.d / 2, 0, "#6d2e46", "#f4e4cc"); clayPlant(c, S, -7.25, -0.9, 0.9); }
   }, [{ npc: "mia", x: -1.2, z: -4.2, rot: 0, ax: -1.2, az: -2.05 }], { floorKind: "wood", accent: "#8a5a3c", warm: true }),
 
   trattoria: () => THEME.restaurant === "yucateco" ? cocina() : room("trattoria", 18, 14, "#a8745a", "#f4e1c8", (c) => {
@@ -757,6 +850,8 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(2.6, 5.2, 0.55, 0.4);
     lamp(c, -4.5, 1.2, 3.4); lamp(c, 1, -1.5, 3.4); lamp(c, 3.7, 3, 3.4);
     if (THEME.roomExtras.pharmacyDoctor) consultorioDoor(c, S);
+    // (theme.ts roomExtras.roomsMx) the báscula by the door, a minisplit on the wall
+    if (THEME.roomExtras.roomsMx) { bascula(c, S, -4.4, 5.3, 0); minisplitAt(S, c.w / 2 - 0.02, 3.3, -3.0, -Math.PI / 2); }
     S.done();
   }, [{ npc: "okafor", x: 1, z: -4.8, rot: 0, ax: 1, az: -2.7 }], { floorKind: "tile", accent: "#2e8b57" }),
 
@@ -810,6 +905,7 @@ const B: Record<string, () => Interior> = {
     lamp(c, -3, -1.2, 3.3); lamp(c, 1, -1.2, 3.3); lamp(c, 3.8, 2.2, 3.3);
     // (in this edition, theme.ts roomExtras.shopsMx: a little altar with the Virgin over the counter, a ceiling fan)
     if (THEME.roomExtras.shopsMx) { shelfAltar(S, -c.w / 2, 1.65, 3.6, Math.PI / 2); ceilingFan(S, -1, 1.6, "#f1ece2"); }
+    if (THEME.roomExtras.roomsMx) minisplitAt(S, c.w / 2 - 0.02, 3.2, -1.0, -Math.PI / 2);
     S.done();
   }, [{ npc: "jessie", x: -1.9, z: -2.3, rot: 0 }], { floorKind: "tile", accent: "#c94f7c" }),
 
@@ -872,6 +968,7 @@ const B: Record<string, () => Interior> = {
     plant(c, -7.2, 5.1, 1); plant(c, -7.3, -5.2, 1.1);
     lamp(c, -3.6, 0.3, 3.4); lamp(c, 3.6, 0.3, 3.4); lamp(c, 6.3, 2.9, 3.3);
     if (THEME.roomExtras.bankTurns) bankTurns(c, S);
+    if (THEME.roomExtras.roomsMx) minisplitAt(S, c.w / 2 - 0.02, 3.3, 0.5, -Math.PI / 2);
     S.done();
   }, [{ npc: "aaron", x: 0, z: -4.8, rot: 0, ax: 0, az: -2.65 }], { floorKind: "stone", accent: "#1f4f8a" }),
 
@@ -950,6 +1047,8 @@ const B: Record<string, () => Interior> = {
     wallPanel(c, postPoster("stamps", ink), 4.9, 2.2, -c.d / 2 + 0.05, 1.0, 1.3);
     wallPanel(c, postPoster("postcard"), c.w / 2 - 0.03, 2.1, 1.6, 1.0, 1.3, -Math.PI / 2);
     lamp(c, -3.5, 0.6, 3.4); lamp(c, 3.5, 0.6, 3.4);
+    // (theme.ts roomExtras.roomsMx) Mexico's flag on its stand behind the counter, as a federal office has it; a minisplit
+    if (THEME.roomExtras.roomsMx) { flagStand(c, S, -5.5, -4.6, 0); minisplitAt(S, c.w / 2 - 0.02, 3.3, -3.6, -Math.PI / 2); }
     S.done();
   }, [{ npc: "gloria", x: 0, z: -4.4, rot: 0, ax: 0, az: -2.25 }], { floorKind: "tile", accent: "#2c4f8f" }),
 
@@ -1033,12 +1132,13 @@ const B: Record<string, () => Interior> = {
       S.add(cylGeo(0.06, 0.055, 0.13, sx - 0.05, 0.685, sz - 0.8 + i * 0.4, 10), i % 2 ? "#e45b4f" : "#ffffff");
       S.add(new THREE.TorusGeometry(0.035, 0.012, 4, 8).rotateY(Math.PI / 2).translate(sx - 0.05, 0.69, sz - 0.73 + i * 0.4), i % 2 ? "#e45b4f" : "#ffffff");
     }
-    for (let i = 0; i < 4; i++) { // snow globes and little lighthouses
+    // (in this edition, theme.ts roomExtras.roomsMx, alebrijes, vanilla, habanero sauce and clay pots instead: infoMx)
+    if (!THEME.roomExtras.roomsMx) for (let i = 0; i < 4; i++) { // snow globes and little lighthouses
       S.add(cylGeo(0.07, 0.08, 0.06, sx - 0.05, 1.2, sz - 0.75 + i * 0.5, 10), "#7d5a44");
       S.add(new THREE.SphereGeometry(0.085, 10, 8).translate(sx - 0.05, 1.31, sz - 0.75 + i * 0.5), "#d8eef7");
       S.add(cylGeo(0.025, 0.04, 0.22, sx - 0.05, 1.28, sz - 0.5 + i * 0.5, 8), i % 2 ? "#e45b4f" : "#ffffff");
     }
-    for (let i = 0; i < 6; i++) { // maple syrup
+    if (!THEME.roomExtras.roomsMx) for (let i = 0; i < 6; i++) { // maple syrup
       S.add(cylGeo(0.045, 0.05, 0.16, sx - 0.05, 1.8, sz - 0.85 + i * 0.34, 8), "#b5651d");
       S.add(cylGeo(0.02, 0.02, 0.05, sx - 0.05, 1.905, sz - 0.85 + i * 0.34, 6), "#e45b4f");
     }
@@ -1060,6 +1160,7 @@ const B: Record<string, () => Interior> = {
     sign(c, "Information", 0, 0.62, -2.79, 1.6, "#ffffff", "#2f6b4f");
     plant(c, -6.3, -5.2, 1.1); plant(c, 2.2, 4.9, 0.8);
     lamp(c, -2.0, 1.5, 3.3); lamp(c, 3.4, 0.4, 3.4);
+    if (THEME.roomExtras.roomsMx) infoMx(c, S, sx, sz);
     S.done();
   }, [{ npc: "chuck", x: 0, z: -4.2, rot: 0, ax: 0, az: -2.2 }], { floorKind: "wood", accent: "#2f6b4f" }),
 
@@ -1070,7 +1171,8 @@ const B: Record<string, () => Interior> = {
     // paintings are)
     const maya = THEME.roomExtras.museumMaya;
     if (!maya) for (let i = 0; i < 5; i++) framedArt(c, i + 2, -9 + i * 4.2, 2.3, -c.d / 2 + 0.2, 2.4 + (i % 2) * 0.6, 1.7);
-    for (let i = 0; i < 3; i++) framedArt(c, i + 9, -c.w / 2 + 0.2, 2.3, -5 + i * 4, 2.2, 1.6, Math.PI / 2);
+    // (in this edition, theme.ts roomExtras.services, the restrooms where the third picture hangs: museumServices)
+    for (let i = 0; i < (THEME.roomExtras.services ? 2 : 3); i++) framedArt(c, i + 9, -c.w / 2 + 0.2, 2.3, -5 + i * 4, 2.2, 1.6, Math.PI / 2);
     // partition with the new exhibition
     c.M.add("partition", mat("#2b2d6e"), boxGeo(0.3, 3.2, 7, 6, 1.6, -3)); c.col.addBox(6, -3, 0.4, 7);
     for (let i = 0; i < 2; i++) framedArt(c, 3 * (i + 1), 6.2, 2, -5 + i * 3.5, 1.8, 1.4, Math.PI / 2);
@@ -1090,6 +1192,7 @@ const B: Record<string, () => Interior> = {
     lamp(c, -6, -6); lamp(c, 0, -6); lamp(c, 6, 3);
     if (THEME.roomExtras.museumStairs) museumStairs(c);
     if (maya) museumMaya(c);
+    if (THEME.roomExtras.services) museumServices(c);
   }, [{ npc: "ben", x: -7, z: 2.5, rot: 0, ax: -7, az: 4.6 }, { npc: "harold", x: 2.5, z: -6.5, rot: 0.4 }], { floorKind: "stone", accent: "#9c8f7a" }),
 
   station: () => room("station", 26, 18, "#c8b8a0", "#efe3d0", (c) => {
@@ -1122,12 +1225,14 @@ const B: Record<string, () => Interior> = {
       c.M.add("bench", mat("#9c6b43"), boxGeo(3, 0.5, 0.08, bx, 0.8, bz - 0.28));
       c.col.addBox(bx, bz, 3.1, 0.7);
     }
-    // bus bay on the east side
-    c.M.add("bus", mat("#3d6fb5", { flat: true }), boxGeo(3, 3, 5, 11.4, 1.6, -3.5));
-    c.M.add("bus-win", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(3.02, 1, 4, 11.4, 2.2, -3.5), false);
-    c.M.add("bus-door", mat("#2b2b2b"), boxGeo(0.06, 2.2, 1.2, 9.88, 1.2, -1.6), false);
-    c.col.addBox(11.4, -3.5, 3.2, 5.2);
-    sign(c, "BUS 12 · DOWNTOWN", 11.4, 3.4, -0.95, 3, "#3d6fb5", "#ffffff");
+    // bus bay on the east side (in this edition, theme.ts roomExtras.terminalMx, route 7's own bus: terminalMx)
+    if (!THEME.roomExtras.terminalMx) {
+      c.M.add("bus", mat("#3d6fb5", { flat: true }), boxGeo(3, 3, 5, 11.4, 1.6, -3.5));
+      c.M.add("bus-win", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(3.02, 1, 4, 11.4, 2.2, -3.5), false);
+      c.M.add("bus-door", mat("#2b2b2b"), boxGeo(0.06, 2.2, 1.2, 9.88, 1.2, -1.6), false);
+      c.col.addBox(11.4, -3.5, 3.2, 5.2);
+      sign(c, "BUS 12 · DOWNTOWN", 11.4, 3.4, -0.95, 3, "#3d6fb5", "#ffffff");
+    }
     for (let i = 0; i < 4; i++) lamp(c, -8 + i * 5, 0, 3.3);
     // a red runner between the rows of benches, ticket machines and the station clock on the back wall, a drinks
     // machine, a newsstand by the door, travellers' bags on the benches, a suitcase, trash cans, two big plants.
@@ -1168,6 +1273,8 @@ const B: Record<string, () => Interior> = {
     c.col.addBox(-6.9, 4.0, 0.5, 0.3);
     for (const [bx, bz] of [[5.0, 1.0], [-7.0, 5.2]]) { S.add(cylGeo(0.24, 0.22, 0.75, bx, 0.375, bz, 12), "#5a646e"); S.add(cylGeo(0.26, 0.26, 0.05, bx, 0.77, bz, 12), "#3a3d42"); c.col.addCircle(bx, bz, 0.26); }
     plant(c, -12.1, 8.1, 1.2); plant(c, 12.1, 8.1, 1.2);
+    if (THEME.roomExtras.terminalMx) terminalMx(c, S);
+    if (THEME.roomExtras.services) terminalAtm(c, S);
     S.done();
   }, [{ npc: "walter", x: -6, z: -7, rot: 0, ax: -6, az: -4.85 }, { npc: "denise", x: 9, z: -1.2, rot: -Math.PI / 2 }], { floorKind: "stone", accent: "#7a2e2e" }),
 
@@ -1220,6 +1327,7 @@ const B: Record<string, () => Interior> = {
     for (let i = 0; i < 6; i++) lamp(c, -18 + i * 7 - (THEME.roomExtras.customs && i === 2 ? 3.2 : 0), -2, 3.6);
     if (THEME.roomExtras.customs || THEME.roomExtras.mexicanFlag) arrivalsMx(c);
     if (THEME.roomExtras.airportMx) airportMx(c);
+    if (THEME.roomExtras.services) airportServices(c);
   }, [
     { npc: "diaz", x: -14, z: -8.7, rot: 0 },
     { npc: "priya", x: -4, z: -9.3, rot: 0, ax: -4, az: -7.1 },
@@ -1254,7 +1362,8 @@ const B: Record<string, () => Interior> = {
     for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) S.add(boxGeo(0.16, 0.24, 0.02, 0, 0, 0).rotateX(-0.2).translate(2.38 + k * 0.22, 0.45 + r * 0.36, 4.12), ["#1f8a70", "#e45b4f", "#4a7bb7", "#e8c547"][(r + k) % 4]);
     c.col.addBox(2.6, 4.3, 0.75, 0.35);
     coffeeTable(c, S, -4.5, 3.7);
-    waterCooler(c, S, -6.2, -4.2);
+    // (in this edition, theme.ts roomExtras.roomsMx, the garrafón instead of the water cooler, a minisplit on the wall)
+    if (THEME.roomExtras.roomsMx) { garrafon(c, S, -6.2, -4.2); minisplitAt(S, c.w / 2 - 0.02, 3.2, -1.5, -Math.PI / 2); } else waterCooler(c, S, -6.2, -4.2);
     wallPanel(c, townMap(), -c.w / 2 + 0.03, 2.1, -0.4, 2.4, 1.6, Math.PI / 2);
     lamp(c, -3, 0, 3.4); lamp(c, 3, 0, 3.4);
     // (in this edition, theme.ts roomExtras.shopsMx: a palm in a clay pot where the plant is, a ceiling fan)
@@ -1299,6 +1408,13 @@ const B: Record<string, () => Interior> = {
     lamp(c, -3, -1, 3.4); lamp(c, 2, 1.4, 3.4); lamp(c, -5.6, 2.4, 3.4);
     // (in this edition, theme.ts roomExtras.shopsMx: garrafones of drinking water on their rack)
     if (THEME.roomExtras.shopsMx) garrafonRack(c, S, -6.3, 3.05);
+    // (theme.ts roomExtras.roomsMx) a minisplit, a tray of dulces by the till, and phone top-ups and bills paid here
+    if (THEME.roomExtras.roomsMx) {
+      minisplitAt(S, c.w / 2 - 0.02, 3.2, -1.2, -Math.PI / 2);
+      S.add(boxGeo(0.7, 0.04, 0.4, -1.6, 1.07, -2.75), "#c79a6b");
+      for (let i = 0; i < 12; i++) S.add(cylGeo(0.035, 0.035, 0.06, -1.88 + (i % 6) * 0.11, 1.12, -2.85 + Math.floor(i / 6) * 0.18, 6), ["#e4007c", "#f6c000", "#7ac143", "#f77f00", "#1f6fd1", "#ffffff"][i % 6]);
+      wallPanel(c, textTexture("Recargas · Pago de servicios", { bg: "#f6c000", fg: "#7a1f2a", w: 768, h: 128 }), -3, 0.62, -2.27, 2.2, 0.37);
+    }
     S.done();
   }, [{ npc: "dot", x: -3, z: -3.8, rot: 0, ax: -3, az: -1.7 }], { floorKind: "tile", accent: "#d94b3d" }),
 
@@ -1470,7 +1586,8 @@ const B: Record<string, () => Interior> = {
     c.M.add("pot", mat("#b86b4b"), cylGeo(0.12, 0.09, 0.2, -c.w / 2 + 0.17, 1.35, 0.55, 10), false);
     c.M.add("leaves", mat("#4c8c3c", { flat: true }), new THREE.IcosahedronGeometry(0.17, 0).translate(-c.w / 2 + 0.17, 1.56, 0.55), false);
     c.M.add("leaves", mat("#5fa24b", { flat: true }), new THREE.IcosahedronGeometry(0.11, 0).translate(-c.w / 2 + 0.2, 1.7, 0.48), false);
-    plant(c, -10.2, 6.8, 1.1); plant(c, 1, 6.8, 0.9);
+    // (in this edition, theme.ts roomExtras.roomsMx, in clay pots: officeMx)
+    if (!THEME.roomExtras.roomsMx) { plant(c, -10.2, 6.8, 1.1); plant(c, 1, 6.8, 0.9); }
     for (let i = 0; i < 4; i++) lamp(c, -6 + i * 5, 0, 3.6);
     // the open-plan desks get their keyboards, mugs, papers and plants; a lounge corner, a whiteboard, a bookcase of
     // binders, a coat rack by the door, a picture and a water cooler
@@ -1496,7 +1613,12 @@ const B: Record<string, () => Interior> = {
     framedArt(c, 3, 4.9, 2.2, -c.d / 2 + 0.2, 1.1, 0.85);
     shelf(c, c.w / 2 - 0.3, 0.4, 3.6, 2.2, "#c9ced6", ["#2c4f8f", "#e8743b", "#2e8b57", "#f4f4f4", "#8e6bb0"], -Math.PI / 2, 0.45);
     coatRack(c, S, -2.2, 7.1);
-    waterCooler(c, S, 6.0, 5.45);
+    // (in this edition, theme.ts roomExtras.roomsMx, the garrafón; plants in clay pots, minisplits in the glass rooms)
+    if (THEME.roomExtras.roomsMx) {
+      garrafon(c, S, 6.0, 5.45);
+      clayPlant(c, S, -10.2, 6.8, 1.15); clayPlant(c, S, 1, 6.8, 0.95);
+      minisplitAt(S, -c.w / 2 + 0.02, 3.3, -5.4, Math.PI / 2); minisplitAt(S, c.w / 2 - 0.02, 3.4, -5.6, -Math.PI / 2);
+    } else waterCooler(c, S, 6.0, 5.45);
     S.done();
   }, [
     // the office chairs (seat) are 0.48 m high
@@ -1586,6 +1708,13 @@ const B: Record<string, () => Interior> = {
     if (!mx) { plant(c, -7.2, 5.1, 0.9); plant(c, 7.2, 5, 0.9); }
     lamp(c, -0.1, -3.4, 3.3); lamp(c, 4.8, -3.4, 3.3); lamp(c, -5.5, 0.5, 3.3);
     if (mx) clinicMx(c);
+    // (theme.ts roomExtras.roomsMx) the children's corner in the waiting room, the vaccination poster, a minisplit
+    if (THEME.roomExtras.roomsMx) {
+      const S = msmalls(c);
+      kidsCorner(c, S, -2.9, 0.6);
+      minisplitAt(S, c.w / 2 - 0.02, 3.3, -4.4, -Math.PI / 2);
+      wallPanel(c, vacunaPoster(), 6.4, 2.35, -c.d / 2 + 0.06, 0.9, 1.24);
+    }
   }, [{ npc: "carter", x: 1.75, z: -4.3, rot: -0.12 }], { floorKind: "tile", accent: "#3a86b0" }),
 
   // Harbor Market: fruit, vegetables and bread at the front by the door (west), two aisles, the dairy fridges
@@ -1736,6 +1865,15 @@ const B: Record<string, () => Interior> = {
     sign(c, "Harbor Fitness", 6.4, 2.4, 3.9, 2.2, "#1f7f8c", "#ffffff");
     plant(c, -9.1, 6.1, 1);
     lamp(c, -5.5, -3.2, 3.4); lamp(c, 3.4, -2.6, 3.4); lamp(c, -5.5, 2.4, 3.4);
+    // (theme.ts roomExtras.roomsMx) a luchador on the wall, pennants in the flag's colours, the garrafón by the water
+    // (s35: water by the vestidores), a minisplit
+    if (THEME.roomExtras.roomsMx) {
+      const S = msmalls(c);
+      banderines(S, -c.w / 2 + 0.4, c.w / 2 - 0.4, 4.0, -c.d / 2 + 0.12);
+      garrafon(c, S, 4.55, -6.6);
+      minisplitAt(S, -c.w / 2 + 0.02, 3.3, -3.5, Math.PI / 2);
+      wallPanel(c, luchadorPoster(), -6.0, 2.3, -c.d / 2 + 0.06, 1.1, 1.51);
+    }
   }, [{ npc: "jordan", x: 4.8, z: -2.6, rot: -0.3 }], { floorKind: "carpet", accent: "#1f7f8c" }),
 
   // Sproutly (advanced song P18): a plant-care app startup in an old brick warehouse. The lounge with beanbags in
@@ -1844,6 +1982,8 @@ const B: Record<string, () => Interior> = {
     plant(c, -10.3, 6.9, 1.2); plant(c, 10.3, 6.9, 1.1); plant(c, -0.9, -7.2, 1.3); plant(c, -10.3, -7.2, 1);
     for (const [hx, hz] of [[-2.6, -2.4], [-9, -2.2], [6.8, -2.2], [-0.4, -6.6], [7.4, 5.2], [-7.6, 5.4]] as [number, number][]) hangingPlant(c, hx, hz);
     for (const [lx, lz] of [[-6.5, -2], [-1.4, -1], [4.6, 2.2], [-5.2, 2.4]] as [number, number][]) lamp(c, lx, lz, 3.5);
+    // (theme.ts roomExtras.roomsMx) a hammock on the west wall, a minisplit on the bricks
+    if (THEME.roomExtras.roomsMx) { const S = msmalls(c); hammock(c, S, -c.w / 2 + 0.24, 1.2, 4.8); minisplitAt(S, -c.w / 2 + 0.06, 3.3, -0.6, Math.PI / 2); }
   }, [{ npc: "tyler", x: 2.2, z: -3.75, rot: 0 }], { floorKind: "stone", accent: "#2f7a4a", warm: true }),
 };
 
@@ -2121,6 +2261,7 @@ function mercado(): Interior {
         S.add(boxGeo(0.34, 0.42, 0.01, x, 3.5 - Math.sin((i / 26) * Math.PI) * 0.25, z), PAPEL[(i + k) % PAPEL.length]);
       }
     }
+    if (THEME.roomExtras.roomsMx) mercadoMx(c, S);
     S.done();
   }, [{ npc: "marcus", x: -2.6, z: 0.85, rot: 0, ax: -2.6, az: 2.85 }], { floorKind: "tile", accent: "#e76f51", warm: true });
 }
@@ -2172,7 +2313,7 @@ function cocina(): Interior {
     // papel picado under the roof: two strings from the back to the front along the side walls (crossing the room
     // they would hide the signs from the camera at the open front)
     const PAPEL = ["#e4007c", "#f6a800", "#00a6a6", "#7ac143", "#ff5a36", "#6d2e9e", "#1f6fd1"];
-    for (const [px, k] of [[-6.7, 0], [6.7, 3]] as [number, number][]) {
+    for (const [px, k] of [[-8.3, 0], [8.3, 3]] as [number, number][]) {
       S.add(boxGeo(0.02, 0.02, c.d - 1, px, 3.95, 0), "#f4f1ea");
       for (let i = 0; i < 18; i++) S.add(boxGeo(0.01, 0.32, 0.26, px, 3.76 - Math.sin((i / 17) * Math.PI) * 0.2, -c.d / 2 + 0.8 + i * ((c.d - 1.6) / 17)), PAPEL[(i + k) % PAPEL.length]);
     }
@@ -2182,11 +2323,14 @@ function cocina(): Interior {
     wallPanel(c, twoLineTexture("La Cocina de Lucía\n¡Buen provecho!", { bg: "#8a1f2a", fg: "#ffe8b0", script: true }), 0, 3.25, -c.d / 2 + 0.2, 4, 1);
     wallPanel(c, menuBoard(["Sopa de lima|$110", "Panuchos o salbutes|$120", "Guacamole con totopos|$130", "Papadzules|$160", "Pollo pibil|$190", "Poc chuc|$210",
       "Cochinita pibil · la de la casa|$220", "Tikin xic, pescado del día|$290", "Arrachera|$320"], "COCINA YUCATECA"), 4.8, 2.8, -c.d / 2 + 0.2, 3.6, 2.25);
-    wallPanel(c, menuBoard(["Flan|$75", "Caballeros pobres|$85", "Dulce de papaya|$75", "Helado de coco|$70", "Aguas frescas: horchata, jamaica, chaya|$45",
+    // (s73's prices: the flan, the dulce de papaya and the helado $70, the caballeros pobres $80, an agua fresca $40)
+    wallPanel(c, menuBoard(["Flan|$70", "Caballeros pobres|$80", "Dulce de papaya|$70", "Helado de coco|$70", "Aguas frescas: horchata, jamaica, chaya|$40",
       "Limonada natural o mineral|$50"], "POSTRES Y BEBIDAS"), c.w / 2 - 0.2, 2.7, -2.6, 2.6, 1.6, -Math.PI / 2);
     S.add(boxGeo(1.8, 1.4, 0.05, -4, 2.6, -c.d / 2 + 0.16), "#c9a227");
     wallPanel(c, pyramidPicture(), -4, 2.6, -c.d / 2 + 0.2, 1.6, 1.2);
     lamp(c, -4, -3); lamp(c, 0, -3); lamp(c, 4, -3); lamp(c, 0, 1.5);
+    // (theme.ts roomExtras.services; s73: "Está al fondo, a la derecha") the restroom door at the back on the right
+    if (THEME.roomExtras.services) restroomDoor(c, S, c.w / 2, -5.0, -Math.PI / 2, "#7a3b1d", "#e9d3a8");
     S.done();
   }, [{ npc: "marco_host", x: -5.5, z: 3.2, rot: Math.PI / 2 }, { npc: "marco", x: 2, z: -1, rot: Math.PI / 2 }], { floorKind: "tile", accent: "#8a1f2a", warm: true });
 }
@@ -3077,6 +3221,421 @@ function guadalupe() {
     x.fillStyle = "#2b2b2e"; x.beginPath(); x.ellipse(cx, 226, 40, 10, 0, 0, Math.PI); x.fill();
     x.strokeStyle = "#f2c14e"; x.lineWidth = 6; x.strokeRect(3, 3, 194, 258);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Graphics round 3 (theme.ts roomExtras: services, terminalMx, roomsMx; docs/es/TOWN.md "Graphics, round 3"): the
+// places the conversations send the learner to, the bus terminal's hall, and the rest of the rooms; in each room's
+// smalls, a sign a texture of its own
+
+/** Yucatán's mosaicos de pasta (theme.ts roomLooks floorKind "pasta"): cement tiles half a metre across on the floor
+ *  canvas (512 px, 4 m), each a four-petalled flower in soft terracotta round a mustard heart, teal quarter circles in
+ *  its corners (four tiles make a little circle), a thin band inside its edge, on the room's floor colour: soft, so the
+ *  floor reads as tiles and not as a carpet. */
+function pastaTiles(x: CanvasRenderingContext2D) {
+  const T = 64;
+  for (let i = 0; i < 8; i++) for (let k = 0; k < 8; k++) {
+    const ox = i * T, oy = k * T, cx = ox + T / 2, cy = oy + T / 2;
+    x.save(); x.beginPath(); x.rect(ox, oy, T, T); x.clip();
+    x.fillStyle = "rgba(47,127,120,0.45)";
+    for (const [qx, qy] of [[ox, oy], [ox + T, oy], [ox, oy + T], [ox + T, oy + T]]) { x.beginPath(); x.arc(qx, qy, T * 0.17, 0, Math.PI * 2); x.fill(); }
+    x.restore();
+    x.strokeStyle = "rgba(47,127,120,0.35)"; x.lineWidth = 2; x.strokeRect(ox + 6, oy + 6, T - 12, T - 12);
+    x.fillStyle = "rgba(181,82,59,0.55)";
+    for (let p = 0; p < 4; p++) { x.save(); x.translate(cx, cy); x.rotate(Math.PI / 4 + (p * Math.PI) / 2); x.beginPath(); x.ellipse(0, -T * 0.15, T * 0.07, T * 0.14, 0, 0, Math.PI * 2); x.fill(); x.restore(); }
+    x.fillStyle = "rgba(217,164,58,0.9)"; x.beginPath(); x.arc(cx, cy, T * 0.07, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = "rgba(0,0,0,0.13)"; x.lineWidth = 1.5; x.strokeRect(ox + 0.75, oy + 0.75, T - 1.5, T - 1.5);
+  }
+}
+
+/** The round's own shapes in a room through the room's merger (theme.ts roomMerge: into the room's two vertex-coloured
+ *  meshes), a Smalls for the helpers: no mesh, and no draw call, of their own. */
+function msmalls(c: Ctx): Smalls {
+  return {
+    add: (g, color) => { const col = typeof color === "string" ? color : "#" + new THREE.Color(color).getHexString(); c.M.add("mx3-" + col, mat(col), g); },
+    done: () => {},
+  };
+}
+
+/** A restroom's pictogram (a woman in a dress, or a man) in white on the sign, its middle at (x, y), `h` tall. */
+function pictogram(x: CanvasRenderingContext2D, cx: number, cy: number, h: number, woman: boolean) {
+  const u = h / 10;
+  x.beginPath(); x.arc(cx, cy - 3.6 * u, 1.15 * u, 0, Math.PI * 2); x.fill();
+  if (woman) {
+    x.beginPath(); x.moveTo(cx - 0.9 * u, cy - 2.2 * u); x.lineTo(cx + 0.9 * u, cy - 2.2 * u); x.lineTo(cx + 2.2 * u, cy + 1.8 * u); x.lineTo(cx - 2.2 * u, cy + 1.8 * u); x.closePath(); x.fill();
+    x.fillRect(cx - 1.0 * u, cy + 1.6 * u, 0.7 * u, 3.4 * u); x.fillRect(cx + 0.3 * u, cy + 1.6 * u, 0.7 * u, 3.4 * u);
+  } else {
+    roundRect(x, cx - 1.5 * u, cy - 2.2 * u, 3.0 * u, 4.4 * u, 0.6 * u); x.fill();
+    x.fillRect(cx - 1.45 * u, cy + 1.8 * u, 1.25 * u, 3.2 * u); x.fillRect(cx + 0.2 * u, cy + 1.8 * u, 1.25 * u, 3.2 * u);
+  }
+}
+
+/** The restrooms' sign: the two pictograms either side of the words (one line, or Spanish over English with a "\n"). */
+function restroomSign(text: string, bg = "#1d3f73", w = 1024, h = 128) {
+  return canvasTex(w, h, (x) => {
+    x.fillStyle = bg; roundRect(x, 3, 3, w - 6, h - 6, h * 0.16); x.fill();
+    x.fillStyle = "#ffffff";
+    pictogram(x, h * 0.55, h / 2, h * 0.78, true);
+    pictogram(x, w - h * 0.55, h / 2, h * 0.78, false);
+    x.textAlign = "center"; x.textBaseline = "middle";
+    const [a, b] = text.split("\n");
+    const font = (sz: number, wt = 800) => `${wt} ${sz}px Nunito, Arial`;
+    if (!b) { x.font = font(h * 0.56); x.fillText(a, w / 2, h * 0.53); return; }
+    x.font = font(h * 0.42); x.fillText(a, w / 2, h * 0.34);
+    x.globalAlpha = 0.85; x.font = font(h * 0.3, 700); x.fillText(b, w / 2, h * 0.75); x.globalAlpha = 1;
+  });
+}
+
+/** A plaque for one door that leads to both restrooms: the two pictograms over the word. */
+function restroomPlaque(word: string) {
+  return canvasTex(256, 256, (x) => {
+    x.fillStyle = "#f7f3ea"; roundRect(x, 6, 6, 244, 244, 28); x.fill();
+    x.strokeStyle = "#1f4e5f"; x.lineWidth = 8; x.stroke();
+    x.fillStyle = "#1f4e5f";
+    pictogram(x, 84, 100, 120, true);
+    x.fillRect(126, 42, 4, 116);
+    pictogram(x, 172, 100, 120, false);
+    x.textAlign = "center"; x.textBaseline = "middle"; x.font = "800 52px Nunito, Arial"; x.fillText(word, 128, 206);
+  });
+}
+
+/** A door in a wall, its face towards `rot` (0: +z), its middle at (x, z) on the wall's face: the leaf, a frame round
+ *  it, a handle on the side away from `hinge` (1: the handle on the leaf's right as seen from the room). In the smalls. */
+function wallDoor(S: Smalls, x: number, z: number, rot: number, w = 0.92, h = 2.05, leaf = "#8a5a3c", frame = "#f4f1ea", hinge = 1) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(w, h, 0.05, 0, h / 2, 0.025)), leaf);
+  for (const s of [-1, 1]) S.add(P(boxGeo(0.08, h + 0.08, 0.08, s * (w / 2 + 0.04), (h + 0.08) / 2, 0.04)), frame);
+  S.add(P(boxGeo(w + 0.16, 0.08, 0.08, 0, h + 0.04, 0.04)), frame);
+  S.add(P(boxGeo(0.04, 0.04, 0.1, hinge * (w / 2 - 0.12), 1.0, 0.07)), "#c9ced6");
+  S.add(P(boxGeo(0.14, 0.035, 0.035, hinge * (w / 2 - 0.17), 1.0, 0.12)), "#c9ced6");
+}
+
+/** A small round café table on its pedestal with two chairs facing across it (along `rot`), and its collider. */
+function bistroTable(c: Ctx, S: Smalls, x: number, z: number, rot: number, top = "#f4f1ea", chair = "#1f6f8b") {
+  S.add(cylGeo(0.36, 0.36, 0.04, x, 0.74, z, 16), top);
+  S.add(cylGeo(0.035, 0.035, 0.72, x, 0.36, z, 6), "#3a3d42");
+  S.add(cylGeo(0.22, 0.24, 0.03, x, 0.015, z, 12), "#3a3d42");
+  for (const s of [-1, 1]) {
+    const cx = x + Math.sin(rot) * s * 0.62, cz = z + Math.cos(rot) * s * 0.62, back = rot + (s > 0 ? 0 : Math.PI);
+    S.add(boxGeo(0.4, 0.05, 0.4, cx, 0.46, cz, back), chair);
+    S.add(boxGeo(0.4, 0.42, 0.05, 0, 0, 0).translate(0, 0.7, 0.19).rotateY(back).translate(cx, 0, cz), chair);
+    for (const [lx, lz] of [[-0.16, -0.16], [0.16, -0.16], [-0.16, 0.16], [0.16, 0.16]]) S.add(boxGeo(0.03, 0.44, 0.03, cx + lx, 0.22, cz + lz), "#3a3d42");
+  }
+  c.col.addCircle(x, z, 0.45);
+  for (const s of [-1, 1]) c.col.addCircle(x + Math.sin(rot) * s * 0.62, z + Math.cos(rot) * s * 0.62, 0.25);
+}
+
+/** An espresso machine on a counter top at height y (its front towards `rot`): the steel body, the group heads, the cup
+ *  rack on top. In the smalls. */
+function espresso(S: Smalls, x: number, y: number, z: number, rot: number) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(0.66, 0.42, 0.46, 0, y + 0.21, 0)), "#c0c4c8");
+  S.add(P(boxGeo(0.68, 0.05, 0.48, 0, y + 0.445, 0)), "#2b2b2b");
+  for (const dx of [-0.16, 0.16]) { S.add(P(cylGeo(0.05, 0.05, 0.08, dx, y + 0.24, 0.25, 8)), "#2b2b2b"); S.add(P(cylGeo(0.035, 0.03, 0.06, dx, y + 0.06, 0.2, 8)), "#f4f1ea"); }
+  for (let i = 0; i < 4; i++) S.add(P(cylGeo(0.035, 0.03, 0.06, -0.21 + i * 0.14, y + 0.5, -0.05, 8)), "#f4f1ea");
+}
+
+/** The airport's café and restrooms (theme.ts roomExtras.services; s64a: "Security is on the left, past the café"; "the
+ *  restrooms are over there, next to the café"): in departures between the check-in counter and the gate, the café
+ *  against the back wall under its window (a counter tiled in talavera, the espresso machine, conchas, two tables) and
+ *  the two restroom doors beside it, under the gate's sign. */
+function airportServices(c: Ctx) {
+  const S = msmalls(c), back = -c.d / 2;
+  const cx = 11.4, cz = -11.3;
+  // the back counter against the wall, the espresso machine and a grinder on it
+  S.add(boxGeo(2.6, 0.95, 0.5, cx, 0.475, back + 0.25), "#6f4a2c");
+  S.add(boxGeo(2.64, 0.04, 0.54, cx, 0.97, back + 0.27), "#e8d9c2");
+  espresso(S, cx - 0.5, 0.99, back + 0.27, 0);
+  S.add(cylGeo(0.09, 0.11, 0.34, cx + 0.3, 1.16, back + 0.25, 10), "#2b2b2b");
+  for (let i = 0; i < 3; i++) S.add(cylGeo(0.05, 0.045, 0.32, cx + 0.75 + i * 0.13, 1.15, back + 0.25, 8), ["#8a3b24", "#f6c000", "#1f6f8b"][i]);
+  c.col.addBox(cx, back + 0.25, 2.7, 0.55);
+  // the front counter, talavera on its face, conchas on a tray and the till on its top
+  S.add(boxGeo(2.6, 1.0, 0.75, cx, 0.5, cz), "#1f6f8b");
+  S.add(boxGeo(2.7, 0.06, 0.85, cx, 1.03, cz), "#f2efe8");
+  talavera(S, 2.5, 0.8, (g) => g.translate(cx, 0.5, cz + 0.376), 0.2);
+  conchas(S, cx - 0.55, 1.06, cz, 3, 2);
+  till(S, cx + 0.75, 1.06, cz + 0.05);
+  c.col.addBox(cx, cz, 2.7, 0.85);
+  // two tables in front of it, and the sign over it
+  bistroTable(c, S, 10.0, -9.1, Math.PI / 2, "#f4f1ea", "#e4007c");
+  bistroTable(c, S, 12.8, -8.8, Math.PI / 2, "#f4f1ea", "#f6a800");
+  wallPanel(c, twoLineTexture("Cafetería\nCafé", { bg: "#6f4a2c", fg: "#fff3d6" }), cx, 3.0, cz, 2.2, 0.55);
+  for (const s of [-0.95, 0.95]) S.add(cylGeo(0.008, 0.008, WALL_H - 3.25, cx + s, (WALL_H + 3.25) / 2, cz, 4), "#3a3d42");
+  // the restrooms: two doors in the wall between the windows, the sign over them (under the gate's)
+  for (const [dx, hinge] of [[15.35, 1], [16.65, -1]] as [number, number][]) wallDoor(S, dx, back, 0, 0.95, 2.0, "#9aa5ad", "#e6e9ee", hinge);
+  wallPanel(c, restroomSign("Sanitarios\nRestrooms"), 16, 2.25, back + 0.06, 2.4, 0.3);
+  S.done();
+}
+
+/** The bus terminal's ATM (theme.ts roomExtras.services; s67b: "Hay un cajero en la terminal, ahí adentro"): a cash
+ *  machine against the west wall, its lit header, its screen, keypad and slots, a little roof over it. */
+function terminalAtm(c: Ctx, S: Smalls) {
+  const x = -c.w / 2 + 0.3, z = -2.4;
+  const P = (g: THREE.BufferGeometry) => g.rotateY(Math.PI / 2).translate(x, 0, z);
+  S.add(P(boxGeo(0.8, 1.75, 0.55, 0, 0.875, 0)), "#2f3b47");
+  S.add(P(boxGeo(0.84, 0.08, 0.6, 0, 1.79, 0.02)), "#1d252d");
+  S.add(P(boxGeo(0.6, 0.04, 0.12, 0, 1.25, 0.3).rotateX(0)), "#1d252d");
+  S.add(P(boxGeo(0.44, 0.32, 0.02, 0, 1.38, 0.29)), "#7fc3e8");
+  S.add(P(boxGeo(0.3, 0.12, 0.2, 0, 0.98, 0.33)), "#c9ced6");
+  for (let i = 0; i < 12; i++) S.add(P(boxGeo(0.05, 0.012, 0.04, -0.07 + (i % 3) * 0.07, 1.045, 0.27 + Math.floor(i / 3) * 0.045)), "#3a3d42");
+  S.add(P(boxGeo(0.2, 0.03, 0.02, 0.24, 1.15, 0.285)), "#1d1d1d");
+  S.add(P(boxGeo(0.34, 0.04, 0.02, 0, 0.8, 0.285)), "#1d1d1d");
+  c.col.addBox(x + 0.05, z, 0.65, 0.9);
+  wallPanel(c, textTexture("Cajero automático", { bg: "#1f8a4c", fg: "#ffffff", w: 512, h: 128 }), -c.w / 2 + 0.02, 2.2, z, 1.4, 0.35, Math.PI / 2);
+}
+
+/** A shoeshine stand (a bolero's: a raised seat with its footrests, the box of polishes beside it), facing `rot`. */
+function shoeshine(c: Ctx, S: Smalls, x: number, z: number, rot: number) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(1.0, 0.5, 1.1, 0, 0.25, -0.1)), "#7a3b1d");
+  S.add(P(boxGeo(0.7, 0.08, 0.6, 0, 0.92, -0.25)), "#8a1f2a");
+  S.add(P(boxGeo(0.7, 0.4, 0.08, 0, 0.5, -0.25).translate(0, 0.22, 0)), "#5a2e16");
+  S.add(P(boxGeo(0.72, 0.7, 0.08, 0, 1.3, -0.55)), "#8a1f2a");
+  for (const s of [-1, 1]) {
+    S.add(P(boxGeo(0.06, 0.32, 0.6, s * 0.38, 1.08, -0.25)), "#5a2e16");
+    S.add(P(boxGeo(0.12, 0.05, 0.22, s * 0.16, 0.62, 0.42)), "#c9a227");
+    S.add(P(cylGeo(0.02, 0.02, 0.12, s * 0.16, 0.56, 0.42, 6)), "#c9a227");
+  }
+  S.add(P(boxGeo(0.4, 0.3, 0.28, 0.7, 0.15, 0.35)), "#9c6b43");
+  for (let i = 0; i < 4; i++) S.add(P(cylGeo(0.04, 0.04, 0.05, 0.58 + (i % 2) * 0.12, 0.33, 0.28 + Math.floor(i / 2) * 0.12, 8)), ["#1d1d1d", "#6b3e26", "#8a1f2a", "#1d1d1d"][i]);
+  const cw = Math.abs(Math.cos(rot)) * 1.1 + Math.abs(Math.sin(rot)) * 1.3, cd = Math.abs(Math.sin(rot)) * 1.1 + Math.abs(Math.cos(rot)) * 1.3;
+  c.col.addBox(x, z, cw, cd);
+}
+
+/** The bus terminal's hall in this edition (theme.ts roomExtras.terminalMx; s67b): route 7's city bus at the bay (the
+ *  town's own bus, car.ts busParts: white over teal, its number lit amber over the windshield), its front to the hall
+ *  and its doors towards Ana; the route's sign hanging over its front; a shoeshine stand by the west wall. */
+function terminalMx(c: Ctx, S: Smalls) {
+  for (const [g, col] of busParts("#f4f6f8", "#1f8fa3", 7)) S.add(g.translate(11.45, 0, -3.5), col);
+  c.col.addBox(11.45, -3.5, 2.6, 10.0);
+  sign(c, "BUS 12 · DOWNTOWN", 11.45, 3.5, 1.95, 3, "#1f8fa3", "#ffffff");
+  for (const s of [-1.3, 1.3]) S.add(cylGeo(0.008, 0.008, WALL_H - 3.875, 11.45 + s, (WALL_H + 3.875) / 2, 1.95, 4), "#3a3d42");
+  shoeshine(c, S, -11.0, 1.6, Math.PI / 2);
+}
+
+/** The museum's services (theme.ts roomExtras.services; s70): the paquetería right by the entrance on the left
+ *  (cubbyholes with the visitors' bags and its counter), the restrooms past it along the same wall, the elevator at
+ *  the back on the left, and the café beside the shop by the exit. */
+function museumServices(c: Ctx) {
+  const S = msmalls(c), west = -c.w / 2;
+  // the paquetería: cubbyholes along the west wall, the bags in them, the counter in front with its numbered tokens
+  const pz = 7.0, len = 2.6, rows = 3, cols = 4, ch = 0.56;
+  S.add(boxGeo(0.04, 1.8, len, west + 0.04, 0.9, pz), "#5a3e26");
+  for (let r = 0; r <= rows; r++) S.add(boxGeo(0.46, 0.04, len, west + 0.26, 0.12 + r * ch, pz), "#9c7a52");
+  for (let k = 0; k <= cols; k++) S.add(boxGeo(0.46, 1.72, 0.04, west + 0.26, 0.98, pz - len / 2 + (k * len) / cols), "#9c7a52");
+  const bags = ["#e4007c", "#1f6fd1", "#3a3d42", "#f6a800", "#2a9d5c", "#8a1f2a", "#00a6a6"];
+  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
+    if ((r * 5 + k * 3) % 4 === 1) continue;
+    const bx = west + 0.28, by = 0.14 + r * ch, bz = pz - len / 2 + (k + 0.5) * (len / cols), col = bags[(r * cols + k) % bags.length];
+    S.add(new THREE.CapsuleGeometry(0.15, 0.12, 3, 8).scale(1, 1, 1.25).translate(bx, by + 0.22, bz), col);
+    S.add(boxGeo(0.05, 0.08, 0.1, bx + 0.17, by + 0.32, bz), "#f4f1ea");
+  }
+  c.col.addBox(west + 0.25, pz, 0.5, len);
+  S.add(boxGeo(0.55, 1.0, 2.2, west + 1.15, 0.5, pz), "#9c8f7a");
+  S.add(boxGeo(0.63, 0.05, 2.28, west + 1.15, 1.025, pz), "#f7f4ee");
+  for (let i = 0; i < 6; i++) S.add(boxGeo(0.07, 0.012, 0.1, west + 1.05 + (i % 2) * 0.12, 1.057, pz - 0.6 + Math.floor(i / 2) * 0.1), "#c9a227");
+  c.col.addBox(west + 1.15, pz, 0.6, 2.2);
+  wallPanel(c, twoLineTexture("Paquetería\nBag check · free", { bg: "#2b2d6e", fg: "#ffffff" }), west + 0.04, 2.55, pz, 2.2, 0.55, Math.PI / 2);
+  // the restrooms past it along the same wall
+  for (const [dz, hinge] of [[4.3, 1], [3.1, -1]] as [number, number][]) wallDoor(S, west, dz, Math.PI / 2, 0.95, 2.0, "#2b2d6e", "#f7f4ee", hinge);
+  wallPanel(c, restroomSign("Sanitarios", "#2b2d6e", 768, 128), west + 0.05, 2.32, 3.7, 1.9, 0.32, Math.PI / 2);
+  // the elevator at the back on the left: its steel doors, the frame, the call buttons and the floor it is on
+  const ex = -11.4, back = -c.d / 2;
+  S.add(boxGeo(1.5, 2.45, 0.1, ex, 1.225, back + 0.05), "#8a949c");
+  for (const s of [-1, 1]) S.add(boxGeo(0.58, 2.15, 0.04, ex + s * 0.3, 1.075, back + 0.11), "#c3cad0");
+  S.add(boxGeo(0.02, 2.15, 0.045, ex, 1.075, back + 0.115), "#6b7680");
+  S.add(boxGeo(0.12, 0.3, 0.04, ex + 0.95, 1.15, back + 0.03), "#8a949c");
+  for (const by of [1.08, 1.22]) S.add(cylGeo(0.025, 0.025, 0.02, 0, 0, 0, 10).rotateX(Math.PI / 2).translate(ex + 0.95, by, back + 0.06), "#f6c000");
+  c.col.addBox(ex, back + 0.12, 1.6, 0.3);
+  wallPanel(c, textTexture("♿ Elevador · PB ↑ 1", { bg: "#2b2d6e", fg: "#ffffff", w: 512, h: 128 }), ex, 2.78, back + 0.06, 1.5, 0.375);
+  // the café by the shop, at the exit: its counter along the east wall, the espresso machine, two tables
+  const east = c.w / 2, kz = 8.4;
+  S.add(boxGeo(0.6, 1.0, 1.9, east - 0.4, 0.5, kz), "#7a3b1d");
+  S.add(boxGeo(0.68, 0.05, 1.98, east - 0.4, 1.025, kz), "#f7f4ee");
+  espresso(S, east - 0.45, 1.05, kz - 0.4, -Math.PI / 2);
+  conchas(S, east - 0.42, 1.05, kz + 0.45, 2, 2);
+  c.col.addBox(east - 0.4, kz, 0.7, 1.95);
+  bistroTable(c, S, 9.4, 8.6, Math.PI / 2, "#f7f4ee", "#2b2d6e");
+  bistroTable(c, S, 7.5, 8.4, 0, "#f7f4ee", "#a0522d");
+  wallPanel(c, textTexture("Cafetería", { bg: "#7a3b1d", fg: "#fff3d6", w: 512, h: 128 }), east - 0.04, 2.45, kz, 1.6, 0.4, -Math.PI / 2);
+  S.done();
+}
+
+/** The restroom door at the back of a café or a restaurant (theme.ts roomExtras.services; s72: "al fondo, a la
+ *  izquierda"; s73: "al fondo, a la derecha"), with its plaque: in the wall at (x, z) facing `rot`. */
+function restroomDoor(c: Ctx, S: Smalls, x: number, z: number, rot: number, leaf: string, frame: string) {
+  wallDoor(S, x, z, rot, 0.9, 2.05, leaf, frame, rot === 0 ? 1 : -1);
+  const ox = Math.sin(rot) * 0.06, oz = Math.cos(rot) * 0.06;
+  wallPanel(c, restroomPlaque("Baños"), x + ox, 1.62, z + oz, 0.34, 0.34, rot);
+}
+
+/** A minisplit (the air conditioner every room on this coast has) high on a wall at (x, y, z), its front towards `rot`
+ *  (0: +z): the white unit, its louver and little green light, the duct taking its pipes away along the wall. */
+function minisplitAt(S: Smalls, x: number, y: number, z: number, rot: number) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, y, z);
+  S.add(P(boxGeo(1.05, 0.3, 0.22, 0, 0, 0.11)), "#f4f5f2");
+  S.add(P(boxGeo(1.07, 0.04, 0.23, 0, 0.15, 0.115)), "#e1e4e0");
+  S.add(P(boxGeo(0.92, 0.05, 0.03, 0, 0, 0).rotateX(-0.5).translate(0, -0.1, 0.235)), "#d4d9d5");
+  S.add(P(boxGeo(0.9, 0.03, 0.01, 0, -0.135, 0.215)), "#4a4f55");
+  S.add(P(boxGeo(0.035, 0.035, 0.01, 0.42, 0.06, 0.224)), "#39c46a");
+  S.add(P(boxGeo(0.9, 0.07, 0.06, 0.97, 0.06, 0.03)), "#eceeea");
+}
+
+/** An alebrije (a little carved animal painted in wild colours: a body, a head with ears, four legs, a curled tail,
+ *  dots) standing at (x, y, z) facing `rot`. In the smalls. */
+function alebrije(S: Smalls, x: number, y: number, z: number, rot: number, k: number) {
+  const C = [["#e4007c", "#f6c000", "#00a6a6"], ["#1f6fd1", "#ff5a36", "#7ac143"], ["#f6a800", "#6d2e9e", "#e4007c"], ["#00a6a6", "#e4007c", "#f6c000"]][k % 4];
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, y, z);
+  S.add(P(new THREE.SphereGeometry(0.07, 8, 6).scale(1.5, 0.9, 0.9).translate(0, 0.1, 0)), C[0]);
+  S.add(P(new THREE.SphereGeometry(0.045, 8, 6).translate(0.11, 0.16, 0)), C[1]);
+  for (const s of [-1, 1]) S.add(P(new THREE.ConeGeometry(0.018, 0.06, 5).translate(0.12, 0.22, s * 0.025)), C[2]);
+  for (const [lx, lz] of [[-0.06, -0.035], [0.06, -0.035], [-0.06, 0.035], [0.06, 0.035]]) S.add(P(cylGeo(0.014, 0.012, 0.06, lx, 0.03, lz, 5)), C[2]);
+  S.add(P(new THREE.TorusGeometry(0.035, 0.01, 4, 8, Math.PI * 1.3).translate(-0.12, 0.15, 0)), C[1]);
+  for (let i = 0; i < 3; i++) S.add(P(new THREE.SphereGeometry(0.012, 5, 4).translate(-0.04 + i * 0.04, 0.165, 0.055)), C[2]);
+}
+
+/** Información Turística's coast (theme.ts roomExtras.roomsMx; s62): the counter faced with talavera, and on the
+ *  souvenir shelf alebrijes, little bottles of vanilla and habanero sauce and clay pots where Maple Harbor has snow
+ *  globes, lighthouses and maple syrup. */
+function infoMx(c: Ctx, S: Smalls, sx: number, sz: number) {
+  talavera(S, 4.8, 0.85, (g) => g.translate(0, 0.48, -3.3 + 0.512), 0.24);
+  for (let i = 0; i < 4; i++) alebrije(S, sx - 0.05, 1.17, sz - 0.75 + i * 0.5, Math.PI / 2 + (i % 2 ? 0.4 : -0.4), i);
+  for (let i = 0; i < 6; i++) {
+    const vanilla = i % 2 === 0, bz = sz - 0.85 + i * 0.34;
+    S.add(cylGeo(vanilla ? 0.032 : 0.04, vanilla ? 0.036 : 0.045, vanilla ? 0.22 : 0.13, sx - 0.05, vanilla ? 1.83 : 1.79, bz, 8), vanilla ? "#3b2416" : "#d62828");
+    S.add(cylGeo(0.02, 0.02, 0.05, sx - 0.05, vanilla ? 1.965 : 1.88, bz, 6), vanilla ? "#c9a227" : "#2a7d3a");
+  }
+  for (let i = 0; i < 3; i++) { S.add(cylGeo(0.07, 0.055, 0.12, sx - 0.05, 0.69, sz - 0.6 + i * 0.6, 10), CLAY_POTS[i]); S.add(cylGeo(0.045, 0.045, 0.05, sx - 0.05, 0.77, sz - 0.6 + i * 0.6, 8), "#a24a2a"); }
+}
+const CLAY_POTS = ["#b5562f", "#c4683a", "#a24a2a"];
+
+/** A báscula (the coin-operated scale by a Mexican pharmacy's door: weigh yourself for a few pesos), facing `rot`. */
+function bascula(c: Ctx, S: Smalls, x: number, z: number, rot: number) {
+  const P = (g: THREE.BufferGeometry) => g.rotateY(rot).translate(x, 0, z);
+  S.add(P(boxGeo(0.46, 0.08, 0.52, 0, 0.04, 0.05)), "#e9eef0");
+  S.add(P(boxGeo(0.4, 0.012, 0.42, 0, 0.086, 0.07)), "#3a3d42");
+  S.add(P(boxGeo(0.16, 1.15, 0.12, 0, 0.62, -0.2)), "#2e8b57");
+  S.add(P(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 20).rotateX(Math.PI / 2).translate(0, 1.32, -0.18)), "#2e8b57");
+  S.add(P(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 20).rotateX(Math.PI / 2).translate(0, 1.32, -0.11)), "#fdfcf7");
+  S.add(P(boxGeo(0.012, 0.13, 0.01, 0, 0, 0).rotateZ(0.7).translate(0.03, 1.35, -0.1)), "#d62828");
+  S.add(P(boxGeo(0.06, 0.02, 0.02, 0, 1.08, -0.135)), "#1d1d1d");
+  c.col.addBox(x, z, 0.55, 0.6);
+}
+
+/** A lucha libre poster for the gym's wall: a luchador's mask (its colours, the white rims round the eyes and mouth, a
+ *  flame up its middle) over "¡Sí se puede!". */
+function luchadorPoster() {
+  return canvasTex(256, 352, (x) => {
+    x.fillStyle = "#1d1d1d"; x.fillRect(0, 0, 256, 352);
+    x.fillStyle = "#f6c000"; x.fillRect(8, 8, 240, 336);
+    x.fillStyle = "#c8102e"; x.fillRect(16, 16, 224, 244);
+    const cx = 128, cy = 136;
+    x.fillStyle = "#1f4e9c"; x.beginPath(); x.ellipse(cx, cy, 78, 98, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#f6c000"; x.beginPath(); x.moveTo(cx, cy - 98); x.quadraticCurveTo(cx + 26, cy - 50, cx, cy - 6); x.quadraticCurveTo(cx - 26, cy - 50, cx, cy - 98); x.fill();
+    for (const s of [-1, 1]) {
+      x.fillStyle = "#ffffff"; x.beginPath(); x.ellipse(cx + s * 34, cy - 4, 24, 15, s * 0.25, 0, Math.PI * 2); x.fill();
+      x.fillStyle = "#e7c49c"; x.beginPath(); x.ellipse(cx + s * 34, cy - 4, 16, 9, s * 0.25, 0, Math.PI * 2); x.fill();
+      x.fillStyle = "#1d1d1d"; x.beginPath(); x.arc(cx + s * 32, cy - 4, 5, 0, Math.PI * 2); x.fill();
+    }
+    x.fillStyle = "#ffffff"; x.beginPath(); x.ellipse(cx, cy + 50, 26, 15, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#e7c49c"; x.beginPath(); x.ellipse(cx, cy + 50, 18, 8, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#c8102e"; x.textAlign = "center"; x.textBaseline = "middle"; x.font = "900 38px Nunito, Arial";
+    x.fillText("¡Sí se puede!", cx, 300);
+  });
+}
+
+/** A vaccination poster for the clinic: a smiling child with a plaster on the arm, a syringe, the campaign's words. */
+function vacunaPoster() {
+  return canvasTex(256, 352, (x) => {
+    x.fillStyle = "#f4f9fb"; x.fillRect(0, 0, 256, 352);
+    x.fillStyle = "#1f8a4c"; x.fillRect(0, 0, 256, 70);
+    x.fillStyle = "#ffffff"; x.textAlign = "center"; x.textBaseline = "middle"; x.font = "900 40px Nunito, Arial"; x.fillText("¡Vacúnate!", 128, 38);
+    x.fillStyle = "#c68e63"; x.beginPath(); x.arc(110, 150, 42, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#1f1a17"; x.beginPath(); x.arc(110, 132, 44, Math.PI, 0); x.fill();
+    x.fillStyle = "#1f1a17"; for (const s of [-1, 1]) { x.beginPath(); x.arc(110 + s * 15, 152, 4, 0, Math.PI * 2); x.fill(); }
+    x.strokeStyle = "#1f1a17"; x.lineWidth = 4; x.beginPath(); x.arc(110, 162, 14, 0.2, Math.PI - 0.2); x.stroke();
+    x.fillStyle = "#f6c000"; x.fillRect(66, 196, 88, 70);
+    x.fillStyle = "#c68e63"; x.fillRect(154, 200, 22, 56);
+    x.fillStyle = "#f2e2c4"; x.fillRect(150, 214, 30, 14);
+    x.save(); x.translate(200, 150); x.rotate(-0.6);
+    x.fillStyle = "#d8eef7"; x.fillRect(-12, -40, 24, 70); x.fillStyle = "#3a86b0"; x.fillRect(-12, -40, 24, 10); x.fillRect(-3, 30, 6, 26);
+    x.restore();
+    x.fillStyle = "#1f4e5f"; x.font = "800 24px Nunito, Arial"; x.fillText("Campaña de vacunación", 128, 296); x.font = "700 20px Nunito, Arial"; x.fillText("Pregunte en recepción", 128, 326);
+  });
+}
+
+/** A string of paper pennants (banderines) in the flag's green, white and red along a wall, from x0 to x1 at z, its
+ *  top at y, sagging a little. In the smalls. */
+function banderines(S: Smalls, x0: number, x1: number, y: number, z: number) {
+  const n = Math.round((x1 - x0) / 0.42), COL = ["#006847", "#f8f8f4", "#ce1126"];
+  S.add(boxGeo(x1 - x0, 0.015, 0.015, (x0 + x1) / 2, y, z), "#f4f1ea");
+  for (let i = 0; i < n; i++) {
+    const px = x0 + (i + 0.5) * ((x1 - x0) / n), sag = Math.sin(((i + 0.5) / n) * Math.PI) * 0.08;
+    S.add(new THREE.ConeGeometry(0.15, 0.3, 3).rotateX(Math.PI).scale(1, 1, 0.08).translate(px, y - 0.16 - sag, z), COL[i % 3]);
+  }
+}
+
+/** A child's corner in the clinic's waiting room: a foam puzzle mat, a little table with two little chairs, building
+ *  blocks. In the smalls. */
+function kidsCorner(c: Ctx, S: Smalls, x: number, z: number) {
+  const COL = ["#e4007c", "#f6c000", "#00a6a6", "#7ac143"];
+  for (let i = 0; i < 4; i++) for (let k = 0; k < 4; k++) S.add(boxGeo(0.49, 0.02, 0.49, x - 0.75 + i * 0.5, 0.012, z - 0.75 + k * 0.5), COL[(i + k * 3) % 4]);
+  S.add(boxGeo(0.6, 0.04, 0.6, x + 0.3, 0.44, z - 0.3), "#f4f1ea");
+  for (const [lx, lz] of [[-0.26, -0.26], [0.26, -0.26], [-0.26, 0.26], [0.26, 0.26]]) S.add(boxGeo(0.04, 0.42, 0.04, x + 0.3 + lx, 0.21, z - 0.3 + lz), "#1f6fd1");
+  for (const [cx, cz, col] of [[x + 0.3, z - 0.82, "#e4007c"], [x + 0.3, z + 0.22, "#7ac143"]] as [number, number, string][]) {
+    S.add(boxGeo(0.28, 0.04, 0.28, cx, 0.26, cz), col); S.add(boxGeo(0.28, 0.26, 0.04, cx, 0.4, cz + (cz < z ? -0.12 : 0.12)), col);
+    for (const [lx, lz] of [[-0.11, -0.11], [0.11, -0.11], [-0.11, 0.11], [0.11, 0.11]]) S.add(boxGeo(0.03, 0.24, 0.03, cx + lx, 0.12, cz + lz), col);
+  }
+  for (let i = 0; i < 7; i++) S.add(boxGeo(0.12, 0.12, 0.12, x - 0.6 + (i % 3) * 0.16, 0.08 + Math.floor(i / 3) * 0.12, z + 0.45 + (i % 2) * 0.05, i * 0.3), COL[i % 4]);
+  c.col.addBox(x + 0.3, z - 0.3, 0.7, 1.4);
+}
+
+/** The mercado's other aisle (theme.ts roomExtras.roomsMx; s32): a stepped stand of flowers in their buckets by the door
+ *  on the east, piñatas hanging from a beam behind the juice stand, and a woman's comal of handmade tortillas by the
+ *  door on the west (the comal on its brazier, the masa, the basket under its cloth). */
+function mercadoMx(c: Ctx, S: Smalls) {
+  // the flowers: three steps, the buckets on them, a bunch in each
+  const fx = 7.6, fz = 4.6;
+  for (let k = 0; k < 3; k++) S.add(boxGeo(2.6, 0.32, 0.5, fx, 0.16 + k * 0.32, fz - 0.5 + k * 0.5), "#8a5a3c");
+  const FLOW = ["#e4007c", "#f6c000", "#f77f00", "#ffffff", "#d62828", "#ff8fab", "#f6c000", "#e4007c"];
+  for (let k = 0; k < 3; k++) for (let i = 0; i < 5; i++) {
+    const bx = fx - 1.0 + i * 0.5, by = 0.32 + k * 0.32, bz = fz - 0.5 + k * 0.5, col = FLOW[(i + k * 3) % FLOW.length];
+    S.add(cylGeo(0.13, 0.11, 0.24, bx, by + 0.12, bz, 10), "#9aa5ad");
+    for (let j = 0; j < 4; j++) S.add(new THREE.IcosahedronGeometry(0.08, 0).translate(bx + Math.cos(j * 1.6) * 0.07, by + 0.42 + (j % 2) * 0.06, bz + Math.sin(j * 1.6) * 0.07), col);
+    S.add(cylGeo(0.012, 0.012, 0.25, bx, by + 0.33, bz, 4), "#3f7d3a");
+  }
+  c.col.addBox(fx, fz, 2.7, 1.6);
+  wallPanel(c, textTexture("Flores", { bg: "#e4007c", fg: "#ffffff", w: 384, h: 128 }), fx, 2.55, fz + 0.1, 1.2, 0.4);
+  for (const s of [-0.5, 0.5]) S.add(cylGeo(0.006, 0.006, WALL_H - 2.75, fx + s, (WALL_H + 2.75) / 2, fz + 0.1, 4), "#3a3d42");
+  // the piñatas: a beam between two posts, five stars hanging from it
+  const px = 6.6, pz = -3.4;
+  for (const s of [-1.6, 1.6]) S.add(cylGeo(0.07, 0.07, 3.2, px + s, 1.6, pz, 6), "#6f4a2c");
+  S.add(boxGeo(3.4, 0.1, 0.1, px, 3.15, pz), "#6f4a2c");
+  const PIN = ["#e4007c", "#f6c000", "#1f6fd1", "#7ac143", "#f77f00"];
+  for (let i = 0; i < 5; i++) {
+    const x = px - 1.3 + i * 0.65, y = 2.45 - (i % 2) * 0.25, col = PIN[i];
+    S.add(cylGeo(0.006, 0.006, 3.1 - y - 0.2, x, (3.1 + y + 0.2) / 2, pz, 4), "#f4f1ea");
+    S.add(new THREE.SphereGeometry(0.2, 10, 8).translate(x, y, pz), col);
+    for (let j = 0; j < 6; j++) {
+      const a = (j / 6) * Math.PI * 2;
+      S.add(new THREE.ConeGeometry(0.06, 0.26, 6).rotateZ(-Math.PI / 2).rotateY(-a).translate(x + Math.cos(a) * 0.27, y + Math.sin(j * 2.1) * 0.06, pz + Math.sin(a) * 0.27), PIN[(i + j + 1) % 5]);
+    }
+  }
+  for (const s of [-1.6, 1.6]) c.col.addCircle(px + s, pz, 0.15);
+  wallPanel(c, textTexture("Piñatas", { bg: "#6d2e9e", fg: "#ffffff", w: 384, h: 128 }), px, 3.6, pz + 0.08, 1.3, 0.43);
+  // the comal by the west door: the brazier, the round comal, tortillas on it, the masa, the basket
+  const cx = -8.6, cz = 5.0;
+  S.add(boxGeo(1.6, 0.75, 0.8, cx, 0.375, cz), "#8a5a3c");
+  S.add(boxGeo(1.7, 0.05, 0.9, cx, 0.775, cz), "#c79a6b");
+  S.add(cylGeo(0.3, 0.26, 0.2, cx - 0.35, 0.9, cz, 14), "#3a3d42");
+  S.add(cylGeo(0.36, 0.36, 0.025, cx - 0.35, 1.012, cz, 18), "#2b2b2e");
+  for (let i = 0; i < 3; i++) S.add(cylGeo(0.075, 0.075, 0.008, cx - 0.5 + i * 0.15, 1.03, cz + (i % 2 ? 0.1 : -0.08), 12), "#f2e2b8");
+  S.add(new THREE.SphereGeometry(0.13, 10, 6).scale(1.3, 0.6, 1).translate(cx + 0.25, 0.86, cz - 0.15), "#e8d6a8");
+  S.add(cylGeo(0.17, 0.14, 0.14, cx + 0.5, 0.87, cz + 0.15, 12), "#c79a6b");
+  S.add(cylGeo(0.175, 0.175, 0.015, cx + 0.5, 0.95, cz + 0.15, 12), "#e4007c");
+  c.col.addBox(cx, cz, 1.7, 0.9);
+  wallPanel(c, textTexture("Tortillas a mano", { bg: "#f6c000", fg: "#5f0f40", w: 512, h: 128 }), cx, 2.2, cz - 0.42, 1.5, 0.375);
+  for (const s of [-0.6, 0.6]) S.add(cylGeo(0.006, 0.006, WALL_H - 2.39, cx + s, (WALL_H + 2.39) / 2, cz - 0.42, 4), "#3a3d42");
 }
 
 export function getInterior(loc: string): Interior | null {

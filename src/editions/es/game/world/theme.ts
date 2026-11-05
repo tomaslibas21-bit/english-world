@@ -109,6 +109,9 @@ export const THEME: TownTheme = {
     customs: true, mexicanFlag: true, bankTurns: true, pharmacyDoctor: true, museumStairs: true, yucatanDinner: true, guayabera: true,
     // graphics round 2: Las Palmas, the hotel, the police, the museum, the airport, the clinic, the shops, the café, El Muelle
     lasPalmas: true, hotelMx: true, policeMx: true, museumMaya: true, airportMx: true, clinicMx: true, shopsMx: true, cafeMx: true, muelleMx: true,
+    // graphics round 3: every place a line sends the learner to (the restrooms, the cafés, the ATM, the paquetería, the
+    // elevator), the bus terminal's hall, and the rest of the rooms
+    services: true, terminalMx: true, roomsMx: true,
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
@@ -206,6 +209,9 @@ export const THEME: TownTheme = {
     [-64, 44.2, "Calle Hidalgo", "Calle Flamboyán"], [-6.2, 31.9, "Calle Hidalgo", "Calle Ceiba"],
     // calle Uxmal (Station Road, past the bus terminal): a Mayan city's name, as Itzamná is a Mayan god's
     [-64, 70.4, "Calle Uxmal", "Calle Flamboyán"], [6.2, 70.4, "Calle Uxmal", "Calle Ceiba"], [64, 70.4, "Calle Uxmal", "Calle Itzamná"],
+    // (graphics round 3) the clinic's corner, Hidalgo and Itzamná (TOWN.md "Getting around": the clinic is on Hidalgo a
+    // little east of Itzamná): on the clinic's side of both streets
+    [76, 31.9, "Calle Hidalgo", "Calle Itzamná"],
   ],
   stopWord: "ALTO",
   topes: { at: [[12, -12.6, 12, -3.4, 16.5, -14.4, Math.PI / 2], [46, -12.6, 46, -3.4, 41.5, -14.4, -Math.PI / 2], [28, -59.1, 28, -50.9, 24, -48.4, -Math.PI / 2]], word: "TOPE" },
@@ -266,9 +272,10 @@ export const THEME: TownTheme = {
     "post-office": { accent: "#c2006a" },
     // Diego and Natalia's house: a warm ceramic tile floor, warm light walls, terracotta baseboards (and `homeMx`)
     "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b" },
-    // (graphics round 2) Departamentos Las Palmas: ceramic tiles and pale mint walls, a teal baseboard; the hotel's lobby:
+    // (graphics round 2) Departamentos Las Palmas: pale mint walls, a teal baseboard, and (round 3) the Yucatán's
+    // mosaicos de pasta on its floors (cement tiles with an eight-pointed star); the hotel's lobby:
     // pale stone tiles, cream walls, the sea's blue
-    apartments: { floor: "#dccbb0", floorKind: "tile", wall: "#eef3e6", accent: "#2f7f78" },
+    apartments: { floor: "#e9dcc0", floorKind: "pasta", wall: "#eef3e6", accent: "#2f7f78" },
     hotel: { floor: "#e8d6b6", floorKind: "tile", wall: "#fbf3e4", accent: "#1f6f8b" },
   },
   homeMx: true,
@@ -319,5 +326,43 @@ export const THEME: TownTheme = {
   houseFronts: { sophie: "12", dan: "24", house3: "31", house4: "47", house5: "53" },
   // the streets as a Mexican town paints them: no white edge lines, the curbs yellow by the corners
   streetPaint: { corner: 5, color: "#f2c230" },
+  // (graphics round 3) the walking camera stands as high as the zócalo's laureles' crowns: a crown it is in or near is
+  // left out whole, one in the way of her or close in front of the lens fades to a light dither (fade.ts deepFade)
+  fade: { most: 0.94, near: 1.5 },
+  // (graphics round 3) the outdoor pieces in a mesh for each part of town: only what is in view is drawn
+  regions: true,
+  // and the tianguis' goods (fruit, flowers, pots, hats: thousands of triangles) left out beyond 45 m of the camera
+  farHide: 45,
+  // the town's plain coloured shapes in a mesh for each 50 m square of it (two: with and without shadows): a view draws
+  // the squares it sees, in a few calls (room for this round's things in calls and triangles)
+  townMerge: 50,
+  // and a room's signs and posters in one mesh on one texture (one draw call for all of them: room for this round's)
+  panelAtlas: true,
+  // the overhead lines along calle Hidalgo (poles on its north sidewalk, clear of the lamps, the signs and the corners),
+  // and the service drops across the street to Ximena's, Diego's and the houses east of the terminal
+  cables: {
+    poles: [[-100, 33], [-80, 33], [-58, 33], [-36, 33], [-14, 33], [10, 33], [34, 33], [58, 33], [80, 33], [104, 33]],
+    drops: [[2, -57.5, 5.6, 47.4], [3, -33.5, 5.6, 47.4], [5, 18, 5.6, 48.9], [8, 87, 5.6, 48.9], [9, 106, 5.6, 48.9]],
+  },
+  // the sidewalks: clay pots by the doors of Hilos, the estética, Correos, the car rental and the pharmacy; a fruit cart
+  // in front of the museum; the water man's tricycle on Hidalgo by Ximena's
+  sidewalks: {
+    macetas: [[-24, -0.35, 1.9], [-10, -0.35, 1.7], [30, -0.35, 1.9], [84, -0.35, 2.0], [-88, -0.35, 2.0]],
+    fruitCart: [-34, -14.9, 0, "Frutas · Cocos"],
+    trike: [-48.5, 44.0, Math.PI / 2],
+  },
+  // El Muelle's terrace: a deck either side of its pier on the sand, tables under palapas
+  terrace: [[-40.6, -32.7, -71.6, -68.6], [-27.3, -19.4, -71.6, -68.6]],
+  // towels on the sand between the palapas, and the coconut seller on the malecón
+  beach: {
+    towels: [[-85, -70.6, 0.1, "#ff5a36"], [-58.4, -70.5, 0.3, "#e4007c"], [-1.0, -70.8, -0.2, "#00a6a6"], [36.5, -70.7, 0.15, "#f6a800"], [82.5, -70.6, -0.25, "#1f6fd1"]],
+    cocos: [-14, -63.6, 0, "Cocos fríos"],
+  },
+  // the atrial cross before the church's door, by the palm at the square's corner
+  atrialCross: [49.3, -45.2],
+  // the mirador where avenida Juárez ends at the meadow, looking out west to Cenote Ka'an
+  mirador: { x: -107, z: -7.5, rot: -Math.PI / 2, sign: "Mirador · Cenote Ka'an →" },
+  // a second taxi waiting at the sitio, behind the first, at the curb (clear of the cars' lane)
+  taxis: [[115.8, -4.25, -Math.PI / 2]],
   letras: { text: "PUERTO COLIBRÍ", x: 2.8, z: -63.55, h: 1.45, colors: ["#e4007c", "#f77f00", "#00a6a6", "#f6c000", "#7ac143", "#6d2e9e", "#1f6fd1", "#ff5a36"] },
 };

@@ -22,7 +22,8 @@ export interface Town {
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
-  update(t: number, dt: number): void;
+  /** `cam`: where the camera is (the edition's small things far from it are left out: theme.ts `farHide`). */
+  update(t: number, dt: number, cam?: THREE.Vector3): void;
   walkableAt(x: number, z: number): boolean;
 }
 
@@ -44,7 +45,7 @@ export function buildTown(): Town {
   group.name = "town";
   const colliders = new Colliders();
   const doors: Door[] = [];
-  const M = new Merger();
+  const M = THEME.townMerge && !STYLED ? new TownMerger(THEME.townMerge) : new Merger();
   const r = rand(7);
   sprays.length = 0; // a new game builds a new town
   seats.length = 0;
@@ -54,6 +55,9 @@ export function buildTown(): Town {
   displayParts = {};
   mx.length = 0;
   mxFlat.length = 0;
+  wires.length = 0;
+  mxFar.length = 0;
+  farHidden.length = 0;
   beachPalms.length = 0;
   atlas = new MX.SignAtlas();
 
@@ -182,9 +186,25 @@ export function buildTown(): Town {
   }
   if (!displays.length && displayGlass.length) group.add(new THREE.Mesh(mergeGeometries(displayGlass, false)!, displayGlassMaterial()));
   // the edition's outdoor pieces (mexican.ts) as one mesh, and their signs as another: none in Maple Harbor
-  if (mx.length) group.add(staticColoured(mx, "town-mx"));
-  if (mxFlat.length) { const m = staticColoured(mxFlat, "town-mx-small"); m.castShadow = false; group.add(m); }
+  // (theme.ts `regions`: a mesh for each part of town)
+  if (M instanceof TownMerger) {
+    // (theme.ts `townMerge`: the edition's pieces in the town's squares too, each drawn only where it is in view)
+    M.addParts(mx, "cast"); M.addParts(mxFlat, "still"); M.addParts(mxFar, "still"); M.addParts(wires, "thin");
+  } else {
+    if (mx.length) group.add(staticColoured(mx, "town-mx"));
+    if (mxFlat.length) { const m = staticColoured(mxFlat, "town-mx-small"); m.castShadow = false; group.add(m); }
+    // (theme.ts `regions`: what stands at the town's far ends in a mesh of its own, drawn only where it is in view; and
+    // the overhead lines in a western and an eastern half)
+    if (mxFar.length) { const m = staticColoured(mxFar, "town-mx-far"); m.castShadow = false; group.add(m); }
+    for (const half of ["w", "e"]) {
+      const list = wires.filter(([g]) => (g.boundingSphere ?? (g.computeBoundingSphere(), g.boundingSphere!)).center.x < 0 === (half === "w"));
+      if (list.length) { const m = staticColoured(list, "cables-" + half); m.castShadow = false; m.userData.thin = true; group.add(m); }
+    }
+  }
   const signsMesh = atlas!.build();
+  // (theme.ts `townMerge`: the signs drawn after the town's squares, so that one painted on a surface, a coach's
+  // destination over its windshield, stays in front of it)
+  if (signsMesh && M instanceof TownMerger) signsMesh.renderOrder = 1;
   if (signsMesh) group.add(signsMesh);
   M.build(group);
 
@@ -194,8 +214,9 @@ export function buildTown(): Town {
 
   return {
     group, colliders, doors, seats: [...seats], groundCanvas,
-    update(t, dt) {
+    update(t, dt, cam) {
       seaMat.uniforms.uTime.value = t;
+      if (cam) for (const f of farHidden) f.mesh.visible = (cam.x - f.x) ** 2 + (cam.z - f.z) ** 2 < f.r * f.r;
       wind.value = t;
       for (const s of sprays) s(t);
       for (const c of clouds) {
@@ -1613,6 +1634,8 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
     for (const u of [-0.45, 0.45]) seats.push({ x: bx + Math.cos(rot) * u, z: bz - Math.sin(rot) * u, rot, y: 0.53 });
   }
   for (const [lx, lz] of THEME.zocalo?.laureles ?? []) MX.whitewash(sq, lx, lz, 0.28 * 1.6 * 1.12);
+  // (graphics round 3, theme.ts `atrialCross`: the cross before the church, in the square's mesh)
+  if (THEME.atrialCross) MX.atrialCross(sq, col, ...THEME.atrialCross);
   if (sq.length) group.add(staticColoured(sq, "tianguis"));
   // bandstand-ish gazebo
   if (!THEME.gazebo) return;
@@ -1639,6 +1662,8 @@ function addTianguis(col: Colliders, group: THREE.Group, parts: MX.Part[]) {
   const g = staticColoured(goods, "tianguis-goods");
   g.castShadow = false;
   group.add(g);
+  // (theme.ts `farHide`: too small to see from farther than that, they are left out)
+  if (THEME.farHide !== null) { const sp = g.geometry.boundingSphere ?? (g.geometry.computeBoundingSphere(), g.geometry.boundingSphere!); farHidden.push({ mesh: g, x: sp.center.x, z: sp.center.z, r: sp.radius + THEME.farHide }); }
 }
 
 /** The edition's outdoor pieces beyond the square (theme.ts, docs/es/TOWN.md tasks 1–4 and 8): the malecón with its
@@ -1661,14 +1686,30 @@ function addTownMx(M: Merger, col: Colliders) {
   if (f) MX.foodCart(mx, col, a, f.x, f.z, f.rot, f.sign);
   // beyond the town's edge: the cenote across the west meadow, the ruins on the point past the beach (TOWN.md task 8)
   // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
-  if (THEME.cenote) MX.cenote(mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign);
-  if (THEME.ruins) MX.ruins(mxFlat, THEME.ruins.x, THEME.ruins.z);
+  if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign);
+  if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z);
   // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
   const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
   if (bt && station) {
     const oak = ROADS.find((r) => r.z1 === r.z2 && r.z1 > station.z - station.d / 2 - 20 && r.z1 < station.z)!;
     for (const [x, z, rot] of MX.busTerminalFront(mx, col, a, station, bt.andenes, bt.buses, oak.z1 + oak.w / 2)) streetBench(M, col, x, z, rot);
   }
+  // (graphics round 3) the overhead lines (a mesh of their own: `wires`), the sidewalks, El Muelle's terrace, the beach,
+  // the atrial cross, the mirador
+  if (THEME.cables) MX.cables(mx, wires, col, THEME.cables.poles, THEME.cables.drops);
+  const sw = THEME.sidewalks;
+  if (sw) {
+    MX.macetas(mx, col, sw.macetas);
+    if (sw.fruitCart) MX.fruitCart(mx, col, a, ...sw.fruitCart);
+    if (sw.trike) MX.waterTrike(mx, col, ...sw.trike);
+  }
+  if (THEME.terrace.length) MX.terrace(mx, col, THEME.terrace);
+  if (THEME.beach) {
+    MX.towels(mxFlat, THEME.beach.towels);
+    if (THEME.beach.cocos) MX.cocoCart(mx, col, a, ...THEME.beach.cocos);
+  }
+  const mi = THEME.mirador;
+  if (mi) MX.mirador(THEME.regions ? mxFar : mx, col, a, mi.x, mi.z, mi.rot, mi.sign);
   const terminal = BUILDINGS.find((b) => b.style === "terminal");
   if (THEME.airportOut && terminal) {
     // the canopy over the drop-off (buildBuilding: 8 m out from the door, 20 m along the front, on posts 5.4 m high);
@@ -2018,6 +2059,76 @@ const mx: MX.Part[] = [];
 /** …and the ones that cast no shadow worth drawing (window bars, bougainvillea, roof parapets and tinacos, topes,
  *  sign posts). */
 const mxFlat: MX.Part[] = [];
+/** This edition's town (theme.ts `townMerge`): every plain coloured shape (an opaque Lambert colour with no texture, no
+ *  glow, no shader of its own, no polygon offset) goes into a vertex-coloured mesh for its square of the town (`cell`
+ *  metres a side, by its middle), one that casts shadows and one that doesn't, instead of a mesh per colour spread over
+ *  the whole town: the same look (a flat-shaded colour keeps its facets) in a few draw calls for what is in view, and
+ *  no triangles for the squares out of it. The rest (glass, lamps, signs, textured walls) is merged per material as
+ *  before. */
+class TownMerger extends Merger {
+  private cells = new Map<string, { cast: [THREE.BufferGeometry, THREE.Color][]; still: [THREE.BufferGeometry, THREE.Color][]; thin: [THREE.BufferGeometry, THREE.Color][] }>();
+  private box = new THREE.Box3();
+  private c = new THREE.Vector3();
+  constructor(private cell: number) { super(); }
+  /** Each key as Merger has it: its first material, shadow and colour stand for every shape added under it (a key's
+   *  later shapes in another colour take the first one's, as they always have). */
+  private keys = new Map<string, { plain: boolean; color: THREE.Color; flat: boolean; cast: boolean }>();
+  add(key: string, m: THREE.Material, geo: THREE.BufferGeometry, cast = true, receive = true) {
+    let k = this.keys.get(key);
+    if (!k) {
+      const l = m as THREE.MeshLambertMaterial;
+      const plain = !!l.isMeshLambertMaterial && !l.map && !l.transparent && !l.vertexColors && l.side === THREE.FrontSide && l.emissive.getHex() === 0 && receive
+        && !l.polygonOffset && l.depthWrite && !Object.prototype.hasOwnProperty.call(l, "onBeforeCompile");
+      k = { plain, color: plain ? l.color.clone() : new THREE.Color(), flat: plain && l.flatShading, cast };
+      this.keys.set(key, k);
+    }
+    if (!k.plain) return super.add(key, m, geo, cast, receive);
+    const g = geo.index ? geo.toNonIndexed() : geo;
+    if (k.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
+    else if (!g.attributes.normal) g.computeVertexNormals();
+    this.put(g, k.color, k.cast ? "cast" : "still");
+  }
+  /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
+   *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
+  addParts(parts: MX.Part[], kind: "cast" | "still" | "thin") {
+    for (const [geo, col] of parts) {
+      const g = geo.index ? geo.toNonIndexed() : geo;
+      g.deleteAttribute("normal"); g.computeVertexNormals();
+      this.put(g, new THREE.Color(col), kind);
+    }
+  }
+  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: "cast" | "still" | "thin") {
+    this.box.setFromBufferAttribute(g.attributes.position as THREE.BufferAttribute).getCenter(this.c);
+    const k = Math.floor(this.c.x / this.cell) + "," + Math.floor(this.c.z / this.cell);
+    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [] }).get(k)!;
+    e[kind].push([g, col]);
+  }
+  build(parent: THREE.Object3D) {
+    super.build(parent);
+    const mat = (townMat ??= new THREE.MeshLambertMaterial({ vertexColors: true }));
+    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin"] as const) {
+      if (!e[kind].length) continue;
+      const mesh = new THREE.Mesh(colourMerge(e[kind]), mat);
+      mesh.castShadow = kind === "cast";
+      if (kind === "thin") mesh.userData.thin = true;
+      mesh.receiveShadow = true;
+      mesh.name = "town-" + kind + "-" + k;
+      mesh.matrixAutoUpdate = false;
+      mesh.updateMatrix();
+      parent.add(mesh);
+    }
+    this.cells.clear();
+    this.keys.clear();
+  }
+}
+let townMat: THREE.MeshLambertMaterial | null = null;
+
+/** The edition's overhead lines (theme.ts `cables`): a mesh the walking camera looks through (userData.thin). */
+const wires: MX.Part[] = [];
+/** (theme.ts `regions`) the cenote, the ruins and the mirador at the town's far ends. */
+const mxFar: MX.Part[] = [];
+/** (theme.ts `farHide`) meshes of small things left out when the camera is farther than `r` from (x, z). */
+const farHidden: { mesh: THREE.Object3D; x: number; z: number; r: number }[] = [];
 let atlas: MX.SignAtlas | null = null;
 /** Palms where the street trees along the beach would be, on a malecón (theme.ts). */
 const beachPalms: [number, number][] = [];
@@ -2134,8 +2245,11 @@ function addTransport(M: Merger, col: Colliders, group: THREE.Group, r: () => nu
   // taxi
   const { x, z, rot } = TAXI;
   const yellow = mat("#f5c518", { flat: true });
-  if (!STYLED) group.add(staticColoured((THEME.taxi ? mxTaxiParts(THEME.taxi.body, THEME.taxi.trim) : carParts("#f5c518", { taxi: true })).map(([g, c]) => [g.rotateY(rot).translate(x, 0, z), c]), "taxi"));
+  if (!STYLED) group.add(staticColoured([[x, z, rot] as [number, number, number], ...(THEME.taxi ? THEME.taxis : [])].flatMap(([tx, tz, tr]) =>
+    (THEME.taxi ? mxTaxiParts(THEME.taxi.body, THEME.taxi.trim) : carParts("#f5c518", { taxi: true })).map(([g, c]) => [g.rotateY(tr).translate(tx, 0, tz), c] as [THREE.BufferGeometry, THREE.ColorRepresentation])), "taxi"));
   else M.add("taxi", yellow, boxGeo(1.9, 0.72, 4.4, 0, 0.66, 0).rotateY(rot).translate(x, 0, z));
+  // (theme.ts `taxis`: more waiting at the stand)
+  if (THEME.taxi && !STYLED) for (const [tx, tz] of THEME.taxis) col.addBox(tx, tz, 4.4, 2.1);
   if (STYLED) {
     M.add("taxi", yellow, boxGeo(1.7, 0.6, 2.3, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z));
     M.add("car-glass", mat("#9ccbe6", { emissive: "#1b3a4c" }), boxGeo(1.72, 0.45, 2.1, 0, 1.32, -0.1).rotateY(rot).translate(x, 0, z), false);

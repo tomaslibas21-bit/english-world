@@ -25,29 +25,31 @@ const HAIR = { black: "#1f1a17", dark: "#2e2119", brown: "#5a3a25", gray: "#b8b3
  *    the toon light washes pastels out to white and crushes the darkest to black, so a light blue shirt is given
  *    bluer than it looks and navy trousers lighter;
  *  - glasses, and a badge (or a lanyard's card) for the workers whose portrait has a name tag.
- *  What the builder can't make takes the nearest: Lucía's braid is long hair, Don Pancho's jipi hat a straw-coloured
- *  cap, Fátima's bandana a cap, Don Héctor's goatee a beard, Doña Carmen's embroidered hipil a white dress, Luis's
- *  waist apron an apron; sleeveless and short-sleeved tops have long sleeves, as in Maple Harbor. No one wears the
- *  police cap (`police`): no officer's portrait shows one. */
+ *  Since graphics round 3 the builder makes the garments the portraits show (Character.ts; Maple Harbor uses none):
+ *  Doña Carmen's hipil, embroidered at the neck and round the hem, under her yellow rebozo; Lucía's braid over her
+ *  shoulder and her blouse embroidered with flowers, as Valeria's and Doña Lupe's are; Don Pancho's jipi and the
+ *  guayaberas of Don Pancho, Don Ernesto, Don Chuy and Luis (with his waist apron); Fátima's bandana. What it still
+ *  can't make takes the nearest: Don Héctor's goatee is a beard; sleeveless and short-sleeved tops have long sleeves,
+ *  as in Maple Harbor. No one wears the police cap (`police`): no officer's portrait shows one. */
 const LOOK: Record<string, Partial<Look>> = {
   // the arrival
   diaz: { skin: "#b0754d", hair: { style: "bun", color: "#2e2119" }, top: "#b5cdff", bottom: "#303d50", acc: ["badge", "earrings"] },
   priya: { skin: "#9a6949", hair: { style: "ponytail", color: "#1f1a17" }, top: "#cb4f41", bottom: "#2c4c5a", acc: ["lanyard", "earrings"] },
   vinnie: { skin: "#a06f4a", hair: { style: "short", color: "#8f8a85" }, top: "#fca938", bottom: "#304a54", acc: ["cap", "mustache"], accColor: "#706f4d", build: 1.16 },
   olivia: { skin: "#d4a07a", hair: { style: "bob", color: "#74502f" }, top: "#fbf2e2", bottom: "#224250", acc: ["cardigan", "badge", "earrings"], accColor: "#375168" },
-  chuck: { skin: "#b3784e", hair: { style: "bald", color: "#e8e2da" }, top: "#f7ecda", acc: ["glasses", "vest", "mustache"], accColor: "#635f52", build: 1.12 },
+  chuck: { skin: "#b3784e", hair: { style: "bald", color: "#e8e2da" }, top: "#f7ecda", acc: ["glasses", "vest", "mustache", "guayabera"], accColor: "#635f52", build: 1.12 },
   // the center
   mia: { skin: "#7d573b", hair: { style: "curly", color: "#1f1a17" }, top: "#f4e4d2", bottom: "#353d4a", acc: ["apron", "earrings"], accColor: "#33534f", build: 0.95 },
-  rosa: { skin: "#a8734b", hair: { style: "bun", color: "#e6e0d8" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["glasses", "cardigan", "earrings"], accColor: "#ffb142", height: 0.92, build: 0.94 },
+  rosa: { skin: "#a8734b", hair: { style: "bun", color: "#e6e0d8" }, top: "#f9f3ee", bottom: "#f6f0ea", skirt: true, acc: ["glasses", "hipil", "rebozo", "earrings"], accColor: "#ffb142", height: 0.92, build: 0.94 },
   ben: { skin: "#c2895f", hair: { style: "short", color: "#1f1a17" }, top: "#6c4561", bottom: "#303038", acc: ["lanyard", "mustache"], build: 0.96 },
   harold: { skin: "#eabfa3", hair: { style: "short", color: "#e2dcd4" }, top: "#405172", bottom: "#2f3c54", acc: ["tie", "badge", "mustache"], accColor: "#2c2f37", build: 1.1 },
-  marco: { skin: "#b77c52", hair: { style: "curly", color: "#1f1a17" }, top: "#fbf9f5", bottom: "#26262c", acc: ["apron"], accColor: "#39393f", build: 0.96 },
-  chloe: { skin: "#e6be9c", hair: { style: "long", color: "#cfa06c" }, top: "#ef9093", bottom: "#2e4d53", acc: ["badge", "earrings"] },
+  marco: { skin: "#b77c52", hair: { style: "curly", color: "#1f1a17" }, top: "#fbf9f5", bottom: "#26262c", acc: ["waistapron", "guayabera"], accColor: "#39393f", build: 0.96 },
+  chloe: { skin: "#e6be9c", hair: { style: "long", color: "#cfa06c" }, top: "#ef9093", bottom: "#2e4d53", acc: ["badge", "embroidered", "earrings"] },
   okafor: { skin: "#9c6a49", hair: { style: "buzz", color: "#8a8580" }, top: "#92adf8", bottom: "#35495e", acc: ["glasses", "beard", "cardigan", "badge"], accColor: "#fafafc" },
   jessie: { skin: "#d9a783", hair: { style: "long", color: "#6e2030" }, top: "#353436", bottom: "#30303a", acc: ["apron", "earrings"], accColor: "#993f6b" },
   aaron: { skin: "#c79166", hair: { style: "side", color: "#1f1a17" }, top: "#c8ecff", bottom: "#2f3e52", acc: ["tie", "badge"], accColor: "#283f5c" },
   gloria: { skin: "#946846", hair: { style: "curly", color: "#4a4644" }, top: "#5177bc", bottom: "#2f3f57", acc: ["glasses", "badge", "earrings"], build: 1.12 },
-  marco_host: { skin: "#9a6949", hair: { style: "long", color: "#1f1a17" }, top: "#723e41", bottom: "#2e5459", skirt: true, acc: ["earrings"] },
+  marco_host: { skin: "#9a6949", hair: { style: "braid", color: "#1f1a17" }, top: "#723e41", bottom: "#2e5459", skirt: true, acc: ["embroidered", "earrings"] },
   walter: { skin: "#cd976e", hair: { style: "short", color: "#9a958f" }, top: "#fcfaf8", bottom: "#3f474f", acc: ["glasses", "vest", "mustache", "badge"], accColor: "#633139", height: 0.94, build: 0.95 },
   denise: { skin: "#7f563c", hair: { style: "bob", color: "#2e2119" }, top: "#799ae9", bottom: "#2e435a", acc: ["badge", "earrings"] },
   jake: { skin: "#ebc7aa", hair: { style: "short", color: "#9a6a45" }, top: "#305d71", bottom: "#cdb08a", acc: ["badge"] },
@@ -57,7 +59,7 @@ const LOOK: Record<string, Partial<Look>> = {
   nina: { skin: "#e8c1a1", hair: { style: "bun", color: "#7a5236" }, top: "#34435f", bottom: "#27344a", acc: ["scarf", "badge", "earrings"], accColor: "#d68d3d" },
   linda: { skin: "#d8a581", hair: { style: "bob", color: "#5d3626" }, top: "#55a9d4", bottom: "#55a9d4", acc: ["headset", "glasses", "badge"] },
   claire: { skin: "#886240", hair: { style: "ponytail", color: "#1f1a17" }, top: "#6a4e90", bottom: "#383a3e", acc: ["headset", "badge"] },
-  patel: { skin: "#9a6b49", hair: { style: "short", color: "#857f78" }, top: "#fff2d2", acc: ["glasses", "mustache"], build: 1.14 },
+  patel: { skin: "#9a6b49", hair: { style: "short", color: "#857f78" }, top: "#fff2d2", acc: ["glasses", "mustache", "guayabera"], build: 1.14 },
   rita: { skin: "#e8bfa1", hair: { style: "curly", color: "#b8461f" }, top: "#f76c3c", bottom: "#2a4e5b", acc: ["earrings"] },
   // work
   brooks: { skin: "#efceb6", hair: { style: "short", color: "#bfb7ae" }, top: "#fcf6ed", bottom: "#293948", acc: ["glasses", "earrings", "cardigan"], accColor: "#344057" },
@@ -79,8 +81,8 @@ const LOOK: Record<string, Partial<Look>> = {
   reyes: { skin: "#8c6142", hair: { style: "buzz", color: "#1f1a17" }, top: "#33405b", bottom: "#304157", acc: ["mustache", "badge"] },
   // songs 31–35
   carter: { skin: "#9e6d4a", hair: { style: "bun", color: "#1f1a17" }, top: "#314862", bottom: "#2c4159", acc: ["glasses", "cardigan", "badge"], accColor: "#fcfbfc" },
-  marcus: { skin: "#a06d4a", hair: { style: "bun", color: "#4a3f38" }, top: "#e25d44", bottom: "#2f3a5a", skirt: true, acc: ["apron", "earrings"], accColor: "#ffa636", height: 0.95, build: 1.08 },
-  frank: { skin: "#e0b291", hair: { style: "short", color: "#e8e2da" }, top: "#a2b8a0", acc: ["glasses", "mustache", "cap"], accColor: "#d6c393" },
+  marcus: { skin: "#a06d4a", hair: { style: "bun", color: "#4a3f38" }, top: "#e25d44", bottom: "#2f3a5a", skirt: true, acc: ["apron", "embroidered", "earrings"], accColor: "#ffa636", height: 0.95, build: 1.08 },
+  frank: { skin: "#e0b291", hair: { style: "short", color: "#e8e2da" }, top: "#a2b8a0", acc: ["glasses", "mustache", "jipi", "guayabera"], accColor: "#d6c393" },
   jordan: { skin: "#c58e63", hair: { style: "ponytail", color: "#4a3427" }, top: "#2f617d", bottom: "#363e44", acc: ["badge"] },
   // chapter 8
   maggie: { skin: "#f0d2b8", hair: { style: "short", color: "#cfc7bf" }, top: "#5f78ac", bottom: "#f7e7d6", acc: ["shades", "earrings"] },
@@ -89,7 +91,7 @@ const LOOK: Record<string, Partial<Look>> = {
   vanessa: { skin: "#edc9b1", hair: { style: "curly", color: "#33241c" }, top: "#2e2e30", bottom: "#2d2e32", acc: ["lanyard", "earrings", "cardigan"], accColor: "#c74232" },
   greg: { skin: "#e6bd9e", hair: { style: "short", color: "#8f8780" }, top: "#828482", bottom: "#353e4d", acc: ["readers", "beard"] },
   whitaker: { skin: "#80593c", hair: { style: "short", color: "#77716b" }, top: "#eef0f0", acc: ["apron", "beard"], accColor: "#fdfdfb" },
-  russo: { skin: "#976a47", hair: { style: "ponytail", color: "#1f1a17" }, top: "#f6eadc", acc: ["apron", "cap", "earrings"], accColor: "#2e4255" },
+  russo: { skin: "#976a47", hair: { style: "ponytail", color: "#1f1a17" }, top: "#f6eadc", acc: ["apron", "bandana", "earrings"], accColor: "#2e4255" },
   emily: { skin: "#ae774c", hair: { style: "bun", color: "#4a2e20" }, top: "#e38837", bottom: "#2f4e5d", acc: ["lanyard", "earrings"] },
   tyler: { skin: "#c89367", hair: { style: "wavy", color: "#2a211c" }, top: "#5d5c43", acc: ["beard", "cardigan"], accColor: "#e9cab0" },
   mr_grant: { skin: "#6d4933", hair: { style: "bald", color: "#b8b2aa" }, top: "#9f4d41", acc: ["beard", "readers"] },
@@ -186,14 +188,27 @@ function mexican(id: string, look: Look): Look {
   };
 }
 
-/** The look of `id` over the base character's `look`: its portrait's (LOOK), else Maple Harbor's with Mexican colouring. */
-const lookOf = (id: string, look: Look): Look => LOOK[id] ? { ...look, ...LOOK[id] } : mexican(id, look);
+/** The look of `id` over the base character's `look`: its portrait's (LOOK), else Maple Harbor's with Mexican colouring;
+ *  and its face's own touches (faceOf). */
+const lookOf = (id: string, look: Look, gender: NpcDef["gender"]): Look => { const l = LOOK[id] ? { ...look, ...LOOK[id] } : mexican(id, look); return { ...l, face: faceOf(id, l, gender) }; };
+
+/** A face of their own for each person (graphics round 3; Character.ts Look.face): the lines of a life of smiling for
+ *  the grey-haired, heavier brows for the men (heavier still with a moustache or a beard), finer and more arched for the
+ *  women, and each one's brows tilted a little their own way. */
+function faceOf(id: string, look: Look, gender: NpcDef["gender"]): NonNullable<Look["face"]> {
+  const c = parseInt(look.hair.color.slice(1), 16), r = c >> 16, g = (c >> 8) & 255, b = c & 255;
+  const grey = Math.max(r, g, b) > 140 && Math.max(r, g, b) - Math.min(r, g, b) < 40;
+  const man = gender !== "f";
+  const whiskers = ["beard", "mustache"].some((a) => look.acc?.includes(a as never));
+  const t = ((hash(id) % 9) - 4) * 0.02;
+  return man ? { brow: whiskers ? 1.4 : 1.25, arch: 0.95, tilt: t, lines: grey } : { brow: 0.85, arch: 1.25, tilt: t + 0.04, lines: grey };
+}
 
 function cast(id: string, n: NpcDef, [name, es, en, extra = {}]: Cast): NpcDef {
-  return { ...n, id, name, role: { en: es, lt: en }, bio: undefined, look: lookOf(id, n.look), ...extra };
+  return { ...n, id, name, role: { en: es, lt: en }, bio: undefined, look: lookOf(id, n.look, extra.gender ?? n.gender), ...extra };
 }
 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries([
-  ...Object.entries(BASE).map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look) }]),
+  ...Object.entries(BASE).map(([id, n]) => [id, CAST[id] ? cast(id, n, CAST[id]) : { ...n, look: lookOf(id, n.look, n.gender) }]),
   ...Object.entries(EXTRA).map(([id, [base, ...c]]) => [id, cast(id, BASE[base], c)]),
 ]);

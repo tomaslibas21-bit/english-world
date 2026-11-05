@@ -178,6 +178,50 @@ describe("graphics round 2: the zócalo dressed, its people, the letters, the co
   });
 });
 
+describe("graphics round 3: the town's new things keep clear of everyone", () => {
+  const people: [string, number, number][] = [
+    ...OUTDOOR_NPCS.map((n) => [n.npc, n.x, n.z] as [string, number, number]),
+    ...OUTDOOR_NPCS.filter((n) => n.ax !== undefined).map((n) => [n.npc + "'s talk spot", n.ax!, n.az!] as [string, number, number]),
+    ...CHAT_SPOTS.flatMap(([ax, az, bx, bz]) => [["a chatting pair", ax, az], ["a chatting pair", bx, bz]] as [string, number, number][]),
+    ...THEME.sitters.map(([x, z]) => ["a sitter", x, z] as [string, number, number]),
+    ...THEME.vendors.map(([x, z]) => ["a vendor", x, z] as [string, number, number]),
+  ];
+  // each new thing's footprint (x0, x1, z0, z1), from mexican.ts's colliders for it
+  const box = (x: number, z: number, hx: number, hz: number) => ({ x0: x - hx, x1: x + hx, z0: z - hz, z1: z + hz });
+  const turned = (x: number, z: number, rot: number, a: number, b: number) => (Math.abs(Math.sin(rot)) > 0.5 ? box(x, z, b, a) : box(x, z, a, b));
+  const gap = (b: { x0: number; x1: number; z0: number; z1: number }, x: number, z: number) => Math.hypot(Math.max(b.x0 - x, 0, x - b.x1), Math.max(b.z0 - z, 0, z - b.z1));
+  const sw = THEME.sidewalks!, things: [string, { x0: number; x1: number; z0: number; z1: number }][] = [
+    ...sw.macetas.flatMap(([x, z, h]) => [["a maceta", box(x - h, z, 0.35, 0.35)], ["a maceta", box(x + h, z, 0.35, 0.35)]] as [string, ReturnType<typeof box>][]),
+    ["the fruit cart", turned(sw.fruitCart![0], sw.fruitCart![1], sw.fruitCart![2], 0.75, 1.1)],
+    ["the water trike", turned(sw.trike![0], sw.trike![1], sw.trike![2], 0.6, 1.1)],
+    ...THEME.terrace.map(([x0, x1, z0, z1]) => ["El Muelle's terrace", { x0, x1, z0, z1 }] as [string, ReturnType<typeof box>]),
+    ["the coconut cart", turned(THEME.beach!.cocos![0], THEME.beach!.cocos![1], THEME.beach!.cocos![2], 0.8, 0.7)],
+    ["the atrial cross", box(THEME.atrialCross![0], THEME.atrialCross![1], 0.8, 0.8)],
+    ["the mirador", turned(THEME.mirador!.x, THEME.mirador!.z, THEME.mirador!.rot, 2.0, 1.5)],
+    ...THEME.cables!.poles.map(([x, z]) => ["a pole", box(x, z, 0.18, 0.18)] as [string, ReturnType<typeof box>]),
+    ...THEME.taxis.map(([x, z, rot]) => ["a taxi", turned(x, z, rot, CAR.width / 2 + 0.1, CAR.length / 2 + 0.1)] as [string, ReturnType<typeof box>]),
+  ];
+
+  it("everyone's spot, talk spot, chatting pair, sitter and vendor stays at least 1 m from them", () => {
+    for (const [what, b] of things) for (const [who, x, z] of people) expect(gap(b, x, z), `${what} and ${who}`).toBeGreaterThan(1);
+  });
+
+  it("they keep off each other and out of the cars' lanes", () => {
+    for (const [i, [a, p]] of things.entries()) for (const [k, [b, q]] of things.entries()) if (k > i && !(a === "a maceta" && b === "a maceta"))
+      expect(p.x1 < q.x0 || q.x1 < p.x0 || p.z1 < q.z0 || q.z1 < p.z0, `${a} and ${b}`).toBe(true);
+    for (const [what, b] of things) for (const l of TRAFFIC_LANES) if (b.x1 > l.from && b.x0 < l.to)
+      expect(b.z1 < l.z - CAR.width / 2 - 0.2 || b.z0 > l.z + CAR.width / 2 + 0.2, `${what} and the lane at z ${l.z}`).toBe(true);
+  });
+
+  it("the overhead lines' poles stand on calle Hidalgo's north sidewalk, clear of its corners", () => {
+    for (const [x, z] of THEME.cables!.poles) {
+      expect(z > 33.5 - 3.2 && z < 33.5, `the pole at ${x}`).toBe(true);
+      for (const cx of [-70, 0, 70]) expect(Math.abs(x - cx), `the pole at ${x} and the corner at ${cx}`).toBeGreaterThan(6);
+    }
+    for (const [i] of THEME.cables!.drops) expect(i).toBeLessThan(THEME.cables!.poles.length);
+  });
+});
+
 describe("the conversation header's place line", () => {
   it("shows the whole Spanish name when its meaning covers both halves", () => {
     expect(placeLtNamed("town-square")).toBe("The main square and its market stalls “Zócalo · Tianguis” – literally “main square · street market”");
