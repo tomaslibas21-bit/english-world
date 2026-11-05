@@ -1,5 +1,5 @@
 // Song 67 "Single or Return?" (part 2 of 2) → Puerto Colibrí: "¿Este camión va al centro?"
-// The city bus (el camión, route 7) at the stop outside the bus terminal; Ana is the driver. As in a small town on
+// The city bus (el camión, route 7) at its bay inside the bus terminal; Ana is the driver. As in a small town on
 // Mexico's Caribbean coast: you ask whether it goes where you need ("¿Pasa por el centro?"), pay the driver on
 // boarding ($12, cash only; the driver gives change for small bills, not for a 500), ask her to tell you where to get
 // off ("¿Me avisa dónde me bajo?"), and get off by pressing the buzzer or calling out "¡Bajan!".
@@ -20,32 +20,55 @@ import { expectHowAreYou } from "@/content/global";
 // Where the route goes. `stops` and `mins` are what Ana says ("como 4 paradas", "como 10 minutos"); `stop` is the
 // stop the learner gets off at (an entity of its own: the museum's stop is the zócalo, which it faces).
 // Unserved places name the line that says how to get there instead (`where`).
+// Route 7 in the 3D town (5 Nov audit; docs/es/TOWN.md "Getting around (from the 3D town)": the city bus goes along
+// avenida Juárez): from the terminal east along calle Hidalgo to the clínica's door (2 stops), up calle Itzamná and
+// west along Juárez: the iglesia at the zócalo's east end (3), the zócalo at calle Ceiba, the museum's door across the
+// street (4), Hotel Mar Azul's door at calle Flamboyán (5); up Flamboyán to the mercado's door on avenida del Puerto
+// (6), east along the malecón to El Muelle (7), and the beach's quiet east end by the lighthouse (8, the last stop).
+// Minutes in the town's own scale (about two minutes a block on foot; the far end some ten to fifteen by bus). The
+// stop Ana calls out on the way ("¡Iglesia! ¿Bajan?", the mid picture's church) is the one before the zócalo.
 
 const P = (id: string, es: string, en: string, g: "m" | "f", forms: string[], attrs: Record<string, any>) =>
   ent(id, es, en, g, { forms, art: "", attrs });
 
 const DESTS: EntityDef[] = [
-  P("centro", "centro", "center", "m", ["el centro", "zocalo", "el zocalo", "la plaza", "plaza principal", "la plaza principal", "centro del pueblo", "el centro del pueblo", "kiosco", "el kiosco"],
-    { served: true, stops: 4, mins: 10, stop: "p_zocalo", nat: "town center", loc: "town-square" }),
+  P("centro", "centro", "center", "m", ["el centro", "zocalo", "el zocalo", "la plaza", "plaza principal", "la plaza principal", "centro del pueblo", "el centro del pueblo", "kiosco", "el kiosco",
+    // the bank and Correos face the zócalo across avenida Juárez
+    "banco", "el banco", "banco del puerto", "el banco del puerto", "correos", "oficina de correos", "la oficina de correos"],
+    { served: true, stops: 4, mins: 5, stop: "p_zocalo", nat: "town center", loc: "town-square" }),
+  P("iglesia", "iglesia", "church", "f", ["la iglesia", "parroquia", "la parroquia"],
+    { served: true, stops: 3, mins: 5, stop: "p_iglesia", loc: "town-square" }),
   P("mercado", "mercado", "market", "m", ["el mercado", "mercado municipal", "el mercado municipal"],
-    { served: true, stops: 3, mins: 10, stop: "p_mercado", loc: "market" }),
+    { served: true, stops: 6, mins: 10, stop: "p_mercado", loc: "market" }),
   P("museo", "museo", "museum", "m", ["el museo", "museo de la costa maya", "el museo de la costa maya"],
-    { served: true, stops: 4, mins: 10, stop: "p_zocalo", loc: "museum" }),
+    { served: true, stops: 4, mins: 5, stop: "p_zocalo", loc: "museum" }),
   P("clinica", "clínica", "clinic", "f", ["la clinica", "clinica familiar", "la clinica familiar", "hospital", "el hospital", "centro de salud", "el centro de salud"],
-    { served: true, stops: 6, mins: 15, stop: "p_clinica", loc: "clinic" }),
-  P("malecon", "malecón", "seafront", "m", ["el malecon", "muelle", "el muelle", "el puerto", "puerto"],
-    { served: true, stops: 6, mins: 15, stop: "p_muelle", nat: "malecón", loc: "the-pier" }),
+    { served: true, stops: 2, mins: 2, stop: "p_clinica", loc: "clinic" }),
+  P("malecon", "malecón", "seafront", "m", ["el malecon", "muelle", "el muelle", "el puerto", "puerto",
+    "restaurante el muelle", "el restaurante el muelle", "restaurante del muelle", "el restaurante del muelle"],
+    { served: true, stops: 7, mins: 10, stop: "p_muelle", nat: "malecón", loc: "the-pier" }),
   P("hotel", "Hotel | Mar Azul", "Hotel | Mar Azul", "m", ["hotel mar azul", "el hotel mar azul", "mar azul", "el mar azul", "el hotel", "hotel"],
-    { served: true, stops: 7, mins: 20, stop: "p_hotel", nat: "Hotel Mar Azul", loc: "hotel" }),
+    { served: true, stops: 5, mins: 10, stop: "p_hotel", nat: "Hotel Mar Azul", loc: "hotel" }),
   P("playa", "playa", "beach", "f", ["la playa", "playa publica", "la playa publica"],
-    { served: true, stops: 8, mins: 20, stop: "p_playa", last: true }),
+    { served: true, stops: 8, mins: 15, stop: "p_playa", last: true }),
   P("aeropuerto", "aeropuerto", "airport", "m", ["el aeropuerto"], { served: false, where: "where_airport" }),
   P("cenote", "cenote", "cenote", "m", ["el cenote", "los cenotes", "cenotes", "un cenote"], { served: false, where: "where_cenote" }),
+  // out of town: the long-distance buses on the terminal's board (s67a); "Playa del Carmen" is never the beach.
+  // Their reply is goes_out + where_out, never a templated "No, este no va a {X.the}" (a town's name takes no article)
+  P("tulum", "Tulum", "Tulum", "m", ["tulum"], { served: false, out: true }),
+  P("playa_carmen", "Playa del Carmen", "Playa del Carmen", "f", ["playa del carmen"], { served: false, out: true }),
+  P("cancun", "Cancún", "Cancún", "m", ["cancun"], { served: false, out: true }),
+  P("merida", "Mérida", "Mérida", "f", ["merida"], { served: false, out: true }),
 ];
+/** The places a learner picks from (the chips): the route's places and two it doesn't serve. */
+const DEST_CHOICES = ["centro", "mercado", "museo", "clinica", "malecon", "hotel", "playa", "aeropuerto", "cenote"];
+/** Hint examples with a place: the town's places only ("¿Me avisa cuando lleguemos a Tulum?" is never voiced). */
+const inTown = (e: EntityDef) => !e.attrs?.out;
 
 /** The stops Ana names ("Se baja en el zócalo"). */
 const STOPS: EntityDef[] = [
   ent("p_zocalo", "zócalo", "town square", "m", { art: "" }),
+  ent("p_iglesia", "iglesia", "church", "f", { art: "" }),
   ent("p_mercado", "mercado", "market", "m", { art: "" }),
   ent("p_clinica", "clínica", "clinic", "f", { art: "" }),
   ent("p_muelle", "muelle", "pier", "m", { art: "" }),
@@ -105,6 +128,8 @@ function setDest(c: Ctx, id: string, kind: "q" | "is" | "stmt" = "q") {
   c.s.deferQ = undefined;
   if (!e.attrs?.served) {
     c.s.unserved = id;
+    // Tulum, Cancún…: "Esta ruta solo va por el pueblo" + the terminal's long-distance buses
+    if (e.attrs!.out) { c.say(c.s.oos ? "oos_out" : "goes_out"); c.say("where_out"); c.hold(); return; }
     // "¿Cuánto cuesta al aeropuerto?" gets no "No,"
     c.say(c.s.oos ? "oos_no" : deferred ? "goes_no_plain" : "goes_no", { X: id });
     c.say(e.attrs!.where);
@@ -215,33 +240,54 @@ function expectSeated(c: Ctx) {
       ask_frequency: (cc, sl, sg) => { bus.handlers.ask_frequency(cc, sl, sg); expectSeated(cc); },
       ask_last: (cc, sl, sg) => { bus.handlers.ask_last(cc, sl, sg); expectSeated(cc); },
       ask_back: (cc, sl, sg) => { bus.handlers.ask_back(cc, sl, sg); expectSeated(cc); },
+      // "¿Dónde me bajo?" on the ride gets the stop (it was read as "Sí, ya sé dónde bajarme" and got nothing)
+      ask_stop: (cc, sl, sg) => { bus.handlers.ask_stop(cc, sl, sg); expectSeated(cc); },
+      my_change: (cc, sl, sg) => { bus.handlers.my_change(cc, sl, sg); expectSeated(cc); },
     },
     yes: () => {}, no: () => {},
   });
 }
 
-/** The learner's stop is next: "Ahí viene el zócalo, su parada. ¿Le paro?" */
+/** The learner's stop is next: "Ahí viene el zócalo, su parada. ¿Le paro?" At the beach, the end of the line, there
+ *  is no next one: "No, la siguiente" gets "No hay siguiente: aquí termina la ruta." */
 function expectNext(c: Ctx) {
   const stopHere = (cc: Ctx) => { arrive(cc); return true; };
+  const last = !!D(c.s.dest).attrs?.last;
+  const notYet = (cc: Ctx) => { if (last) { cc.say("end_of_line"); arrive(cc, true); } else { cc.say("next_no"); expectNext(cc); } };
   ask(c, {
     id: "next", hints: ["ride"], expects: ["bajan", "is_my_stop"],
     suggest: [{ lt: "Ask her to stop: “¡Bajan!”", hint: "ride" }],
     on: {
       bajan: stopHere,
       // "No, la siguiente" is a no, never "Sí, aquí es"
-      is_my_stop: (cc) => { if (/^\s*no\b/.test(fold(cc.heard))) { cc.say("next_no"); expectNext(cc); return true; } cc.say("my_stop_yes"); arrive(cc, true); return true; },
+      is_my_stop: (cc) => { if (/^\s*no\b/.test(fold(cc.heard))) { notYet(cc); return true; } cc.say("my_stop_yes"); arrive(cc, true); return true; },
       g_thanks: stopHere,
       g_ok: stopHere,
       ack: stopHere,
     },
     yes: (cc) => { arrive(cc); },
-    no: (cc) => { cc.say("next_no"); expectNext(cc); },
-    ask: (cc) => cc.say("next_again"),
+    no: notYet,
+    ask: (cc) => { if (last) cc.say("last_stop", { X: D(cc.s.dest).attrs!.stop }); else cc.say("next_again"); },
+  });
+}
+
+/** Out of service: "Súbase al 12, viene atrás de mí." — where the learner is going, or "¿Por qué?" */
+function expectOos(c: Ctx) {
+  ask(c, {
+    id: "oos_dest", optional: true, expects: ["ask_goes", "going_to", "dest_ctx", "oos_why_ctx"], hints: ["ask_12"],
+    suggest: [{ lt: "Ask if the 12 goes where you need", hint: "ask_12", options: DEST_CHOICES }],
+    on: {
+      ask_goes: (cc, sl, sg) => { bus.handlers.ask_goes(cc, sl, sg); },
+      going_to: (cc, sl, sg) => { bus.handlers.going_to(cc, sl, sg); },
+      dest_ctx: (cc, sl, sg) => { bus.handlers.dest_ctx(cc, sl, sg); },
+      oos_why_ctx: (cc) => { cc.say("oos_why"); expectOos(cc); },
+    },
   });
 }
 
 function closing(c: Ctx) {
-  ask(c, { id: "closing", hints: ["g_social"], suggest: [{ lt: "Say thank you and goodbye", hint: "g_social" }],
+  // c.expect, not ask(): a "Sí, ya sé…"-shaped question ("¿Dónde me bajo?") once ended the conversation silently
+  c.expect({ id: "closing", hints: ["g_social"], suggest: [{ lt: "Say thank you and goodbye", hint: "g_social" }],
     on: {
       g_thanks: (cc) => { cc.say("g_welcome"); cc.end(); },
       g_bye: (cc) => { cc.say("g_bye"); cc.end(); },
@@ -280,7 +326,7 @@ export const bus: SituationDef = {
   location: "station",
   npc: "denise",
   goal: "Find out whether the bus goes where you need, pay the fare, and ask the driver to tell you where to get off.",
-  intro: "The city bus stop outside the bus terminal. Route 7 is at the curb and Ana is at the wheel. You pay the driver as you get on: $12 (12 pesos), cash only. Drivers give change for coins and small bills, not for a 500.",
+  intro: "Route 7's city bus waits at its bay inside the bus terminal, and Ana, the driver, is at the open door. You pay the driver as you get on: $12 (12 pesos), cash only. Drivers give change for coins and small bills, not for a 200 or a 500.",
   entities: { dest: DESTS, stop: STOPS },
 
   grammar: {
@@ -360,6 +406,14 @@ export const bus: SituationDef = {
     dest_neg: { patterns: [
       "[ya] no (voy | vamos) @to {dest}", "[ya] no (quiero | necesito | tengo que) ir @to {dest}", "{dest} no",
     ] },
+    // "¿A dónde va este camión?" / "¿Por dónde pasa?": the route's stops (they weren't understood)
+    ask_route: { patterns: [
+      "(a | para | hasta) donde (va | llega) [@thisbus | la ruta | el camion | el autobus | usted]", "adonde va [@thisbus | la ruta | el camion | el autobus]",
+      "por donde (pasa | va) [@thisbus | la ruta | el camion | el autobus]",
+      "(cual | que) es (la | su) ruta", "(que | cual) ruta (hace | sigue | lleva | tiene) [@thisbus]",
+      "(que | cuales) paradas (hace | tiene | hay)",
+      "(que | cuales) lugares (pasa | recorre)", "por (que | cuales) lugares (pasa | va)",
+    ] },
     ask_fare: { patterns: [
       "cuanto (es | cuesta | cobra | le debo | se paga | vale | sale | seria) [el pasaje | el boleto | el viaje | la tarifa | el camion | el autobus | la vuelta] #h:fare",
       "cuanto (es | cuesta | cobra) [el pasaje | el viaje] @to {dest}",
@@ -426,6 +480,18 @@ export const bus: SituationDef = {
       "(puedo pagar | puedo pagarle | le puedo pagar | se puede pagar) con {price} #ask",
       "(hay | tiene) cambio #ask", "(me puede | puede | me podria | podria) cambiar (un billete de | uno de | un billete grande de) {price} #ask",
     ] },
+    // "¿Y mi cambio?" while she owes it (the 500 twist), or after
+    my_change: { patterns: [
+      "[y] (mi | el) cambio [por favor]", "(y | que pasó con) mi cambio",
+      "(me da | me puede dar | me podria dar | deme | me das #tip:tu_staff) (mi | el) cambio [por favor]",
+      "(no | todavia no | aun no) me (dio | ha dado) (mi | el) cambio", "me (falta | debe) (mi | el) cambio", "me debe cambio",
+    ] },
+    // a student fare: vague on purpose (rule 14), and never a payment
+    discount: { patterns: [
+      "(hay | tiene | tienen | hace | hacen | me hace | me da) descuento [para estudiantes | de estudiante | para estudiante]",
+      "(hay | tienen) (tarifa | precio) (de estudiante | para estudiantes | preferencial)",
+      "(soy | somos) (estudiante | estudiantes) [hay descuento | tiene descuento]", "(los | las) estudiantes pagan (menos | lo mismo)",
+    ] },
     day_pass: { patterns: [
       "(hay | tiene | venden | tienen) (pase | boleto | boletos | pases) (de dia | del dia | diario | diarios | por dia | para todo el dia) #h:day_pass",
       "(puedo comprar | quiero | quisiera | me da) un (pase | boleto) (de dia | para todo el dia | diario)",
@@ -466,7 +532,8 @@ export const bus: SituationDef = {
     ] },
     ask_frequency: { patterns: [
       "cada cuanto (pasa | pasan | sale | salen | viene | vienen | hay) [el camion | los camiones | el autobus | los autobuses | la ruta] #h:how_often",
-      "cuando (pasa | sale | viene) el (siguiente | proximo | otro) [camion | autobus]", "[y] (cuando | a que hora) (pasa | sale | viene | llega) @doce", "(hay | tiene | tienen) (un)? horario",
+      // out of service, the 12 is right behind her: "Ya viene"
+      "cuando (pasa | sale | viene) el (siguiente | proximo | otro) [camion | autobus] #next", "[y] (cuando | a que hora) (pasa | sale | viene | llega) @doce #twelve", "cuanto (tarda | falta) [en llegar | para que llegue] @doce #twelve", "(hay | tiene | tienen) (un)? horario",
     ] },
     ask_last: { patterns: [
       "a que hora (pasa | sale) el ultimo [camion | autobus] [de regreso] #h:last_bus",
@@ -478,26 +545,33 @@ export const bus: SituationDef = {
       "como (regreso | me regreso | vuelvo | me vuelvo)", "[y] para (regresar | volver | el regreso)", "(donde | en donde) se toma (el camion | el autobus)? (de regreso | para regresar)",
       "(donde | en donde) pasa el (camion | autobus) de regreso", "(donde | en donde) pasa el (de regreso | que regresa)",
     ] },
+    // a yes/no question gets "Sí, toque el timbre…"; "¿Cómo…?" / "¿Qué hago…?" the how; "¿Dónde está?" the where
     ask_button: { patterns: [
-      "(toco | aprieto | presiono | uso) el timbre #h:button", "(hay | donde esta) [el] timbre",
-      "como (le pido | le digo) (que pare | que se pare | la parada)", "como (pido | hago) la parada",
-      "que hago (para bajarme | cuando me quiera bajar | para que pare)", "como (le hago | hago | le pido) para (bajarme | bajar | que pare | que se pare)", "(grito | digo) bajan",
+      "(toco | aprieto | presiono | uso) el timbre #h:button", "hay [un] timbre", "(grito | digo) bajan",
+      "(donde | en donde) esta [el] timbre #where",
+      "como (le pido | le digo) (que pare | que se pare | la parada) #how", "como (pido | hago) la parada #how",
+      "que hago (para bajarme | cuando me quiera bajar | para que pare) #how", "como (le hago | hago | le pido) para (bajarme | bajar | que pare | que se pare) #how",
     ] },
     is_my_stop: { patterns: [
       "(es | ya es) (aqui | mi parada) #h:my_stop", "(aqui | ya) me bajo", "aqui me bajo #h:my_stop2", "(me bajo | bajo) aqui",
       "(ya)? (llegamos | estamos) [a | en] {dest}", "(es | ya es | esto es | este es) {dest}",
-      "(ya)? llegamos", "ya casi (llegamos | estamos)", "la (siguiente | que sigue | proxima) es (la mia | {dest})", "es la (mia | siguiente | proxima)", "ya es la mia", "(es | ya es) (esta | este)",
+      "(ya)? llegamos", "ya (casi | mero) (llegamos | estamos)", "la (siguiente | que sigue | proxima) es (la mia | {dest})", "es la (mia | siguiente | proxima)", "ya es la mia", "(es | ya es) (esta | este)",
     ] },
     bajan: { patterns: [
       "bajan #h:bajan", "(bajan | baja) [aqui | en la esquina]",
       "(en | a) la esquina [por favor]", "(aqui | ahi) (me deja | me baja | me bajo | bajo | por favor)",
       "(pare | pareme | parele | se puede parar) [aqui | ahi | en la esquina]", "(me puede | puede | me podria | podria) (bajar | parar) (aqui | ahi | en la esquina)", "me baja (aqui | ahi | en la esquina)",
     ] },
-    route_q: { patterns: ["(es | este es) (el | la) (siete | 7 | ruta siete | ruta 7)", "(que | cual) (ruta | numero) es [este | esta]"] },
+    route_q: { patterns: ["(es | este es) (el | la) (siete | 7 | ruta siete | ruta 7)", "(que | cual) (ruta | numero) es [este | esta] #which", "(que | cual) (camion | autobus) es [este] #which"] },
+    // "¿Está ocupado?" gets "No, está libre" (it got "Sí, donde guste")
     sit_q: { patterns: [
       "(puedo | me puedo | se puede) (sentar | sentarme) [donde sea | en cualquier lugar | aqui | atras | adelante]",
-      "(donde | en donde) me siento", "(esta | este lugar esta | este asiento esta) (libre | ocupado)", "(esta | este) (lugar | asiento) (libre | ocupado)", "(esta)? (libre | ocupado) (este | ese) (asiento | lugar)",
+      "(donde | en donde) me (siento | puedo sentar) #where",
+      "(esta | este lugar esta | este asiento esta) libre", "(esta | este) (lugar | asiento) libre", "(esta)? libre (este | ese) (asiento | lugar)",
+      "(esta | este lugar esta | este asiento esta) ocupado #taken", "(esta | este) (lugar | asiento) ocupado #taken", "(esta)? ocupado (este | ese) (asiento | lugar) #taken",
     ] },
+    // out of service: "¿Por qué?"
+    oos_why_ctx: { patterns: ["[y] por que [no]", "[y] eso", "que pasó", "(por que | y eso) (va | esta) fuera de servicio"] },
     ack: { patterns: [
       "(perfecto | muy bien | sale | va | bueno | ok | orale) (gracias | muchas gracias)",
       "(ok | bueno | va)? me (siento | voy a sentar) [aqui | alla atras | atras | adelante]",
@@ -547,25 +621,38 @@ export const bus: SituationDef = {
       t("Este | camión | no va | a | {X.the}.", "This | bus | doesn't go | to | {X.the}.", "This bus doesn't go to the {X}.",
         { flags: { 1: "Mexican: camión = city bus. Elsewhere: autobús." }, neutral: t("Este | autobús | no va | a | {X.the}.", "This | bus | doesn't go | to | {X.the}.", "This bus doesn't go to the {X}.") }),
     ],
+    // the airport closes avenida Juárez's east end and is reached by taxi (s62, TOWN.md); the terminal's board has no
+    // airport bus (it said "salen autobuses de la terminal")
     where_airport: [
-      t("Para | el | aeropuerto | salen | autobuses | de | la | terminal, | aquí | adentro.", "For | the | airport | leave | buses | from | the | terminal, | here | inside.",
-        "For the airport, buses leave from inside the terminal, right here."),
+      t("Para | el | aeropuerto, | mejor | tome | un | taxi.", "For | the | airport, | better | take | a | taxi.",
+        "For the airport, you're better off taking a taxi."),
     ],
     where_cenote: [
       t("Para | los | cenotes | mejor | tome | un | colectivo | en | la | avenida.", "For | the | cenotes | better | take | a | shared van | on | the | avenue.",
         "For the cenotes, you're better off taking a colectivo on the avenue.", { flags: { 6: "colectivo: a shared minivan with a fixed route; you flag it down on the street." } }),
     ],
-    // any place not on the route (Cancún, Tulum, a friend's house): honest, and the route's stops
+    // a place she can't place (a friend's house, a shop): the route's stops, in their order in the 3D town; also the
+    // answer to "¿A dónde va este camión?" (it said "no, esta ruta no va para allá" to the bank and the church, which
+    // are on the route). The towns on the terminal's board get where_out.
     dest_unknown: [
-      t("Mmm, | no, | esta | ruta | no va | para allá. | Pasa | por | el | mercado, | el | centro, | la | clínica | y | el | malecón, | y | termina | en | la | playa.",
-        "Hmm, | no, | this | route | doesn't go | that way. | It-passes | by | the | market, | the | center, | the | clinic | and | the | seafront, | and | it-ends | at | the | beach.",
-        "Hmm, no, this route doesn't go out there. It goes past the market, the center, the clinic and the malecón, and ends at the beach."),
+      t("Mire, | esta | ruta | pasa | por | la | clínica, | el | centro, | el | mercado | y | el | malecón, | y | termina | en | la | playa.",
+        "Look, | this | route | goes | by | the | clinic, | the | center, | the | market | and | the | seafront, | and | it-ends | at | the | beach.",
+        "Look, this route goes past the clinic, the center, the market and the malecón, and ends at the beach."),
     ],
     // the learner doesn't know where to go ("No sé"): the route's main stops
     dest_help: [
-      t("Sin problema. | Esta | ruta | pasa | por | el | mercado, | el | centro, | la | clínica | y | el | malecón, | y | termina | en | la | playa.",
-        "No problem. | This | route | goes | through | the | market, | the | center, | the | clinic | and | the | seafront, | and | it-ends | at | the | beach.",
-        "No problem. This route goes past the market, the center, the clinic and the malecón, and ends at the beach."),
+      t("Sin problema. | Esta | ruta | pasa | por | la | clínica, | el | centro, | el | mercado | y | el | malecón, | y | termina | en | la | playa.",
+        "No problem. | This | route | goes | by | the | clinic, | the | center, | the | market | and | the | seafront, | and | it-ends | at | the | beach.",
+        "No problem. This route goes past the clinic, the center, the market and the malecón, and ends at the beach."),
+    ],
+    // Tulum, Playa del Carmen, Cancún, Mérida: the long-distance buses of this terminal (s67a's ticket window)
+    goes_out: [
+      t("Esta | ruta | solo | va | por | el | pueblo.", "This | route | only | goes | around | the | town.", "This route only goes around town."),
+    ],
+    where_out: [
+      t("Para allá | hay | autobuses | aquí | en | la | terminal: | el | boleto | se compra | en | la | taquilla.",
+        "To there | there are | buses | here | in | the | terminal: | the | ticket | is bought | at | the | ticket window.",
+        "There are buses there from right here in the terminal: you buy your ticket at the ticket window."),
     ],
     dest_neg_ack: [
       t("Ah, | bueno. | ¿Entonces | a | dónde | va?", "Oh, | okay. | Then | to | where | you-go?", "Oh, okay. So where are you headed?"),
@@ -605,6 +692,15 @@ export const bus: SituationDef = {
     ],
     route_7: [
       t("Sí, | es | la | ruta | 7.", "Yes, | it's | the | route | 7.", "Yes, this is route 7.", { say: "Sí, es la ruta siete." }),
+    ],
+    // "¿Qué ruta es esta?" is no yes/no question
+    route_is: [
+      t("Es | la | ruta | 7.", "It's | the | route | 7.", "This is route 7.", { say: "Es la ruta siete." }),
+    ],
+    // "¿Hay descuento para estudiantes?"
+    discount_no: [
+      t("Solo | para | estudiantes | de aquí, | con | credencial. | Si no, | son | {$fare}.", "Only | for | students | from here, | with | ID card. | If not, | it's | {$fare}.",
+        "Only for local students, with their ID. Otherwise it's {$fare}."),
     ],
     phone_no: [
       t("Con | el | celular | no, | perdón. | Solo | efectivo.", "With | the | phone | no, | sorry. | Only | cash.", "Not by phone, sorry. Cash only."),
@@ -653,6 +749,13 @@ export const bus: SituationDef = {
     ],
     change_yes: [
       t("Sí, | claro.", "Yes, | sure.", "Sure."),
+    ],
+    // "¿Y mi cambio?" before the stop (the 500 twist); and once nothing is owed
+    change_soon: [
+      t("Sí, | en cuanto | junte | cambio | se lo | doy.", "Yes, | as soon as | I-collect | change | it to you | I-give.", "Sure, I'll give it to you as soon as I collect some change."),
+    ],
+    change_none: [
+      t("Ya está: | no le debo | nada.", "All set: | I don't owe you | anything.", "We're all set: I don't owe you anything."),
     ],
     change_ok: [
       t("Sí, | le | doy | cambio, | pero | no | de | billetes | grandes.", "Yes, | (to) you | I-give | change, | but | not | for | bills | big.", "Sure, I give change, just not for big bills."),
@@ -721,7 +824,11 @@ export const bus: SituationDef = {
       t("Ahora | sí, | ya | llegamos.", "Now | yes, | already | we-arrived.", "Okay, now we're here."),
     ],
     le_paro: [
-      t("¿Le | paro?", "(For) you | I-stop?", "Shall I stop?"),
+      t("¿Le | paro?", "(For) you | I-stop?", "Want me to stop?"),
+    ],
+    // at the beach, the last stop: "No, la siguiente"
+    end_of_line: [
+      t("No hay | siguiente: | aquí | termina | la | ruta.", "There isn't | a next one: | here | ends | the | route.", "There's no next one: this is the end of the line."),
     ],
     museum_across: [
       t("El | museo | está | enfrente.", "The | museum | is | opposite.", "The museum's right across from it."),
@@ -730,7 +837,7 @@ export const bus: SituationDef = {
       t("Yo | le | aviso.", "I | (to) you | I-let-know.", "I'll let you know."),
     ],
     next_again: [
-      t("¿Le | paro | aquí?", "(For) you | I-stop | here?", "Shall I stop here?"),
+      t("¿Le | paro | aquí?", "(For) you | I-stop | here?", "Want me to stop here?"),
     ],
     next_no: [
       t("Bueno, | me | avisa.", "Okay, | (to) me | you-let-know.", "Okay, just let me know."),
@@ -755,8 +862,20 @@ export const bus: SituationDef = {
     button: [
       t("Sí, | toque | el | timbre | o | diga | “¡Bajan!”.", "Yes, | press | the | buzzer | or | say | “Getting off!”.", "Yes, press the buzzer or call out “¡Bajan!”."),
     ],
+    button_how: [
+      t("Toque | el | timbre | o | diga | “¡Bajan!”.", "Press | the | buzzer | or | say | “Getting off!”.", "Press the buzzer or call out “¡Bajan!”."),
+    ],
+    button_where: [
+      t("Está | junto a | la | puerta | de atrás.", "It's | next to | the | door | at the back.", "It's by the back door."),
+    ],
     sit_anywhere: [
       t("Sí, | donde | guste.", "Yes, | where | you-like.", "Sure, wherever you like."),
+    ],
+    sit_where: [
+      t("Donde | guste.", "Where | you-like.", "Wherever you like."),
+    ],
+    sit_free: [
+      t("No, | está | libre.", "No, | it's | free.", "No, it's free."),
     ],
     no_problem: [
       t("No hay problema.", "No problem.", "No problem."),
@@ -768,8 +887,20 @@ export const bus: SituationDef = {
     oos: [
       t("Perdón, | voy | fuera de servicio.", "Sorry, | I'm going | out of service.", "Sorry, I'm out of service."),
     ],
+    // "¿Es el siete?" / "¿Qué ruta es?" out of service (it repeated "Perdón, voy fuera de servicio")
+    oos_route: [
+      t("Es | la | 7, | pero | voy | fuera de servicio.", "It's | the | 7, | but | I'm going | out of service.", "It's the 7, but I'm out of service.", { say: "Es la siete, pero voy fuera de servicio." }),
+    ],
     oos_take12: [
       t("Súbase | al | 12, | viene | atrás de | mí.", "Get on | the | 12, | it's coming | behind | me.", "Take the 12, it's right behind me.", { say: "Súbase al doce, viene atrás de mí." }),
+    ],
+    // "¿Por qué?"
+    oos_why: [
+      t("Ya | terminó | mi | turno.", "Already | it-ended | my | shift.", "My shift's over."),
+    ],
+    // "¿Cuándo viene el 12?": right behind her, not "every fifteen minutes"
+    oos_coming: [
+      t("Ya viene, | en | un | minuto | llega.", "It's coming, | in | a | minute | it-arrives.", "It's on its way, it'll be here in a minute."),
     ],
     oos_goes: [
       t("Sí, | el | 12 | va | para allá.", "Yes, | the | 12 | goes | that way.", "Yes, the 12 goes there.", { say: "Sí, el doce va para allá." }),
@@ -777,6 +908,9 @@ export const bus: SituationDef = {
     oos_this_no: [
       t("Este | no, | voy | fuera de servicio. | Pero | el | 12 | sí | va | para allá.", "This one | no, | I'm going | out of service. | But | the | 12 | does | go | that way.",
         "Not this one, I'm out of service. But the 12 goes there.", { say: "Este no, voy fuera de servicio. Pero el doce sí va para allá." }),
+    ],
+    oos_out: [
+      t("El | 12 | solo | va | por | el | pueblo.", "The | 12 | only | goes | around | the | town.", "The 12 only goes around town.", { say: "El doce solo va por el pueblo." }),
     ],
     oos_no: [
       t("El | 12 | no va | a | {X.the}.", "The | 12 | doesn't go | to | {X.the}.", "The 12 doesn't go to the {X}.", { say: "El doce no va a {X.the}." }),
@@ -801,20 +935,21 @@ export const bus: SituationDef = {
   domains: {
     fare: () => [FARE],
     amount: () => [...Object.values(CHANGE), ...BIG, ...BIG.map((b) => b - FARE)],
-    num: () => [3, 4, 6, 7, 8, 10, 15, 20],
+    // the stops (2–8) and the minutes (2–15) of DESTS
+    num: () => [2, 3, 4, 5, 6, 7, 8, 10, 15],
   },
 
   hints: {
     ask_bus: {
       lt: "Ask if the bus goes where you need", slot: "dest", examples: ["centro", "mercado", "playa", "clinica"],
       items: [
-        { id: "goes", s: t("¿Este | camión | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?",
+        { id: "goes", only: inTown, s: t("¿Este | camión | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?",
           { flags: { 1: "Mexican: camión = city bus. Elsewhere: autobús." }, neutral: t("¿Este | autobús | va | a | {X.the}?", "This | bus | goes | to | {X.the}?", "Does this bus go to the {X}?") }),
           note: "In Mexico a city bus is el camión." },
-        { id: "passes", s: t("¿Pasa | por | {X.the}?", "Does it pass | by | {X.the}?", "Does it go past the {X}?") },
-        { id: "is_this", s: t("¿Este | es | el | que | va | a | {X.the}?", "This | is | the one | that | goes | to | {X.the}?", "Is this the one that goes to the {X}?") },
-        { id: "going_to", s: t("Voy | a | {X.the}.", "I'm going | to | {X.the}.", "I'm going to the {X}.") },
-        { id: "how_get", s: t("¿Cómo | llego | a | {X.the}?", "How | I-get | to | {X.the}?", "How do I get to the {X}?") },
+        { id: "passes", only: inTown, s: t("¿Pasa | por | {X.the}?", "Does it pass | by | {X.the}?", "Does it go past the {X}?") },
+        { id: "is_this", only: inTown, s: t("¿Este | es | el | que | va | a | {X.the}?", "This | is | the one | that | goes | to | {X.the}?", "Is this the one that goes to the {X}?") },
+        { id: "going_to", only: inTown, s: t("Voy | a | {X.the}.", "I'm going | to | {X.the}.", "I'm going to the {X}.") },
+        { id: "how_get", only: inTown, s: t("¿Cómo | llego | a | {X.the}?", "How | I-get | to | {X.the}?", "How do I get to the {X}?") },
       ],
     },
     fare: {
@@ -840,7 +975,7 @@ export const bus: SituationDef = {
     ask_12: {
       lt: "Ask if the 12 goes where you need", slot: "dest", examples: ["centro", "mercado", "playa", "clinica"],
       items: [
-        { id: "goes12", s: t("¿El | 12 | va | a | {X.the}?", "The | 12 | goes | to | {X.the}?", "Does the 12 go to the {X}?", { say: "¿El doce va a {X.the}?" }) },
+        { id: "goes12", only: inTown, s: t("¿El | 12 | va | a | {X.the}?", "The | 12 | goes | to | {X.the}?", "Does the 12 go to the {X}?", { say: "¿El doce va a {X.the}?" }) },
       ],
     },
     stop: {
@@ -849,8 +984,8 @@ export const bus: SituationDef = {
         { id: "tell_me", s: t("¿Me | avisa | dónde | me bajo?", "(To) me | you-let-know | where | I get off?", "Could you tell me where to get off?") },
         { id: "tell_when", s: t("¿Me | avisa | cuando | lleguemos?", "(To) me | you-let-know | when | we-arrive?", "Could you let me know when we get there?") },
         { id: "where_off", s: t("¿Dónde | me bajo?", "Where | I get off?", "Where do I get off?") },
-        { id: "let_me_know", s: t("¿Me | avisa | cuando | lleguemos | a | {X.the}?", "(To) me | you-let-know | when | we-arrive | to | {X.the}?", "Could you let me know when we get to the {X}?") },
-        { id: "where_off_x", s: t("¿Dónde | me bajo | para | {X.the}?", "Where | I get off | for | {X.the}?", "Where do I get off for the {X}?") },
+        { id: "let_me_know", only: inTown, s: t("¿Me | avisa | cuando | lleguemos | a | {X.the}?", "(To) me | you-let-know | when | we-arrive | to | {X.the}?", "Could you let me know when we get to the {X}?") },
+        { id: "where_off_x", only: inTown, s: t("¿Dónde | me bajo | para | {X.the}?", "Where | I get off | for | {X.the}?", "Where do I get off for the {X}?") },
       ],
     },
     ride_q: {
@@ -904,6 +1039,13 @@ export const bus: SituationDef = {
     "me bajo": { reason: "grammatical_fusion", split: "me → myself + bajo → I lower is a word-for-word reading of the reflexive verb: I get off (S-SE).", minimal: "Two words." },
     "al subir": { reason: "grammatical_fusion", split: "al → to the + subir → to go up misreads the time clause: when (you) get on.", minimal: "Two words." },
     "atrás de": { reason: "lexical_expression", split: "atrás → back + de → of is the compound preposition behind.", minimal: "Two words." },
+    "playa del carmen": { reason: "lexical_expression", split: "playa → beach + del → of the + carmen would translate a town's proper name instead of naming it.", minimal: "The town's three-word name." },
+    "de aquí": { reason: "lexical_expression", split: "de → of + aquí → here misreads the modifier: from here, local.", minimal: "Two words." },
+    "si no": { reason: "lexical_expression", split: "si → if + no → not is the fixed conjunction otherwise.", minimal: "Two words." },
+    "en cuanto": { reason: "lexical_expression", split: "en → in + cuanto → how much misreads the conjunction: as soon as.", minimal: "Two words." },
+    "junto a": { reason: "lexical_expression", split: "junto → together + a → to misreads the preposition: next to.", minimal: "Two words." },
+    "de atrás": { reason: "lexical_expression", split: "de → of + atrás → behind misreads the modifier: the back (door).", minimal: "Two words." },
+    "ya viene": { reason: "lexical_expression", split: "ya → already + viene → it comes misreads the progressive: it's on its way.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -919,7 +1061,7 @@ export const bus: SituationDef = {
     { id: "dest", done: (c) => !!c.s.dest,
       ask: (c) => c.say("ask_dest"),
       expects: ["ask_goes", "going_to", "dest_ctx", "dest_fix"],
-      suggest: [{ lt: "Ask if the bus goes where you need", hint: "ask_bus", options: "dest" }, { lt: "Ask the fare", hint: "fare_q" }],
+      suggest: [{ lt: "Ask if the bus goes where you need", hint: "ask_bus", options: DEST_CHOICES }, { lt: "Ask the fare", hint: "fare_q" }],
       help: (c) => { c.say("dest_help"); c.say("ask_dest"); },
       no: (c) => { c.say("dest_help"); c.say("ask_dest"); } },
     { id: "fare", when: (c) => !c.s.oos && !!c.s.dest, done: (c) => !!c.s.paid,
@@ -928,7 +1070,8 @@ export const bus: SituationDef = {
         if (!c.s.fareSaid) { c.s.fareSaid = true; c.say("fare_is", { fare: FARE }); if (c.s.fareHow) c.say("fare_how"); }
         else c.say("fare_ask", { fare: FARE });
       },
-      expects: ["pay_cash", "give", "cash_ctx", "pay_card", "pay_dollars", "pay_phone", "no_change", "day_pass", "ask_fare"],
+      // route_q: "¿Es el siete?" is the route, never a price check ("No, son $12")
+      expects: ["pay_cash", "give", "cash_ctx", "pay_card", "pay_dollars", "pay_phone", "no_change", "day_pass", "ask_fare", "route_q"],
       suggest: [{ lt: "Pay (cash only)", hint: "fare" }, { lt: "Ask about change or a day pass", hint: "fare_q" }] },
     { id: "known", when: (c) => !!c.s.dest && (c.s.oos || !!c.s.paid) && !!c.s.askKnown, done: (c) => !!c.s.stopAsked,
       ask: (c) => c.say("ask_known"),
@@ -948,7 +1091,8 @@ export const bus: SituationDef = {
     { id: "ride", when: (c) => !c.s.oos && !!c.s.stopAsked, done: (c) => !!c.s.arrived,
       ask: (c) => {
         if (!c.s.seatedAsked) { c.s.seatedAsked = true; if (!c.s.seatSaid) { c.s.seatSaid = true; c.say("have_seat"); } else c.say("stop_ok_short"); expectSeated(c); return; }
-        if (c.s.midStop && !c.s.midSaid) {
+        // the church's stop is the one before the zócalo (route 7 above): "¡Iglesia!" is called only on the way there
+        if (c.s.midStop && !c.s.midSaid && D(c.s.dest).attrs!.stop === "p_zocalo") {
           c.s.midSaid = true;
           c.say("mid_stop");
           ask(c, {
@@ -968,9 +1112,14 @@ export const bus: SituationDef = {
         }
         if (!c.s.nextSaid) {
           c.s.nextSaid = true;
-          if (c.s.toldNext) c.say("next_now");
-          else { c.say("next_yours", { X: D(c.s.dest).attrs!.stop }); if (c.s.dest === "museo") c.say("museum_across"); }
-          c.say("le_paro");
+          const e = D(c.s.dest);
+          // the beach ends the line: "Es la última parada: la playa." (no "¿Le paro?")
+          if (e.attrs!.last && !c.s.toldNext) c.say("last_stop", { X: e.attrs!.stop });
+          else {
+            if (c.s.toldNext) c.say("next_now");
+            else { c.say("next_yours", { X: e.attrs!.stop }); if (c.s.dest === "museo") c.say("museum_across"); }
+            c.say("le_paro");
+          }
           expectNext(c);
           return;
         }
@@ -992,15 +1141,7 @@ export const bus: SituationDef = {
       c.twist("out_of_service");
       c.say("oos");
       c.say("oos_take12");
-      ask(c, {
-        id: "oos_dest", optional: true, expects: ["ask_goes", "going_to", "dest_ctx"], hints: ["ask_12"],
-        suggest: [{ lt: "Ask if the 12 goes where you need", hint: "ask_12", options: "dest" }],
-        on: {
-          ask_goes: (cc, sl, sg) => { bus.handlers.ask_goes(cc, sl, sg); },
-          going_to: (cc, sl, sg) => { bus.handlers.going_to(cc, sl, sg); },
-          dest_ctx: (cc, sl, sg) => { bus.handlers.dest_ctx(cc, sl, sg); },
-        },
-      });
+      expectOos(c);
       return;
     }
     const r = c.rng();
@@ -1028,7 +1169,9 @@ export const bus: SituationDef = {
       if (c.s.dest === slots.dest) c.s.dest = undefined;
       setDest(c, d, "stmt");
     },
-    dest_unknown(c) { c.say("dest_unknown"); c.say("ask_dest"); c.hold(); },
+    dest_unknown(c) { c.say("dest_unknown"); if (!c.s.dest) { c.say("ask_dest"); c.hold(); } },
+    // "¿A dónde va este camión?" / "¿Por dónde pasa?": the route; the step's question follows
+    ask_route(c) { c.say("dest_unknown"); },
     dest_neg(c, slots) {
       const d = slots.dest as string | undefined;
       if (d && c.s.dest === d) c.s.dest = undefined;
@@ -1071,7 +1214,20 @@ export const bus: SituationDef = {
       c.hold();
     },
     ask_atm(c) { c.say("atm"); c.hold(); },
-    route_q(c) { c.say(c.s.oos ? "oos" : "route_7"); },
+    oos_why_ctx(c) { if (c.s.oos) c.say("oos_why"); },
+    route_q(c, _slots, seg) { c.say(c.s.oos ? "oos_route" : seg.tags.includes("which") ? "route_is" : "route_7"); },
+    // "¿Y mi cambio?": owed (the 500 twist) → soon; given or nothing due → nothing owed; not paid yet → change is fine
+    my_change(c) {
+      if (c.s.changeOwed) c.say("change_soon");
+      else if (c.s.paid) c.say("change_none");
+      else c.say("change_ok");
+    },
+    discount(c) {
+      if (c.s.oos) { c.say("oos_fare", { fare: FARE }); return; }
+      c.s.fareSaid = true;
+      c.say("discount_no", { fare: FARE });
+      if (!c.s.paid) { if (!c.s.dest) c.say("ask_dest"); c.hold(); }
+    },
     pay_phone(c) {
       if (c.s.arrived) { c.say("no_problem"); return; }
       if (c.s.oos) { c.say("oos_pay"); return; }
@@ -1135,6 +1291,8 @@ export const bus: SituationDef = {
     no_day_pass(c) { if (c.s.paid) c.say("no_problem"); },
     transfer(c) { c.say("transfer"); },
     ask_stop(c, slots, seg) {
+      // after getting off: "Ahora sí, ya llegamos", never "Yo le aviso"
+      if (c.s.arrived) { c.say("next_now"); return; }
       const d = slots.dest as string | undefined;
       if (d && d !== c.s.dest) { setDest(c, d, "stmt"); if (c.s.dest !== d) return; }
       if (!c.s.dest) { c.say("ask_dest"); c.hold(); return; }
@@ -1159,10 +1317,10 @@ export const bus: SituationDef = {
       if (!placeFromQuestion(c, slots, "time")) return;
       c.say("ride_time", { num: D(c.s.dest).attrs!.mins });
     },
-    ask_frequency(c) { c.say("frequency"); },
+    ask_frequency(c, _slots, seg) { c.say(c.s.oos && (seg.tags.includes("twelve") || seg.tags.includes("next")) ? "oos_coming" : "frequency"); },
     ask_last(c) { c.say("last_bus"); },
     ask_back(c) { c.say("bus_back"); },
-    ask_button(c) { c.s.cordTold = true; c.say("button"); },
+    ask_button(c, _slots, seg) { c.s.cordTold = true; c.say(seg.tags.includes("where") ? "button_where" : seg.tags.includes("how") ? "button_how" : "button"); },
     is_my_stop(c) {
       if (c.s.arrived) { c.say("my_stop_yes"); return; }
       if (c.s.toldNext && c.s.paid) { c.say("my_stop_yes"); arrive(c, true); return; }
@@ -1174,7 +1332,7 @@ export const bus: SituationDef = {
       if (c.s.toldNext && !c.s.oos) { arrive(c); return; } // "Su parada es la que sigue" — and here it is
       c.say("not_yet_tell");
     },
-    sit_q(c) { c.say("sit_anywhere"); },
+    sit_q(c, _slots, seg) { c.say(seg.tags.includes("taken") ? "sit_free" : seg.tags.includes("where") ? "sit_where" : "sit_anywhere"); },
     ack(c) { if (c.step === "known") { const st = bus.steps.find((x) => x.id === "known"); st?.yes?.(c); } },
     g_ok(c) { if (c.step === "known") { const st = bus.steps.find((x) => x.id === "known"); st?.yes?.(c); } },
   },
@@ -1199,7 +1357,7 @@ export const bus: SituationDef = {
     { say: "Necesito ir al Hotel Mar Azul", intent: "going_to", slots: { dest: "hotel" } },
     { say: "Al malecón", intent: "dest_ctx", step: "dest", slots: { dest: "malecon" } },
     { say: "¿Vas al centro?", intent: "ask_goes", slots: { dest: "centro" } },
-    { say: "¿Este camión va a Cancún?", intent: "dest_unknown" },
+    { say: "¿Este camión va a Cancún?", intent: "ask_goes", slots: { dest: "cancun" } },
     { say: "¿El 12 va al mercado?", intent: "ask_goes", slots: { dest: "mercado" } },
     { say: "No al centro, al mercado", intent: "dest_fix", step: "dest", slots: { to: "mercado" } },
     // the fare
@@ -1288,6 +1446,22 @@ export const bus: SituationDef = {
     { say: "¿Es la próxima?", intent: "is_my_stop", step: "ride" },
     { say: "¿Me puede bajar aquí?", intent: "bajan", step: "ride" },
     { say: "No sé a dónde voy", intent: "deny", step: "dest", not: ["going_to", "ask_goes"] },
+    // audit (5 Nov): the route, the town's places, out-of-town names, the seat, the buzzer, the change, a discount
+    { say: "¿A dónde va este camión?", intent: "ask_route", step: "dest" },
+    { say: "¿Por dónde pasa?", intent: "ask_route", step: "dest" },
+    { say: "¿Qué ruta es esta?", intent: "route_q", step: "dest" },
+    { say: "¿Es el siete?", intent: "route_q", step: "fare", not: ["ask_fare"] },
+    { say: "¿Va a la iglesia?", intent: "ask_goes", step: "dest", slots: { dest: "iglesia" } },
+    { say: "¿Pasa por el banco?", intent: "ask_goes", step: "dest", slots: { dest: "centro" } },
+    { say: "¿Va al restaurante El Muelle?", intent: "ask_goes", step: "dest", slots: { dest: "malecon" }, not: ["dest_unknown"] },
+    { say: "¿Va a Playa del Carmen?", intent: "ask_goes", step: "dest", slots: { dest: "playa_carmen" } },
+    { say: "Voy a Tulum", intent: "going_to", step: "dest", slots: { dest: "tulum" } },
+    { say: "¿Está ocupado este asiento?", intent: "sit_q", step: "stop" },
+    { say: "¿Dónde está el timbre?", intent: "ask_button", step: "ride" },
+    { say: "¿Ya mero llegamos?", intent: "is_my_stop", step: "ride" },
+    { say: "¿Y mi cambio?", intent: "my_change", step: "stop" },
+    { say: "Quédese con el cambio", intent: "give", step: "fare", not: ["my_change"] },
+    { say: "¿Hay descuento para estudiantes?", intent: "discount", step: "fare", not: ["pay_cash", "give"] },
     // not understood
     { say: "Mi perro come mangos en la playa", intent: "none" },
     { say: "La lavadora de mi tía es azul", intent: "none" },
@@ -1298,18 +1472,23 @@ export const bus: SituationDef = {
     // (the bus runs on every seed in these; the out-of-service twist has its own sim)
     { name: "happy path: the center, exact fare, tell me where", turns: ["¿Este camión va al centro?", "Tenga, doce pesos", "¿Me avisa dónde me bajo?", "Gracias", "¡Bajan!", "¡Gracias, adiós!"],
       expect: { complete: true, state: { dest: "centro", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.midStop = false; } },
-    { name: "questions and a change of mind: card first, then cash", turns: ["Voy a la playa", "¿Cuánto es?", "Mejor al mercado", "¿Acepta tarjeta?", "Aquí tiene veinte pesos", "¿Cuántas paradas son?", "¿Dónde me bajo?", "¿Cada cuánto pasa?", "Gracias", "¿Aquí me bajo?", "¡Bajan!", "¡Muchas gracias!"],
-      expect: { complete: true, state: { dest: "mercado", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.midStop = true; s.askKnown = false; } },
-    { name: "twist: a 500 bill, no change, she pays it back on the way", turns: ["Voy al centro", "Solo traigo un billete de quinientos", "No, no traigo", "¿Cuánto tarda?", "¿Me avisa cuando lleguemos?", "Gracias", "En la esquina, por favor", "Gracias, que tenga buen día"],
+    // (the church's stop, "¡Iglesia! ¿Bajan?", comes only on the way to the zócalo)
+    { name: "questions and a change of mind: card first, then cash", turns: ["Voy a la playa", "¿Cuánto es?", "Mejor al centro", "¿Acepta tarjeta?", "Aquí tiene veinte pesos", "¿Cuántas paradas son?", "¿Dónde me bajo?", "¿Cada cuánto pasa?", "Gracias", "¿Aquí me bajo?", "¡Bajan!", "¡Muchas gracias!"],
+      expect: { complete: true, state: { dest: "centro", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.midStop = true; s.askKnown = false; } },
+    { name: "twist: a 500 bill, no change, she pays it back on the way", turns: ["Voy al centro", "Solo traigo un billete de quinientos", "No, no traigo", "¿Cuánto tarda?", "¿Y mi cambio?", "¿Me avisa cuando lleguemos?", "Gracias", "En la esquina, por favor", "Gracias, que tenga buen día"],
       expect: { complete: true, state: { dest: "centro", paid: true, changeOwed: false } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = false; s.midStop = false; } },
-    { name: "twist: out of service, take the 12", turns: ["Ah, ok. ¿El 12 va al mercado?", "¿Cuánto es en el doce?", "No, no sé", "¡Gracias!"],
+    { name: "twist: out of service, take the 12", turns: ["¿Por qué?", "Ah, ok. ¿El 12 va al mercado?", "¿Cuánto es en el doce?", "No, no sé", "¡Gracias!"],
       expect: { complete: true, state: { dest: "mercado", stopAsked: true } }, auto: AUTO, setup: (s) => { s.oos = true; s.askKnown = true; } },
     { name: "short answers", turns: ["Al mercado", "Tenga", "No", "Gracias", "Sí", "Adiós"],
       expect: { complete: true, state: { dest: "mercado", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.midStop = false; s.askKnown = false; } },
     { name: "the wrong bus first, then the museum", turns: ["¿Este camión va al aeropuerto?", "Ah, ok. ¿Y al museo?", "¿Puedo pagar en efectivo?", "Aquí tiene", "Sí, ya sé dónde bajarme", "Gracias", "¡Bajan!", "¡Gracias!"],
       expect: { complete: true, state: { dest: "museo", paid: true, unserved: "aeropuerto" } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = true; s.midStop = false; } },
-    { name: "checking the price, dollars, and not getting off yet", turns: ["¿Cuánto cuesta ir a la playa?", "¿Doce pesos?", "¿Aceptan dólares?", "Tome, veinte", "¿Me avisa cuando lleguemos?", "Gracias", "No, la siguiente", "¡Bajan!", "Gracias"],
-      expect: { complete: true, state: { dest: "playa", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = false; s.midStop = false; } },
+    { name: "checking the price, dollars, and not getting off yet", turns: ["¿Cuánto cuesta ir al mercado?", "¿Doce pesos?", "¿Aceptan dólares?", "Tome, veinte", "¿Me avisa cuando lleguemos?", "Gracias", "No, la siguiente", "¡Bajan!", "Gracias"],
+      expect: { complete: true, state: { dest: "mercado", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = false; s.midStop = false; } },
+    { name: "the beach: the end of the line, no next stop", turns: ["Voy a la playa", "Aquí tiene", "¿Me avisa?", "Gracias", "No, la siguiente", "¡Gracias!"],
+      expect: { complete: true, state: { dest: "playa", paid: true, arrived: true } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = false; s.midStop = true; } },
+    { name: "the route, a town it doesn't go to, then the church", turns: ["¿Por dónde pasa este camión?", "¿Va a Playa del Carmen?", "Ah, bueno. ¿Pasa por la iglesia?", "Tenga, doce pesos", "¿Dónde me bajo?", "¿Está ocupado este asiento?", "Gracias", "¡Bajan!", "¡Gracias!"],
+      expect: { complete: true, state: { dest: "iglesia", paid: true, arrived: true, unserved: "playa_carmen" } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = false; s.midStop = true; } },
     { name: "the fare first, with the place in the same question", turns: ["¿Cuánto cuesta al aeropuerto?", "¿Cuánto cuesta al centro?", "Tenga, veinte pesos", "Sí, en el zócalo", "Gracias", "¡Bajan!", "Gracias"],
       expect: { complete: true, state: { dest: "centro", paid: true, unserved: "aeropuerto" } }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = true; s.midStop = false; } },
   ],
