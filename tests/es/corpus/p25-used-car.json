@@ -2708,6 +2708,292 @@
     "yn:yes"
    ],
    "note": "review: rule 17"
+  },
+  {
+   "ctx": "pay",
+   "say": "¿Acepta dólares?",
+   "intent": "pay_dollars",
+   "not": [
+    "pay_cash",
+    "cash_lever"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "pay",
+   "say": "¿Le puedo pagar en dólares?",
+   "intent": "pay_dollars",
+   "not": [
+    "pay_cash"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "pay",
+   "say": "Solo traigo dólares",
+   "intent": "pay_dollars",
+   "not": [
+    "pay_cash",
+    "make_offer"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "price",
+   "say": "¿Cuánto es en dólares?",
+   "intent": "pay_dollars",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Cuánto vale en dólares?",
+   "intent": "pay_dollars",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "final",
+   "say": "¿Lo puedo pagar en dólares?",
+   "intent": "pay_dollars",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov: a how-to-pay question, never a yes"
+  },
+  {
+   "ctx": "pay",
+   "say": "¿Puedo pagar en abonos?",
+   "intent": "pay_parts",
+   "not": [
+    "pay_cash",
+    "pay_card"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "pay",
+   "say": "Le doy la mitad ahora y la mitad mañana",
+   "intent": "pay_parts",
+   "not": [
+    "halfway",
+    "pay_cash"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "price",
+   "say": "¿Lo puedo pagar en abonos?",
+   "intent": "pay_parts",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov: it used to sell the car with its answer"
+  },
+  {
+   "ctx": "final",
+   "say": "¿Acepta pagos a plazos?",
+   "intent": "pay_parts",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "price",
+   "say": "Le dejo un anticipo y el resto mañana",
+   "intent": "pay_parts",
+   "not": [
+    "make_offer",
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Cuánto es el refrendo?",
+   "intent": "q_papers",
+   "not": [
+    "ask_price"
+   ],
+   "note": "audit 5 Nov: not the car's price"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Cuánto cuesta la tenencia?",
+   "intent": "q_papers",
+   "not": [
+    "ask_price"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Tiene la verificación?",
+   "intent": "q_papers",
+   "not": [
+    "q_unknown"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Pasó la verificación?",
+   "intent": "q_papers",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Está a su nombre?",
+   "intent": "q_papers",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿La factura está a su nombre?",
+   "intent": "q_papers",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Las placas son de Quintana Roo?",
+   "intent": "q_papers",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Tiene los comprobantes de pago?",
+   "intent": "q_papers",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Tiene el refrendo de este año?",
+   "intent": "q_papers",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Es manual?",
+   "intent": "q_gearbox",
+   "note": "audit 5 Nov: neutral manual"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Es de transmisión manual?",
+   "intent": "q_gearbox",
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "final",
+   "say": "De acuerdo, gracias",
+   "intent": "closing_ctx",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov: rule 17"
+  },
+  {
+   "ctx": "price",
+   "say": "Perfecto, gracias",
+   "intent": "closing_ctx",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov: rule 17"
+  },
+  {
+   "ctx": "confirm",
+   "say": "De acuerdo, muchas gracias",
+   "intent": "closing_ctx",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov: rule 17"
+  },
+  {
+   "ctx": "final",
+   "say": "Está bien, gracias, lo voy a pensar",
+   "intent": "sleep_on_it",
+   "not": [
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "price",
+   "say": "Ok, gracias, me lo llevo",
+   "intent": "accept_deal",
+   "note": "audit 5 Nov: the yes after the closing"
+  },
+  {
+   "ctx": "pay",
+   "say": "Tengo que ir al banco",
+   "intent": "any",
+   "not": [
+    "q_unknown",
+    "pay_cash",
+    "pay_transfer",
+    "pay_check"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "price",
+   "say": "Tengo prisa",
+   "intent": "any",
+   "not": [
+    "q_unknown",
+    "accept_deal",
+    "accept_ctx",
+    "yn:yes"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "Tengo una pregunta",
+   "intent": "any",
+   "not": [
+    "q_unknown"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "pay",
+   "say": "Traigo poco dinero",
+   "intent": "any",
+   "not": [
+    "q_unknown",
+    "pay_cash",
+    "make_offer"
+   ],
+   "note": "audit 5 Nov"
+  },
+  {
+   "ctx": "look",
+   "say": "¿Tiene bluetooth?",
+   "intent": "q_unknown",
+   "note": "audit 5 Nov: still her honest 'no sé'"
   }
  ]
 }

@@ -75,3 +75,67 @@ reviewer's two open points (an offer at or above her next step closes the deal; 
 **tests**: 9 NLU tests, 1 sim ("hedged yeses, a question, no cash"). **For the owner**: one new line to voice, `fair_price`.
 Gate: `tsc` clean; `check-content` 0/0, 103/103 NLU, 24 sims 12/12, fuzz 80; corpus 322/322, 0/95; heldout 39/39, 0/5;
 vitest 288/288 in both editions.
+
+## Audit (5 Nov 2026)
+Fresh reviewer, both texts. Read: STYLE.md, AUTHORING-ES.md, the brief, this review, the cross and neutral files (lead
+decision: "estándar" → neutral "manual"), the situation, corpus and held-out set; seeds 3 and 7 read in full, before
+and after; about 390 probes with `tools/probe.ts` (every polite closing, would, echo, no-with-a-yes and side question at
+each of her price questions and at the pay step) and a value fuzz (400 random conversations from the corpus, 8,439
+turns, 274 deals).
+
+**Money and paperwork (Quintana Roo, Nov 2026), checked:** $85,000 asked for a 2008 convertible with 160,000 km fits
+the market (2008 Beetle Cabrio, manual: about $77,000–95,000 asked); her ladder 85 → 80 → 77.5 → 75 ("lo menos") and the
+$72,500 floor (−15%), $2,500 off for cash and for a fault: realistic. Cash for $72,500–85,000 is legal (the
+anti-money-laundering cash ban for vehicles starts at 3,210 UMA, far above). Papers: the factura original endorsed on
+its back (a second owner's factura carries the first owner's endorsement to her), the tarjeta de circulación, the
+yearly fees "al corriente" with the receipts in the folder (the 2026 canje de placas / refrendo; whether a tenencia
+applies stays vague, as before), REPUVE by the VIN, "nacional", local plates. Quintana Roo has no emissions check
+(verificación): no line may claim one. The change of owner (SATQ, by appointment) stays unsaid. The bank at Juárez and
+Ceiba matches TOWN.md; nothing gives a direction or a distance.
+
+**Found and fixed, by point**
+- 1 · natural Spanish (1): a returning visitor heard "¡Ah, es usted otra vez!" and then "Soy Margarita…" again: no
+  self-introduction on a replay now (`introduce`), the presentation stays.
+- 4 · facts (2): a personal cheque ("¿Le doy un cheque?", "Con cheque") got "Mejor un cheque de caja…" and the keys and
+  the endorsed factura in the same breath, with nothing agreed: now she waits for a yes ("Muy bien." then the keys), a
+  no ("¿cómo le hacemos?") or another way; a second personal cheque gets the options. "¿Tiene la verificación?" got
+  "Buena pregunta. La verdad, no sé." from the owner: now the papers answer ("Todo en regla: …"), claiming nothing.
+- 5 · English (3): "shall" (talk_prompt, flex_yes, pay_reask and its twin and flag, the split hint) → "should";
+  a_tires "they're safe" → "they're fine" (están bien); gear_yes had no flag on "estándar".
+- 7 · answers and meaning (11 fixed, 1 left below): **sales on no real yes**: "Lo compraría." / "Me lo llevaría." (a would) sold the car,
+  at $85,000 without "¿sin regatear?"; "No, sin regatear." (comma lost: "not without haggling") and her own "Sin
+  regatear." said back sold it at $85,000; "De acuerdo, gracias." / "Perfecto, gracias." sold it (the closing family
+  of "Vale, gracias"): all now get her question again (rules 10, 17). "En efectivo, como dijo, ¿verdad?" / "Mejor un
+  cheque de caja" + "Está bien, gracias" paid: now "¿cómo le hacemos?". "Está bien, gracias, lo voy a pensar" asked her
+  question again before answering: the other piece answers now (rule 8). **Wrong meanings**: "Tengo que ir al banco",
+  "Tengo prisa", "Tengo una pregunta" were read as "¿Tiene…?" ("Buena pregunta…"); "¿Cuánto es el refrendo / cuesta la
+  tenencia?" got the car's price (now her honest "no sé": the amount stays vague, rule 14). **No answer**: "¿Acepta
+  dólares?", "¿Le puedo pagar en dólares?", "¿Cuánto es en dólares?" (new line `pesos_only` "Lo vendo en pesos, no en
+  dólares."; with a price question, pesos first, then her price); paying in parts ("¿Lo puedo pagar en abonos?", "a
+  plazos", "la mitad ahora y la mitad mañana", "un anticipo": new line `pay_one` "No, mejor en un solo pago, por
+  favor."; with "lo puedo pagar" they are how-to-pay questions, never a yes); "¿Está a su nombre?", "¿Las placas son de
+  Quintana Roo?", "¿Tiene los comprobantes de pago?", "¿Tiene el refrendo de este año?" (existing answers). At the pay
+  step "¿cómo le hacemos?" came twice in a row after two side questions: it alternates with "¿cómo me va a pagar?".
+- 10 · neutral (1): the three gearbox lines get neutral twins with "manual" (the lead's decision); the flag now says
+  "Mexican: estándar …; manual is more widely used."
+
+**Checked, no change:** usted everywhere (lines, hints, tips); names (no clash); every flag index; the twins (8 + 3);
+spelling and ¿¡ in both texts; every {$price} line can only say $70,000–85,000 in steps of $1,250 and {$amount} only
+$50,000–82,500 in steps of $2,500 (the fuzz: every amount said is in a voiced list); one speaker, no plural items.
+
+**Left (for the lead / owner):** "¿Tiene seguro?" and "¿Firmamos un contrato (de compraventa)?" get the catch-all "Buena
+pregunta. La verdad, no sé." or nothing, and "¿Me da un recibo?" / "Le pago mañana" aren't understood: harmless, but a
+contract line would also belong in the handover line (a voiced change), so not now. "Sí, de acuerdo, gracias" asks
+again, as "Sí, está bien, gracias" already did (friction, never a sale). "Me gustaría comprarlo" at her
+asking price still sells at $85,000 without "¿sin regatear?" (a clear wish to buy; kept). "No, me lo llevo" reads as
+"No me lo llevo" (a refusal: her last chance, no sale; the safe reading, kept). A bare "es mucho" stays out of
+too_high: it would put "accept_deal" in the parse of two existing traps ("Quisiera comprarlo pero es mucho"), whose
+handlers are safe anyway.
+
+**Tests:** 13 NLU tests, 3 new sims (no sale on a would / a no with the yes / an echo / a closing; a personal cheque
+that waits; dollars and parts; a returning visitor), 1 sim updated (the personal cheque now needs its yes); corpus +32
+(28 understood, 4 traps). **New spoken lines to voice:** `pesos_only`, `pay_one`; neutral texts of `a_gearbox`,
+`gear_no`, `gear_yes`. No spoken line changed.
+
+**Gates:** `tsc` clean; `check-content` 0 errors, 0 warnings, 116/116 NLU, 27 sims 12/12 seeds, fuzz 80 no crash;
+corpus 350/350 (was 322/322), 0/99 traps (was 0/95); held-out 39/39, 0/5; `vitest --project es` 113/113.
