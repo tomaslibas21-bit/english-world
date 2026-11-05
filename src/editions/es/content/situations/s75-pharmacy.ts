@@ -15,7 +15,12 @@
 // brings the paper prescription (rx_paper), he reads it (amoxicillin), asks brand-name or generic, stamps it and may ask
 // about a penicillin allergy. New: the generic question (generic_q), the consultorio (doctor_q, go_doctor), diarrhea and
 // mosquito bites, bug spray, electrolyte drink. Mexican-only words in lines have a neutral twin (pásele, híjole,
-// ahorita, moscos, piquetes); "gripa" only in a hint (twin: gripe).
+// ahorita, moscos, piquetes, agruras, surtir una receta → venir con una receta, de patente → de marca, ticket →
+// recibo); "gripa" only in a hint (twin: gripe).
+// Audit (5 Nov 2026): the advice is safe end to end (unsafeWhy): an allergy, other medicines or a child rule a medicine
+// out wherever it comes from (his recommendation, the other one he offers, the learner's own request, something already
+// on the counter); a cold medicine already has acetaminophen in it; cramps take ibuprofen and dizziness an electrolyte
+// drink; dollars, the card machine, the receipt and the pharmacy's hours (8 a.m. to 10 p.m.) get answers.
 
 import type { Ctx, EntityDef, Pending, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
@@ -35,8 +40,13 @@ const SYMPTOMS: EntityDef[] = [
   ent("fever", "fiebre", "fever", "f", { art: "", forms: ["calentura", "temperatura", "mucha fiebre", "un poco de fiebre", "fiebre alta", "un poco de calentura", "fiebres"] }),
   ent("allergies", "alergia", "allergy", "f", { art: "", forms: ["alergias", "alergia al polen", "rinitis", "rinitis alergica", "una alergia"] }),
   ent("upset_stomach", "dolor | de | estómago", "pain | of | stomach", "m", { art: "", attrs: { nat: "stomachache" },
-    forms: ["dolor de estomago", "agruras", "acidez", "acidez estomacal", "indigestion", "dolor de panza", "dolor de barriga", "gastritis", "colicos", "nauseas", "nausea", "ganas de vomitar", "el estomago mal", "mareo",
+    forms: ["dolor de estomago", "agruras", "acidez", "acidez estomacal", "indigestion", "dolor de panza", "dolor de barriga", "gastritis", "nauseas", "nausea", "ganas de vomitar", "el estomago mal",
       "dolor de pansa", "malestar estomacal", "el estomago revuelto"] }),
+  // (audit 5 Nov: cólicos and mareo were the stomach's, and got an antacid "when you feel heartburn": cramps take
+  // ibuprofen, dizziness in the heat an electrolyte drink)
+  ent("cramps", "cólicos", "cramps", "m", { art: "", pl: "cólicos", ltPl: "cramps",
+    forms: ["colicos", "colico", "un colico", "unos colicos", "colicos menstruales", "dolor menstrual", "dolores menstruales", "colicos fuertes"] }),
+  ent("dizzy", "mareo", "dizziness", "m", { art: "", forms: ["mareo", "mareos", "un mareo", "un poco de mareo", "mucho mareo", "vertigo"] }),
   ent("diarrhea", "diarrea", "diarrhea", "f", { art: "", forms: ["diarrea", "infeccion estomacal", "infeccion en el estomago", "una infeccion estomacal", "el estomago suelto",
     "diarea", "diarreas", "vomito", "vomitos", "vomitando"] }),
   ent("hangover", "cruda", "hangover", "f", { art: "", forms: ["resaca", "la cruda", "una cruda", "un poco de cruda", "una resaca", "la resaca"] }),
@@ -97,9 +107,35 @@ const at = (id: string) => ALL.find((e) => e.id === id)?.attrs || {};
 const REC: Record<string, string> = {
   headache: "ibuprofen", sore_throat: "lozenges", cough: "cough_syrup", cold: "cold_medicine", fever: "acetaminophen",
   allergies: "allergy_medicine", upset_stomach: "antacid", diarrhea: "oral_serum", sunburn: "aloe", bites: "itch_cream", hangover: "oral_serum",
+  cramps: "ibuprofen", dizzy: "oral_serum",
 };
 const ALT: Record<string, string> = { ibuprofen: "acetaminophen", acetaminophen: "ibuprofen", cough_syrup: "lozenges", lozenges: "cough_syrup", cold_medicine: "acetaminophen" };
 const MAX_CASH = 150000;
+
+/** Why a medicine isn't right for this customer (the line that says so), or undefined (audit 5 Nov 2026): an allergy
+ *  to aspirin or another anti-inflammatory rules out ibuprofen and aspirin, one to acetaminophen rules out it and the
+ *  cold medicine (which has it in it); blood-pressure pills, and heart, depression, sleeping or anxiety pills
+ *  ("risk"), rule out ibuprofen and the cold medicine (its decongestant and antihistamine), diabetes or thyroid pills
+ *  ("gland") the cold medicine; a child never gets aspirin. */
+function unsafeWhy(c: Ctx, id: string): string | undefined {
+  if (c.s.mode === "rx") return undefined;
+  if ((id === "ibuprofen" || id === "aspirin") && c.s.allergy === "nsaid") return "nsaid_reason";
+  if ((id === "acetaminophen" || id === "cold_medicine") && c.s.allergy === "para") return "para_reason";
+  if (id === "aspirin" && c.s.forWho === "child") return "kids_aspirin";
+  if (id === "ibuprofen" && c.s.meds === "bp") return "bp_reason";
+  if (id === "cold_medicine" && c.s.meds === "bp") return "bp_reason_cold";
+  if (id === "ibuprofen" && c.s.meds === "risk") return "mix_reason";
+  if (id === "cold_medicine" && (c.s.meds === "risk" || c.s.meds === "gland")) return "mix_reason_cold";
+  return undefined;
+}
+/** The other medicine he offers after a no ("Si prefiere, también tengo…"): never one he has just ruled out, nor the
+ *  one the learner already took without relief. */
+function safeAlt(c: Ctx, id: string): string | undefined {
+  const a = ALT[id];
+  return a && !unsafeWhy(c, a) && a !== c.s.took ? a : undefined;
+}
+/** The painkiller he can give instead: acetaminophen, else ibuprofen (an acetaminophen allergy); none: the doctor. */
+const safeAnalgesic = (c: Ctx) => ["acetaminophen", "ibuprofen"].find((x) => !unsafeWhy(c, x));
 
 // ---------------------------------------------------------------------------
 // State helpers
@@ -126,17 +162,19 @@ const due = (c: Ctx) => total(c) - ((c.s.paidSum as number | undefined) ?? 0);
 /** Paid for already: never switched, swapped or put back. */
 const locked = (c: Ctx, id: string) => ((c.s.paidIds as string[] | undefined) ?? []).includes(id);
 
-/** The recommended product for the symptom, adjusted for an aspirin allergy or blood-pressure pills. */
+/** The recommended product for the symptom, adjusted for an allergy or other medicines (unsafeWhy: cold medicines
+ *  have a decongestant that raises blood pressure), and never the one the learner says didn't help. */
 function recommendation(c: Ctx): string {
   let p = REC[c.s.symptom] ?? "ibuprofen";
-  if (p === "ibuprofen" && (c.s.allergy === "nsaid" || c.s.meds === "bp")) p = "acetaminophen";
-  // cold medicines have a decongestant that raises blood pressure
-  if (p === "cold_medicine" && c.s.meds === "bp") p = "acetaminophen";
+  if (p === c.s.took && safeAlt(c, p)) p = safeAlt(c, p)!;
+  if (unsafeWhy(c, p)) p = safeAnalgesic(c) ?? ""; // ("": nothing he can give safely, noSafe)
   return p;
 }
 
 /** "¿Se lo doy?" / "¿Se la doy?" / "¿Se las doy?": the pronoun agrees with the medicine. */
 const sayRecQ = (c: Ctx, id: string, again = false) => c.say((again ? "rec_again_" : "rec_q_") + (at(id).pro || "lo"));
+/** "Pastillas para la garganta", "curitas": plural (aquí tiene, ¿cómo se toman?). */
+const plural = (id: string) => at(id).pro === "los" || at(id).pro === "las";
 
 const TIPS: Record<string, Tip> = {
   tu_staff: { key: "tu_staff", lt: "Understood! With the pharmacist, usted is more polite: “¿Tiene…?”, “¿Me da…?” (tienes / dame is for friends).", better: "¿Tiene algo para el dolor de cabeza?" },
@@ -182,7 +220,7 @@ export const pharmacy: SituationDef = {
       dur: "([como | unos | mas o menos | casi] ({n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h) | una semana #d7 | un dia #d1 | un mes #d30 | un par de dias #d2 | unos dias #d3 | varios dias #d4))",
       rel_child: "(hijo | hija | nino | nina | bebe | hijos | ninos | nene | nena | chamaco | chamaca | nieto | nieta)",
       rel_adult: "(esposo | esposa | mama | mamá | papa | madre | padre | amigo | amiga | pareja | novio | novia | abuela | abuelo | hermano | hermana | mujer | marido | companero | companera | suegra | suegro)",
-      allergen: "(la aspirina #nsaid | aspirina #nsaid | el ibuprofeno #nsaid | ibuprofeno #nsaid | los antiinflamatorios #nsaid | el naproxeno #nsaid | la penicilina #pen | penicilina #pen | la amoxicilina #pen | amoxicilina #pen | los antibioticos #other | las sulfas #other | el paracetamol #other | los mariscos #other | el polen #other | el polvo #other | los gatos #other | el latex #other | la codeina #other | el huevo #other | la lactosa #other | las nueces #other | los cacahuates #other)",
+      allergen: "(la aspirina #nsaid | aspirina #nsaid | el ibuprofeno #nsaid | ibuprofeno #nsaid | los antiinflamatorios #nsaid | el naproxeno #nsaid | la penicilina #pen | penicilina #pen | la amoxicilina #pen | amoxicilina #pen | los antibioticos #other | las sulfas #other | el paracetamol #para | paracetamol #para | el acetaminofen #para | los mariscos #other | el polen #other | el polvo #other | los gatos #other | el latex #other | la codeina #other | el huevo #other | la lactosa #other | las nueces #other | los cacahuates #other)",
       it: "(lo | la | los | las)",
       tomo: "(tomo | me tomo | debo tomar | tengo que tomar | se toma | se toman | hay que tomar | me lo tomo | me la tomo | lo tomo | la tomo | los tomo | las tomo)",
       kid: "(un nino | una nina | ninos | los ninos | mi hijo | mi hija | un bebe | bebes | mis hijos | ninos chiquitos | criaturas)",
@@ -223,6 +261,7 @@ export const pharmacy: SituationDef = {
       "(tengo | traigo) (la nariz tapada | mocos | escurrimiento) #s_cold", "me escurre la nariz #s_cold", "(estornudo | estoy estornudando) (mucho)? #s_allergies [@since]",
       "(tengo | traigo) alergia [estornudo mucho | me pican los ojos]? #s_allergies", "me pican los ojos #s_allergies",
       "(estoy | ando) (mal | malo | mala) del estomago #s_upset_stomach [@since]", "(algo | la comida) me cayó mal #s_upset_stomach", "me cayó mal (la comida | algo) #s_upset_stomach",
+      "(estoy | ando | me siento) (mareado | mareada | muy mareado | muy mareada) #s_dizzy [@since]", "me (mareo | mareé | maree) [mucho] #s_dizzy",
       "(me enfermé | estoy enfermo | estoy enferma) del estomago #s_upset_stomach", "(voy | he ido) mucho al bano #s_diarrhea", "(tengo | traigo) el estomago suelto #s_diarrhea", "(tengo | traigo) el estomago (mal | revuelto | raro | delicado) #s_upset_stomach", "(estoy | ando) (crudo | cruda) #s_hangover",
       "me (quemé | queme) (con | en) (el sol | la playa) [@when] #s_sunburn", "me (quemé | queme) [mucho] [@when] #s_sunburn", "me (asoleé | asolee) (mucho | demasiado)? #s_sunburn", "(tengo | traigo) la piel quemada #s_sunburn",
       "me (picaron | han picado) [mucho] (los | unos)? (moscos | mosquitos | zancudos | insectos | bichos) [@since | @when] #s_bites", "me (picaron | han picado) [mucho] [@when] #s_bites", "(tengo | traigo) (muchos | unos)? (piquetes | ronchas) #s_bites",
@@ -266,7 +305,8 @@ export const pharmacy: SituationDef = {
     ] },
     // --- the pharmacist's questions -------------------------------------------------------------------
     who_ans: { patterns: [
-      "(es | son) para mi #h:for_me", "para mi", "[si] (es | son) para mi", "[es | son] para (mi | un | una) @rel_child [de {n:number} anos] #child #h:for_child",
+      "(es | son) para mi #h:for_me", "para mi", "[si] (es | son) para mi", "[si] (el medicamento | la medicina | eso | esto | todo) (es | son) para mi [mismo | misma]", "(es | son) para mi (mismo | misma)",
+      "[es | son] para (mi | un | una) @rel_child [de {n:number} anos] #child #h:for_child",
       "[es | son] para (mi | un | una) @rel_adult #adult #h:for_other", "no (es | son) para mi #notme", "(es | son) para (otra persona | alguien mas) #notme",
       "(mi | un | una) @rel_child [de {n:number} anos] #child", "(mi | un | una) @rel_adult #adult", "(tiene | mi hijo tiene | mi hija tiene) {n:number} anos #age",
       "(es | son) para (un nino | una nina | un bebe) #child", "no (es | son) para mi (es | son)? para (mi | un | una) @rel_child [de {n:number} anos] #child",
@@ -287,20 +327,31 @@ export const pharmacy: SituationDef = {
       // "No tomo nada para la presión", "No tengo la presión alta": no (never the blood-pressure reading)
       "no (tomo | estoy tomando | uso) (nada | ningun medicamento | ninguna medicina | ninguna pastilla | pastillas | medicina | medicamento | algo) para la (presion | presion alta | hipertension) #none",
       "no (tengo | soy de) (la presion alta | presion alta | hipertension) #none", "no soy (hipertenso | hipertensa) #none",
+      "no (tomo | estoy tomando | uso) (nada | ningun medicamento | ninguna medicina | ninguna pastilla | pastillas | medicina | medicamento | algo) para (la diabetes | la tiroides | el corazon | la depresion | el colesterol | dormir | la ansiedad) #none",
       // "Ya tomé paracetamol, pero no me hizo nada": what they already took (never an order)
       "ya (tomé | me tomé | tome | me tome) [un | una | unas] {product} [pero no me (hizo nada | sirvio | funciono | hizo efecto) | y no me (hizo nada | sirvio | funciono)] #took",
-      "(tomo | estoy tomando) (pastillas | algo | medicina | medicamento | insulina) para (la diabetes | la tiroides | el corazon | la depresion | el colesterol | dormir | la ansiedad) #other",
-      "(tomo | estoy tomando) (vitaminas #vit | unas vitaminas #vit | anticonceptivos #other | la pastilla #other | aspirina #other | metformina #other | losartan #bp | enalapril #bp | captopril #bp | insulina #other)",
+      // heart, depression, sleeping and anxiety pills or a daily aspirin (#risk): no ibuprofen, no cold medicine
+      "(tomo | estoy tomando) (pastillas | algo | medicina | medicamento | insulina) para (la diabetes #gland | la tiroides #gland | el corazon #risk | la depresion #risk | el colesterol #other | dormir #risk | la ansiedad #risk)",
+      "(tomo | estoy tomando) (vitaminas #vit | unas vitaminas #vit | anticonceptivos #other | la pastilla #other | aspirina #risk | una aspirina #risk | metformina #gland | losartan #bp | enalapril #bp | captopril #bp | insulina #gland) [diario | diaria | todos los dias | cada dia | al dia | en las mananas | para el corazon]",
       "(solo | nada mas | nomas) (vitaminas | unas vitaminas) #vit", "(soy | estoy) (hipertenso | hipertensa) #bp", "(tengo | soy de) (la presion alta | presion alta | hipertension) #bp",
-      "(si)? (tomo | estoy tomando) algo para la presion #bp", "(tomo | estoy tomando) (otro | otra | otras | otros) (medicamento | medicina | pastillas)? #other",
+      // "Tomo otro medicamento": which one? (never "no problem" for a medicine he doesn't know)
+      "(si)? (tomo | estoy tomando) algo para la presion #bp", "(si)? (tomo | estoy tomando) (otro | otra | otras | otros) (medicamento | medicina | pastillas)? #which",
     ] },
-    // bare "Nada" / "Ninguno" only after "¿Toma algún medicamento?"
-    meds_ctx: { patterns: ["(nada | ninguno | ninguna | ningun medicamento | ninguna medicina | nada nada)", "para la presion #bp", "(vitaminas | solo vitaminas) #vit"] },
+    // bare "Nada" / "Ninguno" only after "¿Toma algún medicamento?"; "Para el corazón", "Metformina" after "¿Cuál?"
+    meds_ctx: { patterns: [
+      "(nada | ninguno | ninguna | ningun medicamento | ninguna medicina | nada nada)", "para la presion #bp", "(vitaminas | solo vitaminas) #vit",
+      "[unas | una | algo | solo | nada mas]? (pastillas | pastilla | medicina)? para (la diabetes #gland | la tiroides #gland | el colesterol #other | el corazon #risk | la depresion #risk | dormir #risk | la ansiedad #risk | la presion alta #bp | la hipertension #bp)",
+      "(metformina #gland | insulina #gland | anticonceptivos #other | la pastilla #other | levotiroxina #gland | atorvastatina #other | losartan #bp | enalapril #bp | captopril #bp | aspirina #risk | warfarina #risk | clopidogrel #risk | sertralina #risk | fluoxetina #risk | clonazepam #risk)",
+      // a medicine he can't check: the safe choice (a bare "No sé" is the step's help; "no se" alone would read as "No")
+      "(no se | no me acuerdo | no recuerdo) (como se llama | el nombre | cual es) #risk", "(no me acuerdo | no recuerdo) #risk",
+    ] },
     allergy_ans: { patterns: [
       "no (soy | es) (alergico | alergica) a (nada | ningun medicamento | ninguno | ninguna medicina) #none #h:allergy_none", "no (tengo | tiene) (alergias | ninguna alergia | alergia a nada | alergia a ningun medicamento) #none",
       "que yo sepa no #none", "[no] ninguna alergia #none", "[no] no tengo ninguna alergia #none", "(no que yo sepa | creo que no) #none", "no soy (alergico | alergica) #none",
       "no (soy | es) (alergico | alergica) (a | al) @allergen #neg", "no (tengo | tiene) alergia (a | al) @allergen #neg", "[no] [a | al] @allergen no #neg",
       "(soy | es) (alergico | alergica) (a | al) @allergen #h:allergy_pen", "(tengo | tiene) alergia (a | al) @allergen", "me (hace | hacen | cae | caen) mal @allergen", "(si)? soy (alergico | alergica) [a] @allergen",
+      // "Ah, pero soy alérgico al paracetamol" with the medicine on the counter: it goes back
+      "pero (soy | es) (alergico | alergica) (a | al) @allergen", "pero (tengo | tiene) alergia (a | al) @allergen",
       // "No, solo a la aspirina": that one
       "[no] (solo | nada mas | nomas | nomas a | solamente) [a | al] @allergen",
     ] },
@@ -346,8 +397,12 @@ export const pharmacy: SituationDef = {
       "(y)? (el | con) alcohol", "(hay | hace) (problema | mal) con (el)? alcohol", "(se puede | puedo) (tomar | beber) (alcohol | cerveza)",
     ] },
     ask_kids: { patterns: [
-      "(es | sirve | se puede dar | lo puede tomar | la puede tomar) para @kid #h:q_kids", "(lo | la)? puede tomar @kid", "(se lo | se la) puedo dar a @kid", "(tiene | hay) (para ninos | infantil | version infantil | presentacion infantil)",
-      "(es | sirve) para (ninos | niños)", "(y)? para @kid",
+      // ("Es para mi hijo" says who it's for: who_ans; "¿Es para niños?" asks)
+      "(sirve | se puede dar | lo puede tomar | la puede tomar) para @kid #h:q_kids", "es para (un nino | una nina | ninos | los ninos | un bebe | bebes | ninos chiquitos)", "(lo | la)? puede tomar @kid",
+      "(se lo | se la) puedo dar a @kid", "(tiene | hay) (para ninos | infantil | version infantil | presentacion infantil)",
+      "(es | sirve) para (ninos | niños)", "y para @kid [de {n:number} anos]", "para (ninos | niños | bebes | un bebe | un nino | una nina)",
+      // a cream or a spray: "¿Se le puede poner a los niños?"
+      "(se le | se les | se lo | se la) puede (poner | dar | usar) [a] @kid", "(lo | la) puedo (poner | usar) (en | a) @kid", "(lo | la)? pueden usar @kid", "(es | sirve) (apto | apta) para @kid",
     ] },
     ask_side_effects: { patterns: ["(tiene | causa | da) (efectos secundarios | algun efecto secundario | contraindicaciones | reacciones)", "(hace | es) (dano | malo) (al | para el) (estomago | higado | rinon)", "es (fuerte | seguro)"] },
     ask_how_long_take: { patterns: [
@@ -377,6 +432,7 @@ export const pharmacy: SituationDef = {
     // --- paying (as at the gas station) ---------------------------------------------------------------
     pay_card: { patterns: [
       "(puedo | se puede) pagar con tarjeta #h:pay_card", "con tarjeta #h:pay_card_short", "tarjeta", "(acepta | aceptan | toman | reciben) tarjeta #h:take_cards",
+      "(tiene | tienen | hay) terminal", "(puedo | se puede) pagar con terminal",
       "(pago | voy a pagar | le pago) con tarjeta", "con (tarjeta)? de (credito | debito)", "con (la | mi) tarjeta", "aqui (tiene | esta) mi tarjeta",
       "(visa | mastercard | american express | amex)", "(me cobra | cobrese | me puede cobrar | cobreme) con tarjeta", "(aceptais | acepteis) tarjeta",
     ] },
@@ -392,6 +448,19 @@ export const pharmacy: SituationDef = {
       "aqui tiene #h:here_you_go", "aqui esta", "tenga", "tome", "(aqui tiene | tenga | tome | le doy | aqui le doy) [son] {price}", "(aqui (tiene | esta) | tenga | tome) (otros | los otros) {price}", "aqui (tiene | estan) (los | sus) {price}", "(le pago | pago) con (un billete de)? {price}",
       "(aqui tiene | aqui le doy | tenga | tome | le doy) un billete de {price}",
     ] },
+    // side questions at the counter (audit 5 Nov): dollars, the receipt, the hours
+    ask_dollars: { patterns: [
+      "(acepta | aceptan | toma | toman | recibe | reciben) (dolares | dolar | dolares americanos)", "(puedo | se puede) pagar (en | con) dolares", "(pago | le pago | le puedo pagar) (en | con) dolares",
+      "(solo | nada mas | nomas)? (tengo | traigo) (dolares | puros dolares)", "(y)? (en | con) dolares", "aceptais dolares",
+    ] },
+    ask_receipt: { patterns: [
+      "(me da | me puede dar | me podria dar | deme | me das #tip:tu_staff | quiero | necesito) (el | un | mi | su)? (ticket | recibo | comprobante | nota) [para el seguro | para mi seguro]",
+      "(y)? (el | mi) (ticket | recibo | comprobante)", "(me da | me puede dar) (el | un)? (ticket | recibo | comprobante) de (compra | la compra)",
+    ] },
+    ask_hours: { patterns: [
+      "a que hora (cierran | cierra | abren | abre)", "(hasta | desde) que hora (abren | estan abiertos | atienden | esta abierto | abre)", "(cual es | que) [el]? horario [tienen | tiene]",
+      "(abren | estan abiertos | esta abierto | abre) (los domingos | todos los dias | manana | el domingo | en la noche)", "(cierran | cierra) (tarde | temprano)",
+    ] },
     no_bag: { patterns: ["no (necesito | quiero) [una] (bolsa | bolsita) #h:no_bag", "sin bolsa", "(traigo | tengo) (mi | una)? bolsa", "(asi | asi esta) bien sin bolsa", "(bolsa | bolsita) no [gracias]"] },
     bag_yes: { patterns: ["si (una)? (bolsa | bolsita)", "(me da | deme | me puede dar) (una)? (bolsa | bolsita)", "(una)? (bolsa | bolsita) (por favor)?"] },
     // --- the prescription ----------------------------------------------------------------------------
@@ -399,7 +468,7 @@ export const pharmacy: SituationDef = {
       "vengo a surtir (una | mi | esta | la)? receta #h:rx_fill", "(traigo | tengo) (una | la | esta | mi)? receta [del doctor | de la doctora | medica | del medico] #h:rx_have",
       "(me puede | puede | me podria | podria)? surtir (esta | una | mi | la)? receta", "(me | le) (surte | surten) (esta | una | la)? receta", "(quiero | necesito) surtir (una | esta | mi)? receta",
       "(el doctor | la doctora | el medico | la medica) me (recetó | dio) (esto | esta medicina | este medicamento | algo | {product} | una receta)", "me (recetaron | dieron una receta para) (esto | {product} | un antibiotico)",
-      "(tiene | tienen) (lo de)? esta receta", "(tiene | tienen) (este | esta) (medicamento | medicina) [de la receta]", "vengo (por | con) (una | mi)? receta", "(es | traigo) una receta medica",
+      "(tiene | tienen) (lo de)? esta receta", "(tiene | tienen) (este | esta) (medicamento | medicina) [de la receta]", "vengo (por | con) (una | mi)? receta [medica] #h:rx_fill", "(es | traigo) una receta medica",
       "(tengo | traigo) (una | la)? receta (para | de) {product}", "[pero] (si)? (tengo | traigo) (la | una | mi)? receta (aqui | conmigo)", "pero (tengo | traigo) (la | una | mi)? receta",
     ] },
     hand_over: { patterns: [
@@ -447,12 +516,16 @@ export const pharmacy: SituationDef = {
     doctor_q: { patterns: [
       "cuanto (cuesta | es | sale | cobra) (la consulta | el doctor | la doctora | la consulta con el doctor) #price #h:q_consult", "(que | cual es el) precio (de | tiene) la consulta #price", "(es | sale) (cara | caro) la consulta #price",
       "(donde | en donde) (esta | queda) (el consultorio | el doctor | la doctora) #where #h:q_consult_where", "(hay | tienen | tiene) (un)? (doctor | medico | consultorio | doctora) [aqui | aqui cerca] #here",
-      "(esta | hay) (el doctor | doctor | la doctora) (ahorita | ahora | hoy)? #here", "a que hora (atiende | esta | llega | cierra) (el doctor | el consultorio | la doctora)? #hours",
+      // (the doctor's hours need the doctor: a bare "¿A qué hora cierran?" asks about the pharmacy, ask_hours)
+      "(esta | hay) (el doctor | doctor | la doctora) (ahorita | ahora | hoy)? #here", "a que hora (atiende | esta | llega | cierra | abre) (el doctor | el consultorio | la doctora | el medico) #hours",
+      "a que hora (atiende | llega) #hours", "(hasta | desde) que hora (atiende | esta) (el doctor | la doctora | el medico) #hours",
       "(tengo que | hay que | necesito) (hacer | sacar) (una)? cita #cita", "(se necesita | necesito) cita #cita",
     ] },
     // --- dosage step answers ----------------------------------------------------------------------------
     no_questions: { patterns: ["no (tengo)? (ninguna)? pregunta[s]? #h:no_questions", "no ninguna", "(todo | ya) (claro | quedo claro | entendido)", "(ya | todo) (entendi | entendido)", "no (todo)? (esta)? claro", "ninguna [gracias]"] },
-    first_time: { patterns: ["(es | seria) la primera vez [que lo tomo | que la tomo]", "nunca [lo | la] he tomado", "no [lo | la] he tomado (nunca)?", "no se como (tomarlo | tomarla | se toma | se usa | usarlo)"] },
+    // ("Más o menos" at "¿Sabe cómo se toma?" was taken as a how-are-you answer: "¡Ay, lo siento!")
+    first_time: { patterns: ["(es | seria) la primera vez [que lo tomo | que la tomo]", "nunca [lo | la] he tomado", "no [lo | la] he tomado (nunca)?", "no se como (tomarlo | tomarla | se toma | se usa | usarlo | se toman)",
+      "mas o menos", "no muy bien", "no (estoy | estoy muy) (seguro | segura)", "no me acuerdo [bien]", "no recuerdo [bien]", "mejor digame"] },
     not_first: { patterns: ["(ya | si) [lo | la] he tomado [antes]", "ya (lo | la) conozco", "(si | ya) se como (tomarlo | tomarla | se toma | se usa)", "(ya | si) (lo | la) tomé [antes]", "ya lo (he usado | usé)"] },
     know_ctx: { patterns: ["(si)? (ya)? se", "ya se como"] },
     // --- small talk and closing ----------------------------------------------------------------------
@@ -477,7 +550,9 @@ export const pharmacy: SituationDef = {
     ],
     rx_prompt: [
       t("¡Buenas! | Qué | gusto | {m:verlo|f:verla} | otra vez. | ¿Viene | a | surtir | una | receta?", "Hi! | What | pleasure | to see you | again. | Are you coming | to | fill | a | prescription?",
-        "Hi! Good to see you again. Are you here to fill a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted).", 7: "surtir una receta = to fill a prescription." } }),
+        "Hi! Good to see you again. Are you here to fill a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted).", 7: "Mexican: surtir una receta = to fill a prescription." },
+          neutral: t("¡Buenas! | Qué | gusto | {m:verlo|f:verla} | otra vez. | ¿Viene | con | una | receta?", "Hi! | What | pleasure | to see you | again. | Are you coming | with | a | prescription?",
+            "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }) }),
     ],
     rx_prompt_again: [t("¿Trae | alguna | receta?", "Are you bringing | any | prescription?", "Do you have a prescription with you?")],
     sorry_symptom: [
@@ -517,27 +592,44 @@ export const pharmacy: SituationDef = {
       t("Le | recomiendo | {X.np}.", "(To) you | I-recommend | {X.np}.", "I'd recommend {X.np}."),
       t("Para | eso, | le | puedo | dar | {X.np}.", "For | that, | (to) you | I-can | give | {X.np}.", "For that, I can give you {X.np}."),
     ],
-    rec_q_lo: [t("¿Se lo | doy?", "It to you | I-give?", "Shall I get it for you?")],
-    rec_again_lo: [t("¿Entonces, | se lo | doy?", "So, | it to you | I-give?", "So, shall I get it for you?"), t("¿Se lo | lleva, | entonces?", "It | you-take, | then?", "So, will you take it?")],
-    rec_q_la: [t("¿Se la | doy?", "It to you | I-give?", "Shall I get it for you?", { flags: { 0: "la: “it”, agreeing with a feminine noun (la loratadina)." } })],
-    rec_again_la: [t("¿Entonces, | se la | doy?", "So, | it to you | I-give?", "So, shall I get it for you?", { flags: { 1: "la: “it”, agreeing with a feminine noun (la loratadina)." } }), t("¿Se la | lleva, | entonces?", "It | you-take, | then?", "So, will you take it?", { flags: { 0: "la: “it”, agreeing with a feminine noun." } })],
-    rec_q_los: [t("¿Se los | doy?", "Them to you | I-give?", "Shall I get them for you?")],
-    rec_again_los: [t("¿Entonces, | se los | doy?", "So, | them to you | I-give?", "So, shall I get them for you?"), t("¿Se los | lleva, | entonces?", "Them | you-take, | then?", "So, will you take them?")],
-    rec_q_las: [t("¿Se las | doy?", "Them to you | I-give?", "Shall I get them for you?", { flags: { 0: "las: “them”, agreeing with a feminine plural noun (las pastillas)." } })],
-    rec_again_las: [t("¿Entonces, | se las | doy?", "So, | them to you | I-give?", "So, shall I get them for you?", { flags: { 1: "las: “them”, agreeing with a feminine plural noun (las pastillas)." } }), t("¿Se las | lleva, | entonces?", "Them | you-take, | then?", "So, will you take them?", { flags: { 0: "las: “them”, agreeing with a feminine noun." } })],
+    rec_q_lo: [t("¿Se lo | doy?", "It to you | I-give?", "Would you like it?")],
+    rec_again_lo: [t("¿Entonces, | se lo | doy?", "So, | it to you | I-give?", "So, would you like it?"), t("¿Se lo | lleva, | entonces?", "It | you-take, | then?", "So, will you take it?")],
+    rec_q_la: [t("¿Se la | doy?", "It to you | I-give?", "Would you like it?", { flags: { 0: "la: “it”, agreeing with a feminine noun (la loratadina)." } })],
+    rec_again_la: [t("¿Entonces, | se la | doy?", "So, | it to you | I-give?", "So, would you like it?", { flags: { 1: "la: “it”, agreeing with a feminine noun (la loratadina)." } }), t("¿Se la | lleva, | entonces?", "It | you-take, | then?", "So, will you take it?", { flags: { 0: "la: “it”, agreeing with a feminine noun." } })],
+    rec_q_los: [t("¿Se los | doy?", "Them to you | I-give?", "Would you like them?")],
+    rec_again_los: [t("¿Entonces, | se los | doy?", "So, | them to you | I-give?", "So, would you like them?"), t("¿Se los | lleva, | entonces?", "Them | you-take, | then?", "So, will you take them?")],
+    rec_q_las: [t("¿Se las | doy?", "Them to you | I-give?", "Would you like them?", { flags: { 0: "las: “them”, agreeing with a feminine plural noun (las pastillas)." } })],
+    rec_again_las: [t("¿Entonces, | se las | doy?", "So, | them to you | I-give?", "So, would you like them?", { flags: { 1: "las: “them”, agreeing with a feminine plural noun (las pastillas)." } }), t("¿Se las | lleva, | entonces?", "Them | you-take, | then?", "So, will you take them?", { flags: { 0: "las: “them”, agreeing with a feminine noun." } })],
     rec_fornow: [t("Mientras, | para | los | síntomas, | le | puedo | dar | {X.np}.", "Meanwhile, | for | the | symptoms, | (to) you | I-can | give | {X.np}.",
       "In the meantime, I can give you {X.np} for the symptoms.")],
     rec_alt: [t("Si | prefiere, | también | tengo | {X.np}.", "If | you-prefer, | also | I-have | {X.np}.", "If you'd rather, I also have {X.np}.")],
     rec_nothing_else: [t("Para | eso, | es | lo que | le | puedo | recomendar.", "For | that, | it's | what | (to) you | I-can | recommend.", "For that, that's what I can recommend.")],
     rec_none: [t("Está bien, | como | guste.", "It's fine, | as | you-like.", "All right, whatever you prefer.")],
     switch_aceta: [t("Mejor | le | doy | paracetamol.", "Better | (to) you | I-give | acetaminophen.", "I'd rather give you acetaminophen.")],
-    nsaid_reason: [t("Si | es | {m:alérgico|f:alérgica} | a | la | aspirina, | el | ibuprofeno | no le conviene.",
-      "If | you-are | allergic | to | — | aspirin, | — | ibuprofen | isn't good for you.", "If you're allergic to aspirin, ibuprofen isn't a good idea.",
-      { flags: { 4: "la: Spanish uses the article for a substance in general; English doesn't.", 6: "el: the same, for a medicine in general." } })],
+    // (audit 5 Nov: said for an allergy to aspirin, ibuprofen, naproxen or "los antiinflamatorios"; it used to say
+    // "Si es alérgico a la aspirina" whatever the learner was allergic to)
+    nsaid_reason: [t("Con | esa | alergia, | mejor | no tome | antiinflamatorios.", "With | that | allergy, | better | don't take | anti-inflammatories.",
+      "With that allergy, you'd better not take anti-inflammatories.", { flags: { 5: "antiinflamatorios: ibuprofen, aspirin, naproxen… (NSAIDs), which cross-react with that allergy." } })],
     bp_reason: [t("Con | la | presión | alta, | mejor | no tome | ibuprofeno.", "With | — | blood pressure | high, | better | don't take | ibuprofen.",
       "With high blood pressure, you'd better not take ibuprofen.", { flags: { 1: "la: no article in English here." } })],
     bp_reason_cold: [t("Con | la | presión | alta, | mejor | no tome | antigripales.", "With | — | blood pressure | high, | better | don't take | cold medicines.",
       "With high blood pressure, you'd better not take cold medicine.", { flags: { 1: "la: no article in English here.", 6: "Most cold medicines have a decongestant that raises blood pressure." } })],
+    // heart, depression, sleeping or anxiety pills, a daily aspirin, a medicine the learner can't name (and, for the
+    // cold medicine, diabetes or thyroid pills)
+    mix_reason: [t("Por si acaso, | mejor | no tome | ibuprofeno.", "Just in case, | better | don't take | ibuprofen.",
+      "Just to be safe, you'd better not take ibuprofen.", { flags: { 0: "por si acaso = just in case." } })],
+    mix_reason_cold: [t("Por si acaso, | mejor | no tome | antigripales.", "Just in case, | better | don't take | cold medicines.",
+      "Just to be safe, you'd better not take cold medicine.", { flags: { 3: "Cold medicines have a decongestant and an antihistamine that don't mix well with some medicines and conditions." } })],
+    para_reason: [t("Con | esa | alergia, | mejor | no tome | paracetamol.", "With | that | allergy, | better | don't take | acetaminophen.",
+      "With that allergy, you'd better not take acetaminophen.", { flags: { 5: "Cold medicines have acetaminophen in them too." } })],
+    // (aspirin is never given to children or teenagers: Reye's syndrome)
+    kids_aspirin: [t("La | aspirina | no es | para | niños; | para | ellos, | mejor | paracetamol.", "— | Aspirin | isn't | for | children; | for | them, | better | acetaminophen.",
+      "Aspirin isn't for children; for them, acetaminophen is better.", { flags: { 0: "la: Spanish uses the article for a medicine in general; English doesn't.", 2: "Aspirin isn't given to children or teenagers (it can cause Reye's syndrome)." } })],
+    // a cold medicine already has acetaminophen in it (a second symptom, or both asked for)
+    cold_has_para: [t("El | antigripal | ya | trae | paracetamol; | con | eso | es | suficiente.", "The | cold medicine | already | brings | acetaminophen; | with | that | it's | enough.",
+      "The cold medicine already has acetaminophen in it; that's enough.", { flags: { 3: "traer = to bring; of a product, “to have in it, to come with”." } })],
+    cold_para_warn: [t("Ojo: | el | antigripal | ya | trae | paracetamol; | no los tome | juntos.", "Careful: | the | cold medicine | already | brings | acetaminophen; | don't take them | together.",
+      "Careful: the cold medicine already has acetaminophen in it, so don't take them together.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." } })],
     kids_formula: [t("Para | niños, | mejor | la | presentación | infantil, | en | jarabe.", "For | children, | better | the | version | children's, | in | syrup.",
       "For children, the children's version is better, the syrup.")],
     // --- the doctor next door
@@ -574,41 +666,59 @@ export const pharmacy: SituationDef = {
     qty_three: [t("Claro, | tres.", "Sure, | three.", "Sure, three.")],
     paid_already: [t("Eso | ya | está | pagado.", "That | already | is | paid.", "That's already paid for.")],
     here_it_is: [t("Aquí tiene.", "Here you go.", "Here you go."), t("Aquí está.", "Here it is.", "Here it is.")],
+    // (pastillas, curitas: never "Aquí está")
+    here_pl: [t("Aquí tiene.", "Here you go.", "Here you go.")],
     where_it_is: [t("Todo | está | aquí | atrás | del | mostrador; | yo | se lo | doy.", "Everything | is | here | behind | the | counter; | I | it to you | give.",
       "Everything's back here behind the counter; I'll get it for you.")],
     unknown_product: [t("Ese | medicamento | solo | se vende | con | receta | médica.", "That | medicine | only | is sold | with | prescription | medical.", "That medicine is only sold with a doctor's prescription.")],
     // --- brand-name or generic
+    // "de patente" (brand-name) is Mexican: the neutral text says "de marca" (audit 5 Nov)
     generic_q: [
       t("¿De patente | o | genérico?", "Brand-name | or | generic?", "Brand-name or generic?",
-        { flags: { 0: "de patente = the brand-name medicine; el genérico is the same substance, cheaper." } }),
+        { flags: { 0: "Mexican: de patente = the brand-name medicine (elsewhere: de marca); el genérico is the same substance, cheaper." },
+          neutral: t("¿De marca | o | genérico?", "Brand-name | or | generic?", "Brand-name or generic?",
+            { flags: { 0: "de marca = the brand-name medicine; el genérico is the same substance, cheaper." } }) }),
       t("¿Cuál | le | doy, | el | de patente | o | el | genérico?", "Which | (to) you | I-give, | the | brand-name one | or | the | generic?", "Which would you like, brand-name or generic?",
-        { flags: { 4: "de patente = the brand-name medicine; el genérico is the same substance, cheaper." } }),
+        { flags: { 4: "Mexican: de patente = the brand-name medicine (elsewhere: de marca); el genérico is the same substance, cheaper." },
+          neutral: t("¿Cuál | le | doy, | el | de marca | o | el | genérico?", "Which | (to) you | I-give, | the | brand-name one | or | the | generic?", "Which would you like, brand-name or generic?",
+            { flags: { 4: "de marca = the brand-name medicine; el genérico is the same substance, cheaper." } }) }),
     ],
     which_one: [t("Perdón, | ¿cuál | de | los | dos?", "Sorry, | which | of | the | two?", "Sorry, which of the two?")],
     switch_q: [t("¿Quiere | el | genérico, | entonces?", "Do you want | the | generic, | then?", "Do you want the generic, then?")],
-    generic_again: [t("¿Entonces, | de patente | o | genérico?", "So, | brand-name | or | generic?", "So, brand-name or generic?")],
+    generic_again: [t("¿Entonces, | de patente | o | genérico?", "So, | brand-name | or | generic?", "So, brand-name or generic?",
+      { neutral: t("¿Entonces, | de marca | o | genérico?", "So, | brand-name | or | generic?", "So, brand-name or generic?") })],
     generic_diff: [t("Es | la | misma | sustancia; | el | genérico | nada más | es | más | barato.", "It's | the | same | substance; | the | generic | just | is | more | cheap.",
       "It's the same active ingredient; the generic is just cheaper.")],
     generic_prices: [t("El | de patente | cuesta | {$price}, | y | el | genérico, | {$amount}.", "The | brand-name one | costs | {$price}, | and | the | generic, | {$amount}.",
-      "The brand-name one is {$price}, and the generic is {$amount}.")],
+      "The brand-name one is {$price}, and the generic is {$amount}.",
+      { neutral: t("El | de marca | cuesta | {$price}, | y | el | genérico, | {$amount}.", "The | brand-name one | costs | {$price}, | and | the | generic, | {$amount}.",
+        "The brand-name one is {$price}, and the generic is {$amount}.") })],
     generic_rec: [t("Yo | le | recomiendo | el | genérico: | funciona | igual.", "I | (to) you | recommend | the | generic: | it-works | the same.", "I'd go with the generic; it works just as well.")],
     gen_ok: [t("Muy | bien, | el | genérico. | Aquí tiene.", "Very | good, | the | generic. | Here you go.", "All right, the generic. Here you go.")],
-    pat_ok: [t("Muy | bien, | el | de patente. | Aquí tiene.", "Very | good, | the | brand-name one. | Here you go.", "All right, the brand-name one. Here you go.")],
+    pat_ok: [t("Muy | bien, | el | de patente. | Aquí tiene.", "Very | good, | the | brand-name one. | Here you go.", "All right, the brand-name one. Here you go.",
+      { neutral: t("Muy | bien, | el | de marca. | Aquí tiene.", "Very | good, | the | brand-name one. | Here you go.", "All right, the brand-name one. Here you go.") })],
     gen_ok_f: [t("Muy | bien, | la | genérica. | Aquí tiene.", "Very | good, | the | generic. | Here you go.", "All right, the generic. Here you go.",
       { flags: { 2: "la genérica: agrees with a feminine medicine (la loratadina)." } })],
     pat_ok_f: [t("Muy | bien, | la | de patente. | Aquí tiene.", "Very | good, | the | brand-name one. | Here you go.", "All right, the brand-name one. Here you go.",
-      { flags: { 2: "la de patente: agrees with a feminine medicine (la loratadina)." } })],
+      { flags: { 2: "la de patente: agrees with a feminine medicine (la loratadina)." },
+        neutral: t("Muy | bien, | la | de marca. | Aquí tiene.", "Very | good, | the | brand-name one. | Here you go.", "All right, the brand-name one. Here you go.",
+          { flags: { 2: "la de marca: agrees with a feminine medicine (la loratadina)." } }) })],
     gen_ok_rx: [t("Muy | bien, | la | genérica.", "Very | good, | the | generic.", "All right, the generic.", { flags: { 2: "la genérica: agrees with la amoxicilina." } })],
-    pat_ok_rx: [t("Muy | bien, | la | de patente.", "Very | good, | the | brand-name one.", "All right, the brand-name one.", { flags: { 2: "la de patente: agrees with la amoxicilina." } })],
+    pat_ok_rx: [t("Muy | bien, | la | de patente.", "Very | good, | the | brand-name one.", "All right, the brand-name one.", { flags: { 2: "la de patente: agrees with la amoxicilina." },
+      neutral: t("Muy | bien, | la | de marca.", "Very | good, | the | brand-name one.", "All right, the brand-name one.", { flags: { 2: "la de marca: agrees with la amoxicilina." } }) })],
     rx_here: [t("Aquí tiene | su | medicina.", "Here you have | your | medicine.", "Here's your medicine.")],
     out_brand: [t("El | de patente | se me acabó, | pero | tengo | el | genérico: | es | lo mismo | y | más | barato.",
       "The | brand-name one | ran out on me, | but | I-have | the | generic: | it's | the same | and | more | cheap.",
-      "I'm out of the brand-name one, but I have the generic: it's the same thing, and cheaper.")],
+      "I'm out of the brand-name one, but I have the generic: it's the same thing, and cheaper.",
+      { neutral: t("El | de marca | se me acabó, | pero | tengo | el | genérico: | es | lo mismo | y | más | barato.",
+        "The | brand-name one | ran out on me, | but | I-have | the | generic: | it's | the same | and | more | cheap.",
+        "I'm out of the brand-name one, but I have the generic: it's the same thing, and cheaper.") })],
     cheaper_yes: [t("Sí, | el | genérico: | cuesta | {$price}.", "Yes, | the | generic: | it-costs | {$price}.", "Yes, the generic: it's {$price}.")],
     cheaper_already: [t("Ya | le | di | el | genérico: | es | lo | más | barato.", "Already | (to) you | I-gave | the | generic: | it's | the | most | cheap.", "I already gave you the generic; it's the cheapest.")],
     cheaper_none: [t("Es | lo | más | económico | que | tengo.", "It's | the | most | economical | that | I-have.", "That's the cheapest I have.")],
     // --- how to take it
     ask_questions: [t("¿Sabe | cómo | se toma?", "Do you know | how | it's taken?", "Do you know how to take it?")],
+    ask_questions_pl: [t("¿Sabe | cómo | se toman?", "Do you know | how | they're taken?", "Do you know how to take them?")],
     ask_use: [t("¿Sabe | cómo | se usa?", "Do you know | how | it's used?", "Do you know how to use it?")],
     questions_q: [t("¿Tiene | alguna | pregunta?", "Do you have | any | question?", "Any questions?")],
     dose_first: [t("Primero | vemos | qué | le | conviene.", "First | we-see | what | (to) you | suits.", "Let's first see what's right for you.")],
@@ -659,15 +769,20 @@ export const pharmacy: SituationDef = {
       { flags: { 2: "no tener ciencia = to be simple, nothing to it." } })],
     kids_dose: [t("Para | niños, | la | dosis | va | según | el | peso; | viene | en | la | caja.", "For | children, | the | dose | goes | according to | the | weight; | it-comes | on | the | box.",
       "For children, the dose depends on their weight; it's on the box.")],
+    // creams, sunscreen, bug spray: for children too, from an age the label gives (none for babies)
+    kids_skin: [t("Sí, | también | es | para | niños; | en | la | etiqueta | dice | desde | qué | edad.", "Yes, | also | it's | for | children; | on | the | label | it-says | from | what | age.",
+      "Yes, it's for children too; the label says from what age.")],
+    kids_ok: [t("Claro.", "Sure.", "Sure.")],
     // the prescription (amoxicillin)
     rx_ask: [
       t("Claro. | ¿Me | permite | la | receta?", "Sure. | (To) me | you-allow | the | prescription?", "Sure. May I see the prescription?"),
       t("Con gusto. | ¿Me | deja | ver | la | receta?", "Gladly. | (To) me | you-let | see | the | prescription?", "Of course. Can I see the prescription?"),
     ],
     rx_ask_again: [t("¿Me | permite | la | receta, | por favor?", "(To) me | you-allow | the | prescription, | please?", "Could I see the prescription, please?")],
-    rx_read: [t("A ver… | Amoxicilina | de | quinientos: | una | cápsula | cada | ocho | horas, | por | siete | días.",
-      "Let's see… | Amoxicillin | of | five hundred: | one | capsule | every | eight | hours, | for | seven | days.",
-      "Let's see… Amoxicillin, 500 milligrams: one capsule every eight hours for seven days.", { flags: { 3: "quinientos: 500 milligrams." } })],
+    // (five days, as Doctora Herrera prescribes it in s31: "una cápsula cada ocho horas… por cinco días")
+    rx_read: [t("A ver… | Amoxicilina | de | quinientos: | una | cápsula | cada | ocho | horas, | por | cinco | días.",
+      "Let's see… | Amoxicillin | of | five hundred: | one | capsule | every | eight | hours, | for | five | days.",
+      "Let's see… Amoxicillin, 500 milligrams: one capsule every eight hours for five days.", { flags: { 3: "quinientos: 500 milligrams." } })],
     rx_stamp: [t("Como | es | antibiótico, | tengo | que | sellar | la | receta.", "Since | it's | antibiotic, | I-have | to | stamp | the | prescription.",
       "Since it's an antibiotic, I have to stamp the prescription.", { flags: { 5: "In Mexico a pharmacy stamps a prescription for antibiotics when it fills it (and may keep it)." } })],
     rx_finish: [t("Tómesela | toda, | aunque | se sienta | mejor.", "Take it | all, | even if | you-feel | better.", "Take all of it, even if you feel better.")],
@@ -688,8 +803,9 @@ export const pharmacy: SituationDef = {
     food_any: [t("Con | o | sin | alimentos, | da igual.", "With | or | without | food, | it doesn't matter.", "With or without food, it doesn't matter.")],
     alcohol_no: [t("Mejor | no tome | alcohol | con | este | medicamento.", "Better | don't drink | alcohol | with | this | medicine.", "Better not drink alcohol with this medicine.")],
     alcohol_skin: [t("Eso | es | para | la | piel; | no | hay | problema.", "That | is | for | the | skin; | no | there's | problem.", "That's for your skin, so there's no problem.")],
-    side_effects: [t("Con | la | dosis | que | le | dije, | no debe | darle | problemas.", "With | the | dose | that | (to) you | I-told, | it shouldn't | give you | problems.",
-      "At the dose I told you, it shouldn't give you any trouble.")],
+    // (also asked before he has said the dose: "la dosis que le dije" pointed at nothing)
+    side_effects: [t("Con | la | dosis | correcta, | no debe | darle | problemas.", "With | the | dose | correct, | it shouldn't | give you | problems.",
+      "At the right dose, it shouldn't give you any trouble.")],
     how_long_take: [t("Mientras | tenga | síntomas. | Si | en | tres | días | no mejora, | vaya | al | doctor.", "While | you-have | symptoms. | If | in | three | days | you don't improve, | go | to the | doctor.",
       "As long as you have symptoms. If you're not better in three days, see a doctor.")],
     kids_yes: [t("Para | niños | hay | presentación | infantil.", "For | children | there's | version | children's.", "There's a children's version.")],
@@ -709,14 +825,26 @@ export const pharmacy: SituationDef = {
     cash_ok: [t("Claro, | en efectivo.", "Sure, | in cash.", "Sure, cash is fine.")],
     change_back: [t("Gracias. | Aquí tiene | su | cambio.", "Thanks. | Here's | your | change.", "Thanks. Here's your change.")],
     change_is: [t("Gracias. | Su | cambio: | {$price}.", "Thanks. | Your | change: | {$price}.", "Thanks. Your change is {$price}.")],
-    short: [t("Perdón, | son | {$total}; | faltan | {$price}.", "Sorry, | it's | {$total}; | they're-missing | {$price}.", "Sorry, it's {$total}; you're {$price} short.")],
+    // a bill short of the total (said just before): one amount, so every shortfall has its clip (the old line with
+    // {$total} and {$price} was voiced only for the four pairs the random runs happened to say)
+    short: [t("Perdón, | faltan | {$price}.", "Sorry, | they're-missing | {$price}.", "Sorry, you're {$price} short.", { flags: { 1: "faltan: “are missing”, the pesos still to pay." } })],
     pay_later: [t("En | un | momento | le | cobro.", "In | a | moment | (to) you | I-charge.", "I'll ring you up in a moment.")],
     no_problem: [t("No hay problema.", "No problem.", "No problem.")],
+    no_dollars: [t("Solo | aceptamos | pesos, | pero | puede | pagar | con | tarjeta.", "Only | we-accept | pesos, | but | you-can | pay | with | card.", "We only take pesos, but you can pay by card.")],
+    receipt_here: [t("Claro, | aquí tiene | su | ticket.", "Sure, | here's | your | receipt.", "Sure, here's your receipt.",
+      { flags: { 3: "Mexican: ticket = a store receipt. Elsewhere: recibo." }, neutral: t("Claro, | aquí tiene | su | recibo.", "Sure, | here's | your | receipt.", "Sure, here's your receipt.") })],
+    receipt_later: [t("Claro, | se lo | doy | cuando | pague.", "Sure, | it to you | I-give | when | you-pay.", "Sure, I'll give it to you when you pay.")],
+    // the pharmacy's hours (the doctor next door: doc_hours)
+    hours: [t("Abrimos | todos | los | días, | de | ocho | de la mañana | a | diez | de la noche.", "We-open | all | the | days, | from | eight | a.m. | to | ten | p.m.",
+      "We're open every day, from 8 a.m. to 10 p.m.")],
     ask_bag: [t("¿Le | doy | una | bolsita?", "(To) you | I-give | a | little bag?", "Would you like a bag?", { flags: { 3: "bolsita: bolsa (bag) with the diminutive, very common in Mexico." } })],
     bag_here: [t("Aquí | va, | en | su | bolsita.", "Here | it-goes, | in | your | little bag.", "Here you go, in a bag.")],
     // --- goodbye
     feel_better: [t("¡Que | se mejore!", "That | you-get better!", "Feel better!"), t("¡Que | se alivie | pronto!", "That | you-get well | soon!", "I hope you feel better soon!")],
     see_doctor: [t("Si | no se le quita | en | unos | días, | vaya | al | doctor.", "If | it doesn't go away | in | some | days, | go | to the | doctor.", "If it doesn't go away in a few days, see a doctor.")],
+    // for a child or another adult (vayan: the learner and the patient)
+    see_doctor_other: [t("Si | no mejora | en | un | par | de | días, | vayan | al | doctor.", "If | (he/she) doesn't improve | in | a | couple | of | days, | go (both of you) | to the | doctor.",
+      "If they're not better in a couple of days, take them to a doctor.")],
     closing_other: [t("¡Que | le | vaya | bien!", "That | (to) you | it-goes | well!", "Have a good one!")],
     closing_nobuy: [t("Cuando | guste, | aquí | estamos.", "Whenever | you-like, | here | we-are.", "We're here whenever you need us.")],
   },
@@ -757,7 +885,10 @@ export const pharmacy: SituationDef = {
     rx: {
       lt: "Fill a prescription",
       items: [
-        { id: "rx_fill", s: t("Vengo | a | surtir | una | receta.", "I-come | to | fill | a | prescription.", "I'm here to fill a prescription."), note: "surtir una receta = to fill a prescription." },
+        { id: "rx_fill", s: t("Vengo | a | surtir | una | receta.", "I-come | to | fill | a | prescription.", "I'm here to fill a prescription.",
+          { flags: { 2: "Mexican: surtir una receta = to fill a prescription." },
+            neutral: t("Vengo | con | una | receta.", "I-come | with | a | prescription.", "I'm here with a prescription.") }),
+          note: "In Mexico you “surten” a prescription (fill it): “Vengo a surtir una receta”. Anywhere: “Vengo con una receta”." },
         { id: "rx_have", s: t("Traigo | una | receta | del | doctor.", "I-bring | a | prescription | from the | doctor.", "I have a prescription from the doctor.") },
         { id: "here_rx", s: t("Aquí está | la | receta.", "Here is | the | prescription.", "Here's the prescription.") },
         { id: "no_rx", s: t("No tengo | receta.", "I don't have | prescription.", "I don't have a prescription.") },
@@ -829,7 +960,8 @@ export const pharmacy: SituationDef = {
       lt: "Choose brand-name or generic",
       items: [
         { id: "generic", s: t("El | genérico, | por favor.", "The | generic, | please.", "The generic, please."), note: "The same substance as the brand-name medicine, and cheaper." },
-        { id: "patent", s: t("De patente, | por favor.", "Brand-name, | please.", "Brand-name, please.") },
+        { id: "patent", s: t("De patente, | por favor.", "Brand-name, | please.", "Brand-name, please.",
+          { neutral: t("De marca, | por favor.", "Brand-name, | please.", "Brand-name, please.") }), note: "Mexico says “de patente”; “de marca” is understood everywhere." },
         { id: "q_diff", s: t("¿Cuál | es | la | diferencia?", "What | is | the | difference?", "What's the difference?") },
       ],
     },
@@ -893,6 +1025,8 @@ export const pharmacy: SituationDef = {
     "se me acabó": { reason: "grammatical_fusion", split: "se → itself + me → on me + acabó → it ended; = I ran out of it.", minimal: "Three words, one verb phrase." },
     "lo mismo": { reason: "lexical_expression", split: "lo → it + mismo → same; = the same (thing).", minimal: "Two words." },
     "de patente": { reason: "lexical_expression", split: "de → of + patente → patent; of a medicine = brand-name.", minimal: "Two words." },
+    "de marca": { reason: "lexical_expression", split: "de → of + marca → brand; of a medicine = brand-name.", minimal: "Two words." },
+    "por si acaso": { reason: "lexical_expression", split: "por → for + si → if + acaso → perhaps; together = just in case.", minimal: "Three words." },
     "da igual": { reason: "lexical_expression", split: "da → it gives + igual → equal; = it doesn't matter.", minimal: "Two words." },
     "un poco": { reason: "lexical_expression", split: "un → a + poco → little; together = a little / a bit.", minimal: "Two words." },
     "después de": { reason: "lexical_expression", split: "después → after + de → of; the preposition = after.", minimal: "Two words." },
@@ -935,12 +1069,15 @@ export const pharmacy: SituationDef = {
     { id: "howlong", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && c.s.askHowLong && !c.s.decision, done: (c) => c.s.days !== undefined,
       ask: (c) => c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_when" : "ask_howlong"), expects: ["howlong_ans", "howlong_ctx"],
       suggest: [{ lt: "Say since when", hint: "howlong" }],
-      help: (c) => { c.s.days = 1; c.say("ack"); } },
+      // "No sé": he goes on (the global "no sé" holds the turn, which left him silent)
+      help: (c) => { c.s.days = 1; c.say("ack"); goOn(c); } },
     { id: "meds", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && c.s.askMeds && !c.s.decision, done: (c) => !!c.s.meds,
       ask: (c) => c.say(c.s.forWho && c.s.forWho !== "me" ? "ask_meds_other" : "ask_meds"), expects: ["meds_ans", "meds_ctx"],
       suggest: [{ lt: "Say whether you take other medicines", hint: "meds" }, { lt: "Say yes or no", hint: "g_yesno" }],
       yes: (c) => { c.say("ask_meds_which"); c.hold(); },
-      no: (c) => { c.s.meds = "none"; c.say("ack"); } },
+      no: (c) => { c.s.meds = "none"; c.say("ack"); },
+      // "No sé" (or, after "¿Cuál?", "No sé cuál"): a medicine he can't check, so nothing that could mix badly
+      help: (c) => { c.s.meds = "risk"; c.say("ack"); goOn(c); } },
     { id: "allergy",
       when: (c) => !c.s.decision && c.s.askAllergy && (c.s.mode === "rx" ? !!c.s.rxRead : !!c.s.symptom),
       done: (c) => !!c.s.allergy,
@@ -952,15 +1089,23 @@ export const pharmacy: SituationDef = {
     { id: "recommend", when: (c) => c.s.mode !== "rx" && !!c.s.symptom && !product(c) && !c.s.decision, done: (c) => !!product(c),
       ask: (c) => {
         const p = c.s.offer ?? recommendation(c);
+        const was = REC[c.s.symptom];
+        // the usual one ruled out (an allergy, other medicines) or already tried without relief: another one
+        const why = was && was !== p ? unsafeWhy(c, was) : undefined;
+        // (nothing he can give safely: the doctor next door)
+        if (!p) { if (why && !c.s.recSaid) { c.s.recSaid = true; c.say(why); } noSafe(c); return; }
         c.s.offer = p;
         if (!c.s.recSaid) {
           c.s.recSaid = true;
-          const was = REC[c.s.symptom];
-          if (p === "acetaminophen" && (was === "ibuprofen" || was === "cold_medicine")) {
-            if (was === "ibuprofen" && c.s.allergy === "nsaid") c.say("nsaid_reason"); else if (c.s.meds === "bp") c.say(was === "ibuprofen" ? "bp_reason" : "bp_reason_cold");
+          if (p === "acetaminophen" && was !== p && (why || was === c.s.took)) {
+            if (why) c.say(why);
             c.say("switch_aceta");
-          } else c.say(c.s.long || c.s.wantsRx ? "rec_fornow" : "rec", { X: p });
-          if (c.s.forWho === "child" && at(p).med) c.say("kids_formula");
+          } else {
+            if (why) c.say(why); // "Con esa alergia, mejor no tome paracetamol." "Le recomiendo ibuprofeno."
+            c.say(c.s.long || c.s.wantsRx ? "rec_fornow" : "rec", { X: p });
+          }
+          // (an electrolyte drink is a drink, not a syrup)
+          if (c.s.forWho === "child" && at(p).med) c.say(p === "oral_serum" ? "kids_yes" : "kids_formula");
         }
         sayRecQ(c, p, !!c.s.recQSaid);
         c.s.recQSaid = true;
@@ -995,12 +1140,12 @@ export const pharmacy: SituationDef = {
             yes: (cc) => { cc.say("go_ahead"); cc.hold(); }, no: (cc) => { cc.say("ok"); } });
           return;
         }
-        c.say(at(product(c)!).skin ? "ask_use" : "ask_questions");
+        c.say(at(product(c)!).skin ? "ask_use" : plural(product(c)!) ? "ask_questions_pl" : "ask_questions");
       },
       expects: ["ask_dosage", "first_time", "not_first", "know_ctx", "ask_drowsy", "ask_food", "ask_alcohol", "ask_kids", "ask_how_long_take", "ask_rx_needed", "ask_side_effects"],
       suggest: [{ lt: "Ask how to take it", hint: "dose" }, { lt: "Ask about the medicine", hint: "ask" }],
-      // "No sé" to "¿Sabe cómo se toma?": the directions
-      help: (c) => { giveDosage(c); },
+      // "No sé" to "¿Sabe cómo se toma?": the directions, then on to the total
+      help: (c) => { giveDosage(c); goOn(c); },
       // (the directions may already have been given this turn: never twice in a row)
       yes: (c) => { if (!c.s.dosageGiven) knowsIt(c); },
       no: (c) => { if (!c.s.dosageGiven) giveDosage(c); } },
@@ -1087,11 +1232,13 @@ export const pharmacy: SituationDef = {
       const s = slots.symptom ? (Array.isArray(slots.symptom) ? slots.symptom[0] : slots.symptom) : symptomFromTags(seg.tags);
       if (seg.tags.includes("child")) c.s.forWho = "child";
       else if (seg.tags.includes("adult")) c.s.forWho = "adult";
-      if (!s) return;
+      if (!s) { if (c.s.forWho === "child") fixUnsafe(c); return; }
       setSymptom(c, s);
       // "Me duele la garganta desde ayer": how long is answered too
       const d = daysFromTags(seg.tags, slots);
       if (d !== undefined && c.s.days === undefined && c.s.mode !== "rx") setDays(c, d);
+      // aspirin on the counter, and now it's for a child: acetaminophen instead
+      if (c.s.forWho === "child") fixUnsafe(c);
     },
     symptom_ctx(c, slots, seg) { pharmacy.handlers.symptom_state(c, slots, seg); },
     feel_sick(c) {
@@ -1115,6 +1262,9 @@ export const pharmacy: SituationDef = {
       setGenFromTags(c, id, seg.tags);
       if (at(id).rx && c.s.mode !== "rx") { refuseRx(c); return; }
       if (c.s.mode === "rx" && id === "antibiotic") { if (!c.s.rxRead) return; c.say("ack"); return; }
+      // ruled out by an allergy, other medicines or a child: the reason, and acetaminophen instead
+      const why = basket(c).includes(id) ? undefined : unsafeWhy(c, id);
+      if (why) { steerToAceta(c, why); return; }
       if (c.step === "more") c.s.moreDone = false;
       // "Deme dos cajas": the number is said back and counted in the total
       const q = qtyFromTags(seg.tags);
@@ -1135,6 +1285,8 @@ export const pharmacy: SituationDef = {
       if (!id) return;
       setGenFromTags(c, id, seg.tags);
       if (at(id).rx && c.s.mode !== "rx") { refuseRx(c); return; }
+      const why = unsafeWhy(c, id);
+      if (why) { steerToAceta(c, why); return; }
       const cur = product(c);
       let boxes = 1; // "Mejor paracetamol" after two boxes of ibuprofen: two boxes of it
       // (one paid for already stays: the new one is a second sale)
@@ -1153,12 +1305,17 @@ export const pharmacy: SituationDef = {
       addProduct(c, id);
     },
     other_option(c) {
-      if (c.s.altOffered && !product(c)) { c.say("rec_nothing_else"); return; }
-      if (c.step === "recommend" || (c.s.offer && !product(c))) { declineOffer(c); return; }
+      // "¿Tiene otra cosa?" at his recommendation: the other medicine, if there is a safe one (asking is no no)
+      if (!product(c) && (c.step === "recommend" || c.s.offer)) {
+        if (!c.s.altOffered && safeAlt(c, c.s.offer ?? recommendation(c))) { declineOffer(c); return; }
+        c.say("rec_nothing_else"); return;
+      }
+      // nothing asked for yet: what's wrong?
+      if (!product(c) && !c.s.symptom) { c.say("ask_symptoms"); c.hold(); return; }
       const cur = product(c);
-      const alt = cur ? ALT[cur] : undefined;
+      const alt = cur ? safeAlt(c, cur) : undefined;
       if (alt && !basket(c).includes(alt)) { c.s.offer = alt; c.say("rec_alt", { X: alt }); sayRecQ(c, alt); c.expect(altPending(alt, true)); }
-      else c.say("cheaper_none");
+      else c.say("rec_nothing_else");
     },
     accept_rec(c, _slots, seg) {
       if (!product(c) && (c.s.offer || c.s.symptom)) {
@@ -1186,6 +1343,7 @@ export const pharmacy: SituationDef = {
       else if (tags.includes("adult") || tags.includes("age")) c.s.forWho = "adult";
       else c.s.forWho = "me";
       c.say("ack");
+      if (c.s.forWho === "child") fixUnsafe(c);
     },
     howlong_ans(c, slots, seg) {
       const d = daysFromTags(seg.tags, slots);
@@ -1195,28 +1353,42 @@ export const pharmacy: SituationDef = {
     howlong_ctx(c, slots, seg) { pharmacy.handlers.howlong_ans(c, slots, seg); },
     meds_ctx(c, slots, seg) { pharmacy.handlers.meds_ans(c, slots, seg); },
     allergy_ctx(c, slots, seg) { pharmacy.handlers.allergy_ans(c, slots, seg); },
-    meds_ans(c, _slots, seg) {
-      if (seg.tags.includes("took")) { if (!c.s.meds) c.s.meds = "other"; c.say("allergy_ok"); return; }
+    meds_ans(c, slots, seg) {
+      if (seg.tags.includes("took")) {
+        // "Ya tomé paracetamol, pero no me hizo nada": recorded (never an order), and not recommended again
+        if (!c.s.meds) c.s.meds = "took";
+        const took = last(slots.product) as string | undefined;
+        if (took) c.s.took = took;
+        c.say("allergy_ok");
+        if (took && !product(c) && c.s.offer === took && safeAlt(c, took)) { c.s.offer = undefined; c.s.recSaid = false; c.s.recQSaid = false; }
+        return;
+      }
+      // "Tomo otro medicamento": "¿Cuál?" (the answer comes as meds_ans or meds_ctx)
+      if (seg.tags.includes("which")) { askWhichMed(c); return; }
       if (seg.tags.includes("bp")) c.s.meds = "bp";
+      else if (seg.tags.includes("risk")) c.s.meds = "risk";
+      else if (seg.tags.includes("gland")) c.s.meds = "gland";
       else if (seg.tags.includes("vit")) c.s.meds = "vit";
       else if (seg.tags.includes("other")) c.s.meds = "other";
       else c.s.meds = "none";
+      // ("Con eso no hay problema" only for medicines that mix with all of his: cholesterol pills, the pill)
       if (c.s.meds === "other") c.say("meds_ok"); else c.say("ack");
-      // blood-pressure pills and ibuprofen already on the counter: acetaminophen instead
-      if (c.s.meds === "bp" && (product(c) === "ibuprofen" || product(c) === "cold_medicine") && !locked(c, product(c)!)) swapToAceta(c, product(c)!, product(c) === "ibuprofen" ? "bp_reason" : "bp_reason_cold");
-      else if (c.s.meds === "bp" && !product(c) && (c.s.offer === "ibuprofen" || c.s.offer === "cold_medicine")) { c.s.offer = undefined; c.s.recSaid = false; }
+      // blood-pressure (or heart…) pills and ibuprofen or a cold medicine already on the counter: acetaminophen instead
+      if (fixUnsafe(c)) return;
+      if (!product(c) && c.s.offer && unsafeWhy(c, c.s.offer)) { c.s.offer = undefined; c.s.recSaid = false; c.s.recQSaid = false; }
     },
     allergy_ans(c, _slots, seg) {
       const tags = seg.tags;
       // "No soy alérgico a la penicilina" / "A la penicilina no": no allergy
-      c.s.allergy = tags.includes("neg") ? "none" : tags.includes("nsaid") ? "nsaid" : tags.includes("pen") ? "pen" : tags.includes("other") ? "other" : "none";
+      c.s.allergy = tags.includes("neg") ? "none" : tags.includes("nsaid") ? "nsaid" : tags.includes("pen") ? "pen" : tags.includes("para") ? "para" : tags.includes("other") ? "other" : "none";
       if (c.s.mode === "rx") {
         if (c.s.allergy === "pen" && c.s.rxRead) { rxPen(c); return; }
         c.say(c.s.allergy === "none" ? "ack" : "allergy_ok");
         return;
       }
-      if (c.s.allergy === "nsaid" && product(c) === "ibuprofen" && !locked(c, "ibuprofen")) { swapToAceta(c, "ibuprofen", "nsaid_reason"); return; }
-      if (c.s.allergy === "nsaid" && !product(c) && c.s.offer === "ibuprofen") { c.s.offer = undefined; c.s.recSaid = false; c.say("allergy_ok"); return; }
+      // ibuprofen or aspirin on the counter: acetaminophen instead; only on offer: he recommends again
+      if (fixUnsafe(c)) return;
+      if (!product(c) && c.s.offer && unsafeWhy(c, c.s.offer)) { c.s.offer = undefined; c.s.recSaid = false; c.s.recQSaid = false; c.say("allergy_ok"); return; }
       c.say(c.s.allergy === "none" ? "ack" : "allergy_ok");
     },
     ask_dosage(c) {
@@ -1259,6 +1431,13 @@ export const pharmacy: SituationDef = {
       c.say(at(id).skin || at(id).noDose ? "alcohol_skin" : "alcohol_no");
     },
     ask_kids(c) {
+      // the medicine on offer, else the last thing put on the counter ("También un protector solar… ¿Se le puede poner
+      // a niños?" is about the sunscreen)
+      const id = (c.s.offer && !basket(c).includes(c.s.offer) ? c.s.offer : undefined) ?? (last(basket(c)) as string | undefined) ?? c.s.offer;
+      // never aspirin for a child; a cream or bug spray has no dose by weight (the label says from what age)
+      if (id === "aspirin") { c.say("kids_aspirin"); return; }
+      if (id && at(id).noDose) { c.say("kids_ok"); return; }
+      if (id && at(id).skin) { c.say("kids_skin"); return; }
       c.say("kids_yes");
       c.say("kids_dose");
     },
@@ -1315,6 +1494,10 @@ export const pharmacy: SituationDef = {
       if (c.s.paid) sold(c);
       c.say("g_bye"); c.end(); c.hold();
     },
+    // "¿Acepta dólares?": pesos only, but the card works (nothing paid); "¿Me da el ticket?"; "¿A qué hora cierran?"
+    ask_dollars(c) { c.say("no_dollars"); },
+    ask_receipt(c) { c.say(c.s.paid ? "receipt_here" : "receipt_later"); },
+    ask_hours(c) { c.say("hours"); },
     no_bag(c) { c.s.bag = false; c.say("no_problem"); },
     bag_yes(c) { c.s.bag = true; c.say("bag_here"); },
     no_questions(c) { c.say("ok"); },
@@ -1426,7 +1609,11 @@ export const pharmacy: SituationDef = {
       const sick = !!c.s.symptom || c.s.mode === "rx" || basket(c).some((id) => at(id).med);
       c.say(sick ? "feel_better" : "closing_other");
       if (c.s.doctorLater) c.say("doctor_bye");
-      else if (c.s.symptom && !c.s.doctorOffered && !c.s.doctorSaid && !c.s.rxRead && (!c.s.forWho || c.s.forWho === "me")) { c.say("see_doctor"); c.s.doctorSaid = true; }
+      else if (c.s.symptom && !c.s.doctorOffered && !c.s.doctorSaid && !c.s.rxRead) {
+        // (for a child or another adult too: "vayan al doctor", the learner and the patient)
+        c.say(!c.s.forWho || c.s.forWho === "me" ? "see_doctor" : "see_doctor_other");
+        c.s.doctorSaid = true;
+      }
     } else if (c.s.decision === "doctor") {
       c.say("doctor_bye");
     } else {
@@ -1438,6 +1625,10 @@ export const pharmacy: SituationDef = {
         g_bye: (cc) => { cc.say("g_bye"); cc.end(); },
         thanks_help: (cc) => { cc.say("g_welcome"); cc.end(); },
         will_do_ctx: (cc) => { cc.say("g_bye"); cc.end(); },
+        // "¿Me da el ticket?", "¿A qué hora cierran?" on the way out: expected here (so "me da" isn't read as a yes to
+        // the medicine), answered by their own handlers, and the goodbye stays open
+        ask_receipt: () => false,
+        ask_hours: () => false,
         // "Bueno, sí, deme el paracetamol" after saying no: the visit goes on (not after paying)
         need_product: (cc, sl, sg) => reopen(cc, () => pharmacy.handlers.need_product(cc, sl, sg)),
         change_product: (cc, sl, sg) => reopen(cc, () => pharmacy.handlers.change_product(cc, sl, sg)),
@@ -1583,6 +1774,22 @@ export const pharmacy: SituationDef = {
     { say: "No, solo a la aspirina", intent: "allergy_ans", step: "allergy" },
     { say: "No, mejor el genérico", intent: "generic_ans", not: ["decline_rec"] },
     { say: "Ya le pagué", step: "pay", intent: "none", not: ["pay_card", "pay_cash", "here_you_go"] },
+    // audit (5 Nov 2026): cramps and dizziness, other medicines, who it's for, side questions at the counter
+    { say: "Tengo cólicos", intent: "symptom_state", step: "need", slots: { symptom: "cramps" } },
+    { say: "¿Tiene algo para el mareo?", intent: "need_symptom", step: "need", slots: { symptom: "dizzy" } },
+    { say: "Tomo otro medicamento", intent: "meds_ans", step: "meds", not: ["meds_ctx"] },
+    { say: "Para el corazón", intent: "meds_ctx", step: "meds" },
+    { say: "No tomo nada para el corazón", intent: "meds_ans", step: "meds", not: ["meds_ctx"] },
+    { say: "Sí, el medicamento es para mí", intent: "who_ans", step: "who" },
+    { say: "Es para mi hijo", intent: "who_ans", step: "dosage", not: ["ask_kids"] },
+    { say: "¿Se le puede poner a los niños?", intent: "ask_kids", step: "dosage" },
+    { say: "Más o menos", intent: "first_time", step: "dosage", not: ["g_howareyou_bad", "not_first"] },
+    { say: "¿Aceptan dólares?", intent: "ask_dollars", step: "pay", not: ["pay_cash", "pay_card", "here_you_go"] },
+    { say: "¿Tiene terminal?", intent: "pay_card", step: "pay" },
+    { say: "¿Me da el ticket?", intent: "ask_receipt", step: "pay", not: ["accept_rec", "need_product"] },
+    { say: "¿A qué hora cierran?", intent: "ask_hours", step: "pay", not: ["doctor_q"] },
+    { say: "Vengo con una receta", intent: "rx_pickup", step: "need" },
+    { say: "De marca, por favor", intent: "generic_ans", not: ["ask_cheaper"] },
     // not understood
     { say: "banana jarabe ventana", intent: "none" },
     { say: "Mi perro come curitas azules", intent: "none" },
@@ -1670,6 +1877,41 @@ export const pharmacy: SituationDef = {
       turns: ["Tengo fiebre", "Hace una semana", "Sí", "Gracias"],
       auto: omit(AUTO, ["need", "howlong", "doctor_q"]), expect: { complete: false, state: { decision: "doctor", long: true } },
       setup: (s) => { s.rxPrompt = false; s.askWho = false; s.askHowLong = true; s.askMeds = false; s.askAllergy = false; } },
+    // audit (5 Nov 2026): the advice read end to end
+    { name: "audit: an aspirin allergy: acetaminophen, and ibuprofen asked for anyway is turned down",
+      turns: ["Me duele la cabeza", "Soy alérgica a la aspirina", "Mejor deme ibuprofeno", "Sí, está bien", "El genérico", "¿Cómo se toma?", "Con tarjeta", "Gracias"],
+      auto: omit(AUTO, ["need", "allergy", "recommend", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { allergy: "nsaid", product: "acetaminophen", paid: true, paidSum: 2500 } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = false; s.askAllergy = true; s.askMore = false; s.askBag = false; s.volunteer = false; } },
+    { name: "audit: blood-pressure pills: a no to acetaminophen is a no (ibuprofen is never the other one)",
+      turns: ["Tengo fiebre", "Tomo pastillas para la presión", "No, gracias", "Adiós"],
+      auto: omit(AUTO, ["need", "meds", "recommend", "alt"]), expect: { complete: false, state: { meds: "bp", decision: "none", altOffered: undefined } },
+      setup: (s) => { s.rxPrompt = false; s.askWho = false; s.askHowLong = false; s.askMeds = true; s.askAllergy = false; } },
+    { name: "audit: aspirin is never for a child",
+      turns: ["Mi hija tiene fiebre", "No, mejor aspirina", "Sí", "El genérico", "¿Cada cuánto se lo doy?", "Con tarjeta", "Gracias"],
+      auto: omit(AUTO, ["need", "recommend", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { forWho: "child", product: "acetaminophen", paid: true, paidSum: 2500 } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = false; s.askAllergy = false; s.askMore = false; s.askBag = false; s.volunteer = false; } },
+    { name: "audit: a cold, then a fever: the cold medicine already has acetaminophen in it",
+      turns: ["Tengo gripa", "Sí, me lo llevo", "No", "También tengo fiebre", "No, es todo", "Con tarjeta", "Gracias"],
+      auto: omit(AUTO, ["need", "recommend", "dosage", "more", "pay"]),
+      expect: { complete: true, state: { product: "cold_medicine", paid: true, paidSum: 9500 } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = false; s.askAllergy = false; s.askMore = true; s.askBag = false; s.volunteer = false; } },
+    { name: "audit: heart pills (¿Cuál?) take acetaminophen; dollars, the card machine, the receipt, the hours",
+      turns: ["Me duele la cabeza", "Sí", "Para el corazón", "Sí", "El genérico", "No", "¿Aceptan dólares?", "¿Tiene terminal?", "¿Me da el ticket?", "¿A qué hora cierran?", "Gracias, adiós"],
+      auto: omit(AUTO, ["need", "meds", "recommend", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { meds: "risk", product: "acetaminophen", paid: true, payMethod: "card" } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = true; s.askAllergy = false; s.askMore = false; s.askBag = false; s.volunteer = false; } },
+    { name: "audit: an acetaminophen allergy: ibuprofen for the fever",
+      turns: ["Tengo fiebre", "Soy alérgico al paracetamol", "Sí", "El genérico", "¿Cómo se toma?", "Con tarjeta", "Gracias"],
+      auto: omit(AUTO, ["need", "allergy", "recommend", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { allergy: "para", product: "ibuprofen", paid: true, paidSum: 3500 } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = false; s.askAllergy = true; s.askMore = false; s.askBag = false; s.volunteer = false; } },
+    { name: "audit: acetaminophen didn't help: ibuprofen instead; cash short",
+      turns: ["Tengo fiebre", "Ya tomé paracetamol, pero no me hizo nada", "Sí", "El genérico", "No", "Efectivo", "Aquí tiene veinte", "Aquí tiene otros cien", "Gracias"],
+      auto: omit(AUTO, ["need", "meds", "recommend", "generic_q", "dosage", "pay"]),
+      expect: { complete: true, state: { took: "acetaminophen", product: "ibuprofen", paid: true, cashIn: 2000 } },
+      setup: (s) => { s.rxPrompt = false; s.storeBrand = false; s.askWho = false; s.askHowLong = false; s.askMeds = true; s.askAllergy = false; s.askMore = false; s.askBag = false; s.volunteer = false; } },
   ],
 };
 
@@ -1764,7 +2006,9 @@ function setSymptom(c: Ctx, s: string | undefined) {
   if (product(c) && c.s.symptom && c.s.symptom !== s) {
     c.s.symptom = s;
     const p = recommendation(c);
-    if (basket(c).includes(p)) { c.say("ack"); return; }
+    if (!p || basket(c).includes(p)) { c.say("ack"); return; }
+    // fever on top of a cold: the cold medicine already has acetaminophen in it (never both)
+    if (p === "acetaminophen" && basket(c).includes("cold_medicine")) { c.say("cold_has_para"); return; }
     c.say("rec", { X: p }); sayRecQ(c, p);
     c.expect(altPending(p, false));
     return;
@@ -1941,7 +2185,7 @@ function afterGeneric(c: Ctx, id: string, handed: boolean) {
     if (!c.s.stamped) { c.s.stamped = true; c.say("rx_stamp"); c.say("rx_finish"); c.say("rx_here"); }
     return;
   }
-  if (!handed) c.say("here_it_is");
+  if (!handed) c.say(plural(id) ? "here_pl" : "here_it_is");
 }
 
 /** "Ibuprofeno genérico" / "paracetamol de patente": the choice said with the product. */
@@ -1961,18 +2205,24 @@ function addProduct(c: Ctx, id: string) {
   const cur = product(c);
   if (!cur) { c.s.product = id; c.s.dosageGiven = !!at(id).noDose; }
   else if (!at(cur).med && at(id).med) { c.s.product = id; c.s.dosageGiven = false; }
+  // a cold medicine and acetaminophen both on the counter: never taken together (said once)
+  if ((id === "cold_medicine" || id === "acetaminophen") && basket(c).includes("cold_medicine") && basket(c).includes("acetaminophen") && !c.s.paraWarned) {
+    c.s.paraWarned = true;
+    c.say("cold_para_warn");
+  }
   askGenericOrTwist(c, id);
 }
 
 function acceptOffer(c: Ctx) {
   const p = c.s.offer ?? recommendation(c);
+  if (!p) { noSafe(c); return; }
   c.s.offer = p;
   addProduct(c, p);
 }
 
 function declineOffer(c: Ctx) {
   const cur = c.s.offer ?? recommendation(c);
-  const alt = ALT[cur];
+  const alt = safeAlt(c, cur); // (never ibuprofen right after "Con esa alergia, mejor no tome antiinflamatorios")
   if (alt && !c.s.altOffered) {
     c.s.altOffered = true;
     c.s.offer = alt;
@@ -1996,7 +2246,8 @@ function altPending(alt: string, main: boolean): Pending {
       // "Sí, deme dos": two of them
       accept_rec: (cc, _sl, sg) => { const q = qtyFromTags(sg.tags); if (q > 1 && !basket(cc).includes(alt)) { setQty(cc, alt, q); cc.say(q === 3 ? "qty_three" : "qty_two"); } take(cc); },
       accept_ctx: (cc) => { if (POLITE.test(cc.heard)) { sayRecQ(cc, alt, true); cc.expect(altPending(alt, main)); return; } take(cc); },
-      other_option: (cc) => { refuse(cc); },
+      // "¿Tiene otra cosa?" is a question, not a no: there's nothing else, and the offer stays open
+      other_option: (cc) => { cc.say("rec_nothing_else"); sayRecQ(cc, alt, true); cc.expect(altPending(alt, main)); },
       decline_rec: (cc) => { refuse(cc); },
       need_product: (cc, sl, sg) => { pharmacy.handlers.need_product(cc, sl, sg); },
       change_product: (cc, sl, sg) => { pharmacy.handlers.change_product(cc, sl, sg); },
@@ -2012,6 +2263,57 @@ function altPending(alt: string, main: boolean): Pending {
     ask: (cc) => sayRecQ(cc, alt, true) };
 }
 
+/** Something on the counter (not paid yet) that an allergy, other medicines or a child now rule out: acetaminophen
+ *  instead, with the reason. */
+function fixUnsafe(c: Ctx): boolean {
+  const bad = basket(c).find((id) => !locked(c, id) && unsafeWhy(c, id));
+  if (!bad) return false;
+  swapToAceta(c, bad, unsafeWhy(c, bad)!);
+  return true;
+}
+
+/** Asked for a medicine he has ruled out ("Mejor deme ibuprofeno" after an aspirin allergy, aspirin for a child): the
+ *  reason, and acetaminophen (or ibuprofen) offered instead, unless it is on the counter already. */
+function steerToAceta(c: Ctx, why: string) {
+  c.say(why);
+  const alt = safeAnalgesic(c);
+  if (!alt) { if (!product(c)) noSafe(c); return; }
+  if (basket(c).includes(alt)) return;
+  if (alt !== "acetaminophen") c.say("rec", { X: alt });
+  else if (why !== "kids_aspirin") c.say("switch_aceta"); // ("…para ellos, mejor paracetamol" says it already)
+  c.s.offer = alt;
+  if (!product(c) && c.s.symptom) { c.s.recSaid = true; c.s.recQSaid = false; return; } // the recommend step asks "¿Se lo doy?"
+  sayRecQ(c, alt);
+  c.expect(altPending(alt, !product(c)));
+}
+
+/** Nothing he can give safely (an allergy and other medicines rule out both painkillers): the doctor next door, and
+ *  after a no to the doctor, nothing sold. */
+function noSafe(c: Ctx) {
+  if (c.s.decision) return;
+  if (!c.s.doctorOffered) { offerDoctor(c, ["see_doctor_soon"]); return; }
+  c.say("rec_none");
+  if (!product(c)) c.s.decision = "none";
+}
+
+/** After a step's help settled it ("No sé"), the next open step (the global "no sé" holds the turn). */
+function goOn(c: Ctx) {
+  const st = pharmacy.steps.find((x) => (!x.when || x.when(c)) && !x.done(c));
+  if (st) c.ask(st.id);
+}
+
+/** "Tomo otro medicamento": "¿Cuál?" ("Para el corazón", "Metformina", "No sé" answer it). */
+function askWhichMed(c: Ctx) {
+  c.say("ask_meds_which");
+  c.expect({ id: "meds_which", optional: true, expects: ["meds_ans", "meds_ctx"], hints: ["meds"],
+    suggest: [{ lt: "Say which medicine you take", hint: "meds" }],
+    on: {
+      meds_ans: (cc, sl, sg) => { pharmacy.handlers.meds_ans(cc, sl, sg); },
+      meds_ctx: (cc, sl, sg) => { pharmacy.handlers.meds_ans(cc, sl, sg); },
+    },
+    ask: (cc) => cc.say("ask_meds_which") });
+}
+
 /** Aspirin allergy or blood-pressure pills with ibuprofen on the counter: acetaminophen instead. */
 function swapToAceta(c: Ctx, from: string, reason: string) {
   const boxes = qtyOf(c, from); // the same number of boxes
@@ -2019,10 +2321,21 @@ function swapToAceta(c: Ctx, from: string, reason: string) {
   setQty(c, from, 1);
   if (c.s.genFor === from) c.s.genFor = undefined;
   c.s.product = undefined; c.s.dosageGiven = false;
-  c.say(reason); c.say("switch_aceta");
-  c.s.offer = "acetaminophen";
-  if (boxes > 1 && !basket(c).includes("acetaminophen")) setQty(c, "acetaminophen", boxes);
-  addProduct(c, "acetaminophen");
+  c.say(reason);
+  // (an acetaminophen allergy: ibuprofen; neither: the doctor)
+  const alt = safeAnalgesic(c);
+  if (!alt) {
+    c.s.offer = undefined;
+    c.s.product = basket(c)[0]; c.s.dosageGiven = !c.s.product || !!at(c.s.product).noDose;
+    settle(c);
+    if (!basket(c).length) noSafe(c);
+    return;
+  }
+  if (alt !== "acetaminophen") c.say("rec", { X: alt });
+  else if (reason !== "kids_aspirin") c.say("switch_aceta");
+  c.s.offer = alt;
+  if (boxes > 1 && !basket(c).includes(alt)) setQty(c, alt, boxes);
+  addProduct(c, alt);
 }
 
 /** Directions for the current product (the children's dose for a child). */
@@ -2092,7 +2405,7 @@ function finishPay(c: Ctx, method: "card" | "cash" | "phone", given?: number) {
   // "Aquí tiene cincuenta" … "faltan $15" … "Aquí tiene cien" gets $85 back, the fifty included
   if (method === "cash" && given) {
     const sum = ((c.s.cashIn as number | undefined) ?? 0) + given;
-    if (sum < amount) { c.s.payMethod = "cash"; c.s.cashIn = sum; c.say("short", { total: amount, price: amount - sum }); c.hold(); return; }
+    if (sum < amount) { c.s.payMethod = "cash"; c.s.cashIn = sum; c.say("short", { price: amount - sum }); c.hold(); return; }
     given = sum;
   }
   c.s.paid = true;
