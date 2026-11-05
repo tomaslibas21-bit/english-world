@@ -39,8 +39,8 @@
   { "ctx": "your_turn", "say": "¿Y usted qué hizo el fin de semana?", "intent": ["q_weekend", "ask_back"] },
   { "ctx": "your_turn", "say": "Perdón, ¿y usted?", "intent": "ask_back" },
 
-  { "ctx": "react", "say": "¡Qué bien!", "intent": ["interest", "same"] },
-  { "ctx": "react", "say": "¿De veras?", "intent": ["interest", "q_story"] },
+  { "ctx": "react_weekend", "say": "¡Qué bien!", "intent": ["interest", "same"] },
+  { "ctx": "react_plans", "say": "¿De veras?", "intent": ["interest", "q_story"] },
 
   { "ctx": "rain", "say": "Gracias, es usted muy amable", "intent": ["umbrella_yes", "g_thanks"] },
   { "ctx": "rain", "say": "No, gracias, traigo el mío", "intent": "umbrella_no", "not": ["umbrella_yes"], "note": "trap: refusal" },
