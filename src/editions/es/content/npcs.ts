@@ -146,8 +146,9 @@ const CAST: Record<string, Cast> = {
   mrs_lee: ["Doña Mari", "Puesto de flores", "Flower stall"],
   reyes: ["Oficial Reyes", "Policía", "Police officer"],
   carter: ["Doctora Herrera", "Médica familiar", "Family doctor"],
-  // s32: in Puerto Colibrí a fruit and vegetable stall in the mercado (docs/es/briefs/s32-mercado.md)
-  marcus: ["Doña Lupe", "Puesto de frutas y verduras", "Fruit and vegetable stall", { gender: "f",
+  // s32: in Puerto Colibrí a fruit and vegetable stall in the mercado (docs/es/briefs/s32-mercado.md). Doña Licha (Alicia),
+  // not Doña Lupe, since 5 Nov 2026: the neighbor Doña Lupita (rita) is the town's Guadalupe (the lead's decision)
+  marcus: ["Doña Licha", "Puesto de frutas y verduras", "Fruit and vegetable stall", { gender: "f",
     bio: "Has sold fruit at the mercado for thirty years and calls every customer “güero” or “marchanta”." }],
   sco: ["Caja de autoservicio", "Caja de autoservicio", "Self-checkout machine"],
   // an older neighbor at the bus stop says usted, as his lines in s33 do (Maple Harbor's Frank is informal)
@@ -163,7 +164,8 @@ const CAST: Record<string, Cast> = {
   russo: ["Fátima", "Cocinera principiante", "Junior cook"],
   emily: ["Elena", "Tu jefa", "Your manager"],
   tyler: ["Toño", "Fundador", "Founder"],
-  mr_grant: ["Don Gilberto", "Tu casero", "Your landlord"],
+  // p24: the administrador of Departamentos Las Palmas (the lead's decision, 5 Nov 2026); Don Ernesto (patel) owns it
+  mr_grant: ["Don Gilberto", "Administrador del edificio", "Building manager"],
 };
 
 /** Characters only Puerto Colibrí has, each on a Maple Harbor character's base (build, voice) under an id of its own. */
