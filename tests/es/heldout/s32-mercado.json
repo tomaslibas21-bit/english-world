@@ -1,0 +1,55 @@
+{ "situation": "s32-mercado", "items": [
+  { "ctx": "order", "say": "Buenos días, ¿me da un kilo de limones?", "intent": "order", "slots": { "items": { "item": { "product": "limon" } } } },
+  { "ctx": "order", "say": "Quiero medio kilo de jitomates", "intent": "order", "slots": { "items": { "item": { "product": "jitomate" } } } },
+  { "ctx": "order", "say": "Me llevo dos piñas", "intent": "order", "slots": { "items": { "item": { "product": "pina", "count": 2 } } } },
+  { "ctx": "order", "say": "¿A cómo están los plátanos?", "intent": "ask_price", "slots": { "product": "platano" } },
+  { "ctx": "order", "say": "¿Cuánto cuesta el kilo de papa?", "intent": "ask_price", "slots": { "product": "papa" } },
+  { "ctx": "order", "say": "¿Tiene cilantro?", "intent": "ask_have", "slots": { "product": "cilantro" } },
+  { "ctx": "order", "say": "Deme un kilo de naranjas para jugo", "intent": "order", "slots": { "items": { "item": { "product": "naranja" } } } },
+  { "ctx": "order", "say": "Necesito tres cebollas", "intent": "order", "slots": { "items": { "item": { "product": "cebolla", "count": 3 } } } },
+  { "ctx": "order", "say": "¿Qué me recomienda hoy?", "intent": "ask_recommend" },
+  { "ctx": "order", "say": "Un aguacate, por favor", "intent": "order", "slots": { "items": { "item": { "product": "aguacate" } } } },
+  { "ctx": "order", "say": "¿Me vende un manojo de cilantro?", "intent": "order", "slots": { "items": { "item": { "product": "cilantro" } } } },
+  { "ctx": "order", "say": "No quiero cebolla, gracias", "intent": "any", "not": ["order"], "note": "trap: negation" },
+  { "ctx": "order", "say": "Mi hija vive en Canadá", "intent": "none", "note": "trap: unrelated" },
+
+  { "ctx": "after_price", "say": "Deme medio kilo, por favor", "intent": ["qty_ctx", "order_amount"] },
+  { "ctx": "after_price", "say": "Entonces un kilo", "intent": "qty_ctx" },
+  { "ctx": "after_price", "say": "Mejor nada más un cuarto", "intent": ["qty_ctx", "order_amount"] },
+  { "ctx": "after_price", "say": "Ay, qué caro. ¿Me lo deja en sesenta?", "intent": "haggle" },
+
+  { "ctx": "qty", "say": "Kilo y medio, por favor", "intent": "qty_ctx" },
+  { "ctx": "qty", "say": "Como dos kilos", "intent": "qty_ctx" },
+  { "ctx": "qty", "say": "Nomás medio", "intent": "qty_ctx" },
+  { "ctx": "qty", "say": "Cuatro, por favor", "intent": "qty_ctx", "slots": { "count": 4 } },
+  { "ctx": "qty", "say": "Cincuenta pesos", "intent": "qty_ctx", "slots": { "money": 5000 } },
+
+  { "ctx": "ripe", "say": "Para hoy, que estén bien maduros", "intent": "ripe_ans" },
+  { "ctx": "ripe", "say": "Para el fin de semana, por favor", "intent": "ripe_ans" },
+  { "ctx": "ripe", "say": "Unos para hoy y otros para mañana", "intent": "ripe_ans" },
+  { "ctx": "ripe", "say": "Me da igual", "intent": ["ripe_ans", "ripe_any"], "not": ["product_unknown"] },
+
+  { "ctx": "more", "say": "No, eso es todo, gracias", "intent": ["more_no", "yn:no"] },
+  { "ctx": "more", "say": "Sí, también medio kilo de papa", "intent": "order", "slots": { "items": { "item": { "product": "papa" } } } },
+  { "ctx": "more", "say": "Ya con eso, gracias", "intent": "more_no" },
+  { "ctx": "more", "say": "¿Cuánto llevo?", "intent": "ask_total" },
+  { "ctx": "more", "say": "Quíteme los plátanos, por favor", "intent": "reject", "slots": { "product": "platano" } },
+  { "ctx": "more", "say": "¿Cuánto cuesta cada mango?", "intent": "ask_price", "not": ["order"], "note": "trap: a price question never orders" },
+
+  { "ctx": "bag", "say": "Sí, aquí traigo mi bolsa", "intent": "bag_yes" },
+  { "ctx": "bag", "say": "No, ¿me da una bolsita?", "intent": "bag_no" },
+  { "ctx": "bag", "say": "No necesito bolsa, gracias", "intent": "bag_none_ctx", "not": ["bag_no"], "note": "trap: no bag wanted" },
+
+  { "ctx": "pay", "say": "Tome, aquí tiene", "intent": "pay_cash" },
+  { "ctx": "pay", "say": "Nada más traigo un billete de quinientos", "intent": "big_bill", "slots": { "bill": 50000 } },
+  { "ctx": "pay", "say": "¿Puedo pagar con tarjeta?", "intent": "pay_card" },
+  { "ctx": "pay", "say": "¿Se puede pagar con transferencia?", "intent": "pay_transfer" },
+  { "ctx": "pay", "say": "¿Cuánto es en total?", "intent": "ask_total" },
+  { "ctx": "pay", "say": "¿Tiene cambio de doscientos?", "intent": "big_bill", "slots": { "bill": 20000 } },
+  { "ctx": "pay", "say": "Ya le pagué", "intent": "any", "not": ["pay_cash", "big_bill", "pay_transfer"], "note": "trap: a past tense never pays" },
+
+  { "ctx": "bill", "say": "No, solo tengo ese", "intent": ["no_smaller", "yn:no"] },
+  { "ctx": "bill", "say": "Ah, sí, aquí tengo uno de cien", "intent": "big_bill", "slots": { "bill": 10000 } },
+
+  { "ctx": "closing", "say": "Gracias, que le vaya bien", "intent": ["g_thanks", "g_bye"] }
+] }
