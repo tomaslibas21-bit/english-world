@@ -80,3 +80,72 @@ nothing is paid or recorded).
 
 **Gate:** tsc clean; check-content 120/120 NLU tests, 16 sims all 12/12, fuzz 80, 0/0; corpus 295/295, 0/29 traps;
 held-out 41/41, 0/3; vitest 288/288.
+
+## Audit (5 Nov 2026)
+
+A fresh reviewer, both texts (Mexican and neutral). Read as a native speaker: the transcripts at seeds 3 and 7 (all 16
+sims), probe runs of what patients ask and answer (`tools/probe.ts`), the cross-cutting leads (`AUDIT/cross`,
+`AUDIT/neutral`: nothing found there), the cast, the town and the prices. **Found 18, fixed 18.** Spoken lines: 4 new,
+2 removed, 1 reworded, 1 moved to its own id (same text); the rest is logic, patterns and hint help text.
+
+**1. Natural Spanish, the flow (5)**
+- **Must-fix, a question left open:** "Me siento mal, tengo fiebre", "Me siento fatal, tengo fiebre y tos" (both in the
+  corpus) and "No muy bien, me duele la garganta" (the natural answer to "¿Cómo se siente hoy?") got "Lo siento. ¿Qué
+  síntomas tiene?" right after the symptom, and that question stayed open: "Desde ayer", "38", "No, nada" each got
+  "¿Qué lo trae por aquí?" again until a symptom was repeated. Now, when the turn names a symptom, one "¡Ay, qué mal!"
+  and on to "¿Desde cuándo…?"; when she does ask, the question is optional (the "problem" step asks again; never a loop).
+- "Le voy a dar algo para el dolor. Antes de recetarle algo, ¿es alérgico…?" (the chart twist's intro on a visit
+  without an antibiotic): after the intro she asks "¿Es alérgico a algún medicamento?".
+- The pharmacy question asked again after a side question handed the prescription over a second time ("Aquí tiene la
+  receta. ¿Tiene alguna farmacia cerca?"): the second time it's "¿Sabe dónde surtir la receta?" (new line, rule 8).
+- Two questions before the exam ("¿Cuánto tiempo tengo que descansar?" = how long + work) got "Primero vemos qué
+  necesita. Primero vamos a ver.": one "first" per turn.
+- Cash named before the fee: "La consulta son $500. Claro, en efectivo." → "Claro, en efectivo. La consulta son $500."
+  (the order only).
+
+**2. tú/usted (0):** usted throughout, in the hints, the tips and `#tip:tu_staff`.
+**3. Names (0):** Doctora Herrera only; no other Herrera in the edition.
+
+**4. Facts (2)**
+- The virus visit prescribes paracetamol, yet "¿Puedo manejar?" said "Con cuidado: puede darle sueño" and the side
+  effects "Puede darle un poco de sueño": paracetamol doesn't make you drowsy. Now "No mucho. Es muy suave." and the
+  drive line below; `side_sym` and `drive_careful` removed.
+- An ear infection: "¿Puedo ir a trabajar?" → "Sí, si se siente bien.", then (half the time) the goodbye "Quédese en
+  casa, descanse y tome muchos líquidos". "Quédese en casa…" (its own id, `advice_rest_home`, same text) is now said only
+  when it's contagious, and not after "Mejor quédese en casa…" (rule 13).
+- Checked ✓: the $500 visit (s75's consultorio, "unos sesenta pesos", is a pharmacy doctor), Farmacia del Puerto "aquí
+  cerca, en el centro" (TOWN.md), the clinic downtown, the doses and days as the brief.
+
+**5. Glosses (1):** "No | soy | alérgico" was glossed "Not | I-am" (S-NEG): "No soy" → "I'm not" (two hints).
+**6. Spelling, accents, ¿¡ (0)** in both texts.
+
+**7. Questions and replies (8)** (every new answer is in her register; nothing is paid by any of them)
+- "¿Cuánto cuesta el medicamento?" (in the corpus, not understood) → "Depende de la farmacia; el genérico sale más
+  barato." (new; the generic isn't said twice); "¿Dónde hay una farmacia?" / "¿Dónde la compro?" → Farmacia del Puerto
+  (at the pharmacy question, that question's own answer; told before the directions, the question isn't asked);
+  "¿Me da la receta?" → "Claro, aquí tiene su receta." (new), or the pharmacy question if it hasn't come yet;
+  "¿Aceptan dólares?" / "Solo traigo dólares" → "Lo siento, solo acepto pesos. Puede pagar con tarjeta o por
+  transferencia." (new; after the directions, the fee); "¿Tiene terminal?" is the card, like "¿Acepta tarjeta?".
+- "Vengo porque me duele la garganta", "Vine porque tengo fiebre" (the commonest answer to "¿Qué lo trae por aquí?")
+  weren't understood: a "vengo / vine porque" prefix on the symptom and feeling-unwell patterns. "Solo agua" at
+  "¿Ha tomado algo para eso?" is understood (as a home remedy).
+- "¿Me va a dar sueño?" got "Sí, no le da sueño." (a yes to a no, rule 11): the line is now "No le da sueño: puede
+  manejar sin problema." (it answers both questions; no medicine of hers makes you drowsy).
+
+**8. Hints and help text (2):** the learner's own body was flagged "where English says “your”" ("Me duele la
+garganta" = my throat hurts, "Me escurre la nariz"): "my" (six hint items). "También tengo {X}." had the natural English
+"I also have that.": now per symptom ("I also have a cough.").
+
+**9. Accepted answers:** corpus 295 → 326 understood (+30 items, and "¿Cuánto cuesta el medicamento?" is now
+`ask_med_price`, never `ask_cost`), traps 29 → 39 (+11, one became a positive), 0 false accepts; held-out 41/41, 0/3
+(unchanged). 13 NLU tests and 2 sims ("unwell and the symptom in one breath…", "the reason for the visit, drowsiness,
+the pharmacy question twice, cash").
+**10. The neutral text (0):** the four twins are right (ahorita ×2, unas líneas de temperatura, gripa); the new lines
+have no Mexican-only word. "Surtir (una receta)" stays untwinned, as in s75.
+
+**Not changed (taste, or not this file's):** "¡A la orden!" after thanks (global); "¡Perdón! Con cuidado."; "¿Qué le
+pasa ahora?" (warm in her voice); "Esta semana no" to exercise also for a tension headache; the $500 fee and the
+unnamed second antibiotic stay as the review left them.
+
+**Gates:** tsc clean; check-content 133/133 NLU, 18 sims 12/12, fuzz 80, 0 errors 0 warnings; corpus 326/326, 0/39;
+held-out 41/41, 0/3; vitest (es) 107/107.
