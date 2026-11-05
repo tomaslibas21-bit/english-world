@@ -76,6 +76,11 @@ const RULES: Record<string, (b: Binding, sit: SituationDef) => boolean> = {
   // and the Friday morning; next Monday's two when the week is full; :1756 when_q says the same pair again
   // (c.s.choice, set only there). OFFERS (:73) names the openings; slot2's list is its values in that order.
   "s76-dentist-call:availability": (b, sit) => s76Pairs(sit)?.has(`${sayOf(b.slot)}|${sayOf(b.slot2)}`) ?? true,
+  // s80-support-call.ts:128–142 offerWindow / bookTech say a window's own day with its hours ({ weekday: WEEKDAY[w.d],
+  // win: win(k) }): the four windows, not every day × hours
+  "s80-support-call:tech_offer": (b, sit) => s80Windows(sit)?.has(`${sayOf(b.weekday)}|${sayOf(b.win)}`) ?? true,
+  "s80-support-call:tech_offer_alt": (b, sit) => s80Windows(sit)?.has(`${sayOf(b.weekday)}|${sayOf(b.win)}`) ?? true,
+  "s80-support-call:tech_booked": (b, sit) => s80Windows(sit)?.has(`${sayOf(b.weekday)}|${sayOf(b.win)}`) ?? true,
 };
 /** s76's pairs of openings, as the slot values say them (null when OFFERS can't be read: then every pair stays). */
 const s76Cache = new Map<string, Set<string> | null>();
@@ -156,10 +161,6 @@ export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
     const rates = [...listValues(sit, "size", "rate")];
     return Array.from({ length: 6 }, (_, i) => i + 2).flatMap((n) => rates.flatMap((r) => Array.from({ length: n - 1 }, (_, d) => ({ X: order[n - 1], price: r * (d + 1) }))));
   },
-  // s80-support-call.ts:112–126 offerWindow / bookTech: a window's day with its own hours (WINDOWS, :35)
-  "s80-support-call:tech_offer": (sit) => windows(sit),
-  "s80-support-call:tech_offer_alt": (sit) => windows(sit),
-  "s80-support-call:tech_booked": (sit) => windows(sit),
   // s75-pharmacy.ts:2198 genPrices: a product's brand-name price and its generic's, together (products with a generic)
   "s75-pharmacy:generic_prices": (sit) => (sit.entities?.product ?? []).filter((e) => typeof e.attrs?.generic === "number").map((e) => ({ price: e.attrs!.price, amount: e.attrs!.generic })),
   // p26-complaint.ts:469–473 dayLine: a delivery day (not tomorrow: its own line) with Monday's window (W_MON, :66)
@@ -174,9 +175,11 @@ function longReturns(sit: SituationDef): Binding[] {
   const order = literal(fileOf(sit.id)?.consts.get("ORDER")) as string[] | undefined;
   return order ? nums(sit, "num").filter((n) => n > 7).map((n) => ({ num: n, X: order[(n - 1) % 7] })) : [];
 }
-function windows(sit: SituationDef): Binding[] {
-  const w = literal(fileOf(sit.id)?.consts.get("WINDOWS")) as Record<string, { d: string; en: string; lt: string; say: string }> | undefined;
-  return w ? Object.values(w).map((x) => ({ D: x.d, win: { en: x.en, lt: x.lt, say: x.say } })) : [];
+/** s80: the technician's windows as said: "<the window's day>|<its hours>" (WINDOWS and WEEKDAY, s80-support-call.ts:35, :45). */
+function s80Windows(sit: SituationDef): Set<string> | null {
+  const w = literal(fileOf(sit.id)?.consts.get("WINDOWS")) as Record<string, { d: string; say: string }> | undefined;
+  const day = literal(fileOf(sit.id)?.consts.get("WEEKDAY")) as Record<string, { say: string }> | undefined;
+  return w && day ? new Set(Object.values(w).map((x) => `${day[x.d]?.say}|${x.say}`)) : null;
 }
 /** A constant written out in the code (objects, arrays, strings, numbers), or undefined. */
 function literal(n0: Node | undefined): unknown {

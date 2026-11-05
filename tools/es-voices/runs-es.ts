@@ -194,11 +194,14 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
     if (m.has(key) || (!fromSim && m.size >= MOMENTS_KEPT)) return;
     m.set(key, { conv: fork(conv, keep, m.size + 1), origin: conv, step: conv.step ?? "", key });
   };
-  const take = (o: TurnOut, gender: "m" | "f", how: Heard["how"], input: string | null) => {
+  // `floor`: who held the floor when the turn began, for lines said again from an earlier turn ("¿Puede repetir?"
+  // replays them untagged): p26's recorded message, replayed, still never holds the floor
+  const take = (o: TurnOut, gender: "m" | "f", how: Heard["how"], input: string | null, floor: string) => {
+    const turnFloor = o.lines.map((l) => TAG.get(l)?.floor).find(Boolean) ?? floor;
     for (const line of o.lines) {
       if (!NPCS[line.npc]) continue;
       const tag = TAG.get(line);
-      const h: Heard = { line, gender, how, held: !!tag?.held, floor: tag?.floor ?? line.npc, input };
+      const h: Heard = { line, gender, how, held: !!tag?.held, floor: tag?.floor ?? turnFloor, input };
       if (h.held && input) {
         let s = heldBy.get(line.lineId);
         if (!s) heldBy.set(line.lineId, (s = new Set()));
@@ -224,11 +227,12 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
       conv = new Conversation(sit, { global: GLOBAL, npcs: NPCS, player: { name: EDITION.simPlayer.name, surname: EDITION.simPlayer.surname, gender, datePartner: partner }, visits, seed: r + 1, memory: r % 3 === 0 ? {} : undefined, sharedNlu: NLUS });
     } catch (e: any) { errors.push(`${sit.id}: constructor: ${e.message}`); break; }
     stats.runs++;
-    try { take(conv.start(), gender, "run", null); } catch (e: any) { errors.push(`${sit.id}: start: ${e.message}`); continue; }
+    try { take(conv.start(), gender, "run", null, conv.speakerId); } catch (e: any) { errors.push(`${sit.id}: start: ${e.message}`); continue; }
     for (let t = 0; t < 16 && !conv.ended; t++) {
       const say = inputs[Math.floor(rand() * inputs.length)] ?? "yes";
       snap(conv);
-      try { take(conv.input(say), gender, "run", say); }
+      const floor = conv.speakerId;
+      try { take(conv.input(say), gender, "run", say, floor); }
       catch (e: any) { errors.push(`${sit.id}: input "${say}" (seed ${r + 1}, visits ${visits}): ${e.message}`); break; }
     }
   }
@@ -238,7 +242,8 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
   for (const sim of sit.sims ?? []) for (const [k, g] of (["m", "f"] as const).entries()) for (const seed of opts.simSeeds?.(g) ?? [k + 1]) for (const datePartner of partners) {
     try {
       stats.sims++;
-      playSim(sit, sim, seed, { gender: g, datePartner, onTurn: (conv, turn, o) => { take(o, g, "sim", turn?.say ?? null); snap(conv, true); } });
+      let floor = sit.npc; // who holds the floor as each turn begins
+      playSim(sit, sim, seed, { gender: g, datePartner, onTurn: (conv, turn, o) => { take(o, g, "sim", turn?.say ?? null, floor); floor = conv.speakerId; snap(conv, true); } });
     } catch (e: any) { errors.push(`${sit.id}: sim ${sim.name}: ${e.message}`); }
   }
 
@@ -270,7 +275,7 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
       try { o = p.input(text); } catch { return; }
       stats.probes++;
       if ((origin?.lines.length ?? 0) !== before) { stats.misrouted++; return; }
-      take(o, p.opt.player.gender as "m" | "f", "probe", text);
+      take(o, p.opt.player.gender as "m" | "f", "probe", text, m.conv.speakerId);
     };
     for (const lid of [...heldBy.keys()]) {
       if (!sit.lines[lid]) continue; // the global lines are voiced for everyone who speaks

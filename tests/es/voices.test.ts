@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { NPCS } from "../../src/content/npcs";
 import { ambientVoice, audioDir, coachVoice, coachVoices, npcVoice } from "../../src/content/voices";
-import { setVariety } from "../../src/convo/compose";
+import { placeholders, setVariety } from "../../src/convo/compose";
 import { chooseVariety } from "../../src/state/variety";
 import { ACCENTS, CAST, SCENES, accentOf, castingProblems, roleOf, styleFor, whoOf } from "../../tools/es-voices/casting-es";
 import { geminiTextEs, likenessEs, numbersToDigitsEs, syllables, withFx } from "../../tools/es-voices/voice-batch-es";
@@ -109,6 +109,22 @@ describe("the values a line can really be said with (reach-es.ts)", () => {
     const slots = dom.slot2() as { say: string }[];
     const ok = dom.slot().flatMap((a) => slots.map((b) => ({ slot: a, slot2: b }))).filter(reachFilter(sit("s76-dentist-call"), "availability")!);
     expect(new Set(ok.map((b) => `${(b.slot as { say: string }).say}|${b.slot2.say}`)).size).toBe(11);
+  });
+  it("keeps s80's technician windows to their own days", () => {
+    const dom = sit("s80-support-call").domains!;
+    const f = reachFilter(sit("s80-support-call"), "tech_offer")!;
+    const ok = dom.weekday().flatMap((weekday) => dom.win().map((win) => ({ weekday, win }))).filter(f);
+    expect(new Set(ok.map((b) => `${(b.weekday as { say: string }).say}|${(b.win as { say: string }).say}`))).toEqual(new Set(["jueves|las nueve y las dos", "jueves|las dos y las seis", "viernes|las nueve y las dos", "sábado|las nueve y la una"]));
+  });
+  it("has no rule or binding that no longer fits its line (a line changed after it was read)", () => {
+    for (const [k, f] of Object.entries(BINDINGS)) {
+      const [sid, lid] = k.split(":");
+      const need = [...new Set((sit(sid).lines[lid] ?? []).flatMap((v) => [...placeholders(v).entities, ...placeholders(v).values]))];
+      const bs = f(sit(sid));
+      expect(need.length, k).toBeGreaterThan(0);
+      expect(bs.length, k).toBeGreaterThan(0);
+      for (const b of bs) for (const n of need) expect(n in b, `${k} binds ${n}`).toBe(true);
+    }
   });
   it("lists the lines with two placeholders the code binds together", () => {
     const fares = BINDINGS["s66-taxi:fare_is"](sit("s66-taxi"));

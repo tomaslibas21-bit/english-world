@@ -297,13 +297,15 @@ VOICE-LIST.md):
   item keeps every list (`why: "list?"`, counted by the junk check).
 - **Two placeholders.** A line with two items, or an item and a value, is made from `BINDINGS` in reach-es.ts, read in
   its code (s66's place and its own fare; s74's garment and its own colors; s32's product and its price or kilos;
-  s71a's car, extras and return days; s80's technician windows; p26's delivery days; s75's two prices); a value with
+  s71a's car, extras and return days; p26's delivery days; s75's two prices); a value with
   no list of its own takes the fixed values its calls give. Any other such line is voiced only as heard, and `plan`
   lists it ("lines the list can't make from their text").
 - **Rules from the audits** (`RULES`): s64a's seat question never names one seat twice; s68's walk-in offers and fee
   their own prices; s70's audio guide only in a language the museum has, "no la tenemos" only in one it hasn't; s71a's
   daily rate one of the five car rates; s72's single-item price at most the dearest item, the size question only for
-  a drink that comes in sizes; s76's two openings one of the eleven pairs the code offers (110 before).
+  a drink that comes in sizes; s76's two openings one of the eleven pairs the code offers (110 before); s80's
+  technician windows with their own days. A rule or binding that no longer fits its line (renamed placeholders) is
+  not used and `plan` says so; tests/es/voices.test.ts fails on one.
 - **The checks.** `check-list-es.ts` plays other runs than the list's (from run #1000, the sims on three seeds, the
   probes) and checks every clip they say is in the list, every (line, speaker) pair, and counts the clips made from a
   guess nobody was heard saying (junk); `values-es.ts --lines=` does the same for values with the cuts.

@@ -184,7 +184,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         return [n.id, how?.has("run") || how?.has("sim") ? "" : how?.has("probe") ? "+probe" : code.get(lid)?.has(n.id) ? "+code" : ""];
       }));
       const reach = reachFilter(sit, lid);
-      const pairs = BINDINGS[`${sit.id}:${lid}`];
+      const pairs = BINDINGS[`${sit.id}:${lid}`] as ((s: SituationDef) => Record<string, unknown>[]) | undefined;
       variants.forEach((src, i) => {
         const ph = placeholders(src);
         const binds: { b: Record<string, unknown>; why: string }[] = [];
@@ -192,8 +192,13 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
         const fixed = reachOf(sit).get(lid);
         const domOf = (v: string): unknown[] | undefined => (sit.domains?.[v] ? sit.domains[v]() : fixed?.how === "fixed" ? fixed.values?.[v] : undefined);
         const valuesListed = ph.values.every((v) => domOf(v));
-        if (pairs) {
-          for (const b of pairs(sit)) binds.push({ b, why: "pair" });
+        // a BINDINGS entry that no longer binds every placeholder (the line changed since it was read) is not used
+        const need = [...ph.entities, ...ph.values];
+        const listed = pairs?.(sit) ?? [];
+        const stale = pairs && !(listed.length && listed.every((b) => need.every((n) => n in b)));
+        if (stale) warnings.push(`${sit.id}:${lid}: reach-es.ts BINDINGS doesn't bind ${need.filter((n) => !listed.length || listed.some((b) => !(n in b))).join(", ")} (the line changed?): made without it`);
+        if (pairs && !stale) {
+          for (const b of listed) binds.push({ b, why: "pair" });
         } else if (!ph.entities.length && !ph.values.length) binds.push({ b: {}, why: "line" });
         else if (!ph.entities.length && valuesListed) {
           // only the values the line can really be said with (reach-es.ts: fixed values from its calls, rules)
@@ -204,7 +209,10 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
             for (const c of combos) for (const d of dom) next.push({ ...c, [v]: d });
             combos = reach ? next : next.slice(0, 800);
           }
-          for (const b of reach ? combos.filter(reach).slice(0, 800) : combos) binds.push({ b, why: "value" });
+          // a rule that keeps none of the values reads the line as it was (its values renamed?): every value stays
+          const kept = reach ? combos.filter(reach) : combos;
+          if (reach && combos.length && !kept.length) warnings.push(`${sit.id}:${lid}: reach-es.ts keeps none of its values (the line changed?): every value kept`);
+          for (const b of (kept.length ? kept : combos).slice(0, 800)) binds.push({ b, why: "value" });
         } else if (ph.entities.length === 1 && !ph.values.length) {
           // the item lists it was heard with (else every list), each item bound as the line binds items of its kind
           const P = ph.entities[0];
