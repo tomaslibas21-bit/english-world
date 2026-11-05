@@ -65,6 +65,9 @@ function blushColor(skin: THREE.Color) {
   return c.lerp(new THREE.Color("#ff7a7a"), hsl.l > 0.45 ? 0.3 : 0.2);
 }
 
+/** The embroidery's flowers (a hipil's, a blusa bordada's). */
+const FLOWERS = ["#d62839", "#e4007c", "#f6a800", "#1f6fd1", "#d62839", "#ff8fab"];
+
 // ---- the face: the head is a ball (radius HR, a little taller than deep), and the features are laid onto it
 const HR = 0.27;
 const HA = HR, HB = HR * 1.02, HC = HR * 0.96;
@@ -275,6 +278,12 @@ export class Character {
       // a flared skirt from the waist, on its own mesh (see sit)
       const sk = new Parts();
       sk.add(new THREE.CylinderGeometry(tr + 0.012, 0.34 * b, 0.38 * h, 16).scale(1, 1, 0.84).translate(0, -0.19 * h, 0), bottom);
+      // (a hipil: a band of flowers round the hem)
+      if (acc.includes("hipil")) for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2, yy = -0.31 * h, rr = tr + 0.012 + (0.34 * b - tr - 0.012) * (0.31 / 0.38) + 0.006;
+        sk.add(new THREE.CircleGeometry(0.026, 5).rotateY(Math.PI / 2 - a).translate(Math.cos(a) * rr, yy, Math.sin(a) * rr * 0.84), FLOWERS[i % FLOWERS.length]);
+        sk.add(new THREE.CircleGeometry(0.013, 3).rotateY(Math.PI / 2 - a).translate(Math.cos(a + 0.2) * rr, yy - 0.03, Math.sin(a + 0.2) * rr * 0.84), "#2a9d5c");
+      }
       this.skirt = sk.mesh();
       this.skirt.position.y = waist;
       this.body.add(this.skirt);
@@ -293,6 +302,12 @@ export class Character {
       P.add(new THREE.CylinderGeometry(tr + 0.012, tr + 0.03, y1 - y0, 14, 1, true, -0.95, 1.9).scale(1, 1, 0.8).translate(0, (y0 + y1) / 2, 0), ac);
       P.add(new THREE.TorusGeometry(tr + 0.014, 0.012, 4, 20).rotateX(Math.PI / 2).scale(1, 1, 0.8).translate(0, 0.9 * h, 0), ac);
     }
+    if (acc.includes("waistapron")) {
+      // a waiter's apron from the waist to the knees, its band round the waist
+      const y0 = 0.5 * h, y1 = 0.9 * h;
+      P.add(new THREE.CylinderGeometry(tr + 0.014, tr + 0.04, y1 - y0, 14, 1, true, -1.15, 2.3).scale(1, 1, 0.8).translate(0, (y0 + y1) / 2, 0), ac);
+      P.add(new THREE.TorusGeometry(tr + 0.012, 0.014, 4, 20).rotateX(Math.PI / 2).scale(1, 1, 0.8).translate(0, 0.895 * h, 0), ac);
+    }
     if (acc.includes("vest") || acc.includes("cardigan")) {
       // open at the front, so the top shows
       const r = tr + 0.012, prof: THREE.Vector2[] = [];
@@ -300,6 +315,49 @@ export class Character {
       for (let i = 0; i <= 5; i++) { const a = (i / 5) * 1.05; prof.push(new THREE.Vector2(Math.max(0.06, r * Math.cos(a)), 1.16 * h + r * Math.sin(a))); }
       const c = acc.includes("cardigan") ? ac : look.accColor ?? "#6d8f3e";
       P.add(new THREE.LatheGeometry(prof, 18, 0.32, Math.PI * 2 - 0.64).scale(1, 1, 0.8), c);
+    }
+    // the torso's front surface at (x, y): an ellipse across (tr, tr·0.78), rounded at the top above 1.16 h
+    const frontAt = (x: number, y: number) => {
+      const dy = Math.max(0, y - 1.16 * h), r2 = tr * tr - dy * dy;
+      return Math.sqrt(Math.max(0, r2 - x * x)) * 0.78;
+    };
+    if (acc.includes("embroidered") || acc.includes("hipil")) {
+      // flowers round a square neckline, front and back: red, pink, yellow and blue, a green leaf by each
+      const y0 = 1.17 * h, pts: [number, number][] = [];
+      for (let i = 0; i < 7; i++) pts.push([-0.15 + i * 0.05, y0]);
+      for (const sx of [-1, 1]) for (let j = 1; j <= 2; j++) pts.push([sx * 0.15, y0 + j * 0.05]);
+      pts.forEach(([x, y], i) => {
+        P.add(new THREE.CircleGeometry(0.022, 5).rotateY(Math.atan2(x, frontAt(x, y) * 1.6)).translate(x, y, frontAt(x, y) + 0.004), FLOWERS[i % FLOWERS.length]);
+        P.add(new THREE.CircleGeometry(0.011, 3).translate(x + 0.02, y - 0.017, frontAt(x + 0.02, y - 0.017) + 0.003), "#2a9d5c");
+      });
+    }
+    if (acc.includes("guayabera")) {
+      // its pleats (alforzas) down the front either side of the buttons, a pocket low on each side, the buttons
+      const pc = new THREE.Color(top).multiplyScalar(0.84), y = 1.0 * h, len = 0.3 * h;
+      for (const sx of [-1, 1]) {
+        for (const x of [0.065, 0.1, 0.135]) P.add(new THREE.BoxGeometry(0.011, len, 0.008).translate(sx * x, y + 0.02, frontAt(x, y) + 0.003), pc);
+        P.add(new THREE.BoxGeometry(0.085, 0.075, 0.008).translate(sx * 0.12, 0.89 * h, frontAt(0.12, 0.89 * h) + 0.004), pc);
+      }
+      for (let i = 0; i < 4; i++) { const by = 0.88 * h + i * 0.085 * h; P.add(new THREE.CircleGeometry(0.012, 5).translate(0, by, frontAt(0, by) + 0.005), "#f4f1ea"); }
+    }
+    if (acc.includes("rebozo")) {
+      // a shawl round the shoulders, its two ends hanging down the front, fringed
+      P.add(new THREE.TorusGeometry(0.21, 0.04, 6, 20).rotateX(Math.PI / 2).scale(1.18 * b, 0.65, 0.92).translate(0, 1.225 * h, -0.005), ac);
+      for (const sx of [-1, 1]) {
+        const x = sx * 0.16, y = 0.97 * h, z = frontAt(x, y) + 0.02;
+        P.add(new THREE.BoxGeometry(0.105, 0.44 * h, 0.03).rotateZ(-sx * 0.06).translate(x, y, z), ac);
+        for (let i = 0; i < 4; i++) P.add(new THREE.BoxGeometry(0.012, 0.05, 0.012).translate(x - 0.04 + i * 0.027 + sx * 0.012, y - 0.22 * h - 0.025, z), ac);
+      }
+    }
+    if (look.hair.style === "braid") {
+      // the braid from behind the right ear over the shoulder and down the front: plaited lobes, a tie, the tuft
+      const pts: [number, number, number][] = [[0.17, 1.4, -0.1], [0.2, 1.31, 0.0], [0.19, 1.22, 0.1], [0.17, 1.13, 0.16], [0.16, 1.04, 0.18], [0.155, 0.96, 0.185], [0.15, 0.89, 0.185]];
+      pts.forEach(([x, y, z], i) => {
+        const r = 0.05 - i * 0.003;
+        P.add(new THREE.SphereGeometry(r, 6, 4).scale(1, 1.25, 0.8).translate(x + (i % 2 ? 0.012 : -0.012), y * h, Math.max(z, frontAt(x, y * h) + r * 0.55)), look.hair.color);
+      });
+      P.add(new THREE.CylinderGeometry(0.03, 0.03, 0.025, 8).translate(0.15, 0.85 * h, frontAt(0.15, 0.85 * h) + 0.03), "#e4007c");
+      P.add(new THREE.ConeGeometry(0.04, 0.09, 8).rotateX(Math.PI).translate(0.15, 0.8 * h, frontAt(0.15, 0.8 * h) + 0.03), look.hair.color);
     }
     if (acc.includes("tie")) {
       const ty = 1.08 * h;
@@ -454,6 +512,14 @@ export class Character {
     P.add(onFace(new THREE.SphereGeometry(0.027, 10, 7).scale(1.05, 0.85, 0.75), 0, -0.035, 0.006), skin.clone().multiplyScalar(0.88));
     const blush = blushColor(skin);
     for (const s of [-1, 1]) P.add(onFace(new THREE.SphereGeometry(0.037, 12, 6).scale(1, 0.62, 0.22), s * 0.15, -0.058, -0.0015), blush);
+    if (look.face?.lines) {
+      // (Look.face: the lines of a life of smiling, a shade darker than the skin: beside the mouth, at the eyes' corners)
+      const line = skin.clone().multiplyScalar(0.72);
+      for (const s of [-1, 1]) {
+        P.add(onFace(new THREE.TorusGeometry(0.03, 0.0042, 4, 8, 1.1).rotateZ(s > 0 ? -0.15 : Math.PI + 0.15 - 1.1).scale(1, 1.2, 0.5), s * 0.062, -0.085, 0.001), line);
+        for (const k of [-1, 1]) P.add(onFace(new THREE.BoxGeometry(0.026, 0.0045, 0.004).rotateZ(s * k * 0.35), s * (EYE_X + 0.055), EYE_Y + k * 0.012, 0.001), line);
+      }
+    }
     this.buildHair(P, look, acc);
     this.buildHeadwear(P, look, acc);
     this.head.add(P.mesh());
@@ -476,9 +542,11 @@ export class Character {
 
     // eyebrows: soft arches in the hair colour (they lift while talking)
     const B = new Parts();
+    // (Look.face: this person's own weight, arch and tilt; none: everyone's)
+    const fb = look.face;
     for (const s of [-1, 1]) {
-      const arc = 1.05;
-      const g = new THREE.TorusGeometry(0.05, 0.0095, 5, 10, arc).rotateZ(Math.PI / 2 - arc / 2).translate(0, -0.05, 0).scale(1, 1, 0.6);
+      const arc = fb?.arch ?? 1.05;
+      const g = new THREE.TorusGeometry(0.05, fb?.brow ? 0.0095 * fb.brow : 0.0095, 5, 10, arc).rotateZ(Math.PI / 2 - arc / 2 + (fb?.tilt ? -s * fb.tilt : 0)).translate(0, -0.05, 0).scale(1, 1, 0.6);
       B.add(onFace(g, s * (EYE_X + 0.004), BROW_Y, 0.004), browColor(hair));
     }
     this.brows = B.mesh(false);
@@ -503,8 +571,12 @@ export class Character {
   private buildHair(P: Parts, look: Look, acc: string[]) {
     const s = look.hair.style, c = look.hair.color, R = HR;
     const H = (g: THREE.BufferGeometry) => P.add(g, c);
-    const hatted = ["cap", "hat", "police", "pilot", "chef", "strawhat"].some((a) => acc.includes(a));
-    if (s === "bald") {
+    const hatted = ["cap", "hat", "police", "pilot", "chef", "strawhat", "jipi", "bandana"].some((a) => acc.includes(a));
+    if (s === "braid") {
+      // drawn back from a middle parting to the nape, the braid itself on the body (buildBody)
+      H(hairCap(1.06, 0.62));
+      H(new THREE.SphereGeometry(0.07, 10, 8).translate(0.12, -0.08, -0.2));
+    } else if (s === "bald") {
       // a band round the back and the sides, at the ears
       H(new THREE.SphereGeometry(R * 1.035, 22, 3, Math.PI - 0.12, Math.PI + 0.24, Math.PI * 0.44, Math.PI * 0.17).scale(1, 1.02, 0.97));
     } else if (s === "buzz") {
@@ -619,6 +691,19 @@ export class Character {
       P.add(new THREE.CylinderGeometry(R * 0.9, R * 1.02, 0.15, 18).translate(0, 0.225, -0.005), "#e2c483");
       P.add(new THREE.CylinderGeometry(R * 1.035, R * 1.035, 0.045, 18).translate(0, 0.17, -0.005), "#7a3b1d");
       P.add(new THREE.CylinderGeometry(R * 1.8, R * 1.8, 0.022, 22).translate(0, 0.148, -0.005), "#e8cc8f");
+    }
+    if (acc.includes("jipi")) {
+      // a jipi (the Yucatán's Panama hat): a pale creased crown, a black band, the brim
+      P.add(new THREE.CylinderGeometry(R * 0.86, R * 1.0, 0.16, 18).scale(1, 1, 1.08).translate(0, 0.225, -0.005), "#f1e3bd");
+      P.add(new THREE.BoxGeometry(0.03, 0.03, R * 1.5).translate(0, 0.3, -0.005), "#d8c69c");
+      P.add(new THREE.CylinderGeometry(R * 1.01, R * 1.01, 0.045, 18).scale(1, 1, 1.08).translate(0, 0.168, -0.005), "#1d1d1d");
+      P.add(new THREE.CylinderGeometry(R * 1.6, R * 1.6, 0.02, 22).scale(1, 1, 1.05).translate(0, 0.146, -0.005), "#efe0b8");
+    }
+    if (acc.includes("bandana")) {
+      // a cloth tied over the hair, down to the forehead, the knot and its two ends at the nape
+      P.add(new THREE.SphereGeometry(R * 1.09, 20, 8, 0, Math.PI * 2, 0, Math.PI * 0.46).rotateX(-0.28).translate(0, 0.03, -0.012), ac);
+      P.add(new THREE.SphereGeometry(0.042, 8, 6).translate(0, 0.02, -0.29), ac);
+      for (const sd of [-1, 1]) P.add(new THREE.BoxGeometry(0.05, 0.15, 0.018).rotateZ(sd * 0.35).translate(sd * 0.04, -0.07, -0.29), ac);
     }
     if (acc.includes("chef")) {
       P.add(new THREE.CylinderGeometry(R * 0.92, R * 0.96, 0.2, 20).translate(0, 0.26, -0.01), "#ffffff");

@@ -163,8 +163,8 @@ airport is both: see "Out of town" below.
   clinic. **calle Uxmal**, a block further south, has nothing facing it.
 - From the sea inland, crossing them all: **calle Flamboyán** (west), **calle Ceiba** (along the zócalo's west side)
   and **calle Itzamná** (east). Name blades stand at the corners of Juárez with Flamboyán, Ceiba and Itzamná, of
-  del Puerto with the same three, of Hidalgo with Flamboyán and Ceiba, and of Uxmal with all three (none at Hidalgo
-  and Itzamná, the clinic's corner).
+  del Puerto with the same three, of Hidalgo with all three (Itzamná's since graphics round 3, on the clinic's corner),
+  and of Uxmal with all three.
 
 ### What's across the street from what
 
@@ -774,6 +774,66 @@ switched on by the Spanish theme (new fields documented in src/game/world/theme.
   (plain, instanced, instanced with colors, skinned: 8 to 11 times a frame outdoors); each kind gets its own, once per
   zone. The same shadows, 0.2–0.3 ms less a frame on a desktop CPU. With the held poses, a frame costs the same or less
   than before the round at the measured views, the new people and things included (paired runs, base against round 2).
+
+## Graphics, round 3 (5 Nov 2026)
+
+Round 3 of the rating (the side notes' GRAPHICS.md), judged through the new walking camera (the premium movement): the
+places the conversations send the learner to that the rooms lacked, the areas still under 8, the garments the portraits
+show, and the zócalo's laureles. All switched on by the Spanish theme (new fields in src/game/world/theme.ts: `fade`,
+`regions`, `farHide`, `townMerge`, `cables`, `sidewalks`, `terrace`, `beach`, `atrialCross`, `mirador`, `taxis`, and
+`roomExtras` `services`, `terminalMx`, `roomsMx`; new look options in src/content/npcs.ts: `braid`, `jipi`,
+`bandana`, `embroidered`, `hipil`, `guayabera`, `rebozo`, `waistapron`, `face`); Maple Harbor's values switch every one
+of them off and its cast uses none of the options.
+
+- **Every place a line mentions** (`services`): the airport's **Cafetería** between check-in and security, a counter
+  faced with talavera, the espresso machine, conchas, two tables, and the **Sanitarios** doors next to it (s64a:
+  "Seguridad está a la izquierda, pasando la cafetería"; "Los baños están por allá, junto a la cafetería"); the
+  **cajero automático** on the bus terminal hall's west wall (s67b: "Hay un cajero en la terminal, ahí adentro"); in
+  the museum (s70) the **paquetería** right by the entrance on the left (cubbyholes with the visitors' bags, its counter
+  and its sign, "Bag check · free"), the **restrooms** past it along the same wall, the **elevator** at the back on the
+  left ("♿ Elevador · PB ↑ 1") and a little **cafetería** by the shop at the exit; the restroom door with its "Baños"
+  plaque **at the back on the left** in Café La Ceiba (s72) and **at the back on the right** in La Cocina de Lucía (s73);
+  the street sign at **Hidalgo and Itzamná** (theme `streetSigns`). La Cocina de Lucía's dessert board now shows s73's
+  prices (flan, dulce de papaya and helado $70, caballeros pobres $80, aguas frescas $40), and its papel picado hangs
+  nearer the side walls (the room's camera saw a string edge on).
+- **The laureles** (`fade`; fade.ts `deepFade`): the walking camera stands as high as the zócalo's laureles' crowns, so a
+  crown it is in or near is left out whole, and one in the way of the player (her chest or her head) or close in front
+  of the lens fades to a light dither (94 %; Maple Harbor's trees keep their 82 %).
+- **The bus terminal's hall** (`terminalMx`): route 7's own city bus at the bay (car.ts `busParts`, white over teal, its
+  number lit) instead of a blue box, the route's sign hanging over its front, and a shoeshine stand by the west wall.
+- **The other rooms** (`roomsMx`): minisplits on the walls of the car rental, Tienda El Faro, the pharmacy, the bank,
+  Correos, the estética, the clinic, the gym, Línea Clara and Brotecito; the garrafón instead of the water cooler (Línea
+  Clara, the car rental, the gym by its water); a báscula by the pharmacy's door; Mexico's flag on its stand in Correos;
+  a children's corner (a foam puzzle mat, a little table) and a vaccination poster in the clinic; a luchador poster
+  ("¡Sí se puede!") and pennants in the flag's colors in the gym; a hammock at Brotecito; a tray of dulces and
+  "Recargas · Pago de servicios" at Tienda El Faro; at Información Turística the counter faced with talavera and
+  alebrijes, vanilla, habanero sauce and clay pots where Maple Harbor has snow globes, lighthouses and maple syrup; the
+  mercado's other aisle: a stepped stand of flowers, piñatas hanging from a beam, the comal of handmade tortillas.
+- **Las Palmas' floors** (`roomLooks` floorKind `pasta`): Yucatán's mosaicos de pasta, cement tiles with a soft
+  four-petalled flower, teal corners and a band (interiors.ts `pastaTiles`; on the floor's canvas, no draw call).
+- **The garments the portraits show** (Character.ts, unused in Maple Harbor): Doña Carmen's hipil (flowers round the
+  neck and the skirt's hem) under her yellow rebozo; Lucía's braid over her shoulder and her blouse embroidered with
+  flowers, as Valeria's and Doña Lupe's are; Don Pancho's jipi; the guayaberas (pleats, pockets, buttons) of Don Pancho,
+  Don Ernesto, Don Chuy and Luis, Luis with his waiter's apron from the waist; Fátima's bandana. **Faces** (`face`): the
+  cast's brows their own (heavier for the men, more so with a moustache or a beard, finer and more arched for the women,
+  each tilted a little their own way) and the lines of a life of smiling on the grey-haired.
+- **The streets** (`cables`, `sidewalks`): overhead lines along calle Hidalgo (concrete poles on its north sidewalk, a
+  transformer on every third, three sagging lines, the service drops across the street to the houses; thin, so the
+  walking camera looks through them: Game.ts leaves `userData.thin` out of its occlusion field); clay pots with agaves
+  and flowering shrubs by the doors of Hilos, the estética, Correos, the car rental and the pharmacy; a fruit cart
+  ("Frutas · Cocos") in front of the museum; the water man's tricycle of garrafones on Hidalgo by Ximena's.
+- **The sea front** (`terrace`, `beach`): El Muelle's terrace on the sand either side of its pier (decks with a rail,
+  tables in bright colors with their chairs, a palapa over each), towels on the sand between the palapas, and a coconut
+  cart ("Cocos fríos") on the malecón. **The church** (`atrialCross`): the atrial cross on its stepped base before its
+  door. **The cenote** (`mirador`): a mirador where avenida Juárez ends at the meadow, its sign pointing to Cenote
+  Ka'an. **The sitio** (`taxis`): a second taxi waiting behind the first.
+- **Draw calls and triangles** (`townMerge`, `regions`, `farHide`): the town's plain colored shapes and the edition's
+  pieces in a vertex-colored mesh for each 50 m square of the town (town.ts `TownMerger`; two a square, with and without
+  shadows; a key keeps its first colour, as Merger always had it), instead of a mesh per color across the whole town;
+  the cenote, the ruins and the mirador in a mesh of their own; the tianguis' goods left out beyond 45 m of the camera.
+  The same pictures (paired shots with the merger off and on: only the characters' sub-pixel poses differ) in about half
+  the draw calls and 40–70 thousand fewer triangles at every outdoor view on a phone; the town's signs drawn after the
+  squares (a coach's destination over its windshield). Every view at or under Maple Harbor's draw calls.
 
 ## The tasks (in order)
 
