@@ -4,7 +4,9 @@
 // The learner says who is calling ("Buenos días, ingeniero, habla…"), that they are running late ("Voy tarde", "Se me
 // hizo tarde", "No voy a llegar a tiempo"), why, and when they'll get there ("Llego en veinte minutos", "Llego como a
 // las nueve y media", "Ya casi llego"). Montes reacts to the reason, may ask "¿Empezamos sin usted?", and on some
-// visits has news (twist room_302: today the meeting is in room 302 in the other building, across the street).
+// visits has news (twist room_302: today the meeting isn't in the usual room 204 but in room 302, on the third floor of
+// Línea Clara's own tower; the 3D town has no second office building across avenida Juárez, so the audit of 5 Nov 2026
+// moved the English original's "other building across the street" upstairs).
 //
 // Keeps the English edition's steps, intents and twist. Added: eta_ctx (a bare number or time, only at the time
 // question: "Veinte.", "A las diez." is read by the question asked: ¿Como a qué hora llega? / ¿Como en cuánto tiempo
@@ -54,6 +56,9 @@ function etaOf(v: any): Eta | null {
   if (tags.includes("m45")) return { min: 45 };
   if (tags.includes("m60")) return { min: 60 };
   if (tags.includes("m90")) return { min: 90 };
+  // "al mediodía" (12:00), "en la tarde" (after lunch): long after the nine o'clock start
+  if (tags.includes("noon")) return { min: 190 };
+  if (tags.includes("pm")) return { min: 240 };
   if (tags.includes("hrs") && typeof v.number === "number") return { min: v.number * 60 };
   if (typeof v.number === "number") return { min: Math.max(v.number, typeof v.n2 === "number" ? v.n2 : 0) };
   if (v.time && typeof v.time === "object") {
@@ -132,24 +137,29 @@ const REACT: Record<Reason, string> = {
 function sendHelp(c: Ctx) { if (!c.s.helpSent) { c.s.helpSent = true; c.say("help_send"); } else c.say("ok_fine"); }
 
 /** "Voy a tomar un taxi" is a good idea; "Ya viene mi esposo", "Ya llamé a la grúa" is good news. */
-function taxiOk(c: Ctx) { c.say(/\b(taxi|uber|colectivo|camion|autobus)\b/.test(plain(c.heard)) ? "good_idea" : "help_no"); }
+function taxiOk(c: Ctx) { c.s.noCar = true; c.say(/\b(taxi|uber|colectivo|camion|autobus)\b/.test(plain(c.heard)) ? "good_idea" : "help_no"); }
 
 function doReason(c: Ctx, why: any) {
   const r = reasonOf(why) ?? "generic";
   const first = !c.s.reason;
   c.s.reason = r;
   c.s.late = true;
+  // not at the wheel (the car broke down, a bus, a colectivo, a taxi): no "¡Y maneje con cuidado!" at the end
+  if (r === "car" || r === "bus" || r === "train" || r === "taxi") c.s.noCar = true;
   if (!first) { sayOnce(c, "ack"); return; }
   sayOnce(c, REACT[r]);
   if (r === "car") {
     c.expect({
-      id: "need_help", optional: true, expects: ["taxi_ok", "taxi_ok_ctx", "help_request", "no_help"], hints: ["g_yesno"],
+      id: "need_help", optional: true, expects: ["taxi_ok", "taxi_ok_ctx", "help_request", "no_help", "no_help_ctx"], hints: ["g_yesno"],
       suggest: [{ lt: "Say whether you need help", hint: "g_yesno" }],
       yes: (cc) => { sendHelp(cc); },
       no: (cc) => { cc.say("help_no"); },
       on: { taxi_ok: (cc) => taxiOk(cc), taxi_ok_ctx: (cc) => taxiOk(cc), help_request: (cc) => { sendHelp(cc); }, no_help: (cc) => { cc.say("help_no"); },
+        no_help_ctx: (cc) => { cc.say("help_any"); },
         // "Sí, gracias" is a yes; a bare "Gracias" (or "No, gracias") to an offer is a polite no
-        g_thanks: (cc) => { if (ynLead(cc) === "yes") sendHelp(cc); else cc.say("help_any"); } },
+        g_thanks: (cc) => { if (ynLead(cc) === "yes") sendHelp(cc); else cc.say("help_any"); },
+        // "No sé": nothing sent; Montes leaves the offer open ("Bueno, cualquier cosa me avisa.")
+        g_dontknow: (cc) => { cc.say("help_any"); } },
     });
   }
 }
@@ -167,9 +177,19 @@ function doEta(c: Ctx, v: any) {
   if (!e) return;
   c.s.eta = e;
   c.s.late = true;
+  // "¿Y qué pasó?" "Llego en veinte minutos.": the learner moved on; Montes doesn't ask the reason again
+  if (c.step === "reason" && !c.s.reason) c.s.reasonSkipped = true;
   const m = e.min ?? 20;
   if (e.soon) sayOnce(c, "eta_soon");
-  else if (m >= 45) { sayOnce(c, "eta_long"); if (!c.s.planned) { c.s.planned = "start"; c.s.planStated = true; } }
+  else if (m >= 45) {
+    // said once: a second long time ("Llego en la tarde." … "A las once.") is just taken
+    if (c.s.planned === "start" && c.s.etaLongSaid) { sayOnce(c, "eta_ok"); return; }
+    // "Entonces empezamos sin usted" decides it, even after "Espérenme" or with "¿Empezamos sin usted?" still open
+    sayOnce(c, "eta_long");
+    c.s.etaLongSaid = true; c.s.planned = "start"; c.s.planStated = true;
+    const conv = (c as any).conv;
+    if (conv?.pending?.id === "plan_q") conv.pending = null;
+  }
   else sayOnce(c, "eta_ok");
 }
 
@@ -211,7 +231,8 @@ function planStart(c: Ctx) {
 function planWait(c: Ctx) {
   if (c.s.planned === "wait" && c.s.__planTurn === c.s.__turn) return;
   c.s.planned = "wait"; c.s.__planTurn = c.s.__turn;
-  c.say("ok_wait");
+  // "lo esperamos unos minutos" fits a short delay, not "Llego en cuarenta minutos"
+  c.say((c.s.eta?.min ?? 0) > 20 ? "plan_wait" : "ok_wait");
   maybeComplete(c);
 }
 
@@ -237,6 +258,8 @@ function planQ(): Pending {
       plan_amb_ctx: (cc) => { if (!amb(cc)) planWait(cc); },
       save_seat: (cc) => { if (ynLead(cc) === "no") planWait(cc); else planStart(cc); cc.say("ok_seat"); },
       tell_team: (cc) => { planStart(cc); cc.say("ok_tell"); },
+      // "No sé": the boss decides ("Bueno, entonces empezamos.")
+      g_dontknow: (cc) => planStart(cc),
     },
     ask: (cc) => cc.say("plan_ask"),
   };
@@ -292,7 +315,7 @@ export const runningLate: SituationDef = {
       bitlate: "[un poco | un poquito | algo | un rato | un poco mas]",
       post: "[perdon | lo siento [mucho] | una disculpa | disculpe]",
       approx: "[mas o menos | maximo | a lo mucho | aproximadamente | o algo asi | o asi]",
-      unsure: "[(no se | no estoy (seguro | segura) | no se bien) [pero]] [creo que | espero que | ojala | calculo que | yo creo que | pienso que | si todo va bien | supongo que | tal vez | quizas | quiza | a lo mejor | probablemente]",
+      unsure: "[(no se | no estoy (seguro | segura) | no se bien) [pero]] [creo que | espero que | ojala | calculo que | yo creo que | pienso que | si todo va bien | supongo que | tal vez | quizas | quiza | a lo mejor | probablemente | mas bien]",
       on_road: "[en la (carretera | avenida | federal | autopista | entrada del pueblo) | en el (centro | puente | camino)]",
       be_there: "(llego | voy a llegar | estoy ahi | estoy alla | estoy en la oficina | voy a estar ahi | voy a estar alla | llegare | estare ahi | estare alla | puedo estar ahi | puedo llegar | creo que llego | espero llegar | espero estar ahi)",
       // the reason said with "can't come" in one breath ("Hoy no voy a poder ir, amanecí enfermo")
@@ -414,8 +437,15 @@ export const runningLate: SituationDef = {
         "[@be_there] en (un cuarto de hora | quince minutitos) #m15",
         "[@be_there] en (unos minutos | unos minutitos | un ratito | un momento | un momentito | cinco minutitos | un par de minutos) #m5",
         "[@be_there] en un rato #m15",
-        "@be_there [como | mas o menos] (a | para | antes de | despues de) {time} #h:eta_by",
-        "(como | mas o menos) (a | para) {time}", "(a | para | antes de | despues de) {time}",
+        // ("Llego hasta las diez": Mexican hasta = not until)
+        "@be_there [como | mas o menos] (a | para | antes de | despues de | hasta) {time} #h:eta_by",
+        "(como | mas o menos) (a | para) {time}", "(a | para | antes de | despues de | hasta) {time}",
+        "no (llego | voy a llegar | creo que llegue | creo llegar | voy a estar ahi | voy a estar alla) antes de {time}",
+        "[@be_there] [en] menos de (media hora #m30 | una hora #m45 | {number} minutos)",
+        "[@be_there] [en] mas de (media hora #m45 | una hora #m90)",
+        // (never a bare "tarde": "Voy a llegar tarde" is late, not the afternoon)
+        "[@be_there] (en la tarde | por la tarde | hasta la tarde | despues de comer) #pm",
+        "[@be_there] [como] [hasta] (al mediodia | a mediodia | el mediodia) #noon",
         "estoy a [como | unos | mas o menos] {number} minutos [de (ahi | alla | la oficina)] #h:eta_away",
         "me (faltan | quedan) [como | unos] {number} minutos",
         "ya casi (llego | estoy ahi | estoy alla) #soon #h:eta_soon",
@@ -438,7 +468,7 @@ export const runningLate: SituationDef = {
 
   intents: {
     identify: { patterns: [
-      "[@mh] (habla | le habla | soy | aqui habla) {name} [de (ventas | mercadotecnia | sistemas | la oficina | su equipo | el equipo | contabilidad)] #h:id_habla",
+      "[@mh] (habla | le habla | soy | aqui habla) {name} [de (ventas | mercadotecnia | sistemas | la oficina | su equipo | el equipo | contabilidad | linea clara)] #h:id_habla",
       "[@mh] soy yo [es] {name}",
       "[@mh] {name} (al habla | a sus ordenes)",
       "[@mh] (habla | le habla | soy) {name} [y] [le (llamo | hablo)] (por | sobre) la (junta | reunion)",
@@ -448,9 +478,13 @@ export const runningLate: SituationDef = {
     its_me: { patterns: ["[@mh] soy yo", "[si] soy yo"] },
     // "Es Ryan." as the answer to the phone greeting (a bare word is not a name here: "Ingeniero", "¿Y si nadie viene?")
     identify_ctx: { patterns: ["es {name}"] },
-    name_ctx: { patterns: ["{name}", "(me llamo | mi nombre es | soy | habla | es) {name}"] },
+    name_ctx: { patterns: ["{name}", "(me llamo | mi nombre es | soy | habla | es) {name}",
+      // "¿Con quién hablo?" "Con Ryan."; "Ryan, de su equipo."
+      "con {name}", "[con] {name} de (su equipo | el equipo | la oficina | ventas | mercadotecnia | sistemas | contabilidad | linea clara)"] },
     greet_harris: { patterns: ["(hola | buenos dias | buen dia | buenas) @mh", "[oiga | oye] @mh"] },
-    is_harris: { patterns: ["(hablo | estoy hablando) con [el] @mh", "se encuentra [el] @mh", "[el] @mh (es usted | eres tu)", "(es usted | usted es) [el] @mh"] },
+    is_harris: { patterns: ["(hablo | estoy hablando) con [el] @mh", "se encuentra [el] @mh", "[el] @mh (es usted | eres tu)", "(es usted | usted es) [el] @mh",
+      // the Mexican phone asks: "¿Está el ingeniero Montes?", "¿Con el ingeniero Montes, por favor?"
+      "esta [el] @mh [por favor]", "con [el] @mh [por favor]", "(me comunica | me puede comunicar | me podria comunicar) con [el] @mh [por favor]"] },
     late: { patterns: [
       "@pre @late_core @post",
       "@pre @late_core [porque | es que | ya que | pues] {why} @post",
@@ -557,15 +591,18 @@ export const runningLate: SituationDef = {
     ] },
     ask_room: { patterns: [
       "(en | a) (que | cual) sala (es | va a ser | sera) [la (junta | reunion)]", "donde (es | va a ser | sera) la (junta | reunion)",
-      "(es | sera) en la (sala | misma sala) de siempre", "[es] la (sala) de siempre", "[es] la de siempre", "(en | a) (que | cual) sala #h:q_room", "en que piso [es]",
+      "(es | sera) en la (sala | misma sala) de siempre", "[es] la (sala) de siempre", "[es] la de siempre", "(en | a) (que | cual) sala #h:q_room",
     ] },
     ask_ok: { patterns: [
       "(hay | habra) (algun | algún) problema", "espero que no (haya | sea) (problema | ningun problema)",
       "(no | si) (le | les) molesta", "(esta | estaria) bien si llego (un poco | mas | un poquito) tarde",
+      // "¿Está enojado?" gets "No, para nada."
+      "[no] (esta | estas #tip:tu_staff) (enojado | molesto)", "(se | te #tip:tu_staff) (enojó | molestó)",
     ] },
+    // the room (302, on the third floor) said back; "en el otro edificio" is no confirmation (ask_building answers it)
     confirm_room: { patterns: [
-      "[ok | muy bien | de acuerdo | perfecto | va | sale | entendido | vale] [en] [la] sala {room:digits} [en el otro edificio] [entendido | ok | perfecto] #h:room_got_it",
-      "[ok | muy bien | perfecto | entendido] (en el otro edificio | el otro edificio) [en la sala {room:digits}] [entendido]",
+      "[ok | muy bien | de acuerdo | perfecto | va | sale | entendido | vale] [en] [la] sala {room:digits} [en el (tercer piso | tercero | piso tres)] [entendido | ok | perfecto] #h:room_got_it",
+      "[ok | muy bien | perfecto | entendido | sale | va] [en] el (tercer piso | tercero | piso tres) [en la sala {room:digits}] [entendido]",
       "(voy | me voy) a la sala {room:digits}",
     ] },
     // a bare room number, only at the room news
@@ -577,14 +614,51 @@ export const runningLate: SituationDef = {
       "(ahi | alla) nos vemos", "hasta (ahorita | al rato | en un rato)",
     ] },
     no_help: { patterns: ["[no] no (necesito | ocupo) (ayuda | nada | un taxi | que me ayuden)", "no gracias (estoy bien | todo bien)", "no (estoy bien | todo bien) gracias"] },
+    // "Gracias, no se preocupe" at "¿Necesita ayuda?" only (elsewhere it answers an apology)
+    no_help_ctx: { patterns: ["[no] [gracias] no se (preocupe | moleste) [gracias] [estoy bien | todo bien]"] },
+    // "No llego en veinte minutos" (the comma reading "No, llego en veinte…" is unlikely after "¿Como en cuánto
+    // tiempo llega?"): not a time; Montes asks again, unless the right time follows ("…, más bien en media hora")
+    eta_neg_ctx: { patterns: [
+      "no (llego | voy a llegar | creo que llegue | creo llegar | alcanzo a llegar | voy a estar ahi | voy a estar alla) en [unos | como] ({number} minutos | media hora | una hora | un rato | cinco minutitos)",
+      "no (llego | voy a llegar | alcanzo a llegar | voy a estar ahi | voy a estar alla) (a | para) {time}",
+    ] },
     help_request: { patterns: [
       "[si] (alguien | usted) (puede | podria) (pasar por mi | venir por mi | recogerme | ayudarme)",
       "(me pueden | me puede | me podria) mandar a alguien", "[si] (mande | manden) a alguien [por mi]",
       "[si] (alguien | usted) (me puede | me podria) (recoger | ayudar)",
+      "[si] (me pueden | me puede | me podria | me podrian) (mandar | pedir | conseguir) un (taxi | uber | carro | coche)",
     ] },
+    // "Ahorita se la mando" (the location Montes asked for)
+    send_location: { patterns: [
+      "[si] [ok | claro | sale | va | perfecto] [ahorita | ahora | ya] se la (mando | envio | paso | comparto)",
+      "[si] [ok | claro | sale | va] [ahorita | ahora | ya] le (mando | envio | paso | comparto) (mi | la) ubicacion",
+      "ya (se la | le) (mandé | envié | pasé | compartí) [mi ubicacion | la ubicacion]",
+    ] },
+    // where room 302 is (the third floor of this tower); a building across the street is the English original's, not
+    // this town's: "¿Dónde está el otro edificio?" gets "No, es aquí, en nuestro edificio…"
     ask_building: { patterns: [
-      "donde (esta | queda) el otro edificio #h:q_building", "(cual | que) edificio", "donde (esta | queda) (eso | ese edificio)",
-      "el otro edificio", "como llego [ahi | alla | al otro edificio]", "(en | a) (que | cual) edificio", "[es] el de enfrente",
+      "donde (esta | queda) la sala [{room:digits}] #h:q_building", "donde (esta | queda) [eso]", "(cual | que) edificio",
+      "(en | a) (que | cual) edificio", "[en] que piso [es | esta | queda] [la (junta | reunion | sala [{room:digits}])]",
+      "como llego [ahi | alla | a la sala [{room:digits}]]", "[es] en (nuestro | este | el mismo) edificio",
+      "donde (esta | queda) (el otro edificio | ese edificio)", "[ok] [es] [en] el otro edificio [en la sala {room:digits}]",
+      "como llego al otro edificio", "[es] en otro edificio", "[es] (el | en el) (edificio de enfrente | de enfrente)",
+    ] },
+    // the meeting itself: what time, whether it started, whether everyone is there ("¿Ya llegaron todos?" is no "Ya llego")
+    ask_mtg_time: { patterns: [
+      "(a que hora | cuando) (es | empieza | comienza | va a empezar | va a ser | arranca) la (junta | reunion)",
+      "a que hora (empieza | empiezan | comienza | comienzan | arrancan)",
+      "[la (junta | reunion)] (es | empieza | comienza) a las nueve [la (junta | reunion)]",
+    ] },
+    ask_started: { patterns: [
+      "ya (empezaron | empezó | comenzó | comenzaron | arrancaron | arrancó) [la (junta | reunion)]",
+      "(todavia no | aun no) (empieza | empiezan | empiezan ustedes | empezaron | ha empezado) [la (junta | reunion)]",
+    ] },
+    ask_team: { patterns: ["ya (llegaron | estan) todos [en la (junta | reunion | sala)]", "ya (llego | esta) todo el (equipo | mundo)", "ya (estan | llegaron) los demas"] },
+    // "No sé, depende del tráfico" at the time question
+    eta_unknown_ctx: { patterns: [
+      "[no se] [bien] (depende | va a depender) (del trafico | del transito | de la lluvia | del camion | del autobus | del colectivo | del taxi)",
+      "no se [bien] [todavia] cuanto (tiempo | me voy a tardar | voy a tardar | me tardo) [depende del trafico]",
+      "no (tengo idea | estoy (seguro | segura)) [de] cuanto (tiempo | me voy a tardar | voy a tardar)",
     ] },
     taxi_ok: { patterns: [
       "[@nothanks] (voy a tomar | voy a pedir | ya pedí | ya llamé | pedí | llamé | tomo | agarro | voy a agarrar) un (taxi | uber | colectivo)",
@@ -606,7 +680,9 @@ export const runningLate: SituationDef = {
     // "Sí, no voy a poder" / "No, no voy": a bare can't at "¿Entonces hoy va a faltar?" only
     cant_ctx: { patterns: ["[si] [no] [hoy] no (voy a poder | puedo | voy | voy a ir) [hoy] [lo siento]", "[si] [hoy] voy a faltar [hoy] [lo siento]"] },
     // "No, voy a llegar más tarde" without its comma: at "¿Entonces hoy va a faltar?" only
-    just_late_ctx: { patterns: ["no (voy a llegar | llego) (mas tarde | un poco mas tarde | tarde | un poco tarde)", "no (voy tarde | se me hizo tarde)", "[no] no (voy a faltar | falto) [hoy] [solo | nada mas] [voy tarde | voy a llegar tarde]"] },
+    just_late_ctx: { patterns: ["no (voy a llegar | llego) (mas tarde | un poco mas tarde | tarde | un poco tarde)", "no (voy tarde | se me hizo tarde)", "[no] no (voy a faltar | falto) [hoy] [solo | nada mas] [voy tarde | voy a llegar tarde]",
+      // "No sé, tal vez más tarde": maybe later is coming, late
+      "[no se] (tal vez | quizas | quiza | a lo mejor) [llegue | llego | voy | vaya] (mas tarde | al rato | en un rato)"] },
     // the answer to "¿Va a llegar tarde, o a tiempo?"
     amb_ctx: { patterns: ["[no] [mejor] tarde #late", "[no] [si] a tiempo #ontime", "[no] [si] [voy a llegar] puntual #ontime"] },
     english_q: { patterns: ["(habla | hablas | usted habla) ingles", "(se puede | puedo) hablar en ingles"] },
@@ -753,7 +829,7 @@ export const runningLate: SituationDef = {
       t("Mmm, | bueno. | Entonces | empezamos | sin | usted.", "Hmm, | okay. | Then | we start | without | you.", "Hmm, okay. We'll start without you, then."),
     ],
     plan_ask: [
-      t("¿Empezamos | sin | usted?", "Shall we start | without | you?", "Should we start without you?"),
+      t("¿Empezamos | sin | usted?", "Should we start | without | you?", "Should we start without you?"),
       t("¿Quiere | que | empecemos | sin | usted?", "Do you want | that | we start | without | you?", "Do you want us to start without you?",
         { flags: { 2: "empecemos: the subjunctive after “quiere que” (want us to)." } }),
     ],
@@ -769,24 +845,34 @@ export const runningLate: SituationDef = {
     thanks_letting: [
       t("Gracias | por | avisar.", "Thanks | for | letting know.", "Thanks for letting me know."),
     ],
+    // the twist: not the usual room 204 today but 302, on the third floor of this same tower (the 3D town has no other
+    // office building across the street)
     room_twist: [
-      t("Ah, | y | por cierto, | hoy | la | reunión | es | en | el | otro | edificio.", "Oh, | and | by the way, | today | the | meeting | is | in | the | other | building.",
-        "Oh, and by the way, today the meeting's in the other building."),
+      t("Ah, | y | por cierto, | hoy | la | reunión | no es | en | la | sala | de siempre.", "Oh, | and | by the way, | today | the | meeting | isn't | in | the | room | usual.",
+        "Oh, and by the way, today the meeting isn't in the usual room."),
     ],
     room_num: [
-      t("En | la | sala | 302.", "In | — | room | 302.", "In room 302.",
-        { say: "En la sala trescientos dos.", write: "Sala 302 · el otro edificio (enfrente)", flags: { 1: "la before sala; English has no article here." } }),
+      t("Es | en | la | sala | 302.", "It's | in | — | room | 302.", "It's in room 302.",
+        { say: "Es en la sala trescientos dos.", write: "Sala 302 · tercer piso", flags: { 2: "la before sala; English has no article here." } }),
     ],
     room_right: [
-      t("Exacto.", "Exactly.", "Exactly."),
-      t("Así es.", "That's right.", "That's right."),
+      t("Exacto.", "Exactly.", "Exactly.", { write: "Sala 302 · tercer piso" }),
+      t("Así es.", "That's right.", "That's right.", { write: "Sala 302 · tercer piso" }),
     ],
     room_wrong: [
       t("No, | es | la | sala | 302.", "No, | it's | — | room | 302.", "No, it's room 302.",
-        { say: "No, es la sala trescientos dos.", write: "Sala 302 · el otro edificio (enfrente)", flags: { 2: "la before sala; English has no article here." } }),
+        { say: "No, es la sala trescientos dos.", write: "Sala 302 · tercer piso", flags: { 2: "la before sala; English has no article here." } }),
     ],
     building: [
-      t("Está | justo | enfrente, | cruzando | la | calle.", "It's | right | opposite, | crossing | the | street.", "It's right across the street."),
+      t("Aquí | en | nuestro | edificio, | en | el | tercer | piso.", "Here | in | our | building, | on | the | third | floor.", "Here in our building, on the third floor.",
+        { write: "Sala 302 · tercer piso" }),
+      t("En | el | tercer | piso | de | este | edificio.", "On | the | third | floor | of | this | building.", "On the third floor of this building.",
+        { write: "Sala 302 · tercer piso" }),
+    ],
+    // "¿Dónde está el otro edificio?", "Ok, en el otro edificio": there is none
+    building_no: [
+      t("No, | es | aquí, | en | nuestro | edificio, | en | el | tercer | piso.", "No, | it's | here, | in | our | building, | on | the | third | floor.",
+        "No, it's here in our building, on the third floor.", { write: "Sala 302 · tercer piso" }),
     ],
     room_here: [
       t("Es | aquí, | en | nuestro | edificio, | como | siempre. | Sala | 204.", "It's | here, | in | our | building, | as | always. | Room | 204.",
@@ -824,6 +910,24 @@ export const runningLate: SituationDef = {
     no_problem: [
       t("No, | no hay | problema.", "No, | there's no | problem.", "No, no problem at all."),
     ],
+    not_angry: [
+      t("No, | para nada.", "No, | not at all.", "No, not at all."),
+    ],
+    mtg_time: [
+      t("A | las | nueve.", "At | — | nine.", "At nine.", { flags: { 1: "las before the hour; English has no word here." } }),
+    ],
+    mtg_time_yes: [
+      t("Sí, | a | las | nueve.", "Yes, | at | — | nine.", "Yes, at nine.", { flags: { 2: "las before the hour; English has no word here." } }),
+    ],
+    not_started: [
+      t("Todavía no. | Empieza | a | las | nueve.", "Not yet. | It starts | at | — | nine.", "Not yet. It starts at nine.", { flags: { 3: "las before the hour; English has no word here." } }),
+    ],
+    team_almost: [
+      t("Ya | casi | todos.", "Already | almost | all.", "Almost everyone."),
+    ],
+    eta_unknown: [
+      t("Bueno, | me | avisa | cuando | sepa.", "Okay, | (to) me | you-let-know | when | you-know.", "Okay, let me know when you know."),
+    ],
     ok_fine: [
       t("Bueno, | no se preocupe.", "Okay, | don't worry.", "Okay, don't worry."),
       t("Claro, | no pasa nada.", "Of course, | it's fine.", "Of course, it's no big deal."),
@@ -839,7 +943,7 @@ export const runningLate: SituationDef = {
       t("Perdón, | ¿va | a | llegar | tarde, | o | a tiempo?", "Sorry, | are you going | to | arrive | late, | or | on time?", "Sorry, are you going to be late, or on time?"),
     ],
     amb_plan: [
-      t("Perdón, | ¿empezamos, | o | {m:lo|f:la} | esperamos?", "Sorry, | shall we start, | or | you | do we wait for?", "Sorry, should we start, or wait for you?", { flags: { 3: F_LOLA } }),
+      t("Perdón, | ¿empezamos, | o | {m:lo|f:la} | esperamos?", "Sorry, | should we start, | or | you | should we wait for?", "Sorry, should we start, or wait for you?", { flags: { 3: F_LOLA } }),
     ],
     english: [
       t("Un | poco, | pero | usted | habla | muy | bien | español.", "A | little, | but | you | speak | very | well | Spanish.", "A little, but your Spanish is really good."),
@@ -950,10 +1054,11 @@ export const runningLate: SituationDef = {
       ],
     },
     room: {
-      lt: "Check the room and the building",
+      lt: "Check the room and where it is",
       items: [
         { id: "room_got_it", s: t("Ok, | sala | 302. | Entendido.", "Okay, | room | 302. | Got it.", "Okay, room 302. Got it.", { say: "Ok, sala trescientos dos. Entendido." }) },
-        { id: "q_building", s: t("¿Dónde | está | el | otro | edificio?", "Where | is | the | other | building?", "Where's the other building?") },
+        { id: "q_building", s: t("¿Dónde | queda | la | sala | 302?", "Where | is | — | room | 302?", "Where's room 302?",
+          { say: "¿Dónde queda la sala trescientos dos?", flags: { 1: "queda: is (located); ¿Dónde queda…? asks where a place is.", 2: "la before sala; English has no article here." } }) },
         { id: "q_room", s: t("Perdón, | ¿en | qué | sala?", "Sorry, | in | which | room?", "Sorry, which room?") },
       ],
     },
@@ -991,6 +1096,9 @@ export const runningLate: SituationDef = {
     "lo sé": { reason: "grammatical_fusion", split: "lo → it + sé → I know: English says “I know” without the object pronoun.", minimal: "Two words." },
     "un poco": { reason: "lexical_expression", split: "un → a + poco → little: the quantifier = a little.", minimal: "Two words." },
     "volver a pasar": { reason: "grammatical_fusion", split: "volver → to return + a → to + pasar → to happen is false; volver a + verb = do again (happen again).", minimal: "Three words." },
+    "de siempre": { reason: "lexical_expression", split: "de → of + siempre → always is a literal reading; = the usual (one).", minimal: "Two words." },
+    "para nada": { reason: "lexical_expression", split: "para → for + nada → nothing is false; = not at all.", minimal: "Two words." },
+    "todavía no": { reason: "lexical_expression", split: "todavía → still + no → not; = not yet.", minimal: "Two words." },
   },
 
   // -------------------------------------------------------------------------
@@ -1049,7 +1157,7 @@ export const runningLate: SituationDef = {
         c.s.etaAsk = c.s.etaVague || c.chance(1 / 3) ? "long" : "when";
         c.say(c.s.etaVague ? "ask_eta_vague" : c.s.etaAsk === "long" ? "ask_eta_long" : "ask_eta");
       },
-      expects: ["eta", "eta_ctx", "late", "on_way"],
+      expects: ["eta", "eta_ctx", "late", "on_way", "eta_unknown_ctx", "send_location", "eta_neg_ctx"],
       suggest: [{ lt: "Say when you'll get there", hint: "eta" }],
       help: (c) => { c.s.etaSkipped = true; c.say("ok_fine"); } },
     { id: "plan", when: (c) => !!c.s.late && !c.s.cantCome, done: (c) => !!c.s.planned,
@@ -1074,7 +1182,7 @@ export const runningLate: SituationDef = {
       ask: (c) => { roomNews(c); },
       expects: ["confirm_room", "confirm_room_ctx", "ask_building", "ask_room"],
       suggest: [
-        { lt: "Check the room and the building", hint: "room" },
+        { lt: "Check the room and where it is", hint: "room" },
       ] },
   ],
 
@@ -1139,8 +1247,14 @@ export const runningLate: SituationDef = {
     on_way(c) {
       if (!mark(c)) return;
       c.s.late = true;
+      if (/\b(camion|autobus|colectivo|taxi|uber|tren|caminando|a pie)\b/.test(plain(c.heard))) c.s.noCar = true;
       // ("Voy manejando, le llamo luego.": no question right before the goodbye)
-      if (!c.s.eta && !leaving(c)) { c.s.etaVague = true; c.ask("eta"); }
+      if (c.s.eta || leaving(c)) return;
+      c.s.etaVague = true;
+      // alone, "Ya voy en camino" gets "¿Como en cuánto tiempo?" now; with a time ("Voy caminando, llego en veinte
+      // minutos") or a reason ("Estoy en el camión y hay mucho tráfico") in the same breath, the rest of the turn
+      // comes first and the steps ask what is still missing, last
+      if (turnSegments(c).every((x) => x.intent === "on_way")) c.ask("eta");
     },
     not_late(c, _slots, seg) {
       if (!mark(c)) return;
@@ -1222,20 +1336,57 @@ export const runningLate: SituationDef = {
       if (!c.s.roomTwist) { c.say("room_usual"); return; }
       if (!roomNews(c)) c.say("room_num");
     },
-    ask_ok(c) { if (!mark(c)) return; c.say("no_problem"); },
+    ask_ok(c) { if (!mark(c)) return; c.say(/\b(enojad[oa]|enojo|molest[oa])\b/.test(plain(c.heard)) ? "not_angry" : "no_problem"); },
     confirm_room(c, slots) {
       if (!mark(c)) return;
       if (!c.s.roomTwist) { c.say("room_usual"); return; }
       if (roomNews(c)) return;
       if (typeof slots.room === "string" && slots.room !== "302") c.say("room_wrong");
-      else c.say("room_right");
+      // "Ok, en el otro edificio, sala 302": the building part is corrected (ask_building), not agreed with
+      else if (!turnSegments(c).some((x) => x.intent === "ask_building")) c.say("room_right");
     },
     confirm_room_ctx(c, slots, seg) { runningLate.handlers.confirm_room(c, slots, seg); },
     ask_building(c) {
       if (!mark(c)) return;
       if (!c.s.roomTwist) { c.say("room_here"); return; }
       roomNews(c);
-      c.say("building");
+      // there is no building across the street: "¿Dónde está el otro edificio?" / "Ok, en el otro edificio" get a no
+      sayOnce(c, /\b(otro edificio|enfrente|cruzando)\b/.test(plain(c.heard)) ? "building_no" : "building", undefined, "building");
+    },
+    ask_mtg_time(c) { if (!mark(c)) return; c.say(/\bnueve\b/.test(plain(c.heard)) ? "mtg_time_yes" : "mtg_time"); },
+    ask_started(c) { if (!mark(c)) return; c.say("not_started"); },
+    ask_team(c) { if (!mark(c)) return; c.say("team_almost"); },
+    send_location(c) { if (!mark(c)) return; c.say(c.s.helpSent ? "ok_call" : "ack"); },
+    no_help_ctx(c) { if (!mark(c)) return; c.say("help_any"); },
+    eta_neg_ctx(c) {
+      if (!mark(c)) return;
+      // "No llego en veinte minutos, más bien en media hora": the time after it is the answer
+      if (turnSegments(c).some((x) => x.intent === "eta" || x.intent === "eta_ctx")) return;
+      c.s.etaVague = true; c.s.etaAsk = "long"; c.say("ask_eta_vague"); c.hold();
+    },
+    // "No sé, depende del tráfico" at the time question: no time; Montes asks to be told
+    eta_unknown_ctx(c) { if (!mark(c)) return; c.s.etaSkipped = true; c.s.late = true; c.say("eta_unknown"); },
+    // Situation-level versions of the global how-are-you answers. With caller ID Montes opens with "¿Todo bien?": a
+    // "Sí, todo bien, gracias" or "Bien, ¿y usted?" opens the call (no "¿Bueno? ¿Quién habla?" again), and "Más o
+    // menos" gets "¡Uy! ¿Qué pasó?"; at the reason question "¿Todo bien?" a "todo bien" skips the reason.
+    g_howareyou_answer(c) {
+      if (!mark(c)) return;
+      if (/\b(usted|tu|ti)\b/.test(plain(c.heard))) c.say("g_asked_back");
+      if (c.step === "reason" && !c.s.reason && !c.s.reasonSkipped) { c.s.reasonSkipped = true; sayOnce(c, "ack"); }
+    },
+    g_howareyou_bad(c) {
+      const opening = !c.s.opened;
+      if (!mark(c)) return;
+      if (opening) c.s.notOk = true;
+      else c.say("g_sorry_to_hear");
+    },
+    // "No sé" to the time or the reason question: Montes takes it and goes on (the global "Bueno, no se preocupe"
+    // held the call there); elsewhere as the global one
+    g_dontknow(c) {
+      if (!mark(c)) return;
+      if (c.step === "eta" && !c.s.eta && !c.s.etaSkipped) { c.s.etaSkipped = true; c.s.late = true; c.say("eta_unknown"); return; }
+      if (c.step === "reason" && !c.s.reason && !c.s.reasonSkipped) { c.s.reasonSkipped = true; c.say("react_generic"); return; }
+      c.say("g_take_time"); c.hold();
     },
     // Situation-level versions of two global skills: a phone call ends with Montes's own goodbye (and never re-asks
     // an open question after it), and a bare "¡Hola!" is answered by the opening step (or, with caller ID, by a short
@@ -1262,7 +1413,9 @@ export const runningLate: SituationDef = {
     maybeComplete(c);
     if (c.s.cantCome) c.say("take_care");
     else if (!c.s.notLate) {
-      const drive = c.s.reason === "traffic" || c.s.reason === "car" || c.s.reason === "rain";
+      // traffic or rain on the road: "¡Y maneje con cuidado!", unless the learner isn't driving (the car broke down,
+      // a taxi, the bus, a colectivo, on foot)
+      const drive = (c.s.reason === "traffic" || c.s.reason === "rain") && !c.s.noCar;
       if (drive) c.s.driveSaid = true;
       c.say(drive ? "closing_drive" : "closing");
     }
@@ -1400,6 +1553,36 @@ export const runningLate: SituationDef = {
     { say: "No sé, tal vez una hora.", intent: "eta" },
     { say: "En dos horas.", intent: "eta", slots: { eta: { number: 2 } } },
     { say: "¿Hay algún problema?", intent: "ask_ok" },
+    // audit (5 Nov 2026): room 302 is on the third floor of this tower (no building across the street)
+    { say: "¿Dónde queda la sala 302?", intent: "ask_building", step: "room", not: ["confirm_room"] },
+    { say: "¿En qué piso?", intent: "ask_building", not: ["ask_room"] },
+    { say: "Ok, sala 302, en el tercer piso.", intent: "confirm_room", step: "room", slots: { room: "302" } },
+    { say: "Ok, en el tercer piso.", intent: "confirm_room", step: "room" },
+    { say: "En el otro edificio.", intent: "ask_building", step: "room", not: ["confirm_room"] },
+    { say: "¿Es en el edificio de enfrente?", intent: "ask_building", not: ["confirm_room"] },
+    // audit: the phone asks, side questions, times
+    { say: "¿Está el ingeniero Montes?", intent: "is_harris", step: "opening" },
+    { say: "¿Con el ingeniero Montes, por favor?", intent: "is_harris", step: "opening" },
+    { say: "Habla Ryan, de Línea Clara.", intent: "identify", slots: { name: "Ryan" } },
+    { say: "¿Ya llegaron todos?", intent: "ask_team", not: ["eta"] },
+    { say: "¿A qué hora es la junta?", intent: "ask_mtg_time", not: ["eta"] },
+    { say: "¿La junta es a las nueve?", intent: "ask_mtg_time", not: ["eta"] },
+    { say: "¿Ya empezó la junta?", intent: "ask_started" },
+    { say: "¿Está enojado?", intent: "ask_ok" },
+    { say: "¿Se enojó?", intent: "ask_ok" },
+    { say: "¿Me puede mandar un taxi?", intent: "help_request" },
+    { say: "Ahorita se la mando.", intent: "send_location", not: ["eta"] },
+    { say: "No sé, depende del tráfico.", intent: "eta_unknown_ctx", step: "eta", not: ["eta"] },
+    { say: "Menos de diez minutos.", intent: "eta", step: "eta", slots: { eta: { number: 10 } } },
+    { say: "Menos de media hora.", intent: "eta", step: "eta" },
+    { say: "Llego en la tarde.", intent: "eta" },
+    { say: "Voy a llegar tarde.", intent: "late", not: ["eta"] },
+    { say: "Con Ryan.", intent: "name_ctx", step: "who", slots: { name: "Ryan" } },
+    { say: "Ryan, de su equipo.", intent: "name_ctx", step: "who", slots: { name: "Ryan" } },
+    { say: "No llego en veinte minutos.", intent: "eta_neg_ctx", step: "eta", not: ["eta"] },
+    { say: "No creo que llegue antes de las diez.", intent: "eta", step: "eta", slots: { eta: { time: { h: 10, m: 0 } } } },
+    { say: "Llegaré tarde.", intent: "late", not: ["eta"] },
+    { say: "Llego hasta las diez.", intent: "eta", slots: { eta: { time: { h: 10, m: 0 } } } },
     // must not be understood
     { say: "Quiero una pizza con piña.", intent: "none" },
     { say: "El perro azul canta en la playa.", intent: "none" },
@@ -1429,10 +1612,14 @@ export const runningLate: SituationDef = {
     { name: "ahorita, then a bare number", setup: (s) => { s.askReason = false; s.planAsk = false; s.roomTwist = false; },
       turns: ["Buenos días, ingeniero, habla Ryan. Se me hizo tarde.", "Ahorita llego.", "Como quince.", "Gracias. Hasta luego."],
       expect: { complete: true, state: { ahoritaAsked: true, eta: { min: 15 } } }, auto: AUTO },
-    // the twist: the meeting is in room 302 in the other building
-    { name: "room 302 in the other building (twist forced)", setup: (s) => { s.roomTwist = true; s.planAsk = false; s.callerId = true; s.askReason = true; },
-      turns: ["Ingeniero, habla Ryan. Voy tarde, hay mucho tráfico.", "En media hora.", "¿Dónde está el otro edificio?", "Ok, sala 302. Entendido.", "Gracias, nos vemos en la junta."],
+    // the twist: the meeting is in room 302, on the third floor (not the usual 204)
+    { name: "room 302 on the third floor (twist forced)", setup: (s) => { s.roomTwist = true; s.planAsk = false; s.callerId = true; s.askReason = true; },
+      turns: ["Ingeniero, habla Ryan. Voy tarde, hay mucho tráfico.", "En media hora.", "¿Dónde queda la sala 302?", "Ok, sala 302, en el tercer piso. Entendido.", "Gracias, nos vemos en la junta."],
       expect: { complete: true, state: { roomSaid: true, eta: { min: 30 } } }, auto: AUTO },
+    // audit: a learner who expects the English original's other building is told no, and "¿En qué piso?" gets the floor
+    { name: "the other building? No, the third floor (twist forced)", setup: (s) => { s.roomTwist = true; s.planAsk = false; s.callerId = true; s.askReason = false; },
+      turns: ["Ingeniero, voy tarde. Llego en veinte minutos.", "Ok, en el otro edificio, sala 302.", "¿En qué piso?", "Gracias, hasta luego."],
+      expect: { complete: true, state: { roomSaid: true, eta: { min: 20 } } }, auto: AUTO },
     { name: "room twist, a wrong number and a bare number (twist forced)", setup: (s) => { s.roomTwist = true; s.planAsk = true; s.askReason = false; },
       turns: ["Hola, soy Ryan. Voy a llegar tarde.", "Llego en quince minutos.", "No me esperen.", "Sala doscientos tres.", "Tres cero dos.", "Gracias por avisarme. Hasta luego."],
       expect: { complete: true, state: { roomSaid: true, planned: "start" } }, auto: AUTO },
@@ -1470,6 +1657,35 @@ export const runningLate: SituationDef = {
     { name: "late or on time? Montes asks", setup: (s) => { s.callerId = false; s.askReason = false; s.planAsk = false; s.roomTwist = false; },
       turns: ["Habla Ryan.", "No voy a llegar tarde.", "Tarde.", "En veinte minutos.", "Gracias. Hasta luego."],
       expect: { complete: true, state: { late: true, notLate: undefined } }, auto: (({ late: _l, ...rest }) => rest)(AUTO) },
+    // audit (5 Nov 2026): caller ID's "¿Todo bien?" answered "Sí, todo bien, gracias" opens the call ("Dígame", not
+    // "¿Bueno? ¿Quién habla?" again)
+    { name: "caller ID: «¿Todo bien?» «Sí, todo bien, gracias»", setup: (s) => { s.callerId = true; s.askReason = false; s.planAsk = false; s.roomTwist = false; },
+      turns: ["Sí, todo bien, gracias.", "Le llamo para avisarle que voy a llegar tarde.", "Llego en veinte minutos.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { opened: true, late: true, notOk: undefined, eta: { min: 20 } } }, auto: (({ opening: _o, late: _l, ...rest }) => rest)(AUTO) },
+    // "Más o menos" gets "¡Uy! ¿Qué pasó?"; the car broke down and a taxi is coming: no "¡Y maneje con cuidado!"
+    { name: "«Más o menos», then car trouble and a taxi", setup: (s) => { s.callerId = true; s.askReason = true; s.planAsk = false; s.roomTwist = false; },
+      turns: ["Más o menos.", "Se me descompuso el carro.", "No, gracias, voy a tomar un taxi.", "Como en cuarenta minutos.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { notOk: true, reason: "car", noCar: true, eta: { min: 40 } } }, auto: (({ opening: _o, late: _l, reason: _r, need_help: _n, ...rest }) => rest)(AUTO) },
+    // the reason question answered with the time: Montes doesn't ask the reason again
+    { name: "the reason skipped for the time", setup: (s) => { s.callerId = true; s.askReason = true; s.planAsk = false; s.roomTwist = false; },
+      turns: ["Ingeniero, habla Ryan. Voy tarde.", "Llego en veinte minutos.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { reasonSkipped: true, reason: undefined, eta: { min: 20 } } }, auto: (({ reason: _r, ...rest }) => rest)(AUTO) },
+    // "No sé, depende del tráfico" at the time question
+    { name: "no time yet: it depends on the traffic", setup: (s) => { s.askReason = false; s.planAsk = false; s.roomTwist = false; },
+      turns: ["Buenos días, ingeniero, habla Ryan. Voy tarde.", "No sé, depende del tráfico.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { etaSkipped: true, eta: undefined } }, auto: AUTO },
+    // side questions on the way: the time of the meeting, who is there, is he angry
+    { name: "side questions: the time, the team, angry?", setup: (s) => { s.callerId = true; s.askReason = false; s.planAsk = true; s.roomTwist = false; },
+      turns: ["Ingeniero, voy tarde.", "¿A qué hora es la junta?", "Llego en veinte minutos.", "¿Ya llegaron todos?", "Empiecen sin mí, por favor.", "¿Está enojado?", "Gracias, hasta luego."],
+      expect: { complete: true, state: { planned: "start", eta: { min: 20 } } }, auto: AUTO },
+    // a negated time ("No llego en veinte minutos") is no answer; the right one follows
+    { name: "a negated time, then the right one", setup: (s) => { s.callerId = true; s.askReason = false; s.planAsk = false; s.roomTwist = false; },
+      turns: ["Ingeniero, voy tarde.", "No llego en veinte minutos.", "Más bien en media hora.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { eta: { min: 30 } } }, auto: AUTO },
+    // "¿Está el ingeniero Montes?" (the Mexican phone ask) after "¿Bueno? Buenos días.", and "menos de media hora"
+    { name: "«¿Está el ingeniero Montes?», ahorita, less than half an hour", setup: (s) => { s.callerId = false; s.askReason = false; s.planAsk = false; s.roomTwist = false; },
+      turns: ["¿Está el ingeniero Montes?", "Habla Ryan. Voy un poco tarde.", "Ahorita llego.", "Menos de media hora.", "Gracias. Hasta luego."],
+      expect: { complete: true, state: { name: "Ryan", ahoritaAsked: true, eta: { min: 30 } } }, auto: AUTO },
   ],
 };
 

@@ -2,7 +2,7 @@
 // turn (speech or typing), sends answers to the dialogue engine and records progress.
 import { Conversation, type TurnOut } from "../convo/dialogue";
 import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/speech";
-import { bestReading } from "../convo/readings";
+import { polarityChoices, bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
@@ -79,7 +79,7 @@ export class Session {
       active: true, sitId: this.sit.id, npcId, hostId: npcId, mode: this.sit.mode ?? "talk", transcript: [], phase: "npc",
       suggest: [], hints: [], chosen: {}, openHint: null, mic: { status: speechSupported() ? "off" : "unsupported", heard: "" },
       failures: 0, misses: 0, slowMode: this.conv.slow, lastHeard: "", prefix: false, completed: false, speaking: null, reveal: {}, note: null, typing: !speechSupported(), newExpressions: [],
-      checklist: [], focus: 0, stepId: null, guess: null, practice: null, run: st.conv.run + 1, guideHidden: false,
+      checklist: [], focus: 0, stepId: null, guess: null, practice: null, speechChoices:undefined, run: st.conv.run + 1, guideHidden: false,
     });
     const out = this.conv.start();
     await this.play(out);
@@ -138,7 +138,7 @@ export class Session {
     const st = useStore.getState();
     const sup = this.conv.support();
     st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(), openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
-    if (st.settings.autoListen && speechSupported() && !st.conv.typing && document.visibilityState === "visible") this.autoListen(250);
+    if (st.settings.autoListen && speechSupported() && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
   }
 
   /** Opens the mic by itself after `ms`, unless the learner has meanwhile started an attempt
@@ -148,7 +148,7 @@ export class Session {
     this.autoTimer = setTimeout(() => {
       this.autoTimer = null;
       const c = useStore.getState().conv;
-      if (this.alive && c.phase === "you" && !c.typing && !this.speech) this.listen();
+      if (this.alive && c.phase === "you" && !c.typing && !c.speechChoices?.length && !this.speech) this.listen();
     }, ms);
   }
 
@@ -169,6 +169,7 @@ export class Session {
     const st = useStore.getState();
     if (st.conv.phase !== "you") return;
     this.stopListening();
+    st.setConv({ speechChoices: undefined });
     audio.sfx("listen");
     this.speech = createSpeechAttempt({
       evaluate: (t) => this.conv.nlu.probe(t, this.conv.expectedIntents()),
@@ -199,10 +200,20 @@ export class Session {
 
   /** The learner's answer (spoken, typed, or a picked "Did you mean…?" suggestion). Tries recogniser
    *  alternatives if the first one is not understood. */
-  async submit(text: string, alts: string[] = [], via: "voice" | "typed" | "picked" | "helped" = "typed") {
-    if (!this.alive || this.busy) return;
+  async submit(text: string, alts: string[] = [], via: "voice" | "typed" | "picked" | "helped" = "typed", confirmed = false) {
+    const pending = useStore.getState().conv;
+    if (!this.alive || this.busy || pending.phase !== "you") return;
     let clean = text.trim();
     if (!clean) return;
+    // A confirmation belongs to the choice currently on screen, and cannot be replayed after it was used or cancelled.
+    if (confirmed && (via !== "voice" || !pending.speechChoices?.includes(clean))) return;
+    if(via === "voice" && !confirmed){
+      const choices=polarityChoices(clean,alts);
+      if(choices.length || useStore.getState().settings.confirmSpeech){this.stopListening();useStore.getState().setConv({phase:"you",speechChoices:choices.length ? choices : [clean],lastHeard:clean});return;}
+    }
+    const heard = confirmed && pending.speechChoices?.length ? pending.lastHeard : text;
+    const alternatives = confirmed ? (pending.speechChoices || []).filter(s => s !== heard) : alts;
+    useStore.getState().setConv({speechChoices:undefined});
     this.busy = true;
     this.stopListening();
     const st = useStore.getState();
@@ -227,7 +238,7 @@ export class Session {
         if (probe.ok) { this.conv.failures = Math.max(0, this.conv.failures - 1); chosen = a; out = this.conv.input(a); break; }
       }
     }
-    this.pushLine({ who: "you", text: displayUtterance(chosen), understood: out.understood, tips: out.tips, via });
+    this.pushLine({ who: "you", text: displayUtterance(chosen), understood: out.understood, tips: out.tips, via, ...(via === "voice" ? {heard, alternatives: alternatives.slice(0,3)} : {}) });
     // the one who answers (else the last to speak) shows at once whether they got it
     const who = out.lines[0]?.npc ?? (useStore.getState().conv.npcId || this.sit.npc);
     this.hooks.npcReact?.(who, out.understood && !out.checking && !out.checkNo ? "nod" : "puzzled");

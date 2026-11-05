@@ -22,10 +22,6 @@ export interface Town {
   /** Where townspeople can sit (Ambient seats some of them). */
   seats: Seat[];
   groundCanvas: HTMLCanvasElement;
-  /** Boxes the follow camera must not enter, for this edition's solid things that layout.ts's BUILDINGS doesn't have
-   *  (the church, the kiosco's roof; theme.ts): x and z extents, the top, and `y0` when only what is above it counts
-   *  (the kiosco is open under its roof). None in Maple Harbor. */
-  occluders: { x0: number; x1: number; z0: number; z1: number; y0?: number; h: number }[];
   update(t: number, dt: number): void;
   walkableAt(x: number, z: number): boolean;
 }
@@ -196,13 +192,8 @@ export function buildTown(): Town {
   const boats = group.children.filter((o) => o.userData.boat);
   const gulls = STYLED ? [] : makeGulls(group);
 
-  // the camera's boxes for the edition's church and kiosco (Town.occluders)
-  const occluders: Town["occluders"] = [];
-  if (THEME.church) occluders.push(...MX.churchBoxes(THEME.church.x, THEME.church.z, THEME.church.face));
-  if (THEME.centrepiece === "kiosco") occluders.push({ x0: FOUNTAIN.x - 5.1, x1: FOUNTAIN.x + 5.1, z0: FOUNTAIN.z - 5.1, z1: FOUNTAIN.z + 5.1, y0: 4.3, h: 8.3 });
-
   return {
-    group, colliders, doors, seats: [...seats], groundCanvas, occluders,
+    group, colliders, doors, seats: [...seats], groundCanvas,
     update(t, dt) {
       seaMat.uniforms.uTime.value = t;
       wind.value = t;

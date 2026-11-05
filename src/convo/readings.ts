@@ -1,6 +1,7 @@
 // Which of the speech recogniser's readings of one answer to use. The recogniser's best guess comes first, but a
 // learner's accent can make it hear "I'd like a lot of" where another of its guesses was "I'd like a latte".
 import type { Nlu } from "./nlu";
+import {normalizedVariants,NEGATION_TOKENS} from "./normalize";
 import { hasNegation } from "./speech";
 
 /** 3: understood; 2: understood only loosely (extra words dropped); 1: understood only as a catch-all ("Sorry, we
@@ -25,4 +26,12 @@ export function bestReading(nlu: Nlu, expected: string[], text: string, alts: st
     if (s > top) { best = a; top = s; }
   }
   return best;
+}
+
+/** Near-identical recogniser alternatives that reverse polarity require the learner's choice. */
+export function polarityChoices(text:string,alts:string[]):string[]{
+ const skeleton=(s:string)=>normalizedVariants(s.replace(/[’‘]/g,"'"))[0]?.filter(w=>!NEGATION_TOKENS.has(w)).join(' ')||'';
+ const core=skeleton(text);if(!core)return [];
+ const other=alts.find(a=>hasNegation(a)!==hasNegation(text)&&skeleton(a)===core);
+ return other?[text,other]:[];
 }
