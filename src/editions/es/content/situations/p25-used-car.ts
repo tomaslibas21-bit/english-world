@@ -41,6 +41,7 @@ const F_FACTURA = "factura: the car's original sales invoice; in Mexico it prove
 const F_TARJETA = "tarjeta de circulación: the vehicle registration card.";
 const F_UNOS = "unos before a number means about, roughly.";
 const F_DEJAR = "dejar en: to let something go for a price (¿Me lo deja en…? = will you let me have it for…?).";
+const F_ESTANDAR = "Mexican: estándar = a car with a manual gearbox (a stick shift); manual is more widely used.";
 
 // ---------------------------------------------------------------------------
 // Car prices in pesos: "85000", "$85,000", "85 mil", "ochenta y cinco mil", "setenta y siete mil quinientos", "85k",
@@ -115,7 +116,11 @@ const NOT_A_THING = new Set(("precio precios costo descuento descuentos rebaja o
   "cajuela kilometros kilometraje gasolina dueno duenos choque choques pintura servicio servicios garantia frenos " +
   "uno dos tres cuatro cinco seis siete ocho nueve diez veinte treinta cuarenta cincuenta sesenta setenta ochenta noventa cien").split(" "));
 const anyThing = anyWords(3);
+// "Tengo que ir al banco", "Tengo prisa", "Tengo una pregunta": the learner's own "tengo" / "traigo" is no "¿Tiene…?"
+// (audit, 5 Nov 2026: they got "Buena pregunta. La verdad, no sé.")
+const MINE = new Set(["tengo", "traigo"]);
 const qThingSlot: SlotFn = (tokens, pos, prefix) =>
+  tokens.slice(Math.max(0, pos - 3), pos).some((w) => MINE.has(w)) ? [] :
   anyThing(tokens, pos, prefix).filter((r) => r.partial || !tokens.slice(pos, r.end).some((w) => NOT_A_THING.has(w) || /^\d/.test(w) || w.includes("'") || w === "si"));
 
 // ---------------------------------------------------------------------------
@@ -189,8 +194,9 @@ const ACCEPTS = new Set(["accept_deal", "accept_ctx"]);
 /** A push after a yes takes it back: "Me parece bien, pero es un poco caro", "Quiero comprarlo, pero es muy caro", "Me lo
  *  llevo, pero necesito pensarlo" (the push answers). Before it, the yes stands: "Es caro, pero me lo llevo". */
 const PUSHY = new Set(["too_high", "ask_flex", "ask_better", "ask_best", "halfway", "use_flaw", "sleep_on_it", "walk_away", "walk_rude"]);
-/** A way to pay named: "¿Lo puedo pagar con tarjeta?" asks how, it says no yes. */
-const METHODS = new Set(["pay_cash", "pay_transfer", "pay_check", "pay_card", "cash_lever"]);
+/** A way to pay named: "¿Lo puedo pagar con tarjeta?" asks how, it says no yes; nor do "¿Lo puedo pagar en abonos?" and
+ *  "¿Lo puedo pagar en dólares?" (audit, 5 Nov 2026: with their own answers, the "lo puedo pagar" piece sold the car). */
+const METHODS = new Set(["pay_cash", "pay_transfer", "pay_check", "pay_card", "cash_lever", "pay_parts", "pay_dollars"]);
 /** Soft words: never what answers a hedged yes. */
 const SOFT = new Set(["g_thanks", "g_ok", "vocative"]);
 /** What may follow an unaccented "si" and still make it a yes typed without its accent ("si me lo llevo", "si, claro"). */
@@ -207,6 +213,9 @@ function conditional(c: Ctx): boolean {
   }
   return false;
 }
+/** "No, sin regatear." / "No, me lo llevo.": a bare no said with the yes (its comma lost: rule 10); "No hace falta
+ *  regatear, me lo llevo" is a yes. */
+const noWithYes = (c: Ctx) => (c as any).conv?.out?.parse?.yn === "no" && !/^\s*no (hace falta|necesito|es necesario|hay que|tengo que)\b/.test(heard(c));
 /** A yes this turn that isn't one: a push after it, or a condition. */
 function hedged(c: Ctx): boolean {
   const segs = turnSegments(c);
@@ -239,11 +248,17 @@ const NEG = ["make_offer", "make_offer_ctx", "ask_better", "ask_best", "halfway"
 /** Turns at "¿sin regatear?" (its handlers mark them, for `reask`). */
 const CONFIRMING = new WeakSet<Ctx>();
 const negOn = (confirm = false) => Object.fromEntries(NEG.map((i) => [i, (cc: Ctx, sl: any, sg: Segment) => { if (confirm) CONFIRMING.add(cc); H[i](cc, sl, sg); return true; }]));
-/** At her price questions: the moves, plus "Está bien, gracias" (closing_ctx), which never buys the car (rule 17). */
-const NEGP = [...NEG, "closing_ctx"];
+/** Side questions about paying, answered during the price talk ("¿Lo puedo pagar en abonos?", "¿Acepta dólares?"). */
+const SIDE_PAY = ["pay_parts", "pay_dollars"];
+/** At her price questions: the moves, plus "Está bien, gracias" (closing_ctx), which never buys the car (rule 17), and
+ *  the side questions about paying (answered, then her question again). */
+const NEGP = [...NEG, "closing_ctx", ...SIDE_PAY];
 
-/** "Está bien, gracias" / "Ok, gracias" / "Así está bien": a polite closing never buys the car (rule 17). */
-const politeClosing = (c: Ctx) => /^\s*(esta bien|ok|okay|vale|bueno|asi esta bien)\b.*\bgracias\b/.test(heard(c)) || /^\s*(asi esta bien|esta bien asi)\b/.test(heard(c));
+/** "Está bien, gracias" / "Ok, gracias" / "De acuerdo, gracias" / "Así está bien": a polite closing never buys the car
+ *  (rule 17). */
+const politeClosing = (c: Ctx) => /^\s*(esta bien|ok|okay|vale|bueno|muy bien|de acuerdo|perfecto|asi esta bien)\b.*\bgracias\b/.test(heard(c)) || /^\s*(asi esta bien|esta bien asi)\b/.test(heard(c));
+/** "Está bien, gracias, lo voy a pensar": another piece of the turn answers, and the closing adds nothing (rule 8). */
+const closingOnly = (c: Ctx) => !turnSegments(c).some((s) => s.intent !== "closing_ctx" && !SOFT.has(s.intent));
 
 /** Her last line of the turn before. */
 const lastLine = (c: Ctx): string | undefined => (((c as any).conv?.lastTurn ?? []) as { lineId: string }[]).at(-1)?.lineId;
@@ -259,7 +274,7 @@ function reask(c: Ctx) {
 /** Margarita named a price: the learner offers, pushes, accepts or walks away. "Sí" accepts (at the asking price,
  *  after a check: "Entonces… $85,000, ¿sin regatear?"). */
 function pendPrice(c: Ctx, id = "price") {
-  c.expect({ id, expects: NEGP, on: { ...negOn(), closing_ctx: (cc) => reask(cc) },
+  c.expect({ id, expects: NEGP, on: { ...negOn(), closing_ctx: (cc) => { if (closingOnly(cc)) reask(cc); } },
     suggest: [S_OFFER, S_PUSH, ...flawSuggest(c), S_DECIDE], hints: ["offer", "push", ...flawSuggest(c).map((s) => s.hint!), "decide"],
     yes: (cc) => {
       if (politeClosing(cc)) { reask(cc); return; }
@@ -276,7 +291,7 @@ function pendOffer(c: Ctx) {
 }
 /** Her lowest (or last) price: the learner decides. "No" is a polite refusal (her last chance comes once). */
 function pendFinal(c: Ctx, id = "final") {
-  c.expect({ id, expects: NEGP, on: { ...negOn(), closing_ctx: (cc) => reask(cc) },
+  c.expect({ id, expects: NEGP, on: { ...negOn(), closing_ctx: (cc) => { if (closingOnly(cc)) reask(cc); } },
     suggest: [S_DECIDE, S_PUSH, ...flawSuggest(c)], hints: ["decide", "push"],
     yes: (cc) => { if (politeClosing(cc)) { reask(cc); return; } dealAt(cc, cc.s.cur); },
     // "Así está bien (, gracias)" could be either: the question again, never the end of the talk (rule 17)
@@ -286,7 +301,7 @@ function pendFinal(c: Ctx, id = "final") {
 /** "Entonces… $85,000, ¿sin regatear?" */
 function pendConfirm(c: Ctx) {
   c.s.confirmAsked = true;
-  c.expect({ id: "confirm", expects: NEGP, on: { ...negOn(true), closing_ctx: (cc) => { CONFIRMING.add(cc); reask(cc); } },
+  c.expect({ id: "confirm", expects: NEGP, on: { ...negOn(true), closing_ctx: (cc) => { if (!closingOnly(cc)) return; CONFIRMING.add(cc); reask(cc); } },
     suggest: [S_DECIDE, S_OFFER], hints: ["decide", "offer"],
     yes: (cc) => { if (politeClosing(cc)) { CONFIRMING.add(cc); reask(cc); return; } dealAt(cc, cc.s.cur); },
     no: (cc) => { cc.say("need_offer"); pendOffer(cc); },
@@ -301,8 +316,11 @@ function arrive(c: Ctx): boolean {
   c.s.arrived = true;
   return true;
 }
+/** "Soy Margarita…" when the learner has said why they came; never to a returning visitor she has just greeted with
+ *  "¡Ah, es usted otra vez!" (audit, 5 Nov 2026). */
+function introduce(c: Ctx) { if (arrive(c) && !c.s.known) c.say("maggie_name"); }
 /** The learner skipped saying why they came (a question or a price first): Margarita introduces herself. */
-function ensureArrived(c: Ctx) { if (arrive(c)) c.say("maggie_name"); }
+function ensureArrived(c: Ctx) { introduce(c); }
 
 function lookAsk(c: Ctx) {
   if (!c.s.qCount && !c.s.presented) { c.s.presented = true; c.say("present1"); c.say("present2"); c.say("ask_first"); return; }
@@ -571,10 +589,12 @@ function walkAway(c: Ctx, rude: boolean) {
 
 /** The ways to pay, once; then a short "¿cómo le hacemos?" (no line twice in a row). Without cash, cash isn't offered. */
 function payOptions(c: Ctx) {
-  if (!c.s.optionsSaid) { c.s.optionsSaid = true; c.say(c.s.cash === false ? "pay_no_cash" : "pay_options"); } else c.say("pay_reask");
+  if (!c.s.optionsSaid) { c.s.optionsSaid = true; c.say(c.s.cash === false ? "pay_no_cash" : "pay_options"); } else payReask(c);
   c.s.payAsked = "how";
   c.hold();
 }
+/** "Bueno, ¿cómo le hacemos?", never twice in a row (rule 8): then "Entonces, ¿cómo me va a pagar?" */
+const payReask = (c: Ctx) => c.say(lastLine(c) === "pay_reask" ? "ask_pay" : "pay_reask");
 function paid(c: Ctx, line: string, method: string) {
   if (c.s.paid) { c.say("ack"); return; }
   c.s.paid = true;
@@ -617,7 +637,7 @@ const H: Record<string, Handler> = {
     if (!arrive(c)) return;
     // "¿Todavía está en venta?" gets its answer first (rule 11)
     if (/\b(venta|disponible|vendiendo|vende)\b/.test(heard(c)) && /\?\s*$/.test(c.heard)) c.say("still_yes");
-    c.say("maggie_name");
+    if (!c.s.known) c.say("maggie_name");
   },
   my_name(c) { H.im_name_ctx(c, {}, { intent: "im_name_ctx", slots: {}, tags: [] }); },
   vocative(c) {
@@ -627,19 +647,19 @@ const H: Record<string, Handler> = {
     if (c.s.named) return;
     c.s.named = true;
     c.say("nice_name");
-    if (arrive(c)) c.say("maggie_name");
+    introduce(c);
   },
   weather(c) {
     if (!once(c, "weather")) return;
     c.say("weather_react");
-    if (arrive(c)) c.say("maggie_name");
+    introduce(c);
   },
   compliment_car(c) {
     // after the drive, praise answers "¿Qué le pareció?"
     if (c.s.drove && !c.s.opinion && c.step === "opinion") { H.drive_good(c, {}, { intent: "drive_good", slots: {}, tags: [] }); return; }
     if (!once(c, "compliment")) return;
     c.say("compliment_react");
-    if (arrive(c)) c.say("maggie_name");
+    introduce(c);
   },
 
   // --- questions about the car ---
@@ -677,9 +697,12 @@ const H: Record<string, Handler> = {
   q_seats(c) { answer(c, "seats", "a_seats"); },
   q_papers(c) {
     const h = heard(c);
-    // each question gets its own answer: "¿Debe tenencias?" a no, "¿Está al corriente?" a yes
+    // each question gets its own answer: "¿Debe tenencias?" a no, "¿Está al corriente?" a yes; "¿Cuánto es el
+    // refrendo?" is no question about the car's price, and its amount stays vague (rule 14): she doesn't remember it
     const line = /\b(debe|adeudos?|multas?|pendientes?|atrasad[oa]s?)\b/.test(h) ? "a_fees_no"
-      : /factura/.test(h) && !/tarjeta|tenencia|refrendo/.test(h) ? "a_factura"
+      : /\bcuanto\b/.test(h) ? "a_unknown"
+      : /comprobantes?|recibos?/.test(h) ? "a_fees_yes"
+      : (/factura/.test(h) || /\bnombre\b/.test(h)) && !/tarjeta|tenencia|refrendo/.test(h) ? "a_factura"
       : /tarjeta/.test(h) && !/factura/.test(h) ? "a_tarjeta"
       : /tenencia|refrendo|corriente|pagad|pagos/.test(h) ? "a_fees_yes"
       : /placas/.test(h) ? "a_plates"
@@ -728,6 +751,8 @@ const H: Record<string, Handler> = {
     tellPrice(c);
   },
   ask_price(c) {
+    // "¿Cuánto es en dólares?": pesos first, then her price in pesos
+    if (turnSegments(c).some((s) => s.intent === "pay_dollars") && once(c, "pesos")) c.say("pesos_only");
     if (!mainMove(c, "ask_price")) return;
     if (c.s.outcome === "deal") { afterDeal(c); return; }
     if (c.s.outcome) { c.say("price_now", P(c)); return; }
@@ -798,6 +823,7 @@ const H: Record<string, Handler> = {
   use_flaw(c) { useFlaw(c); },
   // "Está bien, gracias" (expected only at her price questions, whose own handler asks again)
   closing_ctx(c) {
+    if (!closingOnly(c)) return;
     if (c.s.talked && !c.s.outcome) { reask(c); return; }
     c.say("ack");
   },
@@ -824,6 +850,14 @@ const H: Record<string, Handler> = {
     if (!mainMove(c, seg.intent) || c.s.outcome) return;
     // "¿Lo compro?" / "¿Me lo llevo?" (thinking aloud): the question again, never a sale (rule 17)
     if (c.s.talked && /\?\s*$/.test(c.heard) && /^\s*(y\s+)?(lo compro|me lo llevo|me lo quedo|se lo compro)\s*$/.test(heard(c).replace(/[¿?¡!.,]/g, ""))) {
+      reask(c);
+      return;
+    }
+    // "Lo compraría." / "Me lo llevaría." (a would: rule 17), "No, sin regatear." / "No, me lo llevo." (a no with the
+    // yes, its comma lost: rule 10) and her own "Sin regatear." said back (as her price said back, rule 10): the
+    // question again, never a sale (audit, 5 Nov 2026)
+    if (c.s.talked && (/\b(compraria|llevaria|quedaria|aceptaria|pareceria)\b/.test(heard(c)) || noWithYes(c)
+      || /^\s*sin regatear\s*$/.test(heard(c).replace(/[¿?¡!.,]/g, "")))) {
       reask(c);
       return;
     }
@@ -884,8 +918,30 @@ const H: Record<string, Handler> = {
   },
   pay_check(c) {
     if (c.s.outcome !== "deal") { c.say("pay_later"); return; }
-    // a personal cheque ("¿Le doy un cheque?"): she'd rather have a cheque de caja
-    paid(c, /\b(caja|certificado)\b/.test(heard(c)) ? "pay_check_r" : "pay_check_personal", "check");
+    if (c.s.paid) { c.say("ack"); return; }
+    // a personal cheque ("¿Le doy un cheque?"): she'd rather have a cheque de caja, and nothing is paid (no keys, no
+    // factura) until the learner says yes to it or names another way (audit, 5 Nov 2026; it used to pay at once)
+    if (!/\b(caja|certificado)\b/.test(heard(c))) {
+      if (c.s.cajaAsked) { payOptions(c); return; }
+      c.s.cajaAsked = true; c.s.payAsked = "check";
+      c.say("pay_check_personal");
+      c.hold();
+      return;
+    }
+    // after her own "Mejor un cheque de caja. Mi banco está…", no second word about her bank (rule 9)
+    paid(c, c.s.cajaAsked ? "ack" : "pay_check_r", "check");
+  },
+  // "¿Acepta dólares?", "¿Cuánto es en dólares?": she sells in pesos (as the town's other sellers answer it)
+  pay_dollars(c) {
+    if (!once(c, "pesos")) return;
+    c.say("pesos_only");
+    // at the pay step her question comes again as "¿cómo le hacemos?" (a later "Sí" is no yes to cash or a cheque)
+    if (c.s.outcome === "deal" && !c.s.paid) c.s.payAsked = "how";
+  },
+  // "¿Lo puedo pagar en abonos?", "La mitad ahora y la mitad después": all at once (rule 11: answered, then her question)
+  pay_parts(c) {
+    c.say("pay_one");
+    if (c.s.outcome === "deal" && !c.s.paid) c.s.payAsked = "how";
   },
   no_cash(c) {
     const before = c.s.cash;
@@ -1110,6 +1166,14 @@ export const usedCar: SituationDef = {
       "(lo | puedo) (checar | revisar | consultar) en (el repuve | repuve)", "(tiene | trae) el numero de serie",
       "(las placas son | son las placas | son sus placas) de aqui", "es (de agencia | de agencia mexicana)",
       "(tiene | debe) (tenencias | refrendos | adeudos | multas | pagos) (pendientes | atrasados | atrasadas)", "(hay | tiene) (algo | algun pago | algun adeudo) pendiente",
+      // audit (5 Nov 2026): the plates' state, the payment receipts, this year's fee, whose name the car is in, the
+      // emissions check (Quintana Roo has none: the papers answer, vaguely), and what the yearly fees cost
+      "(las placas son | son las placas | son sus placas | tiene placas | trae placas) de (quintana roo | este estado)",
+      "(tiene | trae) (los | sus | todos los) (comprobantes | recibos) [de pago | de los pagos | de la tenencia | del refrendo | de las tenencias | de los refrendos]",
+      "(tiene | trae) (la tenencia | el refrendo) (de este ano | del ano | de 2026 | pagado | pagada)",
+      "(esta | estan) a su nombre [la factura | el @carn | los papeles]", "(la factura | el @carn | los papeles) (esta | estan) a su nombre",
+      "(tiene | trae) (la)? verificacion [vigente | al dia]", "(esta | lo tiene) verificado", "(pasó | paso) la verificacion", "(y | que tal) la verificacion",
+      "(cuanto | que tanto) (es | cuesta | sale | se paga | paga) (de)? (la tenencia | el refrendo | las placas)",
     ] },
     q_problems: { patterns: [
       "(tiene | le ha dado | le da) (algun | algún) (problema | falla | detalle) #h:q_problems", "(tiene | hay) (algun detalle | algo que deba saber | algo malo)",
@@ -1311,7 +1375,7 @@ export const usedCar: SituationDef = {
       "(bueno | si) (lo hacemos | hagamoslo)", "me funciona", "[si | esta bien] sin regatear",
     ] },
     // "Está bien, gracias" at her price question: could be yes or no, so the question again (rule 17)
-    closing_ctx: { patterns: ["(esta bien | ok | okay | vale | bueno | muy bien) [muchas] gracias", "gracias (esta bien | ok)", "(ok | esta bien) gracias por todo"] },
+    closing_ctx: { patterns: ["(esta bien | ok | okay | vale | bueno | muy bien | de acuerdo | perfecto) [muchas] gracias", "gracias (esta bien | ok)", "(ok | esta bien) gracias por todo"] },
     shake: { patterns: [
       "(demonos | nos damos) la mano #h:shake", "(choquela | choque esas cinco | chocala #tip:tu_staff | choca esos cinco #tip:tu_staff)",
       "(aqui esta | le doy) mi mano", "(cerremos | cerramos) (el trato)? con un apreton de manos", "un apreton de manos",
@@ -1360,6 +1424,18 @@ export const usedCar: SituationDef = {
     pay_card: { patterns: [
       "(puedo | le puedo) pagar con tarjeta [de credito | de debito]", "(acepta | aceptan | recibe) (tarjeta | tarjetas) [de credito | de debito]", "(con | en) tarjeta", "tarjeta",
       "(a | con) meses sin intereses", "(le pago | pago) con tarjeta",
+    ] },
+    // audit (5 Nov 2026): a foreign buyer's dollars, and paying in parts (both had no answer)
+    pay_dollars: { patterns: [
+      "(acepta | aceptaria | toma | recibe) (dolares | dolares americanos)", "(puedo | le puedo | se puede | lo puedo | lo podria) pagar (en | con) dolares", "(le pago | pago | le doy) (en | con) dolares",
+      "(solo | nada mas | nomas) (tengo | traigo) dolares", "[y] en dolares", "(cuanto | en cuanto) (es | seria | sale | vale | lo deja) en dolares",
+      "(cuantos | cuanto) dolares (es | son | seria | serian)",
+    ] },
+    pay_parts: { patterns: [
+      "(puedo | le puedo | se puede | lo puedo | lo podria | podria) pagar (en | a) (abonos | partes | plazos | mensualidades | dos pagos | tres pagos)",
+      "(acepta | aceptaria) (abonos | pagos | plazos | mensualidades)", "(en | a) (abonos | plazos | mensualidades)",
+      "[(puedo | le puedo)] (pagar | pagarle | le pago | le doy) la mitad (ahora | hoy) y (la otra mitad | la otra | el resto | la mitad) (despues | manana | luego | otro dia | la proxima semana)",
+      "(le doy | le dejo | le puedo dar | le puedo dejar) (un enganche | un anticipo | un adelanto) [y el resto (despues | manana | luego)]",
     ] },
 
     // --- thanks and goodbye -----------------------------------------------------------------------
@@ -1440,10 +1516,14 @@ export const usedCar: SituationDef = {
       "Honestly? The air conditioning doesn't work. But hey, it's a convertible.")],
     ac_fine: [t("¿El | aire? | Funciona | perfecto.", "The | AC? | It works | perfectly.", "The AC? It works just fine.")],
     a_engine: [t("¿El | motor? | Ronronea | como | un | gatito.", "The | engine? | It purrs | like | a | kitten.", "The engine? She purrs like a kitten.")],
+    // "estándar" is Mexican; the neutral twin says "manual" (the lead's decision, 5 Nov 2026)
     a_gearbox: [t("Es | estándar, | como | casi | todos | los | de | su | época.", "It's | manual, | like | almost | all | the ones | of | its | time.", "It's a stick shift, like most cars from back then.",
-      { flags: { 1: "estándar: in Mexico, a car with a manual gearbox (a stick shift)." } })],
-    gear_no: [t("No, | es | estándar.", "No, | it's | manual.", "No, it's a stick shift.", { flags: { 2: "estándar: in Mexico, a car with a manual gearbox (a stick shift)." } })],
-    gear_yes: [t("Sí, | es | estándar.", "Yes, | it's | manual.", "Yes, it's a stick shift.")],
+      { flags: { 1: F_ESTANDAR },
+        neutral: t("Es | manual, | como | casi | todos | los | de | su | época.", "It's | manual, | like | almost | all | the ones | of | its | time.", "It's a stick shift, like most cars from back then.") })],
+    gear_no: [t("No, | es | estándar.", "No, | it's | manual.", "No, it's a stick shift.",
+      { flags: { 2: F_ESTANDAR }, neutral: t("No, | es | manual.", "No, | it's | manual.", "No, it's a stick shift.") })],
+    gear_yes: [t("Sí, | es | estándar.", "Yes, | it's | manual.", "Yes, it's a stick shift.",
+      { flags: { 2: F_ESTANDAR }, neutral: t("Sí, | es | manual.", "Yes, | it's | manual.", "Yes, it's a stick shift.") })],
     a_fuel: [t("Rinde | unos | doce | kilómetros | por | litro. | Menos | si | maneja | con | la | música | alta.", "It does | about | twelve | kilometers | per | liter. | Less | if | you drive | with | the | music | loud.",
       "About twelve kilometers per liter. Less if you drive with the music up.", { flags: { 0: "rendir: of a car, to get (so many kilometers per liter).", 1: F_UNOS } })],
     a_trunk: [t("La | cajuela | es | chica, | pero | caben | dos | maletas | y | una | hielera.", "The | trunk | is | small, | but | fit | two | suitcases | and | a | cooler.", "The trunk is small, but it fits two suitcases and a cooler.",
@@ -1451,7 +1531,7 @@ export const usedCar: SituationDef = {
         neutral: t("El | maletero | es | chico, | pero | caben | dos | maletas | y | una | hielera.", "The | trunk | is | small, | but | fit | two | suitcases | and | a | cooler.", "The trunk is small, but it fits two suitcases and a cooler.") })],
     a_top: [t("Apriete | este | botón | y | cuente | hasta | diez. | Techo | abajo, | peinado | arruinado.", "Press | this | button | and | count | to | ten. | Top | down, | hairdo | ruined.", "Push this button and count to ten. Top down, hair ruined.")],
     a_radio: [t("Funciona. | Solo | agarra | una | estación, | pero | es | buena.", "It works. | Only | it picks up | one | station, | but | it's | a good one.", "It works. It only gets one station, but it's a good one.")],
-    a_tires: [t("No son | nuevas, | pero | están | bien.", "They aren't | new, | but | they're | fine.", "They're not new, but they're safe.")],
+    a_tires: [t("No son | nuevas, | pero | están | bien.", "They aren't | new, | but | they're | fine.", "They're not new, but they're fine.")],
     a_seats: [t("Son | los | originales. | Ni | un | rasguño.", "They're | the | original ones. | Not | a | scratch.", "All original. Not a single tear.")],
     a_unknown: [t("Buena | pregunta. | La verdad, | no sé.", "Good | question. | Honestly, | I don't know.", "Good question. Honestly, I'm not sure.")],
     a_papers_all: [t("Todo | en regla: | la | factura | original, | la | tarjeta | de | circulación | y | los | pagos | al corriente.", "Everything | in order: | the | invoice | original, | the | card | of | circulation | and | the | payments | up to date.",
@@ -1498,7 +1578,7 @@ export const usedCar: SituationDef = {
 
     // --- the price talk -------------------------------------------------------------------------------
     talk_prompt: [
-      t("Entonces… | ¿hablamos | de | números?", "So… | shall we talk | about | numbers?", "So… shall we talk numbers?"),
+      t("Entonces… | ¿hablamos | de | números?", "So… | should we talk | about | numbers?", "So… should we talk numbers?"),
       t("¿Y? | ¿{m:Listo|f:Lista} | para | hablar | de | dinero?", "Well? | Ready | to | talk | about | money?", "Well? Ready to talk money?"),
     ],
     talk_ask: [
@@ -1512,7 +1592,7 @@ export const usedCar: SituationDef = {
     // "¿Es un precio justo?" (a question, never a yes)
     fair_price: [t("¡Claro! | Es | un | precio | justo | por | un | convertible | así.", "Of course! | It's | a | price | fair | for | a | convertible | like this.",
       "Of course! It's a fair price for a car like this.")],
-    flex_yes: [t("Bueno… | ¿se lo | dejo | en | {$price}?", "Well… | it to you | shall I let go | for | {$price}?", "Well… would you consider {$price}?", { flags: { 2: F_DEJAR } })],
+    flex_yes: [t("Bueno… | ¿se lo | dejo | en | {$price}?", "Well… | it to you | should I let go | for | {$price}?", "Well… would you consider {$price}?", { flags: { 2: F_DEJAR } })],
     flex_what: [t("¿Qué | tenía | en | mente?", "What | did you have | in | mind?", "What did you have in mind?")],
     need_offer: [t("Le toca. | Hágame | una | oferta.", "Your turn. | Make me | an | offer.", "Your turn. Make me an offer.")],
     confirm_full: [t("Entonces… | {$price}, | ¿sin | regatear?", "So… | {$price}, | without | haggling?", "So… {$price}, no haggling?")],
@@ -1585,9 +1665,9 @@ export const usedCar: SituationDef = {
     cash_reminder: [t("En efectivo, | como | dijo, | ¿verdad?", "In cash, | as | you said, | right?", "Cash, like you said?")],
     pay_options: [t("¿En efectivo, | por | transferencia | o | con | cheque de caja?", "In cash, | by | transfer | or | with | a cashier's check?", "Cash, a bank transfer or a cashier's check?")],
     pay_no_cash: [t("Entonces, | ¿por | transferencia | o | con | cheque de caja?", "Then, | by | transfer | or | with | a cashier's check?", "Then a bank transfer, or a cashier's check?")],
-    pay_reask: [t("Bueno, | ¿cómo | le | hacemos?", "Okay, | how | — | shall we do it?", "Okay, so how do you want to do it?",
-      { flags: { 2: "Mexican: ¿cómo le hacemos? = how shall we do it; this le stands for nothing in particular." },
-        neutral: t("Bueno, | ¿cómo | lo | hacemos?", "Okay, | how | it | shall we do?", "Okay, so how do you want to do it?") })],
+    pay_reask: [t("Bueno, | ¿cómo | le | hacemos?", "Okay, | how | — | should we do it?", "Okay, so how do you want to do it?",
+      { flags: { 2: "Mexican: ¿cómo le hacemos? = how should we do it; this le stands for nothing in particular." },
+        neutral: t("Bueno, | ¿cómo | lo | hacemos?", "Okay, | how | it | should we do?", "Okay, so how do you want to do it?") })],
     pay_later: [t("Claro. | Pero | primero | pongámonos | de acuerdo | en | el | precio.", "Sure. | But | first | let's get | in agreement | on | the | price.", "Sure. But first, let's agree on a price.")],
     pay_cash_r: [t("¿En efectivo? | Música | para | mis | oídos.", "In cash? | Music | to | my | ears.", "Cash? Music to my ears.")],
     pay_cash_ok: [t("¡Perfecto! | Música | para | mis | oídos.", "Perfect! | Music | to | my | ears.", "Perfect! Music to my ears.")],
@@ -1598,6 +1678,10 @@ export const usedCar: SituationDef = {
       "A cashier's check is fine. My bank is on the corner of Juárez and Ceiba.")],
     pay_card_no: [t("Ay, | no soy | tienda: | no tengo | terminal.", "Oh, | I'm not | a store: | I don't have | a card reader.", "Oh, I'm not a store. I don't take cards.",
       { flags: { 4: "terminal: in Mexico, the card reader at a shop's counter." } })],
+    // "¿Acepta dólares?", "¿Cuánto es en dólares?" (audit, 5 Nov 2026)
+    pesos_only: [t("Lo | vendo | en | pesos, | no | en | dólares.", "It | I'm selling | in | pesos, | not | in | dollars.", "I'm selling her in pesos, not dollars.")],
+    // "¿Lo puedo pagar en abonos?", "La mitad ahora y la mitad después" (audit, 5 Nov 2026)
+    pay_one: [t("No, | mejor | en | un | solo | pago, | por favor.", "No, | better | in | a | single | payment, | please.", "No, I'd rather be paid all at once, please.")],
     wait_pay: [t("¡Espere, | todavía | no me ha pagado!", "Wait, | still | you haven't paid me!", "Hold on, you haven't paid yet!")],
     title_keys: [t("Aquí | tiene | las | llaves, | la | factura | endosada | a | su | nombre | y | la | tarjeta | de | circulación. | Es | todo | suyo.",
       "Here | you have | the | keys, | the | invoice | signed over | in | your | name | and | the | card | of | circulation. | It's | all | yours.",
@@ -1701,7 +1785,7 @@ export const usedCar: SituationDef = {
         { id: "best_offer", s: t("¿Es | su | mejor | oferta?", "Is it | your | best | offer?", "Is that your best offer?") },
         { id: "lo_menos", s: t("¿Cuánto | es | lo menos?", "How much | is | the lowest?", "What's the lowest you'll go?"), note: "The classic Mexican question for a seller's lowest price." },
         { id: "do_better", s: t("¿Me lo | puede | dejar | en | menos?", "It to me | can you | let go | for | less?", "Can you do any better?") },
-        { id: "split", s: t("¿Partimos | la | diferencia?", "Shall we split | the | difference?", "Let's split the difference.") },
+        { id: "split", s: t("¿Partimos | la | diferencia?", "Should we split | the | difference?", "Let's split the difference.") },
       ],
     },
     flaw_ac: {
@@ -1817,7 +1901,7 @@ export const usedCar: SituationDef = {
       ask: (c) => c.say("ad_again"),
       expects: ["about_ad", "my_name", "im_name_ctx", "compliment_car"],
       suggest: [{ lt: "Say you've come about the ad", hint: "arrive" }, { lt: "Compliment the car", hint: "look" }],
-      yes: (c) => { if (arrive(c)) c.say("maggie_name"); },
+      yes: (c) => { introduce(c); },
       no: (c) => {
         if (!c.s.notAd) { c.s.notAd = true; c.say("not_ad"); c.hold(); return; }
         c.say("see_around"); c.end();
@@ -1849,7 +1933,7 @@ export const usedCar: SituationDef = {
     // Margarita invites the price talk; the learner starts it (the song's "Bueno… hablemos")
     { id: "talk", when: (c) => !!c.s.arrived && !c.s.talked, done: (c) => !!c.s.talked,
       ask: (c) => c.say("talk_prompt"),
-      expects: NEG, suggest: [S_TALK, S_OFFER],
+      expects: [...NEG, ...SIDE_PAY], suggest: [S_TALK, S_OFFER],
       yes: (c) => tellPrice(c),
       no: (c) => {
         if (!c.s.talkNo) { c.s.talkNo = true; c.say("g_take_time"); c.hold(); return; }
@@ -1858,21 +1942,31 @@ export const usedCar: SituationDef = {
       help: (c) => c.say(c.s.talked ? "price_reask" : "talk_ask", P(c)) },
     { id: "haggle", when: (c) => !!c.s.talked && !c.s.finalMade && !c.s.outcome, done: () => false,
       ask: (c) => { c.say("price_reask", P(c)); pendPrice(c); },
-      expects: NEG, suggest: [S_OFFER, S_PUSH, S_DECIDE], help: (c) => { c.say("need_offer"); pendOffer(c); } },
+      expects: [...NEG, ...SIDE_PAY], suggest: [S_OFFER, S_PUSH, S_DECIDE], help: (c) => { c.say("need_offer"); pendOffer(c); } },
     { id: "decide", when: (c) => !!c.s.finalMade && !c.s.outcome, done: () => false,
       ask: (c) => { c.say("final_reask"); pendFinal(c); },
-      expects: NEG, suggest: [S_DECIDE, S_PUSH], help: (c) => { c.say("final_reask_p", P(c)); pendFinal(c); } },
+      expects: [...NEG, ...SIDE_PAY], suggest: [S_DECIDE, S_PUSH], help: (c) => { c.say("final_reask_p", P(c)); pendFinal(c); } },
     { id: "pay", when: (c) => c.s.outcome === "deal" && !c.s.paid, done: (c) => !!c.s.paid,
       ask: (c) => {
         if (!c.s.payAsked && c.s.cash) { c.s.payAsked = "cash"; c.say("cash_reminder"); return; }
-        if (c.s.payAsked) { c.say("pay_reask"); return; }
+        if (c.s.payAsked) { payReask(c); return; }
         c.s.payAsked = "how";
         c.say("ask_pay");
       },
-      expects: ["pay_cash", "pay_transfer", "pay_check", "pay_card", "cash_lever", "no_cash"],
+      expects: ["pay_cash", "pay_transfer", "pay_check", "pay_card", "cash_lever", "no_cash", "pay_dollars", "pay_parts"],
       suggest: [{ lt: "Say how you'll pay", hint: "pay" }],
-      yes: (c) => { if (c.s.payAsked === "cash") paid(c, "pay_cash_r", "cash"); else payOptions(c); },
-      no: (c) => { if (c.s.payAsked === "cash") c.s.cash = false; payOptions(c); },
+      // a yes to "En efectivo, como dijo, ¿verdad?" pays cash, a yes to "Mejor un cheque de caja" a cashier's check;
+      // "Está bien, gracias" pays nothing (rule 17): "¿cómo le hacemos?"
+      yes: (c) => {
+        if ((c.s.payAsked === "cash" || c.s.payAsked === "check") && politeClosing(c)) { c.s.payAsked = "how"; payReask(c); c.hold(); return; }
+        if (c.s.payAsked === "cash") paid(c, "pay_cash_r", "cash"); else if (c.s.payAsked === "check") paid(c, "ack", "check"); else payOptions(c);
+      },
+      // "No" to her cashier's check: "¿cómo le hacemos?" (the other ways, without the one just turned down)
+      no: (c) => {
+        if (c.s.payAsked === "check") { c.s.payAsked = "how"; payReask(c); c.hold(); return; }
+        if (c.s.payAsked === "cash") c.s.cash = false;
+        payOptions(c);
+      },
       help: (c) => { c.s.optionsSaid = true; c.say("pay_options"); } },
   ],
 
@@ -2029,6 +2123,20 @@ export const usedCar: SituationDef = {
     { say: "No quiero comprarlo.", intent: "walk_away", not: ["accept_deal", "accept_ctx"] },
     { say: "No tengo ochenta mil.", intent: "too_high", not: ["make_offer", "make_offer_ctx", "accept_deal"] },
     { say: "Sigue siendo mucho dinero.", intent: "too_high", step: "haggle", not: ["walk_away", "accept_ctx"] },
+    // audit (5 Nov 2026): dollars, paying in parts, the yearly fees' cost, the papers, the learner's own "tengo"
+    { say: "¿Acepta dólares?", intent: "pay_dollars", step: "pay", not: ["pay_cash", "cash_lever", "accept_ctx"] },
+    { say: "¿Le puedo pagar en dólares?", intent: "pay_dollars", step: "haggle", not: ["accept_ctx", "cash_lever"] },
+    { say: "Solo traigo dólares.", intent: "pay_dollars", step: "pay", not: ["make_offer", "pay_cash"] },
+    { say: "¿Lo puedo pagar en abonos?", intent: "pay_parts", step: "haggle", not: ["accept_ctx", "accept_deal"] },
+    { say: "Le doy la mitad ahora y la mitad mañana.", intent: "pay_parts", step: "pay", not: ["halfway", "pay_cash"] },
+    { say: "¿Cuánto es el refrendo?", intent: "q_papers", step: "look", not: ["ask_price"] },
+    { say: "¿Tiene la verificación?", intent: "q_papers", step: "look", not: ["q_unknown"] },
+    { say: "¿Está a su nombre?", intent: "q_papers", step: "look" },
+    { say: "¿Las placas son de Quintana Roo?", intent: "q_papers", step: "look" },
+    { say: "¿Tiene los comprobantes de pago?", intent: "q_papers", step: "look" },
+    { say: "¿Es manual?", intent: "q_gearbox", step: "look" },
+    { say: "Tengo que ir al banco.", intent: "none", step: "pay" },
+    { say: "Tengo prisa.", intent: "none", step: "haggle" },
     // unrelated
     { say: "Me gusta la pizza con piña.", intent: "none" },
     { say: "Mi perro se llama Max.", intent: "none" },
@@ -2091,7 +2199,8 @@ export const usedCar: SituationDef = {
       expect: { complete: true, state: { outcome: "deal", dealPrice: 72500, lastChance: true } }, auto: AUTO, setup: (s) => { s.twist = null; } },
     // polite closings never buy the car (rule 17): "Está bien, gracias" gets the question again
     { name: "polite closings, then a ceiling", turns: ["¡Hola! Vengo por el carro.", "No tengo preguntas.", "No, gracias.", "Bueno… hablemos de números.", "Está bien, gracias.",
-      "No quiero pagar más de setenta y siete mil quinientos.", "Me parece bien.", "Démonos la mano.", "¿Le doy un cheque?", "Gracias, hasta luego."],
+      "No quiero pagar más de setenta y siete mil quinientos.", "Me parece bien.", "Démonos la mano.", "¿Le doy un cheque?", "Sí, un cheque de caja.",
+      "Gracias, hasta luego."],
       expect: { complete: true, state: { outcome: "deal", dealPrice: 80000, payMethod: "check" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
     // the brakes' $2,500, then the AC: it works (no AC fault this visit)
     { name: "the brakes, then the AC that works", turns: ["¡Hola! Vengo por el carro.", "No, es todo.", "¿Puedo darle una vuelta a la manzana?", "Los frenos se sienten un poco suaves.",
@@ -2116,6 +2225,21 @@ export const usedCar: SituationDef = {
       "Si me hace un descuento, me lo llevo.", "ochenta mil", "Me parece bien, pero es un poco caro.", "¿Me lo deja en setenta y cinco mil?", "¿Es un precio justo?", "Sí.",
       "Démonos la mano.", "No en efectivo.", "Por transferencia.", "Gracias, hasta luego."],
       expect: { complete: true, state: { outcome: "deal", dealPrice: 77500, cash: false, payMethod: "transfer" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    // audit (5 Nov 2026): a would, a no with the yes (comma lost), her "Sin regatear" said back and "De acuerdo,
+    // gracias" never buy the car; a personal cheque pays nothing until she hears a yes; dollars and parts are answered
+    { name: "a would, a no with the yes, an echo: no sale", turns: ["¡Hola! Vengo por el carro.", "No tengo preguntas.", "No, gracias.",
+      "Bueno… hablemos de números.", "Me parece bien.", "No, sin regatear.", "Sin regatear.", "Lo compraría.", "De acuerdo, gracias.", "No.",
+      "¿Me lo deja en ochenta mil?", "Démonos la mano.", "¿Acepta dólares?", "¿Le puedo pagar en abonos?", "¿Le doy un cheque?", "No puedo.",
+      "Por transferencia.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { outcome: "deal", dealPrice: 80000, payMethod: "transfer" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    { name: "thanks, I'll think about it: the move answers", turns: ["¡Hola! Vengo por el carro.", "¿Cuánto es en dólares?", "No, es todo.", "No, gracias.",
+      "Bueno… hablemos de números.", "Está bien, gracias, lo voy a pensar.", "Perfecto, gracias.", "Me parece bien.", "Démonos la mano.",
+      "¿Le doy un cheque?", "Está bien, gracias.", "Un cheque de caja.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { outcome: "deal", dealPrice: 72500, lastChance: true, payMethod: "check" } }, auto: AUTO, setup: (s) => { s.twist = null; } },
+    // a returning visitor: "¡Ah, es usted otra vez!" and no second "Soy Margarita"
+    { name: "a returning visitor", turns: ["Sí, vengo por el carro.", "¿Es manual?", "¿Tiene la verificación?", "No, es todo.", "No hace falta. Confío en usted.",
+      "¿Cuánto es lo menos?", "Me lo llevaría.", "Sí, me lo llevo.", "Démonos la mano.", "En efectivo.", "Gracias, hasta luego."],
+      expect: { complete: true, state: { outcome: "deal", dealPrice: 80000, payMethod: "cash" } }, auto: AUTO, setup: (s) => { s.twist = null; s.known = true; } },
     // short answers all the way
     { name: "short answers", turns: ["¡Hola!", "Sí.", "No.", "Sí.", "¡Me encantó!", "Sí.", "Setenta mil.", "Setenta y dos mil quinientos.", "Sí.", "Sí.", "Efectivo.", "Gracias."],
       expect: { complete: true, state: { outcome: "deal", dealPrice: 77500, paid: true } }, auto: AUTO, setup: (s) => { s.twist = null; s.known = false; } },
