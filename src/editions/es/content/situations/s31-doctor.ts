@@ -695,6 +695,10 @@ export const doctor: SituationDef = {
       "(en | a)? cualquiera #any", "no se (donde | de ninguna | cual | donde hay una) #unknown", "[no] (donde hay | hay) una (farmacia)? (cerca | por aqui) #unknown #h:ph_new",
       "no conozco (ninguna | farmacias | ninguna farmacia) #unknown", "[no] [pero]? (conozco | se de) otra [farmacia] [cerca | aqui cerca | por mi casa] #other",
       "[si] (hay | conozco) una (al lado de mi casa | al lado del hotel | enfrente de mi hotel | enfrente de mi casa | a la vuelta | junto al hotel) #other", "[no] no soy de aqui #unknown", "[si] (ya se | si se) (donde) #harbor",
+      // the follow-ups (5 Nov 2026): "Sí, en la farmacia que está enfrente del hotel", "Sí, lo compro en la Farmacia del Puerto"
+      "[si] [en] la farmacia (que esta | de) (enfrente del hotel | enfrente de mi hotel | junto al hotel | en el centro | del centro) #harbor",
+      "[si] (lo | la | los | las) (compro | voy a comprar | consigo | voy a conseguir) en la farmacia del puerto #harbor",
+      "[si] (lo | la | los | las) (compro | voy a comprar | consigo | voy a conseguir) en (una farmacia | la farmacia) (cerca de mi hotel | cerca de mi casa | de la esquina | aqui cerca) #other",
     ] },
     pharmacy_dunno_ctx: { patterns: ["(no lo se | ni idea | no estoy seguro | no estoy segura | no tengo idea) [soy nuevo | soy nueva | no soy de aqui | no conozco]", "no se [la verdad] (soy nuevo | soy nueva | no soy de aqui | no conozco) [aqui | el pueblo]", "(soy nuevo | soy nueva) (aqui | en el pueblo)"] },
     note_ctx: { patterns: ["[si] (para el trabajo | para mi trabajo | para mi jefe | para la escuela | para la empresa | para la oficina) #yes #h:note_yes",
