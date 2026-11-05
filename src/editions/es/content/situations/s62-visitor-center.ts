@@ -24,12 +24,16 @@
 //   RIGHT: Hotel Mar Azul next door · 1 block: Farmacia del Puerto and Estética Tijeras (right side)
 //     · 2 blocks: Banco del Puerto on the corner of Juárez and Ceiba (right). LEFT at the bank = calle Ceiba:
 //     Café La Ceiba (right, small, yellow door) across from Correos (left); the Mercado Municipal (left, past
-//     Correos, ~10 min); the Terminal de Autobuses at the end (~15 min).
+//     Correos, ~10 min) with the taquería next to it (s69's "la taquería junto al mercado"); the Terminal de
+//     Autobuses at the end (~15 min).
 //   LEFT: 1 block: La Cocina de Lucía (left, red awning; the Yucatecan restaurant of s73) across from Boutique Hilos (right)
 //     · 2 blocks: the zócalo (right; kiosco, tianguis on Saturdays), Museo de la Costa Maya (left, across from the
 //     zócalo), Policía Municipal (left, next to the museum).
 //     RIGHT at the zócalo = calle Itzamná down to the sea: the beach (at the end), Restaurante El Muelle, and along
 //     the malecón the lighthouse (~30 min).
+// Facts shared with other conversations (audit, 5 Nov 2026): the bank is open Saturdays until two (s78); the cenote is
+// twenty minutes by colectivo (s69, TOWN.md); the colectivo is paid to the driver (s69: when you get off; the city bus
+// when you get on, s67b); the museum's general admission is $80, free on Sundays for Mexicans and residents (s70).
 //
 // World events: "give" { item: "map" | "bus-schedule" }, "mark-map" { to: locationId }.
 
@@ -51,6 +55,9 @@ const PLACES: EntityDef[] = [
     ["correos", "la oficina de correos", "oficina de correos", "el correo", "la oficina de correo", "correo", "una oficina de correos", "el correos"], { nat: "post office" }),
   PL("market", "mercado", "market", "m", "el mercado",
     ["el mercado", "mercado municipal", "el mercado municipal", "un mercado"]),
+  // the taco place Don Chuy recommends ("Para tacos, la taquería junto al mercado"; s69's too)
+  PL("taqueria", "taquería", "taco place", "f", "la taquería",
+    ["la taqueria", "una taqueria", "taqueria", "la taqueria del mercado", "la taqueria junto al mercado", "las taquerias", "unas taquerias", "taquerias", "el puesto de tacos", "un puesto de tacos"], { nat: "the taco place" }),
   PL("bank", "banco", "bank", "m", "el banco",
     ["el banco", "un banco", "banco del puerto", "el banco del puerto", "un cajero", "el cajero", "cajero", "un cajero automatico", "el cajero automatico", "cajero automatico"]),
   PL("pharmacy", "farmacia", "pharmacy", "f", "la farmacia",
@@ -64,7 +71,9 @@ const PLACES: EntityDef[] = [
   PL("threads", "boutique | Hilos", "boutique | Hilos", "f", "la boutique Hilos",
     ["boutique hilos", "la boutique hilos", "la boutique", "hilos", "una tienda de ropa", "la tienda de ropa", "tienda de ropa"], { nat: "Hilos boutique" }),
   PL("square", "zócalo", "main square", "m", "el zócalo",
-    ["el zocalo", "zocalo", "la plaza", "la plaza principal", "plaza principal", "la plaza mayor", "el socalo"]),
+    ["el zocalo", "zocalo", "la plaza", "la plaza principal", "plaza principal", "la plaza mayor", "el socalo",
+      // the bandstand in its middle ("busque el kiosco del zócalo"): "¿Dónde está el kiosco?" → the way to the zócalo
+      "el kiosco", "el quiosco", "el kiosco del zocalo", "el kiosko"]),
   PL("tianguis", "tianguis", "street market", "m", "el tianguis",
     ["el tianguis", "tianguis", "un tianguis", "el mercado de los sabados", "mercado de los sabados", "el mercadito", "el mercado sobre ruedas", "el tiangui"]),
   PL("museum", "museo", "museum", "m", "el museo",
@@ -148,6 +157,7 @@ const ROUTES: Record<string, Route> = {
   sunny_cup: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "right", ref: { rel: "across", to: "post_office" }, mins: 5, street: "ceiba", size: "little", loc: "sunny-cup" },
   post_office: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "left", ref: { rel: "across", to: "sunny_cup" }, mins: 5, street: "ceiba", loc: "post-office" },
   market: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "left", mins: 10, street: "ceiba", size: "big", loc: "market" },
+  taqueria: { out: "right", blocks: 2, turn: { dir: "left", at: "bank" }, side: "left", ref: { rel: "next", to: "market" }, mins: 10, street: "ceiba", loc: "market" },
   bank: { out: "right", blocks: 2, side: "right", mins: 5, street: "juarez", size: "big", loc: "bank" },
   pharmacy: { out: "right", blocks: 1, side: "right", ref: { rel: "next", to: "salon" }, mins: 2, street: "juarez", loc: "pharmacy" },
   salon: { out: "right", blocks: 1, side: "right", ref: { rel: "next", to: "pharmacy" }, mins: 2, street: "juarez", loc: "salon" },
@@ -164,6 +174,10 @@ const ROUTES: Record<string, Route> = {
   lighthouse: { out: "left", blocks: 2, turn: { dir: "right", at: "square" }, mins: 30, street: "itzamna" },
 };
 const TRIPS = new Set(["cenote", "ruins", "xcacel", "chemuyil"]);
+/** Places with their own Wi-Fi ("¿El café tiene wifi?"): yes, but the password is theirs. */
+const WIFI_THERE = new Set(["sunny_cup", "hotel", "trattoria", "pier"]);
+/** Places that cost nothing ("¿Es gratis la playa?"). The museum and the trips charge admission. */
+const FREE = new Set(["beach", "square", "tianguis"]);
 
 /** Which turn a landmark or a street stands for. */
 const LANDMARK_AT: Record<string, "bank" | "square"> = { bank: "bank", square: "square", tianguis: "square" };
@@ -356,10 +370,13 @@ function askWhere(c: Ctx) {
   c.hold();
 }
 /** Don Chuy recommends Café La Ceiba and offers the way there (the lesson's goal). */
-function offerCafe(c: Ctx, afterRoute: boolean) {
+function offerCafe(c: Ctx, afterRoute: boolean, askedForCoffee = false) {
   if (c.s.asked.includes("sunny_cup")) { c.say("ask_where"); c.hold(); return; }
-  c.say(afterRoute ? "offer_cafe" : "suggest_cafe");
-  c.say("offer_directions");
+  c.s.cafeOffers = (c.s.cafeOffers || 0) + 1;
+  // offered again after a side question: a short reminder, not the whole tip twice in a row
+  // (but "¿Dónde puedo tomar un buen café?" always gets the tip itself)
+  if (c.s.cafeOffers > 1 && !askedForCoffee) c.say("cafe_again");
+  else { c.say(afterRoute ? "offer_cafe" : "suggest_cafe"); c.say("offer_directions"); }
   c.expect({ id: "cafe_offer", optional: true, expects: ["ask_where", "accept_ctx", "decline_ctx", "no_coffee"],
     suggest: [
       { lt: "Say yes to the directions", hint: "yes_please" },
@@ -370,7 +387,7 @@ function offerCafe(c: Ctx, afterRoute: boolean) {
     ask: (cc) => cc.say("offer_directions") });
 }
 /** Don Chuy has just offered the way to the café ("¿Le digo cómo llegar?"). */
-const cafeOffered = (c: Ctx) => conv(c).lastLines.some((l) => l.lineId === "offer_directions");
+const cafeOffered = (c: Ctx) => conv(c).lastLines.some((l) => l.lineId === "offer_directions" || l.lineId === "cafe_again");
 /** "No, gracias" / "No tomo café" to the café tip (once per utterance). */
 function declineCafe(c: Ctx) {
   if (!onceThisTurn(c, "cafe_no")) return;
@@ -533,6 +550,60 @@ const placeOf = (slots: any): string | undefined => {
   return p && (ROUTES[p] || TRIPS.has(p)) ? p : undefined;
 };
 
+/** What a bare "¿Es gratis?" / "¿Cuánto cuesta?" is about: what Don Chuy has just talked about. */
+function priceTopic(c: Ctx): "museum" | "trip" | "free" | "events" | "map" | "other" | null {
+  for (const l of [...conv(c).lastLines].reverse()) {
+    const id = l.lineId;
+    if (/^(r_museum|museum_)/.test(id)) return "museum";
+    if (/^(trip_|recommend$)/.test(id)) return "trip";
+    if (/^(r_beach|r_square|r_tianguis|market_hours|free_place)/.test(id)) return "free";
+    if (/^(events_|event_|tw_trova)/.test(id)) return "events";
+    if (/^(offer_map|greet_map|map_)/.test(id)) return "map";
+    if (/^r_/.test(id)) return "other";
+  }
+  return null;
+}
+/** The price of a place: the museum's admission (s70), a trip's fee, a free place, or "ask there". */
+function sayPrice(c: Ctx, topic: string | null | undefined) {
+  if (topic === "museum") c.say("museum_price", { price: 8000 });
+  else if (topic === "trip") c.say("trip_price");
+  else if (topic === "free") c.say("free_place");
+  else c.say("hours_unknown");
+}
+const priceKind = (p: string) => (p === "museum" ? "museum" : TRIPS.has(p) ? "trip" : FREE.has(p) ? "free" : "other");
+/** The place named in a price question, however it was cut up ("¿Es gratis | el museo?" can parse as the map's
+ *  "¿Es gratis?" + "¿El museo?" where the map's question is expected). Not when the map is named. */
+function pricedPlace(c: Ctx): string | undefined {
+  const h = ` ${fold(c.heard).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ")} `;
+  if (/ mapas? /.test(h)) return undefined;
+  let best: { id: string; n: number } | undefined; // the longest name wins: "la playa de xcacel" over "la playa"
+  for (const e of PLACES) for (const f of [fold(e.en.replace(/ \| /g, " ")), ...(e.forms || [])]) {
+    if (f.length > 3 && h.includes(` ${f} `) && (!best || f.length > best.n)) best = { id: e.id, n: f.length };
+  }
+  return best?.id;
+}
+/** A price answered once per utterance; the place's route is then not given unasked (dest_short). */
+function answerPrice(c: Ctx, kind: string | null) {
+  if (!onceThisTurn(c, "price")) return;
+  c.s.priceTurn = conv(c).history.length;
+  sayPrice(c, kind);
+}
+const pricedThisTurn = (c: Ctx) => c.s.priceTurn === conv(c).history.length;
+
+const HOURS_LINE: Record<string, string> = { museum: "museum_hours", tianguis: "market_hours", square: "market_hours", market: "mercado_hours", sunny_cup: "cafe_hours", bank: "bank_hours", beach: "beach_hours" };
+const LINE_PLACE: Record<string, string> = { museum_price: "museum", museum_hours: "museum", bank_hours: "bank", cafe_hours: "sunny_cup", mercado_hours: "market", market_hours: "tianguis", beach_hours: "beach" };
+/** The place "it" stands for in "¿A qué hora abre?": the place Don Chuy just talked about (a route, a trip, its
+ *  price or hours), else the current destination. */
+function placeInTalk(c: Ctx): string | undefined {
+  for (const l of [...conv(c).lastLines].reverse()) {
+    const id = l.lineId.replace(/_slow$/, "");
+    const m = /^(?:r|trip)_([a-z_]+)$/.exec(id);
+    if (m && (ROUTES[m[1]] || TRIPS.has(m[1]))) return m[1];
+    if (LINE_PLACE[id]) return LINE_PLACE[id];
+  }
+  return c.s.dest;
+}
+
 // ---------------------------------------------------------------------------
 
 const ROUTE_IDS = Object.keys(ROUTES);
@@ -545,8 +616,11 @@ const H: Record<string, Handler> = {
     if (!giveMap(c)) { c.say("map_here"); return; }
     c.say("map_give");
   },
-  map_free(c) {
-    c.say("map_free");
+  // "¿El mapa es gratis?" → "¡Sí, es gratis!"; "¿Cuánto cuesta el mapa?" → "¡Nada, es gratis!" (never "Sí" to "how much")
+  map_free(c, _slots, seg) {
+    const pp = pricedPlace(c);
+    if (pp) { answerPrice(c, priceKind(pp)); return; } // "¿Es gratis la playa?" cut as "¿Es gratis?" + "¿La playa?"
+    c.say(seg.tags.includes("cost") ? "map_free_cost" : "map_free");
     if (giveMap(c)) c.say("map_give");
   },
   map_here(c) {
@@ -566,6 +640,7 @@ const H: Record<string, Handler> = {
     giveRoute(c, p);
   },
   dest_short(c, slots) {
+    if (pricedThisTurn(c)) return; // "¿Es gratis | el museo?": the price was the question, not the way
     const p = placeOf(slots);
     if (!p) { c.say("unknown_place"); return; }
     const r = currentRoute(c);
@@ -852,35 +927,58 @@ const H: Record<string, Handler> = {
   just_arrived(c) { c.say("welcome_new"); },
   ask_language(c) { c.say("speak_lang"); conv(c).markSlow(); },
   is_visitor_center(c) { c.say("yes_vc"); },
-  ask_coffee(c) { H.just_looking(c, {}, { intent: "just_looking", slots: {}, tags: [] }); },
+  // "¿Dónde puedo tomar un buen café?": La Ceiba (its way again once given)
+  ask_coffee(c) {
+    if (c.s.asked.includes("sunny_cup")) { giveRoute(c, "sunny_cup"); return; }
+    offerCafe(c, false, true);
+  },
   more_yes(c) { c.say("g_yes_what"); c.hold(); },
 
   // --- information ---------------------------------------------------------
   ask_hours(c) { c.say("hours"); },
-  ask_place_hours(c, slots) {
-    const p = slots.place as string;
-    const line = ({ museum: "museum_hours", tianguis: "market_hours", square: "market_hours", market: "mercado_hours", sunny_cup: "cafe_hours", bank: "bank_hours" } as Record<string, string>)[p];
-    c.say(line ?? "hours_unknown");
+  // "¿A qué hora abre el museo?", or "¿A qué hora abre?" (#it) about the place just talked about
+  ask_place_hours(c, slots, seg) {
+    const p = (slots.place as string | undefined) ?? (seg.tags.includes("it") ? placeInTalk(c) : undefined);
+    if (!p) { c.say("hours"); return; }
+    c.say(TRIPS.has(p) ? "trip_hours" : HOURS_LINE[p] ?? "hours_unknown");
   },
+  // "¿Cuánto cuesta la entrada al museo?" / "¿Es gratis la playa?" / "¿Se paga en el cenote?"
+  place_price(c, slots) { answerPrice(c, priceKind(slots.place as string)); },
   ask_downtown(c) { c.say("downtown"); },
   ask_events(c) {
     c.s.events = true;
     c.say("events_music");
     c.say("events_market");
   },
-  // "¿Es gratis?": the music (once events were mentioned) or the map
-  event_free(c) {
-    if (c.s.events) { c.say("event_free"); return; }
-    c.say("map_free");
-    if (giveMap(c)) c.say("map_give");
+  // A bare "¿Es gratis?" / "¿Cuánto cuesta?": what Don Chuy just talked about (the museum, a trip, the beach, the
+  // music, the map); with nothing just said, the music once events were mentioned, else the map.
+  event_free(c, _slots, seg) {
+    const pp = pricedPlace(c);
+    if (pp) { answerPrice(c, priceKind(pp)); return; } // "¿Es gratis el museo?" cut in two
+    const topic = priceTopic(c) ?? (c.s.events ? "events" : "map");
+    if (topic === "events") { c.say("event_free"); return; }
+    if (topic === "map") {
+      c.say(seg.tags.includes("cost") ? "map_free_cost" : "map_free");
+      if (giveMap(c)) c.say("map_give");
+      return;
+    }
+    answerPrice(c, topic);
   },
   event_time(c) { if (c.s.events) c.say("event_time"); else { c.say("events_music"); c.s.events = true; } },
   ask_buspass(c, _slots, seg) {
-    c.say(seg.tags.includes("ticket") ? "ticket_none" : seg.tags.includes("price") ? "colectivo_price" : "colectivo");
+    c.say(seg.tags.includes("when") ? "colectivo_when" : seg.tags.includes("ticket") ? "ticket_none" : seg.tags.includes("price") ? "colectivo_price" : "colectivo");
   },
+  // "¿Dónde tomo un taxi?" (far_15 suggests one): hail one on the avenue
+  ask_taxi(c) { c.say("taxi"); },
+  // "¿Dónde es la música?": in the zócalo (events_music said so): the way there
+  where_music(c) { giveRoute(c, "square"); },
   ask_busstop(c, _slots, seg) { c.say(seg.tags.includes("which") ? "bus_which" : "busstop"); },
   ask_schedule(c) { c.say("bus_schedule"); c.event("give", { item: "bus-schedule" }); },
-  ask_wifi(c) { c.say("wifi"); },
+  // "¿El café tiene wifi?": yes, but its password is theirs (s72: ceiba2026), not the office's colibri
+  ask_wifi(c) {
+    const p = pricedPlace(c);
+    c.say(p && WIFI_THERE.has(p) ? "wifi_there" : "wifi");
+  },
   ask_restroom(c) { c.say("restroom"); },
   ask_brochure(c) { c.say("brochure"); },
   ask_recommend(c) { c.say("recommend"); },
@@ -929,7 +1027,7 @@ const CHK: Record<string, HintItem> = {
 };
 const CHECK_FOR: Record<string, string[]> = {
   sunny_cup: ["full_bank", "left_bank", "side"], post_office: ["full_bank", "left_bank", "side"], station: ["full_bank", "left_bank", "far"],
-  market: ["full_bank", "left_bank", "side"], bank: ["full_right2", "two_blocks", "side"], pharmacy: ["full_right1", "right_door", "side"],
+  market: ["full_bank", "left_bank", "side"], taqueria: ["full_bank", "left_bank", "side"], bank: ["full_right2", "two_blocks", "side"], pharmacy: ["full_right1", "right_door", "side"],
   salon: ["full_right1", "right_door", "side"], hotel: ["full_next", "right_door", "side"], trattoria: ["full_left1", "left_door", "side"],
   threads: ["full_left1", "left_door", "side"], museum: ["full_left2", "left_door", "side"], police: ["full_left2", "left_door", "side"],
   square: ["full_left2", "two_blocks", "side"], tianguis: ["full_left2", "two_blocks", "side"], beach: ["full_square", "right_square", "far"],
@@ -965,6 +1063,7 @@ const W_CAFE = "Café La Ceiba: saliendo, a la derecha → 2 cuadras hasta el ba
 const W = {
   post_office: "Correos: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano izquierda, enfrente del café La Ceiba",
   market: "Mercado: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano izquierda, después de Correos",
+  taqueria: "Taquería: saliendo, a la derecha → 2 cuadras hasta el banco → en el banco, a la izquierda (calle Ceiba) → a mano izquierda, junto al mercado",
   bank: "Banco: saliendo, a la derecha → 2 cuadras → en la esquina de Juárez y Ceiba",
   pharmacy: "Farmacia: saliendo, a la derecha → 1 cuadra → a mano derecha, junto a la estética",
   salon: "Estética Tijeras: saliendo, a la derecha → 1 cuadra → a mano derecha, junto a la farmacia",
@@ -1056,8 +1155,8 @@ export const visitorCenter: SituationDef = {
       "(me | nos) (da | regala) uno", "me llevo (uno | un mapa)",
     ] },
     map_free: { patterns: [
-      "(es | el mapa es | son) gratis [el mapa] #h:map_free", "el mapa (es | esta) gratis", "cuanto (cuesta | vale | es) (el mapa | un mapa)", "(hay que | tengo que) pagar (el mapa | por el mapa)",
-      "(cuesta | se paga) [algo] el mapa", "(cobran | se cobra) el mapa", "los mapas son gratis",
+      "(es | el mapa es | son) gratis [el mapa] #h:map_free", "el mapa (es | esta) gratis", "cuanto (cuesta | vale | es) (el mapa | un mapa) #cost", "(hay que | tengo que) pagar (el mapa | por el mapa) #cost",
+      "(cuesta | se paga) [algo] el mapa #cost", "(cobran | se cobra) el mapa #cost", "los mapas son gratis", "el mapa (tiene costo | cuesta algo) #cost",
     ] },
     map_here: { patterns: ["(donde | en donde) (estamos | estoy) [en el mapa] #h:map_here", "@could_you (mostrar | ensenar) donde estamos", "donde esta (esta oficina | la oficina [de turismo]) en el mapa"] },
     map_no: { patterns: [
@@ -1077,6 +1176,9 @@ export const visitorCenter: SituationDef = {
       "(me | nos) (indica | puede indicar | podria indicar) (como llegar | el camino) (a | al) {place}", "el camino (a | al | para) {place}", "direccion (de | del) {place}",
       "(cual es | que es) la mejor manera de llegar (a | al) {place}", "(quisiera | quiero | me gustaria) saber (como llegar | como llego | como se llega | donde (esta | queda)) (a | al) {place}", "(digame | expliqueme | me dice | me explica) como (llegar | llego | se llega) (a | al) {place}",
       "(quiero | quisiera | me gustaria) (nadar | ir a nadar | bucear) (en | a) {place}", "(donde | en donde) (puedo | se puede) sacar dinero #atm", "necesito (sacar dinero | un cajero) #atm",
+      // changing money: at the bank (s78 changes dollars)
+      "(donde | en donde) (puedo | se puede) cambiar (dinero | dolares | euros) #atm", "(necesito | quiero | quisiera) cambiar (dinero | dolares | euros) #atm",
+      "(puedo | se puede) cambiar (dinero | dolares | euros) [aqui] #atm", "[donde | en donde] hay (una)? casa de cambio [por aqui] #atm",
     ] },
     just_arrived: { patterns: [
       "(acabo de llegar | llegué (hoy | ayer | anoche | esta manana)) [al pueblo | a puerto colibri] [y] [es mi (primer dia | primera vez) [aqui | en el pueblo]]", "(soy | somos) (nuevo | nueva | nuevos) [aqui | en el pueblo]",
@@ -1199,24 +1301,44 @@ export const visitorCenter: SituationDef = {
     ] },
     more_yes: { patterns: ["(una cosa mas | otra cosa | otra pregunta | una pregunta mas)", "tengo (una pregunta | otra pregunta)", "(puedo | le puedo) (hacer | preguntar) (otra cosa | algo mas | una pregunta | otra pregunta)", "si tengo otra pregunta", "[no] (todavia | aun) no (es todo | termino)"] },
     // information
-    ask_hours: { patterns: ["a que hora (cierran | abren) [hoy] #h:i_hours", "(cual es | que) (su | el) horario", "que horario tienen", "hasta que hora (estan abiertos | abren | atienden)", "(abren | estan abiertos) (el | los)? {day}", "cuando (cierran | abren)", "a que hora cierra (la oficina | esta oficina)"] },
-    ask_place_hours: { patterns: ["a que hora (abre | cierra) {place}", "(esta | estara) abierto {place} [hoy | ahorita | el {day}]", "(que | cual es el) horario (tiene | de) {place}", "cuando (abre | cierra | se pone | es) {place}", "{place} (abre | esta abierto) (hoy | el {day} | los {day})", "que dia (es | se pone) {place}"] },
+    ask_hours: { patterns: ["a que hora (cierran | abren) [ustedes] [hoy] #h:i_hours", "(cual es | que) (su | el) horario", "que horario tienen", "hasta que hora (estan abiertos | abren | atienden)", "(abren | estan abiertos) (el | los)? {day}", "cuando (cierran | abren) [ustedes]", "a que hora cierra (la oficina | esta oficina)"] },
+    ask_place_hours: { patterns: ["a que hora (abre | cierra) {place}", "(esta | estara) abierto {place} [hoy | ahorita | el {day}]", "(que | cual es el) horario (tiene | de) {place}", "cuando (abre | cierra | se pone | es) {place}", "{place} (abre | esta abierto) (hoy | el {day} | los {day})", "que dia (es | se pone) {place}",
+      // "¿A qué hora abre?" (it, not "abren" = you all): the place just talked about; with none, the office
+      "a que hora (abre | cierra) [hoy | manana] #it", "(esta | estara) abierto [hoy | ahorita | manana | el {day} | los {day}] #it", "hasta que hora (abre | esta abierto) #it", "cuando (abre | cierra) #it", "(abre | cierra) (hoy | manana | el {day} | los {day}) #it"] },
+    place_price: { patterns: [
+      "cuanto (cuesta | vale | sale | cobran | es) (la entrada | entrar) (a | al | en | en el | de | del) {place}", "cuanto (cuesta | vale | sale | cobran) (en | en el)? {place}",
+      "(es gratis | se paga | hay que pagar | cobran | se cobra) (la entrada)? (a | al | en | en el | de | del)? {place}", "(es gratis | se paga | cobran) (para)? entrar (a | al) {place}",
+      "(hay que | tengo que | se tiene que) pagar (para entrar)? (a | al | en | en el) {place}", "{place} (es gratis | esta gratis | se paga | cuesta [algo] | tiene costo | cobra [la]? entrada)",
+      "(la entrada | entrar) (a | al | de | del) {place} (es gratis | cuesta [algo] | se paga | tiene costo)", "(tiene | hay) (costo | que pagar) (la entrada)? (a | al | en | en el | de | del) {place}",
+    ] },
     ask_events: { patterns: [
       "que hay (que hacer | de interesante) [@twk] #h:i_events", "(hay | tienen) (algun | algunos)? (evento | eventos | concierto | conciertos | fiesta | fiestas | musica | musica en vivo) [@twk]", "que (eventos | actividades) hay [@twk]",
       "que se puede hacer (@twk | aqui | en la noche)", "que hay (hoy | esta semana | este fin de semana | esta noche) [en el pueblo]", "(hay | que hay) algo (divertido | interesante) [@twk]", "que pasa (este fin de semana | esta semana)", "que hay para hacer @twk", "(hay | habra) musica [en vivo] @twk",
     ] },
-    event_free: { patterns: ["es gratis", "(cuesta | se paga) [algo]", "cuanto cuesta [la entrada]", "hay que pagar [entrada]", "necesito (boleto | boletos)", "es gratis la musica"] },
+    // (#cost: a how-much or must-I-pay question, answered without "Sí")
+    event_free: { patterns: ["es gratis", "(cuesta | se paga) [algo] #cost", "cuanto cuesta [la entrada] #cost", "hay que pagar [entrada] #cost", "necesito (boleto | boletos) #cost", "es gratis la musica",
+      "tiene (costo | algun costo) #cost", "cuanto (es | sale | cobran) [la entrada] #cost"] },
     event_time: { patterns: ["a que hora (es | empieza)", "cuando (es | empieza)", "a que hora empieza (la musica | el concierto)"] },
     ask_buspass: { patterns: [
       "(donde | en donde) (tomo | agarro | paso | se toma | subo) (el | un) colectivo #h:i_buspass", "(hay | pasa) (un)? colectivo [(a | al) {place}]", "como funciona el colectivo", "(donde | en donde) (esta | queda | pasa) (la parada del colectivo | el colectivo)",
       "cuanto (cuesta | sale | cobra) el colectivo #price", "(donde | en donde) (compro | venden | consigo) (boletos | el boleto | un boleto) [para el (camion | autobus | colectivo)] #ticket",
       "(venden | tienen) boletos [de camion | de autobus | para el (camion | autobus | colectivo)] #ticket", "cuanto (cuesta | sale) el (boleto | pasaje) #price", "(el colectivo | el pasaje) es caro #price", "es caro el colectivo #price",
+      "(que | cual) colectivo (tomo | agarro | me lleva | va | me deja | sirve) (a | al | para) {place}",
+      // colectivos have no timetable (s69: "pasan por la avenida cada rato")
+      "a que hora (pasa | sale | pasan | salen) (el | un | los)? (colectivo | colectivos) #when", "cada cuanto (pasa | pasan | sale | salen) (el | los)? (colectivo | colectivos) #when",
+      "(pasa | pasan) (seguido | muy seguido) (el | los)? (colectivo | colectivos) #when", "(el | los) (colectivo | colectivos) (pasa | pasan) (seguido | muy seguido | cada cuanto) #when",
+      "(hay | tiene | tienen) [un] horario (del | de los | para el | para los) (colectivo | colectivos) #when", "(que | cual es el) horario (del | de los) (colectivo | colectivos) #when",
     ] },
     ask_busstop: { patterns: ["(donde | en donde) (esta | queda) la parada [del camion | del autobus | de autobus | de camiones]", "(donde | por donde) pasa el (camion | autobus)", "(donde | en donde) (tomo | agarro) el (camion | autobus)",
       "(que | cual) (camion | autobus) (va | me lleva) (a | al) {place} #which", "hay (camion | autobus) (a | al | para) {place} #which"] },
-    ask_schedule: { patterns: ["(tiene | tienen | me da) [un] horario de (los)? (camiones | autobuses | colectivos)", "a que hora pasa el (camion | autobus | colectivo)", "(tienes | me das) [un] horario de (los)? (camiones | autobuses) #tip:tu_staff"] },
+    ask_schedule: { patterns: ["(tiene | tienen | me da) [un] horario de (los)? (camiones | autobuses)", "a que hora pasa el (camion | autobus)", "(tienes | me das) [un] horario de (los)? (camiones | autobuses) #tip:tu_staff"] },
+    ask_taxi: { patterns: [
+      "(donde | en donde) (tomo | agarro | consigo | encuentro | hay | puedo tomar | puedo agarrar | se toma) (un | el)? taxi", "(donde | en donde) (esta | queda | hay) (el | un)? (sitio | sitio de taxis | parada de taxis)",
+      "(hay | pasan) taxis [por aqui | aqui | en la avenida]", "necesito un taxi", "(me puede | puede | me podria | podria) (llamar | pedir) un taxi", "(quiero | quisiera) (tomar | agarrar) un taxi", "como (consigo | pido | tomo) un taxi",
+    ] },
+    where_music: { patterns: ["(donde | en donde) (es | va a ser | sera | hay | tocan | ponen) (la musica | el concierto | la musica en vivo | los conciertos)"] },
     ask_wifi: { patterns: ["(tienen | hay | tiene) (wifi | internet) [aqui | gratis] #h:i_wifi", "cual es la (contrasena | clave) del (wifi | internet)", "me (da | pasa) la (contrasena | clave) [del wifi]", "(puedo | me puedo) conectar al (wifi | internet)", "el wifi es gratis", "la (contrasena | clave) del wifi"] },
-    ask_restroom: { patterns: ["(donde | en donde) (esta | queda) el bano #h:i_restroom", "(hay | tienen | tiene) bano", "(puedo | me deja) (usar | pasar a) el bano", "(donde | en donde) (estan | quedan) los banos", "(donde | en donde) (esta | estan) (el servicio | los servicios | el aseo | los aseos | el sanitario | los sanitarios)"] },
+    ask_restroom: { patterns: ["(donde | en donde) (esta | queda) el bano #h:i_restroom", "(hay | tienen | tiene) (bano | banos) [publico | publicos]", "(puedo | me deja) (usar | pasar a) el bano", "(donde | en donde) (estan | quedan) los banos", "(donde | en donde) (esta | estan) (el servicio | los servicios | el aseo | los aseos | el sanitario | los sanitarios)"] },
     ask_brochure: { patterns: [
       "(tiene | tienen | hay) (folletos | informacion | algun folleto | un folleto) [del pueblo | de la zona | de {place} | sobre (el pueblo | la zona)]", "(me da | quisiera | necesito) (informacion | un folleto | folletos) [del pueblo | de la zona | de {place}]",
       "(busco | estoy buscando) (informacion | folletos)",
@@ -1254,7 +1376,7 @@ export const visitorCenter: SituationDef = {
         { flags: { 2: "andar + -ando: “to be (doing)”, very common in Mexico." } }),
     ],
     greet_map: [
-      t("¡Hola! | Usted | tiene | cara | de | necesitar | un | mapa. | ¿Le | doy | uno?", "Hi! | You | have | the look | of | needing | a | map. | (To) you | shall I give | one?", "Hi! You look like you need a map. Want one?"),
+      t("¡Hola! | Usted | tiene | cara | de | necesitar | un | mapa. | ¿Le | doy | uno?", "Hi! | You | have | the look | of | needing | a | map. | (To) you | should I give | one?", "Hi! You look like you need a map. Want one?"),
     ],
     greet_back: [
       t("¡Hola | otra vez! | Hoy | sí | le | hablo | despacito, | se lo | prometo.", "Hi | again! | Today | for sure | (to) you | I'll speak | nice and slow, | it to you | I-promise.", "Hi again! I'll talk slowly this time, I promise!",
@@ -1269,7 +1391,7 @@ export const visitorCenter: SituationDef = {
     // --- the map ------------------------------------------------------------
     offer_map: [
       t("¿Quiere | un | mapa | del | pueblo? | ¡Son | gratis!", "Do you want | a | map | of the | town? | They're | free!", "Would you like a map of the town? They're free!"),
-      t("¿Le | doy | un | mapa? | Es | gratis.", "(To) you | shall I give | a | map? | It's | free.", "Want a map? It's free."),
+      t("¿Le | doy | un | mapa? | Es | gratis.", "(To) you | should I give | a | map? | It's | free.", "Want a map? It's free."),
     ],
     map_give: [
       t("¡Con gusto! | Aquí | tiene | el | mapa. | Nosotros | estamos | aquí, | en | la | estrella | roja.", "Gladly! | Here | you have | the | map. | We | are | here, | at | the | star | red.", "Sure thing! Here's a map. We're right here, at the red star."),
@@ -1278,6 +1400,7 @@ export const visitorCenter: SituationDef = {
     ],
     map_here: [t("Estamos | aquí, | ¿ve | la | estrella | roja?", "We are | here, | do you see | the | star | red?", "We're right here, see the red star?")],
     map_free: [t("¡Sí, | es | gratis!", "Yes, | it's | free!", "Yep, totally free!")],
+    map_free_cost: [t("¡Nada, | es | gratis!", "Nothing, | it's | free!", "Nothing, it's free!")],
     map_ok_no: [t("¡No hay problema! | Aquí | están | por si | cambia de opinión.", "No problem! | Here | they are | in case | you change your mind.", "No problem! They're right here if you change your mind.")],
     map_anyway: [t("Ah, | y | llévese | un | mapa | de todos modos. | ¡Es | gratis!", "Oh, | and | take | a | map | anyway. | It's | free!", "Oh, and take a map anyway. It's free!")],
 
@@ -1288,12 +1411,14 @@ export const visitorCenter: SituationDef = {
       t("¿Busca | algún | lugar | en especial?", "Are you looking for | some | place | in particular?", "Anywhere in particular you want to go?"),
     ],
     suggest_cafe: [t("Pues | si | le gusta | el | café, | La Ceiba | tiene | el | mejor | café | del | pueblo.", "Well | if | you like | the | coffee, | La Ceiba | has | the | best | coffee | in the | town.", "Well, if you like coffee, La Ceiba has the best coffee in town.")],
-    offer_directions: [t("¿Le | digo | cómo | llegar?", "(To) you | shall I tell | how | to get there?", "Should I tell you how to get there?")],
+    offer_directions: [t("¿Le | digo | cómo | llegar?", "(To) you | should I tell | how | to get there?", "Should I tell you how to get there?")],
+    cafe_again: [t("Y | La Ceiba, | ¿le | digo | cómo | llegar?", "And | La Ceiba, | (to) you | should I tell | how | to get there?", "And La Ceiba? Should I tell you how to get there?")],
     oh_okay: [t("¡Ah, | bueno!", "Oh, | okay!", "Oh, okay!")],
     offer_cafe: [t("Ah, | ¿y | ya | conoce | La Ceiba? | ¡El | mejor | café | del | pueblo!", "Oh, | and | already | do you know | La Ceiba? | The | best | coffee | in the | town!", "Oh, and have you been to La Ceiba yet? Best coffee in town!")],
     welcome_new: [
       t("¡Ah, | {m:bienvenido|f:bienvenida}! | Le | va | a | encantar | el | pueblo.", "Oh, | welcome! | (To) you | it's going | to | delight | the | town.", "Oh, welcome! You're going to love it here."),
-      t("¡{m:Bienvenido|f:Bienvenida} | al | pueblo! | ¿Es | su | primera | vez | aquí?", "Welcome | to the | town! | Is it | your | first | time | here?", "Welcome to town! First time here?"),
+      // (no "¿Es su primera vez aquí?": it answers "Es mi primera vez" or "Me acabo de mudar", and nothing took its answer)
+      t("¡{m:Bienvenido|f:Bienvenida} | al | pueblo! | ¡Va | a | ver | qué | bonito | es!", "Welcome | to the | town! | You're going | to | see | how | pretty | it is!", "Welcome to town! You'll see how pretty it is!"),
     ],
     speak_lang: [t("¡Uy, | inglés | muy | poquito! | Pero | le | hablo | despacio, | se lo | prometo.", "Oh, | English | very | little! | But | (to) you | I'll speak | slowly, | it to you | I-promise.", "Oh, just a tiny bit of English! But I'll speak slowly, I promise.")],
     yes_vc: [t("¡Sí, | aquí | es! | ¿En | qué | le | puedo | ayudar?", "Yes, | here | it is! | In | what | (to) you | can I | help?", "Yes, it is! How can I help?")],
@@ -1329,6 +1454,12 @@ export const visitorCenter: SituationDef = {
     r_market_slow: [t("Bueno. | Al | salir, | a la derecha, | dos | cuadras, | hasta | el | banco. | En | el | banco, | a la izquierda. | El | mercado | está | a la izquierda, | después de | Correos.",
       "Okay. | Upon | leaving, | to the right, | two | blocks, | to | the | bank. | At | the | bank, | to the left. | The | market | is | on the left, | after | the post office.",
       "Okay. Right out the door, two blocks, to the bank. At the bank, turn left. The market is on the left, past the post office.", { spell: "Ceiba", write: W.market })],
+    r_taqueria: [t("¿La | taquería? | Está | junto al | mercado. | Saliendo, | a la derecha, | hasta | el | banco, | ahí | a la izquierda, | pasando | Correos.",
+      "The | taco place? | It's | next to the | market. | Going out, | to the right, | to | the | bank, | there | to the left, | past | the post office.",
+      "The taco place? It's next to the market. Right out the door to the bank, left there, past the post office.", { write: W.taqueria })],
+    r_taqueria_slow: [t("Bueno. | Al | salir, | a la derecha, | dos | cuadras, | hasta | el | banco. | En | el | banco, | a la izquierda. | La | taquería | está | a la izquierda, | junto al | mercado.",
+      "Okay. | Upon | leaving, | to the right, | two | blocks, | to | the | bank. | At | the | bank, | to the left. | The | taco place | is | on the left, | next to the | market.",
+      "Okay. Right out the door, two blocks, to the bank. At the bank, turn left. The taco place is on the left, next to the market.", { spell: "Ceiba", write: W.taqueria })],
     r_bank: [t("¿El | banco? | ¡Fácil! | Saliendo, | a la derecha | y | derechito | dos | cuadras. | Es | el | edificio | grande | de | la | esquina.",
       "The | bank? | Easy! | Going out, | to the right | and | straight ahead | two | blocks. | It's | the | building | big | on | the | corner.",
       "The bank? Easy! Right out the door and straight two blocks. It's the big building on the corner.", { write: W.bank })],
@@ -1420,10 +1551,11 @@ export const visitorCenter: SituationDef = {
       "Okay. Left out the door, to the main square. Turn right there, down to the sea. Then walk along the seafront to the very end.", { write: W.lighthouse })],
 
     // --- places outside town: by colectivo -----------------------------------
-    trip_cenote: [t("¿El | cenote? | Está | a | quince | minutos | en | colectivo. | El | colectivo | pasa | aquí | enfrente, | en | la | avenida.",
-      "The | cenote? | It's | at | fifteen | minutes | by | shared van. | The | shared van | passes | here | in front, | on | the | avenue.",
-      "The cenote? It's fifteen minutes away by colectivo. The colectivo stops right out front, on the avenue.",
-      { flags: { 7: "colectivo: a shared van that runs along the coast; you pay the driver." }, write: "Cenote: en colectivo, 15 minutos · se toma en la avenida Juárez" })],
+    // twenty minutes, as in s69 and TOWN.md (Cenote Ka'an)
+    trip_cenote: [t("¿El | cenote? | Está | a | veinte | minutos | en | colectivo. | El | colectivo | pasa | aquí | enfrente, | en | la | avenida.",
+      "The | cenote? | It's | at | twenty | minutes | by | shared van. | The | shared van | passes | here | in front, | on | the | avenue.",
+      "The cenote? It's twenty minutes away by colectivo. The colectivo stops right out front, on the avenue.",
+      { flags: { 7: "colectivo: a shared van that runs along the coast; you pay the driver." }, write: "Cenote: en colectivo, 20 minutos · se toma en la avenida Juárez" })],
     trip_ruins: [t("¿Las | ruinas | de | Tulum? | Están | a | media hora | en | colectivo. | ¡Vaya | temprano, | que | hace | mucho | calor!",
       "The | ruins | of | Tulum? | They're | at | half an hour | by | shared van. | Go | early, | because | it-makes | a lot of | heat!",
       "The ruins at Tulum? They're half an hour away by colectivo. Go early, it gets really hot!", { spell: "Tulum", write: "Ruinas de Tulum: en colectivo, media hora · ¡temprano!" })],
@@ -1453,6 +1585,7 @@ export const visitorCenter: SituationDef = {
     yes_next_salon: [t("Sí, | justo | junto a | la | estética.", "Yes, | right | next to | the | hair salon.", "Yes, right next to the hair salon.")],
     yes_next_pharmacy: [t("Sí, | justo | junto a | la | farmacia.", "Yes, | right | next to | the | pharmacy.", "Yes, right next to the pharmacy.")],
     yes_next_museum: [t("Sí, | justo | junto al | museo.", "Yes, | right | next to the | museum.", "Yes, right next to the museum.")],
+    yes_next_market: [t("Sí, | justo | junto al | mercado.", "Yes, | right | next to the | market.", "Yes, right next to the market.")],
     straight_only: [t("No hay que | dar vuelta. | ¡Solo | siga | derecho!", "You don't need to | turn. | Just | keep going | straight!", "No more turns. Just go straight!")],
     side_right: [t("A la derecha.", "On the right.", "On the right.")],
     side_left: [t("A la izquierda.", "On the left.", "On the left.")],
@@ -1570,7 +1703,21 @@ export const visitorCenter: SituationDef = {
     mercado_hours: [t("El | mercado | abre | todos | los | días, | de | seis | a | tres.", "The | market | opens | all | the | days, | from | six | to | three.", "The market is open every day, from six to three.")],
     cafe_hours: [t("La Ceiba | abre | a | las | siete | y | cierra | a | las | nueve | de la noche.", "La Ceiba | opens | at | — | seven | and | closes | at | — | nine | p.m.", "La Ceiba opens at seven and closes at nine p.m.",
       { flags: { 3: "Spanish uses an article before clock times; English has no separate word.", 8: "Spanish uses an article before clock times; English has no separate word." } })],
-    bank_hours: [t("El | banco | abre | de | nueve | a | cuatro, | de | lunes | a | viernes.", "The | bank | opens | from | nine | to | four, | from | Monday | to | Friday.", "The bank is open nine to four, Monday through Friday.")],
+    // Saturdays as in s78 (the bank itself)
+    bank_hours: [t("El | banco | abre | de | nueve | a | cuatro, | de | lunes | a | viernes, | y | los | sábados | hasta | las | dos.",
+      "The | bank | opens | from | nine | to | four, | from | Monday | to | Friday, | and | on | Saturdays | until | — | two.",
+      "The bank is open nine to four, Monday through Friday, and until two on Saturdays.",
+      { flags: { 12: "los before a weekday = on (every) …", 15: "Spanish uses an article before clock times; English has no separate word." } })],
+    trip_hours: [t("Abren | temprano, | como | a | las | ocho, | y | cierran | en | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.",
+      "They open early, around eight, and close in the afternoon.", { flags: { 4: "Spanish uses an article before clock times; English has no separate word." } })],
+    beach_hours: [t("¡La | playa | no cierra!", "The | beach | doesn't close!", "The beach never closes!")],
+    // prices: the museum's from s70; the cenotes, the ruins and the beaches out of town charge admission (s69)
+    museum_price: [t("La | entrada | general | cuesta | {$price}. | Los | domingos | es | gratis | para | mexicanos | y | residentes.",
+      "The | admission | general | costs | {$price}. | On | Sundays | it's | free | for | Mexicans | and | residents.",
+      "General admission is {$price}. On Sundays it's free for Mexicans and residents.", { flags: { 5: "los before a weekday = on (every) …" } })],
+    trip_price: [t("Se cobra | la | entrada; | depende | del | lugar. | Lleve | efectivo.", "They charge | the | admission; | it-depends | on the | place. | Bring | cash.",
+      "There's an entrance fee; it depends on the place. Bring cash.")],
+    free_place: [t("¡No se paga | nada! | Es | gratis.", "You don't pay | anything! | It's | free.", "You don't pay a thing! It's free.")],
     hours_unknown: [t("Mmm, | no sé. | Fíjese | en | el | letrero | de | la | puerta.", "Hmm, | I don't know. | Look | at | the | sign | on | the | door.", "Hmm, I don't know. Check the sign on the door!")],
     downtown: [t("¡Ya | está | en | el | centro! | El | zócalo | está | a | dos | cuadras.", "Already | you're | in | the | center! | The | main square | is | at | two | blocks.", "You're already downtown! The main square is two blocks away.")],
     events_music: [t("¿Esta | semana? | El | viernes | hay | música | en vivo | en | el | zócalo, | a | las | ocho | de la noche. | ¡Gratis!", "This | week? | On | Friday | there is | music | live | in | the | main square, | at | — | eight | p.m. | Free!", "This week? There's free live music in the main square on Friday, at eight p.m.!",
@@ -1580,14 +1727,19 @@ export const visitorCenter: SituationDef = {
     event_free: [t("¡Totalmente | gratis! | Llegue | temprano | para | encontrar | lugar.", "Totally | free! | Arrive | early | to | find | a spot.", "Totally free! Get there early to find a spot.")],
     event_time: [t("La | música | empieza | a | las | ocho.", "The | music | starts | at | — | eight.", "The music starts at eight.", { flags: { 4: "Spanish uses an article before clock times; English has no separate word." } })],
     colectivo: [t("Los | colectivos | pasan | aquí | enfrente, | en | la | avenida. | Para | subir, | levante | la | mano.", "The | shared vans | pass | here | in front, | on | the | avenue. | To | get on, | raise | your | hand.", "The colectivos stop right out front, on the avenue. Just wave one down.", { flags: { 11: "Spanish says la mano (the hand) for a body part; English says your hand." } })],
-    // "¿Dónde compro boletos?": no tickets in advance; the camión and the colectivo are paid on board
-    ticket_none: [t("Aquí | no vendemos | boletos. | En | el | camión | o | en | el | colectivo | se paga | al | subir, | en efectivo.",
-      "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | upon | getting on, | in cash.",
-      "We don't sell tickets here. On the bus or the colectivo, you pay when you get on, in cash.",
+    // "¿Dónde compro boletos?": no tickets in advance; the camión and the colectivo are paid to the driver (the bus
+    // when you get on, s67b; the colectivo when you get off, s69)
+    ticket_none: [t("Aquí | no vendemos | boletos. | En | el | camión | o | en | el | colectivo | se paga | al | chofer, | en efectivo.",
+      "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | the | driver, | in cash.",
+      "We don't sell tickets here. On the bus or the colectivo, you pay the driver in cash.",
       { flags: { 5: "Mexican: camión = city bus (autobús elsewhere)." },
-        neutral: t("Aquí | no vendemos | boletos. | En | el | autobús | o | en | el | colectivo | se paga | al | subir, | en efectivo.",
-          "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | upon | getting on, | in cash.",
-          "We don't sell tickets here. On the bus or the colectivo, you pay when you get on, in cash.") })],
+        neutral: t("Aquí | no vendemos | boletos. | En | el | autobús | o | en | el | colectivo | se paga | al | chofer, | en efectivo.",
+          "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | the | driver, | in cash.",
+          "We don't sell tickets here. On the bus or the colectivo, you pay the driver in cash.") })],
+    colectivo_when: [t("Pasan | muy | seguido | por | la | avenida. | No tienen | horario.", "They-pass | very | often | along | the | avenue. | They don't have | a schedule.",
+      "They come by all the time on the avenue. There's no schedule.")],
+    taxi: [t("En | la | avenida | pasan | muchos | taxis. | Nada más | levante | la | mano.", "On | the | avenue | pass | many | taxis. | Just | raise | your | hand.",
+      "Lots of taxis go by on the avenue. Just wave one down.", { flags: { 8: "Spanish says la mano (the hand) for a body part; English says your hand." } })],
     colectivo_price: [t("Es | barato. | Se paga | al | chofer, | en efectivo.", "It's | cheap. | You pay | the | driver, | in cash.", "It's cheap. You pay the driver, in cash.")],
     busstop: [t("La | parada | del | camión | está | aquí | enfrente.", "The | stop | of the | bus | is | here | in front.", "The bus stop is right out front.",
       { flags: { 3: "Mexican: camión = city bus (autobús elsewhere)." }, neutral: t("La | parada | del | autobús | está | aquí | enfrente.", "The | stop | of the | bus | is | here | in front.", "The bus stop is right out front.") })],
@@ -1595,6 +1747,7 @@ export const visitorCenter: SituationDef = {
       { flags: { 2: "Mexican: camión = city bus (autobús elsewhere)." }, neutral: t("Tome | cualquier | autobús | de | la | avenida | y | pregúntele | al | chofer.", "Take | any | bus | from | the | avenue | and | ask | the | driver.", "Take any bus on the avenue and ask the driver.") })],
     bus_schedule: [t("¡Claro! | Aquí | tiene | los | horarios | de | los | camiones.", "Sure! | Here | you have | the | schedules | of | the | buses.", "Sure! Here's a bus schedule.",
       { flags: { 7: "Mexican: camión = city bus (autobús elsewhere)." }, neutral: t("¡Claro! | Aquí | tiene | los | horarios | de | los | autobuses.", "Sure! | Here | you have | the | schedules | of | the | buses.", "Sure! Here's a bus schedule.") })],
+    wifi_there: [t("Sí, | pero | la | contraseña | se la | dan | allá.", "Yes, | but | the | password | it to you | they-give | there.", "Yes, but they'll give you the password there.")],
     wifi: [
       t("¡Claro! | La | contraseña | es | colibri, | todo | en | minúsculas, | sin | acento.", "Sure! | The | password | is | colibri, | all | in | lowercase, | without | accent.", "Sure! The password is colibri, all lowercase, no accent.",
         { spell: "colibri", write: "Wifi · contraseña: colibri" }),
@@ -1611,7 +1764,8 @@ export const visitorCenter: SituationDef = {
       t("Si | le gusta | el | mar, | vaya | a | Chemuyil: | es | tranquilo | y | hay | tortugas.", "If | you like | the | sea, | go | to | Chemuyil: | it's | quiet | and | there are | turtles.", "If you like the sea, go to Chemuyil. It's quiet, and there are turtles.",
         { flags: { 6: "Maya name: ch as in English “church” (che-mu-YEEL)." }, spell: "Chemuyil", write: "Chemuyil: playa tranquila, tortugas" }),
     ],
-    food: [t("Para | tacos, | la | taquería | de | la | esquina. | Y | El Muelle | tiene | pescado | muy | rico.", "For | tacos, | the | taco place | on | the | corner. | And | El Muelle | has | fish | very | tasty.", "For tacos, the taco place on the corner. And El Muelle has really good fish.")],
+    // the taquería by the mercado (s69's too), so "¿Dónde está la taquería?" has a way there
+    food: [t("Para | tacos, | la | taquería | junto al | mercado. | Y | El Muelle | tiene | pescado | muy | rico.", "For | tacos, | the | taco place | next to the | market. | And | El Muelle | has | fish | very | tasty.", "For tacos, the taco place next to the market. And El Muelle has really good fish.")],
     map_lang: [t("Los | mapas | están | en | español | y | en | inglés, | nada más.", "The | maps | are | in | Spanish | and | in | English, | only.", "Sorry, we only have them in Spanish and English.")],
     no_problem: [t("¡No hay problema!", "No problem!", "No problem!")],
 
@@ -1621,7 +1775,7 @@ export const visitorCenter: SituationDef = {
       t("¿Le | ayudo | en | algo | más?", "(To) you | I-help | in | anything | else?", "Can I help you with anything else?"),
     ],
     praise: [
-      t("Y | gracias | por | pararme | cuando | hablo | rápido. | ¡Casi | todos | solo | dicen | que | sí | con | la | cabeza!", "And | thanks | for | stopping me | when | I-speak | fast. | Almost | everyone | just | say | — | yes | with | the | head!", "And hey, thanks for stopping me when I talk too fast. Most people just nod and smile!",
+      t("Y | gracias | por | pararme | cuando | hablo | rápido. | ¡Casi | todos | solo | dicen | que | sí | con | la | cabeza!", "And | thanks | for | stopping me | when | I-speak | fast. | Almost | everyone | just | says | — | yes | with | the | head!", "And hey, thanks for stopping me when I talk too fast. Most people just nod and smile!",
         { flags: { 11: "que introduces what is said; English needs no word here." } }),
       t("Por cierto, | ¡muy | bien | que | pregunte! | Así | se aprende.", "By the way, | very | good | that | you-ask! | That's how | you learn.", "Good job asking, by the way. That's the best way to learn!"),
     ],
@@ -1822,7 +1976,8 @@ export const visitorCenter: SituationDef = {
       yes: (c) => { giveMap(c); c.say("map_give"); },
       no: (c) => { c.s.mapNo = true; c.say("map_ok_no"); } },
     // The café is the lesson's goal: asked for directly ("¿A dónde va?"), or offered after another route.
-    { id: "cafe", when: (c) => !c.s.asked.includes("sunny_cup") && !c.s.cafeNo && (!c.s.dest || !!c.s.conf[c.s.dest]),
+    // (the café is offered at most twice: a learner busy with other questions isn't asked after every answer)
+    { id: "cafe", when: (c) => !c.s.asked.includes("sunny_cup") && !c.s.cafeNo && (!c.s.dest || !!c.s.conf[c.s.dest]) && (c.s.cafeOffers || 0) < 2,
       done: (c) => c.s.asked.includes("sunny_cup") || !!c.s.cafeNo,
       ask: (c) => { if (c.s.dest) offerCafe(c, true); else c.say("ask_where"); },
       expects: ["ask_where", "just_looking"],
@@ -2009,6 +2164,26 @@ export const visitorCenter: SituationDef = {
     { say: "¿Me puede deletrear el nombre de la calle?", intent: "spell_q" },
     { say: "No, es todo, gracias", intent: "more_no", step: "more", not: ["more_yes"] },
     { say: "No, todavía no es todo", intent: "more_yes", step: "more", not: ["more_no"] },
+    // Audit (5 Nov 2026): prices (never "¡Sí, es gratis!" for the museum or a trip), the hours of the place just
+    // talked about, the taquería of the food tip, the colectivo's frequency, taxis, changing money, the kiosco
+    { say: "¿Cuánto cuesta la entrada al museo?", intent: "place_price", slots: { place: "museum" }, not: ["map_free", "event_free"] },
+    { say: "¿El museo es gratis?", intent: "place_price", slots: { place: "museum" }, not: ["map_free"] },
+    { say: "¿Hay que pagar para entrar a las ruinas?", intent: "place_price", slots: { place: "ruins" } },
+    { say: "¿Cuánto cuesta el cenote?", intent: "place_price", slots: { place: "cenote" }, not: ["event_free"] },
+    { say: "¿Se paga en la playa?", intent: "place_price", slots: { place: "beach" } },
+    { say: "¿Cuánto cuesta el mapa?", intent: "map_free", not: ["place_price"] },
+    { say: "¿Tiene costo?", intent: "event_free" },
+    { say: "¿Dónde está la taquería?", intent: "ask_where", slots: { place: "taqueria" } },
+    { say: "¿A qué hora pasa el colectivo?", intent: "ask_buspass", not: ["ask_schedule"] },
+    { say: "¿Cada cuánto pasan los colectivos?", intent: "ask_buspass" },
+    { say: "¿A qué hora pasa el camión?", intent: "ask_schedule", not: ["ask_buspass"] },
+    { say: "¿Dónde tomo un taxi?", intent: "ask_taxi" },
+    { say: "¿Dónde es la música?", intent: "where_music" },
+    { say: "¿Dónde puedo cambiar dólares?", intent: "ask_where" },
+    { say: "¿A qué hora abre?", intent: "ask_place_hours", not: ["ask_hours"] },
+    { say: "¿A qué hora abren?", intent: "ask_hours", not: ["ask_place_hours"] },
+    { say: "¿El banco abre los sábados?", intent: "ask_place_hours", slots: { place: "bank" } },
+    { say: "¿Dónde está el kiosco?", intent: "ask_where", slots: { place: "square" } },
   ],
   sims: [
     { name: "map first, café, repeat twice, then check", turns: ["¡Hola! ¿Me da un mapa, por favor?", "¿Cómo llego al Café La Ceiba?", "Perdón, ¿puede repetir?", "Perdón, ¿puede repetir?", "Entonces salgo a la derecha, camino dos cuadras y en el banco doy vuelta a la izquierda, ¿verdad?", "No, eso es todo. ¡Gracias!"], expect: { complete: true }, auto: AUTO },
@@ -2030,6 +2205,10 @@ export const visitorCenter: SituationDef = {
     { name: "quiz: derecho, then a correction", turns: ["¿Me da un mapa?", "Al museo", "Sí", "Derecho, ¿no?", "No a la derecha, a la izquierda", "No, gracias", "No, es todo"], expect: { complete: true, state: { cafeNo: true, fixes: undefined, conf: { museum: true } } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
     { name: "café offer: I already know it", turns: ["¿Me da un mapa?", "¿Dónde está el banco?", "¿Al salir, a la derecha?", "Sí, ya lo conozco", "Eso es todo"], expect: { complete: true, state: { cafeNo: true } }, auto: AUTO,
+      setup: (s) => { s.askMore = true; } },
+    // Audit: a price and the hours of the place just talked about, the taquería of the food tip, the colectivo
+    { name: "museum price and hours, the taquería, the colectivo", turns: ["¿Me da un mapa?", "¿Es gratis el museo?", "¿A qué hora abre?", "¿Dónde puedo comer algo?", "¿Dónde está la taquería?", "¿Está junto al mercado?", "¿A qué hora pasa el colectivo?", "No, gracias", "Eso es todo, gracias"],
+      expect: { complete: true, state: { cafeNo: true, conf: { taqueria: true } } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
   ],
 };
