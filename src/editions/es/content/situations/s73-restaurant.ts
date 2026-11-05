@@ -1,5 +1,6 @@
 // Song 73 "This Isn't What I Ordered" → Puerto Colibrí: "Esto no es lo que pedí".
-// Dinner at La Cocina de Lucía, a Yucatecan restaurant downtown (red awning, across from Boutique Hilos, s62). Lucía
+// Dinner at La Cocina de Lucía, a Yucatecan restaurant downtown (the red awning on avenida Juárez, between Café La Ceiba
+// and Boutique Hilos, across from Información Turística: TOWN.md). Lucía
 // (npc marco_host) greets and seats the learner (reservation or walk-in, party size, a wait, inside or the terrace);
 // Luis, the waiter (npc marco), takes the drinks (aguas frescas, limonada natural o mineral) and the food (sopa de
 // lima, panuchos, cochinita pibil, poc chuc, tikin xic, arrachera with its término), serves, checks back, offers
@@ -13,40 +14,46 @@
 // sometimes cut in two ("la sopa" + "de lima"); freshItems() drops such bare tails and doneFromText() reads the término
 // from the heard text.
 // NEEDS (global.ts): the global goodbye can answer "¡Que tenga buen día!" at this dinner; a time-neutral variant (or
-// "buena noche" in the evening) would fit. s69-local still sends people to an Italian "Trattoria Lucía"; TOWN.md says
-// this building is La Cocina de Lucía, Yucatecan.
+// "buena noche" in the evening) would fit. (s69-local's "Trattoria Lucía" is La Cocina de Lucía since its rewrite.)
+// NEEDS (tools/es-voices/lines-es.ts, 5 Nov audit): its step 1 binds an item line to `{ X: id }`, so the dishes that are
+// always plural here (attrs.plural: los panuchos, los papadzules, los caballeros pobres; B() gives them qty 2) are
+// voiced "el papadzules" and the plural form only when a run reaches it; and a line heard from one speaker only is
+// voiced in that voice only (Luis's side answers heard at Lucía's stand). The sims "side questions at the table" and
+// "a full table: the fifteen percent worked out" make Luis say his side answers and tip_amount.
 
 import type { Ctx, EntityDef, SituationDef, Tip } from "@/content/types";
 import { ent, t } from "@/content/dsl";
 import { expectHowAreYou } from "@/content/global";
 
 // ---------------------------------------------------------------------------
-// Menu (prices in cents of a peso; a sit-down place downtown: dishes $190–340, El Muelle is about $300 in s69)
+// Menu (prices in cents of a peso; a sit-down place downtown: dishes $160–320, El Muelle is about $300 in s69). Every
+// price is a multiple of $10, so every bill is too: the voiced lists of totals and cash step by $10 (domains below). The
+// room's menu board (interiors.ts cocina()) shows the same prices.
 
 const DRINKS: EntityDef[] = [
   ent("water", "agua", "water", "f", { art: "", def: "el", forms: ["un agua", "vaso de agua", "un vaso de agua", "solo agua", "agua simple"], chip: "agua",
-    attrs: { generic: "water", price: 3500 } }),
+    attrs: { generic: "water", price: 4000 } }),
   ent("still_water", "agua | natural", "water | still", "f", { art: "", def: "el",
     forms: ["agua natural", "agua sin gas", "agua de la llave", "agua del grifo", "agua purificada", "botella de agua", "agua embotellada", "una botella de agua natural"],
-    chip: "agua natural", attrs: { family: "water", price: 3500, nat: "still water" } }),
+    chip: "agua natural", attrs: { family: "water", price: 4000, nat: "still water", desc: "desc_mineral" } }),
   ent("sparkling_water", "agua | mineral", "water | sparkling", "f", { art: "", def: "el",
-    forms: ["agua mineral", "agua con gas", "agua mineralizada", "una mineral", "agua gasificada", "soda"], chip: "agua mineral", attrs: { family: "water", price: 4000, nat: "sparkling water" } }),
+    forms: ["agua mineral", "agua con gas", "agua mineralizada", "una mineral", "agua gasificada", "soda"], chip: "agua mineral", attrs: { family: "water", price: 4000, nat: "sparkling water", desc: "desc_mineral" } }),
   ent("fresca", "agua | fresca", "water | fresh", "f", { art: "un", def: "el", pl: "aguas | frescas", ltPl: "waters | fresh",
     forms: ["agua fresca", "aguas frescas", "agua del dia", "agua de sabor", "un agua de sabor", "agua natural de fruta"], chip: "agua fresca",
-    attrs: { generic: "fresca", price: 4500, nat: "agua fresca (fruit drink)" } }),
+    attrs: { generic: "fresca", price: 4000, nat: "agua fresca (fruit drink)", desc: "desc_fresca" } }),
   ent("horchata", "horchata", "horchata", "f", { pl: "horchatas", forms: ["orchata", "horchatas", "agua de horchata", "de horchata"],
-    attrs: { family: "fresca", price: 4500, nat: "horchata (rice and cinnamon drink)" } }),
+    attrs: { family: "fresca", price: 4000, nat: "horchata (rice and cinnamon drink)", desc: "desc_horchata" } }),
   ent("jamaica", "agua | de | jamaica", "water | of | hibiscus", "f", { art: "un", def: "el", pl: "aguas | de | jamaica", ltPl: "waters | of | hibiscus",
-    forms: ["jamaica", "agua de jamaica", "aguas de jamaica", "de jamaica"], chip: "agua de jamaica", attrs: { family: "fresca", price: 4500, nat: "hibiscus water" } }),
+    forms: ["jamaica", "agua de jamaica", "aguas de jamaica", "de jamaica"], chip: "agua de jamaica", attrs: { family: "fresca", price: 4000, nat: "hibiscus water", desc: "desc_jamaica" } }),
   ent("chaya", "agua | de | chaya", "water | of | chaya", "f", { art: "un", def: "el", pl: "aguas | de | chaya", ltPl: "waters | of | chaya",
     forms: ["chaya", "chaya con pina", "agua de chaya", "agua de chaya con pina", "de chaya", "de chaya con pina", "aguas de chaya"], chip: "agua de chaya",
-    attrs: { family: "fresca", price: 4500, nat: "chaya and pineapple drink" } }),
+    attrs: { family: "fresca", price: 4000, nat: "chaya and pineapple drink", desc: "desc_chaya" } }),
   ent("lemonade", "limonada", "lemonade", "f", { pl: "limonadas", forms: ["limonadas", "limonada de limon", "una limonada"], attrs: { generic: "lemonade", price: 5000 } }),
   ent("lemonade_still", "limonada | natural", "lemonade | still", "f", { pl: "limonadas | naturales", ltPl: "lemonades | still",
-    forms: ["limonada natural", "limonada sin gas", "limonadas naturales"], chip: "limonada natural", attrs: { family: "lemonade", price: 5000, nat: "lemonade with still water" } }),
+    forms: ["limonada natural", "limonada sin gas", "limonadas naturales"], chip: "limonada natural", attrs: { family: "lemonade", price: 5000, nat: "lemonade with still water", desc: "desc_mineral" } }),
   ent("lemonade_soda", "limonada | mineral", "lemonade | sparkling", "f", { pl: "limonadas | minerales", ltPl: "lemonades | sparkling",
     forms: ["limonada mineral", "limonada con gas", "limonada con agua mineral", "limonadas minerales"], chip: "limonada mineral",
-    attrs: { family: "lemonade", price: 5500, nat: "lemonade with sparkling water" } }),
+    attrs: { family: "lemonade", price: 5000, nat: "lemonade with sparkling water", desc: "desc_mineral" } }),
   ent("orange_juice", "jugo | de | naranja", "juice | of | orange", "m", { pl: "jugos | de | naranja", ltPl: "juices | of | orange",
     forms: ["jugo de naranja", "jugo", "un jugo", "jugo natural", "naranjada", "jugo de naranja natural"], chip: "jugo de naranja", attrs: { price: 5000, nat: "orange juice" } }),
   ent("soda", "refresco", "soda", "m", { pl: "refrescos", ltPl: "sodas", forms: ["refrescos", "un refresco", "soda de sabor"], attrs: { generic: "soda", price: 4000 } }),
@@ -65,18 +72,18 @@ const DRINKS: EntityDef[] = [
     forms: ["vino blanco", "blanco", "vinos blancos", "chardonnay", "sauvignon blanc"], chip: "vino blanco", attrs: { family: "wine", wine: true, price: 12000, nat: "white wine" } }),
   ent("wine", "vino", "wine", "m", { pl: "vinos", ltPl: "wines", forms: ["vinos", "vino de la casa", "copa de vino", "una copa de vino", "vinito"], attrs: { generic: "wine", wine: true, price: 12000 } }),
   ent("beer", "cerveza", "beer", "f", { pl: "cervezas", ltPl: "beers",
-    forms: ["cervezas", "chela", "chelas", "cervecita", "cerveza clara", "cerveza oscura", "una bien fria", "cerveza de barril", "birra"], attrs: { price: 5500 } }),
+    forms: ["cervezas", "chela", "chelas", "cervecita", "cerveza clara", "cerveza oscura", "una bien fria", "cerveza de barril", "birra"], attrs: { price: 6000 } }),
   ent("na_beer", "cerveza | sin | alcohol", "beer | without | alcohol", "f", { pl: "cervezas | sin | alcohol", ltPl: "beers | without | alcohol",
-    forms: ["cerveza sin alcohol", "cervezas sin alcohol", "una sin alcohol"], chip: "cerveza sin alcohol", attrs: { price: 5500, nat: "non-alcoholic beer" } }),
+    forms: ["cerveza sin alcohol", "cervezas sin alcohol", "una sin alcohol"], chip: "cerveza sin alcohol", attrs: { price: 6000, nat: "non-alcoholic beer" } }),
   ent("coffee", "café", "coffee", "m", { pl: "cafés", ltPl: "coffees", forms: ["cafes", "cafecito", "un cafecito", "taza de cafe"], attrs: { generic: "coffee", price: 4000 } }),
   ent("americano", "americano", "americano", "m", { pl: "americanos", forms: ["cafe americano", "americanos", "cafe normal", "cafe negro"], attrs: { family: "coffee", price: 4000 } }),
   ent("cafe_de_olla", "café | de | olla", "coffee | from | pot", "m", { pl: "cafés | de | olla", ltPl: "coffees | from | pot",
-    forms: ["cafe de olla", "de olla", "cafecito de olla", "cafes de olla"], chip: "café de olla", attrs: { family: "coffee", price: 4500, nat: "café de olla (spiced coffee)" } }),
+    forms: ["cafe de olla", "de olla", "cafecito de olla", "cafes de olla"], chip: "café de olla", attrs: { family: "coffee", price: 5000, nat: "café de olla (spiced coffee)", desc: "desc_olla" } }),
   ent("decaf", "descafeinado", "decaf", "m", { pl: "descafeinados", ltPl: "decafs", forms: ["cafe descafeinado", "descafeinados", "sin cafeina", "cafe sin cafeina"],
     attrs: { family: "coffee", price: 4000 } }),
   ent("espresso", "expreso", "espresso", "m", { pl: "expresos", ltPl: "espressos", forms: ["espresso", "expresso", "expresos", "cafe expreso"], attrs: { family: "coffee", price: 4000 } }),
-  ent("cappuccino", "capuchino", "cappuccino", "m", { pl: "capuchinos", ltPl: "cappuccinos", forms: ["cappuccino", "capuccino", "capuchinos", "capucino"], attrs: { family: "coffee", price: 5500 } }),
-  ent("tea", "té", "tea", "m", { pl: "tés", ltPl: "teas", forms: ["tecito", "te de manzanilla", "te de hierbabuena", "manzanilla", "infusion", "te caliente"], attrs: { price: 3500 } }),
+  ent("cappuccino", "capuchino", "cappuccino", "m", { pl: "capuchinos", ltPl: "cappuccinos", forms: ["cappuccino", "capuccino", "capuchinos", "capucino"], attrs: { family: "coffee", price: 6000 } }),
+  ent("tea", "té", "tea", "m", { pl: "tés", ltPl: "teas", forms: ["tecito", "te de manzanilla", "te de hierbabuena", "manzanilla", "infusion", "te caliente"], attrs: { price: 4000 } }),
 ];
 
 const STARTERS: EntityDef[] = [
@@ -100,7 +107,7 @@ const MAINS: EntityDef[] = [
   ent("pollo_pibil", "pollo | pibil", "chicken | pibil", "m", { pl: "pollos | pibil", ltPl: "chickens | pibil",
     forms: ["pollo pibil", "pollo pivil", "pollo", "el pollo"], chip: "pollo pibil",
     attrs: { family: "pibil", price: 19000, comes: "tortillas", meat: true, desc: "desc_pollo", nat: "pollo pibil (achiote chicken)" } }),
-  ent("pibil", "pibil", "pibil", "m", { forms: ["el pibil", "algo pibil", "pivil"], attrs: { generic: "pibil" } }),
+  ent("pibil", "pibil", "pibil", "m", { forms: ["el pibil", "algo pibil", "pivil"], attrs: { generic: "pibil", desc: "desc_pibil" } }),
   ent("poc_chuc", "poc chuc", "poc chuc", "m", { pl: "poc chucs", ltPl: "poc chucs",
     forms: ["poc chuc", "pok chuk", "poc chuk", "pok chuc", "poc shuc", "poc", "cerdo asado", "puerco asado"], chip: "poc chuc",
     attrs: { price: 21000, side: true, meat: true, desc: "desc_poc_chuc", nat: "poc chuc (grilled pork)" } }),
@@ -116,12 +123,12 @@ const MAINS: EntityDef[] = [
 ];
 
 const SIDES: EntityDef[] = [
-  ent("rice", "arroz", "rice", "m", { art: "", forms: ["arroz blanco", "arroz rojo", "arrocito", "un arroz"], attrs: { price: 4500 } }),
+  ent("rice", "arroz", "rice", "m", { art: "", forms: ["arroz blanco", "arroz rojo", "arrocito", "un arroz"], attrs: { price: 4000 } }),
   ent("beans", "frijoles", "beans", "m", { art: "", pl: "frijoles", ltPl: "beans",
-    forms: ["frijol", "frijoles refritos", "frijol colado", "frijoles colados", "frijolitos", "frijoles negros", "judias"], attrs: { plural: true, price: 4500 } }),
-  ent("salad", "ensalada", "salad", "f", { art: "", forms: ["una ensalada", "ensaladita", "ensalada verde", "ensalada de la casa", "verduras", "ensalada mixta"], attrs: { price: 4500 } }),
+    forms: ["frijol", "frijoles refritos", "frijol colado", "frijoles colados", "frijolitos", "frijoles negros", "judias"], attrs: { plural: true, price: 4000 } }),
+  ent("salad", "ensalada", "salad", "f", { art: "", forms: ["una ensalada", "ensaladita", "ensalada verde", "ensalada de la casa", "verduras", "ensalada mixta"], attrs: { price: 4000 } }),
   ent("fries", "papas | fritas", "potatoes | fried", "f", { art: "", pl: "papas | fritas", ltPl: "potatoes | fried",
-    forms: ["papas", "papas fritas", "papas a la francesa", "papitas", "unas papas", "papa frita", "french fries"], chip: "papas fritas", attrs: { plural: true, price: 4500, nat: "fries" } }),
+    forms: ["papas", "papas fritas", "papas a la francesa", "papitas", "unas papas", "papa frita", "french fries"], chip: "papas fritas", attrs: { plural: true, price: 4000, nat: "fries" } }),
 ];
 
 // Feminine: only the arrachera has a término.
@@ -134,13 +141,13 @@ const DONENESS: EntityDef[] = [
 ];
 
 const DESSERTS: EntityDef[] = [
-  ent("flan", "flan", "flan", "m", { pl: "flanes", ltPl: "flans", forms: ["flanes", "flan napolitano", "un flan", "flancito"], attrs: { price: 7500, desc: "desc_flan" } }),
+  ent("flan", "flan", "flan", "m", { pl: "flanes", ltPl: "flans", forms: ["flanes", "flan napolitano", "un flan", "flancito"], attrs: { price: 7000, desc: "desc_flan" } }),
   ent("caballeros", "caballeros pobres", "caballeros pobres", "m", { pl: "caballeros pobres", ltPl: "caballeros pobres",
     forms: ["caballeros pobres", "caballero pobre", "unos caballeros pobres", "caballeros"],
-    attrs: { plural: true, price: 8500, nuts: true, desc: "desc_caballeros", nat: "caballeros pobres (bread pudding in syrup)", natPl: "caballeros pobres (bread pudding in syrup)" } }),
-  ent("papaya", "dulce | de | papaya", "sweet | of | papaya", "m", { pl: "dulces | de | papaya", ltPl: "sweets | of | papaya",
+    attrs: { plural: true, price: 8000, nuts: true, desc: "desc_caballeros", nat: "caballeros pobres (bread pudding in syrup)", natPl: "caballeros pobres (bread pudding in syrup)" } }),
+  ent("papaya", "dulce | de | papaya", "candy | of | papaya", "m", { pl: "dulces | de | papaya", ltPl: "candies | of | papaya",
     forms: ["dulce de papaya", "papaya", "papaya con queso", "dulce de papaya con queso de bola", "papaya en almibar"], chip: "dulce de papaya",
-    attrs: { price: 7500, desc: "desc_papaya", nat: "candied papaya" } }),
+    attrs: { price: 7000, desc: "desc_papaya", nat: "candied papaya" } }),
   ent("helado", "helado | de | coco", "ice cream | of | coconut", "m", { pl: "helados | de | coco", ltPl: "ice creams | of | coconut",
     forms: ["helado", "helado de coco", "nieve", "nieve de coco", "un helado", "helados", "una bola de helado", "nievecita"], chip: "helado de coco",
     attrs: { price: 7000, desc: "desc_helado", nat: "coconut ice cream" } }),
@@ -148,6 +155,8 @@ const DESSERTS: EntityDef[] = [
 
 const ALL = [...DRINKS, ...STARTERS, ...MAINS, ...SIDES, ...DONENESS, ...DESSERTS];
 const byId = (id: string) => ALL.find((e) => e.id === id)!;
+/** The cheapest thing on the menu: no bill is smaller. */
+const MIN_PRICE = Math.min(...ALL.map((e) => e.attrs?.price as number | undefined).filter((p): p is number => !!p));
 
 // ---------------------------------------------------------------------------
 // State helpers (as in the English edition)
@@ -619,7 +628,9 @@ export const restaurant: SituationDef = {
       "(me | nos) (trae | puede traer | da) {req}", "(mas | otro | otra | unos | unas | un poco de | un poco mas de) {req}",
       "(me | nos) (sirve | puede servir) mas (agua #water) #h:refill",
       "(necesito | necesitamos | quisiera | quisieramos) (mas | otro | otra | unos | unas | un | una) {req}",
-      "(tiene | tienen) (mas)? {req}", "(le | les) (falta | faltan) [un poco de] {req}", "(dos | tres) {req}", "un vaso con hielo", "(me | nos) (trae | da) un vaso con hielo", "(me traes | traeme) [mas] {req} #tip:tu_staff",
+      "(tiene | tienen) (mas)? {req}", "(le | les) (falta | faltan) [un poco de] {req}",
+      // "¿Hay chile habanero?": the habanero salsa (never "eso no lo tenemos")
+      "(hay | habra | tendra | tendran) [algo de] (salsa | salsita | salsa picante | chile | chiles | habanero | chile habanero | salsa de habanero | xnipec) #salsa", "(dos | tres) {req}", "un vaso con hielo", "(me | nos) (trae | da) un vaso con hielo", "(me traes | traeme) [mas] {req} #tip:tu_staff",
     ] },
     box_ask: { patterns: [
       "(me | nos) (lo | la | los | las) (pone | puede poner | pueden poner | podria poner) para llevar #h:box", "(me lo | me la) (empaca | puede empacar) [para llevar]",
@@ -632,6 +643,8 @@ export const restaurant: SituationDef = {
       "ya no (puedo | podemos) (mas | comer mas | comer nada)", "no (quiero | queremos) (postre | nada de postre | nada dulce)",
       "(estoy | estamos) a dieta", "no como (dulce | dulces | postre | azucar)", "(hoy | ahorita) no [gracias]", "no [quiero] {dessert} [gracias]",
       "(no cabe | ya no cabe) (nada | nada mas)",
+      // "Postre no, gracias" / "No, postre no": no dessert (never "postre")
+      "[no] [el] postre no [gracias]",
     ] },
     // "Todavía no la cuenta": not yet (never the check)
     check_not_yet: { patterns: ["todavia no [la cuenta]", "(la cuenta)? (todavia | aun) no", "no (quiero | queremos) la cuenta [todavia]", "(todavia | aun) no (nos vamos | terminamos | he terminado | hemos terminado)"] },
@@ -666,7 +679,8 @@ export const restaurant: SituationDef = {
     // "No con tarjeta" / "No, con tarjeta": the comma is lost, so Luis asks again (rule 10); "No con tarjeta, en efectivo" is cash
     pay_amb: { patterns: ["no (con | en) (tarjeta | efectivo) #amb", "no (tarjeta | efectivo) #amb"] },
     pay_cash: { patterns: ["no (tengo | traigo | tenemos | traemos) tarjeta", "no (quiero | queremos | puedo | podemos) pagar con tarjeta", "no (con tarjeta | tarjeta) [mejor] (en | con)? efectivo","[puedo | podemos] pagar en efectivo", "(en | con) efectivo #h:pay_cash", "efectivo", "(pago | voy a pagar | le pago | vamos a pagar) en efectivo #h:pay_cash",
-      "(mejor | prefiero) [pagar] (en | con) efectivo", "(es | va a ser | seria) (en | con) efectivo"] },
+      "(mejor | prefiero) [pagar] (en | con) efectivo", "(es | va a ser | seria) (en | con) efectivo",
+      "[mejor] (pago | le pago | voy a pagar | vamos a pagar | prefiero pagar) todo (en | con) efectivo"] },
     // "No traigo efectivo": so it's the card (never read as "efectivo")
     no_cash: { patterns: ["no (tengo | traigo | tenemos | traemos) [suficiente | mas] efectivo", "sin efectivo", "no (puedo | podemos) pagar en efectivo", "no (quiero | queremos) pagar en efectivo"] },
     // "¿Y si pago con tarjeta?": a what-if answers, never pays (rule 17)
@@ -735,6 +749,19 @@ export const restaurant: SituationDef = {
       // "Quiero el poc chuc en lugar de la cochinita", "En vez de la cochinita, el poc chuc", "Cámbieme la cochinita por el poc chuc"
       "@order_prefix {item} en (vez | lugar) de {item}", "en (vez | lugar) de {item} [mejor] [quiero | quisiera | voy a querer | me trae | me da | traigame] {item}",
       "(cambieme | cambiame | me cambia | me puede cambiar | me podria cambiar | puede cambiar | podria cambiar | cambie) {item} por {item}"] },
+    // "Un postre, por favor" / "Sí, un postre" / "Postre." to "¿Le traigo un postre o un cafecito?": which one?
+    dessert_some_ctx: { patterns: [
+      "[si] (un | algun | algo de) postre", "postre", "[si] (quiero | quisiera | queremos | quisieramos | voy a querer | vamos a querer) (un | algun | algo de)? postre",
+      "[si] (me | nos) (trae | da | puede traer | podria traer) (un | algun | algo de) postre", "[si] algo dulce", "[si] (puedo | podemos | quiero | queremos) ver los postres",
+      "mejor (un | algun | algo de) postre",
+    ] },
+    // "La propina se la dejo en efectivo": the card pays the check, the tip is left in cash (common in Mexico)
+    tip_cash: { patterns: [
+      "(le dejo | le doy | se la dejo | se la doy | dejo | doy | le voy a dejar | voy a dejar | se la voy a dejar) la propina en efectivo #h:tip_cash",
+      "[y] la propina (se la dejo | se la doy | la dejo | se la pago | la pago | le dejo | va | es | se la doy aparte) en efectivo #h:tip_cash",
+      "(puedo | podemos | se puede) (dejar | dejarle | dar | darle | pagar) la propina en efectivo", "[y] la propina en efectivo",
+      "(la propina | propina) aparte [en efectivo]", "la propina se la (dejo | doy) aparte", "sin propina en la tarjeta [se la dejo en efectivo]",
+    ] },
     // "Sí, una" to "¿Gusta una (sopa) para empezar?"
     soup_yes_ctx: { patterns: ["si (una | uno) [por favor] [para empezar | para mi]", "si (traigame | me trae | traiganos | nos trae) una [por favor]", "[si] una para (compartir | los dos | empezar)"] },
   },
@@ -877,12 +904,16 @@ export const restaurant: SituationDef = {
     what_drink: [t("¡Claro! | ¿Qué | le | traigo?", "Sure! | What | (to) you | I-bring?", "Sure! What would you like?")],
     what_drink_pl: [t("¡Claro! | ¿Qué | les | traigo?", "Sure! | What | (to) you | I-bring?", "Sure! What would you like?")],
     ask_water_kind: [
-      t("¿Natural | o | mineral?", "Still | or | sparkling?", "Still or sparkling?", { flags: { 0: "In Mexico agua natural is still water and agua mineral is sparkling." } }),
-      t("Claro. | ¿La | quiere | natural | o | mineral?", "Sure. | It | do you want | still | or | sparkling?", "Sure. Still or sparkling?", { flags: { 1: "la: “it”, the water (el agua is feminine)." } }),
+      t("¿Natural | o | mineral?", "Still | or | sparkling?", "Still or sparkling?", { flags: { 0: "In Mexico agua natural is still water and agua mineral is sparkling." },
+        neutral: t("¿Sin | gas | o | con | gas?", "Without | gas | or | with | gas?", "Still or sparkling?", { flags: { 0: "sin gas = still, con gas = sparkling." } }) }),
+      t("Claro. | ¿La | quiere | natural | o | mineral?", "Sure. | It | do you want | still | or | sparkling?", "Sure. Still or sparkling?", { flags: { 1: "la: “it”, the water (el agua is feminine)." },
+        neutral: t("Claro. | ¿La | quiere | sin | gas | o | con | gas?", "Sure. | It | do you want | without | gas | or | with | gas?", "Sure. Still or sparkling?", { flags: { 1: "la: “it”, the water (el agua is feminine)." } }) }),
     ],
     ask_lemonade_kind: [
-      t("¿Natural | o | mineral?", "Still | or | sparkling?", "Made with still or sparkling water?", { flags: { 0: "A limonada mineral is made with sparkling water: very Mexican." } }),
-      t("¿La | limonada | natural | o | mineral?", "The | lemonade | still | or | sparkling?", "Would you like the lemonade with still water or sparkling?"),
+      t("¿Natural | o | mineral?", "Still | or | sparkling?", "Made with still or sparkling water?", { flags: { 0: "A limonada mineral is made with sparkling water: very Mexican." },
+        neutral: t("¿Sin | gas | o | con | gas?", "Without | gas | or | with | gas?", "Made with still or sparkling water?", { flags: { 0: "sin gas = still, con gas = sparkling." } }) }),
+      t("¿La | limonada | natural | o | mineral?", "The | lemonade | still | or | sparkling?", "Would you like the lemonade with still water or sparkling?",
+        { neutral: t("¿La | limonada | sin | gas | o | con | gas?", "The | lemonade | without | gas | or | with | gas?", "Would you like the lemonade with still water or sparkling?") }),
     ],
     ask_wine_kind: [
       t("¿Tinto | o | blanco?", "Red | or | white?", "Red or white?"),
@@ -990,7 +1021,9 @@ export const restaurant: SituationDef = {
     ],
     soup_offer: [
       t("Tenemos | sopa | de | lima | casera, | a | {$price}. | ¿Gusta | una | para | empezar?", "We have | soup | of | lime | homemade, | at | {$price}. | Would you like | one | to | start?",
-        "We have homemade sopa de lima for {$price}. Would you like one to start?", { flags: { 7: "Mexican and very polite: “¿Gusta…?” = would you like…?" } }),
+        "We have homemade sopa de lima for {$price}. Would you like one to start?", { flags: { 7: "Mexican and very polite: “¿Gusta…?” = would you like…?" },
+          neutral: t("Tenemos | sopa | de | lima | casera, | a | {$price}. | ¿Quiere | una | para | empezar?", "We have | soup | of | lime | homemade, | at | {$price}. | Do you want | one | to | start?",
+            "We have homemade sopa de lima for {$price}. Would you like one to start?") }),
     ],
     soup_offer_again: [t("¿Le | traigo | una | sopa | para | empezar?", "(To) you | I-bring | a | soup | to | start?", "Shall I bring you a soup to start?")],
     placed: [
@@ -1072,8 +1105,8 @@ export const restaurant: SituationDef = {
         "We have aguas frescas, lemonade, sodas, beer, wine and coffee.", { flags: { 1: "Aguas frescas: cold drinks made with fruit, flowers or rice (horchata)." } }),
     ],
     starters_list: [
-      t("De | entrada | tenemos | sopa | de | lima, | panuchos, | salbutes | y | guacamole.", "As | starter | we have | soup | of | lime, | panuchos, | salbutes | and | guacamole.",
-        "For starters, we have sopa de lima, panuchos, salbutes and guacamole."),
+      t("De | entrada | tenemos | sopa | de | lima, | panuchos, | salbutes | y | guacamole.", "As | appetizer | we have | soup | of | lime, | panuchos, | salbutes | and | guacamole.",
+        "For appetizers, we have sopa de lima, panuchos, salbutes and guacamole."),
     ],
     mains_list: [
       t("De | plato fuerte | hay | cochinita | pibil, | pollo | pibil, | poc chuc, | tikin xic, | arrachera | y | papadzules.",
@@ -1081,12 +1114,12 @@ export const restaurant: SituationDef = {
         "For the main course there's cochinita pibil, chicken pibil, poc chuc, tikin xic, steak and papadzules."),
     ],
     dessert_list: [
-      t("De | postre | hay | flan, | caballeros pobres, | dulce | de | papaya | y | helado | de | coco.", "For | dessert | there's | flan, | caballeros pobres, | sweet | of | papaya | and | ice cream | of | coconut.",
+      t("De | postre | hay | flan, | caballeros pobres, | dulce | de | papaya | y | helado | de | coco.", "For | dessert | there's | flan, | caballeros pobres, | candy | of | papaya | and | ice cream | of | coconut.",
         "For dessert there's flan, caballeros pobres, candied papaya and coconut ice cream."),
     ],
     desc_sopa: [
       t("Es | un | caldo | de | pollo | con | lima | y | tiras | de | tortilla | frita.", "It's | a | broth | of | chicken | with | lime | and | strips | of | tortilla | fried.",
-        "It's a chicken broth with lime and strips of fried tortilla.", { flags: { 6: "Lima: a mild Yucatán citrus, not the green limón." } }),
+        "It's a chicken broth with lime and strips of fried tortilla.", { flags: { 6: "Lima: a fragrant Yucatán citrus (lima agria), not the green limón." } }),
     ],
     desc_panuchos: [
       t("Son | tortillas | rellenas | de | frijol, | fritas, | con | cochinita | o | pollo | encima.", "They're | tortillas | stuffed | with | beans, | fried, | with | cochinita | or | chicken | on top.",
@@ -1132,11 +1165,30 @@ export const restaurant: SituationDef = {
         { flags: { 6: "Queso de bola: Edam cheese, much loved in Yucatán." } }),
     ],
     desc_helado: [t("Es | helado | de | coco, | hecho | aquí.", "It's | ice cream | of | coconut, | made | here.", "It's coconut ice cream, made here.")],
-    desc_generic: [
-      t("Es | uno | de | nuestros | platillos | más | populares.", "It's | one | of | our | dishes | most | popular.", "It's one of our most popular dishes.",
-        { flags: { 4: "Mexican: platillo = a dish on the menu. Elsewhere: plato." },
-          neutral: t("Es | uno | de | nuestros | platos | más | populares.", "It's | one | of | our | dishes | most | popular.", "It's one of our most popular dishes.") }),
+    desc_pibil: [
+      t("Es | carne | con | achiote, | cocida | en | hoja | de | plátano. | Hay | de | cerdo | y | de | pollo.",
+        "It's | meat | with | achiote, | cooked | in | leaf | of | banana. | There's | of | pork | and | of | chicken.",
+        "It's meat with achiote, cooked in banana leaves. We have it with pork or chicken.", { flags: { 3: "Achiote: a red seed paste, the taste of Yucatán." } }),
     ],
+    desc_horchata: [t("Es | agua | de | arroz | con | canela, | bien | fría.", "It's | water | of | rice | with | cinnamon, | nice and | cold.", "It's a cold rice drink with cinnamon.")],
+    desc_jamaica: [
+      t("Es | agua | de | flor | de | jamaica: | fresca | y | un | poco | ácida.", "It's | water | of | flower | of | hibiscus: | refreshing | and | a | little | tart.",
+        "It's made from hibiscus flowers: refreshing and a little tart."),
+    ],
+    desc_chaya: [
+      t("Es | chaya, | una | hoja | verde | de | aquí, | licuada | con | piña.", "It's | chaya, | a | leaf | green | from | here, | blended | with | pineapple.",
+        "It's chaya, a local leafy green, blended with pineapple."),
+    ],
+    desc_fresca: [
+      t("Es | agua | con | fruta, | flores | o | arroz, | bien | fría.", "It's | water | with | fruit, | flowers | or | rice, | nice and | cold.",
+        "It's water blended with fruit, flowers or rice, served cold."),
+    ],
+    desc_olla: [t("Es | café | hecho | en | olla | de | barro, | con | canela.", "It's | coffee | made | in | pot | of | clay, | with | cinnamon.", "It's coffee brewed in a clay pot, with cinnamon.")],
+    desc_mineral: [
+      t("La | natural | es | sin | gas, | y | la | mineral | es | con | gas.", "The | natural (one) | is | without | gas, | and | the | mineral (one) | is | with | gas.",
+        "Natural is still, and mineral is sparkling.", { flags: { 1: "In Mexico agua natural is still water and agua mineral is sparkling." } }),
+    ],
+    desc_generic: [t("Es | de | lo | más | pedido | aquí.", "It's | among | the | most | ordered | here.", "People order it a lot here.")],
     comes_side: [t("Viene | con | guarnición: | arroz, | frijoles, | ensalada | o | papas.", "It comes | with | a side: | rice, | beans, | salad | or | fries.", "It comes with a side: rice, beans, salad or fries.")],
     comes_tortillas: [
       t("Viene | con | tortillas | hechas | a | mano | y | cebolla | morada.", "It comes | with | tortillas | made | by | hand | and | onion | red.", "It comes with handmade tortillas and pickled red onion."),
@@ -1165,6 +1217,7 @@ export const restaurant: SituationDef = {
     ],
     allergy_noted: [t("Gracias | por | avisarme. | Lo | anoto | para | la | cocina.", "Thanks | for | telling me. | It | I'll-note | for | the | kitchen.", "Thanks for telling me. I'll let the kitchen know.")],
     its_yours: [t("Sí, | es | {X.the}. | ¡Provecho!", "Yes, | it's | {X.the}. | Enjoy!", "Yes, that's {X.the}. Enjoy!")],
+    its_yours_pl: [t("¡Sí, | esos | son! | ¡Provecho!", "Yes, | those | they-are! | Enjoy!", "Yes, that's them! Enjoy!")],
     price_is: [t("Son | {$price}.", "It's | {$price}.", "It's {$price}.")],
     not_long: [t("No tarda | mucho.", "It won't take | long.", "It won't take long.")],
     which_item: [t("¿Cuál?", "Which one?", "Which one?")],
@@ -1184,12 +1237,14 @@ export const restaurant: SituationDef = {
     box_free: [t("No cuesta | nada.", "It doesn't cost | anything.", "There's no charge for that.")],
     box_ok: [t("Claro, | enseguida | se lo | pongo | para llevar.", "Sure, | right away | it for you | I-put | to go.", "Sure, I'll box it up for you.")],
     ask_dessert: [
-      t("¿Gusta | algo | de | postre?", "Would you like | something | for | dessert?", "Would you like some dessert?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" } }),
+      t("¿Gusta | algo | de | postre?", "Would you like | something | for | dessert?", "Would you like some dessert?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" },
+        neutral: t("¿Quiere | algo | de | postre?", "Do you want | something | for | dessert?", "Would you like some dessert?") }),
       t("¿Le | traigo | la | carta | de | postres?", "(To) you | I-bring | the | menu | of | desserts?", "Would you like to see the dessert menu?"),
       t("¿Le | traigo | un | postre | o | un | cafecito?", "(To) you | I-bring | a | dessert | or | a | little coffee?", "Can I get you some dessert or coffee?", { flags: { 6: "cafecito: “a little coffee”, a friendly diminutive." } }),
     ],
     ask_dessert_pl: [
-      t("¿Gustan | algo | de | postre?", "Would you like | something | for | dessert?", "Would you like some dessert?", { flags: { 0: "Mexican and very polite: “¿Gustan…?” = would you (all) like…?" } }),
+      t("¿Gustan | algo | de | postre?", "Would you like | something | for | dessert?", "Would you like some dessert?", { flags: { 0: "Mexican and very polite: “¿Gustan…?” = would you (all) like…?" },
+        neutral: t("¿Quieren | algo | de | postre?", "Do you want | something | for | dessert?", "Would you like some dessert?", { flags: { 0: "quieren: the ustedes form, for a group." } }) }),
       t("¿Les | traigo | la | carta | de | postres?", "(To) you | I-bring | the | menu | of | desserts?", "Would you like to see the dessert menu?"),
       t("¿Les | traigo | un | postre | o | un | cafecito?", "(To) you | I-bring | a | dessert | or | a | little coffee?", "Can I get you some dessert or coffee?"),
     ],
@@ -1245,7 +1300,7 @@ export const restaurant: SituationDef = {
       t("Aquí tienen | su | cuenta.", "Here's | your | check.", "Here's your check."),
       t("Aquí | les | dejo | la | cuenta.", "Here | (for) you | I-leave | the | check.", "Here you go, here's your check."),
     ],
-    total_is: [t("Son | {$price} | en | total.", "It's | {$price} | in | total.", "Your total is {$price}."), t("Su | total | es | de | {$price}.", "Your | total | is | of | {$price}.", "Your total comes to {$price}.")],
+    total_is: [t("Son | {$total} | en | total.", "It's | {$total} | in | total.", "Your total is {$total}."), t("Su | total | es | de | {$total}.", "Your | total | is | of | {$total}.", "Your total comes to {$total}.")],
     no_rush: [t("Sin prisa.", "No rush.", "No rush."), t("No se preocupe, | sin prisa.", "Don't worry, | no rush.", "Take your time, no rush.")],
     bring_checks: [t("Aquí tienen | sus | cuentas. | Sin prisa.", "Here are | your | checks. | No rush.", "Here are your checks. No rush.")],
     ask_pay_method: [
@@ -1281,7 +1336,7 @@ export const restaurant: SituationDef = {
       "Yes, that's normal. Most people leave ten to fifteen percent.")],
     tip_fine: [t("No, | está | bien. | Se acostumbra | del | diez | al | quince | por ciento.", "No, | it's | fine. | It's customary | from | ten | to | fifteen | percent.",
       "No, that's fine. People usually leave ten to fifteen percent.")],
-    tip_big: [t("¿{$price} | de | propina? | ¿Está | {m:seguro|f:segura}?", "{$price} | of | tip? | Are you | sure?", "{$price} as a tip? Are you sure?")],
+    tip_big: [t("¿{$amount} | de | propina? | ¿Está | {m:seguro|f:segura}?", "{$amount} | of | tip? | Are you | sure?", "{$amount} as a tip? Are you sure?")],
     tip_again: [t("Ah, | perdón. | ¿Cuánto | le | pongo, | entonces?", "Oh, | sorry. | How much | (for) you | I-put, | then?", "Oh, sorry. How much should I put, then?")],
     tip_amount: [t("Serían | como | {$amount} | de | propina.", "It'd-be | about | {$amount} | as | tip.", "That'd be about {$amount} for the tip.", { flags: { 1: "como before an amount: “about”." } })],
     tip_normal_range: [t("Se acostumbra | del | diez | al | quince | por ciento.", "It's customary | from | ten | to | fifteen | percent.", "People usually leave ten to fifteen percent.")],
@@ -1291,8 +1346,9 @@ export const restaurant: SituationDef = {
       t("¡Muy | amable! | Listo, | ya | quedó.", "Very | kind! | Done, | already | it's-settled.", "That's very kind. You're all set!"),
     ],
     tip_none_ok: [t("Ah... | muy | bien. | Listo.", "Oh... | very | well. | Done.", "Oh... okay. You're all set.")],
+    tip_cash_ok: [t("¡Claro! | Entonces | le | cobro | solo | la | cuenta.", "Sure! | Then | (from) you | I-charge | only | the | check.", "Sure! Then I'll just charge the check.")],
     cash_ok: [t("Muy | bien, | enseguida | le | traigo | su | cambio.", "Very | good, | right away | (to) you | I-bring | your | change.", "Great, I'll bring your change right over.")],
-    cash_short: [t("Perdón, | son | {$price}.", "Sorry, | it's | {$price}.", "Sorry, it's {$price}.")],
+    cash_short: [t("Perdón, | son | {$total}.", "Sorry, | it's | {$total}.", "Sorry, it's {$total}.")],
     cash_missing: [t("Faltan | {$price}.", "They're-missing | {$price}.", "You're {$price} short.", { flags: { 0: "faltan: “are missing”, the pesos still to pay." } })],
     cash_still: [t("Todavía | faltan | {$price}.", "Still | they're-missing | {$price}.", "You're still {$price} short.")],
     cash_exact: [t("Gracias, | está | completo.", "Thanks, | it's | complete.", "Thanks, that's exactly right.")],
@@ -1329,17 +1385,20 @@ export const restaurant: SituationDef = {
     ],
   },
 
+  // Every price is a multiple of $10 (the menu above), so every bill and every cash sum in bills is too.
   domains: {
-    price: () => {
-      const s = new Set<number>();
-      for (let c = 0; c <= 300000; c += 500) s.add(c);
-      return [...s];
-    },
-    // a tip worked out for "¿Cuánto es el diez por ciento?", in whole pesos (tipAmount)
+    // a dish (or its kind) × 1–4 (price_is, cut by reach-es.ts), the soup's price, and the cash still missing
+    // (cash_missing, cash_still): every $10 up to $3,000
+    price: () => Array.from({ length: 300 }, (_, i) => (i + 1) * 1000),
+    // the bill (total_is, cash_short): every $10 from the cheapest item up to $3,000 (about twelve dishes)
+    total: () => Array.from({ length: 300 }, (_, i) => (i + 1) * 1000).filter((p) => p >= MIN_PRICE),
+    // a tip: worked out for "¿Cuánto es el diez por ciento?" (tipAmount: whole pesos up to $200, then every $5), or one
+    // the learner names that looks too big (tip_big: "¿$1,000 de propina?", any round sum)
     amount: () => {
       const s = new Set<number>();
       for (let c = 100; c <= 20000; c += 100) s.add(c);
-      for (let c = 20500; c <= 60000; c += 500) s.add(c);
+      for (let c = 20500; c <= 100000; c += 500) s.add(c);
+      for (let c = 110000; c <= 300000; c += 10000) s.add(c);
       return [...s];
     },
   },
@@ -1406,15 +1465,16 @@ export const restaurant: SituationDef = {
         { id: "can_i_get", s: t("¿Me | trae | {X.np}?", "(To) me | you-bring | {X.np}?", "Could you bring me {X.np}?"), note: "Very common with waiters: “¿Me trae…?” (will you bring me…?)." },
         { id: "could_i_have", s: t("¿Me | da | {X.np}, | por favor?", "(To) me | you-give | {X.np}, | please?", "Could I have {X.np}, please?") },
         { id: "glass_wine", s: t("Una | copa | de | {X}, | por favor.", "A | glass | of | {X}, | please.", "A glass of {X}, please."), only: (e) => !!e.attrs?.wine && !e.attrs?.generic },
-        { id: "tap_water", s: t("Solo | agua | natural, | por favor.", "Just | water | still, | please.", "Just still water, please."), note: "In Mexico tap water isn't for drinking; agua natural is bottled or purified." },
+        { id: "tap_water", s: t("Solo | agua | natural, | por favor.", "Just | water | still, | please.", "Just still water, please.",
+          { neutral: t("Solo | agua | sin | gas, | por favor.", "Just | water | without | gas, | please.", "Just still water, please.") }), note: "In Mexico tap water isn't for drinking; agua natural (agua sin gas) is bottled or purified." },
         { id: "drinks_none", s: t("Nada | para | mí, | gracias.", "Nothing | for | me, | thanks.", "Nothing for me, thanks.") },
         { id: "q_drinks", s: t("¿Qué | tienen | de | tomar?", "What | do you have | to | drink?", "What do you have to drink?") },
       ],
     },
     starter: {
-      lt: "Order a starter", slot: "starter", examples: ["sopa_lima", "panuchos", "guacamole"],
+      lt: "Order an appetizer", slot: "starter", examples: ["sopa_lima", "panuchos", "guacamole"],
       items: [
-        { id: "start_with", s: t("De | entrada, | {X.the}.", "As | a starter, | {X.the}.", "To start, {X.the}.") },
+        { id: "start_with", s: t("De | entrada, | {X.the}.", "As | an appetizer, | {X.the}.", "To start, {X.the}.") },
         { id: "to_share", s: t("¿Nos | trae | {X.the} | para | compartir?", "(To) us | you-bring | {X.the} | to | share?", "Could we get {X.the} to share?") },
         { id: "ill_have", s: t("Voy | a | querer | {X.the}.", "I'm going | to | want | {X.the}.", "I'll have {X.the}.") },
       ],
@@ -1524,6 +1584,8 @@ export const restaurant: SituationDef = {
         { id: "tip_percent", s: t("Quince | por ciento, | por favor.", "Fifteen | percent, | please.", "Fifteen percent, please.") },
         { id: "tip_percent", s: t("Diez | por ciento.", "Ten | percent.", "Ten percent.") },
         { id: "tip_pesos", s: t("Póngale | cien | pesos.", "Put (for it) | a hundred | pesos.", "Add a hundred pesos.") },
+        { id: "tip_cash", s: t("La | propina | se la | dejo | en efectivo.", "The | tip | it to you | I'll-leave | in cash.", "I'll leave the tip in cash."),
+          note: "Common in Mexico: pay the check by card and leave the tip in cash." },
         { id: "q_tip_included", s: t("¿Está | incluida | la | propina?", "Is | included | the | tip?", "Is the tip included?") },
       ],
     },
@@ -1731,7 +1793,7 @@ export const restaurant: SituationDef = {
         "ask_spicy", "ask_desc", "ask_comes", "ask_veg", "ask_allergy", "ask_price"],
       suggest: [
         { lt: "Order a main course", hint: "order_food", options: "main" },
-        { lt: "Order a starter", hint: "starter", options: "starter" },
+        { lt: "Order an appetizer", hint: "starter", options: "starter" },
         { lt: "Ask about the dishes (recommendations, spicy, allergies)", hint: "ask_food" },
         { lt: "Ask for a few more minutes", hint: "ready" },
       ],
@@ -1853,7 +1915,7 @@ export const restaurant: SituationDef = {
     { id: "dessert", when: (c) => c.s.askDessert && mealOver(c) && !c.s.checkAsked, done: (c) => !!c.s.dessertDone,
       ask: (c) => sayP(c, c.s.dessertMenu ? "which_dessert" : "ask_dessert"),
       // "change" / "correction" too: "No, mejor un flan" is a flan, never "no flan"
-      expects: ["order", "dessert_no", "check_ask", "ask_menu", "ask_recommend", "more_no", "reject", "ask_price", "ask_desc", "ask_allergy", "change", "correction"],
+      expects: ["order", "dessert_no", "check_ask", "ask_menu", "ask_recommend", "more_no", "reject", "ask_price", "ask_desc", "ask_allergy", "change", "correction", "dessert_some_ctx"],
       suggest: [
         { lt: "Order dessert or coffee", hint: "dessert", options: ["flan", "caballeros", "papaya", "helado", "cafe_de_olla", "americano"] },
         { lt: "Say no and ask for the check", hint: "check" },
@@ -1877,13 +1939,13 @@ export const restaurant: SituationDef = {
         if (c.s.dessertDeclined && !c.s.wheneverSaid) { c.s.wheneverSaid = true; sayP(c, "check_whenever"); return; }
         sayP(c, "ask_check_else");
       },
-      expects: ["check_ask", "more_no", "order", "ask_menu", "box_ask", "dessert_no", "check_not_yet"],
+      expects: ["check_ask", "more_no", "order", "ask_menu", "box_ask", "dessert_no", "check_not_yet", "dessert_some_ctx"],
       suggest: [
         { lt: "Ask for the check", hint: "check" },
         { lt: "Order a dessert", hint: "dessert", options: "dessert" },
       ],
       yes: (c) => { sayP(c, "what_else"); c.hold(); },
-      no: (c) => { c.s.checkAsked = true; } },
+      no: (c) => { noMoreAtCheck(c); } },
     { id: "check_coming", when: (c) => !!c.s.checkAsked && mealOver(c) && !c.s.checkComing, done: (c) => !!c.s.checkComing,
       ask: (c) => {
         c.s.checkComing = true;
@@ -1900,7 +1962,7 @@ export const restaurant: SituationDef = {
         if (!c.s.checkBrought) {
           c.s.checkBrought = true;
           if (c.s.split === "separate") c.say("bring_checks");
-          else { sayP(c, "bring_check"); if (!c.s.totalSaid) c.say("total_is", { price: total(c) }); c.s.totalSaid = true; }
+          else { sayP(c, "bring_check"); if (!c.s.totalSaid) c.say("total_is", { total: total(c) }); c.s.totalSaid = true; }
           if (c.s.wantPay) {
             c.s.payMethod = c.s.wantPay;
             // the card was chosen before the check came: Luis brings the terminal with it
@@ -1917,7 +1979,7 @@ export const restaurant: SituationDef = {
         }
         sayP(c, "ask_pay_method");
       },
-      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "ask_tip", "no_cash", "factura_ask", "pay_whatif", "ask_price", "pay_amb", "change_q"],
+      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "ask_tip", "no_cash", "factura_ask", "pay_whatif", "ask_price", "pay_amb", "change_q", "tip_cash"],
       suggest: [
         { lt: "Pay by card or in cash", hint: "pay" },
         { lt: "Ask if the tip is included", hint: "tip_ask" },
@@ -1936,7 +1998,7 @@ export const restaurant: SituationDef = {
         c.say("tip_screen");
       },
       // "Mejor en efectivo": nothing is paid yet, so the other way is still open (rule 18)
-      expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip", "tip_none_ctx", "pay_cash", "pay_card", "no_cash", "pay_phone"],
+      expects: ["tip_ctx", "tip_give", "tip_none", "ask_tip", "tip_none_ctx", "pay_cash", "pay_card", "no_cash", "pay_phone", "tip_cash"],
       suggest: [{ lt: "Choose the tip (usually 10–15%)", hint: "tip" }],
       no: (c) => { restaurant.handlers.tip_none(c, {}, { intent: "tip_none", slots: {}, tags: [] } as any); } },
     { id: "change", when: (c) => c.s.payMethod === "cash" && !c.s.paid, done: (c) => !!c.s.paid,
@@ -2113,7 +2175,7 @@ export const restaurant: SituationDef = {
       switch (c.step) {
         case "main_q": c.s.noMain = true; return;
         case "dessert": c.s.dessertDone = true; c.s.dessertDeclined = true; return;
-        case "check": c.s.checkAsked = true; return;
+        case "check": noMoreAtCheck(c); return;
         case "drinks": if (!c.s.drinksDone) { c.s.drinksDone = true; c.say("no_problem"); } return;
         case "checkback": case "checkback_soup": c.s.cb ??= "good"; return;
         case "soup_offer": c.s.soupOffer = false; return;
@@ -2129,7 +2191,7 @@ export const restaurant: SituationDef = {
       if (tags.includes("dessert")) { c.s.dessertMenu = true; if (c.s.box === undefined) c.s.askBox = false; c.say("dessert_list"); }
       else if (tags.includes("drinks") || tags.includes("wine")) c.say("drinks_list");
       else if (tags.includes("starters")) c.say("starters_list");
-      else if (tags.includes("sides")) c.say("side_list");
+      else if (tags.includes("sides")) { c.say("side_list"); if (c.step === "side") c.hold(); }
       else if (tags.includes("mains")) c.say("mains_list");
       else if (c.step === "drinks" || c.step === "drink_kind") c.say("drinks_list");
       else if (c.step === "dessert" || c.step === "check") { c.s.dessertMenu = true; c.say("dessert_list"); }
@@ -2213,20 +2275,24 @@ export const restaurant: SituationDef = {
       // the to-go box and the factura cost nothing ("¿Cuesta algo la factura?")
       if (!slots.dish && (c.step === "box" || c.step === "factura" || (tags.includes("extra") && /\b(factura|recipiente|cajita|contenedor)\b/.test(fold(c.heard))))) { c.say("box_free"); return; }
       if (!slots.dish && tags.includes("extra")) { c.say("which_item"); return; } // "¿Tiene costo?" about something else
+      // at Lucía's stand the bill is Luis's: "¡Claro! Se la traigo después de la cena" (the totals are voiced in his voice)
+      if (!slots.dish && !c.s.seated && items(c).length && (tags.includes("all") || tags.includes("total"))) { c.say("check_later"); return; }
       // "¿Cuánto es todo?" at any time, "¿Cuánto es?" once the check is asked or on the table: the (one) total so far
       if (!slots.dish && items(c).length && c.s.split !== "separate" && (tags.includes("all") || c.s.checkBrought || (tags.includes("total") && (c.s.checkAsked || mealOver(c))))) {
         if (c.s.checkAsked || c.s.checkBrought) c.s.totalSaid = true;
-        c.say("total_is", { price: total(c) }); return;
+        c.say("total_is", { total: total(c) }); return;
       }
       if (!slots.dish && (tags.includes("total") || tags.includes("extra")) && !items(c).length) { c.say("which_item"); return; }
       const id = dishOf(slots.dish) ?? lastDish(c);
       if (!id) { c.say("which_item"); return; }
-      // a kind not chosen yet ("¿Cuánto cuesta el agua fresca?"): its price when every kind costs the same
+      // a kind not chosen yet ("¿Cuánto cuesta el agua?"): its price when every kind costs the same, else the plain
+      // one's ("¿Cuánto cuesta el café?": an americano); "¿Cuál?" only for the pibil, which has no plain one
       const kinds = byId(id).attrs?.generic ? ALL.filter((e) => e.attrs?.family === byId(id).attrs!.generic) : [];
-      if (kinds.length && kinds.some((e) => e.attrs!.price !== kinds[0].attrs!.price)) { c.say("which_item"); return; }
+      const mixed = kinds.length > 0 && kinds.some((e) => e.attrs!.price !== kinds[0].attrs!.price);
+      if (mixed && !byId(id).attrs?.price) { c.say("which_item"); return; }
       const qty = tags.includes("q4") ? 4 : tags.includes("q3") ? 3 : tags.includes("q2") ? 2 : 1;
       c.s.mentioned = id;
-      c.say("price_is", { price: (((kinds[0] ?? byId(id)).attrs?.price as number | undefined) ?? 0) * qty });
+      c.say("price_is", { price: ((((mixed ? undefined : kinds[0]) ?? byId(id)).attrs?.price as number | undefined) ?? 0) * qty });
     },
     ask_have(c, slots) {
       const th = slots.thing || {};
@@ -2292,12 +2358,12 @@ export const restaurant: SituationDef = {
       const said = toArr(slots.dish).map(dishOf).find(Boolean) as string | undefined;
       if (!c.s.served && (said || main)) { c.say("ordered_coming"); return; }
       // "¿Esta es la cochinita?" / "Yo pedí la cochinita" with the cochinita in front of you: yes, it is
-      if (c.s.served && main && said === main.id && !/\bno\b/.test(fold(c.heard))) { c.say("its_yours", { X: B(main.id) }); return; }
+      if (c.s.served && main && said === main.id && !/\bno\b/.test(fold(c.heard))) { if (byId(main.id).attrs?.plural) c.say("its_yours_pl"); else c.say("its_yours", { X: B(main.id) }); return; }
       if (c.s.served && main && !c.s.fixing) { c.s.cb ??= "fix"; c.s.fixing = main.id; c.s.fixKind = "other"; return; }
       c.say("no_problem");
     },
     request(c, slots, seg) {
-      const req = (slots.req as string | undefined) ?? (seg.tags.includes("water") ? "water" : "other");
+      const req = (slots.req as string | undefined) ?? (seg.tags.includes("water") ? "water" : seg.tags.includes("salsa") ? "salsa" : "other");
       if (c.s.served && !c.s.cb) { c.s.cb = "request:" + req; return; }
       c.say(requestLine(req));
     },
@@ -2305,7 +2371,7 @@ export const restaurant: SituationDef = {
     dessert_no(c) {
       c.s.dessertDone = true;
       c.s.dessertDeclined = true;
-      if (c.step === "check") c.s.checkAsked = true;
+      if (c.step === "check") noMoreAtCheck(c);
     },
     // --- Paying
     check_not_yet(c) {
@@ -2330,12 +2396,12 @@ export const restaurant: SituationDef = {
       else { c.s.split = "together"; if (party(c) >= 2) c.say("split_together_ok"); }
       if (!c.s.checkAsked) c.s.checkAsked = true;
     },
-    pay_card(c) { choosePay(c, "card"); },
+    pay_card(c) { if (!payTalk(c, "card")) choosePay(c, "card"); },
     pay_amb(c) { if (!c.s.payMethod) { c.say("amb_again"); sayP(c, "ask_pay_method"); c.hold(); } },
     pay_whatif(c, _slots, seg) { c.say(seg.tags.includes("dollars") ? "pay_dollars" : "pay_options"); },
-    pay_phone(c) { choosePay(c, "card"); },
-    pay_cash(c) { choosePay(c, "cash"); },
-    no_cash(c) { choosePay(c, "card"); },
+    pay_phone(c) { if (!payTalk(c, "card")) choosePay(c, "card"); },
+    pay_cash(c) { if (!payTalk(c, "cash")) choosePay(c, "cash"); },
+    no_cash(c) { if (!payTalk(c, "card")) choosePay(c, "card"); },
     here_you_go(c, slots) {
       const amount = typeof slots.price === "number" ? (slots.price as number) : undefined;
       // "Aquí tiene 500 pesos": cash; before the check comes, it is counted when the check comes
@@ -2350,7 +2416,7 @@ export const restaurant: SituationDef = {
           const given = ((c.s.cashGiven as number | undefined) ?? 0) + amount;
           const due = total(c);
           c.s.cashGiven = given;
-          if (given < due) { (c as any).__shortSaid = true; c.say("cash_short", { price: due }); c.say("cash_missing", { price: due - given }); c.hold(); return; }
+          if (given < due) { (c as any).__shortSaid = true; c.say("cash_short", { total: due }); c.say("cash_missing", { price: due - given }); c.hold(); return; }
           if (keepsChange(c)) return; // "…, quédese con el cambio": keep_change, later in this turn, takes it as the tip
           if (given === due) { payCash(c); c.say("cash_exact"); return; }
         }
@@ -2415,7 +2481,7 @@ export const restaurant: SituationDef = {
       // it, "No" asks again (never "no tip"), another amount is the tip
       if (pesos && (slots.price as number) > total(c) / 2 && !c.s.bigTipChecked) {
         const big = { pesos: (slots.price as number) / 100 };
-        c.s.bigTipChecked = true; c.say("tip_big", { price: slots.price as number });
+        c.s.bigTipChecked = true; c.say("tip_big", { amount: slots.price as number });
         const on = (intent: string) => (cc: Ctx, sl: any, sg: any) => { restaurant.handlers[intent](cc, sl, sg); };
         c.expect({ id: "tip_big", hints: ["tip"], suggest: [{ lt: "Say yes, or give another amount", hint: "tip" }],
           yes: (cc) => { chargeTip(cc, big); },
@@ -2441,6 +2507,20 @@ export const restaurant: SituationDef = {
       if (c.s.payMethod === "card" && !c.s.paid) chargeTip(c, 0);
     },
     tip_none_ctx(c, slots, seg) { restaurant.handlers.tip_none(c, slots, seg); },
+    // "Un postre, por favor" at the dessert offer or at "¿Se le ofrece algo más?": the desserts, then "¿Cuál le traigo?"
+    dessert_some_ctx(c) {
+      if (c.s.dessertOrdered && !c.s.dessertServed) return;
+      Object.assign(c.s, { askDessert: true, dessertDone: false, dessertDeclined: false, dessertMenu: true });
+      if (c.s.box === undefined) c.s.askBox = false;
+      c.say("dessert_list");
+    },
+    // "La propina se la dejo en efectivo": at the terminal the card pays the check alone; before, "¡Sí, claro!"
+    tip_cash(c) {
+      if (c.s.paid) return;
+      if (c.s.payMethod === "card") { c.s.tip = "cash"; c.s.paid = true; c.complete(); c.event("pay", { method: "card", tip: "cash" }); c.say("tip_cash_ok"); return; }
+      if (c.s.payMethod === "cash") { c.say("no_problem"); return; } // in cash the tip goes with the money anyway
+      c.say("have_yes");
+    },
     // "Sí, una" to the soup offer: the offer's own yes
     soup_yes_ctx(c) { if (c.step === "soup_offer") restaurant.steps.find((x) => x.id === "soup_offer")!.yes!(c); },
     factura_ask(c) {
@@ -2669,6 +2749,16 @@ export const restaurant: SituationDef = {
     { say: "Sí, una, por favor", intent: "soup_yes_ctx", step: "soup_offer" },
     { say: "No, mejor un flan", intent: "change", step: "dessert", not: ["dessert_no", "reject"] },
     { say: "No, gracias, mejor un café americano", intent: "change", step: "dessert", not: ["dessert_no", "more_no"] },
+    // the 5 Nov audit: "Un postre" at the offer, the tip in cash, the habanero asked for, a price question never orders
+    { say: "Un postre, por favor", intent: "dessert_some_ctx", step: "dessert", not: ["order", "dessert_no"] },
+    { say: "Sí, un postre", intent: "dessert_some_ctx", step: "dessert" },
+    { say: "No quiero postre", intent: "dessert_no", step: "dessert", not: ["dessert_some_ctx"] },
+    { say: "La propina se la dejo en efectivo", intent: "tip_cash", step: "tip", not: ["tip_none", "tip_ctx", "pay_cash"] },
+    { say: "¿Puedo dejar la propina en efectivo?", intent: "tip_cash", step: "tip", not: ["pay_cash"] },
+    { say: "¿Hay chile habanero?", intent: "request", step: "checkback", not: ["ask_have_unknown"] },
+    { say: "¿Cuánto cuesta el agua?", intent: "ask_price", step: "drinks", not: ["order"] },
+    { say: "¿Qué es la chaya?", intent: "ask_desc", step: "drinks", not: ["order"] },
+    { say: "Agua con gas", intent: "order", step: "drinks", slots: { items: { item: { drink: "sparkling_water" } } } },
     // Spain forms (correct answers too): vosotros, ponme, patatas, móvil, vale
     { say: "Vale, una limonada", intent: "order", step: "drinks" },
     // not understood
@@ -2763,11 +2853,37 @@ export const restaurant: SituationDef = {
       expect: { complete: true, state: { items: { length: 3, 0: { id: "lemonade_still" }, 1: { id: "poc_chuc", side: "rice" }, 2: { id: "americano" } }, paid: true, tip: true, cashGiven: 50000 } } },
     // a dessert swapped before it comes: the bill has the new one only
     { name: "a dessert swapped before it comes",
-      turns: ["Mesa para uno.", "Una horchata, por favor.", "Quiero el pollo pibil.", "Todo muy rico.", "Un flan.", "No el flan, el helado.", "La cuenta, por favor.",
+      turns: ["Mesa para uno.", "Una horchata, por favor.", "Quiero el pollo pibil.", "Todo muy rico.", "¿Este es el pollo pibil?", "Un flan.", "No el flan, el helado.", "La cuenta, por favor.",
         "Con tarjeta.", "Diez por ciento."],
       setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; s.waitTwist = false; s.askDessert = true; },
       auto: omit(AUTO, ["resv", "drinks", "order", "checkback", "dessert", "dessert_ack", "check", "pay", "tip"]),
       expect: { complete: true, state: { items: { length: 3, 2: { id: "helado" } }, tip: 10, paid: true } } },
+    // the 5 Nov audit: the side questions at the table get Luis's answers (and his voice in the line list), a dish not on
+    // the menu, the card asked about while ordering (no check, the dessert still offered), "Un postre" at the offer, the
+    // factura free, a comma lost twice, the ten percent worked out, the tip left in cash
+    { name: "side questions at the table",
+      turns: ["Buenas noches, una mesa para dos, por favor.", "¿Dónde está el baño?", "¿Qué es la chaya?", "¿Aceptan tarjeta?", "¿Tienen hamburguesas?", "Quiero una hamburguesa.",
+        "Dos aguas de chaya, por favor.", "¿Nos da unos minutos?", "¿Qué es el poc chuc?", "¿Con qué viene la cochinita?", "¿Los panuchos vienen con algo?",
+        "No como nada picante.", "¿El flan lleva nueces?", "¿Los caballeros pobres llevan nueces?", "Soy alérgico a las nueces.", "¿El tikin xic es sin gluten?",
+        "La arrachera y el poc chuc, por favor.", "Término medio.", "Con arroz.", "Con frijoles.", "Más salsa, por favor.",
+        "Un postre, por favor.", "El flan.", "La cuenta, por favor.", "No separado.", "Todo junto.", "No con tarjeta.", "¿Y si pago con tarjeta?", "Con tarjeta.",
+        "¿Cuesta algo la factura?", "No, gracias.", "¿Cuánto es el diez por ciento?", "La propina se la dejo en efectivo."],
+      setup: (s) => { Object.assign(s, { wrongTwist: false, soupTwist: false, facturaTwist: true, waitTwist: false, askSeat: false, hay: false, specials: false, askBox: false, askDessert: true, askSplit: true }); },
+      auto: omit(AUTO, ["resv", "drinks", "order", "doneness", "side", "checkback", "dessert", "check", "split", "pay", "factura", "tip"]),
+      expect: { complete: true, state: { party: 2, split: "together", factura: false, tip: "cash", paid: true,
+        items: { length: 4, 0: { id: "chaya", qty: 2 }, 1: { id: "arrachera", done: "medium", side: "rice" }, 2: { id: "poc_chuc", side: "beans" }, 3: { id: "flan" } } } } },
+    { name: "a full table: the fifteen percent worked out",
+      turns: ["Buenas noches, tenemos una reservación a nombre de Miller para cuatro.", "Cuatro cervezas, por favor.", "Cuatro arracheras término medio con papas.",
+        "La cuenta, por favor.", "Todo junto.", "Con tarjeta.", "¿Cuánto es el quince por ciento?", "Está bien, el quince por ciento."],
+      setup: (s) => { Object.assign(s, { wrongTwist: false, soupTwist: false, facturaTwist: false, waitTwist: false, askSeat: false, askBox: false, askDessert: false, askSplit: true }); },
+      auto: omit(AUTO, ["resv", "resv_name", "drinks", "order", "check", "split", "pay", "tip"]),
+      expect: { complete: true, state: { party: 4, tip: 15, paid: true, items: { length: 2, 0: { id: "beer", qty: 4 }, 1: { id: "arrachera", qty: 4, done: "medium", side: "fries" } } } } },
+    { name: "the card asked about while ordering, no more at the end, the tip in cash",
+      turns: ["Mesa para uno.", "Una horchata, por favor.", "¿Aceptan tarjeta?", "Quiero los papadzules.", "Todo muy rico.",
+        "No, gracias.", "La cuenta, por favor.", "Con tarjeta.", "La propina se la dejo en efectivo."],
+      setup: (s) => { Object.assign(s, { wrongTwist: false, soupTwist: false, facturaTwist: false, waitTwist: false, askSeat: false, askBox: false, askDessert: false }); },
+      auto: omit(AUTO, ["resv", "drinks", "order", "checkback", "check", "pay", "tip"]),
+      expect: { complete: true, state: { wheneverSaid: true, checkAsked: true, tip: "cash", paid: true, payMethod: "card" } } },
   ],
 };
 
@@ -2811,8 +2927,11 @@ function chargeTip(c: Ctx, tip: number | { pesos: number }) {
   c.say((typeof tip === "number" ? tip : tip.pesos) > 0 ? "tip_thanks" : "tip_none_ok");
   if (typeof tip === "number" && tip < 10) c.tip(TIPS.tipping);
 }
-/** n % of the check, in whole pesos (said as "como $35"). */
-const tipAmount = (c: Ctx, n: number) => Math.max(100, Math.round((total(c) * n) / 10000) * 100);
+/** n % of the check, said as "como $35": whole pesos up to $200, then the nearest $5 (the amount list). */
+const tipAmount = (c: Ctx, n: number) => {
+  const p = Math.max(1, Math.round((total(c) * n) / 10000));
+  return (p <= 200 ? p : Math.round(p / 5) * 5) * 100;
+};
 
 function partyOf(v: any): number | undefined {
   if (!v) return undefined;
@@ -2894,6 +3013,26 @@ function requestLine(req: string): string {
   return req === "tortillas" ? "tortillas_ok" : req === "water" ? "water_ok" : "request_ok";
 }
 
+/** "¿Aceptan tarjeta?" ("¡Sí, claro!"), "No traigo efectivo" ("No hay problema") while ordering or eating: answered, and
+ *  a way said plainly is kept for the check, nothing more: the check comes only when it is asked for, and the dessert
+ *  is still offered (the brief). */
+function payTalk(c: Ctx, method: "card" | "cash"): boolean {
+  if (c.s.payMethod || c.s.checkBrought || c.s.checkAsked || mealOver(c)) return false;
+  if ((c as any).__payTalk) return true; // "No traigo efectivo, ¿puedo pagar con tarjeta?": one answer
+  (c as any).__payTalk = true;
+  const question = /\?/.test(c.heard) || /^\W*(acepta|aceptan|reciben|toman|puedo|podemos|se puede)\b/.test(fold(c.heard));
+  c.say(question ? "have_yes" : "no_problem");
+  if (!question) c.s.wantPay = method;
+  return true;
+}
+
+/** "No, gracias" / "Es todo" at "¿Se le ofrece algo más?": the waiter never brings the check unasked (the brief), so
+ *  first "Cuando quiera la cuenta, nada más me dice"; a second no brings it. */
+function noMoreAtCheck(c: Ctx) {
+  if (!c.s.wheneverSaid) { c.s.wheneverSaid = true; c.s.dessertDone = true; sayP(c, "check_whenever"); c.hold(); return; }
+  c.s.checkAsked = true;
+}
+
 function choosePay(c: Ctx, method: "card" | "cash") {
   if (c.s.payMethod) {
     // "Mejor en efectivo" at the terminal, "Mejor con tarjeta" before the change: nothing is paid yet, so the other
@@ -2905,8 +3044,9 @@ function choosePay(c: Ctx, method: "card" | "cash") {
     return;
   }
   if (!c.s.checkBrought) {
-    // "¿Puedo pagar con tarjeta?" during the meal (or while the check is on its way) gets an answer; after the meal,
-    // "Ahorita se la traigo" answers it.
+    // Once the check was asked for (or after the meal: payTalk answers before), "¿Puedo pagar con tarjeta?" is the way
+    // to pay: "Claro, le traigo la terminal" while the meal or the check is on its way; after the meal "Ahorita se la
+    // traigo" answers it.
     if (!c.s.wantPay && (!mealOver(c) || c.s.checkComing)) c.say(method === "card" ? "card_ok" : "no_problem");
     c.s.wantPay = method; c.s.checkAsked = true; c.s.dessertDone = true;
     return;
