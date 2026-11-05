@@ -1,16 +1,6 @@
 # Puerto Colibrí's voices (Gemini)
 
-**Status (4 Nov 2026, 23:30):** **waiting for billing; ready to record in the morning.** The key in
-`~/english-world/.env.local` belongs to a Google project on the Gemini API's **free tier**: Google answered the first
-single requests, then refused with "generate_content_free_tier_requests, limit: 10 … per day" (429), and refused a
-one-line batch with `FAILED_PRECONDITION` (400): the free tier has no Batch API. Two clips were made (a test line and
-one sample, $0.003 at paid prices, free in fact). The owner turns on billing for **the project this key belongs to**
-in the morning (Google AI Studio → the key's project → set up billing / the prepaid balance on that project); then
-the run-book below goes step by step. Until then no request goes to Google. Ready: the casting, the line list with
-the cuts (76,792 clips for both sets, from 107,082), the Batch API request files for both sets, the two sample sets,
-the run-book. The owner's decisions (4 Nov): **two accent sets** (Mexican and neutral Latin American, one Settings
-switch for text and voice, wired), **all bulk work through the Batch API**, about $20–25 expected, **stop line $38**
-(the balance), the Mexican set first if the samples project more.
+**Status (5 Nov 2026, 09:45):** **recording on a paid key.** The owner saved a new key on 5 Nov at 08:16; its project accepted a one-line batch at 08:19 (last night's free-tier key got a 400 `FAILED_PRECONDITION`), so billing and the Batch API are on. The samples are done (below) and chose the casting: **the catalog's native Mexican voices** (`DEFAULT_CASTING = "mexico"`). The projection from their real tokens: **85,508 clips for both sets (all 50 conversations), about $29.82 with 5% for redos, $31.34 with what the samples cost**, under the $38 stop. The full sets go to the Batch API once every spoken line is frozen (the five open calls and the 5 Nov dialogue audit land first); a line changed after that is re-voiced inside the $38. Last night's state, for the record: the free tier answered 10 requests a day and had no Batch API, so nothing was recorded then.
 
 The owner's brief (4 Nov 2026, evening): every character of the Spanish edition gets a voice of their own, made with
 Gemini TTS the way Maple Harbor's English voices were (docs/VOICING-PLAN.md), adjusted to each setting: a voice and a
@@ -293,15 +283,31 @@ with the later conversations, or the Mexican set goes first and the neutral set 
 
 ## Samples
 
-Not made yet (the free tier stopped the first round after one clip); both sets are written out with `--dry`:
-`~/puerto-colibri-voicing/samples/p1/plan.json` (Gemini's prebuilt voices) and `m1/plan.json` (the catalog's
-Mexican voices), 243 clips each (two lines per character, the two coaches on the same example answers, and the words a
-voice could read its own way: digits, a peso sign, latte, Wi-Fi, NetWave, ahorita, ¿mande?, pásele, chamba,
-jitomate, pilón, CURP…), in both accents, about $0.22 each at the single-request price. Then the checks: Whisper in
-Spanish and the length screen (`check-samples`), and the listener (`judge`), which is not told the accent asked for and
-says which it hears (Mexican, neutral Latin American, Spain, other) and whether the speaker sounds native. Keep the
-casting whose Mexican set is heard as Mexican and native and whose neutral set as neutral; adjust the accent
-directions (casting-es.ts `ACCENTS`) and voices that sound foreign, and sample again those that missed.
+Made 5 Nov 2026 (08:22–09:20), two lines per character plus the coaches on the same example answers and the words a voice
+could read its own way, in both accents, in both castings: `p1` (Gemini's prebuilt voices) and `m1` (the catalog's
+Mexican voices), 243 clips each, and `p1b` / `m1b` for the 11 characters of the later conversations, 44 each. All 574
+clips came back.
+
+| | prebuilt, Mexican | prebuilt, neutral | catalog, Mexican | catalog, neutral |
+|---|---:|---:|---:|---:|
+| the listener heard Mexican / neutral / Spain | 85 / 16 / 21 | 73 / 21 / 27 | 86 / 12 / 24 | 86 / 11 / 24 |
+| native | 122/122 | 121/121 | 122/122 | 121/121 |
+| the words as written | 119/122 | 121/121 | 120/122 | 121/121 |
+| naturalness (1–5) | 4.96 | 4.96 | 4.93 | 4.98 |
+
+- **The "Spain" calls are the listener's, not the voices':** a second, feature-by-feature question (each c/z word: [s] or
+  [θ]; apical or Latin American s; the j) on 14 clips first called Spain and 14 called Mexican: the same model (Gemini
+  3.8 Flash) took back 10 of the 14 and still heard a θ in 4 words, two of them from the catalog's native Mexican
+  voices; Gemini 3.1 Pro heard no θ in any of the 16 c/z words, no apical s, and Latin America for all 28.
+  `~/puerto-colibri-voicing/samples/accent-probe-*.json`.
+- **Whisper** (Spanish, the length screen): the 88 clips of the later characters, 0 flagged.
+- **The casting:** both castings sound native and Latin American, and the neutral direction moves neither far from
+  Mexican (neutral dubbing Spanish is close to it anyway). The catalog's voices are native Mexican speakers of stated
+  ages, and Google advises a regional voice over describing an accent, so the catalog casting is the default now;
+  each character keeps one voice in both sets.
+- **The projection** (`project m1 m1b`): audio tokens ≈ 23.3 + 3.98 × syllables + 6.5 × pauses (±20), so 3.13M audio
+  tokens for the Mexican set and 3.12M for the neutral one: about $14.90 and $14.92 in batch with 5% for redos. (The
+  prebuilt casting: $29.42 for both.)
 
 ## The run-book (the morning, after billing is on)
 
