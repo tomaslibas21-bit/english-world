@@ -157,6 +157,7 @@
         "person:cast/linda"
       ],
       "prompt": "Change only her pose: Lorena holds a pencil over the open appointment book, rubbing out an entry with the pencil's eraser to move the learner's appointment, an obliging look. The book's grid shows no readable writing.",
+      "note": "5 Nov audit: remade (nearly the same as slot) as an edit of greet (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s76-dentist-call/reschedule.webp"
     },
     {

@@ -24,6 +24,7 @@
       "phases": ["thermostat"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose and expression: his hand stays on the suitcase handle, and he holds up his other hand at chest height as if aiming a small remote control, pressing an imaginary button with his thumb (the hand is empty), one eyebrow raised over his glasses, skeptical (\"Mmm. ¿Ya revisó el control? ¿Está en frío?\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/remote.webp"
     },
     {
@@ -55,6 +56,7 @@
       "phases": ["dodge"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose and expression: he lets go of the suitcase and shrugs, shoulders up and both hands raised at his sides with the palms turned up, eyebrows raised, with an innocent, helpless half-smile (\"Mire, el aparato ya está viejito. Son cosas que pasan. ¿Y qué quiere que haga?\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/dodge.webp"
     },
     {
@@ -65,6 +67,7 @@
       "phases": ["offer"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose and expression: his hand stays on the suitcase handle, and he holds out his other hand toward the viewer for a handshake, fingers together and thumb up, leaning in a little with a hopeful, cheeky grin, as if sealing a bargain (\"Arréglelo usted, y yo le pago la mitad. ¿Trato hecho?\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/offer.webp"
     },
     {
@@ -75,6 +78,7 @@
       "phases": ["date"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose: he holds his phone in one hand at chest height, its back toward the viewer (a plain dark case, no logo), and looks down at it over his glasses, scrolling with his thumb, while the index finger of his other hand is raised (one moment, let me see when the repairman can come: \"¿Qué tal el miércoles de la próxima semana?\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/date.webp"
     },
     {
@@ -85,6 +89,7 @@
       "phases": ["home"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose: his hand stays on the suitcase handle, and he points up with the index finger of his other hand, toward the learner's apartment on the floor above, eyebrows raised in a friendly question (\"¿Va a estar en casa?\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/home.webp"
     },
     {
@@ -95,6 +100,7 @@
       "phases": ["wrap"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose and expression: he grips the suitcase handle and glances down at a plain wristwatch on his other wrist, raised in front of him (a blank face, no numbers), eyebrows raised, in a hurry (\"¿Algo más? De veras ya me tengo que ir.\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/hurry.webp"
     },
     {
@@ -105,6 +111,7 @@
       "phases": ["rent"],
       "refs": ["edit:p29-landlord/hello", "person:cast/patel"],
       "prompt": "Change only his pose and expression: his hand stays on the suitcase handle, and he holds out his other hand toward the viewer at waist height, palm up and open, with a sly, cheeky grin and raised eyebrows (\"Ah, y ya que está aquí: ¿la renta de este mes?\").",
+      "note": "5 Nov audit: remade (his straw hat had vanished (he wears it in hello, rita and bye)) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p29-landlord/rent.webp"
     },
     {

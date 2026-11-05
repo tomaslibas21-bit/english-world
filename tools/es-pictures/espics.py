@@ -33,9 +33,10 @@ HERE = Path(__file__).resolve().parent
 MANIFESTS = HERE / "manifests"
 PARTS_FILE = HERE / "prompt-parts.json"
 
-# Big files and the ledger live outside the repository (the session's scratch folder unless told otherwise).
-WORK = Path(os.environ.get("ES_PICTURES_DIR",
-            "/private/tmp/claude-501/-Users-gabrieledirmontaite/b3b443be-6044-459a-94fe-bcc6886dd88c/scratchpad/pictures"))
+# Big files and the ledger live outside the repository: ~/puerto-colibri-pictures unless told otherwise (since the
+# 5 Nov 2026 audit; the pictures were first made in the session's scratch folder, whose copy is older: one ledger only,
+# so the $75 stop counts everything).
+WORK = Path(os.environ.get("ES_PICTURES_DIR", str(Path.home() / "puerto-colibri-pictures")))
 LEDGER = Path(os.environ.get("ES_PICTURES_LEDGER", str(WORK / "ledger.jsonl")))
 ORIGINALS = WORK / "originals"
 FILES_CACHE = WORK / "uploaded-files.json"   # sha256 of a reference picture → OpenAI file id (for batches)

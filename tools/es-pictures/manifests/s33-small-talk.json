@@ -60,9 +60,10 @@
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
       "moment": "weekend_plans",
-      "phases": ["weekend_plans", "wkp_what"],
+      "phases": ["react"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: with a proud grin he mimes painting with a brush in one hand, short strokes in the air (this weekend he is painting his old lancha).",
+      "note": "5 Nov audit: shown with react, his own plans («Ah, voy a pintar mi lancha»); the question about the learner's plans shows react (the two were one step off).",
       "out": "public/scenes-es/s33-small-talk/plans.webp"
     },
     {
@@ -90,9 +91,10 @@
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
       "moment": "react",
-      "phases": ["react"],
+      "phases": ["weekend_plans", "wkp_what"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: he leans in a little, eyebrows raised, listening with delighted interest and waiting for the learner's reaction.",
+      "note": "5 Nov audit: shown while he asks about the learner's plans (leaning in, listening); his painting mime moved to react.",
       "out": "public/scenes-es/s33-small-talk/react.webp"
     },
     {

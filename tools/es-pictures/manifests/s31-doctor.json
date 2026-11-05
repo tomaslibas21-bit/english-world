@@ -132,7 +132,7 @@
       ],
       "prompt": "Change only her pose: she leans slightly forward over the desk and raises her right hand with the first two fingers extended toward the viewer, as if gently pointing at the learner's neck, with a careful, questioning look (\"¿Le duele aquí?\"). Keep the camera exactly as in the original: the same distance, the desk, the blood-pressure cuff and the room unchanged. Nothing of the learner is in the picture.",
       "out": "public/scenes-es/s31-doctor/hurt.webp",
-      "note": "Redone 5 Nov 2026: the first version moved the camera closer, with an oversized hand and something of the learner at the bottom edge."
+      "note": "Redone 5 Nov 2026: the first version moved the camera closer, with an oversized hand and something of the learner at the bottom edge. 5 Nov audit: remade (her raised hand made a V sign for «¿Le duele aquí?») as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt."
     },
     {
       "id": "s31-doctor/allergy",
@@ -148,6 +148,7 @@
         "person:cast/carter"
       ],
       "prompt": "Change only her pose: she sits back at the desk with a pen poised over a small blank prescription pad, looking up at the learner with a serious, attentive face, eyebrows raised (asking whether the learner is allergic to any medicine).",
+      "note": "5 Nov audit: remade (nearly the same as listen) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s31-doctor/allergy.webp"
     },
     {
@@ -198,6 +199,7 @@
         "person:cast/carter"
       ],
       "prompt": "Change only her pose: she sits at the desk and holds out a small black card terminal toward the learner, its screen blank, a friendly smile (the visit is paid at the end: card, cash or a transfer); a folded blank receipt lies on the desk beside her hand.",
+      "note": "5 Nov audit: remade (the camera had moved in (a jump between rx, pay and bye)) as an edit of rx (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s31-doctor/pay.webp"
     },
     {

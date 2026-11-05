@@ -73,6 +73,7 @@
       "phases": ["closing"],
       "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
       "prompt": "Change only his pose and expression: Ingeniero Montes, phone still at his ear, gives a small, reassured nod and a polite smile, about to hang up, the folder tucked under his arm (\"Bueno, nos vemos en un rato. ¡Y maneje con cuidado!\").",
+      "note": "5 Nov audit: remade (nearly the same as hello) as an edit of hello (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s90-running-late/bye.webp"
     }
   ]

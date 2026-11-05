@@ -73,6 +73,7 @@
       "phases": ["resolve"],
       "refs": ["edit:p27-meeting/pitch", "person:cast/vanessa"],
       "prompt": "Change only Vanessa's pose: she holds up two fingers of one hand (two more weeks for the old site) and holds the other hand out toward the learner, palm up, eyebrows raised, with a bargaining half-smile (\"Te propongo algo intermedio… ¿Trato hecho?\").",
+      "note": "5 Nov audit: remade (two raised fingers while the picture also stays for «Tres semanas») as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/p27-meeting/deal.webp"
     },
     {

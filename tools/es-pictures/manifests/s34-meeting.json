@@ -24,6 +24,7 @@
       "phases": ["notes"],
       "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
       "prompt": "Change only Sofía's pose: she leans over the table and slides a blank notepad and a pen toward the learner, eyebrows raised in a friendly request (\"Ah, ¿y tú puedes tomar notas hoy?\"). Sara on the screen listens with a smile.",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/notes.webp"
     },
     {
@@ -31,6 +32,7 @@
       "phases": ["update", "what_task", "when_q", "send_q", "help_offer", "add", "add_what"],
       "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
       "prompt": "Change only these: Sofía holds a tablet with a blank screen against her forearm and looks at the learner with an attentive, encouraging smile, waiting for their update (\"Gracias, Pablo. ¿Y tú? ¿Cómo vas?\"); Pablo listens with his chin on his hand; Sara on the screen listens with a smile.",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/update.webp"
     },
     {
@@ -38,6 +40,7 @@
       "phases": ["clarify", "makes_sense"],
       "refs": ["edit:s34-meeting/mute", "person:cast/paul"],
       "prompt": "Change only these: Pablo leans forward and explains with enthusiasm, both hands shaping something in the air above his laptop (\"La beta ya está arriba, pero el go-live se puede recorrer una semana\"); Sofía watches him with a patient smile; Sara on the screen listens.",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/clarify.webp"
     },
     {
@@ -45,6 +48,7 @@
       "phases": ["opinion"],
       "refs": ["edit:s34-meeting/mute", "person:cast/paul"],
       "prompt": "Change only these: Pablo sits back with a confident grin and spreads both hands wide over the table, as if putting everything into one big idea (\"Yo pienso que hay que meter todo en…\": all $80,000 into social media ads, or into one big launch party); Sofía looks at the learner, eyebrows raised (\"Mmm. ¿Tú qué opinas?\"); Sara on the screen listens.",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/opinion.webp"
     },
     {
@@ -52,6 +56,7 @@
       "phases": ["why", "talk_after"],
       "refs": ["edit:s34-meeting/mute", "person:cast/paul"],
       "prompt": "Change only Pablo's pose: he folds his arms and tilts his head, looking at the learner with a curious, slightly challenged smile (\"¿Ah, sí? ¿Por qué no?\"). Sofía and Sara listen.",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/why.webp"
     },
     {
@@ -59,6 +64,7 @@
       "phases": ["dl_view", "dl_who"],
       "refs": ["edit:s34-meeting/mute", "person:cast/paul", "person:cast/sara", "person:cast/kate"],
       "prompt": "Change only these: Pablo shakes his head with one hand raised, palm out (\"Mmm, el viernes es muy pronto\"); on the wall screen, Sara frowns slightly and holds up one finger to object (\"No sé si estoy de acuerdo\"); Sofía, at the head of the table, looks from them to the learner, eyebrows raised (\"¿Tú qué opinas?\").",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/deadline.webp"
     },
     {
@@ -66,6 +72,7 @@
       "phases": ["owner"],
       "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
       "prompt": "Change only Sofía's pose: she holds up a closed blank folder and looks around the table, eyebrows raised, waiting for a volunteer (\"¿Quién se encarga?\"). Pablo and Sara look at the learner.",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/owner.webp"
     },
     {
@@ -73,6 +80,7 @@
       "phases": ["aob", "aob_more", "aob_what"],
       "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
       "prompt": "Change only Sofía's pose: she rests one hand on the lid of her laptop on the table, half closing it, and looks around with a relaxed, wrapping-up smile (\"Bueno, vamos cerrando. ¿Algún otro asunto?\").",
+      "note": "5 Nov audit: remade (the muted-microphone icon was back on Sara's video after she was heard) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/aob.webp"
     },
     {
@@ -87,6 +95,7 @@
       "phases": ["summary"],
       "refs": ["edit:s34-meeting/mute", "person:cast/kate"],
       "prompt": "Change only these: Pablo's chair is empty and pushed back; Sofía, her laptop closed under one arm, turns back to the learner and holds up her phone (its screen dark), tapping it with one finger, a friendly asking look (\"Ah, ¿y le puedes mandar a todos un resumen rápido?\"). The wall screen shows a plain dark-blue screen.",
+      "note": "5 Nov audit: remade (Sara was still on the wall screen after the call had ended) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s34-meeting/summary.webp"
     }
   ]

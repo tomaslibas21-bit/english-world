@@ -114,6 +114,7 @@
         "person:cast/okafor"
       ],
       "prompt": "Change only his pose: Don Héctor stands half turned toward the shelves, pointing with one hand at an empty gap on the shelf behind him, and holds up a plain white box with a thin gray stripe and no writing in the other hand, an apologetic smile (the brand-name one is out; the generic is the same).",
+      "note": "5 Nov audit: remade (no empty gap on the shelf for the brand-name medicine) as an edit of its own picture (Batch API); the audit manifest in the work folder's audit/ holds the prompt.",
       "out": "public/scenes-es/s75-pharmacy/outbrand.webp"
     },
     {
