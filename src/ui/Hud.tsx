@@ -58,7 +58,7 @@ export function Hud() {
       )}
       {helpOpen && !hud.showTouch && (
         <div className="help-strip">
-          Vaikščiok <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · bėgti <kbd>Shift</kbd><br />
+          Vaikščiok <kbd><Icon name="arrowUp" size="1em" strokeWidth={2.25} label="aukštyn" /></kbd><kbd><Icon name="arrowDown" size="1em" strokeWidth={2.25} label="žemyn" /></kbd><kbd><Icon name="arrowLeft" size="1em" strokeWidth={2.25} label="kairėn" /></kbd><kbd><Icon name="arrowRight" size="1em" strokeWidth={2.25} label="dešinėn" /></kbd> arba <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · bėgti <kbd>Shift</kbd> · pašokti <kbd>Tarpas</kbd><br />
           Spustelėk žemę – nueisi ten · tempk pele – apsidairyk · <kbd>E</kbd> – kalbėtis / įeiti<br />
           <kbd>G</kbd> – nueiti iki užduoties · <kbd>M</kbd> žemėlapis · <kbd>J</kbd> užduotys · <kbd>P</kbd> telefonas
           <button onClick={() => { setHelpOpen(false); try { localStorage.setItem("ew-help-closed", "1"); } catch { /* ignore */ } }}>Supratau <Icon name="close" size={15} strokeWidth={2.25} /></button>
@@ -199,6 +199,8 @@ function TouchControls() {
     const el = ref.current!;
     let id: number | null = null;
     const R = 60;
+    // pushed to the edge: a run (the ring shows it; the game's own thresholds, Game.updatePlayer)
+    let run = false;
     const move = (e: PointerEvent) => {
       if (e.pointerId !== id) return;
       const r = el.getBoundingClientRect();
@@ -206,9 +208,11 @@ function TouchControls() {
       const d = Math.hypot(dx, dy);
       if (d > R) { dx *= R / d; dy *= R / d; }
       knob.current!.style.transform = `translate(${dx}px, ${dy}px)`;
+      run = d / R > 0.9 || (run && d / R > 0.8);
+      el.classList.toggle("run", run);
       game?.setJoystick(dx / R, -dy / R);
     };
-    const up = (e: PointerEvent) => { if (e.pointerId !== id) return; id = null; knob.current!.style.transform = ""; game?.setJoystick(0, 0); };
+    const up = (e: PointerEvent) => { if (e.pointerId !== id) return; id = null; knob.current!.style.transform = ""; run = false; el.classList.remove("run"); game?.setJoystick(0, 0); };
     const down = (e: PointerEvent) => { id = e.pointerId; el.setPointerCapture(e.pointerId); move(e); };
     el.addEventListener("pointerdown", down); el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
     return () => { el.removeEventListener("pointerdown", down); el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
@@ -216,7 +220,9 @@ function TouchControls() {
   return (
     <>
       <div className="joy" ref={ref}><div className="knob" ref={knob} /></div>
-      {prompt && <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : "Įeiti"}</button>}
+      {prompt
+        ? <button className="act-btn" onClick={() => game?.interact()}>{prompt.kind === "talk" ? "Kalbėti" : prompt.kind === "exit" ? "Išeiti" : "Įeiti"}</button>
+        : <button className="jump-btn" aria-label="Pašokti" title="Pašokti" onPointerDown={(e) => { e.preventDefault(); game?.jump(); }}><Icon name="chevronUp" size={34} strokeWidth={2.5} /></button>}
     </>
   );
 }

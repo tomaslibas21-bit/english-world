@@ -216,7 +216,16 @@ export class Character {
   moveSpeed = 0;
   /** Leaning sideways into a turn (radians, + to the left). */
   bank = 0;
+  /** A hop (Game: movement.ts Hop): how high the body is drawn off the ground (m; the character stays on the ground for
+   *  everything else, its shadow too), how far the legs tuck up (0–1), and the landing's squash (0–1; a little stretch
+   *  below 0). */
+  lift = 0;
+  tuck = 0;
+  squash = 0;
+  private hopShown = false;
   private walkPhase = 0;
+  /** Where the legs are in their swing (radians, growing as they walk): a foot comes down at every π/2 + kπ. */
+  get stepPhase() { return this.walkPhase; }
   private blob: THREE.Mesh;
   seated = false;
   /** Height of the seat top when sitting (chairs and benches in the town are about half a metre). */
@@ -835,6 +844,23 @@ export class Character {
       this.shinR.rotation.x = kneeR + Math.max(0, hip) * 4;
       this.body.position.set(0, bob, 0);
       if (this.skirt) this.skirt.scale.y = 1;
+    }
+    // a hop: the body up (the shadow stays on the ground, smaller), the legs tucked, the arms out, a squash on landing
+    if (this.lift > 0 || this.tuck > 0 || this.squash !== 0 || this.hopShown) {
+      const k = this.tuck;
+      if (!seated) {
+        this.body.position.y += this.lift;
+        this.legL.rotation.x += (-0.55 - this.legL.rotation.x) * k;
+        this.legR.rotation.x += (-0.35 - this.legR.rotation.x) * k;
+        this.shinL.rotation.x += (1.1 - this.shinL.rotation.x) * k;
+        this.shinR.rotation.x += (0.8 - this.shinR.rotation.x) * k;
+        lx += (-0.5 - lx) * k; rx += (-0.5 - rx) * k;
+        lz -= 0.55 * k; rz += 0.55 * k;
+      }
+      const q = this.squash * 0.2;
+      this.body.scale.set(1 + q * 0.5, 1 - q, 1 + q * 0.5);
+      this.blob.scale.setScalar(0.95 * b * (1 - 0.45 * Math.min(1, this.lift / 0.6)));
+      this.hopShown = this.lift > 0 || this.tuck > 0 || this.squash !== 0;
     }
     this.armL.rotation.set(lx, 0, lz);
     this.armR.rotation.set(rx, 0, rz);

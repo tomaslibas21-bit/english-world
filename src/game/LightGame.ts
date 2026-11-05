@@ -104,6 +104,7 @@ export class LightGame implements GameApi {
 
   interact() { /* no world to interact with */ }
   setJoystick(_x: number, _y: number) { /* no walking */ }
+  jump() { /* no walking */ }
   setQuality(_q: "high" | "low") { /* nothing is rendered in 3D */ }
   /** "Nuvesk mane" (the journal): there is nowhere to walk, so the task's conversation starts. */
   autoWalkToObjective() {

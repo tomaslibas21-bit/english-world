@@ -592,6 +592,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .joy .knob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: rgba(255,255,255,0.9); box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
 .prompt.touch { left: auto; right: 16px; bottom: 132px; transform: none; font-size: 0.95em; padding: 8px 14px; max-width: calc(100vw - 190px); }
 .prompt.touch kbd { display: none; }
+.joy.run { border-color: rgba(255, 214, 102, 0.95); background: rgba(255, 214, 102, 0.22); }
+.jump-btn { position: fixed; right: 26px; bottom: 34px; width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); color: #fff; z-index: 12; touch-action: none; display: grid; place-items: center; padding: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
+.jump-btn:active { background: rgba(255,255,255,0.55); }
 .act-btn { position: fixed; right: 22px; bottom: 26px; width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 0.95em; z-index: 12; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
 
 @media (max-width: 900px) {

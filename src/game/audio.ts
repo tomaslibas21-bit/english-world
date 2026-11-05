@@ -348,6 +348,29 @@ export class AudioSystem {
     src.start(now); src.stop(now + 0.12);
   }
 
+  /** A hop's landing: both feet at once, a soft low thud (`strength` 0–1). */
+  land(indoor: boolean, strength = 1) {
+    const ctx = this.ac();
+    if (!ctx || this.volume <= 0) return;
+    const now = ctx.currentTime;
+    for (const [at, lift] of [[0, 1], [0.035, 0.7]] as const) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBurst(ctx);
+      src.playbackRate.value = 0.7 + Math.random() * 0.15;
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.value = (indoor ? 420 : 700) * (0.9 + Math.random() * 0.2);
+      f.Q.value = 0.9;
+      const g = ctx.createGain();
+      const v = this.volume * (indoor ? 0.12 : 0.1) * (0.6 + 0.4 * strength) * lift;
+      g.gain.setValueAtTime(0, now + at);
+      g.gain.linearRampToValueAtTime(v, now + at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.13);
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(now + at); src.stop(now + at + 0.16);
+    }
+  }
+
   sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
     const ctx = this.ac();
     if (!ctx) return;
