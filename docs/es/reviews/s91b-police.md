@@ -92,3 +92,83 @@ answer with "creo" in it can get the engine's sound check "Perdón, ¿correo?" (
 
 **Gate after:** tsc clean; check-content 157/157 NLU, 18 sims 12/12, fuzz 80, 0/0; corpus 361/361, 0/28; held-out 43/43,
 0/2; lead's set 24/24, 0/6; vitest 288/288.
+
+## Audit (5 Nov 2026)
+
+Fresh reviewer, both texts (Mexican and neutral). Read: STYLE.md, AUTHORING-ES.md's rules, the brief, the review above,
+the cross file and the neutral digest (AUDIT/cross, AUDIT/neutral), TOWN.md ("Getting around"), s91a as landed (8b8571ab)
+and the English original on main. Transcripts read in full at seeds 3 and 7, the neutral text through the same sims
+(compose's variety set to neutral), about 60 whole conversations played with tools/probe.ts, and the Spanish offer
+probe in both texts (1 REAL before, 0 after).
+
+**Found 28, fixed 28** (by point: 1: 2 · 2: 0 · 3: 0 · 4: 2 · 5: 0 · 6: 0 · 7: 20 · 8: 1 · 9: 0 · 10: 3).
+
+1. **Natural Spanish.** "¿Lo traía en una cartera, una bolsa o una mochila?" (asked when the learner names what was
+   inside first) said "lo" for every thing: "Me robaron mis tarjetas" → "¿Lo traía…?". Now it agrees: "¿Y lo / la traía…?"
+   (ask_what_in), "¿Y los / las traía…?" (ask_what_in_pl, `{lo@X:pl}`) and "¿Y todo eso lo traía…?" for several
+   (ask_what_in_all). "Quiero hacer un reporte" got "Lo siento mucho. Claro. ¿Qué perdió…?": the sympathy now waits until
+   something bad is said (once).
+2. tú/usted: usted throughout, in the lines, hints and tips. Nothing found.
+3. Names: Oficial Reyes only; the finder is "una señora". Nothing found.
+4. **Facts.** The intro and the header put the station "across from the zócalo next to the museum" (s62's old map): it is
+   on the zócalo next to the church (TOWN.md; s91a's "al otro lado de la plaza, junto a la iglesia"). **Mexican
+   procedure:** after a loss, "¿Esto es una denuncia? / ¿Necesito una denuncia para el seguro?" sent the learner to file a
+   denuncia at the Ministerio Público; a loss has no denuncia. Now (q_denuncia_lost): "Por una pérdida no hay denuncia.
+   Si le piden algo más, es la constancia de extravío del Ministerio Público." Checked and kept: "levantar un reporte /
+   una denuncia", the police report with a folio, the denuncia at the Ministerio Público (free, with an official ID:
+   "Ni el reporte ni la denuncia cuestan nada", "Una identificación y el número de folio del reporte"), "¿Trae alguna
+   identificación?", the consulate for a passport, the bank for cards, "si aparece, le avisamos".
+5. Glosses and English: the new lines' glosses and flags checked against their units (check-content); nothing else found.
+6. Spelling, accents, ¿¡: nothing found (the cross file's dictionary pass agrees).
+7. **Questions and answers** (20):
+   - the offer probe's REAL: "Falta algo." / "Sí, falta algo." at the check weren't understood. Now "¿Qué le falta?"
+     (missing_what) and a bare thing answers it ("El dinero.", "Los trescientos pesos.", missing_what_ctx); a bare thing
+     said first gets "Perdón, ¿falta algo o está todo?"; a bare "No." asks "¿Qué le falta?" instead of filing it blind;
+     "Nada." is all there; "No sé" after "¿Qué le falta?" goes on the report as missing;
+   - no number to call ("No tengo teléfono / número mexicano" → "Usted nos puede llamar, o venir a preguntar") was
+     followed by "Si aparece, le avisamos / le llamamos": now "Si aparece, aquí se la / lo guardamos." (will_keep), also
+     for "¿Qué hago ahora?" and "¿Me van a llamar?";
+   - "¿Qué hago ahora?" after the wallet came back without the money said "Si alguien la entrega, le llamamos" (it had
+     been turned in): now "Si sabemos algo, le avisamos"; after it came back complete, "No hace falta: usted ya tiene su
+     cartera" (also for the folio, as no report was written);
+   - "No sé" at "¿Qué le robaron?", "¿Ya llamó a su banco?" and "¿Trae alguna otra identificación?" got "No se preocupe."
+     and silence: now the question again ("¿Y qué era? ¿Una cartera, una bolsa…?"), the bank advice, "Claro, no se
+     preocupe" (no ID);
+   - "¿Hay cámaras en el mercado?" was read as a camera in the wallet + the market ("De acuerdo."): now "Vamos a revisar
+     si hay cámaras en la zona.";
+   - not understood before, answered now: the folio again ("¿Cuál es el número de folio?", "¿Me repite el número?";
+     mid-report "Al terminar, le doy su número de folio."), "¿Habla inglés?" ("Solo un poquito. Pero no se preocupe, le
+     hablo despacio."), "¿Dónde la encontraron? / ¿Quién la trajo?" ("Una señora. Dice que la encontró en la calle.", the
+     question stays open), "No quiero ir al Ministerio Público / ¿Es obligatorio?" ("No es obligatorio. Pero si su seguro
+     se la pide, sí la va a necesitar."), the constancia de extravío (a loss: "La constancia de extravío se pide en el
+     Ministerio Público. Está aquí cerca."; a theft: "Por un robo, lo que necesita es la denuncia del Ministerio
+     Público."), "¿Necesito ir al Ministerio Público?", "¿Me van a llamar?", "¿Cuánto tarda el reporte?" ("Unos minutos,
+     nada más."), "¿A qué número les llamo?" ("Le anoto el teléfono de aquí."), "¿Tengo que regresar? / ¿Cuándo vuelvo?",
+     "¿Ya me puedo ir?".
+8. **Hints:** the describe hints were not s91a's (a red wallet; the black leather one second, untwinned). They are now
+   s91a's, word for word: "Es una cartera negra de piel." (neutral "Es una billetera negra de piel."), "Es café y
+   chiquita.", "Es negra y tiene una foto de mis hijos." (the black leather wallet of the found/handback pictures; the
+   photo is a describe feature now). Contents hints already match s91a's (cards, license, about $500).
+9. Tests: corpus +49 (389 → 438 items; understood 361 → 408/408; traps (items with `not`) 87 → 119; none/any 0/30);
+   the two "No … ir al Ministerio Público" items are now mp_optional. Held-out +13 written blind before the fixes (44/56
+   before, 56/56 after; one blind item's intent id corrected to ["missing_what", "missing_some"]). NLU tests 157 → 181,
+   sims 18 → 29 (each new line's every pronoun form is reached by a sim: lo/la/los/las, la/lo for the items).
+10. **Neutral text.** "folio" (Mexican, the lead's decision) had no twin: case_number ("Su número de reporte es el 4471.",
+    say and write too), mp_send2, mp_bring_ans, and the new folio_later now have one. "cartera" in what_again,
+    ask_what_in and the describe hint: twins with "billetera" (as s64b, s91a). The entity lines (describe_echo, found,
+    closing…) say the wallet through the entity: `attrs.neutral` "billetera" on wallet and wallet_in, "licencia de
+    conducir" on the license (Mexican "licencia de manejo", as s71a's twin; merge registered): these need the shared
+    target.ts fix (FOLLOWUPS s32) before the neutral set is voiced. "bolsa" kept, as s91a.
+
+**Voices** (one speaker, Oficial Reyes): changed ask_what_in (now "¿Y {lo@X} traía…"); new ask_what_in_pl, ask_what_in_all,
+folio_later, no_report_needed ({X}: the 4 items), will_keep ({lo@X}: lo/la), found_who ({lo@X}), missing_what,
+english_ans, report_quick, cams_ans, our_number, q_denuncia_lost, constancia_ans, constancia_robo, mp_optional_ans; new
+neutral twins on what_again, ask_what_in(_pl, _all), case_number, folio_later, mp_send2, mp_bring_ans; hints: the three
+describe hints above (+ one neutral twin), "Es café, de piel y chica." and "Es chica y roja." gone. No values added; no
+attrs.plural items (the plural contents use attrs.pl and `{lo@X:pl}`).
+
+**Left for the lead / owner:** the target.ts attrs.neutral fix (above); target.ts LETTER_SAY says Spain's names (V "uve",
+Y "ye") in both texts when the spell hint reads a surname (s76's proposal; neutral would want "ve corta"); the found and
+handback pictures always show a black wallet while the line says the learner's color; TOWN.md could note "the
+Ministerio Público: 'aquí cerca', not placed (s91b)"; the owner's open points above stand (the patrol line; the folio
+read digit by digit). EN-FIXES-LEADS: the same no-number "we'll call you" and the missing "Something's missing".

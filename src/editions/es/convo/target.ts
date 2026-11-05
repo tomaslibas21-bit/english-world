@@ -158,6 +158,12 @@ export const resolveTarget = (s: string, o: { player: "m" | "f"; speaker: "m" | 
   .replace(/\{u:([^|}]*)\|t:([^}]*)\}/g, (_m, a, b) => (o.formal ? a : b))
   .replace(/\{m:([^|}]*)\|f:([^}]*)\}/g, (_m, a, b) => (o.player === "m" ? a : b));
 
+/** How a hint example binds the item it is about (suggest.ts composeFull): an item always said in the plural
+ *  (attrs.plural: "los papadzules", "los reportes de errores", "las facturas") with two, as the conversations bind it
+ *  in their lines (s73 B(), s34/s89 taskVar(), p18 tv()), so the example agrees ("Estoy hasta el cuello con los
+ *  reportes de errores", not "con el reporte"); every other item as its bare id. */
+export const hintBinding = (e: EntityDef | undefined, id: string): string | NpBinding => (e?.attrs?.plural ? { id, qty: 2 } : id);
+
 /** {frío@X} → the form agreeing with the entity bound to X. */
 export const agreeTarget = (s: string, bind: (name: string) => { e: EntityDef; plural: boolean } | null) =>
   s.replace(PH_AGREE_TARGET, (_m, lemma: string, name: string, pl?: string) => {
