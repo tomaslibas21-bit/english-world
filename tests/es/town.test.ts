@@ -3,7 +3,7 @@
 // Runs in the vitest project "es" (vite.config.ts), where src/editions/es/ replaces the base files.
 import { describe, expect, it } from "vitest";
 import { SITUATIONS, SITUATION_BY_ID } from "../../src/content/situations";
-import { LOCATIONS } from "../../src/content/locations";
+import { LOCATIONS, NAME_MEANING, placeLtNamed } from "../../src/content/locations";
 import { NPCS } from "../../src/content/npcs";
 import { CAR, OUTDOOR_NPCS, PARKED_CARS, TRAFFIC_LANES } from "../../src/game/world/layout";
 import { THEME } from "../../src/game/world/theme";
@@ -66,5 +66,17 @@ describe("every Spanish conversation's place", () => {
       expect(rows.length, en).toBeGreaterThan(1);
       for (const r of rows.slice(1)) expect(r.includes("|"), `${en}: ${r}`).toBe(true);
     }
+  });
+});
+
+describe("the conversation header's place line", () => {
+  it("shows the whole Spanish name when its meaning covers both halves", () => {
+    expect(placeLtNamed("town-square")).toBe("The main square and its market stalls “Zócalo · Tianguis” – literally “main square · street market”");
+    expect(placeLtNamed("bus-stop")).toBe("Bus stop “Parada · Calle Ceiba” – literally “stop · Ceiba Street”");
+    expect(placeLtNamed("hotel")).toBe("The hotel “Hotel Mar Azul” – literally “Blue Sea Hotel”");
+  });
+
+  it("never puts double quotes inside double quotes", () => {
+    for (const [id, m] of Object.entries(NAME_MEANING)) expect(/[“”]/.test(m), id).toBe(false);
   });
 });

@@ -53,7 +53,7 @@ export const TOWN_LT = "Puerto Colibrí – the town's name (literally “Hummin
 /** What the Spanish names mean, word for word, where the English description doesn't already say it. */
 export const NAME_MEANING: Record<string, string> = {
   airport: "Hummingbird Harbor Airport",
-  "taxi-stand": "taxi stand (“sitio” is Mexican for it)",
+  "taxi-stand": "taxi stand (‘sitio’ is Mexican for it)",
   "bus-stop": "stop · Ceiba Street",
   "car-rental": "Hummingbird car rental",
   "gas-station": "the lighthouse gas station",
@@ -63,7 +63,7 @@ export const NAME_MEANING: Record<string, string> = {
   "sunny-cup": "the ceiba (the Maya's sacred tree)",
   threads: "threads",
   pharmacy: "the harbor pharmacy",
-  salon: "scissors (“estética” is a hair salon)",
+  salon: "scissors (‘estética’ is a hair salon)",
   bank: "the harbor bank",
   "post-office": "post office",
   "town-square": "main square · street market",
@@ -86,9 +86,12 @@ export const placeLt = (id: string) => {
   return m ? `${l.lt} – literally “${m}”` : l.lt;
 };
 
-/** The same with the Spanish name put in where the English one leaves it out, for the conversation's header. */
+/** The same with the Spanish name put in where the English one leaves it out, for the conversation's header. A
+ *  meaning with " · " covers both halves of a "Zócalo · Tianguis" name, so the header shows both halves. */
 export const placeLtNamed = (id: string) => {
   const l = LOCATIONS[id];
-  if (!l || !NAME_MEANING[id] || l.lt.includes("“")) return placeLt(id);
-  return `${l.lt} “${l.name.split(" · ")[0]}” – literally “${NAME_MEANING[id]}”`;
+  const m = NAME_MEANING[id];
+  if (!l || !m || l.lt.includes("“")) return placeLt(id);
+  const name = m.includes(" · ") ? l.name : l.name.split(" · ")[0];
+  return `${l.lt} “${name}” – literally “${m}”`;
 };
