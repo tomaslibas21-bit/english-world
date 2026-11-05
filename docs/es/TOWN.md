@@ -348,7 +348,12 @@ corrected to the town.)
 - **The arrivals hall**: Itzel's baggage desk, then customs with Agente Medina (`aduana`, a Spanish-only character on
   Officer Diaz's base) and the sniffer dog (s65b).
 - **The airport**: flight 223 to Mexico City, check-in → security → sala 4 (boarding 7:30, departure 8:10) (s64a–c).
-- **City bus route 7**: centro (zócalo), mercado, clínica, malecón / muelle, Hotel Mar Azul, the beach; $12 (s67b).
+- **City bus route 7** (s67b; since 5 Nov it follows the town): from its bay inside the bus terminal east along calle
+  Hidalgo to the clínica's door (stop 2), up calle Itzamná and west along avenida Juárez: the iglesia at the zócalo's
+  east end (3), the zócalo at calle Ceiba, with the museum across the street (4), Hotel Mar Azul at calle Flamboyán (5);
+  up Flamboyán to the mercado on avenida del Puerto (6), east along the malecón to El Muelle (7) and the beach's quiet
+  east end by the lighthouse (8, the last). $12, about every fifteen minutes, the last bus around 10 p.m.; for the
+  airport, "mejor tome un taxi".
 - **The streets' names** (on the signs since 4 Nov): **avenida Juárez** is Main Street (s62: the visitor center is on
   it), **calle Ceiba** Center Street (along the zócalo's west side; the bank is on its corner with Juárez; the bus stop
   on calle Hidalgo near it is "Parada · Calle Ceiba"), **avenida del Puerto** Harbor Road (the malecón runs along it),
