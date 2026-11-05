@@ -8,7 +8,7 @@
   { "ctx": "plan", "say": "¿Cuánto cuesta la mensualidad?", "intent": "ask_price" },
   { "ctx": "plan", "say": "¿Cuánto sale el día?", "intent": "ask_price", "not": ["choose_plan"], "note": "trap: price question, not a choice" },
   { "ctx": "plan", "say": "Quiero la mensualidad", "intent": "choose_plan", "slots": { "plan": "monthly" } },
-  { "ctx": "plan", "say": "Nomás por hoy", "intent": "choose_plan", "slots": { "plan": "day_pass" } },
+  { "ctx": "plan", "say": "Nomás por hoy", "intent": "choose_plan", "note": "the visit comes from the #day tag, not a slot (audit 5 Nov: the expectation was wrong)" },
   { "ctx": "plan", "say": "Mejor solo la visita de hoy", "intent": "choose_plan", "slots": { "plan": "day_pass" } },
   { "ctx": "plan", "say": "No quiero la mensualidad, solo hoy", "intent": ["choose_plan", "plan_no"], "not": ["yn:yes"], "note": "trap: negation then the other plan" },
   { "ctx": "plan", "say": "¿Y si me inscribo por un mes?", "intent": "any", "not": ["choose_plan"], "note": "trap: what-if" },
@@ -48,5 +48,5 @@
 
   { "ctx": "next", "say": "¿Mañana a la misma hora?", "intent": "next_same" },
   { "ctx": "next", "say": "Mañana no puedo, ¿el jueves?", "intent": ["next_day", "next_no"], "not": ["next_same"], "note": "trap: refused tomorrow" },
-  { "ctx": "next", "say": "Nos vemos el lunes", "intent": ["next_day", "see_you_ctx"], "slots": { "day": "monday" } }
+  { "ctx": "next", "say": "Nos vemos el lunes", "intent": ["next_day", "see_you_ctx"], "slots": { "weekday": "monday" }, "note": "this pattern fills weekday (audit 5 Nov: the expectation said day)" }
 ]}

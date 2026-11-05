@@ -56,3 +56,76 @@ Numbers, money, the binding choices and the open points. 29 new edge and trap se
 **Open points:** global g_bye[3] (usted only) stays under NEEDS; this file's closing uses bye_tu. Not changed: "¿Cuánto cuestan las clases?" and "¿Cuánto cuesta el candado?" stay unanswered (lock prices vague by design); a pain with no part named during an exercise still takes the knee; "No, nada" at "¿Qué te duele?" isn't understood.
 
 **Gate:** tsc clean; check-content 154/154 NLU tests, 17 sims all 12/12, fuzz 80, 0/0; corpus 291/291, 0/23 traps; heldout 38/40, 0/3 (the review's two slot-name expectations); vitest 288/288 (both editions).
+
+## Audit (5 Nov 2026)
+A fresh reviewer, both texts (N/AUDIT-BRIEF.md). Read: STYLE.md, AUTHORING-ES.md, the brief, this file, the situation
+file, the corpus and held-out sets, the cross-audit's leads (`AUDIT/cross/s35-gym.md`) and the neutral side by side
+(`AUDIT/neutral/s35-gym.md`); the transcripts at seeds 3 and 7 in full; then about 90 probe turns (tools/probe.ts) of
+what a newcomer at a gym would ask or answer at each question, and the 3D room (src/game/world/interiors.ts, `gym`).
+
+**Found and fixed (23):**
+- **1. Natural Spanish (2).** The closing "Lo hiciste muy bien hoy. ¡Toma mucha agua!" always followed a praise
+  ("¡Lo hiciste muy bien! ¿Mañana…?", "¡Excelente entrenamiento!"), often the same words two lines apart: now "¡Y toma
+  mucha agua!". After any side question the plan step asked a bare "¿Cuál quieres?", which right after the showers or
+  "Tenemos zumba, spinning y box" read as "which shower / which class?" (the cross-audit's offer probe): a re-ask now
+  names the two, "Entonces, ¿la mensualidad o la visita?" / "¿Y cuál prefieres: la mensualidad o la visita?".
+- **4. Facts (1).** lockers_info said "al fondo, a la derecha" and "ahí, a la izquierda"; asked twice, the engine says
+  the other variant, so both came out. The 3D door is at the back on the learner's right: the second is now "allá
+  atrás, a la derecha". (Hours match the sign, Lun–Sáb 6:00–22:00; $600 / $100 realistic; Mónica clashes with no one.)
+- **7. Questions and answers (19).** Meaning safety first:
+  - "¿Cuál es (la) más barata?" / "¿Qué es más barato?" **chose the visit** (parsed "¿Cuál es" as warm_any + "más
+    barata"): a new cheaper_q answers "La visita cuesta $100." + the advice, and choose_plan never chooses on it
+    ("Quiero la que es más barata" still does).
+  - Typed questions "¿La mensualidad es mejor?", "¿La visita está bien para empezar?" **chose the plan** (with a
+    stray "¡Perfecto!"): a "?" with es mejor / está bien / me conviene gets her advice; "¿Me conviene la mensualidad?",
+    "¿Es mejor la visita?" (not understood) too. By voice the statement still chooses.
+  - At "¿me prestas una identificación?": "No traigo identificación", "No la traigo", "¿Puedo usar mi pasaporte?",
+    "Solo tengo pasaporte" were not understood, and "No, se me olvidó" was **the lock** ("En la recepción venden
+    candados"): "No te preocupes, me la enseñas la próxima vez." / "¡Claro! El pasaporte sirve.", then the form.
+  - At the total: "¿Puedo pagar con tarjeta?" got "¡Perfecto!" (card_tap is now "¡Claro! Acerca tu tarjeta…"),
+    "¿Puedo pagar en efectivo?" a bare "¡Gracias!" (now "Claro, en efectivo no hay problema." first), "¿Aceptan
+    efectivo?" nothing; "¿Aceptan dólares?" (answered in the town's other conversations: only pesos, or the card),
+    "¿Puedo pagar después?" ("se paga antes de empezar"), "¿Me das un recibo?" (after paying: the receipt; before:
+    "al pagar te doy tu recibo") and "No traigo dinero" (the card is offered; said again, no money at all is the phone
+    or a transfer, never "card, then") had no answer. None of them pays.
+  - The classes: "¿Cuánto cuestan las clases?", "¿Cuánto cuesta la zumba?" (it got both plans' prices plus the
+    times), "¿A qué hora es la zumba?", "Me interesa la zumba", a bare "Zumba." after "Tenemos zumba, spinning y box"
+    (cross-audit): free with the monthly membership, not with the visit; times at the front desk. Her sessions:
+    "¿Cuánto cuesta una sesión contigo?" ("se pagan aparte; los precios están en la recepción"), "¿Cuánto cuesta la
+    primera sesión?" (free). "¿La visita es para todo el día / solo por hoy?" (all day; never "Solo por hoy", the
+    choice). "¿Dónde está la recepción?" ("Ahí, en la entrada", where the 3D desk is).
+  - The lock: "¿Necesito uno?" at "¿Trajiste candado?" was not understood; "¿Dónde compro uno?" (a hint) and
+    "¿Cuánto cuesta el candado?" got "¡Claro!": lock_borrow_ok is now "Pregunta en la recepción: ahí los venden."
+  - "Tengo mucho calor" / "Tengo sed" at "¿Cómo te sientes?" were read as "¿Tienen…?" and **dropped without a
+    word**: now tired / water ("Es normal…", "Descansa y toma agua"; at the door "¡Qué calor!" gets the water).
+  - At the machine (working): "¿Hay otra?" got "Nada, funciona bien" (now her nudge); "¿De quién es la toalla?",
+    "¿Le quito la toalla?" she checks it's free. "Nada" / "Nada, estoy bien" at "¿Qué te duele?" (the lead's open
+    point) and "¿Puedo sentarme?" at the last question are understood.
+  - At "¿Mañana a la misma hora?": "Mejor en la tarde", "Mejor más temprano", "Mañana más tarde" book tomorrow
+    ("¡Nos vemos mañana!", never "a la misma hora"); "Más tarde te aviso" is "send me a message" (a first "más tarde"
+    in when_ctx booked tomorrow and said "send me a message" in one turn; caught by a probe and removed).
+- **9. Accepted answers (1).** The held-out set's two misses were its own expectations (the review said so): "Nomás
+  por hoy" carries the visit as a tag, "Nos vemos el lunes" fills `weekday`. Corrected, with notes: 40/40.
+- **2 (tú/usted), 3 (names), 5 (glosses, English), 6 (spelling, ¿¡), 8 (hints), 10 (neutral): nothing wrong.** The
+  "Y ¿me prestas…?" / "Y ¿cuándo quieres regresar?" placement of ¿ is accepted (RAE) and stays. Every gloss checked
+  line by line; flags point at their units. The 11 twins are right and no line lacks one; the new lines use no
+  Mexican-only word. "Aquí te la regreso" stays without a twin, as "me lo regresa" does in s82.
+
+**Probe set (one new held-out item had collided):** "Mejor solo la visita de hoy" matched the first "la visita es por
+hoy" pattern (the engine forgives a missing "es" and por/de); the pattern now needs "solo" right after the verb.
+
+**New lines (13 clips per accent) and changed lines (4):** plan_reask ×2, classes_free, class_times, trainer_price,
+reception_where, id_later, passport_ok, pesos_only, pay_first, receipt_here, receipt_later; card_tap, lockers_info[1],
+lock_borrow_ok, closing[1].
+
+**Tests:** 21 NLU tests and 2 sims (a newcomer's questions; no ID, no money, the lock, nothing hurts); corpus +60
+sentences and +6 traps.
+**Gate:** tsc clean; check-content 175/175 NLU tests, 19 sims all 12/12, fuzz 80, 0 errors / 0 warnings; corpus
+351/351 (was 291/291), 0/29 traps accepted; held-out 40/40 (was 38/40), 0/3; vitest es 107/107.
+
+**Left for the lead:** TOWN.md "Found on the way" still says s35's intro greets the learner at the front desk (it
+says the gym floor, by the bench press, since the earlier fix). The global g_bye[3] usted-only NEEDS stands. A
+cross-cutting check worth running: lines whose variants state different facts (a direction, a number); the variant
+rotation says both when a question is asked twice. Unanswered, by choice: "¿Cuál es la contraseña del wifi?" (not
+"Sí, la contraseña…"), "¿Puedo traer a un amigo?", "¿Me das factura?", "¿Puedo pagar la mensualidad con tarjeta?"
+(not understood, safe).
