@@ -1498,6 +1498,7 @@
     "style:en/s69-local/greet",
     "setting:place/zocalo"
    ],
+   "note": "Shows the zócalo behind the stand. Since the s66 dialogue audit (5 Nov 2026) the sitio stands by the airport terminal at the east end of avenida Juárez; s66's pictures were edited to match (start from s66-taxi/greet).",
    "out": "public/scenes-es/ref/place/sitio-taxis.webp",
    "size": "2048x1152"
   },

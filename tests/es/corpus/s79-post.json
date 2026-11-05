@@ -796,9 +796,11 @@
 "ctx": "insurance",
 "say": "Sí, por si acaso",
 "intent": [
+"insurance_ctx",
 "insurance_yes",
 "yn:yes"
-]
+],
+"note": "audit: the insurance only at its own offer (insurance_ctx)"
 },
 {
 "ctx": "insurance",
@@ -1337,7 +1339,12 @@
 {
 "ctx": "insurance",
 "say": "Mejor sí",
-"intent": "insurance_yes"
+"intent": [
+"insurance_ctx",
+"insurance_yes",
+"yn:yes"
+],
+"note": "audit: the insurance only at its own offer (insurance_ctx)"
 },
 {
 "ctx": "insurance",
@@ -1600,6 +1607,330 @@
 "contents_perfume"
 ],
 "note": "trap: negation"
+},
+{
+"ctx": "hazmat",
+"say": "Peligroso",
+"intent": "contents_danger_ctx",
+"note": "audit 5 Nov: her own option back (offer probe)"
+},
+{
+"ctx": "hazmat",
+"say": "Sí, algo peligroso",
+"intent": "contents_danger_ctx",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "hazmat",
+"say": "Algo inflamable",
+"intent": "contents_danger_ctx",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "hazmat",
+"say": "No, nada peligroso",
+"intent": [
+"contents_ok",
+"contents_none_ctx",
+"yn:no"
+],
+"not": [
+"contents_danger_ctx"
+],
+"note": "audit 5 Nov, trap: negation"
+},
+{
+"ctx": "hazmat",
+"say": "¿Cuánto cuesta?",
+"intent": "ask_price",
+"note": "audit 5 Nov: before the weight (price_depends)"
+},
+{
+"ctx": "hazmat",
+"say": "¿Hay algo más barato?",
+"intent": "ask_cheaper",
+"note": "audit 5 Nov: before the weight (price_depends)"
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto cuesta?",
+"intent": "ask_price",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "dest",
+"say": "¿Hay algo más barato?",
+"intent": "ask_cheaper",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "help",
+"say": "¿Cuánto cuesta?",
+"intent": "ask_price",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "help",
+"say": "¿Dónde está el buzón?",
+"intent": "ask_mailbox",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "service",
+"say": "¿Y si lo mando express?",
+"intent": "ask_price",
+"not": [
+"service_ans"
+],
+"note": "audit 5 Nov, trap: a what-if never chooses"
+},
+{
+"ctx": "service",
+"say": "¿Qué pasa si lo mando normal?",
+"intent": "ask_price",
+"not": [
+"service_ans"
+],
+"note": "audit 5 Nov, trap: a what-if never chooses"
+},
+{
+"ctx": "service",
+"say": "¿Y si lo mando en el económico?",
+"intent": "ask_price",
+"not": [
+"service_ans"
+],
+"note": "audit 5 Nov, trap: a what-if never chooses"
+},
+{
+"ctx": "service",
+"say": "¿Puedo asegurarlo?",
+"intent": "ask_insured",
+"not": [
+"insurance_yes"
+],
+"note": "audit 5 Nov, trap: a question never adds"
+},
+{
+"ctx": "insurance",
+"say": "¿Cuánto sería con seguro?",
+"intent": "ask_price",
+"not": [
+"insurance_yes"
+],
+"note": "audit 5 Nov, trap: a price question never adds (the handler ignores its 'con seguro')"
+},
+{
+"ctx": "insurance",
+"say": "¿Y si lo aseguro?",
+"intent": "ask_price",
+"not": [
+"insurance_yes",
+"insurance_ctx"
+],
+"note": "audit 5 Nov, trap: a what-if never adds"
+},
+{
+"ctx": "insurance",
+"say": "¿Cuánto cobran por el seguro?",
+"intent": "ask_price",
+"not": [
+"insurance_yes"
+],
+"note": "audit 5 Nov, trap"
+},
+{
+"ctx": "insurance",
+"say": "¿Qué cubre el seguro básico?",
+"intent": "ask_insured",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "insurance",
+"say": "¿Hasta cuánto cubre?",
+"intent": "ask_insured",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "insurance",
+"say": "Con seguro, por favor",
+"intent": [
+"insurance_ctx",
+"insurance_yes"
+],
+"note": "audit 5 Nov"
+},
+{
+"ctx": "stamps_offer",
+"say": "Mejor sí",
+"intent": "any",
+"not": [
+"insurance_yes",
+"insurance_ctx"
+],
+"note": "audit 5 Nov, trap: it added $50 of insurance"
+},
+{
+"ctx": "stamps_offer",
+"say": "Sí, por si acaso",
+"intent": "any",
+"not": [
+"insurance_yes",
+"insurance_ctx"
+],
+"note": "audit 5 Nov, trap"
+},
+{
+"ctx": "stamps_offer",
+"say": "¿Cuánto cuestan cinco timbres?",
+"intent": "ask_price",
+"not": [
+"stamps_qty",
+"stamps_ctx"
+],
+"note": "audit 5 Nov, trap: a price question bought five stamps"
+},
+{
+"ctx": "gift",
+"say": "Sí, por si acaso",
+"intent": "any",
+"not": [
+"insurance_yes",
+"insurance_ctx"
+],
+"note": "audit 5 Nov, trap: it added $50 of insurance"
+},
+{
+"ctx": "stamps_qty",
+"say": "¿Cuánto cuesta cada uno?",
+"intent": "ask_price",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "stamps_qty",
+"say": "¿Cuánto cuestan?",
+"intent": "ask_price",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "pay",
+"say": "¿Y si pago con tarjeta?",
+"intent": "pay_card",
+"note": "audit 5 Nov: #q, a question (paid on the hand-over)"
+},
+{
+"ctx": "pay",
+"say": "¿Y si pago en efectivo?",
+"intent": "pay_cash",
+"note": "audit 5 Nov: #q"
+},
+{
+"ctx": "pay",
+"say": "¿Cuánto sería con el express?",
+"intent": "ask_price",
+"not": [
+"service_ans"
+],
+"note": "audit 5 Nov, trap"
+},
+{
+"ctx": "more",
+"say": "Gracias, es todo",
+"intent": "more_no",
+"note": "audit 5 Nov: was a bare thanks, '¿Algo más?' came again"
+},
+{
+"ctx": "more",
+"say": "Muchas gracias, eso es todo",
+"intent": [
+"more_no",
+"g_thanks"
+],
+"note": "audit 5 Nov"
+},
+{
+"ctx": "more",
+"say": "¿Dónde dejo las postales?",
+"intent": "ask_mailbox",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "more",
+"say": "¿Dónde está el buzón?",
+"intent": "ask_mailbox",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "pick_name",
+"say": "No tengo el número de guía",
+"intent": [
+"no_guia_ctx",
+"yn:no"
+],
+"not": [
+"tracking_ctx"
+],
+"note": "audit 5 Nov: was not understood"
+},
+{
+"ctx": "pick_name",
+"say": "No, no tengo número",
+"intent": [
+"no_guia_ctx",
+"yn:no"
+],
+"not": [
+"tracking_ctx"
+],
+"note": "audit 5 Nov"
+},
+{
+"ctx": "pick_id",
+"say": "¿Sirve una foto del pasaporte?",
+"intent": "id_photo_ctx",
+"not": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+],
+"note": "audit 5 Nov, trap: a photo is no ID"
+},
+{
+"ctx": "pick_id",
+"say": "Tengo una foto de mi pasaporte en el celular",
+"intent": "id_photo_ctx",
+"not": [
+"show_doc",
+"doc_ctx",
+"here_you_go"
+],
+"note": "audit 5 Nov, trap"
+},
+{
+"ctx": "pick_id",
+"say": "Bueno, regreso mañana",
+"intent": "come_back_ctx",
+"note": "audit 5 Nov"
+},
+{
+"ctx": "pick_id",
+"say": "Vuelvo más tarde con mi pasaporte",
+"intent": "come_back_ctx",
+"not": [
+"show_doc",
+"doc_ctx"
+],
+"note": "audit 5 Nov"
+},
+{
+"ctx": "pick_id",
+"say": "Voy por mi pasaporte",
+"intent": "come_back_ctx",
+"not": [
+"show_doc",
+"doc_ctx"
+],
+"note": "audit 5 Nov"
 }
 ]
 }

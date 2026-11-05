@@ -1,5 +1,5 @@
 // Song 74 "Can I Try It On?" → Puerto Colibrí: "¿Me lo puedo probar?"
-// Boutique Hilos, a small clothes shop downtown; sales assistant Valeria (usted). Built on the English edition's
+// Boutique Hilos, a small clothing store downtown; sales associate Valeria (usted). Built on the English edition's
 // s74-clothes: the same steps, intents, handlers and twists, with a beach town's stock (guayaberas, vestidos,
 // trajes de baño, sandalias, tenis), Mexican sizes (chica, mediana, grande, extra grande; shoes in Mexican
 // numbers, "¿Qué número calza?", with a rough conversion from US and European sizes), the probador, "¿Cómo le
@@ -24,16 +24,17 @@ import { expectHowAreYou } from "@/content/global";
 // ---------------------------------------------------------------------------
 // Entities (prices in cents of a peso; IVA included, as Mexican shelf prices are)
 
-const G = (id: string, es: string, en: string, g: "m" | "f", price: number, colors: string[], extra: { pl?: string; ltPl?: string; forms?: string[]; many?: boolean; shoe?: boolean; oneSize?: boolean; nat?: string; natPl?: string; chip?: string } = {}) =>
+const G = (id: string, es: string, en: string, g: "m" | "f", price: number, colors: string[], extra: { pl?: string; ltPl?: string; forms?: string[]; many?: boolean; shoe?: boolean; oneSize?: boolean; nat?: string; natPl?: string; chip?: string; neutral?: string } = {}) =>
   ent(id, es, en, g, { pl: extra.pl, ltPl: extra.ltPl, forms: extra.forms, chip: extra.chip,
-    attrs: { price, colors, many: !!extra.many, shoe: !!extra.shoe, oneSize: !!extra.oneSize, nat: extra.nat, natPl: extra.natPl } });
+    attrs: { price, colors, many: !!extra.many, shoe: !!extra.shoe, oneSize: !!extra.oneSize, nat: extra.nat, natPl: extra.natPl, neutral: extra.neutral } });
 
 export const CLOTHING: EntityDef[] = [
   G("guayabera", "guayabera", "guayabera", "f", 95000, ["blanco", "azul", "beige"], { forms: ["guayaberas", "guayabera de lino", "camisa guayabera", "guallabera"],
     nat: "guayabera shirt", natPl: "guayabera shirts" }),
   G("camisa", "camisa", "shirt", "f", 65000, ["blanco", "azul", "rosa"], { forms: ["camisas", "camisa de manga larga", "camisa de manga corta", "camisita"] }),
   G("blusa", "blusa", "blouse", "f", 55000, ["blanco", "amarillo", "verde"], { forms: ["blusas", "blusita", "blusa de tirantes"] }),
-  G("playera", "playera", "T-shirt", "f", 29000, ["blanco", "negro", "gris"], { forms: ["playeras", "playerita", "camiseta", "camisetas", "remera", "remeras", "polera", "t shirt", "tshirt"] }),
+  // Mexican: playera = T-shirt; the neutral text says camiseta (as s65b's courtesy kit)
+  G("playera", "playera", "T-shirt", "f", 29000, ["blanco", "negro", "gris"], { forms: ["playeras", "playerita", "camiseta", "camisetas", "remera", "remeras", "polera", "t shirt", "tshirt"], neutral: "camiseta" }),
   G("vestido", "vestido", "dress", "m", 89000, ["rojo", "azul", "amarillo"], { pl: "vestidos", ltPl: "dresses", forms: ["vestidos", "vestidito", "vestido de playa", "vestido largo"] }),
   G("falda", "falda", "skirt", "f", 59000, ["negro", "rojo", "beige"], { forms: ["faldas", "faldita", "pollera"] }),
   G("pantalon", "pantalón", "pants", "m", 79000, ["negro", "azul", "beige"], { pl: "pantalones", ltPl: "pants", many: true,
@@ -83,7 +84,7 @@ const FEATURED: Garment = { id: "guayabera", color: "blanco" };
 // State helpers
 
 interface Garment { id: string; color?: string; size?: string; shoe?: number; half?: boolean; paid?: number }
-interface Ret { item: Garment; receipt?: boolean; reason?: string; choice?: "refund" | "exchange" | "credit"; newSize?: string; newColor?: string; newShoe?: number; done?: boolean; refusedRefund?: boolean }
+interface Ret { item: Garment; receipt?: boolean; reason?: string; choice?: "refund" | "exchange" | "credit"; newSize?: string; newColor?: string; newShoe?: number; newHalf?: boolean; same?: boolean; done?: boolean; refusedRefund?: boolean }
 
 const attrs = (id: string) => byId(id).attrs || {};
 /** Plural in use (los pantalones, las sandalias): Spanish plural agreement and English "them". */
@@ -121,11 +122,25 @@ function fromSlot(v: any): Garment | null {
   return g;
 }
 
+/** The Mexican shoe numbers the shop carries; also every number its lines can say (domains.num, the voiced list). */
+const MX_MIN = 20, MX_MAX = 33;
+
 /** Shoe sizes: Mexico numbers shoes roughly by the foot's length in centimeters. Rough conversions only
- *  ("más o menos"): US + 18; European − 13 (women) or − 15 (men). */
+ *  ("más o menos"): US + 18; European − 13 (women) or − 15 (men); kept to the numbers the shop carries. */
 function toMx(c: Ctx, n: number, half: boolean, from: "us" | "eu"): { n: number; half: boolean } {
   const v = from === "us" ? n + (half ? 0.5 : 0) + 18 : n - (c.player.gender === "f" ? 13 : 15);
-  return { n: Math.floor(v), half: v % 1 !== 0 };
+  const mx = Math.floor(v);
+  if (mx < MX_MIN) return { n: MX_MIN, half: false };
+  if (mx > MX_MAX) return { n: MX_MAX, half: false };
+  return { n: mx, half: v % 1 !== 0 };
+}
+
+/** A shoe number the learner said, in Mexican numbers: Mexican (20–32), US (4–15) or European (33–50); else null. */
+function shoeMx(c: Ctx, n: number, half: boolean, from?: "us" | "eu"): { n: number; half: boolean; src?: "us" | "eu" } | null {
+  const src = from ?? (n >= 33 && n <= 50 ? "eu" : n >= 4 && n <= 15 ? "us" : undefined);
+  if (src && ((src === "eu" && n >= 33 && n <= 50) || (src === "us" && n >= 4 && n <= 15))) return { ...toMx(c, n, half, src), src };
+  if (n >= MX_MIN && n <= 32) return { n, half };
+  return null;
 }
 
 function resetItem(c: Ctx, g: Garment | null) {
@@ -228,17 +243,14 @@ function maybeLastOne(c: Ctx) {
 /** A shoe number: Mexican (20–32), US (4–15) or European (33–50), converted roughly. */
 function setShoe(c: Ctx, g: Garment, n: number, half = false, from?: "us" | "eu"): boolean {
   if (!isShoe(g.id)) { c.say("which_size_letters"); return false; }
-  const src = from ?? (n >= 33 && n <= 50 ? "eu" : n >= 4 && n <= 15 ? "us" : undefined);
-  if (src && ((src === "eu" && n >= 33 && n <= 50) || (src === "us" && n >= 4 && n <= 15))) {
-    const mx = toMx(c, n, half, src);
-    g.shoe = mx.n; g.half = mx.half;
-    const line = src === "eu" ? (from ? "eu_size_known" : "eu_size") : "us_size";
+  const mx = shoeMx(c, n, half, from);
+  if (!mx) { c.say("shoe_size_again"); return false; }
+  g.shoe = mx.n; g.half = mx.half;
+  if (mx.src) {
+    const line = mx.src === "eu" ? (from ? "eu_size_known" : "eu_size") : "us_size";
     c.say(mx.half ? line + "_half" : line, { num: mx.n });
-    return true;
   }
-  if (n >= 20 && n <= 32) { g.shoe = n; g.half = half; return true; }
-  c.say("shoe_size_again");
-  return false;
+  return true;
 }
 
 function hasSize(g: Garment) { return oneSize(g.id) || (isShoe(g.id) ? g.shoe != null : !!g.size); }
@@ -264,7 +276,7 @@ function doTry(c: Ctx) {
 function fitPending(c: Ctx): Pending {
   const g = cur(c)!;
   return {
-    id: "fit", expects: ["fit_bad", "fit_good", "fit_unclear", "take_it", "fit_like_ctx"], hints: [itemHint("fit", g.id), isShoe(g.id) ? "shoe_size" : "size"],
+    id: "fit", expects: ["fit_bad", "fit_good", "fit_unclear", "take_it", "fit_like_ctx", "fit_soso_ctx", "ask_opinion"], hints: [itemHint("fit", g.id), isShoe(g.id) ? "shoe_size" : "size"],
     suggest: [
       { lt: "Say how it fits", hint: itemHint("fit", g.id) },
       { lt: "Ask for another size", hint: isShoe(g.id) ? "shoe_size" : "size", options: isShoe(g.id) ? undefined : "size" },
@@ -274,6 +286,9 @@ function fitPending(c: Ctx): Pending {
       fit_good: (cc, sl, seg) => { clothes.handlers.fit_good(cc, sl, seg); },
       fit_like_ctx: (cc, sl, seg) => { clothes.handlers.fit_good(cc, sl, seg); },
       fit_unclear: (cc, sl, seg) => { clothes.handlers.fit_unclear(cc, sl, seg); },
+      fit_soso_ctx: (cc, sl, seg) => { clothes.handlers.fit_unclear(cc, sl, seg); },
+      // "¿Cómo me queda?": her opinion answers it (the fit question isn't asked again)
+      ask_opinion: (cc, sl, seg) => { clothes.handlers.ask_opinion(cc, sl, seg); },
       take_it: (cc, sl, seg) => { cc.s.fitOk = true; clothes.handlers.take_it(cc, sl, seg); },
       // "¿Cómo le quedó?" – "Grande." / "Chica.": a report on the fit, not a size wanted
       size_ans: (cc, sl, seg) => {
@@ -286,7 +301,8 @@ function fitPending(c: Ctx): Pending {
       g_ok: (cc) => { fitGood(cc); },
     },
     yes: (cc) => { fitGood(cc); },
-    no: (cc) => { cc.say("fit_which", { X: bind(cur(cc)!) }); cc.expect(fitWhich(cc)); },
+    // "No." = it doesn't fit: plural garments get "¿Le quedan grandes o chicas?" (the _pl line)
+    no: (cc) => { sayN(cc, "fit_which"); cc.expect(fitWhich(cc)); },
     ask: (cc) => sayN(cc, "ask_fit"),
   };
 }
@@ -300,15 +316,24 @@ function fitWhich(c: Ctx): Pending {
 
 function fitGood(c: Ctx) {
   c.s.fitOk = true;
-  if (c.chance(0.75)) sayN(c, "compliment");
+  // "¿Me queda bien?" asks Valeria's opinion: always a compliment, never "¡Qué bueno!"
+  if (c.heard?.includes("?") || c.chance(0.75)) compliment(c);
   else c.say("fit_ok");
+}
+
+/** "¡Le queda muy bien!"; not "¡Ese color le queda precioso!" while the color is still to be chosen. */
+function compliment(c: Ctx) {
+  const g = cur(c);
+  sayN(c, g && c.s.askColor && !g.color ? "compliment_plain" : "compliment");
 }
 
 function changeSize(c: Ctx, dir: "up" | "down") {
   const g = cur(c)!;
   if (oneSize(g.id)) { c.say("one_size"); return false; }
   if (isShoe(g.id)) {
-    g.shoe = (g.shoe ?? 25) + (dir === "up" ? 1 : -1); g.half = false;
+    const next = (g.shoe ?? 25) + (dir === "up" ? 1 : -1);
+    if (next < MX_MIN || next > MX_MAX) { c.say(dir === "up" ? "no_bigger_shoe" : "no_smaller_shoe"); return false; }
+    g.shoe = next; g.half = false;
     c.say(dir === "up" ? "size_up_get" : "size_down_get");
     return true;
   }
@@ -388,7 +413,7 @@ export const clothes: SituationDef = {
   location: "threads",
   npc: "chloe",
   goal: "Pick something to wear, try it on and buy it (or exchange something you bought).",
-  intro: "Boutique Hilos is a small clothes shop downtown. A white linen guayabera hangs on the mannequin by the door. Valeria, the sales assistant, is folding shirts. Prices are in pesos and already include tax.",
+  intro: "Boutique Hilos is a small clothing store downtown. A white linen guayabera hangs on the mannequin by the door. Valeria, the sales associate, is folding shirts. Prices are in pesos and already include tax.",
   entities: { clothing: CLOTHING, color: COLORS, size: SIZES },
 
   merges: {
@@ -411,6 +436,7 @@ export const clothes: SituationDef = {
     "o sea": { reason: "lexical_expression", split: "o → or + sea → be misreads the connector: that is, so.", minimal: "Two words." },
     "por qué": { reason: "lexical_expression", split: "por → for + qué → what: the question word = why.", minimal: "Two words." },
     "en su lugar": { reason: "lexical_expression", split: "en → in + su → its + lugar → place: = instead.", minimal: "Three words." },
+    "agotar existencias": { reason: "lexical_expression", split: "agotar → exhaust + existencias → stocks: (hasta) agotar existencias = while supplies last.", minimal: "Two words." },
   },
 
   grammar: {
@@ -470,6 +496,8 @@ export const clothes: SituationDef = {
     vague_item: { patterns: [
       "@look_pre algo [@adj] [@for_post]", "@look_pre algo (para el calor | para la playa | para una boda | para una fiesta)",
       "@look_pre (un regalo | algo para regalar) [@for_post]", "@look_pre ropa [@adj] [@for_post]", "@look_pre ropa (para el calor | para la playa | de playa | de verano)", "que me (recomienda | sugiere)", "que (tiene | tienen) de nuevo",
+      // a bare "Algo fresco." / "Algo para la playa." (to "¿Qué anda buscando?")
+      "algo (fresco | fresca | ligero | comodo | bonito | elegante | casual | de playa | de verano | para el calor | para la playa | para una boda | para una fiesta | para regalar) [para (hombre | mujer | dama | caballero)]",
     ] },
     looking_for: { patterns: [
       "@look_pre {item} [@where_tail]", "@look_pre (otro | otra | un nuevo | una nueva) {item}",
@@ -481,6 +509,14 @@ export const clothes: SituationDef = {
       "mejor (quiero ver | me ensena | me muestra | quisiera ver) {item}", "mejor {item}", "(y | que tal | y que tal) {item}",
       "{item} en (vez | lugar) de (eso | esa | ese | esta | este)", "prefiero {item}", "(puedo | podria) ver {item} en (vez | lugar)",
     ] },
+    // "Quiero ver otra cosa": something else, not an item the shop lacks
+    see_other: { patterns: [
+      "[mejor] (quiero | quisiera | me gustaria | puedo | podria | voy a) ver (otra cosa | otras cosas | algo mas | algo diferente | algo distinto | otro modelo | otros modelos | otra opcion | otras opciones)",
+      "(me ensena | me muestra | me puede ensenar | me puede mostrar | me podria ensenar | me podria mostrar) (otra cosa | otras cosas | algo mas | algo diferente | algo distinto | otro modelo | otros modelos)",
+      "(tiene | tienen | hay) (otra cosa | otras cosas | algo diferente | algo distinto | otro modelo | otros modelos)", "mejor (otra cosa | algo diferente | algo distinto | otro modelo)",
+    ] },
+    // "Vengo a comprar" (to "¿Viene a hacer un cambio?" or "¿Le puedo ayudar en algo?"): shopping
+    come_to_buy_ctx: { patterns: ["[no] (vengo | vine) a (comprar | buscar) [algo | ropa | unas cosas]", "[no] (quiero | quisiera) comprar (algo | ropa)", "[no] (vengo | vine) de compras"] },
 
     // --- size ------------------------------------------------------------------------------
     size_ans: { patterns: [
@@ -491,7 +527,7 @@ export const clothes: SituationDef = {
       "{size} (esta bien | creo | creo yo | por favor | me queda bien | esta perfecta)", "(mejor | entonces) [la | una] [talla] {size}",
       "(dame | traeme) [la | una] [talla] {size} #tip:tu_staff", "no (soy | uso) [talla] [la] {wrong:size} [sino] [soy | uso] [talla] [la] {size}",
       "[la] {wrong:size} no [sino] [mejor] [la | una] {size}", "no [la] {wrong:size} [sino] [mejor] [la | una] {size}",
-      "(en estados unidos | en mi pais | en canada | alla) (soy | uso) [talla] [la] {size}",
+      "(en estados unidos | en mi pais | en canada | alla) (soy | uso) [talla] [la] {size}", "(soy | uso) [talla] [la] {size} (en estados unidos | en mi pais | en canada | alla)",
       "[la | una] {size} [y] [pero] en {color}", "(soy | uso) [talla] {size} y [la quiero | lo quiero] en {color}",
       // the size, then why: "Chica, no soy muy alta"
       "{size} (porque | ya que)? (soy | estoy) [muy | un poco | bastante] (alto | alta | bajo | baja | grande | delgado | delgada | flaco | flaca)",
@@ -553,6 +589,17 @@ export const clothes: SituationDef = {
       "{color} no", "no en {color}", "no me convence el color", "(ese | este) color no (me gusta | me queda | me convence)", "el color no (me gusta | me convence | es para mi)",
       "no me gusta como se ve el color", "(ese | este) color no", "no me (queda | va) [bien] (el | ese | este) color", "(el | ese | este) color no me (queda | va) [bien]",
     ] },
+    // "¿Qué color me recomienda?": Valeria names the best seller (the learner still chooses)
+    color_advice: { patterns: [
+      "(que | cual) color me (recomienda | sugiere | queda mejor | va mejor) #h:color_tip", "(que | cual) color (se vende | vende | venden) mas", "(que | cual) color (le gusta | prefiere) [usted] [mas]",
+      "(que | cual) color (es | esta) mas (bonito | de moda)",
+    ] },
+    // at "¿Qué color prefiere?": "¿Cuál me recomienda?" (advice) and "Cualquiera" (Valeria picks the best seller)
+    color_rec_ctx: { patterns: ["cual me (recomienda | sugiere)", "cual (se vende | vende) mas", "cual (le gusta | prefiere) [usted] [mas]", "cual me (queda | va) mejor"] },
+    color_any_ctx: { patterns: [
+      "(cualquiera | cualquier color | el que sea | la que sea | lo que sea | el color que sea | no importa [el color] | me da igual | me es igual | me da lo mismo | como usted quiera | lo que usted diga)",
+      "(escoja | elija) usted", "(usted | tu #tip:tu_staff) (escoja | elija | escoge #tip:tu_staff | elige #tip:tu_staff)", "el que usted (diga | quiera | recomiende)",
+    ] },
 
     // --- fitting room and fit --------------------------------------------------------------
     try_on: { patterns: [
@@ -578,7 +625,7 @@ export const clothes: SituationDef = {
       "(donde | en donde) (me puedo | puedo) (probar | cambiar)", "(donde | en donde) me (cambio | pruebo)", "(el | los) (probador | probadores) (donde | por favor)",
     ] },
     fit_bad: { patterns: [
-      "@fit_subj [@deg] @too_adj [para mi]", "@deg @too_adj [para mi]", "@fit_subj [@deg] @too_adj (de | en) @body",
+      "@fit_subj [@deg] @too_adj [para mi]", "@deg @too_adj [para mi]", "@fit_subj [@deg] @too_adj (de | en) @body", "(es | son) (muy | demasiado | bastante) @too_adj [para mi]",
       "@body (me queda | me quedan | esta | estan) [@deg] @too_adj", "no me (entra | entran | cierra | cierran | sube | suben | abrocha) #up",
       "(me aprieta | me aprietan | aprieta | aprietan) [mucho | un poco | un poquito] #up", "(me aprieta | me aprietan) [mucho | un poco | un poquito] (de | en) @body #up", "(me | le) sobra (tela | mucho) #down",
     ] },
@@ -594,9 +641,18 @@ export const clothes: SituationDef = {
       "(es | esta | son | estan) [muy | super] (comodo | comoda | comodos | comodas)", "me (encanta | encantan | gusta | gustan) como me (queda | quedan)",
       "[esta | es] perfecto", "(perfecto | perfecta | perfectos | perfectas)", "(no esta | no estan) mal", "(se ve | se ven) (bien | muy bien | bonito | bonita | padre | genial)",
       "es (mi | la) talla [correcta]", "(la | el) {size} (me queda | esta) (bien | perfecta | mejor)", "no me queda ni (grande | chico | chica) ni (grande | chico | chica)",
+      "[no me (queda | quedan)] ni (grande | chico | chica | grandes | chicos | chicas) ni (grande | chico | chica | grandes | chicos | chicas)",
     ] },
     // "Me encanta" (to "¿Cómo le quedó?"): it fits and the learner likes it
     fit_like_ctx: { patterns: ["me (encanta | encantan | gusta | gustan) [mucho | muchisimo]", "me (encanta | encantan | gusta | gustan) (este | esta | estos | estas)"] },
+    // "Más o menos" (to "¿Cómo le quedó?"): it doesn't quite fit; Valeria asks which way
+    fit_soso_ctx: { patterns: ["[pues] (mas o menos | asi asi | regular | no muy bien | no tan bien)", "no estoy (seguro | segura) (de como me queda | de como me quedan | si me queda | si me quedan)"] },
+    // "¿Cómo me queda?" / "¿Usted qué opina?": the learner asks Valeria's opinion (the brief's "¿Me queda bien?")
+    ask_opinion: { patterns: [
+      "(como | que tal) me (queda | quedan | veo | ve | sienta | sientan) [este | esta | estos | estas] #h:fit_ask", "(como | que tal) se me (ve | ven)", "(me queda | me quedan | se me ve | se me ven | me veo) bien o no",
+      "[y] [usted] que (opina | piensa | le parece) [usted]", "(le | te #tip:tu_staff) (gusta | gustan) (como me (queda | quedan) | como se me (ve | ven))", "(cree | piensa) que me (queda | quedan | veo) bien",
+      "no se (que opina | usted que opina | que le parece | como me veo | como me queda | como me quedan)", "no se [y] usted que (opina | piensa)",
+    ] },
     // the beach is not a T-shirt ("playa" ≈ "playera" for the recognizer's slips)
     beach_unknown: { patterns: ["[me gusta | me encanta] [mucho] (la | a la | en la | de la) playa"] },
     sweet: { patterns: ["(usted es | es usted) [muy] (amable | linda | lindo)", "(que | muy) (amable | linda)", "(ay)? gracias que (linda | amable)"] },
@@ -614,6 +670,21 @@ export const clothes: SituationDef = {
       "(me hace | me puede hacer | me da | hay) (un)? (descuento | descuentito)", "@take_pron deja (en {price} | mas barato | mas barata | mas baratos | mas baratas)",
       "(es | este es) el precio con descuento", "(entra | entran) en (la)? (promocion | oferta)", "(algun | hay algun) descuento",
     ] },
+    // "¿Hasta cuándo es la oferta?"
+    sale_until: { patterns: [
+      "hasta cuando (es | son | dura | duran | esta | estan | tiene | va a estar | van a estar) (la oferta | el descuento | la promocion | las ofertas | los descuentos | las promociones | la rebaja | el precio)",
+      "(cuanto tiempo | hasta cuando) (dura | duran | va a durar) (la oferta | el descuento | la promocion | las ofertas)", "(la oferta | el descuento | la promocion) (es | dura) hasta cuando",
+      "hasta cuando (tiene | tienen | hay) (descuento | oferta | promocion)", "(el descuento | la oferta) (es | dura) (nada mas | solo) hoy",
+    ] },
+    // "¿Cuánto le debo?" / "¿Cuánto es en total?": the total once she has said it (else the price)
+    ask_total: { patterns: [
+      "cuanto (le | te #tip:tu_staff) (debo | pago)", "cuanto (es | seria | serian | son) (en total | todo | por todo)", "(cual | cuanto) es (el | mi) total", "cuanto (le | te #tip:tu_staff) debo en total",
+    ] },
+    // "¿Me la cobra?": Mexican for "ring me up" (I'll take it; the total, please)
+    charge_me: { patterns: [
+      "@take_pron (cobra | puede cobrar | podria cobrar)", "(me | le) (cobra | puede cobrar | podria cobrar)", "(cobreme | cobremelo | cobremela | cobremelos | cobremelas)",
+      "(cobrame | me cobras) #tip:tu_staff",
+    ] },
     ask_tax: { patterns: [
       "(ya)? (incluye | trae | tiene | lleva) [el] iva #h:q_tax", "(el precio | los precios) (ya)? (incluye | incluyen | trae | traen) [el] iva", "(es | son) (mas | sin) iva",
       "(con | sin) iva", "(hay que | tengo que) pagar (iva | impuestos)", "(ya)? (incluye | estan incluidos) [los] impuestos", "(el iva | los impuestos) (esta | estan) incluidos", "iva incluido",
@@ -621,7 +692,8 @@ export const clothes: SituationDef = {
     ask_return_policy: { patterns: [
       "(puedo | se puede) (cambiar | cambiarlo | cambiarla | cambiarlos | cambiarlas | devolver | devolverlo | devolverla | devolverlos | devolverlas) [despues] si no me (queda | quedan | gusta | gustan) #h:q_return",
       "(tienen | hacen | aceptan) (cambios | devoluciones)", "(cual es | como es) (la | su) politica de (cambios | devoluciones)",
-      "cuantos dias (tengo | hay) para (cambiar | cambiarlo | cambiarla | devolver | devolverlo | devolverla | hacer un cambio)",
+      "(cuantos dias | cuanto tiempo | hasta cuando) (tengo | hay) para (cambiar | cambiarlo | cambiarla | cambiarlos | cambiarlas | devolver | devolverlo | devolverla | devolverlos | devolverlas | hacer un cambio)",
+      "(hasta cuando | cuanto tiempo) (puedo | se puede) (cambiar | cambiarlo | cambiarla | cambiarlos | cambiarlas | devolver | devolverlo | devolverla | devolverlos | devolverlas)",
       "(y si | que pasa si) no (me | le) (queda | quedan | gusta | gustan) [a mi (esposa | esposo | hijo | hija | mama | papa | novia | novio)]",
       "(y si | que pasa si) no le (queda | quedan | gusta | gustan) a mi (esposa | esposo | hijo | hija | mama | papa | novia | novio)",
       "se (puede | pueden) (cambiar | devolver) [despues]",
@@ -644,6 +716,7 @@ export const clothes: SituationDef = {
       "no (me | me esta) (convence | convencen | encanta | encantan)", "no me (gusta | gustan) (como me (queda | quedan) | como se ve | como se ven | mucho)", "no me (gusta | gustan)",
       "no @take_pron voy a llevar", "[no gracias] (lo | la | los | las) dejo", "(ya)? no (lo | la | los | las) quiero", "no (es | son) para mi",
       "no (quiero | voy a) (comprarlo | comprarla | comprarlos | comprarlas | llevarlo | llevarla | llevarlos | llevarlas)",
+      "no me (gustó | gustaron) [mucho | como me (queda | quedan | quedó | quedaron) | como se ve | como se ven]",
     ] },
     too_expensive: { patterns: [
       "(esta | es | estan | son) [muy | un poco | algo | bastante | demasiado | un poquito] (caro | cara | caros | caras | carito | carita) [para mi] #h:too_expensive",
@@ -659,6 +732,7 @@ export const clothes: SituationDef = {
       "(le | les) pago con tarjeta", "(voy a | quiero) pagar con tarjeta", "pago con tarjeta", "con (debito | credito)", "(tarjeta | tarjeta de credito | tarjeta de debito | debito | credito)",
       "aqui (esta | tiene) mi tarjeta", "con mi tarjeta", "no (en)? efectivo [sino] con tarjeta",
       "efectivo no [sino] [mejor] con tarjeta", "no (quiero | puedo) pagar (en | con) efectivo [sino] [mejor] con tarjeta", "con (visa | mastercard | american express | amex)",
+      "(tiene | tienen | hay) terminal",
     ] },
     // "No traigo efectivo": so it's the card (never read as cash)
     no_cash: { patterns: ["no (tengo | traigo | cargo) [suficiente | mucho] (efectivo | dinero en efectivo)", "no traigo (cash | feria)", "no (quiero | puedo) pagar (en | con) efectivo", "sin efectivo",
@@ -670,6 +744,8 @@ export const clothes: SituationDef = {
       "(puedo | se puede) pagar en efectivo", "con (efectivo | billete)", "no con tarjeta [sino] en efectivo",
       "[le] pago con (un billete de)? {price}", "no (traigo | tengo) tarjeta [de credito | de debito]",
       "no (quiero | puedo) pagar con tarjeta [sino] [mejor] (en efectivo | efectivo | con efectivo)", "(con)? tarjeta no [sino] [mejor] (en efectivo | efectivo | con efectivo)",
+      // "¿Me puede dar cambio de mil?": paying with that bill
+      "(me puede dar | me da | me podria dar | tiene) cambio (de | para) [un billete de] {price}",
     ] },
     pay_phone: { patterns: [
       "(puedo | se puede) pagar con (el celular | mi celular | el telefono | mi telefono | apple pay | google pay)", "(acepta | aceptan) (apple pay | google pay | pagos con el celular) #h:apple_pay",
@@ -701,13 +777,21 @@ export const clothes: SituationDef = {
     ] },
     // "¿Cuánto cuesta la bolsa?": a question (the paper bag is free), never a bag taken
     bag_price: { patterns: ["cuanto (cuesta | cuestan | es | sale | cobran) (la | una | las) (bolsa | bolsita | bolsas)", "(la bolsa | la bolsita) (cuesta | tiene costo | se cobra | es gratis | cuesta extra)",
-      "(cobran | se cobra | se paga) (la)? (bolsa | bolsita)", "hay que pagar (la)? (bolsa | bolsita)", "(tiene | tienen) costo (la)? (bolsa | bolsita)"] },
-    want_bag: { patterns: ["[si] (una | la) (bolsa | bolsita) [de papel]", "(me da | me puede dar | me regala) (una | la) (bolsa | bolsita) [de papel]", "con bolsa"] },
+      "(cobran | se cobra | se paga) (la)? (bolsa | bolsita)", "hay que pagar (la)? (bolsa | bolsita)", "(tiene | tienen) costo (la)? (bolsa | bolsita)",
+      "(me | le) (cobra | cobran) (la | una | las)? (bolsa | bolsita | bolsas)"] },
+    want_bag: { patterns: ["[si] (una | la) (bolsa | bolsita) [de papel]", "(me da | me puede dar | me regala) (una | la) (bolsa | bolsita) [de papel]", "con bolsa",
+      // "¿Tienen bolsas?" asks for one (it is never "I have my bag")
+      "(tiene | tienen | hay) (bolsa | bolsas | bolsita | bolsitas) [de papel]"] },
     gift_receipt: { patterns: [
       "(me da | me puede dar | me regala) (un)? (ticket | recibo) de regalo #h:gift_receipt", "(un)? (ticket | recibo) de regalo",
       "es (para)? (un)? regalo", "es para regalo", "@take_pron (envuelve | puede envolver) [para regalo]", "(lo | la | los | las) puede envolver [para regalo]",
     ] },
     receipt_bag: { patterns: ["(impreso | impresa) #h:rc_print", "[si] (quiero | deme | me da) (el | mi) (ticket | recibo) [impreso]", "en papel", "(deme | me da) el (ticket | recibo) [impreso]", "[si] el (ticket | recibo) impreso"] },
+    // "El ticket, por favor." / "Démelo." (to "¿Le doy su ticket o se lo mando por correo?"): the printed one
+    receipt_print_ctx: { patterns: [
+      "[si] (el | mi | un) (ticket | recibo) [impreso | de compra]", "[si] (demelo | demela | me lo da | me lo puede dar | me lo podria dar | me lo regala)",
+      "[si] (damelo | me lo das) #tip:tu_staff",
+    ] },
     receipt_email: { patterns: [
       "por (correo | email | mail | correo electronico) #h:rc_email", "(mandemelo | mandemela | envielo | enviemelo | mandelo) (por | a mi | al) (correo | email)",
       "(a mi | al) correo", "(mejor | prefiero) por (correo | email | mail)", "(me lo | lo) (manda | puede mandar | envia | puede enviar) (por | al) correo", "en (mi)? (correo | email)",
@@ -715,6 +799,7 @@ export const clothes: SituationDef = {
     no_receipt: { patterns: [
       "no (necesito | quiero | ocupo) (el | un)? (ticket | recibo) #h:rc_none", "sin (ticket | recibo)", "no hace falta el (ticket | recibo)",
       "no (necesito | quiero | ocupo) (el | un)? (ticket | recibo) de regalo",
+      "[el] (ticket | recibo) no [gracias]", "(el | mi) (ticket | recibo) no (lo | la)? (necesito | quiero | ocupo)",
     ] },
     // "No, no lo necesito" (to "¿Quiere su ticket?")
     receipt_no_ctx: { patterns: ["[no] no (lo | la) (necesito | ocupo | quiero)", "[no] no hace falta", "[no] no es necesario"] },
@@ -746,10 +831,13 @@ export const clothes: SituationDef = {
       "[si] (lo | la) (tengo | traigo) [aqui | conmigo]", "[si] (lo | la) tengo en (el | mi) (celular | correo | bolsa | cartera)", "(esta | lo tengo) en (mi | el) (celular | correo | bolsa | cartera)",
       "[si] aqui (lo | la) tengo",
     ] },
+    // "Sí, el ticket." (to "¿Trae su ticket?"): handed over
+    receipt_have_ctx: { patterns: ["[si] (el | mi) (ticket | recibo) [de compra] [aqui | aca]"] },
     receipt_none: { patterns: [
       "no (traigo | tengo | encuentro) (el | mi) (ticket | recibo) [conmigo | aqui] #h:ret_no_receipt", "perdi (el | mi) (ticket | recibo)", "(lo | la) perdi #h:ret_lost",
       "se me (perdió | olvidó) [el ticket | el recibo]", "no (lo | la) (traigo | tengo | encuentro) [conmigo | aqui]", "(lo | la) tire", "tire el (ticket | recibo)",
       "(lo | la) (dejé | olvidé) en (el hotel | la casa | casa | mi casa)", "sin (ticket | recibo)", "ya no (lo | la) tengo", "no tengo (ticket | recibo)",
+      "(el | mi) (ticket | recibo) no (lo | la)? (traigo | tengo | encontré | encuentro)",
     ] },
     problem: { patterns: [
       "se (destino | despintó | deslavó | decoloró) [en la (lavadora | lavada) | al lavarlo | al lavarla] #ran #h:ret_ran", "(perdió | se le fue) el color #ran", "se (destineron | despintaron) #ran",
@@ -758,6 +846,8 @@ export const clothes: SituationDef = {
       "el (cierre | zipper) (no sirve | esta roto | se rompió | se atora | no cierra) #zipper", "se (rompió | descompuso) el (cierre | zipper) #zipper", "la cremallera (no funciona | esta rota | se rompió) #zipper",
       "se (le)? (cayó | cayo) un boton #button", "le falta un boton #button",
       "(esta | viene | venia) (roto | rota | danado | danada | descosido | descosida | manchado | manchada) #damaged", "se (rompió | descosió | rompio | descosio) #damaged",
+      // "Tiene una mancha" (never "una" as a size)
+      "(tiene | trae | tenia | traia | venia con) (una | unas) (mancha | manchas | manchita | manchitas) #damaged", "se (manchó | mancho) #damaged",
       "la (tela | calidad) (es mala | no es buena) #damaged",
       "(cambié | cambie) de (opinion | idea) #mind #h:ret_mind", "me arrepenti #mind", "ya no me (gusta | gustan | convence) #dislike",
       "(compré | me llevé) la talla (equivocada | incorrecta) #nofit", "me (equivoqué) de (talla | numero) #nofit",
@@ -775,12 +865,24 @@ export const clothes: SituationDef = {
       "no (quiero | necesito) (un | el)? cambio [sino] [mejor] [quiero | prefiero] ((el | mi) dinero | un reembolso | el reembolso | que me (devuelva | regrese) (el | mi) dinero)",
       "[el] cambio no [sino] [mejor] ((el | mi) dinero | un reembolso | el reembolso)",
     ] },
+    // "El dinero, por favor." (to "¿Reembolso o cambio?"); a bare "el dinero" elsewhere is no refund
+    refund_ctx: { patterns: ["[el | mi] dinero [de vuelta | de regreso]", "(la | una) devolucion [del dinero | de mi dinero]", "que me (devuelva | regrese) (el | mi) dinero"] },
     no_refund: { patterns: ["no (quiero | necesito) (el | un | mi)? (reembolso | dinero)", "no quiero que me (devuelvan | regresen) el dinero", "sin reembolso"] },
     no_credit: { patterns: ["no (quiero | necesito) (saldo a favor | una nota de credito | nota de credito | una tarjeta de regalo | tarjeta de regalo | un vale)", "sin saldo a favor"] },
     want_credit: { patterns: [
       "(saldo a favor | una nota de credito | nota de credito | una tarjeta de regalo | tarjeta de regalo | un vale) (esta bien | me sirve) #h:ret_credit",
       "(prefiero | quisiera | quiero | deme) (el | un)? (saldo a favor | una nota de credito | nota de credito | una tarjeta de regalo | un vale)", "(saldo a favor | nota de credito)",
       "mejor (el)? (saldo a favor | una tarjeta de regalo | un vale) [no (el)? (dinero | reembolso)]", "[el] (dinero | reembolso) no [sino] [mejor] (el)? (saldo a favor | una tarjeta de regalo | un vale)",
+    ] },
+    // At "¿Mismo modelo en otra talla o en otro color?": "En otra talla" / "Otro color" (then which one), "La misma" /
+    // "Una igual" (the same one, new)
+    exch_what_ctx: { patterns: [
+      "[en] (otra talla #size | otro numero #size | otro color #color)", "(quiero | quisiera | prefiero | mejor | me da | deme | me la da | me lo da) [en] (otra talla #size | otro numero #size | otro color #color)",
+      "(el mismo | la misma | los mismos | las mismas | mismo modelo | el mismo modelo) [pero] [en] (otra talla #size | otro numero #size | otro color #color)",
+      "(cambiar | cambiarle | cambio de) (la talla #size | el numero #size | el color #color)", "(la talla #size | el numero #size | el color #color) [nada mas | por favor]",
+      "(el mismo | la misma | los mismos | las mismas | uno igual | una igual | otro igual | otra igual | unos iguales | unas iguales | otros iguales | otras iguales | igual | iguales | el mismo modelo | mismo modelo | lo mismo) [nada mas] #same",
+      "(quiero | quisiera | prefiero | me da | deme) (el mismo | la misma | los mismos | las mismas | uno igual | una igual | otro igual | otra igual | unos iguales | unas iguales | el mismo modelo) [nada mas] #same",
+      "(igual | el mismo | la misma | el mismo modelo) (en la misma talla | en el mismo numero | en el mismo color | pero nuevo | pero nueva | pero sin (el hoyo | la mancha | defecto)) #same",
     ] },
   },
 
@@ -830,6 +932,9 @@ export const clothes: SituationDef = {
     confirm_featured: [
       t("Ah, | la | guayabera | del | maniquí.", "Ah, | the | guayabera | of the | mannequin.", "Oh, the guayabera on the mannequin."),
     ],
+    // "¿Usted qué opina?" before it's tried on, and "¿Tienen bolsas?" before paying (ack_item's own words, the same clips)
+    good_choice: [t("¡Buena | elección!", "Good | choice!", "Great choice!")],
+    sure: [t("¡Claro!", "Sure!", "Sure!")],
     beach: [t("¡A | mí | también! | Y | aquí | hay | mucha | ropa | para | la | playa.", "To | me | too! | And | here | there-is | lots of | clothing | for | the | beach.", "Me too! And we have lots of beachwear here.")],
     beach_q: [t("Ah, | ¿para | la | playa? | Tenemos | trajes | de | baño, | sombreros | y | sandalias.", "Ah, | for | the | beach? | We-have | suits | for | bathing, | hats | and | sandals.",
       "Oh, for the beach? We have swimsuits, hats and sandals.")],
@@ -853,6 +958,8 @@ export const clothes: SituationDef = {
       t("Aquí | tiene | {S.the}.", "Here | you-have | {S.the}.", "Here's {S.the}."),
       t("Le | traigo | {S.the}.", "(For) you | I-bring | {S.the}.", "Let me get you {S.the}."),
     ],
+    // size_here's second variant on its own (the same clip), before "Aquí tiene su … nueva"
+    size_bring: [t("Le | traigo | {S.the}.", "(For) you | I-bring | {S.the}.", "Let me get you {S.the}.")],
     size_check: [
       t("Déjeme | ver... | Sí, | aquí | está | {S.the}.", "Let me | see... | Yes, | here | is | {S.the}.", "Let me check… Yes, here's {S.the}."),
       t("Sí, | sí | hay | en | {S}.", "Yes, | (yes) | there-is | in | {S}.", "Yes, we have it in {S}."),
@@ -869,6 +976,9 @@ export const clothes: SituationDef = {
     ],
     no_bigger: [t("Perdón, | es | la | talla | más | grande | que | tenemos.", "Sorry, | it's | the | size | most | big | that | we-have.", "Sorry, that's our biggest size.")],
     no_smaller: [t("Perdón, | es | la | talla | más | chica | que | tenemos.", "Sorry, | it's | the | size | most | small | that | we-have.", "Sorry, that's our smallest size.")],
+    // shoes go by number
+    no_bigger_shoe: [t("Perdón, | es | el | número | más | grande | que | tenemos.", "Sorry, | it's | the | number | most | big | that | we-have.", "Sorry, that's our biggest size.")],
+    no_smaller_shoe: [t("Perdón, | es | el | número | más | chico | que | tenemos.", "Sorry, | it's | the | number | most | small | that | we-have.", "Sorry, that's our smallest size.")],
     size_list: [
       t("Hay | chica, | mediana, | grande | y | extra | grande.", "There-is | small, | medium, | large | and | extra | large.", "We have small, medium, large and extra-large."),
     ],
@@ -920,13 +1030,13 @@ export const clothes: SituationDef = {
       t("Uy, | la | {S} | se | acabó | ayer.", "Oops, | the | {S} | (itself) | ran out | yesterday.", "Oh no, the {S} sold out yesterday.", { flags: { 3: "se acabó: “ran out”; the se has no English word." } }),
     ],
     sold_out_offer: [
-      t("¿Le | traigo | {T.the}?", "(For) you | I-bring | {T.the}?", "Shall I get you {T.the}?"),
+      t("¿Le | traigo | {T.the}?", "(For) you | I-bring | {T.the}?", "Should I get you {T.the}?"),
     ],
     sold_out_offer_try: [
       t("¿Quiere | probarse | {T.the}?", "Do you want | to try on | {T.the}?", "Would you like to try {T.the} instead?"),
     ],
     sold_out_take: [t("Claro, | aquí | {lo@X} | tiene.", "Sure, | here | it | you-have.", "Sure, here you go.")],
-    sold_out_take_pl: [t("Claro, | aquí | {lo@X} | tiene.", "Sure, | here | them | you-have.", "Sure, here you go.")],
+    sold_out_take_pl: [t("Claro, | aquí | {lo@X:pl} | tiene.", "Sure, | here | them | you-have.", "Sure, here you go.")],
     sold_out_again: [t("Perdón, | en | {S} | ya no hay.", "Sorry, | in | {S} | there's none left.", "Sorry, we're out of {S}.")],
 
     // --- color -------------------------------------------------------------------------------
@@ -938,18 +1048,22 @@ export const clothes: SituationDef = {
       t("{lo@X} | tenemos | en | {A}, | {B} | y | {C}.", "It | we-have | in | {A}, | {B} | and | {C}.", "We have it in {A}, {B} and {C}."),
     ],
     color_list_pl: [
-      t("{lo@X} | tenemos | en | {A}, | {B} | y | {C}.", "Them | we-have | in | {A}, | {B} | and | {C}.", "We have them in {A}, {B} and {C}."),
+      t("{lo@X:pl} | tenemos | en | {A}, | {B} | y | {C}.", "Them | we-have | in | {A}, | {B} | and | {C}.", "We have them in {A}, {B} and {C}."),
     ],
     color_yes: [
       t("¡Sí, | claro! | Aquí | {lo@X} | tiene | en | {C}.", "Yes, | sure! | Here | it | you-have | in | {C}.", "Yes, of course! Here it is in {C}."),
       t("Sí | hay | en | {C}. | Se | {lo@X} | traigo.", "Yes | there-is | in | {C}. | (For) you | it | I-bring.", "Yes, we have it in {C}. I'll get it for you."),
     ],
     color_yes_pl: [
-      t("¡Sí, | claro! | Aquí | {lo@X} | tiene | en | {C}.", "Yes, | sure! | Here | them | you-have | in | {C}.", "Yes, of course! Here they are in {C}."),
-      t("Sí | hay | en | {C}. | Se | {lo@X} | traigo.", "Yes | there-is | in | {C}. | (For) you | them | I-bring.", "Yes, we have them in {C}. I'll get them for you."),
+      t("¡Sí, | claro! | Aquí | {lo@X:pl} | tiene | en | {C}.", "Yes, | sure! | Here | them | you-have | in | {C}.", "Yes, of course! Here they are in {C}."),
+      t("Sí | hay | en | {C}. | Se | {lo@X:pl} | traigo.", "Yes | there-is | in | {C}. | (For) you | them | I-bring.", "Yes, we have them in {C}. I'll get them for you."),
     ],
     color_no: [
       t("Perdón, | en | {C} | no hay.", "Sorry, | in | {C} | there isn't.", "Sorry, we don't have it in {C}."),
+    ],
+    // "¿Cuál me recomienda?" / "Cualquiera": the garment's first color
+    color_tip: [
+      t("El | {C} | es | el | que | más | se vende.", "The | {C} | is | the one | that | most | sells.", "The {C} one is our best seller."),
     ],
 
     // --- trying on -------------------------------------------------------------------------
@@ -960,17 +1074,17 @@ export const clothes: SituationDef = {
         { flags: { 0: "Mexican: ¿gusta…? = would you like…? (very polite)." }, neutral: t("¿Quiere | probárse{lo@X}?", "Do you want | to try it on?", "Would you like to try it on?") }),
     ],
     offer_try_pl: [
-      t("¿Se | {lo@X} | quiere | probar?", "(Yourself) | them | do you want | to try on?", "Would you like to try them on?",
+      t("¿Se | {lo@X:pl} | quiere | probar?", "(Yourself) | them | do you want | to try on?", "Would you like to try them on?",
         { flags: { 0: "probarse: to try on (on yourself); se los quiere probar = would you like to try them on." } }),
-      t("¿Gusta | probárse{lo@X}?", "Would you like | to try them on?", "Would you like to try them on?",
-        { flags: { 0: "Mexican: ¿gusta…? = would you like…? (very polite)." }, neutral: t("¿Quiere | probárse{lo@X}?", "Do you want | to try them on?", "Would you like to try them on?") }),
+      t("¿Gusta | probárse{lo@X:pl}?", "Would you like | to try them on?", "Would you like to try them on?",
+        { flags: { 0: "Mexican: ¿gusta…? = would you like…? (very polite)." }, neutral: t("¿Quiere | probárse{lo@X:pl}?", "Do you want | to try them on?", "Would you like to try them on?") }),
     ],
     fitting_rooms: [
       t("Los | probadores | están | al fondo.", "The | fitting rooms | are | at the back.", "The fitting rooms are at the back."),
       t("El | probador | está | ahí, | a | la | derecha.", "The | fitting room | is | there, | to | the | right.", "The fitting room is over there, on the right."),
     ],
     try_this: [t("Aquí | tiene. | Pruébese | {este@X}.", "Here | you-have. | Try on | this one.", "Here you go. Try this one on.")],
-    try_this_pl: [t("Aquí | tiene. | Pruébese | {este@X}.", "Here | you-have. | Try on | these.", "Here you go. Try these on.")],
+    try_this_pl: [t("Aquí | tiene. | Pruébese | {este@X:pl}.", "Here | you-have. | Try on | these.", "Here you go. Try these on.")],
     try_seat: [t("Siéntese | aquí, | por favor.", "Sit down | here, | please.", "Have a seat right here.")],
     let_me_know: [t("¡Me | avisa | cómo | le | queda!", "Me | you-tell | how | (on) you | it-fits!", "Let me know how it fits!")],
     let_me_know_pl: [t("¡Me | avisa | cómo | le | quedan!", "Me | you-tell | how | (on) you | they-fit!", "Let me know how they fit!")],
@@ -986,7 +1100,7 @@ export const clothes: SituationDef = {
       t("¡Ay, | no! | ¿Le | queda | grande | o | {chico@X}?", "Oh, | no! | (On) you | it-fits | big | or | small?", "Oh no! Is it too big or too small?"),
     ],
     fit_which_pl: [
-      t("¡Ay, | no! | ¿Le | quedan | grandes | o | {chico@X}?", "Oh, | no! | (On) you | they-fit | big | or | small?", "Oh no! Are they too big or too small?"),
+      t("¡Ay, | no! | ¿Le | quedan | grandes | o | {chico@X:pl}?", "Oh, | no! | (On) you | they-fit | big | or | small?", "Oh no! Are they too big or too small?"),
     ],
     compliment: [
       t("¡Le | queda | muy | bien!", "(On) you | it-suits | very | well!", "It looks great on you!"),
@@ -996,6 +1110,15 @@ export const clothes: SituationDef = {
     compliment_pl: [
       t("¡Le | quedan | muy | bien!", "(On) you | they-suit | very | well!", "They look great on you!"),
       t("¡Ese | color | le | queda | precioso!", "That | color | (on) you | it-suits | lovely!", "That color looks lovely on you!"),
+      t("¡Se | le | ven | muy | bien!", "(Themselves) | (on) you | they-look | very | good!", "You look great in them!"),
+    ],
+    // the same compliments without "Ese color…" (the color is still to be chosen)
+    compliment_plain: [
+      t("¡Le | queda | muy | bien!", "(On) you | it-suits | very | well!", "It looks great on you!"),
+      t("¡Se | le | ve | muy | bien!", "(Itself) | (on) you | it-looks | very | good!", "You look great in it!"),
+    ],
+    compliment_plain_pl: [
+      t("¡Le | quedan | muy | bien!", "(On) you | they-suit | very | well!", "They look great on you!"),
       t("¡Se | le | ven | muy | bien!", "(Themselves) | (on) you | they-look | very | good!", "You look great in them!"),
     ],
     fit_ok: [t("¡Qué | bueno!", "How | good!", "Oh, good!"), t("¡Perfecto!", "Perfect!", "Great!")],
@@ -1029,11 +1152,13 @@ export const clothes: SituationDef = {
         { say: "¡Buenas noticias: hoy tienen {$pct} por ciento de descuento!" }),
     ],
     sale_no: [t("Perdón, | {este@X} | no tiene | descuento.", "Sorry, | this one | doesn't have | discount.", "Sorry, this one isn't on sale.")],
-    sale_no_pl: [t("Perdón, | {este@X} | no tienen | descuento.", "Sorry, | these | don't have | discount.", "Sorry, these aren't on sale.")],
+    sale_no_pl: [t("Perdón, | {este@X:pl} | no tienen | descuento.", "Sorry, | these | don't have | discount.", "Sorry, these aren't on sale.")],
     sale_general: [
       t("Pero | lo | de | la | mesa | de | la | entrada | está | al | {$pct}%.", "But | the stuff | on | the | table | by | the | entrance | is | at | {$pct}% (off).",
         "But everything on the front table is {$pct}% off.", { say: "Pero lo de la mesa de la entrada está al {$pct} por ciento." }),
     ],
+    // "¿Hasta cuándo es la oferta?"
+    sale_until: [t("Hasta | agotar existencias.", "Until | (we) sell out.", "While supplies last.")],
     tax_info: [
       t("Sí, | el | precio | ya | incluye | IVA.", "Yes, | the | price | already | includes | VAT.", "Yes, the price already includes tax.",
         { flags: { 5: "IVA: Mexico's sales tax (VAT). Price tags in Mexico normally include it." } }),
@@ -1063,7 +1188,7 @@ export const clothes: SituationDef = {
     ],
     decide_q_pl: [
       t("¿Y? | ¿Qué | le | parecieron?", "So? | What | (to) you | did they seem?", "So, what do you think?"),
-      t("¿Se | {lo@X} | lleva?", "(For yourself) | them | are you taking?", "Will you take them?"),
+      t("¿Se | {lo@X:pl} | lleva?", "(For yourself) | them | are you taking?", "Will you take them?"),
     ],
     take_ok: [
       t("¡Perfecto! | Pásele | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.",
@@ -1073,7 +1198,7 @@ export const clothes: SituationDef = {
     take_ok_pl: [
       t("¡Perfecto! | Pásele | a | la | caja.", "Perfect! | Go on | to | the | register.", "Great! Come on over to the register.",
         { flags: { 1: "Mexican: pásele = go ahead, come in." }, neutral: t("¡Perfecto! | Pase | a | la | caja.", "Perfect! | Go | to | the | register.", "Great! Come on over to the register.") }),
-      t("¡Muy | bien! | Se | {lo@X} | llevo | a | la | caja.", "Very | good! | (For) you | them | I-take | to | the | register.", "Great! I'll take them to the register for you."),
+      t("¡Muy | bien! | Se | {lo@X:pl} | llevo | a | la | caja.", "Very | good! | (For) you | them | I-take | to | the | register.", "Great! I'll take them to the register for you."),
     ],
     think_ok: [
       t("Claro, | con | calma.", "Sure, | with | calm.", "Sure, take your time."),
@@ -1095,7 +1220,7 @@ export const clothes: SituationDef = {
     rewards_offer: [
       t("¿Quiere | registrarse? | Es | gratis | y | junta | puntos.", "Do you want | to sign up? | It's | free | and | you-collect | points.", "Would you like to sign up? It's free, and you earn points."),
     ],
-    rewards_free: [t("No cuesta | nada. | ¿{m:Lo|f:La} | registro?", "It doesn't cost | anything. | You | I-sign up?", "It doesn't cost anything. Shall I sign you up?",
+    rewards_free: [t("No cuesta | nada. | ¿{m:Lo|f:La} | registro?", "It doesn't cost | anything. | You | I-sign up?", "It doesn't cost anything. Should I sign you up?",
       { flags: { 2: "lo / la: “you” (usted), as an object; it follows your gender." } })],
     rewards_no: [t("¡Sin | problema!", "Without | problem!", "No problem!"), t("Está | bien.", "It's | fine.", "That's fine.")],
     rewards_yes: [t("¡Listo! | Nada más | escanee | este | código | en | su | casa.", "Ready! | Just | scan | this | code | in | your | house.", "All set! Just scan this code at home.")],
@@ -1117,7 +1242,7 @@ export const clothes: SituationDef = {
     cash_ok: [t("Claro, | en | efectivo | está | bien.", "Sure, | in | cash | is | fine.", "Sure, cash is fine.")],
     dollars: [t("Sí, | pero | el | cambio | se lo | doy | en | pesos.", "Yes, | but | the | change | it to you | I-give | in | pesos.", "Yes, but I'll give you the change in pesos.")],
     hold_ok: [t("Claro, | se | {lo@X} | aparto | hasta | mañana.", "Sure, | (for) you | it | I-set aside | until | tomorrow.", "Sure, I'll hold it for you until tomorrow.")],
-    hold_ok_pl: [t("Claro, | se | {lo@X} | aparto | hasta | mañana.", "Sure, | (for) you | them | I-set aside | until | tomorrow.", "Sure, I'll hold them for you until tomorrow.")],
+    hold_ok_pl: [t("Claro, | se | {lo@X:pl} | aparto | hasta | mañana.", "Sure, | (for) you | them | I-set aside | until | tomorrow.", "Sure, I'll hold them for you until tomorrow.")],
     transfer_no: [t("Perdón, | aquí | nada más | tarjeta | o | efectivo.", "Sorry, | here | only | card | or | cash.", "Sorry, we only take card or cash here.")],
     change_back: [t("Aquí | tiene | su | cambio.", "Here | you-have | your | change.", "Here's your change."), t("Y | su | cambio.", "And | your | change.", "And your change.")],
     paid: [t("¡Gracias!", "Thanks!", "Thank you!"), t("Listo, | gracias.", "Ready, | thanks.", "All set, thanks!")],
@@ -1136,7 +1261,7 @@ export const clothes: SituationDef = {
     ],
     bag_here_pl: [
       t("Aquí | tiene.", "Here | you-have.", "Here you go."),
-      t("Claro, | se | {lo@X} | pongo | en | una | bolsa | de | papel.", "Sure, | (for) you | them | I-put | in | a | bag | of | paper.", "Sure, I'll put them in a paper bag for you."),
+      t("Claro, | se | {lo@X:pl} | pongo | en | una | bolsa | de | papel.", "Sure, | (for) you | them | I-put | in | a | bag | of | paper.", "Sure, I'll put them in a paper bag for you."),
     ],
     bag_free: [t("Es | gratis. | ¿Le | doy | una?", "It's | free. | (To) you | I-give | one?", "It's free. Would you like one?")],
     cut_tags: [t("¡Claro! | Le | quito | la | etiqueta.", "Sure! | (For) you | I-remove | the | tag.", "Sure! I'll take the tag off for you.")],
@@ -1151,16 +1276,16 @@ export const clothes: SituationDef = {
             "Of course! I'll gift-wrap it and put in a gift receipt.") }),
     ],
     gift_ok_pl: [
-      t("¡Claro! | Se | {lo@X} | envuelvo | para | regalo | y | le | pongo | un | ticket | de | regalo.", "Sure! | (For) you | them | I-wrap | for | gift | and | (for) you | I-put | a | receipt | of | gift.",
+      t("¡Claro! | Se | {lo@X:pl} | envuelvo | para | regalo | y | le | pongo | un | ticket | de | regalo.", "Sure! | (For) you | them | I-wrap | for | gift | and | (for) you | I-put | a | receipt | of | gift.",
         "Of course! I'll gift-wrap them and put in a gift receipt.", { flags: { 10: FLAG_TICKET },
-          neutral: t("¡Claro! | Se | {lo@X} | envuelvo | para | regalo | y | le | pongo | un | recibo | de | regalo.", "Sure! | (For) you | them | I-wrap | for | gift | and | (for) you | I-put | a | receipt | of | gift.",
+          neutral: t("¡Claro! | Se | {lo@X:pl} | envuelvo | para | regalo | y | le | pongo | un | recibo | de | regalo.", "Sure! | (For) you | them | I-wrap | for | gift | and | (for) you | I-put | a | receipt | of | gift.",
             "Of course! I'll gift-wrap them and put in a gift receipt.") }),
     ],
     ask_receipt: [
       t("¿Le | doy | su | ticket | o | se lo | mando | por | correo?", "(To) you | I-give | your | receipt | or | it to you | I-send | by | email?",
-        "Would you like your receipt printed, or shall I email it to you?", { flags: { 3: FLAG_TICKET },
+        "Would you like a printed receipt, or should I email it to you?", { flags: { 3: FLAG_TICKET },
           neutral: t("¿Le | doy | su | recibo | o | se lo | mando | por | correo?", "(To) you | I-give | your | receipt | or | it to you | I-send | by | email?",
-            "Would you like your receipt printed, or shall I email it to you?") }),
+            "Would you like a printed receipt, or should I email it to you?") }),
       t("¿Quiere | su | ticket?", "Do you want | your | receipt?", "Would you like your receipt?", { flags: { 2: FLAG_TICKET },
         neutral: t("¿Quiere | su | recibo?", "Do you want | your | receipt?", "Would you like your receipt?") }),
     ],
@@ -1181,6 +1306,10 @@ export const clothes: SituationDef = {
       t("¡Que | disfrute | {su@X} | {X} | {nuevo@X}!", "(May) | you-enjoy | your | {X} | new!", "Enjoy your new {X}!"),
       t("¡Gracias | por | su | compra!", "Thanks | for | your | purchase!", "Thanks for shopping with us!"),
     ],
+    closing_bought_pl: [
+      t("¡Que | disfrute | {su@X:pl} | {X.pl} | {nuevo@X:pl}!", "(May) | you-enjoy | your | {X.pl} | new!", "Enjoy your new {X.pl}!"),
+      t("¡Gracias | por | su | compra!", "Thanks | for | your | purchase!", "Thanks for shopping with us!"),
+    ],
     closing_nobuy: [t("¡Gracias | por | venir!", "Thanks | for | coming!", "Thanks for stopping by!")],
     bye_after: [
       t("¡Vuelva | pronto!", "Come back | soon!", "Come back soon!"),
@@ -1194,8 +1323,8 @@ export const clothes: SituationDef = {
       t("¿Es | para | un | cambio | o | una | devolución?", "Is it | for | an | exchange | or | a | return?", "Is it an exchange or a return?"),
     ],
     ret_ask_receipt: [
-      t("Claro. | ¿Trae | su | ticket?", "Sure. | Do you bring | your | receipt?", "Sure. Do you have your receipt?", { flags: { 3: FLAG_TICKET },
-        neutral: t("Claro. | ¿Trae | su | recibo?", "Sure. | Do you bring | your | receipt?", "Sure. Do you have your receipt?") }),
+      t("Claro. | ¿Trae | su | ticket?", "Sure. | Do you have (with you) | your | receipt?", "Sure. Do you have your receipt?", { flags: { 3: FLAG_TICKET },
+        neutral: t("Claro. | ¿Trae | su | recibo?", "Sure. | Do you have (with you) | your | receipt?", "Sure. Do you have your receipt?") }),
       t("Con gusto. | ¿Tiene | el | ticket | de | compra?", "With pleasure. | Do you have | the | receipt | of | purchase?", "Of course. Do you have the receipt?", { flags: { 3: FLAG_TICKET },
         neutral: t("Con gusto. | ¿Tiene | el | recibo | de | compra?", "With pleasure. | Do you have | the | receipt | of | purchase?", "Of course. Do you have the receipt?") }),
     ],
@@ -1207,8 +1336,11 @@ export const clothes: SituationDef = {
     ],
     ret_ask_reason_pl: [
       t("¿Tuvo | algún | problema?", "Did you have | some | problem?", "Was there anything wrong with them?"),
-      t("¿Me | permite | preguntar | por qué | {lo@X} | devuelve?", "Me | you-allow | to ask | why | them | you-return?", "May I ask why you're returning them?"),
+      t("¿Me | permite | preguntar | por qué | {lo@X:pl} | devuelve?", "Me | you-allow | to ask | why | them | you-return?", "May I ask why you're returning them?"),
     ],
+    // an exchange already asked for ("Quiero cambiar esta blusa"): not "¿por qué la devuelve?" (ret_ask_reason's first variant, the same clip)
+    ret_ask_problem: [t("¿Tuvo | algún | problema?", "Did you have | some | problem?", "Was there anything wrong with it?")],
+    ret_ask_problem_pl: [t("¿Tuvo | algún | problema?", "Did you have | some | problem?", "Was there anything wrong with them?")],
     ret_what_wrong: [t("¿Qué | problema | tiene?", "What | problem | does it have?", "What's wrong with it?")],
     ret_what_wrong_pl: [t("¿Qué | problema | tienen?", "What | problem | do they have?", "What's wrong with them?")],
     ret_sorry: [t("¡Ay, | qué | pena! | Una disculpa.", "Oh, | what a | shame! | I'm sorry.", "Oh no, I'm so sorry about that!",
@@ -1241,18 +1373,23 @@ export const clothes: SituationDef = {
     ret_credit_done: [t("Aquí | tiene | su | saldo a favor: | {$amount}.", "Here | you-have | your | store credit: | {$amount}.", "Here's your store credit: {$amount}.")],
     ret_credit_card: [t("Está | en | esta | tarjeta | de | regalo.", "It's | on | this | card | of | gift.", "It's on this gift card.")],
     ret_exchange_size_q: [t("¿Qué | talla | quiere | en su lugar?", "What | size | do you want | instead?", "What size would you like instead?")],
+    // shoes go by number ("Las sandalias y los tenis van por número")
+    ret_exchange_shoe_q: [t("¿Qué | número | quiere | en su lugar?", "What | number | do you want | instead?", "What size would you like instead?")],
     ret_exchange_color_q: [t("¿Qué | color | prefiere | entonces?", "What | color | do you prefer | then?", "Which color would you like instead?")],
     ret_exchange_what_q: [
       t("¡Claro! | ¿Mismo | modelo | en | otra | talla | o | en | otro | color?", "Sure! | Same | style | in | other | size | or | in | other | color?", "Sure! Same style, different size or color?"),
+    ],
+    ret_exchange_what_shoe_q: [
+      t("¡Claro! | ¿Mismo | modelo | en | otro | número | o | en | otro | color?", "Sure! | Same | style | in | other | number | or | in | other | color?", "Sure! Same style, different size or color?"),
     ],
     ret_exchange_done: [
       t("Aquí | tiene | {su@X} | {X} | {nuevo@X}. | ¡Perdón | por | las | molestias!", "Here | you-have | your | {X} | new. | Sorry | for | the | trouble!", "Here's your new {X}. Sorry for the trouble!"),
     ],
     ret_exchange_done_pl: [
-      t("Aquí | tiene | {su@X} | {X} | {nuevo@X}. | ¡Perdón | por | las | molestias!", "Here | you-have | your | {X} | new. | Sorry | for | the | trouble!", "Here are your new {X}. Sorry for the trouble!"),
+      t("Aquí | tiene | {su@X:pl} | {X.pl} | {nuevo@X:pl}. | ¡Perdón | por | las | molestias!", "Here | you-have | your | {X.pl} | new. | Sorry | for | the | trouble!", "Here are your new {X.pl}. Sorry for the trouble!"),
     ],
     ret_same_new: [t("Aquí | tiene | {uno@X} | {nuevo@X}, | igual.", "Here | you-have | a | new (one), | the same.", "Here's a new one, just the same.")],
-    ret_same_new_pl: [t("Aquí | tiene | {uno@X} | {nuevo@X}, | iguales.", "Here | you-have | some | new (ones), | the same.", "Here are new ones, just the same.")],
+    ret_same_new_pl: [t("Aquí | tiene | {uno@X:pl} | {nuevo@X:pl}, | iguales.", "Here | you-have | some | new (ones), | the same.", "Here are new ones, just the same.")],
     ret_shop_ok: [t("¡Ah, | perdón! | ¿En | qué | le | puedo | ayudar?", "Oh, | sorry! | In | what | (to) you | can I | help?", "Oh, sorry! How can I help you?")],
   },
 
@@ -1261,7 +1398,8 @@ export const clothes: SituationDef = {
     amount: () => [...new Set(CLOTHING.flatMap((e) => { const p = e.attrs!.price as number; return [p, ...[20, 30].map((pct) => Math.floor((p * (100 - pct)) / 10000) * 100)]; }))],
     total: () => [...new Set(CLOTHING.flatMap((e) => { const p = e.attrs!.price as number; return [p, ...[20, 30].map((pct) => Math.floor((p * (100 - pct)) / 10000) * 100)]; }))],
     pct: () => [20, 30],
-    num: () => Array.from({ length: 14 }, (_, i) => i + 20),
+    // every shoe number a line can say (MX_MIN–MX_MAX: conversions, exchanges and size changes stay inside it)
+    num: () => Array.from({ length: MX_MAX - MX_MIN + 1 }, (_, i) => i + MX_MIN),
   },
 
   hints: {
@@ -1321,6 +1459,7 @@ export const clothes: SituationDef = {
         { id: "q_colors", s: t("¿Qué | colores | tiene?", "What | colors | do you have?", "What colors do you have?") },
         { id: "q_other_colors", s: t("¿Hay | en | otros | colores?", "Is there | in | other | colors?", "Does it come in other colors?") },
         { id: "not_color", s: t("No me gusta | el | color.", "I don't like | the | color.", "I don't like the color.") },
+        { id: "color_tip", s: t("¿Qué | color | me | recomienda?", "What | color | (to) me | do you recommend?", "Which color would you recommend?") },
       ],
     },
     // Answers to "¿Se lo quiere probar?"
@@ -1351,6 +1490,8 @@ export const clothes: SituationDef = {
         hp("fit_tight", "Me | queda | un poco | {apretado@X}.", "(On) me | it-fits | a bit | tight.", "It's a little tight.", "Me | quedan | un poco | {apretado@X:pl}.", "(On) me | they-fit | a bit | tight.", "They're a little tight."),
         hp("fit_long", "Me | queda | {largo@X}.", "(On) me | it-fits | long.", "It's too long.", "Me | quedan | {largo@X:pl}.", "(On) me | they-fit | long.", "They're too long."),
         { id: "size_up", s: t("¿Tiene | una | talla | más | grande?", "Do you have | a | size | more | big?", "Do you have a bigger size?") },
+        hp("fit_ask", "¿Cómo | me | queda?", "How | (on) me | does it fit?", "How does it look on me?", "¿Cómo | me | quedan?", "How | (on) me | do they fit?", "How do they look on me?",
+          {}, { note: "Asking the salesperson's opinion; “¿Me queda bien?” works too." }),
       ),
     },
     // "¿Le queda grande o chico?"
@@ -1415,7 +1556,7 @@ export const clothes: SituationDef = {
         { id: "bag_no", s: t("No, | gracias, | no necesito | bolsa.", "No, | thanks, | I don't need | bag.", "No, thanks, I don't need a bag.") },
         hp("wear_it", "Me | {lo@X} | llevo | {puesto@X}.", "(For) me | it | I-take | on (wearing).", "I'll wear it out.", "Me | {lo@X:pl} | llevo | {puesto@X:pl}.", "(For) me | them | I-take | on (wearing).", "I'll wear them out.",
           {}, { note: "“Me lo llevo puesto” = I'll wear it out of the store." }),
-        { id: "gift_receipt", s: t("Es | para | regalo.", "It's | for | gift.", "It's a gift."), note: "Shops often offer to gift-wrap it: “¿Se lo envuelvo para regalo?”" },
+        { id: "gift_receipt", s: t("Es | para | regalo.", "It's | for | gift.", "It's a gift."), note: "Stores often offer to gift-wrap it: “¿Se lo envuelvo para regalo?”" },
       ),
     },
     receipt: {
@@ -1466,7 +1607,7 @@ export const clothes: SituationDef = {
         { id: "ret_refund", s: t("¿Me | puede | devolver | el | dinero?", "(To) me | can you | give back | the | money?", "Could I get a refund?") },
         { id: "ret_exchange_an", s: t("Prefiero | un | cambio, | por favor.", "I-prefer | an | exchange, | please.", "I'd like an exchange, please.") },
         { id: "ret_credit", s: t("Saldo a favor | está | bien.", "Store credit | is | fine.", "Store credit is fine."),
-          note: "Saldo a favor: money you can spend in the same shop later (often on a gift card)." },
+          note: "Saldo a favor: money you can spend in the same store later (often on a gift card)." },
       ],
     },
     ret: {
@@ -1485,13 +1626,13 @@ export const clothes: SituationDef = {
         { id: "ret_refund", s: t("¿Me | puede | devolver | el | dinero?", "(To) me | can you | give back | the | money?", "Could I get a refund?") },
         { id: "ret_exchange_short", s: t("Quisiera | hacer | un | cambio.", "I'd like | to make | an | exchange.", "I'd like to exchange it.") },
         { id: "ret_credit", s: t("Saldo a favor | está | bien.", "Store credit | is | fine.", "Store credit is fine."),
-          note: "Saldo a favor: money you can spend in the same shop later (often on a gift card)." },
+          note: "Saldo a favor: money you can spend in the same store later (often on a gift card)." },
       ),
     },
   },
 
   tips: {
-    tu_staff: { key: "tu_staff", lt: "Understood! With a shop assistant, usted is more polite: tiene, puede, me enseña (tienes, puedes, me enseñas are for friends).", better: "¿Me lo puedo probar?" },
+    tu_staff: { key: "tu_staff", lt: "Understood! With a salesclerk, usted is more polite: tiene, puede, me enseña (tienes, puedes, me enseñas are for friends).", better: "¿Me lo puedo probar?" },
   },
 
   // -------------------------------------------------------------------------
@@ -1525,7 +1666,7 @@ export const clothes: SituationDef = {
         if (c.s.browsing && !c.s.nudged) { c.s.nudged = true; c.say(c.s.showTable ? "sale_table" : "browse_nudge", { pct: c.s.pct }); return; }
         c.say(c.s.itemReset ? "ask_item_else" : "ask_item");
       },
-      expects: ["looking_for", "just_looking", "ask_have_size", "ask_have_color", "try_on", "return_item", "exchange", "vague_item", "im_fine_ctx"],
+      expects: ["looking_for", "just_looking", "ask_have_size", "ask_have_color", "try_on", "return_item", "exchange", "vague_item", "im_fine_ctx", "come_to_buy_ctx"],
       suggest: [
         { lt: "Say what you're looking for", hint: "looking", options: "clothing" },
         { lt: "Say you're just looking", hint: "browse" },
@@ -1549,7 +1690,7 @@ export const clothes: SituationDef = {
         const id = cur(c)!.id;
         guideFor(c, "color", id, { lt: "Choose a color", hint: itemHint("color", id), options: colorsOf(id) });
       },
-      expects: ["color_ans", "ask_have_color", "ask_colors", "size_ans", "dislike_color"],
+      expects: ["color_ans", "ask_have_color", "ask_colors", "size_ans", "dislike_color", "color_advice", "color_rec_ctx", "color_any_ctx"],
       suggest: [{ lt: "Choose a color", hint: "color", options: "color" }],
       help: (c) => { sayColors(c, cur(c)!); } },
     { id: "tryon", when: (c) => c.s.mode !== "return" && !!cur(c) && hasSize(cur(c)!) && !c.s.decision, done: (c) => !!c.s.tried || !!c.s.noTry,
@@ -1569,7 +1710,7 @@ export const clothes: SituationDef = {
         sayN(c, "decide_q");
         guideFor(c, "decide", cur(c)?.id);
       },
-      expects: ["take_it", "think_about_it", "not_take", "too_expensive", "ask_price", "ask_sale", "ask_tax", "ask_return_policy", "dislike_color", "im_fine_ctx", "wear_it", "hold_item", "ask_colors", "why_not_ctx"],
+      expects: ["take_it", "think_about_it", "not_take", "too_expensive", "ask_price", "ask_sale", "ask_tax", "ask_return_policy", "dislike_color", "im_fine_ctx", "wear_it", "hold_item", "ask_colors", "why_not_ctx", "ask_opinion", "charge_me", "see_other"],
       suggest: [
         { lt: "Say you'll take it, or ask the price", hint: "decide", options: "clothing" },
         { lt: "Think it over, or say no", hint: "think" },
@@ -1593,7 +1734,7 @@ export const clothes: SituationDef = {
         // ("¿Efectivo o tarjeta?" only when the learner hasn't said yet)
         if (!c.s.totalSaid) { c.s.totalSaid = true; if (!c.s.payMethod && c.chance(0.35)) c.say("ask_pay_method"); }
       },
-      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card", "pay_transfer", "here_ctx", "pay_q", "ask_dollars"],
+      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "no_card", "pay_transfer", "here_ctx", "pay_q", "ask_dollars", "ask_total"],
       suggest: [{ lt: "Pay by card, in cash or by phone", hint: "pay" }] },
     { id: "bag", when: (c) => c.s.mode !== "return" && !!c.s.paid && c.s.askBag, done: (c) => c.s.bag !== undefined,
       ask: (c) => { c.say("ask_bag"); guideFor(c, "bag", cur(c)?.id); }, expects: ["wear_it", "no_bag", "gift_receipt", "want_bag", "im_fine_ctx", "no_receipt", "bag_price"],
@@ -1601,44 +1742,39 @@ export const clothes: SituationDef = {
       yes: (c) => { c.s.bag = true; sayN(c, "bag_here"); },
       no: (c) => { c.s.bag = false; c.say("no_problem"); } },
     { id: "receipt", when: (c) => c.s.mode !== "return" && !!c.s.paid && c.s.askReceipt, done: (c) => c.s.receipt !== undefined,
-      ask: (c) => c.say("ask_receipt"), expects: ["receipt_bag", "receipt_email", "no_receipt", "gift_receipt", "receipt_no_ctx", "im_fine_ctx"],
+      ask: (c) => c.say("ask_receipt"), expects: ["receipt_bag", "receipt_email", "no_receipt", "gift_receipt", "receipt_no_ctx", "im_fine_ctx", "receipt_print_ctx"],
       suggest: [{ lt: "Say how you want the receipt", hint: "receipt" }],
       yes: (c) => { c.s.receipt = "paper"; c.say("receipt_here"); c.event("give", { item: "receipt" }); },
       no: (c) => { c.s.receipt = "none"; c.say("receipt_keep"); } },
 
     // Returns and exchanges
     { id: "r_receipt", when: (c) => c.s.mode === "return", done: (c) => ret(c).receipt !== undefined,
-      ask: (c) => c.say("ret_ask_receipt"), expects: ["receipt_yes", "receipt_none", "here_you_go", "here_ctx"],
+      ask: (c) => c.say("ret_ask_receipt"), expects: ["receipt_yes", "receipt_none", "here_you_go", "here_ctx", "receipt_have_ctx"],
       suggest: [{ lt: "Say whether you have the receipt", hint: "ret_receipt" }],
       hints: ["ret_receipt", "ret", "g_yesno"],
       yes: (c) => { ret(c).receipt = true; c.say("ret_receipt_thanks"); },
       no: (c) => { ret(c).receipt = false; c.say("ret_receipt_none"); } },
     { id: "r_reason", when: (c) => c.s.mode === "return", done: (c) => !!ret(c).reason,
-      ask: (c) => { sayN(c, "ret_ask_reason", ret(c).item); guideFor(c, "r_reason", ret(c).item.id); }, expects: ["problem", "fit_bad", "fit_unclear", "dislike_color", "nothing_ctx"],
+      ask: (c) => { sayN(c, ret(c).choice === "exchange" ? "ret_ask_problem" : "ret_ask_reason", ret(c).item); guideFor(c, "r_reason", ret(c).item.id); }, expects: ["problem", "fit_bad", "fit_unclear", "dislike_color", "nothing_ctx"],
       suggest: [{ lt: "Explain what's wrong", hint: "ret_reason" }, { lt: "Say the size doesn't fit", hint: "fit", options: "clothing" }],
       hints: ["ret_reason", "fit", "ret"],
       yes: (c) => { sayN(c, "ret_what_wrong", ret(c).item); guideFor(c, "r_reason", ret(c).item.id); },
       no: (c) => { reactReason(c, "mind"); } },
     { id: "r_choice", when: (c) => c.s.mode === "return", done: (c) => !!ret(c).choice,
       ask: (c) => { if (ret(c).receipt) c.say("ret_choice_q"); else c.say(ret(c).refusedRefund || c.s.noReceiptSaid ? "ret_choice_short" : "ret_choice_noreceipt"); c.s.noReceiptSaid = !ret(c).receipt; },
-      expects: ["want_refund", "exchange", "want_credit", "no_refund", "no_credit"],
+      expects: ["want_refund", "exchange", "want_credit", "no_refund", "no_credit", "refund_ctx"],
       suggest: [{ lt: "Choose: refund, exchange or store credit", hint: "ret_choice" }],
       hints: ["ret_choice", "ret"],
       yes: (c) => { c.say(ret(c).receipt ? "ret_choice_q" : "ret_choice_short"); c.hold(); },
       no: (c) => { c.say(ret(c).receipt ? "ret_choice_q" : "ret_choice_short"); c.hold(); } },
     { id: "r_new", when: (c) => c.s.mode === "return" && ret(c).choice === "exchange", done: (c) => !!(ret(c).newSize || ret(c).newColor || ret(c).newShoe != null || ret(c).done),
-      ask: (c) => {
-        const r = ret(c);
-        const id = r.item.id;
-        const size: Suggestion = isShoe(id) ? { lt: "Choose another size", hint: "shoe_size" } : { lt: "Choose another size", hint: "size", options: "size" };
-        const color: Suggestion = { lt: "Choose another color", hint: itemHint("color", id), options: colorsOf(id) };
-        if (["up", "down", "nofit", "shrank"].includes(r.reason ?? "") && !oneSize(id)) { c.say("ret_exchange_size_q"); guideFor(c, "r_new", id, size, [color]); }
-        else if (["ran", "dislike"].includes(r.reason ?? "") || oneSize(id)) { c.say("ret_exchange_color_q"); guideFor(c, "r_new", id, color, oneSize(id) ? [] : [size]); }
-        else { c.say("ret_exchange_what_q"); guideFor(c, "r_new", id, size, [color]); }
-      },
-      expects: ["size_ans", "color_ans", "ask_have_size", "ask_have_color", "shoe_size", "shoe_size_ctx", "exchange"],
+      ask: (c) => { askNew(c); },
+      expects: ["size_ans", "color_ans", "ask_have_size", "ask_have_color", "shoe_size", "shoe_size_ctx", "exchange", "exch_what_ctx"],
       suggest: [{ lt: "Choose another size", hint: "size", options: "size" }, { lt: "Choose another color", hint: "color", options: "color" }],
-      yes: (c) => { ret(c).done = true; sayN(c, "ret_same_new", ret(c).item); } },
+      // "Sí" (the same model): a new one, the same (said at the end)
+      yes: (c) => { ret(c).done = true; ret(c).same = true; },
+      // "No" (not the same model): back to refund / exchange / store credit
+      no: (c) => { ret(c).choice = undefined; } },
   ],
 
   init: (c) => {
@@ -1663,7 +1799,7 @@ export const clothes: SituationDef = {
       c.say("greet_back");
       c.say("return_q");
       c.expect({
-        id: "return_q", optional: true, expects: ["return_item", "exchange", "problem", "receipt_yes"], hints: ["ret_start", "ret", "browse", "g_yesno"],
+        id: "return_q", optional: true, expects: ["return_item", "exchange", "problem", "receipt_yes", "come_to_buy_ctx"], hints: ["ret_start", "ret", "browse", "g_yesno"],
         suggest: [{ lt: "Say what you want to return or exchange", hint: itemHint("ret_start", (c.memory.lastBought as Garment | undefined)?.id ?? "guayabera") }, { lt: "Say you're just looking", hint: "browse" }],
         on: {
           return_item: (cc, sl, sg) => { clothes.handlers.return_item(cc, sl, sg); },
@@ -1724,6 +1860,19 @@ export const clothes: SituationDef = {
       }
     },
     vague_item(c) { c.s.browsing = true; c.s.nudged = true; c.say("browse_nudge"); c.hold(); },
+    // "Quiero ver otra cosa": back to "¿Qué más le puedo enseñar?" (not "Perdón, eso no lo tenemos")
+    see_other(c) {
+      if (c.s.retOffer) { c.s.retOffer = false; c.say("ret_shop_ok"); c.hold(); return; }
+      if (c.s.paid || c.s.mode === "return") { c.say("browse_ok"); return; }
+      resetItem(c, null);
+      c.s.itemReset = true; c.s.browsing = false;
+      if (c.s.decision === "none") c.s.decision = undefined;
+      c.ask("item");
+    },
+    come_to_buy_ctx(c) {
+      if (c.s.retOffer) { c.s.retOffer = false; c.say("ret_shop_ok"); c.hold(); return; }
+      c.say("what_else"); c.hold();
+    },
     change_item(c, slots) {
       const g = fromSlot(slots.item);
       if (g) { resetItem(c, null); applyItem(c, g); }
@@ -1806,6 +1955,24 @@ export const clothes: SituationDef = {
       g.color = undefined; c.s.askColor = true; c.s.fitOk = false; c.s.tried = false;
       sayColors(c, g);
     },
+    // "¿Qué color me recomienda?": the best seller (the learner still chooses)
+    color_advice(c, _slots, seg) {
+      const g = cur(c) ?? (c.s.mode === "return" && ret(c) ? ret(c).item : null);
+      if (!g) { clothes.handlers.vague_item(c, {}, seg); return; }
+      c.s.colorTip = colorsOf(g.id)[0];
+      c.say("color_tip", { C: c.s.colorTip });
+      c.hold();
+    },
+    color_rec_ctx(c, slots, seg) { clothes.handlers.color_advice(c, slots, seg); },
+    // "Cualquiera" / "Me da igual": Valeria picks the best seller
+    color_any_ctx(c) {
+      const g = cur(c);
+      if (!g) return;
+      const best = colorsOf(g.id)[0];
+      // just recommended: "Listo." (not the tip twice in a row)
+      if (c.s.colorTip === best) c.say("size_ok"); else c.say("color_tip", { C: best });
+      setColor(c, g, best);
+    },
     try_on(c, slots) {
       const g = fromSlot(slots.item);
       if (g || !cur(c)) applyItem(c, g);
@@ -1851,10 +2018,21 @@ export const clothes: SituationDef = {
       fitGood(c);
     },
     fit_like_ctx(c, slots, seg) { clothes.handlers.fit_good(c, slots, seg); },
+    fit_soso_ctx(c, slots, seg) { clothes.handlers.fit_unclear(c, slots, seg); },
+    // "¿Cómo me queda?" / "¿Usted qué opina?": tried on, a compliment (the fit is settled); not yet, "¡Buena elección!"
+    ask_opinion(c, _slots, seg) {
+      if (c.s.mode === "return") { c.say("no_problem"); return; }
+      const g = cur(c);
+      if (!g) { clothes.handlers.vague_item(c, {}, seg); return; }
+      if (c.s.tried) { c.s.fitOk = true; compliment(c); return; }
+      c.say("good_choice");
+    },
     beach_unknown(c) { c.say("beach"); c.hold(); },
     sweet(c) { c.say("sweet_back"); },
     ask_price(c, slots) {
       const g0 = fromSlot(slots.item);
+      // "¿Cuánto es?" at the register: the total (not the price, the discount and then the total again)
+      if (!g0 && c.s.mode !== "return" && c.s.decision === "take" && c.s.totalSaid && !c.s.paid && cur(c)) { sayTotal(c); return; }
       if (g0 && (!cur(c) || cur(c)!.id !== g0.id)) applyItem(c, g0);
       if (!cur(c)) applyItem(c, null);
       const g = cur(c)!;
@@ -1871,6 +2049,24 @@ export const clothes: SituationDef = {
       else { sayN(c, "sale_no"); if (c.chance(0.5)) c.say("sale_general", { pct: c.s.pct }); }
     },
     ask_tax(c) { c.say("tax_info"); },
+    // the item's or the front table's sale lasts "hasta agotar existencias"; an item not on sale says so
+    sale_until(c, slots, seg) {
+      if (c.s.onSale || !cur(c)) { c.s.saleSaid = true; c.say("sale_until"); return; }
+      clothes.handlers.ask_sale(c, slots, seg);
+    },
+    // "¿Cuánto le debo?": the total once she's taking it to the register; before that, the price
+    ask_total(c, slots, seg) {
+      if (c.s.paid) { c.say("paid"); return; }
+      if (c.s.mode !== "return" && c.s.decision === "take" && cur(c)) { sayTotal(c); return; }
+      clothes.handlers.ask_price(c, slots, seg);
+    },
+    // "¿Me la cobra?": she takes it to the register (or says the total there)
+    charge_me(c, slots, seg) {
+      if (c.s.paid) { c.say("paid"); return; }
+      if (c.s.mode === "return") { c.say("no_problem"); return; }
+      if (c.s.decision !== "take") { clothes.handlers.take_it(c, slots, seg); return; }
+      sayTotal(c);
+    },
     ask_sizes(c) {
       if (!cur(c) && c.s.mode === "return" && ret(c)) { const r = ret(c).item; c.say(oneSize(r.id) ? "one_size" : isShoe(r.id) ? "shoe_sizes_numbers" : "size_list"); return; }
       if (!cur(c)) applyItem(c, null);
@@ -1879,10 +2075,8 @@ export const clothes: SituationDef = {
       else if (isShoe(g.id)) c.say("shoe_sizes_numbers");
       else c.say("size_list");
     },
-    ask_return_policy(c) {
-      if (!cur(c)) applyItem(c, null);
-      c.say("return_policy");
-    },
+    // the policy only (no garment is picked for the learner: "¿Cuánto tiempo tengo para cambiarla?" at "¿Viene a hacer un cambio?")
+    ask_return_policy(c) { c.say("return_policy"); },
     take_it(c, slots) {
       const g = fromSlot(slots?.item);
       if (g && (!cur(c) || cur(c)!.id !== g.id)) { applyItem(c, g); }
@@ -1911,7 +2105,8 @@ export const clothes: SituationDef = {
           looking_for: (cc, sl, sg) => { clothes.handlers.looking_for(cc, sl, sg); },
           item_short: (cc, sl, sg) => { clothes.handlers.looking_for(cc, sl, sg); },
         },
-        yes: (cc) => { cc.say("what_else"); cc.ask("item"); },
+        // "Sí": "¿Qué más le puedo enseñar?" (one question, not "¿Qué le gustaría ver?" before it too)
+        yes: (cc) => { cc.ask("item"); },
         no: (cc) => { cc.s.decision = "none"; },
         ask: (cc) => cc.say("not_take_ok") });
     },
@@ -1984,9 +2179,11 @@ export const clothes: SituationDef = {
       if (!c.s.paid && c.s.decision !== "take" && cur(c) && hasSize(cur(c)!)) { c.s.decision = "take"; c.s.fitOk = true; }
     },
     no_bag(c) { c.s.bag = false; c.say("no_problem"); },
-    want_bag(c) { if (c.s.bag !== true) { c.s.bag = true; sayN(c, "bag_here"); } },
+    // before paying ("¿Tienen bolsas?"), she'll bag it at the register: "¡Claro!"
+    want_bag(c) { if (c.s.bag === true) return; c.s.bag = true; if (c.s.paid) sayN(c, "bag_here"); else c.say("sure"); },
     gift_receipt(c) { c.s.receipt = "gift"; if (c.s.bag === false) c.say("gift_ok_nobag"); else sayN(c, "gift_ok"); },
     receipt_bag(c) { c.s.receipt = "paper"; c.say("receipt_here"); c.event("give", { item: "receipt" }); },
+    receipt_print_ctx(c, slots, seg) { clothes.handlers.receipt_bag(c, slots, seg); },
     receipt_email(c) { c.s.receipt = "email"; c.say("receipt_email"); },
     no_receipt(c) { c.s.receipt = "none"; c.say("receipt_keep"); },
     receipt_no_ctx(c) { c.s.receipt = "none"; c.say("receipt_keep"); },
@@ -2022,12 +2219,21 @@ export const clothes: SituationDef = {
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
       ret(c).receipt = true; c.say("ret_receipt_thanks");
     },
+    receipt_have_ctx(c, slots, seg) { clothes.handlers.receipt_yes(c, slots, seg); },
     receipt_none(c) {
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
       ret(c).receipt = false; c.say("ret_receipt_none");
       if (ret(c).choice === "refund") { ret(c).choice = undefined; }
     },
-    problem(c, _slots, seg) {
+    problem(c, slots, seg) {
+      // while shopping it's about the garment in hand, never a return: "Cambié de opinión" = not taking it;
+      // "Esta tiene una mancha" = another one, the same
+      if (c.s.mode !== "return" && !c.s.retOffer && cur(c) && !c.s.paid) {
+        const why = reasonFromTags(seg.tags);
+        if (why && ["ran", "shrank", "hole", "zipper", "button", "damaged"].includes(why)) { c.say("ret_sorry"); sayN(c, "ret_same_new"); return; }
+        clothes.handlers.not_take(c, slots, seg);
+        return;
+      }
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
       const reason = reasonFromTags(seg.tags) ?? "dislike";
       if (!ret(c).reason) reactReason(c, reason);
@@ -2042,6 +2248,7 @@ export const clothes: SituationDef = {
       if (r.receipt === false) { c.say("ret_no_refund_receipt"); r.refusedRefund = true; return; }
       r.choice = "refund";
     },
+    refund_ctx(c, slots, seg) { clothes.handlers.want_refund(c, slots, seg); },
     no_refund(c) {
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
       c.say("no_problem");
@@ -2051,6 +2258,14 @@ export const clothes: SituationDef = {
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
       c.say("no_problem");
       ret(c).choice = ret(c).receipt === false ? "exchange" : undefined;
+    },
+    // "En otra talla." → which size; "Otro color." → which color; "La misma." / "Una igual." → the same, new
+    exch_what_ctx(c, _slots, seg) {
+      if (c.s.mode !== "return" || !ret(c)) return;
+      const r = ret(c);
+      r.choice = "exchange";
+      if (seg.tags.includes("same")) { r.done = true; r.same = true; return; }
+      askNew(c, seg.tags.includes("color") ? "color" : "size");
     },
     want_credit(c) {
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
@@ -2064,10 +2279,14 @@ export const clothes: SituationDef = {
       if (r.choice === "refund") { c.say("ret_refund_done"); c.say("ret_refund_days"); }
       else if (r.choice === "credit") { c.say("ret_credit_done", { amount: r.item.paid ?? basePrice(r.item.id) }); c.say("ret_credit_card"); c.event("give", { item: "store-credit" }); }
       else if (r.choice === "exchange") {
-        const g: Garment = { ...r.item, size: r.newSize ?? r.item.size, color: r.newColor ?? r.item.color, shoe: r.newShoe ?? r.item.shoe };
-        if (r.newShoe != null) c.say("shoes_here", { num: r.newShoe });
-        else if (r.newSize && !r.newColor) c.say("size_here", { S: r.newSize });
-        sayN(c, "ret_exchange_done", g);
+        const g: Garment = { ...r.item, size: r.newSize ?? r.item.size, color: r.newColor ?? r.item.color, shoe: r.newShoe ?? r.item.shoe, half: r.newShoe != null ? !!r.newHalf : r.item.half };
+        // the same model, new ("Sí" / "Una igual"): "Aquí tiene una nueva, igual." (not that and "su … nueva" too)
+        if (r.same && !r.newSize && !r.newColor && r.newShoe == null) sayN(c, "ret_same_new", g);
+        else {
+          // "Le traigo la grande." before "Aquí tiene su … nueva" (not "Aquí tiene…" twice); a shoe number was just said
+          if (r.newSize && !r.newColor && r.newShoe == null) c.say("size_bring", { S: r.newSize });
+          sayN(c, "ret_exchange_done", g);
+        }
         c.event("give", { item: g.id });
         c.remember({ lastBought: g });
       }
@@ -2196,6 +2415,37 @@ export const clothes: SituationDef = {
     { say: "Sí, compré esta guayabera la semana pasada", intent: "return_item", slots: { item: { clothing: "guayabera" } } },
     { say: "¿Hay en azul?", intent: "ask_have_color", slots: { color: "azul" } },
     { say: "No me interesa", intent: "im_fine_ctx", step: "rewards", not: ["rewards_member"] },
+    // audit (5 Nov 2026): the receipt by name, the exchange question's short answers, a bare "el dinero", colors,
+    // her opinion, the total, "otra cosa", a stain, the bag
+    { say: "El ticket, por favor", intent: "receipt_print_ctx", step: "receipt", not: ["receipt_yes", "return_item"] },
+    { say: "Démelo, por favor", intent: "receipt_print_ctx", step: "receipt" },
+    { say: "El ticket no, gracias", intent: "no_receipt", step: "receipt", not: ["receipt_print_ctx", "receipt_bag"] },
+    { say: "Sí, el ticket", intent: "receipt_have_ctx", step: "r_receipt", not: ["receipt_none"] },
+    { say: "El ticket no lo traigo", intent: "receipt_none", step: "r_receipt", not: ["receipt_have_ctx", "receipt_yes"] },
+    { say: "En otra talla", intent: "exch_what_ctx", step: "r_new" },
+    { say: "Otro color, por favor", intent: "exch_what_ctx", step: "r_new" },
+    { say: "Una igual, por favor", intent: "exch_what_ctx", step: "r_new" },
+    { say: "El dinero, por favor", intent: "refund_ctx", step: "r_choice", not: ["exchange", "want_credit"] },
+    { say: "¿Cuál me recomienda?", intent: "color_rec_ctx", step: "color", not: ["vague_item", "color_ans"] },
+    { say: "Cualquiera", intent: "color_any_ctx", step: "color" },
+    { say: "¿Qué color me recomienda?", intent: "color_advice" },
+    { say: "¿Cómo me queda?", intent: "ask_opinion", step: "decide", not: ["take_it"] },
+    { say: "¿Usted qué opina?", intent: "ask_opinion" },
+    { say: "Quiero ver otra cosa", intent: "see_other", step: "decide", not: ["looking_unknown", "take_it"] },
+    { say: "¿Cuánto le debo?", intent: "ask_total", step: "pay", not: ["here_you_go"] },
+    { say: "¿Me la cobra?", intent: "charge_me", step: "decide" },
+    { say: "¿Hasta cuándo es la oferta?", intent: "sale_until", step: "decide" },
+    { say: "No, vengo a comprar", intent: "come_to_buy_ctx", step: "item", not: ["return_item", "exchange"] },
+    { say: "Tiene una mancha", intent: "problem", step: "r_reason", not: ["ask_have_size"] },
+    { say: "No me gustó", intent: "not_take", step: "decide", not: ["take_it"] },
+    { say: "¿Tienen bolsas?", intent: "want_bag", step: "bag", not: ["no_bag"] },
+    { say: "¿Me puede dar cambio de mil?", intent: "pay_cash", step: "pay", not: ["pay_card"] },
+    { say: "¿Tiene terminal?", intent: "pay_card", step: "pay" },
+    { say: "Es muy chica", intent: "fit_bad", step: "r_reason" },
+    { say: "Ni grande ni chica", intent: "fit_good", not: ["fit_bad"] },
+    { say: "Soy mediana en Estados Unidos", intent: "size_ans", step: "size", slots: { size: "mediana" } },
+    { say: "¿Cuánto tiempo tengo para cambiarla?", intent: "ask_return_policy" },
+    { say: "Algo fresco", intent: "vague_item", step: "item" },
     // not understood
     { say: "Mi perro come mucho", intent: "none" },
     { say: "El avión sale a las tres", intent: "none" },
@@ -2234,6 +2484,26 @@ export const clothes: SituationDef = {
       setup: (s) => { s.askColor = true; s.askBag = true; s.askReceipt = false; s.askRewards = false; s.soldOut = false; s.returnVisit = false; } },
     { name: "not my style, nothing else", turns: ["Busco una falda.", "Chica.", "No, gracias.", "No es mi estilo.", "No, gracias.", "Adiós."],
       expect: { complete: false, state: { decision: "none" } }, auto: { ...AUTO, color: "En negro, por favor." }, setup: (s) => { s.soldOut = false; s.returnVisit = false; } },
+    // audit (5 Nov 2026)
+    { name: "sandals: a bare No to the fit question (plural agreement), then a size up", turns: ["Busco unas sandalias.", "Calzo del 24.", "Sí, por favor.", "No.", "Me quedan chicas.",
+      "Me quedan muy bien.", "Me las llevo.", "Con tarjeta.", "Gracias, adiós."],
+      expect: { complete: true, state: { item: { id: "sandalias", shoe: 25 }, paid: true } }, auto: AUTO,
+      setup: (s) => { s.soldOut = false; s.returnVisit = false; s.askColor = false; s.askRewards = false; } },
+    { name: "an exchange: \"En otra talla\", then the size", turns: ["Quiero devolver esta guayabera.", "Sí, el ticket.", "Tiene un hoyo.", "Un cambio, por favor.", "En otra talla.",
+      "La grande, por favor.", "Gracias, adiós."],
+      expect: { complete: true, state: { ret: { choice: "exchange", receipt: true, newSize: "grande" } } }, auto: AUTO, setup: (s) => { s.returnVisit = false; } },
+    { name: "an exchange: the same one, new (a stain)", turns: ["Hola, quiero devolver esta blusa.", "Sí, aquí está el ticket.", "Tiene una mancha.", "Prefiero un cambio.", "Una igual, por favor.", "Gracias."],
+      expect: { complete: true, state: { ret: { choice: "exchange", same: true, reason: "damaged" } } }, auto: AUTO, setup: (s) => { s.returnVisit = false; } },
+    { name: "an exchange of sneakers by number", turns: ["Quiero devolver estos tenis.", "Sí, aquí está el ticket.", "Me quedan chicos.", "Prefiero un cambio.", "Del 27, por favor.", "Gracias, adiós."],
+      expect: { complete: true, state: { ret: { choice: "exchange", newShoe: 27 } } }, auto: AUTO, setup: (s) => { s.returnVisit = false; } },
+    { name: "her color tip and opinion, the total, the receipt by name", turns: ["Busco una guayabera.", "Mediana.", "¿Cuál me recomienda?", "Cualquiera.", "Sí, por favor.",
+      "¿Cómo me queda?", "Me la llevo.", "¿Cuánto le debo?", "Con tarjeta.", "El ticket, por favor.", "Gracias, adiós."],
+      expect: { complete: true, state: { item: { id: "guayabera", color: "blanco", size: "mediana" }, paid: true, receipt: "paper" } }, auto: AUTO,
+      setup: (s) => { s.askColor = true; s.askReceipt = true; s.askBag = false; s.askRewards = false; s.soldOut = false; s.returnVisit = false; s.lastOne = false; } },
+    { name: "something else, and a bag asked for before paying", turns: ["Busco una falda.", "Chica.", "No, gracias.", "Quiero ver otra cosa.", "Busco un sombrero.", "¿Tienen bolsas?",
+      "No, gracias.", "Me lo llevo.", "En efectivo.", "Adiós."],
+      expect: { complete: true, state: { item: { id: "sombrero" }, paid: true, bag: true } }, auto: AUTO,
+      setup: (s) => { s.askColor = false; s.askBag = true; s.askReceipt = false; s.askRewards = false; s.soldOut = false; s.returnVisit = false; } },
   ],
 };
 
@@ -2267,26 +2537,50 @@ function guideFor(c: Ctx, stepId: string, garment?: string | null, main?: Sugges
 
 function exchangeTo(c: Ctx, o: { size?: string; color?: string; shoe?: number; half?: boolean; from?: "us" | "eu"; dir?: "up" | "down" }) {
   const r = ret(c);
+  if (r.done) return; // exchanged already: a stray size at the goodbye changes nothing
   r.choice = "exchange";
   const id = r.item.id;
   if (!r.reason && (o.dir || o.size || o.shoe != null)) r.reason = o.dir ?? "nofit";
   if (!r.reason && o.color) r.reason = "dislike";
   if (o.dir && !oneSize(id)) {
-    if (isShoe(id)) { r.newShoe = (r.item.shoe ?? 25) + (o.dir === "up" ? 1 : -1); }
+    if (isShoe(id)) { r.newShoe = Math.max(MX_MIN, Math.min(MX_MAX, (r.item.shoe ?? 25) + (o.dir === "up" ? 1 : -1))); r.newHalf = false; }
     else {
       const i = SIZE_ORDER.indexOf(r.item.size ?? "mediana");
       r.newSize = SIZE_ORDER[Math.max(0, Math.min(SIZE_ORDER.length - 1, i + (o.dir === "up" ? 1 : -1)))];
     }
   }
   if (o.size && !isShoe(id) && !oneSize(id)) r.newSize = o.size;
+  // a shoe number as in the shop (setShoe's ranges); one it can't read is asked again ("Del 17": "¿Qué número dijo?")
   if (o.shoe != null && isShoe(id)) {
-    const src = o.from ?? (o.shoe >= 33 ? "eu" : o.shoe <= 15 ? "us" : undefined);
-    r.newShoe = src ? toMx(c, o.shoe, !!o.half, src).n : o.shoe;
+    const mx = shoeMx(c, o.shoe, !!o.half, o.from);
+    if (mx) { r.newShoe = mx.n; r.newHalf = mx.half; }
+    else { c.say("shoe_size_again"); c.hold(); }
   }
   if (o.color) {
     if (colorsOf(id).includes(o.color)) r.newColor = o.color;
     else { c.say("color_no", { C: o.color }); sayColors(c, r.item); c.hold(); }
   }
+}
+
+/** The exchange question: "¿Qué talla / número quiere en su lugar?", "¿Qué color prefiere entonces?" or "¿Mismo modelo
+ *  en otra talla (otro número) o en otro color?", with the garment's own suggestions. `kind` asks for that one
+ *  ("En otra talla." → which size; a one-size hat: "Es talla única." and the color). */
+function askNew(c: Ctx, kind?: "size" | "color") {
+  const r = ret(c);
+  const id = r.item.id;
+  const size: Suggestion = isShoe(id) ? { lt: "Choose another size", hint: "shoe_size" } : { lt: "Choose another size", hint: "size", options: "size" };
+  const color: Suggestion = { lt: "Choose another color", hint: itemHint("color", id), options: colorsOf(id) };
+  const k = kind ?? (["up", "down", "nofit", "shrank"].includes(r.reason ?? "") && !oneSize(id) ? "size"
+    : ["ran", "dislike"].includes(r.reason ?? "") || oneSize(id) ? "color" : undefined);
+  if (k === "size" && !oneSize(id)) { c.say(isShoe(id) ? "ret_exchange_shoe_q" : "ret_exchange_size_q"); guideFor(c, "r_new", id, size, [color]); }
+  else if (k) { if (k === "size") c.say("one_size"); c.say("ret_exchange_color_q"); guideFor(c, "r_new", id, color, oneSize(id) ? [] : [size]); }
+  else { c.say(isShoe(id) ? "ret_exchange_what_shoe_q" : "ret_exchange_what_q"); guideFor(c, "r_new", id, size, [color]); }
+}
+
+/** The total at the register ("¿Cuánto le debo?"); the pay step isn't asked again this turn (no total twice). */
+function sayTotal(c: Ctx) {
+  c.say("total", { total: priceOf(c, cur(c)!) });
+  c.hold();
 }
 
 /** The garment is paid for and the learner's: at the end, or on "Gracias, adiós" right after paying. */

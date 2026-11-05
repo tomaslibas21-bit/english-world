@@ -27,7 +27,7 @@
 
   { "ctx": "fit", "say": "Me queda un poco grande", "intent": "fit_bad" },
   { "ctx": "fit", "say": "Me queda perfecta", "intent": "fit_good" },
-  { "ctx": "fit", "say": "No me queda bien", "intent": "fit_bad", "not": ["fit_good"], "note": "trap: negation" },
+  { "ctx": "fit", "say": "No me queda bien", "intent": ["fit_bad", "fit_unclear"], "not": ["fit_good"], "note": "trap: negation; label widened in the audit (5 Nov): fit_unclear is the right reading, Valeria asks “¿grande o chico?”" },
   { "ctx": "fit", "say": "Está muy apretada", "intent": "fit_bad" },
 
   { "ctx": "decide", "say": "Me la llevo", "intent": ["take_it", "yn:yes"] },
@@ -47,5 +47,21 @@
   { "ctx": "r_receipt", "say": "Sí, aquí está el ticket", "intent": ["receipt_yes", "here_ctx", "here_you_go"] },
   { "ctx": "r_reason", "say": "Me queda chica", "intent": "fit_bad" },
   { "ctx": "r_choice", "say": "No quiero el dinero, mejor un cambio", "intent": "exchange", "not": ["want_refund"], "note": "trap: correction" },
-  { "ctx": "rewards", "say": "No, no tengo", "intent": "yn:no", "not": ["rewards_member"], "note": "trap: negation" }
+  { "ctx": "rewards", "say": "No, no tengo", "intent": "yn:no", "not": ["rewards_member"], "note": "trap: negation" },
+
+  {"ctx": "receipt", "say": "El ticket en papel, por favor", "intent": ["receipt_print_ctx", "receipt_bag"]},
+  {"ctx": "receipt", "say": "No quiero el recibo", "intent": "no_receipt", "not": ["receipt_print_ctx", "receipt_bag"], "note": "trap: negation"},
+  {"ctx": "r_receipt", "say": "Sí, mi ticket", "intent": ["receipt_have_ctx", "receipt_yes"]},
+  {"ctx": "r_new", "say": "Otra talla", "intent": "exch_what_ctx"},
+  {"ctx": "r_new", "say": "Una igual", "intent": "exch_what_ctx"},
+  {"ctx": "r_new", "say": "En otro color, por favor", "intent": "exch_what_ctx"},
+  {"ctx": "r_choice", "say": "El dinero", "intent": ["refund_ctx", "want_refund"], "not": ["exchange", "want_credit"]},
+  {"ctx": "color", "say": "¿Cuál me sugiere?", "intent": ["color_rec_ctx", "color_advice"], "not": ["color_ans"]},
+  {"ctx": "color", "say": "Me da lo mismo", "intent": "color_any_ctx"},
+  {"ctx": "fit", "say": "¿Cómo se me ve?", "intent": "ask_opinion"},
+  {"ctx": "fit", "say": "Así así", "intent": "fit_soso_ctx", "not": ["fit_good"], "note": "trap: so-so is no fit"},
+  {"ctx": "decide", "say": "¿Me lo cobra, por favor?", "intent": "charge_me"},
+  {"ctx": "decide", "say": "Quisiera ver otra cosa", "intent": "see_other", "not": ["looking_unknown"], "note": "trap: not an item the shop lacks"},
+  {"ctx": "pay", "say": "¿Cuánto le pago?", "intent": "ask_total"},
+  {"ctx": "bag", "say": "¿Hay bolsas?", "intent": "want_bag", "not": ["no_bag"], "note": "trap: never “I have my bag”"}
 ] }
