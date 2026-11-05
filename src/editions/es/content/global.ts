@@ -6,6 +6,7 @@
 // choice sits inside one unit ("¿{u:Puede|t:Puedes} | repetir?"). In hints it is how the learner addresses the NPC.
 
 import type { GlobalContent, ConvCtx } from "../../../convo/dialogue";
+import type { Parse } from "../../../convo/nlu";
 import type { HintGroup, SentSrc } from "../../../content/types";
 
 const t = (en: string, lt: string, nat: string, extra: Partial<SentSrc> = {}): SentSrc => ({ en, lt, nat, ...extra });
@@ -61,14 +62,29 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
   g_welcome: [
     t("¡De nada!", "You're welcome!", "You're welcome!"),
     t("¡Con gusto!", "My pleasure!", "My pleasure!"),
+    t("¡No hay de qué!", "Don't mention it!", "Don't mention it!"),
+  ],
+  /** The thanks of someone who serves the learner (usted): also "¡A la orden!" (never from a friend or a colleague). */
+  g_welcome_staff: [
+    t("¡De nada!", "You're welcome!", "You're welcome!"),
+    t("¡Con gusto!", "My pleasure!", "My pleasure!"),
     t("¡A la orden!", "At your service!", "Anytime!", { flags: { 0: "Mexican: what staff say after “gracias”." } }),
     t("¡No hay de qué!", "Don't mention it!", "Don't mention it!"),
   ],
+  // a goodbye for any time of day; the day's own one when a greeting said which part of it it is (byeLine)
   g_bye: [
-    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buen día!", "Bye! | (I hope) | you have | a good day!", "Bye! Have a good day!"),
     t("¡{u:Cuídese|t:Cuídate}!", "Take care!", "Take care!"),
     t("¡Nos vemos!", "See you!", "See you!"),
     t("¡Hasta luego! | ¡Que | {u:le|t:te} | vaya | bien!", "See you later! | (I hope) | (for) you | it-goes | well!", "See you! All the best!"),
+  ],
+  g_bye_day: [
+    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buen día!", "Bye! | (I hope) | you have | a good day!", "Bye! Have a good day!"),
+  ],
+  g_bye_afternoon: [
+    t("¡Adiós! | ¡Que | {u:tenga|t:tengas} | buena tarde!", "Bye! | (I hope) | you have | a good afternoon!", "Bye! Have a good afternoon!"),
+  ],
+  g_bye_night: [
+    t("¡Buenas noches! | ¡Que | {u:descanse|t:descanses}!", "Good night! | (I hope) | you rest!", "Good night! Sleep well!"),
   ],
   g_take_time: [
     t("Claro, | {u:tómese su tiempo|t:tómate tu tiempo}.", "Sure, | take your time.", "Sure, take your time."),
@@ -97,6 +113,11 @@ export const GLOBAL_LINES: Record<string, SentSrc[]> = {
   ],
   g_sorry_to_hear: [
     t("¡Ay, | lo siento!", "Oh, | I'm sorry!", "Oh no, I'm sorry to hear that."),
+  ],
+  /** "¿Qué hora es?": nobody here gives the time (a clock time would be a clip for every minute). */
+  g_no_watch: [
+    t("Ay, | no | traigo | reloj, | perdón.", "Oh, | not | I-carry | watch, | sorry.", "Oh, I don't have a watch on me, sorry."),
+    t("Mmm, | no sé, | no | traigo | reloj.", "Hmm, | I don't know, | not | I-carry | watch.", "Hmm, I don't know, I don't have a watch on me."),
   ],
   g_hello: [
     t("¡Hola!", "Hi!", "Hi!"),
@@ -142,6 +163,8 @@ export const LEAVING_PATTERNS = [
 ];
 
 export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
+  // (#last: "¿Qué significa?" says nothing after it: "¿Qué significa máquina?" asks about the word, it never answers with
+  // it; a piece of the conversation's after "¿Qué significa?" is the word asked about: nlu.ts)
   g_repeat: { patterns: [
     "(perdon | mande | como | que | disculpe | perdone | como dice | como dijo | como dijiste | otra vez | de nuevo | repita | repite)",
     "[perdon] @could_you (repetir | repetirlo | repetirmelo) [lo | eso | la pregunta] [otra vez | una vez mas] #h:c_say_again",
@@ -174,10 +197,16 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
     "(me lo | lo) (escribe | escribes | anota | anotas)",
   ] },
   g_meaning: { patterns: [
-    "que (significa | quiere decir) [eso | esto] #h:c_meaning",
+    "que (significa | quiere decir) (eso | esto) #h:c_meaning",
+    "que (significa | quiere decir) #last #h:c_meaning",
     "que (significa | quiere decir) {w:any}",
+    // an expression ("¿Qué significa de un jalón?", "¿Qué quiere decir a la orden?")
+    "que (significa | quiere decir) (de | a | al | en | con | por | para | sin | del) {w:any}",
     "no conozco (esa | esta) palabra",
     "que significa la palabra {w:any}",
+    // "¿Qué es una charola?", "¿Qué es el CURP?" (never "¿Qué es mejor?": {term}, slots.ts; a bare "¿Qué es eso?" is
+    // each conversation's: it points at something)
+    "que es {w:term}",
   ] },
   g_learning: { patterns: [
     "[perdon] (estoy | todavia estoy | apenas estoy) aprendiendo [espanol] #h:c_learning",
@@ -189,6 +218,7 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   g_thanks: { patterns: [
     "[muchas | mil | muchisimas] gracias #h:s_thanks",
     "[muchas | mil | muchisimas] gracias por (su ayuda | tu ayuda | la ayuda | todo | ayudarme | su tiempo | tu tiempo | los consejos | la informacion | las recomendaciones) #h:s_thanks_help",
+    "[muchas | mil | muchisimas] gracias por (la oferta | su oferta | tu oferta | el ofrecimiento | su ofrecimiento | tu ofrecimiento | la invitacion | su invitacion | tu invitacion)",
     "(se lo | te lo) agradezco [mucho]", "(muy | super | que) amable", "[muchas] gracias (a todos | a todas | equipo | chicos)",
     "(perfecto | excelente | genial | que bien | buenisimo) [muchas] gracias",
     "me (ayudó | ayudaste) mucho", "(fue | ha sido) (muy | super) amable",
@@ -220,7 +250,13 @@ export const GLOBAL_INTENTS: Record<string, { patterns: string[] }> = {
   ] },
   g_sorry: { patterns: ["lo siento [mucho]", "(perdon | disculpe | disculpa) (por eso | por la molestia)", "una disculpa", "ups", "me equivoqué", "fue mi error"] },
   g_dontknow: { patterns: ["no se", "no lo se", "no estoy (seguro | segura) [todavia]", "no tengo idea", "ni idea", "no se todavia", "todavia no se", "no me decido", "no he decidido [todavia]", "[ya] no (me acuerdo | recuerdo) [bien]"] },
+  // "¿Qué hora es?" (nobody here gives the time: g_no_watch)
+  // ("¿Tiene hora para el lunes?" asks for an appointment: no "tiene hora" here)
+  g_time: { patterns: ["que (hora | horas) (es | son | tiene | tienes)", "(me | nos) (dice | dices | podria decir | puede decir) la hora", "(tiene | tienes) la hora", "(sabe | sabes) que hora es"] },
   g_ok: { patterns: ["(entendido | ya veo | ya entendi | entiendo | perfecto | genial | que bien | bueno | muy bien | ok entonces | va pues | sale pues)",
+    // "¡Ah, ya sé!" (I see); "¡Ya voy!", "Ya vamos" (coming: no goodbye, that one is "ya me voy")
+    // (never a bare "Ya": "ya [se]" would take it; #last: "Ya sé dónde está el baño" is no "Ya sé" + a question)
+    "ya lo se #last", "(ah | ok | claro) ya se #last", "(ya | ahi | ahorita | enseguida) (voy | vamos) [para alla]",
     // "Ya sé lo que quiere decir" is understanding, not a question about a word (g_meaning)
     "(ya | si) (entiendo | se) lo que (quiere decir | quieres decir | dice | dices)"] },
 };
@@ -236,6 +272,78 @@ function lastWith(c: ConvCtx, key: "spell" | "write") {
   }
   return null;
 }
+
+/** Lowercase, no accents, no punctuation: what the learner said, as the patterns see it. */
+const fold = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9ñ\s]/g, " ").replace(/\s+/g, " ").trim();
+
+/** The last question the person asked (folded, without ¿?), from their last turn. */
+function lastQuestion(c: ConvCtx): string {
+  const lines = c.conv.lastLines;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const qs = lines[i].sentence.en.match(/¿[^¿?]*\?/g);
+    if (qs?.length) return fold(qs[qs.length - 1]);
+  }
+  return "";
+}
+/** An offer: the person offers to do or give something ("¿Le pongo hielo?", "¿Quiere bolsa?", "¿Gusta un café?", "¿Algo
+ *  más?"), not a choice between two ("¿… o …?") or a check ("¿Le parece bien?"). */
+const OFFER_DO = /^(?:(?:y|entonces|bueno|oiga|oye|mire|mira|ok|perfecto|ah|pues|ya|ahora|ahorita|tambien) )*(?:(?:se|le|te|les|lo|la|los|las|me|nos) )*(?:pongo|ponemos|traigo|traemos|sirvo|servimos|doy|damos|envuelvo|preparo|preparamos|agrego|agregamos|anado|aparto|apartamos|separo|reservo|reservamos|mando|mandamos|envio|enviamos|llevo|llevamos|ofrezco|ofrecemos|anoto|apunto|caliento|guardo|guardamos|pido|pedimos|muestro|enseno|ayudo|acompano|presto|regalo|incluyo|lleno|lavo|limpio|reviso|checo|cambio|cambiamos|llamo|consigo|busco|recomiendo|registro|inscribo|dejo)\b/;
+const OFFER_WANT = /^(?:(?:y|entonces|bueno|oiga|oye|mire|mira|ok|perfecto|ah|pues|ya|ahora|ahorita|tambien) )*(?:(?:se|le|te|les) )*(?:quiere|quieres|quieren|gusta|gustas|gustan|desea|deseas|desean|necesita|necesitas|necesitan|ocupa|ocupas|interesa|gustaria|antoja|va a querer|vas a querer|van a querer)\b(?! decir)/;
+const OFFER_MORE = /\b(?:algo mas|alguna otra cosa|otra cosa mas|se (?:le|te|les) ofrece)\b/;
+function offerAsked(c: ConvCtx): boolean {
+  const q = lastQuestion(c);
+  if (!q || (/ o /.test(q) && !/ o no$/.test(q))) return false;
+  return OFFER_DO.test(q) || OFFER_WANT.test(q) || OFFER_MORE.test(q);
+}
+/** A polite closing that is no yes: a bare "Gracias" (Mexico's "no, thanks" to an offer), "Gracias, es todo" (that's
+ *  all), "Está bien, gracias" (I'm fine, thanks). */
+const BARE_THANKS = /^(?:(?:muchas|mil|muchisimas) )?gracias(?: (?:es todo|eso es todo|seria todo|eso seria todo|nada mas|por ahora|asi estoy bien))?(?: (?:senor|senora|senorita|joven))?$/;
+const FINE_THANKS = /^(?:esta bien|asi esta bien|estoy bien) (?:muchas )?gracias(?: (?:senor|senora|senorita|joven))?$/;
+/** Conversations that read a polite closing at their offers themselves (rule 17: most ask once more, "Entonces, ¿sí
+ *  la quiere?"): their reading stays. */
+const OWN_POLITE_CLOSING = new Set(["p25-used-car", "p27-meeting", "p28b-review", "p29-landlord", "p30-start-over", "s35-gym",
+  "s65b-baggage", "s68-hotel", "s75-pharmacy", "s76-dentist-call", "s77-salon", "s78-bank", "s79-post", "s81-apartment", "s86-old-friend"]);
+
+/** At an offer, "Gracias", "Gracias, es todo" and "Está bien, gracias" are its no (a soft no, or the end of "¿Algo
+ *  más?"), never a yes; elsewhere they stay what they are (thanks; "Está bien, gracias" agrees to "¿Le parece bien?").
+ *  A conversation that reads thanks at that point itself (its own g_thanks) keeps it. (dialogue.ts GlobalContent.reread) */
+function reread(c: ConvCtx, p: Parse): Parse {
+  if (OWN_POLITE_CLOSING.has(c.conv.sit.id)) return p;
+  const pend = c.conv.pending, st = pend ? null : c.conv.effectiveStep();
+  const no = pend ? pend.no : st?.no;
+  if (!no || !offerAsked(c)) return p;
+  const h = fold(c.heard);
+  const thanksOnly = !p.yn && p.segments.length > 0 && p.segments.every((sg) => sg.intent === "g_thanks") && BARE_THANKS.test(h);
+  const fine = p.yn === "yes" && !p.segments.length && FINE_THANKS.test(h);
+  if (!thanksOnly && !fine) return p;
+  if (thanksOnly && (pend?.on?.g_thanks || c.conv.sit.handlers.g_thanks)) return p;
+  return { ...p, yn: "no", segments: [], flags: new Set([...p.flags, "thanks"]), tags: [...p.tags, "polite_no"] };
+}
+
+/** The part of the day a greeting in this conversation named ("buenos días", "buenas tardes", "buenas noches"), the
+ *  latest one; null when nobody said one. */
+function dayPart(c: ConvCtx): "day" | "afternoon" | "night" | null {
+  for (let i = c.conv.history.length - 1; i >= 0; i--) {
+    const h = fold(c.conv.history[i].text);
+    if (/\bbuenas noches\b/.test(h)) return "night";
+    if (/\bbuenas tardes\b/.test(h)) return "afternoon";
+    if (/\b(buenos dias|buen dia)\b/.test(h)) return "day";
+  }
+  return null;
+}
+/** The goodbye: one for the part of the day when a greeting named it (never "¡Que tenga buen día!" at dinner). */
+const byeLine = (c: ConvCtx) => ({ day: "g_bye_day", afternoon: "g_bye_afternoon", night: "g_bye_night" } as const)[dayPart(c) ?? "x" as "day"] ?? "g_bye";
+
+/** "Igualmente", "Tú también", "Usted también" (and "Gracias, igualmente"): the reply to a wish. */
+const LIKEWISE = /^(?:(?:muchas )?gracias )?(?:igualmente|igual|tu tambien|usted tambien|ustedes tambien)(?: (?:gracias|muchas gracias))?$/;
+/** The person said goodbye or wished the learner well on leaving: the conversation is ending. ("¡Buenas noches!" is no
+ *  sign of it: it greets too.) */
+const BYE_WORDS = /\b(?:adios|hasta (?:luego|pronto|manana|la proxima)|nos vemos|que (?:le|te|les) vaya|que (?:tenga|tengas|tengan|pase|pases|pasen) (?:un |una )?(?:buen|buena|bonito|bonita|excelente|lindo|linda|feliz)|buen viaje|cuidese|cuidate|cuidense|que (?:descanse|descanses|descansen))\b/;
+const atGoodbye = (c: ConvCtx) => c.conv.completed || !!c.s.__finished || c.conv.lastLines.some((l) => l.lineId.startsWith("g_bye") || BYE_WORDS.test(fold(l.sentence.en)));
+
+/** "¿De verdad? ¿Cómo?": a "¿Cómo?" that ends what was said, with no "¿cómo está?" or "¿qué tal?" in it, asks how or
+ *  asks to hear it again; it never asks how the person is. */
+const bareComo = (h: string) => /\bcomo$/.test(h) && !/\b(?:como (?:esta|estas|estan|le va|te va|les va|va todo|ha estado|has estado|amanecio|amaneciste|anda|andas)|que tal|que onda|que hubo|quiubo)\b/.test(h);
 
 export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> = {
   g_repeat(c) {
@@ -279,18 +387,28 @@ export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> =
     c.conv.markSlow();
   },
   g_thanks(c) {
-    c.say("g_welcome");
+    // "¡A la orden!" is what someone who serves the learner says, never a friend or a colleague
+    c.say(c.conv.opt.npcs[c.conv.speakerId]?.informal ? "g_welcome" : "g_welcome_staff");
+    // "Buenas noches, gracias" at the end of an evening is good night
+    if (/\bbuenas noches\b/.test(fold(c.heard)) && atGoodbye(c)) { c.say(byeLine(c)); c.end(); c.hold(); return; }
     if (c.conv.completed) c.hold();
   },
   g_bye(c) {
-    c.say("g_bye");
+    // "Igualmente" / "Tú también" answers a wish: a goodbye only when the person is saying goodbye ("¡Que le vaya bien!"
+    // – "¡Igualmente!"), not after "Mucho gusto" or "¡Buen provecho!"
+    if (LIKEWISE.test(fold(c.heard)) && !atGoodbye(c)) return;
+    c.say(byeLine(c));
     c.end();
     c.hold(); // no open question is asked again after "¡Adiós!"
   },
   g_hello(c) {
+    // "Buenas noches" at the end of an evening's conversation is "good night"
+    if (/^(?:bueno |ok )?buenas noches\b/.test(fold(c.heard)) && atGoodbye(c)) { GLOBAL_HANDLERS.g_bye(c, {}); return; }
     if (!c.s.__greetedBack) { c.say("g_hello"); c.s.__greetedBack = true; }
   },
   g_howareyou(c) {
+    // a bare "¿Cómo?" ("¿De verdad? ¿Cómo?") asks to hear it again, it never asks how the person is
+    if (bareComo(fold(c.heard))) { GLOBAL_HANDLERS.g_repeat(c, {}); return; }
     c.say("g_howareyou_reply");
     expectHowAreYou(c);
   },
@@ -303,19 +421,49 @@ export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> =
   g_sorry(c) { c.say("g_no_worries"); },
   g_dontknow(c) {
     const st = c.conv.currentStep();
-    if (st?.help) { st.help(c); c.hold(); }
-    else { c.say("g_take_time"); c.hold(); }
+    const pend = c.conv.pending;
+    // "No sé" to a yes/no question about a fact ("¿Va a estar en casa?") is no "Sin prisa": "¡No se preocupe!", and the
+    // question stays open; deciding on an offer or a choice takes its time
+    const yesNo = pend ? !!(pend.yes || pend.no) : !!(st && (st.yes || st.no) && !st.help);
+    if (yesNo && !offerAsked(c)) {
+      c.say("g_no_worries");
+      if (c.conv.pending || !pend) c.hold(); // (an optional question already dropped: the conversation goes on)
+      return;
+    }
+    if (st?.help) {
+      const before = c.conv.saidThisTurn().length;
+      st.help(c);
+      // a help that only reassures ("Bueno, no se preocupe") asks the step again, so the conversation goes on
+      const said = c.conv.saidThisTurn().slice(before);
+      if (!c.conv.pending && !c.conv.ended && !said.some((l) => /\?\s*["”]?$/.test(l.sentence.en)) && !st.done(c) && c.conv.currentStep() === st) st.ask(c);
+      c.hold();
+      return;
+    }
+    c.say("g_take_time"); c.hold();
+  },
+  g_time(c) {
+    // "¿A qué hora es?" asks when something is (heard as "Ah, ¿qué hora es?"), not the time now
+    if (/\ba que hora/.test(fold(c.heard))) { c.say("g_not_understood"); c.hold(); return; }
+    c.say("g_no_watch");
   },
   g_ok() { /* acknowledgement: just continue */ },
 };
 
 /** "¿Y usted?" / "¿Y tú?" / "¿Usted cómo está?": the learner asked back. */
 const askedBack = (c: { heard: string }) => /\b(usted|tu|ti)\b/.test((c.heard || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase());
+/** Bad news in an answer to "¿Cómo está?": "Bien, pero un poco cansada" is the tired part ("No está mal", "nada mal"
+ *  are good). */
+const BAD_NEWS = /\b(?:mas o menos|no muy bien|no tan bien|regular|cansad[oa]s?|agotad[oa]s?|no me siento bien|enferm[oa]s?|fatal|terrible|triste|estresad[oa]s?|preocupad[oa]s?|con gripa|podria estar mejor|he estado mejor|de malas)\b|(?<!\b(?:no esta|no me va|no estoy|no anda|nada|ni tan|no tan|no la paso) )\bmal\b/;
 
-/** After an NPC line that asks "¿Cómo está?": handle the learner's answer (and "¿Y usted?"). */
+/** After an NPC line that asks "¿Cómo está?": handle the learner's answer (and "¿Y usted?"). One reply a turn, and bad
+ *  news wins ("Bien, pero un poco cansada" gets "¡Ay, lo siento!", not that and "¡Qué bueno!"); a bare "No" is a no
+ *  to "are you well". */
 export function expectHowAreYou(c: import("../../../content/types").Ctx, then?: (c: import("../../../content/types").Ctx) => void) {
+  let replied = false;
   const reply = (cc: import("../../../content/types").Ctx, bad = false) => {
-    if (bad) cc.say("g_sorry_to_hear");
+    if (replied) return;
+    replied = true;
+    if (bad || BAD_NEWS.test(fold(cc.heard))) cc.say("g_sorry_to_hear");
     else if (askedBack(cc)) cc.say("g_asked_back");
     else cc.say("g_glad");
     then?.(cc);
@@ -332,6 +480,7 @@ export function expectHowAreYou(c: import("../../../content/types").Ctx, then?: 
       g_ok: (cc) => { reply(cc); },
     },
     yes: (cc) => reply(cc),
+    no: (cc) => reply(cc, true),
   });
 }
 
@@ -406,4 +555,5 @@ export const GLOBAL: GlobalContent = {
   entities: [],
   handlers: GLOBAL_HANDLERS,
   macros: GLOBAL_MACROS,
+  reread,
 };

@@ -521,12 +521,74 @@ describe("17. 'El calentador sí funciona' is no acceptance of the heater", () =
   });
 });
 
+describe("18. a greeting reply, then a request, in one turn", () => {
+  it("'Muy bien, gracias. Oiga, ¿me presta…?' and '¡Ah, ya sé! ¡Muchas gracias!'", () => {
+    const nlu = buildNlu(SITUATION_BY_ID["s82-neighbor"], GLOBAL, NPCS);
+    for (const s of ["Muy bien, gracias. Oiga, ¿me presta una escalera?", "Bien, gracias. Oiga, ¿me presta una escalera?", "Bien. Mire, ¿me presta una escalera?"]) {
+      expect(read(nlu, s), s).toContain("borrow");
+    }
+    expect(read(nlu, "¡Ah, ya sé! ¡Muchas gracias!")).toEqual(["g_ok"]);
+    // "Ya sé dónde está…" says what the learner knows: no "Ya sé" + a question
+    const tour = buildNlu(SITUATION_BY_ID["s88-first-day"], GLOBAL, NPCS);
+    expect(read(tour, "Ya sé dónde está el baño", SITUATION_BY_ID["s88-first-day"].steps.find((s) => s.id === "tour")!.expects)).not.toContain("q_restroom");
+  });
+});
+
 describe("19. a piece may begin with va / sale / está after a clause of its own", () => {
   const nlu = toy({ flight: ["(voy en | tengo) el [vuelo] {number}"], subj: ["el vuelo {number}"], ontime: ["(va | sale | esta) a tiempo"] });
   it("'Voy en el 223, ¿va a tiempo?' is two pieces; 'El vuelo 223 va a tiempo' (subject and verb) isn't", () => {
     expect(read(nlu, "Voy en el 223, ¿va a tiempo?")).toEqual(["flight", "ontime"]);
     expect(read(nlu, "Tengo el 223, ¿sale a tiempo?")).toEqual(["flight", "ontime"]);
     expect(readings(nlu, "El vuelo 223 va a tiempo").filter((r) => r.join() === "subj,ontime")).toEqual([]);
+  });
+});
+
+describe("20. 'Ya voy' / 'Ya vamos' (coming) are no goodbye", () => {
+  const sit = toySit({ lines: { ask: L("¿Ya viene?") } });
+  it("only 'ya me voy' leaves", () => {
+    for (const s of ["Ya voy", "¡Ya voy!", "Ya vamos", "Ahí voy"]) expect(toyRead(sit, s), s).toEqual(["g_ok"]);
+    expect(toyRead(sit, "Ya me voy")).toEqual(["g_bye"]);
+    const { conv, say } = talk(sit);
+    say("¡Ya voy!");
+    expect(conv.ended).toBe(false);
+  });
+});
+
+describe("21. '¿Qué significa…?' / '¿Qué es…?' asks about a word", () => {
+  const sit = toySit({ intents: { tool_ctx: ["(maquina | tijera)"], what_dish: ["que es la cochinita [pibil]"] },
+    steps: [{ id: "tool", done: (c) => !!c.s.tool, ask: (c) => c.say("hi"), expects: ["tool_ctx"] }],
+    handlers: { tool_ctx: (c) => { c.s.tool = c.heard; } } });
+  const nlu = buildNlu(sit, GLOBAL, TOY_NPCS);
+  it("'¿Qué significa máquina?' is the word asked about, never the answer 'máquina'", () => {
+    expect(read(nlu, "¿Qué significa máquina?", ["tool_ctx"])).toEqual(["g_meaning"]);
+    expect(nlu.parse("¿Qué significa máquina?", ["tool_ctx"]).best!.segments[0].slots.w).toBe("maquina");
+    const { conv, say } = talk(sit);
+    say("¿Qué significa máquina?");
+    expect(conv.s.tool).toBeUndefined();
+  });
+  it("an expression, '¿Qué es (una) X?', '¿Qué es eso?'", () => {
+    expect(read(nlu, "¿Qué significa de un jalón?")).toEqual(["g_meaning"]);
+    for (const s of ["¿Qué es una charola?", "¿Qué es el CURP?", "¿Qué es charola?"]) expect(read(nlu, s), s).toEqual(["g_meaning"]);
+    expect(read(nlu, "¿Qué es la cochinita pibil?")).toEqual(["what_dish"]);
+    // another global skill may follow it
+    expect(read(nlu, "¿Qué significa? No entiendo.")).toEqual(["g_meaning", "g_dont_understand"]);
+  });
+  it("but '¿Qué es mejor?' / '¿Qué es más barato?' / '¿Qué es lo que…?' aren't, and '¿Qué es eso?' is each conversation's", () => {
+    for (const s of ["¿Qué es mejor?", "¿Qué es más barato?", "¿Qué es lo que tiene?", "¿Qué es eso?"]) expect(read(nlu, s), s).not.toContain("g_meaning");
+    const term = (BUILTIN_SLOTS as unknown as Record<string, { fn: (tk: string[], pos: number, prefix: boolean) => { value: unknown }[] }>).term;
+    expect(term.fn(["una", "charola"], 0, false).map((r) => r.value)).toContain("charola");
+    expect(term.fn(["mejor"], 0, false)).toEqual([]);
+  });
+});
+
+describe("22. '¿Qué hora es?'", () => {
+  const sit = toySit({});
+  it("is understood (nobody gives the time); '¿A qué hora es?' isn't that", () => {
+    expect(toyRead(sit, "¿Qué hora es?")).toEqual(["g_time"]);
+    expect(toyRead(sit, "¿Qué horas son?")).toEqual(["g_time"]);
+    const { say } = talk(sit);
+    expect(say("¿Qué hora es?")).toEqual(["g_no_watch"]);
+    expect(say("¿A qué hora es?")).not.toContain("g_no_watch");
   });
 });
 
@@ -555,5 +617,141 @@ describe("24. a question is never split into a question and the open question's 
   });
   it("but an answer that begins with a preposition is one ('¿Cuánto cuesta a Mérida?' names the destination)", () => {
     expect(read(nlu, "¿Cuánto cuesta a Mérida?", ["dest_ctx"])).toEqual(["ask_price", "dest_ctx"]);
+  });
+});
+
+describe("25. '¿Cómo está?': one reply a turn, bad news first, a bare 'No'", () => {
+  const sit = toySit({
+    intents: { tired_ctx: ["un poco (cansado | cansada)", "pero un poco (cansado | cansada)"] },
+    lines: { how: L("¿Cómo está?"), next: L("¿Qué le sirvo?"), appt_no: L("¿Sin cita?") },
+    steps: [{ id: "appt", done: (c) => !!c.s.appt, ask: (c) => c.say("next"), no: (c) => { c.s.appt = "none"; c.say("appt_no"); } } as StepDef],
+    start: (c) => { c.say("how"); expectHowAreYou(c); },
+  });
+  it("'Bien, pero un poco cansada' gets '¡Ay, lo siento!' only", () => {
+    const { say } = talk(sit);
+    const out = say("Bien, pero un poco cansada");
+    expect(out.filter((l) => l === "g_glad" || l === "g_sorry_to_hear")).toEqual(["g_sorry_to_hear"]);
+  });
+  it("'Muy bien, gracias' is good news; 'No' is how they are, not the next question's no", () => {
+    expect(talk(sit).say("Muy bien, gracias")).toContain("g_glad");
+    const { conv, say } = talk(sit);
+    expect(say("No")).toContain("g_sorry_to_hear");
+    expect(conv.s.appt).toBeUndefined();
+  });
+  it("a bare '¿Cómo?' asks to hear it again ('¿De verdad? ¿Cómo?')", () => {
+    const sit2 = toySit({ intents: { really: ["de verdad"] }, lines: { news: L("Me caí de la escalera.") }, start: (c) => c.say("news"), handlers: { really: () => {} } });
+    const { say } = talk(sit2);
+    expect(say("¿De verdad? ¿Cómo?")).not.toContain("g_howareyou_reply");
+    expect(say("¿Cómo está?")).toContain("g_howareyou_reply");
+  });
+});
+
+describe("26. goodbyes", () => {
+  const wishes = toySit({ lines: { nice: L("¡Mucho gusto!"), wish: L("¡Que le vaya bien!") }, start: (c) => c.say("nice"),
+    intents: { leave_ctx: ["ya me tengo que ir"] }, handlers: { leave_ctx: (c) => c.say("wish") },
+    steps: [{ id: "chat", done: () => false, ask: (c) => c.say("nice"), expects: ["leave_ctx"] }] });
+  it("'Igualmente' answers 'Mucho gusto' without leaving, and a goodbye wish by leaving", () => {
+    const { conv, say } = talk(wishes);
+    say("Igualmente");
+    expect(conv.ended).toBe(false);
+    say("Ya me tengo que ir");
+    say("¡Igualmente!");
+    expect(conv.ended).toBe(true);
+  });
+  it("fits the part of the day a greeting named", () => {
+    const sit = toySit({});
+    const bye = (hello: string | null) => { const { say } = talk(sit); if (hello) say(hello); return say("Adiós").filter((l) => l.startsWith("g_bye")); };
+    expect(bye("Buenos días")).toEqual(["g_bye_day"]);
+    expect(bye("Buenas tardes")).toEqual(["g_bye_afternoon"]);
+    expect(bye("Buenas noches")).toEqual(["g_bye_night"]);
+    expect(bye(null)).toEqual(["g_bye"]);
+  });
+  it("'Buenas noches' at the end of the evening is good night", () => {
+    const sit = toySit({ steps: [{ id: "x", done: (c) => !!c.s.x, ask: (c) => c.say("hi"), expects: ["done_ctx"] }], intents: { done_ctx: ["listo"] },
+      handlers: { done_ctx: (c) => { c.s.x = true; c.complete(); } } });
+    const { conv, say } = talk(sit);
+    expect(say("Buenas noches")).toContain("g_hello");
+    expect(conv.ended).toBe(false);
+    // the person's own "¡Buenas noches!" greeting answered with one
+    const night = talk(toySit({ lines: { evening: L("¡Buenas noches! Pase, pase.") }, start: (c) => c.say("evening"),
+      steps: [{ id: "x", done: () => false, ask: (c) => c.say("hi") }] }));
+    night.say("¡Buenas noches!");
+    expect(night.conv.ended).toBe(false);
+    night.say("Igualmente");
+    expect(night.conv.ended).toBe(false);
+    say("Listo");
+    say("Buenas noches");
+    expect(conv.ended).toBe(true);
+    const b = talk(sit);
+    b.say("Hola");
+    b.say("Listo");
+    b.say("Gracias, buenas noches");
+    expect(b.conv.ended).toBe(true);
+  });
+});
+
+describe("27. thanks", () => {
+  it("'¡A la orden!' only from someone who serves the learner (usted)", () => {
+    expect(talk(toySit({})).say("Gracias")).toEqual(["g_welcome_staff"]);
+    expect(talk(toySit({ npc: "friend" })).say("Gracias")).toEqual(["g_welcome"]);
+    expect(GLOBAL.lines.g_welcome.some((l) => l.en.includes("A la orden"))).toBe(false);
+  });
+  it("'Gracias por la oferta'", () => {
+    expect(toyRead(toySit({}), "Gracias por la oferta")).toEqual(["g_thanks"]);
+    expect(toyRead(toySit({}), "Muchas gracias por la invitación")).toEqual(["g_thanks"]);
+  });
+});
+
+describe("28. 'Gracias', 'Está bien, gracias', 'Gracias, es todo' at an offer are its no, never a yes", () => {
+  const offer = (q: string, on?: Pending["on"]) => toySit({
+    lines: { q: L(q), took: L("Ahí va."), left: L("Sale.") },
+    start: (c) => { c.say("q"); c.expect({ id: "offer", yes: (cc) => { cc.s.took = true; cc.say("took"); }, no: (cc) => { cc.s.took = false; cc.say("left"); }, on }); },
+  });
+  it("at '¿Le pongo hielo?' / '¿Quiere bolsa?' / '¿Algo más?'", () => {
+    for (const q of ["¿Le pongo hielo?", "¿Quiere bolsa?", "¿Algo más?"]) for (const s of ["Gracias", "Muchas gracias", "Está bien, gracias", "Gracias, es todo"]) {
+      const { conv, say } = talk(offer(q));
+      const out = say(s);
+      expect(conv.s.took, `${q} ${s}`).toBe(false);
+      expect(out, `${q} ${s}`).toContain("left");
+    }
+    const { conv, say } = talk(offer("¿Le pongo hielo?"));
+    say("Sí, gracias");
+    expect(conv.s.took).toBe(true);
+  });
+  it("elsewhere they keep their meaning: '¿Le parece bien el martes?' – 'Está bien, gracias' is a yes", () => {
+    const a = talk(offer("¿Le parece bien el martes?"));
+    a.say("Está bien, gracias");
+    expect(a.conv.s.took).toBe(true);
+    const b = talk(offer("¿Le parece bien el martes?"));
+    expect(b.say("Gracias")).toContain("g_welcome_staff");
+    expect(b.conv.s.took).toBeUndefined();
+  });
+  it("a conversation that reads thanks at its offer itself keeps it", () => {
+    const { conv, say } = talk(offer("¿Le pongo hielo?", { g_thanks: (cc) => { cc.s.took = "thanks"; } }));
+    say("Gracias");
+    expect(conv.s.took).toBe("thanks");
+  });
+  it("and '¿Algo más?' as a step closes on 'Gracias, es todo'", () => {
+    const sit = toySit({ lines: { more: L("¿Algo más?"), bye: L("¡Hasta luego!") },
+      steps: [{ id: "more", done: (c) => c.s.more !== undefined, ask: (c) => c.say("more"), no: (c) => { c.s.more = false; c.say("bye"); } } as StepDef] });
+    const { conv, say } = talk(sit);
+    say("Hola");
+    say("Gracias, es todo");
+    expect(conv.s.more).toBe(false);
+  });
+});
+
+describe("29. 'No sé'", () => {
+  it("to a question about a fact gets '¡No se preocupe!', not 'Sin prisa'; at an offer one takes one's time", () => {
+    const ask = (q: string) => toySit({ lines: { q: L(q) }, start: (c) => { c.say("q"); c.expect({ id: "q", yes: () => {}, no: () => {} }); } });
+    expect(talk(ask("¿Va a estar en casa?")).say("No sé")).toEqual(["g_no_worries"]);
+    expect(talk(ask("¿Quiere postre?")).say("No sé")).toEqual(["g_take_time"]);
+  });
+  it("a step's help that only reassures asks the step again", () => {
+    const sit = toySit({ lines: { q: L("¿Qué día le queda?"), calm: L("Bueno, no se preocupe.") },
+      steps: [{ id: "day", done: (c) => !!c.s.day, ask: (c) => c.say("q"), help: (c) => c.say("calm") } as StepDef] });
+    const { say } = talk(sit);
+    say("Hola");
+    expect(say("No sé")).toEqual(["calm", "q"]);
   });
 });
