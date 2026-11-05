@@ -17,7 +17,7 @@ import { withoutAddressedNames } from "../../src/audio-key";
 import { compose, placeholders, setVariety, type Sentence } from "../../src/convo/compose";
 import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
-import { BINDINGS } from "./reach-es";
+import { BINDINGS, reachOf } from "./reach-es";
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -62,13 +62,15 @@ for (const variety of ES ? (["default", "neutral"] as const) : (["default"] as c
     const people = Object.values(NPCS).filter((n) => voices.has(v2(n)));
     for (const [lid, variants] of Object.entries(sit.lines)) variants.forEach((src) => {
       const ph = placeholders(src);
+      const fixed = reachOf(sit).get(lid);
+      const domOf = (v: string): unknown[] | undefined => (sit.domains?.[v] ? sit.domains[v]() : fixed?.how === "fixed" ? fixed.values?.[v] : undefined);
       let cat: Cat, binds: Record<string, unknown>[] = [];
       if (!ph.entities.length && !ph.values.length) { cat = "plain"; binds = [{}]; }
-      else if (!ph.entities.length && ph.values.every((v) => sit.domains?.[v])) {
+      else if (!ph.entities.length && ph.values.every((v) => domOf(v))) {
         cat = "value";
         let combos: Record<string, unknown>[] = [{}];
         for (const v of ph.values) {
-          const dom = sit.domains![v]();
+          const dom = domOf(v)!;
           domainSize[`${sit.id}:${v}`] = dom.length;
           const next: Record<string, unknown>[] = [];
           for (const c of combos) for (const d of dom) next.push({ ...c, [v]: d });

@@ -17,8 +17,9 @@
 //    other person has it: Luis's side answers at the table); one nobody was heard saying, in the voice of whoever
 //    says the lines around it, or of everyone in the conversation;
 //  • an item line with the item lists it was heard with (all lists when it never was: reported), and each item bound
-//    as the line binds the items of its kind: the quantity heard with them, else two for an item that is always
-//    plural (attrs.plural / attrs.many, as the conversations bind them: B(), taskVar(), tv(), bind()), else one;
+//    as the line binds the items of its kind: the quantity heard with them, else as most of the conversation's item
+//    lines bind that kind, else two for an item that is always plural (attrs.plural / attrs.many, as the conversations
+//    bind them: B(), taskVar(), tv(), bind()) and one for the rest;
 //  • a value line with the values reach-es.ts lets through; a line with two items, or an item and a value, with the
 //    bindings reach-es.ts BINDINGS reads in its code (else only as heard: warned about).
 // Each line also records the conversations it is said in, for the setting's direction (casting-es.ts SCENES), and how
@@ -35,7 +36,7 @@ import { soundKey } from "../../src/convo/soundalike";
 import { EDITION } from "../../src/edition";
 import type { EntityDef, SituationDef } from "../../src/content/types";
 import { lookFor, observe, type Heard, type ObserveStats } from "./runs-es";
-import { BINDINGS, codeSpeakers, idOf, reachFilter } from "./reach-es";
+import { BINDINGS, codeSpeakers, idOf, reachFilter, reachOf } from "./reach-es";
 
 /** The learner the tools play: lines that address them by name are voiced without the name (as the game does). */
 const NAMES = [EDITION.simPlayer.name, EDITION.simPlayer.surname];
@@ -55,15 +56,17 @@ export interface EsUtt {
   neutral?: boolean;
   /** How the list found it: "heard" (a run, a sim or a probe said it), or the kind of line it was made from ("line",
    *  "item", "value", "pair", "hint", "soundcheck", "global", "ambient") and what of it nobody was heard saying:
-   *  "who?" (the speaker), "list?" (the item list), "qty?" (one or two of this kind of item). */
+   *  "who?" (the speaker), "list?" (the item list), "qty?" (one or two of this kind of item); "pl": an item bound in the
+   *  plural; "+probe" / "+code": a speaker heard only in a probe, or only read in the code. */
   why?: string;
 }
 export interface LinesResult { utts: EsUtt[]; errors: string[]; warnings: string[]; stats: Record<string, ObserveStats> }
 
 /** An item always said in the plural ("los papadzules", "los pantalones"): the conversations bind it with qty 2. */
 const pluralItem = (e: EntityDef | undefined) => !!(e?.attrs?.plural || e?.attrs?.many);
-/** What the runs showed about one line. */
-interface Said { by: Set<string>; lists: Map<string, Set<string>>; qty: Map<string, Set<number>> }
+/** What the runs showed about one line: who said it (and how they were heard: run, sim, probe), with which item lists,
+ *  and how many of each kind of item ("<placeholder>|sg" / "|pl"). */
+interface Said { by: Set<string>; how: Map<string, Set<string>>; lists: Map<string, Set<string>>; qty: Map<string, Set<number>> }
 
 /** `part` [k, n]: only every n-th conversation from the k-th (the passers-by in part 0), for workers running side by
  *  side; their lists merge into the whole one (mergeUtts). */
@@ -97,7 +100,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     for (const [ln, list] of Object.entries(sit.entities || {})) for (const e of list) listOf.set(e.id, ln);
     // 0. what the game says (runs-es.ts), made at once in both Spanishes: the same line, vars and learner
     const said = new Map<string, Said>();
-    const saidOf = (lid: string) => { let s = said.get(lid); if (!s) said.set(lid, (s = { by: new Set(), lists: new Map(), qty: new Map() })); return s; };
+    const saidOf = (lid: string) => { let s = said.get(lid); if (!s) said.set(lid, (s = { by: new Set(), how: new Map(), lists: new Map(), qty: new Map() })); return s; };
     const heard = (h: Heard) => {
       const n = NPCS[h.line.npc];
       const src = (sit.lines[h.line.lineId] ?? GLOBAL.lines[h.line.lineId])?.[h.line.variant];
@@ -111,6 +114,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
       }
       const s = saidOf(h.line.lineId);
       s.by.add(h.line.npc);
+      addTo(s.how, h.line.npc, h.how);
       speakersSeen.add(h.line.npc);
       addTo(sitsOf, h.line.npc, sit.id);
       for (const [ph, v] of Object.entries(h.line.vars ?? {})) {
@@ -136,20 +140,37 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
     const guessed = new Map<string, string>();
     ids.forEach((lid, i) => { if (!said.has(lid)) { const a = near(i, -1), b = near(i, 1); if (a && a === b) guessed.set(lid, a); } });
 
+    // how this conversation binds items of each kind in the lines heard (s32 binds its produce in the plural: "¿Cuántos
+    // aguacates?"): the quantity most of its item lines use, for an item line never heard with that kind
+    const kindQty = new Map<string, number>();
+    for (const kind of ["sg", "pl"]) {
+      const votes = new Map<number, number>();
+      for (const sd of said.values()) for (const [k, qs] of sd.qty) if (k.endsWith(`|${kind}`)) for (const q of qs) votes.set(q, (votes.get(q) ?? 0) + 1);
+      const best = [...votes].sort((a, b) => b[1] - a[1])[0];
+      kindQty.set(kind, best ? best[0] : kind === "pl" ? 2 : 1);
+    }
     // 1. every line variant, with what the runs showed: its speakers, item lists, quantities and values
-    const plan: { lid: string; i: number; binds: { b: Record<string, unknown>; why: string }[]; speakers: NpcDef[]; who: string }[] = [];
+    const plan: { lid: string; i: number; binds: { b: Record<string, unknown>; why: string }[]; speakers: NpcDef[]; who: string; tag: Map<string, string> }[] = [];
     for (const [lid, variants] of Object.entries(sit.lines)) {
       const s = said.get(lid);
       // everyone heard saying it, and everyone the code makes say it (reach-es.ts codeSpeakers); else a guess
       const known = new Set([...(s?.by ?? []), ...(code.get(lid) ?? [])]);
       const speakers = known.size ? [...known].map((id) => NPCS[id]).filter(Boolean) : guessed.has(lid) ? [NPCS[guessed.get(lid)!]] : people;
       const who = known.size || people.length === 1 ? "" : "who?";
+      // how each speaker came in, for the comparison with the old list: heard only in a probe, or only from the code
+      const tag = new Map(speakers.map((n) => {
+        const how = s?.how.get(n.id);
+        return [n.id, how?.has("run") || how?.has("sim") ? "" : how?.has("probe") ? "+probe" : code.get(lid)?.has(n.id) ? "+code" : ""];
+      }));
       const reach = reachFilter(sit, lid);
       const pairs = BINDINGS[`${sit.id}:${lid}`];
       variants.forEach((src, i) => {
         const ph = placeholders(src);
         const binds: { b: Record<string, unknown>; why: string }[] = [];
-        const valuesListed = ph.values.every((v) => sit.domains?.[v]);
+        // a value with no list of its own: the fixed values its calls give (reach-es.ts reachOf), if they all do
+        const fixed = reachOf(sit).get(lid);
+        const domOf = (v: string): unknown[] | undefined => (sit.domains?.[v] ? sit.domains[v]() : fixed?.how === "fixed" ? fixed.values?.[v] : undefined);
+        const valuesListed = ph.values.every((v) => domOf(v));
         if (pairs) {
           for (const b of pairs(sit)) binds.push({ b, why: "pair" });
         } else if (!ph.entities.length && !ph.values.length) binds.push({ b: {}, why: "line" });
@@ -157,7 +178,7 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
           // only the values the line can really be said with (reach-es.ts: fixed values from its calls, rules)
           let combos: Record<string, unknown>[] = [{}];
           for (const v of ph.values) {
-            const dom = sit.domains![v]();
+            const dom = domOf(v)!;
             const next: Record<string, unknown>[] = [];
             for (const c of combos) for (const d of dom) next.push({ ...c, [v]: d });
             combos = reach ? next : next.slice(0, 800);
@@ -179,24 +200,24 @@ export function enumerateEs(opts: { fuzzRuns?: number; only?: string[]; part?: [
               if (apart && !mine.has(kind)) continue;
               const qs = s?.qty.get(`${P}|${kind}`);
               const flags = [...(lists ? [] : ["list?"]), ...(qs ? [] : ["qty?"])];
-              for (const q of qs ?? [kind === "pl" ? 2 : 1]) {
+              for (const q of qs ?? [kindQty.get(kind)!]) {
                 const b = { [P]: q === 1 ? e.id : { id: e.id, qty: q } };
-                if (!reach || reach(b)) binds.push({ b, why: ["item", ...flags].join(" ") });
+                if (!reach || reach(b)) binds.push({ b, why: ["item", ...(q > 1 ? ["pl"] : []), ...flags].join(" ") });
               }
             }
           }
         } else if (i === 0 || !variants.slice(0, i).some((v) => sameShape(v, src))) {
           warnings.push(`${sit.id}:${lid}: ${ph.entities.length > 1 ? `${ph.entities.length} items` : ph.entities.length ? "an item and a value" : "a value with no list"} (${[...ph.entities, ...ph.values.map((v) => "$" + v)].join(", ")}): voiced only as heard (${s ? "heard" : "never heard"}); a reach-es.ts BINDINGS entry would list every binding`);
         }
-        plan.push({ lid, i, binds, speakers, who });
+        plan.push({ lid, i, binds, speakers, who, tag });
       });
     }
     for (const variety of VARIETIES) {
       setVariety(variety); // the text (neutral twins) and the voice ids (es_ / esn_) of this Spanish
-      for (const { lid, i, binds, speakers, who } of plan) {
+      for (const { lid, i, binds, speakers, who, tag } of plan) {
         const src = sit.lines[lid][i];
         for (const { b, why } of binds) for (const n of speakers) for (const g of GENDERS) {
-          try { add(npcVoice(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`, sit.id, [why, who].filter(Boolean).join(" ")); }
+          try { add(npcVoice(n), n.speed ?? 1, compose(src, b, { look, addressee: g, speaker: n.gender, formal: !n.informal }), `${sit.id}:${lid}[${i}]`, sit.id, [why, who, tag.get(n.id)].filter(Boolean).join(" ")); }
           catch { /* this entity doesn't fit this line */ }
         }
       }

@@ -160,6 +160,8 @@ export const BINDINGS: Record<string, (sit: SituationDef) => Binding[]> = {
   "s80-support-call:tech_offer": (sit) => windows(sit),
   "s80-support-call:tech_offer_alt": (sit) => windows(sit),
   "s80-support-call:tech_booked": (sit) => windows(sit),
+  // s75-pharmacy.ts:2198 genPrices: a product's brand-name price and its generic's, together (products with a generic)
+  "s75-pharmacy:generic_prices": (sit) => (sit.entities?.product ?? []).filter((e) => typeof e.attrs?.generic === "number").map((e) => ({ price: e.attrs!.price, amount: e.attrs!.generic })),
   // p26-complaint.ts:469–473 dayLine: a delivery day (not tomorrow: its own line) with Monday's window (W_MON, :66)
   "p26-complaint:brenda_delivery_day": (sit) => {
     const w = literal(fileOf(sit.id)?.consts.get("W_MON"));
@@ -249,7 +251,7 @@ function evaluate(n0: Node, sit: SituationDef, consts: Map<string, Node>, depth 
     case "BinaryExpression": {
       const a = ev(n.left), b = ev(n.right);
       if (!a || !b || a.length * b.length > 16 || ![...a, ...b].every((x) => typeof x === "number")) return null;
-      const op = { "+": (x: number, y: number) => x + y, "-": (x: number, y: number) => x - y, "*": (x: number, y: number) => x * y } as Record<string, (x: number, y: number) => number>;
+      const op = { "+": (x: number, y: number) => x + y, "-": (x: number, y: number) => x - y, "*": (x: number, y: number) => x * y, "/": (x: number, y: number) => x / y } as Record<string, (x: number, y: number) => number>;
       return op[n.operator] ? [...new Set(a.flatMap((x) => b.map((y) => op[n.operator](x as number, y as number))))] : null;
     }
     case "ConditionalExpression": { const a = ev(n.consequent), b = ev(n.alternate); return a && b ? [...new Set([...a, ...b])] : null; }

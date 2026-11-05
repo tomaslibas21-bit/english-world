@@ -184,13 +184,14 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
   const moments = new Map<string, Map<string, Moment>>();
   const heldBy = new Map<string, Set<string>>();
   const triggers = new Map<string, string[]>();
-  const snap = (conv: Conversation) => {
+  // (every moment a sim reaches is kept; random runs' only up to MOMENTS_KEPT a person)
+  const snap = (conv: Conversation, fromSim = false) => {
     if (!multi || conv.ended) return;
     const floor = conv.speakerId;
     const key = `${conv.step ?? ""}|${conv.pending?.id ?? ""}|${conv.completed ? 1 : 0}`;
     let m = moments.get(floor);
     if (!m) moments.set(floor, (m = new Map()));
-    if (m.has(key) || m.size >= MOMENTS_KEPT) return;
+    if (m.has(key) || (!fromSim && m.size >= MOMENTS_KEPT)) return;
     m.set(key, { conv: fork(conv, keep, m.size + 1), origin: conv, step: conv.step ?? "", key });
   };
   const take = (o: TurnOut, gender: "m" | "f", how: Heard["how"], input: string | null) => {
@@ -237,7 +238,7 @@ export function observe(sit: SituationDef, opts: ObserveOpts): { errors: string[
   for (const sim of sit.sims ?? []) for (const [k, g] of (["m", "f"] as const).entries()) for (const seed of opts.simSeeds?.(g) ?? [k + 1]) for (const datePartner of partners) {
     try {
       stats.sims++;
-      playSim(sit, sim, seed, { gender: g, datePartner, onTurn: (conv, turn, o) => { take(o, g, "sim", turn?.say ?? null); snap(conv); } });
+      playSim(sit, sim, seed, { gender: g, datePartner, onTurn: (conv, turn, o) => { take(o, g, "sim", turn?.say ?? null); snap(conv, true); } });
     } catch (e: any) { errors.push(`${sit.id}: sim ${sim.name}: ${e.message}`); }
   }
 
