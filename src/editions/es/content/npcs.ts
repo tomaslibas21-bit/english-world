@@ -27,7 +27,7 @@ const HAIR = { black: "#1f1a17", dark: "#2e2119", brown: "#5a3a25", gray: "#b8b3
  *  - glasses, and a badge (or a lanyard's card) for the workers whose portrait has a name tag.
  *  Since graphics round 3 the builder makes the garments the portraits show (Character.ts; Maple Harbor uses none):
  *  Doña Carmen's hipil, embroidered at the neck and round the hem, under her yellow rebozo; Lucía's braid over her
- *  shoulder and her blouse embroidered with flowers, as Valeria's and Doña Lupe's are; Don Pancho's jipi and the
+ *  shoulder and her blouse embroidered with flowers, as Valeria's and Doña Licha's are; Don Pancho's jipi and the
  *  guayaberas of Don Pancho, Don Ernesto, Don Chuy and Luis (with his waist apron); Fátima's bandana. What it still
  *  can't make takes the nearest: Don Héctor's goatee is a beard; sleeveless and short-sleeved tops have long sleeves,
  *  as in Maple Harbor. No one wears the police cap (`police`): no officer's portrait shows one. */

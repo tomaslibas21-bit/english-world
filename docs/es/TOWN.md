@@ -840,7 +840,7 @@ every one of them off and its cast uses none of the options.
   four-petalled flower, teal corners and a band (interiors.ts `pastaTiles`; on the floor's canvas, no draw call).
 - **The garments the portraits show** (Character.ts, unused in Maple Harbor): Doña Carmen's hipil (flowers round the
   neck and the skirt's hem) under her yellow rebozo; Lucía's braid over her shoulder and her blouse embroidered with
-  flowers, as Valeria's and Doña Lupe's are; Don Pancho's jipi; the guayaberas (pleats, pockets, buttons) of Don Pancho,
+  flowers, as Valeria's and Doña Licha's are; Don Pancho's jipi; the guayaberas (pleats, pockets, buttons) of Don Pancho,
   Don Ernesto, Don Chuy and Luis, Luis with his waiter's apron from the waist; Fátima's bandana. **Faces** (`face`): the
   cast's brows their own (heavier for the men, more so with a moustache or a beard, finer and more arched for the women,
   each tilted a little their own way) and the lines of a life of smiling on the grey-haired.
