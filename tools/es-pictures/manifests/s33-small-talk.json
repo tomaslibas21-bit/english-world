@@ -1,5 +1,5 @@
 {
-  "_about": "Chapter 5, s33 ¡Qué calor!: Don Pancho at the bus stop on calle Ceiba, in the morning. One set-up: greet first. The rain is sticky (no dry picture after it).",
+  "_about": "Chapter 5, s33 ¡Qué calor!: Don Pancho at the Calle Ceiba bus stop (it stands on calle Hidalgo, TOWN.md), in the morning. One set-up: greet first. The rain is sticky (no dry picture after it). Since the 5 Nov catch-up: his questions that open a topic show his curious pose (from), his follow-ups his listening pose (react), and each of his three stories its own picture (react_weekend: fishing, react_plans: painting the boat, react_week: retired).",
   "scenes": {
     "s33-small-talk": {"npc": "Don Pancho, your neighbor (at the bus stop)", "focus": [34, 30], "start": "greet", "sticky": ["rain"]}
   },
@@ -40,41 +40,43 @@
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
       "moment": "from_q",
-      "phases": ["from_q"],
+      "phases": ["from_q", "week", "weekend_past", "weekend_plans"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: eyebrows raised with interest, he strokes his chin with one hand, curious (\"¿De dónde es?\").",
+      "note": "5 Nov catch-up: also his questions that open a topic (week «¿Y qué tal la semana?», weekend_past «¿Qué tal el fin de semana?», weekend_plans «¿Qué planes tiene?»), which showed his own stories' pictures before he had told them.",
       "out": "public/scenes-es/s33-small-talk/from.webp"
     },
     {
       "id": "s33-small-talk/fishing",
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
-      "moment": "weekend_past",
-      "phases": ["weekend_past", "wkp_what"],
+      "moment": "react_weekend",
+      "phases": ["react_weekend"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: laughing, he mimes holding a fishing rod with both hands, as if a fish were pulling (fishing with his grandson at the pier last weekend).",
-      "note": "5 Nov audit: shown on Mondays (weekend_past, wkp_what), the day of his fishing story; it was also on wkf_what (Friday).",
+      "note": "5 Nov audit: shown on Mondays (weekend_past, wkp_what), the day of his fishing story; it was also on wkf_what (Friday). 5 Nov catch-up: shown with the story itself, react_weekend («¡Muy bien! Llevé a mi nieto a pescar al muelle.»), the pending after it (s33 now gives each story's pending its own id).",
       "out": "public/scenes-es/s33-small-talk/fishing.webp"
     },
     {
       "id": "s33-small-talk/plans",
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
-      "moment": "weekend_plans",
-      "phases": ["weekend_plans", "wkf_what"],
+      "moment": "react_plans",
+      "phases": ["react_plans"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: with a proud grin he mimes painting with a brush in one hand, short strokes in the air (this weekend he is painting his old lancha).",
-      "note": "5 Nov audit: shown on Fridays (weekend_plans, wkf_what), the day of his painting plan; it was also on wkp_what (Monday) and, for a few hours after ba91c40a, on react, which is the pending after each of his three stories (Friday painting, Monday fishing, the week), so it showed him painting while he told the fishing story.",
+      "note": "5 Nov audit: shown on Fridays (weekend_plans, wkf_what), the day of his painting plan; it was also on wkp_what (Monday) and, for a few hours after ba91c40a, on react, which is the pending after each of his three stories (Friday painting, Monday fishing, the week), so it showed him painting while he told the fishing story. 5 Nov catch-up: shown with the story itself, react_plans («Ah, voy a pintar mi lancha, allá en el muelle.»), the pending after it (s33 now gives each story's pending its own id).",
       "out": "public/scenes-es/s33-small-talk/plans.webp"
     },
     {
       "id": "s33-small-talk/week",
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
-      "moment": "week",
-      "phases": ["week", "busy_why"],
+      "moment": "react_week",
+      "phases": ["react_week"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: he laughs heartily, patting his chest with one hand (he is retired: every day is Saturday).",
+      "note": "5 Nov catch-up: shown with the story itself, react_week («¿Yo? ¡Estoy jubilado! ¡Para mí todos los días son sábado!»), the pending after it; it was on week and busy_why, his questions about the learner's week.",
       "out": "public/scenes-es/s33-small-talk/week.webp"
     },
     {
@@ -91,11 +93,11 @@
       "id": "s33-small-talk/react",
       "scene": "s33-small-talk",
       "situation": "s33-small-talk",
-      "moment": "react",
-      "phases": ["react"],
+      "moment": "wkf_what",
+      "phases": ["busy_why", "wkp_what", "wkf_what"],
       "refs": ["edit:s33-small-talk/greet", "person:cast/frank"],
       "prompt": "Change only his pose: he leans in a little, eyebrows raised, listening with delighted interest and waiting for the learner's reaction.",
-      "note": "5 Nov audit: his listening pose for react, the pending after each of his three stories (one id for all three, so a neutral picture fits them all; one id per story in the dialogue would let each story show its own picture).",
+      "note": "5 Nov audit: his listening pose for react, the pending after each of his three stories (one id for all three, so a neutral picture fits them all; one id per story in the dialogue would let each story show its own picture). 5 Nov catch-up: since the stories' pendings have their own ids (react_weekend, react_plans, react_week, each with its story's picture), this listening pose goes with his follow-ups to the learner's answers («¿Ah, sí? ¿Y qué hizo?», «¿Qué va a hacer?», «¿Por el trabajo, o por la familia?»).",
       "out": "public/scenes-es/s33-small-talk/react.webp"
     },
     {

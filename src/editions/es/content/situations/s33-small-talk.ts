@@ -204,14 +204,15 @@ function tell(c: Ctx, topic: Topic, asked = true) {
   c.say(topic === "week" && c.s.told.job ? "frank_week_retired" : topic === "job" && c.s.told.week ? "frank_job_retired" : TELL[topic]);
   if (MORE[topic] && canAsk(c)) { c.s.moreFor = topic; expectReact(c); }
 }
-/** After a story he waits for a reaction ("¡Qué bien!", "¿En serio?"), then adds a little more. */
+/** After a story he waits for a reaction ("¡Qué bien!", "¿En serio?"), then adds a little more. One id per story
+ *  (react_weekend: the fishing, react_plans: the boat, react_week: retired), so the scene shows the story he tells. */
 function expectReact(c: Ctx) {
   const more = (cc: Ctx) => { tellMore(cc); };
   const story = (cc: Ctx, _sl: any, sg: Segment) => { storyQ(cc, sg); };
   // "¿Es mucho trabajo?" belongs to the boat he is going to paint; after any other story it is not a question to him
   // (an intent in `on` counts as expected, so it goes in both only here)
   const boat = c.s.moreFor === "plans";
-  c.expect({ id: "react", optional: true, expects: ["interest", "same", "q_story", ...(boat ? ["story_work_ctx"] : [])], hints: ["interest"],
+  c.expect({ id: `react_${c.s.moreFor}`, optional: true, expects: ["interest", "same", "q_story", ...(boat ? ["story_work_ctx"] : [])], hints: ["interest"],
     suggest: [{ lt: "Show interest (“¡Qué bien!”, “¿En serio?”)", hint: "interest" }],
     on: { interest: more, same: more, q_story: story, g_ok: more, ...(boat ? { story_work_ctx: story } : {}) },
     yes: more });
@@ -475,7 +476,8 @@ const AUTO: Record<string, string> = {
   howareyou: "Muy bien, gracias. ¿Y usted?", weather: "¡Sí, tiene razón!", new_q: "Sí, acabo de llegar.", intro: "¡Mucho gusto, Don Pancho! Yo soy Ryan.",
   from_q: "Soy de Canadá.", winter: "¡Sí, muchísimo frío!", week: "Sí, mucho trabajo.", busy_why: "El trabajo, sobre todo.",
   weekend_past: "¡Muy bien! Fui a la playa.", wkp_what: "Visité a unos amigos.", weekend_plans: "Voy a ir a la playa.",
-  wkf_what: "Voy a visitar a mi familia.", your_turn: "¡Perdón! ¿Y usted?", react: "¡Qué bien!", rain: "¡Gracias, qué amable!",
+  wkf_what: "Voy a visitar a mi familia.", your_turn: "¡Perdón! ¿Y usted?", react_weekend: "¡Qué bien!", react_plans: "¡Qué bien!",
+  react_week: "¡Qué bien!", rain: "¡Gracias, qué amable!",
   like_q: "¡Me encanta!", closing: "Bueno, ya me voy. ¡Qué gusto platicar con usted!",
 };
 /** An answer map without some keys: those questions are then answered by the sim's own turns. */
@@ -483,11 +485,12 @@ const except = (a: Record<string, string>, ...keys: string[]) => Object.fromEntr
 const AUTO_SHORT: Record<string, string> = {
   howareyou: "Bien, gracias.", weather: "¡Sí!", new_q: "Sí.", intro: "Ryan.", from_q: "Canadá.", winter: "Sí.", week: "Sí.",
   busy_why: "El trabajo.", weekend_past: "Bien.", wkp_what: "Nada especial.", weekend_plans: "Sí.", wkf_what: "La playa.", your_turn: "¿Y usted?",
-  react: "¿En serio?", rain: "¡Gracias!", like_q: "¡Mucho!", closing: "¡Adiós!",
+  react_weekend: "¿En serio?", react_plans: "¿En serio?", react_week: "¿En serio?", rain: "¡Gracias!", like_q: "¡Mucho!", closing: "¡Adiós!",
 };
 const AUTO_BACK: Record<string, string> = {
   ...AUTO, weather: "¡Ya lo creo! ¿Y cómo está usted?", from_q: "Soy de Canadá. ¿Y usted?", week: "¡Una locura! ¿Y usted?",
-  weekend_past: "Bien, ¿y usted?", weekend_plans: "Nada especial. ¿Y usted?", react: "¿En serio? ¡Qué padre!", like_q: "¡Me encanta! ¿Y a usted?",
+  weekend_past: "Bien, ¿y usted?", weekend_plans: "Nada especial. ¿Y usted?", react_weekend: "¿En serio? ¡Qué padre!",
+  react_plans: "¿En serio? ¡Qué padre!", react_week: "¿En serio? ¡Qué padre!", like_q: "¡Me encanta! ¿Y a usted?",
 };
 const AUTO_TWIST: Record<string, string> = {
   ...AUTO, rain: "No, gracias, traigo el mío.", like_q: "¿Otra vez? ¡Como siempre! Pero me encanta el pueblo.", closing: "¡Igualmente! ¡Que le vaya bien!",

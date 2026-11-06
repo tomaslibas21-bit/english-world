@@ -189,10 +189,11 @@ export class Game implements GameApi {
     this.town = buildTown();
     // the follow camera never goes into or behind anything built in the town (the church, a gazebo, a canopy…: all of
     // it, from the meshes themselves), and the trees in its way fade; not what moves (clouds, gulls, boats)
-    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat;
+    // (nor the overhead lines a town may have: thin, looked through, userData.thin)
+    const moves = (o: THREE.Object3D) => o.userData?.v !== undefined || !!o.userData?.gull || !!o.userData?.boat || !!o.userData?.thin;
     this.field = OcclusionField.fromObject(this.town.group, { minX: WORLD.minX - 24, maxX: WORLD.maxX + 24, minZ: WORLD.minZ - 24, maxZ: WORLD.maxZ + 24 }, { skip: moves });
     this.field.fillFootprints(this.town.colliders.boxes, this.town.colliders.circles);
-    this.fader = new PropFader(this.town.group, moves);
+    this.fader = new PropFader(this.town.group, moves, 1.3, THEME.fade);
     withCutout(this.town.group);
     const nav = new NavGrid(WORLD.minX, WORLD.minZ, WORLD.maxX, WORLD.maxZ, 1, this.town.colliders);
     // pedestrians prefer sidewalks: roads cost more, crosswalks are cheap
@@ -1046,7 +1047,7 @@ export class Game implements GameApi {
     this.updatePlayer(dt, blocked, this.transitioning && !talking && !st.hud.panel);
     this.updateNpcs(dt, talking);
     if (!this.zone.interior) this.ambient.update(dt, this.player.root.position);
-    this.town.update(this.t, dt);
+    this.town.update(this.t, dt, this.rig.cam.position);
     this.zone.interior?.update?.(this.t, dt);
     this.guidance.visible = !talking;
     this.guidance.group.visible = !talking;

@@ -1267,3 +1267,201 @@ export function houseDetails(parts: Part[], atlas: SignAtlas, P: (u: number, v: 
     at(new THREE.OctahedronGeometry(0.08).translate(0.12, 0.82, 0.1), s * (doorW / 2 + 0.55), 0.55, s > 0 ? "#e63946" : "#f6c000");
   }
 }
+
+// ------------------------------------------------------------------------------------- graphics round 3
+
+/** The overhead lines of a Mexican street (theme.ts `cables`): concrete poles with a cross arm and a transformer on
+ *  every third (in `parts`), three lines sagging from pole to pole, and service drops from a pole to a house's front
+ *  (pole index, then the point on the wall) (in `lines`: a mesh of their own in town.ts, without shadows, thin, so the
+ *  walking camera neither comes in for them nor stops at them: occlusion.ts leaves them out). */
+export function cables(parts: Part[], lines: Part[], col: Colliders, poles: [number, number][], drops: [number, number, number, number][]) {
+  const CONCRETE = "#b9b4aa", LINE = "#26292e";
+  const line = (a: THREE.Vector3, b: THREE.Vector3, sag: number, r = 0.024) => {
+    const n = 6;
+    let p = a.clone();
+    for (let i = 1; i <= n; i++) {
+      const t = i / n, q = new THREE.Vector3().lerpVectors(a, b, t);
+      q.y -= Math.sin(t * Math.PI) * sag;
+      const d = q.clone().sub(p), len = d.length();
+      const g = new THREE.BoxGeometry(r, r, len + 0.01).lookAt(d);
+      lines.push([g.translate((p.x + q.x) / 2, (p.y + q.y) / 2, (p.z + q.z) / 2), LINE]);
+      p = q;
+    }
+  };
+  const tops: THREE.Vector3[][] = [];
+  poles.forEach(([x, z], i) => {
+    parts.push([cyl(0.1, 0.15, 8.6, x, 4.3, z, 6), CONCRETE]);
+    parts.push([box(0.12, 0.12, 1.5, x, 7.9, z), "#8a8f94"]);
+    for (const dz of [-0.6, 0, 0.6]) parts.push([cyl(0.035, 0.035, 0.12, x, 8.02, z + dz, 5), "#e8e2d6"]);
+    if (i % 3 === 1) {
+      parts.push([cyl(0.22, 0.22, 0.6, x + 0.32, 6.6, z, 8), "#8a8f94"]);
+      parts.push([box(0.05, 0.05, 0.3, x + 0.32, 6.95, z), "#5a5f64"]);
+    }
+    col.addCircle(x, z, 0.18);
+    tops.push([-0.6, 0, 0.6].map((dz) => new THREE.Vector3(x, 8.06, z + dz)));
+  });
+  for (let i = 0; i + 1 < tops.length; i++) for (let k = 0; k < 3; k++) {
+    const a = tops[i][k], b = tops[i + 1][k];
+    line(a, b, 0.3 + 0.012 * a.distanceTo(b));
+  }
+  for (const [pi, x, y, z] of drops) {
+    const a = tops[pi][1].clone().setY(7.6), b = new THREE.Vector3(x, y, z);
+    line(a, b, 0.25 + 0.02 * a.distanceTo(b), 0.02);
+    lines.push([box(0.12, 0.18, 0.08, x, y - 0.12, z), "#d9d4c7"]);
+  }
+}
+
+/** Clay pots with plants by the shops' doors (a pair at each spot: x, z of the door, how far either side, facing). */
+export function macetas(parts: Part[], col: Colliders, spots: [number, number, number][]) {
+  const r = rand(7171);
+  for (const [x, z, half] of spots) for (const s of [-1, 1]) {
+    const px = x + s * half, k = 0.85 + r() * 0.3;
+    parts.push([cyl(0.28 * k, 0.2 * k, 0.5 * k, px, 0.25 * k, z, 7), "#b5562f"]);
+    parts.push([cyl(0.3 * k, 0.3 * k, 0.06 * k, px, 0.5 * k, z, 7), "#a24a2a"]);
+    if (r() < 0.5) for (let i = 0; i < 7; i++) {
+      // an agave: pointed leaves fanning out
+      const a = (i / 7) * Math.PI * 2 + r(), tilt = 0.35 + (i % 3) * 0.22;
+      parts.push([new THREE.ConeGeometry(0.07 * k, 0.75 * k, 4).translate(0, 0.37 * k, 0).rotateZ(-tilt).rotateY(a).translate(px, 0.5 * k, z), i % 2 ? "#5b8c5a" : "#6f9e66"]);
+    } else {
+      parts.push([new THREE.IcosahedronGeometry(0.42 * k, 0).scale(1, 1.1, 1).translate(px, 0.92 * k, z), "#3f7d3a"]);
+      for (let i = 0; i < 5; i++) parts.push([new THREE.OctahedronGeometry(0.07 * k, 0).translate(px + Math.cos(i * 1.3) * 0.3 * k, 1.0 * k + (i % 2) * 0.18 * k, z + Math.sin(i * 1.3) * 0.3 * k), ["#e4007c", "#ff8fab", "#f6c000"][i % 3]]);
+    }
+    col.addCircle(px, z, 0.3 * k);
+  }
+}
+
+/** A fruit cart (frutas picadas, cocos): a cart with a glass case of cut fruit in cups, coconuts on top, a striped
+ *  umbrella, three bicycle wheels; its painted sign both sides (the atlas). Facing `rot` (its front to +z). */
+export function fruitCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, rot: number, sign: string) {
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  add(box(1.3, 0.55, 0.75, 0, 0.75, 0), "#f4f1ea");
+  add(box(1.32, 0.12, 0.77, 0, 0.53, 0), "#1f8a4c");
+  add(box(1.2, 0.36, 0.62, 0, 1.21, 0), "#cfe8ef");
+  add(box(1.24, 0.04, 0.66, 0, 1.41, 0), "#f4f1ea");
+  const FR = ["#ff8a00", "#e63946", "#f6c000", "#8ac926", "#ff8fab"];
+  for (let i = 0; i < 10; i++) {
+    const cx = -0.45 + (i % 5) * 0.225, cz = i < 5 ? -0.13 : 0.13;
+    add(cyl(0.06, 0.05, 0.16, cx, 1.12, cz, 6), "#f4f1ea");
+    add(cyl(0.055, 0.055, 0.04, cx, 1.22, cz, 6), FR[i % FR.length]);
+  }
+  for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(0.13, 6, 4).scale(1, 0.9, 1).translate(-0.4 + i * 0.2, 1.53, (i % 2) * 0.12 - 0.06), "#5a8f2e");
+  for (const s of [-1, 1]) add(new THREE.TorusGeometry(0.27, 0.04, 4, 10).translate(s * 0.45, 0.28, -0.42), "#26292e");
+  add(new THREE.TorusGeometry(0.27, 0.04, 4, 10).translate(0, 0.28, 0.75), "#26292e");
+  add(box(0.05, 0.05, 0.6, 0, 0.45, 0.5), "#26292e");
+  add(cyl(0.02, 0.02, 1.8, 0.5, 1.95, 0, 5), "#7d868c");
+  const colours = ["#e4007c", "#ffffff", "#f6c000", "#ffffff", "#00a6a6", "#ffffff", "#f77f00", "#ffffff"];
+  for (let i = 0; i < 8; i++) add(new THREE.ConeGeometry(1.0, 0.4, 1, 1, false, (i / 8) * Math.PI * 2, Math.PI / 4).translate(0.5, 2.95, 0), colours[i]);
+  for (const s of [-1, 1]) {
+    const o = new THREE.Vector3(0, 0.75, s * 0.385).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+    atlas.add("fruit:" + sign, 384, 128, drawPainted(sign, "", "#fff3d0", "#1f8a4c", "#14532d"), 1.2, 0.4, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
+  }
+  blockRect(col, x, z, rot, -0.75, 0.75, -0.75, 1.1);
+}
+
+/** The water man's cargo tricycle (the garrafones delivered to the houses): a front box of blue water jugs, a seat, the
+ *  rear wheel; facing `rot` (the box ahead, to +z). */
+export function waterTrike(parts: Part[], col: Colliders, x: number, z: number, rot: number) {
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  for (const s of [-1, 1]) add(new THREE.TorusGeometry(0.3, 0.04, 4, 10).rotateY(Math.PI / 2).translate(s * 0.48, 0.3, 0.55), "#26292e");
+  add(new THREE.TorusGeometry(0.3, 0.04, 4, 10).rotateY(Math.PI / 2).translate(0, 0.3, -0.75), "#26292e");
+  add(box(1.05, 0.08, 0.95, 0, 0.55, 0.55), "#1f6fd1");
+  for (const [w, d, ox, oz] of [[1.05, 0.04, 0, 0.08], [1.05, 0.04, 0, 1.02], [0.04, 0.95, -0.5, 0.55], [0.04, 0.95, 0.5, 0.55]] as [number, number, number, number][]) add(box(w, 0.3, d, ox, 0.74, oz), "#1f6fd1");
+  for (let i = 0; i < 4; i++) {
+    const jx = -0.24 + (i % 2) * 0.48, jz = 0.32 + Math.floor(i / 2) * 0.46;
+    add(cyl(0.17, 0.17, 0.42, jx, 0.8, jz, 7), "#9fd3ec");
+    add(cyl(0.06, 0.07, 0.07, jx, 1.05, jz, 6), "#2a7fc0");
+  }
+  add(box(0.06, 0.06, 1.2, 0, 0.55, -0.2), "#26292e");
+  add(box(0.06, 0.5, 0.06, 0, 0.8, -0.5), "#26292e");
+  add(box(0.28, 0.08, 0.32, 0, 1.08, -0.52), "#1d1d1d");
+  add(box(0.6, 0.05, 0.05, 0, 1.15, 0.1), "#26292e");
+  blockRect(col, x, z, rot, -0.6, 0.6, -1.1, 1.1);
+}
+
+/** El Muelle's terrace on the sand beside its pier (theme.ts `terrace`): a wooden deck on posts with a rail, tables in
+ *  bright colours with their chairs, a palapa umbrella over each pair. Each deck x0, x1, z0, z1; one collider for it. */
+export function terrace(parts: Part[], col: Colliders, decks: [number, number, number, number][]) {
+  const CLOTH = ["#e4007c", "#00a6a6", "#f6a800", "#7ac143", "#1f6fd1", "#ff5a36"];
+  let k = 0;
+  for (const [x0, x1, z0, z1] of decks) {
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
+    parts.push([box(w, 0.28, d, cx, 0.26, cz), "#b8895a"]);
+    for (let i = 0; i <= Math.round(w / 0.5); i++) parts.push([box(0.02, 0.005, d, x0 + i * (w / Math.round(w / 0.5)), 0.402, cz), "#9a6f45"]);
+    for (const [px, pz] of [[x0 + 0.2, z0 + 0.2], [x1 - 0.2, z0 + 0.2], [x0 + 0.2, z1 - 0.2], [x1 - 0.2, z1 - 0.2]]) parts.push([cyl(0.1, 0.1, 0.8, px, 0.0, pz, 6), "#7a5a3a"]);
+    // the rail along its sea side and its ends
+    parts.push([box(w, 0.06, 0.06, cx, 1.25, z0 + 0.05), "#f4f1ea"]);
+    for (let i = 0; i <= 6; i++) parts.push([box(0.05, 0.85, 0.05, x0 + 0.05 + i * ((w - 0.1) / 6), 0.82, z0 + 0.05), "#f4f1ea"]);
+    for (const ex of [x0 + 0.05, x1 - 0.05]) parts.push([box(0.06, 0.06, d, ex, 1.25, cz), "#f4f1ea"]);
+    const n = Math.max(1, Math.floor(w / 2.6));
+    for (let i = 0; i < n; i++) {
+      const tx = x0 + (i + 0.5) * (w / n), tz = cz - 0.1, cloth = CLOTH[k++ % CLOTH.length];
+      parts.push([cyl(0.42, 0.42, 0.05, tx, 1.12, tz, 8), cloth]);
+      parts.push([cyl(0.045, 0.045, 0.7, tx, 0.75, tz, 6), "#3a3d42"]);
+      for (const s of [-1, 1]) {
+        const chx = tx + s * 0.72, chair = CLOTH[(k + (s > 0 ? 2 : 4)) % CLOTH.length];
+        parts.push([box(0.42, 0.05, 0.42, chx, 0.86, tz), chair]);
+        parts.push([box(0.05, 0.45, 0.42, chx + s * 0.19, 1.09, tz), chair]);
+        for (const [lx, lz] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]]) parts.push([box(0.03, 0.42, 0.03, chx + lx, 0.62, tz + lz), "#3a3d42"]);
+      }
+      // a palapa umbrella over the table
+      parts.push([cyl(0.05, 0.05, 2.5, tx, 1.65, tz, 6), WOOD]);
+      parts.push([new THREE.ConeGeometry(1.35, 0.7, 8).translate(tx, 3.15, tz), THATCH]);
+      parts.push([new THREE.CylinderGeometry(1.35, 1.42, 0.2, 8, 1, true).translate(tx, 2.72, tz), THATCH_DARK]);
+    }
+    col.addBox(cx, cz, w, d);
+  }
+}
+
+/** A coconut seller's cart on the malecón (cocos fríos): a cart with an ice box, green coconuts piled on it, a
+ *  machete's block, straws, a parasol; its sign both sides. Facing `rot`. */
+export function cocoCart(parts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, rot: number, sign: string) {
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  add(box(1.4, 0.7, 0.8, 0, 0.7, 0), "#1f6fd1");
+  add(box(1.44, 0.06, 0.84, 0, 1.08, 0), "#f4f1ea");
+  for (let i = 0; i < 9; i++) add(new THREE.SphereGeometry(0.15, 6, 4).scale(1, 1.08, 1).translate(-0.45 + (i % 4) * 0.3, 1.24 + Math.floor(i / 4) * 0.2, -0.12 + (i % 2) * 0.24), i % 3 ? "#6aa84f" : "#4f8a3a");
+  add(box(0.3, 0.12, 0.3, 0.52, 1.17, 0.2), "#8a5a3c");
+  for (let i = 0; i < 6; i++) add(cyl(0.008, 0.008, 0.2, 0.45 + (i % 3) * 0.03, 1.3, -0.2 + Math.floor(i / 3) * 0.03, 4), ["#e4007c", "#f6c000", "#00a6a6"][i % 3]);
+  for (const s of [-1, 1]) add(new THREE.TorusGeometry(0.28, 0.045, 4, 10).translate(s * 0.5, 0.29, -0.4), "#26292e");
+  add(cyl(0.02, 0.02, 1.7, -0.6, 1.95, 0.3, 5), "#7d868c");
+  const colours = ["#00a6a6", "#ffffff", "#7ac143", "#ffffff", "#00a6a6", "#ffffff", "#7ac143", "#ffffff"];
+  for (let i = 0; i < 8; i++) add(new THREE.ConeGeometry(0.95, 0.38, 1, 1, false, (i / 8) * Math.PI * 2, Math.PI / 4).translate(-0.6, 2.85, 0.3), colours[i]);
+  for (const s of [-1, 1]) {
+    const o = new THREE.Vector3(0, 0.7, s * 0.41).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+    atlas.add("coco:" + sign, 384, 128, drawPainted(sign, "", "#eafbe0", "#1f6fd1", "#0b3b7a"), 1.2, 0.4, x + o.x, o.y, z + o.z, rot + (s > 0 ? 0 : Math.PI));
+  }
+  blockRect(col, x, z, rot, -0.8, 0.8, -0.7, 0.7);
+}
+
+/** Towels on the sand (x, z, which way they lie, colour) and a beach bag beside some: flat, in the no-shadow mesh. */
+export function towels(parts: Part[], spots: [number, number, number, string][]) {
+  spots.forEach(([x, z, rot, c], i) => {
+    parts.push([place(box(0.95, 0.025, 1.85, 0, 0.012, 0), x, z, rot), c]);
+    for (let k = 0; k < 3; k++) parts.push([place(box(0.95, 0.027, 0.09, 0, 0.013, -0.6 + k * 0.6), x, z, rot), "#ffffff"]);
+    if (i % 2 === 0) parts.push([place(box(0.42, 0.3, 0.2, 0.75, 0.15, -0.4), x, z, rot), ["#f6a800", "#e4007c", "#1f6fd1"][i % 3]]);
+  });
+}
+
+/** The atrial cross before the church (a stone cross on a stepped base, as colonial churches have in their atriums). */
+export function atrialCross(parts: Part[], col: Colliders, x: number, z: number) {
+  for (let k = 0; k < 3; k++) parts.push([box(1.5 - k * 0.4, 0.25, 1.5 - k * 0.4, x, 0.125 + k * 0.25, z), k % 2 ? "#cfc6b0" : "#ddd5c0"]);
+  parts.push([box(0.24, 2.2, 0.24, x, 0.75 + 1.1, z), "#e8e1cf"]);
+  parts.push([box(1.0, 0.22, 0.22, x, 2.35, z), "#e8e1cf"]);
+  col.addCircle(x, z, 0.8);
+}
+
+/** A mirador at the meadow's edge (theme.ts `mirador`): a wooden platform up two steps, its rail, a bench, and the sign
+ *  pointing out to the cenote across the meadow (the atlas). Facing `rot` (the view to +z). */
+export function mirador(parts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, rot: number, sign: string) {
+  const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  add(box(4.0, 0.5, 3.0, 0, 0.25, 0), "#a07a52");
+  for (const k of [0, 1]) add(box(1.4, 0.18, 0.4, 0, 0.09 + k * 0.18, -1.7 + k * 0.2), "#8a6a4a");
+  for (let i = 0; i <= 8; i++) add(box(0.06, 0.9, 0.06, -1.95 + i * (3.9 / 8), 0.95, 1.45), "#7a5a3a");
+  add(box(4.0, 0.08, 0.08, 0, 1.4, 1.45), "#7a5a3a");
+  for (const s of [-1, 1]) { add(box(0.08, 0.08, 3.0, s * 1.96, 1.4, 0), "#7a5a3a"); for (let i = 0; i < 4; i++) add(box(0.06, 0.9, 0.06, s * 1.96, 0.95, -1.4 + i * 0.95), "#7a5a3a"); }
+  add(box(1.6, 0.08, 0.4, 0, 0.95, -0.6), "#8a6a4a");
+  for (const s of [-1, 1]) add(box(0.08, 0.42, 0.36, s * 0.7, 0.71, -0.6), "#7a5a3a");
+  add(cyl(0.05, 0.05, 2.3, 1.6, 1.15, -1.2, 6), "#7a5a3a");
+  const o = new THREE.Vector3(1.6, 2.15, -1.12).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  atlas.add("mirador:" + sign, 512, 160, drawPainted(sign, "", "#fff3d0", "#2f6b34", "#1d4a22"), 1.6, 0.5, x + o.x, o.y, z + o.z, rot + Math.PI);
+  blockRect(col, x, z, rot, -2.0, 2.0, -1.5, 1.5);
+}

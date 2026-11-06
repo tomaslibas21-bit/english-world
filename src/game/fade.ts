@@ -21,8 +21,9 @@ export class PropFader {
   private a = new THREE.Vector3();
   private b = new THREE.Vector3();
 
-  /** Every instanced mesh under `root` that stands taller than `minTop` m and isn't skipped. */
-  constructor(root: THREE.Object3D, skip?: (o: THREE.Object3D) => boolean, minTop = 1.3) {
+  /** Every instanced mesh under `root` that stands taller than `minTop` m and isn't skipped. `deep`: this edition's
+   *  deeper fade (theme.ts `fade`; none: Maple Harbor's, wantFade). */
+  constructor(root: THREE.Object3D, skip?: (o: THREE.Object3D) => boolean, minTop = 1.3, private deep: { most: number; near: number } | null = null) {
     root.updateMatrixWorld(true);
     const m4 = new THREE.Matrix4(), s = new THREE.Sphere(), box = new THREE.Box3();
     root.traverse((o) => {
@@ -69,17 +70,17 @@ export class PropFader {
   /** Fades what stands within its own size of the line from `cam` to `subject` (or right in front of the camera),
    *  and brings back the rest, a little each frame. `on` false: everything back (indoors, in a conversation). */
   update(dt: number, cam: THREE.Vector3, subject: THREE.Vector3, on = true) {
-    const k = Math.min(1, dt * 7);
+    const k = Math.min(1, dt * 7), deep = this.deep;
     for (const set of this.sets) {
       let changed = -1, last = -1;
       for (let i = 0; i < set.mesh.count; i++) {
-        const want = on ? wantFade(set.spheres, i, cam, subject, this.a, this.b) : 0;
+        const want = on ? (deep ? deepFade(set.spheres, i, cam, subject, deep, this.a, this.b) : wantFade(set.spheres, i, cam, subject, this.a, this.b)) : 0;
         const cur = set.now[i];
         if (cur === want) continue;
         let next = cur + (want - cur) * k;
         if (Math.abs(next - want) < 0.01) next = want;
         set.now[i] = next;
-        set.attr.array[i] = next * MOST;
+        set.attr.array[i] = deep ? next : next * MOST;
         if (changed < 0) changed = i;
         last = i;
       }
@@ -107,6 +108,29 @@ export function wantFade(sp: Float32Array, i: number, cam: THREE.Vector3, subjec
   const px = cam.x + a.x * t - cx, py = cam.y + a.y * t - cy, pz = cam.z + a.z * t - cz;
   // (not a prop just behind the subject's back: the line ends at their chest)
   return t < 0.97 && Math.hypot(px, py, pz) < r * 0.85 ? 1 : 0;
+}
+
+/** This edition's deeper fade (theme.ts `fade`: the zócalo's laureles are big and dark, and as high as the walking
+ *  camera stands), as the share of the surface left out: all of it when the camera is in the crown or within `near` m
+ *  of it; `most` when the crown stands in the way of the line from the camera to the player's chest or to her head, or
+ *  close in front of the camera (within two of its radii, where the player is: a crown filling half the picture);
+ *  else 0. */
+export function deepFade(sp: Float32Array, i: number, cam: THREE.Vector3, subject: THREE.Vector3, o: { most: number; near: number }, a = new THREE.Vector3(), b = new THREE.Vector3()) {
+  const cx = sp[i * 4], cy = sp[i * 4 + 1], cz = sp[i * 4 + 2], r = sp[i * 4 + 3];
+  const dc = Math.hypot(cx - cam.x, cy - cam.y, cz - cam.z);
+  if (dc < r + o.near) return 1;
+  b.set(cx - cam.x, cy - cam.y, cz - cam.z);
+  for (const up of [0, 0.55]) {
+    a.set(subject.x - cam.x, subject.y + up - cam.y, subject.z - cam.z);
+    const len2 = a.lengthSq();
+    if (len2 < 1e-6) return 0;
+    const t = Math.max(0, Math.min(1, b.dot(a) / len2));
+    const px = cam.x + a.x * t - cx, py = cam.y + a.y * t - cy, pz = cam.z + a.z * t - cz;
+    if (t < 0.97 && Math.hypot(px, py, pz) < r * 0.9) return o.most;
+    // (close in front of the lens, on the way to her: the angle from the line to her under 40°)
+    if (up === 0 && dc < r * 2 && b.dot(a) > Math.cos(0.7) * dc * Math.sqrt(len2) && dc < Math.sqrt(len2)) return o.most;
+  }
+  return 0;
 }
 
 /** A copy of the material that keeps its own shader changes (a clone drops them: the trees' sway). */

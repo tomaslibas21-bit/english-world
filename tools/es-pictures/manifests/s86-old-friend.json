@@ -100,9 +100,10 @@
       "scene": "s86-old-friend",
       "situation": "s86-old-friend",
       "moment": "numbers",
-      "phases": ["numbers", "number_bye"],
+      "phases": ["numbers", "number_bye", "number_sure"],
       "refs": ["edit:s86-old-friend/surprise", "person:cast/lucy"],
       "prompt": "Change only her pose: smiling, she holds her phone in both hands with her thumbs ready to type the learner's number; the screen faces her, only the back of the phone is seen (\"¿Me pasas tu número?\").",
+      "note": "5 Nov catch-up: also number_sure (the audit's «¿Seguro? ¡Así no nos perdemos otra vez!» after a no to swapping numbers).",
       "out": "public/scenes-es/s86-old-friend/numbers.webp"
     },
     {

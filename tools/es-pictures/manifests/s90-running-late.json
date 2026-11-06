@@ -1,5 +1,5 @@
 {
-  "_about": "s90-running-late (Voy tarde): a phone call to the boss at 8:50. Ingeniero Montes at his end of the line, standing at a desk in the Línea Clara office with the glass-walled meeting room behind him (one set-up). 10 pictures: he answers, who's calling, uh-oh, the reason, car trouble (do you need help?), the arrival time, start without you?, the room 302 twist (the other building across the street), can't come today? and goodbye. The reasons (bus, rain, traffic, the alarm …) share the reason picture.",
+  "_about": "s90-running-late (Voy tarde): a phone call to the boss at 8:50. Ingeniero Montes at his end of the line, standing at a desk in the Línea Clara office with the glass-walled meeting room behind him (one set-up). 10 pictures: he answers, who's calling, uh-oh, the reason, car trouble (do you need help?), the arrival time, start without you?, the room 302 twist (upstairs, on the third floor of Línea Clara's own tower, since the 5 Nov audit), can't come today? and goodbye. The reasons (bus, rain, traffic, the alarm …) share the reason picture.",
   "scenes": {
     "s90-running-late": { "npc": "Ingeniero Montes, your boss (phone call)", "focus": [34, 30], "start": "hello" }
   },
@@ -58,8 +58,9 @@
       "id": "s90-running-late/room", "moment": "room_302",
       "phases": ["room"],
       "refs": ["edit:s90-running-late/hello", "person:cast/harris"],
-      "prompt": "Change only his pose: Ingeniero Montes, phone at his ear, points with his free hand out of the big window, where a two-story ochre building with arched windows stands just across the street, eyebrows raised to make sure the learner gets it (\"Por cierto, hoy la reunión es en el otro edificio. En la sala 302\").",
-      "out": "public/scenes-es/s90-running-late/room.webp"
+      "prompt": "Change only his pose: Ingeniero Montes, phone still at his ear, has put the folder down flat on the desk beside the laptop and points straight up toward the ceiling with the index finger of his free hand, eyebrows raised to make sure the learner gets it (today's meeting is upstairs, on the third floor of this same building: «Es en la sala 302. Aquí en nuestro edificio, en el tercer piso»). Keep the office, the big window and its view, the desk and everything on it exactly the same.",
+      "out": "public/scenes-es/s90-running-late/room.webp",
+      "note": "5 Nov catch-up: remade (regular API) as an edit of hello with this prompt: the s90 audit put the meeting in room 302 on the third floor of Línea Clara's own tower (no other building), and the first picture pointed out of the window across the bay; the remake manifest is in the work folder's catchup/."
     },
     {
       "id": "s90-running-late/cant", "moment": "cant_come",

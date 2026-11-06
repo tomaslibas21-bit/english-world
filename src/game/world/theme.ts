@@ -68,6 +68,20 @@ export interface TownTheme {
     cafeMx?: boolean;
     /** El Muelle: thatch under the ceiling, a fishing net, chairs in bright colors, string lights, the catch of the day. */
     muelleMx?: boolean;
+    // graphics round 3 (docs/es/TOWN.md "Graphics, round 3")
+    /** The places the conversations send people to: the airport's café and restrooms between check-in and security
+     *  (s64a), an ATM in the bus terminal's hall (s67b), the museum's paquetería by the entrance with the restrooms past
+     *  it, its elevator on the left and its café by the shop at the exit (s70), the restroom door at the back on the left
+     *  in Café La Ceiba (s72) and at the back on the right in La Cocina de Lucía (s73). */
+    services?: boolean;
+    /** The bus terminal's hall as a Mexican one: route 7's city bus at its bay (the town's own bus, white and teal, its
+     *  number lit) instead of a blue box, a shoeshine stand, the drinks and the snacks of a terminal. */
+    terminalMx?: boolean;
+    /** The rest of the rooms made Mexican: a minisplit on the wall where it's hot, the garrafón instead of a water
+     *  cooler, Mexico's flag in the post office, a báscula by the pharmacy's door, a luchador on the gym's wall, a hammock
+     *  at Brotecito, the souvenirs of the Caribbean at the tourist information (no maple syrup), the mercado's flowers,
+     *  piñatas and comal. */
+    roomsMx?: boolean;
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
@@ -175,7 +189,7 @@ export interface TownTheme {
    *  in the town's own meshes, and these stalls more (x, z, heading: 0 faces +z). */
   tianguis: { lonas: string[]; signs: Record<string, [string, string]>; stalls: { x: number; z: number; rot: number; goods: TianguisGoods }[] } | null;
   /** The rooms' looks in this edition, by room id: floor and wall colors, the floor's kind, the accent (baseboards). */
-  roomLooks: Record<string, { floor?: string; wall?: string; floorKind?: "wood" | "tile" | "carpet" | "stone"; accent?: string }>;
+  roomLooks: Record<string, { floor?: string; wall?: string; floorKind?: "wood" | "tile" | "carpet" | "stone" | "pasta"; accent?: string }>;
   /** Diego and Natalia's house (s85, p30) as a Yucatecan home: a ceiling fan, a family altar, plants in clay pots, a
    *  hammock, a water jug on its stand (and since round 2 a petate and the television on its stand). */
   homeMx: boolean;
@@ -237,6 +251,43 @@ export interface TownTheme {
    *  frame next to nothing where they are too far to see breathe (null: all of them are animated every frame, as in
    *  Maple Harbor). */
   stillBeyond: number | null;
+
+  // Graphics round 3 (5 Nov 2026; docs/es/TOWN.md "Graphics, round 3"). Off in Maple Harbor.
+  /** The trees in the walking camera's way (fade.ts) fade further than Maple Harbor's (to `most` of their surface, she
+   *  is between dense dark crowns), and a crown the camera is in or within `near` m of is left out whole: the zócalo's
+   *  laureles are as tall as the camera stands (null: Maple Harbor's fade, 82 %). */
+  fade: { most: number; near: number } | null;
+  /** What stands at the town's far ends (the cenote, the ruins, the mirador) in a mesh of its own and the overhead lines
+   *  in two halves: each drawn only where it is in view, instead of with the rest wherever any of it is: the same
+   *  pictures, fewer triangles (room for this round's things under the phones' budget). */
+  regions: boolean;
+  /** The goods on the tianguis' stalls are left out when the camera is farther than this (m) from them: from there they
+   *  are a few pixels, and they are thousands of triangles (null: always drawn). */
+  farHide: number | null;
+  /** The town's plain coloured shapes merged into a vertex-coloured mesh for each square of the town this many metres a
+   *  side (two: casting shadows and not), instead of a mesh per colour across the whole town (town.ts TownMerger): far
+   *  fewer draw calls, and no triangles for the squares out of view (null: a mesh per colour, as in Maple Harbor). */
+  townMerge: number | null;
+  /** A room's flat signs and posters (interiors.ts wallPanel) drawn as one mesh on one texture, an atlas of their
+   *  pictures (interiors.ts panelAtlas), instead of a mesh and a texture each: the same pictures in one draw call
+   *  (false: a mesh each, as in Maple Harbor). */
+  panelAtlas: boolean;
+  /** Overhead lines on the streets south of Juárez (mexican.ts `cables`): the poles (x, z) in order, and service drops
+   *  from a pole (its index) to a point on a house's front (x, y, z) (null: none). */
+  cables: { poles: [number, number][]; drops: [number, number, number, number][] } | null;
+  /** Life on the sidewalks: clay pots either side of shop doors (the door's x and z, half the gap), a fruit cart (x, z,
+   *  heading, its sign) and the water man's tricycle (x, z, heading) (null: none). */
+  sidewalks: { macetas: [number, number, number][]; fruitCart: [number, number, number, string] | null; trike: [number, number, number] | null } | null;
+  /** El Muelle's terrace on the sand either side of its pier: the decks (x0, x1, z0, z1). */
+  terrace: [number, number, number, number][];
+  /** The beach: towels on the sand (x, z, heading, colour) and a coconut cart on the malecón (x, z, heading, its sign). */
+  beach: { towels: [number, number, number, string][]; cocos: [number, number, number, string] | null } | null;
+  /** The atrial cross before the church (x, z; null: none). */
+  atrialCross: [number, number] | null;
+  /** A mirador at the meadow's edge, looking out to the cenote (x, z, heading: its view to +z turned by it; the sign). */
+  mirador: { x: number; z: number; rot: number; sign: string } | null;
+  /** More taxis waiting at the stand (x, z, heading), in the stand's taxi's colours (theme `taxi`). */
+  taxis: [number, number, number][];
 }
 
 /** What a tianguis stall sells (theme.ts `tianguis`; mexican.ts `tianguisStall` builds each). */
@@ -313,4 +364,16 @@ export const THEME: TownTheme = {
   houseFronts: {},
   light: null,
   stillBeyond: null,
+  fade: null,
+  regions: false,
+  farHide: null,
+  townMerge: null,
+  panelAtlas: false,
+  cables: null,
+  sidewalks: null,
+  terrace: [],
+  beach: null,
+  atrialCross: null,
+  mirador: null,
+  taxis: [],
 };

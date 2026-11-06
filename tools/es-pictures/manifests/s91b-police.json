@@ -1,5 +1,5 @@
 {
-  "_about": "Quiero levantar una denuncia: the front desk of the Policía Municipal (one set-up). 12 pictures: hello, what happened, the description, what was inside, the bank, ID, the name, signing, the finished report (folio, copy, anything else), the wallet someone turned in (twist turned_in) and handing it back, goodbye. The ministerio twist comes in the same turn as the report's end (pending id anything_else), so it shares the report picture. The turned-in item is shown as a black wallet (the learner may have lost a phone, a purse or a backpack).",
+  "_about": "Quiero levantar una denuncia: the front desk of the Policía Municipal (one set-up). 12 pictures: hello, what happened, the description, what was inside, the bank, ID, the name, signing, the finished report (folio, copy, anything else), what someone turned in (twist turned_in) and handing it back, goodbye. The ministerio twist comes in the same turn as the report's end (pending id anything_else), so it shares the report picture. The turned-in item was shown as a black wallet (the learner may have lost a phone, a purse or a backpack, and the line names its color or another one); since the 5 Nov catch-up it is in a closed manila envelope, so the pictures fit any item and color.",
   "scenes": {
     "s91b-police": {
       "npc": "Oficial Reyes, police front desk",
@@ -176,7 +176,8 @@
         "edit:s91b-police/greet",
         "person:cast/reyes"
       ],
-      "prompt": "Change only his pose: he holds up a black leather wallet that someone has just turned in, showing it to the learner at chest height, eyebrows raised in a hopeful question (\"Alguien acaba de entregar una cartera. ¿Es suya?\").",
+      "prompt": "Change only his pose: he holds up a large plain manila envelope at chest height, its flap closed and the envelope a little bulging with something inside that can't be seen (no writing, label, stamp or tag on it), eyebrows raised in a hopeful question (someone has just turned in what the learner lost: «¿Es suya?»).",
+      "note": "5 Nov catch-up: remade (regular API) as an edit of greet with this prompt; it showed a black leather wallet (prompt: «he holds up a black leather wallet that someone has just turned in…»), while the line names the learner's item (a wallet, a phone, a purse or a backpack) in its color or another one. The remake manifest is in the work folder's catchup/.",
       "out": "public/scenes-es/s91b-police/found.webp"
     },
     {
@@ -191,9 +192,9 @@
         "edit:s91b-police/found",
         "person:cast/reyes"
       ],
-      "prompt": "Change only his pose: he hands the black wallet across the counter toward the learner with a warm smile (\"Perfecto, coincide. Revise que esté todo, por favor\").",
+      "prompt": "Change only his pose and add the learner's hand: he hands the closed manila envelope across the counter toward the learner with a warm smile; the learner's hand and forearm come in from the bottom edge, in a plain sand-colored sleeve, reaching for it («Perfecto, coincide. Revise que esté todo, por favor»).",
       "out": "public/scenes-es/s91b-police/handback.webp",
-      "note": "An edit of found (not of greet), so the wallet stays the same."
+      "note": "An edit of found (not of greet), so the wallet stays the same. 5 Nov catch-up: made again (regular API) from the new found with this prompt, so the envelope stays the same; it showed the black wallet handed across the counter."
     },
     {
       "id": "s91b-police/bye",
