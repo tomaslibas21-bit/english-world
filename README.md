@@ -95,6 +95,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
   - three.js is a separate download that only town mode fetches (`src/game/gameRef.ts` holds the shared game reference).
   - The phone's back button closes the open conversation or panel.
 - **"Ar norėjai pasakyti…?"** (`src/convo/suggest.ts`). When an answer isn't understood, the 1–2 closest model answers the engine would accept are offered. A tap, or "yes" / „taip“, uses them, and the words that didn't match are highlighted.
+- **Loanwords heard differently** (`src/convo/soundalike.ts`). Café words such as latte and croissant also have targeted pronunciation/recognizer variants. Uncertain matches ask for confirmation, preserve the quantity, and never rewrite a negated answer.
 - **„Pakartok“.** Next to each example answer: listen, repeat, and see which words were missed. It's practice only, and it shares the conversation's microphone safely.
 - **Word cards** (`src/state/cards.ts`, `src/ui/Cards.tsx`).
   - Tap any English word or phrase to save it, or the whole sentence, with its Lithuanian, IPA and source sentence.
@@ -102,6 +103,8 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
   - Cards are stored in the browser under `english-world-cards-v1`, and can be exported as JSON for English Master.
 
 ## Speech input, network use and costs
+
+Recorded voices are tried regardless of the browser's `navigator.onLine` hint. Playback waits for the clip list, retries a failed recording once (using the latest course token), and starts its safety timer when sound actually begins. Up to 64 recordings are kept in memory for this visit, with the next three lines of a turn prefetched; this also lets already loaded clips play through a brief connection loss. The cache is bounded, uses recording versions, and is cleared when the page closes. A truly unavailable recording still uses the browser voice; the lightweight offline package does not download the entire voice library.
 
 The game itself makes **no paid or metered calls**. There is no AI model, no cloud TTS and no speech-to-text account behind it. What remains:
 

@@ -115,17 +115,5 @@ body.light-mode { background: #f5efe5; }
 
 /* the journal's walking and taxi buttons need the town */
 
-/* ---------- the town: "Lengvas režimas" under the toolbar ---------- */
-.lite-btn {
-  position: absolute; right: 14px; top: 574px; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 15px 0 12px;
-  border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.75); background: var(--panel); color: var(--ink); font-weight: 800; font-size: 0.82em;
-  box-shadow: 0 1px 2px rgba(20, 30, 40, 0.08), 0 6px 16px -6px rgba(20, 30, 40, 0.3); transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
-}
-.lite-btn .ui-icon { color: var(--accent); }
-.lite-btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(20, 30, 40, 0.08), 0 10px 22px -8px rgba(20, 30, 40, 0.38); }
-.lite-btn:active { transform: scale(0.96); }
-@media (max-width: 900px) { .lite-btn { right: 10px; top: 450px; min-height: 40px; padding: 0 12px 0 10px; } }
-@media (max-height: 520px) { .lite-btn { display: none; } }
-
 /* the town's name in Lithuanian, on its own line under the brand */
 .lh-town-lt { flex-basis: 100%; font-size: 0.78em; color: var(--ink-soft); line-height: 1.35; }

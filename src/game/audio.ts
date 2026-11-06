@@ -1,5 +1,5 @@
 // Voice playback (pre-generated clips; browser speech synthesis as a fallback for lines that
-// have no clip yet) and small synthesized sound effects. No network TTS is ever called.
+// have no clip or cannot be loaded after a retry) and small synthesized sound effects. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
 
@@ -40,6 +40,11 @@ export class AudioSystem {
   /** Where the clips live: next to the game by default, or VITE_AUDIO_BASE (e.g. a CDN). */
   base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}${audioDir()}`;
   ready = false;
+  private initializing: Promise<void> | null = null;
+  private retryInitAt = 0;
+  /** Bounded session cache: a rotating course token must not download the same recording again. */
+  private recordings = new Map<string, Blob>();
+  private downloads = new Map<string, Promise<void>>();
   private fallbackVoices: SpeechSynthesisVoice[] = [];
   /** The clip playing now, and its loudness once worked out (see loudness()), for the speaker's mouth. */
   private clip: { el: HTMLAudioElement; key: string; done: boolean } | null = null;
@@ -47,20 +52,37 @@ export class AudioSystem {
   private envelopes = new Map<string, Float32Array | null>();
   private decoder: BaseAudioContext | null = null;
 
-  async init() {
-    try {
-      // the clip list always ships with the game (same site, no CORS), even when the clips are elsewhere
-      const r = await fetch(`${import.meta.env.BASE_URL}${audioDir()}manifest.json`, { cache: "no-cache" });
-      if (r.ok) this.manifest = await r.json();
-      const repaired = await fetch(`${import.meta.env.BASE_URL}${audioDir()}repair-versions.json`, { cache: "no-cache" });
-      if (repaired.ok) this.repairVersions = await repaired.json();
-    } catch { /* no clips yet: fallback voices */ }
-    this.ready = true;
+  init(): Promise<void> {
+    if (this.initializing) return this.initializing;
+    if (this.ready || Date.now() < this.retryInitAt) return Promise.resolve();
     if (typeof speechSynthesis !== "undefined") {
       const load = () => { this.fallbackVoices = speechSynthesis.getVoices().filter((v) => /^en(?:[-_]|$)/i.test(v.lang)); };
       load();
       speechSynthesis.onvoiceschanged = load;
     }
+    this.initializing = (async () => {
+      // One failed request must not disable recorded voices for the rest of this visit. The second
+      // attempt bypasses a stale HTTP/service-worker response; each request has a bounded loading time.
+      const read = async (file: string) => {
+        for (const cache of ["no-cache", "reload"] as const) {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 6000);
+          try {
+            const r = await fetch(`${import.meta.env.BASE_URL}${audioDir()}${file}`, { cache, signal: controller.signal });
+            if (r.ok) return await r.json();
+          } catch { /* retry once, then leave offline fallback available */ }
+          finally { clearTimeout(timer); }
+        }
+        return null;
+      };
+      const [manifest, versions] = await Promise.all([read("manifest.json"), read("repair-versions.json")]);
+      if (manifest && typeof manifest === "object" && !Array.isArray(manifest)) {
+        this.manifest = manifest;
+        this.ready = true;
+      } else this.retryInitAt = Date.now() + 15000;
+      if (versions && typeof versions === "object" && !Array.isArray(versions)) this.repairVersions = versions;
+    })().finally(() => { this.initializing = null; });
+    return this.initializing;
   }
 
   hasClip(voice: string, speed: number, text: string) { return !!this.manifest[audioKey(voice, speed, text)]; }
@@ -74,15 +96,70 @@ export class AudioSystem {
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
     if (!/[a-z0-9]/i.test(text)) return Promise.resolve();
+    return new Promise((resolve) => {
+      let cancelled = false;
+      this.cancelCurrent = () => { cancelled = true; resolve(); };
+      void (async () => {
+        await this.init();
+        if (cancelled) return;
+        const key = this.recordingKey(voice, speed, text);
+        if (this.manifest[key]) await this.playRecording(key, text, opts);
+        else await this.speakFallback(text, opts);
+      })().then(resolve, resolve);
+    });
+  }
+
+  private recordingKey(voice: string, speed: number, text: string): string {
     let key = audioKey(voice, speed, text);
     if (!this.manifest[key]) {
       const alt = withoutAddressedNames(text, this.names);
       if (alt && this.manifest[audioKey(voice, speed, alt)]) key = audioKey(voice, speed, alt);
     }
-    if (!navigator.onLine) return this.speakFallback(text, opts);
-    if (this.manifest[key]) {
-      return new Promise((resolve) => {
-        const a = new Audio(clipUrl(this.base, key, this.repairVersions[key], filesToken()));
+    return key;
+  }
+
+  private cacheKey(key: string) { return clipUrl(this.base, key, this.repairVersions[key]); }
+
+  /** Warm only the next few lines of the current turn, never a whole voice library. */
+  async prefetch(lines: { voice: string; speed: number; text: string }[]) {
+    await this.init();
+    await Promise.all(lines.slice(0, 3).map(({ voice, speed, text }) => {
+      const key = this.recordingKey(voice, speed, text);
+      return this.manifest[key] ? this.cacheRecording(key) : undefined;
+    }));
+  }
+
+  private cacheRecording(key: string): Promise<void> {
+    const id = this.cacheKey(key);
+    if (this.recordings.has(id)) return Promise.resolve();
+    const existing = this.downloads.get(id);
+    if (existing) return existing;
+    const work = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const r = await fetch(clipUrl(this.base, key, this.repairVersions[key], filesToken()), { signal: controller.signal });
+        if (!r.ok || !/^(audio\/|application\/octet-stream)/i.test(r.headers.get("content-type") ?? "")) return;
+        const blob = await r.blob();
+        if (!blob.size || blob.size > 2 * 1024 * 1024) return;
+        this.recordings.set(id, blob);
+        if (this.recordings.size > 64) this.recordings.delete(this.recordings.keys().next().value!);
+      } catch { /* warming a clip never interrupts the conversation */ }
+      finally { clearTimeout(timer); }
+    })().finally(() => { this.downloads.delete(id); });
+    this.downloads.set(id, work);
+    return work;
+  }
+
+  private playRecording(key: string, text: string, opts: { slow?: boolean; male?: boolean }): Promise<void> {
+    return new Promise((resolve) => {
+      let cancelled = false;
+      const attempt = (retry: boolean) => {
+        if (cancelled) return;
+        const blob = this.recordings.get(this.cacheKey(key));
+        const objectUrl = blob ? URL.createObjectURL(blob) : null;
+        // navigator.onLine is only a hint: try the cached/network recording even when it says offline.
+        const a = new Audio(objectUrl ?? clipUrl(this.base, key, this.repairVersions[key], filesToken()));
         a.volume = this.volume;
         a.preservesPitch = true;
         a.playbackRate = opts.slow ? 0.82 : 1;
@@ -90,16 +167,46 @@ export class AudioSystem {
         const clip = { el: a, key, done: false };
         this.clip = clip;
         let done = false;
-        const finish = () => { if (done) return; done = true; clip.done = true; if (this.current === a) this.current = null; resolve(); };
-        this.cancelCurrent = () => { a.pause(); finish(); };
+        let started = false;
+        let timer: ReturnType<typeof setTimeout>;
+        const cleanup = () => {
+          if (done) return false;
+          done = true; clip.done = true;
+          clearTimeout(timer);
+          a.onended = a.onerror = a.onplaying = null;
+          a.pause();
+          a.removeAttribute("src"); a.load();
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          if (this.current === a) this.current = null;
+          return true;
+        };
+        const finish = () => { if (cleanup()) resolve(); };
+        const failed = () => {
+          if (!cleanup()) return;
+          if (objectUrl) this.recordings.delete(this.cacheKey(key));
+          // Never restart a partly spoken line in a different voice.
+          if (started || cancelled) { resolve(); return; }
+          if (!retry) { attempt(true); return; }
+          void this.speakFallback(text, opts).then(resolve);
+        };
+        this.cancelCurrent = () => { cancelled = true; finish(); };
         a.onended = finish;
-        a.onerror = () => { finish(); };
-        a.play().catch(() => finish());
-        // safety net
-        setTimeout(finish, ((this.manifest[key] || 4) / (opts.slow ? 0.82 : 1)) * 1000 + 1500);
-      });
-    }
-    return this.speakFallback(text, opts);
+        a.onerror = failed;
+        a.onplaying = () => {
+          started = true;
+          clearTimeout(timer);
+          // Playback time starts when sound starts, not when the network request starts.
+          timer = setTimeout(finish, ((this.manifest[key] || 4) / (opts.slow ? 0.82 : 1)) * 1000 + 5000);
+          void this.cacheRecording(key);
+        };
+        timer = setTimeout(failed, 10000);
+        a.play().catch((error) => {
+          if (error?.name === "NotAllowedError" || error?.name === "AbortError") finish();
+          else failed();
+        });
+      };
+      attempt(false);
+    });
   }
 
   /** How loud the line playing now is at this moment (0–1), for the speaker's mouth; -1 once it has ended; null when

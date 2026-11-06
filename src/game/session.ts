@@ -103,6 +103,7 @@ export class Session {
     // an event happens where it was raised among the lines: the phone rings before "Grant here", the plant falls
     // before "The plant is fine"
     const fire = (i: number) => { for (const e of out.events) if ((e.at ?? Infinity) === i) this.hooks.onEvent(e.name, e.data); };
+    void audio.prefetch(out.lines.slice(1).map((l) => ({ voice: npcVoice(NPCS[l.npc]), speed: NPCS[l.npc]?.speed ?? 1, text: l.sentence.say })));
     for (const [i, l] of out.lines.entries()) {
       if (!this.alive) return;
       fire(i);
