@@ -26,7 +26,8 @@ describe("sound keys", () => {
 
 describe("the café checks a name heard by its sound", () => {
   const LATTE = ["A lot a, please.", "A lot of, please.", "Lata please", "Lada please", "Lady please", "La tay please", "Lah tay please",
-    "Lattay please", "Letter please", "Later please", "I'd like a lot of", "I'd like a lady", "I'd like a later", "Can I get a lot a", "Can I get a la te", "One lata"];
+    "Lattay please", "Letter please", "Later please", "I'd like a lot of", "I'd like a lady", "I'd like a later", "Can I get a lot a", "Can I get a la te", "One lata",
+    "A lah teh please"];
   for (const heard of LATTE) {
     it(`"${heard}" → "Sorry, a latte?" → yes orders a latte`, () => {
       const conv = cafe();
@@ -39,6 +40,13 @@ describe("the café checks a name heard by its sound", () => {
       expect(said(yes)).not.toMatch(/don't have/);
     });
   }
+  for (const heard of ["Latteh please", "A latė please"]) {
+    it(`already understands the close spelling "${heard}"`, () => {
+      const conv = cafe();
+      expect(conv.input(heard).understood).toBe(true);
+      expect(conv.s.items.map((x: any) => x.id)).toEqual(["latte"]);
+    });
+  }
   for (const heard of ["a cap a chino please", "a kappa chino please", "a cup of chino please"]) {
     it(`"${heard}" checks a cappuccino`, () => {
       const conv = cafe();
@@ -47,6 +55,27 @@ describe("the café checks a name heard by its sound", () => {
       expect(conv.s.items.map((x: any) => x.id)).toEqual(["cappuccino"]);
     });
   }
+  for (const heard of ["A crescent please", "A cross on please", "A cross ant please", "A cross aunt please", "A cross and please", "A kwa son please", "A kwason please", "A quasson please", "A kruasanas please", "A cruasan please"]) {
+    it(`"${heard}" checks a croissant, keeps the order empty until yes`, () => {
+      const conv = cafe();
+      expect(said(conv.input(heard))).toMatch(/croissant\?/i);
+      expect(conv.s.items ?? []).toHaveLength(0);
+      conv.input("Yes.");
+      expect(conv.s.items.map((x: any) => x.id)).toEqual(["croissant"]);
+    });
+  }
+  it("keeps the quantity and refuses to repair negated or unrelated answers", () => {
+    const conv = cafe();
+    expect(said(conv.input("Two cross on please"))).toMatch(/croissant\?/i);
+    conv.input("Yes");
+    expect(conv.s.items[0]).toMatchObject({ id: "croissant", qty: 2 });
+    for (const text of ["I don't want a cross on", "No latteh", "We can cross on Monday", "A cross and a road"]) {
+      const c = cafe();
+      const out = c.input(text);
+      expect(out.checking, text).not.toBe(true);
+      expect(c.s.items ?? [], text).toHaveLength(0);
+    }
+  });
   it("a no asks again, and the next answer is taken as usual", () => {
     const conv = cafe();
     conv.input("Lata please");

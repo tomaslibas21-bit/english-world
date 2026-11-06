@@ -47,8 +47,11 @@ export function Hud() {
         <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
         <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
         <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
+        <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
+          <span aria-hidden>LR</span>
+          <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
+        </button>
       </div>
-      <button className="lite-btn" onClick={() => switchPlayMode("light")} title="Be 3D miesto: tik pokalbiai su piešiniais. Greičiau atsidaro ir taupo bateriją."><Icon name="list" size={18} strokeWidth={2} /> Lengvas režimas</button>
       {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {hud.prompt && !hud.panel && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>

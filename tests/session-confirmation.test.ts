@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, useStore } from "../src/state/store";
 import { emptyProgress } from "../src/state/progress";
 
 vi.mock("../src/game/audio", () => ({
-  audio: { names: [], play: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
+  audio: { names: [], play: vi.fn().mockResolvedValue(undefined), prefetch: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
 }));
 vi.mock("../src/convo/speech", async (importOriginal) => ({
   ...await importOriginal<typeof import("../src/convo/speech")>(),
