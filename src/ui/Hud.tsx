@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
+import { SectionHelpButton } from "./sectionHelp";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
@@ -47,6 +48,7 @@ export function Hud() {
         <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
         <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
         <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
+        <SectionHelpButton />
         <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
           <span aria-hidden>LR</span>
           <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>

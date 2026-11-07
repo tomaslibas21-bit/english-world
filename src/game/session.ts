@@ -113,7 +113,7 @@ export class Session {
       useStore.getState().setConv({ speaking: id, npcId: l.npc });
       const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1));
-      await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" });
+      if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
       await wait(160);
     }
     // the learner left (Esc, another situation) while the person was talking: no events (a taxi
@@ -138,7 +138,7 @@ export class Session {
     const st = useStore.getState();
     const sup = this.conv.support();
     st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(), openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
-    if (st.settings.autoListen && speechSupported() && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
+    if (st.settings.autoListen && speechSupported() && !st.hud.panel && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
   }
 
   /** Opens the mic by itself after `ms`, unless the learner has meanwhile started an attempt
@@ -148,7 +148,7 @@ export class Session {
     this.autoTimer = setTimeout(() => {
       this.autoTimer = null;
       const c = useStore.getState().conv;
-      if (this.alive && c.phase === "you" && !c.typing && !c.speechChoices?.length && !this.speech) this.listen();
+      if (this.alive && c.phase === "you" && !useStore.getState().hud.panel && !c.typing && !c.speechChoices?.length && !this.speech) this.listen();
     }, ms);
   }
 
@@ -170,6 +170,7 @@ export class Session {
     if (st.conv.phase !== "you") return;
     this.stopListening();
     st.setConv({ speechChoices: undefined });
+    audio.stop(); // sample/replay audio must release the speaker before opening the microphone
     audio.sfx("listen");
     this.speech = createSpeechAttempt({
       evaluate: (t) => this.conv.nlu.probe(t, this.conv.expectedIntents()),
@@ -318,7 +319,7 @@ export class Session {
     this.stopListening(); // the conversation's own mic off, and no auto-listen
     const run = ++this.practiceRun;
     useStore.getState().setConv({ practice: { en, status: "playing", heard: "" } });
-    await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say);
+    if (!await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say)) return;
     // cancelled meanwhile (another button, the mic, the person's turn, left)?
     if (run !== this.practiceRun || !this.alive || this.speech || useStore.getState().conv.phase !== "you") return;
     audio.sfx("listen");

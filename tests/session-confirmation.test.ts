@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, useStore } from "../src/state/store";
 import { emptyProgress } from "../src/state/progress";
 
 vi.mock("../src/game/audio", () => ({
-  audio: { names: [], play: vi.fn().mockResolvedValue(undefined), prefetch: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
+  audio: { names: [], play: vi.fn().mockResolvedValue(true), prefetch: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
 }));
 vi.mock("../src/convo/speech", async (importOriginal) => ({
   ...await importOriginal<typeof import("../src/convo/speech")>(),
@@ -16,7 +16,7 @@ let session: Session;
 beforeEach(async () => {
   vi.useFakeTimers();
   vi.stubGlobal("document", { visibilityState: "visible" });
-  vi.mocked(audio.play).mockResolvedValue(undefined);
+  vi.mocked(audio.play).mockResolvedValue(true);
   useStore.setState({ settings: { ...DEFAULT_SETTINGS, autoListen: false }, progress: emptyProgress() });
   session = new Session("s35-gym", { npcTalk() {}, onEvent() {}, onEnd() {} });
   const begin = session.begin();
@@ -74,7 +74,7 @@ describe("speech confirmations belong to the learner's current turn", () => {
   it("rejects typed and confirmed answers during replay and preserves choices for afterward", async () => {
     await offerChoices();
     let finishAudio!: () => void;
-    vi.mocked(audio.play).mockImplementationOnce(() => new Promise<void>(resolve => { finishAudio = resolve; }));
+    vi.mocked(audio.play).mockImplementationOnce(() => new Promise<boolean>(resolve => { finishAudio = () => resolve(true); }));
     session.repeatLast(false);
     expect(useStore.getState().conv.phase).toBe("npc");
     await session.submit(choices[1], [], "voice", true);

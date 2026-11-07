@@ -105,11 +105,11 @@ body.light-mode { background: #f5efe5; }
 .lc-sub { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; color: var(--ink-soft); }
 .lc-sub .ui-icon { color: var(--accent); }
 @media (max-width: 900px) {
-  .lc-center { right: 0; bottom: calc(58vh + 8px); padding: 10px 16px; gap: 2px; }
+  .lc-center { right: 0; bottom: calc(100% - var(--conversation-image-height)); padding: 10px 16px; gap: 2px; }
   .lc-avatar { width: 88px; height: 88px; font-size: 38px; box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.75), 0 16px 32px -16px rgba(20, 30, 40, 0.5); }
   .lc-avatar.talking::after { inset: -7px; }
   .lc-name { margin-top: 14px; font-size: 1.75em; }
-  .lc-sky { max-height: none; width: 100%; bottom: calc(58vh - 30px); }
+  .lc-sky { max-height: none; width: 100%; bottom: calc(100% - var(--conversation-image-height) - 30px); }
 }
 @media (prefers-reduced-motion: reduce) { .lc-avatar.talking::after, .lc { animation: none; } .lh-card, .lh-card:hover, .lh-tool, .lh-tool:hover { transition: none; transform: none; } }
 
@@ -117,3 +117,11 @@ body.light-mode { background: #f5efe5; }
 
 /* the town's name in Lithuanian, on its own line under the brand */
 .lh-town-lt { flex-basis: 100%; font-size: 0.78em; color: var(--ink-soft); line-height: 1.35; }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .lc-center { right: 75vw; bottom: 0; padding: 10px; }
+  .lc-avatar { width: 66px; height: 66px; font-size: 30px; }
+  .lc-name { font-size: 1.35em; }
+  .lc-sub { font-size: 0.75em; }
+  .lc-sky { width: 25vw; bottom: 0; }
+}

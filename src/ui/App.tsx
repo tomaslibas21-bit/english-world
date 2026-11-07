@@ -11,6 +11,7 @@ import { Toasts } from "./Toasts";
 import { LightPlay } from "./LightHome";
 import { takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
+import { audio } from "../game/audio";
 
 export function App() {
   const screen = useStore((s) => s.screen);
@@ -18,6 +19,7 @@ export function App() {
   // the mode is fixed once playing: switching modes reloads the page (playMode.ts)
   const [mode, setMode] = useState<PlayMode | null>(() => takeAutoStart());
   useEffect(() => { document.documentElement.style.setProperty("--scale", String(textSize)); }, [textSize]);
+  useEffect(() => audio.bindGestures(), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
   if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts /></>;
   return mode === "light" ? <LightPlay /> : <Play />;

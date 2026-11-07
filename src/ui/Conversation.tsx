@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
@@ -19,6 +19,7 @@ import { Confetti } from "./Confetti";
 import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
 import {ReportProblem} from "./ReportProblem";
+import { SectionHelpButton } from "./sectionHelp";
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -72,8 +73,10 @@ export function Conversation() {
         return;
       }
       const k = e.key.toLowerCase();
+      if (e.defaultPrevented) return;
       const st = useStore.getState();
       if (!st.conv.active) return; // walking around: the world has its own keys (Game.onKeyDown)
+      if (st.hud.panel || ((k === " " || k === "enter") && t.closest("button, a, summary, [contenteditable='true']"))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (k === "escape") { game?.closeConversation(); return; }
       if (k === "h") { e.preventDefault(); st.setConv({ openHint: st.conv.openHint ? null : (st.conv.hints[0] ?? "g_clarify") }); return; }
@@ -96,7 +99,6 @@ export function Conversation() {
 
   if (!conv.active || !sit) return null;
   const formal = !npc?.informal;
-  const ltRole = npc && npc.role.lt.toLowerCase() !== npc.role.en.toLowerCase() ? npc.role.lt : null;
   const gender = useStore.getState().progress.profile?.gender ?? "m";
   const startNext = () => { const next = game?.nextScenarioId(sit.id); if (next) game?.startScenario(next); };
   const showAll = () => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); };
@@ -109,16 +111,11 @@ export function Conversation() {
   };
 
   return (
-    <div className="convo" role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
+    <>
+    <NpcInfo sit={sit} />
+    <div className="convo" data-phase={conv.phase} role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
+      <div className="convo-tools">
       <div className="convo-head">
-        <div className="avatar" style={{ background: avatarColor(conv.npcId) }}>{sit.mode === "phone" ? <Icon name="phoneCall" size={22} /> : sit.mode === "video" ? <Icon name="video" size={22} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
-        <div className="who">
-          <b>{npc?.name}</b>
-          {/* the role in English with the Lithuanian centred under it (as in the conversation lines), then the place
-              with what its English name means (light mode never passes a door, where the 3D town says it) */}
-          <span><i className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</i></span>
-          <span className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</span>
-        </div>
         <div className="toggles">
           <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title="Lietuviškas vertimas (L) · visas sakinys lietuviškai (N)" aria-pressed={settings.lt}>LT</button>
           <button className={"toggle" + (settings.ipa ? " on" : "")} onClick={() => setSettings({ ipa: !settings.ipa })} title="Tarimas IPA (I)" aria-pressed={settings.ipa}>IPA</button>
@@ -134,9 +131,10 @@ export function Conversation() {
         </div>
       </div>
 
+      <AudioRecovery />
       {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
-      <ReportProblem />
       <Mission />
+      </div>
 
       <div className="transcript" ref={scrollRef} aria-live="polite">
         {conv.transcript.length === 0 && <div style={{ color: "var(--ink-faint)", textAlign: "center", marginTop: 20 }}>…</div>}
@@ -158,7 +156,9 @@ export function Conversation() {
                   <button className={"toggle" + (settings.sayIpa ? " on" : "")} onClick={() => setSettings({ sayIpa: !settings.sayIpa })} aria-pressed={settings.sayIpa} title="Tarimas (IPA) po tavo atsakymų pavyzdžiais">IPA</button>
                 </div>
               )}
-              <button className="btn soft small" onClick={() => setConv({ guideHidden: !conv.guideHidden })}>{conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}</button>
+              <button className="btn soft small guide-toggle" onClick={() => setConv({ guideHidden: !conv.guideHidden })} aria-label={conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"} title={conv.guideHidden ? "Rodyti atsakymų pavyzdžius" : "Slėpti atsakymų pavyzdžius"}>
+                <span className="guide-toggle-label">{conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}</span><Icon name={conv.guideHidden ? "bulb" : "chevronDown"} size={20} />
+              </button>
             </div>
           </div>
 
@@ -231,7 +231,64 @@ export function Conversation() {
         </div>
       )}
     </div>
+    </>
   );
+}
+
+/** Identity and place stay one tap away without consuming the sentence/answer space. */
+function NpcInfo({ sit }: { sit: SituationDef }) {
+  const npcId = useStore((s) => s.conv.npcId);
+  const run = useStore((s) => s.conv.run);
+  const npc = NPCS[npcId];
+  const [tapped, setTapped] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const dismissed = useRef(false);
+  const open = tapped || hover || focused;
+  const close = () => { dismissed.current = true; setTapped(false); setHover(false); setFocused(false); };
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { close(); dismissed.current = false; }, [run]);
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) close(); };
+    const escape = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
+    document.addEventListener("pointerdown", outside);
+    window.addEventListener("keydown", escape, true);
+    return () => { document.removeEventListener("pointerdown", outside); window.removeEventListener("keydown", escape, true); };
+  }, [open]);
+  const ltRole = npc?.role.lt.toLowerCase() !== npc?.role.en.toLowerCase() ? npc?.role.lt : null;
+  return <div className="npc-info" ref={ref}
+    onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(false); dismissed.current = false; } }}
+    onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) close(); }}>
+    <button className="npc-info-button" aria-label="Apie pašnekovą" aria-expanded={open} aria-controls="npc-info-card"
+      onPointerEnter={(e) => { if (e.pointerType === "mouse" && !dismissed.current) setHover(true); }}
+      onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))} onClick={() => { dismissed.current = false; setTapped(!tapped); }}>
+      <span aria-hidden="true">i</span>
+    </button>
+    <SectionHelpButton className="npc-info-button" onOpen={close} />
+    {open && <div className="npc-info-card" id="npc-info-card" role="region" aria-label="Apie pašnekovą">
+      <div className="npc-identity">
+        <div className="avatar" style={{ background: avatarColor(npcId) }}>{(npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
+        <div className="who"><b>{npc?.name}</b><span className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</span></div>
+        <button className="close-x" onClick={close} aria-label="Uždaryti informaciją"><Icon name="close" size={20} /></button>
+      </div>
+      <p className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</p>
+      <ReportProblem />
+    </div>}
+  </div>;
+}
+
+function AudioRecovery() {
+  const state = useSyncExternalStore(audio.subscribe, audio.getState);
+  if (state !== "blocked" && state !== "unavailable") return null;
+  return <div className="audio-recovery" role="status">
+    <span>{state === "blocked" ? "Paliesk, kad tęstųsi garsas." : "Balso įrašas nepasiekiamas. Pabandyk dar kartą."}</span>
+    <button className="btn small" onClick={audio.retry}><Icon name="speaker" size={18} />{state === "blocked" ? "Klausyti" : "Bandyti dar"}</button>
+    {state === "unavailable" && <>
+      {audio.canUseBrowserVoice() && <button className="link-btn" onClick={audio.useBrowserVoice}>Klausyti įrenginio balsu</button>}
+      <button className="link-btn" onClick={audio.continueReading}>Tęsti skaitant</button>
+    </>}
+  </div>;
 }
 
 /** Plain-text copy of the conversation, for students to send to the teacher (nothing is uploaded). */
@@ -267,7 +324,7 @@ function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: Transcript
   const npc = NPCS[lines[0].npc!];
   const replay = async (slow: boolean) => {
     game?.activeSession?.stopListening();
-    for (const l of lines) await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" });
+    for (const l of lines) if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence!.say, { slow, male: npc?.gender === "m" })) return;
   };
   return (
     <div className={"msg npc" + (speaking ? " speaking" : "")}>
@@ -284,10 +341,11 @@ function NpcGroup({ lines, speaking, lt, ipa, nat, reveal }: { lines: Transcript
 
 /** "Say it again" and "slower" next to what a person said. */
 function ReplayButtons({ replay }: { replay: (slow: boolean) => void }) {
+  const speaking = useStore((s) => s.conv.phase === "npc");
   return (
     <>
-      <button onClick={() => replay(false)} title="Pakartoti" aria-label="Pakartoti"><Icon name="speaker" size={18} /></button>
-      <button onClick={() => replay(true)} title="Lėčiau" aria-label="Lėčiau"><Icon name="turtle" size={23} /></button>
+      <button disabled={speaking} onClick={() => replay(false)} title="Pakartoti" aria-label="Pakartoti"><Icon name="speaker" size={18} /></button>
+      <button disabled={speaking} onClick={() => replay(true)} title="Lėčiau" aria-label="Lėčiau"><Icon name="turtle" size={23} /></button>
     </>
   );
 }
@@ -353,7 +411,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
   const shown = allChips || opts.length <= 7 ? opts : opts.slice(0, 6);
   return (
     <div className="guide">
-      <div className="guide-task"><Icon name="next" size={24} className="task-ico" /><span>{toImperative(sg.lt)}</span></div>
+      <div className="guide-task" tabIndex={0}><Icon name="next" size={24} className="task-ico" /><span>{toImperative(sg.lt)}</span></div>
       {opts.length > 0 && groupId && (
         <div className="chips">
           {shown.map((e) => {
@@ -368,7 +426,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
           {examples.map((ex, i) => (
             <div className="gx" key={i}>
               <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
-              <div className="gx-text">
+              <div className="gx-text" tabIndex={0} role="region" aria-label={`Atsakymo pavyzdys ${i + 1}`}>
                 {/* word by word, as the other person's lines: Lithuanian under each word, the natural sentence below */}
                 <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} />
                 <RepeatResult en={ex.en} />

@@ -1,7 +1,21 @@
-// Voice playback (pre-generated clips; browser speech synthesis as a fallback for lines that
-// have no clip or cannot be loaded after a retry) and small synthesized sound effects. No network TTS is ever called.
+// Recorded voices and small synthesized sound effects. Browser speech is used for unrecorded lines,
+// or when the learner explicitly chooses it after a failed download. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
+import { playbackRoute, waitForMicrophone } from "../convo/audioFocus";
+
+export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavailable";
+interface PlaybackRequest {
+  done: boolean;
+  cleanup: () => void;
+  finish(completed: boolean): void;
+  retry?: () => void;
+  fallback?: () => void;
+}
+
+// A short, silent WAV: prime the SAME media element during a real tap, before any fetch/await.
+// A muted element does not unlock later audible playback. No network or continuously running audio.
+const SILENCE = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQIAAAAAAA==";
 
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
@@ -34,8 +48,18 @@ export class AudioSystem {
    *  the clip's address makes browsers that cached the old recording fetch the new one. */
   repairVersions: Record<string, string> = {};
   private ctx: AudioContext | null = null;
-  private current: HTMLAudioElement | null = null;
-  private cancelCurrent: (() => void) | null = null;
+  private player: HTMLAudioElement | null = null;
+  private request: PlaybackRequest | null = null;
+  private unlocked = false;
+  private state: PlaybackState = "idle";
+  private listeners = new Set<() => void>();
+  getState = () => this.state;
+  subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
+  private setState(state: PlaybackState) {
+    if (state === this.state) return;
+    this.state = state;
+    for (const listener of this.listeners) listener();
+  }
   volume = 0.9;
   /** Where the clips live: next to the game by default, or VITE_AUDIO_BASE (e.g. a CDN). */
   base = (import.meta.env.VITE_AUDIO_BASE as string | undefined) || `${import.meta.env.BASE_URL}${audioDir()}`;
@@ -43,7 +67,7 @@ export class AudioSystem {
   private initializing: Promise<void> | null = null;
   private retryInitAt = 0;
   /** Bounded session cache: a rotating course token must not download the same recording again. */
-  private recordings = new Map<string, Blob>();
+  private recordings = new Map<string, string>();
   private downloads = new Map<string, Promise<void>>();
   private fallbackVoices: SpeechSynthesisVoice[] = [];
   /** The clip playing now, and its loudness once worked out (see loudness()), for the speaker's mouth. */
@@ -88,24 +112,84 @@ export class AudioSystem {
   hasClip(voice: string, speed: number, text: string) { return !!this.manifest[audioKey(voice, speed, text)]; }
   clipDuration(voice: string, speed: number, text: string) { return this.manifest[audioKey(voice, speed, text)] ?? null; }
 
-  /** Play one line. Resolves when finished (or stopped). */
   /** The player's names (lines that address the player by name are voiced without it). */
   names: string[] = [];
 
-  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean } = {}): Promise<void> {
+  private media() {
+    if (!this.player) {
+      this.player = new Audio();
+      this.player.preload = "auto";
+      this.player.setAttribute("playsinline", "");
+    }
+    return this.player;
+  }
+
+  /** Install for both game modes, including their start screen and linked situations. */
+  bindGestures() {
+    const activate = () => this.unlock();
+    document.addEventListener("click", activate, true);
+    document.addEventListener("keydown", activate, true);
+    return () => {
+      document.removeEventListener("click", activate, true);
+      document.removeEventListener("keydown", activate, true);
+    };
+  }
+
+  unlock() {
+    if (this.ctx && this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
+    if (this.state === "blocked") { this.retry(); return; }
+    if (this.unlocked || (this.clip && !this.clip.done)) return;
+    const a = this.media();
+    playbackRoute();
+    a.src = SILENCE;
+    a.volume = this.volume;
+    void a.play().then(() => {
+      this.unlocked = true;
+      // A line may already have replaced the silent clip while play() was settling.
+      if (a.src === SILENCE) a.pause();
+    }).catch(() => { /* a linked page may still need its first tap; show recovery on the real line */ });
+  }
+
+  /** Called directly by a tap, with no awaited work before play(). */
+  retry = () => { playbackRoute(); this.request?.retry?.(); };
+  useBrowserVoice = () => { playbackRoute(); this.request?.fallback?.(); };
+  canUseBrowserVoice = () => !!this.request?.fallback;
+  continueReading = () => this.request?.finish(true);
+
+  /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
+   *  denial keeps the same line pending. */
+  play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean } = {}): Promise<boolean> {
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
-    if (!/[a-z0-9]/i.test(text)) return Promise.resolve();
+    if (!/[a-z0-9]/i.test(text)) return Promise.resolve(true);
     return new Promise((resolve) => {
-      let cancelled = false;
-      this.cancelCurrent = () => { cancelled = true; resolve(); };
-      void (async () => {
-        await this.init();
-        if (cancelled) return;
+      const request: PlaybackRequest = {
+        done: false, cleanup: () => {},
+        finish: (completed) => {
+          if (request.done) return;
+          request.done = true;
+          request.cleanup();
+          if (this.request === request) { this.request = null; this.setState("idle"); }
+          resolve(completed);
+        },
+      };
+      this.request = request;
+      this.setState("loading");
+      const begin = async () => {
+        if (request.done) return;
+        this.setState("loading");
+        await Promise.all([this.init(), waitForMicrophone()]);
+        if (request.done) return;
+        // A missing manifest does not prove that this NPC has no recording.
+        if (!this.ready) { this.setState("unavailable"); return; }
         const key = this.recordingKey(voice, speed, text);
-        if (this.manifest[key]) await this.playRecording(key, text, opts);
-        else await this.speakFallback(text, opts);
-      })().then(resolve, resolve);
+        if (this.manifest[key]) this.playRecording(request, key, text, opts);
+        else this.speakFallback(request, text, opts);
+      };
+      const start = () => { void begin().catch(() => { if (!request.done) this.setState("unavailable"); }); };
+      request.retry = () => { this.retryInitAt = 0; start(); };
+      request.fallback = () => this.speakFallback(request, text, opts);
+      start();
     });
   }
 
@@ -142,7 +226,12 @@ export class AudioSystem {
         if (!r.ok || !/^(audio\/|application\/octet-stream)/i.test(r.headers.get("content-type") ?? "")) return;
         const blob = await r.blob();
         if (!blob.size || blob.size > 2 * 1024 * 1024) return;
-        this.recordings.set(id, blob);
+        // WebKit routes blob: media through its network process, which can refuse it when
+        // actually offline. A bounded in-memory data URL plays without that network dependency.
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
+        this.recordings.set(id, `data:${blob.type.startsWith("audio/") ? blob.type : "audio/mpeg"};base64,${btoa(binary)}`);
         if (this.recordings.size > 64) this.recordings.delete(this.recordings.keys().next().value!);
       } catch { /* warming a clip never interrupts the conversation */ }
       finally { clearTimeout(timer); }
@@ -151,62 +240,85 @@ export class AudioSystem {
     return work;
   }
 
-  private playRecording(key: string, text: string, opts: { slow?: boolean; male?: boolean }): Promise<void> {
-    return new Promise((resolve) => {
-      let cancelled = false;
-      const attempt = (retry: boolean) => {
-        if (cancelled) return;
-        const blob = this.recordings.get(this.cacheKey(key));
-        const objectUrl = blob ? URL.createObjectURL(blob) : null;
-        // navigator.onLine is only a hint: try the cached/network recording even when it says offline.
-        const a = new Audio(objectUrl ?? clipUrl(this.base, key, this.repairVersions[key], filesToken()));
-        a.volume = this.volume;
-        a.preservesPitch = true;
-        a.playbackRate = opts.slow ? 0.82 : 1;
-        this.current = a;
-        const clip = { el: a, key, done: false };
-        this.clip = clip;
-        let done = false;
-        let started = false;
-        let timer: ReturnType<typeof setTimeout>;
-        const cleanup = () => {
-          if (done) return false;
-          done = true; clip.done = true;
-          clearTimeout(timer);
-          a.onended = a.onerror = a.onplaying = null;
-          a.pause();
-          a.removeAttribute("src"); a.load();
-          if (objectUrl) URL.revokeObjectURL(objectUrl);
-          if (this.current === a) this.current = null;
-          return true;
-        };
-        const finish = () => { if (cleanup()) resolve(); };
-        const failed = () => {
-          if (!cleanup()) return;
-          if (objectUrl) this.recordings.delete(this.cacheKey(key));
-          // Never restart a partly spoken line in a different voice.
-          if (started || cancelled) { resolve(); return; }
-          if (!retry) { attempt(true); return; }
-          void this.speakFallback(text, opts).then(resolve);
-        };
-        this.cancelCurrent = () => { cancelled = true; finish(); };
-        a.onended = finish;
-        a.onerror = failed;
-        a.onplaying = () => {
-          started = true;
-          clearTimeout(timer);
-          // Playback time starts when sound starts, not when the network request starts.
-          timer = setTimeout(finish, ((this.manifest[key] || 4) / (opts.slow ? 0.82 : 1)) * 1000 + 5000);
-          void this.cacheRecording(key);
-        };
+  private playRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }) {
+    const a = this.media();
+    const attempt = (retry: boolean) => {
+      if (request.done) return;
+      const cached = this.recordings.get(this.cacheKey(key));
+      // Keep the gesture-unlocked element across every sentence, retry, and offline recording.
+      a.src = cached ?? clipUrl(this.base, key, this.repairVersions[key], filesToken());
+      a.volume = this.volume;
+      a.preservesPitch = true;
+      a.playbackRate = opts.slow ? 0.82 : 1;
+      const clip = { el: a, key, done: false };
+      this.clip = clip;
+      let disposed = false;
+      let started = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let playAttempt = 0;
+      const current = () => !disposed && !request.done;
+      const cleanup = (clearSource = false) => {
+        if (disposed) return;
+        disposed = true; clip.done = true;
+        clearTimeout(timer);
+        a.onended = a.onerror = a.onplaying = a.onpause = null;
+        a.pause();
+        if (clearSource) { a.removeAttribute("src"); a.load(); }
+      };
+      request.cleanup = () => cleanup(true);
+      const waiting = (state: "blocked" | "unavailable") => {
+        if (!current()) return;
+        clearTimeout(timer);
+        this.setState(state);
+      };
+      const failed = () => {
+        if (!current()) return;
+        if (cached) this.recordings.delete(this.cacheKey(key));
+        if (!retry && !started) { cleanup(true); attempt(true); return; }
+        // A network error is visible. Keep the NPC's recorded voice unless the learner chooses otherwise.
+        waiting("unavailable");
+        request.retry = () => { cleanup(true); attempt(false); };
+      };
+      const start = () => {
+        if (!current()) return;
+        const run = ++playAttempt;
+        clearTimeout(timer);
+        this.setState("loading");
         timer = setTimeout(failed, 10000);
-        a.play().catch((error) => {
-          if (error?.name === "NotAllowedError" || error?.name === "AbortError") finish();
+        // This call stays synchronous for a retry from a user gesture.
+        void a.play().catch((error) => {
+          if (!current() || run !== playAttempt) return;
+          if (error?.name === "NotAllowedError" || error?.name === "AbortError") waiting("blocked");
           else failed();
         });
       };
-      attempt(false);
-    });
+      request.retry = start;
+      request.fallback = () => {
+        if (!current()) return;
+        cleanup(true);
+        this.speakFallback(request, text, opts);
+      };
+      a.onended = () => {
+        if (!current()) return;
+        cleanup();
+        request.finish(true);
+      };
+      a.onerror = failed;
+      a.onpause = () => { if (started && !a.ended) waiting("blocked"); };
+      a.onplaying = () => {
+        if (!current()) return;
+        started = true;
+        this.unlocked = true;
+        this.setState("playing");
+        clearTimeout(timer);
+        // A stalled/backgrounded line must never be counted as successfully spoken.
+        const remaining = Math.max(0, (this.manifest[key] || 4) - a.currentTime);
+        timer = setTimeout(() => waiting("blocked"), remaining / a.playbackRate * 1000 + 5000);
+        void this.cacheRecording(key);
+      };
+      start();
+    };
+    attempt(false);
   }
 
   /** How loud the line playing now is at this moment (0–1), for the speaker's mouth; -1 once it has ended; null when
@@ -258,36 +370,39 @@ export class AudioSystem {
     } catch { failed(); /* the mouth keeps its rhythm */ }
   }
 
-  private speakFallback(text: string, opts: { slow?: boolean; male?: boolean }): Promise<void> {
+  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean }) {
     this.clip = null;
-    if (typeof speechSynthesis === "undefined") return new Promise((r) => setTimeout(r, Math.min(6000, 600 + text.length * 55)));
-    return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    request.cleanup = () => { clearTimeout(timer); };
+    request.fallback = undefined;
+    const start = () => {
+      if (request.done) return;
+      const vs = typeof navigator !== "undefined" && navigator.onLine ? this.fallbackVoices : this.fallbackVoices.filter((v) => v.localService);
+      if (typeof speechSynthesis === "undefined" || (!navigator.onLine && !vs.length)) {
+        this.setState("unavailable");
+        return;
+      }
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "en-US";
       u.rate = opts.slow ? 0.78 : 0.95;
       u.volume = this.volume;
-      const vs = navigator.onLine ? this.fallbackVoices : this.fallbackVoices.filter(v => v.localService);
-      if (!navigator.onLine && !vs.length) {
-        const timer = setTimeout(resolve, Math.min(6000, 600 + text.length * 55));
-        this.cancelCurrent = () => { clearTimeout(timer); resolve(); };
-        return;
-      }
       const pick = vs.find((v) => (opts.male ? /(male|daniel|fred|alex|aaron|arthur|guy|david|mark)/i : /(female|samantha|victoria|allison|ava|susan|zira|aria|jenny)/i).test(v.name) && v.localService)
         ?? vs.find((v) => v.localService) ?? vs[0];
       if (pick) { u.voice = pick; u.lang = pick.lang; }
-      let done = false;
-      const finish = () => { if (!done) { done = true; resolve(); } };
-      u.onend = finish; u.onerror = finish;
-      this.cancelCurrent = () => { speechSynthesis.cancel(); finish(); };
+      const waiting = () => { clearTimeout(timer); if (!request.done) this.setState("blocked"); };
+      u.onend = () => request.finish(true);
+      u.onerror = waiting;
+      request.cleanup = () => { clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); };
+      this.setState("playing");
       speechSynthesis.speak(u);
-      setTimeout(finish, 1500 + text.length * 120);
-    });
+      timer = setTimeout(waiting, 1500 + text.length * 120);
+    };
+    request.retry = () => { request.cleanup(); start(); };
+    start();
   }
 
   stop() {
-    const c = this.cancelCurrent;
-    this.cancelCurrent = null;
-    if (c) c();
+    this.request?.finish(false);
   }
 
   private ac() {
