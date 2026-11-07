@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useStore } from "../state/store";
 import {
   GAME_BUILD,
@@ -96,7 +97,7 @@ export function ReportProblem() {
           Pranešti apie klaidą
         </button>
       </div>
-      <dialog
+      {createPortal(<dialog
         ref={dialog}
         className="problem-dialog"
         onCancel={() => setOpen(false)}
@@ -178,7 +179,7 @@ export function ReportProblem() {
             </button>
           </div>
         </form>
-      </dialog>
+      </dialog>, document.body)}
     </>
   );
 }

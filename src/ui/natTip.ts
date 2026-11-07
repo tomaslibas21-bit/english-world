@@ -20,6 +20,17 @@ export function glossLine(units: Sentence["units"]): string {
   return units.filter((u) => !u.lt.trim().startsWith("—")).map((u) => u.lt).join(" ");
 }
 
+/** An already-visible translation may omit its optional opening personal pronoun in natural Lithuanian.
+ * Keep differences in word order, inflection or vocabulary; they can teach something useful. */
+export function natRepeatsGloss(s: Pick<Sentence, "units" | "nat">): boolean {
+  const natural = natNorm(s.nat ?? "");
+  const gloss = natNorm(glossLine(s.units));
+  if (!natural) return false;
+  if (natural === gloss) return true;
+  const parts = gloss.split(" ");
+  return ["aš", "tu", "jūs", "mes"].includes(parts[0]) && natural === parts.slice(1).join(" ");
+}
+
 /** Fillers and particles that carry no content of their own, so a natural sentence that only adds one of them says
  *  nothing new: na, nu (well), tai (so), o, ir (and), ar (the question particle), gi, juk (after all), ką (as in „ką
  *  gi“), štai, va (here, look). Kept short on purpose: every other word counts. Not gerai: where a natural sentence

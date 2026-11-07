@@ -8,14 +8,14 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { ipaForUnit } from "../convo/ipa";
-import { natSaysMore, placeTip, type TipSpot } from "./natTip";
+import { natRepeatsGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
 
 const unitOf = (t: EventTarget | null) => (t instanceof Element ? t.closest<HTMLElement>(".u[data-i]") : null);
 
 /** `natTip`: the other person's lines; with the natural sentence off (`nat` false), it can sit behind an asterisk. */
-export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; highlight?: boolean }) {
+export function Interlinear({ s, lt, ipa, nat, natTip, highlight, compactNat }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; highlight?: boolean; compactNat?: boolean }) {
   const plain = !lt && !ipa;
   const saved = useCards((c) => c.keys);
   const [open, setOpen] = useState<{ i: number; el: HTMLElement } | null>(null);
@@ -24,6 +24,8 @@ export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentenc
   useEffect(() => { setOpen(null); }, [s.en]); // another sentence in the same place
   const saysMore = useMemo(() => natSaysMore(s), [s]);
   const star = !!natTip && lt && nat === false && saysMore;
+  const repeatsGloss = compactNat && natRepeatsGloss(s);
+  const compactStar = !!compactNat && lt && nat !== false && !!s.nat && !repeatsGloss;
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const el = unitOf(e.target), from = down.current;
@@ -48,10 +50,10 @@ export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentenc
           );
           // the asterisk right after the last word, beside its unit rather than in it (so a tap on it is not a tap
           // on the word), the two kept on one line
-          return star && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en} text={s.nat} /></span> : unit;
+          return (star || compactStar) && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en} text={s.nat} mobileOnly={!star && compactStar} /></span> : unit;
         })}
       </div>
-      {lt && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
+      {lt && nat !== false && s.nat && <div className={"nat" + (compactNat ? " compact-nat" : "") + (repeatsGloss ? " repeats-gloss" : "")} lang="lt">{s.nat}</div>}
       {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} />}
     </div>
   );
@@ -67,7 +69,7 @@ function keyboardFocus(el: Element): boolean {
  *  the conversation panel, so opening it never moves the sentence. Like the word popover it lives at the end of
  *  the page: the transcript doesn't clip it, and screen readers don't announce it as a new transcript line (they
  *  read it as the asterisk's description). */
-function NatTip({ text }: { text: string }) {
+function NatTip({ text, mobileOnly = false }: { text: string; mobileOnly?: boolean }) {
   const id = useId();
   const starRef = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
@@ -131,7 +133,7 @@ function NatTip({ text }: { text: string }) {
   );
   return (
     <>
-      <button ref={starRef} type="button" className="nat-star" aria-label="Natūralus vertimas" aria-expanded={open} aria-describedby={id}
+      <button ref={starRef} type="button" className={"nat-star" + (mobileOnly ? " compact-nat-star" : "")} aria-label="Natūralus vertimas" aria-expanded={open} aria-describedby={id}
         onClick={() => setTapped((v) => !v)} onPointerEnter={enter} onPointerLeave={leave}
         onFocus={(e) => setFocused(keyboardFocus(e.currentTarget))}
         onBlur={(e) => {
