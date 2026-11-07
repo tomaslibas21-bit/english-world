@@ -82,6 +82,8 @@ describe("borrowed menu words", () => {
       expect(soundRepair(cafeNlu, cafe.entities, ["order"], text), text).toBeNull();
     }
     expect(soundRepair(restaurantNlu, restaurant.entities, ["pay"], "A broo sketta please")).toBeNull();
+    // Even a plausible phonetic syllable must not bypass the separate word "no".
+    expect(soundRepair(restaurantNlu, restaurant.entities, ["order"], "A pee no nwar please")).toBeNull();
   });
 
   it("does not pick an arbitrary item when two names are equally plausible", () => {
