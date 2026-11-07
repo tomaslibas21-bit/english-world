@@ -655,7 +655,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .guide > .chips { order: 2; }
   .guide-alt { order: 3; }
   .gx { gap: 7px; padding: 5px 0; }
-  .gx-text { max-height: 4.2em; overflow-y: auto; }
   .gx .il { column-gap: 0.4em; row-gap: 0.3em; }
   .gx .play, .gx .rp-btn { width: 44px; height: 44px; min-height: 44px; padding: 0; justify-content: center; }
   .gx .rp-btn .rp-label { display: none; }
@@ -782,8 +781,6 @@ body.scene-on .tag-layer { display: none; }
 @media (max-width: 900px) and (max-height: 620px) and (orientation: portrait) {
   :root { --conversation-image-height: 100px; }
   .convo .transcript { flex: 0 0 64px; min-height: 64px; }
-  .convo .gx-text { max-height: 3.2em; }
-  .convo .guide-task { max-height: 1.35em; overflow-y: auto; }
 }
 /* On a sideways phone the picture stays on the left. Dialogue and answers each scroll in their
    own column; the input controls stay at the bottom even with large text or a long answer. */
@@ -807,6 +804,4 @@ body.scene-on .tag-layer { display: none; }
   .convo .mic { width: 44px; height: 44px; }
   .convo .guide { padding: 4px; gap: 4px; }
   .convo .gx { padding-block: 3px; }
-  .convo .guide-task { max-height: 1.35em; overflow-y: auto; }
-  .convo .gx-text { max-height: 3.4em; }
 }
