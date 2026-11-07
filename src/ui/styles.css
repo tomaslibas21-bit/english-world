@@ -30,6 +30,7 @@
   --en: "EB Garamond", Georgia, "Times New Roman", serif;
   --ipa-font: "Gentium Book Plus", "Charis SIL", "Doulos SIL", "Noto Serif", "Times New Roman", serif;
   --scale: 1;
+  --conversation-image-height: clamp(110px, 25dvh, 230px);
   color-scheme: light;
 }
 
@@ -210,21 +211,13 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 }
 @keyframes slidein { from { transform: translateX(40px); opacity: 0; } }
 .convo-head {
-  display: flex; align-items: center; gap: 12px; padding: 14px 14px 12px 16px; border-bottom: 1px solid var(--line);
+  display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, #fffefb, rgba(255, 253, 248, 0.5));
 }
 .avatar {
   width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: #fff; font-size: 20px; flex: none;
   box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgba(31, 42, 51, 0.08), 0 5px 12px -4px rgba(20, 30, 40, 0.45), inset 0 -3px 0 rgba(0,0,0,0.15);
 }
-.convo-head .who { flex: 1; min-width: 0; padding-left: 2px; }
-.convo-head .who b { display: block; font-size: 1.14em; line-height: 1.15; font-weight: 900; }
-/* who they are and where: shown in full (wrapping), never cut with "…" */
-.convo-head .who span { display: block; margin-top: 2px; font-size: 0.8em; line-height: 1.3; color: var(--ink-soft); font-weight: 700; overflow-wrap: break-word; }
-.convo-head .who .role { display: inline-flex; flex-direction: column; align-items: center; max-width: 100%; text-align: center; font-style: normal; }
-.convo-head .who .role em { font-style: normal; }
-.convo-head .who .role small { font-size: 0.94em; font-weight: 600; color: var(--ink-faint); }
-.convo-head .who .place { margin-top: 1px; color: var(--ink-faint); }
 .toggles { display: flex; gap: 2px; padding: 3px; background: rgba(31, 42, 51, 0.06); border-radius: 12px; flex: none; }
 .toggle {
   border: 0; background: transparent; border-radius: 9px; padding: 4px 8px; font-weight: 900; font-size: 0.76em; letter-spacing: 0.03em; color: var(--ink-soft);
@@ -631,23 +624,49 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .act-btn { position: fixed; right: 22px; bottom: 26px; width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 0.95em; z-index: 12; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
 
 @media (max-width: 900px) {
-  .convo-head { gap: 6px; padding: 10px 10px 8px 12px; }
-  .convo-head .avatar { display: none; }
-  /* the name on the buttons' row, who they are and where on a full-width row under it */
-  .convo-head { flex-wrap: wrap; row-gap: 1px; }
-  .convo-head .who { display: contents; }
-  .convo-head .who b { flex: 1 1 0; min-width: 0; padding-left: 2px; overflow-wrap: break-word; }
-  .convo-head .toggles, .convo-head .head-actions { order: 1; }
-  .convo-head .who span { order: 2; flex: 1 0 100%; margin-top: 0; padding-left: 2px; }
-  .convo-head .toggles { padding: 2px; }
-  .convo-head .toggle { min-height: 32px; min-width: 34px; padding: 4px 6px; }
-  .convo-head .head-actions { gap: 3px; }
-  .convo-head .close-x { width: 34px; height: 34px; }
-  .convo { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 58vh; border-radius: 22px; animation: slideup 0.35s ease; }
+  .convo {
+    left: max(6px, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right));
+    top: var(--conversation-image-height); bottom: 0; width: auto; height: auto;
+    border-radius: 20px 20px 0 0; animation: slideup 0.35s ease;
+  }
   @keyframes slideup { from { transform: translateY(30px); opacity: 0; } }
-  .transcript { padding: 12px 12px 6px; gap: 12px; }
-  .yt-scroll { padding: 10px 12px 4px; }
-  .yt-bottom { padding: 8px 12px 12px; }
+  .convo-head { padding: 5px 8px; }
+  .convo-head .toggles { padding: 2px; }
+  .convo-head .toggle { min-height: 44px; min-width: 44px; padding: 4px 6px; }
+  .convo-head .head-actions { gap: 2px; }
+  .convo-head .close-x { width: 44px; height: 44px; }
+  .convo .transcript { flex: 0 1 20%; min-height: 90px; padding: 8px 10px; gap: 10px; }
+  .convo .yourturn { flex: 1 1 0; max-height: none; }
+  .yt-scroll { padding: 6px 8px 4px; }
+  .yt-bottom { padding: 6px 10px max(8px, env(safe-area-inset-bottom)); }
+  .yt-title { gap: 4px; margin-bottom: 5px; }
+  .yt-title b { font-size: 0.78em; letter-spacing: 0.04em; }
+  .yt-actions { gap: 4px; }
+  .yt-actions .small { padding: 5px 8px; }
+  .guide-toggle-label { display: none; }
+  .yt-actions .guide-toggle { width: 44px; min-height: 38px; justify-content: center; }
+  .guide-toggle .ui-icon { display: block; }
+  .say-toggles .long { display: none; }
+  .say-toggles .short { display: inline; }
+  .guide { padding: 8px; gap: 6px; border-radius: 14px; }
+  .guide-task { font-size: 0.93em; gap: 6px; }
+  .guide-task .task-ico { width: 20px; height: 20px; }
+  .guide-examples { margin: 0; order: 1; }
+  .guide > .chips { order: 2; }
+  .guide-alt { order: 3; }
+  .gx { gap: 7px; padding: 5px 0; }
+  .gx .il { column-gap: 0.4em; row-gap: 0.3em; }
+  .gx .play, .gx .rp-btn { width: 44px; height: 44px; min-height: 44px; padding: 0; justify-content: center; }
+  .gx .rp-btn .rp-label { display: none; }
+  .mission-bar { padding: 6px 10px; }
+  .mission-list { max-height: 24dvh; overflow-y: auto; }
+  .msg.npc .bubble { padding: 8px 10px; }
+  .msg .meta { margin-bottom: 3px; }
+  .convo .mic { width: 52px; height: 52px; }
+  .convo .type-toggle { width: 44px; height: 44px; }
+  .convo .call-strip { max-height: 64px; overflow-y: auto; padding: 4px 10px; }
+  .call-strip .tile { flex-direction: row; min-width: auto; padding: 2px; }
+  .call-strip .tile .face { display: none; }
   .map-wrap { grid-template-columns: 1fr; }
   .objective-card { width: calc(100vw - 120px); }
   .minimap { width: 88px; height: 88px; border-width: 3px; }
@@ -698,9 +717,9 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 @keyframes scene-breathe { from { transform: scale(1); } to { transform: scale(1.03); } }
 @media (prefers-reduced-motion: reduce) { .scene-backdrop img { animation: none; } }
 body.scene-on .tag-layer { display: none; }
-/* phones: the panel covers the lower 58% of the screen, so the picture fills the space above it */
+/* Phones share one image boundary with the panel; the desktop portrait is unchanged. */
 @media (max-width: 900px) {
-  .scene-backdrop img { bottom: auto; height: calc(42vh + 18px); }
+  .scene-backdrop img { bottom: auto; height: calc(var(--conversation-image-height) + 18px); }
 }
 
 /* answer toggles: short label on narrow phones */
@@ -722,9 +741,67 @@ body.scene-on .tag-layer { display: none; }
 .prompt-text small { font-weight: 600; font-size: 0.74em; color: var(--ink-soft); margin-top: 2px; }
 .sheet-body .town-lt { color: var(--ink-soft); font-size: 0.9em; margin: -2px 0 10px; }
 
-/* Keep the person's name and place readable beside all conversation controls. */
-.convo .convo-head { flex-wrap:wrap; }
-.convo .convo-head .who { display:block;flex:1 1 calc(100% - 64px); }
-.convo .convo-head .who b { display:block;padding-left:0; }
-.convo .convo-head .who span { padding-left:0; }
-.convo .convo-head .toggles { margin-left:54px;flex:1; }
+/* Identity sits over the picture; no persistent bilingual block above the dialogue. */
+.npc-info { position: fixed; z-index: 22; left: 24px; bottom: max(24px, env(safe-area-inset-bottom)); display: flex; gap: 8px; }
+.npc-info-button {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(31, 42, 51, 0.15); background: var(--panel-solid); color: var(--accent); box-shadow: var(--shadow-md);
+}
+.npc-info-button > span { font: 700 26px Georgia, serif; }
+.npc-info-card {
+  position: absolute; left: 0; bottom: 54px; width: 320px; max-width: calc(100vw - 24px); max-height: min(440px, calc(100dvh - 90px));
+  overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid var(--line); border-radius: 18px;
+  background: var(--panel-solid); box-shadow: var(--shadow); font-size: 0.95em;
+}
+.npc-identity { display: flex; align-items: center; gap: 14px; }
+.npc-info .who { min-width: 0; }
+.npc-identity > .close-x { margin-left: auto; }
+.npc-info .who b { display: block; font-size: 1.2em; }
+.npc-info .role { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.35; }
+.npc-info .role em { font-style: normal; }
+.npc-info .role small, .npc-info .place { color: var(--ink-soft); }
+.npc-info .place { margin: 12px 0; line-height: 1.4; }
+.npc-info .beta-strip { padding: 6px 0 0; border-top: 1px solid var(--line); border-bottom: 0; }
+.audio-recovery { display: flex; flex: none; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 8px 12px; background: var(--gold-soft); font-size: 0.85em; }
+.audio-recovery span { flex: 1 1 130px; }
+.audio-recovery button { min-height: 44px; }
+.convo-tools { flex: none; min-width: 0; }
+.convo-head .toggle { min-height: 44px; min-width: 44px; }
+.convo-head .close-x { width: 44px; height: 44px; }
+.transcript, .yt-scroll { overscroll-behavior: contain; overflow-x: hidden; scrollbar-gutter: stable; }
+.msg .meta button:disabled { opacity: 0.45; cursor: default; }
+@media (max-width: 900px) {
+  .npc-info { left: auto; right: max(16px, env(safe-area-inset-right)); bottom: auto; top: calc(var(--conversation-image-height) - 54px); }
+  .npc-info-card { position: fixed; left: auto; right: 12px; top: max(8px, env(safe-area-inset-top)); bottom: auto; }
+}
+@media (max-width: 900px) and (max-height: 700px) and (orientation: portrait) {
+  :root { --conversation-image-height: max(100px, 20dvh); }
+  .convo .transcript { flex-basis: 20%; min-height: 80px; }
+}
+@media (max-width: 900px) and (max-height: 620px) and (orientation: portrait) {
+  :root { --conversation-image-height: 100px; }
+  .convo .transcript { flex: 0 0 64px; min-height: 64px; }
+}
+/* On a sideways phone the picture stays on the left. Dialogue and answers each scroll in their
+   own column; the input controls stay at the bottom even with large text or a long answer. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .convo {
+    top: max(6px, env(safe-area-inset-top)); bottom: max(6px, env(safe-area-inset-bottom));
+    left: max(25vw, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right)); width: auto; height: auto;
+    border-radius: 18px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .convo-tools { grid-column: 1 / -1; }
+  .convo .transcript { grid-column: 1; min-height: 0; }
+  .convo .yourturn { grid-column: 2; min-height: 0; max-height: none; border-left: 1px solid var(--line); }
+  .convo .ended-box { grid-column: 1 / -1; overflow-y: auto; }
+  .convo .mission-list { max-height: 90px; }
+  .scene-backdrop img { width: 25vw; height: 100%; bottom: 0; }
+  .npc-info { left: max(12px, env(safe-area-inset-left)); right: auto; top: auto; bottom: max(12px, env(safe-area-inset-bottom)); }
+  .npc-info-card { left: 12px; right: auto; top: 8px; bottom: auto; }
+  .convo .yt-title { flex-wrap: wrap; }
+  .convo .yt-bottom { padding: 4px 8px; }
+  .convo .mic { width: 44px; height: 44px; }
+  .convo .guide { padding: 4px; gap: 4px; }
+  .convo .gx { padding-block: 3px; }
+}

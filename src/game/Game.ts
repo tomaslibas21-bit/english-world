@@ -1095,8 +1095,12 @@ export class Game implements GameApi {
     {
       const w = this.container.clientWidth, h = this.container.clientHeight;
       if (talking && this.talkNpc) {
-        const wide = w > 900;
-        this.rig.applyViewShift(w, h, wide ? Math.min(w * 0.22, 380) : 0, wide ? 0 : h * 0.25);
+        const sideways = h <= 520 && w > h;
+        const wide = w > 900 && !sideways;
+        // Match the conversation's visible picture area, including scenes-off 3D conversations.
+        const pictureHeight = h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
+        this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
+          wide || sideways ? 0 : (h - pictureHeight) / 2);
       } else this.rig.applyViewShift(w, h, 0, this.rig.mode !== "talk" && h > w * 1.15 ? -h * (this.rig.mode === "follow" ? 0.12 : 0.1) : 0);
     }
     // sun follows the player for crisp shadows

@@ -18,6 +18,7 @@ import type { SituationDef } from "../content/types";
 import { useCards, cardKey, dueCards, ipaFor, type CardInput } from "../state/cards";
 import { MyCards, Glyph } from "./Cards";
 import { showToast } from "./Toasts";
+import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
 
 export const CHAPTERS: Record<number, string> = { 1: "Atvykimas", 2: "Pirmosios dienos mieste", 3: "Įsikūrimas", 4: "Darbas", 5: "Žmonės", 6: "Kelionės", 7: "Pagalba", 8: "Pažengusiems", 9: "Gyva kalba" };
 
@@ -37,6 +38,12 @@ function isPhone(s: SituationDef) { return s.mode === "phone" || s.mode === "vid
 
 export function Panels() {
   const panel = useStore((s) => s.hud.panel);
+  useEffect(() => {
+    if (!panel) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); useStore.getState().setHud({ panel: null }); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
   return (
@@ -47,8 +54,41 @@ export function Panels() {
       {panel === "settings" && <Settings close={close} />}
       {panel === "phrasebook" && <Phrasebook close={close} />}
       {panel === "scenarios" && <Scenarios close={close} />}
+      {panel === "help" && <Help close={close} />}
     </div>
   );
+}
+
+function Help({ close }: { close: () => void }) {
+  const sheet = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    sheet.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => { if (previous?.isConnected) previous.focus(); };
+  }, []);
+  return <div ref={sheet} className="sheet narrow" role="dialog" aria-modal="true" aria-label="Kaip žaisti?"
+    onKeyDown={(e) => {
+      if (e.key !== "Tab") return;
+      const controls = [...e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], summary")].filter((el) => el.getClientRects().length);
+      const first = controls[0], last = controls.at(-1);
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }}>
+    <SheetHead icon="help" title="Kaip žaisti?" close={close} />
+    <div className="sheet-body">
+      <p>Pasirink situaciją, paklausyk pašnekovo ir atsakyk angliškai. Gali kalbėti arba rašyti. Po „Tavo eilė“ rasi atsakymų pavyzdžius.</p>
+      <details className="howto">
+        <summary>Žingsnis po žingsnio <Icon name="arrowRight" size={20} /></summary>
+        <ol>
+          <li>Atidaryk „Visos situacijos“ ir pasirink pokalbį. 3D mieste gali prieiti prie žmogaus.</li>
+          <li>Palauk, kol pašnekovas baigs. Jei telefonas sustabdo garsą, paliesk „Klausyti“.</li>
+          <li>Paliesk mikrofoną ir atsakyk angliškai arba įjunk klaviatūrą. Pavyzdžių garsiakalbis leidžia išgirsti atsakymą; „Pakartok“ – pasipraktikuoti.</li>
+          <li>LT įjungia vertimą, IPA – tarimą, vėžliukas – lėtesnį balsą. „i“ prie piešinio parodo, su kuo ir kur kalbiesi.</li>
+        </ol>
+      </details>
+      <a className="btn soft" href={courseGuideUrl()} target="_blank" rel="noopener noreferrer">Išsamus naudojimo gidas <Icon name="arrowRight" size={18} /></a>
+    </div>
+  </div>;
 }
 
 function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; close: () => void }) {
@@ -318,6 +358,7 @@ function Toggle({ on, onChange, label, sub }: { on: boolean; onChange: (v: boole
 }
 
 function Settings({ close }: { close: () => void }) {
+  const showHelp = useSectionHelp();
   const s = useStore((st) => st.settings);
   const set = useStore((st) => st.setSettings);
   const profile = useStore((st) => st.progress.profile);
@@ -327,6 +368,8 @@ function Settings({ close }: { close: () => void }) {
     <div className="sheet narrow">
       <SheetHead icon="settings" title="Nustatymai" close={close} />
       <div className="sheet-body settings-grid">
+        <Toggle on={showHelp} onChange={setSectionHelp} label="Rodyti pagalbos klaustukus" sub="Trumpa pagalba prie žaidimo ir pokalbių. Išsamų gidą gali atidaryti bet kada." />
+        <a className="btn soft" href={courseGuideUrl()} target="_blank" rel="noopener noreferrer">Naudojimo gidas <Icon name="arrowRight" size={18} /></a>
         <Toggle on={s.lt} onChange={(v) => set({ lt: v })} label="Lietuviški vertimai (L)" sub="Žodis po žodžio po pašnekovo sakiniais." />
         <Toggle on={s.ltNatural} onChange={(v) => set({ ltNatural: v })} label="Visas sakinys lietuviškai (N)" sub="Rodoma, kai įjungti vertimai." />
         <Toggle on={s.ipa} onChange={(v) => set({ ipa: v })} label="Tarimas IPA (I)" sub="Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais)." />

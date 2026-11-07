@@ -47,7 +47,9 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  autoListen: true, confirmSpeech:false, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
+  autoListen: true, confirmSpeech:false, slowVoice: false, volume: 0.9,
+  textSize: typeof window === "undefined" || window.innerWidth > 900 ? 1.15 : 1,
+  quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),
 };
 

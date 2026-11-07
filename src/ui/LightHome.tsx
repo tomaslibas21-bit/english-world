@@ -20,6 +20,7 @@ import { sceneFor } from "./scenes";
 import { switchPlayMode, takeLinkedSituation } from "./playMode";
 import { Icon, InlineIcon, Stars, iconForEmoji, type IconName } from "./icons";
 import "./light.css";
+import { SectionHelpButton } from "./sectionHelp";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
@@ -103,6 +104,7 @@ function LightHome() {
           <div className="lh-brand"><span className="lh-logo">English World <small className="beta-badge">Beta</small></span><span className="lh-town">Maple Harbor</span><span className="lh-town-lt" lang="lt">{TOWN_LT}</span></div>
           <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title="Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis"><Icon name="map" size={22} /><span>Atidaryti 3D miestą</span></button>
           <nav className="lh-tools" aria-label="Įrankiai">
+            <SectionHelpButton className="lh-tool" />
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title="Grįžti į kursą"><Icon name="home" size={24} /><span>Kursas</span></a>}
             <button className="lh-tool" onClick={() => open("phrasebook")} title="Frazių knygelė" aria-label={due ? `Frazių knygelė (${due})` : "Frazių knygelė"}><Icon name="bookOpen" size={24} /><span>Frazės</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
             <button className="lh-tool" onClick={() => open("journal")} title="Užduotys" aria-label="Užduotys"><Icon name="journal" size={24} /><span>Užduotys</span></button>

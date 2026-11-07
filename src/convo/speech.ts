@@ -15,6 +15,7 @@
 // (Chrome's processLocally) is an opt-in setting: more private, but it hears accents less well.
 
 import { NEGATION_TOKENS } from "./normalize";
+import { captureAudio } from "./audioFocus";
 
 export const SPEECH_REC: any =
   typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
@@ -115,6 +116,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   };
   const createRecognition = opt.createRecognition ?? (() => new SPEECH_REC() as SpeechRecognizer);
   let rec: SpeechRecognizer | null = null;
+  let capture: ReturnType<typeof captureAudio> | null = null;
   let running = false;
   let disposed = false;
   let generation = 0;
@@ -164,9 +166,12 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   };
   const release = () => {
     const r = rec; rec = null;
+    const lease = capture; capture = null;
     if (!r) return;
-    r.onstart = r.onresult = r.onerror = r.onend = r.onspeechstart = r.onspeechend = null;
-    try { r.abort(); } catch { /* already ended */ }
+    r.onstart = r.onresult = r.onerror = r.onspeechstart = r.onspeechend = null;
+    r.onend = () => { r.onend = null; lease?.ended(); };
+    lease?.stopping();
+    try { r.abort(); } catch { lease?.ended(); }
   };
   const stopRunning = () => { generation++; running = false; speaking = false; clearTimers(); release(); };
 
@@ -236,6 +241,8 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     let r: SpeechRecognizer;
     try { r = createRecognition(); } catch { failService("unavailable"); return; }
     rec = r;
+    const lease = captureAudio();
+    capture = lease;
     const current = () => running && !disposed && run === generation && rec === r;
     // Rebuild this session from its base: some mobile recognisers replace or shrink earlier result slots, even
     // ones already marked final.
@@ -306,7 +313,12 @@ export function createSpeechAttempt(opt: SpeechOptions) {
         if (current()) {
           update({ status: "reconnecting", heard: heard() });
           if (startupTimer !== undefined) clock.clearTimeout(startupTimer);
-          startupTimer = clock.setTimeout(() => { if (current()) r.onend?.(); }, 2_000);
+          startupTimer = clock.setTimeout(() => {
+            if (!current()) return;
+            if (pendingInterim) { finalCandidates = interimCandidates.slice(); pendingInterim = false; }
+            // This is a missing-end watchdog, not an actual onend from the browser.
+            release(); reconnectSoon(run);
+          }, 2_000);
         }
         return;
       }
@@ -317,6 +329,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       failService(err);
     };
     r.onend = () => {
+      lease.ended();
       if (!current()) return;
       speaking = false;
       // words the browser hadn't finalised yet stay with the answer through its restart
