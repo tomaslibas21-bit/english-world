@@ -12,13 +12,13 @@ body.light-mode { background: #f5efe5; }
 /* ---------- home: the situation list ---------- */
 .lh { position: fixed; inset: 0; z-index: 1; overflow-y: auto; overscroll-behavior: contain; background: var(--lh-bg); background-attachment: fixed; }
 .lh-in { max-width: 960px; margin: 0 auto; padding: 16px 20px 36px; }
-.lh-top { display: flex; align-items: center; gap: 10px; }
-.lh-brand { flex: 1; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; }
+.lh-top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 10px; }
+.lh-brand { flex: 1 1 22em; min-width: min(100%, 22em); display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; }
 .lh-logo { font-family: var(--en); font-size: 1.75em; font-weight: 600; color: var(--accent); line-height: 1.05; }
 .lh-town { font-size: 0.7em; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm); }
-.lh-tools { display: flex; gap: 8px; flex: none; }
+.lh-tools { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 1 auto; min-width: 0; }
 .lh-tool {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 14px 0 11px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 14px 0 11px; flex: none; white-space: nowrap;
   border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.85); background: var(--panel); color: var(--accent); font-weight: 800;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.06), 0 6px 16px -8px rgba(20, 30, 40, 0.28); transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
 }

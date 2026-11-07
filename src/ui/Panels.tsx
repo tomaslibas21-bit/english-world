@@ -76,14 +76,14 @@ function Help({ close }: { close: () => void }) {
     }}>
     <SheetHead icon="help" title="Kaip žaisti?" close={close} />
     <div className="sheet-body">
-      <p>Pasirink situaciją, paklausyk pašnekovo ir atsakyk angliškai. Gali kalbėti arba rašyti. Po „Tavo eilė“ rasi atsakymų pavyzdžius.</p>
+      <p>Pasirink situaciją, išklausyk pašnekovą ir atsakyk angliškai. Gali kalbėti arba rašyti. Atsakymų pavyzdžius rasi po užrašu „Tavo eilė“.</p>
       <details className="howto">
         <summary>Žingsnis po žingsnio <Icon name="arrowRight" size={20} /></summary>
         <ol>
-          <li>Atidaryk „Visos situacijos“ ir pasirink pokalbį. 3D mieste gali prieiti prie žmogaus.</li>
-          <li>Palauk, kol pašnekovas baigs. Jei telefonas sustabdo garsą, paliesk „Klausyti“.</li>
-          <li>Paliesk mikrofoną ir atsakyk angliškai arba įjunk klaviatūrą. Pavyzdžių garsiakalbis leidžia išgirsti atsakymą; „Pakartok“ – pasipraktikuoti.</li>
-          <li>LT įjungia vertimą, IPA – tarimą, vėžliukas – lėtesnį balsą. „i“ prie piešinio parodo, su kuo ir kur kalbiesi.</li>
+          <li>Spausk „Visos situacijos“ ir pasirink pokalbį. Jei žaidi 3D mieste, gali prieiti prie pašnekovo.</li>
+          <li>Palauk, kol pašnekovas baigs kalbėti. Jei garsas sustoja, spausk „Klausyti“.</li>
+          <li>Spausk mikrofono ikonėlę ir atsakyk angliškai. Jei nori rašyti, spausk klaviatūros ikonėlę. Garsiakalbio ikonėlė prie pavyzdžio leidžia išgirsti atsakymą, o „Pakartok“ – jį ištarti ir pasitikrinti.</li>
+          <li>Spausk „LT“, kad matytum vertimą, arba „IPA“, kad matytum tarimo užrašą. Vėžliuko ikonėlė sulėtina balsą, o „i“ prie paveikslėlio atveria informaciją apie pašnekovą ir vietą.</li>
         </ol>
       </details>
       <a className="btn soft" href={courseGuideUrl()} target="_blank" rel="noopener noreferrer">Išsamus naudojimo gidas <Icon name="arrowRight" size={18} /></a>

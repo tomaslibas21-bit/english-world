@@ -102,8 +102,8 @@ function LightHome() {
       <div className="lh-in">
         <header className="lh-top">
           <div className="lh-brand"><span className="lh-logo">English World <small className="beta-badge">Beta</small></span><span className="lh-town">Maple Harbor</span><span className="lh-town-lt" lang="lt">{TOWN_LT}</span></div>
-          <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title="Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis"><Icon name="map" size={22} /><span>Atidaryti 3D miestą</span></button>
           <nav className="lh-tools" aria-label="Įrankiai">
+            <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title="Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis"><Icon name="map" size={22} /><span>Atidaryti 3D miestą</span></button>
             <SectionHelpButton className="lh-tool" />
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title="Grįžti į kursą"><Icon name="home" size={24} /><span>Kursas</span></a>}
             <button className="lh-tool" onClick={() => open("phrasebook")} title="Frazių knygelė" aria-label={due ? `Frazių knygelė (${due})` : "Frazių knygelė"}><Icon name="bookOpen" size={24} /><span>Frazės</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
@@ -126,10 +126,10 @@ function LightHome() {
         <details className="howto lh-howto" open={done === 0}>
           <summary><Icon name="help" size={21} className="howto-ico" /> Kaip žaisti?<Icon name="chevronDown" size={18} className="chev" /></summary>
           <ol>
-            <li>Paspausk situaciją – iškart prasidės pokalbis.</li>
-            <li>Spausk <InlineIcon name="mic" label="mikrofono mygtuką" /> ir kalbėk angliškai. Galima ir rašyti <InlineIcon name="keyboard" label="klaviatūra" />.</li>
-            <li>Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžių – <InlineIcon name="speaker" label="garsiakalbio mygtukas" /> juos perskaito.</li>
-            <li>Po pokalbio rinkis kitą situaciją arba pabandyk dar kartą – žmonės kaskart kalba šiek tiek kitaip.</li>
+            <li>Pasirink situaciją – pokalbis prasidės iš karto.</li>
+            <li>Spausk mikrofono ikonėlę <InlineIcon name="mic" /> ir atsakyk angliškai. Jei nori rašyti, spausk klaviatūros ikonėlę <InlineIcon name="keyboard" />.</li>
+            <li>Atsakymų pavyzdžius rasi po užrašu „Tavo eilė“. Spausk garsiakalbio ikonėlę <InlineIcon name="speaker" />, kad juos išgirstum.</li>
+            <li>Baigęs pokalbį, pasirink kitą situaciją arba pabandyk dar kartą – pašnekovo atsakymai gali skirtis.</li>
           </ol>
         </details>
 
