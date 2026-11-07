@@ -32,7 +32,37 @@ const letters = (s: string) => unaccent(s).toLowerCase().replace(/[^a-z]/g, "");
 const HEARD_AS: Record<string, string[]> = {
   latte: ["latteh", "la teh", "lah teh", "latė"],
   croissant: ["kruasan", "kruasanas", "cruasan", "cruasán", "cross on", "cross ant", "cross aunt", "cross and", "kwa son", "kwah son", "qua son", "quasson", "kwason", "crois son"],
+  cappuccino: ["kapučino", "kapuchino", "capu chino", "cap a cheeno"],
+  americano: ["amerikano", "ah meri kano"],
+  espresso: ["es preso", "es press oh", "eks presso"],
+  mocha: ["moh kah", "mokah"],
+  chamomile: ["kamo mile", "kamomail"],
+  bruschetta: ["broo sketta", "broo shetta", "brusketa"],
+  minestrone: ["min eh strone", "minestroni", "mini stroney"],
+  lasagna: ["la zanya", "lazania", "lazanija"],
+  penne: ["pen ay", "pen eh"],
+  arrabbiata: ["ara bee ata", "arabiyata"],
+  risotto: ["ree zot oh", "ree zotto", "rizoto"],
+  "chicken parmesan": ["chicken parme zan", "chicken parma zhan"],
+  caesar: ["see zer", "see zar", "cezar"],
+  margherita: ["mar ga reeta", "margareeta"],
+  tiramisu: ["tira mee sue", "tira mi su", "tee ramisu"],
+  "panna cotta": ["pan a cotta", "panakota", "pana kota"],
+  gelato: ["jeh lah toe", "jelato"],
+  // The restaurant already offers these named wines/waters as forms of its menu items.
+  // A pronunciation of a label can only suggest the item that actually lists that label.
+  chianti: ["kee an tee", "kianti"],
+  merlot: ["mer low", "mer lo", "merloh"],
+  "pinot noir": ["pino nwar", "pee no nwar"],
+  "pinot grigio": ["pino grigio", "peeno grigio"],
+  chardonnay: ["shar doh nay", "shardonay"],
+  "sauvignon blanc": ["sovinyon blonk", "sovin yon blanc"],
+  perrier: ["perry ay", "perri ay"],
 };
+/** These are different foods/drinks, not pronunciation variants of the available menu.
+ *  Protect the whole candidate window, including "pesto pasta" → "pasta pasta". A future
+ *  situation that actually lists one of these names still uses its own exact forms. */
+const DISTINCT_FOODS = new Set(["matcha", "macchiato", "cortado", "miso", "pesto", "carbonara", "prosciutto", "martini", "mojito"]);
 /** How alike two spellings are, 0…1. */
 function likeness(a: string, b: string): number {
   const x = letters(a), y = letters(b);
@@ -114,6 +144,7 @@ export function soundRepair(nlu: Nlu, entities: Record<string, EntityDef[]> | un
       const named = aliases.get(letters(win.join(""))) ?? [];
       if (EDGE.has(win[0]) || (EDGE.has(last) && !(n > 1 && atEnd && (VOWELISH.has(last) || named.length)))) continue;
       if (win.some((w) => !w || /\d/.test(w) || NEGATION_TOKENS.has(w) || w.includes("n't"))) continue;
+      if (win.some((w) => DISTINCT_FOODS.has(w) && !realWords.has(w))) continue;
       // a name the conversation knows is no mishearing ("large" is never "latte"); inside a longer stretch a real
       // word may be part of one ("cup of chino")
       if (n === 1 ? realWords.has(win[0]) : realPhrases.has(win.join(" "))) continue;
@@ -123,6 +154,9 @@ export function soundRepair(nlu: Nlu, entities: Record<string, EntityDef[]> | un
       const key = soundKey(joined);
       const cands = [...named, ...(known.get(key) ?? []), ...(key.endsWith("r") ? (known.get(key.slice(0, -1)) ?? []).filter((c) => c.vowelEnd) : [])];
       for (const c of cands) {
+        // The grammar may rank just one reading of an identical spelling. That ranking must
+        // not hide a collision between two items before the ambiguity check below.
+        if (cands.some((other) => other.surface === c.surface && (other.type !== c.type || other.entity.id !== c.entity.id))) continue;
         const like = named.includes(c) ? Math.max(0.8, likeness(joined, c.surface)) : likeness(joined, c.surface);
         if (like < (holdsReal ? 0.6 : 0.4)) continue;
         const fixed = [...raw.slice(0, i), c.surface, ...raw.slice(i + n)].join(" ");
@@ -137,5 +171,9 @@ export function soundRepair(nlu: Nlu, entities: Record<string, EntityDef[]> | un
     }
   }
   fixes.sort((a, b) => b.likeness - a.likeness);
-  return fixes[0] ?? null;
+  const best = fixes[0];
+  // If two different menu items sound equally plausible, ask the learner to try again.
+  // Duplicate surfaces of the same item are fine; an arbitrary first item is not a safe suggestion.
+  if (best && fixes.some((f) => (f.type !== best.type || f.entity !== best.entity) && f.likeness >= best.likeness - 0.1)) return null;
+  return best ?? null;
 }
