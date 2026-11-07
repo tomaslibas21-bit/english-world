@@ -82,7 +82,7 @@ function Help({ close }: { close: () => void }) {
         <ol>
           <li>Spausk „Visos situacijos“ ir pasirink pokalbį. Jei žaidi 3D mieste, gali prieiti prie pašnekovo.</li>
           <li>Palauk, kol pašnekovas baigs kalbėti. Jei garsas sustoja, spausk „Klausyti“.</li>
-          <li>Spausk mikrofono ikonėlę ir atsakyk angliškai. Jei nori rašyti, spausk klaviatūros ikonėlę. Garsiakalbio ikonėlė prie pavyzdžio leidžia išgirsti atsakymą, o „Pakartok“ – jį ištarti ir pasitikrinti.</li>
+          <li>Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – atsakyk angliškai. Mikrofono mygtuku gali bandyti dar kartą arba baigti savo atsakymą. Jei nori rašyti, spausk klaviatūros ikonėlę. Garsiakalbio ikonėlė prie pavyzdžio leidžia išgirsti atsakymą, o „Pakartok“ – jį ištarti ir pasitikrinti.</li>
           <li>Spausk „LT“, kad matytum vertimą, arba „IPA“, kad matytum tarimo užrašą. Vėžliuko ikonėlė sulėtina balsą, o „i“ prie paveikslėlio atveria informaciją apie pašnekovą ir vietą.</li>
         </ol>
       </details>
@@ -147,7 +147,7 @@ function HowToPlay({ open }: { open?: boolean }) {
       <ol>
         <li>Pasirink situaciją – iškart atsidursi pokalbyje.</li>
         <li>Viršuje matysi užduočių sąrašą, o prie „<InlineIcon name="next" label="rodyklės" />“ – ką daryti dabar.</li>
-        <li>Spausk <InlineIcon name="mic" label="mikrofono mygtuką" /> (arba tarpo klavišą) ir kalbėk angliškai. Galima ir rašyti <InlineIcon name="keyboard" label="klaviatūra" />.</li>
+        <li>Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. <InlineIcon name="mic" label="Mikrofono mygtuku" /> (arba tarpo klavišu) gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti <InlineIcon name="keyboard" label="klaviatūra" />.</li>
         <li>Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžiai – <InlineIcon name="speaker" label="garsiakalbio mygtukas" /> juos perskaito. „Daugiau frazių“ – dar daugiau būdų tai pasakyti.</li>
         <li>Viršuje <b>LT</b> ir <b>IPA</b> įjungia pašnekovo sakinių vertimą ir tarimą, o prie „Tavo eilė“ esantys <b>Vertimas</b> ir <b>IPA</b> – tavo atsakymų pavyzdžių. <InlineIcon name="restart" label="Rodyklė ratu" /> – pradėti iš naujo, <InlineIcon name="list" label="Sąrašas" /> – kitos situacijos.</li>
         <li>Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti (<InlineIcon name="bookOpen" label="Frazių knygelė" /> → „Mano kortelės“).</li>
@@ -377,7 +377,6 @@ function Settings({ close }: { close: () => void }) {
         <Toggle on={s.sayIpa} onChange={(v) => set({ sayIpa: v })} label="Tavo atsakymų tarimas IPA" sub="Po kiekvienu pavyzdžių žodžiu." />
         <Toggle on={s.suggestions} onChange={(v) => set({ suggestions: v })} label="Pasiūlymai, ką pasakyti" sub="Lietuviški pasiūlymai tavo eilėje." />
         <Toggle on={s.hintsOpen} onChange={(v) => set({ hintsOpen: v })} label="Frazės atidarytos iš karto" sub={<>Kitaip atsidaro paspaudus <InlineIcon name="bulb" label="lemputę" /> (H).</>} />
-        <Toggle on={s.autoListen} onChange={(v) => set({ autoListen: v })} label="Mikrofonas įsijungia automatiškai" sub="Kai pašnekovas baigia kalbėti." />
         <Toggle on={s.confirmSpeech} onChange={v=>set({confirmSpeech:v})} label="Patvirtinti atpažintą tekstą" sub="Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį." />
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label="Žmonės kalba lėčiau" />
         {(local === "available" || local === "downloadable" || local === "downloading") && (

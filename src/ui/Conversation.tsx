@@ -689,7 +689,7 @@ function MicButton() {
   const supported = speechSupported();
   const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
   if (!supported) return <button className="mic" disabled title="Balso atpažinimas šioje naršyklėje nepalaikomas" aria-label="Balso atpažinimas šioje naršyklėje nepalaikomas"><Icon name="mic" size={30} /></button>;
-  const title = listening ? "Baigti klausytis (tarpo klavišas)" : "Kalbėti (tarpo klavišas)";
+  const title = listening ? "Baigti atsakymą (tarpo klavišas)" : "Įjungti mikrofoną dar kartą (tarpo klavišas)";
   return (
     <button className={"mic" + (listening ? " listening" : "")} disabled={conv.phase !== "you"} aria-pressed={listening}
       title={title} aria-label={title}
@@ -707,8 +707,9 @@ function MicStatus() {
   const f = useStore((s) => s.progress.profile?.gender === "f");
   const m = conv.mic;
   if (!speechSupported()) return <div className="mic-status"><b>Rašyk atsakymą</b><span className="sub">Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).</span></div>;
-  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)</span></div>;
+  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">{conv.typing ? "Klausyk…" : "Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)"}</span></div>;
   if (conv.phase === "thinking") return <div className="mic-status"><span className="sub">…</span></div>;
+  if (conv.typing) return <div className="mic-status"><b>Rašyk atsakymą</b><span className="sub">Jei nori kalbėti, spausk {MIC}.</span></div>;
   switch (m.status) {
     case "starting": return <div className="mic-status"><b>Jungiamas mikrofonas…</b></div>;
     case "listening": case "reconnecting":
@@ -716,6 +717,6 @@ function MicStatus() {
     case "denied": return <div className="mic-status"><b>Leisk naudoti mikrofoną</b><span className="sub">Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</span></div>;
     case "error": return <div className="mic-status"><b>{m.error === "network" ? "Nepavyko prisijungti prie atpažinimo" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko"}</b><span className="sub">Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</span></div>;
     case "nothing": return <div className="mic-status"><b>Nieko negirdėjau</b><span className="sub">Spausk {MIC} (arba tarpo klavišą), kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</span></div>;
-    default: return <div className="mic-status"><b>Spausk {MIC} ir kalbėk</b><span className="sub">arba tarpo klavišą · rašyti {KEYS} (T)</span></div>;
+    default: return <div className="mic-status"><b>Tavo eilė</b><span className="sub">Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {MIC} arba tarpo klavišą. Rašyti – {KEYS} (T).</span></div>;
   }
 }

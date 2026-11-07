@@ -67,7 +67,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 
 - Arrow keys or WASD to walk (camera-relative), Shift to run. Mouse: click the ground to walk there, click a person or door to go to it, drag to look around, wheel to zoom.
 - **E** / Enter: talk or enter. **G**: walk to the current goal. **M** map, **J** journal, **P** phone, **Esc** settings.
-- In a conversation: **Space** microphone on/off, **T** type, **H** hints, **L** Lithuanian, **N** the whole sentence in Lithuanian, **I** IPA, **R** repeat, **Esc** leave.
+- In a conversation the microphone starts automatically after the character finishes. **Space** retries or finishes your answer, **T** switches to typing, **H** hints, **L** Lithuanian, **N** the whole sentence in Lithuanian, **I** IPA, **R** repeat, **Esc** leave.
 - Touch: an on-screen joystick appears on touch devices; tapping works like clicking.
 
 ## How it works

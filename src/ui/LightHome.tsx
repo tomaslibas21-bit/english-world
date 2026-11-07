@@ -127,7 +127,7 @@ function LightHome() {
           <summary><Icon name="help" size={21} className="howto-ico" /> Kaip žaisti?<Icon name="chevronDown" size={18} className="chev" /></summary>
           <ol>
             <li>Pasirink situaciją – pokalbis prasidės iš karto.</li>
-            <li>Spausk mikrofono ikonėlę <InlineIcon name="mic" /> ir atsakyk angliškai. Jei nori rašyti, spausk klaviatūros ikonėlę <InlineIcon name="keyboard" />.</li>
+            <li>Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – atsakyk angliškai. Mikrofono mygtuku <InlineIcon name="mic" /> gali bandyti dar kartą arba baigti atsakymą. Jei nori rašyti, spausk klaviatūros ikonėlę <InlineIcon name="keyboard" />.</li>
             <li>Atsakymų pavyzdžius rasi po užrašu „Tavo eilė“. Spausk garsiakalbio ikonėlę <InlineIcon name="speaker" />, kad juos išgirstum.</li>
             <li>Baigęs pokalbį, pasirink kitą situaciją arba pabandyk dar kartą – pašnekovo atsakymai gali skirtis.</li>
           </ol>

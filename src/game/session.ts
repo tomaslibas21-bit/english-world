@@ -42,6 +42,8 @@ export class Session {
   private wasCompleted = false;
   /** The pending "open the mic by itself" (after the person's turn, or after a miss). */
   private autoTimer: ReturnType<typeof setTimeout> | null = null;
+  private unbindListening: (() => void) | null = null;
+  private onVisibility = () => { if (document.visibilityState !== "visible") this.stopListening(); };
   /** `speech` is a "listen and repeat" attempt (practice), not an answer. */
   private practicing = false;
   /** Bumped whenever a practice starts or is cancelled (a stale one never goes on to listen). */
@@ -68,6 +70,11 @@ export class Session {
       s.visits++; s.lastPlayed = Date.now();
       p.sits[sitId] = s;
     });
+    // Entering typing or a panel releases capture immediately, without rearming it on return.
+    this.unbindListening = useStore.subscribe((next, previous) => {
+      if ((!previous.conv.typing && next.conv.typing) || (next.hud.panel && next.hud.panel !== previous.hud.panel)) this.stopListening();
+    });
+    document.addEventListener("visibilitychange", this.onVisibility);
   }
 
   async begin() {
@@ -139,7 +146,7 @@ export class Session {
     const st = useStore.getState();
     const sup = this.conv.support();
     st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(), openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
-    if (st.settings.autoListen && speechSupported() && !st.hud.panel && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
+    if (speechSupported() && !st.hud.panel && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
   }
 
   /** Opens the mic by itself after `ms`, unless the learner has meanwhile started an attempt
@@ -149,7 +156,7 @@ export class Session {
     this.autoTimer = setTimeout(() => {
       this.autoTimer = null;
       const c = useStore.getState().conv;
-      if (this.alive && c.phase === "you" && !useStore.getState().hud.panel && !c.typing && !c.speechChoices?.length && !this.speech) this.listen();
+      if (this.alive && c.phase === "you" && !useStore.getState().hud.panel && !c.typing && !c.speechChoices?.length && !this.speech && document.visibilityState === "visible") this.listen();
     }, ms);
   }
 
@@ -169,9 +176,9 @@ export class Session {
     if (audioDiagnosticsPaused()) return;
     if (!this.alive || !speechSupported()) return;
     const st = useStore.getState();
-    if (st.conv.phase !== "you") return;
+    if (st.conv.phase !== "you" || st.hud.panel || document.visibilityState !== "visible") return;
     this.stopListening();
-    st.setConv({ speechChoices: undefined });
+    st.setConv({ speechChoices: undefined, typing: false });
     audio.stop(); // sample/replay audio must release the speaker before opening the microphone
     audio.sfx("listen");
     const attempt = createSpeechAttempt({
@@ -270,7 +277,7 @@ export class Session {
     else if (!out.understood) {
       // first miss: no NPC reaction, just let the learner try again (or type)
       useStore.getState().setConv({ phase: "you" });
-      if (useStore.getState().settings.autoListen && speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
+      if (speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
     } else this.yourTurn();
   }
 
@@ -425,6 +432,9 @@ export class Session {
   private finish(leave = false) {
     if (!this.alive) return;
     this.stopListening();
+    this.unbindListening?.();
+    this.unbindListening = null;
+    document.removeEventListener("visibilitychange", this.onVisibility);
     useStore.getState().setConv({ phase: "ended" });
     if (!leave) return;
     this.alive = false;

@@ -24,8 +24,10 @@ collection are enabled without that exact flag.
 5. Download the report. It stays on the device until the user chooses to share it.
    Closing the panel stops diagnostic playback. Resume the microphone manually.
 
-An additional typed-only run, with automatic listening disabled, distinguishes a
-capture-triggered issue from ordinary playback. If one method changes the route
+For a typed-only comparison, switch to typing with the keyboard button while
+the first NPC turn is still playing, and keep typing enabled. This prevents
+automatic capture and distinguishes a capture-triggered issue from ordinary
+playback. There is no separate manual-only listening setting. If one method changes the route
 and repairs the other, repeat in a fresh browser session with B played before A.
 Record whether the quiet voice seems to come from the earpiece or main speaker;
 browser properties cannot establish that physical route.

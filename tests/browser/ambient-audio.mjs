@@ -161,7 +161,7 @@ for (const [name, engine] of [
                 bottom: "#264653",
               },
             },
-            settings: { play: "town", autoListen: false, quality: "low", v: 4 },
+            settings: { play: "town", quality: "low", v: 5 },
             place: { zone: "town", x: 0, z: 0, rot: 0 },
             sits: {},
             phrases: {},
