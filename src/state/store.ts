@@ -14,7 +14,6 @@ export interface Settings {
   ipa: boolean;
   suggestions: boolean;
   hintsOpen: boolean;
-  autoListen: boolean;
   confirmSpeech: boolean;
   slowVoice: boolean;
   volume: number;
@@ -47,7 +46,7 @@ function defaultPlayMode(): PlayMode {
 
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  autoListen: true, confirmSpeech:false, slowVoice: false, volume: 0.9,
+  confirmSpeech:false, slowVoice: false, volume: 0.9,
   textSize: typeof window === "undefined" || window.innerWidth > 900 ? 1.15 : 1,
   quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),
@@ -167,18 +166,24 @@ const initial = loadProgress();
  *  v3: "Slėpti pagalbą" no longer stays saved (a hidden guide made later conversations look as if
  *  they had no suggestions); it hides the guide for one conversation (ConvUI.guideHidden).
  *  v4 (27 Oct 2026): speech is recognised by the browser's server recogniser, as in the course's flashcards: it
- *  hears accents much better. Recognition on the device became an opt-in (it used to be on whenever installed). */
-function migrateSettings(saved?: Record<string, any>): Settings {
-  const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number; guide?: boolean };
+ *  hears accents much better. Recognition on the device became an opt-in (it used to be on whenever installed).
+ *  v5: each learner turn starts listening automatically; the former manual-only preference is retired. */
+export function migrateSettings(saved?: Record<string, any>): Settings {
+  const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number; guide?: boolean; autoListen?: unknown };
   if ((s.v ?? 1) < 2) { s.ltNatural = false; s.suggestions = false; s.v = 2; }
   if ((s.v ?? 1) < 3) { delete s.guide; s.v = 3; }
   if ((s.v ?? 1) < 4) { s.onDevice = false; s.v = 4; }
+  delete s.autoListen;
+  if ((s.v ?? 1) < 5) s.v = 5;
   return s;
 }
 
+const initialSettings = migrateSettings(initial.settings);
+if (initial.settings) initial.settings = initialSettings;
+
 export const useStore = create<Store>((set, get) => ({
   screen: "loading",
-  settings: migrateSettings(initial.settings),
+  settings: initialSettings,
   progress: initial,
   conv: EMPTY_CONV,
   hud: {
@@ -189,7 +194,8 @@ export const useStore = create<Store>((set, get) => ({
   loadingText: "",
   setScreen: (screen) => set({ screen }),
   setSettings: (p) => {
-    const settings = { ...get().settings, ...p };
+    const settings = { ...get().settings, ...p } as Settings & { autoListen?: unknown };
+    delete settings.autoListen;
     set({ settings });
     get().updateProgress((pr) => { pr.settings = settings; });
   },

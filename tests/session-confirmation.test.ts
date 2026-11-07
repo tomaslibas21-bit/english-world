@@ -16,13 +16,18 @@ vi.mock("../src/convo/speech", async (importOriginal) => ({
 let session: Session;
 beforeEach(async () => {
   vi.useFakeTimers();
-  vi.stubGlobal("document", { visibilityState: "visible" });
+  vi.stubGlobal("document", Object.assign(new EventTarget(), { visibilityState: "visible" }));
   vi.mocked(audio.play).mockResolvedValue(true);
-  useStore.setState({ settings: { ...DEFAULT_SETTINGS, autoListen: false }, progress: emptyProgress() });
+  vi.spyOn(speech, "createSpeechAttempt").mockImplementation(options => ({
+    start: () => options.onUpdate({ status: "listening", heard: "" }),
+    stop() {}, finish() {}, dispose() {}, running: true,
+  }));
+  useStore.setState({ settings: { ...DEFAULT_SETTINGS }, progress: emptyProgress() });
   session = new Session("s35-gym", { npcTalk() {}, onEvent() {}, onEnd() {} });
   const begin = session.begin();
   await vi.runAllTimersAsync();
   await begin;
+  session.stopListening();
 });
 afterEach(() => {
   session.close();
@@ -57,10 +62,13 @@ describe("speech confirmations belong to the learner's current turn", () => {
     await vi.runAllTimersAsync();
     expect(answers()).toHaveLength(1);
     expect(useStore.getState().conv.phase).toBe("you");
+    expect(attempts).toHaveLength(3); // the next learner turn starts its own microphone
+    const currentMic = useStore.getState().conv.mic;
+    expect(currentMic.status).toBe("listening");
     attempts[1].onCommit("Friday, please.", []);
     attempts[1].onUpdate({ status: "nothing", heard: "" });
     expect(answers()).toHaveLength(1);
-    expect(useStore.getState().conv.mic.status).toBe("off");
+    expect(useStore.getState().conv.mic).toEqual(currentMic);
   });
 
   it("keeps an affirmative answer affirmative when the learner chooses it", async () => {
@@ -117,7 +125,6 @@ describe("speech confirmations belong to the learner's current turn", () => {
 
   it("keeps a confirmation across replay instead of auto-listening over it", async () => {
     await offerChoices();
-    useStore.setState(s => ({ settings: { ...s.settings, autoListen: true } }));
     const listen = vi.spyOn(session, "listen").mockImplementation(() => {});
     session.repeatLast(false);
     await vi.runAllTimersAsync();

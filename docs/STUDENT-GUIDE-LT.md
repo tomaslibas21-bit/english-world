@@ -20,7 +20,8 @@
 
 - **Viršuje** – užduočių sąrašas: ką reikia padaryti šiame pokalbyje. Atlikti žingsniai pažymimi ✓.
 - **„👉“** – ką daryti dabar. Po juo – keli pavyzdžiai, ką galima pasakyti. **🔊** juos perskaito.
-- **🎤** (arba tarpo klavišas) – kalbėk angliškai. Gali daryti pauzes, žaidimas palauks.
+- Pašnekovui baigus kalbėti, **mikrofonas įsijungia automatiškai** – kalbėk angliškai. Gali daryti pauzes, žaidimas palauks.
+- **🎤** (arba tarpo klavišas) – bandyti dar kartą arba baigti savo atsakymą.
 - **⌨️** – jei nori, gali rašyti.
 - **LT** – vertimas po kiekvienu žodžiu, **IPA** – tarimas.
 - **↺** – pradėti pokalbį iš naujo, **☰** – visos situacijos.
