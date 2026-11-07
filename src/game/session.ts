@@ -2,6 +2,7 @@
 // turn (speech or typing), sends answers to the dialogue engine and records progress.
 import { Conversation, type TurnOut } from "../convo/dialogue";
 import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/speech";
+import { audioDiagnosticsPaused } from "../convo/audioDiagnostics";
 import { polarityChoices, bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
 import { NPCS } from "../content/npcs";
@@ -165,6 +166,7 @@ export class Session {
 
   listen() {
     this.cancelAutoListen();
+    if (audioDiagnosticsPaused()) return;
     if (!this.alive || !speechSupported()) return;
     const st = useStore.getState();
     if (st.conv.phase !== "you") return;
@@ -172,17 +174,21 @@ export class Session {
     st.setConv({ speechChoices: undefined });
     audio.stop(); // sample/replay audio must release the speaker before opening the microphone
     audio.sfx("listen");
-    this.speech = createSpeechAttempt({
+    const attempt = createSpeechAttempt({
       evaluate: (t) => this.conv.nlu.probe(t, this.conv.expectedIntents()),
       phrases: this.phrases(),
       preferLocal: st.settings.onDevice,
       onUpdate: (s) => {
+        if (!this.alive || this.speech !== attempt) return;
         const map: Record<string, any> = { idle: "off", starting: "starting", listening: "listening", reconnecting: "reconnecting", denied: "denied", error: "error", nothing: "nothing" };
         useStore.getState().setConv({ mic: { status: map[s.status], heard: s.heard, error: s.error } });
       },
-      onCommit: (text, alts) => { this.submit(text, alts, "voice"); },
+      onCommit: (text, alts) => {
+        if (this.alive && this.speech === attempt) void this.submit(text, alts, "voice");
+      },
     });
-    this.speech.start();
+    this.speech = attempt;
+    attempt.start();
   }
 
   /** The mic button (or space) while listening: hand over what was heard so far, if anything, else just stop. */

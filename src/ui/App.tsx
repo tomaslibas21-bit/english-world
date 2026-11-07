@@ -12,6 +12,7 @@ import { LightPlay } from "./LightHome";
 import { takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { audio } from "../game/audio";
+import { AudioDiagnostics } from "./AudioDiagnostics";
 
 export function App() {
   const screen = useStore((s) => s.screen);
@@ -21,8 +22,8 @@ export function App() {
   useEffect(() => { document.documentElement.style.setProperty("--scale", String(textSize)); }, [textSize]);
   useEffect(() => audio.bindGestures(), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
-  if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts /></>;
-  return mode === "light" ? <LightPlay /> : <Play />;
+  if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts /><AudioDiagnostics /></>;
+  return <>{mode === "light" ? <LightPlay /> : <Play />}<AudioDiagnostics /></>;
   void screen;
 }
 
