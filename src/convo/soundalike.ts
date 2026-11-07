@@ -53,7 +53,7 @@ const HEARD_AS: Record<string, string[]> = {
   // A pronunciation of a label can only suggest the item that actually lists that label.
   chianti: ["kee an tee", "kianti"],
   merlot: ["mer low", "mer lo", "merloh"],
-  "pinot noir": ["pino nwar", "pee no nwar"],
+  "pinot noir": ["pino nwar"],
   "pinot grigio": ["pino grigio", "peeno grigio"],
   chardonnay: ["shar doh nay", "shardonay"],
   "sauvignon blanc": ["sovinyon blonk", "sovin yon blanc"],
