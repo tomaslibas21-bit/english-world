@@ -139,8 +139,8 @@ export class AudioSystem {
     if (this.ctx && this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
     if (this.state === "blocked") { this.retry(); return; }
     if (this.unlocked || (this.clip && !this.clip.done)) return;
+    if (!playbackRoute()) return;
     const a = this.media();
-    playbackRoute();
     a.src = SILENCE;
     a.volume = this.volume;
     void a.play().then(() => {
@@ -284,6 +284,12 @@ export class AudioSystem {
         const run = ++playAttempt;
         clearTimeout(timer);
         this.setState("loading");
+        // Initialization/downloads and the phone's capture service are asynchronous. Claim
+        // playback at the actual play call as well, without making a tap retry asynchronous.
+        if (!playbackRoute(true)) {
+          void waitForMicrophone().then(() => { if (current() && run === playAttempt) start(); });
+          return;
+        }
         timer = setTimeout(failed, 10000);
         // This call stays synchronous for a retry from a user gesture.
         void a.play().catch((error) => {
@@ -307,6 +313,8 @@ export class AudioSystem {
       a.onpause = () => { if (started && !a.ended) waiting("blocked"); };
       a.onplaying = () => {
         if (!current()) return;
+        // The media may only become audible after a delayed download or native route change.
+        if (!started) playbackRoute(true);
         started = true;
         this.unlocked = true;
         this.setState("playing");
@@ -373,10 +381,16 @@ export class AudioSystem {
   private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean }) {
     this.clip = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    request.cleanup = () => { clearTimeout(timer); };
+    let playAttempt = 0;
+    request.cleanup = () => { playAttempt++; clearTimeout(timer); };
     request.fallback = undefined;
     const start = () => {
       if (request.done) return;
+      const run = ++playAttempt;
+      if (!playbackRoute(true)) {
+        void waitForMicrophone().then(() => { if (!request.done && run === playAttempt) start(); });
+        return;
+      }
       const vs = typeof navigator !== "undefined" && navigator.onLine ? this.fallbackVoices : this.fallbackVoices.filter((v) => v.localService);
       if (typeof speechSynthesis === "undefined" || (!navigator.onLine && !vs.length)) {
         this.setState("unavailable");
@@ -392,7 +406,7 @@ export class AudioSystem {
       const waiting = () => { clearTimeout(timer); if (!request.done) this.setState("blocked"); };
       u.onend = () => request.finish(true);
       u.onerror = waiting;
-      request.cleanup = () => { clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); };
+      request.cleanup = () => { playAttempt++; clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); };
       this.setState("playing");
       speechSynthesis.speak(u);
       timer = setTimeout(waiting, 1500 + text.length * 120);

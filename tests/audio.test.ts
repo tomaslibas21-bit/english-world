@@ -201,6 +201,54 @@ describe("recorded voice reliability", () => {
 
 
 describe("mobile media ownership", () => {
+  it("restores speaker routing for repeated answers and delayed media starts without changing gain or replaying", async () => {
+    let type = "auto", nativeRoute = "auto", resets = 0;
+    const routesAtPlay: string[] = [];
+    vi.stubGlobal("navigator", { onLine: true, audioSession: {
+      get type() { return type; },
+      set type(value: string) { if (type !== value) { nativeRoute = value; resets++; } type = value; },
+    } });
+    class RoutedAudio extends FakeAudio {
+      play = vi.fn(() => { routesAtPlay.push(nativeRoute); return Promise.resolve(); });
+    }
+    vi.stubGlobal("Audio", RoutedAudio);
+    for (let i = 0; i < 4; i++) {
+      const mic = captureAudio(); mic.stopping();
+      const done = audio.play(voice, 1, line); await flush();
+      expect(routesAtPlay).toHaveLength(i);
+      mic.ended();
+      nativeRoute = "quiet-capture"; // delayed native cleanup after our release callback
+      await flush();
+      const player = players[0];
+      expect(routesAtPlay.at(-1)).toBe("playback");
+      expect(player.volume).toBe(0.9);
+      player.currentTime = 0.2;
+      nativeRoute = "quiet-capture"; // a slow media start completes after another service update
+      player.onplaying?.();
+      expect(nativeRoute).toBe("playback");
+      expect(player.currentTime).toBe(0.2);
+      expect(player.play).toHaveBeenCalledTimes(i + 1);
+      const atStart = resets;
+      player.onplaying?.(); // buffering/resume must not repeatedly reset the category
+      expect(resets).toBe(atStart);
+      player.onended?.(); expect(await done).toBe(true);
+    }
+    expect(players).toHaveLength(1);
+    expect(synth.speak).not.toHaveBeenCalled();
+  });
+
+  it("waits for a newer microphone opened while initialization was pending", async () => {
+    let release!: (r: Response) => void;
+    fetcher.mockImplementation((url: string) => url.endsWith("manifest.json") ? new Promise((r) => { release = r; }) : Promise.resolve(Response.json({})));
+    const done = audio.play(voice, 1, line); await flush();
+    const mic = captureAudio();
+    release(Response.json({ [key]: 1 })); await flush();
+    expect(players.every((player) => !player.play.mock.calls.length)).toBe(true);
+    mic.ended(); await flush();
+    expect(players[0].play).toHaveBeenCalledOnce();
+    players[0].onended?.(); expect(await done).toBe(true);
+  });
+
   it("cancels a queued reply while the microphone is releasing, without late playback", async () => {
     const mic = captureAudio(); mic.stopping();
     const done = audio.play(voice, 1, line);
