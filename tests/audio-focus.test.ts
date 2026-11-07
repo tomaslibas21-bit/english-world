@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { captureAudio, waitForMicrophone, CAPTURE_RELEASE_TIMEOUT } from "../src/convo/audioFocus";
+import { captureAudio, playbackRoute, waitForMicrophone, CAPTURE_RELEASE_TIMEOUT } from "../src/convo/audioFocus";
 import { createSpeechAttempt, type SpeechRecognizer } from "../src/convo/speech";
 
 let routes: string[];
 beforeEach(() => {
   vi.useFakeTimers();
   routes = [];
-  vi.stubGlobal("navigator", { audioSession: { set type(value: string) { routes.push(value); } } });
+  let type = "auto";
+  vi.stubGlobal("navigator", { audioSession: { get type() { return type; }, set type(value: string) { type = value; routes.push(value); } } });
 });
 afterEach(async () => {
   await vi.runAllTimersAsync();
@@ -55,5 +56,39 @@ describe("microphone to speaker handoff", () => {
     await vi.advanceTimersByTimeAsync(1); await next;
     expect(ready).toBe(true);
     mic.ended(); // late end is harmless
+  });
+
+  it("repairs a stale native capture route even when the DOM override still says playback", () => {
+    let type = "auto", nativeRoute = "auto";
+    vi.stubGlobal("navigator", { audioSession: {
+      get type() { return type; },
+      set type(value: string) { if (type !== value) nativeRoute = value; type = value; },
+    } });
+    const mic = captureAudio(); mic.ended();
+    expect(type).toBe("playback");
+    nativeRoute = "quiet-capture"; // the native service finishes changing routes after onend
+    playbackRoute();
+    expect(nativeRoute).toBe("quiet-capture"); // an unchanged override is a WebKit no-op
+    expect(playbackRoute(true)).toBe(true);
+    expect(nativeRoute).toBe("playback");
+  });
+
+  it("handles a late real end after timeout once, without taking audio from a newer mic", async () => {
+    const old = captureAudio(); old.stopping();
+    await vi.advanceTimersByTimeAsync(CAPTURE_RELEASE_TIMEOUT);
+    const before = routes.length;
+    old.ended();
+    expect(routes.slice(before)).toEqual(["auto", "playback"]);
+    old.ended(); expect(routes).toHaveLength(before + 2);
+
+    const delayed = captureAudio(); delayed.stopping();
+    await vi.advanceTimersByTimeAsync(CAPTURE_RELEASE_TIMEOUT);
+    const current = captureAudio();
+    const duringCapture = routes.length;
+    delayed.ended();
+    expect(playbackRoute(true)).toBe(false);
+    expect(routes).toHaveLength(duringCapture);
+    current.ended();
+    expect(routes.at(-1)).toBe("playback");
   });
 });
