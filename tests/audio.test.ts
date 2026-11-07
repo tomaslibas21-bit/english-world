@@ -15,12 +15,16 @@ class FakeAudio {
   playbackRate = 1;
   currentTime = 0;
   ended = false;
-  pause = vi.fn();
+  paused = true;
+  pause = vi.fn(() => { this.paused = true; });
   load = vi.fn();
-  play = vi.fn(() => Promise.resolve());
+  play = vi.fn(() => { this.paused = false; this.ended = false; return Promise.resolve(); });
   setAttribute = vi.fn();
   removeAttribute = vi.fn();
   constructor(public src = "") { players.push(this); }
+  emitPlaying() { this.paused = false; this.ended = false; this.onplaying?.(); }
+  emitPause() { this.paused = true; this.onpause?.(); }
+  emitEnded() { this.paused = true; this.ended = true; this.onended?.(); }
 }
 let audio: AudioSystem;
 let fetcher: ReturnType<typeof vi.fn>;
@@ -54,7 +58,7 @@ describe("recorded voice reliability", () => {
     fetcher.mockImplementation(async (url: string) => url.endsWith("manifest.json") ? Response.json({ [key]: 1 }) : Response.json({}));
     audio.retry(); await flush();
     expect(players).toHaveLength(1);
-    players[0].onended?.(); await done;
+    players[0].emitEnded(); await done;
     expect(settled).toBe(true);
     expect(synth.speak).not.toHaveBeenCalled();
   });
@@ -66,7 +70,7 @@ describe("recorded voice reliability", () => {
       await flush();
       const player = players.at(-1)!;
       expect(player).toBeDefined();
-      player.onended?.();
+      player.emitEnded();
       await done;
     }
     expect(players).toHaveLength(1);
@@ -86,7 +90,7 @@ describe("recorded voice reliability", () => {
     release(Response.json({ [key]: 1 }));
     await init; await flush();
     expect(players).toHaveLength(1);
-    players[0].onended?.(); await done;
+    players[0].emitEnded(); await done;
   });
 
   it("retries a failed manifest instead of permanently choosing browser voices", async () => {
@@ -103,7 +107,7 @@ describe("recorded voice reliability", () => {
     expect(audio.ready).toBe(true);
     expect(players).toHaveLength(1);
     expect(synth.speak).not.toHaveBeenCalled();
-    players[0].onended?.(); await done;
+    players[0].emitEnded(); await done;
   });
 
   it("does not count download time as spoken time or let a stopped line play later", async () => {
@@ -112,7 +116,7 @@ describe("recorded voice reliability", () => {
     await flush();
     await vi.advanceTimersByTimeAsync(4000); // longer than the old 1-second clip + 1.5-second timer
     expect(settled).toBe(false);
-    players[0].onplaying?.();
+    players[0].emitPlaying();
     await vi.advanceTimersByTimeAsync(1500);
     expect(settled).toBe(false);
     audio.stop(); await done;
@@ -159,7 +163,7 @@ describe("recorded voice reliability", () => {
 
   it("never switches to browser speech halfway through a line", async () => {
     const done = audio.play(voice, 1, line); await flush();
-    players[0].onplaying?.();
+    players[0].emitPlaying();
     players[0].onerror?.();
     expect(audio.getState()).toBe("unavailable");
     audio.stop(); expect(await done).toBe(false);
@@ -173,12 +177,12 @@ describe("recorded voice reliability", () => {
     vi.stubGlobal("navigator", { onLine: false });
     let done = audio.play(voice, 1, line); await flush();
     expect(players[0].src).toMatch(/^data:audio\/mpeg;base64,/);
-    players[0].onplaying?.(); players[0].onended?.(); await done;
+    players[0].emitPlaying(); players[0].emitEnded(); await done;
     expect(fetcher).toHaveBeenCalledTimes(downloads);
     audio.repairVersions[key] = "new-recording";
     done = audio.play(voice, 1, line); await flush();
     expect(players[0].src).toContain("v=new-recordin");
-    players[0].onended?.(); await done;
+    players[0].emitEnded(); await done;
   });
 
   it("does not treat playback permission as an offline failure", async () => {
@@ -193,7 +197,7 @@ describe("recorded voice reliability", () => {
     expect(synth.speak).not.toHaveBeenCalled();
     players[0].play.mockImplementation(() => Promise.resolve());
     audio.retry();
-    players[0].onplaying?.(); players[0].onended?.();
+    players[0].emitPlaying(); players[0].emitEnded();
     await done;
     expect(settled).toBe(true);
   });
@@ -224,14 +228,14 @@ describe("mobile media ownership", () => {
       expect(player.volume).toBe(0.9);
       player.currentTime = 0.2;
       nativeRoute = "quiet-capture"; // a slow media start completes after another service update
-      player.onplaying?.();
+      player.emitPlaying();
       expect(nativeRoute).toBe("playback");
       expect(player.currentTime).toBe(0.2);
       expect(player.play).toHaveBeenCalledTimes(i + 1);
       const atStart = resets;
-      player.onplaying?.(); // buffering/resume must not repeatedly reset the category
+      player.emitPlaying(); // buffering/resume must not repeatedly reset the category
       expect(resets).toBe(atStart);
-      player.onended?.(); expect(await done).toBe(true);
+      player.emitEnded(); expect(await done).toBe(true);
     }
     expect(players).toHaveLength(1);
     expect(synth.speak).not.toHaveBeenCalled();
@@ -246,7 +250,7 @@ describe("mobile media ownership", () => {
     expect(players.every((player) => !player.play.mock.calls.length)).toBe(true);
     mic.ended(); await flush();
     expect(players[0].play).toHaveBeenCalledOnce();
-    players[0].onended?.(); expect(await done).toBe(true);
+    players[0].emitEnded(); expect(await done).toBe(true);
   });
 
   it("cancels a queued reply while the microphone is releasing, without late playback", async () => {
@@ -279,8 +283,8 @@ describe("mobile media ownership", () => {
       const done = audio.play(voice, 1, line);
       await flush();
       expect(audio.getState()).not.toBe("blocked");
-      players[0].onplaying?.();
-      players[0].onended?.();
+      players[0].emitPlaying();
+      players[0].emitEnded();
       expect(await done).toBe(true);
     }
     expect(players).toHaveLength(1);
@@ -297,24 +301,78 @@ describe("mobile media ownership", () => {
     const rejectOld = reject;
     const next = audio.play(voice, 1, line); await flush();
     expect(await old).toBe(false);
-    players[0].onplaying?.();
+    players[0].emitPlaying();
     rejectOld(new DOMException("Old source", "AbortError")); await flush();
     expect(audio.getState()).toBe("playing");
-    players[0].onended?.(); expect(await next).toBe(true);
+    players[0].emitEnded(); expect(await next).toBe(true);
+  });
+
+  it("ignores a queued pause after resume while retaining genuine pause recovery", async () => {
+    let settled = false;
+    const done = audio.play(voice, 1, line).then((completed) => { settled = true; return completed; });
+    await flush();
+    const player = players[0];
+    player.emitPlaying();
+    player.currentTime = 0.4;
+    // pause() queues an event; an immediate user retry resumes before it dispatches.
+    player.pause();
+    audio.retry();
+    expect(player.paused).toBe(false);
+    player.onpause?.();
+    expect(audio.getState()).toBe("loading");
+    expect(settled).toBe(false);
+    expect(player.currentTime).toBe(0.4);
+    player.emitPlaying();
+    player.emitPause();
+    expect(audio.getState()).toBe("blocked");
+    expect(settled).toBe(false);
+    audio.retry();
+    player.emitPlaying();
+    player.emitEnded();
+    expect(await done).toBe(true);
+    expect(players).toHaveLength(1);
+  });
+
+  it("does not complete a replacement recording on an ended event while it is still playing", async () => {
+    const secondLine = "The next sentence.";
+    audio.ready = true;
+    audio.manifest = { [key]: 1, [audioKey(voice, 1, secondLine)]: 1 };
+    const old = audio.play(voice, 1, line);
+    await flush();
+    const player = players[0];
+    player.emitPlaying();
+    let settled = false;
+    const next = audio.play(voice, 1, secondLine).then((completed) => { settled = true; return completed; });
+    await flush();
+    expect(await old).toBe(false);
+    player.emitPlaying();
+    player.currentTime = 0.2;
+    player.pause.mockClear();
+    // Dispatch reaches the element's new handler, but its current source has not ended.
+    player.onended?.();
+    await flush();
+    expect(settled).toBe(false);
+    expect(audio.getState()).toBe("playing");
+    expect(player.pause).not.toHaveBeenCalled();
+    expect(player.currentTime).toBe(0.2);
+    player.emitEnded();
+    expect(await next).toBe(true);
+    expect(audio.getState()).toBe("idle");
+    expect(players).toHaveLength(1);
   });
 
   it("keeps a paused or stalled recording pending until resumed instead of opening the mic", async () => {
     let settled = false;
     const done = audio.play(voice, 1, line).then(() => { settled = true; });
-    await flush(); players[0].onplaying?.();
+    await flush(); players[0].emitPlaying();
     players[0].currentTime = 0.4;
-    players[0].onpause?.();
+    players[0].emitPause();
     await vi.advanceTimersByTimeAsync(30000);
     expect(audio.getState()).toBe("blocked");
     expect(settled).toBe(false);
     audio.retry();
     expect(players[0].currentTime).toBe(0.4);
-    players[0].onplaying?.(); players[0].onended?.(); await done;
+    players[0].emitPlaying(); players[0].emitEnded(); await done;
     expect(settled).toBe(true);
   });
 });

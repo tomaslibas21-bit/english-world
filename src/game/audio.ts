@@ -348,12 +348,14 @@ export class AudioSystem {
         this.speakFallback(request, text, opts);
       };
       a.onended = () => {
-        if (!current()) return;
+        // A queued event from an earlier source can reach this reused element.
+        // Only its current playback state can confirm that this line has ended.
+        if (!current() || !a.ended) return;
         cleanup();
         request.finish(true);
       };
       a.onerror = failed;
-      a.onpause = () => { if (started && !a.ended) waiting("blocked"); };
+      a.onpause = () => { if (current() && started && a.paused && !a.ended) waiting("blocked"); };
       a.onplaying = () => {
         if (!current()) return;
         // The media may only become audible after a delayed download or native route change.
