@@ -24,6 +24,7 @@ export class LightGame implements GameApi {
   private disposed = false;
 
   init() {
+    audio.stopAmbience();
     this.loading = audio.init().then(() => {
       this.loaded = true;
       audio.volume = useStore.getState().settings.volume;
@@ -36,6 +37,7 @@ export class LightGame implements GameApi {
     this.disposed = true;
     window.removeEventListener("keydown", this.onKeyDown);
     this.session?.close();
+    audio.stopAmbience();
     audio.stop();
   }
 

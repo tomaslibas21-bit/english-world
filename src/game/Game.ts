@@ -136,6 +136,11 @@ export class Game implements GameApi {
   private tmpV = new THREE.Vector3();
   private disposed = false;
   private ambient!: Ambient;
+  private unbindAmbience: (() => void) | null = null;
+  private ambienceAllowed = () => {
+    const st = useStore.getState();
+    return !this.disposed && !document.hidden && !st.conv.active && !st.hud.panel;
+  };
   /** Walking under the player's own control (movement.ts): the direction pressed, the turn and the speed, a hop. */
   private steer = new Steer();
   private gait = new Gait();
@@ -210,7 +215,9 @@ export class Game implements GameApi {
     this.zones.set("town", { id: "town", group: this.town.group, colliders: this.town.colliders, nav });
     // pigeons round the fountain (in the town's group, so they are hidden indoors); their wings when they take off
     this.pigeons = new Pigeons(FOUNTAIN.x, FOUNTAIN.z, 4.6, 9.5);
-    this.pigeons.onTakeOff = (n) => audio.flutter(Math.min(1, 0.5 + n * 0.15));
+    this.pigeons.onTakeOff = (n) => {
+      if (this.ambienceAllowed()) audio.flutter(Math.min(1, 0.5 + n * 0.15));
+    };
     this.town.group.add(this.pigeons.group);
     // passers-by walk between shop doors, the square, the beach and the bus stop
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
@@ -227,7 +234,11 @@ export class Game implements GameApi {
     this.player.fidgets = false;
     this.scene.add(this.player.root);
     await audio.init();
+    if (this.disposed) return;
     audio.volume = st.settings.volume;
+    this.unbindAmbience = useStore.subscribe(() => {
+      if (!this.ambienceAllowed() || useStore.getState().settings.volume <= 0) audio.stopAmbience();
+    });
     // start where the player left off, or in the airport on the very first visit
     const place = st.progress.place;
     if (place && (place.zone === "town" || getInterior(place.zone))) this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
@@ -1119,16 +1130,14 @@ export class Game implements GameApi {
     if (this.hudT <= 0) {
       this.hudT = 0.12;
       this.updateHud();
-      // the town's sound: the sea louder towards the beach, gulls near the harbour, the cars' hum; quiet indoors and
-      // while someone is talking
+      // Brief gull/bird/cup sounds only while the town is visible and no conversation or panel is open.
       const px = this.player.root.position.x, pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
       const out = !this.zone.interior;
-      // the fountain within about 18 m; birds in the park, and a little everywhere else outdoors
-      const fountain = out ? THREE.MathUtils.clamp(1 - Math.hypot(px - FOUNTAIN.x, pz - FOUNTAIN.z) / 18, 0, 1) : 0;
       const inPark = px > PARK.x1 - 6 && px < PARK.x2 + 6 && pz > PARK.z1 - 6 && pz < PARK.z2 + 6;
-      const room = this.zone.interior ? (["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id) ? "cafe" : "quiet") : null;
-      audio.ambience(out && !talking && !st.hud.panel, sea, out ? this.ambient.carNoise(px, pz) : 0, sea > 0.4,
-        { fountain, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, room, talking });
+      const cafe = this.zone.interior && ["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id);
+      audio.ambience(this.ambienceAllowed(), {
+        sea, gulls: out && sea > 0.4, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, cafe,
+      });
     }
     // "walking" for the HUD (the task card folds away on a phone while you walk): after 0.4 s on the move, until
     // 1.2 s standing still
@@ -1461,6 +1470,9 @@ export class Game implements GameApi {
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("blur", this.onBlur);
+    this.unbindAmbience?.();
+    this.unbindAmbience = null;
+    audio.stopAmbience();
     audio.stop();
     for (const n of this.npcs) n.tag.remove();
     this.npcs = [];

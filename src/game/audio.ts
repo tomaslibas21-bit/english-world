@@ -127,11 +127,18 @@ export class AudioSystem {
   /** Install for both game modes, including their start screen and linked situations. */
   bindGestures() {
     const activate = () => this.unlock();
+    const hide = () => { if (document.hidden) this.stopAmbience(); };
+    const leave = () => this.stopAmbience();
     document.addEventListener("click", activate, true);
     document.addEventListener("keydown", activate, true);
+    document.addEventListener("visibilitychange", hide);
+    window.addEventListener("pagehide", leave);
     return () => {
       document.removeEventListener("click", activate, true);
       document.removeEventListener("keydown", activate, true);
+      document.removeEventListener("visibilitychange", hide);
+      window.removeEventListener("pagehide", leave);
+      this.stopAmbience();
     };
   }
 
@@ -430,60 +437,51 @@ export class AudioSystem {
   }
 
   private noise: AudioBuffer | null = null;
-  /** The town's sound around the player (see ambience). */
-  private amb: { sea: GainNode; traffic: GainNode; fountain: GainNode; room: GainNode; murmur: GainNode; nextGull: number; nextBird: number; nextClink: number } | null = null;
+  private amb: { nextGull: number; nextBird: number; nextClink: number } | null = null;
+  private ambientSounds = new Set<() => void>();
 
-  /** The town's own sound, made on the spot (no files) and quiet: the sea, louder near the beach and swelling slowly;
-   *  gulls now and then by the harbour; a low hum of passing cars. `on` false (indoors, in a conversation) fades it out.
-   *  Called a few times a second with the levels for where the player is (0–1). */
-  ambience(on: boolean, sea: number, traffic: number, gulls: boolean, more: { fountain?: number; birds?: number; room?: "cafe" | "quiet" | null; talking?: boolean } = {}) {
+  /** Environmental sounds belong to the visible town, never the conversation or a background tab. */
+  stopAmbience() {
+    for (const stop of this.ambientSounds) stop();
+    this.amb = null;
+  }
+
+  private trackAmbient(sources: AudioScheduledSourceNode[], nodes: AudioNode[]) {
+    const stop = () => {
+      for (const source of sources) {
+        source.onended = null;
+        try { source.stop(); } catch { /* already ended */ }
+      }
+      for (const node of nodes) node.disconnect();
+      this.ambientSounds.delete(stop);
+    };
+    this.ambientSounds.add(stop);
+    sources[0].onended = stop;
+  }
+
+  /** Brief, recognizable town sounds only. Continuous filtered-noise beds sounded like unwanted hiss. */
+  ambience(on: boolean, { sea = 0, gulls = false, birds = 0, cafe = false }: { sea?: number; gulls?: boolean; birds?: number; cafe?: boolean } = {}) {
     const ctx = this.ctx;
-    if (!ctx || ctx.state !== "running") return; // only once a click or key has started the sound
-    if (!this.amb) {
-      const loop = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = loop.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      const chain = (freq: number, type: BiquadFilterType = "lowpass", q = 0.7) => {
-        const src = ctx.createBufferSource(); src.buffer = loop; src.loop = true;
-        src.playbackRate.value = 0.9 + Math.random() * 0.2; // the loops drift apart, so no two sound alike
-        const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
-        const g = ctx.createGain(); g.gain.value = 0;
-        src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
-        return g;
-      };
-      const t0 = ctx.currentTime;
-      this.amb = {
-        sea: chain(520), traffic: chain(170), fountain: chain(3200, "bandpass", 0.5), room: chain(220), murmur: chain(650, "bandpass", 0.9),
-        nextGull: t0 + 4, nextBird: t0 + 2, nextClink: t0 + 3,
-      };
+    if (!on || document.hidden || this.volume <= 0 || !ctx || ctx.state !== "running") {
+      this.stopAmbience();
+      return;
     }
-    const now = ctx.currentTime, v = on ? this.volume : 0;
-    // the sea swells and draws back over about eight seconds
-    const swell = 0.62 + 0.38 * Math.sin(now * 0.78) * (0.75 + 0.25 * Math.sin(now * 0.21));
-    this.amb.sea.gain.setTargetAtTime(v * 0.06 * sea * swell, now, 0.25);
-    this.amb.traffic.gain.setTargetAtTime(v * 0.05 * traffic, now, 0.4);
-    if (on && gulls && now > this.amb.nextGull) {
+    const now = ctx.currentTime, v = this.volume;
+    this.amb ??= { nextGull: now + 4, nextBird: now + 2, nextClink: now + 3 };
+    if (gulls && now > this.amb.nextGull) {
       this.amb.nextGull = now + 6 + Math.random() * 9;
       const calls = 1 + Math.floor(Math.random() * 3);
       for (let k = 0; k < calls; k++) this.gull(now + k * 0.42, v * 0.035 * Math.max(0.4, sea));
     }
-    // the fountain's splashing, near the square
-    this.amb.fountain.gain.setTargetAtTime(v * 0.05 * (more.fountain ?? 0), now, 0.3);
     // birdsong among the trees: a few quick chirps now and then
-    const birds = more.birds ?? 0;
-    if (on && birds > 0.05 && now > this.amb.nextBird) {
+    if (birds > 0.05 && now > this.amb.nextBird) {
       this.amb.nextBird = now + (2.5 + Math.random() * 6) / Math.max(0.3, birds);
       const n = 2 + Math.floor(Math.random() * 4), top = 3200 + Math.random() * 1800;
       for (let k = 0; k < n; k++) this.chirp(now + k * (0.09 + Math.random() * 0.05), top * (0.92 + Math.random() * 0.16), v * 0.022 * birds);
     }
-    // indoors (`on` is false there): a café's murmur and a cup now and then, or a quiet room's hum; softer while
-    // someone talks, so the voice stays clear
-    const room = more.room ?? null, inside = this.volume * (more.talking ? 0.4 : 1);
-    const murmur = room === "cafe" ? 0.75 + 0.25 * Math.sin(now * 1.7) * Math.sin(now * 0.63 + 1) : 0;
-    this.amb.murmur.gain.setTargetAtTime(inside * 0.035 * murmur, now, 0.3);
-    this.amb.room.gain.setTargetAtTime(room ? inside * (room === "cafe" ? 0.012 : 0.02) : 0, now, 0.5);
-    if (room === "cafe" && now > this.amb.nextClink) {
+    if (cafe && now > this.amb.nextClink) {
       this.amb.nextClink = now + 3 + Math.random() * 6;
-      this.clink(now + Math.random() * 0.2, inside * 0.03);
+      this.clink(now + Math.random() * 0.2, v * 0.03);
     }
   }
 
@@ -499,6 +497,7 @@ export class AudioSystem {
     g.gain.linearRampToValueAtTime(vol, at + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, at + 0.08);
     o.connect(g); g.connect(ctx.destination);
+    this.trackAmbient([o], [o, g]);
     o.start(at); o.stop(at + 0.1);
   }
 
@@ -512,6 +511,7 @@ export class AudioSystem {
       g.gain.linearRampToValueAtTime(vol, at + dt + 0.003);
       g.gain.exponentialRampToValueAtTime(0.0001, at + dt + 0.25);
       o.connect(g); g.connect(ctx.destination);
+      this.trackAmbient([o], [o, g]);
       o.start(at + dt); o.stop(at + dt + 0.3);
     }
   }
@@ -530,6 +530,7 @@ export class AudioSystem {
       g.gain.linearRampToValueAtTime(this.volume * 0.06 * vol * (1 - k / 9), at + 0.008);
       g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
       src.connect(f); f.connect(g); g.connect(ctx.destination);
+      this.trackAmbient([src], [src, f, g]);
       src.start(at); src.stop(at + 0.07);
     }
   }
@@ -551,6 +552,7 @@ export class AudioSystem {
     g.gain.linearRampToValueAtTime(vol, at + 0.04);
     g.gain.exponentialRampToValueAtTime(0.0001, at + 0.38);
     o.connect(f); f.connect(g); g.connect(ctx.destination);
+    this.trackAmbient([o, wob], [o, wob, wg, f, g]);
     o.start(at); wob.start(at); o.stop(at + 0.42); wob.stop(at + 0.42);
   }
   /** A short burst of noise that fades out (footsteps, wingbeats). */
