@@ -3,6 +3,7 @@ import { Session } from "../src/game/session";
 import { audio } from "../src/game/audio";
 import { DEFAULT_SETTINGS, useStore } from "../src/state/store";
 import { emptyProgress } from "../src/state/progress";
+import * as speech from "../src/convo/speech";
 
 vi.mock("../src/game/audio", () => ({
   audio: { names: [], play: vi.fn().mockResolvedValue(true), prefetch: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
@@ -28,6 +29,7 @@ afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 const choices = ["I can tomorrow", "I can't tomorrow"];
@@ -36,6 +38,31 @@ async function offerChoices() { await session.submit(choices[0], [choices[1]], "
 async function finishSubmit(promise: Promise<void>) { await vi.runAllTimersAsync(); await promise; }
 
 describe("speech confirmations belong to the learner's current turn", () => {
+  it("ignores callbacks from a replaced recognizer and consumes a voice attempt only once", async () => {
+    const attempts: speech.SpeechOptions[] = [];
+    vi.spyOn(speech, "createSpeechAttempt").mockImplementation(options => {
+      attempts.push(options);
+      return {
+        start: () => options.onUpdate({ status: "listening", heard: "" }),
+        stop() {}, finish() {}, dispose() {}, running: true,
+      };
+    });
+    session.listen();
+    session.listen();
+    attempts[0].onUpdate({ status: "nothing", heard: "" });
+    attempts[0].onCommit("Friday, please.", []);
+    expect(useStore.getState().conv.mic.status).toBe("listening");
+    expect(answers()).toHaveLength(0);
+    attempts[1].onCommit("Friday, please.", []);
+    await vi.runAllTimersAsync();
+    expect(answers()).toHaveLength(1);
+    expect(useStore.getState().conv.phase).toBe("you");
+    attempts[1].onCommit("Friday, please.", []);
+    attempts[1].onUpdate({ status: "nothing", heard: "" });
+    expect(answers()).toHaveLength(1);
+    expect(useStore.getState().conv.mic.status).toBe("off");
+  });
+
   it("keeps an affirmative answer affirmative when the learner chooses it", async () => {
     await offerChoices();
     await finishSubmit(session.submit(choices[0], [], "voice", true));

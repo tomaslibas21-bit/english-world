@@ -2,7 +2,17 @@
 // or when the learner explicitly chooses it after a failed download. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
-import { playbackRoute, waitForMicrophone } from "../convo/audioFocus";
+import { microphoneHandoffState, playbackRoute, waitForMicrophone } from "../convo/audioFocus";
+import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
+
+export type DiagnosticPipeline = "html" | "buffer";
+export interface DiagnosticPlaybackState {
+  status: "empty" | "preparing" | "ready" | "playing" | "blocked" | "unavailable";
+  clipId: string | null;
+  volume: number;
+  pipeline: DiagnosticPipeline | null;
+  error?: string;
+}
 
 export type PlaybackState = "idle" | "loading" | "playing" | "blocked" | "unavailable";
 interface PlaybackRequest {
@@ -75,6 +85,18 @@ export class AudioSystem {
   /** Each clip's loudness: null while being worked out, empty when that failed. */
   private envelopes = new Map<string, Float32Array | null>();
   private decoder: BaseAudioContext | null = null;
+  private lastRecordingKey: string | null = null;
+  private diagnosticSelection: { key: string; source: string; buffer: AudioBuffer; volume: number } | null = null;
+  private diagnosticRun = 0;
+  private diagnosticCleanup: (() => void) | null = null;
+  private diagnosticListeners = new Set<() => void>();
+  private diagnosticState: DiagnosticPlaybackState = { status: "empty", clipId: null, volume: 0.9, pipeline: null };
+  getDiagnosticState = () => this.diagnosticState;
+  subscribeDiagnostics = (listener: () => void) => { this.diagnosticListeners.add(listener); return () => { this.diagnosticListeners.delete(listener); }; };
+  private setDiagnosticState(patch: Partial<DiagnosticPlaybackState>) {
+    this.diagnosticState = { ...this.diagnosticState, ...patch };
+    for (const listener of this.diagnosticListeners) listener();
+  }
 
   init(): Promise<void> {
     if (this.initializing) return this.initializing;
@@ -120,15 +142,24 @@ export class AudioSystem {
       this.player = new Audio();
       this.player.preload = "auto";
       this.player.setAttribute("playsinline", "");
+      if (audioDiagnosticsEnabled()) {
+        for (const name of ["loadstart", "loadedmetadata", "canplay", "play", "playing", "pause", "ended", "waiting", "stalled", "error", "volumechange", "ratechange"]) {
+          this.player.addEventListener?.(name, () => this.recordMediaDiagnostic(`media.${name}`));
+        }
+      }
     }
     return this.player;
   }
 
   /** Install for both game modes, including their start screen and linked situations. */
   bindGestures() {
-    const activate = () => this.unlock();
-    const hide = () => { if (document.hidden) this.stopAmbience(); };
-    const leave = () => this.stopAmbience();
+    // A diagnostic marker must not accidentally retry media or repair its route before it is sampled.
+    const activate = (event: Event) => {
+      if ((event.target as Element | null)?.closest?.("[data-audio-diagnostics]")) return;
+      this.unlock();
+    };
+    const hide = () => { if (document.hidden) { this.stopAmbience(); this.stopDiagnostic("hidden"); } };
+    const leave = () => { this.stopAmbience(); this.stopDiagnostic("pagehide"); };
     document.addEventListener("click", activate, true);
     document.addEventListener("keydown", activate, true);
     document.addEventListener("visibilitychange", hide);
@@ -139,6 +170,7 @@ export class AudioSystem {
       document.removeEventListener("visibilitychange", hide);
       window.removeEventListener("pagehide", leave);
       this.stopAmbience();
+      this.stopDiagnostic("unmount");
     };
   }
 
@@ -166,6 +198,7 @@ export class AudioSystem {
   /** True after playback finishes or the learner explicitly continues reading. Cancellation is false;
    *  denial keeps the same line pending. */
   play(voice: string, speed: number, text: string, opts: { slow?: boolean; male?: boolean } = {}): Promise<boolean> {
+    this.stopDiagnostic("normal-playback");
     this.stop();
     // nothing to say (a hint whose blank is still empty comes out as ".")
     if (!/[a-z0-9]/i.test(text)) return Promise.resolve(true);
@@ -188,10 +221,11 @@ export class AudioSystem {
         await Promise.all([this.init(), waitForMicrophone()]);
         if (request.done) return;
         // A missing manifest does not prove that this NPC has no recording.
-        if (!this.ready) { this.setState("unavailable"); return; }
+        if (!this.ready) { audioDiagnostic("recording.manifest-unavailable", { manifestReady: false }); this.setState("unavailable"); return; }
         const key = this.recordingKey(voice, speed, text);
+        audioDiagnostic("recording.lookup", { clipId: key, recordingPresent: !!this.manifest[key], manifestReady: this.ready });
         if (this.manifest[key]) this.playRecording(request, key, text, opts);
-        else this.speakFallback(request, text, opts);
+        else this.speakFallback(request, text, opts, "manifest-miss");
       };
       const start = () => { void begin().catch(() => { if (!request.done) this.setState("unavailable"); }); };
       request.retry = () => { this.retryInitAt = 0; start(); };
@@ -248,6 +282,7 @@ export class AudioSystem {
   }
 
   private playRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }) {
+    this.lastRecordingKey = key;
     const a = this.media();
     const attempt = (retry: boolean) => {
       if (request.done) return;
@@ -299,6 +334,7 @@ export class AudioSystem {
         }
         timer = setTimeout(failed, 10000);
         // This call stays synchronous for a retry from a user gesture.
+        this.recordMediaDiagnostic("media.play-request");
         void a.play().catch((error) => {
           if (!current() || run !== playAttempt) return;
           if (error?.name === "NotAllowedError" || error?.name === "AbortError") waiting("blocked");
@@ -385,7 +421,7 @@ export class AudioSystem {
     } catch { failed(); /* the mouth keeps its rhythm */ }
   }
 
-  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean }) {
+  private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
     this.clip = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let playAttempt = 0;
@@ -393,6 +429,7 @@ export class AudioSystem {
     request.fallback = undefined;
     const start = () => {
       if (request.done) return;
+      audioDiagnostic("voice.browser-request", { reason });
       const run = ++playAttempt;
       if (!playbackRoute(true)) {
         void waitForMicrophone().then(() => { if (!request.done && run === playAttempt) start(); });
@@ -415,6 +452,7 @@ export class AudioSystem {
       u.onerror = waiting;
       request.cleanup = () => { playAttempt++; clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); };
       this.setState("playing");
+      audioDiagnostic("voice.browser-start", { reason });
       speechSynthesis.speak(u);
       timer = setTimeout(waiting, 1500 + text.length * 120);
     };
@@ -426,13 +464,143 @@ export class AudioSystem {
     this.request?.finish(false);
   }
 
-  private ac() {
+  private recordMediaDiagnostic(event: string) {
+    if (!audioDiagnosticsEnabled() || !this.player) return;
+    const a = this.player;
+    audioDiagnostic(event, {
+      clipId: this.diagnosticState.status === "playing" ? this.diagnosticState.clipId : this.clip?.key,
+      currentTime: a.currentTime, duration: a.duration, volume: a.volume, muted: a.muted,
+      readyState: a.readyState, playbackRate: a.playbackRate, paused: a.paused, ended: a.ended,
+      mediaError: a.error?.code ?? null, ...microphoneHandoffState(), ...audioSessionSnapshot(),
+    });
+  }
+
+  /** Freeze one already requested, protected recording for both methods. Decode offline: preparing
+   *  must not create a live output context or change the phone's audio route. */
+  async prepareDiagnosticComparison() {
+    if (!audioDiagnosticsEnabled()) return;
+    this.stopDiagnostic("prepare");
+    const run = ++this.diagnosticRun, key = this.lastRecordingKey;
+    this.diagnosticSelection = null;
+    this.setDiagnosticState({ status: "preparing", clipId: key, volume: this.volume, pipeline: null, error: undefined });
+    if (!key) { this.setDiagnosticState({ status: "empty", error: "no-recording" }); return; }
+    const volume = this.volume;
+    audioDiagnostic("comparison.prepare", { clipId: key, volume });
+    try {
+      await this.cacheRecording(key);
+      if (run !== this.diagnosticRun) return;
+      const source = this.recordings.get(this.cacheKey(key));
+      if (!source) throw { name: "RecordingUnavailable" };
+      // Only the bounded, in-memory data URL is read here. No new provider or public clip URL.
+      const response = await fetch(source);
+      const bytes = await response.arrayBuffer();
+      const byteLength = bytes.byteLength;
+      if (run !== this.diagnosticRun) return;
+      const OAC = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
+      if (!OAC) throw { name: "OfflineDecoderUnavailable" };
+      this.decoder ??= new OAC(1, 1, 44100);
+      const buffer = await this.decoder!.decodeAudioData(bytes);
+      if (run !== this.diagnosticRun) return;
+      if (!buffer.duration || buffer.duration > 30) throw { name: "RecordingTooLong" };
+      this.diagnosticSelection = { key, source, buffer, volume };
+      this.setDiagnosticState({ status: "ready", clipId: key, volume, pipeline: null, error: undefined });
+      audioDiagnostic("comparison.ready", { clipId: key, volume, duration: buffer.duration, bytes: byteLength });
+    } catch (error) {
+      if (run !== this.diagnosticRun) return;
+      this.setDiagnosticState({ status: "unavailable", error: diagnosticError(error) });
+      audioDiagnostic("comparison.prepare-error", { clipId: key, error: diagnosticError(error) });
+    }
+  }
+
+  /** Direct tap only. Both paths use the same frozen bytes, requested volume and speed 1.
+   *  This intentionally does not set audioSession.type: a category reset would contaminate the comparison.
+   *  Matching requested gain does not establish matching physical loudness on iOS. */
+  playDiagnostic(pipeline: DiagnosticPipeline) {
+    if (!audioDiagnosticsEnabled() || !this.diagnosticSelection) return false;
+    if (this.request || microphoneHandoffState().captures) {
+      audioDiagnostic("comparison.busy", { pipeline, ...microphoneHandoffState() });
+      return false;
+    }
+    this.stopDiagnostic("replace");
+    const selected = this.diagnosticSelection, run = ++this.diagnosticRun;
+    let disposed = false, timer: ReturnType<typeof setTimeout> | undefined;
+    let cleanup = () => {};
+    const current = () => !disposed && run === this.diagnosticRun;
+    const finish = (status: "ready" | "blocked" | "unavailable", error?: unknown) => {
+      if (!current()) return;
+      disposed = true;
+      clearTimeout(timer);
+      cleanup();
+      this.diagnosticCleanup = null;
+      this.setDiagnosticState({ status, error: error ? diagnosticError(error) : undefined });
+      audioDiagnostic(status === "ready" ? "comparison.ended" : "comparison.error", {
+        pipeline, clipId: selected.key, volume: selected.volume, ...(error ? { error: diagnosticError(error) } : {}),
+      });
+    };
+    this.diagnosticCleanup = () => { disposed = true; clearTimeout(timer); cleanup(); };
+    this.setDiagnosticState({ status: "playing", pipeline, error: undefined });
+    audioDiagnostic("comparison.play-request", { pipeline, clipId: selected.key, volume: selected.volume, playbackRate: 1, ...microphoneHandoffState(), ...audioSessionSnapshot() });
+    timer = setTimeout(() => finish("blocked", "PlaybackTimeout"), Math.max(8000, selected.buffer.duration * 1000 + 5000));
+    if (pipeline === "html") {
+      const a = this.media();
+      const ended = () => finish("ready");
+      const error = () => finish("unavailable", "MediaError");
+      a.addEventListener("ended", ended);
+      a.addEventListener("error", error);
+      cleanup = () => { a.removeEventListener("ended", ended); a.removeEventListener("error", error); a.pause(); a.removeAttribute("src"); a.load(); };
+      a.src = selected.source;
+      a.volume = selected.volume;
+      a.playbackRate = 1;
+      a.preservesPitch = true;
+      // Synchronous in the tap, using the game's existing gesture-authorized element.
+      try { void a.play().catch((error) => finish("blocked", error)); } catch (error) { finish("blocked", error); }
+    } else {
+      let ctx: AudioContext | null;
+      try {
+        ctx = this.ac(false);
+        if (!ctx) { finish("unavailable", "AudioContextUnavailable"); return false; }
+        const source = ctx.createBufferSource(), gain = ctx.createGain();
+        cleanup = () => { source.onended = null; try { source.stop(); } catch { /* not started/already ended */ } source.disconnect(); gain.disconnect(); };
+        source.buffer = selected.buffer;
+        source.playbackRate.value = 1;
+        gain.gain.value = selected.volume;
+        source.connect(gain); gain.connect(ctx.destination);
+        source.onended = () => finish("ready");
+        const start = () => {
+          if (!current()) return;
+          try { source.start(); audioDiagnostic("comparison.buffer-start", { clipId: selected.key, volume: selected.volume, state: ctx!.state, sampleRate: ctx!.sampleRate }); }
+          catch (error) { finish("unavailable", error); }
+        };
+        // resume() is invoked during the tap; a canceled pending resume must never start later.
+        if (ctx.state === "running") start();
+        else void ctx.resume().then(start, (error) => finish("blocked", error));
+      } catch (error) { finish("unavailable", error); return false; }
+    }
+    return true;
+  }
+
+  stopDiagnostic(reason = "stop") {
+    const active = !!this.diagnosticCleanup || this.diagnosticState.status === "preparing";
+    this.diagnosticRun++;
+    this.diagnosticCleanup?.();
+    this.diagnosticCleanup = null;
+    if (active) {
+      audioDiagnostic("comparison.cancel", { reason, pipeline: this.diagnosticState.pipeline, clipId: this.diagnosticState.clipId });
+      this.setDiagnosticState({ status: this.diagnosticSelection ? "ready" : "empty", error: undefined });
+    }
+  }
+
+  private ac(resume = true) {
     if (!this.ctx) {
       const AC = window.AudioContext || (window as any).webkitAudioContext;
       if (!AC) return null;
       this.ctx = new AC();
+      if (audioDiagnosticsEnabled()) {
+        this.ctx.addEventListener("statechange", () => audioDiagnostic("context.state", { state: this.ctx?.state, sampleRate: this.ctx?.sampleRate, contextTime: this.ctx?.currentTime }));
+        audioDiagnostic("context.create", { state: this.ctx.state, sampleRate: this.ctx.sampleRate });
+      }
     }
-    if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+    if (resume && this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
     return this.ctx;
   }
 
@@ -610,6 +778,7 @@ export class AudioSystem {
   }
 
   sfx(name: "success" | "pop" | "door" | "cheer" | "soft" | "listen" | "coin" | "car" | "error" | "ring" | "beep" | "knock" | "tick") {
+    audioDiagnostic("context.effect", { reason: name });
     const ctx = this.ac();
     if (!ctx) return;
     const now = ctx.currentTime;
