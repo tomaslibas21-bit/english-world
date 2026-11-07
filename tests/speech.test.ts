@@ -84,6 +84,45 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (
 beforeEach(() => resetSpeechForTests());
 
 describe("speech attempt", () => {
+
+  it("keeps a later phrase when an empty interim placeholder is reused after a speech boundary", () => {
+    const target = "thank you thank you very much";
+    for (const initial of ["", "thank you"]) {
+      const h = harness({ evaluate: text => norm(text) === target ? "complete" : target.startsWith(norm(text) + " ") ? "prefix" : "none" });
+      h.rec().speech();
+      h.rec().results([{ final: true, alts: ["thank you"] }, { final: false, alts: [initial] }]);
+      if (initial) h.rec().results([{ final: true, alts: ["thank you"] }, { final: false, alts: [""] }]);
+      h.rec().silence();
+      h.rec().speech();
+      h.rec().results([{ final: true, alts: ["thank you"] }, { final: true, alts: ["thank you very much"] }], 1);
+      h.attempt.finish();
+      expect(h.commits[0].text).toBe(target);
+    }
+  });
+
+  it("assigns changed provisional slots to a new utterance", () => {
+    const target = "thank you thank you very much";
+    const repeated = harness({ evaluate: text => norm(text) === target ? "complete" : target.startsWith(norm(text) + " ") ? "prefix" : "none" });
+    repeated.rec().speech();
+    repeated.rec().results([{ final: true, alts: ["thank you"] }, { final: false, alts: ["thank you"] }]);
+    repeated.rec().silence();
+    repeated.rec().speech();
+    repeated.rec().results([{ final: true, alts: ["thank you"] }, { final: true, alts: ["thank you very much"] }], 1);
+    repeated.attempt.finish();
+    expect(repeated.commits[0].text).toBe(target);
+  });
+
+  it("keeps late unchanged finalization in its original utterance", () => {
+    const late = harness();
+    late.rec().speech();
+    late.rec().results([{ final: true, alts: ["I'd like a"] }, { final: false, alts: ["I'd like a latte"] }]);
+    late.rec().silence();
+    late.rec().speech();
+    late.rec().results([{ final: true, alts: ["I'd like a"] }, { final: true, alts: ["I'd like a latte"] }, { final: true, alts: ["please"] }], 1);
+    late.attempt.finish();
+    expect(late.commits[0].text).toBe("I'd like a latte please");
+  });
+
   it("replaces Android's growing cumulative final slots before the café grammar sees them", () => {
     const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
     conv.start();

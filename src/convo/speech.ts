@@ -113,9 +113,9 @@ const MAX_ALTERNATIVES = 5;
 
 /** Android sometimes appends a growing whole hypothesis as another result slot. Only a strict,
  * multiword extension counts: repeated words or a repetition inside one transcript remain verbatim. */
+const transcriptWords = (text: string) => text.toLowerCase().replace(/[’‘]/g, "'").match(/[\p{L}\p{N}]+(?:'[\p{L}]+)*/gu) ?? [];
 const extendsTranscript = (before: string, after: string) => {
-  const words = (text: string) => text.toLowerCase().replace(/[’‘]/g, "'").match(/[\p{L}\p{N}]+(?:'[\p{L}]+)*/gu) ?? [];
-  const a = words(before), b = words(after);
+  const a = transcriptWords(before), b = transcriptWords(after);
   return a.length >= 2 && b.length > a.length && a.every((word, i) => word === b[i]);
 };
 
@@ -296,7 +296,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     let previousResults = "";
     let utterance = 0;
     let utteranceEnded = false;
-    const resultUtterances: number[] = [];
+    const resultSlots: ({ utterance: number; final: boolean; words: string } | undefined)[] = [];
     const preserveSession = () => {
       continuingHypothesis = pendingInterim || !utteranceEnded;
       if (pendingInterim) { finalCandidates = interimCandidates.slice(); pendingInterim = false; }
@@ -339,12 +339,16 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       let interimText = "";
       let hasFinal = false;
       const pieces: { parts: string[]; final: boolean; utterance: number }[] = [];
-      resultUtterances.length = results.length;
+      resultSlots.length = results.length;
       for (const [i, res] of results.entries()) {
         const parts = Array.from(res).slice(0, MAX_ALTERNATIVES).map((a) => (a.transcript || "").trim()).filter(Boolean);
-        if (!parts.length) continue;
-        resultUtterances[i] ??= utterance;
-        const piece = { parts, final: res.isFinal, utterance: resultUtterances[i] };
+        if (!parts.length) { delete resultSlots[i]; continue; }
+        const words = transcriptWords(parts[0]).join(" ");
+        const slot = resultSlots[i];
+        // Reused provisional slots follow new speech; unchanged late finalization keeps its original owner.
+        const owner = slot && (slot.final || slot.words === words) ? slot.utterance : utterance;
+        resultSlots[i] = { utterance: owner, final: res.isFinal, words };
+        const piece = { parts, final: res.isFinal, utterance: owner };
         const previous = pieces[pieces.length - 1];
         // Rebuild all slots, including rewritten/shrunken lists; resultIndex alone is not reliable on mobile.
         // An explicit new speech boundary keeps intentional phrase repetitions as separate pieces.
