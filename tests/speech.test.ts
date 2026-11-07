@@ -1,6 +1,6 @@
 // The speech attempt (src/convo/speech.ts) with a simulated recogniser and clock, after the course flashcards' tests
 // (fluent-steps tests/speech-attempt.test.mjs). These don't test a real microphone.
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSpeechAttempt, resetSpeechForTests, SPEECH_TIMING, type SpeechRecognizer, type SpeechSnapshot, type Verdict } from "../src/convo/speech";
 import { bestReading } from "../src/convo/readings";
 import { SITUATION_BY_ID } from "../src/content/situations";
@@ -82,6 +82,58 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[] } = {}) {
 }
 
 beforeEach(() => resetSpeechForTests());
+afterEach(() => vi.unstubAllGlobals());
+
+describe("microphone audio routing", () => {
+  it.each(["stop", "dispose", "finish", "error"])("restores media playback after recognition %s", (end) => {
+    const session = { type: "playback" };
+    vi.stubGlobal("navigator", { audioSession: session });
+    const h = harness();
+    expect(session.type).toBe("auto");
+    if (end === "error") h.rec().error("network");
+    else h.attempt[end as "stop" | "dispose" | "finish"]();
+    expect(h.rec().aborted).toBe(true);
+    expect(session.type).toBe("playback");
+  });
+
+  it("allows the microphone route again when the browser restarts recognition", () => {
+    const session = { type: "playback" };
+    vi.stubGlobal("navigator", { audioSession: session });
+    const h = harness();
+    h.rec().end();
+    expect(session.type).toBe("playback");
+    h.advance(250);
+    expect(h.recs).toHaveLength(2);
+    expect(session.type).toBe("auto");
+    h.attempt.dispose();
+  });
+
+  it("restores playback after late microphone release without overriding a newer attempt", () => {
+    const session = { type: "playback" };
+    vi.stubGlobal("navigator", { audioSession: session });
+    const h = harness();
+    const old = h.rec();
+    h.attempt.dispose();
+    session.type = "play-and-record";
+    old.onend?.();
+    expect(session.type).toBe("playback");
+
+    const next = harness();
+    const nextOld = next.rec();
+    next.attempt.dispose();
+    const newest = harness();
+    nextOld.onend?.();
+    expect(session.type).toBe("auto");
+    newest.attempt.dispose();
+  });
+
+  it("continues recognition when the optional audio-session API rejects a change", () => {
+    vi.stubGlobal("navigator", { get audioSession() { throw new Error("not supported"); } });
+    const h = harness();
+    expect(h.status()).toBe("listening");
+    expect(() => h.attempt.dispose()).not.toThrow();
+  });
+});
 
 describe("speech attempt", () => {
   it("treats silence as no answer, not a wrong one", () => {

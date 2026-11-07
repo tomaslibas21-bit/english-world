@@ -2,9 +2,14 @@
 // have no clip or cannot be loaded after a retry) and small synthesized sound effects. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
+import { playbackSession } from "../convo/audio-session";
 
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
+
+// A short silent WAV, played with sound enabled during a tap. Muting an element only authorizes muted
+// playback on Safari; the same, unmuted element must be used for the recordings that follow.
+const UNLOCK_AUDIO = "data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 /** The token the course opened the game's page with (?t=), if any. */
 const PAGE_TOKEN = (() => {
@@ -35,6 +40,11 @@ export class AudioSystem {
   repairVersions: Record<string, string> = {};
   private ctx: AudioContext | null = null;
   private current: HTMLAudioElement | null = null;
+  /** Safari authorizes playback per element. Reuse this one across lines, replays and retries. */
+  private voicePlayer: HTMLAudioElement | null = null;
+  private voiceUnlocked = false;
+  private unlocking = false;
+  private resumeCurrent: (() => void) | null = null;
   private cancelCurrent: (() => void) | null = null;
   volume = 0.9;
   /** Where the clips live: next to the game by default, or VITE_AUDIO_BASE (e.g. a CDN). */
@@ -51,6 +61,35 @@ export class AudioSystem {
   /** Each clip's loudness: null while being worked out, empty when that failed. */
   private envelopes = new Map<string, Float32Array | null>();
   private decoder: BaseAudioContext | null = null;
+
+  /** Bind before the title screen's first tap: loading the game/manifest can outlive its user gesture. */
+  bindUserGestures(target: EventTarget): () => void {
+    const unlock = () => this.unlock();
+    const events = ["touchend", "click", "keydown"];
+    for (const type of events) target.addEventListener(type, unlock, true);
+    return () => { for (const type of events) target.removeEventListener(type, unlock, true); };
+  }
+
+  /** This must call play synchronously inside the gesture, before any fetch or promise continuation. */
+  unlock() {
+    if (this.ctx?.state === "suspended") void this.ctx.resume().catch(() => {});
+    if (this.resumeCurrent) { this.resumeCurrent(); return; }
+    if (this.current || this.voiceUnlocked || this.unlocking) return;
+    const a = this.player();
+    this.unlocking = true;
+    a.src = UNLOCK_AUDIO;
+    try {
+      void a.play().then(() => {
+        this.voiceUnlocked = true;
+        if (!this.current && a.src === UNLOCK_AUDIO) a.pause();
+      }).catch(() => { /* a later tap retries; never use speech synthesis to evade playback permission */ })
+        .finally(() => { this.unlocking = false; });
+    } catch { this.unlocking = false; }
+  }
+
+  private player(): HTMLAudioElement {
+    return this.voicePlayer ??= new Audio();
+  }
 
   init(): Promise<void> {
     if (this.initializing) return this.initializing;
@@ -99,13 +138,16 @@ export class AudioSystem {
     return new Promise((resolve) => {
       let cancelled = false;
       this.cancelCurrent = () => { cancelled = true; resolve(); };
-      void (async () => {
-        await this.init();
+      const start = async () => {
         if (cancelled) return;
+        playbackSession();
         const key = this.recordingKey(voice, speed, text);
         if (this.manifest[key]) await this.playRecording(key, text, opts);
         else await this.speakFallback(text, opts);
-      })().then(resolve, resolve);
+      };
+      // A ready recording can start directly in a replay/answer tap. Initialization still has an immediate
+      // cancellation path, and the title-screen tap has already unlocked the persistent player.
+      void (this.ready ? start() : this.init().then(start)).then(resolve, resolve);
     });
   }
 
@@ -159,7 +201,8 @@ export class AudioSystem {
         const blob = this.recordings.get(this.cacheKey(key));
         const objectUrl = blob ? URL.createObjectURL(blob) : null;
         // navigator.onLine is only a hint: try the cached/network recording even when it says offline.
-        const a = new Audio(objectUrl ?? clipUrl(this.base, key, this.repairVersions[key], filesToken()));
+        const a = this.player();
+        a.src = objectUrl ?? clipUrl(this.base, key, this.repairVersions[key], filesToken());
         a.volume = this.volume;
         a.preservesPitch = true;
         a.playbackRate = opts.slow ? 0.82 : 1;
@@ -168,11 +211,13 @@ export class AudioSystem {
         this.clip = clip;
         let done = false;
         let started = false;
+        let playRequest = 0;
         let timer: ReturnType<typeof setTimeout>;
         const cleanup = () => {
           if (done) return false;
           done = true; clip.done = true;
           clearTimeout(timer);
+          if (this.resumeCurrent === tryPlay) this.resumeCurrent = null;
           a.onended = a.onerror = a.onplaying = null;
           a.pause();
           a.removeAttribute("src"); a.load();
@@ -193,17 +238,34 @@ export class AudioSystem {
         a.onended = finish;
         a.onerror = failed;
         a.onplaying = () => {
+          if (done) return;
           started = true;
+          this.voiceUnlocked = true;
+          if (this.resumeCurrent === tryPlay) this.resumeCurrent = null;
           clearTimeout(timer);
           // Playback time starts when sound starts, not when the network request starts.
           timer = setTimeout(finish, ((this.manifest[key] || 4) / (opts.slow ? 0.82 : 1)) * 1000 + 5000);
           void this.cacheRecording(key);
         };
-        timer = setTimeout(failed, 10000);
-        a.play().catch((error) => {
-          if (error?.name === "NotAllowedError" || error?.name === "AbortError") finish();
+        const playFailed = (error: unknown, request: number) => {
+          if (done || cancelled || request !== playRequest) return;
+          if ((error as { name?: string })?.name === "NotAllowedError") {
+            // Keep this line pending for the next tap. Resolving here silently skipped NPC sentences and
+            // raced all the way to the learner's turn on mobile browsers with autoplay disabled.
+            clearTimeout(timer);
+            this.voiceUnlocked = false;
+            this.resumeCurrent = tryPlay;
+          } else if ((error as { name?: string })?.name === "AbortError") finish();
           else failed();
-        });
+        };
+        const tryPlay = () => {
+          if (done || cancelled) return;
+          const request = ++playRequest;
+          clearTimeout(timer);
+          timer = setTimeout(failed, 10000);
+          try { void a.play().catch((error) => playFailed(error, request)); } catch (error) { playFailed(error, request); }
+        };
+        tryPlay();
       };
       attempt(false);
     });
@@ -519,3 +581,4 @@ export class AudioSystem {
 }
 
 export const audio = new AudioSystem();
+if (typeof document !== "undefined") audio.bindUserGestures(document);

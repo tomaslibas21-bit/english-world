@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { compose, type Sentence } from "../src/convo/compose";
 import { t } from "../src/content/dsl";
-import { natSaysMore, newWords, natNorm, glossLine, stem, placeTip } from "../src/ui/natTip";
+import { natRepeatsGloss, natSaysMore, newWords, natNorm, glossLine, stem, placeTip } from "../src/ui/natTip";
 import { Interlinear } from "../src/ui/Interlinear";
 
 /** A sentence as the conversation shows it (units split on " | "). */
@@ -85,6 +85,43 @@ describe("where the tooltip goes", () => {
 describe("the markup", () => {
   const html = (props: Parameters<typeof Interlinear>[0]) => renderToStaticMarkup(createElement(Interlinear, props));
   const starOf = (out: string) => out.match(/<button[^>]*class="nat-star"[^>]*>\*<\/button>/)?.[0];
+
+  it("marks only an exact repeated translation for compact model answers, retaining differing wording", () => {
+    const identical = html({ s: business(), lt: true, ipa: true, compactNat: true });
+    expect(identical).toContain('class="nat compact-nat repeats-gloss"');
+    expect(identical).toContain('class="ipa"');
+    expect(identical).toContain('class="lt"');
+    expect(html({ s: pleasure(), lt: true, ipa: true, compactNat: true })).not.toContain('repeats-gloss');
+    expect(html({ s: business(), lt: true, ipa: true })).not.toContain('repeats-gloss');
+    const reordered = sent("We | have | cars | available.", "Mes | turime | automobilių | laisvų.", "Turime laisvų automobilių.");
+    expect(html({ s: reordered, lt: true, ipa: true, compactNat: true })).not.toContain('repeats-gloss');
+  });
+
+  it("compacts rental's omitted personal pronoun without hiding changed grammar or meaning", () => {
+    const rental = sent("I | have | a | reservation.", "Aš | turiu | — | rezervaciją.", "Turiu rezervaciją.");
+    expect(natRepeatsGloss(rental)).toBe(true);
+    expect(html({ s: rental, lt: true, ipa: true, compactNat: true })).toContain('class="nat compact-nat repeats-gloss"');
+    expect(natRepeatsGloss({ ...rental, nat: "Turėjau rezervaciją." })).toBe(false);
+    expect(natRepeatsGloss({ ...rental, nat: "Rezervaciją turiu." })).toBe(false);
+    expect(natRepeatsGloss({ ...rental, nat: "Turiu užsakytą automobilį." })).toBe(false);
+  });
+
+  it("keeps a guide's full natural line for desktop and a linked phone asterisk for its differing translation", () => {
+    const out = html({ s: pleasure(), lt: true, ipa: true, compactNat: true });
+    expect(out).toContain('class="nat compact-nat" lang="lt">Mielai!</div>');
+    const star = out.match(/<button[^>]*class="nat-star compact-nat-star"[^>]*>\*<\/button>/)?.[0];
+    expect(star).toContain('aria-label="Natūralus vertimas"');
+    expect(star).toContain('aria-expanded="false"');
+    const id = star!.match(/aria-describedby="([^"]+)"/)?.[1];
+    expect(out).toContain(`id="${id}" role="tooltip" lang="lt"`);
+    expect(out).toMatch(/role="tooltip"[^>]*hidden=""[^>]*>Mielai!<\/span>/);
+    expect(out).toContain('class="ipa"');
+    expect(out).toContain('class="lt"');
+    const repeated = html({ s: business(), lt: true, ipa: true, compactNat: true });
+    expect(repeated).not.toContain('compact-nat-star');
+    const off = html({ s: pleasure(), lt: false, ipa: true, compactNat: true });
+    expect(off).not.toContain('compact-nat-star');
+  });
 
   it("“My pleasure!”: an asterisk button right after the last word, its tooltip the natural sentence", () => {
     const out = html({ s: pleasure(), lt: true, ipa: false, nat: false, natTip: true });

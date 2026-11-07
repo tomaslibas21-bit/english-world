@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useStore, type TranscriptLine } from "../state/store";
 import { Interlinear } from "./Interlinear";
 import { NPCS } from "../content/npcs";
 import { coachVoice, npcVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import { GLOBAL } from "../content/global";
-import { placeLtNamed } from "../content/locations";
 import { compose, type Sentence } from "../convo/compose";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
 import { audio } from "../game/audio";
@@ -18,7 +17,8 @@ import { showToast } from "./Toasts";
 import { Confetti } from "./Confetti";
 import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord } from "../convo/suggest";
 import "./answer.css";
-import {ReportProblem} from "./ReportProblem";
+import { ConversationInfo } from "./ConversationInfo";
+import { useConversationLayout } from "./useConversationLayout";
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -49,6 +49,9 @@ export function Conversation() {
   const [typed, setTyped] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const missRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useConversationLayout(panelRef, conv.active, conv.run,
+    [conv.phase, conv.sitId, conv.stepId, conv.transcript.length, conv.focus, conv.guideHidden, conv.openHint, conv.typing, settings.lt, settings.ipa, settings.ltNatural, settings.sayLt, settings.sayIpa, settings.textSize, JSON.stringify(conv.chosen)].join("|"));
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [conv.transcript.length, conv.phase]);
   useEffect(() => { if (conv.typing && conv.phase === "you") inputRef.current?.focus(); }, [conv.typing, conv.phase]);
@@ -83,6 +86,8 @@ export function Conversation() {
       if (k === "t") { e.preventDefault(); st.setConv({ typing: !st.conv.typing }); return; }
       if (k === "r") { e.preventDefault(); game?.activeSession?.repeatLast(false); return; }
       if ((k === " " || k === "enter") && st.conv.phase === "you") {
+        // Focused buttons and disclosures keep their native keyboard activation.
+        if (t?.closest("button, a, summary, select, [role='button']")) return;
         e.preventDefault();
         const s = game?.activeSession;
         if (!s) return;
@@ -96,7 +101,6 @@ export function Conversation() {
 
   if (!conv.active || !sit) return null;
   const formal = !npc?.informal;
-  const ltRole = npc && npc.role.lt.toLowerCase() !== npc.role.en.toLowerCase() ? npc.role.lt : null;
   const gender = useStore.getState().progress.profile?.gender ?? "m";
   const startNext = () => { const next = game?.nextScenarioId(sit.id); if (next) game?.startScenario(next); };
   const showAll = () => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); };
@@ -109,15 +113,13 @@ export function Conversation() {
   };
 
   return (
-    <div className="convo" role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
+    <>
+    <ConversationInfo key={`${conv.run}/${conv.npcId}`} npcId={conv.npcId} sit={sit} />
+    <div ref={panelRef} className="convo" role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
       <div className="convo-head">
         <div className="avatar" style={{ background: avatarColor(conv.npcId) }}>{sit.mode === "phone" ? <Icon name="phoneCall" size={22} /> : sit.mode === "video" ? <Icon name="video" size={22} /> : (npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
         <div className="who">
           <b>{npc?.name}</b>
-          {/* the role in English with the Lithuanian centred under it (as in the conversation lines), then the place
-              with what its English name means (light mode never passes a door, where the 3D town says it) */}
-          <span><i className="role"><em lang="en">{npc?.role.en}</em>{ltRole && <small>{ltRole}</small>}</i></span>
-          <span className="place" lang="lt">{sit.mode === "video" ? "Vaizdo skambutis" : placeLtNamed(sit.location)}</span>
         </div>
         <div className="toggles">
           <button className={"toggle" + (settings.lt ? " on" : "")} onClick={() => setSettings({ lt: !settings.lt })} title="Lietuviškas vertimas (L) · visas sakinys lietuviškai (N)" aria-pressed={settings.lt}>LT</button>
@@ -135,7 +137,6 @@ export function Conversation() {
       </div>
 
       {(sit.mode === "video" || sit.mode === "phone") && <CallStrip sit={sit} />}
-      <ReportProblem />
       <Mission />
 
       <div className="transcript" ref={scrollRef} aria-live="polite">
@@ -158,7 +159,7 @@ export function Conversation() {
                   <button className={"toggle" + (settings.sayIpa ? " on" : "")} onClick={() => setSettings({ sayIpa: !settings.sayIpa })} aria-pressed={settings.sayIpa} title="Tarimas (IPA) po tavo atsakymų pavyzdžiais">IPA</button>
                 </div>
               )}
-              <button className="btn soft small" onClick={() => setConv({ guideHidden: !conv.guideHidden })}>{conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}</button>
+              <button className="btn soft small guide-toggle" onClick={() => setConv({ guideHidden: !conv.guideHidden })} aria-label={conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}><span className="long">{conv.guideHidden ? "Ką sakyti?" : "Slėpti pagalbą"}</span><span className="short">{conv.guideHidden ? "Pagalba" : "Slėpti"}</span></button>
             </div>
           </div>
 
@@ -231,6 +232,7 @@ export function Conversation() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -313,12 +315,14 @@ function Mission() {
   if (!items.length) return null;
   const done = items.filter((i) => i.done).length;
   const cur = items.find((i) => i.current) ?? items.find((i) => !i.done);
+  const guideInstruction = conv.phase === "you" && !conv.guideHidden ? conv.suggest[Math.min(conv.focus, conv.suggest.length - 1)]?.lt : null;
   return (
-    <div className={"mission" + (conv.completed ? " complete" : "")}>
+    <div className={"mission" + (conv.completed ? " complete" : "") + (guideInstruction ? " has-guide" : "")}>
       <button ref={bar} className="mission-bar" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="mission-count">{done}/{items.length}</span>
         <span className="mission-dots" aria-hidden>{items.map((i) => <i key={i.id} className={i.done ? "d" : i.current ? "c" : ""} />)}</span>
-        <span className="mission-now">{conv.completed ? <><Icon name="check" size={17} strokeWidth={2.25} className="done-ico" /> Užduotis įvykdyta!</> : cur ? toImperative(cur.lt) : ""}</span>
+        <span className="mission-now mission-step-now">{conv.completed ? <><Icon name="check" size={17} strokeWidth={2.25} className="done-ico" /> Užduotis įvykdyta!</> : cur ? toImperative(cur.lt) : ""}</span>
+        {guideInstruction && <span className="mission-now mission-guide-now">{toImperative(guideInstruction)}</span>}
         <Icon name="chevronDown" size={18} className="chev" />
       </button>
       {open && (
@@ -353,7 +357,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
   const shown = allChips || opts.length <= 7 ? opts : opts.slice(0, 6);
   return (
     <div className="guide">
-      <div className="guide-task"><Icon name="next" size={24} className="task-ico" /><span>{toImperative(sg.lt)}</span></div>
+      <div className={"guide-task" + (conv.checklist.length ? " in-mission" : "")}><Icon name="next" size={24} className="task-ico" /><span>{toImperative(sg.lt)}</span></div>
       {opts.length > 0 && groupId && (
         <div className="chips">
           {shown.map((e) => {
@@ -370,7 +374,7 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
               <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
               <div className="gx-text">
                 {/* word by word, as the other person's lines: Lithuanian under each word, the natural sentence below */}
-                <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} />
+                <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} compactNat />
                 <RepeatResult en={ex.en} />
               </div>
               <RepeatButton ex={ex} />
@@ -648,16 +652,31 @@ function MicStatus() {
   const conv = useStore((s) => s.conv);
   const f = useStore((s) => s.progress.profile?.gender === "f");
   const m = conv.mic;
-  if (!speechSupported()) return <div className="mic-status"><b>Rašyk atsakymą</b><span className="sub">Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).</span></div>;
-  if (conv.phase === "npc") return <div className="mic-status"><span className="sub">Klausyk… (mikrofonas įsijungs, kai baigs kalbėti)</span></div>;
+  if (!speechSupported()) return <MicNotice title="Rašyk atsakymą">Ši naršyklė neturi balso atpažinimo (Chrome, Edge ir Safari turi).</MicNotice>;
+  if (conv.phase === "npc") return <MicNotice title="Klausyk…">Mikrofonas įsijungs, kai pašnekovas baigs kalbėti.</MicNotice>;
   if (conv.phase === "thinking") return <div className="mic-status"><span className="sub">…</span></div>;
   switch (m.status) {
     case "starting": return <div className="mic-status"><b>Jungiamas mikrofonas…</b></div>;
     case "listening": case "reconnecting":
-      return <div className="mic-status"><b>Klausau – kalbėk {f ? "neskubėdama" : "neskubėdamas"}</b>{m.heard ? <span className="heard">„{m.heard}“</span> : <span className="sub">Gali daryti pauzes – palauksiu.</span>}</div>;
-    case "denied": return <div className="mic-status"><b>Leisk naudoti mikrofoną</b><span className="sub">Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</span></div>;
-    case "error": return <div className="mic-status"><b>{m.error === "network" ? "Nepavyko prisijungti prie atpažinimo" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko"}</b><span className="sub">Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</span></div>;
-    case "nothing": return <div className="mic-status"><b>Nieko negirdėjau</b><span className="sub">Spausk {MIC} (arba tarpo klavišą), kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</span></div>;
-    default: return <div className="mic-status"><b>Spausk {MIC} ir kalbėk</b><span className="sub">arba tarpo klavišą · rašyti {KEYS} (T)</span></div>;
+      return m.heard ? <div className="mic-status"><b>Klausau – kalbėk</b><span className="heard">„{m.heard}“</span></div> : <MicNotice title="Klausau – kalbėk">Kalbėk {f ? "neskubėdama" : "neskubėdamas"}. Gali daryti pauzes – palauksiu.</MicNotice>;
+    case "denied": return <MicNotice title="Leisk mikrofoną">Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</MicNotice>;
+    case "error": return <MicNotice title={m.error === "network" ? "Ryšio klaida" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko"}>{m.error === "network" && <>Nepavyko prisijungti prie balso atpažinimo. </>}Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</MicNotice>;
+    case "nothing": return <MicNotice title="Nieko negirdėjau">Spausk {MIC} (arba tarpo klavišą), kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</MicNotice>;
+    default: return <MicNotice title="Spausk ir kalbėk">Spausk {MIC} arba tarpo klavišą · rašyti {KEYS} (T)</MicNotice>;
   }
+}
+
+function MicNotice({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const escape = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setOpen(false); } };
+    document.addEventListener("pointerdown", outside, true);
+    window.addEventListener("keydown", escape, true);
+    return () => { document.removeEventListener("pointerdown", outside, true); window.removeEventListener("keydown", escape, true); };
+  }, [open]);
+  return <div ref={root} className="mic-status"><button type="button" className="mic-help-toggle" aria-label={`${title}: daugiau informacijos`} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}><b>{title}</b><Icon name="info" size={18} /></button><div id={id} className="mic-help-detail" hidden={!open}>{children}</div></div>;
 }

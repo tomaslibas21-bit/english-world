@@ -17,7 +17,7 @@ class FakeAudio {
   load = vi.fn();
   play = vi.fn(() => Promise.resolve());
   removeAttribute = vi.fn();
-  constructor(public src: string) { players.push(this); }
+  constructor(public src = "") { players.push(this); }
 }
 let audio: AudioSystem;
 let fetcher: ReturnType<typeof vi.fn>;
@@ -50,7 +50,8 @@ describe("recorded voice reliability", () => {
       player.onended?.();
       await done;
     }
-    expect(players).toHaveLength(3);
+    expect(players).toHaveLength(1);
+    expect(players[0].play).toHaveBeenCalledTimes(3);
     expect(synth.speak).not.toHaveBeenCalled();
   });
 
@@ -116,10 +117,11 @@ describe("recorded voice reliability", () => {
     await flush();
     vi.stubGlobal("localStorage", { getItem: () => JSON.stringify({ token: "renewed", exp: Date.now() / 1000 + 3600 }) });
     players[0].onerror?.();
-    expect(players).toHaveLength(2);
-    expect(players[1].src).toContain("t=renewed");
+    expect(players).toHaveLength(1);
+    expect(players[0].play).toHaveBeenCalledTimes(2);
+    expect(players[0].src).toContain("t=renewed");
     expect(synth.speak).not.toHaveBeenCalled();
-    players[1].onerror?.(); await flush(); await done;
+    players[0].onerror?.(); await flush(); await done;
     expect(synth.speak).toHaveBeenCalledTimes(1);
   });
 
@@ -127,7 +129,8 @@ describe("recorded voice reliability", () => {
     const done = audio.play(voice, 1, line);
     await flush();
     await vi.advanceTimersByTimeAsync(20000); await done;
-    expect(players).toHaveLength(2);
+    expect(players).toHaveLength(1);
+    expect(players[0].play).toHaveBeenCalledTimes(2);
     expect(players.every((p) => p.pause.mock.calls.length && p.removeAttribute.mock.calls.length)).toBe(true);
     expect(synth.speak).toHaveBeenCalledTimes(1);
   });
@@ -150,14 +153,105 @@ describe("recorded voice reliability", () => {
     expect(fetcher).toHaveBeenCalledTimes(downloads);
     audio.repairVersions[key] = "new-recording";
     done = audio.play(voice, 1, line); await flush();
-    expect(players[1].src).toContain("v=new-recordin");
-    players[1].onended?.(); await done;
+    expect(players[0].src).toContain("v=new-recordin");
+    players[0].onended?.(); await done;
   });
 
-  it("does not treat playback permission as an offline failure", async () => {
+  it("keeps a permission-blocked line pending until a tap, without skipping or switching voices", async () => {
+    let allowed = false, settled = false;
+    class BlockedAudio extends FakeAudio { play = vi.fn(() => allowed ? Promise.resolve() : Promise.reject(new DOMException("Tap to play", "NotAllowedError"))); }
+    vi.stubGlobal("Audio", BlockedAudio);
+    const done = audio.play(voice, 1, line).then(() => { settled = true; });
+    await flush();
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(settled).toBe(false);
+    expect(synth.speak).not.toHaveBeenCalled();
+    allowed = true;
+    audio.unlock();
+    expect(players[0].play).toHaveBeenCalledTimes(2);
+    players[0].onplaying?.(); players[0].onended?.(); await done;
+    expect(settled).toBe(true);
+  });
+
+  it("unlocks one player during the title tap and keeps authorization across delayed NPC lines", async () => {
+    // Model Safari's per-element permission, rather than a page-wide 'has interacted' flag.
+    let gesture = false;
+    class SafariAudio extends FakeAudio {
+      authorized = false;
+      play = vi.fn(() => {
+        if (gesture) this.authorized = true;
+        return this.authorized ? Promise.resolve() : Promise.reject(new DOMException("Tap to play", "NotAllowedError"));
+      });
+    }
+    vi.stubGlobal("Audio", SafariAudio);
+    const target = new EventTarget(), unbind = audio.bindUserGestures(target);
+    let release!: (r: Response) => void;
+    const next = "How are you?", nextKey = audioKey(voice, 1, next);
+    fetcher.mockImplementation((url: string) => url.endsWith("manifest.json") ? new Promise((r) => { release = r; }) : Promise.resolve(Response.json({})));
+    const init = audio.init();
+    gesture = true;
+    target.dispatchEvent(new Event("touchend"));
+    gesture = false;
+    expect(players).toHaveLength(1);
+    expect(players[0].src).toMatch(/^data:audio\/wav/);
+    release(Response.json({ [key]: 1, [nextKey]: 1 })); await init; await flush();
+    for (const text of [line, next, line]) {
+      const done = audio.play(voice, 1, text);
+      await flush();
+      players[0].onplaying?.(); players[0].onended?.(); await done;
+      await vi.advanceTimersByTimeAsync(160);
+    }
+    expect(players).toHaveLength(1);
+    expect(players[0].play).toHaveBeenCalledTimes(4);
+    expect(synth.speak).not.toHaveBeenCalled();
+    unbind();
+  });
+
+  it("starts a ready recording synchronously inside a replay tap", async () => {
+    await audio.init();
+    let gesture = true;
+    class GestureAudio extends FakeAudio {
+      play = vi.fn(() => gesture ? Promise.resolve() : Promise.reject(new DOMException("Tap to play", "NotAllowedError")));
+    }
+    vi.stubGlobal("Audio", GestureAudio);
+    const done = audio.play(voice, 1, line);
+    gesture = false;
+    expect(players[0].play).toHaveBeenCalledTimes(1);
+    await flush(); players[0].onended?.(); await done;
+  });
+
+  it("cannot resume a stopped blocked line on a later gesture", async () => {
     class BlockedAudio extends FakeAudio { play = vi.fn(() => Promise.reject(new DOMException("Tap to play", "NotAllowedError"))); }
     vi.stubGlobal("Audio", BlockedAudio);
-    await audio.play(voice, 1, line);
+    const done = audio.play(voice, 1, line); await flush();
+    audio.stop(); await done;
+    audio.unlock(); await flush();
+    expect(players[0].src).toMatch(/^data:audio\/wav/);
     expect(synth.speak).not.toHaveBeenCalled();
+  });
+
+  it("ignores a stopped line's delayed play rejection after the next line has started", async () => {
+    const old = audio.play(voice, 1, line); await flush();
+    let reject!: (error: Error) => void;
+    players[0].play.mockImplementationOnce(() => new Promise((_, rej) => { reject = rej; }));
+    audio.stop(); await old;
+    const second = audio.play(voice, 1, line); await flush();
+    audio.stop(); await second;
+    const third = audio.play(voice, 1, line); await flush();
+    players[0].onplaying?.();
+    const pauses = players[0].pause.mock.calls.length;
+    reject(new DOMException("old attempt", "NotAllowedError")); await flush();
+    expect(players[0].pause).toHaveBeenCalledTimes(pauses);
+    audio.unlock();
+    expect(players[0].play).toHaveBeenCalledTimes(3);
+    players[0].onended?.(); await third;
+  });
+
+  it("returns from the microphone audio route before playing a recording", async () => {
+    const session = { type: "play-and-record" };
+    vi.stubGlobal("navigator", { onLine: true, audioSession: session });
+    const done = audio.play(voice, 1, line); await flush();
+    expect(session.type).toBe("playback");
+    players[0].onended?.(); await done;
   });
 });

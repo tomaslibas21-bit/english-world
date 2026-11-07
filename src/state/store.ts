@@ -45,9 +45,14 @@ function defaultPlayMode(): PlayMode {
   return touch && narrow ? "light" : "town";
 }
 
+/** Medium text on a computer; keep the existing phone size. Saved choices always take precedence. */
+export function defaultTextSize(viewportWidth = typeof window === "undefined" ? 1024 : window.innerWidth) {
+  return viewportWidth > 900 ? 1.15 : 1;
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   lt: true, ltNatural: false, ipa: false, suggestions: false, hintsOpen: false,
-  autoListen: true, confirmSpeech:false, slowVoice: false, volume: 0.9, textSize: 1, quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
+  autoListen: true, confirmSpeech:false, slowVoice: false, volume: 0.9, textSize: defaultTextSize(), quality: "high", cameraFollow: true, onDevice: false, sayLt: true, sayIpa: true, scenes: true, worldStyle: "blocks",
   play: defaultPlayMode(),
 };
 
@@ -166,8 +171,9 @@ const initial = loadProgress();
  *  they had no suggestions); it hides the guide for one conversation (ConvUI.guideHidden).
  *  v4 (27 Oct 2026): speech is recognised by the browser's server recogniser, as in the course's flashcards: it
  *  hears accents much better. Recognition on the device became an opt-in (it used to be on whenever installed). */
-function migrateSettings(saved?: Record<string, any>): Settings {
+export function migrateSettings(saved?: Record<string, any>): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(saved || {}) } as Settings & { v?: number; guide?: boolean };
+  if (saved?.textSize == null) s.textSize = defaultTextSize();
   if ((s.v ?? 1) < 2) { s.ltNatural = false; s.suggestions = false; s.v = 2; }
   if ((s.v ?? 1) < 3) { delete s.guide; s.v = 3; }
   if ((s.v ?? 1) < 4) { s.onDevice = false; s.v = 4; }

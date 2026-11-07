@@ -15,6 +15,7 @@
 // (Chrome's processLocally) is an opt-in setting: more private, but it hears accents less well.
 
 import { NEGATION_TOKENS } from "./normalize";
+import { recognitionSession } from "./audio-session";
 
 export const SPEECH_REC: any =
   typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
@@ -59,6 +60,7 @@ export interface SpeechRecognizer {
   onend: (() => void) | null;
   onspeechstart: (() => void) | null;
   onspeechend: (() => void) | null;
+  onaudioend?: (() => void) | null;
   start(): void;
   abort(): void;
 }
@@ -115,6 +117,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
   };
   const createRecognition = opt.createRecognition ?? (() => new SPEECH_REC() as SpeechRecognizer);
   let rec: SpeechRecognizer | null = null;
+  let releaseAudioSession: (() => void) | null = null;
   let running = false;
   let disposed = false;
   let generation = 0;
@@ -166,7 +169,14 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     const r = rec; rec = null;
     if (!r) return;
     r.onstart = r.onresult = r.onerror = r.onend = r.onspeechstart = r.onspeechend = null;
+    const restore = releaseAudioSession;
+    releaseAudioSession = null;
+    r.onaudioend = r.onend = () => {
+      r.onaudioend = r.onend = null;
+      restore?.();
+    };
     try { r.abort(); } catch { /* already ended */ }
+    restore?.();
   };
   const stopRunning = () => { generation++; running = false; speaking = false; clearTimers(); release(); };
 
@@ -332,6 +342,7 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       restartTimer = clock.setTimeout(() => { if (running && run === generation) connect(); }, Math.min(250 * 2 ** (emptyRestarts - 1), 2_000));
     };
     startupTimer = clock.setTimeout(() => { if (current()) failService("timeout"); }, SPEECH_TIMING.startup);
+    releaseAudioSession = recognitionSession();
     try { r.start(); } catch { if (current()) failService("start"); }
   };
 
