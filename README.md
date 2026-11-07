@@ -95,7 +95,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
   - three.js is a separate download that only town mode fetches (`src/game/gameRef.ts` holds the shared game reference).
   - The phone's back button closes the open conversation or panel.
 - **"Ar norėjai pasakyti…?"** (`src/convo/suggest.ts`). When an answer isn't understood, the 1–2 closest model answers the engine would accept are offered. A tap, or "yes" / „taip“, uses them, and the words that didn't match are highlighted.
-- **Loanwords heard differently** (`src/convo/soundalike.ts`). Café words such as latte and croissant also have targeted pronunciation/recognizer variants. Uncertain matches ask for confirmation, preserve the quantity, and never rewrite a negated answer.
+- **Loanwords heard differently** (`src/convo/soundalike.ts`). Café and restaurant names (including latte, croissant, cappuccino, bruschetta, minestrone, lasagna, risotto, tiramisu, panna cotta, gelato and named wines) have targeted pronunciation/recognizer variants, only where that menu offers them. Uncertain matches ask for confirmation and preserve the rest of the answer, including quantities. Negations, distinct dishes such as matcha and pesto pasta, and ambiguous guesses are protected. `tests/loanwords.test.ts` checks both the intended variants and nearby wrong answers, including actual order confirmation/cancellation.
 - **„Pakartok“.** Next to each example answer: listen, repeat, and see which words were missed. It's practice only, and it shares the conversation's microphone safely.
 - **Word cards** (`src/state/cards.ts`, `src/ui/Cards.tsx`).
   - Tap any English word or phrase to save it, or the whole sentence, with its Lithuanian, IPA and source sentence.
