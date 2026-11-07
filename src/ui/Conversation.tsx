@@ -282,7 +282,7 @@ function AudioRecovery() {
   const state = useSyncExternalStore(audio.subscribe, audio.getState);
   if (state !== "blocked" && state !== "unavailable") return null;
   return <div className="audio-recovery" role="status">
-    <span>{state === "blocked" ? "Paliesk, kad tęstųsi garsas." : "Balso įrašas nepasiekiamas. Pabandyk dar kartą."}</span>
+    <span>{state === "blocked" ? "Spausk „Klausyti“, kad įrašas tęstųsi." : "Balso įrašo nepavyko paleisti. Spausk „Bandyti dar“."}</span>
     <button className="btn small" onClick={audio.retry}><Icon name="speaker" size={18} />{state === "blocked" ? "Klausyti" : "Bandyti dar"}</button>
     {state === "unavailable" && <>
       {audio.canUseBrowserVoice() && <button className="link-btn" onClick={audio.useBrowserVoice}>Klausyti įrenginio balsu</button>}
