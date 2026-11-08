@@ -10,6 +10,12 @@ const R = (reason: MergeReason, split: string, minimal: string, code?: string): 
 const LEX = (split: string, minimal = "All words form the expression.") => R("lexical_expression", split, minimal, "C-LEX");
 
 export const MERGES: Record<string, MergeRecord> = {
+  // Shared returning-visit examples (also used outside their original situation).
+  "i'd love": R("grammatical_fusion", "I'd → aš loses would; Lithuanian norėčiau carries the conditional request.", "Subject/conditional and verb are both needed.", "C-FUT"),
+  "a bit": LEX("a → — + bit → gabalėlis is false when qualifying a feeling; = šiek tiek."),
+  "ice cold": LEX("ice → ledas + cold → šalti gives “ledas šalti”; = lediniai.", "Two words, one adjective."),
+  "sunny cup": LEX("The café name stays intact; sunny → saulėtas + cup → puodelis would translate the business name."),
+  "to pick up": R("grammatical_fusion", "to → į + pick → rinkti + up → aukštyn is false; collecting a prescription = atsiimti.", "Three words (C-INF + C-PHR)."),
   // Fixed expressions (C-LEX)
   "i'm sorry": LEX("I'm → aš esu + sorry → gailiu gives a false “I am pitiful”; apology = atsiprašau."),
   "of course": LEX("of → — + course → kursas gives a false meaning; = žinoma."),

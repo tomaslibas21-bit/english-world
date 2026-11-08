@@ -315,7 +315,7 @@ export const cafe: SituationDef = {
   },
 
   intents: {
-    order: { patterns: ["@order_prefix {items} [@dine]", "[just #only] {items} [@dine]", "@dine {items}", "{items} (is | would be | will be) (fine | good | great | perfect | nice | lovely)", "{items} sounds (good | great | nice)"] },
+    order: { patterns: ["@order_prefix {items} [@dine]", "this time @order_prefix {items} [@dine]", "[just #only] {items} [@dine]", "@dine {items}", "{items} (is | would be | will be) (fine | good | great | perfect | nice | lovely)", "{items} sounds (good | great | nice)"] },
     size_ans: { patterns: [
       "[a | the] {size} [one | size]", "@order_prefix [a | the] {size} [one | size] #h2:size",
       "make (it | that) [a] {size} #h:make_it", "{size} (is fine | is good | is great | will do | works) #h:size_fine", "[the] {size} [one] (is enough | is perfect | is okay)",
