@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { captureAudio, playbackRoute, waitForMicrophone, CAPTURE_RELEASE_TIMEOUT } from "../src/convo/audioFocus";
+import { captureAudio, holdPlaybackRoute, playbackRoute, waitForMicrophone, CAPTURE_RELEASE_TIMEOUT } from "../src/convo/audioFocus";
 import { createSpeechAttempt, type SpeechRecognizer } from "../src/convo/speech";
 
 let routes: string[];
@@ -73,13 +73,18 @@ describe("microphone to speaker handoff", () => {
     expect(nativeRoute).toBe("playback");
   });
 
-  it("handles a late real end after timeout once, without taking audio from a newer mic", async () => {
+  it("recovers a late real end at the next idle start once, without taking audio from a newer mic", async () => {
     const old = captureAudio(); old.stopping();
     await vi.advanceTimersByTimeAsync(CAPTURE_RELEASE_TIMEOUT);
     const before = routes.length;
     old.ended();
-    expect(routes.slice(before)).toEqual(["auto", "playback"]);
-    old.ended(); expect(routes).toHaveLength(before + 2);
+    expect(routes.slice(before)).toEqual(["playback"]);
+    playbackRoute(true);
+    expect(routes.slice(before)).toEqual(["playback", "auto", "playback"]);
+    old.ended(); expect(routes).toHaveLength(before + 3);
+    playbackRoute(true);
+    expect(routes.at(-1)).toBe("playback");
+    expect(routes.slice(before).filter((type) => type === "auto")).toHaveLength(1);
 
     const delayed = captureAudio(); delayed.stopping();
     await vi.advanceTimersByTimeAsync(CAPTURE_RELEASE_TIMEOUT);
@@ -90,5 +95,24 @@ describe("microphone to speaker handoff", () => {
     expect(routes).toHaveLength(duringCapture);
     current.ended();
     expect(routes.at(-1)).toBe("playback");
+  });
+
+  it("defers late release and all playback requests until every audible output has stopped", async () => {
+    const mic = captureAudio(); mic.stopping();
+    await vi.advanceTimersByTimeAsync(CAPTURE_RELEASE_TIMEOUT);
+    playbackRoute(true);
+    const releaseFirst = holdPlaybackRoute(), releaseSecond = holdPlaybackRoute();
+    const before = routes.length;
+    mic.ended();
+    expect(playbackRoute(true)).toBe(true);
+    await waitForMicrophone();
+    expect(routes).toHaveLength(before);
+    releaseFirst(); releaseFirst();
+    playbackRoute(true);
+    expect(routes).toHaveLength(before); // idempotent release cannot drop another owner
+    releaseSecond();
+    expect(routes).toHaveLength(before); // no surprise route change from cleanup
+    playbackRoute(true);
+    expect(routes.slice(before)).toEqual(["auto", "playback"]);
   });
 });

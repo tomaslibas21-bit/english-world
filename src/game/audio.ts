@@ -2,7 +2,7 @@
 // or when the learner explicitly chooses it after a failed download. No network TTS is ever called.
 import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
-import { microphoneHandoffState, playbackRoute, waitForMicrophone } from "../convo/audioFocus";
+import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone } from "../convo/audioFocus";
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
 
 export type DiagnosticPipeline = "html" | "buffer";
@@ -298,6 +298,8 @@ export class AudioSystem {
       let started = false;
       let timer: ReturnType<typeof setTimeout> | undefined;
       let playAttempt = 0;
+      let releaseRoute: (() => void) | undefined;
+      const releasePlayback = () => { releaseRoute?.(); releaseRoute = undefined; };
       const current = () => !disposed && !request.done;
       const cleanup = (clearSource = false) => {
         if (disposed) return;
@@ -306,11 +308,13 @@ export class AudioSystem {
         a.onended = a.onerror = a.onplaying = a.onpause = null;
         a.pause();
         if (clearSource) { a.removeAttribute("src"); a.load(); }
+        releasePlayback();
       };
       request.cleanup = () => cleanup(true);
       const waiting = (state: "blocked" | "unavailable") => {
         if (!current()) return;
         clearTimeout(timer);
+        if (a.paused || a.ended) releasePlayback();
         this.setState(state);
       };
       const failed = () => {
@@ -326,12 +330,14 @@ export class AudioSystem {
         const run = ++playAttempt;
         clearTimeout(timer);
         this.setState("loading");
+        if (a.paused || a.ended) releasePlayback();
         // Initialization/downloads and the phone's capture service are asynchronous. Claim
         // playback at the actual play call as well, without making a tap retry asynchronous.
         if (!playbackRoute(true)) {
           void waitForMicrophone().then(() => { if (current() && run === playAttempt) start(); });
           return;
         }
+        releaseRoute ??= holdPlaybackRoute();
         timer = setTimeout(failed, 10000);
         // This call stays synchronous for a retry from a user gesture.
         this.recordMediaDiagnostic("media.play-request");
@@ -358,8 +364,9 @@ export class AudioSystem {
       a.onpause = () => { if (current() && started && a.paused && !a.ended) waiting("blocked"); };
       a.onplaying = () => {
         if (!current()) return;
-        // The media may only become audible after a delayed download or native route change.
-        if (!started) playbackRoute(true);
+        // This event arrives after output starts. A category reset here can reconfigure
+        // native audio mid-sentence; recovery is confined to start(), before play().
+        releaseRoute ??= holdPlaybackRoute();
         started = true;
         this.unlocked = true;
         this.setState("playing");
@@ -452,7 +459,8 @@ export class AudioSystem {
       const waiting = () => { clearTimeout(timer); if (!request.done) this.setState("blocked"); };
       u.onend = () => request.finish(true);
       u.onerror = waiting;
-      request.cleanup = () => { playAttempt++; clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); };
+      const releaseRoute = holdPlaybackRoute();
+      request.cleanup = () => { playAttempt++; clearTimeout(timer); u.onend = u.onerror = null; speechSynthesis.cancel(); releaseRoute(); };
       this.setState("playing");
       audioDiagnostic("voice.browser-start", { reason });
       speechSynthesis.speak(u);
@@ -525,6 +533,9 @@ export class AudioSystem {
     }
     this.stopDiagnostic("replace");
     const selected = this.diagnosticSelection, run = ++this.diagnosticRun;
+    // Do not let a late recognition end reconfigure either comparison while it is audible.
+    // This hold itself does not claim a category or change the A/B output route.
+    const releaseRoute = holdPlaybackRoute();
     let disposed = false, timer: ReturnType<typeof setTimeout> | undefined;
     let cleanup = () => {};
     const current = () => !disposed && run === this.diagnosticRun;
@@ -533,13 +544,14 @@ export class AudioSystem {
       disposed = true;
       clearTimeout(timer);
       cleanup();
+      releaseRoute();
       this.diagnosticCleanup = null;
       this.setDiagnosticState({ status, error: error ? diagnosticError(error) : undefined });
       audioDiagnostic(status === "ready" ? "comparison.ended" : "comparison.error", {
         pipeline, clipId: selected.key, volume: selected.volume, ...(error ? { error: diagnosticError(error) } : {}),
       });
     };
-    this.diagnosticCleanup = () => { disposed = true; clearTimeout(timer); cleanup(); };
+    this.diagnosticCleanup = () => { disposed = true; clearTimeout(timer); cleanup(); releaseRoute(); };
     this.setDiagnosticState({ status: "playing", pipeline, error: undefined });
     audioDiagnostic("comparison.play-request", { pipeline, clipId: selected.key, volume: selected.volume, playbackRate: 1, ...microphoneHandoffState(), ...audioSessionSnapshot() });
     timer = setTimeout(() => finish("blocked", "PlaybackTimeout"), Math.max(8000, selected.buffer.duration * 1000 + 5000));

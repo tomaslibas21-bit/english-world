@@ -191,6 +191,17 @@ describe("opt-in local audio evidence", () => {
     );
   });
 
+  it("distinguishes an installed app from a browser without storing its URL", async () => {
+    const { audioDiagnosticsReport } = await import("../src/convo/audioDiagnostics");
+    expect(audioDiagnosticsReport().standalone).toBe(false);
+    Object.assign(navigator, { standalone: true });
+    expect(audioDiagnosticsReport().standalone).toBe(true);
+    Object.assign(navigator, { standalone: false });
+    Object.assign(window, { matchMedia: () => ({ matches: true }) });
+    expect(audioDiagnosticsReport().standalone).toBe(true);
+    expect(JSON.stringify(audioDiagnosticsReport())).not.toMatch(/TOKEN_SECRET|https:/);
+  });
+
   it("distinguishes watchdog release, service end and a later capture-end event", async () => {
     const d = await import("../src/convo/audioDiagnostics");
     const { captureAudio, microphoneHandoffState } =
@@ -271,6 +282,27 @@ describe("opt-in local audio evidence", () => {
 });
 
 describe("same-recording comparison ownership", () => {
+  it.each(["html", "buffer"] as const)("does not reconfigure %s comparison on a late recognition end", async (pipeline) => {
+    const { audio } = await sample();
+    const { captureAudio, playbackRoute } = await import("../src/convo/audioFocus");
+    const { audioDiagnosticsReport } = await import("../src/convo/audioDiagnostics");
+    const mic = captureAudio(); mic.stopping();
+    await vi.advanceTimersByTimeAsync(1200);
+    let type = "playback";
+    const changes: string[] = [];
+    Object.defineProperty((navigator as Navigator & { audioSession: object }).audioSession, "type", {
+      get: () => type,
+      set: (value: string) => { changes.push(value); type = value; },
+    });
+    audio.playDiagnostic(pipeline);
+    mic.ended();
+    expect(changes).toEqual([]);
+    expect(audioDiagnosticsReport().events.at(-1)).toMatchObject({ event: "session.deferred", detail: { playbacks: 1, recoveryPending: true } });
+    audio.stopDiagnostic();
+    expect(changes).toEqual([]);
+    playbackRoute(true);
+    expect(changes).toEqual(["auto", "playback"]);
+  });
   it("prepares offline, retains the same bytes and requested volume, and never completes a game turn", async () => {
     const { audio, key } = await sample();
     expect(contexts).toHaveLength(0); // offline decoding did not activate hardware output

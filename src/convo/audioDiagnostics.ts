@@ -1,5 +1,5 @@
 // Opt-in, in-memory evidence for a physical-device audio test. Never records speech or sends a report.
-export const AUDIO_DIAGNOSTICS_VERSION = "2026-11-07-audio-probe-1";
+export const AUDIO_DIAGNOSTICS_VERSION = "2026-11-08-audio-route-2";
 export const AUDIO_DIAGNOSTICS_LIMIT = 400;
 
 export function audioDiagnosticsEnabled() {
@@ -21,6 +21,8 @@ const fields = new Set([
   "recognizerId",
   "leaseId",
   "captures",
+  "playbacks",
+  "recoveryPending",
   "unconfirmed",
   "reason",
   "requested",
@@ -172,8 +174,12 @@ export const subscribeAudioDiagnostics = (listener: () => void) => {
 };
 export const audioDiagnosticsCount = () => sequence;
 export function audioDiagnosticsReport() {
+  const standalone =
+    (typeof navigator !== "undefined" && (navigator as Navigator & { standalone?: boolean }).standalone === true) ||
+    (typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches === true);
   return {
     version: AUDIO_DIAGNOSTICS_VERSION,
+    standalone,
     userAgent:
       typeof navigator === "undefined"
         ? "unavailable"

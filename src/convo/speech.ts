@@ -324,6 +324,9 @@ export function createSpeechAttempt(opt: SpeechOptions) {
     r.onspeechend = () => { trace.event("speechend"); if (!current()) return; utteranceEnded = true; speaking = false; lastActivity = clock.now(); scheduleIdle(); };
     r.onresult = (ev) => {
       if (!current()) return;
+      // Actual results establish service activity even if Safari omitted onstart, or resumed
+      // after a no-speech error. An older startup/missing-end watchdog must not abort them.
+      if (startupTimer !== undefined) { clock.clearTimeout(startupTimer); startupTimer = undefined; }
       const results = Array.from(ev.results);
       const finalSlots = results.filter(result => result.isFinal).length;
       trace.event("result", { resultIndex: ev.resultIndex ?? 0, resultSlots: results.length, finalSlots, interimSlots: results.length - finalSlots });
@@ -428,7 +431,9 @@ export function createSpeechAttempt(opt: SpeechOptions) {
       // Every explicit try is a new answer; only the browser's own restarts inside an attempt keep its words.
       finalCandidates = [""]; interimCandidates = [""];
       pendingInterim = false; hasSpeech = false; speaking = false; topNegated = false;
-      startedAt = null; emptyRestarts = 0; transientRecoveries = 0;
+      // The attempt's deadline includes a recognizer that never sends onstart. Repeated
+      // no-speech/missing-end recovery must not keep the UI reconnecting forever.
+      startedAt = clock.now(); lastActivity = startedAt; emptyRestarts = 0; transientRecoveries = 0;
       continuingHypothesis = false;
       verdicts.clear();
       running = true;
