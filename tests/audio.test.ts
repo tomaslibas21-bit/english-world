@@ -205,6 +205,64 @@ describe("recorded voice reliability", () => {
 
 
 describe("mobile media ownership", () => {
+  it("does not change the audio category after a post-microphone recording has started", async () => {
+    const activeChanges: { type: string; time: number }[] = [];
+    let type = "auto";
+    vi.stubGlobal("navigator", { onLine: true, audioSession: {
+      get type() { return type; },
+      set type(value: string) {
+        const player = players[0];
+        if (value !== type && player && !player.paused && !player.ended) activeChanges.push({ type: value, time: player.currentTime });
+        type = value;
+      },
+    } });
+    const mic = captureAudio(); mic.ended();
+    const done = audio.play(voice, 1, line); await flush();
+    const player = players[0];
+    player.currentTime = 0.2;
+    player.emitPlaying();
+    expect(activeChanges).toEqual([]);
+    player.emitEnded(); expect(await done).toBe(true);
+  });
+
+  it("does not reroute an audible recording when recognition ends after its timeout", async () => {
+    const activeChanges: string[] = [];
+    let type = "auto";
+    vi.stubGlobal("navigator", { onLine: true, audioSession: {
+      get type() { return type; },
+      set type(value: string) {
+        const player = players[0];
+        if (value !== type && player && !player.paused && !player.ended) activeChanges.push(value);
+        type = value;
+      },
+    } });
+    const mic = captureAudio(); mic.stopping();
+    const done = audio.play(voice, 1, line);
+    await vi.advanceTimersByTimeAsync(1200);
+    const player = players[0];
+    player.emitPlaying();
+    activeChanges.length = 0;
+    player.currentTime = 0.4;
+    mic.ended();
+    expect(activeChanges).toEqual([]);
+    expect(player.currentTime).toBe(0.4);
+    expect(player.play).toHaveBeenCalledOnce();
+    player.emitEnded(); expect(await done).toBe(true);
+
+    const afterLateEnd: string[] = [];
+    Object.defineProperty((navigator as Navigator & { audioSession: object }).audioSession, "type", {
+      get() { return type; },
+      set(value: string) { if (value !== type) afterLateEnd.push(value); type = value; },
+      configurable: true,
+    });
+    const next = audio.play(voice, 1, line); await flush();
+    expect(afterLateEnd).toEqual(["auto", "playback"]);
+    player.emitPlaying(); player.emitEnded(); expect(await next).toBe(true);
+    const third = audio.play(voice, 1, line); await flush();
+    expect(afterLateEnd).toEqual(["auto", "playback"]); // consumed, not every later sentence
+    player.emitPlaying(); player.emitEnded(); expect(await third).toBe(true);
+  });
+
   it("restores speaker routing for repeated answers and delayed media starts without changing gain or replaying", async () => {
     let type = "auto", nativeRoute = "auto", resets = 0;
     const routesAtPlay: string[] = [];
@@ -227,12 +285,12 @@ describe("mobile media ownership", () => {
       expect(routesAtPlay.at(-1)).toBe("playback");
       expect(player.volume).toBe(0.9);
       player.currentTime = 0.2;
-      nativeRoute = "quiet-capture"; // a slow media start completes after another service update
+      const atStart = resets;
       player.emitPlaying();
       expect(nativeRoute).toBe("playback");
       expect(player.currentTime).toBe(0.2);
       expect(player.play).toHaveBeenCalledTimes(i + 1);
-      const atStart = resets;
+      expect(resets).toBe(atStart); // first playing is already too late to change category
       player.emitPlaying(); // buffering/resume must not repeatedly reset the category
       expect(resets).toBe(atStart);
       player.emitEnded(); expect(await done).toBe(true);

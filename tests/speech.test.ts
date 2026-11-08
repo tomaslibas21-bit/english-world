@@ -44,7 +44,7 @@ class FakeRec implements SpeechRecognizer {
   end() { this.onend?.(); }
 }
 
-function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (text: string) => Verdict } = {}) {
+function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (text: string) => Verdict; serviceStarted?: boolean } = {}) {
   let now = 0, id = 0;
   const timers = new Map<number, { at: number; fn: () => void }>();
   const clock = {
@@ -76,7 +76,7 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (
   });
   attempt.start();
   const rec = () => recs[recs.length - 1];
-  rec().emitStart();
+  if (opts.serviceStarted !== false) rec().emitStart();
   const status = () => updates[updates.length - 1]?.status;
   return { attempt, advance, rec, recs, updates, commits, status };
 }
@@ -84,6 +84,113 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (
 beforeEach(() => resetSpeechForTests());
 
 describe("speech attempt", () => {
+
+  it.each([false, true])("accepts a complete current size answer promptly (final=%s)", final => {
+    const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
+    conv.start();
+    conv.input("A latte please.");
+    expect(conv.expectedIntents()).toContain("size_ans");
+    expect(conv.nlu.probe("Large please", conv.expectedIntents())).toBe("complete");
+    expect(conv.nlu.probe("Large", conv.expectedIntents())).toBe("open");
+    const h = harness({ evaluate: text => conv.nlu.probe(text, conv.expectedIntents()) });
+    h.rec().speech();
+    h.rec().results([{ final, alts: ["Large please"] }]);
+    if (final) h.rec().silence();
+    const wait = final ? SPEECH_TIMING.finishedAnswer : SPEECH_TIMING.interimStable;
+    h.advance(wait - 1);
+    expect(h.commits).toHaveLength(0);
+    h.advance(1);
+    expect(h.commits[0].text).toBe("Large please");
+    const out = conv.input(h.commits[0].text);
+    expect(out.parse?.segments.map(s => s.intent)).toContain("size_ans");
+    expect(out.lines.map(l => l.lineId)).not.toContain("ask_size");
+  });
+
+  it.each([false, true])("waits for a café Yes to grow into its intended order (final=%s)", final => {
+    const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
+    conv.start();
+    expect(conv.nlu.probe("Yes", conv.expectedIntents())).toBe("open");
+    expect(conv.nlu.probe("Large please", conv.expectedIntents())).toBe("open");
+    const h = harness({ evaluate: text => conv.nlu.probe(text, conv.expectedIntents()) });
+    h.rec().speech();
+    h.rec().results([{ final, alts: ["Yes"] }]);
+    if (final) h.rec().silence();
+    h.advance(SPEECH_TIMING.openAnswer - 100);
+    expect(h.commits).toHaveLength(0);
+    h.rec().speech();
+    h.rec().results([{ final, alts: ["Yes", "yeah"] }, { final, alts: ["I'd like a latte please"] }], 1);
+    if (final) h.rec().silence();
+    h.advance((final ? SPEECH_TIMING.finishedAnswer : SPEECH_TIMING.interimStable) + 1);
+    expect(h.commits[0].text).toBe("Yes I'd like a latte please");
+    const out = conv.input(h.commits[0].text);
+    expect(out.parse?.segments.map(s => s.intent)).toEqual(["order"]);
+    expect(out.lines.map(l => l.lineId)).toContain("ask_size");
+  });
+
+  it("bounds repeated no-speech errors without service-start or service-end and allows a fresh retry", () => {
+    const h = harness({ serviceStarted: false });
+    const stale = h.rec().onresult;
+    for (let i = 0; i < 12 && h.attempt.running; i++) {
+      h.rec().error("no-speech");
+      h.advance(2100);
+    }
+    expect(h.attempt.running).toBe(false);
+    expect(h.status()).toBe("nothing");
+    expect(h.commits).toHaveLength(0);
+    const previous = h.recs.length;
+    h.attempt.start();
+    expect(h.recs.length).toBe(previous + 1);
+    h.rec().emitStart();
+    stale?.({ results: [Object.assign([{ transcript: "stale answer" }], { isFinal: true })] });
+    h.rec().results([{ final: true, alts: ["Large"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 1);
+    expect(h.commits).toEqual([{ text: "Large", alts: [] }]);
+  });
+
+  it("recovers from a service-start timeout with a new recognizer, without reloading", () => {
+    const h = harness({ serviceStarted: false });
+    const first = h.rec();
+    const lateStart = first.onstart;
+    h.advance(SPEECH_TIMING.startup + 1);
+    expect(h.status()).toBe("error");
+    expect(h.attempt.running).toBe(false);
+    expect(first.aborted).toBe(true);
+    h.attempt.start();
+    expect(h.rec()).not.toBe(first);
+    lateStart?.();
+    expect(h.status()).toBe("starting");
+    h.rec().emitStart();
+    h.rec().results([{ final: true, alts: ["Large"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 1);
+    expect(h.commits).toEqual([{ text: "Large", alts: [] }]);
+  });
+
+  it("keeps real recognition results when Safari omits the service-start event", () => {
+    const h = harness({ serviceStarted: false });
+    h.advance(5000);
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.advance(SPEECH_TIMING.startup - 5000 + 1);
+    expect(h.attempt.running).toBe(true);
+    expect(h.status()).toBe("listening");
+    h.rec().results([{ final: false, alts: ["I'd like a latte"] }]);
+    h.advance(SPEECH_TIMING.interimStable + 1);
+    expect(h.commits).toEqual([{ text: "I'd like a latte", alts: [] }]);
+  });
+
+  it("cancels a missing-end recovery watchdog when the recognizer produces words again", () => {
+    const h = harness();
+    h.rec().error("no-speech");
+    h.advance(1000);
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.advance(1500);
+    expect(h.recs).toHaveLength(1);
+    expect(h.status()).toBe("listening");
+    h.rec().results([{ final: false, alts: ["I'd like a latte"] }]);
+    h.advance(SPEECH_TIMING.interimStable + 1);
+    expect(h.commits).toEqual([{ text: "I'd like a latte", alts: [] }]);
+  });
 
   it("keeps a later phrase when an empty interim placeholder is reused after a speech boundary", () => {
     const target = "thank you thank you very much";

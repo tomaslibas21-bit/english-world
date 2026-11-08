@@ -37,7 +37,8 @@ browser properties cannot establish that physical route.
 The report retains at most 400 event records. It contains monotonic event timings,
 recognizer and lease IDs, safe result slot counts, audio-session request/readback
 and errors, media/context states, recording hash IDs, requested gain and explicit
-listening results. It excludes speech recordings, transcript text, account IDs,
+listening results, pending route recovery and a boolean identifying standalone
+Home Screen mode. It excludes speech recordings, transcript text, account IDs,
 page URLs, signed audio URLs and file tokens. There is no upload endpoint and no
 additional `getUserMedia` capture.
 
@@ -53,7 +54,9 @@ flow. Preparing decodes offline. A reuses the game's HTMLAudioElement; B plays t
 same decoded recording through an AudioBufferSourceNode and the existing live
 AudioContext. Both request the frozen volume at playback rate 1. Neither changes
 the audio-session category, submits an answer, resolves a game playback request,
-or changes learning progress. Output is canceled on replacement, close, page
+or changes learning progress. A playback hold also defers a late recognition-end
+category change until a later normal idle start, preserving the comparison.
+Output is canceled on replacement, close, page
 hide/unmount, or new normal playback; stale decoding/resume cannot start later.
 
 Desktop Chromium/WebKit checks validate decoding, event ordering, ownership,
@@ -65,7 +68,9 @@ changes. Use a physical phone for this report.
 Safari's [USB Web Inspector](https://webkit.org/web-inspector/enabling-web-inspector/)
 can inspect the phone without Xcode or routing its speaker to the Mac. Enable
 Web Inspector under the iPhone's Safari advanced settings, connect/trust the Mac,
-and select the phone's Safari page in the Mac Safari Develop menu.
+and select the phone's Safari page in the Mac Safari Develop menu. Apple also
+documents [inspection of foreground Home Screen web apps](https://developer.apple.com/documentation/safari-developer-tools/inspecting-ios):
+look for the app's URL in the **Home Screen Web Apps** section under the device.
 
 ## Why compare output methods?
 
