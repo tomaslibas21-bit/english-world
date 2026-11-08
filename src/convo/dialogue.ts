@@ -13,6 +13,7 @@ import { Nlu, type NluResult, type Parse, type ParsedSegment } from "./nlu";
 import { soundRepair } from "./soundalike";
 import { isConfirmation } from "./normalize";
 import type { Gender } from "./lt-morph";
+import { returningSuggestion } from "../content/returning";
 
 
 /** Global intents that carry no content of their own ("okay", "thanks", "sorry"). */
@@ -476,7 +477,11 @@ export class Conversation {
     const st = this.effectiveStep();
     const suggest = this.pending?.suggest ?? (st ? this.stepSuggest(st) : undefined) ?? this.sit.suggest ?? [];
     const hints = this.pending?.hints ?? st?.hints ?? suggest.map((x) => x.hint).filter(Boolean) as string[];
-    return { suggest, hints: [...new Set(hints)] };
+    const returning = returningSuggestion(this.sit.id, this.opt.visits ?? 0, this.lastTurn.map(l => l.lineId), this.pending?.id, st?.id);
+    return {
+      suggest: returning ? [returning, ...suggest] : suggest,
+      hints: [...new Set(returning?.hint ? [returning.hint, ...hints] : hints)],
+    };
   }
 
   /** A step's suggestions now (some depend on the conversation so far). */
