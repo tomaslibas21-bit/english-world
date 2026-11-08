@@ -800,12 +800,19 @@ body.scene-on .tag-layer { display: none; }
   .convo .gx { padding-block: 3px; }
 }
 
-/* Keep both existing action groups together; on narrow panels context gets a centered row. */
+/* Keep translation, context and conversation controls on one row, with context centered. */
 .convo { container-type: inline-size; }
 .convo-head > .toggles { justify-self: start; }
 .convo-head > .head-actions { justify-self: end; }
 @container (max-width: 540px) {
-  .convo-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .convo-head .npc-info { grid-column: 1 / -1; grid-row: 2; justify-self: center; padding-top: 2px; }
-  .convo-head .head-actions { grid-column: 2; grid-row: 1; }
+  .convo-head { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) minmax(0, 3fr); gap: 4px; padding-inline: 6px; }
+  .convo-head > .toggles, .convo-head > .npc-info, .convo-head > .head-actions {
+    display: grid; align-items: center; gap: 2px; min-width: 0; width: 100%; justify-self: stretch;
+  }
+  .convo-head > .toggles, .convo-head > .head-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .convo-head > .npc-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .convo-head .toggle, .convo-head .npc-info-button, .convo-head > .head-actions .close-x {
+    width: 100%; max-width: 44px; min-width: 0; height: 44px; min-height: 44px; padding: 4px 2px; justify-self: center;
+  }
+  .convo-head .toggle { font-size: min(0.76em, 5cqw); }
 }
