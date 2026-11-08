@@ -4,6 +4,7 @@ import { audioKey, withoutAddressedNames } from "../audio-key";
 import { audioDir } from "../content/voices";
 import { holdPlaybackRoute, microphoneHandoffState, playbackRoute, waitForMicrophone } from "../convo/audioFocus";
 import { audioDiagnostic, audioDiagnosticsEnabled, audioSessionSnapshot, diagnosticError } from "../convo/audioDiagnostics";
+import { stretchSpeech } from "./timeStretch";
 
 export type DiagnosticPipeline = "html" | "buffer";
 export interface DiagnosticPlaybackState {
@@ -29,6 +30,15 @@ const SILENCE = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYA
 
 /** The clips' loudness is worked out this many times a second. */
 const ENVELOPE_RATE = 30;
+
+/** iOS media-element playback and native speech recognition share a problematic native
+ *  session. Use the game's Web Audio output for recordings on iPhone/iPad, including
+ *  iPad's desktop user agent. Other platforms retain their existing media player. */
+export function usesBufferRecordings(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent ?? "") ||
+    (/Macintosh|MacIntel/.test((navigator.userAgent ?? "") + (navigator.platform ?? "")) && navigator.maxTouchPoints > 1);
+}
 
 /** The token the course opened the game's page with (?t=), if any. */
 const PAGE_TOKEN = (() => {
@@ -81,10 +91,15 @@ export class AudioSystem {
   private downloads = new Map<string, Promise<void>>();
   private fallbackVoices: SpeechSynthesisVoice[] = [];
   /** The clip playing now, and its loudness once worked out (see loudness()), for the speaker's mouth. */
-  private clip: { el: HTMLAudioElement; key: string; done: boolean } | null = null;
+  private clip: { el?: HTMLAudioElement; key: string; done: boolean; position?: () => number; envelopeKey?: string } | null = null;
   /** Each clip's loudness: null while being worked out, empty when that failed. */
   private envelopes = new Map<string, Float32Array | null>();
   private decoder: BaseAudioContext | null = null;
+  /** Decoded normal/slow recordings share a 24 MiB budget; the active source retains
+   *  its own buffer if the next few clips evict it. No whole-course PCM downloads. */
+  private buffers = new Map<string, AudioBuffer>();
+  private bufferBytes = 0;
+  private decodings = new Map<string, Promise<AudioBuffer>>();
   private lastRecordingKey: string | null = null;
   private diagnosticSelection: { key: string; source: string; buffer: AudioBuffer; volume: number } | null = null;
   private diagnosticRun = 0;
@@ -175,6 +190,17 @@ export class AudioSystem {
   }
 
   unlock() {
+    if (usesBufferRecordings()) {
+      if (this.state === "blocked") { this.retry(); return; }
+      if (!playbackRoute()) return;
+      // Create/resume in the real gesture, before asynchronous MP3 fetch/decode. Do
+      // not prime an HTMLAudio element: even its silent play/pause uses that pipeline.
+      try {
+        const ctx = this.ac(false);
+        if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
+      } catch (error) { audioDiagnostic("context.unlock-error", { error: diagnosticError(error) }); }
+      return;
+    }
     if (this.ctx && this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
     if (this.state === "blocked") { this.retry(); return; }
     if (this.unlocked || (this.clip && !this.clip.done)) return;
@@ -224,7 +250,10 @@ export class AudioSystem {
         if (!this.ready) { audioDiagnostic("recording.manifest-unavailable", { manifestReady: false }); this.setState("unavailable"); return; }
         const key = this.recordingKey(voice, speed, text);
         audioDiagnostic("recording.lookup", { clipId: key, recordingPresent: !!this.manifest[key], manifestReady: this.ready });
-        if (this.manifest[key]) this.playRecording(request, key, text, opts);
+        if (this.manifest[key]) {
+          if (usesBufferRecordings()) this.playBufferRecording(request, key, text, opts);
+          else this.playRecording(request, key, text, opts);
+        }
         else this.speakFallback(request, text, opts, "manifest-miss");
       };
       const start = () => { void begin().catch(() => { if (!request.done) this.setState("unavailable"); }); };
@@ -279,6 +308,160 @@ export class AudioSystem {
     })().finally(() => { this.downloads.delete(id); });
     this.downloads.set(id, work);
     return work;
+  }
+
+  private async recordingBuffer(key: string, slow: boolean): Promise<AudioBuffer> {
+    const id = `${this.cacheKey(key)}${slow ? "#slow" : ""}`;
+    const cached = this.buffers.get(id);
+    if (cached) return cached;
+    const pending = this.decodings.get(id);
+    if (pending) return pending;
+    const work = (async () => {
+      const OAC = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
+      if (!OAC) throw { name: "OfflineDecoderUnavailable" };
+      this.decoder ??= new OAC(1, 1, 44100);
+      let buffer: AudioBuffer;
+      if (slow) {
+        const original = await this.recordingBuffer(key, false);
+        const channels = stretchSpeech(Array.from({ length: original.numberOfChannels }, (_, i) => original.getChannelData(i)), original.sampleRate, 0.82);
+        buffer = this.decoder.createBuffer(channels.length, channels[0].length, original.sampleRate);
+        channels.forEach((channel, i) => buffer.getChannelData(i).set(channel));
+      } else {
+        await this.cacheRecording(key);
+        const source = this.recordings.get(this.cacheKey(key));
+        if (!source) throw { name: "RecordingUnavailable" };
+        const response = await fetch(source);
+        buffer = await this.decoder.decodeAudioData(await response.arrayBuffer());
+      }
+      if (!Number.isFinite(buffer.duration) || buffer.duration <= 0 || buffer.duration > 180) throw { name: "InvalidRecordingDuration" };
+      const bytes = buffer.length * buffer.numberOfChannels * Float32Array.BYTES_PER_ELEMENT;
+      const limit = 24 * 1024 * 1024;
+      while (this.buffers.size && this.bufferBytes + bytes > limit) {
+        const [oldId, old] = this.buffers.entries().next().value!;
+        this.buffers.delete(oldId); this.bufferBytes -= old.length * old.numberOfChannels * Float32Array.BYTES_PER_ELEMENT;
+      }
+      if (bytes <= limit) { this.buffers.set(id, buffer); this.bufferBytes += bytes; }
+      return buffer;
+    })().finally(() => { this.decodings.delete(id); });
+    this.decodings.set(id, work);
+    return work;
+  }
+
+  /** The same authenticated MP3, decoded once and sent through the existing Web Audio
+   *  context. No HTML media play/pause and no automatic pipeline/voice fallback on iOS. */
+  private playBufferRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }) {
+    this.lastRecordingKey = key;
+    let disposed = false, run = 0, playing = false;
+    let buffer: AudioBuffer | null = null, ctx: AudioContext | null = null;
+    let source: AudioBufferSourceNode | null = null, gain: GainNode | null = null;
+    let offset = 0, startedAt = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let releaseRoute: (() => void) | undefined;
+    const current = () => !disposed && !request.done;
+    const position = () => Math.min(buffer?.duration ?? 0, offset + (playing && ctx ? Math.max(0, ctx.currentTime - startedAt) : 0));
+    const envelopeKey = `${key}${opts.slow ? "#slow" : ""}`;
+    const clip = { key, done: false, position, envelopeKey };
+    this.clip = clip;
+    const diagnostic = (event: string, error?: unknown) => audioDiagnostic(event, {
+      clipId: key, pipeline: "buffer", currentTime: position(), duration: buffer?.duration,
+      volume: this.volume, playbackRate: 1, contextState: ctx?.state, contextTime: ctx?.currentTime,
+      ...(error ? { error: diagnosticError(error) } : {}), ...microphoneHandoffState(), ...audioSessionSnapshot(),
+    });
+    const stopOutput = () => {
+      offset = position(); playing = false;
+      if (source) { source.onended = null; try { source.stop(); } catch { /* not started/already ended */ } source.disconnect(); source = null; }
+      gain?.disconnect(); gain = null;
+      releaseRoute?.(); releaseRoute = undefined;
+    };
+    const waiting = (state: "blocked" | "unavailable", error?: unknown) => {
+      if (!current()) return;
+      run++; clearTimeout(timer); stopOutput();
+      this.setState(state); diagnostic(`buffer.${state}`, error);
+    };
+    const interrupted = () => {
+      if (current() && playing && ctx?.state !== "running") waiting(ctx?.state === "closed" ? "unavailable" : "blocked", "ContextInterrupted");
+    };
+    const hidden = () => { if (document.hidden && current()) waiting("blocked", "PageHidden"); };
+    const pagehide = () => { if (current()) waiting("blocked", "PageHidden"); };
+    const cleanup = () => {
+      if (disposed) return;
+      disposed = true; run++; clip.done = true;
+      clearTimeout(timer); stopOutput();
+      ctx?.removeEventListener("statechange", interrupted);
+      document.removeEventListener("visibilitychange", hidden);
+      window.removeEventListener("pagehide", pagehide);
+    };
+    request.cleanup = cleanup;
+    document.addEventListener("visibilitychange", hidden);
+    window.addEventListener("pagehide", pagehide);
+    const start = () => {
+      if (!current() || !buffer || playing) return;
+      const attempt = ++run;
+      clearTimeout(timer);
+      if (document.hidden) { waiting("blocked", "PageHidden"); return; }
+      if (!playbackRoute(true)) {
+        void waitForMicrophone().then(() => { if (current() && attempt === run) start(); });
+        return;
+      }
+      ctx?.removeEventListener("statechange", interrupted);
+      try { ctx = this.ac(false); }
+      catch (error) { waiting("unavailable", error); return; }
+      if (!ctx) { waiting("unavailable", "AudioContextUnavailable"); return; }
+      ctx.addEventListener("statechange", interrupted);
+      this.setState("loading");
+      const launch = () => {
+        if (!current() || attempt !== run || !ctx || !buffer) return;
+        if (document.hidden || ctx.state !== "running") { waiting("blocked", "ContextNotRunning"); return; }
+        // A microphone can start while resume() is pending. Recheck at the actual
+        // source start, and let cancellation invalidate this awaited handoff.
+        if (microphoneHandoffState().captures) {
+          void waitForMicrophone().then(() => { if (current() && attempt === run) start(); });
+          return;
+        }
+        clearTimeout(timer);
+        try {
+          source = ctx.createBufferSource(); gain = ctx.createGain();
+          const active = source;
+          source.buffer = buffer; source.playbackRate.value = 1;
+          gain.gain.value = this.volume;
+          source.connect(gain); gain.connect(ctx.destination);
+          source.onended = () => {
+            if (!current() || source !== active || attempt !== run) return;
+            // stop()/interruption can also produce ended. Only the context's
+            // rendered clock reaching this source's end completes the NPC line.
+            if (position() + 128 / ctx!.sampleRate < buffer!.duration) { waiting("blocked", "EarlyBufferEnd"); return; }
+            diagnostic("buffer.ended"); request.finish(true);
+          };
+          releaseRoute = holdPlaybackRoute();
+          startedAt = ctx.currentTime; playing = true;
+          source.start(0, offset);
+          this.setState("playing"); diagnostic("buffer.playing");
+          timer = setTimeout(() => waiting("blocked", "PlaybackTimeout"), (buffer.duration - offset) * 1000 + 5000);
+        } catch (error) { waiting("unavailable", error); }
+      };
+      diagnostic("buffer.play-request");
+      // Call resume synchronously from Retry's tap. A hanging promise cannot start
+      // after Stop, another line, a new attempt, or the visible recovery timeout.
+      timer = setTimeout(() => waiting("blocked", "ContextResumeTimeout"), 5000);
+      if (ctx.state === "running") launch();
+      else { try { void ctx.resume().then(launch, (error) => { if (current() && attempt === run) waiting("blocked", error); }); } catch (error) { waiting("blocked", error); } }
+    };
+    const load = () => {
+      if (!current()) return;
+      const attempt = ++run;
+      clearTimeout(timer); this.setState("loading");
+      diagnostic("buffer.load");
+      timer = setTimeout(() => { if (current() && attempt === run) waiting("unavailable", "RecordingLoadTimeout"); }, 15000);
+      void this.recordingBuffer(key, !!opts.slow).then((decoded) => {
+        if (!current() || attempt !== run) return;
+        clearTimeout(timer); buffer = decoded;
+        this.envelope(envelopeKey, decoded);
+        start();
+      }, (error) => { if (current() && attempt === run) waiting("unavailable", error); });
+    };
+    request.retry = () => { if (buffer) start(); else load(); };
+    request.fallback = () => { cleanup(); this.speakFallback(request, text, opts); };
+    load();
   }
 
   private playRecording(request: PlaybackRequest, key: string, text: string, opts: { slow?: boolean; male?: boolean }) {
@@ -386,14 +569,16 @@ export class AudioSystem {
   level(): number | null {
     const c = this.clip;
     if (!c) return null;
-    if (c.done || c.el.ended) return -1;
+    if (c.done || c.el?.ended) return -1;
+    const time = c.position?.() ?? c.el?.currentTime ?? 0;
+    const key = c.envelopeKey ?? c.key;
     // worked out only for lines someone's mouth follows (not the example answers)
-    if (!this.envelopes.has(c.key)) this.loudness(c.key, c.el.src);
-    const env = this.envelopes.get(c.key);
+    if (!this.envelopes.has(key) && c.el) this.loudness(key, c.el.src);
+    const env = this.envelopes.get(key);
     // still being worked out: the mouth stays shut until the voice starts, then keeps a rhythm
-    if (env === null) return c.el.currentTime < 0.05 ? 0 : null;
+    if (env === null) return time < 0.05 ? 0 : null;
     if (!env?.length) return null;
-    return env[Math.min(env.length - 1, Math.floor(c.el.currentTime * ENVELOPE_RATE))] ?? 0;
+    return env[Math.min(env.length - 1, Math.floor(time * ENVELOPE_RATE))] ?? 0;
   }
 
   /** Works out a clip's loudness, 30 times a second, from a second copy of the file (decoded, never played: the voice
@@ -413,21 +598,26 @@ export class AudioSystem {
       const dec = this.decoder;
       // (the browser also rejects the promise it returns: the error callback has it already, so that one is let go)
       const buf = await new Promise<AudioBuffer>((res, rej) => { void (dec.decodeAudioData(bytes, res, rej) as Promise<AudioBuffer> | undefined)?.catch(() => {}); });
-      const data = buf.getChannelData(0), step = buf.sampleRate / ENVELOPE_RATE;
-      const env = new Float32Array(Math.ceil(data.length / step));
-      for (let i = 0; i < env.length; i++) {
-        let sum = 0;
-        const a = Math.floor(i * step), b = Math.min(data.length, Math.floor((i + 1) * step));
-        for (let j = a; j < b; j++) sum += data[j] * data[j];
-        env[i] = Math.sqrt(sum / Math.max(1, b - a));
-      }
-      // as loud as the line gets (its 90th percentile, so one peak doesn't decide it) is a wide-open mouth; quiet
-      // breaths and room noise keep it shut
-      const peak = Float32Array.from(env).sort()[Math.floor(env.length * 0.9)] || 1;
-      for (let i = 0; i < env.length; i++) { const v = env[i] / peak; env[i] = v < 0.12 ? 0 : Math.min(1, (v - 0.12) / 0.75); }
-      if (this.envelopes.size > 300) this.envelopes.delete(this.envelopes.keys().next().value!);
-      this.envelopes.set(key, env);
+      this.envelope(key, buf);
     } catch { failed(); /* the mouth keeps its rhythm */ }
+  }
+
+  private envelope(key: string, buf: AudioBuffer) {
+    if (this.envelopes.get(key)?.length) return;
+    const data = buf.getChannelData(0), step = buf.sampleRate / ENVELOPE_RATE;
+    const env = new Float32Array(Math.ceil(data.length / step));
+    for (let i = 0; i < env.length; i++) {
+      let sum = 0;
+      const a = Math.floor(i * step), b = Math.min(data.length, Math.floor((i + 1) * step));
+      for (let j = a; j < b; j++) sum += data[j] * data[j];
+      env[i] = Math.sqrt(sum / Math.max(1, b - a));
+    }
+    // as loud as the line gets (its 90th percentile, so one peak doesn't decide it) is a wide-open mouth; quiet
+    // breaths and room noise keep it shut
+    const peak = Float32Array.from(env).sort()[Math.floor(env.length * 0.9)] || 1;
+    for (let i = 0; i < env.length; i++) { const v = env[i] / peak; env[i] = v < 0.12 ? 0 : Math.min(1, (v - 0.12) / 0.75); }
+    if (this.envelopes.size > 300) this.envelopes.delete(this.envelopes.keys().next().value!);
+    this.envelopes.set(key, env);
   }
 
   private speakFallback(request: PlaybackRequest, text: string, opts: { slow?: boolean; male?: boolean }, reason: "manifest-miss" | "explicit-choice" = "explicit-choice") {
@@ -605,7 +795,7 @@ export class AudioSystem {
   }
 
   private ac(resume = true) {
-    if (!this.ctx) {
+    if (!this.ctx || this.ctx.state === "closed") {
       const AC = window.AudioContext || (window as any).webkitAudioContext;
       if (!AC) return null;
       this.ctx = new AC();

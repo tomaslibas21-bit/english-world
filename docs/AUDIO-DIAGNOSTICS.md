@@ -1,5 +1,15 @@
 # Physical iPhone audio comparison
 
+The current iPhone/iPad recorded player uses Web Audio (`buffer.*` events; report
+version `2026-11-08-ios-buffer-3`). Other platforms retain HTMLAudio. Comparison A
+still explicitly tests HTMLAudio and B Web Audio with the same frozen recording.
+For the first physical check after this release, use a freshly reopened installed
+app and ordinary conversations without preparing A/B: check both sentences after
+the first microphone answer and later conversations. Only if the problem recurs,
+use the comparison/report to distinguish output behavior; playing A/B can itself
+change the audio context state. `contextState` records the buffer context's state
+separately from the native session's DOM `state`. Neither proves speaker loudness.
+
 This is an opt-in diagnostic, not a fix for the reported drop in audible volume.
 Open the authenticated game with `?audioDebug=1`. The course forwards its query,
 so the course link is `/zaisti?audioDebug=1`. No diagnostic controls or event

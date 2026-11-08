@@ -13,6 +13,10 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
   try {
     for (const lateRoute of [false, true]) for (const offline of [false, true]) {
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      // This harness covers the retained HTMLAudio backend. Touch-enabled desktop
+      // WebKit otherwise resembles a desktop-UA iPad; the iOS branch has its own
+      // real-buffer harness in ios-buffer-audio.mjs.
+      await context.addInitScript(() => Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 0 }));
       const page = await context.newPage();
       await page.route('**/mobile-audio-harness.html', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><button id="play">Play four lines</button>' }));
       await page.route('**/mobile-recordings/*.mp3', route => route.fulfill({ contentType: 'audio/mpeg', body: recording }));

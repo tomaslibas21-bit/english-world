@@ -1,5 +1,5 @@
 // Opt-in, in-memory evidence for a physical-device audio test. Never records speech or sends a report.
-export const AUDIO_DIAGNOSTICS_VERSION = "2026-11-08-audio-route-2";
+export const AUDIO_DIAGNOSTICS_VERSION = "2026-11-08-ios-buffer-3";
 export const AUDIO_DIAGNOSTICS_LIMIT = 400;
 
 export function audioDiagnosticsEnabled() {
@@ -41,6 +41,7 @@ const fields = new Set([
   "duration",
   "sampleRate",
   "contextTime",
+  "contextState",
   "paused",
   "ended",
   "hidden",
