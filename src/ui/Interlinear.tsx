@@ -8,14 +8,15 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from "react-dom";
 import type { Sentence } from "../convo/compose";
 import { ipaForUnit } from "../convo/ipa";
-import { natSaysMore, placeTip, type TipSpot } from "./natTip";
+import { natMatchesGloss, natSaysMore, placeTip, type TipSpot } from "./natTip";
 import { useCards, cardKey } from "../state/cards";
 import { WordPopover, inView } from "./Cards";
 
 const unitOf = (t: EventTarget | null) => (t instanceof Element ? t.closest<HTMLElement>(".u[data-i]") : null);
 
-/** `natTip`: the other person's lines; with the natural sentence off (`nat` false), it can sit behind an asterisk. */
-export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; highlight?: boolean }) {
+/** `natTip`: NPC lines with the natural sentence off. `compactNat`: player examples, with differing natural
+ *  wording behind an asterisk on every screen size and no separate translation row. */
+export function Interlinear({ s, lt, ipa, nat, natTip, compactNat, highlight }: { s: Sentence; lt: boolean; ipa: boolean; nat?: boolean; natTip?: boolean; compactNat?: boolean; highlight?: boolean }) {
   const plain = !lt && !ipa;
   const saved = useCards((c) => c.keys);
   const [open, setOpen] = useState<{ i: number; el: HTMLElement } | null>(null);
@@ -23,7 +24,8 @@ export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentenc
   const close = useCallback(() => setOpen(null), []);
   useEffect(() => { setOpen(null); }, [s.en]); // another sentence in the same place
   const saysMore = useMemo(() => natSaysMore(s), [s]);
-  const star = !!natTip && lt && nat === false && saysMore;
+  const matchesGloss = useMemo(() => natMatchesGloss(s), [s]);
+  const star = lt && !!s.nat?.trim() && (compactNat ? !matchesGloss : !!natTip && nat === false && saysMore);
   // only a deliberate tap on a word opens the popover (not a text selection or a drag)
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const el = unitOf(e.target), from = down.current;
@@ -48,10 +50,10 @@ export function Interlinear({ s, lt, ipa, nat, natTip, highlight }: { s: Sentenc
           );
           // the asterisk right after the last word, beside its unit rather than in it (so a tap on it is not a tap
           // on the word), the two kept on one line
-          return star && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en} text={s.nat} /></span> : unit;
+          return star && i === s.units.length - 1 ? <span className="nat-last" key={i}>{unit}<NatTip key={s.en + "|" + s.nat} text={s.nat} /></span> : unit;
         })}
       </div>
-      {lt && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
+      {lt && !compactNat && nat !== false && s.nat && <div className="nat" lang="lt">{s.nat}</div>}
       {open && open.i < s.units.length && <WordPopover s={s} index={open.i} anchor={open.el} onClose={close} />}
     </div>
   );

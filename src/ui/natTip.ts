@@ -20,6 +20,12 @@ export function glossLine(units: Sentence["units"]): string {
   return units.filter((u) => !u.lt.trim().startsWith("—")).map((u) => u.lt).join(" ");
 }
 
+/** Player examples need the natural wording whenever it differs from the visible glosses. Ignore only
+ *  punctuation, case, spacing and untranslated dash units; retain changes in order, grammar or meaning. */
+export function natMatchesGloss(s: Pick<Sentence, "units" | "nat">): boolean {
+  return natNorm(s.nat ?? "") === natNorm(glossLine(s.units));
+}
+
 /** Fillers and particles that carry no content of their own, so a natural sentence that only adds one of them says
  *  nothing new: na, nu (well), tai (so), o, ir (and), ar (the question particle), gi, juk (after all), ką (as in „ką
  *  gi“), štai, va (here, look). Kept short on purpose: every other word counts. Not gerai: where a natural sentence

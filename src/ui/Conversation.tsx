@@ -429,8 +429,8 @@ function Guide({ sit, formal, gender }: { sit: SituationDef; formal: boolean; ge
             <div className="gx" key={i}>
               <button className="play" onClick={() => { game?.activeSession?.stopListening(); audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, ex.say); }} title="Klausyti" aria-label="Klausyti"><Icon name="speaker" size={19} /></button>
               <div className="gx-text" tabIndex={0} role="region" aria-label={`Atsakymo pavyzdys ${i + 1}`}>
-                {/* word by word, as the other person's lines: Lithuanian under each word, the natural sentence below */}
-                <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} />
+                {/* Keep the glosses; differing natural wording is available on tap or hover. */}
+                <Interlinear s={ex} lt={settings.sayLt} ipa={settings.sayIpa} compactNat />
                 <RepeatResult en={ex.en} />
               </div>
               <RepeatButton ex={ex} />
@@ -587,7 +587,7 @@ function HintGroupView({ id, g, sit, formal, gender, chosen, lt, ipa, used }: { 
         <div className={"hint-row" + (used.includes(it.id) ? " used" : "")} key={it.id + i}>
           {hasGap && <div className="pat">{renderGap(gap.en)}{it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : it.register === "casual" ? "laisviau" : ""}</span>}</div>}
           <div className="ex">
-            <Interlinear s={full} lt={lt} ipa={ipa} nat={lt} />
+            <Interlinear s={full} lt={lt} ipa={ipa} compactNat />
             {!hasGap && it.register && <span className={"tag " + it.register}>{it.register === "polite" ? "mandagu" : "laisviau"}</span>}
             {it.note && <div className="note">{it.note}</div>}
           </div>
