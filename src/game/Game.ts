@@ -247,6 +247,8 @@ export class Game implements GameApi {
     window.addEventListener("resize", this.onResize);
     this.renderer.setAnimationLoop(this.loop);
     this.refreshObjective();
+    // Keep the logo over the canvas until an actual town frame is ready to show.
+    this.renderer.render(this.scene, this.rig.cam);
     this.onReady?.();
   }
 
