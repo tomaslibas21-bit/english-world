@@ -8,7 +8,9 @@ The owner found the final syllable confusingly prominent. The original word-tran
 
 The replacement keeps the exact transcript, `g_mia`, Callirrhoe, speed 1, and Mia's bright, friendly delivery. Only its non-spoken delivery guidance adds first-syllable `/ˈlɑːteɪ/` (“LAH-tay”) and a gentler question finish. It was generated through Gemini Batch. Signal checks show no clipping and quiet boundaries; the comparison found the same established character voice, exact words, no extra speech or noise, and clearer initial stress.
 
-The single repaired key is `f621651c0cb8`: duration 3.57 → 3.29 seconds, content revision `d476ac769b26`. The full accepted MP3 SHA-256 is `d476ac769b262a489a74b7c6c942ba19d3323cf90d3208f082ed2c18bbf368cc`. The original is backed up before replacement. Add the revision to `public/audio-v2/repair-versions.json` and to the course export so cached audio gets a new URL. All other catalogue durations and existing repair revisions must remain unchanged.
+The reported repaired key is `f621651c0cb8`: duration 3.57 → 3.29 seconds, content revision `d476ac769b26`. The full accepted MP3 SHA-256 is `d476ac769b262a489a74b7c6c942ba19d3323cf90d3208f082ed2c18bbf368cc`.
+
+The completed audit also confirmed the same problem in Mia's existing “Hey, welcome back! The usual? A latte?”, key `9edadd559e65`. Its replacement is 3.21 seconds (formerly 2.86), revision `8756b7e80d28`, SHA-256 `8756b7e80d28cc6132ea993bbe67062ae32f1361ac088a24a54ee7e93a57c71d`. Both keep the exact words and original Callirrhoe casting, with clearer first-syllable stress and less prominent question endings. Originals are backed up before replacement. Register both revisions in the source and course export so cached audio gets new URLs; all other 39,216 durations and existing Walter repair must remain unchanged.
 
 ## What to check separately
 
@@ -25,13 +27,25 @@ All 39,218 published keys were matched to their recorded or currently composed t
 
 Other useful review candidates actually occur in the catalogue:
 
-| Category | Examples | Reason to prioritize |
-| --- | --- | --- |
-| Borrowed menu words | cappuccino, americano, espresso, croissant, mocha, bruschetta, minestrone, lasagna, risotto, tiramisu, gelato, penne | English adaptations can differ from source-language vowels or stress; established English variants must be allowed. |
-| Ordinary English | receipt, reservation, available, police, hotel, allergy, medicine, vegetables, interesting | Familiar spelling does not certify generated pronunciation; vowel reduction and lexical stress still matter. |
-| Context and word-family changes | record, refund, address, photography | Part of speech, meaning or related word forms can change stress. Check the complete sentence and accepted variants. |
+| Category                        | Examples                                                                                                             | Reason to prioritize                                                                                                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Borrowed menu words             | cappuccino, americano, espresso, croissant, mocha, bruschetta, minestrone, lasagna, risotto, tiramisu, gelato, penne | English adaptations can differ from source-language vowels or stress; established English variants must be allowed. |
+| Ordinary English                | receipt, reservation, available, police, hotel, allergy, medicine, vegetables, interesting                           | Familiar spelling does not certify generated pronunciation; vowel reduction and lexical stress still matter.        |
+| Context and word-family changes | record, refund, address, photography                                                                                 | Part of speech, meaning or related word forms can change stress. Check the complete sentence and accepted variants. |
 
-This is a risk inventory, not a claim that the listed recordings are wrong or that every context has been audited. The wider listening check samples 26 represented words, while a complete “latte” check covers all 65 takes. Do not generalize a sample pass to all 39,218 recordings.
+This is a risk inventory, not a claim that the listed recordings are wrong or that every context has been audited. The listening check samples 26 represented words, while the complete “latte” check covers all 65 takes. Do not generalize a sample pass to all 39,218 recordings.
+
+## Completed review and its limits
+
+- Reviewed the actual stored audio of all 65 “latte/lattes” takes: 39 Mia clips and 13 for each learner-example voice. The additional 26 samples cover one recorded context for each represented priority word.
+- Gemini 3.8 Flash initially marked 11 “latte” clips for review, mainly question endings. These were review flags, not an error count.
+- A second, blinded Gemini 4 Argon pass checked those 11 plus three controls in shorter groups. It found first-syllable stress in 13 and confirmed an error in the older bare-latte greeting `9edadd559e65`. This also independently accepted the already replaced large-latte take. The ten uncorroborated flags remain a clarity watchlist; they were not automatically re-recorded.
+- The two replacements passed comparative pronunciation/character/wording checks and signal checks. Only those two objects and their duration/revision entries were changed.
+- The 26 other-word samples produced no additional stress flags. That does not check every recording or every noun/verb use of those words.
+
+See [the structured audit](LATTE-AUDIT-2026-11-08.json) for per-key screening and recheck outcomes. Model judgments varied with prompt and context; this is an AI-assisted review, not calibrated human phonetic certification. In particular, a strong question pitch rise and misplaced lexical stress must not be treated as interchangeable, and a human report of confusing delivery remains actionable even when one model passes it.
+
+The review separately noted singular articles paired with plural nouns in some quantity-based returning-greeting variants (for example, “a lattes”). This is a distinct wording/template issue, not a stress diagnosis; the pronunciation repair does not rewrite those templates or label their first-syllable stress wrong.
 
 ## Research and limits
 

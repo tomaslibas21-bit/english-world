@@ -1,0 +1,1619 @@
+{
+  "date": "2026-11-08",
+  "scope": "English World prerecorded English game audio only",
+  "catalogueEntriesTraced": 39218,
+  "latteClips": 65,
+  "latteByVoice": {
+    "g_coach_f": 13,
+    "g_mia": 39,
+    "g_coach_m": 13
+  },
+  "otherWordSamples": 26,
+  "initialReviewModel": "gemini-3.8-flash",
+  "independentReviewModel": "gemini-4-argon",
+  "initialLatteReviewFlags": 11,
+  "independentClips": 14,
+  "independentClear": 13,
+  "additionalCorroboratedStressErrors": ["9edadd559e65"],
+  "repairs": {
+    "f621651c0cb8": {
+      "say": "Hey, welcome back! The usual? A large latte?",
+      "voice": "g_mia",
+      "gv": "Callirrhoe",
+      "seconds": 3.29,
+      "sha256": "d476ac769b262a489a74b7c6c942ba19d3323cf90d3208f082ed2c18bbf368cc",
+      "originalSHA256": "aa3600dcc68f0819df75871d276f8a3416497cae3f2b528637672355af24e776",
+      "originalDuration": 3.57,
+      "acceptedComparison": {
+        "per_segment": [
+          {
+            "id": "A",
+            "transcription": "Hey, welcome back. The usual? A large latte?",
+            "clear_first_syllable_stress": true,
+            "second_syllable_overemphasized": false,
+            "teaching_clarity": "pass",
+            "voice_matches_R": true,
+            "extra_speech_or_noise": "none",
+            "confidence": 0.8,
+            "reason": "Clear pitch accent and duration on the first syllable 'lah' with a soft, natural terminal rise on 'te' that avoids shifting lexical stress."
+          },
+          {
+            "id": "B",
+            "transcription": "Hey! Welcome back. The usual? A large latte?",
+            "clear_first_syllable_stress": false,
+            "second_syllable_overemphasized": true,
+            "teaching_clarity": "review",
+            "voice_matches_R": true,
+            "extra_speech_or_noise": "none",
+            "confidence": 0.75,
+            "reason": "The question inflection sharply raises pitch and duration on '-te', creating an unnatural lah-TAY contour confusing for learners."
+          }
+        ],
+        "preferred": "A",
+        "comparison_reason": "A correctly prioritizes primary stress on the initial syllable while executing a subtle question rise, whereas B overly elongates and emphasizes the final syllable."
+      },
+      "comparisonModel": "gemini-3.8-flash",
+      "signalChecks": {
+        "seconds": 3.288,
+        "rmsDb": -19.47,
+        "tail20msDb": -72.45,
+        "head10msDb": -75.14,
+        "clippedSamples": 0,
+        "passed": true
+      },
+      "storedAudioReadbackMatches": true
+    },
+    "9edadd559e65": {
+      "say": "Hey, welcome back! The usual? A latte?",
+      "voice": "g_mia",
+      "gv": "Callirrhoe",
+      "seconds": 3.21,
+      "sha256": "8756b7e80d28cc6132ea993bbe67062ae32f1361ac088a24a54ee7e93a57c71d",
+      "originalSHA256": "2b5cfbb7ea3940537a8140378b842238b23b84d523329a57e71782387f4f843c",
+      "originalDuration": 2.86,
+      "acceptedComparison": {
+        "per_segment": [
+          {
+            "id": "A",
+            "transcription": "Hey, welcome back! The usual? A latte?",
+            "clear_first_syllable_stress": true,
+            "second_syllable_overemphasized": false,
+            "teaching_clarity": "pass",
+            "voice_matches_R": true,
+            "extra_speech_or_noise": "none",
+            "confidence": 4,
+            "reason": "Clear stress on 'lat' with a lighter terminal rise on 'te' that fits natural question inflection without shifting primary lexical stress."
+          },
+          {
+            "id": "B",
+            "transcription": "Hey, welcome back! The usual? A latte?",
+            "clear_first_syllable_stress": false,
+            "second_syllable_overemphasized": true,
+            "teaching_clarity": "review",
+            "voice_matches_R": true,
+            "extra_speech_or_noise": "none",
+            "confidence": 4,
+            "reason": "Pitch and duration on 'te' are exaggerated, creating ambiguous stress that leans toward 'lah-TAY'."
+          }
+        ],
+        "preferred": "A",
+        "comparison_reason": "A keeps primary prominence on the first syllable of 'latte' with appropriate question intonation, whereas B over-stresses the final syllable."
+      },
+      "comparisonModel": "gemini-3.8-flash",
+      "signalChecks": {
+        "seconds": 3.209,
+        "rmsDb": -19.44,
+        "tail20msDb": -69.5,
+        "clippedSamples": 0,
+        "passed": true
+      },
+      "storedAudioReadbackMatches": true
+    }
+  },
+  "latteResults": [
+    {
+      "key": "013e77ed758d",
+      "text": "Could I have a latte, please?",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "09bb5b61a73b21029a304286ff6949d0196691c4088e40c438fd41249d02d7f1",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Clear /ˈlɑːteɪ/ with primary initial stress despite sentence rise."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "In non-final position before 'please', the first syllable exhibits clear pitch, intensity, and durational prominence over the second syllable.",
+        "grammar_note": "None."
+      },
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "03b328911a21",
+      "text": "Hey, welcome back! The usual? A small lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "5fdafc56842994fe9317e72d344c3e41bbb2ab170f49450d63852eeb7591f5ac",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "medium",
+        "reason": "Question contour causes pitch rise on the final syllable, but first syllable retains primary stress."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable has clear prominence with an open vowel, greater intensity, and duration, while the second syllable carries the rising pitch of the question contour without shifting lexical stress.",
+        "grammar_note": "Number agreement error: singular article 'a' combined with plural noun 'lattes' ('a small lattes')."
+      },
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "0406a715b2e5",
+      "text": "A latte, please.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "638e82a386fbbc5515f7d9f033e102fd44e16f32dfbebdc13ebba4fc341128e9",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "second-syllable",
+        "confidence": "high",
+        "reason": "Intonation and duration put noticeable prominence on the second syllable, sounding close to lah-TAY."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable clearly bears primary prominence with higher pitch, intensity, and vowel duration than the second syllable.",
+        "grammar_note": "Grammatically normal."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "05bdf9536975",
+      "text": "A medium latte is six twenty-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "47b1a79719e00dd14a6d59882e8fce78c2f4960e208b48d4773c11d6daf6789c",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Clear trochaic stress and standard GA vowel realization."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "07e351ef308d",
+      "text": "A medium iced latte is six seventy-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "74ea7e0fefddf2fa8e8aec5f27ed1d4ff3244daaf0995ab5b4d96985f2cc57cf",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Standard pronunciation with distinct initial stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "0adcd5b11572",
+      "text": "I think I'll have a latte.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "9b669ed24d669859748fa6d57637a5caedfb262607618ddc450bd21155416ff5",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Accurate lexical stress and clear vowel qualities."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "0d76b76f9cb0",
+      "text": "I'd like a latte, please.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "999525d934133ccf623e57f885df1f204a0b4826b0aa3f35d2a025f942d2f493",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Standard GA first-syllable stress pattern."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "0f3b3e34c2a5",
+      "text": "A medium iced latte is five twenty-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "edf5a36aa4e8872f67cf2336324a3e2b7965a0f7f58a7ef315e8c8de1098b1ee",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Pronounced clearly with correct trochaic stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "11fb5fc26a2f",
+      "text": "A large iced latte is six fifty.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "353dc951b753103c91752e67d84a2ca276e0c9e16f9add2761af4bc5e7f2dad2",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Accurate initial stress and standard vowel realization."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "133068bf0b96",
+      "text": "A small iced latte is four seventy-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "92ea2fabb703a8c33c5abe69014181a89669b0e8cb96afb791612ae274f661e9",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Clear first-syllable primary stress and correct phonetics."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "180fca7cff14",
+      "text": "A small iced latte is six twenty-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "8dc1fa70bdee29e7027b890e65279f5bc5771034612d800343a2cbe5bb31c5c9",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Standard pronunciation with clear initial stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "19bcbd49ec10",
+      "text": "I'll have a latte.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "157e27e83b3ccf86746444bdba3a98a77682aaf4ceaa062a7e5d4970729e2f31",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Correct lexical stress on first syllable."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "Clear trochaic stress pattern with strong intensity, duration, and pitch peak on the first syllable 'la-', followed by a falling declarative pitch on '-te'.",
+        "grammar_note": "Grammatically normal."
+      },
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "19f8f0f0512e",
+      "text": "I'll get a latte.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "f2e155ff403023b2caf8376a7b38f5404ef9be4af5da1418f4b27407c35633d5",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Standard GA realization with primary stress on first syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "1b1ecf2ed3a5",
+      "text": "Our lattes are really popular.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "8c783c85e933c732744c1b94becc8b3364e1db110983d87207bc7fb46295d3e8",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Proper plural form with clear initial stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "2b4df84df83f",
+      "text": "I'll go with a latte.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "ab7e5bdf47f3d0f7bf8274e827ec70146cb1904fdf470054beb85e33d6124e93",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Target pronounced accurately with expected lexical stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "33e4c2f8f507",
+      "text": "A latte, please.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "193ff10da86b28c59b1cd1f7d039b38ae238dc2345d36e95f5c77d12b58885c3",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Clear model with typical primary stress on initial syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "36ca75da97d8",
+      "text": "How much is a latte?",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "a25bdd99227f68a31132fbcea6e2b75a7e75126d3ebf60d2fe32f7482820eb7d",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Standard pronunciation with clear initial lexical stress despite question intonation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "3ae2a9a6a7dc",
+      "text": "Hey, welcome back! The usual? A large iced lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "6b177a0dbc45910a3698398894ecf0cdbae4faf99f5acaf33fb6b9fd7ca2f8aa",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Accurate first-syllable stress and standard vowel production."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "3e8e71622488",
+      "text": "Okay, no latte.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "f17c3c9cbe867f62a3f18e5e9c09504dc380cffc8809ab77fd2b9e04073a5fef",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Accurate first-syllable stress with proper vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "44a7c2f22689",
+      "text": "Hey, welcome back! The usual? A medium iced lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "322456d06eed6100b6d600be5419971934ef1e006e5a54ed1bac2a13a50bbd6b",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Correct initial stress and clear plural ending."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "4699f9621b9b",
+      "text": "A small iced latte is five fifty.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "71253ddb6ec98f8b10f8faf5cb04c41d6cfb3b8234bbe790e66bf05a0a939471",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Clear first-syllable stress and canonical vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "47791fc85935",
+      "text": "I think I'll have a latte.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "52cd5e479e1c1e5e7b22b77b054af7930e7c5d9cc8eb05954b07ce0bd8f8c244",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Standard GenAm pronunciation with clear primary stress on the first syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "492db4f90d35",
+      "text": "Hey, welcome back! The usual? A medium lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "a0ffb2c0164a5fa43d2eab5ddb0f62d1d2576afd1929ad5c09acbcc61b22c51c",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Appropriate initial stress pattern despite rising intonation contour."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "4a3680ea7837",
+      "text": "Could I have a latte, please?",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "1cb70efc2bd6c3b33de3200f85ddc81c7e23dfbcc7e3a22fd8a6490682e39910",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Clear primary initial stress and canonical vowel qualities."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "4d9a361720ec",
+      "text": "How much is a latte?",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "b6d1ffc415a0683149c7793b0ea822f1310156b6fbd0ba892412cfdfe849c5f6",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "First-syllable stress with proper vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "4f745819aa63",
+      "text": "Hey, welcome back! The usual? A large iced latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "fae4c2e553f33e4ba39f85c6d58b26c46d0aea462ebf1db6de735d9f764c05b8",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Clear stress on first syllable despite rising question intonation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "52d3c85dbfb0",
+      "text": "Hey, welcome back! The usual? A medium iced latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "eee7f9f04e4ab2ff66d34680a732e9587a265d0f5772937c87827d08baa37e0a",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Proper first-syllable primary stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "58781a661277",
+      "text": "I'll go with a latte.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "41c3dc4408ec5c21d5e38ddda4aab4e0aa276a2c9f66ea08a778b45acb4d9eb5",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Standard GA realization with initial stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "58ac4841bc6d",
+      "text": "How much does a latte cost?",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "02902a1887d995a173b712e6c07a50a623a4ba3970a97c728e8258f84f823307",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Clear initial stress and vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "58fbc7946bec",
+      "text": "A small latte is five seventy-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "8d9e86174b4eaee8a7d9ba923b9cc49f1e0d2a9baf96cab1a5f0b9dfce6fc3c0",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Standard stress and pronunciation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "5b4ea7350ed8",
+      "text": "Sorry, latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "84c629ea14155d37c8f5142f3716a9c9d4fe4c4e430c8bd0c6f0c77cd184e3e5",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "second-syllable",
+        "confidence": "medium",
+        "reason": "Question pitch rise gives excessive prominence to the second syllable, sounding like lah-TAY."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "medium",
+        "acoustic_reason": "Despite a strong final interrogative pitch rise on the second syllable, the first syllable retains a full, unreduced [ɑ] vowel and solid initial prominence consistent with first-syllable lexical stress.",
+        "grammar_note": "Grammatically acceptable elliptical question."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "60022cba0591",
+      "text": "A large latte is six seventy-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "2099ca6838c0a43c221b21ca02364cdf7bd9f1e8103c945d673ec499d3f47e37",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Correct first-syllable stress and clear vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "6310b4aa11f7",
+      "text": "Hey, welcome back! The usual? A small iced lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "fc32163cc827b27569d22db7518a6931f03ef91b833d575ce90b732d8c00bab8",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "first-syllable",
+        "confidence": "medium",
+        "reason": "Rising question intonation elevates the second syllable prominence, potentially confusing stress clarity, and plural -s is used ungrammatically with 'a'."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "medium",
+        "acoustic_reason": "The first syllable [lɑ] has a full vowel quality and clear rhythmic beat; the final syllable rises in pitch due to question intonation rather than shifted lexical stress.",
+        "grammar_note": "Number agreement error: singular determiner 'a' is paired with plural noun 'lattes' ('a small iced lattes')."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "7b2cc07aea66",
+      "text": "How much does a latte cost?",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "9bdae050a467fee5cbc9e605cde247794740bec0475af132e6534af9e8c735f6",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Clear first-syllable stress and standard vowel realization."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "7bf5b77a388e",
+      "text": "Hey, welcome back! The usual? A lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "3995ccfd078605b9e68524296c5d8cfdc4e805877768194f454c3dc6c030d53a",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "first-syllable",
+        "confidence": "medium",
+        "reason": "Strong terminal pitch rise places heavy emphasis on the final syllable."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable 'la-' carries primary lexical stress with fuller duration and lower pitch, while the second syllable '-tes' rises in pitch as a normal yes/no question boundary tone without stealing primary prominence.",
+        "grammar_note": "Contains a number agreement error ('a lattes' combining singular article 'a' with plural noun 'lattes'), and the article 'a' is pronounced in its citation form /eɪ/."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "7c8488553776",
+      "text": "Hi again! I'll have a latte, please.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "986028ecf223e9ceece07452065d0a8bca935a83fc0e953a730eaec099b3d4af",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Appropriate initial stress and clear pronunciation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "7d45ce03e1b4",
+      "text": "Can I get a latte?",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "5e15eee6bc92952b5db106198cb5f9f083667eb88bb459aa355487b21f7732af",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "second-syllable",
+        "confidence": "medium",
+        "reason": "Question pitch contour leads to prominent final-syllable stress."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable is distinctly prominent in duration and loudness, with the final syllable showing a natural interrogative pitch rise.",
+        "grammar_note": "Grammatically normal."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "8121cc575175",
+      "text": "A medium latte is five fifty.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "0426ddcfe6d28e3aac1134df11e380abd0145bf0bf347b418541d2844b7c3892",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Well-placed primary stress on the first syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "850bc5602cf5",
+      "text": "May I have a latte?",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "eef484257d53281d5573cc2d9d2f0f0f144fc1cb3290a7e79f0253fb8912bc20",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "second-syllable",
+        "confidence": "medium",
+        "reason": "Noticeable rising intonation creates ambiguity towards final-syllable stress."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "Primary stress is clearly anchored on the first syllable 'la-', which has greater intensity and vowel length; the second syllable carries a terminal question rise.",
+        "grammar_note": "Includes a disfluency/false start ('May I, may I...'), though the final clause is grammatically sound."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "8801e5954aeb",
+      "text": "A large latte is five twenty-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "433332f9f7b9a670d92f0fae397a67be5c993f887a0c20c24579c7b84178f3d8",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "first-syllable",
+        "confidence": "high",
+        "reason": "Clear initial stress and vowel quality."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "8b7b2208a0c9",
+      "text": "Hey, welcome back! The usual? A medium latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "72a2bf2cb94ba75990195117e0eb25483b0431026570b924f47e987660a20db3",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Pitch rise from question contour, but primary stress remains on initial syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "8f458410352d",
+      "text": "Hey, welcome back! The usual? An iced latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "c3ee10166b6a4f36c656d33f23974883ca0445d739cb8146feadcd49f9f60e75",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Accurate first-syllable stress and standard vowel realization despite terminal question intonation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "9174e7e0479a",
+      "text": "Let me get a latte.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "c58a22dab9356f7c417d83df6bc9890c64f85773cdfae2de3e8b9a9fe72f29c2",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Clear falling statement intonation with clear stress on first syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "98fd5fb52920",
+      "text": "Hey, welcome back! The usual? A large lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "c6dbe41be41136342eb6f66963e81279b08467292f566ce1530068d200cfd85d",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "medium",
+        "reason": "Target word stress is clear on the initial syllable, though followed by an extraneous artifact."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "9cf24c4da3a1",
+      "text": "A small latte is four twenty-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "69711029cf654a851de18943797584949ce8f962863a8cabc3fb5a2bcfb7bdc0",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Standard GA stress and clear vowel quality in declarative context."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "9edadd559e65",
+      "text": "Hey, welcome back! The usual? A latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "2b5cfbb7ea3940537a8140378b842238b23b84d523329a57e71782387f4f843c",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "perceived second syllable",
+        "confidence": "medium",
+        "reason": "Terminal pitch inflection causes second syllable to sound prominently stressed, risking confusion with lah-TAY."
+      },
+      "independentRecheck": {
+        "lexical_stress": "second",
+        "stress_verdict": "error",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable 'la-' is short and low in prominence, while the second syllable '-tte' has a sharp pitch jump, noticeably greater intensity, and substantial vowel lengthening, sounding like second-syllable lexical stress rather than a natural English question rise on a trochee.",
+        "grammar_note": "Natural elliptical conversational phrasing."
+      },
+      "disposition": "replaced_after_corroborated_error"
+    },
+    {
+      "key": "a2611a8c1d23",
+      "text": "I'd like a latte, please.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "62f5bd38b18353c99574c3cf678d746f461fe9a7e0eb07436d2d77af856024cb",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Clear stress on first syllable with standard American pronunciation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "a8185f862cac",
+      "text": "Can I get a latte?",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "be571c1ce672b48b2d9a5fa3c8d67c22ee4d2ab3aa184cdd2607f85cad256f89",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "medium",
+        "reason": "Question pitch rise present, but first-syllable prominence remains adequately perceptible."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "abfb836ca1bb",
+      "text": "A small latte is five dollars.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "94c606dbcaef6a5a156ef304f889420fea0a2451af7d8a065f09dc3ce3301628",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Standard pronunciation with clear initial stress and expected vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "ba2afbd14571",
+      "text": "Hey, welcome back! The usual? An iced lattes?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "603fedf1716737bc71a6cba2d21ec3667ee565691ac95ab4f286d8b85e321589",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Clear initial stress maintained despite sentence-final rising intonation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "c1f180c6d3f2",
+      "text": "Sorry, did you say latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "4559411a78d882334ba5347f445b23c3255bb1b4e8e7e284249388cbac27c1a7",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "prominent second syllable",
+        "confidence": "medium",
+        "reason": "Question intonation creates excessive prominence on the second syllable, potentially confusing learners."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable has a full open vowel [ɑ] with strong duration and intensity, establishing primary lexical stress before the final rising question pitch on the second syllable.",
+        "grammar_note": "Grammatically normal."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "c3d9f7c1b54f",
+      "text": "A medium iced latte is six dollars.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "725ae017203e38bf082802163a3504a6c8f30b9511e7f2a39af29f1468e76e9d",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Accurate first-syllable lexical stress and vowel quality."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "c59c65d0a4b9",
+      "text": "Hey, welcome back! The usual? A small latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "007e7757e48d76f8b222c7366af9fca61d52f8c549c8722e5d9d0f177f17a303",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "prominent second syllable",
+        "confidence": "medium",
+        "reason": "Rising intonation imparts noticeable stress to the final syllable."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "Primary stress falls clearly on the first syllable, characterized by a strong, sustained open vowel, followed by a normal phrase-final question rise on the second syllable.",
+        "grammar_note": "None."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "cd8b5c931446",
+      "text": "A large iced latte is seven twenty-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "a0675578cf5846a600617066983d4fa8948ca536fe02c1bd1900623df5770bd2",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Target word features standard stress and clear phonemes."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "cece6703bc71",
+      "text": "I'll get a latte.",
+      "voice": "g_coach_m",
+      "reviewedAudioSHA256": "551012e1abb83ac652d66b654c2767b23589a1dd4c63495648c42799a63f9e87",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Clear first-syllable stress and appropriate GA vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "d194ae2407c3",
+      "text": "A medium latte is four seventy-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "9dac3efa5bdf7356780e0ca88ff42be3727da19921825ffd72da771d919d23fd",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary first syllable",
+        "confidence": "high",
+        "reason": "Standard GA lexical stress and syllable quality."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "d7fc15ae598f",
+      "text": "We have lattes, cappuccinos, americanos and drip coffee.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "7a32811ca5f0cf29185e5907ee3c7f0ff46601cfc2003c90b67e733f244030c2",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Accurate initial stress and standard vowel realization."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "dc9f4db45e3b",
+      "text": "I'll have a latte.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "a4f43ff532a0ef85188020049711446a15727b395c02f8751a46376072180b3b",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Standard initial stress with appropriate vowels."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "e688473f562c",
+      "text": "A large iced latte is five seventy-five.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "3156dbbaa7ad761e6f4f79d3dddd647a7f961459aebf46aa1ac411f802596cc8",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Clearly stressed on the first syllable."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "e7bfb30f0281",
+      "text": "May I have a latte?",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "c350036d59bcafd0915941484485be8e6c14044604aa8f09718feaa5b6321ab0",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "medium",
+        "reason": "Final question intonation does not obscure primary first-syllable stress."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "f0b2e945f5fb",
+      "text": "Hey, welcome back! The usual? A small iced latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "0e5d99eff6cdf8d9915b24e333bfc2d4ead7e22b862f7adc4cd0806813dcf71a",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "shifted",
+        "confidence": "medium",
+        "reason": "Question intonation creates excessive second-syllable prominence that mimics final stress."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The first syllable 'la-' clearly carries primary stress with full vowel duration and intensity, while the second syllable carries a natural phrase-final rising question intonation without overpowering the stressed initial syllable.",
+        "grammar_note": "Natural elliptical conversational phrasing; 'iced' is realized as 'ice' in normal connected speech before 'latte'."
+      },
+      "disposition": "flag_not_corroborated_as_stress_error"
+    },
+    {
+      "key": "f40b3bfb1673",
+      "text": "Let me get a latte.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "c192f09b9ae1720fb669eb36e77a21951886406060f50039d9e7bf466495cf75",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Expected initial stress pattern."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "f6056ed6c8fd",
+      "text": "A large latte is six dollars.",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "4a1dd1e1839b61a820bdd32fad9e38f47f86e4e822530cde53e004909ee8cf78",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "initial",
+        "confidence": "high",
+        "reason": "Correct initial stress and standard pronunciation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    },
+    {
+      "key": "f621651c0cb8",
+      "text": "Hey, welcome back! The usual? A large latte?",
+      "voice": "g_mia",
+      "reviewedAudioSHA256": "d476ac769b262a489a74b7c6c942ba19d3323cf90d3208f082ed2c18bbf368cc",
+      "initialScreen": {
+        "verdict": "review",
+        "stress": "shifted",
+        "confidence": "medium",
+        "reason": "Terminal pitch rise heavily accents the second syllable, potentially confusing learners."
+      },
+      "independentRecheck": {
+        "lexical_stress": "first",
+        "stress_verdict": "clear",
+        "confidence": "high",
+        "acoustic_reason": "The initial syllable is clearly stressed with higher intensity and full vowel length; the final syllable rises in pitch solely due to natural interrogative intonation.",
+        "grammar_note": "None."
+      },
+      "disposition": "replaced_after_human_report"
+    },
+    {
+      "key": "fde2140c337d",
+      "text": "Hi again! I'll have a latte, please.",
+      "voice": "g_coach_f",
+      "reviewedAudioSHA256": "7680dd6ed1ae531b1ff4fee2755c1bdc7dd653e23ee272dac09e9784fd6dff8c",
+      "initialScreen": {
+        "verdict": "clear",
+        "stress": "primary on first syllable",
+        "confidence": "high",
+        "reason": "The initial syllable receives primary stress matching standard General American pronunciation."
+      },
+      "independentRecheck": null,
+      "disposition": "no_issue_flagged_in_screen"
+    }
+  ],
+  "otherWordSampleResults": [
+    {
+      "id": "S1",
+      "transcription": "Here's the cappuccino. Enjoy.",
+      "target": "cappuccino",
+      "phonetic": "ˌkæpəˈtʃiːnoʊ",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Clear penultimate stress and vowel quality matching standard General American.",
+      "category": "risk-pilot",
+      "key": "328de010d6c5",
+      "text": "Here's the cappuccino. Enjoy!"
+    },
+    {
+      "id": "S2",
+      "transcription": "Sorry, did you say Americano?",
+      "target": "americano",
+      "phonetic": "əˌmɛrəˈkɑːnoʊ",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Standard GA stress on the penultimate syllable with question intonation.",
+      "category": "risk-pilot",
+      "key": "d301bcf98274",
+      "text": "Sorry, did you say americano?"
+    },
+    {
+      "id": "S3",
+      "transcription": "Here's the espresso. Enjoy.",
+      "target": "espresso",
+      "phonetic": "ɛˈsprɛsoʊ",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Accurate stress on second syllable without intrusive 'x' sound.",
+      "category": "risk-pilot",
+      "key": "546e0d980177",
+      "text": "Here's the espresso. Enjoy!"
+    },
+    {
+      "id": "S4",
+      "transcription": "Would you like a croissant?",
+      "target": "croissant",
+      "phonetic": "krwɑːˈsɑːnt",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Standard American anglicized pronunciation with final syllable stress.",
+      "category": "risk-pilot",
+      "key": "456e0c7859cf",
+      "text": "Would you like a croissant?"
+    },
+    {
+      "id": "S5",
+      "transcription": "Sorry, did you say mocha?",
+      "target": "mocha",
+      "phonetic": "ˈmoʊkə",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Clear initial stress and appropriate vowel reduction on the final syllable.",
+      "category": "risk-pilot",
+      "key": "d5dffa92b18e",
+      "text": "Sorry, did you say mocha?"
+    },
+    {
+      "id": "S6",
+      "transcription": "Here's the bruschetta. Enjoy.",
+      "target": "bruschetta",
+      "phonetic": "bruːˈskɛtə",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Pronounced with standard English loan realization and correct medial stress.",
+      "category": "risk-pilot",
+      "key": "a695362581af",
+      "text": "Here's the bruschetta. Enjoy!"
+    },
+    {
+      "id": "S7",
+      "transcription": "Here's the minestrone soup. Enjoy.",
+      "target": "minestrone",
+      "phonetic": "ˌmɪnəˈstroʊni",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Fully realized four syllables with primary stress on the third syllable.",
+      "category": "risk-pilot",
+      "key": "389f68d90763",
+      "text": "Here's the minestrone soup. Enjoy!"
+    },
+    {
+      "id": "S8",
+      "transcription": "Here's the lasagna. Enjoy.",
+      "target": "lasagna",
+      "phonetic": "ləˈzɑːnjə",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Clear medial syllable stress and standard American phonemes.",
+      "category": "risk-pilot",
+      "key": "d73668f443b5",
+      "text": "Here's the lasagna. Enjoy!"
+    },
+    {
+      "id": "S1",
+      "transcription": "Okay, no mushroom risotto.",
+      "target": "risotto",
+      "phonetic": "rɪˈzɔːtoʊ",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Standard GA stress on the second syllable with acceptable vowel quality.",
+      "category": "risk-pilot",
+      "key": "5b75f788da92",
+      "text": "Okay, no mushroom risotto."
+    },
+    {
+      "id": "S2",
+      "transcription": "Here's the tiramisu, enjoy.",
+      "target": "tiramisu",
+      "phonetic": "ˌtɪrəmɪˈsuː",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Standard primary stress on the final syllable with clear vowels.",
+      "category": "risk-pilot",
+      "key": "fed71e14b80f",
+      "text": "Here's the tiramisu. Enjoy!"
+    },
+    {
+      "id": "S3",
+      "transcription": "Here's the gelato. Enjoy.",
+      "target": "gelato",
+      "phonetic": "dʒəˈlɑːtoʊ",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Proper second-syllable lexical stress and standard GA vowel realization.",
+      "category": "risk-pilot",
+      "key": "d8beada5fbe4",
+      "text": "Here's the gelato. Enjoy!"
+    },
+    {
+      "id": "S4",
+      "transcription": "Okay, no penne all'arrabbiata.",
+      "target": "penne",
+      "phonetic": "ˈpɛneɪ",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Clear first-syllable stress matching standard American usage.",
+      "category": "risk-pilot",
+      "key": "997295f9711d",
+      "text": "Okay, no penne arrabbiata."
+    },
+    {
+      "id": "S5",
+      "transcription": "Dessert? You're the best!",
+      "target": "dessert",
+      "phonetic": "dɪˈzɜːrt",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Correct second-syllable stress distinguished well despite rising question intonation.",
+      "category": "risk-pilot",
+      "key": "5c716fe6f47f",
+      "text": "Dessert? You're the best!"
+    },
+    {
+      "id": "S6",
+      "transcription": "A receipt? For what?",
+      "target": "receipt",
+      "phonetic": "rɪˈsiːt",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Second-syllable stress clearly articulated with silent 'p'.",
+      "category": "risk-pilot",
+      "key": "d45dfe1c1f4b",
+      "text": "A receipt? For what?"
+    },
+    {
+      "id": "S7",
+      "transcription": "Do you have a reservation?",
+      "target": "reservation",
+      "phonetic": "ˌrɛzərˈveɪʃən",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Clear stress on the penultimate syllable with expected American vowels.",
+      "category": "risk-pilot",
+      "key": "be7595ad447e",
+      "text": "Do you have a reservation?"
+    },
+    {
+      "id": "S8",
+      "transcription": "No problem. We have cars available.",
+      "target": "available",
+      "phonetic": "əˈveɪləbəl",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Clear second-syllable primary stress and correct reduced vowels.",
+      "category": "risk-pilot",
+      "key": "13bfeb1e6e90",
+      "text": "No problem! We have cars available."
+    },
+    {
+      "id": "S1",
+      "transcription": "We're here, the police station.",
+      "target": "police",
+      "phonetic": "pəˈliːs",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Standard second-syllable stress with appropriate reduced initial vowel.",
+      "category": "risk-pilot",
+      "key": "0e6cfe3de63e",
+      "text": "We're here: the police station!"
+    },
+    {
+      "id": "S2",
+      "transcription": "Sorry, did you say hotel?",
+      "target": "hotel",
+      "phonetic": "hoʊˈtɛl",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Second syllable receives proper primary stress despite rising question intonation.",
+      "category": "risk-pilot",
+      "key": "10161b1836aa",
+      "text": "Sorry, did you say hotel?"
+    },
+    {
+      "id": "S3",
+      "transcription": "Me too! I love photography.",
+      "target": "photography",
+      "phonetic": "fəˈtɑːɡrəfi",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Clear second-syllable stress with standard vowel reduction elsewhere.",
+      "category": "risk-pilot",
+      "key": "94232722882d",
+      "text": "Me too! I love photography."
+    },
+    {
+      "id": "S4",
+      "transcription": "And for the record, the new buttons are still going to be blue.",
+      "target": "record",
+      "phonetic": "ˈrɛkərd",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Correct initial stress for the noun form.",
+      "category": "risk-pilot",
+      "key": "64e8d1ab2a38",
+      "text": "And for the record, the new buttons are still going to be blue."
+    },
+    {
+      "id": "S5",
+      "transcription": "Would you like a refund, or an exchange?",
+      "target": "refund",
+      "phonetic": "ˈriːfʌnd",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Clear first-syllable noun stress.",
+      "category": "risk-pilot",
+      "key": "e8473d41cbda",
+      "text": "Would you like a refund or an exchange?"
+    },
+    {
+      "id": "S6",
+      "transcription": "and proof of address?",
+      "target": "address",
+      "phonetic": "əˈdrɛs",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "medium",
+      "reason": "Standard second-syllable stress heard clearly.",
+      "category": "risk-pilot",
+      "key": "57a0dc7e5280",
+      "text": "And proof of address?"
+    },
+    {
+      "id": "S7",
+      "transcription": "We also have allergy medicine.",
+      "target": "allergy",
+      "phonetic": "ˈælərdʒi",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Appropriate initial primary stress.",
+      "category": "risk-pilot",
+      "key": "321c2307432d",
+      "text": "We also have allergy medicine."
+    },
+    {
+      "id": "S8",
+      "transcription": "It depends on the medicine.",
+      "target": "medicine",
+      "phonetic": "ˈmɛdɪsɪn",
+      "stress": "correct",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Standard initial stress with typical syncopated/reduced vowels.",
+      "category": "risk-pilot",
+      "key": "edd103508d02",
+      "text": "It depends on the medicine."
+    },
+    {
+      "id": "S1",
+      "transcription": "Sorry, did you say vegetables?",
+      "target": "vegetables",
+      "phonetic": "[ˈvɛdʒtəbəlz]",
+      "stress": "primary on first syllable",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Standard three-syllable General American pronunciation with primary stress appropriately on the initial syllable, though modified slightly by rising question intonation.",
+      "category": "risk-pilot",
+      "key": "fb866cdcd5d0",
+      "text": "Sorry, did you say vegetables?"
+    },
+    {
+      "id": "S2",
+      "transcription": "Hmm, interesting. Go on.",
+      "target": "interesting",
+      "phonetic": "[ˈɪntrəstɪŋ]",
+      "stress": "primary on first syllable",
+      "verdict": "clear",
+      "confidence": "high",
+      "reason": "Pronounced clearly with primary stress on the initial syllable using standard syncope.",
+      "category": "risk-pilot",
+      "key": "9024dc7a9d65",
+      "text": "Hmm. Interesting. Go on."
+    }
+  ],
+  "riskInventory": [
+    {
+      "word": "cappuccino",
+      "category": "loanword",
+      "recordings": 70
+    },
+    {
+      "word": "americano",
+      "category": "loanword",
+      "recordings": 56
+    },
+    {
+      "word": "espresso",
+      "category": "loanword",
+      "recordings": 46
+    },
+    {
+      "word": "croissant",
+      "category": "loanword",
+      "recordings": 22
+    },
+    {
+      "word": "mocha",
+      "category": "loanword",
+      "recordings": 61
+    },
+    {
+      "word": "bruschetta",
+      "category": "loanword",
+      "recordings": 23
+    },
+    {
+      "word": "minestrone",
+      "category": "loanword",
+      "recordings": 23
+    },
+    {
+      "word": "lasagna",
+      "category": "loanword",
+      "recordings": 48
+    },
+    {
+      "word": "risotto",
+      "category": "loanword",
+      "recordings": 43
+    },
+    {
+      "word": "tiramisu",
+      "category": "loanword",
+      "recordings": 22
+    },
+    {
+      "word": "gelato",
+      "category": "loanword",
+      "recordings": 20
+    },
+    {
+      "word": "penne",
+      "category": "loanword",
+      "recordings": 41
+    },
+    {
+      "word": "merlot",
+      "category": "loanword",
+      "recordings": 0
+    },
+    {
+      "word": "chardonnay",
+      "category": "loanword",
+      "recordings": 0
+    },
+    {
+      "word": "perrier",
+      "category": "loanword",
+      "recordings": 0
+    },
+    {
+      "word": "dessert",
+      "category": "ordinary English",
+      "recordings": 19
+    },
+    {
+      "word": "receipt",
+      "category": "ordinary English",
+      "recordings": 257
+    },
+    {
+      "word": "comfortable",
+      "category": "ordinary English",
+      "recordings": 0
+    },
+    {
+      "word": "reservation",
+      "category": "ordinary English",
+      "recordings": 42
+    },
+    {
+      "word": "available",
+      "category": "ordinary English",
+      "recordings": 8
+    },
+    {
+      "word": "police",
+      "category": "ordinary English",
+      "recordings": 79
+    },
+    {
+      "word": "hotel",
+      "category": "ordinary English",
+      "recordings": 90
+    },
+    {
+      "word": "photograph",
+      "category": "stress-shifting family",
+      "recordings": 0
+    },
+    {
+      "word": "photography",
+      "category": "stress-shifting family",
+      "recordings": 19
+    },
+    {
+      "word": "record",
+      "category": "context-dependent stress",
+      "recordings": 3
+    },
+    {
+      "word": "refund",
+      "category": "context-dependent stress",
+      "recordings": 22
+    },
+    {
+      "word": "address",
+      "category": "context-dependent stress",
+      "recordings": 17
+    },
+    {
+      "word": "allergy",
+      "category": "ordinary English",
+      "recordings": 20
+    },
+    {
+      "word": "medicine",
+      "category": "ordinary English",
+      "recordings": 61
+    },
+    {
+      "word": "vegetables",
+      "category": "ordinary English",
+      "recordings": 70
+    },
+    {
+      "word": "interesting",
+      "category": "ordinary English",
+      "recordings": 118
+    },
+    {
+      "word": "itinerary",
+      "category": "ordinary English",
+      "recordings": 0
+    }
+  ],
+  "limits": [
+    "Automated review flags are not confirmed error counts.",
+    "Independent recheck included 11 suspects and 3 controls; it did not recheck all 65 with a second model.",
+    "26 other-word samples cover one context per word, not every occurrence or part of speech.",
+    "Model judgments are not calibrated human phonetic certification.",
+    "Separate plural-article wording issues are documented, not changed by the stress repair."
+  ],
+  "reviewSnapshot": "Wide review followed the initial large-latte replacement and preceded the additional bare-latte replacement."
+}
