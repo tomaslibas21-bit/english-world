@@ -40,7 +40,7 @@ body {
   font-family: var(--ui);
   font-size: calc(18px * var(--scale));
   color: var(--ink);
-  background: #8fc7e8;
+  background: var(--lh-bg, #f5efe5);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -601,18 +601,6 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
 .info-box { background: #f1f6f7; border: 1px solid #e1ecee; border-radius: 14px; padding: 12px 14px; font-size: 0.88em; line-height: 1.55; color: #3d4a55; }
 
-/* ---------- the 3D town loading (the start screen itself is title.css) ---------- */
-.loading {
-  position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-  background: var(--lh-bg, #f5efe5); font-family: var(--en); font-weight: 600; font-size: 1.7em; color: var(--ink);
-}
-.loading::after {
-  content: ""; width: min(220px, 60vw); height: 6px; border-radius: 99px;
-  background: linear-gradient(90deg, rgba(31, 111, 120, 0) 0%, var(--accent) 50%, rgba(31, 111, 120, 0) 100%) 0 0 / 50% 100% no-repeat, #e7dfd2;
-  animation: loadbar 1.4s ease-in-out infinite;
-}
-@keyframes loadbar { from { background-position: -100% 0, 0 0; } to { background-position: 200% 0, 0 0; } }
-
 /* ---------- touch controls ---------- */
 .joy { position: fixed; left: 18px; bottom: 18px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.28); border: 3px solid rgba(255,255,255,0.6); z-index: 12; touch-action: none; }
 .joy .knob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: rgba(255,255,255,0.9); box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
@@ -702,7 +690,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .sheet-body { padding: 14px 14px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .yt-title.phase-you b::before, .ended-badge, .sheet, .loading::after, .objective-card.fresh, .nat-tipbox { animation: none; }
+  .yt-title.phase-you b::before, .ended-badge, .sheet, .objective-card.fresh, .nat-tipbox { animation: none; }
   .nat-star { transition: none; }
   .scn-card, .scn-card:hover, .icon-btn, .icon-btn:hover, .mic { transition: none; transform: none; }
   .map-pin { transition: none; }

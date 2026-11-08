@@ -21,6 +21,7 @@ import { switchPlayMode, takeLinkedSituation } from "./playMode";
 import { Icon, InlineIcon, Stars, iconForEmoji, type IconName } from "./icons";
 import "./light.css";
 import { SectionHelpButton } from "./sectionHelp";
+import { Loading } from "./Loading";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
@@ -77,6 +78,7 @@ export function LightPlay() {
   return (
     <>
       {ready && <><LightHome /><CallBackdrop /><SceneBackdrop /><Conversation />{!homePanel && <Panels />}</>}
+      {!ready && <Loading />}
       <Toasts />
     </>
   );
