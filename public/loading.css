@@ -42,6 +42,8 @@
   font-style: italic;
   font-weight: 500;
   color: var(--accent, #1f6f78);
+  /* Center the visible italic letters, including their right-hand overhang. */
+  transform: translateX(-0.125em);
 }
 /* The course uses data-theme and different token names; the static game uses data-fs-theme. */
 :root[data-theme] .ew-loading {
