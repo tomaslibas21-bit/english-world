@@ -1,0 +1,333 @@
+{
+  "checkedAt": "2026-11-08T17:13:37.217Z",
+  "wording": {
+    "publishedKeys": 39218,
+    "publishedMetadata": 39218,
+    "currentUniqueUtterances": 36511,
+    "enumerationErrors": [],
+    "legacyPluralArticleVariants": [
+      {
+        "key": "7bf5b77a388e",
+        "text": "Hey, welcome back! The usual? A lattes?",
+        "flags": ["A lattes"]
+      },
+      {
+        "key": "ba2afbd14571",
+        "text": "Hey, welcome back! The usual? An iced lattes?",
+        "flags": ["An iced lattes"]
+      },
+      {
+        "key": "03b328911a21",
+        "text": "Hey, welcome back! The usual? A small lattes?",
+        "flags": ["A small lattes"]
+      },
+      {
+        "key": "6310b4aa11f7",
+        "text": "Hey, welcome back! The usual? A small iced lattes?",
+        "flags": ["A small iced lattes"]
+      },
+      {
+        "key": "492db4f90d35",
+        "text": "Hey, welcome back! The usual? A medium lattes?",
+        "flags": ["A medium lattes"]
+      },
+      {
+        "key": "44a7c2f22689",
+        "text": "Hey, welcome back! The usual? A medium iced lattes?",
+        "flags": ["A medium iced lattes"]
+      },
+      {
+        "key": "98fd5fb52920",
+        "text": "Hey, welcome back! The usual? A large lattes?",
+        "flags": ["A large lattes"]
+      },
+      {
+        "key": "3ae2a9a6a7dc",
+        "text": "Hey, welcome back! The usual? A large iced lattes?",
+        "flags": ["A large iced lattes"]
+      },
+      {
+        "key": "f46488f707aa",
+        "text": "Hey, welcome back! The usual? A cappuccinos?",
+        "flags": ["A cappuccinos"]
+      },
+      {
+        "key": "d4d425e63bdc",
+        "text": "Hey, welcome back! The usual? An iced cappuccinos?",
+        "flags": ["An iced cappuccinos"]
+      },
+      {
+        "key": "33a940a62df5",
+        "text": "Hey, welcome back! The usual? A small cappuccinos?",
+        "flags": ["A small cappuccinos"]
+      },
+      {
+        "key": "352f53e7ca53",
+        "text": "Hey, welcome back! The usual? A small iced cappuccinos?",
+        "flags": ["A small iced cappuccinos"]
+      },
+      {
+        "key": "c878eb9ee22d",
+        "text": "Hey, welcome back! The usual? A medium cappuccinos?",
+        "flags": ["A medium cappuccinos"]
+      },
+      {
+        "key": "15b3769fcc66",
+        "text": "Hey, welcome back! The usual? A medium iced cappuccinos?",
+        "flags": ["A medium iced cappuccinos"]
+      },
+      {
+        "key": "31d8307af44c",
+        "text": "Hey, welcome back! The usual? A large cappuccinos?",
+        "flags": ["A large cappuccinos"]
+      },
+      {
+        "key": "2a4137f3e38e",
+        "text": "Hey, welcome back! The usual? A large iced cappuccinos?",
+        "flags": ["A large iced cappuccinos"]
+      },
+      {
+        "key": "07011749a45e",
+        "text": "Hey, welcome back! The usual? An americanos?",
+        "flags": ["An americanos"]
+      },
+      {
+        "key": "3c9c7b404ca9",
+        "text": "Hey, welcome back! The usual? An iced americanos?",
+        "flags": ["An iced americanos"]
+      },
+      {
+        "key": "af58e2005305",
+        "text": "Hey, welcome back! The usual? A small americanos?",
+        "flags": ["A small americanos"]
+      },
+      {
+        "key": "61625a8795e9",
+        "text": "Hey, welcome back! The usual? A small iced americanos?",
+        "flags": ["A small iced americanos"]
+      },
+      {
+        "key": "6a06c678f933",
+        "text": "Hey, welcome back! The usual? A medium americanos?",
+        "flags": ["A medium americanos"]
+      },
+      {
+        "key": "7a88f61f516b",
+        "text": "Hey, welcome back! The usual? A medium iced americanos?",
+        "flags": ["A medium iced americanos"]
+      },
+      {
+        "key": "e79f0694d6ef",
+        "text": "Hey, welcome back! The usual? A large americanos?",
+        "flags": ["A large americanos"]
+      },
+      {
+        "key": "ad9e49239c8d",
+        "text": "Hey, welcome back! The usual? A large iced americanos?",
+        "flags": ["A large iced americanos"]
+      },
+      {
+        "key": "acc587c26f2e",
+        "text": "Hey, welcome back! The usual? An espressos?",
+        "flags": ["An espressos"]
+      },
+      {
+        "key": "7d69fe2d05ee",
+        "text": "Hey, welcome back! The usual? An iced espressos?",
+        "flags": ["An iced espressos"]
+      },
+      {
+        "key": "a99051f6233d",
+        "text": "Hey, welcome back! The usual? A flat whites?",
+        "flags": ["A flat whites"]
+      },
+      {
+        "key": "50b1cb07c1b3",
+        "text": "Hey, welcome back! The usual? An iced flat whites?",
+        "flags": ["An iced flat whites"]
+      },
+      {
+        "key": "ad60f82ac127",
+        "text": "Hey, welcome back! The usual? A mochas?",
+        "flags": ["A mochas"]
+      },
+      {
+        "key": "a935b92dd07f",
+        "text": "Hey, welcome back! The usual? An iced mochas?",
+        "flags": ["An iced mochas"]
+      },
+      {
+        "key": "f2780aedea12",
+        "text": "Hey, welcome back! The usual? A small mochas?",
+        "flags": ["A small mochas"]
+      },
+      {
+        "key": "2407fddaf717",
+        "text": "Hey, welcome back! The usual? A small iced mochas?",
+        "flags": ["A small iced mochas"]
+      },
+      {
+        "key": "20497235ea3c",
+        "text": "Hey, welcome back! The usual? A medium mochas?",
+        "flags": ["A medium mochas"]
+      },
+      {
+        "key": "babe5482b04b",
+        "text": "Hey, welcome back! The usual? A medium iced mochas?",
+        "flags": ["A medium iced mochas"]
+      },
+      {
+        "key": "e89bcaa1ca73",
+        "text": "Hey, welcome back! The usual? A large mochas?",
+        "flags": ["A large mochas"]
+      },
+      {
+        "key": "f32d30f69fc2",
+        "text": "Hey, welcome back! The usual? A large iced mochas?",
+        "flags": ["A large iced mochas"]
+      },
+      {
+        "key": "594fa725a087",
+        "text": "Hey, welcome back! The usual? A hot chocolates?",
+        "flags": ["A hot chocolates"]
+      },
+      {
+        "key": "be89a88a4fb5",
+        "text": "Hey, welcome back! The usual? An iced hot chocolates?",
+        "flags": ["An iced hot chocolates"]
+      },
+      {
+        "key": "a276b2caa9a6",
+        "text": "Hey, welcome back! The usual? A small hot chocolates?",
+        "flags": ["A small hot chocolates"]
+      },
+      {
+        "key": "f346d695fbbb",
+        "text": "Hey, welcome back! The usual? A small iced hot chocolates?",
+        "flags": ["A small iced hot chocolates"]
+      },
+      {
+        "key": "c73f6a4210d2",
+        "text": "Hey, welcome back! The usual? A medium hot chocolates?",
+        "flags": ["A medium hot chocolates"]
+      },
+      {
+        "key": "81f2d8adae09",
+        "text": "Hey, welcome back! The usual? A medium iced hot chocolates?",
+        "flags": ["A medium iced hot chocolates"]
+      },
+      {
+        "key": "f89be956147a",
+        "text": "Hey, welcome back! The usual? A large hot chocolates?",
+        "flags": ["A large hot chocolates"]
+      },
+      {
+        "key": "0d25bb59942c",
+        "text": "Hey, welcome back! The usual? A large iced hot chocolates?",
+        "flags": ["A large iced hot chocolates"]
+      }
+    ],
+    "remainingPluralArticleFlags": [],
+    "remainingDoubledWordFlags": []
+  },
+  "recordingCoverage": {
+    "savedOrderCases": 144,
+    "uniqueCorrectGreetings": 48,
+    "missing": [],
+    "newlyIntroducedUtterances": [],
+    "newMissingClips": [],
+    "removedDuplicateArticleUtterances": [
+      {
+        "voice": "g_chuck",
+        "speed": 1.18,
+        "say": "Yes, it's right across from the The Pier.",
+        "en": "Yes, it's right across from the The Pier.",
+        "where": "s62-visitor-center:yes_across_the[0]",
+        "key": "74993342b50b"
+      },
+      {
+        "voice": "g_chuck",
+        "speed": 1.18,
+        "say": "Yes, it's right next to the The Pier.",
+        "en": "Yes, it's right next to the The Pier.",
+        "where": "s62-visitor-center:yes_next_the[0]",
+        "key": "216caccfb053"
+      },
+      {
+        "voice": "g_chuck",
+        "speed": 1.18,
+        "say": "Sure! I'll mark it on your map. Here we are, and here's the The Pier.",
+        "en": "Sure! I'll mark it on your map. Here we are, and here's the The Pier.",
+        "where": "s62-visitor-center:show_map_the[0]",
+        "key": "61add68a5951"
+      },
+      {
+        "voice": "g_rosa",
+        "speed": 1,
+        "say": "Oh, it's you again! Did you try the The Pier?",
+        "en": "Oh, it's you again! Did you try the The Pier?",
+        "where": "s69-local:tried_ask_the[0]",
+        "key": "92c6aff3d67d"
+      }
+    ]
+  },
+  "representations": {
+    "checkedAt": "2026-11-08T17:08:48.897Z",
+    "canonicalExamples": 547,
+    "representationVariants": 551,
+    "byRepresentation": {
+      "ampersand": 418,
+      "dollars": 110,
+      "percent": 22,
+      "half-inch": 1
+    },
+    "failures": [],
+    "unparsedCanonical": [
+      {
+        "sid": "p24-flood",
+        "text": "I'd like someone to come and fix it today."
+      },
+      {
+        "sid": "p25-used-car",
+        "text": "Eight and a half? Hmm. How about eight?"
+      },
+      {
+        "sid": "p25-used-car",
+        "text": "Eight and a half? That's still too much."
+      },
+      {
+        "sid": "s32-supermarket",
+        "text": "I don't want twenty dollars."
+      },
+      {
+        "sid": "s68-hotel",
+        "text": "Here's a hundred dollars."
+      },
+      {
+        "sid": "s73-restaurant",
+        "text": "Twenty percent is too much"
+      },
+      {
+        "sid": "s73-restaurant",
+        "text": "Let's not do twenty percent"
+      },
+      {
+        "sid": "s78-bank",
+        "text": "I don't have two hundred dollars"
+      },
+      {
+        "sid": "s87-interview",
+        "text": "At my old job, we had a big project and we did it together"
+      }
+    ],
+    "limits": [
+      "Text-level ASR representation audit; no learner recordings or guesses about unreported sound confusions.",
+      "One utterance may have multiple valid interpretations; preserved accepted intents are checked."
+    ]
+  },
+  "limits": [
+    "Pattern-based wording review and five random paths per situation; not an exhaustive human copy-edit of every possible dialogue.",
+    "No learner recordings were accessed or sent to an external provider in this follow-up.",
+    "The original green-wall location was unknown; boundary hills were reproduced and adjusted; other green scene surfaces may be intentional."
+  ]
+}

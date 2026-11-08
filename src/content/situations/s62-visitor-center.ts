@@ -1209,7 +1209,7 @@ export const visitorCenter: SituationDef = {
     // paying for a bus pass
     pay_card: { patterns: ["[can | could] i pay (by | with) (card | credit card | debit card | my card) #h:pay_card", "(by | with) card", "card", "do you (take | accept) (cards | credit cards | card)"] },
     pay_cash: { patterns: ["[can | could] i pay (in | with) cash", "(in | with) cash", "cash", "i will pay (in | with) cash #h:pay_cash"] },
-    here_you_go: { patterns: ["here you (go | are) #h:here_you_go", "there you go", "here it is", "here is (the money | five dollars | five | a five)"] },
+    here_you_go: { patterns: ["here you (go | are) #h:here_you_go", "there you go", "here it is", "here is (the money | five dollars | 5 dollars | five | 5 | a five | a 5)"] },
     // Saying yes or no to Chuck's offers in other words (a map, the way to the café, a bus pass):
     // "I'll take one", "Tell me", "You're right" / "I don't need it", "Maybe later", "I'll walk".
     accept_ctx: { patterns: [

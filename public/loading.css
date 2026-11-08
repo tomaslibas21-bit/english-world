@@ -1,19 +1,5 @@
-/* Loaded by index.html before JavaScript, and shared with the course's /zaisti entry screen.
-   The logo has its own small Latin font files so it also appears while the game bundle is still loading. */
-@font-face {
-  font-family: "English World Logo";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./brand/eb-garamond-latin-600-normal.woff2") format("woff2");
-}
-@font-face {
-  font-family: "English World Logo";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("./brand/eb-garamond-latin-500-normal.woff2") format("woff2");
-}
+/* The same outlined wordmark is used before JavaScript, while the town loads and on /zaisti.
+   Its fixed proportions do not depend on fonts arriving before or after a navigation. */
 .ew-loading {
   position: fixed;
   inset: 0;
@@ -31,19 +17,11 @@
     linear-gradient(180deg, #f9f5ee 0%, #f3ece1 100%)));
 }
 .ew-loading-logo {
-  font-family: "English World Logo", Georgia, "Times New Roman", serif;
-  font-size: clamp(64px, 12vw, 104px);
-  font-weight: 600;
-  line-height: 0.95;
-  letter-spacing: -0.015em;
-}
-.ew-loading-logo em {
   display: block;
-  font-style: italic;
-  font-weight: 500;
-  color: var(--accent, #1f6f78);
-  /* Center the visible italic letters, including their right-hand overhang. */
-  transform: translateX(-0.125em);
+  width: clamp(188px, 35.3vw, 306px);
+  height: auto;
+  aspect-ratio: 306 / 198;
+  overflow: visible;
 }
 /* The course uses data-theme and different token names; the static game uses data-fs-theme. */
 :root[data-theme] .ew-loading {

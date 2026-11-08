@@ -52,7 +52,9 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
   const mods = (b.mods || []).map((m) => look(m)).filter(Boolean) as EntityDef[];
   const firstWord = (mods[0] ? splitUnits(mods[0].en)[0] : headEn[0]) || "";
   if (kind === "np") {
-    const art = e.art ?? (vowelSound(firstWord) ? "an" : "a");
+    // A plural binding cannot take a singular article. Explicit bare/mass articles still apply.
+    const requestedArt = e.art ?? (plural ? "some" : vowelSound(firstWord) ? "an" : "a");
+    const art = plural && (requestedArt === "a" || requestedArt === "an") ? "some" : requestedArt;
     const artUsed = art === "a" || art === "an" ? (vowelSound(firstWord) ? "an" : "a") : art;
     if (artUsed === "some") {
       en.push("some"); lt.push("—");
@@ -60,7 +62,8 @@ export function npUnits(b: NpBinding, kind: "np" | "the" | "pl" | "bare" | "head
       if (c === "acc" || c === "nom") caseUsed = "gen";
     } else if (artUsed) { en.push(artUsed); lt.push("—"); }
   } else if (kind === "the") {
-    en.push("the"); lt.push("—");
+    // A proper name such as The Pier already carries its article.
+    if (!/^the(?:\s|$)/i.test(headEn[0])) { en.push("the"); lt.push("—"); }
   }
   for (const m of mods) {
     const mEn = splitUnits(m.en), mLt = splitUnits(m.lt);

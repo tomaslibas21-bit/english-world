@@ -90,8 +90,9 @@ export const salon: SituationDef = {
 
   grammar: {
     macros: {
+      trim_word: "(trim | dream)", // Contextual ASR alias; teaching examples and recordings remain “trim”.
       deg: "(a little | a bit | a little bit | kind of | way | really | just a little | just a bit | much | slightly)",
-      howmuch: "(an inch #in1 | one inch #in1 | half an inch #in05 | a half inch #in05 | half inch #in05 | an inch and a half #in15 | one and a half inches #in15 | two inches #in2 | a couple of inches #in2 | a couple inches #in2 | three inches #in3 | a few inches #in3 | {n:number} inches #inN)",
+      howmuch: "(an inch #in1 | one inch #in1 | half an inch #in05 | a half inch #in05 | half inch #in05 | an inch and a half #in15 | one and a half inches #in15 | 1 and a half inches #in15 | two inches #in2 | a couple of inches #in2 | a couple inches #in2 | three inches #in3 | a few inches #in3 | {n:number} inches #inN)",
       cm: "{c:number} (centimeters | centimetres | centimeter | centimetre | cm | centimeters off) #cm #tip:uk_cm",
       it_hair: "(it | my hair | the hair | this)",
     },
@@ -134,11 +135,11 @@ export const salon: SituationDef = {
 
     // --- what we're doing today ----------------------------------------------------------------
     trim: { patterns: [
-      "[just] a trim #h:just_trim", "i (would like | want | need) [just] a trim", "(can | could) i (get | have) [just] a trim", "[just] a little trim",
-      "just (the ends | a little off the ends) #h:just_ends #ends", "[just] (trim | cut) the ends", "i (would like | want) to (keep | maintain) the length", "[just] a (quick | small | little | light) trim",
-      "i (just | only) want (it | my hair) trimmed", "just clean it up [a little | a bit]", "(can | could) you [just] (trim | cut) the ends #ends",
+      "[just] a @trim_word #h:just_trim", "i (would like | want | need) [just] a @trim_word", "(can | could) i (get | have) [just] a @trim_word", "[just] a little @trim_word",
+      "just (the ends | a little off the ends) #h:just_ends #ends", "[just] (@trim_word | cut) the ends", "i (would like | want) to (keep | maintain) the length", "[just] a (quick | small | little | light) @trim_word",
+      "i (just | only) want (it | my hair) trimmed", "just clean it up [a little | a bit]", "(can | could) you [just] (@trim_word | cut) the ends #ends",
       "(just | only) the ends #ends", "[the] same as (last time | before | always | usual)", "the usual [please]", "i want the same (style | haircut | cut) [but | just] [a little | a bit] shorter",
-      "[just] keep (the | my) (style | shape) [and] [make it | cut it] [a little | a bit] shorter", "[a] trim [but] keep the length", "[but] keep the length",
+      "[just] keep (the | my) (style | shape) [and] [make it | cut it] [a little | a bit] shorter", "[a] @trim_word [but] keep the length", "[but] keep the length",
     ] },
     haircut: { patterns: [
       "i (would like | want | need) a haircut #h:haircut", "(can | could) i (get | have) a haircut", "[i am here for] a haircut", "i (would like | want) to (get | have) my hair cut",

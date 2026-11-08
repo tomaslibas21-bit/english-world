@@ -180,7 +180,6 @@ export class Session {
     this.stopListening();
     st.setConv({ speechChoices: undefined, typing: false });
     audio.stop(); // sample/replay audio must release the speaker before opening the microphone
-    audio.sfx("listen");
     const attempt = createSpeechAttempt({
       evaluate: (t) => this.conv.nlu.probe(t, this.conv.expectedIntents()),
       phrases: this.phrases(),
@@ -335,7 +334,6 @@ export class Session {
     if (!await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say)) return;
     // cancelled meanwhile (another button, the mic, the person's turn, left)?
     if (run !== this.practiceRun || !this.alive || this.speech || useStore.getState().conv.phase !== "you") return;
-    audio.sfx("listen");
     const attempt = createSpeechAttempt({
       evaluate: (t) => repeatProgress(en, t),
       preferLocal: useStore.getState().settings.onDevice,

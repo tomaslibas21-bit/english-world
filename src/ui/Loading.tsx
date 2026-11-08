@@ -2,7 +2,7 @@
 export function Loading() {
   return (
     <div className="loading ew-loading" role="status" aria-label="Kraunamas „English World“">
-      <div className="ew-loading-logo" aria-hidden="true">English<em>World</em></div>
+      <svg className="ew-loading-logo" viewBox="0 0 306 198" aria-hidden="true"><use href={`${import.meta.env.BASE_URL}brand/loading-wordmark.svg#wordmark`} /></svg>
     </div>
   );
 }

@@ -28,12 +28,21 @@ const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
-/** Elsewhere (the east, behind the airport) a hill just stays off the town's ground: nobody walks into its slope. */
-const HILL_MARGIN = 6;
+/** The follow camera can stand 22 m behind a player at any boundary. Keep the backdrop beyond that arm,
+ *  including south of Station Road and behind the airport, where a 6 m gap looked like a green wall. */
+export const HILL_MARGIN = 40;
 /** How far a hill's footprint (centre, half-sizes) stays from the town's ground; negative when it reaches onto it. */
 function hillGap(x: number, z: number, fx: number, fz: number) {
   const gx = Math.max(WORLD.minX - (x + fx), x - fx - WORLD.maxX), gz = Math.max(G0Z - (z + fz), z - fz - WORLD.maxZ);
   return gx > 0 && gz > 0 ? Math.hypot(gx, gz) : Math.max(gx, gz);
+}
+
+/** Moves only distant scenery, preserving the random sequence used for the town's other details. */
+export function backgroundHillPosition(x: number, z: number, fx: number, fz: number) {
+  const ox = x - 35, oz = z - 30, gap = x < WORLD.minX ? WEST_MEADOW : HILL_MARGIN;
+  let k = 1;
+  while (hillGap(x, z, fx, fz) < gap && k < 4) { k += 0.02; x = 35 + ox * k; z = 30 + oz * k; }
+  return { x, z };
 }
 
 export function buildTown(): Town {
@@ -77,14 +86,14 @@ export function buildTown(): Town {
     // west of the town a hill stands back behind a meadow, so the ends of Main Street, Oak Avenue and the other streets
     // look out over grass to the hills instead of into a slope: it moves further out along the arc (the random numbers
     // stay the same, and so does everything after them)
-    // elsewhere a hill reaching onto the town's ground moves out just far enough to stay off it
+    // elsewhere the camera also needs room between the playable ground and the distant scenery
     {
-      const ox = hx - 35, oz = hz - 30, gap = hx < WORLD.minX ? WEST_MEADOW : HILL_MARGIN;
-      let k = 1;
-      while (hillGap(hx, hz, 1.6 * s, 1.2 * s) < gap && k < 2) { k += 0.02; hx = 35 + ox * k; hz = 30 + oz * k; }
+      const p = backgroundHillPosition(hx, hz, 1.6 * s, 1.2 * s);
+      hx = p.x; hz = p.z;
     }
     const g = new THREE.IcosahedronGeometry(s, 1);
-    g.scale(1.6, 0.45 + r() * 0.3, 1.2);
+    // Low rolling hills leave sky above them in the narrow phone view, rather than a tall flat green face.
+    g.scale(1.6, 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
     M.add("hills", hillMat, g, false, true);
   }

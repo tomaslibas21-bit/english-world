@@ -50,7 +50,7 @@ input[type="range"] { accent-color: var(--accent); }
 :where(button, summary, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 .stage { position: fixed; inset: 0; }
-.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .tag-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
 
 /* ---------- icons ---------- */
@@ -143,7 +143,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 .minimap canvas { width: 100%; height: 100%; }
 .minimap .label { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
 
-.toolbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, 52px); gap: 10px; }
+.toolbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 200px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.toolbar-tools { display: grid; grid-auto-flow: column; grid-template-rows: repeat(8, 52px); gap: 10px; }
 .light-mode-btn { font-size: 17px; font-weight: 900; color: var(--accent); }
 .toolbar-tooltip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 7px 11px; border: 1px solid var(--ink-faint); border-radius: 10px; background: var(--panel-solid); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .light-mode-btn:hover .toolbar-tooltip, .light-mode-btn:focus-visible .toolbar-tooltip { opacity: 1; }
@@ -604,6 +605,7 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
 /* ---------- touch controls ---------- */
 .joy { position: fixed; left: 18px; bottom: 18px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.28); border: 3px solid rgba(255,255,255,0.6); z-index: 12; touch-action: none; }
 .joy .knob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: rgba(255,255,255,0.9); box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
+.joy, .joy *, .jump-btn, .act-btn { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .prompt.touch { left: auto; right: 16px; bottom: 132px; transform: none; font-size: 0.95em; padding: 8px 14px; max-width: calc(100vw - 190px); }
 .prompt.touch kbd { display: none; }
 .joy.run { border-color: rgba(255, 214, 102, 0.95); background: rgba(255, 214, 102, 0.22); }
@@ -659,7 +661,8 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .objective-card { width: calc(100vw - 120px); }
   .minimap { width: 88px; height: 88px; border-width: 3px; }
   .minimap .label { display: none; }
-  .toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); grid-template-rows: repeat(8, 46px); }
+  .toolbar { top: 112px; right: max(10px, env(safe-area-inset-right)); }
+  .toolbar-tools { grid-template-rows: repeat(8, 46px); }
   .icon-btn { width: 46px; height: 46px; border-radius: 14px; }
   .icon-btn .ui-icon { width: 22px; height: 22px; }
   .help-strip { display: none; }
@@ -667,15 +670,19 @@ a.icon-btn, a.lh-tool { text-decoration: none; }
   .il { font-size: 1.3em; }
 }
 /* Keep every tool reachable above the movement controls, including on short laptop screens. */
+@media (min-width: 901px) and (min-height: 521px) and (max-height: 900px) {
+  .hud.has-touch .toolbar-tools { grid-template-rows: repeat(4, 52px); }
+}
 @media (max-height: 760px) {
-  .toolbar { grid-template-rows: repeat(4, 52px); }
+  .toolbar-tools { grid-template-rows: repeat(4, 52px); }
 }
 @media (max-width: 900px) and (max-height: 760px) {
-  .toolbar { grid-template-rows: repeat(4, 46px); }
+  .toolbar-tools { grid-template-rows: repeat(4, 46px); }
   .objective-card { max-width: calc(100vw - 140px); }
 }
 @media (min-width: 540px) and (max-height: 520px) {
-  .toolbar { top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); grid-template-rows: repeat(2, 46px); gap: 8px; }
+  .toolbar { top: 12px; right: max(112px, calc(env(safe-area-inset-right) + 100px)); gap: 8px; }
+  .toolbar-tools { grid-template-rows: repeat(2, 46px); gap: 8px; }
   .toolbar .icon-btn { width: 46px; height: 46px; }
   .minimap { width: 88px; height: 88px; }
   .objective-card { max-width: calc(100vw - 350px); max-height: calc(100dvh - 180px); overflow-y: auto; }
