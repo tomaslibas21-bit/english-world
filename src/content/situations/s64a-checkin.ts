@@ -590,7 +590,7 @@ export const checkin: SituationDef = {
       "i (will | can) put @things in (my | the) (other bag | backpack | carry on | hand luggage #tip:uk_handluggage)",
     ] },
     pay_fee: { patterns: [
-      "i will pay [the fee | it | that | for it | the hundred dollars | a hundred dollars | the overweight fee] #h:ow_pay",
+      "i will pay [the fee | it | that | for it | the hundred dollars | the 100 dollars | a hundred dollars | 100 dollars | the overweight fee] #h:ow_pay",
       "i will just pay [the fee | it | that]",
       "i would rather pay [the fee]",
       "(can | could) i [just] pay (the fee | for it)", "(can | could) i just pay [extra]",

@@ -45,7 +45,7 @@ This is a risk inventory, not a claim that the listed recordings are wrong or th
 
 See [the structured audit](LATTE-AUDIT-2026-11-08.json) for per-key screening and recheck outcomes. Model judgments varied with prompt and context; this is an AI-assisted review, not calibrated human phonetic certification. In particular, a strong question pitch rise and misplaced lexical stress must not be treated as interchangeable, and a human report of confusing delivery remains actionable even when one model passes it.
 
-The review separately noted singular articles paired with plural nouns in some quantity-based returning-greeting variants (for example, “a lattes”). This is a distinct wording/template issue, not a stress diagnosis; the pronunciation repair does not rewrite those templates or label their first-syllable stress wrong.
+The review separately noted singular articles paired with plural nouns in some quantity-based returning-greeting variants (for example, “a lattes”). This is a distinct wording/template issue, not a stress diagnosis; the pronunciation repair does not rewrite those templates or label their first-syllable stress wrong. The later [wording and mobile follow-up](GAME-QUALITY-2026-11-08.md) corrects that separate template issue while retaining the recordings repaired here.
 
 ## Research and limits
 

@@ -969,14 +969,16 @@ export const cafe: SituationDef = {
   start: (c) => {
     const last = c.memory.lastDrink as Item | undefined;
     if (c.visits >= 3 && last && c.chance(0.6)) {
-      c.say("usual", { X: np(last) });
+      // This offer orders one drink (as the yes handler already did), even after a shared multi-drink order.
+      const usual = { ...last, qty: 1 };
+      c.say("usual", { X: np(usual) });
       c.twist("usual");
       c.expect({
         id: "usual", optional: true, hints: ["g_yesno", "order_drink"], expects: ["order"],
         suggest: [{ lt: "Sutikti (taip) arba užsisakyti ką kita", hint: "order_drink", options: "drink" }],
-        yes: (cc) => { items(cc).push({ ...last, qty: 1 }); cc.say("ack_order"); },
+        yes: (cc) => { items(cc).push({ ...usual }); cc.say("ack_order"); },
         no: (cc) => { cc.say("ask_order"); cc.hold(); },
-        ask: (cc) => cc.say("usual", { X: np(last) }),
+        ask: (cc) => cc.say("usual", { X: np(usual) }),
       });
       return;
     }
@@ -1065,12 +1067,12 @@ export const cafe: SituationDef = {
       if (it) {
         const e = byId(it.id);
         if (e.attrs?.generic) { c.say("which_item"); c.hold(); return; }
-        c.say("price_is", { X: np({ ...it, size: it.size ?? (e.attrs?.sized ? "medium" : undefined) }), price: itemPrice({ ...it, qty: 1, size: it.size ?? "medium" }) });
+        c.say("price_is", { X: np({ ...it, qty: 1, size: it.size ?? (e.attrs?.sized ? "medium" : undefined) }), price: itemPrice({ ...it, qty: 1, size: it.size ?? "medium" }) });
         return;
       }
       if (slots.size && drinks(c).length) {
         const d = drinks(c).at(-1)!;
-        c.say("price_is", { X: np({ ...d, size: slots.size }), price: itemPrice({ ...d, size: slots.size, qty: 1 }) });
+        c.say("price_is", { X: np({ ...d, qty: 1, size: slots.size }), price: itemPrice({ ...d, size: slots.size, qty: 1 }) });
         return;
       }
       if (items(c).length) {

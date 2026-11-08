@@ -81,6 +81,7 @@ describe("automatic-only learner microphone", () => {
     expect(attempts).toHaveLength(1);
     expect(attempts[0].start).toHaveBeenCalledOnce();
     expect(useStore.getState().conv.mic.status).toBe("listening");
+    expect(audio.sfx).not.toHaveBeenCalledWith("listen");
   });
 
   it.each(["typing", "panel", "hidden", "hidden-before-event", "choices", "npc", "close", "diagnostic"])("does not start a queued mic after %s", async mode => {

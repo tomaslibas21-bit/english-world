@@ -37,18 +37,20 @@ export function Hud() {
   if (conv.active) return <Fade />;
   const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
   return (
-    <div className="hud">
+    <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <Objective />
       <Minimap />
       <div className="toolbar">
-        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
-        <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
-        <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
-        <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
-        <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
-        <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
-        <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
-        <SectionHelpButton />
+        <div className="toolbar-tools">
+          {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title="Grįžti į kursą" aria-label="Grįžti į kursą"><Icon name="home" size={25} /></a>}
+          <ToolButton icon="clapper" title="Visos situacijos" panel="scenarios" />
+          <ToolButton icon="map" title="Žemėlapis (M)" panel="map" hotkey="M" />
+          <ToolButton icon="journal" title="Užduotys (J)" panel="journal" hotkey="J" />
+          <ToolButton icon="smartphone" title="Telefonas (P)" panel="phone" hotkey="P" />
+          <ToolButton icon="bookOpen" title="Frazių knygelė" panel="phrasebook" badge={due} />
+          <ToolButton icon="settings" title="Nustatymai (Esc)" panel="settings" />
+          <SectionHelpButton />
+        </div>
         <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title="Lengvas režimas" aria-label="Lengvas režimas">
           <span aria-hidden>LR</span>
           <span className="toolbar-tooltip" aria-hidden>Lengvas režimas</span>
@@ -208,6 +210,7 @@ function TouchControls() {
     let run = false;
     const move = (e: PointerEvent) => {
       if (e.pointerId !== id) return;
+      e.preventDefault();
       const r = el.getBoundingClientRect();
       let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
       const d = Math.hypot(dx, dy);
@@ -217,10 +220,21 @@ function TouchControls() {
       el.classList.toggle("run", run);
       game?.setJoystick(dx / R, -dy / R);
     };
-    const up = (e: PointerEvent) => { if (e.pointerId !== id) return; id = null; knob.current!.style.transform = ""; run = false; el.classList.remove("run"); game?.setJoystick(0, 0); };
-    const down = (e: PointerEvent) => { id = e.pointerId; el.setPointerCapture(e.pointerId); move(e); };
-    el.addEventListener("pointerdown", down); el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
-    return () => { el.removeEventListener("pointerdown", down); el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
+    const stop = () => { id = null; if (knob.current) knob.current.style.transform = ""; run = false; el.classList.remove("run"); game?.setJoystick(0, 0); };
+    const up = (e: PointerEvent) => { if (e.pointerId === id) stop(); };
+    const down = (e: PointerEvent) => {
+      if (id !== null || e.button !== 0) return;
+      e.preventDefault();
+      id = e.pointerId; el.setPointerCapture(e.pointerId); move(e);
+    };
+    const noMenu = (e: Event) => e.preventDefault();
+    const hidden = () => { if (document.hidden) stop(); };
+    el.addEventListener("pointerdown", down); el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up); el.addEventListener("contextmenu", noMenu);
+    window.addEventListener("blur", stop); document.addEventListener("visibilitychange", hidden);
+    return () => {
+      el.removeEventListener("pointerdown", down); el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); el.removeEventListener("lostpointercapture", up); el.removeEventListener("contextmenu", noMenu);
+      window.removeEventListener("blur", stop); document.removeEventListener("visibilitychange", hidden); stop();
+    };
   }, []);
   return (
     <>

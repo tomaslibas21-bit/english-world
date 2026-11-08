@@ -79,6 +79,18 @@ const PAST_PARTICIPLES = new Set([
 export function surfaceTokens(input: string): Tokens {
   const pre = String(input || "")
     .replace(/\b(uh[- ]huh|mm[- ]hmm|mhm)\b/gi, " yes ")
+    // Recognition may render spoken units as symbols. Keep their meaning before stripping punctuation.
+    .replace(/[%％﹪]/g, " percent ")
+    .replace(/\bper\s+cent\b/gi, "percent")
+    .replace(/&/g, " and ")
+    .replace(/(\d)\s*°\s*F\b/gi, "$1 degrees fahrenheit ")
+    .replace(/(\d)\s*°\s*C\b/gi, "$1 degrees celsius ")
+    .replace(/(\d)\s*°/g, "$1 degrees ")
+    .replace(/(\d)\s*¢/g, "$1 cents ")
+    // Fractions before a measurement are not dates ("1/2 inch" at the salon).
+    .replace(/\b1\s*[\/⁄]\s*2(?=\s*(?:an?\s+)?(?:inch(?:es)?|cm|centimet(?:er|re)s?)\b)/gi, "half")
+    .replace(/(\d)½/g, "$1 and a half ")
+    .replace(/½/g, " half ").replace(/¼/g, " quarter ").replace(/¾/g, " three quarters ")
     // thousands separators: "$12,000" is 12000, "1,050" is 1050 (a European "4,50" stays "4 50")
     .replace(/(\d),(?=\d{3}(?!\d))/g, "$1")
     .replace(/([$€£]\s?\d{1,3})((?: \d{3})+)(?!\d)/g, (_m, a: string, b: string) => a + b.replace(/ /g, "")) // "$12 000"
