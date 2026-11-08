@@ -20,6 +20,7 @@ import { modelAnswers, playerVars, type Guess, type HeardWord, type RepeatWord }
 import "./answer.css";
 import {ReportProblem} from "./ReportProblem";
 import { SectionHelpButton } from "./sectionHelp";
+import { useKeyboardHints } from "./keyboardHints";
 
 export function avatarColor(npcId: string) {
   const n = NPCS[npcId];
@@ -40,6 +41,7 @@ function lookup(sit: SituationDef) {
 }
 
 export function Conversation() {
+  const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const settings = useStore((s) => s.settings);
   const setSettings = useStore((s) => s.setSettings);
@@ -112,7 +114,6 @@ export function Conversation() {
 
   return (
     <>
-    <NpcInfo sit={sit} />
     <div className="convo" data-phase={conv.phase} role="dialog" aria-label={`Pokalbis: ${npc?.name ?? ""}`}>
       <div className="convo-tools">
       <div className="convo-head">
@@ -124,10 +125,11 @@ export function Conversation() {
             <Icon name="turtle" size={20} /><span className="long">Lėčiau</span>
           </button>
         </div>
+        <NpcInfo sit={sit} />
         <div className="head-actions">
           <button className="close-x" onClick={() => game?.restartScenario()} title="Pradėti šį pokalbį iš naujo" aria-label="Pradėti iš naujo"><Icon name="restart" /></button>
           <button className="close-x" onClick={() => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); }} title="Visos situacijos" aria-label="Visos situacijos"><Icon name="list" /></button>
-          <button className="close-x" onClick={() => game?.closeConversation()} title="Baigti pokalbį (Esc)" aria-label="Baigti pokalbį"><Icon name="close" /></button>
+          <button className="close-x" onClick={() => game?.closeConversation()} title={keyboardHints ? "Baigti pokalbį (Esc)" : "Baigti pokalbį"} aria-label="Baigti pokalbį"><Icon name="close" /></button>
         </div>
       </div>
 
@@ -192,7 +194,7 @@ export function Conversation() {
           <div className="inputbar">
             <MicButton />
             <MicStatus />
-            <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => setConv({ typing: !conv.typing })} title="Rašyti (T)" aria-label="Rašyti (T)" aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
+            <button className={"type-toggle" + (conv.typing ? " on" : "")} onClick={() => setConv({ typing: !conv.typing })} title={keyboardHints ? "Rašyti (T)" : "Rašyti"} aria-label={keyboardHints ? "Rašyti (T)" : "Rašyti"} aria-pressed={conv.typing}><Icon name="keyboard" size={24} /></button>
           </div>
           {conv.typing && (
             <form className="typebox" onSubmit={(e) => { e.preventDefault(); send(); }}>
@@ -685,11 +687,12 @@ function renderGap(en: string) {
 // --------------------------------------------------------------------------------------------
 
 function MicButton() {
+  const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const supported = speechSupported();
   const listening = ["listening", "starting", "reconnecting"].includes(conv.mic.status);
   if (!supported) return <button className="mic" disabled title="Balso atpažinimas šioje naršyklėje nepalaikomas" aria-label="Balso atpažinimas šioje naršyklėje nepalaikomas"><Icon name="mic" size={30} /></button>;
-  const title = listening ? "Baigti atsakymą (tarpo klavišas)" : "Įjungti mikrofoną dar kartą (tarpo klavišas)";
+  const title = (listening ? "Baigti atsakymą" : "Įjungti mikrofoną dar kartą") + (keyboardHints ? " (tarpo klavišas)" : "");
   return (
     <button className={"mic" + (listening ? " listening" : "")} disabled={conv.phase !== "you"} aria-pressed={listening}
       title={title} aria-label={title}
@@ -703,6 +706,7 @@ const MIC = <InlineIcon name="mic" label="mikrofono mygtuką" />;
 const KEYS = <InlineIcon name="keyboard" label="klaviatūra" />;
 
 function MicStatus() {
+  const keyboardHints = useKeyboardHints();
   const conv = useStore((s) => s.conv);
   const f = useStore((s) => s.progress.profile?.gender === "f");
   const m = conv.mic;
@@ -716,7 +720,7 @@ function MicStatus() {
       return <div className="mic-status"><b>Klausau – kalbėk {f ? "neskubėdama" : "neskubėdamas"}</b>{m.heard ? <span className="heard">„{m.heard}“</span> : <span className="sub">Gali daryti pauzes – palauksiu.</span>}</div>;
     case "denied": return <div className="mic-status"><b>Leisk naudoti mikrofoną</b><span className="sub">Naršyklės adreso juostoje leisk mikrofoną ir spausk {MIC} dar kartą. Arba rašyk {KEYS}.</span></div>;
     case "error": return <div className="mic-status"><b>{m.error === "network" ? "Nepavyko prisijungti prie atpažinimo" : m.error === "audio-capture" ? "Nerastas mikrofonas" : "Klausymas nepavyko"}</b><span className="sub">Spausk {MIC} ir bandyk dar arba rašyk {KEYS}.</span></div>;
-    case "nothing": return <div className="mic-status"><b>Nieko negirdėjau</b><span className="sub">Spausk {MIC} (arba tarpo klavišą), kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</span></div>;
-    default: return <div className="mic-status"><b>Tavo eilė</b><span className="sub">Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {MIC} arba tarpo klavišą. Rašyti – {KEYS} (T).</span></div>;
+    case "nothing": return <div className="mic-status"><b>Nieko negirdėjau</b><span className="sub">Spausk {MIC}{keyboardHints && " (arba tarpo klavišą)"}, kai būsi {f ? "pasiruošusi" : "pasiruošęs"}.</span></div>;
+    default: return <div className="mic-status"><b>Tavo eilė</b><span className="sub">Mikrofonas įsijungia automatiškai. Jei reikia bandyti dar kartą, spausk {MIC}{keyboardHints && " arba tarpo klavišą"}. Rašyti – {KEYS}{keyboardHints && " (T)"}.</span></div>;
   }
 }

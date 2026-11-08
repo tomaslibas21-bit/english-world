@@ -1,3 +1,4 @@
+import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
@@ -141,13 +142,14 @@ function SitCard({ s, onClick, open }: { s: SituationDef; onClick: () => void; o
 export const START_WITH = ["s72-cafe", "s66-taxi", "s68-hotel", "s75-pharmacy", "s74-clothes", "s90-running-late", "s84-date"];
 
 function HowToPlay({ open }: { open?: boolean }) {
+  const keyboardHints = useKeyboardHints();
   return (
     <details className="howto" open={open}>
       <summary><Icon name="help" size={21} className="howto-ico" /> Kaip žaisti?<Icon name="chevronDown" size={18} className="chev" /></summary>
       <ol>
         <li>Pasirink situaciją – iškart atsidursi pokalbyje.</li>
         <li>Viršuje matysi užduočių sąrašą, o prie „<InlineIcon name="next" label="rodyklės" />“ – ką daryti dabar.</li>
-        <li>Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. <InlineIcon name="mic" label="Mikrofono mygtuku" /> (arba tarpo klavišu) gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti <InlineIcon name="keyboard" label="klaviatūra" />.</li>
+        <li>Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. <InlineIcon name="mic" label="Mikrofono mygtuku" />{keyboardHints && " (arba tarpo klavišu)"} gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti <InlineIcon name="keyboard" label="klaviatūra" />.</li>
         <li>Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžiai – <InlineIcon name="speaker" label="garsiakalbio mygtukas" /> juos perskaito. „Daugiau frazių“ – dar daugiau būdų tai pasakyti.</li>
         <li>Viršuje <b>LT</b> ir <b>IPA</b> įjungia pašnekovo sakinių vertimą ir tarimą, o prie „Tavo eilė“ esantys <b>Vertimas</b> ir <b>IPA</b> – tavo atsakymų pavyzdžių. <InlineIcon name="restart" label="Rodyklė ratu" /> – pradėti iš naujo, <InlineIcon name="list" label="Sąrašas" /> – kitos situacijos.</li>
         <li>Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti (<InlineIcon name="bookOpen" label="Frazių knygelė" /> → „Mano kortelės“).</li>
