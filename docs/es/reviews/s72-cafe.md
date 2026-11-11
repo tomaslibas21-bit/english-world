@@ -131,3 +131,7 @@ pequeño, deslactosada → sin lactosa, light → desnatada, soya → soja); 8 S
 - **For the lead:** the hint notes ("Very common in Mexico: ¿Me da…?", "dame is the tú form, for friends") show
   beside the Spain twins ("¿Me pones…?", "Ponme…"): a `noteSpain` on HintItem would fit. The chips ("chico",
   "deslactosada", "light", "de soya") stay Mexican: chipLabel could take `attrs.spainChip`.
+- **12 Nov (batch 2's proposal):** "Vale, muchas gracias" (Spain) and "Bueno, muchas gracias" (Mexico) at "¿Algo más?"
+  / "¿Te pongo algo más?" / "¿Sería todo?" close the order (global.ts reread, CLOSE_THANKS; at "¿Le pongo hielo?"
+  they stay a yes). And a bare "Sí" to "¿Sería todo?" / "¿Eso es todo?" (ask_more variant 2) now closes the order (it
+  asked "¿Qué más le sirvo?" before), as s79 does. Two sims are the traps (coverage.ts reads no reread).

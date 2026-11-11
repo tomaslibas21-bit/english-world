@@ -256,6 +256,8 @@ function kindList(c: Ctx) {
 }
 
 const conv = (c: Ctx) => (c as ConvCtx).conv;
+/** The last "¿Algo más?" was "¿Sería todo?" (ask_more variant 2), where a yes closes the order. */
+const askedAll = (c: Ctx) => ((c as ConvCtx).conv?.lastLines ?? []).some((l) => l.lineId === "ask_more" && l.variant === 2);
 const plain = (c: Ctx) => c.heard.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 /** "¿Qué es una concha?": what Mariana says about the Mexican things on her menu (the rest: the meaning shown). */
 const WHAT: Record<string, string> = { concha: "what_concha", cafe_de_olla: "what_olla", horchata: "what_horchata", jamaica: "what_jamaica", torta: "what_torta" };
@@ -1119,8 +1121,9 @@ export const cafe: SituationDef = {
       suggest: (c) => foods(c).length
         ? [{ lt: "Say that's all", hint: "more" }, { lt: "Order something else", hint: "order_food", options: "food" }]
         : [{ lt: "Order something to eat", hint: "more_food", options: "food" }, { lt: "Say that's all", hint: "more" }],
-      yes: (c) => { c.say("ask_what_else"); c.hold(); },
-      no: (c) => { c.s.moreDone = true; } },
+      // "¿Sería todo?" / Spain's "¿Eso es todo?" (ask_more variant 2) turns a bare yes/no around ("Sí" = that's all)
+      yes: (c) => { if (askedAll(c)) { c.s.moreDone = true; return; } c.say("ask_what_else"); c.hold(); },
+      no: (c) => { if (askedAll(c) && !/\bgracias\b/.test(plain(c))) { c.say("ask_what_else"); c.hold(); return; } c.s.moreDone = true; } },
     { id: "dine", done: (c) => !!c.s.dine, ask: (c) => c.say("ask_dine"), expects: ["dine_ans"],
       suggest: [{ lt: "Say whether it's for here or to go", hint: "dine" }] },
     { id: "name", when: (c) => c.s.dine === "togo" && c.s.askName, done: (c) => !!c.s.name,
@@ -1536,6 +1539,14 @@ export const cafe: SituationDef = {
   ],
 
   sims: [
+    // "¿Algo más?" / "¿Sería todo?" closed with thanks (global.ts reread, 12 Nov 2026): Mexico's "Bueno, muchas gracias"
+    // and Spain's "Vale, muchas gracias" are "that's all", never "yes, something else"
+    { name: "that's all, with thanks (Mexico)", turns: ["Un americano mediano", "Bueno, muchas gracias", "Para aquí", "Con tarjeta", "¡Gracias!"],
+      expect: { complete: true, state: { moreDone: true, items: { 0: { id: "americano" } } } }, auto: Object.fromEntries(Object.entries(CAFE_AUTO).filter(([k]) => k !== "more")),
+      setup: (s) => { s.foodDeclined = true; s.askMilk = false; s.askTemp = false; s.askName = false; } },
+    { name: "that's all, with thanks (Spain)", turns: ["Un americano mediano", "Vale, muchas gracias", "Para aquí", "Con tarjeta", "¡Gracias!"],
+      expect: { complete: true, state: { moreDone: true, items: { 0: { id: "americano" } } } }, auto: Object.fromEntries(Object.entries(CAFE_AUTO).filter(([k]) => k !== "more")),
+      setup: (s) => { s.foodDeclined = true; s.askMilk = false; s.askTemp = false; s.askName = false; } },
     { name: "full order, card", turns: ["¡Hola!", "¿Me da un latte grande con leche de avena?", "Es todo, gracias", "Para llevar, por favor", "Con tarjeta", "¡Gracias!"],
       expect: { complete: true }, auto: CAFE_AUTO, setup: (s) => { s.outOfOat = false; } },
     // the milk and hot-or-iced questions are pinned on (their short answers are in the script)

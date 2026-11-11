@@ -309,6 +309,11 @@ function offerAsked(c: ConvCtx): boolean {
  *  all), "Está bien, gracias" (I'm fine, thanks). */
 const BARE_THANKS = /^(?:(?:muchas|mil|muchisimas) )?gracias(?: (?:es todo|eso es todo|seria todo|eso seria todo|nada mas|por ahora|asi estoy bien))?(?: (?:senor|senora|senorita|joven))?$/;
 const FINE_THANKS = /^(?:esta bien|asi esta bien|estoy bien) (?:muchas )?gracias(?: (?:senor|senora|senorita|joven))?$/;
+/** At "¿Algo más?" only: "Vale, muchas gracias" (Spain), "Bueno, muchas gracias" (Mexico), "Perfecto, gracias" close
+ *  the order ("no, that's all"); at "¿Le pongo hielo?" they stay a yes. */
+/** "¿Sería todo?", "¿Eso es todo?": a closing with thanks there is "that's all" too. */
+const ALL_ASKED = /\b(?:seria todo|eso es todo|es todo|eso seria todo)$/;
+const CLOSE_THANKS = /^(?:vale|bueno|ok|perfecto|listo|genial|muy bien)(?: (?:pues|entonces))? (?:(?:muchas|mil|muchisimas) )?gracias(?: (?:senor|senora|senorita|joven))?$/;
 /** Conversations that read a polite closing at their offers themselves (rule 17: most ask once more, "Entonces, ¿sí
  *  la quiere?"): their reading stays. */
 const OWN_POLITE_CLOSING = new Set(["p25-used-car", "p27-meeting", "p28b-review", "p29-landlord", "p30-start-over", "s35-gym",
@@ -321,11 +326,12 @@ function reread(c: ConvCtx, p: Parse): Parse {
   if (OWN_POLITE_CLOSING.has(c.conv.sit.id)) return p;
   const pend = c.conv.pending, st = pend ? null : c.conv.effectiveStep();
   const no = pend ? pend.no : st?.no;
-  if (!no || !offerAsked(c)) return p;
+  if (!no || !(offerAsked(c) || ALL_ASKED.test(lastQuestion(c)))) return p;
   const h = fold(c.heard);
   const thanksOnly = !p.yn && p.segments.length > 0 && p.segments.every((sg) => sg.intent === "g_thanks") && BARE_THANKS.test(h);
   const fine = p.yn === "yes" && !p.segments.length && FINE_THANKS.test(h);
-  if (!thanksOnly && !fine) return p;
+  const closing = p.yn !== "no" && p.segments.every((sg) => sg.intent === "g_thanks" || sg.intent === "g_ok") && CLOSE_THANKS.test(h) && (OFFER_MORE.test(lastQuestion(c)) || ALL_ASKED.test(lastQuestion(c)));
+  if (!thanksOnly && !fine && !closing) return p;
   if (thanksOnly && (pend?.on?.g_thanks || c.conv.sit.handlers.g_thanks)) return p;
   return { ...p, yn: "no", segments: [], flags: new Set([...p.flags, "thanks"]), tags: [...p.tags, "polite_no"] };
 }
