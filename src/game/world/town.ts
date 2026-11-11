@@ -217,6 +217,9 @@ export function buildTown(): Town {
   if (signsMesh && M instanceof TownMerger) signsMesh.renderOrder = 1;
   if (signsMesh) group.add(signsMesh);
   M.build(group);
+  // the gas station's canopy: looked through by the camera (cutout.ts) rather than a roof it must stay under, or under
+  // it, at the store's door, the camera has nowhere to go but behind the player's head (Game.ts's field skips it)
+  for (const o of group.children) if (/^gas-canopy/.test(o.name)) o.userData.thin = true;
 
   const clouds = makeClouds(group, r);
   const boats = group.children.filter((o) => o.userData.boat);
