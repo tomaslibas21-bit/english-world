@@ -521,7 +521,7 @@ export const post: SituationDef = {
     ],
     ask_dest: [
       t("Claro. | ¿A | dónde | lo | va | a | mandar?", "Sure. | To | where | it | are you going | to | send?", "Sure. Where are you sending it?", { flags: { 3: "lo: it, the package (el paquete)." } }),
-      t("Con gusto. | ¿A | qué | país | va?", "Gladly. | To | what | country | is it going?", "Sure. What country is it going to?", { spain: t("Muy bien. | ¿A | qué | país | va?", "Very well. | To | what | country | is it going?", "Sure. What country is it going to?") }),
+      t("Con gusto. | ¿A | qué | país | va?", "Gladly. | To | what | country | is it going?", "Sure. What country is it going to?", { spain: t("Muy | bien. | ¿A | qué | país | va?", "Very | well. | To | what | country | is it going?", "Sure. What country is it going to?") }),
     ],
     // the question again, after a side question (audit: "Depende del peso y del destino. Con gusto. ¿A qué país va?")
     dest_again: [t("¿A | qué | país | va?", "To | what | country | is it going?", "What country is it going to?")],

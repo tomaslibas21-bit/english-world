@@ -401,6 +401,8 @@ export const doctor: SituationDef = {
   entities: { symptom: SYMPTOMS },
 
   merges: {
+    "menos mal": { reason: "lexical_expression", split: "menos → less + mal → bad is one Spain expression: good thing, thank goodness.", minimal: "Two words." },
+    "cómo de": { reason: "lexical_expression", split: "cómo → how + de → of is Spain's way to ask how much of a quality: how (strong).", minimal: "Two words." },
     "por aquí": { reason: "lexical_expression", split: "por → through + aquí → here; ¿Qué lo trae por aquí? = what brings you here / in.", minimal: "Two words." },
     "voy a": { reason: "grammatical_fusion", split: "voy → I go + a → to; ir a + infinitive = the near future (I'm going to).", minimal: "Two words; the verb stays outside." },
     "va a": { reason: "grammatical_fusion", split: "va → goes + a → to; ir a + infinitive = the near future (you're / it's going to).", minimal: "Two words; the verb stays outside." },
@@ -749,7 +751,7 @@ export const doctor: SituationDef = {
     ],
     greet_back: [
       t("¡Qué | gusto | {m:verlo|f:verla} | otra vez! | ¿Qué | le | pasa | ahora?", "What | pleasure | to see you | again! | What | (to) you | is happening | now?",
-        "Good to see you again! What's going on this time?", { flags: { 2: "lo/la: “you” (usted), for a man or a woman." }, spain: t("¡Me alegro | de | {m:verlo|f:verla} | otra vez! | ¿Qué | le | pasa | ahora?", "I'm glad | of | to see you | again! | What | (to) you | is happening | now?", "Good to see you again! What's going on this time?") }),
+        "Good to see you again! What's going on this time?", { flags: { 2: "lo/la: “you” (usted), for a man or a woman." }, spain: t("¡Me alegro | de | {m:verlo|f:verla} | otra vez! | ¿Qué | le | pasa | ahora?", "I'm glad | of | to see you | again! | What | (to) you | is happening | now?", "Good to see you again! What's going on this time?", { flags: { 2: "lo/la: “you” (usted), for a man or a woman." } }) }),
       t("¡Hola | de nuevo! | ¿Qué | {m:lo|f:la} | trae | hoy?", "Hello | again! | What | you | brings | today?", "Hello again! What brings you in today?", { flags: { 3: FLAG_LOLA } }),
     ],
     greet_feeling: [t("Buenos días, | soy | la | doctora | Herrera. | ¿Cómo | se siente | hoy?", "Good morning, | I'm | — | Doctor | Herrera. | How | do you feel | today?",
@@ -765,7 +767,7 @@ export const doctor: SituationDef = {
     dob_year: [t("¿Y | el | año?", "And | the | year?", "And the year?")],
     dob_daymonth: [t("¿Y | el | día | y | el | mes?", "And | the | day | and | the | month?", "And the day and month?")],
     dob_thanks: [t("Gracias.", "Thanks.", "Thank you."), t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thanks.")],
-    fine_glad: [t("¡Qué | bueno! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "How | good! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 4: FLAG_LOLA }, spain: t("¡Me alegro! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "I'm glad! | So, | what | you | brings | here?", "Good! So what brings you in today?") })],
+    fine_glad: [t("¡Qué | bueno! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "How | good! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 4: FLAG_LOLA }, spain: t("¡Me alegro! | Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "I'm glad! | So, | what | you | brings | here?", "Good! So what brings you in today?", { flags: { 3: FLAG_LOLA } }) })],
     ask_problem: [
       t("Entonces, | ¿qué | {m:lo|f:la} | trae | por aquí?", "So, | what | you | brings | here?", "So, what brings you in today?", { flags: { 2: FLAG_LOLA } }),
       t("¿Qué | le | pasa?", "What | (to) you | is happening?", "What seems to be the problem?"),
@@ -1025,9 +1027,9 @@ export const doctor: SituationDef = {
     pay_method_again: [t("¿Efectivo | o | tarjeta?", "Cash | or | card?", "Cash or card?")],
     cash_wait: [t("Son | {$price}.", "It's | {$price}.", "It's {$price}.")],
     card_tap: [t("Acerque | su | tarjeta | a | la | terminal… | Listo, | ya | pasó.", "Bring close | your | card | to | the | card machine… | Done, | already | it-went-through.",
-      "Tap your card on the machine… Done, it went through.", { spain: t("Acerque | su | tarjeta | al | datáfono… | Ya está, | ya | ha pasado.", "Bring close | your | card | to the | card machine… | Done, | already | it-has-gone-through.", "Tap your card on the machine… Done, it went through.") })],
+      "Tap your card on the machine… Done, it went through.", { spain: t("Acerque | su | tarjeta | al | datáfono… | Ya está, | ya | ha | pasado.", "Bring close | your | card | to the | card machine… | Done, | already | it-has | gone through.", "Tap your card on the machine… Done, it went through.") })],
     transfer_ok: [t("Claro. | Aquí | están | los | datos | de | la | cuenta… | Listo, | ya | me | llegó.", "Sure. | Here | are | the | details | of | the | account… | Done, | already | (to) me | it-arrived.",
-      "Sure. Here are the account details… Great, it came through.", { spain: t("Claro. | Aquí | están | los | datos | de | la | cuenta… | Ya está, | ya | me | ha llegado.", "Sure. | Here | are | the | details | of | the | account… | Done, | already | (to) me | it-has-arrived.", "Sure. Here are the account details… Great, it came through.") })],
+      "Sure. Here are the account details… Great, it came through.", { spain: t("Claro. | Aquí | están | los | datos | de | la | cuenta… | Ya está, | ya | me | ha | llegado.", "Sure. | Here | are | the | details | of | the | account… | Done, | already | (to) me | it-has | arrived.", "Sure. Here are the account details… Great, it came through.") })],
     cash_ok: [t("Claro, | en efectivo.", "Sure, | in cash.", "Sure, cash is fine.")],
     cash_exact: [t("Exacto, | gracias.", "Exact, | thanks.", "That's exactly right, thanks.")],
     change_is: [t("Gracias. | Su | cambio: | {$price}.", "Thanks. | Your | change: | {$price}.", "Thanks. Your change is {$price}.")],

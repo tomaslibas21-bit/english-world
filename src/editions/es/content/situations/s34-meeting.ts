@@ -1417,11 +1417,11 @@ export const meeting: SituationDef = {
     ],
     updates_first: [
       t("Pero | primero, | rápido: | ¿cómo | van | con | sus | pendientes? | ¿Pablo?", "But | first, | quickly: | how | are-you-all-doing | with | your | to-dos? | Pablo?",
-        "But first, quick updates. Pablo?", { flags: { 7: F_PEND }, spain: t("Pero | primero, | rápido: | ¿cómo | vais | con | vuestros | pendientes? | ¿Pablo?", "But | first, | quickly: | how | are-you-all-doing | with | your | to-dos? | Pablo?", "But first, quick updates. Pablo?") }),
+        "But first, quick updates. Pablo?", { flags: { 7: F_PEND }, spain: t("Pero | primero, | rápido: | ¿cómo | vais | con | vuestros | pendientes? | ¿Pablo?", "But | first, | quickly: | how | are-you-all-doing | with | your | to-dos? | Pablo?", "But first, quick updates. Pablo?", { flags: { 7: F_PEND } }) }),
     ],
     paul_update: [
       t("La | app | ya | casi | está. | Nada más | estamos | arreglando | unos | bugs.", "The | app | already | almost | is-there. | Just | we're | fixing | some | bugs.",
-        "The app is almost ready. We're just fixing a few bugs.", { flags: { 2: "ya casi = almost (ya: by now)." }, spain: t("La | app | ya | casi | está. | Solo | estamos | arreglando | unos | bugs.", "The | app | already | almost | is-there. | Just | we're | fixing | some | bugs.", "The app is almost ready. We're just fixing a few bugs.") }),
+        "The app is almost ready. We're just fixing a few bugs.", { flags: { 2: "ya casi = almost (ya: by now)." }, spain: t("La | app | ya | casi | está. | Solo | estamos | arreglando | unos | bugs.", "The | app | already | almost | is-there. | Just | we're | fixing | some | bugs.", "The app is almost ready. We're just fixing a few bugs.", { flags: { 2: "ya casi = almost (ya: by now)." } }) }),
       t("¡Semana | pesada! | Sigo | arreglando | bugs | de | la | app.", "Week | heavy! | I-keep | fixing | bugs | of | the | app.", "Busy week! I'm still fixing bugs in the app.",
         { flags: { 1: "pesada (heavy) = busy, tough.", 2: "seguir + gerund = still doing." } }),
     ],
@@ -1576,7 +1576,7 @@ export const meeting: SituationDef = {
     ],
     add_test_ok: [t("¡Buen | punto! | Lo | agrego | al | plan | de | pruebas.", "Good | point! | It | I'll-add | to the | plan | of | tests.", "Good point! I'll add that to the test plan.")],
     add_help_ok: [t("¡Eso | estaría | genial, | gracias!", "That | would-be | great, | thanks!", "That would be great, thanks!")],
-    add_customers_ok: [t("Qué bueno | saberlo. | Pronto | les | damos | la | fecha.", "Good | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.", { spain: t("Me alegra | saberlo. | Pronto | les | damos | la | fecha.", "I'm glad | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.") })],
+    add_customers_ok: [t("Qué bueno | saberlo. | Pronto | les | damos | la | fecha.", "Good | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.", { spain: t("Me | alegra | saberlo. | Pronto | les | damos | la | fecha.", "(To) me | it-pleases | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.") })],
     add_feedback_ok: [t("¡Buena | idea! | Podemos | poner | un | botón | de | comentarios | en | la | app.", "Good | idea! | We-can | put | a | button | of | feedback | in | the | app.", "Great idea! We can add a feedback button to the app.")],
     add_other_ok: [t("Buen | punto, | gracias. | Lo | vemos | después de | la | reunión.", "Good | point, | thanks. | It | we-see | after | the | meeting.", "Good point, thanks. Let's talk about it after the meeting.", { flags: { 3: F_LO } })],
     no_add_ok: [
@@ -1612,17 +1612,17 @@ export const meeting: SituationDef = {
     offline_two: [
       t("Buenos | argumentos. | Mejor | lo | vemos | aparte. | ¿Lo | pueden | hablar | ustedes | dos | después de | la | reunión?",
         "Good | arguments. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?",
-        "Good points. Let's take this offline. Can you two talk after the meeting?", { flags: { 3: F_LO, 5: "verlo aparte = take it offline, discuss it separately." }, spain: t("Buenos | argumentos. | Mejor | lo | vemos | aparte. | ¿Lo | podéis | hablar | vosotros | dos | después de | la | reunión?", "Good | arguments. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?", "Good points. Let's take this offline. Can you two talk after the meeting?") }),
+        "Good points. Let's take this offline. Can you two talk after the meeting?", { flags: { 3: F_LO, 5: "verlo aparte = take it offline, discuss it separately." }, spain: t("Buenos | argumentos. | Mejor | lo | vemos | aparte. | ¿Lo | podéis | hablar | vosotros | dos | después de | la | reunión?", "Good | arguments. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?", "Good points. Let's take this offline. Can you two talk after the meeting?", { flags: { 3: F_LO, 5: "verlo aparte = take it offline, discuss it separately." } }) }),
     ],
     offline_short: [
       t("Bueno. | Mejor | lo | vemos | aparte. | ¿Lo | pueden | hablar | ustedes | dos | después de | la | reunión?",
         "Okay. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?",
-        "Alright. Let's take this offline. Can you two talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." }, spain: t("Bueno. | Mejor | lo | vemos | aparte. | ¿Lo | podéis | hablar | vosotros | dos | después de | la | reunión?", "Okay. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?", "Alright. Let's take this offline. Can you two talk after the meeting?") }),
+        "Alright. Let's take this offline. Can you two talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." }, spain: t("Bueno. | Mejor | lo | vemos | aparte. | ¿Lo | podéis | hablar | vosotros | dos | después de | la | reunión?", "Okay. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?", "Alright. Let's take this offline. Can you two talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." } }) }),
     ],
     offline_sara: [
       t("Bueno. | Mejor | lo | vemos | aparte. | Pablo | y | Sara, | ¿lo | pueden | hablar | después de | la | reunión?",
         "Okay. | Better | it | we-see | separately. | Pablo | and | Sara, | it | can-you-all | talk-about | after | the | meeting?",
-        "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." }, spain: t("Bueno. | Mejor | lo | vemos | aparte. | Pablo | y | Sara, | ¿lo | podéis | hablar | después de | la | reunión?", "Okay. | Better | it | we-see | separately. | Pablo | and | Sara, | it | can-you-all | talk-about | after | the | meeting?", "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?") }),
+        "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." }, spain: t("Bueno. | Mejor | lo | vemos | aparte. | Pablo | y | Sara, | ¿lo | podéis | hablar | después de | la | reunión?", "Okay. | Better | it | we-see | separately. | Pablo | and | Sara, | it | can-you-all | talk-about | after | the | meeting?", "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." } }) }),
     ],
     talk_later_ok: [
       t("Me | parece | bien.", "(To) me | it-seems | good.", "Sounds good."),
@@ -1958,6 +1958,8 @@ export const meeting: SituationDef = {
   },
 
   merges: {
+    "qué bien": { reason: "lexical_expression", split: "qué → what + bien → well is a word-for-word exclamation; = great, good to hear.", minimal: "Two words." },
+    "por la mañana": { reason: "lexical_expression", split: "por → by, la → the, mañana → morning; Spain's time phrase = in the morning.", minimal: "Three words." },
     "qué bueno": { reason: "lexical_expression", split: "qué → what + bueno → good is a word-for-word exclamation; = great, good to hear.", minimal: "Two words." },
     "después de": { reason: "lexical_expression", split: "después → afterwards + de → of; one preposition = after.", minimal: "Two words." },
     "antes del": { reason: "lexical_expression", split: "antes → before + del → of the; one preposition with its article = before the.", minimal: "Two words." },

@@ -552,7 +552,7 @@ export const pharmacy: SituationDef = {
       t("¡Buenas! | Qué | gusto | {m:verlo|f:verla} | otra vez. | ¿Viene | a | surtir | una | receta?", "Hi! | What | pleasure | to see you | again. | Are you coming | to | fill | a | prescription?",
         "Hi! Good to see you again. Are you here to fill a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted).", 7: "Mexican: surtir una receta = to fill a prescription." },
           neutral: t("¡Buenas! | Qué | gusto | {m:verlo|f:verla} | otra vez. | ¿Viene | con | una | receta?", "Hi! | What | pleasure | to see you | again. | Are you coming | with | a | prescription?",
-            "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }), spain: t("¡Buenas! | Me alegro | de | {m:verlo|f:verla} | otra vez. | ¿Viene | con | una | receta?", "Hi! | I'm glad | of | to see you | again. | Are you coming | with | a | prescription?", "Hi! Good to see you again. Are you here with a prescription?") }),
+            "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }), spain: t("¡Buenas! | Me alegro | de | {m:verlo|f:verla} | otra vez. | ¿Viene | con | una | receta?", "Hi! | I'm glad | of | to see you | again. | Are you coming | with | a | prescription?", "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }) }),
     ],
     rx_prompt_again: [t("¿Trae | alguna | receta?", "Are you bringing | any | prescription?", "Do you have a prescription with you?")],
     sorry_symptom: [
@@ -736,7 +736,7 @@ export const pharmacy: SituationDef = {
     max_eight: [t("No | más | de | ocho | al | día.", "Not | more | than | eight | a | day.", "No more than eight a day.")],
     dose_cold: [t("Una | cápsula | cada | ocho | horas.", "One | capsule | every | eight | hours.", "One capsule every eight hours.")],
     cold_drowsy: [t("Ojo: | da | sueño; | mejor | no maneje | después.", "Careful: | it-causes | sleepiness; | better | don't drive | afterwards.",
-      "Careful, it makes you drowsy, so better not drive afterwards.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." }, spain: t("Ojo: | da | sueño; | mejor | no conduzca | después.", "Careful: | it-causes | sleepiness; | better | don't drive | afterwards.", "Careful, it makes you drowsy, so better not drive afterwards.") })],
+      "Careful, it makes you drowsy, so better not drive afterwards.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." }, spain: t("Ojo: | da | sueño; | mejor | no conduzca | después.", "Careful: | it-causes | sleepiness; | better | don't drive | afterwards.", "Careful, it makes you drowsy, so better not drive afterwards.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." } }) })],
     dose_allergy: [t("Una | tableta | al | día.", "One | tablet | a | day.", "One tablet a day.")],
     allergy_nondrowsy: [t("Y | no da | sueño.", "And | it doesn't cause | sleepiness.", "And it won't make you drowsy.")],
     dose_antacid: [t("Mastique | una | o | dos | tabletas | cuando | sienta | las | agruras.", "Chew | one | or | two | tablets | when | you-feel | — | heartburn.",
@@ -818,10 +818,10 @@ export const pharmacy: SituationDef = {
       t("Serían | {$price}.", "It would be | {$price}.", "That'll be {$price}."),
     ],
     ask_pay_method: [t("¿Efectivo | o | tarjeta?", "Cash | or | card?", "Cash or card?")],
-    card_tap: [t("Acerque | su | tarjeta… | Listo, | ya | pasó.", "Bring close | your | card… | Done, | already | it-went-through.", "Tap your card… Done, it went through.", { spain: t("Acerque | su | tarjeta… | Ya está, | ya | ha pasado.", "Bring close | your | card… | Done, | already | it-has-gone-through.", "Tap your card… Done, it went through.") })],
+    card_tap: [t("Acerque | su | tarjeta… | Listo, | ya | pasó.", "Bring close | your | card… | Done, | already | it-went-through.", "Tap your card… Done, it went through.", { spain: t("Acerque | su | tarjeta… | Ya está, | ya | ha | pasado.", "Bring close | your | card… | Done, | already | it-has | gone through.", "Tap your card… Done, it went through.") })],
     card_later: [t("Sí, | claro. | Al | final | le | cobro.", "Yes, | of course. | At the | end | (to) you | I-charge.", "Sure. I'll ring you up at the end.")],
     phone_ok: [t("Sí, | acérquelo | a | la | terminal… | Listo, | ya | pasó.", "Yes, | bring it close | to | the | card machine… | Done, | already | it-went-through.",
-      "Sure, hold it up to the card machine… Done, it went through.", { spain: t("Sí, | acérquelo | al | datáfono… | Ya está, | ya | ha pasado.", "Yes, | bring it close | to the | card machine… | Done, | already | it-has-gone-through.", "Sure, hold it up to the card machine… Done, it went through.") })],
+      "Sure, hold it up to the card machine… Done, it went through.", { spain: t("Sí, | acérquelo | al | datáfono… | Ya está, | ya | ha | pasado.", "Yes, | bring it close | to the | card machine… | Done, | already | it-has | gone through.", "Sure, hold it up to the card machine… Done, it went through.") })],
     cash_ok: [t("Claro, | en efectivo.", "Sure, | in cash.", "Sure, cash is fine.")],
     change_back: [t("Gracias. | Aquí tiene | su | cambio.", "Thanks. | Here's | your | change.", "Thanks. Here's your change.")],
     change_is: [t("Gracias. | Su | cambio: | {$price}.", "Thanks. | Your | change: | {$price}.", "Thanks. Your change is {$price}.")],
@@ -1015,6 +1015,7 @@ export const pharmacy: SituationDef = {
   tips: TIPS,
 
   merges: {
+    "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same is one expression: right away.", minimal: "Two words." },
     "en qué": { reason: "lexical_expression", split: "en → in + qué → what; ¿En qué le puedo ayudar? = how can I help you.", minimal: "Two words." },
     "se le ofrece": { reason: "lexical_expression", split: "se → itself + le → to you + ofrece → it offers; the service formula = do you need / can I get you.", minimal: "Three words." },
     "aquí al lado": { reason: "lexical_expression", split: "aquí → here + al → to the + lado → side; together = right next door.", minimal: "Three words." },

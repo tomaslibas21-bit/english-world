@@ -784,7 +784,7 @@ export const dentist: SituationDef = {
     ask_reason: [
       t("Claro. | ¿Es | para | una | revisión, | o | tiene | alguna | molestia?", "Sure. | Is it | for | a | checkup, | or | do you have | some | discomfort?",
         "Sure. Is it for a checkup, or is something bothering you?", { flags: { 8: "molestia: discomfort; doctors' offices use it for any pain or problem." } }),
-      t("Con gusto. | ¿Cuál | es | el | motivo | de | la | consulta?", "Gladly. | What | is | the | reason | for | the | appointment?", "Of course. What's the reason for the visit?", { spain: t("Muy bien. | ¿Cuál | es | el | motivo | de | la | consulta?", "Very well. | What | is | the | reason | for | the | appointment?", "Of course. What's the reason for the visit?") }),
+      t("Con gusto. | ¿Cuál | es | el | motivo | de | la | consulta?", "Gladly. | What | is | the | reason | for | the | appointment?", "Of course. What's the reason for the visit?", { spain: t("Muy | bien. | ¿Cuál | es | el | motivo | de | la | consulta?", "Very | well. | What | is | the | reason | for | the | appointment?", "Of course. What's the reason for the visit?") }),
     ],
     reason_ok: [
       t("Muy | bien.", "Very | good.", "Okay."),
@@ -851,7 +851,7 @@ export const dentist: SituationDef = {
     dob_thanks: [t("Gracias.", "Thank you.", "Thank you."), t("Perfecto.", "Perfect.", "Perfect.")],
     ask_phone: [
       t("¿Me | da | un | número | de | celular | para | {m:contactarlo|f:contactarla}?", "(To) me | you-give | a | number | of | cell phone | to | contact you?",
-        "Can I have a cell phone number to reach you?", { flags: { 7: "contactarlo / contactarla: lo for a man, la for a woman." }, spain: t("¿Me | da | un | número | de | móvil | para | {m:contactarlo|f:contactarla}?", "(To) me | you-give | a | number | of | cell phone | to | contact you?", "Can I have a cell phone number to reach you?") }),
+        "Can I have a cell phone number to reach you?", { flags: { 7: "contactarlo / contactarla: lo for a man, la for a woman." }, spain: t("¿Me | da | un | número | de | móvil | para | {m:contactarlo|f:contactarla}?", "(To) me | you-give | a | number | of | cell phone | to | contact you?", "Can I have a cell phone number to reach you?", { flags: { 7: "contactarlo / contactarla: lo for a man, la for a woman." } }) }),
       t("¿Y | un | teléfono, | por favor?", "And | a | phone number, | please?", "And a phone number, please?"),
     ],
     phone_thanks: [t("Muy | bien, | gracias.", "Very | good, | thanks.", "Great, thank you.")],
@@ -909,7 +909,7 @@ export const dentist: SituationDef = {
     move_offer: [
       t("A ver... | ¿Qué tal | el | jueves | en la tarde, | a | las | cuatro | y media?", "Let's see... | How about | — | Thursday | in the afternoon, | at | — | four | thirty?",
         "Let's see... How about Thursday afternoon, at four thirty?",
-        { flags: { 2: "el before a weekday = on; English needs no word here.", 6: "Spanish uses an article before clock times; English has no separate word." }, spain: t("A ver... | ¿Qué tal | el | jueves | por la tarde, | a | las | cuatro | y media?", "Let's see... | How about | — | Thursday | in the afternoon, | at | — | four | thirty?", "Let's see... How about Thursday afternoon, at four thirty?") }),
+        { flags: { 2: "el before a weekday = on; English needs no word here.", 6: "Spanish uses an article before clock times; English has no separate word." }, spain: t("A ver... | ¿Qué tal | el | jueves | por la tarde, | a | las | cuatro | y media?", "Let's see... | How about | — | Thursday | in the afternoon, | at | — | four | thirty?", "Let's see... How about Thursday afternoon, at four thirty?", { flags: { 2: "el before a weekday = on; English needs no word here.", 6: "Spanish uses an article before clock times; English has no separate word." } }) }),
     ],
     earliest: [t("Lo siento, | es | lo | más | pronto | que | tengo.", "I'm sorry, | it's | the | most | soon | that | I have.", "I'm sorry, that's the earliest I have.",
       { flags: { 2: "lo makes más pronto a noun phrase: the soonest." } })],
@@ -960,7 +960,7 @@ export const dentist: SituationDef = {
       t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | cuadra | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | block | from the | main square.",
         "We're at 12 Hidalgo Street, a block from the main square.",
         { say: "Estamos en la calle Hidalgo número doce, a una cuadra del zócalo.", write: "Clínica Dental Coral · calle Hidalgo 12", spell: "Hidalgo",
-          flags: { 2: "Spanish puts la before calle; English has no word here." }, spain: t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | calle | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | street | from the | main square.", "We're at 12 Hidalgo Street, a block from the main square.", { say: "Estamos en la calle Hidalgo número doce, a una calle del zócalo." }) }),
+          flags: { 2: "Spanish puts la before calle; English has no word here." }, spain: t("Estamos | en | la | calle | Hidalgo | número | 12, | a | una | calle | del | zócalo.", "We are | on | — | street | Hidalgo | number | 12, | at | one | street | from the | main square.", "We're at 12 Hidalgo Street, a block from the main square.", { flags: { 2: "Spanish puts la before calle; English has no word here." }, say: "Estamos en la calle Hidalgo número doce, a una calle del zócalo." }) }),
     ],
     parking: [t("Puede | estacionarse | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.", { spain: t("Puede | aparcar | en | la | calle, | enfrente | del | consultorio.", "You can | park | on | the | street, | in front | of the | office.", "You can park on the street, right in front of the office.") })],
     duration: [t("Más o menos | una | hora, | por | ser | primera | vez.", "More or less | an | hour, | for | being | first | time.", "About an hour, since it's your first visit.")],
@@ -1216,6 +1216,7 @@ export const dentist: SituationDef = {
   },
 
   merges: {
+    "por la tarde": { reason: "lexical_expression", split: "por → by, la → the, tarde → afternoon; Spain's time phrase = in the afternoon.", minimal: "Three words." },
     "clínica dental coral": { reason: "lexical_expression", split: "clínica → clinic + dental → dental + coral → coral would translate the office's proper name.", minimal: "A proper name." },
     "le duele": { reason: "grammatical_fusion", split: "le → to you + duele → it hurts is a word-for-word reading of one English verb phrase (does it hurt you).", minimal: "Two words." },
     "se le ofrece": { reason: "grammatical_fusion", split: "se → itself + le → to you + ofrece → offers is false; ¿qué se le ofrece? = what do you need.", minimal: "The pronouns and the verb only." },
@@ -1226,7 +1227,7 @@ export const dentist: SituationDef = {
     "se oye": { reason: "grammatical_fusion", split: "se → itself + oye → hears is false; = it sounds.", minimal: "Two words." },
     "ahora sí": { reason: "lexical_expression", split: "ahora → now + sí → yes is false: sí only adds emphasis (now, at last).", minimal: "Two words." },
     "lo antes posible": { reason: "lexical_expression", split: "lo → it + antes → before + posible → possible is a literal reading; = as soon as possible.", minimal: "A fixed three-word phrase." },
-    "(en | por) la tarde": { reason: "lexical_expression", split: "en → in + la → the + tarde → afternoon is close but the part of the day is one adverbial: in the afternoon.", minimal: "Three words." },
+    "en la tarde": { reason: "lexical_expression", split: "en → in + la → the + tarde → afternoon is close but the part of the day is one adverbial: in the afternoon.", minimal: "Three words." },
     "historia clínica": { reason: "lexical_expression", split: "historia → story + clínica → clinical is false; = a patient's medical history form.", minimal: "Two words." },
     "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less is a literal reading; = about.", minimal: "Three words." },
     "por si": { reason: "lexical_expression", split: "por → for + si → if is a literal reading; = in case.", minimal: "Two words." },

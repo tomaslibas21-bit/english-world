@@ -724,7 +724,7 @@ export const support: SituationDef = {
     ],
     reference: [
       t("Su | número | de | reporte | es | el | {$text}.", "Your | number | of | report | is | — | {$text}.", "Your report number is {$text}.",
-        { say: "Su número de reporte es el {$text}.", write: REF_NOTE, flags: { 5: "el (número): Spanish puts an article before a code or number; English has no word here." }, spain: t("Su | número | de | incidencia | es | el | {$text}.", "Your | number | of | incident | is | — | {$text}.", "Your report number is {$text}.", { say: "Su número de incidencia es el {$text}." }) }),
+        { say: "Su número de reporte es el {$text}.", write: REF_NOTE, flags: { 5: "el (número): Spanish puts an article before a code or number; English has no word here." }, spain: t("Su | número | de | incidencia | es | el | {$text}.", "Your | number | of | incident | is | — | {$text}.", "Your report number is {$text}.", { flags: { 5: "el (número): Spanish puts an article before a code or number; English has no word here." }, say: "Su número de incidencia es el {$text}." }) }),
     ],
     reference_again: [
       t("Claro. | Es | el | {$text}.", "Sure. | It's | — | {$text}.", "Sure. It's {$text}.",
@@ -786,7 +786,7 @@ export const support: SituationDef = {
     breaking_up: [
       t("Perdón, | se está cortando. | ¿Me lo | puede | repetir?", "Sorry, | it's cutting out. | It to me | can you | repeat?", "Sorry, you're breaking up. Could you say that again?"),
       t("Perdón, | no le escuché | bien. | ¿Me | repite | el | número?", "Sorry, | I didn't hear you | well. | (To) me | you-repeat | the | number?",
-        "Sorry, I didn't catch that. Could you repeat the number?", { spain: t("Perdón, | no le he oído | bien. | ¿Me | repite | el | número?", "Sorry, | I haven't heard you | well. | (To) me | you-repeat | the | number?", "Sorry, I didn't catch that. Could you repeat the number?") }),
+        "Sorry, I didn't catch that. Could you repeat the number?", { spain: t("Perdón, | no | le | he | oído | bien. | ¿Me | repite | el | número?", "Sorry, | not | you | I-have | heard | well. | (To) me | you-repeat | the | number?", "Sorry, I didn't catch that. Could you repeat the number?") }),
     ],
     speak_up_ok: [
       t("¡Ay, | perdón! | ¿Así | está | mejor?", "Oh, | sorry! | Like this | is it | better?", "Oh, sorry! Is this better?"),
@@ -960,6 +960,7 @@ export const support: SituationDef = {
   },
 
   merges: {
+    "por la tarde": { reason: "lexical_expression", split: "por → by, la → the, tarde → afternoon; Spain's time phrase = in the afternoon.", minimal: "Three words." },
     "le atiende": { reason: "lexical_expression", split: "le → (to) you + atiende → attends is the call-center formula: you're speaking with.", minimal: "Two words; the name stays outside." },
     "en este momento": { reason: "lexical_expression", split: "en → in + este → this + momento → moment is the fixed adverb: at the moment.", minimal: "Three words." },
     "atención a clientes": { reason: "lexical_expression", split: "atención → attention + a → to + clientes → customers is the department's name: customer service.", minimal: "Three words, one name." },
@@ -971,7 +972,7 @@ export const support: SituationDef = {
     "antes de": { reason: "lexical_expression", split: "antes → before + de → of: de has no English word before a verb; = before.", minimal: "Two words." },
     "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same is false; = right now.", minimal: "Two words." },
     "se está cortando": { reason: "lexical_expression", split: "se → itself + está → is + cortando → cutting: the phone phrase = it's cutting out (you're breaking up).", minimal: "Three words." },
-    "(en | por) la tarde": { reason: "lexical_expression", split: "en → in + la → the + tarde → afternoon: Mexico's way to say in the afternoon; the article lines up with English's.", minimal: "Three words." },
+    "en la tarde": { reason: "lexical_expression", split: "en → in + la → the + tarde → afternoon: Mexico's way to say in the afternoon; the article lines up with English's.", minimal: "Three words." },
     "no le está llegando": { reason: "grammatical_fusion", split: "no → not + le → to you + está → is + llegando → arriving: English puts not inside the verb phrase (it isn't reaching you).", minimal: "Negation, pronoun and the progressive." },
     "todavía no": { reason: "lexical_expression", split: "todavía → still + no → no gives still no; the fixed reply = not yet.", minimal: "Two words." },
     "en casa": { reason: "lexical_expression", split: "en → in + casa → house: the fixed phrase at home.", minimal: "Two words." },
@@ -1488,7 +1489,7 @@ export const support: SituationDef = {
   sims: [
     { name: "review: can't unplug yet, another day in the same breath, someone only in the afternoon",
       turns: ["Soporte técnico.", "Ryan Miller.", "Es el 742 9133.", "Mi internet no funciona.", "Hay una luz roja.", "No sé cómo.", "Todavía no lo desconecto.",
-        "Listo.", "Sigue en rojo.", "No puedo el jueves, ¿y el viernes?", "Trabajo.", "Mi esposo, pero solo (en | por) la tarde.", "Sí, me queda bien.",
+        "Listo.", "Sigue en rojo.", "No puedo el jueves, ¿y el viernes?", "Trabajo.", "Mi esposo, pero solo en la tarde.", "Sí, me queda bien.",
         "Sí, una cosa más.", "¿Cuándo me regresan mi dinero?", "No, es todo."],
       expect: { complete: true, state: { techBooked: "thu_pm" } }, auto: SUPPORT_AUTO,
       setup: (s) => { s.badLine = false; s.askSince = false; s.chargeTwist = false; s.longHold = false; s.firstWindow = "thu_am"; } },
@@ -1503,7 +1504,7 @@ export const support: SituationDef = {
       expect: { complete: true, state: { lookup: true } }, auto: SUPPORT_AUTO, setup: (s) => { s.askSince = true; s.badLine = false; } },
     { name: "an agent first, then the afternoon",
       turns: ["Un asesor, por favor.", "Soporte técnico.", "Me llamo Ryan.", "Es el 742 9133.", "Mi internet no funciona.", "No prende ninguna luz.", "Sí, claro, mil veces.",
-        "A esa hora estoy en el trabajo.", "No, vivo solo.", "¿Y (en | por) la tarde?", "Sí, el jueves (en | por) la tarde me queda bien.", "¿Me da un número de reporte?", "No, es todo, gracias."],
+        "A esa hora estoy en el trabajo.", "No, vivo solo.", "¿Y en la tarde?", "Sí, el jueves en la tarde me queda bien.", "¿Me da un número de reporte?", "No, es todo, gracias."],
       expect: { complete: true, state: { techBooked: "thu_pm" } }, auto: SUPPORT_AUTO, setup: (s) => { s.badLine = false; s.firstWindow = "thu_am"; } },
     { name: "twist: charged twice too",
       turns: ["Soporte técnico, por favor.", "Ryan Miller.", "Es el 742 9133.", "Mi internet no funciona. Y me cobraron dos veces este mes.", "La luz parpadea en rojo.",

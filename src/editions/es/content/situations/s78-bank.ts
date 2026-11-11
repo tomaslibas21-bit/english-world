@@ -881,7 +881,7 @@ export const bank: SituationDef = {
     ],
     greet_back: [
       t("¡Qué | gusto | {m:verlo|f:verla} | otra vez! | ¿En | qué | le | puedo | ayudar?", "What | pleasure | to see you | again! | In | what | (to) you | can I | help?",
-        "Good to see you again! How can I help you?", { flags: { 2: "verlo / verla: to see you, with lo or la for a man or a woman." }, spain: t("¡Me alegro | de | {m:verlo|f:verla} | otra vez! | ¿En | qué | le | puedo | ayudar?", "I'm glad | of | to see you | again! | In | what | (to) you | can I | help?", "Good to see you again! How can I help you?") }),
+        "Good to see you again! How can I help you?", { flags: { 2: "verlo / verla: to see you, with lo or la for a man or a woman." }, spain: t("¡Me alegro | de | {m:verlo|f:verla} | otra vez! | ¿En | qué | le | puedo | ayudar?", "I'm glad | of | to see you | again! | In | what | (to) you | can I | help?", "Good to see you again! How can I help you?", { flags: { 2: "verlo / verla: to see you, with lo or la for a man or a woman." } }) }),
     ],
     greet_hay: [
       t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
@@ -915,7 +915,7 @@ export const bank: SituationDef = {
         "Sure! What kind of account are you looking for: checking or savings?",
         { flags: { 7: "de débito: a debit account, the everyday account with a debit card (a checking account).", 9: "de: of; cuenta de ahorro is a savings account." } }),
       t("Con gusto. | ¿La | quiere | de | débito | o | de | ahorro?", "Gladly. | It | do you want | — | debit | or | — | savings?", "Of course. Would you like checking or savings?",
-        { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." }, spain: t("Por supuesto. | ¿La | quiere | de | débito | o | de | ahorro?", "Of course. | It | do you want | — | debit | or | — | savings?", "Of course. Would you like checking or savings?") }),
+        { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." }, spain: t("Por supuesto. | ¿La | quiere | de | débito | o | de | ahorro?", "Of course. | It | do you want | — | debit | or | — | savings?", "Of course. Would you like checking or savings?", { flags: { 1: "la: it, the object pronoun for la cuenta (not an article).", 3: "de débito: a debit account, the everyday account (a checking account).", 6: "de: of; de ahorro is a savings account." } }) }),
     ],
     ask_type_again: [
       t("Entonces, | ¿de | débito | o | de | ahorro?", "So, | — | debit | or | — | savings?", "So, checking or savings?", { flags: { 1: "de: of; English says just checking or savings." } }),
@@ -1327,7 +1327,7 @@ export const bank: SituationDef = {
       { id: "ssn_what", s: t("¿Qué | es | la | CURP?", "What | is | the | CURP?", "What's a CURP?") },
     ] },
     form: { lt: "Fill out and sign the form", items: [
-      { id: "form_done", s: t("Listo, | ya | firmé.", "Done, | already | I-signed.", "Okay, I've signed it.", { spain: t("Ya está, | ya | he firmado.", "Done, | already | I-have-signed.", "Okay, I've signed it.") }) },
+      { id: "form_done", s: t("Listo, | ya | firmé.", "Done, | already | I-signed.", "Okay, I've signed it.", { spain: t("Ya está, | ya | he | firmado.", "Done, | already | I-have | signed.", "Okay, I've signed it.") }) },
       { id: "form_here", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
       { id: "form_where", s: t("¿Dónde | firmo?", "Where | do I sign?", "Where do I sign?") },
       { id: "form_pen", s: t("¿Me | presta | una | pluma?", "(To) me | do you lend | a | pen?", "Could I borrow a pen?",
@@ -1410,6 +1410,7 @@ export const bank: SituationDef = {
   },
 
   merges: {
+    "carné de conducir": { reason: "lexical_expression", split: "carné → card + de → of + conducir → to drive names one document: a driver's license.", minimal: "Three words, one thing." },
     "banco del puerto": { reason: "lexical_expression", split: "banco → bank + del → of the + puerto → port would translate the bank's proper name word by word.", minimal: "The three-word name only." },
     "puerto colibrí": { reason: "lexical_expression", split: "puerto → port + colibrí → hummingbird would translate the town's proper name.", minimal: "A two-word name." },
     "clave única de registro de población": { reason: "lexical_expression", split: "The words of the official name would be glossed one by one; it is the name of one code (the CURP).", minimal: "The document's official name." },

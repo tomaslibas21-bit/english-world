@@ -903,7 +903,7 @@ export const party: SituationDef = {
     // --- Ximena ---------------------------------------------------------------------------------------
     sophie_open: [
       t("¡Hola! | ¡Qué | bueno | que | viniste! | Ven, | te | presento | a | Marcos.", "Hi! | How | good | that | you-came! | Come, | (to) you | I-introduce | — | Marcos.",
-        "Hi! So glad you came! Come meet Marcos.", { flags: { 8: PERS_A }, spain: t("¡Hola! | ¡Qué | bien | que | hayas venido! | Ven, | te | presento | a | Marcos.", "Hi! | How | good | that | you-have-come! | Come, | (to) you | I-introduce | — | Marcos.", "Hi! So glad you came! Come meet Marcos.") }),
+        "Hi! So glad you came! Come meet Marcos.", { flags: { 8: PERS_A }, spain: t("¡Hola! | ¡Qué | bien | que | hayas | venido! | Ven, | te | presento | a | Marcos.", "Hi! | How | good | that | you-have | come! | Come, | (to) you | I-introduce | — | Marcos.", "Hi! So glad you came! Come meet Marcos.") }),
     ],
     drink_q: [
       t("¿Te | sirvo | algo | de | tomar?", "(For) you | I-serve | something | of | to-drink?", "Can I get you something to drink?"),
@@ -1090,7 +1090,7 @@ export const party: SituationDef = {
     fun_reading: [t("¡A mí también! | Me encanta | leer.", "Me too! | I love | to-read.", "Me too! I love reading.")],
     fun_cooking: [t("¡Ja! | ¡A mí también! | Bueno, | es | mi | trabajo.", "Ha! | Me too! | Well, | it's | my | job.", "Ha! Me too! Well, it's my job.")],
     fun_dancing: [t("¿Bailar? | ¡Qué | valor! | Yo | no sé | bailar | nada.", "To-dance? | What | courage! | I | don't know-how | to-dance | at all.", "Dancing? You're braver than me! I can't dance at all.")],
-    fun_hockey: [t("¡Claro! | En | Canadá | todos | juegan | hockey, | ¿verdad?", "Of course! | In | Canada | everyone | they-play | hockey, | right?", "Of course! Everyone in Canada plays hockey, right?", { spain: t("¡Claro! | En | Canadá | todos | juegan | al hockey, | ¿verdad?", "Of course! | In | Canada | everyone | they-play | (the) hockey, | right?", "Of course! Everyone in Canada plays hockey, right?") })],
+    fun_hockey: [t("¡Claro! | En | Canadá | todos | juegan | hockey, | ¿verdad?", "Of course! | In | Canada | everyone | they-play | hockey, | right?", "Of course! Everyone in Canada plays hockey, right?", { spain: t("¡Claro! | En | Canadá | todos | juegan | al | hockey, | ¿verdad?", "Of course! | In | Canada | everyone | they-play | — | hockey, | right?", "Of course! Everyone in Canada plays hockey, right?") })],
     knew_it: [t("¡Lo | sabía!", "It | I-knew!", "I knew it!")],
     fun_diving: [t("¿Bucear? | ¡Aquí | hay | cenotes | increíbles!", "To-dive? | Here | there-are | cenotes | amazing!", "Diving? There are amazing cenotes here!",
       { flags: { 3: "cenote: a natural sinkhole pool, typical of the Yucatán." } })],
@@ -1111,7 +1111,7 @@ export const party: SituationDef = {
     reading_spanish: [t("¡En | español! | ¡Qué | bien!", "In | Spanish! | How | great!", "In Spanish! Good for you!")],
     mark_reading: [t("Una | novela | de | misterio. | ¡Está | buenísima!", "A | novel | of | mystery. | It-is | really good!", "A mystery novel. It's really good!")],
     mark_live: [t("Cerca | del | mercado, | a | dos | cuadras | del | zócalo.", "Near | of-the | market, | at | two | blocks | from-the | zócalo.", "Near the market, two blocks from the zócalo.",
-      { flags: { 7: "zócalo: the main square." }, spain: t("Cerca | del | mercado, | a | dos | calles | del | zócalo.", "Near | of-the | market, | at | two | streets | from-the | zócalo.", "Near the market, two blocks from the zócalo.") })],
+      { flags: { 7: "zócalo: the main square." }, spain: t("Cerca | del | mercado, | a | dos | calles | del | zócalo.", "Near | of-the | market, | at | two | streets | from-the | zócalo.", "Near the market, two blocks from the zócalo.", { flags: { 7: "zócalo: the main square." } }) })],
     mark_dance: [t("¡Para nada! | Por eso | me quedo | aquí, | junto | al | asador.", "Not at all! | That's why | I'm-staying | here, | next | to-the | grill.", "Not at all! That's why I'm staying here by the grill.")],
     mark_lithuania: [t("¿Yo? | No, | nunca. | Pero | me encantaría | ir | algún | día.", "Me? | No, | never. | But | I'd love | to-go | some | day.", "Me? No, never. But I'd love to go someday.")],
     // family, age, a partner: a friendly dodge
@@ -1126,7 +1126,7 @@ export const party: SituationDef = {
     cafe_q: [t("Oye, | ¿ya | fuiste | al | café | nuevo | del | malecón?", "Hey, | already | did-you-go | to-the | café | new | of-the | malecón?", "Hey, have you been to the new café on the malecón?",
       { flags: { 1: "ya in a question: “yet” / “already”.", 7: MALECON } })],
     cafe_try: [t("¡Tienes | que | ir! | Su | pastel | de | tres leches | está | buenísimo.", "You-have | to | go! | Its | cake | of | tres leches | is | really good.", "You have to go! Their tres leches cake is amazing.",
-      { flags: { 6: "tres leches: a sponge cake soaked in three kinds of milk." }, spain: t("¡Tienes | que | ir! | Su | tarta | de | tres leches | está | buenísimo.", "You-have | to | go! | Its | cake | of | tres leches | is | really good.", "You have to go! Their tres leches cake is amazing.") })],
+      { flags: { 6: "tres leches: a sponge cake soaked in three kinds of milk." }, spain: t("¡Tienes | que | ir! | Su | tarta | de | tres leches | está | buenísimo.", "You-have | to | go! | Its | cake | of | tres leches | is | really good.", "You have to go! Their tres leches cake is amazing.", { flags: { 6: "tres leches: a sponge cake soaked in three kinds of milk." } }) })],
     cafe_great: [t("Su | tres leches | está | buenísimo, | ¿verdad?", "Its | tres leches | is | really good, | right?", "Their tres leches is amazing, right?")],
     cafe_which: [t("El | chiquito, | junto | a | la | panadería.", "The | little one, | next | to | the | bakery.", "The little one next to the bakery.", { spain: t("El | pequeñito, | junto | a | la | panadería.", "The | little one, | next | to | the | bakery.", "The little one next to the bakery.") })],
     cafe_go_q: [t("¿Y | si | vamos | juntos | un | día | de | estos?", "And | if | we-go | together | one | day | of | these?", "Maybe we could go together sometime?")],
@@ -1167,8 +1167,8 @@ export const party: SituationDef = {
     number_got: [t("¡Listo! | Te | mando | un | mensaje | y | así | tienes | el mío.", "Done! | (To) you | I-send | a | message | and | that way | you-have | mine.", "Got it! I'll text you so you have mine.")],
     mark_number: [t("Mira, | aquí | te lo | apunto | en | una | servilleta.", "Look, | here | it for you | I-write-down | on | a | napkin.", "Here, I'll write it down for you on a napkin.")],
     great_meet: [
-      t("¡Qué | gusto | conocerte!", "What | pleasure | to-meet-you!", "It was great to meet you!", { spain: t("¡Me ha encantado | conocerte!", "I've loved | to-meet-you!", "It was great to meet you!") }),
-      t("¡Me | dio | mucho | gusto | conocerte!", "(To) me | it-gave | much | pleasure | to-meet-you!", "It was really nice to meet you!", { spain: t("¡Me ha encantado | conocerte!", "I've loved | to-meet-you!", "It was really nice to meet you!") }),
+      t("¡Qué | gusto | conocerte!", "What | pleasure | to-meet-you!", "It was great to meet you!", { spain: t("¡Me | ha | encantado | conocerte!", "(To) me | it-has | delighted | to-meet-you!", "It was great to meet you!") }),
+      t("¡Me | dio | mucho | gusto | conocerte!", "(To) me | it-gave | much | pleasure | to-meet-you!", "It was really nice to meet you!", { spain: t("¡Me | ha | encantado | conocerte!", "(To) me | it-has | delighted | to-meet-you!", "It was really nice to meet you!") }),
     ],
     see_around: [t("¡Nos vemos!", "See you!", "See you around!"), t("¡Nos vemos | pronto!", "See you | soon!", "See you soon!")],
     howareyou_reply: [t("¡Muy | bien, | gracias!", "Very | well, | thanks!", "Great, thanks!")],
@@ -1357,7 +1357,7 @@ export const party: SituationDef = {
     bye: {
       lt: "Say goodbye",
       items: [
-        { id: "b_great", s: t("¡Me | dio | mucho | gusto | conocerte!", "(To) me | it-gave | much | pleasure | to-meet-you!", "It was great to meet you!", { spain: t("¡Me ha encantado | conocerte!", "I've loved | to-meet-you!", "It was great to meet you!") }) },
+        { id: "b_great", s: t("¡Me | dio | mucho | gusto | conocerte!", "(To) me | it-gave | much | pleasure | to-meet-you!", "It was great to meet you!", { spain: t("¡Me | ha | encantado | conocerte!", "(To) me | it-has | delighted | to-meet-you!", "It was great to meet you!") }) },
         { id: "b_great", s: t("¡Igualmente! | ¡Nos vemos!", "Likewise! | See you!", "You too! See you around!") },
         { id: "b_around", s: t("¡Nos vemos | pronto!", "See you | soon!", "See you soon!") },
       ],
@@ -1370,6 +1370,7 @@ export const party: SituationDef = {
   },
 
   merges: {
+    "muy a menudo": { reason: "lexical_expression", split: "muy → very + a menudo → often; a menudo alone misreads as to + small.", minimal: "Three words, one adverb." },
     "puerto colibrí": { reason: "lexical_expression", split: "puerto → harbor + colibrí → hummingbird; the town's name.", minimal: "Two words." },
     "la ciudad de méxico": { reason: "lexical_expression", split: "la → the + ciudad → city + de → of + méxico → Mexico; = Mexico City.", minimal: "Four words." },
     "nueva york": { reason: "lexical_expression", split: "nueva → new + york; the city's name.", minimal: "Two words." },
