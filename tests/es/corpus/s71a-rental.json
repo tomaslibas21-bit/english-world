@@ -327,5 +327,9 @@
   {"ctx": "resv", "say": "Necesito un carro por un mes", "intent": "rent_walkin", "not": ["have_resv"], "note": "audit: a month wasn't a duration"},
   {"ctx": "days", "say": "Por un mes", "intent": "days_ctx", "note": "audit"},
   {"ctx": "days", "say": "Tres semanas", "intent": "days_ctx", "note": "audit"},
-  {"ctx": "ret_day", "say": "Un mes", "intent": "days_ctx", "note": "audit: quoted by the day"}
+  {"ctx": "ret_day", "say": "Un mes", "intent": "days_ctx", "note": "audit: quoted by the day"},
+  {"ctx": "size", "say": "¿Es manual o automático?", "intent": "auto_q", "note": "follow-up 5 Nov: the neutral word"},
+  {"ctx": "estandar", "say": "No, gracias, sé manejar manual", "intent": "manual_ok_ctx", "not": ["ok_ack", "size_ctx"], "note": "follow-up 5 Nov"},
+  {"ctx": "estandar", "say": "El manual está bien, gracias", "intent": "manual_ok_ctx", "note": "follow-up 5 Nov"},
+  {"ctx": "size", "say": "No sé manejar manual", "intent": "auto_q", "note": "follow-up 5 Nov"}
 ] }

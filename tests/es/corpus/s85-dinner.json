@@ -306,5 +306,8 @@
   {"ctx": "diet", "say": "No como mariscos, pero lo demás sí", "intent": "diet_veg_ctx", "not": ["diet_ok_ctx"]},
   {"say": "El elefante morado baila en la cocina", "intent": "none"},
   {"say": "Mi tía vive en Guadalajara", "intent": "none"},
-  {"say": "tractor banana jueves", "intent": "none"}
+  {"say": "tractor banana jueves", "intent": "none"},
+  {"ctx": "closing", "say": "¡Ay, muchas gracias! No se hubieran molestado", "intent": ["thanks_end", "g_thanks"], "note": "follow-up 5 Nov: the food to take home, every time"},
+  {"ctx": "closing", "say": "¡Gracias por el flan!", "intent": ["thanks_end", "g_thanks"], "note": "follow-up 5 Nov: flan for a guest who eats no meat"},
+  {"ctx": "closing", "say": "¡Qué rico, gracias! Me lo como mañana", "intent": ["thanks_end", "g_thanks"], "note": "follow-up 5 Nov"}
 ] }

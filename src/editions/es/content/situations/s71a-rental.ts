@@ -10,8 +10,8 @@
 // Mexico: the mandatory third-party liability insurance is required by law and no credit card covers it;
 // full coverage ("cobertura amplia": damage to the car and theft) is optional, and declining it means a much
 // larger hold on the card; a foreign license is valid for a tourist, a credit card (not debit) is needed for
-// the hold; rentals come with a full tank; economy cars are often manual ("estándar"); a damage walk-around
-// with photos before leaving ("la hoja de inspección").
+// the hold; rentals come with a full tank; economy cars are often manual ("estándar", Mexican: the neutral text says
+// "manual"); a damage walk-around with photos before leaving ("la hoja de inspección").
 // Figures (typical for the Tulum / Riviera Maya area, Nov 2026, rounded; the exact ones vary by agency):
 // economy $650, compact $750, midsize $950, SUV $1,400, minivan $1,800 a day with the mandatory insurance;
 // that insurance alone $350 a day; full coverage +$450; upgrade +$200; GPS $150, child seat $120;
@@ -23,6 +23,9 @@
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
+
+/** "estándar" for a manual gearbox is Mexico's (and the Caribbean's): the neutral twins say "manual" (as p25). */
+const F_ESTANDAR = "Mexican: estándar = a car with a manual gearbox (a stick shift); manual is more widely used.";
 import { expectHowAreYou } from "@/content/global";
 
 // ---------------------------------------------------------------------------
@@ -798,8 +801,10 @@ export const rental: SituationDef = {
       { flags: { 2: "Mexican: carros = cars; autos is the neutral word." },
         neutral: t("¡Sin problema! | Tenemos | autos | disponibles.", "No problem! | We have | cars | available.", "No problem! We have cars available.") })],
     ask_size: [t("¿Qué | tipo | de | auto | busca?", "What | kind | of | car | are you looking for?", "What kind of car are you looking for?")],
+    // "estándar" (a manual gearbox) is Mexico's; the neutral twin says "manual" (the lead's decision, 5 Nov 2026, with p25)
     auto_all: [t("Todos | son | automáticos, | menos | el | económico, | que | es | estándar.", "All | are | automatic, | except | the | economy car, | which | is | manual.", "They're all automatics, except the economy car, which is a manual.",
-      { flags: { 8: "estándar: a manual (stick-shift) car, in Mexico and much of Latin America." } })],
+      { flags: { 8: F_ESTANDAR },
+        neutral: t("Todos | son | automáticos, | menos | el | económico, | que | es | manual.", "All | are | automatic, | except | the | economy car, | which | is | manual.", "They're all automatics, except the economy car, which is a manual.") })],
     rec_small: [t("Entonces | un | compacto | o | un | intermedio | le | queda | bien.", "Then | a | compact car | or | a | midsize car | (for) you | fits | well.", "Then a compact or a midsize car will work for you.")],
     rec_big: [t("Entonces | le | recomiendo | una | camioneta | o | una | minivan.", "Then | (to) you | I-recommend | an | SUV | or | a | minivan.", "Then I'd recommend an SUV or a minivan.")],
     rec_size: [t("Para | el | pueblo | y | la | playa, | el | compacto | es | lo | más | práctico.", "For | the | town | and | the | beach, | the | compact car | is | the | most | practical.", "For town and the beach, the compact is the most practical.",
@@ -929,7 +934,9 @@ export const rental: SituationDef = {
     automatic: [t("Es | automático.", "It's | automatic.", "It's an automatic.")],
     economy_manual: [t("El | económico | es | estándar. | El | compacto | es | automático | y | cuesta | {$price} | al | día. | ¿Se lo | cambio?", "The | economy car | is | manual. | The | compact car | is | automatic | and | costs | {$price} | per | day. | It for you | should I change?",
       "The economy car is a manual. The compact is an automatic and costs {$price} a day. Do you want me to switch it?",
-      { flags: { 3: "estándar: a manual (stick-shift) car, in Mexico and much of Latin America." } })],
+      { flags: { 3: F_ESTANDAR },
+        neutral: t("El | económico | es | manual. | El | compacto | es | automático | y | cuesta | {$price} | al | día. | ¿Se lo | cambio?", "The | economy car | is | manual. | The | compact car | is | automatic | and | costs | {$price} | per | day. | It for you | should I change?",
+          "The economy car is a manual. The compact is an automatic and costs {$price} a day. Do you want me to switch it?") })],
     switch_ok: [t("Listo, | le | doy | el | compacto.", "Done, | (to) you | I-give | the | compact car.", "All set, you'll have the compact.")],
     // --- extras
     ask_extras: [t("¿Va | a | necesitar | GPS | o | una | silla | para | niño?", "Are you going | to | need | a GPS | or | a | seat | for | child?", "Will you need a GPS or a child seat?")],

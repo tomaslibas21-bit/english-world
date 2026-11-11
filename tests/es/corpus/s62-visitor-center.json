@@ -362,5 +362,10 @@
   {"ctx": "more", "say": "No es peligroso", "intent": "any", "not": ["ask_safe"], "note": "the 3D town's ways, 5 Nov"},
   {"ctx": "confirm_sunny_cup", "say": "No cruzo la avenida", "intent": "any", "not": ["cross_ans_ctx"], "note": "the 3D town's ways, 5 Nov"},
   {"ctx": "quiz", "say": "No cruzo", "intent": "any", "not": ["cross_ans_ctx"], "note": "the 3D town's ways, 5 Nov"},
-  {"ctx": "more", "say": "No busco la iglesia", "intent": "any", "not": ["ask_where"], "note": "the 3D town's ways, 5 Nov"}
+  {"ctx": "more", "say": "No busco la iglesia", "intent": "any", "not": ["ask_where"], "note": "the 3D town's ways, 5 Nov"},
+  {"ctx": "more", "say": "¿Dónde está la casa de cambio?", "intent": "ask_where", "note": "follow-up 5 Nov: the casa de cambio on Juárez"},
+  {"ctx": "more", "say": "Necesito cambiar euros", "intent": "ask_where", "note": "follow-up 5 Nov"},
+  {"ctx": "more", "say": "¿Se puede cambiar dinero en el banco?", "intent": ["ask_where", "ask_place_hours"], "note": "follow-up 5 Nov"},
+  {"ctx": "need", "say": "Quisiera cambiar dólares", "intent": "ask_where", "note": "follow-up 5 Nov"},
+  {"ctx": "more", "say": "Ya cambié dinero", "intent": "any", "not": ["ask_where"], "note": "follow-up 5 Nov trap: a past, not a request"}
 ] }

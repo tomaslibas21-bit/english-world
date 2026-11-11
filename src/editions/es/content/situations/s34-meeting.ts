@@ -1755,7 +1755,12 @@ export const meeting: SituationDef = {
       items: [
         { id: "n_sure", s: t("Claro, | sin problema.", "Sure, | no problem.", "Sure, no problem!") },
         { id: "o_can", s: t("Claro, | yo | las | tomo.", "Sure, | I | them | I-take.", "Of course, I can do that.", { flags: { 2: "las here is a pronoun: them (las notas)." } }) },
-        { id: "n_minuta", s: t("Sí, | yo | hago | la | minuta.", "Yes, | I | I-do | the | minutes.", "Sure, I'll take the minutes."), note: "la minuta: the minutes of a meeting (a Mexican office word)." },
+        // "la minuta" and "la comida" (lunch) are Mexico's; the neutral twins say "el acta" and "el almuerzo" (the lead's decision, 5 Nov 2026)
+        { id: "n_minuta", s: t("Sí, | yo | hago | la | minuta.", "Yes, | I | I-do | the | minutes.", "Sure, I'll take the minutes.",
+          { flags: { 4: "Mexican: la minuta = the minutes of a meeting; elsewhere el acta." },
+            neutral: t("Sí, | yo | hago | el | acta.", "Yes, | I | I-do | the | minutes.", "Sure, I'll take the minutes.",
+              { flags: { 3: "el acta: a feminine noun that takes el (like el agua), because it starts with a stressed a." } }) }),
+          note: "la minuta: the minutes of a meeting (a Mexican office word; el acta elsewhere)." },
         { id: "n_laptop", s: t("Perdón, | hoy | no traigo | mi | laptop.", "Sorry, | today | I don't have | my | laptop.", "Sorry, I don't have my laptop today.") },
       ],
     },
@@ -1923,7 +1928,10 @@ export const meeting: SituationDef = {
       items: [
         { id: "b_none", s: t("No, | nada | de | mi | parte.", "No, | nothing | from | my | side.", "No, nothing from me.") },
         { id: "b_wfh", s: t("¿Puedo | trabajar | desde | casa | el | viernes?", "Can-I | work | from | home | on | Friday?", "Can I work from home on Friday?", { flags: { 4: "el viernes: on Friday (the article stands for “on”)." } }), note: "Mexicans also say “hacer home office”." },
-        { id: "b_lunch", s: t("¿Cuándo | es | la | comida | del | equipo?", "When | is | the | lunch | of the | team?", "When's the team lunch?"), note: "la comida: Mexico's main meal, around two or three." },
+        { id: "b_lunch", s: t("¿Cuándo | es | la | comida | del | equipo?", "When | is | the | lunch | of the | team?", "When's the team lunch?",
+          { flags: { 3: "Mexican: la comida = lunch, the main meal, around two or three; elsewhere el almuerzo." },
+            neutral: t("¿Cuándo | es | el | almuerzo | del | equipo?", "When | is | the | lunch | of the | team?", "When's the team lunch?") }),
+          note: "la comida: Mexico's main meal, around two or three (el almuerzo in much of Latin America)." },
         { id: "b_vacation", s: t("La | próxima | semana | estoy | de | vacaciones.", "— | Next | week | I-am | on | vacation.", "I'm on vacation next week.", { flags: { 0: F_ART } }) },
         { id: "b_printer", s: t("La | impresora | no funciona | otra vez.", "The | printer | doesn't work | again.", "The printer is broken again.") },
         { id: "a_add", s: t("Quiero | agregar | algo.", "I-want | to add | something.", "I'd like to add something.") },

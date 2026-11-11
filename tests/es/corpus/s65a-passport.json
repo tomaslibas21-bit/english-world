@@ -236,4 +236,10 @@
   {"ctx": "closing", "say": "¿Cuántos días me puso?", "intent": "days_given"},
   {"ctx": "howareyou", "say": "Bien, gracias. Fue un vuelo muy largo.", "intent": ["long_flight", "long_flight_ctx"], "note": "was not understood; and «¡Ay, lo siento!» came after the passport request"},
   {"ctx": "howareyou", "say": "Muy largo", "intent": "long_flight_ctx"},
-  {"ctx": "howareyou", "say": "Cansado, fue muy largo", "intent": ["long_flight", "long_flight_ctx"]}]}
+  {"ctx": "howareyou", "say": "Cansado, fue muy largo", "intent": ["long_flight", "long_flight_ctx"]},
+  {"ctx": "days", "say": "¿Me puede dar ciento ochenta días?", "intent": "more_days", "note": "follow-up 5 Nov: above the trip, she gives the days to the return date"},
+  {"ctx": "days", "say": "¿Me puede dar seis meses, por favor?", "intent": "more_days", "note": "follow-up 5 Nov"},
+  {"ctx": "days", "say": "Es que voy a estar dos meses", "intent": ["more_days", "length"], "note": "follow-up 5 Nov: a longer stay said is the trip"},
+  {"ctx": "days", "say": "¿Me puede dar los ciento ochenta?", "intent": ["more_days", "length_num_ctx"], "note": "follow-up 5 Nov"},
+  {"ctx": "days_ticket", "say": "Claro, aquí está mi boleto", "intent": ["hand_over", "return_yes"], "note": "follow-up 5 Nov"},
+  {"ctx": "days", "say": "No necesito ciento ochenta días", "intent": "any", "not": ["more_days"], "note": "follow-up 5 Nov trap"}]}
