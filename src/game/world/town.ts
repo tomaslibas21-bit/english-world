@@ -2083,8 +2083,11 @@ const mxFlat: MX.Part[] = [];
  *  the whole town: the same look (a flat-shaded colour keeps its facets) in a few draw calls for what is in view, and
  *  no triangles for the squares out of it. The rest (glass, lamps, signs, textured walls) is merged per material as
  *  before. */
+/** What a square's mesh holds: shapes that cast shadows, ones that don't, the overhead lines (thin: the walking camera
+ *  looks through them, no shadow) and roofs it looks through that do cast one (the gas station's canopy). */
+type Kind = "cast" | "still" | "thin" | "thinCast";
 class TownMerger extends Merger {
-  private cells = new Map<string, { cast: [THREE.BufferGeometry, THREE.Color][]; still: [THREE.BufferGeometry, THREE.Color][]; thin: [THREE.BufferGeometry, THREE.Color][] }>();
+  private cells = new Map<string, Record<Kind, [THREE.BufferGeometry, THREE.Color][]>>();
   private box = new THREE.Box3();
   private c = new THREE.Vector3();
   constructor(private cell: number) { super(); }
@@ -2106,7 +2109,8 @@ class TownMerger extends Merger {
     const g = geo.index ? geo.toNonIndexed() : geo;
     if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
     else if (!g.attributes.normal) g.computeVertexNormals();
-    this.put(g, e.color, k.cast ? "cast" : "still");
+    // (the gas station's canopy: a roof the walking camera looks through, as Maple Harbor's own mesh is: after M.build)
+    this.put(g, e.color, /^gas-canopy/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
   }
   /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
    *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
@@ -2117,20 +2121,20 @@ class TownMerger extends Merger {
       this.put(g, new THREE.Color(col), kind);
     }
   }
-  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: "cast" | "still" | "thin") {
+  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: Kind) {
     this.box.setFromBufferAttribute(g.attributes.position as THREE.BufferAttribute).getCenter(this.c);
     const k = Math.floor(this.c.x / this.cell) + "," + Math.floor(this.c.z / this.cell);
-    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [] }).get(k)!;
+    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [], thinCast: [] }).get(k)!;
     e[kind].push([g, col]);
   }
   build(parent: THREE.Object3D) {
     super.build(parent);
     const mat = (townMat ??= new THREE.MeshLambertMaterial({ vertexColors: true }));
-    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin"] as const) {
+    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin", "thinCast"] as const) {
       if (!e[kind].length) continue;
       const mesh = new THREE.Mesh(colourMerge(e[kind]), mat);
-      mesh.castShadow = kind === "cast";
-      if (kind === "thin") mesh.userData.thin = true;
+      mesh.castShadow = kind === "cast" || kind === "thinCast";
+      if (kind === "thin" || kind === "thinCast") mesh.userData.thin = true;
       mesh.receiveShadow = true;
       mesh.name = "town-" + kind + "-" + k;
       mesh.matrixAutoUpdate = false;
