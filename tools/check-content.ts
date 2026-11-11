@@ -52,7 +52,8 @@ function stripPunct(w: string) { return w.replace(/^[\s"“”'‘’(¿¡]+|[\s
 const LATAM = /\b(carros?|celulare?s?|computadoras?|jugos?|manej(?:ar|o|a|as|an|amos|ando|ado|e|en)|bolet(?:o|os)|departamentos?|papas|lentes|duraznos?|frijoles|camar(?:ón|ones)|estacion(?:ar|amiento)|ustedes)\b/i;
 function checkUnits(where: string, s: SentSrc, look: (id: string) => EntityDef | undefined, sampleVars: Record<string, any>[]) {
   // a line's twins (the neutral and Spain's text) are checked as lines of their own
-  for (const [k, tw] of [["neutral", s.neutral], ["spain", s.spain]] as const) if (tw) checkUnits(`${where} (${k} twin)`, tw as SentSrc, look, sampleVars);
+  // (a twin without flags of its own is read with its line's: "los domingos" glossed "on Sundays" is flagged once)
+  for (const [k, tw] of [["neutral", s.neutral], ["spain", s.spain]] as const) if (tw) checkUnits(`${where} (${k} twin)`, { ...tw, flags: tw.flags ?? s.flags } as SentSrc, look, sampleVars);
   if (variety() === "spain" && !where.endsWith("twin)")) {
     const m = (s.spain ?? s.neutral ?? s).en.replace(/\{[^}]*\}/g, " ").match(LATAM);
     if (m) warn(`${where}: Spain's text says "${m[0]}"`);
