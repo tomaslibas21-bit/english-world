@@ -32,6 +32,10 @@ const SPAIN: Record<string, string> = {
   cogemos: "tomamos", conducir: "manejar", conduzco: "manejo", conduce: "maneja", aparcar: "estacionar", aparcamiento: "estacionamiento",
   gafas: "lentes", melocoton: "durazno", melocotones: "duraznos", judias: "frijoles", gamba: "camaron", gambas: "camarones",
   vosotros: "ustedes", vosotras: "ustedes", os: "les", vuestro: "su", vuestra: "su", vuestros: "sus", vuestras: "sus",
+  // (11 Nov 2026, Spain's text; words already in the conversations' own patterns, such as camarero, aseo, nevera or
+  // ducha, stay there) the card reader, peas, peanuts, apricots
+  datafono: "terminal", guisantes: "chicharos", cacahuete: "cacahuate", cacahuetes: "cacahuates",
+  albaricoque: "chabacano", albaricoques: "chabacanos",
 };
 
 const PLEASE_ONE = new Set(["porfa", "porfavor", "porfis", "xfa", "plis", "please"]);
