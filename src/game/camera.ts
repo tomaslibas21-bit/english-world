@@ -24,6 +24,9 @@ const ease = (from: number, to: number, rate: number, dt: number) => from + (to 
 const RAISES = [0, 0.08, 0.16, 0.24, 0.32, 0.4, 0.48, 0.56, -0.12, -0.24];
 /** Up over the player's head when nothing behind them is clear for this far (m): the arm's lean and its length. */
 const CRANE = { below: 3, pitch: 1.22, len: 6 };
+/** Standing still, the yaws tried round from the camera's own (rad): the nearer ways first, to straight in front last
+ *  (a doorway with someone in it right behind, as at Tienda El Faro's door). */
+const STAND_TRIES = [0.5, -0.5, 1, -1, 1.5, -1.5, 2.1, -2.1, 2.7, -2.7, Math.PI];
 
 export class CameraRig {
   cam: THREE.PerspectiveCamera;
@@ -70,6 +73,8 @@ export class CameraRig {
   /** Boxed in: the yaw with room that the camera slides round to (null: none), and when to look again (s). */
   private slideYaw: number | null = null;
   private slideT = 0;
+  /** Standing still and boxed in: the yaw with a proper view the camera is on its way to, kept until it gets there. */
+  private standYaw: number | null = null;
   /** After a change of mode (the end of a conversation) or a door: how long the camera still glides to its place (s). */
   private blendT = 0;
   private lastMode: CamMode = "follow";
@@ -284,13 +289,30 @@ export class CameraRig {
       const swinging = follow && on && this.manualT <= 0 && !this.dragging;
       // boxed in (a stall, a wall or a car right behind them and nothing clear above it): the camera slides round,
       // the nearer way, to where there is room, as it swings (looked for five times a second)
+      // Standing still, a short arm (under 4 m: a stall's tarp, a doorway, a canopy) or one craned up over the head
+      // counts as boxed in too: the camera goes round to the nearest side with a proper view (an arm of 6 m or more at
+      // about the usual lean) and keeps that aim until it gets there, rather than stopping as soon as it has 2.5 m.
       this.slideT -= dt;
+      if (on || this.dragging || this.manualT > 0) this.standYaw = null;
       if (this.slideT <= 0 && !this.dragging && this.manualT <= 0 && this.space) {
         this.slideT = 0.2;
         const t = this.target, base = swinging ? m.dir : this.yaw;
         this.chest.set(t.x, t.y + 1.35, t.z);
         this.slideYaw = null;
-        if (this.bestArm(base).l < 2.5) {
+        if (!on) {
+          if (this.standYaw !== null && Math.abs(angleDiff(this.standYaw, this.yaw)) < 0.06) this.standYaw = null;
+          if (this.standYaw === null) {
+            const b = this.bestArm(this.yaw);
+            if (b.l < 4 || b.p > FOLLOW.pitch + 0.4) {
+              for (const o of STAND_TRIES) {
+                const c = this.bestArm(this.yaw + o);
+                if (c.l >= 6 && c.p <= FOLLOW.pitch + 0.25) { this.standYaw = angleDiff(this.yaw + o, 0); break; }
+              }
+            }
+          }
+          this.slideYaw = this.standYaw;
+        }
+        if (this.slideYaw === null && this.bestArm(base).l < 2.5) {
           for (const o of [0.5, -0.5, 1, -1, 1.5, -1.5, 2.1, -2.1]) if (this.bestArm(base + o).l >= 4) { this.slideYaw = angleDiff(base + o, 0); break; }
         }
         this.evalYaw = this.yaw;
