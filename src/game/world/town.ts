@@ -1664,9 +1664,14 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
  *  goods cost no triangles elsewhere), their painted signs in the town's sign atlas. */
 function addTianguis(col: Colliders, group: THREE.Group, parts: MX.Part[]) {
   const t = THEME.tianguis!;
-  const goods: MX.Part[] = [];
+  const goods: MX.Part[] = [], lonas: MX.Part[] = [];
   const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0, goods: s.goods as TianguisGoods })), ...t.stalls];
-  stalls.forEach((s, i) => MX.tianguisStall(parts, goods, col, atlas!, s.x, s.z, s.rot, s.goods, t.lonas[i % t.lonas.length], t.signs[s.goods] ?? [s.goods, ""], 700 + i));
+  stalls.forEach((s, i) => MX.tianguisStall(parts, goods, col, atlas!, s.x, s.z, s.rot, s.goods, t.lonas[i % t.lonas.length], t.signs[s.goods] ?? [s.goods, ""], 700 + i, lonas));
+  // the lonas in a mesh of their own that the camera looks through (userData.thin, Game.ts; cutout.ts opens a hole in
+  // them on the line to the player) rather than a roof it must stay under: under them it was 1–3 m behind her head
+  const lm = staticColoured(lonas, "tianguis-lonas");
+  lm.userData.thin = true;
+  group.add(lm);
   // (the stalls' mesh: addSquareAndMarket, with the zócalo's bancas)
   // the goods in a mesh that casts no shadow (under the lonas' shade they would add triangles and nothing to see)
   const g = staticColoured(goods, "tianguis-goods");

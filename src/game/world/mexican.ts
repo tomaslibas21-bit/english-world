@@ -843,9 +843,11 @@ const darker = (hex: string, k = 0.72) => "#" + [1, 3, 5].map((i) => Math.round(
  *  tied to, the lona itself tilted down to the front and sagging a little between the bars, with a white valance;
  *  the goods on the table (and in front of it, or hanging from the frame), and the stall's painted sign standing on
  *  the front bar, where it hides nobody's face. The table and the front poles are solid. */
-export function tianguisStall(parts: Part[], goodsParts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, rot: number, goods: TianguisGoods, lona: string, sign: [string, string], seed: number) {
+export function tianguisStall(parts: Part[], goodsParts: Part[], col: Colliders, atlas: SignAtlas, x: number, z: number, rot: number, goods: TianguisGoods, lona: string, sign: [string, string], seed: number, lonaParts: Part[] = parts) {
   const r = rand(seed);
   const add = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => parts.push([place(g, x, z, rot), c]);
+  // (the lona and its valance may go in a mesh of their own: `lonaParts`, which the camera looks through, town.ts)
+  const addLona = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => lonaParts.push([place(g, x, z, rot), c]);
   const addGoods = (g: THREE.BufferGeometry, c: THREE.ColorRepresentation) => goodsParts.push([place(g, x, z, rot), c]);
   // the table
   const W = 4.0, D = 1.5, H = 0.85, cloth = CLOTHS[Math.floor(r() * CLOTHS.length)];
@@ -873,9 +875,9 @@ export function tianguisStall(parts: Part[], goodsParts: Part[], col: Colliders,
       p.setXYZ(i, lx, yAt(lz) - 0.11 * Math.sin(Math.PI * (lx / LW + 0.5)) * Math.sin(Math.PI * along) - (down ? 0.015 : 0), lz);
     }
     g.computeVertexNormals();
-    add(g, lona);
+    addLona(g, lona);
   }
-  for (const s of [1, -1]) add(new THREE.PlaneGeometry(LW, 0.2).rotateY(s > 0 ? 0 : Math.PI).translate(0, yAt(L1) - 0.1, L1 + s * 0.004), "#f4f1ea");
+  for (const s of [1, -1]) addLona(new THREE.PlaneGeometry(LW, 0.2).rotateY(s > 0 ? 0 : Math.PI).translate(0, yAt(L1) - 0.1, L1 + s * 0.004), "#f4f1ea");
   // the painted sign standing on the front bar, on a board (its back seen from behind)
   const ink = darker(lona.toLowerCase() === "#f6c000" ? "#c98a00" : lona);
   add(box(1.78, 0.56, 0.03, 0, yf + 0.33, zf), "#3b2a20");
