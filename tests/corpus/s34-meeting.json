@@ -2343,6 +2343,75 @@
    "ctx": "send_q",
    "say": "Sorry, what do you mean?",
    "intent": "clarify"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Thanks, I'm fine.",
+   "intent": "g_thanks",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Thanks, but I can do it.",
+   "intent": "g_thanks",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "No, thanks.",
+   "intent": "any",
+   "not": [
+    "accept_help"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Thanks, but I'm fine.",
+   "intent": "any",
+   "not": [
+    "accept_help"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "That's okay, thanks.",
+   "intent": "any",
+   "not": [
+    "accept_help"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "aob",
+   "say": "Can I leave early on Friday?",
+   "intent": "aob_wfh",
+   "not": [
+    "aob_other_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "aob",
+   "say": "Could I take Friday off?",
+   "intent": "aob_wfh",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "aob",
+   "say": "Is it okay if I come in late tomorrow?",
+   "intent": "aob_wfh",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "aob",
+   "say": "Should we leave early on Friday?",
+   "intent": "any",
+   "not": [
+    "aob_wfh"
+   ],
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

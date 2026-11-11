@@ -288,14 +288,29 @@ function acceptDay(c: Ctx, day: string) {
 /** "Okay." / "That works." to the day on the table ("sometime next week": he names a day). */
 function dateYes(c: Ctx) {
   if (c.s.level === 0) { offerWednesday(c); c.hold(); return; }
+  // the day he confirmed after an echo ("Wednesday?" – "So... Wednesday?" – "Yes.")
+  if (c.s.echoDay) { setDate(c, c.s.echoDay); return; }
   setDate(c, c.s.level === 2 ? "friday" : "wednesday");
+}
+
+/** "Wednesday?" / "Friday?" (typed with its question mark) for a day he offered: he confirms and asks; nothing is
+ *  booked until a yes (an echo booked it). */
+function echoDay(c: Ctx, day: string): boolean {
+  if (!/\?\s*$/.test(c.heard) || /^\W*(yes|yeah|ok|okay|sure|great|perfect|fine)\b/i.test(c.heard)) return false;
+  const offered = (day === "wednesday" && c.s.wedSaid) || (day === "friday" && c.s.friSaid);
+  if (!offered) return false;
+  c.s.echoDay = day;
+  P(c, day === "wednesday" ? "date_reask" : "friday_reask");
+  c.hold();
+  return true;
 }
 
 /** "No." to the day on the table: one step sooner. */
 function dateNo(c: Ctx) {
   if (c.s.level === 0) offerWednesday(c);
   else if (c.s.level === 1) offerFriday(c);
-  else P(c, "friday_best");
+  // (it said "Friday is the best I can do." again and again): it alternates with "So... Friday morning?"
+  else { c.s.fridayNo = (c.s.fridayNo ?? 0) + 1; P(c, c.s.fridayNo % 2 ? "friday_best" : "friday_reask"); }
   c.hold();
 }
 
@@ -649,6 +664,8 @@ export const landlord: SituationDef = {
       "i can leave (a | the | my) key with (rita | my neighbor | the neighbor) #h:key_with_rita", "i will leave (a | the | my) key with (rita | my neighbor)",
       "rita (has | can have) (a | my) key", "(rita | my neighbor) can let (him | gus) in",
     ] },
+    // at "Will you be home?" only
+    home_q_ctx: { patterns: ["do i (have to | need to) be (home | there | in) [then | for that | for him]", "should i be (home | there)", "does (someone | anyone) (have to | need to) be (home | there)"] },
     not_home: { patterns: [
       "[no] i (will be | am) at work [on {day} | then | all day] #h:at_work", "[no] i will not be (home | there) [on {day} | then]",
       "[no] i (work | am working) [on {day} | then | all day]", "i have to work [on {day} | then]",
@@ -1250,12 +1267,15 @@ export const landlord: SituationDef = {
       ask: (c) => {
         c.s.homeAsked = true;
         P(c, "home_q");
-        c.expect({ id: "home", optional: true, expects: ["home_yes", "leave_key", "not_home"], hints: ["home"],
+        c.expect({ id: "home", optional: true, expects: ["home_yes", "leave_key", "not_home", "home_q_ctx"], hints: ["home"],
           suggest: [{ lt: "Pasakyti, ar būsi namie", hint: "home" }],
           on: {
             home_yes: (cc) => { cc.s.homeDone = true; P(cc, "home_ok"); },
             leave_key: (cc) => { cc.s.homeDone = true; P(cc, "key_rita"); },
             not_home: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); },
+            // "I don't know." / "Do I have to be home?": Gus has a key (it got "Take your time." or nothing)
+            g_dontknow: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); },
+            home_q_ctx: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); },
           },
           yes: (cc) => { cc.s.homeDone = true; P(cc, "home_ok"); },
           no: (cc) => { cc.s.homeDone = true; P(cc, "gus_key"); } });
@@ -1486,6 +1506,7 @@ export const landlord: SituationDef = {
         else c.hold();
         return;
       }
+      if (echoDay(c, day)) return;
       proposeDay(c, day);
       if (!c.s.date) c.hold();
     },
@@ -1515,6 +1536,7 @@ export const landlord: SituationDef = {
     home_yes(c) { if (c.s.date && !c.s.homeDone) { c.s.homeDone = true; P(c, "home_ok"); } else P(c, "ack"); },
     leave_key(c) { if (c.s.date && !c.s.homeDone) { c.s.homeDone = true; P(c, "key_rita"); } else P(c, "ack"); },
     not_home(c) { if (c.s.date && !c.s.homeDone) { c.s.homeDone = true; P(c, "gus_key"); } else P(c, "ack"); },
+    home_q_ctx(c) { if (c.s.date && !c.s.homeDone) { c.s.homeDone = true; P(c, "gus_key"); } else P(c, "ack"); },
 
     // --- wrapping up ---
     no_more(c) { if (c.s.date && !c.s.wrapDone) { c.s.wrapDone = true; return; } P(c, "ack"); },
@@ -1561,6 +1583,9 @@ export const landlord: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): a day echoed as a question books nothing; "Do I have to be home?"
+    { say: "Wednesday?", intent: "day_ctx", step: "date", slots: { day: "wednesday" }, not: ["accept_date"] },
+    { say: "Friday?", intent: "day_ctx", step: "date", slots: { day: "friday" }, not: ["accept_date"] },
     // greeting
     { say: "Mr. Patel, it's me, from 2B.", intent: "greet_id" },
     { say: "Good morning, Mr. Patel!", intent: "greet_id" },
@@ -1691,6 +1716,13 @@ export const landlord: SituationDef = {
 
   sims: [
     // firm and polite: the lease, no to the offer, Friday, in writing, the rent and a receipt
+    // logic audit (5 Nov 2026): "Friday?" (his day echoed) gets "So... Friday morning?", booked on the yes; "I don't know"
+    // to "Will you be home?" gets "Gus has a key"
+    { name: "audit: an echo, then yes; I don't know", turns: ["Mr. Patel, it's me, from 2B.", "The heating has been broken for a week.",
+      "It's your responsibility to fix it.", "That's not what we agreed.", "When can someone come out?", "Next week is too late.", "Friday?", "Yes.",
+      "I don't know.", "No, that's all, thanks.", "Sure. Here's the check.", "Thanks, Mr. Patel. Have a good trip!"],
+      expect: { complete: true, state: { date: "friday", echoDay: "friday" } }, auto: AUTO,
+      setup: (s) => { s.greetAgain = false; s.twist = null; s.homeQ = true; } },
     { name: "full: lease, no to the offer, Friday, in writing, receipt", turns: ["Mr. Patel, it's me, from 2B.", "The heating has been broken for a week.",
       "It's your responsibility to fix it.", "That's not what we agreed.", "When can someone come out?", "Next week is too late.", "Friday morning works for me.",
       "Can you put that in an email, please?", "No, that's all, thanks.", "Sure. Here's the check.", "I'll need a receipt.", "Thanks, Mr. Patel. Have a good trip!"],

@@ -869,7 +869,8 @@ export const taxi: SituationDef = {
     ride_no(c) { c.say("ride_mistake"); c.hold(); },
     bag_trunk(c) { c.s.trunk = true; once(c, "bag", turn(c).said_dest ? "bag_ok_too" : "bag_ok"); },
     ask_price(c, slots) {
-      const p = slots.place?.dest;
+      // "How much is it to the airport?" reaches us as a price question + the place: the price for that place
+      const p = slots.place?.dest ?? (((c as any).conv?.out?.parse?.segments ?? []).find((sg: any) => sg.intent === "dest" && sg.slots?.place?.dest)?.slots.place.dest as string | undefined);
       if (p && !c.s.dest) { const f = byId(p)!.attrs!.fare; c.say("est_price", { price: Math.round(f / 500) * 500 }); return; }
       if (c.s.fareSaid || c.s.arrived) { once(c, "fare", "fare_now", { price: fare(c) }); return; }
       if (!c.s.dest && !c.s.addr) { c.say("ask_dest"); c.hold(); return; }
@@ -964,6 +965,8 @@ export const taxi: SituationDef = {
     wait_q(c) { c.say("wait_ok"); },
     allow(c) {
       const st = taxi.steps.find((x) => x.id === c.step);
+      // "That's okay, thanks" to "Want me to put it in the trunk?" (an offer, not a permission) is the polite no
+      if (c.step === "bag" && st?.no && !st.done(c) && /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay)\b|\bno need\b/i.test(c.heard)) { st.no(c); return; }
       if (st?.yes && !st.done(c)) { st.yes(c); return; }
       ack(c, 1);
     },
@@ -1086,6 +1089,9 @@ export const taxi: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): the price to the airport, then a polite no to the trunk
+    { name: "audit: the price first, the bag kept", turns: ["How much is it to the airport?", "That's okay, thanks."], expect: { complete: true, state: { trunk: false } }, auto: TX_AUTO,
+      setup: (s) => { s.askBag = true; s.rideshare = false; s.trafficTwist = false; } },
     { name: "happy path: hotel, card, tip", turns: ["Hi! To the Harborview Hotel, please.", "Right here is fine.", "Can I pay by card?"],
       expect: { complete: true }, auto: TX_AUTO },
     { name: "questions, bag, cash and keep the change", turns: ["Could you take me to the museum? And could you put my bag in the trunk?", "How much will it be?", "In front of the museum, please.", "Here's thirty dollars. Keep the change."],

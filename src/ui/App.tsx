@@ -12,6 +12,10 @@ import { LightPlay } from "./LightHome";
 import { takeAutoStart, takeLinkedSituation } from "./playMode";
 import { refreshLocalState } from "../convo/speech";
 import { L } from "./i18n";
+import { audio } from "../game/audio";
+import { AudioDiagnostics } from "./AudioDiagnostics";
+import { Loading } from "./Loading";
+import { EDITION } from "../edition";
 
 export function App() {
   const screen = useStore((s) => s.screen);
@@ -19,9 +23,10 @@ export function App() {
   // the mode is fixed once playing: switching modes reloads the page (playMode.ts)
   const [mode, setMode] = useState<PlayMode | null>(() => takeAutoStart());
   useEffect(() => { document.documentElement.style.setProperty("--scale", String(textSize)); }, [textSize]);
+  useEffect(() => audio.bindGestures(), []);
   useEffect(() => { if (!mode) useStore.getState().setScreen("title"); refreshLocalState(); }, []);
-  if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts /></>;
-  return mode === "light" ? <LightPlay /> : <Play />;
+  if (!mode) return <><Title onPlay={() => setMode(useStore.getState().settings.play)} /><Toasts />{EDITION.id === "en" && <AudioDiagnostics />}</>;
+  return <>{mode === "light" ? <LightPlay /> : <Play />}{EDITION.id === "en" && <AudioDiagnostics />}</>;
   void screen;
 }
 
@@ -52,7 +57,7 @@ function Play() {
       <div className="tag-layer" ref={tags} />
       {ready && game && <><Hud /><SceneBackdrop /><Conversation /><Panels /></>}
       <Toasts />
-      {!ready && <div className="loading">{L("Kuriamas Maple Harbor…")}</div>}
+      {!ready && <Loading />}
     </>
   );
 }

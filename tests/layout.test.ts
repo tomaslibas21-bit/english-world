@@ -1,8 +1,11 @@
 // The town's buildings stand clear of the roads, the passing cars' lanes, the parked cars and each other; the newest
 // one, Sproutly's warehouse at the east end of Harbor Road, also keeps its distance from the road's end and sidewalks.
 import { describe, expect, it } from "vitest";
-import { BUILDINGS, CAR, PARKED_CARS, ROADS, SIDEWALK, SPROUTLY_LOT, TAXI, TRAFFIC_LANES } from "../src/game/world/layout";
+import { BUILDINGS, CAR, PARKED_CARS, ROADS, SIDEWALK, SPROUTLY_LOT, TAXI, TRAFFIC_LANES, SEA_Z, WORLD } from "../src/game/world/layout";
 import { LOCATIONS } from "../src/content/locations";
+
+import { backgroundHillPosition, HILL_MARGIN } from "../src/game/world/town";
+import { rand } from "../src/game/world/util";
 
 type Box = { x1: number; x2: number; z1: number; z2: number };
 const gap = (a: Box, b: Box) => Math.max(a.x1 - b.x2, b.x1 - a.x2, a.z1 - b.z2, b.z1 - a.z2); // < 0: they overlap
@@ -47,5 +50,27 @@ describe("town layout", () => {
     expect(SPROUTLY_LOT.x2).toBe(b.x - b.w / 2);
     expect(SPROUTLY_LOT.z1).toBeGreaterThanOrEqual(harbor.z1 - harbor.w / 2);
     expect(SPROUTLY_LOT.z2).toBeLessThanOrEqual(harbor.z1 + harbor.w / 2);
+  });
+});
+
+// The same deterministic hill sequence used by buildTown, including skipped seaward hills.
+describe("background hills leave room for the walking camera", () => {
+  it("keeps every hill at least 40 m from the playable ground on all sides", () => {
+    const r = rand(7);
+    let checked = 0;
+    for (let i = 0; i < 26; i++) {
+      const a = i / 26 * Math.PI * 1.2 - 0.1;
+      const x = 35 + Math.cos(a) * (230 + r() * 60), z = 30 + Math.sin(a) * (170 + r() * 50);
+      if (z < SEA_Z + 10) continue;
+      const size = 30 + r() * 40;
+      const p = backgroundHillPosition(x, z, size * 1.6, size * 1.2);
+      const gx = Math.max(WORLD.minX - (p.x + size * 1.6), p.x - size * 1.6 - WORLD.maxX);
+      const gz = Math.max(SEA_Z - 2 - (p.z + size * 1.2), p.z - size * 1.2 - WORLD.maxZ);
+      const gap = gx > 0 && gz > 0 ? Math.hypot(gx, gz) : Math.max(gx, gz);
+      expect(gap, `hill ${i}`).toBeGreaterThanOrEqual(HILL_MARGIN);
+      r(); // vertical scale in buildTown
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(20);
   });
 });

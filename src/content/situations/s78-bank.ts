@@ -161,7 +161,11 @@ function helpStep(id: string, withCard: boolean): StepDef {
     expects: MAIN_EXPECTS,
     suggest: withCard ? [S_CARD, S_OPEN, S_TRANSFER, S_EXCHANGE] : [S_OPEN, S_TRANSFER, S_EXCHANGE],
     yes: (c) => { if (c.s.hay === "asked") { c.s.hay = "done"; c.say("g_glad"); } },
-    no: (c) => { if (c.s.hay === "asked") { c.s.hay = "done"; c.say("g_sorry_to_hear"); } },
+    no: (c) => {
+      if (c.s.hay === "asked") { c.s.hay = "done"; c.say("g_sorry_to_hear"); return; }
+      // "No, thanks" / "That's all" to "How can I help you?" (after a question or a declined offer): goodbye
+      c.say("bye"); c.end();
+    },
     help: (c) => { c.say("services"); },
   };
 }
@@ -260,6 +264,7 @@ export const bank: SituationDef = {
     acct_type_ans: { patterns: [
       "[a | an | the | just a | just an] {acct} [please] #h:type_short", "[a | the] {acct} one [please]", "(i would like | i will take | i will have | i will go with | let us (do | go with) | can i (get | have) | could i (get | have) | i want | i think i will take) [a | an] {acct} #h:type_like",
       "@both #both #h:type_both", "i would like both #both", "(i will take | i will have | let us do | can i have | i want) both #both",
+      "[i will take | i would like] the first [one] [please] #first", "[i will take | i would like] the second [one] [please] #second",
       "{acct} (is fine | sounds good | is good | works | for me)", "(i think | probably | maybe) [a | an] {acct}", "[a | an] {acct} i think",
       "{acct} i guess", "just [the] {acct} [for now]",
       // why they need it: "For everyday spending", "I need it for my salary", "To save money"
@@ -274,7 +279,7 @@ export const bank: SituationDef = {
       "what is the difference #h:q_difference", "what is the difference between (them | the two | checking and savings | a checking and a savings account)",
       "(which one | which | what) do you recommend #h:q_recommend", "which (one | is better | is best) [for me]", "(which | what) (one | account) should i (get | open | choose)",
       "what is a {acct}", "(i do not know | i am not sure) (which | what) (one | account) [i need]", "what (types | kinds) of accounts do you have",
-      "what is better [for me]", "(i do not know | i am not sure) [what | which (one | account)] [is better]",
+      "what is better [for me]", "(i do not know | i am not sure) (what | which (one | account)) [is better]",
     ] },
     show_doc: { patterns: [
       "here is my {doc} #h:id_here", "here (you go | you are) [this is | here is] my {doc}", "[this is] my {doc}", "[i have] my {doc} [right] here",
@@ -1226,7 +1231,7 @@ export const bank: SituationDef = {
       if (seg.tags.includes("needq")) c.say("open_need"); // "What do I need to open an account?"
       startOpening(c);
       if (type) setType(c, type);
-      else if (wasOpening && !c.s.type) c.say("ask_type_again");
+      else if (wasOpening && !c.s.type) { c.say("ask_type_again"); c.hold(); }
       c.s.hay = c.s.hay === "asked" ? "done" : c.s.hay;
     },
     new_in_town(c) {
@@ -1311,7 +1316,7 @@ export const bank: SituationDef = {
     acct_type_ans(c, slots, seg) {
       if (!c.s.opening) startOpening(c);
       if (c.step === "savings") { c.s.savings = slots.acct === "savings" || seg.tags.includes("both"); if (c.s.savings) { c.s.type = "both"; c.say("savings_yes"); } else c.say("no_problem"); return; }
-      setType(c, seg.tags.includes("both") ? "both" : slots.acct ?? (seg.tags.includes("sav") ? "savings" : "checking"));
+      setType(c, seg.tags.includes("both") ? "both" : slots.acct ?? (seg.tags.includes("sav") || seg.tags.includes("second") ? "savings" : "checking"));
     },
     acct_type_not(c, slots) {
       if (c.step === "savings") { c.s.savings = false; c.say("no_problem"); return; }
@@ -1372,7 +1377,10 @@ export const bank: SituationDef = {
       if (c.step === "proof") { bank.handlers.no_proof(c, {}, { intent: "no_proof", slots: {}, tags: [] }); return; }
       c.say("no_problem");
     },
-    ask_ssn_what(c) { c.say("ssn_explain"); },
+    ask_ssn_what(c) {
+      if (c.step === "proof" && !/social|security|ssn/i.test(c.heard)) { c.say("ask_proof"); c.hold(); return; }
+      c.say("ssn_explain");
+    },
     ssn_problem(c) {
       if (c.step === "ssn" || c.s.ssn === "none") { c.s.ssn = c.s.ssn ?? "none"; c.say("ssn_none_ok"); return; }
       c.say("no_problem");
@@ -1401,12 +1409,17 @@ export const bank: SituationDef = {
     minimum(c, slots) { depositAmount(c, slots.price ?? 2500); },
     ask_minimum(c) { c.say("min_is"); },
     amount_ctx(c, slots) {
-      if (c.step === "deposit") { depositAmount(c, slots.price); return; }
+      if (c.step === "deposit") { if (askedBack(c, "ask_deposit")) return; depositAmount(c, slots.price); return; }
+      if ((c.step === "cash_amount" || c.step === "cash_offer") && askedBack(c, "ask_cash_amount")) return;
       if (c.step === "cash_amount" || c.step === "cash_offer") { c.s.cash = "amount"; c.s.cashAmount = slots.price; if (!c.s.askBills) giveCash(c); return; }
     },
 
     // --- questions
     fee_q(c) {
+      if (c.step === "savings") { c.say("savings_fee"); return; }
+      if (c.step === "app") { c.say("app_info"); return; }
+      // about the exchange (before or while it's asked): its rate and fee, not the checking account's
+      if ((c.s.topic === "exchange" || c.s.exchange === "amount") && c.s.exchange !== "done" && c.s.exchange !== "cancelled" && !c.s.opening) { c.say("exchange_rate"); return; }
       c.s.topic = c.s.topic || "account";
       if (c.s.type === "savings") { c.say("savings_fee"); return; }
       c.say("fee_info"); c.say("fee_waive");
@@ -1437,8 +1450,8 @@ export const bank: SituationDef = {
     swift_q(c) { c.say("swift_explain"); },
     app_transfer_q(c) { c.say("transfer_app"); },
     rate_q(c) { c.say("exchange_rate"); },
-    euro_amount(c, slots) { exchangeEuros(c, slots.number); },
-    euro_ctx(c, slots) { exchangeEuros(c, slots.number); },
+    euro_amount(c, slots) { if (askedBack(c, "ask_euros")) return; exchangeEuros(c, slots.number); },
+    euro_ctx(c, slots) { if (askedBack(c, "ask_euros")) return; exchangeEuros(c, slots.number); },
 
     // --- the card
     wrong_pin(c) { if (c.s.pinCause === undefined) { c.s.pinCause = "wrong"; c.say("pin_explain"); } else c.say("no_problem"); },
@@ -1455,7 +1468,7 @@ export const bank: SituationDef = {
     bills_ans(c) { if (c.s.cashAmount === undefined || c.s.billsDone) { c.say("no_problem"); return; } giveCash(c); },
 
     // --- general
-    more_no(c) { if (answerNo(c)) return; c.s.moreDone = true; },
+    more_no(c) { if (c.s.byeSaid) return; if (answerNo(c)) return; c.s.moreDone = true; },
     have_question(c) { c.say("go_ahead"); c.hold(); },
     no_problem(c) { if (c.step === "slow") { c.s.slowDone = true; c.say("slow_thanks"); } },
   },
@@ -1472,6 +1485,9 @@ export const bank: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "The first one.", intent: "acct_type_ans", step: "acct_type" },
+    { say: "I don't know.", intent: "g_dontknow", step: "cash_offer", not: ["ask_difference"] },
     { say: "Hi, I'd like to open a checking account.", intent: "open_account", slots: { acct: "checking" } },
     { say: "Could I open a savings account, please?", intent: "open_account", slots: { acct: "savings" } },
     { say: "I need a bank account.", intent: "open_account" },
@@ -1604,6 +1620,13 @@ function giveCash(c: Ctx) {
   c.event("give", { item: "cash" });
 }
 
+/** "A hundred?" typed with a question mark at an amount question: asked back (no money moves on a question). */
+function askedBack(c: Ctx, line: string): boolean {
+  if (!/\?\s*$/.test(c.heard.trim()) || /\b(yes|please|i would like|i'd like|i will|i want)\b/i.test(c.heard)) return false;
+  c.say(line); c.hold();
+  return true;
+}
+
 function exchangeEuros(c: Ctx, eur: number | undefined) {
   if (c.s.exchange !== "amount" || !eur) { c.say("no_problem"); return; }
   c.s.exchange = "done";
@@ -1621,11 +1644,18 @@ function offerOpen(c: Ctx) {
 
 function openOffer() {
   return {
-    id: "open_offer", expects: ["open_account"], hints: ["g_yesno", "open"],
+    id: "open_offer", expects: ["open_account", "more_no", "g_thanks"], hints: ["g_yesno", "open"],
     suggest: [{ lt: "Sutikti atsidaryti sąskaitą", hint: "g_yesno" }, { lt: "Pasakyti, kokios sąskaitos nori", hint: "acct_type", options: "acct" }],
     yes: (cc: Ctx) => { startOpening(cc); },
     no: (cc: Ctx) => { cc.s.declinedOpen = true; cc.say("no_problem"); },
-    on: { open_account: (cc: Ctx, sl: any, sg: any) => { bank.handlers.open_account(cc, sl, sg); } },
+    on: {
+      open_account: (cc: Ctx, sl: any, sg: any) => { bank.handlers.open_account(cc, sl, sg); },
+      more_no: (cc: Ctx) => { if (cc.s.byeSaid) return; cc.s.declinedOpen = true; cc.s.byeSaid = true; cc.say("bye"); cc.end(); },
+      g_thanks: (cc: Ctx) => {
+        if (/\b(that'?s|that is) (all|it|everything)\b|\bnothing else\b/i.test(cc.heard)) { cc.s.declinedOpen = true; cc.s.byeSaid = true; cc.say("bye"); cc.end(); return; }
+        cc.say("g_welcome"); cc.expect(openOffer());
+      },
+    },
     ask: (cc: Ctx) => cc.say("offer_open"),
   };
 }

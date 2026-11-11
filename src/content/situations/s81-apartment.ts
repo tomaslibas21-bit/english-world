@@ -244,7 +244,9 @@ export const apartment: SituationDef = {
     ask_utilities: { patterns: [
       "are [the] @util_all @incl #h:q_util", "are [the] @util_all (extra | separate | not included)", "are the bills @incl #tip:uk_bills",
       "(is | are) included [the] ({utility} | @util_all)", "do [the] @util_all come with (it | @the_apt | the rent)", "is [the] {utility} @incl #h:q_util2", "are [the] {utility} @incl", "is [the] {utility} extra", "(is | are) [the] {utility} and [the] {utility} @incl",
-      "what is included [in the (rent | price)]", "what does the (rent | price) include", "does the (rent | price) include [the] (@util_all | {utility} [and [the] {utility}])",
+      "what is included [in the (rent | price)]", "what does the (rent | price) include",
+      // "Is there internet?" ("Hmm, good question. I'll have to check." though the answer is known)
+      "is there {utility} [here | in the apartment]", "(do you | does it | does the apartment) have {utility}", "does the (rent | price) include [the] (@util_all | {utility} [and [the] {utility}])",
       "do i (have to | need to) pay (for | extra for) [the] (@util_all | {utility})", "do i pay (for | extra for) [the] (@util_all | {utility}) [separately | myself | extra]",
       "do i pay [the] (@util_all | {utility}) (separately | myself | extra)",
       "who pays (for | the) [the] (@util_all | {utility} [bill])", "(what about | and) [the] (@util_all | bills #tip:uk_bills | {utility})",
@@ -1173,7 +1175,8 @@ export const apartment: SituationDef = {
     { id: "decision", when: (c) => view(c) && !!c.s.qDone, done: (c) => !!c.s.decision,
       ask: (c) => c.say("decision_ask"), expects: ["take", "think", "decline", "like_it", "too_x", "call_back", "think_ctx"],
       suggest: [{ lt: "Nuspręsti: imti butą ar dar pagalvoti", hint: "decide" }],
-      yes: (c) => take(c), no: (c) => decline(c) },
+      // "That's fine, thanks" / "Okay, thanks" to "So, what do you think?" rented the apartment: asked once more
+      yes: (c) => { if (unclearYes(c)) return; take(c); }, no: (c) => decline(c) },
     { id: "movein_take", when: (c) => view(c) && c.s.decision === "take", done: (c) => !!c.s.moveinKnown,
       ask: (c) => askMovein(c, false), expects: ["movein_ans_ctx", "ask_movein"],
       suggest: [{ lt: "Pasakyti, kada norėtum įsikelti", hint: "movein" }],
@@ -1293,9 +1296,15 @@ export const apartment: SituationDef = {
 
     // --- deciding ---
     no_more(c) { if (!view(c)) { c.say("ack"); return; } c.s.qDone = true; volunteer(c); },
-    take(c) { take(c); },
+    take(c) {
+      // "I'm interested, how much is the rent?": the question, not the apartment rented
+      const segs: any[] = (c as any).conv?.out?.parse?.segments ?? [];
+      if (/\binterested\b/i.test(c.heard) && segs.some((sg) => typeof sg.intent === "string" && sg.intent.startsWith("ask_"))) return;
+      take(c);
+    },
     like_it(c) {
-      if (view(c) && c.step === "decision") { take(c); return; }
+      // "I really like it" / "I love it" rented the apartment: glad, and "So, are you interested?" (a yes takes it)
+      if (view(c) && c.step === "decision") { c.say("like_it_ack"); askAgain(c); return; }
       if (view(c) && c.step === "sign") { sign(c); return; }
       c.say("like_it_ack");
     },
@@ -1433,6 +1442,8 @@ export const apartment: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Is there internet?", intent: "ask_utilities", slots: { utility: "internet" }, not: ["ask_unknown"] },
     { say: "Hi, I'm here to see the apartment.", intent: "see_apartment" },
     { say: "Hello, I'm here about the flat for rent", intent: "see_apartment" },
     { say: "Is the apartment still available?", intent: "see_apartment" },
@@ -1577,6 +1588,22 @@ function petAnswer(c: Ctx, pet?: string) {
 function peopleAnswer(c: Ctx, n: number) {
   if (n >= 4) c.say("people_small");
   else c.say("people_ack");
+}
+
+/** "So, are you interested?" once (the decision's own question); a yes to it takes the apartment. */
+function askAgain(c: Ctx) {
+  if (c.s.decisionAgain) { c.hold(); return; }
+  c.s.decisionAgain = true;
+  (c as ConvCtx).conv.pushLine("decision_ask", 1, {});
+  c.hold();
+}
+/** A yes that may be a polite "no, thanks" ("That's fine, thanks", "Okay, thanks", "I'm good"): asked once more. */
+function unclearYes(c: Ctx): boolean {
+  if (/\b(take|rent|sign|want|interested|yes|yeah|sure|definitely|absolutely)\b/i.test(c.heard)) return false;
+  if (!/\bthanks?\b|\bthank you\b|\b(i'?m|i am) (good|fine|ok|okay)\b|\b(that'?s|that is|it'?s|it is) (fine|ok|okay|all right)\b/i.test(c.heard)) return false;
+  if (c.s.decisionAgain) { c.s.decision = "think"; c.say("think_ok"); return true; }
+  askAgain(c);
+  return true;
 }
 
 function take(c: Ctx) {

@@ -141,12 +141,13 @@ function yn(p: import("../types").Pending): import("../types").Pending {
 function suggestPlace(c: Ctx) {
   c.say("suggest_place");
   c.expect(yn({
-    id: "suggest_place", expects: ["meet"], hints: ["agree", "place"],
+    id: "suggest_place", expects: ["meet", "place_no_ctx"], hints: ["agree", "place"],
     suggest: [{ lt: "Sutikti", hint: "agree" }, { lt: "Pasiūlyti kitą vietą", hint: "place", options: ["station", "cafe", "entrance", "bus_stop"] }],
     yes: (cc) => { cc.s.place = "station"; cc.say("ack_place"); },
-    no: (cc) => { cc.say("where_then"); cc.ask("place"); },
+    // "Okay, where then?" is the question (with the place step's own after it, two questions in one breath)
+    no: (cc) => { cc.say("where_then"); cc.hold(); },
     ask: (cc) => cc.say("suggest_place"),
-    on: { meet: (cc, sl, sg) => { H.meet(cc, sl, sg); }, g_ok: (cc) => { cc.s.place = "station"; cc.say("ack_place"); }, agree: (cc) => { cc.s.place = "station"; cc.say("ack_place"); } },
+    on: { meet: (cc, sl, sg) => { H.meet(cc, sl, sg); }, place_no_ctx: (cc) => { cc.say("where_then"); cc.hold(); }, g_ok: (cc) => { cc.s.place = "station"; cc.say("ack_place"); }, agree: (cc) => { cc.s.place = "station"; cc.say("ack_place"); } },
   }));
 }
 function suggestTime(c: Ctx) {
@@ -186,6 +187,9 @@ function satBusy(c: Ctx) {
 const butNo = (c: Ctx) => /\bbut\b/i.test(c.heard || "") && !/\bbut (of course|sure|yes)\b/i.test(c.heard || "");
 
 // Automatic answers the simulation uses when Lizzie asks one of her optional (random) questions.
+/** "That's okay, thanks" / "I'm good" to an offer: a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+
 const AUTO: Record<string, string> = {
   day: "On Friday", band: "It's a jazz band", sister: "Sure!", pay: "Don't worry about it, it's on me",
   bbq: "Sorry, I can't, I'm busy on Sunday", bad_line: "Yes, Friday", meet_change: "Sure", closing: "Bye!",
@@ -324,6 +328,8 @@ const H: Record<string, Handler> = {
     if (c.s.accepted && once(c, "ack")) c.say("ack");
     void seg;
   },
+  // "I don't like that place." outside her suggestion: where, then
+  place_no_ctx(c) { c.say("where_then"); c.hold(); },
   meet(c, slots) {
     const place = toArr(slots.place)[0] as string | undefined;
     const tm = norm(toArr(slots.time)[0]);
@@ -615,10 +621,12 @@ export const inviteCall: SituationDef = {
       "[yes] i am (free | not busy) [on {day}] [i would love to come]", "i have (no | nothing) plans [on {day}]",
       "[yes | sure] what time [should i come]", "{day} [i think] i am (free | not busy)", "[i would love to] (can | should) i bring (something | anything)", "[i would love to] what (should | can) i bring",
     ] },
+    // "I don't like that place." at her "How about outside the station?" (it wasn't understood)
+    place_no_ctx: { patterns: ["[no] [sorry] i (do not | don't) (like | want to meet at) (that place | it | there | that)", "[no] (somewhere | anywhere) else [please]", "[no] not there [please]"] },
     decline_ctx: { patterns: [
       "@sorry i can not [(make it | come | go)] [on {day}] #h:rep_cant", "@sorry i am (busy | working | not free) [on {day}] #h:rep_cant",
       "@sorry i (have | have got) [other] plans [on {day}] #h:rep_plans", "[thanks but] i have something (else | on) [on {day}]", "(no | nope) sorry", "sorry no",
-      "i would love to but i can not [make it] [on {day}]", "i wish i could [but i can not]",
+      "i would love to but i can not [make it] [on {day}]", "i wish i could [but i can not]", "[no] [thanks] maybe (another | next) (day | time)", "[no] not this time [thanks]",
       "maybe (another time | next time | some other time) #h:rep_another", "not this time", "i do not think i can [make it]",
       "[sorry] i will not be able to (make it | come)", "thanks but i can not", "i think i am (busy | working)",
       "i would love to but i (am busy | am working | have plans | have to work)", "@sorry i (work | am working | have to work) [on {day}]",
@@ -1124,8 +1132,10 @@ export const inviteCall: SituationDef = {
         { lt: "Pakviesti Lizzie į koncertą", hint: "invite", options: "genre" },
         { lt: "Paklausti, ar ji laisva penktadienį", hint: "free" },
       ],
-      yes: (c) => { if (c.s.eventSaid) accept(c); else c.say("so_whats_up"); },
-      no: (c) => { if (c.s.eventSaid) c.say("oh_okay"); } },
+      // "So, what's up?" once (the step's question came right after it: "So, what's up? So, what's new?"); a "No" to
+      // "Are you inviting me?" waits (it got "Oh! Okay, no problem. So... is that an invitation?" in one breath)
+      yes: (c) => { if (c.s.eventSaid) accept(c); else { c.say("so_whats_up"); c.hold(); } },
+      no: (c) => { if (c.s.eventSaid) { c.say("oh_okay"); c.hold(); } } },
     { id: "day", when: (c) => !!c.s.accepted && !c.s.day, done: (c) => !!c.s.day,
       ask: (c) => { c.s.dayAsked = true; c.say(c.s.weekend ? "which_day" : "ask_day"); }, expects: ["day_ans"],
       suggest: [{ lt: "Pasakyti, kurią dieną koncertas", hint: "when" }] },
@@ -1157,7 +1167,8 @@ export const inviteCall: SituationDef = {
     { id: "bbq", when: (c) => !!c.s.accepted && c.s.bbq, done: (c) => !!c.s.bbqDone,
       ask: (c) => { c.twist("bbq"); c.say("bbq_invite"); }, expects: ["decline_ctx", "cant_wait"],
       suggest: [{ lt: "Priimti kvietimą arba mandagiai atsisakyti", hint: "reply_invite" }],
-      yes: (c) => { c.s.bbqDone = "yes"; c.say("bbq_yes"); },
+      // "That's okay, thanks" is a polite no (it got "Awesome! I'll text you the details.")
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { c.s.bbqDone = "no"; c.say("bbq_no"); return; } c.s.bbqDone = "yes"; c.say("bbq_yes"); },
       no: (c) => { c.s.bbqDone = "no"; c.say("bbq_no"); } },
   ],
 
@@ -1214,6 +1225,8 @@ export const inviteCall: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Maybe another day.", intent: "decline_ctx", step: "bbq" },
     { say: "Hi Lizzie, it's Tomas!", intent: "its_me_ctx", step: "hello" },
     { say: "Hello, this is Tomas.", intent: "its_me_ctx", step: "hello" },
     { say: "It's Tomas", intent: "none" },

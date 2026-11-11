@@ -24,7 +24,7 @@ The characters never say the learner's lines.
 1. **Character voice ids.** In v2 each character has a voice id of its own (`g_<npcId>`, e.g. `g_mia`) instead of a Kokoro voice name. Clip keys are `audioKey(voice, speed, text)` (`src/audio-key.ts`), so even lines two characters share get each one's own voice.
 2. **Coach voices.** The example answers use `g_coach_f` or `g_coach_m`, by the learner's profile gender. The two coach voices belong to no character, so a model answer never sounds like the person you talk to.
 3. **Passers-by** in the town: `g_amb_f`, `g_amb_m`.
-4. **A new folder.** The new clips go to `public/audio-v2/` (R2: `fluent-steps/game/audio-v2/`) with their own `manifest.json`, so no browser plays a stale cached clip. The old clips stay where they are, so switching back is one setting. Only the manifest is kept in git; the clips live on R2.
+4. **A new folder.** The new clips go to `public/audio-v2/` (R2: `fluent-steps/game/audio-v2/`) with their own `manifest.json`, so no browser plays a stale cached clip. The old clips stay where they are, so switching back is one setting. The manifest and `repair-versions.json` are kept in git; the clips live on R2. The v2 repair map starts as `{}` so loading the optional metadata succeeds. Add a content hash when replacing a v2 recording at an existing key, preserving earlier entries. The separate v1 repair map must not be copied into v2.
 5. **The switch:** `DEFAULT_VOICES` in `src/content/voices.ts` (`"v2"` since 28 Oct 2026). A build or the dev server can try v2 first with `VITE_VOICES=v2`; the English Master export follows the same switch (`tools/export-fluent-steps.ts`).
 
 ## How each line is asked for

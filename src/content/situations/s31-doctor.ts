@@ -199,6 +199,9 @@ function firstThisTurn(c: Ctx, key: string): boolean {
   return true;
 }
 
+/** "I'll examine you first." / "Let's see what you need first.": once per turn (two questions get one). */
+function sayFirst(c: Ctx, line: string) { if (firstThisTurn(c, "first")) c.say(line); }
+
 function sorry(c: Ctx) {
   if (c.s.sorrySaid) return;
   c.s.sorrySaid = true;
@@ -1271,7 +1274,7 @@ export const doctor: SituationDef = {
             ask: (cc) => cc.say("allergy_chart") });
           return;
         }
-        if (!c.s.allergyAsked && !c.s.introFirst) { c.s.allergyAsked = true; c.say("ask_allergy_first"); return; }
+        if (!c.s.allergyAsked && !c.s.introSaid) { c.s.allergyAsked = true; c.say("ask_allergy_first"); return; }
         c.s.allergyAsked = true;
         c.say("ask_allergy");
       },
@@ -1373,8 +1376,10 @@ export const doctor: SituationDef = {
     sym_none(c) { c.s.moreDone = true; c.say("sym_ack"); },
     feel_sick(c) {
       if (syms(c).length) { if (firstThisTurn(c, "ack")) c.say("sym_ack"); return; }
+      // the same turn names a symptom ("I feel bad, I have a fever"): its handler says sorry and goes on to "How long?"
+      if (((c as any).conv?.out?.parse?.segments ?? []).some((sg: any) => ["symptom", "symptom_ctx", "temp_ans"].includes(sg.intent))) return;
       if (c.s.sorrySaid) c.say("ask_problem"); else { c.s.sorrySaid = true; c.say("feel_sick_q"); }
-      c.expect({ id: "sick_q", expects: ["symptom", "symptom_ctx", "sym_neg"], hints: ["symptom"], suggest: [{ lt: "Pasakyti simptomus", hint: "symptom", options: "symptom" }],
+      c.expect({ id: "sick_q", optional: true, expects: ["symptom", "symptom_ctx", "sym_neg"], hints: ["symptom"], suggest: [{ lt: "Pasakyti simptomus", hint: "symptom", options: "symptom" }],
         on: {
           symptom: (cc, sl, sg) => { doctor.handlers.symptom(cc, sl, sg); },
           symptom_ctx: (cc, sl, sg) => { doctor.handlers.symptom_ctx(cc, sl, sg); },
@@ -1437,31 +1442,31 @@ export const doctor: SituationDef = {
     which_arm_ctx(c) { c.say("bp_either_arm"); },
 
     ask_serious(c) {
-      if (!c.s.examDone) { c.say("exam_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "exam_first"); return; }
       c.say("serious_no");
       if (firstThisTurn(c, "fine")) c.say("fine_soon");
     },
     ask_contagious(c) {
-      if (!c.s.examDone) { c.say("exam_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "exam_first"); return; }
       if (CONTAGIOUS[c.s.dx as Dx]) { c.say("contagious_yes"); c.say("contagious_advice"); c.s.stayHomeSaid = true; }
       else c.say("contagious_no");
     },
     ask_antibiotics(c) {
-      if (!c.s.examDone) { c.say("exam_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "exam_first"); return; }
       if (kind(c) === "ab") c.say("ab_yes");
       else if (dx(c) === "virus") c.say("no_ab_virus");
       else c.say("ab_no");
     },
     ask_what(c) {
-      if (!c.s.examDone) { c.say("exam_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "exam_first"); return; }
       c.say("dx_" + dx(c));
     },
     ask_better(c) {
-      if (!c.s.examDone) { c.say("exam_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "exam_first"); return; }
       c.say(kind(c) === "ab" ? "better_ab" : dx(c) === "back" ? "better_back" : "better_week");
     },
     ask_work(c) {
-      if (!c.s.examDone) { c.say("exam_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "exam_first"); return; }
       if (CONTAGIOUS[c.s.dx as Dx]) { c.say("work_home"); c.s.stayHomeSaid = true; }
       else c.say(dx(c) === "back" ? "work_back" : "work_ok");
     },
@@ -1472,31 +1477,36 @@ export const doctor: SituationDef = {
     },
     ask_not_better(c) { c.say("come_back_q"); c.s.comeBackSaid = true; },
     ask_eat(c) { c.say(dx(c) === "stomach" ? "eat_stomach" : "eat_any"); },
-    ask_exercise(c) { if (!c.s.examDone) { c.say("exam_first"); return; } c.say("exercise_no"); },
+    ask_exercise(c) { if (!c.s.examDone) { sayFirst(c, "exam_first"); return; } c.say("exercise_no"); },
     ask_cost(c) { c.say("cost_desk"); },
 
     ask_dosage(c) {
       if (c.s.rxGiven) { c.say("dose"); return; }
-      c.say(c.s.examDone ? "explain_soon" : "dose_first");
+      if (c.s.examDone) c.say("explain_soon"); else sayFirst(c, "dose_first");
     },
     ask_meals(c) {
       if (c.s.rxGiven) { c.say("meals_after"); return; }
-      c.say(c.s.examDone ? "explain_soon" : "dose_first");
+      if (c.s.examDone) c.say("explain_soon"); else sayFirst(c, "dose_first");
     },
     ask_duration(c) {
       if (c.s.rxGiven) { c.say("dose_days"); if (kind(c) === "ab") c.say("dose_finish"); return; }
-      c.say(c.s.examDone ? "explain_soon" : "dose_first");
+      if (c.s.examDone) c.say("explain_soon"); else sayFirst(c, "dose_first");
     },
     ask_side(c) {
-      if (!c.s.examDone) { c.say("dose_first"); return; }
+      if (!c.s.examDone) { sayFirst(c, "dose_first"); return; }
       const k = kind(c);
       if (k === "ab") { c.say("side_ab"); c.say("side_rash"); }
       else if (k === "sym") c.say("side_sym");
       else if (k === "pain") c.say("side_ab");
       else c.say("side_none");
     },
-    ask_alcohol(c) { if (!c.s.examDone) { c.say("dose_first"); return; } c.say("alcohol"); },
-    ask_drive(c) { if (!c.s.examDone) { c.say("dose_first"); return; } c.say(kind(c) === "sym" ? "drive_careful" : "drive_ok"); },
+    ask_alcohol(c) { if (!c.s.examDone) { sayFirst(c, "dose_first"); return; } c.say("alcohol"); },
+    ask_drive(c) {
+      if (!c.s.examDone) { sayFirst(c, "dose_first"); return; }
+      // "Will it make me sleepy?" asks about drowsiness: "Yes, it won't make you sleepy." answered a yes to a no
+      if (/\b(sleepy|drowsy|tired)\b/i.test(c.heard)) { c.say(kind(c) === "sym" ? "side_sym" : "side_none"); return; }
+      c.say(kind(c) === "sym" ? "drive_careful" : "drive_ok");
+    },
     clear_ctx(c) { c.s.questionsDone = true; c.say("ok_plain"); },
 
     pharmacy_ans(c, _slots, seg) {
@@ -1654,6 +1664,9 @@ export const doctor: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): unwell and the symptom in one breath (no "What are your symptoms?" left open)
+    { name: "audit: unwell and the fever in one breath", turns: ["I feel bad, I have a fever.", "Since yesterday.", "Yes, about 38 degrees.", "No, nothing."],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.askDob = false; s.feelingOpener = true; s.bpTwist = false; s.chartTwist = false; } },
     // Optional parts are pinned per sim (`setup` runs right after init): the short answers "Okay.", "Yes." and
     // "No." would otherwise be taken by the blood-pressure sleeve, the chart question or the pharmacy question.
     { name: "song path: sore throat and a temperature, Celsius, questions",
@@ -1808,7 +1821,10 @@ function wrapUp(c: Ctx) {
     case "stomach": c.say("advice_stomach"); break;
     case "back": c.say("advice_back"); break;
     case "tension": c.say("advice_tension"); break;
-    default: c.say("advice_rest"); if (dx(c) === "throat") c.say("advice_tea");
+    default:
+      // variant 1 is "Stay home, rest and drink lots of fluids": not for what isn't contagious, and not after "Better stay home…"
+      if (CONTAGIOUS[dx(c) as Dx] && !c.s.stayHomeSaid) c.say("advice_rest"); else (c as any).conv.pushLine("advice_rest", 0, {});
+      if (dx(c) === "throat") c.say("advice_tea");
   }
   if (!c.s.comeBackSaid) c.say("come_back");
   c.say("feel_better");

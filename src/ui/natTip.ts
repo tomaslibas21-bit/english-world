@@ -27,6 +27,12 @@ export function glossLine(units: Sentence["units"]): string {
  *  edition, whose glosses and natural sentences are English). */
 export const stem = natStem;
 
+/** Player examples need the natural wording whenever it differs from the visible glosses. Ignore only
+ *  punctuation, case, spacing and untranslated dash units; retain changes in order, grammar or meaning. */
+export function natMatchesGloss(s: Pick<Sentence, "units" | "nat">): boolean {
+  return natNorm(s.nat ?? "") === natNorm(glossLine(s.units));
+}
+
 /** Two stems are forms of one word when one starts the other (3 letters at least; shorter ones must be equal). */
 function sameWord(a: string, b: string): boolean {
   const [short, long] = a.length <= b.length ? [a, b] : [b, a];

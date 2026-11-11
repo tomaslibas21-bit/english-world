@@ -266,5 +266,14 @@
   {"ctx": "resolve", "say": "A month would be safer.", "intent": "counter_offer"},
   {"ctx": "resolve", "say": "Two weeks? How about a month?", "intent": "counter_offer"},
   {"ctx": "resolve", "say": "I wouldn't prefer three weeks.", "intent": "any", "not": ["counter_offer", "accept_deal"]},
-  {"ctx": "pitch", "say": "Actually, yes.", "intent": "yn:yes", "not": ["agree_plan"]}
+  {"ctx": "pitch", "say": "Actually, yes.", "intent": "yn:yes", "not": ["agree_plan"]},
+  {"ctx": "resolve", "say": "I see your point.", "intent": "ack_point", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "resolve", "say": "You're right.", "intent": "ack_point", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "resolve", "say": "Two weeks?", "intent": "counter_offer", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "resolve", "say": "Yes, three weeks.", "intent": "counter_offer", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "resolve", "say": "Four weeks works for me.", "intent": "accept_deal", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "so_agree", "say": "Okay, thanks.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "coffee", "say": "That's okay, thanks.", "intent": ["g_thanks", "yn:yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "resolve", "say": "I see your point.", "intent": "any", "not": ["accept_deal", "give_in"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "resolve", "say": "Two weeks?", "intent": "any", "not": ["accept_deal", "give_in"], "note": "logic audit 5 Nov 2026"}
 ] }

@@ -351,5 +351,10 @@
   {"ctx": "vm_msg", "say": "Hello, Mr. Grant, it's Tomas from 3B. I'm afraid the washing machine has flooded the kitchen. Nobody is hurt, and I've turned off the water. Could you send a plumber today? Please call me back.", "intent": "vm_unknown", "note": "review: in one breath (6 pieces)"},
   {"ctx": "vm_msg", "say": "Please ring me back.", "intent": "vm_close", "not": ["vm_who_ctx", "intro_ctx", "its_me", "its_me_ctx"], "note": "review: British: tip; no names"},
   {"ctx": "vm_msg", "say": "This is Tomas.", "intent": "vm_who_ctx"},
-  {"ctx": "vm_msg", "say": "I'm worried.", "intent": "any", "not": ["vm_who_ctx", "intro_ctx", "intro"], "note": "review: never a name"}
+  {"ctx": "vm_msg", "say": "I'm worried.", "intent": "any", "not": ["vm_who_ctx", "intro_ctx", "intro"], "note": "review: never a name"},
+  {"ctx": "l_come", "say": "That would be great.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "l_come", "say": "Yes, I'm sure.", "intent": "sure_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "g_down", "say": "I put towels on the floor.", "intent": "water_off", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "l_come", "say": "Yes, please.", "intent": "any", "not": ["need_nothing", "come_no"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "g_down", "say": "I put towels on the floor.", "intent": "any", "not": ["down_no_ctx", "downstairs_no"], "note": "logic audit 5 Nov 2026"}
 ] }

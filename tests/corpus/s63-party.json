@@ -262,5 +262,12 @@
   {"ctx": "field_q", "say": "I work with computers.", "intent": "job_ans"},
   {"ctx": "field_q", "say": "I do marketing.", "intent": "job_ans"},
   {"ctx": "time", "say": "I'm not new here.", "intent": "any", "not": ["time_ans"]},
-  {"ctx": "job", "say": "I don't work with computers.", "intent": "any", "not": ["job_ans"]}
+  {"ctx": "job", "say": "I don't work with computers.", "intent": "any", "not": ["job_ans"]},
+  {"ctx": "like", "say": "Not much, and you?", "intent": "like_no", "not": ["fun_none"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "like", "say": "Not really, and you?", "intent": "like_no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "like", "say": "Yes. And you?", "intent": ["ask_back", "yn:yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "cafe", "say": "No, and you?", "intent": ["ask_back", "yn:no"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "drink", "say": "Yes, please. And you?", "intent": ["ask_back", "yn:yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "like", "say": "Not much, and you?", "intent": "any", "not": ["like_yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "fun", "say": "Not much.", "intent": "any", "not": ["like_no", "like_yes"], "note": "logic audit 5 Nov 2026"}
 ]}

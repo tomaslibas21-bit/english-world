@@ -138,6 +138,11 @@ export class Game implements GameApi {
   private tmpV = new THREE.Vector3();
   private disposed = false;
   private ambient!: Ambient;
+  private unbindAmbience: (() => void) | null = null;
+  private ambienceAllowed = () => {
+    const st = useStore.getState();
+    return !this.disposed && !document.hidden && !st.conv.active && !st.hud.panel;
+  };
   /** Walking under the player's own control (movement.ts): the direction pressed, the turn and the speed, a hop. */
   private steer = new Steer();
   private gait = new Gait();
@@ -213,7 +218,9 @@ export class Game implements GameApi {
     this.zones.set("town", { id: "town", group: this.town.group, colliders: this.town.colliders, nav });
     // pigeons round the fountain (in the town's group, so they are hidden indoors); their wings when they take off
     this.pigeons = new Pigeons(FOUNTAIN.x, FOUNTAIN.z, 4.6, 9.5);
-    this.pigeons.onTakeOff = (n) => audio.flutter(Math.min(1, 0.5 + n * 0.15));
+    this.pigeons.onTakeOff = (n) => {
+      if (this.ambienceAllowed()) audio.flutter(Math.min(1, 0.5 + n * 0.15));
+    };
     this.town.group.add(this.pigeons.group);
     // passers-by walk between shop doors, the square, the beach and the bus stop
     const places: [number, number][] = this.town.doors.filter((d) => d.loc !== "airport").map((d) => [d.outX, d.outZ]);
@@ -230,7 +237,11 @@ export class Game implements GameApi {
     this.player.fidgets = false;
     this.scene.add(this.player.root);
     await audio.init();
+    if (this.disposed) return;
     audio.volume = st.settings.volume;
+    this.unbindAmbience = useStore.subscribe(() => {
+      if (!this.ambienceAllowed() || useStore.getState().settings.volume <= 0) audio.stopAmbience();
+    });
     // start where the player left off, or in the airport on the very first visit
     const place = st.progress.place;
     if (place && (place.zone === "town" || getInterior(place.zone))) this.enterZone(place.zone, { x: place.x, z: place.z, rot: place.rot }, true);
@@ -239,6 +250,8 @@ export class Game implements GameApi {
     window.addEventListener("resize", this.onResize);
     this.renderer.setAnimationLoop(this.loop);
     this.refreshObjective();
+    // Keep the logo over the canvas until an actual town frame is ready to show.
+    this.renderer.render(this.scene, this.rig.cam);
     this.onReady?.();
   }
 
@@ -1098,8 +1111,12 @@ export class Game implements GameApi {
     {
       const w = this.container.clientWidth, h = this.container.clientHeight;
       if (talking && this.talkNpc) {
-        const wide = w > 900;
-        this.rig.applyViewShift(w, h, wide ? Math.min(w * 0.22, 380) : 0, wide ? 0 : h * 0.25);
+        const sideways = h <= 520 && w > h;
+        const wide = w > 900 && !sideways;
+        // Match the conversation's visible picture area, including scenes-off 3D conversations.
+        const pictureHeight = h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
+        this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
+          wide || sideways ? 0 : (h - pictureHeight) / 2);
       } else this.rig.applyViewShift(w, h, 0, this.rig.mode !== "talk" && h > w * 1.15 ? -h * (this.rig.mode === "follow" ? 0.12 : 0.1) : 0);
     }
     // sun follows the player for crisp shadows
@@ -1118,20 +1135,18 @@ export class Game implements GameApi {
     if (this.hudT <= 0) {
       this.hudT = 0.12;
       this.updateHud();
-      // the town's sound: the sea louder towards the beach, gulls near the harbour, the cars' hum; quiet indoors and
-      // while someone is talking
+      // Brief gull/bird/cup sounds only while the town is visible and no conversation or panel is open.
       const px = this.player.root.position.x, pz = this.player.root.position.z, sea = THREE.MathUtils.clamp(1 - (pz - SEA_Z) / 70, 0, 1);
       const out = !this.zone.interior;
-      // the fountain within about 18 m; birds in the park, and a little everywhere else outdoors
-      const fountain = out && THEME.centrepiece === "fountain" ? THREE.MathUtils.clamp(1 - Math.hypot(px - FOUNTAIN.x, pz - FOUNTAIN.z) / 18, 0, 1) : 0;
       const inPark = px > PARK.x1 - 6 && px < PARK.x2 + 6 && pz > PARK.z1 - 6 && pz < PARK.z2 + 6;
-      const room = this.zone.interior ? (["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id) ? "cafe" : "quiet") : null;
-      audio.ambience(out && !talking && !st.hud.panel, sea, out ? this.ambient.carNoise(px, pz) : 0, sea > 0.4,
-        { fountain, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, room, talking });
+      const cafe = this.zone.interior && ["sunny-cup", "trattoria", "the-pier"].includes(this.zone.id);
+      audio.ambience(this.ambienceAllowed(), {
+        sea, gulls: out && sea > 0.4, birds: out ? (inPark ? 1 : 0.35 * (1 - sea)) : 0, cafe,
+      });
       // the edition's own town sounds (theme.ts: Puerto Colibrí's church bell, street vendors and trucks; none in
       // Maple Harbor): how near the church, the square and the streets of houses are
       const sn = THEME.sounds;
-      if (sn) audio.townSounds(out && !talking && !st.hud.panel, {
+      if (sn) audio.townSounds(out && this.ambienceAllowed(), {
         bell: out ? THREE.MathUtils.clamp(1 - Math.hypot(px - sn.bell[0], pz - sn.bell[1]) / 150, 0, 1) : 0,
         vendors: out ? THREE.MathUtils.clamp(1 - Math.hypot(px - sn.vendors[0], pz - sn.vendors[1]) / 50, 0, 1) : 0,
         homes: out ? THREE.MathUtils.clamp((pz - sn.homesZ) / 12, 0, 1) : 0,
@@ -1468,6 +1483,9 @@ export class Game implements GameApi {
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("blur", this.onBlur);
+    this.unbindAmbience?.();
+    this.unbindAmbience = null;
+    audio.stopAmbience();
     audio.stop();
     for (const n of this.npcs) n.tag.remove();
     this.npcs = [];

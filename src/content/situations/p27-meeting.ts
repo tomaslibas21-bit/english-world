@@ -92,6 +92,12 @@ const qOf = (sg?: Segment) => sg?.tags.find((x) => x.startsWith("q_")) ?? null;
 const politeOpener = (c: Ctx) => /^\W*(sorry|excuse me|pardon( me)?|i'?m sorry|i am sorry|so sorry)\b/i.test(c.heard || "");
 const LEAVING = /\b(have to|need to|must|got to|gotta|should) (go|run|leave)\b|\b(another|a) (meeting|call)\b/i;
 const saysNo = (c: Ctx) => /^\W*(no|nope|nah)\b/i.test(c.heard || "");
+/** A clear yes word first ("Yes, two weeks.", "Okay, three weeks.", "Deal."): an echo of her weeks with it is a yes. */
+const yesLead = (c: Ctx) => /^\W*(yes|yeah|yep|yup|sure|ok|okay|deal|fine|agreed|alright|all right|perfect|great)\b/i.test(c.heard || "");
+/** "Okay, thanks" / "That's okay, thanks" / "I'm fine, thanks": thanks for the meeting, no yes to a deal. */
+const politeClose = (c: Ctx) => /^\W*((ok|okay|sure|great|fine|all right|alright|perfect|cool)|(that'?s|that is|it'?s|it is) (ok|okay|fine|all right|alright)|i'?m (fine|good|ok|okay))\W+(thanks|thank you)\b/i.test(c.heard || "");
+/** "That's okay, thanks" / "I'm fine, thanks": a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bno need\b/i;
 /** Asked as a question: a "?" or a question word first ("The support team is ready." is no question). */
 const asked = (c: Ctx) => /\?\s*["”')]*\s*$/.test(c.heard || "") || /^\W*(is|are|was|were|have|has|did|do|does|what|why|how|who|when|where|which|can|could|will|would)\b/i.test(c.heard || "");
 
@@ -224,8 +230,16 @@ function twistAnswer(c: Ctx, kind: "let" | "finish" | "rude") {
 function deal(c: Ctx) { if (c.s.outcome) return; V(c, "v_deal"); c.s.outcome = "deal"; }
 function gregDecides(c: Ctx) {
   if (c.s.outcome) return;
-  G(c, "g_decide1"); G(c, "g_decide2"); G(c, "g_decide3");
+  // after Vanessa's final three weeks, Greg doesn't give less than she did ("…for two weeks")
+  G(c, "g_decide1"); G(c, c.s.offer === "final" ? "g_decide2_final" : "g_decide2"); G(c, "g_decide3");
   c.s.outcome = "boss";
+}
+/** No clear yes ("I see your point.", "Okay, thanks.", "Two weeks?", "I don't know."): "Deal?" once more, then Greg decides. */
+function dealAgain(c: Ctx) {
+  if (c.s.dealAsked) { gregDecides(c); return; }
+  c.s.dealAsked = true;
+  V(c, "v_deal_q");
+  waitHere(c);
 }
 function gaveIn(c: Ctx) {
   if (c.s.outcome) return;
@@ -296,10 +310,11 @@ function flair(c: Ctx) {
     c.expect({
       id: "coffee", expects: ["coffee_yes_ctx", "coffee_no_ctx"], hints: ["coffee"],
       suggest: [{ lt: "Priimti arba atsisakyti kvietimo", hint: "coffee" }],
-      yes: (cc) => closingTurn(cc, "yes"), no: (cc) => closingTurn(cc, "no"),
+      yes: (cc) => closingTurn(cc, POLITE_NO.test(cc.heard || "") ? "no" : "yes"), no: (cc) => closingTurn(cc, "no"),
       on: {
         coffee_yes_ctx: (cc) => closingTurn(cc, "yes"), coffee_no_ctx: (cc) => closingTurn(cc, "no"),
-        g_thanks: (cc) => closingTurn(cc, "yes"), g_bye: (cc) => closingTurn(cc, "no"), g_ok: (cc) => closingTurn(cc, "yes"),
+        g_thanks: (cc) => closingTurn(cc, POLITE_NO.test(cc.heard || "") ? "no" : "yes"), g_bye: (cc) => closingTurn(cc, "no"),
+        g_ok: (cc) => closingTurn(cc, POLITE_NO.test(cc.heard || "") ? "no" : "yes"),
       },
     });
     return;
@@ -486,7 +501,7 @@ function onAck(c: Ctx, sg: Segment | undefined, kind: "ack" | "agree" | "accept"
     case "resolve":
       if (alt) { onOffer(c, sg, false); return; }
       // "Three weeks works for me." to her two weeks: that's bargaining
-      if (kind === "accept" && (c.s.offer ?? "half") === "half" && weeksOf(sg) >= 3) { resolveTurn(c, "counter", sg); return; }
+      if (kind === "accept" && weeksOf(sg) > ((c.s.offer ?? "half") === "final" ? 3 : 2)) { resolveTurn(c, "counter", sg); return; }
       resolveTurn(c, weak ? "unsure" : kind === "ack" ? "ack" : "accept", sg);
       return;
   }
@@ -678,14 +693,20 @@ function resolveTurn(c: Ctx, kind: "accept" | "ack" | "offer" | "counter" | "dis
     waitHere(c);
     return;
   }
-  // "half" (Meet me halfway… Deal?) or "final" (Three weeks. Final offer.)
-  if (kind === "accept" || kind === "ack") { deal(c); return; }
+  // "half" (Meet me halfway… Deal?) or "final" (Three weeks. Final offer.): a deal only on a clear yes; "I see your
+  // point", "You're right", "Okay, thanks" closed it, and at her final offer so did anything but a no ("I don't know")
+  if (kind === "accept") { if (politeClose(c)) dealAgain(c); else deal(c); return; }
+  if (kind === "ack") { dealAgain(c); return; }
   if (kind === "atd") { V(c, "v_atd"); gregDecides(c); return; }
-  if (off === "final" && kind === "unsure") { deal(c); return; } // anything that isn't a "no"
+  if (off === "final" && kind === "unsure") { dealAgain(c); return; }
   if (kind === "counter") {
-    if (off === "final") { gregDecides(c); return; }
     const w = weeksOf(lastCounter(c, sg));
-    if (w > 0 && w <= 2) { deal(c); return; }
+    const hers = off === "final" ? 3 : 2;
+    // fewer weeks than she offers: she takes it; her own weeks with a yes ("Yes, three weeks"): the deal; her weeks
+    // echoed ("Two weeks?"): "Deal?" once more; more weeks at her final offer: Greg decides
+    if (w > 0 && w < hers) { deal(c); return; }
+    if (w === hers) { if (yesLead(c) && !asked(c)) deal(c); else dealAgain(c); return; }
+    if (off === "final") { gregDecides(c); return; }
     c.s.offer = "final";
     V(c, "v_final_offer");
     waitHere(c);
@@ -712,7 +733,13 @@ function expectSoAgree(c: Ctx) {
   c.expect({
     id: "so_agree", optional: true, expects: ["agree_to_disagree", "disagree_polite", "offer_alt", "counter_offer", "give_in"], hints: ["resolve"],
     suggest: [{ lt: "Pasakyti, kad vis dėlto nesutinki, arba sutarti, kad nesutariate", hint: "resolve" }, { lt: "Pasiūlyti kitą sprendimą", hint: "alt" }],
-    yes: (cc) => gaveIn(cc),
+    yes: (cc) => {
+      if (politeClose(cc) || POLITE_NO.test(cc.heard || "")) {
+        if (cc.s.soAgainAsked) { resolveTurn(cc, "no"); return; }
+        cc.s.soAgainAsked = true; V(cc, "v_reask"); expectSoAgree(cc); return;
+      }
+      gaveIn(cc);
+    },
     no: (cc) => resolveTurn(cc, "no"),
     on: {
       give_in: (cc) => gaveIn(cc),
@@ -1306,6 +1333,11 @@ export const meeting: SituationDef = {
     g_decide2: [
       t("We | launch | on Friday, | but | the | old | site | stays up | for | two | weeks.", "Mes | paleidžiame | penktadienį, | bet | — | senoji | svetainė | lieka veikti | — | dvi | savaites.",
         "Paleidžiame penktadienį, bet senoji svetainė dar dvi savaites veiks.", { flags: { 8: F_DUR } }),
+    ],
+    // after Vanessa's final offer (three weeks) Greg said "two weeks", less than she had given (new line, 5 Nov 2026: needs a voice)
+    g_decide2_final: [
+      t("We | launch | on Friday, | but | the | old | site | stays up | for | three | weeks.", "Mes | paleidžiame | penktadienį, | bet | — | senoji | svetainė | lieka veikti | — | tris | savaites.",
+        "Paleidžiame penktadienį, bet senoji svetainė dar tris savaites veiks.", { flags: { 8: "Duration “for”: the accusative tris savaites carries it." } }),
     ],
     g_decide3: [
       t("Nobody's | happy? | Perfect. | That's | a | compromise.", "Niekas nėra | patenkintas? | Puiku. | Tai yra | — | kompromisas.", "Niekas nepatenkintas? Puiku. Vadinasi, tai kompromisas.",
@@ -2016,6 +2048,10 @@ export const meeting: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): what closed the deal without a clear yes
+    { say: "I see your point.", intent: "ack_point", step: "resolve" },
+    { say: "Two weeks?", intent: "counter_offer", step: "resolve", not: ["accept_deal"] },
+    { say: "Four weeks works for me.", intent: "accept_deal", step: "resolve", slots: { wk: 4 } },
     // --- the pitch: polite disagreement (the song's phrases first) ---
     { say: "I'd push back a little on that. It's not that clear.", intent: "disagree_polite", step: "pitch" },
     { say: "I see your point, but I'm not sure I agree.", intent: "disagree_polite", step: "pitch" },
@@ -2150,6 +2186,13 @@ export const meeting: SituationDef = {
       "Have we considered a soft launch?", "Let's agree to disagree.", "See you Monday.", "I'd say green.", "Teal.",
     ], expect: { complete: true, state: { outcome: "boss" } }, auto: AUTO, setup: SIM(false, true, "teal") },
     // Questions first, a short answer to "Is it the timing?", "another way" with nothing concrete, then bargaining.
+    // logic audit (5 Nov 2026): a deal only on a clear yes ("I see your point" asks "Deal?" again); after her final three
+    // weeks Greg gives three
+    { name: "audit: no deal on an ack; her final three weeks, then Greg's three", turns: [
+      "Why Friday?", "Have we tested it properly?", "I see your point, but I'm not sure I agree.", "Wait, can I jump in here for a second?",
+      "Hmm, I don't know.", "The timing.", "You're right about the cost.", "Could we look at it another way?", "How about keeping the old site as a backup?",
+      "I see your point.", "How about a month?", "How about a month?", "Sure. See you then!", "Maybe next time.",
+    ], expect: { complete: true, state: { outcome: "boss", offer: "final", dealAsked: true } }, auto: AUTO, setup: SIM(false, false, "coffee") },
     { name: "questions, short answers, bargaining", turns: [
       "Why Friday?", "Have we tested it properly?", "I see your point, but I'm not sure I agree.", "Wait, can I jump in here for a second?",
       "Hmm, I don't know.", "The timing.", "You're right about the cost.", "Could we look at it another way?", "How about keeping the old site as a backup?",

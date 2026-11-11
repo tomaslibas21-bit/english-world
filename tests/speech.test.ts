@@ -37,14 +37,14 @@ class FakeRec implements SpeechRecognizer {
   emitStart() { this.onstart?.(); }
   speech() { this.onspeechstart?.(); }
   silence() { this.onspeechend?.(); }
-  results(rs: { final: boolean; alts: string[] }[]) {
-    this.onresult?.({ results: rs.map((r) => Object.assign(r.alts.map((transcript) => ({ transcript })), { isFinal: r.final })) });
+  results(rs: { final: boolean; alts: string[] }[], resultIndex = 0) {
+    this.onresult?.({ resultIndex, results: rs.map((r) => Object.assign(r.alts.map((transcript) => ({ transcript })), { isFinal: r.final })) });
   }
   error(error: string) { this.onerror?.({ error }); }
   end() { this.onend?.(); }
 }
 
-function harness(opts: { preferLocal?: boolean; phrases?: string[] } = {}) {
+function harness(opts: { preferLocal?: boolean; phrases?: string[]; evaluate?: (text: string) => Verdict; serviceStarted?: boolean } = {}) {
   let now = 0, id = 0;
   const timers = new Map<number, { at: number; fn: () => void }>();
   const clock = {
@@ -76,7 +76,7 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[] } = {}) {
   });
   attempt.start();
   const rec = () => recs[recs.length - 1];
-  rec().emitStart();
+  if (opts.serviceStarted !== false) rec().emitStart();
   const status = () => updates[updates.length - 1]?.status;
   return { attempt, advance, rec, recs, updates, commits, status };
 }
@@ -84,6 +84,248 @@ function harness(opts: { preferLocal?: boolean; phrases?: string[] } = {}) {
 beforeEach(() => resetSpeechForTests());
 
 describe("speech attempt", () => {
+
+  it.each([false, true])("accepts a complete current size answer promptly (final=%s)", final => {
+    const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
+    conv.start();
+    conv.input("A latte please.");
+    expect(conv.expectedIntents()).toContain("size_ans");
+    expect(conv.nlu.probe("Large please", conv.expectedIntents())).toBe("complete");
+    expect(conv.nlu.probe("Large", conv.expectedIntents())).toBe("open");
+    const h = harness({ evaluate: text => conv.nlu.probe(text, conv.expectedIntents()) });
+    h.rec().speech();
+    h.rec().results([{ final, alts: ["Large please"] }]);
+    if (final) h.rec().silence();
+    const wait = final ? SPEECH_TIMING.finishedAnswer : SPEECH_TIMING.interimStable;
+    h.advance(wait - 1);
+    expect(h.commits).toHaveLength(0);
+    h.advance(1);
+    expect(h.commits[0].text).toBe("Large please");
+    const out = conv.input(h.commits[0].text);
+    expect(out.parse?.segments.map(s => s.intent)).toContain("size_ans");
+    expect(out.lines.map(l => l.lineId)).not.toContain("ask_size");
+  });
+
+  it.each([false, true])("waits for a café Yes to grow into its intended order (final=%s)", final => {
+    const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
+    conv.start();
+    expect(conv.nlu.probe("Yes", conv.expectedIntents())).toBe("open");
+    expect(conv.nlu.probe("Large please", conv.expectedIntents())).toBe("open");
+    const h = harness({ evaluate: text => conv.nlu.probe(text, conv.expectedIntents()) });
+    h.rec().speech();
+    h.rec().results([{ final, alts: ["Yes"] }]);
+    if (final) h.rec().silence();
+    h.advance(SPEECH_TIMING.openAnswer - 100);
+    expect(h.commits).toHaveLength(0);
+    h.rec().speech();
+    h.rec().results([{ final, alts: ["Yes", "yeah"] }, { final, alts: ["I'd like a latte please"] }], 1);
+    if (final) h.rec().silence();
+    h.advance((final ? SPEECH_TIMING.finishedAnswer : SPEECH_TIMING.interimStable) + 1);
+    expect(h.commits[0].text).toBe("Yes I'd like a latte please");
+    const out = conv.input(h.commits[0].text);
+    expect(out.parse?.segments.map(s => s.intent)).toEqual(["order"]);
+    expect(out.lines.map(l => l.lineId)).toContain("ask_size");
+  });
+
+  it("bounds repeated no-speech errors without service-start or service-end and allows a fresh retry", () => {
+    const h = harness({ serviceStarted: false });
+    const stale = h.rec().onresult;
+    for (let i = 0; i < 12 && h.attempt.running; i++) {
+      h.rec().error("no-speech");
+      h.advance(2100);
+    }
+    expect(h.attempt.running).toBe(false);
+    expect(h.status()).toBe("nothing");
+    expect(h.commits).toHaveLength(0);
+    const previous = h.recs.length;
+    h.attempt.start();
+    expect(h.recs.length).toBe(previous + 1);
+    h.rec().emitStart();
+    stale?.({ results: [Object.assign([{ transcript: "stale answer" }], { isFinal: true })] });
+    h.rec().results([{ final: true, alts: ["Large"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 1);
+    expect(h.commits).toEqual([{ text: "Large", alts: [] }]);
+  });
+
+  it("recovers from a service-start timeout with a new recognizer, without reloading", () => {
+    const h = harness({ serviceStarted: false });
+    const first = h.rec();
+    const lateStart = first.onstart;
+    h.advance(SPEECH_TIMING.startup + 1);
+    expect(h.status()).toBe("error");
+    expect(h.attempt.running).toBe(false);
+    expect(first.aborted).toBe(true);
+    h.attempt.start();
+    expect(h.rec()).not.toBe(first);
+    lateStart?.();
+    expect(h.status()).toBe("starting");
+    h.rec().emitStart();
+    h.rec().results([{ final: true, alts: ["Large"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 1);
+    expect(h.commits).toEqual([{ text: "Large", alts: [] }]);
+  });
+
+  it("keeps real recognition results when Safari omits the service-start event", () => {
+    const h = harness({ serviceStarted: false });
+    h.advance(5000);
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.advance(SPEECH_TIMING.startup - 5000 + 1);
+    expect(h.attempt.running).toBe(true);
+    expect(h.status()).toBe("listening");
+    h.rec().results([{ final: false, alts: ["I'd like a latte"] }]);
+    h.advance(SPEECH_TIMING.interimStable + 1);
+    expect(h.commits).toEqual([{ text: "I'd like a latte", alts: [] }]);
+  });
+
+  it("cancels a missing-end recovery watchdog when the recognizer produces words again", () => {
+    const h = harness();
+    h.rec().error("no-speech");
+    h.advance(1000);
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.advance(1500);
+    expect(h.recs).toHaveLength(1);
+    expect(h.status()).toBe("listening");
+    h.rec().results([{ final: false, alts: ["I'd like a latte"] }]);
+    h.advance(SPEECH_TIMING.interimStable + 1);
+    expect(h.commits).toEqual([{ text: "I'd like a latte", alts: [] }]);
+  });
+
+  it("keeps a later phrase when an empty interim placeholder is reused after a speech boundary", () => {
+    const target = "thank you thank you very much";
+    for (const initial of ["", "thank you"]) {
+      const h = harness({ evaluate: text => norm(text) === target ? "complete" : target.startsWith(norm(text) + " ") ? "prefix" : "none" });
+      h.rec().speech();
+      h.rec().results([{ final: true, alts: ["thank you"] }, { final: false, alts: [initial] }]);
+      if (initial) h.rec().results([{ final: true, alts: ["thank you"] }, { final: false, alts: [""] }]);
+      h.rec().silence();
+      h.rec().speech();
+      h.rec().results([{ final: true, alts: ["thank you"] }, { final: true, alts: ["thank you very much"] }], 1);
+      h.attempt.finish();
+      expect(h.commits[0].text).toBe(target);
+    }
+  });
+
+  it("assigns changed provisional slots to a new utterance", () => {
+    const target = "thank you thank you very much";
+    const repeated = harness({ evaluate: text => norm(text) === target ? "complete" : target.startsWith(norm(text) + " ") ? "prefix" : "none" });
+    repeated.rec().speech();
+    repeated.rec().results([{ final: true, alts: ["thank you"] }, { final: false, alts: ["thank you"] }]);
+    repeated.rec().silence();
+    repeated.rec().speech();
+    repeated.rec().results([{ final: true, alts: ["thank you"] }, { final: true, alts: ["thank you very much"] }], 1);
+    repeated.attempt.finish();
+    expect(repeated.commits[0].text).toBe(target);
+  });
+
+  it("keeps late unchanged finalization in its original utterance", () => {
+    const late = harness();
+    late.rec().speech();
+    late.rec().results([{ final: true, alts: ["I'd like a"] }, { final: false, alts: ["I'd like a latte"] }]);
+    late.rec().silence();
+    late.rec().speech();
+    late.rec().results([{ final: true, alts: ["I'd like a"] }, { final: true, alts: ["I'd like a latte"] }, { final: true, alts: ["please"] }], 1);
+    late.attempt.finish();
+    expect(late.commits[0].text).toBe("I'd like a latte please");
+  });
+
+  it("replaces Android's growing cumulative final slots before the café grammar sees them", () => {
+    const conv = new Conversation(SITUATION_BY_ID["s72-cafe"], { global: GLOBAL, npcs: NPCS, player: { name: "Tomas", surname: "", gender: "m" }, visits: 0, seed: 3 });
+    conv.start();
+    const h = harness({ evaluate: text => conv.nlu.probe(text, conv.expectedIntents()) });
+    h.rec().speech();
+    const partials = ["I'd like a", "I'd like a cappuccino", "I'd like a cappuccino please"];
+    partials.forEach((_, i) => h.rec().results(partials.slice(0, i + 1).map(text => ({ final: true, alts: [text] })), i));
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 100);
+    expect(h.commits[0].text).toBe("I'd like a cappuccino please");
+    const out = conv.input(h.commits[0].text);
+    expect(out.parse?.segments.map(segment => segment.intent)).toEqual(["order"]);
+    expect(out.lines.map(line => line.lineId)).not.toContain("menu_line");
+    expect(out.lines.map(line => line.lineId)).toContain("ask_size");
+  });
+
+  it("continues a cumulative whole hypothesis after an automatic recognizer restart", () => {
+    const h = harness({ evaluate: text => text.includes("latte") ? "complete" : "prefix" });
+    h.rec().speech();
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.rec().silence();
+    h.rec().end();
+    h.advance(300);
+    h.rec().emitStart();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["I'd like a latte please"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 100);
+    expect(h.commits[0].text).toBe("I'd like a latte please");
+  });
+
+  it("keeps an unfinished cumulative answer through a local-service fallback", () => {
+    resetSpeechForTests("available");
+    const h = harness({ preferLocal: true, evaluate: text => text.includes("latte") ? "complete" : "prefix" });
+    h.rec().speech();
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.rec().error("language-not-supported");
+    h.advance(100);
+    h.rec().emitStart();
+    h.rec().speech();
+    h.rec().results([{ final: true, alts: ["I'd like a latte please"] }]);
+    h.rec().silence();
+    h.advance(SPEECH_TIMING.finishedAnswer + 100);
+    expect(h.commits[0].text).toBe("I'd like a latte please");
+    expect(h.rec().processLocally).toBeUndefined();
+  });
+
+  it("does not duplicate rewritten final slots or delay stable results with unchanged events", () => {
+    const h = harness();
+    h.rec().results([{ final: true, alts: ["I'd like a"] }]);
+    const stable = [{ final: false, alts: ["I'd like a latte"] }];
+    h.rec().results(stable, 0);
+    const late = h.rec().onresult;
+    for (let i = 0; i < 4; i++) { h.advance(200); h.rec().results(stable, 0); }
+    h.advance(150);
+    expect(h.commits).toEqual([{ text: "I'd like a latte", alts: [] }]);
+    late?.({ results: [Object.assign([{ transcript: "I'd like a latte please" }], { isFinal: true })] });
+    h.attempt.finish();
+    h.advance(SPEECH_TIMING.session);
+    expect(h.commits).toHaveLength(1);
+  });
+
+  it("keeps real repetitions inside a transcript and separate speech boundaries", () => {
+    const raw = harness({ evaluate: () => "complete" });
+    raw.rec().results([{ final: true, alts: ["very very hot"] }]);
+    raw.attempt.finish();
+    expect(raw.commits[0].text).toBe("very very hot");
+    const words = harness({ evaluate: () => "complete" });
+    words.rec().results([{ final: true, alts: ["very"] }, { final: true, alts: ["very hot"] }]);
+    words.attempt.finish();
+    expect(words.commits[0].text).toBe("very very hot");
+    const phrases = harness({ evaluate: () => "complete" });
+    phrases.rec().speech();
+    phrases.rec().results([{ final: true, alts: ["thank you"] }]);
+    phrases.rec().silence();
+    phrases.rec().speech();
+    phrases.rec().results([{ final: true, alts: ["thank you"] }, { final: true, alts: ["thank you very much"] }], 1);
+    phrases.attempt.finish();
+    expect(phrases.commits[0].text).toBe("thank you thank you very much");
+  });
+
+  it("does not leave an earlier stable-result timer armed when unchanged interim events repeat", () => {
+    const h = harness();
+    const results = [{ final: false, alts: ["I'd like a latte"] }];
+    h.rec().results(results);
+    h.advance(200);
+    h.rec().results(results);
+    h.advance(200);
+    h.rec().results(results);
+    h.advance(200);
+    h.rec().results([{ final: false, alts: ["I'd like a"] }]);
+    h.advance(SPEECH_TIMING.interimStable + 100);
+    expect(h.commits).toHaveLength(0);
+    expect(h.attempt.running).toBe(true);
+  });
+
   it("treats silence as no answer, not a wrong one", () => {
     const h = harness();
     h.advance(SPEECH_TIMING.firstWord - 1_000);

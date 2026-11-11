@@ -277,6 +277,9 @@ function plugNow(c: Ctx) {
   });
 }
 
+/** "The earliest I have is next Tuesday." once (it came again in every round of no manager / no Tuesday). */
+function earliestOnce(c: Ctx) { if (c.s.earliestSaid) return; c.s.earliestSaid = true; K(c, "kyle_earliest"); }
+
 /** "Would you like to speak to my manager?" */
 function offerManager(c: Ctx) {
   K(c, "kyle_offer_manager");
@@ -286,11 +289,11 @@ function offerManager(c: Ctx) {
     on: {
       ask_manager: (cc) => { escalateNow(cc); }, further: (cc) => { escalateNow(cc); }, agree: (cc) => { escalateNow(cc); },
       accept_offer: (cc) => { tuesdayEnding(cc); },
-      no_manager: (cc) => { K(cc, "kyle_earliest"); askBookTuesday(cc); },
+      no_manager: (cc) => { earliestOnce(cc); askBookTuesday(cc); },
     },
     yes: (cc) => { escalateNow(cc); },
     // no manager: then it's next Tuesday ("Should I book you for next Tuesday?")
-    no: (cc) => { K(cc, "kyle_earliest"); askBookTuesday(cc); },
+    no: (cc) => { earliestOnce(cc); askBookTuesday(cc); },
     ask: (cc) => K(cc, "kyle_offer_manager"),
   });
 }
@@ -939,6 +942,7 @@ export const complaint: SituationDef = {
       "you can keep (the | your) (coupon | mug | coupon and (the | your) mug | mugs) #h:keep_mug",
       "keep (your | the) [little] (coupon | mug) [brenda] [and [keep] (your | the) [little] (coupon | mug)]",
       "i appreciate (it | that | the offer | your offer) but (no | no thanks | no thank you | that is not enough | i have to say no)",
+      "(thanks | thank you) (for the offer | for that | for the coupon) but (no | no thanks | no thank you | that is not enough | i (have to | must) say no)",
       "i do not (want | need) (a | your | the | any | another) (coupon | mug | mugs | visit | appointment | @tech)",
       "that is not what i (want | need | asked for)",
       "[wednesday] i (can not | do not want to | will not) take another day off [work | from work]",
@@ -1756,7 +1760,7 @@ export const complaint: SituationDef = {
           K(c, "kyle_new_visit");
           return;
         }
-        if (n === 2) { K(c, "kyle_hands_tied"); K(c, "kyle_earliest"); return; }
+        if (n === 2) { K(c, "kyle_hands_tied"); earliestOnce(c); return; }
         offerManager(c);
       },
       expects: ["third_time", "not_good_enough", "no_show", "disbelief", "ask_manager", "further", "ask_refund", "ask_replacement", "refund_or",
@@ -1865,6 +1869,9 @@ export const complaint: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): a polite decline with "thanks for the offer"
+    { say: "Thanks for the offer, but no.", intent: "decline_offer", step: "offer" },
+    { say: "Thank you for the coupon, but no thanks.", intent: "decline_offer", step: "offer", not: ["accept_offer"] },
     // the spec's test utterances
     { say: "Hi, I'd like to make a complaint.", intent: "complain_open", step: "problem" },
     { say: "My new fridge stopped working, and the technician never came.", intent: "fridge_broke", step: "problem" },

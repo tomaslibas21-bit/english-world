@@ -12,13 +12,13 @@ body.light-mode { background: #f5efe5; }
 /* ---------- home: the situation list ---------- */
 .lh { position: fixed; inset: 0; z-index: 1; overflow-y: auto; overscroll-behavior: contain; background: var(--lh-bg); background-attachment: fixed; }
 .lh-in { max-width: 960px; margin: 0 auto; padding: 16px 20px 36px; }
-.lh-top { display: flex; align-items: center; gap: 10px; }
-.lh-brand { flex: 1; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; }
+.lh-top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 10px; }
+.lh-brand { flex: 1 1 22em; min-width: min(100%, 22em); display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; }
 .lh-logo { font-family: var(--en); font-size: 1.75em; font-weight: 600; color: var(--accent); line-height: 1.05; }
 .lh-town { font-size: 0.7em; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm); }
-.lh-tools { display: flex; gap: 8px; flex: none; }
+.lh-tools { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 1 auto; min-width: 0; }
 .lh-tool {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 14px 0 11px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 14px 0 11px; flex: none; white-space: nowrap;
   border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.85); background: var(--panel); color: var(--accent); font-weight: 800;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.06), 0 6px 16px -8px rgba(20, 30, 40, 0.28); transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
@@ -105,27 +105,23 @@ body.light-mode { background: #f5efe5; }
 .lc-sub { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; color: var(--ink-soft); }
 .lc-sub .ui-icon { color: var(--accent); }
 @media (max-width: 900px) {
-  .lc-center { right: 0; bottom: calc(58vh + 8px); padding: 10px 16px; gap: 2px; }
+  .lc-center { right: 0; bottom: calc(100% - var(--conversation-image-height)); padding: 10px 16px; gap: 2px; }
   .lc-avatar { width: 88px; height: 88px; font-size: 38px; box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.75), 0 16px 32px -16px rgba(20, 30, 40, 0.5); }
   .lc-avatar.talking::after { inset: -7px; }
   .lc-name { margin-top: 14px; font-size: 1.75em; }
-  .lc-sky { max-height: none; width: 100%; bottom: calc(58vh - 30px); }
+  .lc-sky { max-height: none; width: 100%; bottom: calc(100% - var(--conversation-image-height) - 30px); }
 }
 @media (prefers-reduced-motion: reduce) { .lc-avatar.talking::after, .lc { animation: none; } .lh-card, .lh-card:hover, .lh-tool, .lh-tool:hover { transition: none; transform: none; } }
 
 /* the journal's walking and taxi buttons need the town */
 
-/* ---------- the town: "Lengvas režimas" under the toolbar ---------- */
-.lite-btn {
-  position: absolute; right: 14px; top: 574px; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 15px 0 12px;
-  border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.75); background: var(--panel); color: var(--ink); font-weight: 800; font-size: 0.82em;
-  box-shadow: 0 1px 2px rgba(20, 30, 40, 0.08), 0 6px 16px -6px rgba(20, 30, 40, 0.3); transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
-}
-.lite-btn .ui-icon { color: var(--accent); }
-.lite-btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(20, 30, 40, 0.08), 0 10px 22px -8px rgba(20, 30, 40, 0.38); }
-.lite-btn:active { transform: scale(0.96); }
-@media (max-width: 900px) { .lite-btn { right: 10px; top: 450px; min-height: 40px; padding: 0 12px 0 10px; } }
-@media (max-height: 520px) { .lite-btn { display: none; } }
-
 /* the town's name in Lithuanian, on its own line under the brand */
 .lh-town-lt { flex-basis: 100%; font-size: 0.78em; color: var(--ink-soft); line-height: 1.35; }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .lc-center { right: 75vw; bottom: 0; padding: 10px; }
+  .lc-avatar { width: 66px; height: 66px; font-size: 30px; }
+  .lc-name { font-size: 1.35em; }
+  .lc-sub { font-size: 0.75em; }
+  .lc-sky { width: 25vw; bottom: 0; }
+}

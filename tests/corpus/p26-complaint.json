@@ -278,5 +278,9 @@
   {"ctx": "which_day", "say": "Could it be done by Thursday?", "intent": "deadline_ctx", "slots": {"day": "thursday"}},
   {"ctx": "offer", "say": "Can they come on Thursday?", "intent": "any", "not": ["set_deadline", "deadline_ctx", "decline_offer", "accept_offer"], "note": "trap: at the Wednesday visit it is not a deadline"},
   {"ctx": "readback", "say": "HH4471.", "intent": "ref_readback", "note": "review: no space"},
-  {"ctx": "reference", "say": "HH4471, got it.", "intent": "ref_readback"}
+  {"ctx": "reference", "say": "HH4471, got it.", "intent": "ref_readback"},
+  {"ctx": "offer", "say": "Thanks for the offer, but no.", "intent": "decline_offer", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "offer", "say": "Thank you for the coupon, but no thanks.", "intent": "decline_offer", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "book_tuesday", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "offer", "say": "Thanks for the offer, but no.", "intent": "any", "not": ["accept_offer"], "note": "logic audit 5 Nov 2026"}
 ] }

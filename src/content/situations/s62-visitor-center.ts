@@ -320,6 +320,9 @@ function askWhere(c: Ctx) {
 /** Chuck recommends Sunny Cup and offers the way there (the lesson's goal). */
 function offerCafe(c: Ctx, afterRoute: boolean) {
   if (c.s.asked.includes("sunny_cup")) { c.say("ask_where"); c.hold(); return; }
+  // offered at most twice (as the map is): after a second side question the whole tip came a third time, and more
+  c.s.cafeOffers = (c.s.cafeOffers || 0) + 1;
+  if (c.s.cafeOffers > 2) { c.s.cafeNo = true; conv(c).advance(c as ConvCtx); return; } // on to what comes next
   c.say(afterRoute ? "offer_cafe" : "suggest_cafe");
   c.say("offer_directions");
   c.expect({ id: "cafe_offer", optional: true, expects: ["ask_where", "accept_ctx", "decline_ctx", "no_coffee"],
@@ -1206,7 +1209,7 @@ export const visitorCenter: SituationDef = {
     // paying for a bus pass
     pay_card: { patterns: ["[can | could] i pay (by | with) (card | credit card | debit card | my card) #h:pay_card", "(by | with) card", "card", "do you (take | accept) (cards | credit cards | card)"] },
     pay_cash: { patterns: ["[can | could] i pay (in | with) cash", "(in | with) cash", "cash", "i will pay (in | with) cash #h:pay_cash"] },
-    here_you_go: { patterns: ["here you (go | are) #h:here_you_go", "there you go", "here it is", "here is (the money | five dollars | five | a five)"] },
+    here_you_go: { patterns: ["here you (go | are) #h:here_you_go", "there you go", "here it is", "here is (the money | five dollars | 5 dollars | five | 5 | a five | a 5)"] },
     // Saying yes or no to Chuck's offers in other words (a map, the way to the café, a bus pass):
     // "I'll take one", "Tell me", "You're right" / "I don't need it", "Maybe later", "I'll walk".
     accept_ctx: { patterns: [

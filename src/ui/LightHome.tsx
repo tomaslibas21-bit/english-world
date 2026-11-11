@@ -22,6 +22,8 @@ import { Icon, InlineIcon, Stars, iconForEmoji, type IconName } from "./icons";
 import { L, Lx, TL } from "./i18n";
 import { EDITION } from "../edition";
 import "./light.css";
+import { SectionHelpButton } from "./sectionHelp";
+import { Loading } from "./Loading";
 
 /** The same short, varied set to start with as in the situation picker (Panels). */
 
@@ -78,6 +80,7 @@ export function LightPlay() {
   return (
     <>
       {ready && <><LightHome /><CallBackdrop /><SceneBackdrop /><Conversation />{!homePanel && <Panels />}</>}
+      {!ready && <Loading />}
       <Toasts />
     </>
   );
@@ -103,8 +106,9 @@ function LightHome() {
       <div className="lh-in">
         <header className="lh-top">
           <div className="lh-brand"><span className="lh-logo">{EDITION.brand} <small className="beta-badge">Beta</small></span><span className="lh-town">{EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
-          <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
           <nav className="lh-tools" aria-label={L("Įrankiai")}>
+            <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
+            <SectionHelpButton className="lh-tool" />
             {COURSE_URL && <a className="lh-tool" href={COURSE_URL} title={L("Grįžti į kursą")}><Icon name="home" size={24} /><span>{L("Kursas")}</span></a>}
             <button className="lh-tool" onClick={() => open("phrasebook")} title={L("Frazių knygelė")} aria-label={due ? L("Frazių knygelė ({n})", { n: due }) : L("Frazių knygelė")}><Icon name="bookOpen" size={24} /><span>{L("Frazės")}</span>{!!due && <span className="due-badge" aria-hidden>{due}</span>}</button>
             <button className="lh-tool" onClick={() => open("journal")} title={L("Užduotys")} aria-label={L("Užduotys")}><Icon name="journal" size={24} /><span>{L("Užduotys")}</span></button>
@@ -126,10 +130,10 @@ function LightHome() {
         <details className="howto lh-howto" open={done === 0}>
           <summary><Icon name="help" size={21} className="howto-ico" /> {L("Kaip žaisti?")}<Icon name="chevronDown" size={18} className="chev" /></summary>
           <ol>
-            <li>{L("Paspausk situaciją – iškart prasidės pokalbis.")}</li>
-            <li>{Lx("Spausk {mic} ir kalbėk angliškai. Galima ir rašyti {keyboard}.", { mic: <InlineIcon name="mic" label={L("mikrofono mygtuką")} />, keyboard: <InlineIcon name="keyboard" label={L("klaviatūra")} /> })}</li>
-            <li>{Lx("Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžių – {speaker} juos perskaito.", { speaker: <InlineIcon name="speaker" label={L("garsiakalbio mygtukas")} /> })}</li>
-            <li>{L("Po pokalbio rinkis kitą situaciją arba pabandyk dar kartą – žmonės kaskart kalba šiek tiek kitaip.")}</li>
+            <li>{L("Pasirink situaciją – pokalbis prasidės iš karto.")}</li>
+            <li>{Lx("Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – atsakyk angliškai. Mikrofono mygtuku {mic} gali bandyti dar kartą arba baigti atsakymą. Jei nori rašyti, spausk klaviatūros ikonėlę {keyboard}.", { mic: <InlineIcon name="mic" />, keyboard: <InlineIcon name="keyboard" /> })}</li>
+            <li>{Lx("Atsakymų pavyzdžius rasi po užrašu „Tavo eilė“. Spausk garsiakalbio ikonėlę {speaker}, kad juos išgirstum.", { speaker: <InlineIcon name="speaker" /> })}</li>
+            <li>{L("Baigęs pokalbį, pasirink kitą situaciją arba pabandyk dar kartą – pašnekovo atsakymai gali skirtis.")}</li>
           </ol>
         </details>
 

@@ -292,5 +292,13 @@
   { "ctx": "job", "say": "I'm not nervous at all", "intent": "any", "not": ["nervous"] },
   { "ctx": "job", "say": "Sorry, I have to go", "intent": "g_bye" },
   { "ctx": "again", "say": "I'll call you later", "intent": "g_bye" },
-  { "ctx": "hobby", "say": "I need to leave early, sorry", "intent": "g_bye" }
+  { "ctx": "hobby", "say": "I need to leave early, sorry", "intent": "g_bye" },
+  { "ctx": "again", "say": "I'd rather not.", "intent": "no_date_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "again", "say": "Let's just be friends.", "intent": "no_date_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "day", "say": "I'm not interested.", "intent": "no_date_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "day", "say": "No, sorry, I don't think it's a good idea.", "intent": "no_date_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "again", "say": "I'm not looking for anything serious.", "intent": "no_date_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "again", "say": "I'd love to see you again.", "intent": "any", "not": ["no_date_ctx", "decline_again"], "note": "logic audit 5 Nov 2026" },
+  { "ctx": "drinks", "say": "I'm fine, thanks.", "intent": "no_drink_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "drinks", "say": "A glass of white wine, please.", "intent": "any", "not": ["no_drink_ctx", "no_alcohol"], "note": "logic audit 5 Nov 2026" }
 ]}

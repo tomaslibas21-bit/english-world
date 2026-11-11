@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../state/store";
+import { SectionHelpButton } from "./sectionHelp";
 import { game } from "../game/gameRef";
 import { WORLD, SEA_Z } from "../game/world/layout";
 import { LOCATIONS } from "../content/locations";
@@ -38,19 +39,25 @@ export function Hud() {
   if (conv.active) return <Fade />;
   const banner = hud.zoneBanner ? splitLead(hud.zoneBanner.title) : null;
   return (
-    <div className="hud">
+    <div className={"hud" + (hud.showTouch ? " has-touch" : "")}>
       <Objective />
       <Minimap />
       <div className="toolbar">
-        {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title={L("Grįžti į kursą")} aria-label={L("Grįžti į kursą")}><Icon name="home" size={25} /></a>}
-        <ToolButton icon="clapper" title={L("Visos situacijos")} panel="scenarios" />
-        <ToolButton icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" />
-        <ToolButton icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" />
-        <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" />
-        <ToolButton icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />
-        <ToolButton icon="settings" title={L("Nustatymai (Esc)")} panel="settings" />
+        <div className="toolbar-tools">
+          {COURSE_URL && <a className="icon-btn" href={COURSE_URL} title={L("Grįžti į kursą")} aria-label={L("Grįžti į kursą")}><Icon name="home" size={25} /></a>}
+          <ToolButton icon="clapper" title={L("Visos situacijos")} panel="scenarios" />
+          <ToolButton icon="map" title={L("Žemėlapis (M)")} panel="map" hotkey="M" />
+          <ToolButton icon="journal" title={L("Užduotys (J)")} panel="journal" hotkey="J" />
+          <ToolButton icon="smartphone" title={L("Telefonas (P)")} panel="phone" hotkey="P" />
+          <ToolButton icon="bookOpen" title={L("Frazių knygelė")} panel="phrasebook" badge={due} />
+          <ToolButton icon="settings" title={L("Nustatymai (Esc)")} panel="settings" />
+          <SectionHelpButton />
+        </div>
+        <button className="icon-btn light-mode-btn" onClick={() => switchPlayMode("light")} title={L("Lengvas režimas")} aria-label={L("Lengvas režimas")}>
+          <span aria-hidden>{L("LR")}</span>
+          <span className="toolbar-tooltip" aria-hidden>{L("Lengvas režimas")}</span>
+        </button>
       </div>
-      <button className="lite-btn" onClick={() => switchPlayMode("light")} title={L("Be 3D miesto: tik pokalbiai su piešiniais. Greičiau atsidaro ir taupo bateriją.")}><Icon name="list" size={18} strokeWidth={2} /> {L("Lengvas režimas")}</button>
       {hud.zoneBanner && banner && <div className="zone-banner"><h2>{banner.icon && <Icon name={banner.icon} size="0.8em" className="zb-ico" />}{banner.rest}</h2>{hud.zoneBanner.sub && <p>{hud.zoneBanner.sub}</p>}</div>}
       {hud.prompt && !hud.panel && (
         <button className={"prompt" + (hud.showTouch ? " touch" : "")} onClick={() => game?.interact()}>
@@ -210,6 +217,7 @@ function TouchControls() {
     let run = false;
     const move = (e: PointerEvent) => {
       if (e.pointerId !== id) return;
+      e.preventDefault();
       const r = el.getBoundingClientRect();
       let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
       const d = Math.hypot(dx, dy);
@@ -219,10 +227,21 @@ function TouchControls() {
       el.classList.toggle("run", run);
       game?.setJoystick(dx / R, -dy / R);
     };
-    const up = (e: PointerEvent) => { if (e.pointerId !== id) return; id = null; knob.current!.style.transform = ""; run = false; el.classList.remove("run"); game?.setJoystick(0, 0); };
-    const down = (e: PointerEvent) => { id = e.pointerId; el.setPointerCapture(e.pointerId); move(e); };
-    el.addEventListener("pointerdown", down); el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
-    return () => { el.removeEventListener("pointerdown", down); el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
+    const stop = () => { id = null; if (knob.current) knob.current.style.transform = ""; run = false; el.classList.remove("run"); game?.setJoystick(0, 0); };
+    const up = (e: PointerEvent) => { if (e.pointerId === id) stop(); };
+    const down = (e: PointerEvent) => {
+      if (id !== null || e.button !== 0) return;
+      e.preventDefault();
+      id = e.pointerId; el.setPointerCapture(e.pointerId); move(e);
+    };
+    const noMenu = (e: Event) => e.preventDefault();
+    const hidden = () => { if (document.hidden) stop(); };
+    el.addEventListener("pointerdown", down); el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up); el.addEventListener("contextmenu", noMenu);
+    window.addEventListener("blur", stop); document.addEventListener("visibilitychange", hidden);
+    return () => {
+      el.removeEventListener("pointerdown", down); el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); el.removeEventListener("lostpointercapture", up); el.removeEventListener("contextmenu", noMenu);
+      window.removeEventListener("blur", stop); document.removeEventListener("visibilitychange", hidden); stop();
+    };
   }, []);
   return (
     <>

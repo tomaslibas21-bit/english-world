@@ -2142,6 +2142,33 @@
     "leave",
     "g_bye"
    ]
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Thanks, I'm fine.",
+   "intent": "decline_help_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Thanks, but I can do it.",
+   "intent": "decline_help_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "help_offer",
+   "say": "Yes, that would be great.",
+   "intent": "any",
+   "not": [
+    "decline_help_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "hear2",
+   "say": "Yes, now I can.",
+   "intent": "hear_yes",
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

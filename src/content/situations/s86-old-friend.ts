@@ -27,6 +27,15 @@ function once(c: Ctx, key: string): boolean {
 /** The goal is reached. Optional checklist items still open at this moment leave the list
  *  (their `when` checks goalMet), so a completed conversation never shows an unticked item. */
 function win(c: Ctx) { c.s.goalMet = true; c.complete(); }
+/** "That's okay, thanks" / "I'm good" to an offer: a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+/** The number refused ("No, thanks", "I'd rather not"): Lucy lets it go (it asked "What's your number?" again and again);
+ *  the swap, the goal, stays open. */
+function refuseNumber(c: Ctx) {
+  if (c.s.numberRefused) return;
+  c.s.numberRefused = true;
+  c.say("g_no_worries");
+}
 const asked = (c: Ctx, id: string) => (c.s.asks?.[id] ?? 0) as number;
 const bump = (c: Ctx, id: string) => { c.s.asks ||= {}; c.s.asks[id] = asked(c, id) + 1; };
 const hi = (c: Ctx) => { c.s.greeted = true; };
@@ -209,6 +218,7 @@ const H: Record<string, Handler> = {
     c.s.contact = true; c.s.touch = true;
     if (once(c, "num")) c.say("typing_number");
   },
+  refuse_number_ctx(c) { hi(c); refuseNumber(c); },
   ask_number(c) {
     hi(c);
     c.s.touch = true; c.s.contact = true;
@@ -233,7 +243,7 @@ const H: Record<string, Handler> = {
   no_sorry(c) { hi(c); stepNo(c); },
   g_bye(c) {
     hi(c);
-    if (!c.s.contact && !c.s.byeWarned) {
+    if (!c.s.contact && !c.s.byeWarned && !c.s.numberRefused) { // not after "No, thanks" to the number
       c.s.byeWarned = true; c.s.numberAsked = true;
       c.say("wait_number");
       // Lucy waits for the number (no other question after it), then lets the learner go
@@ -383,10 +393,12 @@ export const oldFriend: SituationDef = {
       "(do you have | have you got #tip:uk_have_got) time for a (coffee | cup of coffee) #h:cf_time", "(do you want | would you like) to (get | grab | have) a (coffee | cup of coffee) #h:cf_want",
       "(let us | we could) (get | grab | have) a coffee [together]", "(how about | what about) a coffee", "[do you want to] (grab | get) coffee",
     ] },
+    refuse_number_ctx: { patterns: ["[no] [sorry] i would rather not [give (you)? my number]", "[no] [sorry] i (do not | don't) (want | like) to give (you)? my number", "[no] [sorry] i prefer not to [give (you)? my number]", "[no] maybe (later | another time)"] },
     decline: { patterns: [
       "@sorry i (can not | have to go | need to go | am in a hurry | do not have time | am busy) [right now | today | on {day}] #h:cf_cant", "@sorry not (today | right now | this time)",
       "maybe (next time | another time) #h:cf_next", "i wish i could [but i can not]", "i would love to but i (can not | have to go | am busy | do not have time)",
       "@sorry i (have to | need to) (go | get back) to work [now | right now | today]",
+      "@sorry i (already)? have plans [today | right now]", "@sorry i (have | have got) (an appointment | a meeting) [now | soon | right now]",
     ] },
     keep_in_touch: { patterns: [
       "(let us | we should) keep in touch [@v] #h:kt_keep", "(let us | we should) (swap | exchange) (numbers | phone numbers) #h:kt_swap", "(let us | we should) (meet up | get together) (more often | sometime | soon | again)",
@@ -795,18 +807,22 @@ export const oldFriend: SituationDef = {
       no: (c) => H.mike_no(c, {}, { intent: "mike_no", slots: {}, tags: [] }) },
     { id: "rush", when: (c) => !!c.s.rushTwist, done: (c) => !!c.s.rushing,
       ask: (c) => { c.s.rushing = true; c.twist("in_a_hurry"); c.say("rush"); c.say("quick_numbers"); c.s.numberAsked = true; },
-      expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch"],
+      expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch", "refuse_number_ctx"],
       suggest: [{ lt: "Apsikeisti numeriais", hint: "touch" }] },
     { id: "coffee", when: (c) => !c.s.rushing && c.s.askCoffee, done: (c) => !!c.s.coffee || asked(c, "coffee") >= 2,
       ask: (c) => { bump(c, "coffee"); c.say("ask_coffee"); },
       expects: ["decline", "coffee_invite"],
       suggest: [{ lt: "Sutikti išgerti kavos", hint: "coffee_answer" }],
-      yes: (c) => { c.s.coffee = "yes"; c.say("lets_sit"); }, no: (c) => { c.s.coffee = "no"; c.say("next_time"); } },
-    { id: "numbers", done: (c) => !!c.s.contact,
+      // "That's okay, thanks." is a polite no (it got "Great! Let's sit over here.")
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { c.s.coffee = "no"; c.say("next_time"); return; } c.s.coffee = "yes"; c.say("lets_sit"); },
+      no: (c) => { c.s.coffee = "no"; c.say("next_time"); } },
+    { id: "numbers", done: (c) => !!c.s.contact || !!c.s.numberRefused,
       ask: (c) => { bump(c, "numbers"); if (c.s.numberAsked) c.say("definitely_number"); else { c.s.numberAsked = true; c.say("ask_number"); } },
-      expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch"],
+      expects: ["number_ctx", "give_phone", "ask_number", "keep_in_touch", "refuse_number_ctx"],
       suggest: [{ lt: "Pasakyti savo numerį arba pasiūlyti apsikeisti", hint: "touch" }],
-      yes: (c) => { c.say("definitely_number"); } },
+      // a yes: "Definitely! What's your number?" once (the step's question said it again); a polite no or a no: refused
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { refuseNumber(c); return; } c.say("definitely_number"); c.hold(); },
+      no: (c) => { refuseNumber(c); } },
   ],
 
   init: (c) => {
@@ -838,6 +854,9 @@ export const oldFriend: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): the number refused; plans
+    { say: "I'd rather not give my number.", intent: "refuse_number_ctx", step: "numbers" },
+    { say: "I already have plans.", intent: "decline", step: "coffee" },
     { say: "Lucy! Long time no see!", intent: "greet", step: "recognize" },
     { say: "Oh my gosh, Lucy! What a surprise!", intent: "greet", step: "recognize" },
     { say: "Yes, it's me!", intent: "greet", step: "recognize" },

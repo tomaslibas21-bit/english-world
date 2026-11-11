@@ -14,6 +14,7 @@ import { soundRepair } from "./soundalike";
 import { isConfirmation } from "./normalize";
 import { LANG } from "./lang";
 import type { Gender } from "./lt-morph";
+import { returningSuggestion } from "../content/returning";
 
 
 /** Global intents that carry no content of their own ("okay", "thanks", "sorry"). */
@@ -323,8 +324,11 @@ export class Conversation {
       }
       // keep it if the learner did something else; an optional question is dropped, except once the goodbye
       // has started (finish ran): there is no step to go back to, so the closing stays open through a last
-      // side question ("Can I get a note for work?") and its suggestions stay, and "Thanks!" still ends it
-      if (!handled && (!pend.optional || this.s.__finished)) this.pending = pend;
+      // side question ("Can I get a note for work?") and its suggestions stay, and "Thanks!" still ends it.
+      // Requests to repeat, slow down or explain also keep optional offers open for the eventual answer.
+      const clarification = p.segments.length > 0 && p.segments.every(sg =>
+        ["g_repeat", "g_slower", "g_dont_understand", "g_spell", "g_write", "g_meaning"].includes(sg.intent));
+      if (!handled && (!pend.optional || this.s.__finished || clarification)) this.pending = pend;
     }
 
     // a yes/no (with only soft words) for the current step's question
@@ -480,7 +484,11 @@ export class Conversation {
     const st = this.effectiveStep();
     const suggest = this.pending?.suggest ?? (st ? this.stepSuggest(st) : undefined) ?? this.sit.suggest ?? [];
     const hints = this.pending?.hints ?? st?.hints ?? suggest.map((x) => x.hint).filter(Boolean) as string[];
-    return { suggest, hints: [...new Set(hints)] };
+    const returning = returningSuggestion(this.sit.id, this.opt.visits ?? 0, this.lastTurn.map(l => l.lineId), this.pending?.id, st?.id);
+    return {
+      suggest: returning ? [returning, ...suggest] : suggest,
+      hints: [...new Set(returning?.hint ? [returning.hint, ...hints] : hints)],
+    };
   }
 
   /** A step's suggestions now (some depend on the conversation so far). */

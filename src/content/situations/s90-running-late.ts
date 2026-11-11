@@ -8,6 +8,7 @@
 // in NPC lines and the speaker in hints; both resolve to the player's gender).
 
 import type { Ctx, Pending, SituationDef } from "../types";
+import type { ConvCtx } from "../../convo/dialogue";
 import { t } from "../dsl";
 import { expectHowAreYou } from "../global";
 
@@ -38,6 +39,8 @@ function etaOf(v: any): Eta | null {
   if (tags.includes("m5")) return { min: 5 };
   if (tags.includes("m30")) return { min: 30 };
   if (tags.includes("m60")) return { min: 60 };
+  if (tags.includes("m90")) return { min: 90 };
+  if (tags.includes("hours") && typeof v.number === "number") return { min: v.number * 60 };
   if (typeof v.number === "number") return { min: Math.max(v.number, typeof v.n2 === "number" ? v.n2 : 0) };
   if (v.time && typeof v.time === "object") {
     let h = v.time.h as number;
@@ -70,6 +73,11 @@ function sayOnce(c: Ctx, id: string, vars?: Record<string, any>, group = id) {
   c.say(id, vars);
 }
 
+/** Another piece of the same utterance ("I'm on the bus and there's a lot of traffic"). */
+const piece = (c: Ctx, ...intents: string[]) => ((c as any).conv?.out?.parse?.segments ?? []).some((sg: any) => intents.includes(sg.intent));
+/** On the bus, the train, a taxi or on foot: not driving ("Drive safe!" went to "I'm on the bus and there's a lot of
+ *  traffic" and to a car that won't start). */
+const ON_TRANSIT = /\b(bus|train|subway|metro|taxi|cab|uber|lyft|walking|on foot)\b/i;
 /** The learner is driving ("Sorry, I have to go, I'm driving."). */
 const driving = (c: Ctx) => /\b(driving|in the car|on the (road|highway|freeway))\b/i.test(c.heard || "");
 /** The learner ends the call in the same breath ("I'm driving, I have to go."). */
@@ -99,6 +107,8 @@ function roomNews(c: Ctx) {
 function mark(c: Ctx) {
   if (c.s.byeSaid) return false;
   c.s.opened = true;
+  if (ON_TRANSIT.test(c.heard || "")) c.s.onTransit = true;
+  if (driving(c)) c.s.saidDriving = true;
   if (c.s.__lastHeard !== turn(c)) { c.s.__lastHeard = turn(c); c.s.__turn = (c.s.__turn || 0) + 1; }
   return true;
 }
@@ -118,11 +128,11 @@ function doReason(c: Ctx, why: any) {
   sayOnce(c, REACT[r]);
   if (r === "car") {
     c.expect({
-      id: "need_help", optional: true, expects: ["taxi_ok", "help_request", "no_help"], hints: ["g_yesno"],
+      id: "need_help", optional: true, expects: ["taxi_ok", "ride_ok", "help_request", "no_help"], hints: ["g_yesno"],
       suggest: [{ lt: "Atsakyti, ar reikia pagalbos", hint: "g_yesno" }],
       yes: (cc) => { cc.say("help_yes"); },
       no: (cc) => { cc.say("help_no"); },
-      on: { taxi_ok: (cc) => { cc.say("good_idea"); }, help_request: (cc) => { cc.say("help_yes"); }, no_help: (cc) => { cc.say("help_no"); } },
+      on: { taxi_ok: (cc) => { cc.say("good_idea"); }, ride_ok: (cc) => { cc.say("good_idea"); }, help_request: (cc) => { cc.say("help_yes"); }, no_help: (cc) => { cc.say("help_no"); } },
     });
   }
 }
@@ -138,7 +148,7 @@ function doEta(c: Ctx, v: any) {
   c.s.late = true;
   const m = e.min ?? 20;
   if (e.soon) sayOnce(c, "eta_soon");
-  else if (m >= 45) { sayOnce(c, "eta_long"); if (!c.s.planned) { c.s.planned = "start"; c.s.planStated = true; } }
+  else if (m >= 45) { sayOnce(c, "eta_long"); c.s.planned = "start"; c.s.planStated = true; }
   else sayOnce(c, "eta_ok");
 }
 
@@ -161,9 +171,30 @@ function planStart(c: Ctx) {
 }
 function planWait(c: Ctx) {
   if (c.s.planned === "wait" && c.s.__planTurn === c.s.__turn) return;
+  // more than twenty minutes late: they start ("Sure, we can wait a few minutes" to a forty-minute delay)
+  if ((c.s.eta?.min ?? 0) > 20) { c.s.planned = "start"; c.s.__planTurn = c.s.__turn; sayOnce(c, "eta_long"); maybeComplete(c); return; }
   c.s.planned = "wait"; c.s.__planTurn = c.s.__turn;
   c.say("ok_wait");
   maybeComplete(c);
+}
+
+/** "Should we start without you?" */
+function planQ(): Pending {
+  return {
+    id: "plan_q", expects: ["start_without", "wait_for_me", "eta"], hints: ["requests"],
+    suggest: [{ lt: "Atsakyti, ar pradėti be tavęs", hint: "requests" }],
+    yes: (cc) => planStart(cc),
+    no: (cc) => planWait(cc),
+    on: {
+      start_without: (cc) => planStart(cc),
+      wait_for_me: (cc) => planWait(cc),
+      save_seat: (cc) => { if (ynLead(cc) === "no") planWait(cc); else planStart(cc); cc.say("ok_seat"); },
+      tell_team: (cc) => { planStart(cc); cc.say("ok_tell"); },
+      // "I'll be there in fifty minutes" got "We'll start without you, then. Should we start without you?"
+      eta: (cc, sl) => { runningLate.handlers.eta(cc, sl, { intent: "eta", slots: sl, tags: [] }); if (!cc.s.planned) { cc.say("plan_ask"); cc.expect(planQ()); } else maybeComplete(cc); },
+    },
+    ask: (cc) => cc.say("plan_ask"),
+  };
 }
 
 const AUTO: Record<string, string> = {
@@ -294,6 +325,7 @@ export const runningLate: SituationDef = {
         "[@be_there] in [about | around | maybe] {number} or {n2:number} minutes",
         "[@be_there] in [about | around | maybe] (half an hour | a half hour | thirty minutes) #m30 #h:eta_halfhour",
         "[@be_there] in [about | around | maybe] (an hour | one hour) #m60",
+        "[@be_there] in [about | around | maybe] {number} hours #hours", "[@be_there] in [about | around | maybe] (an hour and a half | one and a half hours) #m90",
         "[@be_there] in (a few | a couple of | a couple) minutes #m5",
         "@be_there (by | at | around | at about | about | before) {time} #h:eta_by",
         "(by | at | around | at about | about | before) {time}",
@@ -307,6 +339,7 @@ export const runningLate: SituationDef = {
         "[about | around | maybe | like | roughly] {number} [or so] #bare",
         "[about | around | maybe] (half an hour | a half hour) #m30",
         "[about | around | maybe] (an hour | one hour) #m60",
+        "[about | around | maybe] {number} hours #hours",
         "[just] (a few | a couple of) minutes #m5",
         "[very | pretty] soon #soon",
         "(shortly | any minute [now]) #soon",
@@ -329,6 +362,8 @@ export const runningLate: SituationDef = {
     identify_ctx: { patterns: ["is {name} [here | calling | speaking]"] },
     name_ctx: { patterns: ["{name}", "my name is {name}", "i am {name}", "(it is | this is) {name}"] },
     greet_harris: { patterns: ["@mh", "(hi | hello | good morning | morning) @mh"] },
+    // caller ID's "Is everything okay?" → "Yes, everything's fine, thanks." (it wasn't understood)
+    fine_ctx: { patterns: ["[yes] (everything is | all is) (fine | okay | ok | good | all right) [thanks | thank you]", "[yes] (all good | i am fine | i am okay | i am good) [thanks | thank you]"] },
     is_harris: { patterns: ["is (this | that) @mh", "is @mh there", "am i speaking (to | with) @mh", "(can | could | may) i (speak | talk) (to | with) @mh [please]"] },
     late: { patterns: [
       "@pre @late_core @post",
@@ -420,6 +455,10 @@ export const runningLate: SituationDef = {
       "i am (getting | taking) a (taxi | cab | uber)", "i (called | will call | will get | will take) a (taxi | cab | uber)", "[no] it is (okay | fine) i am (getting | taking) a (taxi | cab)",
       "[no] [it is (okay | fine)] i (called | will call | will get | will take | ordered | got) (a | an) (taxi | cab | uber | lyft)",
       "[no] [thanks] i am waiting for (a tow truck | roadside assistance | the mechanic | a mechanic | help)",
+    ] },
+    // a ride that isn't a taxi ("My wife is driving me", "I'll take the bus"): the same answer, but never taxi_ok, so
+    // "I don't need a taxi, my wife is driving me" is a no to the taxi (held-out, 5 Nov 2026)
+    ride_ok: { patterns: [
       "[no] [it is (okay | fine)] my (husband | wife | friend | brother | sister | neighbor | son | daughter) is (coming | picking me up | driving me | helping me)",
       "[no] [it is (okay | fine)] i will (take | get) the (bus | train | subway)",
     ] },
@@ -751,7 +790,7 @@ export const runningLate: SituationDef = {
         if (!c.s.openAsked) { c.s.openAsked = true; c.say(c.s.callerId ? "hello_id" : "hello"); return; }
         c.say("hello_again");
       },
-      expects: ["identify", "greet_harris", "late", "reason", "eta", "on_way", "cant_come", "identify_ctx"],
+      expects: ["identify", "greet_harris", "late", "reason", "eta", "on_way", "cant_come", "identify_ctx", "fine_ctx"],
       suggest: [
         { lt: "Pasisveikinti ir pasakyti, kas skambina", hint: "identify" },
         { lt: "Pasakyti, kad vėluoji", hint: "late" },
@@ -784,29 +823,18 @@ export const runningLate: SituationDef = {
       },
       expects: ["eta", "late", "on_way"],
       suggest: [{ lt: "Pasakyti, kada būsi", hint: "eta" }],
-      help: (c) => { c.s.etaSkipped = true; c.say("ok_fine"); } },
+      help: (c) => { c.s.etaSkipped = true; (c as ConvCtx).conv.pushLine("ok_fine", 1, {}); } }, // "Of course. Don't worry." (not "Yes, …")
     { id: "plan", when: (c) => !!c.s.late && !c.s.cantCome, done: (c) => !!c.s.planned,
       ask: (c) => {
         maybeComplete(c);
         if (c.s.planAsk) {
           c.say("plan_ask");
-          c.expect({
-            id: "plan_q", expects: ["start_without", "wait_for_me"], hints: ["requests"],
-            suggest: [{ lt: "Atsakyti, ar pradėti be tavęs", hint: "requests" }],
-            yes: (cc) => planStart(cc),
-            no: (cc) => planWait(cc),
-            on: {
-              start_without: (cc) => planStart(cc),
-              wait_for_me: (cc) => planWait(cc),
-              save_seat: (cc) => { if (ynLead(cc) === "no") planWait(cc); else planStart(cc); cc.say("ok_seat"); },
-              tell_team: (cc) => { planStart(cc); cc.say("ok_tell"); },
-            },
-            ask: (cc) => cc.say("plan_ask"),
-          });
+          c.expect(planQ());
           return;
         }
-        c.s.planned = c.s.planWait ? "wait" : "start";
-        c.say(c.s.planWait ? "plan_wait" : "plan_start");
+        const wait = c.s.planWait && (c.s.eta?.min ?? 0) <= 20; // not "We'll wait for you" for forty minutes
+        c.s.planned = wait ? "wait" : "start";
+        c.say(wait ? "plan_wait" : "plan_start");
         if (c.chance(0.35)) c.say("thanks_letting");
       },
       suggest: [
@@ -847,6 +875,7 @@ export const runningLate: SituationDef = {
       sayOnce(c, "name_ack");
     },
     greet_harris(c) { if (!mark(c)) return; },
+    fine_ctx(c) { if (!mark(c)) return; },
     is_harris(c) { if (!mark(c)) return; c.say("is_harris"); },
     late(c, slots) {
       if (!mark(c)) return;
@@ -862,6 +891,7 @@ export const runningLate: SituationDef = {
     },
     eta(c, slots) {
       if (!mark(c)) return;
+      if (c.step === "reason" && !c.s.reason) c.s.reasonSkipped = true;
       if (slots.eta) doEta(c, slots.eta);
       else if (slots.time) doEta(c, { time: slots.time, __tags: [] });
     },
@@ -869,6 +899,9 @@ export const runningLate: SituationDef = {
       if (!mark(c)) return;
       c.s.late = true;
       // ("I'm driving, I have to go.": no question right before the goodbye)
+      // not before the reason's reaction or with the time in the same breath ("I'm on the bus and there's a lot of
+      // traffic", "I'm walking, I'll be there in twenty minutes"): the eta step asks after them
+      if (piece(c, "reason", "eta")) { if (!c.s.eta) c.s.etaVague = true; return; }
       if (!c.s.eta && !leaving(c)) { c.s.etaVague = true; c.ask("eta"); }
     },
     not_late(c) {
@@ -934,6 +967,7 @@ export const runningLate: SituationDef = {
       if (c.s.callerId && !c.s.opened) { c.s.opened = true; c.say("hi_short"); }
     },
     taxi_ok(c) { if (!mark(c)) return; c.say("good_idea"); },
+    ride_ok(c) { if (!mark(c)) return; c.say("good_idea"); },
     thanks_info(c) { if (!mark(c)) return; /* Harris goes on to the goodbye */ },
     thanks_understanding(c) { if (!mark(c)) return; c.say("g_welcome"); },
     bye_meeting(c) { bye(c); },
@@ -945,7 +979,8 @@ export const runningLate: SituationDef = {
     maybeComplete(c);
     if (c.s.cantCome) c.say("take_care");
     else if (!c.s.notLate) {
-      const drive = c.s.reason === "traffic" || c.s.reason === "car";
+      // traffic said from the bus, or a car that won't start: not driving
+      const drive = (c.s.reason === "traffic" && !c.s.onTransit) || !!c.s.saidDriving;
       if (drive) c.s.driveSaid = true;
       c.say(drive ? "closing_drive" : "closing");
     }
@@ -969,6 +1004,9 @@ export const runningLate: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): caller ID's "Is everything okay?"; hours
+    { say: "Yes, everything's fine, thanks.", intent: "fine_ctx", step: "opening" },
+    { say: "I'll be there in two hours.", intent: "eta", step: "eta" },
     { say: "Okay, room three-oh-two. Got it.", intent: "confirm_room", step: "room" },
     { say: "Hi, Mr. Harris, it's Tomas.", intent: "identify", slots: { name: "Tomas" } },
     { say: "Good morning, Mr. Harris. This is Tomas. I'm running late.", intent: "identify" },
@@ -1037,6 +1075,9 @@ export const runningLate: SituationDef = {
     { say: "No, don't wait for me", intent: "start_without", not: ["wait_for_me"] },
     { say: "Don't start without me", intent: "wait_for_me", not: ["start_without"] },
     { say: "I don't need a taxi", intent: "no_help", not: ["taxi_ok"] },
+    { say: "My wife is driving me.", intent: "ride_ok", not: ["taxi_ok"] },
+    { say: "I don't need a taxi, my wife is driving me.", intent: "no_help", not: ["taxi_ok"] },
+    { say: "I'll take the bus.", intent: "ride_ok", not: ["taxi_ok"] },
     // leaving the call with a reason (BUG-REVIEW, still open: s90)
     { say: "Sorry, I have to go, I'm driving.", intent: "g_bye", step: "eta" },
     { say: "I have to go, I'm driving.", intent: "g_bye", step: "plan" },

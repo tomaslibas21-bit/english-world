@@ -268,5 +268,12 @@
   {"ctx": "start_over", "say": "Let's start fresh, you and me.", "intent": "start_over"},
   {"ctx": "start_over", "say": "Let's try again.", "intent": "start_over"},
   {"ctx": "start_over", "say": "Let's not start again.", "intent": "any", "not": ["start_over"]},
-  {"ctx": "start_over", "say": "Thank you.", "intent": "g_thanks"}
+  {"ctx": "start_over", "say": "Thank you.", "intent": "g_thanks"},
+  {"ctx": "make_up", "say": "Whatever you want.", "intent": "deal_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "make_up", "say": "Anything you want.", "intent": "deal_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "make_up", "say": "Sorry again.", "intent": "g_repeat", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "apology", "say": "Yes.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "make_up", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "make_up", "say": "Whatever you want.", "intent": "any", "not": ["blame", "rude"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "make_up", "say": "Sorry again.", "intent": "any", "not": ["blame", "rude", "excuse"], "note": "logic audit 5 Nov 2026"}
 ] }

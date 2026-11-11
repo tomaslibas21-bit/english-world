@@ -382,7 +382,7 @@ export class Nlu {
   /** Speech timing probe: is the (possibly unfinished) utterance complete, a valid prefix, or neither? "open" is a
    *  short complete answer that an answer to the current question still grows from ("Yes" → "Yes, in New York"). */
   probe(text: string, expected: string[] = []): "complete" | "open" | "prefix" | "none" {
-    const { variants } = tokenizeInput(text);
+    const { variants, please } = tokenizeInput(text);
     const top = this.build(expected);
     let pre = false;
     for (const toks of variants) {
@@ -397,10 +397,25 @@ export class Nlu {
         return !!c && c.from < toks.length && !r.caps.some(isLeaving) && (!only || only.includes((c.value as any)?.__id));
       });
       if (full.length && !(full.every((r) => { const c = lastPiece(r); return !!c && isLeaving(c); }) && goesOn())) {
+        const affirmative = full.some(r => r.tags.includes("yn:yes"));
+        // A politely closed answer to this question ("Large please" to the size question)
+        // is complete even when the bare words could start another intent ("large latte").
+        // Without that closure, preserve the longer pause for genuine short continuations.
+        const answersQuestion = please && !affirmative && full.some(r => {
+          const c = lastPiece(r);
+          return !!c && c.to > c.from && expected.includes((c.value as any)?.__id);
+        });
+        if (answersQuestion) return "complete";
+        // A generic "Yes" may introduce the actual answer without consuming its first word.
+        // That zero-width expected intent used to be excluded by goesOn's content check.
+        const affirmativeLead = affirmative && res.some(r => {
+          const c = r.partial && r.tags.includes("yn:yes") ? lastPiece(r) : undefined;
+          return !!c && c.from === toks.length && expected.includes((c.value as any)?.__id);
+        });
         // "Yes" answers "Did you have a connection?", but the learner may be on the way to "Yes, in New York":
         // a short answer that one of the expected answers goes on from gets a longer pause to finish. Only the
         // expected ones: almost any answer could take an extra word, and a full sentence stays quick.
-        return toks.length <= SHORT_ANSWER && expected.length && goesOn(expected) ? "open" : "complete";
+        return toks.length <= SHORT_ANSWER && expected.length && (goesOn(expected) || affirmativeLead) ? "open" : "complete";
       }
       if (res.some((r) => r.partial)) pre = true;
     }

@@ -84,9 +84,15 @@ function claireOn(c: Ctx) {
   return true;
 }
 
+/** The recorded menu only routes: anything else said to it (an account number, "Can you hear me?", "Thanks",
+ *  "How are you?") got Claire's answers in the menu's voice, or brought Claire on before the call was routed.
+ *  The turn that routes the call counts as said to the recording too (Claire asks about the light herself). */
+const toMenu = (c: Ctx) => !c.s.routed || c.s.routedTurn === (c as ConvCtx).conv.history.length;
+
 function route(c: Ctx, where: "support" | "billing" | "sales" | "agent") {
   if (c.s.routed) return;
   c.s.routed = where;
+  c.s.routedTurn = (c as ConvCtx).conv.history.length;
   c.speaker("netwave_bot");
   c.say(where === "billing" ? "bot_connect_billing" : where === "agent" ? "bot_connect_agent" : "bot_connect_support");
   c.say("bot_important");
@@ -287,7 +293,9 @@ export const support: SituationDef = {
       "(do you have | is there) (anything | something) (later | on another day | next week | in the (afternoon | evening))", "(saturday | the weekend | the afternoon) would be better",
       "is {day} possible", "(what about | how about) {day} [morning | afternoon]", "(is | would) {day} [morning | afternoon] (possible | okay | available)",
     ] },
-    tech_cost_q: { patterns: ["how much (does | will) (the technician | the visit | it) cost", "is (the visit | it) free", "do i (have to | need to) pay for (the visit | the technician)"] },
+    tech_cost_q: { patterns: ["how much (does | will) (the technician | the visit | it) cost", "is (the visit | it) free", "do i (have to | need to) pay for (the visit | the technician)",
+      "how much is (the visit | the technician | the technician visit | it) #generic"] },
+    tech_when_q: { patterns: ["what time will (the technician | they | he | she) (come | arrive | be here | get here)", "when will (the technician | they | he | she) (come | arrive | be here)", "will they call (me | first) [before]", "will (you | they) let me know [before]"] },
     tech_time_q: { patterns: ["how long will (it | the visit | the repair) take", "how long does it take"] },
 
     // --- other requests
@@ -801,19 +809,23 @@ export const support: SituationDef = {
       suggest: [{ lt: "Pasakyti, nuo kada neveikia", hint: "since" }] },
     { id: "lights", when: (c) => internet(c), done: (c) => !!c.s.lights,
       ask: (c) => c.say("ask_lights"), expects: ["lights_ans"],
-      suggest: [{ lt: "Apibūdinti lemputes (mirksi raudonai)", hint: "lights" }] },
+      suggest: [{ lt: "Apibūdinti lemputes (mirksi raudonai)", hint: "lights" }],
+      // "I don't know" ("Take your time." held the turn): no matter, on to the restart
+      help: (c) => { c.s.lights = true; c.say("g_no_worries"); c.ask("restart"); } },
     { id: "restart", when: (c) => internet(c) && !!c.s.lights, done: (c) => c.s.restarted !== undefined,
       ask: (c) => c.say("ask_restart"), expects: ["restart_yes", "restart_no"],
       suggest: [{ lt: "Atsakyti, ar bandei išjungti ir vėl įjungti", hint: "restart" }],
       yes: (c) => { c.s.restarted = true; c.say("restart_ok"); },
-      no: (c) => { askRestartNow(c); } },
+      no: (c) => { askRestartNow(c); },
+      // "I don't know" ("Sure, take your time." held the turn): she asks for a restart now
+      help: (c) => { askRestartNow(c); } },
     { id: "tech", when: (c) => internet(c) && c.s.restarted !== undefined && !c.s.restartPending, done: (c) => !!c.s.techBooked,
       ask: (c) => {
         if (!c.s.diagnosed) { c.s.diagnosed = true; c.say("line_test"); c.say("line_problem"); c.say("need_tech"); offerWindow(c, c.s.firstWindow, true); return; }
         const w = WINDOWS[c.s.window];
         c.say("tech_offer_again", { D: w.d, win: win(c.s.window) });
       },
-      expects: ["tech_accept", "tech_busy", "tech_other", "tech_cost_q", "tech_time_q"],
+      expects: ["tech_accept", "tech_busy", "tech_other", "tech_cost_q", "tech_time_q", "tech_when_q"],
       suggest: [{ lt: "Sutikti arba paprašyti kito laiko", hint: "tech" }],
       yes: (c) => { bookTech(c); },
       no: (c) => { support.handlers.tech_busy(c, {}, { intent: "tech_busy", slots: {}, tags: [] }); } },
@@ -877,7 +889,12 @@ export const support: SituationDef = {
       if (!td.name) { td.name = true; const had = !!c.s.name; c.s.name = part; if (!had) c.say("name_thanks"); return; }
       c.s.name = `${c.s.name} ${part}`;
     },
-    account_ans(c, slots) { setAccount(c, slots.digits); },
+    account_ans(c, slots) { if (toMenu(c)) return; setAccount(c, slots.digits); },
+    // the menu answers no small talk ("Anytime!", "No rush.", "Pretty good, thanks! And you?" in the menu's voice)
+    g_thanks(c, slots, seg) { if (!c.s.routed) return; GLOBAL_HANDLERS.g_thanks(c as ConvCtx, slots); void seg; },
+    g_dontknow(c, slots, seg) { if (!c.s.routed) return; GLOBAL_HANDLERS.g_dontknow(c as ConvCtx, slots); void seg; },
+    g_wait(c, slots, seg) { if (!c.s.routed) return; GLOBAL_HANDLERS.g_wait(c as ConvCtx, slots); void seg; },
+    g_howareyou(c, slots, seg) { if (!c.s.routed) return; GLOBAL_HANDLERS.g_howareyou(c as ConvCtx, slots); void seg; },
     account_ctx(c, slots) { setAccount(c, slots.digits); },
     acct_unknown(c) {
       if (c.s.account) return;
@@ -909,7 +926,7 @@ export const support: SituationDef = {
     },
     since_ans(c) { if (!c.s.since) { c.s.since = true; c.say("ack"); } },
     lights_ans(c) {
-      if (c.s.lights) return;
+      if (c.s.lights || toMenu(c)) return;
       c.s.lights = true;
       c.s.orange = /orange/i.test(c.heard) && !/red/i.test(c.heard);
       if (!internet(c)) problem(c, "down", true);
@@ -965,7 +982,17 @@ export const support: SituationDef = {
       offerWindow(c, k);
       c.hold();
     },
-    tech_cost_q(c) { c.say("tech_free"); },
+    tech_cost_q(c, _slots, seg) {
+      // only once a visit is on the table ("There's no charge" answered "How much is it?" about anything)
+      if (!c.s.diagnosed) return;
+      c.say("tech_free");
+      void seg;
+    },
+    tech_when_q(c) {
+      if (!c.s.diagnosed) return;
+      if (c.s.techBooked) { const w = WINDOWS[c.s.techBooked]; c.say("tech_booked", { D: w.d, win: win(c.s.techBooked) }); }
+      c.say("tech_call_ahead");
+    },
     tech_time_q(c) { c.say("tech_takes"); },
 
     // --- other
@@ -976,7 +1003,7 @@ export const support: SituationDef = {
       c.say("manager_ok");
       if (!c.s.techBooked) c.say("manager_first");
     },
-    wait_complaint(c) { claireOn(c); c.say("wait_sorry"); },
+    wait_complaint(c) { if (!c.s.routed) return; claireOn(c); c.say("wait_sorry"); },
     // the ticket exists from the start of the call: Claire always gives the number
     reference_q(c) { c.say("reference_again", { text: REFERENCE }); },
     text_me(c) { textIt(c as ConvCtx); },
@@ -994,7 +1021,7 @@ export const support: SituationDef = {
         on: { hear_ok: (cc) => { cc.say("hear_great"); } },
       });
     },
-    hear_me(c) { c.say("hear_you"); },
+    hear_me(c) { if (!c.s.routed) return; c.say("hear_you"); },
     hear_ok(c) { c.say("hear_great"); },
 
     more_no(c) {
@@ -1017,6 +1044,9 @@ export const support: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "What time will the technician come?", intent: "tech_when_q", step: "tech" },
+    { say: "How much is it?", intent: "tech_cost_q", step: "tech" },
     { say: "Technical support.", intent: "menu_support", step: "menu" },
     { say: "Tech support, please.", intent: "menu_support", step: "menu" },
     { say: "Two", intent: "menu_num_ctx", step: "menu" },

@@ -327,5 +327,9 @@
   { "ctx": "closing", "say": "Nice talking to you too, Frank!", "intent": "nice_talk" },
   { "ctx": "closing", "say": "I'd better go now. See you!", "intent": "leave" },
   { "ctx": "closing", "say": "It wasn't nice talking to you.", "intent": "any", "not": ["nice_talk"] },
-  { "ctx": "closing", "say": "Thanks, same to you!", "intent": "nice_talk" }
+  { "ctx": "closing", "say": "Thanks, same to you!", "intent": "nice_talk" },
+  {"ctx": "weather", "say": "It's not hot today.", "intent": "wx_neg", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "weather", "say": "Yes, it's not too hot.", "intent": "wx_neg", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "weather", "say": "It's not cold today.", "intent": "wx_neg", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "weather", "say": "It's not cold today.", "intent": "any", "not": ["wx_adj", "wx_short_ctx"], "note": "logic audit 5 Nov 2026"}
 ] }

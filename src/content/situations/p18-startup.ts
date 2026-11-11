@@ -523,6 +523,7 @@ export const startup: SituationDef = {
       "[only] (until | till) {time} [maybe] [but not (later | longer | after that | until midnight)]",
       "(how about | what about | maybe) (until | till) {time}",
       "i will (leave | go home | call it a day) at {time} #limit",
+      "(can | could | may) i (leave | go home | go | call it a day) at {time} [tonight | please]",
       "i (can | could) [only] stay (a little | a bit | an hour | two hours | a couple of hours | for an hour | for two hours) [longer | late] [but not until midnight] #nohour",
       "i (can | could) (stay | work) (a little | a bit) late [but not until midnight] #nohour",
       "i (can | could) stay but not until midnight #nohour",
@@ -552,12 +553,14 @@ export const startup: SituationDef = {
       "(will | is) (the overtime | it | that | this) [be] paid [overtime] #h:paid",
       "(will | do) (we | i) (get paid | be paid) [for (it | that | the overtime | the extra hours | the hours)]",
       "(what about | and) (the pay | overtime pay | the money | payment | the overtime)",
+      "how much (do | will | would) (i | we) get paid [for (it | that | the overtime | the extra hours)]",
       "(is | will) there [be] overtime pay",
       "do you pay [for] overtime",
       "paid overtime [right]",
     ] },
     mid_finish_q: { patterns: ["what time do we (finish | stop | go home) [tonight] #h:finish_time", "when do we (finish | stop | go home) [tonight]", "what is the finish time"] },
-    mid_why: { patterns: ["why [until midnight | so late | tonight]", "what (is it | is that) for", "what do we need to do [tonight | until midnight]"] },
+    mid_why: { patterns: ["why [until midnight | so late | tonight]", "what (is it | is that) for", "what do we need to do [tonight | until midnight]",
+      "is (it | that | this) (mandatory | required | obligatory)", "do (i | we) (have to | need to) (stay | be here) [until midnight | tonight | late]"] },
 
     // --- tomorrow's meeting ----------------------------------------------------------------------
     meet_time: { patterns: [
@@ -1441,7 +1444,7 @@ export const startup: SituationDef = {
       // "Can you stay?" – "Yes." / "No."
       yes: (c) => { midResolve(c, "yes"); },
       no: (c) => { midResolve(c, "cant"); },
-      help: (c) => { if (once(c, "paidq")) { T(c, "mid_paid"); c.expect(midDealPending()); } } },
+      help: (c) => { if (once(c, "paidq")) { T(c, "mid_deal_reask"); c.expect(midDealPending()); } } },
     { id: "tomorrow", when: (c) => !!c.s.ownerDone && (c.s.twist !== "midnight" || !!c.s.midDone), done: (c) => !!c.s.closeDone,
       ask: (c) => {
         if (resumed(c, "tomorrow")) { T(c, "anyway"); T(c, "close_reask"); return; }
@@ -1572,19 +1575,28 @@ export const startup: SituationDef = {
       if (!midLive(c)) return;
       praiseIdiom(c, seg);
       const h = hourId(slots.time);
-      if (h === "midnight") { midResolve(c, "yes"); return; }
+      if (h === "midnight") {
+        const not = midnightNotYes(c);
+        if (not === "no") { if (!c.s.midDone) midResolve(c, "cant"); return; }
+        if (not === "ask") { if (once(c, "midWhy") && !c.s.midWhySaid) { c.s.midWhySaid = true; T(c, "mid_why"); } return; }
+        midResolve(c, "yes"); return;
+      }
+      // six is when the day ends ("Go home at six"): staying until then is no overtime
+      if (h && /^h[1-6]$/.test(h)) { midResolve(c, "cant"); return; }
       midResolve(c, "limit", h);
     },
     stay_yes(c) { if (midLive(c) && !HEDGE.test(c.heard)) midResolve(c, "yes"); },
     cant_stay(c) { if (midLive(c)) midResolve(c, "cant"); },
     cant_ctx(c) {
       if (midLive(c)) { midResolve(c, "cant"); return; }
+      // "Until midnight, I can't.": the no to midnight, said this turn, is no "can't" for tomorrow's meeting too
+      if (!once(c, "mid")) return;
       if (!closingLive(c) || !once(c, "meet")) return;
       T(c, "when_q"); c.expect(whenPending());
     },
     paid_q(c) { if (!midLive(c) || !once(c, "paidq")) return; T(c, "mid_paid"); c.expect(midDealPending()); },
     mid_finish_q(c) { if (!midLive(c) || !once(c, "paidq")) return; T(c, "mid_finish"); c.expect(midDealPending()); },
-    mid_why(c) { if (midLive(c) && once(c, "midWhy")) T(c, "mid_why"); },
+    mid_why(c) { if (midLive(c) && once(c, "midWhy")) { c.s.midWhySaid = true; T(c, "mid_why"); } },
 
     // --- tomorrow ---
     meet_time(c, slots, seg) { praiseIdiom(c, seg); meetTime(c, slots.time); },
@@ -1650,6 +1662,12 @@ export const startup: SituationDef = {
   finish: (c) => { closing(c); },
 
   tests: [
+    // logic audit (5 Nov 2026): midnight asked back is no promise; the overtime's pay; "Is it mandatory?"
+    { say: "Until midnight?", intent: "stay_limit", step: "midnight", not: ["stay_yes"] },
+    { say: "Can I leave at nine?", intent: "stay_limit", step: "midnight", slots: { time: { h: 9 } }, not: ["stay_yes"] },
+    { say: "How much do I get paid?", intent: "paid_q", step: "midnight" },
+    { say: "Is it mandatory?", intent: "mid_why", step: "midnight" },
+    { say: "Do I have to stay?", intent: "mid_why", step: "midnight", not: ["stay_yes"] },
     // the first week
     { say: "I'm learning the ropes.", intent: "finding", step: "hello" },
     { say: "It's a steep learning curve.", intent: "finding", step: "hello" },
@@ -1797,6 +1815,10 @@ export const startup: SituationDef = {
       "What does back to square one mean?", "Let's fix the bug first and then tell the customers.", "No, I'm good.", "Sure, see you at eight.", "Thanks, Tyler!"],
       expect: { complete: true, state: { crashDone: true, crashHow: "fix", meet: "h8" } }, auto: AUTO, setup: (s) => { s.twist = "crash"; s.weightLine = false; } },
     // the midnight request on every seed: a flat "No." first (tip), the evasion taken, then paid overtime and a finish time
+    // logic audit (5 Nov 2026): "Until midnight?" asked back gets his reason, not "Rock star!"; "I don't know." gets the offer
+    { name: "audit: midnight asked back, I don't know", turns: ["Hello! I'm a little lost, honestly.", "No.", "I can do the slides, but not the party.",
+      "Who should I ask about the budget?", "Okay, thanks.", "Until midnight?", "I don't know.", "Deal.", "Sure, see you at eight."],
+      expect: { complete: true, state: { midDone: true, midHow: "paid", midWhySaid: true } }, auto: AUTO, setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
     { name: "twist: until midnight", turns: ["Hello! I'm a little lost, honestly.", "No.", "I can do the slides, but not the party.", "Who should I ask about the budget?",
       "Okay, thanks.", "Will the overtime be paid?", "Hmm, I can stay until seven, but then I'll call it a day.", "Sure, see you at eight."],
       expect: { complete: true, state: { midDone: true, midHow: "limit", stayUntil: "h7", flatNo: true, evaded: true } }, auto: AUTO, setup: (s) => { s.twist = "midnight"; s.weightLine = false; } },
@@ -2080,6 +2102,14 @@ function ownerAnswer(c: Ctx, key: string) { c.s.answered = true; T(c, OWNER_LINE
 function ownerEnd(c: Ctx) { if (c.s.ownerDone || !once(c, "ownerEnd")) return; c.s.ownerDone = true; }
 
 /** The midnight request settled. `h`: the hour the learner stays until. */
+/** "Until midnight?" (his demand asked back) or "Until midnight, I can't." (with a no): never a promise to stay
+ *  (it booked midnight, or the nine o'clock deal). A question gets his reason once; a no is left to the no. */
+function midnightNotYes(c: Ctx): "ask" | "no" | null {
+  const segs: Segment[] = (c as any).conv?.out?.parse?.segments ?? [];
+  if (segs.some((x) => x.intent === "cant_ctx" || x.intent === "cant_stay") || /\b(can'?t|cannot|won'?t|not)\b/i.test(c.heard)) return "no";
+  if (/\?\s*$/.test(c.heard) || /^\W*(should|do|must|have)\s+(i|we)\b/i.test(c.heard)) return "ask";
+  return null;
+}
 function midResolve(c: Ctx, how: "limit" | "yes" | "cant" | "paid", h?: string) {
   if (c.s.midDone || !once(c, "mid")) return;
   c.s.midDone = true; c.s.midHow = how;
@@ -2093,7 +2123,12 @@ function midDealPending(): Pending {
     yes: (c) => { midResolve(c, "paid"); },
     no: midWhen,
     on: {
-      stay_limit: (c, s) => { const h = hourId(s.time); if (h === "midnight") midResolve(c, "paid"); else midResolve(c, "limit", h); },
+      stay_limit: (c, s) => {
+        const h = hourId(s.time);
+        if (h === "midnight") { const not = midnightNotYes(c); if (not === "no") midResolve(c, "cant"); else if (not === "ask") { T(c, "mid_deal_reask"); c.expect(midDealPending()); } else midResolve(c, "paid"); return; }
+        if (h && /^h[1-6]$/.test(h)) { midResolve(c, "cant"); return; }
+        midResolve(c, "limit", h);
+      },
       cant_stay: (c) => { midResolve(c, "cant"); },
       cant_ctx: (c) => { midResolve(c, "cant"); },
       cant_time: midWhen,

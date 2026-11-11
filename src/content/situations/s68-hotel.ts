@@ -57,25 +57,46 @@ function offerCheaper(c: Ctx) {
   c.s.offer = "cheap"; c.say("walkin_cheaper"); c.hold();
 }
 
-/** Choosing between noon (free) and 2 p.m. ($30). */
-function lateChoicePending(): Pending {
+/** "That's okay, thanks" / "I'm fine, thanks" to an offer: the polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+/** A yes that could be either ("Okay." / "Okay, thanks." / "Fine."): never enough for something that costs money. */
+const UNSURE_YES = /^\W*(ok|okay|fine|all right|alright|sure)\W*(thanks|thank you)?\W*$/i;
+
+/** Choosing between noon (free) and 2 p.m. ($30). A bare yes ("Yes", "Okay", "That's fine") answers neither:
+ *  the choice once more, and a second bare yes keeps the free noon. Only "two" or "thirty dollars" books two. */
+function lateChoicePending(again = false): Pending {
   const noon = (cc: Ctx) => { cc.s.late = "noon"; once(cc, "late", "late_noon_ok"); };
   const two = (cc: Ctx) => { cc.s.late = "two"; once(cc, "late", "late_two_ok"); };
+  const unsure = (cc: Ctx) => { if (again) { noon(cc); return; } cc.say("late_offer"); cc.expect(lateChoicePending(true)); };
   return {
     id: "late", expects: ["late_noon", "late_two", "too_expensive_ctx", "cheaper_ctx"], hints: ["late_choice"],
     suggest: [{ lt: "Pasirinkti: vidurdienis (nemokamai) ar 14 val. (už 30 $)", hint: "late_choice" }],
-    on: { late_noon: noon, late_two: two, too_expensive_ctx: noon, cheaper_ctx: noon },
-    yes: two, no: noon,
+    on: {
+      late_noon: noon, too_expensive_ctx: noon, cheaper_ctx: noon,
+      // "That's fine" names no time: it is the bare yes
+      late_two: (cc, _sl, sg) => { if (sg.tags.includes("h:lt_fine") && !/\b(two|2|thirty|30|later)\b/i.test(cc.heard)) unsure(cc); else two(cc); },
+    },
+    yes: unsure, no: noon,
     ask: (cc) => cc.say("late_offer"),
   };
 }
 
-/** Offering an ocean-view room for $20 more. */
-function viewPending(): Pending {
+/** Offering an ocean-view room for $20 more. "That's okay, thanks" is a no; an "Okay." that could be either gets the
+ *  offer once more (the room costs more), then counts as a no. */
+function viewPending(again = false): Pending {
+  const no = (cc: Ctx) => { cc.say("no_problem"); };
   return {
     id: "view", hints: ["g_yesno"], suggest: [{ lt: "Atsakyti, ar nori kambario su vaizdu", hint: "g_yesno" }],
-    yes: (cc) => { cc.s.room = "518"; cc.s.view = true; cc.say("view_ok"); if (cc.s.roomSaid) cc.say("room_518"); },
-    no: (cc) => { cc.say("no_problem"); },
+    expects: ["too_expensive_ctx", "done"],
+    yes: (cc) => {
+      if (POLITE_NO.test(cc.heard)) { no(cc); return; }
+      if (UNSURE_YES.test(cc.heard)) { if (again) { no(cc); return; } cc.say("view_offer"); cc.expect(viewPending(true)); return; }
+      cc.s.room = "518"; cc.s.view = true; cc.say("view_ok"); if (cc.s.roomSaid) cc.say("room_518");
+      // a walk-in who takes the view room has chosen a room (not offered the king room again)
+      if (cc.s.kind === "walkin") cc.s.roomChosen = true;
+    },
+    no,
+    on: { too_expensive_ctx: no, done: no },
     ask: (cc) => cc.say("view_offer"),
   };
 }
@@ -89,6 +110,17 @@ function anyElsePending(): Pending {
       { lt: "Paklausti dar ko nors", hint: "ask" },
       { lt: "Paprašyti vėlesnio išsiregistravimo", hint: "late" },
     ],
+  };
+}
+
+/** "What time do you need it?" (the taxi). "Yes, please" names no time: the question once more; a second yes = now. */
+function taxiPending(again = false): Pending {
+  return {
+    id: "taxi_time", expects: ["taxi_time_ctx"], hints: ["taxi_time"], suggest: [{ lt: "Pasakyti, kuriuo laiku reikia taksi", hint: "taxi_time" }],
+    on: { taxi_time_ctx: (cc) => { cc.s.taxi = true; once(cc, "taxi", "taxi_ok"); } },
+    yes: (cc) => { if (!again) { cc.say("taxi_when"); cc.expect(taxiPending(true)); return; } cc.s.taxi = true; cc.say("taxi_ok"); },
+    no: (cc) => { cc.say("no_problem"); },
+    ask: (cc) => cc.say("taxi_when"),
   };
 }
 
@@ -198,6 +230,9 @@ export const hotel: SituationDef = {
       "here is my (passport | id) and [my] (credit card | card) #both",
       "(can | could) i (show | give) you my (driver s license | drivers license | license | id card | passport | id)",
     ] },
+    // the $100 cash deposit instead of a card (only at the card step)
+    deposit_ctx: { patterns: ["here is [a | one] (hundred | 100) [dollars] [in cash] [for the deposit]", "here is the [cash] deposit", "i will (leave | pay) [a | the] [cash] deposit [in cash]",
+      "i will pay the deposit (in | with) cash", "(a | one) (hundred | 100) dollars in cash", "[okay] i will (leave | pay) (a hundred | one hundred | 100) dollars [in cash]", "[okay] (the | a) cash deposit [is fine] [please]"] },
     id_q: { patterns: ["is (a | my) passport (okay | fine | ok) #h:idc_ok", "can i use my passport", "do you need my passport", "i only have my passport",
       "(lithuanian | european | eu | my) passport (is that | is it) (okay | fine | ok)", "[do you need] (my passport | a passport) or (my | an) (id | id card)"] },
     incidentals_q: { patterns: ["what are incidentals #h:idc_what", "what (is | does) incidentals mean", "what is (it | that | the card) for", "why do you need my (card | credit card)",
@@ -768,7 +803,7 @@ export const hotel: SituationDef = {
       yes: (c) => { c.s.idShown = true; ack(c, 1, "thank_you"); } },
     { id: "card", when: (c) => c.s.mode === "checkin", done: (c) => !!c.s.cardGiven,
       ask: (c) => { if (c.s.kind === "res" && !c.s.prepaidSaid && c.chance(0.3)) { c.s.prepaidSaid = true; c.say("prepaid"); } c.say("ask_card"); },
-      expects: ["hand_over", "incidentals_q", "cash_q", "debit_q"],
+      expects: ["hand_over", "incidentals_q", "cash_q", "debit_q", "deposit_ctx"],
       suggest: [{ lt: "Paduoti kredito kortelę", hint: "card" }, { lt: "Paklausti apie kortelę", hint: "card_q" }],
       yes: (c) => { c.s.cardGiven = true; ack(c, 1, "thank_you"); } },
     { id: "sign", when: (c) => c.s.mode === "checkin", done: (c) => !!c.s.signed,
@@ -847,6 +882,9 @@ export const hotel: SituationDef = {
       if (n) c.s.nights = n;
     },
     walkin(c, slots, seg) {
+      // a guest who said they have a reservation and asks "Do you have any rooms available?": rooms, yes (once); still the reservation
+      if (c.s.kind === "res") { if (!c.s.walkChecked) { c.s.walkChecked = true; c.say("walkin_check"); } return; }
+      if (c.s.kind === "walkin" && c.s.walkChecked) return; // asked again: "How many nights?" again, not "Let me check" twice
       c.s.kind = "walkin";
       const n = nightsFrom(slots, seg);
       if (n) c.s.nights = n;
@@ -887,8 +925,13 @@ export const hotel: SituationDef = {
     },
     id_q(c) { c.say("passport_fine"); },
     incidentals_q(c) { c.say("incidentals"); c.say("hold"); c.say("hold_back"); },
-    cash_q(c) { if (c.s.kind === "res") c.say("prepaid"); c.say("cash_deposit"); },
+    cash_q(c) {
+      if (c.s.kind === "res") c.say("prepaid");
+      c.say("cash_deposit");
+      if (c.step === "card") { c.s.cashOk = true; c.hold(); } // "Here's a hundred dollars" / "Here you go" is the deposit
+    },
     debit_q(c) { c.say("debit_ok"); },
+    deposit_ctx(c) { if (c.s.cardGiven) { once(c, "ho", "thank_you"); return; } c.s.cardGiven = true; c.s.cashDeposit = true; once(c, "ho", "thank_you"); },
     sign_ok_ctx(c) { if (!c.s.signed) { c.s.signed = true; ack(c, 1, "thank_you"); } },
     sign_where(c) {
       // She shows the line, the learner signs.
@@ -937,10 +980,7 @@ export const hotel: SituationDef = {
     ask_luggage(c) { c.say("luggage_ok"); },
     ask_taxi(c) {
       c.say("taxi_when");
-      c.expect({ id: "taxi_time", expects: ["taxi_time_ctx"], hints: ["taxi_time"], suggest: [{ lt: "Pasakyti, kuriuo laiku reikia taksi", hint: "taxi_time" }],
-        on: { taxi_time_ctx: (cc) => { cc.s.taxi = true; once(cc, "taxi", "taxi_ok"); } },
-        yes: (cc) => { cc.s.taxi = true; cc.say("taxi_ok"); }, no: (cc) => { cc.say("no_problem"); },
-        ask: (cc) => cc.say("taxi_when") });
+      c.expect(taxiPending());
     },
     taxi_time_ctx(c) { c.s.taxi = true; once(c, "taxi", "taxi_ok"); },
     ask_towels(c) { c.say("towels_ok"); },
@@ -954,6 +994,8 @@ export const hotel: SituationDef = {
     ask_twobeds(c) {
       if (c.step === "walk_offer") { c.s.offer = "two"; c.say("walkin_twobeds"); c.hold(); return; }
       c.s.room = "207"; c.say("twobeds_ok"); if (c.s.roomSaid) c.say("room_207");
+      // "Yes, but we need two beds" at "…a king bed for three nights. Is that right?": the rest is confirmed (not the king bed again)
+      if (c.step === "found" && !c.s.confirmed) { c.s.confirmed = true; c.s.nights = c.s.nights ?? 3; }
     },
     ask_nonsmoking(c) { c.say("nonsmoking"); },
     ask_restaurant(c) { c.say("restaurant"); },
@@ -1000,6 +1042,10 @@ export const hotel: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): the $100 cash deposit instead of a card
+    { say: "Here's a hundred dollars.", intent: "deposit_ctx", step: "card" },
+    { say: "I'll leave a cash deposit.", intent: "deposit_ctx", step: "card" },
+    { say: "I'll pay the deposit in cash.", intent: "deposit_ctx", step: "card" },
     { say: "Hi, I have a reservation.", intent: "checkin" },
     { say: "I'd like to check in, please.", intent: "checkin" },
     { say: "I have a reservation under Tomas Mikalauskas.", intent: "checkin", slots: { name: "Tomas Mikalauskas" } },
@@ -1088,6 +1134,10 @@ export const hotel: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): a bare yes to the late check-out's choice; a polite no to the view; a yes to the taxi's time
+    { name: "audit: bare yes, polite no, the taxi's time", turns: ["Hi, I have a reservation.", "Mikalauskas.", "Yes, that's right.", "Here's my passport.", "Here's my card.", "Sure.",
+      "Could I have a late check-out?", "Yes.", "Noon is fine, thanks.", "Could I have a room with a view?", "That's okay, thanks.", "Could you call me a taxi?", "Yes, please.", "At noon.", "No, that's all, thanks."],
+      expect: { complete: true, state: { late: "noon", taxi: true, room: "412" } }, auto: HT_AUTO, setup: (s) => { s.mode = "checkin"; s.upgradeTwist = false; } },
     { name: "happy path: reservation, spelling, questions", turns: ["Hi, I have a reservation.", "Mikalauskas.", "M-I-K-A-L-A-U-S-K-A-S.", "Yes.", "Here's my passport.", "Here you go.", "Sure.", "Is breakfast included?", "What's the Wi-Fi password?", "No, that's all, thanks."],
       expect: { complete: true }, auto: HT_AUTO, setup: (s) => { s.mode = "checkin"; s.askSpell = true; } },
     { name: "late check-out, correction and more questions", turns: ["Hi, I have a reservation under Tomas Mikalauskas.", "M I K A L A U S K A S", "No, four nights.", "Here you go. What are incidentals?", "Here's my card.", "Where do I sign?", "Could I have a late check-out? Until two?", "Two, please.", "Can I leave my luggage here after check-out?", "That's all, thanks."],

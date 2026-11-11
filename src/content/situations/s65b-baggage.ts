@@ -192,6 +192,9 @@ function binding(c: Ctx) { return c.s.type && c.s.type !== "bag" ? c.s.type : "s
 const omit = (o: Record<string, string>, keys: string[]) => Object.fromEntries(Object.entries(o).filter(([k]) => !keys.includes(k)));
 
 // Answers the simulation gives when Priya asks an optional question.
+/** "That's okay, thanks" / "I'm fine, thanks" to an offer: the polite no. */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+
 const BG_AUTO: Record<string, string> = {
   problem: "My bag didn't arrive.", flight: "It was flight 482 from New York.", tag: "Yes, here it is.",
   describe: "It's a large blue suitcase.", size: "Large.", material: "Hard-shell.", marks: "It has a red stripe on the side.",
@@ -437,7 +440,8 @@ export const baggage: SituationDef = {
     ] },
     q_call: { patterns: ["will you call me #h:q_call", "(how | when) will i know", "will you let me know", "will you (text | email) me"] },
     q_track: { patterns: ["can i track it [online] #h:q_track", "how can i (check | track) (it | the status | where it is)", "is there a website"] },
-    q_free: { patterns: ["is (the | that | delivery | the delivery) free #h:q_free", "do i (have to | need to) pay [for (the delivery | it)]", "how much is (the delivery | it)"] },
+    q_free: { patterns: ["is (the | that | delivery | the delivery) free #h:q_free", "do i (have to | need to) pay [for (the delivery | it)]", "how much is (the delivery | it)",
+      "is (it | the kit | the overnight kit) free", "how much is (the kit | the overnight kit)", "does it cost (anything | money | extra)"] },
     q_what_if: { patterns: ["what if you (do not | can not) find it #h:q_what_if", "what (happens | will happen) if (it is lost | you do not find it)", "is it lost [forever]"] },
     q_copy: { patterns: ["(can | could) i (have | get) a copy [of the report] #h:q_copy", "do i get a copy"] },
     q_taxi: { patterns: ["where (can i | do i) (get | find) a (taxi | cab)", "where is the taxi (stand | rank #tip:uk_taxi_rank)", "where are the (taxis | cabs)"] },
@@ -636,6 +640,8 @@ export const baggage: SituationDef = {
     ans_call: [t("Yes, | we'll call | or | text | you | when | it | arrives.", "Taip, | paskambinsime | arba | parašysime | jums, | kai | jis | atkeliaus.", "Taip, paskambinsime arba parašysime, kai jis atkeliaus.")],
     ans_track: [t("Yes, | online, | with | your | reference | number.", "Taip, | internetu, | su | jūsų | registracijos | numeriu.", "Taip, internetu, pagal registracijos numerį.")],
     ans_free: [t("Yes, | the | delivery | is | free.", "Taip, | — | pristatymas | yra | nemokamas.", "Taip, pristatymas nemokamas.")],
+    // "How much is it?" at the overnight kit (new line, 5 Nov 2026: needs a voice)
+    ans_kit_free: [t("It's | free.", "Jis yra | nemokamas.", "Rinkinys nemokamas.")],
     ans_what_if: [t("Don't worry. | Almost | all | bags | are | found | within | a | few | days.", "Nesijaudinkite. | Beveik | visi | lagaminai | yra | randami | per | — | kelias | dienas.", "Nesijaudinkite. Beveik visi lagaminai atsiranda per kelias dienas.")],
     ans_copy: [t("Sure, | you'll get | a | copy | of | the | report.", "Žinoma, | gausite | — | kopiją | — | — | pranešimo.", "Žinoma, gausite pranešimo kopiją.",
       { flags: { 4: "“of”: no separate word; the genitive pranešimo carries it." } })],
@@ -929,7 +935,8 @@ export const baggage: SituationDef = {
       ask: (c) => c.say("ask_delivery"),
       expects: ["delivery", "pickup"],
       suggest: [{ lt: "Sutikti, kad pristatytų į viešbutį", hint: "g_yesno" }, { lt: "Atsiimti pačiam arba paklausti", hint: "delivery" }],
-      yes: (c) => { c.s.delivery = "deliver"; c.s.dlTo = "hotel"; once(c, "dl", "delivery_ok"); turn(c).said_when = true; },
+      // (asked "When…?" first: "Okay." now, not the time a second time)
+      yes: (c) => { c.s.delivery = "deliver"; c.s.dlTo = "hotel"; once(c, "dl", c.s.whenTold ? "ack" : "delivery_ok"); turn(c).said_when = true; },
       no: (c) => { c.s.delivery = "pickup"; c.say("pickup_ok"); } },
     { id: "hotel", done: (c) => !!c.s.hotel,
       // Only what's missing: to the hotel → which one ("Where are you staying?"); to a friend's place → where it is
@@ -948,7 +955,8 @@ export const baggage: SituationDef = {
       ask: (c) => c.say("offer_kit"),
       expects: ["q_reimburse", "q_meantime", "kit_yes_ctx", "kit_no_ctx"],
       suggest: [{ lt: "Priimti rinkinį (taip / ne)", hint: "g_yesno" }, { lt: "Paklausti apie išlaidas", hint: "kit" }],
-      yes: (c) => { c.s.kitDone = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
+      // "That's okay, thanks" / "I'm fine, thanks" is the polite no (the engine hears "that's okay" as a yes)
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { c.s.kitDone = true; c.say("no_problem"); return; } c.s.kitDone = true; c.say("kit_here"); c.event("give", { item: "overnight kit" }); },
       no: (c) => { c.s.kitDone = true; c.say("no_problem"); } },
     { id: "ref", done: (c) => !!c.s.refAck,
       ask: (c) => {
@@ -1048,14 +1056,14 @@ export const baggage: SituationDef = {
       // where to: the hotel ("to my hotel", or a yes to Priya's "…to your hotel?"), or somewhere else ("to my friend's house")
       if (seg.tags.includes("to_home")) c.s.dlTo = "home";
       else if (seg.tags.includes("to_hotel") || c.step === "delivery") c.s.dlTo = "hotel";
-      if (turn(c).said_when) once(c, "dl", "ack"); else { once(c, "dl", "delivery_ok"); turn(c).said_when = true; }
+      if (turn(c).said_when || c.s.whenTold) once(c, "dl", "ack"); else { once(c, "dl", "delivery_ok"); turn(c).said_when = true; }
     },
     pickup(c) { c.s.delivery = "pickup"; once(c, "dl", "pickup_ok"); },
     stay(c, slots, seg) { c.s.hotel = slots.hotel ?? (seg.tags.includes("fam") ? "friend" : "address"); ack(c, 0.6); },
     phone(c) { c.s.phone = true; once(c, "ph", "phone_ok"); },
     phone_ctx(c) { c.s.phone = true; once(c, "ph", "phone_ok"); },
     phone_none(c) { c.s.phone = "none"; once(c, "ph", "phone_none_ok"); },
-    q_when(c) { once(c, "when", c.s.found ? "ans_when_found" : "ans_when"); },
+    q_when(c) { c.s.whenTold = true; once(c, "when", c.s.found ? "ans_when_found" : "ans_when"); },
     q_meantime(c) {
       c.s.kitDone = true;
       if (!c.s.kitGiven) { c.s.kitGiven = true; c.say("offer_kit"); c.expect(kitPending()); return; }
@@ -1066,7 +1074,8 @@ export const baggage: SituationDef = {
     kit_no_ctx(c) { c.s.kitDone = true; c.say("no_problem"); },
     q_call(c) { c.say("ans_call"); },
     q_track(c) { c.say("ans_track"); },
-    q_free(c) { c.say("ans_free"); },
+    // at the overnight kit, "How much is it?" is about the kit, not the delivery ("Yes, the delivery is free.")
+    q_free(c) { c.say(c.step === "kit" || (c as any).conv?.pending?.id === "kit" ? "ans_kit_free" : "ans_free"); },
     q_what_if(c) { c.say("ans_what_if"); },
     q_copy(c) { c.say("ans_copy"); },
     q_taxi(c) { c.say("ans_taxi"); },
@@ -1171,6 +1180,11 @@ export const baggage: SituationDef = {
     { say: "No, I'll collect it at the airport.", intent: "pickup", step: "delivery" },
     { say: "I'm at the Harborview, room 305.", intent: "stay", step: "hotel", slots: { hotel: "harborview" } },
     { say: "My phone doesn't work in America.", intent: "phone_none", step: "phone" },
+    // logic audit (5 Nov 2026): the price at the delivery offer and at the overnight kit
+    { say: "Is it free?", intent: "q_free", step: "delivery" },
+    { say: "Does it cost anything?", intent: "q_free", step: "delivery" },
+    { say: "How much is the kit?", intent: "q_free", step: "kit" },
+    { say: "Is it free?", intent: "q_free", step: "kit", not: ["kit_yes_ctx"] },
     { say: "Yes, a toothbrush would be great.", intent: "kit_yes_ctx", step: "kit" },
     { say: "No, I have everything in my carry-on.", intent: "kit_no_ctx", step: "kit" },
     { say: "Yes, one stop in London.", intent: "via_ctx", step: "connection", slots: { via: "london" } },
@@ -1189,6 +1203,10 @@ export const baggage: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): the time asked first; the overnight kit's price and a polite no
+    { name: "audit: when first, the kit declined", turns: ["My bag didn't arrive.", "It was flight 482 from New York.", "It's a large blue suitcase.", "When will I get it?", "Yes, please.",
+      "At the Harborview Hotel.", "My number is 555 0142.", "How much is it?", "That's okay, thanks."], expect: { complete: true }, auto: BG_AUTO,
+      setup: (s) => { s.offerKit = true; s.foundTwist = false; s.askTag = false; s.askConnection = false; s.askSize = false; s.askMaterial = false; s.askMarks = false; s.askBrand = false; s.askContents = false; } },
     // the bag is not in the system (so it is described), and Priya asks for the tag
     // "…to my hotel" is used: Priya asks which hotel ("Where are you staying?"), never "Where should we deliver it?"
     { name: "happy path: report, describe, deliver", turns: ["Hi, my bag didn't arrive.", "It was flight 482 from New York.", "Yes, here it is.", "It's a large blue suitcase with a red stripe on the side.", "Please deliver it to my hotel.", "At the Harborview Hotel.", "My number is 555 0142."],

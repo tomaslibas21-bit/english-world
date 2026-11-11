@@ -9,6 +9,7 @@
 // Lithuanian uses the plural (jūs girdite); to one colleague, tu.
 
 import type { Ctx, EntityDef, Pending, SituationDef } from "../types";
+import type { ConvCtx } from "../../convo/dialogue";
 import { ent, t } from "../dsl";
 import { GLOBAL_HANDLERS, expectHowAreYou } from "../global";
 
@@ -73,6 +74,11 @@ const live = (c: Ctx) => !c.s.ended;
 const once = (c: Ctx, key: string) => { const t = turn(c); if (c.s["__once_" + key] === t) return false; c.s["__once_" + key] = t; return true; };
 /** Checklist items the learner skips by leaving the call early are hidden, not failed. */
 const stay = (c: Ctx) => !c.s.leftEarly && !c.s.leaving;
+/** Another piece of the same utterance ("I finished the report, I'll send it after the call"). */
+const piece = (c: Ctx, ...intents: string[]) => ((c as any).conv?.out?.parse?.segments ?? []).some((sg: any) => intents.includes(sg.intent));
+const saidNo = (c: Ctx) => (c as any).conv?.out?.parse?.yn === "no";
+/** "Thanks, I'm fine" / "That's okay, thanks" to an offer: a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b|\bi can (do it|manage)\b/i;
 /** The learner says they have to leave the call ("Sorry, I have to go."). */
 const leavingNow = (c: Ctx) => /\b(have to|need to|must|got to|gotta)\s+(go|leave|jump off|drop off|hop off|run|log off|sign off|hang up)\b/i.test(c.heard || "");
 const byePaul = (c: Ctx) => { if (!once(c, "byePaul")) return; K(c, "bye_paul_kate"); P(c, "paul_bye"); };
@@ -104,7 +110,7 @@ function goodbye(c: Ctx) {
 
 type Upd = "done" | "working" | "behind" | "ok" | "nothing";
 
-function react(c: Ctx, kind: Upd, task?: string) {
+function react(c: Ctx, kind: Upd, task?: string, when = false) {
   if (task) c.s.task = task;
   c.s.update = kind;
   c.s.updOpen = false;
@@ -126,6 +132,19 @@ function react(c: Ctx, kind: Upd, task?: string) {
   }
   if (kind === "nothing" || kind === "ok") { K(c, "upd_nothing_resp"); return; }
   const X = taskVar(c.s.task);
+  // the rest of the utterance may answer the question that comes next ("I finished the report, I'll send it after the
+  // call", "I'll finish the report by Friday"): answered once, not asked (5 Nov 2026)
+  if (kind === "done" && piece(c, "will_send", "cant_send")) {
+    c.s.__updPiece = turn(c);
+    K(c, piece(c, "cant_send") ? "send_no" : "send_yes");
+    return;
+  }
+  if (kind !== "done" && (when || piece(c, "when_ans", "unsure"))) {
+    c.s.__updPiece = turn(c);
+    K(c, !when && piece(c, "unsure") ? "when_unsure" : "when_ok");
+    afterWhen(c);
+    return;
+  }
   if (kind === "done") {
     K(c, "upd_done_resp", { X });
     c.s.updOpen = true;
@@ -157,11 +176,16 @@ function afterWhen(c: Ctx) {
   if (c.s.update === "behind" && c.s.paulHelps && !c.s.paulLeft) {
     P(c, "paul_help");
     c.expect({
-      id: "help_offer", optional: true, expects: ["accept_help"], hints: ["g_yesno"],
+      id: "help_offer", optional: true, expects: ["accept_help", "decline_help_ctx"], hints: ["g_yesno"],
       suggest: [{ lt: "Priimti pagalbą", hint: "g_yesno" }],
-      yes: (cc) => P(cc, "paul_talk_later"),
+      yes: (cc) => P(cc, POLITE_NO.test(cc.heard) ? "paul_ok_short" : "paul_talk_later"),
       no: (cc) => P(cc, "paul_ok_short"),
-      on: { accept_help: (cc) => P(cc, "paul_talk_later"), g_thanks: (cc) => P(cc, "paul_talk_later") },
+      on: {
+        accept_help: (cc) => P(cc, "paul_talk_later"),
+        // "No, thanks." / "Thanks, I'm fine." / "Thanks, but I can do it." (the thank-you won over the no)
+        g_thanks: (cc) => P(cc, saidNo(cc) || POLITE_NO.test(cc.heard) ? "paul_ok_short" : "paul_talk_later"),
+        decline_help_ctx: (cc) => P(cc, "paul_ok_short"),
+      },
     });
   }
 }
@@ -237,7 +261,7 @@ export const videoCall: SituationDef = {
     hear_yes: { patterns: [
       "[yes] [i | we] can hear you [fine | okay | well | perfectly | now | loud and clear] #h:h_yes",
       "[yes] (loud and clear | perfectly | all good | i hear you [fine]) #h:h_loud",
-      "[yes] we can [hear you] #h:h_morning",
+      "[yes] we can [hear you] #h:h_morning", "[yes] now i can [hear you]",
       "[yes] i can (hear | see) you and (hear | see) you [too]",
       "[yes] i can hear and see you",
       "[yes] (i | we) can hear you (now | again) #h:ph_yes",
@@ -418,12 +442,14 @@ export const videoCall: SituationDef = {
     when_ans: { patterns: [
       "[maybe | probably | hopefully | i think | i hope] [it will be (ready | done) | i will finish it | i can finish it | it should be (ready | done)] {whenr} #h:w_when",
     ] },
-    unsure: { patterns: ["[i am] not sure [yet] #h:w_unsure", "i do not know [yet]", "no idea [yet]", "(it is | that is) hard to say", "i will let you know"] },
+    unsure: { patterns: ["[i am] not sure [yet] #h:w_unsure", "[i am] not sure when (it | they) will be (ready | done | finished)", "i do not know [yet]", "no idea [yet]", "(it is | that is) hard to say", "i will let you know"] },
     help_ask: { patterns: [
       "(could | can) (someone | anyone | you | somebody) help me with @tdet {task}",
       "i (need | could use) (some | a little) help with @tdet {task}",
       "(could | can) (someone | anyone | somebody) help me",
     ] },
+    decline_help_ctx: { patterns: ["[no] [thanks | thank you] [paul] [but] i am (fine | good | okay) [thanks]", "[no] [thanks | thank you] [paul] [but] i can (do it | manage) [myself | alone | on my own]",
+      "[no] [thanks | thank you] [but] i (do not | don't) need (help | any help) [thanks]", "[no] (do not | don't) worry [paul] [i can do it]"] },
     accept_help: { patterns: ["(that | it) would be great [thanks]", "[yes] that would be (great | nice | awesome) [thanks] [paul]", "[sure] thanks paul", "[yes] i would love that"] },
     q_slides: { patterns: [
       "(could | can) you send (us | me) the (slides | presentation | deck) [after the call] #h:q_slides",
@@ -1024,7 +1050,7 @@ export const videoCall: SituationDef = {
     { lt: "Pasakyk Paului apie mikrofoną", optional: true, when: stay, done: (c) => !!c.s.muteFixed && !!c.s.paulOk },
     { lt: "Pasakyk, ar matai ekraną", optional: true, when: stay, done: (c) => !!c.s.screenOk },
     { lt: "Pasakyk Keitei apie ryšį", optional: true, when: (c) => !!c.s.freezeAsks && stay(c), done: (c) => !!c.s.freezeOk },
-    { lt: "Papasakok, kaip sekasi darbe", done: (c) => !!c.s.update && !c.s.updOpen },
+    { lt: "Papasakok, kaip sekasi darbe", when: (c) => stay(c) || !!c.s.update, done: (c) => !!c.s.update && !c.s.updOpen },
     { lt: "Atsakyk, ar turi klausimų", optional: true, when: stay, done: (c) => !!c.s.questionsDone },
   ],
 
@@ -1043,11 +1069,11 @@ export const videoCall: SituationDef = {
       no: (c) => { c.s.weekendDone = true; K(c, "weekend_bad"); },
       help: (c) => { c.s.weekendDone = true; K(c, "ok"); } },
     { id: "camera", when: (c) => !!c.s.camOff && !!c.s.heard, done: (c) => !!c.s.camFixed,
-      ask: (c) => K(c, "camera_off"),
+      ask: (c) => { if (c.s.camTold) { c.s.camTold = false; return; } K(c, "camera_off"); }, // "…but your camera's off" said already
       expects: ["cam_fixed", "cam_fix_ctx", "cam_broken", "better_q", "better_now_ctx"],
       suggest: [{ lt: "Atsiprašyti ir įsijungti kamerą", hint: "camera" }],
       yes: (c) => { c.s.camFixed = true; K(c, "camera_on"); },
-      no: (c) => { c.s.camFixed = true; K(c, "camera_broken"); } },
+      no: (c) => { c.s.camFixed = true; c.s.camStillOn = false; K(c, "camera_broken"); } },
     { id: "mute", when: (c) => !!c.s.heard, done: (c) => !!c.s.muteFixed,
       ask: (c) => {
         c.s.muteAsks = (c.s.muteAsks || 0) + 1;
@@ -1076,7 +1102,7 @@ export const videoCall: SituationDef = {
       expects: ["mute_self", "better_q", "better_now_ctx"],
       suggest: [{ lt: "Išsijungti mikrofoną", hint: "echo" }],
       yes: (c) => { c.s.echoDone = true; K(c, "echo_ok"); },
-      no: (c) => { c.s.echoDone = true; K(c, "ok"); } },
+      no: (c) => { c.s.echoDone = true; } }, // a plain no: on with the call (it got "Sure.")
     { id: "freeze", when: (c) => !!c.s.freeze && !!c.s.screenOk, done: (c) => !!c.s.freezeDone,
       ask: (c) => {
         c.s.freezeAsks = (c.s.freezeAsks || 0) + 1;
@@ -1116,7 +1142,7 @@ export const videoCall: SituationDef = {
         });
       } },
     { id: "questions", when: (c) => !!c.s.update, done: (c) => !!c.s.questionsDone,
-      ask: (c) => { c.s.updOpen = false; K(c, "questions_ask"); },
+      ask: (c) => { c.s.updOpen = false; K(c, c.s.qAnswered ? "anything_else" : "questions_ask"); },
       expects: ["q_slides", "q_link", "q_deadline", "q_next", "q_back", "q_record", "no_questions", "have_question"],
       suggest: [{ lt: "Paklausti ko nors arba pasakyti, kad klausimų nėra", hint: "questions" }],
       yes: (c) => { K(c, "ok"); c.hold(); },
@@ -1161,23 +1187,30 @@ export const videoCall: SituationDef = {
       if (!live(c)) return;
       if (c.s.heard && c.s.muteFixed && c.step !== "hear") { K(c, "quiet_fix"); return; }
       K(c, seg.tags.includes("quiet") ? "quiet_fix" : "mic_fix");
-      c.expect({
+      const hear2 = (): Pending => ({
         id: "hear2", expects: ["hear_yes", "hear_no"], hints: ["hear_now"],
         suggest: [{ lt: "Atsakyti, ar dabar girdi", hint: "hear_now" }],
         yes: (cc) => { cc.s.heard = true; K(cc, "hear_ok"); },
-        no: (cc) => { cc.s.heard = true; K(cc, "quiet_fix"); },
+        no: (cc) => still(cc),
         on: {
           hear_yes: (cc) => { cc.s.heard = true; K(cc, "hear_ok"); },
-          hear_no: (cc) => { cc.s.heard = true; K(cc, "quiet_fix"); },
+          hear_no: (cc) => still(cc),
         },
         ask: (cc) => K(cc, "hear_reask"),
       });
+      // a no: "Is this better?" waits for its answer once (it went on without it); a second no and the call goes on
+      const still = (cc: Ctx) => {
+        if (cc.s.hear2No) { cc.s.heard = true; cc.speaker("kate"); (cc as ConvCtx).conv.pushLine("ok", 0, {}); return; }
+        cc.s.hear2No = true; K(cc, "quiet_fix"); cc.expect(hear2());
+      };
+      c.expect(hear2());
     },
     greet_team() { /* "Morning, Kate!": the greeting is enough; the question stays open */ },
     ask_hear_me(c) {
       if (!live(c)) return;
-      if (/\bmute|muted\b/i.test(c.heard)) { K(c, "heard_you"); return; }
-      if (c.s.camOff && !c.s.camFixed) { K(c, "heard_but_cam"); return; }
+      // "Am I on mute?": "No worries, we can hear you." (a "Yes" there said he was muted)
+      if (/\bmute|muted\b/i.test(c.heard)) { K(c, "camera_broken"); c.s.heard = true; return; }
+      if (c.s.camOff && !c.s.camFixed) { K(c, "heard_but_cam"); c.s.heard = true; c.s.camTold = true; return; }
       K(c, "heard_you");
       if (!c.s.heard) c.s.heard = true;
     },
@@ -1188,7 +1221,7 @@ export const videoCall: SituationDef = {
     },
     // "Sorry, I have to go.": the "sorry" belongs to the goodbye, the camera stays off
     cam_fix_ctx(c) { if (!live(c) || leavingNow(c)) return; c.s.camFixed = true; K(c, "camera_on"); },
-    cam_broken(c) { if (!live(c)) return; c.s.camFixed = true; K(c, "camera_broken"); },
+    cam_broken(c) { if (!live(c)) return; c.s.camFixed = true; c.s.camStillOn = false; K(c, "camera_broken"); },
     tell_mute(c) {
       if (!live(c)) return;
       if (c.s.muteFixed) { ack(c); return; }
@@ -1233,7 +1266,7 @@ export const videoCall: SituationDef = {
           on: {
             go_ahead: (cc) => saraGoes(cc),
             thanks_sara: (cc) => { cc.s.goAhead = true; },
-            g_thanks: (cc) => { cc.s.goAhead = true; },
+            g_thanks: (cc) => { if (saidNo(cc)) { saraGoes(cc); return; } cc.s.goAhead = true; },
             upd_done: (cc, sl) => react(cc, "done", sl.task),
             upd_working: (cc, sl) => react(cc, "working", sl.task),
             upd_behind: (cc, sl) => react(cc, "behind", sl.task),
@@ -1255,24 +1288,25 @@ export const videoCall: SituationDef = {
     },
     thanks_sara(c) { if (!live(c)) return; c.s.goAhead = true; },
     upd_done(c, slots) { if (!live(c)) return; c.s.firstDone = true; react(c, "done", slots.task); },
-    upd_working(c, slots) { if (!live(c)) return; c.s.firstDone = true; react(c, "working", slots.task); },
-    upd_behind(c, slots) { if (!live(c)) return; c.s.firstDone = true; react(c, "behind", slots.task); },
+    upd_working(c, slots) { if (!live(c)) return; c.s.firstDone = true; react(c, "working", slots.task, !!(slots.day || slots.whenr)); },
+    upd_behind(c, slots) { if (!live(c)) return; c.s.firstDone = true; react(c, "behind", slots.task, !!(slots.day || slots.whenr)); },
     upd_ok(c) { if (!live(c)) return; c.s.firstDone = true; react(c, "ok"); },
     upd_nothing(c) { if (!live(c)) return; c.s.firstDone = true; react(c, "nothing"); },
     task_ctx(c, slots) { if (!live(c)) return; react(c, "working", slots.task); },
-    when_ans(c) { if (!live(c)) return; K(c, "when_ok"); },
-    unsure(c) { if (!live(c)) return; K(c, "when_unsure"); },
+    when_ans(c) { if (!live(c) || c.s.__updPiece === turn(c)) return; K(c, "when_ok"); },
+    unsure(c) { if (!live(c) || c.s.__updPiece === turn(c)) return; K(c, "when_unsure"); },
     help_ask(c) { if (!live(c)) return; if (c.s.paulLeft) { ack(c); return; } P(c, "paul_help_sure"); },
     accept_help(c) { if (!live(c)) return; if (!c.s.paulLeft) P(c, "paul_talk_later"); else ack(c); },
-    q_slides(c) { if (!live(c)) return; K(c, "qa_slides"); askMore(c); },
-    q_link(c) { if (!live(c)) return; K(c, "qa_link"); askMore(c); },
-    q_deadline(c) { if (!live(c)) return; K(c, "qa_deadline"); askMore(c); },
-    q_next(c) { if (!live(c)) return; K(c, "qa_next"); askMore(c); },
-    q_back(c) { if (!live(c)) return; K(c, "qa_back"); askMore(c); },
-    q_record(c) { if (!live(c)) return; K(c, "qa_record"); askMore(c); },
+    decline_help_ctx(c) { if (!live(c)) return; if (!c.s.paulLeft) P(c, "paul_ok_short"); else ack(c); },
+    q_slides(c) { if (!live(c)) return; c.s.qAnswered = true; K(c, "qa_slides"); askMore(c); },
+    q_link(c) { if (!live(c)) return; c.s.qAnswered = true; K(c, "qa_link"); askMore(c); },
+    q_deadline(c) { if (!live(c)) return; c.s.qAnswered = true; K(c, "qa_deadline"); askMore(c); },
+    q_next(c) { if (!live(c)) return; c.s.qAnswered = true; K(c, "qa_next"); askMore(c); },
+    q_back(c) { if (!live(c)) return; c.s.qAnswered = true; K(c, "qa_back"); askMore(c); },
+    q_record(c) { if (!live(c)) return; c.s.qAnswered = true; K(c, "qa_record"); askMore(c); },
     no_questions(c) { if (!live(c)) return; c.s.questionsDone = true; K(c, "qa_none"); },
-    will_send(c) { if (!live(c)) return; ack(c); },
-    cant_send(c) { if (!live(c)) return; K(c, "send_no"); },
+    will_send(c) { if (!live(c) || c.s.__updPiece === turn(c)) return; ack(c); },
+    cant_send(c) { if (!live(c) || c.s.__updPiece === turn(c)) return; K(c, "send_no"); },
     better_now_ctx(c) { videoCall.handlers.better_q(c, {}, { intent: "better_q", slots: {}, tags: [] }); },
     // "Yes, one question: …" — the question itself usually follows in the same breath
     have_question(c) { if (!live(c)) return; if (c.step === "questions") { ack(c); c.hold(); } else ack(c); },
@@ -1280,6 +1314,7 @@ export const videoCall: SituationDef = {
       // once per turn: "Sorry, I have to go. Bye, everyone!" is one leaving (g_bye and bye_all come here too)
       if (!live(c) || !once(c, "leave")) return;
       c.s.heard = true;
+      if (!c.s.update && c.s.leaving) { K(c, "leave_ok"); goodbye(c); return; } // asked for the update already
       if (!c.s.update) {
         c.s.leaving = true;
         K(c, "leave_first");
@@ -1346,12 +1381,15 @@ export const videoCall: SituationDef = {
         g_howareyou: (cc) => { K(cc, "g_howareyou_reply"); expectHowAreYou(cc, (x) => x.expect(closing)); },
       },
       yes: (cc) => goodbye(cc),
-      no: (cc) => goodbye(cc),
+      no: (cc) => { K(cc, "vacation_ok"); goodbye(cc); },
     };
     c.expect(closing);
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Yes, now I can.", intent: "hear_yes" },
+    { say: "I'm working on the report. I'm not sure when it will be ready.", intent: "upd_working", step: "first" },
     { say: "Yes, I can hear you.", intent: "hear_yes", step: "hear" },
     { say: "Morning, Kate! Yes, we can.", intent: "greet_team", step: "hear" },
     { say: "Yes, loud and clear!", intent: "hear_yes" },
@@ -1438,6 +1476,10 @@ export const videoCall: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): "Thanks, I'm fine." to Paul's help is a no
+    { name: "audit: behind, Paul's help declined", setup: (s) => { s.paulHelps = true; s.freeze = false; s.collide = false; s.echoTwist = false; s.paulLeaves = false; s.camOff = false; s.smallTalk = false; s.saraLate = false; s.catTwist = false; s.camStillOn = false; },
+      turns: ["Yes, I can hear you.", "Paul, you're on mute!", "Yes, we can hear you now!", "Yes, I can see it.", "I'm a bit behind with the budget.", "By Friday.", "Thanks, I'm fine.", "No, that's all.", "Sounds good! Bye, everyone!"],
+      expect: { complete: true }, auto: AUTO },
     { name: "happy path", turns: ["Yes, I can hear you.", "Paul, you're on mute!", "Yes, we can hear you now!", "Yes, I can see it.", "I finished the report.", "Sure!", "Could you send us the slides?", "No, that's all.", "Sounds good! Bye, everyone!"], expect: { complete: true }, auto: AUTO },
     // "Kate, you froze.": Kate's video freezes (a twist) on every seed here
     { name: "problems and short answers", setup: (s) => { s.freeze = true; }, turns: ["Sorry, you're a bit quiet.", "Yes, much better.", "I think you're muted.", "Yes!", "No, I can only see your face.", "Yes, now I can see it.", "Kate, you froze.", "Yes.", "Sara, you go first.", "I'm working on the presentation.", "By Friday.", "No questions from me.", "See you next week!"], expect: { complete: true }, auto: AUTO },
@@ -1470,10 +1512,9 @@ function expectPaulHear(c: Ctx) {
 
 function paulStillMuted(c: Ctx) {
   if (!once(c, "paulStill")) return;
-  P(c, "paul_now");
   c.s.paulTries = (c.s.paulTries || 0) + 1;
-  if (c.s.paulTries < 2) expectPaulHear(c);
-  else c.s.paulOk = true; // Paul fixes it himself; the call goes on
+  if (c.s.paulTries < 2) { P(c, "paul_now"); expectPaulHear(c); }
+  else c.s.paulOk = true; // Paul fixes it himself; the call goes on (his "What about now?" twice in a row left it open)
 }
 
 function expectScreen2(c: Ctx) {
@@ -1499,17 +1540,22 @@ function afterScreen(c: Ctx) {
 function fixFreeze(c: Ctx) {
   c.s.freezeDone = true; c.twist("froze");
   K(c, "freeze_fix");
-  c.expect({
+  c.expect(freezePending());
+}
+/** "Can you hear me now?" after the freeze: a no gets "Is this better?" and its answer is waited for (once); a second
+ *  no and she carries on. */
+function freezePending(): Pending {
+  const ok = (cc: Ctx) => { cc.s.freezeOk = true; K(cc, "freeze_where"); K(cc, "present"); };
+  const no = (cc: Ctx) => {
+    if (cc.s.freezeNo) { ok(cc); return; }
+    cc.s.freezeNo = true; K(cc, "quiet_fix"); cc.expect(freezePending());
+  };
+  return {
     id: "freeze_q", expects: ["hear_yes", "hear_no"], hints: ["hear_now"],
     suggest: [{ lt: "Atsakyti, ar dabar girdi", hint: "hear_now" }],
-    yes: (cc) => { cc.s.freezeOk = true; K(cc, "freeze_where"); K(cc, "present"); },
-    no: (cc) => { cc.s.freezeOk = true; K(cc, "quiet_fix"); K(cc, "present"); },
-    on: {
-      hear_yes: (cc) => { cc.s.freezeOk = true; K(cc, "freeze_where"); K(cc, "present"); },
-      hear_no: (cc) => { cc.s.freezeOk = true; K(cc, "quiet_fix"); K(cc, "present"); },
-    },
+    yes: ok, no, on: { hear_yes: ok, hear_no: no },
     ask: (cc) => K(cc, "hear_reask"),
-  });
+  };
 }
 
 function saraGoes(c: Ctx) {

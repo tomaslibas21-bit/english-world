@@ -272,5 +272,11 @@
   { "ctx": "invite", "say": "Are you free on Friday? I have two tickets for a jazz concert.", "intent": ["ask_free", "tickets"] },
   { "ctx": "other_day", "say": "Oh, too bad. How about Friday?", "intent": "day_ans" },
   { "ctx": "other_day", "say": "That's a shame. Friday then?", "intent": "day_ans" },
-  { "ctx": "invite", "say": "It's not too bad", "intent": "any", "not": ["reassure"] }
+  { "ctx": "invite", "say": "It's not too bad", "intent": "any", "not": ["reassure"] },
+  { "ctx": "bbq", "say": "Maybe another day.", "intent": "decline_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "bbq", "say": "Not this time, thanks.", "intent": "decline_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "bbq", "say": "Maybe another day.", "intent": "any", "not": ["cant_wait"], "note": "logic audit 5 Nov 2026" },
+  { "ctx": "suggest_place", "say": "I don't like that place.", "intent": "place_no_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "suggest_place", "say": "Somewhere else, please.", "intent": "place_no_ctx", "note": "logic audit 5 Nov 2026" },
+  { "ctx": "suggest_place", "say": "I like that place.", "intent": "any", "not": ["place_no_ctx"], "note": "logic audit 5 Nov 2026" }
 ]}

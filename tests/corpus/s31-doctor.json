@@ -291,5 +291,10 @@
   {"ctx": "problem", "say": "I have a cough and a temperature of 38 since yesterday.", "intent": "symptom"},
   {"ctx": "fever", "say": "I have 38 since yesterday.", "intent": "temp_ans", "slots": {"temp": {"v": 38}}},
   {"ctx": "fever", "say": "37.2", "intent": "temp_ans", "slots": {"temp": {"v": 37.2}}},
-  {"ctx": "fever", "say": "Ninety-nine.", "intent": "temp_ans", "slots": {"temp": {"v": 99}}}
+  {"ctx": "fever", "say": "Ninety-nine.", "intent": "temp_ans", "slots": {"temp": {"v": 99}}},
+  {"ctx": "feeling", "say": "I feel bad, I have a fever.", "intent": "symptom", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "feeling", "say": "I feel terrible, I have a fever and a cough.", "intent": "symptom", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "rx_q", "say": "Will it make me drowsy?", "intent": "ask_drive", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "howlong", "say": "Can I go to work? Can I drive?", "intent": ["ask_work", "ask_drive"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "feeling", "say": "I don't have a fever.", "intent": "any", "not": ["symptom"], "note": "logic audit 5 Nov 2026"}
 ] }

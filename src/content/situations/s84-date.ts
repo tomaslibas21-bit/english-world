@@ -204,6 +204,11 @@ function afterReaction(c: Ctx, topic: Topic, seg: Segment | null) {
 }
 
 // Automatic answers the simulation uses for the partner's optional questions.
+/** "I don't want to see you again" (decline_again): a no to the date, not to the day offered. */
+const NO_DATE = /\b(see you again|meet again|go out again|(a )?good idea|(a )?(good )?match|compatible)\b/i;
+/** "That's okay, thanks" / "I'm fine, thanks" to an offer: a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+
 const AUTO: Record<string, string> = {
   drinks: "A glass of white wine, please", job: "I'm a nurse. And you?", hobby: "I love cooking. What about you?",
   travel: "No, never. But I'd love to go!", music: "Mostly jazz. And you?",
@@ -262,6 +267,13 @@ const H: Record<string, Handler> = {
   },
   same_drink_ans(c) { hi(c); c.s.drink = "white_wine"; if (!c.s.toldDrink) { c.s.toldDrink = true; c.say("own_drink"); } else if (once(c, "drink")) c.say("same_drink"); },
   no_alcohol(c) { hi(c); c.s.noAlcohol = true; if (once(c, "drink")) c.say("no_alcohol_ok"); },
+  no_drink_ctx(c, sl, sg) { H.no_alcohol(c, sl, sg); },
+  // "I'd rather not." / "Let's just be friends." at "Can I see you again?" or the day (they weren't understood)
+  no_date_ctx(c) {
+    hi(c);
+    c.s.againOk = false; c.s.declined = true;
+    if (once(c, "decline")) c.say("no_pressure");
+  },
   ask_drink(c) {
     hi(c);
     if (!c.s.toldDrink) { c.s.toldDrink = true; c.say("own_drink"); }
@@ -397,6 +409,9 @@ const H: Record<string, Handler> = {
   },
   decline_again(c) {
     hi(c);
+    // "I don't want to see you again" / "I don't think that's a good idea" after a first yes is a no to the date,
+    // not to that day (it got "How about Sunday, then?")
+    if (c.s.againOk && NO_DATE.test(c.heard)) { c.s.againOk = false; c.s.declined = true; if (once(c, "decline")) c.say("no_pressure"); return; }
     if (c.s.againOk) { // a day that doesn't work
       if (once(c, "dayno")) { c.say("how_about_sunday"); c.s.offerDay = "sunday"; }
       return;
@@ -773,6 +788,13 @@ export const date: SituationDef = {
     day_ctx: { patterns: ["@when_d [at {time}]"] },
     // "Thank you for the compliment!"
     thanks_compliment: { patterns: ["(thank you | thanks) [so much] for the compliment"] },
+    // "I'm fine, thanks" at "What would you like to drink?": no drink (it was a how-are-you answer and the question came again)
+    no_drink_ctx: { patterns: ["[no] i am (fine | good | okay) [for now] [thanks | thank you]", "[no] nothing for me [thanks | thank you]", "[no] i am good with water"] },
+    no_date_ctx: { patterns: [
+      "[no] [sorry] i would rather not", "[no] [sorry] i am not interested", "[no] [sorry] (let us | let's) just be friends", "[no] [sorry] i am not looking for anything serious",
+      "[no] [sorry] i do not think (it will | this will | it would) work", "[no] [sorry] i do not think we are compatible", "[no] [sorry] i (do not | don't) feel (it | the chemistry | a connection)",
+      "[no] [sorry] i (changed my mind | have changed my mind)", "[no] [sorry] i do not think (it is | this is | that is) a good idea",
+    ] },
     decline_again: { patterns: [
       "@sorry i do not think (so | that is a good idea) #h:ag_no", "@sorry i can not [on {day}]", "@sorry i am busy [(on {day} | that day)] #h:dy_busy", "@sorry not on {day}",
       "@sorry i (have | have got) plans [on {day}]", "maybe not", "i do not think we are a [good] match",
@@ -1403,8 +1425,10 @@ export const date: SituationDef = {
     })),
     { id: "drinks", when: (c) => c.s.askDrinks && !c.s.wrapUp, done: (c) => !!c.s.drink || !!c.s.noAlcohol || asked(c, "drinks") >= 2,
       ask: (c) => { bump(c, "drinks"); if (c.s.drinkBack) { c.s.drinkBack = false; c.say("ask_drinks_back"); } else c.say("ask_drinks"); },
-      expects: ["drink_ans", "same_drink_ans", "no_alcohol", "ask_drink", "me_too_ctx"],
-      suggest: [{ lt: "Pasirinkti gėrimą", hint: "drinks", options: "drink" }] },
+      expects: ["drink_ans", "same_drink_ans", "no_alcohol", "ask_drink", "me_too_ctx", "no_drink_ctx"],
+      suggest: [{ lt: "Pasirinkti gėrimą", hint: "drinks", options: "drink" }],
+      no: (c) => { H.no_alcohol(c, {}, { intent: "no_alcohol", slots: {}, tags: [] }); },
+      yes: (c) => { if (POLITE_NO.test(c.heard)) H.no_alcohol(c, {}, { intent: "no_alcohol", slots: {}, tags: [] }); } },
     ...(["job", "hobby", "travel", "music"] as Topic[]).map((tp) => ({
       id: tp,
       when: (c: Ctx) => !c.s.wrapUp && ((c.s.topics as Topic[]).includes(tp) || c.s.askBackShort === tp),
@@ -1468,7 +1492,7 @@ export const date: SituationDef = {
       yes: (c) => { c.s.niceTime = true; } },
     { id: "again", when: (c) => !c.s.declined, done: (c) => !!c.s.againOk || !!c.s.declined,
       ask: (c) => { c.s.partnerAsked = true; c.say("can_i_see_you"); },
-      expects: ["agree_again", "decline_again", "see_again", "propose_day", "me_too_ctx", "hesitate"],
+      expects: ["agree_again", "decline_again", "see_again", "propose_day", "me_too_ctx", "hesitate", "no_date_ctx"],
       suggest: [{ lt: "Sutikti susitikti vėl", hint: "again_answer" }, { lt: "Pasiūlyti, ką veiksite", hint: "again", options: "activity" }],
       yes: (c) => { c.s.againOk = true; c.say("yay_great"); },
       no: (c) => { c.s.declined = true; c.say("no_pressure"); },
@@ -1479,7 +1503,7 @@ export const date: SituationDef = {
         c.s.offerDay = c.s.busySat ? "sunday" : "saturday"; c.s.dayOffered = true;
         c.say("are_you_free_on", { D: c.s.offerDay });
       },
-      expects: ["propose_day", "agree_again", "decline_again", "day_ctx"],
+      expects: ["propose_day", "agree_again", "decline_again", "day_ctx", "no_date_ctx"],
       suggest: [{ lt: "Sutikti dėl dienos", hint: "day_answer" }, { lt: "Pasiūlyti kitą dieną ar veiklą", hint: "again", options: "activity" }],
       yes: (c) => dayYes(c),
       no: (c) => { if (c.s.offerDay === "saturday") { c.s.offerDay = "sunday"; c.say("how_about_sunday"); c.hold(); } else { c.s.offerDay = "friday"; c.say("when_free"); c.hold(); } } },
@@ -1535,6 +1559,11 @@ export const date: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): a no to the date itself; no drink
+    { say: "I'd rather not.", intent: "no_date_ctx", step: "again" },
+    { say: "Let's just be friends.", intent: "no_date_ctx", step: "again" },
+    { say: "No, sorry, I don't think it's a good idea.", intent: "no_date_ctx", step: "day" },
+    { say: "I'm fine, thanks.", intent: "no_drink_ctx", step: "drinks" },
     { say: "It's so nice to meet you!", intent: "greet_back", step: "greet" },
     { say: "Nice to meet you too!", intent: "greet_back", step: "greet" },
     { say: "You look great!", intent: "compliment", step: "greet" },

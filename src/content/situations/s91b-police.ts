@@ -255,6 +255,8 @@ export const police: SituationDef = {
     name_ctx: { patterns: ["{name}", "my name is {name} #h:name_mine", "(it is | i am) {name}", "(my | the) last name is {name}", "(my | the) first name is {name}", "[my | the] surname is {name} #tip:us_surname"] },
     spell_ctx: { patterns: ["{letters}", "(it is | that is | it is spelled | that is spelled) {letters} #h:spell_it"] },
     phone_ctx: { patterns: ["{digits}", "(it is | my number is | my phone number is | my cell is | my cell phone number is) {digits} #h:phone_its", "my mobile number is {digits} #tip:us_mobile", "you can (call | reach | text) me (at | on) {digits}", "(the number is | the best number is) {digits}"] },
+    // "What was the case number again?" (it wasn't understood)
+    case_q: { patterns: ["what (was | is) (the | my) case number [again]", "(can | could) you (repeat | tell me) the case number [again]", "what is the number of (the | my) case"] },
     no_phone: { patterns: ["i (do not | ) have (a | an) (american | us | local) (number | phone number)", "i do not have a (phone | number | phone number) [here]", "my phone was (in my wallet | stolen too)"] },
     cancel_cards: { patterns: [
       "should i (cancel | block | freeze) my (cards | bank cards | credit cards | card | credit card) #h:q_cancel",
@@ -285,7 +287,7 @@ export const police: SituationDef = {
     its_mine: { patterns: ["[yes] (that is | it is) mine #h:its_mine", "[yes] that is my {item}", "[yes] that is it", "[oh] thank (god | goodness) [that is mine | that is it]"] },
     not_mine: { patterns: ["[no] (that is | it is) not mine #h:not_mine", "[no] that is not my {item}", "[no] mine is {dp}", "no my {item} is {dp}", "[no] my {item} is (bigger | smaller | different | older | newer)"] },
     all_there: { patterns: ["[yes] everything is (here | there | still here | inside | in it) #h:all_there", "nothing is missing", "[yes] it is all (here | there)", "[yes] [all] my {content} [and my {content}] (is | are) [all | still] (here | there | inside)"] },
-    missing_some: { patterns: ["[no] the (cash | money) is (gone | missing)", "[no] (my | the) {content} (is | are) (gone | missing | not there | not here)", "[my {content} (is | are) here] [but] the (cash | money) is (gone | missing | not there)"] },
+    missing_some: { patterns: ["[yes | no] something is missing", "[no] not everything [is (here | there)]", "[yes | no] some (things are | money is | cash is) missing", "[no] the (cash | money) is (gone | missing)", "[no] (my | the) {content} (is | are) (gone | missing | not there | not here)", "[my {content} (is | are) here] [but] the (cash | money) is (gone | missing | not there)"] },
     bank_called: { patterns: ["[yes] i (did | have) [already]", "[yes] i (already | ) (called | blocked | cancelled | canceled) (them | my cards | my bank | it | the bank) [already]", "[yes] i called them [this morning | already]", "[yes] my cards (are | were) [already] (blocked | cancelled | canceled | frozen)", "[yes] i blocked (them | my cards) (in | with) the app", "[yes] i (call | called) [them | my bank] already"] },
     bank_not_yet: { patterns: [
       "[no] not yet", "[no] i (have not | did not) [called them | called my bank] [yet]", "[no] i have not had time [yet]",
@@ -799,7 +801,15 @@ export const police: SituationDef = {
       expects: ["all_there", "missing_some"],
       suggest: [{ lt: "Patikrinti ir pasakyti, ar viskas vietoje", hint: "all_there" }],
       yes: (c) => { c.s.checkedInside = true; c.say("lucky"); c.complete(); },
-      no: (c) => { c.s.checkedInside = true; c.s.found = "partial"; c.say("missing_some"); } },
+      no: (c) => {
+        c.say("ask_what_stolen");
+        const partial = (cc: Ctx) => { cc.s.checkedInside = true; cc.s.found = "partial"; cc.say("missing_some"); };
+        c.expect({ id: "what_missing", optional: true, expects: ["contents", "missing_some"], hints: ["all_there"],
+          suggest: [{ lt: "Pasakyti, ko trūksta", hint: "all_there" }],
+          on: { contents: (cc, sl) => { addContents(cc, sl); partial(cc); }, missing_some: partial, all_there: (cc) => { cc.s.checkedInside = true; cc.say("lucky"); cc.complete(); } },
+          yes: partial, no: partial });
+        c.hold();
+      } },
     { id: "phone", when: (c) => !!c.s.lastName && c.s.found !== "mine", done: (c) => !!c.s.phone,
       ask: (c) => c.say("ask_phone"),
       expects: ["phone_ctx", "no_phone"],
@@ -902,14 +912,21 @@ export const police: SituationDef = {
       if (/\bmobile\b/i.test(c.heard)) c.tip(police.tips!.us_mobile);
       if (once(c, "phone")) c.say("phone_ok");
     },
-    no_phone(c) { if (!live(c)) return; c.s.phone = true; c.say("no_phone_ok"); },
+    no_phone(c) { if (!live(c)) return; c.s.phone = true; c.s.noPhone = true; c.say("no_phone_ok"); },
+    case_q(c) { if (!live(c)) return; c.say("case_number"); },
     cancel_cards(c, _slots, seg) {
       if (!live(c)) return;
       c.s.bankDone = true;
       c.say(seg.tags.includes("done_cards") ? "cards_done" : "cards_yes");
     },
     // "Call your bank…" only for cards nobody has talked about (the officer's own bank question comes later)
-    what_now(c) { if (!live(c)) return; c.say(has(c, (e) => !!e.attrs?.cards) && !c.s.bankDone && !cardsQ(c) ? "what_now" : "will_call", { X: item(c) }); },
+    what_now(c) {
+      if (!live(c)) return;
+      // no local number: "You can call us, then" (not "We'll call you"); back without the cash: the report
+      if (c.s.noPhone) { c.say("no_phone_ok"); return; }
+      if (c.s.found === "partial") { c.say("missing_some"); return; }
+      c.say(has(c, (e) => !!e.attrs?.cards) && !c.s.bankDone && !cardsQ(c) ? "what_now" : "will_call", { X: item(c) });
+    },
     how_long(c) { if (!live(c)) return; c.say("how_long"); },
     chances(c) { if (!live(c)) return; c.say("chances"); },
     copy(c) { if (!live(c)) return; c.say("copy"); },
@@ -969,7 +986,7 @@ export const police: SituationDef = {
       c.complete();
     } else {
       c.say("case_number");
-      c.say("will_call", { X: item(c) });
+      if (!c.s.noPhone) c.say("will_call", { X: item(c) }); // "You can call us, then" was said to "I don't have a local number"
       c.complete();
     }
     c.say("anything_else");
@@ -995,6 +1012,10 @@ export const police: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Something's missing.", intent: "missing_some", step: "check_all" },
+    { say: "Yes, something's missing.", intent: "missing_some", step: "check_all" },
+    { say: "What was the case number again?", intent: "case_q" },
     { say: "I'd like to report a stolen wallet.", intent: "report", slots: { item: "wallet" } },
     { say: "Good afternoon. I'd like to report a theft.", intent: "report" },
     { say: "Someone stole my wallet.", intent: "report" },

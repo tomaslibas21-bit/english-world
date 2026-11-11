@@ -1,0 +1,34 @@
+/* The same outlined wordmark is used before JavaScript, while the town loads and on /zaisti.
+   Its fixed proportions do not depend on fonts arriving before or after a navigation. */
+.ew-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink, var(--foreground, #1f2a33));
+  background: var(--lh-bg, var(--background,
+    radial-gradient(120% 70% at 0% 0%, #dff0ee 0%, rgba(223, 240, 238, 0) 60%),
+    radial-gradient(90% 60% at 100% 100%, #fbe6cf 0%, rgba(251, 230, 207, 0) 65%),
+    linear-gradient(180deg, #f9f5ee 0%, #f3ece1 100%)));
+}
+.ew-loading-logo {
+  display: block;
+  width: clamp(188px, 35.3vw, 306px);
+  height: auto;
+  aspect-ratio: 306 / 198;
+  overflow: visible;
+}
+/* The course uses data-theme and different token names; the static game uses data-fs-theme. */
+:root[data-theme] .ew-loading {
+  --ink: var(--foreground);
+  --accent: var(--primary);
+}
+:root[data-theme="pastel"] .ew-loading {
+  --ink: #1f2a33;
+  --accent: #1f6f78;
+}

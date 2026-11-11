@@ -234,5 +234,7 @@
   {"ctx": "dest", "say": "To station.", "intent": "dest"},
   {"ctx": "dest", "say": "Can you take me to Italian restaurant?", "intent": "dest", "slots": {"place": {"dest": "trattoria"}}},
   {"ctx": "pay", "say": "Sorry, I only have hundred.", "intent": "pay_amount", "slots": {"price": 10000}},
-  {"ctx": "ride_check", "say": "No, I just need taxi to hotel.", "intent": ["dest", "ride_no"]}
+  {"ctx": "ride_check", "say": "No, I just need taxi to hotel.", "intent": ["dest", "ride_no"]},
+  {"ctx": "dest", "say": "How much is it to the airport?", "intent": ["ask_price", "dest"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "bag", "say": "That's okay, thanks. I'll keep it.", "intent": "any", "not": ["bag_trunk"], "note": "logic audit 5 Nov 2026"}
 ]}

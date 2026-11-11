@@ -75,7 +75,8 @@ const HOW: Record<string, string> = { lighthouse: "dir_lighthouse", museum: "wal
 const TOURISTY: Record<string, string> = { lighthouse: "tour_bit", boat: "tour_bit", pier: "tour_pier", market: "tour_market", trucks: "tour_locals", trattoria: "tour_locals", sunny_cup: "tour_locals", museum: "tour_quiet", park: "tour_quiet", jazz: "tour_locals" };
 const TIME: Record<string, string> = { lighthouse: "time_lighthouse", park: "time_lighthouse", market: "time_market", museum: "time_museum", trattoria: "time_trattoria", pier: "time_pier", boat: "time_boat", trucks: "time_trucks", sunny_cup: "time_any", jazz: "time_jazz" };
 const PRICE: Record<string, string> = { pier: "price_pier", trattoria: "price_trattoria", trucks: "price_cheap", sunny_cup: "price_cheap", lighthouse: "price_free", park: "price_free", market: "price_free", jazz: "price_free", museum: "price_museum", boat: "price_boat" };
-const BOOK: Record<string, string> = { pier: "book_pier", trattoria: "book_trattoria", boat: "book_boat" };
+// Lucia's takes reservations (s73's host asks "Do you have a reservation?"): "For dinner, yes", as The Pier
+const BOOK: Record<string, string> = { pier: "book_pier", trattoria: "book_pier", boat: "book_boat" };
 const OPEN: Record<string, string> = { museum: "open_museum", market: "open_market", jazz: "open_jazz", trucks: "time_trucks", lighthouse: "open_path", park: "open_path" };
 
 /** Common nouns take “the” ({X.the}: the article stays out of the natural Lithuanian); names don't. */
@@ -446,7 +447,7 @@ export const local: SituationDef = {
       "is there a [nice | good] (beach | park) [@here_] #nature", "is there a (museum | art museum | gallery) [@here_] #art", "something for (kids #kids | children #kids | the kids #kids | the family #kids)",
       "what is (famous | special | popular) [@here_]", "(what | how) about (shopping #shop | markets #shop | art #art | museums #art | nature #nature | parks #nature)",
       "what do you think i should (see | do | visit)", "what can (i | we) (see | do) [@here_] (today | tomorrow | this afternoon | tonight)",
-      "(where | what) is the best place to (see | watch) the sunset #view", "where can (i | we) (see | watch) the sunset #view", "something (historical #art | old #art | cultural #art | interesting)",
+      "(where | what) is the best place to (see | watch) the sunset #view", "where can (i | we) (see | watch) the sunset #view", "where is a (nice | good | great) (place | spot) to (see | watch) the sunset #view", "something (historical #art | old #art | cultural #art | interesting)",
     ] },
     spot_ctx: { patterns: ["[maybe | what about | how about] {spot} [maybe]"] },
     sight_neg: { patterns: ["i do not (like | want to see | care about) (museums | art | paintings | the museum)"] },
@@ -459,7 +460,7 @@ export const local: SituationDef = {
     // follow-ups
     ask_walk: { patterns: [
       "is @it_ within walking distance #h:u_walk", "is {spot} within walking distance", "can (i | we) walk (there | to it | to {spot})", "is @it_ far [from here]", "is {spot} far [from here] #h:p_far", "how far is (it | {spot}) [from here]",
-      "how (do | can) (i | we) get there #how #h:u_how", "how (do | can) i get to {spot} #how", "how long does it take [to get there | to walk there]", "is it close [to here]",
+      "how (do | can) (i | we) get there #how #h:u_how", "how (do | can) i get to {spot} #how", "where (is | are) {spot} [exactly] #how", "where is (it | that) [exactly] #how", "how long does it take [to get there | to walk there]", "is it close [to here]",
     ] },
     ask_touristy: { patterns: ["is @it_ (touristy | very touristy | full of tourists | crowded | busy) #h:u_touristy", "is {spot} (touristy | very touristy | crowded | busy)", "are there (a lot of | many | lots of) tourists [there]"] },
     ask_best_time: { patterns: ["what is the best time to (go | visit) [there | {spot}] #h:u_time", "when (should | can) (i | we) go [there]", "when is the best time to (go | visit) [there | {spot}]", "what time should (i | we) go [there]", "when should i visit {spot}"] },
@@ -470,7 +471,8 @@ export const local: SituationDef = {
     ask_worth: { patterns: ["is @it_ worth (it | a visit | the trip | the walk | the money)", "is it worth (going | seeing)"] },
     ask_safe: { patterns: ["is (it | the town | this town | maple harbor | this area) safe [at night | to walk at night | for walking at night] #h:u_safe", "is it safe to walk (at night | around at night | back at night)"] },
     no_crowds: { patterns: ["i do not like (crowds | tourists | touristy places | crowded places | busy places)", "(i want | i would like) somewhere (quiet | not touristy | without tourists)"] },
-    no_walk: { patterns: ["i do not want to walk (that far | so far | there)", "that is too far [to walk]", "i can not walk (that far | so far)", "is there a bus [there]"] },
+    no_walk: { patterns: ["i do not want to walk (that far | so far | there)", "that is too far [to walk]", "i can not walk (that far | so far)", "is there a bus [there | to {spot}]",
+      "where (do | can) (i | we) (catch | get | take) the bus", "how (do | can) (i | we) get (there | to {spot}) by bus", "can (i | we) (take | get) (a | the) bus [there | to {spot}]"] },
     thanks_tip: { patterns: [
       "(thanks | thank you) for the (tip | tips | advice | recommendation | recommendations | help) #h:t_tip", "you have been (really | so | very) helpful #h:t_helpful", "that is (really | very | so) helpful",
       "(that | it) sounds (great | good | lovely | amazing | perfect | wonderful) #h:t_sounds", "i will (check it out | try it | go there | try that) #h:t_check", "great tip", "(that is | what) a great (tip | idea)",
@@ -642,7 +644,6 @@ export const local: SituationDef = {
     price_museum: [t("About | eighteen | dollars, | I | think. | Students | pay | less.", "Apie | aštuoniolika | dolerių, | aš | manau. | Studentai | moka | mažiau.", "Apie aštuoniolika dolerių, manau. Studentai moka mažiau.")],
     price_boat: [t("About | thirty-five | dollars, | I | think.", "Apie | trisdešimt penkis | dolerius, | aš | manau.", "Apie trisdešimt penkis dolerius, manau.")],
     book_pier: [t("For dinner, | yes. | Especially | on weekends.", "Vakarienei, | taip. | Ypač | savaitgaliais.", "Vakarienei – taip. Ypač savaitgaliais.")],
-    book_trattoria: [t("They | don't take | reservations. | Just | go | early.", "Jie | nepriima | rezervacijų. | Tiesiog | eikite | anksti.", "Jie nepriima rezervacijų. Tiesiog eikite anksti.")],
     book_boat: [t("Yes! | Book | the | day | before, | by phone | or | online.", "Taip! | Užsisakykite | — | dieną | prieš, | telefonu | arba | internetu.", "Taip! Užsisakykite dieną prieš – telefonu arba internetu.")],
     book_no: [t("No, | you | can | just | go.", "Ne, | jūs | galite | tiesiog | eiti.", "Ne, galite tiesiog eiti.")],
     open_museum: [t("It's | open | ten | to | five, | but | it's | closed | on Mondays.", "Jis yra | atidarytas | nuo dešimties | iki | penkių, | bet | jis yra | uždarytas | pirmadieniais.", "Jis dirba nuo dešimties iki penkių, bet pirmadieniais uždarytas.")],
@@ -910,7 +911,8 @@ export const local: SituationDef = {
       ask: (c) => c.say("ask_cuisine"),
       expects: ["food_ans", "food_neg"],
       suggest: [{ lt: "Pasakyti, kokio maisto nori", hint: "cuisine", options: "cuisine" }, { lt: "Paprašyti pigesnės vietos", hint: "food" }],
-      help: (c) => { recommend(c, foodFor(c, undefined, !!c.s.cheap)); } },
+      help: (c) => { recommend(c, foodFor(c, undefined, !!c.s.cheap)); },
+      no: (c) => { c.say("then_try"); recommend(c, foodFor(c, undefined, !!c.s.cheap)); } },
     // Rosa asks once; if the learner talks about something else, she lets it go (an optional question).
     { id: "from", when: (c) => c.s.askFrom && !!(c.s.foodRec || c.s.sightRec) && !(c.s.foodRec && c.s.sightRec), done: (c) => !!c.s.fromDone,
       ask: (c) => {
@@ -991,6 +993,11 @@ export const local: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Where do I catch the bus?", intent: "no_walk" },
+    { say: "How do I get there by bus?", intent: "no_walk" },
+    { say: "Where is The Pier?", intent: "ask_walk", slots: { spot: "pier" } },
+    { say: "Where's a nice place to watch the sunset?", intent: "ask_sight" },
     // the market stalls in the picture: buying fruit gets a friendly pointer, never "I didn't understand"
     { say: "I'd like to buy some fruit", intent: "buy_produce" },
     { say: "Where can I buy vegetables?", intent: "buy_produce" },
