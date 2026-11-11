@@ -841,6 +841,51 @@ every one of them off and its cast uses none of the options.
   The same pictures; every room at or under its draw calls before the round (up to 6 fewer). Maple Harbor keeps a
   mesh each.
 
+## Graphics, round 4: the rooms (11 Nov 2026)
+
+Round 4 of the rating (the side notes' GRAPHICS.md, "Round 4 (rooms)"): the shops and the clinic (6 each in the fresh
+re-rating, "Maple Harbor's shop with Spanish signs") made to read as Mexican ones from a phone's door view, then the
+bank, the big halls, El Muelle and the homes. All switched on by the Spanish theme (new fields in
+src/game/world/theme.ts: `roomWallH`; `RoomLook` `dado`, `dadoH`, `upper`, `pasta` and the floor kinds `barro`,
+`granito`, `ceramic`; `roomExtras` `shopsMx4`, `clinicMx4`, `bankMx`, `hallsMx`); Maple Harbor's values switch every one
+of them off (its rooms are pixel-identical).
+
+- **Taller walls** (`roomWallH` 8.6 m): an upright phone's room camera (60–66° tall) looks over a 4.2 m back wall into
+  the dark: the top tenth of its picture was black. The walls now go up past the picture's top: a cornice in the room's
+  accent at 4.2 m, the upper wall a lighter tint of the wall, the ends of the ceiling's beams (vigas) under the top. On a
+  wide screen the dark corners above the side walls are gone too.
+- **Painted walls and Mexican floors** (`roomLooks`): a strong lower band under each light wall with a line of the
+  accent on top (the dado, also on the inside of the low front wall: the bottom of a phone's picture). Hilos:
+  terracotta tiles, añil under warm cal; the estética: mosaicos de pasta in turquoise and rosa mexicano, turquoise under
+  pink; Tienda El Faro: large ceramic tiles, the station's red under cream; the car rental: granito, green under sand;
+  the clinic: granito, verde agua under white (1.4 m, as a Mexican clinic's walls); the bank: granito under wood
+  paneling; the museum: terracotta under a Maya red band; the airport: warm granito; El Muelle: mango walls over the
+  sea's blue instead of pale blue; Diego and Natalia's house and Las Palmas: a dado.
+- **The shops** (`shopsMx4`): what each sells painted along the upper wall (Hilos "ROPA TÍPICA · GUAYABERAS · REBOZOS
+  · HUIPILES · SOMBREROS", the estética "CORTES · TINTES · PEINADOS · UÑAS · MAQUILLAJE", El Faro "ABARROTES ·
+  REFRESCOS · BOTANAS · HIELO · RECARGAS", the rental "AUTOS · CAMIONETAS · SEGURO INCLUIDO · GPS · SILLAS PARA NIÑO")
+  and price boards in pesos from the conversations: Hilos s74's (guayaberas $950, blusas bordadas $550, vestidos $890,
+  sombreros $390, sandalias $750), the estética s77's (corte $200, lavado and secado $50, fleco $60; tinte desde $450 and
+  uñas $180, which s77 doesn't mention), El Faro's fuel prices as a station shows them (s71b: magna $23.89, premium
+  $25.99, diésel $26.79 a liter), the rental's rates a day (s71a: económico $650, compacto $750, mediano $950, SUV
+  $1,400, minivan $1,800, seguro incluido). Hilos: straw hats hung on the back wall, guayaberas and embroidered blouses
+  on the two middle racks (instead of Maple Harbor's colored shirts), a Zapotec rug and a petate instead of the lilac
+  rugs, talavera on the counter's front, papel picado under the beams. The estética: the pink rugs left out (the
+  mosaicos show), papel picado. El Faro: a chest of HIELO, a tall rack of botanas, garrafones by the door. The rental: a
+  Riviera Maya poster (Tulum, Cobá, Bacalar) and the rates where Maple Harbor has two car pictures, a palm.
+- **The clinic** (`clinicMx4`, s31): the reception ("Recepción · Citas · Informes") with the garrafón and its cups by
+  the door instead of Maple Harbor's check-in desk by the west wall, a row of joined chairs facing the room's middle, a
+  wheelchair, "¡Lávate las manos!", the hours and the visit's price (s31: $500), Dra. Herrera's plaque with her
+  cédula profesional, the services along the upper wall. Dra. Herrera's spot and the way to it are unchanged.
+- **The bank** (`bankMx`): a compass rose inlaid in the granito by the door instead of the round seal with a star.
+- **The halls and homes** (`hallsMx`): a welcome frieze over the airport's halls, the museum's name and rooms over its
+  hall and a Zapotec rug by its door, the hotel's name, El Muelle's "MARISCOS · PESCADO A LA TALLA · CEVICHE ·
+  COCTELES" and a sailfish on its plaque instead of the life ring; the hotel's hammock hung across the lobby's corner
+  (it hung flat along the wall and read as a striped banner); a Zapotec rug and a mecedora (a Yucatecan rocking chair)
+  in Diego and Natalia's house, a rug in Las Palmas' hallway.
+
+Everything new is in the rooms' merged meshes and their sign atlas: no room draws more calls than before the round.
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

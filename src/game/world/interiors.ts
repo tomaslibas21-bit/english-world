@@ -3789,7 +3789,7 @@ function rotulo(text: string, sub: string, o: { bg: string; fg: string; ink: str
 
 /** A painted frieze along an upper wall: the words in outlined capitals between little diamonds, a stripe above and
  *  below. */
-function frieze(words: string[], o: { bg: string; fg: string; ink: string }, w = 2048, h = 128) {
+function frieze(words: string[], o: { bg: string; fg: string; ink: string }, w = 2000, h = 125) {
   return canvasTex(w, h, (x) => {
     x.fillStyle = o.bg; x.fillRect(0, 0, w, h);
     x.fillStyle = o.ink; x.fillRect(0, h * 0.04, w, h * 0.07); x.fillRect(0, h * 0.89, w, h * 0.07);
