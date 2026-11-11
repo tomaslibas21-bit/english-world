@@ -201,3 +201,11 @@ intent: both give the stop's way). Held-out 43/43, unchanged.
 `confirm_busstop` and `confirm_taqueria` (scene-data, the pictures track); the "far" picture of `confirm_beach` and
 `confirm_pier` now goes with ways of two minutes. The airport: in the 3D town it closes avenida Juárez's east end (about
 200 m away); the conversations keep it out of town (a taxi), as the lead asked.
+
+## Spain twins (11 Nov 2026)
+
+- 81 Spain twins (lines and hints), 24 items in tests/es/spain/s62-visitor-center.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Don Chuy keeps usted.
+- Words: Directions in Spain's words: manzana for cuadra, (todo) recto for derecho/derechito, girar for dar vuelta (gire, gira, giro), solo for nada más, conductor for chofer, billetes for boletos, coger for tomar (a taxi, a bus, the colectivo), furgoneta for camioneta, pequeño for chiquito, andando for caminando, por la mañana/tarde/noche for en la…; the perfect for what just happened (¿Me ha entendido?, ¿Le ha quedado claro?, ¿otra vez he hablado muy rápido?); the hints ¡Vale, entendido!, Ya me oriento.
+- Grammar: ask_map takes ¿me deja un mapa?; did_i and understood take (lo) he entendido and me oriento; the word entities cuadra and derechito take manzana and (todo) recto, so ¿Qué significa manzana? is answered. Merges: todo recto, por la noche, me oriento.
+- Left as is: the word chips still show cuadra, derechito and banqueta (as the neutral text left banqueta): a learner who chose España never hears them, but may still ask. "Vale, muchas gracias" at ¿Algo más? reads as yes (vale = yes, global), as "Bueno, muchas gracias" does: a proposal for the shared yes/no reading, not changed here.

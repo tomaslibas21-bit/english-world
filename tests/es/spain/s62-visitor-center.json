@@ -1,0 +1,163 @@
+{
+"situation": "s62-visitor-center",
+"items": [
+{
+"ctx": "need",
+"say": "Hola, ¿me deja un mapa, por favor?",
+"intent": "ask_map"
+},
+{
+"ctx": "need",
+"say": "¿Tenéis mapas del pueblo?",
+"intent": "ask_map"
+},
+{
+"ctx": "need",
+"say": "¿Cómo se va a la estación de autobuses?",
+"intent": "ask_where",
+"slots": {
+"place": "station"
+}
+},
+{
+"ctx": "need",
+"say": "Perdone, ¿dónde está la farmacia?",
+"intent": "ask_where",
+"slots": {
+"place": "pharmacy"
+}
+},
+{
+"ctx": "map",
+"say": "Vale, gracias",
+"intent": [
+"yn:yes",
+"g_thanks",
+"accept_ctx",
+"g_ok"
+]
+},
+{
+"ctx": "map",
+"say": "No, gracias, ya tengo uno",
+"intent": [
+"map_no",
+"yn:no"
+]
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "Entonces salgo a la izquierda y sigo todo recto dos manzanas, ¿no?",
+"intent": "confirm"
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "¿En el banco giro a la izquierda?",
+"intent": "confirm"
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "Todo recto y en el banco a la izquierda",
+"intent": "confirm"
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "¿Cuántas manzanas?",
+"intent": "ask_blocks"
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "Perdone, ¿dónde giro?",
+"intent": "ask_turn_where"
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "¿Lo he entendido bien?",
+"intent": [
+"did_i",
+"understood"
+]
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "Vale, entendido, gracias",
+"intent": [
+"understood",
+"g_ok"
+]
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "¿Me lo puede repetir más despacio?",
+"intent": [
+"say_again_slowly",
+"g_slower"
+]
+},
+{
+"ctx": "confirm_sunny_cup",
+"say": "¿Qué significa manzana?",
+"intent": "word_q"
+},
+{
+"ctx": "quiz",
+"say": "Giro a la izquierda",
+"intent": "dir_ans_ctx",
+"slots": {
+"dir": "left"
+}
+},
+{
+"ctx": "quiz",
+"say": "Todo recto",
+"intent": "straight_ans_ctx",
+"not": [
+"dir_ans_ctx"
+]
+},
+{
+"ctx": "more",
+"say": "¿Dónde cojo el colectivo?",
+"intent": "ask_buspass"
+},
+{
+"ctx": "more",
+"say": "¿Dónde están los servicios?",
+"intent": "ask_restroom"
+},
+{
+"ctx": "more",
+"say": "¿Dónde puedo coger un taxi?",
+"intent": "ask_taxi"
+},
+{
+"ctx": "more",
+"say": "¿Tenéis wifi?",
+"intent": "ask_wifi"
+},
+{
+"ctx": "more",
+"say": "Nada más, gracias",
+"intent": [
+"more_no",
+"yn:no"
+]
+},
+{
+"ctx": "more",
+"say": "Vale, eso es todo, gracias",
+"intent": [
+"more_no",
+"yn:no"
+]
+},
+{
+"ctx": "recheck",
+"say": "Vale, ya lo he entendido",
+"intent": [
+"understood",
+"g_ok"
+]
+}
+]
+}

@@ -1,0 +1,126 @@
+{
+"situation": "s65a-passport",
+"items": [
+{
+"ctx": "passport",
+"say": "Aquí lo tiene",
+"intent": "hand_over"
+},
+{
+"ctx": "passport",
+"say": "¿Tengo que rellenar algún formulario?",
+"intent": "q_form"
+},
+{
+"ctx": "purpose",
+"say": "Vengo de vacaciones",
+"intent": "purpose"
+},
+{
+"ctx": "purpose",
+"say": "He venido a visitar a mi madre",
+"intent": "purpose_visit"
+},
+{
+"ctx": "purpose",
+"say": "He venido a vivir aquí",
+"intent": "purpose"
+},
+{
+"ctx": "visa",
+"say": "Sí, tengo visado de residente",
+"intent": "have_visa"
+},
+{
+"ctx": "visa",
+"say": "No, no tengo visado",
+"intent": "have_esta"
+},
+{
+"ctx": "visa",
+"say": "¿Necesito visado?",
+"intent": "q_esta"
+},
+{
+"ctx": "length",
+"say": "Quince días",
+"intent": "length"
+},
+{
+"ctx": "stay",
+"say": "He alquilado un piso",
+"intent": [
+"stay_airbnb",
+"stay"
+]
+},
+{
+"ctx": "address",
+"say": "La tengo en el móvil",
+"intent": "address_phone"
+},
+{
+"ctx": "return",
+"say": "Sí, lo llevo en el móvil",
+"intent": "return_yes"
+},
+{
+"ctx": "return",
+"say": "Todavía no lo he comprado",
+"intent": "return_no"
+},
+{
+"ctx": "return",
+"say": "Vuelvo el veinte de junio",
+"intent": "return_date"
+},
+{
+"ctx": "first",
+"say": "No, ya he venido antes",
+"intent": "first_no"
+},
+{
+"ctx": "job",
+"say": "Soy profesora",
+"intent": "job"
+},
+{
+"ctx": "cash",
+"say": "Llevo unos mil dólares",
+"intent": "cash_amount"
+},
+{
+"ctx": "cash",
+"say": "No llevo efectivo",
+"intent": "cash_none_ctx"
+},
+{
+"ctx": "fingers",
+"say": "¿Qué dedo?",
+"intent": "which_hand_ctx"
+},
+{
+"ctx": "fingers",
+"say": "Ya está",
+"intent": "bio_ok_ctx"
+},
+{
+"ctx": "photo",
+"say": "¿Me quito las gafas?",
+"intent": "glasses"
+},
+{
+"ctx": "days",
+"say": "Vale, gracias",
+"intent": [
+"accept_days_ctx",
+"yn:yes"
+]
+},
+{
+"ctx": "passport",
+"say": "¿Dónde puedo coger un taxi?",
+"intent": "q_taxi"
+}
+]
+}

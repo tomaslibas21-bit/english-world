@@ -307,3 +307,11 @@ questions, refusals with a reason, side questions), and the offer probe in both 
 - "No, gracias" to "¿Prefiere un ventilador por ahora, o cambiar de habitación?" moves the guest (the either/or's no
   is the second option). Kept: nothing is paid, and it is the English edition's shape.
 - Rooms 412 ("cuarto piso") and 518 ("quinto piso") stay; the 3D building is 17 m high.
+
+## Spain twins (11 Nov 2026)
+
+- 47 Spain twins (lines and hints), 18 items in tests/es/spain/s68-hotel.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Fernanda keeps usted.
+- Words: reserva, cama de matrimonio, habitación individual, ¿Me deja…? for ¿Me presta/permite…?, documento de identidad, coste, la cuarta/quinta/segunda/tercera planta for el … piso (say too), ascensor(es), aparcamiento, Por supuesto / ¡De nada! for Con gusto, a dos calles, Vuelva a las tres, ¡Qué bien!, the perfect (ya lo he anotado, ya he encontrado, ya lo he corregido, ya he hecho el cambio; the learner's He reservado, Ya he vuelto), Ya está.
+- Grammar: nights_fix takes he reservado; sign_ok_ctx takes ya he firmado; return_ready_ctx takes ya he vuelto. Merges: the perfects, de matrimonio, documento de identidad.
+- Kept: impuesto de hospedaje (the state's tax).

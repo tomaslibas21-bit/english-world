@@ -102,3 +102,11 @@ accent (the totals up to nine tickets and guides, 3 new lines, the neutral twins
 
 For the lead: graphics could add an elevator door ("Elevador") on the museum's west side, a "Paquetería" sign by the
 entrance and a "Baños" sign at the back (the lines point there).
+
+## Spain twins (11 Nov 2026)
+
+- 29 Spain twins (lines and hints), 15 items in tests/es/spain/s70-museum.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Iván and Don Arturo keep usted.
+- Words: le da tiempo a ver for le alcanza para ver, carné (de estudiante) for credencial, jubilados for adultos mayores in the lines and the learner's de jubilado; the senior entity says persona mayor in Spain (two units, like adulto | mayor), datáfono and móvil, Muy bien for Listo, lleva (mochila), ascensor, hacer fotos for tomar fotos, aseos, ya lo he cambiado, me he equivocado, Vale, pago la entrada general.
+- Grammar: no_id and no_cash take llevo; enough_time takes ¿me/le da tiempo a verlo todo?. Merges: da tiempo, he cambiado, muy bien, me he equivocado.
+- The senior chip still reads adulto mayor (chip text, as in s65b).

@@ -110,3 +110,11 @@ the mercado (the church stop only before the zócalo; the beach has no next stop
 - "¡Bajan!" and "¿Le paro?" stay in the neutral text: the brief's own teaching point, Mexican custom in a Mexican town.
 - The ATM "en la terminal, ahí adentro" isn't built (the town's ATM is at the bank's door); it's the "named, not
   built" kind.
+
+## Spain twins (11 Nov 2026)
+
+- 22 Spain twins (lines and hints), 12 items in tests/es/spain/s67b-bus.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Ana (the driver) keeps usted.
+- Words: coja for tome, conductor for chofer, billete, no le llega for no le alcanza, carné, móvil, dentro, Ya ha pagado, no tengo cambio for no traigo cambio, ¿No tiene algo más pequeño?, Se tarda unos… for Se hace como…, Ya hemos llegado, Para volver, cójalo enfrente, detrás de mí, Ya ha terminado mi turno.
+- Grammar: no_change takes solo llevo; ask_back takes para volver / de vuelta; is_my_stop takes ya hemos llegado. Merges: ha pagado, hemos llegado, muy bien, detrás de, ha terminado.
+- Kept: ¡Bajan! (the riders' call to stop, a Mexican custom of the town).
