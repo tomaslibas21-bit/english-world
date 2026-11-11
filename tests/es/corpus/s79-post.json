@@ -1931,6 +1931,46 @@
 "doc_ctx"
 ],
 "note": "audit 5 Nov"
+},
+{
+"ctx": "contents_list",
+"say": "Aquí está mi pasaporte",
+"intent": "show_doc",
+"note": "follow-up 5 Nov: to the US she asks for an ID"
+},
+{
+"ctx": "contents_list",
+"say": "Claro, aquí tiene mi identificación",
+"intent": [
+"show_doc",
+"here_you_go"
+],
+"note": "follow-up 5 Nov"
+},
+{
+"ctx": "contents_list",
+"say": "¿Sirve mi licencia de manejo?",
+"intent": "show_doc",
+"note": "follow-up 5 Nov"
+},
+{
+"ctx": "contents_list",
+"say": "¿Qué pongo en la declaración?",
+"intent": [
+"what_write",
+"ask_customs"
+],
+"note": "follow-up 5 Nov"
+},
+{
+"ctx": "contents_list",
+"say": "No traigo identificación",
+"intent": "any",
+"not": [
+"show_doc",
+"here_you_go"
+],
+"note": "follow-up 5 Nov trap"
 }
 ]
 }

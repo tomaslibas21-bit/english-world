@@ -312,5 +312,7 @@
   {"ctx": "seat_clarify", "say": "Sí, en medio", "intent": "seat_ans"},
   {"ctx": "bp", "say": "¿Dónde recojo mi maleta?", "intent": "ask_pickup", "not": ["bags_ans"], "note": "audit: not understood"},
   {"ctx": "bp", "say": "¿La recojo en la Ciudad de México?", "intent": "ask_pickup"},
-  {"ctx": "bp", "say": "¿En dónde recupero mi equipaje?", "intent": "ask_pickup"}
+  {"ctx": "bp", "say": "¿En dónde recupero mi equipaje?", "intent": "ask_pickup"},
+  {"ctx": "bp", "say": "¿Dónde queda seguridad?", "intent": "ask_security", "note": "follow-up 5 Nov: security on the right"},
+  {"ctx": "bp", "say": "¿Por dónde voy ahora?", "intent": "ask_security", "note": "follow-up 5 Nov"}
 ] }

@@ -14,13 +14,16 @@ Batches (docs/es/PLAN.md): **A** the trial · **B** arrival and getting around �
 immigration desk (Instituto Nacional de Migración style, made-up name). Mexico now gives most visitors a stamp with
 the days allowed (up to 180) instead of the old paper FMM: "¿Cuántos días se va a quedar?", "¿Motivo de su viaje?",
 "¿Dónde se va a hospedar?", "¿Trae su pase de abordar / boleto de regreso?". The twist: she gives fewer days than
-asked and the learner asks politely for more. Numbers: days, dates. Accept "turismo", "de vacaciones", "por
+asked and the learner asks politely for more; once she has seen the return ticket she gives the days up to the return
+date, never more than the trip, and says so ("Le doy treinta días, lo que necesita hasta su regreso"; the lead's
+decision, 5 Nov 2026). Numbers: days, dates. Accept "turismo", "de vacaciones", "por
 trabajo", "vine a vivir aquí" (a mover: "¿Tiene visa de residente?" — a residente temporal card).
 
 **s65b-baggage · "Mi maleta no llegó"** — Itzel (f), baggage services, usted. Lost luggage form: flight number
 (letters + digits: "AM 123" said "a, eme, ciento veintitrés"), describing the bag (color, size, brand, "con
 ruedas", "de tela / rígida"), the hotel address, a phone number (digits in pairs). The twist: the bag is in Cancún
-and comes "mañana en el primer vuelo". Teaches maleta / equipaje / reclamo de equipaje. **Customs at the end** (the
+and comes "mañana en el primer vuelo". Teaches maleta / equipaje / reclamo de equipaje (the hall's sign, and Itzel's
+desk: "…o preguntar aquí, en reclamo de equipaje"). **Customs at the end** (the
 owner's choice, 2 Nov: customs left the passport conversation): "¿Trae algo que declarar?", fruit and food, the
 sniffer dog, with Agente Medina (id `aduana`, Aduana), as Cancún airport does it now: only what official sources
 confirm (ANAM / SAT, SENASICA, the airport), sources in docs/es/reviews/s65b-baggage.md.
@@ -39,7 +42,9 @@ las tres". Numbers: room numbers, times, nights.
 **s62-visitor-center · "¿Me lo puede repetir?"** — Don Chuy (m), tourist information volunteer, talks fast (keep
 `speed: 1.18`), usted. The skill: asking to repeat, slow down, spell, write it down. He recommends the cenote, the
 ruins, the beach, the Saturday tianguis; names to spell ("Xcacel", "Chemuyil": Maya names with x = sh). Must use the
-global skills heavily (`¿Mande?`, "más despacio", "¿cómo se escribe?").
+global skills heavily (`¿Mande?`, "más despacio", "¿cómo se escribe?"). Changing money: "la casa de cambio de la
+avenida Juárez", toward the zócalo (named, not built); the bank changes only US dollars, and only for its customers
+(s78; the lead's decision, 5 Nov 2026).
 
 **s69-local · "¿Qué me recomienda?"** — Doña Carmen (f), born and raised here, sitting on her bench in the zócalo,
 usted. The learner asks a local for tips: where to eat (the cocina económica, the taquería, the marisquería), what
@@ -74,7 +79,8 @@ blanca"), the sale ("¡Todo al 30%!"), paying, "¿Tiene en otro color?". Twist: 
 **s75-pharmacy · "Algo para el dolor de cabeza"** — Don Héctor (m), Farmacia del Puerto, usted. Mexico: many
 medicines over the counter, antibiotics only with a prescription ("receta"); the pharmacy's doctor next door
 ("consultorio", a consultation for a small fee — a realistic twist); generics ("¿El de patente o el genérico?").
-Symptoms with "me duele", "tengo tos / fiebre / gripa (M: gripa → gripe)". Dosage: "una cada ocho horas".
+Symptoms with "me duele", "tengo tos / fiebre / gripa (M: gripa → gripe)". Dosage: "una cada ocho horas". M: de
+patente → de marca; surtir una receta → venir con una receta (decided 5 Nov 2026).
 
 **s76-dentist-call · "¿Cómo se escribe?"** — Lorena (f), dental office reception, on the phone, usted. Booking an
 appointment: name and surname spelled (Spanish letter names: "be grande", "doble ve"), date and time ("el jueves a
@@ -91,7 +97,8 @@ diecisiete con veinte"), the turn ticket ("su turno"). Numbers: amounts, the rat
 
 **s79-post · "¿Dónde está mi paquete?"** — Gloria (f), post office, usted. Mexico: the tracking number ("número de
 guía"), the "aviso" slip, ID to collect a parcel, sending a postcard abroad ("a Estados Unidos"), stamps, the
-customs form. Twist: the parcel is at customs ("en la aduana").
+customs form. Twist: the parcel is at customs ("en la aduana"). A parcel to the US gets one value-free line, the
+declaration and an ID (the 2026 US rules, with no figures and no sub-flow: the lead's decision, 5 Nov 2026).
 
 **s80-support-call · "Su llamada es muy importante"** — Karla (f) and the NetWave phone menu (a recorded voice:
 `silent` steps as in the English one), usted. The internet doesn't work: the menu ("marque uno para…" — the learner
@@ -124,20 +131,23 @@ mute, the camera, the connection; "¿Me escuchan?", "se congeló", "se cortó".
 bus, "llego en veinte minutos", "¿Empiezan sin mí?". M: "el camión" (city bus) → "el autobús".
 
 **s34-meeting · "¿Algún otro asunto?"** — Sofía, Pablo, Sara on screen, tú. A team meeting: the agenda, opinions,
-"estoy de acuerdo", "yo pienso que…", deadlines (dates), who does what.
+"estoy de acuerdo", "yo pienso que…", deadlines (dates), who does what. M: la comida (lunch) → el almuerzo, la minuta →
+el acta.
 
 ## Chapter 5 · Social (batch E)
 
 **s63-party · "¿Y tú de dónde eres?"** — Ximena (f) the host and Marcos (m) a chef, tú. Meeting new people at a
 backyard party: names, where you're from, what you do, how long you've lived here, "¿Qué te trae por aquí?". Food
 and drinks ("¿Te sirvo algo?"), "¡Salud!". Mexico: a "carne asada" or a "posada" depending on the season — keep it
-a carne asada.
+a carne asada (M: the neutral twin says parrillada).
 
 **s83-invite-call · "¿Estás libre el viernes?"** — Andrea (f), friend, phone, tú. Making plans: day and time, where
 (the malecón, a taquería), "¿Paso por ti?", changing the time. M: "¿Qué onda?", "va", "sale".
 
 **s86-old-friend · "¡Cuánto tiempo!"** — Paola (f), an old school friend met in the zócalo, tú. Catching up: work,
-family, how long it's been, "¡No has cambiado nada!", plans to meet.
+family, how long it's been, "¡No has cambiado nada!", plans to meet. Her facts (the audit, 5 Nov 2026): she teaches
+English at a school in town; she married Daniel and has twins, Mateo and Regina ("cuates" in Mexico; not Sofía, the
+team lead's name); Memo, the other exchange student, has La Palapa on the malecón (Mexican food, about $200 a person).
 
 **s84-date · "¿Te puedo volver a ver?"** — Santiago (m) or Camila (f) (the learner's choice, as in English), at
 Restaurante El Muelle, tú. A first date: ordering, favorites, travel, "¿Te gustaría…?", the bill (who pays: in
@@ -145,12 +155,14 @@ Mexico the inviter often pays; "¿Dividimos la cuenta?" — "hacer cuentas" is l
 
 **s85-dinner · "Gracias por invitarme"** — Diego (m) and Natalia (f) at their home, tú. Being a dinner guest:
 compliments ("¡Está riquísimo!"), "¿Me pasas la sal?", seconds ("¿Quieres más?" – "No, gracias, estoy lleno/llena"),
-the "sobremesa" (staying to talk after dinner: a Mexican custom to mention), leaving ("Ya me voy, que es tarde").
+the "sobremesa" (staying to talk after dinner: a Mexican custom to mention), leaving ("Ya me voy, que es tarde"). The
+hosts always send food home: cochinita, or flan for a guest who eats no meat (the lead's decision, 5 Nov 2026).
 
 **s33-small-talk · "¡Qué calor!"** — Don Pancho (m), neighbor at the bus stop, usted. The English edition's weather
 talk becomes heat, humidity, the rainy season ("la temporada de lluvias"), hurricanes ("la temporada de huracanes",
 "un norte"), the sargassum on the beach — real Caribbean small talk. Twist: a downpour; the bus is late. M:
-"el camión".
+"el camión", platicar (→ conversar), carne asada as the party (→ parrillada). He lives in the pink house on the
+corner across calle Ceiba from the stop (the 3D town), and his boat La Rosita is pink too.
 
 ## Chapter 6 · Travel (batch B)
 
@@ -163,7 +175,8 @@ centro?", "¿Cuánto es?" ($12), "¿Me avisa dónde me bajo?", "¡Bajan!" (the s
 
 **s71a-rental · "Tengo una reservación"** — Andrés (m), Renta de Autos Colibrí, usted. Mexico: the mandatory
 Mexican liability insurance ("el seguro obligatorio") that online prices leave out — a real twist; the deposit on
-the card, the license, "¿Lo devuelve con el tanque lleno?", photos of the scratches. M: "el carro" → "el auto".
+the card, the license, "¿Lo devuelve con el tanque lleno?", photos of the scratches. M: "el carro" → "el auto";
+"estándar" (a manual car) → "manual".
 
 **s71b-gas · "Lleno, por favor"** — Doña Chela (f), the gas station: in Mexico an attendant fills the tank, the
 learner never touches the pump. "¿Cuánto le pongo?" — "Lleno, por favor" or "Quinientos pesos de magna" (regular:
@@ -187,7 +200,7 @@ for the consultation (private clinic). M: "gripa".
 
 **s91a-lost-wallet · "¿Me puede ayudar?"** — Doña Mari (f), flower stall in the zócalo, usted. The learner lost the
 wallet: describing it, where they were, she points to the police on the square ("la Policía Municipal, ahí
-enfrente").
+enfrente"). M: cartera (a handbag in much of South America) → billetera.
 
 **s91b-police · "Quiero levantar una denuncia"** — Oficial Reyes (m), Policía Municipal, usted. Reporting a theft:
 "levantar una denuncia / un reporte", what was in the wallet, when and where, ID, a copy of the report "para el
@@ -205,7 +218,7 @@ corriente con la tenencia / el refrendo?"), a test drive. M: "carro" → "auto".
 **p26-complaint · "Quiero poner una queja"** — Jorge (m) and Brenda (f), customer service of Hogar Puerto (a made-up
 furniture store), phone, usted. A formal complaint about a late, damaged delivery: dates, order number, "exijo",
 "le pido de la manera más atenta" (formal Mexican register), PROFECO as the consumer agency (real, public, fine to
-name).
+name). M: folio → número de reporte; (le ofrezco) una disculpa → le pido disculpas.
 
 **p27-meeting · "Con todo respeto"** — Vanessa (f) and Gerardo (m), Línea Clara, tú. Disagreeing politely: "entiendo
 tu punto, pero…", "con todo respeto", "¿y si probamos…?".
@@ -224,7 +237,9 @@ technician. A learner who blames the water heater ("el calentador", "el boiler")
 ("¿El calentador? ¿Con este calor? ¿No será el aire?"). Title corrected 5 Nov (it was "El calentador no sirve").
 
 **p30-start-over · "¿Empezamos de nuevo?"** — Diego (m) and Natalia (f), tú. Making up with a friend after an
-argument: apologizing, explaining, "no fue mi intención", "¿borrón y cuenta nueva?".
+argument: apologizing, explaining, "no fue mi intención", "¿borrón y cuenta nueva?". "Lo siento, no fue mi intención"
+is a real apology Diego accepts; a bare "No fue mi intención" sounds like an excuse ("Tal vez no. Pero lo dijiste."):
+the lead's decision, 5 Nov 2026.
 
 ## Chapter 9 · Living language (batch G)
 
@@ -235,6 +250,10 @@ Beto (marketing), Lalo (the developer) and Rodrigo (sales). The developer is Lal
 s86's exchange student.
 
 **p24-flood · "Saludos cordiales, me estoy ahogando"** — two calls: Andrea (friend, tú, casual) and Don Gilberto
-(landlord, usted, formal) about a flooded apartment after a tropical storm. The register switch is the point:
+(the building's administrador at Departamentos Las Palmas, usted, formal) about a flooded apartment: in the night a
+pipe burst in 2B, the apartment upstairs, and the water comes through the ceiling of the learner's 1B; the neighbor
+downstairs it may reach is Don Ernesto, the owner, on the ground floor (s82). The lead's decisions, 5 Nov 2026: Don
+Gilberto manages the building (its pipes are his), Don Ernesto owns it and is the learner's landlord (s81, p29); the
+neutral twin of "cubeta" is "balde" ("trapeador" stays). The register switch is the point:
 "¡Güey, se me inundó el depa!" (M — and "güey" only from the learner side or not at all: keep it out of NPC lines)
 vs "Le llamo para informarle que…".

@@ -2184,7 +2184,7 @@ function wifiDog(c: Ctx, x: number, z: number, rotY: number) {
 }
 
 const cache = new Map<string, Interior>();
-/** The Spanish edition's market hall (theme.ts `market: "mercado"`): Doña Lupe's fruit and vegetable stall where the
+/** The Spanish edition's market hall (theme.ts `market: "mercado"`): Doña Licha's fruit and vegetable stall where the
  *  supermarket's checkout is in Maple Harbor (her spot and yours are the same), crates of produce, a scale, bananas
  *  hanging from a beam, a chili and spice stall, a juice stand, a back wall of groceries and papel picado under the
  *  roof. The small things are one mesh. */
@@ -2200,7 +2200,7 @@ function mercado(): Interior {
       S.add(boxGeo(w, 0.28, d, x, y + 0.14, z), "#c79a6b");
       for (let i = 0; i < Math.floor(w / (2 * r)); i++) for (let j = 0; j < Math.floor(d / (2 * r)); j++) ball(x - w / 2 + r + i * 2 * r, y + 0.3, z - d / 2 + r + j * 2 * r, r, fill[(i + j + k) % fill.length]);
     };
-    // Lupe's stall: a long wooden counter, its produce in sloping rows, a hanging scale and a sign above
+    // Licha's stall: a long wooden counter, its produce in sloping rows, a hanging scale and a sign above
     counter(c, -2.6, 1.8, 5.2, 1.0, "#8a5a3c", "#c79a6b");
     pile(-4.4, 1.8, 1.4, 0.8, 0.12, ["#2f5a2a", "#3b6b32", "#24452a"], 0); // avocados
     pile(-3.0, 1.8, 1.2, 0.8, 0.12, ["#d62828", "#e63946", "#c1121f"], 1); // tomatoes
@@ -2216,7 +2216,7 @@ function mercado(): Interior {
       const bx = -4.6 + i * 1.3, by = 2.6 - k * 0.12;
       S.add(new THREE.CapsuleGeometry(0.045, 0.24, 2, 5).rotateZ(0.5 - k * 0.25).translate(bx + (k - 2) * 0.06, by, 2.25), "#f2d24b");
     }
-    sign(c, "Frutas y Verduras · Doña Lupe", -2.6, 3.45, 2.25, 3.6, "#2a9d8f", "#fff7e6");
+    sign(c, "Frutas y Verduras · Doña Licha", -2.6, 3.45, 2.25, 3.6, "#2a9d8f", "#fff7e6");
     // crates behind her, on the floor and on a low bench
     const FRUIT = [["#ffb703", "#fb8500"], ["#e63946", "#d62828"], ["#7cb518", "#5c940d"], ["#f77f00", "#fcbf49"], ["#6a994e", "#a7c957"], ["#9d0208", "#d00000"]];
     for (let i = 0; i < 6; i++) crate(-5.2 + i * 1.05, 0, -0.6, 0.95, 0.7, FRUIT[i], 0.11, i);

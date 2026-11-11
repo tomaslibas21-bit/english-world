@@ -370,7 +370,7 @@ was read back letter by letter (accents included). Three cast ids are not people
 | `cast/mrs_lee` | Doña Mari (Flower stall) |  |
 | `cast/reyes` | Oficial Reyes (Police officer) | plate: Reyes |
 | `cast/carter` | Doctora Herrera (Family doctor) | embroidered: Dra. Herrera |
-| `cast/marcus` | Doña Lupe (Fruit and vegetable stall) |  |
+| `cast/marcus` | Doña Licha (Fruit and vegetable stall; Doña Lupe until 5 Nov 2026, no name on the pictures) |  |
 | `cast/frank` | Don Pancho (Neighbor) |  |
 | `cast/jordan` | Mónica (Personal trainer) | badge: Mónica |
 | `cast/maggie` | Doña Margarita (Selling her car) |  |
@@ -382,7 +382,7 @@ was read back letter by letter (accents included). Three cast ids are not people
 | `cast/russo` | Fátima (Junior cook) |  |
 | `cast/emily` | Elena (Your manager) |  |
 | `cast/tyler` | Toño (Founder) |  |
-| `cast/mr_grant` | Don Gilberto (Your landlord) |  |
+| `cast/mr_grant` | Don Gilberto (Building manager; "your landlord" until 5 Nov 2026) |  |
 | `cast/aduana` | Agente Medina (Customs) | plate: Medina |
 
 **42 places** (2048 × 1152, the scene size), framed like the conversation pictures with the person's spot left
@@ -393,7 +393,7 @@ empty: the situation's first picture puts the person there. Places inside a bigg
 |---|---|---|---|
 | `place/zocalo` | The zócalo (main square) | s69-local, s86-old-friend, s91a-lost-wallet |  |
 | `place/zocalo-flores` | Doña Mari's flower stall at the tianguis | s91a-lost-wallet | setting: `place/zocalo`; redone with the zócalo as its setting (the first one had a different kiosco) |
-| `place/mercado` | The Mercado Municipal: Doña Lupe's stall | s32-mercado | redone as a covered hall (the first was open-air, and its juice taps read as digits) |
+| `place/mercado` | The Mercado Municipal: Doña Licha's stall | s32-mercado | redone as a covered hall (the first was open-air, and its juice taps read as digits) |
 | `place/malecon` | The malecón and the beach | s83-invite-call, s67b-bus |  |
 | `place/aeropuerto-equipaje` | The arrivals hall: baggage desk and customs | s65b-baggage | the customs traffic light taken out (an edit; Cancún has had none since 2020) |
 | `place/aeropuerto-migracion` | Immigration control | s65a-passport | setting: `place/aeropuerto-equipaje` |
