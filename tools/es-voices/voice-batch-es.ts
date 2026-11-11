@@ -117,7 +117,12 @@ async function api<T = any>(url: string, init: RequestInit = {}): Promise<T> {
   return (await r.json()) as T;
 }
 
-interface LedgerRow { at: string; kind: string; what: string; model: string; requests: number; textTokens: number; audioTokens: number; outTokens?: number; price: number; batch?: string; total: number; note?: string }
+interface LedgerRow { at: string; kind: string; what: string; model: string; requests: number; textTokens: number; audioTokens: number; outTokens?: number; price: number; batch?: string; total: number; note?: string; mode?: "batch" | "regular" }
+/** Batch API rows (the full sets and the redos) and regular requests (the sample rounds, the listener, single tries):
+ *  the owner (11 Nov 2026): every full set and every redo round through the Batch API; regular only for small samples. */
+const modeOf = (r: { kind: string; batch?: string; mode?: string }): "batch" | "regular" => (r.mode as "batch" | "regular" | undefined) ?? (r.batch || /batch/.test(r.kind) ? "batch" : "regular");
+/** The most clips a regular (non-batch) round may ask for: a sample, never a set. */
+const REGULAR_MAX = 300;
 const ledgerRows = (): LedgerRow[] => (fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
 /** Spent: the ledger's rows. Committed: batches sent and not fetched yet, at their estimate. */
 function spend() {
@@ -127,7 +132,7 @@ function spend() {
 }
 function ledger(row: Omit<LedgerRow, "at" | "total">) {
   const { spent, committed } = spend();
-  const full: LedgerRow = { at: new Date().toISOString(), ...row, price: +row.price.toFixed(6), total: +(spent + row.price + committed).toFixed(4) };
+  const full: LedgerRow = { at: new Date().toISOString(), ...row, mode: modeOf(row), price: +row.price.toFixed(6), total: +(spent + row.price + committed).toFixed(4) };
   fs.mkdirSync(WORK, { recursive: true });
   fs.appendFileSync(LEDGER, JSON.stringify(full) + "\n");
   return full;
@@ -386,6 +391,7 @@ async function sample() {
   const dir = path.join(WORK, "samples", round);
   fs.mkdirSync(dir, { recursive: true });
   const est = estimatePrice(lines, PRICE.standard).price;
+  if (lines.length > REGULAR_MAX) { console.error(`stop: ${lines.length} clips is not a sample; regular requests are for at most ${REGULAR_MAX} (a set or a redo round goes through prepare + send, the Batch API)`); process.exit(2); }
   console.log(`sample ${round}: ${lines.length} clips (${lines.filter((l) => l.accent === "mx").length} Mexican, ${lines.filter((l) => l.accent === "neutral").length} neutral), about $${est.toFixed(2)} at the standard price${styleOpts.age ? ", age in the style" : ""}${styleOpts.accent === "none" ? ", no accent in the style" : ""}`);
   // --dry: only the lines it would ask for (<round>/plan.json), no request
   writeJson(path.join(dir, "plan.json"), lines.map((l) => ({ who: l.who, accent: l.accent, gv: l.gv, say: l.say, style: l.style, fx: l.fx, key: l.key })));
@@ -1077,6 +1083,10 @@ function showLedger() {
   const by = new Map<string, { n: number; price: number; audio: number }>();
   for (const r of rows) { const b = by.get(r.kind) ?? { n: 0, price: 0, audio: 0 }; b.n += r.requests; b.price += r.price; b.audio += r.audioTokens; by.set(r.kind, b); }
   for (const [k, b] of by) console.log(`${k.padEnd(14)} ${String(b.n).padStart(6)} requests  ${(b.audio / 1e6).toFixed(3)}M audio tokens  $${b.price.toFixed(3)}`);
+  for (const m of ["batch", "regular"] as const) {
+    const rs = rows.filter((r) => modeOf(r) === m);
+    console.log(`${m.padEnd(14)} ${String(rs.reduce((a, r) => a + r.requests, 0)).padStart(6)} requests  $${rs.reduce((a, r) => a + r.price, 0).toFixed(3)}`);
+  }
   const { spent, committed } = spend();
   console.log(`spent $${spent.toFixed(3)}; batches running about $${committed.toFixed(3)}; cap $${CAP}`);
 }
