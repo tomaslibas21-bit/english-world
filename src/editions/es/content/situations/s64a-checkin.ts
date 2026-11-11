@@ -1241,11 +1241,12 @@ export const checkin: SituationDef = {
           flags: { 4: "las: Spanish puts an article before clock times.", 11: "las: Spanish puts an article before clock times." } }),
     ],
     security_dir: [
-      t("El | filtro de seguridad | está | por allá, | a la izquierda.", "The | security checkpoint | is | over there, | on the left.", "Security is over there, on the left.",
+      // the 3D hall: the scanner is east of the counter, on the learner's right (Emilio's left) as they face him
+      t("El | filtro de seguridad | está | por allá, | a | su | derecha.", "The | security checkpoint | is | over there, | on | your | right.", "Security is over there, on your right.",
         { flags: { 1: "Mexican: el filtro de seguridad = the security checkpoint; elsewhere el control de seguridad." },
-          neutral: t("El | control de seguridad | está | por allá, | a la izquierda.", "The | security checkpoint | is | over there, | on the left.", "Security is over there, on the left.") }),
-      // the same way as the first (asked twice, the rotation said both "a la izquierda" and "derecho")
-      t("Seguridad | está | a la izquierda, | pasando | la | cafetería.", "Security | is | on the left, | past | the | café.", "Security is on the left, past the café."),
+          neutral: t("El | control de seguridad | está | por allá, | a | su | derecha.", "The | security checkpoint | is | over there, | on | your | right.", "Security is over there, on your right.") }),
+      // the same way as the first (asked twice, the rotation says both); no café is built in the hall
+      t("Seguridad | está | a | su | derecha, | por allá.", "Security | is | on | your | right, | over there.", "Security is to your right, over there."),
     ],
     // "¿Dónde está la sala 4?" got "Es la sala 4": where it is (after security, as s64b's officer says)
     gate_where: [

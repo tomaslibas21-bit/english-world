@@ -27,7 +27,7 @@ const HAIR = { black: "#1f1a17", dark: "#2e2119", brown: "#5a3a25", gray: "#b8b3
  *  - glasses, and a badge (or a lanyard's card) for the workers whose portrait has a name tag.
  *  Since graphics round 3 the builder makes the garments the portraits show (Character.ts; Maple Harbor uses none):
  *  Doña Carmen's hipil, embroidered at the neck and round the hem, under her yellow rebozo; Lucía's braid over her
- *  shoulder and her blouse embroidered with flowers, as Valeria's and Doña Lupe's are; Don Pancho's jipi and the
+ *  shoulder and her blouse embroidered with flowers, as Valeria's and Doña Licha's are; Don Pancho's jipi and the
  *  guayaberas of Don Pancho, Don Ernesto, Don Chuy and Luis (with his waist apron); Fátima's bandana. What it still
  *  can't make takes the nearest: Don Héctor's goatee is a beard; sleeveless and short-sleeved tops have long sleeves,
  *  as in Maple Harbor. No one wears the police cap (`police`): no officer's portrait shows one. */
@@ -148,8 +148,9 @@ const CAST: Record<string, Cast> = {
   mrs_lee: ["Doña Mari", "Puesto de flores", "Flower stall"],
   reyes: ["Oficial Reyes", "Policía", "Police officer"],
   carter: ["Doctora Herrera", "Médica familiar", "Family doctor"],
-  // s32: in Puerto Colibrí a fruit and vegetable stall in the mercado (docs/es/briefs/s32-mercado.md)
-  marcus: ["Doña Lupe", "Puesto de frutas y verduras", "Fruit and vegetable stall", { gender: "f",
+  // s32: in Puerto Colibrí a fruit and vegetable stall in the mercado (docs/es/briefs/s32-mercado.md). Doña Licha (Alicia),
+  // not Doña Lupe, since 5 Nov 2026: the neighbor Doña Lupita (rita) is the town's Guadalupe (the lead's decision)
+  marcus: ["Doña Licha", "Puesto de frutas y verduras", "Fruit and vegetable stall", { gender: "f",
     bio: "Has sold fruit at the mercado for thirty years and calls every customer “güero” or “marchanta”." }],
   sco: ["Caja de autoservicio", "Caja de autoservicio", "Self-checkout machine"],
   // an older neighbor at the bus stop says usted, as his lines in s33 do (Maple Harbor's Frank is informal)
@@ -165,7 +166,8 @@ const CAST: Record<string, Cast> = {
   russo: ["Fátima", "Cocinera principiante", "Junior cook"],
   emily: ["Elena", "Tu jefa", "Your manager"],
   tyler: ["Toño", "Fundador", "Founder"],
-  mr_grant: ["Don Gilberto", "Tu casero", "Your landlord"],
+  // p24: the administrador of Departamentos Las Palmas (the lead's decision, 5 Nov 2026); Don Ernesto (patel) owns it
+  mr_grant: ["Don Gilberto", "Administrador del edificio", "Building manager"],
 };
 
 /** Characters only Puerto Colibrí has, each on a Maple Harbor character's base (build, voice) under an id of its own. */

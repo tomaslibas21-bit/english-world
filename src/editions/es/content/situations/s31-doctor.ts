@@ -11,8 +11,9 @@
 // prescription ("Le voy a recetar…", "una cápsula cada ocho horas, por cinco días", finish the antibiotic), the
 // learner's questions (grave, contagioso, antibiótico, ¿es dengue?, efectos secundarios, alcohol, manejar, trabajo,
 // justificante, picante, el mar; since the 5 Nov audit also the medicine's price, where to buy it, the prescription,
-// dollars and "¿Tiene terminal?"), the paper prescription ("¿Sabe dónde surtirla?": any pharmacy fills it, the
-// generic is cheaper) and the advice ("Descanse y tome muchos líquidos… Si no mejora, regrese. ¡Que se mejore!").
+// dollars and "¿Tiene terminal?"), the paper prescription ("¿Sabe dónde surtirla?", neutral "¿Sabe dónde comprar el
+// medicamento?": any pharmacy fills it, the generic is cheaper) and the advice ("Descanse y tome muchos líquidos… Si no
+// mejora, regrese. ¡Que se mejore!").
 // Kept from the English: the id, steps dob, problem, more_sym, howlong, scale, fever, meds, exam, allergy, rx,
 // pharmacy, note, questions; the intents; the exam stages; the twists penicillin, chart and blood_pressure.
 // Changed by the brief: Celsius (the conversion goes the other way); the pharmacy question is about the paper
@@ -27,6 +28,9 @@ import type { Ctx, EntityDef, HintItem, Pending, SentSrc, SituationDef, Tip } fr
 import type { SlotFn, SlotResult } from "@/convo/grammar";
 import { readInt } from "@/convo/slots";
 import { ent, t } from "@/content/dsl";
+
+/** "surtir una receta" is Mexico's; the neutral twins buy the medicine (the lead's decision, 5 Nov 2026, with s75). */
+const F_SURTIR = "Mexican: surtir una receta = to fill a prescription.";
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -418,6 +422,8 @@ export const doctor: SituationDef = {
     "de vacaciones": { reason: "lexical_expression", split: "de → of + vacaciones → vacation; estar de vacaciones = to be on vacation.", minimal: "Two words." },
     "la verdad": { reason: "lexical_expression", split: "la → the + verdad → truth; as a tag = to be honest.", minimal: "Two words." },
     "farmacia del puerto": { reason: "lexical_expression", split: "farmacia → pharmacy + del → of the + puerto → port would translate a shop's proper name.", minimal: "A proper name." },
+    "mar azul": { reason: "lexical_expression", split: "mar → sea + azul → blue would translate part of the hotel's proper name.", minimal: "Only the two-word name; hotel stays separate." },
+    "enfrente del": { reason: "lexical_expression", split: "enfrente de + el: across from the; the article is fused into del.", minimal: "Two words (de + el = del)." },
     "me siento": { reason: "grammatical_fusion", split: "me → myself + siento → I feel; sentirse (reflexive) = I feel.", minimal: "Two words." },
     "no me la tomé": { reason: "grammatical_fusion", split: "no → not + me → for myself + la → it + tomé → I took; = I didn't take it (S-NEG with two pronouns).", minimal: "Four words, one verb phrase." },
     "por dentro": { reason: "lexical_expression", split: "por → through + dentro → inside; = on the inside.", minimal: "Two words." },
@@ -689,6 +695,10 @@ export const doctor: SituationDef = {
       "(en | a)? cualquiera #any", "no se (donde | de ninguna | cual | donde hay una) #unknown", "[no] (donde hay | hay) una (farmacia)? (cerca | por aqui) #unknown #h:ph_new",
       "no conozco (ninguna | farmacias | ninguna farmacia) #unknown", "[no] [pero]? (conozco | se de) otra [farmacia] [cerca | aqui cerca | por mi casa] #other",
       "[si] (hay | conozco) una (al lado de mi casa | al lado del hotel | enfrente de mi hotel | enfrente de mi casa | a la vuelta | junto al hotel) #other", "[no] no soy de aqui #unknown", "[si] (ya se | si se) (donde) #harbor",
+      // the follow-ups (5 Nov 2026): "Sí, en la farmacia que está enfrente del hotel", "Sí, lo compro en la Farmacia del Puerto"
+      "[si] [en] la farmacia (que esta | de) (enfrente del hotel | enfrente de mi hotel | junto al hotel | en el centro | del centro) #harbor",
+      "[si] (lo | la | los | las) (compro | voy a comprar | consigo | voy a conseguir) en la farmacia del puerto #harbor",
+      "[si] (lo | la | los | las) (compro | voy a comprar | consigo | voy a conseguir) en (una farmacia | la farmacia) (cerca de mi hotel | cerca de mi casa | de la esquina | aqui cerca) #other",
     ] },
     pharmacy_dunno_ctx: { patterns: ["(no lo se | ni idea | no estoy seguro | no estoy segura | no tengo idea) [soy nuevo | soy nueva | no soy de aqui | no conozco]", "no se [la verdad] (soy nuevo | soy nueva | no soy de aqui | no conozco) [aqui | el pueblo]", "(soy nuevo | soy nueva) (aqui | en el pueblo)"] },
     note_ctx: { patterns: ["[si] (para el trabajo | para mi trabajo | para mi jefe | para la escuela | para la empresa | para la oficina) #yes #h:note_yes",
@@ -987,18 +997,29 @@ export const doctor: SituationDef = {
     // --- the paper prescription
     ask_pharmacy: [
       t("Aquí tiene | su | receta. | ¿Sabe | dónde | surtirla?", "Here's | your | prescription. | Do you know | where | to fill it?", "Here's your prescription. Do you know where to fill it?",
-        { flags: { 5: "surtir una receta = to fill a prescription." } }),
+        { flags: { 5: F_SURTIR },
+          neutral: t("Aquí tiene | su | receta. | ¿Sabe | dónde | comprar | el | medicamento?", "Here's | your | prescription. | Do you know | where | to buy | the | medicine?",
+            "Here's your prescription. Do you know where to get the medicine?") }),
       t("Aquí tiene | la | receta. | ¿Tiene | alguna | farmacia | cerca?", "Here's | the | prescription. | Do you have | any | pharmacy | nearby?", "Here's the prescription. Is there a pharmacy near you?"),
     ],
     // the question again after the learner asked something else (the prescription is handed over only once)
     ask_pharmacy_again: [t("¿Sabe | dónde | surtir | la | receta?", "Do you know | where | to fill | the | prescription?", "Do you know where to fill the prescription?",
-      { flags: { 2: "surtir una receta = to fill a prescription." } })],
+      { flags: { 2: F_SURTIR },
+        neutral: t("¿Sabe | dónde | comprar | el | medicamento?", "Do you know | where | to buy | the | medicine?", "Do you know where to get the medicine?") })],
     rx_here: [t("Claro, | aquí tiene | su | receta.", "Sure, | here's | your | prescription.", "Sure, here's your prescription.")],
     med_price: [t("Depende | de | la | farmacia; | el | genérico | sale | más | barato.", "It-depends | on | the | pharmacy; | the | generic | comes out | more | cheap.",
       "It depends on the pharmacy. The generic is cheaper.", { flags: { 6: "salir = to come out; with a price, to cost (sale más barato = it costs less)." } })],
-    pharmacy_harbor: [t("Perfecto. | Ahí | se la | surten | sin | problema.", "Perfect. | There | it for you | they-fill | without | problem.", "Perfect. They'll fill it there, no problem.")],
-    pharmacy_other: [t("Muy | bien; | se la | surten | en | cualquier | farmacia.", "Very | good; | it for you | they-fill | in | any | pharmacy.", "Sure, any pharmacy can fill it.")],
-    pharmacy_suggest: [t("La | Farmacia del Puerto | está | aquí | cerca, | en | el | centro.", "The | Farmacia del Puerto | is | here | nearby, | in | the | center.", "Farmacia del Puerto is close by, downtown.")],
+    pharmacy_harbor: [t("Perfecto. | Ahí | se la | surten | sin | problema.", "Perfect. | There | it for you | they-fill | without | problem.", "Perfect. They'll fill it there, no problem.",
+      { flags: { 3: F_SURTIR },
+        neutral: t("Perfecto. | Ahí | le | venden | el | medicamento | sin | problema.", "Perfect. | There | (to) you | they-sell | the | medicine | without | problem.",
+          "Perfect. They'll have the medicine there, no problem.") })],
+    pharmacy_other: [t("Muy | bien; | se la | surten | en | cualquier | farmacia.", "Very | good; | it for you | they-fill | in | any | pharmacy.", "Sure, any pharmacy can fill it.",
+      { flags: { 3: F_SURTIR },
+        neutral: t("Muy | bien; | el | medicamento | lo | venden | en | cualquier | farmacia.", "Very | good; | the | medicine | it | they-sell | in | any | pharmacy.",
+          "Sure, any pharmacy will have the medicine.", { flags: { 4: "lo repeats el medicamento, which comes first; English says it once." } }) })],
+    // (the 3D town: the pharmacy is at the other end of downtown, on Juárez across from Hotel Mar Azul: TOWN.md)
+    pharmacy_suggest: [t("La | Farmacia del Puerto | está | en | el | centro, | enfrente del | hotel | Mar Azul.", "The | Farmacia del Puerto | is | in | the | center, | across from the | hotel | Mar Azul.",
+      "Farmacia del Puerto is downtown, across from Hotel Mar Azul.")],
     pharmacy_generic: [t("Si | quiere, | pida | el | genérico: | es | lo mismo | y | más | barato.", "If | you-want, | ask for | the | generic: | it's | the same | and | more | cheap.",
       "If you like, ask for the generic: it's the same thing, and cheaper.")],
     // --- the advice

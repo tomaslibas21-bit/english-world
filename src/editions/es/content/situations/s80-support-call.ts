@@ -750,8 +750,11 @@ export const support: SituationDef = {
     // billing
     billing_check: [t("Déjeme | revisar...", "Let me | check...", "Let me check...")],
     billing_right: [
+      // "una disculpa" is Mexico's formula; the neutral twin says "le pido disculpas" (the lead's decision, 5 Nov 2026, as p26)
       t("Tiene | razón, | ¡una | disculpa!", "You have | reason, | an | apology!", "You're right, I'm so sorry about that!",
-        { flags: { 0: "Tiene razón: you're right, literally you have reason." } }),
+        { flags: { 0: "Tiene razón: you're right, literally you have reason.", 3: "Mexican: una disculpa (literally, an apology) = I apologize." },
+          neutral: t("Tiene | razón, | ¡le | pido | disculpas!", "You have | reason, | (of) you | I-ask | apologies!", "You're right, I'm so sorry about that!",
+            { flags: { 0: "Tiene razón: you're right, literally you have reason.", 3: "pedir disculpas: to apologize (literally, to ask for apologies)." } }) }),
     ],
     billing_two: [
       t("Veo | dos | cargos | de | {$amount} | este | mes.", "I see | two | charges | of | {$amount} | this | month.", "I see two charges of {$amount} this month."),

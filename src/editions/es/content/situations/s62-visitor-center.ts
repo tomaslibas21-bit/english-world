@@ -42,7 +42,9 @@
 // Facts shared with other conversations (audit, 5 Nov 2026): the bank is open Saturdays until two (s78); the cenote is
 // twenty minutes by colectivo (s69, TOWN.md); the colectivo is paid to the driver (s69: when you get off; the city bus
 // when you get on, s67b); the museum's general admission is $80, free on Sundays for Mexicans and residents (s70);
-// downtown is safe at night, the beach at night better not (s69); taxis have no meter (s66).
+// downtown is safe at night, the beach at night better not (s69); taxis have no meter (s66). Money is changed at the
+// casa de cambio on avenida Juárez, toward the zócalo (named, not built: TOWN.md); the bank changes only US dollars, and
+// only for its customers (s78; the lead's decision, 5 Nov 2026).
 //
 // World events: "give" { item: "map" | "bus-schedule" }, "mark-map" { to: locationId }.
 
@@ -760,6 +762,8 @@ const H: Record<string, Handler> = {
 
   // --- destinations --------------------------------------------------------
   ask_where(c, slots, seg) {
+    // changing money: the casa de cambio (named, not built: TOWN.md); no route, the way is in the line
+    if (seg.tags.includes("exchange")) { c.say("exchange_where"); return; }
     const p = placeOf(slots) ?? (seg.tags.includes("atm") ? "bank" : undefined);
     if (!p) { c.say("unknown_place"); return; }
     giveRoute(c, p);
@@ -1341,9 +1345,11 @@ export const visitorCenter: SituationDef = {
       "(me | nos) (indica | puede indicar | podria indicar) (como llegar | el camino) (a | al) {place}", "el camino (a | al | para) {place}", "direccion (de | del) {place}",
       "(cual es | que es) la mejor manera de llegar (a | al) {place}", "(quisiera | quiero | me gustaria) saber (como llegar | como llego | como se llega | donde (esta | queda)) (a | al) {place}", "(digame | expliqueme | me dice | me explica) como (llegar | llego | se llega) (a | al) {place}",
       "(quiero | quisiera | me gustaria) (nadar | ir a nadar | bucear) (en | a) {place}", "(donde | en donde) (puedo | se puede) sacar dinero #atm", "necesito (sacar dinero | un cajero) #atm",
-      // changing money: at the bank (s78 changes dollars)
-      "(donde | en donde) (puedo | se puede) cambiar (dinero | dolares | euros) #atm", "(necesito | quiero | quisiera) cambiar (dinero | dolares | euros) #atm",
-      "(puedo | se puede) cambiar (dinero | dolares | euros) [aqui] #atm", "[donde | en donde] hay (una)? casa de cambio [por aqui] #atm",
+      // changing money: the casa de cambio on avenida Juárez, not the bank, which changes only dollars and only for its
+      // customers (s78; the lead's decision, 5 Nov 2026)
+      "(donde | en donde) (puedo | se puede) cambiar (dinero | dolares | euros | pesos) #exchange", "(necesito | quiero | quisiera) cambiar (dinero | dolares | euros) #exchange",
+      "(puedo | se puede) cambiar (dinero | dolares | euros) [aqui] #exchange", "[donde | en donde] hay (una)? casa de cambio [por aqui] #exchange",
+      "(donde | en donde) (esta | queda) la casa de cambio #exchange", "[y] (la | una) casa de cambio #exchange",
     ] },
     just_arrived: { patterns: [
       "(acabo de llegar | llegué (hoy | ayer | anoche | esta manana)) [al pueblo | a puerto colibri] [y] [es mi (primer dia | primera vez) [aqui | en el pueblo]]", "(soy | somos) (nuevo | nueva | nuevos) [aqui | en el pueblo]",
@@ -1623,6 +1629,12 @@ export const visitorCenter: SituationDef = {
     yes_vc: [t("¡Sí, | aquí | es! | ¿En | qué | le | puedo | ayudar?", "Yes, | here | it is! | In | what | (to) you | can I | help?", "Yes, it is! How can I help?")],
     which_place: [t("Perdón, | ¿a | dónde | quiere | ir?", "Sorry, | to | where | do you want | to go?", "Sorry, where do you want to go?")],
     unknown_place: [t("Mmm, | perdón, | ese | lugar | no lo conozco.", "Hmm, | sorry, | that | place | I don't know it.", "Hmm, sorry, I don't know that place.")],
+    // changing money (the lead's decision, 5 Nov 2026): the bank changes only US dollars, and only for its customers (s78)
+    exchange_where: [t("¿Para | cambiar | dinero? | En | la | casa de cambio | de | la | avenida | Juárez: | saliendo, | a la izquierda, | hacia | el | zócalo. | El | banco | solo | les | cambia | dólares | a | sus | clientes.",
+      "To | change | money? | At | the | currency exchange | on | the | avenue | Juárez: | going out, | to the left, | toward | the | main square. | The | bank | only | (for) them | changes | dollars | for | its | customers.",
+      "To change money? At the currency exchange on Avenida Juárez: left out the door, toward the main square. The bank only changes dollars for its customers.",
+      { flags: { 5: "casa de cambio: a currency exchange office.", 18: "les: Spanish doubles a sus clientes (for its customers) with les; English says it once." },
+        spell: "Juárez", write: "Casa de cambio: avenida Juárez → saliendo, a la izquierda, hacia el zócalo" })],
 
     // --- routes: fast (Don Chuy's style) and clear (after "más despacio"): the 3D town's ways (TOWN.md) --------
     // across the avenue: a crosswalk right in front of the door lands between the café and La Cocina de Lucía
@@ -2197,6 +2209,7 @@ export const visitorCenter: SituationDef = {
     "a mano izquierda": { reason: "lexical_expression", split: "a → to + mano → hand + izquierda → left is a calque; = on the left-hand side.", minimal: "Three words, one direction." },
     "enfrente de": { reason: "lexical_expression", split: "enfrente → in front + de → of misreads the preposition: across from.", minimal: "Two words." },
     "enfrente del": { reason: "lexical_expression", split: "enfrente de + el: across from the; the article is fused into del.", minimal: "Two words (de + el = del)." },
+    "casa de cambio": { reason: "lexical_expression", split: "casa → house + de → of + cambio → change is a calque; = a currency exchange office.", minimal: "Three words, one place." },
     "junto a": { reason: "lexical_expression", split: "junto → together + a → to is false; = next to.", minimal: "Two words." },
     "junto al": { reason: "lexical_expression", split: "junto a + el: next to the; the article is fused into al.", minimal: "Two words (a + el = al)." },
     "al lado": { reason: "lexical_expression", split: "al → to the + lado → side is false here; aquí al lado = next door.", minimal: "Two words." },
@@ -2537,6 +2550,9 @@ export const visitorCenter: SituationDef = {
       setup: (s) => { s.askMore = true; } },
     { name: "café offer: I already know it", turns: ["¿Me da un mapa?", "¿Dónde está el banco?", "¿Al salir, a la izquierda?", "Sí, ya lo conozco", "Eso es todo"], expect: { complete: true, state: { cafeNo: true } }, auto: AUTO,
       setup: (s) => { s.askMore = true; } },
+    // the follow-up pass (5 Nov 2026): changing money is the casa de cambio on Juárez, not the bank; then the bank's way
+    { name: "changing money: the casa de cambio, then the bank", turns: ["¿Me da un mapa?", "¿Dónde puedo cambiar dinero?", "¿Dónde está el banco?", "¿Al salir, a la izquierda?", "Sí, ya lo conozco", "Eso es todo"],
+      expect: { complete: true, state: { cafeNo: true } }, auto: AUTO, setup: (s) => { s.askMore = true; } },
     // Audit: a price and the hours of the place just talked about, the taquería of the food tip, the colectivo
     { name: "museum price and hours, the taquería, the colectivo", turns: ["¿Me da un mapa?", "¿Es gratis el museo?", "¿A qué hora abre?", "¿Dónde puedo comer algo?", "¿Dónde está la taquería?", "¿Está junto al mercado?", "¿A qué hora pasa el colectivo?", "No, gracias", "Eso es todo, gracias"],
       expect: { complete: true, state: { cafeNo: true, conf: { taqueria: true } } }, auto: AUTO,
