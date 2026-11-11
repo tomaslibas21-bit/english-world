@@ -118,3 +118,10 @@ casero"; p24 says apartment 3B, the 3D door is 1B: p24's reviewer). Not handled 
 ¡Muchas gracias!" (a bare "ya sé" isn't understood, so the whole turn fails); "¿De verdad? ¡Gracias!" likewise.
 For the owner (invented, kept modest): Doña Lupita is from Puerto Colibrí and has lived in the building for over
 twenty years; a garrafón about $50 and the laundry about $30 a kilo (Riviera Maya, Nov 2026).
+
+## Spain twins (11 Nov 2026)
+
+22 twins. Doña Lupita keeps usted (older neighbor; no register change). Spain: "por la mañana / tarde / noche" (8 lines),
+"esta mañana", "¿Ya se ha mudado…?", "aparcamiento… pocas plazas", "a dos calles, todo recto", "se estropea en su piso",
+"¡Encantada!" / "claro" for "con gusto", "solo" for "nada más", "me lo devuelve", "¡qué alegría!", "¡Qué bien!". "El camión" of
+the trash and the gas stays (a truck in Spain too). Spain corpus: 13 items (grifo, aparcar el coche, ¿Le apetece…?, la semana que viene).

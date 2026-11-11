@@ -789,10 +789,10 @@ export const meeting: SituationDef = {
     },
     slots: {
       whenr: { pattern: [
-        "[para | antes de | antes del | a mas tardar | el | hasta] {day} [en la manana | en la tarde | temprano | a mas tardar]",
+        "[para | antes de | antes del | a mas tardar | el | hasta] {day} [(en | por) la manana | (en | por) la tarde | temprano | a mas tardar]",
         "[para | antes de] (el fin de | finales de) (la semana | esta semana | mes | este mes)",
         "(en | dentro de) (unos dias | un par de dias | {number} dias | una semana | dos semanas)",
-        "(hoy mismo | hoy en la tarde | pronto | muy pronto | al rato | mas tarde | en un rato)",
+        "(hoy mismo | hoy (en | por) la tarde | pronto | muy pronto | al rato | mas tarde | en un rato)",
         "[para] (el proximo mes | el otro mes | fin de mes)",
         // Mexico: "la semana que entra" / "la otra semana" = next week
         "[para] (la semana que entra | la semana que viene | la otra semana)",
@@ -882,7 +882,7 @@ export const meeting: SituationDef = {
 
     // --- updates ------------------------------------------------------------------------------
     upd_done: { patterns: [
-      "[ya] (terminé | acabé | entregué | mandé | envié | completé) @tdet {task} [ayer | la semana pasada | el viernes | esta manana | hoy | ya] #h:u_finished",
+      "[ya] (terminé | acabé | entregué | mandé | envié | completé | he terminado | he acabado | he entregado | he mandado | he enviado) @tdet {task} [ayer | la semana pasada | el viernes | esta manana | hoy | ya] #h:u_finished",
       "@tdet {task} ya (esta | estan | quedó | quedaron) @listo [desde ayer]",
       "[ya] (terminé | acabé) con @tdet {task}",
       "[ya] (le | les)? (mandé | envié) @tdet {task} (al cliente | a todos | a sofia | al equipo) [ayer]",
@@ -995,15 +995,15 @@ export const meeting: SituationDef = {
       "no tengo (opinion | una opinion)", "depende", "buena pregunta", "no me decido", "me da (igual | lo mismo)",
     ] },
     will_send: { patterns: [
-      "[claro | si | por supuesto | va | sale] [ahorita | ahora | hoy] (te lo | te la | se lo | se la | se los | se las | les | lo | la) (mando | envio | paso | comparto) [por correo] [a todos | al equipo] [despues de la reunion | hoy | al rato | en un rato | saliendo de la reunion | ahorita]",
+      "[claro | si | por supuesto | va | sale | vale] [ahorita | ahora | hoy] (te lo | te la | se lo | se la | se los | se las | les | lo | la | os lo | os los | les lo | les los) (mando | envio | paso | comparto) [por correo] [a todos | al equipo] [despues de la reunion | hoy | al rato | en un rato | saliendo de la reunion | ahorita]",
       "[claro | si | por supuesto] (despues de | saliendo de | al terminar) la (reunion | junta)",
       // "Claro, en cuanto termine la reunión." / "Terminando la junta se lo mando."
       "[claro | si | por supuesto] [se lo mando | se los mando | te lo mando | lo mando] (en cuanto | apenas | cuando) (termine | terminemos | acabe | acabemos) la (reunion | junta) [se lo mando | se los mando | te lo mando | lo mando]",
       "[claro | si] (terminando | acabando) la (reunion | junta) [se lo mando | se los mando | te lo mando | lo mando]",
       "[claro | si] (lo | la | te lo | se lo) (mando | envio) por correo",
       // "Claro, les mando un resumen esta tarde."
-      "[claro | si | por supuesto | va | sale] [yo] (les | te | se los | se lo) (mando | envio | paso | comparto | hago) (un | el) resumen [rapido] [por correo] [hoy | esta tarde | en la tarde | al rato | en un rato | manana | despues de la reunion | saliendo de la reunion]",
-      "[claro | si | por supuesto | va | sale] [yo] (lo | la | te lo | se lo | se los | les) (mando | envio) (esta tarde | en la tarde | manana | manana temprano)",
+      "[claro | si | por supuesto | va | sale] [yo] (les | te | se los | se lo) (mando | envio | paso | comparto | hago) (un | el) resumen [rapido] [por correo] [hoy | esta tarde | (en | por) la tarde | al rato | en un rato | manana | despues de la reunion | saliendo de la reunion]",
+      "[claro | si | por supuesto | va | sale] [yo] (lo | la | te lo | se lo | se los | les) (mando | envio) (esta tarde | (en | por) la tarde | manana | manana temprano)",
       "[si] (ya)? (te lo | se lo | se los | les | lo | la) (mandé | envié) [ayer | esta manana]",
     ] },
     cant_send: { patterns: [
@@ -1196,7 +1196,7 @@ export const meeting: SituationDef = {
     talk_later: { patterns: [
       "[claro | si | va | sale | por supuesto] (lo hablamos | lo platicamos | lo vemos | hablamos | platicamos | lo checamos) (despues | al rato | despues de la reunion | mas tarde | en la comida | con un cafe | aparte) [pablo] #h:t_sure",
       "[claro | si] (vamos por | nos tomamos | tomamos) un cafe [despues | al rato | mas tarde]",
-      "[claro | si] estoy (libre | disponible) (despues de la reunion | mas tarde | al rato | en la tarde)",
+      "[claro | si] estoy (libre | disponible) (despues de la reunion | mas tarde | al rato | (en | por) la tarde)",
       "[claro] despues de la reunion (me parece bien | esta bien | me funciona | me queda bien)",
     ] },
     // "Mejor mañana." / "Sí, en la comida." (to "¿Lo pueden hablar ustedes dos después de la reunión?": yes, at that time)
@@ -1265,10 +1265,10 @@ export const meeting: SituationDef = {
       "[perdon] no (tengo | me da) tiempo [esta semana | hoy | para eso]",
       "[perdon] (tengo | traigo) (mucho trabajo | mucha chamba | muchos pendientes) [esta semana | hoy]",
       "[perdon] (esta vez | esta semana | hoy) no [perdon]",
-      "[perdon] [hoy] no traigo (mi laptop | mi computadora | la laptop | la computadora) [hoy]",
+      "[perdon] [hoy] no traigo (mi laptop | mi computadora | la laptop | la computadora | mi portatil | el portatil) [hoy]",
       "me gustaria pero no puedo [esta semana]",
       "[perdon] [hoy] no puedo tomar (las)? notas [hoy]",
-      "[perdon] [hoy] no (traje | tengo) (mi laptop | mi computadora | la laptop | la computadora | mi compu) [hoy]",
+      "[perdon] [hoy] no (traje | tengo | he traido) (mi laptop | mi computadora | la laptop | la computadora | mi compu | mi portatil | el portatil) [hoy]",
       "(prefiero | preferiria) no [gracias]", "[no] yo no [puedo] [perdon]", "(yo)? no me (encargo | puedo encargar) [de eso | de esto]",
       "[perdon] no (puedo | podria) (hacer | preparar | escribir | grabar) @ddet {deliv} [esta semana]",
     ] },
@@ -1384,7 +1384,7 @@ export const meeting: SituationDef = {
     sara_now: [t("¿Y | ahora?", "And | now?", "What about now?")],
     hear_now_kate: [t("¡Ah, | ahora | sí | te | escuchamos!", "Oh, | now | yes | you | we-hear!", "Oh, now we can hear you!")],
     sara_ok: [
-      t("¡Qué bueno! | Perdón, | equipo.", "Great! | Sorry, | team.", "Great! Sorry about that, everyone."),
+      t("¡Qué bueno! | Perdón, | equipo.", "Great! | Sorry, | team.", "Great! Sorry about that, everyone.", { spain: t("¡Qué bien! | Perdón, | equipo.", "Great! | Sorry, | team.", "Great! Sorry about that, everyone.") }),
       t("Perfecto. | ¡Perdón, | chicos!", "Perfect. | Sorry, | guys!", "Perfect. Sorry, guys!"),
     ],
     not_muted_resp: [
@@ -1417,11 +1417,11 @@ export const meeting: SituationDef = {
     ],
     updates_first: [
       t("Pero | primero, | rápido: | ¿cómo | van | con | sus | pendientes? | ¿Pablo?", "But | first, | quickly: | how | are-you-all-doing | with | your | to-dos? | Pablo?",
-        "But first, quick updates. Pablo?", { flags: { 7: F_PEND } }),
+        "But first, quick updates. Pablo?", { flags: { 7: F_PEND }, spain: t("Pero | primero, | rápido: | ¿cómo | vais | con | vuestros | pendientes? | ¿Pablo?", "But | first, | quickly: | how | are-you-all-doing | with | your | to-dos? | Pablo?", "But first, quick updates. Pablo?") }),
     ],
     paul_update: [
       t("La | app | ya | casi | está. | Nada más | estamos | arreglando | unos | bugs.", "The | app | already | almost | is-there. | Just | we're | fixing | some | bugs.",
-        "The app is almost ready. We're just fixing a few bugs.", { flags: { 2: "ya casi = almost (ya: by now)." } }),
+        "The app is almost ready. We're just fixing a few bugs.", { flags: { 2: "ya casi = almost (ya: by now)." }, spain: t("La | app | ya | casi | está. | Solo | estamos | arreglando | unos | bugs.", "The | app | already | almost | is-there. | Just | we're | fixing | some | bugs.", "The app is almost ready. We're just fixing a few bugs.") }),
       t("¡Semana | pesada! | Sigo | arreglando | bugs | de | la | app.", "Week | heavy! | I-keep | fixing | bugs | of | the | app.", "Busy week! I'm still fixing bugs in the app.",
         { flags: { 1: "pesada (heavy) = busy, tough.", 2: "seguir + gerund = still doing." } }),
     ],
@@ -1450,7 +1450,7 @@ export const meeting: SituationDef = {
     ],
     upd_ok_resp: [
       t("¡Qué bueno! | ¿Y | en | qué | estás | trabajando | ahorita?", "Good to hear! | And | on | what | are-you | working | right now?", "Good to hear! What are you working on right now?",
-        { flags: { 6: F_AHORITA }, neutral: t("¡Qué bueno! | ¿Y | en | qué | estás | trabajando | ahora?", "Good to hear! | And | on | what | are-you | working | now?", "Good to hear! What are you working on right now?") }),
+        { flags: { 6: F_AHORITA }, neutral: t("¡Qué bueno! | ¿Y | en | qué | estás | trabajando | ahora?", "Good to hear! | And | on | what | are-you | working | now?", "Good to hear! What are you working on right now?"), spain: t("¡Qué bien! | ¿Y | en | qué | estás | trabajando | ahora?", "Good to hear! | And | on | what | are-you | working | now?", "Good to hear! What are you working on right now?") }),
     ],
     upd_problem_resp: [t("Uy, | ¿y | eso? | ¿En | qué | estás | trabajando?", "Oh, | and | that? | On | what | are-you | working?", "Oh, how come? What are you working on?", { flags: { 1: "¿Y eso?: how come?, what happened?" } })],
     upd_busy_resp: [t("Semana | pesada, | ¿eh? | ¿En | qué | estás | trabajando?", "Week | heavy, | huh? | On | what | are-you | working?", "Busy week, huh? What are you working on?")],
@@ -1458,9 +1458,9 @@ export const meeting: SituationDef = {
     upd_nothing_resp: [t("Muy | bien, | no pasa nada.", "Very | good, | no worries.", "Okay, no worries.")],
     when_ok: [
       t("¡Perfecto, | gracias!", "Perfect, | thanks!", "Perfect, thanks!"),
-      t("Muy | bien. | Nada más | mantenme | al tanto.", "Very | good. | Just | keep-me | posted.", "Okay, great. Just keep me posted."),
+      t("Muy | bien. | Nada más | mantenme | al tanto.", "Very | good. | Just | keep-me | posted.", "Okay, great. Just keep me posted.", { spain: t("Muy | bien. | Solo | mantenme | al tanto.", "Very | good. | Just | keep-me | posted.", "Okay, great. Just keep me posted.") }),
     ],
-    when_unsure: [t("No pasa nada. | Nada más | mantenme | al tanto.", "No worries. | Just | keep-me | posted.", "That's okay. Just keep me posted.")],
+    when_unsure: [t("No pasa nada. | Nada más | mantenme | al tanto.", "No worries. | Just | keep-me | posted.", "That's okay. Just keep me posted.", { spain: t("No pasa nada. | Solo | mantenme | al tanto.", "No worries. | Just | keep-me | posted.", "That's okay. Just keep me posted.") })],
     upd_behind_ok: [t("No te preocupes. | ¡Gracias | por | avisar!", "Don't worry. | Thanks | for | letting-us-know!", "No worries. Thanks for the update!")],
     send_yes: [
       t("¡Gracias!", "Thanks!", "Thanks!"),
@@ -1522,7 +1522,7 @@ export const meeting: SituationDef = {
       t("¿Así | queda | más | claro?", "Like this | it-stays | more | clear?", "Is that clearer?"),
     ],
     sense_ok: [
-      t("¡Qué bueno!", "Great!", "Great!"),
+      t("¡Qué bueno!", "Great!", "Great!", { spain: t("¡Qué bien!", "Great!", "Great!") }),
       t("¡Perfecto!", "Perfect!", "Cool."),
     ],
     sara_clarify: [
@@ -1545,7 +1545,7 @@ export const meeting: SituationDef = {
     term_launch: [t("El | lanzamiento | es | cuando | abrimos | la | app | a | todos.", "The | launch | is | when | we-open | the | app | to | everyone.", "Launch means we open the app to everyone.")],
     // "¿Cuándo es el lanzamiento?": no date is fixed in any version (beta, soft launch, blockers), as add_customers_ok says
     launch_when: [t("Todavía | no hay | fecha | definitiva. | ¡Pronto | les | aviso!", "Still | there's no | date | final. | Soon | (to) you-all | I'll-let-know!",
-      "There's no final date yet. I'll let you all know soon!", { flags: { 5: "les = (to) you all: Pablo tells the whole team." } })],
+      "There's no final date yet. I'll let you all know soon!", { flags: { 5: "les = (to) you all: Pablo tells the whole team." }, spain: t("Todavía | no hay | fecha | definitiva. | ¡Pronto | os | aviso!", "Still | there's no | date | final. | Soon | (to) you-all | I'll-let-know!", "There's no final date yet. I'll let you all know soon!") })],
     // the soft-launch version: its first step has a date
     launch_when_soft: [t("El | soft launch | es | la | próxima | semana; | para | todos, | todavía | no hay | fecha.", "The | soft launch | is | — | next | week; | for | everyone, | still | there's no | date.",
       "The soft launch is next week; for everyone, there's no date yet.", { flags: { 3: F_ART } })],
@@ -1560,7 +1560,7 @@ export const meeting: SituationDef = {
     clarify_party: [t("Pablo | quiere | gastar | todo | el | dinero | en | una | gran | fiesta | de | lanzamiento.", "Pablo | wants | to spend | all | the | money | on | a | big | party | of | launch.", "Pablo wants to spend all the money on one big launch party.")],
     clarify_deadline: [t("Pablo | quiere | más | tiempo, | pero | Sara | lo | quiere | para | el | viernes.", "Pablo | wants | more | time, | but | Sara | it | wants | for | — | Friday.", "Pablo wants more time, but Sara wants it on Friday.", { flags: { 9: "el viernes: on Friday (the article stands for “on”)." } })],
     clarify_who: [t("O sea: | ¿quién | puede | hacer | {X.the}?", "I mean: | who | can | do | {X.the}?", "I mean: who can do {X.the}?")],
-    clarify_send: [t("O sea: | nada más | manda | {X.the} | por | correo | al | equipo.", "I mean: | just | send | {X.the} | by | email | to the | team.", "I mean: just email {X.the} to the team.")],
+    clarify_send: [t("O sea: | nada más | manda | {X.the} | por | correo | al | equipo.", "I mean: | just | send | {X.the} | by | email | to the | team.", "I mean: just email {X.the} to the team.", { spain: t("O sea: | solo | manda | {X.the} | por | correo | al | equipo.", "I mean: | just | send | {X.the} | by | email | to the | team.", "I mean: just email {X.the} to the team.") })],
 
     // --- adding something ---------------------------------------------------------------------------
     anything_add: [
@@ -1576,7 +1576,7 @@ export const meeting: SituationDef = {
     ],
     add_test_ok: [t("¡Buen | punto! | Lo | agrego | al | plan | de | pruebas.", "Good | point! | It | I'll-add | to the | plan | of | tests.", "Good point! I'll add that to the test plan.")],
     add_help_ok: [t("¡Eso | estaría | genial, | gracias!", "That | would-be | great, | thanks!", "That would be great, thanks!")],
-    add_customers_ok: [t("Qué bueno | saberlo. | Pronto | les | damos | la | fecha.", "Good | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.")],
+    add_customers_ok: [t("Qué bueno | saberlo. | Pronto | les | damos | la | fecha.", "Good | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.", { spain: t("Me alegra | saberlo. | Pronto | les | damos | la | fecha.", "I'm glad | to-know-it. | Soon | (to) them | we-give | the | date.", "Good to know. We'll tell them the date soon.") })],
     add_feedback_ok: [t("¡Buena | idea! | Podemos | poner | un | botón | de | comentarios | en | la | app.", "Good | idea! | We-can | put | a | button | of | feedback | in | the | app.", "Great idea! We can add a feedback button to the app.")],
     add_other_ok: [t("Buen | punto, | gracias. | Lo | vemos | después de | la | reunión.", "Good | point, | thanks. | It | we-see | after | the | meeting.", "Good point, thanks. Let's talk about it after the meeting.", { flags: { 3: F_LO } })],
     no_add_ok: [
@@ -1608,21 +1608,21 @@ export const meeting: SituationDef = {
       t("Bueno, | entiendo | tu | punto.", "Okay, | I-understand | your | point.", "Okay, I see your point."),
     ],
     paul_split_ok: [t("Mmm, | eso | podría | funcionar.", "Hmm, | that | could | work.", "Hmm, that could work.")],
-    paul_fair_short: [t("Mmm, | está bien.", "Hmm, | fair enough.", "Okay, fair enough.")],
+    paul_fair_short: [t("Mmm, | está bien.", "Hmm, | fair enough.", "Okay, fair enough.", { spain: t("Mmm, | vale.", "Hmm, | fair enough.", "Okay, fair enough.") })],
     offline_two: [
       t("Buenos | argumentos. | Mejor | lo | vemos | aparte. | ¿Lo | pueden | hablar | ustedes | dos | después de | la | reunión?",
         "Good | arguments. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?",
-        "Good points. Let's take this offline. Can you two talk after the meeting?", { flags: { 3: F_LO, 5: "verlo aparte = take it offline, discuss it separately." } }),
+        "Good points. Let's take this offline. Can you two talk after the meeting?", { flags: { 3: F_LO, 5: "verlo aparte = take it offline, discuss it separately." }, spain: t("Buenos | argumentos. | Mejor | lo | vemos | aparte. | ¿Lo | podéis | hablar | vosotros | dos | después de | la | reunión?", "Good | arguments. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?", "Good points. Let's take this offline. Can you two talk after the meeting?") }),
     ],
     offline_short: [
       t("Bueno. | Mejor | lo | vemos | aparte. | ¿Lo | pueden | hablar | ustedes | dos | después de | la | reunión?",
         "Okay. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?",
-        "Alright. Let's take this offline. Can you two talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." } }),
+        "Alright. Let's take this offline. Can you two talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." }, spain: t("Bueno. | Mejor | lo | vemos | aparte. | ¿Lo | podéis | hablar | vosotros | dos | después de | la | reunión?", "Okay. | Better | it | we-see | separately. | It | can-you-all | talk-about | you | two | after | the | meeting?", "Alright. Let's take this offline. Can you two talk after the meeting?") }),
     ],
     offline_sara: [
       t("Bueno. | Mejor | lo | vemos | aparte. | Pablo | y | Sara, | ¿lo | pueden | hablar | después de | la | reunión?",
         "Okay. | Better | it | we-see | separately. | Pablo | and | Sara, | it | can-you-all | talk-about | after | the | meeting?",
-        "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." } }),
+        "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?", { flags: { 2: F_LO, 4: "verlo aparte = take it offline, discuss it separately." }, spain: t("Bueno. | Mejor | lo | vemos | aparte. | Pablo | y | Sara, | ¿lo | podéis | hablar | después de | la | reunión?", "Okay. | Better | it | we-see | separately. | Pablo | and | Sara, | it | can-you-all | talk-about | after | the | meeting?", "Okay. Let's take this offline. Pablo and Sara, can you talk after the meeting?") }),
     ],
     talk_later_ok: [
       t("Me | parece | bien.", "(To) me | it-seems | good.", "Sounds good."),
@@ -1680,7 +1680,7 @@ export const meeting: SituationDef = {
     ],
     aob_reask: [t("¿Algún | otro | asunto?", "Any | other | business?", "Any other business?")],
     aob_more: [t("¿Algo | más?", "Something | more?", "Anything else?")],
-    aob_wfh_ok: [t("Claro, | sin problema. | Nada más | ponlo | en | el | calendario.", "Sure, | no problem. | Just | put-it | on | the | calendar.", "Sure, no problem. Just put it on the calendar.")],
+    aob_wfh_ok: [t("Claro, | sin problema. | Nada más | ponlo | en | el | calendario.", "Sure, | no problem. | Just | put-it | on | the | calendar.", "Sure, no problem. Just put it on the calendar.", { spain: t("Claro, | sin problema. | Solo | ponlo | en | el | calendario.", "Sure, | no problem. | Just | put-it | on | the | calendar.", "Sure, no problem. Just put it on the calendar.") })],
     aob_lunch_ans: [t("¡El | próximo | jueves, | a | las | dos!", "— | Next | Thursday, | at | — | two!", "Next Thursday at two!", { flags: { 0: F_ART, 4: "The article before a clock time has no English word." } })],
     // "¿Dónde es la comida?": the place isn't chosen yet (no restaurant is named in the town's facts for it)
     aob_lunch_where: [t("Todavía | no sabemos | dónde, | pero | es | el | próximo | jueves | a | las | dos.", "Still | we don't know | where, | but | it's | — | next | Thursday | at | — | two.",
@@ -1719,7 +1719,7 @@ export const meeting: SituationDef = {
     next_meeting_ans: [t("El | próximo | lunes, | a | la | misma | hora.", "— | Next | Monday, | at | the | same | time.", "Same time next Monday.", { flags: { 0: F_ART } })],
     np_paul: [t("¡De nada!", "You're welcome!", "No problem!")],
     np_sara: [t("¡De nada!", "You're welcome!", "No problem!")],
-    sure_welcome: [t("¡Con gusto!", "My pleasure!", "Sure!")],
+    sure_welcome: [t("¡Con gusto!", "My pleasure!", "Sure!", { spain: t("¡De nada!", "You're welcome!", "Sure!") })],
     yes_you: [t("¡Sí, | tú!", "Yes, | you!", "Yes, you!")],
     can_you_take: [t("¿Te encargas | tú?", "You-take-care-of-it | you?", "Can you take it?", { flags: { 0: "encargarse (de algo) = to take care of something; te goes with the verb." } })],
     k_good_thanks: [t("¡Bien, | gracias!", "Good, | thanks!", "Good, thanks!")],
@@ -1784,7 +1784,7 @@ export const meeting: SituationDef = {
       items: [
         { id: "w_when", s: t("Para | el | viernes.", "For | — | Friday.", "By Friday.", { flags: { 1: "el viernes: on Friday (the article stands for “on”)." } }) },
         { id: "w_ready", s: t("Va | a | estar | listo | el | viernes.", "It's-going | to | be | ready | on | Friday.", "It'll be ready by Friday.", { flags: { 4: "el viernes: on Friday (the article stands for “on”)." } }) },
-        { id: "w_when", s: t("Mañana | en la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.") },
+        { id: "w_when", s: t("Mañana | en la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.", { spain: t("Mañana | por la mañana.", "Tomorrow | in the morning.", "Tomorrow morning.") }) },
         { id: "w_unsure", s: t("Todavía | no | estoy | {m:seguro|f:segura}.", "Still | not | I-am | sure.", "I'm not sure yet.") },
       ],
     },
@@ -1841,7 +1841,7 @@ export const meeting: SituationDef = {
       items: [
         { id: "a_add", s: t("Quiero | agregar | algo.", "I-want | to add | something.", "I'd like to add something.") },
         { id: "a_can_add", s: t("¿Puedo | agregar | algo?", "Can-I | add | something?", "Can I add something?") },
-        { id: "a_test", s: t("Deberíamos | probarla | en | celulares | viejos.", "We-should | test-it | on | phones | old.", "We should test it on older phones."), note: "-la = la app." },
+        { id: "a_test", s: t("Deberíamos | probarla | en | celulares | viejos.", "We-should | test-it | on | phones | old.", "We should test it on older phones.", { spain: t("Deberíamos | probarla | en | móviles | viejos.", "We-should | test-it | on | phones | old.", "We should test it on older phones.") }), note: "-la = la app." },
         { id: "a_help", s: t("Yo | puedo | ayudar | con | las | pruebas.", "I | can | help | with | the | tests.", "I can help with the testing.") },
         { id: "a_customers", s: t("Los | clientes | están | preguntando | por | la | fecha.", "The | customers | are | asking | about | the | date.", "Our customers are asking about the launch date.") },
         { id: "a_feedback", s: t("Deberíamos | pedirles | su | opinión | a | los | usuarios.", "We-should | ask-them-for | their | opinion | — | the | users.", "We should ask users for feedback.",
@@ -1852,7 +1852,7 @@ export const meeting: SituationDef = {
     add_what: {
       lt: "Say what you'd like to add",
       items: [
-        { id: "a_test", s: t("Deberíamos | probarla | en | celulares | viejos.", "We-should | test-it | on | phones | old.", "We should test it on older phones.") },
+        { id: "a_test", s: t("Deberíamos | probarla | en | celulares | viejos.", "We-should | test-it | on | phones | old.", "We should test it on older phones.", { spain: t("Deberíamos | probarla | en | móviles | viejos.", "We-should | test-it | on | phones | old.", "We should test it on older phones.") }) },
         { id: "a_help", s: t("Yo | puedo | ayudar | con | las | pruebas.", "I | can | help | with | the | tests.", "I can help with the testing.") },
         { id: "a_customers", s: t("Los | clientes | están | preguntando | por | la | fecha.", "The | customers | are | asking | about | the | date.", "Our customers are asking about the launch date.") },
         { id: "a_feedback", s: t("Deberíamos | hacer | una | encuesta.", "We-should | do | a | survey.", "We should do a survey.") },

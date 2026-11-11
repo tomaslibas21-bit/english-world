@@ -1,0 +1,17 @@
+{ "situation": "s35-gym", "items": [
+  {"ctx": "new", "say": "Hola, soy nuevo aquí", "intent": "im_new"},
+  {"ctx": "new", "say": "Quiero apuntarme", "intent": ["want_join"]},
+  {"ctx": "plan", "say": "¿Qué horario tenéis?", "intent": "ask_hours"},
+  {"ctx": "plan", "say": "¿Tenéis duchas?", "intent": "ask_have"},
+  {"ctx": "plan", "say": "¿Cuál me recomiendas?", "intent": "recommend_q"},
+  {"ctx": "form", "say": "¿Me dejas un boli?", "intent": "pen_q"},
+  {"ctx": "form", "say": "Ya está", "intent": ["form_done", "ready"]},
+  {"ctx": "pay", "say": "¿Puedo pagar con el móvil?", "intent": "pay_phone"},
+  {"ctx": "pay", "say": "¿Tienes datáfono?", "intent": "pay_card"},
+  {"ctx": "lockers", "say": "Sí, ¿dónde están los vestuarios?", "intent": "lockers_q"},
+  {"ctx": "lockers", "say": "¿Dónde está el aseo?", "intent": "restroom_q"},
+  {"ctx": "lockers", "say": "¿Me dejas una toalla?", "intent": "towel_q"},
+  {"ctx": "lockers", "say": "No, ya estoy lista", "intent": ["change_no", "ready"]},
+  {"ctx": "pay", "say": "No llevo efectivo", "intent": "no_cash"},
+  {"ctx": "pay", "say": "No quiero pagar con el móvil", "intent": "any", "not": ["pay_phone"]}
+] }

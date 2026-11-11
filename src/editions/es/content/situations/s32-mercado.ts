@@ -17,9 +17,9 @@ import { expectHowAreYou } from "@/content/global";
 // with: `domains.price`).
 
 const P = (id: string, es: string, en: string, g: "m" | "f", unit: "kg" | "pza" | "manojo", price: number, pc: number,
-  extra: { pl?: string; ltPl?: string; forms?: string[]; ripe?: boolean; nat?: string; natPl?: string; chip?: string; neutral?: string; art?: "" } = {}) =>
+  extra: { pl?: string; ltPl?: string; forms?: string[]; ripe?: boolean; nat?: string; natPl?: string; chip?: string; neutral?: string; spain?: string; art?: "" } = {}) =>
   ent(id, es, en, g, { pl: extra.pl, ltPl: extra.ltPl, forms: extra.forms, chip: extra.chip, art: extra.art,
-    attrs: { unit, price, pc, ripe: !!extra.ripe, nat: extra.nat, natPl: extra.natPl, neutral: extra.neutral } });
+    attrs: { unit, price, pc, ripe: !!extra.ripe, nat: extra.nat, natPl: extra.natPl, neutral: extra.neutral, spain: extra.spain } });
 
 export const PRODUCTS: EntityDef[] = [
   P("aguacate", "aguacate", "avocado", "m", "kg", 6000, 250, { pl: "aguacates", ltPl: "avocados", forms: ["aguacates", "aguacatito", "palta", "paltas"], ripe: true }),
@@ -31,7 +31,7 @@ export const PRODUCTS: EntityDef[] = [
   P("papaya", "papaya", "papaya", "f", "kg", 4000, 1500, { pl: "papayas", forms: ["papayas"], ripe: true }),
   P("pina", "piña", "pineapple", "f", "pza", 4000, 1500, { pl: "piñas", ltPl: "pineapples", forms: ["pinas", "pina", "anana"] }),
   P("cebolla", "cebolla", "onion", "f", "kg", 4000, 250, { pl: "cebollas", ltPl: "onions", forms: ["cebollas", "cebolla blanca"] }),
-  P("papa", "papa", "potato", "f", "kg", 4000, 200, { pl: "papas", ltPl: "potatoes", forms: ["papas", "patata", "patatas"] }),
+  P("papa", "papa", "potato", "f", "kg", 4000, 200, { pl: "papas", ltPl: "potatoes", forms: ["papas", "patata", "patatas"], spain: "patata" }),
   P("naranja", "naranja", "orange", "f", "kg", 2000, 250, { pl: "naranjas", ltPl: "oranges", forms: ["naranjas", "naranja para jugo", "naranjas para jugo"] }),
   P("habanero", "chile | habanero", "chili | habanero", "m", "kg", 8000, 10, { pl: "chiles | habaneros", ltPl: "chilis | habanero", forms: ["habanero", "habaneros", "chile habanero", "chiles habaneros", "chile", "chiles"], nat: "habanero peppers", natPl: "habanero peppers" }),
   // a mass noun: "un manojo de cilantro", "sin cilantro", "veinte pesos de cilantro" (never "cilantros")
@@ -220,10 +220,10 @@ export const mercado: SituationDef = {
     more_no: { patterns: ["(es | seria | eso es | eso seria | ya es) todo #h:more_all", "nada mas #h:more_nothing", "(con eso | ya con eso) [es todo]", "(solo | nomas) eso", "es todo por hoy", "ya no gracias", "no gracias es todo",
       "no (necesito | quiero | ocupo) nada mas", "ya estuvo", "(con eso | ya con eso) (es suficiente | basta)"] },
     more_yes: { patterns: ["(si | ah si) (algo mas | otra cosa)", "otra cosa", "algo mas"] },
-    bag_yes: { patterns: ["[si] (traigo | tengo) [mi | una] bolsa #h:bag_yes", "[si] aqui (traigo | tengo) [mi bolsa]", "[si] traigo", "[si] [aqui] (traigo | tengo) (una | la mia | mi propia bolsa)", "(traigo | tengo) la mia"] },
+    bag_yes: { patterns: ["[si] (traigo | tengo) [mi | una] bolsa #h:bag_yes", "[si] (llevo | ya llevo) [mi | una] bolsa", "[si] llevo", "[si] aqui (traigo | tengo) [mi bolsa]", "[si] traigo", "[si] [aqui] (traigo | tengo) (una | la mia | mi propia bolsa)", "(traigo | tengo) la mia"] },
     // handing the bag over at "¿Trae bolsa?" (elsewhere "Aquí tiene" pays)
     bag_yes_ctx: { patterns: ["(aqui tiene | aqui esta | tome | tenga) [mi bolsa | la bolsa]", "aqui esta mi bolsa"] },
-    bag_no: { patterns: ["no (traigo | tengo) [bolsa]", "me (da | vende | regala) una (bolsa | bolsita) #h:bag_no", "(una | la) (bolsa | bolsita) [por favor]", "(deme | me da) una (bolsa | bolsita)"] },
+    bag_no: { patterns: ["no (traigo | tengo | llevo) [bolsa]", "me (da | vende | regala) una (bolsa | bolsita) #h:bag_no", "(una | la) (bolsa | bolsita) [por favor]", "(deme | me da) una (bolsa | bolsita)"] },
     // "¿Me da una?" at "¿Trae bolsa?": a bag
     bag_no_ctx: { patterns: ["[no] me (da | vende | regala) una", "[no] (deme | me puede dar) una"] },
     // "No necesito bolsa": no bag at all (a bare "no" gets one)
@@ -231,7 +231,7 @@ export const mercado: SituationDef = {
       "no gracias asi esta bien", "no (necesito | ocupo) bolsa gracias", "no es necesario"] },
     pay_cash: { patterns: ["aqui tiene #h:here_you_go", "tenga", "tome", "aqui esta", "aqui le pago", "le pago", "(le pago | pago) en efectivo", "en efectivo", "aqui esta el dinero"] },
     // "Tengo de quinientos" / "¿Tiene cambio de quinientos?" / "Le doy cien": the bill handed over
-    big_bill: { patterns: ["(tengo | traigo) (un billete)? de {bill:price} #h:big_bill", "(solo | nomas) (tengo | traigo) (billete)? de {bill:price}", "(tiene | trae) cambio de {bill:price} #h:q_change",
+    big_bill: { patterns: ["(tengo | traigo) (un billete)? de {bill:price} #h:big_bill", "(solo | nomas) (tengo | traigo | llevo) (billete | un billete)? de {bill:price}", "(tiene | trae) cambio de {bill:price} #h:q_change",
       "(le pago | pago) con (uno | un billete) de {bill:price}", "aqui tiene (uno | un billete)? de {bill:price}", "(le doy | aqui le doy | tome) {bill:price}",
       "(le doy | aqui le doy | tome) (uno | un billete) de {bill:price}", "(tenga | tome) [uno | un billete] de {bill:price}", "(tiene | trae) cambio"] },
     // "Quédese con el cambio": no change to give

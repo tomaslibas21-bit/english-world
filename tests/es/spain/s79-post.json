@@ -1,0 +1,15 @@
+{ "situation": "s79-post", "items": [
+  {"ctx": "help", "say": "Buenos días, quería mandar este paquete a Estados Unidos", "intent": "send_package"},
+  {"ctx": "help_pickup", "say": "Vengo a recoger un paquete", "intent": "pickup"},
+  {"ctx": "help", "say": "¿Me da sellos para unas postales?", "intent": "buy_stamps"},
+  {"ctx": "dest", "say": "A Inglaterra", "intent": "dest_ans"},
+  {"ctx": "hazmat", "say": "No, solo ropa y chocolate", "intent": "contents_ok"},
+  {"ctx": "service", "say": "El normal, por favor", "intent": "service_ans"},
+  {"ctx": "service", "say": "¿Cuánto tarda?", "intent": "ask_time"},
+  {"ctx": "service", "say": "¿Tiene número de seguimiento?", "intent": "ask_tracking"},
+  {"ctx": "value", "say": "Unos ochocientos pesos", "intent": ["value_ans", "value_ctx"]},
+  {"ctx": "gift", "say": "Sí, es un regalo para mi madre", "intent": "gift_yes"},
+  {"ctx": "gift", "say": "No, no es un regalo", "intent": "gift_no"},
+  {"ctx": "stamps_offer", "say": "No necesito sellos, gracias", "intent": "no_stamps"},
+  {"ctx": "stamps_qty", "say": "Cinco, por favor", "intent": "stamps_ctx", "slots": {"number": 5}}
+] }

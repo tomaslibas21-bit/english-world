@@ -155,3 +155,10 @@ card + "¿Cuánto puedo sacar?", a newcomer's foreign card, goodbye after a decl
 - Owner: selling dollars (the board's $18.10) isn't part of this visit; "Quiero comprar dólares" gets the rates only.
   A small sale flow with generic lines (no amount list) is possible. And: no account without the residence card (as
   the big banks do); or should the fictional bank open a basic account with the passport alone?
+
+## Spain twins (11 Nov 2026)
+
+15 twins + Spain nouns for the license (carné de conducir, m) and the lease (contrato de alquiler). Ricardo keeps usted (no
+register change). Also: "¿En qué puedo ayudarle?" for "¿Qué se le ofrece?", "Me alegro de verlo", "Por supuesto" for "Con gusto",
+"Vuelva", "con eso basta", móvil, "aquí fuera", the hint "Ya está, ya he firmado". Left Mexican: CLABE, CURP, RFC, NIP (the bank's
+own Mexican terms, taught by the conversation). Spain corpus: 12 items (carné de conducir, contrato de alquiler, boli, euro).

@@ -1,0 +1,19 @@
+{ "situation": "s34-meeting", "items": [
+  {"ctx": "mute", "say": "Sara, no te oímos", "intent": ["tell_mute_ctx", "tell_mute"]},
+  {"ctx": "sara_hear", "say": "Sí, ya te oímos", "intent": ["hear_yes"]},
+  {"ctx": "notes", "say": "Vale, yo tomo las notas", "intent": ["can_do", "yn:yes"]},
+  {"ctx": "notes", "say": "Hoy no he traído el portátil", "intent": "cant_do"},
+  {"ctx": "update", "say": "He terminado el informe", "intent": ["upd_done"]},
+  {"ctx": "update", "say": "Estoy con la página web", "intent": "upd_working"},
+  {"ctx": "when_q", "say": "Para el viernes", "intent": ["when_ctx", "when_ans"]},
+  {"ctx": "send_q", "say": "Vale, os lo mando después de la reunión", "intent": "will_send"},
+  {"ctx": "clarify", "say": "¿Qué significa go-live?", "intent": "word_q"},
+  {"ctx": "add", "say": "Deberíamos probarla en móviles viejos", "intent": "add_test"},
+  {"ctx": "opinion", "say": "Estoy de acuerdo con Pablo", "intent": "agree"},
+  {"ctx": "talk_after", "say": "Vale, lo hablamos después", "intent": ["talk_later", "agree", "yn:yes"]},
+  {"ctx": "owner", "say": "Vale, yo me encargo", "intent": ["can_do", "can_do_ctx"]},
+  {"ctx": "aob", "say": "¿Puedo trabajar desde casa el viernes?", "intent": "aob_wfh"},
+  {"ctx": "summary", "say": "Vale, hoy os lo mando", "intent": ["will_send", "can_do"]},
+  {"ctx": "closing", "say": "¡Gracias a todos, que tengáis un buen día!", "intent": ["bye_all", "g_thanks"]},
+  {"ctx": "closing", "say": "¡Hasta luego, chicos!", "intent": ["bye_all", "g_bye"]}
+] }

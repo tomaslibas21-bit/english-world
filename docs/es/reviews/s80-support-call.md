@@ -122,3 +122,10 @@ the rest).
   `rate_size`, `extra_quote`, `ret_confirm_long`, `ret_answer_long`, `ret_long`, `ret_more_q`; s83 `summary`,
   `summary_notime`.
 - Plural items: none here.
+
+## Spain twins (11 Nov 2026)
+
+8 twins. Karla keeps usted (call-center usted is common in Spain too; no register change). Spain: "número de incidencia"
+for "número de reporte" (line and hint; the pattern takes "incidencia"), "Claro, le ayudo" for "Con gusto le ayudo", "no le he oído
+bien", "fuera de su casa", "por la tarde" (hints). The NetWave menu needs no twin. Spain corpus: 15 items (a mano, cada dos por
+tres, lo he reiniciado, incidencia).

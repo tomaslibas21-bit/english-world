@@ -116,3 +116,9 @@ todo" pattern (s76 and s79 add it locally); (2) a shared `politeClosing` helper 
 (3) TOWN.md "Prices the conversations share": a stamp for a postcard abroad $15 (s79); CROSS.md's "stamps $22" is
 stale. **For the owner:** model the 2026 US parcel rules (ID, contacts, 10% charge) or keep the US simple; one flat
 price for every country (EMS to Australia and New Zealand is 35–40% above the flat express price) or prices by zone (more clips).
+
+## Spain twins (11 Nov 2026)
+
+12 twins. Gloria keeps usted (no register change). Spain: "número de seguimiento" for "número de guía" (5 lines and the hint),
+datáfono, devolver, "¿En qué puedo ayudarle?" for "¿Qué se le ofrece?", "Muy bien / Claro / sin problema" for "Con gusto", "Solo
+uno" (hint). Spain corpus: 13 items (sellos, número de seguimiento, mi madre).

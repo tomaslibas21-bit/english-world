@@ -1,0 +1,17 @@
+{ "situation": "s80-support-call", "items": [
+  {"ctx": "menu", "say": "Soporte técnico", "intent": "menu_support"},
+  {"ctx": "menu", "say": "No tengo internet", "intent": "internet_down"},
+  {"ctx": "account", "say": "No lo tengo a mano", "intent": ["acct_unknown"]},
+  {"ctx": "problem", "say": "Internet no me funciona", "intent": "internet_down"},
+  {"ctx": "problem", "say": "Va muy lento", "intent": "internet_slow"},
+  {"ctx": "problem", "say": "Se corta cada dos por tres", "intent": "internet_drops"},
+  {"ctx": "since", "say": "Desde ayer por la tarde", "intent": ["since_ans", "since_ctx"]},
+  {"ctx": "restart", "say": "Sí, ya lo he reiniciado", "intent": "restart_yes"},
+  {"ctx": "restart", "say": "No, no lo he intentado", "intent": "restart_no"},
+  {"ctx": "restart_now", "say": "Vale, ahora mismo lo hago", "intent": "doing_ctx"},
+  {"ctx": "still_red", "say": "Sí, sigue en rojo", "intent": "still_red"},
+  {"ctx": "tech", "say": "Vale, me viene bien", "intent": ["tech_accept", "yn:yes"]},
+  {"ctx": "tech", "say": "¿Tiene algo por la tarde?", "intent": "tech_other"},
+  {"ctx": "more", "say": "¿Me da un número de incidencia?", "intent": "reference_q"},
+  {"ctx": "more", "say": "¿Me lo puede mandar por mensaje?", "intent": "text_me"}
+] }

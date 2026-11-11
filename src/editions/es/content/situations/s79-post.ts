@@ -384,7 +384,7 @@ export const post: SituationDef = {
       "[y] [el] {service} (cuanto | cuanto tiempo | en cuanto tiempo) (tarda | se tarda | llega) [en llegar]", "(cuando | en cuanto tiempo) (llega | llegaria) el {service}",
     ] },
     ask_tracking: { patterns: [
-      "(lo | la) (puedo | podre) rastrear #h:q_track", "(puedo | se puede) rastrear(lo | la)? [en linea | por internet]", "(tiene | trae | lleva | incluye) (rastreo | numero de guia | guia | seguimiento)",
+      "(lo | la) (puedo | podre) rastrear #h:q_track", "(puedo | se puede) rastrear(lo | la)? [en linea | por internet]", "(tiene | trae | lleva | incluye) (rastreo | numero de guia | guia | seguimiento | numero de seguimiento | codigo de seguimiento)",
       "(como | donde) (lo | la) rastreo", "donde (esta | viene) el numero de guia", "(me da | me dan) (un | el) numero de guia", "hay (rastreo | seguimiento)",
       "[y] [el] {service} (tiene | trae | incluye | lleva) (rastreo | numero de guia | guia | seguimiento)", "[y] el {service} se puede rastrear", "(tiene | trae | incluye | lleva) (rastreo | numero de guia | seguimiento) el {service}",
     ] },
@@ -517,11 +517,11 @@ export const post: SituationDef = {
     ],
     ask_help: [
       t("¿En | qué | le | puedo | ayudar?", "In | what | (to) you | can I | help?", "How can I help you?"),
-      t("¿Qué | se le ofrece?", "What | do you need?", "What can I do for you?", { flags: { 1: "se le ofrece: the counter's polite formula, literally is offered to you." } }),
+      t("¿Qué | se le ofrece?", "What | do you need?", "What can I do for you?", { flags: { 1: "se le ofrece: the counter's polite formula, literally is offered to you." }, spain: t("¿En | qué | puedo | ayudarle?", "In | what | can I | help-you?", "What can I do for you?") }),
     ],
     ask_dest: [
       t("Claro. | ¿A | dónde | lo | va | a | mandar?", "Sure. | To | where | it | are you going | to | send?", "Sure. Where are you sending it?", { flags: { 3: "lo: it, the package (el paquete)." } }),
-      t("Con gusto. | ¿A | qué | país | va?", "Gladly. | To | what | country | is it going?", "Sure. What country is it going to?"),
+      t("Con gusto. | ¿A | qué | país | va?", "Gladly. | To | what | country | is it going?", "Sure. What country is it going to?", { spain: t("Muy bien. | ¿A | qué | país | va?", "Very well. | To | what | country | is it going?", "Sure. What country is it going to?") }),
     ],
     // the question again, after a side question (audit: "Depende del peso y del destino. Con gusto. ¿A qué país va?")
     dest_again: [t("¿A | qué | país | va?", "To | what | country | is it going?", "What country is it going to?")],
@@ -529,7 +529,7 @@ export const post: SituationDef = {
     price_depends: [t("Depende | del | peso | y | del | destino.", "It depends | on the | weight | and | on the | destination.", "It depends on the weight and where it's going.")],
     dest_ok: [
       t("Claro, | es | un | envío | internacional.", "Sure, | it's | a | shipment | international.", "Sure, so it's an international shipment."),
-      t("Claro, | con gusto.", "Sure, | gladly.", "Sure, happy to help."),
+      t("Claro, | con gusto.", "Sure, | gladly.", "Sure, happy to help.", { spain: t("Claro, | sin problema.", "Sure, | no problem.", "Sure, happy to help.") }),
     ],
     dest_set: [t("Muy | bien, | a | {X}.", "Very | good, | to | {X}.", "Okay, to {X}.")],
     ask_contents: [
@@ -627,7 +627,7 @@ export const post: SituationDef = {
     ],
     return_ask: [t("¿Me | lo | pone | aquí, | por favor?", "(For) me | it | you-put | here, | please?", "Could you write it here, please?", { flags: { 1: "lo: it, el remitente." } })],
     return_explain: [t("Es | su | nombre | y | su | dirección, | por si | lo | tienen | que | regresar.", "It's | your | name | and | your | address, | in case | it | they have | to | return.",
-      "It's your name and address, in case it has to be sent back.")],
+      "It's your name and address, in case it has to be sent back.", { spain: t("Es | su | nombre | y | su | dirección, | por si | lo | tienen | que | devolver.", "It's | your | name | and | your | address, | in case | it | they have | to | return.", "It's your name and address, in case it has to be sent back.") })],
     return_here: [t("Sí, | la | de | aquí, | de | Puerto Colibrí.", "Yes, | the (one) | of | here, | of | Puerto Colibrí.", "Yes, your address here in Puerto Colibrí.")],
     return_either: [t("Puede | ser | la | de | aquí | o | la | de | su | país.", "It can | be | the (one) | of | here | or | the (one) | of | your | country.", "It can be your address here or back home.")],
     return_thanks: [t("¡Gracias! | Así | está | perfecto.", "Thanks! | Like this | it's | perfect.", "Thanks! That's perfect.")],
@@ -674,7 +674,7 @@ export const post: SituationDef = {
     say_total: [t("Son | {$total}.", "It's | {$total}.", "That's {$total}."), t("Serían | {$total}.", "It would be | {$total}.", "That'll be {$total}.")],
     ask_pay: [t("¿Va | a | pagar | en efectivo | o | con | tarjeta?", "Are you going | to | pay | in cash | or | with | card?", "Will that be cash or card?")],
     card_tap: [
-      t("Muy | bien, | aquí | está | la | terminal.", "Very | good, | here | is | the | card reader.", "Okay, here's the card reader."),
+      t("Muy | bien, | aquí | está | la | terminal.", "Very | good, | here | is | the | card reader.", "Okay, here's the card reader.", { spain: t("Muy | bien, | aquí | tiene | el | datáfono.", "Very | good, | here | you-have | the | card reader.", "Okay, here's the card reader.") }),
       t("Acerque | o | inserte | su | tarjeta, | por favor.", "Bring near | or | insert | your | card, | please.", "Tap or insert your card, please."),
     ],
     card_later: [t("Sí, | aceptamos | tarjeta.", "Yes, | we-accept | card.", "Yes, we take cards.")],
@@ -694,9 +694,9 @@ export const post: SituationDef = {
     ],
     tracking_number: [t("Su | número | de | guía | es | CP482915736MX.", "Your | number | of | waybill | is | CP482915736MX.", "Your tracking number is CP482915736MX.",
       { say: "Su número de guía es ce, pe, cuatro ocho dos, nueve uno cinco, siete tres seis, eme, equis.", write: TRACKING_WRITE,
-        spell: "ce, pe, cuatro, ocho, dos, nueve, uno, cinco, siete, tres, seis, eme, equis", flags: { 3: "guía: in Mexico the tracking number is el número de guía." } })],
+        spell: "ce, pe, cuatro, ocho, dos, nueve, uno, cinco, siete, tres, seis, eme, equis", flags: { 3: "guía: in Mexico the tracking number is el número de guía." }, spain: t("Su | número | de | seguimiento | es | CP482915736MX.", "Your | number | of | tracking | is | CP482915736MX.", "Your tracking number is CP482915736MX.", { say: "Su número de seguimiento es ce, pe, cuatro ocho dos, nueve uno cinco, siete tres seis, eme, equis." }) })],
     track_online: [t("Lo | puede | rastrear | en | la | página | del | correo.", "It | you-can | track | on | the | page | of the | post office.", "You can track it on the post office's website.")],
-    tracking_yes: [t("Sí, | tiene | número | de | guía | para | rastrearlo.", "Yes, | it has | number | of | waybill | to | track it.", "Yes, it comes with a tracking number.")],
+    tracking_yes: [t("Sí, | tiene | número | de | guía | para | rastrearlo.", "Yes, | it has | number | of | waybill | to | track it.", "Yes, it comes with a tracking number.", { spain: t("Sí, | tiene | número | de | seguimiento | para | rastrearlo.", "Yes, | it has | number | of | tracking | to | track it.", "Yes, it comes with a tracking number.") })],
     tracking_no_first: [t("El | económico | no tiene | rastreo.", "The | economy (one) | doesn't have | tracking.", "Economy doesn't come with tracking.")],
     tracking_on_receipt: [t("Viene | en | su | comprobante, | arriba.", "It comes | on | your | receipt, | at the top.", "It's on your receipt, at the top.")],
     time_priority: [t("El | normal | tarda | de | dos | a | tres | semanas.", "The | standard (one) | takes | from | two | to | three | weeks.", "Standard takes two to three weeks.")],
@@ -711,12 +711,12 @@ export const post: SituationDef = {
     // pickup (twist)
     pickup_notice_q: [
       t("Claro. | ¿Trae | el | aviso?", "Sure. | Do you have | the | notice?", "Sure. Do you have the notice?"),
-      t("Con gusto. | ¿Me | da | el | aviso | que | le | dejaron?", "Gladly. | (To) me | you-give | the | notice | that | (for) you | they-left?", "Of course. May I have the notice they left you?"),
+      t("Con gusto. | ¿Me | da | el | aviso | que | le | dejaron?", "Gladly. | (To) me | you-give | the | notice | that | (for) you | they-left?", "Of course. May I have the notice they left you?", { spain: t("Claro. | ¿Me | da | el | aviso | que | le | dejaron?", "Sure. | (To) me | you-give | the | notice | that | (for) you | they-left?", "Of course. May I have the notice they left you?") }),
     ],
     notice_thanks: [t("Gracias, | a ver.", "Thanks, | let's see.", "Thanks, let me see.")],
     ask_pickup_name: [t("No se preocupe. | ¿Tiene | el | número | de | guía? | Si | no, | ¿a | nombre | de | quién | viene?",
       "Don't worry. | Do you have | the | number | of | waybill? | If | not, | under | name | of | whom | does it come?",
-      "Don't worry. Do you have the tracking number? If not, whose name is it under?")],
+      "Don't worry. Do you have the tracking number? If not, whose name is it under?", { spain: t("No se preocupe. | ¿Tiene | el | número | de | seguimiento? | Si | no, | ¿a | nombre | de | quién | viene?", "Don't worry. | Do you have | the | number | of | tracking? | If | not, | under | name | of | whom | does it come?", "Don't worry. Do you have the tracking number? If not, whose name is it under?") })],
     ask_name_only: [t("Entonces, | ¿a | nombre | de | quién | viene?", "Then, | under | name | of | whom | does it come?", "Okay, so whose name is it under?")],
     ask_guia: [t("¿Me | lo | dicta, | por favor?", "(To) me | it | you-read-out, | please?", "Could you read it to me, please?", { flags: { 2: "dictar: to read something out for someone to write down." } })],
     name_thanks: [t("Gracias. | Déjeme | revisar.", "Thanks. | Let me | check.", "Thanks. Let me check.")],
@@ -741,7 +741,7 @@ export const post: SituationDef = {
     customs_notice: [t("Cuando | la | aduana | lo | libere, | nos | llega | aquí | y | le | dejamos | un | aviso.",
       "When | the | customs | it | releases, | (to) us | it arrives | here | and | (for) you | we-leave | a | notice.", "Once customs releases it, it comes here and we'll leave you a notice.")],
     customs_track: [t("Mientras, | puede | ver | dónde | va | con | el | número | de | guía.", "Meanwhile, | you can | see | where | it goes | with | the | number | of | waybill.",
-      "In the meantime, you can follow it with the tracking number.")],
+      "In the meantime, you can follow it with the tracking number.", { spain: t("Mientras, | puede | ver | dónde | va | con | el | número | de | seguimiento.", "Meanwhile, | you can | see | where | it goes | with | the | number | of | tracking.", "In the meantime, you can follow it with the tracking number.") })],
     customs_time: [t("Puede | tardar | unos | días | o | unas | semanas; | depende | de | la | aduana.", "It can | take | some | days | or | some | weeks; | it depends | on | the | customs.",
       "It can take a few days or a few weeks; it depends on customs.")],
     customs_tax: [t("A veces | hay que | pagar | impuestos. | Si | es | así, | se los | cobramos | aquí | cuando | llegue.",
@@ -872,7 +872,7 @@ export const post: SituationDef = {
     pname: {
       lt: "Give the tracking number or your name",
       items: [
-        { id: "guia_have", s: t("Tengo | el | número | de | guía.", "I have | the | number | of | waybill.", "I have the tracking number.") },
+        { id: "guia_have", s: t("Tengo | el | número | de | guía.", "I have | the | number | of | waybill.", "I have the tracking number.", { spain: t("Tengo | el | número | de | seguimiento.", "I have | the | number | of | tracking.", "I have the tracking number.") }) },
         { id: "name_its", s: t("Está | a nombre de | {$name} | {$surname}.", "It's | under the name of | {$name} | {$surname}.", "It's under {$name} {$surname}.") },
       ],
     },
@@ -928,7 +928,7 @@ export const post: SituationDef = {
       lt: "Say how many stamps you need",
       items: [
         { id: "stamps_qty", s: t("Cinco, | por favor.", "Five, | please.", "Five, please.") },
-        { id: "stamps_one", s: t("Nada más | uno.", "Just | one.", "Just one.") },
+        { id: "stamps_one", s: t("Nada más | uno.", "Just | one.", "Just one.", { spain: t("Solo | uno.", "Just | one.", "Just one.") }) },
       ],
     },
     more: {
