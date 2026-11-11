@@ -39,7 +39,7 @@ import { GLOBAL_HANDLERS } from "@/content/global";
 const F_EL_DAY = "el + day: Spanish says el viernes where English says on Friday.";
 const F_A_CALL = "a: Spanish puts a before the place you call; English has no word here.";
 const F_YOU_LO = "lo / la: you (lo for a man, la for a woman).";
-const F_FOLIO = "folio: the number a Mexican company or office gives your case or complaint.";
+const F_FOLIO = "Mexican: folio = the number a company or office gives your case or complaint; elsewhere número de reporte.";
 const F_EL_NUM = "el (número): Spanish puts an article before a code or number; English has no word here.";
 const F_PATA = "pata: the leg of a piece of furniture (a person's leg is pierna).";
 const F_LE_OFREZCO = "Le ofrezco una disculpa: a formal Mexican way to say I apologize.";
@@ -63,7 +63,8 @@ const DAY_IDS = new Set([...DAYS.map((d) => d.id), "tomorrow"]);
 
 /** The folio (a value placeholder, as in s80). */
 const REF = { en: "HP-4471", lt: "HP-4471", say: "hache, pe, cuatro, cuatro, siete, uno" };
-const REF_WRITE = "Folio de Hogar Puerto: HP-4471";
+// (the note says "reporte", which both texts share; the spoken folio has its neutral twin "número de reporte")
+const REF_WRITE = "Reporte de Hogar Puerto: HP-4471";
 /** The order number in the intro. */
 const ORDER = "58213";
 const PRICE = 1299900;
@@ -1370,8 +1371,9 @@ export const complaint: SituationDef = {
     readback_unknown: { patterns: ["[entonces | ok] [es el] (hache pe | hp | h p | hache p | ache pe) [guion] {digits} [correcto | verdad]"] },
     ask_repeat: { patterns: [
       "(me repite | me puede repetir | puede repetir | me podria repetir | me repites #tip:tu_staff) el (numero | folio) #h:repeat_num",
-      "(cual era | como era | que era) el (numero | folio)",
-      "no (alcancé a anotar | anoté | escuché | alcancé a escuchar) el (numero | folio)",
+      "(me repite | me puede repetir | puede repetir | me podria repetir | me repites #tip:tu_staff) el numero de (folio | reporte)",
+      "(cual era | como era | que era) el (numero | folio | numero de folio | numero de reporte)",
+      "no (alcancé a anotar | anoté | escuché | alcancé a escuchar) el (numero | folio | numero de folio | numero de reporte)",
       "(me lo | lo) (repite | puede repetir) mas despacio",
     ] },
     ask_timeline: { patterns: [
@@ -1785,16 +1787,22 @@ export const complaint: SituationDef = {
     ],
     brenda_ref_pen: [
       t("Le | voy a | dar | un | número | de | folio. | ¿Tiene | dónde | anotar?", "(To) you | I'm going to | give | a | number | of | reference. | Do you have | where | to write?",
-        "Let me give you a reference number. Do you have something to write with?", { flags: { 6: F_FOLIO } }),
+        "Let me give you a reference number. Do you have something to write with?", { flags: { 6: F_FOLIO },
+          neutral: t("Le | voy a | dar | un | número | de | reporte. | ¿Tiene | dónde | anotar?", "(To) you | I'm going to | give | a | number | of | report. | Do you have | where | to write?",
+            "Let me give you a reference number. Do you have something to write with?") }),
     ],
     brenda_ref: [
       t("Es | el | {$text}.", "It's | — | {$text}.", "It's {$text}.", { say: "Es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 1: F_EL_NUM } }),
       t("Muy | bien. | Su | número | de | folio | es | el | {$text}.", "Very | good. | Your | number | of | reference | is | — | {$text}.", "Okay. Your reference number is {$text}.",
-        { say: "Muy bien. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }),
+        { say: "Muy bien. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 5: F_FOLIO, 7: F_EL_NUM },
+          neutral: t("Muy | bien. | Su | número | de | reporte | es | el | {$text}.", "Very | good. | Your | number | of | report | is | — | {$text}.", "Okay. Your reference number is {$text}.",
+            { say: "Muy bien. Su número de reporte es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }) }),
     ],
     brenda_ref_asked: [
       t("Claro. | Su | número | de | folio | es | el | {$text}.", "Sure. | Your | number | of | reference | is | — | {$text}.", "Of course. Your reference number is {$text}.",
-        { say: "Claro. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 6: F_EL_NUM } }),
+        { say: "Claro. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 4: F_FOLIO, 6: F_EL_NUM },
+          neutral: t("Claro. | Su | número | de | reporte | es | el | {$text}.", "Sure. | Your | number | of | report | is | — | {$text}.", "Of course. Your reference number is {$text}.",
+            { say: "Claro. Su número de reporte es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 6: F_EL_NUM } }) }),
       t("Por supuesto. | Es | el | {$text}.", "Of course. | It's | — | {$text}.", "Sure. It's {$text}.",
         { say: "Por supuesto. Es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 2: F_EL_NUM } }),
     ],
@@ -1804,7 +1812,9 @@ export const complaint: SituationDef = {
     ],
     brenda_ref_before_go: [
       t("Antes de | colgar, | su | número | de | folio | es | el | {$text}.", "Before | hanging up, | your | number | of | reference | is | — | {$text}.",
-        "Before you go, your reference number is {$text}.", { say: "Antes de colgar, su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }),
+        "Before you go, your reference number is {$text}.", { say: "Antes de colgar, su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 5: F_FOLIO, 7: F_EL_NUM },
+          neutral: t("Antes de | colgar, | su | número | de | reporte | es | el | {$text}.", "Before | hanging up, | your | number | of | report | is | — | {$text}.",
+            "Before you go, your reference number is {$text}.", { say: "Antes de colgar, su número de reporte es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }) }),
     ],
     brenda_ref_correct: [t("Exacto.", "Exactly.", "Exactly."), t("Correcto.", "Correct.", "That's right.")],
     brenda_no_pen: [
@@ -1952,7 +1962,8 @@ export const complaint: SituationDef = {
       lt: "Ask for a reference number and read it back",
       items: [
         { id: "ask_ref", s: t("¿Me | da | un | número | de | folio, | por favor?", "(To) me | you-give | a | number | of | reference, | please?", "Could I have a reference number, please?",
-          { flags: { 5: F_FOLIO } }) },
+          { flags: { 5: F_FOLIO },
+            neutral: t("¿Me | da | un | número | de | reporte, | por favor?", "(To) me | you-give | a | number | of | report, | please?", "Could I have a reference number, please?") }) },
         { id: "go_ahead", s: t("Sí, | dígame.", "Yes, | tell me.", "Yes, go ahead.") },
         { id: "readback", s: t("HP-4471. | Anotado.", "HP-4471. | Noted.", "HP-4471. Got it.", { say: "Hache, pe, cuatro, cuatro, siete, uno. Anotado." }) },
         { id: "repeat_num", s: t("¿Me | repite | el | número, | por favor?", "(To) me | you-repeat | the | number, | please?", "Could you repeat the number, please?") },

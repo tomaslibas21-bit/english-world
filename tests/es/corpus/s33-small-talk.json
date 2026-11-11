@@ -387,5 +387,8 @@
   {"ctx": "from_q", "say": "Soy de Canadá. Hace mucho frío en invierno.", "intent": "any", "not": ["q_season"]},
   {"ctx": "weather", "say": "En mi país hace mucho frío en invierno", "intent": "any", "not": ["q_season"]},
   {"ctx": "weather", "say": "Sí, aquí hace frío", "intent": ["wx_adj", "wx_short_ctx", "wx_agree"], "not": ["q_season"]},
-  {"ctx": "weather", "say": "Aquí hace mucho frío hoy", "intent": "wx_adj", "not": ["q_season"]}
+  {"ctx": "weather", "say": "Aquí hace mucho frío hoy", "intent": "wx_adj", "not": ["q_season"]},
+  {"ctx": "react", "say": "¿De qué color es su lancha?", "intent": "q_story", "note": "follow-up 5 Nov: La Rosita is pink, like his house"},
+  {"ctx": "your_turn", "say": "¿Cuál es su casa?", "intent": "q_live", "note": "follow-up 5 Nov: the pink house on the corner"},
+  {"ctx": "new_q", "say": "Sí, vivo en la casa rosa de enfrente", "intent": "new_yes", "note": "follow-up 5 Nov"}
 ] }

@@ -5,7 +5,7 @@
 // vehicles and the town's sounds; and the last details (5 Nov 2026): every speaker in the conversation's picture, the
 // last props from Maple Harbor, calle Uxmal, the cenote and the ruins. What is still to do is in docs/es/TOWN.md.
 import type { TownTheme } from "../../../../game/world/theme";
-export type { BuildingLook, OutdoorSpot, TianguisGoods, TownTheme } from "../../../../game/world/theme";
+export type { BuildingLook, FloorKind, OutdoorSpot, RoomLook, TianguisGoods, TownTheme } from "../../../../game/world/theme";
 
 export const THEME: TownTheme = {
   // --- the rooms and the conversations' spots (docs/es/TOWN.md tasks 6 and 7, "Every conversation's spot") ---
@@ -112,6 +112,8 @@ export const THEME: TownTheme = {
     // graphics round 3: every place a line sends the learner to (the restrooms, the cafés, the ATM, the paquetería, the
     // elevator), the bus terminal's hall, and the rest of the rooms
     services: true, terminalMx: true, roomsMx: true,
+    // graphics round 4: the shops and the clinic as Mexican ones from the door, the bank's floor, the halls and homes
+    shopsMx4: true, clinicMx4: true, bankMx: true, hallsMx: true,
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
@@ -145,7 +147,10 @@ export const THEME: TownTheme = {
     gym: { color: "#ffd166", trim: "#7a1f4b", awning: "#e76f51" },
     apartments: { color: "#e76f51", trim: "#fff3e0" },
     station: { color: "#f1c27d", trim: "#7a2e2e", roofColor: "#b5523b" },
-    pier: { color: "#f4efe6", trim: "#1f4e5f", awning: "#1f6f8b", roof: "palapa" },
+    // (graphics round 4) the airport's terminal in cream stucco and terracotta under its palapa, not a blue glass box
+    terminal: { color: "#f4ead5", trim: "#b5523b" },
+    // (graphics round 4) El Muelle in warm sand and teal under its palapa, where it was white and navy
+    pier: { color: "#f6dcaa", trim: "#2a6f6b", awning: "#2a9d8f", roof: "palapa" },
     sophie: { color: "#5fbfb0", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     dan: { color: "#f6bd60", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house3: { color: "#e5989b", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
@@ -271,12 +276,28 @@ export const THEME: TownTheme = {
     // Correos de México's rosa mexicano (the counter, the rugs and the sign are interiors.ts's, `mailbox`)
     "post-office": { accent: "#c2006a" },
     // Diego and Natalia's house: a warm ceramic tile floor, warm light walls, terracotta baseboards (and `homeMx`)
-    "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b" },
+    "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b", dado: "#d9844f" },
     // (graphics round 2) Departamentos Las Palmas: pale mint walls, a teal baseboard, and (round 3) the Yucatán's
     // mosaicos de pasta on its floors (cement tiles with an eight-pointed star); the hotel's lobby:
     // pale stone tiles, cream walls, the sea's blue
-    apartments: { floor: "#e9dcc0", floorKind: "pasta", wall: "#eef3e6", accent: "#2f7f78" },
+    apartments: { floor: "#e9dcc0", floorKind: "pasta", wall: "#eef3e6", accent: "#2f7f78", dado: "#8fc9bd" },
     hotel: { floor: "#e8d6b6", floorKind: "tile", wall: "#fbf3e4", accent: "#1f6f8b" },
+    // (graphics round 4) the shops and the clinic painted as Mexican ones: a strong lower band (the dado) under a light
+    // wall, Mexican floors. Boutique Hilos: terracotta tiles, añil blue under warm cal; the estética: mosaicos in rosa
+    // mexicano and turquoise, a turquoise dado under pink; Tienda El Faro: large ceramic tiles, the station's red under
+    // cream; the car rental: granito, the green under pale sand; the clinic: granito, verde agua under white (as a
+    // Mexican clinic's walls)
+    threads: { floor: "#c0673f", floorKind: "barro", wall: "#f7e8cf", dado: "#2f5f9a", accent: "#7a1f4b" },
+    salon: { floor: "#f3e6dc", floorKind: "pasta", pasta: ["#1aa39a", "#e4007c", "#f6a800"], wall: "#fde3ec", dado: "#22a39b", accent: "#c2185b" },
+    "gas-station": { floor: "#e9e2d4", floorKind: "ceramic", wall: "#fbf1de", dado: "#c8352a", accent: "#7a1f1a" },
+    "car-rental": { floor: "#e6dccb", floorKind: "granito", wall: "#f6ecd6", dado: "#1f8a70", accent: "#0f5a48" },
+    clinic: { floor: "#e3e3dc", floorKind: "granito", wall: "#fbfaf4", dado: "#8fd1c4", dadoH: 1.4, accent: "#2a7f8a" },
+    // the bank: granito under wood paneling (its compass rose: roomExtras.bankMx); the museum: terracotta under a Maya
+    // red band; the airport: warm granito; El Muelle: mango walls over the sea's blue instead of pale blue
+    bank: { floor: "#ddd5c4", floorKind: "granito", wall: "#f3ead8", dado: "#7a5232", dadoH: 1.25, accent: "#1f4f8a" },
+    museum: { floor: "#cf9a72", floorKind: "barro", wall: "#f7f0e2", dado: "#8e2b1f", dadoH: 0.9, accent: "#3a2f22" },
+    airport: { floor: "#e6dfd0", floorKind: "granito" },
+    "the-pier": { wall: "#f6dfae", dado: "#1f8fb0", accent: "#14607a" },
   },
   homeMx: true,
 
@@ -289,9 +310,14 @@ export const THEME: TownTheme = {
   lean: true,
   // the bus terminal (s67a): its andenes under canopies either side of the door, the coaches at the curb in front of them
   // (the departures board: Cancún from andén 1, Tulum from andén 2)
-  busTerminal: { andenes: ["Andén 1", "Andén 2"], buses: [{ x: 31, dest: "CANCÚN" }, { x: 57.5, dest: "TULUM" }] },
+  busTerminal: {
+    andenes: ["Andén 1", "Andén 2"], buses: [{ x: 31, dest: "CANCÚN" }, { x: 57.5, dest: "TULUM" }],
+    // (graphics round 4) white pilasters between its windows and at its corners, a terracotta band along its foot, and
+    // the suitcase of the traveller sitting on andén 2's bench (theme `sitters`)
+    front: { pilasters: [-16.8, -12.9, -9.7, -6.5, -3.3, 3.1, 6.3, 9.5, 12.7, 16.8], cases: [[36.5, 47.5]] },
+  },
   // the airport outside: the drop-off canopy thatched, agaves, and the town's welcome
-  airportOut: { welcome: ["¡Bienvenidos a Puerto Colibrí!", "Welcome · Caribe Mexicano"] },
+  airportOut: { welcome: ["¡Bienvenidos a Puerto Colibrí!", "Welcome · Caribe Mexicano"], terminal: { hall: 16 } },
   // the zócalo dressed: four laureles in its quarters, iron bancas (the kiosco's three and four more: two on the south
   // side facing the kiosco, one each side), colonial lamp posts on its diagonals; all clear of everyone's spot, the
   // talk spots, the chatting pair, the stalls and the pigeons' ring round the kiosco (tests/es/town.test.ts)
@@ -313,7 +339,10 @@ export const THEME: TownTheme = {
   // palapas), sitting on the zócalo's south bancas and the malecón's benches, and four of the tianguis' vendors behind
   // their stalls (pottery, fruit, hats, vegetables), facing the square
   chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9]],
-  sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05]],
+  sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
+    // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
+    // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)
+    [-5.05, -70.1], [2.05, -70.3], [35.65, 47.65]],
   vendors: [[32, -44.25, 0], [26, -44.25, 0], [44, -44.75, 0], [38, -43.25, 0]],
   // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
   // nothing, and the town's people cost the frame no more than before the round)
@@ -359,10 +388,29 @@ export const THEME: TownTheme = {
     cocos: [-14, -63.6, 0, "Cocos fríos"],
   },
   // the atrial cross before the church's door, by the palm at the square's corner
-  atrialCross: [49.3, -45.2],
+  atrialCross: [50.0, -44.6], // (graphics round 4: inside the atrium's wall)
   // the mirador where avenida Juárez ends at the meadow, looking out west to Cenote Ka'an
   mirador: { x: -107, z: -7.5, rot: -Math.PI / 2, sign: "Mirador · Cenote Ka'an →" },
   // a second taxi waiting at the sitio, behind the first, at the curb (clear of the cars' lane)
   taxis: [[115.8, -4.25, -Math.PI / 2]],
+  // graphics round 4: the rooms' walls taller than the phone's room view (its top is wall, not the dark above it)
+  roomWallH: 8.6,
+  // Graphics, round 4 (town, docs/es/TOWN.md "Graphics, round 4"): the street trees as flamboyanes and almendros
+  tropicalTrees: true,
+  // (and palms in the bus terminal's forecourt, where a flat crown would cut through the andenes' canopies and the coaches)
+  treePalms: [[26, 64, 43, 49.5]],
+  // and the houses: a concrete portal with the terrace upstairs, chairs, rebar and the wash on the roof
+  casas: true,
+  // the church's atrium: a whitewashed wall with merlons 3.4 m out from its facade, the gate 3.2 m wide before the door,
+  // the atrial cross inside it on the beach side, the bread stall's table outside it on the other; the facade's
+  // columns, entablature and niches
+  atrio: { depth: 3.4, left: 5.4, right: 4.4, gate: 1.6 },
+  // the beach: the palapas thatched in layers with a ragged fringe, people on their loungers (theme `sitters`)
+  beachLife: true,
+  // calle Hidalgo's poles dissolve within 6–8 m of the camera, so they never sweep past as grey bars
+  poleFade: [6, 8],
+  // the meadow out to the cenote as the Yucatán's scrub (clear of the cenote and its palapa, the mirador and the end of
+  // avenida Juárez), two ceibas standing over the selva behind it
+  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6]], ceibas: [[-150, -16], [-147, 9]] },
   letras: { text: "PUERTO COLIBRÍ", x: 2.8, z: -63.55, h: 1.45, colors: ["#e4007c", "#f77f00", "#00a6a6", "#f6c000", "#7ac143", "#6d2e9e", "#1f6fd1", "#ff5a36"] },
 };

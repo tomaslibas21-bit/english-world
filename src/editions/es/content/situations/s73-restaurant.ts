@@ -2188,7 +2188,7 @@ export const restaurant: SituationDef = {
         if (!c.s.checkBrought) {
           c.s.checkBrought = true;
           if (c.s.split === "separate") c.say("bring_checks");
-          else { sayP(c, "bring_check"); if (!c.s.totalSaid) c.say("total_is", { total: total(c) }); c.s.totalSaid = true; }
+          else { c.speaker("marco"); sayP(c, "bring_check"); if (!c.s.totalSaid) c.say("total_is", { total: total(c) }); c.s.totalSaid = true; }
           if (c.s.wantPay) {
             c.s.payMethod = c.s.wantPay;
             // the card was chosen before the check came: Luis brings the terminal with it
@@ -2506,6 +2506,8 @@ export const restaurant: SituationDef = {
       // "¿Cuánto es todo?" at any time, "¿Cuánto es?" once the check is asked or on the table: the (one) total so far
       if (!slots.dish && items(c).length && c.s.split !== "separate" && (tags.includes("all") || c.s.checkBrought || (tags.includes("total") && (c.s.checkAsked || mealOver(c))))) {
         if (c.s.checkAsked || c.s.checkBrought) c.s.totalSaid = true;
+        // the bill is Luis's, also after Lucía's goodbye, when she has the floor (the voice list: 1,186 clips in her voice)
+        c.speaker("marco");
         c.say("total_is", { total: total(c) }); return;
       }
       if (!slots.dish && (tags.includes("total") || tags.includes("extra")) && !items(c).length) { c.say("which_item"); return; }
@@ -2998,6 +3000,12 @@ export const restaurant: SituationDef = {
       turns: ["¡Buenas noches! Tengo una reservación para dos a las ocho.", "A nombre de Miller.", "Una limonada y una horchata, por favor.", "Natural, por favor.",
         "Voy a querer la cochinita pibil, por favor.", "La cuenta, por favor.", "Con tarjeta.", "El quince por ciento."],
       // the plain dinner: the complaint twists have their own sims
+      setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; },
+      auto: omit(AUTO, ["resv", "resv_name", "drinks", "drink_kind", "order", "check", "pay", "tip"]), expect: { complete: true } },
+    // the voice list (5 Nov 2026): a bill question after the goodbye is Luis's, also when Lucía said goodbye last
+    { name: "the total asked after the goodbye is Luis's",
+      turns: ["¡Buenas noches! Tengo una reservación para dos a las ocho.", "A nombre de Miller.", "Una limonada y una horchata, por favor.", "Natural, por favor.",
+        "Voy a querer la cochinita pibil, por favor.", "La cuenta, por favor.", "Con tarjeta.", "El quince por ciento.", "Perdón, ¿cuánto fue en total?", "Gracias."],
       setup: (s) => { s.wrongTwist = false; s.soupTwist = false; s.facturaTwist = false; },
       auto: omit(AUTO, ["resv", "resv_name", "drinks", "drink_kind", "order", "check", "pay", "tip"]), expect: { complete: true } },
     { name: "walk-in, questions, arrachera with a side, dessert",

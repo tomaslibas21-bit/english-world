@@ -1488,8 +1488,10 @@ export const clothes: SituationDef = {
         { spain: t("¿Has tenido | algún | problema?", "Did you have | some | problem?", "Was there anything wrong with them?") })],
     ret_what_wrong: [t("¿Qué | problema | tiene?", "What | problem | does it have?", "What's wrong with it?")],
     ret_what_wrong_pl: [t("¿Qué | problema | tienen?", "What | problem | do they have?", "What's wrong with them?")],
+    // "Una disculpa" is Mexico's formula; the neutral twin says "Disculpe" (the lead's decision, 5 Nov 2026, as p26)
     ret_sorry: [t("¡Ay, | qué | pena! | Una disculpa.", "Oh, | what a | shame! | I'm sorry.", "Oh no, I'm so sorry about that!",
-      { flags: { 3: "una disculpa: a common Mexican way to say sorry." },
+      { flags: { 3: "Mexican: una disculpa (literally, an apology) = I'm sorry." },
+        neutral: t("¡Ay, | qué | pena! | Disculpe.", "Oh, | what a | shame! | I'm sorry.", "Oh no, I'm so sorry about that!"),
         spain: t("¡Ay, | qué | pena! | Lo siento.", "Oh, | what | a pity! | I'm sorry.", "Oh, I'm so sorry about that!") })],
     ret_size_happens: [t("Ah, | eso | pasa | mucho.", "Ah, | that | happens | a lot.", "Oh, that happens a lot!")],
     ret_fine: [t("Está | bien, | no hay | problema.", "It's | fine, | there's no | problem.", "That's totally fine.")],

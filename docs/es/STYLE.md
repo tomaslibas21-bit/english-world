@@ -19,9 +19,21 @@ decisions and the rules every conversation follows. The models that show all of 
     on), pásele, ándale/ándele, sitio (taxi stand), camión (bus), ¿mande?, chamba, padre (cool), güey (never in
     NPC lines). Their twins: en un momento / enseguida, solo, pizarra, recibo, de regalo, tomate, encender,
     adelante, muy bien / bueno, parada de taxis, autobús, ¿perdón? / ¿cómo?, trabajo, genial, —.
+  - Added by the dialogue audit (5 Nov 2026: the lead's and the reviewers' decisions), each with the twin the lines
+    use: platicar → conversar (or hablar); carne asada as the party → parrillada; de patente → de marca; surtir (una
+    receta) → comprar el medicamento (or venir con una receta); folio (a case number) → número de reporte; una
+    disculpa (I'm sorry) → le pido disculpas (or disculpe); estándar (a manual gearbox) → manual; cubeta → balde; la
+    comida (lunch) → el almuerzo; la minuta → el acta; cartera (wallet: a handbag in much of South America) →
+    billetera; boleto for a museum or a concert → entrada; pase de abordar → tarjeta de embarque; sala (the gate) →
+    puerta; filtro de seguridad → control de seguridad; ¿Gusta…? → ¿Quiere…?; ¿Bueno? (on the phone) → ¿Hola?; le
+    hablo (I'm calling you) → lo llamo; depa → apartamento; ¡híjole! → ¡caramba!; NIP → PIN; pluma (pen) → bolígrafo;
+    charola → bandeja; listón → cinta; regadera → ducha; fleco → flequillo; timbre (stamp) → estampilla; gripa →
+    gripe; alberca → piscina; junta → reunión; gafete → credencial; cuates (twins) → gemelos; ¡órale!, ¡qué padre! →
+    ¡qué bien!, ¡genial!. A word on this list in a line or a hint gets a twin (`neutral:`); the grammar accepts both.
   - Words Mexico shares with most of Latin America are not "Mexican-only": celular, carro is Mexican (auto/coche are
     neutral — twin it), plátano, papa, jugo, departamento (twin: apartamento), manejar, estacionamiento,
-    computadora, boleto (twin: pasaje where it matters), recámara (twin: dormitorio/habitación).
+    computadora, boleto (twin: pasaje where it matters, and entrada for a museum or a show), recámara (twin:
+    dormitorio/habitación).
 - **Learners' Spain forms are correct answers** (owner, 1 Nov 2026). In the Mexican and neutral texts the town's
   people never say them (Spain's own text since 11 Nov: "Spain Spanish" below), but the checking accepts them like
   synonyms, with no tip:
@@ -150,9 +162,11 @@ The rules are the English edition's (AUTHORING.md §3) turned around. In short:
 - **Pesos.** Prices are in cents of a peso (`8550` = $85.50). Mexico writes `$85` and `$1,250.50` (the dollar sign
   means pesos). Use `{$price}` (or another money value name: total, amount, fare, rent, deposit) in lines: it shows
   "$85.50", glosses "85.50 pesos" and is said "ochenta y cinco pesos con cincuenta centavos". Round prices to 5
-  pesos where real ones are (a coffee $45, a taxi $120, a kilo of avocados $70).
+  pesos where real ones are (a coffee $45, a taxi $120, a kilo of avocados $60).
 - Typical prices (2026, a beach town): coffee $35–60, pan dulce $20–30, a market kilo of fruit $25–80, a taxi in
-  town $100–150 (to the airport $350), a meal $150–350, a hotel night $1,800–3,500, rent $12,000–20,000 a month.
+  town $100–150 (the sitio stands next to the airport, so no conversation prices a ride to it), a meal $150–350, a
+  hotel night $1,800–3,500, rent $12,000–20,000 a month. The prices and hours several conversations share are in
+  docs/es/TOWN.md ("Facts the conversations share").
 - **Time.** `{$time}` carries its article: "las 8:30" (spoken "las ocho y media"), "la 1:00" ("la una"). Write
   "a {$time}", "desde {$time}", "son {$time}" in lines. Mexicans say the 12-hour clock: "las ocho de la noche".
 - The understanding side reads Spanish numbers, "cuarto para las ocho", "ochenta y cinco cincuenta", "15 mil",
