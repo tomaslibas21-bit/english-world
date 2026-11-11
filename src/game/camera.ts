@@ -24,6 +24,8 @@ const ease = (from: number, to: number, rate: number, dt: number) => from + (to 
 const RAISES = [0, 0.08, 0.16, 0.24, 0.32, 0.4, 0.48, 0.56, -0.12, -0.24];
 /** Up over the player's head when nothing behind them is clear for this far (m): the arm's lean and its length. */
 const CRANE = { below: 3, pitch: 1.22, len: 6 };
+/** Indoors on an upright phone: how much further into the room the camera looks (m; interiorLook). */
+const ROOM_BACK = 3;
 /** Standing still, the yaws tried round from the camera's own (rad): the nearer ways first, to straight in front last
  *  (a doorway with someone in it right behind, as at Tienda El Faro's door). */
 const STAND_TRIES = [0.5, -0.5, 1, -1, 1.5, -1.5, 2.1, -2.1, 2.7, -2.7, Math.PI];
@@ -134,8 +136,12 @@ export class CameraRig {
   private interiorLook() {
     const halfW = this.interiorBounds.w / 2 - 3, halfD = this.interiorBounds.d / 2;
     const tx = THREE.MathUtils.clamp(this.target.x, -Math.max(0, halfW), Math.max(0, halfW));
+    // on a phone held upright the lens is tall (fovFor): the look ROOM_BACK m further into the room than the player, so
+    // once they step in the bottom of the view is the room, not the doormat and the street outside the door; at the door
+    // itself (the same limit as before) they stay well above the bottom edge
+    const back = this.cam.aspect < 0.87 ? ROOM_BACK : 0;
     const lo = -halfD + 3, hi = Math.max(lo, halfD - 3.5);
-    const tz = THREE.MathUtils.clamp(this.target.z - 0.5, lo, hi);
+    const tz = THREE.MathUtils.clamp(this.target.z - 0.5 - back, lo, hi);
     return new THREE.Vector3(tx, 1.2, tz);
   }
 
