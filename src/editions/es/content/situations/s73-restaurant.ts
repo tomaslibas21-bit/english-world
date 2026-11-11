@@ -1105,7 +1105,8 @@ export const restaurant: SituationDef = {
       t("Excelente | elección. | No tarda | mucho.", "Excellent | choice. | It won't take | long.", "Excellent choice. It won't take long."),
     ],
     serve: [
-      t("Aquí tiene: | {X.the}. | ¡Buen provecho!", "Here you go: | {X.the}. | Enjoy your meal!", "Here you go: {X.the}. Enjoy!"),
+      t("Aquí tiene: | {X.the}. | ¡Buen provecho!", "Here you go: | {X.the}. | Enjoy your meal!", "Here you go: {X.the}. Enjoy!",
+        { spain: t("Aquí tienes: | {X.the}. | ¡Que aproveche!", "Here you go: | {X.the}. | Enjoy your meal!", "Here you go: {X.the}. Enjoy!") }),
       t("Y | {X.the}, | ¡provecho!", "And | {X.the}, | enjoy!", "And {X.the}. Enjoy your meal!"),
     ],
     serve_starter: [t("Para | empezar, | {X.the}.", "To | start, | {X.the}.", "Here's {X.the} to start.")],
@@ -1485,7 +1486,8 @@ export const restaurant: SituationDef = {
     confirm_keep: [t("¿Entonces | me quedo | con | el | cambio?", "So | I keep | with | the | change?", "So I can keep the change?", { flags: { 1: "me quedo con = I keep (quedarse con)." } })],
     tip_thanks: [
       t("Perfecto, | muchas | gracias.", "Perfect, | many | thanks.", "Perfect, thank you very much."),
-      t("¡Muy | amable! | Listo, | ya | quedó.", "Very | kind! | Done, | already | it's-settled.", "That's very kind. You're all set!"),
+      t("¡Muy | amable! | Listo, | ya | quedó.", "Very | kind! | Done, | already | it's-settled.", "That's very kind. You're all set!",
+        { spain: t("¡Muy | amable! | Listo, | ya | está.", "Very | kind! | Done, | already | it's-settled.", "That's very kind. You're all set!") }),
     ],
     tip_none_ok: [t("Ah... | muy | bien. | Listo.", "Oh... | very | well. | Done.", "Oh... okay. You're all set.")],
     tip_cash_ok: [t("¡Claro! | Entonces | le | cobro | solo | la | cuenta.", "Sure! | Then | (from) you | I-charge | only | the | check.", "Sure! Then I'll just charge the check.",

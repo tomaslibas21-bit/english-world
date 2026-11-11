@@ -195,7 +195,7 @@ cash_still, tip_big, tip_amount, price_is).
 
 ## Spain twins (11 Nov 2026)
 
-About 190 Spain twins (lines, the `_pl` lines and hints), Spain nouns for 9 entities (agua sin gas / con gas, limonada
+198 Spain twins (lines, the `_pl` lines and hints), Spain nouns for 9 entities (agua sin gas / con gas, limonada
 sin gas / con gas, zumo de naranja, refresco de pomelo, patatas fritas, and the steak's points: poco hecha, medio
 hecha, al punto, hecha, muy hecha), 27 Spain multiword units in the file's `merges`.
 
