@@ -80,6 +80,12 @@ const AT_WORK: Record<string, "wipe" | "type"> = {
   emily: "type",
 };
 
+/** On a phone held upright, the height of the 3D picture above the conversation (styles.css
+ *  --conversation-image-height and its shorter screens). */
+function talkPictureHeight(h: number): number {
+  return h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
+}
+
 export class Game implements GameApi {
   readonly light = false;
   renderer: THREE.WebGLRenderer;
@@ -811,10 +817,17 @@ export class Game implements GameApi {
       }
       return true;
     };
-    const fits = (f: Shot) => points(f, (q) => {
+    // On a phone held upright the picture is only the strip above the conversation (styles.css
+    // --conversation-image-height; the loop's applyViewShift centres it there): each point must fall in that strip too,
+    // 10 px in, for the people spoken with. A framing the old test passed and the strip shows stays as it was.
+    const sideways = h <= 520 && w > h, strip = !wide && !sideways ? talkPictureHeight(h) : 0, ssy = (h - strip) / 2;
+    const fits = (f: Shot) => points(f, (q, i) => {
       q.project(cam);
       const px = (q.x + 1) / 2 * w - sx, py = (1 - q.y) / 2 * h - sy;
-      return q.z <= 1 && px >= x0 && px <= x1 && py >= y0 && py <= y1;
+      if (!(q.z <= 1 && px >= x0 && px <= x1 && py >= y0 && py <= y1)) return false;
+      // (the people spoken with: the player, nearest the camera, may reach below the strip)
+      const sy2 = (1 - q.y) / 2 * h - ssy;
+      return !strip || i === 0 || (sy2 >= m && sy2 <= strip - m);
     });
     // Outdoors: the camera clear of anything solid, and nothing in front of anyone: of the six lines from the camera to
     // a person's points, at most three may pass through a building (to its roof), a post or a trunk (the colliders'
@@ -1112,7 +1125,7 @@ export class Game implements GameApi {
         const sideways = h <= 520 && w > h;
         const wide = w > 900 && !sideways;
         // Match the conversation's visible picture area, including scenes-off 3D conversations.
-        const pictureHeight = h <= 620 ? 100 : h <= 700 ? Math.max(100, h * 0.2) : Math.min(230, Math.max(110, h * 0.25));
+        const pictureHeight = talkPictureHeight(h);
         this.rig.applyViewShift(w, h, sideways ? w * 0.375 : wide ? Math.min(w * 0.22, 380) : 0,
           wide || sideways ? 0 : (h - pictureHeight) / 2);
       } else this.rig.applyViewShift(w, h, 0, this.rig.mode !== "talk" && h > w * 1.15 ? -h * (this.rig.mode === "follow" ? 0.12 : 0.1) : 0);
