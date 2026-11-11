@@ -161,3 +161,11 @@ poco de los dos" accepts the renamed intent (purpose or both_ctx).
   once the ticket is shown; a real officer gives the days up to the return date. Unchanged: it is the learner's own
   request, nothing misread.
 - Engine NEEDS as above (the comma before "no"; "No, no …").
+
+## Spain twins (11 Nov 2026)
+
+- 35 Spain twins (lines and hints), 23 items in tests/es/spain/s65a-passport.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Oficial Ramírez keeps usted.
+- Words: visado for visa, billete de vuelta for boleto de regreso, móvil, gafas (quíteselas), rellenar for llenar, aseos, fuera, lleva for trae, ¿Me deja su pasaporte?, ¡Qué bien que haya vuelto!, the learner's perfect (He venido a vivir aquí, ya he venido antes, todavía no lo he comprado, He alquilado un piso), ¿Qué dedo?, Ya está. The relatives mamá, papá, papás have Spain nouns (madre, padre, padres: attrs.spain).
+- Grammar: q_form takes rellenar; the rented-flat pattern takes he alquilado and piso; return_yes takes lo llevo en el móvil. Merges: haya vuelto, he venido, he alquilado, no lo he comprado.
+- Kept: tarjeta de residente, oficina de migración (Mexico's own paperwork).

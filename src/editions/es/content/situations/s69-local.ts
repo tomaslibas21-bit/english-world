@@ -128,12 +128,12 @@ const POC_CHUC = "poc chuc: pork in a citrus marinade, grilled, a Yucatán class
 
 /** "Did you try …?" on a later visit, one line per food tip. */
 const TRIED: Record<string, SentSrc> = {
-  muelle: t("¿Ya | cenó | en | El Muelle?", "Already | you-had-dinner | at | El Muelle?", "Did you have dinner at El Muelle?", { flags: { 0: "Ya in a question: “yet”, “already”." } }),
-  taqueria: t("¿Ya | fue | a | la | taquería?", "Already | you-went | to | the | taco place?", "Did you go to the taco place?", { flags: { 0: "Ya in a question: “yet”, “already”." } }),
-  cocina: t("¿Ya | fue | a | la | cocina económica?", "Already | you-went | to | the | home-style diner?", "Did you go to the little diner?", { flags: { 0: "Ya in a question: “yet”, “already”." } }),
-  cafe: t("¿Ya | probó | el | café | de | La Ceiba?", "Already | you-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", { flags: { 0: "Ya in a question: “yet”, “already”." } }),
-  trattoria: t("¿Ya | fue | a | La Cocina de Lucía?", "Already | you-went | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", { flags: { 0: "Ya in a question: “yet”, “already”." } }),
-  marquesitas: t("¿Ya | probó | las | marquesitas?", "Already | you-tried | the | marquesitas?", "Did you try the marquesitas?", { flags: { 0: "Ya in a question: “yet”, “already”." } }),
+  muelle: t("¿Ya | cenó | en | El Muelle?", "Already | you-had-dinner | at | El Muelle?", "Did you have dinner at El Muelle?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha cenado | en | El Muelle?", "Already | you've-had-dinner | at | El Muelle?", "Did you have dinner at El Muelle?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
+  taqueria: t("¿Ya | fue | a | la | taquería?", "Already | you-went | to | the | taco place?", "Did you go to the taco place?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | la | taquería?", "Already | you've-gone | to | the | taco place?", "Did you go to the taco place?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
+  cocina: t("¿Ya | fue | a | la | cocina económica?", "Already | you-went | to | the | home-style diner?", "Did you go to the little diner?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | la | cocina económica?", "Already | you've-gone | to | the | home-style diner?", "Did you go to the little diner?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
+  cafe: t("¿Ya | probó | el | café | de | La Ceiba?", "Already | you-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | el | café | de | La Ceiba?", "Already | you've-tried | the | coffee | of | La Ceiba?", "Did you try the coffee at La Ceiba?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
+  trattoria: t("¿Ya | fue | a | La Cocina de Lucía?", "Already | you-went | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha ido | a | La Cocina de Lucía?", "Already | you've-gone | to | La Cocina de Lucía?", "Did you go to La Cocina de Lucía?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
+  marquesitas: t("¿Ya | probó | las | marquesitas?", "Already | you-tried | the | marquesitas?", "Did you try the marquesitas?", { flags: { 0: "Ya in a question: “yet”, “already”." }, spain: t("¿Ya | ha probado | las | marquesitas?", "Already | you've-tried | the | marquesitas?", "Did you try the marquesitas?", {flags: {0: "Ya in a question: “yet”, “already”."}}) }),
 };
 
 const toArr = (x: any) => (x == null ? [] : Array.isArray(x) ? x : [x]);
@@ -601,7 +601,7 @@ export const local: SituationDef = {
       "(no tengo | no traigo) tanto dinero", "(es | suena) mucho dinero [para mi]", "(algo | un lugar) que sea mas barato",
     ] },
     not_hungry: { patterns: [
-      "no tengo (mucha)? hambre [todavia | ahorita | ahora | ya]", "(todavia | ahorita | ahora) no tengo hambre", "(ya | acabo de) (comi | comer | desayuné | desayunar | comimos | desayunamos) [{cuisine}]",
+      "no tengo (mucha)? hambre [todavia | ahorita | ahora | ya]", "(todavia | ahorita | ahora) no tengo hambre", "(ya | acabo de) (comi | comer | desayuné | desayunar | comimos | desayunamos) [{cuisine}]", "ya (he | hemos) (comido | desayunado | cenado) [{cuisine}]",
       "(tal vez | quizas | a lo mejor) (mas tarde | despues | luego)", "(estoy | ya estoy) (lleno | llena)", "ahorita no",
     ] },
     ask_sight: { patterns: [
@@ -655,7 +655,7 @@ export const local: SituationDef = {
       "donde esta el mejor cafe [@aqui_]", "(quiero | necesito | se me antoja) un (cafe | cafecito)", "donde (puedo | podemos) tomar un cafe",
     ] },
     ask_walk: { patterns: [
-      "(se puede | puedo | podemos) (ir | llegar) (caminando | a pie) [@a_ {spot}] #h:u_walk", "(esta | queda) (lejos | cerca) [de aqui] #h:u_far", "{spot} (esta | queda) (lejos | cerca) [de aqui]",
+      "(se puede | puedo | podemos) (ir | llegar) (caminando | andando | a pie) [@a_ {spot}] #h:u_walk", "(esta | queda) (lejos | cerca) [de aqui] #h:u_far", "{spot} (esta | queda) (lejos | cerca) [de aqui]",
       "(esta | queda) (lejos | cerca) {spot} [de aqui] #h:p_far", "{spot} (estan | quedan) (lejos | cerca) [de aqui]", "(estan | quedan) (lejos | cerca) [{spot}] [de aqui]", "que tan lejos (esta | queda) [{spot}]", "a cuanto (esta | queda) [{spot}]",
       "como (llego | llegamos | le hago para llegar | se llega | voy | vamos) [@a_ {spot} | ahi | alla] #how #h:u_how", "como (me voy | se va) [@a_ {spot} | para alla | alla] #how", "como (puedo | podemos) (ir | llegar) [@a_ {spot} | ahi | alla] #how", "como (le hago | hago) para (ir | llegar) [@a_ {spot} | ahi | alla] #how",
       "(que tan lejos | a que distancia) (esta | queda) [{spot}]", "(esta | queda) (lejos | cerca) (de aqui)? (caminando | a pie)",
@@ -685,7 +685,7 @@ export const local: SituationDef = {
     ] },
     ask_worth: { patterns: ["(vale | merece) la pena [ir | verlo | verla | visitarlo | visitarla | el viaje]", "si vale la pena"] },
     ask_safe: { patterns: [
-      "es seguro [@aqui_ | el pueblo | caminar | salir | ir a la playa] (en la noche | de noche | por la noche)? #h:u_safe", "(es | sera) peligroso [@aqui_] (en la noche | de noche)?", "no es (peligroso | peligrosa) [@aqui_] (en la noche | de noche)?", "(es | esta) (peligrosa | peligroso | segura | seguro) [la playa | el centro | el pueblo | el malecon] (en la noche | de noche | por la noche)", "(es | sera) (peligroso | seguro) [ir a | caminar por] (la playa | el malecon | el centro) (de noche | en la noche | por la noche)?", "no (es | sera) (seguro | segura) (en la noche | de noche)?", "(es | sera) peligroso (caminar | salir | andar | ir a la playa) [@aqui_] (de noche | en la noche | por la noche)?",
+      "es seguro [@aqui_ | el pueblo | caminar | andar | salir | ir a la playa] (en la noche | de noche | por la noche)? #h:u_safe", "(es | sera) peligroso [@aqui_] (en la noche | de noche)?", "no es (peligroso | peligrosa) [@aqui_] (en la noche | de noche)?", "(es | esta) (peligrosa | peligroso | segura | seguro) [la playa | el centro | el pueblo | el malecon] (en la noche | de noche | por la noche)", "(es | sera) (peligroso | seguro) [ir a | caminar por] (la playa | el malecon | el centro) (de noche | en la noche | por la noche)?", "no (es | sera) (seguro | segura) (en la noche | de noche)?", "(es | sera) peligroso (caminar | salir | andar | ir a la playa) [@aqui_] (de noche | en la noche | por la noche)?",
       "(se puede | puedo) (caminar | andar | salir | ir a la playa) (en la noche | de noche) [sin problema]", "(es | esta) segura la playa (de noche | en la noche)", "la playa es segura (de noche | en la noche)", "hay peligro [@aqui_]",
     ] },
     no_crowds: { patterns: [
@@ -761,10 +761,10 @@ export const local: SituationDef = {
     // --- openers ----------------------------------------------------------------
     open: [
       t("¡Buenas tardes! | ¿Le | puedo | ayudar | en | algo?", "Good afternoon! | (To) you | I-can | help | with | something?", "Good afternoon! Can I help you with something?"),
-      t("Ay, | hola. | Parece | que | anda | conociendo | el | pueblo. | ¿Le | ayudo?", "Oh, | hi. | It-seems | that | you're-going-around | getting-to-know | the | town. | (To) you | I-help?", "Oh, hi! Looks like you're exploring the town. Can I help?"),
+      t("Ay, | hola. | Parece | que | anda | conociendo | el | pueblo. | ¿Le | ayudo?", "Oh, | hi. | It-seems | that | you're-going-around | getting-to-know | the | town. | (To) you | I-help?", "Oh, hi! Looks like you're exploring the town. Can I help?", { spain: t("Ay, | hola. | Parece | que | está | conociendo | el | pueblo. | ¿Le | ayudo?", "Oh, | hi. | It-seems | that | you're | getting-to-know | the | town. | (To) you | I-help?", "Oh, hi! Looks like you're exploring the town. Can I help?") }),
     ],
     open_weather: [
-      t("¡Buenas tardes, | {m:mijo|f:mija}! | ¡Qué | día | tan | bonito! | ¿Verdad?", "Good afternoon, | dear! | What | a day | so | beautiful! | Right?", "Good afternoon, dear! Beautiful day, isn't it?", { flags: { 1: MIJA } }),
+      t("¡Buenas tardes, | {m:mijo|f:mija}! | ¡Qué | día | tan | bonito! | ¿Verdad?", "Good afternoon, | dear! | What | a day | so | beautiful! | Right?", "Good afternoon, dear! Beautiful day, isn't it?", { flags: { 1: MIJA }, spain: t("¡Buenas tardes, | {m:hijo|f:hija}! | ¡Qué | día | tan | bonito! | ¿Verdad?", "Good afternoon, | dear! | What | a day | so | beautiful! | Right?", "Good afternoon, dear! Beautiful day, isn't it?") }),
     ],
     weather_reply: [t("¡Precioso! | Bueno, | ¿en | qué | le | puedo | ayudar?", "Lovely! | Well, | in | what | (to) you | I-can | help?", "Lovely! So, how can I help you?")],
     weather_hot: [t("¡Uy, | sí! | Aquí | siempre | hace | calor. | Bueno, | ¿en | qué | le | ayudo?", "Oh, | yes! | Here | always | it-makes | heat. | Well, | in | what | (to) you | I-help?", "Oh yes, it's always hot here! So, how can I help?")],
@@ -774,7 +774,7 @@ export const local: SituationDef = {
     tried_no: [t("¡Ay, | no sabe | lo que | se pierde!", "Oh, | you don't know | what | you're missing!", "Oh, you don't know what you're missing!")],
     ask_need: [
       t("Dígame, | ¿qué | se le ofrece?", "Tell me, | what | can I offer you?", "Tell me, what can I do for you?"),
-      t("¿En | qué | le | puedo | ayudar, | {m:mijo|f:mija}?", "In | what | (to) you | I-can | help, | dear?", "How can I help you, dear?", { flags: { 5: MIJA } }),
+      t("¿En | qué | le | puedo | ayudar, | {m:mijo|f:mija}?", "In | what | (to) you | I-can | help, | dear?", "How can I help you, dear?", { flags: { 5: MIJA }, spain: t("¿En | qué | le | puedo | ayudar, | {m:hijo|f:hija}?", "In | what | (to) you | I-can | help, | dear?", "How can I help you, dear?") }),
     ],
     ask_need_again: [t("¿Busca | dónde | comer, | o | algo | que | ver?", "You-look-for | where | to eat, | or | something | to | see?", "Are you looking for a place to eat, or something to see?")],
     local_yes: [
@@ -787,8 +787,8 @@ export const local: SituationDef = {
 
     // --- food ---------------------------------------------------------------------
     ask_cuisine: [
-      t("¡Claro! | ¿Qué | se le antoja? | ¿Mariscos? | ¿Algo | típico | de | aquí?", "Sure! | What | do you feel like? | Seafood? | Something | typical | from | here?", "Sure! What do you feel like? Seafood? Something local?"),
-      t("¡Con gusto! | ¿Qué | tipo | de | comida | le gusta?", "With pleasure! | What | kind | of | food | do you like?", "Of course! What kind of food do you like?"),
+      t("¡Claro! | ¿Qué | se le antoja? | ¿Mariscos? | ¿Algo | típico | de | aquí?", "Sure! | What | do you feel like? | Seafood? | Something | typical | from | here?", "Sure! What do you feel like? Seafood? Something local?", { spain: t("¡Claro! | ¿Qué | le apetece? | ¿Mariscos? | ¿Algo | típico | de | aquí?", "Sure! | What | do you feel like? | Seafood? | Something | typical | from | here?", "Sure! What do you feel like? Seafood? Something local?") }),
+      t("¡Con gusto! | ¿Qué | tipo | de | comida | le gusta?", "With pleasure! | What | kind | of | food | do you like?", "Of course! What kind of food do you like?", { spain: t("¡Claro! | ¿Qué | tipo | de | comida | le gusta?", "Sure! | What | kind | of | food | do you like?", "Of course! What kind of food do you like?") }),
     ],
     rec_muelle: [
       t("Para | mariscos, | El Muelle, | en | el | malecón. | Pida | el | pescado | a la talla. | Eso sí, | es | un | poquito | caro.",
@@ -800,7 +800,7 @@ export const local: SituationDef = {
       t("Vaya | a | la | taquería | junto | al | mercado. | En | la | mañana | hay | tacos | de | cochinita, | ¡y | es | barato!",
         "Go | to | the | taco place | next | to the | market. | In | the | morning | there are | tacos | of | cochinita, | and | it's | cheap!",
         "Go to the taco place next to the market. In the morning they have cochinita tacos, and it's cheap!",
-        { flags: { 13: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
+        { flags: { 13: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("Vaya | a | la | taquería | junto | al | mercado. | Por | la | mañana | hay | tacos | de | cochinita, | ¡y | es | barato!", "Go | to | the | taco place | next | to the | market. | In | the | morning | there are | tacos | of | cochinita, | and | it's | cheap!", "Go to the taco place next to the market. In the morning they have cochinita tacos, and it's cheap!", {flags: {13: "cochinita pibil: Yucatán's slow-roasted pork in achiote."}}) }),
     ],
     rec_taqueria_fish: [
       t("Vaya | a | la | taquería | junto | al | mercado. | Al | mediodía | hay | tacos | de | pescado, | ¡y | son | baratos!",
@@ -811,7 +811,7 @@ export const local: SituationDef = {
       t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Hay | comida corrida, | y | la | cochinita | es | buenísima.",
         "Go | to | the | home-style diner | on | the | street | Ceiba. | There's | set lunch, | and | the | cochinita | is | excellent.",
         "Try the little home-style diner on Ceiba Street. They do a set lunch, and the cochinita is excellent.",
-        { flags: { 3: "cocina económica: a small family place with cheap home cooking.", 9: "comida corrida: soup, rice, a main dish and a drink for one price.", 12: "cochinita pibil: Yucatán's slow-roasted pork in achiote." } }),
+        { flags: { 3: "cocina económica: a small family place with cheap home cooking.", 9: "comida corrida: soup, rice, a main dish and a drink for one price.", 12: "cochinita pibil: Yucatán's slow-roasted pork in achiote." }, spain: t("Vaya | a | la | cocina económica | de | la | calle | Ceiba. | Hay | menú del día, | y | la | cochinita | es | buenísima.", "Go | to | the | home-style diner | on | the | street | Ceiba. | There's | set lunch, | and | the | cochinita | is | excellent.", "Try the little home-style diner on Ceiba Street. They do a set lunch, and the cochinita is excellent.", {flags: {3: "cocina económica: a small family place with cheap home cooking.",12: "cochinita pibil: Yucatán's slow-roasted pork in achiote."}}) }),
       t("La | cocina económica | de | la | calle | Ceiba. | Pruebe | los | panuchos | y | los | salbutes: | ¡son | de | aquí!",
         "The | home-style diner | on | the | street | Ceiba. | Try | the | panuchos | and | the | salbutes: | they're | from | here!",
         "The home-style diner on Ceiba Street. Try the panuchos and salbutes: they're a local thing!",
@@ -831,7 +831,7 @@ export const local: SituationDef = {
       t("Vaya | a | La Cocina de Lucía, | a | una | cuadra | de | aquí. | Es | un | restaurante | yucateco, | un | poco | más | caro | que | la | cocina económica. | Pida | la | sopa | de | lima.",
         "Go | to | La Cocina de Lucía, | at | one | block | from | here. | It's | a | restaurant | Yucatecan, | a | little | more | expensive | than | the | home-style diner. | Order | the | soup | of | lime.",
         "Go to La Cocina de Lucía, a block from here. It's a Yucatán restaurant, a bit pricier than the little diner. Get the sopa de lima, the lime soup.",
-        { flags: { 18: COCINA_EC, 21: "sopa de lima: Yucatán's lime soup, usually with chicken, served with crispy tortilla strips." } }),
+        { flags: { 18: COCINA_EC, 21: "sopa de lima: Yucatán's lime soup, usually with chicken, served with crispy tortilla strips." }, spain: t("Vaya | a | La Cocina de Lucía, | a | una | calle | de | aquí. | Es | un | restaurante | yucateco, | un | poco | más | caro | que | la | cocina económica. | Pida | la | sopa | de | lima.", "Go | to | La Cocina de Lucía, | at | one | street | from | here. | It's | a | restaurant | Yucatecan, | a | little | more | expensive | than | the | home-style diner. | Order | the | soup | of | lime.", "Go to La Cocina de Lucía, a block from here. It's a Yucatán restaurant, a bit pricier than the little diner. Get the sopa de lima, the lime soup.", {flags: {18: "cocina económica: a small family place with cheap home cooking.",21: "sopa de lima: Yucatán's lime soup, usually with chicken, served with crispy tortilla strips."}}) }),
     ],
     rec_trattoria_veg: [
       t("Vaya | a | La Cocina de Lucía | y | pida | los | papadzules: | son | de | huevo, | con | salsa | de | pepita, | y | no llevan | carne.",
@@ -852,16 +852,16 @@ export const local: SituationDef = {
     no_italian: [
       t("¡Ay, | {m:mijo|f:mija}, | aquí | no hay | restaurante | italiano! | Pero | la | comida | de | aquí | le | va | a | encantar:",
         "Oh, | dear, | here | there isn't | restaurant | Italian! | But | the | food | from | here | (to) you | it's going | to | delight:",
-        "Oh, dear, there's no Italian restaurant here! But you'll love the food from around here:", { flags: { 1: MIJA } }),
+        "Oh, dear, there's no Italian restaurant here! But you'll love the food from around here:", { flags: { 1: MIJA }, spain: t("¡Ay, | {m:hijo|f:hija}, | aquí | no hay | restaurante | italiano! | Pero | la | comida | de | aquí | le | va | a | encantar:", "Oh, | dear, | here | there isn't | restaurant | Italian! | But | the | food | from | here | (to) you | it's going | to | delight:", "Oh, dear, there's no Italian restaurant here! But you'll love the food from around here:") }),
       t("¿Comida | italiana? | Aquí | no hay, | {m:mijo|f:mija}. | Pero | le | tengo | algo | mejor:",
         "Food | Italian? | Here | there isn't any, | dear. | But | (for) you | I-have | something | better:",
-        "Italian food? Not around here, dear. But I've got something better for you:", { flags: { 4: MIJA } }),
+        "Italian food? Not around here, dear. But I've got something better for you:", { flags: { 4: MIJA }, spain: t("¿Comida | italiana? | Aquí | no hay, | {m:hijo|f:hija}. | Pero | le | tengo | algo | mejor:", "Food | Italian? | Here | there isn't any, | dear. | But | (for) you | I-have | something | better:", "Italian food? Not around here, dear. But I've got something better for you:") }),
     ],
     rec_marquesitas: [
       t("¡Las | marquesitas! | Las | venden | en | la | noche, | aquí | en | la | plaza. | Pídala | con | queso de bola: | suena | raro, | ¡pero | es | lo | típico!",
         "The | marquesitas! | Them | they-sell | in | the | evening, | here | in | the | square. | Order-it | with | Edam cheese: | it-sounds | strange, | but | it's | the | classic!",
         "Marquesitas! They sell them in the evening, right here in the square. Get one with Edam cheese: sounds strange, but that's the classic!",
-        { flags: { 1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 2: "Las here is a pronoun: them (the marquesitas).", 11: "Pídala: order it (la = una marquesita)." } }),
+        { flags: { 1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.", 2: "Las here is a pronoun: them (the marquesitas).", 11: "Pídala: order it (la = una marquesita)." }, spain: t("¡Las | marquesitas! | Las | venden | por | la | noche, | aquí | en | la | plaza. | Pídala | con | queso de bola: | suena | raro, | ¡pero | es | lo | típico!", "The | marquesitas! | Them | they-sell | in | the | evening, | here | in | the | square. | Order-it | with | Edam cheese: | it-sounds | strange, | but | it's | the | classic!", "Marquesitas! They sell them in the evening, right here in the square. Get one with Edam cheese: sounds strange, but that's the classic!", {flags: {1: "marquesita: a crispy rolled crêpe, a Yucatán street sweet.",2: "Las here is a pronoun: them (the marquesitas).",11: "Pídala: order it (la = una marquesita)."}}) }),
     ],
     then_try: [t("Entonces, | mire:", "Then, | look:", "Then how about this:")],
     cheaper: [t("¿Algo | más | barato? | Claro.", "Something | more | cheap? | Sure.", "Something cheaper? Sure.")],
@@ -921,7 +921,7 @@ export const local: SituationDef = {
     locals_do: [
       t("El | sábado | en | la | mañana, | los | puestos | de | la | plaza. | Y | el | viernes | en | la | noche, | la | música | del | kiosco.",
         "On | Saturday | in | the | morning, | the | stalls | of | the | square. | And | on | Friday | in | the | evening, | the | music | of the | bandstand.",
-        "Saturday morning, the stalls in the square. And Friday night, the music at the bandstand.", { flags: { 0: "El sábado: on Saturday (the article stands for “on”).", 11: "El viernes: on Friday (the article stands for “on”)." } }),
+        "Saturday morning, the stalls in the square. And Friday night, the music at the bandstand.", { flags: { 0: "El sábado: on Saturday (the article stands for “on”).", 11: "El viernes: on Friday (the article stands for “on”)." }, spain: t("El | sábado | por | la | mañana, | los | puestos | de | la | plaza. | Y | el | viernes | por | la | noche, | la | música | del | kiosco.", "On | Saturday | in | the | morning, | the | stalls | of | the | square. | And | on | Friday | in | the | evening, | the | music | of the | bandstand.", "Saturday morning, the stalls in the square. And Friday night, the music at the bandstand.", {flags: {0: "El sábado: on Saturday (the article stands for “on”).",11: "El viernes: on Friday (the article stands for “on”)."}}) }),
     ],
     night: [
       t("Los | viernes | hay | música | en vivo | aquí | en | el | kiosco, | a | las | ocho.", "On | Fridays | there's | music | live | here | at | the | bandstand, | at | — | eight.",
@@ -929,22 +929,22 @@ export const local: SituationDef = {
     ],
     night_marq: [
       t("Y | en | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | marquesitas | here | in | the | square. | Try them!",
-        "And in the evenings they sell marquesitas here in the square. Try them!", { flags: { 5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet." } }),
+        "And in the evenings they sell marquesitas here in the square. Try them!", { flags: { 5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet." }, spain: t("Y | por | la | noche | venden | marquesitas | aquí | en | la | plaza. | ¡Pruébelas!", "And | in | the | evening | they-sell | marquesitas | here | in | the | square. | Try them!", "And in the evenings they sell marquesitas here in the square. Try them!", {flags: {5: "marquesita: a crispy rolled crêpe, a Yucatán street sweet."}}) }),
     ],
     no_crowds: [t("Entonces | el | malecón, | temprano. | Siempre | está | tranquilo.", "Then | the | waterfront, | early. | Always | it's | quiet.", "Then the waterfront, early in the day. It's always quiet.")],
 
     // --- follow-ups ----------------------------------------------------------------
-    walk_cenote: [t("Caminando, | no. | Está | como | a | veinte | minutos | en | colectivo.", "Walking, | no. | It's | about | at | twenty | minutes | by | shared van.", "Not on foot. It's about twenty minutes by colectivo.")],
-    walk_ruinas: [t("Está | como | a | media | hora | caminando. | O | tome | un | taxi: | no es | caro.", "It's | about | at | half | hour | walking. | Or | take | a | taxi: | it's not | expensive.", "It's about half an hour on foot. Or take a taxi, it's not expensive.")],
+    walk_cenote: [t("Caminando, | no. | Está | como | a | veinte | minutos | en | colectivo.", "Walking, | no. | It's | about | at | twenty | minutes | by | shared van.", "Not on foot. It's about twenty minutes by colectivo.", { spain: t("Andando, | no. | Está | como | a | veinte | minutos | en | colectivo.", "Walking, | no. | It's | about | at | twenty | minutes | by | shared van.", "Not on foot. It's about twenty minutes by colectivo.") })],
+    walk_ruinas: [t("Está | como | a | media | hora | caminando. | O | tome | un | taxi: | no es | caro.", "It's | about | at | half | hour | walking. | Or | take | a | taxi: | it's not | expensive.", "It's about half an hour on foot. Or take a taxi, it's not expensive.", { spain: t("Está | como | a | media | hora | andando. | O | coja | un | taxi: | no es | caro.", "It's | about | at | half | hour | walking. | Or | take | a | taxi: | it's not | expensive.", "It's about half an hour on foot. Or take a taxi, it's not expensive.") })],
     walk_museo: [t("¡Está | aquí | enfrente, | cruzando | la | calle!", "It's | here | opposite, | crossing | the | street!", "It's right there, across the street!")],
     walk_malecon: [t("Está | aquí | atrás, | a | dos | minutos: | nada más | cruce | la | avenida | del | Puerto.", "It's | here | behind, | at | two | minutes: | just | cross | the | avenue | of the | Harbor.",
-      "It's right behind me, two minutes away: just cross Avenida del Puerto.")],
-    walk_close: [t("Está | aquí | cerquita, | a | dos | minutos | caminando.", "It's | here | very close, | at | two | minutes | walking.", "It's really close, two minutes on foot.", { flags: { 2: "cerquita: cerca + -ita, “really close”." } })],
+      "It's right behind me, two minutes away: just cross Avenida del Puerto.", { spain: t("Está | aquí | atrás, | a | dos | minutos: | solo | cruce | la | avenida | del | Puerto.", "It's | here | behind, | at | two | minutes: | just | cross | the | avenue | of the | Harbor.", "It's right behind me, two minutes away: just cross Avenida del Puerto.") })],
+    walk_close: [t("Está | aquí | cerquita, | a | dos | minutos | caminando.", "It's | here | very close, | at | two | minutes | walking.", "It's really close, two minutes on foot.", { flags: { 2: "cerquita: cerca + -ita, “really close”." }, spain: t("Está | aquí | cerquita, | a | dos | minutos | andando.", "It's | here | very close, | at | two | minutes | walking.", "It's really close, two minutes on foot.", {flags: {2: "cerquita: cerca + -ita, “really close”."}}) })],
     walk_here: [t("¡Es | aquí | mismo, | en | la | plaza!", "It's | here | right, | in | the | square!", "It's right here, in the square!")],
     dir_cenote: [
       t("Tome | un | colectivo | en | la | avenida: | son | camionetas | blancas. | Dígale | al | chofer | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.",
         "Take | a | shared van | on | the | avenue: | they're | vans | white. | Tell | to the | driver | that | you | he-leaves | at | the | cenote, | and | (to) him | you-pay | when you get off.",
-        "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", { flags: { 13: LOLA } }),
+        "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", { flags: { 13: LOLA }, spain: t("Coja | un | colectivo | en | la | avenida: | son | furgonetas | blancas. | Dígale | al | conductor | que | {m:lo|f:la} | deje | en | el | cenote, | y | le | paga | al bajarse.", "Take | a | shared van | on | the | avenue: | they're | vans | white. | Tell | to the | driver | that | you | he-leaves | at | the | cenote, | and | (to) him | you-pay | when you get off.", "Take a colectivo on the main road: they're white vans. Tell the driver to drop you at the cenote, and pay when you get off.", {flags: {13: "lo / la: “you” (usted), for a man / a woman."}}) }),
     ],
     // the ruins: on the rocky point past the beach's west end (TOWN.md "Out of town")
     dir_ruinas: [t("Baje | a | la | playa | y | camine | a la izquierda, | hasta | el | final: | las | ruinas | están | en | las | rocas.", "Go down | to | the | beach | and | walk | to the left, | until | the | end: | the | ruins | are | on | the | rocks.",
@@ -954,9 +954,9 @@ export const local: SituationDef = {
     // El Muelle and the boats: on the malecón to the west, behind the museum
     dir_muelle: [t("Cruce | la | avenida | del | Puerto, | aquí | atrás, | y | camine | a la izquierda | hasta | el | muelle.", "Cross | the | avenue | of the | Harbor, | here | behind, | and | walk | to the left | until | the | pier.",
       "Cross Avenida del Puerto behind me and walk left to the pier.")],
-    dir_trattoria: [t("Está | en | la | avenida | Juárez, | a | una | cuadra, | por | allá: | la | del | toldo | rojo.", "It's | on | the | avenue | Juárez, | at | one | block, | over | there: | the one | with the | awning | red.", "It's on Juárez Avenue, one block that way: the one with the red awning.")],
+    dir_trattoria: [t("Está | en | la | avenida | Juárez, | a | una | cuadra, | por | allá: | la | del | toldo | rojo.", "It's | on | the | avenue | Juárez, | at | one | block, | over | there: | the one | with the | awning | red.", "It's on Juárez Avenue, one block that way: the one with the red awning.", { spain: t("Está | en | la | avenida | Juárez, | a | una | calle, | por | allá: | la | del | toldo | rojo.", "It's | on | the | avenue | Juárez, | at | one | street, | over | there: | the one | with the | awning | red.", "It's on Juárez Avenue, one block that way: the one with the red awning.") })],
     dir_cafe: [t("Está | en | la | avenida | Juárez, | a | una | cuadra, | por | allá: | enfrente de | Información Turística.", "It's | on | the | avenue | Juárez, | at | one | block, | over | there: | across from | Tourist Information.",
-      "It's on Juárez Avenue, one block that way: across from the tourist information office.")],
+      "It's on Juárez Avenue, one block that way: across from the tourist information office.", { spain: t("Está | en | la | avenida | Juárez, | a | una | calle, | por | allá: | enfrente de | Información Turística.", "It's | on | the | avenue | Juárez, | at | one | street, | over | there: | across from | Tourist Information.", "It's on Juárez Avenue, one block that way: across from the tourist information office.") })],
     dir_cocina: [t("En | la | calle | Ceiba, | cruzando | la | avenida, | a la vuelta | del | banco.", "On | the | street | Ceiba, | crossing | the | avenue, | around the corner | from the | bank.", "On Ceiba Street, across the avenue, just around the corner from the bank.")],
     // the taquería
     dir_mercado: [t("Junto | al | mercado: | por | la | avenida | del | Puerto, | para | allá, | pasando | el | museo.", "Next | to the | market: | along | the | avenue | of the | Harbor, | toward | there, | passing | the | museum.",
@@ -965,31 +965,31 @@ export const local: SituationDef = {
     tour_muelle: [t("Sí, | un | poco, | pero | la | comida | es | muy | buena.", "Yes, | a | little, | but | the | food | is | very | good.", "Yes, a little, but the food is really good.")],
     tour_market: [t("Un | poco, | los | sábados, | pero | eso | es | parte | de | lo | bonito.", "A | little, | on | Saturdays, | but | that | is | part | of | the | nice-thing.", "A bit on Saturdays, but that's part of the fun!",
       { flags: { 2: "los sábados: on Saturdays (the article stands for “on”)." } })],
-    tour_locals: [t("No | mucho. | Va | pura | gente | de | aquí.", "Not | much. | Goes | only | people | from | here.", "Not really. It's mostly locals.")],
+    tour_locals: [t("No | mucho. | Va | pura | gente | de | aquí.", "Not | much. | Goes | only | people | from | here.", "Not really. It's mostly locals.", { spain: t("No | mucho. | Solo | va | gente | de | aquí.", "Not | much. | Only | goes | people | from | here.", "Not really. It's mostly locals.") })],
     tour_mixed: [t("Van | turistas | y | gente | de | aquí | también.", "Go | tourists | and | people | from | here | too.", "You get tourists and locals too.")],
     tour_quiet: [t("No | mucho. | Es | muy | tranquilo.", "Not | much. | It's | very | quiet.", "Not really. It's nice and quiet.")],
     time_cenote: [t("Temprano, | cuando | abren. | Al | mediodía | llegan | los | grupos.", "Early, | when | they-open. | At | noon | arrive | the | groups.", "Early, when they open. The tour groups arrive around midday.")],
     time_ruinas: [t("A | las | ocho, | cuando | abren, | antes | del | calor.", "At | — | eight, | when | they-open, | before | the | heat.", "At eight, when they open, before the heat.", { flags: { 1: ART_TIME } })],
     time_sunset: [t("Al | atardecer. | ¡Es | lo | más | bonito!", "At the | sunset. | It's | the | most | beautiful!", "At sunset. It's the most beautiful time!")],
-    time_beach: [t("En | la | mañana, | antes de que | pegue | fuerte | el | sol.", "In | the | morning, | before | hits | hard | the | sun.", "In the morning, before the sun gets too strong.")],
-    time_museo: [t("Entre semana, | en | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.")],
+    time_beach: [t("En | la | mañana, | antes de que | pegue | fuerte | el | sol.", "In | the | morning, | before | hits | hard | the | sun.", "In the morning, before the sun gets too strong.", { spain: t("Por | la | mañana, | antes de que | pegue | fuerte | el | sol.", "In | the | morning, | before | hits | hard | the | sun.", "In the morning, before the sun gets too strong.") })],
+    time_museo: [t("Entre semana, | en | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.", { spain: t("Entre semana, | por | la | mañana. | Está | muy | tranquilo.", "On weekdays, | in | the | morning. | It's | very | quiet.", "Weekday mornings. It's very quiet then.") })],
     time_muelle: [t("Para | la | vista, | al | atardecer. | ¡Pero | reserve!", "For | the | view, | at the | sunset. | But | book!", "For the view, at sunset. But book a table!")],
-    time_lancha: [t("En | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.")],
+    time_lancha: [t("En | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.", { spain: t("Por | la | mañana, | cuando | el | mar | está | más | tranquilo.", "In | the | morning, | when | the | sea | is | more | calm.", "In the morning, when the sea is calmer.") })],
     time_taqueria: [t("¡Temprano! | La | cochinita | se acaba | antes | del | mediodía.", "Early! | The | cochinita | runs out | before | the | noon.", "Early! The cochinita runs out before noon.")],
     time_cocina: [
       t("A | la | hora | de | la | comida, | entre | la | una | y | las | tres.", "At | the | hour | of | the | lunch, | between | — | one | and | — | three.", "At lunchtime, between one and three.",
         { flags: { 5: "la comida: in Mexico, the main meal of the day, around 2 p.m.", 7: ART_TIME, 10: ART_TIME } }),
     ],
-    time_night: [t("En | la | noche, | después de | las | siete.", "In | the | evening, | after | — | seven.", "In the evening, after seven.", { flags: { 4: ART_TIME } })],
+    time_night: [t("En | la | noche, | después de | las | siete.", "In | the | evening, | after | — | seven.", "In the evening, after seven.", { flags: { 4: ART_TIME }, spain: t("Por | la | noche, | después de | las | siete.", "In | the | evening, | after | — | seven.", "In the evening, after seven.", {flags: {4: "The article before a clock time has no English word."}}) })],
     time_musica: [t("Empieza | a | las | ocho, | pero | llegue | antes | para | encontrar | lugar.", "It-starts | at | — | eight, | but | arrive | before | to | find | place.", "It starts at eight, but come early to get a seat.", { flags: { 2: ART_TIME } })],
     time_market: [t("Temprano, | como | a | las | ocho, | antes | del | calor.", "Early, | about | at | — | eight, | before | the | heat.", "Early, around eight, before the heat.", { flags: { 3: ART_TIME } })],
-    time_cafe: [t("Cuando | quiera. | Pero | en | la | mañana | el | pan | está | recién | hecho.", "When | you-want. | But | in | the | morning | the | bread | is | freshly | made.", "Anytime. But in the morning the bread is fresh out of the oven.")],
+    time_cafe: [t("Cuando | quiera. | Pero | en | la | mañana | el | pan | está | recién | hecho.", "When | you-want. | But | in | the | morning | the | bread | is | freshly | made.", "Anytime. But in the morning the bread is fresh out of the oven.", { spain: t("Cuando | quiera. | Pero | por | la | mañana | el | pan | está | recién | hecho.", "When | you-want. | But | in | the | morning | the | bread | is | freshly | made.", "Anytime. But in the morning the bread is fresh out of the oven.") })],
     time_trattoria: [t("Temprano, | como | a | las | siete, | o | va | a | tener | que | esperar | mesa.", "Early, | about | at | — | seven, | or | you're-going | to | have | to | wait | table.", "Early, around seven, or you'll have to wait for a table.", { flags: { 3: ART_TIME } })],
     time_any: [t("¡Cuando | quiera! | Pero | temprano | es | mejor.", "When | you-want! | But | early | is | better.", "Anytime! But earlier is better.")],
     price_muelle: [t("Como | trescientos | pesos | por | persona, | con | bebida.", "About | three hundred | pesos | per | person, | with | drink.", "About three hundred pesos a person, with a drink.")],
     price_trattoria: [t("Como | doscientos | pesos. | No está | mal.", "About | two hundred | pesos. | It's not | bad.", "About two hundred pesos. Not bad.")],
     price_taqueria: [t("¡Es | barato! | Con | cien | pesos | come | muy | bien.", "It's | cheap! | With | a hundred | pesos | you-eat | very | well.", "It's cheap! You can eat well for a hundred pesos.")],
-    price_cocina: [t("Es | barato: | la | comida corrida | cuesta | como | cien | pesos.", "It's | cheap: | the | set lunch | costs | about | a hundred | pesos.", "It's cheap: the set lunch is about a hundred pesos.")],
+    price_cocina: [t("Es | barato: | la | comida corrida | cuesta | como | cien | pesos.", "It's | cheap: | the | set lunch | costs | about | a hundred | pesos.", "It's cheap: the set lunch is about a hundred pesos.", { spain: t("Es | barato: | el | menú del día | cuesta | unos | cien | pesos.", "It's | cheap: | the | set lunch | costs | about | a hundred | pesos.", "It's cheap: the set lunch is about a hundred pesos.", {flags: {5: "unos before a number: about."}}) })],
     price_cafe: [t("Un | café | cuesta | como | cuarenta | y | cinco | pesos.", "A | coffee | costs | about | forty | and | five | pesos.", "A coffee is about forty-five pesos.")],
     price_cheap: [t("¡Es | baratito!", "It's | very cheap!", "It's really cheap!", { flags: { 1: "baratito: barato + -ito, “nice and cheap”." } })],
     price_free: [t("¡Es | gratis!", "It's | free!", "It's free!")],
@@ -1003,17 +1003,17 @@ export const local: SituationDef = {
     price_lancha: [t("No es | barato, | pero | vale la pena. | En | el | muelle | le | dan | precio.", "It's not | cheap, | but | it's worth it. | At | the | pier | (to) you | they-give | price.", "It's not cheap, but it's worth it. They'll give you a price at the pier.")],
     book_muelle: [t("Para | cenar, | sí. | Sobre todo | el | fin de semana.", "For | dinner, | yes. | Especially | on the | weekend.", "For dinner, yes. Especially on weekends.", { flags: { 4: "el fin de semana: on the weekend (the article stands for “on the”)." } })],
     // La Cocina de Lucía takes reservations, and walk-ins may wait in the evening (s73)
-    book_trattoria: [t("Mejor | sí, | sobre todo | en | la | noche: | se llena.", "Better | yes, | especially | in | the | evening: | it-fills-up.", "I'd book, yes, especially in the evening: it fills up.")],
+    book_trattoria: [t("Mejor | sí, | sobre todo | en | la | noche: | se llena.", "Better | yes, | especially | in | the | evening: | it-fills-up.", "I'd book, yes, especially in the evening: it fills up.", { spain: t("Mejor | sí, | sobre todo | por | la | noche: | se llena.", "Better | yes, | especially | in | the | evening: | it-fills-up.", "I'd book, yes, especially in the evening: it fills up.") })],
     book_lancha: [t("Sí, | mejor | un | día | antes, | en | el | muelle.", "Yes, | better | one | day | before, | at | the | pier.", "Yes, best to book the day before, at the pier.")],
-    book_no: [t("No, | no hace falta. | Llegue | y ya.", "No, | there's no need. | Arrive | and that's it.", "No, no need. Just go.")],
+    book_no: [t("No, | no hace falta. | Llegue | y ya.", "No, | there's no need. | Arrive | and that's it.", "No, no need. Just go.", { spain: t("No, | no hace falta. | Vaya | sin más.", "No, | there's no need. | Go | just like that.", "No, no need. Just go.") })],
     open_museo: [t("De | diez | a | cinco, | pero | los | lunes | está | cerrado.", "From | ten | to | five, | but | on | Mondays | it's | closed.", "Ten to five, but it's closed on Mondays.", { flags: { 5: "los lunes: on Mondays (the article stands for “on”)." } })],
     open_market: [
       t("Todos | los | días, | en | la | mañana, | hasta | como | las | dos. | El | sábado | hay | más | puestos.", "All | the | days, | in | the | morning, | until | about | — | two. | On | Saturday | there-are | more | stalls.",
-        "Every morning, until about two. On Saturdays there are more stalls.", { flags: { 8: ART_TIME, 10: "El sábado: on Saturday (the article stands for “on”)." } }),
+        "Every morning, until about two. On Saturdays there are more stalls.", { flags: { 8: ART_TIME, 10: "El sábado: on Saturday (the article stands for “on”)." }, spain: t("Todos | los | días, | por | la | mañana, | hasta | como | las | dos. | El | sábado | hay | más | puestos.", "All | the | days, | in | the | morning, | until | about | — | two. | On | Saturday | there-are | more | stalls.", "Every morning, until about two. On Saturdays there are more stalls.", {flags: {8: "The article before a clock time has no English word.",10: "El sábado: on Saturday (the article stands for “on”)."}}) }),
     ],
     open_musica: [t("Todos | los | viernes, | a | las | ocho.", "All | the | Fridays, | at | — | eight.", "Every Friday, at eight.", { flags: { 4: ART_TIME } })],
-    open_cocina: [t("Nada más | al | mediodía, | de | la | una | a | las | cinco.", "Only | at the | midday, | from | — | one | to | — | five.", "Only at lunchtime, from one to five.", { flags: { 4: ART_TIME, 7: ART_TIME } })],
-    open_cenote: [t("Abren | temprano, | como | a | las | ocho, | y | cierran | en | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.", "They open early, around eight, and close in the afternoon.", { flags: { 4: ART_TIME } })],
+    open_cocina: [t("Nada más | al | mediodía, | de | la | una | a | las | cinco.", "Only | at the | midday, | from | — | one | to | — | five.", "Only at lunchtime, from one to five.", { flags: { 4: ART_TIME, 7: ART_TIME }, spain: t("Solo | a | mediodía, | de | la | una | a | las | cinco.", "Only | at | midday, | from | — | one | to | — | five.", "Only at lunchtime, from one to five.", {flags: {4: "The article before a clock time has no English word.",7: "The article before a clock time has no English word."}}) })],
+    open_cenote: [t("Abren | temprano, | como | a | las | ocho, | y | cierran | en | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.", "They open early, around eight, and close in the afternoon.", { flags: { 4: ART_TIME }, spain: t("Abren | temprano, | como | a | las | ocho, | y | cierran | por | la | tarde.", "They-open | early, | about | at | — | eight, | and | they-close | in | the | afternoon.", "They open early, around eight, and close in the afternoon.", {flags: {4: "The article before a clock time has no English word."}}) })],
     open_ruinas: [t("Todos | los | días, | desde | las | ocho | de la mañana.", "All | the | days, | from | — | eight | a.m.", "Every day, from eight in the morning.", { flags: { 4: ART_TIME } })],
     open_always: [t("¡Siempre | se puede | ir!", "Always | you can | go!", "You can go anytime!")],
     open_generic: [t("Abre | todos | los | días, | desde | temprano, | creo.", "It-opens | all | the | days, | from | early, | I-think.", "It's open every day from early on, I think.")],
@@ -1023,16 +1023,16 @@ export const local: SituationDef = {
     safe: [
       t("El | centro, | sí: | hay | gente | hasta | tarde. | Pero | la | playa | de | noche, | mejor | no: | está | oscura. | Y | no se meta | al | mar | de | noche.",
         "The | center, | yes: | there-are | people | until | late. | But | the | beach | at | night, | better | not: | it's | dark. | And | don't go | into the | sea | at | night.",
-        "Downtown, yes: there are people around until late. But the beach at night, better not: it's dark. And don't go in the sea at night."),
+        "Downtown, yes: there are people around until late. But the beach at night, better not: it's dark. And don't go in the sea at night.", { spain: t("El | centro, | sí: | hay | gente | hasta | tarde. | Pero | la | playa | de | noche, | mejor | no: | está | oscura. | Y | no se meta | en | el | mar | de | noche.", "The | center, | yes: | there-are | people | until | late. | But | the | beach | at | night, | better | not: | it's | dark. | And | don't go | into | the | sea | at | night.", "Downtown, yes: there are people around until late. But the beach at night, better not: it's dark. And don't go in the sea at night.") }),
     ],
-    no_walk_bus: [t("Entonces | tome | un | colectivo. | Pasan | por | la | avenida | cada rato.", "Then | take | a | shared van. | They-pass | along | the | avenue | every few minutes.", "Then take a colectivo. They come along the main road every few minutes.")],
+    no_walk_bus: [t("Entonces | tome | un | colectivo. | Pasan | por | la | avenida | cada rato.", "Then | take | a | shared van. | They-pass | along | the | avenue | every few minutes.", "Then take a colectivo. They come along the main road every few minutes.", { spain: t("Entonces | coja | un | colectivo. | Pasan | por | la | avenida | cada poco.", "Then | take | a | shared van. | They-pass | along | the | avenue | every few minutes.", "Then take a colectivo. They come along the main road every few minutes.") })],
     // the sitio is by the airport, at the far end of avenida Juárez: taxis are hailed on the avenue
-    no_walk_taxi: [t("Entonces | tome | un | taxi: | pasan | muchos | por | la | avenida.", "Then | take | a | taxi: | pass | many | along | the | avenue.", "Then take a taxi: lots of them come along the avenue.")],
-    taxi_where: [t("Pasan | muchos | por | la | avenida: | nada más | levante | la | mano.", "Pass | many | along | the | avenue: | just | raise | the | hand.", "Lots of them come along the avenue: just wave one down.")],
-    fare_colectivo: [t("No es | caro. | Le | paga | al | chofer | al bajarse, | en | efectivo.", "It's not | expensive. | (To) him | you-pay | to the | driver | when you get off, | in | cash.", "It's not expensive. You pay the driver when you get off, in cash.")],
+    no_walk_taxi: [t("Entonces | tome | un | taxi: | pasan | muchos | por | la | avenida.", "Then | take | a | taxi: | pass | many | along | the | avenue.", "Then take a taxi: lots of them come along the avenue.", { spain: t("Entonces | coja | un | taxi: | pasan | muchos | por | la | avenida.", "Then | take | a | taxi: | pass | many | along | the | avenue.", "Then take a taxi: lots of them come along the avenue.") })],
+    taxi_where: [t("Pasan | muchos | por | la | avenida: | nada más | levante | la | mano.", "Pass | many | along | the | avenue: | just | raise | the | hand.", "Lots of them come along the avenue: just wave one down.", { spain: t("Pasan | muchos | por | la | avenida: | solo | levante | la | mano.", "Pass | many | along | the | avenue: | just | raise | the | hand.", "Lots of them come along the avenue: just wave one down.") })],
+    fare_colectivo: [t("No es | caro. | Le | paga | al | chofer | al bajarse, | en | efectivo.", "It's not | expensive. | (To) him | you-pay | to the | driver | when you get off, | in | cash.", "It's not expensive. You pay the driver when you get off, in cash.", { spain: t("No es | caro. | Le | paga | al | conductor | al bajarse, | en | efectivo.", "It's not | expensive. | (To) him | you-pay | to the | driver | when you get off, | in | cash.", "It's not expensive. You pay the driver when you get off, in cash.") })],
     fare_taxi: [t("El | taxi | cuesta | más. | Pregunte | el | precio | antes de | subirse.", "The | taxi | costs | more. | Ask | the | price | before | getting in.", "A taxi costs more. Ask the price before you get in.")],
-    bus_yes: [t("Sí, | pasan | colectivos | por | la | avenida | cada rato.", "Yes, | pass | shared vans | along | the | avenue | every few minutes.", "Yes, colectivos come along the main road every few minutes.")],
-    bus_where: [t("Aquí | enfrente, | en | la | avenida | Juárez: | nada más | levante | la | mano.", "Here | opposite, | on | the | avenue | Juárez: | just | raise | the | hand.", "Right out front, on Juárez Avenue: just wave one down.")],
+    bus_yes: [t("Sí, | pasan | colectivos | por | la | avenida | cada rato.", "Yes, | pass | shared vans | along | the | avenue | every few minutes.", "Yes, colectivos come along the main road every few minutes.", { spain: t("Sí, | pasan | colectivos | por | la | avenida | cada poco.", "Yes, | pass | shared vans | along | the | avenue | every few minutes.", "Yes, colectivos come along the main road every few minutes.") })],
+    bus_where: [t("Aquí | enfrente, | en | la | avenida | Juárez: | nada más | levante | la | mano.", "Here | opposite, | on | the | avenue | Juárez: | just | raise | the | hand.", "Right out front, on Juárez Avenue: just wave one down.", { spain: t("Aquí | enfrente, | en | la | avenida | Juárez: | solo | levante | la | mano.", "Here | opposite, | on | the | avenue | Juárez: | just | raise | the | hand.", "Right out front, on Juárez Avenue: just wave one down.") })],
     // places that aren't tips, from her bench (TOWN.md "From the zócalo's kiosco")
     where_banco: [t("Ahí | enfrente, | cruzando | la | avenida: | el | banco | amarillo | tiene | cajero.", "There | opposite, | crossing | the | avenue: | the | bank | yellow | has | an ATM.", "Right across the avenue: the yellow bank has an ATM.")],
     where_correos: [t("Ahí | enfrente, | cruzando | la | avenida, | junto | al | banco.", "There | opposite, | crossing | the | avenue, | next | to the | bank.", "Right across the avenue, next to the bank.")],
@@ -1042,13 +1042,13 @@ export const local: SituationDef = {
       "Along Avenida del Puerto, that way, past the museum: two minutes from here.")],
     where_turismo: [t("En | la | avenida | Juárez, | para | allá, | pasando | el | museo.", "On | the | avenue | Juárez, | toward | there, | passing | the | museum.", "On Juárez Avenue, that way, past the museum.")],
     where_west: [t("En | la | avenida | Juárez, | a | dos | cuadras, | por | allá, | pasando | la | calle | Flamboyán.", "On | the | avenue | Juárez, | at | two | blocks, | over | there, | passing | the | street | Flamboyán.",
-      "On Juárez Avenue, two blocks that way, past Flamboyán Street.")],
+      "On Juárez Avenue, two blocks that way, past Flamboyán Street.", { spain: t("En | la | avenida | Juárez, | a | dos | calles, | por | allá, | pasando | la | calle | Flamboyán.", "On | the | avenue | Juárez, | at | two | streets, | over | there, | passing | the | street | Flamboyán.", "On Juárez Avenue, two blocks that way, past Flamboyán Street.") })],
     where_other: [t("Mejor | pregunte | en | Información Turística, | aquí | en | la | avenida | Juárez: | ahí | le | dan | un | mapa.", "Better | ask | at | Tourist Information, | here | on | the | avenue | Juárez: | there | (to) you | they-give | a | map.",
       "Better ask at the tourist information office, right here on Juárez Avenue: they'll give you a map.")],
     her_name: [t("¡Carmen, | para servirle!", "Carmen, | at your service!", "Carmen, at your service!")],
-    which_spot: [t("¿De | cuál | me | habla, | {m:mijo|f:mija}?", "About | which | (to) me | you-speak, | dear?", "Which place do you mean, dear?", { flags: { 4: MIJA } })],
+    which_spot: [t("¿De | cuál | me | habla, | {m:mijo|f:mija}?", "About | which | (to) me | you-speak, | dear?", "Which place do you mean, dear?", { flags: { 4: MIJA }, spain: t("¿De | cuál | me | habla, | {m:hijo|f:hija}?", "About | which | (to) me | you-speak, | dear?", "Which place do you mean, dear?") })],
     no_problem: [t("Ah, | ¡está bien!", "Oh, | okay!", "Oh, okay!")],
-    help_sure: [t("¡Claro, | {m:mijo|f:mija}! | ¿Qué | necesita?", "Sure, | dear! | What | you-need?", "Of course, dear! What do you need?", { flags: { 1: MIJA } })],
+    help_sure: [t("¡Claro, | {m:mijo|f:mija}! | ¿Qué | necesita?", "Sure, | dear! | What | you-need?", "Of course, dear! What do you need?", { flags: { 1: MIJA }, spain: t("¡Claro, | {m:hijo|f:hija}! | ¿Qué | necesita?", "Sure, | dear! | What | you-need?", "Of course, dear! What do you need?") })],
 
     // --- small talk and twists -------------------------------------------------------
     ask_from: [t("Y | usted, | ¿de | dónde | es?", "And | you, | from | where | are-you?", "So where are you from?")],
@@ -1064,12 +1064,12 @@ export const local: SituationDef = {
     ],
     walk_yes: [
       t("¡Ándele, | vámonos! | Me gusta | caminar.", "Come on, | let's go! | I like | to walk.", "Wonderful, let's go! I love a good walk.",
-        { flags: { 0: "Mexican: ándele = come on, all right." }, neutral: t("¡Muy | bien, | vámonos! | Me gusta | caminar.", "Very | good, | let's go! | I like | to walk.", "Wonderful, let's go! I love a good walk.") }),
+        { flags: { 0: "Mexican: ándele = come on, all right." }, neutral: t("¡Muy | bien, | vámonos! | Me gusta | caminar.", "Very | good, | let's go! | I like | to walk.", "Wonderful, let's go! I love a good walk."), spain: t("¡Muy | bien, | vámonos! | Me gusta | andar.", "Very | good, | let's go! | I like | to walk.", "Wonderful, let's go! I love a good walk.") }),
     ],
-    walk_no: [t("¡Sin problema, | {m:mijo|f:mija}!", "No problem, | dear!", "No problem, dear!", { flags: { 1: MIJA } })],
-    market_seller: [t("Ay, | yo | no vendo | nada, | {m:mijo|f:mija}. | Los | puestos | están | aquí | atrás.", "Oh, | I | don't sell | anything, | dear. | The | stalls | are | here | behind.", "Oh, I don't sell anything, dear! The stalls are right behind me.", { flags: { 4: MIJA } })],
+    walk_no: [t("¡Sin problema, | {m:mijo|f:mija}!", "No problem, | dear!", "No problem, dear!", { flags: { 1: MIJA }, spain: t("¡Sin problema, | {m:hijo|f:hija}!", "No problem, | dear!", "No problem, dear!") })],
+    market_seller: [t("Ay, | yo | no vendo | nada, | {m:mijo|f:mija}. | Los | puestos | están | aquí | atrás.", "Oh, | I | don't sell | anything, | dear. | The | stalls | are | here | behind.", "Oh, I don't sell anything, dear! The stalls are right behind me.", { flags: { 4: MIJA }, spain: t("Ay, | yo | no vendo | nada, | {m:hijo|f:hija}. | Los | puestos | están | aquí | atrás.", "Oh, | I | don't sell | anything, | dear. | The | stalls | are | here | behind.", "Oh, I don't sell anything, dear! The stalls are right behind me.") })],
     market_where: [t("¡Aquí | mismo! | Los | puestos | están | aquí | atrás.", "Here | right! | The | stalls | are | here | behind.", "Right here! The stalls are right behind me.")],
-    market_tip: [t("Pruebe | la | papaya: | aquí | es | bien | dulce.", "Try | the | papaya: | here | it's | very | sweet.", "Try the papaya: it's really sweet here.", { flags: { 5: "bien before an adjective: “very”." } })],
+    market_tip: [t("Pruebe | la | papaya: | aquí | es | bien | dulce.", "Try | the | papaya: | here | it's | very | sweet.", "Try the papaya: it's really sweet here.", { flags: { 5: "bien before an adjective: “very”." }, spain: t("Pruebe | la | papaya: | aquí | es | muy | dulce.", "Try | the | papaya: | here | it's | very | sweet.", "Try the papaya: it's really sweet here.") })],
 
     // --- the end ------------------------------------------------------------------------
     prompt_sight: [t("Y | ya que | está | aquí, | ¿quiere | conocer | algo?", "And | since | you're | here, | you-want | to see | something?", "And while you're here, is there anything you'd like to see?")],
@@ -1078,7 +1078,7 @@ export const local: SituationDef = {
     food_again: [t("¿Y | para | comer? | ¿Tiene | hambre?", "And | for | eating? | You-have | hunger?", "And what about food? Are you hungry?")],
     prompt_food: [t("¿Y | tiene | hambre? | Yo | conozco | todos | los | lugares | buenos | para | comer.", "And | you-have | hunger? | I | know | all | the | places | good | for | eating.", "And are you hungry? I know all the good places to eat.")],
     ask_more: [
-      t("¿Algo | más, | {m:mijo|f:mija}?", "Something | more, | dear?", "Anything else, dear?", { flags: { 2: MIJA } }),
+      t("¿Algo | más, | {m:mijo|f:mija}?", "Something | more, | dear?", "Anything else, dear?", { flags: { 2: MIJA }, spain: t("¿Algo | más, | {m:hijo|f:hija}?", "Something | more, | dear?", "Anything else, dear?") }),
       t("¿Le | ayudo | en | algo | más?", "(To) you | I-help | in | something | more?", "Can I help you with anything else?"),
     ],
     thanks_reply: [
@@ -1142,7 +1142,7 @@ export const local: SituationDef = {
       lt: "Ask about the place",
       items: [
         { id: "u_far", s: t("¿Está | lejos?", "Is it | far?", "Is it far?") },
-        { id: "u_walk", s: t("¿Se puede | ir | caminando?", "Can you | go | walking?", "Can you walk there?") },
+        { id: "u_walk", s: t("¿Se puede | ir | caminando?", "Can you | go | walking?", "Can you walk there?", { spain: t("¿Se puede | ir | andando?", "Can you | go | walking?", "Can you walk there?") }) },
         { id: "u_how", s: t("¿Cómo | llego?", "How | I-get-there?", "How do I get there?") },
         { id: "u_touristy", s: t("¿Hay | muchos | turistas?", "Are there | many | tourists?", "Is it touristy?") },
         { id: "u_time", s: t("¿A | qué | hora | es | mejor | ir?", "At | what | time | is | better | to go?", "What's the best time to go?") },
@@ -1156,7 +1156,7 @@ export const local: SituationDef = {
     night: {
       lt: "Ask about evenings and coffee",
       items: [
-        { id: "n_night", s: t("¿Qué | se puede | hacer | en | la | noche?", "What | can you | do | in | the | evening?", "What is there to do at night?") },
+        { id: "n_night", s: t("¿Qué | se puede | hacer | en | la | noche?", "What | can you | do | in | the | evening?", "What is there to do at night?", { spain: t("¿Qué | se puede | hacer | por | la | noche?", "What | can you | do | in | the | evening?", "What is there to do at night?") }) },
         { id: "c_best_coffee", s: t("¿Dónde | está | el | mejor | café?", "Where | is | the | best | coffee?", "Where's the best coffee in town?") },
       ],
     },
@@ -1165,7 +1165,7 @@ export const local: SituationDef = {
       items: [
         { id: "t_all", s: t("No, | es | todo. | ¡Gracias | por | los | consejos!", "No, | it's | all. | Thanks | for | the | tips!", "No, that's all. Thanks for the tips!") },
         { id: "t_tip", s: t("¡Gracias | por | la | recomendación!", "Thanks | for | the | recommendation!", "Thanks for the tip!") },
-        { id: "t_helpful", s: t("¡Me | ayudó | mucho!", "(To) me | you-helped | a lot!", "You've been really helpful!") },
+        { id: "t_helpful", s: t("¡Me | ayudó | mucho!", "(To) me | you-helped | a lot!", "You've been really helpful!", { spain: t("¡Me | ha ayudado | mucho!", "(To) me | you've-helped | a lot!", "You've been really helpful!") }) },
         { id: "t_sounds", s: t("¡Suena | muy | bien!", "It-sounds | very | good!", "That sounds great!") },
         { id: "t_check", s: t("¡Voy | a | ir!", "I'm going | to | go!", "I'll check it out!") },
       ],
@@ -1230,6 +1230,15 @@ export const local: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (11 Nov 2026)
+    "ha cenado": { reason: "grammatical_fusion", split: "ha → have/has + cenado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha ido": { reason: "grammatical_fusion", split: "ha → have/has + ido (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha probado": { reason: "grammatical_fusion", split: "ha → have/has + probado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "le apetece": { reason: "grammatical_fusion", split: "le → to you + apetece → appeals: Spain's ¿qué le apetece? = what do you feel like?", minimal: "Clitic and verb." },
+    "sin más": { reason: "lexical_expression", split: "sin → without + más → more: = just like that.", minimal: "Two words." },
+    "menú del día": { reason: "lexical_expression", split: "menú → menu + del → of the + día → day: = the set lunch.", minimal: "Three words." },
+    "cada poco": { reason: "lexical_expression", split: "cada → each + poco → little: = every few minutes (Spain).", minimal: "Two words." },
+    "ha ayudado": { reason: "grammatical_fusion", split: "ha → have/has + ayudado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "la cocina de lucía": { reason: "lexical_expression", split: "la → the + cocina → kitchen + de → of + Lucía would translate the restaurant's proper name.", minimal: "The four-word name." },
     "poc chuc": { reason: "lexical_expression", split: "Two Maya words (toast + charcoal); one dish name.", minimal: "Two-word dish name." },
     "el muelle": { reason: "lexical_expression", split: "el → the + muelle → pier would translate the restaurant's proper name.", minimal: "Two-word name." },

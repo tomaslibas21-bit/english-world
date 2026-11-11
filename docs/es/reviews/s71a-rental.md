@@ -162,3 +162,11 @@ New spoken lines: `total_day`, `check_first`, `usd`, `driver_ok`, `ac_yes`, `ret
 - **Owner:** a later return is still quoted at the car's rate only, without full coverage or extras for those days
   (the lead's note above). An additional driver is free here (some agencies charge about $100–150 a day): say if
   it should cost.
+
+## Spain twins (11 Nov 2026)
+
+- 75 Spain twins (lines and hints), 18 items in tests/es/spain/s71a-rental.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Andrés keeps usted.
+- Words: coche(s), reserva, alquilar / alquiler, conducir, carné (de conducir; extranjero, masculine), depósito (lleno) for tanque, la gasolina por adelantado (so depósito is not read as the deposit), manual for estándar, todoterreno and monovolumen (entities: attrs.spain, masculine), la cobertura a todo riesgo for la cobertura amplia, la franquicia for el deducible, arañazo, hágale una foto, la plaza B2 for el lugar B2 (say too), aparcamiento, fuera, coste, Perfecto for Listo, ¡De nada!, Vale, He reservado un coche.
+- Grammar: ins_full / ins_basic take (el seguro | la cobertura) a todo riesgo; scratch_q takes arañazo(s); ok_ack takes ya he firmado; the SUV and minivan entities take todoterreno and monovolumen. Merges: a todo riesgo, depósito lleno, muy bien, he reservado.
+- Kept: the company's name Renta de Autos Colibrí (a proper name); gasolina regular, la verde (Mexico's pumps). The cast label "Renta de autos" (npcs.ts) is a proposal: Spain would say Alquiler de coches.

@@ -1,0 +1,86 @@
+{
+"situation": "s70-museum",
+"items": [
+{
+"ctx": "tickets",
+"say": "Una entrada, por favor",
+"intent": "buy_qty"
+},
+{
+"ctx": "tickets",
+"say": "¿Cuánto cuesta la entrada para jubilados?",
+"intent": [
+"ask_prices",
+"ask_discount"
+]
+},
+{
+"ctx": "tickets",
+"say": "Soy jubilada",
+"intent": "im_senior"
+},
+{
+"ctx": "types",
+"say": "Un adulto y una persona mayor",
+"intent": [
+"buy_tickets",
+"types_ans"
+]
+},
+{
+"ctx": "student_id",
+"say": "Aquí tiene mi carné",
+"intent": "have_id"
+},
+{
+"ctx": "student_id",
+"say": "No lo llevo",
+"intent": "no_id"
+},
+{
+"ctx": "id_price",
+"say": "Vale, pago la entrada general",
+"intent": "adult_ok"
+},
+{
+"ctx": "guide",
+"say": "Vale, una, por favor",
+"intent": "guide_n_ctx"
+},
+{
+"ctx": "pay",
+"say": "¿Puedo pagar con el móvil?",
+"intent": "pay_phone"
+},
+{
+"ctx": "pay",
+"say": "No llevo efectivo",
+"intent": "no_cash"
+},
+{
+"ctx": "exhibit",
+"say": "¿Se pueden hacer fotos?",
+"intent": "ask_photos"
+},
+{
+"ctx": "exhibit",
+"say": "¿Dónde están los aseos?",
+"intent": "ask_restroom"
+},
+{
+"ctx": "exhibit",
+"say": "¿Hay ascensor?",
+"intent": "ask_elevator"
+},
+{
+"ctx": "harold",
+"say": "Ay, perdone, no lo sabía",
+"intent": "apology"
+},
+{
+"ctx": "late",
+"say": "¿Me da tiempo a verlo todo?",
+"intent": "enough_time"
+}
+]
+}

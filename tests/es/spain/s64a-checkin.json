@@ -1,0 +1,116 @@
+{
+"situation": "s64a-checkin",
+"items": [
+{
+"ctx": "hello",
+"say": "Hola, vengo a facturar",
+"intent": "checkin"
+},
+{
+"ctx": "hello",
+"say": "Quería facturar para mi vuelo a Ciudad de México",
+"intent": "checkin"
+},
+{
+"ctx": "dest",
+"say": "Voy a Ciudad de México",
+"intent": "dest_ans",
+"slots": {
+"city": "cdmx"
+}
+},
+{
+"ctx": "passport",
+"say": "Aquí lo tiene",
+"intent": "give"
+},
+{
+"ctx": "bags",
+"say": "Sí, voy a facturar una maleta",
+"intent": "bags_ans"
+},
+{
+"ctx": "bags",
+"say": "No, solo llevo equipaje de mano",
+"intent": "bags_none"
+},
+{
+"ctx": "bags",
+"say": "No llevo maletas",
+"intent": "bags_none"
+},
+{
+"ctx": "packed",
+"say": "Sí, la he hecho yo",
+"intent": "packed_yes"
+},
+{
+"ctx": "packed",
+"say": "Sí, la he hecho yo misma",
+"intent": "packed_yes"
+},
+{
+"ctx": "battery",
+"say": "No, no llevo nada de eso",
+"intent": [
+"battery_no_ctx",
+"battery_no"
+]
+},
+{
+"ctx": "battery",
+"say": "Sí, llevo un cargador portátil",
+"intent": "battery_yes"
+},
+{
+"ctx": "battery",
+"say": "Lo llevo en la mochila",
+"intent": "battery_no_ctx"
+},
+{
+"ctx": "battery_move",
+"say": "Vale, ya lo he cambiado",
+"intent": "ack_done"
+},
+{
+"ctx": "moving",
+"say": "Ya está",
+"intent": "ack_done"
+},
+{
+"ctx": "overweight",
+"say": "Me pongo el jersey",
+"intent": "move_items"
+},
+{
+"ctx": "no_window",
+"say": "Vale, pasillo",
+"intent": "seat_ans"
+},
+{
+"ctx": "bp",
+"say": "¿A qué hora empieza el embarque?",
+"intent": "ask_boarding_time"
+},
+{
+"ctx": "bp",
+"say": "¿Dónde están los aseos?",
+"intent": "ask_restroom"
+},
+{
+"ctx": "bp",
+"say": "¿Cuántas maletas puedo facturar?",
+"intent": "ask_bagfee"
+},
+{
+"ctx": "bp",
+"say": "Vale, eso es todo, gracias",
+"intent": "more_no"
+},
+{
+"ctx": "fee",
+"say": "Solo llevo dólares",
+"intent": "ask_dollars"
+}
+]
+}

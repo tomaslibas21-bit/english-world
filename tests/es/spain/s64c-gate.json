@@ -1,0 +1,90 @@
+{
+"situation": "s64c-gate",
+"items": [
+{
+"ctx": "gate",
+"say": "¿Es esta la puerta del vuelo 223?",
+"intent": "ask_gate"
+},
+{
+"ctx": "gate",
+"say": "Aquí tiene mi tarjeta de embarque",
+"intent": "give_bp"
+},
+{
+"ctx": "wrong_flight",
+"say": "La tengo en el móvil",
+"intent": "give_bp"
+},
+{
+"ctx": "time",
+"say": "¿A qué hora empieza el embarque?",
+"intent": "ask_boarding_time"
+},
+{
+"ctx": "time",
+"say": "¿Lleva retraso el vuelo?",
+"intent": "ask_delayed"
+},
+{
+"ctx": "help",
+"say": "¿Dónde puedo cargar el móvil?",
+"intent": "ask_charge"
+},
+{
+"ctx": "help",
+"say": "¿Dónde están los aseos?",
+"intent": "ask_restroom"
+},
+{
+"ctx": "help",
+"say": "¿Ya puedo embarcar?",
+"intent": "can_board"
+},
+{
+"ctx": "wait",
+"say": "Vale, gracias",
+"intent": "g_thanks"
+},
+{
+"ctx": "seat_offer",
+"say": "Vale, sí, por favor",
+"intent": "yn:yes"
+},
+{
+"ctx": "offer",
+"say": "Sí, factúrela, por favor",
+"intent": "offer_yes"
+},
+{
+"ctx": "offer",
+"say": "Vale, buena idea",
+"intent": "offer_yes"
+},
+{
+"ctx": "offer",
+"say": "No, gracias, la llevo conmigo",
+"intent": "keep_bag"
+},
+{
+"ctx": "offer",
+"say": "¿No tiene coste?",
+"intent": "ask_free"
+},
+{
+"ctx": "offer",
+"say": "No llevo maleta",
+"intent": "no_bag_ctx"
+},
+{
+"ctx": "early",
+"say": "¿Ya puedo embarcar?",
+"intent": "can_board"
+},
+{
+"ctx": "scan",
+"say": "Aquí tiene mi tarjeta y mi pasaporte",
+"intent": "give_bp"
+}
+]
+}
