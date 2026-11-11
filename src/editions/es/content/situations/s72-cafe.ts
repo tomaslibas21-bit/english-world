@@ -47,28 +47,28 @@ export const DRINKS: EntityDef[] = [
 
 export const FOODS: EntityDef[] = [
   ent("concha", "concha", "concha", "f", { pl: "conchas", forms: ["conchita", "conchas"], attrs: { kind: "pan", price: 2500, nat: "concha (sweet bun)", natPl: "conchas (sweet buns)" } }),
-  ent("croissant", "cuernito", "croissant", "m", { pl: "cuernitos", ltPl: "croissants", forms: ["croissant", "cruasan", "cuerno", "cuernitos", "croissants"], attrs: { kind: "pan", price: 3000 } }),
-  ent("donut", "dona", "doughnut", "f", { pl: "donas", ltPl: "doughnuts", forms: ["donas", "donut", "dona de chocolate"], attrs: { kind: "pan", price: 2500 } }),
+  ent("croissant", "cuernito", "croissant", "m", { pl: "cuernitos", ltPl: "croissants", forms: ["croissant", "cruasan", "cruasanes", "cuerno", "cuernitos", "croissants"], attrs: { kind: "pan", price: 3000, spain: "cruasán", spainPl: "cruasanes" } }),
+  ent("donut", "dona", "doughnut", "f", { pl: "donas", ltPl: "doughnuts", forms: ["donas", "donut", "donuts", "dona de chocolate", "donut de chocolate"], attrs: { kind: "pan", price: 2500, spain: "dónut", spainPl: "dónuts", spainG: "m" } }),
   ent("pan", "pan", "pastry", "m", { pl: "panes", ltPl: "pastries", forms: ["pan dulce", "panes", "panecito", "pancito", "pan de dulce"], attrs: { generic: "pan" } }),
   ent("cookie", "galleta", "cookie", "f", { pl: "galletas", ltPl: "cookies", forms: ["galletas", "galletita", "galleta de chocolate"], attrs: { price: 2000 } }),
-  ent("muffin", "mantecada", "muffin", "f", { pl: "mantecadas", ltPl: "muffins", forms: ["mantecadas", "muffin", "panque", "panquecito", "magdalena"], attrs: { price: 2500 } }),
+  ent("muffin", "mantecada", "muffin", "f", { pl: "mantecadas", ltPl: "muffins", forms: ["mantecadas", "muffin", "panque", "panquecito", "magdalena", "magdalenas"], attrs: { price: 2500, spain: "magdalena" } }),
   ent("torta", "torta | de | jamón", "sandwich | of | ham", "f", { pl: "tortas | de | jamón", ltPl: "sandwiches | of | ham",
     forms: ["torta", "tortas", "torta de jamon", "sandwich", "sandwich de jamon", "emparedado"], attrs: { price: 6500, warm: true, nat: "ham torta (sandwich)", natPl: "ham tortas (sandwiches)" } }),
 ];
 
 const SIZES: EntityDef[] = [
-  ent("small", "chico", "small", "m", { forms: ["chica", "chiquito", "chiquita", "pequeno", "pequena", "corto", "tall", "el mas chico", "la mas chica", "el mas pequeno", "la mas pequena"], chip: "chico" }),
+  ent("small", "chico", "small", "m", { forms: ["chica", "chiquito", "chiquita", "pequeno", "pequena", "corto", "tall", "el mas chico", "la mas chica", "el mas pequeno", "la mas pequena"], chip: "chico", attrs: { spain: "pequeño" } }),
   ent("medium", "mediano", "medium", "m", { forms: ["mediana", "regular", "normal", "medio", "el de en medio", "el de enmedio", "la de en medio"], chip: "mediano" }),
   ent("large", "grande", "large", "m", { forms: ["grandes", "grandote", "grandota", "el mas grande", "la mas grande", "extra grande", "venti"], chip: "grande" }),
 ];
 
 const MILKS: EntityDef[] = [
   ent("whole", "leche | entera", "milk | whole", "f", { art: "", forms: ["entera", "leche normal", "leche regular", "leche de vaca"], chip: "leche entera", attrs: { nat: "whole milk" } }),
-  ent("lactose_free", "leche | deslactosada", "milk | lactose-free", "f", { art: "", forms: ["deslactosada", "sin lactosa", "leche sin lactosa"], chip: "deslactosada", attrs: { nat: "lactose-free milk" } }),
-  ent("light", "leche | light", "milk | skim", "f", { art: "", forms: ["light", "descremada", "leche descremada", "baja en grasa", "leche baja en grasa"], chip: "light", attrs: { nat: "skim milk" } }),
+  ent("lactose_free", "leche | deslactosada", "milk | lactose-free", "f", { art: "", forms: ["deslactosada", "sin lactosa", "leche sin lactosa"], chip: "deslactosada", attrs: { nat: "lactose-free milk", spain: "leche | sin lactosa" } }),
+  ent("light", "leche | light", "milk | skim", "f", { art: "", forms: ["light", "descremada", "leche descremada", "baja en grasa", "leche baja en grasa", "desnatada", "leche desnatada"], chip: "light", attrs: { nat: "skim milk", spain: "leche | desnatada" } }),
   ent("oat", "leche | de | avena", "milk | of | oat", "f", { art: "", forms: ["avena", "de avena"], chip: "de avena", attrs: { extra: 1000, nat: "oat milk" } }),
   ent("almond", "leche | de | almendra", "milk | of | almond", "f", { art: "", forms: ["almendra", "de almendra", "almendras", "leche de almendras"], chip: "de almendra", attrs: { extra: 1000, nat: "almond milk" } }),
-  ent("soy", "leche | de | soya", "milk | of | soy", "f", { art: "", forms: ["soya", "de soya", "soja", "de soja", "leche de soja"], chip: "de soya", attrs: { extra: 1000, nat: "soy milk" } }),
+  ent("soy", "leche | de | soya", "milk | of | soy", "f", { art: "", forms: ["soya", "de soya", "soja", "de soja", "leche de soja"], chip: "de soya", attrs: { extra: 1000, nat: "soy milk", spain: "leche | de | soja" } }),
 ];
 
 const TEMPS: EntityDef[] = [
@@ -293,13 +293,25 @@ export const cafe: SituationDef = {
   intro: "Café La Ceiba is on avenida Juárez, across from the visitor center, under a green-and-white awning. Mariana is behind the counter; the menu is on the board behind her. Prices are in pesos: $45 means 45 pesos.",
   entities: { drink: DRINKS, food: FOODS, size: SIZES, milk: MILKS, temp: TEMPS },
 
+  // Spain twins' multiword units (docs/es/STYLE.md "Spain Spanish")
+  merges: {
+    "te apetece": { reason: "grammatical_fusion", split: "te → (to) you + apetece → appeals; one English verb = you'd like.", minimal: "Two words." },
+    "sin lactosa": { reason: "lexical_expression", split: "sin → without + lactosa → lactose; one milk = lactose-free.", minimal: "Two words." },
+    "has dicho": { reason: "grammatical_fusion", split: "has → you have + dicho → said; Spain's perfect for what was just said = you said.", minimal: "Two words." },
+    "he cambiado": { reason: "grammatical_fusion", split: "he → I have + cambiado → changed; Spain's perfect = I've changed.", minimal: "Two words." },
+    "se nos ha acabado": { reason: "lexical_expression", split: "se → itself + nos → (to) us + ha acabado → has ended; = we've run out of.", minimal: "Four words." },
+    "en total": { reason: "lexical_expression", split: "en → in + total → total; = altogether.", minimal: "Two words." },
+    "que aproveche": { reason: "lexical_expression", split: "que → that + aproveche → it may benefit; Spain, at a meal = enjoy (your meal).", minimal: "Two words." },
+    "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same; = right now.", minimal: "Two words." },
+  },
+
   grammar: {
     macros: {
       order_prefix: [
         "quisiera #h:quisiera", "me gustaria #h:quisiera", "quisiera pedir", "quisiera ordenar", "me gustaria pedir",
         "me da #h:me_da", "me das #h:me_da #tip:tu_staff", "deme #h:deme", "dame #tip:tu_staff",
         "me puede dar #h:me_puede_dar", "me podria dar #h:me_puede_dar", "me puedes dar #tip:tu_staff", "me podrias dar #tip:tu_staff",
-        "me regala", "me trae", "me sirve", "sirvame", "me pone", "pongame", "ponme #tip:tu_staff", "me pones #tip:tu_staff",
+        "me regala", "me trae", "me sirve", "sirvame", "me pone", "pongame", "ponme #tip:tu_staff", "me pones #tip:tu_staff", "me (puede | podria) poner", "me (puedes | podrias) poner #tip:tu_staff",
         "me (prepara | hace)", "me (puede | podria) (preparar | hacer)", "me (preparas | haces) #tip:tu_staff", "(puede | podria) (darme | prepararme | hacerme)",
         "quiero #h:quiero", "quiero pedir", "quiero ordenar", "queremos", "quisieramos",
         "voy a querer #h:voy_a_querer", "vamos a querer", "voy a pedir", "voy a tomar", "le pido",
@@ -471,52 +483,71 @@ export const cafe: SituationDef = {
 
   lines: {
     food_menu: [
-      t("De | comer | tenemos | conchas, | cuernitos, | donas | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies."),
+      t("De | comer | tenemos | conchas, | cuernitos, | donas | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies.",
+        { spain: t("De | comer | tenemos | conchas, | cruasanes, | dónuts | y | galletas.", "To | eat | we have | conchas, | croissants, | doughnuts | and | cookies.", "To eat, we have conchas, croissants, doughnuts and cookies.") }),
       t("Tenemos | pan dulce, | galletas | y | tortas | de | jamón.", "We have | sweet bread, | cookies | and | sandwiches | of | ham.", "We have Mexican pastries, cookies and ham tortas."),
     ],
     rec_food: [
       t("¡Las | conchas | están | recién | hechas!", "The | conchas | are | just | made!", "The conchas are freshly baked!"),
-      t("Pruebe | una | concha. | Están | muy | ricas.", "Try | a | concha. | They're | very | tasty.", "Try a concha. They're really good."),
+      t("Pruebe | una | concha. | Están | muy | ricas.", "Try | a | concha. | They're | very | tasty.", "Try a concha. They're really good.",
+        { spain: t("Prueba | una | concha. | Están | muy | ricas.", "Try | a | concha. | They're | very | tasty.", "Try a concha. They're really good.") }),
     ],
     food_pick: [
-      t("¿Qué | le | gustaría?", "What | (to) you | would please?", "What would you like?", { flags: { 2: "gustaría: “would please” – le gustaría = would you like (usted)." } }),
+      t("¿Qué | le | gustaría?", "What | (to) you | would please?", "What would you like?", { flags: { 2: "gustaría: “would please” – le gustaría = would you like (usted)." },
+        spain: t("¿Qué | te | apetece?", "What | (to) you | appeals?", "What would you like?", { flags: { 2: "apetecer: “to appeal to” – ¿qué te apetece? = what would you like? (tú)." } }) }),
     ],
     ask_food_more: [
       t("¿Gusta | algo | de | comer?", "Would you like | something | to | eat?", "Would you like something to eat?", { flags: { 0: "Mexican and very polite: “¿Gusta…?” = would you like…?" },
-        neutral: t("¿Quiere | algo | de | comer?", "Do you want | something | to | eat?", "Would you like something to eat?") }),
+        neutral: t("¿Quiere | algo | de | comer?", "Do you want | something | to | eat?", "Would you like something to eat?"),
+        spain: t("¿Quieres | algo | de | comer?", "Do you want | something | to | eat?", "Would you like something to eat?") }),
     ],
     greet_howareyou: [
-      t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?"),
-      t("¡Buenas! | ¿Cómo | le | va?", "Hi! | How | (for) you | it-goes?", "Hi! How's it going?"),
-      t("¡Hola! | ¿Qué tal | su | día?", "Hi! | How's | your | day?", "Hi! How's your day going?"),
+      t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?",
+        { spain: t("¡Buenos días! | ¿Cómo | estás?", "Good morning! | How | are you?", "Good morning! How are you?") }),
+      t("¡Buenas! | ¿Cómo | le | va?", "Hi! | How | (for) you | it-goes?", "Hi! How's it going?",
+        { spain: t("¡Buenas! | ¿Qué tal?", "Hi! | How's it going?", "Hi! How's it going?") }),
+      t("¡Hola! | ¿Qué tal | su | día?", "Hi! | How's | your | day?", "Hi! How's your day going?",
+        { spain: t("¡Hola! | ¿Qué tal | el | día?", "Hi! | How's | the | day?", "Hi! How's your day going?") }),
     ],
     greet_order: [
       t("¡Buenos días! | ¿Qué | le | sirvo?", "Good morning! | What | (to) you | I-serve?", "Good morning! What can I get you?",
-        { flags: { 2: "le: “(to) you” – the polite usted (tú: te)." } }),
-      t("¡Buenas! | ¿Qué | va | a | tomar?", "Hi! | What | are you going | to | drink?", "Hi! What would you like to drink?"),
-      t("¡{m:Bienvenido|f:Bienvenida}! | ¿Qué | le | preparo?", "Welcome! | What | (for) you | I-prepare?", "Welcome! What can I make for you?"),
-      t("¡Hola! | ¿Qué | le | sirvo | hoy?", "Hi! | What | (to) you | I-serve | today?", "Hi! What can I get you today?"),
+        { flags: { 2: "le: “(to) you” – the polite usted (tú: te)." },
+        spain: t("¡Buenos días! | ¿Qué | te | pongo?", "Good morning! | What | (for) you | I-put?", "Good morning! What can I get you?", { flags: { 3: "¿Qué te pongo?: what bars and cafés in Spain ask (poner = to serve)." } }) }),
+      t("¡Buenas! | ¿Qué | va | a | tomar?", "Hi! | What | are you going | to | drink?", "Hi! What would you like to drink?",
+        { spain: t("¡Buenas! | ¿Qué | vas | a | tomar?", "Hi! | What | are you going | to | drink?", "Hi! What would you like to drink?") }),
+      t("¡{m:Bienvenido|f:Bienvenida}! | ¿Qué | le | preparo?", "Welcome! | What | (for) you | I-prepare?", "Welcome! What can I make for you?",
+        { spain: t("¡{m:Bienvenido|f:Bienvenida}! | ¿Qué | te | preparo?", "Welcome! | What | (for) you | I-prepare?", "Welcome! What can I make for you?") }),
+      t("¡Hola! | ¿Qué | le | sirvo | hoy?", "Hi! | What | (to) you | I-serve | today?", "Hi! What can I get you today?",
+        { spain: t("¡Hola! | ¿Qué | te | pongo | hoy?", "Hi! | What | (for) you | I-put | today?", "Hi! What can I get you today?") }),
     ],
     greet_back: [
       t("¡Qué | gusto | {m:verlo|f:verla} | otra vez! | ¿Qué | le | sirvo?", "How | nice | to see you | again! | What | (to) you | I-serve?", "So nice to see you again! What can I get you?",
-        { flags: { 2: "verlo / verla: “to see you”, with lo for a man and la for a woman (usted)." } }),
-      t("¡{m:Bienvenido|f:Bienvenida} | de nuevo! | ¿Qué | va | a | querer | hoy?", "Welcome | back! | What | are you going | to | want | today?", "Welcome back! What would you like today?"),
+        { flags: { 2: "verlo / verla: “to see you”, with lo for a man and la for a woman (usted)." },
+        spain: t("¡Qué | alegría | verte | otra vez! | ¿Qué | te | pongo?", "How | nice | to see you | again! | What | (for) you | I-put?", "So nice to see you again! What can I get you?") }),
+      t("¡{m:Bienvenido|f:Bienvenida} | de nuevo! | ¿Qué | va | a | querer | hoy?", "Welcome | back! | What | are you going | to | want | today?", "Welcome back! What would you like today?",
+        { spain: t("¡{m:Bienvenido|f:Bienvenida} | de nuevo! | ¿Qué | vas | a | querer | hoy?", "Welcome | back! | What | are you going | to | want | today?", "Welcome back! What would you like today?") }),
     ],
     // said with the drink alone ("¿Lo de siempre, un latte?"): its size and milk come with the yes
     usual: [
       t("¡Hola | otra vez! | ¿Lo de siempre, | {X.np}?", "Hi | again! | The usual, | {X.np}?", "Hi again! The usual, {X.np}?"),
     ],
     ask_order: [
-      t("¿Qué | le | sirvo?", "What | (to) you | I-serve?", "What can I get you?"),
-      t("¿Qué | va | a | querer?", "What | are you going | to | want?", "What would you like?"),
-      t("Entonces, | ¿qué | le | preparo?", "So, | what | (for) you | I-prepare?", "So, what can I make for you?"),
+      t("¿Qué | le | sirvo?", "What | (to) you | I-serve?", "What can I get you?",
+        { spain: t("¿Qué | te | pongo?", "What | (for) you | I-put?", "What can I get you?") }),
+      t("¿Qué | va | a | querer?", "What | are you going | to | want?", "What would you like?",
+        { spain: t("¿Qué | vas | a | querer?", "What | are you going | to | want?", "What would you like?") }),
+      t("Entonces, | ¿qué | le | preparo?", "So, | what | (for) you | I-prepare?", "So, what can I make for you?",
+        { spain: t("Entonces, | ¿qué | te | preparo?", "So, | what | (for) you | I-prepare?", "So, what can I make for you?") }),
     ],
     ask_what_else: [
-      t("¡Claro! | ¿Qué | más | le | sirvo?", "Sure! | What | else | (to) you | I-serve?", "Sure! What else can I get you?"),
-      t("Por supuesto. | ¿Qué | más | va | a | querer?", "Of course. | What | else | are you going | to | want?", "Of course. What else would you like?"),
+      t("¡Claro! | ¿Qué | más | le | sirvo?", "Sure! | What | else | (to) you | I-serve?", "Sure! What else can I get you?",
+        { spain: t("¡Claro! | ¿Qué | más | te | pongo?", "Sure! | What | else | (for) you | I-put?", "Sure! What else can I get you?") }),
+      t("Por supuesto. | ¿Qué | más | va | a | querer?", "Of course. | What | else | are you going | to | want?", "Of course. What else would you like?",
+        { spain: t("Por supuesto. | ¿Qué | más | vas | a | querer?", "Of course. | What | else | are you going | to | want?", "Of course. What else would you like?") }),
     ],
     ask_kind_coffee: [
-      t("¡Claro! | ¿Qué | café | le gustaría?", "Sure! | What | coffee | would you like?", "Sure! What kind of coffee would you like?"),
+      t("¡Claro! | ¿Qué | café | le gustaría?", "Sure! | What | coffee | would you like?", "Sure! What kind of coffee would you like?",
+        { spain: t("¡Claro! | ¿Qué | café | te apetece?", "Sure! | What | coffee | would you like?", "Sure! What kind of coffee would you like?") }),
       t("¿Qué | tipo | de | café?", "What | kind | of | coffee?", "What kind of coffee?"),
     ],
     coffee_list: [
@@ -528,16 +559,19 @@ export const cafe: SituationDef = {
     ],
     ask_kind_pan: [
       t("¿Qué | pan | le | doy? | Hay | conchas, | cuernitos | y | donas.", "Which | pastry | (to) you | I-give? | There are | conchas, | croissants | and | doughnuts.",
-        "Which pastry would you like? There are conchas, croissants and doughnuts."),
+        "Which pastry would you like? There are conchas, croissants and doughnuts.",
+        { spain: t("¿Qué | pan | te | pongo? | Hay | conchas, | cruasanes | y | dónuts.", "Which | pastry | (for) you | I-put? | There are | conchas, | croissants | and | doughnuts.", "Which pastry would you like? There are conchas, croissants and doughnuts.") }),
     ],
     ask_size: [
       t("¿De | qué | tamaño?", "Of | what | size?", "What size?"),
-      t("¿Chico, | mediano | o | grande?", "Small, | medium | or | large?", "Small, medium or large?"),
+      t("¿Chico, | mediano | o | grande?", "Small, | medium | or | large?", "Small, medium or large?",
+        { spain: t("¿Pequeño, | mediano | o | grande?", "Small, | medium | or | large?", "Small, medium or large?") }),
     ],
     // one drink of its kind: lo / la agree with it (el latte → lo, la horchata → la)
     ask_size_it: [
       t("¿Y | de | qué | tamaño | {lo@X} | quiere?", "And | of | what | size | it | you-want?", "And what size would you like?",
-        { flags: { 4: "lo / la: “it”, agreeing with the drink (el latte → lo, la horchata → la)." } }),
+        { flags: { 4: "lo / la: “it”, agreeing with the drink (el latte → lo, la horchata → la)." },
+        spain: t("¿Y | de | qué | tamaño | {lo@X} | quieres?", "And | of | what | size | it | you-want?", "And what size would you like?", { flags: { 4: "lo / la: “it”, agreeing with the drink (el latte → lo, la horchata → la)." } }) }),
     ],
     // two drinks or more: which one she means
     ask_size_of: [
@@ -546,10 +580,12 @@ export const cafe: SituationDef = {
     ask_milk: [
       t("¿Con | qué | leche?", "With | what | milk?", "What kind of milk?"),
       t("¿Qué | leche | le | pongo? | Tenemos | entera, | deslactosada, | light | y | de | avena.", "What | milk | (for) you | I-put? | We have | whole, | lactose-free, | skim | and | of | oat.",
-        "What milk would you like? We have whole, lactose-free, skim and oat."),
+        "What milk would you like? We have whole, lactose-free, skim and oat.",
+        { spain: t("¿Qué | leche | te | pongo? | Tenemos | entera, | sin lactosa, | desnatada | y | de | avena.", "What | milk | (for) you | I-put? | We have | whole, | lactose-free, | skim | and | of | oat.", "What milk would you like? We have whole, lactose-free, skim and oat.") }),
     ],
     milk_which: [
-      t("¿Qué | leche | prefiere?", "What | milk | do you prefer?", "Which milk would you prefer?"),
+      t("¿Qué | leche | prefiere?", "What | milk | do you prefer?", "Which milk would you prefer?",
+        { spain: t("¿Qué | leche | prefieres?", "What | milk | do you prefer?", "Which milk would you prefer?") }),
     ],
     ask_whole_ok: [
       t("¿Con | leche | entera | está bien?", "With | milk | whole | is it okay?", "Is whole milk okay?"),
@@ -560,12 +596,15 @@ export const cafe: SituationDef = {
     // one drink of its kind (two lattes would be "los… fríos")
     ask_temp_it: [
       t("¿{lo@X} | quiere | caliente | o | {frío@X}?", "It | you-want | hot | or | iced?", "Would you like it hot or iced?",
-        { flags: { 0: "lo: “it”, agreeing with the drink (el latte, el moka → lo; a feminine drink would take la)." } }),
+        { flags: { 0: "lo: “it”, agreeing with the drink (el latte, el moka → lo; a feminine drink would take la)." },
+        spain: t("¿{lo@X} | quieres | caliente | o | {frío@X}?", "It | you-want | hot | or | iced?", "Would you like it hot or iced?", { flags: { 0: "lo: “it”, agreeing with the drink (el latte, el moka → lo; a feminine drink would take la)." } }) }),
     ],
     ask_more: [
       t("¿Algo | más?", "Anything | else?", "Anything else?"),
-      t("¿Le | sirvo | algo | más?", "(To) you | I-serve | something | more?", "Can I get you anything else?"),
-      t("¿Sería todo?", "Would that be all?", "Will that be all?", { flags: { 0: "What staff ask to close an order, all over Latin America." } }),
+      t("¿Le | sirvo | algo | más?", "(To) you | I-serve | something | more?", "Can I get you anything else?",
+        { spain: t("¿Te | pongo | algo | más?", "(For) you | I-put | something | more?", "Can I get you anything else?") }),
+      t("¿Sería todo?", "Would that be all?", "Will that be all?", { flags: { 0: "What staff ask to close an order, all over Latin America." },
+        spain: t("¿Eso | es | todo?", "That | is | all?", "Will that be all?") }),
     ],
     ask_dine: [
       t("¿Para aquí | o | para llevar?", "For here | or | to go?", "For here or to go?"),
@@ -573,20 +612,23 @@ export const cafe: SituationDef = {
     ],
     ask_name: [
       t("¿A nombre de | quién?", "Under the name of | who?", "What's the name for the order?"),
-      t("¿Me | da | su | nombre | para | el | pedido?", "(To) me | you-give | your | name | for | the | order?", "Can I get a name for the order?"),
+      t("¿Me | da | su | nombre | para | el | pedido?", "(To) me | you-give | your | name | for | the | order?", "Can I get a name for the order?",
+        { spain: t("¿Me | dices | tu | nombre | para | el | pedido?", "(To) me | you-tell | your | name | for | the | order?", "Can I get a name for the order?") }),
     ],
     name_thanks: [
       t("¡Gracias! | Lo | escribo | en | el | vaso.", "Thanks! | It | I'll-write | on | the | cup.", "Thanks! I'll write it on the cup."),
       t("Perfecto, | gracias.", "Perfect, | thanks.", "Great, thanks!"),
     ],
     name_again: [
-      t("Perdón, | ¿cómo | dijo | que | se llama?", "Sorry, | how | did you say | that | you're called?", "Sorry, what was the name?"),
+      t("Perdón, | ¿cómo | dijo | que | se llama?", "Sorry, | how | did you say | that | you're called?", "Sorry, what was the name?",
+        { spain: t("Perdona, | ¿cómo | has dicho | que | te llamas?", "Sorry, | how | did you say | that | you're called?", "Sorry, what was the name?") }),
     ],
     ack_order: [
       t("¡Claro!", "Sure!", "Sure!"),
       t("¡Buena | elección!", "Good | choice!", "Great choice!"),
       t("Perfecto.", "Perfect.", "Perfect."),
-      t("¡Con gusto!", "My pleasure!", "My pleasure!"),
+      t("¡Con gusto!", "My pleasure!", "My pleasure!",
+        { spain: t("¡Marchando!", "Coming up!", "Coming right up!", { flags: { 0: "Spain: what bar and café staff say as an order goes in." } }) }),
     ],
     ack: [
       t("Muy | bien.", "Very | good.", "Okay."),
@@ -599,7 +641,8 @@ export const cafe: SituationDef = {
     say_total: [
       t("Son | {$price}.", "That's | {$price}.", "That's {$price}."),
       t("Serían | {$price}.", "That would be | {$price}.", "That'll be {$price}."),
-      t("Su | total | es | de | {$price}.", "Your | total | is | of | {$price}.", "Your total is {$price}."),
+      t("Su | total | es | de | {$price}.", "Your | total | is | of | {$price}.", "Your total is {$price}.",
+        { spain: t("En total | son | {$price}.", "In total | it's | {$price}.", "That's {$price} in total.") }),
     ],
     pre_total: [
       t("Muy | bien.", "Very | good.", "Alright."),
@@ -608,24 +651,30 @@ export const cafe: SituationDef = {
     ],
     ask_pay_method: [
       t("¿Efectivo | o | tarjeta?", "Cash | or | card?", "Cash or card?"),
-      t("¿Cómo | va | a | pagar?", "How | are you going | to | pay?", "How would you like to pay?"),
+      t("¿Cómo | va | a | pagar?", "How | are you going | to | pay?", "How would you like to pay?",
+        { spain: t("¿Cómo | vas | a | pagar?", "How | are you going | to | pay?", "How would you like to pay?") }),
     ],
     card_tap: [
-      t("Claro, | acerque | su | tarjeta | aquí.", "Sure, | bring close | your | card | here.", "Sure, just tap your card here."),
-      t("Por supuesto. | Acerque | la | tarjeta | a | la | terminal.", "Of course. | Bring close | the | card | to | the | terminal.", "Of course. Tap your card on the card reader."),
+      t("Claro, | acerque | su | tarjeta | aquí.", "Sure, | bring close | your | card | here.", "Sure, just tap your card here.",
+        { spain: t("Claro, | acerca | tu | tarjeta | aquí.", "Sure, | bring close | your | card | here.", "Sure, just tap your card here.") }),
+      t("Por supuesto. | Acerque | la | tarjeta | a | la | terminal.", "Of course. | Bring close | the | card | to | the | terminal.", "Of course. Tap your card on the card reader.",
+        { spain: t("Por supuesto. | Acerca | la | tarjeta | al | datáfono.", "Of course. | Bring close | the | card | to the | card reader.", "Of course. Tap your card on the card reader.", { flags: { 5: "Spain: el datáfono = the card reader." } }) }),
     ],
     card_later: [
       t("Claro, | con | tarjeta | sí | se puede.", "Sure, | with | card | yes | it's possible.", "Sure, card is fine."),
     ],
     phone_ok: [
-      t("¡Claro! | Acerque | su | celular | aquí.", "Sure! | Bring close | your | phone | here.", "Of course! Just hold your phone here."),
+      t("¡Claro! | Acerque | su | celular | aquí.", "Sure! | Bring close | your | phone | here.", "Of course! Just hold your phone here.",
+        { spain: t("¡Claro! | Acerca | el | móvil | aquí.", "Sure! | Bring close | the | phone | here.", "Of course! Just hold your phone here.") }),
     ],
     cash_ok: [
       t("Claro, | en efectivo | está bien.", "Sure, | in cash | is fine.", "Sure, cash is fine."),
     ],
     change_back: [
-      t("Aquí tiene | su | cambio.", "Here's | your | change.", "Here's your change."),
-      t("Y | aquí tiene | su | cambio.", "And | here's | your | change.", "And here's your change."),
+      t("Aquí tiene | su | cambio.", "Here's | your | change.", "Here's your change.",
+        { spain: t("Aquí tienes | tu | cambio.", "Here's | your | change.", "Here's your change.") }),
+      t("Y | aquí tiene | su | cambio.", "And | here's | your | change.", "And here's your change.",
+        { spain: t("Y | aquí tienes | tu | cambio.", "And | here's | your | change.", "And here's your change.") }),
     ],
     thanks_tip: [
       t("¡Ay, | muchas | gracias!", "Oh, | many | thanks!", "Oh, thank you so much!"),
@@ -636,26 +685,36 @@ export const cafe: SituationDef = {
     ],
     ask_receipt: [
       t("¿Quiere | su | ticket?", "Do you want | your | receipt?", "Would you like a receipt?",
-        { flags: { 2: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Quiere | su | recibo?", "Do you want | your | receipt?", "Would you like a receipt?") }),
+        { flags: { 2: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Quiere | su | recibo?", "Do you want | your | receipt?", "Would you like a receipt?"),
+        spain: t("¿Quieres | el | ticket?", "Do you want | the | receipt?", "Would you like a receipt?", { flags: { 2: "Spain and Mexico: a receipt is a ticket." } }) }),
       t("¿Le | doy | su | ticket?", "(To) you | I-give | your | receipt?", "Do you need a receipt?",
-        { flags: { 3: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Le | doy | su | recibo?", "(To) you | I-give | your | receipt?", "Do you need a receipt?") }),
+        { flags: { 3: "Mexican: a receipt is a ticket. Elsewhere: recibo." }, neutral: t("¿Le | doy | su | recibo?", "(To) you | I-give | your | receipt?", "Do you need a receipt?"),
+        spain: t("¿Te | doy | el | ticket?", "(To) you | I-give | the | receipt?", "Do you need a receipt?") }),
     ],
-    receipt_here: [t("Aquí tiene | su | ticket.", "Here's | your | receipt.", "Here's your receipt.", { neutral: t("Aquí tiene | su | recibo.", "Here's | your | receipt.", "Here's your receipt.") })],
+    receipt_here: [t("Aquí tiene | su | ticket.", "Here's | your | receipt.", "Here's your receipt.", { neutral: t("Aquí tiene | su | recibo.", "Here's | your | receipt.", "Here's your receipt."),
+        spain: t("Aquí tienes | el | ticket.", "Here's | the | receipt.", "Here's your receipt.") })],
     no_problem: [t("No hay problema.", "No problem.", "No problem."), t("Sin problema.", "No problem.", "No problem.")],
     closing_here: [
-      t("¡Perfecto! | Siéntese | y | se lo | llevo.", "Perfect! | Have a seat | and | it to you | I'll-bring.", "Perfect! Have a seat, and I'll bring it over."),
-      t("¡Muy | bien! | Se lo | llevo | a | su | mesa.", "Very | good! | It to you | I'll-bring | to | your | table.", "Great! I'll bring it to your table."),
+      t("¡Perfecto! | Siéntese | y | se lo | llevo.", "Perfect! | Have a seat | and | it to you | I'll-bring.", "Perfect! Have a seat, and I'll bring it over.",
+        { spain: t("¡Perfecto! | Siéntate | y | te lo | llevo.", "Perfect! | Have a seat | and | it to you | I'll-bring.", "Perfect! Have a seat, and I'll bring it over.") }),
+      t("¡Muy | bien! | Se lo | llevo | a | su | mesa.", "Very | good! | It to you | I'll-bring | to | your | table.", "Great! I'll bring it to your table.",
+        { spain: t("¡Muy | bien! | Te lo | llevo | a | la | mesa.", "Very | good! | It to you | I'll-bring | to | the | table.", "Great! I'll bring it to your table.") }),
     ],
     closing_togo: [
       t("¡Ahorita | sale! | Se lo | entrego | en | la | barra.", "Right now | it-comes-out! | It to you | I'll-hand | at | the | counter.", "Coming right up! I'll hand it to you at the counter.",
         { flags: { 0: "Mexican: ahorita = right now (or in a little while)." },
-          neutral: t("¡Enseguida | sale! | Se lo | entrego | en | la | barra.", "Right away | it-comes-out! | It to you | I'll-hand | at | the | counter.", "Coming right up! I'll hand it to you at the counter.") }),
-      t("¡Perfecto! | En | un | momento | se lo | entrego.", "Perfect! | In | a | moment | it to you | I'll-hand.", "Perfect! It'll be ready in a moment."),
+          neutral: t("¡Enseguida | sale! | Se lo | entrego | en | la | barra.", "Right away | it-comes-out! | It to you | I'll-hand | at | the | counter.", "Coming right up! I'll hand it to you at the counter."),
+        spain: t("¡Enseguida | sale! | Te lo | doy | en | la | barra.", "Right away | it-comes-out! | It to you | I'll-give | at | the | counter.", "Coming right up! I'll hand it to you at the counter.") }),
+      t("¡Perfecto! | En | un | momento | se lo | entrego.", "Perfect! | In | a | moment | it to you | I'll-hand.", "Perfect! It'll be ready in a moment.",
+        { spain: t("¡Perfecto! | En | un | momento | te lo | doy.", "Perfect! | In | a | moment | it to you | I'll-give.", "Perfect! It'll be ready in a moment.") }),
     ],
     bye_after: [
-      t("¡Que | lo | disfrute!", "(I hope) | it | you-enjoy!", "Enjoy!"),
-      t("¡Buen provecho!", "Enjoy your meal!", "Enjoy!"),
-      t("¡Que | tenga | buen día!", "(I hope) | you have | a good day!", "Have a great day!"),
+      t("¡Que | lo | disfrute!", "(I hope) | it | you-enjoy!", "Enjoy!",
+        { spain: t("¡Que | lo | disfrutes!", "(I hope) | it | you-enjoy!", "Enjoy!") }),
+      t("¡Buen provecho!", "Enjoy your meal!", "Enjoy!",
+        { spain: t("¡Que aproveche!", "Enjoy your meal!", "Enjoy!") }),
+      t("¡Que | tenga | buen día!", "(I hope) | you have | a good day!", "Have a great day!",
+        { spain: t("¡Que | tengas | buen día!", "(I hope) | you have | a good day!", "Have a great day!") }),
     ],
     menu_line: [
       t("Tenemos | café, | té, | chocolate | y | pan dulce.", "We have | coffee, | tea, | hot chocolate | and | sweet bread.", "We have coffee, tea, hot chocolate and Mexican pastries."),
@@ -663,19 +722,23 @@ export const cafe: SituationDef = {
         { flags: { 5: "Mexican: pizarrón = the board. Elsewhere: pizarra." }, neutral: t("El | menú | está | en | la | pizarra.", "The | menu | is | on | the | board.", "The menu is on the board.") }),
     ],
     size_list: [
-      t("Tenemos | chico, | mediano | y | grande.", "We have | small, | medium | and | large.", "We have small, medium and large."),
+      t("Tenemos | chico, | mediano | y | grande.", "We have | small, | medium | and | large.", "We have small, medium and large.",
+        { spain: t("Tenemos | pequeño, | mediano | y | grande.", "We have | small, | medium | and | large.", "We have small, medium and large.") }),
     ],
     milk_list: [
       t("Tenemos | leche | entera, | deslactosada, | light, | de | avena, | de | almendra | y | de | soya.", "We have | milk | whole, | lactose-free, | skim, | of | oat, | of | almond | and | of | soy.",
-        "We have whole, lactose-free, skim, oat, almond and soy milk."),
+        "We have whole, lactose-free, skim, oat, almond and soy milk.",
+        { spain: t("Tenemos | leche | entera, | sin lactosa, | desnatada, | de | avena, | de | almendra | y | de | soja.", "We have | milk | whole, | lactose-free, | skim, | of | oat, | of | almond | and | of | soy.", "We have whole, lactose-free, skim, oat, almond and soy milk.") }),
     ],
     food_list: [
       t("Tenemos | conchas, | cuernitos, | donas, | galletas | y | tortas | de | jamón.", "We have | conchas, | croissants, | doughnuts, | cookies | and | sandwiches | of | ham.",
-        "We have conchas, croissants, doughnuts, cookies and ham tortas."),
+        "We have conchas, croissants, doughnuts, cookies and ham tortas.",
+        { spain: t("Tenemos | conchas, | cruasanes, | dónuts, | galletas | y | tortas | de | jamón.", "We have | conchas, | croissants, | doughnuts, | cookies | and | sandwiches | of | ham.", "We have conchas, croissants, doughnuts, cookies and ham tortas.") }),
     ],
     recommend: [
       t("Nuestro | café | de | olla | es | muy | famoso.", "Our | coffee | from | pot | is | very | famous.", "Our café de olla is very popular."),
-      t("¡Pruebe | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite."),
+      t("¡Pruebe | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite.",
+        { spain: t("¡Prueba | la | horchata! | Es | mi | favorita.", "Try | the | horchata! | It's | my | favorite.", "Try the horchata! It's my favorite.") }),
       t("Las | conchas | están | recién | hechas.", "The | conchas | are | just | made.", "The conchas are fresh out of the oven."),
     ],
     // prices without the item's name, so the voices can say every one ({$amount}: domains)
@@ -705,7 +768,8 @@ export const cafe: SituationDef = {
       t("¡Sí | tenemos!", "Yes | we have!", "Sure do!"),
     ],
     offer_food: [
-      t("¿Le | doy | {X.np}?", "(To) you | I-give | {X.np}?", "Would you like {X.np}?"),
+      t("¿Le | doy | {X.np}?", "(To) you | I-give | {X.np}?", "Would you like {X.np}?",
+        { spain: t("¿Te | pongo | {X.np}?", "(For) you | I-put | {X.np}?", "Would you like {X.np}?") }),
     ],
     have_no: [
       t("Perdón, | eso | no lo tenemos.", "Sorry, | that | we don't have it.", "Sorry, we don't have that."),
@@ -730,40 +794,49 @@ export const cafe: SituationDef = {
       t("Es | la | puerta | del | fondo, | a la izquierda.", "It's | the | door | at the | back, | on the left.", "It's the door at the back, on the left."),
     ],
     water: [
-      t("¡Claro! | Aquí tiene | un | vaso | de | agua.", "Sure! | Here's | a | glass | of | water.", "Sure! Here's a glass of water."),
+      t("¡Claro! | Aquí tiene | un | vaso | de | agua.", "Sure! | Here's | a | glass | of | water.", "Sure! Here's a glass of water.",
+        { spain: t("¡Claro! | Aquí tienes | un | vaso | de | agua.", "Sure! | Here's | a | glass | of | water.", "Sure! Here's a glass of water.") }),
     ],
     sugar: [
       t("El | azúcar | está | en | la | barra, | junto | a | la | ventana.", "The | sugar | is | on | the | counter, | next | to | the | window.", "The sugar is on the counter by the window."),
     ],
     reject_ok: [
-      t("¡No hay problema! | ¿Qué | le | sirvo | entonces?", "No problem! | What | (to) you | I-serve | then?", "No problem! What would you like instead?"),
+      t("¡No hay problema! | ¿Qué | le | sirvo | entonces?", "No problem! | What | (to) you | I-serve | then?", "No problem! What would you like instead?",
+        { spain: t("¡No hay problema! | ¿Qué | te | pongo | entonces?", "No problem! | What | (for) you | I-put | then?", "No problem! What would you like instead?") }),
     ],
     removed: [
       t("Muy | bien, | sin | {X}.", "Very | good, | without | {X}.", "Okay, no {X}."),
     ],
     changed: [
       t("Claro, | sin problema.", "Sure, | no problem.", "Sure, no problem."),
-      t("Listo, | ya | lo | cambié.", "Done, | already | it | I-changed.", "Okay, I changed it."),
+      t("Listo, | ya | lo | cambié.", "Done, | already | it | I-changed.", "Okay, I changed it.",
+        { spain: t("Listo, | ya | lo | he cambiado.", "Done, | already | it | I've-changed.", "Okay, I changed it.") }),
     ],
     out_of_oat: [
-      t("¡Ay, | perdón! | Hoy | se nos acabó | la | leche | de | avena.", "Oh, | sorry! | Today | we ran out of | the | milk | of | oat.", "Oh, sorry, we're out of oat milk today."),
+      t("¡Ay, | perdón! | Hoy | se nos acabó | la | leche | de | avena.", "Oh, | sorry! | Today | we ran out of | the | milk | of | oat.", "Oh, sorry, we're out of oat milk today.",
+        { spain: t("¡Ay, | perdona! | Hoy | se nos ha acabado | la | leche | de | avena.", "Oh, | sorry! | Today | we've run out of | the | milk | of | oat.", "Oh, sorry, we're out of oat milk today.") }),
     ],
     offer_alt_milk: [
-      t("¿Le parece | bien | de | almendra | o | de | soya?", "Does it seem to you | fine | of | almond | or | of | soy?", "Would almond or soy milk be okay?"),
+      t("¿Le parece | bien | de | almendra | o | de | soya?", "Does it seem to you | fine | of | almond | or | of | soy?", "Would almond or soy milk be okay?",
+        { spain: t("¿Te parece | bien | de | almendra | o | de | soja?", "Does it seem to you | fine | of | almond | or | of | soy?", "Would almond or soy milk be okay?") }),
     ],
     card_down: [
       t("Perdón, | la | terminal | no funciona | ahorita.", "Sorry, | the | card reader | doesn't work | right now.", "Sorry, our card machine is down right now.",
         { flags: { 4: "Mexican: ahorita = right now." },
-          neutral: t("Perdón, | la | terminal | no funciona | en | este | momento.", "Sorry, | the | card reader | doesn't work | at | this | moment.", "Sorry, our card machine is down right now.") }),
+          neutral: t("Perdón, | la | terminal | no funciona | en | este | momento.", "Sorry, | the | card reader | doesn't work | at | this | moment.", "Sorry, our card machine is down right now."),
+        spain: t("Perdona, | el | datáfono | no funciona | ahora mismo.", "Sorry, | the | card reader | doesn't work | right now.", "Sorry, our card machine is down right now.") }),
     ],
     card_back: [
-      t("¡Ah, | espere, | ya | funciona!", "Oh, | wait, | already | it-works!", "Oh wait, it's working again!"),
+      t("¡Ah, | espere, | ya | funciona!", "Oh, | wait, | already | it-works!", "Oh wait, it's working again!",
+        { spain: t("¡Ah, | espera, | ya | funciona!", "Oh, | wait, | already | it-works!", "Oh wait, it's working again!") }),
     ],
     ask_warm: [
-      t("¿Se la | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "se la: “it for you” – la is the torta." } }),
+      t("¿Se la | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "se la: “it for you” – la is the torta." },
+        spain: t("¿Te la | caliento?", "For you it | I-warm-up?", "Would you like it warmed up?", { flags: { 0: "te la: “it for you” – la is the torta." } }) }),
     ],
     bag: [
-      t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go."),
+      t("Claro, | aquí tiene.", "Sure, | here you go.", "Sure, here you go.",
+        { spain: t("Claro, | aquí tienes.", "Sure, | here you go.", "Sure, here you go.") }),
     ],
     // "¡Qué rico!" at the goodbye
     glad: [
@@ -818,14 +891,18 @@ export const cafe: SituationDef = {
       lt: "Order a drink", slot: "drink", examples: ["latte", "cafe_de_olla", "horchata", "cappuccino"],
       items: [
         { id: "quisiera", s: t("Quisiera | {X.np}, | por favor.", "I'd like | {X.np}, | please.", "I'd like {X.np}, please."), register: "polite" },
-        { id: "me_da", s: t("¿Me | da | {X.np}, | por favor?", "(To) me | you-give | {X.np}, | please?", "Can I have {X.np}, please?"),
+        { id: "me_da", s: t("¿Me | da | {X.np}, | por favor?", "(To) me | you-give | {X.np}, | please?", "Can I have {X.np}, please?",
+        { spain: t("¿Me | pones | {X.np}, | por favor?", "(For) me | you-put | {X.np}, | please?", "Can I have {X.np}, please?") }),
           note: "Very common in Mexico: “¿Me da…?” – literally “do you give me…?”" },
         { id: "quiero", s: t("Quiero | {X.np}, | por favor.", "I want | {X.np}, | please.", "I'd like {X.np}, please."), note: "With “por favor” this is perfectly polite in Spanish." },
         { id: "please_only", s: t("{X.np}, | por favor.", "{X.np}, | please.", "{X.np}, please.") },
-        { id: "voy_a_querer", s: t("Voy | a | querer | {X.np}.", "I'm going | to | want | {X.np}.", "I'll have {X.np}."), note: "How Mexicans often order: “Voy a querer…” (I'll have…)." },
-        { id: "me_puede_dar", s: t("¿Me | puede | dar | {X.np}?", "(To) me | can you | give | {X.np}?", "Could I have {X.np}?"), register: "polite" },
+        { id: "voy_a_querer", s: t("Voy | a | querer | {X.np}.", "I'm going | to | want | {X.np}.", "I'll have {X.np}.",
+        { spain: t("Voy | a | tomar | {X.np}.", "I'm going | to | have | {X.np}.", "I'll have {X.np}.") }), note: "How Mexicans often order: “Voy a querer…” (I'll have…)." },
+        { id: "me_puede_dar", s: t("¿Me | puede | dar | {X.np}?", "(To) me | can you | give | {X.np}?", "Could I have {X.np}?",
+        { spain: t("¿Me | puedes | poner | {X.np}?", "(For) me | can you | put | {X.np}?", "Could I have {X.np}?") }), register: "polite" },
         { id: "para_mi", s: t("Para | mí, | {X.np}.", "For | me, | {X.np}.", "For me, {X.np}."), register: "casual" },
-        { id: "deme", s: t("Deme | {X.np}, | por favor.", "Give me | {X.np}, | please.", "I'll take {X.np}, please."), note: "Fine with “por favor”; dame is the tú form, for friends." },
+        { id: "deme", s: t("Deme | {X.np}, | por favor.", "Give me | {X.np}, | please.", "I'll take {X.np}, please.",
+        { spain: t("Ponme | {X.np}, | por favor.", "Put me | {X.np}, | please.", "I'll take {X.np}, please.") }), note: "Fine with “por favor”; dame is the tú form, for friends." },
         { id: "cup_of", s: t("Quisiera | una | taza | de | {X}, | por favor.", "I'd like | a | cup | of | {X}, | please.", "I'd like a cup of {X}, please."),
           only: (e) => !!e.attrs?.cup && !e.en.includes(" | ") },
       ],
@@ -833,10 +910,12 @@ export const cafe: SituationDef = {
     order_food: {
       lt: "Order something to eat", slot: "food", examples: ["concha", "croissant", "torta"],
       items: [
-        { id: "food_also", s: t("¿Me | da | también | {X.np}?", "(To) me | you-give | also | {X.np}?", "Can I also get {X.np}?") },
+        { id: "food_also", s: t("¿Me | da | también | {X.np}?", "(To) me | you-give | also | {X.np}?", "Can I also get {X.np}?",
+        { spain: t("¿Me | pones | también | {X.np}?", "(For) me | you-put | also | {X.np}?", "Can I also get {X.np}?") }) },
         { id: "food_and", s: t("Y | {X.np}, | por favor.", "And | {X.np}, | please.", "And {X.np}, please.") },
         { id: "food_id_also", s: t("También | quisiera | {X.np}.", "Also | I'd like | {X.np}.", "I'd also like {X.np}.") },
-        { id: "voy_a_querer", s: t("Voy | a | querer | {X.np}.", "I'm going | to | want | {X.np}.", "I'll have {X.np}.") },
+        { id: "voy_a_querer", s: t("Voy | a | querer | {X.np}.", "I'm going | to | want | {X.np}.", "I'll have {X.np}.",
+        { spain: t("Voy | a | tomar | {X.np}.", "I'm going | to | have | {X.np}.", "I'll have {X.np}.") }) },
       ],
     },
     kind_tea: {
@@ -850,7 +929,8 @@ export const cafe: SituationDef = {
       lt: "Choose a pastry", slot: "food", examples: ["concha", "croissant", "donut"],
       items: [
         { id: "kind_please", s: t("{X.np}, | por favor.", "{X.np}, | please.", "{X.np}, please."), only: (e) => e.attrs?.kind === "pan" },
-        { id: "me_da", s: t("¿Me | da | {X.np}?", "(To) me | you-give | {X.np}?", "Can I have {X.np}?"), only: (e) => e.attrs?.kind === "pan" },
+        { id: "me_da", s: t("¿Me | da | {X.np}?", "(To) me | you-give | {X.np}?", "Can I have {X.np}?",
+        { spain: t("¿Me | pones | {X.np}?", "(For) me | you-put | {X.np}?", "Can I have {X.np}?") }), only: (e) => e.attrs?.kind === "pan" },
       ],
     },
     more_food: {
@@ -858,7 +938,8 @@ export const cafe: SituationDef = {
       items: [
         { id: "food_yes", s: t("Sí, | {X.np}, | por favor.", "Yes, | {X.np}, | please.", "Yes, {X.np}, please.") },
         { id: "food_id_also", s: t("También | quisiera | {X.np}.", "Also | I'd like | {X.np}.", "I'd also like {X.np}.") },
-        { id: "food_also", s: t("¿Me | da | también | {X.np}?", "(To) me | you-give | also | {X.np}?", "Can I also get {X.np}?") },
+        { id: "food_also", s: t("¿Me | da | también | {X.np}?", "(To) me | you-give | also | {X.np}?", "Can I also get {X.np}?",
+        { spain: t("¿Me | pones | también | {X.np}?", "(For) me | you-put | also | {X.np}?", "Can I also get {X.np}?") }) },
       ],
     },
     size: {
@@ -867,7 +948,8 @@ export const cafe: SituationDef = {
         { id: "size_please", s: t("{X}, | por favor.", "{X}, | please.", "{X}, please.") },
         { id: "size_fine", s: t("{X} | está bien.", "{X} | is fine.", "{X} is fine.") },
         { id: "make_it", s: t("Mejor | {X}.", "Better | {X}.", "Make it {X}."), register: "casual" },
-        { id: "q_sizes", s: t("¿Qué | tamaños | tiene?", "What | sizes | do you have?", "What sizes do you have?") },
+        { id: "q_sizes", s: t("¿Qué | tamaños | tiene?", "What | sizes | do you have?", "What sizes do you have?",
+        { spain: t("¿Qué | tamaños | tienes?", "What | sizes | do you have?", "What sizes do you have?") }) },
       ],
     },
     milk: {
@@ -875,7 +957,8 @@ export const cafe: SituationDef = {
       items: [
         { id: "milk_please", s: t("{X}, | por favor.", "{X}, | please.", "{X}, please.") },
         { id: "milk_with", s: t("Con | {X}, | por favor.", "With | {X}, | please.", "With {X}, please.") },
-        { id: "q_have", s: t("¿Tiene | {X}?", "Do you have | {X}?", "Do you have {X}?") },
+        { id: "q_have", s: t("¿Tiene | {X}?", "Do you have | {X}?", "Do you have {X}?",
+        { spain: t("¿Tienes | {X}?", "Do you have | {X}?", "Do you have {X}?") }) },
         { id: "milk_none", s: t("Sin | leche, | gracias.", "Without | milk, | thanks.", "No milk, thanks.") },
         { id: "milk_regular", s: t("Leche | normal.", "Milk | regular.", "Just regular milk.") },
       ],
@@ -917,21 +1000,29 @@ export const cafe: SituationDef = {
         { id: "pay_card", s: t("¿Puedo | pagar | con | tarjeta?", "Can I | pay | with | card?", "Can I pay by card?") },
         { id: "pay_card_short", s: t("Con | tarjeta, | por favor.", "With | card, | please.", "Card, please.") },
         { id: "pay_cash", s: t("Pago | en efectivo.", "I'll-pay | in cash.", "I'll pay in cash.") },
-        { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
-        { id: "apple_pay", s: t("¿Aceptan | Apple Pay?", "Do you accept | Apple Pay?", "Do you take Apple Pay?") },
-        { id: "keep_change", s: t("Quédese | con | el | cambio.", "Keep | with | the | change.", "Keep the change.") },
+        { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.",
+        { spain: t("Aquí tienes.", "Here you go.", "Here you go.") }) },
+        { id: "apple_pay", s: t("¿Aceptan | Apple Pay?", "Do you accept | Apple Pay?", "Do you take Apple Pay?",
+        { spain: t("¿Aceptáis | Apple Pay?", "Do you (all) accept | Apple Pay?", "Do you take Apple Pay?") }) },
+        { id: "keep_change", s: t("Quédese | con | el | cambio.", "Keep | with | the | change.", "Keep the change.",
+        { spain: t("Quédate | con | el | cambio.", "Keep | with | the | change.", "Keep the change.") }) },
       ],
     },
     ask: {
       lt: "Ask about the menu and the café",
       items: [
-        { id: "q_recommend", s: t("¿Qué | me | recomienda?", "What | (to) me | you-recommend?", "What do you recommend?") },
-        { id: "q_kinds", s: t("¿Qué | tipos | de | café | tienen?", "What | kinds | of | coffee | do you have?", "What kinds of coffee do you have?") },
-        { id: "q_menu", s: t("¿Qué | tienen?", "What | do you have?", "What do you have?") },
-        { id: "q_wifi", s: t("¿Tienen | wifi?", "Do you have | Wi-Fi?", "Do you have Wi-Fi?") },
+        { id: "q_recommend", s: t("¿Qué | me | recomienda?", "What | (to) me | you-recommend?", "What do you recommend?",
+        { spain: t("¿Qué | me | recomiendas?", "What | (to) me | you-recommend?", "What do you recommend?") }) },
+        { id: "q_kinds", s: t("¿Qué | tipos | de | café | tienen?", "What | kinds | of | coffee | do you have?", "What kinds of coffee do you have?",
+        { spain: t("¿Qué | tipos | de | café | tenéis?", "What | kinds | of | coffee | do you (all) have?", "What kinds of coffee do you have?") }) },
+        { id: "q_menu", s: t("¿Qué | tienen?", "What | do you have?", "What do you have?",
+        { spain: t("¿Qué | tenéis?", "What | do you (all) have?", "What do you have?") }) },
+        { id: "q_wifi", s: t("¿Tienen | wifi?", "Do you have | Wi-Fi?", "Do you have Wi-Fi?",
+        { spain: t("¿Tenéis | wifi?", "Do you (all) have | Wi-Fi?", "Do you have Wi-Fi?") }) },
         { id: "q_password", s: t("¿Cuál | es | la | contraseña | del | wifi?", "What | is | the | password | of the | Wi-Fi?", "What's the Wi-Fi password?") },
         { id: "q_restroom", s: t("¿Dónde | está | el | baño?", "Where | is | the | restroom?", "Where's the restroom?") },
-        { id: "q_water", s: t("¿Me | da | un | vaso | de | agua?", "(To) me | you-give | a | glass | of | water?", "Could I get a glass of water?") },
+        { id: "q_water", s: t("¿Me | da | un | vaso | de | agua?", "(To) me | you-give | a | glass | of | water?", "Could I get a glass of water?",
+        { spain: t("¿Me | pones | un | vaso | de | agua?", "(For) me | you-put | a | glass | of | water?", "Could I get a glass of water?") }) },
       ],
     },
     ask_price: {
