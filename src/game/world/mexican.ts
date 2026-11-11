@@ -228,14 +228,25 @@ export function kiosk(parts: Part[], col: Colliders, atlas: SignAtlas, x: number
 
 /** Palapas on the sand: a thatched umbrella on a wooden pole, with two wooden loungers in front of it (towards the
  *  sea) and a towel on one. */
-export function palapas(parts: Part[], col: Colliders, spots: [number, number][]) {
+export function palapas(parts: Part[], col: Colliders, spots: [number, number][], thatch = false): [number, number][] {
   const r = rand(91);
   const towels = ["#e4007c", "#00a6a6", "#f6a800", "#ff5a36", "#1f6fd1"];
+  const loungers: [number, number][] = [];
   spots.forEach(([x, z], i) => {
     parts.push([new THREE.CylinderGeometry(0.09, 0.11, 2.7, 6, 1, true).translate(x, 1.35, z), WOOD]);
     parts.push([new THREE.ConeGeometry(2.1, 1.05, 10).translate(x, 3.05, z), THATCH]);
     parts.push([new THREE.CylinderGeometry(2.1, 2.2, 0.3, 10, 1, true).translate(x, 2.4, z), THATCH_DARK]);
     parts.push([new THREE.ConeGeometry(0.4, 0.4, 8).translate(x, 3.72, z), THATCH_DARK]);
+    if (thatch) {
+      // (graphics round 4) the thatch in layers, a second, darker skirt of palm leaves over the first, and a ragged
+      // fringe of leaf ends round its edge
+      parts.push([new THREE.ConeGeometry(1.55, 0.75, 10, 1, true).rotateY(0.3).translate(x, 3.3, z), THATCH_DARK]);
+      parts.push([new THREE.ConeGeometry(1.0, 0.5, 9, 1, true).rotateY(0.6).translate(x, 3.55, z), THATCH]);
+      for (let k = 0; k < 18; k++) {
+        const a = (k / 18) * Math.PI * 2 + (k % 2) * 0.08, rr = 2.12 + (k % 3) * 0.05;
+        parts.push([new THREE.ConeGeometry(0.17, 0.4 + (k % 3) * 0.1, 4).rotateX(Math.PI).translate(x + Math.cos(a) * rr, 2.12 - (k % 3) * 0.05, z + Math.sin(a) * rr), k % 2 ? THATCH : THATCH_DARK]);
+      }
+    }
     col.addCircle(x, z, 0.16);
     for (const s of [-1, 1]) {
       const lx = x + s * 0.95, lz = z - 0.9; // in front of the pole, towards the sea (-z)
@@ -244,8 +255,10 @@ export function palapas(parts: Part[], col: Colliders, spots: [number, number][]
       for (const dz of [-0.8, 0.45]) parts.push([box(0.56, 0.3, 0.05, lx, 0.15, lz + dz), "#7a5236"]);
       if ((i + (s > 0 ? 1 : 0)) % 2 === 0) parts.push([box(0.5, 0.02, 1.3, lx, 0.37, lz - 0.15), towels[Math.floor(r() * towels.length)]]);
       col.addBox(lx, lz, 0.7, 2.0);
+      loungers.push([lx, lz - 0.2]);
     }
   });
+  return loungers;
 }
 
 /** A lancha (an open fishing boat, white with a stripe in `stripe`) made round (0, 0), the bow towards +z: its hull
@@ -1466,4 +1479,252 @@ export function mirador(parts: Part[], col: Colliders, atlas: SignAtlas, x: numb
   const o = new THREE.Vector3(1.6, 2.15, -1.12).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot);
   atlas.add("mirador:" + sign, 512, 160, drawPainted(sign, "", "#fff3d0", "#2f6b34", "#1d4a22"), 1.6, 0.5, x + o.x, o.y, z + o.z, rot + Math.PI);
   blockRect(col, x, z, rot, -2.0, 2.0, -1.5, 1.5);
+}
+
+// ------------------------------------------------------------------------------------------------ graphics round 4
+
+/** The town's street trees as the tropics grow them (theme.ts `tropicalTrees`), each made round (0, 0) on the ground
+ *  as town.ts's round tree is (the same instancing, a colour each). The trunk: taller and forking into two limbs under
+ *  the crown, so the crown reads as an umbrella held up, not a ball on a stick. */
+export function tropicalTrunk(): THREE.BufferGeometry {
+  // (open-ended: the ends are hidden in the ground and the crown; the triangles go to the crowns)
+  const parts = [
+    new THREE.CylinderGeometry(0.15, 0.27, 2.5, 5, 1, true).translate(0, 1.25, 0),
+    new THREE.CylinderGeometry(0.07, 0.13, 1.5, 4, 1, true).rotateZ(0.75).translate(-0.5, 2.85, 0.05),
+    new THREE.CylinderGeometry(0.07, 0.12, 1.4, 4, 1, true).rotateZ(-0.7).rotateY(0.5).translate(0.42, 2.85, -0.22),
+  ];
+  return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
+}
+
+/** A flamboyán's (or a parota's) crown: wide, flat-topped and a little lumpy, lower at its rim, lifted high. Few
+ *  triangles (a town has a hundred and more, all drawn wherever one is in view): a faceted dome, flat lumps on it and
+ *  round its rim. */
+export function flamboyanCrown(): THREE.BufferGeometry {
+  const lump = (sx: number, sy: number, sz: number, x: number, y: number, z: number, rot = 0) => new THREE.OctahedronGeometry(1, 0).rotateY(rot).scale(sx, sy, sz).translate(x, y, z);
+  const parts: THREE.BufferGeometry[] = [
+    new THREE.SphereGeometry(1, 7, 3).scale(2.75, 0.62, 2.55).translate(0, 3.7, 0),
+    lump(1.55, 0.5, 1.4, 0.55, 4.05, -0.35, 0.4),
+    lump(1.3, 0.45, 1.2, -0.95, 3.98, 0.65, 1.1),
+  ];
+  for (let i = 0; i < 4; i++) {
+    const a = i * 1.57 + 0.3, r = 2.35 + (i % 2) * 0.25;
+    parts.push(lump(0.95, 0.42, 0.85, Math.cos(a) * r, 3.45 - (i % 3) * 0.08, Math.sin(a) * r, a));
+  }
+  return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
+}
+
+/** An almendro's (Indian almond's) crown: flat tiers of leaves stacked like a pagoda, each smaller than the one below,
+ *  each with a low cone of leaves for its top. */
+export function almendroCrown(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  ([[2.3, 3.0, 0], [1.85, 3.75, 0.45], [1.35, 4.45, 0.9], [0.75, 5.05, 1.3]] as const).forEach(([r, y, rot]) => {
+    parts.push(new THREE.CylinderGeometry(r * 0.82, r, 0.42, 7, 1, true).rotateY(rot).translate(0, y, 0));
+    parts.push(new THREE.ConeGeometry(r * 0.84, 0.32, 7, 1, true).rotateY(rot).translate(0, y + 0.37, 0));
+  });
+  return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
+}
+
+/** A house's front as a Mexican house has it (theme.ts `casas`), where Maple Harbor has a porch roof on two thin posts:
+ *  the ground floor's concrete portal (a slab on two square columns, its edge in the trim's colour) with the upstairs
+ *  terrace on it behind an iron railing, potted plants up there; two plastic chairs under it; on the flat roof the
+ *  rebar left standing at its corners for the next floor (varillas) and a clothesline with the wash. `P(u, v)` as for
+ *  houseFront, `rot` the front's heading; `w`, `d`, `h` the house's width, depth and height. In `parts` what casts a
+ *  shadow, in `flat` the thin things. */
+export function casa(parts: Part[], flat: Part[], P: (u: number, v: number) => [number, number], rot: number, w: number, d: number, h: number, wall: string, trim: string, seed: number) {
+  const at = (list: Part[], g: THREE.BufferGeometry, u: number, v: number, c: THREE.ColorRepresentation) => { const [x, z] = P(u, v); list.push([place(g, x, z, rot), c]); };
+  const r = rand(seed);
+  // the slab's width, depth out from the wall, underside (no wider or deeper than Maple Harbor's porch roof: P25's
+  // camera at Cedar Lane looks past house5's corner to Maggie)
+  const SW = 6.4, SD = 2.6, Y = 3.0;
+  at(parts, box(SW, 0.3, SD, 0, Y + 0.15, 0), 0, SD / 2, wall);
+  at(parts, box(SW + 0.08, 0.32, 0.1, 0, Y + 0.15, 0), 0, SD + 0.01, trim);
+  for (const s of [-1, 1]) at(parts, box(0.1, 0.32, SD, 0, Y + 0.15, 0), s * (SW / 2 + 0.01), SD / 2, trim);
+  // the columns where the porch's posts were (their colliders: town.ts), and a pilaster against the wall behind each
+  for (const s of [-1, 1]) {
+    at(parts, box(0.36, Y, 0.36, 0, Y / 2, 0), s * 2.8, 2.5, wall);
+    at(parts, box(0.44, 0.12, 0.44, 0, Y - 0.06, 0), s * 2.8, 2.5, trim);
+  }
+  // the terrace's railing: a top rail and a bottom rail, posts, and the bars between (flat strips facing the street,
+  // and along the sides); a parapet-height wall at the ends against the house
+  const ry = Y + 0.3, rh = 0.95;
+  for (const y of [ry + 0.08, ry + rh]) {
+    at(flat, box(SW - 0.1, 0.05, 0.05, 0, y, 0), 0, SD - 0.08, IRON);
+    for (const s of [-1, 1]) at(flat, box(0.05, 0.05, SD - 0.1, 0, y, 0), s * (SW / 2 - 0.05), SD / 2, IRON);
+  }
+  for (let u = -SW / 2 + 0.05; u <= SW / 2; u += SW / 4) at(flat, box(0.07, rh, 0.07, 0, ry + rh / 2, 0), u, SD - 0.08, IRON);
+  for (let u = -SW / 2 + 0.2; u < SW / 2 - 0.1; u += 0.19) at(flat, new THREE.PlaneGeometry(0.03, rh - 0.1).translate(0, ry + rh / 2 + 0.02, 0.0), u, SD - 0.06, IRON);
+  for (const s of [-1, 1]) for (let v = 0.25; v < SD - 0.1; v += 0.19) at(flat, new THREE.PlaneGeometry(0.03, rh - 0.1).rotateY(Math.PI / 2).translate(0, ry + rh / 2 + 0.02, 0), s * (SW / 2 - 0.05), v, IRON);
+  // pots up on the terrace (a palm, a geranium)
+  for (const [u, big] of [[-2.6, 1], [2.2, 0.8]] as const) {
+    at(parts, cyl(0.24 * big, 0.18 * big, 0.36 * big, 0, ry + 0.18 * big, 0), u, SD - 0.55, "#c56f4c");
+    at(parts, new THREE.IcosahedronGeometry(0.4 * big, 0).scale(1, 1.2, 1).translate(0, ry + 0.36 * big + 0.36 * big, 0), u, SD - 0.55, big > 0.9 ? "#3f7d3a" : "#4a8a3c");
+    if (big < 0.9) at(flat, new THREE.OctahedronGeometry(0.09).translate(0.1, ry + 0.95, 0.15), u, SD - 0.55, "#e63946");
+  }
+  // two plastic chairs under the portal, either side of the door, facing the street (on the porch's floor, 0.35 up)
+  for (const [u, c] of [[-1.95, "#f2f1ec"], [1.95, "#c8312f"]] as const) {
+    const y0 = 0.35, turn = u < 0 ? 0.25 : -0.3;
+    const chair: Part[] = [
+      [box(0.46, 0.05, 0.44, 0, y0 + 0.44, 0), c], [box(0.46, 0.46, 0.05, 0, y0 + 0.7, -0.21).rotateX(-0.12), c],
+      ...[[-0.2, -0.19], [0.2, -0.19], [-0.2, 0.19], [0.2, 0.19]].map(([lx, lz]) => [box(0.05, 0.44, 0.05, lx, y0 + 0.22, lz), c] as Part),
+    ];
+    for (const [g, cc] of chair) at(parts, g.rotateY(turn), u, 1.15, cc);
+  }
+  // on the roof: rebar at its four corners (bundles of four rods, rusty), and the wash on a line across its front half
+  const RUST = "#6b4630";
+  for (const su of [-1, 1]) for (const sv of [0.3, d - 0.3]) for (const [a, b] of [[-0.06, -0.06], [0.06, -0.06], [-0.06, 0.06], [0.06, 0.06]]) {
+    const tilt = (r() - 0.5) * 0.12;
+    for (const turn of [0, Math.PI / 2]) at(flat, new THREE.PlaneGeometry(0.035, 0.85).rotateY(turn).rotateZ(tilt).translate(0, h + 1.3, 0), su * (w / 2 - 0.3) + a, -sv + b, RUST);
+  }
+  const lv = -2.2, lu0 = -w / 2 + 1.6, lu1 = w / 2 - 3.2, ly = h + 1.75;
+  for (const u of [lu0, lu1]) at(flat, box(0.05, 1.55, 0.05, 0, h + 0.97, 0), u, lv, "#8a8f94");
+  at(flat, box(lu1 - lu0, 0.015, 0.015, 0, ly, 0), (lu0 + lu1) / 2, lv, "#e8e2d6");
+  const WASH = ["#f4f1ea", "#e4007c", "#1f6fd1", "#f6c000", "#ffffff", "#2a9d5c", "#ff8fab", "#f77f00"];
+  for (let u = lu0 + 0.35; u < lu1 - 0.3; u += 0.55 + r() * 0.25) {
+    const ww = 0.35 + r() * 0.25, hh = 0.35 + r() * 0.35;
+    at(flat, new THREE.PlaneGeometry(ww, hh).translate(0, ly - hh / 2 - 0.02, 0), u, lv, WASH[Math.floor(r() * WASH.length)]);
+    at(flat, new THREE.PlaneGeometry(ww, hh).rotateY(Math.PI).translate(0, ly - hh / 2 - 0.02, 0), u, lv - 0.01, "#d9d4c7");
+  }
+}
+
+/** The church's atrium and a bolder facade (theme.ts `atrio`; the church as `church` builds it, at x, z facing `face`):
+ *  a whitewashed atrium wall with merlons round a paved atrium before the door, its gate between two pillars with
+ *  finials; on the facade white columns either side of the door on pedestals, an entablature over them, and a niche with
+ *  a saint in white stone either side. `depth`: how far the atrium reaches out from the facade, `left` and `right` how far
+ *  it reaches either side of the door (seen from the facade: the left side is -x in its own frame). */
+export function atrio(parts: Part[], flat: Part[], col: Colliders, x: number, z: number, face: Face, depth: number, left: number, right: number, gate: number) {
+  const rot = faceRot(face), add = (list: Part[], g: THREE.BufferGeometry, c: string) => list.push([place(g, x, z, rot), c]);
+  const LIME = "#f6f1e4", CAP = "#e3d6b8", TRIM = "#f7f2e6";
+  // the paving: limestone slabs in two tones, a band down the middle to the door
+  add(flat, box(left + right, 0.04, depth, (right - left) / 2, 0.02, depth / 2), "#e2d6bd");
+  add(flat, box(2.4, 0.045, depth, 0, 0.025, depth / 2), "#cdbd9c");
+  const H = 0.95, T = 0.34;
+  const wall = (x0: number, x1: number, z0: number, z1: number) => {
+    const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    add(parts, box(w, H, d, cx, H / 2, cz), LIME);
+    add(parts, box(w + 0.06, 0.08, d + 0.06, cx, H + 0.04, cz), CAP);
+    // merlons along its top
+    const along = w > d, len = along ? w : d;
+    for (let s = -len / 2 + 0.45; s <= len / 2 - 0.3; s += 1.05) {
+      add(parts, new THREE.ConeGeometry(0.2, 0.42, 4).rotateY(Math.PI / 4).translate(along ? cx + s : cx, H + 0.29, along ? cz : cz + s), LIME);
+    }
+    blockRect(col, x, z, rot, x0, x1, z0, z1);
+  };
+  wall(-left, -gate, depth - T, depth); wall(gate, right, depth - T, depth);
+  wall(-left, -left + T, 0.3, depth - T); wall(right - T, right, 0.3, depth - T);
+  // the gate's pillars with their finials
+  for (const s of [-1, 1]) {
+    add(parts, box(0.6, 1.9, 0.6, s * (gate + 0.15), 0.95, depth - T / 2), LIME);
+    add(parts, box(0.72, 0.12, 0.72, s * (gate + 0.15), 1.94, depth - T / 2), CAP);
+    add(parts, new THREE.SphereGeometry(0.2, 8, 6).translate(s * (gate + 0.15), 2.2, depth - T / 2), LIME);
+    add(parts, new THREE.ConeGeometry(0.08, 0.3, 6).translate(s * (gate + 0.15), 2.5, depth - T / 2), CAP);
+  }
+  // the facade: columns either side of the door on pedestals, their capitals, the entablature over them
+  for (const s of [-1, 1]) {
+    add(parts, box(0.56, 0.6, 0.46, s * 1.75, 0.75, 0.2), TRIM);
+    add(parts, new THREE.CylinderGeometry(0.17, 0.2, 3.3, 10).translate(s * 1.75, 2.7, 0.2), TRIM);
+    add(parts, box(0.56, 0.18, 0.46, s * 1.75, 4.42, 0.2), TRIM);
+  }
+  add(parts, box(4.4, 0.26, 0.42, 0, 4.64, 0.17), TRIM);
+  add(parts, box(1.1, 0.24, 0.3, 0, 4.9, 0.12), TRIM);
+  // a niche either side with a saint in white stone
+  for (const s of [-1, 1]) {
+    const nx = s * 3.05;
+    add(flat, box(0.78, 1.35, 0.04, nx, 3.35, 0.02), "#6e5434");
+    add(flat, new THREE.CylinderGeometry(0.39, 0.39, 0.04, 12, 1, false, -Math.PI / 2, Math.PI).rotateX(-Math.PI / 2).translate(nx, 4.02, 0.02), "#6e5434");
+    add(parts, new THREE.TorusGeometry(0.47, 0.08, 4, 10, Math.PI).translate(nx, 4.02, 0.06), TRIM);
+    for (const t of [-1, 1]) add(parts, box(0.12, 1.4, 0.14, nx + t * 0.47, 3.33, 0.06), TRIM);
+    add(parts, box(0.95, 0.12, 0.3, nx, 2.62, 0.12), TRIM);
+    add(parts, new THREE.CylinderGeometry(0.13, 0.2, 0.95, 8).translate(nx, 3.17, 0.1), "#fbf8f0");
+    add(parts, new THREE.SphereGeometry(0.12, 8, 6).translate(nx, 3.76, 0.1), "#fbf8f0");
+  }
+}
+
+/** The airport's terminal as a small Riviera Maya airport's (theme.ts `airportOut.terminal`; its walls' colours are
+ *  theme.ts `buildings`): a thatched palapa roof over the front hall, and a Maya step-fret frieze (a greca) in
+ *  terracotta along the top of the front wall. The building is `b` (facing -x: its front wall at x - w / 2), the hall
+ *  under the thatch `hall` metres deep. */
+export function airportTerminal(parts: Part[], flat: Part[], col: Colliders, b: { x: number; z: number; w: number; d: number; h: number }, hall: number, arcades: [number, number][]) {
+  const fx = b.x - b.w / 2;
+  palapaRoof(parts, fx + hall / 2, b.z, hall, b.d, b.h);
+  // a portal of arches against the front wall either side of the drop-off (z0…z1 each), cream with a terracotta cap
+  const BAY = 3.65, AH = 5.6, AW = 2.65, SPRING = 3.25, DEPTH = 0.5;
+  for (const [z0, z1] of arcades) {
+    const n = Math.max(1, Math.round((z1 - z0) / BAY)), bay = (z1 - z0) / n;
+    for (let i = 0; i < n; i++) {
+      const sh = new THREE.Shape();
+      sh.moveTo(0, 0); sh.lineTo(bay, 0); sh.lineTo(bay, AH); sh.lineTo(0, AH); sh.lineTo(0, 0);
+      const hole = new THREE.Path(), c = bay / 2, r = AW / 2;
+      hole.moveTo(c - r, 0); hole.lineTo(c - r, SPRING); hole.absarc(c, SPRING, r, Math.PI, 0, true); hole.lineTo(c + r, 0); hole.lineTo(c - r, 0);
+      sh.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(sh, { depth: DEPTH, bevelEnabled: false, curveSegments: 5 });
+      // (the shape's x along the front, toward +z; extruded out from the wall, toward -x)
+      parts.push([g.rotateY(-Math.PI / 2).translate(fx - 0.02, 0, z0 + i * bay), "#fbf1dc"]);
+    }
+    parts.push([box(DEPTH + 0.16, 0.22, z1 - z0 + 0.1, fx - DEPTH / 2 - 0.02, AH + 0.11, (z0 + z1) / 2), "#b5523b"]);
+    col.addBox(fx - DEPTH / 2, (z0 + z1) / 2, DEPTH + 0.1, z1 - z0);
+  }
+  // the greca: a band top and bottom, and between them steps going up and down in turn (flat strips on the wall)
+  const y0 = 10.15, y1 = 11.75, step = 0.32, len = b.d - 1.2, RED = "#b5523b";
+  const strip = (z: number, y: number, w: number, h: number) => flat.push([new THREE.PlaneGeometry(w, h).rotateY(-Math.PI / 2).translate(fx - 0.06, y, z), RED]);
+  strip(b.z, y0, len, 0.14); strip(b.z, y1, len, 0.14);
+  const motif = 6 * step;
+  for (let s = -len / 2 + 0.1; s + motif <= len / 2; s += motif) {
+    for (let k = 0; k < 3; k++) {
+      // three steps up from the bottom band, then three down from the top band
+      strip(b.z + s + (k + 0.5) * step, y0 + 0.07 + ((k + 1) * 0.36) / 2, step * 0.9, (k + 1) * 0.36);
+      strip(b.z + s + (3 + k + 0.5) * step, y1 - 0.07 - ((3 - k) * 0.36) / 2, step * 0.9, (3 - k) * 0.36);
+    }
+  }
+}
+
+/** The bus terminal's front as a central de autobuses' (theme.ts `busTerminal.front`; `b` the building, facing -z):
+ *  white pilasters up its front between the windows, a terracotta band along its foot; and travellers' suitcases by
+ *  the benches (x, z each: a rolling case standing up, its handle out). */
+export function terminalFront(parts: Part[], flat: Part[], col: Colliders, b: { x: number; z: number; w: number; d: number; h: number }, pilasters: number[], cases: [number, number][]) {
+  const front = b.z - b.d / 2;
+  for (const u of pilasters) {
+    parts.push([box(0.5, b.h - 0.9, 0.16, b.x + u, 0.5 + (b.h - 0.9) / 2, front - 0.08), "#fbf6ea"]);
+    parts.push([box(0.66, 0.2, 0.24, b.x + u, b.h - 0.35, front - 0.1), "#fbf6ea"]);
+  }
+  flat.push([box(b.w + 0.04, 0.75, 0.04, b.x, 0.5 + 0.375, front - 0.02), "#c4683a"]);
+  const COLORS = ["#1f6fd1", "#e4007c", "#2b2d42", "#f6a800"];
+  cases.forEach(([x, z], i) => {
+    const c = COLORS[i % COLORS.length];
+    parts.push([box(0.42, 0.6, 0.26, x, 0.36, z), c]);
+    parts.push([box(0.44, 0.04, 0.28, x, 0.5, z), darker(c)]);
+    for (const s of [-1, 1]) parts.push([box(0.03, 0.42, 0.03, x + s * 0.12, 0.87, z + 0.1), "#55595e"]);
+    parts.push([box(0.27, 0.04, 0.04, x, 1.08, z + 0.1), "#2b2b2e"]);
+    for (const s of [-1, 1]) parts.push([cyl(0.04, 0.04, 0.05, x + s * 0.16, 0.05, z - 0.08, 6).rotateZ(Math.PI / 2).translate(0, 0, 0), "#1d1f22"]);
+    col.addCircle(x, z, 0.3);
+  });
+}
+
+/** The meadow round the cenote as the Yucatán's scrub (theme.ts `meadow`): low shrubs in clumps and tufts of tall
+ *  grass scattered over x0…x1, z0…z1 (none within the `clear` circles: x, z, radius), and ceibas standing over the selva
+ *  behind it (x, z each: a tall grey trunk with buttress roots, a wide flat crown high up). */
+export function meadow(parts: Part[], x0: number, x1: number, z0: number, z1: number, clear: [number, number, number][], ceibas: [number, number][]) {
+  const r = rand(5150), GREENS = ["#4f8a3a", "#5c9a3f", "#3f7d3a", "#6aa346", "#7a9a48"], DRY = ["#9cb04e", "#8fa848", "#b3bd62"];
+  const free = (x: number, z: number) => clear.every(([cx, cz, cr]) => Math.hypot(x - cx, z - cz) > cr);
+  for (let i = 0; i < 48; i++) {
+    const x = x0 + r() * (x1 - x0), z = z0 + r() * (z1 - z0), s = 0.5 + r() * 0.65;
+    if (!free(x, z)) continue;
+    const g = GREENS[Math.floor(r() * GREENS.length)];
+    parts.push([new THREE.IcosahedronGeometry(s, 0).scale(1.3, 0.75, 1.1).translate(x, s * 0.55, z), g]);
+    if (r() < 0.5) parts.push([new THREE.IcosahedronGeometry(s * 0.7, 0).scale(1.2, 0.8, 1).translate(x + s * 0.9, s * 0.4, z + (r() - 0.5) * s), GREENS[Math.floor(r() * GREENS.length)]]);
+  }
+  for (let i = 0; i < 30; i++) {
+    const x = x0 + r() * (x1 - x0), z = z0 + r() * (z1 - z0);
+    if (!free(x, z)) continue;
+    const c = DRY[Math.floor(r() * DRY.length)];
+    for (let k = 0; k < 2; k++) parts.push([new THREE.ConeGeometry(0.16, 0.6 + r() * 0.35, 4).rotateZ((k - 1) * 0.35).translate(x + (k - 1) * 0.12, 0.35, z), c]);
+  }
+  for (const [x, z] of ceibas) {
+    parts.push([new THREE.CylinderGeometry(0.42, 0.62, 10, 8, 1, true).translate(x, 5, z), "#9a958a"]);
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2;
+      parts.push([new THREE.ConeGeometry(0.5, 2.2, 4).scale(0.35, 1, 1).rotateY(-a).translate(x + Math.cos(a) * 0.6, 1.0, z + Math.sin(a) * 0.6), "#8c877b"]);
+    }
+    for (const s of [-1, 1]) parts.push([new THREE.CylinderGeometry(0.12, 0.22, 3.2, 6, 1, true).rotateZ(s * 0.8).translate(x + s * 1.1, 10.6, z), "#9a958a"]);
+    parts.push([flamboyanCrown().scale(2.1, 1.5, 2.1).translate(x, 6.2, z), "#3f7d3a"]);
+  }
 }
