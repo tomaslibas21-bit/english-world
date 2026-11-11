@@ -1,0 +1,26 @@
+{
+"situation": "p29-landlord",
+"items": [
+{ "ctx": "problem", "say": "Perdone que le moleste, pero es importante", "intent": "greet_id" },
+{ "ctx": "problem", "say": "Hace más calor dentro que fuera", "intent": "cold_detail" },
+{ "ctx": "problem", "say": "Me he comprado un ventilador con mi dinero", "intent": "space_heater" },
+{ "ctx": "duration", "say": "Le he llamado todos los días", "intent": "called_before" },
+{ "ctx": "duration", "say": "Le he dejado tres mensajes", "intent": "called_before" },
+{ "ctx": "thermostat", "say": "Sí, ya lo he mirado dos veces", "intent": "thermo_yes" },
+{ "ctx": "thermostat", "say": "Ya lo he probado todo", "intent": "thermo_yes" },
+{ "ctx": "thermostat", "say": "No es el mando", "intent": "thermo_yes" },
+{ "ctx": "dodge", "say": "El aire acondicionado está incluido en el alquiler", "intent": "responsibility" },
+{ "ctx": "dodge", "say": "No voy a pagar el alquiler hasta que lo arregle", "intent": "withhold" },
+{ "ctx": "offer", "say": "Vale, lo intento", "intent": "accept_offer" },
+{ "ctx": "date", "say": "El viernes por la mañana me viene bien", "intent": "accept_date", "slots": { "day": "friday" } },
+{ "ctx": "date", "say": "El viernes no me viene bien", "intent": "day_no" },
+{ "ctx": "date", "say": "¿Puede venir por la tarde?", "intent": "afternoon_ctx" },
+{ "ctx": "wrap", "say": "¿Me puede hacer un descuento en el alquiler?", "intent": "ask_discount" },
+{ "ctx": "wrap", "say": "¿Cuándo vuelve?", "intent": "ask_trip" },
+{ "ctx": "rent", "say": "Se lo transfiero mañana", "intent": "pay_later" },
+{ "ctx": "rent", "say": "Ya se lo he pagado", "intent": "paid_already" },
+{ "ctx": "wrap", "say": "Aquí tiene el alquiler de este mes", "intent": "pay_rent" },
+{ "ctx": "closing", "say": "Vale, gracias, Don Ernesto. ¡Buen viaje!", "intent": "trip_wish" },
+{ "ctx": "rent", "say": "No necesito el recibo", "intent": "any" }
+]
+}

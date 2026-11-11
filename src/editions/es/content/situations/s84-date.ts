@@ -807,7 +807,7 @@ export const date: SituationDef = {
       when_d: "{day} [(en la noche | en la tarde | en la manana | por la noche | por la tarde | temprano)]",
       sorry: "[(perdon | perdona | lo siento | ay | uy | desafortunadamente | la verdad | fijate que)]",
       isnice: "(es | esta) [muy] (bonito | bonita | padre | lindo | linda | precioso | preciosa | bueno | buena | interesante)",
-      jacket: "(chamarra | chaqueta | sueter | saco | sudadera | chal | rebozo | abrigo)",
+      jacket: "(chamarra | chaqueta | sueter | jersey | saco | sudadera | chal | rebozo | abrigo)",
       hp: "(en | por | cerca de | junto a) [el | la] (mar | playa | parque | malecon | cenote | cenotes | gimnasio | alberca | piscina | agua)",
     },
     slots: {
@@ -867,7 +867,7 @@ export const date: SituationDef = {
       "que (bonita | linda | hermosa | increible) (vista | puesta de sol)", "que (bonito | lindo | hermoso | increible) (atardecer | lugar | restaurante)",
       "mira (el atardecer | la vista | el mar)", "me encanta (este lugar | la vista | el atardecer | este restaurante)",
     ] },
-    come_here_often: { patterns: ["(vienes | sueles venir) [aqui] (seguido | mucho | a menudo) [aqui]", "sueles venir aqui", "ya (habias venido | has venido | conocias) [aqui | este lugar | antes]"] },
+    come_here_often: { patterns: ["(vienes | sueles venir) [aqui | por aqui] (seguido | mucho | a menudo) [aqui | por aqui]", "sueles venir aqui", "ya (habias venido | has venido | conocias) [aqui | este lugar | antes]"] },
     // drinks
     drink_ans: { patterns: [
       "@have @drink_np [para mi] #h:dr_have", "@drink_np [para mi] #h:dr_short", "[@have] una copa de {drink} #h:dr_glass",
@@ -877,7 +877,7 @@ export const date: SituationDef = {
       "[@have] [un | una] {nd:drink} [no] (mejor | perdon | bueno no) [@have] @drink_np", "no {nd:drink} no [@have] @drink_np",
     ] },
     same_drink_ans: { patterns: [
-      "lo mismo [para mi | que tu] #h:dr_same", "(yo | yo tambien) (quiero | pido | tomo) lo mismo [que tu]", "(que sean | entonces) dos",
+      "lo mismo [para mi | que tu] #h:dr_same", "para mi lo mismo", "(yo | yo tambien) (quiero | pido | tomo) lo mismo [que tu]", "(que sean | entonces) dos",
       "(yo tambien | a mi tambien) (una margarita | lo mismo)", "igual que tu", "(dame | pideme | pide) lo mismo [para mi]", "otra (para mi | igual)",
       "(yo tambien | tambien) quiero una margarita",
     ] },
@@ -1053,7 +1053,7 @@ export const date: SituationDef = {
       "[ay] gracias eres muy (amable | lindo | linda)", "[muchas] gracias por (invitarme | la invitacion)",
     ] },
     // "¿Cuánto es?": the sum (CHECK_TOTAL) once the check is here; never pays or splits (rule 17)
-    ask_amount: { patterns: ["cuanto (es | fue | salio | sale | hay que pagar | te debo | le debo | va a ser | seria)", "cuanto (es | fue) en total", "cuanto cuesta [todo | la cena]"] },
+    ask_amount: { patterns: ["cuanto (es | fue | ha sido | salio | sale | hay que pagar | te debo | le debo | va a ser | seria)", "cuanto (es | fue) en total", "cuanto cuesta [todo | la cena]"] },
     ask_check: { patterns: [
       "(nos | me) (trae | traes | puede traer | da | das) la cuenta", "la cuenta", "(pedimos | pidamos) la cuenta", "donde esta (la cuenta | el mesero | la mesera)",
     ] },
@@ -1127,8 +1127,8 @@ export const date: SituationDef = {
     propose_day: { patterns: [
       "(estas libre | tienes tiempo) @when_d #h:ag_free", "(que tal | y si) @when_d", "@when_d (es mejor | seria mejor | seria perfecto | seria genial) [para mi]",
       "(estoy | voy a estar) libre @when_d", "@when_d (suena bien | me parece bien | me late)",
-      "@sorry no puedo {nd:day} pero @when_d (si | me queda bien | esta bien | puedo | si puedo)", "@sorry {nd:day} no puedo pero @when_d (si | me queda bien | esta bien | puedo | si puedo)",
-      "@when_d me (queda | va) (bien | perfecto) [a mi] #h:ag_works", "@when_d (puedo | si puedo | si)",
+      "@sorry no puedo {nd:day} pero @when_d (si | me queda bien | me viene bien | esta bien | puedo | si puedo)", "@sorry {nd:day} no puedo pero @when_d (si | me queda bien | me viene bien | esta bien | puedo | si puedo)",
+      "@when_d me (queda | va | viene) (bien | perfecto) [a mi] #h:ag_works", "@when_d (puedo | si puedo | si)",
       "(te gustaria | quieres | que tal si | podemos | podriamos | vamos a | te invito a) {activity} [@when_d] #h:ag_activity",
       "(que tal | y si) {activity} [@when_d] [conmigo]", "me gustaria {activity} contigo [@when_d]",
       "(me gustaria | quiero | quisiera) invitarte a {activity} [@when_d]", "(te gustaria | quieres) {activity} conmigo [@when_d]",
@@ -1140,9 +1140,9 @@ export const date: SituationDef = {
     ] },
     agree_again: { patterns: [
       "me encantaria [volver a verte] #h:ag_id_love", "si me (gustaria | encantaria) [mucho] [@when_d] #h:ag_yes", "claro que si", "(si | claro) por supuesto",
-      "[si | claro] me queda bien #h:dy_works", "[si] estoy libre [ese dia] #h:dy_free", "(si | claro) (me encantaria | quiero) volver a verte",
+      "[si | claro] me (queda | viene) bien #h:dy_works", "[si] estoy libre [ese dia] #h:dy_free", "(si | claro) (me encantaria | quiero) volver a verte",
       "seria (genial | padre | increible | lindo)", "yo te iba a preguntar lo mismo", "[si | claro] a que hora [nos vemos | quedamos] #time", "[si | claro] cuando [estas libre | tienes tiempo]",
-      "claro que quiero", "[vale] {day} me (queda | va) bien a que hora", "[yo] te iba a preguntar [lo mismo | eso]",
+      "claro que quiero", "[vale] {day} me (queda | va | viene) bien a que hora", "[yo] te iba a preguntar [lo mismo | eso]",
       "[si] me (gustaria | encantaria) [mucho] pero no se cuando", "[si] [claro] cuando quieras",
     ] },
     // "¿El domingo en la noche?" (to "¿Qué tal el domingo? ¿Tienes tiempo?")
@@ -1194,17 +1194,17 @@ export const date: SituationDef = {
     // hello
     open_late: [
       t("¡Hola! | ¡Perdón | por | llegar | tarde! | No encontraba | dónde | estacionarme.", "Hi! | Sorry | for | arriving | late! | I couldn't find | where | to park.",
-        "Hi! Sorry I'm late! I couldn't find a place to park."),
+        "Hi! Sorry I'm late! I couldn't find a place to park.", { spain: t("¡Hola! | ¡Perdón | por | llegar | tarde! | No encontraba | dónde | aparcar.", "Hi! | Sorry | for | arriving | late! | I couldn't find | where | to park.", "Hi! Sorry I'm late! I couldn't find a place to park.") }),
       // the partner lives a few blocks away: held up on the way back from work, never lost in town
       t("¡Hola! | ¡Perdóname, | llegué | tarde! | Había | mucho | tráfico | en | la | carretera.", "Hi! | Forgive me, | I arrived | late! | There was | a lot of | traffic | on | the | highway.",
-        "Hi! I'm so sorry I'm late! Traffic on the highway was terrible."),
+        "Hi! I'm so sorry I'm late! Traffic on the highway was terrible.", { spain: t("¡Hola! | ¡Perdona, | he llegado | tarde! | Había | mucho | tráfico | en | la | carretera.", "Hi! | Sorry, | I've arrived | late! | There was | a lot of | traffic | on | the | highway.", "Hi! I'm so sorry I'm late! Traffic on the highway was terrible.") }),
     ],
     open_early: [
-      t("¡Hola! | ¡Aquí | estás! | Oye, | ¡te ves | muy | bien!", "Hi! | Here | you-are! | Hey, | you look | very | good!", "Hi! There you are! Wow, you look great!"),
-      t("¡Hola, | ya | llegaste! | ¡Te ves | increíble!", "Hi, | already | you-arrived! | You look | amazing!", "Hey, you made it! You look amazing."),
+      t("¡Hola! | ¡Aquí | estás! | Oye, | ¡te ves | muy | bien!", "Hi! | Here | you-are! | Hey, | you look | very | good!", "Hi! There you are! Wow, you look great!", { spain: t("¡Hola! | ¡Aquí | estás! | Oye, | ¡estás | muy | {m:guapo|f:guapa}!", "Hi! | Here | you are! | Hey, | you look | very | good-looking!", "Hi! There you are! Wow, you look great!") }),
+      t("¡Hola, | ya | llegaste! | ¡Te ves | increíble!", "Hi, | already | you-arrived! | You look | amazing!", "Hey, you made it! You look amazing.", { spain: t("¡Hola, | ya | has llegado! | ¡Estás | increíble!", "Hi, | already | you've arrived! | You look | amazing!", "Hey, you made it! You look amazing.") }),
     ],
     open_meet: [
-      t("¡Hola! | ¡Qué | gusto | conocerte | en persona!", "Hi! | What a | pleasure | to meet you | in person!", "Hi! It's so nice to meet you in person!"),
+      t("¡Hola! | ¡Qué | gusto | conocerte | en persona!", "Hi! | What a | pleasure | to meet you | in person!", "Hi! It's so nice to meet you in person!", { spain: t("¡Hola! | ¡Qué | ilusión | conocerte | en persona!", "Hi! | What | a thrill | to meet you | in person!", "Hi! It's so nice to meet you in person!") }),
       t("¡Hola! | ¡Por fin! | Mucho gusto.", "Hi! | Finally! | Nice to meet you.", "Hi! Finally! It's great to meet you."),
     ],
     hello_again: [
@@ -1212,18 +1212,18 @@ export const date: SituationDef = {
     ],
     phew: [
       t("¡Uf! | Gracias | por | esperarme.", "Phew! | Thanks | for | waiting for me.", "Phew! Thanks for waiting."),
-      t("Ay, | qué | bueno. | ¡Gracias | por | esperar!", "Oh, | how | good. | Thanks | for | waiting!", "Oh, good. Thanks for waiting!"),
+      t("Ay, | qué | bueno. | ¡Gracias | por | esperar!", "Oh, | how | good. | Thanks | for | waiting!", "Oh, good. Thanks for waiting!", { spain: t("Ay, | menos mal. | ¡Gracias | por | esperar!", "Oh, | thank goodness. | Thanks | for | waiting!", "Oh, good. Thanks for waiting!") }),
     ],
     you_are_fine: [
       t("¡No, | {sm:el|sf:la} | que | llegó | tarde | soy | yo! | Gracias | por | esperarme.", "No, | the one | who | arrived | late | am | I! | Thanks | for | waiting for me.",
-        "No, I'm the one who was late! Thanks for waiting."),
+        "No, I'm the one who was late! Thanks for waiting.", { spain: t("¡No, | {sm:el|sf:la} | que | ha llegado | tarde | soy | yo! | Gracias | por | esperarme.", "No, | the one | who | arrived | late | am | I! | Thanks | for | waiting for me.", "No, I'm the one who was late! Thanks for waiting.") }),
     ],
     just_got_here: [
       t("¡No te preocupes! | Yo | también | acabo de | llegar.", "Don't worry! | I | also | have just | arrived.", "Don't worry! I just got here myself."),
     ],
     thanks_compliment: [
-      t("¡Ay, | gracias! | Tú | también | te ves | muy | bien.", "Oh, | thanks! | You | too | look | very | good.", "Aw, thank you! You look great too."),
-      t("¡Ay, | qué | lindo! | ¡Gracias!", "Oh, | how | sweet! | Thanks!", "Aw, that's so sweet. Thank you!"),
+      t("¡Ay, | gracias! | Tú | también | te ves | muy | bien.", "Oh, | thanks! | You | too | look | very | good.", "Aw, thank you! You look great too.", { spain: t("¡Ay, | gracias! | Tú | también | estás | muy | {m:guapo|f:guapa}.", "Aw, | thanks! | You | too | look | very | good-looking.", "Aw, thank you! You look great too.") }),
+      t("¡Ay, | qué | lindo! | ¡Gracias!", "Oh, | how | sweet! | Thanks!", "Aw, that's so sweet. Thank you!", { spain: t("¡Ay, | qué | detalle! | ¡Gracias!", "Aw, | what | a sweet thing! | Thanks!", "Aw, that's so sweet. Thank you!") }),
     ],
     aw: [
       t("¡Ay, | gracias!", "Oh, | thanks!", "Aw, thanks!"),
@@ -1260,7 +1260,7 @@ export const date: SituationDef = {
     // job
     ask_job: [
       t("Bueno, | cuéntame | de | ti. | ¿A qué te dedicas?", "So, | tell me | about | you. | What do you do?", "So, tell me about yourself. What do you do?",
-        { flags: { 4: "¿A qué te dedicas? = what do you do (for a living)? Literally: to what do you devote yourself?" } }),
+        { flags: { 4: "¿A qué te dedicas? = what do you do (for a living)? Literally: to what do you devote yourself?" }, spain: t("Bueno, | háblame | de | ti. | ¿A qué te dedicas?", "So, | tell me | about | yourself. | What do you do?", "So, tell me about yourself. What do you do?") }),
       t("Y | tú, | ¿a qué te dedicas?", "And | you, | what do you do?", "So what do you do?"),
     ],
     ask_back: [
@@ -1288,7 +1288,7 @@ export const date: SituationDef = {
       t("¿Y | te gusta?", "And | do you like it?", "Do you like it?"),
     ],
     thats_great: [
-      t("¡Qué | bueno!", "How | good!", "That's great!"),
+      t("¡Qué | bueno!", "How | good!", "That's great!", { spain: t("¡Qué | bien!", "How | great!", "That's great!") }),
     ],
     not_every_job: [
       t("Bueno, | no | todos | los | trabajos | son | divertidos.", "Well, | not | all | the | jobs | are | fun.", "Oh well, not every job is fun."),
@@ -1301,7 +1301,7 @@ export const date: SituationDef = {
         "I'm a photographer. I mostly do weddings on the beach."),
     ],
     told_you: [
-      t("¡Ja, | ya | te | dije!", "Ha, | already | (to) you | I-told!", "Ha, I told you!"),
+      t("¡Ja, | ya | te | dije!", "Ha, | already | (to) you | I-told!", "Ha, I told you!", { spain: t("¡Ja, | ya | te lo | he dicho!", "Ha, | already | it to you | I've said!", "Ha, I told you!") }),
     ],
     // a topic question asked again (after a side question): a short reminder
     job_again: [
@@ -1410,7 +1410,7 @@ export const date: SituationDef = {
     ],
     qf_beach_yes: [
       // "Estamos": the learner may be visiting, not living here
-      t("¡Obvio! | Estamos | en | el | Caribe.", "Obviously! | We are | in | the | Caribbean.", "Of course! We're in the Caribbean."),
+      t("¡Obvio! | Estamos | en | el | Caribe.", "Obviously! | We are | in | the | Caribbean.", "Of course! We're in the Caribbean.", { spain: t("¡Pues claro! | Estamos | en | el | Caribe.", "Well, of course! | We're | in | the | Caribbean.", "Of course! We're in the Caribbean.") }),
     ],
     qf_mountain: [
       t("¿Montaña? | ¡Pero | aquí | tenemos | el | mar!", "Mountains? | But | here | we-have | the | sea!", "Mountains? But we have the sea right here!"),
@@ -1421,7 +1421,7 @@ export const date: SituationDef = {
     // the check
     not_ordered_yet: [
       t("¡Ja! | ¡Si | todavía | no pedimos | nada!", "Ha! | But | still | we haven't ordered | anything!", "Ha! We haven't even ordered yet!",
-        { flags: { 1: "si: here no “if”, but surprise (= but…!)." } }),
+        { flags: { 1: "si: here no “if”, but surprise (= but…!)." }, spain: t("¡Ja! | ¡Si | todavía | no hemos pedido | nada!", "Ha! | Why, | still | we haven't ordered | anything!", "Ha! We haven't even ordered yet!") }),
     ],
     // "Dividamos la cuenta." after ordering, before the check comes
     when_it_comes: [
@@ -1431,13 +1431,13 @@ export const date: SituationDef = {
       t("Bueno, | ¿cómo | hacemos | con | la | cuenta?", "So, | how | do we do | with | the | check?", "So, what should we do about the check?"),
     ],
     amount_not_yet: [
-      t("Todavía | no nos traen | la | cuenta.", "Still | they haven't brought us | the | check.", "They haven't brought us the check yet."),
+      t("Todavía | no nos traen | la | cuenta.", "Still | they haven't brought us | the | check.", "They haven't brought us the check yet.", { spain: t("Todavía | no nos han traído | la | cuenta.", "Still | they haven't brought us | the | check.", "They haven't brought us the check yet.") }),
     ],
     amount_total: [
       t("A ver... | son | {$total}.", "Let's see... | it's | {$total}.", "Let's see... it's {$total}."),
     ],
     amount_half: [
-      t("Son | {$total}, | o sea, | {$amount} | cada quien.", "It's | {$total}, | that is, | {$amount} | each.", "It's {$total}, so {$amount} each."),
+      t("Son | {$total}, | o sea, | {$amount} | cada quien.", "It's | {$total}, | that is, | {$amount} | each.", "It's {$total}, so {$amount} each.", { spain: t("Son | {$total}, | o sea, | {$amount} | cada uno.", "It's | {$total}, | that is, | {$amount} | each.", "It's {$total}, so {$amount} each.") }),
     ],
     amount_paid: [
       t("¡Ya | está | pagada! | No te preocupes.", "Already | it's | paid! | Don't worry.", "It's already paid! Don't worry."),
@@ -1446,7 +1446,7 @@ export const date: SituationDef = {
       t("¡Ni lo pienses! | Yo | invito.", "Don't even think about it! | I | treat.", "Don't even think about it! It's on me.", { flags: { 2: INVITAR } }),
     ],
     check_here: [
-      t("Ah, | ya | trajeron | la | cuenta.", "Oh, | already | they-brought | the | check.", "Oh, here's the check."),
+      t("Ah, | ya | trajeron | la | cuenta.", "Oh, | already | they-brought | the | check.", "Oh, here's the check.", { spain: t("Ah, | ya | han traído | la | cuenta.", "Oh, | already | they've brought | the | check.", "Oh, here's the check.") }),
     ],
     partner_offers: [
       t("Déjame | invitarte.", "Let me | treat you.", "Let me get this.", { flags: { 1: INVITAR } }),
@@ -1465,7 +1465,7 @@ export const date: SituationDef = {
       t("¡Me parece | justo!", "It seems to me | fair!", "Sounds fair!"),
     ],
     my_pleasure: [
-      t("¡Con gusto! | La | próxima | invitas | tú.", "My pleasure! | The | next one | treat | you.", "My pleasure! You can get the next one."),
+      t("¡Con gusto! | La | próxima | invitas | tú.", "My pleasure! | The | next one | treat | you.", "My pleasure! You can get the next one.", { spain: t("¡De nada! | La | próxima | invitas | tú.", "You're welcome! | The | next one | treat | you.", "My pleasure! You can get the next one.") }),
     ],
     // the end of the evening
     cold: [
@@ -1475,21 +1475,21 @@ export const date: SituationDef = {
       t("Un | poquito, | sí.", "A | little bit, | yes.", "A little, yeah."),
     ],
     so_sweet: [
-      t("¡Ay, | qué | {m:lindo|f:linda} | eres!", "Oh, | how | sweet | you-are!", "Aw, you're so sweet!"),
+      t("¡Ay, | qué | {m:lindo|f:linda} | eres!", "Oh, | how | sweet | you-are!", "Aw, you're so sweet!", { spain: t("¡Ay, | qué | {m:majo|f:maja} | eres!", "Oh, | how | sweet | you-are!", "Aw, you're so sweet!") }),
     ],
     nice_time: [
       t("La pasé | muy | bien | esta | noche.", "I had a time | very | good | this | night.", "I had a really nice time tonight.",
-        { flags: { 0: "pasarla bien: to have a good time (la pasé = I had it, the time)." } }),
+        { flags: { 0: "pasarla bien: to have a good time (la pasé = I had it, the time)." }, spain: t("Me lo he pasado | muy | bien | esta | noche.", "I had a time | very | good | this | night.", "I had a really nice time tonight.") }),
     ],
     me_too_nice: [
-      t("¡Yo | también! | La pasé | súper | bien.", "I | too! | I had a time | super | good.", "Me too! I had a great time."),
+      t("¡Yo | también! | La pasé | súper | bien.", "I | too! | I had a time | super | good.", "Me too! I had a great time.", { spain: t("¡Yo | también! | Me lo he pasado | genial.", "Me | too! | I had | a great time.", "Me too! I had a great time.") }),
     ],
     glad: [
-      t("¡Qué | bueno!", "How | good!", "I'm so glad."),
-      t("Me da | mucho | gusto.", "It gives me | much | pleasure.", "I'm really glad."),
+      t("¡Qué | bueno!", "How | good!", "I'm so glad.", { spain: t("¡Qué | bien!", "How | great!", "I'm so glad.") }),
+      t("Me da | mucho | gusto.", "It gives me | much | pleasure.", "I'm really glad.", { spain: t("Me alegro | mucho.", "I'm glad | a lot.", "I'm really glad.") }),
     ],
     thank_you_too: [
-      t("¡Gracias | a | ti! | La pasé | súper | bien.", "Thanks | to | you! | I had a time | super | good.", "Thank you! I had a great time."),
+      t("¡Gracias | a | ti! | La pasé | súper | bien.", "Thanks | to | you! | I had a time | super | good.", "Thank you! I had a great time.", { spain: t("¡Gracias | a | ti! | Me lo he pasado | genial.", "Thanks | to | you! | I had | a great time.", "Thank you! I had a great time.") }),
     ],
     can_i_see_you: [
       t("Oye... | ¿te | puedo | volver a | ver?", "Hey... | you | can I | again | see?", "So... can I see you again?",
@@ -1499,7 +1499,7 @@ export const date: SituationDef = {
       t("Me encantaría. | De verdad, | me encantaría.", "I'd love that. | Really, | I'd love that.", "I'd like that. I'd really like that."),
     ],
     yay_great: [
-      t("¡Ay, | qué | bueno!", "Oh, | how | good!", "Yay! Great!"),
+      t("¡Ay, | qué | bueno!", "Oh, | how | good!", "Yay! Great!", { spain: t("¡Ay, | qué | bien!", "Oh, | how | great!", "Yay! Great!") }),
       t("¡Qué | emoción!", "What | excitement!", "Yay, how exciting!"),
     ],
     are_you_free_on: [
@@ -1510,24 +1510,24 @@ export const date: SituationDef = {
       t("¿Cuándo | tienes | tiempo?", "When | do you have | time?", "When are you free?"),
     ],
     which_day: [
-      t("¿Qué | día | te queda | bien?", "What | day | suits you | well?", "What day works for you?"),
+      t("¿Qué | día | te queda | bien?", "What | day | suits you | well?", "What day works for you?", { spain: t("¿Qué | día | te viene | bien?", "What | day | suits you | well?", "What day works for you?") }),
     ],
     busy_saturday: [
       t("Ay, | el | sábado | voy | a | ver | a | mis | papás.", "Oh, | on | Saturday | I'm going | to | see | — | my | parents.",
-        "Oh, I'm seeing my parents on Saturday.", { flags: { 1: ART_DAY, 6: "Personal a: a person as the object takes “a” (ver a mis papás)." } }),
+        "Oh, I'm seeing my parents on Saturday.", { flags: { 1: ART_DAY, 6: "Personal a: a person as the object takes “a” (ver a mis papás)." }, spain: t("Ay, | el | sábado | voy | a | ver | a | mis | padres.", "Oh, | on | Saturday | I'm going | to | see | — | my | parents.", "Oh, I'm seeing my parents on Saturday.", { flags: { 1: ART_DAY, 6: "Personal a: a person as the object takes “a” (ver a mis padres)." } }) }),
     ],
     how_about_sunday: [
       t("Mmm, | ¿y | el | domingo, | entonces?", "Hmm, | and | on | Sunday, | then?", "Hmm, how about Sunday, then?", { flags: { 2: ART_DAY } }),
     ],
     day_works: [
       t("¡Perfecto, | el | {D} | me queda | bien!", "Perfect, | — | {D} | suits me | well!", "Great, {D} works for me!",
-        { flags: { 1: "The article before a weekday: no English word here." } }),
+        { flags: { 1: "The article before a weekday: no English word here." }, spain: t("¡Perfecto, | el | {D} | me viene | bien!", "Perfect, | — | {D} | suits me | well!", "Great, {D} works for me!", { flags: { 1: "The article before a weekday: no English word here." } }) }),
     ],
     day_works_tomorrow: [
-      t("¡Perfecto, | mañana | me queda | bien!", "Perfect, | tomorrow | suits me | well!", "Great, tomorrow works for me!"),
+      t("¡Perfecto, | mañana | me queda | bien!", "Perfect, | tomorrow | suits me | well!", "Great, tomorrow works for me!", { spain: t("¡Perfecto, | mañana | me viene | bien!", "Perfect, | tomorrow | suits me | well!", "Great, tomorrow works for me!") }),
     ],
     day_works_after: [
-      t("¡Perfecto, | pasado mañana | me queda | bien!", "Perfect, | the day after tomorrow | suits me | well!", "Great, the day after tomorrow works for me!"),
+      t("¡Perfecto, | pasado mañana | me queda | bien!", "Perfect, | the day after tomorrow | suits me | well!", "Great, the day after tomorrow works for me!", { spain: t("¡Perfecto, | pasado mañana | me viene | bien!", "Perfect, | the day after tomorrow | suits me | well!", "Great, the day after tomorrow works for me!") }),
     ],
     love_that: [
       t("¡Me encantaría!", "I'd love that!", "I'd love that."),
@@ -1541,13 +1541,13 @@ export const date: SituationDef = {
     ],
     no_pressure: [
       t("Ah... | está bien. | Sin | presión. | Me dio | gusto | conocerte.", "Oh... | okay. | Without | pressure. | It gave me | pleasure | to meet you.",
-        "Oh... okay. No pressure. It was nice to meet you."),
+        "Oh... okay. No pressure. It was nice to meet you.", { spain: t("Ah... | vale. | Sin | presión. | Me ha encantado | conocerte.", "Oh... | okay. | No | pressure. | I've loved | meeting you.", "Oh... okay. No pressure. It was lovely to meet you.") }),
     ],
     id_like_walk: [
-      t("Me encantaría. | Vivo | aquí | cerca, | a | unas | cuadras.", "I'd love that. | I live | here | near, | at | some | blocks.", "I'd like that. I live just a few blocks away."),
+      t("Me encantaría. | Vivo | aquí | cerca, | a | unas | cuadras.", "I'd love that. | I live | here | near, | at | some | blocks.", "I'd like that. I live just a few blocks away.", { spain: t("Me encantaría. | Vivo | aquí | cerca, | a | unas | calles.", "I'd love that. | I live | here | near, | at | some | blocks.", "I'd like that. I live just a few blocks away.") }),
     ],
     live_close: [
-      t("¡Qué | lindo! | Pero | vivo | aquí | a la vuelta.", "How | sweet! | But | I live | here | around the corner.", "That's so sweet! But I live right around the corner."),
+      t("¡Qué | lindo! | Pero | vivo | aquí | a la vuelta.", "How | sweet! | But | I live | here | around the corner.", "That's so sweet! But I live right around the corner.", { spain: t("¡Qué | detalle! | Pero | vivo | aquí | a la vuelta.", "How | sweet! | But | I live | here | around the corner.", "That's so sweet! But I live right around the corner.") }),
     ],
     nervous_too: [
       t("¡Ay, | no te preocupes! | Yo | también | estoy | un poco | {sm:nervioso|sf:nerviosa}.", "Oh, | don't worry! | I | also | am | a little | nervous.",
@@ -1557,7 +1557,7 @@ export const date: SituationDef = {
       t("Oye, | ¿ya | te vas?", "Hey, | already | you're leaving?", "Wait, are you leaving already?"),
     ],
     text_me: [
-      t("Mándame | un | mensaje | cuando | llegues | a | tu | casa, | ¿sí?", "Send me | a | message | when | you get | to | your | house, | okay?", "Text me when you get home, okay?"),
+      t("Mándame | un | mensaje | cuando | llegues | a | tu | casa, | ¿sí?", "Send me | a | message | when | you get | to | your | house, | okay?", "Text me when you get home, okay?", { spain: t("Mándame | un | mensaje | cuando | llegues | a | tu | casa, | ¿vale?", "Send me | a | message | when | you get | to | your | house, | okay?", "Text me when you get home, okay?") }),
     ],
     good_night: [
       t("¡Buenas noches!", "Good night!", "Good night!"),
@@ -1568,7 +1568,7 @@ export const date: SituationDef = {
     ],
     perfect: [
       t("¡Perfecto!", "Perfect!", "Perfect!"),
-      t("¡Súper!", "Great!", "Great!"),
+      t("¡Súper!", "Great!", "Great!", { spain: t("¡Genial!", "Great!", "Great!") }),
     ],
     if_you_insist: [
       t("Bueno, | si | insistes. | ¡Gracias!", "Okay, | if | you-insist. | Thanks!", "Okay, if you insist! Thank you!"),
@@ -1576,7 +1576,7 @@ export const date: SituationDef = {
     // the check: the tip, cards ("¿Dejamos propina?", "¿Aceptan tarjeta?")
     tip_usual: [
       t("Aquí | se deja | como | el | diez | o | quince | por ciento.", "Here | one leaves | about | — | ten | or | fifteen | percent.",
-        "People here leave about ten or fifteen percent.", { flags: { 1: "se deja: impersonal se, “one leaves” (people leave).", 3: "el before a percentage: no English word." } }),
+        "People here leave about ten or fifteen percent.", { flags: { 1: "se deja: impersonal se, “one leaves” (people leave).", 3: "el before a percentage: no English word." }, spain: t("Aquí | se deja | más o menos | un | diez | o | quince | por ciento.", "Here | one leaves | about | — | ten | or | fifteen | percent.", "People here leave about ten or fifteen percent.", { flags: { 1: "se deja: impersonal se, “one leaves” (people leave).", 3: "un before a percentage: no English word." } }) }),
     ],
     cards_ok: [
       t("Sí, | aquí | aceptan | tarjeta.", "Yes, | here | they-accept | card.", "Yes, they take cards here."),
@@ -1594,7 +1594,7 @@ export const date: SituationDef = {
       t("¡Toda la vida! | Nací | aquí.", "My whole life! | I was born | here.", "My whole life! I was born here."),
     ],
     live_blocks: [
-      t("Aquí | cerca, | a | unas | cuadras | del | malecón.", "Here | near, | at | some | blocks | from the | waterfront.", "Close by, a few blocks from the waterfront."),
+      t("Aquí | cerca, | a | unas | cuadras | del | malecón.", "Here | near, | at | some | blocks | from the | waterfront.", "Close by, a few blocks from the waterfront.", { spain: t("Aquí | cerca, | a | unas | calles | del | malecón.", "Here | near, | at | some | blocks | from the | waterfront.", "Close by, a few blocks from the waterfront.") }),
     ],
     live_corner: [
       t("¡Aquí | a la vuelta!", "Here | around the corner!", "Right around the corner!"),
@@ -1612,7 +1612,7 @@ export const date: SituationDef = {
       t("No, | todavía | no.", "No, | still | not.", "No, not yet."),
     ],
     own_family: [
-      t("Sí, | mis | papás | viven | aquí | cerca.", "Yes, | my | parents | live | here | near.", "Yes, my parents live nearby."),
+      t("Sí, | mis | papás | viven | aquí | cerca.", "Yes, | my | parents | live | here | near.", "Yes, my parents live nearby.", { spain: t("Sí, | mis | padres | viven | aquí | cerca.", "Yes, | my | parents | live | here | near.", "Yes, my parents live nearby.") }),
     ],
     like_here: [
       t("¡Me encanta! | Tenemos | el | mar | y | los | cenotes.", "I love it! | We-have | the | sea | and | the | cenotes.", "I love it! We've got the sea and the cenotes."),
@@ -1653,14 +1653,14 @@ export const date: SituationDef = {
       lt: "Say hello",
       items: [
         { id: "gr_nice_too", s: t("¡Igualmente!", "Likewise!", "Nice to meet you too!"), note: "The usual answer to “Mucho gusto”." },
-        { id: "cm_look", s: t("¡Te ves | muy | bien!", "You look | very | good!", "You look great!") },
+        { id: "cm_look", s: t("¡Te ves | muy | bien!", "You look | very | good!", "You look great!", { spain: t("¡Estás | genial!", "You look | great!", "You look great!") }) },
         { id: "gr_nice", s: t("¡Qué | gusto | conocerte!", "What a | pleasure | to meet you!", "It's so nice to meet you!") },
       ],
     },
     compliments: {
       lt: "Say something nice",
       items: [
-        { id: "cm_look", s: t("¡Te ves | muy | bien!", "You look | very | good!", "You look great!") },
+        { id: "cm_look", s: t("¡Te ves | muy | bien!", "You look | very | good!", "You look great!", { spain: t("¡Estás | genial!", "You look | great!", "You look great!") }) },
         { id: "cm_love", s: t("Me encanta | tu | camisa.", "I love | your | shirt.", "I love your shirt.") },
         { id: "cm_view", s: t("¡Qué | bonita | vista!", "What a | beautiful | view!", "The view is beautiful!") },
         { id: "cm_place", s: t("¡Este | lugar | está | precioso!", "This | place | is | lovely!", "This place is great!") },
@@ -1696,7 +1696,7 @@ export const date: SituationDef = {
     travel: {
       lt: "Answer about travel",
       items: [
-        { id: "tr_yes", s: t("¡Sí, | ya | fui! | ¿Y | tú?", "Yes, | already | I-went! | And | you?", "Yes, I have! Have you?") },
+        { id: "tr_yes", s: t("¡Sí, | ya | fui! | ¿Y | tú?", "Yes, | already | I-went! | And | you?", "Yes, I have! Have you?", { spain: t("¡Sí, | ya | he ido! | ¿Y | tú?", "Yes, | already | I've been! | And | you?", "Yes, I have! Have you?") }) },
         { id: "tr_not_yet", s: t("¡Todavía | no!", "Still | not!", "Not yet!") },
         { id: "tr_no", s: t("No, | nunca. | ¡Pero | me encantaría | ir!", "No, | never. | But | I'd love | to go!", "No, never. But I'd love to go!") },
         { id: "tr_ask", s: t("¿Conoces | Estados Unidos?", "Do you know | the United States?", "Have you ever been to the United States?"),
@@ -1725,7 +1725,7 @@ export const date: SituationDef = {
         { id: "ck_let_me", s: t("Déjame | invitarte.", "Let me | treat you.", "Let me get this."), note: "In Mexico whoever invites usually pays." },
         { id: "ck_split", s: t("¿Dividimos | la | cuenta?", "Do we split | the | check?", "Should we split the check?") },
         { id: "ck_on_me", s: t("Yo | invito.", "I | treat.", "It's on me.") },
-        { id: "ck_half", s: t("¿Pagamos | a | la | mitad?", "Do we pay | at | the | half?", "Should we split it fifty-fifty?") },
+        { id: "ck_half", s: t("¿Pagamos | a | la | mitad?", "Do we pay | at | the | half?", "Should we split it fifty-fifty?", { spain: t("¿Pagamos | a medias?", "Shall we pay | half and half?", "Should we split it fifty-fifty?") }) },
         { id: "ck_sure", s: t("¿Estás | {sm:seguro|sf:segura}? | ¡Gracias!", "Are you | sure? | Thanks!", "Are you sure? Thank you!") },
       ],
     },
@@ -1733,7 +1733,7 @@ export const date: SituationDef = {
       lt: "Say you had a nice time",
       items: [
         { id: "nt_me_too", s: t("¡Yo | también!", "I | too!", "Me too!") },
-        { id: "nt_had", s: t("La pasé | muy | bien.", "I had a time | very | good.", "I had a really nice time.") },
+        { id: "nt_had", s: t("La pasé | muy | bien.", "I had a time | very | good.", "I had a really nice time.", { spain: t("Me lo he pasado | muy | bien.", "I had a time | very | good.", "I had a really nice time.") }) },
         { id: "nt_thanks", s: t("Gracias | por | esta | noche | tan | bonita.", "Thanks | for | this | night | so | lovely.", "Thank you for a lovely evening.") },
       ],
     },
@@ -1744,7 +1744,7 @@ export const date: SituationDef = {
         { id: "ag_free", s: t("¿Estás | libre | el | sábado?", "Are you | free | on | Saturday?", "Are you free on Saturday?", { flags: { 2: ART_DAY } }) },
         { id: "ag_activity", s: t("¿Te gustaría | {X} | el | sábado?", "Would you like | to {X} | on | Saturday?", "Would you like to {X} on Saturday?", { flags: { 2: ART_DAY } }) },
         { id: "ag_id_love", s: t("¡Me encantaría!", "I'd love that!", "I'd love that!") },
-        { id: "ag_works", s: t("¡El | sábado | me queda | bien!", "— | Saturday | suits me | well!", "Saturday works for me!", { flags: { 0: "The article before a weekday: no English word here." } }),
+        { id: "ag_works", s: t("¡El | sábado | me queda | bien!", "— | Saturday | suits me | well!", "Saturday works for me!", { flags: { 0: "The article before a weekday: no English word here." }, spain: t("¡El | sábado | me viene | bien!", "— | Saturday | suits me | well!", "Saturday works for me!", { flags: { 0: "The article before a weekday: no English word here." } }) }),
           note: "Me queda bien = it works for me (a day, a time)." },
       ],
     },
@@ -1759,7 +1759,7 @@ export const date: SituationDef = {
     day_answer: {
       lt: "Agree on a day",
       items: [
-        { id: "dy_works", s: t("¡Claro, | me queda | bien!", "Sure, | it suits me | well!", "Sure, that works!") },
+        { id: "dy_works", s: t("¡Claro, | me queda | bien!", "Sure, | it suits me | well!", "Sure, that works!", { spain: t("¡Claro, | me viene | bien!", "Sure, | it suits me | well!", "Sure, that works!") }) },
         { id: "dy_free", s: t("¡Sí, | estoy | libre!", "Yes, | I'm | free!", "Yes, I'm free!") },
         { id: "dy_busy", s: t("Perdón, | ese | día | estoy | {m:ocupado|f:ocupada}.", "Sorry, | that | day | I'm | busy.", "Sorry, I'm busy that day.") },
       ],
@@ -1767,8 +1767,8 @@ export const date: SituationDef = {
     jacket: {
       lt: "Offer your sweater",
       items: [
-        { id: "jk_take", s: t("Toma, | ponte | mi | suéter.", "Here, | put on | my | sweater.", "Here, take my sweater.") },
-        { id: "jk_want", s: t("¿Quieres | mi | suéter?", "Do you want | my | sweater?", "Do you want my sweater?") },
+        { id: "jk_take", s: t("Toma, | ponte | mi | suéter.", "Here, | put on | my | sweater.", "Here, take my sweater.", { spain: t("Toma, | ponte | mi | jersey.", "Here, | put on | my | sweater.", "Here, take my sweater.") }) },
+        { id: "jk_want", s: t("¿Quieres | mi | suéter?", "Do you want | my | sweater?", "Do you want my sweater?", { spain: t("¿Quieres | mi | jersey?", "Do you want | my | sweater?", "Do you want my sweater?") }) },
       ],
     },
     check_offer: {
@@ -1817,7 +1817,7 @@ export const date: SituationDef = {
       lt: "Offer to walk them home",
       items: [
         { id: "wk_walk", s: t("¿Te | acompaño | a | tu | casa?", "You | I-accompany | to | your | house?", "Can I walk you home?") },
-        { id: "jk_take", s: t("Toma, | ponte | mi | suéter.", "Here, | put on | my | sweater.", "Here, take my sweater.") },
+        { id: "jk_take", s: t("Toma, | ponte | mi | suéter.", "Here, | put on | my | sweater.", "Here, take my sweater.", { spain: t("Toma, | ponte | mi | jersey.", "Here, | put on | my | sweater.", "Here, take my sweater.") }) },
       ],
     },
     goodbye: {
@@ -1835,6 +1835,23 @@ export const date: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha llegado": { reason: "grammatical_fusion", split: "ha → has + llegado (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "he llegado": { reason: "grammatical_fusion", split: "he → have + llegado (participle): haber + participle, Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "has llegado": { reason: "grammatical_fusion", split: "has → you have + llegado (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "menos mal": { reason: "lexical_expression", split: "menos → less + mal → bad is a fixed phrase = thank goodness.", minimal: "Two words." },
+    "he dicho": { reason: "grammatical_fusion", split: "he → have + dicho (participle): Spain's present perfect; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "pues claro": { reason: "lexical_expression", split: "pues → well + claro → clear: together = well, of course.", minimal: "Two words." },
+    "no hemos pedido": { reason: "grammatical_fusion", split: "no → not + hemos → we have + pedido (participle): Spain's present perfect, negated; one English verb phrase.", minimal: "Negation, auxiliary and participle." },
+    "no nos han traído": { reason: "grammatical_fusion", split: "no → not + nos → to us + han → they have + traído (participle): one English verb phrase (they haven't brought us).", minimal: "Negation, pronoun, auxiliary and participle." },
+    "han traído": { reason: "grammatical_fusion", split: "han → they have + traído (participle): Spain's present perfect for what has just happened; one English verb phrase.", minimal: "Auxiliary and participle." },
+    "me lo he pasado": { reason: "grammatical_fusion", split: "me → myself + lo → it + he → have + pasado → spent: pasárselo bien = to have a good time (Spain); one English verb phrase.", minimal: "Pronouns, auxiliary and participle." },
+    "te viene": { reason: "grammatical_fusion", split: "te → to you + viene → comes: ¿te viene bien? = does it suit you (Spain); English says it as one verb.", minimal: "Pronoun and verb." },
+    "me viene": { reason: "grammatical_fusion", split: "me → to me + viene → comes: me viene bien = it suits me (Spain); English says it as one verb.", minimal: "Pronoun and verb." },
+    "me ha encantado": { reason: "grammatical_fusion", split: "me → to me + ha → has + encantado → delighted: = I've loved; one English verb phrase.", minimal: "Pronoun, auxiliary and participle." },
+    "más o menos": { reason: "lexical_expression", split: "más → more + o → or + menos → less = about, roughly.", minimal: "Three words." },
+    "he ido": { reason: "grammatical_fusion", split: "he → have + ido (participle): Spain's present perfect; one English verb phrase (I've been).", minimal: "Auxiliary and participle." },
+    "a medias": { reason: "lexical_expression", split: "a → to + medias → halves: pagar a medias = to split it half and half.", minimal: "Two words." },
     "no encontraba": { reason: "grammatical_fusion", split: "no → not + encontraba → I-was-finding; = I couldn't find.", minimal: "Two words." },
     "me perdí": { reason: "grammatical_fusion", split: "me → myself + perdí → I lost; perderse = to get lost.", minimal: "Two words." },
     "te ves": { reason: "grammatical_fusion", split: "te → yourself + ves → you see; verse = to look (good, tired…).", minimal: "Two words." },

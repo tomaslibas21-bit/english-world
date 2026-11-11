@@ -1,0 +1,27 @@
+{
+"situation": "s91a-lost-wallet",
+"items": [
+{ "ctx": "problem", "say": "Perdone, ¿me puede ayudar?", "intent": "help_req" },
+{ "ctx": "problem", "say": "He perdido la cartera", "intent": "lost", "slots": { "item": "wallet" } },
+{ "ctx": "problem", "say": "Se me ha perdido el móvil", "intent": "lost", "slots": { "item": "phone" } },
+{ "ctx": "problem", "say": "Creo que me han robado el bolso", "intent": "lost", "slots": { "item": "bag" } },
+{ "ctx": "pockets", "say": "Sí, ya he mirado", "intent": "checked" },
+{ "ctx": "pockets", "say": "Sí, ya he buscado por todas partes", "intent": "checked" },
+{ "ctx": "pockets", "say": "No, todavía no he mirado", "intent": "not_checked_ctx" },
+{ "ctx": "last_seen", "say": "Esta mañana, en la panadería", "intent": ["last_seen", "place_ctx"] },
+{ "ctx": "last_seen", "say": "Hace una hora, más o menos", "intent": "when_ctx" },
+{ "ctx": "last_seen", "say": "Sí, he comprado pan", "intent": "bought_ctx" },
+{ "ctx": "last_seen", "say": "Cogí un taxi", "intent": "last_seen" },
+{ "ctx": "describe", "say": "Es marrón y pequeñita", "intent": ["describe", "describe_ctx"] },
+{ "ctx": "describe", "say": "Es un móvil negro con funda azul", "intent": "describe" },
+{ "ctx": "police", "say": "¿Está abierta ahora?", "intent": "police_open" },
+{ "ctx": "police", "say": "Voy a volver a preguntar", "intent": "will_go_back" },
+{ "ctx": "police", "say": "¿Tengo que bloquear las tarjetas?", "intent": "cancel_cards" },
+{ "ctx": "police", "say": "¿Dónde está la parada de taxis?", "intent": "where_stand" },
+{ "ctx": "found", "say": "Sí, es mi móvil", "intent": "its_mine_ctx" },
+{ "ctx": "found", "say": "¿Dónde la ha encontrado?", "intent": "where_found" },
+{ "ctx": "problem", "say": "Ya la he encontrado", "intent": "not_lost" },
+{ "ctx": "closing", "say": "Muchas gracias, es usted muy amable", "intent": "thanks_kind" },
+{ "ctx": "pockets", "say": "No he mirado", "intent": "any" }
+]
+}

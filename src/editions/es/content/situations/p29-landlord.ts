@@ -495,7 +495,7 @@ export const landlord: SituationDef = {
       "soy (su | tu #tip:tu_staff) (inquilino | inquilina) [de arriba | del primer piso]",
       "soy (su | tu #tip:tu_staff) (inquilino | inquilina) del @apt", "soy (el | la) del @apt", "(vivo | soy) (arriba | del primer piso | del departamento de arriba | del depa de arriba)",
       "soy {name} [su (inquilino | inquilina)] (del @apt | de arriba)", "vivo en el @apt",
-      "(perdon | disculpe) que lo moleste [@don] [pero es (importante | urgente)] #h:sorry_bother", "(perdon | disculpe) la molestia [@don] [pero es (importante | urgente)]",
+      "(perdon | perdone | disculpe) que (lo | le) moleste [@don] [pero es (importante | urgente)] #h:sorry_bother", "(perdon | disculpe) la molestia [@don] [pero es (importante | urgente)]",
       "[@don] (tiene | tienes #tip:tu_staff) un (minuto | momento | segundo | minutito) #h:minute",
       "(puedo | podemos) hablar con usted [un (minuto | momento | segundo)]", "(podemos | puedo) hablar [un (minuto | momento)]",
       "(espere | espereme) @don", "@don (espere | espereme) [un (momento | segundo)]",
@@ -522,7 +522,7 @@ export const landlord: SituationDef = {
       "@ac (no funciona | no enfria | esta descompuesto | esta roto | no sirve) (por | durante) @dur #tip:tense_since",
     ] },
     cold_detail: { patterns: [
-      "hace mas calor (adentro | en @home | arriba | en mi casa) que afuera #h:kitchen_colder",
+      "hace mas calor (adentro | dentro | en @home | arriba | en mi casa) que (afuera | fuera) #h:kitchen_colder",
       "(@home | mi casa) (esta | es) mas (caliente | calurosa | caluroso) que afuera",
       "no (puedo | podemos) dormir (del calor | por el calor | con este calor | de calor) #h:sleep_coat",
       "no (puedo | podemos) dormir [en la noche]",
@@ -537,7 +537,7 @@ export const landlord: SituationDef = {
       "estoy [muy | bien] caliente [@where] #tip:caliente",
     ] },
     space_heater: { patterns: [
-      "(compré | me compré | tuve que comprar) (un ventilador | dos ventiladores | un ventilador nuevo | un abanico) [con mi (dinero | propio dinero)]",
+      "(compré | me compré | tuve que comprar | he comprado | me he comprado | he tenido que comprar) (un ventilador | dos ventiladores | un ventilador nuevo | un abanico) [con mi (dinero | propio dinero)]",
       "(estoy usando | uso | tengo) (un ventilador | dos ventiladores | un abanico) [todo el dia | toda la noche]",
     ] },
     // the water heater (or heating) blamed instead of the AC: Don Ernesto steers it to the AC
@@ -579,12 +579,12 @@ export const landlord: SituationDef = {
     // "El lunes." / "El lunes pasado." while he asks how long
     dur_ctx: { patterns: ["[el] {day} [pasado]"] },
     called_before: { patterns: [
-      "le (llamé | marqué | hablé) (todos los dias | muchas veces | varias veces | {number} veces | mil veces | toda la semana | ayer | el {day}) [@dur_tail] #h:called_every_day",
+      "le (llamé | marqué | hablé | he llamado) (todos los dias | muchas veces | varias veces | {number} veces | mil veces | toda la semana | ayer | el {day}) [@dur_tail] #h:called_every_day",
       "le he (llamado | marcado | hablado) [al celular] (todos los dias | muchas veces | varias veces | {number} veces | mil veces | toda la semana)",
       "te (llamé | he llamado) [al celular] [todos los dias | muchas veces | varias veces | {number} veces] #tip:tu_staff",
       "le (llamé | marqué) al celular [todos los dias | muchas veces | varias veces]",
       "le (escribí | mandé mensajes | mandé mensaje) (varias veces | muchas veces | todos los dias | {number} veces | mil veces)",
-      "le (dejé | mandé | escribí) [un | {number} | muchos | varios] (mensaje | mensajes | whatsapp | whatsapps | correo | correos | recado | recados | audio | audios) #h:left_voicemail",
+      "le (dejé | mandé | escribí | he dejado | he mandado | he escrito) [un | {number} | muchos | varios] (mensaje | mensajes | whatsapp | whatsapps | correo | correos | recado | recados | audio | audios) #h:left_voicemail",
       "(usted)? (nunca | no) (contesta | me contesta | contestó | me contestó | responde | me responde) [el telefono | mis llamadas | mis mensajes | el celular]",
       "no me (regresó | devolvió) la llamada", "nadie contesta [el telefono]",
       // "¿Por qué no contesta el teléfono?" (the intro: he never answers)
@@ -596,9 +596,9 @@ export const landlord: SituationDef = {
 
     // --- the remote control (the English thermostat) ----------------------------------
     thermo_yes: { patterns: [
-      "[si] ya (lo | la) revisé [dos veces | varias veces | mil veces | {number} veces] #h:checked_twice",
-      "[si] (ya)? (revisé | probé) el control [dos veces | varias veces]", "no es el control #h:not_thermostat", "no es el control es el (aparato | aire | minisplit)", "el control (funciona | esta bien | sirve)",
-      "(ya)? (probé | intenté | hice) todo #h:tried_everything",
+      "[si] ya (lo | la) (revisé | he revisado | he mirado | he comprobado | miré) [dos veces | varias veces | mil veces | {number} veces] #h:checked_twice",
+      "[si] (ya)? (revisé | probé | he revisado | he probado | he mirado) el (control | mando) [dos veces | varias veces]", "no es el (control | mando) #h:not_thermostat", "no es el (control | mando) es el (aparato | aire | minisplit)", "el (control | mando) (funciona | esta bien | sirve)",
+      "(ya)? (probé | intenté | hice) todo #h:tried_everything", "(ya)? (lo he probado | lo he intentado | lo he hecho | he probado | he intentado) todo",
       "[si] (ya)? le (cambié | puse) (las | unas) pilas [nuevas] [al control]", "[si] (ya)? (esta | lo puse) en (frio | modo frio) [y nada | y no enfria | y sigue igual | y sigue echando aire caliente]",
       "(no funciona | no enfria) ni con el control", "ya (lo | la) puse en (frio | modo frio) y nada",
       "[si] claro que (lo revisé | si)",
@@ -621,9 +621,9 @@ export const landlord: SituationDef = {
       "segun el @contract usted (tiene que arreglarlo | paga las reparaciones | se encarga de las reparaciones)",
       "(el @contract dice | dice el @contract) que (usted | el dueno) (arregla | paga | tiene que arreglar | se encarga de | debe arreglar) (las reparaciones | todo | eso | el aire)",
       "(esta | viene) en el @contract", "eso no es lo que dice el @contract",
-      "@ac (esta | viene) incluido [en la renta | en el @contract] #h:heat_included", "(la renta | el @contract) incluye el aire [acondicionado]",
+      "@ac (esta | viene) incluido [en la renta | en el alquiler | en el @contract] #h:heat_included", "(la renta | el alquiler | el @contract) incluye el aire [acondicionado]",
       "(el departamento | lo) (renté | rentamos) con aire [acondicionado]", "el departamento (viene | se renta) con aire [acondicionado]",
-      "(yo)? pago la renta [cada mes | completa | puntual | a tiempo]",
+      "(yo)? pago (la renta | el alquiler) [cada mes | completa | puntual | a tiempo]",
       "usted es el dueno", "usted es el dueno asi que le toca (a usted)?", "[usted es el dueno] le (toca | corresponde) (arreglarlo | a usted arreglarlo)", "(eso | arreglarlo) no me toca a mi",
       "(eso | ese) es su trabajo [no el mio]", "es su trabajo no el mio",
       "el dueno (tiene que | debe) arreglarlo", "he tenido paciencia pero (es su responsabilidad | le toca a usted)",
@@ -635,7 +635,7 @@ export const landlord: SituationDef = {
     // "No es su responsabilidad." / "No está en el contrato.": never the landlord's job admitted
     resp_neg: { patterns: [
       "no es su (responsabilidad | trabajo | obligacion)", "(eso | arreglarlo) no es su (responsabilidad | trabajo | obligacion)", "no le toca a usted",
-      "no (esta | viene) en el @contract", "usted no es el dueno", "@ac no (esta | viene) incluido [en la renta | en el @contract]",
+      "no (esta | viene) en el @contract", "usted no es el dueno", "@ac no (esta | viene) incluido [en la renta | en el alquiler | en el @contract]",
       "el @contract no dice (eso | nada)",
     ] },
     request_fix: { patterns: [
@@ -668,12 +668,12 @@ export const landlord: SituationDef = {
       "usted es (un flojo | flojo | un mentiroso | mentiroso | un inutil | inutil) #tip:rude_insult", "callese #tip:rude_insult",
     ] },
     withhold: { patterns: [
-      "no (le voy a pagar | voy a pagar | le pago | pago) [la renta] hasta que (lo arregle | funcione | arregle el aire | el aire funcione) #tip:withhold",
-      "no (le voy a pagar | voy a pagar | le pago) [la renta | nada | este mes] #tip:withhold",
-      "este mes no (le voy a pagar | voy a pagar | le pago | pago) [la renta | nada] #tip:withhold",
-      "sin aire no hay renta #tip:withhold", "voy a dejar de pagar [la renta] #tip:withhold",
+      "no (le voy a pagar | voy a pagar | le pago | pago) [la renta | el alquiler] hasta que (lo arregle | funcione | arregle el aire | el aire funcione) #tip:withhold",
+      "no (le voy a pagar | voy a pagar | le pago) [la renta | el alquiler | nada | este mes] #tip:withhold",
+      "este mes no (le voy a pagar | voy a pagar | le pago | pago) [la renta | el alquiler | nada] #tip:withhold",
+      "sin aire no hay renta #tip:withhold", "voy a dejar de pagar [la renta | el alquiler] #tip:withhold",
       "le pago cuando (lo arregle | funcione el aire | el aire funcione) #tip:withhold",
-      "si no lo arregla no (le pago | le voy a pagar | pago | voy a pagar) [la renta] #tip:withhold",
+      "si no lo arregla no (le pago | le voy a pagar | pago | voy a pagar) [la renta | el alquiler] #tip:withhold",
     ] },
 
     // --- the offer: fix it yourself ------------------------------------------------------------
@@ -741,23 +741,23 @@ export const landlord: SituationDef = {
       "lo necesito (antes | esta semana | antes del fin de semana)", "(puede | podria) ser (antes | esta semana)",
     ] },
     propose_day: { patterns: [
-      "(que tal | y si | mejor | puede ser | se puede) {day} [de la (proxima | otra) semana] [en la manana | en la tarde]",
-      "(puede | podria) venir {day} [de la (proxima | otra) semana] [en la manana | en la tarde]", "que venga [@someone] {day} [en la manana | en la tarde]",
-      "{day} (seria mejor | es mejor | me queda mejor) #h:saturday_better", "{day} si se puede", "{day} o {day}",
+      "(que tal | y si | mejor | puede ser | se puede) {day} [de la (proxima | otra) semana] [en la manana | en la tarde | por la manana | por la tarde]",
+      "(puede | podria) venir {day} [de la (proxima | otra) semana] [en la manana | en la tarde | por la manana | por la tarde]", "que venga [@someone] {day} [en la manana | en la tarde | por la manana | por la tarde]",
+      "{day} (seria mejor | es mejor | me queda mejor | me viene mejor) #h:saturday_better", "{day} si se puede", "{day} o {day}",
       "para {day} [a mas tardar]", "a mas tardar {day}", "antes del {day} #before",
       "lo necesito (arreglado | listo | funcionando) (para | a mas tardar) {day}", "lo necesito (arreglado | listo | funcionando) antes del {day} #before",
     ] },
     // "¿Puede venir en la tarde?" while a day is being agreed: mornings only
-    afternoon_ctx: { patterns: ["(puede | podria) (venir | ser) [{day}] en la tarde", "[y] en la tarde", "(mejor | que tal) en la tarde", "en la manana no (puedo | estoy)"] },
+    afternoon_ctx: { patterns: ["(puede | podria) (venir | ser) [{day}] (en la tarde | por la tarde)", "[y] (en la tarde | por la tarde)", "(mejor | que tal) (en la tarde | por la tarde)", "(en la manana | por la manana) no (puedo | estoy)"] },
     // a bare day while a day is being agreed: "El viernes." / "El viernes en la mañana."
-    day_ctx: { patterns: ["{day} [de la (proxima | otra) semana] [en la manana | en la tarde | temprano] [a {time}]"] },
+    day_ctx: { patterns: ["{day} [de la (proxima | otra) semana] [en la manana | en la tarde | por la manana | por la tarde | temprano] [a {time}]"] },
     // "El viernes no me queda." (never an agreement)
     day_no: { patterns: [
-      "{day} [en la manana] no (puedo | me queda | me queda bien | me sirve | me conviene | esta bien)",
+      "{day} [en la manana | por la manana] no (puedo | me queda | me queda bien | me viene bien | me sirve | me conviene | esta bien)",
       "no puedo {day}", "{day} no", "no me (queda | queda bien | sirve | conviene) {day}",
     ] },
     accept_date: { patterns: [
-      "{day} [en la manana] me queda bien #h:friday_works", "{day} [en la manana] (esta bien | esta perfecto | perfecto | me parece bien | me sirve)",
+      "{day} [en la manana | por la manana] (me queda | me viene) bien #h:friday_works", "{day} [en la manana | por la manana] (esta bien | esta perfecto | perfecto | me parece bien | me sirve)",
       "nos vemos {day}", "trato hecho", "me parece bien #h:works_me", "me sirve", "de acuerdo {day}",
     ] },
     home_yes: { patterns: [
@@ -793,17 +793,17 @@ export const landlord: SituationDef = {
       "[y] (un | algun) descuento", "me (hace | da) un descuento [en la renta] [por (esta semana | estos dias | los dias sin aire)]", "me (descuenta | puede descontar) (los dias sin aire | esta semana | estos dias)",
     ] },
     ask_trip: { patterns: [
-      "cuanto tiempo (se va | va a estar fuera | va a estar en san cristobal | se queda en san cristobal)", "cuando (regresa | vuelve)", "a donde (va | se va)", "se va de vacaciones",
+      "cuanto tiempo (se va | va a estar fuera | va a estar en san cristobal | se queda en san cristobal)", "cuando (regresa | vuelve | vuelve usted)", "a donde (va | se va)", "se va de vacaciones",
     ] },
 
     // --- the rent -------------------------------------------------------------------------------
     pay_rent: { patterns: [
-      "[claro] aqui (tiene | esta) en efectivo #h:here_check", "[claro] aqui (tiene | esta) la renta [de este mes] [en efectivo]",
+      "[claro] aqui (tiene | esta) en efectivo #h:here_check", "[claro] aqui (tiene | esta) (la renta | el alquiler) [de este mes] [en efectivo]",
       "(le pago | se la pago) (ahorita | ahora | de una vez | en efectivo)", "(puedo | le puedo) pagar (ahorita | ahora | en efectivo)",
       "aqui (tiene | estan) (los | sus) ({price} | catorce mil [pesos])", "(traigo | tengo) la renta [aqui]",
     ] },
     // "¿Cuánto es?" while he asks for the rent: the amount again, nothing paid
-    rent_q_ctx: { patterns: ["(cuanto | de cuanto) (es | son | le debo | era) [la renta] [de este mes]", "cuanto le (debo | pago)"] },
+    rent_q_ctx: { patterns: ["(cuanto | de cuanto) (es | son | le debo | era) [la renta | el alquiler] [de este mes]", "cuanto le (debo | pago)"] },
     // "Sí, el aire." / "Otra vez el aire." to "Déjeme adivinar: ¿el aire?"
     ac_ctx: { patterns: ["(si | exacto | correcto | asi es | adivino) [otra vez] (el aire | el aire acondicionado | el clima | el minisplit | el aparato) [otra vez]",
       // "Sí, perdón, el aire." / "Ah, el aire." after "¿No será el aire?"
@@ -832,7 +832,7 @@ export const landlord: SituationDef = {
       "(puedo | le puedo) (pagarle | pagarsela | pagar) (despues | mas tarde | luego | al rato | {day} | el primero | con transferencia | por transferencia)",
     ] },
     paid_already: { patterns: [
-      "ya (se la | le) (pagué | transferí | deposité)", "ya (pagué | la pagué) [la renta]", "(pagué | la pagué | se la pagué) (el primero | ayer | la semana pasada | por transferencia)",
+      "ya (se la | le) (pagué | transferí | deposité)", "ya (se la | se lo | le | lo) (he pagado | he transferido | he ingresado)", "ya (he pagado | lo he pagado) [el alquiler]", "ya (pagué | la pagué) [la renta | el alquiler]", "(pagué | la pagué | se la pagué) (el primero | ayer | la semana pasada | por transferencia)",
       "ya esta pagada", "[ya] pagué todo", "ya se la (mandé | transferí)", "(le | se la) (pagué | transferí | deposité) (el primero | ayer | la semana pasada | antier | el {day})",
     ] },
 
@@ -858,7 +858,7 @@ export const landlord: SituationDef = {
       t("¡Ay, | hola! | Perdón, | no puedo | quedarme. | ¡Me voy | a | San Cristóbal!", "Oh, | hi! | Sorry, | I can't | stay. | I'm off | to | San Cristóbal!",
         "Oh, hi! Sorry, I can't stay. I'm off to San Cristóbal!"),
       t("¡Buenos días! | Rapidito, | ¿sí? | San Cristóbal | me | espera.", "Good morning! | Make it quick, | okay? | San Cristóbal | (for) me | is waiting.",
-        "Morning! Make it quick, okay? San Cristóbal is waiting.", { flags: { 1: "rapidito: rápido + -ito, “nice and quick”." } }),
+        "Morning! Make it quick, okay? San Cristóbal is waiting.", { flags: { 1: "rapidito: rápido + -ito, “nice and quick”." }, spain: t("¡Buenos días! | Rapidito, | ¿vale? | San Cristóbal | me | espera.", "Good morning! | Make it quick, | okay? | San Cristóbal | (for) me | is waiting.", "Morning! Make it quick, okay? San Cristóbal is waiting.", { flags: { 1: "rapidito: rápido + -ito, “nice and quick”." } }) }),
     ],
     greet_again: [
       t("Ay, | usted | otra vez. | Déjeme | adivinar: | ¿el | aire?", "Oh, | you | again. | Let me | guess: | the | AC?", "Oh, it's you again. Let me guess: the AC?"),
@@ -870,10 +870,10 @@ export const landlord: SituationDef = {
       t("A ver, | ¿en | qué | le | puedo | ayudar?", "Let's see, | with | what | (to) you | can I | help?", "So, what can I do for you?"),
       t("Bueno, | ¿cuál | es | el | problema?", "Okay, | what | is | the | problem?", "Okay, what's the problem?"),
     ],
-    one_minute: [t("Nada más | un | minuto, | ¿eh?", "Just | one | minute, | okay?", "Just one minute, okay?")],
+    one_minute: [t("Nada más | un | minuto, | ¿eh?", "Just | one | minute, | okay?", "Just one minute, okay?", { spain: t("Solo | un | minuto, | ¿eh?", "Just | one | minute, | okay?", "Just one minute, okay?") })],
     problem_reask: [t("¿Pasa | algo | arriba?", "Is going on | something | upstairs?", "Is something wrong upstairs?")],
     problem_what: [t("A ver. | ¿Qué | pasa?", "Let's see. | What | is going on?", "Okay. What's wrong?")],
-    i_know_problem: [t("Sí, | sí, | el | aire. | Ya | me | dijo.", "Yes, | yes, | the | AC. | Already | (to) me | you said.", "Yes, yes, the AC. You told me.")],
+    i_know_problem: [t("Sí, | sí, | el | aire. | Ya | me | dijo.", "Yes, | yes, | the | AC. | Already | (to) me | you said.", "Yes, yes, the AC. You told me.", { spain: t("Sí, | sí, | el | aire. | Ya | me lo | ha dicho.", "Yes, | yes, | the | AC. | Already | it to me | you've said.", "Yes, yes, the AC. You told me.") })],
     oh_no: [t("¡Ay, | no!", "Oh, | no!", "Oh, no."), t("Uy.", "Uh-oh.", "Uh-oh.")],
     // the water heater blamed (5 Nov 2026): steered to the AC
     heater_redirect: [
@@ -884,15 +884,15 @@ export const landlord: SituationDef = {
 
     // --- the remote control --------------------------------------------------------
     thermostat_q: [
-      t("Mmm. | ¿Ya | revisó | el | control?", "Hmm. | Already | did you check | the | remote?", "Hmm. Have you checked the remote?"),
-      t("¿Seguro | que | el | control | está | en | frío?", "Sure | that | the | remote | is | on | cool?", "Are you sure the remote is set to cool?"),
+      t("Mmm. | ¿Ya | revisó | el | control?", "Hmm. | Already | did you check | the | remote?", "Hmm. Have you checked the remote?", { spain: t("Mmm. | ¿Ya | ha mirado | el | mando?", "Hmm. | Already | have you checked | the | remote?", "Hmm. Have you checked the remote?") }),
+      t("¿Seguro | que | el | control | está | en | frío?", "Sure | that | the | remote | is | on | cool?", "Are you sure the remote is set to cool?", { spain: t("¿Seguro | que | el | mando | está | en | frío?", "Sure | that | the | remote | is | on | cool?", "Are you sure the remote is set to cool?") }),
     ],
     thermostat_ok: [t("Bueno, | bueno, | le | creo.", "Okay, | okay, | (to) you | I believe.", "Okay, okay, I believe you.")],
     thermostat_no: [t("Pruébelo. | Estos | aparatos | viejos | tienen | su | carácter.", "Try it. | These | units | old | have | their | temper.", "Give it a try. These old units have a mind of their own.")],
-    thermostat_no2: [t("O | no. | Por | su | cara, | ya | lo | intentó.", "Or | not. | By | your | face, | already | it | you tried.", "Or not. From your face, I'd say you already tried.")],
+    thermostat_no2: [t("O | no. | Por | su | cara, | ya | lo | intentó.", "Or | not. | By | your | face, | already | it | you tried.", "Or not. From your face, I'd say you already tried.", { spain: t("O | no. | Por | su | cara, | ya | lo | ha intentado.", "Or | not. | By | your | face, | already | it | you've tried.", "Or not. From your face, I'd say you already tried.") })],
     thermostat_where: [
       t("Es | el | control | blanco | del | aire: | póngalo | en | frío, | el | del | copo de nieve.", "It's | the | remote | white | of the | AC: | set it | on | cool, | the one | with the | snowflake.",
-        "It's the white remote for the AC: set it to cool, the snowflake button."),
+        "It's the white remote for the AC: set it to cool, the snowflake button.", { spain: t("Es | el | mando | blanco | del | aire: | póngalo | en | frío, | el | del | copo de nieve.", "It's | the | remote | white | of the | AC: | set it | on | cool, | the one | with the | snowflake.", "It's the white remote for the AC: set it to cool, the snowflake button.") }),
     ],
 
     // --- how long ------------------------------------------------------------------
@@ -907,11 +907,11 @@ export const landlord: SituationDef = {
     dur_unknown: [t("Bueno. | Unos | días, | por lo menos.", "Okay. | A few | days, | at least.", "Okay. A few days, at least.")],
     voicemail_react: [
       t("Ay, | mis | mensajes... | Los | iba | a | revisar, | de veras.", "Oh, | my | messages... | Them | I was going | to | check, | really.", "Oh, my messages… I was going to check them, really.",
-        { flags: { 3: "Los here is a pronoun (them, the messages), not an article." } }),
+        { flags: { 3: "Los here is a pronoun (them, the messages), not an article." }, spain: t("Ay, | mis | mensajes... | Los | iba | a | escuchar, | de verdad.", "Oh, | my | messages... | Them | I was going | to | listen to, | really.", "Oh, my messages… I was going to check them, really.", { flags: { 3: "Los here is a pronoun (them, the messages), not an article." } }) }),
     ],
 
     // --- Doña Lupita (the twist) -------------------------------------------------------------
-    rita_in: [t("Perdón | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.")],
+    rita_in: [t("Perdón | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.", { spain: t("Perdone | que | me meta, | Don | Ernesto.", "Sorry | that | I butt in, | Don | Ernesto.", "Sorry to butt in, Don Ernesto.") })],
     rita_back: [
       t("Es | cierto. | Desde | mi | casa | se oye | el | ventilador | de al lado | toda | la | noche.", "It's | true. | From | my | home | you can hear | the | fan | next door | all | the | night.",
         "It's true. From my place I can hear that fan next door all night."),
@@ -941,7 +941,7 @@ export const landlord: SituationDef = {
     ],
     dodge_sweater: [
       t("¿Ya | probó | con | un | baño | de | agua | fría?", "Already | did you try | with | a | shower | of | water | cold?", "Have you tried a cold shower?",
-        { flags: { 4: "baño: a bath or a shower; also the bathroom." } }),
+        { flags: { 4: "baño: a bath or a shower; also the bathroom." }, spain: t("¿Ya | ha probado | con | una | ducha | de | agua | fría?", "Already | have you tried | with | a | shower | of | water | cold?", "Have you tried a cold shower?") }),
     ],
     kidding: [t("Es broma, | es broma.", "Just kidding, | just kidding.", "I'm kidding, I'm kidding.")],
     sorry_joke: [t("Perdón, | perdón. | Mal | chiste.", "Sorry, | sorry. | Bad | joke.", "Sorry, sorry. Bad joke.")],
@@ -957,7 +957,7 @@ export const landlord: SituationDef = {
     i_know: [t("Ya sé, | ya sé.", "I know, | I know.", "I know, I know.")],
     resp_react: [
       t("Bueno, | bueno. | Ya | leyó | el | contrato. | Eso | lo | respeto.", "Okay, | okay. | Already | you read | the | lease. | That | it | I respect.",
-        "Okay, okay. You've read the lease. I respect that.", { flags: { 7: "lo repeats eso (that): Spanish doubles a fronted object." } }),
+        "Okay, okay. You've read the lease. I respect that.", { flags: { 7: "lo repeats eso (that): Spanish doubles a fronted object." }, spain: t("Bueno, | bueno. | Ya | se ha leído | el | contrato. | Eso | lo | respeto.", "Okay, | okay. | Already | you've read | the | lease. | That | it | I respect.", "Okay, okay. You've read the lease. I respect that.", { flags: { 7: "lo repeats eso (that): Spanish doubles a fronted object." } }) }),
     ],
     resp_lease: [
       t("La | cláusula | de | las | reparaciones, | ya sé. | Me la | sé | de memoria.", "The | clause | about | the | repairs, | I know. | It | I know | by heart.",
@@ -979,15 +979,15 @@ export const landlord: SituationDef = {
         "Okay, I hear you. No AC in this heat is no fun."),
     ],
     blunt_react: [
-      t("¡Epa, | epa! | {m:Tranquilo.|f:Tranquila.} | Somos | adultos.", "Whoa, | whoa! | Easy. | We're | adults.", "Whoa, whoa. Easy. We're both adults here."),
+      t("¡Epa, | epa! | {m:Tranquilo.|f:Tranquila.} | Somos | adultos.", "Whoa, | whoa! | Easy. | We're | adults.", "Whoa, whoa. Easy. We're both adults here.", { spain: t("¡Eh, | eh! | {m:Tranquilo.|f:Tranquila.} | Somos | adultos.", "Whoa, | whoa! | Easy. | We're | adults.", "Whoa, whoa. Easy. We're both adults here.") }),
     ],
     not_enemy: [
       t("Oiga, | no es | para tanto. | Yo | no soy | su | enemigo.", "Hey, | it's not | that big a deal. | I | am not | your | enemy.", "Hey, no need for that. I'm not the enemy."),
     ],
-    blunt_last: [t("Empecemos | otra vez. | Con | calma, | ¿sí?", "Let's start | again. | With | calm, | okay?", "Let's start over. Nice and calm, okay?")],
+    blunt_last: [t("Empecemos | otra vez. | Con | calma, | ¿sí?", "Let's start | again. | With | calm, | okay?", "Let's start over. Nice and calm, okay?", { spain: t("Empecemos | otra vez. | Con | calma, | ¿vale?", "Let's start | again. | With | calm, | okay?", "Let's start over. Nice and calm, okay?") })],
     rent_threat_react: [
       t("¡Epa! | Nadie | está | hablando | de | la | renta. | Hablemos | del | aire.", "Whoa! | Nobody | is | talking | about | the | rent. | Let's talk | about the | AC.",
-        "Whoa! Nobody's talking about rent. Let's talk about the AC."),
+        "Whoa! Nobody's talking about rent. Let's talk about the AC.", { spain: t("¡Eh! | Nadie | está | hablando | del | alquiler. | Hablemos | del | aire.", "Whoa! | Nobody | is | talking | about the | rent. | Let's talk | about the | AC.", "Whoa! Nobody's talking about rent. Let's talk about the AC.") }),
     ],
 
     // --- the offer -------------------------------------------------------------------
@@ -1011,12 +1011,12 @@ export const landlord: SituationDef = {
     ],
     offer_refused_react: [
       t("Valía la pena | intentarlo. | Bueno, | bueno. | Le | llamo | a | Chucho.", "It was worth | trying it. | Okay, | okay. | (To) him | I'll call | — | Chucho.", "Worth a try. Okay, okay. I'll call Chucho.",
-        { flags: { 4: F_LE, 6: F_A } }),
+        { flags: { 4: F_LE, 6: F_A }, spain: t("Valía la pena | intentarlo. | Bueno, | bueno. | Llamo | a | Chucho.", "It was worth | trying it. | Okay, | okay. | I'll call | — | Chucho.", "Worth a try. Okay, okay. I'll call Chucho.", { flags: { 5: F_A } }) }),
       t("¡Ja! | Tenía | que | preguntar. | Bueno, | le | mando | a | alguien.", "Ha! | I had | to | ask. | Okay, | (to) you | I'll send | — | someone.", "Ha! I had to ask. Okay, I'll send someone.",
         { flags: { 7: F_A } }),
     ],
     offer_accepted_react: [
-      t("¿De veras? | ¡Perfecto! | Espere... | ¿y | si | se cae | de | la | escalera?", "Really? | Perfect! | Wait... | and | if | you fall | off | the | ladder?", "Really? Great! Wait… what if you fall off the ladder?"),
+      t("¿De veras? | ¡Perfecto! | Espere... | ¿y | si | se cae | de | la | escalera?", "Really? | Perfect! | Wait... | and | if | you fall | off | the | ladder?", "Really? Great! Wait… what if you fall off the ladder?", { spain: t("¿De verdad? | ¡Perfecto! | Espere... | ¿y | si | se cae | de | la | escalera?", "Really? | Perfect! | Wait... | and | if | you fall | off | the | ladder?", "Really? Great! Wait… what if you fall off the ladder?") }),
     ],
     offer_accepted2: [t("No, | no. | Olvídelo. | Le | mando | a | Chucho.", "No, | no. | Forget it. | (To) you | I'll send | — | Chucho.", "No, no. Forget it. I'll send Chucho.", { flags: { 5: F_A } })],
     one_thing: [t("Vamos por partes.", "One thing at a time.", "One thing at a time.")],
@@ -1024,15 +1024,15 @@ export const landlord: SituationDef = {
     // --- the date --------------------------------------------------------------------
     vague: [
       t("Él | le | llama | la | próxima | semana, | ¿sí?", "He | (to) you | will call | — | next | week, | okay?",
-        "He'll call you sometime next week, okay?", { flags: { 2: "The present llama for a promise: he'll call.", 3: "la: the article before próxima semana has no English word." } }),
+        "He'll call you sometime next week, okay?", { flags: { 2: "The present llama for a promise: he'll call.", 3: "la: the article before próxima semana has no English word." }, spain: t("Él | le | llama | la | próxima | semana, | ¿vale?", "He | (to) you | will call | — | next | week, | okay?", "He'll call you sometime next week, okay?", { flags: { 2: "The present llama for a promise: he'll call.", 3: "la: the article before próxima semana has no English word." } }) }),
     ],
-    vague_reask: [t("Entonces, | la | próxima | semana, | ¿sí?", "So, | — | next | week, | okay?", "So, sometime next week, okay?", { flags: { 1: "la: the article before próxima semana has no English word." } })],
+    vague_reask: [t("Entonces, | la | próxima | semana, | ¿sí?", "So, | — | next | week, | okay?", "So, sometime next week, okay?", { flags: { 1: "la: the article before próxima semana has no English word." }, spain: t("Entonces, | la | próxima | semana, | ¿vale?", "So, | — | next | week, | okay?", "So, sometime next week, okay?", { flags: { 1: "la: the article before próxima semana has no English word." } }) })],
     date_offer: [
       t("A ver... | ¿qué tal | el | miércoles | de | la | próxima | semana?", "Let's see... | how about | — | Wednesday | of | — | next | week?", "Let me see… how about next Wednesday?",
         { flags: { 2: F_EL_DAY, 5: "la: the article before próxima semana has no English word." } }),
     ],
     date_reask: [t("¿Entonces... | el | miércoles?", "So... | — | Wednesday?", "So… Wednesday?", { flags: { 1: F_EL_DAY } })],
-    friday_reask: [t("¿Entonces... | el | viernes | en la mañana?", "So... | — | Friday | in the morning?", "So… Friday morning?", { flags: { 1: F_EL_DAY } })],
+    friday_reask: [t("¿Entonces... | el | viernes | en la mañana?", "So... | — | Friday | in the morning?", "So… Friday morning?", { flags: { 1: F_EL_DAY }, spain: t("¿Entonces... | el | viernes | por la mañana?", "So... | — | Friday | in the morning?", "So… Friday morning?", { flags: { 1: F_EL_DAY } }) })],
     friday_best: [t("Antes | del | viernes, | imposible.", "Before | — | Friday, | impossible.", "Friday is the best I can do.", { flags: { 1: F_DEL } })],
     // "¿El miércoles?" typed as a question (the audit, 5 Nov 2026): he confirms his day and asks; nothing is booked yet
     echo_wednesday: [
@@ -1042,9 +1042,9 @@ export const landlord: SituationDef = {
     echo_friday: [t("Sí, | este | viernes. | ¿Le parece?", "Yes, | this | Friday. | Does that work for you?", "Yes, this Friday. Does that work for you?")],
     sooner_react: [
       t("Bueno, | bueno. | Chucho | puede | venir | el | viernes | en la mañana.", "Okay, | okay. | Chucho | can | come | on | Friday | in the morning.", "Okay, okay. Chucho can come out Friday morning.",
-        { flags: { 5: F_EL_DAY } }),
+        { flags: { 5: F_EL_DAY }, spain: t("Bueno, | bueno. | Chucho | puede | venir | el | viernes | por la mañana.", "Okay, | okay. | Chucho | can | come | on | Friday | in the morning.", "Okay, okay. Chucho can come out Friday morning.", { flags: { 5: F_EL_DAY } }) }),
       t("Usted | sí que | sabe | negociar. | El | viernes | en la mañana.", "You | really | know how | to negotiate. | — | Friday | in the morning.",
-        "You drive a hard bargain. Friday morning.", { flags: { 4: F_EL_DAY } }),
+        "You drive a hard bargain. Friday morning.", { flags: { 4: F_EL_DAY }, spain: t("Usted | sí que | sabe | negociar. | El | viernes | por la mañana.", "You | really | know how | to negotiate. | — | Friday | in the morning.", "You drive a hard bargain. Friday morning.", { flags: { 4: F_EL_DAY } }) }),
     ],
     today_react: [t("¿Hoy? | Hoy | Chucho | tiene | la | agenda | llena.", "Today? | Today | Chucho | has | the | schedule | full.", "Today? Chucho's booked solid today.")],
     tomorrow_react: [t("¿Mañana? | Mañana | Chucho | tiene | la | agenda | llena.", "Tomorrow? | Tomorrow | Chucho | has | the | schedule | full.", "Tomorrow? Chucho's booked solid tomorrow.")],
@@ -1072,7 +1072,7 @@ export const landlord: SituationDef = {
       t("Perfecto. | El | sábado, | entre | las | 9 | y | las | 12.", "Perfect. | — | Saturday, | between | — | 9 | and | — | 12.", "Great. Saturday, between 9 and noon.",
         { say: "Perfecto. El sábado, entre las nueve y las doce.", flags: { 1: F_EL_DAY, 4: F_CLOCK, 7: F_CLOCK } }),
     ],
-    mornings_only: [t("Chucho | nada más | puede | en la mañana.", "Chucho | only | can | in the morning.", "Chucho only does mornings.")],
+    mornings_only: [t("Chucho | nada más | puede | en la mañana.", "Chucho | only | can | in the morning.", "Chucho only does mornings.", { spain: t("Chucho | solo | puede | por la mañana.", "Chucho | only | can | in the morning.", "Chucho only does mornings.") })],
     wait_wait: [t("¡Espere, | espere!", "Wait, | wait!", "Wait, wait!")],
     writing_first: [t("¿Por escrito? | Bueno, | bueno.", "In writing? | Okay, | okay.", "In writing? Okay, okay.")],
     home_q: [t("¿Va | a | estar | en casa?", "Are you going | to | be | at home?", "Will you be home?")],
@@ -1085,7 +1085,7 @@ export const landlord: SituationDef = {
 
     // --- wrapping up -----------------------------------------------------------------
     anything_else: [
-      t("¿Algo | más? | De veras | ya | me tengo que ir.", "Anything | else? | Really | now | I have to go.", "Anything else? I really have to run."),
+      t("¿Algo | más? | De veras | ya | me tengo que ir.", "Anything | else? | Really | now | I have to go.", "Anything else? I really have to run.", { spain: t("¿Algo | más? | De verdad, | ya | me tengo que ir.", "Anything | else? | Really | now | I have to go.", "Anything else? I really have to run.") }),
       t("¿Algo | más?", "Anything | else?", "Anything else?"),
     ],
     writing_react: [
@@ -1093,7 +1093,7 @@ export const landlord: SituationDef = {
         { flags: { 2: F_AHORITA }, neutral: t("¿Por escrito? | Claro, | ahora mismo | le | mando | un | mensaje.", "In writing? | Sure, | right now | (to) you | I'll send | a | message.", "In writing? Sure, I'll text you right now.") }),
     ],
     writing_lease: [
-      t("De veras | leyó | el | contrato. | Bueno, | le | mando | un | mensaje.", "Really | you read | the | lease. | Okay, | (to) you | I'll send | a | message.", "You really did read the lease. Okay, I'll text you."),
+      t("De veras | leyó | el | contrato. | Bueno, | le | mando | un | mensaje.", "Really | you read | the | lease. | Okay, | (to) you | I'll send | a | message.", "You really did read the lease. Okay, I'll text you.", { spain: t("De verdad | se ha leído | el | contrato. | Bueno, | le | mando | un | mensaje.", "Really | you've read | the | lease. | Okay, | (to) you | I'll send | a | message.", "You really did read the lease. Okay, I'll text you.") }),
     ],
     text_sent_wednesday: [
       t("Listo: | “Chucho, | miércoles, | de | 9 | a | 12.” | ¿{m:Contento?|f:Contenta?}", "Done: | “Chucho, | Wednesday, | from | 9 | to | 12.” | Happy?",
@@ -1121,40 +1121,40 @@ export const landlord: SituationDef = {
       t("De | eso | hablamos | después | del | sábado. | Mándeme | un | mensaje.", "About | that | we'll talk | after | — | Saturday. | Send me | a | message.", "Let's talk about that after Saturday. Send me a message.",
         { flags: { 4: F_DEL } }),
     ],
-    rent_first: [t("Primero | el | aire, | luego | la | renta.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.")],
+    rent_first: [t("Primero | el | aire, | luego | la | renta.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.", { spain: t("Primero | el | aire, | luego | el | alquiler.", "First | the | AC, | then | the | rent.", "The AC first, then the rent.") })],
     discount_first: [t("Primero | el | aire, | luego | el | dinero.", "First | the | AC, | then | the | money.", "First the AC, then the money.")],
     trip_info: [
       t("Dos | semanas | en | San Cristóbal. | ¡Allá | hace | fresco | y | no hay | aparatos | que | arreglar!", "Two | weeks | in | San Cristóbal. | There | it's | cool | and | there are no | units | to | fix!",
-        "Two weeks in San Cristóbal. It's cool up there, and nothing to fix!"),
+        "Two weeks in San Cristóbal. It's cool up there, and nothing to fix!", { spain: t("Dos | semanas | en | San Cristóbal. | ¡Allí | hace | fresco | y | no hay | aparatos | que | arreglar!", "Two | weeks | in | San Cristóbal. | There | it's | cool | and | there are no | units | to | fix!", "Two weeks in San Cristóbal. It's cool up there, and nothing to fix!") }),
     ],
-    trip_thanks: [t("¡Gracias! | Ya | quiero | estar | allá.", "Thanks! | Already | I want | to be | there.", "Thanks! I can't wait.")],
+    trip_thanks: [t("¡Gracias! | Ya | quiero | estar | allá.", "Thanks! | Already | I want | to be | there.", "Thanks! I can't wait.", { spain: t("¡Gracias! | Ya | tengo ganas de | estar | allí.", "Thanks! | Already | I'm looking forward to | being | there.", "Thanks! I can't wait.") })],
 
     // --- the rent ----------------------------------------------------------------------
     rent_twist: [
-      t("Ah, | y | ya que | está | aquí: | ¿la | renta | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?"),
+      t("Ah, | y | ya que | está | aquí: | ¿la | renta | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?", { spain: t("Ah, | y | ya que | está | aquí: | ¿el | alquiler | de | este | mes?", "Oh, | and | since | you are | here: | the | rent | of | this | month?", "Oh, and since you're here: this month's rent?") }),
     ],
     rent_amount: [t("Son | {$rent}, | como | siempre.", "It's | {$rent}, | as | always.", "{$rent}, as always.")],
     rent_amount_again: [t("{$rent}, | lo de siempre.", "{$rent}, | the usual.", "{$rent}, same as always.")],
-    rent_reask: [t("¿Entonces... | la | renta?", "So... | the | rent?", "So… the rent?")],
+    rent_reask: [t("¿Entonces... | la | renta?", "So... | the | rent?", "So… the rent?", { spain: t("¿Entonces... | el | alquiler?", "So... | the | rent?", "So… the rent?") })],
     rent_thanks: [
       t("¡Gracias! | Usted | es | mi | {m:inquilino|f:inquilina} | {m:favorito.|f:favorita.}", "Thanks! | You | are | my | tenant | favorite.", "Thanks! You're my favorite tenant."),
     ],
     receipt_react: [t("¿Un | recibo? | Uy. | No confía | en | mí, | ¿verdad?", "A | receipt? | Wow. | You don't trust | in | me, | right?", "A receipt? Wow. You don't trust me, huh?")],
     receipt_write: [
       t("Bueno: | “Recibí | la | renta | de | este | mes.” | Aquí tiene.", "Okay: | “I received | the | rent | for | this | month.” | Here you go.",
-        "Fine. “Received this month's rent.” There you go."),
+        "Fine. “Received this month's rent.” There you go.", { spain: t("Bueno: | “He recibido | el | alquiler | de | este | mes.” | Aquí tiene.", "Okay: | “I have received | the | rent | for | this | month.” | Here you go.", "Fine. “Received this month's rent.” There you go.") }),
     ],
     receipt_for_what: [t("¿Un | recibo? | ¿De | qué?", "A | receipt? | For | what?", "A receipt? For what?")],
-    rent_later_ok: [t("No hay problema. | Me la | transfiere, | como | siempre.", "No problem. | It to me | you transfer, | as | always.", "No problem, just send it by transfer, as usual.")],
+    rent_later_ok: [t("No hay problema. | Me la | transfiere, | como | siempre.", "No problem. | It to me | you transfer, | as | always.", "No problem, just send it by transfer, as usual.", { spain: t("No hay problema. | Me lo | transfiere, | como | siempre.", "No problem. | It to me | you transfer, | as | always.", "No problem, just send it by transfer, as usual.") })],
     paid_already: [
       t("Ah, | es | cierto, | ya | me la | pagó. | Mi | cabeza | ya | está | en | San Cristóbal.", "Oh, | it's | true, | already | it to me | you paid. | My | head | already | is | in | San Cristóbal.",
-        "Oh, right, you did. My head's already in San Cristóbal."),
+        "Oh, right, you did. My head's already in San Cristóbal.", { spain: t("Ah, | es | cierto, | ya | me lo | ha pagado. | Mi | cabeza | ya | está | en | San Cristóbal.", "Oh, | it's | true, | already | it to me | you've paid. | My | head | already | is | in | San Cristóbal.", "Oh, right, you did. My head's already in San Cristóbal.") }),
     ],
     rent_is_rent: [
       t("La | renta | es | la | renta, | y | el | aire | es | el | aire.", "— | Rent | is | — | rent, | and | the | AC | is | the | AC.", "Rent is rent, and the AC is the AC.",
-        { flags: { 0: F_LA_GEN, 3: F_LA_GEN } }),
+        { flags: { 0: F_LA_GEN, 3: F_LA_GEN }, spain: t("El | alquiler | es | el | alquiler, | y | el | aire | es | el | aire.", "— | Rent | is | — | rent, | and | the | AC | is | the | AC.", "Rent is rent, and the AC is the AC.", { flags: { 0: "el before a noun in general (rent); English has no article.", 3: "el before a noun in general (rent); English has no article." } }) }),
     ],
-    walkaway_rent: [t("Bueno... | hablamos | cuando | regrese.", "Okay... | we'll talk | when | I get back.", "Okay… let's talk when I'm back.", { flags: { 3: "regrese: the subjunctive after cuando for the future." } })],
+    walkaway_rent: [t("Bueno... | hablamos | cuando | regrese.", "Okay... | we'll talk | when | I get back.", "Okay… let's talk when I'm back.", { flags: { 3: "regrese: the subjunctive after cuando for the future." }, spain: t("Bueno... | hablamos | cuando | vuelva.", "Okay... | we'll talk | when | I get back.", "Okay… let's talk when I'm back.", { flags: { 3: "vuelva: the subjunctive after cuando for the future." } }) })],
 
     // --- the goodbye -----------------------------------------------------------------
     bye_success: [
@@ -1163,7 +1163,7 @@ export const landlord: SituationDef = {
     final_full: [t("Y | oiga: | gracias | por | la | paciencia.", "And | hey: | thanks | for | the | patience.", "And hey: thanks for being patient.")],
     final_wed: [
       t("El | miércoles, | entonces. | Mientras, | abra | bien | las | ventanas | en la noche.", "— | Wednesday, | then. | Meanwhile, | open | wide | the | windows | at night.",
-        "Wednesday, then. In the meantime, keep the windows open at night.", { flags: { 0: F_EL_DAY } }),
+        "Wednesday, then. In the meantime, keep the windows open at night.", { flags: { 0: F_EL_DAY }, spain: t("El | miércoles, | entonces. | Mientras, | abra | bien | las | ventanas | por la noche.", "— | Wednesday, | then. | Meanwhile, | open | wide | the | windows | at night.", "Wednesday, then. In the meantime, keep the windows open at night.", { flags: { 0: F_EL_DAY } }) }),
     ],
     final_partial: [t("Y | por favor, | no toque | el | aparato.", "And | please, | don't touch | the | unit.", "And please, don't touch the unit.")],
     bye_back: [
@@ -1173,7 +1173,7 @@ export const landlord: SituationDef = {
     walkaway: [t("Bueno... | ¡llámeme | si | empeora!", "Okay... | call me | if | it gets worse!", "Okay… call me if it gets worse!")],
 
     // --- small reactions -----------------------------------------------------------------
-    cold_react_outside: [t("¿Más | calor | que | afuera? | Ahora sí | está | exagerando.", "More | heat | than | outside? | Now | you are | exaggerating.", "Hotter than outside? Now you're exaggerating.")],
+    cold_react_outside: [t("¿Más | calor | que | afuera? | Ahora sí | está | exagerando.", "More | heat | than | outside? | Now | you are | exaggerating.", "Hotter than outside? Now you're exaggerating.", { spain: t("¿Más | calor | que | fuera? | Ahora sí | está | exagerando.", "More | heat | than | outside? | Now | you are | exaggerating.", "Hotter than outside? Now you're exaggerating.") })],
     cold_react: [
       t("Uf. | Bueno, | ya | me imagino.", "Phew. | Okay, | now | I can imagine.", "Ugh. Okay, I get the picture."),
       t("Uy. | Bueno, | ya | entendí.", "Ouch. | Okay, | now | I get it.", "Ouch. Okay, I hear you."),
@@ -1181,7 +1181,7 @@ export const landlord: SituationDef = {
     cat_react: [t("¿Su | gato? | Gato | listo.", "Your | cat? | Cat | smart.", "Your cat? Smart cat.")],
     heater_react: [
       t("Bien | pensado. | Y | abra | las | ventanas | en la noche, | que | entra | el | aire | del | mar.", "Well | thought. | And | open | the | windows | at night, | since | comes in | the | air | from the | sea.",
-        "Smart. And open the windows at night: you get the sea breeze."),
+        "Smart. And open the windows at night: you get the sea breeze.", { spain: t("Bien | pensado. | Y | abra | las | ventanas | por la noche, | que | entra | el | aire | del | mar.", "Well | thought. | And | open | the | windows | at night, | since | comes in | the | air | from the | sea.", "Smart. And open the windows at night: you get the sea breeze.") }),
     ],
     ack: [t("Bueno.", "Okay.", "Okay."), t("Claro.", "Sure.", "Sure.")],
   },
@@ -1196,7 +1196,7 @@ export const landlord: SituationDef = {
           { flags: { 2: "soy yo: Spanish says “I am me”; English says “it's me”." } }) },
         { id: "hi_patel", s: t("¡Buenos días, | Don | Ernesto!", "Good morning, | Don | Ernesto!", "Good morning, Don Ernesto!") },
         { id: "sorry_bother", s: t("Perdón | que | lo | moleste, | pero | es | importante.", "Sorry | that | you | I bother, | but | it's | important.", "Sorry to bother you, but it's important.",
-          { flags: { 2: "lo: “you” (usted) as the object.", 3: "moleste: the subjunctive after perdón que." } }) },
+          { flags: { 2: "lo: “you” (usted) as the object.", 3: "moleste: the subjunctive after perdón que." }, spain: t("Perdone | que | le | moleste, | pero | es | importante.", "Sorry | that | you | I bother, | but | it's | important.", "Sorry to bother you, but it's important.", { flags: { 2: "le: “you” (usted) as the object; Spain often says le here.", 3: "moleste: the subjunctive after perdone que." } }) }) },
         { id: "minute", s: t("¿Tiene | un | minuto?", "Do you have | a | minute?", "Do you have a minute?") },
       ],
     },
@@ -1210,16 +1210,16 @@ export const landlord: SituationDef = {
           { flags: { 1: F_MINISPLIT }, neutral: t("El | aire | acondicionado | solo | echa | aire | caliente.", "The | air | conditioning | only | blows | air | hot.", "The AC only blows warm air.") }) },
         { id: "cold_apt", s: t("Hace | un | calor | horrible | en | mi | casa.", "It makes | a | heat | horrible | in | my | home.", "It's horribly hot in my place.",
           { flags: { 0: "hace + a weather noun: it's (hot, cold)." } }) },
-        { id: "kitchen_colder", s: t("Hace | más | calor | adentro | que | afuera.", "It makes | more | heat | inside | than | outside.", "It's hotter inside than outside.") },
+        { id: "kitchen_colder", s: t("Hace | más | calor | adentro | que | afuera.", "It makes | more | heat | inside | than | outside.", "It's hotter inside than outside.", { spain: t("Hace | más | calor | dentro | que | fuera.", "It makes | more | heat | inside | than | outside.", "It's hotter inside than outside.") }) },
         { id: "sleep_coat", s: t("No puedo | dormir | del | calor.", "I can't | sleep | from the | heat.", "I can't sleep, it's so hot.") },
       ],
     },
     thermostat: {
       lt: "Answer about the remote",
       items: [
-        { id: "checked_twice", s: t("Sí, | ya | lo | revisé | dos | veces.", "Yes, | already | it | I checked | two | times.", "Yes, I checked it twice.") },
-        { id: "not_thermostat", s: t("No es | el | control.", "It isn't | the | remote.", "It's not the remote.") },
-        { id: "tried_everything", s: t("Ya | probé | todo.", "Already | I tried | everything.", "I've tried everything.") },
+        { id: "checked_twice", s: t("Sí, | ya | lo | revisé | dos | veces.", "Yes, | already | it | I checked | two | times.", "Yes, I checked it twice.", { spain: t("Sí, | ya | lo | he mirado | dos | veces.", "Yes, | already | it | I've checked | two | times.", "Yes, I checked it twice.") }) },
+        { id: "not_thermostat", s: t("No es | el | control.", "It isn't | the | remote.", "It's not the remote.", { spain: t("No es | el | mando.", "It isn't | the | remote.", "It's not the remote.") }) },
+        { id: "tried_everything", s: t("Ya | probé | todo.", "Already | I tried | everything.", "I've tried everything.", { spain: t("Ya | lo he probado | todo.", "Already | I've tried | everything.", "I've tried everything.") }) },
       ],
     },
     duration: {
@@ -1229,8 +1229,8 @@ export const landlord: SituationDef = {
           { flags: { 3: "desde hace + a length of time, with the present: it started then and still goes on." } }) },
         { id: "since_last", s: t("Desde | el | miércoles | pasado.", "Since | — | Wednesday | last.", "Since last Wednesday.", { flags: { 1: F_EL_DAY } }) },
         { id: "a_week", s: t("Ya | lleva | una | semana.", "Already | it's been | a | week.", "It's been a week now.") },
-        { id: "called_every_day", s: t("Le | llamé | todos | los | días.", "(To) you | I called | all | the | days.", "I called you every day.", { flags: { 0: F_LE } }) },
-        { id: "left_voicemail", s: t("Le | dejé | tres | mensajes.", "(For) you | I left | three | messages.", "I left you three messages.", { flags: { 0: F_LE } }) },
+        { id: "called_every_day", s: t("Le | llamé | todos | los | días.", "(To) you | I called | all | the | days.", "I called you every day.", { flags: { 0: F_LE }, spain: t("Le | he llamado | todos | los | días.", "(To) you | I've called | all | the | days.", "I called you every day.", { flags: { 0: F_LE } }) }) },
+        { id: "left_voicemail", s: t("Le | dejé | tres | mensajes.", "(For) you | I left | three | messages.", "I left you three messages.", { flags: { 0: F_LE }, spain: t("Le | he dejado | tres | mensajes.", "(For) you | I've left | three | messages.", "I left you three messages.", { flags: { 0: F_LE } }) }) },
       ],
     },
     dodge: {
@@ -1241,7 +1241,7 @@ export const landlord: SituationDef = {
           note: "Me temo que…: polite but firm." },
         { id: "contract", s: t("Según | el | contrato, | las | reparaciones | le tocan | a | usted.", "According to | the | lease, | the | repairs | fall | to | you.",
           "According to the lease, repairs are your job.", { flags: { 3: "las: Spanish uses the article; English says just “repairs”." } }), note: "El contrato (de arrendamiento): the lease." },
-        { id: "heat_included", s: t("El | aire | acondicionado | está | incluido | en | la | renta.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.") },
+        { id: "heat_included", s: t("El | aire | acondicionado | está | incluido | en | la | renta.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.", { spain: t("El | aire | acondicionado | está | incluido | en | el | alquiler.", "The | air | conditioning | is | included | in | the | rent.", "The AC is included in the rent.") }) },
         { id: "been_patient", s: t("He | tenido | paciencia, | pero | la | paciencia | no me refresca.", "I've | had | patience, | but | — | patience | doesn't cool me down.",
           "I've been patient, but patience doesn't keep me cool.", { flags: { 4: F_LA_GEN } }) },
         { id: "please_fix", s: t("Usted | es | el | dueño. | Arréglelo, | por favor.", "You | are | the | owner. | Fix it, | please.", "You're the landlord. Please fix it.") },
@@ -1277,7 +1277,7 @@ export const landlord: SituationDef = {
     date_ok: {
       lt: "Agree on a day",
       items: [
-        { id: "friday_works", s: t("El | viernes | en la mañana | me queda | bien.", "— | Friday | in the morning | suits me | well.", "Friday morning works for me.", { flags: { 0: F_EL_DAY } }) },
+        { id: "friday_works", s: t("El | viernes | en la mañana | me queda | bien.", "— | Friday | in the morning | suits me | well.", "Friday morning works for me.", { flags: { 0: F_EL_DAY }, spain: t("El | viernes | por la mañana | me viene | bien.", "— | Friday | in the morning | suits me | well.", "Friday morning works for me.", { flags: { 0: F_EL_DAY } }) }) },
         { id: "works_me", s: t("Me parece | bien.", "It seems to me | good.", "That works for me.") },
         { id: "saturday_better", s: t("El | sábado | sería | mejor.", "— | Saturday | would be | better.", "Saturday would be better.", { flags: { 0: F_EL_DAY } }) },
       ],
@@ -1314,7 +1314,7 @@ export const landlord: SituationDef = {
         { id: "receipt_please", s: t("¿Me | da | un | recibo, | por favor?", "(To) me | you give | a | receipt, | please?", "Could I get a receipt, please?") },
         // "mañana", not "el primero": this month's rent is due in the first five days (s81), so the first would be late
         { id: "pay_online", s: t("Se la | transfiero | mañana.", "It to you | I'll transfer | tomorrow.", "I'll send it by bank transfer tomorrow.",
-          { flags: { 0: "se la: la is the rent (la renta); le becomes se before la." } }) },
+          { flags: { 0: "se la: la is the rent (la renta); le becomes se before la." }, spain: t("Se lo | transfiero | mañana.", "It to you | I'll transfer | tomorrow.", "I'll send it by bank transfer tomorrow.", { flags: { 0: "se lo: lo is the rent (el alquiler); le becomes se before lo." } }) }) },
       ],
     },
     bye: {
@@ -1336,6 +1336,23 @@ export const landlord: SituationDef = {
   tips: TIPS,
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha dicho": { reason: "grammatical_fusion", split: "ha → have (usted) + dicho (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "ha mirado": { reason: "grammatical_fusion", split: "ha → have (usted) + mirado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "ha intentado": { reason: "grammatical_fusion", split: "ha → have (usted) + intentado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "ha probado": { reason: "grammatical_fusion", split: "ha → have (usted) + probado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "he recibido": { reason: "grammatical_fusion", split: "he → I have + recibido (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "ha pagado": { reason: "grammatical_fusion", split: "ha → have (usted) + pagado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "he mirado": { reason: "grammatical_fusion", split: "he → I have + mirado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "he llamado": { reason: "grammatical_fusion", split: "he → I have + llamado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "he dejado": { reason: "grammatical_fusion", split: "he → I have + dejado (participle): Spain's present perfect for what has just happened (or this week); one English verb phrase.", minimal: "Auxiliary and participle." },
+    "se ha leído": { reason: "grammatical_fusion", split: "se → (for) yourself + ha leído → have read: leerse algo = to read something through, in Spain's present perfect.", minimal: "Pronoun, auxiliary and participle." },
+    "lo he probado": { reason: "grammatical_fusion", split: "lo → it + he probado → I have tried: Spain doubles todo with lo (lo he probado todo = I've tried everything).", minimal: "Pronoun, auxiliary and participle." },
+    "de verdad": { reason: "lexical_expression", split: "de → of + verdad → truth; = really.", minimal: "Two words." },
+    "por la mañana": { reason: "lexical_expression", split: "por → through + la → the + mañana → morning; = in the morning (Spain says por).", minimal: "Three words." },
+    "por la noche": { reason: "lexical_expression", split: "por → through + la → the + noche → night; = at night (Spain says por).", minimal: "Three words." },
+    "tengo ganas de": { reason: "lexical_expression", split: "tengo → I have + ganas → desire + de → of; = I'm looking forward to / I feel like.", minimal: "Three words." },
+    "me viene": { reason: "grammatical_fusion", split: "me → to me + viene → comes: me viene bien = it suits me (Spain).", minimal: "Pronoun and verb." },
     "me voy": { reason: "grammatical_fusion", split: "me → myself + voy → I go; irse = to leave, I'm off.", minimal: "Pronoun and verb." },
     "san cristóbal": { reason: "lexical_expression", split: "san → saint + cristóbal → Christopher; one place name (San Cristóbal de las Casas).", minimal: "A two-word name." },
     "copo de nieve": { reason: "lexical_expression", split: "copo → flake + de → of + nieve → snow gives “flake of snow”; = snowflake.", minimal: "Three words, one noun." },

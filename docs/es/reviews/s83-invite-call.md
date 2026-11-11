@@ -113,3 +113,15 @@ new items 12/14, not understood (safe): "Mejor en algún otro lugar", "A esa hor
   s66: place × value); s83 no longer has one, but the rule matters for every conversation.
 - lang.ts (edition-wide): "porque" as a leading word of an answer ("Porque tengo dos boletos…" was heard as
   "¿iglesia?" through the sound-alike repair); s83 handles it in its patterns.
+
+## Spain twins (11 Nov 2026)
+
+26 Spain twins (20 lines, 6 hints), done 12 Nov. Register unchanged: Andrea is the learner's friend and says tú in all
+three texts; no plural "you" in this call. Spain's phone answer ("¿Sí?", "¿Diga? ¿Quién es?"), vale for sale/va/ok/bueno
+where it means okay, venga to wrap up the goodbye, Spain's present perfect for what just happened ("He visto tu nombre en
+la pantalla"), madre (an adult about her mother), barbacoa for the carne asada/parrillada, sobre las nueve/dos for "como a
+las…", solo for "nada más", fuera de for "afuera de", ¿Te recojo? for "¿Paso por ti?", ¿A qué hora te viene bien?,
+¡Cuantos más, mejor!, eres un sol / qué detalle for "eres lo máximo / qué lindo", "le va a hacer mucha ilusión".
+Patterns: pickup reads "paso a buscarte / voy a por ti", time_ask_you reads "te viene bien". Merge records for the new
+units (lo sé, he visto, te viene, cuantos más, mejor). tests/es/spain/s83-invite-call.json: 22 items, all understood,
+0/1 false accepts. "¡Venga, hasta luego!" isn't read as a goodbye (global.ts g_bye has no "venga"): proposed to batch 1.

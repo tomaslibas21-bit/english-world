@@ -1,0 +1,28 @@
+{
+"situation": "s83-invite-call",
+"items": [
+{ "ctx": "hello", "say": "¡Hola, Andrea! Soy Ryan", "intent": "its_me_ctx" },
+{ "ctx": "hello", "say": "¿Me oyes bien?", "intent": "hear_me" },
+{ "ctx": "invite", "say": "Tengo dos entradas para un concierto", "intent": ["tickets", "invite"] },
+{ "ctx": "invite", "say": "¿Te apetece ir a un concierto el viernes?", "intent": "invite", "slots": { "day": "friday" } },
+{ "ctx": "invite", "say": "¿Tienes planes para el viernes?", "intent": "ask_free", "slots": { "day": "friday" } },
+{ "ctx": "start", "say": "Sobre las nueve, creo", "intent": ["time_ans", "starts_at"] },
+{ "ctx": "place", "say": "¿Te recojo?", "intent": "pickup" },
+{ "ctx": "place", "say": "¿Paso a buscarte?", "intent": "pickup" },
+{ "ctx": "place", "say": "Te veo fuera del café", "intent": "meet", "slots": { "place": "cafe" } },
+{ "ctx": "suggest_place", "say": "Vale, perfecto", "intent": ["agree", "yn:yes", "g_ok"] },
+{ "ctx": "meet_time", "say": "¿A qué hora te viene bien?", "intent": "ask_when" },
+{ "ctx": "suggest_time", "say": "Vale", "intent": ["agree", "yn:yes", "g_ok"] },
+{ "ctx": "time_change", "say": "Vale, a las ocho", "intent": ["time_ans", "agree"] },
+{ "ctx": "meet_change", "say": "Vale, en la taquería", "intent": ["meet", "agree"] },
+{ "ctx": "meet_change", "say": "¿Dónde está la taquería?", "intent": "where_is_ctx" },
+{ "ctx": "sister", "say": "¡Claro! ¡Cuantos más, mejor!", "intent": "sister_yes_ctx" },
+{ "ctx": "sister", "say": "Lo siento, solo tengo dos entradas", "intent": "sister_no_ctx" },
+{ "ctx": "pay", "say": "Invito yo", "intent": "on_me" },
+{ "ctx": "bbq", "say": "¡Vale, me encantaría!", "intent": "accept_inv" },
+{ "ctx": "bbq", "say": "Lo siento, el domingo no puedo", "intent": "decline_ctx" },
+{ "ctx": "closing", "say": "¡Venga, nos vemos el viernes!", "intent": "bye_ext" },
+{ "ctx": "closing", "say": "¡Hasta luego, Andrea!", "intent": "g_bye" },
+{ "ctx": "suggest_place", "say": "No en el quiosco", "intent": "any" }
+]
+}

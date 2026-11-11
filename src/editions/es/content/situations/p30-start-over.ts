@@ -185,7 +185,7 @@ export const startOver: SituationDef = {
     can_talk: { patterns: [
       "(tienes | tiene | tienen) un (minuto | momento | segundo | minutito | momentito) #h:have_minute", "(tienes | tiene | tienen) (tiempo | un rato | un ratito | chance) [para (hablar | platicar)]",
       "(necesito | quiero | tengo que | queria) decirte algo", "(vengo | vine) en (son de paz | paz)", "no (vengo | vine) a (pelear | discutir)",
-      "no quiero (pelear | discutir) [contigo]", "[nada] [solo | nada mas] (queria | quise | vine a | vengo a) (verte | saludarte | saludar)",
+      "no quiero (pelear | discutir) [contigo]", "[nada] [solo | nada mas] (queria | quise | vine a | vengo a | he venido a) (verte | saludarte | saludar)",
       "(podemos | podriamos) (hablar | platicar) [un (momento | minuto | rato)] #h:can_talk",
       "(puedo | podria) (hablar | platicar) contigo [un (momento | minuto)]",
       "(necesito | quiero | quisiera | me gustaria) (hablar | platicar) contigo [de (algo | la @bbq | lo que pasó | nosotros | lo que dije)] [es importante]",
@@ -203,8 +203,8 @@ export const startOver: SituationDef = {
       // announcing it ("Bueno. Sigue.")
       "te debo una disculpa #announce #h:owe_apology", "te debo (una gran disculpa | una disculpa enorme | un perdon) #announce",
       "(quiero | necesito | queria | tengo que) (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) [contigo] #announce #h:apologize",
-      "(vine | vengo) a (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) [contigo] #announce #h:came_apologize",
-      "estoy aqui para (disculparme | pedirte perdon) #announce", "te (quiero | queria | tengo que | vengo a | vine a) pedir (perdon | disculpas | una disculpa) #announce", "(vine | vengo) a decirte que lo siento #announce",
+      "(vine | vengo | he venido) a (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) [contigo] #announce #h:came_apologize",
+      "estoy aqui para (disculparme | pedirte perdon) #announce", "te (quiero | queria | tengo que | vengo a | vine a | he venido a) pedir (perdon | disculpas | una disculpa) #announce", "(vine | vengo | he venido) a decirte que lo siento #announce",
       // "¿Viniste a disculparte o a pelear?" – "A disculparme."
       "a (disculparme | pedirte perdon | pedirte disculpas | pedirte una disculpa) #announce",
       // naming what for (specific)
@@ -240,7 +240,7 @@ export const startOver: SituationDef = {
       "por todo lo que (dije | te dije) [@where] [y por no llamarte]",
     ] },
     own_it: { patterns: [
-      "me equivoqué [contigo] #h:was_wrong", "me equivoqué (al decir eso | al decirte eso | en decir eso | al decir lo que dije)", "me equivoqué y (es | fue) (mi culpa | culpa mia) #h:was_wrong", "me equivoqué (mucho | completamente | por completo | feo)",
+      "me equivoqué [contigo] #h:was_wrong", "me equivoqué (al decir eso | al decirte eso | en decir eso | al decir lo que dije)", "(me equivoqué | me he equivocado) y (es | fue | ha sido) (mi culpa | culpa mia) #h:was_wrong", "me he equivocado [contigo]", "me equivoqué (mucho | completamente | por completo | feo)",
       "(fue | es) [toda] (mi culpa | culpa mia) #h:my_fault", "(toda)? la culpa (es | fue) (mia | toda mia)", "(fue | fue todo) mi error", "yo tuve la culpa", "(yo | solo yo) tengo la culpa",
       "no tengo (excusa | justificacion | pretexto) [para (lo que dije | eso)]", "no hay (excusa | justificacion | pretexto) (para | por) (@said | eso | lo que hice) #h:no_excuse", "no hay (excusa | justificacion) [que valga]",
       "(tenias | tienes) razon [y yo no] #h:you_right", "(tenias | tienes) toda la razon", "(tenias | tienes) razon y (fui | estaba | era) @proud para (llamarte | hablarte | buscarte) #h:you_right #why #pride",
@@ -389,7 +389,7 @@ export const startOver: SituationDef = {
       "que (te | les) (cocino | preparo) [de cenar]", "que (cocino | preparo) [de cenar]", "que (quieres | te gustaria | se te antoja) (cenar | de cenar)",
     ] },
     cant_cook: { patterns: [
-      "[pero] (yo)? no se cocinar #h:cant_cook", "[pero] (yo)? no puedo cocinar", "[pero] (cocino | soy) (fatal | muy mal | pesimo | horrible | malisimo)",
+      "[pero] [si] (yo)? no se cocinar #h:cant_cook", "[pero] (yo)? no puedo cocinar", "[pero] (cocino | soy) (fatal | muy mal | pesimo | horrible | malisimo)",
       "soy (un | una)? (pesimo | pesima | malisimo | malisima | terrible) (cocinero | cocinera)", "(natalia | todos) (sabe | saben) que no se cocinar",
       "(se me quema | quemo) (todo | hasta el agua)", "no se ni hervir agua", "ni (se | sé) cocinar",
       // the lancha's version: "Pero no sé nada de lanchas."
@@ -445,13 +445,13 @@ export const startOver: SituationDef = {
   lines: {
     // --- the door ---------------------------------------------------------------------------------
     door_open: [
-      t("Vaya, | vaya. | Mira | quién | vino.", "Well, | well. | Look | who | came.", "Well, well. Look who's here."),
+      t("Vaya, | vaya. | Mira | quién | vino.", "Well, | well. | Look | who | came.", "Well, well. Look who's here.", { spain: t("Vaya, | vaya. | Mira | quién | ha venido.", "Well, | well. | Look | who | has come.", "Well, well. Look who's here.") }),
       t("¿Dos | meses, | y | ahora | vienes?", "Two | months, | and | now | you-come?", "Two months, and now you show up?"),
       t("Ah. | Eres | tú. | Cuánto tiempo.", "Oh. | It's | you. | Long time.", "Oh. It's you. It's been a while."),
     ],
     door_cold: [t("Hola.", "Hi.", "Hi."), t("Qué tal.", "Hey.", "Hey.")],
     door_what: [
-      t("¿Y | qué | se te ofrece?", "And | what | do-you-need?", "So what can I do for you?"),
+      t("¿Y | qué | se te ofrece?", "And | what | do-you-need?", "So what can I do for you?", { spain: t("¿Y | qué | quieres?", "And | what | do-you-want?", "So what can I do for you?") }),
       t("¿Qué | te | trae | por aquí?", "What | you | brings | around here?", "What brings you here?"),
     ],
     long_time_react: [
@@ -470,13 +470,13 @@ export const startOver: SituationDef = {
     ],
     how_boat: [t("¿La | lancha? | Ahí | va, | despacio.", "The | boat? | There | it-goes, | slowly.", "The boat? Getting there. Slowly.",
       { flags: { 2: "ahí va: it's coming along." } })],
-    how_here: [t("Sí, | está | adentro.", "Yeah, | she's | inside.", "Yeah, she's inside.")],
+    how_here: [t("Sí, | está | adentro.", "Yeah, | she's | inside.", "Yeah, she's inside.", { spain: t("Sí, | está | dentro.", "Yeah, | she's | inside.", "Yeah, she's inside.") })],
     how_cat: [t("¿Michi? | Gorda | y | feliz.", "Michi? | Fat | and | happy.", "Michi? Fat and happy.")],
     porch: [t("Empecemos | aquí, | en | la | puerta.", "Let's-start | here, | at | the | door.", "Let's start out here, at the door.")],
     listening: [
       t("Bueno. | Te | escucho.", "Okay. | (To) you | I-listen.", "Okay. I'm listening."),
       t("Adelante. | Te | escucho.", "Go ahead. | (To) you | I-listen.", "Go ahead. I'm listening."),
-      t("Está bien. | Di | lo que | viniste | a | decir.", "Fine. | Say | what | you-came | to | say.", "Fine. Say what you came to say."),
+      t("Está bien. | Di | lo que | viniste | a | decir.", "Fine. | Say | what | you-came | to | say.", "Fine. Say what you came to say.", { spain: t("Vale. | Di | lo que | has venido | a | decir.", "Fine. | Say | what | you've come | to | say.", "Fine. Say what you came to say.") }),
     ],
 
     // --- the apology --------------------------------------------------------------------------------
@@ -489,7 +489,7 @@ export const startOver: SituationDef = {
       t("Vas | a | tener | que | ser | más | {m:específico|f:específica}.", "You're-going | to | have | to | be | more | specific.", "You'll have to be a little more specific."),
     ],
     sorry_accept_vague: [t("Bueno, | bueno. | Ya | te | oí.", "Okay, | okay. | Already | you | I-heard.", "Okay, okay. I hear you.",
-      { flags: { 2: "ya: here “all right” (I got it)." } })],
+      { flags: { 2: "ya: here “all right” (I got it)." }, spain: t("Vale, | vale. | Ya | te | he oído.", "Okay, | okay. | Already | you | I've heard.", "Okay, okay. I hear you.", { flags: { 2: "ya: here “all right” (I got it)." } }) })],
     sorry_but_react: [
       t("Y | ahí | está: | el | “pero”.", "And | there | it-is: | the | “but.”", "And there it is: the “but.”"),
       t("Todo | lo que | dices | antes | del | “pero” | no cuenta.", "Everything | that | you-say | before | the | “but” | doesn't count.", "Everything before the “but” doesn't count."),
@@ -503,12 +503,12 @@ export const startOver: SituationDef = {
     ],
     excuse_react: [t("Eso | es | una | explicación, | no | una | disculpa.", "That | is | an | explanation, | not | an | apology.", "That's an explanation, not an apology.")],
     didnt_mean_react: [t("Tal vez | no. | Pero | lo | dijiste.", "Maybe | not. | But | it | you-said.", "Maybe not. But you said it.")],
-    blame_react: [t("¿Viniste | a | disculparte | o | a | pelear?", "Did-you-come | to | apologize | or | to | fight?", "Did you come here to apologize or to argue?")],
+    blame_react: [t("¿Viniste | a | disculparte | o | a | pelear?", "Did-you-come | to | apologize | or | to | fight?", "Did you come here to apologize or to argue?", { spain: t("¿Has venido | a | disculparte | o | a | pelearte?", "Have-you-come | to | apologize | or | to | fight?", "Did you come here to apologize or to argue?") })],
     blame_late: [t("Oye. | No empieces | otra vez | con | eso.", "Hey. | Don't start | again | with | that.", "Hey. Don't start that again.")],
     rude_react: [t("Uf. | Bueno. | ¿Quieres | intentarlo | otra vez?", "Wow. | Okay. | Do-you-want | to-try-it | again?", "Wow. Okay. Want to try that again?")],
     nudge_apology: [
       t("No viniste | hasta | aquí | a | hablar | del | clima.", "You didn't come | all the way | here | to | talk | about the | weather.",
-        "You didn't come all the way here to talk about the weather."),
+        "You didn't come all the way here to talk about the weather.", { spain: t("No has venido | hasta | aquí | a | hablar | del | tiempo.", "You haven't come | all the way | here | to | talk | about the | weather.", "You didn't come all the way here to talk about the weather.") }),
     ],
 
     // --- responsibility -------------------------------------------------------------------------------
@@ -519,7 +519,7 @@ export const startOver: SituationDef = {
         { flags: { 4: NADA, 10: CARNE },
           neutral: t("Dijiste | que | nunca | termino | nada. | Enfrente de | todos. | En | mi | propia | parrillada.",
             "You-said | that | never | I-finish | anything. | In front of | everybody. | At | my | own | cookout.",
-            "You said I never finish anything. In front of everybody. At my own cookout.", { flags: { 4: NADA } }) }),
+            "You said I never finish anything. In front of everybody. At my own cookout.", { flags: { 4: NADA } }), spain: t("Dijiste | que | nunca | termino | nada. | Delante de | todos. | En | mi | propia | barbacoa.", "You-said | that | never | I-finish | anything. | In front of | everybody. | At | my | own | cookout.", "You said I never finish anything. In front of everybody. At my own cookout.", { flags: { 4: NADA, 10: "barbacoa: in Spain, a cookout (meat on the grill, with friends)." } }) }),
     ],
     dan_quote: [
       t("Tus | palabras: | “Ni siquiera | esa | lancha | tonta.”", "Your | words: | “Not even | that | boat | stupid.”", "Your words: “Not even that stupid boat.”"),
@@ -528,20 +528,20 @@ export const startOver: SituationDef = {
     ask_why_silent: [
       t("Y | luego, | dos | meses | de | nada. | ¿Por qué | no me llamaste | y ya?",
         "And | then, | two | months | of | nothing. | Why | didn't you call me | and that's it?",
-        "And then two months of nothing. Why didn't you just call?", { flags: { 8: "y ya: “and that's it” = just (do it)." } }),
+        "And then two months of nothing. Why didn't you just call?", { flags: { 8: "y ya: “and that's it” = just (do it)." }, spain: t("Y | luego, | dos | meses | de | nada. | ¿Por qué | no me llamaste | sin más?", "And | then, | two | months | of | nothing. | Why | didn't you call me | just like that?", "And then two months of nothing. Why didn't you just call?") }),
       t("Dos | meses. | ¿Por qué | el | silencio?", "Two | months. | Why | the | silence?", "Two months. Why the silence?"),
     ],
     why_again: [
-      t("Está bien. | Pero | ¿por qué | no me llamaste?", "Okay. | But | why | didn't you call me?", "Okay. But why didn't you call?"),
+      t("Está bien. | Pero | ¿por qué | no me llamaste?", "Okay. | But | why | didn't you call me?", "Okay. But why didn't you call?", { spain: t("Vale. | Pero | ¿por qué | no me llamaste?", "Okay. | But | why | didn't you call me?", "Okay. But why didn't you call?") }),
       t("Ajá. | ¿Y | el | silencio?", "Uh-huh. | And | the | silence?", "Mm-hm. And the silence?"),
     ],
     own_nudge: [t("¿Y | lo que | dijiste | en | la | fiesta?", "And | what | you-said | at | the | party?", "And what you said at the party?")],
     heard_you: [
-      t("Ya | te | oí.", "Already | you | I-heard.", "I heard you."),
-      t("Sí. | Ya | me lo | dijiste.", "Yeah. | Already | it to me | you-said.", "Yeah. You said that."),
+      t("Ya | te | oí.", "Already | you | I-heard.", "I heard you.", { spain: t("Ya | te | he oído.", "Already | you | I've heard.", "I heard you.") }),
+      t("Sí. | Ya | me lo | dijiste.", "Yeah. | Already | it to me | you-said.", "Yeah. You said that.", { spain: t("Sí. | Ya | me lo | has dicho.", "Yeah. | Already | it to me | you've said.", "Yeah. You said that.") }),
     ],
     // "¿Me perdonas?" once Diego has had his say
-    forgiven: [t("Ya | te | perdoné.", "Already | you | I-forgave.", "I already forgave you.")],
+    forgiven: [t("Ya | te | perdoné.", "Already | you | I-forgave.", "I already forgave you.", { spain: t("Ya | te | he perdonado.", "Already | you | I've forgiven.", "I already forgave you.") })],
     // "¿Sigues enojado?": before Diego has had his say, and after it
     mad_q: [t("¿Tú | qué | crees?", "You | what | you-think?", "What do you think?", { flags: { 0: "tú before the question word: what do YOU think?" } })],
     not_mad: [t("No. | Ya | se me pasó.", "No. | Already | it's-passed (for me).", "No. I'm over it.", { flags: { 2: "pasársele algo a alguien: get over it (anger, a cold)." } })],
@@ -568,19 +568,19 @@ export const startOver: SituationDef = {
       t("Te | oigo. | Pero | necesito | tiempo | para | pensarlo.", "You | I-hear. | But | I-need | time | to | think it over.", "I hear you. But I need some time to think."),
       t("Es | mucho. | Necesito | tiempo.", "It's | a lot. | I-need | time.", "This is a lot. I need some time."),
     ],
-    push_react: [t("No me presiones, | ¿sí? | Hoy | no.", "Don't push me, | okay? | Today | not.", "Don't push me, okay? Not today.")],
-    push_close: [t("Mejor | hablamos | otro | día, | ¿sí?", "Better | we-talk | another | day, | okay?", "Let's talk another time, okay?")],
+    push_react: [t("No me presiones, | ¿sí? | Hoy | no.", "Don't push me, | okay? | Today | not.", "Don't push me, okay? Not today.", { spain: t("No me presiones, | ¿vale? | Hoy | no.", "Don't push me, | okay? | Today | not.", "Don't push me, okay? Not today.") })],
+    push_close: [t("Mejor | hablamos | otro | día, | ¿sí?", "Better | we-talk | another | day, | okay?", "Let's talk another time, okay?", { spain: t("Mejor | hablamos | otro | día, | ¿vale?", "Better | we-talk | another | day, | okay?", "Let's talk another time, okay?") })],
     just_time: [t("Solo | dame | un | tiempo.", "Just | give me | a | while.", "Just give me some time.")],
     time_q_react: [t("Yo | te | aviso.", "I | (to) you | I'll-let-know.", "I'll let you know.")],
     time_ok: [t("Gracias. | Te lo | agradezco.", "Thanks. | (For) it, you | I-thank.", "Thanks. I appreciate that.")],
     wait_twist: [t("Oye. | Espera.", "Hey. | Wait.", "Hey. Wait.")],
     wait_twist2: [
       t("Ya | lo | pensé. | Me | tomó | como | diez | segundos.", "Already | it | I-thought-over. | (To) me | it-took | about | ten | seconds.",
-        "I thought about it. Took me about ten seconds."),
+        "I thought about it. Took me about ten seconds.", { spain: t("Ya | lo | he pensado. | Me | ha llevado | unos | diez | segundos.", "Already | it | I've thought-over. | (To) me | it's taken | about | ten | seconds.", "I thought about it. Took me about ten seconds.", { flags: { 5: "unos + a number: about." } }) }),
     ],
 
     // --- Natalia (twist) ---------------------------------------------------------------------------------
-    nora_hall: [t("¡Ay! | ¡Mira | quién | por fin | apareció!", "Oh! | Look | who | finally | showed up!", "Oh! Look who finally showed up!")],
+    nora_hall: [t("¡Ay! | ¡Mira | quién | por fin | apareció!", "Oh! | Look | who | finally | showed up!", "Oh! Look who finally showed up!", { spain: t("¡Ay! | ¡Mira | quién | por fin | ha aparecido!", "Oh! | Look | who | finally | has shown up!", "Oh! Look who finally showed up!") })],
     nora_coffee: [
       t("¡Diego! | ¡No dejes | a | tu | {m:amigo|f:amiga} | en | la | puerta! | Ya | está | el | café.",
         "Diego! | Don't leave | — | your | friend | at | the | door! | Already | it's-ready | the | coffee.",
@@ -588,8 +588,8 @@ export const startOver: SituationDef = {
         { flags: { 2: PERS_A, 9: "ya está: it's done, it's ready." } }),
     ],
     nora_hi: [
-      t("¡Ay, | qué | gusto | verte!", "Oh, | what | joy | to see you!", "Oh, it's so good to see you!"),
-      t("¡Hola! | Te | extrañamos | mucho.", "Hi! | You | we-missed | a lot.", "Hi! We missed you so much."),
+      t("¡Ay, | qué | gusto | verte!", "Oh, | what | joy | to see you!", "Oh, it's so good to see you!", { spain: t("¡Ay, | qué | alegría | verte!", "Oh, | what | joy | to see you!", "Oh, it's so good to see you!") }),
+      t("¡Hola! | Te | extrañamos | mucho.", "Hi! | You | we-missed | a lot.", "Hi! We missed you so much.", { spain: t("¡Hola! | Te | hemos echado de menos | muchísimo.", "Hi! | You | we've missed | so much.", "Hi! We missed you so much.") }),
     ],
     dan_nora_aside: [
       t("Llevaba | dos | meses | esperando | decir | eso.", "She'd-been | two | months | waiting | to say | that.", "She's been waiting two months to say that.",
@@ -654,10 +654,10 @@ export const startOver: SituationDef = {
     ],
     dan_offers_start: [t("Entonces, | ¿borrón y cuenta nueva | o | qué?", "So, | clean slate | or | what?", "So. Are we starting over or what?", { flags: { 1: BORRON } })],
     // a second "No" to "¿Borrón y cuenta nueva o qué?"
-    slow_start: [t("Está bien. | Poco a poco, | entonces.", "Okay. | Little by little, | then.", "Okay. One step at a time, then.")],
+    slow_start: [t("Está bien. | Poco a poco, | entonces.", "Okay. | Little by little, | then.", "Okay. One step at a time, then.", { spain: t("Vale. | Poco a poco, | entonces.", "Okay. | Little by little, | then.", "Okay. One step at a time, then.") })],
     me_too: [
       t("Sí. | Yo | también.", "Yeah. | Me | too.", "Yeah. Me too."),
-      t("Yo | también | te | extrañé, | {m:tonto|f:tonta}.", "I | too | you | I-missed, | dummy.", "I missed you too, you idiot."),
+      t("Yo | también | te | extrañé, | {m:tonto|f:tonta}.", "I | too | you | I-missed, | dummy.", "I missed you too, you idiot.", { spain: t("Yo | también | te | he echado de menos, | {m:tonto|f:tonta}.", "I | too | you | I've missed, | dummy.", "I missed you too, you idiot.") }),
     ],
     anytime_wait: [
       t("Cuando quieras. | Solo | no me hagas | esperar | dos | meses | la | próxima | vez.", "Anytime. | Just | don't make me | wait | two | months | — | next | time.",
@@ -671,7 +671,7 @@ export const startOver: SituationDef = {
         { flags: { 0: "Mexican: pásale = come in." }, neutral: t("Pasa. | Ya | está | el | café.", "Come in. | Already | it's-ready | the | coffee.", "Come on in. The coffee's ready.") }),
     ],
     // after Natalia's "Ya está el café": not the coffee again
-    come_home_michi: [t("Pasa. | Michi | también | te | extrañó.", "Come in. | Michi | too | you | missed.", "Come on in. Michi missed you too.")],
+    come_home_michi: [t("Pasa. | Michi | también | te | extrañó.", "Come in. | Michi | too | you | missed.", "Come on in. Michi missed you too.", { spain: t("Pasa. | Michi | también | te | ha echado de menos.", "Come in. | Michi | too | you | has missed.", "Come on in. Michi missed you too.") })],
     talk_too_much: [t("Siempre | hablas | demasiado.", "Always | you-talk | too much.", "You always did talk too much.")],
     boat_final: [
       t("Ah, | ¿y | la | lancha? | Todavía | sin | terminar. | Ni | una | palabra.", "Oh, | and | the | boat? | Still | without | finishing. | Not | one | word.",
@@ -687,10 +687,10 @@ export const startOver: SituationDef = {
     talk: {
       lt: "Ask to talk",
       items: [
-        { id: "yeah_know", s: t("Sí, | ya | sé. | Ha pasado | mucho | tiempo.", "Yes, | already | I-know. | It's been | a long | time.", "Yeah, I know. It's been a long time.") },
+        { id: "yeah_know", s: t("Sí, | ya | sé. | Ha pasado | mucho | tiempo.", "Yes, | already | I-know. | It's been | a long | time.", "Yeah, I know. It's been a long time.", { spain: t("Sí, | ya | lo sé. | Ha pasado | mucho | tiempo.", "Yes, | already | I-know-it. | It's been | a long | time.", "Yeah, I know. It's been a long time.") }) },
         { id: "have_minute", s: t("¿Tienes | un | minuto?", "Do-you-have | a | minute?", "Do you have a minute?") },
         { id: "can_talk", s: t("¿Podemos | hablar?", "Can-we | talk?", "Can we talk?") },
-        { id: "came_apologize", s: t("Vine | a | disculparme.", "I-came | to | apologize.", "I came to apologize.") },
+        { id: "came_apologize", s: t("Vine | a | disculparme.", "I-came | to | apologize.", "I came to apologize.", { spain: t("He venido | a | disculparme.", "I've come | to | apologize.", "I came to apologize.") }) },
       ],
     },
     apology: {
@@ -701,7 +701,7 @@ export const startOver: SituationDef = {
           note: "Sentir + what you did: a sincere apology." },
         { id: "sorry_barbecue", s: t("Perdóname | por | lo que | dije | en | tu | carne asada.", "Forgive me | for | what | I-said | at | your | cookout.",
           "I'm so sorry about what I said at your cookout.", { flags: { 6: CARNE },
-            neutral: t("Perdóname | por | lo que | dije | en | tu | parrillada.", "Forgive me | for | what | I-said | at | your | cookout.", "I'm so sorry about what I said at your cookout.") }),
+            neutral: t("Perdóname | por | lo que | dije | en | tu | parrillada.", "Forgive me | for | what | I-said | at | your | cookout.", "I'm so sorry about what I said at your cookout."), spain: t("Perdóname | por | lo que | dije | en | tu | barbacoa.", "Forgive me | for | what | I-said | at | your | cookout.", "I'm so sorry about what I said at your cookout.") }),
           note: "“Perdóname” is warm and normal between friends." },
         { id: "apologize", s: t("Quiero | pedirte | perdón.", "I-want | to ask you | forgiveness.", "I want to apologize.") },
         { id: "hope_forgive", s: t("Espero | que | me | puedas | perdonar.", "I-hope | that | me | you-can | forgive.", "I hope you can forgive me.", { flags: { 3: SUBJ } }) },
@@ -763,7 +763,7 @@ export const startOver: SituationDef = {
         { id: "wont_happen", s: t("No se va | a | repetir.", "It's not going | to | happen again.", "It won't happen again.") },
         { id: "words_cheap", s: t("Hechos, | no | palabras. | Ya | verás.", "Actions, | not | words. | Already | you'll-see.", "Actions, not words. You'll see.") },
         { id: "call_more", s: t("Te | voy | a | llamar | más | seguido. | Te lo | prometo.", "You | I'm-going | to | call | more | often. | It to you | I-promise.",
-          "I'll call more often. I promise.") },
+          "I'll call more often. I promise.", { spain: t("Te | voy | a | llamar | más | a menudo. | Te lo | prometo.", "You | I'm-going | to | call | more | often. | It to you | I-promise.", "I'll call more often. I promise.") }) },
       ],
     },
     deal: {
@@ -771,7 +771,7 @@ export const startOver: SituationDef = {
       items: [
         { id: "deal_ok", s: t("Trato hecho.", "Deal.", "Deal.") },
         { id: "you_got_it", s: t("¡Sale!", "You got it!", "You got it!", { flags: { 0: "Mexican: sale = okay, deal." },
-          neutral: t("¡De acuerdo!", "Agreed!", "You got it!") }), register: "casual" },
+          neutral: t("¡De acuerdo!", "Agreed!", "You got it!"), spain: t("¡Vale!", "Okay!", "You got it!") }), register: "casual" },
         { id: "name_day", s: t("Tú | dime | cuándo.", "You | tell me | when.", "Name the day.") },
         { id: "cant_cook", s: t("¡Pero | yo | no sé | cocinar!", "But | I | don't know how | to cook!", "But I can't cook!"), note: "A joke works too." },
       ],
@@ -791,14 +791,14 @@ export const startOver: SituationDef = {
       items: [
         { id: "heard_out", s: t("Gracias | por | escucharme.", "Thanks | for | listening to me.", "Thank you for hearing me out.") },
         { id: "thanks_door", s: t("Gracias | por | no cerrarme | la | puerta.", "Thanks | for | not shutting on me | the | door.", "Thanks for not slamming the door.") },
-        { id: "missed_you", s: t("Te | extrañé, | Diego.", "You | I-missed, | Diego.", "I missed you, Diego.") },
+        { id: "missed_you", s: t("Te | extrañé, | Diego.", "You | I-missed, | Diego.", "I missed you, Diego.", { spain: t("Te | he echado de menos, | Diego.", "You | I've missed, | Diego.", "I missed you, Diego.") }) },
       ],
     },
     nora: {
       lt: "Say hello to Natalia",
       items: [
-        { id: "hi_nora", s: t("¡Hola, | Natalia! | ¡Qué | gusto | verte!", "Hi, | Natalia! | What | joy | to see you!", "Hi, Natalia! It's so good to see you.") },
-        { id: "nora_missed", s: t("Los | extrañé.", "You all | I-missed.", "I missed you guys.", { flags: { 0: "los: you (both of you)." } }) },
+        { id: "hi_nora", s: t("¡Hola, | Natalia! | ¡Qué | gusto | verte!", "Hi, | Natalia! | What | joy | to see you!", "Hi, Natalia! It's so good to see you.", { spain: t("¡Hola, | Natalia! | ¡Qué | alegría | verte!", "Hi, | Natalia! | What | joy | to see you!", "Hi, Natalia! It's so good to see you.") }) },
+        { id: "nora_missed", s: t("Los | extrañé.", "You all | I-missed.", "I missed you guys.", { flags: { 0: "los: you (both of you)." }, spain: t("Os | he echado de menos.", "You all | I've missed.", "I missed you guys.", { flags: { 0: "os: you (both of you), Spain's vosotros." } }) }) },
       ],
     },
   },
@@ -806,6 +806,24 @@ export const startOver: SituationDef = {
   tips: TIPS,
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha venido": { reason: "grammatical_fusion", split: "ha + venido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "has venido": { reason: "grammatical_fusion", split: "has + venido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he oído": { reason: "grammatical_fusion", split: "he + oído: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "no has venido": { reason: "grammatical_fusion", split: "no + has + venido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "The verb phrase." },
+    "has dicho": { reason: "grammatical_fusion", split: "has + dicho: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he perdonado": { reason: "grammatical_fusion", split: "he + perdonado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he pensado": { reason: "grammatical_fusion", split: "he + pensado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha llevado": { reason: "grammatical_fusion", split: "ha + llevado: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "ha aparecido": { reason: "grammatical_fusion", split: "ha + aparecido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he venido": { reason: "grammatical_fusion", split: "he + venido: haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "hemos echado de menos": { reason: "grammatical_fusion", split: "hemos echado → we have thrown + de menos → of less: echar de menos = to miss (someone), in Spain's present perfect; one English verb.", minimal: "The verb phrase." },
+    "he echado de menos": { reason: "grammatical_fusion", split: "he echado → I have thrown + de menos → of less: echar de menos = to miss (someone), in Spain's present perfect; one English verb.", minimal: "The verb phrase." },
+    "ha echado de menos": { reason: "grammatical_fusion", split: "ha echado → has thrown + de menos → of less: echar de menos = to miss (someone), in Spain's present perfect; one English verb.", minimal: "The verb phrase." },
+    "delante de": { reason: "lexical_expression", split: "delante → ahead + de → of: delante de = in front of.", minimal: "Two words." },
+    "sin más": { reason: "lexical_expression", split: "sin → without + más → more: sin más = just like that.", minimal: "Two words." },
+    "lo sé": { reason: "grammatical_fusion", split: "lo → it + sé → I know: ya lo sé = I know; English drops the object.", minimal: "Pronoun and verb." },
+    "a menudo": { reason: "lexical_expression", split: "a → to + menudo → small is false; a menudo = often.", minimal: "Two words." },
     "cuánto tiempo": { reason: "lexical_expression", split: "cuánto → how much + tiempo → time; the greeting = long time (no see).", minimal: "Two words." },
     "se te ofrece": { reason: "lexical_expression", split: "se → itself + te → to you + ofrece → offers; = what do you need, what can I do for you.", minimal: "Three words." },
     "por aquí": { reason: "lexical_expression", split: "por → through + aquí → here; = around here.", minimal: "Two words." },

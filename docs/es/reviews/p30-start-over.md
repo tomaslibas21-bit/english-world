@@ -97,3 +97,11 @@ surprise_me, deal_later, deal_let_go, slow_start. One gloss changed (door_what),
 - Natalia's "Ya está el café." has no answer of its own ("¡Qué rico, un cafecito!" gets the generic "no te entendí");
   her hello comes on "Gracias" and "Hola", which is enough.
 - The earlier owner question stands: "Lo siento, no fue mi intención" is a soft bad move ("Tal vez no. Pero lo dijiste.").
+
+## Spain twins (11 Nov 2026)
+
+- 30 Spain twins (lines and hints), 19 items in tests/es/spain/p30-start-over.json (all understood, 0 false accepts).
+- Register: no change between tú and usted (old friends). The learner's words to Diego and Natalia together are vosotros in Spain: "Os he echado de menos" (Los extrañé).
+- Words: echar de menos everywhere for extrañar (te hemos echado de menos, te he echado de menos, Michi también te ha echado de menos), barbacoa (carne asada / parrillada), delante de todos, dentro, ¿Y qué quieres? (¿Y qué se te ofrece?), sin más (y ya), hablar del tiempo (del clima), qué alegría verte, ¿vale?, vale, ya lo sé, más a menudo, ¡Vale! (¡Sale!). Spain's present perfect for what just happened: mira quién ha venido, ¿has venido a disculparte o a pelearte?, no has venido hasta aquí…, ya te he oído, ya me lo has dicho, ya te he perdonado, ya lo he pensado, ha aparecido, he venido a disculparme.
+- Grammar: he venido a… in the apology and announce patterns; me he equivocado (y ha sido culpa mía); "¡Pero si yo no sé cocinar!". Merges: 17.
+- Kept: lancha, Michi, the cookout story's past tense (dijiste, en tu barbacoa: a finished event two months ago).

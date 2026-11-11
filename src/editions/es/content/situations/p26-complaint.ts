@@ -919,7 +919,7 @@ export const complaint: SituationDef = {
       "(quiero | quisiera) (reportar | levantar un reporte de) (un problema | una entrega | mi pedido) [con mi pedido | con la entrega]",
     ] },
     fridge_broke: { patterns: [
-      "(mi | el) @sofa (llegó | vino | me llegó) @dmg [@late] #h:fridge_stopped",
+      "(mi | el) @sofa (llegó | vino | me llegó) @dmg [@late] #h:fridge_stopped", "(mi | el) @sofa (ha llegado | me ha llegado) @dmg [@late]",
       "(mi | el) @sofa (llegó | vino | me llegó) @late [y @dmg | y con @parts | y @parts]",
       "(llegó | vino | me llegó) @dmg [y @late]",
       "(llegó | vino | me llegó | me lo entregaron | me lo trajeron | lo entregaron | lo trajeron) @late [y (@dmg | con @parts)] [y con @parts] #h:late_delivery",
@@ -961,7 +961,7 @@ export const complaint: SituationDef = {
       "[ya] (pedí | me tomé | tuve que pedir) (el dia | un dia | permiso | el dia libre | un dia libre) [en el trabajo] [y | pero] [nadie (vino | llegó)] #dayoff",
       "(me quedé | estuve) (en casa | todo el dia en casa) [esperando] (y | pero) nadie (vino | llegó)",
       "la @visit (nunca se hizo | no se hizo | se canceló | nunca pasó)",
-      "[y] (el | su) @tech no (vino | llegó | se presentó | llamó | apareció)",
+      "[y] (el | su) @tech no (vino | llegó | se presentó | llamó | apareció | ha venido | ha llegado | se ha presentado | ha aparecido) [nunca]", "[y] (el | su) @tech nunca (ha venido | ha llegado | se ha presentado | ha aparecido)",
       "(iba a venir | tenia que venir | quedaron de mandar | me iban a mandar) (un | el | a un) @tech [el {day} | @when] [y | pero] (nadie | no) (vino | llegó)",
       "(me dejaron | me dejaron plantado | me dejaron plantada | me dejaron esperando) [todo el dia]",
       "nadie lo (revisó | arregló | reparó | recogió | vino a ver)",
@@ -1066,9 +1066,9 @@ export const complaint: SituationDef = {
     plugged_yes: { patterns: [
       "si ya lo revisé #h:plugged_yes",
       "[si] (claro | por supuesto) [que si] [ya lo revisé] [esta bien armado]",
-      "[si] ya (lo | la) (revisé | intenté | apreté | cheque | vi | armé bien) [@times]",
+      "[si] ya (lo | la) (revisé | intenté | apreté | cheque | vi | armé bien | he comprobado | he revisado | he mirado | he probado | he intentado) [@times]",
       "[si] ya (revisé | intenté | probé | hice) (eso | todo) [@times]",
-      "(esta | el sofa esta) bien armado [la pata esta (rota | quebrada)] #h:checked",
+      "(esta | el sofa esta) bien armado [la pata esta (rota | quebrada)] #h:checked", "(esta | el sofa esta) bien montado [pero]? [la pata esta (rota | quebrada)]",
       "[si] (esta | el sofa esta) bien armado pero la pata esta (rota | quebrada)",
       "no es (un tornillo | los tornillos | un tornillo flojo | nada mas un tornillo) la pata esta (rota | quebrada)",
       "(la pata | esta) (esta | estaba)? (rota | quebrada) no (floja | suelta)",
@@ -1150,7 +1150,7 @@ export const complaint: SituationDef = {
       "(esta bien | bueno | ok | sale | va | de acuerdo) (el miercoles | el martes | el proximo martes) [entonces]",
       "me encantan los cojines",
       "(agendeme | apunteme | reserveme | agendelo | agendela) (para | el) [proximo] (martes | miercoles)",
-      "[si | ok | esta bien] (agendelo | agendeme | agendela | aparteme la cita | reserve la visita)",
+      "[si | ok | esta bien | vale] (agendelo | agendeme | agendela | aparteme la cita | reserve la visita | programelo | programela | programeme)",
       "[si | sale] (mandeme | deme) el cupon",
       "(un cupon | el cupon) (estaria bien | me sirve)",
     ] },
@@ -1277,7 +1277,7 @@ export const complaint: SituationDef = {
     // --- the deadline, in writing, the folio ---------------------------------------------------
     set_deadline: { patterns: [
       "(necesito | quiero | quisiera | me gustaria) que (esto | esto se | se) (resuelva | quede resuelto | solucione | arregle | quede listo | quede) (@deadl | para el {day} | el {day}) [no (algun dia | cuando sea | quien sabe cuando)] #h:by_friday",
-      "lo necesito (para | antes de | antes del | a mas tardar) {day} #h:need_by",
+      "lo necesito (para | antes de | antes del | a mas tardar | como muy tarde) [el]? {day} #h:need_by",
       "lo necesito (para | antes de | antes del | a mas tardar) {day} [a mas tardar] no (algun dia | cuando sea | la proxima semana | en dos semanas)",
       "(necesito | quiero) (el @sofa | el reembolso | mi dinero | el nuevo | uno nuevo | eso | esto | el cambio) (para | antes de | antes del | a mas tardar) {day}",
       "@deadl", "@deadl no (algun dia | cuando sea | la proxima semana | en dos semanas)",
@@ -1355,16 +1355,16 @@ export const complaint: SituationDef = {
     // "Sí, una cosa más": there is something else (only at "¿Algo más?")
     more_yes_ctx: { patterns: ["[si] (una cosa mas | otra cosa | una pregunta mas | otra pregunta | tengo otra pregunta | tengo una pregunta | una pregunta)", "[no] solo una pregunta"] },
     no_pen: { patterns: [
-      "[no] no tengo (pluma | con que escribir | boligrafo | papel | lapiz | boli | donde anotar)",
+      "[no] no tengo (pluma | con que escribir | con que apuntar | boligrafo | papel | lapiz | boli | donde anotar | donde apuntar)",
       "[no] no tengo nada (para | con que) escribir", "no (puedo | alcanzo a) (anotarlo | escribirlo) [ahorita | ahora]",
     ] },
     pen_wait: { patterns: [
-      "(dejeme | permitame | espere | espereme) [que] (busco | busque | agarro | tomo | traigo | saco) (una pluma | pluma | con que escribir | un lapiz | papel | algo para anotar)",
-      "[un momento | un segundo | permitame | dejeme] (voy por | voy a buscar | voy a traer) (una pluma | pluma | papel | un lapiz | algo para anotar | con que escribir)",
+      "(dejeme | permitame | espere | espereme) [que] (busco | busque | agarro | tomo | traigo | saco | cojo) (una pluma | pluma | con que escribir | un lapiz | papel | algo para anotar | un boli | un boligrafo | algo para apuntar)",
+      "[un momento | un segundo | permitame | dejeme] (voy por | voy a buscar | voy a traer | voy a por) (una pluma | pluma | papel | un lapiz | algo para anotar | con que escribir | un boli | un boligrafo | algo para apuntar)", "(un momento | un segundo) (busco | cojo) (un boli | un boligrafo | papel | una pluma | algo para apuntar | con que escribir)",
     ] },
     ref_readback: { patterns: [
-      "[entonces | ok] [es el] @ref [correcto | verdad | es correcto | anotado | listo | ya lo anoté] #h:readback",
-      "[entonces | ok] [es el] @refnum [correcto | verdad | anotado]",
+      "[entonces | ok] [es el] @ref [correcto | verdad | es correcto | anotado | apuntado | listo | ya lo anoté | ya lo he apuntado | ya lo he anotado] #h:readback",
+      "[entonces | ok] [es el] @refnum [correcto | verdad | anotado | apuntado]",
     ] },
     // a read-back with other digits ("¿HP 4472?"): a catch-all, so the right number always wins
     readback_unknown: { patterns: ["[entonces | ok] [es el] (hache pe | hp | h p | hache p | ache pe) [guion] {digits} [correcto | verdad]"] },
@@ -1416,7 +1416,7 @@ export const complaint: SituationDef = {
       "(voy a | mejor) colgar",
     ] },
     rude: { patterns: [
-      "(usted es | ustedes son | eres) (un inutil | una inutil | unos inutiles | inutil | inutiles | incompetente | incompetentes | un idiota | unos idiotas | un tonto | una tonta | unos tontos | un desastre | lo peor | ridiculos | un fraude) #tip:too_harsh",
+      "(usted es | ustedes son | eres | sois) (un inutil | una inutil | unos inutiles | inutil | inutiles | incompetente | incompetentes | un idiota | unos idiotas | un tonto | una tonta | unos tontos | un desastre | lo peor | ridiculos | un fraude) #tip:too_harsh",
       "(esta tienda | su tienda | su empresa | esta empresa | hogar puerto | su servicio | este servicio) es (una burla | un fraude | una estafa | un desastre | lo peor | ridicula | ridiculo | una porqueria | una verguenza | un robo) #tip:too_harsh",
       "(que les pasa | que le pasa) [a ustedes | a usted] #tip:too_harsh",
       "(callese | escucheme bien | callate) #tip:too_harsh",
@@ -1452,7 +1452,7 @@ export const complaint: SituationDef = {
       t("Hogar Puerto, | buenas tardes, | habla | Jorge. | ¿En | qué | le | puedo | servir?",
         "Hogar Puerto, | good afternoon, | speaking | Jorge. | In | what | (to) you | can I | serve?",
         "Hogar Puerto, good afternoon, this is Jorge. What can I do for you today?",
-        { flags: { 2: "habla: on the phone, this is…, literally speaks." } }),
+        { flags: { 2: "habla: on the phone, this is…, literally speaks." }, spain: t("Hogar Puerto, | buenas tardes, | le atiende | Jorge. | ¿En | qué | le | puedo | ayudar?", "Hogar Puerto, | good afternoon, | you're speaking with | Jorge. | In | what | (to) you | can I | help?", "Hogar Puerto, good afternoon, this is Jorge. What can I do for you today?", { flags: { 2: "Le atiende: the call-center way to say who's helping you, literally attends to you." } }) }),
     ],
     kyle_greet_hold: [
       t("¡Gracias | por | su | espera! | Le atiende | Jorge, | de | Hogar Puerto. | ¿En | qué | le | puedo | ayudar?",
@@ -1461,11 +1461,11 @@ export const complaint: SituationDef = {
     ],
     kyle_ask_problem: [
       t("Cuénteme, | ¿cuál | es | el | problema?", "Tell me, | what | is | the | problem?", "So, what seems to be the problem?"),
-      t("Muy | bien, | aquí | estoy | para | ayudarle. | ¿Qué | pasó?", "Very | good, | here | I am | to | help you. | What | happened?", "Okay, I'm here to help. What's going on?"),
+      t("Muy | bien, | aquí | estoy | para | ayudarle. | ¿Qué | pasó?", "Very | good, | here | I am | to | help you. | What | happened?", "Okay, I'm here to help. What's going on?", { spain: t("Muy | bien, | aquí | estoy | para | ayudarle. | ¿Qué | ha pasado?", "Very | good, | here | I am | to | help you. | What | has happened?", "Okay, I'm here to help. What's going on?") }),
     ],
     kyle_complaint_ok: [
-      t("Claro, | dígame. | ¿Qué | pasó?", "Sure, | tell me. | What | happened?", "Of course. What happened?"),
-      t("Lamento | escuchar | eso. | ¿Qué | pasó | exactamente?", "I regret | to hear | that. | What | happened | exactly?", "I'm sorry to hear that. What happened, exactly?"),
+      t("Claro, | dígame. | ¿Qué | pasó?", "Sure, | tell me. | What | happened?", "Of course. What happened?", { spain: t("Claro, | dígame. | ¿Qué | ha pasado?", "Sure, | tell me. | What | has happened?", "Of course. What happened?") }),
+      t("Lamento | escuchar | eso. | ¿Qué | pasó | exactamente?", "I regret | to hear | that. | What | happened | exactly?", "I'm sorry to hear that. What happened, exactly?", { spain: t("Lamento | oír | eso. | ¿Qué | ha pasado | exactamente?", "I regret | to hear | that. | What | has happened | exactly?", "I'm sorry to hear that. What happened, exactly?") }),
     ],
     kyle_sorry: [
       t("Ay, | no, | lo siento | mucho.", "Oh, | no, | I'm sorry | a lot.", "Oh no, I'm so sorry to hear that."),
@@ -1478,18 +1478,18 @@ export const complaint: SituationDef = {
       t("Solo | para | confirmar, | señor: | ¿ya | revisó | que | esté | bien | armado?",
         "Just | to | confirm, | sir: | already | did you check | that | it is | well | assembled?",
         "Just to check, sir: are you sure it's put together right?",
-        { flags: { 4: "Ya in a question: already, as in English have you … yet." } }),
+        { flags: { 4: "Ya in a question: already, as in English have you … yet." }, spain: t("Solo | para | confirmar, | señor: | ¿ya | ha comprobado | que | esté | bien | montado?", "Just | to | confirm, | sir: | already | have you checked | that | it is | well | assembled?", "Just to check, sir: are you sure it's put together right?", { flags: { 4: "Ya in a question: already, as in English have you … yet." } }) }),
     ],
     kyle_plugged_f: [
       t("Solo | para | confirmar, | señora: | ¿ya | revisó | que | esté | bien | armado?",
         "Just | to | confirm, | ma'am: | already | did you check | that | it is | well | assembled?",
         "Just to check, ma'am: are you sure it's put together right?",
-        { flags: { 4: "Ya in a question: already, as in English have you … yet." } }),
+        { flags: { 4: "Ya in a question: already, as in English have you … yet." }, spain: t("Solo | para | confirmar, | señora: | ¿ya | ha comprobado | que | esté | bien | montado?", "Just | to | confirm, | ma'am: | already | have you checked | that | it is | well | assembled?", "Just to check, ma'am: are you sure it's put together right?", { flags: { 4: "Ya in a question: already, as in English have you … yet." } }) }),
     ],
     // Jorge's script goes on (half of the time)
     kyle_off_on: [
       t("¿Y | ya | intentó | apretar | los | tornillos | de | la | pata?", "And | already | did you try | to tighten | the | screws | of | the | leg?",
-        "And have you tried tightening the screws on the leg?", { flags: { 8: F_PATA } }),
+        "And have you tried tightening the screws on the leg?", { flags: { 8: F_PATA }, spain: t("¿Y | ya | ha probado a | apretar | los | tornillos | de | la | pata?", "And | already | have you tried | to tighten | the | screws | of | the | leg?", "And have you tried tightening the screws on the leg?", { flags: { 8: F_PATA } }) }),
     ],
     kyle_plugged_ok: [
       t("Muy | bien, | solo | tenía | que | preguntar. | Viene | en | mi | guion.", "Very | good, | just | I had | to | ask. | It comes | in | my | script.",
@@ -1539,7 +1539,7 @@ export const complaint: SituationDef = {
     kyle_new_visit: [
       t("Lo siento | mucho. | Le | puedo | agendar | una | nueva | visita | para | el | próximo | martes.",
         "I'm sorry | a lot. | (For) you | I can | schedule | a | new | visit | for | — | next | Tuesday.",
-        "I'm so sorry about that. I can book you a new visit for next Tuesday.", { flags: { 9: F_EL_DAY } }),
+        "I'm so sorry about that. I can book you a new visit for next Tuesday.", { flags: { 9: F_EL_DAY }, spain: t("Lo siento | mucho. | Le | puedo | programar | una | nueva | visita | para | el | próximo | martes.", "I'm sorry | a lot. | (For) you | I can | schedule | a | new | visit | for | — | next | Tuesday.", "I'm so sorry about that. I can book you a new visit for next Tuesday.", { flags: { 9: F_EL_DAY } }) }),
     ],
     kyle_apologize: [
       t("Lo | entiendo | perfectamente, | y | de verdad | le | ofrezco | una | disculpa.", "It | I-understand | perfectly, | and | really | (to) you | I-offer | an | apology.",
@@ -1565,7 +1565,7 @@ export const complaint: SituationDef = {
     ],
     kyle_book_q: [
       t("Entonces, | ¿le | agendo | la | visita | para | el | próximo | martes?", "So, | (for) you | should I schedule | the | visit | for | — | next | Tuesday?",
-        "So, should I book you for next Tuesday?", { flags: { 6: F_PROXIMO } }),
+        "So, should I book you for next Tuesday?", { flags: { 6: F_PROXIMO }, spain: t("Entonces, | ¿le | programo | la | visita | para | el | próximo | martes?", "So, | (for) you | should I schedule | the | visit | for | — | next | Tuesday?", "So, should I book you for next Tuesday?", { flags: { 6: F_PROXIMO } }) }),
     ],
     // "¿La visita tiene costo?" (no "No," first: "¿Es gratis?" must not get a no)
     kyle_visit_free: [
@@ -1588,7 +1588,7 @@ export const complaint: SituationDef = {
       t("Claro. | Pero | primero | necesito | algunos | datos.", "Sure. | But | first | I need | some | details.", "Of course. But first, I need a few details."),
     ],
     kyle_manager_file: [
-      t("Claro. | Nada más | déjeme | revisar | su | pedido | primero.", "Sure. | Just | let me | check | your | order | first.", "Sure. Let me just check your order first."),
+      t("Claro. | Nada más | déjeme | revisar | su | pedido | primero.", "Sure. | Just | let me | check | your | order | first.", "Sure. Let me just check your order first.", { spain: t("Claro. | Solo | déjeme | revisar | su | pedido | primero.", "Sure. | Just | let me | check | your | order | first.", "Sure. Let me just check your order first.") }),
     ],
     kyle_cant_refund: [
       t("Me temo | que | yo | no puedo | autorizar | reembolsos. | Solo | mi | gerente | puede | hacerlo.",
@@ -1610,7 +1610,7 @@ export const complaint: SituationDef = {
       t("Claro. | Ahorita | {m:lo|f:la} | comunico | con | mi | gerente.", "Sure. | Right now | you | I-connect | with | my | manager.", "Of course. One moment, I'll transfer you to my manager.",
         { flags: { 1: "Mexican: ahorita = right now, in a moment.", 2: F_YOU_LO },
           neutral: t("Claro. | Enseguida | {m:lo|f:la} | comunico | con | mi | gerente.", "Sure. | Right away | you | I-connect | with | my | manager.",
-            "Of course. One moment, I'll transfer you to my manager.", { flags: { 2: F_YOU_LO } }) }),
+            "Of course. One moment, I'll transfer you to my manager.", { flags: { 2: F_YOU_LO } }), spain: t("Claro. | Enseguida | le | paso | con | mi | gerente.", "Sure. | Right away | you | I-put-through | to | my | manager.", "Of course. One moment, I'll transfer you to my manager.", { flags: { 2: "le: you (usted); pasar con = to put a caller through to someone." } }) }),
       t("Por supuesto. | Déjeme | pasarle | la | llamada | a | mi | gerente.", "Of course. | Let me | pass (to) you | the | call | to | my | manager.",
         "Absolutely. Let me get my manager for you.", { flags: { 2: "pasarle la llamada: put the call through (le = you, the caller)." } }),
     ],
@@ -1634,19 +1634,19 @@ export const complaint: SituationDef = {
     ],
     kyle_tuesday_ok: [
       t("¡Listo! | Su | visita | queda | agendada | para | el | próximo | martes.", "Done! | Your | visit | stays | scheduled | for | — | next | Tuesday.",
-        "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." } }),
+        "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." }, spain: t("¡Listo! | Su | visita | queda | programada | para | el | próximo | martes.", "Done! | Your | visit | stays | scheduled | for | — | next | Tuesday.", "Okay! You're all set for next Tuesday.", { flags: { 6: "el: Spanish puts the article before próximo martes; English has none." } }) }),
     ],
     kyle_understand: [t("Entiendo.", "I understand.", "I understand.")],
     kyle_bye: [
       t("Gracias | por | llamar | a | Hogar Puerto. | Que | tenga | buen | día.", "Thanks | for | calling | — | Hogar Puerto. | (I hope) | you have | a good | day.",
-        "Thank you for calling Hogar Puerto, and have a nice day.", { flags: { 3: F_A_CALL } }),
+        "Thank you for calling Hogar Puerto, and have a nice day.", { flags: { 3: F_A_CALL }, spain: t("Gracias | por | llamar | a | Hogar Puerto. | Que | tenga | un | buen | día.", "Thanks | for | calling | — | Hogar Puerto. | (I hope) | you have | a | good | day.", "Thank you for calling Hogar Puerto, and have a nice day.", { flags: { 3: F_A_CALL } }) }),
     ],
 
     // --- Brenda ---
     brenda_hi: [
       t("Buenas tardes, | habla | Brenda, | gerente | de | atención a clientes. | Jorge | ya | me | explicó | el | problema | con | su | sofá.",
         "Good afternoon, | speaking | Brenda, | manager | of | customer service. | Jorge | already | (to) me | explained | the | problem | with | your | sofa.",
-        "Hi, this is Brenda, the customer care manager. Jorge filled me in on your sofa."),
+        "Hi, this is Brenda, the customer care manager. Jorge filled me in on your sofa.", { spain: t("Buenas tardes, | soy | Brenda, | gerente | de | atención al cliente. | Jorge | ya | me | ha explicado | el | problema | con | su | sofá.", "Good afternoon, | I'm | Brenda, | manager | of | customer service. | Jorge | already | (to) me | has explained | the | problem | with | your | sofa.", "Hi, this is Brenda, the customer care manager. Jorge filled me in on your sofa.") }),
     ],
     brenda_hi2: [
       t("Entiendo | que | no ha | sido | una | buena | experiencia.", "I understand | that | it hasn't | been | a | good | experience.", "I understand this hasn't been a great experience."),
@@ -1679,7 +1679,7 @@ export const complaint: SituationDef = {
     ],
     brenda_check_coupon: [t("Entonces, | ¿le | mando | el | cupón?", "So, | (to) you | should I send | the | coupon?", "So, should I send you the coupon?")],
     brenda_check_visit: [
-      t("Entonces, | ¿le | agendo | la | visita | del | miércoles?", "So, | (for) you | should I schedule | the | visit | of the | Wednesday?", "So, should I book the Wednesday visit for you?"),
+      t("Entonces, | ¿le | agendo | la | visita | del | miércoles?", "So, | (for) you | should I schedule | the | visit | of the | Wednesday?", "So, should I book the Wednesday visit for you?", { spain: t("Entonces, | ¿le | programo | la | visita | del | miércoles?", "So, | (for) you | should I schedule | the | visit | of the | Wednesday?", "So, should I book the Wednesday visit for you?") }),
     ],
     brenda_coupon_info: [
       t("Es | de | {$price} | para | su | próxima | compra | en | la | tienda.", "It's | of | {$price} | for | your | next | purchase | in | the | store.",
@@ -1688,7 +1688,7 @@ export const complaint: SituationDef = {
     // "¿Cuándo vence el cupón?" (audit, 5 Nov; Hogar Puerto's own rule, like its 10 to 14 days)
     brenda_coupon_valid: [
       t("Tiene | vigencia | de | seis | meses.", "It has | validity | of | six | months.", "It's good for six months.",
-        { flags: { 1: "vigencia: how long something is valid (a coupon, a card, an ID)." } }),
+        { flags: { 1: "vigencia: how long something is valid (a coupon, a card, an ID)." }, spain: t("Es | válido | durante | seis | meses.", "It's | valid | for | six | months.", "It's good for six months.") }),
     ],
     brenda_visit_info: [
       t("El | técnico | va | el | miércoles, | entre | {$win}, | sin | costo | para | usted.", "The | technician | goes | on | Wednesday, | between | {$win}, | without | cost | for | you.",
@@ -1785,16 +1785,16 @@ export const complaint: SituationDef = {
     ],
     brenda_ref_pen: [
       t("Le | voy a | dar | un | número | de | folio. | ¿Tiene | dónde | anotar?", "(To) you | I'm going to | give | a | number | of | reference. | Do you have | where | to write?",
-        "Let me give you a reference number. Do you have something to write with?", { flags: { 6: F_FOLIO } }),
+        "Let me give you a reference number. Do you have something to write with?", { flags: { 6: F_FOLIO }, spain: t("Le | voy a | dar | un | número | de | referencia. | ¿Tiene | dónde | apuntar?", "(To) you | I'm going to | give | a | number | of | reference. | Do you have | where | to write?", "Let me give you a reference number. Do you have something to write with?") }),
     ],
     brenda_ref: [
       t("Es | el | {$text}.", "It's | — | {$text}.", "It's {$text}.", { say: "Es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 1: F_EL_NUM } }),
       t("Muy | bien. | Su | número | de | folio | es | el | {$text}.", "Very | good. | Your | number | of | reference | is | — | {$text}.", "Okay. Your reference number is {$text}.",
-        { say: "Muy bien. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }),
+        { say: "Muy bien. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM }, spain: t("Muy | bien. | Su | número | de | referencia | es | el | {$text}.", "Very | good. | Your | number | of | reference | is | — | {$text}.", "Okay. Your reference number is {$text}.", { say: "Muy bien. Su número de referencia es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }) }),
     ],
     brenda_ref_asked: [
       t("Claro. | Su | número | de | folio | es | el | {$text}.", "Sure. | Your | number | of | reference | is | — | {$text}.", "Of course. Your reference number is {$text}.",
-        { say: "Claro. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 6: F_EL_NUM } }),
+        { say: "Claro. Su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 6: F_EL_NUM }, spain: t("Claro. | Su | número | de | referencia | es | el | {$text}.", "Sure. | Your | number | of | reference | is | — | {$text}.", "Of course. Your reference number is {$text}.", { say: "Claro. Su número de referencia es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 6: F_EL_NUM } }) }),
       t("Por supuesto. | Es | el | {$text}.", "Of course. | It's | — | {$text}.", "Sure. It's {$text}.",
         { say: "Por supuesto. Es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 2: F_EL_NUM } }),
     ],
@@ -1804,7 +1804,7 @@ export const complaint: SituationDef = {
     ],
     brenda_ref_before_go: [
       t("Antes de | colgar, | su | número | de | folio | es | el | {$text}.", "Before | hanging up, | your | number | of | reference | is | — | {$text}.",
-        "Before you go, your reference number is {$text}.", { say: "Antes de colgar, su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }),
+        "Before you go, your reference number is {$text}.", { say: "Antes de colgar, su número de folio es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM }, spain: t("Antes de | colgar, | su | número | de | referencia | es | el | {$text}.", "Before | hanging up, | your | number | of | reference | is | — | {$text}.", "Before you go, your reference number is {$text}.", { say: "Antes de colgar, su número de referencia es el {$text}.", spell: "HP4471", write: REF_WRITE, flags: { 7: F_EL_NUM } }) }),
     ],
     brenda_ref_correct: [t("Exacto.", "Exactly.", "Exactly."), t("Correcto.", "Correct.", "That's right.")],
     brenda_no_pen: [
@@ -1830,11 +1830,11 @@ export const complaint: SituationDef = {
     ],
     brenda_bye_new: [
       t("¡Que | tenga | excelente | día, | y | que | disfrute | su | sofá | nuevo!", "(I hope) | you have | an excellent | day, | and | (I hope) | you-enjoy | your | sofa | new!",
-        "Have a wonderful day, and enjoy the new sofa!"),
+        "Have a wonderful day, and enjoy the new sofa!", { spain: t("¡Que | tenga | un | excelente | día, | y | que | disfrute | su | sofá | nuevo!", "(I hope) | you have | an | excellent | day, | and | (I hope) | you-enjoy | your | sofa | new!", "Have a wonderful day, and enjoy the new sofa!") }),
     ],
     brenda_bye: [
-      t("Que | tenga | excelente | día.", "(I hope) | you have | an excellent | day.", "Have a wonderful day."),
-      t("Cuídese | mucho, | y | que | tenga | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a good | day.", "Take care, and have a good day."),
+      t("Que | tenga | excelente | día.", "(I hope) | you have | an excellent | day.", "Have a wonderful day.", { spain: t("Que | tenga | un | excelente | día.", "(I hope) | you have | an | excellent | day.", "Have a wonderful day.") }),
+      t("Cuídese | mucho, | y | que | tenga | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a good | day.", "Take care, and have a good day.", { spain: t("Cuídese | mucho, | y | que | tenga | un | buen | día.", "Take care of yourself | a lot, | and | (I hope) | you have | a | good | day.", "Take care, and have a good day.") }),
     ],
     brenda_walk: [
       t("Lamento | que | hoy | no pudiéramos | resolverlo.", "I regret | that | today | we couldn't | solve it.", "I'm sorry we couldn't sort this out today."),
@@ -1874,7 +1874,7 @@ export const complaint: SituationDef = {
       items: [
         { id: "plugged_yes", s: t("Sí, | ya | lo | revisé.", "Yes, | already | it | I-checked.", "Yes, I already checked.") },
         { id: "checked", s: t("Está | bien | armado: | la | pata | está | rota.", "It's | well | assembled: | the | leg | is | broken.", "It's put together fine: the leg is broken.",
-          { flags: { 4: F_PATA } }) },
+          { flags: { 4: F_PATA }, spain: t("Está | bien | montado: | la | pata | está | rota.", "It's | well | assembled: | the | leg | is | broken.", "It's put together fine: the leg is broken.", { flags: { 4: F_PATA } }) }) },
         { id: "still_not", s: t("Sigue | igual.", "It stays | the same.", "It's still the same.") },
       ],
     },
@@ -1952,7 +1952,7 @@ export const complaint: SituationDef = {
       lt: "Ask for a reference number and read it back",
       items: [
         { id: "ask_ref", s: t("¿Me | da | un | número | de | folio, | por favor?", "(To) me | you-give | a | number | of | reference, | please?", "Could I have a reference number, please?",
-          { flags: { 5: F_FOLIO } }) },
+          { flags: { 5: F_FOLIO }, spain: t("¿Me | da | un | número | de | referencia, | por favor?", "(To) me | you-give | a | number | of | reference, | please?", "Could I have a reference number, please?") }) },
         { id: "go_ahead", s: t("Sí, | dígame.", "Yes, | tell me.", "Yes, go ahead.") },
         { id: "readback", s: t("HP-4471. | Anotado.", "HP-4471. | Noted.", "HP-4471. Got it.", { say: "Hache, pe, cuatro, cuatro, siete, uno. Anotado." }) },
         { id: "repeat_num", s: t("¿Me | repite | el | número, | por favor?", "(To) me | you-repeat | the | number, | please?", "Could you repeat the number, please?") },
@@ -1963,7 +1963,7 @@ export const complaint: SituationDef = {
       items: [
         { id: "appreciate", s: t("Le | agradezco | mucho | su | ayuda, | de verdad.", "(To) you | I-thank | a lot | your | help, | really.", "I really appreciate your help, I truly do.") },
         { id: "thats_all", s: t("No, | es | todo. | Gracias.", "No, | it's | all. | Thanks.", "No, that's all. Thank you.") },
-        { id: "nice_day", s: t("Que | tenga | muy | buen | día.", "(I hope) | you have | very | good | day.", "Have a nice day.") },
+        { id: "nice_day", s: t("Que | tenga | muy | buen | día.", "(I hope) | you have | very | good | day.", "Have a nice day.", { spain: t("Que | tenga | un | buen | día.", "(I hope) | you have | a | good | day.", "Have a nice day.") }) },
       ],
     },
   },
@@ -1978,6 +1978,12 @@ export const complaint: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (12 Nov 2026)
+    "ha pasado": { reason: "grammatical_fusion", split: "ha → has + pasado (participle): Spain's present perfect, ¿qué ha pasado? = what's happened.", minimal: "Auxiliary and participle." },
+    "ha comprobado": { reason: "grammatical_fusion", split: "ha → have (usted) + comprobado (participle): Spain's present perfect in a have-you-yet question.", minimal: "Auxiliary and participle." },
+    "ha probado a": { reason: "grammatical_fusion", split: "ha → have (usted) + probado → tried + a: probar a + verb = to try doing something (Spain).", minimal: "Auxiliary, participle and preposition." },
+    "atención al cliente": { reason: "lexical_expression", split: "atención → attention + al → to the + cliente → customer; Spain's name for customer service.", minimal: "The department's name." },
+    "ha explicado": { reason: "grammatical_fusion", split: "ha → has + explicado (participle): Spain's present perfect for what has just happened.", minimal: "Auxiliary and participle." },
     "le atiende": { reason: "lexical_expression", split: "le → (to) you + atiende → attends is the call-center formula: you're speaking with.", minimal: "Two words; the name stays outside." },
     "hogar puerto": { reason: "lexical_expression", split: "Hogar → home + Puerto → port would translate a store's name; = Hogar Puerto.", minimal: "Two words of one name." },
     "atención a clientes": { reason: "lexical_expression", split: "atención → attention + a → to + clientes → customers is the department's name: customer service.", minimal: "Three words, one name." },

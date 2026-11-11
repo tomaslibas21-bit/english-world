@@ -139,3 +139,19 @@ that waits; dollars and parts; a returning visitor), 1 sim updated (the personal
 
 **Gates:** `tsc` clean; `check-content` 0 errors, 0 warnings, 116/116 NLU, 27 sims 12/12 seeds, fuzz 80 no crash;
 corpus 350/350 (was 322/322), 0/99 traps (was 0/95); held-out 39/39, 0/5; `vitest --project es` 113/113.
+
+## Spain twins (11 Nov 2026)
+
+55 Spain twins (lines and hints), no register change: Doña Margarita and the learner keep usted. Spain's words: coche
+(carro/auto), conducir (manejar), prueba de conducción, descapotable (convertible), capota (techo), la radio (el
+radio), coger una emisora, maletero pequeño and nevera portátil (cajuela chica, hielera), garaje (cochera),
+revisiones (servicios), no funciona (no sirve), neumáticos (llantas), depósito (tanque), matrícula (placas), número
+de bastidor (número de serie), móvil, datáfono (terminal), cheque bancario (cheque de caja), sitio, delante de,
+entre nosotros (entre nos), de verdad (de veras), sincera (honesta), esta mañana (hoy en la mañana), llevarlo a su
+mecánico (con), un rasguñito (un rayoncito), me parece caro (se me hace caro), ¿Le vale…? (¿Le sirve…?), ¿Ha tenido
+algún accidente? (choque). Fuel use the Spanish way: "Gasta unos ocho litros a los cien" (12 km per liter). Spain's
+present perfect for what has just happened: ha venido, ha vuelto / ¿qué le ha parecido?, le ha robado el corazón, lo
+ha notado, ya lo ha conducido, ya le he bajado, he visto su anuncio. Kept: the Mexican car papers (factura endosada,
+tarjeta de circulación, refrendo, REPUVE, nacional), pesos, the streets. Patterns take he visto, revisiones, prueba de
+conducción, descapotable, cheque bancario / le vale, no llevo efectivo. Spain corpus: 23 items, 22/22, 0/1 false
+accepts. Gates: Mexican, neutral and Spain 0 errors, sims 12/12; corpus 350/350 0/99; held-out 39/39 0/5.

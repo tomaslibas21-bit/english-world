@@ -1,0 +1,26 @@
+{
+"situation": "s90-running-late",
+"items": [
+{ "ctx": "opening", "say": "Buenos días, ingeniero, soy Ryan", "intent": "identify" },
+{ "ctx": "opening", "say": "Buenos días, ingeniero, se me ha hecho tarde", "intent": "late" },
+{ "ctx": "late", "say": "Llego tarde, lo siento", "intent": "late" },
+{ "ctx": "reason", "say": "He perdido el autobús", "intent": "reason" },
+{ "ctx": "reason", "say": "Estoy en un atasco", "intent": "reason" },
+{ "ctx": "reason", "say": "No me ha sonado el despertador", "intent": "reason" },
+{ "ctx": "reason", "say": "Se me ha averiado el coche", "intent": "reason" },
+{ "ctx": "reason", "say": "Me he quedado dormido", "intent": "reason" },
+{ "ctx": "eta", "say": "Llego sobre las diez", "intent": ["eta", "eta_ctx"] },
+{ "ctx": "eta", "say": "Ahora mismo se la mando", "intent": "send_location" },
+{ "ctx": "eta", "say": "¿Ya ha empezado la reunión?", "intent": "ask_started" },
+{ "ctx": "eta", "say": "¿Ya han llegado todos?", "intent": "ask_team" },
+{ "ctx": "plan_q", "say": "¿Me guarda un sitio?", "intent": "save_seat" },
+{ "ctx": "plan_q", "say": "Sí, empiecen sin mí, por favor", "intent": "start_without" },
+{ "ctx": "need_help", "say": "No, gracias, voy a coger un taxi", "intent": "taxi_ok" },
+{ "ctx": "room", "say": "Vale, sala 302. Entendido", "intent": "confirm_room" },
+{ "ctx": "room", "say": "¿Dónde está la sala 302?", "intent": "ask_building" },
+{ "ctx": "closing", "say": "Nos vemos en la reunión", "intent": "bye_meeting" },
+{ "ctx": "closing", "say": "Perdone por el retraso", "intent": ["apologize", "g_sorry"] },
+{ "ctx": "closing", "say": "Perdón, me tengo que ir, voy conduciendo", "intent": "g_bye" },
+{ "ctx": "need_help", "say": "No voy a coger un taxi", "intent": "any" }
+]
+}

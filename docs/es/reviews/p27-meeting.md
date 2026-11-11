@@ -97,3 +97,12 @@ decides", "maybe is no yes: Gerardo decides", "stubborn: maybe is no giving in; 
 first; a proposal before the problem; vague problems", "her final offer echoed, then a clear yes". Corpus 194 → 224
 understood (+30), traps 42 → 43 (+21 `not` checks on the new items), 0 false accepts; held-out 34/35 (unchanged; the
 miss is the "No sé, <reason>" lead the first review left for the lead).
+
+## Spain twins (11 Nov 2026)
+
+- 34 Spain twins (lines and hints), 20 items in tests/es/spain/p27-meeting.json (all understood, 0 false accepts).
+- Register: everyone keeps the brief's tú. Gerardo's words to Vanessa and the learner together become vosotros in Spain ("Calma, vosotros dos", "Pero seguid", "¿Veis? No ha sido tan difícil", "Y vosotros, becarios, guardad las palomitas"); no line moved between tú and usted.
+- Words: móvil (celular, twice), gráfico (gráfica), becarios (practicantes), formación lleva tiempo (capacitación toma tiempo), ¡Vaya! (¡Guau!), ¿Perdona? (¿Disculpa?), vale for "okay/fine", solo for "nada más", añadir, Obviamente, pequeñito, mi argumento (mi punto). Spain's present perfect for what just happened: ya lo has dicho, ya la hemos probado, ¿has visto siquiera…?, has ganado la mitad, ha estado divertido, las visitas han subido. Hints: "Entiendo lo que dices" (Entiendo tu punto), "Así sí me convence", "El lunes me viene bien".
+- Not "me vale" for "works for me": in Mexico it means "I don't care", so the hint says "me convence".
+- Grammar: me viene bien / no me viene bien / me convence in the deal, Monday and coffee answers; vale before "el lunes". Merges: no ha sido, han subido, has dicho, hemos probado, has visto, has escuchado, has ganado, ha estado, hemos pensado.
+- Kept: "Es un punto válido" and "Buen punto" (heard in Spain too); pesos.

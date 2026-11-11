@@ -104,3 +104,19 @@ neutral only: the four hint twins. None of the changed lines has a Mexican-only 
 **Gates (worktree, niced).** tsc clean; check-content ✓ 0 errors 0 warnings, NLU 116/116 (was 100), 21 sims 12/12
 (was 17), fuzz 80; corpus 233/233, 0/32 false accepts (was 203/203, 0/30); held-out 39/40, 0/1 (unchanged); vitest
 es 113/113.
+
+## Spain twins (11 Nov 2026)
+
+30 Spain twins (lines and hints), no register change: Toño says tú to the learner and the learner tú to him, as in
+Mexico (a startup founder). Spain's words: inversores (inversionistas), informes de errores (reportes), móvil, tarta,
+portátiles, tirar de (jalar), volver (regresar), llevar el presupuesto (manejar), tú solo (nada más), esta noche (hoy
+en la noche), vale (ok/bueno), me/te viene bien (me/te funciona), centrarse en (enfocarse en), me has pillado (me
+descubriste); the hang-of-it idiom is cogerle el ritmo (agarrarle el ritmo), on Toño's line, its meaning line and the
+learner's hint. Spain's present perfect for what has just happened: se ha vuelto loco, ha hecho / han escrito, se han
+caído, te tengo una noticia → tengo que darte una noticia. The entities: attrs.spain "presentación para inversores"
+and "informe(s) de errores" (forms for the Spain words added). Patterns take cogiendo/he cogido el ritmo, centrarse,
+viene bien, inversores, "esta noche tengo planes". Kept as Spain says them too or as taught idioms: está en chino,
+eres un crack, hasta el cuello, piensa fuera de la caja, la pelota está en tu cancha, a la carrera, dale con todo, en
+la misma página (each has its meaning line); chamba and its meaning line stay Mexican (Toño explains it as Mexican).
+Spain corpus tests/es/spain/p18-startup.json: 20 items, 20/20, 0/1 false accepts. Gates: Mexican, neutral and Spain
+0 errors, sims 12/12; corpus 233/233 0/32; held-out 39/40 0/1 (the known goodbye miss).

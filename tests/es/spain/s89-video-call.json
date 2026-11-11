@@ -1,0 +1,28 @@
+{
+"situation": "s89-video-call",
+"items": [
+{ "ctx": "hear", "say": "Sí, te oigo bien", "intent": "hear_yes" },
+{ "ctx": "hear", "say": "¡Buenos días, Sofía! Sí, te oímos", "intent": ["hear_yes", "greet_team"] },
+{ "ctx": "hear", "say": "Perdona, se oye muy bajito", "intent": "hear_no" },
+{ "ctx": "hear", "say": "¿Me oís?", "intent": "ask_hear_me" },
+{ "ctx": "camera", "say": "¡Ay, perdón! ¿Ya me veis?", "intent": "cam_fixed" },
+{ "ctx": "camera", "say": "Ya la he encendido", "intent": ["cam_fixed", "cam_fix_ctx"] },
+{ "ctx": "camera", "say": "Ahora mismo la enciendo", "intent": "cam_fix_ctx" },
+{ "ctx": "mute", "say": "Pablo, no te oímos", "intent": ["tell_mute_ctx", "tell_mute"] },
+{ "ctx": "paul_hear", "say": "¡Sí, ya te oímos!", "intent": "hear_yes" },
+{ "ctx": "screen", "say": "Se ve un poco pequeño", "intent": "screen_small" },
+{ "ctx": "freeze", "say": "Perdona, te has congelado", "intent": "tell_freeze" },
+{ "ctx": "update", "say": "He terminado el informe", "intent": "upd_done", "slots": { "task": "report" } },
+{ "ctx": "update", "say": "Voy un poco retrasado con la página web", "intent": "upd_behind", "slots": { "task": "website" } },
+{ "ctx": "send_q", "say": "Vale, te lo mando después de la llamada", "intent": "will_send" },
+{ "ctx": "when_q", "say": "Mañana por la mañana", "intent": "when_ans" },
+{ "ctx": "questions", "say": "¿Nos puedes pasar el enlace?", "intent": "q_link" },
+{ "ctx": "questions", "say": "¿Puedes volver a la diapositiva anterior?", "intent": "q_back" },
+{ "ctx": "questions", "say": "¿Cuándo es la próxima reunión?", "intent": "q_next" },
+{ "ctx": "paul_leave", "say": "Suerte en la reunión", "intent": "bye_paul" },
+{ "ctx": "next_week", "say": "Que tengáis buena semana", "intent": ["bye_all", "g_bye"] },
+{ "ctx": "next_week", "say": "¡Venga, hasta la semana que viene!", "intent": ["bye_all", "g_bye", "next_week_yes"] },
+{ "ctx": "cam_still", "say": "¡Qué vergüenza! ¡Gracias!", "intent": ["oops", "g_thanks"] },
+{ "ctx": "update", "say": "No he terminado el informe", "intent": "any" }
+]
+}

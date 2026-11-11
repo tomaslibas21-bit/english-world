@@ -1,0 +1,28 @@
+{
+"situation": "s91b-police",
+"items": [
+{ "ctx": "report", "say": "Quiero poner una denuncia", "intent": "report" },
+{ "ctx": "report", "say": "Vengo a denunciar un robo", "intent": "report" },
+{ "ctx": "what_item", "say": "Me han robado la cartera", "intent": "report" },
+{ "ctx": "what_item", "say": "El móvil", "intent": "what_item_ctx", "slots": { "item": "phone" } },
+{ "ctx": "stolen_q", "say": "Sí, creo que ha sido un robo", "intent": "stolen_yes" },
+{ "ctx": "stolen_q", "say": "No, creo que se me ha caído", "intent": "stolen_no" },
+{ "ctx": "happened", "say": "Estaba en el mercado y cuando he ido a pagar ya no estaba", "intent": "happened" },
+{ "ctx": "when", "say": "Sobre las once", "intent": "where_when" },
+{ "ctx": "describe", "say": "Es marrón, de piel y pequeña", "intent": "describe" },
+{ "ctx": "contents", "say": "Llevaba las tarjetas y el carné de conducir", "intent": "contents" },
+{ "ctx": "contents", "say": "No llevaba efectivo", "intent": "no_cash" },
+{ "ctx": "cash_amount", "say": "Unos quinientos pesos", "intent": "contents" },
+{ "ctx": "bank", "say": "Sí, ya he llamado", "intent": "bank_called" },
+{ "ctx": "id_q", "say": "Sí, llevo el pasaporte", "intent": "have_id" },
+{ "ctx": "id_q", "say": "No, me lo han robado todo", "intent": "no_id_ctx" },
+{ "ctx": "sign", "say": "¿Me deja un bolígrafo?", "intent": "pen" },
+{ "ctx": "sign", "say": "Ya está", "intent": ["signed", "signed_ctx"] },
+{ "ctx": "sign", "say": "¿Tengo que rellenar algo?", "intent": "fill_form" },
+{ "ctx": "check_all", "say": "¿Dónde la han encontrado?", "intent": "found_who_ctx" },
+{ "ctx": "anything_else", "say": "¿Lo puedo hacer por internet?", "intent": "mp_online" },
+{ "ctx": "anything_else", "say": "Ha sido usted muy amable, gracias", "intent": ["thanks_officer", "g_thanks"] },
+{ "ctx": "anything_else", "say": "Vale, voy para allá", "intent": ["thats_all", "g_thanks", "yn:yes", "mp_ok"] },
+{ "ctx": "happened", "say": "Nadie se ha chocado conmigo", "intent": "any" }
+]
+}
