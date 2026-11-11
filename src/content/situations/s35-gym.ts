@@ -366,7 +366,8 @@ export const gym: SituationDef = {
     im_back: { patterns: ["i am back [now] #h:im_back", "(okay | all right) i am back", "(here | there) i am", "i am (all)? changed [now]", "i changed [my clothes]"] },
     lock_need: { patterns: ["do i need a lock", "(is | do i need) a lock (necessary | required)", "do i (have | need) to bring a lock"] },
     lock_borrow: { patterns: ["(can | could) i (borrow | rent | buy | get) (one | a lock | a padlock) [here] #h:lock_borrow", "do you (sell | have | rent) (locks | padlocks | a lock)",
-      "where (can | do) i (buy | get) (one | a lock)", "i need (one | a lock)"] },
+      "where (can | do) i (buy | get) (one | a lock)", "i need (one | a lock)",
+      "how much (is | are) (a lock | the lock | one | a padlock | locks)", "how much (does | do) (a lock | one | a padlock | locks) cost"] },
     towel_q: { patterns: ["where (are | can i get | can i find | do i get) [the] towels", "(can | could | may) i (get | have | borrow) a towel", "do i need [to bring] (a towel | towels | my own towel)", "i need a towel"] },
     water_q: { patterns: [
       "where (is | can i get | can i find | do i get) [the | some] (water | water fountain | drinking fountain | fountain | drinking water) #h:q_water",
@@ -681,10 +682,9 @@ export const gym: SituationDef = {
       t("Okay! | Do | you | want | to change | first?", "Gerai! | Ar | tu | nori | persirengti | pirmiausia?", "Gerai! Gal nori pirmiausia persirengti?", { flags: { 1: FLAG_DO } }),
       t("Do | you | need | to change | before | we | start?", "Ar | tau | reikia | persirengti | prieš | mums | pradedant?", "Ar tau reikia persirengti prieš pradedant?", { flags: { 0: FLAG_DO } }),
     ],
+    // one way only: with two variants, asking twice gave "on the right" and then "on the left" (5 Nov 2026)
     lockers_info: [
       t("The | locker room | is | downstairs, | on the right.", "— | Persirengimo kambarys | yra | apačioje, | dešinėje.", "Persirengimo kambarys – apačioje, dešinėje."),
-      t("The | locker room | is | right | over | there, | on the left.", "— | Persirengimo kambarys | yra | tiesiai | — | ten, | kairėje.", "Persirengimo kambarys – štai ten, kairėje.",
-        { flags: { 4: FLAG_OVER } }),
     ],
     bring_lock: [t("Did | you | bring | a | lock?", "Ar | tu | atsinešei | — | spynelę?", "Ar atsinešei spynelę?", { flags: { 0: "Question “Did” = the particle ar; the past tense sits on atsinešei." } })],
     lock_yes: [t("Perfect!", "Puiku!", "Puiku!")],
@@ -1359,6 +1359,8 @@ export const gym: SituationDef = {
     pay_cash(c) {
       if (c.s.paid) { c.say("ack"); return; }
       if (!c.s.signed) { c.s.payMethod = "cash"; c.say("cash_ok"); return; }
+      // "Can I pay in cash?": "Sure, cash is fine." first (it got a bare "Perfect, thanks!")
+      if (/^\W*(can|could|may|is it okay if) i\b|\?\s*$/i.test(c.heard)) c.say("cash_ok");
       pay(c, "cash");
     },
     no_card(c, slots, seg) { gym.handlers.pay_cash(c, slots, seg); },
@@ -1387,8 +1389,13 @@ export const gym: SituationDef = {
       c.say("ack");
     },
     lock_have(c) { c.say("lock_yes"); },
-    lock_none(c) { c.say("lock_buy"); },
-    lock_borrow(c) { c.say("lock_borrow_ok"); },
+    lock_none(c) {
+      // "No, I forgot it" / "I didn't bring it" right after "And I'll need a photo ID": the ID, not a lock
+      if (c.step === "form" && c.s.askId && !c.s.signed) { c.s.idMissing = true; c.say("g_no_worries"); return; }
+      c.say("lock_buy");
+    },
+    // "Where do I buy one?" / "How much is a lock?": where and how much ("Sure! Just ask…" answered a yes to them)
+    lock_borrow(c) { c.say(/\b(buy|cost|much|sell|price)\b/i.test(c.heard) ? "lock_buy" : "lock_borrow_ok"); },
     lock_need(c) { c.say("lock_need_info"); },
     towel_q(c) { c.say("towels_info"); },
     water_q(c) { c.say("water_info"); },
@@ -1433,7 +1440,8 @@ export const gym: SituationDef = {
     machine_free_q(c) { if (c.s.warm && !c.s.machineOk) machineOk(c, true); else c.say("machine_ok"); },
     machine_free_ctx(c, slots, seg) { gym.handlers.machine_free_q(c, slots, seg); },
     machine_taken(c) { if (c.s.warm && !c.s.machineOk) machineOk(c, false); else c.say("ack"); },
-    broken_q(c) { c.say(c.s.outOfOrder ? "broken_info" : "not_broken"); },
+    // "Is there another one?" when nothing is broken: no "No, it's fine!" (the step nudges: "Go ahead and ask if it's free.")
+    broken_q(c) { if (!c.s.outOfOrder && /\b(another|other|different)\b/i.test(c.heard)) return; c.say(c.s.outOfOrder ? "broken_info" : "not_broken"); },
 
     // --- sets, reps, weight
     ask_sets(c) {
@@ -1522,6 +1530,10 @@ export const gym: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): the lock's price and where to buy one
+    { say: "How much is a lock?", intent: "lock_borrow" },
+    { say: "How much does a lock cost?", intent: "lock_borrow" },
+    { say: "Where do I buy one?", intent: "lock_borrow" },
     // hint patterns
     { say: "Hi, I'm new here!", intent: "im_new", step: "new" },
     { say: "It's my first time here.", intent: "im_new", step: "new" },
@@ -1719,6 +1731,11 @@ export const gym: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): no ID with me, the lock's price, tomorrow at another time
+    { name: "audit: no ID, the lock's price, tomorrow at 7 pm", turns: ["Hi, I'm new here!", "I'll take the monthly membership.", "No, I forgot it.", "Here you go.", "Card, please.",
+      "Yes. Where are the lockers?", "How much is a lock?", "I'm back!", "The bike, please.", "Is this machine free?", "How many sets should I do?", "Done!", "Can you spot me?",
+      "I'm out of breath!", "Tomorrow at 7 pm."], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.askId = true; s.askLock = true; s.askFeel = false; s.painTwist = false; s.outOfOrder = false; s.nextAsk = "same"; s.firstQ = false; } },
     // Optional moments pinned with `setup` where a scripted turn needs them one way: "How do you feel?" after the
     // warm-up (askFeel; the next turn is often "Is this machine free?", a question that never waits) and the pain
     // twist after the leg press (painTwist). The twist sims force their twist on every seed.
@@ -1869,7 +1886,7 @@ function lockPending(): Pending {
     on: {
       lock_have: (cc) => { cc.say("lock_yes"); afterLockers(cc); },
       lock_none: (cc) => { cc.say("lock_buy"); afterLockers(cc); },
-      lock_borrow: (cc) => { cc.say("lock_borrow_ok"); afterLockers(cc); },
+      lock_borrow: (cc, sl, sg) => { gym.handlers.lock_borrow(cc, sl, sg); afterLockers(cc); },
       lock_need: (cc) => { cc.say("lock_need_info"); afterLockers(cc); },
     },
     yes: (cc) => { cc.say("lock_yes"); afterLockers(cc); },
@@ -2068,7 +2085,9 @@ function breathPending(c: Ctx): Pending {
 function setNext(c: Ctx, value: string) {
   if (c.s.next) { c.say("ack"); return; }
   c.s.next = value;
-  c.say("see_tomorrow");
+  // a time of its own ("Tomorrow at 7 pm", "in the afternoon"): not "See you tomorrow, same time!"
+  if (/\d|\b(am|pm|a m|p m|morning|afternoon|evening|night|noon|later|earlier|o'?clock)\b/i.test(c.heard)) (c as any).conv.pushLine("see_tomorrow", 0, {});
+  else c.say("see_tomorrow");
 }
 
 function nextDay(c: Ctx, day: string | undefined) {

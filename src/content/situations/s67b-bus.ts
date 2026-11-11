@@ -793,6 +793,8 @@ export const bus: SituationDef = {
       c.say("dest_neg_ack"); c.hold();
     },
     ask_fare(c) {
+      // "Is it the 12?" / "Is this bus 7?" asks about the bus, not a fare of $12 (it got "That's $2.50.")
+      if (/\b(the|bus|route|number)\s+(\d+|seven|twelve|twenty)\s*\??\s*$/i.test(c.heard) && !/\b(dollars?|cents?|bucks?|fare|pay|cost)\b/i.test(c.heard)) { c.say("g_not_understood"); c.hold(); return; }
       if (c.s.oos) { c.say("oos_fare"); return; }
       c.s.fareSaid = true;
       c.say("fare_is");
@@ -855,6 +857,8 @@ export const bus: SituationDef = {
     no_day_pass(c) { c.say("no_problem"); },
     transfer(c) { c.say("transfer"); },
     ask_stop(c, slots) {
+      // "Where do I get off?" after "This is your stop!": here (not "Sure! I'll let you know.")
+      if (c.s.arrived) { c.say("my_stop_yes"); return; }
       const d = placeOf(slots);
       if (d && d !== c.s.dest) { setDest(c, d, true); if (c.s.dest !== d) return; }
       if (!c.s.dest) { c.say("ask_dest"); c.hold(); return; }
@@ -979,6 +983,9 @@ export const bus: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): "Where do I get off?" after arriving: here
+    { name: "audit: where to get off, after arriving", turns: ["Does this bus go to Old Town?", "Can I pay by card?", "Okay.", "Could you tell me when to get off?", "Thank you.", "Where do I get off?"],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.oos = false; s.askKnown = false; s.midStop = false; } },
     // (the bus runs on every seed in these three; the out-of-service twist has its own sim)
     { name: "happy path, card", turns: ["Does this bus go to Old Town?", "Can I pay by card?", "Could you tell me when to get off?", "Thank you!", "Thanks a lot!"],
       expect: { complete: true }, auto: AUTO, setup: (s) => { s.oos = false; } },

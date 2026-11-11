@@ -82,30 +82,100 @@ const AUTO: Record<string, string> = {
 
 // ---------------------------------------------------------------------------
 
-function setTix(c: Ctx, tix: Tix, add = false) {
-  const cur: Tix = add ? { ...(c.s.tix || {}) } : {};
-  for (const [k, n] of Object.entries(tix)) cur[k] = (cur[k] || 0) + n;
-  c.s.tix = cur;
-  c.s.qty = count(cur);
-  if (c.s.paid) { c.s.paid = false; c.s.totalSaid = false; } // a change after paying: pay the difference (rare)
+/** What is left to pay: after paying, an extra (one more ticket, an audio guide) is charged alone. */
+const due = (c: Ctx) => total(c) - (c.s.paidAmt || 0);
+
+/** After paying, the order may grow (the extra is charged alone) but never shrink: "Oh, you already paid!". */
+function paidBlocks(c: Ctx, tix: Tix, guides = c.s.guides || 0): boolean {
+  if (!c.s.paid) return false;
+  const t = Object.entries(tix).reduce((a, [k, n]) => a + PRICE[k] * n, 0) + GUIDE * guides;
+  if (t >= (c.s.paidAmt || 0)) return false;
+  c.say("already_paid");
+  return true;
+}
+/** A change of tickets after paying ("I'm a student", "Not a senior"): the order stays as it was paid. */
+function paidNoChange(c: Ctx): boolean {
+  if (!c.s.paid) return false;
+  c.say("already_paid");
+  return true;
+}
+/** After paying, an order that drops a paid ticket ("One adult ticket" after a student one, "Make it one adult"):
+ *  it stays as paid (no charge for the difference); more tickets on top are an extra. */
+function paidSwap(c: Ctx, tix: Tix, add: boolean): boolean {
+  if (add || !c.s.paid) return false;
+  if (!Object.entries((c.s.tix || {}) as Tix).some(([k, n]) => (tix[k] || 0) < n)) return false;
+  return paidNoChange(c);
+}
+/** The order grew after paying: the pay step comes back for the difference. */
+function reopenIfMore(c: Ctx) {
+  if (c.s.paid && total(c) > (c.s.paidAmt || 0)) { c.s.paid = false; c.s.totalSaid = false; }
 }
 
+function setTix(c: Ctx, tix: Tix, add = false): boolean {
+  const cur: Tix = add ? { ...(c.s.tix || {}) } : {};
+  for (const [k, n] of Object.entries(tix)) cur[k] = (cur[k] || 0) + n;
+  if (paidBlocks(c, cur)) return false;
+  c.s.tix = cur;
+  c.s.qty = count(cur);
+  reopenIfMore(c);
+  return true;
+}
+
+/** Hands over what hasn't been handed yet (after an extra, only the extra). */
 function handover(c: Ctx) {
-  c.say(count(c.s.tix) > 1 ? "tickets_here" : "ticket_here");
-  c.event("give", { item: "museum-ticket", count: count(c.s.tix) });
-  if (c.s.guides) {
+  const n = count(c.s.tix) - (c.s.handedTix || 0);
+  if (n > 0) {
+    c.say(n > 1 ? "tickets_here" : "ticket_here");
+    c.event("give", { item: "museum-ticket", count: n });
+  }
+  c.s.handedTix = count(c.s.tix);
+  if ((c.s.guides || 0) > (c.s.handedGuides || 0)) {
     c.say("guide_here", { X: c.s.lang || "english" });
     c.event("give", { item: "audio-guide", lang: c.s.lang || "english" });
   }
+  c.s.handedGuides = c.s.guides || 0;
   if (c.s.mentionExhibit && !c.s.exhibitKnown) { c.s.exhibitKnown = true; c.say("exhibit_mention"); }
 }
 
-function markPaid(c: Ctx, method: string) {
+/** `tendered`: the cash amount said ("Here's eighteen dollars"): exact money gets no change. */
+function markPaid(c: Ctx, method: string, tendered?: number) {
+  const amount = due(c);
   c.s.paid = true;
-  c.event("pay", { method, amount: total(c) });
-  if (method === "cash") c.say("change_back");
+  c.s.paidAmt = total(c);
+  c.event("pay", { method, amount });
+  if (method === "cash" && tendered !== amount) c.say("change_back");
   else c.say("paid");
   handover(c);
+}
+
+/** Cash said with an amount below what is due: the total again, nothing paid. */
+function cashShort(c: Ctx, tendered: unknown): boolean {
+  if (typeof tendered !== "number" || tendered >= due(c)) return false;
+  c.say("say_total", { price: due(c) });
+  c.hold();
+  return true;
+}
+
+/** "Are you sure?" → "Yes." is "yes, I'm sure": nothing is bought on it. These words take the guide after all. */
+const TAKE_IT = /\bplease\b|\b(i('ll| will)|let me|we('ll| will)) (take|have|get)\b|\bwhy not\b|\bconvinced\b|\bgo on\b|\bsounds good\b/i;
+/** "Do you have audio guides?" asked before the offer is a question, not an order. */
+const AVAILABILITY_Q = /^\s*(and\s+|so\s+)?((do|does)\s+(you|they|the museum)\s+(have|offer|rent)|(is|are)\s+there|have\s+you\s+got)\b/i;
+
+/** The plain offer again ("Would you like an audio guide? It's five dollars."): its yes takes the guide. */
+function guideAgainPending(): Pending {
+  const take = (cc: Ctx) => { cc.s.guides = 1; cc.s.guideAsked = true; cc.say("ack"); };
+  const decline = (cc: Ctx) => { cc.s.guides = 0; cc.s.guideNo = true; cc.s.guideAsked = true; cc.say("no_problem"); };
+  return {
+    id: "guide_again", optional: true, expects: ["want_guide", "no_guide", "guide_n_ctx", "guide_no_ctx"],
+    suggest: [{ lt: "Sutikti paimti audiogidą", hint: "guide_yes" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
+    yes: take, no: decline,
+    on: {
+      no_guide: decline, guide_no_ctx: decline,
+      want_guide: (cc, sl, sg) => { H.want_guide(cc, sl, sg); cc.say("ack"); },
+      guide_n_ctx: (cc, sl, sg) => { H.guide_n_ctx(cc, sl, sg); cc.say("ack"); },
+    },
+    ask: (cc) => (cc as ConvCtx).conv.pushLine("offer_guide", 1, {}),
+  };
 }
 
 /** "Adult?" / "Are they all adults?" / "Any students, seniors, or kids?": a yes means opposite things,
@@ -134,12 +204,19 @@ const H: Record<string, Handler> = {
   // --- tickets ---------------------------------------------------------------
   buy_tickets(c, slots, seg) {
     const tix = readTix(slots);
-    if (!count(tix)) { c.say("ask_qty"); c.hold(); return; }
+    // "Can I get one more adult ticket?" (#add): that one ticket
+    if (!count(tix) && seg.tags.includes("add") && typeof slots.tt === "string" && PRICE[slots.tt] !== undefined) tix[slots.tt] = 1;
+    if (!count(tix)) {
+      const big = toArr(slots.tks?.tk).some((tk: any) => typeof tk.n === "number" && tk.n >= 10) || (typeof slots.n === "number" && slots.n >= 10);
+      c.say(big ? "group_book" : "ask_qty"); c.hold(); return;
+    }
     // "Two tickets, one is a student": the rest are adults
     if (typeof slots.n === "number" && slots.n > count(tix) && slots.n <= 9) tix.adult = (tix.adult || 0) + slots.n - count(tix);
     // answering "Any students, seniors, or kids?" ("Yes, one student"): the rest are adults
     if (c.step === "types" && !c.s.typesKnown && !seg.tags.includes("add")) { H.types_ans(c, slots, seg); return; }
-    setTix(c, tix, seg.tags.includes("add") || c.step === "more");
+    const add = seg.tags.includes("add") || c.step === "more";
+    if (paidSwap(c, tix, add)) return;
+    if (!setTix(c, tix, add)) return;
     c.s.typesKnown = true;
     if (tix.student) c.s.idChecked = false;
     // "One adult ticket with an audio guide"
@@ -147,9 +224,12 @@ const H: Record<string, Handler> = {
     if (c.chance(0.6)) c.say("ack");
   },
   buy_qty(c, slots, seg) {
+    if (paidNoChange(c)) return;
     if (seg.tags.includes("family") && typeof slots.n !== "number") { c.say("ask_qty"); c.hold(); return; }
     const n = typeof slots.n === "number" ? slots.n : seg.tags.includes("n2") ? 2 : seg.tags.includes("n1") ? 1 : 0;
-    if (n < 1 || n > 9) { c.say("ask_qty"); c.hold(); return; }
+    // ten or more: a group visit, booked ahead (not "How many tickets?" again and again)
+    if (n >= 10) { c.say("group_book"); c.hold(); return; }
+    if (n < 1) { c.say("ask_qty"); c.hold(); return; }
     c.s.qty = n;
     c.s.tix = { adult: n };
     c.s.typesKnown = false;
@@ -158,6 +238,7 @@ const H: Record<string, Handler> = {
     // "One of them is a student" / "One adult and one student" / "My friend is a student"
     const said = readTix(slots);
     if (!count(said)) return;
+    if (paidNoChange(c)) return;
     // keep a type already given in this answer ("I'm a student and my wife is an adult")
     const known: Tix = {};
     if (c.s.typesKnown) for (const [k, n] of Object.entries(c.s.tix as Tix || {})) if (k !== "adult") known[k] = n;
@@ -178,12 +259,14 @@ const H: Record<string, Handler> = {
   change_tickets(c, slots, seg) {
     const tix = readTix(slots);
     if (!count(tix)) return;
-    setTix(c, tix, seg.tags.includes("add"));
+    if (paidSwap(c, tix, seg.tags.includes("add"))) return;
+    if (!setTix(c, tix, seg.tags.includes("add"))) return;
     c.s.typesKnown = true;
     c.say("changed");
   },
   reject_type(c, slots) {
     // "Not a student" / "No student ticket": that ticket becomes an adult one
+    if (paidNoChange(c)) return;
     const tt = slots.tt as string;
     const tix: Tix = { ...(c.s.tix || {}) };
     if (tt && tix[tt] && tt !== "adult") { tix.adult = (tix.adult || 0) + tix[tt]; delete tix[tt]; c.s.tix = tix; }
@@ -192,6 +275,7 @@ const H: Record<string, Handler> = {
   im_senior(c, slots) {
     // "I'm sixty-seven" (a younger age is just information: tell the prices)
     if (typeof slots.n === "number" && slots.n < 65) { c.say("prices"); return; }
+    if (paidNoChange(c)) return;
     c.say("discount_senior");
     if (!c.s.tix || !count(c.s.tix)) { c.s.tix = { senior: 1 }; c.s.qty = 1; c.s.typesKnown = true; }
     else if (!c.s.tix.senior) { const tix = { ...c.s.tix }; if (tix.adult) { tix.adult--; if (!tix.adult) delete tix.adult; } tix.senior = 1; c.s.tix = tix; c.s.typesKnown = true; }
@@ -199,6 +283,7 @@ const H: Record<string, Handler> = {
   child_age(c, slots) {
     const n = slots.n as number;
     if (typeof n !== "number") return;
+    if (paidNoChange(c)) return;
     const tix: Tix = { ...(c.s.tix || {}) };
     if (n < 12) { c.say("kids_free"); if (!tix.child) { tix.child = 1; if (tix.adult && count(tix) > (c.s.qty || 0)) tix.adult--; } }
     else { c.say("child_adult"); if (tix.child) { tix.adult = (tix.adult || 0) + tix.child; delete tix.child; } }
@@ -206,6 +291,7 @@ const H: Record<string, Handler> = {
     c.s.tix = tix; c.s.typesKnown = true;
   },
   im_student(c) {
+    if (paidNoChange(c)) return;
     c.say("discount_student");
     if (!c.s.tix || !count(c.s.tix)) { c.s.tix = { student: 1 }; c.s.qty = 1; c.s.typesKnown = true; }
     else if (!c.s.tix.student) { const tix = { ...c.s.tix }; if (tix.adult) { tix.adult--; if (!tix.adult) delete tix.adult; } tix.student = 1; c.s.tix = tix; c.s.typesKnown = true; }
@@ -216,7 +302,7 @@ const H: Record<string, Handler> = {
     if (slots.tt === "student") { c.say("discount_student"); return; }
     if (slots.tt === "senior") { c.say("discount_senior"); return; }
     if (c.s.tix && count(c.s.tix) && c.s.typesKnown && c.step !== "tickets") {
-      c.say("say_total", { price: total(c) });
+      c.say("say_total", { price: !c.s.paid && c.s.paidAmt ? due(c) : total(c) });
       if (c.step === "pay") { c.s.totalSaid = true; c.hold(); } // don't let the pay step say it again
       return;
     }
@@ -237,6 +323,7 @@ const H: Record<string, Handler> = {
   },
   no_id(c) {
     if (!c.s.tix?.student) { c.say("no_problem"); return; }
+    if (paidNoChange(c)) return;
     const tix: Tix = { ...c.s.tix };
     tix.adult = (tix.adult || 0) + tix.student;
     delete tix.student;
@@ -248,23 +335,31 @@ const H: Record<string, Handler> = {
   },
   // --- audio guide ------------------------------------------------------------
   want_guide(c, slots) {
-    c.s.guideAsked = true;
+    // "Do you have audio guides?" before Ben offers one: its price (the offer comes after the tickets), no guide yet
+    if (!c.s.guideAsked && !c.s.guides && c.step !== "guide" && AVAILABILITY_Q.test(c.heard)) { c.say("guide_price"); return; }
     const n = typeof slots.n === "number" && slots.n > 0 && slots.n < 10 ? slots.n : 1;
+    if (c.s.paid && n <= (c.s.guides || 0)) { c.say(n < (c.s.guides || 0) ? "already_paid" : "ack"); return; }
+    c.s.guideAsked = true;
     c.s.guides = n;
     if (slots.lang) langChosen(c, slots.lang);
-    if (c.s.paid) { c.s.paid = false; c.s.totalSaid = false; }
+    reopenIfMore(c);
   },
   no_guide(c) {
+    if (c.s.paid && c.s.guides) { c.say("already_paid"); return; } // paid for: it stays
     c.s.guideAsked = true;
     if (c.s.persuaded) { c.s.guides = 0; c.s.guideNo = true; c.say("no_problem"); return; }
     c.s.persuaded = true;
     c.say("guide_persuade");
-    c.expect({ id: "persuade", optional: true, expects: ["want_guide", "no_guide", "guide_n_ctx", "guide_no_ctx"],
+    c.expect({ id: "persuade", optional: true, expects: ["want_guide", "no_guide", "guide_n_ctx", "guide_no_ctx", "guide_price"],
       suggest: [{ lt: "Sutikti paimti audiogidą", hint: "guide_yes" }, { lt: "Atsakyti: taip arba ne", hint: "g_yesno" }],
-      yes: (cc) => { cc.s.guides = 1; cc.say("ack"); }, no: (cc) => { cc.s.guides = 0; cc.s.guideNo = true; cc.say("no_problem"); },
+      // "Are you sure?" — a bare "Yes." is "yes, I'm sure": the plain offer once more instead of buying it
+      yes: (cc) => { if (TAKE_IT.test(cc.heard)) { cc.s.guides = 1; cc.say("ack"); return; } (cc as ConvCtx).conv.pushLine("offer_guide", 0, {}); cc.expect(guideAgainPending()); },
+      no: (cc) => { cc.s.guides = 0; cc.s.guideNo = true; cc.say("no_problem"); },
       on: {
         no_guide: (cc) => { cc.s.guides = 0; cc.s.guideNo = true; cc.say("no_problem"); },
         want_guide: (cc, sl, sg) => { H.want_guide(cc, sl, sg); cc.say("ack"); },
+        // "How much is it?": its price, and the offer stays open
+        guide_price: (cc) => { cc.say("guide_price"); cc.expect(guideAgainPending()); },
       } });
   },
   guide_price(c) { c.say("guide_price"); },
@@ -273,7 +368,11 @@ const H: Record<string, Handler> = {
     const n = seg.tags.includes("both") ? 2 : seg.tags.includes("each") ? Math.max(1, Math.min(9, c.s.qty || count(c.s.tix) || 1)) : slots.n;
     H.want_guide(c, { ...slots, n }, { intent: "want_guide", slots, tags: [] });
   },
-  guide_no_ctx(c, slots, seg) { H.no_guide(c, slots, seg); },
+  guide_no_ctx(c, slots, seg) {
+    // at "What language would you like?": no guide after all, as "No, thanks" there (not "Are you sure?")
+    if (c.step === "lang" && !c.s.paid) { c.s.guides = Math.min(c.s.guides || 0, c.s.handedGuides || 0); c.s.guideNo = true; c.say("no_problem"); return; }
+    H.no_guide(c, slots, seg);
+  },
   have_question(c) { c.say("g_yes_what"); c.hold(); },
   lang_ctx(c, slots) { langChosen(c, slots.lang); },
   lang_q(c, slots) {
@@ -285,19 +384,27 @@ const H: Record<string, Handler> = {
   },
   langs_q(c) { c.say("langs_list"); },
   lang_not_ctx(c) { c.say("langs_list"); },
-  mixed_types_ctx(c) { askTypes(c, true); },
+  mixed_types_ctx(c) { if (paidNoChange(c)) return; askTypes(c, true); },
   // --- paying ----------------------------------------------------------------
+  // "Do you have change for a hundred?" (it wasn't understood): cash, and the money comes next
+  change_q_ctx(c) {
+    if (c.s.paid) { c.say("already_paid"); return; }
+    c.s.method = "cash";
+    c.say("no_problem");
+    if (c.step === "pay") c.hold();
+  },
   pay_card(c) {
     if (c.s.paid) { c.say("already_paid"); return; }
     if (!c.s.totalSaid) { c.say("card_later"); c.s.method = "card"; return; }
     c.say("card_tap"); markPaid(c, "card");
   },
   no_cash(c, slots, seg) { H.pay_card(c, slots, seg); },
-  pay_cash(c) {
+  pay_cash(c, slots) {
     if (c.s.paid) { c.say("already_paid"); return; }
     c.s.method = "cash";
     if (!c.s.totalSaid) { c.say("cash_ok"); return; }
-    markPaid(c, "cash");
+    if (cashShort(c, slots.price)) return;
+    markPaid(c, "cash", slots.price);
   },
   pay_phone(c) {
     if (c.s.paid) { c.say("already_paid"); return; }
@@ -305,11 +412,13 @@ const H: Record<string, Handler> = {
     if (!c.s.totalSaid) { c.say("phone_ok"); return; }
     c.say("phone_ok"); markPaid(c, "phone");
   },
-  here_you_go(c) {
+  here_you_go(c, slots) {
     if (c.step === "student_id" || (c.s.tix?.student && !c.s.idChecked && !c.s.totalSaid)) { H.have_id(c, {}, { intent: "have_id", slots: {}, tags: [] }); return; }
     if (c.s.paid) { c.say("already_paid"); return; }
     if (!c.s.totalSaid) { c.say("no_problem"); return; }
-    markPaid(c, c.s.method || "cash");
+    // "Here's ten dollars" for $18: the total again; "Here's eighteen dollars": no change
+    if (c.s.method !== "card" && c.s.method !== "phone" && cashShort(c, slots.price)) return;
+    markPaid(c, c.s.method || "cash", slots.price);
   },
   // --- the new exhibition ------------------------------------------------------
   ask_exhibit(c) { c.s.exhibitKnown = true; c.say("exhibit_where"); },
@@ -334,11 +443,11 @@ const H: Record<string, Handler> = {
   come_back(c) { c.say("come_back"); },
   more_no(c) { if (c.s.paid) exhibitAnyway(c); c.s.moreDone = true; },
   // only parsed while Ben asks about the ticket types (the pending question answers it first)
-  all_adults_ctx(c) { c.s.tix = { adult: c.s.qty || 1 }; c.s.typesKnown = true; c.say("ack"); },
+  all_adults_ctx(c) { if (paidNoChange(c)) return; c.s.tix = { adult: c.s.qty || 1 }; c.s.typesKnown = true; c.say("ack"); },
   // --- Harold (twist) -----------------------------------------------------------
   apology(c) { if (c.s.harold) { haroldThanks(c); } else c.say("no_problem"); },
   deny(c) { if (c.s.harold) haroldDeny(c); },
-  why_not(c) { if (c.s.harold) { c.say(c.s.flash ? "harold_why_flash" : "harold_why"); } else c.say("no_problem"); },
+  why_not(c) { if (c.s.harold) { c.speaker("harold"); c.say(c.s.flash ? "harold_why_flash" : "harold_why"); } else c.say("no_problem"); },
   // "Great, thank you!" is thanks, not an answer to "How are you?"
   g_howareyou_answer(c, slots) {
     const h = (c.heard || "").toLowerCase();
@@ -363,20 +472,25 @@ function langChosen(c: Ctx, lang: string, quiet = false) {
 function haroldThanks(c: Ctx) {
   c.s.apologized = true;
   c.complete();
+  c.speaker("harold");
   c.say("harold_thanks");
   c.end();
 }
 function haroldDeny(c: Ctx) {
   c.s.denied = true;
   c.complete();
+  c.speaker("harold");
   c.say("harold_deny");
   c.end();
 }
 
-/** Every situation handler reacts once per utterance (an utterance may be parsed as several segments). */
+/** Every situation handler reacts once per utterance (an utterance may be parsed as several segments), and in Ben's
+ *  voice: after Harold's "Please don't touch!" the speaker stayed Harold, so Ben's answers to anything else ("Oh, you
+ *  already paid!", the coat check, the languages …) came in Harold's voice (5 Nov 2026). Harold's own lines (his
+ *  thanks, "My mistake!", why not) name him again. */
 function wrap(hs: Record<string, Handler>): Record<string, Handler> {
   const out: Record<string, Handler> = {};
-  for (const [id, h] of Object.entries(hs)) out[id] = (c, slots, seg) => { if (onceThisTurn(c, "h:" + id)) h(c, slots, seg); };
+  for (const [id, h] of Object.entries(hs)) out[id] = (c, slots, seg) => { if (onceThisTurn(c, "h:" + id)) { c.speaker("ben"); h(c, slots, seg); } };
   return out;
 }
 
@@ -435,6 +549,7 @@ export const museum: SituationDef = {
       "@order_prefix {tks} [please] [with @guide_w #guide]", "[just] {tks} [please] [with @guide_w #guide]", "(one | a) ticket for {tks}",
       "({n:number} | a) @tkw [please] {tks} [please] [if i may]",
       "@order_prefix (one | a) more {tt:ttype} [ticket] #add", "(can | could) (i | we) add {tks} #add", "{tks} @nice_",
+      "@order_prefix another {tt:ttype} [ticket] [please] #add", "[and] another {tt:ttype} [ticket] [please] #add",
     ] },
     buy_qty: { patterns: [
       "@order_prefix [{n:number} | a #n1 | one #n1 | just one #n1] @tkw [please]", "[{n:number} | one #n1 | a #n1] (ticket | tickets) [please] #h:tk_two", "({n:number} | one #n1 | a #n1 | an #n1) @tkw",
@@ -508,7 +623,7 @@ export const museum: SituationDef = {
     no_guide: { patterns: ["no @guide_w [thanks | for me]", "i do not (need | want) (an | the) @guide_w", "(i | we) do not (need | want) (any | {n:number} | two | three) @guide_w", "without (an | the) @guide_w", "just the (ticket | tickets) [please] #h:g_no", "[no] i am fine without (it | one)",
       "[no] i will (use | just use) my (phone | own phone)", "[no] maybe (later | next time)", "[no] i will [just] (walk around | look around | look myself | read the signs)"] },
     // "No, I'm fine" / "I don't need it": only right after the offer (elsewhere it means something else)
-    guide_no_ctx: { patterns: ["[no] i am (good | fine | okay) [thanks]", "[no] i do not (need | want) (it | one | that)", "[no] not (today | this time) [thanks]", "[no] i will pass",
+    guide_no_ctx: { patterns: ["[no] i am (good | fine | okay) [thanks]", "[no] [never mind] i do not (need | want) (it | one | that) [anymore | after all]", "never mind [then] [thanks]", "[no] not (today | this time) [thanks]", "[no] i will pass",
       "[yes] i am sure [thanks]", "[yes] (i am | we are) (fine | okay | good) without (it | one)",
       "[no] (it is | that is) (too expensive | a bit expensive | expensive)", "[no] i do not think (i need it | so)", "i would rather not [thanks]"] },
     guide_price: { patterns: ["how much is (the | an) @guide_w #h:g_price", "how much does (the | an) @guide_w cost", "is the @guide_w free", "is the @guide_w included",
@@ -536,6 +651,7 @@ export const museum: SituationDef = {
       "contactless", "(put it | charge it) on my card", "i will (use | tap) my card", "(visa | mastercard | amex | american express)", "card is (fine | okay | ok | good)"] },
     // "I don't have cash": so it's the card (never read as "cash")
     no_cash: { patterns: ["(i | we) do not have [any | enough] cash", "no cash [sorry]", "(i | we) (can not | do not want to) pay (in | with) cash", "i have no cash"] },
+    change_q_ctx: { patterns: ["do you have change for [a | an] {price} [bill]", "(can | could) you (break | change) [a | an] {price} [bill]", "is [a | an] {price} [bill] (okay | ok | fine)"] },
     pay_cash: { patterns: ["[can | could] i pay (in | with) cash", "(in | with) cash", "cash [please]", "i will pay (in | with) cash #h:pay_cash",
       "(i will | i am going to | i would like to) pay [in | with] cash", "cash is (okay | ok | fine)", "is cash (okay | ok | fine)",
       "(can | could) i pay (in | with) (dollars | us dollars | bills)"] },
@@ -624,6 +740,9 @@ export const museum: SituationDef = {
       t("How many | tickets?", "Kiek | bilietų?", "Kiek bilietų?"),
       t("How many | tickets | would | you | like?", "Kiek | bilietų | — | jūs | norėtumėte?", "Kiek bilietų norėtumėte?", { flags: { 2: "“would”: the conditional ending of norėtumėte carries it." } }),
     ],
+    // ten or more people (new line, 5 Nov 2026: needs a voice)
+    group_book: [t("Sorry, | groups | of | ten | or | more | need | to book | ahead.", "Atsiprašau, | grupės | iš | dešimties | ar | daugiau | turi | užsisakyti | iš anksto.",
+      "Atsiprašau, dešimties ir daugiau žmonių grupės turi užsisakyti apsilankymą iš anksto.")],
     ask_type_one: [t("Sure! | Adult?", "Žinoma! | Suaugusiojo?", "Žinoma! Suaugusiojo?")],
     ask_type_all: [
       t("Sure! | Are | they | all | adults?", "Žinoma! | Ar | jie | visi | suaugę?", "Žinoma! Ar visi suaugę?", { flags: { 1: "“Are” in a yes/no question = the particle ar; the copula has no separate word." } }),
@@ -755,6 +874,8 @@ export const museum: SituationDef = {
         if (a + b + cc + d === 0) continue;
         for (let g = 0; g <= 4; g++) s.add(a * P[0] + b * P[1] + cc * P[2] + d * P[3] + g * GUIDE);
       }
+      // an audio guide bought after paying is charged alone
+      for (let g = 1; g <= 4; g++) s.add(g * GUIDE);
       return [...s].sort((x, y) => x - y);
     },
   },
@@ -962,16 +1083,19 @@ export const museum: SituationDef = {
       no: (c) => { H.no_guide(c, {}, { intent: "no_guide", slots: {}, tags: [] }); } },
     { id: "lang", when: (c) => !!c.s.guides && !c.s.lang, done: (c) => !!c.s.lang,
       ask: (c) => { if (c.s.langAsked) { c.s.langAsked = false; return; } c.say("ask_lang"); },
-      expects: ["lang_ctx", "lang_q", "langs_q", "lang_not_ctx"],
+      expects: ["lang_ctx", "lang_q", "langs_q", "lang_not_ctx", "guide_no_ctx"],
       suggest: [{ lt: "Pasirinkti audiogido kalbą", hint: "lang", options: ["english", "lithuanian", "russian", "polish", "german", "spanish"] }],
+      // "No, thanks" to "What language would you like?": no audio guide after all (not the question again)
+      no: (c) => { c.s.guides = Math.min(c.s.guides || 0, c.s.handedGuides || 0); c.s.guideNo = true; c.say("no_problem"); },
       help: (c) => { c.say("langs_list"); } },
-    { id: "pay", when: (c) => !!c.s.tix && !!c.s.typesKnown, done: (c) => !!c.s.paid,
+    // after paying, an extra (a guide, one more ticket) brings this step back for that extra alone
+    { id: "pay", when: (c) => !!c.s.tix && !!c.s.typesKnown, done: (c) => !!c.s.paid || (!!c.s.paidAmt && due(c) <= 0),
       ask: (c) => {
-        if (total(c) === 0) { c.s.paid = true; c.say("kids_free"); handover(c); return; }
+        if (total(c) === 0) { c.s.paid = true; c.s.paidAmt = 0; c.say("kids_free"); handover(c); return; }
         c.s.totalSaid = true;
-        c.say("say_total", { price: total(c) });
+        c.say("say_total", { price: due(c) });
       },
-      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash"],
+      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "change_q_ctx"],
       suggest: [{ lt: "Susimokėti", hint: "pay" }] },
     // "Any questions?" — first the new exhibition (the goal), then anything else.
     { id: "exhibit", when: (c) => !!c.s.paid && !c.s.exhibitKnown, done: (c) => !!c.s.exhibitKnown,
@@ -1033,10 +1157,14 @@ export const museum: SituationDef = {
         on: {
           apology: (cc) => { haroldThanks(cc); },
           g_sorry: (cc) => { haroldThanks(cc); },
-          g_repeat: (cc) => { haroldThanks(cc); }, // "Sorry!" alone
+          // "Sorry!" alone is the apology; "Pardon?", "What?", "Sorry?" ask him to say it again
+          g_repeat: (cc) => {
+            if (!/\?|\b(pardon|what|excuse me|again|repeat|catch|hear|understand|come again)\b/i.test(cc.heard)) { haroldThanks(cc); return; }
+            cc.speaker("harold"); cc.say(cc.s.flash ? "no_flash" : "dont_touch"); cc.expect(pend);
+          },
           g_ok: (cc) => { haroldThanks(cc); },
           deny: (cc) => { haroldDeny(cc); },
-          why_not: (cc) => { cc.say(cc.s.flash ? "harold_why_flash" : "harold_why"); cc.say("harold_ask"); cc.expect(pend); },
+          why_not: (cc) => { cc.speaker("harold"); cc.say(cc.s.flash ? "harold_why_flash" : "harold_why"); cc.say("harold_ask"); cc.expect(pend); },
         },
         yes: (cc) => { haroldThanks(cc); }, no: (cc) => { haroldThanks(cc); },
         ask: (cc) => { cc.speaker("harold"); cc.say("harold_ask"); } };
@@ -1053,6 +1181,11 @@ export const museum: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): another ticket of a type, change for a big bill, "Never mind" at the language
+    { say: "I'd like another student ticket.", intent: "buy_tickets", step: "pay", slots: { tt: "student" } },
+    { say: "Do you have change for a hundred?", intent: "change_q_ctx", step: "pay", slots: { price: 10000 } },
+    { say: "Can you break a fifty?", intent: "change_q_ctx", step: "pay", not: ["pay_cash"] },
+    { say: "Never mind, I don't want it.", intent: "guide_no_ctx", step: "lang", not: ["lang_ctx", "want_guide"] },
     { say: "One adult ticket, please.", intent: "buy_tickets", slots: { tks: { tk: { tt: "adult" } } } },
     { say: "Two tickets, please.", intent: "buy_qty", slots: { n: 2 } },
     { say: "Two adults and one student, please.", intent: "buy_tickets" },
@@ -1157,6 +1290,10 @@ export const museum: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): a bare yes to "Are you sure?" buys nothing; exact cash; an audio guide after paying is charged alone
+    { name: "audit: sure?, exact cash, a guide after paying", turns: ["One adult ticket, please.", "No, thanks.", "Yes.", "No, thanks.", "Here's eighteen dollars.", "Where's the new exhibition?",
+      "Actually, can I get an audio guide?", "English, please.", "Card, please.", "No, that's all, thanks."], expect: { complete: true, state: { guides: 1, paidAmt: 2300 } }, auto: AUTO,
+      setup: (s) => { s.haroldTwist = false; s.late = false; s.mentionExhibit = false; } },
     { name: "one adult, audio guide in English, card, exhibition", turns: ["Hi! One adult ticket, please.", "Yes, please", "English, please", "Card", "Where's the new exhibition?", "No, that's all. Thanks!"], expect: { complete: true }, auto: AUTO },
     // no guard at the end: "Thank you!" is the goodbye
     { name: "two tickets, student without ID, Lithuanian audio guide", turns: ["Hello! Two tickets, please.", "One of us is a student", "Sorry, I don't have it with me", "Okay", "Do you have an audio guide?", "Do you have it in Lithuanian?", "Russian, then", "Cash", "Here you go", "Is it included in the ticket?", "Thank you!"], expect: { complete: true }, auto: AUTO,

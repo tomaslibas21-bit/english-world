@@ -371,6 +371,17 @@ export const dentist: SituationDef = {
       "(can | could) (i | we) (move | change) (it | my appointment | the appointment) to @dayp [at {time}] [instead]",
     ] },
     time_req: { patterns: ["(can | could) i come at {time}", "how about {time}", "do you have anything at {time}", "{time} would be better", "is {time} possible"] },
+    // at the offer: "Maybe." / "Let me check my calendar" (not understood; nothing is booked on a maybe)
+    maybe_ctx: { patterns: ["maybe", "perhaps", "possibly", "i am not sure", "i do not know yet", "hmm maybe", "maybe i (can | could)",
+      "let me (check | look at) my (calendar | schedule | agenda) #check", "i (need | have) to check my (calendar | schedule) #check", "one (moment | second) let me check #check"] },
+    // "What time?" / "What day did you say?" at the offer (not understood)
+    slot_repeat_ctx: { patterns: ["[sorry] what time [was it | did you say | is that | again]", "[sorry] what day [was it | did you say | is that | again]", "[sorry] which day [was it | did you say]",
+      "[sorry] (when | what day and time) did you say", "what day and (what time | time) [did you say]"] },
+    // after booking: "What time is my appointment?" (not understood)
+    appt_when_q: { patterns: ["what time is my appointment [again]", "when is my appointment [again]", "what day is my appointment [again]", "(can | could) you (repeat | tell me) the (day | time | day and time) [again] [please]",
+      "what (day | time) was it again", "(when | what time) do i (come | need to come) [again]"] },
+    // "Yes, one question" at "Anything else I can do for you?" (not understood)
+    have_question: { patterns: ["[yes] (one | a | another) [more] (question | thing) [please]", "[yes] i have (a | one | another) [more] question", "[yes] actually i have a question", "[yes] just one (question | thing)"] },
     accept: { patterns: [
       "(that works | that works for me | that is perfect | that sounds good | that is great | that is fine | that is good | that would be great) #h:slot_ok",
       "(@dayp | {day}) [at {time}] (is | sounds | works | would be) (perfect | fine | great | good | okay) [for me] #h:slot_perfect", "{time} is (perfect | fine | great | good) [for me]",
@@ -943,12 +954,12 @@ export const dentist: SituationDef = {
         }
         offer(c, c.s.offer, true);
       },
-      expects: ["accept", "earlier", "later", "morning", "day_req", "time_req", "reject", "availability_q"],
+      expects: ["accept", "earlier", "later", "morning", "day_req", "time_req", "reject", "availability_q", "maybe_ctx", "slot_repeat_ctx"],
       suggest: [{ lt: "Sutikti arba paprašyti kito laiko", hint: "slot" }],
       yes: (c) => { accept(c); },
       no: (c) => { dentist.handlers.reject(c, {}, { intent: "reject", slots: {}, tags: [] }); } },
     { id: "more", when: (c) => !!c.s.task && (!!c.s.appt || !!c.s.canceled), done: (c) => !!c.s.moreDone,
-      ask: (c) => c.say("anything_else"), expects: ["more_no", "see_you"],
+      ask: (c) => c.say("anything_else"), expects: ["more_no", "see_you", "have_question"],
       suggest: [{ lt: "Padėkoti ir atsisveikinti (ar dar ko paklausti)", hint: "more" }, { lt: "Paklausti apie adresą, kainą ar ką atsinešti", hint: "ask" }],
       yes: (c) => { c.say("anything_else_yes"); c.hold(); },
       no: (c) => { c.s.moreDone = true; } },
@@ -1085,7 +1096,30 @@ export const dentist: SituationDef = {
       c.say("not_that_time");
       offer(c, c.s.offer === "late" ? "morning" : "late"); c.hold();
     },
+    maybe_ctx(c, _slots, seg) {
+      if (!readyForSlot(c) || !c.s.offer || c.s.appt) return;
+      if (seg.tags.includes("check")) { c.say("g_take_time"); c.hold(); return; }
+      offer(c, c.s.offer, true); c.hold();
+    },
+    slot_repeat_ctx(c) {
+      if (c.s.appt) { dentist.handlers.appt_when_q(c, {}, { intent: "appt_when_q", slots: {}, tags: [] }); return; }
+      if (!readyForSlot(c) || !c.s.offer) return;
+      offer(c, c.s.offer, true); c.hold();
+    },
+    appt_when_q(c) {
+      if (!c.s.appt) { if (readyForSlot(c) && c.s.offer) { offer(c, c.s.offer, true); c.hold(); } return; }
+      const o = OFFERS[c.s.appt];
+      c.say(moving(c) ? "moved" : "booked", { D: o.d, slot: slotVal(o) });
+      if (c.step === "more") c.hold();
+    },
+    have_question(c) { c.say("anything_else_yes"); c.hold(); },
     accept(c, slots) {
+      // "That works, but could we do Wednesday instead?" / "Yes, but do you have anything earlier?": the change
+      // answers, and nothing is booked yet (it booked Tuesday and offered Wednesday)
+      const segs: any[] = (c as any).conv?.out?.parse?.segments ?? [];
+      if (c.s.offer && !c.s.appt && segs.some((sg) => ["day_req", "time_req", "earlier", "later", "morning", "reject", "availability_q"].includes(sg.intent))) return;
+      // "Tuesday?" / "Tuesday at ten, right?" is a question: the offer once more, and only a yes books it
+      const question = /\?\s*$/.test(c.heard.trim()) && !/\b(yes|yeah|yep|sure|perfect|great|good|fine|okay|ok|works|book)\b/i.test(c.heard);
       if (c.step === "hold" && !c.s.holdDone) {
         holdOk(c, true);
         // "Wednesday is fine." while Linda asks to hold: she offers that day first
@@ -1098,7 +1132,7 @@ export const dentist: SituationDef = {
       if (tm) {
         // "Half past three is perfect": pick the offered slot with that time, if any.
         const hit = (c.s.offered || []).find((k: string) => OFFERS[k].h % 12 === tm.h % 12 && OFFERS[k].m === tm.m);
-        if (hit && hit !== c.s.offer) { c.s.offer = hit; accept(c); return; }
+        if (hit && hit !== c.s.offer) { c.s.offer = hit; if (question) { offer(c, hit, true); c.hold(); return; } accept(c); return; }
         if (!hit) {
           // "Tomorrow at 8:15 is perfect.": a slot Linda has but hasn't offered yet (never the one being moved)
           const d0 = slots.day as string | undefined;
@@ -1111,6 +1145,7 @@ export const dentist: SituationDef = {
       // "Wednesday is fine." when Linda offered Thursday: that day, please (never the offered one)
       const d = slots.day as string | undefined;
       if (d && OFFERS[c.s.offer].d !== d) { dentist.handlers.day_req(c, slots, { intent: "day_req", slots, tags: [] }); return; }
+      if (question) { offer(c, c.s.offer, true); c.hold(); return; }
       accept(c);
     },
     reject(c) {
@@ -1199,6 +1234,12 @@ export const dentist: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Maybe.", intent: "maybe_ctx", step: "slot", not: ["accept"] },
+    { say: "Let me check my calendar.", intent: "maybe_ctx", step: "slot" },
+    { say: "What time?", intent: "slot_repeat_ctx", step: "slot", not: ["accept"] },
+    { say: "What time is my appointment?", intent: "appt_when_q" },
+    { say: "Yes, one question.", intent: "have_question", step: "more" },
     { say: "Hi, I'd like to make an appointment.", intent: "book" },
     { say: "Could I make an appointment for a checkup, please?", intent: "book", slots: { reason: "checkup" } },
     { say: "I'm calling to make an appointment.", intent: "book" },

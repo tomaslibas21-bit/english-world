@@ -254,5 +254,10 @@
   {"ctx": "thursday_q", "say": "Thursday doesn't work", "intent": "any", "not": ["next_day", "when_ctx"]},
   {"ctx": "closing", "say": "Thank you!", "intent": "g_thanks"},
   {"ctx": "closing", "say": "Thanks, see you tomorrow!", "intent": ["g_thanks", "next_same"]},
-  {"ctx": "closing", "say": "Thanks for your help!", "intent": "g_thanks"}
+  {"ctx": "closing", "say": "Thanks for your help!", "intent": "g_thanks"},
+  {"ctx": "lock_q", "say": "How much is a lock?", "intent": "lock_borrow", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "lock_q", "say": "Where do I buy one?", "intent": "lock_borrow", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "lock_q", "say": "How much does a lock cost?", "intent": "lock_borrow", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "next", "say": "Tomorrow at 7 pm.", "intent": ["next_same", "next_day"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "lock_q", "say": "I don't need a lock.", "intent": "any", "not": ["lock_have"], "note": "logic audit 5 Nov 2026"}
 ] }

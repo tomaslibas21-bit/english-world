@@ -267,5 +267,11 @@
   {"ctx": "mia_try", "say": "Maybe a little salt pork.", "intent": "suggest_fix", "slots": {"fix": "pork"}},
   {"ctx": "consent", "say": "I'd rather not.", "intent": "no_feedback", "not": ["keep_own", "want_feedback"]},
   {"ctx": "consent", "say": "I'd prefer not to right now.", "intent": "no_feedback", "not": ["want_feedback"]},
-  {"ctx": "second", "say": "I'd rather not.", "intent": "keep_own", "not": ["no_feedback"]}
+  {"ctx": "second", "say": "I'd rather not.", "intent": "keep_own", "not": ["no_feedback"]},
+  {"ctx": "again", "say": "How much should I add?", "intent": "ask_example", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "second", "say": "I like it.", "intent": "praise_general", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "mia_open", "say": "No.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "mia_worked", "say": "Yes.", "intent": "yn:yes", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "second", "say": "I like it.", "intent": "any", "not": ["reject_rude", "keep_own"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "again", "say": "How much should I add?", "intent": "any", "not": ["no_questions"], "note": "logic audit 5 Nov 2026"}
 ] }

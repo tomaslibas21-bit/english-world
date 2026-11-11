@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { compose, type Sentence } from "../src/convo/compose";
 import { t } from "../src/content/dsl";
-import { natSaysMore, newWords, natNorm, glossLine, stem, placeTip } from "../src/ui/natTip";
+import { natMatchesGloss, natSaysMore, newWords, natNorm, glossLine, stem, placeTip } from "../src/ui/natTip";
 import { Interlinear } from "../src/ui/Interlinear";
 
 /** A sentence as the conversation shows it (units split on " | "). */
@@ -85,6 +85,52 @@ describe("where the tooltip goes", () => {
 describe("the markup", () => {
   const html = (props: Parameters<typeof Interlinear>[0]) => renderToStaticMarkup(createElement(Interlinear, props));
   const starOf = (out: string) => out.match(/<button[^>]*class="nat-star"[^>]*>\*<\/button>/)?.[0];
+
+  it("omits both the duplicate natural row and asterisk from matching player examples", () => {
+    const out = html({ s: business(), lt: true, ipa: true, compactNat: true });
+    expect(out).not.toContain('class="nat"');
+    expect(out).not.toContain('nat-star');
+    expect(out).toContain('class="lt"');
+    expect(out).toContain('class="ipa"');
+    const punctuation = sent("A | coffee, | please.", "— | Kavos, | prašom.", "KAVOS — prašom!");
+    expect(natMatchesGloss(punctuation)).toBe(true);
+    expect(html({ s: punctuation, lt: true, ipa: false, compactNat: true })).not.toContain('nat-star');
+  });
+
+  it("puts differing player wording behind the same accessible tooltip, without a natural row", () => {
+    const out = html({ s: pleasure(), lt: true, ipa: true, compactNat: true });
+    const star = starOf(out);
+    expect(star).toContain('aria-label="Natūralus vertimas"');
+    expect(star).toContain('aria-expanded="false"');
+    const id = star!.match(/aria-describedby="([^"]+)"/)?.[1];
+    expect(out).toContain(`id="${id}" role="tooltip" lang="lt"`);
+    expect(out).toMatch(/role="tooltip"[^>]*hidden=""[^>]*>Mielai!<\/span>/);
+    expect(out).not.toContain('class="nat"');
+    expect(out).toContain('class="lt"');
+    expect(out).toContain('class="ipa"');
+  });
+
+  it("retains natural wording for changed grammar, word order and omitted words in player examples", () => {
+    for (const s of [
+      sent("I | knew | it!", "Aš | žinojau | tai!", "Taip ir žinojau!"),
+      sent("What | would | you | like?", "Ko | — | jūs | norėtumėte?", "Ko norite?"),
+      sent("We | have | cars | available.", "Mes | turime | automobilių | laisvų.", "Turime laisvų automobilių."),
+      sent("I | have | a | reservation.", "Aš | turiu | — | rezervaciją.", "Turiu rezervaciją."),
+    ]) {
+      expect(natMatchesGloss(s)).toBe(false);
+      expect(starOf(html({ s, lt: true, ipa: false, compactNat: true }))).toBeTruthy();
+    }
+  });
+
+  it("never adds a player translation tooltip with LT off or without natural text", () => {
+    for (const ipa of [true, false]) {
+      const out = html({ s: pleasure(), lt: false, ipa, compactNat: true });
+      expect(out).not.toContain('nat-star');
+      expect(out).not.toContain('class="nat"');
+    }
+    const empty = { ...pleasure(), nat: "" };
+    expect(html({ s: empty, lt: true, ipa: true, compactNat: true })).not.toContain('nat-star');
+  });
 
   it("“My pleasure!”: an asterisk button right after the last word, its tooltip the natural sentence", () => {
     const out = html({ s: pleasure(), lt: true, ipa: false, nat: false, natTip: true });

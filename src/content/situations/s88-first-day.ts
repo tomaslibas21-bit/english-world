@@ -14,6 +14,7 @@
 // (the "give" toasts are generic now).
 
 import type { Ctx, Suggestion, SituationDef } from "../types";
+import type { ConvCtx } from "../../convo/dialogue";
 import { t } from "../dsl";
 
 // ---------------------------------------------------------------------------
@@ -276,11 +277,19 @@ export const firstDay: SituationDef = {
       "[no] i (do not | don't) (want | feel like) (to come | to go | lunch | going) [today | now]", "[no] i have my [own] (food | lunch | sandwich) [with me | here | today]", "[no] [sorry] i am not (coming | going) [today | this time]",
     ] },
     lunch_q: { patterns: [
-      "where is (it | the thai place | the restaurant) #h:l_where", "is it (far | close | near | expensive | cheap)", "(what time | when) (are you | are we | do you | do we) (going | leaving | go | leave)",
-      "what time #h:l_time", "how much is (it | lunch | the food)", "what kind of food [do they have]", "is it (thai | thai food)", "how far is it",
-      "(can | could) i (pay | pay by | pay with) card [there]",
-      "do they have (vegetarian | vegan | gluten free) (food | options | dishes)", "is (it | thai food | the food) (spicy | very spicy)",
+      "where is (the thai place | the thai restaurant | the restaurant)", "how much is (lunch | the food) [there]", "what kind of food [do they have]", "is it (thai | thai food)",
+      "do they have (vegetarian | vegan | gluten free) (food | options | dishes)", "is (thai food | the food) (spicy | very spicy)",
+      "(what time | when) (are you | are we | do you | do we) (going | leaving | go | leave) (for | to) lunch",
     ] },
+    // the bare ones only at the invitation (at the desk or on the tour they answered about the Thai place: "What time?" → "At noon.")
+    lunch_q_ctx: { patterns: [
+      "where is it #h:l_where", "is it (far | close | near | expensive | cheap)", "(what time | when) (are you | are we | do you | do we) (going | leaving | go | leave)",
+      "what time #h:l_time", "how much is it", "how far is it", "(can | could) i (pay | pay by | pay with) card [there]", "is it (spicy | very spicy)",
+    ] },
+    lunch_who_ctx: { patterns: ["who is (going | coming) [to lunch]", "who (else)? is going [to lunch | with us]", "who are we going with", "who goes [to lunch]"] },
+    // "When is it due?" (the client list): no rush
+    task_when: { patterns: ["when is it due", "when do you need it [by]", "is it urgent", "when should i (finish | have it done | send it)", "how (soon | fast) do you need it", "is there a deadline"] },
+    q_dave: { patterns: ["who is dave", "who is that dave", "dave who"] },
     fancy_q: { patterns: ["do you fancy (lunch | grabbing lunch) #tip:us_fancy", "i fancy (thai | lunch | it) #tip:us_fancy"] },
 
     // --- end of the day -----------------------------------------------------------------------
@@ -495,6 +504,10 @@ export const firstDay: SituationDef = {
         "Gal nori papietauti su mumis? Paprastai einame į tajų restoranėlį už kampo.", { flags: { 0: F_DO_Q } }),
     ],
     lunch_reask: [t("So, | are | you | coming?", "Tai | ar | tu | eini?", "Tai eini kartu?", { flags: { 1: "“are” in a yes/no question = the particle ar; the progressive sits on eini." } })],
+    // new lines (5 Nov 2026, the logic audit; they need a voice): who is going, who Dave is, the day asked again
+    a_lunch_who: [t("Me, | Dave, | and | a | few | others | from | the | team.", "Aš, | Deivas | ir | — | keli | kiti | iš | — | komandos.", "Aš, Deivas ir dar keli iš komandos.")],
+    a_dave: [t("He's | on | our | team. | You'll meet | him | soon!", "Jis yra | — | mūsų | komandoje. | Tu susipažinsi | su juo | netrukus!", "Jis iš mūsų komandos. Netrukus susipažinsi!",
+      { flags: { 1: "“on” (on our team): the locative komandoje carries it." } })],
     lunch_yes_reply: [
       t("Great! | We'll go | at noon.", "Puiku! | Eisime | vidurdienį.", "Puiku! Eisime vidurdienį."),
       t("Awesome! | We | leave | at noon.", "Šaunu! | Mes | išeiname | vidurdienį.", "Šaunu! Išeiname vidurdienį."),
@@ -507,6 +520,7 @@ export const firstDay: SituationDef = {
     a_thai_card: [t("Yes, | they | take | cards.", "Taip, | jie | priima | korteles.", "Taip, ten galima mokėti kortele.")],
 
     // --- end of the day -----------------------------------------------------------------------------------
+    day_reask: [t("So, | how | was | your | first | day?", "Tai | kaip | praėjo | tavo | pirmoji | diena?", "Tai kaip praėjo tavo pirmoji diena?")],
     day_ask: [
       t("Hey! | Time | to go | home. | So, | how | was | your | first | day?", "Ei! | Laikas | eiti | namo. | Tai | kaip | praėjo | tavo | pirmoji | diena?",
         "Ei! Laikas eiti namo. Tai kaip praėjo tavo pirmoji diena?"),
@@ -725,7 +739,12 @@ export const firstDay: SituationDef = {
     { id: "tour", when: (c) => !!c.s.deskDone, done: (c) => !!c.s.tourDone || (c.s.tourAsks || 0) >= 6,
       ask: (c) => {
         c.s.tourAsks = (c.s.tourAsks || 0) + 1;
-        if (!c.s.toured) { c.s.toured = true; c.say("tour_rooms"); c.say("tour_restrooms"); c.say("ask_anything"); }
+        if (!c.s.toured) {
+          c.s.toured = true;
+          if (!c.s.asked.meeting) c.say("tour_rooms");
+          if (!c.s.asked.restroom) c.say("tour_restrooms");
+          c.say("ask_anything");
+        }
         else c.say("what_else");
         // the model questions move on to ones the learner hasn't asked yet
         const [set, , label] = WHERE_SETS.find(([, keys]) => keys.every((k) => !c.s.asked[k])) ?? WHERE_SETS.find(([, keys]) => keys.some((k) => !c.s.asked[k])) ?? WHERE_SETS[2];
@@ -757,11 +776,11 @@ export const firstDay: SituationDef = {
         c.s.lunchAsks = (c.s.lunchAsks || 0) + 1;
         c.say(c.s.lunchAsks === 1 ? "lunch_invite" : "lunch_reask");
       },
-      expects: ["lunch_yes", "lunch_no", "lunch_q"],
+      expects: ["lunch_yes", "lunch_no", "lunch_q", "lunch_q_ctx", "lunch_who_ctx"],
       suggest: [S_LUNCH],
       yes: (c) => { lunchYes(c); }, no: (c) => { lunchNo(c); } },
     { id: "day", when: (c) => c.s.lunch !== undefined || (c.s.lunchAsks || 0) >= 3, done: (c) => !!c.s.dayDone || (c.s.dayAsks || 0) >= 2,
-      ask: (c) => { c.s.dayAsks = (c.s.dayAsks || 0) + 1; c.say("day_ask"); },
+      ask: (c) => { c.s.dayAsks = (c.s.dayAsks || 0) + 1; c.say(c.s.dayAsks === 1 ? "day_ask" : "day_reask"); },
       expects: ["day_good", "day_tired", "day_ctx", "thanks_all"],
       suggest: [S_DAY],
       yes: (c) => { dayGood(c); }, no: (c) => { dayTired(c); } },
@@ -867,6 +886,10 @@ export const firstDay: SituationDef = {
     // --- lunch ---
     lunch_yes(c) { if (c.s.lunchAsks) lunchYes(c); else c.say("ack"); },
     lunch_no(c) { if (c.s.lunchAsks) lunchNo(c); else c.say("ack"); },
+    lunch_q_ctx(c, slots, seg) { (firstDay.handlers as any).lunch_q(c, slots, seg); },
+    lunch_who_ctx(c) { c.say("a_lunch_who"); if (c.step === "lunch") { c.say("lunch_reask"); c.hold(); } },
+    task_when(c) { (c as ConvCtx).conv.pushLine("g_take_time", 1, {}); },
+    q_dave(c) { question(c, "dave"); c.say("a_dave"); },
     lunch_q(c) {
       const h = heard(c);
       if (/\bwhere\b|\bfar\b|\bclose\b|\bnear\b/.test(h)) c.say("a_thai_where");
@@ -900,10 +923,10 @@ export const firstDay: SituationDef = {
     c.say("see_tomorrow");
     c.expect({ id: "closing", hints: ["bye"], suggest: [{ lt: "Atsisveikinti", hint: "bye" }],
       on: {
-        see_you: (cc) => { cc.say("bye_reply"); cc.end(); },
-        g_bye: (cc) => { cc.say("bye_reply"); cc.end(); },
-        g_thanks: (cc) => { cc.say("welcome_reply"); cc.say("bye_reply"); cc.end(); },
-        thanks_all: (cc) => { cc.say("welcome_reply"); cc.say("bye_reply"); cc.end(); },
+        see_you: (cc) => { byeBack(cc); },
+        g_bye: (cc) => { byeBack(cc); },
+        g_thanks: (cc) => { byeBack(cc, true); },
+        thanks_all: (cc) => { byeBack(cc, true); },
       },
       yes: (cc) => { cc.end(); }, no: (cc) => { cc.end(); } });
   },
@@ -939,7 +962,15 @@ export const firstDay: SituationDef = {
     { say: "Thanks, but I brought my lunch today.", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
     { say: "I can't today, sorry.", intent: "lunch_no", step: "lunch", not: ["lunch_yes"] },
     { say: "Maybe next time!", intent: "lunch_no", step: "lunch" },
-    { say: "Where is it?", intent: "lunch_q", step: "lunch" },
+    { say: "Where is it?", intent: "lunch_q_ctx", step: "lunch" },
+    // logic audit (5 Nov 2026): the bare lunch questions only at the invitation; who's going, when it's due, Dave
+    { say: "What time?", intent: "lunch_q_ctx", step: "lunch" },
+    { say: "Where is it?", intent: "none", step: "desk" },
+    { say: "Where is the Thai place?", intent: "lunch_q" },
+    { say: "Who's going?", intent: "lunch_who_ctx", step: "lunch" },
+    { say: "When is it due?", intent: "task_when", step: "task" },
+    { say: "Is it urgent?", intent: "task_when", step: "task" },
+    { say: "Who's Dave?", intent: "q_dave" },
     { say: "Do you fancy grabbing lunch?", intent: "fancy_q" },
     { say: "It was great!", intent: "day_good", step: "day" },
     { say: "Tiring, but I love it here!", intent: "day_tired", step: "day" },
@@ -1070,6 +1101,14 @@ function taskOk(c: Ctx) {
   if (!c.s.sent) { c.s.sent = true; turn(c).sent = true; c.say("send_offer"); }
   c.say("task_ok_reply");
   c.s.taskDone = true;
+}
+
+/** The goodbye at the end, once a turn ("Thanks for everything! See you tomorrow!" is two pieces). */
+function byeBack(c: Ctx, thanked = false) {
+  const d = turn(c);
+  if (thanked && !d.bye && !d.welcome) { d.welcome = true; c.say("welcome_reply"); }
+  if (!d.bye) { d.bye = true; c.say("bye_reply"); }
+  c.end();
 }
 
 function lunchYes(c: Ctx) {

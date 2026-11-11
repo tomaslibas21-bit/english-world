@@ -192,5 +192,9 @@
   {"ctx": "help", "say": "The coffee is cold", "intent": "none"},
   {"ctx": "value", "say": "My brother plays guitar", "intent": "none"},
   {"ctx": "more", "say": "It's sunny today", "intent": "none"},
-  {"ctx": "hazmat", "say": "No, not fragile", "intent": "any", "not": ["contents_fragile"]}
+  {"ctx": "hazmat", "say": "No, not fragile", "intent": "any", "not": ["contents_fragile"]},
+  {"ctx": "stamps_offer", "say": "How much are five stamps?", "intent": "stamps_price_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "stamps_offer", "say": "How much are they?", "intent": "stamps_price_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "stamps_offer", "say": "How much are five stamps?", "intent": "any", "not": ["stamps_qty"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "more", "say": "Thanks, that's all.", "intent": "more_no", "note": "logic audit 5 Nov 2026"}
 ]}

@@ -480,6 +480,19 @@ export const clothes: SituationDef = {
     ] },
     item_short: { patterns: ["[just] {item}", "{item} @where_tail"] },
     looking_unknown: { patterns: ["@look_pre {w:any}"] },
+    // "I want to see something else" ("Sorry, we don't carry that"): another garment
+    see_else: { patterns: ["(i want | i would like | i would love | can i | could i) (to see | to look at | see | look at) something else", "(can | could) you show me something else", "something else [please]", "(show me | let me see) something else [please]"] },
+    // at "Are you returning something today?": "No, I'm here to buy something" / "No, just shopping" (not understood)
+    shop_ctx: { patterns: ["[no] i am [just] here to (buy | shop for | get | look for) something", "[no] i am [just] shopping [today]", "[no] (just | only) shopping [today]",
+      "[no] i (want | would like | need) to buy something [today]", "[no] i am here to shop", "[no] not today i am [just] shopping"] },
+    // "Which color do you recommend?" / "Any color is fine" / "I don't mind" at the color question: the colors there are
+    color_any_ctx: { patterns: ["(which | what) (color | one) (do | would) you recommend", "what color (do you think | would you choose | would you pick | looks best)",
+      "[any | either] [one | color] is fine", "any color [is fine | is okay]", "i do not mind [which color | the color]", "i do not care [which color | the color]", "you choose", "(whatever | any) color [you think]"] },
+    // her opinion: "Does it look good on me?" / "How does it look?" / "What do you think?" (not understood)
+    ask_opinion: { patterns: ["(does | do) (it | they | this | these) look (good | ok | okay | nice | all right | alright | right) [on me]", "how (does | do) (it | they | this | these) look [on me]",
+      "what do you think [of it | about it | of them]", "(is | are) (it | they | this | these) (good | ok | okay | nice) on me", "do you like (it | them) [on me]", "how do i look"] },
+    // at the register: "How much do I owe you?" / "How much is it in total?" (not understood)
+    ask_total: { patterns: ["how much do i owe you", "what do i owe you", "how much is (it | that | everything) (in total | altogether | all together)", "what is the total", "how much is the total"] },
     change_item: { patterns: [
       "[actually] (can | could) i (see | try | look at) {item} instead", "[actually] {item} instead", "[actually] (what about | how about) {item}",
       "[actually] i would (like | prefer) {item} instead",
@@ -579,6 +592,7 @@ export const clothes: SituationDef = {
       "(it | this | this one | that one) does not fit [me] [well | very well | right | at all]", "(they | these) do not fit [me] [well | very well | right | at all]",
       "(it is | they are) the wrong size", "i do not think (it fits | they fit)", "the size is (wrong | not right)", "(it is | they are) not (right | good)",
       "(the | this | my) {clothing} (is | are) not (right | good | okay | ok) [on me]",
+      "so so", "more or less", "kind of", "not (great | really)",
     ] },
     fit_good: { patterns: [
       "(it | this | this one | that one | the {size}) fits [me] [really | just] (perfectly #h:fit_perfect | well | great | fine | nicely | right | like a glove)",
@@ -658,9 +672,9 @@ export const clothes: SituationDef = {
     ] },
     no_bag: { patterns: ["(i do not need | no need for) a bag", "no bag [thanks | needed]", "i (have | brought) my own bag", "i am fine without a bag",
       "i will put (it | them) in my (bag | backpack | purse)", "[no] i do not need (it | one | a bag)", "just the receipt [and] no bag"] },
-    want_bag: { patterns: ["[yes] (a | one) [small | paper | plastic | big] bag [please]", "[yes] a bag would be (great | nice | good)", "(can | could) i (have | get) a bag"] },
+    want_bag: { patterns: ["[yes] (a | one) [small | paper | plastic | big] bag [please]", "[yes] a bag would be (great | nice | good)", "(can | could) i (have | get) a bag", "do you have (a | any) [paper | plastic] (bag | bags)", "do you have bags"] },
     gift_receipt: { patterns: ["(can | could) i (get | have) a gift receipt #h:gift_receipt", "[a] gift receipt", "it is a (gift | present)", "(can | could) you (include | add) a gift receipt"] },
-    receipt_bag: { patterns: ["[yes] (in the bag | put it in the bag)", "(printed | print it | paper) [is fine]", "(can | could) you put it in the bag"] },
+    receipt_bag: { patterns: ["[yes] (in the bag | put it in the bag)", "[yes] [the | my] receipt [please]", "i will take (it | the receipt) [please]", "(give | hand) (it | the receipt) to me [please]", "(printed | print it | paper) [is fine]", "(can | could) you put it in the bag"] },
     receipt_email: { patterns: ["(email | email it | by email) [is fine]", "(can | could) you email it [to me]", "[yes] emailed", "(send it | email it) to my email", "(to | on) my email"] },
     no_receipt: { patterns: ["(i do not need | no need for) a receipt", "no receipt [needed]", "(i do not need | no need for) [a] gift receipt"] },
     // "No, I don't need it" (to "Would you like your receipt printed or emailed?")
@@ -700,13 +714,16 @@ export const clothes: SituationDef = {
       "the color ran [in the (rain | wash)] #ran #h:ret_ran", "(it | the color) (changed color | faded) [in the (rain | wash)] #ran", "it (turned | went) green [in the rain] #ran",
       "(it | they) shrank [in the wash] #shrank", "(there is | it has) a hole [in it] #hole", "the zipper (is broken | broke | does not work | is stuck) #zipper",
       "a button (fell off | is missing) #button", "(it is | it was) (damaged | broken | ripped | torn) #damaged", "i changed my mind #mind #h:ret_mind",
-      "i do not (like | love) (it | them | the style) [anymore] #dislike", "(it is | they are) the wrong size #nofit", "i (bought | got) the wrong size #nofit",
+      "i do not (like | love) (it | them | the style) [anymore] #dislike", "i did not (like | love) (it | them | the style | the color) [very much | that much] #dislike", "(it is | they are) the wrong size #nofit", "i (bought | got) the wrong size #nofit",
       "(it | this) does not fit [me] [well] #nofit", "(they | these) do not fit [me] [well] #nofit", "it (was | is) a (gift | present) #gift",
       "(it | they) (does not | do not) (suit | look good on) me #dislike",
       "my (wife | husband | son | daughter | friend | girlfriend | boyfriend) (does not | did not) like (it | them) #dislike", "the quality is (bad | not good | poor) #damaged",
       "(after | in) (one | the first) wash (it | they) (was | were | got | became) smaller #shrank", "nothing is wrong i [just] changed my mind #mind",
       "(it | they) lost (its | their | the) color #ran", "the color changed [after (washing | the wash | one wash | the rain)] #ran",
     ] },
+    exch_what_ctx: { patterns: ["[a | another | a different | an other | other] size [please] #size", "(i want | i would like | i need | can i (get | have) | could i (get | have)) (another | a different | an other) size [please] #size",
+      "[a | another | a different | an other | other] color [please] #color", "(i want | i would like | i need | can i (get | have) | could i (get | have)) (another | a different | an other) color [please] #color",
+      "the same [one | style | size | color | thing] [please] #same", "[just] (a new one | the same one | the same) [please] #same", "the same one but new #same", "[just] a new one [in the same size] [please] #same"] },
     want_refund: { patterns: [
       "i would like a refund #h:ret_refund", "(can | could) i (get | have) a refund", "(i would like | can i (get | have) | could i (get | have)) my money back",
       "[a] refund", "(put it | can you put it) back on my card", "refund (it | it to my card)", "just a refund", "i want a refund #blunt",
@@ -1426,7 +1443,7 @@ export const clothes: SituationDef = {
         const id = cur(c)!.id;
         guideFor(c, "color", id, { lt: "Pasirinkti spalvą", hint: itemHint("color", id), options: colorsOf(id) });
       },
-      expects: ["color_ans", "ask_have_color", "ask_colors", "size_ans", "dislike_color"],
+      expects: ["color_ans", "ask_have_color", "ask_colors", "size_ans", "dislike_color", "color_any_ctx"],
       suggest: [{ lt: "Pasirinkti spalvą", hint: "color", options: "color" }],
       help: (c) => { sayColors(c, cur(c)!); } },
     { id: "tryon", when: (c) => c.s.mode !== "return" && !!cur(c) && hasSize(cur(c)!) && !c.s.decision, done: (c) => !!c.s.tried || !!c.s.noTry,
@@ -1473,7 +1490,7 @@ export const clothes: SituationDef = {
         // ("Cash or card?" only when the learner hasn't said yet)
         if (!c.s.totalSaid) { c.s.totalSaid = true; if (!c.s.payMethod && c.chance(0.35)) c.say("ask_pay_method"); }
       },
-      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash"],
+      expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go", "no_cash", "ask_total"],
       suggest: [{ lt: "Susimokėti kortele, grynaisiais ar telefonu", hint: "pay" }] },
     { id: "bag", when: (c) => c.s.mode !== "return" && !!c.s.paid && c.s.askBag, done: (c) => c.s.bag !== undefined,
       ask: (c) => { c.say("ask_bag"); guideFor(c, "bag", cur(c)?.id); }, expects: ["wear_it", "no_bag", "gift_receipt", "want_bag", "im_fine_ctx", "no_receipt"],
@@ -1516,7 +1533,7 @@ export const clothes: SituationDef = {
         else if (["ran", "dislike"].includes(r.reason ?? "") || oneSize(id)) { c.say("ret_exchange_color_q"); guideFor(c, "r_new", id, color, oneSize(id) ? [] : [size]); }
         else { c.say("ret_exchange_what_q"); guideFor(c, "r_new", id, size, [color]); }
       },
-      expects: ["size_ans", "color_ans", "ask_have_size", "ask_have_color", "shoe_size", "shoe_size_ctx", "exchange"],
+      expects: ["size_ans", "color_ans", "ask_have_size", "ask_have_color", "shoe_size", "shoe_size_ctx", "exchange", "exch_what_ctx"],
       suggest: [{ lt: "Pasirinkti kitą dydį", hint: "size", options: "size" }, { lt: "Pasirinkti kitą spalvą", hint: "color", options: "color" }],
       yes: (c) => { ret(c).done = true; c.say("ret_same_new"); } },
   ],
@@ -1542,7 +1559,7 @@ export const clothes: SituationDef = {
       c.say("greet_back");
       c.say("return_q");
       c.expect({
-        id: "return_q", optional: true, expects: ["return_item", "exchange", "problem", "receipt_yes"], hints: ["ret_start", "ret", "browse", "g_yesno"],
+        id: "return_q", optional: true, expects: ["return_item", "exchange", "problem", "receipt_yes", "shop_ctx"], hints: ["ret_start", "ret", "browse", "g_yesno"],
         suggest: [{ lt: "Pasakyti, ką nori grąžinti ar pasikeisti", hint: itemHint("ret_start", (c.memory.lastBought as Garment | undefined)?.id ?? "jacket") }, { lt: "Pasakyti, kad tik apsidairai", hint: "browse" }],
         on: {
           return_item: (cc, sl, sg) => { clothes.handlers.return_item(cc, sl, sg); },
@@ -1556,9 +1573,10 @@ export const clothes: SituationDef = {
           ask_have_size: (cc, sl, sg) => { cc.s.mode = "shop"; clothes.handlers.ask_have_size(cc, sl, sg); },
           ask_have_color: (cc, sl, sg) => { cc.s.mode = "shop"; clothes.handlers.ask_have_color(cc, sl, sg); },
           try_on: (cc, sl, sg) => { cc.s.mode = "shop"; clothes.handlers.try_on(cc, sl, sg); },
+          shop_ctx: (cc) => { cc.s.retOffer = false; cc.say("ret_shop_ok"); cc.hold(); },
         },
         yes: (cc) => { startReturn(cc, null); cc.ask("r_receipt"); },
-        no: (cc) => { cc.say("ret_shop_ok"); cc.ask("item"); },
+        no: (cc) => { cc.say("ret_shop_ok"); cc.hold(); }, // one question ("How can I help you?"), not two
         ask: (cc) => cc.say("return_q"),
       });
       return;
@@ -1589,6 +1607,26 @@ export const clothes: SituationDef = {
     },
     item_short(c, slots) { clothes.handlers.looking_for(c, slots, { intent: "looking_for", slots, tags: [] }); },
     looking_unknown(c) { c.say("unknown_item"); if (!cur(c)) c.ask("item"); else c.hold(); },
+    see_else(c) {
+      if (c.s.paid || c.s.mode === "return") { c.say("what_else"); c.hold(); return; }
+      if (cur(c)) { c.s.itemReset = true; resetItem(c, null); }
+      c.say("what_else"); c.hold();
+    },
+    shop_ctx(c) { c.s.retOffer = false; if (c.s.mode === "return" && !ret(c)?.choice) c.s.mode = "shop"; if (!cur(c)) { c.say("ret_shop_ok"); c.hold(); } },
+    color_any_ctx(c) { if (!cur(c)) return; sayColors(c, cur(c)!); },
+    ask_opinion(c) { if (!cur(c)) return; sayN(c, "compliment"); },
+    ask_total(c, slots, seg) {
+      if (c.s.decision === "take" && cur(c) && !c.s.paid) { c.say("total", { total: Math.round(priceOf(c, cur(c)!) * TAX) }); if (c.step === "pay") c.hold(); return; }
+      clothes.handlers.ask_price(c, slots, seg);
+    },
+    exch_what_ctx(c, _slots, seg) {
+      if (c.s.mode !== "return" || !ret(c)) return;
+      const r = ret(c);
+      const id = r.item.id;
+      if (seg.tags.includes("same")) { r.done = true; c.say("ret_same_new"); return; }
+      if (seg.tags.includes("size") && !oneSize(id)) { c.say("ret_exchange_size_q"); c.hold(); return; }
+      c.say("ret_exchange_color_q"); c.hold();
+    },
     im_fine_ctx(c, slots, seg) {
       const H = clothes.handlers;
       switch (c.step) {
@@ -1784,7 +1822,7 @@ export const clothes: SituationDef = {
           looking_for: (cc, sl, sg) => { clothes.handlers.looking_for(cc, sl, sg); },
           item_short: (cc, sl, sg) => { clothes.handlers.looking_for(cc, sl, sg); },
         },
-        yes: (cc) => { cc.say("what_else"); cc.ask("item"); },
+        yes: (cc) => { cc.say("what_else"); cc.hold(); },
         no: (cc) => { cc.s.decision = "none"; },
         ask: (cc) => cc.say("not_take_ok") });
     },
@@ -1851,6 +1889,10 @@ export const clothes: SituationDef = {
       c.ask("r_receipt");
     },
     exchange(c, slots, seg) {
+      // "I want another size / color" at "Same style, different size or color?": which one (it asked the same again)
+      if (c.step === "r_new" && /\b(another|different|other)\s+(size|color)\b/i.test(c.heard) && !slots.size && !slots.color && slots.shoe == null && !seg.tags.includes("up") && !seg.tags.includes("down")) {
+        clothes.handlers.exch_what_ctx(c, slots, { ...seg, tags: [/\bsize\b/i.test(c.heard) ? "size" : "color"] }); return;
+      }
       const g = fromSlot(slots.item);
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, g);
       const r = ret(c);
@@ -1867,7 +1909,12 @@ export const clothes: SituationDef = {
       ret(c).receipt = false; c.say("ret_receipt_none");
       if (ret(c).choice === "refund") { ret(c).choice = undefined; }
     },
-    problem(c, _slots, seg) {
+    problem(c, slots, seg) {
+      // while shopping, before paying: "I changed my mind" / "I don't like it" is not taking it, a size is the fit
+      if (c.s.mode !== "return" && cur(c) && !c.s.paid && !c.s.retOffer) {
+        if (seg.tags.includes("mind") || seg.tags.includes("dislike")) { clothes.handlers.not_take(c, slots, seg); return; }
+        if (seg.tags.includes("nofit")) { clothes.handlers.fit_unclear(c, slots, seg); return; }
+      }
       if (c.s.mode !== "return" || !ret(c)) startReturn(c, null);
       const reason = reasonFromTags(seg.tags) ?? "dislike";
       if (!ret(c).reason) reactReason(c, reason);
@@ -1926,6 +1973,16 @@ export const clothes: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "A different size.", intent: "exch_what_ctx", step: "r_new" },
+    { say: "The same one, please.", intent: "exch_what_ctx", step: "r_new" },
+    { say: "I want to see something else.", intent: "see_else", not: ["looking_unknown"] },
+    { say: "Does it look good on me?", intent: "ask_opinion" },
+    { say: "How much do I owe you?", intent: "ask_total", step: "pay" },
+    { say: "I didn't like it.", intent: "problem", step: "r_reason" },
+    { say: "Do you have bags?", intent: "want_bag", step: "bag", not: ["looking_unknown"] },
+    { say: "The receipt, please.", intent: "receipt_bag", step: "receipt" },
+    { say: "Which color do you recommend?", intent: "color_any_ctx", step: "color" },
     // hint patterns
     { say: "I'm just looking, thanks.", intent: "just_looking" },
     { say: "No, thanks, I'm fine. Just browsing.", intent: "just_looking" },

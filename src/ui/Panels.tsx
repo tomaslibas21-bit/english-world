@@ -1,3 +1,4 @@
+import { useKeyboardHints } from "./keyboardHints";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useStore } from "../state/store";
 import { game } from "../game/gameRef";
@@ -21,6 +22,7 @@ import { showToast } from "./Toasts";
 import { L, Lx } from "./i18n";
 import { EDITION } from "../edition";
 import { chooseVariety, loadVariety } from "../state/variety";
+import { courseGuideUrl, setSectionHelp, useSectionHelp } from "./sectionHelp";
 
 export const CHAPTERS: Record<number, string> = { 1: L("Atvykimas"), 2: L("Pirmosios dienos mieste"), 3: L("Įsikūrimas"), 4: L("Darbas"), 5: L("Žmonės"), 6: L("Kelionės"), 7: L("Pagalba"), 8: L("Pažengusiems"), 9: L("Gyva kalba") };
 
@@ -48,6 +50,12 @@ function VarietyToggle() {
 
 export function Panels() {
   const panel = useStore((s) => s.hud.panel);
+  useEffect(() => {
+    if (!panel) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); useStore.getState().setHud({ panel: null }); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panel]);
   if (!panel) return null;
   const close = () => useStore.getState().setHud({ panel: null });
   return (
@@ -58,8 +66,41 @@ export function Panels() {
       {panel === "settings" && <Settings close={close} />}
       {panel === "phrasebook" && <Phrasebook close={close} />}
       {panel === "scenarios" && <Scenarios close={close} />}
+      {panel === "help" && <Help close={close} />}
     </div>
   );
+}
+
+function Help({ close }: { close: () => void }) {
+  const sheet = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    sheet.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => { if (previous?.isConnected) previous.focus(); };
+  }, []);
+  return <div ref={sheet} className="sheet narrow" role="dialog" aria-modal="true" aria-label={L("Kaip žaisti?")}
+    onKeyDown={(e) => {
+      if (e.key !== "Tab") return;
+      const controls = [...e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], summary")].filter((el) => el.getClientRects().length);
+      const first = controls[0], last = controls.at(-1);
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }}>
+    <SheetHead icon="help" title={L("Kaip žaisti?")} close={close} />
+    <div className="sheet-body">
+      <p>{L("Pasirink situaciją, išklausyk pašnekovą ir atsakyk angliškai. Gali kalbėti arba rašyti. Atsakymų pavyzdžius rasi po užrašu „Tavo eilė“.")}</p>
+      <details className="howto">
+        <summary>{L("Žingsnis po žingsnio")} <Icon name="arrowRight" size={20} /></summary>
+        <ol>
+          <li>{L("Spausk „Visos situacijos“ ir pasirink pokalbį. Jei žaidi 3D mieste, gali prieiti prie pašnekovo.")}</li>
+          <li>{L("Palauk, kol pašnekovas baigs kalbėti. Jei garsas sustoja, spausk „Klausyti“.")}</li>
+          <li>{L("Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – atsakyk angliškai. Mikrofono mygtuku gali bandyti dar kartą arba baigti savo atsakymą. Jei nori rašyti, spausk klaviatūros ikonėlę. Garsiakalbio ikonėlė prie pavyzdžio leidžia išgirsti atsakymą, o „Pakartok“ – jį ištarti ir pasitikrinti.")}</li>
+          <li>{L("Spausk „LT“, kad matytum vertimą, arba „IPA“, kad matytum tarimo užrašą. Vėžliuko ikonėlė sulėtina balsą, o „i“ prie paveikslėlio atveria informaciją apie pašnekovą ir vietą.")}</li>
+        </ol>
+      </details>
+      {courseGuideUrl() && <a className="btn soft" href={courseGuideUrl()} target="_blank" rel="noopener noreferrer">{L("Išsamus naudojimo gidas")} <Icon name="arrowRight" size={18} /></a>}
+    </div>
+  </div>;
 }
 
 function SheetHead({ icon, title, close }: { icon: IconName; title: ReactNode; close: () => void }) {
@@ -112,13 +153,15 @@ function SitCard({ s, onClick, open }: { s: SituationDef; onClick: () => void; o
 export const START_WITH = ["s72-cafe", "s66-taxi", "s68-hotel", "s75-pharmacy", "s74-clothes", "s90-running-late", "s84-date"];
 
 function HowToPlay({ open }: { open?: boolean }) {
+  const keyboardHints = useKeyboardHints();
+  const micKeys = { mic: <InlineIcon name="mic" label={L("Mikrofono mygtuku")} />, keyboard: <InlineIcon name="keyboard" label={L("klaviatūra")} /> };
   return (
     <details className="howto" open={open}>
       <summary><Icon name="help" size={21} className="howto-ico" /> {L("Kaip žaisti?")}<Icon name="chevronDown" size={18} className="chev" /></summary>
       <ol>
         <li>{L("Pasirink situaciją – iškart atsidursi pokalbyje.")}</li>
         <li>{Lx("Viršuje matysi užduočių sąrašą, o prie „{arrow}“ – ką daryti dabar.", { arrow: <InlineIcon name="next" label={L("rodyklės")} /> })}</li>
-        <li>{Lx("Spausk {mic} (arba tarpo klavišą) ir kalbėk angliškai. Galima ir rašyti {keyboard}.", { mic: <InlineIcon name="mic" label={L("mikrofono mygtuką")} />, keyboard: <InlineIcon name="keyboard" label={L("klaviatūra")} /> })}</li>
+        <li>{(keyboardHints ? Lx("Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. {mic} (arba tarpo klavišu) gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti {keyboard}.", micKeys) : Lx("Pašnekovui baigus kalbėti, mikrofonas įsijungia automatiškai – kalbėk angliškai. {mic} gali bandyti dar kartą arba baigti atsakymą. Galima ir rašyti {keyboard}.", micKeys))}</li>
         <li>{Lx("Nežinai, ką pasakyti? Po „Tavo eilė“ yra pavyzdžiai – {speaker} juos perskaito. „Daugiau frazių“ – dar daugiau būdų tai pasakyti.", { speaker: <InlineIcon name="speaker" label={L("garsiakalbio mygtukas")} /> })}</li>
         <li>{Lx("Viršuje {lt} ir {ipa} įjungia pašnekovo sakinių vertimą ir tarimą, o prie „Tavo eilė“ esantys {translation} ir {ipa} – tavo atsakymų pavyzdžių. {restart} – pradėti iš naujo, {list} – kitos situacijos.", { lt: <b>{L("LT")}</b>, ipa: <b>IPA</b>, translation: <b>{L("Vertimas")}</b>, restart: <InlineIcon name="restart" label={L("Rodyklė ratu")} />, list: <InlineIcon name="list" label={L("Sąrašas")} /> })}</li>
         <li>{Lx("Paspausk bet kurį anglišką žodį – galėsi jį išsaugoti kortelėse ir vėliau pakartoti ({book} → „Mano kortelės“).", { book: <InlineIcon name="bookOpen" label={L("Frazių knygelė")} /> })}</li>
@@ -333,6 +376,7 @@ function Toggle({ on, onChange, label, sub }: { on: boolean; onChange: (v: boole
 }
 
 function Settings({ close }: { close: () => void }) {
+  const showHelp = useSectionHelp();
   const s = useStore((st) => st.settings);
   const set = useStore((st) => st.setSettings);
   const profile = useStore((st) => st.progress.profile);
@@ -342,6 +386,8 @@ function Settings({ close }: { close: () => void }) {
     <div className="sheet narrow">
       <SheetHead icon="settings" title={L("Nustatymai")} close={close} />
       <div className="sheet-body settings-grid">
+        <Toggle on={showHelp} onChange={setSectionHelp} label={L("Rodyti pagalbos klaustukus")} sub={L("Trumpa pagalba prie žaidimo ir pokalbių. Išsamų gidą gali atidaryti bet kada.")} />
+        {courseGuideUrl() && <a className="btn soft" href={courseGuideUrl()} target="_blank" rel="noopener noreferrer">{L("Naudojimo gidas")} <Icon name="arrowRight" size={18} /></a>}
         <Toggle on={s.lt} onChange={(v) => set({ lt: v })} label={L("Lietuviški vertimai (L)")} sub={L("Žodis po žodžio po pašnekovo sakiniais.")} />
         <Toggle on={s.ltNatural} onChange={(v) => set({ ltNatural: v })} label={L("Visas sakinys lietuviškai (N)")} sub={L("Rodoma, kai įjungti vertimai.")} />
         <Toggle on={s.ipa} onChange={(v) => set({ ipa: v })} label={L("Tarimas IPA (I)")} sub={L("Amerikietiškas tarimas po kiekvienu pašnekovo žodžiu (sugeneruota, dar netikrinta su įrašais).")} />
@@ -349,7 +395,6 @@ function Settings({ close }: { close: () => void }) {
         <Toggle on={s.sayIpa} onChange={(v) => set({ sayIpa: v })} label={L("Tavo atsakymų tarimas IPA")} sub={L("Po kiekvienu pavyzdžių žodžiu.")} />
         <Toggle on={s.suggestions} onChange={(v) => set({ suggestions: v })} label={L("Pasiūlymai, ką pasakyti")} sub={L("Lietuviški pasiūlymai tavo eilėje.")} />
         <Toggle on={s.hintsOpen} onChange={(v) => set({ hintsOpen: v })} label={L("Frazės atidarytos iš karto")} sub={Lx("Kitaip atsidaro paspaudus {bulb} (H).", { bulb: <InlineIcon name="bulb" label={L("lemputę")} /> })} />
-        <Toggle on={s.autoListen} onChange={(v) => set({ autoListen: v })} label={L("Mikrofonas įsijungia automatiškai")} sub={L("Kai pašnekovas baigia kalbėti.")} />
         <Toggle on={s.confirmSpeech} onChange={v=>set({confirmSpeech:v})} label={L("Patvirtinti atpažintą tekstą")} sub={L("Prieš išsiunčiant atsakymą parodyti, ką išgirdo. Galėsi pataisyti praleistą „ne“ ar kitą žodį.")} />
         <Toggle on={s.slowVoice} onChange={(v) => set({ slowVoice: v })} label={L("Žmonės kalba lėčiau")} />
         {EDITION.id === "es" && <VarietyToggle />}

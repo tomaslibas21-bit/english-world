@@ -375,5 +375,8 @@
   {"ctx": "keys_spot", "say": "Thank you so much", "intent": "g_thanks"},
   {"ctx": "keys_spot", "say": "Where is spot C2?", "intent": "where_car"},
   {"ctx": "anything", "say": "No, that's everything", "intent": "more_no"},
-  {"ctx": "free_up", "say": "That's great, thank you!", "intent": ["g_thanks", "ok_ack"]}
+  {"ctx": "free_up", "say": "That's great, thank you!", "intent": ["g_thanks", "ok_ack"]},
+  {"ctx": "upgrade", "say": "How much is it?", "intent": "price_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "free_up", "say": "How much is it per day?", "intent": "price_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "upgrade", "say": "How much is it?", "intent": "any", "not": ["upgrade_yes"], "note": "logic audit 5 Nov 2026"}
 ]}

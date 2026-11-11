@@ -12,7 +12,7 @@
 // "soup", "medium" + "rare"). freshItems() drops such bare tails and doneFromText() reads the
 // doneness from the heard text; one bonus per parse would make both unnecessary.
 
-import type { Ctx, EntityDef, SituationDef, Tip } from "../types";
+import type { Ctx, EntityDef, Handler, SituationDef, Tip } from "../types";
 import { ent, t } from "../dsl";
 import { expectHowAreYou } from "../global";
 
@@ -604,6 +604,9 @@ export const restaurant: SituationDef = {
       "(can | could) you (box | pack | wrap) (this | it | that) [up] [for (me | us)]", "(i | we) would like a (box | to go box)",
       "(i | we) will take (it | this | the rest) (to go | home)",
     ] },
+    // at the dessert question: "A dessert, please" / "Yes, a dessert" / "Dessert." = the list (they weren't understood)
+    dessert_some_ctx: { patterns: ["[yes] [a | some] (dessert | desserts) [please | would be (nice | great | lovely)]", "[yes] (i | we) would (like | love) (a | some) (dessert | desserts) [please]",
+      "[yes] (i | we) (will | would) (have | take) (a | some) dessert [please]", "[yes] something sweet [please]", "[yes] (let us | let's) see the (dessert | desserts) [menu] [please]"] },
     dessert_no: { patterns: [
       "(no | nothing) (dessert | desserts) [for (me | us)] [tonight]", "(i am | we are) (full | stuffed | too full | so full) #h:im_full",
       "(i | we) (can not | could not) eat (another bite | anything else | any more)", "no dessert tonight", "not tonight",
@@ -1759,7 +1762,7 @@ export const restaurant: SituationDef = {
     // Dessert
     { id: "dessert", when: (c) => c.s.askDessert && mealOver(c) && !c.s.checkAsked, done: (c) => !!c.s.dessertDone,
       ask: (c) => c.say(c.s.dessertMenu ? "what_else" : "ask_dessert"),
-      expects: ["order", "dessert_no", "check_ask", "ask_menu", "ask_recommend", "more_no"],
+      expects: ["order", "dessert_no", "check_ask", "ask_menu", "ask_recommend", "more_no", "dessert_some_ctx"],
       suggest: [
         { lt: "Užsisakyti desertą ar kavos", hint: "dessert", options: ["tiramisu", "chocolate_cake", "cheesecake", "panna_cotta", "gelato", "coffee", "espresso"] },
         { lt: "Atsisakyti ir paprašyti sąskaitos", hint: "check" },
@@ -1783,7 +1786,7 @@ export const restaurant: SituationDef = {
         if (c.s.dessertDeclined && !c.s.wheneverSaid) { c.s.wheneverSaid = true; c.say("check_whenever"); return; }
         c.say("ask_check_else");
       },
-      expects: ["check_ask", "more_no", "order", "ask_menu", "box_ask", "dessert_no"],
+      expects: ["check_ask", "more_no", "order", "ask_menu", "box_ask", "dessert_no", "dessert_some_ctx"],
       suggest: [
         { lt: "Paprašyti sąskaitos", hint: "check" },
         { lt: "Užsisakyti desertą", hint: "dessert", options: "dessert" },
@@ -2025,7 +2028,24 @@ export const restaurant: SituationDef = {
       // "How much is it?" with the (one) check on the table: the total, not the last dish's price
       if (!slots.dish && c.s.checkBrought && c.s.split !== "separate") { c.say("total_is", { price: total(c) }); return; }
       const id = dishOf(slots.dish) ?? lastDish(c);
-      if (!id || byId(id).attrs?.generic) { c.say("which_item"); return; }
+      if (!id) { c.say("which_item"); return; }
+      const g = byId(id).attrs?.generic as string | undefined;
+      if (g) {
+        // the kinds cost the same (a soda), or the plain one is meant ("How much is the coffee?"): that price
+        const prices = new Set(ALL.filter((e) => e.attrs?.family === g).map((e) => e.attrs?.price as number));
+        const one = g === "coffee" ? (byId(id).attrs?.price as number) : prices.size === 1 ? [...prices][0] : 0;
+        if (one) { c.s.mentioned = id; c.say("price_is", { price: one }); return; }
+        // "Which one?" → "Sparkling.": that one's price (the answer ordered one); a free one (tap water) is ordered
+        c.say("which_item");
+        c.expect({ id: "price_which", optional: true, expects: ["order"],
+          on: { order: (cc, sl, sg) => {
+            const it = toArr(sl.items?.item).map((x: any) => dishOf(x)).find(Boolean) as string | undefined;
+            const p = it ? (byId(it).attrs?.price as number | undefined) : undefined;
+            if (!it || !p || byId(it).attrs?.generic) { (restaurant.handlers as Record<string, Handler>).order(cc, sl, sg); return; }
+            cc.s.mentioned = it; cc.say("price_is", { price: p });
+          } } });
+        return;
+      }
       c.s.mentioned = id;
       c.say("price_is", { price: byId(id).attrs?.price ?? 0 });
     },
@@ -2092,6 +2112,11 @@ export const restaurant: SituationDef = {
       c.say(requestLine(slots.req));
     },
     box_ask(c) { if (!c.s.box) { c.s.box = true; c.say("box_ok"); } },
+    dessert_some_ctx(c) {
+      if (c.s.checkBrought) { c.say("no_problem"); return; }
+      c.s.dessertMenu = true; c.s.dessertDone = false; c.s.dessertDeclined = false; c.s.checkAsked = false;
+      c.say("dessert_list"); c.hold();
+    },
     dessert_no(c) {
       c.s.dessertDone = true;
       c.s.dessertDeclined = true;
@@ -2197,6 +2222,9 @@ export const restaurant: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "A dessert, please.", intent: "dessert_some_ctx", step: "dessert", not: ["order"] },
+    { say: "Yes, a dessert.", intent: "dessert_some_ctx", step: "dessert" },
     { say: "No, we don't.", intent: "resv_no_ctx", step: "resv" },
     { say: "Just me, thanks.", intent: "party_ctx", step: "resv" },
     // host
@@ -2421,9 +2449,11 @@ function requestLine(req: string): string {
 function choosePay(c: Ctx, method: "card" | "cash") {
   if (c.s.payMethod) return;
   if (!c.s.checkBrought) {
-    // "Can I pay by card?" during the meal (or while the check is on its way) gets an answer; after the
-    // meal, "I'll bring the check right over" answers it.
-    if (!c.s.wantPay && (!mealOver(c) || c.s.checkComing)) c.say("no_problem");
+    // "Can I pay by card?" during the meal gets an answer and the way to pay is kept, but nothing more: it asked
+    // for the check (brought unasked after the meal, with no dessert offered). After the meal, or while the check
+    // is on its way, "I'll bring the check right over" answers it.
+    if (!mealOver(c) && !c.s.checkAsked) { if (!c.s.wantPay) c.say("no_problem"); c.s.wantPay = method; return; }
+    if (!c.s.wantPay && c.s.checkComing) c.say("no_problem");
     c.s.wantPay = method; c.s.checkAsked = true; c.s.dessertDone = true;
     return;
   }

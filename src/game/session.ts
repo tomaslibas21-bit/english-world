@@ -2,6 +2,7 @@
 // turn (speech or typing), sends answers to the dialogue engine and records progress.
 import { Conversation, type TurnOut } from "../convo/dialogue";
 import { createSpeechAttempt, hasNegation, speechSupported } from "../convo/speech";
+import { audioDiagnosticsPaused } from "../convo/audioDiagnostics";
 import { polarityChoices, bestReading } from "../convo/readings";
 import { GLOBAL } from "../content/global";
 import { NPCS } from "../content/npcs";
@@ -42,6 +43,8 @@ export class Session {
   private wasCompleted = false;
   /** The pending "open the mic by itself" (after the person's turn, or after a miss). */
   private autoTimer: ReturnType<typeof setTimeout> | null = null;
+  private unbindListening: (() => void) | null = null;
+  private onVisibility = () => { if (document.visibilityState !== "visible") this.stopListening(); };
   /** `speech` is a "listen and repeat" attempt (practice), not an answer. */
   private practicing = false;
   /** Bumped whenever a practice starts or is cancelled (a stale one never goes on to listen). */
@@ -68,6 +71,11 @@ export class Session {
       s.visits++; s.lastPlayed = Date.now();
       p.sits[sitId] = s;
     });
+    // Entering typing or a panel releases capture immediately, without rearming it on return.
+    this.unbindListening = useStore.subscribe((next, previous) => {
+      if ((!previous.conv.typing && next.conv.typing) || (next.hud.panel && next.hud.panel !== previous.hud.panel)) this.stopListening();
+    });
+    document.addEventListener("visibilitychange", this.onVisibility);
   }
 
   async begin() {
@@ -104,6 +112,7 @@ export class Session {
     // an event happens where it was raised among the lines: the phone rings before "Grant here", the plant falls
     // before "The plant is fine"
     const fire = (i: number) => { for (const e of out.events) if ((e.at ?? Infinity) === i) this.hooks.onEvent(e.name, e.data); };
+    void audio.prefetch(out.lines.slice(1).map((l) => ({ voice: npcVoice(NPCS[l.npc]), speed: NPCS[l.npc]?.speed ?? 1, text: l.sentence.say })));
     for (const [i, l] of out.lines.entries()) {
       if (!this.alive) return;
       fire(i);
@@ -113,7 +122,7 @@ export class Session {
       useStore.getState().setConv({ speaking: id, npcId: l.npc });
       const dur = audio.clipDuration(npcVoice(npc), npc?.speed ?? 1, l.sentence.say) ?? Math.max(1.2, l.sentence.say.length * 0.06);
       this.hooks.npcTalk(l.npc, dur / (slow ? 0.82 : 1));
-      await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" });
+      if (!await audio.play(npcVoice(npc), npc?.speed ?? 1, l.sentence.say, { slow, male: npc?.gender === "m" })) return;
       await wait(160);
     }
     // the learner left (Esc, another situation) while the person was talking: no events (a taxi
@@ -138,7 +147,7 @@ export class Session {
     const st = useStore.getState();
     const sup = this.conv.support();
     st.setConv({ phase: "you", suggest: sup.suggest, hints: sup.hints, focus: 0, checklist: this.conv.checklist(), openHint: st.settings.hintsOpen ? (sup.hints[0] ?? null) : st.conv.openHint && sup.hints.includes(st.conv.openHint) ? st.conv.openHint : null });
-    if (st.settings.autoListen && speechSupported() && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
+    if (speechSupported() && !st.hud.panel && !st.conv.typing && !st.conv.speechChoices?.length && document.visibilityState === "visible") this.autoListen(250);
   }
 
   /** Opens the mic by itself after `ms`, unless the learner has meanwhile started an attempt
@@ -148,7 +157,7 @@ export class Session {
     this.autoTimer = setTimeout(() => {
       this.autoTimer = null;
       const c = useStore.getState().conv;
-      if (this.alive && c.phase === "you" && !c.typing && !c.speechChoices?.length && !this.speech) this.listen();
+      if (this.alive && c.phase === "you" && !useStore.getState().hud.panel && !c.typing && !c.speechChoices?.length && !this.speech && document.visibilityState === "visible") this.listen();
     }, ms);
   }
 
@@ -165,23 +174,28 @@ export class Session {
 
   listen() {
     this.cancelAutoListen();
+    if (audioDiagnosticsPaused()) return;
     if (!this.alive || !speechSupported()) return;
     const st = useStore.getState();
-    if (st.conv.phase !== "you") return;
+    if (st.conv.phase !== "you" || st.hud.panel || document.visibilityState !== "visible") return;
     this.stopListening();
-    st.setConv({ speechChoices: undefined });
-    audio.sfx("listen");
-    this.speech = createSpeechAttempt({
+    st.setConv({ speechChoices: undefined, typing: false });
+    audio.stop(); // sample/replay audio must release the speaker before opening the microphone
+    const attempt = createSpeechAttempt({
       evaluate: (t) => this.conv.nlu.probe(t, this.conv.expectedIntents()),
       phrases: this.phrases(),
       preferLocal: st.settings.onDevice,
       onUpdate: (s) => {
+        if (!this.alive || this.speech !== attempt) return;
         const map: Record<string, any> = { idle: "off", starting: "starting", listening: "listening", reconnecting: "reconnecting", denied: "denied", error: "error", nothing: "nothing" };
         useStore.getState().setConv({ mic: { status: map[s.status], heard: s.heard, error: s.error } });
       },
-      onCommit: (text, alts) => { this.submit(text, alts, "voice"); },
+      onCommit: (text, alts) => {
+        if (this.alive && this.speech === attempt) void this.submit(text, alts, "voice");
+      },
     });
-    this.speech.start();
+    this.speech = attempt;
+    attempt.start();
   }
 
   /** The mic button (or space) while listening: hand over what was heard so far, if anything, else just stop. */
@@ -263,7 +277,7 @@ export class Session {
     else if (!out.understood) {
       // first miss: no NPC reaction, just let the learner try again (or type)
       useStore.getState().setConv({ phase: "you" });
-      if (useStore.getState().settings.autoListen && speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
+      if (speechSupported() && !useStore.getState().conv.typing) this.autoListen(1400);
     } else this.yourTurn();
   }
 
@@ -318,10 +332,9 @@ export class Session {
     this.stopListening(); // the conversation's own mic off, and no auto-listen
     const run = ++this.practiceRun;
     useStore.getState().setConv({ practice: { en, status: "playing", heard: "" } });
-    await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say);
+    if (!await audio.play(coachVoice(useStore.getState().progress.profile?.gender), 1, say)) return;
     // cancelled meanwhile (another button, the mic, the person's turn, left)?
     if (run !== this.practiceRun || !this.alive || this.speech || useStore.getState().conv.phase !== "you") return;
-    audio.sfx("listen");
     const attempt = createSpeechAttempt({
       evaluate: (t) => repeatProgress(en, t),
       preferLocal: useStore.getState().settings.onDevice,
@@ -418,6 +431,9 @@ export class Session {
   private finish(leave = false) {
     if (!this.alive) return;
     this.stopListening();
+    this.unbindListening?.();
+    this.unbindListening = null;
+    document.removeEventListener("visibilitychange", this.onVisibility);
     useStore.getState().setConv({ phase: "ended" });
     if (!leave) return;
     this.alive = false;

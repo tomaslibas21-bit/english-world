@@ -56,6 +56,9 @@ const TRACKING = { en: "CP 482 915 736 US", lt: "CP 482 915 736 US", say: "C P, 
 
 const prof = (c: Ctx) => PROFILES[c.s.profile ?? 0];
 const priceOf = (c: Ctx, svc: string) => (prof(c) as any)[svc] as number;
+/** "That's fine, thanks" / "I'm good, thanks" to an offer: the polite no (the engine hears "that's fine" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+
 const total = (c: Ctx) =>
   (c.s.sending && c.s.service ? priceOf(c, c.s.service) : 0) + (c.s.insurance ? INSURANCE : 0) + (c.s.stampQty ? c.s.stampQty * STAMP : 0);
 
@@ -304,6 +307,8 @@ export const post: SituationDef = {
     return_ctx: { patterns: ["oh [i am] sorry [sure | of course | okay | no problem] #h:return_ok", "[i am] sorry (sure | of course | okay | no problem)"] },
     what_return: { patterns: ["what is (a | the) return address #h:what_return", "(my | whose) address", "what do you mean return address", "which address",
       "(my | which) address [here | in the us | in lithuania] [or (in lithuania | here | there)]"] },
+    // "How much are they?" / "How much are five stamps?" at the stamps (not understood)
+    stamps_price_q: { patterns: ["how much (are | is) (they | it | the stamps | a stamp | stamps | one | each one | {number:number} stamps)", "how much does (a | one) stamp cost", "how much (do | does) (they | it | the stamps) cost"] },
     insurance_yes: { patterns: ["[yes] i would like (insurance | extra insurance | more insurance) #h:ins_yes", "[yes] (please add | add) insurance", "yes (to be safe | just in case)"] },
     insurance_no: { patterns: ["[no] i do not need (it | insurance | extra insurance) #h:ins_no", "[it is okay | it is fine] no [extra] insurance [thanks]", "[no] (it is not | it is not very) (expensive | valuable | worth much)", "[no] (that is | it is) enough", "no (insurance | extra insurance) [thanks]", "[no] (that is | it is) (fine | okay) without (it | insurance)", "no two hundred is enough"] },
     stamps_qty: { patterns: ["{number} [stamps | global forever stamps] [please] #h:stamps_qty", "(i need | i would like | can i get | give me) {number} [stamps | global forever stamps]", "[i would like] a sheet [of stamps] [please] #sheet #h:stamps_sheet", "(one | just one) [stamp] [please]"] },
@@ -331,7 +336,7 @@ export const post: SituationDef = {
     tracking_ctx: { patterns: ["[it is | the number is] {digits}", "[it is] c p {digits} u s", "the tracking number is {digits}"] },
 
     // --- general
-    more_no: { patterns: ["(that is | that will be) (all | it | everything) [for today] #h:more_all", "that is everything", "nothing else", "[no] that is it #h:more_its", "[no] i am (good | fine | all set)", "i think that is (all | it)"] },
+    more_no: { patterns: ["(that is | that will be) (all | it | everything) [for today] #h:more_all", "(thanks | thank you) [so much] (that is | that will be) (all | it | everything) [for today]", "that is everything", "nothing else", "[no] that is it #h:more_its", "[no] i am (good | fine | all set)", "i think that is (all | it)"] },
     need_tape: { patterns: ["(can | could) i (borrow | use | have | get) [some] tape", "do you have [some] tape", "do you sell boxes", "(can | could) i (buy | get) a box"] },
     ask_open: { patterns: ["what time do you (close | open)", "when do you close", "are you open on (saturday | sunday | saturdays | sundays)"] },
   },
@@ -911,20 +916,28 @@ export const post: SituationDef = {
     { id: "insurance", when: (c) => sending(c) && customsDone(c) && !!c.s.askInsurance && c.s.service !== "first", done: (c) => c.s.insurance !== undefined && c.s.insurance !== "ask",
       ask: (c) => c.say("ask_insurance"), expects: ["insurance_yes", "insurance_no"],
       suggest: [{ lt: "Atsakyti dėl papildomo draudimo", hint: "insurance" }],
-      yes: (c) => { c.s.insurance = true; c.say("insurance_added"); },
+      yes: (c) => {
+        if (POLITE_NO.test(c.heard)) { c.s.insurance = false; c.say("no_problem"); return; }
+        // "Okay, thanks" (a yes, or "okay, it's insured; no, thanks"?): the offer once more; money only on a clear yes
+        if (/\bthanks?\b|\bthank you\b/i.test(c.heard) && !/\b(yes|yeah|please|sure|add)\b/i.test(c.heard)) {
+          if (!c.s.insAskedAgain) { c.s.insAskedAgain = true; c.say("ask_insurance"); c.hold(); return; }
+          c.s.insurance = false; c.say("no_problem"); return;
+        }
+        c.s.insurance = true; c.say("insurance_added");
+      },
       no: (c) => { c.s.insurance = false; c.say("no_problem"); } },
     { id: "stamps_offer", when: (c) => sending(c) && customsDone(c) && !!c.s.offerStamps && c.s.stamps === undefined, done: (c) => c.s.stamps !== undefined,
-      ask: (c) => c.say("offer_stamps"), expects: ["buy_stamps", "stamps_qty", "no_stamps"],
+      ask: (c) => c.say("offer_stamps"), expects: ["buy_stamps", "stamps_qty", "no_stamps", "stamps_price_q"],
       suggest: [{ lt: "Atsakyti, ar reikia pašto ženklų", hint: "g_yesno" }, { lt: "Nusipirkti pašto ženklų atvirukams", hint: "stamps" }],
       yes: (c) => { c.s.stamps = "ask"; c.say("stamps_info"); c.say("stamps_price"); c.hold(); },
       no: (c) => { c.s.stamps = false; } },
     { id: "stamps_qty", when: (c) => c.s.stamps === "ask", done: (c) => c.s.stamps !== "ask",
-      ask: (c) => c.say("stamps_price"), expects: ["stamps_qty", "stamps_ctx", "no_stamps"],
+      ask: (c) => c.say("stamps_price"), expects: ["stamps_qty", "stamps_ctx", "no_stamps", "stamps_price_q"],
       suggest: [{ lt: "Pasakyti, kiek pašto ženklų reikia", hint: "stamps_n" }],
       no: (c) => { c.s.stamps = false; c.say("no_problem"); } },
     { id: "pay", when: readyToPay, done: (c) => !!c.s.paid,
       ask: (c) => {
-        if (bump(c, "pay") === 0) { c.say("say_total", { total: total(c) }); if (c.s.askPay) c.say("ask_pay"); }
+        if (bump(c, "pay") === 0) { c.say("say_total", { total: total(c) }); if (c.s.askPay && !c.s.payMethod) c.say("ask_pay"); }
         else c.say("say_total", { total: total(c) });
       },
       expects: ["pay_card", "pay_cash", "pay_phone", "here_you_go"],
@@ -1127,17 +1140,28 @@ export const post: SituationDef = {
     return_ok(c) { if (c.step === "return_addr" || c.s.returnTwist) { c.s.returnDone = true; c.say("return_thanks"); } },
     return_ctx(c) { post.handlers.return_ok(c, {}, { intent: "return_ok", slots: {}, tags: [] }); },
     what_return(c) { c.say("return_explain"); },
-    insurance_yes(c) { if (c.s.insurance === true) return; c.s.insurance = true; c.say("insurance_added"); },
+    insurance_yes(c) {
+      if (c.s.insurance === true) return;
+      // "Yes, just in case" at "Is it a gift?" added $4.35 of insurance: only at the offer, or when insurance is named
+      if (c.step !== "insurance" && !/insur/i.test(c.heard)) { const st = post.steps.find((x) => x.id === c.step); if (st?.yes) st.yes(c); return; }
+      c.s.insurance = true; c.say("insurance_added");
+    },
+    stamps_price_q(c) {
+      if (c.step === "stamps_offer") c.s.stamps = "ask";
+      c.say("stamps_price"); c.hold();
+    },
     insurance_no(c) { c.s.insurance = false; c.say("no_problem"); },
     stamps_qty(c, slots, seg) {
       let n = slots.number as number | undefined;
       if (seg.tags.includes("sheet")) n = 10;
       if (!n && /\bone\b/.test(c.heard.toLowerCase())) n = 1;
       if (!n || n > 50) { c.say("stamps_price"); c.hold(); return; }
+      const after = !!c.s.paid && !c.s.stampsDue && !c.s.stampQty;
       c.s.stampQty = n;
       c.s.stamps = true;
       if (!c.s.task) c.s.task = "stamps";
       c.say("stamps_sure");
+      if (after) { c.s.stampsDue = n * STAMP; c.say("say_total", { total: c.s.stampsDue }); c.hold(); }
     },
     stamps_ctx(c, slots, seg) { post.handlers.stamps_qty(c, slots, seg); },
     no_stamps(c) { if (c.s.stampQty) { c.say("no_problem"); return; } const asked = c.s.stamps === "ask"; c.s.stamps = false; if (asked) c.say("no_problem"); },
@@ -1200,6 +1224,10 @@ export const post: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "How much are five stamps?", intent: "stamps_price_q", step: "stamps_offer", not: ["stamps_qty"] },
+    { say: "How much are they?", intent: "stamps_price_q", step: "stamps_offer" },
+    { say: "Thanks, that's all.", intent: "more_no", step: "more" },
     { say: "Fragile.", intent: "contents_fragile", step: "hazmat" },
     { say: "Something fragile.", intent: "contents_fragile", step: "hazmat" },
     { say: "Yes, some cheese.", intent: "contents_perishable", step: "hazmat" },
@@ -1348,6 +1376,14 @@ function pickedUp(c: Ctx) {
 }
 
 function pay(c: Ctx, method: string) {
+  // stamps bought after paying for the package: they alone
+  if (c.s.stampsDue) {
+    c.event("pay", { method, amount: c.s.stampsDue });
+    c.s.stampsDue = 0;
+    c.say(method === "card" ? "card_tap" : method === "phone" ? "phone_ok" : "cash_change");
+    c.say("stamps_here");
+    return;
+  }
   if (!readyToPay(c) || c.step !== "pay") {
     if (c.s.paid) { c.say("no_problem"); return; }
     c.s.payMethod = method;

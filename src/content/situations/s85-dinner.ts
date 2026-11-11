@@ -100,6 +100,9 @@ function checkGoal(c: Ctx) {
 }
 
 // Automatic answers for the hosts' optional questions (simulations).
+/** "That's okay, thanks" / "I'm good" to an offer: a polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+
 const AUTO: Record<string, string> = {
   drink: "Just some water, please", diet: "No, I eat everything", cat: "No, I love cats!", salad: "Sure!",
   pass: "Sure, here you go!", seconds: "Just a little, please", dessert: "Yes, please! Just a small piece", stay: "I wish I could, but I have work tomorrow",
@@ -348,12 +351,12 @@ export const dinner: SituationDef = {
     ] },
     // "Sorry I'm a little late!"
     late_sorry: { patterns: ["[i am] [so | really] sorry (i am | for being) [a (little | bit)] late", "sorry for the delay", "[i am] sorry to keep you waiting"] },
-    no_drink: { patterns: ["i am (fine | good | okay | all set) (for now | right now | thanks) [thanks] #h:dr_nothing", "nothing (for now | for me | right now) [thanks]", "not right now [thanks]", "maybe later [thanks]"] },
+    no_drink: { patterns: ["i am (fine | good | okay | all set) (for now | right now | thanks) [thanks] #h:dr_nothing", "nothing (for now | for me | right now) [thanks]", "nothing [thanks | thank you]", "not right now [thanks]", "maybe later [thanks]"] },
     ask_drinks: { patterns: ["what do you have", "what (drinks | kind of drinks) do you have", "what (are the options | have you got | kind of drinks do you have)", "what is there", "what kind of (wine | beer | juice | drinks) do you have"] },
     offer_help: { patterns: [
       "(can | could | may) i help [you] [with (anything | something | dinner | the table)] #h:hp_can_i", "is there anything i can do [to help] #h:hp_anything", "(do | can) you need [any] help",
       "let me help [you] [with (the dishes | the table | that)] #h:hp_let_me", "(can | could) i help (set | with) the table", "what can i do to help",
-      "(can | could) i help (clear | with) the (table | dishes)", "i can help with the dishes", "what can i do", "(should | can | shall) i set the table", "(can | could) i do (something | anything) [to help]", "(do you want | would you like) me to help [you]",
+      "(can | could) i help (clear | with) the (table | dishes)", "i can help with the dishes", "(can | could | may) i help [you] (clean up | with the cleaning | wash the dishes | do the dishes)", "what can i do", "(should | can | shall) i set the table", "(can | could) i do (something | anything) [to help]", "(do you want | would you like) me to help [you]",
       "(do | can) you need [any] help (in the kitchen | with (dinner | anything | the table))", "(can | could) i help you in the kitchen",
       "is there anything i can help [you] with", "is there anything i can help",
     ] },
@@ -855,7 +858,9 @@ export const dinner: SituationDef = {
       ask: (c) => { bump(c, "drink"); dan(c, c.s.listed ? "what_can_i_get" : "ask_drink"); },
       expects: ["drink_ans", "no_drink", "ask_drinks"],
       suggest: [{ lt: "Pasirinkti gėrimą", hint: "drinks", options: "drink" }],
-      yes: (c) => { dan(c, "drink_list"); }, no: (c) => { c.s.drink = "none"; dan(c, "just_say"); } },
+      // "That's okay, thanks" is a polite no (it got the drinks list twice)
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { c.s.drink = "none"; dan(c, "just_say"); return; } dan(c, "drink_list"); c.s.listed = true; c.hold(); },
+      no: (c) => { c.s.drink = "none"; dan(c, "just_say"); } },
     { id: "cat", when: (c) => !!c.s.catTwist, done: (c) => !!c.s.cat || asked(c, "cat") >= 2,
       ask: (c) => { bump(c, "cat"); c.twist("cat"); dan(c, "cat_intro"); },
       expects: ["cat_ok_ctx", "cat_allergic_ctx"],
@@ -892,12 +897,14 @@ export const dinner: SituationDef = {
       ask: (c) => { bump(c, "seconds"); nora(c, "ask_seconds"); },
       expects: ["more_yes", "more_no"],
       suggest: [{ lt: "Atsakyti, ar dar norėsi", hint: "more" }],
-      yes: (c) => { c.s.seconds = "yes"; nora(c, "here_more"); }, no: (c) => { c.s.seconds = "no"; nora(c, "save_room"); } },
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { c.s.seconds = "no"; nora(c, "save_room"); return; } c.s.seconds = "yes"; nora(c, "here_more"); },
+      no: (c) => { c.s.seconds = "no"; nora(c, "save_room"); } },
     { id: "dessert", when: (c) => !!c.s.askDessert, done: (c) => c.s.dessert !== undefined || asked(c, "dessert") >= 2,
       ask: (c) => { bump(c, "dessert"); c.s.dessertAsked = true; nora(c, "ask_dessert"); },
       expects: ["more_yes", "more_no"],
       suggest: [{ lt: "Atsakyti dėl deserto", hint: "dessert" }],
-      yes: (c) => { c.s.dessert = "yes"; nora(c, "here_cake"); }, no: (c) => { c.s.dessert = "no"; nora(c, "more_for_dan"); } },
+      yes: (c) => { if (POLITE_NO.test(c.heard)) { c.s.dessert = "no"; nora(c, "more_for_dan"); return; } c.s.dessert = "yes"; nora(c, "here_cake"); },
+      no: (c) => { c.s.dessert = "no"; nora(c, "more_for_dan"); } },
     { id: "late", when: (c) => !c.s.leaving, done: (c) => !!c.s.lateSaid,
       ask: (c) => { c.s.lateSaid = true; dan(c, "late"); },
       expects: ["leave", "thanks_end"],
@@ -934,6 +941,9 @@ export const dinner: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026)
+    { say: "Nothing, thanks.", intent: "no_drink", step: "drink" },
+    { say: "Can I help you clean up?", intent: "offer_help" },
     { say: "Thank you for inviting me!", intent: "thanks_invite", step: "arrive" },
     { say: "Hi Dan! Thanks so much for having me", intent: "thanks_invite", step: "arrive" },
     { say: "These are for you", intent: "gift", step: "coat" },

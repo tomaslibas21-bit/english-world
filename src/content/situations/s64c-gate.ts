@@ -72,6 +72,8 @@ const QUESTION_LINES: Record<string, (c: Ctx) => void> = {
 function withFlight(c: Ctx, key: string) {
   if (c.s.gateOk) { QUESTION_LINES[key](c); if (key !== "boarding" && key !== "departure") c.s.delayTold = true; return; }
   c.s.afterFlight = key;
+  // "Is flight 223 on time?": the flight is in the question (not "What's your flight number?")
+  if (/\b(223|two twenty[ -]three|two two three)\b/i.test(c.heard)) { confirmGate(c); return; }
   c.say("which_flight");
   expectFlight(c);
 }
@@ -153,6 +155,9 @@ function expectScan(c: Ctx) {
   });
 }
 
+/** "That's okay, thanks" / "I'm fine, thanks" to an offer: the polite no (the engine hears "that's okay" as a yes). */
+const POLITE_NO = /\b(that'?s|that is|it'?s|it is)\s+(ok|okay|fine|all right|alright)\b|\bi'?m\s+(fine|good|ok|okay|all right|alright)\b|\bi am\s+(fine|good|ok|okay)\b|\bno need\b/i;
+
 function offerGateCheck(c: Ctx, fromQuestion = false) {
   c.s.offerDone = true;
   c.twist("full_flight");
@@ -161,7 +166,7 @@ function offerGateCheck(c: Ctx, fromQuestion = false) {
   ask(c, {
     id: "offer", expects: ["bag_check_q", "keep_bag", "offer_yes", "ask_free"], hints: ["g_yesno", "offer"],
     suggest: [{ lt: "Sutikti arba atsisakyti", hint: "offer" }],
-    yes: (cc) => { cc.s.bagChecked = true; cc.say("bag_tagged"); cc.say("bag_back_boston"); },
+    yes: (cc) => { if (POLITE_NO.test(cc.heard)) { cc.say("no_problem"); return; } cc.s.bagChecked = true; cc.say("bag_tagged"); cc.say("bag_back_boston"); },
     no: (cc) => { cc.say("no_problem"); },
     on: {
       keep_bag: (cc) => { cc.say("no_problem"); },
@@ -175,7 +180,7 @@ function offerGateCheck(c: Ctx, fromQuestion = false) {
 const offerPending = (): Pending => ({
   id: "offer", expects: ["keep_bag", "offer_yes"], hints: ["g_yesno", "offer"],
   suggest: [{ lt: "Sutikti arba atsisakyti", hint: "offer" }],
-  yes: (cc) => { cc.s.bagChecked = true; cc.say("bag_tagged"); cc.say("bag_back_boston"); },
+  yes: (cc) => { if (POLITE_NO.test(cc.heard)) { cc.say("no_problem"); return; } cc.s.bagChecked = true; cc.say("bag_tagged"); cc.say("bag_back_boston"); },
   no: (cc) => { cc.say("no_problem"); },
   on: {
     keep_bag: (cc) => { cc.say("no_problem"); },
@@ -377,6 +382,9 @@ export const gate: SituationDef = {
     ] },
     keep_bag: { patterns: [
       "i will keep it [with me] #h:of_keep", "i would like to keep it [with me]", "i want to keep it [with me] #blunt",
+      // nothing to check: "I don't have a bag" / "I only have a backpack"
+      "[no] i do not have (a | any) (bag | bags | suitcase | carry on | carry-on)", "[no] i (only | just) have (a | my) (backpack | small bag | purse | laptop bag)",
+      "[no] (it is | this is) (just | only) (a | my) (backpack | small bag | purse)",
       "i will take it (with me | on board)",
       "i do not (want | need) to check (it | my bag | my suitcase)", "[sorry] i need it (on the plane | on board | with me | during the flight)",
       "(i have | there is) my (laptop | computer | medicine | valuables | camera) in (it | there)", "it is (small | not big | light) [i will take it with me]",
@@ -927,6 +935,9 @@ export const gate: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): nothing to check at the gate
+    { say: "I only have a backpack.", intent: "keep_bag" },
+    { say: "I don't have a bag.", intent: "keep_bag" },
     { say: "Is this the right gate for flight 223?", intent: "ask_gate", step: "gate", slots: { number: 223 } },
     { say: "Is this the gate to Boston?", intent: "ask_gate", slots: { city: "boston" } },
     { say: "Is this gate 8?", intent: "ask_gate", slots: { number: 8 } },
@@ -997,6 +1008,9 @@ export const gate: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): the flight said in the question; "That's okay, thanks" to the gate check
+    { name: "audit: the flight in the question, a polite no", turns: ["Is flight 223 on time?", "No, that's all. Thank you.", "Thank you.", "That's okay, thanks.", "Here's my boarding pass."],
+      expect: { complete: true }, auto: AUTO, setup: (s) => { s.fullFlight = true; s.gateChange = false; s.earlyGroup = false; } },
     { name: "happy path", turns: ["Is this the right gate for flight 223 to Boston?", "Is the flight on time?", "No, that's all. Thank you.", "Thanks!", "Here's my boarding pass."],
       expect: { complete: true }, auto: AUTO },
     { name: "questions first, flight asked back", turns: ["Is the flight on time?", "Flight 223 to Boston.", "What group am I in?", "Is there Wi-Fi on board?", "Where can I get a coffee?", "That's all, thanks.", "Okay.", "Here you go."],

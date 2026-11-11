@@ -237,5 +237,11 @@
   {"ctx": "pay", "say": "Actually, forty dollars.", "intent": ["prepay", "amount_change_ctx"]},
   {"ctx": "extras", "say": "Oh, make that forty dollars.", "intent": "amount_change_ctx"},
   {"ctx": "pump", "say": "Pump six. Actually, make it forty.", "intent": ["pump_ctx", "amount_change_ctx"]},
-  {"ctx": "pay", "say": "Don't make it forty.", "intent": "any", "not": ["amount_change_ctx"]}
+  {"ctx": "pay", "say": "Don't make it forty.", "intent": "any", "not": ["amount_change_ctx"]},
+  {"ctx": "order", "say": "How much is premium?", "intent": "gas_price_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "order", "say": "How much is diesel?", "intent": "gas_price_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "Here's forty dollars.", "intent": "here_you_go", "slots": {"price": 4000}, "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "Here's twenty more.", "intent": "here_you_go", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "Can I have a receipt?", "intent": "receipt_ask", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "order", "say": "How much is premium?", "intent": "any", "not": ["prepay", "fill"], "note": "logic audit 5 Nov 2026"}
 ]}

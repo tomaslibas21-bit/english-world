@@ -122,5 +122,10 @@
   {"ctx": "help", "say": "When can I board?", "intent": "ask_boarding_time"},
   {"ctx": "offer", "say": "No, I need it on the plane.", "intent": "keep_bag", "not": ["offer_yes"]},
   {"ctx": "offer", "say": "Where do I pick it up?", "intent": "bag_check_q"},
-  {"ctx": "offer", "say": "I don't need it on the plane.", "intent": "any", "not": ["keep_bag", "offer_yes"]}
+  {"ctx": "offer", "say": "I don't need it on the plane.", "intent": "any", "not": ["keep_bag", "offer_yes"]},
+  {"ctx": "offer", "say": "I only have a backpack.", "intent": "keep_bag", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "offer", "say": "I don't have a bag.", "intent": "keep_bag", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "gate", "say": "Is flight 223 on time?", "intent": "ask_ontime", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "offer", "say": "Yes, I have a bag.", "intent": "any", "not": ["keep_bag"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "offer", "say": "I have a big bag.", "intent": "any", "not": ["keep_bag"], "note": "logic audit 5 Nov 2026"}
 ]}

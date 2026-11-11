@@ -163,5 +163,6 @@
   {"ctx": "seated", "say": "Should I press the button?", "intent": "ask_button"},
   {"ctx": "mid", "say": "Is the next stop the museum?", "intent": "is_my_stop"},
   {"ctx": "known", "say": "How much is it on the 12?", "intent": "ask_fare"},
-  {"ctx": "known", "say": "Is the fare the same?", "intent": "ask_fare"}
+  {"ctx": "known", "say": "Is the fare the same?", "intent": "ask_fare"},
+  {"ctx": "closing", "say": "Where do I get off?", "intent": "ask_stop", "note": "logic audit 5 Nov 2026"}
 ]}

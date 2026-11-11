@@ -193,5 +193,8 @@
   {"ctx": "still_red", "say": "It's not orange anymore", "intent": "green_now", "not": ["still_red"]},
   {"ctx": "tech", "say": "Can I get a reference number?", "intent": "reference_q"},
   {"ctx": "tech", "say": "Could you text me the reference number?", "intent": "text_me"},
-  {"ctx": "tech", "say": "No, that's all. Bye.", "intent": "any", "not": ["tech_busy", "tech_accept"]}
+  {"ctx": "tech", "say": "No, that's all. Bye.", "intent": "any", "not": ["tech_busy", "tech_accept"]},
+  {"ctx": "tech", "say": "What time will the technician come?", "intent": "tech_when_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "more", "say": "When will the technician come?", "intent": "tech_when_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "tech", "say": "How much is it?", "intent": "tech_cost_q", "note": "logic audit 5 Nov 2026"}
 ]}

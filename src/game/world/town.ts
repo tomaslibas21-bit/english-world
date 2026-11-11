@@ -32,12 +32,21 @@ const GW = WORLD.maxX - WORLD.minX, GD = WORLD.maxZ - SEA_Z + 2;
 const G0Z = SEA_Z - 2;
 /** Open grass between the town's west edge and the foot of the hills beyond it (m). */
 const WEST_MEADOW = 40;
-/** Elsewhere (the east, behind the airport) a hill just stays off the town's ground: nobody walks into its slope. */
-const HILL_MARGIN = 6;
+/** The follow camera can stand 22 m behind a player at any boundary. Keep the backdrop beyond that arm,
+ *  including south of Station Road and behind the airport, where a 6 m gap looked like a green wall. */
+export const HILL_MARGIN = 40;
 /** How far a hill's footprint (centre, half-sizes) stays from the town's ground; negative when it reaches onto it. */
 function hillGap(x: number, z: number, fx: number, fz: number) {
   const gx = Math.max(WORLD.minX - (x + fx), x - fx - WORLD.maxX), gz = Math.max(G0Z - (z + fz), z - fz - WORLD.maxZ);
   return gx > 0 && gz > 0 ? Math.hypot(gx, gz) : Math.max(gx, gz);
+}
+
+/** Moves only distant scenery, preserving the random sequence used for the town's other details. */
+export function backgroundHillPosition(x: number, z: number, fx: number, fz: number) {
+  const ox = x - 35, oz = z - 30, gap = x < WORLD.minX ? WEST_MEADOW : HILL_MARGIN;
+  let k = 1;
+  while (hillGap(x, z, fx, fz) < gap && k < 4) { k += 0.02; x = 35 + ox * k; z = 30 + oz * k; }
+  return { x, z };
 }
 
 export function buildTown(): Town {
@@ -91,14 +100,15 @@ export function buildTown(): Town {
     // west of the town a hill stands back behind a meadow, so the ends of Main Street, Oak Avenue and the other streets
     // look out over grass to the hills instead of into a slope: it moves further out along the arc (the random numbers
     // stay the same, and so does everything after them)
-    // elsewhere a hill reaching onto the town's ground moves out just far enough to stay off it
+    // elsewhere the camera also needs room between the playable ground and the distant scenery
     {
-      const ox = hx - 35, oz = hz - 30, gap = hx < WORLD.minX ? WEST_MEADOW : HILL_MARGIN;
-      let k = 1;
-      while (hillGap(hx, hz, 1.6 * s, 1.2 * s) < gap && k < 2) { k += 0.02; hx = 35 + ox * k; hz = 30 + oz * k; }
+      const p = backgroundHillPosition(hx, hz, 1.6 * s, 1.2 * s);
+      hx = p.x; hz = p.z;
     }
     const g = new THREE.IcosahedronGeometry(s, 1);
-    g.scale(1.6, (0.45 + r() * 0.3) * hillK, 1.2);
+    // Low rolling hills leave sky above them in the narrow phone view, rather than a tall flat green face (Puerto
+    // Colibrí's selva hills keep their own, lower heights).
+    g.scale(1.6, THEME.selva ? (0.45 + r() * 0.3) * hillK : 0.28 + r() * 0.12, 1.2);
     g.translate(hx, -s * 0.15, hz);
     M.add("hills", hillMat, g, false, true);
   }
@@ -207,6 +217,9 @@ export function buildTown(): Town {
   if (signsMesh && M instanceof TownMerger) signsMesh.renderOrder = 1;
   if (signsMesh) group.add(signsMesh);
   M.build(group);
+  // the gas station's canopy: looked through by the camera (cutout.ts) rather than a roof it must stay under, or under
+  // it, at the store's door, the camera has nowhere to go but behind the player's head (Game.ts's field skips it)
+  for (const o of group.children) if (/^gas-canopy/.test(o.name)) o.userData.thin = true;
 
   const clouds = makeClouds(group, r);
   const boats = group.children.filter((o) => o.userData.boat);
@@ -1654,9 +1667,14 @@ function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: ()
  *  goods cost no triangles elsewhere), their painted signs in the town's sign atlas. */
 function addTianguis(col: Colliders, group: THREE.Group, parts: MX.Part[]) {
   const t = THEME.tianguis!;
-  const goods: MX.Part[] = [];
+  const goods: MX.Part[] = [], lonas: MX.Part[] = [];
   const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0, goods: s.goods as TianguisGoods })), ...t.stalls];
-  stalls.forEach((s, i) => MX.tianguisStall(parts, goods, col, atlas!, s.x, s.z, s.rot, s.goods, t.lonas[i % t.lonas.length], t.signs[s.goods] ?? [s.goods, ""], 700 + i));
+  stalls.forEach((s, i) => MX.tianguisStall(parts, goods, col, atlas!, s.x, s.z, s.rot, s.goods, t.lonas[i % t.lonas.length], t.signs[s.goods] ?? [s.goods, ""], 700 + i, lonas));
+  // the lonas in a mesh of their own that the camera looks through (userData.thin, Game.ts; cutout.ts opens a hole in
+  // them on the line to the player) rather than a roof it must stay under: under them it was 1–3 m behind her head
+  const lm = staticColoured(lonas, "tianguis-lonas");
+  lm.userData.thin = true;
+  group.add(lm);
   // (the stalls' mesh: addSquareAndMarket, with the zócalo's bancas)
   // the goods in a mesh that casts no shadow (under the lonas' shade they would add triangles and nothing to see)
   const g = staticColoured(goods, "tianguis-goods");
@@ -2065,8 +2083,11 @@ const mxFlat: MX.Part[] = [];
  *  the whole town: the same look (a flat-shaded colour keeps its facets) in a few draw calls for what is in view, and
  *  no triangles for the squares out of it. The rest (glass, lamps, signs, textured walls) is merged per material as
  *  before. */
+/** What a square's mesh holds: shapes that cast shadows, ones that don't, the overhead lines (thin: the walking camera
+ *  looks through them, no shadow) and roofs it looks through that do cast one (the gas station's canopy). */
+type Kind = "cast" | "still" | "thin" | "thinCast";
 class TownMerger extends Merger {
-  private cells = new Map<string, { cast: [THREE.BufferGeometry, THREE.Color][]; still: [THREE.BufferGeometry, THREE.Color][]; thin: [THREE.BufferGeometry, THREE.Color][] }>();
+  private cells = new Map<string, Record<Kind, [THREE.BufferGeometry, THREE.Color][]>>();
   private box = new THREE.Box3();
   private c = new THREE.Vector3();
   constructor(private cell: number) { super(); }
@@ -2088,7 +2109,8 @@ class TownMerger extends Merger {
     const g = geo.index ? geo.toNonIndexed() : geo;
     if (e.flat) { g.deleteAttribute("normal"); g.computeVertexNormals(); } // (each triangle its own normal)
     else if (!g.attributes.normal) g.computeVertexNormals();
-    this.put(g, e.color, k.cast ? "cast" : "still");
+    // (the gas station's canopy: a roof the walking camera looks through, as Maple Harbor's own mesh is: after M.build)
+    this.put(g, e.color, /^gas-canopy/.test(key) ? "thinCast" : k.cast ? "cast" : "still");
   }
   /** The edition's vertex-coloured pieces (mexican.ts: flat-shaded) into the squares too: `kind` "thin" for the overhead
    *  lines (a mesh the walking camera looks through: userData.thin, no shadow). */
@@ -2099,20 +2121,20 @@ class TownMerger extends Merger {
       this.put(g, new THREE.Color(col), kind);
     }
   }
-  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: "cast" | "still" | "thin") {
+  private put(g: THREE.BufferGeometry, col: THREE.Color, kind: Kind) {
     this.box.setFromBufferAttribute(g.attributes.position as THREE.BufferAttribute).getCenter(this.c);
     const k = Math.floor(this.c.x / this.cell) + "," + Math.floor(this.c.z / this.cell);
-    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [] }).get(k)!;
+    const e = this.cells.get(k) ?? this.cells.set(k, { cast: [], still: [], thin: [], thinCast: [] }).get(k)!;
     e[kind].push([g, col]);
   }
   build(parent: THREE.Object3D) {
     super.build(parent);
     const mat = (townMat ??= new THREE.MeshLambertMaterial({ vertexColors: true }));
-    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin"] as const) {
+    for (const [k, e] of this.cells) for (const kind of ["cast", "still", "thin", "thinCast"] as const) {
       if (!e[kind].length) continue;
       const mesh = new THREE.Mesh(colourMerge(e[kind]), mat);
-      mesh.castShadow = kind === "cast";
-      if (kind === "thin") mesh.userData.thin = true;
+      mesh.castShadow = kind === "cast" || kind === "thinCast";
+      if (kind === "thin" || kind === "thinCast") mesh.userData.thin = true;
       mesh.receiveShadow = true;
       mesh.name = "town-" + kind + "-" + k;
       mesh.matrixAutoUpdate = false;

@@ -167,7 +167,12 @@ function wxTemp(c: Ctx, slots: any, seg: Segment) {
   }
   wxReact(c, f >= 85 ? "hot" : f >= 60 ? "nice" : "cold", !celsius && seg.tags.includes("tag"));
 }
-function wxNo(c: Ctx) {
+/** The day's own word: denying it ("It's not cold" on a cold day) disagrees with Frank. */
+const CORE: Record<Weather, Said> = { lovely: "nice", cold: "cold", hot: "hot", cloudy: "rain" };
+/** "It's not …": only denying Frank's own remark disagrees. "It's not hot today" on a cold day, "Yes, it's not too hot"
+ *  on a lovely one agree with him (they got "No? You're tougher than me!"). A bare "No, …" still denies his remark. */
+function wxNo(c: Ctx, said: Said | null = null) {
+  if (said && said !== CORE[W(c)] && !/^\W*(no|nope|nah)\b/i.test(c.heard || "")) { wxReact(c, null, false); return; }
   c.s.weatherDone = true;
   if (once(c, "wx")) c.say("wxn_" + W(c));
 }
@@ -1595,7 +1600,7 @@ export const smallTalk: SituationDef = {
       c.say("hope_react");
       if (W(c) === "cloudy" && !c.s.umbrellaSaid) { c.s.umbrellaSaid = true; c.say("umbrella_ready"); }
     },
-    wx_neg(c) { wxNo(c); },
+    wx_neg(c, slots, seg) { wxNo(c, saidOf(slots, seg)); },
     wx_temp(c, slots, seg) { wxTemp(c, slots, seg); },
     wx_temp_ctx(c, slots, seg) { wxTemp(c, slots, seg); },
     wx_dislike(c, slots, seg) {
@@ -1821,6 +1826,9 @@ export const smallTalk: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): "It's not hot today" on a cold morning agrees with Frank
+    { name: "audit: a not that agrees", turns: ["It's not hot today."], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.weather = "cold"; s.howOpener = false; s.rainTwist = false; } },
     // every answer in full
     { name: "happy path", turns: [], expect: { complete: true }, auto: AUTO },
     // "Yeah!", "Yes.", "Good." … Frank invites a little more once per topic

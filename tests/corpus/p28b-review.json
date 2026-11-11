@@ -356,6 +356,14 @@
     {"ctx": "rev_try", "say": "The meetings are too long.", "intent": "rev_try", "not": ["rev_rude"], "note": "review fix 5: a suggestion, not rudeness"},
     {"ctx": "rev_try", "say": "Our meetings are a bit too long.", "intent": "rev_try", "not": ["rev_rude"]},
     {"ctx": "rev_try", "say": "Meetings could be shorter.", "intent": "rev_try", "not": ["rev_rude"]},
-    {"ctx": "rev_try", "say": "Your meetings are a waste of time.", "intent": "rev_rude"}
+    {"ctx": "rev_try", "say": "Your meetings are a waste of time.", "intent": "rev_rude"},
+    {"ctx": "feedback", "say": "What should I do differently?", "intent": "ask_how_fb", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "feedback", "say": "How do I do that?", "intent": "ask_how_fb", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "feedback", "say": "How can I speak up?", "intent": "ask_how_fb", "note": "logic audit 5 Nov 2026"},
+    {"ctx": "goal_offer", "say": "No, thanks.", "intent": ["g_thanks", "yn:no"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "checkin", "say": "No, thanks.", "intent": ["g_thanks", "yn:no"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "protect_offer", "say": "That's okay, thanks.", "intent": ["g_thanks", "yn:yes"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "feedback", "say": "What should I do differently?", "intent": "any", "not": ["ask_example_fb", "pushback"], "note": "logic audit 5 Nov 2026"},
+    {"ctx": "feedback", "say": "Which meetings do you mean?", "intent": "any", "not": ["ask_how_fb"], "note": "logic audit 5 Nov 2026"}
   ]
 }

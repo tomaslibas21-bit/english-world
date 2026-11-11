@@ -277,5 +277,11 @@
   {"ctx": "thermostat", "say": "What's a thermostat?", "intent": "thermo_no", "not": ["thermo_yes"], "note": "review"},
   {"ctx": "thermostat", "say": "What is a thermostat?", "intent": "thermo_no", "not": ["thermo_yes"]},
   {"ctx": "problem", "say": "Mr. Petal, the heating isn't working.", "intent": "heat_broken", "note": "review: a misheard name"},
-  {"ctx": "problem", "say": "Good morning, Mr. Petal!", "intent": "greet_id"}
+  {"ctx": "problem", "say": "Good morning, Mr. Petal!", "intent": "greet_id"},
+  {"ctx": "date", "say": "Wednesday?", "intent": "day_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "date", "say": "Friday?", "intent": "day_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "home", "say": "Do I have to be home?", "intent": "home_q_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "home", "say": "I don't know.", "intent": "g_dontknow", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "date", "say": "Friday?", "intent": "any", "not": ["accept_date"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "home", "say": "Do I have to be home?", "intent": "any", "not": ["home_yes", "not_home"], "note": "logic audit 5 Nov 2026"}
 ] }

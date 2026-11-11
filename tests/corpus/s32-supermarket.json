@@ -2084,6 +2084,92 @@
    "ctx": "rewards",
    "say": "banana banana register chips",
    "intent": "none"
+  },
+  {
+   "ctx": "bags",
+   "say": "That's fine, thanks.",
+   "intent": "bag_no_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "bags",
+   "say": "I'm good, thanks.",
+   "intent": "bag_no_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "bags",
+   "say": "Yes, I have one here.",
+   "intent": "bag_no_ctx",
+   "not": [
+    "rewards_have"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "bags",
+   "say": "I brought my own.",
+   "intent": [
+    "bag_no",
+    "bag_no_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "pay",
+   "say": "Do you have change for a fifty?",
+   "intent": "change_q_ctx",
+   "not": [
+    "ask_have_unknown"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "bags",
+   "say": "Do you have change for a twenty?",
+   "intent": "change_q_ctx",
+   "not": [
+    "ask_have_unknown"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "cash",
+   "say": "And here's five more.",
+   "intent": [
+    "here_you_go",
+    "cash_given_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "bags",
+   "say": "Yes, I need a bag.",
+   "intent": "any",
+   "not": [
+    "bag_no",
+    "bag_no_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "bags",
+   "say": "Yes, please, I need one.",
+   "intent": "any",
+   "not": [
+    "bag_no",
+    "bag_no_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "find",
+   "say": "That's fine, thanks.",
+   "intent": "any",
+   "not": [
+    "bag_no_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

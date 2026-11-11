@@ -268,5 +268,13 @@
   {"ctx": "appt", "say": "Do you have a spot for me right now?", "intent": "walkin"},
   {"ctx": "appt", "say": "Are you free for a haircut?", "intent": "walkin"},
   {"ctx": "appt", "say": "No, but can I get a trim today?", "intent": "walkin"},
-  {"ctx": "appt", "say": "I don't have time for a haircut now", "intent": "none"}
+  {"ctx": "appt", "say": "I don't have time for a haircut now", "intent": "none"},
+  {"ctx": "wash", "say": "That's fine, thanks.", "intent": "decline_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "blowdry", "say": "I'm good, thanks.", "intent": "decline_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "drink", "say": "I'm fine, thanks.", "intent": "decline_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "book", "say": "That's okay, thanks.", "intent": "decline_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "wash", "say": "Is it extra?", "intent": "extra_q", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "reveal", "say": "It doesn't matter.", "intent": "polite_ok", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "wash", "say": "That's fine, thanks.", "intent": "any", "not": ["wash_request", "confirm_yes"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "blowdry", "say": "I'm good, thanks.", "intent": "any", "not": ["style", "g_howareyou_answer"], "note": "logic audit 5 Nov 2026"}
 ]}

@@ -326,5 +326,11 @@
   {"ctx": "describe", "say": "Hard plastic.", "intent": "material_ctx", "slots": {"material": "hard"}},
   {"ctx": "describe", "say": "Gray, hard plastic.", "intent": ["color_ctx", "material_ctx"]},
   {"ctx": "phone", "say": "I have a Lithuanian number.", "intent": "phone_none"},
-  {"ctx": "kit", "say": "Will you pay for new clothes?", "intent": "q_reimburse"}
+  {"ctx": "kit", "say": "Will you pay for new clothes?", "intent": "q_reimburse"},
+  {"ctx": "kit", "say": "How much is it?", "intent": "q_free", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "delivery", "say": "When will I get it?", "intent": "q_when", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "kit", "say": "That's okay, thanks.", "intent": "any", "not": ["kit_yes_ctx"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "delivery", "say": "Is it free?", "intent": "q_free", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "kit", "say": "Is the kit free?", "intent": "q_free", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "kit", "say": "Is it free?", "intent": "any", "not": ["kit_yes_ctx", "yn:yes"], "note": "logic audit 5 Nov 2026"}
 ]}

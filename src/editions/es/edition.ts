@@ -6,9 +6,10 @@ export const EDITION: Edition = {
   id: "es",
   target: "es-MX",
   helper: "en",
-  brand: "Spanish World",
+  // the game is called after its town (the owner, 11 Nov 2026)
+  brand: "Puerto Colibrí",
   town: "Puerto Colibrí",
-  title: "Spanish World · Puerto Colibrí",
+  title: "Puerto Colibrí",
   storage: "puerto-colibri",
   simPlayer: { name: "Ryan", surname: "Miller" },
   simAuto: { howareyou: "Bien, gracias. ¿Y usted?", closing: "¡Gracias, adiós!" },

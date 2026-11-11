@@ -67,11 +67,16 @@ function walkThrough(c: Ctx) {
   c.say(c.s.scanner ? "scan_done" : "walk_clear");
 }
 
+/** At an alarm question, "Done." / "Okay." / "I took it out": it is in the bin, so through again. */
+function emptied(c: Ctx) { c.say("again_ask"); expectAgain(c); }
+const EMPTIED = { ack_done: emptied, g_ok: emptied, emptied_ctx: emptied };
+
 function expectPockets(c: Ctx) {
   ask(c, {
-    id: "pockets", expects: ["pockets_item", "pockets_nothing"], hints: ["pockets"],
+    id: "pockets", expects: ["pockets_item", "pockets_nothing", "emptied_ctx"], hints: ["pockets"],
     suggest: [{ lt: "Pasakyti, kas kišenėje (arba kad nieko)", hint: "pockets" }],
     on: {
+      ...EMPTIED,
       pockets_item: (cc, sl, sg) => { removeItem(cc, sl, sg); },
       pockets_nothing: (cc) => { askBeltWatch(cc); },
       g_dontknow: (cc) => { cc.say("check_pockets"); expectCheckPockets(cc); },
@@ -84,9 +89,10 @@ function expectPockets(c: Ctx) {
 
 function expectCheckPockets(c: Ctx) {
   ask(c, {
-    id: "check_pockets", expects: ["pockets_item", "pockets_nothing"], hints: ["pockets"],
+    id: "check_pockets", expects: ["pockets_item", "pockets_nothing", "emptied_ctx"], hints: ["pockets"],
     suggest: [{ lt: "Pasakyti, ką radai kišenėje", hint: "pockets" }],
     on: {
+      ...EMPTIED,
       pockets_item: (cc, sl, sg) => { removeItem(cc, sl, sg); },
       pockets_nothing: (cc) => { askBeltWatch(cc); },
     },
@@ -105,9 +111,10 @@ function removeItem(c: Ctx, slots: any, seg: { tags: string[] }) {
 function askBeltWatch(c: Ctx) {
   c.say("ask_belt_watch");
   ask(c, {
-    id: "belt_watch", expects: ["pockets_item", "pockets_nothing"], hints: ["beltwatch"],
+    id: "belt_watch", expects: ["pockets_item", "pockets_nothing", "emptied_ctx"], hints: ["beltwatch"],
     suggest: [{ lt: "Atsakyti apie diržą ar laikrodį", hint: "beltwatch" }],
     on: {
+      ...EMPTIED,
       pockets_item: (cc) => { cc.say("put_it_bin_too"); expectAgain(cc); },
       pockets_nothing: (cc) => { shoesOff(cc); },
     },
@@ -117,15 +124,15 @@ function askBeltWatch(c: Ctx) {
   });
 }
 
-function shoesOff(c: Ctx) {
+function shoesOff(c: Ctx, again = false) {
   c.twist("shoes_off");
-  c.say("shoes_alarm");
+  if (!again) c.say("shoes_alarm");
   ask(c, {
     id: "shoes_off", expects: ["ack_done"], hints: ["ok_short"],
     suggest: [{ lt: "Nusiauti batus", hint: "ok_short" }],
     on: { ack_done: (cc) => { cc.s.shoesOff = true; cc.say("again_ask"); expectAgain(cc, true); }, g_ok: (cc) => { cc.s.shoesOff = true; cc.say("again_ask"); expectAgain(cc, true); } },
     yes: (cc) => { cc.s.shoesOff = true; cc.say("again_ask"); expectAgain(cc, true); },
-    no: (cc) => { cc.say("shoes_must"); shoesOff(cc); },
+    no: (cc) => { cc.say("shoes_must"); shoesOff(cc, true); },
     ask: (cc) => cc.say("shoes_alarm"),
   });
 }
@@ -154,6 +161,10 @@ function startBottle(c: Ctx) {
     on: {
       forgot: (cc) => { cc.say("no_worries"); },
       g_sorry: (cc) => { cc.say("no_worries"); },
+      g_repeat: (cc) => {
+        if (/\?|\b(pardon|what|excuse me|again|repeat|catch|hear|understand)\b/i.test(cc.heard)) { cc.say("found_bottle"); return; }
+        cc.say("no_worries");
+      },
       g_ok: () => {},
       ask_what: () => {},
     },
@@ -369,7 +380,10 @@ export const security: SituationDef = {
       "i totally forgot",
       "[sorry] my (mistake | bad)", "i did not know [that | about the rule | it was not allowed]",
     ] },
-    ask_what: { patterns: ["what is (it | the problem | wrong)", "is there a problem", "is something wrong", "what did you find", "why [not]", "(is that | is it) a problem", "what is wrong with (it | that)"] },
+    ask_what: { patterns: ["what is (it | the problem | wrong)", "is there a problem", "is something wrong", "what did you find", "why [not]", "(is that | is it) a problem", "what is wrong with (it | that)",
+      "what happened", "what is going on", "(why | what) did it (beep | find)"] },
+    // at an alarm question: it is out now ("I took it out", "I put it in the bin")
+    emptied_ctx: { patterns: ["i (took | have taken) (it | them | everything) (out | off) [already]", "i (put | have put) (it | them | everything) in the bin", "(it is | they are | everything is) in the bin [now]", "(all | everything) out"] },
     bottle_drink: { patterns: [
       "i will drink it [now | here | right now] #h:bt_drink",
       "(can | could) i drink it [now | here]",
@@ -864,7 +878,7 @@ export const security: SituationDef = {
       expects: ["bottle_drink", "bottle_throw", "bottle_empty", "bottle_keep"],
       suggest: [{ lt: "Pasakyti, ką daryti su buteliu", hint: "bottle" }] },
     { id: "collect", when: (c) => !!c.s.bagHeld && !!c.s.bagChecked, done: (c) => !!c.s.collected,
-      ask: (c) => c.say("rest_fine"),
+      ask: (c) => { if (c.s.restSaid) { c.s.collected = true; c.say("bag_back"); return; } c.s.restSaid = true; c.say("rest_fine"); },
       expects: ["bag_back"],
       suggest: [{ lt: "Paprašyti grąžinti krepšį", hint: "after" }],
       yes: (c) => { c.s.collected = true; c.say("bag_back"); },
@@ -926,8 +940,23 @@ export const security: SituationDef = {
       if (c.step === "collect" && !c.s.collected) { c.s.collected = true; c.say("bag_back"); return; }
       c.say("g_welcome");
     },
-    ask_what(c) { c.say(c.s.bagHeld ? "found_bottle" : "no_problem"); },
-    where_stand(c) { c.say(c.s.scanner ? "scanner2" : "walkthrough"); c.hold(); },
+    // (the alarm questions take it themselves; heard anywhere else it is just an okay)
+    emptied_ctx(c) { if (c.s.alarmDone && !c.s.walked) { c.say("again_ask"); return; } c.say("no_problem"); },
+    ask_what(c) {
+      const pend = (c as any).conv?.pending?.id as string | undefined;
+      // the alarm: what the scanner did ("Okay, no problem." answered nothing)
+      if (pend === "pockets" || pend === "check_pockets" || pend === "belt_watch" || pend === "again") { c.say(c.s.scanner ? "alarm_scanner" : "alarm_beep"); return; }
+      if (pend === "shoes_off") return; // its question again says why: "It might be your shoes."
+      if (c.s.bagHeld && !c.s.bagChecked) { c.say("found_bottle"); return; }
+      if (/\bwhy\b/i.test(c.heard)) return; // elsewhere "Why?" gets the open question again (not "Okay, no problem.")
+      c.say("no_problem");
+    },
+    // "What do I do?" at the scanner: feet on the footprints; elsewhere the open question again (not the scanner's steps)
+    where_stand(c) {
+      const pend = (c as any).conv?.pending?.id as string | undefined;
+      if (c.step !== "walk" && pend !== "again") return;
+      c.say(c.s.scanner ? "scanner2" : "walkthrough"); c.hold();
+    },
     bottle_drink(c) { if (c.s.bagHeld && !c.s.bagChecked) bottleDone(c, "drink_ok"); else c.say(c.s.__finished ? "all_set" : "ack"); },
     bottle_throw(c) { if (c.s.bagHeld && !c.s.bagChecked) bottleDone(c, "toss_ok"); else c.say(c.s.__finished ? "all_set" : "ack"); },
     bottle_empty(c) { if (c.s.bagHeld && !c.s.bagChecked) bottleDone(c, "empty_ok"); else c.say("water_rule"); },
@@ -973,6 +1002,9 @@ export const security: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): "What happened?" asks why ("I took it out" is the alarm questions' own: the corpus has it)
+    { say: "What happened?", intent: "ask_what" },
+    { say: "Why did it beep?", intent: "ask_what" },
     { say: "Here you go.", intent: "give_docs", step: "docs" },
     { say: "Here's my passport and boarding pass.", intent: "give_docs", step: "docs" },
     { say: "My boarding pass is on my phone.", intent: "give_docs" },
@@ -1049,6 +1081,9 @@ export const security: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): "Done." at the alarm question means it's out: through again (it looped)
+    { name: "audit: done at the alarm", turns: ["Here you go.", "Okay, done.", "Okay.", "Done.", "Okay."], expect: { complete: true }, auto: AUTO,
+      setup: (s) => { s.alarm = true; s.camera = false; s.bagCheck = false; } },
     { name: "happy path", turns: ["Here's my passport and boarding pass.", "Okay, no problem.", "Okay.", "Can I have my bag back?"],
       expect: { complete: true }, auto: AUTO },
     { name: "partial documents and questions", turns: ["Here's my passport.", "It's on my phone.", "Do I need to take off my shoes?", "Should I take out my laptop?", "Where do I put my phone?", "Okay, done.", "Like this?", "Where's gate 8?"],

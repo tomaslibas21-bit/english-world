@@ -1226,6 +1226,33 @@
    "not": [
     "last_seen"
    ]
+  },
+  {
+   "ctx": "last_seen",
+   "say": "Did you see anyone?",
+   "intent": "seen_anyone",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "problem",
+   "say": "I'm just looking at the flowers.",
+   "intent": "not_lost",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "advice",
+   "say": "What do I do if I don't find it?",
+   "intent": "what_do",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "last_seen",
+   "say": "I saw it at the café.",
+   "intent": "any",
+   "not": [
+    "seen_anyone"
+   ],
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

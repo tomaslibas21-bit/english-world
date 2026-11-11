@@ -856,6 +856,9 @@ export const kitchen: SituationDef = {
     ],
     again_prompt: [t("Go ahead, | add | some. | I'll wait.", "Pirmyn, | įdėk | truputį. | Palauksiu.", "Pirmyn, įdėk truputį. Palauksiu.")],
     again_auto: [t("Here, | let | me | taste | it | again.", "Duok, | leisk | man | paragauti | jos | dar kartą.", "Duok, paragausiu dar kartą.")],
+    // "How much should I add?" while he waits (new line, 5 Nov 2026: needs a voice)
+    again_hint: [t("Just | a | few | drops. | Then | I'll taste | it | again.", "Tik | — | kelis | lašus. | Tada | paragausiu | jos | dar kartą.", "Tik kelis lašus. Tada dar kartą paragausiu.",
+      { flags: { 1: "“a” (a few): no Lithuanian word; kelis carries it." } })],
     again_react: [
       t("Now we're talking. | That | really | wakes | it | up.", "Štai čia jau kita kalba. | Tai | tikrai | pažadina | ją | —.", "Štai čia jau kita kalba. Tai ją tikrai pažadina.",
         { flags: { 5: "“up” (wake … up): the prefix pa- of pažadina carries it." } }),
@@ -1353,7 +1356,7 @@ export const kitchen: SituationDef = {
       ask: (c) => {
         const n = bump(c, "receive");
         if (!c.s.fbGiven) { c.s.fbGiven = true; C(c, "feedback1a"); C(c, "feedback1b"); return; }
-        if (n >= 4) { c.s.recvSkip = true; C(c, "receive_skip"); askNext(c); return; }
+        if (n >= 3) { c.s.recvSkip = true; C(c, "receive_skip"); askNext(c); return; }
         C(c, "receive_again");
       },
       expects: ["thanks_helpful", "will_work", "defensive", "ask_example"],
@@ -1387,7 +1390,7 @@ export const kitchen: SituationDef = {
       ask: (c) => {
         const n = bump(c, "second");
         if (n === 1) { C(c, "second_ask"); return; }
-        if (n <= 3) { C(c, "second_reask"); return; }
+        if (n === 2) { C(c, "second_reask"); return; }
         C(c, "second_skip"); c.s.secondDone = true; askNext(c);
       },
       expects: ["accept_idea", "keep_own", "reject_rude", "second_ctx", "thanks_helpful", "will_work"],
@@ -1417,15 +1420,15 @@ export const kitchen: SituationDef = {
       ask: (c) => {
         const n = bump(c, "mia_open");
         if (n === 1) { M(c, "mia_hi"); return; }
-        if (n <= 3) { M(c, "mia_wait"); return; }
+        if (n === 2) { M(c, "mia_wait"); return; }
         M(c, "mia_here"); c.s.miaOpen = true; askNext(c);
       },
       expects: ["offer_feedback", "reassure", "calm_down", "intro_mia_ctx", "nice_meet"],
       suggest: [{ lt: "Paklausti, ar gali paragauti ir pasakyti pastabų", hint: "mia_open" }, { lt: "Nuraminti Miją", hint: "mia_calm" }],
       yes: (c) => { miaReady(c); },
-      // "No" to "It's probably terrible": it isn't
-      no: (c) => { reassure(c); },
-      help: (c) => { M(c, "mia_wait"); } },
+      // "No" to "It's probably terrible": it isn't; to "Do you... want to taste it?" she holds the bowl out
+      no: (c) => { if (asks(c, "mia_open") >= 2) { M(c, "mia_here"); c.s.miaOpen = true; askNext(c); return; } reassure(c); },
+      help: (c) => { if (asks(c, "mia_open") >= 2) { M(c, "mia_here"); c.s.miaOpen = true; askNext(c); return; } M(c, "mia_wait"); } },
     { id: "mia_worked", when: (c) => !!c.s.miaOpen, done: praiseDone,
       ask: (c) => {
         const n = bump(c, "mia_worked");
@@ -1438,7 +1441,11 @@ export const kitchen: SituationDef = {
       expects: ["praise_part", "praise_general", "praise_short_ctx", "good_ctx", "other_food_ctx", "blunt_bad", "problem_state"],
       suggest: [{ lt: "Pasakyti Mijai, kas jai pavyko", hint: "mia_worked", options: "good_part" }],
       // "Is anything good?" – "Yes." → "Really? What?"
-      yes: (c) => { if (c.s.miaQ === "ask_good") { M(c, "mia_what"); c.hold(); } },
+      yes: (c) => {
+        if (c.s.miaQ !== "ask_good") return;
+        if (c.s.miaWhatSaid) { praise(c, undefined); return; }
+        c.s.miaWhatSaid = true; M(c, "mia_what"); c.hold();
+      },
       no: (c) => { if (c.s.miaQ === "ask_good") blunt(c); },
       help: (c) => { c.s.miaQ = "ask_good"; M(c, "mia_ask_good"); } },
     { id: "mia_try", when: praiseDone, done: tryDone,
@@ -1470,7 +1477,7 @@ export const kitchen: SituationDef = {
       ask: (c) => {
         const n = bump(c, "mia_encourage");
         if (n === 1) { M(c, "mia_slow"); return; }
-        if (n <= 3) { M(c, "mia_slow_again"); return; }
+        if (n === 2) { M(c, "mia_slow_again"); return; }
         c.s.encSkip = true; M(c, "mia_try_harder"); askNext(c);
       },
       expects: ["encourage", "encourage_ctx", "reassure", "calm_down", "rush"],
@@ -1556,6 +1563,7 @@ export const kitchen: SituationDef = {
       // "Like what?" is about the soup only until the chef has tasted it again ("What should I say?" to Mia is not)
       if (!c.s.fbGiven || c.s.againDone) return;
       if (!once(c, "example")) return;
+      if (c.s.exampleDone && c.step === "again") { C(c, "again_hint"); c.hold(); return; }
       c.s.exampleDone = true; c.s.exAsked = true;
       C(c, "example_give");
     },
@@ -1638,7 +1646,8 @@ export const kitchen: SituationDef = {
       praise(c, part);
     },
     good_ctx(c, slots) { praise(c, slots.good); },
-    praise_general(c) { praise(c, undefined); },
+    // "I like it." to the croutons is the idea taken (it was read as praise for Mia, and the question came again)
+    praise_general(c) { if (c.step === "second") { secondAnswer(c, "accept"); return; } praise(c, undefined); },
     other_food_ctx(c, slots) { if (c.step === "mia_worked" && once(c, "praise")) M(c, "mia_other", { X: slots.o }); },
     praise_short_ctx(c) { praise(c, undefined); },
     blunt_bad(c) {
@@ -1736,6 +1745,9 @@ export const kitchen: SituationDef = {
   finish: (c) => { closing(c); },
 
   tests: [
+    // logic audit (5 Nov 2026): "How much should I add?" while he waits; "I like it." to the croutons
+    { say: "How much should I add?", intent: "ask_example", step: "again" },
+    { say: "I like it.", intent: "praise_general", step: "second", not: ["reject_rude", "keep_own"] },
     // the soup
     { say: "Chef, could you taste this?", intent: "offer_taste", step: "serve" },
     { say: "Here's my cold beet soup.", intent: "offer_taste", step: "serve" },
@@ -1917,6 +1929,11 @@ export const kitchen: SituationDef = {
 
   sims: [
     // the song's way, start to finish (no "how much?" question, no twist)
+    // logic audit (5 Nov 2026): a hint while he waits (not the example again and an early taste); "I like it." takes the idea
+    { name: "audit: how much while he waits, I like it", turns: ["Hi, Chef! Here's my cold beet soup.", "Of course. Please be honest.",
+      "Thanks, that's really helpful. I'll work on that.", "Could you give me an example?", "How much should I add?", "Could you taste it again?", "I like it.",
+      "Sure, I'd be happy to.", "Can I give you some feedback?", "What worked really well was the bacon.", "One thing you could try is a little thyme.",
+      "Don't worry, it's your first week. You'll get there.", "Yes, Chef!"], expect: { complete: true, state: { secondAns: true } }, auto: AUTO, setup: PLAIN },
     { name: "happy path: the song's phrases", turns: ["Hi, Chef! Here's my cold beet soup.", "Of course. Please be honest.", "Thanks, that's really helpful. I'll work on that.",
       "Could you give me an example?", "Could you taste it again?", "I hadn't thought of it that way. I'll try it both ways.", "Sure, I'd be happy to.",
       "Can I give you some feedback?", "What worked really well was the bacon.", "One thing you could try is a little thyme.",
@@ -2190,6 +2207,8 @@ function encourage(c: Ctx) {
 function rush(c: Ctx, bare: boolean) {
   if (bare) c.tip(TIPS.rush);
   if (!once(c, "rush") || encDone(c)) return;
+  if (c.s.rushed) return; // her reaction once (it came again on every "Hurry up")
+  c.s.rushed = true;
   M(c, "mia_rush_react");
 }
 

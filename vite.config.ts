@@ -11,10 +11,12 @@ import { editionFromEnv, editionOverlay } from "./tools/edition-overlay.mjs";
 // Editions (docs/es/EDITIONS.md): VITE_EDITION=es builds the Spanish edition (Puerto Colibrí); without it, the English
 // edition (Maple Harbor). The tests run both: the "en" project with the English edition, "es" with the Spanish one.
 const EDITION = process.env.VITEST ? "en" : editionFromEnv();
-const PAGES: Record<string, { lang: string; title: string; description: string }> = {
+const PAGES: Record<string, { lang: string; title: string; description: string; loading?: string }> = {
   es: {
     lang: "en",
-    title: "Spanish World · Puerto Colibrí",
+    title: "Puerto Colibrí",
+    // the static loading screen (index.html) with the game's own name instead of the English World wordmark
+    loading: '<div class="loading ew-loading" role="status" aria-label="Loading Puerto Colibrí"><div class="pc-loading-word" aria-hidden="true">Puerto <em>Colibrí</em></div></div>',
     description: "Speak Spanish in a living town: walk around a small Mexican beach town and talk with its people.",
   },
 };

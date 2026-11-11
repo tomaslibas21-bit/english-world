@@ -6,6 +6,7 @@
 
 import type { GlobalContent, ConvCtx } from "../convo/dialogue";
 import type { HintGroup, SentSrc } from "./types";
+import { RETURNING_HINTS } from "./returning";
 
 const t = (en: string, lt: string, nat: string, extra: Partial<SentSrc> = {}): SentSrc => ({ en, lt, nat, ...extra });
 
@@ -348,6 +349,7 @@ export function expectHowAreYou(c: import("./types").Ctx, then?: (c: import("./t
 // ---------------------------------------------------------------------------
 
 export const GLOBAL_HINTS: Record<string, HintGroup> = {
+  ...RETURNING_HINTS,
   g_clarify: {
     lt: "Paprašyti pakartoti, kalbėti lėčiau ar paaiškinti",
     items: [

@@ -360,5 +360,22 @@
   {"ctx": "bag", "say": "Just the receipt, no bag", "intent": "no_bag"},
   {"ctx": "size", "say": "Medium, I'm quite tall.", "intent": "size_ans", "slots": {"size": "medium"}},
   {"ctx": "size", "say": "Large, I'm pretty big.", "intent": "size_ans", "slots": {"size": "large"}},
-  {"ctx": "size", "say": "Small, because I'm quite slim.", "intent": "size_ans", "slots": {"size": "small"}}
+  {"ctx": "size", "say": "Small, because I'm quite slim.", "intent": "size_ans", "slots": {"size": "small"}},
+  {"ctx": "r_new", "say": "A different size.", "intent": "exch_what_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "r_new", "say": "Another color, please.", "intent": "exch_what_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "r_new", "say": "The same one.", "intent": "exch_what_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "r_new", "say": "A large, please.", "intent": "any", "not": ["exch_what_ctx"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "size", "say": "I want to see something else.", "intent": "see_else", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "size", "say": "I want to see something else.", "intent": "any", "not": ["looking_unknown"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "fit", "say": "How does it look?", "intent": "ask_opinion", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "fit", "say": "So-so.", "intent": "fit_unclear", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "fit", "say": "So-so.", "intent": "any", "not": ["g_howareyou_bad"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "pay", "say": "How much do I owe you?", "intent": "ask_total", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "r_reason", "say": "I didn't like it.", "intent": "problem", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "bag", "say": "Do you have bags?", "intent": "want_bag", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "bag", "say": "Do you have bags?", "intent": "any", "not": ["looking_unknown", "no_bag"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "receipt", "say": "The receipt, please.", "intent": "receipt_bag", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "color", "say": "I don't mind.", "intent": "color_any_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "return_q", "say": "No, I'm just shopping.", "intent": "shop_ctx", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "return_q", "say": "No, I'm just shopping.", "intent": "any", "not": ["return_item", "problem"], "note": "logic audit 5 Nov 2026"}
 ]}

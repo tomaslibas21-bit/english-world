@@ -149,5 +149,11 @@
   {"ctx": "food_kind", "say": "I don't want anything expensive.", "intent": "any", "not": ["food_ans"]},
   {"ctx": "need", "say": "My computer is very slow.", "intent": "none"},
   {"ctx": "sight", "say": "The cat sleeps on the sofa.", "intent": "none"},
-  {"ctx": "more", "say": "Blue elephants dance on Monday.", "intent": "none"}
+  {"ctx": "more", "say": "Blue elephants dance on Monday.", "intent": "none"},
+  {"ctx": "from", "say": "Where do I catch the bus?", "intent": "no_walk", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "from", "say": "How do I get there by bus?", "intent": "no_walk", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "from", "say": "Where is The Pier?", "intent": "ask_walk", "slots": {"spot": "pier"}, "note": "logic audit 5 Nov 2026"},
+  {"ctx": "need", "say": "Where's a nice place to watch the sunset?", "intent": "ask_sight", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "food_kind", "say": "No, thanks.", "intent": "yn:no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "need", "say": "Where do I catch the bus?", "intent": "any", "not": ["ask_sight", "ask_food"], "note": "logic audit 5 Nov 2026"}
 ]}

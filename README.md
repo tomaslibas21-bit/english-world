@@ -68,7 +68,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
 
 - Arrow keys or WASD to walk (camera-relative), Shift to run. Mouse: click the ground to walk there, click a person or door to go to it, drag to look around, wheel to zoom.
 - **E** / Enter: talk or enter. **G**: walk to the current goal. **M** map, **J** journal, **P** phone, **Esc** settings.
-- In a conversation: **Space** microphone on/off, **T** type, **H** hints, **L** Lithuanian, **N** the whole sentence in Lithuanian, **I** IPA, **R** repeat, **Esc** leave.
+- In a conversation the microphone starts automatically after the character finishes. **Space** retries or finishes your answer, **T** switches to typing, **H** hints, **L** Lithuanian, **N** the whole sentence in Lithuanian, **I** IPA, **R** repeat, **Esc** leave.
 - Touch: an on-screen joystick appears on touch devices; tapping works like clicking.
 
 ## How it works
@@ -96,6 +96,7 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
   - three.js is a separate download that only town mode fetches (`src/game/gameRef.ts` holds the shared game reference).
   - The phone's back button closes the open conversation or panel.
 - **"Ar norėjai pasakyti…?"** (`src/convo/suggest.ts`). When an answer isn't understood, the 1–2 closest model answers the engine would accept are offered. A tap, or "yes" / „taip“, uses them, and the words that didn't match are highlighted.
+- **Loanwords heard differently** (`src/convo/soundalike.ts`). Café and restaurant names (including latte, croissant, cappuccino, bruschetta, minestrone, lasagna, risotto, tiramisu, panna cotta, gelato and named wines) have targeted pronunciation/recognizer variants, only where that menu offers them. Uncertain matches ask for confirmation and preserve the rest of the answer, including quantities. Negations, distinct dishes such as matcha and pesto pasta, and ambiguous guesses are protected. `tests/loanwords.test.ts` checks both the intended variants and nearby wrong answers, including actual order confirmation/cancellation.
 - **„Pakartok“.** Next to each example answer: listen, repeat, and see which words were missed. It's practice only, and it shares the conversation's microphone safely.
 - **Word cards** (`src/state/cards.ts`, `src/ui/Cards.tsx`).
   - Tap any English word or phrase to save it, or the whole sentence, with its Lithuanian, IPA and source sentence.
@@ -103,6 +104,8 @@ Student instructions (Lithuanian): `docs/STUDENT-GUIDE-LT.md`.
   - Cards are stored in the browser under `english-world-cards-v1`, and can be exported as JSON for English Master.
 
 ## Speech input, network use and costs
+
+Recorded voices are tried regardless of the browser's `navigator.onLine` hint. Playback waits for the clip list, retries a failed recording once (using the latest course token), and starts its safety timer when sound actually begins. Up to 64 recordings are kept in memory for this visit, with the next three lines of a turn prefetched; this also lets already loaded clips play through a brief connection loss. The cache is bounded, uses recording versions, and is cleared when the page closes. A truly unavailable recording still uses the browser voice; the lightweight offline package does not download the entire voice library.
 
 The game itself makes **no paid or metered calls**. There is no AI model, no cloud TTS and no speech-to-text account behind it. What remains:
 

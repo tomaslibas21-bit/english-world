@@ -3,9 +3,10 @@ import { Session } from "../src/game/session";
 import { audio } from "../src/game/audio";
 import { DEFAULT_SETTINGS, useStore } from "../src/state/store";
 import { emptyProgress } from "../src/state/progress";
+import * as speech from "../src/convo/speech";
 
 vi.mock("../src/game/audio", () => ({
-  audio: { names: [], play: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
+  audio: { names: [], play: vi.fn().mockResolvedValue(true), prefetch: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), sfx: vi.fn(), clipDuration: vi.fn() },
 }));
 vi.mock("../src/convo/speech", async (importOriginal) => ({
   ...await importOriginal<typeof import("../src/convo/speech")>(),
@@ -15,19 +16,25 @@ vi.mock("../src/convo/speech", async (importOriginal) => ({
 let session: Session;
 beforeEach(async () => {
   vi.useFakeTimers();
-  vi.stubGlobal("document", { visibilityState: "visible" });
-  vi.mocked(audio.play).mockResolvedValue(undefined);
-  useStore.setState({ settings: { ...DEFAULT_SETTINGS, autoListen: false }, progress: emptyProgress() });
+  vi.stubGlobal("document", Object.assign(new EventTarget(), { visibilityState: "visible" }));
+  vi.mocked(audio.play).mockResolvedValue(true);
+  vi.spyOn(speech, "createSpeechAttempt").mockImplementation(options => ({
+    start: () => options.onUpdate({ status: "listening", heard: "" }),
+    stop() {}, finish() {}, dispose() {}, running: true,
+  }));
+  useStore.setState({ settings: { ...DEFAULT_SETTINGS }, progress: emptyProgress() });
   session = new Session("s35-gym", { npcTalk() {}, onEvent() {}, onEnd() {} });
   const begin = session.begin();
   await vi.runAllTimersAsync();
   await begin;
+  session.stopListening();
 });
 afterEach(() => {
   session.close();
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 const choices = ["I can tomorrow", "I can't tomorrow"];
@@ -36,6 +43,34 @@ async function offerChoices() { await session.submit(choices[0], [choices[1]], "
 async function finishSubmit(promise: Promise<void>) { await vi.runAllTimersAsync(); await promise; }
 
 describe("speech confirmations belong to the learner's current turn", () => {
+  it("ignores callbacks from a replaced recognizer and consumes a voice attempt only once", async () => {
+    const attempts: speech.SpeechOptions[] = [];
+    vi.spyOn(speech, "createSpeechAttempt").mockImplementation(options => {
+      attempts.push(options);
+      return {
+        start: () => options.onUpdate({ status: "listening", heard: "" }),
+        stop() {}, finish() {}, dispose() {}, running: true,
+      };
+    });
+    session.listen();
+    session.listen();
+    attempts[0].onUpdate({ status: "nothing", heard: "" });
+    attempts[0].onCommit("Friday, please.", []);
+    expect(useStore.getState().conv.mic.status).toBe("listening");
+    expect(answers()).toHaveLength(0);
+    attempts[1].onCommit("Friday, please.", []);
+    await vi.runAllTimersAsync();
+    expect(answers()).toHaveLength(1);
+    expect(useStore.getState().conv.phase).toBe("you");
+    expect(attempts).toHaveLength(3); // the next learner turn starts its own microphone
+    const currentMic = useStore.getState().conv.mic;
+    expect(currentMic.status).toBe("listening");
+    attempts[1].onCommit("Friday, please.", []);
+    attempts[1].onUpdate({ status: "nothing", heard: "" });
+    expect(answers()).toHaveLength(1);
+    expect(useStore.getState().conv.mic).toEqual(currentMic);
+  });
+
   it("keeps an affirmative answer affirmative when the learner chooses it", async () => {
     await offerChoices();
     await finishSubmit(session.submit(choices[0], [], "voice", true));
@@ -74,7 +109,7 @@ describe("speech confirmations belong to the learner's current turn", () => {
   it("rejects typed and confirmed answers during replay and preserves choices for afterward", async () => {
     await offerChoices();
     let finishAudio!: () => void;
-    vi.mocked(audio.play).mockImplementationOnce(() => new Promise<void>(resolve => { finishAudio = resolve; }));
+    vi.mocked(audio.play).mockImplementationOnce(() => new Promise<boolean>(resolve => { finishAudio = () => resolve(true); }));
     session.repeatLast(false);
     expect(useStore.getState().conv.phase).toBe("npc");
     await session.submit(choices[1], [], "voice", true);
@@ -90,7 +125,6 @@ describe("speech confirmations belong to the learner's current turn", () => {
 
   it("keeps a confirmation across replay instead of auto-listening over it", async () => {
     await offerChoices();
-    useStore.setState(s => ({ settings: { ...s.settings, autoListen: true } }));
     const listen = vi.spyOn(session, "listen").mockImplementation(() => {});
     session.repeatLast(false);
     await vi.runAllTimersAsync();

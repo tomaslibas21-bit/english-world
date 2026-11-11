@@ -765,17 +765,26 @@
   {
    "ctx": "lunch",
    "say": "Is it expensive?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
    "say": "How far is it?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
    "say": "What time are you going?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
@@ -812,6 +821,7 @@
    "say": "Great, what time?",
    "intent": [
     "lunch_q",
+    "lunch_q_ctx",
     "lunch_yes"
    ]
   },
@@ -820,6 +830,7 @@
    "say": "Yes! When do we go?",
    "intent": [
     "lunch_q",
+    "lunch_q_ctx",
     "lunch_yes"
    ]
   },
@@ -831,7 +842,10 @@
   {
    "ctx": "lunch",
    "say": "Do they have vegetarian food?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
@@ -1299,12 +1313,18 @@
   {
    "ctx": "lunch",
    "say": "Where is the Thai place?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
    "say": "When are you going?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
@@ -1541,7 +1561,10 @@
   {
    "ctx": "lunch",
    "say": "Where is it?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
@@ -1714,7 +1737,10 @@
   {
    "ctx": "lunch",
    "say": "It is far?",
-   "intent": "lunch_q"
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ]
   },
   {
    "ctx": "lunch",
@@ -1904,6 +1930,59 @@
    "ctx": "task",
    "say": "Sure, no problem. Where can I find the file?",
    "intent": "task_ok"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Where is it?",
+   "intent": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "lunch",
+   "say": "Who's going?",
+   "intent": "lunch_who_ctx",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "desk",
+   "say": "Where is it?",
+   "intent": "any",
+   "not": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "tour",
+   "say": "What time?",
+   "intent": "any",
+   "not": [
+    "lunch_q",
+    "lunch_q_ctx"
+   ],
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "task",
+   "say": "When is it due?",
+   "intent": "task_when",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "task",
+   "say": "Is it urgent?",
+   "intent": "task_when",
+   "note": "logic audit 5 Nov 2026"
+  },
+  {
+   "ctx": "tour",
+   "say": "Who's Dave?",
+   "intent": "q_dave",
+   "note": "logic audit 5 Nov 2026"
   }
  ]
 }

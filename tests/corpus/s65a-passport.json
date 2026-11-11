@@ -185,5 +185,11 @@
   {"ctx": "address", "say": "Just a moment, I'll check.", "intent": ["address_show_ctx", "g_wait"]},
   {"ctx": "address", "say": "I'll show you.", "intent": "address_show_ctx"},
   {"ctx": "purpose", "say": "Not for fun.", "intent": "any", "not": ["purpose"]},
-  {"ctx": "declare", "say": "Just a moment, I'll check.", "intent": "any", "not": ["address_show_ctx", "address_phone"]}
+  {"ctx": "declare", "say": "Just a moment, I'll check.", "intent": "any", "not": ["address_show_ctx", "address_phone"]},
+  {"ctx": "return", "say": "It's one-way.", "intent": "return_no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "return", "say": "I only have a one-way ticket.", "intent": "return_no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "return", "say": "I don't know when I'm going back.", "intent": "return_no", "note": "logic audit 5 Nov 2026"},
+  {"ctx": "howareyou", "say": "Fine, thanks. It was a very long flight.", "intent": ["long_flight", "g_howareyou_answer"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "return", "say": "It's a round trip.", "intent": "any", "not": ["return_no"], "note": "logic audit 5 Nov 2026"},
+  {"ctx": "return", "say": "I have a return ticket.", "intent": "any", "not": ["return_no"], "note": "logic audit 5 Nov 2026"}
 ]}

@@ -964,7 +964,12 @@ export const rental: SituationDef = {
     price_q(c, slots) {
       // "How much more?" about the upgrade
       if (c.step === "upgrade" && /\b(more|extra)\b/i.test(c.heard)) { c.say("rate_is", { price: UPGRADE }); return; }
-      c.say("rate_is", { price: byId((slots.size as string) || size(c)).attrs!.rate });
+      // "How much is it?" at the upgrade offer: the midsize's rate (it got the compact's, the car already booked)
+      const asked = (slots.size as string | undefined) ?? (c.step === "upgrade" && c.s.upgrade === undefined ? "midsize" : undefined);
+      // after the free upgrade the learner still pays the compact's rate (it was quoted at the midsize's)
+      const sz = asked ?? (c.s.upgrade === "free" ? "compact" : size(c));
+      if (!asked && c.s.walkin) c.s.rateSaid = true; // "How much is it for three days?": the rate once, not again with the documents
+      c.say("rate_is", { price: byId(sz).attrs!.rate });
     },
     sizes_q(c) { c.say("size_list"); },
     polite_no_ctx(c) { rental.steps.find((x) => x.id === c.step)?.no?.(c); },
@@ -1098,6 +1103,9 @@ export const rental: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): "How much is it?" at the upgrade offer is the midsize's rate
+    { name: "audit: the upgrade's price", turns: ["Hi, I have a reservation.", "It's Mikalauskas.", "Here you go.", "How much is it?", "No, thanks. The compact is fine."],
+      expect: { complete: true, state: { upgrade: "no" } }, auto: AUTO, setup: (s) => { s.askUpgrade = true; s.freeUpgrade = false; s.firstNameTwist = false; s.askSpell = false; } },
     { name: "reservation, basic insurance, asks deposit and return",
       turns: ["Hi, I've booked a car online.", "It's Mikalauskas.", "Here's my driver's license.", "Just the basic, please.", "When do I get it back?",
         "Okay.", "When do I need to return it?", "Sure.", "Where's the car?", "Thank you!"],

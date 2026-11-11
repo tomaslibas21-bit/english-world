@@ -27,7 +27,7 @@ const SNACKS: EntityDef[] = [
 ];
 const byId = (id: string) => SNACKS.find((e) => e.id === id)!;
 
-const GALLON = 349; // regular, per gallon
+const GALLON = 349; // regular, per gallon (premium $4.19, diesel $3.89: their lines say them)
 const FILL_COSTS = [3860, 4175, 4362];
 
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ export const gas: SituationDef = {
     ] },
     grade_ans: { patterns: ["@grade [please | gas]", "(i need | i want | it takes | it needs) @grade [gas]", "(this car | my car | it) takes @grade"] },
     grade_q: { patterns: ["which (one | pump | button | nozzle) is (diesel #diesel | regular #regular | premium #premium) #h:q_grade", "which (pump | pumps) (has | have) (diesel #diesel | premium #premium)", "do you have diesel #diesel", "(is | what is) regular (okay | fine | good) for (my car | the car | a rental [car])", "what [kind of] gas (does it | should i) (take | use)"] },
-    gas_price_q: { patterns: ["how much is (gas | regular | diesel | premium | a gallon) [per gallon | a gallon]", "what is the price (of | for) (gas | regular | diesel)", "how much is a (liter | litre) #liter"] },
+    gas_price_q: { patterns: ["how much is (gas | regular | diesel | premium | a gallon) [per gallon | a gallon]", "what is the price (of | for) (gas | regular | diesel | premium)", "how much is a (liter | litre) #liter"] },
     zip_problem: { patterns: [
       "the pump (is asking | asks | wants | needs) [for] [a | my | the] (zip code | zip | postal code) #h:zip",
       "the pump (does not | did not | will not) work with my card", "my card (does not | did not | will not) work (with | in) the pump", "it (is asking | asks) for a zip code",
@@ -296,6 +296,12 @@ export const gas: SituationDef = {
       { flags: { 3: "“for”: the dative daugumai carries it (C-CASE-DASH, “most” intervenes)." } })],
     gas_price: [t("Regular | is | {$price} | a | gallon.", "Paprastas | yra | {$price} | už | galoną.", "Paprastas benzinas – {$price} už galoną.",
       { flags: { 3: "“a” (a gallon = per gallon): už carries it." } })],
+    // "How much is premium / diesel?" got the regular price (new lines, 5 Nov 2026: need a voice). Fixed figures, not
+    // {$price}: a value line is voiced with every price of the domain.
+    gas_price_premium: [t("Premium | is | $4.19 | a | gallon.", "„Premium“ | yra | 4,19 $ | už | galoną.", "Benzinas „Premium“ – 4,19 $ už galoną.",
+      { say: "Premium is four nineteen a gallon.", flags: { 3: "“a” (a gallon = per gallon): už carries it." } })],
+    gas_price_diesel: [t("Diesel | is | $3.89 | a | gallon.", "Dyzelinas | yra | 3,89 $ | už | galoną.", "Dyzelinas – 3,89 $ už galoną.",
+      { say: "Diesel is three eighty-nine a gallon.", flags: { 3: "“a” (a gallon = per gallon): už carries it." } })],
     liter_joke: [t("We | sell | it | by | the | gallon | here, | hon!", "Mes | parduodame | jį | — | — | galonais | čia, | {m:mielasis|f:mieloji}!", "Čia pardavinėjame galonais, {m:mielasis|f:mieloji}!",
       { flags: { 3: "“by the gallon”: the instrumental galonais carries “by”." } })],
     zip_explain: [
@@ -685,7 +691,12 @@ export const gas: SituationDef = {
       else if (/\brental\b|\bokay\b|\bfine\b|\bgood\b/i.test(c.heard)) c.say("regular_fine");
       else c.say("grade_info");
     },
-    gas_price_q(c, _slots, seg) { if (seg.tags.includes("liter")) c.say("liter_joke"); else c.say("gas_price", { price: GALLON }); },
+    gas_price_q(c, _slots, seg) {
+      if (seg.tags.includes("liter")) { c.say("liter_joke"); return; }
+      if (/\bpremium\b/i.test(c.heard)) c.say("gas_price_premium");
+      else if (/\bdiesel\b/i.test(c.heard)) c.say("gas_price_diesel");
+      else c.say("gas_price", { price: GALLON });
+    },
     zip_problem(c) { c.say("zip_explain"); c.tip(TIPS.prepay); },
     want_gas(c) { if (c.s.paid) return; c.say(c.s.pump ? "ask_amount" : "ask_pump"); c.hold(); },
     receipt_no_ctx(c, slots, seg) { gas.handlers.no_receipt(c, slots, seg); },
@@ -715,7 +726,10 @@ export const gas: SituationDef = {
     },
     ask_mechanic(c) { c.say("mechanic"); if (c.s.trouble || c.s.troubleTwist) c.s.troubleDone = true; },
     call_help(c) { c.say("calling"); if (c.s.trouble || c.s.troubleTwist) c.s.troubleDone = true; },
-    receipt_ask(c) { if (c.s.receipt !== true) { c.s.receipt = true; c.say("receipt_here"); c.event("give", { item: "receipt" }); } },
+    receipt_ask(c) {
+      if (!c.s.paid) { if (!c.s.receiptWanted) { c.s.receiptWanted = true; c.say("ack"); } return; } // after paying
+      if (c.s.receipt !== true) { c.s.receipt = true; c.say("receipt_here"); c.event("give", { item: "receipt" }); }
+    },
     no_receipt(c) { if (c.s.receipt === undefined) { c.s.receipt = false; c.say("no_problem"); } },
     pay_card(c) { choosePay(c, "card"); },
     pay_cash(c) { choosePay(c, "cash"); },
@@ -723,7 +737,14 @@ export const gas: SituationDef = {
     here_you_go(c, slots, seg) {
       // "Here's sixty dollars" = the amount left for a fill-up
       if (c.step === "leave") { if (typeof slots.price === "number") gas.handlers.amount_ctx(c, { money: { price: slots.price } }, seg); return; }
-      if (c.s.totalSaid && !c.s.paid) finishPay(c, c.s.method ?? "cash");
+      if (!c.s.totalSaid || c.s.paid) return;
+      let amt = typeof slots.price === "number" ? slots.price : undefined;
+      // "Here's twenty" (short) and then "Here's twenty more": the two together
+      if (amt !== undefined && c.s.cashIn && /\b(more|another|too|also|plus)\b/i.test(c.heard)) amt += c.s.cashIn;
+      // too little cash ("Here's twenty" for $40): the total again, nothing paid (it was paid, with change)
+      if (amt !== undefined && (c.s.method ?? "cash") === "cash" && !c.s.fill && amt < payNow(c)) { c.s.cashIn = amt; c.say("say_total", { price: payNow(c) }); c.hold(); return; }
+      c.s.cashIn = 0;
+      finishPay(c, c.s.method ?? "cash", amt);
     },
     credit_debit(c, _slots, seg) {
       if (c.s.cardType) return;
@@ -763,6 +784,10 @@ export const gas: SituationDef = {
   },
 
   tests: [
+    // logic audit (5 Nov 2026): premium and diesel have their own prices
+    { say: "How much is premium?", intent: "gas_price_q" },
+    { say: "What is the price for premium?", intent: "gas_price_q" },
+    { say: "How much is diesel?", intent: "gas_price_q" },
     { say: "Forty dollars on pump three, please.", intent: "prepay", slots: { pnum: "3" } },
     { say: "Forty on three.", intent: "prepay", slots: { pnum: "3" } },
     { say: "Twenty bucks on pump five.", intent: "prepay", slots: { pnum: "5" } },
@@ -847,6 +872,9 @@ export const gas: SituationDef = {
   ],
 
   sims: [
+    // logic audit (5 Nov 2026): premium's price; exact cash gets no change
+    { name: "audit: premium's price, exact cash", turns: ["How much is premium?", "Forty dollars on pump three, please.", "Here's forty dollars.", "Thank you!"],
+      auto: omit(AUTO, ["order", "pay"]), expect: { complete: true }, setup: (s) => { s.oooTwist = false; s.troubleTwist = false; } },
     // pump 3 works (the out-of-order twist has its own sim)
     { name: "prepay forty on pump three, card",
       turns: ["Hi! Forty dollars on pump three, please.", "Can I pay by card?", "Thank you!"],
@@ -889,12 +917,15 @@ function choosePay(c: Ctx, method: "card" | "cash") {
   else c.say("ack"); // "Can I pay by card?" before the total: "Sure." (not silence; the total comes next)
 }
 
-function finishPay(c: Ctx, method: "card" | "cash") {
+/** `tendered`: the cash amount said; the exact money gets no change ("Thanks! And here's your change." for $40 on $40). */
+function finishPay(c: Ctx, method: "card" | "cash", tendered?: number) {
   if (c.s.paid) return;
   c.s.paid = true;
   c.s.method = method;
-  if (method === "card") c.say("card_ok"); else c.say(c.s.fill ? "cash_exact" : "cash_ok");
+  if (method === "card") c.say("card_ok"); else c.say(c.s.fill || tendered === payNow(c) ? "cash_exact" : "cash_ok");
   c.event("pay", { method, amount: payNow(c) });
+  // a receipt asked for before paying comes with the payment (it was handed over before any money)
+  if (c.s.receiptWanted && c.s.receipt !== true) { c.s.receipt = true; c.say("receipt_here"); c.event("give", { item: "receipt" }); }
 }
 
 export default gas;
