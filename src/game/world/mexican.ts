@@ -1489,35 +1489,39 @@ export function mirador(parts: Part[], col: Colliders, atlas: SignAtlas, x: numb
 export function tropicalTrunk(): THREE.BufferGeometry {
   // (open-ended: the ends are hidden in the ground and the crown; the triangles go to the crowns)
   const parts = [
-    new THREE.CylinderGeometry(0.15, 0.27, 2.5, 6, 1, true).translate(0, 1.25, 0),
-    new THREE.CylinderGeometry(0.07, 0.13, 1.5, 5, 1, true).rotateZ(0.75).translate(-0.5, 2.85, 0.05),
-    new THREE.CylinderGeometry(0.07, 0.12, 1.4, 5, 1, true).rotateZ(-0.7).rotateY(0.5).translate(0.42, 2.85, -0.22),
+    new THREE.CylinderGeometry(0.15, 0.27, 2.5, 5, 1, true).translate(0, 1.25, 0),
+    new THREE.CylinderGeometry(0.07, 0.13, 1.5, 4, 1, true).rotateZ(0.75).translate(-0.5, 2.85, 0.05),
+    new THREE.CylinderGeometry(0.07, 0.12, 1.4, 4, 1, true).rotateZ(-0.7).rotateY(0.5).translate(0.42, 2.85, -0.22),
   ];
   return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
 }
 
-/** A flamboyán's (or a parota's) crown: wide, flat-topped and a little lumpy, lower at its rim, lifted high. */
+/** A flamboyán's (or a parota's) crown: wide, flat-topped and a little lumpy, lower at its rim, lifted high. Few
+ *  triangles (a town has a hundred and more, all drawn wherever one is in view): a faceted dome, flat lumps on it and
+ *  round its rim. */
 export function flamboyanCrown(): THREE.BufferGeometry {
-  const ico = (r: number, d: number) => new THREE.IcosahedronGeometry(r, d);
+  const lump = (sx: number, sy: number, sz: number, x: number, y: number, z: number, rot = 0) => new THREE.OctahedronGeometry(1, 0).rotateY(rot).scale(sx, sy, sz).translate(x, y, z);
   const parts: THREE.BufferGeometry[] = [
-    ico(1, 1).scale(2.75, 0.6, 2.55).translate(0, 3.7, 0),
-    ico(1, 0).scale(1.6, 0.5, 1.45).translate(0.55, 4.05, -0.35),
-    ico(1, 0).scale(1.35, 0.45, 1.25).translate(-0.95, 3.98, 0.65),
+    new THREE.SphereGeometry(1, 7, 3).scale(2.75, 0.62, 2.55).translate(0, 3.7, 0),
+    lump(1.55, 0.5, 1.4, 0.55, 4.05, -0.35, 0.4),
+    lump(1.3, 0.45, 1.2, -0.95, 3.98, 0.65, 1.1),
   ];
-  for (let i = 0; i < 5; i++) {
-    const a = i * 1.26 + 0.3, r = 2.35 + (i % 2) * 0.25;
-    parts.push(ico(0.8, 0).scale(1, 0.55, 1).translate(Math.cos(a) * r, 3.45 - (i % 3) * 0.08, Math.sin(a) * r));
+  for (let i = 0; i < 4; i++) {
+    const a = i * 1.57 + 0.3, r = 2.35 + (i % 2) * 0.25;
+    parts.push(lump(0.95, 0.42, 0.85, Math.cos(a) * r, 3.45 - (i % 3) * 0.08, Math.sin(a) * r, a));
   }
-  return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
+  return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
 }
 
-/** An almendro's (Indian almond's) crown: flat tiers of leaves stacked like a pagoda, each smaller than the one below. */
+/** An almendro's (Indian almond's) crown: flat tiers of leaves stacked like a pagoda, each smaller than the one below,
+ *  each with a low cone of leaves for its top. */
 export function almendroCrown(): THREE.BufferGeometry {
-  const tier = (r: number, y: number, rot: number) => new THREE.CylinderGeometry(r * 0.82, r, 0.42, 7, 1, true).rotateY(rot).translate(0, y, 0);
-  const parts: THREE.BufferGeometry[] = [tier(2.3, 3.0, 0), tier(1.85, 3.75, 0.45), tier(1.35, 4.45, 0.9), tier(0.75, 5.05, 1.3)];
-  // the tiers' soft tops, so they read as leaves, not plates
-  for (const [r, y] of [[2.3, 3.0], [1.85, 3.75], [1.35, 4.45], [0.75, 5.05]] as const) parts.push(new THREE.IcosahedronGeometry(1, 0).scale(r * 0.86, 0.22, r * 0.86).translate(0, y + 0.2, 0));
-  return mergeGeometries(parts.map((g) => g.toNonIndexed()), false)!;
+  const parts: THREE.BufferGeometry[] = [];
+  ([[2.3, 3.0, 0], [1.85, 3.75, 0.45], [1.35, 4.45, 0.9], [0.75, 5.05, 1.3]] as const).forEach(([r, y, rot]) => {
+    parts.push(new THREE.CylinderGeometry(r * 0.82, r, 0.42, 7, 1, true).rotateY(rot).translate(0, y, 0));
+    parts.push(new THREE.ConeGeometry(r * 0.84, 0.32, 7, 1, true).rotateY(rot).translate(0, y + 0.37, 0));
+  });
+  return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false)!;
 }
 
 /** A house's front as a Mexican house has it (theme.ts `casas`), where Maple Harbor has a porch roof on two thin posts:
@@ -1529,7 +1533,9 @@ export function almendroCrown(): THREE.BufferGeometry {
 export function casa(parts: Part[], flat: Part[], P: (u: number, v: number) => [number, number], rot: number, w: number, d: number, h: number, wall: string, trim: string, seed: number) {
   const at = (list: Part[], g: THREE.BufferGeometry, u: number, v: number, c: THREE.ColorRepresentation) => { const [x, z] = P(u, v); list.push([place(g, x, z, rot), c]); };
   const r = rand(seed);
-  const SW = 7.6, SD = 2.95, Y = 3.0; // the slab's width, depth out from the wall, underside
+  // the slab's width, depth out from the wall, underside (no wider or deeper than Maple Harbor's porch roof: P25's
+  // camera at Cedar Lane looks past house5's corner to Maggie)
+  const SW = 6.4, SD = 2.6, Y = 3.0;
   at(parts, box(SW, 0.3, SD, 0, Y + 0.15, 0), 0, SD / 2, wall);
   at(parts, box(SW + 0.08, 0.32, 0.1, 0, Y + 0.15, 0), 0, SD + 0.01, trim);
   for (const s of [-1, 1]) at(parts, box(0.1, 0.32, SD, 0, Y + 0.15, 0), s * (SW / 2 + 0.01), SD / 2, trim);
@@ -1549,7 +1555,7 @@ export function casa(parts: Part[], flat: Part[], P: (u: number, v: number) => [
   for (let u = -SW / 2 + 0.2; u < SW / 2 - 0.1; u += 0.19) at(flat, new THREE.PlaneGeometry(0.03, rh - 0.1).translate(0, ry + rh / 2 + 0.02, 0.0), u, SD - 0.06, IRON);
   for (const s of [-1, 1]) for (let v = 0.25; v < SD - 0.1; v += 0.19) at(flat, new THREE.PlaneGeometry(0.03, rh - 0.1).rotateY(Math.PI / 2).translate(0, ry + rh / 2 + 0.02, 0), s * (SW / 2 - 0.05), v, IRON);
   // pots up on the terrace (a palm, a geranium)
-  for (const [u, big] of [[-2.9, 1], [2.4, 0.8]] as const) {
+  for (const [u, big] of [[-2.6, 1], [2.2, 0.8]] as const) {
     at(parts, cyl(0.24 * big, 0.18 * big, 0.36 * big, 0, ry + 0.18 * big, 0), u, SD - 0.55, "#c56f4c");
     at(parts, new THREE.IcosahedronGeometry(0.4 * big, 0).scale(1, 1.2, 1).translate(0, ry + 0.36 * big + 0.36 * big, 0), u, SD - 0.55, big > 0.9 ? "#3f7d3a" : "#4a8a3c");
     if (big < 0.9) at(flat, new THREE.OctahedronGeometry(0.09).translate(0.1, ry + 0.95, 0.15), u, SD - 0.55, "#e63946");
@@ -1566,7 +1572,8 @@ export function casa(parts: Part[], flat: Part[], P: (u: number, v: number) => [
   // on the roof: rebar at its four corners (bundles of four rods, rusty), and the wash on a line across its front half
   const RUST = "#6b4630";
   for (const su of [-1, 1]) for (const sv of [0.3, d - 0.3]) for (const [a, b] of [[-0.06, -0.06], [0.06, -0.06], [-0.06, 0.06], [0.06, 0.06]]) {
-    at(flat, box(0.03, 0.85, 0.03, 0, h + 1.3, 0).rotateZ((r() - 0.5) * 0.12), su * (w / 2 - 0.3) + a, -sv + b, RUST);
+    const tilt = (r() - 0.5) * 0.12;
+    for (const turn of [0, Math.PI / 2]) at(flat, new THREE.PlaneGeometry(0.035, 0.85).rotateY(turn).rotateZ(tilt).translate(0, h + 1.3, 0), su * (w / 2 - 0.3) + a, -sv + b, RUST);
   }
   const lv = -2.2, lu0 = -w / 2 + 1.6, lu1 = w / 2 - 3.2, ly = h + 1.75;
   for (const u of [lu0, lu1]) at(flat, box(0.05, 1.55, 0.05, 0, h + 0.97, 0), u, lv, "#8a8f94");
@@ -1698,18 +1705,18 @@ export function terminalFront(parts: Part[], flat: Part[], col: Colliders, b: { 
 export function meadow(parts: Part[], x0: number, x1: number, z0: number, z1: number, clear: [number, number, number][], ceibas: [number, number][]) {
   const r = rand(5150), GREENS = ["#4f8a3a", "#5c9a3f", "#3f7d3a", "#6aa346", "#7a9a48"], DRY = ["#9cb04e", "#8fa848", "#b3bd62"];
   const free = (x: number, z: number) => clear.every(([cx, cz, cr]) => Math.hypot(x - cx, z - cz) > cr);
-  for (let i = 0; i < 70; i++) {
-    const x = x0 + r() * (x1 - x0), z = z0 + r() * (z1 - z0), s = 0.45 + r() * 0.6;
+  for (let i = 0; i < 48; i++) {
+    const x = x0 + r() * (x1 - x0), z = z0 + r() * (z1 - z0), s = 0.5 + r() * 0.65;
     if (!free(x, z)) continue;
     const g = GREENS[Math.floor(r() * GREENS.length)];
     parts.push([new THREE.IcosahedronGeometry(s, 0).scale(1.3, 0.75, 1.1).translate(x, s * 0.55, z), g]);
     if (r() < 0.5) parts.push([new THREE.IcosahedronGeometry(s * 0.7, 0).scale(1.2, 0.8, 1).translate(x + s * 0.9, s * 0.4, z + (r() - 0.5) * s), GREENS[Math.floor(r() * GREENS.length)]]);
   }
-  for (let i = 0; i < 45; i++) {
+  for (let i = 0; i < 30; i++) {
     const x = x0 + r() * (x1 - x0), z = z0 + r() * (z1 - z0);
     if (!free(x, z)) continue;
     const c = DRY[Math.floor(r() * DRY.length)];
-    for (let k = 0; k < 3; k++) parts.push([new THREE.ConeGeometry(0.16, 0.6 + r() * 0.35, 4).rotateZ((k - 1) * 0.35).translate(x + (k - 1) * 0.12, 0.35, z), c]);
+    for (let k = 0; k < 2; k++) parts.push([new THREE.ConeGeometry(0.16, 0.6 + r() * 0.35, 4).rotateZ((k - 1) * 0.35).translate(x + (k - 1) * 0.12, 0.35, z), c]);
   }
   for (const [x, z] of ceibas) {
     parts.push([new THREE.CylinderGeometry(0.42, 0.62, 10, 8, 1, true).translate(x, 5, z), "#9a958a"]);

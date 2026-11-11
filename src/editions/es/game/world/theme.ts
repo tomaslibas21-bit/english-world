@@ -295,8 +295,8 @@ export const THEME: TownTheme = {
   busTerminal: {
     andenes: ["Andén 1", "Andén 2"], buses: [{ x: 31, dest: "CANCÚN" }, { x: 57.5, dest: "TULUM" }],
     // (graphics round 4) white pilasters between its windows and at its corners, a terracotta band along its foot, and
-    // the suitcases of the travellers sitting on the andenes' benches (theme `sitters`)
-    front: { pilasters: [-16.8, -12.9, -9.7, -6.5, -3.3, 3.1, 6.3, 9.5, 12.7, 16.8], cases: [[36.5, 47.5], [39.05, 47.5], [53.5, 47.5]] },
+    // the suitcase of the traveller sitting on andén 2's bench (theme `sitters`)
+    front: { pilasters: [-16.8, -12.9, -9.7, -6.5, -3.3, 3.1, 6.3, 9.5, 12.7, 16.8], cases: [[36.5, 47.5]] },
   },
   // the airport outside: the drop-off canopy thatched, agaves, and the town's welcome
   airportOut: { welcome: ["¡Bienvenidos a Puerto Colibrí!", "Welcome · Caribe Mexicano"], terminal: { hall: 16 } },
@@ -320,13 +320,11 @@ export const THEME: TownTheme = {
   // more people on the malecón and the beach (a pair chatting by the bench at x 46, another on the sand by the
   // palapas), sitting on the zócalo's south bancas and the malecón's benches, and four of the tianguis' vendors behind
   // their stalls (pottery, fruit, hats, vegetables), facing the square
-  chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9],
-    // (graphics round 4) two on the sand by the palapas east of the letters, two travellers outside the bus terminal
-    [34.0, -67.8, 35.1, -68.1], [40.3, 46.0, 41.45, 46.3]],
+  chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9]],
   sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
-    // (graphics round 4) under the palapas, on their loungers (`beachLife`), and travellers on the andenes' benches
-    [-5.05, -70.1], [2.05, -70.3], [-63.05, -70.0], [42.95, -70.3], [75.05, -70.1],
-    [35.65, 47.65], [38.25, 47.65], [52.65, 47.65]],
+    // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
+    // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)
+    [-5.05, -70.1], [2.05, -70.3], [35.65, 47.65]],
   vendors: [[32, -44.25, 0], [26, -44.25, 0], [44, -44.75, 0], [38, -43.25, 0]],
   // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
   // nothing, and the town's people cost the frame no more than before the round)
