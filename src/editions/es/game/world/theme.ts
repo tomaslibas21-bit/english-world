@@ -147,7 +147,10 @@ export const THEME: TownTheme = {
     gym: { color: "#ffd166", trim: "#7a1f4b", awning: "#e76f51" },
     apartments: { color: "#e76f51", trim: "#fff3e0" },
     station: { color: "#f1c27d", trim: "#7a2e2e", roofColor: "#b5523b" },
-    pier: { color: "#f4efe6", trim: "#1f4e5f", awning: "#1f6f8b", roof: "palapa" },
+    // (graphics round 4) the airport's terminal in cream stucco and terracotta under its palapa, not a blue glass box
+    terminal: { color: "#f4ead5", trim: "#b5523b" },
+    // (graphics round 4) El Muelle in warm sand and teal under its palapa, where it was white and navy
+    pier: { color: "#f6dcaa", trim: "#2a6f6b", awning: "#2a9d8f", roof: "palapa" },
     sophie: { color: "#5fbfb0", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     dan: { color: "#f6bd60", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
     house3: { color: "#e5989b", trim: "#fff3e0", roofColor: "#fff3e0", roof: "flat" },
@@ -307,9 +310,14 @@ export const THEME: TownTheme = {
   lean: true,
   // the bus terminal (s67a): its andenes under canopies either side of the door, the coaches at the curb in front of them
   // (the departures board: Cancún from andén 1, Tulum from andén 2)
-  busTerminal: { andenes: ["Andén 1", "Andén 2"], buses: [{ x: 31, dest: "CANCÚN" }, { x: 57.5, dest: "TULUM" }] },
+  busTerminal: {
+    andenes: ["Andén 1", "Andén 2"], buses: [{ x: 31, dest: "CANCÚN" }, { x: 57.5, dest: "TULUM" }],
+    // (graphics round 4) white pilasters between its windows and at its corners, a terracotta band along its foot, and
+    // the suitcase of the traveller sitting on andén 2's bench (theme `sitters`)
+    front: { pilasters: [-16.8, -12.9, -9.7, -6.5, -3.3, 3.1, 6.3, 9.5, 12.7, 16.8], cases: [[36.5, 47.5]] },
+  },
   // the airport outside: the drop-off canopy thatched, agaves, and the town's welcome
-  airportOut: { welcome: ["¡Bienvenidos a Puerto Colibrí!", "Welcome · Caribe Mexicano"] },
+  airportOut: { welcome: ["¡Bienvenidos a Puerto Colibrí!", "Welcome · Caribe Mexicano"], terminal: { hall: 16 } },
   // the zócalo dressed: four laureles in its quarters, iron bancas (the kiosco's three and four more: two on the south
   // side facing the kiosco, one each side), colonial lamp posts on its diagonals; all clear of everyone's spot, the
   // talk spots, the chatting pair, the stalls and the pigeons' ring round the kiosco (tests/es/town.test.ts)
@@ -331,7 +339,10 @@ export const THEME: TownTheme = {
   // palapas), sitting on the zócalo's south bancas and the malecón's benches, and four of the tianguis' vendors behind
   // their stalls (pottery, fruit, hats, vegetables), facing the square
   chatSpots: [[43.5, -63.75, 44.7, -63.45], [-2.6, -68.2, -1.5, -67.9]],
-  sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05]],
+  sitters: [[24.05, -17.4], [37.45, -17.4], [0.45, -65.05], [21.55, -65.05], [-39.55, -65.05],
+    // (graphics round 4) two under the palapas by the letters, on their loungers (`beachLife`), and a traveller on
+    // andén 2's bench (a person is ~4,000 triangles, in every view that sees them: no more, for the phones' budget)
+    [-5.05, -70.1], [2.05, -70.3], [35.65, 47.65]],
   vendors: [[32, -44.25, 0], [26, -44.25, 0], [44, -44.75, 0], [38, -43.25, 0]],
   // (and those who sit or stand farther than 22 m from the player keep their pose: at that distance a breath shows
   // nothing, and the town's people cost the frame no more than before the round)
@@ -377,12 +388,29 @@ export const THEME: TownTheme = {
     cocos: [-14, -63.6, 0, "Cocos fríos"],
   },
   // the atrial cross before the church's door, by the palm at the square's corner
-  atrialCross: [49.3, -45.2],
+  atrialCross: [50.0, -44.6], // (graphics round 4: inside the atrium's wall)
   // the mirador where avenida Juárez ends at the meadow, looking out west to Cenote Ka'an
   mirador: { x: -107, z: -7.5, rot: -Math.PI / 2, sign: "Mirador · Cenote Ka'an →" },
   // a second taxi waiting at the sitio, behind the first, at the curb (clear of the cars' lane)
   taxis: [[115.8, -4.25, -Math.PI / 2]],
   // graphics round 4: the rooms' walls taller than the phone's room view (its top is wall, not the dark above it)
   roomWallH: 8.6,
+  // Graphics, round 4 (town, docs/es/TOWN.md "Graphics, round 4"): the street trees as flamboyanes and almendros
+  tropicalTrees: true,
+  // (and palms in the bus terminal's forecourt, where a flat crown would cut through the andenes' canopies and the coaches)
+  treePalms: [[26, 64, 43, 49.5]],
+  // and the houses: a concrete portal with the terrace upstairs, chairs, rebar and the wash on the roof
+  casas: true,
+  // the church's atrium: a whitewashed wall with merlons 3.4 m out from its facade, the gate 3.2 m wide before the door,
+  // the atrial cross inside it on the beach side, the bread stall's table outside it on the other; the facade's
+  // columns, entablature and niches
+  atrio: { depth: 3.4, left: 5.4, right: 4.4, gate: 1.6 },
+  // the beach: the palapas thatched in layers with a ragged fringe, people on their loungers (theme `sitters`)
+  beachLife: true,
+  // calle Hidalgo's poles dissolve within 6–8 m of the camera, so they never sweep past as grey bars
+  poleFade: [6, 8],
+  // the meadow out to the cenote as the Yucatán's scrub (clear of the cenote and its palapa, the mirador and the end of
+  // avenida Juárez), two ceibas standing over the selva behind it
+  meadow: { x0: -152, x1: -113, z0: -36, z1: 26, clear: [[-136, -6, 13], [-127.6, -1.6, 4], [-107, -7.5, 5], [-112, -8, 6]], ceibas: [[-150, -16], [-147, 9]] },
   letras: { text: "PUERTO COLIBRÍ", x: 2.8, z: -63.55, h: 1.45, colors: ["#e4007c", "#f77f00", "#00a6a6", "#f6c000", "#7ac143", "#6d2e9e", "#1f6fd1", "#ff5a36"] },
 };
