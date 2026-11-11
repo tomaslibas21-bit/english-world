@@ -142,3 +142,6 @@ inútiles" is read too (Spain says vosotros to a company's staff when it's rude;
 take ha llegado / no ha venido, lo he comprobado, bien montado, sois, prográmelo, como muy tarde, boli / cojo /
 apuntar / apuntado. Spain corpus: 21 items, 20/20, 0/1 false accepts. Gates: Mexican, neutral and Spain 0 errors,
 sims 12/12; corpus 390/390 0/61; held-out 38/40 0/3 (unchanged).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the folio lines got neutral "número de reporte" twins; their
+Spain twins stay "número de referencia" (and "¿Tiene dónde apuntar?"), now beside the neutral ones.

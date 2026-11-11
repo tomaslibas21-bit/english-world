@@ -111,3 +111,11 @@ No Mexican line's text changed. New lines: `no_bag`, `offer_optional`, `id_passp
 - Kept: "¿Dónde está la sala 4?" at gate 4 still gets "Sí, es la sala 4. Aquí sale el vuelo 223…" (natural enough
   there); "¿Está lejos?" after the gate change and a lost boarding pass ("No encuentro mi pase") are not understood,
   which is safe.
+
+## Spain twins (11 Nov 2026)
+
+- 38 Spain twins (lines and hints), 17 items in tests/es/spain/s64c-gate.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Daniela (the gate) keeps usted.
+- Words: embarque/embarcar for abordaje/abordar, facturar for documentar, coste for costo, cinta de equipajes for banda de equipaje, móvil, documentación, ¿Me deja…? for ¿Me permite…?, ¿Qué desea? for ¿Qué se le ofrece?, Mire, ha habido un cambio de puerta for Fíjese que hubo…, Pues no for Fíjese que no, Llevamos un retraso for Traemos…, the perfect (el avión todavía no ha llegado, el embarque todavía no ha empezado), un bolso for una bolsa, asientos for lugares, aseos, delante.
+- Grammar: the boarding pass may be tarjeta / billete; ask_free takes coste; give_bp takes documentación / DNI. Merges: ha habido, no ha llegado, no ha empezado.
+- Nothing left for the lead.

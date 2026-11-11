@@ -112,3 +112,26 @@ pesos only; s69's "El Café La Ceiba, aquí en la plaza" is off the 3D town (the
 Juárez); the 3D café has no restroom door ("al fondo, a la izquierda"); compose.ts could capitalize a placeholder after
 a lone "¿" or "¡" mid-line (none left in the edition); reach-es.ts could bound `s72-cafe:price_is` to one item ($95) and
 `ask_size_of` to the sized drinks (a few dozen clips).
+
+## Spain twins (11 Nov 2026)
+
+79 Spain twins (lines and hints) and 7 Spain nouns (cuernito → cruasán, dona → dónut, mantecada → magdalena, chico →
+pequeño, deslactosada → sin lactosa, light → desnatada, soya → soja); 8 Spain multiword units in the file's `merges`.
+
+- **Register:** the brief's usted becomes **tú** in Spain (Mariana is `informalSpain`): every line of hers that
+  addresses the learner ("¿Qué te pongo?", "¿Quieres el ticket?", "Acerca tu tarjeta", "Siéntate y te lo llevo", "¡Que
+  lo disfrutes!") and the learner's hints to her ("¿Me pones…?", "Ponme…", "¿Me puedes poner…?", "¿Tienes…?",
+  "Quédate con el cambio"); "¿Tenéis wifi?", "¿Qué tenéis?", "¿Aceptáis Apple Pay?" ask the café (vosotros).
+- **Spain's words:** ¿Qué te pongo? (bars and cafés), ¿Qué te apetece?, el datáfono (the card reader), el móvil,
+  ¿Eso es todo? (for Latin America's "¿Sería todo?"), ¡Marchando!, ¡Que aproveche!, ahora mismo, Spain's perfect for
+  today ("se nos ha acabado", "ya lo he cambiado", "¿cómo has dicho?"). The ticket stays (Spain says it too); conchas,
+  tortas, café de olla, horchata and pan dulce stay Mexican things.
+- **Grammar:** "me (puede | puedes | podría | podrías) poner" added to the order prefixes (the tip stays off in Spain).
+- Spain corpus tests/es/spain/s72-cafe.json: 29 items, all understood, 0 false accepts.
+- **For the lead:** the hint notes ("Very common in Mexico: ¿Me da…?", "dame is the tú form, for friends") show
+  beside the Spain twins ("¿Me pones…?", "Ponme…"): a `noteSpain` on HintItem would fit. The chips ("chico",
+  "deslactosada", "light", "de soya") stay Mexican: chipLabel could take `attrs.spainChip`.
+- **12 Nov (batch 2's proposal):** "Vale, muchas gracias" (Spain) and "Bueno, muchas gracias" (Mexico) at "¿Algo más?"
+  / "¿Te pongo algo más?" / "¿Sería todo?" close the order (global.ts reread, CLOSE_THANKS; at "¿Le pongo hielo?"
+  they stay a yes). And a bare "Sí" to "¿Sería todo?" / "¿Eso es todo?" (ask_more variant 2) now closes the order (it
+  asked "¿Qué más le sirvo?" before), as s79 does. Two sims are the traps (coverage.ts reads no reread).

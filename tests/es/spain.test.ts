@@ -81,3 +81,13 @@ describe("the switch", () => {
     expect(npcVoice(NPCS.mia)).toBe("es_mia");
   });
 });
+
+describe("Spain's role names", () => {
+  it("names a job as Spain does where it differs", async () => {
+    const { roleSaid } = await import("../../src/convo/compose");
+    expect(roleSaid(NPCS.jake)).toBe("Renta de autos");
+    setVariety("spain");
+    expect(roleSaid(NPCS.jake)).toBe("Alquiler de coches");
+    expect(roleSaid(NPCS.mia)).toBe("Barista");
+  });
+});

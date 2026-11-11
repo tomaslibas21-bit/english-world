@@ -330,5 +330,7 @@
   {"ctx": "dog", "say": "Traigo una botella de tequila", "intent": "personal_ctx", "not": ["declare_none", "declare_none_ctx"]},
   {"ctx": "gift_value", "say": "Ni idea de cuánto costaron", "intent": "gift_dunno_ctx", "not": ["gift_value_ctx"]},
   {"ctx": "declare", "say": "No, no traigo alcohol ni tabaco", "intent": "declare_none", "not": ["personal_ctx", "declare_items"]},
-  {"ctx": "declare", "say": "No traigo tequila", "intent": "declare_none", "not": ["personal_ctx", "declare_items"], "note": "audit 5 Nov trap: a denial is not the bottle"}
+  {"ctx": "declare", "say": "No traigo tequila", "intent": "declare_none", "not": ["personal_ctx", "declare_items"], "note": "audit 5 Nov trap: a denial is not the bottle"},
+  {"ctx": "closing", "say": "¿Puedo consultar el estado en línea?", "intent": "q_track", "note": "follow-up 5 Nov: the report line now names reclamo de equipaje"},
+  {"ctx": "closing", "say": "¿Se puede consultar por internet?", "intent": "q_track", "note": "follow-up 5 Nov"}
 ] }

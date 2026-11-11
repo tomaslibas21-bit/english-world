@@ -1,0 +1,100 @@
+{
+"situation": "s64b-security",
+"items": [
+{
+"ctx": "docs",
+"say": "¿Es esta la cola para el control de seguridad?",
+"intent": "is_this_line"
+},
+{
+"ctx": "docs",
+"say": "Aquí tiene mi tarjeta de embarque",
+"intent": "give_docs"
+},
+{
+"ctx": "docs_more",
+"say": "La tengo en el móvil",
+"intent": "give_docs"
+},
+{
+"ctx": "camera",
+"say": "¿Me quito las gafas?",
+"intent": "ask_glasses"
+},
+{
+"ctx": "camera",
+"say": "Vale",
+"intent": "yn:yes"
+},
+{
+"ctx": "divest",
+"say": "¿Tengo que sacar el portátil?",
+"intent": "ask_laptop"
+},
+{
+"ctx": "divest",
+"say": "No llevo portátil",
+"intent": "no_laptop"
+},
+{
+"ctx": "divest",
+"say": "No llevo líquidos",
+"intent": "no_liquids"
+},
+{
+"ctx": "divest",
+"say": "¿Dónde pongo el móvil?",
+"intent": "ask_phone"
+},
+{
+"ctx": "divest",
+"say": "¿Me quito la chaqueta?",
+"intent": "ask_jacket"
+},
+{
+"ctx": "divest",
+"say": "¿Dónde están las bandejas?",
+"intent": "ask_bins"
+},
+{
+"ctx": "divest",
+"say": "Ya está, ya lo he puesto todo",
+"intent": "ack_done"
+},
+{
+"ctx": "walk",
+"say": "Ya está",
+"intent": "ack_done"
+},
+{
+"ctx": "pockets",
+"say": "No llevo nada en los bolsillos",
+"intent": "pockets_nothing"
+},
+{
+"ctx": "check_pockets",
+"say": "Ay, el móvil",
+"intent": "pockets_item"
+},
+{
+"ctx": "belt_watch",
+"say": "No, no llevo",
+"intent": "pockets_nothing"
+},
+{
+"ctx": "bottle_found",
+"say": "Ay, perdón, se me ha olvidado",
+"intent": "forgot"
+},
+{
+"ctx": "bottle",
+"say": "Me la bebo aquí",
+"intent": "bottle_drink"
+},
+{
+"ctx": "closing",
+"say": "¿Hay aseos después del control?",
+"intent": "ask_restroom"
+}
+]
+}

@@ -133,3 +133,12 @@ chilaquiles (Mexican food), the anoche lines in the preterite (Spain says them s
 (encima de la nevera, no hace falta, has salvado, hecho daño, lo he mirado, cuadro eléctrico / plomos, por la mañana,
 me viene bien, de camino). Spain corpus: 25 items, 24/24, 0/1 false accepts. Gates: Mexican, neutral and Spain 0
 errors, sims 12/12; corpus 356/356 0/86; held-out 35/37 0/2 (unchanged).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the storm and the roof drain became the pipe that burst in 2B
+upstairs, with Don Ernesto downstairs. The twins of the five rewritten lines were written again against the new text:
+"¿Se está filtrando al piso de Don Ernesto?", "Vale. Luego llamo a la puerta de Don Ernesto.", "Mi fontanero tiene
+la agenda llena", the hint pipe "Ha reventado una tubería en el 2B." (drain and its desagüe twin are gone), and
+last_night "Empezó anoche, de madrugada." (both copies). The bucket keeps pass B's neutral balde and gets Spain's cubo
+(spainG m, spainPl cubos); the filtración note now says "ceiling or wall" like pass B's. Patterns: the burst pipe reads
+ha reventado / se ha roto / ha estallado, @up reads "(en el | del) piso de arriba", the not-sure answers read lo he
+mirado / he comprobado again. Spain corpus +3 (the pipe, Don Ernesto): 27/27, 0/1 false accepts.

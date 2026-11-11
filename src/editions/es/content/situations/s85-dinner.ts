@@ -9,8 +9,8 @@
 // Mexico, not Maple Harbor: nobody takes a coat on the Caribbean coast, so the "coat" step is the host's "Siéntate,
 // estás en tu casa"; hosts answer "Gracias por invitarme" with "¡Al contrario!"; a gift gets "No te hubieras
 // molestado"; a guest who is a little late hears "Llegaste justo a tiempo"; the sobremesa (staying at the table to
-// talk after the meal) is why Natalia asks you to stay; hosts often pack food to take home ("para llevar") and ask
-// "Avísanos cuando llegues".
+// talk after the meal) is why Natalia asks you to stay; hosts pack food to take home ("para llevar": here always,
+// cochinita, or flan for a guest who eats no meat) and ask "Avísanos cuando llegues".
 // Twists (later visits, as in the English): Diego asks for the tortillas, Natalia burns the rice, Michi the cat (are
 // you allergic?), a dietary question at the door, and "¿Ya te vas? ¡Quédate otro ratito, estamos en la sobremesa!".
 // The learner speaks to both hosts: the hints use ustedes ("Les traje…", "¿Les ayudo?"); tú to one host and
@@ -154,7 +154,7 @@ const AUTO: Record<string, string> = {
 };
 /** Sims without a twist: the visit's optional moments are off unless the sim turns one on. */
 const PLAIN = (s: Record<string, any>) => {
-  s.catTwist = false; s.passTwist = false; s.burntTwist = false; s.stayTwist = false; s.dietTwist = false; s.saladTask = false; s.roadFood = false;
+  s.catTwist = false; s.passTwist = false; s.burntTwist = false; s.stayTwist = false; s.dietTwist = false; s.saladTask = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -443,8 +443,9 @@ const H: Record<string, Handler> = {
 function letGo(c: Ctx) {
   c.s.leaving = true;
   dan(c, "thanks_for_coming");
-  // Mexican hosts often pack food for the road (cochinita: not for a guest who eats no meat)
-  if (c.s.roadFood && c.s.diet !== "veg") nora(c, "for_the_road");
+  // Mexican hosts pack food for the road, every time (as the closing picture shows; the lead's decision, 5 Nov 2026):
+  // cochinita, or flan for a guest who eats no meat
+  nora(c, c.s.diet === "veg" ? "for_the_road_flan" : "for_the_road");
   checkGoal(c);
   c.expect({
     id: "closing", expects: ["thanks_end", "thanks_invite", "will_text", "good_night", "thanks_back_ctx"], hints: ["goodbye"],
@@ -740,6 +741,11 @@ export const dinner: SituationDef = {
       "(todo | la cena | la comida) (estuvo | estaba) @great", "(fue | que) (una noche | una cena | una velada) (maravillosa | increible | muy bonita | padrisima | deliciosa)",
       "me encantaria pero (manana trabajo | tengo que trabajar manana | me tengo que levantar temprano | tengo que irme | no puedo | ya es tarde) #h:lv_work",
       "la proxima (en mi casa | vienen a mi casa | los invito yo | yo invito)",
+      // the food to take home, every visit (the follow-up pass, 5 Nov 2026): "¡Gracias por el flan!", "No se hubieran molestado"
+      "[ay | uy] [muchas | mil] gracias (por | por el | por la | por los) (flan | cochinita | comida | taco | tacos | itacate | taper | tupper | comida para llevar | para llevar) [@great] [no se hubieran molestado | no te hubieras molestado]",
+      "[ay | uy] [muchas | mil] gracias [que (rico | amables | lindos | lindas)] (no se hubieran molestado | no te hubieras molestado | no hacia falta | no era necesario)",
+      "[ay] (no se hubieran molestado | no te hubieras molestado | no hacia falta | no era necesario) [muchas gracias | mil gracias | gracias]",
+      "[ay] [que rico] me (lo | la) como manana [gracias | muchas gracias]", "[ay] (que | muy) (amables | lindos | lindas) [muchas gracias | gracias]",
     ] },
     // "Gracias a ustedes": only as the answer to "¡Gracias por venir!"
     thanks_back_ctx: { patterns: ["[no] [muchas] gracias a (ustedes | ti | vosotros) [por todo | por la invitacion]"] },
@@ -1115,6 +1121,10 @@ export const dinner: SituationDef = {
     for_the_road: [
       t("¡Espérate! | Te | pongo | un | poco | de | cochinita | para llevar.", "Wait! | (For) you | I-put | a | little | of | cochinita | to go.", "Wait! Let me pack you some cochinita to take home.", { spain: t("¡Espera! | Te | pongo | un | poco | de | cochinita | para llevar.", "Wait! | (To) you | I'll put | a | bit | of | cochinita | to take away.", "Wait! Let me pack you some cochinita to take home.") }),
     ],
+    // a guest who eats no meat takes flan home
+    for_the_road_flan: [
+      t("¡Espérate! | Te | pongo | un | pedazo | de | flan | para llevar.", "Wait! | (For) you | I-put | a | piece | of | flan | to go.", "Wait! Let me pack you a piece of flan to take home.", { spain: t("¡Espera! | Te | pongo | un | trozo | de | flan | para llevar.", "Wait! | (For) you | I-put | a | piece | of | flan | to go.", "Wait! Let me pack you a piece of flan to take home.") }),
+    ],
     yes_please: [
       t("¡Sí, | porfa!", "Yes, | please!", "Yes, please do!", { flags: { 1: "porfa: short for por favor." } }),
     ],
@@ -1443,7 +1453,6 @@ export const dinner: SituationDef = {
     c.s.askDessert = c.chance(0.6);
     c.s.saladTask = c.chance(0.4);
     c.s.catTwist = c.chance(0.3);
-    c.s.roadFood = c.chance(0.5);
     c.s.passTwist = c.visits >= 1 && c.chance(0.45);
     c.s.burntTwist = c.visits >= 1 && c.chance(0.35);
     c.s.stayTwist = c.visits >= 1 && c.chance(0.45);
@@ -1676,14 +1685,14 @@ export const dinner: SituationDef = {
         "¿Qué es lo que huele tan rico? ¿Quién cocinó?", "¡Salud!", "¿Qué lleva?", "¿Qué lleva la salsa?", "Está rica, pero está un poco salada.", "¿Tú hiciste el flan?",
         "Sí, un pedacito.", "¡Qué rápido se pasa el tiempo!", "Gracias por la cena, ¡estuvo deliciosa!", "No, gracias, ya me voy.", "¡Gracias por todo!"],
       expect: { complete: true, state: { lateSorry: true, gift: "mezcal", diet: "other", dessert: "yes" } }, auto: AUTO },
-    { name: "Natalia's own answers: two gifts, the restroom, the pictures, spicy, who made the flan", setup: (s) => { PLAIN(s); s.saladTask = true; s.roadFood = true; s.askSeconds = true; s.askDessert = true; },
+    { name: "Natalia's own answers: two gifts, the restroom, the pictures, spicy, who made the flan", setup: (s) => { PLAIN(s); s.saladTask = true; s.askSeconds = true; s.askDessert = true; },
       turns: ["¡Hola! Gracias por invitarme. Les traje galletas.", "Y les traje un pastel.", "Nada por ahora, gracias.", "¿Les ayudo en algo?", "¿Dónde está el baño?",
         "¡Claro! ¿Dónde la pongo?", "Me encantan los cuadros.", "¿Esto pica?", "No me gusta el picante.", "¡Pero está riquísima!", "Sí, por favor.", "¿Quién hizo el flan?",
         "Sí, por favor.", "Ya me voy, que es tarde.", "Les aviso cuando llegue."],
       expect: { complete: true, state: { gift: "cookies", saladDone: true, seconds: "yes", dessert: "yes", willText: true } }, auto: AUTO },
     // A guest who eats no meat has the rajas tacos: "¿Y? ¿Te gusta?" (never "¿Qué tal la cochinita?"), more on asking
-    // ("¿Me sirves un poco más?" before Natalia offers), and no cochinita to take home
-    { name: "no meat: the tacos, more on asking, nothing to go", setup: (s) => { PLAIN(s); s.dietTwist = true; s.roadFood = true; s.askSeconds = false; s.askDessert = false; },
+    // ("¿Me sirves un poco más?" before Natalia offers), and flan to take home, never cochinita
+    { name: "no meat: the tacos, more on asking, flan to go", setup: (s) => { PLAIN(s); s.dietTwist = true; s.askSeconds = false; s.askDessert = false; },
       turns: ["Hola, gracias por invitarme.", "Gracias.", "Soy vegetariano.", "Una limonada.", "¿Qué es esto?", "¡Salud!", "¿Me sirves un poco más?", "¡Qué rico!",
         "Ya me voy, que es tarde.", "¡Gracias por todo!"],
       expect: { complete: true, state: { diet: "veg", seconds: "yes", foodPraised: true } }, auto: AUTO },

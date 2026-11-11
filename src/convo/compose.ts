@@ -37,6 +37,11 @@ let VARIETY: Variety = "default";
 export function setVariety(v: Variety) { VARIETY = v; }
 export const variety = () => VARIETY;
 
+/** A character's role in the practised language as the chosen Spanish names it (Spain's `roleSpain`). */
+export function roleSaid(npc: { role: { en: string }; roleSpain?: string } | undefined): string {
+  return npc ? (VARIETY === "spain" && npc.roleSpain ? npc.roleSpain : npc.role.en) : "";
+}
+
 /** Whether a character says tú to the learner: `informal`, or in Spain's Spanish also `informalSpain` (Spain's tú in
  *  casual service: the café, the shop, the salon, the gym; docs/es/STYLE.md "Spain Spanish"). */
 export function addressInformal(npc: { informal?: boolean; informalSpain?: boolean } | undefined): boolean {

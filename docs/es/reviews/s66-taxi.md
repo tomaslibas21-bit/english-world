@@ -99,3 +99,11 @@ grammar, a held-out set of 66 learner sentences was written blind (`tests/es/hel
 - A piece of a sentence can't start with "es" ("Al centro, es urgente" isn't read as two pieces); s66 finds the place
   in the sentence instead.
 - N/AUDIT pictures: the manifest's note says the sitio is "by the zócalo"; it is at the east end of avenida Juárez.
+
+## Spain twins (11 Nov 2026)
+
+- 8 Spain twins (lines and hints), 13 items in tests/es/spain/s66-taxi.json.
+- Register: no change. The brief's usted holds in Spain too (STYLE.md: officials, the airline, the hotel, older people, anyone senior); nobody here is `informalSpain`, so no line or hint moved between tú and usted. Don Rigo keeps usted (older, and STYLE.md names him).
+- Words: coja un colectivo, andando, ¿Le pongo el aire? / ¿Puede poner el aire?, Ya está, Ya hemos llegado, Sí, tengo cambio, the learner's Ya he venido antes. The car-rental place has a Spain noun (alquiler de coches, attrs.spain + forms).
+- Grammar: ac_on takes póngame; no_cash takes no llevo. Merges: hemos llegado, he venido.
+- Kept: joven as Don Rigo's way to address the learner (also said in Spain); lo/la llevo (no leísmo).

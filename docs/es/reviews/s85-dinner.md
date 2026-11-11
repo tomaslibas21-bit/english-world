@@ -149,3 +149,6 @@ speaker's voice. No plural items, no values.
 - Grammar: que aproveche, aseo / servicios, qué alegría veros, no he traído nada, quién ha preparado / lo has hecho
   tú, trocito, fregar los platos, me lo he pasado muy bien. Merges for the new units.
 - Left for the lead (global.ts): "¿Qué tal estáis?" isn't read as g_howareyou ("¿Cómo estáis?" is).
+
+After pass B (merge of es-spain 98cfaffc, 12 Nov 2026): the new for_the_road_flan line gets its Spain twin, "¡Espera!
+Te pongo un trozo de flan para llevar." (like for_the_road's "¡Espera!").

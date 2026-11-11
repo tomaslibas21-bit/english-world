@@ -1,0 +1,85 @@
+{
+"situation": "s67a-tickets",
+"items": [
+{
+"ctx": "dest",
+"say": "Buenos días, un billete a Tulum, por favor",
+"intent": "buy"
+},
+{
+"ctx": "dest",
+"say": "¿Cuánto cuesta un billete a Mérida?",
+"intent": "ask_price"
+},
+{
+"ctx": "trip",
+"say": "Ida y vuelta, por favor",
+"intent": "trip_ans"
+},
+{
+"ctx": "trip",
+"say": "Solo ida",
+"intent": "trip_ans"
+},
+{
+"ctx": "ret",
+"say": "Vuelvo el domingo",
+"intent": "ret_ctx"
+},
+{
+"ctx": "ret",
+"say": "El domingo por la tarde",
+"intent": "ret_ctx"
+},
+{
+"ctx": "sold_out",
+"say": "Vale, deme ese",
+"intent": "accept_ctx"
+},
+{
+"ctx": "name",
+"say": "No llevo el pasaporte",
+"intent": "no_id"
+},
+{
+"ctx": "student_id",
+"say": "Aquí está mi carné",
+"intent": "show_id"
+},
+{
+"ctx": "student_id",
+"say": "No lo llevo",
+"intent": "no_id"
+},
+{
+"ctx": "discount",
+"say": "¿Hay descuento para jubilados?",
+"intent": "discount_ask"
+},
+{
+"ctx": "pay",
+"say": "Mejor ida y vuelta",
+"intent": "change_trip"
+},
+{
+"ctx": "info",
+"say": "¿Dónde están los aseos?",
+"intent": "ask_restroom"
+},
+{
+"ctx": "info",
+"say": "Vale, eso es todo",
+"intent": "more_no"
+},
+{
+"ctx": "closing",
+"say": "¿Este sitio está libre?",
+"intent": "seat_taken"
+},
+{
+"ctx": "dest",
+"say": "Quiero un billete de ida y vuelta a Cancún",
+"intent": "buy"
+}
+]
+}

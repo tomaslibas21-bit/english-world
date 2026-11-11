@@ -472,5 +472,11 @@
   {"ctx": "turn", "say": "Está bien, Diego", "intent": ["start_over", "yn:yes"], "note": "(audit 5 Nov)"},
   {"ctx": "deal", "say": "El sábado no puedo", "intent": "cant_now_ctx", "not": ["deal_ctx", "yn:yes"], "note": "(audit 5 Nov)"},
   {"ctx": "deal", "say": "¡No puedo esperar!", "intent": "any", "not": ["cant_now_ctx", "yn:no"], "note": "(audit 5 Nov)"},
-  {"ctx": "deal", "say": "Claro, el sábado en mi casa", "intent": "deal_ctx", "not": ["cant_now_ctx"], "note": "(audit 5 Nov)"}
+  {"ctx": "deal", "say": "Claro, el sábado en mi casa", "intent": "deal_ctx", "not": ["cant_now_ctx"], "note": "(audit 5 Nov)"},
+  {"ctx": "apology", "say": "Lo siento, no fue mi intención", "intent": "apologize", "not": ["didnt_mean"], "note": "follow-up 5 Nov: the brief phrase with the apology is a real one Diego accepts"},
+  {"ctx": "apology", "say": "Lo siento mucho, no fue mi intención lastimarte", "intent": "apologize", "not": ["didnt_mean"], "note": "follow-up 5 Nov"},
+  {"ctx": "apology", "say": "Perdóname, no quise lastimarte", "intent": "apologize", "not": ["didnt_mean"], "note": "follow-up 5 Nov"},
+  {"ctx": "apology", "say": "No fue mi intención, perdóname", "intent": "apologize", "not": ["didnt_mean"], "note": "follow-up 5 Nov"},
+  {"ctx": "apology", "say": "Lo siento, de verdad no fue mi intención", "intent": "apologize", "not": ["didnt_mean"], "note": "follow-up 5 Nov"},
+  {"ctx": "apology", "say": "Lo siento, pero no fue mi intención", "intent": "any", "not": ["own_it"], "note": "follow-up 5 Nov trap: sorry + but is no real apology"}
 ] }

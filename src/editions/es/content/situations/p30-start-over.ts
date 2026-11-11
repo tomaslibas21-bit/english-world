@@ -13,7 +13,9 @@
 // dejes a tu amigo en la puerta! Ya está el café."] → making it up (a dinner, and you cook / help with the lancha /
 // stay for lunch) → "¿Empezamos de nuevo?" / "¿Borrón y cuenta nueva?" → "Ya empezamos. Tú y yo." → "Pásale."
 // Bad moves ("Lo siento, pero…", "Siento que te sientas así", excuses, blame, "era una broma", pushing) get an
-// in-world reply and a tip, never a failure. "No fue mi intención" (the brief) gets "Tal vez no. Pero lo dijiste."
+// in-world reply and a tip, never a failure. A bare "No fue mi intención" gets "Tal vez no. Pero lo dijiste."; said
+// with the apology ("Lo siento, no fue mi intención", one of the brief's phrases) it is a real apology that Diego
+// accepts (the lead's decision, 5 Nov 2026).
 // A bare yes or no answers the question in a bad move's reply ("¿Quieres intentarlo otra vez?" – "Sí." – "Te escucho.").
 // No is respected: "Hoy no puedo" to his price gets "Bueno, otro día. Pero me la debes."; a "No" gets "Respuesta
 // equivocada" once (a joke between friends), and a second "No" he lets go (the price: "Con la disculpa me conformo";
@@ -218,6 +220,13 @@ export const startOver: SituationDef = {
       "@sorry por @hurt [@where] #specific",
       "@sorry por (ser | haber sido) @rude_adj [contigo] [@where] #specific", "@sorry por portarme (mal | tan mal | fatal) [contigo] [@where] #specific",
       "@sorry por todo lo que (dije | te dije) [@where] #specific",
+      // "Lo siento, no fue mi intención": the brief's phrase with the apology is a real one (a bare "No fue mi intención"
+      // stays didnt_mean, the mild misstep)
+      "@sorry [de verdad | en serio] no fue mi intencion [@hurt | decir eso | hacerte sentir mal | que pasara eso] [de verdad | en serio] #specific #h:sorry_not_meant",
+      "@sorry (diego | amigo | amiga | carnal | hermano | compa) [de verdad | en serio] no fue mi intencion [@hurt | decir eso | hacerte sentir mal | que pasara eso] #specific",
+      "@siento [mucho | muchisimo] (lo que dije | haberte dicho eso) no fue mi intencion [@hurt] #specific",
+      "no fue mi intencion [@hurt | decir eso | hacerte sentir mal] @sorry #specific", "no fue mi intencion [@hurt] @sorry (diego | amigo | amiga | carnal | hermano | compa) #specific",
+      "@sorry no (quise | queria) (@hurt | decir eso | hacerte sentir mal) [de verdad] #specific", "@sorry (diego | amigo | amiga | carnal | hermano | compa) no (quise | queria) (@hurt | decir eso | hacerte sentir mal) #specific",
       "@siento @silence #specific #silence", "@siento (haberte dicho | haber dicho | decirte) (eso | esas cosas | lo que dije | todo eso) [@where] #specific", "@siento (haberte | que te haya) (lastimado | herido | ofendido | humillado) [@where] #specific",
       "(me siento | me he sentido | me senti) (fatal | muy mal | mal | terrible | horrible | pesimo) por @said [@where] #specific",
       "(me arrepiento | estoy arrepentido | estoy arrepentida) (de | por) @said [@where] #specific", "me arrepiento (de eso | de todo) #specific", "me arrepiento [mucho | muchisimo | de verdad]",
@@ -703,6 +712,8 @@ export const startOver: SituationDef = {
           "I'm so sorry about what I said at your cookout.", { flags: { 6: CARNE },
             neutral: t("Perdóname | por | lo que | dije | en | tu | parrillada.", "Forgive me | for | what | I-said | at | your | cookout.", "I'm so sorry about what I said at your cookout."), spain: t("Perdóname | por | lo que | dije | en | tu | barbacoa.", "Forgive me | for | what | I-said | at | your | cookout.", "I'm so sorry about what I said at your cookout.") }),
           note: "“Perdóname” is warm and normal between friends." },
+        { id: "sorry_not_meant", s: t("Lo siento, | no fue | mi | intención.", "I'm sorry, | it wasn't | my | intention.", "I'm sorry. I didn't mean to."),
+          note: "With “Lo siento” it's a real apology; “No fue mi intención” alone sounds like an excuse." },
         { id: "apologize", s: t("Quiero | pedirte | perdón.", "I-want | to ask you | forgiveness.", "I want to apologize.") },
         { id: "hope_forgive", s: t("Espero | que | me | puedas | perdonar.", "I-hope | that | me | you-can | forgive.", "I hope you can forgive me.", { flags: { 3: SUBJ } }) },
       ],
@@ -1191,12 +1202,24 @@ export const startOver: SituationDef = {
       "No va a volver a pasar.", "¿Podemos volver a ser amigos?",
     ], expect: { complete: true, state: { whySkipped: true, saidWrong: true } }, auto: AUTO,
       setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "boat"; } },
-    // "No fue mi intención" (the brief), Spain forms, "sale"
+    // a bare "No fue mi intención" (the mild misstep), Spain forms, "sale"
     { name: "no fue mi intención, Spain forms", turns: [
-      "¿Tenéis un momento?", "Lo siento, no fue mi intención.", "Lo siento mucho por lo que te dije, tío.", "La he liado. No te lo merecías.", "Me daba vergüenza.",
+      "¿Tenéis un momento?", "No fue mi intención.", "Lo siento mucho por lo que te dije, tío.", "La he liado. No te lo merecías.", "Me daba vergüenza.",
       "Vale, lo entiendo.", "¿Te apetece una cerveza? Yo invito.", "Os eché de menos.", "Sí.",
     ], expect: { complete: true, state: { timeOk: true, lastBad: "didnt_mean" } }, auto: AUTO,
       setup: (s) => { s.mood = "needs_time"; s.noraTwist = false; s.variant = "dinner"; } },
+    // the follow-up pass (5 Nov 2026): "Lo siento, no fue mi intención" (the brief) is a real apology Diego accepts: no
+    // "Tal vez no. Pero lo dijiste.", no "¿Perdón por qué?"
+    { name: "Lo siento, no fue mi intención: a real apology", turns: [
+      "Hola, Diego. ¿Podemos hablar?", "Lo siento, no fue mi intención.", "Me equivoqué. No te lo merecías.", "Fui demasiado orgulloso para llamarte.",
+      "Gracias por escucharme.", "¿Cómo te lo puedo compensar?", "Trato hecho.", "¿Empezamos de nuevo?",
+    ], expect: { complete: true, state: { apologyDone: true, badMoves: undefined, lastBad: undefined } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
+    { name: "Perdóname, no quise lastimarte: a real apology", turns: [
+      "¿Tienes un minuto?", "Perdóname, Diego, no quise lastimarte.", "Tenías razón. Me pasé.", "Me daba vergüenza.",
+      "Gracias por escucharme.", "Te invito a cenar.", "¿Borrón y cuenta nueva?",
+    ], expect: { complete: true, state: { apologyDone: true, badMoves: undefined } }, auto: AUTO,
+      setup: (s) => { s.mood = "open"; s.noraTwist = false; s.variant = "dinner"; } },
     // review: "Está bien, gracias" while Diego needs time accepts it (it used to get "Solo dame un tiempo" again)
     // review: a bare "Es verdad" admits it (it was the "¡pero es verdad!" jab, a bad move)
     { name: "it's true, I said it", turns: [

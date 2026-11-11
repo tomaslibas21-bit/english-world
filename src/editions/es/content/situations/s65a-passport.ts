@@ -27,7 +27,8 @@ import { expectHowAreYou } from "@/content/global";
 // ---------------------------------------------------------------------------
 // Entities: the people the learner visits or travels with.
 
-const R = (id: string, es: string, en: string, g: "m" | "f", forms: string[], pl = false) => ent(id, es, en, g, { forms, attrs: { pl } });
+const R = (id: string, es: string, en: string, g: "m" | "f", forms: string[], pl = false, spain?: string) => ent(id, es, en, g, { forms, attrs: { pl, ...(spain ? { spain } : {}) } });
+// Spain says "mi madre", "mi padre", "mis padres" (attrs.spain).
 const RELS: EntityDef[] = [
   R("familia", "familia", "family", "f", ["familiares", "parientes", "mi gente"], false),
   R("amigos", "amigos", "friends", "m", ["amigas", "unos amigos", "unas amigas", "amistades"], true),
@@ -37,9 +38,9 @@ const RELS: EntityDef[] = [
   R("hijo", "hijo", "son", "m", []),
   R("hija", "hija", "daughter", "f", []),
   R("hijos", "hijos", "children", "m", ["hijas", "ninos", "nietos", "nietas", "nieto", "nieta"], true),
-  R("padres", "papás", "parents", "m", ["padres", "papas"], true),
-  R("mama", "mamá", "mom", "f", ["mama", "madre", "mami"]),
-  R("papa", "papá", "dad", "m", ["papa", "padre", "papi"]),
+  R("padres", "papás", "parents", "m", ["padres", "papas"], true, "padres"),
+  R("mama", "mamá", "mom", "f", ["mama", "madre", "mami"], false, "madre"),
+  R("papa", "papá", "dad", "m", ["papa", "padre", "papi"], false, "padre"),
   R("primo", "primo", "cousin", "m", ["prima", "primos", "primas"]),
   R("tia", "tía", "aunt", "f", ["tia", "tias"]),
   R("tio", "tío", "uncle", "m", ["tio", "tios"]),
@@ -354,10 +355,18 @@ function glassesPending(): Pending {
   };
 }
 
-/** The twist: more days once she has seen the return ticket. */
+/** The twist: more days once she has seen the return ticket, up to the return date: a request above the trip ("¿Me
+ *  puede dar 180 días?" after "Un mes") gets the trip's days, and she says so (the lead's decision, 5 Nov 2026). */
 function grantMore(c: Ctx) {
   c.s.daysDone = true; c.s.daysResult = "more";
-  if (c.s.length === "until") c.say("stamp_more_until"); else c.say("stamp_more", { num: grantOf(c.s.days) });
+  if (c.s.length === "until") { c.say("stamp_more_until"); return; }
+  const trip = typeof c.s.length === "number" ? grantOf(c.s.length) : undefined;
+  if (trip !== undefined && typeof c.s.days === "number" && grantOf(c.s.days) > trip) {
+    c.s.days = c.s.length;
+    c.say("stamp_more_return", { num: trip });
+    return;
+  }
+  c.say("stamp_more", { num: grantOf(c.s.days) });
 }
 function keepShort(c: Ctx, line = "stamp_keep") { c.s.daysDone = true; c.s.daysResult = "short"; c.say(line, { num: c.s.short }); }
 function acceptShort(c: Ctx) { c.s.daysDone = true; c.s.daysResult = "short"; ack(c, 1); }
@@ -383,6 +392,9 @@ function daysTicketPending(): Pending {
 }
 /** "Quince días más", "una semana más": the figure is added to the days she gave ("más o menos" is not). */
 const addsToHers = (c: Ctx) => /\b(dias?|semanas?|mes|meses)\s+mas\b(?!\s+o\s+menos)/.test(fold(c.heard));
+/** "Es que voy a estar dos meses": a stay said at the stamp is the trip (her limit is the return date); a figure asked
+ *  for ("¿Me puede dar ciento ochenta días?") is only a request. */
+const staySaid = (c: Ctx) => /\b(voy a estar|vamos a estar|voy a quedarme|vamos a quedarnos|me voy a quedar|nos vamos a quedar|me quedo|nos quedamos|estare|estaremos)\b/.test(fold(c.heard));
 /** "¿Me puede dar treinta días?": a new figure counts if it's more than she gave; then the ticket, unless already seen. */
 function moreDays(c: Ctx, want?: number | "until" | "vague") {
   const T = turn(c);
@@ -392,6 +404,7 @@ function moreDays(c: Ctx, want?: number | "until" | "vague") {
   // "Diez días" when she gives fifteen asks for nothing more
   if (typeof want === "number" && want < (c.s.short ?? 0) && !/\bno\b/.test(fold(c.heard))) { acceptShort(c); return; }
   if (typeof want === "number" && want > (c.s.short ?? 0)) c.s.days = Math.min(want, 180);
+  if (typeof want === "number" && want > (c.s.short ?? 0) && staySaid(c)) c.s.length = Math.min(want, 180);
   if (want === "until") c.s.length = "until";
   if (c.s.ret === true) { grantMore(c); return; }
   c.s.ticketQ = true;
@@ -635,7 +648,7 @@ export const passport: SituationDef = {
     ] },
     stay_airbnb: { patterns: [
       "[@stay_verb] en (un | una) (airbnb | air bnb | departamento | apartamento | depa | departamento rentado | casa rentada | cuarto rentado | casa | casita | cabana | villa) #h:w_airbnb",
-      "(renté | reservé | alquilé | rentamos | alquilamos) (un | una) (departamento | apartamento | casa | cuarto | airbnb | casita | cabana) [por airbnb] #h:w_apartment",
+      "(renté | reservé | alquilé | rentamos | alquilamos | he alquilado | he reservado | hemos alquilado) (un | una) (departamento | apartamento | piso | casa | cuarto | airbnb | casita | cabana) [por airbnb] #h:w_apartment",
       "[@stay_verb] en [la] (calle | avenida) {street} [numero] {number} #addr",
     ] },
     hotel_other_ctx: { patterns: [
@@ -675,7 +688,7 @@ export const passport: SituationDef = {
       "[es] [en] [la] (calle | avenida) {street} [pero] no (se | me se | recuerdo | me acuerdo de) el numero",
     ] },
     return_yes: { patterns: [
-      "[si] (lo | la) (tengo | traigo) en (el | mi) (celular | telefono | correo) #h:r_yes", "[si] (esta | lo tengo) en (mi | el) (celular | telefono | correo)",
+      "[si] (lo | la) (tengo | traigo | llevo) en (el | mi) (celular | telefono | correo) #h:r_yes", "[si] (esta | lo tengo) en (mi | el) (celular | telefono | correo)",
       "[si] (tengo | traigo) [mi | el] @ticket [de regreso | de vuelta] [aqui]", "[si] (tengo | ya tengo) (vuelo | boleto | billete) de (regreso | vuelta)",
       "[si] es (viaje | boleto | vuelo) redondo", "[si] (ya lo compré | lo compré)", "[si] (es | tengo) [de] (ida y vuelta | viaje redondo)", "[si] (tengo | es) [un | mi] (boleto | vuelo) (de ida y vuelta | redondo)",
     ] },
@@ -800,7 +813,7 @@ export const passport: SituationDef = {
       "le (doy | muestro | enseno) [tambien] (mi | el) (pase de abordar | boleto | tarjeta de embarque)",
     ] },
     q_form: { patterns: [
-      "(tengo que | hay que | debo) llenar (algun | un | algo | una) [formulario | forma | papel | documento] #h:q_form", "(hay | necesito) (algun | un | una) (formulario | forma) [migratoria]",
+      "(tengo que | hay que | debo) (llenar | rellenar) (algun | un | algo | una) [formulario | forma | papel | documento] #h:q_form", "(hay | necesito) (algun | un | una) (formulario | forma) [migratoria]",
       "(y | que hay de) la forma migratoria",
     ] },
     q_baggage: { patterns: [
@@ -816,6 +829,7 @@ export const passport: SituationDef = {
       "@staff (dar | poner) (mas dias | mas tiempo | {number} dias | {dur}) #h:dy_more",
       "(puede | podria | me puede | me podria) (darme | ponerme) (mas dias | mas tiempo | {number} [dias] | {dur})", "(puedes | podrias) (darme | ponerme) (mas dias | {number} [dias] | {dur}) #tip:tu_staff",
       "(me da | me pone) (mas dias | {number} dias | {dur})", "no me (puede | podria) (dar | poner) {number} [dias]",
+      "@staff (dar | poner) los {number} [dias]", "(puede | podria | me puede | me podria) (darme | ponerme) los {number} [dias]",
       "por que (solo | nomas | nada mas)? {number} [dias]",
       "(necesito | quisiera | me gustaria | quiero) (mas dias | mas tiempo)", "prefiero (mas dias | {number} dias | {dur})",
       "(es que | pero) (voy a estar | me quedo | necesito | voy a quedarme) {dur} #h:dy_more2",
@@ -845,7 +859,7 @@ export const passport: SituationDef = {
     ],
     greet_passport: [
       t("Buenas tardes. | Su | pasaporte, | por favor.", "Good afternoon. | Your | passport, | please.", "Good afternoon. Passport, please."),
-      t("Buenas. | ¿Me | permite | su | pasaporte?", "Hello. | (To) me | you-allow | your | passport?", "Hello. May I see your passport?", { flags: { 0: "Buenas: short for buenas tardes, a common hello in Mexico." } }),
+      t("Buenas. | ¿Me | permite | su | pasaporte?", "Hello. | (To) me | you-allow | your | passport?", "Hello. May I see your passport?", { flags: { 0: "Buenas: short for buenas tardes, a common hello in Mexico." }, spain: t("Buenas. | ¿Me | deja | su | pasaporte?", "Hello. | (To) me | you-let-have | your | passport?", "Hello. May I see your passport?", {flags: {0: "Buenas: short for buenas tardes, a common hello in Mexico."}}) }),
       t("¡Hola! | Pasaporte, | por favor.", "Hi! | Passport, | please.", "Hi! Passport, please."),
     ],
     greet_howareyou: [
@@ -877,12 +891,12 @@ export const passport: SituationDef = {
     ],
     good_luck: [t("¡Mucha | suerte | con | su | entrevista!", "Much | luck | with | your | interview!", "Good luck with your interview!")],
     who_visit: [t("¿A | quién | visita?", "— | Whom | are you visiting?", "Who are you visiting?", { flags: { 0: "Personal a: Spanish marks a person as the object; English needs no word." } })],
-    visa_q: [t("¿Tiene | visa | de | residente?", "Do you have | a visa | as a | resident?", "Do you have a resident visa?")],
-    visa_again: [t("Gracias. | ¿Y | su | visa | de | residente?", "Thanks. | And | your | visa | as a | resident?", "Thanks. And your resident visa?")],
+    visa_q: [t("¿Tiene | visa | de | residente?", "Do you have | a visa | as a | resident?", "Do you have a resident visa?", { spain: t("¿Tiene | visado | de | residente?", "Do you have | a visa | as a | resident?", "Do you have a resident visa?") })],
+    visa_again: [t("Gracias. | ¿Y | su | visa | de | residente?", "Thanks. | And | your | visa | as a | resident?", "Thanks. And your resident visa?", { spain: t("Gracias. | ¿Y | su | visado | de | residente?", "Thanks. | And | your | visa | as a | resident?", "Thanks. And your resident visa?") })],
     visa_ok_res: [t("Muy | bien. | Tiene | treinta | días | para | tramitar | su | tarjeta | de | residente | en | una | oficina | de | migración.", "Very | good. | You have | thirty | days | to | apply for | your | card | of | resident | at | an | office | of | immigration.", "All right. You have thirty days to get your resident card at an immigration office.")],
-    no_visa_work: [t("Sin | visa | de | residente, | no puede | trabajar | ni | vivir | aquí.", "Without | a visa | as a | resident, | you can't | work | or | live | here.", "Without a resident visa, you can't work or live here.")],
+    no_visa_work: [t("Sin | visa | de | residente, | no puede | trabajar | ni | vivir | aquí.", "Without | a visa | as a | resident, | you can't | work | or | live | here.", "Without a resident visa, you can't work or live here.", { spain: t("Sin | visado | de | residente, | no puede | trabajar | ni | vivir | aquí.", "Without | a visa | as a | resident, | you can't | work | or | live | here.", "Without a resident visa, you can't work or live here.") })],
     tourist_can: [t("Como | turista, | puede | entrar | de | vacaciones | o | por | negocios.", "As | a tourist, | you can | come in | on | vacation | or | for | business.", "As a tourist, you can come on vacation or on business.")],
-    ans_visa: [t("Para | turismo | no necesita | visa, | solo | su | pasaporte.", "For | tourism | you don't need | a visa, | only | your | passport.", "You don't need a visa for tourism, just your passport.")],
+    ans_visa: [t("Para | turismo | no necesita | visa, | solo | su | pasaporte.", "For | tourism | you don't need | a visa, | only | your | passport.", "You don't need a visa for tourism, just your passport.", { spain: t("Para | turismo | no necesita | visado, | solo | su | pasaporte.", "For | tourism | you don't need | a visa, | only | your | passport.", "You don't need a visa for tourism, just your passport.") })],
     // Length of stay
     ask_length: [
       t("¿Cuántos | días | se va a quedar?", "How many | days | are you going to stay?", "How many days are you staying?"),
@@ -906,13 +920,13 @@ export const passport: SituationDef = {
       t("¿Tiene | la | dirección?", "Do you have | the | address?", "Do you have the address?"),
     ],
     address_show: [t("Muéstremela, | por favor.", "Show it to me, | please.", "Please show me.")],
-    address_check: [t("¿La | puede | buscar | en | su | celular?", "It | can you | look for | on | your | phone?", "Could you look it up on your phone?", { flags: { 0: "la: it, the pronoun for la dirección (not the article)." } })],
+    address_check: [t("¿La | puede | buscar | en | su | celular?", "It | can you | look for | on | your | phone?", "Could you look it up on your phone?", { flags: { 0: "la: it, the pronoun for la dirección (not the article)." }, spain: t("¿La | puede | buscar | en | su | móvil?", "It | can you | look for | on | your | phone?", "Could you look it up on your phone?", {flags: {0: "la: it, the pronoun for la dirección (not the article)."}}) })],
     address_none: [t("Bueno, | no importa.", "Well, | it doesn't matter.", "Okay, never mind.")],
     // Return ticket
-    ask_return_ticket: [t("¿Trae | su | boleto | de | regreso?", "Are you carrying | your | ticket | of | return?", "Do you have your return ticket?")],
+    ask_return_ticket: [t("¿Trae | su | boleto | de | regreso?", "Are you carrying | your | ticket | of | return?", "Do you have your return ticket?", { spain: t("¿Lleva | su | billete | de | vuelta?", "Are you carrying | your | ticket | of | return?", "Do you have your return ticket?") })],
     ask_fly_back: [t("¿Cuándo | regresa | a | su | país?", "When | do you return | to | your | country?", "When are you going back home?")],
-    simple_return: [t("¿Tiene | boleto | de | regreso?", "Do you have | a ticket | of | return?", "Do you have a return ticket?")],
-    show_ticket: [t("¿Me | muestra | su | boleto | de | regreso, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?")],
+    simple_return: [t("¿Tiene | boleto | de | regreso?", "Do you have | a ticket | of | return?", "Do you have a return ticket?", { spain: t("¿Tiene | billete | de | vuelta?", "Do you have | a ticket | of | return?", "Do you have a return ticket?") })],
+    show_ticket: [t("¿Me | muestra | su | boleto | de | regreso, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?", { spain: t("¿Me | muestra | su | billete | de | vuelta, | por favor?", "(To) me | you-show | your | ticket | of | return, | please?", "Could you show me your return ticket, please?") })],
     ticket_ok: [t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thank you.")],
     return_needed: [t("Necesitamos | ver | que | va | a | salir | del | país.", "We need | to see | that | you're going | to | leave | from the | country.", "We need to see that you'll be leaving the country.")],
     check_email: [t("¿Lo | puede | buscar | en | su | correo?", "It | can you | look for | in | your | email?", "Could you look for it in your email?")],
@@ -921,17 +935,17 @@ export const passport: SituationDef = {
     ask_first: [t("¿Es | su | primera | vez | en | México?", "Is it | your | first | time | in | Mexico?", "Is this your first time in Mexico?")],
     ask_before: [t("¿Ya | había | venido | a | México?", "Already | had you | come | to | Mexico?", "Have you been to Mexico before?")],
     first_welcome: [t("¡Pues | {m:bienvenido|f:bienvenida}!", "Well | welcome!", "Well, welcome!")],
-    welcome_back: [t("¡Qué | bueno | que | regresó!", "How | good | that | you came back!", "Nice to have you back!")],
+    welcome_back: [t("¡Qué | bueno | que | regresó!", "How | good | that | you came back!", "Nice to have you back!", { spain: t("¡Qué | bien | que | haya vuelto!", "How | good | that | you came back!", "Nice to have you back!") })],
     ask_job: [t("¿A | qué | se dedica?", "To | what | do you devote yourself?", "What do you do for a living?")],
     simple_job: [t("¿Cuál | es | su | trabajo?", "What | is | your | job?", "What's your job?")],
     retired_ack: [t("¡Qué | bien! | A | descansar.", "How | nice! | To | rest.", "How nice! Time to relax.")],
     ask_alone: [t("¿Viaja | {m:solo|f:sola}?", "Are you traveling | alone?", "Are you traveling alone?")],
     // the same yes/no as "¿Viaja solo?" ("¿Viene con alguien?" turned the learner's "Sí" into "alone")
     simple_alone: [t("¿Viene | {m:solo|f:sola}, | sin | familia | ni | amigos?", "Are you coming | alone, | without | family | or | friends?", "Are you here on your own, without family or friends?", { flags: { 4: "ni: nor; after sin (without), English says or." } })],
-    ask_cash: [t("¿Cuánto | dinero | trae | para | su | viaje, | más o menos?", "How much | money | are you carrying | for | your | trip, | more or less?", "Roughly how much money do you have for your trip?")],
-    simple_cash: [t("¿Trae | dinero | en efectivo | o | tarjetas?", "Are you carrying | money | in cash | or | cards?", "Do you have cash or cards?")],
+    ask_cash: [t("¿Cuánto | dinero | trae | para | su | viaje, | más o menos?", "How much | money | are you carrying | for | your | trip, | more or less?", "Roughly how much money do you have for your trip?", { spain: t("¿Cuánto | dinero | lleva | para | su | viaje, | más o menos?", "How much | money | are you carrying | for | your | trip, | more or less?", "Roughly how much money do you have for your trip?") })],
+    simple_cash: [t("¿Trae | dinero | en efectivo | o | tarjetas?", "Are you carrying | money | in cash | or | cards?", "Do you have cash or cards?", { spain: t("¿Lleva | dinero | en efectivo | o | tarjetas?", "Are you carrying | money | in cash | or | cards?", "Do you have cash or cards?") })],
     cash_howmuch: [t("¿Cuánto, | más o menos?", "How much, | more or less?", "About how much?")],
-    cash_card_q: [t("¿Y | trae | tarjeta | de | crédito | o | débito?", "And | are you carrying | a card | of | credit | or | debit?", "And do you have a credit or debit card?")],
+    cash_card_q: [t("¿Y | trae | tarjeta | de | crédito | o | débito?", "And | are you carrying | a card | of | credit | or | debit?", "And do you have a credit or debit card?", { spain: t("¿Y | lleva | tarjeta | de | crédito | o | débito?", "And | are you carrying | a card | of | credit | or | debit?", "And do you have a credit or debit card?") })],
     cash_none: [t("Bueno. | Le | recomiendo | llevar | algo | de | dinero.", "Okay. | (To) you | I-recommend | to carry | some | — | money.", "Okay. I'd recommend carrying some money.", { flags: { 5: "algo de: some; de links algo to the noun." } })],
     // Biometrics
     fingers: [t("Ponga | el | dedo | índice | derecho | en | el | lector, | por favor.", "Put | the | finger | index | right | on | the | scanner, | please.", "Please put your right index finger on the scanner.")],
@@ -946,8 +960,8 @@ export const passport: SituationDef = {
       t("Ahora | una | foto. | Mire | aquí.", "Now | a | photo. | Look | here.", "Now a photo. Look here."),
     ],
     photo_ok: [t("Ya está, | gracias.", "That's it, | thanks.", "That's it, thanks.")],
-    take_off_glasses: [t("Quítese | los | lentes, | por favor.", "Take off | the | glasses, | please.", "Please take off your glasses.", { flags: { 1: "Spanish says the glasses where English says your glasses." } })],
-    glasses_yes: [t("Sí, | quíteselos, | por favor.", "Yes, | take them off, | please.", "Yes, take them off, please.")],
+    take_off_glasses: [t("Quítese | los | lentes, | por favor.", "Take off | the | glasses, | please.", "Please take off your glasses.", { flags: { 1: "Spanish says the glasses where English says your glasses." }, spain: t("Quítese | las | gafas, | por favor.", "Take off | the | glasses, | please.", "Please take off your glasses.") })],
+    glasses_yes: [t("Sí, | quíteselos, | por favor.", "Yes, | take them off, | please.", "Yes, take them off, please.", { spain: t("Sí, | quíteselas, | por favor.", "Yes, | take them off, | please.", "Yes, take them off, please.") })],
     glasses_later: [t("Todavía no. | Primero | el | dedo.", "Not yet. | First | the | finger.", "Not yet. Your finger first.")],
     glasses_need: [t("Sí, | por favor, | para | la | foto.", "Yes, | please, | for | the | photo.", "Yes, please, for the photo.")],
     // Clarifying
@@ -958,16 +972,16 @@ export const passport: SituationDef = {
     mean_purpose: [t("Motivo | es | la | razón: | ¿por qué | viene?", "“Motivo” | is | the | reason: | why | are you coming?", "“Motivo” means the reason: why are you here?")],
     mean_stay: [t("Hospedarse | es | quedarse | a | dormir: | ¿en | qué | lugar?", "“Hospedarse” | is | to stay | to | sleep: | in | what | place?", "“Hospedarse” means where you'll sleep: what place?")],
     mean_job: [t("Dedicarse | es | trabajar: | ¿cuál | es | su | trabajo?", "“Dedicarse” | is | to work: | what | is | your | job?", "“Dedicarse” here means work: what's your job?")],
-    mean_return: [t("El | boleto | de | regreso | es | el | boleto | para | volver | a | su | país.", "The | ticket | of | return | is | the | ticket | to | go back | to | your | country.", "A return ticket is the ticket to go back home.")],
+    mean_return: [t("El | boleto | de | regreso | es | el | boleto | para | volver | a | su | país.", "The | ticket | of | return | is | the | ticket | to | go back | to | your | country.", "A return ticket is the ticket to go back home.", { spain: t("El | billete | de | vuelta | es | el | billete | para | volver | a | su | país.", "The | ticket | of | return | is | the | ticket | to | go back | to | your | country.", "A return ticket is the ticket to go back home.") })],
     mean_scanner: [t("El | lector | es | esta | maquinita, | para | el | dedo.", "The | scanner | is | this | little machine, | for | the | finger.", "The scanner is this little machine, for your finger.")],
     mean_cash: [t("Efectivo | son | billetes | y | monedas.", "Cash | is | bills | and | coins.", "Cash means bills and coins.")],
     mean_stamp: [t("El | sello | va | en | su | pasaporte, | con | sus | días.", "The | stamp | goes | in | your | passport, | with | your | days.", "The stamp goes in your passport, with your days.")],
     // Side questions
     ans_boarding: [t("No, | solo | su | pasaporte.", "No, | only | your | passport.", "No, just your passport.")],
-    ans_form: [t("No, | no hay | que | llenar | nada. | Solo | le | pongo | un | sello.", "No, | there's no need | to | fill out | anything. | Just | (for) you | I-put | a | stamp.", "No, there's nothing to fill out. I'll just stamp your passport.")],
+    ans_form: [t("No, | no hay | que | llenar | nada. | Solo | le | pongo | un | sello.", "No, | there's no need | to | fill out | anything. | Just | (for) you | I-put | a | stamp.", "No, there's nothing to fill out. I'll just stamp your passport.", { spain: t("No, | no hay | que | rellenar | nada. | Solo | le | pongo | un | sello.", "No, | there's no need | to | fill out | anything. | Just | (for) you | I-put | a | stamp.", "No, there's nothing to fill out. I'll just stamp your passport.") })],
     ans_baggage: [t("El | equipaje | está | saliendo | de | aquí, | a la derecha.", "The | baggage | is | as you leave | — | here, | on the right.", "Baggage claim is just past here, on the right.", { flags: { 3: "saliendo de aquí: right after you leave here, a common way to give directions in Mexico." } })],
-    ans_restroom: [t("Hay | baños | después de | migración.", "There are | restrooms | after | immigration.", "There are restrooms right after immigration.")],
-    ans_taxi: [t("Los | taxis | están | afuera, | a la salida.", "The | taxis | are | outside, | at the exit.", "Taxis are outside, by the exit.")],
+    ans_restroom: [t("Hay | baños | después de | migración.", "There are | restrooms | after | immigration.", "There are restrooms right after immigration.", { spain: t("Hay | aseos | después de | migración.", "There are | restrooms | after | immigration.", "There are restrooms right after immigration.") })],
+    ans_taxi: [t("Los | taxis | están | afuera, | a la salida.", "The | taxis | are | outside, | at the exit.", "Taxis are outside, by the exit.", { spain: t("Los | taxis | están | fuera, | a la salida.", "The | taxis | are | outside, | at the exit.", "Taxis are outside, by the exit.") })],
     ans_limit: [t("Como | visitante, | hasta | 180 | días. | Yo | le | pongo | los | días | de | su | viaje.", "As | a visitor, | up to | 180 | days. | I | (for) you | I-put | the | days | of | your | trip.", "As a visitor, up to 180 days. I give you the days for your trip.", { say: "Como visitante, hasta ciento ochenta días. Yo le pongo los días de su viaje." })],
     ans_customs: [t("La | aduana | está | después | del | equipaje.", "The | customs | is | after | the | baggage.", "Customs is right after baggage claim.", { flags: { 4: "del = de + el; después de: after." } })],
     routine_q: [t("Es | solo | una | pregunta | de | rutina.", "It's | just | a | question | of | routine.", "It's just a routine question.")],
@@ -979,10 +993,14 @@ export const passport: SituationDef = {
     stamp_until: [t("Le | pongo | los | días | hasta | su | regreso.", "(For) you | I-put | the | days | until | your | return.", "I'm giving you the days until your return.")],
     stamp_short: [t("Le | voy | a | dar | {$num} | días.", "(To) you | I'm going | to | give | {$num} | days.", "I'm going to give you {$num} days.")],
     days_remind: [t("Entonces, | ¿le | pongo | {$num} | días?", "So, | (for) you | I-put | {$num} | days?", "So, should I put down {$num} days?")],
-    days_ticket_q: [t("¿Tiene | su | boleto | de | regreso? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?")],
+    days_ticket_q: [t("¿Tiene | su | boleto | de | regreso? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?", { spain: t("¿Tiene | su | billete | de | vuelta? | ¿Me | lo | muestra?", "Do you have | your | ticket | of | return? | (To) me | it | you-show?", "Do you have your return ticket? Can you show me?") })],
     stamp_more: [t("Muy | bien, | entonces | le | doy | {$num} | días.", "Very | good, | then | (to) you | I-give | {$num} | days.", "All right, then I'll give you {$num} days.")],
     stamp_more_until: [t("Muy | bien, | le | pongo | los | días | hasta | su | regreso.", "Very | good, | (for) you | I-put | the | days | until | your | return.", "All right, I'll give you the days until your return.")],
-    stamp_keep: [t("Sin | boleto | de | regreso, | le | dejo | {$num} | días.", "Without | a ticket | of | return, | (to) you | I-leave | {$num} | days.", "Without a return ticket, I'll leave it at {$num} days.")],
+    // a request above the trip: the days up to the return date on the ticket, rounded up to a usual figure as the
+    // stamp always is (the lead's decision, 5 Nov 2026)
+    stamp_more_return: [t("Muy | bien. | Le | doy | {$num} | días, | lo que | necesita | hasta | su | regreso.", "Very | good. | (To) you | I-give | {$num} | days, | what | you-need | until | your | return.",
+      "All right. I'll give you {$num} days, which covers you until your return.")],
+    stamp_keep: [t("Sin | boleto | de | regreso, | le | dejo | {$num} | días.", "Without | a ticket | of | return, | (to) you | I-leave | {$num} | days.", "Without a return ticket, I'll leave it at {$num} days.", { spain: t("Sin | billete | de | vuelta, | le | dejo | {$num} | días.", "Without | a ticket | of | return, | (to) you | I-leave | {$num} | days.", "Without a return ticket, I'll leave it at {$num} days.") })],
     // Closing
     welcome: [
       t("Aquí tiene | su | pasaporte. | ¡{m:Bienvenido|f:Bienvenida} | a | México!", "Here's | your | passport. | Welcome | to | Mexico!", "Here's your passport. Welcome to Mexico!"),
@@ -1002,7 +1020,7 @@ export const passport: SituationDef = {
       { id: "pp_boarding", s: t("¿Necesita | mi | pase de abordar?", "Do you need | my | boarding pass?", "Do you need my boarding pass?",
         { flags: { 2: "Mexican: pase de abordar = boarding pass; elsewhere tarjeta de embarque." },
           neutral: t("¿Necesita | mi | tarjeta de embarque?", "Do you need | my | boarding pass?", "Do you need my boarding pass?") }) },
-      { id: "q_form", s: t("¿Tengo | que | llenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I need to fill out a form?") },
+      { id: "q_form", s: t("¿Tengo | que | llenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I need to fill out a form?", { spain: t("¿Tengo | que | rellenar | algún | formulario?", "Do I have | to | fill out | any | form?", "Do I need to fill out a form?") }) },
     ] },
     purpose: { lt: "Say why you're here", items: [
       { id: "p_vac", s: t("Vengo | de | vacaciones.", "I'm coming | on | vacation.", "I'm here on vacation.") },
@@ -1014,7 +1032,7 @@ export const passport: SituationDef = {
       { id: "p_visit", s: t("Vengo | a | visitar | a | mi | familia.", "I'm coming | to | visit | — | my | family.", "I'm here to visit my family.", { flags: { 3: "Personal a: Spanish marks a person as the object; English needs no word." } }) },
       { id: "p_friends", s: t("Visito | a | unos | amigos.", "I'm visiting | — | some | friends.", "I'm visiting friends.", { flags: { 1: "Personal a: Spanish marks a person as the object; English needs no word." } }) },
       { id: "p_study", s: t("Vengo | a | estudiar | español.", "I'm coming | to | study | Spanish.", "I'm here to study Spanish.") },
-      { id: "p_live", s: t("Vine | a | vivir | aquí.", "I came | to | live | here.", "I've moved here."), note: "Moving here takes a resident visa from a Mexican consulate." },
+      { id: "p_live", s: t("Vine | a | vivir | aquí.", "I came | to | live | here.", "I've moved here.", { spain: t("He venido | a | vivir | aquí.", "I've come | to | live | here.", "I've moved here.") }), note: "Moving here takes a resident visa from a Mexican consulate." },
     ] },
     biz: { lt: "Say what kind of business", items: [
       { id: "bz_conf", s: t("Una | conferencia.", "A | conference.", "A conference.") },
@@ -1030,8 +1048,8 @@ export const passport: SituationDef = {
       { id: "v_to_visit", s: t("A | visitar | a | mi | {X}.", "To | visit | — | my | {X}.", "To visit my {X}.", { flags: { 2: "Personal a: Spanish marks a person as the object; English needs no word." } }), only: (e) => !e.attrs?.pl },
     ] },
     visa: { lt: "Say whether you have a resident visa", items: [
-      { id: "vs_yes", s: t("Sí, | tengo | visa | de | residente.", "Yes, | I have | a visa | as a | resident.", "Yes, I have a resident visa.") },
-      { id: "r_here", s: t("Sí, | aquí está | mi | visa.", "Yes, | here is | my | visa.", "Yes, here's my visa.") },
+      { id: "vs_yes", s: t("Sí, | tengo | visa | de | residente.", "Yes, | I have | a visa | as a | resident.", "Yes, I have a resident visa.", { spain: t("Sí, | tengo | visado | de | residente.", "Yes, | I have | a visa | as a | resident.", "Yes, I have a resident visa.") }) },
+      { id: "r_here", s: t("Sí, | aquí está | mi | visa.", "Yes, | here is | my | visa.", "Yes, here's my visa.", { spain: t("Sí, | aquí está | mi | visado.", "Yes, | here is | my | visa.", "Yes, here's my visa.") }) },
       { id: "vs_no", s: t("Solo | tengo | mi | pasaporte.", "Only | I have | my | passport.", "I only have my passport.") },
     ] },
     length: { lt: "Say how long you're staying", items: [
@@ -1048,17 +1066,17 @@ export const passport: SituationDef = {
       { id: "w_family", s: t("Me quedo | con | mi | hermana.", "I'm staying | with | my | sister.", "I'm staying with my sister.") },
       { id: "w_friend", s: t("En | casa | de | unos | amigos.", "At | the house | of | some | friends.", "At some friends' place.") },
       { id: "w_airbnb", s: t("En | un | Airbnb.", "In | an | Airbnb.", "At an Airbnb.") },
-      { id: "w_apartment", s: t("Renté | un | departamento.", "I rented | an | apartment.", "I rented an apartment.", { flags: { 2: "Mexican: departamento = apartment; apartamento elsewhere." }, neutral: t("Renté | un | apartamento.", "I rented | an | apartment.", "I rented an apartment.") }) },
+      { id: "w_apartment", s: t("Renté | un | departamento.", "I rented | an | apartment.", "I rented an apartment.", { flags: { 2: "Mexican: departamento = apartment; apartamento elsewhere." }, neutral: t("Renté | un | apartamento.", "I rented | an | apartment.", "I rented an apartment."), spain: t("He alquilado | un | piso.", "I've rented | an | apartment.", "I rented an apartment.") }) },
     ] },
     address: { lt: "Give the address (or show it on your phone)", items: [
       { id: "a_its", s: t("Calle | Flamboyán, | número | veintitrés.", "Street | Flamboyán, | number | twenty-three.", "23 Flamboyán Street.") },
-      { id: "a_phone", s: t("La | tengo | en | mi | celular.", "It | I-have | on | my | phone.", "I have it on my phone.", { flags: { 0: "la: it, the pronoun for la dirección (not the article)." } }) },
+      { id: "a_phone", s: t("La | tengo | en | mi | celular.", "It | I-have | on | my | phone.", "I have it on my phone.", { flags: { 0: "la: it, the pronoun for la dirección (not the article)." }, spain: t("La | tengo | en | mi | móvil.", "It | I-have | on | my | phone.", "I have it on my phone.", {flags: {0: "la: it, the pronoun for la dirección (not the article)."}}) }) },
       { id: "a_dunno", s: t("No me acuerdo | de | la | dirección.", "I don't remember | — | the | address.", "I don't remember the address.", { flags: { 1: "acordarse de: de links the verb to what you remember." } }) },
     ] },
     return: { lt: "Say whether you have a return ticket", items: [
-      { id: "r_yes", s: t("Sí, | lo | tengo | en | mi | celular.", "Yes, | it | I-have | on | my | phone.", "Yes, I have it on my phone.") },
+      { id: "r_yes", s: t("Sí, | lo | tengo | en | mi | celular.", "Yes, | it | I-have | on | my | phone.", "Yes, I have it on my phone.", { spain: t("Sí, | lo | tengo | en | mi | móvil.", "Yes, | it | I-have | on | my | phone.", "Yes, I have it on my phone.") }) },
       { id: "r_date", s: t("Regreso | el | veinte | de | junio.", "I return | on | the twentieth | of | June.", "I fly back on June 20th.", { flags: { 1: "el before a date: English says on." } }) },
-      { id: "r_no", s: t("Todavía | no lo compro.", "Still | I haven't bought it.", "I haven't bought it yet.", { flags: { 1: "Mexican Spanish often uses the present here: todavía no lo compro = I haven't bought it yet." } }) },
+      { id: "r_no", s: t("Todavía | no lo compro.", "Still | I haven't bought it.", "I haven't bought it yet.", { flags: { 1: "Mexican Spanish often uses the present here: todavía no lo compro = I haven't bought it yet." }, spain: t("Todavía | no lo he comprado.", "Still | I haven't bought it.", "I haven't bought it yet.") }) },
     ] },
     fly_back: { lt: "Say when you fly back", items: [
       { id: "r_date", s: t("Regreso | el | veinte | de | junio.", "I return | on | the twentieth | of | June.", "I fly back on June 20th.", { flags: { 1: "el before a date: English says on." } }) },
@@ -1071,7 +1089,7 @@ export const passport: SituationDef = {
     ] },
     first: { lt: "Say whether it's your first time", items: [
       { id: "f_first", s: t("Sí, | es | mi | primera | vez.", "Yes, | it's | my | first | time.", "Yes, it's my first time.") },
-      { id: "f_before", s: t("No, | ya | vine | antes.", "No, | already | I-came | before.", "No, I've been here before.") },
+      { id: "f_before", s: t("No, | ya | vine | antes.", "No, | already | I-came | before.", "No, I've been here before.", { spain: t("No, | ya | he venido | antes.", "No, | already | I've come | before.", "No, I've been here before.") }) },
       { id: "f_second", s: t("Es | mi | segunda | vez.", "It's | my | second | time.", "It's my second time.") },
     ] },
     job: { lt: "Say what you do", items: [
@@ -1086,17 +1104,17 @@ export const passport: SituationDef = {
       { id: "al_with", s: t("Vengo | con | mi | familia.", "I'm coming | with | my | family.", "I'm here with my family.") },
     ] },
     cash: { lt: "Answer about money", items: [
-      { id: "c_about", s: t("Traigo | unos | mil | dólares.", "I have | about | a thousand | dollars.", "I have about a thousand dollars.", { flags: { 1: "unos before a number: about." } }) },
+      { id: "c_about", s: t("Traigo | unos | mil | dólares.", "I have | about | a thousand | dollars.", "I have about a thousand dollars.", { flags: { 1: "unos before a number: about." }, spain: t("Llevo | unos | mil | dólares.", "I have | about | a thousand | dollars.", "I have about a thousand dollars.", {flags: {1: "unos before a number: about."}}) }) },
       { id: "c_card", s: t("Pago | con | tarjeta.", "I pay | by | card.", "I'll pay by card.") },
     ] },
     bio_fingers: { lt: "Follow the instructions", items: [
-      { id: "b_okay", s: t("Listo.", "Done.", "Done.") },
+      { id: "b_okay", s: t("Listo.", "Done.", "Done.", { spain: t("Ya está.", "Done.", "Done.") }) },
       { id: "b_like", s: t("¿Así?", "Like this?", "Like this?") },
-      { id: "b_which", s: t("¿Cuál | dedo?", "Which | finger?", "Which finger?") },
+      { id: "b_which", s: t("¿Cuál | dedo?", "Which | finger?", "Which finger?", { spain: t("¿Qué | dedo?", "Which | finger?", "Which finger?") }) },
     ] },
     bio_photo: { lt: "Look at the camera", items: [
-      { id: "b_okay", s: t("Listo.", "Done.", "Done.") },
-      { id: "b_glasses", s: t("¿Me quito | los | lentes?", "Do I take off | the | glasses?", "Should I take off my glasses?") },
+      { id: "b_okay", s: t("Listo.", "Done.", "Done.", { spain: t("Ya está.", "Done.", "Done.") }) },
+      { id: "b_glasses", s: t("¿Me quito | los | lentes?", "Do I take off | the | glasses?", "Should I take off my glasses?", { spain: t("¿Me quito | las | gafas?", "Do I take off | the | glasses?", "Should I take off my glasses?") }) },
     ] },
     bio_glasses: { lt: "Take off your glasses", items: [
       { id: "b_sure", s: t("Claro.", "Sure.", "Sure.") },
@@ -1119,6 +1137,11 @@ export const passport: SituationDef = {
     tu_staff: { key: "tu_staff", lt: "Understood! With an officer, usted is more polite: puede, se refiere (puedes and te refieres are for friends).", better: "¿Me puede dar treinta días?" },
   },
   merges: {
+    // Spain's twins (11 Nov 2026)
+    "haya vuelto": { reason: "grammatical_fusion", split: "haya → have/has + vuelto (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he venido": { reason: "grammatical_fusion", split: "he → have/has + venido (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he alquilado": { reason: "grammatical_fusion", split: "he → have/has + alquilado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "no lo he comprado": { reason: "grammatical_fusion", split: "he → have/has + comprado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle, with no and the pronoun." },
     "se va a quedar": { reason: "grammatical_fusion", split: "se → himself + va → goes + a → to + quedar → remain gives a false reflexive and a motion verb; = are you going to stay.", minimal: "The pronominal periphrastic future only." },
     "se va a hospedar": { reason: "grammatical_fusion", split: "se → himself + va → goes + a → to + hospedar → lodge gives a false reflexive and a motion verb; = are you going to stay.", minimal: "The pronominal periphrastic future only." },
     "me voy a hospedar": { reason: "grammatical_fusion", split: "me → myself + voy → I go + a → to + hospedar → lodge gives a false reflexive and a motion verb; = I'm going to stay.", minimal: "The pronominal periphrastic future only." },
@@ -1866,6 +1889,16 @@ export const passport: SituationDef = {
       setup: (s) => { quiet(s); s.shortTwist = true; } },
     { name: "fewer days: '¿Por qué?' asks for more; the ticket shown (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "¿Por qué?", "Sí, aquí está.", "Gracias."],
       expect: { complete: true, state: { days: 30, daysResult: "more" } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
+    // The follow-up pass (5 Nov 2026): more than the trip gets the days to the return date; a longer stay said is the trip
+    { name: "fewer days: 180 asked after a month gets the days to the return date (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "¿Me puede dar ciento ochenta días?", "Sí, aquí está.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 30, short: 15 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
+    { name: "fewer days: the ticket first, then six months asked: the return date (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Tres semanas.", "En el Hotel Mar Azul.", "¿Me puede dar seis meses, por favor?", "Claro, aquí está mi boleto.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 21 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
+      setup: (s) => { quiet(s); s.shortTwist = true; } },
+    { name: "fewer days: a longer stay said at the stamp is the trip (twist forced)", turns: ["Aquí tiene.", "De vacaciones.", "Un mes.", "En el Hotel Mar Azul.", "Es que voy a estar dos meses.", "Sí, aquí está.", "Gracias."],
+      expect: { complete: true, state: { daysResult: "more", days: 60, length: 60 } }, auto: omit(PP_AUTO, ["days", "days_ticket"]),
       setup: (s) => { quiet(s); s.shortTwist = true; } },
     { name: "a return ticket not bought yet: a reminder, nothing to look up", turns: ["Aquí tiene.", "De vacaciones.", "Dos semanas.", "En el Hotel Mar Azul.", "Todavía no lo compro.", "¿Cuántos días me dio?", "Gracias."],
       expect: { complete: true, state: { ret: false, days: 14 } }, auto: PP_AUTO,

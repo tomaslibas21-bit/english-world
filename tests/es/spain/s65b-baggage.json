@@ -1,0 +1,123 @@
+{
+"situation": "s65b-baggage",
+"items": [
+{
+"ctx": "problem",
+"say": "Hola, mi maleta no ha llegado",
+"intent": "problem"
+},
+{
+"ctx": "problem",
+"say": "Creo que se ha perdido mi maleta",
+"intent": "problem"
+},
+{
+"ctx": "problem",
+"say": "Quisiera hacer una reclamación por una maleta perdida",
+"intent": "problem"
+},
+{
+"ctx": "flight",
+"say": "He llegado de Houston",
+"intent": "flight"
+},
+{
+"ctx": "from_city",
+"say": "Vengo de Toronto",
+"intent": "flight"
+},
+{
+"ctx": "connection",
+"say": "Sí, he hecho escala en Cancún",
+"intent": "via_ctx"
+},
+{
+"ctx": "tag",
+"say": "Creo que lo he perdido",
+"intent": "tag_lost"
+},
+{
+"ctx": "size",
+"say": "Es pequeña",
+"intent": "size_ctx"
+},
+{
+"ctx": "color",
+"say": "Marrón",
+"intent": "color_ctx"
+},
+{
+"ctx": "marks",
+"say": "Lleva una cinta amarilla en el asa",
+"intent": "describe"
+},
+{
+"ctx": "marks",
+"say": "Muchas pegatinas",
+"intent": "marks_ctx"
+},
+{
+"ctx": "contents",
+"say": "Llevo unos regalos",
+"intent": "contents"
+},
+{
+"ctx": "delivery",
+"say": "La recojo aquí",
+"intent": "pickup"
+},
+{
+"ctx": "closing",
+"say": "¿Puedo seguirla por internet?",
+"intent": "q_track"
+},
+{
+"ctx": "closing",
+"say": "¿Me da una copia de la reclamación?",
+"intent": "q_copy"
+},
+{
+"ctx": "kit",
+"say": "¿Tiene coste?",
+"intent": "q_free"
+},
+{
+"ctx": "declare",
+"say": "No, no llevo nada",
+"intent": "declare_none_ctx"
+},
+{
+"ctx": "declare",
+"say": "Llevo una manzana",
+"intent": "declare_items"
+},
+{
+"ctx": "declare",
+"say": "¿Tengo que rellenar algún formulario?",
+"intent": "q_form"
+},
+{
+"ctx": "dog",
+"say": "Ay, sí, perdón, llevo una manzana del avión",
+"intent": "declare_items"
+},
+{
+"ctx": "dog",
+"say": "Se me ha olvidado: llevo un bocadillo de jamón",
+"intent": "declare_items"
+},
+{
+"ctx": "declare_what",
+"say": "Algo envasado",
+"intent": [
+"declare_items",
+"declare_items_ctx"
+]
+},
+{
+"ctx": "declare",
+"say": "Llevo dos mil dólares en efectivo",
+"intent": "declare_cash"
+}
+]
+}

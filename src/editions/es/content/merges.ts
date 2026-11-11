@@ -107,7 +107,13 @@ const RULES: { re: RegExp; rec: MergeRecord }[] = [
   { re: /^se [a-záéíóúñü]+$/,
     rec: R("grammatical_fusion", "Impersonal or passive se has no English word of its own; the English verb phrase carries it (se puede → can I / is it possible).", "Two words.", "S-CLITIC") },
   // "dámelo", "tráigamela" are one word already; "me lo" / "se lo" before a verb: the two pronouns
-  { re: /^(me|te|se|nos) (lo|la|los|las)$/,
+  // Spain's perfect (docs/es/STYLE.md "Spain Spanish"): "he dicho" → "I said", "no te he entendido", "se ha ido"
+  { re: /^(no )?((me|te|se|le|lo|la|nos|os|les|los|las) ){0,2}(he|has|ha|hemos|habéis|han) [a-záéíóúñü]+(ado|ido|ído|to|cho|sto|elto|ierto|uesto)$/,
+    rec: R("grammatical_fusion", "haber + participle is one English verb (the perfect: I have said / I said); glossed together, as English often uses the simple past.", "Two to four words.", "S-PERFECT") },
+  // Spain's vosotros: "os" before a verb ("os traigo", "os lo traigo") and "os lo / os la…"
+  { re: /^(no )?os ((lo|la|los|las) )?[a-záéíóúñü]+$/,
+    rec: R("grammatical_fusion", "os → to/for you (all) before the verb, as me/te/nos are.", "Two or three words.", "S-CLITIC") },
+  { re: /^(me|te|se|nos|os) (lo|la|los|las)$/,
     rec: R("grammatical_fusion", "Two object pronouns before the verb are glossed together (me lo → it to me).", "Two words.", "S-CLITIC") },
 ];
 

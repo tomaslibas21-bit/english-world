@@ -1,0 +1,73 @@
+{
+"situation": "s67b-bus",
+"items": [
+{
+"ctx": "dest",
+"say": "¿Este autobús va al centro?",
+"intent": "ask_goes"
+},
+{
+"ctx": "dest",
+"say": "¿Para en el mercado?",
+"intent": "ask_goes"
+},
+{
+"ctx": "fare",
+"say": "¿Puedo pagar con el móvil?",
+"intent": "pay_phone"
+},
+{
+"ctx": "fare",
+"say": "Solo llevo un billete de quinientos",
+"intent": "no_change"
+},
+{
+"ctx": "smaller",
+"say": "No, no tengo más pequeño",
+"intent": [
+"yn:no",
+"no_change",
+"no_smaller_ctx"
+]
+},
+{
+"ctx": "known",
+"say": "No, ¿me avisa?",
+"intent": "tell_me_ctx"
+},
+{
+"ctx": "seated",
+"say": "Vale, gracias",
+"intent": "g_thanks"
+},
+{
+"ctx": "seated",
+"say": "¿Dónde lo cojo para volver?",
+"intent": "ask_back"
+},
+{
+"ctx": "seated",
+"say": "¿Ya hemos llegado?",
+"intent": "is_my_stop"
+},
+{
+"ctx": "seated",
+"say": "¿Cada cuánto pasa el autobús?",
+"intent": "ask_frequency"
+},
+{
+"ctx": "next",
+"say": "Vale, aquí me bajo",
+"intent": [
+"is_my_stop",
+"bajan",
+"yn:yes"
+]
+},
+{
+"ctx": "oos_dest",
+"say": "¿El 12 va al mercado?",
+"intent": "ask_goes"
+}
+]
+}
