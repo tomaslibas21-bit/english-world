@@ -538,7 +538,7 @@ export const salon: SituationDef = {
     appt_found: [
       t("Perfecto, | aquí | está | en | la | agenda.", "Perfect, | here | it-is | in | the | appointment book.", "Perfect, I've got you right here."),
       t("¡Listo! | Ya | {m:lo|f:la} | tengo | {m:anotado|f:anotada}.", "All set! | Already | you | I-have | written down.", "All set! I've got you down.", { flags: { 2: FLAG_LOLA },
-        spain: t("¡Listo! | Ya | te | tengo | {m:apuntado|f:apuntada}.", "All set! | Already | you | I-have | written down.", "All set! I've got you down.") }),
+        spain: t("¡Perfecto! | Ya | te | tengo | {m:apuntado|f:apuntada}.", "All set! | Already | you | I-have | written down.", "All set! I've got you down.") }),
     ],
     appt_other_time: [t("Ah, | yo | la | tenía | a las tres, | pero | no hay problema.", "Oh, | I | it | had | at three, | but | no problem.",
       "Oh, I had you down for three, but no problem!", { flags: { 2: "la = the appointment (la cita)." } })],
@@ -553,7 +553,7 @@ export const salon: SituationDef = {
         spain: t("¡Perfecto! | Siéntate, | ahora mismo | te | atiendo.", "Perfect! | Have a seat, | right now | you | I'll-see-to.", "Great! Have a seat, I'll be right with you.") })],
     come_back_now: [t("¡Listo, | ya | me | desocupé! | Pase | por aquí.", "Ready, | already | (myself) | I-got-free! | Come | this way.", "Okay, I'm free now! Come on back.",
       { flags: { 2: "desocuparse: to get free (from a job, a client)." },
-        spain: t("¡Listo, | ya | estoy | libre! | Pasa | por aquí.", "Okay, | now | I'm | free! | Come | this way.", "Okay, I'm free now! Come on through.") })],
+        spain: t("¡Bueno, | ya | estoy | libre! | Pasa | por aquí.", "Okay, | now | I'm | free! | Come | this way.", "Okay, I'm free now! Come on through.") })],
     wait_no_line: [t("No se preocupe. | ¡Será | la | próxima!", "Don't worry. | It-will-be | the | next (time)!", "Don't worry. Maybe next time!",
         { spain: t("No te preocupes. | ¡Será | la | próxima!", "Don't worry. | It-will-be | the | next (time)!", "Don't worry. Maybe next time!") })],
     have_seat: [t("Siéntese | aquí, | por favor.", "Sit down | here, | please.", "Have a seat right here.",
@@ -743,7 +743,7 @@ export const salon: SituationDef = {
     // --- the result ----------------------------------------------------------------------------
     reveal: [
       t("¡Listo! | Mírese. | ¿Qué | le | parece?", "Done! | Look at yourself. | What | (to) you | it-seems?", "All done! Take a look. What do you think?",
-        { spain: t("¡Listo! | Mírate. | ¿Qué | te | parece?", "Done! | Look at yourself. | What | (to) you | it-seems?", "All done! Take a look. What do you think?") }),
+        { spain: t("¡Ya | estás! | Mírate. | ¿Qué | te | parece?", "Now | you're-done! | Look at yourself. | What | (to) you | it-seems?", "All done! Take a look. What do you think?") }),
       t("Ya | quedó. | ¿Cómo | lo | ve?", "Already | it-turned-out. | How | it | you-see?", "Okay, all done! How do you like it?",
         { flags: { 1: "quedar: to turn out (“¿Cómo quedó?” = how did it turn out?).", 3: "lo = the haircut (el corte)." },
         spain: t("Ya | está. | ¿Cómo | lo | ves?", "Already | it-is (done). | How | it | you-see?", "Okay, all done! How do you like it?") }),
@@ -817,7 +817,7 @@ export const salon: SituationDef = {
     transfer_data: [t("Aquí tiene | mis | datos | para | la | transferencia.", "Here you have | my | details | for | the | transfer.", "Here are my details for the transfer.",
         { spain: t("Aquí tienes | mis | datos | para | la | transferencia.", "Here you have | my | details | for | the | transfer.", "Here are my details for the transfer.") })],
     transfer_done: [t("¡Listo, | ya | me | llegó!", "Done, | already | (to) me | it-arrived!", "Great, it came through!",
-        { spain: t("¡Listo, | ya | me | ha llegado!", "Done, | already | (to) me | it-arrived!", "Great, it came through!") })],
+        { spain: t("¡Perfecto, | ya | me | ha llegado!", "Great, | already | (to) me | it-arrived!", "Great, it came through!") })],
     change_back: [t("Y | aquí está | su | cambio.", "And | here is | your | change.", "And here's your change.",
         { spain: t("Y | aquí está | tu | cambio.", "And | here is | your | change.", "And here's your change.") })],
     // "¿Tiene cambio de quinientos?"
@@ -836,7 +836,7 @@ export const salon: SituationDef = {
         { spain: t("¿Te | apunto | tu | próxima | cita?", "(For) you | I-schedule | your | next | appointment?", "Would you like to book your next appointment?") })],
     book_offer: [t("¡Muy | bien! | ¿En | seis | semanas, | a | la | misma | hora?", "Very | good! | In | six | weeks, | at | the | same | time?", "Great! Same time in six weeks?")],
     book_done: [t("¡Listo, | ya | quedó | agendada!", "Done, | already | it-is | scheduled!", "You're all set!", { flags: { 3: "agendada agrees with la cita (the appointment)." },
-        spain: t("¡Listo, | ya | está | apuntada!", "Done, | already | it's | booked!", "Done, you're all booked!") })],
+        spain: t("¡Perfecto, | ya | está | apuntada!", "Great, | already | it's | booked!", "Done, you're all booked!") })],
     book_amb: [t("Perdón, | ¿entonces | se la | agendo?", "Sorry, | so | it for you | I-schedule?", "Sorry, so should I book it?", { flags: { 2: "se la: la = la cita (the appointment)." },
         spain: t("Perdona, | ¿entonces | te la | apunto?", "Sorry, | so | it for you | I-schedule?", "Sorry, so should I book it?") })],
     book_later_ok: [t("No hay problema. | Nada más | mándeme | un | mensaje.", "No problem. | Just | send me | a | message.", "No problem. Just send me a message.",

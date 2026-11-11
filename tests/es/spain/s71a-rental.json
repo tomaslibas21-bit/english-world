@@ -56,6 +56,8 @@
 "say": "No necesito el seguro a todo riesgo",
 "intent": "ins_basic"
 },
+{"ctx": "insurance", "say": "Sí, añádamela, por favor", "intent": ["ins_full", "ins_yes_ctx", "yn:yes"]},
+{"ctx": "insurance", "say": "Añádame la cobertura a todo riesgo", "intent": "ins_full"},
 {
 "ctx": "deposit",
 "say": "Vale, no hay problema",

@@ -113,3 +113,9 @@ the device voice unless the owner wants every whole peso voiced (~1,500 values �
 - Words: ruedas for llantas, taller de neumáticos, depósito for tanque, el surtidor … a cero for la bomba … en ceros, ¿Cuánto le pongo? for ¿Cuánto le cargo?, datáfono, Ya está for Listo, ya ha pasado, no llega for no alcanza, por internet, dentro, está a unos … pesos for anda en, coches, en la calle Itzamná for sobre la calle, ¿Qué ha pasado?, Será la batería, unas pinzas / Voy a por las pinzas for cables, ¡Qué bien!, ¡Conduzca con cuidado!, Para un café for Para su refresco, the perfect (les he puesto aire, no lo he puesto a cero).
 - Grammar: zeros_q / zeros_ctx take a cero and el surtidor; the tire patterns take las ruedas; half_tank takes medio depósito; no_cash / no_change take llevo (and billetes pequeños, suelto). Merges: the perfects, se había quedado, por internet, a por.
 - Kept: magna, premium and diésel (Mexico's grades), the attendant who fills the tank, factura.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

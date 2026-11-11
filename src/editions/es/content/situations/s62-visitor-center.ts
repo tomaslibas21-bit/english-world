@@ -1954,7 +1954,7 @@ export const visitorCenter: SituationDef = {
     w_cenote: [t("Un | cenote | es | un | pozo | natural | de | agua | dulce. | ¡Se puede | nadar!", "A | cenote | is | a | well | natural | of | water | fresh. | You can | swim!", "A cenote is a natural pool of fresh water. You can swim in it!")],
     w_tianguis: [t("Un | tianguis | es | un | mercado | en | la | calle, | un | día | a la semana.", "A | tianguis | is | a | market | in | the | street, | one | day | a week.", "A tianguis is a street market, one day a week.",
       { flags: { 1: "Mexican word (from Nahuatl): an open-air street market." }, neutral: t("Es | un | mercado | en | la | calle, | un | día | a la semana.", "It's | a | market | in | the | street, | one | day | a week.", "It's a street market, one day a week.") })],
-    w_colectivo: [t("Un | colectivo | es | una | camioneta | para | varias | personas. | Es | barato | y | pasa | seguido.", "A | colectivo | is | a | van | for | several | people. | It's | cheap | and | it-comes | often.", "A colectivo is a shared van. It's cheap and comes by often.", { spain: t("Un | colectivo | es | una | furgoneta | para | varias | personas. | Es | barato | y | pasa | seguido.", "A | colectivo | is | a | van | for | several | people. | It's | cheap | and | it-comes | often.", "A colectivo is a shared van. It's cheap and comes by often.") })],
+    w_colectivo: [t("Un | colectivo | es | una | camioneta | para | varias | personas. | Es | barato | y | pasa | seguido.", "A | colectivo | is | a | van | for | several | people. | It's | cheap | and | it-comes | often.", "A colectivo is a shared van. It's cheap and comes by often.", { spain: t("Un | colectivo | es | una | furgoneta | para | varias | personas. | Es | barato | y | pasa | a menudo.", "A | colectivo | is | a | van | for | several | people. | It's | cheap | and | it-comes | often.", "A colectivo is a shared van. It's cheap and comes by often.") })],
     w_perico: [t("Un | perico | es | un | pájaro | que | habla | y | habla | sin parar. | ¡Como | yo!", "A | parrot | is | a | bird | that | talks | and | talks | nonstop. | Like | me!", "A perico is a parrot: it talks and talks nonstop. Like me!")],
     w_cant_miss: [t("Quiere decir | que | es | muy | fácil | de | encontrar.", "It means | that | it's | very | easy | to | find.", "It means it's very easy to find!")],
 
@@ -2014,7 +2014,8 @@ export const visitorCenter: SituationDef = {
           "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | the | driver, | in cash.",
           "We don't sell tickets here. On the bus or the colectivo, you pay the driver in cash."), spain: t("Aquí | no vendemos | billetes. | En | el | autobús | o | en | el | colectivo | se paga | al | conductor, | en efectivo.", "Here | we don't sell | tickets. | On | the | bus | or | on | the | shared van | you pay | the | driver, | in cash.", "We don't sell tickets here. On the bus or the colectivo, you pay the driver in cash.") })],
     colectivo_when: [t("Pasan | muy | seguido | por | la | avenida. | No tienen | horario.", "They-pass | very | often | along | the | avenue. | They don't have | a schedule.",
-      "They come by all the time on the avenue. There's no schedule.")],
+      "They come by all the time on the avenue. There's no schedule.",
+      { spain: t("Pasan | cada poco | por | la | avenida. | No tienen | horario.", "They-pass | all the time | along | the | avenue. | They don't have | a schedule.", "They come by all the time on the avenue. There's no schedule.") })],
     taxi: [t("En | la | avenida | pasan | muchos | taxis. | Nada más | levante | la | mano.", "On | the | avenue | pass | many | taxis. | Just | raise | your | hand.",
       "Lots of taxis go by on the avenue. Just wave one down.", { flags: { 8: "Spanish says la mano (the hand) for a body part; English says your hand." }, spain: t("En | la | avenida | pasan | muchos | taxis. | Solo | levante | la | mano.", "On | the | avenue | pass | many | taxis. | Just | raise | your | hand.", "Lots of taxis go by on the avenue. Just wave one down.", {flags: {8: "Spanish says la mano (the hand) for a body part; English says your hand."}}) })],
     // taxis have no meter (s66): agree on the fare first
@@ -2184,6 +2185,8 @@ export const visitorCenter: SituationDef = {
   },
 
   merges: {
+    "a menudo": { reason: "lexical_expression", split: "a → to + menudo → small would hide the meaning: = often (Spain's word for \"seguido\").", minimal: "Two words." },
+    "cada poco": { reason: "lexical_expression", split: "cada → each + poco → little: = every few minutes (Spain).", minimal: "Two words." },
     "puerto colibrí": { reason: "lexical_expression", split: "A proper name; puerto → harbor + colibrí → hummingbird would translate the town's name.", minimal: "Two-word name." },
     "la ceiba": { reason: "lexical_expression", split: "A café name; la → the + ceiba → ceiba tree would translate the name.", minimal: "Two-word name." },
     "café la ceiba": { reason: "lexical_expression", split: "The café's full name; splitting it translates part of a proper name.", minimal: "The three-word name." },

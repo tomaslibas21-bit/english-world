@@ -562,7 +562,7 @@ export const cafe: SituationDef = {
     ask_kind_pan: [
       t("¿Qué | pan | le | doy? | Hay | conchas, | cuernitos | y | donas.", "Which | pastry | (to) you | I-give? | There are | conchas, | croissants | and | doughnuts.",
         "Which pastry would you like? There are conchas, croissants and doughnuts.",
-        { spain: t("¿Qué | pan | te | pongo? | Hay | conchas, | cruasanes | y | dónuts.", "Which | pastry | (for) you | I-put? | There are | conchas, | croissants | and | doughnuts.", "Which pastry would you like? There are conchas, croissants and doughnuts.") }),
+        { spain: t("¿Qué | bollo | te | pongo? | Hay | conchas, | cruasanes | y | dónuts.", "Which | pastry | (for) you | I-put? | There are | conchas, | croissants | and | doughnuts.", "Which pastry would you like? There are conchas, croissants and doughnuts.") }),
     ],
     ask_size: [
       t("¿De | qué | tamaño?", "Of | what | size?", "What size?"),
@@ -649,7 +649,7 @@ export const cafe: SituationDef = {
     pre_total: [
       t("Muy | bien.", "Very | good.", "Alright."),
       t("Perfecto.", "Perfect.", "Perfect."),
-      t("Listo.", "All set.", "All set."),
+      t("Listo.", "All set.", "All set.", { spain: t("Ya está.", "Done.", "All set.") }),
     ],
     ask_pay_method: [
       t("¿Efectivo | o | tarjeta?", "Cash | or | card?", "Cash or card?"),
@@ -812,7 +812,7 @@ export const cafe: SituationDef = {
     changed: [
       t("Claro, | sin problema.", "Sure, | no problem.", "Sure, no problem."),
       t("Listo, | ya | lo | cambié.", "Done, | already | it | I-changed.", "Okay, I changed it.",
-        { spain: t("Listo, | ya | lo | he cambiado.", "Done, | already | it | I've-changed.", "Okay, I changed it.") }),
+        { spain: t("Hecho, | ya | lo | he cambiado.", "Done, | already | it | I've-changed.", "Okay, I changed it.") }),
     ],
     out_of_oat: [
       t("¡Ay, | perdón! | Hoy | se nos acabó | la | leche | de | avena.", "Oh, | sorry! | Today | we ran out of | the | milk | of | oat.", "Oh, sorry, we're out of oat milk today.",

@@ -244,3 +244,9 @@ brief says the conversation teaches "reclamo de equipaje": only the hall's sign 
 - Words: un parte (the lost-bag report) and número de referencia for reporte, por internet for en línea, the perfect (no ha llegado, ¿Qué ha pasado?, ¿En qué vuelo ha llegado?, ¿Ha hecho escala?, ya la hemos encontrado, se ha quedado en…, el perro se ha sentado / ha marcado, se me ha olvidado), ¿Pequeña, mediana o grande? and ¿Cómo de grande es?, pegatinas, dentro, coste, tienda for tiendita, customs: ¿Tiene algo que declarar? and lleva for trae, rellenar, pulsar for apretar, 10.000 written the Spain way, el asa for la manija, La recojo aquí, Quisiera hacer una reclamación por una maleta perdida. Entities: small → pequeña, brown → marrón, packaged → algo envasado, candy → caramelo(s) (attrs.spain).
 - Grammar: problem, via_ctx, tag_lost, q_copy, q_free, q_form and the dog's forgot take the Spain forms; the sandwich takes bocadillo. Merges: the perfects, cómo de, por internet, se me ha olvidado.
 - The size/colour chips show the entity's chip text (chica, café), not the Spain noun: Conversation.tsx chipLabel reads e.chip; a proposal (the chip could use neutralNoun). Kept: semáforo, SENASICA, carril de Auto declaración (Mexico's customs).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.

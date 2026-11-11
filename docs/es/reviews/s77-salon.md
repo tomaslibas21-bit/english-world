@@ -145,3 +145,11 @@ About 115 Spain twins (lines and hints), 8 Spain multiword units in the file's `
   más", "ya me ha llegado").
 - **Grammar:** "atendéis / aceptáis sin cita", "me lo he lavado", "no he pedido cita", "(no) me has cortado demasiado".
 - Spain corpus tests/es/spain/s77-salon.json: 28 items, all understood.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Register: Paty says tú in every line; hints tú (¿Me puedes cortar…?, ¿Cuánto te debo?, Esto es para ti), vosotros for the salon (¿Atendéis sin cita?). Correct.
+- Fixed ("Listo" as "done" is Latin American; a Spanish hairdresser says "¡Ya estás!"): "¡Listo! Mírate" → "¡Ya estás! Mírate"; "¡Listo! Ya te tengo apuntado/a" → "¡Perfecto! …"; "¡Listo, ya estoy libre!" → "¡Bueno, ya estoy libre!"; "¡Listo, ya me ha llegado!" and "¡Listo, ya está apuntada!" → "¡Perfecto, …!".
+- Left: "¡Con gusto!" (style_ok) is fine in Spain as an answer to a request.

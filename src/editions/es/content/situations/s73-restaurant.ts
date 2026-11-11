@@ -848,7 +848,7 @@ export const restaurant: SituationDef = {
     ],
     table_ready: [
       t("¡Listo, | ya | está | su | mesa!", "Ready, | already | is | your | table!", "Okay, your table is ready!",
-        { spain: t("¡Listo, | ya | está | tu | mesa!", "Ready, | already | is | your | table!", "Okay, your table is ready!") }),
+        { spain: t("¡Perfecto, | ya | está | tu | mesa!", "Perfect, | already | is | your | table!", "Okay, your table is ready!") }),
     ],
     table_opened: [
       t("¡Ah, | espere! | Se acaba | de | desocupar | una | mesa.", "Oh, | wait! | It just | — | got free | a | table.", "Oh, wait, a table just opened up!",
@@ -1326,7 +1326,7 @@ export const restaurant: SituationDef = {
         { spain: t("¡No hay problema! | ¿Qué | os | traigo | entonces?", "No problem! | What | (to) you (all) | I-bring | then?", "No problem! What would you like instead?") })],
     removed: [t("Muy | bien, | sin | {X}.", "Very | good, | without | {X}.", "Okay, no {X}.")],
     changed: [t("Claro, | sin problema.", "Sure, | no problem.", "Sure, no problem."), t("Listo, | ya | lo | cambié.", "Done, | already | it | I-changed.", "Okay, I changed it.",
-        { spain: t("Listo, | ya | lo | he cambiado.", "Done, | already | it | I've-changed.", "Okay, I changed it.") })],
+        { spain: t("Hecho, | ya | lo | he cambiado.", "Done, | already | it | I've-changed.", "Okay, I changed it.") })],
     no_problem: [t("No hay problema.", "No problem.", "No problem."), t("Sin problema.", "No problem.", "No problem.")],
     ask_box: [
       t("¿Se lo | pongo | para llevar?", "For you it | I-put | to go?", "Would you like me to box that up?",
@@ -1487,9 +1487,10 @@ export const restaurant: SituationDef = {
     tip_thanks: [
       t("Perfecto, | muchas | gracias.", "Perfect, | many | thanks.", "Perfect, thank you very much."),
       t("¡Muy | amable! | Listo, | ya | quedó.", "Very | kind! | Done, | already | it's-settled.", "That's very kind. You're all set!",
-        { spain: t("¡Muy | amable! | Listo, | ya | está.", "Very | kind! | Done, | already | it's-settled.", "That's very kind. You're all set!") }),
+        { spain: t("¡Muy | amable! | Pues | ya | está.", "Very | kind! | Well, | all | done.", "That's very kind. You're all set!") }),
     ],
-    tip_none_ok: [t("Ah... | muy | bien. | Listo.", "Oh... | very | well. | Done.", "Oh... okay. You're all set.")],
+    tip_none_ok: [t("Ah... | muy | bien. | Listo.", "Oh... | very | well. | Done.", "Oh... okay. You're all set.",
+      { spain: t("Ah... | muy | bien. | Pues | ya está.", "Oh... | very | well. | Well, | that's it.", "Oh... okay. You're all set.") })],
     tip_cash_ok: [t("¡Claro! | Entonces | le | cobro | solo | la | cuenta.", "Sure! | Then | (from) you | I-charge | only | the | check.", "Sure! Then I'll just charge the check.",
         { spain: t("¡Claro! | Entonces | te | cobro | solo | la | cuenta.", "Sure! | Then | (from) you | I-charge | only | the | check.", "Sure! Then I'll just charge the check.") })],
     cash_ok: [t("Muy | bien, | enseguida | le | traigo | su | cambio.", "Very | good, | right away | (to) you | I-bring | your | change.", "Great, I'll bring your change right over.",

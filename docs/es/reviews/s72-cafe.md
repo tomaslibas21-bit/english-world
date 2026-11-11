@@ -135,3 +135,12 @@ pequeño, deslactosada → sin lactosa, light → desnatada, soya → soja); 8 S
   / "¿Te pongo algo más?" / "¿Sería todo?" close the order (global.ts reread, CLOSE_THANKS; at "¿Le pongo hielo?"
   they stay a yes). And a bare "Sí" to "¿Sería todo?" / "¿Eso es todo?" (ask_more variant 2) now closes the order (it
   asked "¿Qué más le sirvo?" before), as s79 does. Two sims are the traps (coverage.ts reads no reread).
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Register: Mariana says tú in every line and the hints ask her with tú (¿Me pones…?, Ponme…, ¿Qué me recomiendas?); vosotros only for the café as a business (¿Tenéis wifi?, ¿Aceptáis…?). Correct.
+- Fixed: "Listo" as "done" is Latin American in Spain's ear (batch 2 already said "Ya está"): pre_total "Listo." gets a twin "Ya está."; the change line "Listo, ya lo he cambiado" → "Hecho, ya lo he cambiado". "¿Qué pan te pongo?" (for croissants and doughnuts) → "¿Qué bollo te pongo?".
+- global.ts (shared lines) checked too: the perfect for what was just said (no te he entendido, ¿has dicho…?, me he equivocado, no he oído bien), "Vale, no hay problema", "¡A usted/ti!" and "¡Faltaría más!" after thanks, "¡Cuánto me alegro!", "Pues ahí vamos", "no llevo reloj": all natural, nothing changed.
+- Left: "Serían $40" (heard in Spain too).

@@ -137,3 +137,9 @@ could warn about a line with two entity placeholders, which the voice list never
 - Words: facturar for documentar, reserva for reservación, embarque for abordaje, (maleta) facturada, coste for costo, aseos for baños, móvil, dentro for adentro, llevar for traer (what you carry), jersey for suéter, ¿Me deja su pasaporte? for ¿Me permite/presta…?; the perfect: ¿Ha hecho usted mismo su maleta?, Sí, la he hecho yo, ya he encontrado su reserva, ya ha pagado el sobrepeso; Ya está for Listo.
 - Grammar: packed_yes takes la he hecho (yo / yo mismo/a); ack_done takes ya lo he cambiado; ask_dollars takes solo llevo dólares; the sweater entity takes jersey.
 - Nothing left for the lead.
+
+## Spain review (12 Nov 2026)
+
+Fresh reviewer (Madrid ear). Checked every Spain twin against the Mexican line and STYLE.md "Spain Spanish": register, vosotros/os agreement, the perfect, Spain's words, glosses, Mexican-only names, spelling, and the Spain corpus.
+
+- Read every twin: usted kept throughout, Spain's words right (billete, tarjeta de embarque, móvil, gafas, portátil, aseos, maleta, facturar, coger, aparcamiento, coche, jersey), the perfect for what just happened, "Ya está" for "Listo", Mexican-only names kept. Meaning, glosses and spelling: no problems found. No changes.
