@@ -6,7 +6,7 @@ import { coachVoice, npcVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import { GLOBAL } from "../content/global";
 import { placeLtNamed } from "../content/locations";
-import { compose, type Sentence } from "../convo/compose";
+import { addressInformal, compose, type Sentence } from "../convo/compose";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
 import { audio } from "../game/audio";
 import { game } from "../game/gameRef";
@@ -102,7 +102,7 @@ export function Conversation() {
   }, []);
 
   if (!conv.active || !sit) return null;
-  const formal = !npc?.informal;
+  const formal = !addressInformal(npc);
   const gender = useStore.getState().progress.profile?.gender ?? "m";
   const startNext = () => { const next = game?.nextScenarioId(sit.id); if (next) game?.startScenario(next); };
   const showAll = () => { game?.closeConversation(); useStore.getState().setHud({ panel: "scenarios" }); };

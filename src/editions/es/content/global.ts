@@ -8,6 +8,7 @@
 import type { GlobalContent, ConvCtx } from "../../../convo/dialogue";
 import type { Parse } from "../../../convo/nlu";
 import type { HintGroup, SentSrc } from "../../../content/types";
+import { addressInformal } from "../../../convo/compose";
 
 const t = (en: string, lt: string, nat: string, extra: Partial<SentSrc> = {}): SentSrc => ({ en, lt, nat, ...extra });
 
@@ -388,7 +389,7 @@ export const GLOBAL_HANDLERS: Record<string, (c: ConvCtx, slots: any) => void> =
   },
   g_thanks(c) {
     // "¡A la orden!" is what someone who serves the learner says, never a friend or a colleague
-    c.say(c.conv.opt.npcs[c.conv.speakerId]?.informal ? "g_welcome" : "g_welcome_staff");
+    c.say(addressInformal(c.conv.opt.npcs[c.conv.speakerId]) ? "g_welcome" : "g_welcome_staff");
     // "Buenas noches, gracias" at the end of an evening is good night
     if (/\bbuenas noches\b/.test(fold(c.heard)) && atGoodbye(c)) { c.say(byeLine(c)); c.end(); c.hold(); return; }
     if (c.conv.completed) c.hold();

@@ -40,12 +40,17 @@ function mainNpc(s: SituationDef) {
 
 function isPhone(s: SituationDef) { return s.mode === "phone" || s.mode === "video" || s.location === "phone"; }
 
-/** The Spanish edition: Mexican Spanish (the default) or neutral Latin American Spanish (docs/es/STYLE.md). Its words
- *  are English: it is only shown in that edition. */
+/** The Spanish edition: Mexican Spanish (the default), neutral Latin American Spanish or Spain's Spanish
+ *  (docs/es/STYLE.md). Its words are English: it is only shown in that edition. */
 function VarietyToggle() {
   const [v, setV] = useState(loadVariety);
-  return <Toggle on={v === "neutral"} onChange={(on) => { const nv = on ? "neutral" : "default"; chooseVariety(nv); setV(nv); }}
-    label="Neutral Latin American Spanish" sub="Off: people speak Mexican Spanish (ahorita, el camión, ¿mande?). On: the few Mexican-only words become the neutral ones. Your answers are understood either way." />;
+  const OPTIONS = [["default", "México"], ["neutral", "Latinoamérica"], ["spain", "España"]] as const;
+  return (
+    <div className="set-row">
+      <div className="txt"><b>Which Spanish</b><span>Mexican (ahorita, el camión, ¿mande?), neutral Latin American, or Spain's (vosotros, coche, vale; tú in the café and the shops). The voices change with it. Your answers are understood in any of them.</span></div>
+      <div className="seg">{OPTIONS.map(([k, n]) => <button key={k} className={v === k ? "on" : ""} onClick={() => { chooseVariety(k); setV(k); }}>{n}</button>)}</div>
+    </div>
+  );
 }
 
 export function Panels() {
