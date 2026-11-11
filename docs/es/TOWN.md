@@ -841,6 +841,41 @@ every one of them off and its cast uses none of the options.
   The same pictures; every room at or under its draw calls before the round (up to 6 fewer). Maple Harbor keeps a
   mesh each.
 
+## Graphics, round 4: the town (11 Nov 2026)
+
+Outdoors only, every change behind a theme switch (Maple Harbor's values switch them off; its town is built as before):
+
+- **Street trees** (`tropicalTrees`, mexican.ts `tropicalTrunk`, `flamboyanCrown`, `almendroCrown`): the town's round
+  "lollipop" trees are flamboyanes (a wide flat crown on a trunk that forks under it) and, one in three, almendros
+  (flat tiers of leaves); same spots, sizes, turns and random numbers. The palette's bloom colours (red-orange,
+  yellow) go to flamboyanes only, so a red crown reads as a flamboyán in bloom, not an autumn maple. The zócalo's
+  laureles keep their dense round crowns (a mesh of their own); in the bus terminal's forecourt the trees are coconut
+  palms instead (`treePalms`: a flat crown cut through the andenes' canopies and the coaches).
+- **Houses** (`casas`, mexican.ts `casa`): Maple Harbor's porch roof on two thin posts becomes a concrete portal on two
+  square columns (where the posts and their colliders were) with the upstairs terrace on it behind an iron railing and
+  pots; two plastic chairs under it; rebar standing at the roof's corners for the next floor; the wash on a line on the
+  roof.
+- **The church** (`atrio`, mexican.ts `atrio`): a whitewashed atrium wall with merlons 3.4 m out from the facade, the
+  gate (3.2 m) before the door between pillars with finials, limestone paving inside; the atrial cross moved inside it
+  (50.0, -44.6); on the facade white columns on pedestals either side of the door, an entablature, a niche with a saint
+  either side. The atrium stops short of the bread stall on its north side.
+- **The airport** (`buildings.terminal`, `airportOut.terminal`, mexican.ts `airportTerminal`): cream stucco and
+  terracotta instead of pale blue, a portal of arches against the front either side of the drop-off, a thatched palapa
+  roof over the front hall and a Maya step-fret frieze along the top of the front.
+- **The bus terminal** (`busTerminal.front`, mexican.ts `terminalFront`): white pilasters between its windows, a
+  terracotta band along its foot, travellers on the andenes' benches (`sitters`) with their suitcases, and two more
+  standing outside (`chatSpots`).
+- **The beach** (`beachLife`): the palapas thatched in layers with a ragged fringe of leaf ends; their loungers are seats,
+  and five people sit under them (`sitters`); a pair stands on the sand east of the letters (`chatSpots`). El Muelle's
+  walls warm sand and teal (`buildings.pier`).
+- **Calle Hidalgo's poles** (`poleFade`): in a mesh of their own that dissolves 6–8 m from the camera and that the walking
+  camera looks through (thin), so they no longer sweep through the picture as grey bars.
+- **The cenote's meadow** (`meadow`, mexican.ts `meadow`): shrubs and grass tufts over the meadow (clear of the cenote,
+  its palapa, the mirador and the end of Juárez), two ceibas over the selva behind it (in the far region's mesh).
+
+Tests: tests/es/town.test.ts "graphics round 4" (the atrium clear of everyone, the stalls and the cross; the beach's
+sitters on loungers; the suitcases clear of everyone; the meadow clear of the cenote and the mirador).
+
 ## The tasks (in order)
 
 Each task is one area; each ends with before/after screenshots at phone size and the draw-call numbers.

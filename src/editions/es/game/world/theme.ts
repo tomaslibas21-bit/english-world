@@ -379,6 +379,8 @@ export const THEME: TownTheme = {
   taxis: [[115.8, -4.25, -Math.PI / 2]],
   // Graphics, round 4 (town, docs/es/TOWN.md "Graphics, round 4"): the street trees as flamboyanes and almendros
   tropicalTrees: true,
+  // (and palms in the bus terminal's forecourt, where a flat crown would cut through the andenes' canopies and the coaches)
+  treePalms: [[26, 64, 43, 49.5]],
   // and the houses: a concrete portal with the terrace upstairs, chairs, rebar and the wash on the roof
   casas: true,
   // the church's atrium: a whitewashed wall with merlons 3.4 m out from its facade, the gate 3.2 m wide before the door,

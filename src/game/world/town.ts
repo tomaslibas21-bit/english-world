@@ -1648,8 +1648,11 @@ function tropicalTrees(group: THREE.Group, col: Colliders, r: () => number, rl: 
   };
   const sets = [make(MX.tropicalTrunk(), MX.flamboyanCrown(), counts[0]), make(MX.tropicalTrunk(), MX.almendroCrown(), counts[1]), make(roundTrunk, roundCrown, counts[2])];
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
-  spots.forEach(([x, z, sc], i) => {
+  // (a town tree where the theme wants a palm instead, theme.ts `treePalms`: a coconut palm there, the tree unseen)
+  const palm = (x: number, z: number) => THEME.treePalms.some(([x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
+  spots.forEach(([x, z, sc0], i) => {
     const k = kind(i), rr = i < town ? r : rl;
+    const sc = i < town && sc0 > 0 && palm(x, z) ? (beachPalms.push([x, z]), 0) : sc0;
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rr() * Math.PI);
     m4.compose(v.set(x, 0, z), q, s.set(sc * (i < town ? 1 : 1.12), sc * (0.9 + rr() * 0.3), sc * (i < town ? 1 : 1.12)));
     let leafCol = i < town ? palette[Math.floor(r() * palette.length)] : ["#2f6b34", "#2a6330", "#356f37"][Math.floor(rl() * 3)];
