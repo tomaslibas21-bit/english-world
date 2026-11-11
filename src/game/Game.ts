@@ -31,6 +31,7 @@ import { sitProgress } from "../state/progress";
 import { textTexture, rand } from "./world/util";
 import { givenItem } from "./given";
 import { L, TL } from "../ui/i18n";
+import { roleSaid } from "../convo/compose";
 import { EDITION } from "../edition";
 import type { GameApi } from "./gameRef";
 import { THEME } from "./world/theme";
@@ -392,7 +393,7 @@ export class Game implements GameApi {
       tag.className = "nametag";
       // who they are in English, and in Lithuanian under it (unless it is the same word, like "Barista")
       const lt = def.role.lt.toLowerCase() === def.role.en.toLowerCase() ? "" : `<i lang="${EDITION.helper}">${def.role.lt}</i>`;
-      tag.innerHTML = `<b>${def.name}</b><span lang="${TL}">${def.role.en}</span>${lt}`;
+      tag.innerHTML = `<b>${def.name}</b><span lang="${TL}">${roleSaid(def)}</span>${lt}`;
       this.tagLayer.appendChild(tag);
       const ap = sp as { ax?: number; az?: number };
       this.npcs.push({ id: sp.npc, ch, home: new THREE.Vector3(sp.x, 0, sp.z), rot: sp.rot, tag, sit: sp.sit, waved: false, approach: ap.ax !== undefined && ap.az !== undefined ? new THREE.Vector3(ap.ax, 0, ap.az) : undefined });
