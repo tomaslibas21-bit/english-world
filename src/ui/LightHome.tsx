@@ -105,7 +105,7 @@ function LightHome() {
     <div className="lh" inert={covered} aria-hidden={covered || undefined}>
       <div className="lh-in">
         <header className="lh-top">
-          <div className="lh-brand"><span className="lh-logo">{EDITION.brand} <small className="beta-badge">Beta</small></span><span className="lh-town">{EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
+          <div className="lh-brand"><span className="lh-logo">{EDITION.brand} <small className="beta-badge">Beta</small></span><span className="lh-town">{EDITION.town === EDITION.brand ? L("Maple Harbor · JAV") : EDITION.town}</span><span className="lh-town-lt" lang={EDITION.helper}>{TOWN_LT}</span></div>
           <nav className="lh-tools" aria-label={L("Įrankiai")}>
             <button className="lh-tool lh-3d" onClick={() => switchPlayMode("town")} title={L("Vaikščiok po 3D miestą ir kalbėkis su jo žmonėmis")}><Icon name="map" size={22} /><span>{L("Atidaryti 3D miestą")}</span></button>
             <SectionHelpButton className="lh-tool" />

@@ -32,3 +32,13 @@
   --ink: #1f2a33;
   --accent: #1f6f78;
 }
+/* The Spanish edition's loading screen: its name, "Puerto Colibrí", in the title screen's lettering (title.css .ts-title). */
+.pc-loading-word {
+  font-family: "EB Garamond", Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  font-size: clamp(2.6em, 7vw, 4.2em);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  color: var(--ink, #1f2a33);
+}
+.pc-loading-word em { font-style: italic; font-weight: 500; color: var(--accent, #1f6f78); }
