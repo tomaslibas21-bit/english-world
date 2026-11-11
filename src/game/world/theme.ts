@@ -173,6 +173,26 @@ export interface TownTheme {
   backyardWall: { wall: string; base: string; cap: string; gate: string } | null;
   /** The colours of the town's leafy trees (each tree draws one; none: Maple Harbor's autumn ones). */
   treeColors: string[];
+  /** (graphics round 4) The street, park and yard trees as the tropics grow them (mexican.ts): flamboyanes, a wide flat
+   *  crown on a forked trunk (the town's bloom colours go to them alone), and almendros, flat tiers of leaves; the
+   *  zócalo's laureles keep their dense round crowns (false: Maple Harbor's round trees). */
+  tropicalTrees: boolean;
+  /** (graphics round 4) The houses' fronts as Mexican houses (mexican.ts `casa`): a concrete portal with the upstairs
+   *  terrace on it behind an iron railing, plastic chairs under it, rebar at the roof's corners and the wash on a line
+   *  up there (false: Maple Harbor's porch roof on two posts). */
+  casas: boolean;
+  /** (graphics round 4) The church's walled atrium before its door (how far out from the facade, how far either side of
+   *  the door, the gate's half width) and its facade's columns, entablature and niches (mexican.ts `atrio`; null: none). */
+  atrio: { depth: number; left: number; right: number; gate: number } | null;
+  /** (graphics round 4) The beach's palapas thatched in layers with a ragged fringe, and their loungers places where
+   *  the townspeople sit (theme `sitters` names which; false: smooth cones). */
+  beachLife: boolean;
+  /** (graphics round 4) The overhead lines' poles dissolve between these distances from the camera (metres) and the
+   *  walking camera looks through them (null: in the town's mesh, solid). */
+  poleFade: [number, number] | null;
+  /** (graphics round 4) The meadow round the cenote as scrub: shrubs and tall grass over x0…x1, z0…z1 but in the `clear`
+   *  circles (x, z, radius), and ceibas over the selva (x, z) (mexican.ts `meadow`; null: bare grass). */
+  meadow: { x0: number; x1: number; z0: number; z1: number; clear: [number, number, number][]; ceibas: [number, number][] } | null;
   /** A cenote in the meadow beyond the town's west edge (its water's middle and its painted sign): seen from the ends
    *  of the streets, not reached on foot. */
   cenote: { x: number; z: number; sign: string } | null;
@@ -215,10 +235,20 @@ export interface TownTheme {
   lean: boolean;
   /** The bus terminal outside: canopies over its two andenes either side of the door, their painted signs and benches,
    *  planters by the door, and intercity buses at the curb in front of them (x and the destination on each). */
-  busTerminal: { andenes: string[]; buses: { x: number; dest: string }[] } | null;
+  busTerminal: {
+    andenes: string[]; buses: { x: number; dest: string }[];
+    /** (graphics round 4) white pilasters up its front (x from its middle), a terracotta band along its foot, and
+     *  travellers' suitcases (x, z) by the benches (mexican.ts `terminalFront`). */
+    front?: { pilasters: number[]; cases: [number, number][] };
+  } | null;
   /** The airport outside: its drop-off canopy thatched like a palapa (no higher than the camera's box over it, Game.ts),
    *  agave planters along the forecourt, and a painted welcome sign (two lines) at the forecourt's north end. */
-  airportOut: { welcome: [string, string] } | null;
+  airportOut: {
+    welcome: [string, string];
+    /** (graphics round 4) the terminal itself: a thatched palapa roof over its front hall (`hall` m deep) and a Maya
+     *  step-fret frieze along its front (mexican.ts `airportTerminal`). */
+    terminal?: { hall: number };
+  } | null;
   /** The square dressed as a zócalo: laureles de la India (big dark crowns, their trunks whitewashed) at these spots, iron
    *  bancas where the square's benches are and these more (x, z and which way the seat faces: 0 is +z), and colonial
    *  lamp posts with four-sided lanterns at these spots. In the tianguis' mesh: drawn only where the square is in view. */
@@ -342,6 +372,12 @@ export const THEME: TownTheme = {
   mailbox: "usps",
   backyardWall: null,
   treeColors: [],
+  tropicalTrees: false,
+  casas: false,
+  atrio: null,
+  beachLife: false,
+  poleFade: null,
+  meadow: null,
   cenote: null,
   ruins: null,
   sea: null,
