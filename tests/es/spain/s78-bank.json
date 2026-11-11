@@ -1,0 +1,14 @@
+{ "situation": "s78-bank", "items": [
+  {"ctx": "help", "say": "Hola, quería abrir una cuenta", "intent": "open_account"},
+  {"ctx": "help", "say": "Quiero sacar dinero", "intent": "withdraw"},
+  {"ctx": "help", "say": "¿A cuánto está el dólar?", "intent": "rate_q"},
+  {"ctx": "acct_type", "say": "De débito, por favor", "intent": "acct_type_ans", "slots": {"acct": "checking"}},
+  {"ctx": "id", "say": "Aquí tiene mi pasaporte", "intent": "show_doc", "slots": {"doc": "passport"}},
+  {"ctx": "id", "say": "Tengo el carné de conducir", "intent": "show_doc", "slots": {"doc": "license"}},
+  {"ctx": "proof", "say": "Aquí tiene mi contrato de alquiler", "intent": "give_proof", "slots": {"proof": "lease"}},
+  {"ctx": "lease_q", "say": "Sí, tengo contrato de alquiler", "intent": "give_proof", "slots": {"proof": "lease"}},
+  {"ctx": "form", "say": "¿Me deja un boli?", "intent": "ask_pen"},
+  {"ctx": "form", "say": "Ya está, ya he firmado", "intent": "signed"},
+  {"ctx": "slow", "say": "Vale, no pasa nada", "intent": ["no_problem", "yn:yes", "g_ok"]},
+  {"ctx": "form", "say": "¿Dónde firmo?", "intent": "where_sign"}
+] }

@@ -39,8 +39,8 @@ const UTILITIES: EntityDef[] = [
 const INCLUDED = ["water", "maintenance", "trash"];
 
 const APPLIANCES: EntityDef[] = [
-  ent("fridge", "refrigerador", "fridge", "m", { forms: ["refri", "el refri", "refrigerador", "nevera", "frigorifico", "heladera"], attrs: { kitchen: true } }),
-  ent("stove", "estufa", "stove", "f", { forms: ["la estufa", "estufa de gas", "horno", "el horno", "cocina de gas", "parrilla"], attrs: { kitchen: true } }),
+  ent("fridge", "refrigerador", "fridge", "m", { forms: ["refri", "el refri", "refrigerador", "nevera", "frigorifico", "heladera"], attrs: { kitchen: true, spain: "frigorífico" } }),
+  ent("stove", "estufa", "stove", "f", { forms: ["la estufa", "estufa de gas", "horno", "el horno", "cocina de gas", "parrilla", "vitroceramica", "la vitroceramica", "placa", "la placa", "fogones", "los fogones"], attrs: { kitchen: true, spain: "vitrocerámica" } }),
   ent("microwave", "microondas", "microwave", "m", { pl: "microondas", forms: ["horno de microondas", "el microondas"], attrs: { none: true } }),
   ent("dishwasher", "lavaplatos", "dishwasher", "m", { pl: "lavaplatos", forms: ["lavavajillas", "el lavaplatos"], attrs: { none: true } }),
   ent("washer", "lavadora", "washing machine", "f", { forms: ["la lavadora", "lavadoras", "lavarropas"] }),
@@ -151,7 +151,7 @@ export const apartment: SituationDef = {
       month: "(enero | febrero | marzo | abril | mayo | junio | julio | agosto | septiembre | setiembre | octubre | noviembre | diciembre)",
       fam: "(esposa | esposo | pareja | novia | novio | hijo | hija | hijos | hijas | familia | amigo | amiga | bebe | mama | papa | hermana | hermano | dos hijos | tres hijos | perro | gato)",
       broken: "(no funciona | no sirve | no prende | no enciende | no enfria | no calienta | no jala | ya no funciona | ya no sirve | ya no enfria | esta descompuesto | esta descompuesta | se descompuso | dejó de funcionar | esta roto | esta rota | se rompió | no esta funcionando)",
-      where_when: "(en la cocina | en el bano | en la recamara | en el cuarto | en el departamento | desde ayer | desde anoche | desde hoy en la manana | desde la manana | otra vez | de nuevo | todavia)",
+      where_when: "(en la cocina | en el bano | en la recamara | en el cuarto | en el departamento | desde ayer | desde anoche | desde hoy (en | por) la manana | desde la manana | otra vez | de nuevo | todavia)",
       when_mv: [
         "(lo antes posible | lo mas pronto posible | cuanto antes | lo mas rapido posible | lo mas pronto que se pueda) #h:asap",
         "(ya | ahorita | ahora | de inmediato | hoy | hoy mismo | manana | manana mismo | luego luego | esta semana | este fin de semana | este mes)",
@@ -328,10 +328,10 @@ export const apartment: SituationDef = {
       "(hay | hay una) lavanderia cerca", "(y | que tal) la ropa", "(donde | en donde) (tiendo | seco | se tiende) la ropa",
     ] },
     ask_quiet: { patterns: [
-      "es (un edificio | una zona | una colonia | una calle) (tranquilo | tranquila) #h:q_quiet", "es tranquilo [el edificio | aqui | en la noche]",
-      "hay mucho ruido [en la noche]", "es (ruidoso | ruidosa)", "(como son | que tal) los vecinos", "los vecinos son (tranquilos | ruidosos | amables | buena onda)",
+      "es (un edificio | una zona | una colonia | una calle) (tranquilo | tranquila) #h:q_quiet", "es tranquilo [el edificio | aqui | (en | por) la noche]",
+      "hay mucho ruido [(en | por) la noche]", "es (ruidoso | ruidosa)", "(como son | que tal) los vecinos", "los vecinos son (tranquilos | ruidosos | amables | buena onda)",
       "(es | esta) (segura | seguro) (la colonia | la zona | el barrio | aqui | la calle)", "(la colonia | la zona | el barrio | la calle) es (segura | tranquila | ruidosa)",
-      "(que tal | como es) (la colonia | la zona | el barrio)", "es seguro [aqui | en la noche]",
+      "(que tal | como es) (la colonia | la zona | el barrio)", "es seguro [aqui | (en | por) la noche]",
     ] },
     ask_bus: { patterns: [
       "hay una parada [de (camion | colectivo | autobus)] cerca #h:q_bus", "(donde | en donde) (pasa | se toma | tomo) el (camion | colectivo | autobus)",
@@ -360,7 +360,7 @@ export const apartment: SituationDef = {
       "(puedo | se puede) fumar [aqui | adentro | en el departamento | en el balcon]", "(se permite | esta permitido) fumar", "(acepta | aceptan) fumadores",
     ] },
     ask_size: { patterns: [
-      "cuantas (recamaras | habitaciones) (tiene | hay | son)", "cuantos (cuartos | banos | metros [cuadrados]) (tiene | hay)",
+      "cuantas (recamaras | habitaciones) (tiene | hay | son)", "cuantos dormitorios (tiene | hay | son)", "cuantos (cuartos | banos | metros [cuadrados]) (tiene | hay)",
       "(que tan grande | de que tamano) es [@the_apt | la {room} | el {room}]", "cuantos metros cuadrados (tiene | son | mide)", "es de (una | dos) (recamaras | recamara)",
     ] },
     ask_see: { patterns: [
@@ -378,7 +378,7 @@ export const apartment: SituationDef = {
       "(hay | piden | hacen) (un estudio | investigacion | estudio de credito)",
     ] },
     ask_aval: { patterns: [
-      "(necesito | pide | piden | hace falta | se necesita) [un] (aval | fiador) #h:q_aval", "que es (un | el) aval #h:aval_q",
+      "(necesito | pide | piden | hace falta | se necesita) [un] (aval | fiador) #h:q_aval", "(necesito | pide | piden | hace falta | se necesita) [un] avalista", "que es (un | el) aval #h:aval_q",
       "(tengo que | hay que) tener (aval | fiador)", "(y | que tal) el aval", "(es | el) aval es obligatorio",
     ] },
     ask_poliza: { patterns: [
@@ -437,8 +437,8 @@ export const apartment: SituationDef = {
     // "Tal vez." / "Lo estoy pensando." only as an answer to "¿Qué le parece?"
     think_ctx: { patterns: ["(tal vez | quizas | quiza | a lo mejor | puede ser)", "(lo | todavia lo) estoy pensando", "(todavia | aun) no (me decido | estoy (seguro | segura) | lo se)", "(todavia | aun) no"] },
     call_back: { patterns: [
-      "[si] le (llamo | hablo | marco | aviso | escribo | confirmo | mando un mensaje | mando mensaje) (hoy | hoy en la noche | esta noche | en la noche | en la tarde | mas tarde | al rato | en un rato | en una hora | antes de la noche | hoy mismo) #h:call_tonight",
-      "[si] (le prometo | se lo prometo)", "(hoy | esta noche | en la noche) le (aviso | llamo | marco | hablo)",
+      "[si] le (llamo | hablo | marco | aviso | escribo | confirmo | mando un mensaje | mando mensaje) (hoy | hoy (en | por) la noche | esta noche | (en | por) la noche | (en | por) la tarde | mas tarde | al rato | en un rato | en una hora | antes de la noche | hoy mismo) #h:call_tonight",
+      "[si] (le prometo | se lo prometo)", "(hoy | esta noche | (en | por) la noche) le (aviso | llamo | marco | hablo)",
     ] },
 
     // --- Don Ernesto's questions ----------------------------------------------
@@ -573,18 +573,18 @@ export const apartment: SituationDef = {
     ] },
     home_yes: { patterns: [
       "[si] (voy a estar | estoy | estare) (en casa | aqui | ahi) [todo el dia | toda la manana | manana] #h:home_yes", "[si] trabajo desde casa",
-      "[si] (estoy | voy a estar) libre [manana] [en la manana]", "[si] manana estoy aqui", "[si] (ahi | aqui) (estoy | voy a estar | estare) [manana]", "[si] a esa hora (estoy | voy a estar) [en casa | aqui]", "[si] manana (estoy | voy a estar) (en casa | aqui)",
+      "[si] (estoy | voy a estar) libre [manana] [(en | por) la manana]", "[si] manana estoy aqui", "[si] (ahi | aqui) (estoy | voy a estar | estare) [manana]", "[si] a esa hora (estoy | voy a estar) [en casa | aqui]", "[si] manana (estoy | voy a estar) (en casa | aqui)",
     ] },
     at_work: { patterns: [
-      "[no] (voy a estar | estoy | estare) (trabajando | en el trabajo) [manana | todo el dia | hasta {time} | en la manana] #h:at_work",
-      "[no] no (voy a estar | estoy | estare) [en casa | aqui] [manana | en la manana | a las diez]", "[manana] trabajo [manana] [todo el dia | en la manana] [hasta {time}]",
-      "[no] tengo que trabajar [manana]", "[no] (estoy | voy a estar) (ocupado | ocupada) [manana] [en la manana]", "[no] manana no estoy",
+      "[no] (voy a estar | estoy | estare) (trabajando | en el trabajo) [manana | todo el dia | hasta {time} | (en | por) la manana] #h:at_work",
+      "[no] no (voy a estar | estoy | estare) [en casa | aqui] [manana | (en | por) la manana | a las diez]", "[manana] trabajo [manana] [todo el dia | (en | por) la manana] [hasta {time}]",
+      "[no] tengo que trabajar [manana]", "[no] (estoy | voy a estar) (ocupado | ocupada) [manana] [(en | por) la manana]", "[no] manana no estoy",
     ] },
     time_pref: { patterns: [
-      "(puede | podria) venir (despues de | a | antes de) {time} #h:after_five", "(puede | podria) venir (en la tarde | en la noche | mas tarde | el {day} | {day} | el fin de semana)",
-      "(mejor | prefiero) (en la tarde | en la noche | mas tarde | el {day} | {day} | despues de {time} | a {time})", "(despues de | a partir de) {time}",
+      "(puede | podria) venir (despues de | a | antes de) {time} #h:after_five", "(puede | podria) venir ((en | por) la tarde | (en | por) la noche | mas tarde | el {day} | {day} | el fin de semana)",
+      "(mejor | prefiero) ((en | por) la tarde | (en | por) la noche | mas tarde | el {day} | {day} | despues de {time} | a {time})", "(despues de | a partir de) {time}",
       "(en | por) la (tarde | noche) [mejor] #h:afternoon", "[el] {day} (es mejor | seria mejor | me queda mejor) #h:saturday",
-      "que tal (a {time} | en la tarde | el {day})", "mas tarde (es mejor | me queda mejor)",
+      "que tal (a {time} | (en | por) la tarde | el {day})", "mas tarde (es mejor | me queda mejor)",
     ] },
     use_key: { patterns: [
       "[si] (puede | usted puede) (usar su llave | entrar con su llave | abrirle | dejarlo pasar | abrir con su llave) #h:use_key", "(abrale | dejelo pasar | dejelo entrar)",
@@ -593,11 +593,11 @@ export const apartment: SituationDef = {
     // "A las diez no puedo." → Don Ernesto asks for another time
     time_bad: { patterns: [
       // "Mañana a las diez no puedo" / "A las diez no está bien": the time he offered, refused (never booked)
-      "(a las diez | las diez | manana | manana a las diez | en la manana | manana en la manana | a esa hora | esa hora) no (puedo | me queda | me queda bien | me conviene | esta bien | me parece bien | me sirve)",
-      "no puedo (a las diez | manana | manana a las diez | a esa hora | en la manana)", "(a las diez | esa hora) es muy temprano [para mi]",
-      "(a las diez | manana | en la manana | a esa hora) no (estoy | voy a estar) [en casa | aqui]", "(prefiero | mejor) (otro dia | otra hora | otro horario)", "prefiero estar (yo | en casa | presente)",
+      "(a las diez | las diez | manana | manana a las diez | (en | por) la manana | manana (en | por) la manana | a esa hora | esa hora) no (puedo | me queda | me queda bien | me conviene | esta bien | me parece bien | me sirve)",
+      "no puedo (a las diez | manana | manana a las diez | a esa hora | (en | por) la manana)", "(a las diez | esa hora) es muy temprano [para mi]",
+      "(a las diez | manana | (en | por) la manana | a esa hora) no (estoy | voy a estar) [en casa | aqui]", "(prefiero | mejor) (otro dia | otra hora | otro horario)", "prefiero estar (yo | en casa | presente)",
     ] },
-    time_ok: { patterns: ["(manana a las diez | a las diez | las diez | manana | en la manana) (esta bien | me queda bien | me parece bien | perfecto) #h:ten_fine", "(a las diez | manana) si (puedo | estoy)"] },
+    time_ok: { patterns: ["(manana a las diez | a las diez | las diez | manana | (en | por) la manana) (esta bien | me queda bien | me parece bien | perfecto) #h:ten_fine", "(a las diez | manana) si (puedo | estoy)"] },
     // a bare time or day ("A las seis.", "El sábado.") only where a time for the repair is asked
     time_ctx: { patterns: ["[a] {time} [por favor | esta bien | mejor]", "[el] {day} [a {time} | en la (manana | tarde | noche) | por la (manana | tarde | noche)] [por favor | mejor]"] },
   },
@@ -605,28 +605,28 @@ export const apartment: SituationDef = {
   lines: {
     greet_must_be: [
       t("¡Buenas tardes! | Viene | por | el | departamento, | ¿verdad?", "Good afternoon! | You've come | about | the | apartment, | right?", "Good afternoon! You're here about the apartment, right?",
-        { flags: { 4: F_DEPA }, neutral: t("¡Buenas tardes! | Viene | por | el | apartamento, | ¿verdad?", "Good afternoon! | You've come | about | the | apartment, | right?", "Good afternoon! You're here about the apartment, right?") }),
+        { flags: { 4: F_DEPA }, neutral: t("¡Buenas tardes! | Viene | por | el | apartamento, | ¿verdad?", "Good afternoon! | You've come | about | the | apartment, | right?", "Good afternoon! You're here about the apartment, right?"), spain: t("¡Buenas tardes! | Viene | por | el | piso, | ¿verdad?", "Good afternoon! | You've come | about | the | apartment, | right?", "Good afternoon! You're here about the apartment, right?") }),
       t("¡Hola! | ¿Viene | a | ver | el | departamento?", "Hi! | Have you come | to | see | the | apartment?", "Hi! Are you here to see the apartment?",
-        { flags: { 5: F_DEPA }, neutral: t("¡Hola! | ¿Viene | a | ver | el | apartamento?", "Hi! | Have you come | to | see | the | apartment?", "Hi! Are you here to see the apartment?") }),
+        { flags: { 5: F_DEPA }, neutral: t("¡Hola! | ¿Viene | a | ver | el | apartamento?", "Hi! | Have you come | to | see | the | apartment?", "Hi! Are you here to see the apartment?"), spain: t("¡Hola! | ¿Viene | a | ver | el | piso?", "Hi! | Have you come | to | see | the | apartment?", "Hi! Are you here to see the apartment?") }),
     ],
     greet_help: [
       t("¡Buenas tardes! | ¿Le | puedo | ayudar | en | algo?", "Good afternoon! | (To) you | can I | help | in | something?", "Good afternoon! Can I help you with something?"),
       t("¡Hola! | ¿En | qué | le | puedo | ayudar?", "Hi! | In | what | (to) you | can I | help?", "Hi! How can I help you?"),
     ],
     purpose_again: [t("¿Viene | por | el | departamento?", "Have you come | about | the | apartment?", "Are you here about the apartment?",
-      { flags: { 3: F_DEPA }, neutral: t("¿Viene | por | el | apartamento?", "Have you come | about | the | apartment?", "Are you here about the apartment?") })],
+      { flags: { 3: F_DEPA }, neutral: t("¿Viene | por | el | apartamento?", "Have you come | about | the | apartment?", "Are you here about the apartment?"), spain: t("¿Viene | por | el | piso?", "Have you come | about | the | apartment?", "Are you here about the apartment?") })],
     how_help: [t("¡Ah, | perdón! | ¿En | qué | le | puedo | ayudar?", "Oh, | sorry! | In | what | (to) you | can I | help?", "Oh, sorry! How can I help you?")],
     come_in: [
       t("¡Pase, | pase!", "Come in, | come in!", "Come on in!"),
-      t("¡Qué | bueno! | Pase, | por favor.", "How | good! | Come in, | please.", "Great, come on in!"),
+      t("¡Qué | bueno! | Pase, | por favor.", "How | good! | Come in, | please.", "Great, come on in!", { spain: t("¡Muy | bien! | Pase, | por favor.", "Very | good! | Come in, | please.", "Great, come on in!") }),
       t("Sí, | claro. | ¡Pase!", "Yes, | of course. | Come in!", "Yes, of course. Come on in!"),
     ],
     still_yes: [t("¡Sí, | todavía | está | disponible! | Pase.", "Yes, | still | it's | available! | Come in.", "Yes, it's still available! Come on in.")],
     tour: [
       // no side named: the 3D room has the kitchen ahead on the right, the pictures (shown instead of it) on the left
-      t("Mire, | esta | es | la | sala, | y | ahí | está | la | cocina.", "Look, | this | is | the | living room, | and | there | is | the | kitchen.", "So, this is the living room, and there's the kitchen."),
+      t("Mire, | esta | es | la | sala, | y | ahí | está | la | cocina.", "Look, | this | is | the | living room, | and | there | is | the | kitchen.", "So, this is the living room, and there's the kitchen.", { spain: t("Mire, | este | es | el | salón, | y | ahí | está | la | cocina.", "Look, | this | is | the | living room, | and | there | is | the | kitchen.", "So, this is the living room, and there's the kitchen.") }),
       t("Esta | es | la | sala. | La | recámara | está | al fondo | del | pasillo.", "This | is | the | living room. | The | bedroom | is | at the back | of the | hallway.", "This is the living room. The bedroom is at the end of the hall.",
-        { flags: { 5: F_RECAMARA }, neutral: t("Esta | es | la | sala. | La | habitación | está | al fondo | del | pasillo.", "This | is | the | living room. | The | bedroom | is | at the back | of the | hallway.", "This is the living room. The bedroom is at the end of the hall.") }),
+        { flags: { 5: F_RECAMARA }, neutral: t("Esta | es | la | sala. | La | habitación | está | al fondo | del | pasillo.", "This | is | the | living room. | The | bedroom | is | at the back | of the | hallway.", "This is the living room. The bedroom is at the end of the hall."), spain: t("Este | es | el | salón. | La | habitación | está | al fondo | del | pasillo.", "This | is | the | living room. | The | bedroom | is | at the back | of the | hallway.", "This is the living room. The bedroom is at the end of the hall.") }),
     ],
     tour_extra: [
       t("Es | muy | fresco | y | tiene | mucha | luz.", "It's | very | cool | and | it has | a lot of | light.", "It stays nice and cool, and it gets lots of light."),
@@ -652,7 +652,7 @@ export const apartment: SituationDef = {
     ask_pet_which: [t("Ah, | ¿qué | mascota | tiene?", "Oh, | what | pet | do you have?", "Oh, what pet do you have?")],
     pets_policy: [t("Se aceptan | gatos | y | perros | chicos.", "Are allowed | cats | and | dogs | small.", "Cats are allowed, and small dogs too.")],
     pet_cat_ok: [t("Un | gato, | no hay | problema.", "A | cat, | there's no | problem.", "A cat is fine.")],
-    pet_dog_ok: [t("Un | perro | chico | también | está bien.", "A | dog | small | also | is fine.", "A small dog is fine too.")],
+    pet_dog_ok: [t("Un | perro | chico | también | está bien.", "A | dog | small | also | is fine.", "A small dog is fine too.", { spain: t("Un | perro | pequeño | también | está bien.", "A | dog | small | also | is fine.", "A small dog is fine too.") })],
     // two or more ("Tengo dos gatos", "¿Se aceptan perros?"): never "Un gato…"
     pet_cats_ok: [t("Con | gatos | no hay | problema.", "With | cats | there's no | problem.", "Cats are no problem.")],
     pet_dogs_ok: [t("Con | perros | chicos | no hay | problema.", "With | dogs | small | there's no | problem.", "Small dogs are no problem.")],
@@ -670,16 +670,16 @@ export const apartment: SituationDef = {
     go_ahead: [t("Claro, | dígame.", "Sure, | tell me.", "Sure, go ahead.")],
     good_q: [t("Buena | pregunta.", "Good | question.", "Good question.")],
     rent: [
-      t("La | renta | es | de | {$rent} | al mes.", "The | rent | is | — | {$rent} | a month.", "The rent is {$rent} a month.", { flags: { 3: F_DE_AMOUNT } }),
+      t("La | renta | es | de | {$rent} | al mes.", "The | rent | is | — | {$rent} | a month.", "The rent is {$rent} a month.", { flags: { 3: F_DE_AMOUNT }, spain: t("El | alquiler | es | de | {$rent} | al mes.", "The | rent | is | — | {$rent} | a month.", "The rent is {$rent} a month.", { flags: { 3: F_DE_AMOUNT } }) }),
       t("Son | {$rent} | al mes.", "It's | {$rent} | a month.", "It's {$rent} a month."),
     ],
-    rent_full: [t("La | renta | es | de | {$rent} | al mes.", "The | rent | is | — | {$rent} | a month.", "The rent is {$rent} a month.", { flags: { 3: F_DE_AMOUNT } })],
-    deposit_full: [t("El | depósito | es | de | un | mes | de | renta.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT } })],
+    rent_full: [t("La | renta | es | de | {$rent} | al mes.", "The | rent | is | — | {$rent} | a month.", "The rent is {$rent} a month.", { flags: { 3: F_DE_AMOUNT }, spain: t("El | alquiler | es | de | {$rent} | al mes.", "The | rent | is | — | {$rent} | a month.", "The rent is {$rent} a month.", { flags: { 3: F_DE_AMOUNT } }) })],
+    deposit_full: [t("El | depósito | es | de | un | mes | de | renta.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT }, spain: t("La | fianza | es | de | un | mes | de | alquiler.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT } }) })],
     lease_full: [t("El | contrato | es | por | un | año.", "The | lease | is | for | one | year.", "The lease is for one year.")],
-    rent_due: [t("La | renta | se paga | los | primeros | cinco | días | de | cada | mes.", "The | rent | is paid | the | first | five | days | of | each | month.", "Rent is due in the first five days of each month.")],
+    rent_due: [t("La | renta | se paga | los | primeros | cinco | días | de | cada | mes.", "The | rent | is paid | the | first | five | days | of | each | month.", "Rent is due in the first five days of each month.", { spain: t("El | alquiler | se paga | los | primeros | cinco | días | de | cada | mes.", "The | rent | is paid | the | first | five | days | of | each | month.", "Rent is due in the first five days of each month.") })],
     rent_pay_how: [t("Me | puede | pagar | por | transferencia | o | en efectivo.", "(To) me | you can | pay | by | transfer | or | in cash.", "You can pay me by bank transfer or in cash.")],
     rent_firm: [
-      t("Lo siento, | la | renta | es | fija. | Pero | el | agua | y | el | mantenimiento | están | incluidos.", "I'm sorry, | the | rent | is | fixed. | But | the | water | and | the | maintenance | are | included.", "Sorry, the rent is firm. But water and maintenance are included."),
+      t("Lo siento, | la | renta | es | fija. | Pero | el | agua | y | el | mantenimiento | están | incluidos.", "I'm sorry, | the | rent | is | fixed. | But | the | water | and | the | maintenance | are | included.", "Sorry, the rent is firm. But water and maintenance are included.", { spain: t("Lo siento, | el | alquiler | es | fijo. | Pero | el | agua | y | el | mantenimiento | están | incluidos.", "I'm sorry, | the | rent | is | fixed. | But | the | water | and | the | maintenance | are | included.", "Sorry, the rent is firm. But water and maintenance are included.") }),
       t("La verdad, | el | precio | es | fijo. | Pero | el | agua | y | el | mantenimiento | están | incluidos.", "Honestly, | the | price | is | fixed. | But | the | water | and | the | maintenance | are | included.", "Honestly, the price is firm. But water and maintenance are included."),
     ],
     utilities_all: [
@@ -690,9 +690,9 @@ export const apartment: SituationDef = {
     util_yes: [t("Sí, | {X.the} | está | {incluido@X}.", "Yes, | {X.the} | is | included.", "Yes, {X} is included.")],
     util_no: [t("No, | {X.the} | no está | {incluido@X}.", "No, | {X.the} | isn't | included.", "No, {X} isn't included.")],
     // "¿Tengo que pagar el agua?" / "¿El agua se paga aparte?": no, it's included
-    util_incl_no: [t("No, | {X.the} | ya | está | {incluido@X} | en | la | renta.", "No, | {X.the} | already | is | included | in | the | rent.", "No, {X} is already included in the rent.")],
+    util_incl_no: [t("No, | {X.the} | ya | está | {incluido@X} | en | la | renta.", "No, | {X.the} | already | is | included | in | the | rent.", "No, {X} is already included in the rent.", { spain: t("No, | {X.the} | ya | está | {incluido@X} | en | el | alquiler.", "No, | {X.the} | already | is | included | in | the | rent.", "No, {X} is already included in the rent.") })],
     // "¿Quién paga el agua?" / "¿Cuánto cuesta el agua?": no yes or no
-    util_incl: [t("{X.the} | ya | está | {incluido@X} | en | la | renta.", "{X.the} | already | is | included | in | the | rent.", "{X} is already included in the rent.")],
+    util_incl: [t("{X.the} | ya | está | {incluido@X} | en | la | renta.", "{X.the} | already | is | included | in | the | rent.", "{X} is already included in the rent.", { spain: t("{X.the} | ya | está | {incluido@X} | en | el | alquiler.", "{X.the} | already | is | included | in | the | rent.", "{X} is already included in the rent.") })],
     util_depends: [t("Eso | se paga | aparte; | depende | de | cuánto | use.", "That | is paid | separately; | it depends | on | how much | you use.", "That's extra, and it depends on how much you use.")],
     util_separate: [t("Eso | se paga | aparte.", "That | is paid | separately.", "You'd pay for that separately.")],
     util_internet: [t("Casi | todos | los | vecinos | tienen | NetWave.", "Almost | all | the | neighbors | have | NetWave.", "Most of the neighbors use NetWave.")],
@@ -701,19 +701,19 @@ export const apartment: SituationDef = {
       { flags: { 8: "azotea: the flat roof of a Mexican building, used for water and gas tanks and laundry.", 14: "Mexican: la pipa = the tanker truck that refills gas tanks." },
         neutral: t("El | gas | viene | de | un | tanque | en | la | azotea. | Cuando | se acaba, | usted | llama | al | camión | del | gas.", "The | gas | comes | from | a | tank | on | the | roof. | When | it runs out, | you | call | the | truck | of the | gas.", "The gas comes from a tank on the roof. When it runs out, you call the gas truck.") })],
     deposit: [
-      t("El | depósito | es | de | un | mes | de | renta.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT } }),
-      t("Es | un | mes | de | renta: | {$deposit}.", "It's | one | month | of | rent: | {$deposit}.", "It's one month's rent, so {$deposit}."),
+      t("El | depósito | es | de | un | mes | de | renta.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT }, spain: t("La | fianza | es | de | un | mes | de | alquiler.", "The | deposit | is | — | one | month | of | rent.", "The security deposit is one month's rent.", { flags: { 3: F_DE_AMOUNT } }) }),
+      t("Es | un | mes | de | renta: | {$deposit}.", "It's | one | month | of | rent: | {$deposit}.", "It's one month's rent, so {$deposit}.", { spain: t("Es | un | mes | de | alquiler: | {$deposit}.", "It's | one | month | of | rent: | {$deposit}.", "It's one month's rent, so {$deposit}.") }),
     ],
     // after two months' deposit was agreed (no guarantor)
-    deposit_two: [t("Son | {$deposit} | de | depósito: | dos | meses | de | renta.", "It's | {$deposit} | of | deposit: | two | months | of | rent.", "It's {$deposit} for the deposit: two months' rent.")],
-    deposit_first: [t("Y | el | primer | mes | de | renta, | al | firmar | el | contrato.", "And | the | first | month | of | rent, | upon | signing | the | lease.", "And the first month's rent when you sign the lease.")],
+    deposit_two: [t("Son | {$deposit} | de | depósito: | dos | meses | de | renta.", "It's | {$deposit} | of | deposit: | two | months | of | rent.", "It's {$deposit} for the deposit: two months' rent.", { spain: t("Son | {$deposit} | de | fianza: | dos | meses | de | alquiler.", "It's | {$deposit} | of | deposit: | two | months | of | rent.", "It's {$deposit} for the deposit: two months' rent.") })],
+    deposit_first: [t("Y | el | primer | mes | de | renta, | al | firmar | el | contrato.", "And | the | first | month | of | rent, | upon | signing | the | lease.", "And the first month's rent when you sign the lease.", { spain: t("Y | el | primer | mes | de | alquiler, | al | firmar | el | contrato.", "And | the | first | month | of | rent, | upon | signing | the | lease.", "And the first month's rent when you sign the lease.") })],
     deposit_back: [t("Se lo | devuelvo | cuando | se vaya, | si | todo | está | en orden.", "It to you | I'll return | when | you leave, | if | everything | is | in order.", "You get it back when you move out, if everything's in order.")],
     furnished_semi: [t("Está | semiamueblado: | tiene | estufa, | refrigerador | y | clósets, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.",
-      { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." } })],
+      { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." }, spain: t("Está | semiamueblado: | tiene | vitrocerámica, | frigorífico | y | armarios empotrados, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.", { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." } }) })],
     furnished: [
       t("Está | semiamueblado: | tiene | estufa, | refrigerador | y | clósets, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.",
-        { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." } }),
-      t("No, | no está | amueblado, | pero | la | cocina | tiene | estufa | y | refrigerador | nuevos.", "No, | it isn't | furnished, | but | the | kitchen | has | stove | and | fridge | new.", "No, it's unfurnished, but the kitchen has a new stove and fridge."),
+        { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." }, spain: t("Está | semiamueblado: | tiene | vitrocerámica, | frigorífico | y | armarios empotrados, | pero | no tiene | muebles.", "It's | semi-furnished: | it has | stove, | fridge | and | closets, | but | it doesn't have | furniture.", "It's semi-furnished: it has a stove, a fridge and closets, but no furniture.", { flags: { 1: "semiamueblado: in Mexico, kitchen appliances and closets, but no furniture." } }) }),
+      t("No, | no está | amueblado, | pero | la | cocina | tiene | estufa | y | refrigerador | nuevos.", "No, | it isn't | furnished, | but | the | kitchen | has | stove | and | fridge | new.", "No, it's unfurnished, but the kitchen has a new stove and fridge.", { spain: t("No, | no está | amueblado, | pero | la | cocina | tiene | vitrocerámica | y | frigorífico | nuevos.", "No, | it isn't | furnished, | but | the | kitchen | has | stove | and | fridge | new.", "No, it's unfurnished, but the kitchen has a new stove and fridge.") }),
     ],
     app_kitchen: [t("Sí, | hay | {X.np} | en | la | cocina.", "Yes, | there's | {X.np} | in | the | kitchen.", "Yes, there's {X.np} in the kitchen.")],
     app_yes: [t("Sí, | hay | {X.np}.", "Yes, | there's | {X.np}.", "Yes, there's {X.np}.")],
@@ -726,11 +726,11 @@ export const apartment: SituationDef = {
     ],
     lease_min: [t("El | mínimo | es | un | año, | lo siento.", "The | minimum | is | one | year, | I'm sorry.", "The minimum is one year, sorry.")],
     // "¿Puedo cancelar el contrato antes?" / "¿Qué pasa si me voy antes?"
-    lease_break: [t("Si | se va | antes | del | año, | pierde | el | depósito.", "If | you leave | before | the | year, | you lose | the | deposit.", "If you move out before the year is up, you lose the deposit.")],
+    lease_break: [t("Si | se va | antes | del | año, | pierde | el | depósito.", "If | you leave | before | the | year, | you lose | the | deposit.", "If you move out before the year is up, you lose the deposit.", { spain: t("Si | se va | antes | del | año, | pierde | la | fianza.", "If | you leave | before | the | year, | you lose | the | deposit.", "If you move out before the year is up, you lose the deposit.") })],
     parking: [
       t("Tiene | un | cajón | de | estacionamiento | atrás | del | edificio.", "It has | a | space | of | parking | behind | the | building.", "You get one parking space behind the building.",
-        { flags: { 2: "Mexican: cajón (de estacionamiento) = a parking space; lugar is more widely used." }, neutral: t("Tiene | un | lugar | de | estacionamiento | atrás | del | edificio.", "It has | a | space | of | parking | behind | the | building.", "You get one parking space behind the building.") }),
-      t("Hay | estacionamiento | gratis | atrás | del | edificio.", "There's | parking | free | behind | the | building.", "There's free parking behind the building."),
+        { flags: { 2: "Mexican: cajón (de estacionamiento) = a parking space; lugar is more widely used." }, neutral: t("Tiene | un | lugar | de | estacionamiento | atrás | del | edificio.", "It has | a | space | of | parking | behind | the | building.", "You get one parking space behind the building."), spain: t("Tiene | una | plaza | de | aparcamiento | detrás | del | edificio.", "It has | a | space | of | parking | behind | the | building.", "You get one parking space behind the building.") }),
+      t("Hay | estacionamiento | gratis | atrás | del | edificio.", "There's | parking | free | behind | the | building.", "There's free parking behind the building.", { spain: t("Hay | aparcamiento | gratis | detrás | del | edificio.", "There's | parking | free | behind | the | building.", "There's free parking behind the building.") }),
     ],
     laundry: [
       t("En | la | azotea | hay | un | área | de | lavado | con | lavadora.", "On | the | roof | there's | an | area | for | washing | with | washing machine.", "There's a laundry area with a washing machine up on the roof.",
@@ -751,41 +751,41 @@ export const apartment: SituationDef = {
     bus: [
       t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | nomás | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.",
         { flags: { 1: F_COLECTIVO, 11: F_NOMAS, 13: F_LA_MANO },
-          neutral: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | solo | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }) }),
+          neutral: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | cuadra: | solo | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | block: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }), spain: t("Los | colectivos | pasan | por | la | avenida | Juárez, | aquí | a | una | calle: | solo | levante | la | mano.", "The | colectivos | go | along | the | avenue | Juárez, | here | at | one | street: | just | raise | your | hand.", "The colectivos go along Avenida Juárez, a block from here: just wave one down.", { flags: { 1: F_COLECTIVO, 13: F_LA_MANO } }) }),
       t("En | la | avenida | Juárez, | a | una | cuadra, | pasan | colectivos | cada rato.", "On | the | avenue | Juárez, | at | one | block, | come by | colectivos | all the time.", "Colectivos come by all the time on Avenida Juárez, a block away.",
-        { flags: { 8: F_COLECTIVO } }),
+        { flags: { 8: F_COLECTIVO }, spain: t("En | la | avenida | Juárez, | a | una | calle, | pasan | colectivos | muy a menudo.", "On | the | avenue | Juárez, | at | one | street, | come by | colectivos | all the time.", "Colectivos come by all the time on Avenida Juárez, a block away.", { flags: { 8: F_COLECTIVO } }) }),
     ],
     // "¿Hay una parada de camión cerca?": the city bus
     bus_city: [t("La | parada | del | camión | está | aquí | a | una | cuadra, | enfrente | del | gimnasio.", "The | stop | of the | bus | is | here | at | one | block, | in front | of the | gym.", "The bus stop is a block from here, in front of the gym.",
       { flags: { 3: "Mexican: camión = a city bus (and a truck); autobús is more widely used." },
-        neutral: t("La | parada | del | autobús | está | aquí | a | una | cuadra, | enfrente | del | gimnasio.", "The | stop | of the | bus | is | here | at | one | block, | in front | of the | gym.", "The bus stop is a block from here, in front of the gym.") })],
+        neutral: t("La | parada | del | autobús | está | aquí | a | una | cuadra, | enfrente | del | gimnasio.", "The | stop | of the | bus | is | here | at | one | block, | in front | of the | gym.", "The bus stop is a block from here, in front of the gym."), spain: t("La | parada | del | autobús | está | aquí | a | una | calle, | enfrente | del | gimnasio.", "The | stop | of the | bus | is | here | at | one | street, | in front | of the | gym.", "The bus stop is a block from here, in front of the gym.") })],
     bus_downtown: [t("El | centro | está | a | unos | cinco | minutos | caminando.", "The | downtown | is | at | about | five | minutes | walking.", "Downtown is about a five-minute walk.", { flags: { 4: F_UNOS } })],
     // "¿Cómo llego al centro?": the way (up Flamboyán to Juárez, then right to the zócalo)
     bus_downtown_way: [t("Por | la | calle | Flamboyán | hasta | la | avenida | Juárez, | y | ahí | a la derecha: | unos | cinco | minutos.", "Along | the | street | Flamboyán | to | the | avenue | Juárez, | and | there | to the right: | about | five | minutes.", "Take Calle Flamboyán up to Avenida Juárez, then turn right: about five minutes.",
       { flags: { 11: F_UNOS } })],
-    beach: [t("La | playa | está | a | dos | cuadras, | derecho | por | la | calle | Flamboyán: | unos | cinco | minutos | caminando.", "The | beach | is | at | two | blocks, | straight | along | the | street | Flamboyán: | about | five | minutes | walking.", "The beach is two blocks away, straight down Calle Flamboyán: about a five-minute walk.", { flags: { 11: F_UNOS } })],
+    beach: [t("La | playa | está | a | dos | cuadras, | derecho | por | la | calle | Flamboyán: | unos | cinco | minutos | caminando.", "The | beach | is | at | two | blocks, | straight | along | the | street | Flamboyán: | about | five | minutes | walking.", "The beach is two blocks away, straight down Calle Flamboyán: about a five-minute walk.", { flags: { 11: F_UNOS }, spain: t("La | playa | está | a | dos | calles, | todo recto | por | la | calle | Flamboyán: | unos | cinco | minutos | caminando.", "The | beach | is | at | two | streets, | straight | along | the | street | Flamboyán: | about | five | minutes | walking.", "The beach is two blocks away, straight down Calle Flamboyán: about a five-minute walk.", { flags: { 11: F_UNOS } }) })],
     floor: [t("Está | en | el | primer | piso; | yo | vivo | en | la | planta baja.", "It's | on | the | first | floor; | I | live | on | the | ground floor.", "It's one floor up; I live on the ground floor.",
       { flags: { 3: "In Mexico the ground floor is la planta baja, so el primer piso is one floor up (an American second floor)." } })],
-    elevator: [t("No hay | elevador, | solo | escaleras.", "There's no | elevator, | just | stairs.", "There's no elevator, just the stairs.")],
+    elevator: [t("No hay | elevador, | solo | escaleras.", "There's no | elevator, | just | stairs.", "There's no elevator, just the stairs.", { spain: t("No hay | ascensor, | solo | escaleras.", "There's no | elevator, | just | stairs.", "There's no elevator, just the stairs.") })],
     balcony: [t("Sí, | tiene | un | balcón | chico | que | da | a | la | calle.", "Yes, | it has | a | balcony | small | that | faces | onto | the | street.", "Yes, it has a small balcony facing the street.")],
     // the pictures show the sea from the balcony; in the town it's at the end of calle Flamboyán, two blocks away
     sea_view: [t("Sí, | desde | el | balcón | se alcanza a ver | el | mar, | y | la | playa | está | cerca.", "Yes, | from | the | balcony | you can just see | the | sea, | and | the | beach | is | close.", "Yes, you can see a bit of the ocean from the balcony, and the beach is close.")],
     // no "Sí,": it also answers "¿Dónde hago la despensa?"
     shops: [t("Hay | una | tiendita | en | la | esquina, | y | el | mercado | está | a | dos | cuadras.", "There's | a | little store | on | the | corner, | and | the | market | is | at | two | blocks.", "There's a little corner store, and the market is two blocks away.",
       { flags: { 2: "Mexican: tiendita = a small neighborhood store; the -ita makes it small and friendly." },
-        neutral: t("Hay | una | tienda | en | la | esquina, | y | el | mercado | está | a | dos | cuadras.", "There's | a | store | on | the | corner, | and | the | market | is | at | two | blocks.", "There's a store on the corner, and the market is two blocks away.") })],
-    shops_pharmacy: [t("Hay | una | farmacia | aquí | a | una | cuadra, | en | la | avenida | Juárez.", "There's | a | pharmacy | here | at | one | block, | on | the | avenue | Juárez.", "There's a pharmacy a block from here, on Avenida Juárez.")],
+        neutral: t("Hay | una | tienda | en | la | esquina, | y | el | mercado | está | a | dos | cuadras.", "There's | a | store | on | the | corner, | and | the | market | is | at | two | blocks.", "There's a store on the corner, and the market is two blocks away."), spain: t("Hay | una | tienda | en | la | esquina, | y | el | mercado | está | a | dos | calles.", "There's | a | store | on | the | corner, | and | the | market | is | at | two | streets.", "There's a store on the corner, and the market is two blocks away.") })],
+    shops_pharmacy: [t("Hay | una | farmacia | aquí | a | una | cuadra, | en | la | avenida | Juárez.", "There's | a | pharmacy | here | at | one | block, | on | the | avenue | Juárez.", "There's a pharmacy a block from here, on Avenida Juárez.", { spain: t("Hay | una | farmacia | aquí | a | una | calle, | en | la | avenida | Juárez.", "There's | a | pharmacy | here | at | one | street, | on | the | avenue | Juárez.", "There's a pharmacy a block from here, on Avenida Juárez.") })],
     smoking: [t("Lo siento, | adentro | no se puede | fumar.", "I'm sorry, | inside | you can't | smoke.", "Sorry, smoking isn't allowed inside.")],
     size: [t("Tiene | una | recámara, | un | baño, | sala, | comedor | y | cocina: | unos | sesenta | metros | cuadrados.", "It has | one | bedroom, | a | bathroom, | living room, | dining room | and | kitchen: | about | sixty | meters | square.", "It has one bedroom, a bathroom, a living room, a dining area and a kitchen: about sixty square meters.",
-      { flags: { 2: F_RECAMARA, 9: F_UNOS }, neutral: t("Tiene | una | habitación, | un | baño, | sala, | comedor | y | cocina: | unos | sesenta | metros | cuadrados.", "It has | one | bedroom, | a | bathroom, | living room, | dining room | and | kitchen: | about | sixty | meters | square.", "It has one bedroom, a bathroom, a living room, a dining area and a kitchen: about sixty square meters.", { flags: { 9: F_UNOS } }) })],
+      { flags: { 2: F_RECAMARA, 9: F_UNOS }, neutral: t("Tiene | una | habitación, | un | baño, | sala, | comedor | y | cocina: | unos | sesenta | metros | cuadrados.", "It has | one | bedroom, | a | bathroom, | living room, | dining room | and | kitchen: | about | sixty | meters | square.", "It has one bedroom, a bathroom, a living room, a dining area and a kitchen: about sixty square meters.", { flags: { 9: F_UNOS } }), spain: t("Tiene | una | habitación, | un | baño, | salón, | comedor | y | cocina: | unos | sesenta | metros | cuadrados.", "It has | one | bedroom, | a | bathroom, | living room, | dining room | and | kitchen: | about | sixty | meters | square.", "It has one bedroom, a bathroom, a living room, a dining area and a kitchen: about sixty square meters.", { flags: { 9: F_UNOS } }) })],
     see_room: [
       t("¡Claro! | Venga, | por | aquí.", "Of course! | Come, | through | here.", "Of course! Follow me."),
       t("Claro, | véalo | con | calma.", "Sure, | look at it | with | calm.", "Sure, take your time."),
     ],
     apply_info: [t("Necesito | una | identificación | y | un | comprobante | de | ingresos.", "I need | an | ID | and | a | proof | of | income.", "I'll need your ID and proof of income.")],
-    landlord_here: [t("Yo | vivo | en | la | planta baja; | si | algo | se descompone, | toque | mi | puerta.", "I | live | on | the | ground floor; | if | something | breaks, | knock on | my | door.", "I live on the ground floor, so if anything breaks, just knock on my door.")],
+    landlord_here: [t("Yo | vivo | en | la | planta baja; | si | algo | se descompone, | toque | mi | puerta.", "I | live | on | the | ground floor; | if | something | breaks, | knock on | my | door.", "I live on the ground floor, so if anything breaks, just knock on my door.", { spain: t("Yo | vivo | en | la | planta baja; | si | algo | se estropea, | toque | mi | puerta.", "I | live | on | the | ground floor; | if | something | breaks, | knock on | my | door.", "I live on the ground floor, so if anything breaks, just knock on my door.") })],
     unknown_q: [t("Mmm, | buena | pregunta. | Déjeme | revisar | y | le | aviso.", "Hmm, | good | question. | Let me | check | and | (to) you | I'll let know.", "Hmm, good question. Let me check and get back to you.")],
-    like_it_ack: [t("¡Qué | bueno | que | le gusta!", "How | good | that | you like it!", "I'm glad you like it!")],
+    like_it_ack: [t("¡Qué | bueno | que | le gusta!", "How | good | that | you like it!", "I'm glad you like it!", { spain: t("¡Me alegro | de | que | le guste!", "I'm glad | of | that | you like it!", "I'm glad you like it!") })],
     what_can_do: [t("Entonces, | ¿en | qué | le | puedo | ayudar?", "Then, | in | what | (to) you | can I | help?", "So, what can I do for you?")],
     price_fair: [t("Sí, | es | un | buen | precio | para | la | zona.", "Yes, | it's | a | good | price | for | the | area.", "Yes, it's a good price for the area.")],
     understand: [t("Entiendo.", "I understand.", "I understand.")],
@@ -803,10 +803,10 @@ export const apartment: SituationDef = {
     // "Me gusta mucho." at the decision: liking it isn't taking it, so he asks
     take_q: [t("Entonces, | ¿se lo queda?", "So, | you'll take it?", "So, are you taking it?")],
     // "Me lo quedo" before the terms were said: the terms first, then the question again
-    terms_first: [t("¡Qué | bueno! | Antes, | para | que | sepa:", "How | good! | First, | so | that | you know:", "Great! But first, just so you know:")],
+    terms_first: [t("¡Qué | bueno! | Antes, | para | que | sepa:", "How | good! | First, | so | that | you know:", "Great! But first, just so you know:", { spain: t("¡Muy | bien! | Antes, | para | que | sepa:", "Very | good! | First, | so | that | you know:", "Great! But first, just so you know:") })],
     take_ok: [
       t("¡Excelente! | Creo | que | aquí | va | a | estar | muy | a gusto.", "Excellent! | I think | that | here | you're going | to | be | very | comfortable.", "Wonderful! I think you'll be very happy here."),
-      t("¡Qué | bueno | que | le gustó!", "How | good | that | you liked it!", "Great! I'm glad you like it."),
+      t("¡Qué | bueno | que | le gustó!", "How | good | that | you liked it!", "Great! I'm glad you like it.", { spain: t("¡Me alegro | de | que | le haya gustado!", "I'm glad | of | that | you have liked it!", "Great! I'm glad you like it.") }),
     ],
     docs_ask: [
       t("Necesito | una | identificación | y | un | comprobante | de | ingresos.", "I need | an | ID | and | a | proof | of | income.", "I'll need your ID and proof of income."),
@@ -840,7 +840,7 @@ export const apartment: SituationDef = {
           neutral: t("Está bien. | Solo | avíseme | antes | del | viernes.", "That's fine. | Just | let me know | before | — | Friday.", "That's fine. Just let me know by Friday.", { flags: { 4: "del = de + el: Spanish puts el before a day of the week; English has no article." } }) }),
     ],
     someone_else: [t("Para | que | sepa, | mañana | viene | otra | persona | a | verlo.", "So | that | you know, | tomorrow | is coming | another | person | to | see it.", "Just so you know, someone else is coming to see it tomorrow.")],
-    hurry: [t("¿Me | puede | avisar | hoy | en la noche?", "(To) me | can you | let know | today | in the evening?", "Could you let me know by tonight?")],
+    hurry: [t("¿Me | puede | avisar | hoy | en la noche?", "(To) me | can you | let know | today | in the evening?", "Could you let me know by tonight?", { spain: t("¿Me | puede | avisar | esta | noche?", "(To) me | can you | let know | this | evening?", "Could you let me know by tonight?") })],
     wait_call: [t("Muy | bien. | Espero | su | llamada.", "Very | good. | I'll wait for | your | call.", "Great. I'll wait for your call.")],
     decline_ok: [
       t("No hay | problema. | ¡Suerte | con | la | búsqueda!", "There's no | problem. | Luck | with | the | search!", "No problem. Good luck with your search!"),
@@ -855,14 +855,14 @@ export const apartment: SituationDef = {
       { flags: { 4: "aval: a guarantor, usually someone with a home in the same town who co-signs the lease. Most Mexican landlords ask for one." } })],
     aval_explain: [t("Un | aval | es | una | persona | con | casa | propia | aquí | que | firma | el | contrato | con | usted. | Si | usted | no paga, | paga | el | aval.", "A | guarantor | is | a | person | with | house | own | here | who | signs | the | lease | with | you. | If | you | don't pay, | pays | the | guarantor.", "A guarantor is someone who owns a home here and co-signs the lease with you. If you don't pay, they do.")],
     aval_needed: [t("Sí, | normalmente | pido | un | aval.", "Yes, | normally | I ask for | a | guarantor.", "Yes, I usually ask for a guarantor.")],
-    aval_not_needed: [t("No hace falta; | con | el | depósito | es | suficiente.", "It's not needed; | with | the | deposit | it's | enough.", "You don't need one; the deposit is enough.")],
+    aval_not_needed: [t("No hace falta; | con | el | depósito | es | suficiente.", "It's not needed; | with | the | deposit | it's | enough.", "You don't need one; the deposit is enough.", { spain: t("No hace falta; | con | la | fianza | es | suficiente.", "It's not needed; | with | the | deposit | it's | enough.", "You don't need one; the deposit is enough.") })],
     aval_yes_ok: [t("Perfecto. | Antes de | la | mudanza, | tráigame | los | datos | de | su | aval | y | una | copia | de | sus | escrituras.", "Perfect. | Before | the | move, | bring me | the | details | of | your | guarantor | and | a | copy | of | their | deeds.", "Perfect. Before you move in, bring me your guarantor's details and a copy of their property deed.",
       { flags: { 14: "sus: here their (the guarantor's); su/sus can mean his, her, their or your." } })],
     aval_none_ok: [t("Entiendo; | mucha | gente | que | llega | de fuera | no tiene.", "I understand; | many | people | who | arrive | from elsewhere | don't have one.", "I understand. A lot of people who move here from somewhere else don't have one.")],
-    aval_deposit_q: [t("Sin | aval, | le | pido | dos | meses | de | depósito | en vez de | uno: | {$deposit}. | ¿Está | de acuerdo?", "Without | a guarantor, | (from) you | I ask | two | months | of | deposit | instead of | one: | {$deposit}. | Are you | in agreement?", "Without a guarantor, I'd ask for two months' deposit instead of one: {$deposit}. Is that okay?")],
-    aval_deposit_reask: [t("Entonces, | ¿le parecen | bien | los | dos | meses | de | depósito?", "So, | do they seem to you | fine | the | two | months | of | deposit?", "So, are two months' deposit okay with you?")],
-    aval_deposit_ok: [t("Muy | bien: | dos | meses | de | depósito | y | listo.", "Very | good: | two | months | of | deposit | and | done.", "All right: two months' deposit, and we're all set.")],
-    aval_deposit_amount: [t("Serían | {$deposit} | de | depósito: | dos | meses | de | renta.", "It would be | {$deposit} | of | deposit: | two | months | of | rent.", "That would be {$deposit} for the deposit: two months' rent.")],
+    aval_deposit_q: [t("Sin | aval, | le | pido | dos | meses | de | depósito | en vez de | uno: | {$deposit}. | ¿Está | de acuerdo?", "Without | a guarantor, | (from) you | I ask | two | months | of | deposit | instead of | one: | {$deposit}. | Are you | in agreement?", "Without a guarantor, I'd ask for two months' deposit instead of one: {$deposit}. Is that okay?", { spain: t("Sin | aval, | le | pido | dos | meses | de | fianza | en vez de | uno: | {$deposit}. | ¿Está | de acuerdo?", "Without | a guarantor, | (from) you | I ask | two | months | of | deposit | instead of | one: | {$deposit}. | Are you | in agreement?", "Without a guarantor, I'd ask for two months' deposit instead of one: {$deposit}. Is that okay?") })],
+    aval_deposit_reask: [t("Entonces, | ¿le parecen | bien | los | dos | meses | de | depósito?", "So, | do they seem to you | fine | the | two | months | of | deposit?", "So, are two months' deposit okay with you?", { spain: t("Entonces, | ¿le parecen | bien | los | dos | meses | de | fianza?", "So, | do they seem to you | fine | the | two | months | of | deposit?", "So, are two months' deposit okay with you?") })],
+    aval_deposit_ok: [t("Muy | bien: | dos | meses | de | depósito | y | listo.", "Very | good: | two | months | of | deposit | and | done.", "All right: two months' deposit, and we're all set.", { spain: t("Muy | bien: | dos | meses | de | fianza | y | ya está.", "Very | good: | two | months | of | deposit | and | done.", "All right: two months' deposit, and we're all set.") })],
+    aval_deposit_amount: [t("Serían | {$deposit} | de | depósito: | dos | meses | de | renta.", "It would be | {$deposit} | of | deposit: | two | months | of | rent.", "That would be {$deposit} for the deposit: two months' rent.", { spain: t("Serían | {$deposit} | de | fianza: | dos | meses | de | alquiler.", "It would be | {$deposit} | of | deposit: | two | months | of | rent.", "That would be {$deposit} for the deposit: two months' rent.") })],
     aval_deposit_fine: [t("No hace falta; | con | un | mes | es | suficiente.", "It's not needed; | with | one | month | it's | enough.", "No need; one month is enough.")],
     poliza_offer: [t("Entonces | puede | contratar | una | póliza | jurídica: | una | empresa | revisa | sus | datos | y | responde | por | usted. | Usted | la | paga | una | sola | vez. | ¿Le parece?", "Then | you can | take out | a | policy | legal: | a | company | checks | your | details | and | answers | for | you. | You | it | pay | one | single | time. | Does that work for you?", "Then you can take out a rental guarantee policy: a company checks your details and vouches for you. You pay for it once. Would that work?",
       { flags: { 4: "póliza jurídica: a rental guarantee from a legal firm, common in Mexico when there's no guarantor.", 16: "la before a verb is a pronoun: it (the policy)." } })],
@@ -872,7 +872,7 @@ export const apartment: SituationDef = {
     poliza_what: [t("Es | como | un | aval, | pero | de | una | empresa: | revisan | sus | datos | y | responden | por | usted.", "It's | like | a | guarantor, | but | from | a | company: | they check | your | details | and | they vouch | for | you.", "It's like a guarantor, but it's a company: they check your details and vouch for you.")],
     // "¿Qué pasa si no tengo aval?" / "No tengo aval." before the lease: the options, nothing recorded or quoted yet
     aval_options: [t("Sin | aval, | le | pido | dos | meses | de | depósito, | o | puede | contratar | una | póliza | jurídica.", "Without | a guarantor, | (from) you | I ask | two | months | of | deposit, | or | you can | take out | a | policy | legal.", "Without a guarantor, I ask for two months' deposit, or you can take out a rental guarantee policy.",
-      { flags: { 12: F_POLIZA } })],
+      { flags: { 12: F_POLIZA }, spain: t("Sin | aval, | le | pido | dos | meses | de | fianza, | o | puede | contratar | un | seguro | de | impago.", "Without | a guarantor, | (from) you | I ask | two | months | of | deposit, | or | you can | take out | an | insurance | against | non-payment.", "Without a guarantor, I ask for two months' deposit, or you can take out a rental guarantee policy.") })],
     // "¿Hay otra opción?" with nothing to choose between (after the one-year minimum, the firm rent)
     only_option: [t("Mmm, | la verdad, | es | lo | único | que | le | puedo | ofrecer.", "Hmm, | honestly, | it's | the | only thing | that | (to) you | I can | offer.", "Hmm, honestly, that's all I can offer.")],
     poliza_reask: [t("¿Entonces | le parece | bien | la | póliza?", "So | does it seem to you | fine | the | policy?", "So, does the policy work for you?")],
@@ -883,17 +883,17 @@ export const apartment: SituationDef = {
     // --- tenant mode ---
     howis: [
       t("¡Hola! | ¿Qué tal | todo | en | el | departamento?", "Hi! | How's | everything | in | the | apartment?", "Oh, hi! How's everything with the apartment?",
-        { flags: { 5: F_DEPA }, neutral: t("¡Hola! | ¿Qué tal | todo | en | el | apartamento?", "Hi! | How's | everything | in | the | apartment?", "Oh, hi! How's everything with the apartment?") }),
+        { flags: { 5: F_DEPA }, neutral: t("¡Hola! | ¿Qué tal | todo | en | el | apartamento?", "Hi! | How's | everything | in | the | apartment?", "Oh, hi! How's everything with the apartment?"), spain: t("¡Hola! | ¿Qué tal | todo | en | el | piso?", "Hi! | How's | everything | in | the | apartment?", "Oh, hi! How's everything with the apartment?") }),
       t("¡Buenas! | ¿Cómo | va | todo | en | su | casa | nueva?", "Hi! | How | is going | everything | in | your | home | new?", "Hi there! How are you settling in?"),
     ],
     problem_reask: [t("¿Todo | funciona | bien?", "Everything | works | well?", "Is everything working okay?")],
     problem_what: [t("¡Ay, | no! | ¿Qué | pasó?", "Oh, | no! | What | happened?", "Oh no! What's wrong?")],
     all_good_ack: [t("¡Qué | bueno! | Si | algo | se descompone, | nomás | avíseme.", "How | good! | If | something | breaks, | just | let me know.", "Good to hear! If anything breaks, just let me know.",
-      { flags: { 5: F_NOMAS }, neutral: t("¡Qué | bueno! | Si | algo | se descompone, | solo | avíseme.", "How | good! | If | something | breaks, | just | let me know.", "Good to hear! If anything breaks, just let me know.") })],
+      { flags: { 5: F_NOMAS }, neutral: t("¡Qué | bueno! | Si | algo | se descompone, | solo | avíseme.", "How | good! | If | something | breaks, | just | let me know.", "Good to hear! If anything breaks, just let me know."), spain: t("¡Me alegro! | Si | algo | se estropea, | solo | avíseme.", "I'm glad! | If | something | breaks, | just | let me know.", "Good to hear! If anything breaks, just let me know.") })],
     no_bother: [t("¡No es | ninguna | molestia!", "It isn't | any | bother!", "Not at all!")],
     sorry_problem: [t("Ay, | lo siento | mucho.", "Oh, | I'm sorry | very much.", "Oh no, sorry about that!"), t("Uy, | qué pena.", "Oh, | what a shame.", "Oh, I'm sorry to hear that.")],
     plan_repairman: [t("Llamo | al | técnico | enseguida.", "I'll call | the | repairman | right away.", "I'll call the repairman right away.", { flags: { 1: F_AL } })],
-    plan_plumber: [t("Llamo | al | plomero | enseguida.", "I'll call | the | plumber | right away.", "I'll call the plumber right away.", { flags: { 1: F_AL } })],
+    plan_plumber: [t("Llamo | al | plomero | enseguida.", "I'll call | the | plumber | right away.", "I'll call the plumber right away.", { flags: { 1: F_AL }, spain: t("Llamo | al | fontanero | enseguida.", "I'll call | the | plumber | right away.", "I'll call the plumber right away.", { flags: { 1: F_AL } }) })],
     plan_electrician: [t("Llamo | al | electricista | enseguida.", "I'll call | the | electrician | right away.", "I'll call the electrician right away.", { flags: { 1: F_AL } })],
     plan_someone: [t("Mando | a | alguien | a | revisarlo.", "I'll send | — | someone | to | check it.", "I'll send someone to look at it.", { flags: { 1: "Personal a marks the person being sent; English needs no word." } })],
     visit_time: [
@@ -918,34 +918,34 @@ export const apartment: SituationDef = {
 
   hints: {
     purpose: { lt: "Say you're here to see the apartment", items: [
-      { id: "here_see", s: t("Vengo | a | ver | el | departamento.", "I've come | to | see | the | apartment.", "I'm here to see the apartment.", { neutral: t("Vengo | a | ver | el | apartamento.", "I've come | to | see | the | apartment.", "I'm here to see the apartment.") }) },
-      { id: "here_about", s: t("Vengo | por | el | departamento | que | se renta.", "I've come | about | the | apartment | that | is for rent.", "I'm here about the apartment for rent.", { neutral: t("Vengo | por | el | apartamento | que | se renta.", "I've come | about | the | apartment | that | is for rent.", "I'm here about the apartment for rent.") }) },
-      { id: "like_see", s: t("Me gustaría | ver | el | departamento, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please.", { neutral: t("Me gustaría | ver | el | apartamento, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please.") }), register: "polite" },
+      { id: "here_see", s: t("Vengo | a | ver | el | departamento.", "I've come | to | see | the | apartment.", "I'm here to see the apartment.", { neutral: t("Vengo | a | ver | el | apartamento.", "I've come | to | see | the | apartment.", "I'm here to see the apartment."), spain: t("Vengo | a | ver | el | piso.", "I've come | to | see | the | apartment.", "I'm here to see the apartment.") }) },
+      { id: "here_about", s: t("Vengo | por | el | departamento | que | se renta.", "I've come | about | the | apartment | that | is for rent.", "I'm here about the apartment for rent.", { neutral: t("Vengo | por | el | apartamento | que | se renta.", "I've come | about | the | apartment | that | is for rent.", "I'm here about the apartment for rent."), spain: t("Vengo | por | el | piso | que | se alquila.", "I've come | about | the | apartment | that | is for rent.", "I'm here about the apartment for rent.") }) },
+      { id: "like_see", s: t("Me gustaría | ver | el | departamento, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please.", { neutral: t("Me gustaría | ver | el | apartamento, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please."), spain: t("Me gustaría | ver | el | piso, | por favor.", "I'd like | to see | the | apartment, | please.", "I'd like to see the apartment, please.") }), register: "polite" },
       { id: "spoke_phone", s: t("Hablamos | por | teléfono | ayer.", "We spoke | on | the phone | yesterday.", "We spoke on the phone yesterday.") },
-      { id: "still_avail", s: t("¿Todavía | está | disponible | el | departamento?", "Still | is | available | the | apartment?", "Is the apartment still available?", { neutral: t("¿Todavía | está | disponible | el | apartamento?", "Still | is | available | the | apartment?", "Is the apartment still available?") }) },
+      { id: "still_avail", s: t("¿Todavía | está | disponible | el | departamento?", "Still | is | available | the | apartment?", "Is the apartment still available?", { neutral: t("¿Todavía | está | disponible | el | apartamento?", "Still | is | available | the | apartment?", "Is the apartment still available?"), spain: t("¿Todavía | está | disponible | el | piso?", "Still | is | available | the | apartment?", "Is the apartment still available?") }) },
       { id: "my_name", s: t("Me llamo | {$name}.", "My name is | {$name}.", "My name is {$name}.") },
     ] },
     ask_terms: { lt: "Ask about the rental terms", items: [
-      { id: "q_rent", s: t("¿Cuánto | es | la | renta?", "How much | is | the | rent?", "How much is the rent?") },
+      { id: "q_rent", s: t("¿Cuánto | es | la | renta?", "How much | is | the | rent?", "How much is the rent?", { spain: t("¿Cuánto | es | el | alquiler?", "How much | is | the | rent?", "How much is the rent?") }) },
       { id: "q_util", s: t("¿Están | incluidos | los | servicios?", "Are | included | the | utilities?", "Are utilities included?"), note: "Los servicios: water, electricity, gas and the like." },
       { id: "q_util2", s: t("¿La | luz | está | incluida?", "The | electricity | is | included?", "Is electricity included?"), note: "In Mexico, la luz (the light) is the everyday word for electricity." },
-      { id: "q_deposit", s: t("¿Cuánto | es | el | depósito?", "How much | is | the | deposit?", "How much is the security deposit?") },
+      { id: "q_deposit", s: t("¿Cuánto | es | el | depósito?", "How much | is | the | deposit?", "How much is the security deposit?", { spain: t("¿Cuánto | es | la | fianza?", "How much | is | the | deposit?", "How much is the security deposit?") }) },
       { id: "q_lease", s: t("¿Por | cuánto | tiempo | es | el | contrato?", "For | how much | time | is | the | lease?", "How long is the lease?") },
       { id: "q_furnished", s: t("¿Está | amueblado?", "Is it | furnished?", "Is it furnished?") },
       { id: "q_pets", s: t("¿Se aceptan | mascotas?", "Are allowed | pets?", "Are pets allowed?") },
       { id: "q_movein", s: t("¿Cuándo | puedo | mudarme?", "When | can I | move in?", "When can I move in?") },
       { id: "q_aval", s: t("¿Necesito | aval?", "Do I need | a guarantor?", "Do I need a guarantor?"), note: "Most Mexican landlords ask for an aval, a local guarantor. Ask early." },
-      { id: "q_lower", s: t("¿Me | puede | bajar | un poco | la | renta?", "(For) me | can you | lower | a little | the | rent?", "Could you lower the rent a little?") },
+      { id: "q_lower", s: t("¿Me | puede | bajar | un poco | la | renta?", "(For) me | can you | lower | a little | the | rent?", "Could you lower the rent a little?", { spain: t("¿Me | puede | bajar | un poco | el | alquiler?", "(For) me | can you | lower | a little | the | rent?", "Could you lower the rent a little?") }) },
     ] },
     ask_more: { lt: "Ask about the building and the area", items: [
-      { id: "q_parking", s: t("¿Hay | estacionamiento?", "Is there | parking?", "Is there parking?") },
+      { id: "q_parking", s: t("¿Hay | estacionamiento?", "Is there | parking?", "Is there parking?", { spain: t("¿Hay | aparcamiento?", "Is there | parking?", "Is there parking?") }) },
       { id: "q_laundry", s: t("¿Dónde | puedo | lavar | la | ropa?", "Where | can I | wash | the | clothes?", "Where can I do laundry?") },
       { id: "q_quiet", s: t("¿Es | un | edificio | tranquilo?", "Is it | a | building | quiet?", "Is it a quiet building?") },
       { id: "q_bus", s: t("¿Hay | una | parada | de | colectivo | cerca?", "Is there | a | stop | of | colectivo | nearby?", "Is there a colectivo stop nearby?"), note: "A colectivo is a shared van on a fixed route." },
       { id: "q_floor", s: t("¿En | qué | piso | está?", "On | what | floor | is it?", "What floor is it on?") },
-      { id: "q_elevator", s: t("¿Hay | elevador?", "Is there | an elevator?", "Is there an elevator?") },
+      { id: "q_elevator", s: t("¿Hay | elevador?", "Is there | an elevator?", "Is there an elevator?", { spain: t("¿Hay | ascensor?", "Is there | an elevator?", "Is there an elevator?") }) },
       { id: "q_see", s: t("¿Puedo | ver | la | recámara?", "Can I | see | the | bedroom?", "Can I see the bedroom?", { flags: { 3: F_RECAMARA }, neutral: t("¿Puedo | ver | la | habitación?", "Can I | see | the | bedroom?", "Can I see the bedroom?") }) },
-      { id: "q_payrent", s: t("¿Cuándo | se paga | la | renta?", "When | is paid | the | rent?", "When is the rent due?") },
+      { id: "q_payrent", s: t("¿Cuándo | se paga | la | renta?", "When | is paid | the | rent?", "When is the rent due?", { spain: t("¿Cuándo | se paga | el | alquiler?", "When | is paid | the | rent?", "When is the rent due?") }) },
     ] },
     done_asking: { lt: "Say you have no more questions", items: [
       { id: "that_all", s: t("Creo | que | es | todo.", "I think | that | it's | all.", "I think that's all.") },
@@ -953,14 +953,14 @@ export const apartment: SituationDef = {
     ] },
     decide: { lt: "Decide", items: [
       { id: "take_it", s: t("¡Me lo quedo!", "I'll take it!", "I'll take it!") },
-      { id: "like_to_rent", s: t("Me gustaría | rentarlo.", "I'd like | to rent it.", "I'd like to rent it."), register: "polite" },
+      { id: "like_to_rent", s: t("Me gustaría | rentarlo.", "I'd like | to rent it.", "I'd like to rent it.", { spain: t("Me gustaría | alquilarlo.", "I'd like | to rent it.", "I'd like to rent it.") }), register: "polite" },
       { id: "think", s: t("Lo | tengo | que | pensar.", "It | I have | to | think over.", "I need to think about it.") },
       { id: "let_know", s: t("¿Le | puedo | avisar | mañana?", "(To) you | can I | let know | tomorrow?", "Can I let you know tomorrow?") },
       { id: "too_expensive", s: t("Está | un poco | caro | para | mí.", "It's | a little | expensive | for | me.", "It's a little too expensive for me.") },
       { id: "not_for_me", s: t("Creo | que | no es | para | mí.", "I think | that | it isn't | for | me.", "I don't think it's right for me.") },
     ] },
     hurry: { lt: "Promise an answer by tonight", items: [
-      { id: "call_tonight", s: t("Sí, | le | llamo | hoy | en la noche.", "Yes, | (to) you | I'll call | today | in the evening.", "Sure, I'll call you tonight.") },
+      { id: "call_tonight", s: t("Sí, | le | llamo | hoy | en la noche.", "Yes, | (to) you | I'll call | today | in the evening.", "Sure, I'll call you tonight.", { spain: t("Sí, | le | llamo | esta | noche.", "Yes, | (to) you | I'll call | this | evening.", "Sure, I'll call you tonight.") }) },
       { id: "take_now", s: t("Mejor | me lo quedo | de una vez.", "Better | I'll take it | right now.", "Actually, I'll take it now.") },
     ] },
     movein: { lt: "Say when you'd like to move in", items: [
@@ -992,7 +992,7 @@ export const apartment: SituationDef = {
       { id: "aval_none", s: t("No, | no tengo | aval.", "No, | I don't have | a guarantor.", "No, I don't have a guarantor.") },
       { id: "aval_have", s: t("Sí, | tengo | aval.", "Yes, | I have | a guarantor.", "Yes, I have a guarantor.") },
       { id: "aval_q", s: t("¿Qué | es | un | aval?", "What | is | a | guarantor?", "What's an aval?") },
-      { id: "aval_dep", s: t("¿Puedo | dejar | dos | meses | de | depósito?", "Can I | leave | two | months | of | deposit?", "Can I pay two months' deposit instead?") },
+      { id: "aval_dep", s: t("¿Puedo | dejar | dos | meses | de | depósito?", "Can I | leave | two | months | of | deposit?", "Can I pay two months' deposit instead?", { spain: t("¿Puedo | dejar | dos | meses | de | fianza?", "Can I | leave | two | months | of | deposit?", "Can I pay two months' deposit instead?") }) },
     ] },
     extra_dep: { lt: "Ask about other options", items: [
       { id: "q_poliza", s: t("¿Hay | otra | opción?", "Is there | another | option?", "Is there another option?") },
@@ -1022,7 +1022,7 @@ export const apartment: SituationDef = {
     other_time: { lt: "Suggest another time", items: [
       { id: "after_five", s: t("¿Puede | venir | después de | las | cinco?", "Can he | come | after | — | five?", "Could he come after five?", { flags: { 3: F_CLOCK } }) },
       { id: "saturday", s: t("El | sábado | es | mejor.", "— | Saturday | is | better.", "Saturday would be better.", { flags: { 0: "Spanish puts el before a day of the week; English has no article." } }) },
-      { id: "afternoon", s: t("En la tarde, | por favor.", "In the afternoon, | please.", "In the afternoon, please.") },
+      { id: "afternoon", s: t("En la tarde, | por favor.", "In the afternoon, | please.", "In the afternoon, please.", { spain: t("Por la tarde, | por favor.", "In the afternoon, | please.", "In the afternoon, please.") }) },
     ] },
   },
 
@@ -1031,6 +1031,12 @@ export const apartment: SituationDef = {
   },
 
   merges: {
+    "muy a menudo": { reason: "lexical_expression", split: "muy → very + a menudo → often; a menudo alone misreads as to + small.", minimal: "Three words, one adverb." },
+    "por la tarde": { reason: "lexical_expression", split: "por → by, la → the, tarde → afternoon; Spain's time phrase = in the afternoon.", minimal: "Three words." },
+    "armarios empotrados": { reason: "lexical_expression", split: "armarios → closets + empotrados → built-in names one thing: built-in closets.", minimal: "Two words, one thing." },
+    "le guste": { reason: "lexical_expression", split: "le → to you + guste → pleases is the gustar construction: you like (it).", minimal: "Two words, one verb." },
+    "le haya gustado": { reason: "lexical_expression", split: "le → to you + haya gustado → has pleased is the gustar construction: you liked (it).", minimal: "Three words, one verb." },
+    "todo recto": { reason: "lexical_expression", split: "todo → all + recto → straight is one direction: straight ahead.", minimal: "Two words." },
     "al mes": { reason: "lexical_expression", split: "al → to the + mes → month misreads the rate: a month / per month.", minimal: "Two words; the amount stays separate." },
     "un poco": { reason: "lexical_expression", split: "un → a + poco → little reads as a noun phrase; the degree adverb = a little.", minimal: "Two words." },
     "por cierto": { reason: "lexical_expression", split: "por → for + cierto → certain is false; the discourse marker = by the way.", minimal: "Two words." },

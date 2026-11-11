@@ -1,0 +1,17 @@
+{ "situation": "s32-mercado", "items": [
+  {"ctx": "order", "say": "¿Me pone un kilo de patatas?", "intent": "order", "slots": {"items": {"item": {"product": "papa"}}}},
+  {"ctx": "order", "say": "Póngame medio kilo de tomates", "intent": "order"},
+  {"ctx": "order", "say": "¿Tiene patatas?", "intent": "ask_have", "slots": {"product": "papa"}},
+  {"ctx": "order", "say": "¿A cuánto están las patatas?", "intent": "ask_price", "slots": {"product": "papa"}},
+  {"ctx": "after_price", "say": "Vale, póngame un kilo", "intent": ["qty_ctx", "order_amount", "order"]},
+  {"ctx": "after_price", "say": "Vale", "intent": ["yn:yes"]},
+  {"ctx": "qty", "say": "Un kilo, por favor", "intent": "qty_ctx"},
+  {"ctx": "more", "say": "No, nada más, gracias", "intent": ["more_no", "yn:no"]},
+  {"ctx": "more", "say": "Y póngame también un kilo de naranjas", "intent": "order"},
+  {"ctx": "bag", "say": "Sí, llevo bolsa", "intent": ["bag_yes"]},
+  {"ctx": "bag", "say": "No, no llevo", "intent": ["bag_no"]},
+  {"ctx": "pay", "say": "¿Puedo pagar con tarjeta?", "intent": "pay_card"},
+  {"ctx": "pay", "say": "Solo llevo un billete de quinientos", "intent": "big_bill"},
+  {"ctx": "closing", "say": "Vale, gracias, hasta luego", "intent": ["g_thanks", "g_bye"]},
+  {"ctx": "more", "say": "No quiero patatas", "intent": "any", "not": ["order"]}
+] }

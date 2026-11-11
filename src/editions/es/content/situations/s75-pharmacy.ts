@@ -216,7 +216,7 @@ export const pharmacy: SituationDef = {
       for_body: "(para | contra) (la cabeza #s_headache | la garganta #s_sore_throat | el estomago #s_upset_stomach | la panza #s_upset_stomach | la barriga #s_upset_stomach | la tos #s_cough | los moscos #s_bites | los mosquitos #s_bites | el sol #s_sunburn | las quemaduras #s_sunburn | la comezon #s_bites | el resfriado #s_cold | la gripa #s_cold | la gripe #s_cold)",
       duele: "(me duele | me esta doliendo | me anda doliendo | me duele mucho | me duele un poco | me duele bastante)",
       have: "(tengo | traigo | ando con | estoy con | tengo un poco de | tengo mucha | tengo mucho | creo que tengo | me dio | me pego | me agarro | me esta dando | creo que me esta dando)",
-      since: "(desde (ayer #d1 | anoche #d1 | hoy #d0 | esta manana #d0 | la manana #d0 | en la manana #d0 | el fin de semana #d3 | la semana pasada #d7 | antier #d2 | antenoche #d2 | antes de ayer #d2 | el {day} #d3 | hace (unos | como)? ({n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h) | una semana #d7 | un dia #d1 | un mes #d30 | rato #d0 | poco #d0 | mucho #d14)) | hace [como | unos | mas o menos | casi | ya] ({n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h) | una semana #d7 | un dia #d1 | un mes #d30 | un rato #d0 | unas horas #d0 | poco #d0 | mucho tiempo #d14 | mucho #d14) | todo el dia #d0 | toda la noche #d1)",
+      since: "(desde (ayer #d1 | ayer (en | por) la (manana | tarde | noche) #d1 | anoche #d1 | hoy #d0 | esta manana #d0 | la manana #d0 | (en | por) la manana #d0 | el fin de semana #d3 | la semana pasada #d7 | antier #d2 | antenoche #d2 | antes de ayer #d2 | el {day} #d3 | hace (unos | como)? ({n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h) | una semana #d7 | un dia #d1 | un mes #d30 | rato #d0 | poco #d0 | mucho #d14)) | hace [como | unos | mas o menos | casi | ya] ({n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h) | una semana #d7 | un dia #d1 | un mes #d30 | un rato #d0 | unas horas #d0 | poco #d0 | mucho tiempo #d14 | mucho #d14) | todo el dia #d0 | toda la noche #d1)",
       dur: "([como | unos | mas o menos | casi] ({n:number} (dias #unit_d | dia #unit_d | semanas #unit_w | semana #unit_w | horas #unit_h) | una semana #d7 | un dia #d1 | un mes #d30 | un par de dias #d2 | unos dias #d3 | varios dias #d4))",
       rel_child: "(hijo | hija | nino | nina | bebe | hijos | ninos | nene | nena | chamaco | chamaca | nieto | nieta)",
       rel_adult: "(esposo | esposa | mama | mamá | papa | madre | padre | amigo | amiga | pareja | novio | novia | abuela | abuelo | hermano | hermana | mujer | marido | companero | companera | suegra | suegro)",
@@ -224,7 +224,7 @@ export const pharmacy: SituationDef = {
       it: "(lo | la | los | las)",
       tomo: "(tomo | me tomo | debo tomar | tengo que tomar | se toma | se toman | hay que tomar | me lo tomo | me la tomo | lo tomo | la tomo | los tomo | las tomo)",
       kid: "(un nino | una nina | ninos | los ninos | mi hijo | mi hija | un bebe | bebes | mis hijos | ninos chiquitos | criaturas)",
-      when: "(anoche | ayer | hoy | esta manana | en la playa | en la noche | ayer en la noche | en el cenote | en la tarde)",
+      when: "(anoche | ayer | hoy | esta manana | en la playa | (en | por) la noche | ayer (en | por) la noche | en el cenote | (en | por) la tarde)",
       gen: "(generico #gen | generica #gen | el generico #gen | la generica #gen | genericos #gen | de patente #pat | el de patente #pat | la de patente #pat | original #pat | el original #pat | de marca #pat | el de marca #pat)",
       // "Deme dos cajas de paracetamol": the number is counted (never read as "dosis")
       qty: "(dos #q2 | tres #q3)",
@@ -314,7 +314,7 @@ export const pharmacy: SituationDef = {
     ] },
     howlong_ans: { patterns: [
       "@since #h:since", "(llevo | ya llevo | tengo | ya tengo | ando) @dur [asi | con (esto | eso | {symptom} | el dolor | la tos | la fiebre)]",
-      "(empezó | comenzó | me empezó | me comenzó | me dio) (ayer #d1 | anoche #d1 | hoy #d0 | antier #d2 | esta manana #d0 | en la manana #d0 | el fin de semana #d3 | la semana pasada #d7 | el {day} #d3 | hace @dur)",
+      "(empezó | comenzó | me empezó | me comenzó | me dio) (ayer #d1 | anoche #d1 | hoy #d0 | antier #d2 | esta manana #d0 | (en | por) la manana #d0 | el fin de semana #d3 | la semana pasada #d7 | el {day} #d3 | hace @dur)",
       "(empezó | comenzó | me empezó | me dio) @since", "(apenas | nada mas | solo) (hoy #d0 | desde hoy #d0 | desde ayer #d1 | ayer #d1 | desde anoche #d1)",
       "ya @dur", "@dur (ya | mas o menos)",
     ] },
@@ -378,7 +378,7 @@ export const pharmacy: SituationDef = {
       "(como | cada cuanto) se lo doy", "(y)? la dosis",
     ] },
     ask_drowsy: { patterns: [
-      "(da | me da | me va a dar | causa | provoca | da mucho) sueno #h:q_drowsy", "(me | lo) (duerme | adormece)", "(puedo | se puede) manejar [con esto | si lo tomo | si la tomo | despues]",
+      "(da | me da | me va a dar | causa | provoca | da mucho) sueno #h:q_drowsy", "(me | lo) (duerme | adormece)", "(puedo | se puede) manejar [con esto | si lo tomo | si la tomo | despues]", "(da | me da | me va a dar | causa) sueno [es que | porque] tengo que manejar",
       "(da | causa) somnolencia", "no (da | causa) sueno", "(es | no es)? de los que dan sueno",
     ] },
     ask_rx_needed: { patterns: [
@@ -459,13 +459,13 @@ export const pharmacy: SituationDef = {
     ] },
     ask_hours: { patterns: [
       "a que hora (cierran | cierra | abren | abre)", "(hasta | desde) que hora (abren | estan abiertos | atienden | esta abierto | abre)", "(cual es | que) [el]? horario [tienen | tiene]",
-      "(abren | estan abiertos | esta abierto | abre) (los domingos | todos los dias | manana | el domingo | en la noche)", "(cierran | cierra) (tarde | temprano)",
+      "(abren | estan abiertos | esta abierto | abre) (los domingos | todos los dias | manana | el domingo | (en | por) la noche)", "(cierran | cierra) (tarde | temprano)",
     ] },
     no_bag: { patterns: ["no (necesito | quiero) [una] (bolsa | bolsita) #h:no_bag", "sin bolsa", "(traigo | tengo) (mi | una)? bolsa", "(asi | asi esta) bien sin bolsa", "(bolsa | bolsita) no [gracias]"] },
     bag_yes: { patterns: ["si (una)? (bolsa | bolsita)", "(me da | deme | me puede dar) (una)? (bolsa | bolsita)", "(una)? (bolsa | bolsita) (por favor)?"] },
     // --- the prescription ----------------------------------------------------------------------------
     rx_pickup: { patterns: [
-      "vengo a surtir (una | mi | esta | la)? receta #h:rx_fill", "(traigo | tengo) (una | la | esta | mi)? receta [del doctor | de la doctora | medica | del medico] #h:rx_have",
+      "vengo a surtir (una | mi | esta | la)? receta #h:rx_fill", "vengo (con | a por) (una | mi | esta | la) receta", "vengo [a] por (lo | las pastillas | unas pastillas | el medicamento | la medicina | las medicinas) de (la | mi | esta) receta", "(traigo | tengo) (una | la | esta | mi)? receta [del doctor | de la doctora | medica | del medico] #h:rx_have",
       "(me puede | puede | me podria | podria)? surtir (esta | una | mi | la)? receta", "(me | le) (surte | surten) (esta | una | la)? receta", "(quiero | necesito) surtir (una | esta | mi)? receta",
       "(el doctor | la doctora | el medico | la medica) me (recetó | dio) (esto | esta medicina | este medicamento | algo | {product} | una receta)", "me (recetaron | dieron una receta para) (esto | {product} | un antibiotico)",
       "(tiene | tienen) (lo de)? esta receta", "(tiene | tienen) (este | esta) (medicamento | medicina) [de la receta]", "vengo (por | con) (una | mi)? receta [medica] #h:rx_fill", "(es | traigo) una receta medica",
@@ -552,7 +552,7 @@ export const pharmacy: SituationDef = {
       t("¡Buenas! | Qué | gusto | {m:verlo|f:verla} | otra vez. | ¿Viene | a | surtir | una | receta?", "Hi! | What | pleasure | to see you | again. | Are you coming | to | fill | a | prescription?",
         "Hi! Good to see you again. Are you here to fill a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted).", 7: "Mexican: surtir una receta = to fill a prescription." },
           neutral: t("¡Buenas! | Qué | gusto | {m:verlo|f:verla} | otra vez. | ¿Viene | con | una | receta?", "Hi! | What | pleasure | to see you | again. | Are you coming | with | a | prescription?",
-            "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }) }),
+            "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }), spain: t("¡Buenas! | Me alegro | de | {m:verlo|f:verla} | otra vez. | ¿Viene | con | una | receta?", "Hi! | I'm glad | of | to see you | again. | Are you coming | with | a | prescription?", "Hi! Good to see you again. Are you here with a prescription?", { flags: { 3: "lo/la: “you”, for a man or a woman (usted)." } }) }),
     ],
     rx_prompt_again: [t("¿Trae | alguna | receta?", "Are you bringing | any | prescription?", "Do you have a prescription with you?")],
     sorry_symptom: [
@@ -661,7 +661,7 @@ export const pharmacy: SituationDef = {
     doctor_bye: [t("Con | la | receta, | aquí | {m:lo|f:la} | espero.", "With | the | prescription, | here | you | I-wait for.", "Come back with the prescription and I'll fill it for you.",
       { flags: { 4: "lo/la: “you”, for a man or a woman (usted)." } })],
     // --- products
-    product_ok: [t("Claro.", "Sure.", "Sure."), t("Con gusto.", "Gladly.", "Sure thing.")],
+    product_ok: [t("Claro.", "Sure.", "Sure."), t("Con gusto.", "Gladly.", "Sure thing.", { spain: t("Ahora mismo.", "Right away.", "Sure thing.") })],
     qty_two: [t("Claro, | dos.", "Sure, | two.", "Sure, two.")],
     qty_three: [t("Claro, | tres.", "Sure, | three.", "Sure, three.")],
     paid_already: [t("Eso | ya | está | pagado.", "That | already | is | paid.", "That's already paid for.")],
@@ -669,7 +669,7 @@ export const pharmacy: SituationDef = {
     // (pastillas, curitas: never "Aquí está")
     here_pl: [t("Aquí tiene.", "Here you go.", "Here you go.")],
     where_it_is: [t("Todo | está | aquí | atrás | del | mostrador; | yo | se lo | doy.", "Everything | is | here | behind | the | counter; | I | it to you | give.",
-      "Everything's back here behind the counter; I'll get it for you.")],
+      "Everything's back here behind the counter; I'll get it for you.", { spain: t("Todo | está | aquí | detrás | del | mostrador; | yo | se lo | doy.", "Everything | is | here | behind | the | counter; | I | it to you | give.", "Everything's back here behind the counter; I'll get it for you.") })],
     unknown_product: [t("Ese | medicamento | solo | se vende | con | receta | médica.", "That | medicine | only | is sold | with | prescription | medical.", "That medicine is only sold with a doctor's prescription.")],
     // --- brand-name or generic
     // "de patente" (brand-name) is Mexican: the neutral text says "de marca" (audit 5 Nov)
@@ -688,7 +688,7 @@ export const pharmacy: SituationDef = {
     generic_again: [t("¿Entonces, | de patente | o | genérico?", "So, | brand-name | or | generic?", "So, brand-name or generic?",
       { neutral: t("¿Entonces, | de marca | o | genérico?", "So, | brand-name | or | generic?", "So, brand-name or generic?") })],
     generic_diff: [t("Es | la | misma | sustancia; | el | genérico | nada más | es | más | barato.", "It's | the | same | substance; | the | generic | just | is | more | cheap.",
-      "It's the same active ingredient; the generic is just cheaper.")],
+      "It's the same active ingredient; the generic is just cheaper.", { spain: t("Es | la | misma | sustancia; | el | genérico | solo | es | más | barato.", "It's | the | same | substance; | the | generic | just | is | more | cheap.", "It's the same active ingredient; the generic is just cheaper.") })],
     generic_prices: [t("El | de patente | cuesta | {$price}, | y | el | genérico, | {$amount}.", "The | brand-name one | costs | {$price}, | and | the | generic, | {$amount}.",
       "The brand-name one is {$price}, and the generic is {$amount}.",
       { neutral: t("El | de marca | cuesta | {$price}, | y | el | genérico, | {$amount}.", "The | brand-name one | costs | {$price}, | and | the | generic, | {$amount}.",
@@ -722,7 +722,7 @@ export const pharmacy: SituationDef = {
     ask_use: [t("¿Sabe | cómo | se usa?", "Do you know | how | it's used?", "Do you know how to use it?")],
     questions_q: [t("¿Tiene | alguna | pregunta?", "Do you have | any | question?", "Any questions?")],
     dose_first: [t("Primero | vemos | qué | le | conviene.", "First | we-see | what | (to) you | suits.", "Let's first see what's right for you.")],
-    dose_reminder: [t("Muy | bien. | Nada más | le | recuerdo:", "Very | good. | Just | (to) you | I-remind:", "Okay. Just a reminder:")],
+    dose_reminder: [t("Muy | bien. | Nada más | le | recuerdo:", "Very | good. | Just | (to) you | I-remind:", "Okay. Just a reminder:", { spain: t("Muy | bien. | Solo | le | recuerdo:", "Very | good. | Just | (to) you | I-remind:", "Okay. Just a reminder:") })],
     dose_ibuprofen: [t("Una | tableta | cada | ocho | horas, | después de | comer.", "One | tablet | every | eight | hours, | after | eating.", "One tablet every eight hours, after eating.")],
     max_three: [t("No tome | más | de | tres | al | día.", "Don't take | more | than | three | a | day.", "Don't take more than three a day.")],
     dose_paracetamol: [t("Una | o | dos | tabletas | cada | ocho | horas.", "One | or | two | tablets | every | eight | hours.", "One or two tablets every eight hours.")],
@@ -736,7 +736,7 @@ export const pharmacy: SituationDef = {
     max_eight: [t("No | más | de | ocho | al | día.", "Not | more | than | eight | a | day.", "No more than eight a day.")],
     dose_cold: [t("Una | cápsula | cada | ocho | horas.", "One | capsule | every | eight | hours.", "One capsule every eight hours.")],
     cold_drowsy: [t("Ojo: | da | sueño; | mejor | no maneje | después.", "Careful: | it-causes | sleepiness; | better | don't drive | afterwards.",
-      "Careful, it makes you drowsy, so better not drive afterwards.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." } })],
+      "Careful, it makes you drowsy, so better not drive afterwards.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." }, spain: t("Ojo: | da | sueño; | mejor | no conduzca | después.", "Careful: | it-causes | sleepiness; | better | don't drive | afterwards.", "Careful, it makes you drowsy, so better not drive afterwards.", { flags: { 0: "¡Ojo! (eye) = watch out / careful." } }) })],
     dose_allergy: [t("Una | tableta | al | día.", "One | tablet | a | day.", "One tablet a day.")],
     allergy_nondrowsy: [t("Y | no da | sueño.", "And | it doesn't cause | sleepiness.", "And it won't make you drowsy.")],
     dose_antacid: [t("Mastique | una | o | dos | tabletas | cuando | sienta | las | agruras.", "Chew | one | or | two | tablets | when | you-feel | — | heartburn.",
@@ -776,7 +776,7 @@ export const pharmacy: SituationDef = {
     // the prescription (amoxicillin)
     rx_ask: [
       t("Claro. | ¿Me | permite | la | receta?", "Sure. | (To) me | you-allow | the | prescription?", "Sure. May I see the prescription?"),
-      t("Con gusto. | ¿Me | deja | ver | la | receta?", "Gladly. | (To) me | you-let | see | the | prescription?", "Of course. Can I see the prescription?"),
+      t("Con gusto. | ¿Me | deja | ver | la | receta?", "Gladly. | (To) me | you-let | see | the | prescription?", "Of course. Can I see the prescription?", { spain: t("Claro. | ¿Me | deja | ver | la | receta?", "Sure. | (To) me | you-let | see | the | prescription?", "Of course. Can I see the prescription?") }),
     ],
     rx_ask_again: [t("¿Me | permite | la | receta, | por favor?", "(To) me | you-allow | the | prescription, | please?", "Could I see the prescription, please?")],
     // (five days, as Doctora Herrera prescribes it in s31: "una cápsula cada ocho horas… por cinco días")
@@ -795,7 +795,7 @@ export const pharmacy: SituationDef = {
     // --- answers about the medicine
     drowsy_no: [t("No, | no da | sueño.", "No, | it doesn't cause | sleepiness.", "No, it won't make you drowsy.")],
     drowsy_little: [t("Puede | dar | un poco | de | sueño.", "It-can | cause | a little | of | sleepiness.", "It can make you a little drowsy.")],
-    drowsy_yes: [t("Sí, | da | sueño; | mejor | no maneje | después.", "Yes, | it-causes | sleepiness; | better | don't drive | afterwards.", "Yes, it makes you drowsy, so better not drive afterwards.")],
+    drowsy_yes: [t("Sí, | da | sueño; | mejor | no maneje | después.", "Yes, | it-causes | sleepiness; | better | don't drive | afterwards.", "Yes, it makes you drowsy, so better not drive afterwards.", { spain: t("Sí, | da | sueño; | mejor | no conduzca | después.", "Yes, | it-causes | sleepiness; | better | don't drive | afterwards.", "Yes, it makes you drowsy, so better not drive afterwards.") })],
     rx_not_needed: [t("No, | se vende | sin | receta.", "No, | it's sold | without | prescription.", "No, it's sold without a prescription.")],
     rx_stronger: [t("Algo | más | fuerte | ya | necesita | receta.", "Something | more | strong | already | needs | prescription.", "Anything stronger needs a prescription.")],
     food_with: [t("Mejor | con | alimentos, | para | cuidar | el | estómago.", "Better | with | food, | to | protect | your | stomach.", "Better with food, to protect your stomach.", { flags: { 5: "el estómago: Spanish says “the stomach” where English says “your”." } })],
@@ -818,10 +818,10 @@ export const pharmacy: SituationDef = {
       t("Serían | {$price}.", "It would be | {$price}.", "That'll be {$price}."),
     ],
     ask_pay_method: [t("¿Efectivo | o | tarjeta?", "Cash | or | card?", "Cash or card?")],
-    card_tap: [t("Acerque | su | tarjeta… | Listo, | ya | pasó.", "Bring close | your | card… | Done, | already | it-went-through.", "Tap your card… Done, it went through.")],
+    card_tap: [t("Acerque | su | tarjeta… | Listo, | ya | pasó.", "Bring close | your | card… | Done, | already | it-went-through.", "Tap your card… Done, it went through.", { spain: t("Acerque | su | tarjeta… | Ya está, | ya | ha | pasado.", "Bring close | your | card… | Done, | already | it-has | gone through.", "Tap your card… Done, it went through.") })],
     card_later: [t("Sí, | claro. | Al | final | le | cobro.", "Yes, | of course. | At the | end | (to) you | I-charge.", "Sure. I'll ring you up at the end.")],
     phone_ok: [t("Sí, | acérquelo | a | la | terminal… | Listo, | ya | pasó.", "Yes, | bring it close | to | the | card machine… | Done, | already | it-went-through.",
-      "Sure, hold it up to the card machine… Done, it went through.")],
+      "Sure, hold it up to the card machine… Done, it went through.", { spain: t("Sí, | acérquelo | al | datáfono… | Ya está, | ya | ha | pasado.", "Yes, | bring it close | to the | card machine… | Done, | already | it-has | gone through.", "Sure, hold it up to the card machine… Done, it went through.") })],
     cash_ok: [t("Claro, | en efectivo.", "Sure, | in cash.", "Sure, cash is fine.")],
     change_back: [t("Gracias. | Aquí tiene | su | cambio.", "Thanks. | Here's | your | change.", "Thanks. Here's your change.")],
     change_is: [t("Gracias. | Su | cambio: | {$price}.", "Thanks. | Your | change: | {$price}.", "Thanks. Your change is {$price}.")],
@@ -840,7 +840,7 @@ export const pharmacy: SituationDef = {
     ask_bag: [t("¿Le | doy | una | bolsita?", "(To) you | I-give | a | little bag?", "Would you like a bag?", { flags: { 3: "bolsita: bolsa (bag) with the diminutive, very common in Mexico." } })],
     bag_here: [t("Aquí | va, | en | su | bolsita.", "Here | it-goes, | in | your | little bag.", "Here you go, in a bag.")],
     // --- goodbye
-    feel_better: [t("¡Que | se mejore!", "That | you-get better!", "Feel better!"), t("¡Que | se alivie | pronto!", "That | you-get well | soon!", "I hope you feel better soon!")],
+    feel_better: [t("¡Que | se mejore!", "That | you-get better!", "Feel better!"), t("¡Que | se alivie | pronto!", "That | you-get well | soon!", "I hope you feel better soon!", { spain: t("¡Que | se mejore | pronto!", "That | you-get better | soon!", "I hope you feel better soon!") })],
     see_doctor: [t("Si | no se le quita | en | unos | días, | vaya | al | doctor.", "If | it doesn't go away | in | some | days, | go | to the | doctor.", "If it doesn't go away in a few days, see a doctor.")],
     // for a child or another adult (vayan: the learner and the patient)
     see_doctor_other: [t("Si | no mejora | en | un | par | de | días, | vayan | al | doctor.", "If | (he/she) doesn't improve | in | a | couple | of | days, | go (both of you) | to the | doctor.",
@@ -995,7 +995,7 @@ export const pharmacy: SituationDef = {
         { id: "take_cards", s: t("¿Acepta | tarjeta?", "Do you accept | card?", "Do you take cards?") },
         { id: "pay_cash", s: t("En efectivo.", "In cash.", "Cash.") },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
-        { id: "pay_phone", s: t("¿Puedo | pagar | con | el | celular?", "Can I | pay | with | the | cell phone?", "Can I pay with my phone?") },
+        { id: "pay_phone", s: t("¿Puedo | pagar | con | el | celular?", "Can I | pay | with | the | cell phone?", "Can I pay with my phone?", { spain: t("¿Puedo | pagar | con | el | móvil?", "Can I | pay | with | the | cell phone?", "Can I pay with my phone?") }) },
       ],
     },
     bag: {
@@ -1015,6 +1015,7 @@ export const pharmacy: SituationDef = {
   tips: TIPS,
 
   merges: {
+    "ahora mismo": { reason: "lexical_expression", split: "ahora → now + mismo → same is one expression: right away.", minimal: "Two words." },
     "en qué": { reason: "lexical_expression", split: "en → in + qué → what; ¿En qué le puedo ayudar? = how can I help you.", minimal: "Two words." },
     "se le ofrece": { reason: "lexical_expression", split: "se → itself + le → to you + ofrece → it offers; the service formula = do you need / can I get you.", minimal: "Three words." },
     "aquí al lado": { reason: "lexical_expression", split: "aquí → here + al → to the + lado → side; together = right next door.", minimal: "Three words." },

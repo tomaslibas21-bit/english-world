@@ -580,7 +580,7 @@ export const smallTalk: SituationDef = {
       approx: "(como | unos | mas o menos | casi | mas de | cerca de | alrededor de | aproximadamente | por lo menos | ya | apenas)",
       wx_when: "(hoy | esta manana | el dia | la manana | ahorita | ahora | otra vez | ya | afuera | aqui | todavia | desde temprano)",
       hedge: "(a lo mejor | tal vez | quizas | quiza | igual y | seguro | seguramente | creo que | probablemente | pienso que)",
-      when_wk: "(este fin de semana | el fin de semana | el fin | el sabado | el domingo | este sabado | este domingo | manana | el sabado y el domingo | todo el fin de semana | ayer | el fin de semana pasado | el viernes en la noche | hoy en la noche | en la tarde)",
+      when_wk: "(este fin de semana | el fin de semana | el fin | el sabado | el domingo | este sabado | este domingo | manana | el sabado y el domingo | todo el fin de semana | ayer | el fin de semana pasado | el viernes (en | por) la noche | hoy (en | por) la noche | (en | por) la tarde)",
       moved_when: "(la semana pasada | el mes pasado | el ano pasado | hace (poco | poquito | unos dias | unas semanas | unos meses | una semana | un mes | {number} (dias | semanas | meses)) | este mes | ayer | antier | en {month} | el (lunes | martes | miercoles | jueves | viernes | sabado | domingo) [pasado])",
       who: "[a] [mi | mis | unos | unas | un | una] (amigos | amigas | amigo | amiga | familia | papas | padres | mama | papa | hijos | hijo | hija | hijas | ninos | nietos | nieto | hermana | hermano | hermanos | primos | esposo | esposa | novio | novia | suegros | vecinos | companeros)",
       fut: "(voy a | vamos a | pienso | pensamos | quiero | queremos | me gustaria | nos gustaria | tengo que | tenemos que | me toca | creo que voy a | a lo mejor voy a | tal vez voy a | seguramente voy a | quizas voy a | igual y voy a | espero | esperamos | planeo | planeamos)",
@@ -665,7 +665,7 @@ export const smallTalk: SituationDef = {
     // "Como treinta." (only as an answer to his weather remark)
     wx_temp_ctx: { patterns: ["@approx {number} [@wx_when]", "estamos a [@approx] {number} [@wx_when] [@tagq]"] },
     no_umbrella: { patterns: [
-      "no (traigo | tengo | traje) @umb [hoy] #h:w_no_umbrella",
+      "no (traigo | tengo | traje | llevo | he traido) @umb [hoy] #h:w_no_umbrella",
       "se me (olvidó | quedó) @umb [en casa | en la casa]", "dejé @umb en (casa | la casa)", "y yo sin @umb",
       "(hoy | yo | y yo | yo hoy) no (traigo | tengo | traje) @umb", "[yo] tampoco (traigo | tengo | traje) @umb", "olvidé @umb [en casa | en la casa]",
     ] },
@@ -693,7 +693,7 @@ export const smallTalk: SituationDef = {
       "no (me acabo de mudar | acabo de llegar) [(llevo | tengo) (anos | {number} anos | un ano | mucho tiempo) [aqui]]",
     ] },
     // "Hace un mes.", "La semana pasada." (to "¿Es nuevo por aquí?")
-    new_when_ctx: { patterns: ["[apenas | solo | desde] @moved_when"] },
+    new_when_ctx: { patterns: ["[apenas | solo | desde] @moved_when", "[si] (llevo | llevamos) [aqui] (solo | apenas)? (unos dias | una semana | unas semanas | un mes | unos meses | poco tiempo | poco | {number} (dias | semanas | meses)) [aqui]"] },
     nice_meet: { patterns: [
       "(mucho gusto | encantado | encantada | un placer | igualmente | el gusto es mio | un gusto | el placer es mio | gusto en conocerlo | un placer conocerlo) [tambien] #h:in_too",
       "gusto en conocerte #tip:tu_neighbor",
@@ -824,8 +824,8 @@ export const smallTalk: SituationDef = {
     q_job: { patterns: ["[usted] (esta | ya esta) jubilado", "(a que | en que) se dedica", "[usted] (trabaja todavia | todavia trabaja | aun trabaja)", "(en que | de que) trabajaba", "que hacia antes", "es pescador"] },
     q_where: { patterns: ["(a donde | adonde) va [hoy]", "va al centro", "que @bus (espera | toma | va a tomar)", "[usted] [tambien] (espera | va a tomar | toma) el @bus", "a donde vas #tip:tu_neighbor"] },
     q_forecast: { patterns: [
-      "va a llover [hoy | mas tarde | en la tarde]", "cree que (va a llover | llueva)", "que dice el pronostico", "como va a estar el (clima | tiempo) [hoy | manana | mas tarde]",
-      "va a hacer (calor | frio | buen tiempo | sol) [manana | hoy | en la tarde]", "se va a (quitar | componer) el (clima | tiempo)",
+      "va a llover [hoy | mas tarde | (en | por) la tarde]", "cree que (va a llover | llueva)", "que dice el pronostico", "como va a estar el (clima | tiempo) [hoy | manana | mas tarde]",
+      "va a hacer (calor | frio | buen tiempo | sol) [manana | hoy | (en | por) la tarde]", "se va a (quitar | componer) el (clima | tiempo)",
     ] },
     q_temp: { patterns: [
       "cuantos grados (hace | hay | estamos | tenemos) [hoy | ahorita]", "a cuanto estamos [hoy]", "(que | cual es la) temperatura (hace | hay) [hoy]",
@@ -877,7 +877,7 @@ export const smallTalk: SituationDef = {
       "(puedo | me puedo) (meter | quedar) [con usted | bajo su paraguas]", "gracias por (el paraguas | compartir) [su paraguas]",
     ] },
     umbrella_no: { patterns: [
-      "[no gracias | gracias | esta bien | no se preocupe] (traigo | tengo | traje) (el mio | mi propio paraguas | mi paraguas | mi sombrilla | un paraguas | impermeable | un impermeable | mi impermeable | gorra | mi gorra) #h:r_have_one",
+      "[no gracias | gracias | esta bien | no se preocupe | vale] (traigo | tengo | traje | llevo) (el mio | mi propio paraguas | mi paraguas | mi sombrilla | un paraguas | impermeable | un impermeable | mi impermeable | gorra | mi gorra) #h:r_have_one",
       "me (gusta | encanta) la lluvia", "[no] [esta bien] no me (importa | molesta) (mojarme | la lluvia)", "(es | solo es) un poco de lluvia",
     ] },
     late_react_ctx: { patterns: [
@@ -902,7 +902,7 @@ export const smallTalk: SituationDef = {
 
     // --- the goodbye ------------------------------------------------------------------------
     leave: { patterns: [
-      "[bueno] [ya] (me voy | me tengo que ir | tengo que irme | me retiro | lo dejo) [don pancho] [(fue | ha sido) un (placer | gusto) [platicar con usted]] #h:by_better",
+      "[bueno] [ya] (me voy | me tengo que ir | tengo que irme | me retiro | lo dejo) [don pancho] [(fue | ha sido) un (placer | gusto) [(platicar | charlar | conversar | hablar) con usted]] #h:by_better",
       "(ahi viene | ya viene | ya llegó | ya esta aqui | ese es | aqui viene) mi @bus", "me voy (que | porque) ya (llegó | viene) mi @bus",
       "tengo que (tomar | agarrar | alcanzar) (mi | el | este) @bus", "ya es hora de irme",
     ] },
@@ -986,7 +986,7 @@ export const smallTalk: SituationDef = {
     ],
     wxa_fresh: [t("Sí, | con | este | airecito | da gusto.", "Yes, | with | this | little breeze | it's a pleasure.", "Yes, this little breeze is lovely.", { flags: { 3: "airecito: aire + -ito, a light breeze." } })],
     wxa_cold: [
-      t("Yo | ya | saqué | mi | suéter. | ¡Ja!", "I | already | took-out | my | sweater. | Ha!", "I've already got my sweater out. Ha!"),
+      t("Yo | ya | saqué | mi | suéter. | ¡Ja!", "I | already | took-out | my | sweater. | Ha!", "I've already got my sweater out. Ha!", { spain: t("Yo | ya | he | sacado | el | jersey. | ¡Ja!", "I | already | I-have | taken out | the | sweater. | Ha!", "I've already got my sweater out. Ha!") }),
       t("Para | nosotros, | ¡esto | es | frío! | ¡Ja!", "For | us, | this | is | cold! | Ha!", "For us, this is cold! Ha!"),
     ],
     wxa_hot: [
@@ -1007,7 +1007,7 @@ export const smallTalk: SituationDef = {
     ],
     wx_optimist: [t("¡Ja! | ¡Me gusta | su | actitud!", "Ha! | I like | your | attitude!", "Ha! I like your attitude!")],
     wx_you_cold: [t("¿Frío? | ¡Ja! | ¡Hace | un | calorón!", "Cold? | Ha! | It-makes | a | big heat!", "Cold? Ha! It's boiling out here!", { flags: { 4: "calorón: calor + -ón, a big heat." } })],
-    wx_you_hot: [t("¿Calor? | ¡Ja! | ¡Yo | ya | traigo | suéter!", "Hot? | Ha! | I | already | I'm-wearing | sweater!", "Hot? Ha! I've already got my sweater on!")],
+    wx_you_hot: [t("¿Calor? | ¡Ja! | ¡Yo | ya | traigo | suéter!", "Hot? | Ha! | I | already | I'm-wearing | sweater!", "Hot? Ha! I've already got my sweater on!", { spain: t("¿Calor? | ¡Ja! | ¡Yo | ya | llevo | jersey!", "Hot? | Ha! | I | already | I'm-wearing | sweater!", "Hot? Ha! I've got a sweater on already!") })],
     wx_you_rain: [t("¿Lluvia? | ¡No hay | ni | una | nube!", "Rain? | There isn't | even | a | cloud!", "Rain? There's not a cloud in the sky!")],
     wxn_lovely: [t("¿No? | Bueno, | ¡mejor | que | la | lluvia!", "No? | Well, | better | than | the | rain!", "No? Well, it's better than rain!")],
     wxn_cold: [t("¿No? | ¡Usted | aguanta | más | que | yo! | ¡Ja!", "No? | You | can-take | more | than | me! | Ha!", "No? You're tougher than me! Ha!")],
@@ -1040,7 +1040,7 @@ export const smallTalk: SituationDef = {
     frank_always: [
       t("Casi | todo | el | año, | sí. | Nada más | en | invierno | entra | un | norte | de vez en cuando | y | refresca.",
         "Almost | all | the | year, | yes. | Only | in | winter | comes-in | a | norte | once in a while | and | it-cools-down.",
-        "Most of the year, yes. Only in the winter a norte blows in now and then and cools things down.", { flags: { 10: F_NORTE } }),
+        "Most of the year, yes. Only in the winter a norte blows in now and then and cools things down.", { flags: { 10: F_NORTE }, spain: t("Casi | todo | el | año, | sí. | Solo | en | invierno | entra | un | norte | de vez en cuando | y | refresca.", "Almost | all | the | year, | yes. | Only | in | winter | comes-in | a | norte | once in a while | and | it-cools-down.", "Most of the year, yes. Only in the winter a norte blows in now and then and cools things down.", { flags: { 10: F_NORTE } }) }),
     ],
     frank_rainy: [
       t("En | temporada | de | lluvias, | muchas | tardes | cae | un | aguacero. | Pero | rápido | se quita.", "In | season | of | rains, | many | afternoons | falls | a | downpour. | But | quickly | it-clears-up.",
@@ -1068,7 +1068,7 @@ export const smallTalk: SituationDef = {
     ],
     frank_winter: [
       t("No hace | mucho | frío. | Nada más | cuando | entra | un | norte, | refresca | unos | días.", "It doesn't make | much | cold. | Only | when | comes-in | a | norte, | it-cools-down | some | days.",
-        "It doesn't get very cold. It only cools off for a few days when a norte blows in.", { flags: { 7: F_NORTE } }),
+        "It doesn't get very cold. It only cools off for a few days when a norte blows in.", { flags: { 7: F_NORTE }, spain: t("No hace | mucho | frío. | Solo | cuando | entra | un | norte, | refresca | unos | días.", "It doesn't make | much | cold. | Only | when | comes-in | a | norte, | it-cools-down | some | days.", "It doesn't get very cold. It only cools off for a few days when a norte blows in.", { flags: { 7: F_NORTE } }) }),
     ],
 
     // --- first visit: new here, names, where from ------------------------------------------
@@ -1104,7 +1104,7 @@ export const smallTalk: SituationDef = {
     from_rain: [t("¡{X}! | Allá | llueve | mucho, | ¿no?", "{X}! | There | it-rains | a lot, | right?", "{X}! It rains a lot there, doesn't it?")],
     from_warm: [t("¡Ah, | {X}! | Entonces | ya | está | {m:acostumbrado|f:acostumbrada} | al | calor.", "Oh, | {X}! | Then | already | you're | used | to the | heat.", "Oh, {X}! Then you're used to the heat.")],
     from_other: [t("¡Ah, | de | {X}! | Por aquí | vienen | muchos | de | allá.", "Oh, | from | {X}! | Around here | come | many | from | there.", "Oh, {X}! Lots of folks from there come here.")],
-    from_far: [t("¡{X}! | ¡Uy, | qué | lejos! | ¡Qué bueno | que | vino | hasta | acá!", "{X}! | Wow, | how | far! | How good | that | you-came | all the way | here!", "{X}! Wow, that's far! So glad you came all this way!")],
+    from_far: [t("¡{X}! | ¡Uy, | qué | lejos! | ¡Qué bueno | que | vino | hasta | acá!", "{X}! | Wow, | how | far! | How good | that | you-came | all the way | here!", "{X}! Wow, that's far! So glad you came all this way!", { spain: t("¡{X}! | ¡Uy, | qué | lejos! | ¡Qué bien | que | haya | venido | hasta | aquí!", "{X}! | Wow, | how | far! | How good | that | you-have | come | all the way | here!", "{X}! Wow, that's far! So glad you came all this way!") })],
     from_unknown: [t("¡Ah, | qué | bien! | Yo | nunca | he ido | para | allá.", "Oh, | how | nice! | I | never | have gone | toward | there.", "Oh, nice! I've never been there.")],
     from_short: [t("¡Ah, | {X}!", "Oh, | {X}!", "Oh, {X}!")],
     winter_yes_react: [t("¡Ja! | ¡Con razón | le | gusta | tanto | el | sol | de | aquí!", "Ha! | No wonder | (to) you | it-pleases | so much | the | sun | of | here!", "Ha! No wonder you like the sun here so much!")],
@@ -1129,8 +1129,8 @@ export const smallTalk: SituationDef = {
     busy_both: [t("¿Las | dos | cosas? | ¡Ay, | pobre!", "The | two | things? | Oh, | poor thing!", "Both? Oh, you poor thing!")],
     busy_spanish: [t("¡Qué | bien! | ¡Y | ya | habla | muy | bien | español!", "How | nice! | And | already | you-speak | very | well | Spanish!", "Good for you! And your Spanish is already really good!")],
     busy_moving: [t("¡Ja! | Las | mudanzas | son | lo peor.", "Ha! | The | moves | are | the worst.", "Ha! Moving is the worst.")],
-    not_busy_react: [t("¡Qué | suerte!", "What | luck!", "Lucky you!"), t("¡Qué bueno!", "How good!", "Good for you!")],
-    react_good: [t("¡Ah, | qué bueno!", "Oh, | how good!", "Oh, good!")],
+    not_busy_react: [t("¡Qué | suerte!", "What | luck!", "Lucky you!"), t("¡Qué bueno!", "How good!", "Good for you!", { spain: t("¡Qué bien!", "How good!", "Good for you!") })],
+    react_good: [t("¡Ah, | qué bueno!", "Oh, | how good!", "Oh, good!", { spain: t("¡Ah, | qué bien!", "Oh, | how good!", "Oh, good!") })],
 
     // --- the weekend ----------------------------------------------------------------------------
     wkp_q: [
@@ -1169,11 +1169,11 @@ export const smallTalk: SituationDef = {
     react_beach: [t("¡Qué | bien! | Me encanta | la | playa.", "How | nice! | I love | the | beach.", "Oh, nice! I love the beach.")],
     sargazo_tip: [
       t("Nada más | fíjese | si | hay | sargazo: | a veces | llega | mucho.", "Just | check | if | there's | sargassum: | sometimes | arrives | a lot.",
-        "Just check whether there's sargassum first: sometimes a lot of it washes up.", { flags: { 4: F_SARGAZO } }),
+        "Just check whether there's sargassum first: sometimes a lot of it washes up.", { flags: { 4: F_SARGAZO }, spain: t("Eso sí, | fíjese | si | hay | sargazo: | a veces | llega | mucho.", "Just one thing, | check | if | there's | sargassum: | sometimes | arrives | a lot.", "Just check whether there's sargassum first: sometimes a lot of it washes up.", { flags: { 4: F_SARGAZO } }) }),
     ],
     react_cenote: [
       t("¡Ah, | qué | rico! | El | agua | del | cenote | es | bien | fresquita.", "Oh, | how | nice! | The | water | of the | cenote | is | very | nice and cool.", "Oh, lovely! The water in a cenote is so refreshing.",
-        { flags: { 6: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 8: "bien before an adjective: “very”.", 9: "fresquita: fresca + -ita, “nice and cool”." } }),
+        { flags: { 6: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 8: "bien before an adjective: “very”.", 9: "fresquita: fresca + -ita, “nice and cool”." }, spain: t("¡Ah, | qué | maravilla! | El | agua | del | cenote | está | muy | fresquita.", "Oh, | how | wonderful! | The | water | of the | cenote | is | very | nice and cool.", "Oh, lovely! The water in a cenote is so refreshing.", { flags: { 6: "cenote: a natural pool in a limestone sinkhole, typical of the Yucatán.", 9: "fresquita: fresca + -ita, “nice and cool”." } }) }),
     ],
     react_home: [t("¡Los | fines de semana | tranquilos | son | los | mejores!", "The | weekends | quiet | are | the | best!", "Quiet weekends are the best!")],
     react_friends: [t("¡Ah, | qué | bonito!", "Oh, | how | lovely!", "Oh, that's nice!")],
@@ -1221,15 +1221,15 @@ export const smallTalk: SituationDef = {
     frank_from: [t("¿Yo? | ¡Nacido | y | criado | aquí!", "Me? | Born | and | raised | here!", "Me? Born and raised right here!")],
     frank_live: [t("¿Yo? | ¡Toda la vida! | Más | de | setenta | años.", "Me? | All my life! | More | than | seventy | years.", "Me? All my life! Over seventy years.")],
     frank_job: [t("Ya | estoy | jubilado. | Fui | pescador | cuarenta | años.", "Now | I'm | retired. | I-was | fisherman | forty | years.", "I'm retired now. I was a fisherman for forty years.")],
-    frank_where: [t("Nada más | voy | a | la | ferretería. | ¡Necesito | pintura | para | mi | lancha!", "Just | I'm going | to | the | hardware store. | I-need | paint | for | my | boat!", "Just to the hardware store. I need paint for my boat!")],
+    frank_where: [t("Nada más | voy | a | la | ferretería. | ¡Necesito | pintura | para | mi | lancha!", "Just | I'm going | to | the | hardware store. | I-need | paint | for | my | boat!", "Just to the hardware store. I need paint for my boat!", { spain: t("Solo | voy | a | la | ferretería. | ¡Necesito | pintura | para | mi | lancha!", "Just | I'm going | to | the | hardware store. | I-need | paint | for | my | boat!", "Just to the hardware store. I need paint for my boat!") })],
     frank_like: [t("¿Yo? | ¡Me encanta! | No lo cambio | por | nada.", "Me? | I love it! | I wouldn't trade it | for | anything.", "Me? I love it! I wouldn't trade it for anything.")],
     frank_forecast_lovely: [t("Dicen | que | va | a | estar | soleado | toda | la | semana.", "They-say | that | it's going | to | be | sunny | all | the | week.", "They say it'll be sunny all week.")],
-    frank_forecast_cold: [t("Dicen | que | en | la | tarde | ya | va | a | calentar.", "They-say | that | in | the | afternoon | already | it's going | to | warm up.", "They say it'll warm up this afternoon.")],
+    frank_forecast_cold: [t("Dicen | que | en | la | tarde | ya | va | a | calentar.", "They-say | that | in | the | afternoon | already | it's going | to | warm up.", "They say it'll warm up this afternoon.", { spain: t("Dicen | que | por | la | tarde | ya | va | a | calentar.", "They-say | that | in | the | afternoon | already | it's going | to | warm up.", "They say it'll warm up this afternoon.") })],
     frank_forecast_hot: [t("¡Dicen | que | mañana | va | a | hacer | todavía | más | calor!", "They-say | that | tomorrow | it's going | to | make | even | more | heat!", "They say it'll be even hotter tomorrow!")],
-    frank_forecast_cloudy: [t("Dicen | que | en | la | tarde | va | a | caer | un | aguacero.", "They-say | that | in | the | afternoon | it's going | to | fall | a | downpour.", "They say there'll be a downpour this afternoon.")],
-    frank_temp_lovely: [t("Como | veintiocho | grados, | dice | mi | celular.", "About | twenty-eight | degrees, | says | my | phone.", "About 28 degrees, my phone says.")],
+    frank_forecast_cloudy: [t("Dicen | que | en | la | tarde | va | a | caer | un | aguacero.", "They-say | that | in | the | afternoon | it's going | to | fall | a | downpour.", "They say there'll be a downpour this afternoon.", { spain: t("Dicen | que | por | la | tarde | va | a | caer | un | aguacero.", "They-say | that | in | the | afternoon | it's going | to | fall | a | downpour.", "They say there'll be a downpour this afternoon.") })],
+    frank_temp_lovely: [t("Como | veintiocho | grados, | dice | mi | celular.", "About | twenty-eight | degrees, | says | my | phone.", "About 28 degrees, my phone says.", { spain: t("Como | veintiocho | grados, | dice | mi | móvil.", "About | twenty-eight | degrees, | says | my | phone.", "About 28 degrees, my phone says.") })],
     frank_temp_cold: [t("Como | veinte | grados. | ¡Para | nosotros, | eso | es | frío!", "About | twenty | degrees. | For | us, | that | is | cold!", "About 20 degrees. For us, that's cold!")],
-    frank_temp_hot: [t("Como | treinta y dos | grados, | dice | mi | celular.", "About | thirty-two | degrees, | says | my | phone.", "About 32 degrees, my phone says.")],
+    frank_temp_hot: [t("Como | treinta y dos | grados, | dice | mi | celular.", "About | thirty-two | degrees, | says | my | phone.", "About 32 degrees, my phone says.", { spain: t("Como | treinta y dos | grados, | dice | mi | móvil.", "About | thirty-two | degrees, | says | my | phone.", "About 32 degrees, my phone says.") })],
     frank_temp_cloudy: [t("Como | veintisiete | grados, | pero | con | esta | humedad | se siente | más.", "About | twenty-seven | degrees, | but | with | this | humidity | it-feels | more.", "About 27 degrees, but with this humidity it feels hotter.")],
     frank_house: [t("Aquí | a la vuelta, | en | la | casa | rosa | de | la | esquina.", "Here | around the corner, | in | the | house | pink | of | the | corner.", "Right around the corner, in the pink house on the corner.")],
     frank_family: [t("Tengo | una | hija | y | dos | nietos. | Viven | aquí | cerca.", "I-have | a | daughter | and | two | grandkids. | They-live | here | nearby.", "I've got a daughter and two grandkids. They live close by.")],
@@ -1256,7 +1256,7 @@ export const smallTalk: SituationDef = {
     umbrella_yes_react: [t("¡No hay de qué! | Hay | lugar | para | los | dos.", "Don't mention it! | There's | room | for | the | two.", "Don't mention it! Plenty of room.")],
     umbrella_decline: [t("¡Bueno, | como | quiera! | ¡Ja!", "Okay, | as | you-wish! | Ha!", "Okay, suit yourself! Ha!")],
     umbrella_no_react: [t("¡Ah, | qué | {m:precavido|f:precavida}! | Vino | {m:preparado|f:preparada}.", "Oh, | how | careful! | You-came | prepared.", "Oh, smart! You came prepared.")],
-    rain_you_have: [t("¡Qué bueno | que | trae | paraguas!", "Good thing | that | you-have | umbrella!", "Good thing you brought an umbrella!")],
+    rain_you_have: [t("¡Qué bueno | que | trae | paraguas!", "Good thing | that | you-have | umbrella!", "Good thing you brought an umbrella!", { spain: t("¡Menos mal | que | lleva | paraguas!", "Good thing | that | you-have | umbrella!", "Good thing you brought an umbrella!") })],
     bus_late: [
       t("Mmm, | el | camión | viene | tarde | otra vez. | ¡Como | siempre!", "Hmm, | the | bus | comes | late | again. | As | always!", "Hmm, the bus is late again. Typical!",
         { flags: { 2: F_CAMION }, neutral: t("Mmm, | el | autobús | viene | tarde | otra vez. | ¡Como | siempre!", "Hmm, | the | bus | comes | late | again. | As | always!", "Hmm, the bus is late again. Typical!") }),
@@ -1297,7 +1297,7 @@ export const smallTalk: SituationDef = {
       t("¡Ah, | ahí | viene | mi | camión! | Ya | me voy. | ¡Qué | gusto | platicar | con | usted!", "Oh, | there | comes | my | bus! | Now | I'm off. | What a | pleasure | to chat | with | you!",
         "Oh, there's my bus! I'd better get going. Nice talking to you!",
         { flags: { 4: F_CAMION, 7: F_QUE, 9: F_PLATICAR }, neutral: t("¡Ah, | ahí | viene | mi | autobús! | Ya | me voy. | ¡Qué | gusto | conversar | con | usted!", "Oh, | there | comes | my | bus! | Now | I'm off. | What a | pleasure | to chat | with | you!",
-          "Oh, there's my bus! I'd better get going. Nice talking to you!", { flags: { 7: F_QUE } }) }),
+          "Oh, there's my bus! I'd better get going. Nice talking to you!", { flags: { 7: F_QUE } }), spain: t("¡Ah, | ahí | viene | mi | autobús! | Ya | me voy. | ¡Ha | sido | un | placer | charlar | con | usted!", "Oh, | there | comes | my | bus! | Now | I'm off. | It-has | been | a | pleasure | to chat | with | you!", "Oh, there's my bus! I'd better get going. Nice talking to you!") }),
     ],
     frank_wave: [t("¡Nos vemos, | {m:vecino|f:vecina}!", "See you, | neighbor!", "See you, neighbor!")],
     bye_you_too: [t("¡Igualmente! | ¡Que | le | vaya | bien!", "Likewise! | (I hope) | (for) you | it-goes | well!", "You too! Have a good one!")],
@@ -1346,7 +1346,7 @@ export const smallTalk: SituationDef = {
         { id: "w_beautiful", s: t("Sí, | hace | fresco.", "Yes, | it-makes | cool.", "Yes, it's chilly."), note: "Weather with hacer: hace fresco, hace frío, hace calor." },
         { id: "w_know_right", s: t("Sí, | tiene razón.", "Yes, | you're right.", "You're right!") },
         { id: "w_than_tag", s: t("Hace | más | fresco | que | ayer, | ¿no?", "It-makes | more | cool | than | yesterday, | right?", "It's cooler than yesterday, isn't it?") },
-        { id: "w_jacket", s: t("¡Necesito | un | suéter!", "I-need | a | sweater!", "I need a sweater!") },
+        { id: "w_jacket", s: t("¡Necesito | un | suéter!", "I-need | a | sweater!", "I need a sweater!", { spain: t("¡Necesito | un | jersey!", "I-need | a | sweater!", "I need a sweater!") }) },
         { id: "w_dislike", s: t("No me gusta | el | frío.", "I don't like | the | cold.", "I don't like the cold.") },
         { id: "w_temp", s: t("Estamos | como | a | veinte | grados.", "We-are | about | at | twenty | degrees.", "It's about 20 degrees."), note: "Mexico uses Celsius: 20 °C is 68 °F." },
       ],
@@ -1520,7 +1520,7 @@ export const smallTalk: SituationDef = {
       lt: "Say goodbye politely",
       items: [
         { id: "by_better", s: t("Bueno, | ya | me voy. | ¡Qué | gusto | platicar | con | usted!", "Well, | now | I'm off. | What a | pleasure | to chat | with | you!", "Well, I'd better get going. Nice talking to you!",
-            { flags: { 5: F_PLATICAR }, neutral: t("Bueno, | ya | me voy. | ¡Qué | gusto | conversar | con | usted!", "Well, | now | I'm off. | What a | pleasure | to chat | with | you!", "Well, I'd better get going. Nice talking to you!") }),
+            { flags: { 5: F_PLATICAR }, neutral: t("Bueno, | ya | me voy. | ¡Qué | gusto | conversar | con | usted!", "Well, | now | I'm off. | What a | pleasure | to chat | with | you!", "Well, I'd better get going. Nice talking to you!"), spain: t("Bueno, | ya | me voy. | ¡Ha | sido | un | placer | charlar | con | usted!", "Well, | now | I'm off. | It-has | been | a | pleasure | to chat | with | you!", "Well, I'd better get going. Nice talking to you!") }),
           note: "“Bueno, ya me voy” is the gentle way to end a chat." },
         { id: "by_nice", s: t("¡Fue | un | gusto | platicar | con | usted!", "It-was | a | pleasure | to chat | with | you!", "Nice talking to you!",
             { flags: { 3: F_PLATICAR }, neutral: t("¡Fue | un | gusto | conversar | con | usted!", "It-was | a | pleasure | to chat | with | you!", "Nice talking to you!") }) },
@@ -1542,6 +1542,9 @@ export const smallTalk: SituationDef = {
   },
 
   merges: {
+    "menos mal": { reason: "lexical_expression", split: "menos → less + mal → bad is one Spain expression: good thing, thank goodness.", minimal: "Two words." },
+    "qué bien": { reason: "lexical_expression", split: "qué → what + bien → well is a word-for-word exclamation; = great, how nice.", minimal: "Two words." },
+    "eso sí": { reason: "lexical_expression", split: "eso → that + sí → yes is false; the concession = mind you, just one thing.", minimal: "Two words." },
     "da gusto": { reason: "lexical_expression", split: "da → gives + gusto → pleasure is a calque; = it's a pleasure, it's a treat.", minimal: "Two words." },
     "se está nublando": { reason: "grammatical_fusion", split: "se → itself + está → is + nublando → clouding; one English verb = it's clouding over.", minimal: "Three words." },
     "antes que": { reason: "lexical_expression", split: "antes → before + que → than/that is false; = before.", minimal: "Two words." },

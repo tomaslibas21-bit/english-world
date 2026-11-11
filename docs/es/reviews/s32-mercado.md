@@ -91,3 +91,10 @@ sets). Leads from the cross-cutting audit (N/AUDIT/cross, N/AUDIT/neutral) were 
 - STYLE.md's example "a kilo of avocados $70" no longer matches the model ($60).
 - s66-taxi glosses "joven" as "young man" for both genders too.
 - The owner: Doña Lupe vs Doña Lupita (point 3).
+
+## Spain twins (11 Nov 2026)
+
+No line twins needed: Doña Lupe keeps usted, and her lines already read as Spain's once the neutral twins apply (the
+Mexican-only "pilón", "ándale", "ahorita" have neutral twins). One Spain noun: papa → patata (`P(…, { spain: "patata" })`, the
+helper now passes `spain`). "Limón" (a Mexican lime; Spain: lima) and "chile habanero" stay Mexican, as the market's own goods.
+Spain corpus: 15 items (¿Me pone…?, póngame, patatas, vale, llevo bolsa).

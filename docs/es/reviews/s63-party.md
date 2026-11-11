@@ -115,3 +115,11 @@ line's words changed. Two sims added ("yes or no, and ask back", "neighbor, a st
 - global.ts LEAVING_PATTERNS: "Ya vamos" at a café question reads as a goodbye and ends the conversation (here the flow
   no longer re-asks, so it isn't reached).
 - Still open from the first review: g_bye takes "igualmente" / "tú también".
+
+## Spain twins (11 Nov 2026)
+
+17 twins + Spain nouns for camarero/a, fontanero/a (the J helper takes a Spain pair) and zumo. Guests say tú (unchanged).
+Register change in Spain: Ximena's plural "you" to the learner and Marcos is vosotros ("Entonces trabajáis juntos", "¡Sois
+vecinos!"). Also: "¡Qué bien que hayas venido!", "¡Vale! Si quieres algo, me lo dices", calentita, "solo" for "nada más", "a dos
+calles del zócalo", "tarta de tres leches", "pequeñito", "muy a menudo", "juegan al hockey", "¡Me ha encantado conocerte!" (the
+goodbye pattern now takes "me ha encantado / encantado de conocerte"). Spain corpus: 14 items (zumo, camarera, fontanero, porfa).

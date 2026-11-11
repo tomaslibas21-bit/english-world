@@ -1,0 +1,14 @@
+{ "situation": "s75-pharmacy", "items": [
+  {"ctx": "need", "say": "¿Tiene algo para el dolor de cabeza?", "intent": "need_symptom", "slots": {"symptom": "headache"}},
+  {"ctx": "need", "say": "Vengo a por unas pastillas de la receta", "intent": ["rx_pickup"]},
+  {"ctx": "need", "say": "Estoy constipado", "intent": ["symptom_state"]},
+  {"ctx": "sick_q", "say": "Me duele la garganta", "intent": "symptom_state"},
+  {"ctx": "who", "say": "Sí, es para mí", "intent": ["who_ans", "yn:yes"]},
+  {"ctx": "howlong", "say": "Desde ayer por la tarde", "intent": "howlong_ans"},
+  {"ctx": "meds", "say": "No, no tomo nada", "intent": ["meds_ans", "yn:no"]},
+  {"ctx": "recommend", "say": "Vale, me lo llevo", "intent": ["accept_rec", "accept_ctx", "yn:yes"]},
+  {"ctx": "recommend", "say": "¿Da sueño? Tengo que conducir", "intent": "ask_drowsy"},
+  {"ctx": "recommend", "say": "¿Hay algo más barato?", "intent": "ask_cheaper"},
+  {"ctx": "recommend", "say": "¿Necesito receta?", "intent": "ask_rx_needed"},
+  {"ctx": "recommend", "say": "No, gracias, no me lo llevo", "intent": ["decline_rec", "yn:no"]}
+] }

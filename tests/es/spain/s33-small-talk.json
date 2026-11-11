@@ -1,0 +1,17 @@
+{ "situation": "s33-small-talk", "items": [
+  {"ctx": "weather", "say": "Pues sí, hace muchísimo calor", "intent": ["wx_adj", "wx_agree", "yn:yes"]},
+  {"ctx": "weather", "say": "Sí, hace un calor horrible", "intent": ["wx_adj", "wx_agree", "yn:yes"]},
+  {"ctx": "weather", "say": "¿Va a llover esta tarde?", "intent": "q_forecast"},
+  {"ctx": "new_q", "say": "Sí, acabo de llegar", "intent": ["new_yes"]},
+  {"ctx": "new_q", "say": "Llevo aquí un mes", "intent": ["new_when_ctx", "new_no", "new_yes"]},
+  {"ctx": "from_q", "say": "Soy de Inglaterra", "intent": "from_ans"},
+  {"ctx": "winter", "say": "Sí, muchísimo frío", "intent": "winter_yes_ctx"},
+  {"ctx": "weekend_past", "say": "Fui a la playa con unos amigos", "intent": "wk_act_ctx"},
+  {"ctx": "weekend_plans", "say": "Todavía no lo sé", "intent": ["wk_notyet_ctx", "g_dontknow"]},
+  {"ctx": "rain", "say": "No, gracias, llevo el mío", "intent": "umbrella_no"},
+  {"ctx": "rain", "say": "No llevo paraguas", "intent": "no_umbrella"},
+  {"ctx": "like_q", "say": "Me encanta", "intent": "like_yes_ctx"},
+  {"ctx": "closing", "say": "Bueno, me voy. Ha sido un placer charlar con usted", "intent": ["leave", "nice_talk", "g_bye"]},
+  {"ctx": "closing", "say": "Ahí viene mi autobús", "intent": ["leave"]},
+  {"ctx": "closing", "say": "Vale, hasta luego, Don Pancho", "intent": ["g_bye"]}
+] }

@@ -105,3 +105,11 @@ its id).
 **For the lead:** the scene phases above (pictures track); STYLE.md's Mexican-only list could add
 platicar (conversar) and carne asada as the party (parrillada), so the cross-cutting digest catches them; global
 g_meaning could take "¿Qué es (un/el) X?" (now only "¿Qué significa X?").
+
+## Spain twins (11 Nov 2026)
+
+18 twins. Don Pancho keeps usted (an older neighbor; no register change). Spain's words: jersey (suéter), móvil, autobús,
+charlar ("¡Ha sido un placer charlar con usted!" for "¡Qué gusto platicar con usted!", also the learner's by_better hint; its pattern
+now takes charlar / conversar / hablar), "Solo…" for "Nada más…", "¡Qué bien!" / "¡Menos mal que lleva paraguas!" for "¡Qué
+bueno…!", "por la tarde" for "en la tarde", "aquí" for "acá", "¡Qué maravilla! El agua del cenote está muy fresquita" for "¡Qué rico!…
+es bien fresquita", and the perfect "he sacado el jersey" / "haya venido". Spain corpus: 16 items.

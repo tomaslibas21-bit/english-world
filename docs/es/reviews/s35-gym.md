@@ -129,3 +129,13 @@ cross-cutting check worth running: lines whose variants state different facts (a
 rotation says both when a question is asked twice. Unanswered, by choice: "¿Cuál es la contraseña del wifi?" (not
 "Sí, la contraseña…"), "¿Puedo traer a un amigo?", "¿Me das factura?", "¿Puedo pagar la mensualidad con tarjeta?"
 (not understood, safe).
+
+## Spain twins (11 Nov 2026)
+
+36 twins + 2 Spain nouns. Mónica says tú (unchanged). Spain's gym words: vestuarios (vestidores; the lockers forms and
+patterns now take vestuarios / taquillas), aseos, cinta (caminadora; `attrs.spain: "cinta"`), tarjeta de socio (credencial; Spain
+noun too), boxeo (box), asas + coge (agarra las manijas), aparcamiento / aparcar, datáfono, móvil, devuelvo, volver, and Spain's
+perfect for today ("¿Has traído candado?", "Ya has calentado", "¡Te lo has ganado!", "¡Lo has hecho muy bien!", the hint "¡Lo he
+conseguido!"), "solo por la mañana". Kept: the learner's "¿Qué horario tienen? / ¿Tienen…?" (the hint's note explains ustedes = the
+gym; Spain says it too, and the grammar takes "tenéis", see the corpus). Spain corpus: 15 items (apuntarme, tenéis, boli, vestuarios,
+aseo, móvil, datáfono).
