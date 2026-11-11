@@ -222,6 +222,60 @@ describe("graphics round 3: the town's new things keep clear of everyone", () =>
   });
 });
 
+describe("graphics round 4: the town's new things keep clear of everyone", () => {
+  const people: [string, number, number][] = [
+    ...OUTDOOR_NPCS.map((n) => [n.npc, n.x, n.z] as [string, number, number]),
+    ...OUTDOOR_NPCS.filter((n) => n.ax !== undefined).map((n) => [n.npc + "'s talk spot", n.ax!, n.az!] as [string, number, number]),
+    ...CHAT_SPOTS.flatMap(([ax, az, bx, bz]) => [["a chatting pair", ax, az], ["a chatting pair", bx, bz]] as [string, number, number][]),
+    ...THEME.vendors.map(([x, z]) => ["a vendor", x, z] as [string, number, number]),
+  ];
+  const gap = (b: { x0: number; x1: number; z0: number; z1: number }, x: number, z: number) => Math.hypot(Math.max(b.x0 - x, 0, x - b.x1), Math.max(b.z0 - z, 0, z - b.z1));
+  const stalls = [...STALLS.map((s) => ({ x: s.x, z: s.z, rot: 0 })), ...(THEME.tianguis?.stalls ?? [])];
+
+  it("the church's atrium wall stands clear of everyone, the stalls and the atrial cross, the cross inside it", () => {
+    const a = THEME.atrio!, c = THEME.church!;
+    expect(a && c && c.face === "w").toBeTruthy();
+    // (facing west: out from the facade is -x, the atrium's left side towards -z)
+    const front = c.x - a.depth, walls = [
+      { x0: front, x1: front + 0.34, z0: c.z - a.left, z1: c.z + a.right },
+      { x0: front, x1: c.x, z0: c.z - a.left, z1: c.z - a.left + 0.34 },
+      { x0: front, x1: c.x, z0: c.z + a.right - 0.34, z1: c.z + a.right },
+    ];
+    for (const w of walls) {
+      for (const [who, x, z] of people) expect(gap(w, x, z), `the atrium wall and ${who}`).toBeGreaterThan(1);
+      for (const s of stalls) {
+        const t = { x0: s.x - (Math.abs(Math.cos(s.rot)) * 2.1 + Math.abs(Math.sin(s.rot)) * 0.9), x1: s.x + (Math.abs(Math.cos(s.rot)) * 2.1 + Math.abs(Math.sin(s.rot)) * 0.9),
+          z0: s.z - (Math.abs(Math.sin(s.rot)) * 2.1 + Math.abs(Math.cos(s.rot)) * 0.9), z1: s.z + (Math.abs(Math.sin(s.rot)) * 2.1 + Math.abs(Math.cos(s.rot)) * 0.9) };
+        expect(w.x1 < t.x0 || t.x1 < w.x0 || w.z1 < t.z0 || t.z1 < w.z0, `the atrium wall and the stall at ${s.x},${s.z}`).toBe(true);
+      }
+      const [cx, cz] = THEME.atrialCross!;
+      expect(gap(w, cx, cz), "the atrium wall and the cross's base").toBeGreaterThan(0.75 + 0.2);
+    }
+    const [cx, cz] = THEME.atrialCross!;
+    expect(cx > front + 0.34 + 0.75 && cx < c.x && cz > c.z - a.left + 0.34 + 0.75 && cz < c.z + a.right, "the cross inside the atrium").toBe(true);
+    // the gate before the door, wide enough to walk through
+    expect(a.gate * 2).toBeGreaterThan(2.5);
+  });
+
+  it("the beach's sitters sit on a palapa's lounger, the terminal's on a bench, each traveller's suitcase by them", () => {
+    const loungers = THEME.palapas.flatMap(([x, z]) => [[x - 0.95, z - 1.1], [x + 0.95, z - 1.1]]);
+    const beach = THEME.sitters.filter(([, z]) => z < -69);
+    expect(beach.length).toBeGreaterThan(0);
+    for (const [x, z] of beach) expect(loungers.some(([lx, lz]) => Math.hypot(lx - x, lz - z) < 0.05), `a lounger at ${x},${z}`).toBe(true);
+    const bt = THEME.busTerminal!.front!;
+    for (const [x, z] of bt.cases) {
+      for (const [who, px, pz] of people) expect(Math.hypot(x - px, z - pz), `a suitcase and ${who}`).toBeGreaterThan(1);
+      for (const [sx, sz] of THEME.sitters) expect(Math.hypot(x - sx, z - sz), "a suitcase and a sitter's knees").toBeGreaterThan(0.6);
+    }
+  });
+
+  it("the meadow's scrub keeps off the cenote, the mirador and the end of avenida Juárez", () => {
+    const m = THEME.meadow!, cen = THEME.cenote!, mi = THEME.mirador!;
+    expect(m.clear.some(([x, z, r]) => Math.hypot(x - cen.x, z - cen.z) < 1 && r >= 12)).toBe(true);
+    expect(m.clear.some(([x, z, r]) => Math.hypot(x - mi.x, z - mi.z) < 1 && r >= 4)).toBe(true);
+  });
+});
+
 describe("the conversation header's place line", () => {
   it("shows the whole Spanish name when its meaning covers both halves", () => {
     expect(placeLtNamed("town-square")).toBe("The main square and its market stalls “Zócalo · Tianguis” – literally “main square · street market”");
