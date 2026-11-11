@@ -1,8 +1,8 @@
 // Song 32 "Unexpected Item" → Puerto Colibrí: "¿A cómo el kilo?"
-// Doña Lupe's fruit and vegetable stall in the Mercado Municipal (the English edition's supermarket checkout becomes a
+// Doña Licha's fruit and vegetable stall in the Mercado Municipal (the English edition's supermarket checkout becomes a
 // Mexican market stall: docs/es/STYLE.md, docs/es/reviews/s32-mercado.md). The model for numbers: prices by the kilo,
 // by the piece and by the bunch, weights (un kilo, medio kilo, kilo y medio, un cuarto), pieces of what is sold by the
-// kilo ("tres aguacates": Lupe weighs them), buying "veinte pesos de limón", the total, cash and change. Mexican market
+// kilo ("tres aguacates": Licha weighs them), buying "veinte pesos de limón", the total, cash and change. Mexican market
 // talk: "¿Qué le damos, joven?", "¿Cuánto le doy?", "¿Para hoy o para mañana?" (how ripe), the pilón (a little extra
 // for free). Lines with a Mexican-only word ("jitomate", "pilón", "nomás", "ahorita") have a neutral twin.
 
@@ -51,7 +51,7 @@ interface Buy {
   id: string;
   /** grams (by weight), pieces or bunches; null until said */
   qty: number | null;
-  /** pieces of something sold by weight ("tres aguacates"): Lupe weighs them (qty holds their grams) */
+  /** pieces of something sold by weight ("tres aguacates"): Licha weighs them (qty holds their grams) */
   pcs?: number;
   /** "20 pesos of limes": an amount of money instead of a weight */
   money?: number;
@@ -63,7 +63,7 @@ const cost = (b: Buy) => {
   if (b.qty == null) return 0;
   if (unitOf(b.id) !== "kg") return priceOf(b.id) * b.qty;
   const exact = (priceOf(b.id) * b.qty) / 1000;
-  // pieces are weighed and rounded to five pesos (at least five), as Lupe does; a weight's price is exact
+  // pieces are weighed and rounded to five pesos (at least five), as Licha does; a weight's price is exact
   return b.pcs ? Math.max(500, Math.round(exact / 500) * 500) : Math.round(exact / 50) * 50;
 };
 const total = (c: Ctx) => buys(c).reduce((a, b) => a + cost(b), 0);
@@ -84,7 +84,7 @@ function grams(v: any): number | null {
 /** An amount as said: money ("veinte pesos"), a weight ("medio kilo"), a count ("tres") or "un / una". */
 interface Amount { money?: number; g?: number | null; count?: number; one?: boolean }
 
-/** Sets a bought thing's amount; false if nothing usable was said. A count of something sold by weight is pieces (Lupe
+/** Sets a bought thing's amount; false if nothing usable was said. A count of something sold by weight is pieces (Licha
  *  weighs them), a weight of something sold by the piece is the pieces it makes ("un kilo de mangos": three). */
 function setAmount(b: Buy, a: Amount): boolean {
   const u = unitOf(b.id);
@@ -124,7 +124,7 @@ function addBuy(c: Ctx, b: Buy): Buy {
   return prev;
 }
 
-/** "Medio kilo de aguacates…" as Lupe says it back while she weighs. */
+/** "Medio kilo de aguacates…" as Licha says it back while she weighs. */
 function amountSay(b: Buy): { line: string; vars: Record<string, any> } {
   if (b.money) return { line: "got_money", vars: { X: { id: b.id, qty: 2 }, price: b.money } };
   const u = unitOf(b.id);
@@ -158,7 +158,7 @@ export const mercado: SituationDef = {
   location: "market",
   npc: "marcus",
   goal: "Buy fruit and vegetables for the week: ask the price, say how much you want (by the kilo or by the piece), and pay.",
-  intro: "The Mercado Municipal is a covered market hall off the zócalo. Doña Lupe has sold fruit and vegetables here for thirty years. Prices are per kilo (el kilo) or per piece (la pieza); most people pay in cash.",
+  intro: "The Mercado Municipal is a covered market hall off the zócalo. Doña Licha has sold fruit and vegetables here for thirty years. Prices are per kilo (el kilo) or per piece (la pieza); most people pay in cash.",
   entities: { product: PRODUCTS },
 
   grammar: {
@@ -199,7 +199,7 @@ export const mercado: SituationDef = {
     order_amount: { patterns: ["[mejor] @order_prefix @amount", "[mejor] @order_prefix {count:number}", "[mejor] @order_prefix (uno | una) #one",
       "mejor [solo | nomas | nada mas] @amount", "mejor [solo | nomas | nada mas] {count:number}", "mejor (solo | nomas | nada mas)? (uno | una) #one"] },
     ripe_ans: { patterns: ["@ripe #h:ripe", "(los | las) quiero @ripe", "(mejor)? @ripe", "son @ripe"] },
-    // "Me da igual": at "¿Los quiere para hoy o para mañana?" Lupe picks them; elsewhere just "Muy bien."
+    // "Me da igual": at "¿Los quiere para hoy o para mañana?" Licha picks them; elsewhere just "Muy bien."
     ripe_any: { patterns: ["(me da | da) igual", "no importa", "como sea", "como (usted | tu) (quiera | quieras | diga | digas)", "lo que usted (diga | quiera)",
       "(usted | tu) (escoja | escoge | elija | elige | decida | decide)", "(los | las) que sean", "cualquiera", "como (los | las) tenga", "como vengan"] },
     ask_price: { patterns: [
@@ -306,7 +306,7 @@ export const mercado: SituationDef = {
     ack_ripe_one: [t("Muy | bien.", "Very | good.", "Okay."), t("Ahorita | se | {lo@X} | escojo.", "Right now | for you | it | I-pick.", "I'll pick a good one for you.",
       { flags: { 0: "Mexican: ahorita = right now, in a moment.", 2: "lo / la: “it” (a pronoun here, not the article)." },
         neutral: t("Ya | se | {lo@X} | escojo.", "Now | for you | it | I-pick.", "I'll pick a good one for you.", { flags: { 2: "lo / la: “it” (a pronoun here, not the article)." } }) })],
-    // what Lupe says as she weighs (X = the product, in the plural)
+    // what Licha says as she weighs (X = the product, in the plural)
     got_kilo: [t("Un | kilo | de | {X.pl}...", "A | kilo | of | {X.pl}...", "A kilo of {X.pl}…")],
     got_half: [t("Medio | kilo | de | {X.pl}...", "Half | kilo | of | {X.pl}...", "Half a kilo of {X.pl}…")],
     got_quarter: [t("Un | cuarto | de | {X.pl}...", "A | quarter | of | {X.pl}...", "A quarter kilo of {X.pl}…")],
@@ -609,7 +609,7 @@ export const mercado: SituationDef = {
       paidCash(c, "change_back");
     },
     big_bill(c, slots) {
-      // "¿Tiene cambio de quinientos?" / "Solo tengo de quinientos" / "Le doy cien": Lupe finds change
+      // "¿Tiene cambio de quinientos?" / "Solo tengo de quinientos" / "Le doy cien": Licha finds change
       const t = total(c);
       if (c.s.paid) return;
       if (!t) { c.say("ack"); return; }
@@ -830,7 +830,7 @@ function sayGood(c: Ctx, id: string) {
   else c.say("have_yes", { X: { id, qty: 2 } });
 }
 
-/** Lupe recommends the mangoes or a papaya; "Sí, deme tres" is for that one. */
+/** Licha recommends the mangoes or a papaya; "Sí, deme tres" is for that one. */
 function recommend(c: Ctx) {
   const id = c.chance(0.5) ? "mango" : "papaya";
   c.say(id === "mango" ? "recommend_mango" : "recommend_papaya");
@@ -861,7 +861,7 @@ function paidTransfer(c: Ctx) {
   pilon(c);
 }
 
-/** The pilón: on some visits Lupe adds a little cilantro for free (or after a request for a discount). */
+/** The pilón: on some visits Licha adds a little cilantro for free (or after a request for a discount). */
 function pilon(c: Ctx) {
   if (!c.s.pilon || c.s.pilonGiven) return;
   c.s.pilonGiven = true;

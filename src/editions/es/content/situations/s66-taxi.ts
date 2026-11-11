@@ -18,10 +18,10 @@ import { ent, t } from "@/content/dsl";
 // isn't el / la ("los Departamentos"); `more`: understood when said, but not one of the chips; `here`: no ride, it's
 // right here (the airport, next to the sitio in the 3D town).
 
-const D = (id: string, es: string, en: string, g: "m" | "f", loc: string, fare: number, forms: string[], extra: { def?: string; nat?: string; more?: boolean; here?: boolean } = {}) =>
+const D = (id: string, es: string, en: string, g: "m" | "f", loc: string, fare: number, forms: string[], extra: { def?: string; nat?: string; more?: boolean; here?: boolean; spain?: string; spainG?: "m" | "f" } = {}) =>
   // (the composer takes any article as `def`: "los", or "" for none; the type names only el / la)
   ent(id, es, en, g, { forms, art: "", ...(extra.def !== undefined ? { def: extra.def as EntityDef["def"] } : {}),
-    attrs: { loc, fare, nat: extra.nat, ...(extra.more ? { more: true } : {}), ...(extra.here ? { here: true } : {}) } });
+    attrs: { loc, fare, nat: extra.nat, ...(extra.more ? { more: true } : {}), ...(extra.here ? { here: true } : {}), ...(extra.spain ? { spain: extra.spain, spainG: extra.spainG } : {}) } });
 
 const DESTS: EntityDef[] = [
   D("centro", "centro", "center", "m", "town-square", 10000, ["el centro", "zocalo", "el zocalo", "la plaza", "plaza principal", "la plaza principal", "centro del pueblo", "el centro del pueblo", "el kiosco", "kiosco"], { nat: "town center" }),
@@ -35,7 +35,7 @@ const DESTS: EntityDef[] = [
   D("banco", "banco", "bank", "m", "bank", 10000, ["el banco", "banco del puerto", "el banco del puerto"]),
   D("farmacia", "farmacia", "pharmacy", "f", "pharmacy", 10000, ["la farmacia", "farmacia del puerto", "la farmacia del puerto"]),
   D("clinica", "clínica", "clinic", "f", "clinic", 12000, ["la clinica", "hospital", "el hospital", "clinica familiar", "la clinica familiar", "el doctor", "el medico", "centro de salud", "el centro de salud"]),
-  D("renta", "renta | de | autos", "rental | of | cars", "f", "car-rental", 12000, ["la renta de autos", "renta de carros", "la renta de carros", "alquiler de autos", "el alquiler de autos", "renta de autos colibri", "la renta de autos colibri"], { nat: "car rental" }),
+  D("renta", "renta | de | autos", "rental | of | cars", "f", "car-rental", 12000, ["la renta de autos", "renta de carros", "la renta de carros", "alquiler de autos", "el alquiler de autos", "alquiler de carros", "el alquiler de carros", "renta de autos colibri", "la renta de autos colibri"], { nat: "car rental", spain: "alquiler | de | coches", spainG: "m" }),
   // the rest of the town: he knows every corner
   D("correos", "oficina | de | correos", "office | of | mail", "f", "post-office", 10000, ["oficina de correos", "la oficina de correos", "correos", "el correo", "correo", "oficina postal", "la oficina postal"], { nat: "post office", more: true }),
   D("policia", "policía", "police", "f", "police", 10000, ["la policia", "policia municipal", "la policia municipal", "estacion de policia", "la estacion de policia", "comandancia", "la comandancia", "la delegacion", "delegacion"], { nat: "police station", more: true }),
@@ -232,7 +232,7 @@ export const taxi: SituationDef = {
     ] },
     ac_on: { patterns: [
       "(puede | podria) (prender | encender | poner | subir) el (aire | clima | aire acondicionado) #h:c_ac", "(hace | tengo) (mucho)? calor", "que calor",
-      "(prenda | ponga | encienda) el (aire | clima | aire acondicionado)", "(tiene | hay) (aire | clima | aire acondicionado)",
+      "(prenda | ponga | encienda | pongame) el (aire | clima | aire acondicionado)", "(tiene | hay) (aire | clima | aire acondicionado)",
     ] },
     ac_off: { patterns: [
       "(puede | podria) (apagar | quitar | bajar | bajarle) [a] el (aire | clima | aire acondicionado)", "(apague | quite | bajele) [a] el (aire | clima | aire acondicionado)",
@@ -270,7 +270,7 @@ export const taxi: SituationDef = {
       "(acepta | aceptan | toma | agarra) dolares", "(puedo pagar | le pago | pago) (en | con) dolares", "(tengo | traigo) (solo | nomas)? dolares", "le doy dolares",
     ] },
     no_cash: { patterns: [
-      "no (tengo | traigo) @cash_word", "no (tengo | traigo) nada de efectivo", "(solo | nomas) (tengo | traigo) tarjeta", "(hay | donde hay) (un)? cajero [por aqui | cerca]",
+      "no (tengo | traigo | llevo) @cash_word", "no (tengo | traigo | llevo) nada de efectivo", "(solo | nomas) (tengo | traigo) tarjeta", "(hay | donde hay) (un)? cajero [por aqui | cerca]",
     ] },
     ask_change: { patterns: [
       "(tiene | trae) cambio [de {price} [pesos]] #h:p_change", "(tiene | trae) cambio para (un billete de)? {price}", "no (tengo | traigo) cambio",
@@ -341,8 +341,8 @@ export const taxi: SituationDef = {
     far_bus: [t("¿{m:Lo|f:La} | llevo | a | la | terminal?", "You | I-take | to | the | bus station?", "Want me to take you to the bus station?",
       { flags: { 0: "lo / la: “you” (usted), for a man / a woman." } })],
     far_colectivo: [t("Mejor | tome | un | colectivo.", "Better | take | a | colectivo.", "You'd better take a colectivo.",
-      { flags: { 3: "colectivo: a shared van that runs along the highway." } })],
-    ruins_walk: [t("A | las | ruinas | se llega | caminando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.")],
+      { flags: { 3: "colectivo: a shared van that runs along the highway." }, spain: t("Mejor | coja | un | colectivo.", "Better | take | a | colectivo.", "You'd better take a colectivo.", {flags: {3: "colectivo: a shared van that runs along the highway."}}) })],
+    ruins_walk: [t("A | las | ruinas | se llega | caminando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.", { spain: t("A | las | ruinas | se llega | andando | por | la | playa.", "To | the | ruins | you get there | walking | along | the | beach.", "You get to the ruins on foot, along the beach.") })],
     /** The sitio stands next to the airport. */
     airport_here: [t("El | aeropuerto | está | aquí | al lado, | {m:joven|f:joven}.", "The | airport | is | here | next door, | {m:young man|f:young lady}.", "The airport's right next door.")],
     ask_from: [
@@ -365,9 +365,9 @@ export const taxi: SituationDef = {
     ],
     ask_ac: [
       t("¿Le | prendo | el | aire?", "(For) you | I-turn-on | the | AC?", "Want me to turn on the AC?",
-        { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Le | enciendo | el | aire?", "(For) you | I-turn-on | the | AC?", "Want me to turn on the AC?") }),
+        { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Le | enciendo | el | aire?", "(For) you | I-turn-on | the | AC?", "Want me to turn on the AC?"), spain: t("¿Le | pongo | el | aire?", "(For) you | I-put-on | the | AC?", "Want me to turn on the AC?") }),
     ],
-    ac_done: [t("Listo.", "Done.", "There you go.")],
+    ac_done: [t("Listo.", "Done.", "There you go.", { spain: t("Ya está.", "Done.", "There you go.") })],
     window_ok: [t("Sí, | claro.", "Yes, | sure.", "Sure.")],
     far: [
       t("Son | como | cinco | minutos.", "It's | about | five | minutes.", "About five minutes."),
@@ -378,7 +378,7 @@ export const taxi: SituationDef = {
         { flags: { 2: "Mexican: ahorita = in a moment." }, neutral: t("Está | cerca, | ya | casi | llegamos.", "It's | close, | now | almost | we-arrive.", "It's close, we're almost there.") }),
     ],
     arrived: [
-      t("Ya | llegamos. | ¿Dónde | {m:lo|f:la} | dejo?", "Already | we-arrived. | Where | you | I-leave?", "Here we are. Where should I drop you off?", { flags: { 3: "lo / la: “you” (usted), for a man / a woman." } }),
+      t("Ya | llegamos. | ¿Dónde | {m:lo|f:la} | dejo?", "Already | we-arrived. | Where | you | I-leave?", "Here we are. Where should I drop you off?", { flags: { 3: "lo / la: “you” (usted), for a man / a woman." }, spain: t("Ya | hemos llegado. | ¿Dónde | {m:lo|f:la} | dejo?", "Already | we've arrived. | Where | you | I-leave?", "Here we are. Where should I drop you off?", {flags: {3: "lo / la: “you” (usted), for a man / a woman."}}) }),
       t("Aquí | es. | ¿Le | paro | aquí?", "Here | it-is. | (For) you | I-stop | here?", "This is it. Should I stop here?"),
     ],
     /** "No" to stopping here. */
@@ -397,7 +397,7 @@ export const taxi: SituationDef = {
     dollars_no: [t("Dólares | no, | {m:joven|f:joven}. | Solo | pesos.", "Dollars | no, | {m:young man|f:young lady}. | Only | pesos.", "No dollars, I'm afraid. Pesos only.")],
     no_cash: [t("Aquí | cerca | hay | un | cajero; | {m:lo|f:la} | espero.", "Here | near | there's | an | ATM; | you | I-wait.", "There's an ATM near here. I'll wait for you.",
       { flags: { 5: "lo / la: “you” (usted), for a man / a woman." } })],
-    change_yes: [t("Sí, | traigo | cambio.", "Yes, | I-carry | change.", "Yes, I've got change.")],
+    change_yes: [t("Sí, | traigo | cambio.", "Yes, | I-carry | change.", "Yes, I've got change.", { spain: t("Sí, | tengo | cambio.", "Yes, | I-have | change.", "Yes, I've got change.") })],
     change_back: [t("Aquí tiene | su | cambio.", "Here's | your | change.", "Here's your change.")],
     exact: [t("¡Justo! | Gracias.", "Exact! | Thanks.", "Exactly right, thanks!")],
     thanks_tip: [t("¡Ay, | muchas | gracias!", "Oh, | many | thanks!", "Oh, thank you so much!")],
@@ -412,6 +412,9 @@ export const taxi: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (11 Nov 2026)
+    "hemos llegado": { reason: "grammatical_fusion", split: "hemos → have/has + llegado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "he venido": { reason: "grammatical_fusion", split: "he → have/has + venido (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "mar azul": { reason: "lexical_expression", split: "mar → sea + azul → blue would translate part of the hotel's proper name instead of identifying it.", minimal: "Only the two-word name; Hotel stays separate." },
     "la ceiba": { reason: "lexical_expression", split: "la → the + ceiba → ceiba would split the café's proper name.", minimal: "Only the two-word name; Café stays separate." },
     "el muelle": { reason: "lexical_expression", split: "el → the + muelle → pier would translate the restaurant's proper name.", minimal: "Only the two-word name; restaurante stays separate." },
@@ -454,12 +457,12 @@ export const taxi: SituationDef = {
       items: [
         { id: "st_from", s: t("Soy | de | Estados Unidos.", "I'm | from | the United States.", "I'm from the United States.") },
         { id: "st_first", s: t("Sí, | es | mi | primera | vez.", "Yes, | it's | my | first | time.", "Yes, it's my first time.") },
-        { id: "st_before", s: t("No, | ya | vine | antes.", "No, | already | I-came | before.", "No, I've been here before.") },
+        { id: "st_before", s: t("No, | ya | vine | antes.", "No, | already | I-came | before.", "No, I've been here before.", { spain: t("No, | ya | he venido | antes.", "No, | already | I've come | before.", "No, I've been here before.") }) },
         { id: "e_far", s: t("¿Está | lejos?", "Is it | far?", "Is it far?") },
         { id: "e_long", s: t("¿Cuánto | se hace?", "How much | does it take?", "How long does it take?",
           { flags: { 1: "Mexican: hacerse = take (time). Elsewhere: tardar." }, neutral: t("¿Cuánto | se tarda?", "How much | does it take?", "How long does it take?") }) },
         { id: "c_ac", s: t("¿Puede | prender | el | aire?", "Can you | turn on | the | AC?", "Could you turn on the AC?",
-          { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Puede | encender | el | aire?", "Can you | turn on | the | AC?", "Could you turn on the AC?") }) },
+          { flags: { 1: "Mexican: prender = turn on. Elsewhere: encender." }, neutral: t("¿Puede | encender | el | aire?", "Can you | turn on | the | AC?", "Could you turn on the AC?"), spain: t("¿Puede | poner | el | aire?", "Can you | put on | the | AC?", "Could you turn on the AC?") }) },
         { id: "c_window", s: t("¿Puedo | abrir | la | ventana?", "Can I | open | the | window?", "Can I open the window?") },
       ],
     },

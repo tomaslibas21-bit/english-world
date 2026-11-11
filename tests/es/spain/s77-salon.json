@@ -1,0 +1,166 @@
+{
+ "situation": "s77-salon",
+ "items": [
+  {
+   "ctx": "appt",
+   "say": "Sí, tengo cita a las tres",
+   "intent": "appt_have"
+  },
+  {
+   "ctx": "appt",
+   "say": "No, no he pedido cita",
+   "intent": [
+    "appt_none",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "wait_q",
+   "say": "Vale, te espero",
+   "intent": [
+    "wait_ok",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "drink",
+   "say": "Un vaso de agua, gracias",
+   "intent": "drink_ans"
+  },
+  {
+   "ctx": "service",
+   "say": "Solo las puntas",
+   "intent": "trim"
+  },
+  {
+   "ctx": "service",
+   "say": "Solo despuntar, por favor",
+   "intent": "trim"
+  },
+  {
+   "ctx": "service",
+   "say": "Quiero un corte de pelo",
+   "intent": "haircut"
+  },
+  {
+   "ctx": "service",
+   "say": "¿Me puedes cortar el flequillo?",
+   "intent": "bangs_only"
+  },
+  {
+   "ctx": "service",
+   "say": "¿Qué me recomiendas?",
+   "intent": "recommend_q"
+  },
+  {
+   "ctx": "length",
+   "say": "Solo un poquito",
+   "intent": "length"
+  },
+  {
+   "ctx": "tool_q",
+   "say": "Con tijera, porfa",
+   "intent": "tool_ans"
+  },
+  {
+   "ctx": "bangs_q",
+   "say": "No, el flequillo no",
+   "intent": [
+    "no_bangs",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "wash",
+   "say": "Vale, sí",
+   "intent": "yn:yes"
+  },
+  {
+   "ctx": "wash",
+   "say": "No, me lo he lavado esta mañana",
+   "intent": [
+    "no_wash",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "water",
+   "say": "Está un poco caliente",
+   "intent": "water_temp"
+  },
+  {
+   "ctx": "chat",
+   "say": "¡Qué gracioso!",
+   "intent": "react_funny"
+  },
+  {
+   "ctx": "chat",
+   "say": "¿Cómo se llama tu gata?",
+   "intent": "ask_cat"
+  },
+  {
+   "ctx": "chat_from",
+   "say": "Soy de Canadá",
+   "intent": "from_ans"
+  },
+  {
+   "ctx": "style",
+   "say": "Liso, por favor",
+   "intent": "style"
+  },
+  {
+   "ctx": "reveal",
+   "say": "¡Me encanta!",
+   "intent": "love_it"
+  },
+  {
+   "ctx": "reveal",
+   "say": "No, me has cortado demasiado",
+   "intent": "short_amb_ctx"
+  },
+  {
+   "ctx": "pay",
+   "say": "¿Cuánto te debo?",
+   "intent": "ask_owe"
+  },
+  {
+   "ctx": "pay",
+   "say": "Te pago con tarjeta",
+   "intent": "pay_card"
+  },
+  {
+   "ctx": "tip_q",
+   "say": "Te dejo el diez por ciento",
+   "intent": "add_tip"
+  },
+  {
+   "ctx": "book",
+   "say": "Vale, en seis semanas",
+   "intent": [
+    "book_when",
+    "yn:yes"
+   ]
+  },
+  {
+   "ctx": "book",
+   "say": "Ahora no, gracias",
+   "intent": [
+    "book_later",
+    "yn:no"
+   ]
+  },
+  {
+   "ctx": "appt",
+   "say": "¿Atendéis sin cita?",
+   "intent": "walkin"
+  },
+  {
+   "ctx": "reveal",
+   "say": "Me has cortado demasiado",
+   "intent": [
+    "shorter_than",
+    "short_amb_ctx"
+   ]
+  }
+ ]
+}

@@ -10,8 +10,8 @@
 // Mexico: the mandatory third-party liability insurance is required by law and no credit card covers it;
 // full coverage ("cobertura amplia": damage to the car and theft) is optional, and declining it means a much
 // larger hold on the card; a foreign license is valid for a tourist, a credit card (not debit) is needed for
-// the hold; rentals come with a full tank; economy cars are often manual ("estándar"); a damage walk-around
-// with photos before leaving ("la hoja de inspección").
+// the hold; rentals come with a full tank; economy cars are often manual ("estándar", Mexican: the neutral text says
+// "manual"); a damage walk-around with photos before leaving ("la hoja de inspección").
 // Figures (typical for the Tulum / Riviera Maya area, Nov 2026, rounded; the exact ones vary by agency):
 // economy $650, compact $750, midsize $950, SUV $1,400, minivan $1,800 a day with the mandatory insurance;
 // that insurance alone $350 a day; full coverage +$450; upgrade +$200; GPS $150, child seat $120;
@@ -23,6 +23,9 @@
 
 import type { Ctx, EntityDef, Pending, Segment, SituationDef } from "@/content/types";
 import { ent, t } from "@/content/dsl";
+
+/** "estándar" for a manual gearbox is Mexico's (and the Caribbean's): the neutral twins say "manual" (as p25). */
+const F_ESTANDAR = "Mexican: estándar = a car with a manual gearbox (a stick shift); manual is more widely used.";
 import { expectHowAreYou } from "@/content/global";
 
 // ---------------------------------------------------------------------------
@@ -39,11 +42,11 @@ const SIZES: EntityDef[] = [
     forms: ["intermedio", "mediano", "uno mediano", "carro mediano", "auto mediano", "carro intermedio", "auto intermedio", "uno intermedio", "sedan", "un sedan"],
     attrs: { rate: 95000, car: "car_midsize" } }),
   ent("suv", "camioneta", "SUV", "f", { pl: "camionetas", ltPl: "SUVs", chip: "camioneta",
-    forms: ["suv", "una suv", "un suv", "camioneta suv", "jeep", "un jeep", "camioneta grande", "una camioneta grande", "carro grande", "auto grande", "algo grande", "cuatro por cuatro", "4x4"],
-    attrs: { rate: 140000, car: "car_suv" } }),
+    forms: ["todoterreno", "un todoterreno", "todoterrenos", "suv", "una suv", "un suv", "camioneta suv", "jeep", "un jeep", "camioneta grande", "una camioneta grande", "carro grande", "auto grande", "algo grande", "cuatro por cuatro", "4x4"],
+    attrs: { rate: 140000, car: "car_suv", spain: "todoterreno", spainPl: "todoterrenos", spainG: "m" } }),
   ent("minivan", "minivan", "minivan", "f", { pl: "minivans", ltPl: "minivans", chip: "minivan",
-    forms: ["minivan", "mini van", "van", "una van", "camioneta de siete pasajeros", "camioneta para siete", "camioneta familiar"],
-    attrs: { rate: 180000, car: "car_minivan" } }),
+    forms: ["monovolumen", "un monovolumen", "monovolumenes", "minivan", "mini van", "van", "una van", "camioneta de siete pasajeros", "camioneta para siete", "camioneta familiar"],
+    attrs: { rate: 180000, car: "car_minivan", spain: "monovolumen", spainPl: "monovolúmenes", spainG: "m" } }),
 ];
 
 const EXTRAS: EntityDef[] = [
@@ -547,6 +550,8 @@ export const rental: SituationDef = {
       "(quiero | prefiero | quisiera) [el] seguro (completo | total | amplio | con todo)",
       "(agregueme | agregue | agregue la | agrega #tip:tu_staff | agregame #tip:tu_staff | pongame | ponme) [la] (cobertura | proteccion) (amplia | completa | total)",
       "(quiero | prefiero) estar (cubierto | cubierta | protegido | protegida) [completamente | al cien]",
+      // Spain: el seguro a todo riesgo
+      "[quiero | quisiera | prefiero | me da | deme | necesito | agregueme | pongame] [el | la] (seguro | cobertura) a todo riesgo",
     ] },
     // "Sí, la quiero" / "La tomo": only as an answer to the full-coverage offer
     ins_yes_ctx: { patterns: ["[si] (la | lo) (quiero | tomo | agrego)", "[si] agreguela", "mejor si [por si acaso]", "[si] por si acaso"] },
@@ -558,6 +563,7 @@ export const rental: SituationDef = {
       "sin (cobertura amplia | la cobertura amplia | seguro extra | cobertura extra)", "no me interesa (la cobertura amplia | la cobertura completa | el seguro completo)",
       "(la cobertura amplia | el seguro completo) (es | esta) (muy | demasiado) (caro | cara)",
       "con el obligatorio [es suficiente | esta bien]",
+      "no (necesito | quiero) (el | la) (seguro | cobertura) a todo riesgo", "sin [el | la] (seguro | cobertura) a todo riesgo",
     ] },
     // "No, no la necesito" / "Es muy caro": only as an answer to the full-coverage offer
     ins_no_ctx: { patterns: ["no (la | lo) (necesito | quiero)", "prefiero no [gracias]", "es mucho [dinero]", "(es | esta) (muy | demasiado) caro", "(la cobertura amplia | la cobertura completa | la completa | el seguro completo) no"] },
@@ -723,7 +729,7 @@ export const rental: SituationDef = {
       "donde esta (estacionado | el estacionamiento)", "(de que | que) color es", "(es | cual es) (el | la) (rojo | roja | azul | blanco | blanca | negro | negra | gris | plateado)", "que @car es", "(en que | cual) lugar", "esta lejos",
     ] },
     scratch_q: { patterns: [
-      "[y] que (hago si | pasa si) (veo | hay | encuentro) un (rayon | golpe | dano) #h:q_scratch", "y si (veo | hay | encuentro) (un rayon | un golpe | un dano | rayones | golpes | danos)", "que (hago si | pasa si) (veo | hay | encuentro) (rayones | golpes | danos)",
+      "[y] que (hago si | pasa si) (veo | hay | encuentro) un (rayon | aranazo | golpe | dano) #h:q_scratch", "y si (veo | hay | encuentro) (un rayon | un aranazo | un golpe | un dano | rayones | aranazos | golpes | danos)", "que (hago si | pasa si) (veo | hay | encuentro) (rayones | aranazos | golpes | danos)",
       "(hay | tiene) (un rayon | un golpe | rayones | golpes) [en la puerta | en la defensa | en el @car | atras | adelante]",
       "(tengo que | debo) revisar el @car", "[le | lo] (tomo | tengo que tomar) fotos", "(le | lo) tomo una foto", "(puedo | podemos) (ver | revisar) el @car [primero | antes]", "(el @car | la puerta | la defensa) (tiene | esta) (un rayon | un golpe | rayado | rayada | golpeado | golpeada)",
     ] },
@@ -754,7 +760,7 @@ export const rental: SituationDef = {
     ok_ack: { patterns: [
       "(ok | okay | vale | perfecto | de acuerdo | sale | va | entendido | claro | listo | muy bien) [no hay problema | sin problema | gracias] #h:ok_ack",
       "esta bien (no hay problema | sin problema) #h:ok_ack",
-      "(no hay | sin) problema", "(listo | ya) (ya firmé | firmado | esta)", "ya firmé",
+      "(no hay | sin) problema", "(listo | ya) (ya firmé | firmado | esta)", "ya firmé", "[ya esta] ya he firmado",
       "(esta bien | ok | de acuerdo | vale) lo pago #h:tpl_ok", "[ok] (lo pago | lo acepto | acepto)", "(ni modo | ya que | bueno pues | que le vamos a hacer)",
       "[ok | esta bien] (agreguelo | agreguemelo | pongalo | agreguela | pongamelo)",
       "voy a (tomar | tomarle) (fotos | una foto)", "[ok] (reviso | voy a revisar | ya revisé) el @car", "(por que no | claro que si)", "[ya] (esta)? firmado",
@@ -770,19 +776,19 @@ export const rental: SituationDef = {
         { flags: { 8: "Mexican: carro = car; auto is the neutral word." },
           neutral: t("¡Buenos días! | ¡{m:Bienvenido|f:Bienvenida} | a | Renta de Autos Colibrí! | ¿Viene | a | recoger | su | auto?",
             "Good morning! | Welcome | to | Hummingbird Car Rental! | Are you here | to | pick up | your | car?",
-            "Good morning! Welcome to Renta de Autos Colibrí! Are you here to pick up your car?") }),
-      t("¡Siguiente, | por favor! | ¿Tiene | reservación | con | nosotros?", "Next, | please! | Do you have | a reservation | with | us?", "Next, please! Do you have a reservation with us?"),
+            "Good morning! Welcome to Renta de Autos Colibrí! Are you here to pick up your car?"), spain: t("¡Buenos días! | ¡{m:Bienvenido|f:Bienvenida} | a | Renta de Autos Colibrí! | ¿Viene | a | recoger | su | coche?", "Good morning! | Welcome | to | Hummingbird Car Rental! | Are you here | to | pick up | your | car?", "Good morning! Welcome to Renta de Autos Colibrí! Are you here to pick up your car?") }),
+      t("¡Siguiente, | por favor! | ¿Tiene | reservación | con | nosotros?", "Next, | please! | Do you have | a reservation | with | us?", "Next, please! Do you have a reservation with us?", { spain: t("¡Siguiente, | por favor! | ¿Tiene | reserva | con | nosotros?", "Next, | please! | Do you have | a reservation | with | us?", "Next, please! Do you have a reservation with us?") }),
       t("¡Buenos días! | ¿En | qué | le | puedo | ayudar?", "Good morning! | In | what | (to) you | can I | help?", "Good morning! How can I help you?"),
     ],
     greet_hay: [t("¡Buenos días! | ¿Cómo | está?", "Good morning! | How | are you?", "Good morning! How are you?")],
     ask_resv: [
-      t("¿Tiene | reservación?", "Do you have | a reservation?", "Do you have a reservation?"),
+      t("¿Tiene | reservación?", "Do you have | a reservation?", "Do you have a reservation?", { spain: t("¿Tiene | reserva?", "Do you have | a reservation?", "Do you have a reservation?") }),
       // not "Muy bien.": it follows "Muy bien, gracias por preguntar." after the learner's "¿Y usted?"
-      t("Y | dígame, | ¿tiene | reservación | con | nosotros?", "And | tell me, | do you have | a reservation | with | us?", "So tell me, do you have a reservation with us?"),
+      t("Y | dígame, | ¿tiene | reservación | con | nosotros?", "And | tell me, | do you have | a reservation | with | us?", "So tell me, do you have a reservation with us?", { spain: t("Y | dígame, | ¿tiene | reserva | con | nosotros?", "And | tell me, | do you have | a reservation | with | us?", "So tell me, do you have a reservation with us?") }),
     ],
     ask_name: [
       t("Muy | bien. | ¿Me | da | su | apellido?", "Very | good. | (To) me | you-give | your | last name?", "Great. Can I get your last name?"),
-      t("Claro. | ¿A nombre de | quién | está | la | reservación?", "Sure. | Under the name of | whom | is | the | reservation?", "Sure. What name is the reservation under?"),
+      t("Claro. | ¿A nombre de | quién | está | la | reservación?", "Sure. | Under the name of | whom | is | the | reservation?", "Sure. What name is the reservation under?", { spain: t("Claro. | ¿A nombre de | quién | está | la | reserva?", "Sure. | Under the name of | whom | is | the | reservation?", "Sure. What name is the reservation under?") }),
     ],
     ask_spell: [
       t("¿Me | lo | deletrea, | por favor?", "(To) me | it | you-spell, | please?", "Could you spell that for me, please?"),
@@ -796,28 +802,30 @@ export const rental: SituationDef = {
     // --- walk-in
     walkin_ok: [t("¡Sin problema! | Tenemos | carros | disponibles.", "No problem! | We have | cars | available.", "No problem! We have cars available.",
       { flags: { 2: "Mexican: carros = cars; autos is the neutral word." },
-        neutral: t("¡Sin problema! | Tenemos | autos | disponibles.", "No problem! | We have | cars | available.", "No problem! We have cars available.") })],
-    ask_size: [t("¿Qué | tipo | de | auto | busca?", "What | kind | of | car | are you looking for?", "What kind of car are you looking for?")],
+        neutral: t("¡Sin problema! | Tenemos | autos | disponibles.", "No problem! | We have | cars | available.", "No problem! We have cars available."), spain: t("¡Sin problema! | Tenemos | coches | disponibles.", "No problem! | We have | cars | available.", "No problem! We have cars available.") })],
+    ask_size: [t("¿Qué | tipo | de | auto | busca?", "What | kind | of | car | are you looking for?", "What kind of car are you looking for?", { spain: t("¿Qué | tipo | de | coche | busca?", "What | kind | of | car | are you looking for?", "What kind of car are you looking for?") })],
+    // "estándar" (a manual gearbox) is Mexico's; the neutral twin says "manual" (the lead's decision, 5 Nov 2026, with p25)
     auto_all: [t("Todos | son | automáticos, | menos | el | económico, | que | es | estándar.", "All | are | automatic, | except | the | economy car, | which | is | manual.", "They're all automatics, except the economy car, which is a manual.",
-      { flags: { 8: "estándar: a manual (stick-shift) car, in Mexico and much of Latin America." } })],
+      { flags: { 8: F_ESTANDAR },
+        neutral: t("Todos | son | automáticos, | menos | el | económico, | que | es | manual.", "All | are | automatic, | except | the | economy car, | which | is | manual.", "They're all automatics, except the economy car, which is a manual."), spain: t("Todos | son | automáticos, | menos | el | económico, | que | es | manual.", "All | are | automatic, | except | the | economy car, | which | is | manual.", "They're all automatics, except the economy car, which is a manual.") })],
     rec_small: [t("Entonces | un | compacto | o | un | intermedio | le | queda | bien.", "Then | a | compact car | or | a | midsize car | (for) you | fits | well.", "Then a compact or a midsize car will work for you.")],
-    rec_big: [t("Entonces | le | recomiendo | una | camioneta | o | una | minivan.", "Then | (to) you | I-recommend | an | SUV | or | a | minivan.", "Then I'd recommend an SUV or a minivan.")],
+    rec_big: [t("Entonces | le | recomiendo | una | camioneta | o | una | minivan.", "Then | (to) you | I-recommend | an | SUV | or | a | minivan.", "Then I'd recommend an SUV or a minivan.", { spain: t("Entonces | le | recomiendo | un | todoterreno | o | un | monovolumen.", "Then | (to) you | I-recommend | an | SUV | or | a | minivan.", "Then I'd recommend an SUV or a minivan.") })],
     rec_size: [t("Para | el | pueblo | y | la | playa, | el | compacto | es | lo | más | práctico.", "For | the | town | and | the | beach, | the | compact car | is | the | most | practical.", "For town and the beach, the compact is the most practical.",
       { flags: { 9: "lo + más + adjective: the most … (thing)." } })],
-    rec_ins: [t("Casi | todos | nuestros | clientes | toman | la | cobertura | amplia; | así | la | garantía | es | más | baja.", "Almost | all | our | customers | take | the | coverage | full; | that way | the | deposit | is | more | low.", "Most of our customers take full coverage; that way the deposit is lower.")],
+    rec_ins: [t("Casi | todos | nuestros | clientes | toman | la | cobertura | amplia; | así | la | garantía | es | más | baja.", "Almost | all | our | customers | take | the | coverage | full; | that way | the | deposit | is | more | low.", "Most of our customers take full coverage; that way the deposit is lower.", { spain: t("Casi | todos | nuestros | clientes | contratan | la | cobertura | a todo riesgo; | así | la | garantía | es | más | baja.", "Almost | all | our | customers | take | the | coverage | full; | that way | the | deposit | is | more | low.", "Most of our customers take full coverage; that way the deposit is lower.") })],
     fuel_price: [t("Depende | de | la | gasolinera; | si | se lo | llenamos | nosotros, | le | sale | más | caro.", "It depends | on | the | gas station; | if | it for you | we-fill | ourselves, | (to) you | it comes out | more | expensive.", "It depends on the gas station; if we fill it for you, it costs more.")],
     hours: [t("Abrimos | todos | los | días, | de | siete | de la mañana | a | nueve | de la noche.", "We're open | all | the | days, | from | seven | a.m. | to | nine | p.m.", "We're open every day, from 7 a.m. to 9 p.m.")],
-    contract: [t("Es | el | contrato | de | renta: | las | fechas, | el | seguro | y | la | garantía.", "It's | the | contract | of | rental: | the | dates, | the | insurance | and | the | deposit.", "It's the rental agreement: the dates, the insurance and the deposit.")],
+    contract: [t("Es | el | contrato | de | renta: | las | fechas, | el | seguro | y | la | garantía.", "It's | the | contract | of | rental: | the | dates, | the | insurance | and | the | deposit.", "It's the rental agreement: the dates, the insurance and the deposit.", { spain: t("Es | el | contrato | de | alquiler: | las | fechas, | el | seguro | y | la | garantía.", "It's | the | contract | of | rental: | the | dates, | the | insurance | and | the | deposit.", "It's the rental agreement: the dates, the insurance and the deposit.") })],
     upgrade_info: [t("Es | más | grande | y | le | caben | más | maletas.", "It's | more | big | and | (in) it | fit | more | suitcases.", "It's bigger, and it fits more luggage.")],
     see_car: [t("Claro, | salimos | y | lo | revisamos | juntos.", "Sure, | we go out | and | it | we-check | together.", "Sure, we'll go out and check it together.")],
     passport_ok: [t("Sí, | su | pasaporte | también, | por favor.", "Yes, | your | passport | too, | please.", "Yes, your passport too, please.")],
     fuel_type: [t("Usa | gasolina | regular; | en | la | gasolinera | es | la | verde.", "It uses | gas | regular; | at | the | gas station | it's | the | green one.", "It takes regular gas; at the gas station, it's the green pump.",
       { flags: { 8: "la verde: the green one, the color of the regular-gas pump in Mexico." } })],
     deposit_lower: [t("Si | toma | la | cobertura | amplia, | por | {$price} | al | día, | la | garantía | baja | a | {$deposit}. | ¿Se la | agrego?", "If | you-take | the | coverage | full, | for | {$price} | per | day, | the | deposit | goes down | to | {$deposit}. | It for you | should I add?",
-      "If you take full coverage, for {$price} a day, the deposit goes down to {$deposit}. Should I add it?")],
+      "If you take full coverage, for {$price} a day, the deposit goes down to {$deposit}. Should I add it?", { spain: t("Si | contrata | la | cobertura | a todo riesgo, | por | {$price} | al | día, | la | garantía | baja | a | {$deposit}. | ¿Se la | agrego?", "If | you-take | the | coverage | full, | for | {$price} | per | day, | the | deposit | goes down | to | {$deposit}. | It for you | should I add?", "If you take full coverage, for {$price} a day, the deposit goes down to {$deposit}. Should I add it?") })],
     deposit_now: [t("Entonces | le | retenemos | solo | {$deposit}.", "Then | (from) you | we-hold | only | {$deposit}.", "Then we'll only hold {$deposit}.")],
     size_list: [t("Tenemos | económicos, | compactos, | intermedios, | camionetas | y | minivans.", "We have | economy cars, | compacts, | midsize cars, | SUVs | and | minivans.", "We have economy, compact and midsize cars, SUVs and minivans.",
-      { flags: { 4: "camioneta: in Mexico, an SUV, a pickup or a van." } })],
+      { flags: { 4: "camioneta: in Mexico, an SUV, a pickup or a van." }, spain: t("Tenemos | económicos, | compactos, | intermedios, | todoterrenos | y | monovolúmenes.", "We have | economy cars, | compacts, | midsize cars, | SUVs | and | minivans.", "We have economy, compact and midsize cars, SUVs and minivans.") })],
     ask_days: [t("¿Y | por | cuántos | días?", "And | for | how many | days?", "And for how many days?")],
     rate_is: [t("Son | {$price} | al | día, | con | el | seguro | obligatorio | incluido.", "It's | {$price} | per | day, | with | the | insurance | mandatory | included.", "It's {$price} a day, with the mandatory insurance included.")],
     rate_size: [t("{X.np} | cuesta | {$price} | al | día, | con | el | seguro | obligatorio | incluido.", "{X.np} | costs | {$price} | per | day, | with | the | insurance | mandatory | included.", "{X.np} is {$price} a day, with the mandatory insurance included.")],
@@ -830,37 +838,37 @@ export const rental: SituationDef = {
     usd: [t("Le | cobramos | en | pesos, | a | su | tarjeta | de | crédito.", "(To) you | we-charge | in | pesos, | to | your | card | of | credit.", "We charge in pesos, on your credit card.")],
     driver_ok: [t("Sí, | solo | necesito | su | licencia; | el | conductor | adicional | no tiene | costo.", "Yes, | just | I need | their | license; | the | driver | additional | doesn't have | a cost.",
       "Sure, I just need their license; there's no charge for an additional driver.",
-      { flags: { 3: "su: their here (the other driver's); su can mean your, his, her or their." } })],
-    ac_yes: [t("Sí, | todos | nuestros | autos | tienen | aire acondicionado.", "Yes, | all | our | cars | have | air conditioning.", "Yes, all our cars have air conditioning.")],
+      { flags: { 3: "su: their here (the other driver's); su can mean your, his, her or their." }, spain: t("Sí, | solo | necesito | su | carné; | el | conductor | adicional | no tiene | coste.", "Yes, | just | I need | their | license; | the | driver | additional | doesn't have | a cost.", "Sure, I just need their license; there's no charge for an additional driver.", {flags: {3: "su: their here (the other driver's); su can mean your, his, her or their."}}) })],
+    ac_yes: [t("Sí, | todos | nuestros | autos | tienen | aire acondicionado.", "Yes, | all | our | cars | have | air conditioning.", "Yes, all our cars have air conditioning.", { spain: t("Sí, | todos | nuestros | coches | tienen | aire acondicionado.", "Yes, | all | our | cars | have | air conditioning.", "Yes, all our cars have air conditioning.") })],
     // --- documents
     ask_docs: [
       t("¿Me | permite | su | licencia | de | manejo | y | una | tarjeta | de | crédito | a | su | nombre?", "(To) me | you-allow | your | license | of | driving | and | a | card | of | credit | in | your | name?",
         "May I see your driver's license and a credit card in your name?",
         { flags: { 5: "Mexican: licencia de manejo = driver's license; licencia de conducir is the neutral form." },
           neutral: t("¿Me | permite | su | licencia | de | conducir | y | una | tarjeta | de | crédito | a | su | nombre?", "(To) me | you-allow | your | license | of | driving | and | a | card | of | credit | in | your | name?",
-            "May I see your driver's license and a credit card in your name?") }),
-      t("Necesito | su | licencia, | su | pasaporte | y | una | tarjeta | de | crédito, | por favor.", "I need | your | license, | your | passport | and | a | card | of | credit, | please.", "I'll need your driver's license, your passport and a credit card, please."),
+            "May I see your driver's license and a credit card in your name?"), spain: t("¿Me | deja | su | carné | de | conducir | y | una | tarjeta | de | crédito | a | su | nombre?", "(To) me | you-let-have | your | license | of | driving | and | a | card | of | credit | in | your | name?", "May I see your driver's license and a credit card in your name?") }),
+      t("Necesito | su | licencia, | su | pasaporte | y | una | tarjeta | de | crédito, | por favor.", "I need | your | license, | your | passport | and | a | card | of | credit, | please.", "I'll need your driver's license, your passport and a credit card, please.", { spain: t("Necesito | su | carné, | su | pasaporte | y | una | tarjeta | de | crédito, | por favor.", "I need | your | license, | your | passport | and | a | card | of | credit, | please.", "I'll need your driver's license, your passport and a credit card, please.") }),
     ],
     docs_ok: [t("Perfecto, | gracias.", "Perfect, | thanks.", "Perfect, thank you."), t("Muy | bien, | gracias.", "Very | good, | thanks.", "Great, thanks.")],
-    license_fine: [t("Su | licencia | extranjera | es | válida | aquí; | no necesita | permiso | internacional.", "Your | license | foreign | is | valid | here; | you don't need | a permit | international.", "Your foreign license is valid here; you don't need an international permit.")],
+    license_fine: [t("Su | licencia | extranjera | es | válida | aquí; | no necesita | permiso | internacional.", "Your | license | foreign | is | valid | here; | you don't need | a permit | international.", "Your foreign license is valid here; you don't need an international permit.", { spain: t("Su | carné | extranjero | es | válido | aquí; | no necesita | permiso | internacional.", "Your | license | foreign | is | valid | here; | you don't need | a permit | international.", "Your foreign license is valid here; you don't need an international permit.") })],
     debit_no: [t("Para | la | garantía | necesitamos | una | tarjeta | de | crédito; | con | débito | o | efectivo | no se puede.", "For | the | deposit | we need | a | card | of | credit; | with | debit | or | cash | it's not possible.", "For the security deposit we need a credit card; we can't take debit or cash.")],
     // --- upgrade
     ask_upgrade: [t("¿Le gustaría | cambiarse | a | un | intermedio | por | solo | {$price} | más | al | día?", "Would you like | to switch | to | a | midsize car | for | only | {$price} | more | per | day?", "Would you like to upgrade to a midsize car for just {$price} more a day?")],
     ask_upgrade_again: [t("Entonces, | ¿se lo | cambio | al | intermedio?", "So, | it for you | should I change | to the | midsize car?", "So, should I switch you to the midsize?")],
-    free_upgrade: [t("Buenas | noticias: | hoy | no nos quedan | compactos, | así que | le | doy | un | intermedio | sin | costo | extra.", "Good | news: | today | we're out of | compacts, | so | (to) you | I'll-give | a | midsize car | without | cost | extra.", "Good news: we're out of compacts today, so I'm giving you a midsize car at no extra cost.")],
+    free_upgrade: [t("Buenas | noticias: | hoy | no nos quedan | compactos, | así que | le | doy | un | intermedio | sin | costo | extra.", "Good | news: | today | we're out of | compacts, | so | (to) you | I'll-give | a | midsize car | without | cost | extra.", "Good news: we're out of compacts today, so I'm giving you a midsize car at no extra cost.", { spain: t("Buenas | noticias: | hoy | no nos quedan | compactos, | así que | le | doy | un | intermedio | sin | coste | extra.", "Good | news: | today | we're out of | compacts, | so | (to) you | I'll-give | a | midsize car | without | cost | extra.", "Good news: we're out of compacts today, so I'm giving you a midsize car at no extra cost.") })],
     upgrade_ok: [t("¡Perfecto! | Se lo | cambio | a | un | intermedio.", "Perfect! | It for you | I'll-change | to | a | midsize car.", "Great! I'll switch you to a midsize car.")],
     // --- the mandatory insurance (twist)
     tpl_twist: [t("Le | comento: | su | reservación | por | internet | no incluye | el | seguro | obligatorio | de | responsabilidad | civil. | Son | {$price} | más | al | día.",
       "(To) you | I-mention: | your | reservation | over | the internet | doesn't include | the | insurance | mandatory | of | liability | civil. | It's | {$price} | more | per | day.",
       "Just so you know: your online reservation doesn't include the mandatory liability insurance. It's {$price} more a day.",
-      { flags: { 1: "Le comento: a polite Mexican way to bring something up (just so you know).", 11: "responsabilidad civil: third-party liability, required by law in Mexico." } })],
+      { flags: { 1: "Le comento: a polite Mexican way to bring something up (just so you know).", 11: "responsabilidad civil: third-party liability, required by law in Mexico." }, spain: t("Le | comento: | su | reserva | por | internet | no incluye | el | seguro | obligatorio | de | responsabilidad | civil. | Son | {$price} | más | al | día.", "(To) you | I-mention: | your | reservation | over | the internet | doesn't include | the | insurance | mandatory | of | liability | civil. | It's | {$price} | more | per | day.", "Just so you know: your online reservation doesn't include the mandatory liability insurance. It's {$price} more a day.", {flags: {1: "Le comento: a polite Mexican way to bring something up (just so you know).",11: "responsabilidad civil: third-party liability, required by law in Mexico."}}) })],
     tpl_must: [t("Lo | exige | la | ley | en | México: | cubre | los | daños | a | otras | personas.", "It | requires | the | law | in | Mexico: | it covers | the | damage | to | other | people.", "Mexican law requires it: it covers damage to other people.",
       { flags: { 0: "Lo exige la ley: the object (lo) comes first; the subject, la ley, comes after the verb." } })],
     tpl_why: [t("Muchas | páginas | de | internet | no lo incluyen | en | el | precio, | pero | en | México | es | obligatorio.", "Many | sites | on | the internet | don't include it | in | the | price, | but | in | Mexico | it's | mandatory.", "Many websites leave it out of the price, but in Mexico it's mandatory.")],
     tpl_sorry: [t("Lo | entiendo, | y | lo siento. | Muchas | páginas | no lo muestran | en | el | precio, | pero | aquí | es | obligatorio | por | ley.", "It | I-understand, | and | I'm sorry. | Many | sites | don't show it | in | the | price, | but | here | it's | mandatory | by | law.", "I understand, and I'm sorry. Many websites don't show it in the price, but here it's required by law.")],
     tpl_required: [t("Lo siento, | pero | sin | ese | seguro | no le puedo | entregar | el | carro.", "I'm sorry, | but | without | that | insurance | I can't (to you) | hand over | the | car.", "I'm sorry, but I can't give you the car without that insurance.",
       { flags: { 8: "Mexican: carro = car; auto is the neutral word." },
-        neutral: t("Lo siento, | pero | sin | ese | seguro | no le puedo | entregar | el | auto.", "I'm sorry, | but | without | that | insurance | I can't (to you) | hand over | the | car.", "I'm sorry, but I can't give you the car without that insurance.") })],
+        neutral: t("Lo siento, | pero | sin | ese | seguro | no le puedo | entregar | el | auto.", "I'm sorry, | but | without | that | insurance | I can't (to you) | hand over | the | car.", "I'm sorry, but I can't give you the car without that insurance."), spain: t("Lo siento, | pero | sin | ese | seguro | no le puedo | entregar | el | coche.", "I'm sorry, | but | without | that | insurance | I can't (to you) | hand over | the | car.", "I'm sorry, but I can't give you the car without that insurance.") })],
     tpl_card: [t("Su | tarjeta | puede | cubrir | los | daños | al | vehículo, | pero | no | la | responsabilidad | civil. | Esa | la | exige | la | ley | en | México.",
       "Your | card | may | cover | the | damage | to the | vehicle, | but | not | the | liability | civil. | That one | it | requires | the | law | in | Mexico.",
       "Your card may cover damage to the car, but not liability. Mexican law requires that one.",
@@ -875,27 +883,27 @@ export const rental: SituationDef = {
     tpl_leave: [t("Entiendo. | Si | cambia | de | opinión, | aquí | estamos.", "I understand. | If | you-change | — | opinion, | here | we are.", "I understand. If you change your mind, we're here.",
       { flags: { 3: "cambiar de opinión: change your mind; de links the thing that changes." } })],
     tpl_cancel_q: [t("Si | quiere, | puede | cancelar | la | reservación. | ¿Se la | cancelo?", "If | you want, | you-can | cancel | the | reservation. | It for you | should I cancel?",
-      "You can cancel the reservation if you like. Do you want me to cancel it?")],
+      "You can cancel the reservation if you like. Do you want me to cancel it?", { spain: t("Si | quiere, | puede | cancelar | la | reserva. | ¿Se la | cancelo?", "If | you want, | you-can | cancel | the | reservation. | It for you | should I cancel?", "You can cancel the reservation if you like. Do you want me to cancel it?") })],
     // --- insurance
     ask_insurance: [
       t("El | seguro | obligatorio | ya | está | incluido. | ¿Quiere | agregar | la | cobertura | amplia | por | {$price} | al | día?", "The | insurance | mandatory | already | is | included. | Do you want | to add | the | coverage | full | for | {$price} | per | day?",
         "The mandatory insurance is already included. Would you like to add full coverage for {$price} a day?",
-        { flags: { 10: "amplia: wide; cobertura amplia is full coverage (damage to the car and theft)." } }),
+        { flags: { 10: "amplia: wide; cobertura amplia is full coverage (damage to the car and theft)." }, spain: t("El | seguro | obligatorio | ya | está | incluido. | ¿Quiere | agregar | la | cobertura | a todo riesgo | por | {$price} | al | día?", "The | insurance | mandatory | already | is | included. | Do you want | to add | the | coverage | full | for | {$price} | per | day?", "The mandatory insurance is already included. Would you like to add full coverage for {$price} a day?") }),
       t("¿Le | agrego | la | cobertura | amplia? | Son | {$price} | al | día | y | cubre | los | daños | al | vehículo | y | el | robo.", "(For) you | should I add | the | coverage | full? | It's | {$price} | per | day | and | it covers | the | damage | to the | vehicle | and | — | theft.",
         "Would you like me to add full coverage? It's {$price} a day and covers damage to the car and theft.",
-        { flags: { 4: "amplia: wide; cobertura amplia is full coverage.", 16: "Spanish uses the article with robo here; English says just theft." } }),
+        { flags: { 4: "amplia: wide; cobertura amplia is full coverage.", 16: "Spanish uses the article with robo here; English says just theft." }, spain: t("¿Le | agrego | la | cobertura | a todo riesgo? | Son | {$price} | al | día | y | cubre | los | daños | al | vehículo | y | el | robo.", "(For) you | should I add | the | coverage | full? | It's | {$price} | per | day | and | it covers | the | damage | to the | vehicle | and | — | theft.", "Would you like me to add full coverage? It's {$price} a day and covers damage to the car and theft.", {flags: {16: "Spanish uses the article with robo here; English says just theft."}}) }),
     ],
     ask_insurance_after: [t("Y | aparte, | ¿quiere | agregar | la | cobertura | amplia? | Son | {$price} | al | día.", "And | besides, | do you want | to add | the | coverage | full? | It's | {$price} | per | day.", "And would you also like to add full coverage? It's {$price} a day.",
-      { flags: { 6: "amplia: wide; cobertura amplia is full coverage (damage to the car and theft)." } })],
-    ask_insurance_again: [t("Entonces, | ¿le | agrego | la | cobertura | amplia?", "So, | (for) you | should I add | the | coverage | full?", "So, should I add full coverage?"),
+      { flags: { 6: "amplia: wide; cobertura amplia is full coverage (damage to the car and theft)." }, spain: t("Y | aparte, | ¿quiere | agregar | la | cobertura | a todo riesgo? | Son | {$price} | al | día.", "And | besides, | do you want | to add | the | coverage | full? | It's | {$price} | per | day.", "And would you also like to add full coverage? It's {$price} a day.") })],
+    ask_insurance_again: [t("Entonces, | ¿le | agrego | la | cobertura | amplia?", "So, | (for) you | should I add | the | coverage | full?", "So, should I add full coverage?", { spain: t("Entonces, | ¿le | agrego | la | cobertura | a todo riesgo?", "So, | (for) you | should I add | the | coverage | full?", "So, should I add full coverage?") }),
       // names the coverage: the reminder can follow other talk (the manual car switched, the upgrade declined)
-      t("¿Quiere | la | cobertura | amplia, | entonces?", "Do you want | the | coverage | full, | then?", "So, do you want the full coverage?")],
+      t("¿Quiere | la | cobertura | amplia, | entonces?", "Do you want | the | coverage | full, | then?", "So, do you want the full coverage?", { spain: t("¿Quiere | la | cobertura | a todo riesgo, | entonces?", "Do you want | the | coverage | full, | then?", "So, do you want the full coverage?") })],
     cover_info: [t("La | cobertura | amplia | cubre | los | daños | al | vehículo | y | el | robo.", "The | coverage | full | covers | the | damage | to the | vehicle | and | — | theft.", "Full coverage covers damage to the car and theft.",
-      { flags: { 9: "Spanish uses the article with robo here; English says just theft." } })],
+      { flags: { 9: "Spanish uses the article with robo here; English says just theft." }, spain: t("La | cobertura | a todo riesgo | cubre | los | daños | al | vehículo | y | el | robo.", "The | coverage | full | covers | the | damage | to the | vehicle | and | — | theft.", "Full coverage covers damage to the car and theft.", {flags: {9: "Spanish uses the article with robo here; English says just theft."}}) })],
     ins_included: [t("El | seguro | obligatorio | ya | está | incluido; | los | daños | al | vehículo, | no.", "The | insurance | mandatory | already | is | included; | the | damage | to the | vehicle, | not.", "The mandatory insurance is already included; damage to the car isn't.")],
-    ins_optional: [t("La | cobertura | amplia | es | opcional; | el | seguro | obligatorio | ya | está | incluido.", "The | coverage | full | is | optional; | the | insurance | mandatory | already | is | included.", "Full coverage is optional; the mandatory insurance is already included.")],
-    deductible: [t("Con | la | cobertura | amplia, | el | deducible | es | mucho | más | bajo.", "With | the | coverage | full, | the | deductible | is | much | more | low.", "With full coverage, the deductible is much lower.")],
-    ins_full_ok: [t("Perfecto, | queda | con | cobertura | amplia.", "Perfect, | you're | with | coverage | full.", "Great, you're fully covered.")],
+    ins_optional: [t("La | cobertura | amplia | es | opcional; | el | seguro | obligatorio | ya | está | incluido.", "The | coverage | full | is | optional; | the | insurance | mandatory | already | is | included.", "Full coverage is optional; the mandatory insurance is already included.", { spain: t("La | cobertura | a todo riesgo | es | opcional; | el | seguro | obligatorio | ya | está | incluido.", "The | coverage | full | is | optional; | the | insurance | mandatory | already | is | included.", "Full coverage is optional; the mandatory insurance is already included.") })],
+    deductible: [t("Con | la | cobertura | amplia, | el | deducible | es | mucho | más | bajo.", "With | the | coverage | full, | the | deductible | is | much | more | low.", "With full coverage, the deductible is much lower.", { spain: t("Con | la | cobertura | a todo riesgo, | la | franquicia | es | mucho | más | baja.", "With | the | coverage | full, | the | deductible | is | much | more | low.", "With full coverage, the deductible is much lower.") })],
+    ins_full_ok: [t("Perfecto, | queda | con | cobertura | amplia.", "Perfect, | you're | with | coverage | full.", "Great, you're fully covered.", { spain: t("Perfecto, | queda | con | cobertura | a todo riesgo.", "Perfect, | you're | with | coverage | full.", "Great, you're fully covered.") })],
     ins_basic_ok: [t("De acuerdo, | solo | el | seguro | obligatorio.", "All right, | only | the | insurance | mandatory.", "All right, just the mandatory insurance.")],
     ins_card_ok: [t("Muy | bien. | Su | tarjeta | puede | cubrir | los | daños; | el | seguro | obligatorio | ya | está | incluido.", "Very | good. | Your | card | may | cover | the | damage; | the | insurance | mandatory | already | is | included.", "Okay. Your card may cover damage; the mandatory insurance is already included.")],
     // --- deposit
@@ -904,7 +912,7 @@ export const rental: SituationDef = {
     deposit_basic: [t("Como | no lleva | la | cobertura | amplia, | la | garantía | es | de | {$deposit}. | Se la | retenemos | en | su | tarjeta | y | se libera | cuando | nos | devuelva | el | vehículo.",
       "Since | you're not taking | the | coverage | full, | the | deposit | is | — | {$deposit}. | It (from) you | we-hold | on | your | card | and | it's released | when | (to) us | you-return | the | vehicle.",
       "Since you're not taking full coverage, the security deposit is {$deposit}. We put it as a hold on your card, and it's released when you bring the car back.",
-      { flags: { 8: "de before an amount: the deposit is of that amount; English needs no word." } })],
+      { flags: { 8: "de before an amount: the deposit is of that amount; English needs no word." }, spain: t("Como | no lleva | la | cobertura | a todo riesgo, | la | garantía | es | de | {$deposit}. | Se la | retenemos | en | su | tarjeta | y | se libera | cuando | nos | devuelva | el | vehículo.", "Since | you're not taking | the | coverage | full, | the | deposit | is | — | {$deposit}. | It (from) you | we-hold | on | your | card | and | it's released | when | (to) us | you-return | the | vehicle.", "Since you're not taking full coverage, the security deposit is {$deposit}. We put it as a hold on your card, and it's released when you bring the car back.", {flags: {8: "de before an amount: the deposit is of that amount; English needs no word."}}) })],
     deposit_amount: [t("La | garantía | es | de | {$deposit}, | retenida | en | su | tarjeta.", "The | deposit | is | — | {$deposit}, | held | on | your | card.", "The security deposit is {$deposit}, held on your card.",
       { flags: { 3: "de before an amount: the deposit is of that amount; English needs no word." } })],
     deposit_back: [t("Se la | liberamos | al | devolver | el | vehículo; | su | banco | puede | tardar | unos | días | hábiles | en | reflejarlo.", "It (for) you | we-release | upon | returning | the | vehicle; | your | bank | may | take | some | days | business | to | show it.",
@@ -913,31 +921,33 @@ export const rental: SituationDef = {
       { flags: { 9: "de: from; salir de = to leave (a place)." } })],
     deposit_why: [t("Es | por si | hay | daños, | multas | o | si | falta | gasolina.", "It's | in case | there are | damages, | fines | or | if | is missing | gas.", "It's in case of damage, fines, or a tank that isn't full.")],
     // --- fuel
-    fuel_ask: [t("Se lo | entregamos | con | el | tanque | lleno. | ¿Lo | devuelve | con | el | tanque | lleno?", "It to you | we-hand-over | with | the | tank | full. | It | will you return | with | the | tank | full?", "It comes with a full tank. Will you bring it back full?")],
-    fuel_info: [t("Se lo | entregamos | con | el | tanque | lleno, | y | lo | devuelve | lleno.", "It to you | we-hand-over | with | the | tank | full, | and | it | you-return | full.", "It comes with a full tank, and you bring it back full.")],
-    fuel_again: [t("Entonces, | ¿lo | devuelve | con | el | tanque | lleno?", "So, | it | will you return | with | the | tank | full?", "So, will you bring it back with a full tank?")],
+    fuel_ask: [t("Se lo | entregamos | con | el | tanque | lleno. | ¿Lo | devuelve | con | el | tanque | lleno?", "It to you | we-hand-over | with | the | tank | full. | It | will you return | with | the | tank | full?", "It comes with a full tank. Will you bring it back full?", { spain: t("Se lo | entregamos | con | el | depósito | lleno. | ¿Lo | devuelve | con | el | depósito | lleno?", "It to you | we-hand-over | with | the | tank | full. | It | will you return | with | the | tank | full?", "It comes with a full tank. Will you bring it back full?") })],
+    fuel_info: [t("Se lo | entregamos | con | el | tanque | lleno, | y | lo | devuelve | lleno.", "It to you | we-hand-over | with | the | tank | full, | and | it | you-return | full.", "It comes with a full tank, and you bring it back full.", { spain: t("Se lo | entregamos | con | el | depósito | lleno, | y | lo | devuelve | lleno.", "It to you | we-hand-over | with | the | tank | full, | and | it | you-return | full.", "It comes with a full tank, and you bring it back full.") })],
+    fuel_again: [t("Entonces, | ¿lo | devuelve | con | el | tanque | lleno?", "So, | it | will you return | with | the | tank | full?", "So, will you bring it back with a full tank?", { spain: t("Entonces, | ¿lo | devuelve | con | el | depósito | lleno?", "So, | it | will you return | with | the | tank | full?", "So, will you bring it back with a full tank?") })],
     ask_prepay: [
-      t("¿O | prefiere | pagar | el | tanque | por adelantado? | Son | {$price}, | y | así | lo | puede | devolver | vacío.", "Or | do you prefer | to pay | the | tank | in advance? | It's | {$price}, | and | that way | it | you-can | return | empty.", "Or would you rather prepay for the tank? It's {$price}, and then you can bring it back empty."),
+      t("¿O | prefiere | pagar | el | tanque | por adelantado? | Son | {$price}, | y | así | lo | puede | devolver | vacío.", "Or | do you prefer | to pay | the | tank | in advance? | It's | {$price}, | and | that way | it | you-can | return | empty.", "Or would you rather prepay for the tank? It's {$price}, and then you can bring it back empty.", { spain: t("¿O | prefiere | pagar | la | gasolina | por adelantado? | Son | {$price}, | y | así | lo | puede | devolver | vacío.", "Or | do you prefer | to pay | the | gas | in advance? | It's | {$price}, | and | that way | it | you-can | return | empty.", "Or would you rather prepay for the tank? It's {$price}, and then you can bring it back empty.") }),
     ],
-    full_ok: [t("Perfecto, | con | el | tanque | lleno.", "Perfect, | with | the | tank | full.", "Great, with a full tank.")],
-    prepay_quote: [t("Claro. | El | tanque | cuesta | {$price}, | y | así | lo | puede | devolver | vacío. | ¿Se lo | cobro?", "Sure. | The | tank | costs | {$price}, | and | that way | it | you-can | return | empty. | It (from) you | should I charge?", "Sure. A full tank is {$price}, and then you can bring it back empty. Should I charge you for it?")],
-    prepay_confirm: [t("Entonces, | ¿le | cobro | el | tanque | por adelantado?", "So, | (to) you | should I charge | the | tank | in advance?", "So, should I charge you for the tank up front?")],
-    prepay_ok: [t("Listo, | el | tanque | queda | pagado. | Lo | puede | devolver | vacío.", "Done, | the | tank | is | paid. | It | you-can | return | empty.", "Done, the tank is paid for. You can bring it back empty.")],
+    full_ok: [t("Perfecto, | con | el | tanque | lleno.", "Perfect, | with | the | tank | full.", "Great, with a full tank.", { spain: t("Perfecto, | con | el | depósito | lleno.", "Perfect, | with | the | tank | full.", "Great, with a full tank.") })],
+    prepay_quote: [t("Claro. | El | tanque | cuesta | {$price}, | y | así | lo | puede | devolver | vacío. | ¿Se lo | cobro?", "Sure. | The | tank | costs | {$price}, | and | that way | it | you-can | return | empty. | It (from) you | should I charge?", "Sure. A full tank is {$price}, and then you can bring it back empty. Should I charge you for it?", { spain: t("Claro. | El | depósito lleno | cuesta | {$price}, | y | así | lo | puede | devolver | vacío. | ¿Se lo | cobro?", "Sure. | A | full tank | costs | {$price}, | and | that way | it | you-can | return | empty. | It (from) you | should I charge?", "Sure. A full tank is {$price}, and then you can bring it back empty. Should I charge you for it?") })],
+    prepay_confirm: [t("Entonces, | ¿le | cobro | el | tanque | por adelantado?", "So, | (to) you | should I charge | the | tank | in advance?", "So, should I charge you for the tank up front?", { spain: t("Entonces, | ¿le | cobro | la | gasolina | por adelantado?", "So, | (to) you | should I charge | the | gas | in advance?", "So, should I charge you for the tank up front?") })],
+    prepay_ok: [t("Listo, | el | tanque | queda | pagado. | Lo | puede | devolver | vacío.", "Done, | the | tank | is | paid. | It | you-can | return | empty.", "Done, the tank is paid for. You can bring it back empty.", { spain: t("Perfecto, | la | gasolina | queda | pagada. | Lo | puede | devolver | vacío.", "Perfect, | the | gas | is | paid. | It | you-can | return | empty.", "Done, the tank is paid for. You can bring it back empty.") })],
     fuel_charge: [t("Entonces | le | cobramos | la | gasolina | que | falte, | y | le | sale | más | cara | que | en | la | gasolinera.", "Then | (to) you | we-charge | the | gas | that | is missing, | and | (to) you | it comes out | more | expensive | than | at | the | gas station.", "Then we'll charge you for the missing gas, and it costs more than at a gas station.")],
     gas_station: [t("Hay | una | gasolinera | aquí | cerca, | sobre | la | avenida.", "There is | a | gas station | here | nearby, | on | the | avenue.", "There's a gas station close by, on the main avenue.")],
-    mileage: [t("El | kilometraje | es | ilimitado: | puede | manejar | lo que | quiera.", "The | mileage | is | unlimited: | you-can | drive | what | you want.", "Mileage is unlimited: you can drive as much as you like.")],
+    mileage: [t("El | kilometraje | es | ilimitado: | puede | manejar | lo que | quiera.", "The | mileage | is | unlimited: | you-can | drive | what | you want.", "Mileage is unlimited: you can drive as much as you like.", { spain: t("El | kilometraje | es | ilimitado: | puede | conducir | lo que | quiera.", "The | mileage | is | unlimited: | you-can | drive | what | you want.", "Mileage is unlimited: you can drive as much as you like.") })],
     automatic: [t("Es | automático.", "It's | automatic.", "It's an automatic.")],
     economy_manual: [t("El | económico | es | estándar. | El | compacto | es | automático | y | cuesta | {$price} | al | día. | ¿Se lo | cambio?", "The | economy car | is | manual. | The | compact car | is | automatic | and | costs | {$price} | per | day. | It for you | should I change?",
       "The economy car is a manual. The compact is an automatic and costs {$price} a day. Do you want me to switch it?",
-      { flags: { 3: "estándar: a manual (stick-shift) car, in Mexico and much of Latin America." } })],
-    switch_ok: [t("Listo, | le | doy | el | compacto.", "Done, | (to) you | I-give | the | compact car.", "All set, you'll have the compact.")],
+      { flags: { 3: F_ESTANDAR },
+        neutral: t("El | económico | es | manual. | El | compacto | es | automático | y | cuesta | {$price} | al | día. | ¿Se lo | cambio?", "The | economy car | is | manual. | The | compact car | is | automatic | and | costs | {$price} | per | day. | It for you | should I change?",
+          "The economy car is a manual. The compact is an automatic and costs {$price} a day. Do you want me to switch it?"), spain: t("El | económico | es | manual. | El | compacto | es | automático | y | cuesta | {$price} | al | día. | ¿Se lo | cambio?", "The | economy car | is | manual. | The | compact car | is | automatic | and | costs | {$price} | per | day. | It for you | should I change?", "The economy car is a manual. The compact is an automatic and costs {$price} a day. Do you want me to switch it?") })],
+    switch_ok: [t("Listo, | le | doy | el | compacto.", "Done, | (to) you | I-give | the | compact car.", "All set, you'll have the compact.", { spain: t("Perfecto, | le | doy | el | compacto.", "Perfect, | (to) you | I-give | the | compact car.", "All set, you'll have the compact.") })],
     // --- extras
     ask_extras: [t("¿Va | a | necesitar | GPS | o | una | silla | para | niño?", "Are you going | to | need | a GPS | or | a | seat | for | child?", "Will you need a GPS or a child seat?")],
     which_extra: [t("¡Claro! | ¿Qué | necesita?", "Sure! | What | do you need?", "Sure! What do you need?")],
     extra_quote: [t("{X.the} | cuesta | {$price} | al | día. | ¿Se | {lo@X} | agrego?", "{X.the} | costs | {$price} | per | day. | (For) you | it | should I add?", "{X.the} is {$price} a day. Should I add it?",
       { flags: { 6: "lo / la: it, agreeing with the thing (el GPS, la silla)." } })],
     extra_quote_both: [t("Los | dos | juntos | son | {$price} | al | día. | ¿Se los | agrego?", "The | two | together | are | {$price} | per | day. | Them for you | should I add?", "Both together are {$price} a day. Should I add them?")],
-    extra_added: [t("Listo, | ya | está | en | su | contrato.", "Done, | already | it's | in | your | contract.", "Done, it's on your contract now.")],
+    extra_added: [t("Listo, | ya | está | en | su | contrato.", "Done, | already | it's | in | your | contract.", "Done, it's on your contract now.", { spain: t("Perfecto, | ya | está | en | su | contrato.", "Perfect, | already | it's | in | your | contract.", "Done, it's on your contract now.") })],
     no_extras: [t("Sin problema.", "No problem.", "No problem.")],
     // --- return
     ret_confirm: [
@@ -959,7 +969,7 @@ export const rental: SituationDef = {
     ret_answer_long: [t("En | {$num} | días, | el | {X}, | antes de | las | cinco | de la tarde, | aquí mismo.", "In | {$num} | days, | on | {X}, | before | — | five | p.m., | right here.", "In {$num} days, on {X}, by 5 p.m., right here.",
       { flags: { 3: "el before a weekday means on.", 6: "Spanish uses an article before clock times; English has no separate word." } })],
     ret_long: [t("Listo: | lo | devuelve | el | {X}, | en | {$num} | días.", "Done: | it | you-return | on | {X}, | in | {$num} | days.", "All set: you'll bring it back on {X}, in {$num} days.",
-      { flags: { 3: "el before a weekday means on." } })],
+      { flags: { 3: "el before a weekday means on." }, spain: t("Perfecto: | lo | devuelve | el | {X}, | en | {$num} | días.", "Perfect: | it | you-return | on | {X}, | in | {$num} | days.", "All set: you'll bring it back on {X}, in {$num} days.", {flags: {3: "el before a weekday means on."}}) })],
     ret_more_q_long: [t("Claro. | Serían | {$price} | más. | ¿Se lo | cambio?", "Sure. | It would be | {$price} | more. | It for you | should I change?", "Sure. That would be {$price} more. Should I change it?")],
     ret_more_q_day: [t("Claro. | Cada | día | extra | cuesta | {$price}. | ¿Se lo | cambio?", "Sure. | Each | day | extra | costs | {$price}. | It for you | should I change?", "Sure. Each extra day is {$price}. Should I change it?")],
     ret_early: [t("Sí, | claro, | puede | devolverlo | antes.", "Yes, | of course, | you-can | return it | earlier.", "Sure, you can bring it back early.")],
@@ -967,7 +977,7 @@ export const rental: SituationDef = {
     ret_where: [t("Aquí mismo, | en | esta | oficina.", "Right here, | at | this | office.", "Right here, at this office.")],
     ret_where_airport: [t("En | el | aeropuerto, | como | quedamos.", "At | the | airport, | as | we agreed.", "At the airport, as we agreed.")],
     ret_airport_q: [t("Sí, | se puede, | con | un | cargo | de | {$price}. | ¿Lo | quiere | devolver | allá?", "Yes, | it's possible, | with | a | fee | of | {$price}. | It | do you want | to return | there?", "Yes, you can, for a drop-off fee of {$price}. Would you like to return it there?")],
-    ret_airport_ok: [t("Listo: | lo | devuelve | en | el | aeropuerto.", "Done: | it | you-return | at | the | airport.", "All set: you'll return it at the airport.")],
+    ret_airport_ok: [t("Listo: | lo | devuelve | en | el | aeropuerto.", "Done: | it | you-return | at | the | airport.", "All set: you'll return it at the airport.", { spain: t("Perfecto: | lo | devuelve | en | el | aeropuerto.", "Perfect: | it | you-return | at | the | airport.", "All set: you'll return it at the airport.") })],
     ret_here: [t("Muy | bien, | entonces | aquí | en | la | oficina.", "Very | good, | then | here | at | the | office.", "Okay, then here at the office.")],
     ret_other: [t("Lo siento, | solo | aquí | o | en | el | aeropuerto.", "I'm sorry, | only | here | or | at | the | airport.", "I'm sorry, only here or at the airport.")],
     ret_more_q: [t("Claro. | Serían | {$price} | más. | ¿Se lo | cambio | para | el | {X}?", "Sure. | It would be | {$price} | more. | It for you | should I change | for | — | {X}?", "Sure. That would be {$price} more. Should I change it to {X}?",
@@ -975,7 +985,7 @@ export const rental: SituationDef = {
     ret_changed: [t("Claro, | se lo | cambio | para | el | {X}.", "Sure, | it for you | I'll-change | for | — | {X}.", "Sure, I'll change it to {X}.",
       { flags: { 4: "el before a weekday; English says just the day here." } })],
     ret_changed_ok: [t("Listo, | lo | devuelve | el | {X}.", "Done, | it | you-return | on | {X}.", "All set, you'll bring it back on {X}.",
-      { flags: { 3: "el before a weekday means on." } })],
+      { flags: { 3: "el before a weekday means on." }, spain: t("Perfecto, | lo | devuelve | el | {X}.", "Perfect, | it | you-return | on | {X}.", "All set, you'll bring it back on {X}.", {flags: {3: "el before a weekday means on."}}) })],
     ret_keep: [t("Bueno, | entonces | se queda | el | {X}.", "Okay, | then | it stays | on | {X}.", "Okay, then it stays on {X}.",
       { flags: { 3: "el before a weekday means on." } })],
     late_info: [t("Tiene | una | hora | de | tolerancia; | después, | le | cobramos | un | día | más.", "You have | an | hour | of | grace; | after that, | (to) you | we-charge | a | day | more.", "You have a one-hour grace period; after that, we charge an extra day.",
@@ -986,31 +996,31 @@ export const rental: SituationDef = {
       t("Solo | necesito | su | firma | aquí | y | aquí.", "Just | I need | your | signature | here | and | here.", "I just need your signature here and here."),
     ],
     sign_where: [t("Aquí, | abajo.", "Here, | at the bottom.", "Right here, at the bottom.")],
-    keys: [t("Aquí | tiene | sus | llaves.", "Here | you have | your | keys.", "Here are your keys."), t("Listo, | aquí | están | sus | llaves.", "Done, | here | are | your | keys.", "All right, here are your keys.")],
-    car_economy: [t("Es | el | económico | rojo, | en | el | lugar | B2.", "It's | the | economy car | red, | in | the | spot | B2.", "It's the red economy car in spot B2.", { say: "Es el económico rojo, en el lugar be dos." })],
-    car_compact: [t("Es | el | compacto | plateado, | en | el | lugar | B4.", "It's | the | compact car | silver, | in | the | spot | B4.", "It's the silver compact in spot B4.", { say: "Es el compacto plateado, en el lugar be cuatro." })],
-    car_midsize: [t("Es | el | intermedio | azul, | en | el | lugar | C2.", "It's | the | midsize car | blue, | in | the | spot | C2.", "It's the blue midsize car in spot C2.", { say: "Es el intermedio azul, en el lugar ce dos." })],
-    car_suv: [t("Es | la | camioneta | negra, | en | el | lugar | D1.", "It's | the | SUV | black, | in | the | spot | D1.", "It's the black SUV in spot D1.", { say: "Es la camioneta negra, en el lugar de uno." })],
-    car_minivan: [t("Es | la | minivan | blanca, | en | el | lugar | D3.", "It's | the | minivan | white, | in | the | spot | D3.", "It's the white minivan in spot D3.", { say: "Es la minivan blanca, en el lugar de tres." })],
-    lot_where: [t("Los | autos | están | aquí | afuera, | en | el | estacionamiento.", "The | cars | are | here | outside, | in | the | parking lot.", "The cars are right outside, in the parking lot.")],
+    keys: [t("Aquí | tiene | sus | llaves.", "Here | you have | your | keys.", "Here are your keys."), t("Listo, | aquí | están | sus | llaves.", "Done, | here | are | your | keys.", "All right, here are your keys.", { spain: t("Muy bien, | aquí | están | sus | llaves.", "All right, | here | are | your | keys.", "All right, here are your keys.") })],
+    car_economy: [t("Es | el | económico | rojo, | en | el | lugar | B2.", "It's | the | economy car | red, | in | the | spot | B2.", "It's the red economy car in spot B2.", { say: "Es el económico rojo, en el lugar be dos.", spain: t("Es | el | económico | rojo, | en | la | plaza | B2.", "It's | the | economy car | red, | in | the | spot | B2.", "It's the red economy car in spot B2.", {say: "Es el económico rojo, en la plaza be dos."}) })],
+    car_compact: [t("Es | el | compacto | plateado, | en | el | lugar | B4.", "It's | the | compact car | silver, | in | the | spot | B4.", "It's the silver compact in spot B4.", { say: "Es el compacto plateado, en el lugar be cuatro.", spain: t("Es | el | compacto | plateado, | en | la | plaza | B4.", "It's | the | compact car | silver, | in | the | spot | B4.", "It's the silver compact in spot B4.", {say: "Es el compacto plateado, en la plaza be cuatro."}) })],
+    car_midsize: [t("Es | el | intermedio | azul, | en | el | lugar | C2.", "It's | the | midsize car | blue, | in | the | spot | C2.", "It's the blue midsize car in spot C2.", { say: "Es el intermedio azul, en el lugar ce dos.", spain: t("Es | el | intermedio | azul, | en | la | plaza | C2.", "It's | the | midsize car | blue, | in | the | spot | C2.", "It's the blue midsize car in spot C2.", {say: "Es el intermedio azul, en la plaza ce dos."}) })],
+    car_suv: [t("Es | la | camioneta | negra, | en | el | lugar | D1.", "It's | the | SUV | black, | in | the | spot | D1.", "It's the black SUV in spot D1.", { say: "Es la camioneta negra, en el lugar de uno.", spain: t("Es | el | todoterreno | negro, | en | la | plaza | D1.", "It's | the | SUV | black, | in | the | spot | D1.", "It's the black SUV in spot D1.", {say: "Es el todoterreno negro, en la plaza de uno."}) })],
+    car_minivan: [t("Es | la | minivan | blanca, | en | el | lugar | D3.", "It's | the | minivan | white, | in | the | spot | D3.", "It's the white minivan in spot D3.", { say: "Es la minivan blanca, en el lugar de tres.", spain: t("Es | el | monovolumen | blanco, | en | la | plaza | D3.", "It's | the | minivan | white, | in | the | spot | D3.", "It's the white minivan in spot D3.", {say: "Es el monovolumen blanco, en la plaza de tres."}) })],
+    lot_where: [t("Los | autos | están | aquí | afuera, | en | el | estacionamiento.", "The | cars | are | here | outside, | in | the | parking lot.", "The cars are right outside, in the parking lot.", { spain: t("Los | coches | están | aquí | fuera, | en | el | aparcamiento.", "The | cars | are | here | outside, | in | the | parking lot.", "The cars are right outside, in the parking lot.") })],
     check_car: [t("Antes de | irse, | revise | bien | el | carro. | Si | ve | un | rayón | o | un | golpe, | tómele | una | foto | y | avísenos.",
       "Before | leaving, | check | well | the | car. | If | you-see | a | scratch | or | a | dent, | take (of it) | a | photo | and | let us know.",
       "Before you leave, check the car carefully. If you see a scratch or a dent, take a photo and let us know.",
       { flags: { 5: "Mexican: carro = car; auto is the neutral word.", 13: "tómele: take (usted) + le, of it." },
         neutral: t("Antes de | irse, | revise | bien | el | auto. | Si | ve | un | rayón | o | un | golpe, | tómele | una | foto | y | avísenos.",
           "Before | leaving, | check | well | the | car. | If | you-see | a | scratch | or | a | dent, | take (of it) | a | photo | and | let us know.",
-          "Before you leave, check the car carefully. If you see a scratch or a dent, take a photo and let us know.") })],
-    scratch_info: [t("Tómele | una | foto | y | avísenos; | lo | anotamos | en | la | hoja | de | inspección.", "Take (of it) | a | photo | and | let us know; | it | we-note | on | the | sheet | of | inspection.", "Take a photo and let us know; we'll note it on the inspection sheet.")],
+          "Before you leave, check the car carefully. If you see a scratch or a dent, take a photo and let us know."), spain: t("Antes de | irse, | revise | bien | el | coche. | Si | ve | un | arañazo | o | un | golpe, | hágale | una | foto | y | avísenos.", "Before | leaving, | check | well | the | car. | If | you-see | a | scratch | or | a | dent, | take (of it) | a | photo | and | let us know.", "Before you leave, check the car carefully. If you see a scratch or a dent, take a photo and let us know.") })],
+    scratch_info: [t("Tómele | una | foto | y | avísenos; | lo | anotamos | en | la | hoja | de | inspección.", "Take (of it) | a | photo | and | let us know; | it | we-note | on | the | sheet | of | inspection.", "Take a photo and let us know; we'll note it on the inspection sheet.", { spain: t("Hágale | una | foto | y | avísenos; | lo | anotamos | en | la | hoja | de | inspección.", "Take (of it) | a | photo | and | let us know; | it | we-note | on | the | sheet | of | inspection.", "Take a photo and let us know; we'll note it on the inspection sheet.") })],
     scratch_noted: [t("Gracias | por | avisar. | Lo | anoto | en | la | hoja | de | inspección.", "Thanks | for | letting us know. | It | I-note | on | the | sheet | of | inspection.", "Thanks for telling me. I'll note it on the inspection sheet.")],
     anything_else: [t("¿Algo | más | en | que | le | pueda | ayudar?", "Anything | else | in | which | (to) you | I-can | help?", "Anything else I can help you with?")],
     drive_safe: [
       t("¡Buen | viaje!", "Good | trip!", "Have a great trip!"),
-      t("¡Maneje | con | cuidado!", "Drive | with | care!", "Drive safe!"),
-      t("¡Que | le | vaya | bien, | y | maneje | con | cuidado!", "May | (to) you | it go | well, | and | drive | with | care!", "Have a good trip, and drive safe!"),
+      t("¡Maneje | con | cuidado!", "Drive | with | care!", "Drive safe!", { spain: t("¡Conduzca | con | cuidado!", "Drive | with | care!", "Drive safe!") }),
+      t("¡Que | le | vaya | bien, | y | maneje | con | cuidado!", "May | (to) you | it go | well, | and | drive | with | care!", "Have a good trip, and drive safe!", { spain: t("¡Que | le | vaya | bien, | y | conduzca | con | cuidado!", "May | (to) you | it go | well, | and | drive | with | care!", "Have a good trip, and drive safe!") }),
     ],
     // not "¡Buen viaje!" again: the goodbye before it is often "¡Buen viaje!"
     you_welcome: [t("¡De nada! | ¡Hasta luego!", "You're welcome! | See you later!", "You're welcome! See you later!")],
-    welcome: [t("¡Con gusto!", "My pleasure!", "You're welcome!")],
+    welcome: [t("¡Con gusto!", "My pleasure!", "You're welcome!", { spain: t("¡De nada!", "You're welcome!", "You're welcome!") })],
     ack_ok: [t("Muy | bien.", "Very | good.", "Okay.")],
     ack: [t("Muy | bien.", "Very | good.", "Okay."), t("Perfecto.", "Perfect.", "Perfect."), t("Claro.", "Sure.", "Sure.")],
     no_problem: [t("Sin problema.", "No problem.", "No problem.")],
@@ -1038,14 +1048,14 @@ export const rental: SituationDef = {
 
   hints: {
     pickup: { lt: "Say you've booked a car", items: [
-      { id: "have_resv", s: t("Tengo | una | reservación.", "I have | a | reservation.", "I have a reservation.") },
-      { id: "booked", s: t("Reservé | un | auto | por | internet.", "I booked | a | car | over | the internet.", "I booked a car online.") },
-      { id: "pick_up", s: t("Vengo | a | recoger | mi | auto.", "I'm here | to | pick up | my | car.", "I'm here to pick up my car.") },
+      { id: "have_resv", s: t("Tengo | una | reservación.", "I have | a | reservation.", "I have a reservation.", { spain: t("Tengo | una | reserva.", "I have | a | reservation.", "I have a reservation.") }) },
+      { id: "booked", s: t("Reservé | un | auto | por | internet.", "I booked | a | car | over | the internet.", "I booked a car online.", { spain: t("He reservado | un | coche | por | internet.", "I've booked | a | car | over | the internet.", "I booked a car online.") }) },
+      { id: "pick_up", s: t("Vengo | a | recoger | mi | auto.", "I'm here | to | pick up | my | car.", "I'm here to pick up my car.", { spain: t("Vengo | a | recoger | mi | coche.", "I'm here | to | pick up | my | car.", "I'm here to pick up my car.") }) },
     ] },
     walkin: { lt: "Rent a car without a reservation", items: [
-      { id: "rent", s: t("Quisiera | rentar | un | auto, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please."), note: "Mexico says rentar; alquilar is understood too." },
-      { id: "no_resv", s: t("No tengo | reservación.", "I don't have | a reservation.", "I don't have a reservation.") },
-      { id: "rent_have", s: t("¿Tienen | autos | disponibles?", "Do you have | cars | available?", "Do you have any cars available?") },
+      { id: "rent", s: t("Quisiera | rentar | un | auto, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please.", { spain: t("Quisiera | alquilar | un | coche, | por favor.", "I'd like | to rent | a | car, | please.", "I'd like to rent a car, please.") }), note: "Mexico says rentar; alquilar is understood too." },
+      { id: "no_resv", s: t("No tengo | reservación.", "I don't have | a reservation.", "I don't have a reservation.", { spain: t("No tengo | reserva.", "I don't have | a reservation.", "I don't have a reservation.") }) },
+      { id: "rent_have", s: t("¿Tienen | autos | disponibles?", "Do you have | cars | available?", "Do you have any cars available?", { spain: t("¿Tienen | coches | disponibles?", "Do you have | cars | available?", "Do you have any cars available?") }) },
     ] },
     name: { lt: "Give your last name", items: [
       { id: "name_its", s: t("Mi | apellido | es | {$surname}.", "My | last name | is | {$surname}.", "My last name is {$surname}.") },
@@ -1064,8 +1074,8 @@ export const rental: SituationDef = {
     ] },
     docs: { lt: "Hand over your documents", items: [
       { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
-      { id: "here_license", s: t("Aquí | tiene | mi | licencia | y | mi | tarjeta.", "Here | you have | my | license | and | my | card.", "Here's my license and my card.") },
-      { id: "q_license", s: t("¿Sirve | mi | licencia | extranjera?", "Does it work | my | license | foreign?", "Is my foreign license okay?") },
+      { id: "here_license", s: t("Aquí | tiene | mi | licencia | y | mi | tarjeta.", "Here | you have | my | license | and | my | card.", "Here's my license and my card.", { spain: t("Aquí | tiene | mi | carné | y | mi | tarjeta.", "Here | you have | my | license | and | my | card.", "Here's my license and my card.") }) },
+      { id: "q_license", s: t("¿Sirve | mi | licencia | extranjera?", "Does it work | my | license | foreign?", "Is my foreign license okay?", { spain: t("¿Sirve | mi | carné | extranjero?", "Does it work | my | license | foreign?", "Is my foreign license okay?") }) },
       { id: "q_debit", s: t("¿Aceptan | tarjeta | de | débito?", "Do you accept | card | of | debit?", "Do you take debit cards?") },
     ] },
     upgrade: { lt: "Answer the upgrade offer", items: [
@@ -1075,23 +1085,23 @@ export const rental: SituationDef = {
     tpl: { lt: "Ask about the mandatory insurance", items: [
       { id: "tpl_must", s: t("¿Es | obligatorio?", "Is it | mandatory?", "Is it mandatory?") },
       { id: "tpl_why", s: t("¿Por qué | no estaba | incluido?", "Why | wasn't it | included?", "Why wasn't it included?") },
-      { id: "tpl_ok", s: t("Está bien, | lo | pago.", "That's fine, | it | I'll-pay.", "Okay, I'll pay it.") },
+      { id: "tpl_ok", s: t("Está bien, | lo | pago.", "That's fine, | it | I'll-pay.", "Okay, I'll pay it.", { spain: t("Vale, | lo | pago.", "Okay, | it | I'll-pay.", "Okay, I'll pay it.") }) },
     ] },
     insurance: { lt: "Choose your insurance", items: [
       { id: "ins_basic", s: t("Solo | el | seguro | obligatorio, | por favor.", "Only | the | insurance | mandatory, | please.", "Just the mandatory insurance, please.") },
-      { id: "ins_full", s: t("Quiero | la | cobertura | amplia, | por favor.", "I want | the | coverage | full, | please.", "I'd like full coverage, please.") },
+      { id: "ins_full", s: t("Quiero | la | cobertura | amplia, | por favor.", "I want | the | coverage | full, | please.", "I'd like full coverage, please.", { spain: t("Quiero | la | cobertura | a todo riesgo, | por favor.", "I want | the | coverage | full, | please.", "I'd like full coverage, please.") }) },
       { id: "q_cover", s: t("¿Qué | cubre?", "What | does it cover?", "What does it cover?") },
       { id: "q_ins_included", s: t("¿Está | incluido | el | seguro?", "Is | included | the | insurance?", "Is insurance included?") },
       { id: "ins_card", s: t("Mi | tarjeta | de | crédito | me | cubre.", "My | card | of | credit | me | covers.", "My credit card covers me."), note: "In Mexico a card can cover damage to the car, never the mandatory liability insurance." },
     ] },
     deposit: { lt: "Accept or ask about the deposit", items: [
-      { id: "ok_ack", s: t("Está bien, | no hay problema.", "That's fine, | no problem.", "Okay, no problem.") },
+      { id: "ok_ack", s: t("Está bien, | no hay problema.", "That's fine, | no problem.", "Okay, no problem.", { spain: t("Vale, | no hay problema.", "Okay, | no problem.", "Okay, no problem.") }) },
       { id: "q_deposit_back", s: t("¿Cuándo | me lo | devuelven?", "When | it to me | do you give back?", "When do I get it back?") },
     ] },
     fuel: { lt: "Answer about the gas", items: [
-      { id: "full_to_full", s: t("Lo | devuelvo | con | el | tanque | lleno.", "It | I'll-return | with | the | tank | full.", "I'll bring it back with a full tank.") },
+      { id: "full_to_full", s: t("Lo | devuelvo | con | el | tanque | lleno.", "It | I'll-return | with | the | tank | full.", "I'll bring it back with a full tank.", { spain: t("Lo | devuelvo | con | el | depósito | lleno.", "It | I'll-return | with | the | tank | full.", "I'll bring it back with a full tank.") }) },
       { id: "q_gas_station", s: t("¿Hay | una | gasolinera | cerca?", "Is there | a | gas station | nearby?", "Is there a gas station nearby?") },
-      { id: "prepay", s: t("Prefiero | pagar | el | tanque | por adelantado.", "I prefer | to pay | the | tank | in advance.", "I'd rather prepay for the tank.") },
+      { id: "prepay", s: t("Prefiero | pagar | el | tanque | por adelantado.", "I prefer | to pay | the | tank | in advance.", "I'd rather prepay for the tank.", { spain: t("Prefiero | pagar | la | gasolina | por adelantado.", "I prefer | to pay | the | gas | in advance.", "I'd rather prepay for the tank.") }) },
     ] },
     sign: { lt: "Sign the contract", items: [
       { id: "ok_ack", s: t("Claro.", "Sure.", "Sure.") },
@@ -1106,7 +1116,7 @@ export const rental: SituationDef = {
       { id: "q_gas_station", s: t("¿Hay | una | gasolinera | cerca?", "Is there | a | gas station | nearby?", "Is there a gas station nearby?") },
     ] },
     extras: { lt: "Extras", slot: "extra", examples: ["gps", "child_seat"], items: [
-      { id: "extra_phone", s: t("No, | gracias. | Uso | mi | celular.", "No, | thanks. | I-use | my | cell phone.", "No, thanks. I'll use my phone.") },
+      { id: "extra_phone", s: t("No, | gracias. | Uso | mi | celular.", "No, | thanks. | I-use | my | cell phone.", "No, thanks. I'll use my phone.", { spain: t("No, | gracias. | Uso | mi | móvil.", "No, | thanks. | I-use | my | phone.", "No, thanks. I'll use my phone.") }) },
       { id: "extra_want", s: t("¿Me | puede | dar | {X.np}?", "(To) me | can you | give | {X.np}?", "Could I get {X.np}?") },
     ] },
     ret: { lt: "Confirm or change the return", items: [
@@ -1117,8 +1127,8 @@ export const rental: SituationDef = {
       { id: "keep_until", s: t("¿Puedo | quedármelo | hasta | el | sábado?", "Can I | keep it | until | — | Saturday?", "Could I keep it until Saturday?", { flags: { 3: "el before a weekday; English says just the day here." } }) },
     ] },
     car: { lt: "Ask about the car", items: [
-      { id: "q_where_car", s: t("¿Dónde | está | el | auto?", "Where | is | the | car?", "Where's the car?") },
-      { id: "q_scratch", s: t("¿Qué | hago | si | veo | un | rayón?", "What | do I do | if | I-see | a | scratch?", "What if I see a scratch?") },
+      { id: "q_where_car", s: t("¿Dónde | está | el | auto?", "Where | is | the | car?", "Where's the car?", { spain: t("¿Dónde | está | el | coche?", "Where | is | the | car?", "Where's the car?") }) },
+      { id: "q_scratch", s: t("¿Qué | hago | si | veo | un | rayón?", "What | do I do | if | I-see | a | scratch?", "What if I see a scratch?", { spain: t("¿Qué | hago | si | veo | un | arañazo?", "What | do I do | if | I-see | a | scratch?", "What if I see a scratch?") }) },
       { id: "q_automatic", s: t("¿Es | automático?", "Is it | automatic?", "Is it an automatic?") },
     ] },
   },
@@ -1128,6 +1138,11 @@ export const rental: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (11 Nov 2026)
+    "a todo riesgo": { reason: "lexical_expression", split: "a → to + todo → all + riesgo → risk: = full coverage (fully comprehensive insurance).", minimal: "Three words." },
+    "depósito lleno": { reason: "lexical_expression", split: "depósito → tank + lleno → full: = a full tank.", minimal: "Two words." },
+    "muy bien": { reason: "lexical_expression", split: "muy → very + bien → well; = all right, okay.", minimal: "Two words." },
+    "he reservado": { reason: "grammatical_fusion", split: "he → have/has + reservado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
     "renta de autos colibrí": { reason: "lexical_expression", split: "renta → rental + de → of + autos → cars + colibrí → hummingbird would translate the agency's proper name word by word.", minimal: "The four-word name only." },
     "antes de": { reason: "lexical_expression", split: "antes → before + de → of: the two-word preposition is English before.", minimal: "Two words; the time stays separate." },
     "a más tardar": { reason: "lexical_expression", split: "a → at + más → more + tardar → to be late misreads the fixed phrase: at the latest.", minimal: "Three words." },

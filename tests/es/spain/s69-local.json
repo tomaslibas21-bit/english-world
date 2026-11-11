@@ -1,0 +1,80 @@
+{
+"situation": "s69-local",
+"items": [
+{
+"ctx": "need",
+"say": "Perdone, ¿es usted de aquí?",
+"intent": "are_you_local"
+},
+{
+"ctx": "need",
+"say": "¿Qué hay para hacer por la noche?",
+"intent": "ask_night"
+},
+{
+"ctx": "need",
+"say": "¿Dónde puedo coger el colectivo?",
+"intent": "no_walk"
+},
+{
+"ctx": "need",
+"say": "¿Es seguro andar de noche?",
+"intent": "ask_safe"
+},
+{
+"ctx": "food_kind",
+"say": "Nada caro, por favor",
+"intent": "budget"
+},
+{
+"ctx": "sight",
+"say": "¿Se puede ir andando?",
+"intent": "ask_walk"
+},
+{
+"ctx": "sight",
+"say": "¿Hay que reservar?",
+"intent": "ask_book"
+},
+{
+"ctx": "more",
+"say": "Vale, gracias por todo",
+"intent": "thanks_tip"
+},
+{
+"ctx": "more",
+"say": "Me ha ayudado mucho, gracias",
+"intent": "thanks_tip"
+},
+{
+"ctx": "food",
+"say": "Sí, tengo hambre",
+"intent": "ask_food"
+},
+{
+"ctx": "food",
+"say": "No, ya he comido",
+"intent": "not_hungry"
+},
+{
+"ctx": "tried",
+"say": "Sí, estaba buenísimo",
+"intent": "tried_yes_ctx"
+},
+{
+"ctx": "tried",
+"say": "No, todavía no he ido",
+"intent": "tried_no_ctx"
+},
+{
+"ctx": "walk",
+"say": "Vale, vamos",
+"intent": "walk_yes_ctx"
+},
+{
+"ctx": "walk",
+"say": "No se preocupe, ya llego sola",
+"intent": "walk_no_ctx"
+}
+]
+}

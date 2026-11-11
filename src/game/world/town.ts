@@ -66,6 +66,7 @@ export function buildTown(): Town {
   mxFlat.length = 0;
   wires.length = 0;
   mxFar.length = 0;
+  poleParts.length = 0;
   farHidden.length = 0;
   beachPalms.length = 0;
   atlas = new MX.SignAtlas();
@@ -210,6 +211,20 @@ export function buildTown(): Town {
       const list = wires.filter(([g]) => (g.boundingSphere ?? (g.computeBoundingSphere(), g.boundingSphere!)).center.x < 0 === (half === "w"));
       if (list.length) { const m = staticColoured(list, "cables-" + half); m.castShadow = false; m.userData.thin = true; group.add(m); }
     }
+  }
+  if (poleParts.length && THEME.poleFade) {
+    // (theme.ts `poleFade`) the poles dissolve within a few metres of the camera, as the lamps do nearer, and the walking
+    // camera looks through them (thin): they no longer sweep through the picture as grey bars
+    const [near, far] = THEME.poleFade, m = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    m.onBeforeCompile = (sh) => nearFadeShader(sh, near, far);
+    m.customProgramCacheKey = () => `nearfade-${near}-${far}`;
+    const poles = new THREE.Mesh(colourMerge(poleParts), m);
+    poles.name = "cable-poles";
+    poles.castShadow = poles.receiveShadow = true;
+    poles.userData.thin = true;
+    poles.matrixAutoUpdate = false;
+    poles.updateMatrix();
+    group.add(poles);
   }
   const signsMesh = atlas!.build();
   // (theme.ts `townMerge`: the signs drawn after the town's squares, so that one painted on a surface, a coach's
@@ -876,8 +891,14 @@ function buildBuilding(b: BuildingDef, M: Merger, col: Colliders, doors: Door[],
   if (b.style === "house") {
     // porch
     M.add("porch", mat("#e8e2d6"), boxGeo(6, 0.35, 2.6, 0, 0.17, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
-    M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
-    for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
+    // (theme.ts `casas`: a concrete portal with the terrace on it instead, mexican.ts `casa`)
+    if (THEME.casas) {
+      const P = (u: number, v: number): [number, number] => [dx + t[0] * u + n[0] * v, dz + t[1] * u + n[1] * v];
+      MX.casa(mx, mxFlat, P, rotY, halfWidth * 2, halfDepth * 2, b.h, b.color, b.trim ?? "#ffffff", 700 + b.id.length * 53 + Math.round(b.x));
+    } else {
+      M.add("porch-roof", mat(b.roofColor ?? "#6b4f3a"), boxGeo(6.4, 0.2, 2.8, 0, 3.1, 0).rotateY(rotY).translate(dx + n[0] * 1.3, 0, dz + n[1] * 1.3));
+      for (const s of [-1, 1]) M.add("porch-post", mat("#ffffff"), cylGeo(0.1, 0.1, 2.8, dx + t[0] * s * 2.8 + n[0] * 2.5, 1.55, dz + t[1] * s * 2.8 + n[1] * 2.5, 6));
+    }
     for (const s of [-1, 1]) col.addCircle(dx + t[0] * s * 2.8 + n[0] * 2.5, dz + t[1] * s * 2.8 + n[1] * 2.5, 0.14);
     if (THEME.mexican) {
       // a low wall with an iron gate and a potted plant instead of the picket fence, the mailbox and the chimney
@@ -1546,6 +1567,8 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   for (const [x, z] of THEME.zocalo?.laureles ?? []) add(x, z, 1.6);
 
   const n = spots.length;
+  // (theme.ts `tropicalTrees`: the town's trees as flamboyanes and almendros, built below; the laureles round as here)
+  if (THEME.tropicalTrees && !STYLED) { tropicalTrees(group, col, r, rl, spots, town); return; }
   const trunkGeo = STYLED ? trunkGeometry() : new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0);
   const leafGeo = STYLED ? canopyGeometry() : mergeGeometries([
     new THREE.IcosahedronGeometry(1.6, 1).translate(0, 3.3, 0),
@@ -1571,6 +1594,11 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   trunks.receiveShadow = leaves.receiveShadow = true;
   group.add(trunks, leaves);
   if (STYLED) { outlineInstanced(trunks, "#7a5236", 0.03, "trunk"); outlineInstanced(leaves, "#3f6b2a", 0.045, "canopy"); }
+  addBushes(group, col);
+}
+
+function addBushes(group: THREE.Group, col: Colliders) {
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
   // bushes
   const bushGeo = STYLED ? bushGeometry() : new THREE.IcosahedronGeometry(0.7, 0);
   const bushes = new THREE.InstancedMesh(bushGeo, STYLED ? bushMaterial() : new THREE.MeshLambertMaterial({ color: "#4f8f3f", flatShading: true }), 60);
@@ -1592,6 +1620,52 @@ function addTrees(group: THREE.Group, col: Colliders, r: () => number) {
   bushes.castShadow = true;
   group.add(bushes);
   if (STYLED) outlineInstanced(bushes, "#2f5f2a", 0.03, "bush");
+}
+
+/** (theme.ts `tropicalTrees`) The town's trees at the same spots, sizes and turns from the same random numbers, as
+ *  flamboyanes and almendros (mexican.ts): one in three an almendro, by its place in the list; the bloom colours of the
+ *  theme's palette go to the flamboyanes (an almendro drawing one is green). The zócalo's laureles keep the round
+ *  crown, denser and darker, in a mesh of their own. Then the bushes, as for Maple Harbor's trees. */
+function tropicalTrees(group: THREE.Group, col: Colliders, r: () => number, rl: () => number, spots: [number, number, number][], town: number) {
+  const palette = THEME.treeColors, BLOOM = new Set(["#f2c230", "#e8432b"]), GREENS = palette.filter((c) => !BLOOM.has(c));
+  const roundTrunk = new THREE.CylinderGeometry(0.18, 0.28, 2.2, 7).translate(0, 1.1, 0);
+  const roundCrown = mergeGeometries([
+    new THREE.IcosahedronGeometry(1.6, 1).translate(0, 3.3, 0),
+    new THREE.IcosahedronGeometry(1.05, 1).translate(0.35, 4.45, -0.2),
+    new THREE.IcosahedronGeometry(0.9, 0).translate(-0.85, 3.7, 0.55),
+  ], false)!;
+  const isAlmendro = (i: number) => i % 3 === 1;
+  const counts = [0, 0, 0];
+  const kind = (i: number) => (i >= town ? 2 : isAlmendro(i) ? 1 : 0);
+  spots.forEach((_, i) => counts[kind(i)]++);
+  const trunkMat = mat("#7a5236"), leafMat = swaying(new THREE.MeshLambertMaterial({ flatShading: true }));
+  const make = (trunk: THREE.BufferGeometry, crown: THREE.BufferGeometry, n: number) => {
+    const t = new THREE.InstancedMesh(trunk, trunkMat, Math.max(1, n)), l = new THREE.InstancedMesh(crown, leafMat, Math.max(1, n));
+    t.count = l.count = 0;
+    t.castShadow = l.castShadow = t.receiveShadow = l.receiveShadow = true;
+    group.add(t, l);
+    return [t, l] as const;
+  };
+  const sets = [make(MX.tropicalTrunk(), MX.flamboyanCrown(), counts[0]), make(MX.tropicalTrunk(), MX.almendroCrown(), counts[1]), make(roundTrunk, roundCrown, counts[2])];
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3();
+  // (a town tree where the theme wants a palm instead, theme.ts `treePalms`: a coconut palm there, the tree unseen)
+  const palm = (x: number, z: number) => THEME.treePalms.some(([x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1);
+  spots.forEach(([x, z, sc0], i) => {
+    const k = kind(i), rr = i < town ? r : rl;
+    const sc = i < town && sc0 > 0 && palm(x, z) ? (beachPalms.push([x, z]), 0) : sc0;
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rr() * Math.PI);
+    m4.compose(v.set(x, 0, z), q, s.set(sc * (i < town ? 1 : 1.12), sc * (0.9 + rr() * 0.3), sc * (i < town ? 1 : 1.12)));
+    let leafCol = i < town ? palette[Math.floor(r() * palette.length)] : ["#2f6b34", "#2a6330", "#356f37"][Math.floor(rl() * 3)];
+    if (k === 1 && BLOOM.has(leafCol)) leafCol = GREENS[i % GREENS.length];
+    const [t, l] = sets[k];
+    t.setMatrixAt(t.count, m4);
+    l.setMatrixAt(l.count, m4);
+    l.setColorAt(l.count, new THREE.Color(leafCol));
+    t.count++; l.count++;
+    if (sc > 0) col.addCircle(x, z, 0.35 * sc);
+  });
+  for (const [t, l] of sets) { t.computeBoundingSphere(); l.computeBoundingSphere(); }
+  addBushes(group, col);
 }
 
 function addSquareAndMarket(M: Merger, col: Colliders, group: THREE.Group, r: () => number) {
@@ -1695,9 +1769,15 @@ function addTownMx(M: Merger, col: Colliders) {
   }
   const L = THEME.letras;
   if (L) MX.letras(mx, col, L.text, L.x, L.z, L.h, L.colors);
-  if (THEME.palapas.length) MX.palapas(mx, col, THEME.palapas);
+  if (THEME.palapas.length) {
+    // (graphics round 4, theme.ts `beachLife`: the palapas thatched in layers, and their loungers places to sit)
+    const loungers = MX.palapas(mx, col, THEME.palapas, !!THEME.beachLife);
+    if (THEME.beachLife) for (const [x, z] of loungers) seats.push({ x, z, rot: Math.PI, y: 0.42 });
+  }
   if (THEME.lanchas) MX.beachedLanchas(mx, col, THEME.lanchas.beached);
   if (THEME.church) MX.church(mx, col, THEME.church.x, THEME.church.z, THEME.church.face);
+  // (graphics round 4) its atrium, walled, and its facade's columns and niches
+  if (THEME.church && THEME.atrio) MX.atrio(mx, mxFlat, col, THEME.church.x, THEME.church.z, THEME.church.face, THEME.atrio.depth, THEME.atrio.left, THEME.atrio.right, THEME.atrio.gate);
   for (const [x, z, ew, ns] of THEME.streetSigns) MX.streetSign(mxFlat, col, a, x, z, ew, ns);
   for (const [x1, z1, x2, z2, sx, sz, srot] of THEME.topes?.at ?? []) MX.tope(mxFlat, col, a, THEME.topes!.word, x1, z1, x2, z2, sx, sz, srot);
   const f = THEME.foodCart;
@@ -1705,16 +1785,22 @@ function addTownMx(M: Merger, col: Colliders) {
   // beyond the town's edge: the cenote across the west meadow, the ruins on the point past the beach (TOWN.md task 8)
   // (in the mesh that casts no shadow: they stand beyond the town's edge, seen from afar)
   if (THEME.cenote) MX.cenote(THEME.regions ? mxFar : mxFlat, a, THEME.cenote.x, THEME.cenote.z, THEME.cenote.sign);
+  // (graphics round 4) the scrub on the meadow round it, ceibas over the selva behind it
+  const md = THEME.meadow;
+  if (md) MX.meadow(THEME.regions ? mxFar : mxFlat, md.x0, md.x1, md.z0, md.z1, md.clear, md.ceibas);
   if (THEME.ruins) MX.ruins(THEME.regions ? mxFar : mxFlat, THEME.ruins.x, THEME.ruins.z);
   // (graphics round 2) the bus terminal's andenes and coaches, the airport's thatched canopy, planters and welcome sign
   const bt = THEME.busTerminal, station = BUILDINGS.find((b) => b.id === "station");
   if (bt && station) {
     const oak = ROADS.find((r) => r.z1 === r.z2 && r.z1 > station.z - station.d / 2 - 20 && r.z1 < station.z)!;
     for (const [x, z, rot] of MX.busTerminalFront(mx, col, a, station, bt.andenes, bt.buses, oak.z1 + oak.w / 2)) streetBench(M, col, x, z, rot);
+    // (graphics round 4) its pilasters and band, the travellers' suitcases
+    if (bt.front) MX.terminalFront(mx, mxFlat, col, station, bt.front.pilasters, bt.front.cases);
   }
   // (graphics round 3) the overhead lines (a mesh of their own: `wires`), the sidewalks, El Muelle's terrace, the beach,
   // the atrial cross, the mirador
-  if (THEME.cables) MX.cables(mx, wires, col, THEME.cables.poles, THEME.cables.drops);
+  // (graphics round 4, theme.ts `poleFade`: the poles in a mesh of their own that dissolves near the camera)
+  if (THEME.cables) MX.cables(THEME.poleFade ? poleParts : mx, wires, col, THEME.cables.poles, THEME.cables.drops);
   const sw = THEME.sidewalks;
   if (sw) {
     MX.macetas(mx, col, sw.macetas);
@@ -1734,6 +1820,8 @@ function addTownMx(M: Merger, col: Colliders) {
     // the thatch stays under the follow camera's box over it (Game.ts: 6.2 m)
     const dx = terminal.x - terminal.w / 2, dz = terminal.z;
     MX.airportFront(mx, col, a, { x0: dx - 8, x1: dx, z0: dz - 10, z1: dz + 10, y: 5.5, top: 6.15 }, THEME.airportOut.welcome);
+    // (graphics round 4) the thatch over the front hall and the greca along its front
+    if (THEME.airportOut.terminal) MX.airportTerminal(mx, mxFlat, col, terminal, THEME.airportOut.terminal.hall, [[terminal.z - terminal.d / 2, dz - 11], [dz + 11, terminal.z + terminal.d / 2]]);
   }
 }
 
@@ -1940,12 +2028,12 @@ function palmFrond(len: number, w: number, rise: number) {
 /** The near-camera dissolve (theme.ts `nearFade`; the palms): fragments nearer than about 4.5 m to the camera are
  *  dropped in a short dither, as the papel picado's are, so a crown or a lantern beside the follow camera never fills
  *  the picture. Added to a material's shaders in onBeforeCompile. */
-function nearFadeShader(sh: { vertexShader: string; fragmentShader: string }) {
+function nearFadeShader(sh: { vertexShader: string; fragmentShader: string }, near = 4.4, far = 5.0) {
   sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vNearCam;")
     .replace("#include <project_vertex>", "#include <project_vertex>\nvNearCam = length(mvPosition.xyz);");
   sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vNearCam;")
     .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>
-      if (smoothstep(4.4, 5.0, vNearCam) < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;`);
+      if (smoothstep(${near.toFixed(2)}, ${far.toFixed(2)}, vNearCam) < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;`);
 }
 /** A material (a copy of one of the town's: the lamps') with the near-camera dissolve. */
 function nearFaded<T extends THREE.Material>(m: T): T {
@@ -2149,6 +2237,8 @@ let townMat: THREE.MeshLambertMaterial | null = null;
 
 /** The edition's overhead lines (theme.ts `cables`): a mesh the walking camera looks through (userData.thin). */
 const wires: MX.Part[] = [];
+/** (theme.ts `poleFade`) the overhead lines' poles, in a mesh that dissolves near the camera. */
+const poleParts: MX.Part[] = [];
 /** (theme.ts `regions`) the cenote, the ruins and the mirador at the town's far ends. */
 const mxFar: MX.Part[] = [];
 /** (theme.ts `farHide`) meshes of small things left out when the camera is farther than `r` from (x, z). */

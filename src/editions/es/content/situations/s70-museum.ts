@@ -37,7 +37,8 @@ const TTYPES: EntityDef[] = [
     forms: ["estudiantes", "universitario", "universitaria", "alumno", "alumna", "de estudiante"], attrs: { price: 4000 } }),
   ent("senior", "adulto | mayor", "adult | older", "m", { pl: "adultos | mayores", ltPl: "adults | older", chip: "adulto mayor",
     forms: ["adulta mayor", "adultos mayores", "adultas mayores", "persona mayor", "personas mayores", "tercera edad", "de la tercera edad", "inapam", "jubilado", "jubilada", "jubilados", "pensionado", "pensionada"],
-    attrs: { price: 4000, nat: "senior" } }),
+    // Spain: "persona mayor" (attrs.spain, two units like adulto | mayor)
+    attrs: { price: 4000, nat: "senior", spain: "persona | mayor", spainPl: "personas | mayores", spainG: "f" } }),
   ent("child", "niño", "child", "m", { pl: "niños", ltPl: "children", chip: "niño",
     forms: ["nino", "ninos", "nina", "ninas", "niña", "niñas", "menor", "menores", "nene", "nena", "infantil"], attrs: { price: 0 } }),
 ];
@@ -760,7 +761,7 @@ export const museum: SituationDef = {
       "(sirve | le sirve | esta bien) (mi | la | esta) @cred [de la universidad | internacional | digital]",
     ] },
     no_id: { patterns: [
-      "no (la | lo) (traigo | tengo) [aqui | conmigo | ahorita] #h:id_none", "no (tengo | traigo | traje) (mi | la) @cred [de estudiante] [aqui | conmigo]", "no (la | lo) traje", "no (la | lo) encuentro", "no (tengo | traigo) (la | mi | una)? (tarjeta | credencial) de residente",
+      "no (la | lo) (traigo | tengo | llevo) [aqui | conmigo | ahorita] #h:id_none", "no (tengo | traigo | traje) (mi | la) @cred [de estudiante] [aqui | conmigo]", "no (la | lo) traje", "no (la | lo) encuentro", "no (tengo | traigo) (la | mi | una)? (tarjeta | credencial) de residente",
       "[si] (tengo | la tengo | lo tengo) [mi | la]? [@cred] pero no (la | lo)? (traigo | traje | tengo aqui | tengo conmigo)", "[si] (la | lo) tengo pero (en el hotel | en la casa | en casa | no aqui | no la traigo)",
       "(la | lo) dejé en (el hotel | la casa | casa | el carro | el cuarto)", "(dejé | olvidé) (mi | la) @cred [en (el hotel | la casa | casa)]", "se me olvidó [mi @cred | la @cred]",
       "(la | lo) olvidé [en (el hotel | casa)]", "(perdi | se me perdio) (mi | la) @cred", "(mi | la) @cred (esta | ya esta) vencida", "(esta | ya esta) vencida",
@@ -831,7 +832,7 @@ export const museum: SituationDef = {
     // "No tengo efectivo": so it's the card (never read as "cash")
     // "No tengo tarjeta": only at paying and at the residence-card question (elsewhere it could be either card)
     no_card_ctx: { patterns: ["no (tengo | traigo) (tarjeta | la tarjeta) [aqui | conmigo]", "no (tengo | traigo) (tarjeta | la tarjeta) [aqui | conmigo] [pago | le pago] en efectivo"] },
-    no_cash: { patterns: ["no (tengo | traigo) [suficiente] (efectivo | cash | dinero en efectivo)", "no traigo (efectivo | cash)", "no (puedo | quiero) pagar en efectivo"] },
+    no_cash: { patterns: ["no (tengo | traigo | llevo) [suficiente] (efectivo | cash | dinero en efectivo)", "no (traigo | llevo) (efectivo | cash)", "no (puedo | quiero) pagar en efectivo"] },
     pay_cash: { patterns: ["(con)? tarjeta no [sino] (en | con)? efectivo", "no (con)? tarjeta [sino] (en | con)? efectivo", "(puedo | se puede) pagar en efectivo #q", "(pago | le pago | voy a pagar | prefiero pagar) en efectivo #h:pay_cash", "[no] prefiero [pagar] (en | con)? efectivo", "(en | con) efectivo", "efectivo", "(con | en) (dinero | billetes) [en efectivo]", "(aceptan | acepta) efectivo #q", "en efectivo esta bien",
       "(tiene | tienen) cambio (de | para) [un billete de] {price} #q", "(tiene | tienen) cambio #q"] },
     ask_dollars: { patterns: ["(solo | nomas)? (tengo | traigo) dolares", "(aceptan | acepta | toman) (dolares | dolares americanos)", "(puedo | se puede) pagar (en | con) dolares", "(tienen | hay) cambio de dolares", "cuanto (es | seria | sale | cuesta) en dolares"] },
@@ -887,7 +888,7 @@ export const museum: SituationDef = {
       // the ground floor's permanent collection (the 3D partition's sign "Colección permanente")
       "(donde | por donde) (esta | queda | empieza | se ve) la (coleccion | exposicion) permanente", "(donde | por donde) (esta | queda | empieza) la coleccion [del museo]"] },
     enough_time: { patterns: [
-      "(alcanza | me alcanza | nos alcanza) (el tiempo)? [para ver (todo | la exposicion)]", "(me | nos) da tiempo [de ver (todo | la exposicion)]", "(vale | todavia vale) la pena",
+      "(alcanza | me alcanza | nos alcanza) (el tiempo)? [para ver (todo | la exposicion)]", "(me | nos | le) da tiempo [(de | a) ver (todo | la exposicion | lo todo) | a verlo todo]", "(vale | todavia vale) la pena",
       "(es | son) suficiente [tiempo]", "[solo | nomas] {n:number} minutos", "{n:number} minutos (es | son) (suficiente | suficientes)", "(es | son) suficientes {n:number} minutos", "(alcanzo | alcanzamos) a ver (todo | la exposicion)",
     ] },
     come_back: { patterns: ["manana (puedo | podemos) (usar | volver con) (el | mi | este) boleto", "(puedo | podemos) usar (el | mi | este) boleto manana", "(sirve | vale) (el boleto)? (para)? manana", "(puedo | podemos) (volver | regresar) manana [con el mismo boleto]", "(el boleto | la entrada) (sirve | vale) para manana",
@@ -925,8 +926,8 @@ export const museum: SituationDef = {
     ],
     greet_pm: [t("¡Buenas tardes! | {m:Bienvenido|f:Bienvenida} | al | museo.", "Good afternoon! | Welcome | to the | museum.", "Good afternoon! Welcome to the museum.")],
     late: [t("Le | aviso | que | hoy | cerramos | en | 45 | minutos.", "(To) you | I-let-know | that | today | we-close | in | 45 | minutes.", "Just so you know, we close in 45 minutes today.", { say: "Le aviso que hoy cerramos en cuarenta y cinco minutos." })],
-    enough_time: [t("Sí, | le | alcanza | para | ver | la | exposición | nueva.", "Yes, | (for) you | it's enough | to | see | the | exhibition | new.", "Yes, that's enough time to see the new exhibition.")],
-    still_time: [t("Pero | en | 45 | minutos | le | alcanza | para | ver | la | exposición | nueva.", "But | in | 45 | minutes | (for) you | it's enough | to | see | the | exhibition | new.", "But 45 minutes is enough to see the new exhibition.", { say: "Pero en cuarenta y cinco minutos le alcanza para ver la exposición nueva." })],
+    enough_time: [t("Sí, | le | alcanza | para | ver | la | exposición | nueva.", "Yes, | (for) you | it's enough | to | see | the | exhibition | new.", "Yes, that's enough time to see the new exhibition.", { spain: t("Sí, | le | da tiempo | a | ver | la | exposición | nueva.", "Yes, | (for) you | there's time | to | see | the | exhibition | new.", "Yes, that's enough time to see the new exhibition.") })],
+    still_time: [t("Pero | en | 45 | minutos | le | alcanza | para | ver | la | exposición | nueva.", "But | in | 45 | minutes | (for) you | it's enough | to | see | the | exhibition | new.", "But 45 minutes is enough to see the new exhibition.", { say: "Pero en cuarenta y cinco minutos le alcanza para ver la exposición nueva.", spain: t("Pero | en | 45 | minutos | le | da tiempo | a | ver | la | exposición | nueva.", "But | in | 45 | minutes | (for) you | there's time | to | see | the | exhibition | new.", "But 45 minutes is enough to see the new exhibition.", {say: "Pero en cuarenta y cinco minutos le da tiempo a ver la exposición nueva."}) })],
     open_tomorrow_short: [t("Como | guste. | Mañana | abrimos | a | las | diez.", "As | you-like. | Tomorrow | we-open | at | — | ten.", "Whatever you prefer. Tomorrow we open at ten.", { flags: { 5: ART } })],
     closed_tomorrow_short: [t("Como | guste, | pero | mañana | es | lunes | y | cerramos.", "As | you-like, | but | tomorrow | is | Monday | and | we're closed.", "Whatever you prefer, but tomorrow's Monday and we're closed.")],
     come_back: [t("Lo siento, | el | boleto | es | solo | para | hoy.", "I'm sorry, | the | ticket | is | only | for | today.", "Sorry, the ticket is only good for today.",
@@ -944,26 +945,26 @@ export const museum: SituationDef = {
     group_max: [t("Lo siento, | los | grupos | de | diez | o | más | tienen | que | reservar | antes.", "I'm sorry, | the | groups | of | ten | or | more | have | to | book | ahead.", "Sorry, groups of ten or more need to book ahead.")],
     ask_type_one: [t("¡Claro! | ¿Entrada | general?", "Sure! | Admission | general?", "Sure! General admission?")],
     ask_type_all: [t("¡Claro! | ¿Todos | son | adultos?", "Sure! | All | are | adults?", "Sure! Are they all adults?")],
-    ask_type_any: [t("¡Claro! | ¿Hay | algún | estudiante, | adulto mayor | o | niño?", "Sure! | Is there | any | student, | senior | or | child?", "Sure! Any students, seniors, or kids?")],
-    ask_types_again: [t("Muy | bien. | ¿Cuántos | adultos, | estudiantes, | adultos mayores | o | niños?", "Very | good. | How many | adults, | students, | seniors | or | children?", "Okay. How many adults, students, seniors, or kids?")],
+    ask_type_any: [t("¡Claro! | ¿Hay | algún | estudiante, | adulto mayor | o | niño?", "Sure! | Is there | any | student, | senior | or | child?", "Sure! Any students, seniors, or kids?", { spain: t("¡Claro! | ¿Hay | algún | estudiante, | jubilado | o | niño?", "Sure! | Is there | any | student, | senior | or | child?", "Sure! Any students, seniors, or kids?") })],
+    ask_types_again: [t("Muy | bien. | ¿Cuántos | adultos, | estudiantes, | adultos mayores | o | niños?", "Very | good. | How many | adults, | students, | seniors | or | children?", "Okay. How many adults, students, seniors, or kids?", { spain: t("Muy | bien. | ¿Cuántos | adultos, | estudiantes, | jubilados | o | niños?", "Very | good. | How many | adults, | students, | seniors | or | children?", "Okay. How many adults, students, seniors, or kids?") })],
     ask_amb: [t("Perdón, | ¿entrada | general | o | de | {X}?", "Sorry, | admission | general | or | for | {X}?", "Sorry, general admission or a {X} ticket?")],
     ack: [t("Perfecto.", "Perfect.", "Perfect."), t("Muy | bien.", "Very | good.", "Okay."), t("Claro.", "Sure.", "Sure.")],
-    changed: [t("Claro, | ya | lo | cambié.", "Sure, | already | it | I-changed.", "Sure, I've changed it.")],
+    changed: [t("Claro, | ya | lo | cambié.", "Sure, | already | it | I-changed.", "Sure, I've changed it.", { spain: t("Claro, | ya | lo | he cambiado.", "Sure, | already | it | I've-changed.", "Sure, I've changed it.") })],
     no_problem: [t("No hay problema.", "No problem.", "No problem.")],
     prices: [t("La | entrada | general | cuesta | {$price}. | Estudiantes | y | adultos mayores | pagan | {$amount}, | y | los | niños | menores | de | doce | entran | gratis.",
       "The | admission | general | costs | {$price}. | Students | and | seniors | pay | {$amount}, | and | the | children | younger | than | twelve | get in | free.",
-      "General admission is {$price}. Students and seniors pay {$amount}, and kids under twelve get in free.")],
-    discount_student: [t("Los | estudiantes | pagan | {$price}, | con | credencial | vigente.", "The | students | pay | {$price}, | with | ID card | valid.", "Students pay {$price} with a valid student ID.", { flags: { 5: CRED } })],
+      "General admission is {$price}. Students and seniors pay {$amount}, and kids under twelve get in free.", { spain: t("La | entrada | general | cuesta | {$price}. | Estudiantes | y | jubilados | pagan | {$amount}, | y | los | niños | menores | de | doce | entran | gratis.", "The | admission | general | costs | {$price}. | Students | and | seniors | pay | {$amount}, | and | the | children | younger | than | twelve | get in | free.", "General admission is {$price}. Students and seniors pay {$amount}, and kids under twelve get in free.") })],
+    discount_student: [t("Los | estudiantes | pagan | {$price}, | con | credencial | vigente.", "The | students | pay | {$price}, | with | ID card | valid.", "Students pay {$price} with a valid student ID.", { flags: { 5: CRED }, spain: t("Los | estudiantes | pagan | {$price}, | con | carné | vigente.", "The | students | pay | {$price}, | with | ID card | valid.", "Students pay {$price} with a valid student ID.") })],
     discount_senior: [t("Las | personas | de | sesenta | o | más | pagan | {$price}.", "The | people | of | sixty | or | more | pay | {$price}.", "People sixty and over pay {$price}.")],
     discount_senior_short: [t("Y | las | personas | de | sesenta | o | más, | también | {$price}.", "And | the | people | of | sixty | or | more, | also | {$price}.", "And people sixty and over pay {$price} too.")],
     child_adult: [t("A partir de | los | doce | años | pagan | entrada | general.", "From | the | twelve | years | they-pay | admission | general.", "From age twelve, it's general admission.", { flags: { 1: "los doce años: age twelve (Spanish uses the article)." } })],
     kids_free: [t("Los | niños | menores | de | doce | entran | gratis.", "The | children | younger | than | twelve | get in | free.", "Kids under twelve get in free.")],
 
     // --- student ID ------------------------------------------------------------------
-    ask_id: [t("¿Me | muestra | su | credencial | de | estudiante, | por favor?", "(To) me | you-show | your | ID card | of | student, | please?", "May I see your student ID, please?", { flags: { 3: CRED } })],
-    ask_ids: [t("¿Me | muestran | sus | credenciales | de | estudiante, | por favor?", "(To) me | you-all-show | your | ID cards | of | student, | please?", "May I see your student IDs, please?", { flags: { 1: "muestran: ustedes, speaking to the whole group." } })],
+    ask_id: [t("¿Me | muestra | su | credencial | de | estudiante, | por favor?", "(To) me | you-show | your | ID card | of | student, | please?", "May I see your student ID, please?", { flags: { 3: CRED }, spain: t("¿Me | muestra | su | carné | de | estudiante, | por favor?", "(To) me | you-show | your | ID card | of | student, | please?", "May I see your student ID, please?") })],
+    ask_ids: [t("¿Me | muestran | sus | credenciales | de | estudiante, | por favor?", "(To) me | you-all-show | your | ID cards | of | student, | please?", "May I see your student IDs, please?", { flags: { 1: "muestran: ustedes, speaking to the whole group." }, spain: t("¿Me | muestran | sus | carnés | de | estudiante, | por favor?", "(To) me | you-all-show | your | ID cards | of | student, | please?", "May I see your student IDs, please?", {flags: {1: "muestran: ustedes, speaking to the whole group."}}) })],
     id_ok: [t("Gracias, | está bien.", "Thanks, | it's fine.", "Thanks, that's fine."), t("Perfecto, | gracias.", "Perfect, | thanks.", "Great, thank you.")],
-    id_missing: [t("Lo siento, | sin | credencial | vigente | le | tengo | que | cobrar | la | entrada | general. | ¿Está bien?", "I'm sorry, | without | ID card | valid | (to) you | I-have | to | charge | the | admission | general. | Is that okay?", "Sorry, without a valid ID I have to charge general admission. Is that okay?")],
+    id_missing: [t("Lo siento, | sin | credencial | vigente | le | tengo | que | cobrar | la | entrada | general. | ¿Está bien?", "I'm sorry, | without | ID card | valid | (to) you | I-have | to | charge | the | admission | general. | Is that okay?", "Sorry, without a valid ID I have to charge general admission. Is that okay?", { spain: t("Lo siento, | sin | carné | vigente | le | tengo | que | cobrar | la | entrada | general. | ¿Está bien?", "I'm sorry, | without | ID card | valid | (to) you | I-have | to | charge | the | admission | general. | Is that okay?", "Sorry, without a valid ID I have to charge general admission. Is that okay?") })],
     id_sorry: [t("Lo siento | mucho. | Así | son | las | reglas.", "I'm sorry | very much. | So | are | the | rules.", "I'm really sorry. Those are the rules.")],
     rules: [t("Son | las | reglas | del | museo.", "They're | the | rules | of the | museum.", "Those are the museum's rules.")],
 
@@ -1002,15 +1003,15 @@ export const museum: SituationDef = {
       t("En | total | son | {$price}.", "In | total | it's | {$price}.", "Your total is {$price}."),
     ],
     pay_how: [t("¿Va | a | pagar | en efectivo | o | con | tarjeta?", "Are you going | to | pay | in cash | or | with | card?", "Will that be cash or card?")],
-    card_tap: [t("Claro, | le | paso | la | terminal.", "Sure, | (to) you | I-pass | the | card machine.", "Sure, here's the card machine.", { flags: { 4: "la terminal: the card machine." } })],
+    card_tap: [t("Claro, | le | paso | la | terminal.", "Sure, | (to) you | I-pass | the | card machine.", "Sure, here's the card machine.", { flags: { 4: "la terminal: the card machine." }, spain: t("Claro, | le | paso | el | datáfono.", "Sure, | (to) you | I-pass | the | card machine.", "Sure, here's the card machine.") })],
     card_later: [t("Sí, | aceptamos | tarjeta.", "Yes, | we-accept | card.", "Yes, we take cards.")],
     cash_yes: [t("Sí, | claro.", "Yes, | of course.", "Yes, of course.")],
     cash_then: [t("Entonces | en efectivo.", "Then | in cash.", "Cash, then.")],
     cash_ok: [t("De acuerdo, | en efectivo.", "Okay, | in cash.", "Okay, cash.")],
-    phone_ok: [t("Claro, | acerque | su | celular | a | la | terminal.", "Sure, | bring close | your | cell phone | to | the | card machine.", "Sure, just hold your phone to the card machine.")],
-    phone_later: [t("Sí, | también | se puede | con | el | celular.", "Yes, | also | you can | with | the | cell phone.", "Yes, you can pay with your phone too.")],
+    phone_ok: [t("Claro, | acerque | su | celular | a | la | terminal.", "Sure, | bring close | your | cell phone | to | the | card machine.", "Sure, just hold your phone to the card machine.", { spain: t("Claro, | acerque | su | móvil | al | datáfono.", "Sure, | bring close | your | phone | to the | card machine.", "Sure, just hold your phone to the card machine.") })],
+    phone_later: [t("Sí, | también | se puede | con | el | celular.", "Yes, | also | you can | with | the | cell phone.", "Yes, you can pay with your phone too.", { spain: t("Sí, | también | se puede | con | el | móvil.", "Yes, | also | you can | with | the | phone.", "Yes, you can pay with your phone too.") })],
     dollars: [t("Lo siento, | solo | aceptamos | pesos. | También | puede | pagar | con | tarjeta.", "I'm sorry, | only | we-accept | pesos. | Also | you-can | pay | with | card.", "Sorry, we only take pesos. You can also pay by card.")],
-    paid: [t("¡Gracias!", "Thank you!", "Thank you!"), t("Listo, | gracias.", "Done, | thanks.", "All set, thanks.")],
+    paid: [t("¡Gracias!", "Thank you!", "Thank you!"), t("Listo, | gracias.", "Done, | thanks.", "All set, thanks.", { spain: t("Muy bien, | gracias.", "All right, | thanks.", "All set, thanks.") })],
     change_back: [t("Gracias. | Aquí | tiene | su | cambio.", "Thanks. | Here | you have | your | change.", "Thank you. Here's your change.")],
     ticket_here: [t("Aquí | tiene | su | boleto.", "Here | you have | your | ticket.", "Here's your ticket.",
       { neutral: t("Aquí | tiene | su | entrada.", "Here | you have | your | ticket.", "Here's your ticket.") })],
@@ -1019,14 +1020,14 @@ export const museum: SituationDef = {
     guide_here: [t("Y | aquí | está | su | audioguía, | en | {X}. | Marque | el | número | de | cada | pieza.", "And | here | is | your | audio guide, | in | {X}. | Key in | the | number | of | each | piece.", "And here's your audio guide, in {X}. Just key in the number of each piece.")],
     guides_here: [t("Y | aquí | están | sus | audioguías, | en | {X}. | Marquen | el | número | de | cada | pieza.", "And | here | are | your | audio guides, | in | {X}. | Key in (pl.) | the | number | of | each | piece.", "And here are your audio guides, in {X}. Just key in the number of each piece.", { flags: { 7: "Marquen: ustedes, speaking to the whole group." } })],
     bag_rule: [t("Si | trae | mochila, | por favor | déjela | en | paquetería, | aquí | a | la | entrada.", "If | you-bring | backpack, | please | leave it | at | bag check, | here | at | the | entrance.", "If you have a backpack, please leave it at the bag check, here by the entrance.", { flags: { 6: PAQ },
-      neutral: t("Si | trae | mochila, | por favor | déjela | en | el | guardarropa, | aquí | a | la | entrada.", "If | you-bring | backpack, | please | leave it | at | the | bag check, | here | at | the | entrance.", "If you have a backpack, please leave it at the bag check, here by the entrance.") })],
+      neutral: t("Si | trae | mochila, | por favor | déjela | en | el | guardarropa, | aquí | a | la | entrada.", "If | you-bring | backpack, | please | leave it | at | the | bag check, | here | at | the | entrance.", "If you have a backpack, please leave it at the bag check, here by the entrance."), spain: t("Si | lleva | mochila, | por favor | déjela | en | el | guardarropa, | aquí | a | la | entrada.", "If | you-have | backpack, | please | leave it | at | the | bag check, | here | at | the | entrance.", "If you have a backpack, please leave it at the bag check, here by the entrance.") })],
     already_paid: [t("Ya | está | pagado.", "Already | it's | paid.", "You've already paid.")],
 
     // --- the new exhibition ------------------------------------------------------------
     exhibit_where: [
       t("La | exposición | nueva, | “Colores de la noche”, | está | arriba, | a la derecha.", "The | exhibition | new, | “Colors of the Night”, | is | upstairs, | on the right.", "The new exhibition, “Colors of the Night”, is upstairs on the right."),
       t("Está | en | la | planta | alta, | a la derecha. | Puede | subir | por | las | escaleras | o | en | el | elevador.", "It's | on | the | floor | upper, | on the right. | You-can | go up | by | the | stairs | or | in | the | elevator.", "It's upstairs on the right. You can take the stairs or the elevator.",
-        { flags: { 3: "planta alta: the upper floor (planta baja = the ground floor)." } }),
+        { flags: { 3: "planta alta: the upper floor (planta baja = the ground floor)." }, spain: t("Está | en | la | planta | alta, | a la derecha. | Puede | subir | por | las | escaleras | o | en | el | ascensor.", "It's | on | the | floor | upper, | on the right. | You-can | go up | by | the | stairs | or | in | the | elevator.", "It's upstairs on the right. You can take the stairs or the elevator.", {flags: {3: "planta alta: the upper floor (planta baja = the ground floor)."}}) }),
     ],
     exhibit_included_full: [t("Sí, | la | exposición | nueva | viene | incluida | en | su | boleto. | Está | arriba, | a la derecha.", "Yes, | the | exhibition | new | comes | included | in | your | ticket. | It's | upstairs, | on the right.", "Yes, the new exhibition is included in your ticket. It's upstairs on the right.",
       { neutral: t("Sí, | la | exposición | nueva | viene | incluida | en | su | entrada. | Está | arriba, | a la derecha.", "Yes, | the | exhibition | new | comes | included | in | your | ticket. | It's | upstairs, | on the right.", "Yes, the new exhibition is included in your ticket. It's upstairs on the right.") })],
@@ -1036,7 +1037,7 @@ export const museum: SituationDef = {
     exhibit_mention: [t("Ah, | y | no se pierda | nuestra | exposición | nueva, | “Colores de la noche”. | Está | arriba, | a la derecha.", "Oh, | and | don't miss | our | exhibition | new, | “Colors of the Night”. | It's | upstairs, | on the right.", "Oh, and don't miss our new exhibition, “Colors of the Night”. It's upstairs on the right.")],
 
     // --- information ---------------------------------------------------------------------
-    photos: [t("Puede | tomar | fotos, | pero | sin | flash, | por favor.", "You-can | take | photos, | but | without | flash, | please.", "You can take photos, but no flash, please.")],
+    photos: [t("Puede | tomar | fotos, | pero | sin | flash, | por favor.", "You-can | take | photos, | but | without | flash, | please.", "You can take photos, but no flash, please.", { spain: t("Puede | hacer | fotos, | pero | sin | flash, | por favor.", "You-can | take | photos, | but | without | flash, | please.", "You can take photos, but no flash, please.") })],
     coat_check: [t("La | paquetería | está | aquí, | a | la | entrada. | Es | gratis.", "The | bag check | is | here, | at | the | entrance. | It's | free.", "The bag check is right here by the entrance. It's free.", { flags: { 1: PAQ },
       neutral: t("El | guardarropa | está | aquí, | a | la | entrada. | Es | gratis.", "The | bag check | is | here, | at | the | entrance. | It's | free.", "The bag check is right here by the entrance. It's free.") })],
     bag_check: [t("Las | mochilas | se dejan | en | paquetería, | aquí | a | la | entrada. | Es | gratis.", "The | backpacks | are left | at | bag check, | here | at | the | entrance. | It's | free.", "Backpacks go to the bag check, right here by the entrance. It's free.", { flags: { 4: PAQ },
@@ -1045,16 +1046,16 @@ export const museum: SituationDef = {
       neutral: t("En | el | guardarropa, | aquí | a | la | entrada.", "At | the | bag check, | here | at | the | entrance.", "At the bag check, right here by the entrance.") })],
     shop_cafe: [t("La | tienda | y | la | cafetería | están | en | la | planta | baja, | junto | a | la | salida.", "The | shop | and | the | café | are | on | the | floor | ground, | next | to | the | exit.", "The shop and the café are on the ground floor, next to the exit.")],
     restroom: [t("Los | baños | están | al fondo | del | pasillo, | pasando | la | paquetería.", "The | restrooms | are | at the end | of the | hallway, | past | the | bag check.", "The restrooms are at the end of the hall, past the bag check.", { flags: { 8: PAQ },
-      neutral: t("Los | baños | están | al fondo | del | pasillo, | pasando | el | guardarropa.", "The | restrooms | are | at the end | of the | hallway, | past | the | bag check.", "The restrooms are at the end of the hall, past the bag check.") })],
+      neutral: t("Los | baños | están | al fondo | del | pasillo, | pasando | el | guardarropa.", "The | restrooms | are | at the end | of the | hallway, | past | the | bag check.", "The restrooms are at the end of the hall, past the bag check."), spain: t("Los | aseos | están | al fondo | del | pasillo, | pasando | el | guardarropa.", "The | restrooms | are | at the end | of the | hallway, | past | the | bag check.", "The restrooms are at the end of the hall, past the bag check.") })],
     hours: [t("Abrimos | de | martes | a | domingo, | de | diez | a | cinco. | Los | lunes | cerramos.", "We-open | from | Tuesday | to | Sunday, | from | ten | to | five. | On | Mondays | we're closed.", "We're open Tuesday to Sunday, ten to five. We're closed on Mondays.",
       { flags: { 9: "los before a weekday = on (every) …" } })],
     close_today: [t("Hoy | cerramos | a | las | cinco.", "Today | we-close | at | — | five.", "We close at five today.", { flags: { 3: ART } })],
     exit: [t("La | salida | está | en | la | planta | baja, | junto | a | la | tienda.", "The | exit | is | on | the | floor | ground, | next | to | the | shop.", "The exit is on the ground floor, next to the shop.")],
-    touch_rule: [t("No, | no se puede | tocar | nada. | Pero | sí | puede | tomar | fotos, | sin | flash.", "No, | you can't | touch | anything. | But | yes | you-can | take | photos, | without | flash.", "No, you can't touch anything. But you can take photos, without flash.", { flags: { 5: "sí before a verb stresses it: you CAN take photos." } })],
+    touch_rule: [t("No, | no se puede | tocar | nada. | Pero | sí | puede | tomar | fotos, | sin | flash.", "No, | you can't | touch | anything. | But | yes | you-can | take | photos, | without | flash.", "No, you can't touch anything. But you can take photos, without flash.", { flags: { 5: "sí before a verb stresses it: you CAN take photos." }, spain: t("No, | no se puede | tocar | nada. | Pero | sí | puede | hacer | fotos, | sin | flash.", "No, | you can't | touch | anything. | But | yes | you-can | take | photos, | without | flash.", "No, you can't touch anything. But you can take photos, without flash.", {flags: {5: "sí before a verb stresses it: you CAN take photos."}}) })],
     floor_plan: [t("¡Claro! | Aquí | tiene | un | mapa | del | museo.", "Sure! | Here | you have | a | map | of the | museum.", "Sure! Here's a map of the museum.")],
-    elevator: [t("El | elevador | está | ahí, | a la izquierda.", "The | elevator | is | there, | on the left.", "The elevator is over there on the left.")],
+    elevator: [t("El | elevador | está | ahí, | a la izquierda.", "The | elevator | is | there, | on the left.", "The elevator is over there on the left.", { spain: t("El | ascensor | está | ahí, | a la izquierda.", "The | elevator | is | there, | on the left.", "The elevator is over there on the left.") })],
     duration: [t("Más o menos | una | hora | y | media.", "More or less | an | hour | and | a half.", "About an hour and a half.")],
-    duration_late: [t("Más o menos | una | hora | y | media, | pero | en | 45 | minutos | le | alcanza | para | la | exposición | nueva.", "More or less | an | hour | and | a half, | but | in | 45 | minutes | (for) you | it's enough | for | the | exhibition | new.", "About an hour and a half, but 45 minutes is enough for the new exhibition.", { say: "Más o menos una hora y media, pero en cuarenta y cinco minutos le alcanza para la exposición nueva." })],
+    duration_late: [t("Más o menos | una | hora | y | media, | pero | en | 45 | minutos | le | alcanza | para | la | exposición | nueva.", "More or less | an | hour | and | a half, | but | in | 45 | minutes | (for) you | it's enough | for | the | exhibition | new.", "About an hour and a half, but 45 minutes is enough for the new exhibition.", { say: "Más o menos una hora y media, pero en cuarenta y cinco minutos le alcanza para la exposición nueva.", spain: t("Más o menos | una | hora | y | media, | pero | en | 45 | minutos | le | da tiempo | a ver | la | exposición | nueva.", "More or less | an | hour | and | a half, | but | in | 45 | minutes | (for) you | there's time | to see | the | exhibition | new.", "About an hour and a half, but 45 minutes is enough for the new exhibition.", {say: "Más o menos una hora y media, pero en cuarenta y cinco minutos le da tiempo a ver la exposición nueva."}) })],
     tour: [t("Los | sábados | a | las | doce | hay | una | visita | guiada | gratis, | en | español.", "On | Saturdays | at | — | twelve | there is | a | tour | guided | free, | in | Spanish.", "On Saturdays at noon there's a free guided tour, in Spanish.",
       { flags: { 0: "los before a weekday = on (every) …", 3: ART } })],
     start: [t("Las | salas | empiezan | ahí, | a la izquierda.", "The | galleries | start | there, | on the left.", "The galleries start over there on the left.")],
@@ -1098,7 +1099,7 @@ export const museum: SituationDef = {
     ],
     harold_why: [t("Las | piezas | son | muy | antiguas | y | delicadas.", "The | pieces | are | very | old | and | delicate.", "The pieces are very old and delicate.")],
     harold_why_flash: [t("El | flash | daña | las | piezas.", "The | flash | damages | the | pieces.", "Flash damages the exhibits.")],
-    harold_deny: [t("Ah, | perdone, | me equivoqué. | Siga | disfrutando | su | visita.", "Oh, | forgive me, | I was wrong. | Keep | enjoying | your | visit.", "Oh, sorry, my mistake. Enjoy the rest of your visit.")],
+    harold_deny: [t("Ah, | perdone, | me equivoqué. | Siga | disfrutando | su | visita.", "Oh, | forgive me, | I was wrong. | Keep | enjoying | your | visit.", "Oh, sorry, my mistake. Enjoy the rest of your visit.", { spain: t("Ah, | perdone, | me he equivocado. | Siga | disfrutando | su | visita.", "Oh, | forgive me, | I was wrong. | Keep | enjoying | your | visit.", "Oh, sorry, my mistake. Enjoy the rest of your visit.") })],
     harold_ask: [t("¿De acuerdo?", "Okay?", "Okay?")],
   },
 
@@ -1139,7 +1140,7 @@ export const museum: SituationDef = {
       items: [
         { id: "ty_yes", s: t("Sí, | por favor.", "Yes, | please.", "Yes, please.") },
         { id: "ty_student", s: t("No, | de | estudiante.", "No, | for | student.", "No, a student ticket.") },
-        { id: "ty_senior", s: t("No, | de | adulto mayor, | por favor.", "No, | for | senior, | please.", "No, a senior ticket, please.") },
+        { id: "ty_senior", s: t("No, | de | adulto mayor, | por favor.", "No, | for | senior, | please.", "No, a senior ticket, please.", { spain: t("No, | de | jubilado, | por favor.", "No, | for | senior, | please.", "No, a senior ticket, please.") }) },
       ],
     },
     types_all: {
@@ -1163,13 +1164,13 @@ export const museum: SituationDef = {
       items: [
         { id: "ty_mix", s: t("Un | adulto | y | un | estudiante, | por favor.", "One | adult | and | one | student, | please.", "One adult and one student, please.") },
         { id: "ty_they_all", s: t("Todos | somos | adultos.", "All | we-are | adults.", "We're all adults.") },
-        { id: "ty_senior_child", s: t("Un | adulto mayor | y | un | niño.", "One | senior | and | one | child.", "One senior and one child.") },
+        { id: "ty_senior_child", s: t("Un | adulto mayor | y | un | niño.", "One | senior | and | one | child.", "One senior and one child.", { spain: t("Un | jubilado | y | un | niño.", "One | senior | and | one | child.", "One senior and one child.") }) },
       ],
     },
     okay: {
       lt: "Agree",
       items: [
-        { id: "ok_pay", s: t("Está bien, | pago | la | entrada | general.", "That's fine, | I-pay | the | admission | general.", "That's fine, I'll pay general admission.") },
+        { id: "ok_pay", s: t("Está bien, | pago | la | entrada | general.", "That's fine, | I-pay | the | admission | general.", "That's fine, I'll pay general admission.", { spain: t("Vale, | pago | la | entrada | general.", "Okay, | I-pay | the | admission | general.", "That's fine, I'll pay general admission.") }) },
         { id: "ok_full", s: t("Bueno, | pago | el | precio | completo.", "Well, | I-pay | the | price | full.", "Okay, I'll pay full price.") },
       ],
     },
@@ -1193,9 +1194,9 @@ export const museum: SituationDef = {
     id: {
       lt: "Show your student ID",
       items: [
-        { id: "id_here", s: t("Aquí | está | mi | credencial.", "Here | is | my | ID card.", "Here's my student ID.") },
+        { id: "id_here", s: t("Aquí | está | mi | credencial.", "Here | is | my | ID card.", "Here's my student ID.", { spain: t("Aquí | está | mi | carné.", "Here | is | my | ID card.", "Here's my student ID.") }) },
         { id: "here_you_go", s: t("Aquí tiene.", "Here you go.", "Here you go.") },
-        { id: "id_none", s: t("Perdón, | no la traigo.", "Sorry, | I don't have it on me.", "Sorry, I don't have it with me.") },
+        { id: "id_none", s: t("Perdón, | no la traigo.", "Sorry, | I don't have it on me.", "Sorry, I don't have it with me.", { spain: t("Perdón, | no lo llevo.", "Sorry, | I don't have it on me.", "Sorry, I don't have it with me.") }) },
       ],
     },
     guide: {
@@ -1228,10 +1229,10 @@ export const museum: SituationDef = {
     questions: {
       lt: "Ask about the museum",
       items: [
-        { id: "q_photos", s: t("¿Se pueden | tomar | fotos?", "Can one | take | photos?", "Can I take photos?") },
+        { id: "q_photos", s: t("¿Se pueden | tomar | fotos?", "Can one | take | photos?", "Can I take photos?", { spain: t("¿Se pueden | hacer | fotos?", "Can one | take | photos?", "Can I take photos?") }) },
         { id: "q_coat", s: t("¿Dónde | dejo | mi | mochila?", "Where | do I leave | my | backpack?", "Where can I leave my backpack?") },
         { id: "q_shop", s: t("¿Dónde | está | la | tienda?", "Where | is | the | shop?", "Where's the gift shop?") },
-        { id: "q_restroom", s: t("¿Dónde | están | los | baños?", "Where | are | the | restrooms?", "Where are the restrooms?") },
+        { id: "q_restroom", s: t("¿Dónde | están | los | baños?", "Where | are | the | restrooms?", "Where are the restrooms?", { spain: t("¿Dónde | están | los | aseos?", "Where | are | the | restrooms?", "Where are the restrooms?") }) },
         { id: "q_close", s: t("¿A | qué | hora | cierran?", "At | what | time | do you close?", "What time do you close?") },
         { id: "q_map", s: t("¿Tiene | un | mapa | del | museo?", "Do you have | a | map | of the | museum?", "Do you have a map of the museum?") },
       ],
@@ -1274,6 +1275,11 @@ export const museum: SituationDef = {
   },
 
   merges: {
+    // Spain's twins (11 Nov 2026)
+    "da tiempo": { reason: "grammatical_fusion", split: "da → it gives + tiempo → time: (le) da tiempo = there's time (for you).", minimal: "Verb and noun." },
+    "he cambiado": { reason: "grammatical_fusion", split: "he → have/has + cambiado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle." },
+    "muy bien": { reason: "lexical_expression", split: "muy → very + bien → well; = all right, okay.", minimal: "Two words." },
+    "me he equivocado": { reason: "grammatical_fusion", split: "he → have/has + equivocado (participle): haber + participle, Spain's present perfect for what has just happened; English says it as one verb phrase.", minimal: "Auxiliary and participle, with no and the pronoun." },
     "costa maya": { reason: "lexical_expression", split: "costa → coast + maya → Maya would translate part of the museum's proper name word by word.", minimal: "Only the two-word name; Museo de la stays separate." },
     "adulto mayor": { reason: "lexical_expression", split: "adulto → adult + mayor → older reads a fixed Mexican term word by word: a senior (60 and over).", minimal: "Two words." },
     "adultos mayores": { reason: "lexical_expression", split: "adultos → adults + mayores → older reads a fixed Mexican term word by word: seniors.", minimal: "Two words." },

@@ -152,11 +152,11 @@ held-out 41/41, 0/3; vitest (es) 107/107.
 
 ## Spain twins (11 Nov 2026)
 
-26 twins (Doctora Herrera keeps usted, as the brief says; no register change). Spain's words: conducir (drive_ok, the hint q_drive),
+22 twins (Doctora Herrera keeps usted, as the brief says; no register change). Spain's words: conducir (drive_ok, the hint q_drive),
 datáfono (card_tap; the pattern also takes "¿Tiene datáfono?"), calentito, "unas décimas" for a temperature just above normal
 (temp_slight), "¿cómo de fuerte…?" for "¿qué tan fuerte…?", "Solo…" for "Nada más…" (= just), "¡Me alegro!" / "Menos mal que…"
 for "¡Qué bueno (que)…!", "vuelva" for "regrese", "¡Que se mejore pronto!" for "¡Que se alivie!", "más pequeño" for "más chico",
 "Ya está, ya ha pasado / ya me ha llegado" (Spain's perfect for what just happened). "Surtir una receta" is Mexican: the pharmacy
-lines ask "¿Sabe a qué farmacia ir?" and answer "le vale cualquier farmacia" / "le dan el medicamento". Left for the lead: the symptom
+lines take their neutral twins in Spain ("¿Sabe dónde comprar el medicamento?", from es-spain's merge). Left for the lead: the symptom
 entity "escurrimiento nasal" (Spain: moqueo / mucosidad) has no Spain noun (a two-unit entity; the doctor rarely says it); "¿Qué
 lo/la trae por aquí?" kept (Spain also says "le"). Spain corpus: 17 items (constipado, décimas, conducir, coger el coche, datáfono, vale).

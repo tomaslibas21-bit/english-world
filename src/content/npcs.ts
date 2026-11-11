@@ -49,6 +49,8 @@ export interface Look {
 
 export interface NpcDef extends NpcInfo {
   role: { en: string; lt: string };
+  /** The Spanish edition: the role as Spain names it, where it differs ("Alquiler de coches"; compose.ts roleSaid). */
+  roleSpain?: string;
   look: Look;
   bio?: string;
 }

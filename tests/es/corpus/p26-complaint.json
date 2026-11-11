@@ -449,5 +449,8 @@
   {"ctx": "offer", "say": "No, gracias por la oferta", "intent": "any", "not": ["accept_offer", "agree", "yn:yes"], "note": "audit 5 Nov"},
   {"ctx": "offer", "say": "Aunque sea gratis, no lo quiero", "intent": "any", "not": ["accept_offer", "agree", "yn:yes"], "note": "audit 5 Nov"},
   {"ctx": "offer", "say": "No quiero pagar nada más", "intent": "any", "not": ["accept_offer", "agree", "yn:yes"], "note": "audit 5 Nov"},
-  {"ctx": "offer_manager", "say": "Sí, acepto.", "intent": ["accept_offer", "yn:yes", "agree"], "note": "audit 5 Nov: a yes to the manager (the handler: no visit named)"}
+  {"ctx": "offer_manager", "say": "Sí, acepto.", "intent": ["accept_offer", "yn:yes", "agree"], "note": "audit 5 Nov: a yes to the manager (the handler: no visit named)"},
+  {"ctx": "anything", "say": "¿Me da un número de reporte, por favor?", "intent": "ask_reference", "note": "follow-up 5 Nov: the neutral word for folio"},
+  {"ctx": "history", "say": "¿Cuál es mi número de reporte?", "intent": "ask_reference", "note": "follow-up 5 Nov"},
+  {"ctx": "anything", "say": "¿Me repite el número de reporte?", "intent": "ask_repeat", "note": "follow-up 5 Nov"}
 ] }

@@ -12,7 +12,7 @@ Branch `spanish-edition` on GitHub (english-world). Nothing is live; Maple Harbo
 - **The owner's decisions:** Puerto Colibrí; Mexican Spanish with a Settings switch to neutral Latin American (lines with
   a Mexican-only word have a neutral twin); learners' Spain forms count as correct (vosotros, zumo, móvil, coche, vale);
   a Mexican cast; English help.
-- **Three model conversations, fully Spanish:** the café (Mariana, Café La Ceiba), the mercado (Doña Lupe's stall:
+- **Three model conversations, fully Spanish:** the café (Mariana, Café La Ceiba), the mercado (Doña Licha's stall:
   kilos, "¿a cómo?", "¿para hoy o para mañana?", the pilón) and the taxi (Don Rigo: the fare agreed before you get in).
   Café 93/93 understanding tests, mercado 49/49, taxi 44/44; every conversation completes on 12/12 seeds; no crashes.
 - **The interface in English** for the Spanish edition: 494 strings through `L()`. In the English edition the rendered
@@ -37,7 +37,7 @@ Branch `spanish-edition` on GitHub (english-world). Nothing is live; Maple Harbo
 | ![Title](img/1-title-phone.jpg) | ![Café](img/6-cafe-conversation-phone.jpg) |
 | The title, in English, at phone size | The café: Spanish with English glosses |
 | ![Zócalo](img/3-zocalo-kiosco.jpg) | ![Mercado](img/5-mercado-inside.jpg) |
-| The zócalo's kiosco, stalls and the sea | Doña Lupe's stall in the Mercado Municipal |
+| The zócalo's kiosco, stalls and the sea | Doña Licha's stall in the Mercado Municipal |
 
 ## Next
 

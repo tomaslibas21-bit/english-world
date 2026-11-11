@@ -6,7 +6,7 @@ import { coachVoice, npcVoice } from "../content/voices";
 import { SITUATION_BY_ID } from "../content/situations";
 import { GLOBAL } from "../content/global";
 import { placeLtNamed } from "../content/locations";
-import { addressInformal, compose, type Sentence } from "../convo/compose";
+import { addressInformal, compose, roleSaid, variety, type Sentence } from "../convo/compose";
 import type { EntityDef, HintGroup, SituationDef } from "../content/types";
 import { audio } from "../game/audio";
 import { game } from "../game/gameRef";
@@ -273,7 +273,7 @@ function NpcInfo({ sit }: { sit: SituationDef }) {
     {open && <div className="npc-info-card" id="npc-info-card" role="region" aria-label={L("Apie pašnekovą")}>
       <div className="npc-identity">
         <div className="avatar" style={{ background: avatarColor(npcId) }}>{(npc?.name ?? "?").replace(/^(Mr\.|Ms\.|Mrs\.|Officer) /, "").charAt(0)}</div>
-        <div className="who"><b>{npc?.name}</b><span className="role"><em lang={TL}>{npc?.role.en}</em>{ltRole && <small lang={EDITION.helper}>{ltRole}</small>}</span></div>
+        <div className="who"><b>{npc?.name}</b><span className="role"><em lang={TL}>{roleSaid(npc)}</em>{ltRole && <small lang={EDITION.helper}>{ltRole}</small>}</span></div>
         <button className="close-x" onClick={close} aria-label={L("Uždaryti informaciją")}><Icon name="close" size={20} /></button>
       </div>
       <p className="place" lang={EDITION.helper}>{sit.mode === "video" ? L("Vaizdo skambutis") : placeLtNamed(sit.location)}</p>
@@ -484,6 +484,11 @@ function CallStrip({ sit }: { sit: SituationDef }) {
 
 function chipLabel(e: EntityDef, fem = false) {
   if (fem && e.ltF) return e.ltF.split(" | ").map((p) => p.split("/")[0]).join(" ");
+  // the Spanish edition's neutral or Spain text: the entity's own word there (attrs.neutralChip / spainChip, else its
+  // neutral / Spain noun), so a learner who chose España sees "pequeña", "coche" on the chips
+  const a = e.attrs as Record<string, unknown> | undefined, v = variety();
+  const alt = v === "spain" ? a?.spainChip ?? a?.spain ?? a?.neutralChip ?? a?.neutral : v === "neutral" ? a?.neutralChip ?? a?.neutral : undefined;
+  if (e.chip && typeof alt === "string") return alt;
   if (e.chip) return e.chip;
   const parts = e.lt.split(" | ").map((p) => p.split("/")[0]);
   return parts.join(" ");
