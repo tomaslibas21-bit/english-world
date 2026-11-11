@@ -5,7 +5,7 @@
 // vehicles and the town's sounds; and the last details (5 Nov 2026): every speaker in the conversation's picture, the
 // last props from Maple Harbor, calle Uxmal, the cenote and the ruins. What is still to do is in docs/es/TOWN.md.
 import type { TownTheme } from "../../../../game/world/theme";
-export type { BuildingLook, OutdoorSpot, TianguisGoods, TownTheme } from "../../../../game/world/theme";
+export type { BuildingLook, FloorKind, OutdoorSpot, RoomLook, TianguisGoods, TownTheme } from "../../../../game/world/theme";
 
 export const THEME: TownTheme = {
   // --- the rooms and the conversations' spots (docs/es/TOWN.md tasks 6 and 7, "Every conversation's spot") ---
@@ -112,6 +112,8 @@ export const THEME: TownTheme = {
     // graphics round 3: every place a line sends the learner to (the restrooms, the cafés, the ATM, the paquetería, the
     // elevator), the bus terminal's hall, and the rest of the rooms
     services: true, terminalMx: true, roomsMx: true,
+    // graphics round 4: the shops and the clinic as Mexican ones from the door, the bank's floor, the halls and homes
+    shopsMx4: true, clinicMx4: true, bankMx: true, hallsMx: true,
   },
   // s71b: in Mexico an attendant fills the tank, so Doña Chela stands at the pump by the learner's car (beside pump 2,
   // the car facing the street), not in the shop; the learner talks to her from behind the car
@@ -271,12 +273,28 @@ export const THEME: TownTheme = {
     // Correos de México's rosa mexicano (the counter, the rugs and the sign are interiors.ts's, `mailbox`)
     "post-office": { accent: "#c2006a" },
     // Diego and Natalia's house: a warm ceramic tile floor, warm light walls, terracotta baseboards (and `homeMx`)
-    "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b" },
+    "dans-house": { floor: "#e3c9a4", floorKind: "tile", wall: "#ffe6cc", accent: "#b5523b", dado: "#d9844f" },
     // (graphics round 2) Departamentos Las Palmas: pale mint walls, a teal baseboard, and (round 3) the Yucatán's
     // mosaicos de pasta on its floors (cement tiles with an eight-pointed star); the hotel's lobby:
     // pale stone tiles, cream walls, the sea's blue
-    apartments: { floor: "#e9dcc0", floorKind: "pasta", wall: "#eef3e6", accent: "#2f7f78" },
+    apartments: { floor: "#e9dcc0", floorKind: "pasta", wall: "#eef3e6", accent: "#2f7f78", dado: "#8fc9bd" },
     hotel: { floor: "#e8d6b6", floorKind: "tile", wall: "#fbf3e4", accent: "#1f6f8b" },
+    // (graphics round 4) the shops and the clinic painted as Mexican ones: a strong lower band (the dado) under a light
+    // wall, Mexican floors. Boutique Hilos: terracotta tiles, añil blue under warm cal; the estética: mosaicos in rosa
+    // mexicano and turquoise, a turquoise dado under pink; Tienda El Faro: large ceramic tiles, the station's red under
+    // cream; the car rental: granito, the green under pale sand; the clinic: granito, verde agua under white (as a
+    // Mexican clinic's walls)
+    threads: { floor: "#c0673f", floorKind: "barro", wall: "#f7e8cf", dado: "#2f5f9a", accent: "#7a1f4b" },
+    salon: { floor: "#f3e6dc", floorKind: "pasta", pasta: ["#1aa39a", "#e4007c", "#f6a800"], wall: "#fde3ec", dado: "#22a39b", accent: "#c2185b" },
+    "gas-station": { floor: "#e9e2d4", floorKind: "ceramic", wall: "#fbf1de", dado: "#c8352a", accent: "#7a1f1a" },
+    "car-rental": { floor: "#e6dccb", floorKind: "granito", wall: "#f6ecd6", dado: "#1f8a70", accent: "#0f5a48" },
+    clinic: { floor: "#e3e3dc", floorKind: "granito", wall: "#fbfaf4", dado: "#8fd1c4", dadoH: 1.4, accent: "#2a7f8a" },
+    // the bank: granito under wood paneling (its compass rose: roomExtras.bankMx); the museum: terracotta under a Maya
+    // red band; the airport: warm granito; El Muelle: mango walls over the sea's blue instead of pale blue
+    bank: { floor: "#ddd5c4", floorKind: "granito", wall: "#f3ead8", dado: "#7a5232", dadoH: 1.25, accent: "#1f4f8a" },
+    museum: { floor: "#cf9a72", floorKind: "barro", wall: "#f7f0e2", dado: "#8e2b1f", dadoH: 0.9, accent: "#3a2f22" },
+    airport: { floor: "#e6dfd0", floorKind: "granito" },
+    "the-pier": { wall: "#f6dfae", dado: "#1f8fb0", accent: "#14607a" },
   },
   homeMx: true,
 
@@ -364,5 +382,7 @@ export const THEME: TownTheme = {
   mirador: { x: -107, z: -7.5, rot: -Math.PI / 2, sign: "Mirador · Cenote Ka'an →" },
   // a second taxi waiting at the sitio, behind the first, at the curb (clear of the cars' lane)
   taxis: [[115.8, -4.25, -Math.PI / 2]],
+  // graphics round 4: the rooms' walls taller than the phone's room view (its top is wall, not the dark above it)
+  roomWallH: 8.6,
   letras: { text: "PUERTO COLIBRÍ", x: 2.8, z: -63.55, h: 1.45, colors: ["#e4007c", "#f77f00", "#00a6a6", "#f6c000", "#7ac143", "#6d2e9e", "#1f6fd1", "#ff5a36"] },
 };

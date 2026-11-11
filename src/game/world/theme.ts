@@ -82,6 +82,19 @@ export interface TownTheme {
      *  at Brotecito, the souvenirs of the Caribbean at the tourist information (no maple syrup), the mercado's flowers,
      *  piñatas and comal. */
     roomsMx?: boolean;
+    // graphics round 4 (docs/es/TOWN.md "Graphics, round 4")
+    /** The shops as Mexican shops from the door: each one's goods and its painted signs with prices in pesos where a
+     *  phone looks (Hilos' wall of hats and huipiles, the estética's price list, El Faro's fuel prices and ice chest, the
+     *  car rental's rates and the Riviera Maya's poster), talavera on the counters' fronts, rugs woven as zarapes. */
+    shopsMx4?: boolean;
+    /** The clinic as a Mexican consultorio: the reception counter and a waiting row near the door, "Lávate las manos",
+     *  the hours and the doctor's plaque on the back wall, a garrafón with its cups by the reception. */
+    clinicMx4?: boolean;
+    /** The bank's floor: a compass rose inlaid in its granito instead of the round seal with a star. */
+    bankMx?: boolean;
+    /** The big halls (the airport, the museum, the hotel) and the homes: woven rugs and benches where the phone's view
+     *  is pale floor, the hotel's hammock hung across a corner instead of flat on the wall, El Muelle's walls. */
+    hallsMx?: boolean;
   };
   /** People who stand outdoors in this edition (added to layout.ts OUTDOOR_NPCS; a room that has them leaves them out). */
   outdoorNpcs: OutdoorSpot[];
@@ -189,7 +202,7 @@ export interface TownTheme {
    *  in the town's own meshes, and these stalls more (x, z, heading: 0 faces +z). */
   tianguis: { lonas: string[]; signs: Record<string, [string, string]>; stalls: { x: number; z: number; rot: number; goods: TianguisGoods }[] } | null;
   /** The rooms' looks in this edition, by room id: floor and wall colors, the floor's kind, the accent (baseboards). */
-  roomLooks: Record<string, { floor?: string; wall?: string; floorKind?: "wood" | "tile" | "carpet" | "stone" | "pasta"; accent?: string }>;
+  roomLooks: Record<string, RoomLook>;
   /** Diego and Natalia's house (s85, p30) as a Yucatecan home: a ceiling fan, a family altar, plants in clay pots, a
    *  hammock, a water jug on its stand (and since round 2 a petate and the television on its stand). */
   homeMx: boolean;
@@ -288,7 +301,25 @@ export interface TownTheme {
   mirador: { x: number; z: number; rot: number; sign: string } | null;
   /** More taxis waiting at the stand (x, z, heading), in the stand's taxi's colours (theme `taxi`). */
   taxis: [number, number, number][];
+
+  // Graphics round 4 (11 Nov 2026; docs/es/TOWN.md "Graphics, round 4"). Off in Maple Harbor.
+  /** The rooms' back and side walls stand this high (m; null: 4.2, as in Maple Harbor). An upright phone's room camera
+   *  looks over a 4.2 m back wall into the dark; with taller walls the top of its picture is the room's upper wall (a
+   *  lighter tint above a cornice at 4.2 m, the ends of the ceiling's wooden beams under the top). */
+  roomWallH: number | null;
 }
+
+/** A room's look in an edition (theme.ts `roomLooks`): its floor's and walls' colors, the floor's kind, the accent
+ *  (baseboards and the low front wall's top), and (round 4) a painted lower band on the walls (`dado`, `dadoH` m high,
+ *  a line of the accent on top) and the upper wall's tint above the cornice (`upper`; theme `roomWallH`). The floor
+ *  kinds: Maple Harbor's wood, tile, carpet and stone; the Yucatán's mosaicos de pasta (`pasta`, in `pasta`'s colors:
+ *  the corners, the petals, the heart); terracotta (`barro`); terrazzo (`granito`, with metal strips every metre);
+ *  large ceramic tiles (`ceramic`). */
+export interface RoomLook {
+  floor?: string; wall?: string; floorKind?: FloorKind; accent?: string;
+  dado?: string; dadoH?: number; upper?: string; pasta?: [string, string, string];
+}
+export type FloorKind = "wood" | "tile" | "carpet" | "stone" | "pasta" | "barro" | "granito" | "ceramic";
 
 /** What a tianguis stall sells (theme.ts `tianguis`; mexican.ts `tianguisStall` builds each). */
 export type TianguisGoods = "flowers" | "fruit" | "veg" | "bread" | "pinatas" | "pottery" | "hats" | "textiles" | "hammocks";
@@ -376,4 +407,5 @@ export const THEME: TownTheme = {
   atrialCross: null,
   mirador: null,
   taxis: [],
+  roomWallH: null,
 };
